@@ -87,7 +87,7 @@ keywordsOps   =  [ "=", "\\", show hsnArrow, "::", "@", "...", ".", "|", "*", ":
 %%]
 
 %%[9.keywordsOps -7.keywordsOps
-keywordsOps   =  [ "=", "\\", show hsnArrow, "::", "@", "...", ".", "|", "*", ":=", "=>", "<:", ":>" ]
+keywordsOps   =  [ "=", "\\", show hsnArrow, "::", "@", "...", ".", "|", "*", ":=", "=>", "<:" ]
 %%]
 
 %%[1.offsideTrigs
@@ -446,6 +446,10 @@ pTyExprBase     =    sem_TyExpr_Con   <$>  pCon
                         pVar pTyExpr
 %%]
 
+%%[pTyExprApp.5
+pTyExprApp      =    pApp tyExprAlg pTyExprBase
+%%]
+
 %%[pTyExpr.1
 pTyExpr         =    pChainr
                        (mkArrow tyExprAlg <$ pKeyw hsnArrow)
@@ -458,7 +462,6 @@ pTyExpr         =    pTyExprPrefix <*> pTyExpr
 %%]
 
 %%[pTyExpr.5
-pTyExprApp      =    pApp tyExprAlg pTyExprBase
 pTyExpr         =    pTyExprPrefix <*> pTyExpr
                 <|>  pTyExprApp <??> (flip (mkArrow tyExprAlg) <$ pKeyw hsnArrow <*> pTyExpr)
 %%]
@@ -477,11 +480,20 @@ pPackImpl       =    pPacked (pKeyw hsnOImpl) (pKeyw hsnCImpl)
 %%[pTyExprPrefix.9
                 <|>  mkArrow tyExprAlg
                      <$>  pPackImpl
-                            (    sem_TyExpr_Pred   <$>  pPrExpr
-                            <|>  sem_TyExpr_Impls  <$   pKey "..."
+                            (    pPr
+                            <|>  pIm
                             <|>  pSucceed  sem_TyExpr_NoImpls
                             )
                      <*   pKeyw hsnArrow
+                <|>  (    mkArrow tyExprAlg <$> (pPr <|> pIm)
+                     <|>  flip (foldr (mkArrow tyExprAlg))
+                          <$> pParens ((++) <$> pList1Sep pComma pPr <*> ((:[]) <$ pComma <*> pIm `opt` []))
+                     )
+                     <*   pKey "=>"
+                where  pPr = sem_TyExpr_Pred   <$>  pPrExpr
+                       pPr :: EHParser T_TyExpr
+                       pIm = sem_TyExpr_Impls  <$   pKey "..."
+                       pIm :: EHParser T_TyExpr
 %%]
 
 --versions
@@ -515,6 +527,7 @@ pPackImpl       =    pPacked (pKeyw hsnOImpl) (pKeyw hsnCImpl)
 %%@pTyExprCommon.1
 %%@pTyExprBase.3.Head
 %%@pTyExprBase.3
+%%@pTyExprApp.5
 %%@pTyExpr.5
 %%]
 
@@ -522,6 +535,7 @@ pPackImpl       =    pPacked (pKeyw hsnOImpl) (pKeyw hsnCImpl)
 %%@pTyExprCommon.1
 %%@pTyExprBase.3.Head
 %%@pTyExprBase.7
+%%@pTyExprApp.5
 %%@pTyExpr.5
 %%]
 
@@ -529,6 +543,7 @@ pPackImpl       =    pPacked (pKeyw hsnOImpl) (pKeyw hsnCImpl)
 %%@pTyExprCommon.1
 %%@pTyExprBase.3.Head
 %%@pTyExprBase.9
+%%@pTyExprApp.5
 %%@pTyExpr.5
 %%]
 
@@ -588,7 +603,7 @@ pExprApp        =    pApp exprAlg (pExprBase <**> pExprSelSuffix)
 %%[pExprApp.9
 pExprApp        =    let  pE = pExprBase <**> pExprSelSuffix
                           pA = flip sem_Expr_App <$> pE
-                          pI = pPackImpl ((\p a e -> sem_Expr_AppImpl e a p) <$> pPrExpr <* pKey ":>" <*> pExpr)
+                          pI = pPackImpl ((\a p e -> sem_Expr_AppImpl e a p) <$> pExpr <* pKey "<:" <*> pPrExpr)
                      in   pE <??> ((\l e -> sem_Expr_AppTop (foldl (flip ($)) e l)) <$> pList1 (pA <|> pI))
 %%]
 
@@ -823,11 +838,29 @@ pDeclClass      =    (uncurry sem_Decl_Class)
                      <*   pKey "where" <*> pDecls
 
 pDeclInstance   ::   EHParser T_Decl
+pDeclInstance   =    pKey "instance"
+                     *>   (    (\ne -> uncurry (sem_Decl_Instance ne))
+                               <$>  ((\n e -> Just (n,e)) <$> pVar <*> (True <$ pKey "<:" <|> False <$ pKey "::") `opt` Nothing)
+                               <*>  pClassHead
+                               <*   pKey "where" <*> pDecls
+                          <|>  sem_Decl_InstanceIntro <$> pVar <* pKey "<:" <*> pPrExprClass
+                          )
+%%]
+
+
+pDeclInstance   =    pKey "instance"
+                     *>   (    (\ne -> uncurry (sem_Decl_Instance ne))
+                               <$>  ((\n e -> Just (n,e)) <$> pVar <*> (True <$ pKey "<:" <|> False <$ pKey "::") `opt` Nothing)
+                               <*>  pClassHead
+                               <*   pKey "where" <*> pDecls
+                          <|>  sem_Decl_InstanceIntro <$> pVar <* pKey "<:" <*> pPrExprClass
+                          )
+
+
 pDeclInstance   =    (\ne -> uncurry (sem_Decl_Instance ne))
                      <$   pKey "instance"  <*> ((\n e -> Just (n,e)) <$> pVar <*> (True <$ pKey "<:" <|> False <$ pKey "::") `opt` Nothing)
                      <*>  pClassHead
                      <*   pKey "where" <*> pDecls
-%%]
 
 pDeclInstance   =    pKey "instance"
                      *>   (  (\mbNe (cp,p) d -> maybe () () mb)

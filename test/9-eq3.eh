@@ -5,8 +5,8 @@ in   let  class Eq a where
             eq = \_ _ -> True
           instance dEqInt2 <: Eq Int where
             eq = \_ _ -> False
-     in   let  f :: (# Eq a #) -> a -> a -> (# Eq b #) -> b -> b -> (Bool,Bool)
+     in   let  f :: Eq a => a -> a -> Eq b => b -> b -> (Bool,Bool)
                f = \p q r s -> (eq p q, eq r s)
-          in   let  v = f  (# Eq Int :> dEqInt1 #) 3 4
-                           (# Eq Int :> dEqInt2 #) 5 6
+          in   let  v = f  (# dEqInt1 <: Eq Int #) 3 4
+                           (# dEqInt2 <: Eq Int #) 5 6
                in   v

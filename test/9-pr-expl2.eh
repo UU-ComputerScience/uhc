@@ -7,7 +7,7 @@ let  class A a where
      instance dBInt <: B Int where
        bb = \x -> x
 in
-let  f  ::  (# B a #) -> a -> (Int,Int)
+let  f  ::  B a => a -> (Int,Int)
      f  =   \x -> (aa 3,aa x)
 in
 let  (v1,v2)  = f 5

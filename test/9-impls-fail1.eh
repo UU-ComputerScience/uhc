@@ -3,7 +3,7 @@ let class A a where
     instance A Int where
       aa = \x -> x
 in
-let f :: (# A a #) -> a -> a -> Int
+let f :: A a => a -> a -> Int
 in
-let v = f 3 (# A Int :> (aa = \x -> x) #) 4
+let v = f 3 (# (aa = \x -> x) <: A Int #) 4
 in  v

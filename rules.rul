@@ -270,7 +270,7 @@ rules expr9.app "Type checking/inferencing for expression application with impli
     judge pred9 Gamma :- pi..a ~> _ : sigma..a
     judge expr9 predFIOpts; Gamma; (pi.2 -> sigma..k) :- e.1 : (pi..a -> sigma) ~> Cnstr.1 ; Transl.1
     -
-    judge expr9 fiopt; Gamma; (sigma..k) :- (e.1 ^^ (# pi.2 :> e.2 #)) : (Cnstr.2 sigma) ~> Cnstr.(2(..)1) ; (Transl.1 ^^ Transl.2)
+    judge expr9 fiopt; Gamma; (sigma..k) :- (e.1 ^^ (# e.2 <: pi.2 #)) : (Cnstr.2 sigma) ~> Cnstr.(2(..)1) ; (Transl.1 ^^ Transl.2)
 
   rule e_app_impl9_impl =
     judge pred9 ((pi.i.k :~> Transl.i.k)..._,Gamma) :- (Cnstr.3 pi..a._) ~> Transl..a._ : _
