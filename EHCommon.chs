@@ -78,7 +78,7 @@
 %%[9 export(hsnOImpl,hsnCImpl)
 %%]
 
-%%[9 export(showPP)
+%%[9 export(showPP,ppPair)
 %%]
 
 %%[9 export(mkNewLevUIDL)
@@ -346,6 +346,11 @@ mkExtAppPP (funNm,funNmPP,funPPL) (argNm,argNmPP,argPPL,argPP)
   =  if hsnIsRec funNm || hsnIsSum funNm
      then (mkPPAppFun argNm argNmPP,argPPL)
      else (funNmPP,funPPL ++ [argPP])
+%%]
+
+%%[9
+ppPair :: (PP a, PP b) => (a,b) -> PP_Doc
+ppPair (x,y) = pp_parens (pp x >|< "," >|< pp y)
 %%]
 
 %%[9

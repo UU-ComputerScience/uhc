@@ -215,8 +215,6 @@ SEM TyExpr
 
 SEM PrExpr
   | Class       loc     .   pp      =   ppSpaced (pp @nm : @tyExprs.ppL)
-  | Lacks       loc     .   pp      =   @rowTyExpr.pp >|< "\\" >|< pp @nm
-  | Equal       loc     .   pp      =   pp @nm >|< "=" >|< @tyExpr.pp
 
 SEM PrExprs
   | Nil         lhs     .   ppL     =   []
@@ -246,6 +244,16 @@ SEM FuncDeps
 
 SEM AGItf
   | AGItf       lhs     .   pp      =   @expr.pp >-< @errTopPP
+%%]
+
+%%[10
+SEM PrExpr
+  | Lacks       loc     .   pp      =   @rowTyExpr.pp >|< "\\" >|< pp @nm
+%%]
+
+%%[11
+SEM PrExpr
+  | Equal       loc     .   pp      =   pp @nm >|< "=" >|< @tyExpr.pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

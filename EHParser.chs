@@ -811,16 +811,25 @@ pSel            =    pVar <|> pCon <|> HNPos <$> pInt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-pPrExpr         ::   EHParser T_PrExpr
-pPrExpr         =    pPrExprClass
-                <|>  pVar <**>  (    (\s v -> sem_PrExpr_Lacks (sem_RowTyExpr_Var v) s)
-                                     <$ pKey "\\" <*> pSel
-                                <|>  (flip sem_PrExpr_Equal)
-                                     <$ pKey "=" <*> pTyExpr
-                                )
-
 pPrExprClass    ::   EHParser T_PrExpr
 pPrExprClass    =    sem_PrExpr_Class  <$> pCon <*> pTyExprs
+
+pPrExpr         ::   EHParser T_PrExpr
+pPrExpr         =    pPrExprClass
+%%]
+
+%%[10
+                <|>  pVar <**>  (    (\s v -> sem_PrExpr_Lacks (sem_RowTyExpr_Var v) s)
+                                     <$ pKey "\\" <*> pSel
+%%]
+
+%%[11
+                                <|>  (flip sem_PrExpr_Equal)
+                                     <$ pKey "=" <*> pTyExpr
+%%]
+
+%%[10
+                                )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

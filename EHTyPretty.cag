@@ -144,16 +144,22 @@ SEM Ty
   | Pred            loc     .   pp      =   hsnOImpl >#< @pr.pp >#< hsnCImpl
   | Impls           loc     .   pp      =   hsnOImpl >#< @impls.pp >#< hsnCImpl
 
-SEM Pred
-  | Lacks           lhs     .   pp      =   @ty.pp >|< "\\" >|< @nm
-  | Equal           lhs     .   pp      =   @tvTy.pp >|< "=" >|< @ty.pp
-
 SEM Impls
   | Tail Cons       loc     .   ppIv    =   maybe (mkDefaultTvNm "i" @iv) id (lookup @iv @lhs.tnMap)
   | Tail            lhs     .   pp      =   @ppIv
   | Cons            loc     .   ppPv    =   maybe (mkDefaultTvNm "p" @pv) id (lookup @iv @lhs.tnMap)
                     lhs     .   pp      =   @ppIv >|< "=" >|< @pr.pp >|< "/" >|< @ppPv >|< "," >|< @tl.pp
   | Nil             lhs     .   pp      =   pp "_"
+%%]
+
+%%[10
+SEM Pred
+  | Lacks           lhs     .   pp      =   @ty.pp >|< "\\" >|< @nm
+%%]
+
+%%[11
+SEM Pred
+  | Equal           lhs     .   pp      =   @tvTy.pp >|< "=" >|< @ty.pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -174,8 +180,7 @@ SEM Ty
 
 %%[9
 SEM Pred
-  | Class Lacks Equal
-                    loc     .   positionalFldNmL    =   positionalFldNames
+  | *               loc     .   positionalFldNmL    =   positionalFldNames
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -240,8 +245,7 @@ SEM Ty
 
 %%[9
 SEM Pred
-  | Class Lacks Equal  
-                loc     .   parNeed             =   ParNotNeeded
+  | *           loc     .   parNeed             =   ParNotNeeded
                         .   parNeedL            =   []
 %%]
 

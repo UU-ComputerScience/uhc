@@ -95,7 +95,7 @@ SHUFFLE_DOC_PDF		:= $(SHUFFLE_DIR)/ShuffleDoc.pdf
 
 SHUFFLE_SRC			:= $(SHUFFLE_DIR)/$(SHUFFLE_AG)
 
-SHUFFLE_ORDER		:= 1 < 2 < 3 < 4 < 5 < 6 < 7 < 8 < 9, 6 < 6_1
+SHUFFLE_ORDER		:= 1 < 2 < 3 < 4 < 5 < 6 < 7 < 8 < 9 < 10 < 11, 6 < 6_1
 
 
 RULER				:= bin/ruler
@@ -289,6 +289,22 @@ VF					:= $(V)
 include mk/ehfiles.mk
 EHC_V9				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 9
+
+
+### Version 10
+V					:= 10
+VF					:= $(V)
+include mk/ehfiles.mk
+EHC_V10				:= $(addprefix $(VF)/,$(EHC))
+### End of Version 10
+
+
+### Version 11
+V					:= 11
+VF					:= $(V)
+include mk/ehfiles.mk
+EHC_V11				:= $(addprefix $(VF)/,$(EHC))
+### End of Version 11
 
 
 ### TeX production upto a version

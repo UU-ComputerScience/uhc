@@ -181,7 +181,8 @@ SEM Expr
                             .  foPr                 =   prFitToEvid @lUniq4 @knArgImpl @lhs.prIntroGam
                 arg         .  knTy                 =   foTy @foPr
                             .  tyCnstr              =   foCnstr @foPr |=> foCnstr @foKnFun |=> @lhs.tyCnstr
-                loc         .  ty                   =   @arg.tyCnstr |=> (@knResImpls `mkTyArrow` @fTy)
+                body        .  knTy                 =   @knResImpls `mkTyArrow` @fTy
+                loc         .  ty                   =   [@body.tyCnstr |=> @knArgImpl] `mkTyArrow` @body.ty
 %%]
 
 %%[2.AppTop
@@ -211,7 +212,7 @@ SEM Expr
                                                              ftvTy   = ftv . (@lhs.tyCnstr |=>) . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
                                                         in   ftvVal ++ ftvTy
                             .  asTy                 =   tyQuantify (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) (@lhs.tyCnstr |=> @tyExpr.ty)
-                            .  fo                   :=  fitsIn @lhs.fiOpts emptyFE @lUniq @asTy @lhs.knTy
+                            .  fo                   :=  fitsIn @lhs.fiOpts emptyFE @lUniq @asTy (@lhs.tyCnstr |=> @lhs.knTy)
                 expr        .  knTy                 =   foCnstr @fo |=> @asTy
                             .  tyCnstr              =   foCnstr @fo |=> @lhs.tyCnstr
 %%]

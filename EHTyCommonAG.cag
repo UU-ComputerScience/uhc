@@ -102,8 +102,7 @@ SEM Ty
 
 %%[9
 SEM Pred
-  | Class Equal Lacks
-                loc         .   appSpinePos     =   0
+  | *           loc         .   appSpinePos     =   0
 %%]
 
 %%[9

@@ -103,6 +103,7 @@ SEM Decl
                                         , mkInfo1 "sigTy" (ppTy @sigTy)
                                         , mkInfo1 "patExpr.ty" (ppTy @patExpr.ty)
                                         , mkInfo1 "expr.ty" (ppTy @expr.ty)
+                                        , mkInfo1 "expr.tyCnstr" (pp @expr.tyCnstr)
                                         ]
 
 SEM Expr
@@ -272,8 +273,6 @@ SEM TyExpr
 
 SEM PrExpr
   | Class       loc     .  ppAST    =   ppNest ["PrExpr","Class"] [ppNm @nm] [@tyExprs.ppAST]
-  | Lacks       loc     .  ppAST    =   ppNest ["PrExpr","Lacks"] [ppNm @nm] [@rowTyExpr.ppAST]
-  | Equal       loc     .  ppAST    =   ppNest ["PrExpr","Equal"] [ppNm @nm] [@tyExpr.ppAST]
 
 SEM Decl
   | Class       loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Class"] [] [@ctxtPrExprs.ppAST,@prExpr.ppAST,@funcDeps.ppAST,@decls.ppAST] @info
@@ -335,7 +334,27 @@ SEM Expr
                 loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         ]
   | LamImpl     lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","LamImpl"] [] [@arg.ppAST,@argPr.ppAST,@body.ppAST] @info
-                loc     .  info     =   []
+                loc     .  info     =   [ mkInfo1 "lhs.knTy" (pp @lhs.knTy)
+                                        , mkInfo1 "funTy" (pp @funTy)
+                                        , mkInfo1 "ty" (pp @ty)
+                                        , mkInfo1 "knPrL" (ppCommaList @knPrL)
+                                        , mkInfo1 "gathSubsPredL" (ppCommaList @gathSubsPredL)
+                                        , mkInfo1 "inKnGathPrL" (ppCommaList @inKnGathPrL)
+                                        , mkInfo1 "remPrfPrL" (ppCommaList @remPrfPrL)
+                                        , mkInfo1 "prfCBindLMap" (ppCBindLMap @prfCBindLMap)
+                                        , mkInfo1 "lamBodyCoeL" (ppCommaList @lamBodyCoeL)
+                                        , mkInfo1 "lamArgCoeL" (ppCommaList @lamArgCoeL)
+                                        ]
+%%]
+
+%%[10
+SEM PrExpr
+  | Lacks       loc     .  ppAST    =   ppNest ["PrExpr","Lacks"] [ppNm @nm] [@rowTyExpr.ppAST]
+%%]
+
+%%[11
+SEM PrExpr
+  | Equal       loc     .  ppAST    =   ppNest ["PrExpr","Equal"] [ppNm @nm] [@tyExpr.ppAST]
 %%]
 
 
