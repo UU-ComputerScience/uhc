@@ -42,7 +42,7 @@ SEM Ty
   | Quant           lhs     .   tvs         =   @tv `delete` @ty.tvs
 %%]
 
-%%[9
+%%[11
 SEM Pred
   | Equal           lhs     .   tvs         =   @ty.tvs
 %%]

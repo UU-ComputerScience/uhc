@@ -142,9 +142,6 @@ SEM RowTyExpr
 SEM TyExpr
   | Impls           (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
 
-SEM PrExpr
-  | Equal           (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
-
 SEM Decl
   | Class           (ctxtPrExprs.gUniq,loc.lUniq,loc.lUniq2)        =   mkNewLevUID2    @lhs.gUniq
   | Instance        (loc.gUniq2,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4,loc.lUniq5)
@@ -153,5 +150,10 @@ SEM Decl
                                                                     =   mkNewLevUID2    @gUniq2
   | InstanceIntro   (expr.gUniq,loc.lUniq,loc.lUniq2)               =   mkNewLevUID2    @lhs.gUniq
   | Val             (patExpr.gUniq,loc.lUniq,loc.lUniq2)            :=  mkNewLevUID2    @lhs.gUniq
+%%]
+
+%%[11
+SEM PrExpr
+  | Equal           (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
 %%]
 

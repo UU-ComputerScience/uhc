@@ -975,7 +975,8 @@ prfOneStepClass env pr@(Pred_Class t) prUid st@(ProofState g@(ProvenGraph i2n p2
                                           in   foldr
                                                    (\(uid,m@(prOccL,evid,rid,cost)) (g,newPr)
                                                       -> let hasNoPre   =  null prOccL
-                                                             addOrig g  =  if hasNoPre then g {prvgPrOrigIdMp = addToFM_C (++) (prvgPrOrigIdMp g) pr [rid]} else g
+                                                             addOrig g  =  if hasNoPre then g {prvgPrOrigIdMp = addToFM_C (flip (++)) (prvgPrOrigIdMp g) pr [rid]}
+                                                                                       else g
                                                              prf        =  ProvenAnd pr (map poId prOccL)
                                                                              (if isInOrig && hasNoPre then CostAvailImpl (costCost cost) else cost) evid
                                                          in  (addOrig . prvgAddNd uid prf $ g,prOccL ++ newPr)
@@ -999,7 +1000,13 @@ prfOneStep env (PredOcc pr prUid) st@(ProofState g@(ProvenGraph i2n p2i p2oi) u 
         Nothing
           ->  case pr of
                 Pred_Class t  -> prfOneStepClass env pr prUid st
+%%]
+
+%%[10
                 _             -> st
+%%]
+
+%%[9
         _ ->  st
 %%]
 
@@ -1044,16 +1051,16 @@ prfPredsPruneProvenGraph prL (ProvenGraph i2n p2i p2oi)
                                               = case alts of
                                                     [(uida,_)]  -> (uida,prvgAddPrUids pr [uid] gp,calt)
                                                     _           -> (uid,prvgAddNd uid (ProvenOr pr (map fst alts) c') gp,c')
-                                            cm'                 = addToFM cm uid' (Just c'')
+                                            cm'                 = addToFM (delFromFM cm uid) uid' (Just c'')
                                        in   (uid',c',cm',gp')
                                  ProvenShare pr e
                                    ->  let  (uid',c,cm,gp)      = costOf e costMp' gPrune
                                             gp'                 = prvgAddPrUids pr [uid] gp
-                                       in   (uid',c,cm,gp')
+                                       in   (uid',c,delFromFM cm uid,gp')
                                  prf@(ProvenArg pr c)
-                                   ->  let  cm'                 = addToFM costMp' uid (Just c)
-                                            gp'                 = prvgAddPrevPrNd pr uid prf gPrune
-                                       in   (uid,c,cm',gp')
+                                   ->  let  cm                  = addToFM costMp' uid (Just c)
+                                            gp                  = prvgAddPrevPrNd pr uid prf gPrune
+                                       in   (uid,c,delFromFM cm uid,gp)
           costOfL uidL costMp gPrune
             =  foldr  (\uid (cs,cm,g) ->  let  (uid',c,cm',g') = costOf uid cm g
                                           in   ((uid',c):cs,cm',g'))

@@ -71,7 +71,7 @@ SEM Expr
                                                                           in  null fv || any (`elem` ftv @knPrL) fv
                                                                    )
                                                                    @gathSubsPredL
-  | LamImpl     loc         .   knPr                =   tyPred @knArgImpl
+  | LamImpl     loc         .   knPr                =   tyPred . tyFixTyVars . (@body.tyCnstr |=>) $ @knArgImpl
                             .   knPrUid             =   @lUniq
                             .   knPrL               =   [PredOcc @knPr @knPrUid]
                             .   prElimGam           =   peGamAddKnPr @arg.topNm @knPrUid @knPr (gamPushNew @lhs.prElimGam)
@@ -150,7 +150,7 @@ SEM Expr
   | Lam         loc         .   lamArgCoeL          =   mkImplsLamCoe (mkLetRecCoe (mkCBindLForUIDL @cbindLMap (`elem` @uidLKnHd))) @implsKnHd
                                                         ++ mkImplsLamCoe (mkLetRecCoe (mkCBindLForUIDL @cbindLMap (`elem` @uidLKnTl))) @implsKnTl
                                                         ++ [mkLamCoe @arg.topNm]
-  | LamImpl     loc         .   lamArgCoeL          =   [mkLamCoe @arg.topNm `coeCompose` mkLetRecCoe (mkCBindLForUIDL @cbindLMap (== @knPrUid))]
+  | LamImpl     loc         .   lamArgCoeL          =   [mkLamCoe @arg.topNm `coeCompose` mkLetRecCoe (mkCBindLForUIDL @prfCBindLMap (== @knPrUid))]
   | AppTop      loc         .   lamArgCoeL          =   mkImplsLamCoe
                                                             (mkLetRecCoe (mkCBindLForUIDL @cbindLMap (`elem` (@uidLKnHd ++ @uidLKnTl))))
                                                             (@lhs.finTyCnstr |=> @implsKnHd)

@@ -149,9 +149,17 @@ SEM RowTyExpr
 ATTR PrExpr [ | | ki: Ty ]
 
 SEM PrExpr
+  | Class       loc         .   ki                  =   kiStar
+%%]
+
+%%[10
+SEM PrExpr
+  | Lacks       loc         .   ki                  =   kiStar
+%%]
+
+%%[11
+SEM PrExpr
   | Equal       (loc.tgi,tyExpr.tyGam)              =   tyGamLookupOrAdd @nm @lUniq @lhs.kiCnstr @lhs.tyGam
-                loc         .   ki                  =   tgiKi @tgi
-  | * - Equal   loc         .   ki                  =   kiStar
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -245,7 +253,15 @@ ATTR PrExpr [ | | pr: Pred ]
 
 SEM PrExpr
   | Class       loc         .   pr                  =   Pred_Class (@nm `mkTyConApp` @tyExprs.tyL)
+%%]
+
+%%[10
+SEM PrExpr
   | Lacks       loc         .   pr                  =   Pred_Lacks @rowTyExpr.tyRow @nm
+%%]
+
+%%[11
+SEM PrExpr
   | Equal       loc         .   pr                  =   Pred_Equal (tgiTy @tgi) @tyExpr.ty
 %%]
 
@@ -271,9 +287,15 @@ SEM PrExprs
 
 %%[9
 ATTR PrExpr [ | | kiL: TyL ]
+%%]
 
+%%[10
 SEM PrExpr
-  | Equal Lacks
-                lhs         .   kiL                 =   []
+  | Lacks       lhs         .   kiL                 =   []
+%%]
+
+%%[11
+SEM PrExpr
+  | Equal       lhs         .   kiL                 =   []
 %%]
 

@@ -332,12 +332,20 @@ DATA RowTyExpr
 DATA PrExpr
   | Class           nm              : {HsName}
                     tyExprs         : TyExprs
-  | Lacks           rowTyExpr       : RowTyExpr
-                    nm              : {HsName}
-  | Equal           nm              : {HsName}
-                    tyExpr          : TyExpr
 
 TYPE PrExprs        =   [PrExpr]
+%%]
+
+%%[10
+DATA PrExpr
+  | Lacks           rowTyExpr       : RowTyExpr
+                    nm              : {HsName}
+%%]
+
+%%[11
+DATA PrExpr
+  | Equal           nm              : {HsName}
+                    tyExpr          : TyExpr
 %%]
 
 %%[9

@@ -450,18 +450,26 @@ tyPred t
   =  case t of
        Ty_Pred pt  -> pt
 
-predTy :: Pred -> Ty
-predTy p
-  =  case p of
-       Pred_Class t    -> t
-       Pred_Lacks t _  -> t
-       Pred_Equal _ t  -> t
-
 predNm :: Pred -> HsName
 predNm = tyAppFunConNm . predTy
 
 tyPredNm :: Ty -> HsName
 tyPredNm = predNm . tyPred
+%%]
+
+%%[9 hs
+predTy :: Pred -> Ty
+predTy p
+  =  case p of
+       Pred_Class t    -> t
+%%]
+
+%%[10 hs
+       Pred_Lacks t _  -> t
+%%]
+
+%%[11 hs
+       Pred_Equal _ t  -> t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

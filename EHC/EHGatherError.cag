@@ -109,7 +109,7 @@ SEM Expr
   | AppImpl     lhs         .  errL         =   mkNestErr @pp
                                                     (@nmErrs ++ foErrL @foPr ++ @func.errL ++ @arg.errL ++ @argPr.errL)
   | LamImpl     lhs         .  errL         =   mkNestErr @pp
-                                                    (@nmErrs ++ foErrL @foPr ++ @arg.errL ++ @argPr.errL ++ @body.errL)
+                                                    (@nmErrs ++ foErrL @foPr ++ @prfErrs ++ @arg.errL ++ @argPr.errL ++ @body.errL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

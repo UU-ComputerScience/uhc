@@ -95,9 +95,17 @@ DATA Impls
 
 %%[9
 DATA Pred
+  | Class       ty              : Ty
+%%]
+
+%%[10
+DATA Pred
   | Lacks       ty              : Ty
                 nm              : {HsName}
-  | Class       ty              : Ty
+%%]
+
+%%[11
+DATA Pred
   | Equal       tvTy            : Ty
                 ty              : Ty
 %%]

@@ -474,7 +474,7 @@ SEM RecExpr
                 loc         .   nm                  =   maybe @positionalNm id @mbNm
 %%]
 
-%%[9
+%%[10
 SEM PrExpr
   | Lacks       rowTyExpr   .   positionalFldNmL    =   positionalFldNames
 %%]
