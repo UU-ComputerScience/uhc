@@ -172,7 +172,7 @@ gamUnzip (Gam ll)
 
 valGamQuantify :: TyVarIdL -> [PredOcc] -> ValGam -> (ValGam,Gam HsName TyQuOut)
 valGamQuantify globTvL prL g
-  =  let  g' = gamMap  (\(n,t) ->  let  tqo = tyQuantifyPr (`elem` globTvL) TyQu_Forall prL (vgiTy t)
+  =  let  g' = gamMap  (\(n,t) ->  let  tqo = tyQuantifyPr defaultTyQuOpts (`elem` globTvL) TyQu_Forall prL (vgiTy t)
                                    in   (n,(t {vgiTy = tqoTy tqo},tqo))
                        ) g
      in   gamUnzip g'

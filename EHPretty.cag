@@ -190,6 +190,7 @@ SEM RowTyExpr
 SEM TyExpr
   | Pred        loc     .  pp       =   hsnOImpl >#< @prExpr.pp >#< hsnCImpl
   | Impls       loc     .  pp       =   hsnOImpl >#< "..." >#< hsnCImpl
+  | NoImpls     loc     .  pp       =   hsnOImpl >#< "_" >#< hsnCImpl
 
 SEM PrExpr
   | Class       loc     .  pp       =   ppSpaced (pp @nm : @tyExprs.ppL)

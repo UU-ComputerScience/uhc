@@ -22,11 +22,6 @@ SEM AGItf
   | AGItf       expr        .  knTy         =  Ty_Any
 %%]
 
-%%[5
-SEM CaseAlt
-  | Pat         expr        .  knTy         =  Ty_Any
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type of Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -125,10 +120,8 @@ SEM Expr
 SEM Expr
   | App         loc         .  (knFunTy,imTy)       :=  let  [i,a] = mkNewUIDL 2 @lUniq
                                                              im = mkImplsVar i
-                                                        in   ([im,mkTyVar a]
-                                                               `mkTyArrow` (@lhs.tyCnstr |=> @lhs.knTy)
-                                                             ,im)
-                (loc.knImpls,arg.knTy,loc.fTy)      :=  tyArrowImplsArgRes @func.ty
+                                                        in   ([im,mkTyVar a] `mkTyArrow` (@lhs.tyCnstr |=> @lhs.knTy),im)
+                (_,arg.knTy,loc.fTy)                :=  tyArrowImplsArgRes @func.ty
                 loc         .  prOccL               =   tyImplsPreds (@arg.tyCnstr |=> @imTy)
 %%]
 
@@ -158,10 +151,9 @@ SEM Expr
 
 %%[9.Lam
 SEM Expr
-  | Lam         loc         .  (funTy,im1Ty,im2Ty)  :=  let  [i1,a,i2,r] = mkNewUIDL 4 @lUniq
-                                                             im1 = mkImplsVar i1
-                                                             im2 = mkImplsVar i2
-                                                        in   ([im1,mkTyVar a,im2] `mkTyArrow` mkTyVar r,im1,im2)
+  | Lam         loc         .  (funTy,imTy)         :=  let  [i,a,r] = mkNewUIDL 3 @lUniq
+                                                             im = mkImplsVar i
+                                                        in   ([im,mkTyVar a] `mkTyArrow` mkTyVar r,im)
                 (loc.knImpls,arg.knTy,body.knTy)    :=  tyArrowImplsArgRes (foTy @foKnFun)
                 loc         .  ty                   :=  ((@body.tyCnstr |=> @knImpls) ++ [@body.tyCnstr |=> @arg.ty])
                                                         `mkTyArrow` @body.ty
@@ -170,6 +162,15 @@ SEM Expr
 %%[2.AppTop
 SEM Expr
   | AppTop      loc         .  knTy                 =   tyEnsureNonBotTop @lUniq @lhs.knTy
+%%]
+
+%%[9.AppTop
+SEM Expr
+  | AppTop      loc         .  resTy                =   let  [i,r] = mkNewUIDL 2 @lUniq
+                                                        in   [mkImplsVar i] `mkTyArrow` mkTyVar r
+                            .  foKnRes              =   let  fo = fitsIn @lhs.fiOpts @fe @lUniq2 @resTy (@lhs.tyCnstr |=> @lhs.knTy)
+                                                        in   fo {foTy = foCnstr fo |=> @resTy}
+                            .  (imTy,knTy)          :=  tyArrowArgRes (foTy @foKnRes)
 %%]
 
 %%[4.Rest

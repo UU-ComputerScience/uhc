@@ -452,6 +452,7 @@ pTyExprPrefix   =    sem_TyExpr_Quant
                      <$>  pPacked  (pKeyw hsnOImpl) (pKeyw hsnCImpl)
                                    (    sem_TyExpr_Pred   <$>  pPrExpr
                                    <|>  sem_TyExpr_Impls  <$   pKey "..."
+                                   <|>  pSucceed  sem_TyExpr_NoImpls
                                    )
                      <*   pKeyw hsnArrow
 %%]

@@ -31,7 +31,7 @@
 DERIVING *     : Show, Eq
 %%]
 
-%%[9 hs import(FiniteMap,EHTy) export(CBindLMap, Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkImplsAppCoe, mkImplsLamCoe)
+%%[9 hs import(FiniteMap,EHTy) export(CBindLMap, emptyCBindLMap, Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLetRecCoe, mkCBindLForUIDL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,6 +57,11 @@ data CBindCateg = CBindRec | CBindStrict | CBindPlain deriving (Show,Eq)
 
 %%[9 hs
 type CBindLMap = FiniteMap PredOccId CBindL
+
+emptyCBindLMap = emptyFM
+
+mkCBindLForUIDL :: CBindLMap -> [UID] -> CBindL
+mkCBindLForUIDL cbindLMap = nubBy (\(CBind_Bind n1 _) (CBind_Bind n2 _) -> n1 == n2) . concat . map (maybe [] id . lookupFM cbindLMap)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -149,11 +154,8 @@ mkAppCoe bL eL = mkCoe (\e -> (concat . eltsFM $ bL) `mkCExprLetRec` (e `mkCExpr
 mkLamCoe :: HsName -> Coe
 mkLamCoe n = mkCoe (\e -> n `CExpr_Lam` e)
 
-mkImplsAppCoe :: Impls -> [Coe]
-mkImplsAppCoe = map (\p -> mkAppCoe emptyFM [CExpr_Hole . poId $ p]) . fst . implsPredsTail
-
-mkImplsLamCoe :: Impls -> [Coe]
-mkImplsLamCoe = map (\p -> mkLamCoe (uidHNm (poId p))) . fst . implsPredsTail
+mkLetRecCoe :: CBindL -> Coe
+mkLetRecCoe b = mkCoe (\e -> mkCExprLet CBindRec b e)
 
 instance Show Coe where
   show _ = "COE"

@@ -45,21 +45,38 @@ SEM RecExpr
   | Ext         lhs         .   cexprL      =   (@nm,@expr.cexpr) : @recExpr.cexprL
 %%]
 
-%%[9 hs
-mkCBindLForPr :: CBindLMap -> [PredOcc] -> CBindL
-mkCBindLForPr cbindLMap = nubBy (\(CBind_Bind n1 _) (CBind_Bind n2 _) -> n1 == n2) . concat . map (maybe [] id . lookupFM cbindLMap . poId)
-%%]
-
 %%[9
 SEM Expr
-  | Var         loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst (CExpr_Var @nm)
+  | Var Con     loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst (CExpr_Var @nm)
+  | IConst      loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst (CExpr_Int @int)
+  | CConst      loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst (CExpr_Char @char)
   | Let         loc         .   cexpr       :=  mkCExprLet CBindRec (@decls.cbindL) @body.cexpr
-  | App         loc         .   cexpr       :=  CExpr_App (@coe `coeEvalOn` @func.cexpr) @arg.cexpr
-  | Lam         loc         .   cexpr       :=  @coeKnHd `coeEvalOn`
-                                                    mkCExprLet CBindRec (mkCBindLForPr @cbindLMap . fst . implsPredsTail $ @implsKnHd)
-                                                        (@coeKnTl `coeEvalOn`
-                                                            mkCExprLet CBindRec (mkCBindLForPr @cbindLMap . fst . implsPredsTail $ @implsKnTl)
-                                                                (CExpr_Lam @arg.topNm (rceMatch [@arg.topNm] [CAlt_Alt [@arg.cpat] @body.cexpr] cvarUndefined)))
+  | App         loc         .   cexpr       :=  CExpr_App
+                                                    (coeWipeWeave @lhs.finTyCnstr @lhs.cSubst @appImplsCoeL []
+                                                      `coeEvalOn` @func.cexpr)
+                                                    @arg.cexpr
+  | Lam         loc         .   cexpr       :=  coeWipeWeave @lhs.finTyCnstr @cSubst @lamBodyCoeL @lamArgCoeL `coeEvalOn` @body.appFunCExpr
+  | AppTop      loc         .   cexpr       =   coeWipeWeave @lhs.finTyCnstr @cSubst [] @lamArgCoeL `coeEvalOn` @expr.cexpr
+  | Parens      loc         .   cexpr       =   @expr.cexpr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering coercions/cexpr for app args for optimization by weaving above apptop
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR Expr [ | | appArgCoeL: {[Coe]} ^^ appFunCExpr: CExpr ]
+
+SEM Expr
+  | App         lhs         .   appArgCoeL      =   @func.appArgCoeL ++ @appImplsCoeL ++ [mkAppCoe emptyCBindLMap [@arg.cexpr]]
+                            .   appFunCExpr     =   @func.appFunCExpr
+  | AppTop      lhs         .   (appArgCoeL,appFunCExpr)
+                                                =   if null @lamArgCoeL
+                                                    then (@expr.appArgCoeL,@expr.appFunCExpr)
+                                                    else ([],@cexpr)
+  | * - App AppTop
+                lhs         .   appArgCoeL      =   []
+                            .   appFunCExpr     =   @cexpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

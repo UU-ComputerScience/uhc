@@ -62,8 +62,15 @@ SEM TyVar
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2.tyVarWildL
-SEM TyExpr [ | | tyVarWildL USE {++} {[]}: TyVarIdL ]
+ATTR TyExpr [ | | tyVarWildL USE {++} {[]}: TyVarIdL ]
+
+SEM TyExpr
   | Wild        lhs         .   tyVarWildL          =   [@tyVarId]
+%%]
+
+%%[9
+SEM TyExpr
+  | Impls       lhs         .   tyVarWildL          =   [@implsVarId]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -126,7 +133,10 @@ SEM TyExpr
 
 %%[9
 SEM TyExpr
-  | Impls       loc         .  tgi                  :=  mkTGI (Ty_Impls (Impls_Tail @lUniq)) kiStar
+  | Impls       loc         .  implsVarId           =   @lUniq
+                            .  tgi                  =   mkTGI (Ty_Impls (Impls_Tail @implsVarId)) kiStar
+                            .  ki                   =   tgiKi @tgi
+  | NoImpls     loc         .  tgi                  =   mkTGI (Ty_Impls Impls_Nil) kiStar
                             .  ki                   =   tgiKi @tgi
 
 SEM RowTyExpr
@@ -202,7 +212,8 @@ SEM TyVars
 
 %%[9
 SEM TyExpr
-  | Impls       lhs         .  ty                   =   tgiTy @tgi
+  | Impls NoImpls
+                lhs         .  ty                   =   tgiTy @tgi
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

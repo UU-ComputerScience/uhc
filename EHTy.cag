@@ -36,13 +36,13 @@
 %%[8 hs import(List) export(tyRowCanonOrder,tyRecOffset) 
 %%]
 
-%%[9 hs export(Pred(..),predNm,tyPredNm,tyPred,tyLImplsPreds,tyArrowImplsArgRes,mkTyPr)
+%%[9 hs export(Pred(..),predNm,tyPredNm,tyPred,tyLImplsPreds,tyArrowImplsRes,tyArrowImplsArgRes,mkTyPr)
 %%]
 
 %%[9 hs export(tyRecExts,tyAppFunConNm,tyArrowArity)
 %%]
 
-%%[9 hs export(tyImpls,Impls(..),ImplsVarId,mkImplsVar,implsPredsTail,implsPredsMbTail,tyImplsPreds)
+%%[9 hs export(tyImpls,Impls(..),ImplsVarId,mkImplsVar,implsPredsTail,implsUIDs,implsPredsMbTail,tyIsImplsTail,tyImplsPreds)
 %%]
 
 %%[9 hs export(PredOccId,PredOcc(..))
@@ -433,5 +433,12 @@ implsPredsMbTail i =  case implsPredsTail i of
 
 tyImplsPreds :: Ty -> [PredOcc]
 tyImplsPreds = fst . implsPredsTail . tyImpls
+
+tyIsImplsTail :: Ty -> Bool
+tyIsImplsTail (Ty_Impls (Impls_Tail _))  = True
+tyIsImplsTail _                          = False
+
+implsUIDs :: Impls -> [UID]
+implsUIDs = map poId . fst . implsPredsTail
 %%]
 

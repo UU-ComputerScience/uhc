@@ -136,15 +136,19 @@ SEM Decl
                 loc     .  info     =   []
 
 SEM Expr
-  | Case        lhs     .  ppAST    =   ppNest ["Expr","Case"] [] [@expr.ppAST,@alts.ppAST]
+  | Case        lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Case"] [] [@expr.ppAST,@alts.ppAST] @info
+                loc     .  info     =   [ mkInfo1 "knTy" (ppTy (@lhs.tyCnstr |=> @lhs.knTy))
+                                        ]
 
 SEM CaseAlt
   | Pat         lhs     .  ppAST    =   ppNest ["CaseAlt","Pat"] [] [@patExpr.ppAST,@expr.ppAST]
 
 SEM CaseAlts
-  | Nil         lhs     .  ppAST    =   ppNest ["CaseAlts","Nil"] [] []
+  | Nil         lhs     .  ppAST    =   ppNestInfo @lhs.opts  ["CaseAlts","Nil"] [] [] @info
+                loc     .  info     =   [ mkInfo1 "knTy" (ppTy (@lhs.tyCnstr |=> @lhs.knTy))
+                                        ]
   | Cons        lhs     .  ppAST    =   ppNestInfo @lhs.opts ["CaseAlts","Cons"] [] [@hd.ppAST,@tl.ppAST] @info
-                loc     .  info     =   [ mkInfo1 "fiOpts" (pp (show @lhs.fiOpts))
+                loc     .  info     =   [ mkInfo1 "knTy" (ppTy (@lhs.tyCnstr |=> @lhs.knTy))
                                         ]
 
 SEM TyExprs
@@ -245,7 +249,7 @@ SEM FuncDeps
 
 SEM Expr
   | Let         loc     .  info     :=  [ mkInfo1 "gathSubsPredL" (ppCommaList @gathSubsPredL)
-                                        , mkInfo1 "cbindLMap" (ppAssocL . map (\(i,b) -> (i,ppAssocL . map (\(CBind_Bind n v) -> (n,v)) $ b)) . fmToList $ @prfCBindLMap)
+                                        , mkInfo1 "cbindLMap" (ppCBindLMap @prfCBindLMap)
                                         , mkInfo1 "lhs.cSubst" (ppAssocL . fmToList $ @lhs.cSubst)
                                         , mkInfo1 "cSubst" (ppAssocL . fmToList $ @cSubst)
                                         , mkInfo1 "remPrfPrL" (ppCommaList @remPrfPrL)
@@ -257,6 +261,8 @@ SEM Expr
                                         , mkInfo1 "remPrfPrL" (ppCommaList @remPrfPrL)
                                         , mkInfo1 "csubst" (ppAssocL . fmToList $ @csubst)
                                         , mkInfo1 "cSubst" (ppAssocL . fmToList $ @cSubst)
+                                        , mkInfo1 "lamBodyCoeL" (ppCommaList @lamBodyCoeL)
+                                        , mkInfo1 "lamArgCoeL" (ppCommaList @lamArgCoeL)
                                         ]
 %%]
 
