@@ -46,6 +46,9 @@
 %%[6 export(fitsInL)
 %%]
 
+%%[6_2 export(unifyFIOpts,foHasErrs)
+%%]
+
 %%[7 import(List)
 %%]
 
@@ -112,6 +115,11 @@ instFIOpts = instLFIOpts {fioLeaveRInst = True, fioBindLFirst = False}
 %%[5
 weakFIOpts :: FIOpts
 weakFIOpts = strongFIOpts {fioLeaveRInst = True, fioBindRFirst = False}
+%%]
+
+%%[6_2
+unifyFIOpts :: FIOpts
+unifyFIOpts = strongFIOpts {fioCoContra = CoContraVariant}
 %%]
 
 %%[9
@@ -483,21 +491,22 @@ fitsIn opts env uniq ty1 ty2
 
 %%[6_2
             mkTyBind fi tv t        =  if fioBindToTyBind (fiFIOpts fi) then Ty_Bind tv [t] else t
+            foBind tv t fo          =  foUpdCnstr (tv `cnstrTyUnit` t) . foUpdTy t $ fo
 %%]
 
 %%[4.fitsIn.allowBind
-            allowBind fi v          =  True
+            allowBind fi (Ty_Var v f)   =  f == TyVarCateg_Plain
 %%]
 
 %%[9.fitsIn.allowBind -4.fitsIn.allowBind
-            allowBind fi v          =  v `notElem` fioDontBind (fiFIOpts fi)
+            allowBind fi (Ty_Var v f)   =  f == TyVarCateg_Plain && v `notElem` fioDontBind (fiFIOpts fi)
 %%]
 
 %%[4.fitsIn.allowImpredTVBind
-            allowImpredTVBindL fi (Ty_Var v f) _
-                = fioBindLFirst (fiFIOpts fi) && f == TyVarCateg_Plain && allowBind fi v
-            allowImpredTVBindR fi (Ty_Var v f) _
-                = fioBindRFirst (fiFIOpts fi) && f == TyVarCateg_Plain && allowBind fi v
+            allowImpredTVBindL fi t _
+                = fioBindLFirst (fiFIOpts fi) && allowBind fi t
+            allowImpredTVBindR fi t _
+                = fioBindRFirst (fiFIOpts fi) && allowBind fi t
 %%]
 
 %%[99.fitsIn.allowImpredTVBind -4.fitsIn.allowImpredTVBind
@@ -569,13 +578,18 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[6
-            fPairWise' f fi tL1 tL2
+            fPairWise' cCmb fi tL1 tL2
               =  foldr  (\(t1,t2) (foL,fii,c)
                            -> let  fo = f (fii) (c |=> t1) (c |=> t2)
-                              in   (fo:foL,fii {fiUniq = foUniq fo},foCnstr fo |=> c))
+                              in   (fo:foL,fii {fiUniq = foUniq fo},foCnstr fo `cCmb` c))
                         ([],fi,emptyCnstr)
                         (zip tL1 tL2)
-            fPairWise = fPairWise' f
+            fPairWise = fPairWise' (|=>)
+            fPairWiseAlt = fPairWise' (\_ _ -> emptyCnstr)
+%%]
+
+%%[6_2
+            foLCnstr (fo:foL) = if null foL then foCnstr fo else emptyCnstr
 %%]
 
 %%[7.fitsIn.fRow.Base
@@ -750,6 +764,13 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[6_2.fitsIn.Var1 -4.fitsIn.Var1
+            f fi t1@(Ty_Var v1 _)       t2@(Ty_Var v2 _)
+                | allowBind fi t1                   = bind fi v1 t2
+                | allowBind fi t2                   = bind fi v2 t1
+            f fi t1@(Ty_Var v1 _)       t2@(Ty_Bind _ _)
+                | allowBind fi t1                   = bind fi v1 t2
+            f fi t1@(Ty_Bind _ _)       t2@(Ty_Var v2 _)
+                | allowBind fi t2                   = bind fi v2 t1
             f fi t1@(Ty_Var v1 _)       t2
                 | allowImpredTVBindL fi t1 t2       = occurBind fi v1 (mkTyBind fi v1 t2)
             f fi t1                     t2@(Ty_Var v2 _)
@@ -757,23 +778,29 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[6_2
-            f fi t1@(Ty_Bind v1 t1L@(_:_))  t2          = fo2
-                where  bind tv t fo =  foUpdCnstr (tv `cnstrTyUnit` t) . foUpdTy t $ fo
-                       fo2 =  case t2 of
+            f fi t1 t2@(Ty_Bind v2 t2L)             = fo2
+                where  (foL@(fo:_),_,_) = fPairWiseAlt fi (repeat t1) t2L
+                       c = foLCnstr foL
+                       fo2 =  if any (not.foHasErrs) foL
+                              then  foUpdTy (c |=> t2) . foUpdCnstr c $ (fo {foErrL = []})
+                              else  foBind v2 (Ty_Bind v2 (t1:t2L)) (emptyFO {foUniq = fiUniq fi})
+            f fi t1@(Ty_Bind v1 t1L@(_:_))  t2      = fo2
+                where  fo2 =  case t2 of
                                   Ty_Quant q2 _ _ | tyquIsForall q2
-                                      ->  bind v1 (Ty_Bind v1 [c |=> t2]) . foUpdCnstr c $ fo
+                                      ->  foBind v1 (Ty_Bind v1 [c |=> t2]) . foUpdCnstr c $ fo
                                           where  (foL@(fo:_),_,c) = fPairWise fi (repeat t2) t1L
-                                  _   | any foHasErrs foL  ->  bind v1 (Ty_Bind v1 (t2:t1L)) (emptyFO {foUniq = fiUniq fi})
-                                      | otherwise          ->  bind v1 (Ty_Bind v1 [foTy fo]) . foUpdCnstr c $ fo
-                                          where  (foL@(fo:_),_,c) = fPairWise fi t1L (repeat t2)
+                                  _   ->  foBind v1 (Ty_Bind v1 (t2:t1L)) (emptyFO {foUniq = fiUniq fi})
 %%]
+                where  (foL@(fo:_),_,_) = fPairWiseAlt fi t1L (repeat t2)
+                       c = foLCnstr foL
                        fo2 =  if any foHasErrs foL
                               then  case t2 of
                                       Ty_Quant q2 _ _ | tyquIsForall q2
-                                        ->  bind v1 (Ty_Bind v1 [c |=> t2]) . foUpdCnstr c $ fo
-                                        where  (foL@(fo:_),fi2,c) = fPairWise' (\fi -> flip (f fi)) fi (repeat t2) t1L
-                                      _ ->  bind v1 (Ty_Bind v1 (t2:t1L)) (emptyFO {foUniq = fiUniq fi})
-                              else  bind v1 (Ty_Bind v1 [foTy fo]) . foUpdCnstr c $ fo
+                                        ->  manyFO (foL ++ [foBind v1 (Ty_Bind v1 [c |=> t2]) . foUpdCnstr c $ fo])
+                                            where  (foL@(fo:_),_,_) = fPairWiseAlt fi (repeat t2) t1L
+                                                   c = foLCnstr foL
+                                      _ ->  foBind v1 (Ty_Bind v1 (t2:t1L)) (emptyFO {foUniq = fiUniq fi})
+                              else  foBind v1 (Ty_Bind v1 [c |=> t2]) . foUpdCnstr c $ fo
 
 %%[9
             f fi t1@(Ty_Pred (Pred_Class ct1)) t2@(Ty_Pred (Pred_Class ct2))
@@ -927,21 +954,17 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[4.fitsIn.Var2
-            f fi t1@(Ty_Var v1 f)       t2
-                | f == TyVarCateg_Plain && allowBind fi v1
-                                                    = occurBind fi v1 t2
-            f fi t1                     t2@(Ty_Var v2 f)
-                | f == TyVarCateg_Plain && allowBind fi v2
-                                                    = occurBind fi v2 t1
+            f fi t1@(Ty_Var v1 _)       t2
+                | allowBind fi t1                   = occurBind fi v1 t2
+            f fi t1                     t2@(Ty_Var v2 _)
+                | allowBind fi t2                   = occurBind fi v2 t1
 %%]
 
 %%[6_2.fitsIn.Var2 -4.fitsIn.Var2
-            f fi t1@(Ty_Var v1 f)       t2
-                | f == TyVarCateg_Plain && allowBind fi v1
-                                                    = occurBind fi v1 (mkTyBind fi v1 t2)
-            f fi t1                     t2@(Ty_Var v2 f)
-                | f == TyVarCateg_Plain && allowBind fi v2
-                                                    = occurBind fi v2 (mkTyBind fi v2 t1)
+            f fi t1@(Ty_Var v1 _)       t2
+                | allowBind fi t1                   = occurBind fi v1 (mkTyBind fi v1 t2)
+            f fi t1                     t2@(Ty_Var v2 _)
+                | allowBind fi t2                   = occurBind fi v2 (mkTyBind fi v2 t1)
 %%]
 
 %%[4.fitsIn.App

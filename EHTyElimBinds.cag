@@ -1,0 +1,114 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to check/elimination for/of inconsistent/ binds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6_2 hs import(EHCommon,EHTy,EHError,EHTyFitsIn,EHCnstr,EHSubstitutable) export(tyElimBinds)
+%%]
+
+
+%%[6_2.WRAPPER import(EHTyAbsSyn)
+WRAPPER TyAGItf
+%%]
+
+%%[6_2.tyElimBinds hs
+tyElimBinds :: FIEnv -> UID -> Ty -> (Ty,Cnstr,ErrL)
+tyElimBinds env uniq ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf {gUniq_Inh_TyAGItf = uniq, fe_Inh_TyAGItf = env})
+     in   (repl_Syn_TyAGItf t,tyCnstr_Syn_TyAGItf t,errL_Syn_TyAGItf t)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% FIEnv
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6_2
+ATTR TyAGItf AllAllTy [ fe: FIEnv | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Uniq
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6_2
+ATTR TyAGItf [ gUniq: UID | | ]
+ATTR AllAllTy [ | gUniq: UID | ]
+
+SEM TyL
+  | Cons            (hd.gUniq,loc.lUniq)    =   mkNewLevUID @lhs.gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Check/elim
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6_2
+ATTR TyAGItf AllAllTy [ | | errL USE {++} {[]}: ErrL ]
+ATTR AllAllTy [ | | repl: SELF  ]
+ATTR TyAGItf  [ | | repl: Ty    ]
+
+SEM Ty
+  | Bind            (lhs.repl,loc.errL)     =   if foHasErrs @tyL.fo
+                                                then (mkTyVar @tv,[Err_InconsistentBind @lhs.self @tv @tyL.replL])
+                                                else (foTy @tyL.fo,[])
+                    lhs     .   errL        =   @errL ++ @tyL.errL
+%%]
+SEM Ty
+  | Bind            (lhs.repl,loc.errL)     =   case @tyL.replL of
+                                                  l@(_:_:_) -> (mkTyVar @tv,[Err_InconsistentBind @lhs.self @tv l])
+                                                  [t] -> (t,[])
+                    lhs     .   errL        =   @errL ++ @tyL.errL
+
+%%[6_2
+ATTR TyL [ | | replL: TyL ]
+
+SEM TyL
+  | Cons            lhs     .   replL       =   @hd.repl : @tl.replL
+  | Nil             lhs     .   replL       =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unification of all binds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6_2
+ATTR AllAllTy [ | tyCnstr: Cnstr | ]
+ATTR TyAGItf  [ | | tyCnstr: Cnstr ]
+ATTR TyL [ ty: Ty | | fo: FIOut ]
+
+SEM TyL
+  | Cons            loc     .   fo          =   fitsIn unifyFIOpts @lhs.fe @lUniq @lhs.ty (@hd.tyCnstr |=> @hd.repl)
+                    tl      .   ty          =   foTy @fo
+                            .   tyCnstr     =   foCnstr @fo |=> @hd.tyCnstr
+                    lhs     .   (fo,tyCnstr)
+                                            =   if foHasErrs @fo
+                                                then (@fo,@lhs.tyCnstr)
+                                                else (@tl.fo,@tl.tyCnstr)
+  | Nil             lhs     .   fo          =   emptyFO {foTy = @lhs.ty}
+
+SEM Ty
+  | Bind            tyL     .   ty          =   Ty_Any
+
+SEM TyAGItf
+  | AGItf           ty      .   tyCnstr     =   emptyCnstr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Orig type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6_2
+ATTR AllTy [ self: Ty | | ]
+
+SEM TyAGItf
+  | AGItf           ty      .   self        =   @ty.repl
+%%]
+

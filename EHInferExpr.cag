@@ -117,6 +117,11 @@ SEM Expr
                             .  ty                   :=  @arg.tyCnstr |=> @fTy
 %%]
 
+%%[6_2.App
+SEM Expr
+  | App         (arg.knTy,loc.fTy)                  :=  tyArrowArgRes . tyBindTy $ @func.ty
+%%]
+
 %%[9.App
 SEM Expr
   | App         loc         .  (knFunTy,imTy)       :=  let  [i,a] = mkNewUIDL 2 @lUniq
@@ -228,6 +233,12 @@ SEM Expr
   | IConst CConst
                 loc         .  fo                   :=  fitsIn @lhs.fiOpts @fe @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
 %%]
+
+%%[6_2.Rest
+%%]
+SEM Expr
+  | IConst CConst
+                loc         .  fo                   :=  fitsIn (@lhs.fiOpts {fioBindToTyBind = True}) @fe @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gamma/Environment for fitting

@@ -29,10 +29,14 @@
 %if phd || asSlides || forAfpTRUU1
 %let incl02     = True
 %let incl03     = True
-%let incl04     = True
 %else
 %let incl02     = False
 %let incl03     = False
+%endif
+
+%if phd || asSlides || forAfpTRUU1 || onlyCurrentWork
+%let incl04     = True
+%else
 %let incl04     = False
 %endif
 
@@ -6480,8 +6484,39 @@ the parts between |->| but still applies right associatively.
 
 \TBD{previous should be redone.}
 
+%if onlyCurrentWork
+\subsection{Propagation of impredicativity}
 
-\TBD{until here}
+Our solution for the use of higher ranked types is based on:
+\begin{itemize}
+\item The obligation for a programmer to specify the type information the type inferencer is not capable of inferring.
+\item The obligation of the type inferencer to not forget this information.
+\end{itemize}
+
+The type inferencer uses standard Hindley-Milner type inferencing extended with the possibility to bind type variables to
+quantified types, usually named \IxAsDef{impredicativity}.
+This allows the type inferencer to propagate quantified types instead of instantiating these types to a monomorphic type
+for which it is then impossible to find back forgotten polymorphism.
+This idea works well for the examples encountered so far, for example:
+
+\begin{code}
+%%4srcfile(test/3-poly-rank.eh%%)
+\end{code}
+
+Polymorphism for |i| has been declared explicitly before any use of this information in de type checking of the body of |f| is done or any parameter is
+passed to |f|.
+Because we allow type variables to be bound to quantified types the following example also works:
+
+\begin{code}
+%%4srcfile(test/4-impred2.eh%%)
+\end{code}
+
+
+
+
+%endif % onlyCurrentWork
+
+
 
 
 \chunkCmdUseMark{EHInferExpr.4.Var}

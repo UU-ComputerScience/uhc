@@ -55,7 +55,7 @@ ALL_AFP_SRC			:= $(AFP_LHS) $(AFP_RULES)
 
 
 EHC_SRC_PREFIX				:=
-EHC_LAG_FOR_HS_TY			:= $(addsuffix .lag,EHTyQuantify EHTySubst EHTyInconsistentBind EHTyFtv EHTyPretty EHTyInstantiate )
+EHC_LAG_FOR_HS_TY			:= $(addsuffix .lag,EHTyQuantify EHTySubst EHTyElimBinds EHTyFtv EHTyPretty EHTyInstantiate )
 EHC_LAG_FOR_HS_CORE			:= $(addsuffix .lag,EHCoreJava EHCoreGrin EHCoreTrfRenUniq EHCoreTrfFullLazy EHCoreTrfLamLift \
 												EHCoreTrfInlineLetAlias EHCoreTrfLetUnrec EHCorePretty EHCoreSubst EHCoreTrfConstProp)
 EHC_LAG_FOR_HS_GRIN_CODE	:= $(addsuffix .lag,GrinCodePretty)
@@ -97,7 +97,7 @@ EHC_DPDS_TY_INST				:= EHTyInstantiate.ag EHTyCommonAG.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_PRETTY				:= EHTyPretty.ag EHTyCommonAG.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_QUANT				:= EHTyQuantify.ag EHTyCommonAG.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_SUBST				:= EHTySubst.ag EHTyAbsSyn.ag
-EHC_DPDS_TY_INCOB				:= EHTyInconsistentBind.ag EHTyAbsSyn.ag
+EHC_DPDS_TY_ELIMB				:= EHTyElimBinds.ag EHTyAbsSyn.ag
 
 EHC_DPDS_CORE_TRF				:= $(EHC_DPDS_CORE_TRF_CONSTPROP) $(EHC_DPDS_CORE_TRF_RENUNQ) $(EHC_DPDS_CORE_TRF_INLLETALI) \
 									$(EHC_DPDS_CORE_TRF_FULLAZY) $(EHC_DPDS_CORE_TRF_LETUNREC) $(EHC_DPDS_CORE_TRF_LAMLIFT)
@@ -113,7 +113,7 @@ EHC					:= ehc
 EHC_MAIN			:= EHC
 EHC_LAG_FOR_AG		:= $(EHC_DPDS_ALL_MIN_TARG:.ag=.lag)
 EHC_LAG				:= $(EHC_LAG_FOR_AG) $(EHC_LAG_FOR_HS)
-EHC_LHS_FOR_HS		:= $(addsuffix .lhs,$(EHC_MAIN) EHCommon EHCnstr EHSubstitutable EHTyFitsIn EHGam EHPred EHParser FPath EHScanner EHScannerMachine EHCoreUtils EHDebug)
+EHC_LHS_FOR_HS		:= $(addsuffix .lhs,$(EHC_MAIN) EHCommon EHCnstr EHSubstitutable EHTyFitsIn EHGam EHGamUtils EHPred EHParser FPath EHScanner EHScannerMachine EHCoreUtils EHDebug)
 EHC_LHS				:= $(EHC_LHS_FOR_HS)
 EHC_HS				:= $(EHC_LAG_FOR_HS:.lag=.hs) $(EHC_LHS_FOR_HS:.lhs=.hs)
 
@@ -597,7 +597,7 @@ MK_EHC_MKF			= \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_PRETTY),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_QUANT),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_SUBST),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_INCOB),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_ELIMB),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY),-dr) ; \
 	  $(call MK_EHC_MKF_FOR,$(GRI_DPDS_GRI),-dcfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(GRI_DPDS_GRIN_CODE_SETUP),-cfspr) ; \

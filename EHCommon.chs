@@ -223,7 +223,6 @@ newtype UID= UID [Int] deriving (Eq,Ord)
 type UIDL = [UID]
 
 instance Show UID where
---  show (UID (l:ls)) = foldl (\ls l -> show l ++ "_" ++ ls) (show l) ls
   show (UID ls) = concat . intersperse "_" . map show . reverse $ ls
 %%]
 
