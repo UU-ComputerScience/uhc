@@ -240,7 +240,7 @@ rules expr4 "Type checking/inferencing for expression" =
 rules expr4.bind "Type checking/inferencing for expression with bind intro/elim" =
   rule e_ident4B =
     cond (ident :-> sigma) `elem` Gamma
-    judge fit4 (fioBindToTyBindY, fiopt) :- sigma <= sigma..k : sigma ~> Cnstr
+    judge fit4 (fioBindToTyAltsY, fiopt) :- sigma <= sigma..k : sigma ~> Cnstr
     -
     judge expr4 fiopt; Gamma; sigma..k :- ident : sigma ~> Cnstr
   &
@@ -565,11 +565,11 @@ rules fit4.bind "Fitting/subsumption for tvar binds" =
   rule f_var_l1 =
     cond sigma /= _ // _
     -
-    judge fit4 fioBindToTyBindY :- tvar <= sigma : (tvar // sigma) ~> (tvar :-> tvar // sigma)
+    judge fit4 fioBindToTyAltsY :- tvar <= sigma : (tvar // sigma) ~> (tvar :-> tvar // sigma)
   &
   rule f_var_l2 =
     -
-    judge fit4 fioBindToTyBindN :- tvar <= sigma : sigma ~> (tvar :-> sigma)
+    judge fit4 fioBindToTyAltsN :- tvar <= sigma : sigma ~> (tvar :-> sigma)
 
   rule f_bind_r1 =
     judge fit4 fiopt :- sigma.1 <= sigma.2.i : _ ~> _
@@ -597,7 +597,7 @@ rules fit4.bind "Fitting/subsumption for tvar binds" =
 
   rule f_forall_l =
     judge elimb4 unifyFIOpts; tvar..._ :- rho..i : rho ~> Cnstr.2
-    judge fit4 (fioBindToTyBindY, meetFIOpts) :- rho..i <= sigma.2 : sigma ~> Cnstr.1
+    judge fit4 (fioBindToTyAltsY, meetFIOpts) :- rho..i <= sigma.2 : sigma ~> Cnstr.1
     cond (tvar..._,rho..i) == inst.tvar(alpha..._,rho.1)
     -
     judge fit4 meetFIOpts :- (forall ^ alpha..._ (.) rho.1) <= sigma.2 : (forall ^ (tvar..._ `intersect` ftv(rho)) (.) rho) ~> (Cnstr.2 (Cnstr.1 restr.(tvar..._).dom))

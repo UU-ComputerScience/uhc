@@ -24,7 +24,10 @@
 %%[4 hs export(TyQu(..), tyquExists, tyquIsExists, tyquIsForall, showTyQu) 
 %%]
 
-%%[4_1 hs export(tyBindTy) 
+%%[4 hs export(tyConNm) 
+%%]
+
+%%[4_1 hs export(tyAltsTy,tyIsQu) 
 %%]
 
 %%[6 hs export(kiStar) 
@@ -36,7 +39,7 @@
 %%[7 hs export(tyAppFunArg) 
 %%]
 
-%%[8 hs export(tyConNm,tyAppFunConNm) 
+%%[8 hs export(tyAppFunConNm) 
 %%]
 
 %%[8 hs export(tyRecOffset) 
@@ -327,9 +330,18 @@ tyAppArgs    = snd . tyAppFunArgs
 tyProdArgs = tyAppArgs
 %%]
 
+%%[4 hs
+tyConNm :: Ty -> HsName
+tyConNm  (Ty_Con nm)  = nm
+tyConNm  _            = hsnUnknown
+%%]
+
 %%[4_1 hs
-tyBindTy :: Ty -> Ty
-tyBindTy t = case t of {Ty_Bind _ tl -> last tl; _ -> t}
+tyAltsTy :: Ty -> Ty
+tyAltsTy t = case t of {Ty_Alts _ tl -> last tl; _ -> t}
+
+tyIsQu :: Ty -> Bool
+tyIsQu t = case t of {Ty_Quant _ _ _ -> True; _ -> False}
 %%]
 
 %%[7.tyProdArgs -1.tyProdArgs hs
@@ -339,12 +351,6 @@ tyProdArgs ty = let (t,al) = tyRecExts ty in map snd al
 %%[7 hs
 tyAppFunArg :: Ty -> (Ty,Ty)
 tyAppFunArg t =  case t of {Ty_App f a -> (f,a); _ -> (Ty_Any,Ty_Any)}
-%%]
-
-%%[8 hs
-tyConNm :: Ty -> HsName
-tyConNm  (Ty_Con nm)  = nm
-tyConNm  _            = hsnUnknown
 %%]
 
 %%[8 hs

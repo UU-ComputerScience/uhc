@@ -42,8 +42,8 @@ DATA Err
 
 %%[4_1
 DATA Err
-  | InconsistentBind    ty         : {Ty}                ^^  tvar       : {TyVarId}
-                        tyL        : {TyL}
+  | InconsistentAlts    ty         : {Ty}                ^^  tvar       : {TyVarId}
+                        tyL        : {TyL}               ^^  fiMode     : FIMode
 %%]
 
 %%[7

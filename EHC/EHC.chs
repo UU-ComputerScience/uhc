@@ -9,7 +9,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module Main import(System, GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, EHCommon, EHParser, EHMainAG)
+%%[1 module Main import(System, GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, EHCommon, EHOpts,EHParser, EHMainAG)
 %%]
 
 %%[8 import (EHScanner,EHError,EHErrorPretty,FPath,FiniteMap,Maybe,List,Directory)
@@ -346,7 +346,7 @@ crCore1Trf modNm trfNm cr
                                       )
                                     . cmodule_Syn_AGItf
                                     $ synAG}
-         ;  putCompileMsg VerboseALot (crOpts cr) "Transforming" (lookup trfNm cmdLineTrfs) modNm (cuFilePath cu)
+         ;  putCompileMsg VerboseALot (ehcoptVerbosity . crOpts $ cr) "Transforming" (lookup trfNm cmdLineTrfs) modNm (cuFilePath cu)
          ;  crUpdCU modNm (\cu -> return (cu {cuMbOut = Just synAG'})) cr
          }
 %%]
@@ -401,7 +401,7 @@ crCompileCU :: HsName -> CompileRun -> IO CompileRun
 crCompileCU modNm cr
   = do { let cu    = crCU modNm cr
              opts  = crOpts cr
-             msg m = putCompileMsg VerboseNormal opts m Nothing modNm (cuFilePath cu)
+             msg m = putCompileMsg VerboseNormal (ehcoptVerbosity opts) m Nothing modNm (cuFilePath cu)
        ; case cuState cu of
            CUEH
              -> do { msg "Compiling"

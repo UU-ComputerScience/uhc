@@ -9,25 +9,34 @@
 %%% Haskell importable interface to check/elimination for/of inconsistent/ binds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1 hs import(EHCommon,EHTy,EHError,EHCnstr,EHSubstitutable) export(tyElimBinds)
+%%[4_1 hs import(EHCommon,EHOpts,EHTy,EHError,EHCnstr,EHSubstitutable,EHGam) export(tyElimBinds)
 %%]
 
-%%[4_1 hs import(EHDebug,EHErrorPretty)
+%%[4_1 hs export(EBOpts(..),emptyEBOpts)
+%%]
+
+%%[4_1 hs import(EHDebug,UU.Pretty,EHErrorPretty)
 %%]
 
 %%[4_1.WRAPPER import(EHTyAbsSyn)
 WRAPPER TyAGItf
 %%]
 
+%%[4_1 hs
+data EBOpts = EBOpts {eboMeetTvL :: TyVarIdL, eboOnlyFor :: Maybe TyVarIdL}
+
+emptyEBOpts = EBOpts {eboMeetTvL = [], eboOnlyFor = Nothing}
+%%]
+
 %%[4_1.tyElimBinds hs
 type FitsIn = FIOpts -> UID -> Ty -> Ty -> (Ty,Cnstr,ErrL)
 
-tyElimBinds :: FitsIn -> FIOpts -> UID -> TyVarIdL -> Ty -> (Ty,Cnstr,ErrL)
-tyElimBinds fitsIn opts uniq meetTvL ty
+tyElimBinds :: EBOpts -> FitsIn -> FIOpts -> UID -> Ty -> (Ty,Cnstr,Cnstr,ErrL)
+tyElimBinds ebo fitsIn fio uniq ty
   =  let  t =  wrap_TyAGItf
                  (sem_TyAGItf (TyAGItf_AGItf ty))
-                 (Inh_TyAGItf {fitsIn_Inh_TyAGItf = fitsIn, meetTvL_Inh_TyAGItf = meetTvL, opts_Inh_TyAGItf = opts, gUniq_Inh_TyAGItf = uniq})
-     in   (repl_Syn_TyAGItf t,tyCnstr_Syn_TyAGItf t,errL_Syn_TyAGItf t)
+                 (Inh_TyAGItf {fitsIn_Inh_TyAGItf = fitsIn, ebo_Inh_TyAGItf = ebo, fio_Inh_TyAGItf = fio, gUniq_Inh_TyAGItf = uniq})
+     in   (repl_Syn_TyAGItf t,internCnstr_Syn_TyAGItf t,externCnstr_Syn_TyAGItf t,errL_Syn_TyAGItf t)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -43,7 +52,7 @@ ATTR TyAGItf AllAllTy [ fitsIn: FitsIn | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_1
-ATTR TyAGItf AllAllTy [ meetTvL: TyVarIdL ^^ opts: FIOpts | | ]
+ATTR TyAGItf AllAllTy [ ebo: EBOpts ^^ fio: FIOpts | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,6 +62,9 @@ ATTR TyAGItf AllAllTy [ meetTvL: TyVarIdL ^^ opts: FIOpts | | ]
 %%[4_1
 ATTR TyAGItf [ gUniq: UID | | ]
 ATTR AllAllTy [ | gUniq: UID | ]
+
+SEM Ty
+  | Alts            (tyL.gUniq,loc.lUniq)   =   mkNewLevUID @lhs.gUniq
 
 SEM TyL
   | Cons            (hd.gUniq,loc.lUniq)    =   mkNewLevUID @lhs.gUniq
@@ -67,18 +79,20 @@ ATTR AllAllTy [ | | repl: SELF  ]
 ATTR TyAGItf  [ | | repl: Ty    ]
 
 SEM Ty
-  | Bind            (lhs.repl,loc.errL,loc.iCnstr,loc.eCnstr)
+  | Alts            (loc.repl,loc.errL,loc.iCnstr,loc.eCnstr)
                                             =   case cnstrTyLookup @tv @lhs.internCnstr of
                                                     Just t
                                                         ->  (t,[],emptyCnstr,emptyCnstr)
-                                                    _   ->  if @tyL.canMeet
-                                                            then  if @tv `elem` @lhs.meetTvL
-                                                                  then (mkTyVar @tv,[],emptyCnstr,@tv `cnstrTyUnit` @tyL.resTy)
-                                                                  else (@tyL.resTy,[],emptyCnstr,emptyCnstr)
-                                                            else  (mkTyVar @tv,[Err_InconsistentBind @lhs.self @tv @tyL.replL],@tv `cnstrTyUnit` mkTyVar @tv,emptyCnstr)
+                                                    _   ->  let  (t,ci,ce,e) = tyElimBinds @lhs.ebo @lhs.fitsIn @lhs.fio @lUniq @tyL.resTy
+                                                            in   if @tyL.canMeet && null e
+                                                                 then  (t,[],ci,ce)
+                                                                 else  (mkTyVar @tv
+                                                                       ,if null e then [Err_InconsistentAlts @lhs.selfRepl @tv @tyL.replL (fioMode @lhs.fio)] else e
+                                                                       ,@tv `cnstrTyUnit` mkTyVar @tv,emptyCnstr)
                     lhs     .   internCnstr =   @iCnstr |=> @tyL.internCnstr
                             .   externCnstr =   @eCnstr |=> @tyL.externCnstr
 %%]
+                    lhs     .   internCnstr =   tr "QQ" (pp @self >#< ":->" >#< pp @repl >#< ", icnstr" >#< pp @iCnstr >#< ", ecnstr" >#< pp @eCnstr >#< ", lhs.internCnstr" >#< pp @tyL.internCnstr) (@iCnstr |=> @tyL.internCnstr)
 
 %%[4_1
 ATTR TyL [ | | replL: TyL ]
@@ -97,7 +111,7 @@ ATTR TyAGItf AllAllTy [ | | errL USE {++} {[]}: ErrL ]
 ATTR TyL [ | | canMeet: Bool ]
 
 SEM Ty
-  | Bind            lhs     .   errL        =   @errL ++ @tyL.errL
+  | Alts            lhs     .   errL        =   @errL ++ @tyL.errL
 
 SEM TyL
   | Nil             lhs     .   canMeet     =   True
@@ -105,6 +119,7 @@ SEM TyL
 SEM TyAGItf
   | AGItf           lhs     .   errL        =   @ty.errL
 %%]
+  | Alts            lhs     .   errL        =   trm "YY" ppErrL @errL ++ @tyL.errL
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Unification of all binds
@@ -112,12 +127,70 @@ SEM TyAGItf
 
 %%[4_1
 ATTR AllAllTy [ | internCnstr: Cnstr ^^ externCnstr: Cnstr | ]
+ATTR TyAGItf  [ | | internCnstr: Cnstr ^^ externCnstr: Cnstr ]
+ATTR TyL [ ty: Ty | | resTy: Ty ]
+
+SEM TyL
+  | Cons            loc     .   (ty,cnstr,errL)
+                                            =   @lhs.fitsIn @lhs.fio @lUniq @lhs.ty (@lhs.internCnstr |=> @hd.self)
+                    tl      .   ty          =   @ty
+                            .   internCnstr =   @cnstr |=> @lhs.internCnstr
+                    lhs     .   (resTy,internCnstr,externCnstr,canMeet)
+                                            =   if null @errL
+                                                then (@tl.resTy,@tl.internCnstr,@tl.externCnstr,@tl.canMeet)
+                                                else (@lhs.ty,@lhs.internCnstr,@lhs.externCnstr,False)
+  | Nil             lhs     .   resTy       =   @lhs.ty
+
+SEM Ty
+  | Alts Both       tyL     .   ty          =   Ty_Any
+
+SEM TyAGItf
+  | AGItf           ty      .   externCnstr =   emptyCnstr
+                            .   internCnstr =   emptyCnstr
+%%]
+                    tl      .   ty          =   tr "XX" (pp @lhs.ty >#< pp (fioMode @lhs.fio) >#< pp (@lhs.internCnstr |=> @hd.self) >#< "=" >#< pp @ty >#< ", cnstr" >#< pp @cnstr) @ty
+                                                else (tr "ZZ" (ppErrL @errL) @lhs.ty,@lhs.internCnstr,@lhs.externCnstr,False)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Orig type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_1
+ATTR AllTy [ selfRepl: Ty | | ]
+ATTR AllAllTy [ | | self: SELF ]
+
+SEM TyAGItf
+  | AGItf           ty      .   selfRepl    =   @ty.repl
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% App spine info, coco variance
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_1
+ATTR Ty [ | | appSpineInfoL: {[AppSpineInfo]} ]
+
+SEM Ty
+  | Con             lhs     .   appSpineInfoL       =   asGamLookup @nm appSpineGam
+  | App             (loc.asi,lhs.appSpineInfoL)     =   hdAndTl @func.appSpineInfoL
+  | * - Con App     lhs     .   appSpineInfoL       =   unknownAppSpineInfoL
+
+SEM Ty
+  | App             arg     .   fio                 =   fioSwapCoCo (asCoCo @asi) @lhs.fio
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Prev stuff 1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[44_1
+ATTR AllAllTy [ | internCnstr: Cnstr ^^ externCnstr: Cnstr | ]
 ATTR TyAGItf  [ | | tyCnstr: Cnstr ]
 ATTR TyL [ ty: Ty | | resTy: Ty ]
 
 SEM TyL
   | Cons            loc     .   (ty,cnstr,errL)
-                                            =   @lhs.fitsIn @lhs.opts @lUniq @lhs.ty (@hd.internCnstr |=> @hd.repl)
+                                            =   @lhs.fitsIn @lhs.fio @lUniq @lhs.ty (@hd.internCnstr |=> @hd.repl)
                     tl      .   ty          =   @ty
                             .   internCnstr =   @cnstr |=> @hd.internCnstr
                     lhs     .   (resTy,internCnstr,externCnstr,canMeet,errL)
@@ -127,7 +200,7 @@ SEM TyL
   | Nil             lhs     .   resTy       =   @lhs.ty
 
 SEM Ty
-  | Bind            tyL     .   ty          =   Ty_Any
+  | Alts Both       tyL     .   ty          =   Ty_Any
 
 SEM TyAGItf
   | AGItf           ty      .   externCnstr =   emptyCnstr
@@ -135,14 +208,48 @@ SEM TyAGItf
                     lhs     .   tyCnstr     =   @ty.externCnstr |=> @ty.internCnstr
 %%]
 
+%%[44_1
+ATTR AllAllTy [ | | repl: SELF  ]
+ATTR TyAGItf  [ | | repl: Ty    ]
+
+SEM Ty
+  | Alts            (lhs.repl,loc.errL,loc.iCnstr,loc.eCnstr)
+                                            =   case cnstrTyLookup @tv @lhs.internCnstr of
+                                                    Just t
+                                                        ->  (t,[],emptyCnstr,emptyCnstr)
+                                                    _   ->  if @tyL.canMeet
+                                                            then  if @tv `elem` eboMeetTvL @lhs.ebo
+                                                                  then (mkTyVar @tv,[],emptyCnstr,@tv `cnstrTyUnit` @tyL.resTy)
+                                                                  else (@tyL.resTy,[],emptyCnstr,emptyCnstr)
+                                                            else  (mkTyVar @tv,[Err_InconsistentAlts @lhs.selfRepl @tv @tyL.replL (fioMode @lhs.fio)]
+                                                                  ,@tv `cnstrTyUnit` mkTyVar @tv,emptyCnstr)
+                    lhs     .   internCnstr =   @iCnstr |=> @tyL.internCnstr
+                            .   externCnstr =   @eCnstr |=> @tyL.externCnstr
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Orig type
+%%% Prev stuff 2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1
-ATTR AllTy [ self: Ty | | ]
+%%[44_1
+ATTR AllAllTy [ | | repl: SELF  ]
+ATTR TyAGItf  [ | | repl: Ty    ]
 
-SEM TyAGItf
-  | AGItf           ty      .   self        =   @ty.repl
+SEM Ty
+  | Alts            (loc.repl,loc.errL,loc.iCnstr,loc.eCnstr)
+                                            =   case cnstrTyLookup @tv @lhs.internCnstr of
+                                                    Just t
+                                                        ->  (t,[],emptyCnstr,emptyCnstr)
+                                                    _ | maybe False (\l -> @tv `notElem` l) . eboOnlyFor $ @lhs.ebo
+                                                        ->  (@self,[],emptyCnstr,emptyCnstr)
+                                                      | otherwise
+                                                        ->  let  (t,ci,ce,e) = tyElimBinds @lhs.ebo @lhs.fitsIn @lhs.fio @lUniq @tyL.resTy
+                                                            in   if @tyL.canMeet && null e
+                                                                 then  (t,[],ci,ce)
+                                                                 else  (mkTyVar @tv
+                                                                       ,if null e then [Err_InconsistentAlts @lhs.selfRepl @tv @tyL.replL (fioMode @lhs.fio)] else e
+                                                                       ,@tv `cnstrTyUnit` mkTyVar @tv,emptyCnstr)
+                    lhs     .   internCnstr =   tr "QQ" (pp @self >#< ":->" >#< pp @repl >#< ", icnstr" >#< pp @iCnstr >#< ", ecnstr" >#< pp @eCnstr >#< ", lhs.internCnstr" >#< pp @tyL.internCnstr) (@iCnstr |=> @tyL.internCnstr)
+                            .   externCnstr =   @eCnstr |=> @tyL.externCnstr
 %%]
 

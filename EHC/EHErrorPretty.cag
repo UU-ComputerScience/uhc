@@ -108,10 +108,11 @@ SEM Err
 
 %%[4_1
 SEM Err
-  | InconsistentBind    lhs     .  pp   =   ppMsgErr    "Inconsistent binds for tvar"
+  | InconsistentAlts    lhs     .  pp   =   ppMsgErr    "Inconsistent type alternatives for type variable"
                                                         (    "in type :" >#< pp @ty
                                                          >-< "for tvar:" >#< pp @tvar
                                                          >-< "types   :" >#< vlist (map ppTy @tyL)
+                                                         >-< "fit mode:" >#< text (show @fiMode)
                                                         )
 %%]
 

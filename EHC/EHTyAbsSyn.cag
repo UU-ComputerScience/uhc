@@ -70,7 +70,9 @@ DATA TyQu
 
 %%[4_1
 DATA Ty
-  | Bind        tv              : {TyVarId}
+  | Alts        tv              : {TyVarId}
+                tyL             : TyL
+  | Both        tv              : {TyVarId}
                 tyL             : TyL
 
 TYPE TyL        =   [Ty]

@@ -61,7 +61,7 @@ SEM Ty
 
 %%[4_1
 SEM Ty
-  | Bind            lhs     .   repl        =   tvRepl @tv @lhs.cnstr @lhs.isBound @repl
+  | Alts Both       lhs     .   repl        =   tvRepl @tv @lhs.cnstr @lhs.isBound @repl
 %%]
 
 %%[9

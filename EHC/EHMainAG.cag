@@ -9,7 +9,7 @@
 %%% Haskell interface to AG generated code for compiler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs import(Char,IOExts,List,UU.Pretty,EHCommon,EHTy,EHGam,EHError,EHErrorPretty,EHTyFitsIn,EHTyPretty)
+%%[1 hs import(Char,IOExts,List,UU.Pretty,EHCommon,EHOpts, EHTy,EHGam,EHError,EHErrorPretty,EHTyFitsIn,EHTyPretty)
 %%]
 
 %%[2 hs import(EHCnstr,EHSubstitutable,Maybe)

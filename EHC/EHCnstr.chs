@@ -16,7 +16,10 @@
 %%% Substitution for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 import(List, EHCommon, EHTy, UU.Pretty, EHTyPretty) export(Cnstr(..), emptyCnstr, cnstrTyUnit, cnstrTyLookup, unionL)
+%%[2 import(List, EHCommon, EHTy) export(Cnstr(..), emptyCnstr, cnstrTyUnit, cnstrTyLookup, unionL)
+%%]
+
+%%[2 import(UU.Pretty, EHTyPretty) export(ppCnstrV)
 %%]
 
 %%[4 export(cnstrFilter)
@@ -127,14 +130,24 @@ cnstrSize (Cnstr m) = sizeFM m
 %%% Pretty printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2.PP
-instance PP Cnstr where
-  pp (Cnstr l) = ppListSepFill "" "" ", " (map (\(n,v) -> pp n >|< ":->" >|< pp v) l)
+%%[2.ppCnstr
+ppCnstr :: (PP_DocL -> PP_Doc) -> Cnstr -> PP_Doc
+ppCnstr ppL (Cnstr l) = ppL . map (\(n,v) -> pp n >|< ":->" >|< pp v) $ l
 %%]
 
-%%[9 -2.PP
+%%[2
+ppCnstrV :: Cnstr -> PP_Doc
+ppCnstrV = ppCnstr vlist
+%%]
+
+%%[9.ppCnstr -2.ppCnstr
+ppCnstr :: (PP_DocL -> PP_Doc) -> Cnstr -> PP_Doc
+ppCnstr ppL (Cnstr l) = ppL . map (\(n,v) -> pp n >|< ":->" >|< pp v) . fmToList $ l
+%%]
+
+%%[2.PP
 instance PP Cnstr where
-  pp (Cnstr l) = ppListSepFill "" "" ", " (map (\(n,v) -> pp n >|< ":->" >|< pp v) . fmToList $ l)
+  pp = ppCnstr (ppListSepFill "" "" ", ")
 %%]
 
 %%[9

@@ -9,7 +9,7 @@
 %%% Gamma utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1 import(List,EHCommon,EHTy,EHTyFitsIn,EHError,EHGam,EHCnstr,EHSubstitutable)
+%%[4_1 import(List,EHCommon,EHOpts,EHTy,EHTyFitsIn,EHError,EHGam,EHCnstr,EHSubstitutable)
 %%]
 
 %%[4_1 import(EHTyElimBinds) export(valGamElimBinds)
@@ -26,8 +26,8 @@ valGamElimBinds env uniq g
             =  gamMapThr
                   (\(n,vgi) (c,eg,u)
                   	->  let  (u',u1) = mkNewLevUID u
-                  	         (t,c',e) = tyElimBinds (mkElimBindsWrap env) meetFIOpts u1 [] (c |=> vgiTy vgi)
-                  	    in   ((n,vgi {vgiTy = t}),(c' |=> c,gamAdd n e eg,u'))
+                  	         (t,ci,ce,e) = tyElimBinds emptyEBOpts (mkElimBindsWrap env) joinFIOpts u1 (c |=> vgiTy vgi)
+                  	    in   ((n,vgi {vgiTy = t}),(ce |=> ci |=> c,gamAdd n e eg,u'))
                   )
                   (emptyCnstr,emptyGam,uniq) g
      in   (g',c,eg)

@@ -55,7 +55,7 @@ ALL_AFP_SRC			:= $(AFP_LHS) $(AFP_RULES)
 
 
 EHC_SRC_PREFIX				:=
-EHC_LAG_FOR_HS_TY			:= $(addsuffix .lag,EHTyQuantify EHTySubst EHTyElimBinds EHTyFtv EHTyPretty EHTyInstantiate )
+EHC_LAG_FOR_HS_TY			:= $(addsuffix .lag,EHTyQuantify EHTySubst EHTyElimBinds EHTyElimBoth EHTyFtv EHTyPretty EHTyInstantiate )
 EHC_LAG_FOR_HS_CORE			:= $(addsuffix .lag,EHCoreJava EHCoreGrin EHCoreTrfRenUniq EHCoreTrfFullLazy EHCoreTrfLamLift \
 												EHCoreTrfInlineLetAlias EHCoreTrfLetUnrec EHCorePretty EHCoreSubst EHCoreTrfConstProp)
 EHC_LAG_FOR_HS_GRIN_CODE	:= $(addsuffix .lag,GrinCodePretty)
@@ -98,6 +98,7 @@ EHC_DPDS_TY_PRETTY				:= EHTyPretty.ag EHTyCommonAG.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_QUANT				:= EHTyQuantify.ag EHTyCommonAG.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_SUBST				:= EHTySubst.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_ELIMB				:= EHTyElimBinds.ag EHTyAbsSyn.ag
+EHC_DPDS_TY_ELIMBOTH			:= EHTyElimBoth.ag EHTyAbsSyn.ag
 
 EHC_DPDS_CORE_TRF				:= $(EHC_DPDS_CORE_TRF_CONSTPROP) $(EHC_DPDS_CORE_TRF_RENUNQ) $(EHC_DPDS_CORE_TRF_INLLETALI) \
 									$(EHC_DPDS_CORE_TRF_FULLAZY) $(EHC_DPDS_CORE_TRF_LETUNREC) $(EHC_DPDS_CORE_TRF_LAMLIFT)
@@ -106,6 +107,7 @@ EHC_DPDS_ALL					:= $(sort $(EHC_DPDS_MAIN) \
 										$(EHC_DPDS_TY) $(EHC_DPDS_TY_PRETTY) $(EHC_DPDS_TY_QUANT) $(EHC_DPDS_TY_SUBST) $(EHC_DPDS_TY_FTV) $(EHC_DPDS_TY_INST) \
 										$(EHC_DPDS_GRIN_CODE) $(EHC_DPDS_GRIN_CODE_PRETTY) \
 										$(EHC_DPDS_ERR) $(EHC_DPDS_ERR_PRETTY) \
+										$(EHC_DPDS_TY_ELIMBOTH) $(EHC_DPDS_TY_ELIMB) \
 										)
 EHC_DPDS_ALL_MIN_TARG			:= $(filter-out $(EHC_LAG_FOR_HS:.lag=.ag),$(EHC_DPDS_ALL))
 
@@ -113,7 +115,7 @@ EHC					:= ehc
 EHC_MAIN			:= EHC
 EHC_LAG_FOR_AG		:= $(EHC_DPDS_ALL_MIN_TARG:.ag=.lag)
 EHC_LAG				:= $(EHC_LAG_FOR_AG) $(EHC_LAG_FOR_HS)
-EHC_LHS_FOR_HS		:= $(addsuffix .lhs,$(EHC_MAIN) EHCommon EHCnstr EHSubstitutable EHTyFitsIn EHGam EHGamUtils EHPred EHParser FPath EHScanner EHScannerMachine EHCoreUtils EHDebug)
+EHC_LHS_FOR_HS		:= $(addsuffix .lhs,$(EHC_MAIN) EHCommon EHOpts EHCnstr EHSubstitutable EHTyFitsIn EHGam EHGamUtils EHPred EHParser FPath EHScanner EHScannerMachine EHCoreUtils EHDebug)
 EHC_LHS				:= $(EHC_LHS_FOR_HS)
 EHC_HS				:= $(EHC_LAG_FOR_HS:.lag=.hs) $(EHC_LHS_FOR_HS:.lhs=.hs)
 
@@ -445,13 +447,16 @@ esop05-tr:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=truu --set=forESOP05 --set=omitTBD --set=omitLitDiscuss" afp-bib
 
 eh-work:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=asArticle --set=refToPDF --set=inclOmitted --set=onlyCurrentWork" afp
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=onlyCurrentWork --unset=asArticle --set=refToPDF --set=inclOmitted" afp
 
 phd:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=asArticle --set=refToPDF --set=inclOmitted --set=phd" afp
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=forPHD --unset=asArticle --set=refToPDF --set=inclOmitted" afp
 
 afp-slides:
-	$(MAKE) AFP=$@ LHS2TEX_POLY_MODE=--poly LHS2TEX_OPTS="$(LHS2TEX_OPTS) --set=asSlides --set=omitTBD --set=omitLitDiscuss" afp
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_POLY_MODE=--poly LHS2TEX_OPTS="$(LHS2TEX_OPTS) --set=forPHD --set=asSlides --set=omitTBD --set=omitLitDiscuss" afp
+
+eh-intro:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_POLY_MODE=--poly LHS2TEX_OPTS="$(LHS2TEX_OPTS) --set=forEHIntro --set=asSlides --set=omitTBD --set=omitLitDiscuss" afp
 
 .PHONY: shuffle ruler brew ehcs dist www www-sync gri gris
 
@@ -598,6 +603,7 @@ MK_EHC_MKF			= \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_QUANT),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_SUBST),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_ELIMB),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_ELIMBOTH),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY),-dr) ; \
 	  $(call MK_EHC_MKF_FOR,$(GRI_DPDS_GRI),-dcfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(GRI_DPDS_GRIN_CODE_SETUP),-cfspr) ; \
@@ -649,6 +655,7 @@ $(DIST_ZIP): $(addprefix $(VERSION_LAST)/,$(EHC_DPDS_ALL_MIN_TARG)) Makefile tes
 
 wc:
 	grep frametitle $(AFP_LHS) | wc
+	wc $(EHC_CAG) $(EHC_CHS)
 
 WWW_EXAMPLES_TMPL			:=	www/ehc-examples-templ.html
 WWW_EXAMPLES_HTML			:=	www/ehc-examples.html
