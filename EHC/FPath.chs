@@ -9,7 +9,7 @@
 %%% File path
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(FPath(..), fpathToStr, fpathIsEmpty, fpathSetBase, fpathSetSuff, mkFPath, emptyFPath, fpathSetDir, fpathPrependDir)
+%%[8 export(FPath(..), fpathToStr, fpathIsEmpty, fpathSetBase, fpathSetSuff, mkFPath, emptyFPath, fpathSetDir, fpathPrependDir, mkTopLevelFPath, mkInitSearchPath)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -89,5 +89,14 @@ fpathSplit fn
         (b',s) = maybe (b,"") id (splitOnLast '.' b)
         b''    = if null d then b' else d ++ "/" ++ b'
      in (b'',s)
+
+mkTopLevelFPath :: String -> String -> FPath
+mkTopLevelFPath suff fn
+  = let fpNoSuff = mkFPath fn
+     in maybe (fpathSetSuff suff fpNoSuff) (const fpNoSuff) . fpathMbSuff $ fpNoSuff
+
+mkInitSearchPath :: FPath -> [String]
+mkInitSearchPath fp = maybe [] (:[]) (fpathMbDir fp) ++ [""]
+
 %%]
 

@@ -5,34 +5,82 @@
 %include afp.fmt
 %%]
 
-%%[7 module EHScannerMachine import(Char,List,Maybe,UU.Util.BinaryTrees,UU.Scanner.Token,UU.Scanner.Position)
-scanFile :: [String] -> [String] -> String -> String -> [String] -> FilePath -> IO [Token]
-scanFile keywordstxt keywordsops specchars opchars specpairs fn = 
-        do txt <- readFile fn
-           return (scan keywordstxt keywordsops specchars opchars specpairs (initPos fn) txt) 
+%%[7 module EHScannerMachine import(Char,List,Maybe,IO,UU.Util.BinaryTrees,UU.Scanner.Token,UU.Scanner.Position)
+%%]
 
-scan :: [String] -> [String] -> String -> String -> [String] -> Pos -> String -> [Token]
-scan keywordstxt keywordsops specchars opchars specpairs pos input
+%%[7
+data ScanOpts
+  =  ScanOpts
+        {   scoKeywordsTxt      ::  [String]
+        ,   scoKeywordsOps      ::  [String]
+        ,   scoSpecChars        ::  String
+        ,   scoOpChars          ::  String
+        ,   scoSpecPairs        ::  [String]
+%%]
+%%[8
+        ,   scoDollarIdent      ::  Bool
+%%]
+%%[1
+        }
+%%]
+
+%%[7
+defaultScanOpts :: ScanOpts
+defaultScanOpts
+  =  ScanOpts
+        {   scoKeywordsTxt      =   []
+        ,   scoKeywordsOps      =   []
+        ,   scoSpecChars        =   ""
+        ,   scoOpChars          =   ""
+        ,   scoSpecPairs        =   []
+%%]
+%%[8
+        ,   scoDollarIdent      =   False
+%%]
+%%[1
+        }
+%%]
+
+%%[7.scanHandle -1.scanHandle
+scanHandle :: ScanOpts -> FilePath -> Handle -> IO [Token]
+scanHandle opts fn fh
+  = do  {  txt <- hGetContents fh
+        ;  return (scan opts (initPos fn) txt) 
+        }
+%%]
+
+%%[7
+scanFile :: ScanOpts -> FilePath -> IO [Token]
+scanFile opts fn = 
+        do txt <- readFile fn
+           return (scan opts (initPos fn) txt) 
+
+scan :: ScanOpts -> Pos -> String -> [Token]
+scan opts pos input
   = doScan pos input
 
  where
    locatein :: Ord a => [a] -> a -> Bool
    locatein es = isJust . btLocateIn compare (tab2tree (sort es))
-   iskw     = locatein keywordstxt
-   isop     = locatein keywordsops
-   isSymbol = locatein specchars
-   isOpsym  = locatein opchars
-   isPairSym= locatein specpairs
+   iskw     = locatein (scoKeywordsTxt opts)
+   isop     = locatein (scoKeywordsOps opts)
+   isSymbol = locatein (scoSpecChars opts)
+   isOpsym  = locatein (scoOpChars opts)
+   isPairSym= locatein (scoSpecPairs opts)
 
    isIdStart c = isLower c || c == '_'
 
-   isIdChar c =  isAlphaNum c
-              || c == '\''
-              || c == '_'
+   isIdChar  c = isAlphaNum c || c == '\'' || c == '_'
 
    scanIdent p s = let (name,rest) = span isIdChar s
                    in (name,advc (length name) p,rest)
 
+   scanDollarIdent :: String -> (String,Int,String)
+   scanDollarIdent []           = ("",0,[])
+   scanDollarIdent cs@(c:s)     | isSpace c || isSymbol c
+                                = ("",0,cs)
+   scanDollarIdent cs@(c:s)     = let (str,w,s') = scanDollarIdent s
+                                  in  (c:str,w+1,s')
 
    doScan p [] = []
    doScan p (c:s)        | isSpace c = let (sp,next) = span isSpace s
@@ -45,6 +93,13 @@ scan keywordstxt keywordsops specchars opchars specpairs pos input
        in if null rest || head rest /= '"'
              then errToken "Unterminated string literal" p : doScan (advc swidth p) rest
              else valueToken TkString s p : doScan (advc (swidth+2) p) (tail rest)
+
+   doScan p ('$':ss)
+     | scoDollarIdent opts   = tok : doScan (advc w p) ss'
+         where (ident,w,ss') = scanDollarIdent ss
+               tok = if null ident
+                     then errToken "Zero length $identifier" p
+                     else valueToken TkVarid ident p
 
    doScan p ('\'':ss)
      = let (mc,cwidth,rest) = scanChar ss
@@ -88,6 +143,7 @@ lexNest cont pos inp = lexNest' cont pos inp
        lexNest' c p ('{':'-':s) = lexNest' (lexNest' c) (advc 2 p) s
        lexNest' c p (x:s)       = lexNest' c (adv p x) s
        lexNest' _ _ []          = [ errToken "Unterminated nested comment" pos]
+
 
 scanString :: String -> (String,Int,String)
 scanString []            = ("",0,[])

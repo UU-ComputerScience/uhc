@@ -32,10 +32,10 @@
 main :: IO ()
 main
   =  do  {  args <- getArgs
-         ;  let  oo@(o,n,errs)  = getOpt Permute cmdLineOpts args
+         ;  let  oo@(o,n,errs)  = getOpt Permute ehcCmdLineOpts args
                  opts           = foldr ($) defaultEHCOpts o
          ;  if ehcoptHelp opts
-            then  putStrLn (usageInfo "Usage: ehc [options] [file]\n\noptions:" cmdLineOpts)
+            then  putStrLn (usageInfo "Usage: ehc [options] [file]\n\noptions:" ehcCmdLineOpts)
             else  if null errs
                   then  doCompileRun (if null n then "" else head n) opts
                   else  putStr (head errs)
@@ -46,10 +46,10 @@ main
 main :: IO ()
 main
   =  do  {  args <- getArgs
-         ;  let  oo@(o,n,errs)  = getOpt Permute cmdLineOpts args
+         ;  let  oo@(o,n,errs)  = getOpt Permute ehcCmdLineOpts args
                  opts           = foldr ($) defaultEHCOpts o
          ;  if ehcoptHelp opts
-            then  do  {  putStrLn (usageInfo "Usage ehc [options] [file]\n\noptions:" cmdLineOpts)
+            then  do  {  putStrLn (usageInfo "Usage ehc [options] [file]\n\noptions:" ehcCmdLineOpts)
                       ;  putStrLn ("Transformations:\n" ++ (unlines . map (\(n,t) -> "  " ++ n ++ ": " ++ t) $ cmdLineTrfs))
                       }
             else  if null errs
@@ -427,19 +427,11 @@ crCompileOrderedCUs modNmLL = crSeq (map (crCompileCU . head) modNmLL)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8.doCompile -1.doCompile
-mkTopLevelFPath :: String -> FPath
-mkTopLevelFPath fn
-  = let fpNoSuff = mkFPath fn
-     in maybe (fpathSetSuff "eh" fpNoSuff) (const fpNoSuff) . fpathMbSuff $ fpNoSuff
-
-mkSearchPath :: FPath -> [String]
-mkSearchPath fp = maybe [] (:[]) (fpathMbDir fp) ++ [""]
-
 doCompileRun :: String -> EHCOpts -> IO ()
 doCompileRun fn opts
-  = do { let fp             = mkTopLevelFPath fn
+  = do { let fp             = mkTopLevelFPath "eh" fn
              topModNm       = HNm (fpathBase fp)
-             searchPath     = mkSearchPath fp
+             searchPath     = mkInitSearchPath fp
              opts'          = opts { ehcoptSearchPath = searchPath ++ ehcoptSearchPath opts }
              p1ib           = Inh_AGItf {baseName_Inh_AGItf = fpathBase fp, gUniq_Inh_AGItf = uidStart, opts_Inh_AGItf = opts'}
              aSetup cr      = crHandle1
