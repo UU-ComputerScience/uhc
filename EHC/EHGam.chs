@@ -45,7 +45,7 @@
 %%[7 export(mkTGIData)
 %%]
 
-%%[8 import(Maybe) export(gamUpd)
+%%[8 import(Maybe,FiniteMap,EHCore) export(gamUpd,DataTagArityMp)
 %%]
 
 %%[9 import(EHDebug) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
@@ -249,6 +249,31 @@ mkTGI :: Ty -> Ty -> TyGamInfo
 mkTGI t k = TyGamInfo t k
 %%]
 
+%%[7.TyGamInfo -6.TyGamInfo
+data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty, tgiData :: Ty } deriving Show
+
+mkTGIData :: Ty -> Ty -> Ty -> TyGamInfo
+mkTGIData t k d = TyGamInfo t k d
+
+mkTGI :: Ty -> Ty -> TyGamInfo
+mkTGI t k = mkTGIData t k Ty_Any
+%%]
+
+%%[8.TyGamInfo -7.TyGamInfo
+type DataTagArityMp = FiniteMap HsName (CTag,Int)
+
+data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty, tgiData :: Ty, tgiDataTagArityMp :: DataTagArityMp }
+
+instance Show TyGamInfo where
+  show _ = "TyGamInfo"
+
+mkTGIData :: Ty -> Ty -> Ty -> DataTagArityMp -> TyGamInfo
+mkTGIData t k d m = TyGamInfo t k d m
+
+mkTGI :: Ty -> Ty -> TyGamInfo
+mkTGI t k = mkTGIData t k Ty_Any emptyFM
+%%]
+
 %%[6.tyGamLookup -1.tyGamLookup
 tyGamLookup :: HsName -> TyGam -> Maybe TyGamInfo
 tyGamLookup nm g
@@ -261,25 +286,15 @@ tyGamLookup nm g
        _         -> Nothing
 %%]
 
+%%[7.tyGamLookup -6.tyGamLookup
+tyGamLookup :: HsName -> TyGam -> Maybe TyGamInfo
+tyGamLookup = gamLookup
+%%]
+
 %%[6.tyGamQuantify
 tyGamQuantify :: TyVarIdL -> TyGam -> TyGam
 tyGamQuantify globTvL
   = gamMap (\(n,k) -> (n,k {tgiKi = kiQuantify (`elem` globTvL) (tgiKi k)}))
-%%]
-
-%%[7.TyGamInfo -6.TyGamInfo
-data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty, tgiData :: Ty } deriving Show
-
-mkTGIData :: Ty -> Ty -> Ty -> TyGamInfo
-mkTGIData t k d = TyGamInfo t k d
-
-mkTGI :: Ty -> Ty -> TyGamInfo
-mkTGI t k = mkTGIData t k Ty_Any
-%%]
-
-%%[7.tyGamLookup -6.tyGamLookup
-tyGamLookup :: HsName -> TyGam -> Maybe TyGamInfo
-tyGamLookup = gamLookup
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

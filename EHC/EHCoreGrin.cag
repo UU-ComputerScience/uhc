@@ -193,7 +193,7 @@ SEM CExpr
                                                                                | arity < apArity && @lhs.isStrict
                                                                                    -> mkSq (GrExpr_Call funNm (take arity argL')) n (GrExpr_App n (drop arity argL'))
                                                                                | otherwise
-                                                                                   -> GrExpr_Store (mkNdApp funNm argL')
+                                                                                   -> mkSq (GrExpr_Store (mkNdPApp funNm 0 (take arity argL'))) n (GrExpr_Store (mkNdApp n (drop arity argL')))
                                                                              Nothing
                                                                                | @lhs.isStrict
                                                                                    -> mkSq (GrExpr_Eval funNm) n (GrExpr_App n argL')

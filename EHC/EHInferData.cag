@@ -83,6 +83,25 @@ SEM Decl
                             .  dataTgi              :=  mkTGIData (Ty_Con @tyNm) (tyEnsureNonBotTop @lUniq @knKi) @dataAltTy
 %%]
 
+%%[8
+SEM Decl
+  | Data        loc         .  dataTgi              :=  mkTGIData  (Ty_Con @tyNm) (tyEnsureNonBotTop @lUniq @knKi)
+                                                                   @dataAltTy @constrs.dataTagArityMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Map for tag + arity
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllDataConstr [ | | dataTagArityMp USE {`plusFM`} {emptyFM}: DataTagArityMp ]
+
+SEM DataConstr
+  | Constr      loc         .   tag                 =   tyRecOffset @conNm @lhs.dataAltTy
+                            .   ctag                =   CTag @tag @conNm
+                lhs         .   dataTagArityMp      =   @conNm `unitFM` (@ctag,length @fields.tyL)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Label of data fields
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

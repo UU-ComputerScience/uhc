@@ -15,7 +15,7 @@
 %%[8 hs export(CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL) 
 %%]
 
-%%[8 hs export(CPatNm(..), cpatNmEither)
+%%[8 hs export(CPatNm(..), cpatNmEither,cpatNmNone)
 %%]
 
 %%[8 hs export(CTag(..),ctagNone,ctag,cpatVarNm,caltTag,caltIsVar,caltPatL,caltPat,caltLPatNms,cvarUndefined,ppCTag,ppCTagInt) 
@@ -102,6 +102,9 @@ instance Show CPatNm where
 
 cpatNmEither :: (HsName -> a) -> (HsName -> a) -> CPatNm -> a
 cpatNmEither o u pnm = case pnm of {CPatNmOrig n -> o n; CPatNmUniq n -> u n}
+
+cpatNmNone :: CPatNm
+cpatNmNone = CPatNmOrig hsnWild
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
