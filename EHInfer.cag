@@ -374,11 +374,11 @@ SEM PatExpr
 ATTR PatExpr [ | | topNm: HsName ]
 
 SEM PatExpr
-  | Var VarAs   loc         .   topNm               =   if @nm == hsnWild then HNm (show @lUniq) else @nm
+  | Var VarAs   loc         .   topNm               =   if @nm == hsnWild then uidHNm @lUniq else @nm
   | CConst IConst App
                 lhs         .   topNm               =   hsnUnknown
   | AppTop Con Rec
-                loc         .   topNm               =   HNm (show @lUniq)
+                loc         .   topNm               =   uidHNm @lUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -455,7 +455,25 @@ SEM CaseAlt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Predicate
+%%% Predicate, for elim of predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR AllDecl [ | patPrElimGam: PrElimGam | ]
+ATTR AllDecl AllExpr AllCase [ prElimGam: PrElimGam | | ]
+
+SEM Expr
+  | Let         decls       .   patPrElimGam        =   gamPushNew @lhs.prElimGam
+                loc         .   (lPrEGam,gPrEGam)   =   gamPop @decls.patPrElimGam
+                decls       .   prElimGam           =   @lPrEGam `gamPushGam` @lhs.prElimGam
+                body        .   prElimGam           =   @lPrEGam `gamPushGam` @gPrEGam
+
+SEM AGItf
+  | AGItf       loc         .   prElimGam           =   emptyGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicate, for intro of predicates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
@@ -475,6 +493,6 @@ SEM Expr
                 body        .   prIntroGam          =   @lQuPrIGam `gamPushGam` @gSubsPrIGam
 
 SEM AGItf
-  | AGItf       loc         .   prIntroGam          :=  emptyGam
+  | AGItf       loc         .   prIntroGam          =   emptyGam
 %%]
 

@@ -31,10 +31,10 @@ SEM Expr
   | Let         loc         .   cexpr       =   mkCExprLet CBindRec @decls.cbindL @body.cexpr
   | App         loc         .   cexpr       =   CExpr_App @func.cexpr @arg.cexpr
   | Lam         loc         .   cexpr       =   CExpr_Lam @arg.topNm (rceMatch [@arg.topNm] [CAlt_Alt [@arg.cpat] @body.cexpr] cvarUndefined)
-  | Rec         loc         .   cexpr       =   foldl CExpr_App (CExpr_Tup (length @recExpr.cexprL)) (map snd . tyRowCanonOrder $ @recExpr.cexprL)
+  | Rec         loc         .   cexpr       =   foldl CExpr_App CExpr_Tup (map snd . tyRowCanonOrder $ @recExpr.cexprL)
   | Sel         loc         .   offset      =   maybe (-1) id (tyRecOffset @lbl @expr.ty)
                             .   cexpr       =   CExpr_Sel @expr.cexpr ctagNone (CExpr_Int @offset)
-  | Case        loc         .   cexpr       =   let  n = HNm (show @lUniq)
+  | Case        loc         .   cexpr       =   let  n = uidHNm @lUniq
                                                 in   mkCExprLet CBindPlain [CBind_Bind n @expr.cexpr]
                                                         (rceMatch [n] @alts.caltL cvarUndefined)
 
@@ -238,7 +238,7 @@ SEM DataConstr
                                                      nms = map (\i -> HNm ("x" ++ show i)) [1..len]
                                                 in   [CBind_Bind @conNm
                                                         (mkCExprLam nms
-                                                          (mkCExprApp (CExpr_App (CExpr_Tup len) (CExpr_Int @tag))
+                                                          (mkCExprApp (CExpr_App CExpr_Tup (CExpr_Int @tag))
                                                             (map CExpr_Var nms)))
                                                      ]
 %%]

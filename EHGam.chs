@@ -42,7 +42,10 @@
 %%[7 export(mkTGIData)
 %%]
 
-%%[8 export(gamUpd)
+%%[8 import(Maybe) export(gamUpd)
+%%]
+
+%%[9 export(gamUpdAdd)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -89,13 +92,25 @@ gamMap f (Gam ll) = Gam (map (map f) ll)
 %%]
 
 %%[8.gamUpd
+gamMbUpd :: Eq k => k -> (k -> v -> v) -> Gam k v -> Maybe (Gam k v)
+gamMbUpd k upd (Gam ll)
+  =  let  (didUpd,ll')
+            = foldr  (\l (didUpd,ll')
+                         ->  let  (didUpd',l')
+                                    = foldr  (\kv@(k',v) (didUpd,l')
+                                               -> if k' == k then (True,(k,upd k v) : l') else (didUpd,kv : l')
+                                             ) (didUpd,[]) l
+                             in   (didUpd',l' : ll')
+                     ) (False,[]) ll
+     in   if didUpd then Just (Gam ll') else Nothing
+
 gamUpd :: Eq k => k -> (k -> v -> v) -> Gam k v -> Gam k v
-gamUpd k upd (Gam ll)
-  =  Gam (foldr (\l ll'
-                    -> (foldr (\kv@(k',v) l'
-                                -> (if k' == k then (k,upd k v) else kv) : l'
-                              ) [] l) : ll'
-                ) [] ll)
+gamUpd k upd = fromJust . gamMbUpd k upd
+%%]
+
+%%[9
+gamUpdAdd :: Eq k => k -> v -> (k -> v -> v) -> Gam k v -> Gam k v
+gamUpdAdd k v upd g = maybe (gamAdd k v g) id (gamMbUpd k upd g)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

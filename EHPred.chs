@@ -9,7 +9,7 @@
 %%% Pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 import(UU.Pretty)
+%%[9 import(FiniteMap,UU.Pretty)
 %%]
 
 %%[9 import(EHTy,EHTyPretty,EHCode,EHCommon,EHGam,EHCnstr)
@@ -30,7 +30,7 @@
 
 %%[9
 type PredL
-  = [Pred]
+  =  [Pred]
 
 data PredOcc
   =  PredOcc
@@ -45,7 +45,7 @@ data ProvenPred
        }
 
 type ProvenPredL
-  = [ProvenPred]
+  =  [ProvenPred]
 
 data ProofState
   =  ProofState
@@ -59,10 +59,28 @@ data OnePredProof pr
        { oneprfResolve  :: pr -> ProvenPredL -> ProofState
        }
 
+data ProvenNode
+  =  ProvenNode
+       { prvnPred       :: Pred
+       , prvnEdges      :: [UID]
+       , prvnEvidence   :: CExpr
+       }
+
+data ProvenGraph
+  =  ProvenGraph
+       { prvgGraph      :: FiniteMap UID ProvenNode
+       , prvgPreds      :: FiniteMap Pred UID
+       }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Rule
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
 data Rule
   =  Rule
        { rulRuleTy      :: Ty
-       , rulMkEvidTy    :: Ty
        , rulMkEvid      :: [CExpr] -> CExpr
        , rulNmEvid      :: HsName
        }
@@ -71,10 +89,10 @@ instance Show Rule where
   show r = show (rulNmEvid r) ++ "::" ++ show (rulRuleTy r)
 
 instance PP Rule where
-  pp r = ppTy (rulRuleTy r) >#< "~>" >#< pp (rulNmEvid r) >#< "::" >#< ppTy (rulMkEvidTy r) 
+  pp r = ppTy (rulRuleTy r) >#< "~>" >#< pp (rulNmEvid r)
 
 type RuleL
-  = [Rule]
+  =  [Rule]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -91,14 +109,17 @@ data PrIntroGamInfo
 
 data PrElimGamInfo
   =  PrElimGamInfo
-       { pegiRuleL :: RuleL
+       { pegiRuleL      :: RuleL
        } deriving Show
 
-type PrIntroGam = Gam HsName PrIntroGamInfo
-type PrElimGam = Gam HsName PrElimGamInfo
+type PrIntroGam     = Gam HsName PrIntroGamInfo
+type PrElimGam      = Gam HsName PrElimGamInfo
 
 instance PP PrIntroGamInfo where
-  pp pigi = pp (pigiRule pigi) >#< ":::" >#< ppTy (pigiKi pigi)
+  pp pigi = pp (pigiRule pigi) >#< "::" >#< ppTy (pigiEvidTy pigi) >#< ":::" >#< ppTy (pigiKi pigi)
+
+instance PP PrElimGamInfo where
+  pp pegi = ppListSep "[" "]" "," (pegiRuleL pegi)
 
 instance Substitutable PrIntroGamInfo where
   s |=> pigi        =   pigi { pigiKi = s |=> pigiKi pigi }
