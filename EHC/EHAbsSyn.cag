@@ -120,7 +120,7 @@ SET AllTyExpr       =   TyExpr TyExprs RowTyExpr
 %%]
 
 %%[9.AllTyExpr -7.AllTyExpr
-SET AllTyExpr       =   TyExpr TyExprs RowTyExpr PrExpr
+SET AllTyExpr       =   TyExpr TyExprs RowTyExpr PrExpr PrExprL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -303,6 +303,23 @@ DATA PrExpr
                     nm              : {HsName}
   | Eq              nm              : {HsName}
                     tyExpr          : TyExpr
+
+TYPE PrExprL        =  [PrExpr]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Class & instance
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+DATA Decl
+  | Class           ctxtPrExprL     : PrExprL
+                    prExpr          : PrExpr
+                    decls           : Decls
+  | Instance        mbNm            : {Maybe HsName}
+                    ctxtPrExprL     : PrExprL
+                    prExpr          : PrExpr
+                    decls           : Decls
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

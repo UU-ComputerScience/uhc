@@ -42,12 +42,21 @@ keywordsText  =  [ "in", "forall", "exists" ] ++ offsideTrigs
 %%]
 
 %%[5.keywordsText -4.keywordsText
-keywordsText  =  [ "in", "forall", "exists", "data", "case" ] ++ offsideTrigs
+keywordsText  =  [ "in", "forall", "exists", "data", "case"
+                 ] ++ offsideTrigs
 %%]
 
 %%[8.keywordsText -5.keywordsText
 keywordsText  =  [ "in", "forall", "exists", "data", "case"
-                 , "foreign", "import", "jazy" ] ++ offsideTrigs
+                 , "foreign", "import", "jazy"
+                 ] ++ offsideTrigs
+%%]
+
+%%[9.keywordsText -8.keywordsText
+keywordsText  =  [ "in", "forall", "exists", "data", "case"
+                 , "foreign", "import", "jazy"
+                 , "class", "instance"
+                 ] ++ offsideTrigs
 %%]
 
 %%[1.keywordsOps
@@ -70,12 +79,20 @@ keywordsOps   =  [ "=", "\\", show hsnArrow, "::", "@", "...", ".", "|" ]
 keywordsOps   =  [ "=", "\\", show hsnArrow, "::", "@", "...", ".", "|", "*" ]
 %%]
 
+%%[9.keywordsOps -6.keywordsOps
+keywordsOps   =  [ "=", "\\", show hsnArrow, "::", "@", "...", ".", "|", "*", "=>" ]
+%%]
+
 %%[1.offsideTrigs
 offsideTrigs  =  [ "let" ]
 %%]
 
 %%[5.offsideTrigs -1.offsideTrigs
 offsideTrigs  =  [ "let", "of" ]
+%%]
+
+%%[9.offsideTrigs -5.offsideTrigs
+offsideTrigs  =  [ "let", "of", "where" ]
 %%]
 
 %%[7.specPairs
@@ -250,6 +267,11 @@ pDecl           =    sem_Decl_Val     <$>  pPatExprBase  <*   pKey "="   <*> pEx
                      <*   pKey "::" <*> pTyExpr
 %%]
 
+%%[pDecl.9
+                <|>  pDeclClass
+                <|>  pDeclInstance
+%%]
+
 -- versions
 %%[1.pDecl
 %%@pDecl.1
@@ -271,6 +293,14 @@ pDecl           =    sem_Decl_Val     <$>  pPatExprBase  <*   pKey "="   <*> pEx
 %%@pDecl.5
 %%@pDecl.6
 %%@pDecl.8
+%%]
+
+%%[9.pDecl -8.pDecl
+%%@pDecl.1
+%%@pDecl.5
+%%@pDecl.6
+%%@pDecl.8
+%%@pDecl.9
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -648,11 +678,38 @@ pSel            =    pVar <|> pCon <|> HNPos <$> pInt
 
 %%[9
 pPrExpr         ::   EHParser T_PrExpr
-pPrExpr         =    sem_PrExpr_Class  <$> pCon <*> pTyExprs
+pPrExpr         =    pPrExprClass
                 <|>  pVar <**>  (    (\s v -> sem_PrExpr_Lacks (sem_RowTyExpr_Var v) s)
                                      <$ pKey "\\" <*> pSel
                                 <|>  (flip sem_PrExpr_Eq)
                                      <$ pKey "=" <*> pTyExpr
                                 )
+
+pPrExprClass    ::   EHParser T_PrExpr
+pPrExprClass    =    sem_PrExpr_Class  <$> pCon <*> pTyExprs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Parser for Class & Instance
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+pClassHead      ::   EHParser (T_PrExprL,T_PrExpr)
+pClassHead      =    pPrExprClass <**>  (    (\p c -> (sem_PrExprL_Cons c sem_PrExprL_Nil,p))
+                                             <$ pKey "=>" <*> pPrExprClass
+                                        <|>  pSucceed (\p -> (sem_PrExprL_Nil,p))
+                                        )
+                <|>  (,) <$> pParens (pFoldrSep (sem_PrExprL_Cons,sem_PrExprL_Nil) pComma pPrExprClass)
+                     <* pKey "=>" <*> pPrExprClass
+
+pDeclClass      ::   EHParser T_Decl
+pDeclClass      =    (uncurry sem_Decl_Class)
+                     <$   pKey "class"
+                     <*>  pClassHead <*  pKey "where"  <*> pDecls
+
+pDeclInstance   ::   EHParser T_Decl
+pDeclInstance   =    (\n -> uncurry (sem_Decl_Instance n))
+                     <$   pKey "instance"  <*> (Just <$> pVar <* pKey "=" `opt` Nothing)
+                     <*>  pClassHead <*  pKey "where"  <*> pDecls
 %%]
 
