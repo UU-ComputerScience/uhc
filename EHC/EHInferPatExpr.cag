@@ -72,11 +72,11 @@ SEM PatExpr
                             .  (knTyL,aErrs)
                                                     =   case tyProdArgs @knProdTy of
                                                             tL | @patExpr.arity == length tL
-                                                                -> (reverse tL,[])
-                                                            tL  -> (reverse . take @patExpr.arity
-                                                                     . (++ repeat Ty_Any) $ tL
-                                                                   ,[Err_PatArity
-                                                                     @knProdTy @patExpr.arity])
+                                                                ->  (reverse tL,[])
+                                                            tL  ->  (reverse . take @patExpr.arity
+                                                                      . (++ repeat Ty_Any) $ tL
+                                                                    ,[Err_PatArity
+                                                                      @knProdTy @patExpr.arity])
   | App         loc         .  (knArgTy,knTyL)
                                                     =   hdAndTl @lhs.knTyL
                 arg         .  knTy                 =   @knArgTy
@@ -120,9 +120,10 @@ ATTR AllPatExpr [ | valGam: ValGam | ]
 
 SEM PatExpr
   | Var VarAs   loc         .   ty                  =   @lhs.knTy
+                            .   varTy               =   @ty
                             .   addToGam            =   if @lhs.inclVarBind && @nm /= hsnWild
                                                         then  gamAdd @nm
-                                                                (ValGamInfo @ty)
+                                                                (ValGamInfo @varTy)
                                                         else  id
   | Var         lhs         .   valGam              =   @addToGam @lhs.valGam
   | VarAs       lhs         .   valGam              =   @addToGam @patExpr.valGam
@@ -163,6 +164,13 @@ SEM PatExpr
                             .   ty                  :=  foTy @fo
                 lhs         .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
   | Var VarAs   loc         .   ty                  :=  tyInst1Exists @lUniq2 (tyEnsureNonBotTop @lUniq @lhs.knTy)
+%%]
+
+%%[4_2.Var
+SEM PatExpr
+  | Var VarAs   loc         .   (varTy,varTyCnstr)  :=  tyAsCnstr @lUniq @ty
+  | Var         lhs         .   tyCnstr             =   @varTyCnstr |=> @lhs.tyCnstr
+  | VarAs       patExpr     .   tyCnstr             =   @varTyCnstr |=> @lhs.tyCnstr
 %%]
 
 %%[11.ApptopCon

@@ -18,10 +18,13 @@
 %%[3 hs import(EHTyQuantify,EHTyInstantiate)
 %%]
 
-%%[4_3 hs import(EHGamUtils,EHTyElimAlts)
+%%[4 hs import(EHDebug)
 %%]
 
-%%[8 hs import(FiniteMap,EHCore,EHCoreUtils,EHDebug)
+%%[4_1 hs import(EHGamUtils,EHTyElimAlts)
+%%]
+
+%%[8 hs import(FiniteMap,EHCore,EHCoreUtils)
 %%]
 
 %%[9 hs import(Set,FiniteMap,EHPred,EHCorePretty,EHCoreSubst)

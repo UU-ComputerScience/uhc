@@ -65,6 +65,15 @@ SEM TyExpr
   | Quant           (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
 %%]
 
+%%[4_2
+SEM Expr
+  | App             (func.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)    :=  mkNewLevUID3    @lhs.gUniq
+  | Lam             (arg.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)     :=  mkNewLevUID3    @lhs.gUniq
+
+SEM Decl
+  | TySig           (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
+%%]
+
 %%[5
 SEM TyVar
   | Var             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
@@ -81,7 +90,7 @@ SEM TyExpr
   | App             (func.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)    =   mkNewLevUID3    @lhs.gUniq
   
 SEM Decl
-  | TySig           (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
+  | TySig           (tyExpr.gUniq,loc.lUniq,loc.lUniq2)             =   mkNewLevUID2    @lhs.gUniq
   | Data            (tyVars.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)  =   mkNewLevUID3    @lhs.gUniq
   
 SEM DataConstr

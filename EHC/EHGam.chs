@@ -36,7 +36,10 @@
 %%[4 export(gamMapThr)
 %%]
 
-%%[5 export(gamTop)
+%%[4 export(gamTop)
+%%]
+
+%%[4_2 export(valGamQuantifyWithCnstr)
 %%]
 
 %%[6 export(tyGamQuantify, tyGamInst1Exists,gamUnzip)
@@ -118,7 +121,7 @@ gamMapThr f thr (Gam ll)
      in  (Gam ll',thr')
 %%]
 
-%%[5
+%%[4
 gamTop ::  Gam k v -> Gam k v
 gamTop  (Gam (l:ll)) = Gam [l]
 %%]
@@ -206,6 +209,21 @@ valGamMapTy f = gamMapElts (\vgi -> vgi {vgiTy = f (vgiTy vgi)})
 %%[3.valGamQuantify
 valGamQuantify :: TyVarIdL -> ValGam -> ValGam
 valGamQuantify globTvL = valGamMapTy (\t -> tyQuantify (`elem` globTvL) t)
+%%]
+
+%%[4_2.valGamQuantifyWithCnstr
+valGamQuantifyWithCnstr :: Cnstr -> TyVarIdL -> ValGam -> (ValGam,Cnstr)
+valGamQuantifyWithCnstr gamCnstr globTvL
+  =  gamMapThr
+        (\(n,vgi) c
+            ->  let  t = vgiTy vgi
+                     tq = tyQuantify (`elem` globTvL) (gamCnstr |=> t)
+                     (tg,cg) =  case t of
+                                    Ty_Var v _ -> (t,v `cnstrTyUnit` tq)
+                                    _ -> (tq,emptyCnstr)
+                in   ((n,vgi {vgiTy = tg}),cg `cnstrPlus` c)
+        )
+        emptyCnstr
 %%]
 
 %%[6

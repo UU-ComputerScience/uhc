@@ -28,6 +28,9 @@
 %%[4 export(assocLToCnstr,cnstrToAssocTyL)
 %%]
 
+%%[4_2 export(tyAsCnstr)
+%%]
+
 %%[9 import(FiniteMap,EHDebug) export(CnstrInfo(..),cnstrImplsLookup,cnstrImplsUnit,assocLToCnstrImpls,cnstrToAssocL)
 %%]
 
@@ -166,6 +169,18 @@ cnstrSize (Cnstr m) = sizeFM m
 %%[11
 cnstrKeys :: Cnstr -> TyVarIdL
 cnstrKeys = assocLKeys . cnstrToAssocL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Ty as cnstr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+tyAsCnstr :: UID -> Ty -> (Ty,Cnstr)
+tyAsCnstr u ty
+  =  case ty of
+        Ty_Var _ TyVarCateg_Plain -> (ty,emptyCnstr)
+        _ -> let t = mkNewTyVar u in (t,u `cnstrTyUnit` ty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

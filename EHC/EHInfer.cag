@@ -11,57 +11,75 @@
 
 %%[1.Let
 SEM Expr
-  | Let         decls       .  patValGam            =   @decls.gathTySigGam
+  | Let         decls       .   patValGam           =   @decls.gathTySigGam
                                                         `gamPushGam` @lhs.valGam
-                loc         .  (lValGam,gValGam)    =   gamPop @decls.patValGam
-                decls       .  valGam               =   @decls.patValGam
-                body        .  valGam               =   @decls.patValGam
+                loc         .   (lValGam,gValGam)   =   gamPop @decls.patValGam
+                decls       .   valGam              =   @decls.patValGam
+                body        .   valGam              =   @decls.patValGam
 %%]
 
 %%[2.Let
 SEM Expr
-  | Let         decls       .  patTyCnstr           =   @lhs.tyCnstr
-                            .  tyCnstr              =   @decls.patTyCnstr
+  | Let         decls       .   patTyCnstr          =   @lhs.tyCnstr
+                            .   tyCnstr             =   @decls.patTyCnstr
 %%]
 
 %%[3.Let
 SEM Expr
-  | Let         loc         .  lSubsValGam          =   @decls.tyCnstr |=> @lValGam
-                            .  gSubsValGam          =   @decls.tyCnstr |=> @gValGam
-                            .  gTyTvL               =   ftv @gSubsValGam
-                            .  lQuValGam            =   valGamQuantify @gTyTvL @lSubsValGam
-                body        .  valGam               :=  @lQuValGam
+  | Let         loc         .   lSubsValGam         =   @decls.tyCnstr |=> @lValGam
+                            .   gSubsValGam         =   @decls.tyCnstr |=> @gValGam
+                            .   gTyTvL              =   ftv @gSubsValGam
+                            .   lQuValGam           =   valGamQuantify @gTyTvL @lSubsValGam
+                body        .   valGam              :=  @lQuValGam
                                                             `gamPushGam` @gSubsValGam
 %%]
 
 %%[4
 SEM Expr
-  | Let         decls       .  patValGam            :=  gamPushGam  (valGamInst1Exists @lUniq @decls.gathTySigGam)
+  | Let         decls       .   patValGam           :=  gamPushGam  (valGamInst1Exists @lUniq @decls.gathTySigGam)
                                                                     @lhs.valGam
-                loc         .  lQuValGam            :=  valGamInst1Exists @lUniq2 . valGamQuantify @gTyTvL $ @lSubsValGam
+                loc         .   lQuValGam           :=  valGamInst1Exists @lUniq2 . valGamQuantify @gTyTvL $ @lSubsValGam
 %%]
+
+%%[4_2
+SEM Expr
+  | Let         decls       .   tySigTyCnstr        =   emptyCnstr
+                            .   patTyCnstr          :=  @decls.tySigTyCnstr |=> @lhs.imprTyCnstr
+                            .   imprTyCnstr         =   @decls.patTyCnstr
+                loc         .   (lElimValGam,imprElimTyCnstr,_)
+                                                    =   valGamElimAlts joinFIOpts @fe (ftv @gValGam) @lUniq4 (@decls.imprTyCnstr |=> @lValGam)
+                body        .   imprTyCnstr         =   @imprElimTyCnstr |=> @decls.imprTyCnstr
+                lhs         .   quTyCnstr           =   @imprElimTyCnstr |=> @body.quTyCnstr
+                decls       .   tyCnstr             :=  @lhs.tyCnstr |=> @decls.patTyCnstr
+                loc         .   (lQuValGam,lQuTyCnstr)
+                                                    :=  let  (g,c) = valGamQuantifyWithCnstr @decls.tyCnstr @gTyTvL @lValGam
+                                                        in   (valGamInst1Exists @lUniq2 g,c)
+                body        .   tyCnstr             :=  @lQuTyCnstr |=> @decls.tyCnstr
+                body        .   valGam              :=  @decls.patValGam
+%%]
+                loc         .   gImprValGam         =   @decls.imprTyCnstr |=> @gValGam
 
 %%[4_3
 SEM Expr
-  | Let         loc         .  (lElimValGam,elimTyCnstr,errGam)
-                                                    =   valGamElimAlts @fe @lUniq4 (@decls.tyCnstr |=> @lValGam)
-                            .  lSubsValGam          :=  @elimTyCnstr |=> @lElimValGam
-                            .  gSubsValGam          :=  @elimTyCnstr |=> @decls.tyCnstr |=> @gValGam
-                body        .  tyCnstr              =   @elimTyCnstr |=> @decls.tyCnstr
+  | Let         loc         .   (lElimValGam,elimTyCnstr,errGam)
+                                                    =   valGamElimAlts joinFIOpts @fe @lUniq4 (@decls.tyCnstr |=> @lValGam)
+                            .   lSubsValGam         :=  @elimTyCnstr |=> @lElimValGam
+                            .   gSubsValGam         :=  @elimTyCnstr |=> @decls.tyCnstr |=> @gValGam
+                body        .   tyCnstr             =   @elimTyCnstr |=> @decls.tyCnstr
 %%]
 
 %%[9
 SEM Expr
-  | Let         loc         .  (lQuValGam,tqoGam)   :=  let  (vg,tqog) = valGamQuantify @gTyTvL @remPrfPrL @lSubsValGam
+  | Let         loc         .   (lQuValGam,tqoGam)  :=  let  (vg,tqog) = valGamQuantify @gTyTvL @remPrfPrL @lSubsValGam
                                                         in   (valGamInst1Exists @lUniq2 vg,tqog)
-                            .  tqoTyCnstr           =   foldr (\tqo c -> tqoImplsCnstr tqo |=> c) emptyCnstr (gamElts @tqoGam)
+                            .   tqoTyCnstr          =   foldr (\tqo c -> tqoImplsCnstr tqo |=> c) emptyCnstr (gamElts @tqoGam)
 %%]
 
 %%[11
 %%]
 SEM Expr
-  | Let         loc         .  lElimEqualValGam     =   valGamElimEqual (@decls.tyCnstr |=> @lValGam)
-                            .  lSubsValGam          :=  @lElimEqualValGam
+  | Let         loc         .   lElimEqualValGam    =   valGamElimEqual (@decls.tyCnstr |=> @lValGam)
+                            .   lSubsValGam         :=  @lElimEqualValGam
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known type and instantiation required
@@ -69,29 +87,29 @@ SEM Expr
 
 %%[1.tyInstKnown
 SEM Decl
-  | Val         loc         .  knTy                 =   @sigTy
+  | Val         loc         .   knTy                =   @sigTy
 %%]
 
 %%[2.tyInstKnown
 SEM Decl
-  | Val         expr        .  knTy                 =   if @hasTySig then @knTy else @patExpr.ty
+  | Val         expr        .   knTy                =   if @hasTySig then @knTy else @patExpr.ty
 %%]
 
 %%[3.tyInstKnown
 SEM Decl
-  | Val         loc         .  knTy                 :=  tyInstKnown @lUniq @sigTy
+  | Val         loc         .   knTy                :=  tyInstKnown @lUniq @sigTy
 %%]
 
 %%[4.tyInstKnown
 SEM Decl
-  | Val         loc         .  knTy                 :=  @sigTy
+  | Val         loc         .   knTy                :=  @sigTy
 %%]
 
 %%[9.tyInstKnown
 %%]
 
 SEM Decl
-  | Val         expr        .  knTy                 :=  if @hasTySig  then @knTy
+  | Val         expr        .   knTy                :=  if @hasTySig  then @knTy
                                                                       else [mkImplsVar @lUniq2] `mkTyArrow` @patExpr.ty
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -129,7 +147,7 @@ SEM Expr
 
 %%[6
 SEM Decl
-  | Data        loc         .  knKi                 =   @sigKi
+  | Data        loc         .   knKi                =   @sigKi
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -162,6 +180,15 @@ SEM Decl
 
 SEM AGItf
   | AGItf       expr        .   tyCnstr             =   emptyCnstr
+%%]
+
+%%[4_2
+SEM AGItf
+  | AGItf       expr        .   tyCnstr             :=  @expr.quTyCnstr
+
+SEM Decl
+  | Val         loc         .   imprFO              =   fitsIn impredFIOpts emptyFE uidStart (@expr.imprTyCnstr |=> @patExpr.ty) @expr.imprTy
+                lhs         .   imprTyCnstr         =   foCnstr @imprFO |=> @expr.imprTyCnstr
 %%]
 
 %%[5
@@ -215,7 +242,7 @@ SEM Expr
 
 SEM Decl
   | TySig       tyExpr      .   tyGam               =   gamPushNew @lhs.tyGam
-                loc         .   fo                  =   fitsIn weakFIOpts @fe @lUniq @tyExpr.ki kiStar
+                loc         .   fo                  =   fitsIn weakFIOpts @fe @lUniq2 @tyExpr.ki kiStar
                 lhs         .   tyGam               =   @lhs.tyGam
                             .   kiCnstr             =   foCnstr @fo |=> @tyExpr.kiCnstr
 %%]
@@ -266,22 +293,22 @@ SEM Decl
 
 %%[1.initTyGam
 SEM AGItf
-  | AGItf       loc         .  tyGam                =   assocLToGam
+  | AGItf       loc         .   tyGam               =   assocLToGam
 %%@initTyGam.1
                                                           ]
 %%]
 
 %%[6
 SEM AGItf
-  | AGItf       loc         .  tyGam                :=  assocLToGam
+  | AGItf       loc         .   tyGam               :=  assocLToGam
 %%@initTyGam.6
                                                           ]
-                            .  kiCnstr              =   emptyCnstr
+                            .   kiCnstr             =   emptyCnstr
 %%]
 
 %%[7
 SEM AGItf
-  | AGItf       loc         .  tyGam                :=  assocLToGam
+  | AGItf       loc         .   tyGam               :=  assocLToGam
 %%@initTyGam.6
 %%@initTyGam.7
                                                           ]
@@ -300,7 +327,7 @@ SEM AGItf
 ATTR AllExpr AllTyExpr AllPatExpr AllData AllCase AllDecl [ kiGam: KiGam | | ]
 
 SEM AGItf
-  | AGItf       loc         .  kiGam                =   assocLToGam
+  | AGItf       loc         .   kiGam               =   assocLToGam
 %%@initKiGam.6
                                                           ]
 %%]
@@ -311,7 +338,7 @@ SEM AGItf
 
 %%[7
 SEM AGItf
-  | AGItf       loc         .  kiGam                :=  assocLToGam
+  | AGItf       loc         .   kiGam               :=  assocLToGam
 %%@initKiGam.6
 %%@initKiGam.7
                                                           ]
@@ -325,18 +352,18 @@ SEM AGItf
 ATTR AllDecl [ tySigGam: ValGam | gathTySigGam: ValGam | ]
 
 SEM Decl
-  | TySig       lhs         .  gathTySigGam         =   gamAdd
-                                                            @nm (ValGamInfo @sigTy)
+  | TySig       lhs         .   gathTySigGam        =   gamAdd
+                                                            @nm (ValGamInfo @gamSigTy)
                                                             @lhs.gathTySigGam
 
 SEM Expr
-  | Let         decls       .  gathTySigGam         =   emptyGam
-                            .  tySigGam             =   @decls.gathTySigGam
+  | Let         decls       .   gathTySigGam        =   emptyGam
+                            .   tySigGam            =   @decls.gathTySigGam
 %%]
 
 %%[1.tySigGam.Val
 SEM Decl
-  | Val         loc         .  (sigTy,hasTySig)     =   case @patExpr.mbTopNm of
+  | Val         loc         .   (sigTy,hasTySig)    =   case @patExpr.mbTopNm of
                                                           Nothing  ->  (Ty_Any,False)
                                                           Just nm  ->  case gamLookup nm @lhs.tySigGam of
                                                                          Nothing   -> (Ty_Any,False)
@@ -345,31 +372,41 @@ SEM Decl
 
 %%[1.TySig
 SEM Decl
-  | TySig       loc         .  sigTy                =   @tyExpr.ty
+  | TySig       loc         .   sigTy               =   @tyExpr.ty
+                            .   gamSigTy            =   @sigTy
 %%]
 
 %%[3.TySig
 SEM Decl
-  | TySig       loc         .  sigTy                :=  tyQuantify (`elem` @tyExpr.tyVarWildL) @tyExpr.ty
+  | TySig       loc         .   sigTy               :=  tyQuantify (`elem` @tyExpr.tyVarWildL) @tyExpr.ty
+%%]
+
+%%[4_2
+ATTR AllDecl [ | tySigTyCnstr: Cnstr | ]
+
+SEM Decl
+  | TySig       loc         .   (gamSigTy,gamSigCnstr)
+                                                    :=  tyAsCnstr @lUniq @sigTy
+                lhs         .   tySigTyCnstr        =   @gamSigCnstr |=> @lhs.tySigTyCnstr
 %%]
 
 %%[6
 SEM Decl
-  | TySig       loc         .  gTyTvL               =   ftv . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
-                            .  sigTy                :=  tyQuantify (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyExpr.ty
+  | TySig       loc         .   gTyTvL              =   ftv . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
+                            .   sigTy               :=  tyQuantify (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyExpr.ty
 %%]
 
 %%[9
 SEM Decl
-  | TySig       loc         .  sigTy                :=  tqoTy (tyQuantifyPr  (TyQuOpts {tqoptLeaveImpls=True})
+  | TySig       loc         .   sigTy               :=  tqoTy (tyQuantifyPr  (TyQuOpts {tqoptLeaveImpls=True})
                                                                              (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL))
                                                                              TyQu_Forall [] @tyExpr.ty)
 %%]
 
 %%[8
 SEM Decl
-  | FFI         loc         .  sigTy                =   tyQuantifyClosed @tyExpr.ty
-                lhs         .  gathTySigGam         =   gamAdd
+  | FFI         loc         .   sigTy               =   tyQuantifyClosed @tyExpr.ty
+                lhs         .   gathTySigGam        =   gamAdd
                                                             @nm (ValGamInfo @sigTy)
                                                             @lhs.gathTySigGam
 %%]
@@ -382,21 +419,21 @@ SEM Decl
 ATTR AllDecl [ kiSigGam: TyGam | gathKiSigGam: TyGam | ]
 
 SEM Decl
-  | KiSig       lhs         .  gathKiSigGam         =   gamAdd @nm (mkTGI (Ty_Con @nm) @sigKi) @lhs.gathKiSigGam
+  | KiSig       lhs         .   gathKiSigGam        =   gamAdd @nm (mkTGI (Ty_Con @nm) @sigKi) @lhs.gathKiSigGam
 
 SEM Expr
-  | Let         decls       .  gathKiSigGam         =   emptyGam
-                            .  kiSigGam             =   @decls.gathKiSigGam
+  | Let         decls       .   gathKiSigGam        =   emptyGam
+                            .   kiSigGam            =   @decls.gathKiSigGam
 
 SEM Decl
-  | Data        loc         .  (sigKi,hasKiSig)     =   case gamLookup @tyNm @lhs.kiSigGam of
+  | Data        loc         .   (sigKi,hasKiSig)    =   case gamLookup @tyNm @lhs.kiSigGam of
                                                           Nothing   -> (Ty_Any,False)
                                                           Just tgi  -> (tgiKi tgi,True)
 %%]
 
 %%[6
 SEM Decl
-  | KiSig       loc         .  sigKi                =   kiQuantify (const False) @kiExpr.ki
+  | KiSig       loc         .   sigKi               =   kiQuantify (const False) @kiExpr.ki
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -513,7 +550,9 @@ ATTR AllExpr AllPatExpr [ fiOpts: FIOpts | | ]
 
 SEM Expr
   | App         func        .  fiOpts               =   strongFIOpts
-                arg         .  fiOpts               =   if @arg.isForcedTy then strongFIOpts else instLFIOpts
+                loc         .  argFIOpts            =   if @arg.isForcedTy then strongFIOpts else instLFIOpts
+                arg         .  fiOpts               =   @argFIOpts
+  | Lam         loc         .  knFunFIOpts          =   @lhs.fiOpts {fioBindRFirst=True}
 
 SEM Decl
   | Val         expr        .  fiOpts               =   strongFIOpts

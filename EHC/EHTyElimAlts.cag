@@ -9,14 +9,28 @@
 %%% Haskell importable interface to check/elimination for/of inconsistent/ binds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_3 hs import(EHCommon,EHOpts,EHTy,EHError,EHCnstr,EHSubstitutable,EHGam,EHTyFitsInCommon) export(tyElimAlts)
+%%[4_1 hs import(EHCommon,EHOpts,EHTy,EHError,EHCnstr,EHSubstitutable,EHGam,EHTyFitsInCommon) export(tyElimAlts)
 %%]
 
-%%[4_3 hs import(EHDebug,UU.Pretty,EHErrorPretty)
+%%[4_1 hs import(EHDebug,UU.Pretty,EHErrorPretty)
 %%]
 
-%%[4_3.WRAPPER import(EHTyAbsSyn)
+%%[4_2 hs import(Set)
+%%]
+
+%%[4_1.WRAPPER import(EHTyAbsSyn)
 WRAPPER TyAGItf
+%%]
+
+%%[4_2.tyElimAlts hs
+type FitsIn = FIOpts -> UID -> Ty -> Ty -> (Ty,Cnstr,ErrL)
+
+tyElimAlts :: FitsIn -> FIOpts -> TyVarIdL -> UID -> Ty -> (Ty,Cnstr,ErrL)
+tyElimAlts fitsIn fio globTvL uniq ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf {fitsIn_Inh_TyAGItf = fitsIn, fio_Inh_TyAGItf = fio, gUniq_Inh_TyAGItf = uniq, globTvL_Inh_TyAGItf = globTvL})
+     in   (repl_Syn_TyAGItf t,tyCnstr_Syn_TyAGItf t,errL_Syn_TyAGItf t)
 %%]
 
 %%[4_3.tyElimAlts hs
@@ -34,15 +48,23 @@ tyElimAlts fitsIn fio uniq ty
 %%% fitsIn, parameterized with env+opts, passed as param to avoid mutual module recursion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_3
+%%[4_1
 ATTR TyAGItf AllAllTy [ fitsIn: FitsIn | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global tvars (no elim allowed)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR TyAGItf AllAllTy [ globTvL: TyVarIdL | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Other flags: is it a meet?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_3
+%%[4_1
 ATTR TyAGItf AllAllTy [ fio: FIOpts | | ]
 %%]
 
@@ -50,25 +72,59 @@ ATTR TyAGItf AllAllTy [ fio: FIOpts | | ]
 %%% Uniq
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_3
+%%[4_1
 ATTR TyAGItf [ gUniq: UID | | ]
 ATTR AllAllTy [ | gUniq: UID | ]
 
-SEM Ty
-  | Alts            (tyL.gUniq,loc.lUniq)   =   mkNewLevUID @lhs.gUniq
-
 SEM TyPlusL
   | Cons            (hd.gUniq,loc.lUniq)    =   mkNewLevUID @lhs.gUniq
+
+SEM Ty
+  | Alts            (tyL.gUniq,loc.lUniq)   =   mkNewLevUID @lhs.gUniq
+%%]
+
+%%[4_2
+SEM Ty
+  | Var             (lhs.gUniq,loc.lUniq)   =   mkNewUID @lhs.gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Has quantifier inside
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR AllTy [ | | hasQu USE {||} {False}: Bool ]
+
+SEM Ty
+  | Quant           lhs     .   hasQu       =   True
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Check/elim
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_3
+%%[4_1
 ATTR AllAllTy [ | | repl: SELF  ]
 ATTR TyAGItf  [ | | repl: Ty    ]
+%%]
 
+%%[4_2
+SEM Ty
+  | Alts            loc     .   (repl,quTyCnstr)
+                                            =   case cnstrTyLookup @tv @lhs.tyCnstr of
+                                                    Nothing | @tv `notElem` @lhs.globTvL
+                                                        ->  if null @tyL.errL && @tyL.hasQu
+                                                            then  let  (t,c,_) = tyElimAlts @lhs.fitsIn @lhs.fio @lhs.globTvL @lUniq @tyL.quTy
+                                                                  in   (t,(@tv `cnstrTyUnit` t) `cnstrPlus` c)
+                                                            else (mkTyVar @tv,emptyCnstr)
+                                                    Just t
+                                                        ->  (t,emptyCnstr)
+                                                    _   ->  (@self,emptyCnstr)
+                            .   errL        =   []
+                    lhs     .   tyCnstr     =   @quTyCnstr `cnstrPlus` @lhs.tyCnstr
+%%]
+
+%%[4_3
 SEM Ty
   | Alts            (loc.repl,loc.errL,loc.iCnstr)
                                             =   case cnstrTyLookup @tv @lhs.tyCnstr of
@@ -82,7 +138,6 @@ SEM Ty
                                                                        ,@tv `cnstrTyUnit` mkTyVar @tv)
                     lhs     .   tyCnstr     =   @iCnstr |=> @tyL.tyCnstr
 %%]
-                    lhs     .   tyCnstr =   tr "QQ" (pp @self >#< ":->" >#< pp @repl >#< ", icnstr" >#< pp @iCnstr >#< ", ecnstr" >#< pp @eCnstr >#< ", lhs.tyCnstr" >#< pp @tyL.tyCnstr) (@iCnstr |=> @tyL.tyCnstr)
 
 %%[4_3
 ATTR TyPlusL [ | | replL: TyPlusL ]
@@ -96,29 +151,44 @@ SEM TyPlusL
 %%% Errors
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_3
+%%[4_1
 ATTR TyAGItf AllAllTy [ | | errL USE {++} {[]}: ErrL ]
-ATTR TyPlusL [ | | canMeet: Bool ]
+%%]
 
+%%[4_3
 SEM Ty
   | Alts            lhs     .   errL        =   @errL ++ @tyL.errL
-
-SEM TyPlusL
-  | Nil             lhs     .   canMeet     =   True
 
 SEM TyAGItf
   | AGItf           lhs     .   errL        =   @ty.errL
 %%]
-  | Alts            lhs     .   errL        =   trm "YY" ppErrL @errL ++ @tyL.errL
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Unification of all binds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_3
+%%[4_1
 ATTR AllAllTy [ | tyCnstr: Cnstr | ]
 ATTR TyAGItf  [ | | tyCnstr: Cnstr ]
+
+SEM TyAGItf
+  | AGItf           ty      .   tyCnstr     =   emptyCnstr
+%%]
+
+%%[4_2
+ATTR TyPlusL [ | | quTy: Ty ]
+
+SEM TyPlusL
+  | Cons            loc     .   (quTy,_,errL)
+                                            =   if null @tl.errL && @hd.hasQu
+                                                then @lhs.fitsIn @lhs.fio @lUniq @tl.quTy (tyPlusTy @hd.selfTvRen)
+                                                else (@tl.quTy,emptyCnstr,@tl.errL)
+  | Nil             lhs     .   quTy        =   Ty_Any
+%%]
+
+%%[4_3
 ATTR TyPlusL [ ty: Ty | | resTy: Ty ]
+ATTR TyPlusL [ | | canMeet: Bool ]
 
 SEM TyPlusL
   | Cons            loc     .   (ty,cnstr,errL)
@@ -130,23 +200,49 @@ SEM TyPlusL
                                                 then (@tl.resTy,@tl.tyCnstr,@tl.canMeet)
                                                 else (@lhs.ty,@lhs.tyCnstr,False)
   | Nil             lhs     .   resTy       =   @lhs.ty
+                            .   canMeet     =   True
 
 SEM Ty
   | Alts            tyL     .   ty          =   Ty_Any
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replacement of free tvars with fresh ones (alpha rename)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR AllTy [ boundTvS: {Set TyVarId} | | ]
 
 SEM TyAGItf
-  | AGItf           ty      .   tyCnstr     =   emptyCnstr
+  | AGItf           ty      .   boundTvS    =   emptySet
+
+SEM Ty
+  | Quant           ty      .   boundTvS    =   @lhs.boundTvS `addToSet` @tv
+  | Var             loc     .   tvNew       =   @lUniq
 %%]
-                    tl      .   ty          =   tr "XX" (pp @lhs.ty >#< pp (fioMode @lhs.fio) >#< pp (@lhs.tyCnstr |=> @hd.self) >#< "=" >#< pp @ty >#< ", cnstr" >#< pp @cnstr) @ty
-                                                else (tr "ZZ" (ppErrL @errL) @lhs.ty,@lhs.tyCnstr,False)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Orig type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[4_2
+ATTR AllAllTy [ | | selfTvRen: SELF ]
+ATTR AllAllTy [ | | self: SELF ]
+
+SEM Ty
+  | Var             lhs     .   selfTvRen   =   if @tv `elementOf` @lhs.boundTvS then @selfTvRen else Ty_Var @tvNew @categ.selfTvRen
+%%]
+
+%%[4_3
+ATTR AllAllTy [ | | self: SELF ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replacement type passed back inside
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[4_3
 ATTR AllTy [ selfRepl: Ty | | ]
-ATTR AllAllTy [ | | self: SELF ]
 
 SEM TyAGItf
   | AGItf           ty      .   selfRepl    =   @ty.repl
@@ -156,7 +252,7 @@ SEM TyAGItf
 %%% App spine info, coco variance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_3
+%%[4_1
 ATTR Ty [ | | appSpineInfoL: {[AppSpineInfo]} ]
 
 SEM Ty
