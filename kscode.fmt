@@ -1,0 +1,44 @@
+
+%subst code a           = "\begingroup\parskip=\abovedisplayskip\par\noindent\advance\leftskip\mathindent\('n\begin{pboxed}\SaveRestoreHook'n" a "\ColumnHook'n\end{pboxed}'n\)\parskip=\belowdisplayskip\par\noindent\endgroup\resethooks'n"
+
+
+%subst code a = "\begin{hscode}\SaveRestoreHook'n" a "\ColumnHook'n\end{hscode}\resethooks'n"
+
+\newenvironment{plainhscode}%
+  {\parskip=\abovedisplayskip\par\noindent
+   \advance\leftskip\mathindent
+   \(\pboxed}%
+  {\endpboxed\)%
+   \parskip=\belowdisplayskip\par\noindent}
+
+
+\let\hscode=\plainhscode
+\let\endhscode=\endplainhscode
+
+\newenvironment{arrayhscode}%
+  {\parray}{\endparray}
+
+\newcommand*{\arrayhs}%
+  {\let\hscode=\arrayhscode
+   \let\endhscode=\endarrayhscode}
+
+% the following two are not needed, because the {} are
+% already in %subst fromto ...
+
+%%%subst left a     = "@{}>{{}}l<{{}}@{}"
+%%%subst centered a = ">{{}}c<{{}}"
+
+% the following is an ugly hack:
+% we choose to represent keywords and some other things as math
+% operators, which get more space surrounding them, but that also
+% implies that they will not be aligned correctly.
+% To prevent that, we make the first column special.
+
+%subst fromto b e x = "\fromto{" b "}{" e "}{\BF " b "\relax{" x "}}"
+
+\def\BF#1#2\relax#3{%
+  \if B#1%
+    {#3{}}%
+  \else
+    {{}#3{}}%
+  \fi}

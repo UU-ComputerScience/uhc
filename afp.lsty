@@ -1,0 +1,179 @@
+%include lhs2TeX.fmt
+
+% xfig figure
+\newcommand{\XFigLatex}[1]{%
+ \begin{center}
+ \input figs/#1.latex
+ \end{center}
+}
+
+%% AFP TeX macro's
+\def\spacecorrection{\;}
+\def\isspacecorrection{\spacecorrection}
+\def\allowforspacecorrection#1{%
+  \def\temp{#1}%
+  \ifx\isspacecorrection\temp
+    \let\next=\empty
+  \else
+    \let\next=\temp
+  \fi
+  \next}
+
+% Env for rules in a figure
+\newenvironment{RulesFigure}[3]{%
+  \def\RFCap{#2}
+  \def\RFLab{#3}
+  \begin{figure}[htbp]
+  \begin{tabular}{P}
+  \hline
+  \fbox{#1}
+  \\
+}{%
+  \\
+  \hline
+  \end{tabular}
+  \caption{\RFCap}
+  \label{\RFLab}
+  \end{figure}
+}
+
+% Env for code in a figure
+\newenvironment{Figure}[2]{%
+  \def\RFCap{#1}
+  \def\RFLab{#2}
+  \begin{figure}[htbp]
+  \begin{center}
+  \begin{tabular}{c}
+  \hline
+  \begin{minipage}{0.9\textwidth}
+  %\vspace{.5ex}
+}{%
+  %\vspace{.5ex}
+  \end{minipage}
+  \\
+  \hline
+  \end{tabular}
+  \end{center}
+  \caption{\RFCap}
+  \label{\RFLab}
+  \end{figure}
+}
+
+% safe way of using code env in slides
+%\newcommand{\SafeCode}[1]{\parbox{\textwidth}{#1}}
+\newcommand{\SafeCode}[1]{\parbox{\textwidth}{#1}}
+
+% input
+% 'If' depending on file existence
+\newread\TmpRead
+% IfInputExists( filename, exec-then, exec-else )
+\def\IfInputExists#1#2#3{%
+\immediate\openin\TmpRead=#1
+\ifeof\TmpRead\immediate\closein\TmpRead\def\TmpA{#3}%
+\else\immediate\closein\TmpRead\def\TmpA{#2}%
+\fi\TmpA}   
+% input
+\newcommand{\Input}[1]{\IfInputExists{#1}{\input{#1}}{}}
+
+% stripAfterDot
+\def\@@stripAfterDot#1.#2;{#1}
+
+% chunk related
+\newcommand{\chunkCmdDef}[1]{\expandafter\def\csname #1\endcsname}
+\newcommand{\chunkCmdUse}[1]{%
+%if asSlides
+ \parbox{\textwidth}{\csname #1\endcsname}
+%else
+ \csname #1\endcsname\vspace{-1.5\parskip}
+%endif
+}
+\newcommand{\chunkCmdFrameUse}[1]{%
+%if asSlides
+ \chunkCmdUse{#1}
+%endif
+}
+\newcommand{\chunkCmdUsePrevLit}[1]{{\color{blue}\chunkCmdUse{#1}}}
+\newcommand{\chunkCmdUsePrev}[1]{\par\chunkRefsExpanded{#1}}
+\newcommand{\chunkCmdUseOnPrev}[2]{%
+%if expandPrevRef
+{\par\chunkRefsExpanded{#1}\chunkCmdUseMark{#2}}
+%else
+{\par{\color{blue}...page(s)~\chunkRefs{#1}}\setlength{\parskip}{0cm}\chunkCmdUseMark{#2}}
+%endif
+}
+\newcommand{\chunkMark}[1]{%
+%if not asSlides
+ \expandafter\marginpar{\footnotesize\color{blue}\@@stripAfterDot#1;}
+%endif
+}
+\newcommand{\chunkCmdUseMark}[1]{\chunkMark{#1}\chunkCmdUse{#1}}
+\newcommand{\chunkIndex}[1]{\index{#1}}
+\newcommand{\chunkRefs}[1]{\@@for\@@chunkRef:=#1\do{,~\pageref{\@@chunkRef}}}
+\newcommand{\chunkRefsExpanded}[1]{\@@for\@@chunkRef:=#1\do{{\color{blue}\chunkCmdUse{\@@chunkRef}}\setlength{\parskip}{0cm}}}
+
+% ruler related
+\newcommand{\rulerCmdDef}[1]{\expandafter\def\csname #1\endcsname}
+\newcommand{\rulerCmdUse}[1]{\csname #1\endcsname}
+\newcommand{\ruleRef}[1]{rule~\textsf{#1}}
+\newcommand{\RuleRef}[1]{Rule~\textsf{#1}}
+
+% referencing
+\newcommand{\pageRef}[1]{page~\pageref{#1}}
+\newcommand{\figRef}[1]{figure~\ref{#1}}
+\newcommand{\figPageRef}[1]{\figRef{#1}, \pageRef{#1}}
+\newcommand{\FigRef}[1]{Figure~\ref{#1}}
+\newcommand{\secRef}[1]{section~\ref{#1}}
+\newcommand{\secPageRef}[1]{\secRef{#1}, \pageRef{#1}}
+\newcommand{\chapterRef}[1]{%
+%if asArticle
+\secRef{#1}
+%else
+chapter~\ref{#1}
+%endif
+}
+\newcommand{\appRef}[1]{%
+%if omitAppendix
+\chapterRef{#1}
+%else
+appendix~\ref{#1}
+%endif
+}
+
+% citations
+\newcommand{\refPDF}[1]{%
+%if refToPDF
+\IfInputExists{#1}{({\color{blue}\href{#1}{pdf}})}{}
+%else
+%endif
+}
+% \newcommand{\Cite}[1]{\cite{#1}\ifx#2\empty\else(#2)\fi\refPDF{papers/#1.pdf}}
+
+% verbatim
+\DefineVerbatimEnvironment%
+ {TT}{Verbatim}
+%if asSlides
+ {xleftmargin=.05\textwidth,fontsize=\small}
+%else
+ {xleftmargin=.05\textwidth}
+%endif
+\DefineVerbatimEnvironment%
+ {TTtiny}{Verbatim}
+ {fontsize=\tiny}
+
+% Indexing
+\newcommand{\Ix}[1]{\index{#1}}
+\newcommand{\IxAsIs}[1]{#1\Ix{#1}}
+\newcommand{\IxAsDef}[1]{\emph{#1}\Ix{#1}}
+
+% To be done
+%if omitTBD
+\def\TBD#1{}
+%else
+\def\TBD#1{{\color{red}TBD: #1}}
+%endif
+
+% slides
+%if not asSlides
+% \def\frame#1{}
+%endif
+

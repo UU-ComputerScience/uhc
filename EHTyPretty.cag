@@ -1,0 +1,213 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Ty pretty print
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs import(UU.Pretty,EHCommon,EHTy) export(ppTy)
+%%]
+
+%%[3 hs import(Char)
+%%]
+
+%%[1.WRAPPER import(EHTyAbsSyn,EHTyCommonAG)
+WRAPPER TyAGItf
+%%]
+
+%%[1.ppTy hs
+ppTy :: Ty -> PP_Doc
+ppTy ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 Inh_TyAGItf
+     in   pp_Syn_TyAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TyVar name
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[3 hs
+type TVarNameMap = AssocL TyVarId PP_Doc
+%%]
+
+%%[3 hs
+ppTnUniq :: Int -> PP_Doc
+ppTnUniq u
+  =  let  lrepr i     =  if i <= 26
+                         then  [repr i]
+                         else  let  (d,r) = i `divMod` 26
+                               in   (repr d : lrepr r)
+          repr        =  (chr . (97+))
+     in text (lrepr u)
+%%]
+
+%%[3.mkDefaultTvNm hs
+mkDefaultTvNm :: TyVarCateg -> TyVarId -> PP_Doc
+mkDefaultTvNm categ tv
+  = text (tvStr ++ show tv)
+  where tvStr =  case categ of
+                   TyVarCateg_Fixed   ->  "c_"
+                   TyVarCateg_Plain   ->  "v_"
+%%]
+
+%%[3
+ATTR AllTy [ | tnUniq: {Int} ^^ tnMap: TVarNameMap | ]
+
+SEM TyAGItf
+  | AGItf           ty      .   tnUniq    =   0
+                            .   tnMap     =   []
+
+SEM Ty
+  | Quant           loc     .   tnPP      =   ppTnUniq @lhs.tnUniq
+                    ty      .   tnUniq    =   @lhs.tnUniq + 1
+                            .   tnMap     =   (@tv,@tnPP) : @lhs.tnMap
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printed type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.pp
+ATTR TyAGItf AllTy [ | | pp: PP_Doc ]
+
+SEM Ty
+  | Con             loc     .   pp      =   ppCon @nm
+  | App             loc     .   ppDflt  =   @func.pp >#< @arg.pp
+                            .   pp      =   if @isSpineRoot
+                                            then  ppParNeed  @parNeed @lhs.parNeed
+                                                             (ppAppTop (@appFunNm,@appFunPP) @appArgPPL @ppDflt)
+                                            else  @ppDflt
+  | Any             loc     .   pp      =   pp hsnUnknown
+%%]
+
+%%[2.Var
+SEM Ty
+  | Var             loc     .   pp      =   pp ("v_" ++ show @tv)
+%%]
+
+%%[3.Var -2.Var
+SEM Ty
+  | Var             loc     .   pp      :=  maybe (mkDefaultTvNm @categ.self @tv) id (lookup @tv @lhs.tnMap)
+%%]
+
+%%[3.Quant
+SEM Ty
+  | Quant           loc     .   pp      =   ppParNeed  @parNeed @lhs.parNeed
+                                                       ("forall" >#< @tnPP >#< "." >#< @ty.pp)
+%%]
+
+%%[4.Quant -3.Quant
+ATTR TyQu [ | | pp: PP_Doc ]
+
+SEM Ty
+  | Quant           loc     .   pp      :=  ppParNeed  @parNeed @lhs.parNeed
+                                                       (@qu.pp >#< @tnPP >#< "." >#< @ty.pp)
+  
+SEM TyQu
+  | Forall Exists   lhs     .   pp      =   text (showTyQu @self)
+%%]
+
+%%[6
+SEM TyQu
+  | KiForall KiExists
+                    lhs     .   pp      =   text (showTyQu @self)
+%%]
+
+%%[7
+SEM Ty
+  | Ext             loc     .   pp      =   ppAppTop (hsnRow,@mkPPAppFun @appFunNm @appFunPP) @appArgPPL empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Records, default (positional) name if absent
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+ATTR Ty [ | positionalFldNmL: {[HsName]} | ]
+
+SEM TyAGItf
+  | AGItf           ty      .   positionalFldNmL    =   positionalFldNames
+
+SEM Ty
+  | Ext             (loc.positionalNm,lhs.positionalFldNmL)
+                                                    =   hdAndTl @ty.positionalFldNmL
+  | Con App Any Var Quant
+                    lhs     .   positionalFldNmL    =   @lhs.positionalFldNmL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Ty constr name of app + args, see also EHPretty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.appFunPP
+ATTR Ty [ | | appFunPP: PP_Doc ^^ appArgPPL: PP_DocL ]
+
+SEM Ty
+  | App         loc     .  appArgPPL    =   @func.appArgPPL ++ [@arg.pp]
+                        .  appFunPP     =   @func.appFunPP
+  | Con Any     lhs     .  appArgPPL    =   []
+                        .  appFunPP     =   @pp
+%%]
+
+%%[2
+SEM Ty
+  | Var         lhs     .  appArgPPL    =   []
+                        .  appFunPP     =   @pp
+%%]
+
+%%[3
+SEM Ty
+  | Quant       lhs     .  appArgPPL    =   []
+                        .  appFunPP     =   @pp
+%%]
+
+%%[7
+SEM Ty
+  | App Ext     loc     .  mkPPAppFun   =   \c p -> if c == hsnRowEmpty then empty else p >|< "|"
+  | App         loc     .  (appFunPP,appArgPPL)
+                                        :=  if hsnIsRec @appFunNm || hsnIsSum @appFunNm
+                                            then (@mkPPAppFun @arg.appFunNm @arg.appFunPP,@arg.appArgPPL)
+                                            else (@func.appFunPP,@func.appArgPPL ++ [@arg.pp])
+  | Ext         loc     .  appArgPPL    =   @ty.appArgPPL ++ [ppFld "::" @positionalNm @nm @extTy.pp]
+                        .  appFunPP     =   @ty.appFunPP
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Need for parenthesis
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.ParNeed
+ATTR Ty [ parNeed: ParNeed ^^^ parNeedL: ParNeedL | | ]
+
+SEM TyAGItf
+  | AGItf       ty      .   parNeed             =   ParNotNeeded
+                        .   parNeedL            =   []
+
+SEM Ty
+  | App         loc     .   (parNeed,argsParNeedL)
+                                                =   if @isSpineRoot
+                                                    then  let  (here,_,args) = parNeedApp @appFunNm
+                                                          in   (here,args)
+                                                    else  (ParNotNeeded,@lhs.parNeedL)
+                (arg.parNeed,func.parNeedL)
+                                                =   hdAndTl @argsParNeedL
+%%]
+
+%%[3
+SEM Ty
+  | Quant       (loc.parNeed,ty.parNeed)        =   (ParNotNeeded,ParNotNeeded)
+%%]
+
+%%[7
+SEM Ty
+  | Ext         ty      .   parNeed             =   ParNotNeeded
+                extTy   .   parNeed             =   ParNotNeeded
+                loc     .   parNeed             =   ParNotNeeded
+%%]
+

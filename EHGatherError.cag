@@ -1,0 +1,122 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gather errors
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.GatherExpr
+ATTR AllNT [ | | errL USE {++} {[]} : ErrL ]
+
+SEM Expr
+  | App         lhs         .  errL         =   mkNestErr @pp
+                                                    (@func.errL ++ @arg.errL)
+  | Lam         lhs         .  errL         =   mkNestErr @pp
+                                                    (foErrL @foKnFun ++ @arg.errL
+                                                      ++ @body.errL)
+  | Var         lhs         .  errL         =   mkNestErr @pp
+                                                    (@nmErrs ++ foErrL @fo)
+  | AppTop      lhs         .  errL         =   mkNestErr @pp (@expr.errL)
+  | IConst CConst
+                lhs         .  errL         =   mkNestErr @pp (foErrL @fo)
+%%]
+
+%%[1.GatherRest
+SEM TyExpr
+  | Con         lhs         .  errL         =   mkNestErr @pp (@nmErrs)
+
+SEM PatExpr
+  | AppTop      lhs         .  errL         =   mkNestErr @pp (@patExpr.errL ++ @aErrs)
+
+SEM Decl
+  | Val         lhs         .  errL         =   @patExpr.errL ++ @expr.errL ++ @sigMissErrs
+%%]
+
+%%[2
+SEM Expr
+  | Con         lhs         .  errL         =   mkNestErr @pp (foErrL @fo)
+
+SEM PatExpr
+  | AppTop      lhs         .  errL         :=  mkNestErr @pp (@patExpr.errL ++ @aErrs ++ foErrL @fo)
+
+SEM Decl
+  | Val         lhs         .  errL         :=  @patExpr.errL ++ @expr.errL
+%%]
+
+%%[4
+SEM Expr
+  | Con         lhs         .  errL         :=  mkNestErr @pp (@nmErrs ++ foErrL @fo)
+
+SEM PatExpr
+  | Con         lhs         .  errL         =   mkNestErr @pp (@nmErrs ++ foErrL @fo)
+%%]
+
+%%[5
+SEM CaseAlts
+  | Cons        lhs         .  errL         =   mkNestErr @hd.pp (@hd.errL ++ foErrL @fo) ++ @tl.errL
+%%]
+
+%%[6
+SEM TyExpr
+  | App         lhs         .  errL         =   mkNestErr @pp (@func.errL ++ @arg.errL ++ foErrL @fo)
+  | AppTop      lhs         .  errL         =   mkNestErr @pp (@tyExpr.errL)
+
+SEM Decl
+  | TySig       lhs         .  errL         =   mkNestErr @tyExpr.pp (@tyExpr.errL ++ foErrL @fo)
+  | Data        lhs         .  errL         =   mkNestErr @pp (@tyVars.errL ++ @constrs.errL ++ foErrL @fo)
+
+SEM DataConstr
+  | Constr      lhs         .  errL         =   mkNestErr @pp (@fields.errL ++ foErrL @fo)
+
+SEM KiExpr
+  | Con         lhs         .  errL         =   mkNestErr @pp (@nmErrs)
+%%]
+
+%%[7
+SEM PatExpr
+  | Rec         lhs         .  errL         =   mkNestErr @pp (@recPatExpr.errL ++ foErrL @fo)
+
+SEM Expr
+  | Rec         lhs         .  errL         =   mkNestErr @pp (@recExpr.errL ++ foErrL @fo)
+  | Sel         lhs         .  errL         =   mkNestErr @pp (@expr.errL ++ @nmErrs ++ foErrL @fo)
+%%]
+
+%%[9
+SEM RowTyExpr
+  | Var			lhs			.  errL			=	mkNestErr @pp (foErrL @fo)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% PP of error
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.PP
+SEM Decls
+  | Cons        loc         .  errPP        =   ppErrs @hd.errL
+                lhs         .  errL         =   []
+
+SEM Expr
+  | Let         loc         .  errDeclsPP   =   ppErrs @dupErrs
+                            .  errBodyPP    =   ppErrs @body.errL
+                lhs         .  errL         =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gather all errors, for further processing elsewhere
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllNT [ | | allErrL USE {++} {[]} : ErrL ]
+
+SEM Decls
+  | Cons        lhs         .  allErrL      =   @hd.errL ++ @hd.allErrL ++ @tl.allErrL
+
+SEM Expr
+  | Let         lhs         .  allErrL      =   @dupErrs ++ @body.errL ++ @decls.allErrL ++ @body.allErrL
+%%]
+
+

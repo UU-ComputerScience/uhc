@@ -1,0 +1,54 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell interface to AG generated code for compiler
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs import(Char,IOExts,List,UU.Pretty,EHCommon,EHTy,EHGam,EHError,EHErrorPretty,EHTyFitsIn,EHTyPretty)
+%%]
+
+%%[2 hs import(EHCnstr,Maybe)
+%%]
+
+%%[3 hs import(EHTyQuantify,EHTyInstantiate)
+%%]
+
+%%[8 hs import(EHCode)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Import of all separate aspects
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 import(EHAbsSyn,EHPretty,EHPrettyAST,EHInfer,EHInferExpr,EHInferPatExpr,EHInferTyExpr,EHExtraChecks,EHGatherError)
+WRAPPER AGItf
+%%]
+
+%%[2 import(EHUniq)
+%%]
+
+%%[5 import(EHInferCaseExpr,EHInferData)
+%%]
+
+%%[6 import(EHInferKiExpr)
+%%]
+
+%%[8 import(EHGenCode)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR AllNT AGItf [ opts: EHCOpts | | ]
+%%]
+
+%%[8
+ATTR AGItf [ baseName: String | | ]
+%%]

@@ -1,0 +1,115 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Kind inferencing for data, placeholders, known ki use
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5.tyGam
+SEM Decl
+  | Data        tyVars      .  tyGam                =   gamPushNew @lhs.patTyGam
+                loc         .  (lTyGam,gTyGam)      =   gamPop @tyVars.tyGam
+                lhs         .  patTyGam             =   gamAdd @tyNm (TyGamInfo (Ty_Con @tyNm)) @lhs.patTyGam
+                constrs     .  tyGam                =   @lTyGam `gamPushGam` @lhs.tyGam
+                lhs         .  tyGam                =   @lhs.tyGam
+%%]
+
+%%[6
+SEM Decl
+  | Data        loc         .  dataTgi              =   mkTGI (Ty_Con @tyNm) (tyEnsureNonBotTop @lUniq @knKi)
+                lhs         .  patTyGam             :=  if @hasKiSig  then @lhs.patTyGam
+                                                                      else gamAdd @tyNm @dataTgi @lhs.patTyGam
+                loc         .  fo                   =   fitsIn strongFIOpts @lUniq2  (@lhs.patKiCnstr |=> (@tyVars.kiL `mkTyArrow` kiStar))
+                                                                                     (@lhs.patKiCnstr |=> (tgiKi @dataTgi))
+                            .  dataKi               =   foTy @fo
+                lhs         .  patKiCnstr           =   foCnstr @fo |=> @lhs.patKiCnstr
+                constrs     .  tyGam                :=  tyGamInst1Exists @lUniq3 (@lhs.kiCnstr |=> @lTyGam)
+                                                        `gamPushGam` @lhs.tyGam
+%%]
+
+%%[8
+SEM Decl
+  | Data        lhs         .  patTyGam             :=  if @hasKiSig  then gamUpd @tyNm (\_ t -> t {tgiData = tgiData @dataTgi}) @lhs.patTyGam
+                                                                      else gamAdd @tyNm @dataTgi @lhs.patTyGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Kind inferencing for data
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6
+SEM DataConstr
+  | Constr      loc         .  (_,fo)               =   fitsInL weakFIOpts @lUniq  (@fields.kiCnstr |=> @fields.kiL)
+                                                                                   (repeat kiStar)
+                lhs         .  kiCnstr              =   foCnstr @fo |=> @fields.kiCnstr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type of data constructors
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+ATTR AllDataConstr [ dataTy: Ty | patValGam: ValGam | ]
+
+SEM DataConstr
+  | Constr      loc         .  dataConTy            =   @fields.tyL `mkTyArrow` @lhs.dataTy
+                            .  dataConProdTy        =   mkTyProdApp @fields.tyL
+                            .  dataUnConTy          =   [@lhs.dataTy] `mkTyArrow` @dataConProdTy
+                            .  dataQuUnConTy        =   mkTyQu TyQu_Forall (ftv @lhs.dataTy) @dataUnConTy
+                lhs         .  patValGam            =   gamAdd @conNm (ValGamInfo @dataConTy)
+                                                          (gamAdd (hsnUn @conNm) (ValGamInfo @dataQuUnConTy)
+                                                             @lhs.patValGam)
+
+SEM Decl
+  | Data        loc         .  dataTy               =   @tyNm `mkTyConApp` @tyVars.tyL
+%%]
+
+%%[7
+ATTR AllDataConstr [ | | dataAltTyL USE {++} {[]}: {AssocL HsName Ty} ]
+
+SEM DataConstr
+  | Constr      loc         .  dataConProdTy        :=  let  lbls = zipWith (\p ml -> maybe p id ml) positionalFldNames @fields.lblL
+                                                        in   mkTyRec (zip lbls @fields.tyL)
+                lhs         .  dataAltTyL           =   [(@conNm,@dataConProdTy)]
+
+SEM Decl
+  | Data        loc         .  dataAltTy            =   mkTySum @constrs.dataAltTyL
+                            .  dataTgi              :=  mkTGIData (Ty_Con @tyNm) (tyEnsureNonBotTop @lUniq @knKi) @dataAltTy
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Label of data fields
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+ATTR AllDataField [ | | lblL USE {++} {[]}: {[Maybe HsName]} ]
+
+SEM DataField
+  | Field       lhs         .   lblL                =   maybe [Nothing] (map Just) @mbLabels
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type of data fields
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+ATTR AllDataField [ | | tyL USE {++} {[]}: TyL ]
+
+SEM DataField
+  | Field       lhs         .   tyL                 =   replicate (maybe 1 length @mbLabels) @tyExpr.ty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Kind of data fields
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+ATTR AllDataField [ | | kiL USE {++} {[]}: TyL ]
+
+SEM DataField
+  | Field       lhs         .   kiL                 =   replicate (maybe 1 length @mbLabels) @tyExpr.ki
+%%]

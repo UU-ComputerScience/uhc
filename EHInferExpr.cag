@@ -1,0 +1,177 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type inferencing for Expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known type distr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.knTy
+ATTR Expr [ knTy: Ty | | ]
+%%]
+
+%%[1.knTy.AGItf
+SEM AGItf
+  | AGItf       expr        .  knTy         =  Ty_Any
+%%]
+
+%%[5
+SEM CaseAlt
+  | Pat         expr        .  knTy         =  Ty_Any
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type of Expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2.tyCnstr
+ATTR AllExpr [ | tyCnstr: Cnstr | ]
+%%]
+
+%%[1.Const
+ATTR Expr [ | | ty: Ty ]
+
+SEM Expr
+  | CConst      loc         .  fTy                  =   tyChar
+  | IConst      loc         .  fTy                  =   tyInt
+  | IConst CConst
+                loc         .  fo                   =   @fTy `fitsIn` @lhs.knTy
+                            .  ty                   =   foTy @fo
+%%]
+
+%%[2.Const
+SEM Expr
+  | IConst CConst
+                loc         .  fo                   :=  @fTy `fitsIn` (@lhs.tyCnstr |=> @lhs.knTy)
+                lhs         .  tyCnstr              =   foCnstr @fo |=> @lhs.tyCnstr
+%%]
+
+%%[1.Var
+SEM Expr
+  | Var         loc         .  (gTy,nmErrs)
+                                                    =   case valGamLookup @nm @lhs.valGam of
+                                                          Nothing    ->  (Ty_Any
+                                                                         ,[Err_NamesNotIntrod [@nm]])
+                                                          Just vgi   ->  (vgiTy vgi,[])
+                            .  fTy                  =   @gTy
+                            .  fo                   =   @fTy `fitsIn` @lhs.knTy
+                            .  ty                   =   foTy @fo
+%%]
+
+%%[2.Var
+SEM Expr
+  | Var         loc         .  fTy                  :=  @lhs.tyCnstr |=> @gTy
+                            .  fo                   :=  @fTy `fitsIn` (@lhs.tyCnstr |=> @lhs.knTy)
+                lhs         .  tyCnstr              =   foCnstr @fo |=> @lhs.tyCnstr
+%%]
+
+%%[3.Var
+SEM Expr
+  | Var         loc         .  fTy                  :=  @lhs.tyCnstr |=> tyInst @lUniq @gTy
+%%]
+
+%%[1.Con
+SEM Expr
+  | Con         loc         .  ty                   =   let  resTy = snd (tyArrowArgsRes @lhs.knTy)
+                                                        in   tyProdArgs resTy `mkTyArrow` resTy
+%%]
+
+%%[2.Con
+SEM Expr
+  | Con         loc         .  fo                   =   let  gTy      = mkTyFreshProdFrom @lUniq (hsnProdArity @nm)
+                                                             foKnRes  = gTy `fitsIn` (@lhs.tyCnstr |=> snd (tyArrowArgsRes @lhs.knTy))
+                                                        in   foKnRes {foTy = tyProdArgs (foTy foKnRes) `mkTyArrow` (foTy foKnRes)}
+                            .  ty                   :=  foTy @fo
+                lhs         .  tyCnstr              =   foCnstr @fo |=> @lhs.tyCnstr
+%%]
+
+%%[4.Con
+SEM Expr
+  | Con         loc         .  (gTy,nmErrs)         :=  case valGamLookup @nm @lhs.valGam of
+                                                          Nothing    ->  (Ty_Any,[Err_NamesNotIntrod [@nm]])
+                                                          Just vgi   ->  (vgiTy vgi,[])
+                            .  fTy                  :=  @lhs.tyCnstr |=> @gTy
+                            .  fo                   :=  fitsIn @lhs.fiOpts @lUniq2 @fTy (@lhs.tyCnstr |=> @lhs.knTy)
+%%]
+
+%%[1.App
+SEM Expr
+  | App         loc         .  knFunTy              =   [Ty_Any] `mkTyArrow` @lhs.knTy
+                func        .  knTy                 =   @knFunTy
+                (arg.knTy,loc.fTy)                  =   tyArrowArgRes @func.ty
+                loc         .  ty                   =   @fTy
+%%]
+
+%%[2.App
+SEM Expr
+  | App         loc         .  knFunTy              :=  [mkNewTyVar @lUniq]
+                                                        `mkTyArrow` (@lhs.tyCnstr |=> @lhs.knTy)
+                            .  ty                   :=  @arg.tyCnstr |=> @fTy
+%%]
+
+%%[1.Lam
+SEM Expr
+  | Lam         loc         .  funTy                =   [Ty_Any] `mkTyArrow` Ty_Any
+                            .  foKnFun              =   @funTy `fitsIn` @lhs.knTy
+                (arg.knTy,body.knTy)                =   tyArrowArgRes (foTy @foKnFun)
+                arg         .  valGam               =   gamPushNew @lhs.valGam
+                loc         .  ty                   =   @lhs.knTy
+%%]
+
+%%[2.Lam
+SEM Expr
+  | Lam         loc         .  funTy                :=  let  [a,r] = mkNewTyVarL 2 @lUniq
+                                                        in   [a] `mkTyArrow` r
+                            .  foKnFun              :=  @funTy `fitsIn` (@lhs.tyCnstr |=> @lhs.knTy)
+                arg         .  tyCnstr              =   foCnstr @foKnFun |=> @lhs.tyCnstr
+                loc         .  ty                   :=  [@body.tyCnstr |=> @arg.ty] `mkTyArrow` @body.ty
+%%]
+
+%%[2.AppTop
+SEM Expr
+  | AppTop      loc         .  knTy                 =   tyEnsureNonBotTop @lUniq @lhs.knTy
+%%]
+
+%%[4.Rest
+SEM Expr
+  | Var         loc         .  fTy                  :=  @lhs.tyCnstr |=> @gTy
+  | IConst CConst Var
+                loc         .  fo                   :=  fitsIn @lhs.fiOpts @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
+  | Lam         loc         .  foKnFun              :=  let  fo = fitsIn @lhs.fiOpts @lUniq2 @funTy (@lhs.tyCnstr |=> @lhs.knTy)
+                                                        in   fo {foTy = foCnstr fo |=> @funTy}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Records
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+ATTR RecExpr [ | | knTyRow: Ty ]
+
+SEM RecExpr
+  | Empty       lhs         .  knTyRow              =   tyRowEmpty
+  | Ext         loc         .  knTy                 =   mkNewTyVar @lUniq
+                lhs         .  knTyRow              =   Ty_Ext @recExpr.knTyRow @nm @knTy
+
+SEM Expr
+  | Rec         loc         .  fTy                  =   hsnRec `mkTyConApp` [@recExpr.knTyRow]
+                            .  fo                   =   fitsIn @lhs.fiOpts @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
+                            .  ty                   =   foTy @fo
+                recExpr     .  tyCnstr              =   foCnstr @fo |=> @lhs.tyCnstr
+                lhs         .  ty                   =   @recExpr.tyCnstr |=> @ty
+  | Sel         expr        .  knTy                 =   hsnRec `mkTyConApp` [mkNewTyVar @lUniq]
+                loc         .  (fTy,nmErrs)         =   case tyRecExtr @lbl @expr.ty of
+                                                          Just (_,e)  ->  (e,[])
+                                                          Nothing     ->  (Ty_Any,[Err_MissingRowLabel @lbl @expr.ty])
+                            .  fo                   =   fitsIn @lhs.fiOpts @lUniq2 @fTy (@expr.tyCnstr |=> @lhs.knTy)
+                            .  ty                   =   foTy @fo
+                lhs         .  tyCnstr              =   foCnstr @fo |=> @expr.tyCnstr
+%%]
+

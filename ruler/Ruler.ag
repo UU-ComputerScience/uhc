@@ -1,0 +1,488 @@
+imports
+{
+import System
+import GetOpt
+import Maybe
+import Char
+import IO
+import List
+import FiniteMap
+import FPath
+import Utils
+import PPUtils
+import UU.Pretty
+import UU.Parsing
+import UU.Scanner
+import UU.Scanner.Position( initPos, Pos )
+import qualified UU.DData.Set as Set
+import qualified UU.DData.Seq as Seq
+}
+
+{
+-------------------------------------------------------------------------
+-- Main
+-------------------------------------------------------------------------
+
+main :: IO ()
+main
+  = do { args <- getArgs
+       ; let oo@(o,n,errs)  = getOpt Permute cmdLineOpts args
+             opts           = foldr ($) defaultOpts o
+       ; if optHelp opts
+         then putStrLn (usageInfo "Usage ruler [options] [file]\n\noptions:" cmdLineOpts)
+         else if null errs
+              then  doCompile (if null n then emptyFPath else mkFPath (head n)) opts
+              else  putStr (head errs)
+       }
+
+doCompile :: FPath -> Opts -> IO ()
+doCompile fp opts
+  = do { (fn,fb,fh)
+             <- if fpathIsEmpty fp
+                then return ("<stdin>","<stdin>",stdin)
+                else do { let fn = fpathToStr fp
+                        ; h <- openFile fn ReadMode
+                        ; return (fn,fpathToStr (fpathRemoveSuff fp),h)
+                        }
+       ; tokens <- scanHandle keywordsText keywordsOps specialChars opChars fn fh
+       ; pres <- parseIO (pAGItf) tokens
+       ; let res = wrap_AGItf pres
+                     (Inh_AGItf
+                        { opts_Inh_AGItf = opts
+                        })
+       ; putBld (optLaTeX opts) (ppLaTeX_Syn_AGItf res) 
+       ; return ()
+       }
+  where putBld f b
+          = if f
+            then putStrLn (disp b 2000 "")
+            else return ()
+
+-------------------------------------------------------------------------
+-- Options
+-------------------------------------------------------------------------
+
+data Opts 
+  = Opts
+      { optLaTeX        :: Bool
+      , optHelp         :: Bool
+      , optWrapLhs2tex  :: Bool
+      }
+
+defaultOpts
+  = Opts
+      { optLaTeX        =  False
+      , optHelp         =  False
+      , optWrapLhs2tex  =  True
+      }
+
+cmdLineOpts  
+  =  [ Option "l"  ["latex"]     (NoArg oLaTeX)
+          "generate code for latex, default=no"
+     ,  Option ""   ["help"]      (NoArg oHelp)
+          "output this help"
+     ,  Option ""   ["lhs2tex"]   (OptArg oLhs2tex "yes|no")
+          "wrap chunks in lhs2tex's code environment, default=yes (not implemented)"
+     ]
+  where  oLaTeX          o =  o {optLaTeX = True}
+         oLhs2tex    ms  o =  yesno (\f o -> o {optWrapLhs2tex = f}) ms o
+         oHelp           o =  o {optHelp = True}
+         yesno updO  ms  o =  case ms of
+                                Just "yes"  -> updO True o
+                                Just "no"   -> updO False o
+                                _           -> o
+
+
+-------------------------------------------------------------------------
+-- Scanning
+-------------------------------------------------------------------------
+
+specialChars  =  "().`"
+opChars       =  "!#$%&*+/<=>?@\\^|-:;,[]{}~"
+
+keywordsText  =  [ "judge", "rule", "rules", "cond", "preamble", "scheme" ]
+keywordsOps   =  [ "=", "-", "&" ]
+
+scanHandle :: [String] -> [String] -> String -> String -> FilePath -> Handle -> IO [Token]
+scanHandle keywordstxt keywordsops specchars opchars fn fh
+  = do  {  txt <- hGetContents fh
+        ;  return (scan keywordstxt keywordsops specchars opchars (initPos fn) txt) 
+        }
+
+-------------------------------------------------------------------------
+-- Parser
+-------------------------------------------------------------------------
+
+type MkConAppAlg t = (String -> t,t -> t -> t,t -> t)
+
+mkApp :: MkConAppAlg t -> [t] -> t
+mkApp (_,app,top) ts
+  = case ts of
+      [t]  -> t
+      _    -> top t
+  where t = foldl1 app ts
+
+pAGItf :: (IsParser p Token) => p T_AGItf
+pAGItf
+  = let alg                 =   (undefined,sem_JExpr_App,sem_JExpr_AppTop)
+        pAGItf              =   sem_AGItf_AGItf <$ pKey "preamble" <*> pString <*> pDecls
+        pDecls              =   pFoldr (sem_Decls_Cons,sem_Decls_Nil) pDecl
+        pDecl               =   sem_Decl_Judge <$ pKey "scheme" <*> pNm <* pKey "=" <*> pJExpr <* pKey "=" <*> pJExpr
+                            <|> sem_Decl_Rules <$ pKey "rules" <*> pNm <*> (Just <$ pKey "." <*> pNm' <|> pSucceed Nothing) <*> pString <* pKey "=" <*> pRules
+        pRules              =   pFoldr (sem_Rules_Cons,sem_Rules_Nil) pRule
+        pRule               =   sem_Rule_Rule
+                                <$> (True <$ pKey "&" <|> pSucceed False)
+                                <*  pKey "rule" <*> pNm <* pKey "=" <*> pRExprs <* pKey "-" <*> pRExprs
+        pNm                 =   pVarid <|> pConid
+        pNm'                =   pNm <|> pInteger
+        pSym                =   pVarsym <|> pConsym <|> (\q n -> q ++ n ++ q) <$> pKey "`" <*> pNm <* pKey "`"
+        pRExprs             =   pFoldr (sem_RExprs_Cons,sem_RExprs_Nil) pRExpr
+        pRExpr              =   sem_RExpr_Judge <$> pJudge
+                            <|> sem_RExpr_Cond <$ pKey "cond" <*> pJExpr
+        pJudge              =   sem_Judge_Judge <$ pKey "judge" <*> pNm <*> pJExpr
+        pJExpr              =   pChainr pOp pJExprApp
+                            where pOp = (\s ss -> sem_JExpr_Op s (ss (sem_JExpr_Var (mkLhs2TeXSafe s)))) <$> pSym <*> pJExprSel
+        pJExprApp           =   mkApp alg <$> pList1 (pJExprBase <**> pJExprSel) <|> pSucceed sem_JExpr_Empty
+        pJExprBase          =   sem_JExpr_Paren <$> pParens pJExpr
+                            <|> sem_JExpr_Var <$> pNm'
+                            <|> sem_JExpr_Str <$> pString
+                            <|> pParens pJExprEsc
+        pJExprEsc           =   (sem_JExpr_StrAsIs . concat) <$> pList1 (foldr1 (<|>) . map pKey $ (keywordsOps ++ ["."]))
+        pJExprMbBase        =   sem_MbJExpr_Just <$> pJExprBase <|> pSucceed sem_MbJExpr_Nothing
+        pJExprSel           =   pJExprSel1 <|> pSucceed id
+        pJExprSel1          =   (\ss s -> \e -> sem_JExpr_SelTop (sem_JExpr_Sel (ss e) (sem_MbJExpr_Just s))) <$> pDots <*> pJExprBase
+                            where pSel' = flip sem_JExpr_Sel <$> pJExprMbBase
+                                  pDots = pChainr_ng ((\s -> \_ r -> \e -> r (s e)) <$> pSel') (id <$ pKey ".")
+     in pAGItf
+}
+
+-------------------------------------------------------------------------
+-- Inferfacing
+-------------------------------------------------------------------------
+
+WRAPPER AGItf
+
+ATTR AGItf [ opts: {Opts} | | ]
+
+-------------------------------------------------------------------------
+-- AST
+-------------------------------------------------------------------------
+
+DATA AGItf
+  | AGItf               preamble    : {String}
+                        decls       : Decls
+
+DATA Decl
+  | Judge               nm          : {String}
+                        jExpr       : JExpr
+                        jExprRepl   : JExpr
+  | Rules               nm          : {String}
+                        mbNmSuff    : {Maybe String}
+                        info        : {String}
+                        rules       : Rules
+
+TYPE Decls = [Decl]
+
+SET AllDecl = Decl Decls
+
+DATA Rule
+  | Rule                horizontal  : {Bool}
+                        nm          : {String}
+                        pre         : RExprs
+                        post        : RExprs
+
+TYPE Rules = [Rule]
+
+SET AllRule = Rule Rules
+
+DATA Judge
+  | Judge               nm          : {String}
+                        jExpr       : JExpr
+
+DATA JExpr
+  | Op                  nm          : {String}
+                        nmExpr      : JExpr
+                        lExpr       : JExpr
+                        rExpr       : JExpr
+  | AppTop              jExpr       : JExpr
+  | App                 lExpr       : JExpr
+                        rExpr       : JExpr
+  | Var                 nm          : {String}
+  | Str                 str         : {String}
+  | StrAsIs             str         : {String}
+  | Paren               jExpr       : JExpr
+  | SelTop              jExpr       : JExpr
+  | Sel                 jExpr       : JExpr
+                        selMbJExpr  : MbJExpr
+  | Empty
+
+DATA MbJExpr
+  | Nothing
+  | Just                jExpr       : JExpr
+
+SET AllJudge = Judge JExpr
+
+DATA RExpr
+  | Judge               judge       : Judge
+  | Cond                jExpr       : JExpr
+
+TYPE RExprs = [RExpr]
+
+SET AllRExpr = RExpr RExprs
+
+-------------------------------------------------------------------------
+-- Ty of JExpr
+-------------------------------------------------------------------------
+
+{
+data JTy
+  = JTy_Op      String PP_Doc JTy JTy
+  | JTy_Paren   JTy
+  | JTy_Var     String
+  | JTy_PP      PP_Doc
+  | JTy_Any
+  deriving Show
+
+ppJTy :: JTy -> PP_Doc
+ppJTy t
+  = case t of
+      JTy_Op _ p l r    -> ppJTy l >#< p >#< ppJTy r
+      JTy_Paren t'      -> ppParens (ppJTy t')
+      JTy_Var n         -> text (mkLhs2TeXSafe n)
+      JTy_PP p          -> p
+      JTy_Any           -> text "*"
+
+jtyUnPPify :: JTy -> JTy
+jtyUnPPify t
+  = case t of
+      JTy_Op nm p l r   -> JTy_Op nm p (jtyUnPPify l) (jtyUnPPify r)
+      JTy_Paren t'      -> JTy_Paren (jtyUnPPify t')
+      JTy_PP p          -> JTy_Any
+      _                 -> t
+
+type Binds = FiniteMap String JTy
+data FIOut = FIOut {foTy :: JTy, foErrL :: PP_DocL, foCoe :: JTy -> JTy, foBinds :: Binds}
+
+emptyFIOut = FIOut {foTy = JTy_Any, foErrL = [], foCoe = id, foBinds = emptyFM}
+
+foHasErrs :: FIOut -> Bool
+foHasErrs = not . null . foErrL
+
+jtyFitsIn :: JTy -> JTy -> FIOut
+jtyFitsIn ty1 ty2
+  = let res t = emptyFIOut {foTy = t}
+        err p = emptyFIOut {foErrL = [p]}
+        coe fo c = fo {foCoe = c}
+        bnd fo n t = fo {foBinds = addToFM (foBinds fo) n t}
+        bnds fo fo1 fo2 = fo {foBinds = foBinds fo `plusFM` foBinds fo1 `plusFM` foBinds fo2}
+        f t1 JTy_Any
+            = res t1
+        f (JTy_Paren t1) (JTy_Paren t2)
+            = f t1 t2
+        f t1 (JTy_Paren t2)
+            = f t1 t2
+        f t1 (JTy_Var v2)
+            = bnd (res t1) v2 t1
+        f (JTy_Op n1 p1 l1 r1) (JTy_Op n2 _ l2 r2)
+            | n1 == n2
+            = foldr1 (\fo1 fo2 -> if foHasErrs fo1 then fo1 else fo2) [lfo,rfo,bnds (coe (res rt) c) lfo rfo]
+            where lfo = f l1 l2
+                  rfo = f r1 r2
+                  rt  = JTy_Op n1 p1 (foTy lfo) (foTy rfo)
+                  c   = \(JTy_Op n p l r) -> JTy_Op n p (foCoe lfo l) (foCoe rfo r)
+        f t1 t2
+            = err ("RULER error, fitsin:" >#< ppJTy ty1 >#< "<=" >#< ppJTy ty2 >|< ", detail:" >#< ppJTy t1 >#< "<=" >#< ppJTy t2)
+     in f ty1 ty2
+
+jtyAppBinds :: Binds -> JTy -> JTy
+jtyAppBinds b jt
+  = let app t = case t of
+                  JTy_Op nm p l r   -> JTy_Op nm p (app l) (app r)
+                  JTy_Paren t'      -> JTy_Paren (app t')
+                  JTy_Var nm        -> maybe t id (lookupFM b nm)
+                  _                 -> t
+     in app jt
+}
+
+
+ATTR JExpr [ | | ty: JTy ]
+
+SEM JExpr
+  | Op          lhs     .   ty          =   JTy_Op @nm @nmExpr.ppLaTeX @lExpr.ty @rExpr.ty
+  | Paren       lhs     .   ty          =   JTy_Paren @jExpr.ty
+  | Var         lhs     .   ty          =   JTy_Var @nm
+  | AppTop SelTop Str Empty StrAsIs
+                lhs     .   ty          =   JTy_PP @ppLaTeX
+
+-------------------------------------------------------------------------
+-- Declared stuff (Judgement fmt)
+-------------------------------------------------------------------------
+
+{
+data JFmtGamInfo = JFmtGamInfo {jgiTy :: JTy, jgiFullTy :: JTy, jgiReplTy :: JTy }
+type JFmtGam = FiniteMap String JFmtGamInfo
+}
+
+ATTR AllDecl [ | gathJFmtGam: JFmtGam | ]
+ATTR AllDecl AllRule AllRExpr Judge [ jFmtGam: JFmtGam | | ]
+
+SEM Decl
+  | Judge       lhs     .   gathJFmtGam =   addToFM @lhs.gathJFmtGam @nm (JFmtGamInfo (jtyUnPPify @jExpr.ty) @jExpr.ty @jExprRepl.ty)
+
+SEM AGItf
+  | AGItf       decls   .   gathJFmtGam =   emptyFM
+                        .   jFmtGam     =   @decls.gathJFmtGam
+
+-------------------------------------------------------------------------
+-- Checking, retrieving, etc
+-------------------------------------------------------------------------
+
+SEM Judge
+  | Judge       loc     .   (ty,errs)   =   case lookupFM @lhs.jFmtGam @nm of
+                                              Nothing  -> (JTy_Any,["RULER error, undefined:" >#< @nm])
+                                              Just jgi -> let fo = jtyFitsIn @jExpr.ty (jgiTy jgi)
+                                                           in (foBinds fo `jtyAppBinds` jgiReplTy jgi,foErrL fo)
+
+SEM Decl
+  | Rules       loc     .   (ppFmt,errs)=   case lookupFM @lhs.jFmtGam @nm of
+                                              Nothing  -> (empty,["RULER error, undefined:" >#< @nm])
+                                              Just jgi -> let fo = jtyFitsIn (jgiFullTy jgi) (jgiTy jgi)
+                                                           in (ppJTy (foBinds fo `jtyAppBinds` jgiReplTy jgi),foErrL fo)
+
+-------------------------------------------------------------------------
+-- Depth of selection
+-------------------------------------------------------------------------
+
+ATTR JExpr [ | | selL: {[Maybe PP_Doc]}]
+
+SEM JExpr
+  | Sel         lhs     .   selL        =   @selMbJExpr.mbPPLaTeX : @jExpr.selL
+  | Var Str Paren App AppTop Op SelTop Empty StrAsIs
+                lhs     .   selL        =   []
+
+-------------------------------------------------------------------------
+-- Depth of selection
+-------------------------------------------------------------------------
+
+ATTR MbJExpr JExpr [ needToParen: Bool | | ]
+
+SEM JExpr
+  | Sel         selMbJExpr  .   needToParen =   False
+  | Paren App Op AppTop SelTop Sel
+                loc         .   needToParen =   True
+
+SEM Decl
+  | Judge       jExpr       .   needToParen =   True
+                jExprRepl   .   needToParen =   True
+  
+SEM Judge
+  | Judge       jExpr       .   needToParen =   True
+  
+SEM RExpr
+  | Cond        jExpr       .   needToParen =   True
+  
+-------------------------------------------------------------------------
+-- LaTeX/Lhs2TeX
+-------------------------------------------------------------------------
+
+{
+mkLaTeXNm :: String -> String
+mkLaTeXNm = map (\c -> if isAlphaNum c then c else '-')
+
+mkLhs2TeXSafe :: String -> String
+mkLhs2TeXSafe = concat . map (\c -> if c == '|' then "||" else [c])
+
+mkMBox :: PP_Doc -> PP_Doc
+mkMBox p = "\\;\\mbox" >|< ppCurly p
+
+mkVerb :: PP_Doc -> PP_Doc
+mkVerb p = ppPacked "@" "@" p
+
+switchLaTeXLhs :: PP a => a -> PP_Doc
+switchLaTeXLhs = ppVBar
+
+mkInLhs2Tex :: PP_Doc -> PP_Doc
+mkInLhs2Tex p = ppVBar (p >|< " ")
+
+ensureTeXMath :: PP_Doc -> PP_Doc
+ensureTeXMath = mkTexCmdUse "ensuremath"
+
+ppArg :: PP p => p -> PP_Doc
+ppArg p = ppCurly p >|< "%"
+
+mkCmdNmDef :: PP_Doc -> PP_Doc -> PP_Doc
+mkCmdNmDef = mkTexCmdDef "rulerCmdDef"
+
+mkCmdNmUse :: PP_Doc -> PP_Doc
+mkCmdNmUse = mkTexCmdUse "rulerCmdUse"
+
+}
+
+ATTR AGItf AllDecl AllJudge RExpr Rule [ | | ppLaTeX USE {>-<} {empty} : PP_Doc ]
+ATTR RExprs Rules [ | | ppLaTeXL: PP_DocL ]
+ATTR MbJExpr [ | | mbPPLaTeX: {Maybe PP_Doc} ]
+ATTR AllRule [ | | ppLaTeXMp USE {++} {[]}: {[(PP_Doc,Bool,PP_Doc)]} ]
+
+SEM AGItf
+  | AGItf       lhs     .   ppLaTeX     =   (vlist . map text . lines $ @preamble) >-< @decls.ppLaTeX
+
+SEM Decl
+  | Judge       lhs     .   ppLaTeX     =   "%%" >#< @nm >#< "=" >#< ppJTy @jExpr.ty >#< "=" >#< ppJTy @jExprRepl.ty
+  | Rules       lhs     .   ppLaTeX     =   let nm = ppDots (["rules",@nm] ++ maybeToList @mbNmSuff)
+                                                rs = map (\(n,h,c) -> (ppDots [nm,n],h,c)) @rules.ppLaTeXMp
+                                                ru = concat . map (\(n,h,_) -> [text (if h then "\\qquad" else "\\\\"),mkCmdNmUse n]) $ rs
+                                                rschm = ensureTeXMath (mkInLhs2Tex @ppFmt)
+                                                nmschm = ppDots [nm,pp "scheme"]
+                                                rr = mkCmdNmDef nm
+                                                        ("\\begin{RulesFigure}" >|< ppCurly (mkCmdNmUse nmschm) >|< ppCurly (text @info) >|< ppCurly nm
+                                                         >-< (if null ru then empty else vlist (tail ru))
+                                                         >-< "\\end{RulesFigure}"
+                                                        )
+                                             in vlist (map (\(n,_,c) -> mkCmdNmDef n c) rs) >-< mkCmdNmDef nmschm rschm >-< rr
+
+SEM Judge
+  | Judge       lhs     .   ppLaTeX     =   if null @errs then mkInLhs2Tex (ppJTy @ty) else mkInLhs2Tex (ppListSep "" "" "," @errs)
+
+SEM JExpr
+  | Var         loc     .   ppLaTeX     =   text (mkLhs2TeXSafe @nm)
+  | Str         loc     .   ppLaTeX     =   switchLaTeXLhs (mkMBox (text @str))
+  | StrAsIs     loc     .   ppLaTeX     =   text @str
+  | Paren       loc     .   ppLaTeX     =   (if @lhs.needToParen then ppParens else id) @jExpr.ppLaTeX
+  | AppTop      loc     .   ppLaTeX     =   @jExpr.ppLaTeX
+  | App         loc     .   ppLaTeX     =   @lExpr.ppLaTeX >#< @rExpr.ppLaTeX
+  | SelTop      loc     .   ppLaTeX     =   let sw = switchLaTeXLhs
+                                             in case (@jExpr.ppLaTeX,reverse @jExpr.selL) of
+                                                  (x,[Nothing,Nothing,Just s3])     -> sw ("\\stackrel{" >|< sw s3 >|< "}{") >|< x >|< sw (text "}")
+                                                  (x,[Nothing,Just s2,Just s3])     -> sw ("\\stackrel{" >|< sw s3 >|< "}{") >|< x >|< sw ("^{" >|< sw s2 >|< "}}")
+                                                  (x,(Just s1:Just s2:_))           -> x >|< sw ("_{" >|< sw s1 >|< "}^{" >|< sw s2 >|< "}")
+                                                  (x,(Nothing:Just s2:_))           -> x >|< sw ("^{" >|< sw s2 >|< "}")
+                                                  (x,(Just s1:_))                   -> x >|< sw ("_{" >|< sw s1 >|< "}")
+                                                  (x,_)                             -> x
+  | Op          loc     .   ppLaTeX     =   @lExpr.ppLaTeX >#< mkLhs2TeXSafe @nm >#< @rExpr.ppLaTeX
+  | Empty       loc     .   ppLaTeX     =   empty
+
+SEM MbJExpr
+  | Nothing     lhs     .   mbPPLaTeX   =   Nothing
+  | Just        lhs     .   mbPPLaTeX   =   Just @jExpr.ppLaTeX
+
+SEM RExpr
+  | Cond        lhs     .   ppLaTeX     =   mkInLhs2Tex @jExpr.ppLaTeX
+
+SEM RExprs
+  | Nil         lhs     .   ppLaTeXL    =   []
+  | Cons        lhs     .   ppLaTeXL    =   @hd.ppLaTeX : @tl.ppLaTeXL
+
+SEM Rule
+  | Rule        lhs     .   (ppLaTeX,ppLaTeXMp)
+                                        =   let n = mkLaTeXNm @nm
+                                                r = "\\infrule" >|< ppArg n
+                                                    >-< ppListSepVV "{%" "}" "\\\\" @pre.ppLaTeXL
+                                                    >-< ppListSepVV "{%" "}" "\\\\"  @post.ppLaTeXL
+                                             in (r,[(pp n,@horizontal,r)])
+SEM Rules
+  | Nil         lhs     .   ppLaTeXL    =   []
+  | Cons        lhs     .   ppLaTeXL    =   @hd.ppLaTeX : @tl.ppLaTeXL
+
+
+
+

@@ -1,0 +1,47 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abstract syntax for Error
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Error structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.Base
+DATA Err
+  | UnifyClash          ty1        : Ty                  ^^  ty2        : Ty
+                        ty1detail  : Ty                  ^^  ty2detail  : Ty
+  | NamesNotIntrod      nmL        : {[HsName]}
+%%]
+
+%%[1.Rest
+DATA Err
+  | NamesDupIntrod      nmL        : {[HsName]}
+  | PatArity            ty         : Ty                  ^^  arity      : {Int}
+  | NestedIn            wher       : {PP_Doc}            ^^  errL       : ErrL
+
+TYPE ErrL       = [Err]
+%%]
+
+%%[1.MissingSig
+DATA Err
+  | MissingSig          wher       : {PP_Doc}
+%%]
+
+%%[2 -1.MissingSig
+DATA Err
+  | UnifyOccurs         ty1        : Ty                  ^^  ty2        : Ty
+                        tvar       : {TyVarId}           ^^  ty2detail  : Ty
+%%]
+
+%%[7
+DATA Err
+  | MissingRowLabel     nm         : {HsName}            ^^  ty         : Ty
+%%]
+

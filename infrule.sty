@@ -1,0 +1,99 @@
+\ProvidesPackage{infrule}
+
+\usepackage{nameref}% from hyperref
+
+\newcounter{rules}
+
+\newcommand*{\infrule}[4][\relax]{%
+  \refstepcounter{rules}%
+  \def\@currentlabelname{#2}%
+  \ifx #1\relax\relax
+    \label{rule:#2}%
+  \else
+    \label{rule:#1}%
+  \fi
+  \frac{%
+    \primhs
+    \ \begin{array}{c}#3\end{array}\ %
+  }{%
+    \primhs
+    \ \begin{parray}
+      \column{left}{l}
+      \column{leftend}{l}
+      \column{right}{r}
+      \column{bogus}{}
+      \def\L##1{\fromto{left}{leftend}{##1}
+                \fromto{leftend}{bogus}{\quad\quad}}
+      \def\R##1{\fromto{left}{right}{\quad\quad}
+                \fromto{right}{bogus}{##1}}
+      \def\M##1##2{\L{\fracspacecorrection{##1}}\nextline\R{##2}}
+      \infrule@@ #4\infrule@@end
+      \end{parray}\ }%
+  \quad \text{(#2)}}
+
+\newcommand*{\xinfrule}[2]{%
+  \frac{%
+    \primhs
+    \ \begin{array}{c}#1\end{array}\ %
+  }{%
+    \primhs
+    \ \begin{parray}
+      \column{left}{l}
+      \column{leftend}{l}
+      \column{right}{r}
+      \column{bogus}{}
+      \def\L##1{\fromto{left}{leftend}{##1}
+                \fromto{leftend}{bogus}{\quad\quad}}
+      \def\R##1{\fromto{left}{right}{\quad\quad}
+                \fromto{right}{bogus}{##1}}
+      \def\M##1##2{\L{##1}\nextline\R{##2}}
+      \infrule@@ #2\infrule@@end
+      \end{parray}\ }}
+
+\def\infrule@@#1#2\infrule@@end{%
+  \ifx\M #1\relax
+     \def\next{#1#2}%
+  \else
+     \def\next{\fromto{left}{bogus}{\fracspacecorrection{#1#2}}}%
+  \fi\next}
+
+\newcommand*{\cinfrule}[4][\relax]{%
+  \refstepcounter{rules}%
+  \def\@currentlabelname{#2}%
+  \ifx #1\relax\relax
+    \label{rule:#2}%
+  \else
+    \label{rule:#1}%
+  \fi
+  \frac{%
+    \primhs\ \begin{array}{c}#3\end{array}\ %
+  }{\primhs\ \begin{array}{c}#4\end{array}\ }
+  \quad \text{(#2)}}
+
+\newcommand*{\xcinfrule}[2]{%
+  \frac{%
+    \primhs\ \begin{array}{c}#1\end{array}\ %
+  }{\primhs\ \begin{array}{c}#2\end{array}\ }}
+
+\newcommand*{\ruleref}[1]{(\nameref{rule:#1})}
+\newcommand*{\rulepageref}[1]{\pageref{rule:#1}}
+
+\def\pmboxed{%
+  \def\PT@begin{\array{@{}l@{}}\@gobble}
+  \let\PT@end\endarray
+  \let\PT@multicolumn\PT@placeinbox
+  \expandafter\beginpolytable\ignorespaces}
+
+\let\endpmboxed\endpolytable
+
+\newcommand*{\primhs}%
+  {\let\hscode=\pmboxed
+   \let\endhscode=\endpmboxed}
+
+\newcommand*{\fracspacecorrection}[2][1pt]{%
+  \begingroup
+  \setbox0=\hbox{$\displaystyle #2$}%
+  \dimen0=\ht0%
+  \advance\dimen0 by #1%
+  \vphantom{\rule{0pt}{\dimen0}}%
+  \endgroup #2}
