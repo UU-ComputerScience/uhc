@@ -8,9 +8,12 @@ let class Eq a where
       lt :: a -> a -> Bool
       gt :: a -> a -> Bool
     instance dEqInt = Eq Int where
-      lt = \_ _ -> True
-      gt = \_ _ -> True
+      eq = \_ _ -> True
+      ne = \_ _ -> True
     instance dEqList = Eq a => Eq (List a) where
-      lt = \_ _ -> True
-      gt = \_ _ -> True
+      eq = \_ _ -> True
+      ne = \_ _ -> True
+in
+let f = eq (Cons 3 Nil) (Cons 4 Nil)
+    -- f = eq 3 4
 in  3

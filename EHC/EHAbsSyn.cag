@@ -301,7 +301,7 @@ DATA PrExpr
                     tyExprs         : TyExprs
   | Lacks           rowTyExpr       : RowTyExpr
                     nm              : {HsName}
-  | Eq              nm              : {HsName}
+  | Equal           nm              : {HsName}
                     tyExpr          : TyExpr
 
 TYPE PrExprs        =  [PrExpr]

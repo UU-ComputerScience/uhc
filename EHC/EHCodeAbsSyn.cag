@@ -20,7 +20,9 @@ DATA CodeAGItf
 DATA CModule
   | Mod         baseName        : {String}
                 expr            : CExpr
+%%]
 
+%%[8
 DATA CExpr
   | Let         categ           : {CBindCateg}
                 binds           : CBindL
@@ -39,7 +41,14 @@ DATA CExpr
                 dflt            : CExpr
   | Int         int             : {Int}
   | Char        char            : {Char}
+%%]
 
+%%[9
+DATA CExpr
+  | Hole        uid             : {UID}
+%%]
+
+%%[8
 DATA CBind
   | Bind        nm              : {HsName}
                 expr            : CExpr

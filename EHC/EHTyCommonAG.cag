@@ -86,7 +86,7 @@ SEM Ty
 
 %%[9
 SEM Pred
-  | Class Eq Lacks
+  | Class Equal Lacks
                 loc         .   appSpinePos     =   0
 %%]
 

@@ -87,7 +87,7 @@ SEM Expr
 
 %%[9
 SEM RowTyExpr
-  | Var			lhs			.  errL			=	mkNestErr @pp (foErrL @fo)
+  | Var         lhs         .  errL         =   mkNestErr @pp (foErrL @fo)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -100,8 +100,16 @@ SEM Decls
                 lhs         .  errL         =   []
 
 SEM Expr
-  | Let         loc         .  errDeclsPP   =   ppErrs @dupErrs
+  | Let         loc         .  errLetPP     =   ppErrs @dupErrs
                             .  errBodyPP    =   ppErrs @body.errL
+                lhs         .  errL         =   []
+%%]
+
+%%[9
+SEM Decl
+  | Instance    loc         .  lErrL        =   @ctxtPrExprs.errL ++ @prExpr.errL ++ @nmErrs ++ foErrL @fo
+                            .  errInstPP    =   ppErrs @lErrL
+                            .  errDeclsPP   =   ppErrs @decls.errL
                 lhs         .  errL         =   []
 %%]
 
@@ -119,4 +127,8 @@ SEM Expr
   | Let         lhs         .  allErrL      =   @dupErrs ++ @body.errL ++ @decls.allErrL ++ @body.allErrL
 %%]
 
+%%[9
+SEM Decl
+  | Instance    lhs         .  allErrL      =   @lErrL ++ @decls.allErrL
+%%]
 

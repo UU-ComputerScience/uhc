@@ -19,7 +19,7 @@ SEM Expr
   | Con         loc     .  pp       =   ppCon @nm
   | Let         loc     .  pp       =   "let"
                                         >#< (@decls.pp >-< @ppExtra)
-                                        >-< @errDeclsPP
+                                        >-< @errLetPP
                                         >-< "in" >#< @body.pp
                                         >-< @errBodyPP
   | App         loc     .  pp       =   @func.pp >#< @arg.pp
@@ -193,7 +193,7 @@ SEM TyExpr
 SEM PrExpr
   | Class       loc     .  pp       =   ppListSep "" "" " " (pp @nm : @tyExprs.ppL)
   | Lacks       loc     .  pp       =   @rowTyExpr.pp >|< "\\" >|< pp @nm
-  | Eq          loc     .  pp       =   pp @nm >|< "=" >|< @tyExpr.pp
+  | Equal       loc     .  pp       =   pp @nm >|< "=" >|< @tyExpr.pp
 
 SEM PrExprs
   | Nil         lhs     .  ppL      =   []
@@ -206,7 +206,9 @@ SEM Decl
   | Instance    loc     .  pp       =   "instance"  >|< maybe empty (\n -> " " >|< n >#< "=") @mbNm
                                                     >#< ppListSep "(" ")" ", " @ctxtPrExprs.ppL
                                                     >#< "=>" >#< @prExpr.pp
+                                                    >-< @errInstPP
                                                     >#< "where" >-< indent 2 @decls.pp
+                                                    >-< @errDeclsPP
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

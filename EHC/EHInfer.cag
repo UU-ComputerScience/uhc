@@ -465,8 +465,7 @@ ATTR AllDecl AllExpr AllCase [ prElimGam: PrElimGam | | ]
 SEM Expr
   | Let         decls       .   patPrElimGam        =   gamPushNew @lhs.prElimGam
                 loc         .   (lPrEGam,gPrEGam)   =   gamPop @decls.patPrElimGam
-                decls       .   prElimGam           =   @lPrEGam `gamPushGam` @lhs.prElimGam
-                body        .   prElimGam           =   @lPrEGam `gamPushGam` @gPrEGam
+                            .   prElimGam           =   @lPrEGam `gamPushGam` @lhs.prElimGam
 
 SEM AGItf
   | AGItf       loc         .   prElimGam           =   emptyGam

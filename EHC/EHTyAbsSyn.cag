@@ -95,7 +95,7 @@ DATA Pred
   | Lacks   ty              : Ty
             nm              : {HsName}
   | Class   ty              : Ty
-  | Eq      tvTy            : Ty
+  | Equal   tvTy            : Ty
             ty              : Ty
 %%]
 

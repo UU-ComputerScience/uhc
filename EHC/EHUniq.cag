@@ -109,16 +109,20 @@ SEM Expr
 %%]
 
 %%[9
+SEM Expr
+  | Let             (decls.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
+                                                                    :=  mkNewLevUID4    @lhs.gUniq
+
 SEM RowTyExpr
   | Var             (lhs.gUniq,loc.lUniq,loc.lUniq2)                =   mkNewLevUID2    @lhs.gUniq
 
 SEM PrExpr
-  | Eq              (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
+  | Equal           (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
 
 SEM Decl
   | Class           (ctxtPrExprs.gUniq,loc.lUniq,loc.lUniq2)        =   mkNewLevUID2    @lhs.gUniq
 
 SEM Decl
-  | Instance        (ctxtPrExprs.gUniq,loc.lUniq)                   =   mkNewLevUID     @lhs.gUniq
+  | Instance        (ctxtPrExprs.gUniq,loc.lUniq,loc.lUniq2)        =   mkNewLevUID2    @lhs.gUniq
 %%]
 

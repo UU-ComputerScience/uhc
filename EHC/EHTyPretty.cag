@@ -26,6 +26,14 @@ ppTy ty
                  (sem_TyAGItf (TyAGItf_AGItf ty))
                  Inh_TyAGItf
      in   pp_Syn_TyAGItf t
+
+instance PP Ty where
+  pp t = ppTy t
+%%]
+
+%%[9 hs
+instance PP Pred where
+  pp p = ppTy (Ty_Pred p)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -131,7 +139,7 @@ SEM Ty
 
 SEM Pred
   | Lacks           lhs     .   pp      =   @ty.pp >|< "\\" >|< @nm
-  | Eq              lhs     .   pp      =   @tvTy.pp >|< "=" >|< @ty.pp
+  | Equal           lhs     .   pp      =   @tvTy.pp >|< "=" >|< @ty.pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -152,7 +160,8 @@ SEM Ty
 
 %%[9
 SEM Pred
-  | Class Lacks Eq  loc     .   positionalFldNmL    =   positionalFldNames
+  | Class Lacks Equal
+  					loc     .   positionalFldNmL    =   positionalFldNames
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -231,7 +240,7 @@ SEM Ty
 
 %%[9
 SEM Pred
-  | Class Lacks Eq  
+  | Class Lacks Equal  
                 loc     .   parNeed             =   ParNotNeeded
                         .   parNeedL            =   []
 %%]

@@ -12,7 +12,7 @@
 %%[1 export(HsName(..), hsnWild, hsnArrow, hsnProd, hsnProdArity, hsnUnknown, hsnIsArrow, hsnIsProd, hsnInt, hsnChar)
 %%]
 
-%%[1 export(AssocL, hdAndTl)
+%%[1 export(AssocL, hdAndTl, ppAssocL)
 %%]
 
 %%[1 import(UU.Pretty, List) export(PP_DocL, ppListSep, ppListSepFill, ppAppTop, ppCon, ppCmt)
@@ -66,9 +66,6 @@
 %%[7 export(uidHNm)
 %%]
 
-%%[8 export(ppAssocL)
-%%]
-
 %%[8 export(hsnUndefined)
 %%]
 
@@ -76,6 +73,9 @@
 %%]
 
 %%[9 export(hsnOImpl,hsnCImpl)
+%%]
+
+%%[9 export(showPP)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -213,10 +213,10 @@ uidStart = UID [0]
 mkNewUID :: UID -> (UID,UID)
 mkNewUID   uid = (uidNext uid,uid)
 
-mkNewUIDL :: Int -> UID -> (UID,[UID]) -- assume sz > 0
+mkNewUIDL :: Int -> UID -> [UID] -- assume sz > 0
 mkNewUIDL sz uid
   =  let  l = take sz . iterate (\(nxt,uid) -> mkNewUID nxt) . mkNewUID $ uid
-     in   (fst (last l),map snd l)
+     in   map snd l
 
 instance PP UID where
   pp uid = text (show uid)
@@ -322,9 +322,9 @@ mkExtAppPP (funNm,funNmPP,funPPL) (argNm,argNmPP,argPPL,argPP)
      else (funNmPP,funPPL ++ [argPP])
 %%]
 
-%%[8
-ppAssocL :: (PP k,PP v) => AssocL k v -> PP_Doc
-ppAssocL = ppListSep "(" ")" "," . map (\(k,v) -> k >|< ":" >|< v)
+%%[9
+showPP :: PP a => a -> String
+showPP x = disp (pp x) 100 ""
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -462,6 +462,16 @@ cmdLineOpts
 
 %%[1.AssocL
 type AssocL k v = [(k,v)]
+%%]
+
+%%[1.ppAssocL
+ppAssocL :: (PP k, PP v) => AssocL k v -> PP_Doc
+ppAssocL al = ppListSepFill "[ " " ]" ", " (map (\(k,v) -> pp k >|< ":" >|< pp v) al)
+%%]
+
+%%[9.ppAssocL -1.ppAssocL
+ppAssocL :: (PP k, PP v) => AssocL k v -> PP_Doc
+ppAssocL al = pp_block "[" "]" "," (map (\(k,v) -> pp k >|< ":" >|< pp v) al)
 %%]
 
 %%[2
