@@ -574,15 +574,15 @@ WWW home page:
 %endif
 
 %if forESOP05
-In most languages arguments to functions are to be given explicitly in the program text.
+In almost all languages arguments to functions are to be given explicitly in the program text.
 There are however a few interesting exceptions to this rule.
 In Haskell functions take arguments which are either passed explicitly or implicitly.
-Probably the best known example of the latter is the class system in Haskell where
+An instance of the latter is the class system in Haskell where
 dictionaries are passed as evidence for class predicates.
 However, the construction as well as the passing of these dictionaries
 is invisible to the programmer.
 Unfortunately the approach taken here is that the language is a bit autistic
-in the sense that the programmer cannot provide some help if the built-in decision mechanism fails.
+in the sense that the programmer cannot provide any help if the built-in proof mechanism fails.
 In this paper we propose, in the context of Haskell, a mechanism that allows the programmer
 to explicitly pass
 implicit parameters.
@@ -593,8 +593,10 @@ We also describe how this extension can be implemented for Haskell.
 The implementation also gives us the additional bonus of partial type signatures,
 liberating the programmer from the obligation to specify either full signatures
 or not to specify a signature at all.
+%if False
 To our knowledge the implementation is the first to handle these features
 in combination with existentials and higher ranked polymorphic types.
+%endif
 %else
 Much has been written about type systems.
 Much less has been written about implementing type systems.
@@ -6726,16 +6728,16 @@ The Haskell class system originally introduced by both Wadler \cite{wadler88how-
 and Kaes \cite{kaes88parametric-overl} offers a powerful abstraction mechanism
 for dealing with overloading (or ad-hoc polymorphism).
 The basic idea is to restrict the polymorphism of a parameter by specifying
-that a predicate should be satisfied:
+that some predicates are to be satisfied when the function is called:
 
 \begin{code}
-f  ::  Eq a => a ->  a ->  Int
-f  =   \       x     y ->  if x == y then 3 else 4
+f  ::  Eq a =>  a ->  a ->  Int
+f  =   \        x     y ->  if x == y then 3 else 4
 \end{code}
 
 In this example the type signature for |f| specifies that any type |a| can be passed as an argument
 as long as it satisfies predicate |Eq a|.
-A predicate itself is introduced by a \IxAsDef{class declaration}:
+Such predicates are introduced by \IxAsDef{class declaration}s:
 
 \begin{code}
 class Eq a where
@@ -6746,9 +6748,10 @@ class Eq a where
 A class declaration also introduces functions (and values) which can only be used
 on a type |a| for which the predicate |Eq a| is satisfied.
 A class declaration alone is not sufficient, \IxAsDef{instance declarations} are needed
-to specify for which types a predicate is true.
-Because a class declaration also guarantees the existence of its associated functions,
-an instance declaration is also required to specify an implementation for those functions:
+to specify for which types the predicate holds.
+Because a class declaration also specifies the existence of its associated functions,
+an instance declaration is also required to provide an implementation for those functions,
+and hence prove their existence:
 
 \begin{code}
 instance Eq Int where
@@ -6772,17 +6775,17 @@ eqDictBool     = EqDict ...
 Inside a function the elements of the predicate's dictionaries
 are available, as if they were defined as global variables.
 A dictionary for the actual type is required as an additional argument
-to be able to invoke the type specific variant of the class functions.
-For example, the actual implementation of |f| is:
+in order to be able to invoke the type specific variant of the class functions.
+So the actual implementation of |f| is:
 
 \begin{code}
 f = \ ^^ dEq x y -> if (eqDictEq dEq) x y then 3 else 4
 \end{code}
 
-At the call site |f| must be passed the dictionary
-that corresponds to the actual type of the polymorphic argument the dictionary is related to.
+At the call site of the function |f| the dictionary
+that corresponds to the actual type of the polymorphic argument must be passed.
 Thus in our case the expression 
-|f True False| is internally represented as |f eqDictBool True False|.
+|f True False| can be seen as an abbreviation for the semantically more complete |f eqDictBool True False|.
 
 Haskell's class system has turned out to be theoretically sound \cite{jones94phd-qual-types}
 as well as flexibile enough to incorporate extensions \cite{jones93constr-class,jones00class-fundep}.
@@ -6791,7 +6794,7 @@ as well as its semantics \cite{hall96type-class-haskell,faxen02semantics-haskell
 Nevertheless, some observations with respect to its design and implementation can be made.
 
 First, to start with the issue we will deal with in this paper,
-the compiler determines which dictionary is passed for a predicate.
+the compiler determines which dictionary to pass for a predicate.
 This is both a blessing and a curse.
 A blessing because it silently solves a problem (i.e. overloading). And a curse
 because as a programmer we cannot easily override the choices made by the compiler.
@@ -6799,7 +6802,7 @@ because as a programmer we cannot easily override the choices made by the compil
 Second, class predicates are considered somewhat special in the sense that
 in a type signature predicates may only occur at the beginning, preceding the
 rest of the type in which no predicates may occur, forming what usually is called a type scheme.
-In this way predicates as seen from a programmers point of view loose some of its first-classness.
+In this way predicates, as seen from a programmers point of view, loose some of their first-classness.
 This is the price to be paid for keeping the type inferencing process decidable.
 
 We intend to remedy these limitations in this paper by allowing
@@ -6811,7 +6814,7 @@ We intend to remedy these limitations in this paper by allowing
 
 Some of these problems also have been addressed by Scheffczyk \cite{scheffczyk01mth-namedinst,kahl01named-instance}
 by giving names to dictionaries for later use.
-In \secRef{ehc09-others} we will discuss the differences between our and their approach.
+In \secRef{ehc09-others} we will discuss the differences between the two approaches.
 
 In the remainder of this paper we will first explore the use of implicit parameters further in
 \secRef{ehc09-implparam}.
@@ -6825,7 +6828,7 @@ The exploration of explicit implicit parameters will be presented in the context
 Haskell variant named EH (Essential Haskell)
 \cite{dijkstra04ehc-web,dijkstra04thag,dijkstra04thag-part1}.
 Meant as a platform for education and research, EH already offers advanced features
-like higher ranked types, existential types, partial type signatures and records.
+like higher ranked types, existential types, partial type signatures and records\footnote{In the current implementation not yet extensible}.
 Syntactic sugar has been kept to a minimum in order to ease experimentation with and understanding
 of the implementation.
 
@@ -6835,32 +6838,21 @@ After pointing out these features and
 other differences with Haskell
 we continue with exploring the relevant aspects in greater depth.
 The following is an EH program including the standard Haskell function |nub| which removes duplicate
-elements from a list:
+elements from a list.
+Notice that a separate |nubBy| is no longer needed:
 
 \begin{code}
 %%9srcfile<test/9-eq-nub.eh%%>
 \end{code}
 
-In general, we designed EH to be as compatible as possible with Haskell,
-as simple as possible and to be an extension of Haskell.
+In general, we designed EH to be as upwards compatible as possible with Haskell and
+as simple as possible.
 By definition these design constraints are contradictory.
 We point out some of the differences; each item corresponds to the commented number in the example.
 
 \begin{enumerate}
 \item
-An EH program is an expression instead of a module.
-Declarations of all sorts (value bindings, type signatures, data types, etc.) are located in a |let|-expression.
-For all declarations in a |let|-expression mutual recursion is allowed, thereby automatically constituting
-a Haskell binding group.
-As a consequence no dependency analysis is performed; the order of declarations is defined by the sequencing of |let .. in let .. in ...|.
-\item
-Programs are standalone in the sense that no Prelude or any other library module is available.
-Though a subset of the foreign function interface \cite{chakravarty03hask-ffi}
-is available, bindings with underlying primitives are omitted, hence the nonsensical implementation of |instance Eq Int|
-and inclusion of datatypes and
-functions normally found in library modules.
-\item
-EH does not support operator identifiers like @==@. Plain alphanumeric identifiers are used instead.
+We shortly mention the absence of features like a module system, a Prelude and infix operators.
 \item
 The notation |<:| binds an identifier, here |dEqInt1|, to the dictionary representing the instance.
 The record |dEqInt1| is available as a normal value.
@@ -6870,7 +6862,7 @@ An explicitly passed parameter is syntactically denoted by an expression inside
 The predicate after the |<:| explicitly states the predicate for which the expression is an 
 instance dictionary (or \IxAsDef{evidence}).
 The expression in the example itself is formed by updating a field of an already existing record.
-Record notation is based on Jones proposal \cite{jones99lightweight-ext-rec} with the simplification
+Record notation is based on Jones (et. al.) proposal \cite{jones99lightweight-ext-rec} with the simplification
 that tuples and records are merged into one parenthesis delimited notation.
 In the example |(r || l := e)| means update record |r| at field with label |l| with value |e|.
 \end{enumerate}
@@ -6899,8 +6891,8 @@ If quantification over a type variable can take place, the quantifier is placed 
 type variable in the type signature.
 This is also done for a predicate referring to a type variable.
 The idea is to instantiate a quantified type variable or pass an implicit parameter
-corresponding to a predicate as late as possible, later being defined as the
-order in which parameters are passed.
+corresponding to a predicate as late as possible, where later is defined as the
+order in which arguments are passed.
 In this way polymorphism can be retained as long as possible by the type inferencer.
 
 The type inferred for |f| by Hugs also shows that the set of required predicates for |f|
@@ -6928,11 +6920,12 @@ this is specified by swapping the two predicates:
 f :: forall a b . (Eq a, Eq b) => a -> a -> b -> b -> (Bool,Bool)
 \end{code}
 
+%if False
 In EH and its implementation this aspect is stressed by interpreting the notation
 |(Eq a, Eq b) =>| as syntactic sugar for a more explicit notation of implicit parameters:
 
 \begin{code}
-f :: forall a b . (# Eq a #) -> (# Eq b #) -> a -> a -> b -> b -> (Bool,Bool)
+f :: forall a . (# Eq a #) -> forall b . (# Eq b #) -> a -> a -> b -> b -> (Bool,Bool)
 \end{code}
 
 This notation more closely corresponds to the nature of its implementation,
@@ -6941,20 +6934,22 @@ The use of |->| instead of |=>| reflects this interpretation.
 For the remainder of this paper we will not use this notation for types;
 only value expressions will use |(#| and |#)| to denote an explicitly passed
 implicit parameter.
+%endif
 
+\paragraph{Partial type signatures.}
 Explicitly specifying type signatures can be a burden for the programmer,
 especially when
 types become large and only a specific part of the type needs to be specified
 explicitly. EH therefore allows partial type signatures. For example,
 if we only want to specify the aforementioned restriction of the third and fourth parameter,
-the following signature is be sufficient:
+the following signature is sufficient:
 
 \begin{code}
 f :: forall    b . (Eq b,  ...   ) => ...  -> ...  -> b -> b -> ...
 f :: forall a  b . (Eq b,  Eq a  ) => a    -> a    -> b -> b -> (Bool,Bool) -- INFERRED
 \end{code}
 
-Or, if instead the predicate for the first and second parameter needs
+Or, if instead the predicate associated with the first and second parameter needs
 to have a fixed position:
 
 \begin{code}
@@ -7007,11 +7002,11 @@ it concerns a single type variable since the type variable may be bound to a typ
 contains predicates.
 \end{itemize}
 
-We make use of the fact that predicates also stand for actual values in the implementation when explicitly
+We make use of the fact that predicate instances also stand for actual values in the implementation when explicitly
 passing an implicit parameter.
 A class declaration introduces a record type for the dictionary
 corresponding to the predicate introduced by the class declaration.
-For example, the class declaration for |Eq| introduces record type |(eq :: a -> a -> Bool)|
+For example, the class declaration for |Eq| introduces the record type |(eq :: a -> a -> Bool)|
 (record with one field with label |eq|) as the type
 of the dictionary to be passed when an implicit parameter for predicate |Eq a| is required.
 Now, instead of letting the compiler determine which implicit parameter to pass we construct
@@ -7027,7 +7022,7 @@ The notation |(# e <: p #)| suggests a combination of ``is of type'' and ``is ev
 Here ``is of type'' means that the dictionary |e| must be of the record type introduced by the class declaration
 for the predicate |p|.
 The phrase ``is evidence for'' means that the dictionary |e| is used instead of
-the proof evidence for an implicit parameter of a function (|f|).
+the proof evidence for an implicit parameter of a function |f|.
 By default, this value is computed by the predicate proving machinery of the compiler
 \cite{jones94phd-qual-types}.
 
@@ -7042,14 +7037,14 @@ example in the presence of overlapping instances:
 The dictionaries computed as a result of an instance declaration can be given a name (denoted by |<:|)
 for later use.
 In the example the overlapping instance error is avoided by letting the programmer instead
-of the compiler make the choice by specifying explicitly which dictionaries should be passed to
+of the compiler make the choice by specifying explicitly which dictionaries to pass to
 the call |f 3 4 5 6|.
 
 Overlapping instances of course can also be avoided by not introducing those overlapping instances in the first place.
 However, this conflicts with our goal of allowing the programmer to use different instances at different places
 in a program.
 This problem can be overcome by letting only one instance participate in the predicate proving machinery of the
-compiler and inhibit this participation for the remaining instances:
+compiler and inhibit participation for the remaining instances:
 
 \begin{code}
 instance dEqInt2 :: Eq Int where
@@ -7058,11 +7053,12 @@ instance dEqInt2 :: Eq Int where
 
 Instead of introducing the named dictionary via |<:|, |::| is used.
 The naming of a dictionary by means of |<:| actually does two things.
-It binds the name to the dictionary and it tells the compiler to use this dictionary for
-its proof process.
+It binds the name to the dictionary and it tells the compiler to use this dictionary for instances of
+|Eq Int|
+for its proof process.
 The notation |::| tells the compiler to only bind the name and not use it for proving predicates.
 However, if one at a later point wants to introduce the dictionary for use by the proving machinery
-of the compiler this can be done by:
+of the compiler this can be done by specifying:
 
 \begin{code}
 instance dEqInt2 <: Eq Int
@@ -7084,10 +7080,11 @@ in   let  g  = \x y -> eq x y
 
 The value for |v1| is computed with |dEqInt1| as evidence for |Eq Int|,
 whereas |v2| is computed with |dEqInt2| as evidence.
-Instances for use by the compiler are introduced in a scoped fashion,
+Instances for use by the compiler are introduced in a scoped fashion:
 the instances introduced in an inner enclosing scope taking precedence over the ones introduced
 in an outer scope.
 
+%if False
 Explicitly passing a dictionary also opens up the possibility of getting rid of Haskell library functions.
 This is demonstrated by our introductory |nub| example.
 Haskell implements |nub| in terms of |nubBy|:
@@ -7111,6 +7108,7 @@ instance dictionary for |Eq Int| is created.
 If that were the case, |ne| would use |eq| with |dEqInt|, not with the newly adapted variant
 of |dEqInt|.
 We will discuss this further in the following section which deals with some implementation aspects.
+%endif
 
 \subsection{Implementation}
 \label{ehc09-implem}
@@ -7145,7 +7143,7 @@ is applied to an implicit parameter.
 The typing \ruleRef{e-pred9A} states that if an expression |e| accepts
 an implicit parameter corresponding to predicate |pi|
 which we can prove to be true, we can apply the computed value |Transle| of |e|
-to the evidence |Translp| for |pi|.
+to the evidence |Translp| for |pi| to obtain the result of the compilation.
 
 \rulerCmdUse{rules.expr9A}
 
@@ -7153,11 +7151,11 @@ The typing judgement for expressions itself has a 'type' too,
 shown in the top box of \figRef{rules.expr9A},
 in the sense that it is a structure with elements of a certain type.
 Its usual reading goes like this: given contextual information |Gamma| it can be proven (|:-|) that
-term |e| has (:) type |sigma| and some additional (|~>|) results, here the translation |Transl| to code where passing
+term |e| has (:) type |sigma| and some additional (|~>|) results, which in our case is the code |Transl| in which passing
 of implicit parameters is made explicit.
 
-The rule uses types described by the following type language consisting of basic types, type variables, records,
-functions (both normal and taking an implicit parameter), universally quantified types and predicates respectively:
+The rule uses types described by the type language consisting of basic types, type variables, records,
+functions (taking normal and implicit parameters), universally quantified types and predicates respectively:
 
 \begin{code}
 sigma  =  Int | Char | tvar | (l1 :: sigma1,...,ln :: sigman) | sigma -> sigma | pi -> sigma | forall alpha . sigma
@@ -7168,12 +7166,11 @@ The context, or environment |Gamma| is an ordered list of bindings which either
 bind value identifiers to types or predicates to a translation (a dictionary) and the type of the translation:
 
 \begin{code}
-Gamma  =  ident :-> sigma |  pi :> Transl : sigma
+bind   =  ident :-> sigma |  pi :> Transl : sigma
+Gamma  =  Vec(bind)
 \end{code}
 
 For convenience, the environment |Gamma| holds bindings for value identifiers as well as predicates.
-We allow ourselves the omission of
-a vector notation if this is evident from the context.
 Concatenation is denoted with a comma ','.
 Identifiers |ident| can be lowercase |identv| for values as well as uppercase |identc| of type, class names and data constructors,
 thereby following the Haskell convention.
@@ -7192,16 +7189,15 @@ Though the conciseness of the given rule suggests that its implementation should
 pose much of a problem, the opposite is true.
 In general, typing rules give us equations which should hold but do not tell us
 how to find out if and under what conditions those rules hold.
-Algorithmic variants of typing rules usually are closely connected to the syntactical
+Algorithmic variants of typing rules usually are closely connected to the syntactic
 structure of a source language.
 It is then at least clear which rule applies for a particular language construct.
 Algorithmic variants of typing rules usually also incorporate additional information which
 is passed from and to the premises and conclusions of a rule.
-This additional information corresponds to information passing up and down a syntax tree,
+This additional information corresponds to information being passed up and down a syntax tree,
 or in terms of an attribute grammar, this information is encoded as synthesized and inherited attributes.
-For the implementation of explicit implicit parameters this is also the case,
-or even worse,
-in particular due to a combination of several factors:
+Finding a suitable algorithm for explicit implicit parameters
+is even further complicated due to a combination of several factors:
 
 \begin{itemize}
 \item
@@ -7219,8 +7215,8 @@ This information usually only becomes available after generalization of the infe
 \item
 These problems are usually circumvented by limiting the type language for types used during
 inferencing to those types which do not contain predicates.
-By effectively stripping a type from both its predicates and quantifiers standard Hindley-Milner type
-inference then still is possible.
+By effectively stripping a type from both its predicates and quantifiers the standard Hindley-Milner type
+inference becomes is possible.
 However, we allow predicated as well as quantified types to participate in type inferencing.
 Consequently, a predicate as well as a quantifier can be present in any type encountered during
 type inferencing.
@@ -7229,7 +7225,7 @@ type inferencing.
 So, the bad news is that we do not know when an implicit parameter needs to be passed,
 but the good news is that if we make this lack of knowledge explicit we can still figure out
 if and where implicit parameters need to be passed.
-This is not a new idea because type variables are usually used to refer to
+This is not a new idea, because type variables are usually used to refer to
 a particular type about which nothing is known.
 In a later stage of a type inferencing algorithm this type variable is
 replaced by more accurate knowledge, if any.
@@ -7252,12 +7248,13 @@ The implementation of this rules maintains the invariant that |e| has a type |si
 which is a subtype of |sigmak|, |sigma| is said to be subsumed by |sigmak|.
 This also involves coercions but in this paper we will not concern us with that additional aspect.
 \item
-An explicit parameter can be expected anywhere, this is now made explicit by stating that
+An explicit parameter can be expected anywhere; this is made explicit by stating that
 the known type of |e| can have an additional sequence of implicit parameters in front.
 This is expressed by letting the expected type in the premise be |pvar -> sigmak|.
 \end{itemize}
 
-The idea is that this implicits variable makes explicit that we can expect a sequence of |>= 0| implicits parameters
+The idea is that this implicits variable makes explicit that we can expect a (possibly empty)
+sequence of implicits parameters
 and at the same time gives an identity to this sequence.
 It requires the type language to be extended by an implicits variable |pvar| (or `pivar'),
 also corresponding to the dots "..." in the source language for predicates:
@@ -7272,10 +7269,10 @@ and holds the inferred type.
 If a fully specified expected type |sigmak| is passed downwards, |sigma| will be equal to this type.
 
 
-This typing \ruleRef{e-pred9B} still does not give much of a help as to when it should be applied.
+This typing \ruleRef{e-pred9B} still is not much of a help as to when it should be applied.
 However, as we only have to deal with a limited number of language constructs,
 we can use case analysis on the source language constructs.
-In this paper we only look at function application, for which the relevant rules are shown
+In this paper we only deal with function application, for which the relevant rules are shown
 in \figRef{rules.expr9.C}.
 These rules also use an additional parameter |fiopt| influencing 
 certain aspects of subsumption |<=|.
@@ -7291,8 +7288,8 @@ Cnstr  =  tvar :-> sigma | pvar :-> pi , pvar | pvar :-> pempty
 The mapping from type variables |tvar| constitutes the usual substitution for type variables.
 The second alternative maps an implicit variable to a list of predicates.
 
-From bottom to top, this rule reads as follows.
-To keep matters simple we ignore the handling of constraints and the use of |fiopt|.
+From bottom to top, the first rule in \figRef{rules.expr9.C} reads as follows.
+To keep matters simple we ignore the handling of constraints |Cnstr| and the use of |fiopt|.
 The type for the application itself is expected to be |sigmak|,
 which in general will have the structure |pvark -> tvark|.
 This structure is enforced and checked by the subsumption check described
@@ -7321,10 +7318,10 @@ The implicit parameters are passed before the argument itself.
 Even though the rule for implicitly passing an implicit parameter already provides a fair amount of detail,
 some issues remain hidden.
 For example, the typing judgement for |e1| gives a set of predicates |pia| for which the corresponding
-evidence is passed as implicit parameters.
+evidence is passed by implicit arguments.
 The rule suggests that this information is readily available in an actual implementation of the rule.
-However, assuming |e1| is a |let| bound function for which the type is being inferred,
-this information will become available
+However, assuming |e1| is a |let| bound function for which the type is currently being inferred,
+this information will only become available
 when the bindings in a |let| expression are generalized \cite{jones99thih},
 higher in the corresponding abstract syntax tree.
 Only then the presence and positioning of predicates in the type of |e1| can be determined.
@@ -7373,7 +7370,7 @@ binding.
 \end{itemize}
 
 It is yet unclear which solutions is the best one,
-but we notice that whatever approach is taken the programmer has all the means available to
+but we notice that whatever approach is taken, the programmer has all the means available to
 express his differing intentions.
 
 
@@ -7412,12 +7409,14 @@ the name space occupied by normal values.
 This is used to implement functors as available in ML \cite{leroy94manif-ty-mod,leroy95appl-func-mod}
 and as described by Jones \cite{jones96paramsig-mod} for Haskell.
 Our approach is solely based on normal values already available.
+%if False
 In Scheffczyk work
 named instances populate a module name space.
 Vice versa, modules can be used as implicit parameters.
 Our approach does not introduce a new name space, but uses normal values.
 These values are explicitly lifted to the `evidence for predicate' domain of the compiler.
 No special syntax is required to perform computations on these values.
+%endif
 \item
 Our syntax is less concise than the syntax used by Scheffczyk.
 This is probably difficult to repair because of the additional notation
@@ -7442,7 +7441,7 @@ of partially specified types, existentials and higher ranked polymorphic types.
 Allowing explicit parameterization for implicit parameters gives a programmer an
 additional mechanism for reusing existing functions.
 It also makes explicit what otherwise remains hidden inside the bowels of a compiler.
-We feel that this a 'good thing', it should be possible to override decisions made by the compiler.
+We feel that this a 'good thing': it should be possible to override decisions made by the compiler.
 
 The approach taken in this paper still leaves much to be sorted out.
 In particular the relation with functional dependencies of multiparameter type classes,
