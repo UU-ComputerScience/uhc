@@ -257,7 +257,8 @@ SEM FuncDeps
 SEM Expr
   | Let         loc     .  info     :=  [ mkInfo1 "gathSubsPredL" (ppCommaList @gathSubsPredL)
                                         , mkInfo1 "cbindL" (ppAssocL . map (\(CBind_Bind n v) -> (n,v)) $ @cbindL)
-                                        , mkInfo1 "csubst" (ppAssocL . fmToList $ @csubst)
+                                        , mkInfo1 "lhs.cSubst" (ppAssocL . fmToList $ @lhs.cSubst)
+                                        , mkInfo1 "cSubst" (ppAssocL . fmToList $ @cSubst)
                                         , mkInfo1 "remPrOccL" (ppCommaList @remPrOccL)
                                         , mkInfo1 "tqoGam" (pp @tqoGam)
                                         ]

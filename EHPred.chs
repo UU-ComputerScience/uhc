@@ -128,13 +128,13 @@ prvgCode prL (ProvenGraph i2n p2i)
             . iterate
                 (\(s,(asS,asB))
                     -> let asS' = concat . map (\(i,n) -> zip (maybe [] id . lookupFM i2i $ i) (repeat n)) $ asS
-                           s' = s `cAppSubst` assocLToCSubst asS'
+                           s' = s `cAppSubst` assocLCExprToCSubst asS'
                        in  (s',partition canAsSubst (s' `cAppSubst` asB))
                 )
             $ (emptyCSubst,partition canAsSubst (map (\(i,ProvenAnd _ _ _ e) -> (i,e)) provenL))
           r = map fst argL
-          m1 = provenAsCSubst `cAppSubst` assocLToCSubst [ (i,CExpr_Var (uidHNm i)) | (i,_) <- provenForBind ]
-          m2 = assocLToCSubst . concat . map (\(_,uidL@(uid:_)) -> zip uidL (repeat (m1 `cAppSubst` CExpr_Hole uid))) $ p2iL
+          m1 = provenAsCSubst `cAppSubst` assocLCExprToCSubst [ (i,CExpr_Var (uidHNm i)) | (i,_) <- provenForBind ]
+          m2 = assocLCExprToCSubst . concat . map (\(_,uidL@(uid:_)) -> zip uidL (repeat (m1 `cAppSubst` CExpr_Hole uid))) $ p2iL
           b = map (\(i,ev) -> CBind_Bind (uidHNm i) (m2 `cAppSubst` ev)) provenForBind
           rem = concat [ uidL | (_,uidL) <- p2iL, any (`elem` r) uidL ]
      in   (b,m2,mkSet rem)

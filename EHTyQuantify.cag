@@ -428,7 +428,7 @@ SEM Ty
 %%[9 hs
 prOccLImpls :: Maybe ImplsVarId -> [PredOcc] -> AssocL ImplsVarId Impls
 prOccLImpls mbI prL
-  = maybe [] (\i -> [(i,foldr (\p im -> Impls_Cons (poId p) (poPr p) im) Impls_Nil prL)]) mbI
+  = maybe [] (\i -> [(i,foldr (\p im -> Impls_Cons (poId p) (poPr p) (poId p) im) Impls_Nil prL)]) mbI
 %%]
 
 %%[9
@@ -443,14 +443,3 @@ SEM Ty
   | Var         lhs         .   prImpls         =   prOccLImpls @lhs.mbPrLoc @insHerePrL ++ @lhs.prImpls
 %%]
 
-ATTR TyAGItf [ | | prImpls: {AssocL ImplsVarId Impls} ]
-ATTR AllTy [ | prImpls: {AssocL ImplsVarId Impls} | ]
-
-SEM TyAGItf
-  | AGItf       ty          .   prImpls         =   []
-
-SEM Ty
-  | App         lhs         .   prImpls         =   maybe id (const (tr "X" (pp @self))) @lhs.mbPrLoc $ (prOccLImpls @lhs.mbPrLoc @insHerePrL ++ @arg.prImpls)
-  | Var         lhs         .   prImpls         =   maybe id (const (tr "Y" (pp @self))) @lhs.mbPrLoc $ (prOccLImpls @lhs.mbPrLoc @insHerePrL ++ @lhs.prImpls)
-
-ATTR AllTy [ | | self: SELF ]

@@ -9,7 +9,7 @@
 %%% Haskell importable interface to Code's Java gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(UU.Pretty,EHCommon,EHCode) export(ppCModule)
+%%[8 hs import(UU.Pretty,EHCommon,EHTy,EHCode) export(ppCModule)
 %%]
 
 %%[8.WRAPPER import(EHCodeAbsSyn)
@@ -98,6 +98,8 @@ SEM CPatBindL
 SEM CExpr
   | Hole        loc         .   pp          =   "<" >|< pp @uid >|< ">"
   | CoeArg      loc         .   pp          =   pp "<_>"
+  | ImplsApp    loc         .   pp          =   ppDef @func.pp ("<" >|< pp @uid >|< ">")
+  | ImplsLam    loc         .   pp          =   ppDef ("\\" >|< "<" >|< pp @uid >|< ">") ("->" >#< @body.pp)
 %%]
 
 

@@ -42,7 +42,7 @@
 %%[9 hs export(tyRecExts,tyAppFunConNm,tyArrowArity)
 %%]
 
-%%[9 hs export(Impls(..),ImplsVarId,mkImplsVar,implsPredsTail)
+%%[9 hs export(tyImpls,Impls(..),ImplsVarId,mkImplsVar,implsPredsTail)
 %%]
 
 %%[9 hs export(PredOccId,PredOcc(..))
@@ -415,10 +415,13 @@ tyPredNm t
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
+tyImpls :: Ty -> Impls
+tyImpls (Ty_Impls i) = i
+
 implsPredsTail :: Impls -> ([PredOcc],Maybe ImplsVarId)
-implsPredsTail (Impls_Cons v p t)  =  let  (p',mi) = implsPredsTail t
-                                      in   (PredOcc p v : p',mi)
-implsPredsTail (Impls_Tail v    )  =  ([],Just v)
-implsPredsTail (Impls_Nil       )  =  ([],Nothing)
+implsPredsTail (Impls_Cons v p pv t)  =  let  (p',mi) = implsPredsTail t
+                                         in   (PredOcc p pv : p',mi)
+implsPredsTail (Impls_Tail v       )  =  ([],Just v)
+implsPredsTail (Impls_Nil          )  =  ([],Nothing)
 %%]
 

@@ -170,7 +170,7 @@ arrowAppSpineInfoL
                          n = uidHNm u1
                          l = mkCoe (\e ->  CExpr_Lam n e)
                          r = mkCoe (\e ->  CExpr_App e
-                                             (coeWeave (foCSubst afo) (foLCoeL ffo) (foRCoeL ffo)
+                                             (coeWipeWeave emptyCnstr (foCSubst afo) (foLCoeL ffo) (foRCoeL ffo)
                                                `coeEvalOn` CExpr_Var n)
                                    )
                     in   afo  { foRCoeL = l : foRCoeL afo, foLCoeL = r : foLCoeL afo
@@ -221,10 +221,10 @@ appSpineGam =  assocLToGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-foAppCoe :: FIOut -> CSubst -> CExpr -> CExpr
-foAppCoe fo cs ce
+foAppCoe :: FIOut -> Cnstr -> CSubst -> CExpr -> CExpr
+foAppCoe fo c cs ce
   =  let  s = cs `cAppSubst` foCSubst fo
-     in   cAppSubst s (coeWeave s (foLCoeL fo) (foRCoeL fo) `coeEvalOn` ce)
+     in   cAppSubst s (coeWipeWeave c s (foLCoeL fo) (foRCoeL fo) `coeEvalOn` ce)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -497,14 +497,12 @@ fitsIn opts env uniq ty1 ty2
             foUpdTy  t   fo = fo {foTy = t}
             foUpdCnstr c fo = fo {foCnstr = c |=> foCnstr fo}
             foUpdCSubst s fo = fo {foCSubst = s `cAppSubst` foCSubst fo}
-            foUpdImplExpl iv im tpr fo
+            foUpdImplExpl iv im tpr lCoe rCoe fo
                             = foUpdCnstr (iv `cnstrImplsUnit` (foCnstr fo |=> im))
                             . foUpdTy ([foCnstr fo |=> tpr] `mkTyArrow` foTy fo)
-                            . foUpdLRCoe coeId coeId
+                            . foUpdLRCoe lCoe rCoe
                             $ fo
-            mkLCoe bL eL = mkCoe (\e -> bL `mkCExprLetRec` (e `mkCExprApp` eL))
-            mkRCoe n = mkCoe (\e -> n `CExpr_Lam` e)
-            mkLRCoe n bL eL = (mkLCoe bL eL,mkRCoe n)
+                            where n = uidHNm iv
 %%]
 
 %%[4.fitsIn.Base
@@ -573,15 +571,17 @@ fitsIn opts env uniq ty1 ty2
                        fi2              = fi {fiUniq = u'}
                        mbfp             = fp tpr1 tpr2
                        fp tpr1@(Ty_Pred pr1)            (Ty_Impls (Impls_Tail iv2))
-                            =  Just (foUpdImplExpl iv2 (Impls_Cons iv2 pr1 im2) tpr1 fo)
+                            =  Just (foUpdImplExpl iv2 (Impls_Cons iv2 pr1 u2 im2) tpr1 (mkAppCoe [] [CExpr_Var n]) (mkLamCoe n) fo)
                             where  im2   = Impls_Tail u1
+                                   n     = uidHNm u2
                                    fo    = f fi2 tr1 ([Ty_Impls im2] `mkTyArrow` tr2)
                        fp (Ty_Impls (Impls_Tail iv1))   tpr2@(Ty_Pred pr2)
-                            =  Just (foUpdImplExpl iv1 (Impls_Cons iv1 pr2 im1) tpr2 fo)
+                            =  Just (foUpdImplExpl iv1 (Impls_Cons iv1 pr2 u2 im1) tpr2 (mkAppCoe [] [CExpr_Var n]) (mkLamCoe n) fo)
                             where  im1   = Impls_Tail u1
+                                   n     = uidHNm u2
                                    fo    = f fi2 ([Ty_Impls im1] `mkTyArrow` tr1) tr2
                        fp (Ty_Impls (Impls_Tail iv1))   tpr2@(Ty_Impls im2@(Impls_Tail iv2))
-                            =  Just (foUpdImplExpl iv1 im2 tpr2 (f fi2 tr1 tr2))
+                            =  Just (foUpdImplExpl iv1 im2 tpr2 (CoeImplApp iv2) (CoeImplLam iv2) (f fi2 tr1 tr2))
                        fp _                             _
                             =  Nothing
             f fi  t1
@@ -595,14 +595,14 @@ fitsIn opts env uniq ty1 ty2
                        fSub pr2n pr2 tr2
                             =  let  fo    = f (fiAddPr pr2n tpr2 fi2) t1 tr2
                                     pr2s  = foCnstr fo |=> pr2
-                               in   (fo,mkRCoe pr2n)
+                               in   (fo,mkLamCoe pr2n)
                        fp (Ty_Impls (Impls_Nil))
                             =  Just (f fi2 t1 tr2)
                        fp (Ty_Impls (Impls_Tail iv2))
                             =  Just (foUpdCnstr (iv2 `cnstrImplsUnit` Impls_Nil) (f fi2 t1 tr2))
-                       fp (Ty_Impls (Impls_Cons iv2 pr2 im2))
+                       fp (Ty_Impls (Impls_Cons iv2 pr2 pv2 im2))
                             =  Just (foUpdRCoe rCoe . foUpdTy (mkTy pr2 fo) $ fo)
-                            where (fo,rCoe) = fSub (uidHNm iv2) pr2 ([Ty_Impls im2] `mkTyArrow` tr2)
+                            where (fo,rCoe) = fSub (uidHNm pv2) pr2 ([Ty_Impls im2] `mkTyArrow` tr2)
                        fp (Ty_Pred pr2)
                             =  Just (foUpdRCoe rCoe . foUpdTy (mkTy pr2 fo) $ fo)
                             where (fo,rCoe) = fSub (uidHNm u1) pr2 tr2
@@ -614,21 +614,21 @@ fitsIn opts env uniq ty1 ty2
                 where  (u',u1,u2,u3)    = mkNewLevUID3 (fiUniq fi)
                        fi2              = fi {fiUniq = u'}
                        mbfp             = fp tpr1
-                       fSub pr1 tr1
+                       fSub pr1 pv1 tr1
                             =  let  fo    = f fi2 tr1 t2
                                     fs    = foCnstr fo
-                                    (cbindL,csubst,remPrOccL,evidL) = prfPreds u3 (fiEnv (fs |=> fi2)) [PredOcc (fs |=> pr1) u2]
-                               in   (fo,mkLCoe cbindL evidL,csubst,remPrOccL)
+                                    (cbindL,csubst,remPrOccL,evidL) = prfPreds u3 (fiEnv (fs |=> fi2)) [PredOcc (fs |=> pr1) pv1]
+                               in   (fo,mkAppCoe cbindL evidL,csubst,remPrOccL)
                        fp (Ty_Impls (Impls_Nil))
                             =  Just (f fi2 tr1 t2)
                        fp (Ty_Impls (Impls_Tail iv1))
                             =  Just (foUpdCnstr (iv1 `cnstrImplsUnit` Impls_Nil) (f fi2 tr1 t2))
-                       fp (Ty_Impls (Impls_Cons _ pr1 _))
+                       fp (Ty_Impls (Impls_Cons _ pr1 pv1 _))
                             =  Just (foUpdPrL remPrOccL . foUpdLCoe lCoe . foUpdCSubst csubst $ fo)
-                            where (fo,lCoe,csubst,remPrOccL) = fSub pr1 tr1
+                            where (fo,lCoe,csubst,remPrOccL) = fSub pr1 pv1 tr1
                        fp (Ty_Pred pr1)
                             =  Just (foUpdPrL remPrOccL . foUpdLCoe lCoe . foUpdCSubst csubst $ fo)
-                            where (fo,lCoe,csubst,remPrOccL) = fSub pr1 tr1
+                            where (fo,lCoe,csubst,remPrOccL) = fSub pr1 u1 tr1
                        fp _ =  Nothing
 %%]
 
