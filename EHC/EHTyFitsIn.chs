@@ -569,9 +569,9 @@ fitsIn opts env uniq ty1 ty2
                   t2@(Ty_App (Ty_App (Ty_Con c2) tpr2) tr2)
                     | hsnIsArrow c1 && c1 == c2 && not (fioPredAsTy (fiFIOpts fi)) && isJust mbfp
                 = fromJust mbfp
-                where  (u',u1,u2,u3) = mkNewLevUID3 (fiUniq fi)
-                       fi2 = fi {fiUniq = u'}
-                       mbfp = fp tpr1 tpr2
+                where  (u',u1,u2,u3)    = mkNewLevUID3 (fiUniq fi)
+                       fi2              = fi {fiUniq = u'}
+                       mbfp             = fp tpr1 tpr2
                        fp tpr1@(Ty_Pred pr1)            (Ty_Impls (Impls_Tail iv2))
                             =  Just (foUpdImplExpl iv2 (Impls_Cons iv2 pr1 im2) tpr1 fo)
                             where  im2   = Impls_Tail u1
@@ -588,40 +588,47 @@ fitsIn opts env uniq ty1 ty2
                   t2@(Ty_App (Ty_App (Ty_Con c2) tpr2) tr2)
                     | hsnIsArrow c2 && not (fioPredAsTy (fiFIOpts fi)) && isJust mbfp
                 = fromJust mbfp
-                where  (u',u1,u2,u3) = mkNewLevUID3 (fiUniq fi)
-                       fi2 = fi {fiUniq = u'}
-                       mbfp = fp tpr2
+                where  (u',u1,u2,u3)    = mkNewLevUID3 (fiUniq fi)
+                       fi2              = fi {fiUniq = u'}
+                       mbfp             = fp tpr2
+                       mkTy pr2 fo      = [Ty_Pred (foCnstr fo |=> pr2)] `mkTyArrow` foTy fo
                        fSub pr2n pr2 tr2
-                         = let  fo    = f (fiAddPr pr2n tpr2 fi2) t1 tr2
-                                pr2s  = foCnstr fo |=> pr2
-                           in   (fo,mkRCoe pr2n)
+                            =  let  fo    = f (fiAddPr pr2n tpr2 fi2) t1 tr2
+                                    pr2s  = foCnstr fo |=> pr2
+                               in   (fo,mkRCoe pr2n)
                        fp (Ty_Impls (Impls_Nil))
                             =  Just (f fi2 t1 tr2)
                        fp (Ty_Impls (Impls_Tail iv2))
                             =  Just (foUpdCnstr (iv2 `cnstrImplsUnit` Impls_Nil) (f fi2 t1 tr2))
                        fp (Ty_Impls (Impls_Cons iv2 pr2 im2))
-                            =  Just (foUpdRCoe rCoe . foUpdTy ([Ty_Pred (foCnstr fo |=> pr2)] `mkTyArrow` foTy fo) $ fo)
-                            where  (fo,rCoe) = fSub (uidHNm iv2) pr2 ([Ty_Impls im2] `mkTyArrow` tr2)
+                            =  Just (foUpdRCoe rCoe . foUpdTy (mkTy pr2 fo) $ fo)
+                            where (fo,rCoe) = fSub (uidHNm iv2) pr2 ([Ty_Impls im2] `mkTyArrow` tr2)
                        fp (Ty_Pred pr2)
-                            =  Just (foUpdRCoe rCoe . foUpdTy ([Ty_Pred (foCnstr fo |=> pr2)] `mkTyArrow` foTy fo) $ fo)
-                            where  (fo,rCoe) = fSub (uidHNm u1) pr2 tr2
+                            =  Just (foUpdRCoe rCoe . foUpdTy (mkTy pr2 fo) $ fo)
+                            where (fo,rCoe) = fSub (uidHNm u1) pr2 tr2
                        fp _ =  Nothing
             f fi  t1@(Ty_App (Ty_App (Ty_Con c1) tpr1) tr1)
                   t2
                     | hsnIsArrow c1 && not (fioPredAsTy (fiFIOpts fi)) && isJust mbfp
                 = fromJust mbfp
-                where  (u',u1,u2,u3) = mkNewLevUID3 (fiUniq fi)
-                       fi2 = fi {fiUniq = u'}
-                       mbfp = fp tpr1
+                where  (u',u1,u2,u3)    = mkNewLevUID3 (fiUniq fi)
+                       fi2              = fi {fiUniq = u'}
+                       mbfp             = fp tpr1
+                       fSub pr1 tr1
+                            =  let  fo    = f fi2 tr1 t2
+                                    fs    = foCnstr fo
+                                    (cbindL,csubst,remPrOccL,evidL) = prfPreds u3 (fiEnv (fs |=> fi2)) [PredOcc (fs |=> pr1) u2]
+                               in   (fo,mkLCoe cbindL evidL,csubst,remPrOccL)
+                       fp (Ty_Impls (Impls_Nil))
+                            =  Just (f fi2 tr1 t2)
                        fp (Ty_Impls (Impls_Tail iv1))
                             =  Just (foUpdCnstr (iv1 `cnstrImplsUnit` Impls_Nil) (f fi2 tr1 t2))
+                       fp (Ty_Impls (Impls_Cons _ pr1 _))
+                            =  Just (foUpdPrL remPrOccL . foUpdLCoe lCoe . foUpdCSubst csubst $ fo)
+                            where (fo,lCoe,csubst,remPrOccL) = fSub pr1 tr1
                        fp (Ty_Pred pr1)
                             =  Just (foUpdPrL remPrOccL . foUpdLCoe lCoe . foUpdCSubst csubst $ fo)
-                            where  fo    = f fi2 tr1 t2
-                                   fs    = foCnstr fo
-                                   fi2s  = fs |=> fi2
-                                   (cbindL,csubst,remPrOccL,evidL) = prfPreds u3 (fiEnv fi2s) [PredOcc (fs |=> pr1) u2]
-                                   lCoe  = mkLCoe cbindL evidL
+                            where (fo,lCoe,csubst,remPrOccL) = fSub pr1 tr1
                        fp _ =  Nothing
 %%]
 
@@ -651,14 +658,14 @@ fitsIn opts env uniq ty1 ty2
 %%[7
             f fi t1@(Ty_Ext tr1 l1 te1)   t2@(Ty_Ext _ _ _)
                 =  case tyRowExtr l1 t2 of
-                     Just (r,e)  -> let  tefo  = f fi te1 e
+                     Just (r,e) ->  let  tefo  = f fi te1 e
                                          tes   = foCnstr tefo
                                          trfo  = f fi (tes |=> tr1) (tes |=> r)
                                          trs   = foCnstr trfo
                                          rt    = Ty_Ext (foTy trfo) l1 (trs |=> foTy tefo)
                                          rfo   = trfo {foTy = rt, foCnstr = trs |=> tes}
                                     in   manyFO [tefo,trfo,rfo]
-                     _           -> err fi [Err_MissingRowLabel l1 t2]
+                     _          ->  err fi [Err_MissingRowLabel l1 t2]
 %%]
 
 %%[4.fitsIn.DefaultCase

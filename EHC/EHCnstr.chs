@@ -227,6 +227,10 @@ instance Substitutable Pred where
   s |=>  p  =  (\(Ty_Pred p) -> p) (s |=> (Ty_Pred p))
   ftv    p  =  ftv (Ty_Pred p)
 
+instance Substitutable PredOcc where
+  s |=>  (PredOcc pr id)  = PredOcc (tyPred (s |=> Ty_Pred pr)) id
+  ftv    (PredOcc pr _)   = ftv (Ty_Pred pr)
+
 instance Substitutable Impls where
   s |=>  i  =  case i of
                  Impls_Cons v p t  -> Impls_Cons v (s |=> p) (s |=> t)

@@ -36,10 +36,16 @@
 %%[8 hs import(List) export(tyRowCanonOrder,tyRecOffset) 
 %%]
 
-%%[9 hs export(Pred(..),tyPredNm,tyPred,tyImplsPreds,tyArrowImplsArgRes)
+%%[9 hs export(Pred(..),tyPredNm,tyPred,tyImplsPreds,tyArrowImplsArgRes,mkTyPr)
 %%]
 
-%%[9 hs export(tyRecExts,tyAppFunConNm,tyArrowArity,Impls(..),ImplsVarId,mkImplsVar)
+%%[9 hs export(tyRecExts,tyAppFunConNm,tyArrowArity)
+%%]
+
+%%[9 hs export(Impls(..),ImplsVarId,mkImplsVar,implsPredsTail)
+%%]
+
+%%[9 hs export(PredOccId,PredOcc(..))
 %%]
 
 %%[1 import(EHTyAbsSyn)
@@ -64,6 +70,22 @@ type TyVarIdL   = [TyVarId]
 
 %%[9 hs
 type ImplsVarId    = UID
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pred occurrence
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+type PredOccId
+  =  UID
+
+data PredOcc
+  =  PredOcc
+       { poPr               :: Pred
+       , poId               :: PredOccId
+       }
+  deriving Show
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -201,9 +223,18 @@ mkTyFreshProd :: Int -> Ty
 mkTyFreshProd = mkTyFreshProdFrom uidStart
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Construction for preds/impls
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[9 hs
 mkImplsVar :: ImplsVarId -> Ty
 mkImplsVar v = Ty_Impls (Impls_Tail v)
+%%]
+
+%%[9 hs
+mkTyPr :: [Pred] -> Ty -> Ty
+mkTyPr prL t = map Ty_Pred prL `mkTyArrow` t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -380,14 +411,14 @@ tyPredNm t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Expansion of implicits
+%%% Destruction for implicits
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
+implsPredsTail :: Impls -> ([PredOcc],Maybe ImplsVarId)
+implsPredsTail (Impls_Cons v p t)  =  let  (p',mi) = implsPredsTail t
+                                      in   (PredOcc p v : p',mi)
+implsPredsTail (Impls_Tail v    )  =  ([],Just v)
+implsPredsTail (Impls_Nil       )  =  ([],Nothing)
 %%]
-
-implsExpand :: TyL -> TyL
-implsExpand l
-  =  let  l' = s |=> l
-     in   
 
