@@ -166,11 +166,8 @@ SEM PatExpr
                                                     CPatRest_Empty
                                                       ->  CPat_Con @cpNm @tag @rest @cpatBinds
                                                     CPatRest_Var r
-                                                      ->  let  (n:nL) = map uidHNm . mkNewLevUIDL (length @fsCPatL + 1) $ @lUniq3
-                                                               (oL,fsL) = rfsReorder nL . reverse $ @fsCPatL
-                                                               obL = zipWith CBind_Bind nL oL
-                                                               pbL = map (\(n,(o,p)) -> CPatBind_Bind n o n p) fsL
-                                                          in   CPat_Con @cpNm @tag @rest @cpatBinds
+                                                      ->  CPat_Con @cpNm @tag @rest pbL
+                                                          where  pbL = rpbReorder . map (\(n,(o,p)) -> CPatBind_Bind n o n p) . reverse $ @fsCPatL
   | CConst IConst
                 lhs         .   cpat        =   CPat_Undef
 %%]
@@ -184,9 +181,6 @@ SEM PatExpr
                                                                obL = zipWith CBind_Bind nL oL
                                                                pbL = map (\(n,(o,p)) -> CPatBind_Bind n o n p) fsL
                                                           in   CPat_Con @cpNm @tag @rest pbL
-
-%%[8 hs
-type FieldSplitL = AssocL HsName (CExpr,CPat)
 
 rfsReorder :: [HsName] -> FieldSplitL -> ([CExpr],FieldSplitL)
 rfsReorder nL fsL
@@ -204,6 +198,35 @@ rfsReorder nL fsL
             $  fsL
           cmpFS (n1,_)  (n2,_) = rowLabCmp n1 n2
      in   (offL,sortBy cmpFS fsL')
+
+%%[8 hs
+type FieldSplitL = AssocL HsName (CExpr,CPat)
+
+rpbReorder :: CPatBindL -> CPatBindL
+rpbReorder pbL
+  =  let  (pbL',_)
+            =  foldr
+                 (\(CPatBind_Bind l o n p) (pbL,exts) 
+                     ->  let  mkOff lbl exts o
+                                =  let nrSmaller = length . filter (\e -> rowLabCmp e lbl == LT) $ exts
+                                   in  if nrSmaller == 0 then o else mkCExprAddInt o (CExpr_Int nrSmaller)
+                         in   ((CPatBind_Bind l (mkOff l exts o) n p):pbL,l:exts)
+                 )
+                 ([],[])
+            $  pbL
+          cmpPB (CPatBind_Bind l1 _ _ _)  (CPatBind_Bind l2 _ _ _) = rowLabCmp l1 l2
+     in   sortBy cmpPB pbL'
+
+patBindLOffset :: CPatBindL -> (CPatBindL,[CBindL])
+patBindLOffset
+  =  unzip
+  .  map
+       (\b@(CPatBind_Bind l o n p@(CPat_Var pn))
+           ->  let  offNm = hsnPrefix "off_" . cpatNmNm $ pn
+               in   case o of
+                      CExpr_Int _  -> (b,[])
+                      _            -> (CPatBind_Bind l (CExpr_Var offNm) n p,[CBind_Bind offNm o])
+       )
 %%]
 
 %%[8
@@ -461,31 +484,35 @@ rceMatchCon :: RCEEnv -> [HsName] -> CAltL -> CExpr -> CExpr
 rceMatchCon env args@(arg:args') alts ce
   =  let  arg'   =  hsnPrefix "!" arg
           sortAltsOnTag = sortBy (\a1 a2 -> caltTag a1 `compare` caltTag a2)
-          alts'  =  map
-                      (\alts
-                        ->  let  (subAlts,subAltSubNms)
-                                               =  unzip
-                                                    [ (CAlt_Alt (pats ++ ps) e, map (cpatNmNm . cpatVarNm) pats)
-                                                    | (CAlt_Alt (CPat_Con _ _ _ pbinds : ps) e) <- alts,
-                                                      let pats = [ p | (CPatBind_Bind _ _ _ p) <- pbinds ]
-                                                    ]
-                                 subMatch      =  rceMatch env (head subAltSubNms ++ args') subAlts ce
-                                 altPat        =  case head alts of
-                                                    CAlt_Alt (CPat_Con n t r pbinds : _) _
-                                                      -> CPat_Con n t r [ CPatBind_Bind l o n (CPat_Var (cpatVarNm p))| (CPatBind_Bind l o n p) <- pbinds ]
-                            in   CAlt_Alt [altPat] (mkCExprLet CBindPlain (rceRebinds arg' alts) subMatch)
-                      )
-                 .  groupBy (\a1 a2 -> caltTag a1 == caltTag a2)
-                 .  sortAltsOnTag
-                 .  filter (not . null . caltPatL)
-                 $  alts
+          mkAltAndSubAlts alts
+            =  let  (subAlts,subAltSubNms)
+                      =  unzip
+                           [ (CAlt_Alt (pats ++ ps) e, map (cpatNmNm . cpatVarNm) pats)
+                           | (CAlt_Alt (CPat_Con _ _ _ pbinds : ps) e) <- alts,
+                             let pats = [ p | (CPatBind_Bind _ _ _ p) <- pbinds ]
+                           ]
+                    subMatch
+                      =  rceMatch env (head subAltSubNms ++ args') subAlts ce
+                    (altPat,altOffBL)
+                      =  case head alts of
+                           CAlt_Alt (CPat_Con n t r pbL : _) _
+                             ->  (CPat_Con n t r pbL3,offBL)
+                                 where  pbL2 = [ CPatBind_Bind l o n (CPat_Var (cpatVarNm p))| (CPatBind_Bind l o n p) <- pbL ]
+                                        (pbL3,offBL) = patBindLOffset pbL2
+                                        
+               in   (CAlt_Alt [altPat] (mkCExprLet CBindPlain (rceRebinds arg' alts) subMatch),concat altOffBL)
+          (alts',(altOffBL:_))
+            =  unzip . map mkAltAndSubAlts
+            .  groupBy (\a1 a2 -> caltTag a1 == caltTag a2) . sortAltsOnTag
+            .  filter (not . null . caltPatL) $ alts
           altTags = [ t | (CAlt_Alt (CPat_Con _ t _ _ : _) _) <- alts' ]
           absentTagArities = filter (\t -> t `notElem` altTags) . rceEnvDataAlts env . head $ altTags
           absentAlts
                  =  [ CAlt_Alt [mkP ct a] ce | ct@(CTag _ a _) <- absentTagArities ]
                  where  mkB o = CPatBind_Bind hsnUnknown (CExpr_Int o) (cpatNmNm cpatNmNone) (CPat_Var cpatNmNone)
                         mkP ct a = CPat_Con cpatNmNone ct CPatRest_Empty [mkB o | o <- [0..a-1]]
-     in   ceStrictIn arg' (CExpr_Var arg) (\n -> CExpr_Case n (sortAltsOnTag (alts' ++ absentAlts)) ce)
+     in   ceStrictIn arg' (CExpr_Var arg)
+            (\n -> mkCExprLet CBindStrict altOffBL (CExpr_Case n (sortAltsOnTag (alts' ++ absentAlts)) ce))
 
 rceMatchVarCon :: RCEEnv -> [HsName] -> CAltL -> CExpr -> CExpr
 rceMatchVarCon env args alts@(alt:_) ce

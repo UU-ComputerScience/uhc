@@ -103,13 +103,13 @@ SEM GrAdapt
 
 SEM GrPat
   | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : map @lhs.ppGrNm @fldL)
-  | NodeSplit   lhs         .   pp          =   pp_parens (@nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
+  | NodeSplit   lhs         .   pp          =   pp_parens (@lhs.ppGrNm @nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
   | Empty       lhs         .   pp          =   pp "()"
   | LitInt      lhs         .   pp          =   pp @int
   | Var         lhs         .   pp          =   @lhs.ppGrNm @nm
 
 SEM GrSplit
-  | Sel         lhs         .   pp          =   @nm >|< "=" >|< @off.pp
+  | Sel         lhs         .   pp          =   @lhs.ppGrNm @nm >|< "=" >|< @off.pp
 
 SEM GrTag
   | Lit         lhs         .   pp          =   "#" >|< @int >|< "/" >|< pp @categ >|< "/" >|< @lhs.ppGrNm @nm
