@@ -27,13 +27,13 @@
 %%[4 hs export(tyConNm) 
 %%]
 
+%%[4 hs export(tyVar) 
+%%]
+
 %%[4_1 hs export(tyAltsTy,tyIsQu) 
 %%]
 
 %%[4_1 hs export(TyPlus(..),TyPlusL,tyPlusTy) 
-%%]
-
-%%[5 hs export(tyVar) 
 %%]
 
 %%[6 hs export(kiStar) 
@@ -349,6 +349,12 @@ tyConNm  (Ty_Con nm)  = nm
 tyConNm  _            = hsnUnknown
 %%]
 
+%%[4.tyVar hs
+tyVar :: Ty -> TyVarId
+tyVar (Ty_Var v _)  = v
+tyVar _             = uidStart
+%%]
+
 %%[4_1.tyPlusTy hs
 tyPlusTy :: TyPlus -> Ty
 tyPlusTy (TyPlus_Ty t) = t
@@ -365,12 +371,6 @@ tyAltsTy t = case t of {Ty_Alts _ tl -> tyPlusTy (last tl); _ -> t}
 
 tyIsQu :: Ty -> Bool
 tyIsQu t = case t of {Ty_Quant _ _ _ -> True; _ -> False}
-%%]
-
-%%[5.tyVar hs
-tyVar :: Ty -> TyVarId
-tyVar (Ty_Var v _)  = v
-tyVar _             = uidStart
 %%]
 
 %%[7.tyProdArgs -1.tyProdArgs hs

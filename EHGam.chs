@@ -39,7 +39,7 @@
 %%[4 export(gamTop)
 %%]
 
-%%[4_2 export(valGamQuantifyWithCnstr)
+%%[4_2 export(valGamQuantifyWithCnstr,valGamInst1ExistsWithCnstr)
 %%]
 
 %%[6 export(tyGamQuantify, tyGamInst1Exists,gamUnzip)
@@ -211,8 +211,27 @@ valGamQuantify :: TyVarIdL -> ValGam -> ValGam
 valGamQuantify globTvL = valGamMapTy (\t -> tyQuantify (`elem` globTvL) t)
 %%]
 
+%%[4_2.valGamDoWithCnstr
+valGamDoWithCnstr :: (Ty -> thr -> (Ty,thr)) -> Cnstr -> thr -> ValGam -> (ValGam,Cnstr)
+valGamDoWithCnstr f gamCnstr thr gam
+  =  let  (g,(_,c))
+            =  gamMapThr
+                    (\(n,vgi) (thr,c)
+                        ->  let  t = vgiTy vgi
+                                 (t',thr') = f (gamCnstr |=> t) thr
+                                 (tg,cg) =  case t of
+                                                Ty_Var v _ -> (t,v `cnstrTyUnit` t')
+                                                _ -> (t',emptyCnstr)
+                            in   ((n,vgi {vgiTy = tg}),(thr',cg `cnstrPlus` c))
+                    )
+                    (thr,emptyCnstr) gam
+     in   (g,c)
+%%]
+
 %%[4_2.valGamQuantifyWithCnstr
 valGamQuantifyWithCnstr :: Cnstr -> TyVarIdL -> ValGam -> (ValGam,Cnstr)
+valGamQuantifyWithCnstr = valGamDoWithCnstr (\t globTvL -> (tyQuantify (`elem` globTvL) t,globTvL))
+%%]
 valGamQuantifyWithCnstr gamCnstr globTvL
   =  gamMapThr
         (\(n,vgi) c
@@ -224,7 +243,6 @@ valGamQuantifyWithCnstr gamCnstr globTvL
                 in   ((n,vgi {vgiTy = tg}),cg `cnstrPlus` c)
         )
         emptyCnstr
-%%]
 
 %%[6
 gamUnzip :: Gam k (v1,v2) -> (Gam k v1,Gam k v2)
@@ -254,6 +272,15 @@ gamInst1Exists (extr,upd) u
 
 valGamInst1Exists :: UID -> ValGam -> ValGam
 valGamInst1Exists = gamInst1Exists (vgiTy,(\vgi t -> vgi {vgiTy=t}))
+%%]
+
+%%[4_2.valGamInst1ExistsWithCnstr
+valGamInst1ExistsWithCnstr :: Cnstr -> UID -> ValGam -> (ValGam,Cnstr)
+valGamInst1ExistsWithCnstr
+  =  valGamDoWithCnstr
+        (\t u ->  let  (u',ue) = mkNewLevUID u
+                  in   (tyInst1Exists ue t,u')
+        )
 %%]
 
 %%[6

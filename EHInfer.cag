@@ -44,19 +44,25 @@ SEM Expr
 %%[4_2
 SEM Expr
   | Let         decls       .   tySigTyCnstr        =   emptyCnstr
-                            .   patTyCnstr          :=  @decls.tySigTyCnstr |=> @lhs.imprTyCnstr
+                loc         .   (_,lExSigTyCnstr)   =   valGamInst1ExistsWithCnstr (@decls.tySigTyCnstr |=> @lhs.imprTyCnstr) @lUniq @decls.gathTySigGam
+                decls       .   patValGam           :=  gamPushGam @decls.gathTySigGam @lhs.valGam
+                            .   gathPatTyCnstr      =   emptyCnstr
+                            .   patTyCnstr          :=  @lExSigTyCnstr |=> @decls.tySigTyCnstr |=> @lhs.imprTyCnstr
                             .   imprTyCnstr         =   @decls.patTyCnstr
-                loc         .   (lElimValGam,imprElimTyCnstr,_)
+                loc         .   (lElimValGam,elimImprTyCnstr,_)
                                                     =   valGamElimAlts joinFIOpts @fe (ftv @gValGam) @lUniq4 (@decls.imprTyCnstr |=> @lValGam)
-                body        .   imprTyCnstr         =   @imprElimTyCnstr |=> @decls.imprTyCnstr
-                lhs         .   quTyCnstr           =   @imprElimTyCnstr |=> @body.quTyCnstr
-                decls       .   tyCnstr             :=  @lhs.tyCnstr |=> @decls.patTyCnstr
+                body        .   imprTyCnstr         =   @elimImprTyCnstr |=> @decls.imprTyCnstr
+                lhs         .   quTyCnstr           =   @elimImprTyCnstr |=> @body.quTyCnstr
                 loc         .   (lQuValGam,lQuTyCnstr)
-                                                    :=  let  (g,c) = valGamQuantifyWithCnstr @decls.tyCnstr @gTyTvL @lValGam
-                                                        in   (valGamInst1Exists @lUniq2 g,c)
+                                                    :=  let  (g1,c1) = valGamQuantifyWithCnstr @decls.tyCnstr @gTyTvL @lValGam
+                                                             (g2,c2) = valGamInst1ExistsWithCnstr (c1 |=> @decls.tyCnstr) @lUniq2 g1
+                                                        in   (g2,c2 |=> c1)
+                decls       .   tyCnstr             :=  @lhs.tyCnstr |=> @decls.patTyCnstr
                 body        .   tyCnstr             :=  @lQuTyCnstr |=> @decls.tyCnstr
-                body        .   valGam              :=  @decls.patValGam
+                            .   valGam              :=  @decls.patValGam
 %%]
+                lhs         .   quTyCnstr           =   @elimImprTyCnstr |=> @decls.gathPatTyCnstr |=> @body.quTyCnstr
+                decls       .   tyCnstr             :=  @lhs.tyCnstr |=> @decls.patTyCnstr
                 loc         .   gImprValGam         =   @decls.imprTyCnstr |=> @gValGam
 
 %%[4_3
@@ -183,8 +189,19 @@ SEM AGItf
 %%]
 
 %%[4_2
+ATTR AllDecl [ | gathPatTyCnstr: Cnstr | ]
+
 SEM AGItf
-  | AGItf       expr        .   tyCnstr             :=  @expr.quTyCnstr
+  | AGItf       loc         .   (elimImprTyCnstr,_) =   foldr  (\(v,t) (c,u)
+                                                                  ->  let  (u',u1) = mkNewLevUID u
+                                                                           (t',ce,_) = tyElimAlts (mkElimAltsWrap emptyFE) joinFIOpts [] u1 (c |=> t)
+                                                                           c' = if v == tyVar t' then emptyCnstr else v `cnstrTyUnit` t'
+                                                                      in   (c' |=> ce |=> c,u')
+                                                               )
+                                                               (emptyCnstr,@lUniq)
+                                                        .  cnstrToAssocTyL
+                                                        $  @expr.imprTyCnstr
+                expr        .   tyCnstr             :=  @expr.quTyCnstr
 
 SEM Decl
   | Val         loc         .   imprFO              =   fitsIn impredFIOpts emptyFE uidStart (@expr.imprTyCnstr |=> @patExpr.ty) @expr.imprTy
@@ -388,6 +405,9 @@ SEM Decl
   | TySig       loc         .   (gamSigTy,gamSigCnstr)
                                                     :=  tyAsCnstr @lUniq @sigTy
                 lhs         .   tySigTyCnstr        =   @gamSigCnstr |=> @lhs.tySigTyCnstr
+
+SEM Expr
+  | Let         decls       .   tySigGam            :=  @decls.tySigTyCnstr |=> @decls.gathTySigGam
 %%]
 
 %%[6
