@@ -333,7 +333,7 @@ tyProdArgs ty = let (t,al) = tyRecExts ty in map snd al
 
 %%[6_2 hs
 tyBindTy :: Ty -> Ty
-tyBindTy t = case t of {Ty_Bind _ (bt:_) -> bt; _ -> t}
+tyBindTy t = case t of {Ty_Bind _ tl -> last tl; _ -> t}
 %%]
 
 %%[7 hs

@@ -45,20 +45,20 @@ tyInstKnown = tyInst' (\tv -> Ty_Var tv TyVarCateg_Fixed)
 type HowToInst = TyQu -> TyVarId -> Ty
 
 instCoConst, instContra :: HowToInst
-instCoConst     q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else mkTyCon ("C_" ++ show v)
-instContra      q v = if tyquIsForall q then Ty_Var v TyVarCateg_Fixed else Ty_Var v TyVarCateg_Plain
+instCoConst  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else mkTyCon ("C_" ++ show v)
+instContra   q v = if tyquIsForall q then Ty_Var v TyVarCateg_Fixed else Ty_Var v TyVarCateg_Plain
 %%]
 
 %%[4.tyInst -(3.tyInst 3.tyInstKnown) hs
 tyInst :: UID -> Bool -> HowToInst -> Ty -> (Ty,TyVarIdL)
 tyInst uniq onlyExists howToInst ty
   = (s |=> ty',tvl)
-  where  i u (Ty_Quant q v t) | not (tyquIsForall q && onlyExists)
+  where  i u mbQ (Ty_Quant q v t) | not (tyquIsForall q && onlyExists) && maybe True (==q) mbQ
                              =  let  (u',v')        = mkNewUID u
-                                     (s,t',tvl')    = i u' t
+                                     (s,t',tvl')    = i u' (Just q) t
                                 in   ((v `cnstrTyUnit` (howToInst q v')) |=> s,t',v':tvl')
-         i _ t               =  (emptyCnstr,t,[])
-         (s,ty',tvl)         =  i uniq ty
+         i _ _ t             =  (emptyCnstr,t,[])
+         (s,ty',tvl)         =  i uniq Nothing ty
 
 tyInst1Quants :: UID -> HowToInst -> Ty -> (Ty,TyVarIdL)
 tyInst1Quants uniq howToInst ty = tyInst uniq False howToInst ty

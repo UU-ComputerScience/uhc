@@ -85,7 +85,7 @@ ATTR TyAGItf  [ | | tyCnstr: Cnstr ]
 ATTR TyL [ ty: Ty | | fo: FIOut ]
 
 SEM TyL
-  | Cons            loc     .   fo          =   fitsIn unifyFIOpts @lhs.fe @lUniq @lhs.ty (@hd.tyCnstr |=> @hd.repl)
+  | Cons            loc     .   fo          =   fitsIn meetFIOpts @lhs.fe @lUniq @lhs.ty (@hd.tyCnstr |=> @hd.repl)
                     tl      .   ty          =   foTy @fo
                             .   tyCnstr     =   foCnstr @fo |=> @hd.tyCnstr
                     lhs     .   (fo,tyCnstr)

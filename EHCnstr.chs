@@ -22,7 +22,10 @@
 %%[4 export(cnstrFilter)
 %%]
 
-%%[9 import(FiniteMap,EHDebug) export(CnstrInfo(..),cnstrImplsLookup,cnstrImplsUnit,listToCnstrImpls,cnstrToAssocL)
+%%[6_2 export(assocLToCnstr,cnstrToAssocTyL)
+%%]
+
+%%[9 import(FiniteMap,EHDebug) export(CnstrInfo(..),cnstrImplsLookup,cnstrImplsUnit,assocLToCnstrImpls,cnstrToAssocL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -83,12 +86,26 @@ cnstrFilter :: (TyVarId -> CnstrInfo -> Bool) -> Cnstr -> Cnstr
 cnstrFilter f (Cnstr c) = Cnstr (filterFM f c)
 %%]
 
+%%[6_2
+assocLToCnstr :: AssocL TyVarId Ty -> Cnstr
+assocLToCnstr = Cnstr
+
+cnstrToAssocTyL :: Cnstr -> AssocL TyVarId Ty
+cnstrToAssocTyL (Cnstr l) = l
+%%]
+
+assocLToCnstr :: AssocL TyVarId Ty -> Cnstr
+assocLToCnstr = Cnstr . listToFM . assocLMapSnd CITy
+
+cnstrToAssocTyL :: Cnstr -> AssocL TyVarId Ty
+cnstrToAssocTyL c = [ (v,t) | (v,CITy t) <- cnstrToAssocL c ]
+
 %%[9
 cnstrImplsUnit :: ImplsVarId -> Impls -> Cnstr
 cnstrImplsUnit v i = Cnstr (listToFM [(v,CIImpls i)])
 
-listToCnstrImpls :: AssocL ImplsVarId Impls -> Cnstr
-listToCnstrImpls = Cnstr . listToFM . assocLMapSnd CIImpls
+assocLToCnstrImpls :: AssocL ImplsVarId Impls -> Cnstr
+assocLToCnstrImpls = Cnstr . listToFM . assocLMapSnd CIImpls
 
 cnstrImplsLookup :: ImplsVarId -> Cnstr -> Maybe Impls
 cnstrImplsLookup v (Cnstr s)
