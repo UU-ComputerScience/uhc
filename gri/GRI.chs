@@ -12,13 +12,13 @@
 %%[1 module Main import(System, GetOpt, IO)
 %%]
 
-%%[8 import(UU.Parsing, GRICommon,EHScanner)
+%%[8 import(UU.Parsing, UU.Pretty, EHCommon,GRICommon,EHScanner)
 %%]
 
-%%[8 import (GRICommon,GRIParser,FPath,FiniteMap,Maybe,List,Directory)
+%%[8 import (FPath,FiniteMap,Maybe,List,Directory)
 %%]
 
-%%[8 import (GrinCode)
+%%[8 import (GRICommon,GRIParser,GRIRun,GRISetup,GrinCode)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -65,11 +65,34 @@ parseGrin fp opts
 %%]
 
 %%[8
+runGrin :: GRIOpts -> RunState -> IO RunState
+runGrin opts rs
+  =  do  {  rs' <- run1Step rs
+         ;  case rsHalted rs' of
+              Just msg
+                ->  return rs'
+              Nothing
+                ->  do  {  if grioptDebug opts
+                           then do  {  putPPLn (pp "-------")
+                                    ;  putPPLn (pp rs')
+                                    }
+                           else return ()
+                        ;  runGrin opts rs'
+                        }
+         }
+%%]
+
+%%[8
 doCompileRun :: String -> GRIOpts -> IO ()
 doCompileRun fn opts
-  = do { let fp             = mkTopLevelFPath "grin" fn
+  = do { let fp = mkTopLevelFPath "grin" fn
        ; gr <- parseGrin fp opts
-       ; return ()
+       ; let rs = grGriSetup gr
+       ; if grioptDebug opts
+         then putPPLn (pp rs)
+         else return ()
+       ; rs' <- runGrin opts rs
+       ; putPPLn (fromJust . rsHalted $ rs')
        }
 %%]
 

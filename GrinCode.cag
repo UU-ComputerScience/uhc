@@ -31,13 +31,13 @@ data GrTagCateg
   =  GrTagCon
   |  GrTagApp
   |  GrTagFun
-  |  GrTagPartial {grtgNeeds :: Int}
+  |  GrTagPApp {grtgNeeds :: Int}
   deriving (Show,Eq,Ord)
 
 instance PP GrTagCateg where
   pp GrTagCon = pp "C"
   pp GrTagApp = pp "A"
   pp GrTagFun = pp "F"
-  pp (GrTagPartial need) = pp "P" >|< pp need
+  pp (GrTagPApp need) = pp "P/" >|< pp need
 %%]
 

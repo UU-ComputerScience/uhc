@@ -1,0 +1,75 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Code's Java gen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs import(GRIRun,EHCommon,GrinCode) export(grGriSetup)
+%%]
+
+%%[8 hs import(FiniteMap,Data.Array,Data.Array.IO)
+%%]
+
+%%[8.WRAPPER import(GrinCodeAbsSyn)
+WRAPPER GrAGItf
+%%]
+
+%%[8 hs
+grGriSetup :: GrModule -> RunState
+grGriSetup cmod
+  =  let  t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf cmod)) Inh_GrAGItf
+     in   (rs_Syn_GrAGItf t)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Initial run state
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrAGItf GrModule [ | | rs: RunState ]
+
+SEM GrModule
+  | Mod         lhs         .   rs          =   let  (n2p,p2v)
+                                                        = unzip
+                                                        . zipWith (\p (n,v) -> ((n,p),(p,v))) [0..]
+                                                        $ @bindL.globL
+                                                     n2p' = listToFM . assocLMapSnd RVPtr $ n2p
+                                                     p2v' = listToFM p2v
+                                                     sz = length n2p
+                                                     h = RunHeap
+                                                            { rhMem = p2v'
+                                                            , rhSize = sz
+                                                            , rhFree = sz
+                                                            }
+                                                in   RunState
+                                                        { rsNext = do { p <- lookupFM n2p' (HNm "main")
+                                                                      ; let (RVPtr i) = p
+                                                                      ; n <- lookupFM p2v' i
+                                                                      ; let (RVGlob _ _ m) = n
+                                                                      ; return m
+                                                        			  }
+                                                        , rsStack = []
+                                                        , rsEnv = n2p'
+                                                        , rsGlobEnv = n2p'
+                                                        , rsHeap = h
+                                                        , rsHalted = Nothing
+                                                        }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Clone
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllBind [ | | globL USE {++} {[]}: {AssocL HsName RunVal} ]
+ATTR AllExpr [ | | self: SELF ]
+
+SEM GrBind
+  | Bind        lhs         .   globL       =   [(@nm,RVGlob @nm @argNmL @expr.self)]
+%%]
+

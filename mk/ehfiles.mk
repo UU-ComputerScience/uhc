@@ -3,11 +3,11 @@ VPREFIX				:= $(VF)/
 ### EHC
 
 $(addprefix $(VPREFIX),$(EHC_CAG:.cag=.ag)): $(VPREFIX)%.ag: %.cag $(SHUFFLE)
-	$(call SHUFFLE_LHS_AG,$<,$@,$(V)) ; \
+	$(call SHUFFLE_LHS_AG,$<,$@,$(V),$(*F)) ; \
 	touch $@
 
 $(addprefix $(VPREFIX),$(EHC_CHS:.chs=.hs)): $(VPREFIX)%.hs: %.chs $(SHUFFLE)
-	$(call SHUFFLE_LHS_HS,$<,$@,$(V)) ; \
+	$(call SHUFFLE_LHS_HS,$<,$@,$(V),$(*F)) ; \
 	touch $@
 
 $(VPREFIX)EHTy.hs: $(addprefix $(VPREFIX),$(EHC_DPDS_TY))
@@ -45,9 +45,16 @@ $(VPREFIX)$(EHC): $(addprefix $(VPREFIX),$(EHC_MAIN).hs $(EHC_HS))
 
 ### GRI
 
-$(addprefix $(VPREFIX),$(GRI_CHS:.chs=.hs)): $(VPREFIX)%.hs: $(GRI_SRC_PREFIX)%.chs $(SHUFFLE)
-	$(call SHUFFLE_LHS_HS,$<,$@,$(V)) ; \
+$(addprefix $(VPREFIX),$(GRI_CAG:.cag=.ag)): $(VPREFIX)%.ag: $(GRI_SRC_PREFIX)%.cag $(SHUFFLE)
+	$(call SHUFFLE_LHS_AG,$<,$@,$(V),$(*F)) ; \
 	touch $@
+
+$(addprefix $(VPREFIX),$(GRI_CHS:.chs=.hs)): $(VPREFIX)%.hs: $(GRI_SRC_PREFIX)%.chs $(SHUFFLE)
+	$(call SHUFFLE_LHS_HS,$<,$@,$(V),$(*F)) ; \
+	touch $@
+
+$(addprefix $(VPREFIX),$(GRI_LAG_FOR_HS_GRIN_CODE:.lag=.hs)): %.hs: %.ag $(addprefix $(VPREFIX),GrinCodeAbsSyn.ag)
+	$(call AGCC,-cfspr,$<)
 
 $(VPREFIX)$(GRI): $(addprefix $(VPREFIX),$(GRI_MAIN).hs $(GRI_HS))
 	cd `dirname $@` ; $(GHC) -package uust -package data -o `basename $@` --make `basename $<`

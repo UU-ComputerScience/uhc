@@ -9,11 +9,11 @@
 %%% Haskell importable interface to Code's Java gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(UU.Pretty,EHCommon,GrinCode) export(ppGrModule)
+%%[8 hs import(UU.Pretty,EHCommon,GrinCode) export(ppGrModule,ppGrExpr,ppGrPat)
 %%]
 
 %%[8.WRAPPER import(GrinCodeAbsSyn)
-WRAPPER GrAGItf
+WRAPPER GrAGItf GrExpr GrPat
 %%]
 
 %%[8 hs
@@ -21,6 +21,16 @@ ppGrModule :: GrModule -> PP_Doc
 ppGrModule cmod
   =  let  t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf cmod)) Inh_GrAGItf
      in   (pp_Syn_GrAGItf t)
+
+ppGrExpr :: GrExpr -> PP_Doc
+ppGrExpr ce
+  =  let  t = wrap_GrExpr (sem_GrExpr ce) Inh_GrExpr
+     in   (pp_Syn_GrExpr t)
+
+ppGrPat :: GrPat -> PP_Doc
+ppGrPat ce
+  =  let  t = wrap_GrPat (sem_GrPat ce) Inh_GrPat
+     in   (pp_Syn_GrPat t)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -56,7 +66,7 @@ SEM GrExpr
                                                     indent 2 (ppCurlyV @altL.ppL)
   | App         lhs         .   pp          =   "apply" >#< ppSpaced (ppGrNm @nm : @argL.ppL)
   | Call        lhs         .   pp          =   ppSpaced (ppGrNm @nm : @argL.ppL)
-  | Eval        lhs         .   pp          =   "eval" >#< @val.pp
+  | Eval        lhs         .   pp          =   "eval" >#< ppGrNm @nm
   | Unit        lhs         .   pp          =   "unit" >#< @val.pp
   | Store       lhs         .   pp          =   "store" >#< @val.pp
   | Fetch       lhs         .   pp          =   "fetch" >#< ppGrNm @nm >#< maybe empty pp @mbOffset
