@@ -36,6 +36,9 @@
 %%[2 export(UID, mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, nextUID, mkNewUID, mkNewUIDL, startUID)
 %%]
 
+%%[2 export(assocLMapSnd)
+%%]
+
 %%[2 import(List) export(unionL)
 %%]
 
@@ -57,7 +60,7 @@
 %%[7 export(hsnORow,hsnCRow,hsnORec,hsnCRec,hsnOSum,hsnCSum)
 %%]
 
-%%[7 export(positionalFldNames,ppFld)
+%%[7 export(positionalFldNames,ppFld,mkExtAppPP,mkPPAppFun)
 %%]
 
 %%[8 export(ppAssocL)
@@ -297,6 +300,15 @@ ppListSepFill o c s pps
 ppFld :: String -> HsName -> HsName -> PP_Doc -> PP_Doc
 ppFld sep positionalNm nm f
   = if nm == positionalNm then f else nm >#< sep >#< f
+
+mkPPAppFun :: HsName -> PP_Doc -> PP_Doc
+mkPPAppFun c p = if c == hsnRowEmpty then empty else p >|< "|"
+
+mkExtAppPP :: (HsName,PP_Doc,PP_DocL) -> (HsName,PP_Doc,PP_DocL,PP_Doc) -> (PP_Doc,PP_DocL)
+mkExtAppPP (funNm,funNmPP,funPPL) (argNm,argNmPP,argPPL,argPP)
+  =  if hsnIsRec funNm || hsnIsSum funNm
+     then (mkPPAppFun argNm argNmPP,argPPL)
+     else (funNmPP,funPPL ++ [argPP])
 %%]
 
 %%[8
@@ -434,12 +446,24 @@ cmdLineOpts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Misc
+%%% AssocL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.AssocL
 type AssocL k v = [(k,v)]
 %%]
+
+%%[2
+assocLMap :: (k -> v -> (k',v')) -> AssocL k v -> AssocL k' v'
+assocLMap f = map (uncurry f)
+
+assocLMapSnd :: (v -> v') -> AssocL k v -> AssocL k v'
+assocLMapSnd f = assocLMap (\k v -> (k,f v))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.Misc
 hdAndTl :: [a] -> (a,[a])

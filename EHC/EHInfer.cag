@@ -454,3 +454,27 @@ SEM CaseAlt
   | Pat         patExpr     .  fiOpts               =   strongFIOpts
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicate
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR AllDecl [ | patPrIntroGam: PrIntroGam | ]
+ATTR AllDecl AllExpr AllCase [ prIntroGam: PrIntroGam | | ]
+
+SEM Expr
+  | Let         decls       .   patPrIntroGam       =   gamPushNew @lhs.prIntroGam
+                loc         .   (lPrIGam,gPrIGam)   =   gamPop @decls.patPrIntroGam
+                decls       .   prIntroGam          =   @lPrIGam `gamPushGam` @lhs.prIntroGam
+                loc         .   lSubsPrIGam         =   @decls.kiCnstr |=> @lPrIGam
+                            .   gSubsPrIGam         =   @decls.kiCnstr |=> @gPrIGam
+                            .   gKiTvL              :=  ftv @gSubsTyGam `union` ftv @gSubsPrIGam
+                            .   lQuPrIGam           =   gamMap
+                                                            (\(n,t) -> (n,t {pigiKi = tyQuantify (`elem` @gKiTvL) (pigiKi t)}))
+                                                            @lSubsPrIGam
+                body        .   prIntroGam          =   @lQuPrIGam `gamPushGam` @gSubsPrIGam
+
+SEM AGItf
+  | AGItf       loc         .   prIntroGam          :=  emptyGam
+%%]
+

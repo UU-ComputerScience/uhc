@@ -6,15 +6,36 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Pred gathering
+%%% Class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
+SEM Decl
+  | Class       ctxtPrExprs     .   tyGam           =   gamPushNew @lhs.tyGam
+                decls           .   gathTySigGam    =   gamPushNew @lhs.gathTySigGam
+                loc             .   (lSigGam,_)     =   gamPop @decls.gathTySigGam
+                                .   pigi            =   let  e =  mkTyRec (assocLMapSnd vgiTy . gamToAssocL $ @lSigGam)
+                                                             k =  mkNewTyVar @lUniq
+                                                             n =  HNm (show @lUniq)
+                                                             r =  Rule
+                                                                    { rulRuleTy    = tyQuantifyClosed (@ctxtPrExprs.tyL `mkTyArrow` @prExpr.ty)
+                                                                    , rulMkEvidTy  = tyQuantifyClosed ([e] `mkTyArrow` e)
+                                                                    , rulMkEvid    = \_ -> CExpr_Var n
+                                                                    , rulNmEvid    = n
+                                                                    }
+                                                        in   PrIntroGamInfo e k r
+                lhs             .   tyGam           =   @lhs.tyGam
+                                .   gathTySigGam    =   @lhs.gathTySigGam
+                                .   patPrIntroGam   =   gamAdd @prExpr.nm @pigi @lhs.patPrIntroGam
 %%]
-ATTR AllTyExpr [ | tyGam: TyGam | ]
 
-SEM TyExpr
-  | Con         loc         .  (tgi,nmErrs)         =   case tyGamLookup @nm @lhs.tyGam of
-                                                          Nothing    ->  (TyGamInfo Ty_Any,[Err_NamesNotIntrod [@nm]])
-                                                          Just tgi   ->  (tgi,[])
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Kind inference
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[9
+SEM Decl
+  | Class       loc         	.   fo              =   fitsIn weakFIOpts @lUniq2  (@lhs.kiCnstr |=> (@prExpr.kiL `mkTyArrow` kiStar))
+                                                                                   (@lhs.kiCnstr |=> (pigiKi @pigi))
+                decls			.   kiCnstr			=	foCnstr @fo |=> @prExpr.kiCnstr
+%%]

@@ -114,5 +114,8 @@ SEM RowTyExpr
 
 SEM PrExpr
   | Eq              (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
+
+SEM Decl
+  | Class           (ctxtPrExprs.gUniq,loc.lUniq,loc.lUniq2)        =   mkNewLevUID2    @lhs.gUniq
 %%]
 

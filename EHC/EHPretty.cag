@@ -22,7 +22,6 @@ SEM Expr
                                         >-< @errDeclsPP
                                         >-< "in" >#< @body.pp
                                         >-< @errBodyPP
-                        .  ppExtra  =   ppCmt (ppGam @lValGam)
   | App         loc     .  pp       =   @func.pp >#< @arg.pp
   | Parens      loc     .  pp       =   pp_parens @expr.pp
 %%]
@@ -61,12 +60,6 @@ SEM Decls
   | Cons        lhs     .  pp       =   @hd.pp >-< @errPP >-< @tl.pp
 %%]
 
-%%[2
-SEM Expr
-  | Let         loc     .  ppExtra  :=  ppCmt (ppGam (@body.tyCnstr |=> @lValGam))
-
-%%]
-
 %%[2.Wild.pp
 SEM TyExpr
   | Wild        loc     .  pp       =   pp "..."
@@ -78,9 +71,6 @@ SEM Decl
 %%]
 
 %%[3
-SEM Expr
-  | Let         loc     .  ppExtra  :=  ppCmt (ppGam @lQuValGam)
-
 SEM TyExpr
   | Var         loc     .  pp       =   pp @nm
 %%]
@@ -131,9 +121,6 @@ SEM DataConstrs
 %%]
 
 %%[6
-SEM Expr
-  | Let         loc     .  ppExtra  :=  ppCmt (ppGam @lQuTyGam) >-< ppCmt (ppGam @lQuValGam)
-
 SEM KiExpr
   | Con Var     loc     .  pp       =   pp @nm
   | App         loc     .  pp       =   @func.pp >#< @arg.pp
@@ -149,7 +136,8 @@ SEM Decl
 ATTR RecExpr RowTyExpr RecPatExpr DataFields [ | | ppL: PP_DocL ]
 
 SEM Expr
-  | Rec         loc     .  pp       =   ppAppTop (hsnRec,@recExpr.pp) (reverse @recExpr.ppL) @recExpr.pp
+  | Rec         loc     .  pp       =   ppAppTop  (hsnRec,mkPPAppFun @appFunNm @recExpr.pp)
+                                                  (reverse @recExpr.ppL) @recExpr.pp
   | Sel         loc     .  pp       =   @expr.pp >|< "." >|< @lbl
 
 SEM RecExpr
@@ -158,7 +146,8 @@ SEM RecExpr
                         .  ppL      =   ppFld "=" @positionalNm @nm @expr.pp : @recExpr.ppL
 
 SEM PatExpr
-  | Rec         loc     .  pp       =   ppAppTop (hsnRec,@recPatExpr.pp) (reverse @recPatExpr.ppL) @recPatExpr.pp
+  | Rec         loc     .  pp       =   ppAppTop  (hsnRec,mkPPAppFun @appFunNm @recPatExpr.pp)
+                                                  (reverse @recPatExpr.ppL) @recPatExpr.pp
 
 SEM RecPatExpr
   | Empty       lhs     .  ppL      =   []
@@ -166,7 +155,8 @@ SEM RecPatExpr
                         .  ppL      =   ppFld "=" @positionalNm @nm @patExpr.pp : @recPatExpr.ppL
 
 SEM TyExpr
-  | Row         loc     .  pp       =   ppAppTop (hsnRow,@rowTyExpr.pp) (reverse @rowTyExpr.ppL) @rowTyExpr.pp
+  | Row         loc     .  pp       =   ppAppTop  (hsnRow,mkPPAppFun hsnRow @rowTyExpr.pp)
+                                                  (reverse @rowTyExpr.ppL) @rowTyExpr.pp
 
 SEM RowTyExpr
   | Empty       lhs     .  ppL      =   []
@@ -191,7 +181,7 @@ SEM Decl
 %%]
 
 %%[9
-ATTR PrExprL [ | | ppL: PP_DocL ]
+ATTR PrExprs [ | | ppL: PP_DocL ]
 
 SEM RowTyExpr
   | Var         loc     .  pp       =   pp @nm
@@ -205,16 +195,16 @@ SEM PrExpr
   | Lacks       loc     .  pp       =   @rowTyExpr.pp >|< "\\" >|< pp @nm
   | Eq          loc     .  pp       =   pp @nm >|< "=" >|< @tyExpr.pp
 
-SEM PrExprL
+SEM PrExprs
   | Nil         lhs     .  ppL      =   []
   | Cons        lhs     .  ppL      =   @hd.pp : @tl.ppL
 
 SEM Decl
-  | Class       loc     .  pp       =   "class"     >#< ppListSep "(" ")" ", " @ctxtPrExprL.ppL
+  | Class       loc     .  pp       =   "class"     >#< ppListSep "(" ")" ", " @ctxtPrExprs.ppL
                                                     >#< "=>" >#< @prExpr.pp
                                                     >#< "where" >-< indent 2 @decls.pp
   | Instance    loc     .  pp       =   "instance"  >|< maybe empty (\n -> " " >|< n >#< "=") @mbNm
-                                                    >#< ppListSep "(" ")" ", " @ctxtPrExprL.ppL
+                                                    >#< ppListSep "(" ")" ", " @ctxtPrExprs.ppL
                                                     >#< "=>" >#< @prExpr.pp
                                                     >#< "where" >-< indent 2 @decls.pp
 %%]
@@ -238,6 +228,23 @@ SEM TyExpr
                 lhs     .  appFunPP     =   @pp
 %%]
 
+%%[7
+ATTR RowTyExpr [ | | extNm: {HsName} ]
+
+SEM RowTyExpr
+  | Empty       lhs     .  extNm        =   hsnRowEmpty
+  | * - Empty Ext
+                lhs     .  extNm        =   hsnUnknown
+
+SEM TyExpr
+  | App         lhs     .  (appFunPP,appArgPPL)
+                                        :=  mkExtAppPP  (@func.appFunNm,@func.appFunPP,@func.appArgPPL)
+                                                        (@arg.appFunNm,@arg.appFunPP,@arg.appArgPPL,@arg.pp)
+  | Row         lhs     .  appFunNm     :=  @rowTyExpr.extNm
+                        .  appArgPPL    :=  reverse @rowTyExpr.ppL
+                        .  appFunPP     :=  @rowTyExpr.pp
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Ki constr name of app + args, see also EHTyPretty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -257,6 +264,37 @@ SEM KiExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extra info for pp
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.ExprExtra
+SEM Expr
+  | Let         loc     .  ppExtra  =   ppCmt (ppGam @lValGam)
+%%]
+
+%%[2
+SEM Expr
+  | Let         loc     .  ppExtra  :=  ppCmt (ppGam (@body.tyCnstr |=> @lValGam))
+%%]
+
+%%[3
+SEM Expr
+  | Let         loc     .  ppExtra  :=  ppCmt (ppGam @lQuValGam)
+%%]
+
+%%[6
+SEM Expr
+  | Let         loc     .  ppExtra  :=  ppCmt (ppGam @lQuTyGam) >-< ppCmt (ppGam @lQuValGam)
+%%]
+
+%%[9
+SEM Expr
+  | Let         loc     .  ppExtra  :=  ppCmt  (   ppGam @lQuTyGam >-< ppGam @lQuValGam
+                                               >-< ppGam @lQuPrIGam
+                                               )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Expr constr name of app + args
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -272,6 +310,23 @@ SEM Expr
                 lhs     .  appFunNm     =   hsnUnknown
   | * - App     lhs     .  appArgPPL    =   []
                         .  appFunPP     =   @pp
+%%]
+
+%%[7
+ATTR RecExpr [ | | extNm: {HsName} ]
+
+SEM RecExpr
+  | Empty       lhs     .  extNm        =   hsnRowEmpty
+  | * - Empty Ext
+                lhs     .  extNm        =   hsnUnknown
+
+SEM Expr
+  | App         lhs     .  (appFunPP,appArgPPL)
+                                        :=  mkExtAppPP  (@func.appFunNm,@func.appFunPP,@func.appArgPPL)
+                                                        (@arg.appFunNm,@arg.appFunPP,@arg.appArgPPL,@arg.pp)
+  | Rec         loc     .  appFunNm     :=  @recExpr.extNm
+                lhs     .  appArgPPL    :=  reverse @recExpr.ppL
+                        .  appFunPP     :=  @recExpr.pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -294,8 +349,20 @@ SEM PatExpr
 %%]
 
 %%[7
+ATTR RecPatExpr [ | | extNm: {HsName} ]
+
+SEM RecPatExpr
+  | Empty       lhs     .  extNm        =   hsnRowEmpty
+  | * - Empty Ext
+                lhs     .  extNm        =   hsnUnknown
+
 SEM PatExpr
-  | Rec         loc     .  appFunNm     :=  hsnUnknown
+  | App         lhs     .  (appFunPP,appArgPPL)
+                                        :=  mkExtAppPP  (@func.appFunNm,@func.appFunPP,@func.appArgPPL)
+                                                        (@arg.appFunNm,@arg.appFunPP,@arg.appArgPPL,@arg.pp)
+  | Rec         loc     .  appFunNm     :=  @recPatExpr.extNm
+                lhs     .  appArgPPL    :=  reverse @recPatExpr.ppL
+                        .  appFunPP     :=  @recPatExpr.pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
