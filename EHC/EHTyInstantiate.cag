@@ -28,7 +28,7 @@ tyInst' mkFreshTy uniq ty
   = s |=> ty'
   where  i u (Ty_Quant v t)  =  let  (u',v') = mkNewUID u
                                      (s,t') = i u' t
-                                in   ((v `cnstrUnit` (mkFreshTy v')) |=> s,t')
+                                in   ((v `cnstrTyUnit` (mkFreshTy v')) |=> s,t')
          i _ t               =  (emptyCnstr,t)
          (s,ty')             =  i uniq ty
 
@@ -56,7 +56,7 @@ tyInst uniq onlyExists howToInst ty
   where  i u (Ty_Quant q v t) | not (tyquIsForall q && onlyExists)
                              =  let  (u',v')        = mkNewUID u
                                      (s,t',tvl')    = i u' t
-                                in   ((v `cnstrUnit` (howToInst q v')) |=> s,t',v':tvl')
+                                in   ((v `cnstrTyUnit` (howToInst q v')) |=> s,t',v':tvl')
          i _ t               =  (emptyCnstr,t,[])
          (s,ty',tvl)         =  i uniq ty
 

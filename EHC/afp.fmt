@@ -99,7 +99,7 @@
 
 %format Cnstr       = "\mathcal{C}"
 %format Cnstrk		= Cnstr "^{k}"
-%format `cnstrUnit`	= :->
+%format `cnstrTyUnit`	= :->
 
 %format Qu          = "\mathcal{Q}"
 
@@ -116,6 +116,8 @@
 %format tcon        = c
 
 %format pvar        = "{\varpi}"
+%format pivar       = p
+%format pempty      = emptyset
 
 %format inst		= "inst"
 %format instv		= inst "_{" tvar  "}"

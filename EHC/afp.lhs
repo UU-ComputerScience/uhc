@@ -2258,7 +2258,12 @@ abstract syntax we can define pretty printing for a type:
 Some additional attributes are necessary to determine whether an |App| is at the top of
 the spine of |App|'s
 
+\savecolumns
 \chunkCmdUseMark{EHTyCommonAG.1.ConNm}
+\restorecolumns
+\chunkCmdUseMark{EHTyCommonAG.1.ConNm.ConApp}
+\restorecolumns
+\chunkCmdUseMark{EHTyCommonAG.1.ConNm.Ty}
 \chunkCmdUseMark{EHTyCommonAG.1.SpinePos}
 
 \paragraph{Parenthesis.}
@@ -3701,9 +3706,10 @@ A set of \IxAsDef{constraint}s |Cnstr| is a set of bindings for type variables,
 represented as
 
 \chunkCmdUseMark{EHCnstr.2.Cnstr.Base}
-\chunkCmdUseMark{EHCnstr.2.Cnstr.Rest}
+\chunkCmdUseMark{EHCnstr.2.Cnstr.emptyCnstr}
+\chunkCmdUseMark{EHCnstr.2.Cnstr.cnstrTyUnit}
 
-If |cnstrUnit| is used as an infix operator it is printed as |`cnstrUnit`| in
+If |cnstrTyUnit| is used as an infix operator it is printed as |`cnstrTyUnit`| in
 the same way as used in type rules.
 
 Different strategies can be used to cope with constraints
@@ -6583,11 +6589,35 @@ sigma  =  ..
 pi     =  r lacks \
        |  C ^^ Vec(sigma)
        |  v = sigma
+       |  pivar
 \end{code}
 The alternatives for |pi| respectively denote the lacking constraint for extensible records, class constraint and equality constraint
 (for use by generalized data types).
 Partial type signatures w.r.t. predicates are denoted by |(# ... #)|.
 Alternatively, the more concise denotations |pi| and |pvar| are used for |(# pi #)| and |(# ... #)| respectively.
+A predicate var |(# pivar #)| is shorthanded by |pivar|.
+\item
+The constraint language has to deal with additional constraints on predicates:
+\begin{code}
+Cnstr  =  ..
+       |  pivar  :-> pi
+       |  pvar   :-> pi : pvar
+       |  pvar   :-> pempty
+\end{code}
+These additional
+alternatives deal with 
+which predicate may replace a predicate variable |p| or how much predicates may replace a a wildcard |(# ... #)| or |pvar|.
+The constraint |p :-> pi| is similar to type variables; the |pvar :-> | constraints limit the number of
+predicates.
+\item The environment |Gamma| now also may contain evidence for predicates:
+\begin{code}
+Gamma  =  ..
+       |  pi ~> Transl
+\end{code}
+|Transl| is a piece of code representing the proof evidence for the predicate.
+A |Transl| may contain holes referring to not yet resolved predicates, allowing
+delay of proving predicates.
+A substitution mechanism substitutes these holes with the actual proof evidence.
 \end{itemize}
 
 The idea here is that if an implicit parameter |pia| is expected, whereas an expression translating to |Transl2| is given,
@@ -6734,11 +6764,13 @@ by the Haskell programmer itself.
 \subsection{Expr rules}
 
 \rulerCmdUse{rules.expr9.app}
+\rulerCmdUse{rules.expr9.lam}
 
 
 \subsection{Fitting rules}
 
-\rulerCmdUse{rules.fit9.pred}
+\rulerCmdUse{rules.fit9.predSymmetric}
+\rulerCmdUse{rules.fit9.predAsymmetric}
 
 
 %}

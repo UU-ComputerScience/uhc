@@ -16,7 +16,7 @@
 %%% Substitution for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 import(List, EHCommon, EHTy, UU.Pretty, EHTyPretty) export(Cnstr, emptyCnstr, cnstrUnit, Substitutable(..), unionL)
+%%[2 import(List, EHCommon, EHTy, UU.Pretty, EHTyPretty) export(Cnstr, emptyCnstr, cnstrTyUnit, Substitutable(..), unionL)
 %%]
 
 %%[4 export(cnstrFilter)
@@ -32,20 +32,45 @@
 %%[2.Cnstr.Base
 newtype Cnstr  = Cnstr (AssocL TyVarId Ty) deriving Show
 
-cnstrLookup :: TyVarId -> Cnstr -> Maybe Ty
-cnstrLookup tv (Cnstr s) = lookup tv s
+cnstrTyLookup :: TyVarId -> Cnstr -> Maybe Ty
+cnstrTyLookup tv (Cnstr s) = lookup tv s
 %%]
 
-%%[2.Cnstr.Rest
+%%[9 -2.Cnstr.Base
+data CnstrInfo  = CITy Ty
+                deriving (Eq,Show)
+
+newtype Cnstr   = Cnstr (AssocL TyVarId CnstrInfo) deriving Show
+
+cnstrTyLookup :: TyVarId -> Cnstr -> Maybe Ty
+cnstrTyLookup tv (Cnstr s)
+  = case lookup tv s of
+      Just (CITy t)  -> Just t
+      _              -> Nothing
+%%]
+
+%%[2.Cnstr.emptyCnstr
 emptyCnstr :: Cnstr
 emptyCnstr = Cnstr []
-
-cnstrUnit :: TyVarId -> Ty -> Cnstr
-cnstrUnit tv t = Cnstr [(tv,t)]
 %%]
 
-%%[4
+%%[2.Cnstr.cnstrTyUnit
+cnstrTyUnit :: TyVarId -> Ty -> Cnstr
+cnstrTyUnit tv t = Cnstr [(tv,t)]
+%%]
+
+%%[9.Cnstr.cnstrTyUnit -2.Cnstr.cnstrTyUnit
+cnstrTyUnit :: TyVarId -> Ty -> Cnstr
+cnstrTyUnit tv t = Cnstr [(tv,CITy t)]
+%%]
+
+%%[4.cnstrFilter
 cnstrFilter :: (TyVarId -> Ty -> Bool) -> Cnstr -> Cnstr
+cnstrFilter f (Cnstr l) = Cnstr (filter (uncurry f) l)
+%%]
+
+%%[9.cnstrFilter -4.cnstrFilter
+cnstrFilter :: (TyVarId -> CnstrInfo -> Bool) -> Cnstr -> Cnstr
 cnstrFilter f (Cnstr l) = Cnstr (filter (uncurry f) l)
 %%]
 
@@ -73,7 +98,7 @@ instance Substitutable Ty where
 %%]
 
 %%[SubstitutableTyVar.2
-                               Ty_Var tvar      ->  maybe t id (cnstrLookup tvar s)
+                               Ty_Var tvar      ->  maybe t id (cnstrTyLookup tvar s)
 %%]
 
 %%[SubstitutableTyTVarsHead
@@ -98,7 +123,7 @@ instance Substitutable Ty where
 %%]
 
 %%[SubstitutableTyVar.3
-                               Ty_Var tvar f    ->  if isBound tvar then t else maybe t id (cnstrLookup tvar s)
+                               Ty_Var tvar f    ->  if isBound tvar then t else maybe t id (cnstrTyLookup tvar s)
 %%]
 
 %%[SubstitutableTyTVarsVar.3
@@ -185,13 +210,19 @@ instance Substitutable Cnstr where
   ftv                  (Cnstr sl)      =   ftv . map snd $ sl
 %%]
 
+%%[9
+instance Substitutable CnstrInfo where
+  s |=>  (CITy t) = CITy (s |=> t)
+  ftv    (CITy t) = ftv t
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Fixating free type vars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
 fixTyVarsCnstr :: Substitutable s => s -> Cnstr
-fixTyVarsCnstr = Cnstr . map (\v -> (v,Ty_Var v TyVarCateg_Fixed)) . ftv
+fixTyVarsCnstr = Cnstr . map (\v -> (v,CITy (Ty_Var v TyVarCateg_Fixed))) . ftv
 
 tyFixTyVars :: Substitutable s => s -> s
 tyFixTyVars s = fixTyVarsCnstr s |=> s
@@ -203,6 +234,11 @@ tyFixTyVars s = fixTyVarsCnstr s |=> s
 
 %%[2
 instance PP Cnstr where
-  pp (Cnstr l) = ppListSepFill "" "" ", " (map (\(n,v) -> pp n >|< ":->" >|< ppTy v) l)
+  pp (Cnstr l) = ppListSepFill "" "" ", " (map (\(n,v) -> pp n >|< ":->" >|< pp v) l)
+%%]
+
+%%[9
+instance PP CnstrInfo where
+  pp (CITy t) = pp t
 %%]
 

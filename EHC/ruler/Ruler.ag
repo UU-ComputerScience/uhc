@@ -367,6 +367,9 @@ ATTR MbJExpr JExpr [ needToParen: Bool | | ]
 
 SEM JExpr
   | Sel         selMbJExpr  .   needToParen =   False
+                jExpr       .   needToParen =   case @selMbJExpr.mbPPLaTeX of
+                                                  Just ("_",_) -> False
+                                                  _            -> @lhs.needToParen
   | Paren App Op AppTop SelTop Sel
                 loc         .   needToParen =   True
 

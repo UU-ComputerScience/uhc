@@ -15,7 +15,7 @@
 
 %%[1
 DATA TyAGItf
-  | AGItf   ty              : Ty
+  | AGItf       ty              : Ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -24,21 +24,21 @@ DATA TyAGItf
 
 %%[1
 DATA Ty
-  | Con     nm              : {HsName}
-  | App     func            : Ty
-            arg             : Ty
+  | Con         nm              : {HsName}
+  | App         func            : Ty
+                arg             : Ty
   | Any
 %%]
 
 %%[2.TyVar
 DATA Ty
-  | Var     tv              : {TyVarId}
+  | Var         tv              : {TyVarId}
 %%]
 
 %%[3.TyVar -2.TyVar
 DATA Ty
-  | Var     tv              : {TyVarId}
-            categ           : TyVarCateg
+  | Var         tv              : {TyVarId}
+                categ           : TyVarCateg
 
 DATA TyVarCateg
   | Plain
@@ -47,15 +47,15 @@ DATA TyVarCateg
 
 %%[3.Quant
 DATA Ty
-  | Quant   tv              : {TyVarId}
-            ty              : Ty
+  | Quant       tv              : {TyVarId}
+                ty              : Ty
 %%]
 
 %%[4.Quant -3.Quant
 DATA Ty
-  | Quant   qu              : TyQu
-            tv              : {TyVarId}
-            ty              : Ty
+  | Quant       qu              : TyQu
+                tv              : {TyVarId}
+                ty              : Ty
 
 DATA TyQu
   | Forall
@@ -70,20 +70,26 @@ DATA TyQu
 
 %%[6_1
 DATA Ty
-  | Eq      tv              : {TyVarId}
-            ty              : Ty
+  | Eq          tv              : {TyVarId}
+                ty              : Ty
 %%]
 
 %%[7
 DATA Ty
-  | Ext     ty              : Ty
-            nm              : {HsName}
-            extTy           : Ty
+  | Ext         ty              : Ty
+                nm              : {HsName}
+                extTy           : Ty
 %%]
 
 %%[9
 DATA Ty
-  | Pred    pr              : Pred
+  | Pred        pr              : Pred
+  | Impls       impls           : Impls
+
+DATA Impls
+  | Tail        tv              : {UID}
+  | Cons        pr              : Pred
+                tl              : Impls
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -92,11 +98,11 @@ DATA Ty
 
 %%[9
 DATA Pred
-  | Lacks   ty              : Ty
-            nm              : {HsName}
-  | Class   ty              : Ty
-  | Equal   tvTy            : Ty
-            ty              : Ty
+  | Lacks       ty              : Ty
+                nm              : {HsName}
+  | Class       ty              : Ty
+  | Equal       tvTy            : Ty
+                ty              : Ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -108,7 +114,7 @@ SET AllTy = Ty
 %%]
 
 %%[9.AllTy -1.AllTy
-SET AllTy = Ty Pred
+SET AllTy = Ty Pred Impls
 %%]
 
 
