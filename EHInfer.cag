@@ -41,12 +41,13 @@ SEM Expr
                 loc         .  lQuValGam            :=  valGamInst1Exists @lUniq2 . valGamQuantify @gTyTvL $ @lSubsValGam
 %%]
 
-%%[6_2
+%%[4_1
 SEM Expr
   | Let         loc         .  (lElimValGam,elimTyCnstr,errGam)
-  													=	valGamElimBinds @fe @lUniq4 (@decls.tyCnstr |=> @lValGam)
-  	         	         	.  lSubsValGam          :=  @elimTyCnstr |=> @lElimValGam
+                                                    =   valGamElimBinds @fe @lUniq4 (@decls.tyCnstr |=> @lValGam)
+                            .  lSubsValGam          :=  @elimTyCnstr |=> @lElimValGam
                             .  gSubsValGam          :=  @elimTyCnstr |=> @decls.tyCnstr |=> @gValGam
+                body        .  tyCnstr              =   @elimTyCnstr |=> @decls.tyCnstr
 %%]
 
 %%[9

@@ -323,22 +323,22 @@ SEM Expr
 
 %%[2
 SEM Expr
-  | Let         loc     .  ppExtra  :=  ppCmt (ppGam (@body.tyCnstr |=> @lValGam))
+  | Let         loc     .  ppExtra  :=  ppCmt (ppGam (@lhs.finTyCnstr |=> @lValGam))
 %%]
 
 %%[3
 SEM Expr
-  | Let         loc     .  ppExtra  :=  ppCmt (ppGam @lQuValGam)
+  | Let         loc     .  ppExtra  :=  ppCmt (ppGam (@lhs.finTyCnstr |=> @lQuValGam))
 %%]
 
 %%[6
 SEM Expr
-  | Let         loc     .  ppExtra  :=  ppCmt (ppGam @lQuTyGam) >-< ppCmt (ppGam @lQuValGam)
+  | Let         loc     .  ppExtra  :=  ppCmt (ppGam @lQuTyGam) >-< ppCmt (ppGam (@lhs.finTyCnstr |=> @lQuValGam))
 %%]
 
 %%[9
 SEM Expr
-  | Let         loc     .  ppExtra  :=  ppCmt  (   ppGam @lQuTyGam   >-< ppGam @lQuValGam
+  | Let         loc     .  ppExtra  :=  ppCmt  (   ppGam @lQuTyGam   >-< ppGam (@lhs.finTyCnstr |=> @lQuValGam)
                                                >-< ppGam @lQuPrIGam  >-< ppGam @decls.patPrElimGam
                                                )
 %%]

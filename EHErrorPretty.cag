@@ -106,7 +106,7 @@ SEM Err
                                                         @ty1 @ty2 (mkTyVar @tvar) @ty2detail
 %%]
 
-%%[6_2
+%%[4_1
 SEM Err
   | InconsistentBind    lhs     .  pp   =   ppMsgErr    "Inconsistent binds for tvar"
                                                         (    "in type :" >#< pp @ty

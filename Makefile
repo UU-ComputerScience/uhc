@@ -142,7 +142,7 @@ SHUFFLE_DOC_PDF		:= $(SHUFFLE_DIR)/ShuffleDoc.pdf
 
 SHUFFLE_SRC			:= $(SHUFFLE_DIR)/$(SHUFFLE_AG)
 
-SHUFFLE_ORDER		:= 1 < 2 < 3 < 4 < 5 < 6 < 7 < 8 < 9 < 10 < 11, 6 < 6_1, 6 < 6_2
+SHUFFLE_ORDER		:= 1 < 2 < 3 < 4 < 4_1 < 5 < 6 < 7 < 8 < 9 < 10 < 11, 6 < 6_1
 
 
 RULER				:= bin/ruler
@@ -314,6 +314,14 @@ EHC_V4				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 4
 
 
+### Version 4:1
+V					:= 4_1
+VF					:= 4_1
+include $(MK_EHFILES)
+EHC_V4_1			:= $(addprefix $(VF)/,$(EHC))
+### End of Version 4_1
+
+
 ### Version 5
 V					:= 5
 VF					:= $(V)
@@ -336,14 +344,6 @@ VF					:= 6_1
 include $(MK_EHFILES)
 EHC_V6_1			:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 6_1
-
-
-### Version 6:2
-V					:= 6_2
-VF					:= 6_2
-include $(MK_EHFILES)
-EHC_V6_2			:= $(addprefix $(VF)/,$(EHC))
-### End of Version 6_2
 
 
 ### Version 7

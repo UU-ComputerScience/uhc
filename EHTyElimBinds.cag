@@ -9,22 +9,24 @@
 %%% Haskell importable interface to check/elimination for/of inconsistent/ binds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6_2 hs import(EHCommon,EHTy,EHError,EHCnstr,EHSubstitutable) export(tyElimBinds)
+%%[4_1 hs import(EHCommon,EHTy,EHError,EHCnstr,EHSubstitutable) export(tyElimBinds)
 %%]
 
+%%[4_1 hs import(EHDebug,EHErrorPretty)
+%%]
 
-%%[6_2.WRAPPER import(EHTyAbsSyn)
+%%[4_1.WRAPPER import(EHTyAbsSyn)
 WRAPPER TyAGItf
 %%]
 
-%%[6_2.tyElimBinds hs
-type FitsIn = UID -> Ty -> Ty -> (Ty,Cnstr,ErrL)
+%%[4_1.tyElimBinds hs
+type FitsIn = FIOpts -> UID -> Ty -> Ty -> (Ty,Cnstr,ErrL)
 
-tyElimBinds :: FitsIn -> UID -> TyVarIdL -> Ty -> (Ty,Cnstr,ErrL)
-tyElimBinds fitsIn uniq meetTvL ty
+tyElimBinds :: FitsIn -> FIOpts -> UID -> TyVarIdL -> Ty -> (Ty,Cnstr,ErrL)
+tyElimBinds fitsIn opts uniq meetTvL ty
   =  let  t =  wrap_TyAGItf
                  (sem_TyAGItf (TyAGItf_AGItf ty))
-                 (Inh_TyAGItf {fitsIn_Inh_TyAGItf = fitsIn, meetTvL_Inh_TyAGItf = meetTvL, gUniq_Inh_TyAGItf = uniq})
+                 (Inh_TyAGItf {fitsIn_Inh_TyAGItf = fitsIn, meetTvL_Inh_TyAGItf = meetTvL, opts_Inh_TyAGItf = opts, gUniq_Inh_TyAGItf = uniq})
      in   (repl_Syn_TyAGItf t,tyCnstr_Syn_TyAGItf t,errL_Syn_TyAGItf t)
 %%]
 
@@ -32,7 +34,7 @@ tyElimBinds fitsIn uniq meetTvL ty
 %%% fitsIn, parameterized with env+opts, passed as param to avoid mutual module recursion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6_2
+%%[4_1
 ATTR TyAGItf AllAllTy [ fitsIn: FitsIn | | ]
 %%]
 
@@ -40,15 +42,15 @@ ATTR TyAGItf AllAllTy [ fitsIn: FitsIn | | ]
 %%% Other flags: is it a meet?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6_2
-ATTR TyAGItf AllAllTy [ meetTvL: TyVarIdL | | ]
+%%[4_1
+ATTR TyAGItf AllAllTy [ meetTvL: TyVarIdL ^^ opts: FIOpts | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Uniq
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6_2
+%%[4_1
 ATTR TyAGItf [ gUniq: UID | | ]
 ATTR AllAllTy [ | gUniq: UID | ]
 
@@ -60,17 +62,25 @@ SEM TyL
 %%% Check/elim
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6_2
+%%[4_1
 ATTR AllAllTy [ | | repl: SELF  ]
 ATTR TyAGItf  [ | | repl: Ty    ]
 
 SEM Ty
-  | Bind            (lhs.repl,loc.errL)     =   if null @tyL.bndErrL
-                                                then (if @tv `elem` @lhs.meetTvL then mkTyVar @tv else @tyL.resTy,[])
-                                                else (mkTyVar @tv,[Err_InconsistentBind @lhs.self @tv @tyL.replL])
+  | Bind            (lhs.repl,loc.errL,loc.iCnstr,loc.eCnstr)
+                                            =   case cnstrTyLookup @tv @lhs.internCnstr of
+                                                    Just t
+                                                        ->  (t,[],emptyCnstr,emptyCnstr)
+                                                    _   ->  if @tyL.canMeet
+                                                            then  if @tv `elem` @lhs.meetTvL
+                                                                  then (mkTyVar @tv,[],emptyCnstr,@tv `cnstrTyUnit` @tyL.resTy)
+                                                                  else (@tyL.resTy,[],emptyCnstr,emptyCnstr)
+                                                            else  (mkTyVar @tv,[Err_InconsistentBind @lhs.self @tv @tyL.replL],@tv `cnstrTyUnit` mkTyVar @tv,emptyCnstr)
+                    lhs     .   internCnstr =   @iCnstr |=> @tyL.internCnstr
+                            .   externCnstr =   @eCnstr |=> @tyL.externCnstr
 %%]
 
-%%[6_2
+%%[4_1
 ATTR TyL [ | | replL: TyL ]
 
 SEM TyL
@@ -82,49 +92,54 @@ SEM TyL
 %%% Errors
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6_2
+%%[4_1
 ATTR TyAGItf AllAllTy [ | | errL USE {++} {[]}: ErrL ]
-ATTR TyL [ | | bndErrL: ErrL ]
+ATTR TyL [ | | canMeet: Bool ]
 
 SEM Ty
   | Bind            lhs     .   errL        =   @errL ++ @tyL.errL
 
 SEM TyL
-  | Nil             lhs     .   bndErrL     =   []
+  | Nil             lhs     .   canMeet     =   True
+
+SEM TyAGItf
+  | AGItf           lhs     .   errL        =   @ty.errL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Unification of all binds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6_2
-ATTR AllAllTy [ | tyCnstr: Cnstr | ]
+%%[4_1
+ATTR AllAllTy [ | internCnstr: Cnstr ^^ externCnstr: Cnstr | ]
 ATTR TyAGItf  [ | | tyCnstr: Cnstr ]
 ATTR TyL [ ty: Ty | | resTy: Ty ]
 
 SEM TyL
   | Cons            loc     .   (ty,cnstr,errL)
-                                            =   @lhs.fitsIn @lUniq @lhs.ty (@hd.tyCnstr |=> @hd.repl)
+                                            =   @lhs.fitsIn @lhs.opts @lUniq @lhs.ty (@hd.internCnstr |=> @hd.repl)
                     tl      .   ty          =   @ty
-                            .   tyCnstr     =   @cnstr |=> @hd.tyCnstr
-                    lhs     .   (resTy,tyCnstr,bndErrL,errL)
-                                            =   if null @errL
-                                                then (@tl.resTy,@tl.tyCnstr,[],@hd.errL ++ @tl.errL)
-                                                else (@lhs.ty,@lhs.tyCnstr,@errL,[])
+                            .   internCnstr =   @cnstr |=> @hd.internCnstr
+                    lhs     .   (resTy,internCnstr,externCnstr,canMeet,errL)
+                                            =   if null @errL && null @hd.errL
+                                                then (@tl.resTy,@tl.internCnstr,@tl.externCnstr,@tl.canMeet,@tl.errL)
+                                                else (@lhs.ty,@lhs.internCnstr,@lhs.externCnstr,null @errL,@hd.errL)
   | Nil             lhs     .   resTy       =   @lhs.ty
 
 SEM Ty
   | Bind            tyL     .   ty          =   Ty_Any
 
 SEM TyAGItf
-  | AGItf           ty      .   tyCnstr     =   emptyCnstr
+  | AGItf           ty      .   externCnstr =   emptyCnstr
+                            .   internCnstr =   emptyCnstr
+                    lhs     .   tyCnstr     =   @ty.externCnstr |=> @ty.internCnstr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Orig type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6_2
+%%[4_1
 ATTR AllTy [ self: Ty | | ]
 
 SEM TyAGItf

@@ -5936,10 +5936,10 @@ has as its effect that instantiation will be done a la Hindley-Milner.
 Finally, all of this is encoded as follows
 
 \savecolumns
-\chunkCmdUseMark{EHTyFitsIn.4.FIOpts.hd}
+\chunkCmdUseMark{EHCommon.4.FIOpts.hd}
 \restorecolumns
-\chunkCmdUseMark{EHTyFitsIn.4.FIOpts.tl}
-\chunkCmdUseMark{EHTyFitsIn.4.FIOpts.defaults}
+\chunkCmdUseMark{EHCommon.4.FIOpts.tl}
+\chunkCmdUseMark{EHCommon.4.FIOpts.defaults}
 
 \paragraph{Co- and contravariance.}
 For tuples the check |(sigma1,sigma2) <= (sigma3,sigma4)|
@@ -6060,7 +6060,7 @@ options |fiopt| should be made strong. This is described via a environment
 encoding this information
 
 \chunkCmdUseMark{EHTyFitsIn.4.AppSpine}
-\chunkCmdUseMark{EHTyFitsIn.4.mkStrong}
+\chunkCmdUseMark{EHTyFitsIn.4.fioMkStrong}
 \chunkCmdUseMark{EHTyFitsIn.4.AppSpineGam}
 \chunkCmdUseMark{EHTyFitsIn.4.appSpineGam}
 
@@ -6564,7 +6564,7 @@ or alternatively, if only the decision to let |h| be monomorphic could be delaye
 We choose the latter, that is, we introduce a way of delaying a binding decision for a type variable.
 
 In order to be able to rebind a type variable to a more polymorphic we may not forget to which type variable a type was assigned.
-This can be remembered by just relating the type variable to its type:
+This can be remembered by just relating the type variable to its type(s):
 
 \begin{code}
 sigma  =  ...
@@ -6591,10 +6591,49 @@ Here, in a similar manner, if nothing is known about an identifier, its type var
 all possible instantiations found during type inferencing.
 The remaining rules of \figRef{rules.fit4.bind} specify what should be done if a bind type is encountered in |<=|.
 
+Some additional notation for manipulating vectors is used as well.
+A vector |Vec(x)| of |x|'s is alternatively notated as |VecI(x)(i)| where |i| implicitly ranges over all indices referring to
+an element of the vector. Any predicate referring to |i| has an implicit quantifier |forall ^ i| in front of it.
+Extraction of an individual element of the array with index |i| is notated by |VecI(x)(..,i,..)|.
+A predicate referring to this |i| has an implicit |exists ^ i| in front of it.
+
+Some additional options need to be passed as well:
+
+\chunkCmdUseMark{EHTyFitsIn.6.2.FIOpts.defaults}
+
 \rulerCmdUse{rules.fit4.bind}
-\rulerCmdUse{rules.expr4.B}
+\rulerCmdUse{rules.expr4.bind}
+\rulerCmdUse{rules.elimb4}
+\rulerCmdUse{rules.elimbGam4}
 
+The following example really is responsible for delaying subsumption checks:
 
+\begin{code}
+%%4srcfile(test/4-impred4.eh%%)
+\end{code}
+
+There is no single usage of |h| which enforces |h :: forall a . forall b . (a,b) -> (a,b)|,
+the meet of |forall a . (Int,a) -> (Int,a)| and |forall a . (a,Int) -> (a,Int)| done at the generalization of |f|
+computes this type.
+Newfound polymorphism (as in |g1 h|) can be used to deduce a more general type for (e.g.) |(Int,Int) -> v| found in |h (3,4)|...
+
+???? Meet instead of subsumption
+
+\subsection{Propagation of impredicativity + predicates + coercions}
+
+Some examples:
+
+\begin{code}
+let  g  ::  (forall a . A a => a -> a) -> Int
+     f  =   \h ->  let  x1 = g h
+                        x2 = h 3
+                   in   ...
+in   ...
+\end{code}
+
+Function |h| has type |h :: forall a . A a => a -> a|.
+However, it cannot be instantiated immediately in its use in |h 3| because later on |h| might turn out
+to be more polymorphic. Here it does not matter because |h| already is polymorphic enough...
 
 %endif % onlyCurrentWork
 

@@ -30,6 +30,9 @@
 %%[4 import(EHTyInstantiate) export(valGamInst1Exists)
 %%]
 
+%%[4_1 export(gamMapThr)
+%%]
+
 %%[5 export(gamTop)
 %%]
 
@@ -40,9 +43,6 @@
 %%]
 
 %%[6 export(mkTGI)
-%%]
-
-%%[6_2 export(gamMapThr)
 %%]
 
 %%[7 export(mkTGIData)
@@ -100,12 +100,7 @@ gamMapElts :: (v -> v') -> Gam k v -> Gam k v'
 gamMapElts f = gamMap (\(n,v) -> (n,f v))
 %%]
 
-%%[5
-gamTop ::  Gam k v -> Gam k v
-gamTop  (Gam (l:ll)) = Gam [l]
-%%]
-
-%%[6_2
+%%[4_1
 gamMapThr :: ((k,v) -> t -> ((k',v'),t)) -> t -> Gam k v -> (Gam k' v',t)
 gamMapThr f thr (Gam ll)
   =  let (ll',thr')
@@ -118,6 +113,11 @@ gamMapThr f thr (Gam ll)
                       ) ([],thr) ll
               )
      in  (Gam ll',thr')
+%%]
+
+%%[5
+gamTop ::  Gam k v -> Gam k v
+gamTop  (Gam (l:ll)) = Gam [l]
 %%]
 
 %%[8.gamUpd

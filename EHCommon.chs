@@ -51,6 +51,15 @@
 %%[4 export(CoContraVariance(..), cocoOpp)
 %%]
 
+%%[4 export(FIMode(..),fimOpp,fimSwapCoCo)
+%%]
+
+%%[4 export(FIOpts(..), fioSwapCoCo, fioSwapOpts, strongFIOpts, instFIOpts, instLFIOpts)
+%%]
+
+%%[4_1 export(unifyFIOpts,meetFIOpts)
+%%]
+
 %%[6 export(hsnStar)
 %%]
 
@@ -91,6 +100,9 @@
 %%]
 
 %%[8 export(hsnLclSupplyL)
+%%]
+
+%%[9 export(predFIOpts,implFIOpts)
 %%]
 
 %%[9 export(hsnOImpl,hsnCImpl,hsnIsUnknown)
@@ -671,6 +683,123 @@ assocLElts = map snd
 
 assocLKeys :: AssocL k v -> [k]
 assocLKeys = map fst
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fitting mode (should be in FitsIn, but here it avoids mut rec modules)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4.FIMode
+data FIMode  =  FitSubLR
+             |  FitSubRL
+             |  FitUnify
+%%]
+%%[4_1
+             |  FitMeet
+             |  FitJoin
+%%]
+%%[4
+             deriving (Eq,Ord,Show)
+%%]
+
+%%[4
+fimOpp :: FIMode -> FIMode
+fimOpp m
+  =  case m of
+       FitSubLR  -> FitSubRL
+       FitSubRL  -> FitSubLR
+%%]
+%%[4_1
+       FitMeet   -> FitJoin
+       FitJoin   -> FitMeet
+%%]
+%%[4
+       _         -> m
+%%]
+
+%%[4
+fimSwapCoCo :: CoContraVariance -> FIMode -> FIMode
+fimSwapCoCo coco m = case coco of {ContraVariant -> fimOpp m; _ -> m}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fitting options (should be in FitsIn, but here it avoids mut rec modules)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4.FIOpts.hd
+data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindRFirst           ::  Bool
+                        ,  fioBindLFirst     ::  Bool                ,  fioUniq                 ::  UID
+                        ,  fioMode           ::  FIMode
+%%]
+%%[4_1
+                        ,  fioBindToTyBind   ::  Bool
+%%]
+%%[7.FIOpts
+                        ,  fioNoRLabElimFor  ::  [HsName]
+%%]
+%%[9.FIOpts
+                        ,  fioPredAsTy       ::  Bool                ,  fioAllowRPredElim       ::  Bool
+                        ,  fioDontBind       ::  TyVarIdL
+%%]
+%%[4.FIOpts.tl
+                        } deriving Show
+%%]
+
+%%[4.strongFIOpts.hd
+strongFIOpts :: FIOpts
+strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindRFirst           =   True
+                        ,  fioBindLFirst     =   True                ,  fioUniq                 =   uidStart
+                        ,  fioMode           =   FitSubLR
+%%]
+%%[4_1
+                        ,  fioBindToTyBind   =   False
+%%]
+%%[7.strongFIOpts
+                        ,  fioNoRLabElimFor  =   []
+%%]
+%%[9.strongFIOpts
+                        ,  fioPredAsTy       =   False               ,  fioAllowRPredElim       =   True
+                        ,  fioDontBind       =   []
+%%]
+%%[4.strongFIOpts.tl
+                        }
+%%]
+
+%%[4.FIOpts.defaults
+instLFIOpts :: FIOpts
+instLFIOpts = strongFIOpts {fioBindRFirst = False}
+
+instFIOpts :: FIOpts
+instFIOpts = instLFIOpts {fioLeaveRInst = True, fioBindLFirst = False}
+%%]
+
+%%[4_1.FIOpts.defaults
+unifyFIOpts :: FIOpts
+unifyFIOpts = strongFIOpts {fioMode = FitUnify}
+
+meetFIOpts :: FIOpts
+meetFIOpts = unifyFIOpts {fioMode = FitMeet}
+%%]
+
+%%[5
+weakFIOpts :: FIOpts
+weakFIOpts = strongFIOpts {fioLeaveRInst = True, fioBindRFirst = False}
+%%]
+
+%%[9
+predFIOpts :: FIOpts
+predFIOpts = strongFIOpts {fioPredAsTy = True, fioLeaveRInst = True}
+
+implFIOpts  :: FIOpts
+implFIOpts = strongFIOpts {fioAllowRPredElim = False}
+%%]
+
+%%[4
+fioSwapOpts :: FIOpts -> FIOpts
+fioSwapOpts fio = fio { fioBindRFirst = fioBindLFirst fio, fioBindLFirst = fioBindRFirst fio }
+
+fioSwapCoCo :: CoContraVariance -> FIOpts -> FIOpts
+fioSwapCoCo coco fio = fio {fioMode = fimSwapCoCo coco (fioMode fio)}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

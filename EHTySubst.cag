@@ -12,7 +12,6 @@
 %%[2 hs import(EHCommon,EHTy,EHCnstr) export(tyAppCnstr)
 %%]
 
-
 %%[2.WRAPPER import(EHTyAbsSyn)
 WRAPPER TyAGItf
 %%]
@@ -60,7 +59,7 @@ SEM Ty
   | Quant           ty      .   isBound     =   (\v -> v == @tv || @lhs.isBound v)
 %%]
 
-%%[6_2
+%%[4_1
 SEM Ty
   | Bind            lhs     .   repl        =   tvRepl @tv @lhs.cnstr @lhs.isBound @repl
 %%]

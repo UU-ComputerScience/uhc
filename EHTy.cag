@@ -24,10 +24,10 @@
 %%[4 hs export(TyQu(..), tyquExists, tyquIsExists, tyquIsForall, showTyQu) 
 %%]
 
-%%[6 hs export(kiStar) 
+%%[4_1 hs export(tyBindTy) 
 %%]
 
-%%[6_2 hs export(tyBindTy) 
+%%[6 hs export(kiStar) 
 %%]
 
 %%[7 hs import(List) export(rowExtCmp,rowLabCmp,tyRowCanonOrder,kiRow,tyRowEmpty,tyRecEmpty,tySumEmpty,tyRowExtr,tyRecExtr,mkTyRow,mkTyRec,mkTySum,mkTyRecExt,tyRowExts) 
@@ -77,7 +77,7 @@ type TyVarId    = UID
 type TyVarIdL   = [TyVarId]
 %%]
 
-%%[6_2 -1.TyL
+%%[4_1 -1.TyL
 %%]
 
 %%[9 hs
@@ -327,13 +327,13 @@ tyAppArgs    = snd . tyAppFunArgs
 tyProdArgs = tyAppArgs
 %%]
 
-%%[7.tyProdArgs -1.tyProdArgs hs
-tyProdArgs ty = let (t,al) = tyRecExts ty in map snd al
-%%]
-
-%%[6_2 hs
+%%[4_1 hs
 tyBindTy :: Ty -> Ty
 tyBindTy t = case t of {Ty_Bind _ tl -> last tl; _ -> t}
+%%]
+
+%%[7.tyProdArgs -1.tyProdArgs hs
+tyProdArgs ty = let (t,al) = tyRecExts ty in map snd al
 %%]
 
 %%[7 hs
