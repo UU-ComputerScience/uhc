@@ -59,7 +59,8 @@ SEM Ty
                                             =   if @tv `elem` @lhs.elimTvL
                                                 then  case @tyL.replExpose of
                                                         []      ->  (@replTv,@lhs.cnstr)
-                                                        (r:_)   ->  (r,(@tv `cnstrTyUnit` r) |=> @tyL.cnstr)
+                                                        (r:_)   ->  let  (r',c) = @tv `cnstrTyRevUnit` r
+                                                                    in   (r',c |=> @tyL.cnstr)
                                                 else  let  r = Ty_Both @tv @tyL.replExpose
                                                       in   (r,@tyL.cnstr)
                     lhs     .   repl        =   if @tv `elem` @lhs.elimTvL then @replTv else @repl

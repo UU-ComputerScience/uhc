@@ -114,6 +114,12 @@ DATA TyPlus
   | Ty          ty              : Ty
 %%]
 
+%%[4_2.TyPlus -4_1.TyPlus
+DATA TyPlus
+  | Ty          ty              : Ty
+                hardness        : {TyHardness}
+%%]
+
 %%[9_1.TyPlus -4_1.TyPlus
 DATA TyPlus
   | Ty          ty              : Ty

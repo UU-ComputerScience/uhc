@@ -31,7 +31,7 @@
 %%[4_2 export(cnstrMapThrTy,cnstrDelAlphaRename)
 %%]
 
-%%[4_2 export(tyAsCnstr)
+%%[4_2 export(tyAsCnstr,cnstrTyRevUnit)
 %%]
 
 %%[9 import(FiniteMap,EHDebug) export(CnstrInfo(..),cnstrImplsLookup,cnstrImplsUnit,assocLToCnstrImpls,cnstrToAssocL)
@@ -92,6 +92,11 @@ emptyCnstr = Cnstr emptyFM
 %%[2.Cnstr.cnstrTyUnit
 cnstrTyUnit :: TyVarId -> Ty -> Cnstr
 cnstrTyUnit tv t = Cnstr [(tv,t)]
+%%]
+
+%%[4_2.cnstrTyRevUnit
+cnstrTyRevUnit :: TyVarId -> Ty -> (Ty,Cnstr)
+cnstrTyRevUnit tv t = maybe (t,cnstrTyUnit tv t) (\v -> let t = mkTyVar tv in (t,cnstrTyUnit v t)) . tyMbVar $ t
 %%]
 
 %%[9.Cnstr.cnstrTyUnit -2.Cnstr.cnstrTyUnit

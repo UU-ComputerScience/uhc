@@ -27,13 +27,16 @@
 %%[4 hs export(tyConNm) 
 %%]
 
-%%[4 hs export(tyVar) 
+%%[4 hs import(Maybe) export(tyVar) 
 %%]
 
-%%[4_1 hs export(tyAltsTy,tyIsQu,tyIsVar) 
+%%[4_1 hs export(tyAltsTy,tyIsQu,tyIsVar,tyMbVar) 
 %%]
 
 %%[4_1 hs export(TyPlus(..),TyPlusL,tyPlusTy) 
+%%]
+
+%%[4_2 hs export(TyHardness(..)) 
 %%]
 
 %%[6 hs export(kiStar) 
@@ -98,6 +101,18 @@ type ImplsVarId    = UID
 
 %%[9_1 hs
 type TyPlusId      = UID
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Hardness of type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2 hs
+data TyHardness = TyHard | TySoft deriving (Eq,Ord)
+
+instance Show TyHardness where
+  show TyHard = "H"
+  show TySoft = "S"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -188,8 +203,11 @@ showTyQu  TyQu_KiExists   =  "Exists"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_1 hs
+tyMbVar :: Ty -> Maybe TyVarId
+tyMbVar t = case t of {Ty_Var v _ -> Just v ; _ -> Nothing}
+
 tyIsVar :: Ty -> Bool
-tyIsVar t = case t of {Ty_Var _ _ -> True; _ -> False}
+tyIsVar = isJust . tyMbVar
 
 tyIsQu :: Ty -> Bool
 tyIsQu t = case t of {Ty_Quant _ _ _ -> True; _ -> False}
@@ -381,6 +399,11 @@ tyVar _             = uidStart
 %%[4_1.tyPlusTy hs
 tyPlusTy :: TyPlus -> Ty
 tyPlusTy (TyPlus_Ty t) = t
+%%]
+
+%%[4_2.tyPlusTy -4_1.tyPlusTy hs
+tyPlusTy :: TyPlus -> Ty
+tyPlusTy (TyPlus_Ty t _) = t
 %%]
 
 %%[9_1.tyPlusTy -4_1.tyPlusTy hs
