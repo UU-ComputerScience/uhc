@@ -323,20 +323,25 @@ afp-full: afp
 	makeindex $(AFP)
 	$(AFP_LATEX) $(AFP_TEX)
 
+afp-bib: afp
+	bibtex $(AFP)
+	$(AFP_LATEX) $(AFP_TEX)
+	$(AFP_LATEX) $(AFP_TEX)
+
 afp-tr:
-	$(MAKE) AFP=$@ LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=asArticle --set=forAfpTRUU1 --set=omitEH5Onwards --set=omitAppendix --set=omitTBD --set=omitLitDiscuss" afp-full
+	$(MAKE) AFP=$@ LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=asArticle --set=forAfpTRUU1 --set=omitTBD --set=omitLitDiscuss" afp-full
 
 afp-llncs:
-	$(MAKE) AFP=$@ LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=forAfpLLNCS --set=omitEH5Onwards --set=omitAppendix --set=omitTBD --set=omitLitDiscuss" afp
+	$(MAKE) AFP=$@ LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=forAfpLLNCS --set=omitTBD --set=omitLitDiscuss" afp
 
-afp-all:
-	$(MAKE) AFP=$@ LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=asArticle --set=refToPDF --set=inclFuture --set=inclOmitted" afp
+cc2005:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=forCC2005 --set=omitTBD --set=omitLitDiscuss" afp
 
 eh-work:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=asArticle --set=refToPDF --set=inclFuture --set=inclOmitted --set=onlyCurrentWork" afp
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=asArticle --set=refToPDF --set=inclOmitted --set=onlyCurrentWork" afp
 
 phd:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=asArticle --set=refToPDF --set=inclFuture --set=inclOmitted --set=phd" afp
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=asArticle --set=refToPDF --set=inclOmitted --set=phd" afp
 
 afp-slides:
 	$(MAKE) AFP=$@ LHS2TEX_POLY_MODE=--poly LHS2TEX_OPTS="$(LHS2TEX_OPTS) --set=asSlides --set=omitTBD --set=omitLitDiscuss" afp

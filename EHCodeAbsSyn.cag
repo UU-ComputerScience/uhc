@@ -45,6 +45,10 @@ DATA CExpr
 
 %%[9
 DATA CExpr
+  | Set         expr            : CExpr
+                tag             : {Int}
+                offset          : CExpr
+                fldExpr         : CExpr
   | Hole        uid             : {UID}
   | CoeArg
   | ImplsApp    func            : CExpr

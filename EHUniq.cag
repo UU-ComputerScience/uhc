@@ -50,12 +50,14 @@ SEM PatExpr
   | Var             (lhs.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
   | VarAs           (patExpr.gUniq,loc.lUniq,loc.lUniq2)            :=  mkNewLevUID2    @lhs.gUniq
   | AppTop          (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
+  | TypeAs          (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
   | Con             (lhs.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
   
 SEM Expr
   | IConst CConst   (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
   | Lam             (arg.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
   | Let             (decls.gUniq,loc.lUniq,loc.lUniq2)              =   mkNewLevUID2    @lhs.gUniq
+  | TypeAs          (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
   | Con             (lhs.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
 
 SEM TyExpr
@@ -130,7 +132,10 @@ SEM PrExpr
 
 SEM Decl
   | Class           (ctxtPrExprs.gUniq,loc.lUniq,loc.lUniq2)        =   mkNewLevUID2    @lhs.gUniq
-  | Instance        (ctxtPrExprs.gUniq,loc.lUniq,loc.lUniq2)        =   mkNewLevUID2    @lhs.gUniq
+  | Instance        (loc.gUniq2,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4,loc.lUniq5)
+                                                                    =   mkNewLevUID5    @lhs.gUniq
+                    (ctxtPrExprs.gUniq,loc.lUniq6,loc.lUniq7)
+                                                                    =   mkNewLevUID2    @gUniq2
   | Val             (patExpr.gUniq,loc.lUniq,loc.lUniq2)            :=  mkNewLevUID2    @lhs.gUniq
 %%]
 

@@ -163,36 +163,40 @@ ATTR AllDecl [ | tyGam: TyGam | ]
 ATTR AllExpr [ tyGam: TyGam | | ]
 %%]
 
+%%[4
+ATTR AllPatExpr [ | tyGam: TyGam | ]
+%%]
+
 %%[5
 ATTR AllDataConstr AllCase [ tyGam: TyGam | | ]
 ATTR AllDecl [ | patTyGam: TyGam | ]
 
 SEM Expr
-  | Let         decls       .  patTyGam             =   gamPushNew @lhs.tyGam
-                            .  tyGam                =   @decls.patTyGam
+  | Let         decls       .   patTyGam            =   gamPushNew @lhs.tyGam
+                            .   tyGam               =   @decls.patTyGam
 %%]
 
 %%[6
-ATTR AllExpr AllData AllCase AllDecl [ | kiCnstr: Cnstr | ]
+ATTR AllExpr AllPatExpr AllData AllCase AllDecl [ | kiCnstr: Cnstr | ]
 ATTR AllDecl [ | patKiCnstr: Cnstr | ]
 
 SEM Expr
-  | Let         decls       .  patTyGam             :=  @decls.gathKiSigGam `gamPushGam` @lhs.tyGam
-                            .  patKiCnstr           =   @lhs.kiCnstr
-                loc         .  (lTyGam,gTyGam)      =   gamPop @decls.patTyGam
-                decls       .  tyGam                :=  @lTyGam `gamPushGam` @lhs.tyGam
-                            .  kiCnstr              =   @decls.patKiCnstr
-                loc         .  lSubsTyGam           =   @decls.kiCnstr |=> @lTyGam
-                            .  gSubsTyGam           =   @decls.kiCnstr |=> @gTyGam
-                            .  gKiTvL               =   ftv @gSubsTyGam
-                            .  lQuTyGam             =   tyGamInst1Exists @lUniq3 . tyGamQuantify @gKiTvL $ @lSubsTyGam
-                body        .  tyGam                =   @lQuTyGam `gamPushGam` @gSubsTyGam
+  | Let         decls       .   patTyGam            :=  @decls.gathKiSigGam `gamPushGam` @lhs.tyGam
+                            .   patKiCnstr          =   @lhs.kiCnstr
+                loc         .   (lTyGam,gTyGam)     =   gamPop @decls.patTyGam
+                decls       .   tyGam               :=  @lTyGam `gamPushGam` @lhs.tyGam
+                            .   kiCnstr             =   @decls.patKiCnstr
+                loc         .   lSubsTyGam          =   @decls.kiCnstr |=> @lTyGam
+                            .   gSubsTyGam          =   @decls.kiCnstr |=> @gTyGam
+                            .   gKiTvL              =   ftv @gSubsTyGam
+                            .   lQuTyGam            =   tyGamInst1Exists @lUniq3 . tyGamQuantify @gKiTvL $ @lSubsTyGam
+                body        .   tyGam               =   @lQuTyGam `gamPushGam` @gSubsTyGam
 
 SEM Decl
-  | TySig       tyExpr      .  tyGam                =   gamPushNew @lhs.tyGam
-                loc         .  fo                   =   fitsIn weakFIOpts @fe @lUniq @tyExpr.ki kiStar
-                lhs         .  tyGam                =   @lhs.tyGam
-                            .  kiCnstr              =   foCnstr @fo |=> @tyExpr.kiCnstr
+  | TySig       tyExpr      .   tyGam               =   gamPushNew @lhs.tyGam
+                loc         .   fo                  =   fitsIn weakFIOpts @fe @lUniq @tyExpr.ki kiStar
+                lhs         .   tyGam               =   @lhs.tyGam
+                            .   kiCnstr             =   foCnstr @fo |=> @tyExpr.kiCnstr
 %%]
 
 %%[7
@@ -268,7 +272,7 @@ SEM AGItf
 %%]
 
 %%[6
-ATTR AllExpr AllTyExpr AllData AllCase AllDecl [ kiGam: KiGam | | ]
+ATTR AllExpr AllTyExpr AllPatExpr AllData AllCase AllDecl [ kiGam: KiGam | | ]
 
 SEM AGItf
   | AGItf       loc         .  kiGam                =   assocLToGam

@@ -31,7 +31,7 @@
 DERIVING *     : Show, Eq
 %%]
 
-%%[9 hs import(FiniteMap,EHTy) export(CBindLMap, emptyCBindLMap, Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLetRecCoe, mkCBindLForUIDL)
+%%[9 hs import(FiniteMap,Set,EHTy) export(CBindLMap, emptyCBindLMap, Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLetRecCoe, cbindLMapBinds, mkCBindLForUIDL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -56,12 +56,18 @@ data CBindCateg = CBindRec | CBindStrict | CBindPlain deriving (Show,Eq)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
-type CBindLMap = FiniteMap PredOccId CBindL
+type CBindLMap = FiniteMap PredOccId (Set PredOccId,CBindL)
 
 emptyCBindLMap = emptyFM
 
-mkCBindLForUIDL :: CBindLMap -> [UID] -> CBindL
-mkCBindLForUIDL cbindLMap = nubBy (\(CBind_Bind n1 _) (CBind_Bind n2 _) -> n1 == n2) . concat . map (maybe [] id . lookupFM cbindLMap)
+cbindLMapBinds :: CBindLMap -> [CBindL]
+cbindLMapBinds = map snd . eltsFM
+
+mkCBindLForUIDL :: CBindLMap -> (UID -> Bool) -> CBindL
+mkCBindLForUIDL cbindLMap doIncl
+  =  nubBy (\(CBind_Bind n1 _) (CBind_Bind n2 _) -> n1 == n2)
+     . concat . cbindLMapBinds . filterFM (\i _ -> doIncl i)
+     $ cbindLMap
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -149,7 +155,7 @@ mkCoe :: (CExpr -> CExpr) -> Coe
 mkCoe = Coe
 
 mkAppCoe :: CBindLMap -> [CExpr] -> Coe
-mkAppCoe bL eL = mkCoe (\e -> (concat . eltsFM $ bL) `mkCExprLetRec` (e `mkCExprApp` eL))
+mkAppCoe bL eL = mkCoe (\e -> (concat . cbindLMapBinds $ bL) `mkCExprLetRec` (e `mkCExprApp` eL))
 
 mkLamCoe :: HsName -> Coe
 mkLamCoe n = mkCoe (\e -> n `CExpr_Lam` e)

@@ -107,42 +107,50 @@ SEM RecPatExpr
 ATTR PatExpr [ | valGam: ValGam | ]
 
 SEM PatExpr
-  | Var VarAs   loc         .  ty                   =   @lhs.knTy
-                            .  addToGam             =   if @lhs.inclVarBind && @nm /= hsnWild
+  | Var VarAs   loc         .   ty                  =   @lhs.knTy
+                            .   addToGam            =   if @lhs.inclVarBind && @nm /= hsnWild
                                                         then  gamAdd @nm
                                                                 (ValGamInfo @ty)
                                                         else  id
-  | Var         lhs         .  valGam               =   @addToGam @lhs.valGam
-  | VarAs       lhs         .  valGam               =   @addToGam @patExpr.valGam
+  | Var         lhs         .   valGam              =   @addToGam @lhs.valGam
+  | VarAs       lhs         .   valGam              =   @addToGam @patExpr.valGam
 %%]
 
 %%[2.Var
 ATTR PatExpr [ | tyCnstr: Cnstr | ty: Ty ]
 
 SEM PatExpr
-  | Var VarAs   loc         .  ty                   :=  tyEnsureNonBotTop @lUniq @lhs.knTy
-  | VarAs       patExpr     .  knTy                 =   @ty
+  | Var VarAs   loc         .   ty                  :=  tyEnsureNonBotTop @lUniq @lhs.knTy
+  | VarAs       patExpr     .   knTy                =   @ty
 %%]
 
 %%[2.Rest
 SEM PatExpr
-  | IConst      loc         .  ty                   =   tyInt
-  | CConst      loc         .  ty                   =   tyChar
-  | AppTop      loc         .  fo                   =   @lhs.knTy `fitsIn` @knResTy
-                            .  ty                   =   foTy @fo
-                patExpr     .  tyCnstr              =   foCnstr @fo |=> @lhs.tyCnstr
-                lhs         .  ty                   =   @patExpr.tyCnstr |=> @ty
-  | App         arg         .  knTy                 :=  @func.tyCnstr |=> @knArgTy
-  | Con         loc         .  ty                   =   Ty_Any
+  | IConst      loc         .   ty                  =   tyInt
+  | CConst      loc         .   ty                  =   tyChar
+  | AppTop      loc         .   fo                  =   @lhs.knTy `fitsIn` @knResTy
+                            .   ty                  =   foTy @fo
+                patExpr     .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
+                lhs         .   ty                  =   @patExpr.tyCnstr |=> @ty
+  | App         arg         .   knTy                :=  @func.tyCnstr |=> @knArgTy
+  | Con         loc         .   ty                  =   Ty_Any
+%%]
+
+%%[4.TypeAs
+SEM PatExpr
+  | TypeAs      loc         .   asTy                =   @tyExpr.ty
+                            .   fo                  =   fitsIn @lhs.fiOpts emptyFE @lUniq @lhs.knTy @asTy
+                patExpr     .   knTy                =   foTy @fo
+                            .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
 %%]
 
 %%[4.Rest
 SEM PatExpr
-  | AppTop Con  loc         .  fo                   :=  fitsIn @lhs.fiOpts emptyFE @lUniq @lhs.knTy @knResTy
-  | Con         loc         .  (knResTy,_)          =   tyArrowArgRes @patFunTy
-                            .  ty                   :=  foTy @fo
-                lhs         .  tyCnstr              =   foCnstr @fo |=> @lhs.tyCnstr
-  | Var VarAs   loc         .  ty                   :=  tyInst1Exists @lUniq2 (tyEnsureNonBotTop @lUniq @lhs.knTy)
+  | AppTop Con  loc         .   fo                  :=  fitsIn @lhs.fiOpts emptyFE @lUniq @lhs.knTy @knResTy
+  | Con         loc         .   (knResTy,_)         =   tyArrowArgRes @patFunTy
+                            .   ty                  :=  foTy @fo
+                lhs         .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
+  | Var VarAs   loc         .   ty                  :=  tyInst1Exists @lUniq2 (tyEnsureNonBotTop @lUniq @lhs.knTy)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -175,10 +183,3 @@ SEM PatExpr
                 lhs         .  ty                   =   @recPatExpr.tyCnstr |=> @ty
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Distr of additional info for codegen
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-ATTR AllPatExpr [ tyGam: TyGam | | ]
-%%]

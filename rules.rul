@@ -265,42 +265,14 @@ scheme expr9
   = fiopt; Gamma; sigmak :-...expr e : sigma ~> Cnstr; Transl
 
 rules expr9.app "Type checking/inferencing for expression application with implicit parameters" =
-  rule e_app9_impl_expl_infer =
-    judge pred9 (pi..a :~> Transl..a, Gamma) :- (Cnstr.2 pi.2) ~> Transl.2 : _
-    judge pred9 Gamma :- pi..a ~> Transl..a : sigma..a
-    judge expr9 instLFIOpts; Gamma; ANY :- e.2 : sigma..a ~> Cnstr.2 ; Transl.2
-    judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- e.1 : (pvar.1 -> sigma) ~> Cnstr.1 ; Transl.1
-    cond pvar..a "fresh"
-    cond Cnstr.3 == pvar.1 :-> pi.2 , pvar..a
+  rule e_app_impl9_expl =
+    judge expr9 instLFIOpts; Gamma; sigma..a :- e.2 : _ ~> Cnstr.2 ; Transl.2
+    judge pred9 Gamma :- pi..a ~> _ : sigma..a
+    judge expr9 fiopt; Gamma; (pi.2 -> sigma..k) :- e.1 : (pi..a -> sigma) ~> Cnstr.1 ; Transl.1
     -
-    judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- (e.1 ^^ (# e.2 #)) : (pvar..a -> Cnstr.2 sigma) ~> (Cnstr.3,Cnstr.(2(..)1)) ; (Transl.1 ^^ Transl.2)
+    judge expr9 fiopt; Gamma; (sigma..k) :- (e.1 ^^ (# e.2 <~: pi.2 #)) : (Cnstr.2 sigma) ~> Cnstr.(2(..)1) ; (Transl.1 ^^ Transl.2)
 
-  rule e_app9_expl_expl_known =
-    judge pred9 (pi..a :~> Transl..a, Gamma) :- (Cnstr.2 pi.2) ~> Transl.2 : _
-    judge pred9 Gamma :- pi..a ~> Transl..a : sigma..a
-    judge expr9 instLFIOpts; Gamma; ANY :- e.2 : sigma..a ~> Cnstr.2 ; Transl.2
-    judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- e.1 : (pi.2 -> sigma) ~> Cnstr.1 ; Transl.1
-    -
-    judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- (e.1 ^^ (# e.2 #)) : (Cnstr.2 sigma) ~> Cnstr.(2(..)1) ; (Transl.1 ^^ Transl.2)
-
-  rule e_app9_expl_known =
-    judge pred9 (Cnstr.(2(..)1) pi.2 :~> Transl.2,Gamma) :- Cnstr.2 pi..a ~> Transl..a : _
-    judge expr9 instLFIOpts; Gamma; sigma..pi :- e.2 : _ ~> Cnstr.2 ; Transl.2
-    judge pred9 Gamma :- pi.2 ~> _ : sigma..pi
-    judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- e.1 : (pi..a -> sigma) ~> Cnstr.1 ; Transl.1
-    -
-    judge expr9 fiopt; Gamma; (sigma..k) :- (e.1 ^^ (# e.2 <~: pi.2 #)) : (Cnstr.2 sigma) ~> Cnstr.(2(..)1) ; (Transl.1 ^^ Transl..a)
-
-  rule e_app9_expl_infer =
-    judge expr9 instLFIOpts; Gamma; sigma..pi :- e.2 : _ ~> Cnstr.2 ; Transl.2
-    judge pred9 Gamma :- Cnstr.1 pi.2 ~> _ : sigma..pi
-    judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- e.1 : (pvar..a -> sigma) ~> Cnstr.1 ; Transl.1
-    cond Cnstr.3 == pvar..a :-> pi.2 , pvar..r
-    cond pvar..r "fresh"
-    -
-    judge expr9 fiopt; Gamma; (sigma..k) :- (e.1 ^^ (# e.2 <~: pi.2 #)) : (pvar..r -> Cnstr.2 sigma) ~> Cnstr.(3(..)1) ; (Transl.1 ^^ Transl.2)
-
-  rule e_app9_impl =
+  rule e_app_impl9_impl =
     judge pred9 ((pi.i.k :~> Transl.i.k)..._,Gamma) :- (Cnstr.2 pi..a._) ~> Transl..a._ : _
     judge expr9 instLFIOpts; Gamma; sigma..a :- e.2 : _ ~> Cnstr.2 ; Transl.2
     judge expr9 fiopt; ((pi.i.k :~> Transl.i.k)..._,Gamma); (pvar -> tvar -> sigma.r.k) :- e.1 : (pi..a._ -> sigma..a -> sigma) ~> Cnstr.1 ; Transl.1
@@ -325,6 +297,42 @@ rules expr9.part2 "Type checking/inferencing for lambda expressions with implici
     judge fit9 fiopt; Gamma :- sigma <= sigma..k : sigma ~> Cnstr; coe
     -
     judge expr9 fiopt; Gamma; sigma..k :- ident : sigma ~> Cnstr ; (coe ^^ ident)
+
+rules expr9.proving "Proving for lambda expressions with implicit parameters" =
+  rule e_app9_expl_known =
+    judge pred9 (Cnstr.(2(..)1) pi.2 :~> Transl.2,Gamma) :- Cnstr.2 pi..a ~> Transl..a : _
+    judge expr9 instLFIOpts; Gamma; sigma..pi :- e.2 : _ ~> Cnstr.2 ; Transl.2
+    judge pred9 Gamma :- pi.2 ~> _ : sigma..pi
+    judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- e.1 : (pi..a -> sigma) ~> Cnstr.1 ; Transl.1
+    -
+    judge expr9 fiopt; Gamma; (sigma..k) :- (e.1 ^^ (# e.2 <~: pi.2 #)) : (Cnstr.2 sigma) ~> Cnstr.(2(..)1) ; (Transl.1 ^^ Transl..a)
+
+  rule e_app9_expl_infer =
+    judge expr9 instLFIOpts; Gamma; sigma..pi :- e.2 : _ ~> Cnstr.2 ; Transl.2
+    judge pred9 Gamma :- Cnstr.1 pi.2 ~> _ : sigma..pi
+    judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- e.1 : (pvar..a -> sigma) ~> Cnstr.1 ; Transl.1
+    cond Cnstr.3 == pvar..a :-> pi.2 , pvar..r
+    cond pvar..r "fresh"
+    -
+    judge expr9 fiopt; Gamma; (sigma..k) :- (e.1 ^^ (# e.2 <~: pi.2 #)) : (pvar..r -> Cnstr.2 sigma) ~> Cnstr.(3(..)1) ; (Transl.1 ^^ Transl.2)
+
+  rule e_app9_impl_expl_infer =
+    judge pred9 (pi..a :~> Transl..a, Gamma) :- (Cnstr.2 pi.2) ~> Transl.2 : _
+    judge pred9 Gamma :- pi..a ~> Transl..a : sigma..a
+    judge expr9 instLFIOpts; Gamma; ANY :- e.2 : sigma..a ~> Cnstr.2 ; Transl.2
+    judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- e.1 : (pvar.1 -> sigma) ~> Cnstr.1 ; Transl.1
+    cond pvar..a "fresh"
+    cond Cnstr.3 == pvar.1 :-> pi.2 , pvar..a
+    -
+    judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- (e.1 ^^ (# e.2 #)) : (pvar..a -> Cnstr.2 sigma) ~> (Cnstr.3,Cnstr.(2(..)1)) ; (Transl.1 ^^ Transl.2)
+
+  rule e_app9_expl_expl_known =
+    judge pred9 (pi..a :~> Transl..a, Gamma) :- (Cnstr.2 pi.2) ~> Transl.2 : _
+    judge pred9 Gamma :- pi..a ~> Transl..a : sigma..a
+    judge expr9 instLFIOpts; Gamma; ANY :- e.2 : sigma..a ~> Cnstr.2 ; Transl.2
+    judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- e.1 : (pi.2 -> sigma) ~> Cnstr.1 ; Transl.1
+    -
+    judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- (e.1 ^^ (# e.2 #)) : (Cnstr.2 sigma) ~> Cnstr.(2(..)1) ; (Transl.1 ^^ Transl.2)
 
 -------------------------------------------------------------------------
 -- Pat
