@@ -1,0 +1,57 @@
+data type let if then else case of module where in otherwise class instance do data type return
+infix infixr infixl deriving import
+text take stdin reverse repeat
+results position
+Ord Eq
+Show show
+FilePath file
+openFile
+yes no
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+a1 a2
+ty1 ty2 t1 t2 t1d t2d
+fs fo fo1 fo2 fi fi1 fi2 fh
+afo rfo ffo
+ex es ep
+mv ms
+NM
+Inh Syn
+pr
+pP pE
+ll l1 l2 lk ll1 ll2 ls
+v1 v2 vs
+s1 s2 s1l s2l sz sl
+steps
+tyl1 tyl2 ty1detail ty2detail tf1 tf2 tp ts ta1 ta2
+q1 q2
+uq uqt uqt1 uqt2
+u1 u2 u3 u4 u5 ue
+rt rtvs
+zip un uncurry union map snd fst not null nub concat foldr foldl foldr1 foldl1 id filter head tail
+iterate length
+maybe Maybe Just Nothing isJust isNothing
+True False Bool
+Type Const
+IO
+Int
+SEM ATTR DATA SET TYPE USE WRAPPER SELF loc lhs self
+_ ( ) | @ =
+Usage utils expected
+alg
+wrong with version than this to Plain Permute
+msg
+moduleT
+more
+oBrace cBrace
+once
+output
+mk
+main
+line
+hide
+help
+has
+hd tl
+fos for fit fio filename fill
+g1 group sort failed extr

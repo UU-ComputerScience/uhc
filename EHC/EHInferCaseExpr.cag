@@ -1,0 +1,58 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type inferencing for Case Expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pattern type of Case Expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+ATTR AllCase [ knPatTy: Ty | patTyCnstr: Cnstr | patTy: Ty ]
+
+SEM Expr
+  | Case        alts        .  knPatTy              =  @expr.ty
+                            .  patTyCnstr           =  @expr.tyCnstr
+                            .  tyCnstr              =  @alts.patTyCnstr
+
+SEM CaseAlt
+  | Pat         patExpr     .  tyCnstr              =  @lhs.patTyCnstr
+                            .  knTy                 =  @lhs.knPatTy
+                            .  valGam               =  gamPushNew @lhs.valGam
+                lhs         .  patTyCnstr           =  @patExpr.tyCnstr
+                            .  patTy                =  @patExpr.ty
+
+SEM CaseAlts
+  | Nil         lhs         .  patTy                =  @lhs.knPatTy
+  | Cons        tl          .  knPatTy              =  @hd.patTy
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type of Case Expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+ATTR AllCase [ knTy: Ty | | ty: Ty ]
+
+SEM Expr
+  | Case        expr        .  knTy                 =  Ty_Any
+                alts        .  knTy                 =  @lhs.knTy
+
+SEM CaseAlt
+  | Pat         expr        .  tyCnstr              =  @lhs.tyCnstr
+                lhs         .  ty                   =  @expr.ty
+                            .  tyCnstr              =  @expr.tyCnstr
+
+SEM CaseAlts
+  | Nil         lhs         .  ty                   =  @lhs.knTy
+  | Cons        hd          .  knTy                 =  @lhs.knTy
+                loc         .  fo                   =  fitsIn @lhs.fiOpts @lUniq @hd.ty (@hd.tyCnstr |=> @lhs.knTy)
+                            .  knTy                 =  foTy @fo
+                tl          .  tyCnstr              =  foCnstr @fo |=> @hd.tyCnstr
+%%]

@@ -1,0 +1,245 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation of code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AGItf [ | | cmodule: CModule ]
+
+SEM AGItf
+  | AGItf       lhs         .   cmodule     =   CModule_Mod @lhs.baseName @expr.cexpr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR Expr [ | | cexpr: CExpr ]
+
+SEM Expr
+  | IConst      loc         .   cexpr       =   CExpr_Int @int
+  | CConst      loc         .   cexpr       =   CExpr_Char @char
+  | Var         loc         .   cexpr       =   CExpr_Var @nm
+  | Con         loc         .   cexpr       =   CExpr_Var @nm
+  | Let         loc         .   cexpr       =   mkCExprLet CBindRec @decls.cbindL @body.cexpr
+  | App         loc         .   cexpr       =   CExpr_App @func.cexpr @arg.cexpr
+  | Lam         loc         .   cexpr       =   CExpr_Lam @arg.topNm (rceMatch [@arg.topNm] [CAlt_Alt [@arg.cpat] @body.cexpr] cvarUndefined)
+  | Rec         loc         .   cexpr       =   foldl CExpr_App (CExpr_Tup (length @recExpr.cexprL)) (map snd . tyRowCanonOrder $ @recExpr.cexprL)
+  | Sel         loc         .   offset      =   maybe (-1) id (tyRecOffset @lbl @expr.ty)
+                            .   cexpr       =   CExpr_Sel @expr.cexpr ctagNone (CExpr_Int @offset)
+  | Case        loc         .   cexpr       =   let  n = HNm (show @lUniq)
+                                                in   mkCExprLet CBindPlain [CBind_Bind n @expr.cexpr]
+                                                        (rceMatch [n] @alts.caltL cvarUndefined)
+
+ATTR RecExpr [ | | cexprL: {AssocL HsName CExpr} ]
+
+SEM RecExpr
+  | Empty       lhs         .   cexprL      =   []
+  | Ext         lhs         .   cexprL      =   (@nm,@expr.cexpr) : @recExpr.cexprL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Decl
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR Decls Decl AllDataConstr [ | | cbindL USE {++} {[]}: CBindL ]
+
+SEM Decl
+  | Val         lhs         .   cbindL      =   [CBind_Bind @patExpr.topNm @expr.cexpr] ++ @patExpr.cbindL
+  | TySig       lhs         .   cbindL      =   []
+  | FFI         lhs         .   cbindL      =   [CBind_Bind @nm (CExpr_Var (HNm @impEnt))]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Case
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR CaseAlt [ | | calt: CAlt ]
+ATTR CaseAlts [ | | caltL: CAltL ]
+
+SEM CaseAlt
+  | Pat         lhs         .   calt        =   CAlt_Alt [@patExpr.cpat] @expr.cexpr
+
+SEM CaseAlts
+  | Nil         lhs         .   caltL       =   []
+  | Cons        lhs         .   caltL       =   @hd.calt : @tl.caltL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pat for use in case alt
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR PatExpr [ | | cpat: CPat ]
+
+SEM PatExpr
+  | Var VarAs AppTop Rec Con
+                loc         .   cpNm        =   maybe (CPatNmUniq @topNm) CPatNmOrig @mbTopNm
+  | Var         lhs         .   cpat        =   CPat_Var @cpNm
+  | VarAs       lhs         .   cpat        =   case @patExpr.cpat of
+                                                    CPat_Con _ t tn ps  -> CPat_Con @cpNm t tn ps
+                                                    _                   -> @patExpr.cpat
+  | AppTop Con  loc         .   finResTy    =   @lhs.finTyCnstr |=> @knResTy
+                            .   finResTyData
+                                            =   let  (c,_)  = tyAppFunArgs @finResTy
+                                                     n      = tyConNm c
+                                                in   tgiData . fromJust . tyGamLookup n $ @lhs.tyGam
+                            .   tag         =   fromJust (tyRecOffset @appFunNm @finResTyData)
+  | Rec         loc         .   tag         =   ctagNone
+  | AppTop Con Rec
+                loc         .   cpatBinds   =   map (\(o,(n,p)) -> CPatBind_Bind o n p) . zip [0..] . tyRowCanonOrder . reverse $ @cpbindL
+                lhs         .   cpat        =   CPat_Con @cpNm @tag @appFunNm @cpatBinds
+  | CConst IConst
+                lhs         .   cpat        =   CPat_Undef
+
+ATTR AllPatExpr [ | | cpbindL: {AssocL HsName CPat} ]
+
+SEM RecPatExpr
+  | Empty       lhs         .   cpbindL     =   []
+  | Ext         lhs         .   cpbindL     =   (@nm,@patExpr.cpat) : @recPatExpr.cpbindL
+
+SEM PatExpr
+  | App         lhs         .   cpbindL     =   (hsnUnknown,@arg.cpat) : @func.cpbindL
+  | AppTop      loc         .   cpbindL     =   @patExpr.cpbindL
+  | Rec         loc         .   cpbindL     =   @recPatExpr.cpbindL
+  | Con         loc         .   cpbindL     =   []
+  | IConst CConst AppTop Rec Var
+                lhs         .   cpbindL     =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pat for use in (recursive) let bindings (lazy unpacking)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllPatExpr [ | | cbindL USE {++} {[]}: CBindL ]
+ATTR AllPatExpr [ ceParentNm: HsName | | ]
+
+SEM PatExpr
+  | AppTop Rec  loc         .   cbindL      =   concat
+                                                .  map  (\(CPatBind_Bind o _ p)
+                                                            -> let  b n = [CBind_Bind n (CExpr_Sel (CExpr_Var @lhs.ceParentNm) @tag (CExpr_Int o))]
+                                                               in   case cpatVarNm p of
+                                                                        CPatNmOrig n                          -> b n
+                                                                        CPatNmUniq n | not (null @cbindLSub)  -> b n
+                                                                        _                                     -> []
+                                                        )
+                                                $  @cpatBinds
+                lhs         .   cbindL      =   @cbindL ++ @cbindLSub
+  | AppTop      loc         .   cbindLSub   =   @patExpr.cbindL
+  | Rec         loc         .   cbindLSub   =   @recPatExpr.cbindL
+  | App         arg         .   ceParentNm  =   cpatNmNm (cpatVarNm @arg.cpat)
+
+SEM RecPatExpr
+  | Ext         patExpr     .   ceParentNm  =   cpatNmNm (cpatVarNm @patExpr.cpat)
+
+SEM Decl
+  | Val         patExpr     .   ceParentNm  =   @patExpr.topNm
+
+SEM CaseAlt
+  | Pat         patExpr     .   ceParentNm  =   @patExpr.topNm
+
+SEM Expr
+  | Lam         arg         .   ceParentNm  =   @arg.topNm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Reordering of case expression
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+rceSplit :: (CAlt -> Bool) -> CAltL -> [CAltL]
+rceSplit f []   = []
+rceSplit f [x]  = [[x]]
+rceSplit f (x:xs@(x':_))
+  | f x == f x'  =  let  (z:zs) = rceSplit f xs
+                    in   (x:z) : zs
+  | otherwise    =  [x] : rceSplit f xs
+
+rceAltsForCon :: CAltL -> HsName -> CAltL
+rceAltsForCon alts conNm
+  = [a | a@(CAlt_Alt (CPat_Con _ _ nm _ : _) _) <- alts, nm == conNm]
+
+rceRebinds :: HsName -> CAltL -> CBindL
+rceRebinds nm alts = [ CBind_Bind n (CExpr_Var nm) | (CPatNmOrig n) <- caltLPatNms alts, n /= nm ]
+
+rceMatchVar :: [HsName] -> CAltL -> CExpr -> CExpr
+rceMatchVar (arg:args') alts ce
+  =  let  remMatch  = rceMatch args' [CAlt_Alt remPats e | (CAlt_Alt (CPat_Var n : remPats) e) <- alts] ce
+     in   mkCExprLet CBindPlain (rceRebinds arg alts) remMatch
+
+rceMatchCon :: [HsName] -> CAltL -> CExpr -> CExpr
+rceMatchCon args@(arg:args') alts ce
+  =  let  arg'   =  hsnPrefix "!" arg
+          alts'  =  map
+                      (\alts
+                        ->  let  (subAlts,subAltSubNms)
+                                               =  unzip
+                                                    [ (CAlt_Alt (pats ++ ps) e, map (cpatNmNm . cpatVarNm) pats)
+                                                    | (CAlt_Alt (CPat_Con _ _ _ pbinds : ps) e) <- alts,
+                                                      let pats = [ p | (CPatBind_Bind _ _ p) <- pbinds ]
+                                                    ]
+                                 subMatch      =  rceMatch (head subAltSubNms ++ args') subAlts ce
+                                 altPat        =  case head alts of
+                                                    CAlt_Alt (CPat_Con n t tn pbinds : _) _
+                                                      -> CPat_Con n t tn [ CPatBind_Bind o n (CPat_Var (cpatVarNm p))| (CPatBind_Bind o n p) <- pbinds ]
+                            in   CAlt_Alt [altPat] (mkCExprLet CBindPlain (rceRebinds arg' alts) subMatch)
+                      )
+                 .  groupBy (\a1 a2 -> caltTag a1 == caltTag a2)
+                 .  sortBy (\a1 a2 -> caltTag a1 `compare` caltTag a2)
+                 .  filter (not . null . caltPatL)
+                 $  alts
+     in   ceStrictIn arg' (CExpr_Var arg) (\n -> CExpr_Case n alts' ce)
+
+rceMatchVarCon :: [HsName] -> CAltL -> CExpr -> CExpr
+rceMatchVarCon args alts@(alt:_) ce
+  |  caltIsVar alt  = rceMatchVar args alts ce
+  |  otherwise      = rceMatchCon args alts ce
+
+rceMatch :: [HsName] -> CAltL -> CExpr -> CExpr
+rceMatch [] []    ce =  ce
+rceMatch [] alts  ce
+  =  case [ e | (CAlt_Alt [] e) <- alts ] of
+       (e:_)  -> e
+       _      -> ce
+rceMatch args alts ce
+  =  foldr
+        (\alts e
+           ->  case e of
+                  CExpr_Var _
+                     ->  rceMatchVarCon args alts e
+                  _  ->  let  bnm = HNm ("_casecont_" ++ (show . cpatVarNm . caltPat . head $ alts))
+                              vc = rceMatchVarCon args alts (CExpr_Var bnm)
+                         in   mkCExprLet CBindPlain [CBind_Bind bnm e] vc
+        )
+        ce
+     $ (rceSplit caltIsVar alts)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllDataConstr [ dataAltTy: Ty | | ]
+
+SEM DataConstr
+  | Constr      loc         .   tag         =   fromJust (tyRecOffset @conNm @lhs.dataAltTy)
+                lhs         .   cbindL      =   let  len = length @fields.tyL
+                                                     nms = map (\i -> HNm ("x" ++ show i)) [1..len]
+                                                in   [CBind_Bind @conNm
+                                                        (mkCExprLam nms
+                                                          (mkCExprApp (CExpr_App (CExpr_Tup len) (CExpr_Int @tag))
+                                                            (map CExpr_Var nms)))
+                                                     ]
+%%]
+

@@ -1,0 +1,90 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Code's Java gen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs import(UU.Pretty,EHCommon,EHCode) export(ppCode)
+%%]
+
+%%[8.WRAPPER import(EHCodeAbsSyn)
+WRAPPER CodeAGItf
+%%]
+
+%%[8 hs
+ppCode :: CModule -> PP_Doc
+ppCode cmod
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
+     in   (pp_Syn_CodeAGItf t)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printed code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+ppDef :: (PP a, PP b) => a -> b -> PP_Doc
+ppDef n v   = n >-< indent 1 v
+%%]
+
+%%[8
+ATTR CodeAGItf AllCodeNT [ | | pp USE {>-<} {empty} : PP_Doc ]
+ATTR CPatBindL CPatL CBindL [ | | ppL: PP_DocL ]
+
+SEM CModule
+  | Mod         lhs         .   pp          =   "module" >#< @baseName >-< @expr.pp
+
+SEM CExpr
+  | Int         loc         .   pp          =   pp @int
+  | Char        loc         .   pp          =   pp (show @char)
+  | Var         loc         .   pp          =   pp @nm
+  | App         loc         .   pp          =   ppDef @func.pp (pp_parens @arg.pp)
+  | Let         loc         .   ppCateg     =   case @categ of
+                                                    CBindRec     -> pp "rec"
+                                                    CBindStrict  -> pp "!"
+                                                    _            -> empty
+                            .   pp          =   ppDef ("let" >#< @ppCateg) @binds.pp >-< ppDef "in" @body.pp
+  | Lam         loc         .   pp          =   ppDef ("\\" >|< @arg) ("->" >#< @body.pp)
+  | Tup         loc         .   pp          =   "#" >|< pp (hsnProd @arity)
+  | Sel         loc         .   pp          =   ppDef (pp_parens @expr.pp) ("." >|< pp @tag >|< "." >|< pp_parens @offset.pp)
+  | Case        loc         .   pp          =   ppDef ("case" >#< @expr.pp)
+                                                    (ppDef "of"
+                                                        (@alts.pp >-< "_->" >#< @dflt.pp))
+
+SEM CBind
+  | Bind        lhs         .   pp          =   ppDef @nm ("=" >#< @expr.pp)
+
+SEM CBindL
+  | Nil         lhs         .   ppL         =   []
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+
+SEM CAlt
+  | Alt         lhs         .   pp          =   ppDef (head @pats.ppL) ("->" >#< @expr.pp)
+
+SEM CPat
+  | Var         lhs         .   pp          =   pp (cpatNmNm @pnm)
+  | Con         lhs         .   pp          =   (cpatNmEither ((>|< "@") . pp) (const empty) @pnm)
+                                                >|< pp_parens   (   @tag >|< "=" >|< @tagNm >|< ":"
+                                                                >|< ppListSep "(" ")" "," @binds.ppL
+                                                                )
+  | Undef       lhs         .   pp          =   pp hsnUnknown
+
+SEM CPatL
+  | Nil         lhs         .   ppL         =   []
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+
+SEM CPatBind
+  | Bind        lhs         .   pp          =   @offset >|< "=" >|< @pat.pp
+
+SEM CPatBindL
+  | Nil         lhs         .   ppL         =   []
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+%%]
+
+
+

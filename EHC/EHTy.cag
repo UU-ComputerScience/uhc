@@ -1,0 +1,316 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Ty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs import(EHCommon) export(TyAGItf(..), Ty(..), TyL, tyInt, tyChar, mkTyArrow, mkTyApp, mkTyConApp, mkTyProdApp, mkTyCon)
+%%]
+
+%%[1 hs export(tyArrowArgRes, tyArrowArgsRes, tyAppFunArgs, tyProdArgs) 
+%%]
+
+%%[2 hs export(TyVarId, TyVarIdL, mkTyVar, mkNewTyVar, mkNewTyVarL, mkTyFreshProd, mkTyFreshProdFrom, tyEnsureNonBotTop) 
+%%]
+
+%%[3 hs export(mkTyQu, TyVarCateg(..))
+%%]
+
+%%[4 hs export(TyQu(..), tyquExists, tyquIsExists, tyquIsForall, showTyQu) 
+%%]
+
+%%[6 hs export(kiStar) 
+%%]
+
+%%[7 hs export(kiRow,tyRowEmpty,tyRowExtr,tyRecExtr,mkTyRec,mkTySum) 
+%%]
+
+%%[8 hs export(tyConNm) 
+%%]
+
+%%[8 hs import(List) export(tyRowCanonOrder,tyRecOffset) 
+%%]
+
+%%[1 import(EHTyAbsSyn)
+DERIVING *     : Show, Eq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+type TyL        = [Ty]
+%%]
+
+%%[2.TyVarId.Base hs
+type TyVarId    = UID
+%%]
+
+%%[2.TyVarId.Rest hs
+type TyVarIdL   = [TyVarId]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type quantifier utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4 hs
+tyquExists, tyquForall :: TyQu -> TyQu
+tyquIsExists, tyquIsForall :: TyQu -> Bool
+%%]
+
+%%[4.tyquMisc hs
+tyquForall   TyQu_Exists              = TyQu_Forall
+tyquForall   q                        = q
+
+tyquExists   TyQu_Forall              = TyQu_Exists
+tyquExists   q                        = q
+
+tyquIsForall TyQu_Forall              = True
+tyquIsForall _                        = False
+
+tyquIsExists TyQu_Exists              = True
+tyquIsExists _                        = False
+%%]
+
+%%[6.tyquMisc -4.tyquMisc hs
+tyquForall   TyQu_Exists              = TyQu_Forall
+tyquForall   TyQu_KiExists            = TyQu_KiForall
+tyquForall   q                        = q
+
+tyquExists   TyQu_Forall              = TyQu_Exists
+tyquExists   TyQu_KiForall            = TyQu_KiExists
+tyquExists   q                        = q
+
+tyquIsForall TyQu_Forall              = True
+tyquIsForall TyQu_KiForall            = True
+tyquIsForall _                        = False
+
+tyquIsExists TyQu_Exists              = True
+tyquIsExists TyQu_KiExists            = True
+tyquIsExists _                        = False
+%%]
+
+%%[showTyQu.4
+showTyQu  TyQu_Forall     =  "forall"
+showTyQu  TyQu_Exists     =  "exists"
+%%]
+
+%%[4.showTyQu hs
+%%@showTyQu.4
+%%]
+
+%%[6.showTyQu -4.showTyQu hs
+%%@showTyQu.4
+showTyQu  TyQu_KiForall   =  "Forall"
+showTyQu  TyQu_KiExists   =  "Exists"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Construction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.mkTy hs
+algTy :: MkConAppAlg Ty
+algTy = (Ty_Con,Ty_App,id,id)
+
+mkTyArrow :: TyL -> Ty -> Ty
+mkTyArrow = let mk = mkArrow algTy in flip (foldr mk)
+
+mkTyApp :: TyL -> Ty
+mkTyApp = mkApp algTy
+
+mkTyConApp :: HsName -> TyL -> Ty
+mkTyConApp = mkConApp algTy
+%%]
+
+%%[1.mkTyProdApp hs
+mkTyProdApp :: TyL -> Ty
+mkTyProdApp = mkProdApp algTy
+%%]
+
+%%[7.mkTyProdApp -1.mkTyProdApp hs
+mkTyProdApp :: TyL -> Ty
+mkTyProdApp tyL = mkTyRec (zip positionalFldNames tyL)
+%%]
+
+%%[1.mkTyCon hs
+mkTyCon :: String -> Ty
+mkTyCon n = Ty_Con (HNm n)
+%%]
+
+%%[2.mkTyVar hs
+mkTyVar :: TyVarId -> Ty
+mkTyVar tv = Ty_Var tv
+%%]
+
+%%[3.mkTyVar -2.mkTyVar hs
+mkTyVar :: TyVarId -> Ty
+mkTyVar tv = Ty_Var tv TyVarCateg_Plain
+%%]
+
+%%[2.NewTyVar hs
+mkNewTyVar :: UID -> Ty
+mkNewTyVar u = let  (_,v) = mkNewUID u in mkTyVar v
+%%]
+
+%%[2.NewTyVarL hs
+mkNewTyVarL :: Int -> UID -> TyL
+mkNewTyVarL sz u = let  (_,vs) = mkNewUIDL sz u in map mkTyVar vs
+%%]
+
+%%[2.tyEnsureNonBotTop hs
+tyEnsureNonBotTop :: UID -> Ty -> Ty
+tyEnsureNonBotTop u t = if t /= Ty_Any then t else mkNewTyVar u
+%%]
+
+%%[3.mkTyQu hs
+mkTyQu :: TyVarIdL -> Ty -> Ty
+mkTyQu tvL t = foldr (\tv t -> Ty_Quant tv t) t tvL
+%%]
+
+%%[4.mkTyQu -3.mkTyQu hs
+mkTyQu :: TyQu -> TyVarIdL -> Ty -> Ty
+mkTyQu q tvL t = foldr (\tv t -> Ty_Quant q tv t) t tvL
+%%]
+
+%%[2.mkTyFreshProd hs
+mkTyFreshProdFrom :: UID -> Int -> Ty
+mkTyFreshProdFrom uid arity =  mkTyProdApp . map mkTyVar . snd . mkNewUIDL arity $ uid
+
+mkTyFreshProd :: Int -> Ty
+mkTyFreshProd = mkTyFreshProdFrom startUID
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constants
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.tyConsts hs
+tyInt   = Ty_Con hsnInt
+tyChar  = Ty_Con hsnChar
+%%]
+
+%%[6 hs
+kiStar  = Ty_Con hsnStar
+%%]
+
+%%[7 hs
+kiRow       = Ty_Con hsnRow
+tyRowEmpty  = Ty_Con hsnRowEmpty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Destruction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.unMkTy.sigs hs
+tyArrowArgRes   :: Ty -> (Ty,Ty)
+tyArrowArgsRes  :: Ty -> (TyL,Ty)
+tyAppFunArgs    :: Ty -> (Ty,TyL)
+tyProdArgs      :: Ty -> TyL
+%%]
+
+%%[1.unMkTy.funs hs
+tyArrowArgRes t
+  =  case t of
+       (Ty_App (Ty_App (Ty_Con nm) a) r)
+         | hsnIsArrow nm  -> (a,r)
+       _                  -> (Ty_Any,t)
+
+tyArrowArgsRes t
+  =  case t of
+       (Ty_App (Ty_App (Ty_Con nm) a) r)
+         | hsnIsArrow nm  -> let (as,r') = tyArrowArgsRes r in (a:as,r')
+       _                  -> ([],t)
+
+tyAppFunArgs
+  =  extr []
+  where  extr as t
+           =  case t of
+                Ty_App f a  -> extr (a:as) f
+                _           -> (t,as)
+%%]
+
+%%[1.tyProdArgs hs
+tyProdArgs = snd . tyAppFunArgs
+%%]
+
+%%[7.tyProdArgs -1.tyProdArgs hs
+tyProdArgs ty = let (t,al) = tyRecExts ty in map snd al
+%%]
+
+%%[8 hs
+tyConNm :: Ty -> HsName
+tyConNm  (Ty_Con nm)  = nm
+tyConNm  _            = hsnUnknown
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Construction for records/variants
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7 hs
+mkTyRow :: AssocL HsName Ty -> Ty
+mkTyRow = foldl (\t (n,e) -> Ty_Ext t n e) tyRowEmpty
+
+mkTyRec :: AssocL HsName Ty -> Ty
+mkTyRec al = hsnRec `mkTyConApp` [mkTyRow al]
+
+mkTySum :: AssocL HsName Ty -> Ty
+mkTySum al = hsnSum `mkTyConApp` [mkTyRow al]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Destruction for records
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7 hs
+tyRowExts :: Ty -> (Ty,AssocL HsName Ty)
+tyRowExts
+  =  extr []
+  where  extr as t
+           =  case t of
+                (Ty_Ext r l e) -> extr ((l,e):as) r
+                _              -> (t,as)
+
+tyRecExts :: Ty -> (Ty,AssocL HsName Ty)
+tyRecExts t
+  =  case tyAppFunArgs t of
+       (Ty_Con n,[row]) | hsnIsRec n || hsnIsSum n  -> tyRowExts row
+       _                                            -> (Ty_Any,[])
+
+tyRowExtr :: HsName -> Ty -> Maybe (Ty,Ty)
+tyRowExtr lbl t
+  =  case t of
+       (Ty_Ext r l e)   | lbl == l   -> Just (r,e)
+                        | otherwise  -> maybe Nothing (\(r',e') -> Just (Ty_Ext r' l e,e')) (tyRowExtr lbl r)
+       _                             -> Nothing
+
+tyRecExtr :: HsName -> Ty -> Maybe (Ty,Ty)
+tyRecExtr lbl t
+  =  case tyAppFunArgs t of
+       (Ty_Con n,[row]) | hsnIsRec n || hsnIsSum n  -> tyRowExtr lbl row
+       _                                            -> Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Canonical ordering of fields of record
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+tyRowCanonOrder :: AssocL HsName a -> AssocL HsName a
+tyRowCanonOrder = sortBy (\(n1,_) (n2,_) -> n1 `compare` n2)
+
+tyRecOffset :: HsName -> Ty -> Maybe Int
+tyRecOffset lbl t
+  =  let (_,exts) = tyRecExts t
+      in findIndex ((==lbl).fst) . tyRowCanonOrder $ exts
+%%]
+

@@ -1,0 +1,107 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Error pretty print
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs import(List, UU.Pretty, EHCommon, EHTy, EHTyPretty, EHError) export(ppErr, ppErrs)
+%%]
+
+%%[1 import(EHErrorAbsSyn)
+WRAPPER Err
+%%]
+
+%%[1 hs
+ppErrs :: ErrL -> PP_Doc
+ppErrs errL = if null errL then empty else ppCmt ("***ERROR(S):" >-< indent 2 (ppErrL errL))
+
+ppErrL :: ErrL -> PP_Doc
+ppErrL errL = if null errL then empty else vlist (map ppErr errL)
+
+ppErr :: Err -> PP_Doc
+ppErr err =  let  r = wrap_Err (sem_Err err) (Inh_Err {nestDepth_Inh_Err=0})
+             in   pp_Syn_Err r
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+ppMsgErr :: PP msg => msg -> PP_Doc -> PP_Doc
+ppMsgErr msg err = msg  >|< ":" >-< indent 2 err
+
+ppUnifyErr :: String -> Ty -> Ty -> Ty -> Ty -> PP_Doc
+ppUnifyErr msg t1 t2 t1d t2d
+  =  ppMsgErr msg    (    "failed to fit:"  >#< ppListSepFill "" "" " <= " [ppTy t1,ppTy t2]
+                     >-<  "problem with :"  >#< ppListSepFill "" "" " <= " [ppTy t1d,ppTy t2d]
+                     )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Weeding nested error msg
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR Err ErrL [ nestDepth: Int | | isNestPP USE {`const`} {False}: Bool ]
+
+SEM Err
+  | NestedIn            errL    .   nestDepth   =   case @errL.ppL of {[_] -> @lhs.nestDepth+1; _ -> 0}
+                        lhs     .   isNestPP    =   True
+
+SEM ErrL
+  | Nil                 lhs     .   isNestPP    =   True
+  | Cons                lhs     .   isNestPP    =   @hd.isNestPP && @tl.isNestPP
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Error pretty printing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR Err [ | | pp: PP_Doc ]
+ATTR ErrL [ | | ppL: PP_DocL ]
+
+SEM Err
+  | UnifyClash          lhs     .  pp   =   ppUnifyErr  "Type clash"
+                                                        @ty1 @ty2 @ty1detail @ty2detail
+  | NamesNotIntrod      lhs     .  pp   =   ppMsgErr    "Names not introduced"
+                                                        (ppListSep "" "" ", " @nmL)
+  | NamesDupIntrod      lhs     .  pp   =   ppMsgErr    "Names introduced more than once"
+                                                        (ppListSep "" "" ", " @nmL)
+  | PatArity            lhs     .  pp   =   ppMsgErr    "Known type has wrong arity for pattern"
+                                                        ("type :" >#< ppTy @ty >-< "arity:" >#< @arity)
+  | NestedIn            loc     .  pp   =   let  h =  if @lhs.nestDepth == 1 && @errL.isNestPP
+                                                      then (text "..." >#<)
+                                                      else if @lhs.nestDepth <= 1 || @lhs.nestDepth >= 1 && not @errL.isNestPP
+                                                      then ppMsgErr ("In `" >|< @wher >|< "'")
+                                                      else id
+                                            in   h (vlist @errL.ppL)
+
+SEM ErrL
+  | Nil                 lhs     .  ppL  =   []
+  | Cons                lhs     .  ppL  =   @hd.pp : @tl.ppL
+%%]
+
+%%[1.MissingSig
+SEM Err
+  | MissingSig          lhs     .  pp   =   ppMsgErr    "Missing sig for" (@wher)
+%%]
+
+%%[2 -1.MissingSig
+SEM Err
+  | UnifyOccurs         lhs     .  pp   =   ppUnifyErr  "Infinite type"
+                                                        @ty1 @ty2 (mkTyVar @tvar) @ty2detail
+%%]
+
+%%[7
+SEM Err
+  | MissingRowLabel     lhs     .  pp   =   ppMsgErr    "Missing label in row"
+                                                        ("Label:" >#< @nm >-< "Row  :" >#< ppTy @ty)
+%%]
+

@@ -1,0 +1,69 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Ty instantiate
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[3.tyInst hs import(EHCommon,EHTy,EHCnstr) export(tyInst)
+%%]
+
+%%[4.tyInst -3.tyInst hs import(EHCommon,EHTy,EHCnstr)
+%%]
+
+%%[4 hs import(List) export(tyInst1Quants, tyInst1Exists, instCoConst, instContra)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% tyInst
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[3.tyInst hs
+tyInst' :: (TyVarId -> Ty) -> UID -> Ty -> Ty
+tyInst' mkFreshTy uniq ty
+  = s |=> ty'
+  where  i u (Ty_Quant v t)  =  let  (u',v') = mkNewUID u
+                                     (s,t') = i u' t
+                                in   ((v `cnstrUnit` (mkFreshTy v')) |=> s,t')
+         i _ t               =  (emptyCnstr,t)
+         (s,ty')             =  i uniq ty
+
+tyInst :: UID -> Ty -> Ty
+tyInst = tyInst' mkTyVar
+%%]
+
+%%[3.tyInstKnown hs export(tyInstKnown)
+tyInstKnown :: UID -> Ty -> Ty
+tyInstKnown = tyInst' (\tv -> Ty_Var tv TyVarCateg_Fixed)
+%%]
+
+%%[4.HowToInst hs
+type HowToInst = TyQu -> TyVarId -> Ty
+
+instCoConst, instContra :: HowToInst
+instCoConst     q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else mkTyCon ("C_" ++ show v)
+instContra      q v = if tyquIsForall q then Ty_Var v TyVarCateg_Fixed else Ty_Var v TyVarCateg_Plain
+%%]
+
+%%[4.tyInst -(3.tyInst 3.tyInstKnown) hs
+tyInst :: UID -> Bool -> HowToInst -> Ty -> (Ty,TyVarIdL)
+tyInst uniq onlyExists howToInst ty
+  = (s |=> ty',tvl)
+  where  i u (Ty_Quant q v t) | not (tyquIsForall q && onlyExists)
+                             =  let  (u',v')        = mkNewUID u
+                                     (s,t',tvl')    = i u' t
+                                in   ((v `cnstrUnit` (howToInst q v')) |=> s,t',v':tvl')
+         i _ t               =  (emptyCnstr,t,[])
+         (s,ty',tvl)         =  i uniq ty
+
+tyInst1Quants :: UID -> HowToInst -> Ty -> (Ty,TyVarIdL)
+tyInst1Quants uniq howToInst ty = tyInst uniq False howToInst ty
+
+tyInst1Exists :: UID -> Ty -> Ty
+tyInst1Exists uniq ty = fst (tyInst uniq True instCoConst ty)
+%%]
+

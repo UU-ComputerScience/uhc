@@ -1,0 +1,128 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common AG functionality for Ty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type constructor name
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.ConNm
+ATTR Ty [ | | appFunNm: HsName ]
+
+SEM Ty
+  | Con         lhs       .  appFunNm  =  @nm
+  | App         loc       .  appFunNm  =  @func.appFunNm
+  | Any         lhs       .  appFunNm  =  hsnUnknown
+%%]
+
+%%[2
+SEM Ty
+  | Var         lhs       .  appFunNm  =  hsnUnknown
+%%]
+
+%%[7
+SEM Ty
+  | Ext         loc       .  appFunNm  =  @ty.appFunNm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Which type con
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4
+SEM Ty
+  | App     loc     .  appIsArrow        =   hsnIsArrow @func.appFunNm
+                    .  appIsLikeProd     =   hsnIsProd @func.appFunNm
+%%]
+
+%%[7
+SEM Ty
+  | App     loc     .  appIsLikeProd     :=  hsnIsProd @func.appFunNm || hsnIsRec @func.appFunNm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Position on app spine, ==0 implies at a root
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.SpinePos
+ATTR Ty [ appSpinePos : Int | | ]
+
+SEM TyAGItf
+  | AGItf       ty          .   appSpinePos     =   0
+
+SEM Ty
+  | App         func        .   appSpinePos     =   @lhs.appSpinePos + 1
+                arg         .   appSpinePos     =   0
+                loc         .   isSpineRoot     =   @lhs.appSpinePos == 0
+%%]
+
+%%[3
+SEM Ty
+  | Quant       ty          .   appSpinePos     =   0
+%%]
+
+%%[4.whereIAm
+SEM Ty
+  | App         loc         .   isArrowRoot     =   @appIsArrow && @isSpineRoot
+%%]
+
+%%[7
+SEM Ty
+  | Ext         ty          .   appSpinePos     =   0
+                extTy       .   appSpinePos     =   0
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Nr of arrows at left + max of it
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[100
+ATTR Ty [ nrLeftArrs: {Int}  mxLeftArrs: Int | | mxNrLeftArrs: Int ]
+
+SEM TyAGItf
+  | AGItf       ty          .   nrLeftArrs      =   0
+                            .   mxLeftArrs      =   @ty.mxNrLeftArrs
+
+SEM Ty
+  | App         (arg.nrLeftArrs,arg.mxLeftArrs,lhs.mxNrLeftArrs)
+                                                =   if @appIsArrow
+                                                    then  if @isArrowRoot
+                                                          then (@lhs.nrLeftArrs+1,@lhs.mxLeftArrs,@arg.mxNrLeftArrs)
+                                                          else (0,@arg.mxNrLeftArrs,@lhs.nrLeftArrs)
+                                                    else  (@lhs.nrLeftArrs,@lhs.mxLeftArrs,@lhs.nrLeftArrs)
+                loc         .   isLastArrow     =   @lhs.nrLeftArrs == @lhs.mxLeftArrs - 1
+  | Var App Quant
+                loc         .   isInArrow       =   @lhs.mxLeftArrs > 0
+                            .   isInArrowRes    =   @isInArrow && @lhs.nrLeftArrs == @lhs.mxLeftArrs
+                            .   isInArrowArg    =   @isInArrow && @lhs.nrLeftArrs < @lhs.mxLeftArrs
+  | Any Con Var lhs         .   mxNrLeftArrs    =   @lhs.nrLeftArrs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Introduced ty vars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[3
+SEM Ty
+  | Quant       loc         .   introTVarL      =   [@tv]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Clone
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[3
+ATTR TyVarCateg [ | | self: SELF ]
+%%]
+
+%%[4
+ATTR TyQu [ | | self: SELF ]
+%%]
+

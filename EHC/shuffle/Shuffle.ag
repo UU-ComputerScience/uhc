@@ -1,0 +1,1046 @@
+imports
+{
+import System
+import GetOpt
+import Maybe
+import Char
+import IO
+import Monad
+import Array
+import List
+import FiniteMap
+import FPath
+import Utils
+import PPUtils
+import UU.Pretty
+import UU.Parsing
+import UU.Parsing.CharParser
+import UU.Scanner.Position( initPos, Pos )
+import qualified UU.DData.Set as Set
+import qualified UU.DData.Seq as Seq
+}
+
+{
+-------------------------------------------------------------------------
+-- Main
+-------------------------------------------------------------------------
+
+main :: IO ()
+main
+  = do { args <- getArgs
+       ; let oo@(o,n,errs)  = getOpt Permute cmdLineOpts args
+             opts           = foldr ($) defaultOpts o
+{-
+       ; putStrLn (show (voAllLE' (optVerOrder opts) (optGenVersion opts)))
+       ; putStrLn (show (voAllLE'' (optVerOrder opts) (optGenVersion opts)))
+-}
+       ; if optHelp opts
+         then putStrLn (usageInfo "Usage shuffle [options] [file]\n\noptions:" cmdLineOpts)
+         else if null errs
+              then  doCompile (if null n then emptyFPath else mkFPath (head n)) opts
+              else  putStr (head errs)
+       }
+
+doCompile :: FPath -> Opts -> IO ()
+doCompile fp opts
+  = do { (fn,fb,fh)
+             <- if fpathIsEmpty fp
+                then return ("<stdin>","<stdin>",stdin)
+                else do { let fn = fpathToStr fp
+                        ; h <- openFile fn ReadMode
+                        ; return (fn,fpathToStr (fpathRemoveSuff fp),h)
+                        }
+       ; xrefExceptFileContent
+           <- maybe (return "") readFile (optMbXRefExcept opts)
+       ; pres <- parseHandle show (pAGItf) fn fh
+       ; let res = wrap_AGItf pres
+                     (Inh_AGItf
+                        { opts_Inh_AGItf = opts {optBaseName = maybe (Just fb) Just (optBaseName opts)}
+                        , fpath_Inh_AGItf = fp
+                        , xrefExcept_Inh_AGItf = Set.unions . map (Set.fromList . words) . lines $ xrefExceptFileContent
+                        })
+       ; putBld (optAG opts) (bldAG_Syn_AGItf res) 
+       ; putBld (optHS opts) (bldHS_Syn_AGItf res) 
+       ; putBld (optLaTeX opts) (bldLaTeX_Syn_AGItf res) 
+       ; return ()
+       }
+  where putBld f b
+          = if f
+            then putStrLn (disp (vlist (map bldPP b)) 200 "")
+            else return ()
+
+-------------------------------------------------------------------------------------------
+-- Scanning
+-------------------------------------------------------------------------------------------
+
+{-
+data TokKind
+  = TKBegChunk | TKEndChunk | TKNameRef | TKNl | TKText
+  deriving (Show,Eq,Ord)
+
+data Tok
+  = Tok { tokKind :: TokKind, tokWhite :: String, tokBlack :: String }
+  deriving (Show)
+
+instance Eq Tok where
+  (Tok k1 _ b1) == (Tok k2 _ b2) = k1 == k2
+
+instance Symbol Tok
+
+isWhite :: Char -> Bool
+isWhite = (`elem` " \t")
+
+isLF :: Char -> Bool
+isLF = (`elem` "\n\r")
+
+isBlack :: Char -> Bool
+isBlack c = not (isWhite c || isLF c)
+
+scan :: String -> [Tok]
+scan s
+  = let sc p []                     = []
+        sc p s@(c:_)
+          | isWhite c               = let (w,s') = span isWhite s
+                                          (t:ts) = sc (a w p) s'
+                                       in (t {tokWhite = w} : ts)
+        sc p s@(c:s')
+          | isLF c                  = Tok TKNl "" [c] : sc 0 s'
+        sc 0 s@('%':'%':'[':s')     = Tok TKBegChunk "" "%%[" : sc 3 s'
+        sc 0 s@('%':'%':']':s')     = Tok TKEndChunk "" "%%]" : sc 3 s'
+        sc 0 s@('%':'%':'@':s')     = Tok TKNameRef "" "%%@" : sc 3 s'
+        sc p s@(c:_)
+          | isBlack c               = let (b,s') = span isBlack s
+                                       in (Tok TKText "" b : sc (a b p) s')
+        a s p                       = p + length s
+     in sc 0 s
+
+pBegChunk, pEndChunk, pBegNameRef, pNl :: (IsParser p Tok) => p Tok
+pBegChunk   = pSym (Tok TKBegChunk "" "%%[")
+pEndChunk   = pSym (Tok TKEndChunk "" "%%]")
+pBegNameRef = pSym (Tok TKNameRef "" "%%@")
+pNl         = pSym (Tok TKNl "" "\n")
+
+pBlack :: (IsParser p Tok) => p (Maybe String,String)
+pBlack      = (\(Tok _ w b) -> (if null w then Nothing else Just w,b)) <$> pSym (Tok TKText "" "<text>")
+-}
+
+
+-------------------------------------------------------------------------
+-- Parsing
+-------------------------------------------------------------------------
+
+parseHandle :: (Message Char Pos -> String) -> CharParser a -> FilePath -> Handle -> IO a
+parseHandle showM p fn fh
+  = do { txt <- hGetContents fh
+       ; parseIOMessage showM p (Input txt (initPos fn))
+       }
+
+-------------------------------------------------------------------------
+-- Parser
+-------------------------------------------------------------------------
+
+{-
+pChunks :: (IsParser p Tok) => p T_AGItf
+pChunks
+  = let pAGItf              =   sem_AGItf_AGItf <$> pLines <*> pChunks
+        pChunks             =   pFoldr_ng (sem_Chunks_Cons,sem_Chunks_Nil) pChunk
+        pChunk              =   pBegChunk
+                                 *> ((   sem_Chunk_Ver
+                                         <$> (mkVerFromInt <$> pInt)
+                                         <*> ((:[]) <$ pKey "." <*> pId <|> pSucceed [])
+                                         <*> (pKey "-" *> ((:[]) <$> pChunkId <|> pParens' (pList1 pChunkId)) <|> pSucceed [])
+                                         <*> (True <$ pKey "hs" <|> pSucceed False)
+                                         <*> (Just <$ pKey "module" <*> pId <|> pSucceed Nothing)
+                                         <*> (pKey "import" *> pParens pIdNests <|> pSucceed [])
+                                         <*> (pKey "export" *> pParens pIdNests <|> pSucceed [])
+                                     <|> sem_Chunk_Named
+                                         <$> pId
+                                     )
+                                     <*  pChunkBegTail
+                                     <*> pLines
+                                     <*  pChunkEnd
+                                     <*> pLines
+                                    )
+                            <?> "a chunk"
+     in pAGItf
+-}
+
+pAGItf :: (IsParser p Char) => p T_AGItf
+pAGItf
+  = let pAGItf              =   sem_AGItf_AGItf <$> pLines <*> pChunks
+        pChunks             =   pFoldr_ng (sem_Chunks_Cons,sem_Chunks_Nil) pChunk
+        pChunk              =   pChunkBeg
+                                 *> ((   sem_Chunk_Ver
+                                         <$> pVersion
+                                         <*> ((:[]) <$ pKey "." <*> pId <|> pSucceed [])
+                                         <*> (pKey "-" *> ((:[]) <$> pChunkId <|> pParens' (pList1 pChunkId)) <|> pSucceed [])
+                                         <*> (True <$ pKey "hs" <|> pSucceed False)
+                                         <*> (Just <$ pKey "module" <*> pId <|> pSucceed Nothing)
+                                         <*> (pKey "import" *> pParens pIdNests <|> pSucceed [])
+                                         <*> (pKey "export" *> pParens pIdNests <|> pSucceed [])
+                                     <|> sem_Chunk_Named
+                                         <$> pId
+                                     )
+                                     <*  pChunkBegTail
+                                     <*> pLines
+                                     <*  pChunkEnd
+                                     <*> pLines
+                                    )
+                            <?> "a chunk"
+        pChunkBeg           =   pToks "%%["
+        pChunkBegTail       =   pSpaces <* pNl
+        pChunkEnd           =   pToks "%%]" *> pLineChars <* pNl
+        pChunkId            =   (,) <$ pSpaces <*> pVersion <* pToks "." <*> pId'
+        pLines              =   pFoldr_ng  (sem_Lines_Cons,sem_Lines_Nil) pLine
+        pLine               =   sem_Line_AsIs
+                                <$> (pLineBeg
+                                     <**> ((\l b -> l b) <$> pLineChars) <* pNl <|> sem_Words_Nil <$ pNl)
+                            <|> sem_Line_Named
+                                <$ pToks "%%@" <*> pId <* pChunkBegTail
+                            <?> "a line"
+        pLineBeg            =   (\c1 c2 c3 -> c1 : c2 : c3 : []) <$> pPerc <*> pPerc <*> pExceptSym "[]@\r\n"
+                            <|> (\c1 c2 -> c1 : c2 : []) <$> pPerc <*> pNonPerc
+                            <|> (:[]) <$> pNonPerc
+                            where pNonPerc = pExceptSym "\r\n%"
+        pLineChars          =   pSucceed (\s -> f [sem_Word_Black s])
+                            <|> (\w tl s -> f ([sem_Word_Black s,sem_Word_White w] ++ tl)) <$> pSpaces1 <*> pGrs
+                            <|> (\b tl s -> f ([sem_Word_Black (s++b)] ++ tl)) <$> pGr <*> pGrs
+                            where pGr = pNonSpaceGroups
+                                             [(['a'..'z']++['A'..'Z']++['0'..'9'])
+                                             ,"@" ,"|", "()[]{}"
+                                             ]
+                                  pGrs= pList (sem_Word_White <$> pSpaces1 <|> sem_Word_Black <$> pGr)
+                                  f   = foldr sem_Words_Cons sem_Words_Nil
+        pNl                 =   pAnySym "\r\n"
+        pPerc               =   pSym '%'
+        pPacked  p1 p       =   p1 *> p <* p1
+        pPacked2 p1 p2 p    =   p1 *> p <* p2
+        pPacked2S c1 c2 p   =   pPacked2 (pKey c1) (pKey c2) p
+        pPacked2S' c1 c2 p  =   pPacked2 (pToks c1) (pKey c2) p
+        pParens             =   pPacked2S "(" ")"
+        pParens'            =   pPacked2S' "(" ")"
+        pIdStart            =   'a' <..> 'z' <|> 'A' <..> 'Z'
+        pIdChar             =   pIdStart <|> pDigit <|> pAnySym "."
+        pId'                =   (:) <$> pIdStart <*> pList pIdChar
+        pId                 =   pSpaces *> pId'
+        pIds                =   pListSep (pKey ",") pId
+        pNonComma           =   pExceptSym "\r\n,() \t"
+        pIdNonComma         =   pSpaces *> pList1 pNonComma
+        pIdNonCommas        =   pListSep (pKey ",") pIdNonComma
+        pIdNest             =   (\h mh2 t -> concat ([h] ++ maybe [] (\h2 -> [" " ++ h2]) mh2 ++ t))
+                                <$> pIdNonComma
+                                <*  pSpaces
+                                <*> (Just <$> pIdNonComma `opt` Nothing)
+                                <*> ((\x -> ["("] ++ x ++ [")"]) 
+                                     <$> pParens' pIdNonCommas <|> pSucceed [])
+        pIdNests            =   pListSep_ng (pKey ",") pIdNest
+     in pAGItf
+
+pVersion :: (IsParser p Char) => p Version
+pVersion = mkVerFromIntL <$> pList1Sep (pToks "_") pInt'
+
+pVerOrder :: (IsParser p Char) => p VersionOrder
+pVerOrder = pListSep (pToks ",") (pList1Sep (pToks "<") pVersion)
+
+pExceptSym :: (IsParser p Char) => String -> p Char
+pExceptSym e
+  = let exc st [] = st <..> chr 255
+        exc st (e:es) = st <..> chr (ord e - 1) <|> exc (chr (ord e + 1)) es
+     in exc (chr 1) (sort e)
+
+pSpaces, pSpaces1, pNonSpaces1 :: (IsParser p Char) => p String
+pSpaces = pList (pAnySym " \t")
+pSpaces1 = pList1 (pAnySym " \t")
+pNonSpaces1 = pList1 (pExceptSym " \t\r\n")
+
+pInt' :: (IsParser p Char) => p Int
+pInt' = read <$> pList1 pDigit
+
+pInt :: (IsParser p Char) => p Int
+pInt = pSpaces *> pInt'
+
+pDigit :: (IsParser p Char) => p Char
+pDigit = '0' <..> '9'
+
+pNonSpaceGroups :: (IsParser p Char) => [String] -> p String
+pNonSpaceGroups gs
+  = let wh = sort " \t\r\n"
+        gr seen [] = [pExceptSym (wh ++ seen)]
+        gr seen (g:gs) = pAnySym (g \\ (wh ++ seen)) : gr (g ++ seen) gs
+     in foldr1 (<|>) . map pList1 . gr [] . map sort $ gs
+
+pKey :: (IsParser p Char) => String -> p String
+pKey s = pSpaces *> pToks s
+
+parseAndGetRes :: (Symbol s, InputState inp s pos) => AnaParser inp Pair s pos a -> inp -> a
+parseAndGetRes p s = case evalSteps (parse p s) of {Pair v _ -> v}
+
+
+-------------------------------------------------------------------------
+-- Options
+-------------------------------------------------------------------------
+
+data Opts 
+  = Opts
+      { optAG           :: Bool
+      , optHS           :: Bool
+      , optLaTeX        :: Bool
+      , optIndex        :: Bool
+      , optHelp         :: Bool
+      , optGenVersion   :: Version
+      , optBaseName     :: Maybe String
+      , optWrapLhs2tex  :: Bool
+      , optMbXRefExcept :: Maybe String
+      , optVerOrder     :: VersionOrder
+      }
+
+defaultOpts
+  = Opts
+      { optAG           =  False
+      , optHS           =  False
+      , optLaTeX        =  False
+      , optIndex        =  False
+      , optHelp         =  False
+      , optGenVersion   =  VNone
+      , optBaseName     =  Nothing
+      , optWrapLhs2tex  =  True
+      , optMbXRefExcept =  Nothing
+      , optVerOrder     =  [[]]
+      }
+
+optsHasNoVerOrder :: Opts -> Bool
+optsHasNoVerOrder = null . head . optVerOrder
+
+cmdLineOpts  
+  =  [  Option "a"  ["ag"]        (NoArg oAG)
+          "generate code for ag, default=no"
+     ,  Option "h"  ["hs"]        (NoArg oHS)
+          "generate code for haskell, default=no"
+     ,  Option "l"  ["latex"]     (NoArg oLaTeX)
+          "generate code for latex, default=no"
+     ,  Option ""   ["index"]     (NoArg oIndex)
+          "combined with latex, generate index entries, default=no"
+     ,  Option "g"  ["gen"]       (ReqArg oGen "all|<nr>")
+          "generate for version, default=none"
+     ,  Option ""   ["order"]     (ReqArg oVerOrder "<order-spec>")
+          "version order"
+     ,  Option "b"  ["base"]      (ReqArg oBase "<name>")
+          "base name, default=derived from filename"
+     ,  Option ""   ["xref-except"]      (ReqArg oXRefExcept "<filename>")
+          "file with list of strings not to be cross ref'd"
+     ,  Option ""   ["help"]      (NoArg oHelp)
+          "output this help"
+     ,  Option ""   ["lhs2tex"]   (OptArg oLhs2tex "yes|no")
+          "wrap chunks in lhs2tex's code environment, default=yes"
+     ]
+  where  oAG             o =  o {optAG = True}
+         oHS             o =  o {optHS = True}
+         oLaTeX          o =  o {optLaTeX = True}
+         oIndex          o =  o {optIndex = True}
+         oLhs2tex    ms  o =  yesno (\f o -> o {optWrapLhs2tex = f}) ms o
+         oBase        s  o =  o {optBaseName = Just s}
+         oVerOrder    s  o =  o {optVerOrder = parseAndGetRes pVerOrder s}
+         oXRefExcept  s  o =  o {optMbXRefExcept = Just s}
+         oGen         s  o =  case s of
+                                "all"               -> o {optGenVersion = VAll}
+                                (c:_) | isDigit c   -> o {optGenVersion = parseAndGetRes pVersion s}
+                                _                   -> o {optGenVersion = VAll}
+         oHelp           o =  o {optHelp = True}
+         yesno updO  ms  o =  case ms of
+                                Just "yes"  -> updO True o
+                                Just "no"   -> updO False o
+                                _           -> o
+
+
+}
+
+-------------------------------------------------------------------------
+-- Common. Version
+-------------------------------------------------------------------------
+
+{
+type StringL    = [String]
+
+data Version    = VAll
+                | VPre
+                | VNone
+                | VRef {verRef :: Int}
+                | VNest {verNest :: Version, verRef :: Int}
+                deriving (Show,Eq,Ord)
+
+type VersionOrder = [[Version]]
+
+mkVerFromInt :: Int -> Version
+mkVerFromInt r = if r == 0 then VPre else VRef r
+
+mkVerFromIntL :: [Int] -> Version
+mkVerFromIntL (0:_)  = mkVerFromInt 0
+mkVerFromIntL (i:is) = foldl VNest (VRef i) is
+
+instance PP Version where
+  pp VPre           = pp "pre"
+  pp VAll           = pp "*"
+  pp VNone          = pp "-"
+  pp (VRef r)       = pp r
+  pp (VNest n r)    = pp n >|< "." >|< pp r
+
+verMatch :: Version -> Version -> Bool
+verMatch VAll           _               = True
+verMatch _              VAll            = True
+verMatch (VRef r1)      (VRef r2)       = r1 == r2
+verMatch (VNest n1 r1)  (VNest n2 r2)   = r1 == r2 && n1 == n2
+verMatch VPre           VPre            = True
+verMatch _              _               = False
+
+cmpByVersionOrder :: VersionOrder -> Version -> Version -> Ordering
+cmpByVersionOrder vo v1 v2
+  = maybe EQ id . listToMaybe . catMaybes . map c $ vo
+  where  c o = do { i1 <- elemIndex v1 o
+                  ; i2 <- elemIndex v2 o
+                  ; return (compare i1 i2)
+                  }
+
+voAllLE :: VersionOrder -> Version -> [Version]
+voAllLE vo v
+  = sortBy (cmpByVersionOrder vo)
+  . nub . sort . concat
+  . (case v of
+      VAll -> id
+      _    -> map (\o -> maybe [] (\i -> take (i+1) o) (elemIndex v o))
+    )
+  $ vo
+
+voAllLE' :: VersionOrder -> Version -> [Version]
+voAllLE' vo v
+  = let voPrefixes
+          = map (\p@((v,_):_) -> (v,map snd p))
+          . groupBy (\(v1,_) (v2,_) -> v1 == v2)
+          . sortBy (\(v1,_) (v2,_) -> compare v1 v2)
+          . concat . map (\o -> zip o (inits o))
+          $ vo
+        all
+          = case v of
+              VAll -> concat vo
+              _    -> maybe [] concat (lookup v voPrefixes)
+     in sortBy (cmpByVersionOrder vo) . nub . sort $ all
+
+voAllLE'' :: VersionOrder -> Version -> [Version]
+voAllLE'' vo v
+  = let allN = nub . sort . concat $ vo
+        nrN = length allN
+        nsN = [(0::Int)..nrN-1]
+        ixOf' v = elemIndex v allN
+        ixOf v = maybe 0 id (ixOf' v)
+        voPrefixes
+          = map (\p@((v,_):_) -> (ixOf v,map ixOf . nub . sort . (v:) . concat . map snd $ p))
+          . groupBy (\(v1,_) (v2,_) -> v1 == v2)
+          . sortBy (\(v1,_) (v2,_) -> compare v1 v2)
+          . concat . map (\o -> zip o (inits o))
+          $ vo
+        m1 = map
+                (\(n,ns)
+                    -> map snd . sort $ (zip (ns) (repeat True) ++ zip (nsN \\ ns) (repeat False))
+                )
+                voPrefixes
+        m2 = array (0,nrN-1) (zip nsN (map (\r -> array (0,nrN-1) (zip nsN r)) m1))
+        m3 = foldr
+                (\n m
+                    -> foldr
+                        (\i m -> m // [(i,m ! i // [ (j,m ! i ! n && m ! n ! j || m ! i ! j) | j <- nsN ])])
+                        m nsN
+                )
+                m2 nsN
+        nsV = maybe [] (\i -> assocs (m3 ! i)) (ixOf' v)
+        allN' = case v of
+                  VAll -> allN
+                  _    -> [ allN !! i | (i,b) <- nsV, b ]
+     in sortBy (cmpByVersionOrder vo) . nub . sort $ allN'
+
+voDefault :: VersionOrder
+voDefault = [take 30 (map VRef [1..])]
+
+}
+
+-------------------------------------------------------------------------
+-- Inferfacing
+-------------------------------------------------------------------------
+
+WRAPPER AGItf
+
+ATTR AGItf [ opts: {Opts}  fpath: FPath | | ]
+
+-------------------------------------------------------------------------
+-- AST
+-------------------------------------------------------------------------
+
+{
+type ChunkId = (Version,String)
+type MbChunkId = Maybe ChunkId
+type ChunkIdL = [ChunkId]
+}
+
+DATA AGItf
+  | AGItf               dumLines    : Lines
+                        chunks      : Chunks
+
+DATA Chunk
+  | Ver                 version     : {Version}
+                        aliasNmL    : {StringL}
+                        minusL      : ChunkIdL
+                        isHS        : {Bool}
+                        mbModNm     : {Maybe String}
+                        imports     : {StringL}
+                        exports     : {StringL}
+                        lines       : Lines
+                        dumLines    : Lines
+  | Named               nm          : {String}
+                        lines       : Lines
+                        dumLines    : Lines
+
+TYPE Chunks     = [Chunk]
+
+SET AllChunk    = Chunk Chunks
+
+DATA Line
+  | AsIs                words       : Words
+  | Named               nm          : {String}
+
+TYPE Lines      = [Line]
+
+SET AllLine     = Line Lines
+
+DATA Word
+  | White               chars       : {String}
+  | Black               chars       : {String}
+
+TYPE Words      = [Word]
+
+SET AllWord     = Word Words
+
+SET AllNT       = AllWord AllLine AllChunk
+
+-------------------------------------------------------------------------
+-- Sequence nr (for ordering when printing)
+-------------------------------------------------------------------------
+
+ATTR AllChunk [ seqNr: Int | | ]
+
+SEM AGItf
+  | AGItf       chunks      . seqNr     = 1
+
+SEM Chunks
+  | Cons        tl          . seqNr     = @lhs.seqNr + 1
+
+-------------------------------------------------------------------------
+-- Line counting, column counting
+-------------------------------------------------------------------------
+
+ATTR AllChunk AllLine [ | lineNr: Int | ]
+ATTR AllWord [ | colNr: Int | ]
+
+SEM AGItf
+  | AGItf       dumLines    . lineNr    = 1
+
+SEM Lines
+  | Cons        tl          . lineNr    = @lhs.lineNr + 1
+
+SEM Chunk
+  | Ver Named   loc         . chunkLineNr
+                                        = @lhs.lineNr + 1
+                lines       . lineNr    = @chunkLineNr
+                dumLines    . lineNr    = @lines.lineNr + 1
+
+SEM Line
+  | AsIs        words       . colNr     = 0
+
+SEM Word
+  | White Black loc         . wordColNr = @lhs.colNr
+                lhs         . colNr     = @lhs.colNr + length @chars
+
+-------------------------------------------------------------------------
+-- Left + right context
+-------------------------------------------------------------------------
+
+ATTR Words [ lCtxt: StringL  lAllCtxt: StringL | | rCtxt: StringL ]
+ATTR Word [ | lCtxt: StringL  lAllCtxt: StringL  rCtxt: StringL | ]
+
+SEM Line
+  | AsIs        words       . lCtxt     = []
+                            . lAllCtxt  = []
+
+SEM Words
+  | Nil         lhs         . rCtxt     = []
+  | Cons        hd          . rCtxt     = @tl.rCtxt
+                lhs         . rCtxt     = @hd.rCtxt
+
+SEM Word
+  | Black       lhs         . rCtxt     = @chars : @lhs.rCtxt
+                            . lCtxt     = @chars : @lhs.lCtxt
+                            . lAllCtxt  = @chars : @lhs.lAllCtxt
+  | White       lhs         . lAllCtxt  = @chars : @lhs.lAllCtxt
+
+-------------------------------------------------------------------------
+-- Cross ref
+-------------------------------------------------------------------------
+
+{
+data XRefKind = XRHsDef | XRAgAttrDef | XRAgAltDef | XRAgSemDef | XRHsUse | XRAgAttrUse deriving Show
+data XRef = XRef { xrKind :: XRefKind, xrKeyL :: StringL } deriving Show
+
+xrMainKey :: XRef -> String
+xrMainKey = head . xrKeyL
+
+xrKindIsDefining :: XRefKind -> Bool
+xrKindIsDefining XRHsDef = True
+xrKindIsDefining XRAgAttrDef = True
+xrKindIsDefining XRAgAltDef = True
+xrKindIsDefining XRAgSemDef = True
+xrKindIsDefining _ = False
+
+xrIsDefining :: XRef -> Bool
+xrIsDefining = xrKindIsDefining . xrKind
+
+type XRefL = Seq.Seq XRef
+type XRefExcept = Set.Set String
+
+passXR :: XRefExcept -> String -> ([XRef],Int) -> ([XRef],Int)
+passXR exc r xr = if Set.member r exc then ([],0) else xr
+}
+
+ATTR AGItf AllNT [ xrefExcept: XRefExcept | | ]
+ATTR AllWord AllLine [ | | xrefL USE {`Seq.append`} {Seq.empty} : XRefL ]
+ATTR Word [ | rCtxtUsed: Int | ]
+ATTR Words [ rCtxtUsed: Int | | ]
+
+SEM Word
+  | Black       (loc.xrefL,lhs.rCtxtUsed)
+                                        = let ctxtHuge = 10000000
+                                              loclhs = ["lhs","loc"]
+                                              none = ([],@lhs.rCtxtUsed - 1)
+                                              def nms k cUsed
+                                                   = if any (flip Set.member @lhs.xrefExcept) nms then ([],0) else ([XRef k nms],cUsed)
+                                           in if @lhs.rCtxtUsed <= 0 && isAlpha (head @chars)
+                                              then case (@lhs.lAllCtxt,@lhs.lCtxt,@chars,@lhs.rCtxt) of
+                                                     (_,("@":_),nm1,(".":nm2:_))
+                                                       | nm1 `elem` loclhs          -> def [nm2] XRAgAttrUse 2
+                                                     (_,("@":_),nm1,(".":nm2:_))    -> def [nm2,nm1] XRAgAttrUse 2
+                                                     (_,("@":_),nm1,_)              -> def [nm1] XRAgAttrUse 0
+                                                     (_,("|":_),nm1,_)              -> def [nm1] XRAgAltDef 0
+                                                     (_,(".":ll:_),nm1,("=":_))
+                                                       | ll `elem` loclhs           -> def [nm1] XRAgAttrDef 1
+                                                     (_,(".":nm2:_),nm1,("=":_))    -> def [nm1,nm2] XRAgAttrDef 1
+                                                     (_,_,nm1,([sep]:nm2:_))
+                                                       | sep `elem` "._"            -> def [nm2,nm1] XRHsUse 2
+                                                       | otherwise                  -> none
+                                                     (_,["SEM"],nm1,_)              -> def [nm1] XRAgSemDef ctxtHuge
+                                                     (_,["data"],nm1,_)             -> def [nm1] XRHsDef 0
+                                                     (_,["type"],nm1,_)             -> def [nm1] XRHsDef 0
+                                                     ([],_,nm1,_)                   -> def [nm1] XRHsDef ctxtHuge
+                                                     (_,_,nm1,_)
+                                                       | nm1 `notElem` loclhs       -> def [nm1] XRHsUse 0
+                                                     _                              -> none
+                                              else none
+                lhs         . xrefL     = Seq.fromList @xrefL
+  | White       lhs         . rCtxtUsed = 0
+
+SEM Line
+  | AsIs        words       . rCtxtUsed = 0
+
+-------------------------------------------------------------------------
+-- Named chunks
+-------------------------------------------------------------------------
+
+{
+data NamedChunkInfo
+  = NamedChunkInfo
+      { nciNm       :: String
+      , nciMbPP     :: Maybe PP_Doc
+      }
+
+type NamedChunkInfoMp = FiniteMap String NamedChunkInfo
+}
+
+ATTR AllChunk [ | | nmChInfoMp USE {`plusFM`} {emptyFM}: NamedChunkInfoMp ]
+ATTR AllChunk AllLine [ allNmChInfoMp: NamedChunkInfoMp | | ]
+
+SEM Chunk
+  | Named       loc         . chInfo    = NamedChunkInfo @nm @lines.mbPP
+                lhs         . nmChInfoMp= unitFM @nm @chInfo
+
+SEM AGItf
+  | AGItf       chunks      . allNmChInfoMp
+                                        = @chunks.nmChInfoMp
+                dumLines    . allNmChInfoMp
+                                        = emptyFM
+
+-------------------------------------------------------------------------
+-- Content replica
+-------------------------------------------------------------------------
+
+ATTR AllLine [ | | mbPP : {Maybe PP_Doc} ]
+ATTR Word [ | | chars: String ]
+ATTR Words [ | | charsL: {[String]} ]
+
+SEM Word
+  | White       lhs         . chars     = @chars
+  | Black       lhs         . chars     = {- show @xrefL ++ -} @chars
+
+SEM Words
+  | Nil         lhs         . charsL    = []
+  | Cons        lhs         . charsL    = @hd.chars : @tl.charsL
+
+SEM Line
+  | AsIs        lhs         . mbPP      = Just (if null @words.charsL then text "" else hlist @words.charsL)
+  | Named       lhs         . mbPP      = maybe (Just ("<<" >|< @nm >|< ">>")) nciMbPP (lookupFM @lhs.allNmChInfoMp @nm)
+
+SEM Lines
+  | Nil         lhs         . mbPP      = Nothing
+  | Cons        lhs         . mbPP      = maybe (@hd.mbPP) (Just . (maybe empty id @hd.mbPP >-<)) @tl.mbPP
+
+-------------------------------------------------------------------------
+-- Chunks
+-------------------------------------------------------------------------
+
+{
+data VerChunkInfo
+  = VerChunkInfo
+      { vciLineNr   :: Int
+      , vciSeqNr    :: Int
+      , vciVer      :: Version
+      , vciAliasL   :: StringL
+      , vciMinusL   :: ChunkIdL
+      , vciIsHS     :: Bool
+      , vciMbModNm  :: Maybe String
+      , vciImps     :: StringL
+      , vciExps     :: StringL
+      , vciMbPP     :: Maybe PP_Doc
+      , vciXRefL    :: [XRef]
+      }
+type VerChunkInfoL = [VerChunkInfo]
+type VerChunkInfoM = [(Version,VerChunkInfoL)]
+
+vciMToL :: VerChunkInfoM -> VerChunkInfoL
+vciMToL = concat . map snd
+
+instance Eq VerChunkInfo where
+  i1 == i2 = vciVer i1 == vciVer i2
+
+instance Ord VerChunkInfo where
+  compare i1 i2 = vciVer i1 `compare` vciVer i2
+
+vciSortBySeqNr :: VerChunkInfoL -> VerChunkInfoL
+vciSortBySeqNr = sortBy (\v1 v2 -> vciSeqNr v1 `compare` vciSeqNr v2)
+
+vciVerFilter :: (Version -> Bool) -> VerChunkInfoL -> VerChunkInfoL
+vciVerFilter f = filter (f . vciVer)
+
+vciVerGroup :: VerChunkInfoL -> [VerChunkInfoL]
+vciVerGroup = groupBy (\i1 i2 -> vciVer i1 == vciVer i2)
+
+vciHasImpExp :: VerChunkInfo -> Bool
+vciHasImpExp i = not (null (vciImps i) && null (vciExps i))
+
+vciIsPre :: VerChunkInfo -> Bool
+vciIsPre = (==VPre) . vciVer
+
+vciPP :: VerChunkInfo -> PP_Doc
+vciPP = maybe empty id . vciMbPP
+
+vciHasPP :: VerChunkInfo -> Bool
+vciHasPP = isJust . vciMbPP
+
+vciSplitPre :: VerChunkInfoL -> (VerChunkInfoL,VerChunkInfoL)
+vciSplitPre = partition vciIsPre
+
+vciTakePre :: VerChunkInfoM -> (VerChunkInfoL,VerChunkInfoM)
+vciTakePre is
+  = case is of
+        ((VPre,p):r) -> (p,r)
+        _            -> ([],is)
+
+
+selectChunks' :: Bool -> Version -> VerChunkInfoL -> VerChunkInfoM
+selectChunks' appMinus v agl
+  = let s v agl
+          = case v of
+              VRef r -> let agl' = sort . vciVerFilter (<= v) $ agl
+                            m = if appMinus then [ m | ml <- map vciMinusL agl', m <- ml ] else []
+                         in [(v,sort . filter (\i -> (vciVer i,if null (vciAliasL i) then "" else head (vciAliasL i)) `notElem` m) $ agl')]
+              VAll   -> let vs = nubBy verMatch . filter (/= VPre) . sort . map vciVer $ agl
+                         in concat . map (\v -> s v agl) $ vs
+              _      -> []
+     in s v agl
+
+selectChunks :: Bool -> Opts -> VerChunkInfoL -> [(Version,VerChunkInfoL)]
+selectChunks appMinus opts agl
+  = let (pre,nonPre)    = vciSplitPre agl
+        availVersions   = nub . sort . map vciVer $ nonPre
+        v               = optGenVersion opts
+        vo              = optVerOrder opts
+        allowedVersions = voAllLE'' (if optsHasNoVerOrder opts then voDefault else vo) v
+        vAndVciL        = map (\v -> (v,vciSortBySeqNr . vciVerFilter (==v) $ nonPre)) allowedVersions
+        isNotMinused
+          = let minuses = if appMinus then [ m | (_,vciL) <- vAndVciL, ml <- map vciMinusL vciL, m <- ml ] else []
+             in \i -> (vciVer i,if null (vciAliasL i) then "" else head (vciAliasL i)) `notElem` minuses
+     in filter
+          ( not.null.snd )
+          ( (VPre,pre)
+          : map (\(v,vciL) -> (v,filter isNotMinused vciL)) vAndVciL
+          )
+
+data Build = Build { bldBase :: String, bldVer :: Version, bldPP :: PP_Doc }
+type BuildL = [Build]
+}
+
+ATTR AllChunk [ | | verChInfoL USE {++} {[]} : VerChunkInfoL ]
+
+SEM Chunk
+  | Ver         loc         . chInfo    = VerChunkInfo
+                                            @chunkLineNr @lhs.seqNr
+                                            @version @aliasNmL @minusL
+                                            @isHS @mbModNm @imports @exports
+                                            @lines.mbPP (Seq.toList @lines.xrefL)
+                lhs         . verChInfoL= [@chInfo]
+
+SEM AGItf
+  | AGItf       loc         . selChunks' = selectChunks' True (optGenVersion @lhs.opts) @chunks.verChInfoL
+                            . selChunks = selectChunks True @lhs.opts @chunks.verChInfoL
+                            . selLaTeXChunks'
+                                        = selectChunks' False (optGenVersion @lhs.opts) @chunks.verChInfoL
+                            . selLaTeXChunks
+                                        = selectChunks False (@lhs.opts {optGenVersion=VAll}) @chunks.verChInfoL
+                            . wrapLhs2tex
+                                        = if optWrapLhs2tex @lhs.opts
+                                          then (\doWr p -> if doWr then "\\begin{code}" >-< p >-< "\\end{code}" else p)
+                                          else flip const
+                            . build'    = \bld chunks
+                                               -> let fileBase = fromJust (optBaseName @lhs.opts)
+                                                      builds = map (\(v,c) -> Build fileBase v (bld @lhs.opts @wrapLhs2tex @lhs.fpath fileBase c)) chunks
+                                                   in builds
+                            . build     = \bld chunks
+                                               -> let fileBase = fromJust (optBaseName @lhs.opts)
+                                                      v = optGenVersion @lhs.opts
+                                                      builds = [Build fileBase v (bld @lhs.opts @wrapLhs2tex @lhs.fpath fileBase chunks)]
+                                                   in builds
+
+-------------------------------------------------------------------------
+-- Gen AG
+-------------------------------------------------------------------------
+
+{
+buildAGImps :: VerChunkInfo -> PP_Doc
+buildAGImps = vlist . map (\imp -> "INCLUDE \"" >|< imp >|< ".ag\"") . vciImps
+
+buildAG' :: Opts -> (Bool -> PP_Doc -> PP_Doc) -> FPath -> String -> VerChunkInfoL -> PP_Doc
+buildAG' _ wrap fpath fileBase is
+  = let (pre,noPre) = vciSplitPre is
+        h p  = "{" >-< p >-< "}"
+        mk i = if vciIsHS i
+               then h (vciPP i)
+               else buildAGImps i >-< vciPP i
+        ish  = filter vciIsHS noPre
+        pph  = if any vciHasImpExp ish
+               then wrap True (h (buildHSModImpExp fileBase ish))
+               else empty
+     in vlist (map (wrap False . vciPP) pre)
+        >-< pph
+        >-< (vlist . map (\i -> wrap (not (vciIsPre i)) (mk i)) . vciSortBySeqNr $ noPre)
+
+buildAG :: Opts -> (Bool -> PP_Doc -> PP_Doc) -> FPath -> String -> VerChunkInfoM -> PP_Doc
+buildAG _ wrap fpath fileBase is
+  = let (pre,noPre) = vciTakePre is
+        noPre' = vciMToL noPre
+        h p  = "{" >-< p >-< "}"
+        mk i = if vciIsHS i
+               then h (vciPP i)
+               else buildAGImps i >-< vciPP i
+        ish  = filter vciIsHS noPre'
+        pph  = if any vciHasImpExp ish
+               then wrap True (h (buildHSModImpExp fileBase ish))
+               else empty
+     in vlist (map (wrap False . vciPP) pre)
+        >-< pph
+        >-< (vlist . map (\i -> wrap (not (vciIsPre i)) (mk i)) . vciSortBySeqNr $ noPre')
+}
+
+ATTR AGItf [ | | bldAG: BuildL ]
+
+SEM AGItf
+  | AGItf       lhs         . bldAG     = @build buildAG @selChunks
+                loc         . bldAG'    = @build' buildAG' @selChunks'
+
+-------------------------------------------------------------------------
+-- Gen LaTeX
+-------------------------------------------------------------------------
+
+{
+mkCmdNmDef :: PP_Doc -> PP_Doc -> PP_Doc
+mkCmdNmDef = mkTexCmdDef "chunkCmdDef"
+
+mkCmdNmUse :: PP_Doc -> PP_Doc
+mkCmdNmUse = mkTexCmdUse' "chunkCmdUse"
+
+mkCmdInx :: PP_Doc -> PP_Doc
+mkCmdInx = mkTexCmdUse' "chunkIndex"
+
+mkLabel :: PP_Doc -> PP_Doc
+mkLabel = mkTexCmdUse' "label"
+
+mkMetaInfo :: PP_Doc -> String -> PP_Doc
+mkMetaInfo lab fileBase = mkLabel lab -- >-< mkTexCmdDef "chunkMetaDef" lab (pp fileBase)
+
+buildLaTeX' :: Opts -> (Bool -> PP_Doc -> PP_Doc) -> FPath -> String -> VerChunkInfoL -> PP_Doc
+buildLaTeX' opts wrap fpath fileBase is
+  = let (pre,noPre) = vciSplitPre is
+        versions = nub . map (verRef.vciVer) $ noPre
+        missing = if null versions then []
+                                   else [minimum versions .. maximum versions] \\ versions
+        mkInx
+          = let styleFmt = if optWrapLhs2tex opts then "||" else "|"
+             in \ix
+                 -> let n = foldr1 (\x y -> y ++ "!" ++ x) . xrKeyL $ ix
+                        dfmt = empty -- if xrIsDefining ix then text (styleFmt ++ "emph") else empty
+                     in mkCmdInx (n >|< dfmt)
+        mkContent = let mk = wrap True . vciPP
+                     in if optIndex opts
+                        then \i -> vlist (map mkInx (vciXRefL i)) >-< mk i
+                        else mk
+        ppNoPre 
+          = vlist
+            . map (\is -> let nml = [pp fileBase,pp (vciVer (head is))]
+                              nm = ppDots nml
+                              (nms,pps)
+                                  = unzip
+                                    . map (\(nr,i) -> let nm = ppDots (nml ++ [pp nr])
+                                                       in ( nm
+                                                          , mkCmdNmDef nm (mkMetaInfo nm fileBase >-< mkContent i)
+                                                            >-< vlist (map (\n -> let na = ppDots (nml ++ [pp n])
+                                                                                   in mkCmdNmDef na (mkMetaInfo na fileBase >-< mkCmdNmUse nm))
+                                                                           (vciAliasL i))
+                                                          )
+                                          )
+                                    . zip [(0::Int)..]
+                                    $ is
+                           in vlist pps >-< mkCmdNmDef nm (mkMetaInfo nm fileBase >-< vlist (map mkCmdNmUse nms))
+                  )
+            . vciVerGroup
+            $ noPre
+     in vlist (map (wrap False . vciPP) pre) >-< ppNoPre
+        >-< vlist (map (\v -> mkCmdNmDef (ppDots [pp fileBase,pp v]) empty) missing)
+
+buildLaTeX :: Opts -> (Bool -> PP_Doc -> PP_Doc) -> FPath -> String -> VerChunkInfoM -> PP_Doc
+buildLaTeX opts wrap fpath fileBase is
+  = let (pre,noPre) = vciTakePre is
+        noPre' = vciMToL noPre
+        versions = nub . map (verRef.vciVer) $ noPre'
+        missing = if null versions then []
+                                   else [minimum versions .. maximum versions] \\ versions
+        mkInx
+          = let styleFmt = if optWrapLhs2tex opts then "||" else "|"
+             in \ix
+                 -> let n = foldr1 (\x y -> y ++ "!" ++ x) . xrKeyL $ ix
+                        dfmt = empty -- if xrIsDefining ix then text (styleFmt ++ "emph") else empty
+                     in mkCmdInx (n >|< dfmt)
+        mkContent = let mk = wrap True . vciPP
+                     in if optIndex opts
+                        then \i -> vlist (map mkInx (vciXRefL i)) >-< mk i
+                        else mk
+        ppNoPre 
+          = vlist
+            . map (\is -> let nml = [pp fileBase,pp (vciVer (head is))]
+                              nm = ppDots nml
+                              (nms,pps)
+                                  = unzip
+                                    . map (\(nr,i) -> let nm = ppDots (nml ++ [pp nr])
+                                                       in ( nm
+                                                          , mkCmdNmDef nm (mkMetaInfo nm fileBase >-< mkContent i)
+                                                            >-< vlist (map (\n -> let na = ppDots (nml ++ [pp n])
+                                                                                   in mkCmdNmDef na (mkMetaInfo na fileBase >-< mkCmdNmUse nm))
+                                                                           (vciAliasL i))
+                                                          )
+                                          )
+                                    . zip [(0::Int)..]
+                                    $ is
+                           in vlist pps >-< mkCmdNmDef nm (mkMetaInfo nm fileBase >-< vlist (map mkCmdNmUse nms))
+                  )
+            . vciVerGroup
+            $ noPre'
+     in vlist (map (wrap False . vciPP) pre) >-< ppNoPre
+        >-< vlist (map (\v -> mkCmdNmDef (ppDots [pp fileBase,pp v]) empty) missing)
+}
+
+ATTR AGItf [ | | bldLaTeX: BuildL ]
+
+SEM AGItf
+  | AGItf       lhs         . bldLaTeX  = @build buildLaTeX @selLaTeXChunks
+                loc         . bldLaTeX' = @build' buildLaTeX' @selLaTeXChunks'
+
+-------------------------------------------------------------------------
+-- Gen Haskell
+-------------------------------------------------------------------------
+
+{
+mkModNm :: [PP_Doc] -> PP_Doc
+mkModNm = hlist
+
+buildHSImps :: VerChunkInfoL -> PP_Doc
+buildHSImps = vlist . map (vlist . map ("import" >#<) . vciImps)
+
+buildHSModuleHead :: String -> VerChunkInfoL -> PP_Doc
+buildHSModuleHead fileBase is
+  = let ise = [ i | i <- is, not (null (vciExps i) && null (vciImps i))]
+        e = filter (not.null) . map vciExps $ ise
+        m = catMaybes . map vciMbModNm $ ise
+        exps = if null e then empty
+                         else ppListSepV "( " " )" ", " . map (ppListSep "" "" ", ") $ e
+        modNm = if null m then fileBase else head m
+     in "module" >#< modNm >-< indent 2 (exps >-< "where")
+
+buildHSModImpExp :: String -> VerChunkInfoL -> PP_Doc
+buildHSModImpExp fileBase is = buildHSModuleHead fileBase is >-< buildHSImps is
+
+buildHS' :: Opts -> (Bool -> PP_Doc -> PP_Doc) -> FPath -> String -> VerChunkInfoL -> PP_Doc
+buildHS' _ wrap fpath fileBase is
+  = let (pre,noPre) = vciSplitPre is
+        ppMod = buildHSModImpExp fileBase is
+        -- ppLineNr i = "{-# LINE" >#< vciLineNr i >#< "\"" >|< fpathToStr fpath >|< "\" #-}"
+        ppNoPre
+          = vlist
+            . map   (\is@(i:_)
+                        -> let pb = vlist (map (\i -> wrap (vciHasPP i) ({- ppLineNr i >-< -} vciPP i)) is)
+                            in pb
+                    )
+            . vciVerGroup
+            . vciSortBySeqNr
+            $ noPre
+        isEmpty = all (isNothing.vciMbPP) noPre
+     in if isEmpty
+        then empty
+        else vlist (map (wrap False . vciPP) pre) >-< wrap True ppMod >-< ppNoPre
+
+buildHS :: Opts -> (Bool -> PP_Doc -> PP_Doc) -> FPath -> String -> VerChunkInfoM -> PP_Doc
+buildHS _ wrap fpath fileBase is
+  = let (pre,noPre) = vciTakePre is
+        noPre' = vciMToL noPre
+        ppMod = buildHSModImpExp fileBase (vciMToL is)
+        -- ppLineNr i = "{-# LINE" >#< vciLineNr i >#< "\"" >|< fpathToStr fpath >|< "\" #-}"
+        ppNoPre
+          = vlist
+            . map   (\is@(i:_)
+                        -> let pb = vlist (map (\i -> wrap (vciHasPP i) ({- ppLineNr i >-< -} vciPP i)) is)
+                            in pb
+                    )
+            . vciVerGroup . vciSortBySeqNr
+            $ noPre'
+        isEmpty = all (isNothing.vciMbPP) noPre'
+     in if isEmpty
+        then empty
+        else vlist (map (wrap False . vciPP) pre) >-< wrap True ppMod >-< ppNoPre
+}
+
+ATTR AGItf [ | | bldHS: BuildL ]
+
+SEM AGItf
+  | AGItf       lhs         . bldHS     = @build buildHS @selChunks
+                loc         . bldHS'    = @build' buildHS' @selChunks'
+

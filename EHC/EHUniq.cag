@@ -1,0 +1,115 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique id per AST node
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2.Expr
+ATTR AllNT [ | gUniq: UID | ]
+  
+SEM Expr
+  | Con             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+  | App             (func.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
+  | Lam             (arg.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+  | AppTop          (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
+%%]
+
+%%[2
+SEM PatExpr
+  | Var             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+  | VarAs           (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
+  | Con             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+  
+SEM AGItf
+  | AGItf           expr        .   gUniq                           =   startUID
+%%]
+
+%%[2.Wild
+SEM TyExpr
+  | Wild            (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+%%]
+
+%%[3
+SEM Expr
+  | Var             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+
+SEM TyExpr
+  | Var             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+  
+SEM Decl
+  | Val             (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
+%%]
+
+%%[4
+SEM PatExpr
+  | Var             (lhs.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
+  | VarAs           (patExpr.gUniq,loc.lUniq,loc.lUniq2)            :=  mkNewLevUID2    @lhs.gUniq
+  | AppTop          (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
+  | Con             (lhs.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
+  
+SEM Expr
+  | IConst CConst   (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+  | Lam             (arg.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
+  | Let             (decls.gUniq,loc.lUniq,loc.lUniq2)              =   mkNewLevUID2    @lhs.gUniq
+  | Con             (lhs.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
+
+SEM TyExpr
+  | Quant           (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
+%%]
+
+%%[5
+SEM TyVar
+  | Var             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+  
+SEM CaseAlts
+  | Cons            (hd.gUniq,loc.lUniq)                            =   mkNewLevUID     @lhs.gUniq
+%%]
+
+%%[6
+SEM Expr
+  | Let             (decls.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)   :=  mkNewLevUID3    @lhs.gUniq
+
+SEM TyExpr
+  | App             (func.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)    =   mkNewLevUID3    @lhs.gUniq
+  
+SEM Decl
+  | TySig           (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
+  | Data            (tyVars.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)  =   mkNewLevUID3    @lhs.gUniq
+  
+SEM DataConstr
+  | Constr          (fields.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
+
+SEM KiExpr
+  | Var             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+%%]
+
+%%[7
+SEM Expr
+  | Rec             (recExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
+  | Sel             (expr.gUniq,loc.lUniq,loc.lUniq2)               =   mkNewLevUID2    @lhs.gUniq
+
+SEM RecExpr
+  | Ext             (recExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
+
+SEM PatExpr
+  | Rec             (recPatExpr.gUniq,loc.lUniq)                    =   mkNewLevUID     @lhs.gUniq
+
+SEM RecPatExpr
+  | Ext             (recPatExpr.gUniq,loc.lUniq)                    =   mkNewLevUID     @lhs.gUniq
+%%]
+
+%%[8
+SEM Expr
+  | Case            (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
+%%]
+
+%%[9
+SEM RowTyExpr
+  | Var             (lhs.gUniq,loc.lUniq,loc.lUniq2)                =   mkNewLevUID2    @lhs.gUniq
+%%]
+

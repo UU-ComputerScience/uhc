@@ -1,0 +1,186 @@
+%% configuration
+
+%if yesAFP04
+%let noAFP04 		= False
+%let inclOmitted 	= False
+%let inclFuture 	= False
+%else
+%let noAFP04 		= True
+%endif
+
+%% end of configuration
+
+%if yesAFP04
+%% CONFIG: For AFP04
+%else
+%endif
+
+%if inclOmitted
+%% CONFIG: Omitted material included
+%else
+%% CONFIG: Omitted material excluded
+%endif
+
+%if inclFuture
+%% CONFIG: Future material included
+%else
+%% CONFIG: Future material excluded
+%endif
+
+%if asSlides
+%% CONFIG: As slides
+%else
+%endif
+
+%if asArticle
+%% CONFIG: As article
+%else
+%endif
+
+%if yesBeamer
+%% CONFIG: Beamer pkg used
+%else
+%endif
+
+%include lag2TeX.fmt
+%include spacing.fmt
+
+%if style == poly
+
+%include greek.fmt
+%include parsing.fmt
+%include pretty.fmt
+
+%if False
+%% compatibility with AFP04
+
+%format ValGam				= "TyGam"
+%format ValGamInfo			= "TyGamInfo"
+%format vgiTy				= "tgiTy"
+%format valGam				= "tyGam"
+%format finValGam			= "finTyGam"
+%format vgi					= "tgi"
+%format lValGam				= "lTyGam"
+%format gValGam				= "gTyGam"
+%format lSubsValGam			= "lSubsTyGam"
+%format gSubsValGam			= "gSubsTyGam"
+%format lQuValGam			= "lAbsTyGam"
+%format patValGam			= "patTyGam"
+%format valGamInst1Exists	= "tyGamInst1Exists"
+%format valGamQuantify		= "tyGamQuantify"
+%format valGamLookup		= "tyGamLookup"
+%format TyGam				= "KiGam"
+%format tyGam				= "kiGam"
+%format tyGamLookup			= "kiGamLookup"
+
+%% end of compatibility with AFP04
+%endif
+
+
+
+%format forall      = "\forall "
+%format exists      = "\exists "
+
+%format ^ 			= " "
+%format ^^ 			= "\;"
+
+%format (Vec(x))    = "\overline{" x "}"
+
+%format restr		= "\backslash "
+
+%format Gammap      = Gamma "^{p}"
+%format Gammaq      = Gamma "^{q}"
+
+%format sigmak      = sigma "^{k}"
+%format sigmaq      = sigma "^{q}"
+%format sigmal      = sigma "^{l}"
+%format sigmar      = sigma "^{r}"
+%format sigma'
+
+%format Cnstr       = "\mathcal{C}"
+%format Cnstrk		= Cnstr "^{k}"
+%format `cnstrUnit`	= :->
+
+%format Qu          = "\mathcal{Q}"
+
+%format ident       = "{\xi}"
+
+%format tvar        = v
+%format tvari       = tvar "_i"
+%format tvar1
+%format tvar2
+%format tvar3
+%format tvar4
+%format tvarf       = f
+
+%format tcon        = c
+
+%format inst		= "inst"
+%format instv		= inst "_{" tvar  "}"
+%format instf		= inst "_{" tvarf "}"
+%format instc		= inst "_{" tvarc "}"
+%format instE		= inst "^{" exists "}"
+
+%format sigma1
+%format sigma2
+%format sigma3
+%format sigma4
+
+%format |=>     		= "\Yright "
+%format :->         	= "\mapsto "
+%format :-  			= "\vdash "
+%format **  			= ".."
+%format ::- 			= "\Vdash "
+%format ~>   			= "\leadsto "
+%format .    			= "."
+
+
+%format fiopt			= nu
+%format strongFIOpts	= fiopt "_{s}"
+%format weakFIOpts		= fiopt "_{w}"
+%format instFIOpts		= fiopt "_{i}"
+%format instLFIOpts		= fiopt "_{il}"
+
+%format	fioptBase		= "fi"
+%format fioLeaveRInstY	= fioptBase "_{r-inst}^{+}"
+%format fioLeaveRInstN	= fioptBase "_{r-inst}^{-}"
+%format fioBindRFirstY	= fioptBase "_{r-bind}^{+}"
+%format fioBindRFirstN	= fioptBase "_{r-bind}^{-}"
+%format fioBindLFirstY	= fioptBase "_{l-bind}^{+}"
+%format fioBindLFirstN	= fioptBase "_{l-bind}^{-}"
+
+%format coco        	= "\mathcal{V}"
+%format cocovar     	= coco
+
+%format CoVrCoOpp       = "\neg "
+
+%format CoVariant		= "\oplus "
+%format ContraVariant	= "\ominus "
+%format CoContraVariant	= "\odot "
+
+%format Top         	= "\top "
+%format Bot         	= "\bot "
+%format ANY				= Top "\hspace*{-0.8em}" Bot
+
+%format `union`			= "\cup "
+%format `setdiff`		= "-"
+%format `intersect`		= "\cap "
+%format emptyset		= "\emptyset "
+
+%format InstUnExists    = "inst^{" exists "}"
+
+%format ftv				= "\ftv "
+
+%format `gamUnit`		= :->
+%format `fitsIn`		= <=
+%format </=				= "\not" <=
+
+%format Transl			= delta
+%format Transl2
+%format Transl2pi		= Transl2 "^{" pi "}"
+%format lacks			= "\backslash "
+
+%elif style == newcode
+%format ^ =
+%format ^^ = 
+%endif

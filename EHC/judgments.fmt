@@ -1,0 +1,284 @@
+% well-formedness
+
+%format KindC(x)(t)(k)     = x :- t :: k
+%format TypeC(x)(e)(t)     = x :- e :: t
+%format TypeF(x)(e)        = x :- e
+%format PatC(x1)(p)(t)(x2) = x1 :- "^{\Varid{pat}}" p :: t ~> x2
+%format PatCJ              = :- "^{\Varid{pat}}"
+%format PatK(x1)(p)(k)(x2) = x1 :- "^{\Varid{pat}}" p :: k ~> x2
+%format DataC(x1)(d)(x2)   = x1 :- d ~> x2
+%format ProgC(x)(p)(t)     = x :- p :: t
+%format DeclC(x1)(d)(x2)   = x1 :- "^{\Varid{decl}}" d ~> x2
+%format DeclCJ             = :- "^{\Varid{decl}}"
+%format QTypeC(x)(q)       = x :- q :: *
+%format QKindC(x)(q)       = x :- q
+%format ConstraintC(x)(c)  = x :- c :: *
+%format TConstraintC(x)(c) = x :- c
+
+% pattern match
+
+%format PatM(p)(v)(phi)    = :- "^{\Varid{match}}" p <- v ~> phi
+%format PatMJ              = :- "^{\Varid{match}}"
+
+% subsumption
+
+%format SubsT(x)(t1)(t2)   = x :- t1 <= t2
+%format SubsK(x)(k1)(k2)   = x :- k1 <= k2
+%format SubsQ(x)(q1)(q2)(e) = x :- q1 <= q2 ~> e
+%format SubsQK(x)(r1)(r2)(t) = x :- r1 <= r2 ~> t
+%format SubsThPre(x)(theta1)(theta2)   = x :- theta1 <= theta2
+%format SubsTh(x)(theta1)(theta2)   = x :- theta1 <<= theta2
+%format <<=                = "\sqsubseteq "
+%format BoundedTh(x)(theta) = x :- theta "\downarrow "
+
+% entailment and constraint translation
+
+%format EntD(x)(delta)(e)  = x ::- delta ~> e
+%format ConvD(delta)(e)    = :- delta ~> e
+
+% translations
+
+\newcommand*{\xlate}[2][norm]{\csname #1l\endcsname\llbracket #2\csname #1r\endcsname\rrbracket}
+\MakeResizable\xlate 
+
+%format RecX(e1)(e2)       = e1 ~>> e2
+%format RecX(e1)(e2)       = "\xlate{" e1 "}^{\mathrm{rec}}" == e2
+%format RecXF(e1)          = "\xlate{" e1 "}^{\mathrm{rec}}"
+%format TifX(x)(e1)(e2)    = x :- e1 ->> e2
+%format TifX'(x1)(e1)(e2)(x2) = x1 :- e1 ->> e2 ~> x2
+%format TifX(x1)(e1)(e2)   = "\xlate{" e1 "}_{" x1 "}^{\mathrm{tif}}" == e2
+%format TifXF(x1)(e1)(e2)   = "\xlate{" e1 "}_{" x1 "}^{\mathrm{tif}}"
+%format TifX'(x1)(e1)(e2)(x2) = "\xlate{" e1 "}_{" x1 "}^{\mathrm{tif}}" == e2 ~> x2
+%format TifXF'(x1)(e1)     = "\xlate{" e1 "}_{" x1 "}^{\mathrm{tif}}"
+%format TifXRHS'(e2)(x2)   = e2 ~> x2
+%format TifF(x1)(e1)       = lmn e1 rmn "_{" x1 "}^{\mathrm{tif}}"
+%format ParX(x)(e1)(e2)    = x :- e1 =>> e2
+%format ParX(x)(e1)(e2)    = "\xlate{" e1 "}_{" x "}^{\mathrm{par}}" == e2
+%format ParXF(x)(e1)       = "\xlate{" e1 "}_{" x "}^{\mathrm{par}}"
+%format ShortX(x)(e1)(e2)  = lmn e1 rmn "_{" x "}^{\mathrm{short}}" == e2
+%format ShortF(x)(e1)      = lmn e1 rmn "_{" x "}^{\mathrm{short}}"
+
+% combined type-checking / translation
+
+%format TypeCPar(x)(e1)(t)(e2) = x :- e1 :: t =>> e2
+%format TypeCPar(x)(e1)(t)(e2) = lmn e1 :: t rmn "_{" x "}^{\mathrm{par}}" == e2
+%format TypeCParF(x)(e1)(t)    = lmn e1 :: t rmn "_{" x "}^{\mathrm{par}}"
+%format DeclCPar(x1)(d1)(x2)(d2) = x1 :- d1 ~> x2 => d2
+%format DeclCPar(x1)(d1)(x2)(d2) = lmn d1 ~> x2 rmn "_{" x1 "}^{\mathrm{par}}" == d2
+%format DeclCParF(x1)(d1)(x2)    = "\xlate{" d1 ~> x2 "}_{" x1 "}^{\mathrm{par}}"
+%format ProgCPar(x)(p1)(t)(p2)   = lmn p1 :: t rmn "_{" x "}^{\mathrm{par}}" == p2
+%format ProgCParF(x)(p1)(t)      = lmn p1 :: t rmn "_{" x "}^{\mathrm{par}}"
+
+
+%format GTransX(x)(y)(a)(e) = x :- "^{\Varid{gtrans}}" x :- y ^^ lty a rty =>> e
+%format GTransX(x)(y)(a)(e) = lmn y ^^ lty a rty rmn "_{" x "}^{\mathrm{gtrans}}" == e
+%format GTransF(x)(y)(a)    = lmn y ^^ lty a rty rmn "_{" x "}^{\mathrm{gtrans}}"
+%format GTransJ             = lmn "\cdot " rmn "^{\mathrm{gtrans}}"
+
+%format TGTransX(x)(t)(a)(u) = lmn t ^^ lty a rty rmn "_{" x "}^{\mathrm{Gtrans}}" == u
+%format TGTransF(x)(t)(a)    = lmn t ^^ lty a rty rmn "_{" x "}^{\mathrm{Gtrans}}"
+%format TGTransJ             = lmn "\cdot " rmn "^{\mathrm{Gtrans}}"
+
+%format GTransLX(x)(y)(a)(e) = lmn y ^^ lty a rty rmn "_{" x "}^{\mathrm{gtrans}\lambda}" == e
+%format GTransLF(x)(y)(a)    = lmn y ^^ lty a rty rmn "_{" x "}^{\mathrm{gtrans}\lambda}"
+%format GTransLJ             = lmn "\cdot " rmn "^{\mathrm{gtrans}\lambda}"
+
+% combined type-checking / translation for generic functions
+
+%format DataCGf(x1)(d1)(x2)(d2)   = "\xlate{" d1 ~> x2 "}_{" x1 "}^{\mathrm{gf}}" == d2
+%format ProgCGf(x)(p1)(t)(p2)     = "\xlate{" p1 :: t "}_{" x "}^{\mathrm{gf}}" == p2
+
+%format TypeCGf(x)(e1)(t)(e2)     = "\xlate{" e1 :: t "}_{" x "}^{\mathrm{gf}}" == e2
+%format DeclCGf(x1)(d1)(x2)(d2)   = "\xlate{" d1 ~> x2 "}_{" x1 "}^{\mathrm{gf}}" == d2
+%format DeclCGfF(x1)(d1)(x2)      = "\xlate{" d1 ~> x2 "}_{" x1 "}^{\mathrm{gf}}"
+
+%format TypeCGAbs(x)(e1)(t)(e2)     = "\xlate{" e1 :: t "}_{" x "}^{\mathrm{gabs}}" == e2
+%format DeclCGAbs(x1)(d1)(x2)(d2)   = "\xlate{" d1 ~> x2 "}_{" x1 "}^{\mathrm{gabs}}" == d2
+%format DeclCGAbsF(x1)(d1)(x2)      = "\xlate{" d1 ~> x2 "}_{" x1 "}^{\mathrm{gabs}}"
+
+%format DeclCDC(x1)(d1)(x2)(d2)   = "\xlate{" d1 ~> x2 "}_{" x1 "}^{\mathrm{dc}}" == d2
+%format DeclCDCF(x1)(d1)(x2)      = "\xlate{" d1 ~> x2 "}_{" x1 "}^{\mathrm{dc}}"
+
+% combined type-checking / translation for type-indexed datatypes
+
+%format TidXX(x)(e1)(e2)    = "\xlate{" e1 "}_{" x "}^{\mathrm{gftx}}" == e2
+%format TidXXF(x)(e1)       = "\xlate{" e1 "}_{" x "}^{\mathrm{gftx}}"
+
+%format KindCTidX(x)(t1)(k)(t2) = lmn t1 :: k rmn "_{" x "}^{\mathrm{gftx}}" == t2
+%format KindCTidXF(x)(t1)(k)    = lmn t1 :: k rmn "_{" x "}^{\mathrm{gftx}}"
+
+%format DeclCTidX(x1)(d1)(x2)(d2) = "\xlate{" d1 ~> x2 "}_{" x1 "}^{\mathrm{gftx}}" == d2
+%format DeclCTidXF(x1)(d1)(x2)    = "\xlate{" d1 ~> x2 "}_{" x1 "}^{\mathrm{gftx}}"
+%format TypeCTidX(x)(e1)(t)(e2)   = "\xlate{" e1 :: t "}_{" x "}^{\mathrm{gftx}}" == e2
+
+%format ParJ                = "\xlate{\cdot}^{\mathrm{par}}"
+%format GfJ                 = "\xlate{\cdot}^{\mathrm{gf}}"
+
+\DeclareMathOperator{\RJoin}{Join}
+%format Join(r)             = "\RJoin " ( r )
+%format JoinJ               = "\RJoin "
+
+
+% structure types and eps
+
+%format DataStr(d)(pt)      = "\xlate{" d "}^{\mathrm{str}}" == pt
+%format DataStrF(d)         = "\xlate{" d "}^{\mathrm{str}}"
+%format ConStr(d)(t)        = "\xlate{" d "}^{\mathrm{str}}" == t
+%format ConStrF(d)          = "\xlate{" d "}^{\mathrm{str}}"
+
+%format DataEP(d1)(d2)      = "\xlate{" d1 "}^{\mathrm{ep}}" == d2
+%format DataEPF(d1)         = "\xlate{" d1 "}^{\mathrm{ep}}"
+%format ConEP(d)(p1)(p2)    = "\xlate{" d "}^{\mathrm{ep}}" == p1 ; p2
+%format ConEPF(d)           = "\xlate{" d "}^{\mathrm{ep}}"
+%format PatPair(p1)(p2)     = p1 ; p2
+
+% evaluation
+
+%format SingleE(e1)(e2)    = :- e1 ~~> e2
+
+% base type
+
+\DeclareMathOperator{\base}{base}
+%format base               = "\base "
+%format BaseR(x)(y)(a)(t)  = x :- "^{\Varid{base}}" y ^^ lty a rty :: t
+%format BaseR(x)(y)(a)(t)  = base "_{" x "}" ( y ^^ lty a rty ) == t
+%format BaseF(x)(y)(a)     = base "_{" x "}" ( y ^^ lty a rty )
+\DeclareMathOperator{\Base}{Base}
+%format TBase              = "\Base "
+%format TBaseR(x)(t)(k)    = TBase "_{" x "}" ( t ) == k
+%format TBaseF(x)(t)       = TBase "_{" x "}" ( t )
+\DeclareMathOperator{\mbase}{mbase}
+%format mbase              = "\mbase "
+%format MBaseR(x)(y)(a)(t) = x :- "^{\Varid{mbase}}" y ^^ lty a rty :: t
+%format MBaseR(x)(y)(a)(t) = mbase "_{" x "}\pars{" y ^^ lty a rty "}" == t
+%format MBaseF(x)(y)(a)    = mbase "_{" x "}\pars{" y ^^ lty a rty "}"
+%format MBaseF'(x)(y)(a)   = mbase "_{" x "}" ( y ^^ lty a rty )
+%format MBaseJ             = mbase
+\DeclareMathOperator{\cmbase}{cmbase}
+%format cmbase             = "\cmbase "
+%format CMBaseR(x)(n)(y)(a)(t) = cmbase "_{" x "}^{" n "}\pars{" y ^^ lty a rty "}" == t
+%format CMBaseF(x)(n)(y)(a)    = cmbase "_{" x "}^{" n "}\pars{" y ^^ lty a rty "}"
+%format CMBaseF'(x)(n)(y)(a)   = cmbase "_{" x "}^{" n "}" ( y ^^ lty a rty )
+%format CMBaseJ             = cmbase
+\DeclareMathOperator{\dependencies}{dependencies}
+%format dependencies       = "\dependencies "
+%format DepR(x)(y)(z)      = x :- "^{\Varid{deps}}" y <- z
+%format DepR(x)(y)(z)      = dependencies "_{" x "}" ( y ) == z
+%format DepF(x)(y)         = dependencies "_{" x "}" ( y )
+\DeclareMathOperator{\Dependencies}{Dependencies}
+%format TDependencies      = "\Dependencies "
+%format TDepR(x)(t)(u)     = TDependencies "_{" x "}" ( t ) == u
+%format TDepF(x)(t)        = TDependencies "_{" x "}" ( t )
+\DeclareMathOperator{\deptt}{deptt}
+%format deptt              = "\deptt "
+%format DepTTR(x)(y)(z)(theta1)(theta2) = deptt "_{" x "}" "\pars{" y ^^ "\typ{" theta1 "}" , z "}" == theta2
+%format DepTTR'(x)(y)(z)(theta1)(theta2) = deptt "_{" x "}(" y ^^ lty theta1 rty , z ")" == theta2
+%format DepTTF(x)(y)(z)(theta1)         = deptt "_{" x "}" "\pars{" y ^^ "\typ{" theta1 "}" , z "}"
+%format DepTTJ             = deptt
+
+% type signature
+
+%format TpSig(x)(z)        = x :- "^{\Varid{tpsig}}" z
+
+%format TpSigCorr(x)(l)(r) = x :- l "\leftrightarrow " r
+%format TpSigCorr1(x)(l)   = x :- l
+%format TpSigCorr2(r)      = "\leftrightarrow " r
+
+% kind signature
+
+%format KSig(x)(z)         = x :- "^{\Varid{ksig}}" z
+
+% generic application
+
+\DeclareMathOperator{\gapp}{gapp}
+%format gapp               = "\gapp "
+%format GAppR(x)(y)(a)(q)  = x :- "^{\Varid{gapp}}" y ^^ lty a rty :: q
+%format GAppR(x)(y)(a)(q)  = gapp "_{" x "}\pars{" y ^^ lty a rty "}" == q
+%format GAppF(x)(y)(a)     = gapp "_{" x "}\pars{" y ^^ lty a rty "}"
+%format GAppJ              = gapp
+
+\DeclareMathOperator{\Gapp}{Gapp}
+%format TGapp              = "\Gapp "
+%format TGAppR(x)(t)(a)(r) = TGapp "_{" x "}\pars{" t ^^ lty a rty "}" == r
+%format TGAppF(x)(t)(a)    = TGapp "_{" x "}\pars{" t ^^ lty a rty "}"
+%format TGAppJ             = TGapp
+
+\DeclareMathOperator{\gmapp}{gmapp}
+%format gmapp              = "\gmapp "
+%format GMAppR(x)(y)(a)(q) = x :- "^{\Varid{gmapp}}" y ^^ lty a rty :: q
+%format GMAppR(x)(y)(a)(q) = gmapp "_{" x "}\pars{" y ^^ lty a rty "}" == q
+%format GMAppF(x)(y)(a)    = gmapp "_{" x "}\pars{" y ^^ lty a rty "}"
+%format GMAppJ             = gmapp
+
+
+\DeclareMathOperator{\gqtype}{gqtype}
+%format gqtype             = "\gqtype "
+%format GQTypeR(x)(c)(y)(a)(q) = x :- "^{\Varid{gqtype}}" ( c ) => y ^^ lty a rty ~> q
+%format GQTypeR(x)(c)(y)(a)(q) = gqtype "_{" x "}" "\bigl " ( ( c ) => y ^^ lty a rty "\bigr " ) == q
+%format GQTypeR(x)(y)(a)(alpha)(ys)(q) = gqtype "_{" x "}" "\bigl " ( y ^^ lty a rty ; alpha ; ys "\bigr " ) == q
+%format GQTypeF(x)(c)(y)(a)    = gqtype "_{" x "}" "\bigl " ( ( c ) => y ^^ lty a rty "\bigr " )
+%format GQTypeF(x)(y)(a)(alpha)(ys)    = gqtype "_{" x "}" "\bigl " ( y ^^ lty a rty ; alpha ; ys "\bigr " )
+%format GQTypeJ            = gqtype
+\DeclareMathOperator{\gqmtype}{gqmtype}
+%format gqmtype             = "\gqmtype "
+%format GQMTypeR(x)(c)(y)(a)(q) = x :- "^{\Varid{gqmtype}}" ( c ) => y ^^ lty a rty ~> q
+%format GQMTypeR(x)(c)(y)(a)(q) = gqmtype "_{" x "}" "\bigl " ( ( c ) => y ^^ lty a rty "\bigr " ) == q
+%format GQMTypeF(x)(c)(y)(a)    = gqmtype "_{" x "}" "\bigl " ( ( c ) => y ^^ lty a rty "\bigr " )
+%format GQMTypeJ            = gqmtype
+
+\DeclareMathOperator{\mkdep}{mkdep}
+%format mkdep              = "\mkdep "
+%format MkDepR(x)(y)(alpha)(a)(kappa)(c) = x :- "^{\Varid{mkdep}}" y ^^ lty alpha <- a :: kappa rty ~> c
+%format MkDepR(x)(y)(alpha)(a)(c) = mkdep "_{" x "}" ( y ^^ lty alpha <- a rty ) == c
+%format MkDepF(x)(y)(alpha)(a) = mkdep "_{" x "}" ( y ^^ lty alpha <- a rty )
+%format MkDepJ             = mkdep
+
+\DeclareMathOperator{\Mkdep}{Mkdep}
+%format TMkdep              = "\Mkdep "
+%format TMkDepR(x)(t)(alpha)(a)(c) = TMkdep "_{" x "}" ( t ^^ lty alpha <- a rty ) == c
+%format TMkDepF(x)(t)(alpha)(a)    = TMkdep "_{" x "}" ( t ^^ lty alpha <- a rty )
+%format TMkDepJ             = TMkdep
+
+\DeclareMathOperator{\mkmdep}{mkmdep}
+%format mkmdep             = "\mkmdep "
+%format MkMDepR(x)(y)(alpha)(a)(c) = mkmdep "_{" x "}" "\pars{" y ^^ lty alpha <- a rty "}" == c
+%format MkMDepF(x)(y)(alpha)(a) = mkmdep "_{" x "}" "\pars{" y ^^ lty alpha <- a rty "}"
+%format MkMDepJ            = mkmdep
+
+
+\DeclareMathOperator{\size}{size}%
+%format sizeF (x) = "\size " ( x )
+
+\DeclareMathOperator{\spec}{spec}%
+%format spec = "\spec "
+%format SpecAlg(x)(y)(sigma)(d) = spec "_{" x "}" "\pars{" y "}" == sigma; d
+
+
+% conversion for default cases
+
+\DeclareMathOperator{\convert}{convert}
+\DeclareMathOperator{\new}{new}
+%format new_ = "\new "
+%format inv_new_ = "\new^{-1}"
+%format new(y) = "\new " ( y )
+%format convert(x)(a)(y)(z)(n) = "\convert_{" x "}" ( y , z , a , n )
+%format convertJ               = "\convert "
+
+\DeclareMathOperator{\signature}{signature}
+\DeclareMathOperator{\presignature}{presignature}
+%format signature(x)(a) = "\signature_{" x "}" ( a )
+%format presignature(x)(a) = "\presignature_{" x "}" ( a )
+
+% default cases signature marks
+
+%format dcM = "\mathsf{dc}"
+%format preM = "\mathsf{pre}"
+%format gfM = "\mathsf{gf}"
+
+% for modules
+
+%format ExpX(x1)(xx1)(x2)(xx2) = "\xlate{" xx1 ~> x2 "}_{" x1 "}" == xx2
+\DeclareMathOperator{\Signature}{Signature}
+%format Signature(x)(t) = "\Signature_{" x "}" ( t )
+\DeclareMathOperator{\constructors}{constructors}
+%format constructors(x)(t) = "\constructors_{" x "}" ( t )

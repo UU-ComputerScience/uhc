@@ -1,0 +1,451 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Let expressions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.Let
+SEM Expr
+  | Let         decls       .  patValGam            =   @decls.gathTySigGam
+                                                        `gamPushGam` @lhs.valGam
+                loc         .  (lValGam,gValGam)    =   gamPop @decls.patValGam
+                decls       .  valGam               =   @decls.patValGam
+                body        .  valGam               =   @decls.patValGam
+%%]
+
+%%[2.Let
+SEM Expr
+  | Let         decls       .  patTyCnstr           =   @lhs.tyCnstr
+                            .  tyCnstr              =   @decls.patTyCnstr
+%%]
+
+%%[3.Let
+SEM Expr
+  | Let         loc         .  lSubsValGam          =   @decls.tyCnstr |=> @lValGam
+                            .  gSubsValGam          =   @decls.tyCnstr |=> @gValGam
+                            .  gTyTvL               =   ftv @gSubsValGam
+                            .  lQuValGam            =   valGamQuantify @gTyTvL @lSubsValGam
+                body        .  valGam               :=  @lQuValGam
+                                                            `gamPushGam` @gSubsValGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known type and instantiation required
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.tyInstKnown
+SEM Decl
+  | Val         loc         .  knTy                 =   @sigTy
+%%]
+
+%%[2.tyInstKnown
+SEM Decl
+  | Val         expr        .  knTy                 =   if @hasTySig then @knTy else @patExpr.ty
+%%]
+
+%%[3.tyInstKnown
+SEM Decl
+  | Val         loc         .  knTy                 :=  tyInstKnown @lUniq @sigTy
+%%]
+
+%%[4 -3.tyInstKnown
+SEM Expr
+  | Let         decls       .  patValGam            :=  gamPushGam  (valGamInst1Exists @lUniq @decls.gathTySigGam)
+                                                                    @lhs.valGam
+                loc         .  lQuValGam            :=  valGamInst1Exists @lUniq2 . valGamQuantify @gTyTvL $ @lSubsValGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Final type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2.finValGam
+ATTR AllDecl [ finValGam: ValGam | | ]
+ATTR AllNT [ finTyCnstr: Cnstr | | ]
+
+SEM Expr
+  | Let         decls       .   finValGam           =   @lhs.finTyCnstr |=> @lValGam
+
+SEM Decl
+  | TySig       loc         .   finalTy             =   vgiTy . fromJust . valGamLookup @nm
+                                                        $ @lhs.finValGam
+
+SEM AGItf
+  | AGItf       expr        .   finTyCnstr          =   @expr.tyCnstr
+%%]
+
+%%[3.finValGam
+SEM Expr
+  | Let         decls       .   finValGam           :=  @lhs.finTyCnstr |=> @lQuValGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known kind
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6
+SEM Decl
+  | Data        loc         .  knKi                 =   @sigKi
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type inferencing, decls, top level, abstraction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.valGam
+ATTR AllDecl AllExpr [ valGam: ValGam | | ]
+
+SEM AGItf
+  | AGItf       expr        .  valGam               =   emptyGam
+%%]
+
+%%[1.patValGam
+ATTR AllDecl [ | patValGam: ValGam | ]
+
+SEM Decl
+  | Val         patExpr     .  valGam               =   @lhs.patValGam
+                lhs         .  patValGam            =   @patExpr.valGam
+                expr        .  valGam               =   @lhs.valGam
+%%]
+
+%%[2.Rest
+ATTR AllDecl [ | tyCnstr: Cnstr ^^^ patTyCnstr: Cnstr | ]
+
+SEM Decl
+  | Val         patExpr     .  tyCnstr              =   @lhs.patTyCnstr
+                lhs         .  patTyCnstr           =   @patExpr.tyCnstr
+                expr        .  tyCnstr              =   @lhs.tyCnstr
+
+SEM AGItf
+  | AGItf       expr        .  tyCnstr              =   emptyCnstr
+%%]
+
+%%[5
+ATTR AllCase [ | tyCnstr: Cnstr | ]
+ATTR AllDataConstr AllCase [ valGam: ValGam | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Kind inferencing, decls, top level, abstraction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.tyGam
+ATTR AllDecl [ | tyGam: TyGam | ]
+ATTR AllExpr [ tyGam: TyGam | | ]
+%%]
+
+%%[5
+ATTR AllDataConstr AllCase [ tyGam: TyGam | | ]
+ATTR AllDecl [ | patTyGam: TyGam | ]
+
+SEM Expr
+  | Let         decls       .  patTyGam             =   gamPushNew @lhs.tyGam
+                            .  tyGam                =   @decls.patTyGam
+%%]
+
+%%[6
+ATTR AllExpr AllData AllCase AllDecl [ | kiCnstr: Cnstr | ]
+ATTR AllDecl [ | patKiCnstr: Cnstr | ]
+
+SEM Expr
+  | Let         decls       .  patTyGam             :=  @decls.gathKiSigGam `gamPushGam` @lhs.tyGam
+                            .  patKiCnstr           =   @lhs.kiCnstr
+                loc         .  (lTyGam,gTyGam)      =   gamPop @decls.patTyGam
+                decls       .  tyGam                :=  @lTyGam `gamPushGam` @lhs.tyGam
+                            .  kiCnstr              =   @decls.patKiCnstr
+                loc         .  lSubsTyGam           =   @decls.kiCnstr |=> @lTyGam
+                            .  gSubsTyGam           =   @decls.kiCnstr |=> @gTyGam
+                            .  gKiTvL               =   ftv @gSubsTyGam
+                            .  lQuTyGam             =   tyGamInst1Exists @lUniq3 . tyGamQuantify @gKiTvL $ @lSubsTyGam
+                body        .  tyGam                =   @lQuTyGam `gamPushGam` @gSubsTyGam
+
+SEM Decl
+  | TySig       tyExpr      .  tyGam                =   gamPushNew @lhs.tyGam
+                loc         .  fo                   =   fitsIn weakFIOpts @lUniq @tyExpr.ki kiStar
+                lhs         .  tyGam                =   @lhs.tyGam
+                            .  kiCnstr              =   foCnstr @fo |=> @tyExpr.kiCnstr
+%%]
+
+%%[7
+ATTR AllDataField [ | tyGam: TyGam | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Init of tyGam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[initTyGam.1
+                                                          [ (hsnArrow,  TyGamInfo (Ty_Con hsnArrow))
+                                                          , (hsnInt,    TyGamInfo tyInt)
+                                                          , (hsnChar,   TyGamInfo tyChar)
+%%]
+
+%%[initTyGam.6
+                                                          [ (hsnArrow,  mkTGI (Ty_Con hsnArrow) ([kiStar,kiStar] `mkTyArrow` kiStar))
+                                                          , (hsnInt,    mkTGI tyInt kiStar)
+                                                          , (hsnChar,   mkTGI tyChar kiStar)
+%%]
+
+%%[initTyGam.7
+                                                          , (hsnRow,    mkTGI (Ty_Con hsnUnknown) kiRow)
+                                                          , (hsnRec,    mkTGI (Ty_Con hsnRec) ([kiRow] `mkTyArrow` kiStar))
+                                                          , (hsnSum,    mkTGI (Ty_Con hsnSum) ([kiRow] `mkTyArrow` kiStar))
+%%]
+
+%%[1.initTyGam
+SEM AGItf
+  | AGItf       loc         .  tyGam                =   assocLToGam
+%%@initTyGam.1
+                                                          ]
+%%]
+
+%%[6
+SEM AGItf
+  | AGItf       loc         .  tyGam                :=  assocLToGam
+%%@initTyGam.6
+                                                          ]
+                            .  kiCnstr              =   emptyCnstr
+%%]
+
+%%[7
+SEM AGItf
+  | AGItf       loc         .  tyGam                :=  assocLToGam
+%%@initTyGam.6
+%%@initTyGam.7
+                                                          ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Sort, but no inferencing && etc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[initKiGam.6
+                                                          [ (hsnArrow,  KiGamInfo (Ty_Con hsnArrow))
+                                                          , (hsnStar,   KiGamInfo kiStar)
+%%]
+
+%%[6
+ATTR AllExpr AllTyExpr AllData AllCase AllDecl [ kiGam: KiGam | | ]
+
+SEM AGItf
+  | AGItf       loc         .  kiGam                =   assocLToGam
+%%@initKiGam.6
+                                                          ]
+%%]
+
+%%[initKiGam.7
+                                                          , (hsnRow,    KiGamInfo kiRow)
+%%]
+
+%%[7
+SEM AGItf
+  | AGItf       loc         .  kiGam                :=  assocLToGam
+%%@initKiGam.6
+%%@initKiGam.7
+                                                          ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type signatures
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.tySigGam.TysigLet
+ATTR AllDecl [ tySigGam: ValGam | gathTySigGam: ValGam | ]
+
+SEM Decl
+  | TySig       lhs         .  gathTySigGam         =   gamAdd
+                                                            @nm (ValGamInfo @sigTy)
+                                                            @lhs.gathTySigGam
+
+SEM Expr
+  | Let         decls       .  gathTySigGam         =   emptyGam
+                            .  tySigGam             =   @decls.gathTySigGam
+%%]
+
+%%[1.tySigGam.Val
+SEM Decl
+  | Val         loc         .  (sigTy,hasTySig)     =   case @patExpr.mbTopNm of
+                                                          Nothing  ->  (Ty_Any,False)
+                                                          Just nm  ->  case gamLookup nm @lhs.tySigGam of
+                                                                         Nothing   -> (Ty_Any,False)
+                                                                         Just vgi  -> (vgiTy vgi,True)
+%%]
+
+%%[1.TySig
+SEM Decl
+  | TySig       loc         .  sigTy                =   @tyExpr.ty
+%%]
+
+%%[3.TySig
+SEM Decl
+  | TySig       loc         .  sigTy                :=  tyQuantify (`elem` @tyExpr.tyVarWildL) @tyExpr.ty
+%%]
+
+%%[6
+SEM Decl
+  | TySig       loc         .  gTyTvL               =   ftv . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
+                            .  sigTy                :=  tyQuantify (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyExpr.ty
+%%]
+
+%%[8
+SEM Decl
+  | FFI         loc         .  sigTy                =   tyQuantifyClosed @tyExpr.ty
+                lhs         .  gathTySigGam         =   gamAdd
+                                                            @nm (ValGamInfo @sigTy)
+                                                            @lhs.gathTySigGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Kind signatures
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6.kiSigGam
+ATTR AllDecl [ kiSigGam: TyGam | gathKiSigGam: TyGam | ]
+
+SEM Decl
+  | KiSig       lhs         .  gathKiSigGam         =   gamAdd @nm (mkTGI (Ty_Con @nm) @sigKi) @lhs.gathKiSigGam
+
+SEM Expr
+  | Let         decls       .  gathKiSigGam         =   emptyGam
+                            .  kiSigGam             =   @decls.gathKiSigGam
+
+SEM Decl
+  | Data        loc         .  (sigKi,hasKiSig)     =   case gamLookup @tyNm @lhs.kiSigGam of
+                                                          Nothing   -> (Ty_Any,False)
+                                                          Just tgi  -> (tgiKi tgi,True)
+%%]
+
+%%[6
+SEM Decl
+  | KiSig       loc         .  sigKi                =   kiQuantify (const False) @kiExpr.ki
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Include binding for pattern var?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.inclVarBind
+ATTR PatExpr [ inclVarBind: Bool | | ]
+
+SEM PatExpr
+  | AppTop      patExpr     .   inclVarBind         =   True
+
+SEM Decl
+  | Val         patExpr     .   inclVarBind         =   not @hasTySig
+
+SEM Expr
+  | Lam         arg         .   inclVarBind         =   True
+%%]
+
+%%[5
+SEM CaseAlt
+  | Pat         patExpr     .   inclVarBind         =   True
+%%]
+
+%%[7
+SEM RecPatExpr
+  | Ext         patExpr     .   inclVarBind         =   True
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Top name of pattern
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.mbTopNm
+ATTR PatExpr [ | | mbTopNm: {Maybe HsName} ]
+
+SEM PatExpr
+  | Var VarAs   loc         .   mbTopNm             =   if @nm == hsnWild then Nothing else Just @nm
+  | Con CConst IConst App AppTop
+                loc         .   mbTopNm             =   Nothing
+%%]
+
+%%[7
+SEM PatExpr
+  | Rec         loc         .   mbTopNm             =   Nothing
+%%]
+
+%%[7.topNm
+ATTR PatExpr [ | | topNm: HsName ]
+
+SEM PatExpr
+  | Var VarAs   loc         .   topNm               =   if @nm == hsnWild then HNm (show @lUniq) else @nm
+  | CConst IConst App
+                lhs         .   topNm               =   hsnUnknown
+  | AppTop Con Rec
+                loc         .   topNm               =   HNm (show @lUniq)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Records, default (positional) name if absent
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+ATTR RecPatExpr RowTyExpr RecExpr [ | positionalFldNmL: {[HsName]} | ]
+ATTR RecPatExpr [ matchOnFld: Bool | | hasAFldRef: Bool ]
+
+SEM Expr
+  | Rec         recExpr     .   positionalFldNmL    =   positionalFldNames
+
+SEM TyExpr
+  | Row         rowTyExpr   .   positionalFldNmL    =   positionalFldNames
+
+SEM PatExpr
+  | Rec         recPatExpr  .   positionalFldNmL    =   positionalFldNames
+                            .   matchOnFld          =   @recPatExpr.hasAFldRef
+
+SEM RecPatExpr
+  | Empty       lhs         .   hasAFldRef          =   False
+  | Ext         lhs         .   hasAFldRef          =   maybe @recPatExpr.hasAFldRef (const True) @mbNm
+                (loc.positionalNm,lhs.positionalFldNmL)
+                                                    =   hdAndTl @recPatExpr.positionalFldNmL
+                loc         .   nm                  =   case @mbNm of
+                                                          Just nm                     -> nm
+                                                          Nothing  | @lhs.matchOnFld  -> @patExpr.topNm
+                                                                   | otherwise        -> @positionalNm
+ 
+SEM RowTyExpr
+  | Ext         (loc.positionalNm,lhs.positionalFldNmL)
+                                                    =   hdAndTl @rowTyExpr.positionalFldNmL
+                loc         .   nm                  =   maybe @positionalNm id @mbNm
+
+SEM RecExpr
+  | Ext         (loc.positionalNm,lhs.positionalFldNmL)
+                                                    =   hdAndTl @recExpr.positionalFldNmL
+                loc         .   nm                  =   maybe @positionalNm id @mbNm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% How to do subsumption
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4
+ATTR AllExpr AllPatExpr [ fiOpts: FIOpts | | ]
+
+SEM Expr
+  | App         func        .  fiOpts               =   strongFIOpts
+                arg         .  fiOpts               =   instLFIOpts
+
+SEM Decl
+  | Val         expr        .  fiOpts               =   strongFIOpts
+                patExpr     .  fiOpts               =   strongFIOpts
+
+SEM AGItf
+  | AGItf       expr        .  fiOpts               =   strongFIOpts
+%%]
+
+%%[5
+ATTR AllCase [ fiOpts: FIOpts | | ]
+
+SEM Decl
+  | Val         expr        .  fiOpts               :=  if @hasTySig then strongFIOpts else weakFIOpts
+
+SEM CaseAlt
+  | Pat         patExpr     .  fiOpts               =   strongFIOpts
+%%]
+

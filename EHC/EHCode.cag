@@ -1,0 +1,114 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs import(EHCommon,List) export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBindL, CBindCateg(..)) 
+%%]
+
+%%[8 hs export(CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL) 
+%%]
+
+%%[8 hs export(CPatNm(..), cpatNmEither)
+%%]
+
+%%[8 hs export(ctagNone,cpatVarNm,caltTag,caltIsVar,caltPatL,caltPat,caltLPatNms,cvarUndefined) 
+%%]
+
+%%[8 hs export(mkCExprLet,mkCExprLam,mkCExprApp)
+%%]
+
+%%[8 hs export(ceStrictIn)
+%%]
+
+%%[8 import(EHCodeAbsSyn)
+DERIVING *     : Show, Eq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tag indicating a non-data
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+ctagNone :: Int
+ctagNone = -1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Binding category
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+data CBindCateg = CBindRec | CBindStrict | CBindPlain deriving (Show,Eq)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name of a pattern var/con
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+data CPatNm = CPatNmOrig {cpatNmNm :: HsName} | CPatNmUniq {cpatNmNm :: HsName} deriving (Ord,Eq)
+
+instance Show CPatNm where
+  show pnm = show (cpatNmNm pnm)
+
+cpatNmEither :: (HsName -> a) -> (HsName -> a) -> CPatNm -> a
+cpatNmEither o u pnm = case pnm of {CPatNmOrig n -> o n; CPatNmUniq n -> u n}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Construction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+mkCExprLet :: CBindCateg -> CBindL -> CExpr -> CExpr
+mkCExprLet c bs e = if null bs then e else CExpr_Let c bs e
+
+mkCExprLam :: [HsName] -> CExpr -> CExpr
+mkCExprLam as e = foldr (\n e -> CExpr_Lam n e) e as
+
+mkCExprApp :: CExpr -> [CExpr] -> CExpr
+mkCExprApp f as = foldl (\f a -> CExpr_App f a) f as
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Destruction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+cpatVarNm :: CPat -> CPatNm
+cpatVarNm (CPat_Var n)        = n
+cpatVarNm (CPat_Con n _ _ _)  = n
+
+cpatConTag :: CPat -> Int
+cpatConTag (CPat_Con _ t _ _)  = t
+
+caltTag :: CAlt -> Int
+caltTag (CAlt_Alt (p : _) _) = cpatConTag p
+
+caltIsVar :: CAlt -> Bool
+caltIsVar (CAlt_Alt (CPat_Var _ : _) _)  = True
+caltIsVar _                              = False
+
+caltPatL :: CAlt -> CPatL
+caltPatL (CAlt_Alt p _) = p
+
+caltPat :: CAlt -> CPat
+caltPat = head . caltPatL
+
+caltLPatNms :: CAltL -> [CPatNm]
+caltLPatNms = nub . sort . map (cpatVarNm . caltPat)
+
+cvarUndefined :: CExpr
+cvarUndefined = CExpr_Var hsnUndefined
+
+ceStrictIn :: HsName -> CExpr -> (CExpr -> CExpr) -> CExpr
+ceStrictIn nm e mkC = CExpr_Let CBindStrict [CBind_Bind nm e] (mkC (CExpr_Var nm))
+%%]
+
