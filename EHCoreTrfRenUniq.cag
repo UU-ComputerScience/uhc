@@ -9,7 +9,7 @@
 %%% Simplify code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Maybe,FiniteMap,EHCommon,EHCore) export(cmodTrfRenUniq)
+%%[8 hs import(Maybe,Char,FiniteMap,EHCommon,EHCore) export(cmodTrfRenUniq)
 %%]
 
 %%[9 hs import(EHTy)
@@ -64,11 +64,13 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 type ARenMp = FiniteMap HsName HsName
 
 aRenAdd :: [HsName] -> Int -> UID -> ARenMp -> ARenMp
-aRenAdd nL l u m = addListToFM m (map (\n -> (n,hsnSuffix n ("~" ++ show l ++ "~" ++ show u))) nL)
+aRenAdd nL l u m = addListToFM m [ (n,hsnSuffix n ("~" ++ show l ++ "~" ++ show u)) | n <- nL, isAlpha (head (show n))]
 
 aRenRepl :: ARenMp -> HsName -> HsName
 aRenRepl m n = maybe n id . lookupFM m $ n
 %%]
+
+aRenAdd nL l u m = addListToFM m (map (\n -> (n,hsnSuffix n ("~" ++ show l ++ "~" ++ show u))) nL)
 
 %%[8
 ATTR AllCodeNT [ aRenMp: ARenMp ^^ lev: Int | | ]
@@ -85,7 +87,9 @@ SEM CPatBind
   | Bind        lhs         .   nmL         =   [@nm] ++ @pat.nmL
 
 SEM CPat
-  | Var Con     lhs         .   nmL         =   cpatNmEither (:[]) (const []) @pnm
+  | Var Con     loc         .   nm          =   cpatNmEither id id @pnm
+  | Var         lhs         .   nmL         =   [@nm]
+  | Con         lhs         .   nmL         =   [@nm] ++ @binds.nmL
 
 SEM CExpr
   | Let         loc         .   aRenMp      =   if @lhs.lev == 0
@@ -120,8 +124,8 @@ SEM CPatBind
   | Bind        lhs         .   cTrf        =   CPatBind_Bind @offset.cTrf (aRenRepl @lhs.aRenMp @nm) @pat.cTrf
 
 SEM CPat
-  | Var         lhs         .   cTrf        =   CPat_Var (cpatNmEither (CPatNmOrig . aRenRepl @lhs.aRenMp) CPatNmUniq @pnm)
-  | Con         lhs         .   cTrf        =   CPat_Con (cpatNmEither (CPatNmOrig . aRenRepl @lhs.aRenMp) CPatNmUniq @pnm)
+  | Var         lhs         .   cTrf        =   CPat_Var (CPatNmOrig . aRenRepl @lhs.aRenMp $ @nm)
+  | Con         lhs         .   cTrf        =   CPat_Con (CPatNmOrig . aRenRepl @lhs.aRenMp $ @nm)
                                                     @tag (aRenRepl @lhs.aRenMp @tagNm) @binds.cTrf
 %%]
 

@@ -333,8 +333,8 @@ crTrfCore modNm cr
                  synAG  = fromJust (cuMbOut cu)
                  [u1,u2] = mkNewLevUIDL 2 . snd . mkNewLevUID . crHereUID $ cr
                  synAG' = synAG {cmodule_Syn_AGItf
-                                    = {- cmodTrfFullLazy u2
-                                    . -} cmodTrfLetUnrec
+                                    = cmodTrfFullLazy u2
+                                    . cmodTrfLetUnrec
                                     . cmodTrfRenUniq u1
                                     . cmodule_Syn_AGItf
                                     $ synAG}
