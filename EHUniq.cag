@@ -104,6 +104,8 @@ SEM RecPatExpr
 %%]
 
 %%[8
+ATTR AGItf [ gUniq: UID | | ]
+
 SEM Expr
   | Case            (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
 %%]

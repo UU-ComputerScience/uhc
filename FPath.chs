@@ -9,7 +9,7 @@
 %%% File path
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(FPath(..), fpathToStr, fpathSetBase, fpathSetSuff, mkFPath, emptyFPath)
+%%[8 export(FPath(..), fpathToStr, fpathIsEmpty, fpathSetBase, fpathSetSuff, mkFPath, emptyFPath, fpathSetDir, fpathPrependDir)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

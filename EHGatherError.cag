@@ -118,7 +118,7 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllNT [ | | allErrL USE {++} {[]} : ErrL ]
+ATTR AllNT AGItf [ | | allErrL USE {++} {[]} : ErrL ]
 
 SEM Decls
   | Cons        lhs         .  allErrL      =   @hd.errL ++ @hd.allErrL ++ @tl.allErrL
