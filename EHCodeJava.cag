@@ -214,6 +214,11 @@ SEM CPat
                                                 >-< @binds.jvSrc
 %%]
 
+%%[9
+SEM CExpr
+  | Hole        loc         .   jvSrc       =   jvNmPP (uidHNm @uid)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Builtin distr to outer let
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -240,8 +245,7 @@ ATTR CExpr [ | | varNm: HsName ]
 
 SEM CExpr
   | Var         lhs         .   varNm       =   @nm
-  | Int Let Lam Tup Char Sel App
-                lhs         .   varNm       =   hsnUnknown
+  | * - Var     lhs         .   varNm       =   hsnUnknown
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

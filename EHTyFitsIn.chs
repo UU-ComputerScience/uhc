@@ -43,25 +43,63 @@
 %%[6 export(fitsInL)
 %%]
 
-%%[9 import(EHPred)
+%%[9 import(Maybe,FiniteMap,EHPred,EHCode) export(predFIOpts,prfPreds)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% External interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4.FIOpts
+-- common
+%%[FIOpts.4.hd
 data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindRFirst     ::  Bool
                         ,  fioBindLFirst     ::  Bool                ,  fioUniq           ::  UID
                         ,  fioCoContra       ::  CoContraVariance 
-                        } deriving Show
+%%]
 
+%%[FIOpts.4.tl
+                        } deriving Show
+%%]
+
+%%[FIOpts.4.strongFIOpts.hd
 strongFIOpts :: FIOpts
 strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindRFirst     =   True
                         ,  fioBindLFirst     =   True                ,  fioUniq           =   uidStart
                         ,  fioCoContra       =   CoVariant
-                        }
+%%]
 
+%%[FIOpts.4.strongFIOpts.tl
+                        }
+%%]
+
+%%[FIOpts.9
+                        ,  fioPredAsTy       ::  Bool
+%%]
+
+%%[FIOpts.9.strongFIOpts
+                        ,  fioPredAsTy       =   False
+%%]
+
+-- versions
+%%[4.FIOpts
+%%@FIOpts.4.hd
+%%@FIOpts.4.tl
+
+%%@FIOpts.4.strongFIOpts.hd
+%%@FIOpts.4.strongFIOpts.tl
+%%]
+
+%%[9.FIOpts -4.FIOpts
+%%@FIOpts.4.hd
+%%@FIOpts.9
+%%@FIOpts.4.tl
+
+%%@FIOpts.4.strongFIOpts.hd
+%%@FIOpts.9.strongFIOpts
+%%@FIOpts.4.strongFIOpts.tl
+%%]
+
+%%[4.FIOpts.defaults
 instLFIOpts :: FIOpts
 instLFIOpts = strongFIOpts {fioBindRFirst = False}
 
@@ -72,6 +110,11 @@ instFIOpts = instLFIOpts {fioLeaveRInst = True, fioBindLFirst = False}
 %%[5
 weakFIOpts :: FIOpts
 weakFIOpts = strongFIOpts {fioLeaveRInst = True, fioBindRFirst = False}
+%%]
+
+%%[9
+predFIOpts :: FIOpts
+predFIOpts = strongFIOpts {fioPredAsTy = True, fioLeaveRInst = True}
 %%]
 
 %%[4
@@ -157,6 +200,20 @@ data FIOut  =  FIOut    {  foCnstr           ::  Cnstr               ,  foTy    
 emptyFO     =  FIOut    {  foCnstr           =   emptyCnstr          ,  foTy              =   Ty_Any
                         ,  foUniq            =   uidStart            ,  foCoContraL       =   []
                         ,  foErrL            =   []
+                        }
+%%]
+
+%%[9.FIOut -4.FIOut
+data FIOut  =  FIOut    {  foCnstr           ::  Cnstr               ,  foTy              ::  Ty
+                        ,  foUniq            ::  UID                 ,  foCoContraL       ::  CoCoInfo
+                        ,  foErrL            ::  ErrL
+                        ,  foPredOccL        ::  [PredOcc]
+                        }
+
+emptyFO     =  FIOut    {  foCnstr           =   emptyCnstr          ,  foTy              =   Ty_Any
+                        ,  foUniq            =   uidStart            ,  foCoContraL       =   []
+                        ,  foErrL            =   []
+                        ,  foPredOccL        =   []
                         }
 %%]
 
@@ -325,6 +382,12 @@ fitsIn opts uniq ty1 ty2
                                                     = occurBind fi v2 t1
 %%]
 
+%%[9
+            u fi t1@(Ty_Pred (Pred_Class ct1)) t2@(Ty_Pred (Pred_Class ct2))
+                | fioPredAsTy (fiFIOpts fi)         = fo {foTy = Ty_Pred (Pred_Class (foTy fo))} 
+                where  fo = u fi ct1 ct2
+%%]
+
 %%[4.fitsIn.QLR
             u fi t1@(Ty_Quant q1 _ _)   t2@(Ty_Quant q2 _ _)
                 | fiCoContra fi == CoContraVariant && q1 == q2
@@ -355,6 +418,15 @@ fitsIn opts uniq ty1 ty2
                 | f == TyVarCateg_Plain             = occurBind fi v1 t2
             u fi t1                     t2@(Ty_Var v2 f)
                 | f == TyVarCateg_Plain             = occurBind fi v2 t1
+%%]
+
+%%[9
+            u fi  t1@(Ty_App (Ty_App (Ty_Con c1) (Ty_Pred pr)) tr1)
+                  t2@(Ty_App (Ty_App (Ty_Con c2) _) _)
+                    | hsnIsArrow c1 && c1 == c2 && not (fioPredAsTy (fiFIOpts fi))
+                = fo {foPredOccL = PredOcc pr u1 : foPredOccL fo}
+                where  (u',u1) = mkNewUID (fiUniq fi)
+                       fo = u (fi {fiUniq = u'}) tr1 t2
 %%]
 
 %%[4.fitsIn.App
@@ -407,3 +479,66 @@ fitsInL opts uniq tyl1 tyl2
      .  zip tyl1 $ tyl2
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Proof of predicates, must be here because of mutual dep with fitsIn
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+matchRule :: UID -> Pred -> Rule -> Maybe ([PredOcc],CExpr,ProofCost)
+matchRule u pr r@(Rule rt mkEv _ cost)
+  =  let  (_,u1,u2,u3)   = mkNewLevUID3 u
+          (rTy,_)        = tyInst1Quants u1 instCoConst rt
+          (us,vs)        = mkNewUIDTyVarL (tyArrowArity rTy) u2
+          fo             = fitsIn predFIOpts u3 rTy (vs `mkTyArrow` Ty_Pred pr)
+     in   if foHasErrs fo
+          then Nothing
+          else Just  ( zipWith PredOcc (map tyPred . fst . tyArrowArgsRes . foTy $ fo) us
+                     , mkEv (map CExpr_Hole us)
+                     , cost
+                     )
+
+prfOneStep :: PrElimGam -> PredOcc -> ProofState -> ProofState
+prfOneStep eGam (PredOcc pr prUid) st@(ProofState g@(ProvenGraph i2n p2i) u toProof)
+  =  let  
+     in   case lookupFM p2i pr of
+            Just uid | uid /= prUid
+              ->  let  nd = ProvenAnd pr [uid] (CExpr_Hole uid) 0
+                  in   st {prfsProvenGraph = prvgAddPrNd pr prUid nd g}
+            Nothing
+              ->  case pr of
+                    Pred_Class t
+                      ->  let  nm = tyAppFunConNm t
+                          in   case gamLookupAll nm eGam of
+                                 pegis@(_:_)
+                                   ->  let  rs = concat . map pegiRuleL $ pegis
+                                            (u',u1,u2) = mkNewLevUID2 u
+                                            matches = catMaybes . zipWith (\u r -> matchRule u pr r) (mkNewUIDL (length rs) u1) $ rs
+                                            mkPrf pr (prOccL,evid,cost) = ProvenAnd pr (map poId prOccL) evid cost
+                                            (g',newPr)
+                                               = case matches of
+                                                     [m@(prOccL,_,_)]
+                                                        ->  (prvgAddPrNd pr prUid (mkPrf pr m) g,prOccL)
+                                                     [] ->  (prvgAddPrNd pr prUid (ProvenFail pr) g,[])
+                                                     ms ->  let  orUids = mkNewUIDL (length ms) u2
+                                                            in   foldr
+                                                                     (\(uid,m@(prOccL,_,_)) (g,newPr)
+                                                                        -> (prvgAddNd uid (mkPrf pr m) g,prOccL ++ newPr)
+                                                                     )
+                                                                     (prvgAddPrNd pr prUid (ProvenOr pr orUids) g,[])
+                                                                     (zip orUids ms)
+                                       in   st {prfsUniq = u', prfsProvenGraph = g', prfsPredsToProve = newPr ++ toProof}
+                                 []
+                                   ->  let  nd = ProvenFail pr
+                                       in   st {prfsProvenGraph = prvgAddPrNd pr prUid nd g}
+                    _ ->  st
+            _ ->  st
+
+prfPreds :: UID -> PrElimGam -> [PredOcc] -> ProvenGraph
+prfPreds u eGam prL
+  =  let  initState = ProofState (ProvenGraph emptyFM emptyFM) u prL
+          resolve st@(ProofState _ _ (pr:prL))
+            =  let  st' = prfOneStep eGam pr (st {prfsPredsToProve = prL})
+               in   resolve st'
+          resolve st@(ProofState _ _ []) = st
+     in   prfsProvenGraph (resolve initState)
+%%]

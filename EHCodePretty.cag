@@ -9,18 +9,26 @@
 %%% Haskell importable interface to Code's Java gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(UU.Pretty,EHCommon,EHCode) export(ppCode)
+%%[8 hs import(UU.Pretty,EHCommon,EHCode) export(ppCModule)
 %%]
 
 %%[8.WRAPPER import(EHCodeAbsSyn)
-WRAPPER CodeAGItf
+WRAPPER CodeAGItf CExpr
 %%]
 
 %%[8 hs
-ppCode :: CModule -> PP_Doc
-ppCode cmod
+ppCModule :: CModule -> PP_Doc
+ppCModule cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
      in   (pp_Syn_CodeAGItf t)
+
+ppCExpr :: CExpr -> PP_Doc
+ppCExpr ce
+  =  let  t = wrap_CExpr (sem_CExpr ce) Inh_CExpr
+     in   (pp_Syn_CExpr t)
+
+instance PP CExpr where
+  pp ce = ppCExpr ce
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -84,6 +92,11 @@ SEM CPatBind
 SEM CPatBindL
   | Nil         lhs         .   ppL         =   []
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+%%]
+
+%%[9
+SEM CExpr
+  | Hole        loc         .   pp          =   "<" >|< pp @uid >|< ">"
 %%]
 
 

@@ -681,7 +681,7 @@ pPrExpr         ::   EHParser T_PrExpr
 pPrExpr         =    pPrExprClass
                 <|>  pVar <**>  (    (\s v -> sem_PrExpr_Lacks (sem_RowTyExpr_Var v) s)
                                      <$ pKey "\\" <*> pSel
-                                <|>  (flip sem_PrExpr_Eq)
+                                <|>  (flip sem_PrExpr_Equal)
                                      <$ pKey "=" <*> pTyExpr
                                 )
 

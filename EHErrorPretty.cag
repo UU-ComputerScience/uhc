@@ -9,7 +9,7 @@
 %%% Haskell importable interface to Error pretty print
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs import(List, UU.Pretty, EHCommon, EHTy, EHTyPretty, EHError) export(ppErr, ppErrs)
+%%[1 hs import(List, UU.Pretty, EHCommon, EHTy, EHTyPretty, EHError) export(ppErr, ppErrs,ppErrL)
 %%]
 
 %%[1 import(EHErrorAbsSyn)

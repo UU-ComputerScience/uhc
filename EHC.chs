@@ -61,7 +61,7 @@ main
 %%]
 
 %%[doCompileC.8
-         ;  let codePP = ppCode (cmodule_Syn_AGItf wrRes)
+         ;  let codePP = ppCModule (cmodule_Syn_AGItf wrRes)
          ;  case ehcoptDumpPP opts of
               Just "pp"    ->  putStrLn (disp (pp_Syn_AGItf wrRes) 70 "")
               Just "ast"   ->  putStrLn (disp (ppAST_Syn_AGItf wrRes) 1000 "")

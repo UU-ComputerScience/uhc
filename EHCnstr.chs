@@ -22,6 +22,9 @@
 %%[4 export(cnstrFilter)
 %%]
 
+%%[9 export(fixTyVarsCnstr,tyFixTyVars)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Cnstr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -95,13 +98,11 @@ instance Substitutable Ty where
 %%]
 
 %%[SubstitutableTyVar.3
-                               Ty_Var tvar f
-                                 | f == TyVarCateg_Plain
-                                                ->  if isBound tvar then t else maybe t id (cnstrLookup tvar s)
+                               Ty_Var tvar f    ->  if isBound tvar then t else maybe t id (cnstrLookup tvar s)
 %%]
 
 %%[SubstitutableTyTVarsVar.3
-                 Ty_Var tv _                    -> [tv]
+                 Ty_Var tv _                    ->  [tv]
 %%]
 
 %%[3.SubstitutableTy -2.SubstitutableTy
@@ -111,8 +112,8 @@ instance Substitutable Ty where
                                otherwise        ->  t
 %%@SubstitutableTyTVarsHead
 %%@SubstitutableTyTVarsVar.3
-                 Ty_Quant tv tp                 -> tv `delete` ftv tp
-                 otherwise                      -> []
+                 Ty_Quant tv tp                 ->  tv `delete` ftv tp
+                 otherwise                      ->  []
 %%]
 
 %%[SubstitutableTyQuant.4
@@ -121,7 +122,7 @@ instance Substitutable Ty where
 %%]
 
 %%[SubstitutableTyTVarsQuant.4
-                 Ty_Quant _ tv tp               -> tv `delete` ftv tp
+                 Ty_Quant _ tv tp               ->  tv `delete` ftv tp
 %%]
 
 %%[4.SubstitutableTy -3.SubstitutableTy
@@ -132,7 +133,7 @@ instance Substitutable Ty where
 %%@SubstitutableTyTVarsHead
 %%@SubstitutableTyTVarsVar.3
 %%@SubstitutableTyTVarsQuant.4
-                 otherwise                      -> []
+                 otherwise                      ->  []
 %%]
 
 %%[7.SubstitutableTy -4.SubstitutableTy
@@ -144,8 +145,31 @@ instance Substitutable Ty where
 %%@SubstitutableTyTVarsHead
 %%@SubstitutableTyTVarsVar.3
 %%@SubstitutableTyTVarsQuant.4
-                 Ty_Ext t _ e                   -> ftv t `union` ftv e
-                 otherwise                      -> []
+                 Ty_Ext t _ e                   ->  ftv t `union` ftv e
+                 otherwise                      ->  []
+%%]
+
+%%[9.SubstitutableTy -7.SubstitutableTy
+%%@SubstitutableTyHead.3
+%%@SubstitutableTyVar.3
+%%@SubstitutableTyQuant.4
+                               Ty_Ext t l e     ->  Ty_Ext (st isBound t) l (st isBound e)
+                               Ty_Pred p        ->  Ty_Pred (sp isBound p)
+                               otherwise        ->  t
+          sp isBound p    =  case p of
+                               Pred_Class t     ->  Pred_Class (st isBound t)
+                               Pred_Lacks t n   ->  Pred_Lacks (st isBound t) n
+                               Pred_Equal v t   ->  Pred_Equal v (st isBound t)
+%%@SubstitutableTyTVarsHead
+%%@SubstitutableTyTVarsVar.3
+%%@SubstitutableTyTVarsQuant.4
+                 Ty_Ext t _ e                   ->  ftv t `union` ftv e
+                 Ty_Pred p                      ->  fpv p
+                 otherwise                      ->  []
+    where fpv p           =  case p of
+                               Pred_Class t     ->  ftv t
+                               Pred_Lacks t n   ->  ftv t
+                               Pred_Equal v t   ->  ftv t
 %%]
 
 %%[2.SubstitutableList
@@ -159,6 +183,18 @@ instance Substitutable Cnstr where
   s1@(Cnstr sl1) |=>   s2@(Cnstr sl2)  =   Cnstr (sl1 ++ map (\(v,t) -> (v,s1 |=> t)) sl2')
                                            where sl2' = deleteFirstsBy (\(v1,_) (v2,_) -> v1 == v2) sl2 sl1
   ftv                  (Cnstr sl)      =   ftv . map snd $ sl
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fixating free type vars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+fixTyVarsCnstr :: Substitutable s => s -> Cnstr
+fixTyVarsCnstr = Cnstr . map (\v -> (v,Ty_Var v TyVarCateg_Fixed)) . ftv
+
+tyFixTyVars :: Substitutable s => s -> s
+tyFixTyVars s = fixTyVarsCnstr s |=> s
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -15,7 +15,7 @@
 %%[1 hs export(tyArrowArgRes, tyArrowArgsRes, tyAppFunArgs, tyProdArgs) 
 %%]
 
-%%[2 hs export(TyVarId, TyVarIdL, mkTyVar, mkNewTyVar, mkNewTyVarL, mkTyFreshProd, mkTyFreshProdFrom, tyEnsureNonBotTop) 
+%%[2 hs export(TyVarId, TyVarIdL, mkTyVar, mkNewTyVar, mkNewUIDTyVarL, mkNewTyVarL, mkTyFreshProd, mkTyFreshProdFrom, tyEnsureNonBotTop) 
 %%]
 
 %%[3 hs export(mkTyQu, TyVarCateg(..))
@@ -36,11 +36,14 @@
 %%[8 hs import(List) export(tyRowCanonOrder,tyRecOffset) 
 %%]
 
-%%[9 hs export(Pred(..),tyPredNm)
+%%[9 hs export(Pred(..),tyPredNm,tyPred)
+%%]
+
+%%[9 hs export(tyRecExts,tyAppFunConNm,tyArrowArity)
 %%]
 
 %%[1 import(EHTyAbsSyn)
-DERIVING *     : Show, Eq
+DERIVING *     : Show, Eq, Ord
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -164,8 +167,11 @@ mkNewTyVar u = let  (_,v) = mkNewUID u in mkTyVar v
 %%]
 
 %%[2.NewTyVarL hs
+mkNewUIDTyVarL :: Int -> UID -> ([UID],TyL)
+mkNewUIDTyVarL sz u = let vs = mkNewUIDL sz u in (vs,map mkTyVar vs)
+
 mkNewTyVarL :: Int -> UID -> TyL
-mkNewTyVarL sz u = let  (_,vs) = mkNewUIDL sz u in map mkTyVar vs
+mkNewTyVarL sz u = snd (mkNewUIDTyVarL sz u)
 %%]
 
 %%[2.tyEnsureNonBotTop hs
@@ -185,7 +191,7 @@ mkTyQu q tvL t = foldr (\tv t -> Ty_Quant q tv t) t tvL
 
 %%[2.mkTyFreshProd hs
 mkTyFreshProdFrom :: UID -> Int -> Ty
-mkTyFreshProdFrom uid arity =  mkTyProdApp . map mkTyVar . snd . mkNewUIDL arity $ uid
+mkTyFreshProdFrom uid arity =  mkTyProdApp . map mkTyVar . mkNewUIDL arity $ uid
 
 mkTyFreshProd :: Int -> Ty
 mkTyFreshProd = mkTyFreshProdFrom uidStart
@@ -255,6 +261,14 @@ tyConNm  (Ty_Con nm)  = nm
 tyConNm  _            = hsnUnknown
 %%]
 
+%%[9 hs
+tyAppFunConNm :: Ty -> HsName
+tyAppFunConNm = tyConNm . fst . tyAppFunArgs
+
+tyArrowArity :: Ty -> Int
+tyArrowArity = length . fst . tyArrowArgsRes
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Construction for records/variants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -322,10 +336,15 @@ tyRecOffset lbl t
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
+tyPred :: Ty -> Pred
+tyPred t
+  =  case t of
+       Ty_Pred pt  -> pt
+
 tyPredNm :: Ty -> HsName
 tyPredNm t
   =  case t of
-       Ty_Pred (Pred_Class pt)  -> tyConNm . fst . tyAppFunArgs $ pt
+       Ty_Pred (Pred_Class pt)  -> tyAppFunConNm pt
        _                        -> hsnUnknown
 %%]
 

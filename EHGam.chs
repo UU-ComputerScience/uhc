@@ -45,7 +45,7 @@
 %%[8 import(Maybe) export(gamUpd)
 %%]
 
-%%[9 export(gamUpdAdd)
+%%[9 export(gamUpdAdd,gamLookupAll)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -109,6 +109,9 @@ gamUpd k upd = fromJust . gamMbUpd k upd
 %%]
 
 %%[9
+gamLookupAll :: Eq k => k -> Gam k v -> [v]
+gamLookupAll k (Gam ll) = catMaybes (map (lookup k) ll)
+
 gamUpdAdd :: Eq k => k -> v -> (k -> v -> v) -> Gam k v -> Gam k v
 gamUpdAdd k v upd g = maybe (gamAdd k v g) id (gamMbUpd k upd g)
 %%]
@@ -265,7 +268,7 @@ instance Substitutable TyGamInfo where
 
 %%[1.ppGam
 ppGam :: (PP k, PP v) => Gam k v -> PP_Doc
-ppGam g = ppListSepFill "[ " " ]" ", " (map (\(k,v) -> pp k >|< ":" >|< pp v) (gamToAssocL g))
+ppGam g = ppAssocL (gamToAssocL g)
 
 instance PP ValGamInfo where
   pp vgi = ppTy (vgiTy vgi)

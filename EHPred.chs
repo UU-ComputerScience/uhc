@@ -12,16 +12,19 @@
 %%[9 import(FiniteMap,UU.Pretty)
 %%]
 
-%%[9 import(EHTy,EHTyPretty,EHCode,EHCommon,EHGam,EHCnstr)
+%%[9 import(EHTy,EHTyPretty,EHCode,EHCodePretty,EHCommon,EHGam,EHCnstr)
 %%]
 
-%%[9 export(PredL,PredOcc(..),ProvenPred(..),ProofState(..),OnePredProof(..))
+%%[9 export(PredOcc(..),ProofState(..))
 %%]
 
-%%[9 export(Rule(..),RuleL)
+%%[9 export(ProvenNode(..),ProvenGraph(..),prvgAddPrNd,prvgAddNd,ProofCost)
 %%]
 
-%%[9 export(PrIntroGamInfo(..),PrElimGamInfo(..),PrIntroGam,PrElimGam)
+%%[9 export(Rule(..),emptyRule)
+%%]
+
+%%[9 export(PrIntroGamInfo(..),PrElimGamInfo(..),PrIntroGam,PrElimGam,emptyPIGI)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -29,48 +32,68 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-type PredL
-  =  [Pred]
-
 data PredOcc
   =  PredOcc
-       { poPr           :: Pred
-       , poId           :: UID
+       { poPr               :: Pred
+       , poId               :: UID
        }
-
-data ProvenPred
-  =  ProvenPred
-       { prvPredOcc     :: PredOcc
-       , prvEvidence    :: CExpr
-       }
-
-type ProvenPredL
-  =  [ProvenPred]
 
 data ProofState
   =  ProofState
-       { prfsIntroPrL   :: ProvenPredL
-       , prfsProvenPrL  :: ProvenPredL
-       , prfsIntermPrL  :: ProvenPredL
+       { prfsProvenGraph    :: ProvenGraph
+       , prfsUniq           :: UID
+       , prfsPredsToProve   :: [PredOcc]
        }
 
-data OnePredProof pr
-  =  OnePredProof
-       { oneprfResolve  :: pr -> ProvenPredL -> ProofState
-       }
+type ProofCost
+  =  Int
 
 data ProvenNode
-  =  ProvenNode
-       { prvnPred       :: Pred
-       , prvnEdges      :: [UID]
-       , prvnEvidence   :: CExpr
+  =  ProvenOr
+       { prvnPred           :: Pred
+       , prvnOrEdges        :: [UID]
        }
-
+  |  ProvenAnd
+       { prvnPred           :: Pred
+       , prvnAndEdges       :: [UID]
+       , prvnEvidence       :: CExpr
+       , prvnCost           :: ProofCost
+       }
+  |  ProvenFail
+       { prvnPred           :: Pred
+       }
+  
 data ProvenGraph
   =  ProvenGraph
-       { prvgGraph      :: FiniteMap UID ProvenNode
-       , prvgPreds      :: FiniteMap Pred UID
+       { prvgIdNdMp         :: FiniteMap UID ProvenNode
+       , prvgPrIdMp         :: FiniteMap Pred UID
        }
+
+prvgAddPrNd :: Pred -> UID -> ProvenNode -> ProvenGraph -> ProvenGraph
+prvgAddPrNd pr uid nd g@(ProvenGraph i2n p2i)
+  =  g {prvgIdNdMp = addToFM i2n uid nd, prvgPrIdMp = addToFM p2i pr uid}
+
+prvgAddNd :: UID -> ProvenNode -> ProvenGraph -> ProvenGraph
+prvgAddNd uid nd g@(ProvenGraph i2n _)
+  =  g {prvgIdNdMp = addToFM i2n uid nd}
+
+instance Substitutable PredOcc where
+  s |=>  (PredOcc pr id)  = PredOcc (tyPred (s |=> Ty_Pred pr)) id
+  ftv    (PredOcc pr _)   = ftv (Ty_Pred pr)
+
+instance Show ProvenNode where
+  show _ = ""
+
+instance Show ProvenGraph where
+  show _ = ""
+
+instance PP ProvenNode where
+  pp (ProvenOr pr es) 		 = "OR:" 	>#< "pr=" >|< pp pr >#< "edges=" >|< ppListSep "[" "]" "," es
+  pp (ProvenAnd pr es ev c)  = "AND:" 	>#< "pr=" >|< pp pr >#< "edges=" >|< ppListSep "[" "]" "," es >#< "cost=" >|< pp c >#< "evid=" >|< pp ev
+  pp (ProvenFail pr) 		 = "FAIL:" 	>#< "pr=" >|< pp pr
+
+instance PP ProvenGraph where
+  pp (ProvenGraph i2n p2i) = ppAssocL (fmToList p2i) >-< ppAssocL (fmToList i2n)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -80,19 +103,19 @@ data ProvenGraph
 %%[9
 data Rule
   =  Rule
-       { rulRuleTy      :: Ty
-       , rulMkEvid      :: [CExpr] -> CExpr
-       , rulNmEvid      :: HsName
+       { rulRuleTy          :: Ty
+       , rulMkEvid          :: [CExpr] -> CExpr
+       , rulNmEvid          :: HsName
+       , rulCost            :: ProofCost
        }
+
+emptyRule = Rule Ty_Any head hsnUnknown 100
 
 instance Show Rule where
   show r = show (rulNmEvid r) ++ "::" ++ show (rulRuleTy r)
 
 instance PP Rule where
   pp r = ppTy (rulRuleTy r) >#< "~>" >#< pp (rulNmEvid r)
-
-type RuleL
-  =  [Rule]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -102,21 +125,23 @@ type RuleL
 %%[9
 data PrIntroGamInfo
   =  PrIntroGamInfo
-       { pigiEvidTy     :: Ty
-       , pigiKi         :: Ty
-       , pigiRule       :: Rule
+       { pigiPrToEvidTy     :: Ty
+       , pigiKi             :: Ty
+       , pigiRule           :: Rule
        } deriving Show
+
+emptyPIGI = PrIntroGamInfo Ty_Any Ty_Any emptyRule
 
 data PrElimGamInfo
   =  PrElimGamInfo
-       { pegiRuleL      :: RuleL
+       { pegiRuleL          :: [Rule]
        } deriving Show
 
 type PrIntroGam     = Gam HsName PrIntroGamInfo
 type PrElimGam      = Gam HsName PrElimGamInfo
 
 instance PP PrIntroGamInfo where
-  pp pigi = pp (pigiRule pigi) >#< "::" >#< ppTy (pigiEvidTy pigi) >#< ":::" >#< ppTy (pigiKi pigi)
+  pp pigi = pp (pigiRule pigi) >#< "::" >#< ppTy (pigiPrToEvidTy pigi) >#< ":::" >#< ppTy (pigiKi pigi)
 
 instance PP PrElimGamInfo where
   pp pegi = ppListSep "[" "]" "," (pegiRuleL pegi)

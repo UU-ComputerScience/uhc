@@ -22,19 +22,26 @@ SEM Decl
                                                                     { rulRuleTy    = tyQuantifyClosed (@ctxtPrExprs.tyL `mkTyArrow` @prExpr.ty)
                                                                     , rulMkEvid    = \_ -> CExpr_Var n
                                                                     , rulNmEvid    = n
+                                                                    , rulCost	   = 10
                                                                     }
-                                                        in   PrIntroGamInfo (tyQuantifyClosed @clsTyRec) k r
+                                                        in   PrIntroGamInfo (tyQuantifyClosed ([@prExpr.ty] `mkTyArrow` @clsTyRec)) k r
                                 .   elimRules       =   let  mkR sub sup supNm
                                                                =  Rule
                                                                     { rulRuleTy    = tyQuantifyClosed ([sub] `mkTyArrow` sup)
                                                                     , rulMkEvid    = \[sub] -> CExpr_Sel sub ctagNone
                                                                                                  (CExpr_Int . fromJust . tyRecOffset supNm $ @clsTyRec)
                                                                     , rulNmEvid    = hsnUnknown
+                                                                    , rulCost	   = 2
                                                                     }
                                                         in   zipWith (\p n -> (tyPredNm p,mkR @prExpr.ty p n)) @ctxtPrExprs.tyL @supClsNmL
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   tyGam           =   @lhs.tyGam
-                                .   gathTySigGam    =   @lhs.gathTySigGam
+                                .   gathTySigGam    =   gamAddGam
+                                                            (gamMap (\(n,vgi)
+                                                                        ->  let  t = tyQuantifyClosed ([@prExpr.ty] `mkTyArrow` (vgiTy vgi))
+                                                                            in   (n,vgi {vgiTy = t})
+                                                                    ) @lSigGam)
+                                                            @lhs.gathTySigGam
                                 .   patPrIntroGam   =   gamAdd (tyPredNm @prExpr.ty) @pigi @lhs.patPrIntroGam
                                 .   patPrElimGam    =   foldr  (\(n,r) g
                                                                   -> gamUpdAdd n (PrElimGamInfo [r]) (\_ p -> p {pegiRuleL = r : pegiRuleL p}) g
@@ -50,17 +57,28 @@ SEM Decl
 %%[9
 SEM Decl
   | Instance    ctxtPrExprs     .   tyGam           =   gamPushNew @lhs.patTyGam
+                loc             .   introNm         =   tyPredNm @prExpr.ty
+                                .   (pigi,nmErrs)   =   case gamLookup @introNm @lhs.prIntroGam of
+                                                            Just p   -> (p,[])
+                                                            Nothing  -> (emptyPIGI,[Err_NamesNotIntrod [@introNm]])
+                                .   ctxtToInstTy    =   tyFixTyVars (@ctxtPrExprs.tyL `mkTyArrow` @prExpr.ty)
+                                .   fo              =   fitsIn predFIOpts @lUniq2  (pigiPrToEvidTy @pigi)
+                                                                                   ([snd (tyArrowArgRes @ctxtToInstTy)] `mkTyArrow` mkNewTyVar @lUniq)
+                                .   instTyRec       =   snd (tyArrowArgRes (foTy @fo))
+                decls           .   tySigGam        =   assocLToGam . assocLMapSnd ValGamInfo . snd . tyRecExts $ @instTyRec
                 loc             .   pegi            =   let  n =  maybe (uidHNm @lUniq) id @mbNm
                                                              r =  Rule
-                                                                    { rulRuleTy    = tyQuantifyClosed (@ctxtPrExprs.tyL `mkTyArrow` @prExpr.ty)
+                                                                    { rulRuleTy    = tyQuantifyClosed @ctxtToInstTy
                                                                     , rulMkEvid    = \ctxt -> CExpr_Var n `mkCExprApp` ctxt
                                                                     , rulNmEvid    = n
+                                                                    , rulCost	   = 1 + 2 * length @ctxtPrExprs.tyL
                                                                     }
                                                         in   PrElimGamInfo [r]
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   tyGam           =   @lhs.tyGam
+                                .   gathTySigGam    =   @lhs.gathTySigGam
                                 .   patValGam       =   @lhs.patValGam
-                                .   patPrElimGam    =   gamUpdAdd (tyPredNm @prExpr.ty) @pegi
+                                .   patPrElimGam    =   gamUpdAdd @introNm @pegi
                                                             (\_ p -> p {pegiRuleL = pegiRuleL @pegi ++ pegiRuleL p})
                                                             @lhs.patPrElimGam
 %%]

@@ -10,11 +10,19 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-%%]
-ATTR AllTyExpr [ | tyGam: TyGam | ]
+ATTR AllNT [ | | gathPredL USE {++} {[]}: {[PredOcc]} ]
 
-SEM TyExpr
-  | Con         loc         .  (tgi,nmErrs)         =   case tyGamLookup @nm @lhs.tyGam of
-                                                          Nothing    ->  (TyGamInfo Ty_Any,[Err_NamesNotIntrod [@nm]])
-                                                          Just tgi   ->  (tgi,[])
+SEM Expr
+  | IConst CConst Var Con
+                lhs         .   gathPredL           =   foPredOccL @fo
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pred resolution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+SEM Expr
+  | Let         loc         .   prvnGraph           =   prfPreds @lUniq @prElimGam (tyFixTyVars (@decls.tyCnstr |=> @decls.gathPredL))
+%%]
 

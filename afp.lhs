@@ -5523,6 +5523,7 @@ has as its effect that instantiation will be done a la Hindley-Milner.
 Finally, all of this is encoded as follows
 
 \chunkCmdUseMark{EHTyFitsIn.4.FIOpts}
+\chunkCmdUseMark{EHTyFitsIn.4.FIOpts.defaults}
 
 \paragraph{Co- and contravariance.}
 For tuples the check |(sigma1,sigma2) <= (sigma3,sigma4)|
