@@ -128,6 +128,68 @@ instance PP Name where
   pp (Nm s) = pp s
 
 -------------------------------------------------------------------------
+-- Value
+-------------------------------------------------------------------------
+
+data Value
+  = ValNm       Name
+  | ValList     [Value]
+  | ValRec      (FiniteMap Name Value)
+  | ValApp      Name [Name] Value
+  deriving Eq
+
+emptyValue :: Value
+emptyValue = ValList []
+
+instance Show Value where
+  show _ = "Value"
+
+instance PP Value where
+  pp (ValNm n)          = pp n
+  pp (ValList l)        = ppListSep "[" "]" " " l
+  pp (ValRec m)         = ppListSep "{" "}" ", " . map (\(k,v) -> pp k >|< "=" >|< pp v) . fmToList $ m
+  pp (ValApp f m a)     = pp f >#< pp a >#< "-" >#< ppListSep "{" "}" "," m
+
+-------------------------------------------------------------------------
+-- Value Graph
+-------------------------------------------------------------------------
+
+type VGKey = Name
+
+data VGNode
+  = NodeNm      Name
+  | NodeFile    Name
+  | NodeDeriv   {ndLam :: Name, ndArgs :: Value, ndRes :: Value, ndDependsOn :: [VGKey] }
+
+instance Show VGNode where
+  show _ = "VGNode"
+
+instance PP VGNode where
+  pp (NodeNm n)             = "N:" >|< pp n
+  pp (NodeFile n)           = "F:" >|< pp n
+  pp (NodeDeriv f a r ds)   = "D:" >|< pp f >#< pp a >#< "->" >#< pp r >#< "<-" >#< ppListSep "[" "]" " " ds
+
+data ValGraph
+  = ValGraph
+        { vgKeyToNode :: FiniteMap VGKey VGNode
+        }
+
+emptyVG :: ValGraph
+emptyVG = ValGraph emptyFM
+
+-------------------------------------------------------------------------
+-- Run state
+-------------------------------------------------------------------------
+
+data RunState
+  = RunState
+        { rsValGraph :: ValGraph
+        }
+
+emptyRS :: RunState
+emptyRS = RunState emptyVG
+
+-------------------------------------------------------------------------
 -- Parser
 -------------------------------------------------------------------------
 
@@ -137,22 +199,21 @@ type BrParser         ep    =    (IsParser (OffsideParser i o Token p) Token,Inp
 pAGItf :: BrParser T_AGItf
 pAGItf
   = let mkExprL             =   foldr sem_ExprL_Cons sem_ExprL_Nil
-        pAGItf              =   sem_AGItf_AGItf <$> pDeclL
-        pDeclL              =   foldr sem_DeclL_Cons sem_DeclL_Nil
-                                <$> pBlock pOCurly pSemi pCCurly pDecl
-        pDecl               =   sem_Decl_Bind <$> pNm <* pKey "=" <*> pExpr
+        pAGItf              =   sem_AGItf_AGItf <$> pBindL
+        pBindL              =   foldr sem_BindL_Cons sem_BindL_Nil
+                                <$> pBlock pOCurly pSemi pCCurly pBind
+        pBind               =   sem_Bind_Bind <$> pNm <* pKey "=" <*> pExpr
         pNm                 =   Nm <$> (pVarid <|> pConid)
         pNmKey k            =   Nm <$> pKey k
         pOp                 =   (\o l r -> sem_Expr_App o (mkExprL [l,r])) <$> pNmKey "++"
         pExpr               =   pChainr pOp pExprApp
-        pExprApp            =   sem_Expr_App <$> pNm <*> (mkExprL <$> pList pExprBase)
+        pExprApp            =   pNm <**> (flip sem_Expr_App <$> (mkExprL <$> pList1 pExprBase) `opt` sem_Expr_Var)
         pExprBase           =   pParens pExpr
-                            <|> sem_Expr_Var <$> pNm
      in pAGItf
 }
 
 -------------------------------------------------------------------------
--- Inferfacing
+-- Interfacing
 -------------------------------------------------------------------------
 
 WRAPPER AGItf
@@ -164,26 +225,26 @@ ATTR AGItf [ opts: {Opts} | | ]
 -------------------------------------------------------------------------
 
 DATA AGItf
-  | AGItf               declL       : DeclL
+  | AGItf               bindL       : BindL
 
-DATA Decl
+DATA Bind
   | Bind                nm          : {Name}
                         expr        : Expr
 
-TYPE DeclL = [Decl]
+TYPE BindL = [Bind]
 
-SET AllDecl = Decl DeclL
+SET AllBind = Bind BindL
 
 DATA Expr
   | App                 func        : {Name}
                         argL        : ExprL
   | Lam                 argL        : LamArgs
-  | Let                 bindL       : DeclL
+  | Let                 bindL       : BindL
                         body        : Expr
   | Var                 nm          : {Name}
   | Str                 str         : {String}
   | List                argL        : ExprL
-  | Rec                 bindL       : DeclL
+  | Rec                 bindL       : BindL
 
 TYPE ExprL = [Expr]
 
@@ -201,22 +262,38 @@ TYPE ArgBindL = [ArgBind]
 
 SET AllArgBind = ArgBind ArgBindL
 
-SET AllNT = AllExpr AllArgBind AllDecl
+SET AllNT = AllExpr AllArgBind AllBind
+
+-------------------------------------------------------------------------
+-- Evaluator
+-------------------------------------------------------------------------
+
+{
+type Eval = IO (Value,RunState)
+
+emptyEval :: Eval
+emptyEval = return (emptyValue,emptyRS)
+}
+
+ATTR AGItf AllNT [ | | eval USE {`const`} {emptyEval}: Eval ]
+
+SEM Expr
+  | App
 
 -------------------------------------------------------------------------
 -- Pretty printing
 -------------------------------------------------------------------------
 
 ATTR AGItf AllNT [ | | pp USE {>-<} {empty} : PP_Doc ]
-ATTR DeclL ExprL [ | | ppL: {[PP_Doc]} ]
+ATTR BindL ExprL [ | | ppL: {[PP_Doc]} ]
 
 SEM AGItf
-  | AGItf               loc         .   pp          =   vlist @declL.ppL
+  | AGItf               loc         .   pp          =   vlist @bindL.ppL
 
-SEM Decl
+SEM Bind
   | Bind                loc         .   pp          =   @nm >#< "=" >#< @expr.pp
 
-SEM DeclL
+SEM BindL
   | Nil                 lhs         .   ppL         =   []
   | Cons                lhs         .   ppL         =   @hd.pp : @tl.ppL
 

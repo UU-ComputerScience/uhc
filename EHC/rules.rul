@@ -9,7 +9,7 @@ scheme expr1A
   = (Gamma) :- (e) : (sigma)
   = Gamma :-...expr e : sigma
 
-rules expr1A "Type checking for expression" =
+rules expr1A "Type rules for expressions" =
   rule e_app1 = 
     judge expr1A Gamma :- e.2 : sigma..a
     judge expr1A Gamma :- e.1 : (sigma..a -> sigma)
@@ -483,14 +483,6 @@ rules fit1 "Rules for fit" =
     cond I.1 == I.2
     -
     judge fit1 :- I.1 <= I.2 : I.2
-
-  rule f_any_l1 =
-    -
-    judge fit1 :- ANY <= sigma.2 : sigma.2
-  &
-  rule f_any_r1 =
-    -
-    judge fit1 :- sigma.1 <= ANY : sigma.1
 
 
 -- 2

@@ -321,7 +321,8 @@ pPatExprBase    =    pVar <**>  (    flip sem_PatExpr_VarAs <$ pKey "@" <*> pPat
 %%]
 
 %%[patExprAlg.1
-patExprAlg      =    (sem_PatExpr_Con,sem_PatExpr_App,sem_PatExpr_AppTop,sem_PatExpr_Parens)
+patExprAlg      =    (sem_PatExpr_Con,sem_PatExpr_App
+                     ,sem_PatExpr_AppTop,sem_PatExpr_Parens)
 %%]
 
 %%[patExpr.1

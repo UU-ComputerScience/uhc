@@ -14,7 +14,8 @@ ATTR AllTyExpr [ | tyGam: TyGam | ]
 
 SEM TyExpr
   | Con         loc         .  (tgi,nmErrs)         =   case tyGamLookup @nm @lhs.tyGam of
-                                                          Nothing    ->  (TyGamInfo Ty_Any,[Err_NamesNotIntrod [@nm]])
+                                                          Nothing    ->  (TyGamInfo Ty_Any
+                                                                         ,[Err_NamesNotIntrod [@nm]])
                                                           Just tgi   ->  (tgi,[])
 %%]
 
