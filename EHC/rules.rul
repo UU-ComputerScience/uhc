@@ -266,28 +266,45 @@ scheme expr9
 
 rules expr9.app "Type checking/inferencing for expression application with implicit parameters" =
   rule e_app9_impl_expl_infer =
-    judge pred9 (pi..a ~> Transl..a, Gamma) :- (Cnstr.2 pi.2) ~> Transl.2 : _
+    judge pred9 (pi..a :~> Transl..a, Gamma) :- (Cnstr.2 pi.2) ~> Transl.2 : _
     judge pred9 Gamma :- pi..a ~> Transl..a : sigma..a
     judge expr9 instLFIOpts; Gamma; ANY :- e.2 : sigma..a ~> Cnstr.2 ; Transl.2
     judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- e.1 : (pvar.1 -> sigma) ~> Cnstr.1 ; Transl.1
     cond pvar..a "fresh"
-    cond Cnstr.3 == pvar.1 :-> pi.2 : pvar..a
+    cond Cnstr.3 == pvar.1 :-> pi.2 , pvar..a
     -
     judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- (e.1 ^^ (# e.2 #)) : (pvar..a -> Cnstr.2 sigma) ~> (Cnstr.3,Cnstr.(2(..)1)) ; (Transl.1 ^^ Transl.2)
 
   rule e_app9_expl_expl_known =
-    judge pred9 (pi..a ~> Transl..a, Gamma) :- (Cnstr.2 pi.2) ~> Transl.2 : _
+    judge pred9 (pi..a :~> Transl..a, Gamma) :- (Cnstr.2 pi.2) ~> Transl.2 : _
     judge pred9 Gamma :- pi..a ~> Transl..a : sigma..a
     judge expr9 instLFIOpts; Gamma; ANY :- e.2 : sigma..a ~> Cnstr.2 ; Transl.2
     judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- e.1 : (pi.2 -> sigma) ~> Cnstr.1 ; Transl.1
     -
     judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- (e.1 ^^ (# e.2 #)) : (Cnstr.2 sigma) ~> Cnstr.(2(..)1) ; (Transl.1 ^^ Transl.2)
 
+  rule e_app9_expl_known =
+    judge pred9 (Cnstr.(2(..)1) pi.2 :~> Transl.2,Gamma) :- Cnstr.2 pi..a ~> Transl..a : _
+    judge expr9 instLFIOpts; Gamma; sigma..pi :- e.2 : _ ~> Cnstr.2 ; Transl.2
+    judge pred9 Gamma :- pi.2 ~> _ : sigma..pi
+    judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- e.1 : (pi..a -> sigma) ~> Cnstr.1 ; Transl.1
+    -
+    judge expr9 fiopt; Gamma; (sigma..k) :- (e.1 ^^ (# e.2 <~: pi.2 #)) : (Cnstr.2 sigma) ~> Cnstr.(2(..)1) ; (Transl.1 ^^ Transl..a)
+
+  rule e_app9_expl_infer =
+    judge expr9 instLFIOpts; Gamma; sigma..pi :- e.2 : _ ~> Cnstr.2 ; Transl.2
+    judge pred9 Gamma :- Cnstr.1 pi.2 ~> _ : sigma..pi
+    judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- e.1 : (pvar..a -> sigma) ~> Cnstr.1 ; Transl.1
+    cond Cnstr.3 == pvar..a :-> pi.2 , pvar..r
+    cond pvar..r "fresh"
+    -
+    judge expr9 fiopt; Gamma; (sigma..k) :- (e.1 ^^ (# e.2 <~: pi.2 #)) : (pvar..r -> Cnstr.2 sigma) ~> Cnstr.(3(..)1) ; (Transl.1 ^^ Transl.2)
+
   rule e_app9_impl =
-    judge pred9 ((pi.i.k ~> Transl.i.k)..._,Gamma) :- (Cnstr.2 pi..a._) ~> Transl..a._ : _
+    judge pred9 ((pi.i.k :~> Transl.i.k)..._,Gamma) :- (Cnstr.2 pi..a._) ~> Transl..a._ : _
     judge expr9 instLFIOpts; Gamma; sigma..a :- e.2 : _ ~> Cnstr.2 ; Transl.2
-    judge expr9 fiopt; ((pi.i.k ~> Transl.i.k)..._,Gamma); (pvar -> tvar -> sigma.r.k) :- e.1 : (pi..a._ -> sigma..a -> sigma) ~> Cnstr.1 ; Transl.1
-    cond (pi.i.k ~> Transl.i.k)..._ == inst.pi(pi.a.k._)
+    judge expr9 fiopt; ((pi.i.k :~> Transl.i.k)..._,Gamma); (pvar -> tvar -> sigma.r.k) :- e.1 : (pi..a._ -> sigma..a -> sigma) ~> Cnstr.1 ; Transl.1
+    cond (pi.i.k :~> Transl.i.k)..._ == inst.pi(pi.a.k._)
     judge fit9 fiopt; Gamma :- (pvar..k -> tvar..k) <= sigma..k : (pi.a.k._ -> sigma.r.k) ~> _ ; _
     cond pvar, pvar..k, tvar, tvar..k "fresh"
     -
@@ -295,8 +312,8 @@ rules expr9.app "Type checking/inferencing for expression application with impli
 
 rules expr9.part2 "Type checking/inferencing for lambda expressions with implicit parameters" =
   rule e_lam9 =
-    judge expr9 fiopt; ((pi.i.p ~> Transl.i.p)..._,Gamma..p,Gamma); sigma..r :- e : sigma..e ~> Cnstr.3 ; Transl..e
-    cond (pi.i.p ~> Transl.i.p)..._ == inst.pi(pi..p._)
+    judge expr9 fiopt; ((pi.i.p :~> Transl.i.p)..._,Gamma..p,Gamma); sigma..r :- e : sigma..e ~> Cnstr.3 ; Transl..e
+    cond (pi.i.p :~> Transl.i.p)..._ == inst.pi(pi..p._)
     judge pat4 fiopt; Gamma; sigma..p :- p : _; Gamma..p ~> Cnstr.2
     judge fit9 fiopt; Gamma :- (pvar -> tvar.1 -> tvar.2) <= sigma..k : (pi..p._ -> sigma..p->sigma..r) ~> Cnstr.1; _
     cond pvar, tvar.i "fresh"
@@ -498,22 +515,22 @@ scheme fit9
 rules fit9.predSymmetric "Fitting/subsumption for predicates (impl/expl match)" =
   rule f_pred9_expl_impl =
     judge fit9 fiopt; Gamma :- sigma.1 <= (pvar -> sigma.2) : sigma ~> Cnstr; coe
-    cond Cnstr.1 == pvar.2 :-> pi.1 : pvar
+    cond Cnstr.1 == pvar.2 :-> pi.1 , pvar
     cond pvar "fresh"
     -
     judge fit9 fiopt; Gamma :- (pi.1 -> sigma.1) <= (pvar.2 -> sigma.2) : (pi.1 -> sigma) ~> (Cnstr.1, Cnstr); (\n -> coe (_ ^^ n))
 
   rule f_pred9_impl_expl =
-    judge fit9 fiopt; (pi.2.i ~> Transl.pi, Gamma) :- (pvar -> sigma.1) <= sigma.2 : sigma ~> Cnstr; coe
-    cond pi.2.i ~> Transl.pi == inst.pi(pi.2)
-    cond Cnstr.1 == pvar.1 :-> pi.2 : pvar
+    judge fit9 fiopt; (pi.2.i :~> Transl.pi, Gamma) :- (pvar -> sigma.1) <= sigma.2 : sigma ~> Cnstr; coe
+    cond pi.2.i :~> Transl.pi == inst.pi(pi.2)
+    cond Cnstr.1 == pvar.1 :-> pi.2 , pvar
     cond pvar "fresh"
     -
     judge fit9 fiopt; Gamma :- (pvar.1 -> sigma.1) <= (pi.2 -> sigma.2) : (pi.2 -> sigma) ~> (Cnstr.1, Cnstr); (\Transl.pi -> coe (_ ^^ Transl.pi))
 
   rule f_pred9_impl_impl =
     judge fit9 fiopt; Gamma :- sigma.1 <= sigma.2 : sigma ~> Cnstr; coe
-    cond pvar.2.i ~> Transl.pi.._ == inst.pi(pvar.2)
+    cond pvar.2.i :~> Transl.pi.._ == inst.pi(pvar.2)
     -
     judge fit9 fiopt; Gamma :- (pvar.1 -> sigma.1) <= (pvar.2 -> sigma.2) : (pvar.2 -> sigma) ~> (pvar.1 :-> pvar.2, Cnstr); (\Transl.pi.._ -> coe (_ ^^ Transl.pi.._))
 
@@ -525,8 +542,8 @@ rules fit9.predAsymmetric "Fitting/subsumption for predicates (only impl or expl
     judge fit9 fiopt; Gamma :- (pi.1 ->  sigma.1) <= sigma.2 : sigma ~> Cnstr; (coe (_ Transl.1))
 
   rule f_pred9_expl_r =
-    judge fit9 fiopt; (pi.2.i ~> Transl.pi, Gamma) :- sigma.1 <= sigma.2 : sigma ~> Cnstr; coe
-    cond pi.2.i ~> Transl.pi == inst.pi(pi.2)
+    judge fit9 fiopt; (pi.2.i :~> Transl.pi, Gamma) :- sigma.1 <= sigma.2 : sigma ~> Cnstr; coe
+    cond pi.2.i :~> Transl.pi == inst.pi(pi.2)
     -
     judge fit9 fiopt; Gamma :- sigma.1 <= (pi.2 -> sigma.2) : (Cnstr pi.2 -> sigma) ~> Cnstr; (\ Transl.pi -> coe _)
 

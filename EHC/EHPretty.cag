@@ -184,7 +184,7 @@ SEM Decl
 ATTR PrExprs FuncDeps [ | | ppL: PP_DocL ]
 
 SEM Expr
-  | AppImpl     loc     .  argPP	=	@arg.pp >|< "::" >|< @argPr.pp >#< hsnCImpl
+  | AppImpl     loc     .  argPP	=	@argPr.pp >#< "~>" >#< @arg.pp >#< hsnCImpl
                         .  pp       =   @func.pp >#< hsnOImpl >#< @argPP
 
 SEM RowTyExpr
@@ -210,7 +210,7 @@ SEM Decl
                                                     >#< "=>" >#< @prExpr.pp
                                                     >#< "|" >#< ppListSep "" "" ", " @funcDeps.ppL
                                                     >#< "where" >-< indent 2 @decls.pp
-  | Instance    loc     .  pp       =   "instance"  >|< maybe empty (\n -> " " >|< n >#< "=") @mbNm
+  | Instance    loc     .  pp       =   "instance"  >|< maybe empty (\n -> " " >|< n >#< "<~") @mbNm
                                                     >#< ppListSep "(" ")" ", " @ctxtPrExprs.ppL
                                                     >#< "=>" >#< @prExpr.pp
                                                     >-< @errInstPP

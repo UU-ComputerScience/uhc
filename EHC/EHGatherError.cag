@@ -94,6 +94,8 @@ SEM Expr
                                                     (foErrL @foKnFun ++ @prfErrs
                                                       ++ @arg.errL ++ @body.errL)
   | AppTop      lhs         .  errL         :=  mkNestErr @pp (@prfErrs ++ @expr.errL)
+  | AppImpl     lhs         .  errL         =   mkNestErr @pp
+                                                    (@argErrs ++ @func.errL ++ @arg.errL ++ @argPr.errL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -113,7 +115,7 @@ SEM Expr
 
 %%[9
 SEM Decl
-  | Instance    loc         .  lErrL        =   @ctxtPrExprs.errL ++ @prExpr.errL ++ @nmErrs ++ foErrL @fo
+  | Instance    loc         .  lErrL        =   @ctxtPrExprs.errL ++ @prExpr.errL ++ @nmErrs
                             .  errInstPP    =   ppErrs @lErrL
                             .  errDeclsPP   =   ppErrs @decls.errL
                 lhs         .  errL         =   []

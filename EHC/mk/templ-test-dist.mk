@@ -9,10 +9,18 @@ test-expect test-regress: test-lists
 	  then \
 	    for t in `cat $$v.lst` ; \
 	    do \
+	      tb=`basename $$t .eh` ; \
 	      if test -r $$t -a -x $$ehc ; \
 	      then \
 	        te=$${t}.exp$${v} ; tr=$${t}.reg$${v} ; th=$${t}.$${how}$${v} ; \
+	        tc=$${tb}.code ; \
+	        rm -f $${tc} ; \
 	        $$ehc $$t > $$th ; \
+	        if test -r $${tc} ; \
+	        then \
+	          echo "== code ==" >> $${th} ; \
+	          cat $${tc} >> $${th} ; \
+	        fi ; \
 	        if test $$tr = $$th -a -r $$te ; \
 	        then \
 	          echo "-- $$te -- $$th --" | $(INDENT2) ; \

@@ -212,6 +212,8 @@
 \def\subsubsection{\prevSubsection}
 %endif
 
+\usepackage{txfonts}
+
 %if forAfpTRUU1
 \usepackage{TRtitlepage}
 %endif
@@ -6651,7 +6653,7 @@ In this rule we assume that each value term is translated to a form
 where implicit parameters are explicit. This translation is denoted by |Transl|.
 \item
 We also assume that |Gamma| holds values from the implicit world
-by means of bindings of the form |[pi ~> e]|, associating predicates |pi| to implicit values |e|.
+by means of bindings of the form |[pi :~> e]|, associating predicates |pi| to implicit values |e|.
 \item
 The type language has an additional alternative:
 \begin{code}
@@ -6673,7 +6675,7 @@ The constraint language has to deal with additional constraints on predicates:
 \begin{code}
 Cnstr  =  ..
        |  pivar  :-> pi
-       |  pvar   :-> pi : pvar
+       |  pvar   :-> pi , pvar
        |  pvar   :-> pempty
 \end{code}
 These additional
@@ -6684,7 +6686,7 @@ predicates.
 \item The environment |Gamma| now also may contain evidence for predicates:
 \begin{code}
 Gamma  =  ..
-       |  pi ~> Transl
+       |  pi :~> Transl
 \end{code}
 |Transl| is a piece of code representing the proof evidence for the predicate.
 A |Transl| may contain holes referring to not yet resolved predicates, allowing
@@ -6719,8 +6721,8 @@ passed.
 
 Predicates corresponding to class declarations are introduced by:
 \begin{code}
-pred  Eq a ~> ( eq :: a -> a -> Bool )
-pred  Eq a ~> x => Ord a ~> ( lt :: a -> a -> Bool, Eq :: (# Eq a #) ) = ( r | Eq = x )
+pred  Eq a :~> ( eq :: a -> a -> Bool )
+pred  Eq a :~> x => Ord a :~> ( lt :: a -> a -> Bool, Eq :: (# Eq a #) ) = ( r | Eq = x )
 \end{code}
 This should be read as:
 \begin{itemize}
@@ -6729,7 +6731,7 @@ A predicate |Eq a| has as its proof/evidence/witness object a record with a func
 \item
 A predicate |Ord a| has as its proof a record with a function |lt| and another record |Eq| (for the superclass).
 The proof object for |Eq| value is declared implicit.
-However, additional evidence can be specified, here |Eq a ~> x|.
+However, additional evidence can be specified, here |Eq a :~> x|.
 Additionally it can be used to partially specify its initialization.
 In this way also default fields should be specifiable.
 \\
@@ -6740,9 +6742,9 @@ Or just only use the notation but under the hood use record structure as being k
 Rules, corresponding to instance declaratations, populate the world of predicates:
 \begin{code}
 rule Eq Int = ( eq = primEqInt )
-rule Eq a ~> e => Eq [a] ~> l =  ( eq = \a -> \b ->  eq (# e #) (head a) (head b) &&
-                                                     eq (# l #) (tail a) (tail b)
-                                 )
+rule Eq a :~> e => Eq [a] :~> l =  ( eq = \a -> \b ->  eq (# e #) (head a) (head b) &&
+                                                       eq (# l #) (tail a) (tail b)
+                                   )
 \end{code}
 This should be read as:
 \begin{itemize}
@@ -6755,7 +6757,7 @@ In the example the implicit parameters are explicitly given, in principle this c
 
 The introduction of |Ord a| also requires an additional rule for retrieving the superclass:
 \begin{code}
-rule Ord a ~> o => Eq a ~> e = o.Eq
+rule Ord a :~> o => Eq a :~> e = o.Eq
 \end{code}
 
 Implementation issues:
@@ -6775,9 +6777,9 @@ rule eqInt1 :: Eq Int = ( eq = primEqInt )
 Sofar an explicit parameter passed to a function just consisted of an identifier.
 Implicit parameter application could/should also be allowed
 \begin{code}
-rule eqList1 :: Eq a ~> e => Eq [a] ~> l =  ( eq = \a -> \b ->  eq (# e #) (head a) (head b) &&
-                                                                eq (# l #) (tail a) (tail b)
-                                            )
+rule eqList1 :: Eq a :~> e => Eq [a] :~> l =  ( eq = \a -> \b ->  eq (# e #) (head a) (head b) &&
+                                                                  eq (# l #) (tail a) (tail b)
+                                              )
 
 ... eq (# eqList1 eqInt1 #) ...
 \end{code}
@@ -6991,7 +6993,7 @@ built on records
 
 \subsection<article>{Literature}
 
-
+\cite{mitchell88absty-exist,leroy94manif-ty-mod,leroy95appl-func-mod}
 
 
 

@@ -2,9 +2,9 @@ let  class A a where
        aa :: a -> Int
      class A a => B a where
        bb :: a -> Int
-     instance dAInt = A Int where
+     instance dAInt <~ A Int where
        aa = \x -> x
-     instance dBInt = B Int where
+     instance dBInt <~ B Int where
        bb = \x -> x
 in
 let  f  ::  (# B a #) -> a -> (Int,Int)

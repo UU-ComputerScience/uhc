@@ -174,19 +174,19 @@ DATA Expr
                     lbl             : {HsName}
 %%]
 
+%%[9
+DATA Expr
+  | AppImpl         func            : Expr
+                    arg             : Expr
+                    argPr           : PrExpr
+%%]
+
 %%[1.AllExpr
 SET AllExpr         =  Expr
 %%]
 
 %%[7.AllExpr -1.AllExpr
 SET AllExpr         =  Expr RecExpr
-%%]
-
-%%[9
-DATA Expr
-  | AppImpl         func            : Expr
-                    arg             : Expr
-                    argPr           : PrExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
