@@ -78,6 +78,9 @@
 %%[8 export(sortOn,groupSortOn)
 %%]
 
+%%[8 export(Seq,mkSeq,unitSeq,concatSeq,"(<+>)",seqToList,emptySeq)
+%%]
+
 %%[8 export(showPP,ppPair)
 %%]
 
@@ -249,6 +252,33 @@ mkNewLevUIDL :: Int -> UID -> [UID]
 mkNewLevUIDL = mkNewUIDL' mkNewLevUID
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Ordered sequence, 'delayed concat' list
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+newtype Seq a = Seq ([a] -> [a])
+
+emptySeq :: Seq a
+emptySeq = Seq id
+
+mkSeq :: [a] -> Seq a
+mkSeq l = Seq (l++)
+
+unitSeq :: a -> Seq a
+unitSeq e = Seq (e:)
+
+concatSeq :: Seq a -> Seq a -> Seq a
+concatSeq (Seq s1) (Seq s2) = Seq (s1.s2)
+
+infixr 5 <+>
+
+(<+>) :: Seq a -> Seq a -> Seq a
+(<+>) = concatSeq
+
+seqToList :: Seq a -> [a]
+seqToList (Seq s) = s []
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Building specific structures
@@ -478,6 +508,7 @@ data EHCOpts    = EHCOptions    {  ehcoptDumpPP         ::  Maybe String
 %%[EHCOpts.8
                                 ,  ehcoptCore           ::  Bool
                                 ,  ehcoptCoreJava       ::  Bool
+                                ,  ehcoptCoreGrin       ::  Bool
                                 ,  ehcoptSearchPath     ::  [String]
                                 ,  ehcoptVerbosity      ::  Verbosity
                                 ,  ehcoptTrf            ::  [TrfOpt]
@@ -493,6 +524,7 @@ defaultEHCOpts  = EHCOptions    {  ehcoptDumpPP         =   Just "pp"
 %%[defaultEHCOpts.8
                                 ,  ehcoptCore           =   True
                                 ,  ehcoptCoreJava       =   False
+                                ,  ehcoptCoreGrin       =   False
                                 ,  ehcoptSearchPath     =   []
                                 ,  ehcoptVerbosity      =   VerboseQuiet
                                 ,  ehcoptTrf            =   []
@@ -511,8 +543,8 @@ cmdLineOpts
 %%]
 
 %%[cmdLineOptsA.8
-     ,  Option "c"  ["code"]          (OptArg oCode "java")
-          "dump code (java -> .java) on file, default=core (-> .core)"
+     ,  Option "c"  ["code"]          (OptArg oCode "java|grin")
+          "dump code (java->.java, grin->.grin) on file, default=core (-> .core)"
      ,  Option ""   ["trf"]           (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
           "switch on/off transformations"
      ,  Option "v"  ["verbose"]       (OptArg oVerbose "0|1|2")
@@ -534,6 +566,7 @@ cmdLineOpts
 %%[cmdLineOptsB.8
          oCode       ms  o =  case ms of
                                 Just "java"  -> o { ehcoptCoreJava     = True      }
+                                Just "grin"  -> o { ehcoptCoreGrin     = True      }
                                 _            -> o { ehcoptCore         = True      }
          oTrf        s   o =  o { ehcoptTrf           = opt s   }
                            where  opt "" =  []

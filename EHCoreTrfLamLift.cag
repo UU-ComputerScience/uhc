@@ -18,7 +18,7 @@
 %%[9 hs import(EHTy)
 %%]
 
-%%[8.WRAPPER import(EHCoreAbsSyn,EHCoreTrfCommonFv,EHCoreTrfCommonLev)
+%%[8.WRAPPER import(EHCoreAbsSyn,EHCoreCommonLev,EHCoreTrfCommonFv,EHCoreTrfCommonLev)
 WRAPPER CodeAGItf
 %%]
 
@@ -32,6 +32,17 @@ cmodTrfLamLift cmod
   =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
                               (Inh_CodeAGItf)
      in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllCodeNT [ | gUniq: Int | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   gUniq       =   0
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -119,7 +130,6 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-%%]
 ATTR AllCodeNT [ argSubst: {FiniteMap HsName HsName} | | ]
 
 SEM CodeAGItf
@@ -127,6 +137,7 @@ SEM CodeAGItf
 
 SEM CBind
   | Bind        expr        .   argSubst    =   @lhs.argSubst `plusFM` @argMp
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Adding parameters to lam call sites
@@ -152,37 +163,41 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-type LamBindL = AssocL CBindCateg CBindL
+type LamBindSq = Seq (CBindCateg,CBindL)
 %%]
 
 %%[8
 ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
-ATTR AllCodeNT [ | | lamBindL USE {++} {[]}: LamBindL ]
+ATTR AllCodeNT [ | | lamBindSq USE {<+>} {emptySeq}: LamBindSq ]
 ATTR AllBind [ | | bindLamBindL, bindVarBindL USE {++} {[]}: CBindL ]
 
 SEM CBind
-  | Bind        loc         .   (bindLamBindL,bindVarBindL,bindLamArgMp)
+  | Bind        (expr.gUniq,loc.argMp,loc.bindLamBindL,loc.bindVarBindL,loc.bindLamArgMp)
                                             =   if @expr.isLam
                                                 then  let  argLevL = sortOn snd . filter (\(_,l) -> l > cLevOuter) . map (\n -> (n,fvLev @lhs.levMp n)) . setToList . fromJust . lookupFM @lhs.fvSLamMp $ @nm
-                                                           argNmL = assocLKeys argLevL
-                                                      in   ([CBind_Bind @nm (mkCExprLam argNmL @expr.cTrf)],[]
-                                                           ,@nm `unitFM` map CExpr_Var argNmL
+                                                           argOL = assocLKeys argLevL
+                                                           argNL = zipWith (\u n -> hsnSuffix n ("~" ++ show u)) [@lhs.gUniq..] argOL
+                                                      in   (@lhs.gUniq + length argOL,listToFM (zip argOL argNL)
+                                                           ,[CBind_Bind @nm (mkCExprLam argNL @expr.cTrf)],[]
+                                                           ,@nm `unitFM` map CExpr_Var argOL
                                                            )
-                                                else  ([],[@cTrf],emptyFM)
+                                                else  (@lhs.gUniq,emptyFM,[],[@cTrf],emptyFM)
 
 SEM CExpr
-  | Var         lhs         .   cTrf        =   maybe @cTrf (mkCExprApp @cTrf) . lookupFM @lhs.lamArgMp $ @nm
-  | Let         (loc.hereBindL,lhs.lamBindL)
-                                            =   let  b1    = @binds.lamBindL
-                                                     b2l   = [(@categ,@binds.bindLamBindL)]
-                                                     b2v   = [(@categ,@binds.bindVarBindL)]
-                                                     b2lv  = [(@categ,@binds.bindLamBindL ++ @binds.bindVarBindL)]
-                                                     b3    = @body.lamBindL
+  | Var         lhs         .   cTrf        =   let  v1 = maybe @cTrf CExpr_Var . lookupFM @lhs.argSubst $ @nm
+                                                     v2 = maybe v1 (mkCExprApp v1) . lookupFM @lhs.lamArgMp $ @nm
+                                                in   v2
+  | Let         (loc.hereBindSq,lhs.lamBindSq)
+                                            =   let  b1    = @binds.lamBindSq
+                                                     b2l   = unitSeq (@categ,@binds.bindLamBindL)
+                                                     b2v   = unitSeq (@categ,@binds.bindVarBindL)
+                                                     b2lv  = unitSeq (@categ,@binds.bindLamBindL ++ @binds.bindVarBindL)
+                                                     b3    = @body.lamBindSq
                                                 in   if @lhs.lev == cLevOuter
-                                                     then  (b1 ++ b2lv ++ b3,[])
-                                                     else  (b2v,b1 ++ b2l ++ b3)
-                lhs         .   cTrf        =   foldr (\(c,b) e -> mkCExprLet c b e) @body.cTrf @hereBindL
+                                                     then  (b1 <+> b2lv <+> b3,emptySeq)
+                                                     else  (b2v,b1 <+> b2l <+> b3)
+                lhs         .   cTrf        =   foldr (\(c,b) e -> mkCExprLet c b e) @body.cTrf . seqToList $ @hereBindSq
 %%]
 

@@ -709,7 +709,7 @@ fitsIn opts env uniq ty1 ty2
                                    ([],Ty_Con n1,Ty_Con n2,[]) | n1 == hsnRowEmpty && n2 == hsnRowEmpty
                                      -> fo {foLCoeL = []}
                                    (_,_,Ty_Con n2,_) | n2 == hsnRowEmpty
-                                     -> fo {foLCoeL = [Coe (mkLLet (CExpr_Tup `mkCExprApp` vL))], foPredOccL = zipWith mkLPred lL uL ++ foPredOccL fo, foUniq = u'}
+                                     -> fo {foLCoeL = [Coe (mkLLet (CExpr_Tup ctagNone `mkCExprApp` vL))], foPredOccL = zipWith mkLPred lL uL ++ foPredOccL fo, foUniq = u'}
                                      where  lL  = sortBy rowLabCmp (lL12 ++ lL2)
                                             vL  = zipWith (\l u -> (maybe id coeEvalOn (lookup l (foRowCoeL fo)) $ mkLSel u)) lL uL
                                    (_,Ty_Var _ TyVarCateg_Fixed,_,_:_)

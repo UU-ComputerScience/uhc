@@ -9,16 +9,217 @@
 %%% Haskell importable interface to Code's GRIN gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(UU.Pretty,EHCommon,EHCore,GrinCode,Char)
+%%[8 hs import(UU.Pretty,EHCommon,EHCore,GrinCode,Char) export(cmodGrin)
 %%]
 
 %%[9 hs import(EHTy)
 %%]
 
-%%[8.WRAPPER import(EHCoreAbsSyn)
+%%[8.WRAPPER import(EHCoreAbsSyn,EHCoreCommonLev)
 WRAPPER CodeAGItf
 %%]
 
 %%[8 hs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+cmodGrin :: UID -> CModule -> GrModule
+cmodGrin uniq cmod
+  =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                              (Inh_CodeAGItf {gUniq_Inh_CodeAGItf = uniq})
+     in   grMod_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllCodeNT [ | gUniq: UID | ]
+ATTR CodeAGItf [ gUniq: UID | | ]
+
+SEM CExpr
+  | Var         (lhs.gUniq,loc.lUniq)       =   mkNewLevUID @lhs.gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context: strict yes/no, rhs of lam yes/no
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR CExpr AllAlt AllBind [ isStrict, isLamBody: Bool | | ]
+
+SEM CModule
+  | Mod         expr        .   isStrict    =   True
+                            .   isLamBody   =   False
+
+SEM CBind
+  | Bind        expr        .   isStrict    =   @lhs.isStrict || not (null @expr.grLamArgL)
+
+SEM CPatBind
+  | Bind        offset      .   isStrict    =   True
+                            .   isLamBody   =   False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Grin code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+grE2V :: GrExpr -> Maybe GrVal
+grE2V e = case e of {GrExpr_Unit v -> Just v; _ -> Nothing}
+
+grV2HNm :: GrVal -> Maybe HsName
+grV2HNm v = case v of {GrVal_Var n -> Just n; _ -> Nothing}
+
+emptyGrExpr = GrExpr_Unit GrVal_Empty
+
+mbMkStrict :: UID -> Bool -> GrVal -> GrExpr
+mbMkStrict u isStrict v
+  =  if isStrict
+     then  let  n = uidHNm u
+           in   GrExpr_Seq (GrExpr_Unit v) (GrPat_Var n) (GrExpr_Eval (GrVal_Var n))
+     else  GrExpr_Unit v
+%%]
+
+%%[8
+ATTR CodeAGItf CModule [ | | grMod: GrModule ]
+
+SEM CModule
+  | Mod         lhs         .   grMod       =   GrModule_Mod (HNm @baseName) @expr.grBindL
+%%]
+
+%%[8
+ATTR CExpr   [ | | grExpr: GrExpr ]
+ATTR CExpr   [ | | grBindL USE {++} {[]}: GrBindL ]
+
+SEM CExpr
+  | Let         (loc.grExpr,lhs.grBindL,binds.isStrict)
+                                            =   if @lhs.lev == cLevOuter
+                                                then  (emptyGrExpr
+                                                      ,case @categ of
+                                                          CBindRec     ->  [GrBind_Rec @binds.grBindL] ++ @body.grBindL
+                                                          _            ->  @binds.grBindL ++ @body.grBindL
+                                                      ,True
+                                                      )
+                                                else  (case @categ of
+                                                          CBindRec     ->  emptyGrExpr
+                                                          _            ->  foldr  (\(GrBind_Bind n _ v) e -> GrExpr_Seq v (GrPat_Var n) e)
+                                                                                  @body.grExpr @binds.grBindL
+                                                      ,[]
+                                                      ,@categ == CBindStrict
+                                                      )
+  | Case        loc         .   grExpr      =   GrExpr_Case @expr.grVal @alts.grAltL
+  | App         loc         .   (grVal,grExpr)
+                                            =   case @func.mbTupApp of
+                                                    Just t   ->  let  v  =  case t of
+                                                                              CTagNone  -> GrVal_Node GrTag_None (reverse @grAppArgL)
+                                                                              CTag t l  -> GrVal_Node (GrTag_Lit GrTagCon t l) (reverse @grAppArgL)
+                                                                 in   (v,(if @lhs.isStrict then GrExpr_Unit else GrExpr_Store) v)
+                                                    Nothing  ->  if @lhs.isStrict
+                                                                 then (GrVal_Empty,GrExpr_App @grAppFun (reverse @grAppArgL))
+                                                                 else let v = GrVal_Node (GrTag_Lit GrTagFun 0 @grAppFun) (reverse @grAppArgL)
+                                                                      in  (v,GrExpr_Store v)
+  | Var         loc         .   grExpr      =   mbMkStrict @lUniq @lhs.isStrict @grVal
+  | Tup Int Char
+                loc         .   grExpr      =   (if @lhs.isStrict then GrExpr_Unit else GrExpr_Store) @grVal
+  | * - Let App Case Var Tup Int Char
+                loc         .   grExpr      =   GrExpr_Unit @grVal
+%%]
+
+%%[8
+ATTR CExpr   [ | | grVal USE {`const`} {GrVal_Empty}: GrVal ]
+
+SEM CExpr
+  | Tup         loc         .   grVal       =   ctag GrVal_Empty (\t l -> GrVal_Node (GrTag_Lit GrTagCon t l) []) @tag
+  | Var         loc         .   grVal       =   GrVal_Var @nm
+  | Int         loc         .   grVal       =   GrVal_Node (GrTag_Lit GrTagCon 0 hsnInt) [GrVal_LitInt @int]
+  | Char        loc         .   grVal       =   GrVal_Node (GrTag_Lit GrTagCon 1 hsnChar) [GrVal_LitInt (ord @char)]
+  | * - Int Char Var App Tup
+                loc         .   grVal       =   GrVal_Empty
+%%]
+
+%%[8
+ATTR CBind   [ | | grBind: GrBind ]
+ATTR CBindL  [ | | grBindL: GrBindL ]
+
+SEM CBind
+  | Bind        lhs         .   grBind      =   GrBind_Bind @nm @expr.grLamArgL @expr.grLamBody
+
+SEM CBindL
+  | Cons        lhs         .   grBindL     =   @hd.grBind : @tl.grBindL
+  | Nil         lhs         .   grBindL     =   []
+%%]
+
+%%[8
+ATTR CAlt    [ | | grAlt: GrAlt ]
+ATTR CAltL   [ | | grAltL: GrAltL ]
+
+SEM CAlt
+  | Alt         lhs         .   grAlt       =   GrAlt_Alt (head @pats.grPatL) @expr.grExpr
+
+SEM CAltL
+  | Cons        lhs         .   grAltL      =   @hd.grAlt : @tl.grAltL
+  | Nil         lhs         .   grAltL      =   []
+%%]
+
+%%[8
+ATTR CPat    [ | | patNm: HsName ]
+
+SEM CPat
+  | Var Con     loc         .   patNm       =   cpatNmEither id id @pnm
+  | Undef       loc         .   patNm       =   hsnUnknown
+%%]
+
+%%[8
+ATTR CPat    [ | | grPat: GrPat ]
+ATTR CPatL   [ | | grPatL: GrPatL ]
+
+SEM CPat
+  | Var         lhs         .   grPat       =   GrPat_Var @patNm
+  | Con         lhs         .   grPat       =   GrPat_Node (ctag GrTag_None (GrTag_Lit GrTagCon) @tag) @binds.patBindL
+  | Undef       lhs         .   grPat       =   GrPat_Empty
+
+SEM CPatL
+  | Cons        lhs         .   grPatL      =   @hd.grPat : @tl.grPatL
+  | Nil         lhs         .   grPatL      =   []
+%%]
+
+%%[8
+ATTR CPatBind CPatBindL [ | | patBindL USE {++} {[]}: {[HsName]} ]
+
+SEM CPatBind
+  | Bind        lhs         .   patBindL    =   [@pat.patNm]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lam arg/body info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR CExpr [ | | grLamArgL: {[HsName]} ^^ grLamBody: GrExpr ]
+
+SEM CExpr
+  | Lam         lhs         .   grLamArgL   =   @arg : @body.grLamArgL
+  | * - Lam     lhs         .   grLamArgL   =   []
+                            .   grLamBody   =   @grExpr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% App func/args info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR CExpr [ | | grAppFun: HsName ^^ grAppArgL: GrValL ]
+
+SEM CExpr
+  | App         loc         .   grAppFun    =   @func.grAppFun
+                            .   grAppArgL   =   @arg.grVal : @func.grAppArgL
+  | * - App     lhs         .   grAppFun    =   maybe hsnUnknown id . grV2HNm $ @grVal
+                            .   grAppArgL   =   []
 %%]
 

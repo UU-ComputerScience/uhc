@@ -37,7 +37,7 @@ DATA CExpr
                 dflt            : CExpr
   | Int         int             : {Int}
   | Char        char            : {Char}
-  | Tup
+  | Tup         tag             : {CTag}
   | TupSel      expr            : CExpr
                 tag             : {CTag}
                 offset          : CExpr
@@ -98,5 +98,6 @@ TYPE CPatBindL  =   [CPatBind]
 %%[8
 SET AllBind     =   CBind CBindL
 SET AllPat      =   CPat CPatL CPatBind CPatBindL
-SET AllCodeNT   =   CModule CExpr AllBind CAlt CAltL AllPat
+SET AllAlt      =   CAlt CAltL
+SET AllCodeNT   =   CModule CExpr AllBind AllAlt AllPat
 %%]

@@ -23,7 +23,7 @@ $(VPREFIX)EHError.hs: $(addprefix $(VPREFIX),$(DPDS_ERR))
 $(addprefix $(VPREFIX),$(EHC_LAG_FOR_HS_TY:.lag=.hs)): %.hs: %.ag $(addprefix $(VPREFIX),EHTyCommonAG.ag EHTyAbsSyn.ag)
 	$(call AGCC,-cfspr,$<)
 
-$(addprefix $(VPREFIX),$(EHC_LAG_FOR_HS_CORE:.lag=.hs)): %.hs: %.ag $(addprefix $(VPREFIX),EHCoreTrfCommonFv.ag EHCoreTrfCommonLev.ag EHCoreAbsSyn.ag)
+$(addprefix $(VPREFIX),$(EHC_LAG_FOR_HS_CORE:.lag=.hs)): %.hs: %.ag $(addprefix $(VPREFIX),EHCoreTrfCommonFv.ag EHCoreTrfCommonLev.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag)
 	$(call AGCC,-cfspr,$<)
 
 $(addprefix $(VPREFIX),$(EHC_LAG_FOR_HS_GRIN_CODE:.lag=.hs)): %.hs: %.ag $(addprefix $(VPREFIX),GrinCodeAbsSyn.ag)

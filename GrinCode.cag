@@ -9,13 +9,29 @@
 %%% Haskell importable interface to GRIN code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(EHCommon) export(GrAGItf(..), GrModule(..), GrExpr(..), GrBind(..), GrBindL) 
+%%[8 hs import(EHCommon,UU.Pretty) export(GrAGItf(..), GrModule(..), GrExpr(..), GrBind(..), GrBindL) 
 %%]
 
 %%[8 hs export(GrAlt(..), GrAltL, GrPat(..), GrPatL, GrVal(..), GrValL, GrTag(..)) 
 %%]
 
+%%[8 hs export(GrTagCateg(..)) 
+%%]
+
 %%[8 import(GrinCodeAbsSyn)
 DERIVING *     : Show, Eq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tag categories
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+data GrTagCateg = GrTagCon | GrTagApp | GrTagFun deriving (Show,Eq,Ord)
+
+instance PP GrTagCateg where
+  pp GrTagCon = pp "C"
+  pp GrTagApp = pp "A"
+  pp GrTagFun = pp "F"
 %%]
 

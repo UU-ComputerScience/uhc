@@ -70,8 +70,6 @@ aRenRepl :: ARenMp -> HsName -> HsName
 aRenRepl m n = maybe n id . lookupFM m $ n
 %%]
 
-aRenAdd nL l u m = addListToFM m (map (\n -> (n,hsnSuffix n ("~" ++ show l ++ "~" ++ show u))) nL)
-
 %%[8
 ATTR AllCodeNT [ aRenMp: ARenMp ^^ lev: Int | | ]
 ATTR AllBind AllPat [ | | nmL USE {++} {[]}: {[HsName]} ]
