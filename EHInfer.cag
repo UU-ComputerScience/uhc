@@ -371,10 +371,12 @@ SEM Expr
 %%[1.tySigGam.Val
 SEM Decl
   | Val         loc         .   (sigTy,hasTySig)    =   case @patExpr.mbTopNm of
-                                                          Nothing  ->  (Ty_Any,False)
-                                                          Just nm  ->  case gamLookup nm @lhs.tySigGam of
-                                                                         Nothing   -> (Ty_Any,False)
-                                                                         Just vgi  -> (vgiTy vgi,True)
+                                                          Nothing
+                                                            ->  (Ty_Any,False)
+                                                          Just nm
+                                                            ->  case gamLookup nm @lhs.tySigGam of
+                                                                  Nothing   -> (Ty_Any,False)
+                                                                  Just vgi  -> (vgiTy vgi,True)
 %%]
 
 %%[1.TySig

@@ -80,7 +80,8 @@ gamAdd              ::  k -> v      -> Gam k v -> Gam k v
 %%[1.Base.funs
 emptyGam                            = Gam [[]]
 gamUnit         k v                 = Gam [[(k,v)]]
-gamLookup       k (Gam ll)          = foldr (\l mv -> maybe mv Just (lookup k l)) Nothing ll
+gamLookup       k (Gam ll)          = foldr  (\l mv -> maybe mv Just (lookup k l))
+                                             Nothing ll
 gamToAssocL     (Gam ll)            = concat ll
 gamPushNew      (Gam ll)            = Gam ([]:ll)
 gamPushGam g1   (Gam ll2)           = Gam (gamToAssocL g1 : ll2)

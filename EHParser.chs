@@ -554,72 +554,58 @@ pTyExprs        =    pFoldr (sem_TyExprs_Cons,sem_TyExprs_Nil) pTyExprBase
 %%% Parser for Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--- common
-%%[pExprBaseCommon.1
+-- pExprBase
+%%[1.pExprBase
 pExprBase       =    sem_Expr_IConst     <$>  pInt
                 <|>  sem_Expr_CConst     <$>  pChr
                 <|>  sem_Expr_Var        <$>  pVar
                 <|>  sem_Expr_Con        <$>  pCon
 %%]
-
-%%[pExprBaseParenProd.1
+%%[1.pExprBaseParenProd
                 <|>  pParenProd exprAlg pExpr
 %%]
-
-%%[pExprBaseCommon.5
-                <|>  sem_Expr_Case       <$   pKey "case" <*> pExpr <* pKey "of" <*> pCaseAlts
-%%]
-
-%%[pExprBase.7
+%%[7.pExprBase -1.pExprBaseParenProd
                 <|>  pParenRow True (show hsnORec) (show hsnCRec) "=" (Just (":=",sem_RecExpr_Upd))
                         (sem_RecExpr_Empty,sem_RecExpr_Expr . sem_Expr_Var,sem_RecExpr_Ext,sem_Expr_Rec,sem_Expr_Parens)
                         pVar pExpr
 %%]
-
-%%[pExprBase.8
+%%[5.pExprBase
+                <|>  sem_Expr_Case       <$   pKey "case" <*> pExpr <* pKey "of" <*> pCaseAlts
+%%]
+%%[8.pExprBase
                 <|>  sem_Expr_Undefined  <$   pKey "..."
 %%]
 
-%%[pExprApp.1
+-- pExpr
+%%[1.exprAlg
+exprAlg         =    (sem_Expr_Con,sem_Expr_App
+                     ,sem_Expr_AppTop,sem_Expr_Parens)
+%%]
+
+%%[1.pExpr
+pExpr           =    pE <??> (sem_Expr_TypeAs <$ pKey "::" <*> pTyExpr)
+                where pE  =    pExprPrefix <*> pE
+                          <|>  pExprApp
+%%]
+
+%%[1.pExprApp
 pExprApp        =    pApp exprAlg pExprBase
 %%]
-
-%%[pExprApp.7
+%%[7.pExprApp -1.pExprApp
 pExprApp        =    pApp exprAlg (pExprBase <**> pExprSelSuffix)
 %%]
-
-%%[pExprApp.9
+%%[9.pExprApp -7.pExprApp
 pExprApp        =    let  pE = pExprBase <**> pExprSelSuffix
                           pA = flip sem_Expr_App <$> pE
                           pI = pPackImpl ((\a p e -> sem_Expr_AppImpl e p a) <$> pExpr <* pKey "<:" <*> pPrExpr)
                      in   pE <??> ((\l e -> sem_Expr_AppTop (foldl (flip ($)) e l)) <$> pList1 (pA <|> pI))
 %%]
 
-%%[pExprPrefix.1
+%%[1.pExprPrefix
 pExprPrefix     =    sem_Expr_Let      <$ pKey "let"
                      <*> pDecls        <* pKey "in"
 %%]
-
-%%[pExprPrefix.1.Lam
-                <|>  sem_Expr_Lam      <$ pKey "\\"
-                     <*> pPatExprBase  <* pKey "->"
-%%]
-
-%%[pExprPrefix.7.Lam
-                <|>  (\ps -> \e -> foldr sem_Expr_Lam e ps)  <$ pKey "\\"
-                     <*> pList1 pPatExprBase                 <* pKey "->"
-%%]
-
-%%[pExprPrefix.9.Lam
-                <|>  (flip (foldr ($)))
-                     <$   pKey "\\"
-                     <*>  pList1  (    sem_Expr_Lam <$> pPatExprBase
-                                  <|>  pPackImpl (flip sem_Expr_LamImpl <$> pPatExpr <* pKey "<:" <*> pPrExpr)
-                                  )
-                     <*   pKey "->"
-%%]
-
-%%[pExprPrefix.5.If
+%%[5.pExprPrefix
                 <|>  (\c t e ->  sem_Expr_Case c
                                    (sem_CaseAlts_Cons (sem_CaseAlt_Pat (sem_PatExpr_Con (HNm "True")) t)
                                       (sem_CaseAlts_Cons (sem_CaseAlt_Pat (sem_PatExpr_Con (HNm "False")) e)
@@ -627,89 +613,21 @@ pExprPrefix     =    sem_Expr_Let      <$ pKey "let"
                      )             )  )
                      <$ pKey "if" <*> pExpr <* pKey "then" <*> pExpr <* pKey "else"
 %%]
-
-%%[exprAlg.1
-exprAlg         =    (sem_Expr_Con,sem_Expr_App
-                     ,sem_Expr_AppTop,sem_Expr_Parens)
+%%[1.pExprPrefixLam
+                <|>  sem_Expr_Lam      <$ pKey "\\"
+                     <*> pPatExprBase  <* pKey "->"
 %%]
-
-%%[pExpr.1
-pExpr           =    pExprPrefix <*> pExpr
-                <|>  pExprApp
+%%[7.pExprPrefixLam -1.pExprPrefixLam
+                <|>  (\ps -> \e -> foldr sem_Expr_Lam e ps)  <$ pKey "\\"
+                     <*> pList1 pPatExprBase                 <* pKey "->"
 %%]
-
-%%[pExpr.4
-pExpr           =    pE <??> (sem_Expr_TypeAs <$ pKey "::" <*> pTyExpr)
-                where pE  =    pExprPrefix <*> pE
-                          <|>  pExprApp
-%%]
-
--- versions
-%%[1.pExprBase
-%%@pExprBaseCommon.1
-%%@pExprBaseParenProd.1
-%%]
-
-%%[5.pExprBase -1.pExprBase
-%%@pExprBaseCommon.1
-%%@pExprBaseParenProd.1
-%%@pExprBaseCommon.5
-%%]
-
-%%[7.pExprBase -5.pExprBase
-%%@pExprBaseCommon.1
-%%@pExprBaseCommon.5
-%%@pExprBase.7
-%%]
-
-%%[8.pExprBase -7.pExprBase
-%%@pExprBaseCommon.1
-%%@pExprBaseCommon.5
-%%@pExprBase.7
-%%@pExprBase.8
-%%]
-
-%%[1.pExpr
-%%@exprAlg.1
-%%@pExpr.1
-%%@pExprApp.1
-%%@pExprPrefix.1
-%%@pExprPrefix.1.Lam
-%%]
-
-%%[4.pExpr -1.pExpr
-%%@exprAlg.1
-%%@pExpr.4
-%%@pExprApp.1
-%%@pExprPrefix.1
-%%@pExprPrefix.1.Lam
-%%]
-
-%%[5.pExpr -4.pExpr
-%%@exprAlg.1
-%%@pExpr.4
-%%@pExprApp.1
-%%@pExprPrefix.1
-%%@pExprPrefix.1.Lam
-%%@pExprPrefix.5.If
-%%]
-
-%%[7.pExpr -5.pExpr
-%%@exprAlg.1
-%%@pExpr.4
-%%@pExprApp.7
-%%@pExprPrefix.1
-%%@pExprPrefix.7.Lam
-%%@pExprPrefix.5.If
-%%]
-
-%%[9.pExpr -7.pExpr
-%%@exprAlg.1
-%%@pExpr.4
-%%@pExprApp.9
-%%@pExprPrefix.1
-%%@pExprPrefix.9.Lam
-%%@pExprPrefix.5.If
+%%[9.pExprPrefixLam -7.pExprPrefixLam
+                <|>  (flip (foldr ($)))
+                     <$   pKey "\\"
+                     <*>  pList1  (    sem_Expr_Lam <$> pPatExprBase
+                                  <|>  pPackImpl (flip sem_Expr_LamImpl <$> pPatExpr <* pKey "<:" <*> pPrExpr)
+                                  )
+                     <*   pKey "->"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -106,7 +106,8 @@ SEM Expr
 SEM Expr
   | Con         loc         .   fo                  =   let  gTy      = mkTyFreshProdFrom @lUniq (hsnProdArity @nm)
                                                              foKnRes  = gTy `fitsIn` (@lhs.tyCnstr |=> tyArrowRes @lhs.knTy)
-                                                        in   foKnRes {foTy = tyProdArgs (foTy foKnRes) `mkTyArrow` (foTy foKnRes)}
+                                                        in   foKnRes {foTy =  tyProdArgs (foTy foKnRes)
+                                                                                `mkTyArrow` (foTy foKnRes)}
                             .   ty                  :=  foTy @fo
                 lhs         .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
 %%]
@@ -210,7 +211,8 @@ SEM Expr
 
 %%[2.Lam
 SEM Expr
-  | Lam         loc         .   (argTy,resTy,funTy) :=  let  [a,r] = mkNewTyVarL 2 @lUniq
+  | Lam         loc         .   (argTy,resTy,funTy)
+                                                    :=  let  [a,r] = mkNewTyVarL 2 @lUniq
                                                         in   (a,r,[a] `mkTyArrow` r)
                             .   foKnFun             :=  @funTy `fitsIn` (@lhs.tyCnstr |=> @lhs.knTy)
                 arg         .   knTy                :=  @argTy
@@ -282,7 +284,7 @@ SEM Expr
 
 %%[2.AppTop
 SEM Expr
-  | AppTop      loc         .   knTy                =   tyEnsureNonBotTop @lUniq @lhs.knTy
+  | AppTop      loc         .   knTy                =   tyEnsureNonAny @lUniq @lhs.knTy
 %%]
 
 %%[9.AppTop
@@ -298,7 +300,21 @@ SEM Expr
 
 %%[8.Undefined
 SEM Expr
-  | Undefined   loc         .   ty                  =   @lhs.tyCnstr |=> (tyEnsureNonBotTop @lUniq @lhs.knTy)
+  | Undefined   loc         .   ty                  =   @lhs.tyCnstr |=> (tyEnsureNonAny @lUniq @lhs.knTy)
+%%]
+
+%%[1.TypeAs
+SEM Expr
+  | TypeAs      loc         .   tyTy                =   @tyExpr.ty
+                            .   asTy                =   @tyTy
+                            .   fo                  =   @asTy `fitsIn` @lhs.knTy
+                expr        .   knTy                =   @asTy
+%%]
+
+%%[2.TypeAs
+SEM Expr
+  | TypeAs      expr        .   knTy                :=  foCnstr @fo |=> @asTy
+                            .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
 %%]
 
 %%[4.TypeAs
@@ -306,11 +322,9 @@ SEM Expr
   | TypeAs      loc         .   gTyTvL              =   let  ftvVal  = ftv (@lhs.tyCnstr |=> @lhs.valGam)
                                                              ftvTy   = ftv . (@lhs.tyCnstr |=>) . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
                                                         in   ftvVal ++ ftvTy
-                            .   tyTy                =   @lhs.tyCnstr |=> @tyExpr.ty
-                            .   asTy                =   tyQuantify (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyTy
-                            .   fo                  =   fitsIn @lhs.fiOpts emptyFE @lUniq (@lhs.tyCnstr |=> @asTy) (@lhs.tyCnstr |=> @lhs.knTy)
-                expr        .   knTy                =   foCnstr @fo |=> @asTy
-                            .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
+                            .   tyTy                :=  @lhs.tyCnstr |=> @tyExpr.ty
+                            .   asTy                :=  tyQuantify (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyTy
+                            .   fo                  :=  fitsIn @lhs.fiOpts emptyFE @lUniq (@lhs.tyCnstr |=> @asTy) (@lhs.tyCnstr |=> @lhs.knTy)
 %%]
 
 %%[4_2
