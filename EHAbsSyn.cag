@@ -77,6 +77,7 @@ DATA TyExpr
 %%[3
 DATA TyExpr
   | Var             nm              : {HsName}
+  | VarWild         nm              : {HsName}
 %%]
 
 %%[4
@@ -184,9 +185,9 @@ DATA Expr
 %%[9
 DATA Expr
   | AppImpl         func            : Expr
-                    argPr           : PrExpr
+                    argPr           : TyExpr
                     arg             : Expr
-  | LamImpl         argPr           : PrExpr
+  | LamImpl         argPr           : TyExpr
                     arg             : PatExpr
                     body            : Expr
 %%]

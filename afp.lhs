@@ -2560,6 +2560,11 @@ in order to make parsing take linear time.
 The parsers for patterns and type expressions also use these abstractions,
 for example, the parser for type expressions:
 
+\savecolumns
+\chunkCmdUse{EHParser.1.tyExprAlg}
+\restorecolumns
+\chunkCmdUse{EHParser.1.pTyExprBase}
+\restorecolumns
 \chunkCmdUse{EHParser.1.pTyExpr}
 
 \frame<presentation>[plain]
@@ -2568,6 +2573,8 @@ for example, the parser for type expressions:
 \begin{itemize}
 \item Similar to normal expressions
 \item Type expressions (for example)
+\chunkCmdFrameUse{EHParser.1.tyExprAlg}
+\chunkCmdFrameUse{EHParser.1.pTyExprBase}
 \chunkCmdFrameUse{EHParser.1.pTyExpr}
 \end{itemize}
 }
@@ -2579,8 +2586,14 @@ of more elementary types separated by |->|.
 The parser for patterns is, because of its similarity with the previous expression
 parsers, given without further explanation:
 
+\savecolumns
+\chunkCmdUse{EHParser.1.patExprAlg}
+\restorecolumns
 \chunkCmdUse{EHParser.1.pPatExpr}
+\restorecolumns
 \chunkCmdUse{EHParser.1.pPatExprBase}
+\restorecolumns
+\chunkCmdUse{EHParser.1.pPatExprBase.prod}
 
 Finally, the parsers for the program itself and declarations should have few surprises by now,
 except for the use of |pBlock| recognising a list of more elementary parsers
@@ -5386,8 +5399,8 @@ can be found in \appRef{app-ag-pattern-uid}.
 \item ``Impact analysis'' of change
 \item Abstract syntax
 \chunkCmdFrameUse{EHAbsSyn.2.TyExpr}
-\item Parser for type expressions
-\chunkCmdFrameUse{EHParser.2.pTyExpr}
+\item Parser for type expressions (|pTyExprBase|)
+\chunkCmdFrameUse{EHParser.2.pTyExprBase}
 \item (scanner configuration omitted)
 \end{itemize}
 }
@@ -5435,6 +5448,7 @@ chosen for unspecified type information designated by |Wild| for wildcard:
 
 \chunkCmdUseMark{EHAbsSyn.2.TyExpr}
 %if incl01TopicParsing
+The parser for |pTyExprBase| needs an additional alternative:
 \chunkCmdUseMark{EHParser.2.pTyExpr}
 %endif
 
@@ -8560,19 +8574,15 @@ This typing \ruleRef{e-pred9B} still is not much of a help as to when it should 
 However, as we only have to deal with a limited number of language constructs,
 we can use case analysis on the source language constructs.
 In \thispaper\ we only deal with function application, for which the relevant rules are shown
-in \figRef{rules.expr9.C}.
+in \figRef{rules.exprC9.baseExplImpl}.
 These rules also use an additional parameter |fiopt| influencing 
 certain aspects of subsumption |<=|.
 Also, the rule is more explicit in its handling of constraints computed by the rule labeled |fit|
 for the subsumption |<=|:
 
-\rulerCmdUse{rules.expr9.C}
-\rulerCmdUse{rules2.exprE.typeRules}
-\rulerCmdUse{rules2.exprK.typeRules}
-\rulerCmdUse{rules2.expr1.typeRules}
-\rulerCmdUse{rules2.expr2.typeRules}
-\rulerCmdUse{rules2.expr4.typeRules}
-\rulerCmdUse{rules2.expr9.typeRules}
+\rulerCmdUse{rules2.exprE.base}
+\rulerCmdUse{rules2.exprC9.baseExplImpl}
+\rulerCmdUse{rules2.exprC9.explimpl}
 
 \begin{code}
 Cnstr  =  tvarv :-> sigma | pvar :-> pi , pvar | pvar :-> pempty
@@ -8581,7 +8591,7 @@ Cnstr  =  tvarv :-> sigma | pvar :-> pi , pvar | pvar :-> pempty
 The mapping from type variables |tvarv| constitutes the usual substitution for type variables.
 The second alternative maps an implicit variable to a list of predicates.
 
-From bottom to top, the first rule in \figRef{rules.expr9.C} reads as follows.
+From bottom to top, the first rule in \figRef{rules.exprC9.baseExplImpl} reads as follows.
 To keep matters simple we ignore the handling of constraints |Cnstr| and the use of |fiopt|.
 The type for the application itself is expected to be |sigmak|,
 which in general will have the structure |pvark -> tvark|.
@@ -8621,7 +8631,7 @@ Only then the presence and positioning of predicates in the type of |e1| can be 
 This complicates the implementation because this information has to be redistributed over
 the abstract syntax tree.
 
-The second rule in \figRef{rules.expr9.C} for explicitly passing an implicit parameter
+The \ruleRef{e-iapp} in \figRef{rules.exprC9.explImpl} for explicitly passing an implicit parameter
 is simpler than the rule for normal application because all the required type information
 has been made explicit.
 We now only have to supply the judgement for |e2| with the type |sigmaa| of the evidence for |pia|

@@ -250,8 +250,7 @@ SEM Expr
 SEM Decl
   | TySig       tyExpr      .   tyGam               =   gamPushNew @lhs.tyGam
                 loc         .   fo                  =   fitsIn weakFIOpts @fe @lUniq2 @tyExpr.ki kiStar
-                lhs         .   tyGam               =   @lhs.tyGam
-                            .   kiCnstr             =   foCnstr @fo |=> @tyExpr.kiCnstr
+                lhs         .   kiCnstr             =   foCnstr @fo |=> @tyExpr.kiCnstr
 %%]
 
 %%[7
@@ -363,6 +362,7 @@ SEM Decl
                             .   gathTySigGam        =   gamAdd
                                                             @nm (ValGamInfo @gamSigTy)
                                                             @lhs.gathTySigGam
+                lhs         .   tyGam               =   @lhs.tyGam
 
 SEM Expr
   | Let         decls       .   gathTySigGam        =   emptyGam

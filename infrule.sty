@@ -4,13 +4,13 @@
 
 \newcounter{rules}
 
-\newcommand{\ehinfrule}[3]{%
+\newcommand{\ehinfrule}[4]{%
   \frac{%
-    \begin{array}{@{}c@{}}#2\end{array}%
-  }{%
     \begin{array}{@{}c@{}}#3\end{array}%
+  }{%
+    \begin{array}{@{}c@{}}#4\end{array}%
   }%
-  \, #1%
+  \, \textsc{#1}_{#2}%
 }
 
 \newcommand*{\infrule}[4][\relax]{%

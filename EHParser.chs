@@ -72,6 +72,9 @@ scanOpts
 %%[2
                 , "..."
 %%]
+%%[3
+                , "%"
+%%]
 %%[4
                 , "."
 %%]
@@ -182,14 +185,16 @@ pVar                        ::   EHParser HsName
 pTyExprPrefix               ::   EHParser (T_TyExpr -> T_TyExpr)
 %%]
 
+%%[4
+pTyExprApp                  ::   EHParser T_TyExpr
+%%]
+
 %%[5
 pCaseAlts                   ::   EHParser T_CaseAlts
 pCaseAlt                    ::   EHParser T_CaseAlt
 
 pDataConstr                 ::   EHParser T_DataConstr
 pDataConstrs                ::   EHParser T_DataConstrs
-
-pTyExprApp                  ::   EHParser T_TyExpr
 
 pTyVars                     ::   EHParser T_TyVars
 pTyVar                      ::   EHParser T_TyVar
@@ -242,24 +247,20 @@ pAGItf          =    sem_AGItf_AGItf <$> pExpr
 %%% Parser for Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--- common
-%%[pDecl.1
+%%[1.pDecl
 pDecls          =    foldr sem_Decls_Cons sem_Decls_Nil
                                       <$>  pBlock pOCurly pSemi pCCurly pDecl
 pDecl           =    sem_Decl_Val     <$>  pPatExprBase  <*   pKey "="   <*> pExpr
                 <|>  sem_Decl_TySig   <$>  pVar          <*   pKey "::"  <*> pTyExpr
 %%]
-
-%%[pDecl.5
+%%[5.pDecl
                 <|>  sem_Decl_Data    <$   pKey "data"   <*>  pCon       <*> pTyVars
                                                          <*   pKey "="   <*> pDataConstrs
 %%]
-
-%%[pDecl.6
+%%[6.pDecl
                 <|>  sem_Decl_KiSig   <$>  pCon          <*   pKey "::"  <*> pKiExpr
 %%]
-
-%%[pDecl.8
+%%[8.pDecl
                 <|>  (\conv saf imp nm sig -> sem_Decl_FFI conv saf (if null imp then show nm else imp) nm sig)
                      <$   pKey "foreign" <* pKey "import" <*> pKey "jazy"
                      <*>  ((pKey "safe" <|> pKey "unsafe") `opt` "safe")
@@ -267,94 +268,40 @@ pDecl           =    sem_Decl_Val     <$>  pPatExprBase  <*   pKey "="   <*> pEx
                      <*>  pVar
                      <*   pKey "::" <*> pTyExpr
 %%]
-
-%%[pDecl.9
+%%[9.pDecl
                 <|>  pDeclClass
                 <|>  pDeclInstance
-%%]
-
--- versions
-%%[1.pDecl
-%%@pDecl.1
-%%]
-
-%%[5.pDecl -1.pDecl
-%%@pDecl.1
-%%@pDecl.5
-%%]
-
-%%[6.pDecl -5.pDecl
-%%@pDecl.1
-%%@pDecl.5
-%%@pDecl.6
-%%]
-
-%%[8.pDecl -6.pDecl
-%%@pDecl.1
-%%@pDecl.5
-%%@pDecl.6
-%%@pDecl.8
-%%]
-
-%%[9.pDecl -8.pDecl
-%%@pDecl.1
-%%@pDecl.5
-%%@pDecl.6
-%%@pDecl.8
-%%@pDecl.9
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parser for PatExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--- common
-%%[pPatExprBase.1
+%%[1.patExprAlg
+patExprAlg      =    (sem_PatExpr_Con,sem_PatExpr_App
+                     ,sem_PatExpr_AppTop,sem_PatExpr_Parens)
+%%]
+
+%%[1.pPatExprBase
 pPatExprBase    =    pVar <**>  (    flip sem_PatExpr_VarAs <$ pKey "@" <*> pPatExprBase
                                 <|>  pSucceed sem_PatExpr_Var
                                 )
                 <|>  sem_PatExpr_Con <$> pCon
 %%]
-
-%%[pPatExprBaseParenProd.1
+%%[1.pPatExprBase.prod
                 <|>  pParenProd patExprAlg pPatExpr
 %%]
-
-%%[patExprAlg.1
-patExprAlg      =    (sem_PatExpr_Con,sem_PatExpr_App
-                     ,sem_PatExpr_AppTop,sem_PatExpr_Parens)
-%%]
-
-%%[patExpr.1
-pPatExpr        =    pApp patExprAlg pPatExprBase
-%%]
-
-%%[patExpr.4
-pPatExpr        =    pP <??> (sem_PatExpr_TypeAs <$ pKey "::" <*> pTyExpr)
-                where pP = pApp patExprAlg pPatExprBase
-%%]
-
--- versions
-%%[1.pPatExprBase
-%%@pPatExprBase.1
-%%@pPatExprBaseParenProd.1
-%%]
-
-%%[7.pPatExprBase -1.pPatExprBase
-%%@pPatExprBase.1
+%%[7.pPatExprBase.prod -1.pPatExprBase.prod
                 <|>  pParenRow True (show hsnORec) (show hsnCRec) "=" Nothing
                         (sem_RecPatExpr_Empty,sem_RecPatExpr_Expr . sem_PatExpr_Var,sem_RecPatExpr_Ext,sem_PatExpr_Rec,sem_PatExpr_Parens)
                         pSel pPatExpr
 %%]
 
 %%[1.pPatExpr
-%%@patExprAlg.1
-%%@patExpr.1
+pPatExpr        =    pApp patExprAlg pPatExprBase
 %%]
-
-%%[4.pPatExpr -1.pPatExpr
-%%@patExprAlg.1
-%%@patExpr.4
+%%[4.patExpr
+                     <??> (sem_PatExpr_TypeAs <$ pKey "::" <*> pTyExpr)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -375,98 +322,73 @@ pKiExpr         =    pChainr (mkArrow kiExprAlg <$ pKeyw hsnArrow) pKiExprBase
 %%% Parser for TyExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--- common
-%%[pTyExprCommon.1
+%%[1.tyExprAlg
 tyExprAlg       =    (sem_TyExpr_Con,sem_TyExpr_App
                      ,sem_TyExpr_AppTop,sem_TyExpr_Parens)
 %%]
 
-%%[pTyExprBase.1
-pTyExprBase     =    sem_TyExpr_Con   <$>  pCon
+%%[1.pTyExprBase
+pTyExprBase     =    sem_TyExpr_Con       <$>  pCon
+%%]
+%%[2.pTyExprBase
+                <|>  sem_TyExpr_Wild      <$   pKey "..."
+%%]
+%%[3.pTyExprBase
+                <|>  sem_TyExpr_Var       <$>  pVar
+                <|>  sem_TyExpr_VarWild   <$   pKey "%" <*> pVar
+%%]
+%%[1.pTyExprBase.prod
                 <|>  pParenProd tyExprAlg pTyExpr
 %%]
-
-%%[pTyExprBase.2
-pTyExprBase     =    sem_TyExpr_Con   <$>  pCon
-                <|>  sem_TyExpr_Wild  <$   pKey "..."
-                <|>  pParenProd tyExprAlg pTyExpr
-%%]
-
-%%[pTyExprBase.3.Head
-pTyExprBase     =    sem_TyExpr_Con   <$>  pCon
-                <|>  sem_TyExpr_Var   <$>  pVar
-                <|>  sem_TyExpr_Wild  <$   pKey "..."
-%%]
-
-%%[pTyExprBase.3
-                <|>  pParenProd tyExprAlg pTyExpr
-%%]
-
-%%[pTyExprBase.7
+%%[7.pTyExprBase.prod -1.pTyExprBase.prod
                 <|>  pParenRow False (show hsnORow) (show hsnCRow) "::" Nothing
-                        (sem_RowTyExpr_Empty,const sem_RowTyExpr_Empty,sem_RowTyExpr_Ext,sem_TyExpr_Row,id)
+                        (sem_RowTyExpr_Empty,semVar,sem_RowTyExpr_Ext,sem_TyExpr_Row,id)
                         pVar pTyExpr
                 <|>  pParenRow True (show hsnORec) (show hsnCRec) "::" Nothing
-                        (sem_RowTyExpr_Empty,const sem_RowTyExpr_Empty,sem_RowTyExpr_Ext
+                        (sem_RowTyExpr_Empty,semVar,sem_RowTyExpr_Ext
                             ,\r -> mkConApp tyExprAlg hsnRec [sem_TyExpr_Row r]
                             ,sem_TyExpr_Parens)
                         pVar pTyExpr
                 <|>  pParenRow False (show hsnOSum) (show hsnCSum) "::" Nothing
-                        (sem_RowTyExpr_Empty,const sem_RowTyExpr_Empty,sem_RowTyExpr_Ext
+                        (sem_RowTyExpr_Empty,semVar,sem_RowTyExpr_Ext
                             ,\r -> mkConApp tyExprAlg hsnSum [sem_TyExpr_Row r]
                             ,id)
                         pVar pTyExpr
 %%]
-
-%%[pTyExprBase.9
-                <|>  pParenRow False (show hsnORow) (show hsnCRow) "::" Nothing
-                        (sem_RowTyExpr_Empty,sem_RowTyExpr_Var,sem_RowTyExpr_Ext,sem_TyExpr_Row,id)
-                        pVar pTyExpr
-                <|>  pParenRow True (show hsnORec) (show hsnCRec) "::" Nothing
-                        (sem_RowTyExpr_Empty,sem_RowTyExpr_Var,sem_RowTyExpr_Ext
-                            ,\r -> mkConApp tyExprAlg hsnRec [sem_TyExpr_Row r]
-                            ,sem_TyExpr_Parens)
-                        pVar pTyExpr
-                <|>  pParenRow False (show hsnOSum) (show hsnCSum) "::" Nothing
-                        (sem_RowTyExpr_Empty,sem_RowTyExpr_Var,sem_RowTyExpr_Ext
-                            ,\r -> mkConApp tyExprAlg hsnSum [sem_TyExpr_Row r]
-                            ,id)
-                        pVar pTyExpr
+%%[7.pTyExprBase.prodVar
+                where  semVar = const sem_RowTyExpr_Empty
+%%]
+%%[9.pTyExprBase.prodVar -7.pTyExprBase.prodVar
+                where  semVar = sem_RowTyExpr_Var
 %%]
 
-%%[pTyExprApp.5
-pTyExprApp      =    pApp tyExprAlg pTyExprBase
-%%]
-
-%%[pTyExpr.1
+%%[1.pTyExpr
 pTyExpr         =    pChainr
                        (mkArrow tyExprAlg <$ pKeyw hsnArrow)
                        pTyExprBase
 %%]
-
-%%[pTyExpr.4
-pTyExpr         =    pTyExprPrefix <*> pTyExpr
-                <|>  pTyExprBase <??> (flip (mkArrow tyExprAlg) <$ pKeyw hsnArrow <*> pTyExpr)
-%%]
-
-%%[pTyExpr.5
+%%[4.pTyExpr -1.pTyExpr
 pTyExpr         =    pTyExprPrefix <*> pTyExpr
                 <|>  pTyExprApp <??> (flip (mkArrow tyExprAlg) <$ pKeyw hsnArrow <*> pTyExpr)
 %%]
 
-%%[pTyExprPrefix.4
+%%[5.pTyExprs
+pTyExprs        ::   EHParser T_TyExprs
+pTyExprs        =    pFoldr (sem_TyExprs_Cons,sem_TyExprs_Nil) pTyExprBase
+%%]
+
+%%[4.pTyExprPrefix
 pTyExprPrefix   =    sem_TyExpr_Quant
                      <$>  (TyQu_Forall <$ pKey "forall" <|> TyQu_Exists <$ pKey "exists")
                      <*>  pVar <* pKey "."
 %%]
-
-%%[pPackImpl.9
-pPackImpl       ::   EHParser p -> EHParser p
-pPackImpl       =    pPacked (pKeyw hsnOImpl) (pKeyw hsnCImpl)
+%%[9.pTyExprPrefix
+                <|>  pTyPrExprPrefix
 %%]
 
-%%[pTyExprPrefix.9
-                <|>  mkArrow tyExprAlg
+%%[9.pTyPrExprPrefix
+pTyPrExprPrefix ::   EHParser (T_TyExpr -> T_TyExpr)
+pTyPrExprPrefix =    mkArrow tyExprAlg
                      <$>  pPackImpl
                             (    pPr
                             <|>  pIm
@@ -478,76 +400,22 @@ pPackImpl       =    pPacked (pKeyw hsnOImpl) (pKeyw hsnCImpl)
                           <$> pParens ((++) <$> pList1Sep pComma pPr <*> ((:[]) <$ pComma <*> pIm `opt` []))
                      )
                      <*   pKey "=>"
-                where  pPr = sem_TyExpr_Pred   <$>  pPrExpr
+                where  pPr = sem_TyExpr_Pred   <$>  pPrExprBase
                        pPr :: EHParser T_TyExpr
                        pIm = sem_TyExpr_Impls  <$   pKey "..."
                        pIm :: EHParser T_TyExpr
 %%]
 
---versions
-%%[1.pTyExpr
-%%@pTyExprCommon.1
-%%@pTyExprBase.1
-%%@pTyExpr.1
+%%[4.pTyExprApp
+pTyExprApp      =    pTyExprBase
+%%]
+%%[5.pTyExprApp -4.pTyExprApp
+pTyExprApp      =    pApp tyExprAlg pTyExprBase
 %%]
 
-%%[2.pTyExpr -1.pTyExpr
-%%@pTyExprCommon.1
-%%@pTyExprBase.2
-%%@pTyExpr.1
-%%]
-
-%%[3.pTyExpr -2.pTyExpr
-%%@pTyExprCommon.1
-%%@pTyExprBase.3.Head
-%%@pTyExprBase.3
-%%@pTyExpr.1
-%%]
-
-%%[4.pTyExpr -3.pTyExpr
-%%@pTyExprCommon.1
-%%@pTyExprBase.3.Head
-%%@pTyExprBase.3
-%%@pTyExpr.4
-%%]
-
-%%[5.pTyExpr -4.pTyExpr
-%%@pTyExprCommon.1
-%%@pTyExprBase.3.Head
-%%@pTyExprBase.3
-%%@pTyExprApp.5
-%%@pTyExpr.5
-%%]
-
-%%[7.pTyExpr -5.pTyExpr
-%%@pTyExprCommon.1
-%%@pTyExprBase.3.Head
-%%@pTyExprBase.7
-%%@pTyExprApp.5
-%%@pTyExpr.5
-%%]
-
-%%[9.pTyExpr -7.pTyExpr
-%%@pTyExprCommon.1
-%%@pTyExprBase.3.Head
-%%@pTyExprBase.9
-%%@pTyExprApp.5
-%%@pTyExpr.5
-%%]
-
-%%[4.pTyExprPrefix
-%%@pTyExprPrefix.4
-%%]
-
-%%[9.pTyExprPrefix -4.pTyExprPrefix
-%%@pTyExprPrefix.4
-%%@pTyExprPrefix.9
-%%@pPackImpl.9
-%%]
-
-%%[5
-pTyExprs        ::   EHParser T_TyExprs
-pTyExprs        =    pFoldr (sem_TyExprs_Cons,sem_TyExprs_Nil) pTyExprBase
+%%[9.pPackImpl
+pPackImpl       ::   EHParser p -> EHParser p
+pPackImpl       =    pPacked (pKeyw hsnOImpl) (pKeyw hsnCImpl)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -597,13 +465,13 @@ pExprApp        =    pApp exprAlg (pExprBase <**> pExprSelSuffix)
 %%[9.pExprApp -7.pExprApp
 pExprApp        =    let  pE = pExprBase <**> pExprSelSuffix
                           pA = flip sem_Expr_App <$> pE
-                          pI = pPackImpl ((\a p e -> sem_Expr_AppImpl e p a) <$> pExpr <* pKey "<:" <*> pPrExpr)
+                          pI = pPackImpl ((\a p e -> sem_Expr_AppImpl e p a) <$> pExpr <* pKey "<:" <*> pTyPrExpr)
                      in   pE <??> ((\l e -> sem_Expr_AppTop (foldl (flip ($)) e l)) <$> pList1 (pA <|> pI))
 %%]
 
 %%[1.pExprPrefix
-pExprPrefix     =    sem_Expr_Let      <$ pKey "let"
-                     <*> pDecls        <* pKey "in"
+pExprPrefix     =    sem_Expr_Let  <$ pKey "let"
+                     <*> pDecls    <* pKey "in"
 %%]
 %%[5.pExprPrefix
                 <|>  (\c t e ->  sem_Expr_Case c
@@ -625,7 +493,7 @@ pExprPrefix     =    sem_Expr_Let      <$ pKey "let"
                 <|>  (flip (foldr ($)))
                      <$   pKey "\\"
                      <*>  pList1  (    sem_Expr_Lam <$> pPatExprBase
-                                  <|>  pPackImpl (flip sem_Expr_LamImpl <$> pPatExpr <* pKey "<:" <*> pPrExpr)
+                                  <|>  pPackImpl (flip sem_Expr_LamImpl <$> pPatExpr <* pKey "<:" <*> pTyPrExpr)
                                   )
                      <*   pKey "->"
 %%]
@@ -726,9 +594,17 @@ pSel            =    pVar <|> pCon <|> HNPos <$> pInt
 %%[9
 pPrExprClass    ::   EHParser T_PrExpr
 pPrExprClass    =    sem_PrExpr_Class  <$> pCon <*> pTyExprs
+%%]
 
-pPrExpr         ::   EHParser T_PrExpr
-pPrExpr         =    pPrExprClass
+%%[9
+pTyPrExpr       ::   EHParser T_TyExpr
+pTyPrExpr       =    pTyPrExprPrefix <*> pTyPrExpr
+                <|>  sem_TyExpr_Pred <$> pPrExprBase
+%%]
+
+%%[9
+pPrExprBase     ::   EHParser T_PrExpr
+pPrExprBase     =    pPrExprClass
 %%]
 %%[10
                 <|>  pVar <**>  (    (\s v -> sem_PrExpr_Lacks (sem_RowTyExpr_Var v) s)

@@ -122,8 +122,8 @@
 % ruler related
 \newcommand{\rulerCmdDef}[1]{\expandafter\def\csname #1\endcsname}
 \newcommand{\rulerCmdUse}[1]{\csname #1\endcsname}
-\newcommand{\ruleRef}[1]{rule~\textsf{#1}}
-\newcommand{\RuleRef}[1]{Rule~\textsf{#1}}
+\newcommand{\ruleRef}[1]{rule~\textsc{#1}}
+\newcommand{\RuleRef}[1]{Rule~\textsc{#1}}
 
 % referencing
 % \newcommand{\figRef}[1]{figure~\ref{#1}}
