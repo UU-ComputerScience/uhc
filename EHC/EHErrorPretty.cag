@@ -130,6 +130,9 @@ SEM Err
   | OverlapPreds        lhs     .  pp   =   ppMsgErr    "Proof for predicates did overlap"
                                                         (    vlist . map (\(p,evs) -> p >#< ":" >#< ppCommaList evs) $ @overl
                                                         )
+  | TyHasFreeTVars      lhs     .  pp   =   ppMsgErr    "Type has free type vars (not allowed)"
+                                                        (    "type:" >#< pp @ty
+                                                        )
 %%]
 
 

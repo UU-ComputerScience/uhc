@@ -144,11 +144,13 @@ SEM Decl
   | Class       lhs         .   cbindL      =   let  nDflt = rulNmEvid . pigiRule $ @pigi
                                                      nD = hsnPrefix "$self_" nDflt
                                                      nR = hsnPrefix "$res_" nDflt
+                                                     lookupBnd n = let b = map (\(CBind_Bind n v) -> (n,v)) @decls.cbindL
+                                                                   in  lookup n b
                                                      dDflt = mkCExprLam [nD]
                                                                 (mkCExprLetRec
                                                                     [CBind_Bind nR
                                                                         (mkCExprApp CExpr_Tup
-                                                                            (flip replicate cvarUndefined . length . snd . tyRecExts $ @clsTyRec))]
+                                                                            (map (\(n,_) -> maybe cvarUndefined id (lookupBnd n)) . tyRowCanonOrder . snd . tyRecExts $ @clsTyRec))]
                                                                     (CExpr_Var nR)
                                                                 )
                                                      x = HNm "x"
@@ -182,6 +184,8 @@ SEM Decl
                                                                     (CExpr_Var nR)
                                                                 )
                                                 in   [CBind_Bind @dictNm (@cSubst `cAppSubst` dD)]
+  | InstanceIntro
+                lhs         .   cbindL      =   [CBind_Bind @dictNm @expr.cexpr]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

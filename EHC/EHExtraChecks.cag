@@ -46,5 +46,7 @@ SEM AGItf
 
 SEM Decl
   | Instance    loc         .   predNotPrfErrs      =   if null @supRemPrfPrL then [] else [Err_NotProvenPreds @supRemPrfPrL]
+  | InstanceIntro
+                loc         .   predErrs            =   if null (ftv @prExpr.ty) then [] else [Err_TyHasFreeTVars @prExpr.ty]
 %%]
 

@@ -281,6 +281,9 @@ SEM Decl
                                         , mkInfo1 "csubst" (ppAssocL . fmToList $ @csubst)
                                         , mkInfo1 "remPrfPrL" (ppCommaList @remPrfPrL)
                                         ]
+  | InstanceIntro
+                loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","InstanceIntro"] [] [@expr.ppAST,@prExpr.ppAST] @info
+                        .  info     =   []
 
 SEM FuncDep
   | Dep         loc     .  ppAST    =   ppNest ["FuncDep","Dep"] [] [@fromTvs.ppAST,@toTvs.ppAST]

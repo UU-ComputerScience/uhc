@@ -328,6 +328,11 @@ ppListSepFill o c s pps
         l (p:ps)  = fill ((o >|< pp p) : map (s >|<) ps) >|< c
 %%]
 
+%%[9
+instance PP a => PP (Maybe a) where
+  pp m = "?(" >|< maybe empty pp m >|< ")?"
+%%]
+
 %%[7
 ppFld :: String -> HsName -> HsName -> PP_Doc -> PP_Doc
 ppFld sep positionalNm nm f

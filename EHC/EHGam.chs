@@ -12,7 +12,7 @@
 %%[1 import(List,EHCommon) export(Gam,emptyGam,gamLookup, gamPushNew, gamPop, gamAddGam, gamUnit, gamAdd, gamPushGam, gamToAssocL, assocLToGam)
 %%]
 
-%%[1 import(EHTy) export(ValGam, ValGamInfo(..), valGamLookup)
+%%[1 import(EHTy,EHError) export(ValGam, ValGamInfo(..), valGamLookup,valGamLookupTy)
 %%]
 
 %%[1 export(TyGam, TyGamInfo(..), tyGamLookup)
@@ -144,6 +144,14 @@ type ValGam = Gam HsName ValGamInfo
 %%[1.valGamLookup
 valGamLookup :: HsName -> ValGam -> Maybe ValGamInfo
 valGamLookup = gamLookup
+%%]
+
+%%[1.valGamLookupTy
+valGamLookupTy :: HsName -> ValGam -> (Ty,ErrL)
+valGamLookupTy n g
+  =  case valGamLookup n g of
+       Nothing    ->  (Ty_Any,[Err_NamesNotIntrod [n]])
+       Just vgi   ->  (vgiTy vgi,[])
 %%]
 
 %%[4.valGamLookup -1.valGamLookup

@@ -51,10 +51,7 @@ SEM Expr
 %%[1.Var
 SEM Expr
   | Var         loc         .  (gTy,nmErrs)
-                                                    =   case valGamLookup @nm @lhs.valGam of
-                                                          Nothing    ->  (Ty_Any
-                                                                         ,[Err_NamesNotIntrod [@nm]])
-                                                          Just vgi   ->  (vgiTy vgi,[])
+                                                    =   valGamLookupTy @nm @lhs.valGam
                             .  fTy                  =   @gTy
                             .  fo                   =   @fTy `fitsIn` @lhs.knTy
                             .  ty                   =   foTy @fo
@@ -94,9 +91,7 @@ SEM Expr
 
 %%[4.Con
 SEM Expr
-  | Con         loc         .  (gTy,nmErrs)         :=  case valGamLookup @nm @lhs.valGam of
-                                                          Nothing    ->  (Ty_Any,[Err_NamesNotIntrod [@nm]])
-                                                          Just vgi   ->  (vgiTy vgi,[])
+  | Con         loc         .  (gTy,nmErrs)         :=  valGamLookupTy @nm @lhs.valGam
                             .  fTy                  :=  @lhs.tyCnstr |=> @gTy
                             .  fo                   :=  fitsIn @lhs.fiOpts @fe @lUniq2 @fTy (@lhs.tyCnstr |=> @lhs.knTy)
 %%]
@@ -189,7 +184,7 @@ SEM Expr
 
 %%[8.Undefined
 SEM Expr
-  | Undefined   loc         .  ty                   =   @lhs.tyCnstr |=> @lhs.knTy
+  | Undefined   loc         .  ty                   =   @lhs.tyCnstr |=> (tyEnsureNonBotTop @lUniq @lhs.knTy)
 %%]
 
 %%[4.TypeAs

@@ -843,7 +843,7 @@ pDeclInstance   =    pKey "instance"
                                <$>  ((\n e -> Just (n,e)) <$> pVar <*> (True <$ pKey "<:" <|> False <$ pKey "::") `opt` Nothing)
                                <*>  pClassHead
                                <*   pKey "where" <*> pDecls
-                          <|>  sem_Decl_InstanceIntro <$> pVar <* pKey "<:" <*> pPrExprClass
+                          <|>  sem_Decl_InstanceIntro <$> pExpr <* pKey "<:" <*> pPrExprClass
                           )
 %%]
 

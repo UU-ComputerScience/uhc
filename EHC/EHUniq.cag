@@ -116,6 +116,7 @@ SEM AGItf
 
 SEM Expr
   | Case            (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
+  | Undefined       (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
 %%]
 
 %%[9
@@ -148,6 +149,7 @@ SEM Decl
                                                                     =   mkNewLevUID5    @lhs.gUniq
                     (ctxtPrExprs.gUniq,loc.lUniq6,loc.lUniq7)
                                                                     =   mkNewLevUID2    @gUniq2
+  | InstanceIntro   (expr.gUniq,loc.lUniq,loc.lUniq2)               =   mkNewLevUID2    @lhs.gUniq
   | Val             (patExpr.gUniq,loc.lUniq,loc.lUniq2)            :=  mkNewLevUID2    @lhs.gUniq
 %%]
 

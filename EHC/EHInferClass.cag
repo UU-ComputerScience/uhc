@@ -117,6 +117,13 @@ SEM Decl
                                 .   gathTySigGam    =   (maybe id (\(n,_) g -> gamAdd n (ValGamInfo (tyQuantifyClosed @ctxtRecToInstRecTy)) g) @mbNmElim) @lhs.gathTySigGam
                                 .   patValGam       =   @lhs.patValGam
                                 .   patPrElimGam    =   (if @inclForElim then peGamAdd @instClsNm @elimRule else id) @lhs.patPrElimGam
+  | InstanceIntro
+                loc             .   instClsNm       =   tyPredNm @prExpr.ty
+                                .   instId          =   @lUniq
+                                .   dictNm          =   uidHNm @instId
+                                .   elimRule        =   mkInstElimRule @dictNm @instId 0 @prExpr.ty
+                lhs             .   patPrElimGam    =   peGamAdd @instClsNm @elimRule @lhs.patPrElimGam
+                (expr.knTy,loc.prRecErrs)           =   prFitToEvid @lUniq @prExpr.ty @lhs.prIntroGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
