@@ -487,13 +487,8 @@ ATTR PatExpr [ | | mbTopNm: {Maybe HsName} ]
 
 SEM PatExpr
   | Var VarAs   loc         .   mbTopNm             =   if @nm == hsnWild then Nothing else Just @nm
-  | Con CConst IConst App AppTop
+  | * - Var VarAs
                 loc         .   mbTopNm             =   Nothing
-%%]
-
-%%[7
-SEM PatExpr
-  | Rec         loc         .   mbTopNm             =   Nothing
 %%]
 
 %%[7.topNm

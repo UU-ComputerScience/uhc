@@ -219,9 +219,11 @@ hsnLclSupplyL = map (\i -> HNm ("_" ++ show i)) [1..]
 newtype UID= UID [Int] deriving (Eq,Ord)
 %%]
 
-%%[2.UID.Rest
+%%[2.UID.UIDL
 type UIDL = [UID]
+%%]
 
+%%[2.UID.Show
 instance Show UID where
   show (UID ls) = concat . intersperse "_" . map show . reverse $ ls
 %%]
