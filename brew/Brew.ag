@@ -1,0 +1,230 @@
+imports
+{
+import System
+import GetOpt
+import Maybe
+import Char
+import IO
+import List
+import FiniteMap
+import FPath
+import Utils
+import PPUtils
+import UU.Pretty
+import UU.Parsing
+import UU.Parsing.Offside
+import UU.Scanner
+import UU.Scanner.Position( initPos, Pos )
+import UU.Scanner.GenToken
+}
+
+{
+-------------------------------------------------------------------------
+-- Main
+-------------------------------------------------------------------------
+
+main :: IO ()
+main
+  = do { args <- getArgs
+       ; let oo@(o,n,errs)  = getOpt Permute cmdLineOpts args
+             opts           = foldr ($) defaultOpts o
+       ; if optHelp opts
+         then putStrLn (usageInfo "Usage: brew [options] [file]\n\noptions:" cmdLineOpts)
+         else if null errs
+              then  doCompile (if null n then emptyFPath else mkFPath (head n)) opts
+              else  putStr (head errs)
+       }
+
+doCompile :: FPath -> Opts -> IO ()
+doCompile fp opts
+  = do { (fn,fb,fh)
+             <- if fpathIsEmpty fp
+                then return ("<stdin>","<stdin>",stdin)
+                else do { let fn = fpathToStr fp
+                        ; h <- openFile fn ReadMode
+                        ; return (fn,fpathToStr (fpathRemoveSuff fp),h)
+                        }
+       ;  tokens <- offsideScanHandle fn fh
+       ;  let steps = parseOffside (pAGItf) tokens
+       ;  (pres,_) <- evalStepsIO show steps
+       ;  let res = wrap_AGItf pres (Inh_AGItf {opts_Inh_AGItf = opts})
+       ;  putStrLn (disp (pp_Syn_AGItf res)  200 "")
+       }
+
+offsideScanHandle fn fh
+  = do  {  tokens <- scanHandle keywordsText keywordsOps specialChars opChars fn fh
+        ;  return (scanOffside moduleT oBrace cBrace triggers tokens)
+        }
+  where   moduleT   = reserved "let" noPos
+          oBrace    = reserved "{" noPos
+          cBrace    = reserved "}" noPos
+          triggers  = [ reserved x noPos | x <- offsideTrigs ]
+
+instance Position (Maybe Token) where
+  line    =  maybe (-1)  (line.position) 
+  column  =  maybe (-1)  (column.position)
+  file    =  maybe ""    (file.position)
+
+-------------------------------------------------------------------------
+-- Options
+-------------------------------------------------------------------------
+
+data Opts 
+  = Opts
+      { optLaTeX        :: Bool
+      , optHelp         :: Bool
+      , optWrapLhs2tex  :: Bool
+      }
+
+defaultOpts
+  = Opts
+      { optLaTeX        =  False
+      , optHelp         =  False
+      , optWrapLhs2tex  =  True
+      }
+
+cmdLineOpts  
+  =  [  Option "l"  ["latex"]     (NoArg oLaTeX)
+          "generate code for latex, default=no"
+     ,  Option ""   ["help"]      (NoArg oHelp)
+          "output this help"
+     ,  Option ""   ["lhs2tex"]   (OptArg oLhs2tex "yes|no")
+          "wrap chunks in lhs2tex's code environment, default=yes (not implemented)"
+     ]
+  where  oLaTeX          o =  o {optLaTeX = True}
+         oLhs2tex    ms  o =  yesno (\f o -> o {optWrapLhs2tex = f}) ms o
+         oHelp           o =  o {optHelp = True}
+         yesno updO  ms  o =  case ms of
+                                Just "yes"  -> updO True o
+                                Just "no"   -> updO False o
+                                _           -> o
+
+
+-------------------------------------------------------------------------
+-- Scanning
+-------------------------------------------------------------------------
+
+offsideTrigs  =  [ "let", "of" ]
+
+specialChars  =  "().{}[],$"
+opChars       =  "+->="
+
+keywordsText  =  [ "in", "case", "if", "then", "else" ] ++ offsideTrigs
+keywordsOps   =  [ "=", "->", "\\\\", "++" ]
+
+scanHandle :: [String] -> [String] -> String -> String -> FilePath -> Handle -> IO [Token]
+scanHandle keywordstxt keywordsops specchars opchars fn fh
+  = do  {  txt <- hGetContents fh
+        ;  return (scan keywordstxt keywordsops specchars opchars (initPos fn) txt) 
+        }
+
+-------------------------------------------------------------------------
+-- Basic structures
+-------------------------------------------------------------------------
+
+data Name = Nm String deriving (Show,Eq,Ord)
+
+instance PP Name where
+  pp (Nm s) = pp s
+
+-------------------------------------------------------------------------
+-- Parser
+-------------------------------------------------------------------------
+
+type BrParser         ep    =    (IsParser (OffsideParser i o Token p) Token,InputState i Token p, OutputState o, Position p)
+                                    => OffsideParser i o Token p ep
+
+pAGItf :: BrParser T_AGItf
+pAGItf
+  = let mkExprL             =   foldr sem_ExprL_Cons sem_ExprL_Nil
+        pAGItf              =   sem_AGItf_AGItf <$> pDeclL
+        pDeclL              =   foldr sem_DeclL_Cons sem_DeclL_Nil
+                                <$> pBlock pOCurly pSemi pCCurly pDecl
+        pDecl               =   sem_Decl_Bind <$> pNm <* pKey "=" <*> pExpr
+        pNm                 =   Nm <$> (pVarid <|> pConid)
+        pNmKey k            =   Nm <$> pKey k
+        pOp                 =   (\o l r -> sem_Expr_App o (mkExprL [l,r])) <$> pNmKey "++"
+        pExpr               =   pChainr pOp pExprApp
+        pExprApp            =   sem_Expr_App <$> pNm <*> (mkExprL <$> pList pExprBase)
+        pExprBase           =   pParens pExpr
+                            <|> sem_Expr_Var <$> pNm
+     in pAGItf
+}
+
+-------------------------------------------------------------------------
+-- Inferfacing
+-------------------------------------------------------------------------
+
+WRAPPER AGItf
+
+ATTR AGItf [ opts: {Opts} | | ]
+
+-------------------------------------------------------------------------
+-- AST
+-------------------------------------------------------------------------
+
+DATA AGItf
+  | AGItf               declL       : DeclL
+
+DATA Decl
+  | Bind                nm          : {Name}
+                        expr        : Expr
+
+TYPE DeclL = [Decl]
+
+SET AllDecl = Decl DeclL
+
+DATA Expr
+  | App                 func        : {Name}
+                        argL        : ExprL
+  | Lam                 argL        : LamArgs
+  | Let                 bindL       : DeclL
+                        body        : Expr
+  | Var                 nm          : {Name}
+  | Str                 str         : {String}
+  | List                argL        : ExprL
+  | Rec                 bindL       : DeclL
+
+TYPE ExprL = [Expr]
+
+SET AllExpr = Expr ExprL
+
+DATA LamArgs
+  | Var                 nmL         : {[Name]}
+  | Bind                bindL       : ArgBindL
+
+DATA ArgBind
+  | Var                 nmLocal     : {Name}
+                        nm          : {Name}
+
+TYPE ArgBindL = [ArgBind]
+
+SET AllArgBind = ArgBind ArgBindL
+
+SET AllNT = AllExpr AllArgBind AllDecl
+
+-------------------------------------------------------------------------
+-- Pretty printing
+-------------------------------------------------------------------------
+
+ATTR AGItf AllNT [ | | pp USE {>-<} {empty} : PP_Doc ]
+ATTR DeclL ExprL [ | | ppL: {[PP_Doc]} ]
+
+SEM AGItf
+  | AGItf               loc         .   pp          =   vlist @declL.ppL
+
+SEM Decl
+  | Bind                loc         .   pp          =   @nm >#< "=" >#< @expr.pp
+
+SEM DeclL
+  | Nil                 lhs         .   ppL         =   []
+  | Cons                lhs         .   ppL         =   @hd.pp : @tl.ppL
+
+SEM Expr
+  | Var                 loc         .   pp          =   pp @nm
+  | App                 loc         .   pp          =   @func >#< ppListSep "" "" " " @argL.ppL
+
+SEM ExprL
+  | Nil                 lhs         .   ppL         =   []
+  | Cons                lhs         .   ppL         =   @hd.pp : @tl.ppL
+

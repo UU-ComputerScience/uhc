@@ -154,6 +154,16 @@ RULER_DOC_PDF		:= $(RULER_DIR)/RulerDoc.pdf
 
 RULER_SRC			:= $(RULER_DIR)/$(RULER_AG)
 
+BREW				:= bin/brew
+BREW_DIR			:= brew
+BREW_MAIN			:= Brew
+BREW_AG				:= $(BREW_MAIN).ag
+BREW_HS				:= $(BREW_AG:.ag=.hs)
+BREW_DERIV			:= $(BREW_DIR)/$(BREW_HS)
+BREW_DOC_PDF		:= $(BREW_DIR)/BrewDoc.pdf
+
+BREW_SRC			:= $(BREW_DIR)/$(BREW_AG)
+
 CORE_TARG			:= grin
 
 
@@ -416,6 +426,9 @@ afp-tr:
 afp04:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=forAFP04Notes --set=omitTBD --set=omitLitDiscuss" afp-bib
 
+afp-tst:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=forAFP04Notes --set=omitTBD --set=omitLitDiscuss" afp
+
 esop05:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=forESOP05 --set=omitTBD --set=omitLitDiscuss" afp
 
@@ -431,7 +444,7 @@ phd:
 afp-slides:
 	$(MAKE) AFP=$@ LHS2TEX_POLY_MODE=--poly LHS2TEX_OPTS="$(LHS2TEX_OPTS) --set=asSlides --set=omitTBD --set=omitLitDiscuss" afp
 
-.PHONY: shuffle ruler ehcs dist www www-sync gri gris
+.PHONY: shuffle ruler brew ehcs dist www www-sync gri gris
 
 shuffle: $(SHUFFLE)
 
@@ -455,6 +468,17 @@ $(RULER): $(RULER_DIR)/$(RULER_AG) $(wildcard lib/*.hs)
 	strip ../$@
 
 $(RULER_DOC_PDF): $(RULER_DIR)/RulerDoc.tex $(RULER)
+	cd `dirname $<` ; pdflatex `basename $<`
+
+brew: $(BREW)
+
+$(BREW): $(BREW_DIR)/$(BREW_AG) $(wildcard lib/*.hs)
+	cd $(BREW_DIR) ; \
+	$(AGC) -csdfr --module=Main `basename $<` ; \
+	$(GHC) --make -package uust -package data -i../lib $(BREW_HS) -o ../$@ ; \
+	strip ../$@
+
+$(BREW_DOC_PDF): $(BREW_DIR)/RulerDoc.tex $(BREW)
 	cd `dirname $<` ; pdflatex `basename $<`
 
 ehcs: $(EHC_V1) $(EHC_V2) $(EHC_V3) $(EHC_V4) $(EHC_V5) $(EHC_V6) $(EHC_V7) $(EHC_V8) $(EHC_V9)
