@@ -452,11 +452,11 @@ data ParNeed =  ParNotNeeded | ParNeededLow | ParNeeded | ParNeededHigh | ParOve
 
 type ParNeedL = [ParNeed]
 
-parNeedApp :: HsName -> (ParNeed,ParNeed,ParNeedL)
+parNeedApp :: HsName -> (ParNeed,ParNeedL)
 parNeedApp conNm
-  =  let  pr  | hsnIsArrow  conNm   =  (ParNeededLow,ParNotNeeded,[ParNotNeeded,ParNeeded])
-              | hsnIsProd   conNm   =  (ParOverrideNeeded,ParNotNeeded,repeat ParNotNeeded)
-              | otherwise           =  (ParNeeded,ParNeededHigh,repeat ParNeededHigh)
+  =  let  pr  | hsnIsArrow  conNm   =  (ParNeededLow,[ParNotNeeded,ParNeeded])
+              | hsnIsProd   conNm   =  (ParOverrideNeeded,repeat ParNotNeeded)
+              | otherwise           =  (ParNeeded,repeat ParNeededHigh)
      in   pr
 
 ppParNeed :: PP p => ParNeed -> ParNeed -> p -> PP_Doc

@@ -59,6 +59,7 @@
 newtype Gam k v     =   Gam [AssocL k v]  deriving Show
 
 emptyGam            ::  Gam k v
+gamUnit             ::  k -> v      -> Gam k v
 gamLookup           ::  Eq k => k   -> Gam k v -> Maybe v
 gamToAssocL         ::  Gam k v     -> AssocL k v
 gamPushNew          ::  Gam k v     -> Gam k v
@@ -69,6 +70,7 @@ gamAdd              ::  k -> v      -> Gam k v -> Gam k v
 
 %%[1.Base.funs
 emptyGam                            = Gam [[]]
+gamUnit         k v                 = Gam [[(k,v)]]
 gamLookup       k (Gam ll)          = foldr (\l mv -> maybe mv Just (lookup k l)) Nothing ll
 gamToAssocL     (Gam ll)            = concat ll
 gamPushNew      (Gam ll)            = Gam ([]:ll)
@@ -78,13 +80,11 @@ gamAdd          k v                 = gamAddGam (k `gamUnit` v)
 %%]
 
 %%[1.Rest.sigs
-gamUnit             ::  k -> v      -> Gam k v
 gamPop              ::  Gam k v     -> (Gam k v,Gam k v)
 assocLToGam         ::  AssocL k v  -> Gam k v
 %%]
 
 %%[1.Rest.funs
-gamUnit         k v                 = Gam [[(k,v)]]
 gamPop          (Gam (l:ll))        = (Gam [l],Gam ll)
 assocLToGam     l                   = Gam [l]
 %%]

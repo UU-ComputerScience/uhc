@@ -26,7 +26,7 @@ DERIVING *     : Show
 %%% Nested error
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs
+%%[1.mkNestErr hs
 mkNestErr :: PP_Doc -> ErrL -> ErrL
 mkNestErr wher errL | null errL = []
                     | otherwise = [Err_NestedIn wher errL]

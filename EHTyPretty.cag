@@ -224,8 +224,7 @@ SEM TyAGItf
 SEM Ty
   | App         loc     .   (parNeed,argsParNeedL)
                                                 =   if @isSpineRoot
-                                                    then  let  (here,_,args) = parNeedApp @appFunNm
-                                                          in   (here,args)
+                                                    then  parNeedApp @appFunNm
                                                     else  (ParNotNeeded,@lhs.parNeedL)
                 (arg.parNeed,func.parNeedL)
                                                 =   hdAndTl @argsParNeedL
