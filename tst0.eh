@@ -1,8 +1,9 @@
-let class X x where
-      xx :: x -> x
-    instance xxx = X Int where
-      xx = \a -> a
-    f1 :: (# X a #) -> a -> Int
-    f2 :: (# r \ l #) -> (r | l :: a ) -> a
-    f3 :: (# a = Int #) -> a -> Int
+let data Bool = False | True
+in
+let class Eq a where
+      eq :: a -> a -> Bool
+      ne :: a -> a -> Bool
+    class Eq a => Ord a where
+      lt :: a -> a -> Bool
+      gt :: a -> a -> Bool
 in  3

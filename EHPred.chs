@@ -9,10 +9,19 @@
 %%% Pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 import(EHTy,EHCode,EHCommon)
+%%[9 import(UU.Pretty)
 %%]
 
-%%[9 export(PredOcc(..),ProvenPred(..),ProofState(..),OnePredProof(..))
+%%[9 import(EHTy,EHTyPretty,EHCode,EHCommon,EHGam,EHCnstr)
+%%]
+
+%%[9 export(PredL,PredOcc(..),ProvenPred(..),ProofState(..),OnePredProof(..))
+%%]
+
+%%[9 export(Rule(..),RuleL)
+%%]
+
+%%[9 export(PrIntroGamInfo(..),PrElimGamInfo(..),PrIntroGam,PrElimGam)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -50,18 +59,50 @@ data OnePredProof pr
        { oneprfResolve  :: pr -> ProvenPredL -> ProofState
        }
 
-type ProvenPredEvidence
-  = [CExpr] -> CExpr
-
 data Rule
   =  Rule
-       { rulConseq      :: Pred
-       , rulPrereq      :: PredL
-       , rulEvidence    :: ProvenPredEvidence
+       { rulRuleTy      :: Ty
+       , rulMkEvidTy    :: Ty
+       , rulMkEvid      :: [CExpr] -> CExpr
+       , rulNmEvid      :: HsName
        }
+
+instance Show Rule where
+  show r = show (rulNmEvid r) ++ "::" ++ show (rulRuleTy r)
+
+instance PP Rule where
+  pp r = ppTy (rulRuleTy r) >#< "~>" >#< pp (rulNmEvid r) >#< "::" >#< ppTy (rulMkEvidTy r) 
 
 type RuleL
   = [Rule]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gamma for intro rules and elim rules
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+data PrIntroGamInfo
+  =  PrIntroGamInfo
+       { pigiEvidTy     :: Ty
+       , pigiKi         :: Ty
+       , pigiRule       :: Rule
+       } deriving Show
+
+data PrElimGamInfo
+  =  PrElimGamInfo
+       { pegiRuleL :: RuleL
+       } deriving Show
+
+type PrIntroGam = Gam HsName PrIntroGamInfo
+type PrElimGam = Gam HsName PrElimGamInfo
+
+instance PP PrIntroGamInfo where
+  pp pigi = pp (pigiRule pigi) >#< ":::" >#< ppTy (pigiKi pigi)
+
+instance Substitutable PrIntroGamInfo where
+  s |=> pigi        =   pigi { pigiKi = s |=> pigiKi pigi }
+  ftv   pigi        =   ftv (pigiKi pigi)
 %%]
 
 

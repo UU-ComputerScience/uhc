@@ -230,7 +230,7 @@ type KiGam = Gam HsName KiGamInfo
 
 %%[2
 instance Substitutable v => Substitutable (Gam k v) where
-  s |=> (Gam ll)    =   Gam (map (map (\(k,v) -> (k,s |=> v))) ll)
+  s |=> (Gam ll)    =   Gam (map (assocLMapSnd (s |=>)) ll)
   ftv   (Gam ll)    =   unionL . map ftv . map snd . concat $ ll
 
 instance Substitutable ValGamInfo where

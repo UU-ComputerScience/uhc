@@ -1974,6 +1974,7 @@ for the abstract syntax tree, starting with the definition for |Expr|
 
 \savecolumns
 \chunkCmdUseMark{EHPretty.1.Base.ExprSimple}
+\chunkCmdUseMark{EHPretty.1.ExprExtra}
 \restorecolumns
 \chunkCmdUseMark{EHPretty.1.Base.ExprComplex}
 
@@ -2031,6 +2032,7 @@ for the abstract syntax tree, starting with the definition for |Expr|
 \begin{itemize}
 \item AG attribution and attribute definitions
 \chunkCmdFrameUse{EHPretty.1.Base.ExprSimple}
+\chunkCmdFrameUse{EHPretty.1.ExprExtra}
 \item (and more, but left out)
 \end{itemize}
 }

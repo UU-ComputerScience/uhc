@@ -694,12 +694,12 @@ pPrExprClass    =    sem_PrExpr_Class  <$> pCon <*> pTyExprs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-pClassHead      ::   EHParser (T_PrExprL,T_PrExpr)
-pClassHead      =    pPrExprClass <**>  (    (\p c -> (sem_PrExprL_Cons c sem_PrExprL_Nil,p))
+pClassHead      ::   EHParser (T_PrExprs,T_PrExpr)
+pClassHead      =    pPrExprClass <**>  (    (\p c -> (sem_PrExprs_Cons c sem_PrExprs_Nil,p))
                                              <$ pKey "=>" <*> pPrExprClass
-                                        <|>  pSucceed (\p -> (sem_PrExprL_Nil,p))
+                                        <|>  pSucceed (\p -> (sem_PrExprs_Nil,p))
                                         )
-                <|>  (,) <$> pParens (pFoldrSep (sem_PrExprL_Cons,sem_PrExprL_Nil) pComma pPrExprClass)
+                <|>  (,) <$> pParens (pFoldrSep (sem_PrExprs_Cons,sem_PrExprs_Nil) pComma pPrExprClass)
                      <* pKey "=>" <*> pPrExprClass
 
 pDeclClass      ::   EHParser T_Decl

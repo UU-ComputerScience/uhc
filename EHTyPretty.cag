@@ -121,7 +121,7 @@ SEM TyQu
 
 %%[7
 SEM Ty
-  | Ext             loc     .   pp      =   ppAppTop  (hsnRow,@mkPPAppFun @appFunNm @appFunPP)
+  | Ext             loc     .   pp      =   ppAppTop  (hsnRow,mkPPAppFun @appFunNm @appFunPP)
                                                       @appArgPPL empty
 %%]
 
@@ -183,11 +183,9 @@ SEM Ty
 
 %%[7
 SEM Ty
-  | App Ext     loc     .  mkPPAppFun   =   \c p -> if c == hsnRowEmpty then empty else p >|< "|"
   | App         loc     .  (appFunPP,appArgPPL)
-                                        :=  if hsnIsRec @appFunNm || hsnIsSum @appFunNm
-                                            then (@mkPPAppFun @arg.appFunNm @arg.appFunPP,@arg.appArgPPL)
-                                            else (@func.appFunPP,@func.appArgPPL ++ [@arg.pp])
+                                        :=  mkExtAppPP  (@appFunNm,@func.appFunPP,@func.appArgPPL)
+                                                        (@arg.appFunNm,@arg.appFunPP,@arg.appArgPPL,@arg.pp)
   | Ext         loc     .  appArgPPL    =   @ty.appArgPPL ++ [ppFld "::" @positionalNm @nm @extTy.pp]
                         .  appFunPP     =   @ty.appFunPP
 %%]

@@ -85,7 +85,7 @@ SEM Ty
 %%[9
 SEM Ty
   | App         loc         .   frTvL       :=  listCombineUniq (@frRowTvL : @frTvLL)
-  | Pred		loc			.	frTvL		=	listCombineUniq @pr.frTvLL
+  | Pred        loc         .   frTvL       =   listCombineUniq @pr.frTvLL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -119,13 +119,24 @@ SEM TyAGItf
   | AGItf       ty          .   coco        =   CoVariant
 %%]
 
+%%[9
+SEM Ty
+  | Pred        pr          .   coco        =   CoContraVariant
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Is type a candidate where quantification can take place?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4.isQuLoc
 SEM Ty
-  | Var App Quant   loc         .   isQuLoc     =   @lhs.coco /= CoContraVariant
+  | Var App Quant
+                loc         .   isQuLoc     =   @lhs.coco /= CoContraVariant
+%%]
+
+%%[9
+SEM Ty
+  | Pred        loc         .   isQuLoc     =   @lhs.coco /= CoContraVariant
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -160,6 +171,7 @@ SEM Ty
                                                           then  tvarOccurGE2 @frTvLL `union` @frRowTvL
                                                           else  @frTvL
                                                     else  []
+  | Pred        loc         .   qHereTvL        =   @frTvL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -183,9 +195,15 @@ ATTR TyAGItf AllTy [ tvIsBound: {TyVarId -> Bool} | | ]
 
 SEM TyAGItf
   | AGItf       loc         .   (qBndTvL,tvIsBound)     =   tvarsToQuant True @lhs.tvIsBound @qHereTvL
+
 SEM Ty
   | App Var     loc         .   (qBndTvL,tvIsBound)     =   tvarsToQuant @isQuLoc @lhs.tvIsBound @qHereTvL
   | Quant       loc         .   tvIsBound               =   tvBoundAdd @lhs.tvIsBound @introTVarL
+%%]
+
+%%[9
+SEM Ty
+  | Pred        loc         .   (qBndTvL,tvIsBound)     =   tvarsToQuant @isQuLoc @lhs.tvIsBound @qHereTvL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -213,6 +231,12 @@ SEM Ty
   | App Var     loc         .   hereQu          :=  if @qAsExist then tyquExists @lhs.baseQu else @lhs.baseQu
 %%]
 
+%%[9
+SEM Ty
+  | Pred        loc         .   qAsExist        =   @lhs.coco == ContraVariant
+                            .   hereQu          =   if @qAsExist then tyquExists @lhs.baseQu else @lhs.baseQu
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Quantified type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -228,5 +252,10 @@ SEM Ty
   | Var         lhs         .   quTy            =   mkTyQu @hereQu @qBndTvL (Ty_Var @tv @categ.quTy)
   | App         lhs         .   quTy            =   mkTyQu @hereQu @qBndTvL (Ty_App @func.quTy @arg.quTy)
   | Quant       lhs         .   quTy            =   Ty_Quant @qu.self @tv @ty.quTy
+%%]
+
+%%[9
+SEM Ty
+  | Pred        lhs         .   quTy            =   mkTyQu @hereQu @qBndTvL (Ty_Pred @pr.quTy)
 %%]
 

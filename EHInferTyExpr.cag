@@ -183,11 +183,6 @@ SEM TyVars
   | Cons        lhs         .  tyL                  =   @hd.ty : @tl.tyL
 %%]
 
-%%[9
-SEM TyExpr
-  | Pred        lhs         .  ty                   =   Ty_Pred @prExpr.pr
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -216,7 +211,42 @@ SEM RowTyExpr
 ATTR PrExpr [ | | pr: Pred ]
 
 SEM PrExpr
-  | Class       lhs         .   pr                  =   Pred_Class (@nm `mkTyConApp` @tyExprs.tyL)
-  | Lacks       lhs         .   pr                  =   Pred_Lacks @rowTyExpr.tyRow @nm
-  | Eq          lhs         .   pr                  =   Pred_Eq (tgiTy @tgi) @tyExpr.ty
+  | Class       loc         .   pr                  =   Pred_Class (@nm `mkTyConApp` @tyExprs.tyL)
+  | Lacks       loc         .   pr                  =   Pred_Lacks @rowTyExpr.tyRow @nm
+  | Eq          loc         .   pr                  =   Pred_Eq (tgiTy @tgi) @tyExpr.ty
 %%]
+
+%%[9
+ATTR PrExprs [ | | prL: PredL ]
+
+SEM PrExprs
+  | Nil         lhs         .   prL                 =   []
+  | Cons        lhs         .   prL                 =   @hd.pr : @tl.prL
+%%]
+
+%%[9
+ATTR PrExpr [ | | ty: Ty ]
+ATTR PrExprs [ | | tyL: TyL ]
+
+SEM PrExpr
+  | *           lhs         .   ty                  =   Ty_Pred @pr
+
+SEM PrExprs
+  | Nil         lhs         .   tyL                 =   []
+  | Cons        lhs         .   tyL                 =   @hd.ty : @tl.tyL
+%%]
+
+%%[9
+ATTR PrExpr [ | | nm: HsName ]
+
+SEM PrExpr
+  | *           lhs         .   nm                  =   @nm 
+%%]
+
+%%[9
+ATTR PrExpr [ | | kiL: TyL ]
+
+SEM PrExpr
+  | Eq Lacks    lhs         .   kiL                 =   []
+%%]
+
