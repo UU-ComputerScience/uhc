@@ -1044,7 +1044,7 @@ For example for:
 %%2srcfile(test/1-sig-fail.eh%%)
 \end{code}
 
-the compiler will reconstruct the type specification |i :: %%2file<test/1-sig-fail.eh%%>|.
+the compiler will reconstruct the type specification |i :: %%2file(test/1-sig-fail.eh%%)|.
 
 The reconstructed type information is monomorphic, for example for the identity function in:
 
@@ -1052,7 +1052,7 @@ The reconstructed type information is monomorphic, for example for the identity 
 %%2srcfile(test/2-id-int.eh%%)
 \end{code}
 
-the type |id :: %%2file<test/2-id-int.eh%%>|
+the type |id :: %%2file(test/2-id-int.eh%%)|
 will be reconstructed.
 
 \frame<presentation>
@@ -1066,7 +1066,7 @@ will be reconstructed.
 \end{code}
 }
 \item
-Missing type is inferred: |i :: %%2file<test/1-sig-fail.eh%%>|
+Missing type is inferred: |i :: %%2file(test/1-sig-fail.eh%%)|
 \item Inferred types are monomorphic
 \SafeCode{%
 \begin{code}
@@ -1074,7 +1074,7 @@ Missing type is inferred: |i :: %%2file<test/1-sig-fail.eh%%>|
 \end{code}
 }
 gives rise to type
-|id :: %%2file<test/2-id-int.eh%%>|
+|id :: %%2file(test/2-id-int.eh%%)|
 \end{itemize}
 }
 
@@ -1095,7 +1095,7 @@ For example,
 let  id = \x -> x
 in   id 3
 \end{code}
-infers type |id :: %%3<let id = \x -> x in id%%>|.
+infers type |id :: %%3(let id = \x -> x in id%%)|.
 
 A type for a value can also be specified explicitly
 \begin{code}
@@ -1118,7 +1118,7 @@ let  id = \x -> x
 in   id 3
 \end{code}
 }
-gives type |id :: %%3<let id = \x -> x in id%%>|
+gives type |id :: %%3(let id = \x -> x in id%%)|
 \item Type signature may be given
 \SafeCode{%
 \begin{code}
@@ -1173,7 +1173,7 @@ let  f :: (a -> a) -> (Int,Char)
      f = \i -> (i 3, i 'x')
 in   f
 \end{code}
-infers |f :: %%4<let  f :: (a -> a) -> (Int,Char) in f%%>|
+infers |f :: %%4(let  f :: (a -> a) -> (Int,Char) in f%%)|
 
 Specifying a complete type signature can be difficult for complicated types,
 so it is permitted to leave argument and results of a function unspecified
@@ -4753,8 +4753,8 @@ For example
 \begin{code}
 %%srcfile(afp-eh/04.eh%%)
 \end{code}
-gives |v :: %%3file<afp-eh/04.eh%%>|
-and |id :: %%3<let id = \x -> x in id%%>|.
+gives |v :: %%3file(afp-eh/04.eh%%)|
+and |id :: %%3(let id = \x -> x in id%%)|.
 The polymorphic identity function |id| accepts a value of any type |a|,
 giving back a value of the same type |a|.
 Type variables in the type signature are used to specify polymorphic types.
@@ -4856,7 +4856,7 @@ for which the compiler will infer types
 %%3srcfile(test/3-mono-arg2.eh%%)
 \end{code}
 }
-\item Type of \alert<+>{|f :: %%3file<test/3-mono-arg2.eh%%>|}
+\item Type of \alert<+>{|f :: %%3file(test/3-mono-arg2.eh%%)|}
 \onslide<+->
 \item If used in same group of bindings:
 \SafeCode{%
@@ -4864,7 +4864,7 @@ for which the compiler will infer types
 %%3srcfile(test/3-mono-arg4.eh%%)
 \end{code}
 }
-\item Type of \alert<+>{|f :: %%3file<test/3-mono-arg4.eh%%>|}
+\item Type of \alert<+>{|f :: %%3file(test/3-mono-arg4.eh%%)|}
 \item<+-> Analysis per \emph{binding group}
 \end{itemize}
 }
@@ -5264,7 +5264,7 @@ For example in
 \begin{code}
 %%4srcfile(test/3-poly-rank.eh%%)
 \end{code}
-|f| has type |f :: %%4file<test/3-poly-rank.eh%%>|,
+|f| has type |f :: %%4file(test/3-poly-rank.eh%%)|,
 which means that |i| has type |forall a. a ->a| in the body of |f|.
 Therefore |i| can be used polymorphically in the body of |f|.
 
