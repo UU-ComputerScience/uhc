@@ -51,7 +51,8 @@ SEM Expr
   | IConst      loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst (CExpr_Int @int)
   | CConst      loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst (CExpr_Char @char)
   | Let         loc         .   cexpr       :=  mkCExprLet CBindRec (@decls.cbindL) @body.cexpr
-  | App         loc         .   cexpr       :=  CExpr_App
+  | App AppImpl
+                loc         .   cexpr       :=  CExpr_App
                                                     (coeWipeWeave @lhs.finTyCnstr @lhs.cSubst @appImplsCoeL []
                                                       `coeEvalOn` @func.cexpr)
                                                     @arg.cexpr
@@ -68,13 +69,14 @@ SEM Expr
 ATTR Expr [ | | appArgCoeL: {[Coe]} ^^ appFunCExpr: CExpr ]
 
 SEM Expr
-  | App         lhs         .   appArgCoeL      =   @func.appArgCoeL ++ @appImplsCoeL ++ [mkAppCoe emptyCBindLMap [@arg.cexpr]]
+  | App AppImpl
+                lhs         .   appArgCoeL      =   @func.appArgCoeL ++ @appImplsCoeL ++ [mkAppCoe emptyCBindLMap [@arg.cexpr]]
                             .   appFunCExpr     =   @func.appFunCExpr
   | AppTop      lhs         .   (appArgCoeL,appFunCExpr)
                                                 =   if null @lamArgCoeL
                                                     then (@expr.appArgCoeL,@expr.appFunCExpr)
                                                     else ([],@cexpr)
-  | * - App AppTop
+  | * - App AppImpl AppTop
                 lhs         .   appArgCoeL      =   []
                             .   appFunCExpr     =   @cexpr
 %%]

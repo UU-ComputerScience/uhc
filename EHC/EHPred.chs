@@ -27,6 +27,9 @@
 %%[9 export(Rule(..),emptyRule,mkInstElimRule,costAdd,costALot,costBase)
 %%]
 
+%%[9 export(ClsFuncDep)
+%%]
+
 %%[9 export(PrIntroGamInfo(..),PrIntroGam,emptyPIGI)
 %%]
 
@@ -222,6 +225,17 @@ instance PP ProofCost where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Functional dependency
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+type ClsFuncDep = ([Int],[Int])
+
+instance PP ClsFuncDep where
+  pp (f,t) = ppCommaList f >|< "->" >|< ppCommaList t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Rule
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -233,9 +247,10 @@ data Rule
        , rulNmEvid          :: HsName
        , rulId              :: PredOccId
        , rulCost            :: ProofCost
+       , rulFuncDeps        :: [ClsFuncDep]
        }
 
-emptyRule = Rule Ty_Any head hsnUnknown uidStart (CostInt costALot)
+emptyRule = Rule Ty_Any head hsnUnknown uidStart (CostInt costALot) []
 
 mkInstElimRule :: HsName -> PredOccId -> Int -> Ty -> Rule
 mkInstElimRule n i sz ctxtToInstTy
@@ -244,6 +259,7 @@ mkInstElimRule n i sz ctxtToInstTy
                      , rulNmEvid    = n
                      , rulId        = i
                      , rulCost      = CostInt (costBase + 2 * costBase * sz)
+                     , rulFuncDeps  = []
                      }
      in   r
 
@@ -255,7 +271,7 @@ instance Show Rule where
   show r = show (rulNmEvid r) ++ "::" ++ show (rulRuleTy r)
 
 instance PP Rule where
-  pp r = ppTy (rulRuleTy r) >#< "~>" >#< pp (rulNmEvid r) >|< "/" >|< pp (rulId r)
+  pp r = ppTy (rulRuleTy r) >#< "~>" >#< pp (rulNmEvid r) >|< "/" >|< pp (rulId r) >#< "|" >|< ppCommaList (rulFuncDeps r)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

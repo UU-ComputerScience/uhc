@@ -153,6 +153,9 @@ DATA Expr
   | Var             nm              : {HsName}
   | App             func            : Expr
                     arg             : Expr
+  | AppImpl         func            : Expr
+                    arg             : Expr
+                    argPr           : PrExpr
   | Let             decls           : Decls
                     body            : Expr
   | Lam             arg             : PatExpr
