@@ -285,9 +285,9 @@ unboxArgL uniq tyNm vL
   =  let  nL = map uidHNm . mkNewUIDL (length vL) $ uniq
      in   foldr  (\(n,a) (aL,wG)
                     ->  case a of
-                            GrVal_Node _ _
-                                -> (GrVal_Var n : aL,GrExpr_Seq (GrExpr_Unit a) (mkGrUnbox tyNm n) . wG)
-                            _   -> (a:aL,wG)
+                            GrVal_LitInt _
+                                -> (a:aL,wG)
+                            _   -> (GrVal_Var n : aL,GrExpr_Seq (GrExpr_Unit a) (mkGrUnbox tyNm n) . wG)
                  )
                  ([],id)
           $ zip nL vL

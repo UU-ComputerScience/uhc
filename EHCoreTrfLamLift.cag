@@ -186,10 +186,16 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllBind [ mutRecNmL: {[HsName]} | | ]
+ATTR AllCodeNT [ mutRecMp: LevMp | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   mutRecMp    =   emptyFM
 
 SEM CExpr
-  | Let         binds       .   mutRecNmL   =   if @categ == CBindRec then @binds.nmL else []
+  | Let         binds       .   mutRecMp    =   (if @categ == CBindRec
+                                                 then @lhs.mutRecMp `plusFM` listToFM (zip @binds.nmL (repeat @lhs.lev))
+                                                 else @lhs.mutRecMp
+                                                )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -212,6 +218,9 @@ fvLArgRepl uniq argLevL
   =  let  argOL = assocLKeys argLevL
           argNL = zipWith (\u n -> mkFvNm u n) [uniq..] argOL
      in   (argOL,argNL,listToFM (zip argOL argNL))
+
+varRepl :: FiniteMap HsName HsName -> HsName -> CExpr
+varRepl nMp n = maybe (CExpr_Var n) CExpr_Var . lookupFM nMp $ n
 %%]
 
 %%[8
@@ -231,7 +240,7 @@ SEM CBind
                                                            ,@nm `unitFM` argOL
                                                            )
                                                 else  if @expr.isLet
-                                                then  let  argLevL = zip @lhs.mutRecNmL (repeat cLevOuter) ++ fvLAsArg @lhs.levMp @expr.fvS
+                                                then  let  argLevL = fvLAsArg (@lhs.levMp `plusFM` @lhs.mutRecMp) @expr.fvS
                                                            cafLamNm = mkFvNm @lhs.gUniq @nm
                                                            (argOL,argNL,argONMp) = fvLArgRepl (@lhs.gUniq + 1) argLevL
                                                       in   if null argLevL
@@ -239,14 +248,14 @@ SEM CBind
                                                            else  (@lhs.gUniq + 1 + length argOL,argONMp
                                                                  ,[CBind_Bind cafLamNm (mkCExprLam argNL @expr.cTrf)]
                                                                  ,[]
-                                                                 ,[CBind_Bind @nm (mkCExprApp (CExpr_Var cafLamNm) (map CExpr_Var argOL))]
+                                                                 ,[CBind_Bind @nm (mkCExprApp (CExpr_Var cafLamNm) (map (varRepl @lhs.argSubst) argOL))]
                                                                  ,emptyFM
                                                                  )
                                                 else  (@lhs.gUniq,emptyFM,[],[],[@cTrf],emptyFM)
   | FFI         loc         .   bindVarBindL=   [@cTrf]
 
 SEM CExpr
-  | Var         lhs         .   cTrf        =   let  r n = maybe (CExpr_Var n) CExpr_Var . lookupFM @lhs.argSubst $ n
+  | Var         lhs         .   cTrf        =   let  r n = varRepl @lhs.argSubst n
                                                      v1 = r @nm
                                                      v2 = maybe v1 (mkCExprApp v1 . map r) . lookupFM @lhs.lamArgMp $ @nm
                                                 in   v2
@@ -264,3 +273,14 @@ SEM CExpr
                 lhs         .   cTrf        =   foldr (\(c,b) e -> mkCExprLet c b e) @body.cTrf . seqToList $ @hereBindSq
 %%]
 
+                                                then  let  argLevL = zip @lhs.mutRecNmL (repeat cLevOuter) ++ fvLAsArg @lhs.levMp @expr.fvS
+                                                           cafLamNm = mkFvNm @lhs.gUniq @nm
+                                                           (argOL,argNL,argONMp) = fvLArgRepl (@lhs.gUniq + 1) argLevL
+                                                      in   if null argLevL
+                                                           then  (@lhs.gUniq,emptyFM,[],[@cTrf],[],emptyFM)
+                                                           else  (@lhs.gUniq + 1 + length argOL,argONMp
+                                                                 ,[CBind_Bind cafLamNm (mkCExprLam argNL @expr.cTrf)]
+                                                                 ,[]
+                                                                 ,[CBind_Bind @nm (mkCExprApp (CExpr_Var cafLamNm) (map CExpr_Var argOL))]
+                                                                 ,emptyFM
+                                                                 )
