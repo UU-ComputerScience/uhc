@@ -45,7 +45,7 @@ SEM Decl
                             .   supPrUIDL           =   mkNewUIDL (length @supPrTyL) @lUniq4
                             .   supPrElimGam        =   peGamDel @instClsNm @elimRule @instPrElimGam
                             .   declsPrElimGam      =   peGamDel @instClsNm @elimRule @instPrElimGam
-                            .   (supPrfCBindLMap,supCSubst,supRemPrfPrL,supEvidL,supPrfErrs)
+                            .   (supPrfCBindLMap,supCSubst,supRemPrfPrL,supEvidL,supPrfErrs,(dbgPrfG1,dbgPrfPruneG1,dbgPrfTr1))
                                                     =   prfPreds @lUniq5 (emptyFE {fePrElimGam = @supPrElimGam}) (zipWith PredOcc (map tyPred @supPrTyL) @supPrUIDL)
                 decls       .   prElimGam           =   @declsPrElimGam
 %%]
@@ -58,9 +58,9 @@ SEM Decl
 SEM Expr
   | Let         loc         .   gathSubsPredL       =   @decls.tyCnstr |=> @decls.gathPredL
                             .   gathBodySubsPredL   =   @body.tyCnstr |=> @body.gathPredL
-                            .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs)
+                            .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs,(dbgPrfG1,dbgPrfPruneG1,dbgPrfTr1))
                                                     =   prfPreds @lUniq4 (emptyFE {fePrElimGam = @prElimGam}) @gathSubsPredL
-                            .   (bodyPrfCBindLMap,bodyCSubst,bodyRemPrfPrL,_,bodyPrfErrs)
+                            .   (bodyPrfCBindLMap,bodyCSubst,bodyRemPrfPrL,_,bodyPrfErrs,(dbgPrfG2,dbgPrfPruneG2,dbgPrfTr2))
                                                     =   prfPreds @lUniq5 (emptyFE {fePrElimGam = @prElimGam}) @gathBodySubsPredL
                             .   quantPrIdSet        =   unionManySets
                                                         . map (unionManySets . map (maybe emptySet fst . lookupFM @prfCBindLMap) . setToList . tqoInsPrIdSet)
@@ -87,13 +87,13 @@ SEM Expr
                             .   prElimGam           =   foldr (\p g -> peGamAddKnPr (uidHNm (poId p)) (poId p) (poPr p) g) (gamPushNew @lhs.prElimGam) @knPrL
                             .   prfFE               =   emptyFE {fePrElimGam = @prElimGam}
   | AppTop Lam LamImpl
-                loc         .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs)
+                loc         .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs,(dbgPrfG,dbgPrfPruneG,dbgPrfTr))
                                                     =   prfPreds @lUniq3 @prfFE @inKnGathPrL
                             .   gathPredL           =   @remPrfPrL ++ @remGathPrL
 
 SEM Decl
   | Instance    loc         .   gathSubsPredL       =   @decls.tyCnstr |=> @decls.gathPredL
-                            .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs)
+                            .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs,(dbgPrfG2,dbgPrfPruneG2,dbgPrfTr2))
                                                     =   prfPreds @lUniq7 (emptyFE {fePrElimGam = @declsPrElimGam}) @gathSubsPredL
                 lhs         .   gathPredL           =   []
 

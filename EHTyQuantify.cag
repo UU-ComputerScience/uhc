@@ -25,7 +25,7 @@ WRAPPER TyAGItf
 %%[6 hs export(kiQuantify)
 %%]
 
-%%[9 hs import(Maybe,Set,UU.Pretty) export(tyQuantifyPr,TyQuOut(..),TyQuOpts(..),defaultTyQuOpts)
+%%[9 hs import(Maybe,Set,UU.Pretty) export(tyQuantifyPr,tyQuantifyRank,TyQuOut(..),TyQuOpts(..),defaultTyQuOpts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,6 +40,15 @@ tyQuantify tvIsBound ty = mkTyQu (filter (not.tvIsBound) (ftv ty)) ty
 %%[3.tyQuantifyClosed hs
 tyQuantifyClosed :: Ty -> Ty
 tyQuantifyClosed = tyQuantify (const False)
+%%]
+
+%%[9.tyQuantifyClosed -3.tyQuantifyClosed hs
+tyQuantifyClosed :: Ty -> Ty
+tyQuantifyClosed = tyQuantifyRank [1..]
+
+tyQuantifyRank :: [Int] -> Ty -> Ty
+tyQuantifyRank rL ty
+  = tqoTy (tyQuantifyPr (defaultTyQuOpts {tqoptQuRanks = rL}) (const False) TyQu_Forall [] ty)
 %%]
 
 %%[4.tyQuantify -3.tyQuantify hs
@@ -65,7 +74,8 @@ tyQuantify' tvIsBound baseQuant ty
   = let  t  =  wrap_TyAGItf
                   (sem_TyAGItf  (TyAGItf_AGItf ty))
                   (Inh_TyAGItf  { baseQu_Inh_TyAGItf        = baseQuant
-                                , tvIsBound_Inh_TyAGItf     = tvIsBound })
+                                , tvIsBound_Inh_TyAGItf     = tvIsBound
+                                })
     in   quTy_Syn_TyAGItf t
 %%]
 
@@ -75,10 +85,10 @@ tyQuantify' tvIsBound baseQuant ty = tqoTy (tyQuantifyPr defaultTyQuOpts tvIsBou
 %%]
 
 %%[9 hs
-data TyQuOpts  = TyQuOpts  {tqoptLeaveImpls :: Bool}
+data TyQuOpts  = TyQuOpts  {tqoptLeaveImpls :: Bool, tqoptQuRanks :: [Int]}
 
 defaultTyQuOpts :: TyQuOpts
-defaultTyQuOpts = TyQuOpts False
+defaultTyQuOpts = TyQuOpts False [1..]
 
 data TyQuOut   = TyQuOut   {tqoTy :: Ty, tqoInsPrIdSet :: Set PredOccId, tqoImplsCnstr :: Cnstr}
 
@@ -111,6 +121,9 @@ tyQuantifyPr opts tvIsBound baseQuant prL ty
 
 %%[9
 ATTR TyAGItf AllTy [ opts: TyQuOpts | | ]
+
+SEM TyAGItf
+  | AGItf       ty          .   opts        =   @lhs.opts {tqoptQuRanks = take 5 (tqoptQuRanks @lhs.opts)}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -178,6 +191,22 @@ SEM Ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Rank
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR AllTy [ rank: Int | | ]
+
+SEM Ty
+  | App         arg         .   rank        =   @lhs.rank + (if @isArrowArg then 1 else 0)
+  | Var App Pred
+                loc         .   isQuRank    =   @lhs.rank `elem` tqoptQuRanks @lhs.opts
+
+SEM TyAGItf
+  | AGItf       ty          .   rank        =   1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Determine co- contravariance of place in type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -200,8 +229,8 @@ SEM Ty
   | Pred        pr          .   coco        =   CoContraVariant
 
 SEM Pred
-  | Pred  		ty          .   coco        =   CoVariant
-  | Class  		ty          .   coco        =   CoContraVariant
+  | Pred        ty          .   coco        =   CoVariant
+  | Class       ty          .   coco        =   CoContraVariant
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -262,7 +291,7 @@ SEM Ty
 ATTR AllTy [ | | qInsideTvL USE {++} {[]}: TyVarIdL ]
 
 SEM Ty
-  | App			lhs			.	qInsideTvL		=	@qHereTvL
+  | App         lhs         .   qInsideTvL      =   @qHereTvL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -444,17 +473,22 @@ SEM Ty
   | Quant       lhs         .   quTy            =   Ty_Quant @qu.self @tv @ty.quTy
 %%]
 
+%%[9 hs
+mkTyQuForRank :: Bool -> TyQu -> TyVarIdL -> Ty -> Ty
+mkTyQuForRank allow q l t = if allow then mkTyQu q l t else t
+%%]
+
 %%[9
 SEM Ty
-  | Var         lhs         .   quTy            :=  mkTyQu @hereQu @qBndTvL . mkTyPr (map poPr @insPrL) $ Ty_Var @tv @categ.quTy
-  | App         loc         .   quTy            :=  mkTyQu @hereQu (filter (`notElem` @frRowTvL) @qBndTvL)
-                                                    .  mkTyQu @lhs.baseQu (filter (`elem` @frRowTvL) @qBndTvL)
+  | Var         lhs         .   quTy            :=  mkTyQuForRank @isQuRank @hereQu @qBndTvL . mkTyPr (map poPr @insPrL) $ Ty_Var @tv @categ.quTy
+  | App         loc         .   quTy            :=  mkTyQuForRank @isQuRank @hereQu (filter (`notElem` @frRowTvL) @qBndTvL)
+                                                    .  mkTyQuForRank @isQuRank @lhs.baseQu (filter (`elem` @frRowTvL) @qBndTvL)
                                                     .  mkTyPr (map poPr @insPrL)
                                                     $  (if tqoptLeaveImpls @lhs.opts
                                                         then Ty_App @func.quTy @arg.quTy
                                                         else maybe (Ty_App @func.quTy @arg.quTy) (const @arg.quTy) @func.mbImpls
                                                        )
-  | Pred        lhs         .   quTy            =   mkTyQu @hereQu @qBndTvL (Ty_Pred @pr.quTy)
+  | Pred        lhs         .   quTy            =   mkTyQuForRank @isQuRank @hereQu @qBndTvL (Ty_Pred @pr.quTy)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
