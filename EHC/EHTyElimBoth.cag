@@ -17,12 +17,20 @@ WRAPPER TyAGItf
 %%]
 
 %%[4_1 hs
-tyElimBoth :: Ty -> (Ty,Cnstr)
-tyElimBoth ty
+tyElimBoth :: TyVarIdL -> Ty -> (Ty,Cnstr)
+tyElimBoth elimTvL ty
   =  let  t =  wrap_TyAGItf
                  (sem_TyAGItf (TyAGItf_AGItf ty))
-                 (Inh_TyAGItf)
+                 (Inh_TyAGItf {elimTvL_Inh_TyAGItf = elimTvL})
      in   (repl_Syn_TyAGItf t,cnstr_Syn_TyAGItf t)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tvars to eliminate
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_1
+ATTR AllAllTy TyAGItf [ elimTvL: TyVarIdL | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -34,7 +42,7 @@ ATTR AllAllTy [ | | repl: SELF  ]
 ATTR TyAGItf  [ | | repl: Ty    ]
 
 SEM Ty
-  | Both            loc     .   repl        =   mkTyVar @tv
+  | Both            loc     .   replTv      =   mkTyVar @tv
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -48,11 +56,28 @@ ATTR TyAGItf  [ | | cnstr: Cnstr ]
 
 SEM Ty
   | Both            lhs     .   (replExpose,cnstr)
-                                            =   case @tyL.replExpose of
-                                                    []      ->  (@repl,@lhs.cnstr)
-                                                    (r:_)   ->  (r,(@tv `cnstrTyUnit` r) |=> @tyL.cnstr)
+                                            =   if @tv `elem` @lhs.elimTvL
+                                                then  case @tyL.replExpose of
+                                                        []      ->  (@replTv,@lhs.cnstr)
+                                                        (r:_)   ->  (r,(@tv `cnstrTyUnit` r) |=> @tyL.cnstr)
+                                                else  let  r = Ty_Both @tv @tyL.replExpose
+                                                      in   (r,@tyL.cnstr)
+                    lhs     .   repl        =   if @tv `elem` @lhs.elimTvL then @replTv else @repl
 
 SEM TyAGItf
   | AGItf           ty      .   cnstr       =   emptyCnstr
 %%]
+SEM Ty
+  | Both            lhs     .   (replExpose,cnstr)
+                                            =   if @tv `elem` @lhs.elimTvL
+                                                then  case @tyL.replExpose of
+                                                        []      ->  (@replTv,@lhs.cnstr)
+                                                        (r:_)   ->  (r,(@tv `cnstrTyUnit` r) |=> @tyL.cnstr)
+                                                else  let  r = Ty_Both @tv @tyL.replExpose
+                                                      in   (r,@tyL.cnstr)
+SEM Ty
+  | Both            lhs     .   (replExpose,cnstr)
+                                            =   case @tyL.replExpose of
+                                                    []      ->  (@replTv,@lhs.cnstr)
+                                                    (r:_)   ->  (r,(@tv `cnstrTyUnit` r) |=> @tyL.cnstr)
 

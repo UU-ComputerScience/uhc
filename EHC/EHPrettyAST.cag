@@ -208,7 +208,6 @@ SEM TyExpr
 %%[4_2
 SEM AGItf
   | AGItf       loc     .  infoImpr :=  [ mkInfo1 "expr.imprTyCnstr" (ppCnstrV @expr.imprTyCnstr)
-                                        , mkInfo1 "elimImprTyCnstr" (ppCnstrV @elimImprTyCnstr)
                                         , mkInfo1 "expr.quTyCnstr" (ppCnstrV @expr.quTyCnstr)
                                         ]
 
@@ -227,6 +226,11 @@ SEM Expr
                                         , mkInfo1 "lhs.tyCnstr" (ppCnstrV @lhs.tyCnstr)
                                         ]
 %%]
+SEM AGItf
+  | AGItf       loc     .  infoImpr :=  [ mkInfo1 "expr.imprTyCnstr" (ppCnstrV @expr.imprTyCnstr)
+                                        , mkInfo1 "elimImprTyCnstr" (ppCnstrV @elimImprTyCnstr)
+                                        , mkInfo1 "expr.quTyCnstr" (ppCnstrV @expr.quTyCnstr)
+                                        ]
   | Let         loc     .  infoImpr :=  [ mkInfo1 "lValGam+imprCnstr" (ppGam (@decls.imprTyCnstr |=> @lValGam))
                                         , mkInfo1 "lElimValGam" (ppGam @lElimValGam)
                                         , mkInfo1 "decls.imprTyCnstr" (ppCnstrV @decls.imprTyCnstr)

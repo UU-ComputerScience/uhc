@@ -6,6 +6,15 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Conversion
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4 hs
+gamErrToL :: Gam HsName ErrL -> ErrL 
+gamErrToL = concat . map (\(n,e) -> mkNestErr (pp n) e) . gamToAssocL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gather errors
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -55,6 +64,19 @@ SEM Expr
 SEM PatExpr
   | Con         lhs         .  errL         =   mkNestErr @pp (@nmErrs ++ foErrL @fo)
   | TypeAs      lhs         .  errL         =   mkNestErr @pp (@patExpr.errL ++ @tyExpr.errL ++ foErrL @fo)
+%%]
+
+%%[4_2
+SEM Expr
+  | Lam         loc         .  gamErrL      =   gamErrToL @errGam
+                lhs         .  errL         :=  mkNestErr @pp
+                                                    (foErrL @foKnFun ++ @arg.errL ++ @body.errL ++ @gamErrL)
+%%]
+
+%%[4_3
+SEM Expr
+  | Let         loc         .  gamErrL      =   gamErrToL @errGam
+                            .  letErrL      :=  @dupErrs ++ @gamErrL
 %%]
 
 %%[5
@@ -136,13 +158,15 @@ SEM Expr
                             .  errLetPP     =   ppErrs @letErrL
                             .  errBodyPP    =   ppErrs @body.errL
                 lhs         .  errL         =   []
+
+SEM AGItf
+  | AGItf       loc         .  errTopPP     =   empty
 %%]
 
-%%[4_3
-SEM Expr
-  | Let         loc         .  gamErrL      =   concat . map (\(n,e) -> mkNestErr (pp n) e) . gamToAssocL $ @errGam
-                            .  letErrL      :=  @dupErrs ++ @gamErrL
+%%[4_2
 %%]
+SEM AGItf
+  | AGItf       loc         .  errTopPP     :=  ppErrs (@elimImprErrs)
 
 %%[9
 SEM Decl
@@ -159,7 +183,7 @@ SEM Expr
   | Let         loc         .  letErrL      :=  @dupErrs ++ @prfErrs
 
 SEM AGItf
-  | AGItf       loc         .  errTopPP     =   ppErrs (@predNotPrfErrs)
+  | AGItf       loc         .  errTopPP     :=  ppErrs (@predNotPrfErrs)
 %%]
 
 %%[9_1
