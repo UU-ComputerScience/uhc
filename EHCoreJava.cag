@@ -188,7 +188,7 @@ SEM CExpr
   | App         loc         .   jvSrc       =   let  (f:as) = reverse @jvSrcL
   												in   case @func.mbTupApp of
   												       Just (CTag t l)  -> jvTupApp (("new Int" >|< pp_parens (pp t)) : as)
-  												       Just CTagNone    -> jvTupApp (as)
+  												       Just CTagRec     -> jvTupApp (as)
   												       Nothing          -> jvApp f as
   | Let         loc         .   jvBinds     =   case @categ of
                                                     CBindFFI     -> @binds.jvSrc
@@ -204,7 +204,7 @@ SEM CExpr
                                                      >|< pp_parens
                                                             (if @alts.tagSz > 0
                                                              then jvForceInt (jvInx (jvNmPP @jvCaseScrutinee) (0::Int))
-                                                             else ppCTagInt ctagNone
+                                                             else ppCTagInt CTagRec
                                                             )
                                                      >-< pp_braces
                                                             (   @alts.jvSrc

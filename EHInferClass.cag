@@ -45,7 +45,7 @@ SEM Decl
                                 .   elimRules       =   let  mkR sub sup supNm
                                                                =  Rule
                                                                     { rulRuleTy    = tyQuantifyClosed ([sub] `mkTyArrow` sup)
-                                                                    , rulMkEvid    = \[sub] -> CExpr_TupSel sub ctagNone
+                                                                    , rulMkEvid    = \[sub] -> CExpr_TupSel sub CTagRec
                                                                                                  (CExpr_Int . tyRecOffset supNm $ @clsTyRec)
                                                                     , rulNmEvid    = hsnUnknown
                                                                     , rulId        = uidStart

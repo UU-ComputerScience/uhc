@@ -113,7 +113,6 @@ SEM GrSplit
 SEM GrTag
   | Lit         lhs         .   pp          =   "#" >|< @int >|< "/" >|< pp @categ >|< "/" >|< @lhs.ppGrNm @nm
   | Var         lhs         .   pp          =   @lhs.ppGrNm @nm
-  | None        lhs         .   pp          =   pp "()"
 %%]
 
 %%[8

@@ -7875,6 +7875,8 @@ Named instances \cite{kahl01named-instance}.
 \section{EH 10: Extensible records}
 \label{ehc10}
 
+\subsection{Coercion}
+
 \begin{center}
 \begin{tabular}{l||||p{.12\textwidth}p{.14\textwidth}||p{.12\textwidth}p{.12\textwidth}||p{.12\textwidth}p{.12\textwidth}}
 |<=| 			& |(x)|	& |(x,y)|	& |(c2||x)|	& |(c2||x,y)|	& |(r2||x)|	& |(r2||x,y)| 	\\
@@ -7915,6 +7917,37 @@ Notes:
 By rebuilding a record if the |rhs| of |<=| is fully known,
 we can be more liberal in constraining the |lhs|.
 For example, in |(r1||x) <= (x)| it is not necessary to restrict |r1 :-> ()|.
+\end{itemize}
+
+\subsection{Low level code for update/extend}
+
+\begin{TT}
+Node* old[] ;
+Node* new[] ;
+struct{enum {UPD;EXT} what; int offset; Node* val} upd[] ;
+for ( o = 0, n = 0, u = 0 ; u < upd.length ; ) {
+  for ( ; o < upd[u].offset ; ) {
+    new[n++] = old[o++]
+  }
+  switch( upd[u].what ) {
+    case EXT : new[n++] = upd[u].val ; break ;
+    case UPD : new[n++] = upd[u].val ; o++ ; break ;
+  }
+  u++ ;
+}
+for ( ; o < old.length ; ) {
+  new[n++] = old[o++] ;
+}
+\end{TT}
+
+Notes:
+\begin{itemize}
+\item
+All offsets are expressed in terms of the original/old record.
+\item
+The @upd[..].offset@'s should be sorted.
+If this can statically be determined, loop unrolling can be done.
+This cannot be determined statically for label polymorphism.
 \end{itemize}
 
 \subsection<article>{Literature}

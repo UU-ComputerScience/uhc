@@ -18,7 +18,7 @@
 %%[8 hs export(CPatNm(..), cpatNmEither,cpatNmNone)
 %%]
 
-%%[8 hs export(CTag(..),ctagNone,ctag,cpatVarNm,caltTag,caltIsVar,caltPatL,caltPat,caltLPatNms,cvarUndefined,ppCTag,ppCTagInt) 
+%%[8 hs export(CTag(..),ctag,cpatVarNm,caltTag,caltIsVar,caltPatL,caltPat,caltLPatNms,cvarUndefined,ppCTag,ppCTagInt) 
 %%]
 
 %%[8 hs export(mkCExprLet,mkCExprLetRec,mkCExprLam,mkCExprApp)
@@ -45,10 +45,7 @@ DERIVING *     : Show, Eq
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-data CTag = CTagNone | CTag Int HsName deriving (Show,Eq,Ord)
-
-ctagNone  ::  CTag
-ctagNone  =   CTagNone
+data CTag = CTagRec | CTag Int HsName deriving (Show,Eq,Ord)
 
 ctag :: a -> (Int -> HsName -> a) -> CTag -> a
 ctag n t tg = case tg of {CTag i l -> t i l; _ -> n}

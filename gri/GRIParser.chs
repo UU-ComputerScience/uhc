@@ -54,12 +54,12 @@ pExpr           ::   GRIParser GrExpr
 pExpr           =    GrExpr_Unit    <$  pKey "unit"     <*> pVal
                 <|>  GrExpr_Store   <$  pKey "store"    <*> pVal
                 <|>  GrExpr_Eval    <$  pKey "eval"     <*> pGrNm
-                <|>  GrExpr_Fetch   <$  pKey "fetch"    <*> pGrNm   <*> (Just <$> pInt `opt` Nothing)
-                <|>  GrExpr_Update  <$  pKey "update"   <*> pGrNm   <*> pVal
-                <|>  GrExpr_Case    <$  pKey "case"     <*> pVal    <*  pKey "of" <*> pCurly_pSemics pAlt
-                <|>  GrExpr_App     <$  pKey "apply"    <*> pGrNm   <*> pSValL
-                <|>  GrExpr_FFI     <$  pKey "ffi"      <*> pVarid  <*> pGrNmL
-                <|>  GrExpr_Call                        <$> pGrNm   <*> pSValL
+                <|>  GrExpr_Fetch   <$  pKey "fetch"    <*> pGrNm   <*>  (Just <$> pInt `opt` Nothing)
+                <|>  GrExpr_Update  <$  pKey "update"   <*> pGrNm   <*>  pVal
+                <|>  GrExpr_Case    <$  pKey "case"     <*> pVal    <*   pKey "of" <*> pCurly_pSemics pAlt
+                <|>  GrExpr_App     <$  pKey "apply"    <*> pGrNm   <*>  pSValL
+                <|>  GrExpr_FFI     <$  pKey "ffi"      <*> pId     <*>  pGrNmL
+                <|>  GrExpr_Call                        <$> pGrNm   <*>  pSValL
 
 pSVal           ::   GRIParser GrVal
 pSVal           =    GrVal_Var      <$> pGrNm
@@ -104,7 +104,6 @@ pSplit          =    GrSplit_Sel <$> pGrNm <* pKey "=" <*> pVal
 
 pTag            ::   GRIParser GrTag
 pTag            =    (\i c n -> GrTag_Lit c i n) <$ pKey "#" <*> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> pGrNm
-                <|>  pParens (pSucceed GrTag_None)
 
 pTagVar         ::   GRIParser GrTag
 pTagVar         =    GrTag_Var <$> pGrNm
@@ -122,6 +121,9 @@ pGrNmL          =    pList pGrNm
 
 pGrNm           ::   GRIParser HsName
 pGrNm           =    HNm <$> pVarid
+
+pId             ::   GRIParser String
+pId             =    pConid <|> pVarid
 
 pInt            ::   GRIParser Int
 pInt            =    read <$> pInteger
