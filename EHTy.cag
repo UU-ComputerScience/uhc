@@ -36,10 +36,10 @@
 %%[8 hs import(List) export(tyRowCanonOrder,tyRecOffset) 
 %%]
 
-%%[9 hs export(Pred(..),tyPredNm,tyPred)
+%%[9 hs export(Pred(..),tyPredNm,tyPred,tyImplsPreds,tyArrowImplsArgRes)
 %%]
 
-%%[9 hs export(tyRecExts,tyAppFunConNm,tyArrowArity,Impls(..),ImplsVarId)
+%%[9 hs export(tyRecExts,tyAppFunConNm,tyArrowArity,Impls(..),ImplsVarId,mkImplsVar)
 %%]
 
 %%[1 import(EHTyAbsSyn)
@@ -201,6 +201,11 @@ mkTyFreshProd :: Int -> Ty
 mkTyFreshProd = mkTyFreshProdFrom uidStart
 %%]
 
+%%[9 hs
+mkImplsVar :: ImplsVarId -> Ty
+mkImplsVar v = Ty_Impls (Impls_Tail v)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -271,6 +276,28 @@ tyAppFunConNm = tyConNm . fst . tyAppFunArgs
 
 tyArrowArity :: Ty -> Int
 tyArrowArity = length . fst . tyArrowArgsRes
+%%]
+
+%%[9 hs
+tyArrowImplsRes  :: Ty -> (TyL,Ty)
+tyArrowImplsRes t
+  =  case t of
+       (Ty_App (Ty_App (Ty_Con nm) a) r)
+         | hsnIsArrow nm && isImpls a
+           -> let (as,r') = tyArrowImplsRes r in (a:as,r')
+         where  isImpls (Ty_Pred  _)  = True
+                isImpls (Ty_Impls _)  = True
+                isImpls _             = False
+       _                  -> ([],t)
+
+tyArrowImplsArgRes  :: Ty -> (TyL,Ty,Ty)
+tyArrowImplsArgRes t
+  =  let  (i,t')  = tyArrowImplsRes  t
+          (a,r)   = tyArrowArgRes    t'
+     in   (i,a,r)
+
+tyImplsPreds :: TyL -> ([Pred],Impls)
+tyImplsPreds = foldr (\t (ps,i) -> case t of {Ty_Pred p -> (p:ps,i); Ty_Impls i -> (ps,i)}) ([],Impls_Nil)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -351,4 +378,16 @@ tyPredNm t
        Ty_Pred (Pred_Class pt)  -> tyAppFunConNm pt
        _                        -> hsnUnknown
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expansion of implicits
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+%%]
+
+implsExpand :: TyL -> TyL
+implsExpand l
+  =  let  l' = s |=> l
+     in   
 

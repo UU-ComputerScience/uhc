@@ -116,6 +116,16 @@ SEM Expr
                             .  ty                   :=  @arg.tyCnstr |=> @fTy
 %%]
 
+%%[9.App
+SEM Expr
+  | App         loc         .  knFunTy              :=  let  [i,a] = mkNewUIDL 2 @lUniq
+                                                        in   [mkImplsVar i,mkTyVar a]
+                                                               `mkTyArrow` (@lhs.tyCnstr |=> @lhs.knTy)
+                (loc.knImpls,arg.knTy,loc.fTy)      :=  tyArrowImplsArgRes @func.ty
+                loc         .  (prL,impls)          =   tyImplsPreds @knImpls
+                            .  prOccL               =   zipWith PredOcc @prL (mkNewUIDL (length @prL) @lUniq2)
+%%]
+
 %%[1.Lam
 SEM Expr
   | Lam         loc         .  funTy                =   [Ty_Any] `mkTyArrow` Ty_Any
@@ -132,6 +142,15 @@ SEM Expr
                             .  foKnFun              :=  @funTy `fitsIn` (@lhs.tyCnstr |=> @lhs.knTy)
                 arg         .  tyCnstr              =   foCnstr @foKnFun |=> @lhs.tyCnstr
                 loc         .  ty                   :=  [@body.tyCnstr |=> @arg.ty] `mkTyArrow` @body.ty
+%%]
+
+%%[9.Lam
+SEM Expr
+  | Lam         loc         .  funTy                :=  let  [i,a,r] = mkNewUIDL 3 @lUniq
+                                                        in   [mkImplsVar i,mkTyVar a] `mkTyArrow` mkTyVar r
+                (loc.knImpls,arg.knTy,body.knTy)    :=  tyArrowImplsArgRes (foTy @foKnFun)
+                loc         .  ty                   :=  ((@body.tyCnstr |=> @knImpls) ++ [@body.tyCnstr |=> @arg.ty])
+                                                        `mkTyArrow` @body.ty
 %%]
 
 %%[2.AppTop

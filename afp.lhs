@@ -6833,12 +6833,62 @@ by the Haskell programmer itself.
 
 \subsection{Expr rules}
 
+\paragraph{Starting point.}
+If type specifies an implicit parameter is expected, give it the corresponding translation/evidence |Transl| for it
+as a parameter:
+
+\[
+\rulerCmdUse{rules.expr9A.e-pred9A}
+\]
+
+Issues/problems:
+\begin{enumerate}
+\item
+Type inference means we do not yet know if a predicate must be passed.
+\item
+Yet the explicit passing via |(# expr #)| requires the presence of an implicit parameter (i.e. predicate in the corresponding type).
+\item
+If given a |(# expr #)| how do we find the corresponding predicate |pi| for which |expr| is the evidence/proof?
+\end{enumerate}
+
+Corresponding solutions:
+\begin{enumerate}
+\item
+Make the possible locations for implicit parameters explicit.
+\item
+A possible location can be encoded as an 'implicits variable' |pvar|, which can be constrained to be a set of predicates:
+\[
+\rulerCmdUse{rules.expr9B.e-pred9B}
+\]
+Fitting |<=| will take care of constraining |pvar| so the problem is (more or less) reduced to determine where a known type
+|sigmak| may be given possible implicit parameters |pvar|, denoted by |pvar -> sigmak|.
+In principle always an implicit parameter may be taken except when specified otherwise by an explicit type signature.
+This means that in |let| expressions (yes/no type sig for val decl) and applications (yes/no type for arg) a choice between
+no/yes |pvar -> sigmak| as known type to be passed downwards has to be made.
+\item
+\begin{enumerate}
+\item
+Matching with the type of evidence, but this is most likely not 1-1.
+It might work for classes because the corresponding record is unique (names in it may not be re-used in other classes).
+But for |Int| offsets for lacking constraints?
+\item
+Require a more explicit notation where each evidence has an evidence type.
+For example, the evidence of each instance would have type |data Dict c r = Dict r| with |r| a record
+and |c| a phantom type equal to the class name.
+The type |Dict| is only used for class instances so if a |Dict Eq (...)| value is found we know it
+deals with instances of class |Eq|.
+\end{enumerate}
+\end{enumerate}
+
+\paragraph{Case analysis on context.}
+
 \rulerCmdUse{rules.expr9.app}
 \rulerCmdUse{rules.expr9.lam}
 
 
 \subsection{Fitting rules}
 
+\rulerCmdUse{rules.fit9.app}
 \rulerCmdUse{rules.fit9.predSymmetric}
 \rulerCmdUse{rules.fit9.predAsymmetric}
 

@@ -123,7 +123,7 @@ ceStrictIn nm e mkC = CExpr_Let CBindStrict [CBind_Bind nm e] (mkC (CExpr_Var nm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
-data Coe = CoeId | Coe (CExpr -> CExpr) | CoeC CExpr | CoeImplsApp ImplsVarId | CoeImplsLam ImplsVarId
+data Coe = CoeId | Coe (CExpr -> CExpr) | CoeC CExpr
 
 coeId :: Coe
 coeId = CoeC CExpr_CoeArg
@@ -134,5 +134,8 @@ coeIsId _                   = False
 
 mkCoe :: (CExpr -> CExpr) -> Coe
 mkCoe = Coe
+
+instance Show Coe where
+  show _ = "COE"
 %%]
 

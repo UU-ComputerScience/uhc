@@ -18,7 +18,7 @@
 
 %%[1
 showPP :: PP a => a -> String
-showPP p = disp (pp p) 1000 "\n"
+showPP p = disp (pp p) 1000 ""
 
 trPP :: PP a => String -> a -> a
 trPP msg x = trace (showPP (msg >|< ":" >|< x)) x
