@@ -12,7 +12,13 @@
 %%[1 module Main import(System, GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, EHCommon, EHParser, EHMainAG)
 %%]
 
-%%[8 import (EHCodeJava,EHCodePretty,EHScanner,EHError,EHErrorPretty,FPath,FiniteMap,Maybe,Directory)
+%%[8 import (EHScanner,EHError,EHErrorPretty,FPath,FiniteMap,Maybe,Directory)
+%%]
+
+%%[8 import (EHCodeJava,EHCodeGrin,EHCodePretty,EHCodeSimplify)
+%%]
+
+%%[8 import (GrinCodePretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -98,7 +104,7 @@ doCompileRun filename opts
                       }
             else  return ()
          ;  if ehcoptCodeJava opts
-            then  do  {  let (jBase,jPP) = cexprJavaSrc (cmodule_Syn_AGItf wrRes)
+            then  do  {  let (jBase,jPP) = cmodJavaSrc (cmodule_Syn_AGItf wrRes)
                              jFP = fpathSetBase jBase fp
                       ;  writeFile (fpathToStr (fpathSetSuff "java" jFP))
                             (disp jPP 120 "")
@@ -324,12 +330,13 @@ crCompileCUPass2HS modNm cr
                  p1ob   = fromJust (cuMbOut (crCU modNm cr))
                  fp     = cuFilePath cu
                  opts   = crOpts cr
-                 codePP = ppCModule (cmodule_Syn_AGItf p1ob)
+                 cMod	= cmodSimplify . cmodule_Syn_AGItf $ p1ob
+                 codePP = ppCModule cMod 
          ;  if ehcoptCode opts
             then  putPPFile (fpathToStr (fpathSetSuff "code" fp)) codePP 120
             else  return ()
          ;  if ehcoptCodeJava opts
-            then  do  {  let (jBase,jPP) = cexprJavaSrc (cmodule_Syn_AGItf p1ob)
+            then  do  {  let (jBase,jPP) = cmodJavaSrc cMod
                              jFP = fpathSetBase jBase fp
                       ;  putPPFile (fpathToStr (fpathSetSuff "java" jFP)) jPP 120
                       }
@@ -339,7 +346,7 @@ crCompileCUPass2HS modNm cr
 
 crStepUID :: CompileRun -> IO CompileRun
 crStepUID cr
-  = let (h,n) = mkNewLevUID (crNextUID cr)
+  = let (n,h) = mkNewLevUID (crNextUID cr)
      in return (cr {crNextUID = n, crHereUID = h})
 
 crCompileCU :: HsName -> CompileRun -> IO CompileRun

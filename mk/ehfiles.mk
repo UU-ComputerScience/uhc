@@ -14,6 +14,9 @@ $(VPREFIX)EHTy.hs: $(addprefix $(VPREFIX),$(DPDS_TY))
 $(VPREFIX)EHCode.hs: $(addprefix $(VPREFIX),$(DPDS_CODE))
 	$(call AGCC,-dr,$<)
 
+$(VPREFIX)GrinCode.hs: $(addprefix $(VPREFIX),$(DPDS_GRIN_CODE))
+	$(call AGCC,-dr,$<)
+
 $(VPREFIX)EHError.hs: $(addprefix $(VPREFIX),$(DPDS_ERR))
 	$(call AGCC,-dr,$<)
 
@@ -21,6 +24,9 @@ $(addprefix $(VPREFIX),$(EHC_LAG_FOR_HS_TY:.lag=.hs)): %.hs: %.ag $(addprefix $(
 	$(call AGCC,-cfspr,$<)
 
 $(addprefix $(VPREFIX),$(EHC_LAG_FOR_HS_CODE:.lag=.hs)): %.hs: %.ag $(addprefix $(VPREFIX),EHCodeAbsSyn.ag)
+	$(call AGCC,-cfspr,$<)
+
+$(addprefix $(VPREFIX),$(EHC_LAG_FOR_HS_GRIN_CODE:.lag=.hs)): %.hs: %.ag $(addprefix $(VPREFIX),GrinCodeAbsSyn.ag)
 	$(call AGCC,-cfspr,$<)
 
 $(VPREFIX)EHErrorPretty.hs: $(addprefix $(VPREFIX),$(DPDS_ERR_PRETTY))
