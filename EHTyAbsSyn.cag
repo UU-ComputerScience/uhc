@@ -136,6 +136,7 @@ TYPE TyPlusL    =   [TyPlus]
 %%[9
 DATA Pred
   | Class       ty              : Ty
+  | Pred        ty              : Ty
 %%]
 
 %%[10

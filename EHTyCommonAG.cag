@@ -19,21 +19,21 @@ ATTR Ty [ | | appFunNm: HsName ]
 
 %%[1.ConNm.ConApp
 SEM Ty
-  | Con         lhs         .  appFunNm         =   @nm
-  | App         loc         .  appFunNm         =   @func.appFunNm
+  | Con         lhs         .   appFunNm        =   @nm
+  | App         loc         .   appFunNm        =   @func.appFunNm
 %%]
 
 %%[1.ConNm.Ty
 SEM Ty
   | * - Con App
-                lhs         .  appFunNm         =   hsnUnknown
+                lhs         .   appFunNm        =   hsnUnknown
 %%]
 
 %%[7 -1.ConNm.Ty
 SEM Ty
-  | Ext         loc         .  appFunNm         =   @ty.appFunNm
+  | Ext         loc         .   appFunNm        =   @ty.appFunNm
   | * - Con App Ext
-                lhs         .  appFunNm         =   hsnUnknown
+                lhs         .   appFunNm        =   hsnUnknown
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -42,14 +42,14 @@ SEM Ty
 
 %%[4
 SEM Ty
-  | App         loc         .  appIsArrow       =   hsnIsArrow @func.appFunNm
-                            .  appIsLikeProd    =   hsnIsProd @func.appFunNm
+  | App         loc         .   appIsArrow      =   hsnIsArrow @func.appFunNm
+                            .   appIsLikeProd   =   hsnIsProd @func.appFunNm
 %%]
 
 %%[7
 SEM Ty
-  | App         loc         .  appIsRecOrSum    =   hsnIsSum @func.appFunNm || hsnIsRec @func.appFunNm
-                            .  appIsLikeProd    :=  hsnIsProd @func.appFunNm || hsnIsRec @func.appFunNm
+  | App         loc         .   appIsRecOrSum   =   hsnIsSum @func.appFunNm || hsnIsRec @func.appFunNm
+                            .   appIsLikeProd   :=  hsnIsProd @func.appFunNm || hsnIsRec @func.appFunNm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

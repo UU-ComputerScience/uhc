@@ -93,7 +93,7 @@
 %%[8 export(hsnLclSupplyL)
 %%]
 
-%%[9 export(hsnOImpl,hsnCImpl,hsnIsUnknown)
+%%[9 export(hsnOImpl,hsnCImpl,hsnPrArrow,hsnIsPrArrow,hsnIsUnknown)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -196,9 +196,10 @@ hsnPrimAddInt						=	HNm "primAddInt"
 %%[9
 hsnOImpl                            =   HNm "(#"
 hsnCImpl                            =   HNm "#)"
-%%]
+hsnPrArrow                          =   HNm "=>"
 
-%%[9
+hsnIsPrArrow                        ::  HsName -> Bool
+hsnIsPrArrow    hsn                 =   hsn == hsnPrArrow
 hsnIsUnknown                        =   (==hsnUnknown)
 %%]
 
@@ -339,7 +340,7 @@ mkArrow alg@(con,_,_,_) a r = mkApp alg [con hsnArrow,a,r]
 %%[ppAppTop.1
 ppAppTop :: PP arg => (HsName,arg) -> [arg] -> PP_Doc -> PP_Doc
 ppAppTop (conNm,con) args dflt
-  =  if       hsnIsArrow conNm  then     ppListSep "" "" (" " ++ show hsnArrow ++ " ") args
+  =  if       hsnIsArrow conNm  then     ppListSep "" "" (" " >|< con >|< " ") args
      else if  hsnIsProd conNm   then     ppListSep "(" ")" "," args
 %%]
 

@@ -198,13 +198,11 @@ SEM TyAGItf
 %%[9
 SEM Ty
   | Pred        pr          .   coco        =   CoContraVariant
-%%]
 
-SEM Ty
-  | App         func        .   coco        =   CoContraVariant
-                arg         .   coco        =   if          @appIsLikeProd || @isArrowRoot  then  CoVariant
-                                                else  if    @appIsArrow                     then  ContraVariant
-                                                                                            else  CoContraVariant
+SEM Pred
+  | Pred  		ty          .   coco        =   CoVariant
+  | Class  		ty          .   coco        =   CoContraVariant
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Is type a candidate where quantification can take place?
@@ -253,7 +251,18 @@ SEM Ty
                                                           then  tvarOccurGE2 @frTvLL `List.union` @frRowTvL
                                                           else  @frTvL
                                                     else  []
-  | Pred        loc         .   qHereTvL        =   @frTvL
+  | Pred        loc         .   qHereTvL        =   @frTvL \\ @pr.qInsideTvL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Inside 'here' tvars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR AllTy [ | | qInsideTvL USE {++} {[]}: TyVarIdL ]
+
+SEM Ty
+  | App			lhs			.	qInsideTvL		=	@qHereTvL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -434,7 +443,6 @@ SEM Ty
   | App         loc         .   quTy            =   mkTyQu @hereQu @qBndTvL (Ty_App @func.quTy @arg.quTy)
   | Quant       lhs         .   quTy            =   Ty_Quant @qu.self @tv @ty.quTy
 %%]
-                lhs         .   quTy            =   trm "App" (\t -> pp t >#< pp @qBndTvL) @quTy
 
 %%[9
 SEM Ty

@@ -15,6 +15,9 @@
 %%[3 hs import(Char)
 %%]
 
+%%[9 hs export(ppTyPr)
+%%]
+
 %%[1.WRAPPER import(EHTyAbsSyn,EHTyCommonAG)
 WRAPPER TyAGItf
 %%]
@@ -26,6 +29,24 @@ ppTy ty
                  (sem_TyAGItf (TyAGItf_AGItf ty))
                  Inh_TyAGItf
      in   pp_Syn_TyAGItf t
+
+instance PP Ty where
+  pp t = ppTy t
+%%]
+
+%%[9.ppTy -1.ppTy hs
+ppTy' :: TyCtxt -> Ty -> PP_Doc
+ppTy' c ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf {ctxt_Inh_TyAGItf = c})
+     in   pp_Syn_TyAGItf t
+
+ppTy :: Ty -> PP_Doc
+ppTy = ppTy' TyCtxt_Ty
+
+ppTyPr :: Ty -> PP_Doc
+ppTyPr = ppTy' TyCtxt_Pred
 
 instance PP Ty where
   pp t = ppTy t
@@ -45,6 +66,18 @@ instance PP Impls where
 
 instance PP PredOcc where
   pp po = pp (poPr po) >|< "/" >|< pp (poId po)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The context of a type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR TyAGItf Ty [ ctxt: TyCtxt | | ]
+
+SEM Pred
+  | Pred        loc         .   ctxt            =   TyCtxt_Pred
+  | * - Pred    loc         .   ctxt            =   TyCtxt_Ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -168,8 +201,10 @@ SEM Ty
 
 %%[9
 SEM Ty
-  | Pred            loc     .   pp      =   hsnOImpl >#< @pr.pp >#< hsnCImpl
-  | Impls           loc     .   pp      =   hsnOImpl >#< @impls.pp >#< hsnCImpl
+  | *               loc     .   wrapPP  =   if @lhs.ctxt == TyCtxt_Pred then id else (\pp -> hsnOImpl >#< pp >#< hsnCImpl)
+  | Pred            loc     .   pp      =   @wrapPP @pr.pp
+  | Impls           loc     .   pp      =   @wrapPP @impls.pp
+  | Con             loc     .   pp      :=  if @lhs.ctxt == TyCtxt_Pred && hsnIsArrow @nm then ppCon hsnPrArrow else ppCon @nm
 
 SEM Impls
   | Tail Cons       loc     .   ppIv    =   maybe (mkDefaultTvNm "i" @iv) id (lookup @iv @lhs.tnMap)

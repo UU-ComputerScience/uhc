@@ -162,15 +162,21 @@ SEM RowTyExpr
 SEM TyExpr
   | Impls           (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
 
+SEM PrExpr
+  | Class           (tyExprs.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
+
 SEM Decl
-  | Class           (ctxtPrExprs.gUniq,loc.lUniq,loc.lUniq2)        =   mkNewLevUID2    @lhs.gUniq
+  | Class           (tyPrExpr.gUniq,loc.lUniq,loc.lUniq2)           =   mkNewLevUID2    @lhs.gUniq
+  | Instance        (loc.gUniq2,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4,loc.lUniq5)
+                                                                    =   mkNewLevUID5    @lhs.gUniq
+                    (tyPrExpr.gUniq,loc.lUniq6,loc.lUniq7)          =   mkNewLevUID2    @gUniq2
+  | InstanceIntro   (expr.gUniq,loc.lUniq,loc.lUniq2)               =   mkNewLevUID2    @lhs.gUniq
+  | Val             (patExpr.gUniq,loc.lUniq,loc.lUniq2)            :=  mkNewLevUID2    @lhs.gUniq
+%%]
   | Instance        (loc.gUniq2,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4,loc.lUniq5)
                                                                     =   mkNewLevUID5    @lhs.gUniq
                     (ctxtPrExprs.gUniq,loc.lUniq6,loc.lUniq7)
                                                                     =   mkNewLevUID2    @gUniq2
-  | InstanceIntro   (expr.gUniq,loc.lUniq,loc.lUniq2)               =   mkNewLevUID2    @lhs.gUniq
-  | Val             (patExpr.gUniq,loc.lUniq,loc.lUniq2)            :=  mkNewLevUID2    @lhs.gUniq
-%%]
 
 %%[10
 SEM Expr

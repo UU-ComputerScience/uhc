@@ -160,12 +160,13 @@ SEM RowTyExpr
 ATTR PrExpr [ | | ki: Ty ]
 
 SEM PrExpr
-  | Class       loc         .   ki                  =   kiStar
-%%]
-
-%%[10
-SEM PrExpr
-  | Lacks       loc         .   ki                  =   kiStar
+  | *           lhs         .   ki                  =   kiStar
+  | Class       loc         .   fo                  =   case gamLookup @nm @lhs.prIntroGam of
+                                                            Just p   ->  fitsIn  weakFIOpts emptyFE @lUniq
+                                                                            (@tyExprs.kiCnstr |=> (@tyExprs.kiL `mkTyArrow` kiStar))
+                                                                            (@tyExprs.kiCnstr |=> pigiKi p)
+                                                            Nothing  ->  emptyFO
+                lhs         .   kiCnstr             =   foCnstr @fo |=> @tyExprs.kiCnstr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -260,6 +261,15 @@ ATTR PrExpr [ | | pr: Pred ]
 
 SEM PrExpr
   | Class       loc         .   pr                  =   Pred_Class (@nm `mkTyConApp` @tyExprs.tyL)
+  | Arrow       loc         .   pr                  =   Pred_Pred @prTy
+%%]
+
+%%[9
+ATTR PrExpr [ | | prTy: Ty ]
+
+SEM PrExpr
+  | Arrow       loc         .   prTy                =   [@arg.prTy] `mkTyArrow` @res.prTy
+  | * - Arrow   loc         .   prTy                =   @ty
 %%]
 
 %%[10
@@ -280,20 +290,11 @@ ATTR PrExpr [ | | ty: Ty ]
 ATTR PrExprs [ | | tyL: TyL ]
 
 SEM PrExpr
-  | *           lhs         .   ty                  =   Ty_Pred @pr
+  | *           loc         .   ty                  =   Ty_Pred @pr
 
 SEM PrExprs
   | Nil         lhs         .   tyL                 =   []
   | Cons        lhs         .   tyL                 =   @hd.ty : @tl.tyL
-%%]
-
-%%[9
-ATTR PrExpr [ | | kiL: TyL ]
-%%]
-
-%%[10
-SEM PrExpr
-  | Lacks       lhs         .   kiL                 =   []
 %%]
 
 

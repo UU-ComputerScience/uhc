@@ -63,6 +63,9 @@
 %%[9 hs export(tyImpls,Impls(..),ImplsVarId,mkImplsVar,implsPredsTail,implsUIDs,implsPredsMbTail,tyIsImplsTail,tyImplsPreds)
 %%]
 
+%%[9 hs export(TyCtxt(..))
+%%]
+
 %%[9_1 hs export(TyPlusId)
 %%]
 
@@ -583,6 +586,7 @@ predTy p
   =  case p of
        Pred_Class t    -> t
 %%]
+       Pred_Arrow a r  -> Ty_Con hsnPrArrow
 %%[10 hs
        Pred_Lacks t _  -> t
 %%]
@@ -614,5 +618,13 @@ tyIsImplsTail _                          = False
 
 implsUIDs :: Impls -> [UID]
 implsUIDs = map poId . fst . implsPredsTail
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context of type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+data TyCtxt = TyCtxt_Ty | TyCtxt_Pred | TyCtxt_Class deriving (Show,Eq)
 %%]
 
