@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -67,5 +67,10 @@ SEM Ty
 %%[9
 SEM Impls
   | Tail            lhs     .   repl        =   maybe @repl id (cnstrImplsLookup @iv @lhs.cnstr)
+%%]
+
+%%[11
+SEM Ty
+  | Equal           lhs     .   repl        =   tvRepl @tv @lhs.cnstr @lhs.isBound @repl
 %%]
 

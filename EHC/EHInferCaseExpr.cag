@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -29,8 +29,19 @@ SEM CaseAlt
                             .   patTy               =   @patExpr.ty
 
 SEM CaseAlts
+  | Nil         lhs         .   patTy               =   @lhs.patTyCnstr |=> @lhs.knPatTy
+  | Cons        tl          .   knPatTy             =   @hd.patTyCnstr |=> @lhs.knPatTy
+%%]
+SEM CaseAlts
   | Nil         lhs         .   patTy               =   @lhs.knPatTy
   | Cons        tl          .   knPatTy             =   @hd.patTy
+
+%%[5_1
+SEM Expr
+  | Case        loc         .   (ebTy,ebCnstr,ebErrs)
+                                                    =   tyElimAlts (mkElimAltsWrap @fe) joinFIOpts @lUniq (@expr.ty)
+                alts        .   knPatTy             :=  @ebTy
+                            .   patTyCnstr          :=  @ebCnstr |=> @expr.tyCnstr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -43,8 +54,6 @@ ATTR AllCase [ knTy: Ty | | ty: Ty ]
 SEM Expr
   | Case        expr        .   knTy                =   Ty_Any
                 alts        .   knTy                =   @lhs.knTy
-                loc         .   (_,ebCnstr,ebErrs)  =   tyElimAlts (mkElimAltsWrap @fe) joinFIOpts @lUniq (@alts.tyCnstr |=> @expr.ty)
-                lhs         .   tyCnstr             =   @ebCnstr |=> @alts.tyCnstr
 
 SEM CaseAlt
   | Pat         expr        .   tyCnstr             =   @lhs.tyCnstr
@@ -55,5 +64,22 @@ SEM CaseAlts
   | Nil         lhs         .   ty                  =   @lhs.knTy
   | Cons        hd          .   knTy                =   @lhs.knTy
                 tl          .   knTy                =   @hd.ty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GADT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[11
+ATTR AllPatExpr [ | | tyEqCnstr USE {|=>} {emptyCnstr}: Cnstr ]
+
+SEM PatExpr
+  | AppTop      lhs         .   tyEqCnstr           =   foEqCnstr @fo |=> @patExpr.tyEqCnstr
+  | Con         lhs         .   tyEqCnstr           =   foEqCnstr @fo
+
+SEM CaseAlt
+  | Pat         expr        .   tyCnstr             :=  @patExpr.tyEqCnstr |=> @lhs.tyCnstr
+                lhs         .   tyCnstr             :=  cnstrDel  (assocLKeys . cnstrToAssocL $ @patExpr.tyEqCnstr)
+                                                                  @expr.tyCnstr
 %%]
 

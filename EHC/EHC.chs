@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -321,7 +321,7 @@ crCompileCUPass1HS :: HsName -> CompileRun -> IO CompileRun
 crCompileCUPass1HS modNm cr
   = do { let p1ob   = fromJust (cuMbOut (crCU modNm cr))
        ; case ehcoptDumpPP (crOpts cr) of
-              Just "pp"   ->  putPPLn (pp_Syn_AGItf p1ob)
+              Just "pp"   ->  putWidthPPLn 120 (pp_Syn_AGItf p1ob)
               Just "ast"  ->  putPPLn (ppAST_Syn_AGItf p1ob)
               _           ->  return ()
        ; return (cr {crState = CRSErrInfoL "Type checking" False (allErrL_Syn_AGItf p1ob)})

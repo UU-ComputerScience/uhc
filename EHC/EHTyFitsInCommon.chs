@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -66,6 +66,9 @@ data FIOut  =  FIOut    {  foCnstr           ::  Cnstr               ,  foTy    
 %%[10
                         ,  foRowCoeL         ::  AssocL HsName Coe
 %%]
+%%[11
+                        ,  foEqCnstr         ::  Cnstr
+%%]
 %%[9
                         }
 %%]
@@ -79,6 +82,9 @@ emptyFO     =  FIOut    {  foCnstr           =   emptyCnstr          ,  foTy    
 %%]
 %%[10
                         ,  foRowCoeL         =   []
+%%]
+%%[11
+                        ,  foEqCnstr         =   emptyCnstr
 %%]
 %%[9
                         }

@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -210,6 +210,10 @@ SEM Decl
 
 %%[7
 ATTR AllDataField [ | tyGam: TyGam | ]
+%%]
+
+%%[11
+ATTR AllDataConstrEq [ | tyGam: TyGam | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

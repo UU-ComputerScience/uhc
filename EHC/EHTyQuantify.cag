@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -118,7 +118,7 @@ ATTR TyAGItf AllTy [ opts: TyQuOpts | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4.frTvLL
-ATTR AllTy [ | | frTvLL: {[TyVarIdL]} ]
+ATTR AllTy [ | | frTvLL USE {++} {[]}: {[TyVarIdL]} ]
 
 SEM TyAGItf
   | AGItf       loc         .   frTvL       =   head @ty.frTvLL
@@ -137,7 +137,9 @@ SEM Ty
 %%[4_1
 SEM TyL
   | Nil         lhs         .   frTvLL      =   []
-  | Cons        lhs         .   frTvLL      =   @hd.frTvLL ++ @tl.frTvLL
+
+SEM TyPlusL
+  | Nil         lhs         .   frTvLL      =   []
 %%]
 
 %%[7

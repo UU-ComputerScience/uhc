@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -173,7 +173,8 @@ SEM RecPatExpr
 %%]
 
 %%[11
-SEM PrExpr
-  | Equal           (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
+SEM DataConstrEq
+  | Eq             (tyVar.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
 %%]
+
 

@@ -1,4 +1,4 @@
-% $Id: afp.lhs 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %% configuration of what to include
 
@@ -3332,7 +3332,8 @@ For a compiler this is not good enough, being the reason |fitsIn| gives a ``will
 |Ty_Any| back together with an error for later processing (in section~\ref{sec-error1}).
 Errors themselves are also described via AG:
 
-\chunkCmdUseMark{EHErrorAbsSyn.1.Base}
+\chunkCmdUseMark{EHErrorAbsSyn.1.UnifyClash}
+\chunkCmdUseMark{EHErrorAbsSyn.1.NamesNotIntrod}
 
 The |Err| datatype is available as a datatype in the same way a |Ty| is.
 The error datatype is also used for signalling undeclared identifiers: 
@@ -3862,7 +3863,7 @@ Errors too are defined using AG%
 %if forAFP04Notes
 .
 %else
-(see also \pageRef{EHErrorAbsSyn.1.Base}).
+(see also \pageRef{EHErrorAbsSyn.1.UnifyClash}).
 %endif
 
 \chunkCmdUseMark{EHErrorAbsSyn.1.Rest}
@@ -3897,7 +3898,8 @@ can give a long trace of locations where the error did occur.
 \frametitle{Errors}
 \begin{itemize}
 \item Errors are described by AG too:
-\chunkCmdFrameUse{EHErrorAbsSyn.1.Base}
+\chunkCmdFrameUse{EHErrorAbsSyn.1.UnifyClash}
+\chunkCmdFrameUse{EHErrorAbsSyn.1.NamesNotIntrod}
 \chunkCmdFrameUse{EHErrorAbsSyn.1.Rest}
 \chunkCmdFrameUse{EHErrorAbsSyn.1.MissingSig}
 \end{itemize}

@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -22,13 +22,21 @@
 %%[2 import(UU.Pretty, EHTyPretty) export(ppCnstrV)
 %%]
 
-%%[4 export(cnstrFilter)
+%%[4 export(cnstrFilter,cnstrDel,cnstrPlus,cnstrMap)
 %%]
 
-%%[4_1 export(assocLToCnstr,cnstrToAssocTyL)
+%%[4 export(assocLToCnstr,cnstrToAssocTyL)
 %%]
 
 %%[9 import(FiniteMap,EHDebug) export(CnstrInfo(..),cnstrImplsLookup,cnstrImplsUnit,assocLToCnstrImpls,cnstrToAssocL)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Operator prio
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4
+infixr `cnstrPlus`
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -89,7 +97,32 @@ cnstrFilter :: (TyVarId -> CnstrInfo -> Bool) -> Cnstr -> Cnstr
 cnstrFilter f (Cnstr c) = Cnstr (filterFM f c)
 %%]
 
-%%[4_1.assocLToCnstr
+%%[4.cnstrDel
+cnstrDel :: TyVarIdL -> Cnstr -> Cnstr
+cnstrDel tvL c = cnstrFilter (const.not.(`elem` tvL)) c
+%%]
+
+%%[2.cnstrPlus
+cnstrPlus :: Cnstr -> Cnstr -> Cnstr
+cnstrPlus (Cnstr l1) (Cnstr l2) = Cnstr (l1 ++ l2)
+%%]
+
+%%[9.cnstrPlus -2.cnstrPlus
+cnstrPlus :: Cnstr -> Cnstr -> Cnstr
+cnstrPlus (Cnstr l1) (Cnstr l2) = Cnstr (l2 `plusFM` l1)
+%%]
+
+%%[2.cnstrMap
+cnstrMap :: ((TyVarId,Ty) -> (TyVarId,Ty)) -> Cnstr -> Cnstr
+cnstrMap f (Cnstr l) = Cnstr (map f l)
+%%]
+
+%%[9.cnstrMap -2.cnstrMap
+cnstrMap :: ((TyVarId,CnstrInfo) -> (TyVarId,CnstrInfo)) -> Cnstr -> Cnstr
+cnstrMap f (Cnstr l) = Cnstr (mapFM (\k e -> snd (f (k,e))) l)
+%%]
+
+%%[4.assocLToCnstr
 assocLToCnstr :: AssocL TyVarId Ty -> Cnstr
 assocLToCnstr = Cnstr
 
@@ -97,7 +130,7 @@ cnstrToAssocTyL :: Cnstr -> AssocL TyVarId Ty
 cnstrToAssocTyL (Cnstr l) = l
 %%]
 
-%%[9.assocLToCnstr -4_1.assocLToCnstr
+%%[9.assocLToCnstr -4.assocLToCnstr
 assocLToCnstr :: AssocL TyVarId Ty -> Cnstr
 assocLToCnstr = Cnstr . listToFM . assocLMapSnd CITy
 
@@ -123,6 +156,7 @@ cnstrToAssocL (Cnstr l) = fmToList l
 %%]
 
 %%[9
+cnstrSize :: Cnstr -> Int
 cnstrSize (Cnstr m) = sizeFM m
 %%]
 

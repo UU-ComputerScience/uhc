@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -30,6 +30,12 @@
 %%[4_1 hs export(tyAltsTy,tyIsQu) 
 %%]
 
+%%[4_1 hs export(TyPlus(..),TyPlusL,tyPlusTy) 
+%%]
+
+%%[5 hs export(tyVar) 
+%%]
+
 %%[6 hs export(kiStar) 
 %%]
 
@@ -52,6 +58,9 @@
 %%]
 
 %%[9 hs export(tyImpls,Impls(..),ImplsVarId,mkImplsVar,implsPredsTail,implsUIDs,implsPredsMbTail,tyIsImplsTail,tyImplsPreds)
+%%]
+
+%%[9_1 hs export(TyPlusId)
 %%]
 
 %%[9 hs export(PredOccId,PredOcc(..))
@@ -85,6 +94,10 @@ type TyVarIdL   = [TyVarId]
 
 %%[9 hs
 type ImplsVarId    = UID
+%%]
+
+%%[9_1 hs
+type TyPlusId      = UID
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -336,12 +349,28 @@ tyConNm  (Ty_Con nm)  = nm
 tyConNm  _            = hsnUnknown
 %%]
 
+%%[4_1.tyPlusTy hs
+tyPlusTy :: TyPlus -> Ty
+tyPlusTy (TyPlus_Ty t) = t
+%%]
+
+%%[9_1.tyPlusTy -4_1.tyPlusTy hs
+tyPlusTy :: TyPlus -> Ty
+tyPlusTy (TyPlus_Ty t _) = t
+%%]
+
 %%[4_1 hs
 tyAltsTy :: Ty -> Ty
-tyAltsTy t = case t of {Ty_Alts _ tl -> last tl; _ -> t}
+tyAltsTy t = case t of {Ty_Alts _ tl -> tyPlusTy (last tl); _ -> t}
 
 tyIsQu :: Ty -> Bool
 tyIsQu t = case t of {Ty_Quant _ _ _ -> True; _ -> False}
+%%]
+
+%%[5.tyVar hs
+tyVar :: Ty -> TyVarId
+tyVar (Ty_Var v _)  = v
+tyVar _             = uidStart
 %%]
 
 %%[7.tyProdArgs -1.tyProdArgs hs
@@ -509,9 +538,6 @@ predMatchNm p
 %%[10 hs
        Pred_Lacks _ l  -> hsnPrefix "_Lab_" l
 %%]
-%%[11 hs
-       Pred_Equal _ t  -> tyAppFunConNm t -- ??
-%%]
 
 %%[9 hs
 predTy :: Pred -> Ty
@@ -519,13 +545,8 @@ predTy p
   =  case p of
        Pred_Class t    -> t
 %%]
-
 %%[10 hs
        Pred_Lacks t _  -> t
-%%]
-
-%%[11 hs
-       Pred_Equal _ t  -> t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
