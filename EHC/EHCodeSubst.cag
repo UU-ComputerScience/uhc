@@ -9,23 +9,56 @@
 %%% Substituting holes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs import(FiniteMap,EHCommon,EHCode) export(cAppSubst,CSubst,assocLToCSubst)
+%%[9 hs import(FiniteMap,EHCommon,EHCode) export(CSubstitutable(..),cAppCoeArg,CSubst,emptyCSubst,assocLToCSubst)
+%%]
+
+%%[9 hs export(coeWeave,coeEvalOn)
 %%]
 
 %%[9.WRAPPER import(EHCodeAbsSyn)
 WRAPPER CExpr
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code substitution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[9 hs
 type CSubst = FiniteMap UID CExpr
 
-cAppSubst :: CSubst -> CExpr -> CExpr
-cAppSubst cs ce
-  =  let  t = wrap_CExpr (sem_CExpr ce) (Inh_CExpr {cSubst_Inh_CExpr = cs})
+emptyCSubst :: CSubst
+emptyCSubst = emptyFM
+
+cAppCoeArg :: CExpr -> CExpr -> CExpr
+cAppCoeArg ce coeArg
+  =  let  t = wrap_CExpr (sem_CExpr ce) (Inh_CExpr {cSubst_Inh_CExpr = emptyCSubst, coeArg_Inh_CExpr = coeArg})
      in   (cRepl_Syn_CExpr t)
 
 assocLToCSubst :: AssocL UID CExpr -> CSubst
 assocLToCSubst = listToFM
+
+instance Show CSubst where
+  show = show . fmToList
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code substitution as class
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+class CSubstitutable a where
+  cAppSubst :: CSubst -> a -> a
+
+instance CSubstitutable CExpr where
+  cAppSubst cs ce
+    =  let  t = wrap_CExpr (sem_CExpr ce) (Inh_CExpr {cSubst_Inh_CExpr = cs, coeArg_Inh_CExpr = CExpr_CoeArg})
+       in   (cRepl_Syn_CExpr t)
+
+instance CSubstitutable v => CSubstitutable (AssocL k v) where
+  cAppSubst cs l = assocLMapSnd (cAppSubst cs) l
+
+instance CSubstitutable CSubst where
+  cAppSubst cs s = mapFM (const (cAppSubst cs)) s `plusFM` cs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -33,10 +66,44 @@ assocLToCSubst = listToFM
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-ATTR AllCodeNT CodeAGItf [ cSubst: CSubst | | cRepl: SELF ]
+ATTR AllCodeNT CodeAGItf [ cSubst: CSubst ^^^ coeArg: CExpr | | cRepl: SELF ]
 
 SEM CExpr
   | Hole        lhs         .   cRepl       =   maybe  (CExpr_Var (uidHNm @uid)) id
                                                        (lookupFM @lhs.cSubst @uid)
+  | CoeArg      lhs         .   cRepl       =   @lhs.coeArg
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Coercion
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+coeEvalOn :: Coe -> CExpr -> CExpr
+coeEvalOn coe ce
+  =  case coe of
+       CoeId   -> ce
+       Coe  f  -> f ce
+       CoeC e  -> e `cAppCoeArg` ce
+
+coeWeave :: CSubst -> [Coe] -> [Coe] -> Coe
+coeWeave cs lCoeL rCoeL
+  =  let  (lCoeL',rCoeL') = coeWipe cs lCoeL rCoeL
+          ev c e = c `coeEvalOn` (cAppSubst cs e)
+     in   CoeC (foldr ev (foldr ev CExpr_CoeArg (reverse lCoeL')) rCoeL')
+
+coeWipe :: CSubst -> [Coe] -> [Coe] -> ([Coe],[Coe])
+coeWipe cs (lCoe:lCoeL) (rCoe:rCoeL)
+  =  let  (lCoeL',rCoeL') = w (lCoeL,rCoeL)
+          w ([lc],[rc]) | match      = ([],[])
+                        | otherwise  = ([CoeC lce],[CoeC rce])
+            where  lce    =  cs `cAppSubst` (lc `coeEvalOn` CExpr_CoeArg)
+                   rce    =  cs `cAppSubst` (rc `coeEvalOn` CExpr_CoeArg)
+                   match  =  case (lce,rce) of
+                               (CExpr_App _ (CExpr_Var ln),CExpr_Lam rn _) | ln == rn  -> True
+                               _                                                       -> False
+          w c = c
+     in   w (lCoe:lCoeL',rCoe:rCoeL')
+coeWipe _ [] [] = ([],[])
 %%]
 

@@ -97,6 +97,7 @@ SEM CPatBindL
 %%[9
 SEM CExpr
   | Hole        loc         .   pp          =   "<" >|< pp @uid >|< ">"
+  | CoeArg      loc         .   pp          =   pp "<_>"
 %%]
 
 

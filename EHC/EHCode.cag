@@ -21,7 +21,7 @@
 %%[8 hs export(ctagNone,cpatVarNm,caltTag,caltIsVar,caltPatL,caltPat,caltLPatNms,cvarUndefined) 
 %%]
 
-%%[8 hs export(mkCExprLet,mkCExprLam,mkCExprApp)
+%%[8 hs export(mkCExprLet,mkCExprLetRec,mkCExprLam,mkCExprApp)
 %%]
 
 %%[8 hs export(ceStrictIn)
@@ -31,7 +31,7 @@
 DERIVING *     : Show, Eq
 %%]
 
-%%[9 hs export(Coe(..))
+%%[9 hs import(EHTy) export(Coe(..), mkCoe, coeId, coeIsId)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -72,6 +72,9 @@ cpatNmEither o u pnm = case pnm of {CPatNmOrig n -> o n; CPatNmUniq n -> u n}
 %%[8 hs
 mkCExprLet :: CBindCateg -> CBindL -> CExpr -> CExpr
 mkCExprLet c bs e = if null bs then e else CExpr_Let c bs e
+
+mkCExprLetRec :: CBindL -> CExpr -> CExpr
+mkCExprLetRec = mkCExprLet CBindRec
 
 mkCExprLam :: [HsName] -> CExpr -> CExpr
 mkCExprLam as e = foldr (\n e -> CExpr_Lam n e) e as
@@ -120,6 +123,16 @@ ceStrictIn nm e mkC = CExpr_Let CBindStrict [CBind_Bind nm e] (mkC (CExpr_Var nm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
-data Coe = CoeId | Coe (CExpr -> CExpr)
+data Coe = CoeId | Coe (CExpr -> CExpr) | CoeC CExpr | CoeImplsApp ImplsVarId | CoeImplsLam ImplsVarId
+
+coeId :: Coe
+coeId = CoeC CExpr_CoeArg
+
+coeIsId :: Coe -> Bool
+coeIsId (CoeC CExpr_CoeArg) = True
+coeIsId _                   = False
+
+mkCoe :: (CExpr -> CExpr) -> Coe
+mkCoe = Coe
 %%]
 

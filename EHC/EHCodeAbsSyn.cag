@@ -46,6 +46,7 @@ DATA CExpr
 %%[9
 DATA CExpr
   | Hole        uid             : {UID}
+  | CoeArg
 %%]
 
 %%[8

@@ -253,8 +253,12 @@ SEM FuncDeps
   | Cons        lhs     .  ppAST    =   ppNest ["FuncDeps","Cons"] [] [@hd.ppAST,@tl.ppAST]
 
 SEM Expr
-  | Let         loc     .  info     :=  [ mkInfo1 "prvnGraph" (pp @prvnGraph)
+  | Let         loc     .  info     :=  [ mkInfo1 "gathFixPredL" (ppCommaList @gathFixPredL)
+                                        , mkInfo1 "prvnGraph" (pp @prvnGraph)
                                         , mkInfo1 "prvnPrune" (pp @prvnPrune)
+                                        , mkInfo1 "cbindL" (ppAssocL . map (\(CBind_Bind n v) -> (n,v)) $ @cbindL)
+                                        , mkInfo1 "csubst" (ppAssocL . fmToList $ @csubst)
+                                        , mkInfo1 "remPrIdSet" (ppCommaList . setToList $ @remPrIdSet)
                                         ]
 %%]
 

@@ -34,6 +34,9 @@ instance PP Ty where
 %%[9 hs
 instance PP Pred where
   pp p = ppTy (Ty_Pred p)
+
+instance PP Impls where
+  pp i = ppTy (Ty_Impls i)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -143,8 +146,9 @@ SEM Pred
   | Equal           lhs     .   pp      =   @tvTy.pp >|< "=" >|< @ty.pp
 
 SEM Impls
-  | Tail            lhs     .   pp      =   maybe (mkDefaultTvNm TyVarCateg_Plain @tv) id (lookup @tv @lhs.tnMap)
+  | Tail            lhs     .   pp      =   maybe (mkDefaultTvNm TyVarCateg_Plain @iv) id (lookup @iv @lhs.tnMap)
   | Cons            lhs     .   pp      =   @pr.pp >|< "," >|< @tl.pp
+  | Nil             lhs     .   pp      =   pp "_"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

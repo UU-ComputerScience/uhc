@@ -22,7 +22,7 @@
 %%[4 export(cnstrFilter)
 %%]
 
-%%[9 export(fixTyVarsCnstr,tyFixTyVars)
+%%[9 export(fixTyVarsCnstr,tyFixTyVars,cnstrImplsLookup,cnstrImplsUnit)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,13 +38,14 @@ cnstrTyLookup tv (Cnstr s) = lookup tv s
 
 %%[9 -2.Cnstr.Base
 data CnstrInfo  = CITy Ty
+                | CIImpls Impls
                 deriving (Eq,Show)
 
 newtype Cnstr   = Cnstr (AssocL TyVarId CnstrInfo) deriving Show
 
 cnstrTyLookup :: TyVarId -> Cnstr -> Maybe Ty
-cnstrTyLookup tv (Cnstr s)
-  = case lookup tv s of
+cnstrTyLookup v (Cnstr s)
+  = case lookup v s of
       Just (CITy t)  -> Just t
       _              -> Nothing
 %%]
@@ -61,7 +62,7 @@ cnstrTyUnit tv t = Cnstr [(tv,t)]
 
 %%[9.Cnstr.cnstrTyUnit -2.Cnstr.cnstrTyUnit
 cnstrTyUnit :: TyVarId -> Ty -> Cnstr
-cnstrTyUnit tv t = Cnstr [(tv,CITy t)]
+cnstrTyUnit v t = Cnstr [(v,CITy t)]
 %%]
 
 %%[4.cnstrFilter
@@ -72,6 +73,17 @@ cnstrFilter f (Cnstr l) = Cnstr (filter (uncurry f) l)
 %%[9.cnstrFilter -4.cnstrFilter
 cnstrFilter :: (TyVarId -> CnstrInfo -> Bool) -> Cnstr -> Cnstr
 cnstrFilter f (Cnstr l) = Cnstr (filter (uncurry f) l)
+%%]
+
+%%[9
+cnstrImplsUnit :: ImplsVarId -> Impls -> Cnstr
+cnstrImplsUnit v i = Cnstr [(v,CIImpls i)]
+
+cnstrImplsLookup :: ImplsVarId -> Cnstr -> Maybe Impls
+cnstrImplsLookup v (Cnstr s)
+  = case lookup v s of
+      Just (CIImpls i)  -> Just i
+      _                 -> Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -211,9 +223,26 @@ instance Substitutable Cnstr where
 %%]
 
 %%[9
+instance Substitutable Pred where
+  s |=>  p =  (\(Ty_Pred p) -> p) (s |=> (Ty_Pred p))
+  ftv    p =  ftv (Ty_Pred p)
+
+instance Substitutable Impls where
+  s |=>  i =  case i of
+                Impls_Cons p t  -> Impls_Cons (s |=> p) (s |=> t)
+                Impls_Tail iv   -> maybe i id (cnstrImplsLookup iv s)
+                _               -> i
+  ftv    i =  case i of
+                Impls_Cons p t  -> ftv p `union` ftv t
+                _               -> []
+
 instance Substitutable CnstrInfo where
-  s |=>  (CITy t) = CITy (s |=> t)
-  ftv    (CITy t) = ftv t
+  s |=>  ci =  case ci of
+                 CITy     t -> CITy (s |=> t)
+                 CIImpls  i -> CIImpls (s |=> i)
+  ftv    ci =  case ci of
+                 CITy     t -> ftv t
+                 CIImpls  i -> ftv i
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -240,5 +269,6 @@ instance PP Cnstr where
 %%[9
 instance PP CnstrInfo where
   pp (CITy t) = pp t
+  pp (CIImpls i) = pp i
 %%]
 

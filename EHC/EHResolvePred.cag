@@ -26,5 +26,21 @@ SEM Expr
   | Let         loc         .   gathFixPredL        =   tyFixTyVars (@decls.tyCnstr |=> @decls.gathPredL)
                             .   prvnGraph           =   prfPredsToProvenGraph @lUniq (emptyFE {fePrElimGam = @prElimGam}) @gathFixPredL
                             .   prvnPrune           =   prfPredsPruneProvenGraph @gathFixPredL @prvnGraph
+                            .   (cbindL,csubst,remPrIdSet)
+                                                    =   prvgCode @prvnPrune
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Passing back code substitution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR AllNT [ cSubst: CSubst | | ]
+
+SEM AGItf
+  | AGItf       loc         .   cSubst              =   emptyCSubst
+
+SEM Expr
+  | Let			loc			. 	cSubst				=	@lhs.cSubst `cAppSubst` @csubst
 %%]
 

@@ -5687,8 +5687,9 @@ the first argument should be fitted with the opposite variance and
 options |fiopt| should be made strong. This is described via a environment
 encoding this information
 
-\chunkCmdUseMark{EHTyFitsIn.4.CoCo}
-\chunkCmdUseMark{EHTyFitsIn.4.cocoGam}
+\chunkCmdUseMark{EHTyFitsIn.4.AppSpine}
+\chunkCmdUseMark{EHTyFitsIn.4.AppSpineGam}
+\chunkCmdUseMark{EHTyFitsIn.4.appSpineGam}
 
 It also shows that only for function and tuple types we know what to do in such a situation.
 Complications in this area will arise with the introduction of datatypes
@@ -5750,6 +5751,21 @@ of an alternative for flipping
 |t1 <= t2| into |t2 <= t1| if the variance is |ContraVariant|,
 and
 an additional guard on |fioBindLFirst| and |fioBindRFirst|.
+
+Finally, before looking at the case analysis, some convenience functions for
+updating the output |FIOut| are introduced:
+
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.foCmb}
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.foCmbApp}
+
+These functions straightforwardly combine fields from two different |FIOut|'s.
+These combination functions specify how aspects of |fitsIn| should be combined
+for |Ty_App|. For example |foCmbCnstr| applies the constraints resulting
+from fitting the second subtype |afo| (of |Ty_App|) to the constraints coming out
+of the first subtype |ffo|.
+The overal combination |foCmbApp| used by the fitting of
+two |Ty_App|'s is the composition of all the smaller combinations.
 
 \restorecolumns
 \chunkCmdUseMark{EHTyFitsIn.4.fitsIn.Base}

@@ -9,10 +9,13 @@
 %%% Pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 import(FiniteMap,Set,UU.Pretty)
+%%[9 import(Maybe,List,FiniteMap,Set,UU.Pretty)
 %%]
 
-%%[9 import(EHTy,EHTyPretty,EHCode,EHCodePretty,EHCodeSubst,EHCommon,EHGam,EHCnstr)
+%%[9 import(EHTy,EHTyPretty,EHTyQuantify,EHCode,EHCodePretty,EHCodeSubst,EHCommon,EHGam,EHCnstr)
+%%]
+
+%%[9 import(EHTrace)
 %%]
 
 %%[9 export(PredOccId,PredOcc(..),ProofState(..))
@@ -21,14 +24,17 @@
 %%[9 export(ProvenNode(..),ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,ProofCost,prvgCode)
 %%]
 
-%%[9 export(Rule(..),emptyRule,costALot)
+%%[9 export(Rule(..),emptyRule,mkInstElimRule,costALot,costBase)
 %%]
 
-%%[9 export(PrIntroGamInfo(..),PrElimGamInfo(..),PrIntroGam,PrElimGam,emptyPIGI)
+%%[9 export(PrIntroGamInfo(..),PrIntroGam,emptyPIGI)
+%%]
+
+%%[9 export(PrElimGamInfo(..),PrElimGam,peGamAdd)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Pred resolver
+%%% Pred occurrence
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
@@ -40,7 +46,17 @@ data PredOcc
        { poPr               :: Pred
        , poId               :: PredOccId
        }
+  deriving Show
 
+instance PP PredOcc where
+  pp po = pp (poPr po) >|< "/" >|< pp (poId po)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pred resolver
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
 data ProofState
   =  ProofState
        { prfsProvenGraph        :: ProvenGraph
@@ -116,20 +132,35 @@ instance PP ProvenGraph where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-prvgCode :: ProvenGraph -> (CBindL,CSubst,Set PredOccId)
-prvgCode (ProvenGraph i2n p2i)
-  =  let  c i n
-            =  case n of
-                 ProvenAnd _ _ _ ev
-                   -> [CBind_Bind (uidHNm i) (m `cAppSubst` ev)]
-                 _ -> []
-          i2nL = fmToList i2n
+prvgCode :: [PredOcc] -> ProvenGraph -> (CBindL,CSubst,Set PredOccId)
+prvgCode prL (ProvenGraph i2n p2i)
+  =  let  i2nL = fmToList i2n
           p2iL = fmToList p2i
-          r = [ uid | (uid,ProvenArg _ _) <- i2nL ]
-          b = concat . map (uncurry c) $ i2nL
-          m = assocLToCSubst . concat . map (\(_,uidL@(uid:_)) -> zip uidL (repeat (CExpr_Var (uidHNm uid)))) $ p2iL
+          i2i  = listToFM [ (i,ii) | (_,ii) <- p2iL, i <- ii ]
+          canAsSubst (_,CExpr_Var _)  = True
+          canAsSubst _                = False
+          (provenL,argL,overlapL)
+            = (concat p, concat a, concat o)
+            where  spl n@(_,ProvenAnd _ _ _ _) = ([n],[],[])
+                   spl n@(_,ProvenArg _ _    ) = ([],[n],[])
+                   spl n                       = ([],[],[n])
+                   (p,a,o) = unzip3 . map spl $ i2nL
+          (provenAsCSubst,(_,provenForBind))
+            = head
+            . dropWhile (\(_,(l,_)) -> not (null l))
+            . iterate
+                (\(s,(asS,asB))
+                    -> let asS' = concat . map (\(i,n) -> zip (maybe [] id . lookupFM i2i $ i) (repeat n)) $ asS
+                           s' = s `cAppSubst` assocLToCSubst asS'
+                       in  (s',partition canAsSubst (s' `cAppSubst` asB))
+                )
+            $ (emptyCSubst,partition canAsSubst (map (\(i,ProvenAnd _ _ _ e) -> (i,e)) provenL))
+          r = map fst argL
+          m1 = provenAsCSubst `cAppSubst` assocLToCSubst [ (i,CExpr_Var (uidHNm i)) | (i,_) <- provenForBind ]
+          m2 = assocLToCSubst . concat . map (\(_,uidL@(uid:_)) -> zip uidL (repeat (m1 `cAppSubst` CExpr_Hole uid))) $ p2iL
+          b = map (\(i,ev) -> CBind_Bind (uidHNm i) (m2 `cAppSubst` ev)) provenForBind
           rem = concat [ uidL | (_,uidL) <- p2iL, any (`elem` r) uidL ]
-     in   (b,m,mkSet rem)
+     in   (b,m2,mkSet rem)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -137,8 +168,9 @@ prvgCode (ProvenGraph i2n p2i)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-costALot :: Int
-costALot = 100
+costALot, costBase :: Int
+costALot  = 100
+costBase  = 1
 
 data Rule
   =  Rule
@@ -150,6 +182,19 @@ data Rule
 
 emptyRule = Rule Ty_Any head hsnUnknown costALot
 
+mkInstElimRule :: HsName -> Int -> Ty -> Rule
+mkInstElimRule n sz ctxtToInstTy
+  =  let  r =  Rule  { rulRuleTy    = ctxtToInstTy
+                     , rulMkEvid    = \ctxt -> CExpr_Var n `mkCExprApp` ctxt
+                     , rulNmEvid    = n
+                     , rulCost      = costBase + 2 * costBase * sz
+                     }
+     in   r
+
+instance Substitutable Rule where
+  s |=>  r = r { rulRuleTy = s |=> rulRuleTy r }
+  ftv    r = ftv (rulRuleTy r)
+
 instance Show Rule where
   show r = show (rulNmEvid r) ++ "::" ++ show (rulRuleTy r)
 
@@ -158,7 +203,7 @@ instance PP Rule where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Gamma for intro rules and elim rules
+%%% Gamma for intro rules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
@@ -169,25 +214,42 @@ data PrIntroGamInfo
        , pigiRule           :: Rule
        } deriving Show
 
+type PrIntroGam     = Gam HsName PrIntroGamInfo
+
 emptyPIGI = PrIntroGamInfo Ty_Any Ty_Any emptyRule
 
+instance PP PrIntroGamInfo where
+  pp pigi = pp (pigiRule pigi) >#< "::" >#< ppTy (pigiPrToEvidTy pigi) >#< ":::" >#< ppTy (pigiKi pigi)
+
+instance Substitutable PrIntroGamInfo where
+  s |=> pigi        =   pigi { pigiKi = s |=> pigiKi pigi }
+  ftv   pigi        =   ftv (pigiKi pigi)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gamma for elim rules
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
 data PrElimGamInfo
   =  PrElimGamInfo
        { pegiRuleL          :: [Rule]
        } deriving Show
 
-type PrIntroGam     = Gam HsName PrIntroGamInfo
 type PrElimGam      = Gam HsName PrElimGamInfo
 
-instance PP PrIntroGamInfo where
-  pp pigi = pp (pigiRule pigi) >#< "::" >#< ppTy (pigiPrToEvidTy pigi) >#< ":::" >#< ppTy (pigiKi pigi)
+instance Substitutable PrElimGamInfo where
+  s |=>  pegi = pegi { pegiRuleL = s |=> pegiRuleL pegi }
+  ftv    pegi = ftv (pegiRuleL pegi)
 
 instance PP PrElimGamInfo where
   pp pegi = ppCommaList (pegiRuleL pegi)
 
-instance Substitutable PrIntroGamInfo where
-  s |=> pigi        =   pigi { pigiKi = s |=> pigiKi pigi }
-  ftv   pigi        =   ftv (pigiKi pigi)
+peGamAdd :: HsName -> Rule -> PrElimGam -> PrElimGam
+peGamAdd n r g
+  =  let  (h,t) = gamPop g
+          h' = gamUpdAdd n (PrElimGamInfo [r]) (\_ p -> p {pegiRuleL = r : pegiRuleL p}) h
+     in   h' `gamPushGam` t
 %%]
 
 
