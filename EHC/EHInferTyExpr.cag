@@ -15,7 +15,7 @@ ATTR AllTyExpr [ | tyGam: TyGam | ]
 
 %%[1.check
 SEM TyExpr
-  | Con         loc         .  (tgi,nmErrs)         =   case tyGamLookup @nm @lhs.tyGam of
+  | Con         loc         .  (tgi,nmErrs)         =   case tyGamLookup @lhs.tyGam @nm of
                                                           Nothing    ->  (TyGamInfo Ty_Any
                                                                          ,[Err_NamesNotIntrod [@nm]])
                                                           Just tgi   ->  (tgi,[])
@@ -34,10 +34,10 @@ SEM TyExpr
 %%[3.tyVarGather
 SEM TyExpr
   | Var VarWild loc         .   tyVarId             =   @lUniq
-                (loc.tgi,lhs.tyGam)                 =   case tyGamLookup @nm @lhs.tyGam of
+                (loc.tgi,lhs.tyGam)                 =   case tyGamLookup @lhs.tyGam @nm of
                                                           Nothing    ->  let  t    =  mkNewTyVar @tyVarId
                                                                               tgi  =  TyGamInfo t
-                                                                         in   (tgi,gamAdd @nm tgi @lhs.tyGam)
+                                                                         in   (tgi,gamAdd @lhs.tyGam @nm tgi)
                                                           Just tgi   ->  (tgi,@lhs.tyGam)
 %%]
 
@@ -45,19 +45,19 @@ SEM TyExpr
 SEM TyExpr
   | Quant       loc         .   (tv,tgi)            =   let  t = mkTyVar @lUniq
                                                         in   (@lUniq,TyGamInfo t)
-                tyExpr      .   tyGam               =   gamPushNew ((@tyVar `gamUnit` @tgi) `gamPushGam` @lhs.tyGam)
+                tyExpr      .   tyGam               =   gamPushNew (@lhs.tyGam `gamPushGam` (@tyVar `gamUnit` @tgi))
                 lhs         .   tyGam               =   let  (l,g) = gamPop @tyExpr.tyGam
-                                                        in   l `gamAddGam` @lhs.tyGam
+                                                        in   @lhs.tyGam `gamAddGam` l 
 %%]
 
 %%[5.tyVarGather
 ATTR AllTyVar [ | tyGam: TyGam | ]
 
 SEM TyVar
-  | Var         (loc.tgi,lhs.tyGam)                 =   case tyGamLookup @nm (gamTop @lhs.tyGam) of
+  | Var         (loc.tgi,lhs.tyGam)                 =   case tyGamLookup (gamTop @lhs.tyGam) @nm of
                                                           Nothing    ->  let  t    =  mkNewTyVar @lUniq
                                                                               tgi  =  TyGamInfo t
-                                                                         in   (tgi,gamAdd @nm tgi @lhs.tyGam)
+                                                                         in   (tgi,gamAdd @lhs.tyGam @nm tgi)
                                                           Just tgi   ->  (tgi,@lhs.tyGam)
                 loc         .   tv                  =   tyVar . tgiTy $ @tgi
 %%]
@@ -88,12 +88,12 @@ SEM TyExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[6 hs
-tyGamLookupOrAdd :: HsName -> UID -> Cnstr -> TyGam -> (TyGamInfo,TyGam)
-tyGamLookupOrAdd nm uniq cnstr tyGam
-  =  case tyGamLookup nm tyGam of
+tyGamLookupOrAdd :: UID -> Cnstr -> TyGam -> HsName -> (TyGamInfo,TyGam)
+tyGamLookupOrAdd uniq cnstr tyGam nm
+  =  case tyGamLookup tyGam nm of
        Nothing    ->  let  t    =  mkNewTyVar uniq
                            tgi  =  mkTGI t t
-                      in   (tgi,gamAdd nm tgi tyGam)
+                      in   (tgi,gamAdd tyGam nm tgi)
        Just tgi   ->  (cnstr |=> tgi,tyGam)
 %%]
 
@@ -104,11 +104,11 @@ ATTR TyExprs TyVars [ | | kiL: TyL ]
 
 SEM TyExpr
   | Var VarWild
-                (loc.tgi,lhs.tyGam)                 :=  tyGamLookupOrAdd @nm @lUniq @lhs.kiCnstr @lhs.tyGam
+                (loc.tgi,lhs.tyGam)                 :=  tyGamLookupOrAdd @lUniq @lhs.kiCnstr @lhs.tyGam @nm
                 loc         .   ki                  =   tgiKi @tgi
   | Wild        loc         .   tgi                 :=  let t = mkNewTyVar @tyVarId in mkTGI t t
                             .   ki                  =   tgiKi @tgi
-  | Con         loc         .   (tgi,nmErrs)        :=  case tyGamLookup @nm @lhs.tyGam of
+  | Con         loc         .   (tgi,nmErrs)        :=  case tyGamLookup @lhs.tyGam @nm of
                                                           Nothing    ->  (mkTGI Ty_Any kiStar,[Err_NamesNotIntrod [@nm]])
                                                           Just tgi   ->  (@lhs.kiCnstr |=> tgi,[])
                 loc         .   ki                  =   tgiKi @tgi
@@ -125,10 +125,10 @@ SEM TyExprs
   | Cons        lhs         .   kiL                 =   @hd.ki : @tl.kiL
 
 SEM TyVar
-  | Var         (loc.tgi,lhs.tyGam)                 :=  case tyGamLookup @nm (gamTop @lhs.tyGam) of
+  | Var         (loc.tgi,lhs.tyGam)                 :=  case tyGamLookup (gamTop @lhs.tyGam) @nm of
                                                           Nothing    ->  let  t    =  Ty_Var @lUniq TyVarCateg_Plain
                                                                               tgi  =  mkTGI t t
-                                                                         in   (tgi,gamAdd @nm tgi @lhs.tyGam)
+                                                                         in   (tgi,gamAdd @lhs.tyGam @nm tgi)
                                                           Just tgi   ->  (tgi,@lhs.tyGam)
                 loc         .   ki                  =   tgiKi @tgi
 
@@ -151,7 +151,7 @@ SEM TyExpr
                             .   ki                  =   tgiKi @tgi
 
 SEM RowTyExpr
-  | Var         (loc.tgi,lhs.tyGam)                 =   tyGamLookupOrAdd @nm @lUniq @lhs.kiCnstr @lhs.tyGam
+  | Var         (loc.tgi,lhs.tyGam)                 =   tyGamLookupOrAdd @lUniq @lhs.kiCnstr @lhs.tyGam @nm
                 loc         .   fo                  =   fitsIn weakFIOpts emptyFE @lUniq2 (tgiKi @tgi) kiRow
                             .   ki                  =   foTy @fo
 %%]

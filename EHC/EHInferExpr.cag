@@ -67,7 +67,7 @@ SEM Expr
 %%[1.Var
 SEM Expr
   | Var         loc         .   (gTy,nmErrs)
-                                                    =   valGamLookupTy @nm @lhs.valGam
+                                                    =   valGamLookupTy @lhs.valGam @nm
                             .   fTy                 =   @gTy
                             .   fo                  =   @fTy `fitsIn` @lhs.knTy
                             .   ty                  =   foTy @fo
@@ -114,7 +114,7 @@ SEM Expr
 
 %%[4.Con
 SEM Expr
-  | Con         loc         .   (gTy,nmErrs)        :=  valGamLookupTy @nm @lhs.valGam
+  | Con         loc         .   (gTy,nmErrs)        :=  valGamLookupTy @lhs.valGam @nm
                             .   fTy                 :=  @lhs.tyCnstr |=> @gTy
                             .   fo                  :=  fitsIn @lhs.fiOpts @fe @lUniq2 @fTy (@lhs.tyCnstr |=> @lhs.knTy)
 %%]
@@ -155,21 +155,6 @@ SEM Expr
   | App         loc         .   fo                  =   fitsIn strongFIOpts @fe @lUniq4 (@lhs.tyCnstr |=> @imprResTy) (@lhs.tyCnstr |=> @lhs.knTy)
                 func        .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
 %%]
-SEM Expr
-  | App         loc         .   (imprArgTy,imprResTy)
-                                                    =   let [a,r] = mkNewTyVarL 2 @lUniq in (a,r)
-                            .   knFunTy             :=  [@imprArgTy] `mkTyArrow` @imprResTy
-                arg         .   knTy                :=  @imprArgTy
-                loc         .   imprFO1             =   fitsIn  (@argFIOpts {fioBindToTyAlts = True}) @fe @lUniq2
-                                                                @arg.imprTy @imprArgTy
-                            .   imprFunTy           =   [foTy @imprFO1] `mkTyArrow` @imprResTy
-                            .   imprTyCnstr1        =   foCnstr @imprFO1 |=> @arg.imprTyCnstr
-                            .   imprFO2             =   fitsIn  impredFIOpts @fe @lUniq3
-                                                                (@imprTyCnstr1 |=> @func.imprTy) @imprFunTy
-                            .   imprTy              =   foCnstr @imprFO2 |=> @imprResTy
-                lhs         .   imprTyCnstr         =   foCnstr @imprFO2 |=> @imprTyCnstr1
-  | App         loc         .   fo                  =   fitsIn strongFIOpts @fe uidStart @imprResTy (@lhs.tyCnstr |=> @lhs.knTy)
-                func        .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
 
 %%[9.App
 SEM Expr
@@ -378,10 +363,10 @@ SEM RecExpr
 
 %%[9.FIEnv -(4.FIEnv 7.FIEnv)
 SEM Expr
-  | *           loc         .   fe                  =   emptyFE {fePrElimGam = @lhs.prElimGam}
+  | *           loc         .   fe                  =   emptyFE {fePrElimTGam = @lhs.prElimTGam, fePrElimGam = @lhs.prElimGam, fePrfCtxtId = @lhs.prfCtxtId}
 
 SEM RecExpr
-  | *           loc         .   fe                  =   emptyFE {fePrElimGam = @lhs.prElimGam}
+  | *           loc         .   fe                  =   emptyFE {fePrElimTGam = @lhs.prElimTGam, fePrElimGam = @lhs.prElimGam, fePrfCtxtId = @lhs.prfCtxtId}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -44,7 +44,7 @@ SEM PatExpr
 
 %%[4.patFunTy
 SEM PatExpr
-  | Con         loc         .  (knUnTy,nmErrs)      =   valGamLookupTy (hsnUn @nm) @lhs.valGam
+  | Con         loc         .  (knUnTy,nmErrs)      =   valGamLookupTy @lhs.valGam (hsnUn @nm)
                             .  patFunTy             :=  let  [a,r]  = mkNewTyVarL 2 @lUniq
                                                              fo     = fitsIn  instFIOpts emptyFE @lUniq2 @knUnTy ([a] `mkTyArrow` r)
                                                         in   foTy fo
@@ -134,8 +134,8 @@ SEM PatExpr
   | Var VarAs   loc         .   ty                  =   @lhs.knTy
                             .   varTy               =   @ty
                             .   addToGam            =   if @lhs.inclVarBind && @nm /= hsnWild
-                                                        then  gamAdd @nm
-                                                                (ValGamInfo @varTy)
+                                                        then  \g ->  gamAdd g @nm
+                                                                       (ValGamInfo @varTy)
                                                         else  id
   | Var         lhs         .   valGam              =   @addToGam @lhs.valGam
   | VarAs       lhs         .   valGam              =   @addToGam @patExpr.valGam

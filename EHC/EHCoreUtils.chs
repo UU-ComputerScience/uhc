@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -32,10 +32,10 @@ rceEnvDataAlts :: RCEEnv -> CTag -> [CTag]
 rceEnvDataAlts env t
   =  case t of
        CTag _ _ conNm
-          ->  case valGamLookup conNm . rceValGam $ env of
+          ->  case valGamLookup (rceValGam env) conNm of
                 Just vgi
                    ->  let  tyNm = tyAppFunConNm . snd . tyArrowArgsRes . vgiTy $ vgi
-                       in   maybe [] (assocLElts . fmToList . tgiDataTagMp) . tyGamLookup tyNm . rceTyGam $ env
+                       in   maybe [] (assocLElts . fmToList . tgiDataTagMp) . tyGamLookup (rceTyGam env) $ tyNm
                 _  ->  []
        _  ->  []
 %%]

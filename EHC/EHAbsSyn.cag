@@ -432,5 +432,7 @@ SET AllNT           =   AllData AllCase AllTyExpr AllTyVar AllDecl AllPatExpr Al
 %%[9.AllNT -6.AllNT
 SET AllNT           =   AllData AllCase AllTyExpr AllTyVar AllDecl AllPatExpr AllExpr
                         AllKiExpr AllFuncDep
+
+SET NTPrf           =   AllDecl AllCase AllExpr AllPatExpr
 %%]
 

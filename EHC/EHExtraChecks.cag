@@ -41,7 +41,7 @@ checkClNms s = if isEmptySet s then [] else [Err_NamesNotIntrod (setToList s)]
 %%]
 checkPrClassName :: PrIntroGam -> [HsName] -> [Err]
 checkPrClassName g pl
-  =  let  nms = nub . concat . map (\n -> maybe [n] (const []) (gamLookup n g)) . filter (not.hsnIsUnknown) $ pl
+  =  let  nms = nub . concat . map (\n -> maybe [n] (const []) (gamLookup g n)) . filter (not.hsnIsUnknown) $ pl
      in   if null nms then [] else [Err_NamesNotIntrod nms]
 
 %%[9

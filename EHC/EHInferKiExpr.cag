@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -13,12 +13,12 @@
 ATTR KiExpr [ | kiGam: KiGam | ]
 
 SEM KiExpr
-  | Var         (loc.kgi,lhs.kiGam)                 =   case gamLookup @nm @lhs.kiGam of
+  | Var         (loc.kgi,lhs.kiGam)                 =   case gamLookup @lhs.kiGam @nm of
                                                           Nothing    ->  let  t    =  mkNewTyVar @lUniq
                                                                               kgi  =  KiGamInfo t
-                                                                         in   (kgi,gamAdd @nm kgi @lhs.kiGam)
+                                                                         in   (kgi,gamAdd @lhs.kiGam @nm kgi)
                                                           Just kgi   ->  (kgi,@lhs.kiGam)
-  | Con         loc         .  (kgi,nmErrs)         =   case gamLookup @nm @lhs.kiGam of
+  | Con         loc         .  (kgi,nmErrs)         =   case gamLookup @lhs.kiGam @nm of
                                                           Nothing    ->  (KiGamInfo Ty_Any,[Err_NamesNotIntrod [@nm]])
                                                           Just kgi   ->  (kgi,[])
 %%]
