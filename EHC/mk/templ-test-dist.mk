@@ -21,9 +21,9 @@ test-expect test-regress: test-lists
 	        then \
 	          echo "== core ==" >> $${th} ; \
 	          cat $${tc} >> $${th} ; \
+	          cp $$t t.eh ; \
 	          if test -x ../bin/jc -a -x ../bin/jr -a "x$(CORE_TARG)" = "xjava" ; \
 	          then \
-	            cp $$t t.eh ; \
 	            $$ehc --code=java t.eh > /dev/null ; \
 	            rm -f t.class ; \
 	            ../bin/jc t &> /dev/null ; \
@@ -34,7 +34,6 @@ test-expect test-regress: test-lists
 	            fi \
 	          elif test -x $$gri -a "x$(CORE_TARG)" = "xgrin" ; \
 	          then \
-	            cp $$t t.eh ; \
 	            rm -f t.grin ; \
 	            $$ehc --code=grin t.eh > /dev/null ; \
 	            echo "== grin execution ==" >> $${th} ; \

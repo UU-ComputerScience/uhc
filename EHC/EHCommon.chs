@@ -78,7 +78,7 @@
 %%[8 export(cmdLineTrfs,trfOptOverrides)
 %%]
 
-%%[8 export(sortOn,groupSortOn)
+%%[8 export(sortByOn,sortOn,groupOn,groupSortOn)
 %%]
 
 %%[8 export(Seq,mkSeq,unitSeq,concatSeq,"(<+>)",seqToList,emptySeq)
@@ -88,6 +88,9 @@
 %%]
 
 %%[8 export(mkNewLevUIDL)
+%%]
+
+%%[8 export(hsnLclSupplyL)
 %%]
 
 %%[9 export(hsnOImpl,hsnCImpl,hsnIsUnknown)
@@ -197,6 +200,15 @@ hsnCImpl                            =   HNm "#)"
 
 %%[9
 hsnIsUnknown                        =   (==hsnUnknown)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name supply, no uniqueness required
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+hsnLclSupplyL :: [HsName]
+hsnLclSupplyL = map (\i -> HNm ("_" ++ show i)) [1..]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -683,10 +695,16 @@ listCombineUniq = nub . concat
 
 %%[8
 sortOn :: Ord b => (a -> b) -> [a] -> [a]
-sortOn sel = sortBy (\e1 e2 -> sel e1 `compare` sel e2)
+sortOn = sortByOn compare
+
+sortByOn :: (b -> b -> Ordering) -> (a -> b) -> [a] -> [a]
+sortByOn cmp sel = sortBy (\e1 e2 -> sel e1 `cmp` sel e2)
+
+groupOn :: Eq b => (a -> b) -> [a] -> [[a]]
+groupOn sel = groupBy (\e1 e2 -> sel e1 == sel e2)
 
 groupSortOn :: Ord b => (a -> b) -> [a] -> [[a]]
-groupSortOn sel = groupBy (\e1 e2 -> sel e1 == sel e2) . sortOn sel
+groupSortOn sel = groupOn sel . sortOn sel
 %%]
 
 %%[8

@@ -173,6 +173,10 @@ grEvalVal rs v
                                                                 =  grEvalVal rs v : fL'
                                                                    where  fL' = ad adL' fL (fO+1)
                                                                           (RVInt o') = grEvalVal rs o
+                                                             ad (GrAdapt_Del o:adL') (_:fL) fO | o' == fO
+                                                                =  fL'
+                                                                   where  fL' = ad adL' fL (fO+1)
+                                                                          (RVInt o') = grEvalVal rs o
                                                              ad adL (f:fL) fO
                                                                 =  f : fL'
                                                                    where  fL' = ad adL fL (fO+1)
@@ -295,7 +299,7 @@ grEvalExpr rs e
                                       ->  return (rs3,Nothing)
                                           where  rs2 = upd rs n
                                                  n2 = hsnWild
-                                                 nL@(nF:nAL) = take (length ndFAL) grLclNmSupplyL
+                                                 nL@(nF:nAL) = take (length ndFAL) hsnLclSupplyL
                                                  e = GrExpr_Seq (GrExpr_Eval nF) (GrPat_Var n2) (GrExpr_App n2 (map GrVal_Var nAL))
                                                  re = rsGlobEnv rs `plusFM` listToFM (zip nL ndFAL)
                                                  rs3 = rs2 {rsNext = Just e, rsEnv = re}

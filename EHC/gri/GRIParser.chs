@@ -24,7 +24,7 @@ scanOpts
                                     , "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi"
                                     , "C", "F", "P", "A", "R", "H"
                                     ]
-        ,   scoKeywordsOps      =   [ "->", "=", "+=", ":=", "-" ]
+        ,   scoKeywordsOps      =   [ "->", "=", "+=", "-=", ":=", "-" ]
         ,   scoSpecChars        =   "();{}#/\\|,"
         ,   scoOpChars          =   "->:=+"
         ,   scoDollarIdent      =   True
@@ -82,7 +82,7 @@ pValL           ::   GRIParser GrValL
 pValL           =    pList pVal
 
 pAdapt          ::   GRIParser GrAdapt
-pAdapt          =    pSVal <**> (GrAdapt_Ins <$ pKey "+=" <|> GrAdapt_Upd <$ pKey ":=") <*> pVal
+pAdapt          =    pSVal <**> ((flip GrAdapt_Ins <$ pKey "+=" <|> flip GrAdapt_Upd <$ pKey ":=") <*> pVal <|> GrAdapt_Del <$ pKey "-=")
 
 pAlt            ::   GRIParser GrAlt
 pAlt            =    GrAlt_Alt <$> pPat <* pKey "->" <*> pCurly pExprSeq

@@ -43,8 +43,7 @@ SEM CExpr
   | Var         lhs         .   levOf       =   lookupWithDefaultFM @lhs.levMp cLevOuter @nm
   | App         loc         .   levOf       =   @func.levOf `max` @arg.levOf
   | Case        loc         .   levOf       =   @expr.levOf `max` @alts.levOf `max` @dflt.levOf
-  | TupSel TupDel
-                loc         .   levOf       =   @expr.levOf `max` @offset.levOf
+  | TupDel      loc         .   levOf       =   @expr.levOf `max` @offset.levOf
   | TupIns TupUpd
                 loc         .   levOf       =   @expr.levOf `max` @offset.levOf `max` @fldExpr.levOf
   | Lam         loc         .   levOf       =   fvsLev @lhs.levMp @body.fvS

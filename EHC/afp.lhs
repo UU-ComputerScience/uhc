@@ -968,7 +968,7 @@ and some basic types like |Int|, |Char| and tuples.
 An EH program is a single expression, contrary to a Haskell program which consists of a set of declarations forming a module.
 
 \begin{code}
-%%1srcfile<test/1-all-ok2.eh%%>
+%%1srcfile(test/1-all-ok2.eh%%)
 \end{code}
 
 All variables need to be typed explicitly, absence of an explicit type is considered to be an error.
@@ -976,7 +976,7 @@ The corresponding compiler (EH version 1, \chapterRef{ehc1}) checks the explicit
 actual types. For example:
 
 \begin{code}
-%%1srcfile<test/1-all-fail2.eh%%>
+%%1srcfile(test/1-all-fail2.eh%%)
 \end{code}
 
 is not accepted.
@@ -984,7 +984,7 @@ is not accepted.
 Besides the basic types |Int| and |Char|, composite types can be formed by building tuples and defining functions:
 
 \begin{code}
-%%1srcfile<test/1-all-ok3.eh%%>
+%%1srcfile(test/1-all-ok3.eh%%)
 \end{code}
 
 Functions accept one parameter only, which can be a pattern.
@@ -997,13 +997,13 @@ Functions are not polymorphic (yet).
 \item EH program is single expression
 \SafeCode{%
 \begin{code}
-%%1srcfile<test/1-all-ok2.eh%%>
+%%1srcfile(test/1-all-ok2.eh%%)
 \end{code}
 }
 \item Types |Int|, |Char|, tuples and functions
 \SafeCode{%
 \begin{code}
-%%1srcfile<test/1-all-ok3.eh%%>
+%%1srcfile(test/1-all-ok3.eh%%)
 \end{code}
 }
 \end{itemize}
@@ -1017,12 +1017,12 @@ Functions are not polymorphic (yet).
 \item Types are checked
 \SafeCode{%
 \begin{code}
-%%1srcfile<test/1-all-fail2.eh%%>
+%%1srcfile(test/1-all-fail2.eh%%)
 \end{code}
 }
 gives rise to error annotated representation of program:
 \begin{TT}
-%%1ppfile<test/1-all-fail2.eh%%>
+%%1ppfile(test/1-all-fail2.eh%%)
 \end{TT}
 \end{itemize}
 }
@@ -1041,7 +1041,7 @@ The consequently missing type information has to be inferred by the compiler.
 For example for:
 
 \begin{code}
-%%2srcfile<test/1-sig-fail.eh%%>
+%%2srcfile(test/1-sig-fail.eh%%)
 \end{code}
 
 the compiler will reconstruct the type specification |i :: %%2file<test/1-sig-fail.eh%%>|.
@@ -1049,7 +1049,7 @@ the compiler will reconstruct the type specification |i :: %%2file<test/1-sig-fa
 The reconstructed type information is monomorphic, for example for the identity function in:
 
 \begin{code}
-%%2srcfile<test/2-id-int.eh%%>
+%%2srcfile(test/2-id-int.eh%%)
 \end{code}
 
 the type |id :: %%2file<test/2-id-int.eh%%>|
@@ -1062,7 +1062,7 @@ will be reconstructed.
 \item Type signature may be omitted
 \SafeCode{%
 \begin{code}
-%%2srcfile<test/1-sig-fail.eh%%>
+%%2srcfile(test/1-sig-fail.eh%%)
 \end{code}
 }
 \item
@@ -1070,7 +1070,7 @@ Missing type is inferred: |i :: %%2file<test/1-sig-fail.eh%%>|
 \item Inferred types are monomorphic
 \SafeCode{%
 \begin{code}
-%%2srcfile<test/2-id-int.eh%%>
+%%2srcfile(test/2-id-int.eh%%)
 \end{code}
 }
 gives rise to type
@@ -1179,14 +1179,14 @@ Specifying a complete type signature can be difficult for complicated types,
 so it is permitted to leave argument and results of a function unspecified
 using a \IxAsDef{partial type signature}.
 \begin{code}
-%%4srcfile<test/4-ty-wild1.eh%%>
+%%4srcfile(test/4-ty-wild1.eh%%)
 \end{code}
 Only the part which cannot be inferred is given in the signature.
 
 Finally, type information can be hidden, or encapsulated,
 by using existential quantification
 \begin{code}
-%%4srcfile<test/4-ex-extr.eh%%>
+%%4srcfile(test/4-ex-extr.eh%%)
 \end{code}
 The value |xy| contains an |Int| and a function making an |Int| from the
 value of which the type has been hidden.
@@ -1232,7 +1232,7 @@ in   f
 Existential quantification: hiding/forgetting type information
 \SafeCode{%
 \begin{code}
-%%4srcfile<test/4-ex-extr.eh%%>
+%%4srcfile(test/4-ex-extr.eh%%)
 \end{code}
 }
 \end{itemize}
@@ -1264,7 +1264,7 @@ The fifth version (EH version 5, \chapterRef{ehc5})
 adds |data| types and opening/unpacking/scrutinizing
 a data type value by means of a |case| expression.
 \begin{code}
-%%5srcfile<test/5-list.eh%%>
+%%5srcfile(test/5-list.eh%%)
 \end{code}
 
 \frame<presentation>
@@ -1275,7 +1275,7 @@ a data type value by means of a |case| expression.
 User defined data types
 \SafeCode{%
 \begin{code}
-%%5srcfile<test/5-list.eh%%>
+%%5srcfile(test/5-list.eh%%)
 \end{code}
 }
 \item Unpacking via case expression
@@ -1290,7 +1290,7 @@ User defined data types
 The previous version allows incorrect programs because
 data types can be used incorrectly:
 \begin{code}
-%%6srcfile<test/5-list-wrong.eh%%>
+%%6srcfile(test/5-list-wrong.eh%%)
 \end{code}
 The type of |v| is not a type of a value, and thus the type of |v|
 itself is not well-typed.
@@ -1299,7 +1299,7 @@ adds kind (that is, the type of a type) inferencing.
 %if noAFP04
 For example, the previous example gives
 \begin{TT}
-%%6ppfile<test/5-list-wrong.eh%%>
+%%6ppfile(test/5-list-wrong.eh%%)
 \end{TT}
 %endif
 
@@ -1313,7 +1313,7 @@ in   Eq id
 \end{code}
 infers for type constructor |Eq|
 \begin{TT}
-%%6ppinline<let data Eq a b = Eq (forall f . f a -> f b) in 3%%>
+%%6ppinline(let data Eq a b = Eq (forall f . f a -> f b) in 3%%)
 \end{TT}
 
 \frame<presentation>
@@ -1324,7 +1324,7 @@ infers for type constructor |Eq|
 Type expressions can be incorrectly used
 \SafeCode{%
 \begin{code}
-%%6srcfile<test/5-list-wrong.eh%%>
+%%6srcfile(test/5-list-wrong.eh%%)
 \end{code}
 }
 \item
@@ -1354,7 +1354,7 @@ Kind inferencing/checking for types
 Polymorphic kinds
 \SafeCode{%
 \begin{code}
-%%6srcfile<test/5-all-ok2.eh%%>
+%%6srcfile(test/5-all-ok2.eh%%)
 \end{code}
 }
 infers kind @Eq :: Forall a . a -> a -> *@
@@ -1363,7 +1363,7 @@ Kind signatures for types (similar to type signatures for values)
 
 \SafeCode{%
 \begin{code}
-%%6srcfile<test/6-expl-ki.eh%%>
+%%6srcfile(test/6-expl-ki.eh%%)
 \end{code}
 }
 \end{itemize}
@@ -1376,7 +1376,7 @@ Kind signatures for types (similar to type signatures for values)
 \item Replacement for tuples
 \SafeCode{%
 \begin{code}
-%%6srcfile<test/7-all-ok2.eh%%>
+%%6srcfile(test/7-all-ok2.eh%%)
 \end{code}
 }
 \end{itemize}
@@ -1543,18 +1543,18 @@ value definitions.
 For example
 
 \begin{code}
-%%1srcfile<test/1-all-ok2.eh%%>
+%%1srcfile(test/1-all-ok2.eh%%)
 \end{code}
 
 is accepted, whereas
 
 \begin{code}
-%%1srcfile<test/1-all-fail2.eh%%>
+%%1srcfile(test/1-all-fail2.eh%%)
 \end{code}
 produces a pretty printed version of the erroneous program,
 annotated with errors.
 \begin{TT}
-%%1ppfile<test/1-all-fail2.eh%%>
+%%1ppfile(test/1-all-fail2.eh%%)
 \end{TT}
 
 Although the implementation of a type system will be the main focus of this section,
@@ -1626,11 +1626,11 @@ a declaration),
 or |App| represents the application of a function to an argument.
 The EH fragment
 \begin{code}
-%%1srcfile<afp-eh/02.eh%%>
+%%1srcfile(afp-eh/02.eh%%)
 \end{code}
 is represented by the following piece of abstract syntax tree:
 \begin{TT}
-%%1astfile<afp-eh/02.eh%%>
+%%1astfile(afp-eh/02.eh%%)
 \end{TT}
 Note that the program is incorrect for this version of EH because type
 signatures are missing.
@@ -1698,13 +1698,13 @@ signatures are missing.
  \begin{column}{.5\textwidth}
   \SafeCode{%
 \begin{code}
-%%1srcfile<afp-eh/02.eh%%>
+%%1srcfile(afp-eh/02.eh%%)
 \end{code}
   }
  \end{column}
  \begin{column}{.5\textwidth}
 \begin{TTtiny}
-%%1astfile<afp-eh/02.eh%%>
+%%1astfile(afp-eh/02.eh%%)
 \end{TTtiny}
  \end{column}
 \end{columns}
@@ -2243,7 +2243,7 @@ for the abstract syntax tree, starting with the definition for |Expr|
 \item Input
 \SafeCode{%
 \begin{code}
-%%1srcfile<test/1-all-fail2.eh%%>
+%%1srcfile(test/1-all-fail2.eh%%)
 \end{code}
 }
 \end{itemize}
@@ -2252,7 +2252,7 @@ for the abstract syntax tree, starting with the definition for |Expr|
 \begin{itemize}
 \item Abstract syntax
 \begin{TT}
-%%1astfile<test/1-all-fail2.eh%%>
+%%1astfile(test/1-all-fail2.eh%%)
 \end{TT}
 \end{itemize}
 \end{column}
@@ -2265,7 +2265,7 @@ for the abstract syntax tree, starting with the definition for |Expr|
 \begin{itemize}
 \item Output
 \begin{TT}
-%%1ppfile<test/1-all-fail2.eh%%>
+%%1ppfile(test/1-all-fail2.eh%%)
 \end{TT}
 \end{itemize}
 }
@@ -3805,11 +3805,11 @@ need to be accompanied by an explicit type signature.
 For example, repeating the example from the introduction
 
 \begin{code}
-%%2srcfile<test/1-sig-fail.eh%%>
+%%2srcfile(test/1-sig-fail.eh%%)
 \end{code}
 gives
 \begin{TT}
-%%2ppfile<test/1-sig-fail.eh%%>
+%%2ppfile(test/1-sig-fail.eh%%)
 \end{TT}
 
 \frame<presentation>[containsverbatim]
@@ -3820,12 +3820,12 @@ gives
 \item For example
 \SafeCode{%
 \begin{code}
-%%2srcfile<test/1-sig-fail.eh%%>
+%%2srcfile(test/1-sig-fail.eh%%)
 \end{code}
 } 
 \item gives
 \begin{TT}
-%%2ppfile<test/1-sig-fail.eh%%>
+%%2ppfile(test/1-sig-fail.eh%%)
 \end{TT}
 \item Type is inferred/reconstructed
 \end{itemize}
@@ -3846,11 +3846,11 @@ the used type language, that is, basic types, tuples and functions.
 
 So
 \begin{code}
-%%2srcfile<test/2-id-int.eh%%>
+%%2srcfile(test/2-id-int.eh%%)
 \end{code}
 will give
 \begin{TT}
-%%2ppfile<test/2-id-int.eh%%>
+%%2ppfile(test/2-id-int.eh%%)
 \end{TT}
 
 \frame<presentation>[containsverbatim]
@@ -3861,24 +3861,24 @@ will give
 \item For example
 \SafeCode{%
 \begin{code}
-%%2srcfile<test/2-id-int.eh%%>
+%%2srcfile(test/2-id-int.eh%%)
 \end{code}
 }
 \item infers
 \begin{TT}
-%%2ppfile<test/2-id-int.eh%%>
+%%2ppfile(test/2-id-int.eh%%)
 \end{TT}
 \end{itemize}
 }
 
 If the use of |id| to define |v| is omitted less information (namely the argument of |id| is an int) to infer a type for |id| is available
 \begin{TT}
-%%2ppinline<let id = \x -> x in id%%>
+%%2ppinline(let id = \x -> x in id%%)
 \end{TT}
 
 On the other hand, if contradictory information is found we will have
 \begin{TT}
-%%2ppfile<test/2-id-intchar.eh%%>
+%%2ppfile(test/2-id-intchar.eh%%)
 \end{TT}
 This may look a bit strange for a Haskell programmer, but we will concern ourselves 
 with polymorphism no sooner then with the next version of EH (\chapterRef{ehc3}).
@@ -3891,12 +3891,12 @@ with polymorphism no sooner then with the next version of EH (\chapterRef{ehc3})
 \item For example
 \SafeCode{%
 \begin{code}
-%%2srcfile<test/2-id-intchar.eh%%>
+%%2srcfile(test/2-id-intchar.eh%%)
 \end{code}
 }
 \item gives
 \begin{TT}
-%%2ppfile<test/2-id-intchar.eh%%>
+%%2ppfile(test/2-id-intchar.eh%%)
 \end{TT}
 \end{itemize}
 }
@@ -3908,13 +3908,13 @@ known about a type signature and the type inferencer filling in the unspecified 
 For example:
 
 \begin{code}
-%%2srcfile<test/2-ty-wild.eh%%>
+%%2srcfile(test/2-ty-wild.eh%%)
 \end{code}
 
 The type inferencer pretty prints the inferred type instead of the explicity type signature:
 
 \begin{code}
-%%2srcfile<test/2-ty-wild.eh%%>
+%%2srcfile(test/2-ty-wild.eh%%)
 \end{code}
 
 The discussion of the implementation of this feature is postponed until
@@ -3928,7 +3928,7 @@ on the compiler implementation.
 \item Type need not be specified completely
 \SafeCode{%
 \begin{code}
-%%2srcfile<test/2-ty-wild.eh%%>
+%%2srcfile(test/2-ty-wild.eh%%)
 \end{code}
 }
 \item
@@ -3944,7 +3944,7 @@ As an afterthought to see how well an additional feature can be added
 \begin{itemize}
 \item Pretty printing shows inferred types
 \begin{TT}
-%%2ppfile<test/2-ty-wild.eh%%>
+%%2ppfile(test/2-ty-wild.eh%%)
 \end{TT}
 \item Shows inferred type only if partially specified
 \end{itemize}
@@ -4751,7 +4751,7 @@ The third version of EH adds polymorphism, in particular so-called parametric po
 which allows functions to be used on arguments of differing types.
 For example
 \begin{code}
-%%srcfile<afp-eh/04.eh%%>
+%%srcfile(afp-eh/04.eh%%)
 \end{code}
 gives |v :: %%3file<afp-eh/04.eh%%>|
 and |id :: %%3<let id = \x -> x in id%%>|.
@@ -4773,7 +4773,7 @@ type can be used with different types for the quantified type variables.
 \item E.g.
 \SafeCode{%
 \begin{code}
-%%srcfile<afp-eh/04.eh%%>
+%%srcfile(afp-eh/04.eh%%)
 \end{code}
 }
 \item |a -> a| means |forall a . a -> a|
@@ -4793,13 +4793,13 @@ The following variant of the previous example is therefore not to be considered
 correct:
 
 \begin{code}
-%%3srcfile<test/3-mono-arg.eh%%>
+%%3srcfile(test/3-mono-arg.eh%%)
 \end{code}
 
 It will give the following output:
 
 \begin{TT}
-%%3ppfile<test/3-mono-arg.eh%%>
+%%3ppfile(test/3-mono-arg.eh%%)
 \end{TT}
 
 The problem here is that the polymorphism of |f| in |a| means that the caller
@@ -4822,13 +4822,13 @@ The use of type constants will be explained later.
 \item Incorrect:
 \SafeCode{%
 \begin{code}
-%%3srcfile<test/3-mono-arg.eh%%>
+%%3srcfile(test/3-mono-arg.eh%%)
 \end{code}
 }
 \item Incorrect:
 \SafeCode{%
 \begin{code}
-%%3srcfile<test/3-mono-arg3.eh%%>
+%%3srcfile(test/3-mono-arg3.eh%%)
 \end{code}
 }
 \item Only identifiers bound by |let|
@@ -4838,11 +4838,11 @@ The use of type constants will be explained later.
 Another example of the limitations of polymorphism in this version of EH is the following
 variation
 \begin{code}
-%%3srcfile<test/3-mono-arg2.eh%%>
+%%3srcfile(test/3-mono-arg2.eh%%)
 \end{code}
 for which the compiler will infer types
 \begin{TT}
-%%3ppfile<test/3-mono-arg2.eh%%>
+%%3ppfile(test/3-mono-arg2.eh%%)
 \end{TT}
 
 \frame<presentation>
@@ -4853,7 +4853,7 @@ for which the compiler will infer types
 \item Bindings can only be polymorphically used in body of |let|:
 \SafeCode{%
 \begin{code}
-%%3srcfile<test/3-mono-arg2.eh%%>
+%%3srcfile(test/3-mono-arg2.eh%%)
 \end{code}
 }
 \item Type of \alert<+>{|f :: %%3file<test/3-mono-arg2.eh%%>|}
@@ -4861,7 +4861,7 @@ for which the compiler will infer types
 \item If used in same group of bindings:
 \SafeCode{%
 \begin{code}
-%%3srcfile<test/3-mono-arg4.eh%%>
+%%3srcfile(test/3-mono-arg4.eh%%)
 \end{code}
 }
 \item Type of \alert<+>{|f :: %%3file<test/3-mono-arg4.eh%%>|}
@@ -4873,11 +4873,11 @@ EH version 3 allows parametric polymorphism but not polymorphic parameters.
 The parameter |i| has a monomorphic type, which is made even more clear when
 we make an attempt to use this |i| polymorphically in
 \begin{code}
-%%3srcfile<test/3-mono-arg3.eh%%>
+%%3srcfile(test/3-mono-arg3.eh%%)
 \end{code}
 for which the compiler will infer types
 \begin{TT}
-%%3ppfile<test/3-mono-arg3.eh%%>
+%%3ppfile(test/3-mono-arg3.eh%%)
 \end{TT}
 
 Because |i| is not allowed to be polymorphic it can either be used on |Int| or |Char|, but
@@ -5143,7 +5143,7 @@ The condition that quantification only may be done for type variables not occurr
 the global |Gamma| is a necessary one.
 Take for example,
 \begin{code}
-%%3srcfile<test/3-mono-glob.eh%%>
+%%3srcfile(test/3-mono-glob.eh%%)
 \end{code}
 
 If the type |g :: a -> (a,a)| would be concluded, |g| can be used with |y| an |Int| parameter, as
@@ -5152,7 +5152,7 @@ This would go wrong because |h| assumes the types of its parameters |x| and |y| 
 So, this justifies the error given by the compiler for this version of EH:
 
 \begin{TT}
-%%3ppfile<test/3-mono-glob.eh%%>
+%%3ppfile(test/3-mono-glob.eh%%)
 \end{TT}
 
 All declarations in a |let|-expression together form what in Haskell is called a binding group.
@@ -5161,7 +5161,7 @@ are quantified together. The consequence is that a declaration that on its own w
 may no be so in conjunction with an additional declaration which uses the previous declaration
 
 \begin{code}
-%%3srcfile<test/3-mono-bind.eh%%>
+%%3srcfile(test/3-mono-bind.eh%%)
 \end{code}
 
 The types of the function |id1| and value |v1| are inferred in the same binding group.
@@ -5171,7 +5171,7 @@ The application |id1 3| therefore infers an additional constraint |tvar1 :-> Int
 in type |Int -> Int| for |id1|
 
 \begin{TT}
-%%3ppfile<test/3-mono-bind.eh%%>
+%%3ppfile(test/3-mono-bind.eh%%)
 \end{TT}
 
 On the other hand, |id2| is used after quantification, outside the binding group, with
@@ -5189,13 +5189,13 @@ Being together in a binding group can create a problem for inferencing mutually 
 for example:
 
 \begin{code}
-%%3srcfile<test/3-mut-rec.eh%%>
+%%3srcfile(test/3-mut-rec.eh%%)
 \end{code}
 
 This results in
 
 \begin{TT}
-%%3ppfile<test/3-mut-rec.eh%%>
+%%3ppfile(test/3-mut-rec.eh%%)
 \end{TT}
 
 For |f1| it is only known that its type is |tvar1 -> tvar2|.
@@ -5262,7 +5262,7 @@ quantified types.
 \paragraph{Higher ranked explicit polymorphism.}
 For example in
 \begin{code}
-%%4srcfile<test/3-poly-rank.eh%%>
+%%4srcfile(test/3-poly-rank.eh%%)
 \end{code}
 |f| has type |f :: %%4file<test/3-poly-rank.eh%%>|,
 which means that |i| has type |forall a. a ->a| in the body of |f|.
@@ -5281,7 +5281,7 @@ Therefore |i| can be used polymorphically in the body of |f|.
 \item Only if explicitly specified
 \SafeCode{%
 \begin{code}
-%%4srcfile<test/3-poly-rank.eh%%>
+%%4srcfile(test/3-poly-rank.eh%%)
 \end{code}
 }
 \item Quantifier may be at any position in type
@@ -5323,7 +5323,7 @@ implemented by not forgetting higher ranked type information.
 Quantifiers on higher ranked positions are also necessary to make existential types useful
 
 \begin{code}
-%%4srcfile<test/4-ex-extr.eh%%>
+%%4srcfile(test/4-ex-extr.eh%%)
 \end{code}
 
 An existentially quantified type \Ix{existential quantification}
@@ -5338,7 +5338,7 @@ All we know is that we can apply the second component to the first component
 This constraint is not upheld for |pq|, so an error is produced:
 
 \begin{TT}
-%%4ppfile<test/4-ex-extr.eh%%>
+%%4ppfile(test/4-ex-extr.eh%%)
 \end{TT}
 
 \frame<presentation>
@@ -5348,7 +5348,7 @@ This constraint is not upheld for |pq|, so an error is produced:
 \item ``It exists, but I've forgotten what it was''
 \SafeCode{%
 \begin{code}
-%%4srcfile<test/4-ex-extr.eh%%>
+%%4srcfile(test/4-ex-extr.eh%%)
 \end{code}
 }
 \item |xy| created with |a = Int|, quantifier hides this information
@@ -5360,7 +5360,7 @@ This constraint is not upheld for |pq|, so an error is produced:
 {
 \frametitle{Existential types}
 \begin{TT}
-%%4ppfile<test/4-ex-extr.eh%%>
+%%4ppfile(test/4-ex-extr.eh%%)
 \end{TT}
 }
 
@@ -5379,13 +5379,13 @@ It also means that we can create values with which we cannot do much useful.
 For example
 
 \begin{code}
-%%4srcfile<test/4-ex-extr3.eh%%>
+%%4srcfile(test/4-ex-extr3.eh%%)
 \end{code}
 
 gives
 
 \begin{TT}
-%%4ppfile<test/4-ex-extr3.eh%%>
+%%4ppfile(test/4-ex-extr3.eh%%)
 \end{TT}
 
 \frame<presentation>[containsverbatim,plain]
@@ -5400,12 +5400,12 @@ gives
 \item Once opened, always open
 \SafeCode{%
 \begin{code}
-%%4srcfile<test/4-ex-extr3.eh%%>
+%%4srcfile(test/4-ex-extr3.eh%%)
 \end{code}
 }
 \item
 \begin{TT}
-%%4ppfile<test/4-ex-extr3.eh%%>
+%%4ppfile(test/4-ex-extr3.eh%%)
 \end{TT}
 \end{itemize}
 }
@@ -5418,13 +5418,13 @@ bound to a value identifier.
 For example:
 
 \begin{code}
-%%4srcfile<test/4-ex-extr4.eh%%>
+%%4srcfile(test/4-ex-extr4.eh%%)
 \end{code}
 
 gives
 
 \begin{TT}
-%%4ppfile<test/4-ex-extr4.eh%%>
+%%4ppfile(test/4-ex-extr4.eh%%)
 \end{TT}
 
 \frame<presentation>[containsverbatim]
@@ -5434,12 +5434,12 @@ gives
 \item Nested existentials are retained
 \SafeCode{%
 \begin{code}
-%%4srcfile<test/4-ex-extr4.eh%%>
+%%4srcfile(test/4-ex-extr4.eh%%)
 \end{code}
 }
 \item
 \begin{TT}
-%%4ppfile<test/4-ex-extr4.eh%%>
+%%4ppfile(test/4-ex-extr4.eh%%)
 \end{TT}
 \end{itemize}
 }
@@ -5458,7 +5458,7 @@ Quantifiers need not always be specified.
 For example in
 
 \begin{code}
-%%4srcfile<test/4-ex-extr2.eh%%>
+%%4srcfile(test/4-ex-extr2.eh%%)
 \end{code}
 
 no quantifiers are specified in the type signatures, for |ixy| a type signature is even absent.
@@ -5483,7 +5483,7 @@ More rules are needed but we will look into this further when we look at the imp
 For the given example the following will be concluded
 
 \begin{TT}
-%%4ppfile<test/4-ex-extr2.eh%%>
+%%4ppfile(test/4-ex-extr2.eh%%)
 \end{TT}
 
 \frame<presentation>
@@ -5493,7 +5493,7 @@ For the given example the following will be concluded
 \item Notational sugar/convention
 \SafeCode{%
 \begin{code}
-%%4srcfile<test/4-ex-extr2.eh%%>
+%%4srcfile(test/4-ex-extr2.eh%%)
 \end{code}
 }
 \item Interprets type structure to find suitable location for quantifier
@@ -5509,7 +5509,7 @@ For the given example the following will be concluded
 {
 \frametitle{Quantifier location}
 \begin{TT}
-%%4ppfile<test/4-ex-extr2.eh%%>
+%%4ppfile(test/4-ex-extr2.eh%%)
 \end{TT}
 }
 
@@ -5575,7 +5575,7 @@ becomes a partial ordering on types.
 For example,
 \label{ehc4-exists-sub}
 \begin{code}
-%%srcfile<test/4-exists-sub.eh%%>
+%%srcfile(test/4-exists-sub.eh%%)
 \end{code}
 
 makes the type inferencer check |Int <= exists a . a|,
@@ -5590,7 +5590,7 @@ holds as we can use a more generally applicable function |id|
 in the more restricted required setting |Int -> Int|.
 \label{ehc4-forall-sub}
 \begin{code}
-%%srcfile<test/4-forall-sub.eh%%>
+%%srcfile(test/4-forall-sub.eh%%)
 \end{code}
 
 Losing generality, or specialization/instantiation to a specific type is ok,
@@ -5630,7 +5630,7 @@ has to deal with.
 \item Forgetting type information is ok, but irreversible
 \SafeCode{%
 \begin{code}
-%%srcfile<test/4-exists-sub.eh%%>
+%%srcfile(test/4-exists-sub.eh%%)
 \end{code}
 }
 \item Check done
@@ -5650,7 +5650,7 @@ but the reverse only if it can be guaranteed no additional
 constraints will be found for the quantified type variable
 \SafeCode{%
 \begin{code}
-%%srcfile<test/4-forall-sub.eh%%>
+%%srcfile(test/4-forall-sub.eh%%)
 \end{code}
 }
 \item Check done
@@ -5689,7 +5689,7 @@ The following example (from Botlan \cite{botlan03ml-power-f})
 
 \label{ehc4-choose}
 \begin{code}
-%%srcfile<test/4-choose.eh%%>
+%%srcfile(test/4-choose.eh%%)
 \end{code}
 
 demonstrates a choice we can make.
@@ -5737,7 +5737,7 @@ using |fitsIn|/|<=| to allow richer types still to match properly.
 be bound to type variables?
 \SafeCode{%
 \begin{code}
-%%srcfile<test/4-choose.eh%%>
+%%srcfile(test/4-choose.eh%%)
 \end{code}
 }
 \item Haskell: |v :: forall b . (b -> b) -> b -> b|
@@ -5939,7 +5939,7 @@ The rules for quantified types also deserve a bit more attention.
 \item
 \RuleRef{f-forall-r2} applies in
 \begin{code}
-%%srcfile<test/4-forall-sub.eh%%>
+%%srcfile(test/4-forall-sub.eh%%)
 \end{code}
 to the check |Int -> Int <= forall a . a -> a| which has to be done for |id = ii|.
 If |forall a . a -> a| is instantiated with type variables |tvar|,
@@ -6671,7 +6671,7 @@ Error gathering, pretty printing, uniq
 \item
 \SafeCode{%
 \begin{code}
-%%7srcfile<test/7-all-ok.eh%%>
+%%7srcfile(test/7-all-ok.eh%%)
 \end{code}
 }
 \end{itemize}
@@ -6680,13 +6680,13 @@ Error gathering, pretty printing, uniq
 \subsection{Current implementation examples}
 
 \begin{code}
-%%7srcfile<test/7-all-ok.eh%%>
+%%7srcfile(test/7-all-ok.eh%%)
 \end{code}
 
 with output
 
 \begin{TT}
-%%7ppfile<test/7-all-ok.eh%%>
+%%7ppfile(test/7-all-ok.eh%%)
 \end{TT}
 
 \subsection{Choices already made}
@@ -6700,7 +6700,7 @@ Especially the case alternative would lead to parsing problems with the matching
 \item
 Tuples now automatically are records with a numerical selection as field selection
 \begin{code}
-%%7srcfile<test/7-tup-sel.eh%%>
+%%7srcfile(test/7-tup-sel.eh%%)
 \end{code}
 \end{itemize}
 
@@ -6713,7 +6713,7 @@ For a following version allowing extensible records this restriction (obviously)
 Pattern matching a record is done via case:
 
 \begin{code}
-%%7srcfile<test/7-pun.eh%%>
+%%7srcfile(test/7-pun.eh%%)
 \end{code}
 
 In these examples, the matching for |v1| is done on the basis of field names at the left of |=|.
@@ -6738,7 +6738,7 @@ If no field is matched explicitly, all fields are implicitly matched on their po
 This design decision causes |v4| and |v5| to produce error messages:
 
 \begin{TT}
-%%7ppfile<test/7-pun.eh%%>
+%%7ppfile(test/7-pun.eh%%)
 \end{TT}
 
 \paragraph{Relation with other proposals.}
@@ -6902,6 +6902,7 @@ val         ::=     (tag {sval}+)                   --  complete node (constant 
 
 adapt       ::=     offset += sval                  --  insertion at offset
             |       offset := sval                  --  update at offset
+            |       offset -=                       --  delete at offset
 
 sval        ::=     literal                         --  constant, basic value
             |       var                             --  variable
@@ -6954,7 +6955,7 @@ split       ::=     var = offset                    --  extraction at offset
 %endif
 
 %if not forESOP05
-\section{EH 9: explicit implicitness}
+\section{EH 9: explicit implicitness, classes}
 \label{ehc9}
 %endif
 
@@ -7085,7 +7086,7 @@ elements from a list.
 Notice that a separate |nubBy| is no longer needed:
 
 \begin{code}
-%%9srcfile<test/9-eq-nub.eh%%>
+%%9srcfile(test/9-eq-nub.eh%%)
 \end{code}
 
 In general, we designed EH to be as upwards compatible as possible with Haskell and
@@ -7113,7 +7114,7 @@ In the example |(r || l := e)| means update record |r| at field with label |l| w
 Much simpler is the following example which we take as the starting point of our discussion:
 
 \begin{code}
-%%9srcfile<test/9-eq1.eh%%>
+%%9srcfile(test/9-eq1.eh%%)
 \end{code}
 
 A Haskell compiler like Hugs \cite{www03hugs} would infer the following type for |f|:
@@ -7256,7 +7257,7 @@ Now, instead of letting the compiler determine which implicit parameter to pass 
 a dictionary ourselves:
 
 \begin{code}
-%%9srcfile<test/9-eq2.eh%%>
+%%9srcfile(test/9-eq2.eh%%)
 \end{code}
 
 The constructed dictionary must be of the expected dictionary type.
@@ -7274,7 +7275,7 @@ This can also be used in situations where the compiler fails to make a choice, f
 example in the presence of overlapping instances:
 
 \begin{code}
-%%9srcfile<test/9-eq3.eh%%>
+%%9srcfile(test/9-eq3.eh%%)
 \end{code}
 
 The dictionaries computed as a result of an instance declaration can be given a name (denoted by |<:|)
@@ -8073,7 +8074,7 @@ Named instances \cite{kahl01named-instance}.
 
 %if incl10
 
-\section{EH 10: Extensible records}
+\section{EH 10: extensible records}
 \label{ehc10}
 
 \subsection{Coercion}

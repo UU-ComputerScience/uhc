@@ -337,7 +337,7 @@ crCore1Trf modNm trfNm cr
                  synAG' = synAG {cmodule_Syn_AGItf
                                     = ( case trfNm of
                                           "CCP"     -> cmodTrfConstProp
-                                          "CRU"     -> cmodTrfRenUniq u1
+                                          "CRU"     -> cmodTrfRenUniq
                                           "CLU"     -> cmodTrfLetUnrec
                                           "CILA"    -> cmodTrfInlineLetAlias
                                           "CFL"     -> cmodTrfFullLazy u1

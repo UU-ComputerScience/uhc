@@ -71,8 +71,7 @@ SEM CExpr
                                                     (ppDef "of"
                                                         (@alts.pp >-< "_->" >#< @dflt.pp))
   | Tup         loc         .   pp          =   "#" >|< pp_parens (pp @tag)
-  | TupSel      loc         .   pp          =   ppDef (pp_parens @expr.pp) ("." >|< pp_parens (pp @tag >|< ":" >|< @offset.pp))
-  | TupDel      loc         .   pp          =   ppDef (pp_parens @expr.pp) (".-" >|< pp_parens (pp @tag >|< ":" >|< @offset.pp))
+  | TupDel      loc         .   pp          =   ppDef (pp_parens @expr.pp) (".-" >|< pp_parens (pp @tag >|< ":" >|< @offset.pp >|< ":" >|< @nm))
   | TupIns      loc         .   pp          =   ppDef (pp_parens @expr.pp) (ppDef (".+" >|< pp_parens (pp @tag >|< ":" >|< @offset.pp >|< ":" >|< @nm)) (@fldExpr.pp))
   | TupUpd      loc         .   pp          =   ppDef (pp_parens @expr.pp) (ppDef (".-+" >|< pp_parens (pp @tag >|< ":" >|< @offset.pp >|< ":" >|< @nm)) (@fldExpr.pp))
 

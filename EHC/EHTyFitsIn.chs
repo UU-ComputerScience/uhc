@@ -55,6 +55,9 @@
 %%[9 import(EHDebug) export(fitsIn')
 %%]
 
+%%[10 import(EHCoreUtils)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% External interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -685,42 +688,117 @@ fitsIn opts env uniq ty1 ty2
                          =  let  rn = uidHNm u1
                                  r = CExpr_Var rn
                                  tr1s = foCnstr fo |=> tr1
-                                 lL1 = assocLKeys e1
-                                 lL2 = assocLKeys e2
-                                 lL12 = assocLKeys . map fst $ e12
-                                 (u',u2,u3) = mkNewLevUID2 (foUniq fo)
-                                 uL = mkNewUIDL (length lL1 + length lL12 + length lL2) u2
-                                 mkLSel u = CExpr_TupSel r CTagRec (CExpr_Hole u)
-                                 mkLDel u e = CExpr_TupDel e CTagRec (CExpr_Hole u)
-                                 mkLLet r e = mkCExprLet CBindPlain [CBind_Bind rn e] r
+                                 (u',u2,u3,u4) = mkNewLevUID3 (foUniq fo)
+                                 mkLSel n u = mkCExprSelCase emptyRCEEnv (hsnSuffix rn "!") r CTagRec n n (CExpr_Hole u)
                                  mkLPred' r l u
                                    =  let  r' = maybe Ty_Any fst . tyRowExtr l $ r
                                       in   (PredOcc (Pred_Lacks r' l) u,r')
-                                 mkLPred l u = fst (mkLPred' tr1s l u)
+                                 mkLPred r l u = fst (mkLPred' r l u)
+                                 rowCoeL = [ rc | rc@(_,c) <- sortByOn rowLabCmp fst (foRowCoeL fo), not (coeIsId c) ]
+                                 (fuUpdL,prUpdL,tr1s',_)
+                                   =  foldr  (\(l,c) (fuL,prL,r,u)
+                                                ->  ((l,CExpr_TupUpd cvarUndefined CTagRec l (CExpr_Hole u) (c `coeEvalOn` mkLSel l u)):fuL
+                                                    ,mkLPred r l u : prL,r,uidNext u
+                                                    )
+                                             )
+                                             ([],[],tr1s,u2) rowCoeL
+                                 (fuDelL,prDelL,_,_)
+                                   =  foldl  (\(fuL,prL,r,u) l
+                                                  ->  let  (pr,r') = mkLPred' r l u
+                                                      in   ((l,CExpr_TupDel (CExpr_Var hsnWild) CTagRec l (CExpr_Hole u)):fuL
+                                                           ,pr:prL,r',uidNext u
+                                                           )
+                                             )
+                                             ([],[],tr1s',u3) (sortBy rowLabCmp (assocLKeys e1))
+                                 fuL = fuUpdL ++ reverse fuDelL
+                                 (fBldL,prBldL,_,_)
+                                   =  foldr  (\l (fL,prL,r,u)
+                                                ->  ((maybe id coeEvalOn (lookup l rowCoeL) $ mkLSel l u):fL
+                                                    ,mkLPred r l u : prL,r,uidNext u
+                                                    )
+                                             )
+                                             ([],[],tr1s,u3) (sortBy rowLabCmp ((assocLKeys . map fst $ e12) ++ assocLKeys e2))
+                            in   case r2 of
+                                   Ty_Con n2 | n2 == hsnRowEmpty
+                                     ->  fo  {  foLCoeL = [Coe (\e -> mkCExprLet CBindPlain [CBind_Bind rn e] (CExpr_Tup CTagRec `mkCExprApp` fBldL))]
+                                             ,  foPredOccL = prBldL ++ foPredOccL fo
+                                             ,  foUniq = u'
+                                             }
+                                   Ty_Var _ TyVarCateg_Fixed | not (null fuL)
+                                     ->  fo  {  foLCoeL = [Coe (\e -> mkCExprLet CBindPlain [CBind_Bind rn e] (fuMkCExpr u4 fuL r))]
+                                             ,  foPredOccL = prUpdL ++ prDelL ++ foPredOccL fo
+                                             ,  foUniq = u'
+                                             }
+                                   _ |  not (null fuUpdL)
+                                     ->  fo  {  foLCoeL = [Coe (\e -> mkCExprLet CBindPlain [CBind_Bind rn e] (fuMkCExpr u4 fuUpdL r))]
+                                             ,  foPredOccL = prUpdL ++ foPredOccL fo
+                                             ,  foUniq = u'
+                                             }
+                                     |  otherwise
+                                     ->  fo  {  foLCoeL = [] }
+%%]
+                                 uL = mkNewUIDL (length lL1 + length lL12 + length lL2) u2
+                                 lL1 = assocLKeys e1
+                                 lL2 = assocLKeys e2
+                                 lL12 = assocLKeys . map fst $ e12
                                  mkUpd lL uL e
                                    = foldr  (\(l,u) e
                                                -> case lookup l (foRowCoeL fo) of
                                                     Just c | not (coeIsId c)
-                                                      -> CExpr_TupUpd e CTagRec l (CExpr_Hole u) (c `coeEvalOn` mkLSel u)
+                                                      -> CExpr_TupUpd e CTagRec l (CExpr_Hole u) (c `coeEvalOn` mkLSel l u)
+                                                    _ -> e
+                                            )
+                                            e (zip lL uL)
+                                 mkLLet r e = mkCExprLet CBindPlain [CBind_Bind rn e] r
+                            in   case (foRowCoeL fo,r1,r2,lL1) of
+                                   ([],Ty_Con n1,Ty_Con n2,[]) | n1 == hsnRowEmpty && n2 == hsnRowEmpty
+                                     -> fo {foLCoeL = []}
+                                   (_,_,Ty_Con n2,_) | n2 == hsnRowEmpty
+                                     -> fo {foLCoeL = [Coe (mkLLet (CExpr_Tup CTagRec `mkCExprApp` vL))], foPredOccL = zipWith mkLPred tr1s lL uL ++ foPredOccL fo, foUniq = u'}
+                                     where  lL  = sortBy rowLabCmp (lL12 ++ lL2)
+                                            vL  = zipWith (\l u -> (maybe id coeEvalOn (lookup l (foRowCoeL fo)) $ mkLSel l u)) lL uL
+                                   (_,Ty_Var _ TyVarCateg_Fixed,Ty_Con n2,_:_) | n2 == hsnRowEmpty
+                                     -> fo {foLCoeL = [Coe (mkLLet (cDel . mkUpd lL12 uL $ r))], foPredOccL = zipWith mkLPred tr1s lL12 uL ++ pDelL ++ foPredOccL fo, foUniq = u'}
+                                     where  (fuDelL,pDelL,_)
+                                              = foldr  (\(l,u) (fuL,pL,r)
+                                                            ->  let  (p,r') = mkLPred' r l u
+                                                                     fu = CExpr_TupDel (CExpr_Var hsnWild) CTagRec l (CExpr_Hole u)
+                                                                in   ((l,fu):fuL,p:pL,r')
+                                                       )
+                                                       ([],[],tr1s) (zip lL1 (drop (length lL12) uL))
+                                            cDel = fuMkCExpr u4 (reverse fuDelL)
+                                   (_:_,_,_,_)
+                                     -> fo {foLCoeL = [Coe (mkLLet (mkUpd lL12 uL r))], foPredOccL = zipWith mkLPred tr1s lL12 uL ++ foPredOccL fo, foUniq = u'}
+                                   _ -> fo {foLCoeL = []}
+
+--
+                                 isFixed (Ty_Con n) | n == hsnRowEmpty = True
+                                 isFixed (Ty_Var _ TyVarCateg_Fixed) = True
+                                 isFixed _ = False
+                                 mkUpd lL uL e
+                                   = foldr  (\(l,u) e
+                                               -> case lookup l (foRowCoeL fo) of
+                                                    Just c | not (coeIsId c)
+                                                      -> CExpr_TupUpd e CTagRec l (CExpr_Hole u) (c `coeEvalOn` mkLSel l u)
                                                     _ -> e
                                             )
                                             e (zip lL uL)
                             in   case (foRowCoeL fo,r1,r2,lL1) of
                                    ([],Ty_Con n1,Ty_Con n2,[]) | n1 == hsnRowEmpty && n2 == hsnRowEmpty
                                      -> fo {foLCoeL = []}
-                                   (_,_,Ty_Con n2,_) | n2 == hsnRowEmpty
-                                     -> fo {foLCoeL = [Coe (mkLLet (CExpr_Tup CTagRec `mkCExprApp` vL))], foPredOccL = zipWith mkLPred lL uL ++ foPredOccL fo, foUniq = u'}
-                                     where  lL  = sortBy rowLabCmp (lL12 ++ lL2)
-                                            vL  = zipWith (\l u -> (maybe id coeEvalOn (lookup l (foRowCoeL fo)) $ mkLSel u)) lL uL
-                                   (_,Ty_Var _ TyVarCateg_Fixed,_,_:_)
+                                   (_,r1,Ty_Con n2,_:_) | n2 == hsnRowEmpty && isFixed r1
                                      -> fo {foLCoeL = [Coe (mkLLet (cDel . mkUpd lL12 uL $ r))], foPredOccL = zipWith mkLPred lL12 uL ++ pDelL ++ foPredOccL fo, foUniq = u'}
-                                     where  (cDel,pDelL,_)
-                                              = foldr  (\(l,u) (c,pL,r) -> let (p,r') = mkLPred' r l u in (mkLDel u . c,p:pL,r'))
-                                                       (id,[],tr1s) (zip lL1 (drop (length lL12) uL))
+                                     where  (fuDelL,pDelL,_)
+                                              = foldr  (\(l,u) (fuL,pL,r)
+                                                            ->  let  (p,r') = mkLPred' r l u
+                                                                     fu = CExpr_TupDel (CExpr_Var hsnWild) CTagRec l (CExpr_Hole u)
+                                                                in   ((l,fu):fuL,p:pL,r')
+                                                       )
+                                                       ([],[],tr1s) (zip lL1 (drop (length lL12) uL))
+                                            cDel = fuMkCExpr u4 (reverse fuDelL)
                                    (_:_,_,_,_)
                                      -> fo {foLCoeL = [Coe (mkLLet (mkUpd lL12 uL r))], foPredOccL = zipWith mkLPred lL12 uL ++ foPredOccL fo, foUniq = u'}
                                    _ -> fo {foLCoeL = []}
-%%]
 
 %%[10.fitsIn.fRow.Coe
                        foUpdRecFldsCoe eKeys foL tr1 foR
@@ -1099,7 +1177,7 @@ prfOneStepLacks env pr@(Pred_Lacks r l) prUid st@(ProofState g@(ProvenGraph i2n 
                                                   []  ->  st {prfsProvenGraph = prvgAddPrNd pr [prUid] (ProvenArg pr zeroCost) g}
                                 | otherwise ->  let  (u',u2) = mkNewUID u
                                                      newPr = PredOcc (Pred_Lacks row l) u2
-                                                     g2 = prvgAddPrNd pr [prUid] (ProvenAnd pr [u2] zeroCost (CExpr_Hole u2 `mkCExprAddInt` CExpr_Int offset)) g
+                                                     g2 = prvgAddPrNd pr [prUid] (ProvenAnd pr [u2] zeroCost (CExpr_Hole u2 `mkCExprAddInt` offset)) g
                                                 in   st {prfsProvenGraph = g2, prfsUniq = u', prfsPredsToProve = newPr : toProof}
                               _             ->  let  g2 = prvgAddPrNd pr [prUid] (ProvenAnd pr [] zeroCost (CExpr_Int offset)) g
                                                 in   st {prfsProvenGraph = g2}

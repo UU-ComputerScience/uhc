@@ -15,7 +15,7 @@
 %%[8 hs export(GrAlt(..), GrAltL, GrPat(..), GrPatL, GrVal(..), GrValL, GrTag(..),GrAdapt(..),GrAdaptL,GrSplit(..),GrSplitL) 
 %%]
 
-%%[8 hs export(GrTagCateg(..),mkGrBox,mkGrTagNode,mkGrRecNode,mkGrConNode,grLclNmSupplyL) 
+%%[8 hs export(GrTagCateg(..),mkGrBox,mkGrTagNode,mkGrRecNode,mkGrConNode) 
 %%]
 
 %%[8 hs export(mkGrPatRecNode,mkGrPatConNode,mkGrPatTagNode,mkGrPatRecSplit,mkGrPatConSplit,mkGrUnbox) 
@@ -73,15 +73,6 @@ data GrNodeAdapt = GrNodeUpd | GrNodeExt deriving (Show,Eq)
 
 grRecTag :: GrTag
 grRecTag = GrTag_Lit GrTagRec 0 hsnRec
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Name supply for local use
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 hs
-grLclNmSupplyL :: [HsName]
-grLclNmSupplyL = map (\i -> HNm ("_" ++ show i)) [1..]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
