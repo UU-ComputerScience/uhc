@@ -122,15 +122,16 @@ SEM Decls
                 lhs         .  errL         =   []
 
 SEM Expr
-  | Let         loc         .  errLetPP     =   ppErrs @dupErrs
+  | Let         loc         .  letErrL      =   @dupErrs
+                            .  errLetPP     =   ppErrs @letErrL
                             .  errBodyPP    =   ppErrs @body.errL
                 lhs         .  errL         =   []
 %%]
 
-%%[6_2
+%%[4_1
 SEM Expr
   | Let         loc         .  gamErrL      =   concat . map (\(n,e) -> mkNestErr (pp n) e) . gamToAssocL $ @errGam
-                loc         .  errLetPP     :=  ppErrs (@dupErrs ++ @gamErrL)
+                            .  letErrL      :=  @dupErrs ++ @gamErrL
 %%]
 
 %%[9
@@ -145,7 +146,7 @@ SEM Decl
                 lhs         .  errL         =   []
 
 SEM Expr
-  | Let         loc         .  errLetPP     :=  ppErrs (@dupErrs ++ @prfErrs)
+  | Let         loc         .  letErrL      :=  @dupErrs ++ @prfErrs
 
 SEM AGItf
   | AGItf       loc         .  errTopPP     =   ppErrs (@predNotPrfErrs)
@@ -162,7 +163,7 @@ SEM Decls
   | Cons        lhs         .  allErrL      =   @hd.errL ++ @hd.allErrL ++ @tl.allErrL
 
 SEM Expr
-  | Let         lhs         .  allErrL      =   @dupErrs ++ @body.errL ++ @decls.allErrL ++ @body.allErrL
+  | Let         lhs         .  allErrL      =   @letErrL ++ @body.errL ++ @decls.allErrL ++ @body.allErrL
 %%]
 
 %%[9
@@ -170,9 +171,6 @@ SEM Decl
   | Instance    lhs         .  allErrL      =   @lErrL ++ @decls.allErrL
   | InstanceIntro
                 lhs         .  allErrL      =   @lErrL
-
-SEM Expr
-  | Let         lhs         .  allErrL      :=  @dupErrs ++ @prfErrs ++ @body.errL ++ @decls.allErrL ++ @body.allErrL
 
 SEM AGItf
   | AGItf       lhs         .  allErrL      =   @predNotPrfErrs ++ @expr.allErrL

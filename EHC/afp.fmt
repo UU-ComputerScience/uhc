@@ -78,14 +78,17 @@
 %format ^^ 			= "\;"
 
 %format (Vec(x))    = "\overline{" x "}"
+%format (VecI(x)(i))    = x "^{\{" i "\}}"
 
 %format restr		= "\backslash "
 
 %format Gammap      = Gamma "^{p}"
 %format Gammaq      = Gamma "^{q}"
+%format Gammab      = Gamma "^{b}"
 
 %format sigmak      = sigma "^{k}"
 %format sigmaq      = sigma "^{q}"
+%format sigmab      = sigma "^{b}"
 %format sigmal      = sigma "^{l}"
 %format sigmar      = sigma "^{r}"
 %format sigma'
@@ -147,16 +150,22 @@
 %format instLFIOpts		= fiopt "_{inst-l}"
 %format predFIOpts		= fiopt "_{pred}"
 %format implFIOpts		= fiopt "_{impl}"
+%format unifyFIOpts		= fiopt "_{unify}"
+%format meetFIOpts		= fiopt "_{meet}"
 
-%format	fioptBase		= "fi"
+%format	fioptBase		= "\textit{fi}"
 %format fioLeaveRInstY	= fioptBase "_{r-inst}^{+}"
 %format fioLeaveRInstN	= fioptBase "_{r-inst}^{-}"
 %format fioBindRFirstY	= fioptBase "_{r-bind}^{+}"
 %format fioBindRFirstN	= fioptBase "_{r-bind}^{-}"
 %format fioBindLFirstY	= fioptBase "_{l-bind}^{+}"
 %format fioBindLFirstN	= fioptBase "_{l-bind}^{-}"
-%format fioBindToTyBindY	= fioptBase "_{delay-bind}^{+}"
-%format fioBindToTyBindN	= fioptBase "_{delay-bind}^{-}"
+%format fioBindToTyBind		= fioptBase "_{delay-bind}"
+%format fioBindToTyBindY	= fioBindToTyBind "^{+}"
+%format fioBindToTyBindN	= fioBindToTyBind "^{-}"
+%format fioMeet			= fioptBase "_{meet}"
+%format fioMeetY		= fioMeet "^{+}"
+%format fioMeetN		= fioMeet "^{-}"
 
 %format coco        	= "\mathcal{V}"
 %format cocovar     	= coco
@@ -172,7 +181,8 @@
 %format ANY				= "\makebox[0cm][l]{\(\top\)}\bot{}"
 
 %format `union`			= "\cup "
-%format `setdiff`		= "-"
+%format `subset`		= "{\subset}"
+%format `minusset`		= "-"
 %format `intersect`		= "\cap "
 %format emptyset		= "\emptyset "
 

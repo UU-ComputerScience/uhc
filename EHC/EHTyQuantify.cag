@@ -134,7 +134,7 @@ SEM Ty
                 lhs         .   frTvLL      =   [@frTvL]
 %%]
 
-%%[6_2
+%%[4_1
 SEM TyL
   | Nil         lhs         .   frTvLL      =   []
   | Cons        lhs         .   frTvLL      =   @hd.frTvLL ++ @tl.frTvLL

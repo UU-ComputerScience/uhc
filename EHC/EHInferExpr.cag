@@ -75,7 +75,7 @@ SEM Expr
                             .  fTy                  :=  @lhs.tyCnstr |=> @gTy
 %%]
 
-%%[6_2
+%%[4_1
 SEM Expr
   | Var         loc         .  fo                   :=  fitsIn (@lhs.fiOpts {fioBindToTyBind = True}) @fe @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
 %%]
@@ -117,7 +117,7 @@ SEM Expr
                             .  ty                   :=  @arg.tyCnstr |=> @fTy
 %%]
 
-%%[6_2.App
+%%[4_1.App
 SEM Expr
   | App         (arg.knTy,loc.fTy)                  :=  tyArrowArgRes . tyBindTy $ @func.ty
 %%]
@@ -127,7 +127,7 @@ SEM Expr
   | App         loc         .  (knFunTy,imTy)       :=  let  [i,a] = mkNewUIDL 2 @lUniq
                                                              im = mkImplsVar i
                                                         in   ([im,mkTyVar a] `mkTyArrow` (@lhs.tyCnstr |=> @lhs.knTy),im)
-                (_,arg.knTy,loc.fTy)                :=  tyArrowImplsArgRes @func.ty
+                (_,arg.knTy,loc.fTy)                :=  tyArrowImplsArgRes . tyBindTy $ @func.ty
                 loc         .  prOccL               =   tyImplsPreds (@arg.tyCnstr |=> @imTy)
 %%]
 
@@ -234,7 +234,7 @@ SEM Expr
                 loc         .  fo                   :=  fitsIn @lhs.fiOpts @fe @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
 %%]
 
-%%[6_2.Rest
+%%[4_1.Rest
 %%]
 SEM Expr
   | IConst CConst

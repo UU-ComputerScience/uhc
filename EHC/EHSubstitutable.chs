@@ -19,6 +19,9 @@
 %%[2 import(List, EHCommon, EHTy, EHCnstr,EHTySubst,EHTyFtv) export(Substitutable(..))
 %%]
 
+%%[4_1 export(tvUnderCnstr)
+%%]
+
 %%[9 import(FiniteMap) export(fixTyVarsCnstr,tyFixTyVars)
 %%]
 
@@ -101,5 +104,18 @@ fixTyVarsCnstr = Cnstr . listToFM . map (\v -> (v,CITy (Ty_Var v TyVarCateg_Fixe
 
 tyFixTyVars :: Substitutable s => s -> s
 tyFixTyVars s = fixTyVarsCnstr s |=> s
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tvar under constr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_1 hs
+tvUnderCnstr :: Cnstr -> TyVarId -> TyVarId
+tvUnderCnstr c v
+  =  case c |=> mkTyVar v of
+		Ty_Var   v' TyVarCateg_Plain  -> v'
+		Ty_Bind  v' _                 -> v'
+		_                             -> v
 %%]
 

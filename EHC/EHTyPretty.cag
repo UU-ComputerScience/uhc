@@ -74,13 +74,14 @@ tvCategPrefix TyVarCateg_Plain = "v"
 ATTR AllTy [ | tnUniq: {Int} ^^ tnMap: TVarNameMap | ]
 
 SEM TyAGItf
-  | AGItf           ty      .   tnUniq    =   0
-                            .   tnMap     =   []
+  | AGItf           ty      .   tnUniq      =   0
+                            .   tnMap       =   []
 
 SEM Ty
-  | Quant           loc     .   tnPP      =   ppTnUniq @lhs.tnUniq
-                    ty      .   tnUniq    =   @lhs.tnUniq + 1
-                            .   tnMap     =   (@tv,@tnPP) : @lhs.tnMap
+  | Quant           loc     .   tnPP        =   ppTnUniq @lhs.tnUniq
+                    ty      .   tnUniq      =   @lhs.tnUniq + 1
+                            .   tnMap       =   (@tv,@tnPP) : @lhs.tnMap
+                    lhs     .   tnMap       =   filter (\(v,_) -> v /= @tv) @ty.tnMap
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -127,13 +128,7 @@ SEM TyQu
   | Forall Exists   lhs     .   pp      =   text (showTyQu @self)
 %%]
 
-%%[6
-SEM TyQu
-  | KiForall KiExists
-                    lhs     .   pp      =   text (showTyQu @self)
-%%]
-
-%%[6_2
+%%[4_1
 SEM Ty
   | Bind            loc     .   pp      =   ppParNeed  @parNeed @lhs.parNeed
                                                        (maybe (pp @tv) id (lookup @tv @lhs.tnMap) >|< ppListSep "[" "]" "/" @tyL.ppL)
@@ -141,6 +136,12 @@ SEM Ty
 SEM TyL [ | | ppL: PP_DocL ]
   | Nil             lhs     .   ppL     =   []
   | Cons            lhs     .   ppL     =   @hd.pp : @tl.ppL
+%%]
+
+%%[6
+SEM TyQu
+  | KiForall KiExists
+                    lhs     .   pp      =   text (showTyQu @self)
 %%]
 
 %%[7
@@ -181,6 +182,9 @@ ATTR Ty [ | positionalFldNmL: {[HsName]} | ]
 
 SEM TyAGItf
   | AGItf           ty      .   positionalFldNmL    =   positionalFldNames
+
+SEM TyL
+  | Cons            hd      .   positionalFldNmL    =   positionalFldNames
 
 SEM Ty
   | Ext             (loc.positionalNm,lhs.positionalFldNmL)
@@ -245,7 +249,7 @@ SEM Ty
   | Quant       (loc.parNeed,ty.parNeed)        =   (ParNotNeeded,ParNotNeeded)
 %%]
 
-%%[6_2
+%%[4_1
 SEM TyL
   | Cons        hd      .   parNeed             =   ParNotNeeded
                         .   parNeedL            =   []
