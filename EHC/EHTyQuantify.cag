@@ -480,10 +480,10 @@ mkTyQuForRank allow q l t = if allow then mkTyQu q l t else t
 
 %%[9
 SEM Ty
-  | Var         lhs         .   quTy            :=  mkTyQuForRank @isQuRank @hereQu @qBndTvL . mkTyPr (map poPr @insPrL) $ Ty_Var @tv @categ.quTy
+  | Var         lhs         .   quTy            :=  mkTyQuForRank @isQuRank @hereQu @qBndTvL . mkTyImpls (map poPr @insPrL) $ Ty_Var @tv @categ.quTy
   | App         loc         .   quTy            :=  mkTyQuForRank @isQuRank @hereQu (filter (`notElem` @frRowTvL) @qBndTvL)
                                                     .  mkTyQuForRank @isQuRank @lhs.baseQu (filter (`elem` @frRowTvL) @qBndTvL)
-                                                    .  mkTyPr (map poPr @insPrL)
+                                                    .  mkTyImpls (map poPr @insPrL)
                                                     $  (if tqoptLeaveImpls @lhs.opts
                                                         then Ty_App @func.quTy @arg.quTy
                                                         else maybe (Ty_App @func.quTy @arg.quTy) (const @arg.quTy) @func.mbImpls
@@ -499,8 +499,8 @@ SEM Ty
 ATTR TyAGItf AllTy [ | | insPrIdSet USE {`Set.union`} {emptySet} : {Set PredOccId} ]
 
 SEM Ty
-  | App         lhs         .   insPrIdSet      =   mkSet (map poId @insHerePrL) `Set.union` @func.insPrIdSet `Set.union` @arg.insPrIdSet
-  | Var         lhs         .   insPrIdSet      =   mkSet (map poId @insHerePrL)
+  | App         lhs         .   insPrIdSet      =   mkSet (map poPrId @insHerePrL) `Set.union` @func.insPrIdSet `Set.union` @arg.insPrIdSet
+  | Var         lhs         .   insPrIdSet      =   mkSet (map poPrId @insHerePrL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -510,7 +510,7 @@ SEM Ty
 %%[9 hs
 prOccLImpls :: Maybe ImplsVarId -> [PredOcc] -> AssocL ImplsVarId Impls
 prOccLImpls mbI prL
-  = maybe [] (\i -> [(i,foldr (\p im -> Impls_Cons (poId p) (poPr p) (poId p) im) Impls_Nil prL)]) mbI
+  = maybe [] (\i -> [(i,foldr (\p im -> Impls_Cons (poId p) (poPr p) (poPrId p) im) Impls_Nil prL)]) mbI
 %%]
 
 %%[9

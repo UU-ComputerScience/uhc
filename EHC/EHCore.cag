@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -39,7 +39,10 @@
 %%[8 hs export(CTag(..),ctag,ppCTag,ppCTagInt) 
 %%]
 
-%%[9 hs export(CBindLMap, emptyCBindLMap, Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLetRecCoe, cbindLMapBinds, mkCBindLForUIDL)
+%%[9 hs export(CBindLMap, emptyCBindLMap, Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLetRecCoe, cbindLMapBinds, mkCBindLForUIDL',mkCBindLForUIDL)
+%%]
+
+%%[9 hs export(mkCExprPrHole)
 %%]
 
 %%[8 import(EHCoreAbsSyn)
@@ -102,11 +105,16 @@ emptyCBindLMap = emptyFM
 cbindLMapBinds :: CBindLMap -> [CBindL]
 cbindLMapBinds = map snd . eltsFM
 
-mkCBindLForUIDL :: CBindLMap -> (UID -> Bool) -> CBindL
-mkCBindLForUIDL cbindLMap doIncl
-  =  nubBy (\(CBind_Bind n1 _) (CBind_Bind n2 _) -> n1 == n2)
-     . concat . cbindLMapBinds . filterFM (\i _ -> doIncl i)
-     $ cbindLMap
+mkCBindLForUIDL' :: CBindLMap -> (PredOccId -> Bool) -> (CBindL,[PredOccId])
+mkCBindLForUIDL' cbindLMap doIncl
+  =  (nubBy (\(CBind_Bind n1 _) (CBind_Bind n2 _) -> n1 == n2)
+      . concat . cbindLMapBinds $ b
+     ,keysFM b
+     )
+  where  b = filterFM (\i _ -> doIncl i) cbindLMap
+
+mkCBindLForUIDL :: CBindLMap -> (PredOccId -> Bool) -> CBindL
+mkCBindLForUIDL cbindLMap doIncl = fst (mkCBindLForUIDL' cbindLMap doIncl)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -208,6 +216,15 @@ fvsLev lm fvs = foldr (\n l -> fvLev lm n `max` l) cLevOuter . setToList $ fvs
 
 levMpAdd :: LevMp -> FvSMp -> LevMp
 levMpAdd lm fvm = lm `plusFM` mapFM  (\_ fv -> fvsLev lm fv) fvm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Hole construction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+mkCExprPrHole :: PredOccId -> CExpr
+mkCExprPrHole = CExpr_Hole . poiId
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

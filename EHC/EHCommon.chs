@@ -33,7 +33,7 @@
 %%[2 export(UID, mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, uidNext, mkNewUID, mkNewUIDL, uidStart)
 %%]
 
-%%[2 export(assocLMapSnd)
+%%[2 export(assocLMapSnd,assocLMapFst)
 %%]
 
 %%[2 import(List) export(unionL)
@@ -72,7 +72,7 @@
 %%[8 import (FPath,IO,Char) export(putPPLn,putWidthPPLn,putPPFile,Verbosity(..),putCompileMsg)
 %%]
 
-%%[8 export(hsnPrefix,hsnSuffix)
+%%[8 export(hsnPrefix,hsnSuffix,hsnConcat)
 %%]
 
 %%[8 export(hsnUndefined,hsnPrimAddInt,hsnMain)
@@ -94,6 +94,12 @@
 %%]
 
 %%[9 export(hsnOImpl,hsnCImpl,hsnPrArrow,hsnIsPrArrow,hsnIsUnknown)
+%%]
+
+%%[9 hs export(PredOccId(..),mkPrId,poiHNm)
+%%]
+
+%%[10 export(hsnDynVar)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -185,6 +191,9 @@ hsnPrefix   p   hsn                 =   HNm (p ++ show hsn)
 
 hsnSuffix                           ::  HsName -> String -> HsName
 hsnSuffix       hsn   p             =   HNm (show hsn ++ p)
+
+hsnConcat                           ::  HsName -> HsName -> HsName
+hsnConcat       h1    h2            =   HNm (show h1 ++ show h2)
 %%]
 
 %%[8
@@ -201,6 +210,10 @@ hsnPrArrow                          =   HNm "=>"
 hsnIsPrArrow                        ::  HsName -> Bool
 hsnIsPrArrow    hsn                 =   hsn == hsnPrArrow
 hsnIsUnknown                        =   (==hsnUnknown)
+%%]
+
+%%[10
+hsnDynVar                           =   HNm "?"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -258,7 +271,7 @@ mkNewUIDL :: Int -> UID -> [UID] -- assume sz > 0
 mkNewUIDL = mkNewUIDL' mkNewUID
 
 instance PP UID where
-  pp uid = text (show uid)
+  pp = text . show
 %%]
 
 %%[7
@@ -269,6 +282,23 @@ uidHNm = HNm . show
 %%[8
 mkNewLevUIDL :: Int -> UID -> [UID]
 mkNewLevUIDL = mkNewUIDL' mkNewLevUID
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pred occurrence id
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+data PredOccId =  PredOccId {poiId :: UID} deriving (Show,Eq,Ord)
+
+mkPrId :: UID -> PredOccId
+mkPrId u = PredOccId u
+
+poiHNm :: PredOccId -> HsName
+poiHNm = uidHNm . poiId
+
+instance PP PredOccId where
+  pp = pp . poiId
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -511,6 +541,9 @@ assocLMap f = map (uncurry f)
 
 assocLMapSnd :: (v -> v') -> AssocL k v -> AssocL k v'
 assocLMapSnd f = assocLMap (\k v -> (k,f v))
+
+assocLMapFst :: (k -> k') -> AssocL k v -> AssocL k' v
+assocLMapFst f = assocLMap (\k v -> (f k,v))
 %%]
 
 %%[4

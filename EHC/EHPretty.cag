@@ -227,6 +227,17 @@ SEM FuncDeps
 %%[10
 SEM PrExpr
   | Lacks       loc     .   pp      =   @rowTyExpr.pp >|< "\\" >|< pp @nm
+  | DynVar      loc     .   pp      =   hsnDynVar >|< @nm >#< "::" >#< @tyExpr.pp
+
+SEM Expr
+  | DynVar      loc     .   pp      =   hsnDynVar >|< pp @nm
+
+SEM Decl
+  | DynVal      loc     .   pp      =   hsnDynVar >|< @nm >#< "=" >#< @expr.pp
+  | DynTySig    loc     .   tyPP    =   if null @tyExpr.tyVarWildL
+                                        then  @tyExpr.pp
+                                        else  ppTy @finalTy
+                        .   pp      =   hsnDynVar >|< @nm >#< "::" >#< @tyPP
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

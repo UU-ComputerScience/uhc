@@ -56,6 +56,14 @@ DATA Decl
                     tyExpr          : TyExpr
 %%]
 
+%%[10.Decl
+DATA Decl
+  | DynTySig        nm              : {HsName}
+                    tyExpr          : TyExpr
+  | DynVal          nm              : {HsName}
+                    expr            : Expr
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -190,6 +198,11 @@ DATA Expr
   | LamImpl         argPr           : PrExpr
                     arg             : PatExpr
                     body            : Expr
+%%]
+
+%%[10.Expr
+DATA Expr
+  | DynVar          nm              : {HsName}
 %%]
 
 %%[1.AllExpr
@@ -363,6 +376,8 @@ TYPE PrExprs        = [PrExpr]
 DATA PrExpr
   | Lacks           rowTyExpr       : RowTyExpr
                     nm              : {HsName}
+  | DynVar          nm              : {HsName}
+                    tyExpr          : TyExpr
 %%]
 
 %%[9
