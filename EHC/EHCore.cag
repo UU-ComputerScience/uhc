@@ -18,7 +18,7 @@
 %%[8 hs export(CPatNm(..), cpatNmEither)
 %%]
 
-%%[8 hs export(CTag(..),ctagNone,ctag,cpatVarNm,caltTag,caltIsVar,caltPatL,caltPat,caltLPatNms,cvarUndefined,ppCTag) 
+%%[8 hs export(CTag(..),ctagNone,ctag,cpatVarNm,caltTag,caltIsVar,caltPatL,caltPat,caltLPatNms,cvarUndefined,ppCTag,ppCTagInt) 
 %%]
 
 %%[8 hs export(mkCExprLet,mkCExprLetRec,mkCExprLam,mkCExprApp)
@@ -55,6 +55,9 @@ ctag n t tg = case tg of {CTag i l -> t i l; _ -> n}
 
 ppCTag :: CTag -> PP_Doc
 ppCTag = ctag (pp "?") (\t _ -> pp t)
+
+ppCTagInt :: CTag -> PP_Doc
+ppCTagInt = ctag (pp "-1") (\t _ -> pp t)
 
 instance PP CTag where
   pp = ppCTag

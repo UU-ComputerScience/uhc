@@ -44,7 +44,8 @@ ATTR CodeAGItf [ gUniq: UID | | ]
 
 SEM CExpr
   | App         (func.gUniq,loc.lUniq)      =   mkNewUID @lhs.gUniq
-  | Lam         (body.gUniq,loc.lUniq)      =   mkNewUID @lhs.gUniq
+  | Lam         (body.gUniq,loc.lUniq,loc.lUniq2)
+                                            =   mkNewLevUID2 @lhs.gUniq
   | Case TupSel TupDel TupIns TupUpd
                 (expr.gUniq,loc.lUniq)      =   mkNewUID @lhs.gUniq
 %%]
@@ -201,17 +202,35 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 SEM CExpr
   | App Lam Case TupSel TupDel TupIns TupUpd
                 loc         .   nm          =   uidHNm @lUniq
+  | Lam         loc         .   nm2         =   uidHNm @lUniq2
   | App Case TupSel TupDel TupIns TupUpd
                 loc         .   trfIsOk     =   @lhs.appTrfIsOk == AppYesLet && @lhs.isTopApp
                 (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @nm @cTrf
-  | Lam         loc         .   (isLTrf,lTrf)
-                                            =   mkLetTrf' @hereBindSq @body.cTrf
-                            .   cTrf        =   CExpr_Lam @arg @lTrf
-                            .   trfIsOk     =   @lhs.lamTrfIsOk == LamYesLet
-                (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @nm @cTrf
+  | Lam         loc         .   trfIsOk     =   @lhs.lamTrfIsOk == LamYesLet
+                (lhs.cTrf,loc.levBindSq)    =   let mkTLB = mkTrf @trfIsOk @lhs.lev @levOf @nm
+                                                          . CExpr_Lam @arg
+                                                          . mkLetTrf @hereBindSq
+                                                in  case @body.cTrf of
+                                                        CExpr_Lam _ _ | not (null (seqToList @hereBindSq))
+                                                            -> mkTLB (CExpr_Let CBindPlain [CBind_Bind @nm2 @body.cTrf] (CExpr_Var @nm2))
+                                                        _   -> mkTLB @body.cTrf
   | Let         lhs         .   cTrf        =   mkLetTrf @hereBindSq @body.cTrf
 
 SEM CAlt
   | Alt         lhs         .   cTrf        =   CAlt_Alt @pats.cTrf (mkLetTrf @hereBindSq @expr.cTrf)
 
 %%]
+
+                                            =   let mkTLB = mkTrf @trfIsOk @lhs.lev @levOf @nm
+                                                          . CExpr_Lam @arg
+                                                          . mkLetTrf @hereBindSq
+                                                in  case @body.cTrf of
+                                                        CExpr_Lam _ _ | not (null (seqToList @hereBindSq))
+                                                            -> mkTLB (CExpr_Let CBindPlain [CBind_Bind @nm2 @body.cTrf] (CExpr_Var @nm2))
+                                                        _   -> mkTLB @body.cTrf
+
+  | Lam         loc         .   (didLetTrf,lTrf)
+                                            =   mkLetTrf' @hereBindSq @body.cTrf
+                            .   cTrf        =   CExpr_Lam @arg @lTrf
+                            .   trfIsOk     =   @lhs.lamTrfIsOk == LamYesLet
+                (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @nm @cTrf

@@ -144,7 +144,7 @@ SEM CBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-type LamArgMp = FiniteMap HsName [CExpr]
+type LamArgMp = FiniteMap HsName [HsName]
 %%]
 
 %%[8
@@ -176,27 +176,30 @@ ATTR AllBind [ | | bindLamBindL, bindVarBindL USE {++} {[]}: CBindL ]
 SEM CBind
   | Bind        (expr.gUniq,loc.argMp,loc.bindLamBindL,loc.bindVarBindL,loc.bindLamArgMp)
                                             =   if @expr.isLam
-                                                then  let  argLevL = sortOn snd . filter (\(_,l) -> l > cLevOuter) . map (\n -> (n,fvLev @lhs.levMp n)) . setToList . fromJust . lookupFM @lhs.fvSLamMp $ @nm
+                                                then  let  argLevL = sortOn snd . filter (\(_,l) -> l > cLevOuter)
+                                                                   . map (\n -> (n,fvLev @lhs.levMp n)) . setToList
+                                                                   . fromJust . lookupFM @lhs.fvSLamMp $ @nm
                                                            argOL = assocLKeys argLevL
                                                            argNL = zipWith (\u n -> hsnSuffix n ("~" ++ show u)) [@lhs.gUniq..] argOL
                                                       in   (@lhs.gUniq + length argOL,listToFM (zip argOL argNL)
                                                            ,[CBind_Bind @nm (mkCExprLam argNL @expr.cTrf)],[]
-                                                           ,@nm `unitFM` map CExpr_Var argOL
+                                                           ,@nm `unitFM` argOL
                                                            )
                                                 else  (@lhs.gUniq,emptyFM,[],[@cTrf],emptyFM)
 
 SEM CExpr
-  | Var         lhs         .   cTrf        =   let  v1 = maybe @cTrf CExpr_Var . lookupFM @lhs.argSubst $ @nm
-                                                     v2 = maybe v1 (mkCExprApp v1) . lookupFM @lhs.lamArgMp $ @nm
+  | Var         lhs         .   cTrf        =   let  r n = maybe (CExpr_Var n) CExpr_Var . lookupFM @lhs.argSubst $ n
+                                                     v1 = r @nm
+                                                     v2 = maybe v1 (mkCExprApp v1 . map r) . lookupFM @lhs.lamArgMp $ @nm
                                                 in   v2
   | Let         (loc.hereBindSq,lhs.lamBindSq)
-                                            =   let  b1    = @binds.lamBindSq
-                                                     b2l   = unitSeq (@categ,@binds.bindLamBindL)
-                                                     b2v   = unitSeq (@categ,@binds.bindVarBindL)
-                                                     b2lv  = unitSeq (@categ,@binds.bindLamBindL ++ @binds.bindVarBindL)
-                                                     b3    = @body.lamBindSq
+                                            =   let  b1     = @binds.lamBindSq
+                                                     b2l    = unitSeq (@categ,@binds.bindLamBindL)
+                                                     b2v    = unitSeq (@categ,@binds.bindVarBindL)
+                                                     b12lv  = unitSeq (@categ,(concat . map snd . seqToList $ b1) ++ @binds.bindLamBindL ++ @binds.bindVarBindL)
+                                                     b3     = @body.lamBindSq
                                                 in   if @lhs.lev == cLevOuter
-                                                     then  (b1 <+> b2lv <+> b3,emptySeq)
+                                                     then  (b12lv <+> b3,emptySeq)
                                                      else  (b2v,b1 <+> b2l <+> b3)
                 lhs         .   cTrf        =   foldr (\(c,b) e -> mkCExprLet c b e) @body.cTrf . seqToList $ @hereBindSq
 %%]

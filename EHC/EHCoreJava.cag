@@ -203,7 +203,7 @@ SEM CExpr
                                                      >|< pp_parens
                                                             (if @alts.tagSz > 0
                                                              then jvForceInt (jvInx (jvNmPP @jvCaseScrutinee) (0::Int))
-                                                             else ppCTag ctagNone
+                                                             else ppCTagInt ctagNone
                                                             )
                                                      >-< pp_braces
                                                             (   @alts.jvSrc
@@ -246,7 +246,7 @@ SEM CAlt
                                                 >-< "break ;"
 
 SEM CPat
-  | Con         lhs         .   jvSrc       =   "case" >#< ppCTag @tag >#< ":"
+  | Con         lhs         .   jvSrc       =   "case" >#< ppCTagInt @tag >#< ":"
                                                 >-< @binds.jvSrc
 %%]
 
