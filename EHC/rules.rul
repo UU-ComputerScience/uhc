@@ -237,6 +237,12 @@ rules expr4 "Type checking/inferencing for expression" =
     -
     judge expr4 fiopt; Gamma; sigma..k :- (minint(..)maxint) : sigma ~> Cnstr
 
+rules expr4.B "Type checking/inferencing for expression" =
+  rule e_ident4B =
+    cond (ident :-> sigma) `elem` Gamma
+    judge fit4 (fioBindToTyBindY, fiopt) :- sigma <= sigma..k : sigma ~> Cnstr
+    -
+    judge expr4 fiopt; Gamma; sigma..k :- ident : sigma ~> Cnstr
 
 scheme expr9A
   = (Gamma) :- (e) : (sigma) ~> (Transl)
@@ -537,13 +543,43 @@ rules fit4.app "Fitting/subsumption for type applications" =
     judge fit4 strongFIOpts :- (Cnstr.1 sigma.2.a) <= (Cnstr.1 sigma.1.a) : sigma..a ~> Cnstr.2
     judge fit4 fiopt :- sigma.1.r <= sigma.2.r : sigma..r ~> Cnstr.1
     -
-    judge fit4 fiopt  :- (sigma.1.a -> sigma.1.r) <= (sigma.2.a -> sigma.2.r) : (sigma..a -> Cnstr.2 sigma..r) ~> Cnstr.(2(..)1)
+    judge fit4 fiopt :- (sigma.1.a -> sigma.1.r) <= (sigma.2.a -> sigma.2.r) : (sigma..a -> Cnstr.2 sigma..r) ~> Cnstr.(2(..)1)
 
   rule f_prod4 =
     judge fit4 fiopt :- (Cnstr.1 sigma.1.l) <= (Cnstr.1 sigma.2.l) : sigma..l ~> Cnstr.2
     judge fit4 fiopt :- sigma.1.r <= sigma.2.r : sigma..r ~> Cnstr.1
     -
     judge fit4 fiopt :- ((sigma.1.l,sigma.1.r)) <= ((sigma.2.l,sigma.2.r)) : ((sigma..l,Cnstr.2 sigma..r)) ~> Cnstr.(2(..)1)
+
+rules fit4.bind "Fitting/subsumption for tvar binds" =
+  rule f_var_l1 =
+    cond sigma /= _ // _
+    -
+    judge fit4 fioBindToTyBindY :- tvar <= sigma : (tvar // sigma) ~> (tvar :-> tvar // sigma)
+  &
+  rule f_var_l2 =
+    -
+    judge fit4 fioBindToTyBindN :- tvar <= sigma : sigma ~> (tvar :-> sigma)
+
+  rule f_bind_r =
+    judge fit4 fiopt :- sigma.1 <= sigma..i : _ ~> _
+    -
+    judge fit4 fiopt :- sigma.1 <= (tvar.2 // sigma..({(..),i,(..)})) : (tvar.2 // sigma..({(..),i,(..)})) ~> _
+
+  rule f_bind_l1 =
+    judge fit4 fiopt :- (forall alpha (.) rho.1) <= sigma.2 : sigma ~> Cnstr
+    -
+    judge fit4 fiopt :- (tvar.1 // forall alpha (.) rho.1) <= sigma.2 : sigma ~> Cnstr
+
+  rule f_bind_l2 =
+    cond sigma.2 /= forall ^ (...)
+    -
+    judge fit4 fiopt :- (tvar.1 // sigma.1.._) <= sigma.2 : (tvar.1 // sigma.2,sigma.1.._) ~> _
+  &
+  rule f_bind_l3 =
+    judge fit4 fiopt :- (forall alpha (.) rho.2) <= sigma.1.i : _ ~> Cnstr.i
+    -
+    judge fit4 fiopt :- (tvar.1 // sigma.1.({i})) <= (forall alpha (.) rho.2) : (tvar.1 // forall alpha (.) rho.2) ~> Cnstr.({i})
 
 -- 9
 scheme fit9

@@ -784,6 +784,9 @@ fitsIn opts env uniq ty1 ty2
                        fo2 =  if any (not.foHasErrs) foL
                               then  foUpdTy (c |=> t2) . foUpdCnstr c $ (fo {foErrL = []})
                               else  foBind v2 (Ty_Bind v2 (t1:t2L)) (emptyFO {foUniq = fiUniq fi})
+            f fi t1@(Ty_Bind v1 [t1b@(Ty_Quant q1 _ _)])  t2
+                | tyquIsForall q1                   = fo2
+                where  fo2 = f fi t1b t2
             f fi t1@(Ty_Bind v1 t1L@(_:_))  t2      = fo2
                 where  fo2 =  case t2 of
                                   Ty_Quant q2 _ _ | tyquIsForall q2
