@@ -89,7 +89,8 @@ SEM Ty
   | Impls       loc         .   frTvL       =   []
 
 SEM Impls
-  | Tail        lhs         .   frTvLL      =   []
+  | Tail Nil    lhs         .   frTvLL      =   []
+  | Cons        lhs         .   frTvLL      =   [listCombineUniq @pr.frTvLL]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

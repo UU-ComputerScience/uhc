@@ -87,9 +87,10 @@ DATA Ty
   | Impls       impls           : Impls
 
 DATA Impls
-  | Tail        tv              : {UID}
+  | Tail        iv              : {ImplsVarId}
   | Cons        pr              : Pred
                 tl              : Impls
+  | Nil
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

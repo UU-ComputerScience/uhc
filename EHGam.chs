@@ -57,6 +57,7 @@
 
 %%[1.Base.sigs
 newtype Gam k v     =   Gam [AssocL k v]
+                    deriving Show
 
 emptyGam            ::  Gam k v
 gamLookup           ::  Eq k => k   -> Gam k v -> Maybe v

@@ -46,7 +46,10 @@
 %%[6 export(fitsInL)
 %%]
 
-%%[9 import(Maybe,FiniteMap,Set,List,EHPred,EHCode,EHCodeSubst) export(predFIOpts,prfPredsToProvenGraph,prfPredsPruneProvenGraph)
+%%[9 import(Maybe,FiniteMap,Set,List,EHPred,EHCode,EHCodeSubst) export(predFIOpts,prfPredsToProvenGraph,prfPredsPruneProvenGraph,foAppCoe)
+%%]
+
+%%[9 import(EHTrace)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -126,40 +129,99 @@ fioSwapVariance fio = fio { fioBindRFirst = fioBindLFirst fio, fioBindLFirst = f
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Co/Contra variance Gam
+%%% App spine Gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4.CoCo
-type CoCoInfo = [(CoContraVariance -> CoContraVariance,FIOpts -> FIOpts)]
-data CoCoGamInfo = CoCoGamInfo { ccgiCoCoL :: CoCoInfo }
+%%[4.AppSpine
+data AppSpineInfo
+  =  AppSpineInfo
+       { asCoCo         :: CoContraVariance -> CoContraVariance
+       , asFIO          :: FIOpts -> FIOpts
+       }
 
-type CoCoGam = Gam HsName CoCoGamInfo
+unknownAppSpineInfoL :: AppSpineInfoL
+unknownAppSpineInfoL = repeat (AppSpineInfo (const CoContraVariant) id)
 
+arrowAppSpineInfoL :: AppSpineInfoL
+arrowAppSpineInfoL = [AppSpineInfo cocoOpp mkStrong ,AppSpineInfo id id]
+
+prodAppSpineInfoL :: AppSpineInfoL
+prodAppSpineInfoL = repeat (AppSpineInfo id id)
+%%]
+
+%%[9.AppSpine -4.AppSpine
+data AppSpineInfo
+  =  AppSpineInfo
+       { asCoCo         :: CoContraVariance -> CoContraVariance
+       , asFIO          :: FIOpts -> FIOpts
+       , asFOUpdCoe     :: FIOut -> FIOut -> FIOut
+       }
+
+unknownAppSpineInfoL :: AppSpineInfoL
+unknownAppSpineInfoL = repeat (AppSpineInfo (const CoContraVariant) id (\_ x -> x))
+
+arrowAppSpineInfoL :: AppSpineInfoL
+arrowAppSpineInfoL
+  =  [  AppSpineInfo cocoOpp mkStrong
+            (\_ x -> x)
+     ,  AppSpineInfo id id
+            (\ffo afo
+                ->  let  (u',u1) = mkNewUID (foUniq afo)
+                         n = uidHNm u1
+                    in   afo
+                            { foRCoeL = mkCoe (\e -> CExpr_Lam n e) : foRCoeL afo
+                            , foLCoeL = mkCoe (\e -> CExpr_App e (coeWeave (foCSubst afo) (foLCoeL ffo) (foRCoeL ffo) `coeEvalOn` CExpr_Var n)) : foLCoeL afo
+                            , foUniq = u'
+                            }
+            )
+     ]
+
+prodAppSpineInfoL :: AppSpineInfoL
+prodAppSpineInfoL = repeat (AppSpineInfo id id (\_ x -> x))
+%%]
+
+%%[4.AppSpineGam
 mkStrong :: FIOpts -> FIOpts
 mkStrong fi = fi {fioLeaveRInst = False, fioBindRFirst = True, fioBindLFirst = True}
 
-cocoGamLookup :: Ty -> CoCoGam -> CoCoInfo
-cocoGamLookup ty g
+type AppSpineInfoL = [AppSpineInfo]
+
+data AppSpineGamInfo = AppSpineGamInfo { asgiInfoL :: AppSpineInfoL }
+
+type AppSpineGam = Gam HsName AppSpineGamInfo
+
+asGamLookup :: Ty -> AppSpineGam -> AppSpineInfoL
+asGamLookup ty g
   =  case ty of
        Ty_Con nm  ->  case gamLookup nm g of
-                        Just ccgi                ->  ccgiCoCoL ccgi
-                        Nothing | hsnIsProd nm   ->  take (hsnProdArity nm) (repeat (id,id))
-                        _                        ->  unknownCoCoL
-       _          ->  unknownCoCoL
-  where unknownCoCoL = repeat (const CoContraVariant,id)
+                        Just ccgi                ->  asgiInfoL ccgi
+                        Nothing | hsnIsProd nm   ->  take (hsnProdArity nm) prodAppSpineInfoL
+                        _                        ->  unknownAppSpineInfoL
+       _          ->  unknownAppSpineInfoL
 %%]
 
-%%[4.cocoGam
-cocoGam :: CoCoGam
-cocoGam = assocLToGam [(hsnArrow, CoCoGamInfo [(cocoOpp,mkStrong),(id,id)])]
+%%[4.appSpineGam
+appSpineGam :: AppSpineGam
+appSpineGam =  assocLToGam [(hsnArrow, AppSpineGamInfo arrowAppSpineInfoL)]
 %%]
 
-%%[7.cocoGam -4.cocoGam
-cocoGam :: CoCoGam
-cocoGam = assocLToGam
-            [ (hsnArrow,    CoCoGamInfo [(cocoOpp,mkStrong),(id,id)])
-            , (hsnRec,      CoCoGamInfo [(id,id)])
-            ]
+%%[7.appSpineGam -4.appSpineGam
+appSpineGam :: AppSpineGam
+appSpineGam =  assocLToGam
+                 [ (hsnArrow,    AppSpineGamInfo arrowAppSpineInfoL)
+                 , (hsnRec,      AppSpineGamInfo (take 1 prodAppSpineInfoL))
+                 ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Coercion application
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+foAppCoe :: FIOut -> CSubst -> CExpr -> CExpr
+foAppCoe fo cs ce
+  =  let  s = cs `cAppSubst` foCSubst fo
+     in   cAppSubst s (coeWeave s (foLCoeL fo) (foRCoeL fo) `coeEvalOn` ce)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -178,12 +240,19 @@ emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts        ,  fiUniq  
 
 %%[9.FIIn -4.FIIn
 data FIIn   =  FIIn     {  fiFIOpts          ::  FIOpts              ,  fiUniq            ::  UID
-                        ,  fiCoContra        ::  CoContraVariance    ,  fiPrElimGam       ::  PrElimGam
+                        ,  fiCoContra        ::  CoContraVariance    ,  fiEnv             ::  FIEnv
                         }
 
 emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts        ,  fiUniq            =   uidStart
-                        ,  fiCoContra        =   CoVariant           ,  fiPrElimGam       =   emptyGam
+                        ,  fiCoContra        =   CoVariant           ,  fiEnv             =   emptyFE
                         }
+%%]
+
+%%[9
+instance Substitutable FIIn where
+  s |=> fi  =  let  e = fiEnv fi
+               in   fi {fiEnv = e {fePrElimGam = s `gamSubstTop` fePrElimGam e}}
+  ftv       =  ftv . gamTop . fePrElimGam . fiEnv
 %%]
 
 %%[4.FIEnv
@@ -194,6 +263,7 @@ emptyFE     =   FIEnv
 
 %%[9.FIEnv -4.FIEnv
 data FIEnv  =   FIEnv   {   fePrElimGam     ::  PrElimGam   }
+            deriving Show
 
 emptyFE     =   FIEnv   {   fePrElimGam     =   emptyGam    }
 %%]
@@ -218,27 +288,29 @@ emptyFO     =  FIOut  {  foTy     =   Ty_Any  ,  foCnstr           =   emptyCnst
 
 %%[4.FIOut -(2.FIOut 2.FIOut.empty)
 data FIOut  =  FIOut    {  foCnstr           ::  Cnstr               ,  foTy              ::  Ty
-                        ,  foUniq            ::  UID                 ,  foCoContraL       ::  CoCoInfo
+                        ,  foUniq            ::  UID                 ,  foAppSpineL       ::  AppSpineInfoL
                         ,  foErrL            ::  ErrL
                         }
 
 emptyFO     =  FIOut    {  foCnstr           =   emptyCnstr          ,  foTy              =   Ty_Any
-                        ,  foUniq            =   uidStart            ,  foCoContraL       =   []
+                        ,  foUniq            =   uidStart            ,  foAppSpineL       =   []
                         ,  foErrL            =   []
                         }
 %%]
 
 %%[9.FIOut -4.FIOut
 data FIOut  =  FIOut    {  foCnstr           ::  Cnstr               ,  foTy              ::  Ty
-                        ,  foUniq            ::  UID                 ,  foCoContraL       ::  CoCoInfo
-                        ,  foErrL            ::  ErrL
-                        ,  foPredOccL        ::  [PredOcc]           ,  foCoe             ::  Coe
+                        ,  foUniq            ::  UID                 ,  foAppSpineL       ::  AppSpineInfoL
+                        ,  foErrL            ::  ErrL                ,  foPredOccL        ::  [PredOcc]
+                        ,  foLCoeL           ::  [Coe]               ,  foRCoeL           ::  [Coe]
+                        ,  foCSubst          ::  CSubst
                         }
 
 emptyFO     =  FIOut    {  foCnstr           =   emptyCnstr          ,  foTy              =   Ty_Any
-                        ,  foUniq            =   uidStart            ,  foCoContraL       =   []
-                        ,  foErrL            =   []
-                        ,  foPredOccL        =   []                  ,  foCoe             =   CoeId
+                        ,  foUniq            =   uidStart            ,  foAppSpineL       =   []
+                        ,  foErrL            =   []                  ,  foPredOccL        =   []
+                        ,  foLCoeL           =   []                  ,  foRCoeL           =   []
+                        ,  foCSubst          =   emptyCSubst
                         }
 %%]
 
@@ -254,15 +326,15 @@ foHasErrs = not . null . foErrL
 %%[fitsInHead.1
 fitsIn :: Ty -> Ty -> FIOut
 fitsIn ty1 ty2
-  =  u ty1 ty2
+  =  f ty1 ty2
   where
             res t                                   = emptyFO {foTy = t}
 %%]
 
 %%[fitsInBotCon.1
-            u  Ty_Any               t2              = res t2
-            u  t1                   Ty_Any          = res t1
-            u  t1@(Ty_Con s1)
+            f  Ty_Any               t2              = res t2
+            f  t1                   Ty_Any          = res t1
+            f  t1@(Ty_Con s1)
                t2@(Ty_Con s2)
                  | s1 == s2                         = res t2
 %%]
@@ -277,8 +349,8 @@ fitsIn ty1 ty2
             comp tf1 ta1 tf2 ta2 mkComp
                  = foldr1  (\fo1 fo2 -> if foHasErrs fo1 then fo1 else fo2)
                            [ffo,afo,res rt]
-                 where  ffo  = u tf1 tf2
-                        afo  = u ta1 ta2
+                 where  ffo  = f tf1 tf2
+                        afo  = f ta1 ta2
                         rt   = mkComp (foTy ffo) (foTy afo)
 %%]
 
@@ -286,26 +358,26 @@ fitsIn ty1 ty2
             comp tf1 ta1 tf2 ta2 mkComp
                  = foldr1  (\fo1 fo2 -> if foHasErrs fo1 then fo1 else fo2)
                            [ffo,afo,rfo]
-                 where  ffo  =   u tf1 tf2
+                 where  ffo  =   f tf1 tf2
                         fs   =   foCnstr ffo
-                        afo  =   u (fs |=> ta1) (fs |=> ta2)
+                        afo  =   f (fs |=> ta1) (fs |=> ta2)
                         as   =   foCnstr afo
                         rt   =   mkComp (as |=> foTy ffo) (foTy afo)
                         rfo  =   emptyFO {foTy = rt, foCnstr = as |=> fs}
 %%]
 
 %%[fitsInApp.1
-            u  t1@(Ty_App (Ty_App (Ty_Con c1) ta1) tr1)
+            f  t1@(Ty_App (Ty_App (Ty_Con c1) ta1) tr1)
                t2@(Ty_App (Ty_App (Ty_Con c2) ta2) tr2)
                  | hsnIsArrow c1 && c1 == c2
                  = comp ta2 tr1 ta1 tr2 (\a r -> [a] `mkTyArrow` r)
-            u  t1@(Ty_App tf1 ta1)
+            f  t1@(Ty_App tf1 ta1)
                t2@(Ty_App tf2 ta2)
                  = comp tf1 ta1 tf2 ta2 Ty_App
 %%]
 
 %%[fitsInRest.1
-            u  t1                   t2              = err [Err_UnifyClash ty1 ty2 t1 t2]
+            f  t1                   t2              = err [Err_UnifyClash ty1 ty2 t1 t2]
             err e                                   = emptyFO {foErrL = e}
 %%]
 
@@ -337,10 +409,10 @@ fitsIn ty1 ty2
 %%]
 
 %%[2.fitsIn.Var
-            u  t1@(Ty_Var v1)       (Ty_Var v2)     ^^
+            f  t1@(Ty_Var v1)       (Ty_Var v2)     ^^
                  | v1 == v2                         = res t1
-            u  t1@(Ty_Var v1)       t2              = occurBind v1 t2
-            u  t1                   t2@(Ty_Var v2)  = occurBind v2 t1
+            f  t1@(Ty_Var v1)       t2              = occurBind v1 t2
+            f  t1                   t2@(Ty_Var v2)  = occurBind v2 t1
 %%]
 
 %%[2.fitsIn.AppRest
@@ -353,11 +425,11 @@ fitsIn ty1 ty2
 %%@fitsInBind.2
 %%@fitsInapp.2
 %%@fitsInBotCon.1
-            u  t1@(Ty_Var v1 f1)    (Ty_Var v2 f2)  ^^
+            f  t1@(Ty_Var v1 f1)    (Ty_Var v2 f2)  ^^
                  | v1 == v2 && f1 == f2             = res t1
-            u  t1@(Ty_Var v1 f)     t2              
+            f  t1@(Ty_Var v1 f)     t2              
                  | f == TyVarCateg_Plain            = occurBind v1 t2
-            u  t1                   t2@(Ty_Var v2 f)
+            f  t1                   t2@(Ty_Var v2 f)
                  | f == TyVarCateg_Plain            = occurBind v2 t1
 %%@fitsInApp.1
 %%@fitsInRest.1
@@ -369,7 +441,7 @@ fitsIn opts env uniq ty1 ty2
   =  fo
   where
             res fi t                = emptyFO  { foUniq = fiUniq fi, foTy = t
-                                               , foCoContraL = cocoGamLookup t cocoGam}
+                                               , foAppSpineL = asGamLookup t appSpineGam}
             err fi e                = emptyFO {foUniq = fioUniq opts, foErrL = e}
             manyFO fos              = foldr1 (\fo1 fo2 -> if foHasErrs fo1 then fo1 else fo2) fos
             bind fi tv t            = (res fi t) {foCnstr = tv `cnstrTyUnit` t}
@@ -388,115 +460,188 @@ fitsIn opts env uniq ty1 ty2
                     in   (fi {fiUniq = u},uqt,back)
 %%]
 
+%%[4.fitsIn.foCmb
+            foCmbAppTy   ffo afo  = afo {foTy = Ty_App (foCnstr afo |=> foTy ffo) (foTy afo)}
+            foCmbCnstr   ffo afo  = afo {foCnstr = foCnstr afo |=> foCnstr ffo}
+            foCmbCoCon   ffo afo  = afo {foAppSpineL = tail (foAppSpineL ffo)}
+%%]
+
+%%[4.fitsIn.foCmbApp
+            foCmbApp     ffo      = foCmbCoCon ffo . foCmbCnstr ffo . foCmbAppTy ffo
+%%]
+
+%%[9
+            foCmbPrL     ffo afo  = afo {foPredOccL = foPredOccL afo ++ foPredOccL ffo}
+            foCmbCSubst  ffo afo  = afo {foCSubst = foCSubst afo `cAppSubst` foCSubst ffo}
+%%]
+
+%%[9.fitsIn.foCmbApp -4.fitsIn.foCmbApp
+            foCmbApp     ffo      = foCmbCSubst ffo . foCmbPrL ffo . foCmbCoCon ffo . foCmbCnstr ffo . foCmbAppTy ffo
+%%]
+
+%%[9
+            fiAddPr n prTy fi
+                =  let  e = fiEnv fi
+                        g = peGamAdd (tyPredNm prTy) (mkInstElimRule n 0 prTy) (fePrElimGam e)
+                   in   fi { fiEnv = e {fePrElimGam = g} }
+            foUpdLCoe l fo = fo {foLCoeL = l : foLCoeL fo}
+            foUpdRCoe r fo = fo {foRCoeL = r : foRCoeL fo}
+            foUpdLRCoe l r = foUpdLCoe l . foUpdRCoe r
+            foUpdPrL prL fo = fo {foPredOccL = prL ++ foPredOccL fo}
+            foUpdTy  t   fo = fo {foTy = t}
+            foUpdCnstr c fo = fo {foCnstr = c |=> foCnstr fo}
+            foUpdCSubst s fo = fo {foCSubst = s `cAppSubst` foCSubst fo}
+            foUpdImplExpl iv im tpr fo
+                            = foUpdCnstr (iv `cnstrImplsUnit` (foCnstr fo |=> im))
+                            . foUpdTy ([foCnstr fo |=> tpr] `mkTyArrow` foTy fo)
+                            . foUpdLRCoe coeId coeId
+                            $ fo
+            mkLCoe bL eL = mkCoe (\e -> bL `mkCExprLetRec` (e `mkCExprApp` eL))
+            mkRCoe n = mkCoe (\e -> n `CExpr_Lam` e)
+            mkLRCoe n bL eL = (mkLCoe bL eL,mkRCoe n)
+%%]
+
 %%[4.fitsIn.Base
-            u fi t1                     t2
-                | fiCoContra fi == ContraVariant    = u  (fi  { fiCoContra = CoVariant
+            f fi t1                     t2
+                | fiCoContra fi == ContraVariant    = f  (fi  { fiCoContra = CoVariant
                                                               , fiFIOpts = fioSwapVariance (fiFIOpts fi)})
                                                          t2 t1
-            u fi Ty_Any                 t2          = res fi t2
-            u fi t1                     Ty_Any      = res fi t1
-            u fi t1@(Ty_Con s1)         t2@(Ty_Con s2)
+            f fi Ty_Any                 t2          = res fi t2
+            f fi t1                     Ty_Any      = res fi t1
+            f fi t1@(Ty_Con s1)         t2@(Ty_Con s2)
                 | s1 == s2                          = res fi t2
-            u fi t1@(Ty_Var v1 f1)      (Ty_Var v2 f2)
+            f fi t1@(Ty_Var v1 f1)      (Ty_Var v2 f2)
                 | v1 == v2 && f1 == f2              = res fi t1
-            u fi t1@(Ty_Var v1 f)       t2
+            f fi t1@(Ty_Var v1 f)       t2
                 | fioBindLFirst (fiFIOpts fi) && f == TyVarCateg_Plain
                                                     = occurBind fi v1 t2
-            u fi t1                     t2@(Ty_Var v2 f)
+            f fi t1                     t2@(Ty_Var v2 f)
                 | fioBindRFirst (fiFIOpts fi) && f == TyVarCateg_Plain
                                                     = occurBind fi v2 t1
 %%]
 
 %%[9
-            u fi t1@(Ty_Pred (Pred_Class ct1)) t2@(Ty_Pred (Pred_Class ct2))
+            f fi t1@(Ty_Pred (Pred_Class ct1)) t2@(Ty_Pred (Pred_Class ct2))
                 | fioPredAsTy (fiFIOpts fi)         = fo {foTy = Ty_Pred (Pred_Class (foTy fo))} 
-                where  fo = u fi ct1 ct2
+                where  fo = f fi ct1 ct2
 %%]
 
 %%[4.fitsIn.QLR
-            u fi t1@(Ty_Quant q1 _ _)   t2@(Ty_Quant q2 _ _)
+            f fi t1@(Ty_Quant q1 _ _)   t2@(Ty_Quant q2 _ _)
                 | fiCoContra fi == CoContraVariant && q1 == q2
-                                                    = u fi2 uqt1 uqt2
+                                                    = f fi2 uqt1 uqt2
                 where  (fi1,uqt1,_) = unquant fi t1 False instCoConst
                        (fi2,uqt2,_) = unquant fi1 t2 False instCoConst
 %%]
 
 %%[4.fitsIn.QR
-            u fi t1                     t2@(Ty_Quant _ _ _)
+            f fi t1                     t2@(Ty_Quant _ _ _)
                 | fiCoContra fi /= CoContraVariant && fioLeaveRInst (fiFIOpts fi)
-                                                    = back2 (u fi2 t1 uqt2)
+                                                    = back2 (f fi2 t1 uqt2)
                 where (fi2,uqt2,back2) = unquant fi t2 False instCoConst
-            u fi t1                     t2@(Ty_Quant _ _ _)
+            f fi t1                     t2@(Ty_Quant _ _ _)
                 | fiCoContra fi /= CoContraVariant && not (fioLeaveRInst (fiFIOpts fi))
-                                                    = back2 (u fi2 t1 uqt2)
+                                                    = back2 (f fi2 t1 uqt2)
                 where (fi2,uqt2,back2) = unquant fi t2 True instContra
 %%]
 
 %%[4.fitsIn.QL
-            u fi t1@(Ty_Quant _ _ _)    t2
-                | fiCoContra fi /= CoContraVariant  = u fi1 uqt1 t2
+            f fi t1@(Ty_Quant _ _ _)    t2
+                | fiCoContra fi /= CoContraVariant  = f fi1 uqt1 t2
                 where (fi1,uqt1,back1) = unquant fi t1 False instCoConst
 %%]
 
 %%[4.fitsIn.Var2
-            u fi t1@(Ty_Var v1 f)       t2
+            f fi t1@(Ty_Var v1 f)       t2
                 | f == TyVarCateg_Plain             = occurBind fi v1 t2
-            u fi t1                     t2@(Ty_Var v2 f)
+            f fi t1                     t2@(Ty_Var v2 f)
                 | f == TyVarCateg_Plain             = occurBind fi v2 t1
 %%]
 
 %%[9
-            u fi  t1@(Ty_App (Ty_App (Ty_Con c1) tpr1) tr1)
+            f fi  t1@(Ty_App (Ty_App (Ty_Con c1) tpr1) tr1)
                   t2@(Ty_App (Ty_App (Ty_Con c2) tpr2) tr2)
-                    | False && hsnIsArrow c1 && c1 == c2 && not (fioPredAsTy (fiFIOpts fi))
-                = fo
-                where  (u',u1) = mkNewUID (fiUniq fi)
-                       fo = u (fi {fiUniq = u'}) tr1 t2
-                       up (Ty_Pred pr1) (Ty_Pred pr2)
-                       		=  let  eGam = fiPrElimGam fi
-                       		   in   ()
-            u fi  t1@(Ty_App (Ty_App (Ty_Con c1) (Ty_Pred pr)) tr1)
-                  t2@(Ty_App (Ty_App (Ty_Con c2) _) _)
-                    | hsnIsArrow c1 && c1 == c2 && not (fioPredAsTy (fiFIOpts fi))
-                = fo {foPredOccL = PredOcc pr u1 : foPredOccL fo}
-                where  (u',u1) = mkNewUID (fiUniq fi)
-                       fo = u (fi {fiUniq = u'}) tr1 t2
+                    | hsnIsArrow c1 && c1 == c2 && not (fioPredAsTy (fiFIOpts fi)) && isJust mbfp
+                = fromJust mbfp
+                where  (u',u1,u2,u3) = mkNewLevUID3 (fiUniq fi)
+                       fi2 = fi {fiUniq = u'}
+                       mbfp = fp tpr1 tpr2
+                       fp tpr1@(Ty_Pred pr1)            (Ty_Impls (Impls_Tail iv2))
+                            =  Just (foUpdImplExpl iv2 (Impls_Cons pr1 im2) tpr1 fo)
+                            where  im2   = Impls_Tail u1
+                                   fo    = f fi2 tr1 ([Ty_Impls im2] `mkTyArrow` tr2)
+                       fp (Ty_Impls (Impls_Tail iv1))   tpr2@(Ty_Pred pr2)
+                            =  Just (foUpdImplExpl iv1 (Impls_Cons pr2 im1) tpr2 fo)
+                            where  im1   = Impls_Tail u1
+                                   fo    = f fi2 ([Ty_Impls im1] `mkTyArrow` tr1) tr2
+                       fp (Ty_Impls (Impls_Tail iv1))   tpr2@(Ty_Impls im2@(Impls_Tail iv2))
+                            =  Just (foUpdImplExpl iv1 im2 tpr2 (f fi2 tr1 tr2))
+                       fp _                             _
+                            =  Nothing
+            f fi  t1
+                  t2@(Ty_App (Ty_App (Ty_Con c2) tpr2) tr2)
+                    | hsnIsArrow c2 && not (fioPredAsTy (fiFIOpts fi)) && isJust mbfp
+                = fromJust mbfp
+                where  (u',u1,u2,u3) = mkNewLevUID3 (fiUniq fi)
+                       fi2 = fi {fiUniq = u'}
+                       mbfp = fp tpr2
+                       fp (Ty_Impls (Impls_Tail iv2))
+                            =  Just (foUpdCnstr (iv2 `cnstrImplsUnit` Impls_Nil) (f fi2 t1 tr2))
+                       fp (Ty_Pred pr2)
+                            =  Just (foUpdRCoe rCoe . foUpdTy ([Ty_Pred pr2s] `mkTyArrow` foTy fo) $ fo)
+                            where  pr2n  = uidHNm u1
+                                   fo    = f (fiAddPr pr2n tpr2 fi2) t1 tr2
+                                   pr2s  = foCnstr fo |=> pr2
+                                   rCoe  = mkRCoe pr2n
+                       fp _ =  Nothing
+            f fi  t1@(Ty_App (Ty_App (Ty_Con c1) tpr1) tr1)
+                  t2
+                    | hsnIsArrow c1 && not (fioPredAsTy (fiFIOpts fi)) && isJust mbfp
+                = fromJust mbfp
+                where  (u',u1,u2,u3) = mkNewLevUID3 (fiUniq fi)
+                       fi2 = fi {fiUniq = u'}
+                       mbfp = fp tpr1
+                       fp (Ty_Impls (Impls_Tail iv1))
+                            =  Just (foUpdCnstr (iv1 `cnstrImplsUnit` Impls_Nil) (f fi2 tr1 t2))
+                       fp (Ty_Pred pr1)
+                            =  Just (foUpdPrL remPrOccL . foUpdLCoe lCoe . foUpdCSubst csubst $ fo)
+                            where  fo    = f fi2 tr1 t2
+                                   fs    = foCnstr fo
+                                   fi2s  = fs |=> fi2
+                                   (cbindL,csubst,remPrOccL,evidL) = prfPreds u3 (fiEnv fi2s) [PredOcc (fs |=> pr1) u2]
+                                   lCoe  = mkLCoe cbindL evidL
+                       fp _ =  Nothing
 %%]
 
 %%[4.fitsIn.App
-            u fi t1@(Ty_App tf1 ta1)    t2@(Ty_App tf2 ta2)
-                = manyFO [ffo,afo,rfo]
-                where  ffo  = u fi tf1 tf2
+            f fi t1@(Ty_App tf1 ta1)    t2@(Ty_App tf2 ta2)
+                = manyFO [ffo,afo,foCmbApp ffo afo]
+                where  ffo  = f fi tf1 tf2
                        fs   = foCnstr ffo
-                       ((coUpd,fiUpd):cor) = foCoContraL ffo
-                       fi'  = fi  { fiCoContra  = coUpd (fiCoContra fi), fiFIOpts = fiUpd (fiFIOpts fi)
+                       (as:_) = foAppSpineL ffo
+                       fi'  = fi  { fiCoContra  = (asCoCo as) (fiCoContra fi), fiFIOpts = (asFIO as) (fiFIOpts fi)
                                   , fiUniq      = foUniq ffo }
-                       afo  = u fi' (fs |=> ta1) (fs |=> ta2)
-                       as   = foCnstr afo
-                       rt   = Ty_App (as |=> foTy ffo) (foTy afo)
-                       rfo  = afo {foTy = rt, foCnstr = as |=> fs, foCoContraL = cor}
+                       afo  = f fi' (fs |=> ta1) (fs |=> ta2)
 %%]
 
 %%[9.fitsIn.App -4.fitsIn.App
-            u fi t1@(Ty_App tf1 ta1)    t2@(Ty_App tf2 ta2)
+            f fi t1@(Ty_App tf1 ta1)    t2@(Ty_App tf2 ta2)
                 = manyFO [ffo,afo,rfo]
-                where  ffo  = u fi tf1 tf2
+                where  ffo  = f fi tf1 tf2
                        fs   = foCnstr ffo
-                       ((coUpd,fiUpd):cor) = foCoContraL ffo
-                       fi'  = fi  { fiCoContra  = coUpd (fiCoContra fi), fiFIOpts = fiUpd (fiFIOpts fi)
+                       (as:_) = foAppSpineL ffo
+                       fi'  = fi  { fiCoContra  = (asCoCo as) (fiCoContra fi), fiFIOpts = (asFIO as) (fiFIOpts fi)
                                   , fiUniq      = foUniq ffo }
-                       afo  = u fi' (fs |=> ta1) (fs |=> ta2)
-                       as   = foCnstr afo
-                       rt   = Ty_App (as |=> foTy ffo) (foTy afo)
-                       rfo  = afo {foTy = rt, foCnstr = as |=> fs, foCoContraL = cor, foPredOccL = foPredOccL afo ++ foPredOccL ffo}
+                       afo  = f fi' (fs |=> ta1) (fs |=> ta2)
+                       rfo  = asFOUpdCoe as ffo . foCmbApp ffo $ afo
 %%]
 
 %%[7
-            u fi t1@(Ty_Ext tr1 l1 te1)   t2@(Ty_Ext _ _ _)
+            f fi t1@(Ty_Ext tr1 l1 te1)   t2@(Ty_Ext _ _ _)
                 =  case tyRowExtr l1 t2 of
-                     Just (r,e)  -> let  tefo  = u fi te1 e
+                     Just (r,e)  -> let  tefo  = f fi te1 e
                                          tes   = foCnstr tefo
-                                         trfo  = u fi (tes |=> tr1) (tes |=> r)
+                                         trfo  = f fi (tes |=> tr1) (tes |=> r)
                                          trs   = foCnstr trfo
                                          rt    = Ty_Ext (foTy trfo) l1 (trs |=> foTy tefo)
                                          rfo   = trfo {foTy = rt, foCnstr = trs |=> tes}
@@ -505,16 +650,16 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[4.fitsIn.DefaultCase
-            u fi t1                     t2          = err fi [Err_UnifyClash ty1 ty2 t1 t2]
+            f fi t1                     t2          = err fi [Err_UnifyClash ty1 ty2 t1 t2]
 %%]
 
 %%[4.fitsIn.SetupAndResult
-            fo  = u (emptyFI {fiUniq = uniq, fiFIOpts = opts, fiCoContra = fioCoContra opts}) ty1 ty2
+            fo  = f (emptyFI {fiUniq = uniq, fiFIOpts = opts, fiCoContra = fioCoContra opts}) ty1 ty2
 %%]
 
 %%[9.fitsIn.SetupAndResult -4.fitsIn.SetupAndResult
-            fo  = u  (emptyFI  { fiUniq = uniq, fiFIOpts = opts, fiCoContra = fioCoContra opts
-                               , fiPrElimGam = gamPushNew (fePrElimGam env) }
+            fo  = f  (emptyFI  { fiUniq = uniq, fiFIOpts = opts, fiCoContra = fioCoContra opts
+                               , fiEnv = env { fePrElimGam = gamPushNew (fePrElimGam env) } }
                      ) ty1 ty2
 %%]
 
@@ -540,13 +685,15 @@ fitsInL opts env uniq tyl1 tyl2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-prfPreds :: UID -> FIEnv -> [PredOcc] -> (CBindL,CSubst,[PredOcc])
+prfPreds :: UID -> FIEnv -> [PredOcc] -> (CBindL,CSubst,[PredOcc],[CExpr])
 prfPreds u env prL
   =  let  prL'                          = tyFixTyVars prL
-          g                             = prfPredsToProvenGraph u env prL'
-          g'                            = prfPredsPruneProvenGraph prL' g
-          (cbindL,csubst,remPrIdSet)    = prvgCode g'
-     in   (cbindL,csubst,filter (\p -> poId p `elementOf` remPrIdSet) prL)
+          g                             = trPP "PROVEN" (prfPredsToProvenGraph u env prL')
+          g'                            = trPP "PRUNE" (prfPredsPruneProvenGraph prL' g)
+          (cbindL,csubst,remPrIdSet)    = prvgCode prL' g'
+          isRem po                      = poId po `elementOf` remPrIdSet
+          remPrL                        = filter isRem prL
+     in   (cbindL,csubst,remPrL,map (\po -> (if isRem po then id else cAppSubst csubst) . CExpr_Hole . poId $ po) prL)
 
 matchRule :: UID -> Pred -> Rule -> Maybe ([PredOcc],CExpr,ProofCost)
 matchRule u pr r@(Rule rt mkEv _ cost)

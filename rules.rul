@@ -475,11 +475,11 @@ rules fit9.predSymmetric "Fitting/subsumption for predicates (symmetric)" =
 
   rule f_pred9_expl_impl =
     judge pred9 Gamma :- (Cnstr pi.1) ~> Transl.1 : _
-    judge fit9 fiopt; Gamma :- sigma.1 <= (pvar -> sigma.2) : sigma ~> Cnstr; (coe Transl.1)
+    judge fit9 fiopt; Gamma :- sigma.1 <= (pvar -> sigma.2) : sigma ~> Cnstr; coe
     cond Cnstr.1 == pvar.2 :-> pi.1 : pvar
     cond pvar "fresh"
     -
-    judge fit9 fiopt; Gamma :- (pi.1 -> sigma.1) <= (pvar.2 -> sigma.2) : (pi.1 -> sigma) ~> (Cnstr.1, Cnstr); coe
+    judge fit9 fiopt; Gamma :- (pi.1 -> sigma.1) <= (pvar.2 -> sigma.2) : (pi.1 -> sigma) ~> (Cnstr.1, Cnstr); (coe Transl.1)
 
   rule f_pred9_impl_expl =
     judge fit9 fiopt; (pi.2.i ~> Transl.pi, Gamma) :- (pvar -> sigma.1) <= sigma.2 : sigma ~> Cnstr; coe
@@ -492,7 +492,7 @@ rules fit9.predSymmetric "Fitting/subsumption for predicates (symmetric)" =
   rule f_pred9_impl_impl =
     judge fit9 fiopt; Gamma :- sigma.1 <= sigma.2 : sigma ~> Cnstr; coe
     -
-    judge fit9 fiopt; Gamma :- (pvar.1 -> sigma.1) <= (pvar.2 -> sigma.2) : (pvar.2 -> sigma) ~> (pvar.2 :-> pvar.1, Cnstr); coe
+    judge fit9 fiopt; Gamma :- (pvar.1 -> sigma.1) <= (pvar.2 -> sigma.2) : (pvar.2 -> sigma) ~> (pvar.1 :-> pvar.2, Cnstr); coe
 
 rules fit9.predAsymmetric "Fitting/subsumption for predicates (asymmetric)" =
   rule f_pred9_expl_l =
@@ -515,7 +515,7 @@ rules fit9.predAsymmetric "Fitting/subsumption for predicates (asymmetric)" =
   rule f_pred9_impl_r =
     judge fit9 fiopt; Gamma :- sigma.1 <= sigma.2 : sigma ~> Cnstr; coe
     -
-    judge fit9 fiopt; Gamma :- sigma.1 <= (pvar -> sigma.2) : sigma ~> (pvar :-> pempty, Cnstr) ; (\Transl.pi.._ -> coe)
+    judge fit9 fiopt; Gamma :- sigma.1 <= (pvar -> sigma.2) : sigma ~> (pvar :-> pempty, Cnstr) ; coe
 
 -------------------------------------------------------------------------
 -- Quantify

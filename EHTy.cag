@@ -39,7 +39,7 @@
 %%[9 hs export(Pred(..),tyPredNm,tyPred)
 %%]
 
-%%[9 hs export(tyRecExts,tyAppFunConNm,tyArrowArity,Impls(..))
+%%[9 hs export(tyRecExts,tyAppFunConNm,tyArrowArity,Impls(..),ImplsVarId)
 %%]
 
 %%[1 import(EHTyAbsSyn)
@@ -60,6 +60,10 @@ type TyVarId    = UID
 
 %%[2.TyVarId.Rest hs
 type TyVarIdL   = [TyVarId]
+%%]
+
+%%[9 hs
+type ImplsVarId    = UID
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

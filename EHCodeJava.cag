@@ -217,6 +217,7 @@ SEM CPat
 %%[9
 SEM CExpr
   | Hole        loc         .   jvSrc       =   jvNmPP (uidHNm @uid)
+  | CoeArg      loc         .   jvSrc       =   jvNmPP hsnUnknown
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
