@@ -125,6 +125,7 @@ SEM Expr
                                         , mkInfo1 "knFun" (ppTy (foTy @foKnFun))
                                         , mkInfo1 "ty" (ppTy @ty)
                                         , mkInfo1 "gam" (ppGam @arg.valGam)
+                                        , mkInfo1 "body.tyCnstr" (pp @body.tyCnstr)
                                         ]
 %%]
 

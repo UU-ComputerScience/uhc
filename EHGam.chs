@@ -161,6 +161,12 @@ valGamQuantify globTvL
   = gamMap (\(n,t) -> (n,t {vgiTy = tyQuantify (`elem` globTvL) (vgiTy t)}))
 %%]
 
+%%[9.valGamQuantify -3.valGamQuantify
+valGamQuantify :: TyVarIdL -> [PredOcc] -> ValGam -> ValGam
+valGamQuantify globTvL prL
+  = gamMap (\(n,t) -> (n,t {vgiTy = tyQuantifyPr (`elem` globTvL) TyQu_Forall prL (vgiTy t)}))
+%%]
+
 %%[4.valGamInst1Exists
 gamInst1Exists :: (v -> Ty,v -> Ty -> v) -> UID -> Gam k v -> Gam k v
 gamInst1Exists (extr,upd) u

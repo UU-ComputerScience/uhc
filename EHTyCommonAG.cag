@@ -89,30 +89,9 @@ SEM Pred
                 loc         .   appSpinePos     =   0
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Nr of arrows at left + max of it
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[100
-ATTR Ty [ nrLeftArrs: {Int}  mxLeftArrs: Int | | mxNrLeftArrs: Int ]
-
-SEM TyAGItf
-  | AGItf       ty          .   nrLeftArrs      =   0
-                            .   mxLeftArrs      =   @ty.mxNrLeftArrs
-
+%%[9
 SEM Ty
-  | App         (arg.nrLeftArrs,arg.mxLeftArrs,lhs.mxNrLeftArrs)
-                                                =   if @appIsArrow
-                                                    then  if @isArrowRoot
-                                                          then (@lhs.nrLeftArrs+1,@lhs.mxLeftArrs,@arg.mxNrLeftArrs)
-                                                          else (0,@arg.mxNrLeftArrs,@lhs.nrLeftArrs)
-                                                    else  (@lhs.nrLeftArrs,@lhs.mxLeftArrs,@lhs.nrLeftArrs)
-                loc         .   isLastArrow     =   @lhs.nrLeftArrs == @lhs.mxLeftArrs - 1
-  | Var App Quant
-                loc         .   isInArrow       =   @lhs.mxLeftArrs > 0
-                            .   isInArrowRes    =   @isInArrow && @lhs.nrLeftArrs == @lhs.mxLeftArrs
-                            .   isInArrowArg    =   @isInArrow && @lhs.nrLeftArrs < @lhs.mxLeftArrs
-  | Any Con Var lhs         .   mxNrLeftArrs    =   @lhs.nrLeftArrs
+  | App         loc         .   isArrowArg      =   @appIsArrow && @lhs.appSpinePos == 1
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

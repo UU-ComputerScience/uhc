@@ -18,7 +18,7 @@
 %%[9 import(EHDebug)
 %%]
 
-%%[9 export(PredOccId,PredOcc(..),ProofState(..))
+%%[9 export(ProofState(..))
 %%]
 
 %%[9 export(ProvenNode(..),ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,ProofCost,prvgCode)
@@ -31,25 +31,6 @@
 %%]
 
 %%[9 export(PrElimGamInfo(..),PrElimGam,peGamAdd)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Pred occurrence
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-type PredOccId
-  =  UID
-
-data PredOcc
-  =  PredOcc
-       { poPr               :: Pred
-       , poId               :: PredOccId
-       }
-  deriving Show
-
-instance PP PredOcc where
-  pp po = pp (poPr po) >|< "/" >|< pp (poId po)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -106,10 +87,6 @@ prvgAddPrNd pr uidL@(uid:_) nd g@(ProvenGraph i2n p2i)
 prvgAddNd :: UID -> ProvenNode -> ProvenGraph -> ProvenGraph
 prvgAddNd uid nd g@(ProvenGraph i2n _)
   =  g {prvgIdNdMp = addToFM i2n uid nd}
-
-instance Substitutable PredOcc where
-  s |=>  (PredOcc pr id)  = PredOcc (tyPred (s |=> Ty_Pred pr)) id
-  ftv    (PredOcc pr _)   = ftv (Ty_Pred pr)
 
 instance Show ProvenNode where
   show _ = ""

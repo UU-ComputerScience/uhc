@@ -34,6 +34,18 @@ SEM Expr
                                                             `gamPushGam` @gSubsValGam
 %%]
 
+%%[4
+SEM Expr
+  | Let         decls       .  patValGam            :=  gamPushGam  (valGamInst1Exists @lUniq @decls.gathTySigGam)
+                                                                    @lhs.valGam
+                loc         .  lQuValGam            :=  valGamInst1Exists @lUniq2 . valGamQuantify @gTyTvL $ @lSubsValGam
+%%]
+
+%%[9
+SEM Expr
+  | Let         loc         .  lQuValGam            :=  valGamInst1Exists @lUniq2 . valGamQuantify @gTyTvL @remPrOccL $ @lSubsValGam
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known type and instantiation required
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,11 +65,9 @@ SEM Decl
   | Val         loc         .  knTy                 :=  tyInstKnown @lUniq @sigTy
 %%]
 
-%%[4 -3.tyInstKnown
-SEM Expr
-  | Let         decls       .  patValGam            :=  gamPushGam  (valGamInst1Exists @lUniq @decls.gathTySigGam)
-                                                                    @lhs.valGam
-                loc         .  lQuValGam            :=  valGamInst1Exists @lUniq2 . valGamQuantify @gTyTvL $ @lSubsValGam
+%%[4.tyInstKnown
+SEM Decl
+  | Val         loc         .  knTy                 :=  @sigTy
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
