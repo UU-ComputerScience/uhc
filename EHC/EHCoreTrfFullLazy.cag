@@ -41,6 +41,9 @@ ATTR CodeAGItf [ gUniq: UID | | ]
 
 SEM CExpr
   | App         (func.gUniq,loc.lUniq)      =   mkNewUID @lhs.gUniq
+  | Lam         (body.gUniq,loc.lUniq)      =   mkNewUID @lhs.gUniq
+  | Case TupSel TupDel TupIns TupUpd
+                (expr.gUniq,loc.lUniq)      =   mkNewUID @lhs.gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -48,55 +51,95 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-mkTrf :: Int -> Int -> HsName -> CExpr -> (CExpr,LevBindL)
-mkTrf outerLev hereLev n e
-  =  if outerLev == hereLev
-     then (e,[])
-     else (CExpr_Var n,[(hereLev,(CBindPlain,[CBind_Bind n e]))])
+mkTrf :: Bool -> Int -> Int -> HsName -> CExpr -> (CExpr,LevBindL)
+mkTrf cond outerLev hereLev n e
+  =  if cond
+     then (CExpr_Var n,[(hereLev,(CBindPlain,[CBind_Bind n e]))])
+     else (e,[])
 
 mkLetTrf :: LevBindL -> CExpr -> CExpr
 mkLetTrf bs ce = foldr (\(_,(c,b)) e -> mkCExprLet c b e) ce bs
 %%]
+
+  =  if cond && (outerLev /= hereLev || hereLev <= levOuter)
+     then (CExpr_Var n,[(hereLev,(CBindPlain,[CBind_Bind n e]))])
+     else (e,[])
 
 %%[8
 ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CExpr
-  | App         loc         .   nm          =   uidHNm @lUniq
-                (lhs.cTrf,loc.levBindL)     =   if @lhs.isTopApp
-                                                then mkTrf @lhs.lev @levOf @nm @cTrf
-                                                else (@cTrf,[])
-  | Lam         lhs         .   cTrf        =   CExpr_Lam @arg (mkLetTrf @hereBindL @body.cTrf)
+  | App Lam Case TupSel TupDel TupIns TupUpd
+                loc         .   nm          =   uidHNm @lUniq
+  | App Case TupSel TupDel TupIns TupUpd
+                (lhs.cTrf,loc.levBindL)     =   mkTrf (@lhs.appTop == AppYesLet) @lhs.lev @levOf @nm @cTrf
+  | Lam         loc         .   cTrf        =   CExpr_Lam @arg (mkLetTrf @hereBindL @body.cTrf)
+                (lhs.cTrf,loc.levBindL)     =   mkTrf (@lhs.lamTop == LamYesLet) @lhs.lev @levOf @nm @cTrf
   | Let         lhs         .   cTrf        =   mkLetTrf @hereBindL @body.cTrf
 
 SEM CAlt
-  | Alt         lhs         .   cTrf        =   CAlt_Alt @pats.cTrf (mkLetTrf @hereBindL @expr.cTrf)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Is App a top App?
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-ATTR CExpr [ isTopApp: Bool | | ]
-
-SEM CModule
-  | Mod         expr        .   isTopApp    =   True
+  | Alt         loc         .   cTrf        =   CAlt_Alt @pats.cTrf (mkLetTrf @expr.levBindL @expr.cTrf)
+                            .   levBindL    =   []
 
 SEM CBind
-  | Bind        expr        .   isTopApp    =   True
-
-SEM CPatBind
-  | Bind        offset      .   isTopApp    =   True
-
-SEM CExpr
-  | App         func        .   isTopApp    =   False
-                arg         .   isTopApp    =   True
-  | * - App     loc         .   isTopApp    =   True
+  | Bind        loc         .   cTrf        =   CBind_Bind @nm (mkLetTrf @expr.levBindL @expr.cTrf)
+                            .   levBindL    =   []
+%%]
 
 SEM CAlt
-  | Alt         expr        .   isTopApp    =   True
+  | Alt         lhs         .   cTrf        =   CAlt_Alt @pats.cTrf (mkLetTrf @hereBindL @expr.cTrf)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is CExpr on top?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+data AppTop = AppYesLet | AppNoLet deriving (Eq,Ord)
+data LamTop = LamYesLet | LamNoLet deriving (Eq,Ord)
+%%]
+
+%%[8
+ATTR CExpr [ appTop: AppTop | | ]
+
+SEM CModule
+  | Mod         expr        .   appTop      =   AppYesLet
+
+SEM CBind
+  | Bind        expr        .   appTop      =   AppNoLet
+
+SEM CPatBind
+  | Bind        offset      .   appTop      =   AppYesLet
+
+SEM CExpr
+  | App         func        .   appTop      =   AppNoLet
+                arg         .   appTop      =   AppYesLet
+  | Lam Let     body        .   appTop      =   AppNoLet
+  | * - App Lam Let
+                loc         .   appTop      =   AppYesLet
+
+SEM CAlt
+  | Alt         expr        .   appTop      =   AppNoLet
+%%]
+
+%%[8
+ATTR CExpr [ lamTop: LamTop | | ]
+
+SEM CModule
+  | Mod         expr        .   lamTop      =   LamYesLet
+
+SEM CBind
+  | Bind        expr        .   lamTop      =   LamNoLet
+
+SEM CPatBind
+  | Bind        offset      .   lamTop      =   LamYesLet
+
+SEM CExpr
+  | Lam         body        .   lamTop      =   LamNoLet
+  | * - Lam     loc         .   lamTop      =   LamYesLet
+
+SEM CAlt
+  | Alt         expr        .   lamTop      =   LamYesLet
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -196,7 +239,12 @@ ATTR AllCodeNT [ | | levOf USE {`max`} {0}: Int ]
 SEM CExpr
   | Var         lhs         .   levOf       =   lookupWithDefaultFM @lhs.levMp levOuter @nm
   | App         loc         .   levOf       =   @func.levOf `max` @arg.levOf
-  | Lam         lhs         .   levOf       =   fvLev @lhs.levMp @body.fvS
+  | Case        loc         .   levOf       =   @expr.levOf `max` @alts.levOf `max` @dflt.levOf
+  | TupSel TupDel
+                loc         .   levOf       =   @expr.levOf `max` @offset.levOf
+  | TupIns TupUpd
+                loc         .   levOf       =   @expr.levOf `max` @offset.levOf `max` @fldExpr.levOf
+  | Lam         loc         .   levOf       =   fvLev @lhs.levMp @body.fvS
 
 SEM CAlt
   | Alt         lhs         .   levOf       =   fvLev @lhs.levMp @expr.fvS
@@ -224,16 +272,28 @@ ATTR AllBind [ | | bindL USE {++} {[]}: {AssocL Int CBind} ]
 
 SEM CExpr
   | App         lhs         .   levBindL    =   @arg.levBindL ++ @func.levBindL ++ @levBindL
-  | Let         loc         .   levBindL    =   @binds.levBindL ++ [(@lhs.lev,(@categ,@binds.cTrf))] ++ @body.levBindL
+  | Case        lhs         .   levBindL    =   @expr.levBindL ++ @alts.levBindL ++ @dflt.levBindL ++ @levBindL
+  | TupSel TupDel
+                lhs         .   levBindL    =   @expr.levBindL ++ @offset.levBindL ++ @levBindL
+  | TupIns TupUpd
+                lhs         .   levBindL    =   @expr.levBindL ++ @offset.levBindL ++ @fldExpr.levBindL ++ @levBindL
   | Let         (loc.hereBindL,lhs.levBindL)=   let ((hl,_):_) = @binds.bindL
-                                                    b = @binds.levBindL ++ [(hl,(@categ,assocLElts @binds.bindL))] ++ @body.levBindL
-                                                in  if @lhs.lev == levOuter then (b,[]) else ([],b)
-  | Lam         (loc.hereBindL,lhs.levBindL)=   levBindSplit @lev @body.levBindL
+                                                    b1 = @binds.levBindL
+                                                    b2 = [(hl,(@categ,assocLElts @binds.bindL))] ++ @body.levBindL
+                                                    b  = b1 ++ b2
+                                                in  if @lhs.lev == levOuter
+                                                    then (b,[])
+                                                    else if @categ == CBindStrict
+                                                         then (b2,b1)
+                                                         else ([],b)
+  | Lam         loc         .   (hereBindL,remBindL)
+                                            =   levBindSplit @lev @body.levBindL
+                lhs         .   levBindL    =   @remBindL ++ @levBindL
 
 SEM CBind
   | Bind        lhs         .   bindL       =   [(@expr.levOf,@cTrf)]
+%%]
 
 SEM CAlt
   | Alt         (loc.hereBindL,lhs.levBindL)=   levBindSplit @lev @expr.levBindL
-%%]
 
