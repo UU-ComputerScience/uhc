@@ -71,7 +71,13 @@ SEM Expr
 
 %%[4.Var
 SEM Expr
-  | Var         loc         .  fTy                  :=  @lhs.tyCnstr |=> @gTy
+  | Var         loc         .  fo                   :=  fitsIn @lhs.fiOpts @fe @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
+                            .  fTy                  :=  @lhs.tyCnstr |=> @gTy
+%%]
+
+%%[6_2
+SEM Expr
+  | Var         loc         .  fo                   :=  fitsIn (@lhs.fiOpts {fioBindToTyBind = True}) @fe @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
 %%]
 
 %%[1.Con
@@ -219,7 +225,7 @@ SEM Expr
 
 %%[4.Rest
 SEM Expr
-  | IConst CConst Var
+  | IConst CConst
                 loc         .  fo                   :=  fitsIn @lhs.fiOpts @fe @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
 %%]
 

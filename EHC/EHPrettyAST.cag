@@ -41,10 +41,14 @@ SEM Decl
                                         ]
 
 SEM Expr
-  | IConst      lhs     .  ppAST    =   ppNest ["Expr","IConst"] [@pp] []
+  | IConst      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","IConst"] [@pp] [] @info
+                loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
+                                        , mkInfo1 "ty" (ppTy @ty)
+                                        ]
   | CConst      lhs     .  ppAST    =   ppNest ["Expr","CConst"] [@pp] []
   | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Var"] [ppNm @nm] [] (@info ++ @info2 ++ @info3)
                 loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
+                                        , mkInfo1 "ty" (ppTy @ty)
                                         ]
                         .  info2    =   []
                         .  info3    =   []
@@ -108,7 +112,7 @@ SEM Decl
 
 SEM Expr
   | Var         loc     .  info2    :=  [ mkInfo1 "fTy" (ppTy @fTy)
-                                        , mkInfo1 "ty" (ppTy @ty)
+                                        , mkInfo1 "foCnstr fo" (pp (foCnstr @fo))
                                         ]
   | App         loc     .  info     :=  [ mkInfo1 "knTy" (ppTy (@lhs.tyCnstr |=> @lhs.knTy))
                                         , mkInfo1 "func.ty" (ppTy @func.ty)

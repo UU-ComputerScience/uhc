@@ -94,6 +94,11 @@ SEM Ty
   | App         loc         .   isArrowRoot     =   @appIsArrow && @isSpineRoot
 %%]
 
+%%[6_2
+SEM TyL
+  | Cons        hd          .   appSpinePos     =   0
+%%]
+
 %%[7
 SEM Ty
   | Ext         ty          .   appSpinePos     =   0

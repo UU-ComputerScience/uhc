@@ -18,6 +18,9 @@
 %%[3 hs import(EHTyQuantify,EHTyInstantiate)
 %%]
 
+%%[6_2 hs import(EHTyInconsistentBind)
+%%]
+
 %%[8 hs import(FiniteMap,EHCore,EHCoreUtils,EHDebug)
 %%]
 

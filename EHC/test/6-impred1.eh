@@ -1,6 +1,7 @@
-let const = \x y -> y
-in
-let data Test = Test (forall a . a->a)
+let t :: (a->a) -> Int
     -- test :: (a -> a) -> Test
-    test = \a -> const (a 3) (Test a)
+    test = \a -> let x1 = a 3
+                     -- x2 = a 'x'
+                     y = t a
+                 in  y
 in  3

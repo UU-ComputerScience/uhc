@@ -5931,7 +5931,10 @@ has as its effect that instantiation will be done a la Hindley-Milner.
 
 Finally, all of this is encoded as follows
 
-\chunkCmdUseMark{EHTyFitsIn.4.FIOpts}
+\savecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.FIOpts.hd}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.FIOpts.tl}
 \chunkCmdUseMark{EHTyFitsIn.4.FIOpts.defaults}
 
 \paragraph{Co- and contravariance.}
@@ -6053,6 +6056,7 @@ options |fiopt| should be made strong. This is described via a environment
 encoding this information
 
 \chunkCmdUseMark{EHTyFitsIn.4.AppSpine}
+\chunkCmdUseMark{EHTyFitsIn.4.mkStrong}
 \chunkCmdUseMark{EHTyFitsIn.4.AppSpineGam}
 \chunkCmdUseMark{EHTyFitsIn.4.appSpineGam}
 
@@ -6096,6 +6100,11 @@ parameter and some work has to be done for extracting and passing variance infor
 
 \savecolumns
 \chunkCmdUseMark{EHTyFitsIn.4.fitsIn.Prelim}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.bind}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.allowBind}
+\restorecolumns
 \chunkCmdUseMark{EHTyFitsIn.4.fitsIn.allowImpredTVBind}
 
 The fitting of quantified types uses |unquant| which removes all top level quantifiers.
@@ -6123,6 +6132,7 @@ updating the output |FIOut| are introduced:
 
 \restorecolumns
 \chunkCmdUseMark{EHTyFitsIn.4.fitsIn.foCmb}
+\restorecolumns
 \chunkCmdUseMark{EHTyFitsIn.4.fitsIn.foCmbApp}
 
 These functions straightforwardly combine fields from two different |FIOut|'s.
@@ -6135,6 +6145,8 @@ two |Ty_App|'s is the composition of all the smaller combinations.
 
 \restorecolumns
 \chunkCmdUseMark{EHTyFitsIn.4.fitsIn.Base}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.Var1}
 
 The order in which all these case are listed is now important
 as the cases for |fioBindLFirstN| and |fioBindRFirstN| will

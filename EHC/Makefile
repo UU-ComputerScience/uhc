@@ -55,7 +55,7 @@ ALL_AFP_SRC			:= $(AFP_LHS) $(AFP_RULES)
 
 
 EHC_SRC_PREFIX				:=
-EHC_LAG_FOR_HS_TY			:= $(addsuffix .lag,EHTyQuantify EHTySubst EHTyFtv EHTyPretty EHTyInstantiate )
+EHC_LAG_FOR_HS_TY			:= $(addsuffix .lag,EHTyQuantify EHTySubst EHTyInconsistentBind EHTyFtv EHTyPretty EHTyInstantiate )
 EHC_LAG_FOR_HS_CORE			:= $(addsuffix .lag,EHCoreJava EHCoreGrin EHCoreTrfRenUniq EHCoreTrfFullLazy EHCoreTrfLamLift \
 												EHCoreTrfInlineLetAlias EHCoreTrfLetUnrec EHCorePretty EHCoreSubst EHCoreTrfConstProp)
 EHC_LAG_FOR_HS_GRIN_CODE	:= $(addsuffix .lag,GrinCodePretty)
@@ -97,6 +97,7 @@ EHC_DPDS_TY_INST				:= EHTyInstantiate.ag EHTyCommonAG.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_PRETTY				:= EHTyPretty.ag EHTyCommonAG.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_QUANT				:= EHTyQuantify.ag EHTyCommonAG.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_SUBST				:= EHTySubst.ag EHTyAbsSyn.ag
+EHC_DPDS_TY_INCOB				:= EHTyInconsistentBind.ag EHTyAbsSyn.ag
 
 EHC_DPDS_CORE_TRF				:= $(EHC_DPDS_CORE_TRF_CONSTPROP) $(EHC_DPDS_CORE_TRF_RENUNQ) $(EHC_DPDS_CORE_TRF_INLLETALI) \
 									$(EHC_DPDS_CORE_TRF_FULLAZY) $(EHC_DPDS_CORE_TRF_LETUNREC) $(EHC_DPDS_CORE_TRF_LAMLIFT)
@@ -141,7 +142,7 @@ SHUFFLE_DOC_PDF		:= $(SHUFFLE_DIR)/ShuffleDoc.pdf
 
 SHUFFLE_SRC			:= $(SHUFFLE_DIR)/$(SHUFFLE_AG)
 
-SHUFFLE_ORDER		:= 1 < 2 < 3 < 4 < 5 < 6 < 7 < 8 < 9 < 10 < 11, 6 < 6_1
+SHUFFLE_ORDER		:= 1 < 2 < 3 < 4 < 5 < 6 < 7 < 8 < 9 < 10 < 11, 6 < 6_1, 6 < 6_2
 
 
 RULER				:= bin/ruler
@@ -334,7 +335,15 @@ V					:= 6_1
 VF					:= 6_1
 include $(MK_EHFILES)
 EHC_V6_1			:= $(addprefix $(VF)/,$(EHC))
-### End of Version 6
+### End of Version 6_1
+
+
+### Version 6:2
+V					:= 6_2
+VF					:= 6_2
+include $(MK_EHFILES)
+EHC_V6_2			:= $(addprefix $(VF)/,$(EHC))
+### End of Version 6_2
 
 
 ### Version 7
@@ -521,7 +530,8 @@ test-lists:
 	for v in $(VERSIONS) ; \
 	do \
 	  ehs= ; \
-	  for ((i = 1 ; i <= $${v} ; i++)) ; do ehs="$$ehs `ls $${i}-*.eh`" ; done ; \
+	  vv=`echo $$v | sed -e 's/_[0-9]//'` ; \
+	  for ((i = 1 ; i <= $${vv} ; i++)) ; do ehs="$$ehs `ls $${i}-*.eh`" ; done ; \
 	  echo "$$ehs" > $$v.lst ; \
 	done
 
@@ -587,6 +597,7 @@ MK_EHC_MKF			= \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_PRETTY),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_QUANT),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_SUBST),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_INCOB),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY),-dr) ; \
 	  $(call MK_EHC_MKF_FOR,$(GRI_DPDS_GRI),-dcfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(GRI_DPDS_GRIN_CODE_SETUP),-cfspr) ; \
