@@ -119,13 +119,12 @@ ppRunState rs
 grEvalTag :: RunState -> GrTag -> Int -> [RunVal]
 grEvalTag rs t sz
   =  case t of
-        GrTag_Lit GrTagCon           i _    ->  [RVCat NdCon,RVInt i]
+        GrTag_Lit GrTagCon           i _    ->  [RVCat NdCon,RVInt i,RVInt sz]
         GrTag_Lit GrTagHole          _ _    ->  [RVCat NdHole]
-        GrTag_Lit GrTagRec           _ _    ->  [RVCat NdRec,RVInt sz]
+        GrTag_Lit GrTagRec           _ _    ->  [RVCat NdRec,RVInt 0,RVInt sz]
         GrTag_Lit GrTagFun           i n    ->  [RVCat NdFun,rsVar rs n]
         GrTag_Lit GrTagApp           _ _    ->  [RVCat NdApp]
         GrTag_Lit (GrTagPApp nMiss)  _ _    ->  [RVCat NdPApp,RVInt nMiss]
-        GrTag_None                          ->  [RVCat NdCon,RVInt 0]
 %%]
 
 %%[8
@@ -156,7 +155,7 @@ grFFI rs f aL
         ("primDivInt",[RVInt i1,RVInt i2])              ->  return (rs,Just (RVInt (i1 `div` i2)))
         ("primMulInt",[RVInt i1,RVInt i2])              ->  return (rs,Just (RVInt (i1 * i2)))
         ("primSubInt",[RVInt i1,RVInt i2])              ->  return (rs,Just (RVInt (i1 - i2)))
-        ("primCmpInt",[RVInt i1,RVInt i2])              ->  return (rs,Just (mkRN [RVCat NdCon,RVInt c]))
+        ("primCmpInt",[RVInt i1,RVInt i2])              ->  return (rs,Just (mkRN [RVCat NdCon,RVInt c,RVInt 0]))
                                                             where c = case i1 `compare` i2 of {EQ->0; GT->1; LT->2}
         _   ->  do  { rs' <- halt rs ("No ffi for:" >#< f >-< indent 2 ("with args:" >#< (ppCommaList . map pp $ aL)))
                     ; return (rs',Nothing)
@@ -269,7 +268,7 @@ grEvalExpr rs e
           ->  case grEvalVal rs v of
                 nd@(RVNode a)
                   ->  case elems a of
-                        (RVCat NdCon:RVInt ndTg:ndAL)
+                        (RVCat NdCon:RVInt ndTg:_:ndAL)
                           ->  let  lookup t []    = Nothing
                                    lookup t (GrAlt_Alt (GrPat_Node (GrTag_Lit _ t' _) fL) e:aL)
                                      | t == t'    = Just (fL,e)
@@ -283,7 +282,7 @@ grEvalExpr rs e
                                        ->  do  { rs' <- halt rs ("No case alt for:" >#< pp nd >-< indent 2 ("in:" >#< ppGrExpr e))
                                                ; return (rs',Nothing)
                                                }
-                        (RVCat NdRec:RVInt ndSz:ndAL)
+                        (RVCat NdRec:_:RVInt ndSz:ndAL)
                           ->  return (rs',Nothing)
                               where  (GrAlt_Alt (GrPat_Node _ fL) e:_) = altL
                                      re = rsEnv rs `plusFM` listToFM (zip fL ndAL)
@@ -302,7 +301,7 @@ grPatBind re v p
           ->  case v of
                 RVNode a
                   ->  case elems a of
-                        (RVCat _:_:vfL) -> re `plusFM` listToFM (zip pfL vfL)
+                        (RVCat _:_:_:vfL) -> re `plusFM` listToFM (zip pfL vfL)
 %%]
 
 %%[8

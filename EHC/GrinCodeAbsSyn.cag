@@ -98,7 +98,6 @@ DATA GrTag
                 int             : {Int}
                 nm              : {HsName}
   | Var         nm              : {HsName}
-  | None
 %%]
 
 %%[8

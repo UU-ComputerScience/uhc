@@ -119,10 +119,10 @@ retStrict isStrict = if isStrict then GrExpr_Unit else GrExpr_Store
 
 %%[8 hs
 mkNdPApp :: HsName -> Int -> GrValL -> GrVal
-mkNdPApp f nMiss argL = GrVal_Node (GrTag_Lit (GrTagPApp nMiss) 0 (HNm "papply")) (GrVal_Var f : argL)
+mkNdPApp f nMiss argL = mkGrTagNode (GrTagPApp nMiss) 0 (HNm "papply") (GrVal_Var f : argL)
 
 mkNdApp :: HsName -> GrValL -> GrVal
-mkNdApp f argL = GrVal_Node (GrTag_Lit GrTagApp 0 (HNm "apply")) (GrVal_Var f : argL)
+mkNdApp f argL = mkGrTagNode GrTagApp 0 (HNm "apply") (GrVal_Var f : argL)
 
 mkSq :: GrExpr -> HsName -> GrExpr -> GrExpr
 mkSq e1 p e2 = GrExpr_Seq e1 (GrPat_Var p) e2
@@ -153,7 +153,7 @@ SEM CExpr
                                                           CBindRec     ->  mkSt (map (\(GrBind_Bind n _ _) -> n) @binds.grBindL)
                                                                            . mkVs @binds.grBindL
                                                                            $ @body.grExpr
-                                                                           where  h             = GrVal_Node (GrTag_Lit GrTagHole 0 hsnUnknown) []
+                                                                           where  h             = mkGrTagNode GrTagHole 0 hsnUnknown []
                                                                                   mkSt nmL e    = foldr (\n e -> GrExpr_Seq (GrExpr_Store h) (GrPat_Var n) e) e nmL
                                                                                   mkV b n n' n'' e
                                                                                                 = GrExpr_Seq b (GrPat_Var n')
@@ -187,8 +187,8 @@ SEM CExpr
                                                 in   case @func.mbTupApp of
                                                         Just t
                                                             ->  let  v  =  case t of
-                                                                             CTagNone  -> GrVal_Node grRecTag argL'
-                                                                             CTag t l  -> GrVal_Node (GrTag_Lit GrTagCon t l) argL'
+                                                                             CTagRec   -> mkGrRecNode argL'
+                                                                             CTag t l  -> mkGrConNode t l argL'
                                                                 in   wrapGr (mkE v)
                                                         Nothing
                                                             ->  let  ap = case lookupFM @lhs.lamMp funNm of
@@ -196,7 +196,7 @@ SEM CExpr
                                                                                | arity == apArity && @lhs.isStrict
                                                                                    -> GrExpr_Call funNm argL'
                                                                                | arity == apArity
-                                                                                   -> GrExpr_Store (GrVal_Node (GrTag_Lit GrTagFun 0 funNm) argL')
+                                                                                   -> GrExpr_Store (mkGrTagNode GrTagFun 0 funNm argL')
                                                                                | arity > apArity
                                                                                    -> mkE (mkNdPApp funNm (arity - apArity) argL')
                                                                                | arity < apArity && @lhs.isStrict
@@ -220,10 +220,10 @@ SEM CExpr
 ATTR CExpr   [ | | grVal USE {`const`} {GrVal_Empty}: GrVal ]
 
 SEM CExpr
-  | Tup         loc         .   grVal       =   ctag GrVal_Empty (\t l -> GrVal_Node (GrTag_Lit GrTagCon t l) []) @tag
+  | Tup         loc         .   grVal       =   ctag GrVal_Empty (\t l -> mkGrConNode t l []) @tag
   | Var         loc         .   grVal       =   GrVal_Var @nm
-  | Int         loc         .   grVal       =   grBox hsnInt (GrVal_LitInt @int)
-  | Char        loc         .   grVal       =   grBox hsnChar (GrVal_LitInt (ord @char))
+  | Int         loc         .   grVal       =   mkGrBox hsnInt (GrVal_LitInt @int)
+  | Char        loc         .   grVal       =   mkGrBox hsnChar (GrVal_LitInt (ord @char))
   | * - Int Char Var Tup
                 loc         .   grVal       =   GrVal_Empty
 %%]
@@ -239,11 +239,11 @@ SEM CBind
                                                 in   (nmRes,nmArgL,nmArgPatL)
                 lhs         .   grBindL     =   let  mkPat ty n
                                                        =  case tyConNm ty of
-                                                            t | t == hsnInt -> GrPat_Node (GrTag_Lit GrTagCon 0 t) [n]
+                                                            t | t == hsnInt -> mkGrPatConNode 0 t [n]
                                                             _               -> GrPat_Var n
                                                      mkRes ty v
                                                        =  case tyConNm ty of
-                                                            t | t == hsnInt -> \e -> GrExpr_Seq e (GrPat_Var @nmRes) (GrExpr_Unit (grBox t (GrVal_Var v)))
+                                                            t | t == hsnInt -> \e -> GrExpr_Seq e (GrPat_Var @nmRes) (GrExpr_Unit (mkGrBox t (GrVal_Var v)))
                                                             _               -> id
                                                 in   [GrBind_Bind @nm @nmArgL
                                                         (foldr  (\(n,p) e -> GrExpr_Seq (GrExpr_Eval n) p e)
@@ -281,7 +281,7 @@ ATTR CPatL   [ | | grPatL: GrPatL ]
 
 SEM CPat
   | Var         lhs         .   grPat       =   GrPat_Var @patNm
-  | Con         lhs         .   grPat       =   GrPat_Node (ctag grRecTag (GrTag_Lit GrTagCon) @tag) @binds.patBindL
+  | Con         lhs         .   grPat       =   ctag mkGrPatRecNode mkGrPatConNode @tag @binds.patBindL
   | Undef       lhs         .   grPat       =   GrPat_Empty
 
 SEM CPatL
