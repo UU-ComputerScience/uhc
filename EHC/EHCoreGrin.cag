@@ -440,7 +440,7 @@ SEM CBind
                                                             _               -> GrPat_Var n
                                                      mkRes ty v
                                                        =  case tyConNm ty of
-                                                            t | t == hsnInt -> \e -> GrExpr_Seq e (GrPat_Var @nmRes) (GrExpr_Unit (mkGrBox t (GrVal_Var v)))
+                                                            t | t == hsnInt -> \e -> GrExpr_Seq e (mkGrUnboxFFI @nmRes) (GrExpr_Unit (mkGrBox t (GrVal_Var v)))
                                                             _               -> id
                                                 in   [GrBind_Bind @nm @nmArgL
                                                         (foldr  (\(n,p) e -> GrExpr_Seq (GrExpr_Eval n) p e)

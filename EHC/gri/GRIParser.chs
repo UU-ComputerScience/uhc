@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -22,7 +22,7 @@ scanOpts
   =  defaultScanOpts
         {   scoKeywordsTxt      =   [ show hsnGrEval, show hsnGrApply
                                     , "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi"
-                                    , "C", "F", "P", "A", "R", "H"
+                                    , "C", "F", "P", "A", "R", "H", "U"
                                     ]
         ,   scoKeywordsOps      =   [ "->", "=", "+=", "-=", ":=", "-" ]
         ,   scoSpecChars        =   "();{}#/\\|,"
@@ -39,7 +39,7 @@ scanOpts
 type GRIParser       gp     =    IsParser p Token => p gp
 
 pModule         ::   GRIParser GrModule
-pModule         =    GrModule_Mod <$ pKey "module" <*> pGrNm <*> pBindL
+pModule         =    GrModule_Mod <$ pKey "module" <*> (HNm <$> pString) <*> pBindL
 
 pBindL          ::   GRIParser GrBindL
 pBindL          =    pCurly_pSemics pBind
@@ -109,7 +109,10 @@ pSplit          ::   GRIParser GrSplit
 pSplit          =    GrSplit_Sel <$> pGrNm <* pKey "=" <*> pVal
 
 pTag            ::   GRIParser GrTag
-pTag            =    (\i c n -> GrTag_Lit c i n) <$ pKey "#" <*> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> (pGrNm <|> pGrSpecialNm)
+pTag            =    pKey "#"
+                     *>  (   (\i c n -> GrTag_Lit c i n) <$> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> (pGrNm <|> pGrSpecialNm)
+                         <|> GrTag_Unboxed <$ pKey "U"
+                         )
 
 pTagVar         ::   GRIParser GrTag
 pTagVar         =    GrTag_Var <$> pGrNm

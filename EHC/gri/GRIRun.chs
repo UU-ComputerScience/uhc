@@ -1,4 +1,4 @@
-% $Id: GRI.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -345,6 +345,8 @@ grPatBind rs re v p
           ->  addToFM re n v
         GrPat_Empty
           ->  re
+        GrPat_Node GrTag_Unboxed (pf:_)
+          ->  addToFM re pf v
         GrPat_Node _ pfL
           ->  case v of
                 RVNode a
