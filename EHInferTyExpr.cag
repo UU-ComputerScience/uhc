@@ -125,6 +125,10 @@ SEM TyExpr
 %%]
 
 %%[9
+SEM TyExpr
+  | Impls       loc         .  tgi                  :=  mkTGI (Ty_Impls (Impls_Tail @lUniq)) kiStar
+                            .  ki                   =   tgiKi @tgi
+
 SEM RowTyExpr
   | Var         (loc.tgi,lhs.tyGam)                 =   tyGamLookupOrAdd @nm @lUniq @lhs.kiCnstr @lhs.tyGam
                 loc         .  fo                   =   fitsIn weakFIOpts @lUniq2 (tgiKi @tgi) kiRow
@@ -185,6 +189,11 @@ SEM TyVar
 SEM TyVars
   | Nil         lhs         .  tyL                  =   []
   | Cons        lhs         .  tyL                  =   @hd.ty : @tl.tyL
+%%]
+
+%%[9
+SEM TyExpr
+  | Impls       lhs         .  ty                   =   tgiTy @tgi
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -118,6 +118,9 @@ SEM Expr
 SEM RowTyExpr
   | Var             (lhs.gUniq,loc.lUniq,loc.lUniq2)                =   mkNewLevUID2    @lhs.gUniq
 
+SEM TyExpr
+  | Impls           (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+
 SEM PrExpr
   | Equal           (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
 

@@ -243,7 +243,7 @@ fitsIn ty1 ty2
 %%]
 
 %%[fitsInBind.2
-            bind tv t                               = (res t) {foCnstr = tv `cnstrUnit` t}
+            bind tv t                               = (res t) {foCnstr = tv `cnstrTyUnit` t}
             occurBind v t       | v `elem` ftv t    = err [Err_UnifyOccurs ty1 ty2 v t]
                                 | otherwise         = bind v t
 %%]
@@ -347,7 +347,7 @@ fitsIn opts uniq ty1 ty2
                                                , foCoContraL = cocoGamLookup t cocoGam}
             err fi e                = emptyFO {foUniq = fioUniq opts, foErrL = e}
             manyFO fos              = foldr1 (\fo1 fo2 -> if foHasErrs fo1 then fo1 else fo2) fos
-            bind fi tv t            = (res fi t) {foCnstr = tv `cnstrUnit` t}
+            bind fi tv t            = (res fi t) {foCnstr = tv `cnstrTyUnit` t}
             occurBind fi v t
                 | v `elem` ftv t    = err fi [Err_UnifyOccurs ty1 ty2 v t]
                 | otherwise         = bind fi v t

@@ -136,10 +136,15 @@ SEM Ty
 %%[9
 SEM Ty
   | Pred            loc     .   pp      =   hsnOImpl >#< @pr.pp >#< hsnCImpl
+  | Impls           loc     .   pp      =   hsnOImpl >#< @impls.pp >#< hsnCImpl
 
 SEM Pred
   | Lacks           lhs     .   pp      =   @ty.pp >|< "\\" >|< @nm
   | Equal           lhs     .   pp      =   @tvTy.pp >|< "=" >|< @ty.pp
+
+SEM Impls
+  | Tail            lhs     .   pp      =   maybe (mkDefaultTvNm TyVarCateg_Plain @tv) id (lookup @tv @lhs.tnMap)
+  | Cons            lhs     .   pp      =   @pr.pp >|< "," >|< @tl.pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -161,7 +166,7 @@ SEM Ty
 %%[9
 SEM Pred
   | Class Lacks Equal
-  					loc     .   positionalFldNmL    =   positionalFldNames
+                    loc     .   positionalFldNmL    =   positionalFldNames
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -170,39 +175,25 @@ SEM Pred
 
 %%[1.appFunPP
 ATTR Ty [ | | appFunPP: PP_Doc ^^ appArgPPL: PP_DocL ]
-
-SEM Ty
-  | App         loc     .  appArgPPL    =   @func.appArgPPL ++ [@arg.pp]
-                        .  appFunPP     =   @func.appFunPP
-  | Con Any     lhs     .  appArgPPL    =   []
-                        .  appFunPP     =   @pp
 %%]
 
-%%[2
+%%[1.appFunPP.Ty
 SEM Ty
-  | Var         lhs     .  appArgPPL    =   []
-                        .  appFunPP     =   @pp
+  | App             loc     .  appArgPPL    =   @func.appArgPPL ++ [@arg.pp]
+                            .  appFunPP     =   @func.appFunPP
+  | * - App         lhs     .  appArgPPL    =   []
+                            .  appFunPP     =   @pp
 %%]
 
-%%[3
+%%[7 -1.appFunPP.Ty
 SEM Ty
-  | Quant       lhs     .  appArgPPL    =   []
-                        .  appFunPP     =   @pp
-%%]
-
-%%[7
-SEM Ty
-  | App         loc     .  (appFunPP,appArgPPL)
-                                        :=  mkExtAppPP  (@appFunNm,@func.appFunPP,@func.appArgPPL)
-                                                        (@arg.appFunNm,@arg.appFunPP,@arg.appArgPPL,@arg.pp)
-  | Ext         loc     .  appArgPPL    =   @ty.appArgPPL ++ [ppFld "::" @positionalNm @nm @extTy.pp]
-                        .  appFunPP     =   @ty.appFunPP
-%%]
-
-%%[9
-SEM Ty
-  | Pred        lhs     .  appArgPPL    =   []
-                        .  appFunPP     =   @pp
+  | App             loc     .  (appFunPP,appArgPPL)
+                                            :=  mkExtAppPP  (@appFunNm,@func.appFunPP,@func.appArgPPL)
+                                                            (@arg.appFunNm,@arg.appFunPP,@arg.appArgPPL,@arg.pp)
+  | Ext             loc     .  appArgPPL    :=  @ty.appArgPPL ++ [ppFld "::" @positionalNm @nm @extTy.pp]
+                            .  appFunPP     :=  @ty.appFunPP
+  | * - App Ext     lhs     .  appArgPPL    :=  []
+                            .  appFunPP     :=  @pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -448,8 +448,11 @@ pTyExprPrefix   =    sem_TyExpr_Quant
 %%]
 
 %%[pTyExprPrefix.9
-                <|>  (\pr -> mkArrow tyExprAlg (sem_TyExpr_Pred pr))
-                     <$>  pPacked (pKeyw hsnOImpl) (pKeyw hsnCImpl) pPrExpr
+                <|>  mkArrow tyExprAlg
+                     <$>  pPacked  (pKeyw hsnOImpl) (pKeyw hsnCImpl)
+                                   (    sem_TyExpr_Pred   <$>  pPrExpr
+                                   <|>  sem_TyExpr_Impls  <$   pKey "..."
+                                   )
                      <*   pKeyw hsnArrow
 %%]
 
