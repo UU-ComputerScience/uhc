@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -12,7 +12,7 @@
 %%[9 hs import(Maybe,FiniteMap,UU.Pretty,EHCommon,EHTy,EHCore,EHCnstr,EHCorePretty) export(CSubstitutable(..),cAppCoeArg)
 %%]
 
-%%[9 hs export(CSubst,emptyCSubst,assocLCExprToCSubst,cnstrImplsToCSubst)
+%%[9 hs export(CSubst,emptyCSubst,uidCExprLToCSubst,poiCExprLToCSubst,cnstrImplsToCSubst)
 %%]
 
 %%[9 hs export(coeWipeWeave,coeEvalOn,coeCompose,mkImplsAppCoe, mkImplsLamCoe,mkLamBodyCoe)
@@ -41,15 +41,18 @@ cAppCoeArg ce coeArg
   =  let  t = wrap_CExpr (sem_CExpr ce) (Inh_CExpr {cSubst_Inh_CExpr = emptyCSubst, coeArg_Inh_CExpr = coeArg})
      in   (cRepl_Syn_CExpr t)
 
-assocLCExprToCSubst :: AssocL UID CExpr -> CSubst
-assocLCExprToCSubst = listToFM . assocLMapSnd CSIExpr
+uidCExprLToCSubst :: AssocL UID CExpr -> CSubst
+uidCExprLToCSubst = listToFM . assocLMapSnd CSIExpr
 
-assocLImplsToCSubst :: AssocL UID ([Coe],[Coe]) -> CSubst
-assocLImplsToCSubst = listToFM . assocLMapSnd (uncurry CSIImpls)
+poiCExprLToCSubst :: AssocL PredOccId CExpr -> CSubst
+poiCExprLToCSubst = uidCExprLToCSubst . assocLMapFst poiId
+
+uidImplsLToCSubst :: AssocL UID ([Coe],[Coe]) -> CSubst
+uidImplsLToCSubst = listToFM . assocLMapSnd (uncurry CSIImpls)
 
 cnstrImplsToCSubst :: Cnstr -> CSubst
 cnstrImplsToCSubst c
-  =  assocLImplsToCSubst
+  =  uidImplsLToCSubst
         [ (iv,(mkImplsAppCoe i,mkImplsLamCoe coeId i))
         | (iv,CIImpls i) <- cnstrToAssocL c, let (_,mbTl) = implsPredsMbTail i, isNothing mbTl
         ]
@@ -164,23 +167,25 @@ coeWipe cs l r
                          where  lce    =  eval lc
                                 rce    =  eval rc
                                 match  =  case (lce,rce) of
-                                            (CExpr_App _ (CExpr_Var  ln),CExpr_Lam rn _) | ln == rn            -> True
-                                            (CExpr_App _ (CExpr_Hole li),CExpr_Lam rn _) | show li == show rn  -> True
-                                            _                                                                  -> False
+                                            (CExpr_App _ (CExpr_Var  ln),CExpr_Lam rn CExpr_CoeArg)
+                                              | ln == rn            -> True
+                                            (CExpr_App _ (CExpr_Hole li),CExpr_Lam rn CExpr_CoeArg)
+                                              | show li == show rn  -> True
+                                            _                       -> False
                      _ -> (l,r)
           (l',r') = w (reverse l) (reverse r)
      in   (reverse l',reverse r')
 
 mkImplsAppCoe :: Impls -> [Coe]
-mkImplsAppCoe = map (\i -> mkAppCoe emptyFM [CExpr_Hole i]) . implsUIDs
+mkImplsAppCoe = map (\i -> mkAppCoe emptyFM [mkCExprPrHole i]) . implsPrIds
 
 mkImplsLamCoe :: Coe -> Impls -> [Coe]
 mkImplsLamCoe onLast is
-  =  case map (mkLamCoe . uidHNm) (implsUIDs is) of
+  =  case map (mkLamCoe . poiHNm) (implsPrIds is) of
        l@(_:_)  ->  let  h = init l
                          t = last l
                     in   h ++ [t `coeCompose` onLast]
-       l        ->  l
+       _        ->  []
 
 mkLamBodyCoe :: Coe -> [Coe] -> [Coe]
 mkLamBodyCoe onLast l
@@ -195,4 +200,32 @@ mkLamBodyCoe onLast l
 instance PP Coe where
   pp c = "<" >|< pp (c `coeEvalOn` CExpr_CoeArg) >|< ">"
 %%]
+mkImplsLamCoe :: Coe -> Impls -> [Coe]
+mkImplsLamCoe onLast is
+  =  case map (mkLamCoe . poiHNm) (implsPrIds is) of
+       l@(_:_)  ->  let  h = init l
+                         t = last l
+                    in   h ++ [t `coeCompose` onLast]
+       l        ->  [onLast]
+
+coeWipe :: CSubst -> [Coe] -> [Coe] -> ([Coe],[Coe])
+coeWipe cs l r
+  =  let  eval coe = cs `cAppSubst` (coe `coeEvalOn` CExpr_CoeArg)
+          w l r =  case (l,r) of
+                     (CoeImplApp li:ls,CoeImplLam ri:rs)
+                                    | li == ri   -> w ls rs
+                                    | otherwise  -> (l,r)
+                     (lc:ls,rc:rs)  | match      -> w ls rs
+                                    | otherwise  -> (CoeC lce : ls, CoeC rce : rs)
+                         where  lce    =  eval lc
+                                rce    =  eval rc
+                                match  =  case (lce,rce) of
+                                            (CExpr_App _ (CExpr_Var  ln),CExpr_Lam rn CExpr_CoeArg)
+                                              | ln == rn            -> True
+                                            (CExpr_App _ (CExpr_Hole li),CExpr_Lam rn CExpr_CoeArg)
+                                              | show li == show rn  -> True
+                                            _                       -> False
+                     _ -> (l,r)
+          (l',r') = w (reverse l) (reverse r)
+     in   (reverse l',reverse r')
 

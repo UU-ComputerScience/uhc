@@ -72,6 +72,11 @@ SEM Expr
   | TypeAs      loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst @expr.cexpr
 %%]
 
+%%[10
+SEM Expr
+  | DynVar      loc         .   cexpr       =   cvarUndefined
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Records, construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -141,7 +146,7 @@ SEM RecExpr
 
 %%[10
 SEM RecExpr
-  | Ext Upd     loc         .   offset          :=  @lhs.cSubst `cAppSubst` CExpr_Hole @prUid
+  | Ext Upd     loc         .   offset          :=  @lhs.cSubst `cAppSubst` mkCExprPrHole @prUid
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -157,7 +162,7 @@ SEM Expr
 
 %%[10
 SEM Expr
-  | Sel         loc         .   offset          :=  @lhs.cSubst `cAppSubst` CExpr_Hole @prUid
+  | Sel         loc         .   offset          :=  @lhs.cSubst `cAppSubst` mkCExprPrHole @prUid
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -260,7 +265,7 @@ SEM RecPatExpr
 
 %%[10
 SEM RecPatExpr
-  | Ext         loc         .   offset      :=  @lhs.cSubst `cAppSubst` CExpr_Hole @prUid
+  | Ext         loc         .   offset      :=  @lhs.cSubst `cAppSubst` mkCExprPrHole @prUid
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -90,6 +90,9 @@ scanOpts
 %%[9
                 , show hsnPrArrow, "<:"
 %%]
+%%[10
+                , show hsnDynVar
+%%]
 %%[1
                 ]
         ,   scoSpecChars        =
@@ -249,16 +252,16 @@ pAGItf          =    sem_AGItf_AGItf <$> pExpr
 
 %%[1.pDecl
 pDecls          =    foldr sem_Decls_Cons sem_Decls_Nil
-                                      <$>  pBlock pOCurly pSemi pCCurly pDecl
-pDecl           =    sem_Decl_Val     <$>  pPatExprBase  <*   pKey "="   <*> pExpr
-                <|>  sem_Decl_TySig   <$>  pVar          <*   pKey "::"  <*> pTyExpr
+                                         <$>  pBlock pOCurly pSemi pCCurly pDecl
+pDecl           =    sem_Decl_Val        <$>  pPatExprBase  <*   pKey "="   <*> pExpr
+                <|>  sem_Decl_TySig      <$>  pVar          <*   pKey "::"  <*> pTyExpr
 %%]
 %%[5.pDecl
-                <|>  sem_Decl_Data    <$   pKey "data"   <*>  pCon       <*> pTyVars
+                <|>  sem_Decl_Data       <$   pKey "data"   <*>  pCon       <*> pTyVars
                                                          <*   pKey "="   <*> pDataConstrs
 %%]
 %%[6.pDecl
-                <|>  sem_Decl_KiSig   <$>  pCon          <*   pKey "::"  <*> pKiExpr
+                <|>  sem_Decl_KiSig      <$>  pCon          <*   pKey "::"  <*> pKiExpr
 %%]
 %%[8.pDecl
                 <|>  (\conv saf imp nm sig -> sem_Decl_FFI conv saf (if null imp then show nm else imp) nm sig)
@@ -271,6 +274,10 @@ pDecl           =    sem_Decl_Val     <$>  pPatExprBase  <*   pKey "="   <*> pEx
 %%[9.pDecl
                 <|>  pDeclClass
                 <|>  pDeclInstance
+%%]
+%%[10.pDecl
+                <|>  sem_Decl_DynVal     <$>  pDynVar       <*   pKey "="   <*> pExpr
+                <|>  sem_Decl_DynTySig   <$>  pDynVar       <*   pKey "::"  <*> pTyExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -443,6 +450,9 @@ pExprBase       =    sem_Expr_IConst     <$>  pInt
 %%]
 %%[8.pExprBase
                 <|>  sem_Expr_Undefined  <$   pKey "..."
+%%]
+%%[10.pExprBase
+                <|>  sem_Expr_DynVar     <$>  pDynVar
 %%]
 
 -- pExpr
@@ -620,6 +630,7 @@ pPrExprBase     =    pPrExprClass
                 <|>  pParens pPrExpr
 %%]
 %%[10
+                <|>  sem_PrExpr_DynVar <$> pDynVar <* pKey "::" <*> pTyExpr
                 <|>  pVar <**>  (    (\s v -> sem_PrExpr_Lacks (sem_RowTyExpr_Var v) s)
                                      <$ pKey "\\" <*> pSel
 %%]
@@ -637,7 +648,7 @@ pPrExprBase     =    pPrExprClass
 
 %%[9
 pClassHead      ::   EHParser T_TyExpr
-pClassHead 		=	 pTyPrExprPrefix <*> pHd <|> pHd
+pClassHead      =    pTyPrExprPrefix <*> pHd <|> pHd
                 where pHd = sem_TyExpr_Pred <$> pPrExprClass
 
 pDeclClass      ::   EHParser T_Decl
@@ -658,4 +669,13 @@ pDeclInstance   =    pKey "instance"
                                <*   pKey "where" <*> pDecls
                           <|>  sem_Decl_InstanceIntro <$> pExpr <* pKey "<:" <*> pPrExprClass
                           )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Parser dynamic variable
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[10
+pDynVar         ::   EHParser HsName
+pDynVar         =    pKeyw hsnDynVar *> pVar
 %%]

@@ -39,7 +39,7 @@ SEM Decl
                                                                     { rulRuleTy    = tyQuantifyClosed @tyPrExpr.ty
                                                                     , rulMkEvid    = \_ -> CExpr_Var n
                                                                     , rulNmEvid    = n
-                                                                    , rulId        = @lUniq
+                                                                    , rulId        = mkPrId @lUniq
                                                                     , rulCost      = CostInt 10
                                                                     , rulFuncDeps  = @funcDeps.funcDeps
                                                                     }
@@ -50,7 +50,7 @@ SEM Decl
                                                                     , rulMkEvid    = let  o = (CExpr_Int . tyRecOffset supNm $ @clsTyRec)
                                                                                      in   \[sub] -> mkCExprSelCase emptyRCEEnv (hsnSuffix supNm "!") sub CTagRec supNm supNm o
                                                                     , rulNmEvid    = hsnUnknown
-                                                                    , rulId        = uidStart
+                                                                    , rulId        = mkPrId uidStart
                                                                     , rulCost      = CostInt (2 * costBase)
                                                                     , rulFuncDeps  = []
                                                                     }
@@ -89,9 +89,9 @@ SEM Decl
                                                     =   tyArrowArgsRes @prTyFix
                                 .   instClsNm       =   tyPredMatchNm @hdPrTyFix
                                 .   ctxtClsNmL      =   map tyPredMatchNm @ctxtPrTyFixL
-                                .   instId          =   @lUniq
+                                .   instId          =   mkPrId @lUniq
                                 .   (dictNm,inclForElim)
-                                                    =   maybe (uidHNm @instId,True) id @mbNmElim
+                                                    =   maybe (poiHNm @instId,True) id @mbNmElim
                                 .   pigi            =   fromJust (gamLookup @instClsNm @lhs.prIntroGam)
                                 .   supPrTyL        =   let  t      =  rulRuleTy . pigiRule $ @pigi
                                                              st     =  mkNewTyVarL (tyArrowArity . tyQuant $ t) @lUniq4 `mkTyArrow` @hdPrTyFix
@@ -109,8 +109,8 @@ SEM Decl
                                 .   patPrElimGam    =   (if @inclForElim then peGamAdd @instClsNm @elimRule else id) @lhs.patPrElimGam
   | InstanceIntro
                 loc             .   instClsNm       =   tyPredMatchNm @prExpr.ty
-                                .   instId          =   @lUniq
-                                .   dictNm          =   uidHNm @instId
+                                .   instId          =   mkPrId @lUniq
+                                .   dictNm          =   poiHNm @instId
                                 .   elimRule        =   mkInstElimRule @dictNm @instId 0 @prExpr.ty
                 lhs             .   patPrElimGam    =   peGamAdd @instClsNm @elimRule @lhs.patPrElimGam
                 loc             .   foPr            =   fitPredToEvid @lUniq @prExpr.ty @lhs.prIntroGam
@@ -152,4 +152,11 @@ SEM TyExpr
   | * - App AppTop Parens Pred
                 lhs             .   evTy            =   @ty
 %%]
+
+%%[10
+SEM PrExpr
+  | Lacks       lhs             .   evTy            =   tyInt
+%%]
+
+
 

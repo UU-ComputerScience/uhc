@@ -105,6 +105,11 @@ SEM Decl
   | Val         expr        .   knTy                :=  if @hasTySig  then @knTy
                                                                       else [mkImplsVar @lUniq2] `mkTyArrow` @patExpr.ty
 
+%%[10.tyInstKnown
+SEM Decl
+  | DynVal      loc         .   knTy                =   Ty_Any
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Final type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -132,6 +137,12 @@ SEM Expr
 %%[9
 SEM Expr
   | Let         loc         .   finTyCnstr          =   @tqoTyCnstr |=> @lhs.finTyCnstr
+%%]
+
+%%[10
+SEM Decl
+  | DynTySig    loc         .   finalTy             =   vgiTy . fromJust . valGamLookup @nm
+                                                        $ @lhs.finValGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -597,6 +608,11 @@ SEM Expr
 SEM Decl
   | InstanceIntro
                 expr        .  fiOpts               =   strongFIOpts
+%%]
+
+%%[10
+SEM Decl
+  | DynVal      expr        .  fiOpts               =   strongFIOpts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
