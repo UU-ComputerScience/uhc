@@ -12,7 +12,7 @@
 %%[1 hs import(List, UU.Pretty, EHCommon, EHTy, EHTyPretty, EHError) export(ppErr, ppErrs,ppErrL)
 %%]
 
-%%[9 hs import(EHCode,EHCodePretty)
+%%[9 hs import(EHCore,EHCorePretty)
 %%]
 
 %%[1 import(EHErrorAbsSyn)

@@ -9,7 +9,7 @@
 %%% Substituting holes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs import(Maybe,FiniteMap,UU.Pretty,EHCommon,EHTy,EHCode,EHCnstr,EHCodePretty) export(CSubstitutable(..),cAppCoeArg)
+%%[9 hs import(Maybe,FiniteMap,UU.Pretty,EHCommon,EHTy,EHCore,EHCnstr,EHCorePretty) export(CSubstitutable(..),cAppCoeArg)
 %%]
 
 %%[9 hs export(CSubst,emptyCSubst,assocLCExprToCSubst,cnstrImplsToCSubst)
@@ -18,7 +18,7 @@
 %%[9 hs export(coeWipeWeave,coeEvalOn,coeCompose,mkImplsAppCoe, mkImplsLamCoe,mkLamBodyCoe)
 %%]
 
-%%[9.WRAPPER import(EHCodeAbsSyn)
+%%[9.WRAPPER import(EHCoreAbsSyn)
 WRAPPER CExpr
 %%]
 

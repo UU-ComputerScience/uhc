@@ -49,7 +49,7 @@
 %%[7 import(List)
 %%]
 
-%%[9 import(Maybe,FiniteMap,Set,UU.Pretty,EHCodePretty,EHPred,EHCode,EHCodeSubst) export(predFIOpts,implFIOpts,prfPreds,foAppCoe,fitPredToEvid)
+%%[9 import(Maybe,FiniteMap,Set,UU.Pretty,EHCorePretty,EHPred,EHCore,EHCoreSubst) export(predFIOpts,implFIOpts,prfPreds,foAppCoe,fitPredToEvid)
 %%]
 
 %%[9 import(EHDebug) export(fitsIn')

@@ -12,7 +12,7 @@
 %%[9 import(Maybe,List,FiniteMap,Set,UU.Pretty)
 %%]
 
-%%[9 import(EHTy,EHTyPretty,EHTyQuantify,EHCode,EHCodePretty,EHCodeSubst,EHCommon,EHGam,EHCnstr,EHSubstitutable)
+%%[9 import(EHTy,EHTyPretty,EHTyQuantify,EHCore,EHCorePretty,EHCoreSubst,EHCommon,EHGam,EHCnstr,EHSubstitutable)
 %%]
 
 %%[9 import(EHDebug)

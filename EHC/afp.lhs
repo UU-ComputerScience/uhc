@@ -538,10 +538,10 @@ WWW home page:
 \inputEHCTex{\EHCTexVersion}{EHTyQuantify.tex}
 \inputEHCTex{\EHCTexVersion}{EHTySubst.tex}
 \inputEHCTex{\EHCTexVersion}{EHUniq.tex}
-%\inputEHCTex{\EHCTexVersion}{EHCodeAbsSyn.tex}
-%\inputEHCTex{\EHCTexVersion}{EHCode.tex}
-%\inputEHCTex{\EHCTexVersion}{EHCodePretty.tex}
-%\inputEHCTex{\EHCTexVersion}{EHCodeJava.tex}
+%\inputEHCTex{\EHCTexVersion}{EHCoreAbsSyn.tex}
+%\inputEHCTex{\EHCTexVersion}{EHCore.tex}
+%\inputEHCTex{\EHCTexVersion}{EHCorePretty.tex}
+%\inputEHCTex{\EHCTexVersion}{EHCoreJava.tex}
 %\inputEHCTex{\EHCTexVersion}{EHGenCode.tex}
 
 % rules

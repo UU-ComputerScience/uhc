@@ -9,13 +9,13 @@
 %%% Haskell importable interface to Code's Java gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(UU.Pretty,EHCommon,EHTy,EHCode) export(ppCModule)
+%%[8 hs import(UU.Pretty,EHCommon,EHTy,EHCore) export(ppCModule)
 %%]
 
 %%[9 hs import(FiniteMap,Set) export(ppCBindLMap)
 %%]
 
-%%[8.WRAPPER import(EHCodeAbsSyn)
+%%[8.WRAPPER import(EHCoreAbsSyn)
 WRAPPER CodeAGItf CExpr
 %%]
 

@@ -9,13 +9,13 @@
 %%% Haskell importable interface to Code's GRIN gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(UU.Pretty,EHCommon,EHCode,GrinCode,Char)
+%%[8 hs import(UU.Pretty,EHCommon,EHCore,GrinCode,Char)
 %%]
 
 %%[9 hs import(EHTy)
 %%]
 
-%%[8.WRAPPER import(EHCodeAbsSyn)
+%%[8.WRAPPER import(EHCoreAbsSyn)
 WRAPPER CodeAGItf
 %%]
 

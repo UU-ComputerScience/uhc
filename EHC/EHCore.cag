@@ -27,7 +27,7 @@
 %%[8 hs export(ceStrictIn)
 %%]
 
-%%[8 import(EHCodeAbsSyn)
+%%[8 import(EHCoreAbsSyn)
 DERIVING *     : Show, Eq
 %%]
 
