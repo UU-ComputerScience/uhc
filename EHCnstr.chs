@@ -22,10 +22,10 @@
 %%[2 import(UU.Pretty, EHTyPretty) export(ppCnstrV)
 %%]
 
-%%[4 export(cnstrFilter,cnstrDel,cnstrPlus)
+%%[4 export(cnstrFilterTy,cnstrDel,cnstrPlus)
 %%]
 
-%%[4 export(assocLToCnstr,cnstrToAssocTyL)
+%%[4 export(assocLToCnstr,cnstrToAssocTyL,cnstrKeys)
 %%]
 
 %%[4_2 export(cnstrMapThrTy,cnstrDelAlphaRename)
@@ -99,19 +99,22 @@ cnstrTyUnit :: TyVarId -> Ty -> Cnstr
 cnstrTyUnit v t = Cnstr (listToFM [(v,CITy t)])
 %%]
 
-%%[4.cnstrFilter
-cnstrFilter :: (TyVarId -> Ty -> Bool) -> Cnstr -> Cnstr
-cnstrFilter f (Cnstr l) = Cnstr (filter (uncurry f) l)
+%%[4.cnstrFilterTy
+cnstrFilterTy :: (TyVarId -> Ty -> Bool) -> Cnstr -> Cnstr
+cnstrFilterTy f (Cnstr l) = Cnstr (filter (uncurry f) l)
 %%]
 
-%%[9.cnstrFilter -4.cnstrFilter
+%%[9.cnstrFilterTy -4.cnstrFilterTy
 cnstrFilter :: (TyVarId -> CnstrInfo -> Bool) -> Cnstr -> Cnstr
 cnstrFilter f (Cnstr c) = Cnstr (filterFM f c)
+
+cnstrFilterTy :: (TyVarId -> Ty -> Bool) -> Cnstr -> Cnstr
+cnstrFilterTy f = cnstrFilter (\v i -> case i of {CITy t -> f v t ; _ -> True})
 %%]
 
 %%[4.cnstrDel
 cnstrDel :: TyVarIdL -> Cnstr -> Cnstr
-cnstrDel tvL c = cnstrFilter (const.not.(`elem` tvL)) c
+cnstrDel tvL c = cnstrFilterTy (const.not.(`elem` tvL)) c
 %%]
 
 %%[2.cnstrPlus
@@ -175,6 +178,16 @@ cnstrToAssocTyL :: Cnstr -> AssocL TyVarId Ty
 cnstrToAssocTyL c = [ (v,t) | (v,CITy t) <- cnstrToAssocL c ]
 %%]
 
+%%[4.cnstrKeys
+cnstrKeys :: Cnstr -> TyVarIdL
+cnstrKeys (Cnstr l) = assocLKeys l
+%%]
+
+%%[9.cnstrKeys -4.cnstrKeys
+cnstrKeys :: Cnstr -> TyVarIdL
+cnstrKeys (Cnstr fm) = keysFM fm
+%%]
+
 %%[9
 cnstrImplsUnit :: ImplsVarId -> Impls -> Cnstr
 cnstrImplsUnit v i = Cnstr (listToFM [(v,CIImpls i)])
@@ -208,7 +221,7 @@ cnstrKeys = assocLKeys . cnstrToAssocL
 
 %%[4_2
 cnstrDelAlphaRename :: Cnstr -> Cnstr
-cnstrDelAlphaRename = cnstrFilter (\_ t -> not (tyIsVar t))
+cnstrDelAlphaRename = cnstrFilterTy (\_ t -> not (tyIsVar t))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

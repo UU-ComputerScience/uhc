@@ -258,12 +258,12 @@ SEM Expr
                 arg         .   tyCnstr             :=  foCnstr @imprFoKnFun |=> @lhs.imprTyCnstr
                             .   gathPatTyCnstr      =   emptyCnstr
                 body        .   imprTyCnstr         =   @arg.tyCnstr
-                loc         .   (lArgElimValGam,elimImprTyCnstr,_)
+                loc         .   (lArgElimValGam,elimImprTyCnstr,errGam)
                                                     =   valGamElimAlts meetFIOpts @fe (ftv @lhs.valGam) @lUniq3 (@body.imprTyCnstr |=> gamTop @arg.valGam)
                 loc         .   imprBodyTyCnstr     =   @elimImprTyCnstr |=> @body.imprTyCnstr
                             .   imprTy              =   [@imprBodyTyCnstr |=> @arg.ty] `mkTyArrow` @body.imprTy
                 lhs         .   imprTyCnstr         =   @imprBodyTyCnstr
-                            .   quTyCnstr           =   @elimImprTyCnstr |=> @body.quTyCnstr
+                            .   quTyCnstr           =   @elimImprTyCnstr |=> cnstrFilterAliasAlts @elimImprTyCnstr @body.imprTyCnstr |=> @body.quTyCnstr
   | Lam         loc         .   foKnFun             :=  let  fo = fitsIn @knFunFIOpts @fe @lUniq2 (@lamKnTyCnstr |=> @funTy) (@lamKnTyCnstr |=> @lhs.knTy)
                                                         in   fo {foTy = foCnstr fo |=> @funTy}
                 body        .   tyCnstr             =   foCnstr @foKnFun |=> @lamKnTyCnstr

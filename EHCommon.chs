@@ -51,6 +51,9 @@
 %%[4 export(FIMode(..),fimOpp,fimSwapCoCo)
 %%]
 
+%%[4 export(assocLKeys)
+%%]
+
 %%[6 export(hsnStar)
 %%]
 
@@ -63,7 +66,7 @@
 %%[7 export(positionalFldNames,ppFld,mkExtAppPP,mkPPAppFun)
 %%]
 
-%%[7 export(assocLElts,assocLKeys,uidHNm)
+%%[7 export(assocLElts,uidHNm)
 %%]
 
 %%[8 import (FPath,IO,Char) export(putPPLn,putWidthPPLn,putPPFile,Verbosity(..),putCompileMsg)
@@ -505,12 +508,14 @@ assocLMapSnd :: (v -> v') -> AssocL k v -> AssocL k v'
 assocLMapSnd f = assocLMap (\k v -> (k,f v))
 %%]
 
+%%[4
+assocLKeys :: AssocL k v -> [k]
+assocLKeys = map fst
+%%]
+
 %%[7
 assocLElts :: AssocL k v -> [v]
 assocLElts = map snd
-
-assocLKeys :: AssocL k v -> [k]
-assocLKeys = map fst
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -557,8 +562,8 @@ instance Show FIMode where
   show FitUnify  = "=="
 %%]
 %%[4_1
-  show FitMeet   = "=v="
-  show FitJoin   = "=^="
+  show FitMeet   = "=^="
+  show FitJoin   = "=v="
 %%]
 
 %%[4

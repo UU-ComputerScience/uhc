@@ -1,4 +1,5 @@
-let  g   ::  (forall a . a -> (forall b . b->b) -> a) -> Int
+let  id  ::  a -> a
+     g   ::  (forall a . a -> (forall b . b->b) -> a) -> Int
      f   =   \h -> \z
                 ->  let  z1 = z 2
                          z2 = z 'x'
@@ -6,4 +7,8 @@ let  g   ::  (forall a . a -> (forall b . b->b) -> a) -> Int
                          x2  = h 'x' z
                          y   = g h
                     in   y
-in   3
+     p   ::  forall a . a -> (forall b . b->b) -> a
+     p   =   \a -> \i -> i a
+     v1  =   f p id
+     v2  =   f (\a -> \i -> i a) (\x ->x)
+in   v2

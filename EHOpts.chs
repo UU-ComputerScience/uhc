@@ -12,7 +12,7 @@
 %%[1 import(GetOpt,EHCommon) export(EHCOpts(..), defaultEHCOpts, ehcCmdLineOpts)
 %%]
 
-%%[4 export(FIOpts(..), fioSwapCoCo, fioSwapOpts, strongFIOpts, instFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)
+%%[4 import(EHTy) export(FIOpts(..), fioSwapCoCo, fioSwapOpts, strongFIOpts, instFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)
 %%]
 
 %%[4_1 export(unifyFIOpts,meetFIOpts,joinFIOpts)
@@ -27,7 +27,7 @@
 %%[8 import(List,Char) export(cmdLineTrfs,trfOptOverrides)
 %%]
 
-%%[9 import(EHTy) export(predFIOpts,implFIOpts)
+%%[9 export(predFIOpts,implFIOpts)
 %%]
 
 %%[11 import(EHTyInstantiate)
@@ -196,6 +196,9 @@ data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindR
 %%[4_1
                         ,  fioBindToTyAlts   ::  Bool
 %%]
+%%[4_2
+                        ,  fioDontBind       ::  TyVarIdL
+%%]
 %%[7.FIOpts
                         ,  fioNoRLabElimFor  ::  [HsName]
 %%]
@@ -218,6 +221,9 @@ strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindR
 %%]
 %%[4_1
                         ,  fioBindToTyAlts   =   False
+%%]
+%%[4_2
+                        ,  fioDontBind       =   []
 %%]
 %%[7.strongFIOpts
                         ,  fioNoRLabElimFor  =   []
