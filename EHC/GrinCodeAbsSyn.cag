@@ -1,0 +1,82 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abstract syntax for GRIN (Graph Reduction Intermediate Notation)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GRIN structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+DATA GrAGItf
+  | AGItf       module          : GrModule
+
+DATA GrModule
+  | Mod         baseName        : {String}
+                bindL           : GrBindL
+
+DATA GrBind
+  | Bind        nm              : {HsName}
+                argNmL          : {[HsName]}
+                expr            : GrExpr
+
+TYPE GrBindL    =   [GrBind]
+
+DATA GrExpr
+  | Seq         expr            : GrExpr
+                pat             : GrPat
+                body            : GrExpr
+  | Case        val             : GrVal
+                altL            : GrAltL
+  | App         nm              : {HsName}
+                argL            : GrValL
+  | Unit        val             : GrVal
+  | Store       val             : GrVal
+  | Fetch       nm              : {HsName}
+                mbOffset        : {Maybe Int}
+  | Update      nm              : {HsName}
+                val             : GrVal
+
+DATA GrAlt
+  | Alt         pat             : GrPat
+                expr            : GrExpr
+
+TYPE GrAltL     =   [GrAlt]
+
+DATA GrVal
+  | Node        tag             : GrTag
+                fldL            : GrValL
+  | Tag         tag             : GrTag
+  | Empty
+  | LitInt      int             : {Int}
+  | Var         nm              : {HsName}
+
+TYPE GrValL     =   [GrVal]
+
+DATA GrPat
+  | Node        tag             : GrTag
+                fldL            : GrPatL
+  | Tag         tag             : GrTag
+  | Empty
+  | LitInt      int             : {Int}
+  | Var         nm              : {HsName}
+
+TYPE GrPatL     =   [GrPat]
+
+DATA GrTag
+  | Lit         int             : {Int}
+  | Var         nm              : {HsName}
+  | None
+
+%%]
+
+%%[8
+SET AllGrNT     =   GrModule GrExpr GrBind GrBindL GrAlt GrAltL
+                    GrPat GrPatL GrTag GrVal GrValL
+%%]

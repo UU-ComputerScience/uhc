@@ -9,7 +9,7 @@
 %%% Haskell importable interface to Code's Java gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(UU.Pretty,EHCommon,EHTy,EHCode,Char) export(cexprJavaSrc)
+%%[8 hs import(UU.Pretty,EHCommon,EHTy,EHCode,Char) export(cmodJavaSrc)
 %%]
 
 %%[8.WRAPPER import(EHCodeAbsSyn)
@@ -17,8 +17,8 @@ WRAPPER CodeAGItf
 %%]
 
 %%[8 hs
-cexprJavaSrc :: CModule -> (String,PP_Doc)
-cexprJavaSrc cmod
+cmodJavaSrc :: CModule -> (String,PP_Doc)
+cmodJavaSrc cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
      in   (jvBasename_Syn_CodeAGItf t,jvSrc_Syn_CodeAGItf t)
 %%]
@@ -42,6 +42,8 @@ jvNm hn
                      , ((=='-'),const "dash")
                      , ((=='!'),const "bang")
                      , ((=='$'),const "doll")
+                     , ((=='~'),const "tilde")
+                     , ((==':'),const "colon")
                      ]
          surr x   =  "_" ++ x ++ "_"
          lookup v [] = Nothing

@@ -1,0 +1,39 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Code's Java gen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs import(UU.Pretty,EHCommon,GrinCode) export(ppGrModule)
+%%]
+
+%%[8.WRAPPER import(GrinCodeAbsSyn)
+WRAPPER GrAGItf
+%%]
+
+%%[8 hs
+ppGrModule :: GrModule -> PP_Doc
+ppGrModule cmod
+  =  let  t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf cmod)) Inh_GrAGItf
+     in   (pp_Syn_GrAGItf t)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printed code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrAGItf AllGrNT [ | | pp USE {>-<} {empty} : PP_Doc ]
+
+SEM GrModule
+  | Mod         lhs         .   pp          =   "module" >#< @baseName >-< @bindL.pp
+
+%%]
+
+
+

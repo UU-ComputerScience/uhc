@@ -51,29 +51,39 @@ AFP_PGF_TEX			:= afp-pgf.tex
 
 ALL_AFP_SRC			:= $(AFP_LHS) $(AFP_RULES)
 
-EHC_LAG_FOR_HS_TY	:= $(addsuffix .lag,EHTyQuantify EHTySubst EHTyFtv EHTyPretty EHTyInstantiate )
-EHC_LAG_FOR_HS_CODE	:= $(addsuffix .lag,EHCodeJava EHCodePretty EHCodeSubst)
-EHC_LAG_FOR_HS		:= $(addsuffix .lag,EHMainAG EHTy EHCode EHError EHErrorPretty) $(EHC_LAG_FOR_HS_TY) $(EHC_LAG_FOR_HS_CODE)
+EHC_LAG_FOR_HS_TY			:= $(addsuffix .lag,EHTyQuantify EHTySubst EHTyFtv EHTyPretty EHTyInstantiate )
+EHC_LAG_FOR_HS_CODE			:= $(addsuffix .lag,EHCodeJava EHCodeGrin EHCodeSimplify EHCodePretty EHCodeSubst)
+EHC_LAG_FOR_HS_GRIN_CODE	:= $(addsuffix .lag,GrinCodePretty)
+EHC_LAG_FOR_HS				:= $(addsuffix .lag,EHMainAG EHTy EHCode EHError EHErrorPretty GrinCode) $(EHC_LAG_FOR_HS_TY) $(EHC_LAG_FOR_HS_CODE) $(EHC_LAG_FOR_HS_GRIN_CODE)
 
-DPDS_MAIN			:= EHMainAG.ag EHInfer.ag EHInferExpr.ag \
-						EHInferPatExpr.ag EHInferTyExpr.ag EHInferKiExpr.ag EHInferData.ag \
-						EHInferCaseExpr.ag EHPretty.ag EHPrettyAST.ag EHAbsSyn.ag \
-						EHUniq.ag EHExtraChecks.ag EHGatherError.ag \
-						EHGenCode.ag \
-						EHResolvePred.ag EHInferClass.ag
-DPDS_TY				:= EHTy.ag EHTyAbsSyn.ag
-DPDS_TY_PRETTY		:= EHTyPretty.ag EHTyCommonAG.ag EHTyAbsSyn.ag
-DPDS_TY_QUANT		:= EHTyQuantify.ag EHTyCommonAG.ag EHTyAbsSyn.ag
-DPDS_TY_SUBST		:= EHTySubst.ag EHTyAbsSyn.ag
-DPDS_TY_FTV			:= EHTyFtv.ag EHTyAbsSyn.ag
-DPDS_TY_INST		:= EHTyInstantiate.ag EHTyCommonAG.ag EHTyAbsSyn.ag
-DPDS_ERR			:= EHError.ag EHErrorAbsSyn.ag
-DPDS_ERR_PRETTY		:= EHErrorPretty.ag EHErrorAbsSyn.ag
-DPDS_CODE			:= EHCode.ag EHCodeAbsSyn.ag
-DPDS_CODE_JAVA		:= EHCodeJava.ag EHCodeAbsSyn.ag
-DPDS_CODE_PRETTY	:= EHCodePretty.ag EHCodeAbsSyn.ag
-DPDS_ALL			:= $(sort $(DPDS_MAIN) $(DPDS_CODE) $(DPDS_CODE_JAVA) $(DPDS_CODE_PRETTY) $(DPDS_TY) $(DPDS_TY_PRETTY) $(DPDS_TY_QUANT) $(DPDS_TY_SUBST) $(DPDS_TY_FTV) $(DPDS_MAIN) $(DPDS_TY_INST) $(DPDS_ERR) $(DPDS_ERR_PRETTY))
-DPDS_ALL_MIN_TARG	:= $(filter-out $(EHC_LAG_FOR_HS:.lag=.ag),$(DPDS_ALL))
+DPDS_MAIN					:= EHMainAG.ag EHInfer.ag EHInferExpr.ag \
+								EHInferPatExpr.ag EHInferTyExpr.ag EHInferKiExpr.ag EHInferData.ag \
+								EHInferCaseExpr.ag EHPretty.ag EHPrettyAST.ag EHAbsSyn.ag \
+								EHUniq.ag EHExtraChecks.ag EHGatherError.ag \
+								EHGenCode.ag \
+								EHResolvePred.ag EHInferClass.ag
+DPDS_TY						:= EHTy.ag EHTyAbsSyn.ag
+DPDS_TY_PRETTY				:= EHTyPretty.ag EHTyCommonAG.ag EHTyAbsSyn.ag
+DPDS_TY_QUANT				:= EHTyQuantify.ag EHTyCommonAG.ag EHTyAbsSyn.ag
+DPDS_TY_SUBST				:= EHTySubst.ag EHTyAbsSyn.ag
+DPDS_TY_FTV					:= EHTyFtv.ag EHTyAbsSyn.ag
+DPDS_TY_INST				:= EHTyInstantiate.ag EHTyCommonAG.ag EHTyAbsSyn.ag
+DPDS_ERR					:= EHError.ag EHErrorAbsSyn.ag
+DPDS_ERR_PRETTY				:= EHErrorPretty.ag EHErrorAbsSyn.ag
+DPDS_CODE					:= EHCode.ag EHCodeAbsSyn.ag
+DPDS_CODE_JAVA				:= EHCodeJava.ag EHCodeAbsSyn.ag
+DPDS_CODE_GRIN				:= EHCodeGrin.ag EHCodeAbsSyn.ag
+DPDS_CODE_PRETTY			:= EHCodePretty.ag EHCodeAbsSyn.ag
+DPDS_CODE_SIMPL				:= EHCodeSimplify.ag EHCodeAbsSyn.ag
+DPDS_GRIN_CODE				:= GrinCode.ag GrinCodeAbsSyn.ag
+DPDS_GRIN_CODE_PRETTY		:= GrinCodePretty.ag GrinCodeAbsSyn.ag
+DPDS_ALL					:= $(sort $(DPDS_MAIN) \
+										$(DPDS_CODE) $(DPDS_CODE_JAVA) $(DPDS_CODE_GRIN) $(DPDS_CODE_PRETTY) $(DPDS_CODE_SIMPL) \
+										$(DPDS_TY) $(DPDS_TY_PRETTY) $(DPDS_TY_QUANT) $(DPDS_TY_SUBST) $(DPDS_TY_FTV) $(DPDS_TY_INST) \
+										$(DPDS_GRIN_CODE) $(DPDS_GRIN_CODE_PRETTY) \
+										$(DPDS_ERR) $(DPDS_ERR_PRETTY) \
+										)
+DPDS_ALL_MIN_TARG			:= $(filter-out $(EHC_LAG_FOR_HS:.lag=.ag),$(DPDS_ALL))
 
 EHC					:= ehc
 EHC_MAIN			:= EHC
@@ -476,7 +486,11 @@ MK_EHC_MKF			= \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_ERR_PRETTY),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_CODE),-dr) ; \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_CODE_PRETTY),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(DPDS_CODE_SIMPL),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_CODE_JAVA),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(DPDS_CODE_GRIN),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(DPDS_GRIN_CODE),-dr) ; \
+	  $(call MK_EHC_MKF_FOR,$(DPDS_GRIN_CODE_PRETTY),-cfspr) ; \
 	) > Makefile
 
 dist: $(DIST_ZIP) 
