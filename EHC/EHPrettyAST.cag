@@ -290,7 +290,8 @@ SEM FuncDeps
   | Cons        lhs     .  ppAST    =   ppNest ["FuncDeps","Cons"] [] [@hd.ppAST,@tl.ppAST]
 
 SEM Expr
-  | Let         loc     .  info     :=  [ mkInfo1 "gathSubsPredL" (ppCommaList @gathSubsPredL)
+  | Let         loc     .  info     :=  [ mkInfo1 "prElimGam" (ppGam @prElimGam)
+                                        , mkInfo1 "gathSubsPredL" (ppCommaList @gathSubsPredL)
                                         , mkInfo1 "lSubsValGam" (ppGam @lSubsValGam)
                                         , mkInfo1 "prfCBindLMap" (ppCBindLMap @prfCBindLMap)
                                         , mkInfo1 "csubst" (ppAssocL . fmToList $ @csubst)

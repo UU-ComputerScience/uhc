@@ -961,11 +961,11 @@ prfPredsPruneProvenGraph prL (ProvenGraph i2n p2i p2oi)
                                    ->  let  (cs,cm,gp)          = costOfL es costMp gPrune
                                             alts@((_,calt):_)   = head (groupSortOn snd cs)
                                             c'                  = c `costAdd` calt
-                                            (uid',gp')
+                                            (uid',gp',c'')
                                               = case alts of
-                                                    [(uida,_)]  -> (uida,prvgAddPrUids pr [uid] gp)
-                                                    _           -> (uid,prvgAddNd uid (ProvenOr pr (map fst alts) c') gp)
-                                            cm'                 = addToFM cm uid' c'
+                                                    [(uida,_)]  -> (uida,prvgAddPrUids pr [uid] gp,calt)
+                                                    _           -> (uid,prvgAddNd uid (ProvenOr pr (map fst alts) c') gp,c')
+                                            cm'                 = addToFM cm uid' c''
                                        in   (uid',c',cm',gp')
                                  ProvenShare pr e
                                    ->  let  (uid',c,cm,gp)      = costOf e costMp gPrune

@@ -17,11 +17,11 @@ SEM AGItf
 %%]
 
 %%[9
-SEM AGItf
-  | AGItf       lhs         .   cmodule     :=  CModule_Mod @lhs.baseName
-  													(mkCExprLet CBindRec (mkCBindLForUIDL @prfCBindLMap (const True)) @expr.cexpr)
 %%]
 
+SEM AGItf
+  | AGItf       lhs         .   cmodule     :=  CModule_Mod @lhs.baseName
+                                                    (mkCExprLet CBindRec (mkCBindLForUIDL @prfCBindLMap (const True)) @expr.cexpr)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -49,7 +49,11 @@ SEM Expr
   | Var Con     loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst (CExpr_Var @nm)
   | IConst      loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst (CExpr_Int @int)
   | CConst      loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst (CExpr_Char @char)
-  | Let         loc         .   cexpr       :=  mkCExprLet CBindRec (@decls.cbindL ++ mkCBindLForUIDL @prfCBindLMap (not.(`elementOf` @quantPrIdSet))) @body.cexpr
+  | Let         loc         .   cexpr       :=  mkCExprLet CBindRec
+                                                    (@decls.cbindL
+                                                        ++ mkCBindLForUIDL @prfCBindLMap (not.(`elementOf` @quantPrIdSet))
+                                                        ++ mkCBindLForUIDL @bodyPrfCBindLMap (const True))
+                                                    @body.cexpr
   | App AppImpl
                 loc         .   cexpr       :=  CExpr_App
                                                     (coeWipeWeave @lhs.finTyCnstr @lhs.cSubst @appImplsCoeL []

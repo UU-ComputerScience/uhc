@@ -192,6 +192,10 @@
 
 %format coe         	= "{\delta}"
 
+%format NYI				= "\mbox{\color{red}[Not yet implemented]}"
+
+
+
 
 %elif style == newcode
 %format ^ =

@@ -133,8 +133,11 @@ SEM Expr
   | Let         loc         .  errLetPP     :=  ppErrs (@dupErrs ++ @prfErrs)
 
 SEM AGItf
-  | AGItf       loc         .  errTopPP     =   ppErrs (@predNotPrfErrs ++ @prfErrs)
+  | AGItf       loc         .  errTopPP     =   ppErrs (@predNotPrfErrs)
 %%]
+
+SEM AGItf
+  | AGItf       loc         .  errTopPP     =   ppErrs (@predNotPrfErrs ++ @prfErrs)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gather all errors, for further processing elsewhere

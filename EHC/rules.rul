@@ -245,9 +245,9 @@ scheme expr9A
 rules expr9A "Basic implicit parameter passing" =
   rule e_pred9A = 
     judge pred9 Gamma :- pi ~> Transl.pi : _
-    judge expr9A Gamma :- e : (pi -> sigma) ~> Transl.sigma
+    judge expr9A Gamma :- e : (pi -> sigma) ~> Transl.e
     -
-    judge expr9A Gamma :- e : sigma ~> (Transl.sigma Transl.pi)
+    judge expr9A Gamma :- e : sigma ~> (Transl.e Transl.pi)
 
 scheme expr9B
   = (Gamma); (sigmak) :- (e) : (sigma) ~> (Transl)
@@ -256,9 +256,9 @@ scheme expr9B
 rules expr9B "Implicit parameter passing with expected type" =
   rule e_pred9B = 
     judge pred9 Gamma :- pi ~> Transl.pi : _
-    judge expr9B Gamma; (pvar -> sigmak) :- e : (pi -> sigma) ~> Transl.sigma
+    judge expr9B Gamma; (pvar -> sigmak) :- e : (pi -> sigma) ~> Transl.e
     -
-    judge expr9B Gamma; sigmak :- e : sigma ~> (Transl.sigma Transl.pi)
+    judge expr9B Gamma; sigmak :- e : sigma ~> (Transl.e Transl.pi)
 
 scheme expr9
   = (fiopt); (Gamma); (sigmak) :- (e) : (sigma) ~> (Cnstr); (Transl)
@@ -273,14 +273,14 @@ rules expr9.app "Type checking/inferencing for expression application with impli
     judge expr9 fiopt; Gamma; (sigma..k) :- (e.1 ^^ (# e.2 <~: pi.2 #)) : (Cnstr.2 sigma) ~> Cnstr.(2(..)1) ; (Transl.1 ^^ Transl.2)
 
   rule e_app_impl9_impl =
-    judge pred9 ((pi.i.k :~> Transl.i.k)..._,Gamma) :- (Cnstr.2 pi..a._) ~> Transl..a._ : _
-    judge expr9 instLFIOpts; Gamma; sigma..a :- e.2 : _ ~> Cnstr.2 ; Transl.2
-    judge expr9 fiopt; ((pi.i.k :~> Transl.i.k)..._,Gamma); (pvar -> tvar -> sigma.r.k) :- e.1 : (pi..a._ -> sigma..a -> sigma) ~> Cnstr.1 ; Transl.1
+    judge pred9 ((pi.i.k :~> Transl.i.k)..._,Gamma) :- (Cnstr.3 pi..a._) ~> Transl..a._ : _
+    judge expr9 instLFIOpts; ((pi.i.k :~> Transl.i.k)..._,Gamma); sigma..a :- e.2 : _ ~> Cnstr.3 ; Transl.2
+    judge expr9 fiopt; ((pi.i.k :~> Transl.i.k)..._,Gamma); (pvar -> tvar -> sigma.r.k) :- e.1 : (pi..a._ -> sigma..a -> sigma) ~> Cnstr.2 ; Transl.1
     cond (pi.i.k :~> Transl.i.k)..._ == inst.pi(pi.a.k._)
-    judge fit9 fiopt; Gamma :- (pvar..k -> tvar..k) <= sigma..k : (pi.a.k._ -> sigma.r.k) ~> _ ; _
+    judge fit9 fiopt; Gamma :- (pvar..k -> tvar..k) <= sigma..k : (pi.a.k._ -> sigma.r.k) ~> Cnstr.1 ; _
     cond pvar, pvar..k, tvar, tvar..k "fresh"
     -
-    judge expr9 fiopt; Gamma; sigma..k :- (e.1 ^^ e.2) : (Cnstr.2 sigma) ~> Cnstr.(2(..)1) ; (\Transl.i.k._ -> Transl.1 ^^ Transl..a._ ^^ Transl.2)
+    judge expr9 fiopt; Gamma; sigma..k :- (e.1 ^^ e.2) : (Cnstr.3 sigma) ~> Cnstr.(3(..)1) ; (\Transl.i.k._ -> Transl.1 ^^ Transl..a._ ^^ Transl.2)
 
 rules expr9.part2 "Type checking/inferencing for lambda expressions with implicit parameters" =
   rule e_lam9 =
