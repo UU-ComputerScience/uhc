@@ -62,7 +62,7 @@ DERIVING *     : Show, Eq, Ord
 %%% Misc types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs
+%%[1.TyL hs
 type TyL        = [Ty]
 %%]
 
@@ -72,6 +72,9 @@ type TyVarId    = UID
 
 %%[2.TyVarId.Rest hs
 type TyVarIdL   = [TyVarId]
+%%]
+
+%%[6_2 -1.TyL
 %%]
 
 %%[9 hs

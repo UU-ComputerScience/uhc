@@ -26,6 +26,16 @@ tyAppCnstr cnstr ty
      in   repl_Syn_TyAGItf t
 %%]
 
+%%[3 hs
+type IsBound = TyVarId -> Bool
+
+tvRepl :: TyVarId -> Cnstr -> IsBound -> Ty -> Ty
+tvRepl tv c isBound repl
+  =  case (cnstrTyLookup tv c) of
+		Just t | not (isBound tv)  -> t
+		_                          -> repl
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Apply substitution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,16 +50,19 @@ SEM Ty
 %%]
 
 %%[3
-ATTR AllTy [ isBound: {TyVarId -> Bool} | | ]
+ATTR AllTy [ isBound: IsBound | | ]
 
 SEM TyAGItf
   | AGItf           ty      .   isBound     =   const False
 
 SEM Ty
-  | Var             lhs     .   repl        :=  case (cnstrTyLookup @tv @lhs.cnstr) of
-                                                    Just t | not (@lhs.isBound @tv)  -> t
-                                                    _                                -> @repl
+  | Var             lhs     .   repl        :=  tvRepl @tv @lhs.cnstr @lhs.isBound @repl
   | Quant           ty      .   isBound     =   (\v -> v == @tv || @lhs.isBound v)
+%%]
+
+%%[6_2
+SEM Ty
+  | Bind            lhs     .   repl        =   tvRepl @tv @lhs.cnstr @lhs.isBound @repl
 %%]
 
 %%[9

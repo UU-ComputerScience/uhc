@@ -68,6 +68,14 @@ DATA TyQu
   | KiExists
 %%]
 
+%%[6_2
+DATA Ty
+  | Bind        tv              : {TyVarId}
+                tyL             : TyL
+
+TYPE TyL        =   [Ty]
+%%]
+
 %%[7
 DATA Ty
   | Ext         ty              : Ty
@@ -126,6 +134,11 @@ SET AllAllTy    = AllTy TyVarCateg
 
 %%[4.AllTy -3.AllTy
 SET AllTy       = Ty
+SET AllAllTy    = AllTy TyVarCateg TyQu
+%%]
+
+%%[6_2.AllTy -4.AllTy
+SET AllTy       = Ty TyL
 SET AllAllTy    = AllTy TyVarCateg TyQu
 %%]
 

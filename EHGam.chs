@@ -42,6 +42,9 @@
 %%[6 export(mkTGI)
 %%]
 
+%%[6_2 import(EHTyInconsistentBind) export(valGamElimBinds)
+%%]
+
 %%[7 export(mkTGIData)
 %%]
 
@@ -187,12 +190,23 @@ valGamQuantify :: TyVarIdL -> ValGam -> ValGam
 valGamQuantify globTvL = valGamMapTy (\t -> tyQuantify (`elem` globTvL) t)
 %%]
 
-%%[9.valGamQuantify -3.valGamQuantify
+%%[6
 gamUnzip :: Gam k (v1,v2) -> (Gam k v1,Gam k v2)
 gamUnzip (Gam ll)
   =  let  (ll1,ll2) = unzip . map (unzip . map (\(n,(v1,v2)) -> ((n,v1),(n,v2)))) $ ll
      in   (Gam ll1,Gam ll2)
+%%]
 
+%%[6_2.valGamElimBinds
+valGamElimBinds :: ValGam -> (ValGam,Gam HsName ErrL)
+valGamElimBinds g
+  =  let  g' = gamMapElts  (\vgi ->  let  (t,e) = tyElimBinds (vgiTy vgi)
+                                     in   (vgi {vgiTy = t},e)
+                           ) g
+     in   gamUnzip g'
+%%]
+
+%%[9.valGamQuantify -3.valGamQuantify
 valGamQuantify :: TyVarIdL -> [PredOcc] -> ValGam -> (ValGam,Gam HsName TyQuOut)
 valGamQuantify globTvL prL g
   =  let  g' = gamMapElts  (\vgi ->  let  tqo = tyQuantifyPr defaultTyQuOpts (`elem` globTvL) TyQu_Forall prL (vgiTy vgi)

@@ -88,7 +88,7 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.pp
-ATTR TyAGItf AllTy [ | | pp: PP_Doc ]
+ATTR TyAGItf AllTy [ | | pp USE {>#<} {empty}: PP_Doc ]
 
 SEM Ty
   | Con             loc     .   pp      =   ppCon @nm
@@ -131,6 +131,16 @@ SEM TyQu
 SEM TyQu
   | KiForall KiExists
                     lhs     .   pp      =   text (showTyQu @self)
+%%]
+
+%%[6_2
+SEM Ty
+  | Bind            loc     .   pp      =   ppParNeed  @parNeed @lhs.parNeed
+                                                       (maybe (pp @tv) id (lookup @tv @lhs.tnMap) >|< ppListSep "[" "]" "/" @tyL.ppL)
+
+SEM TyL [ | | ppL: PP_DocL ]
+  | Nil             lhs     .   ppL     =   []
+  | Cons            lhs     .   ppL     =   @hd.pp : @tl.ppL
 %%]
 
 %%[7
@@ -233,6 +243,15 @@ SEM Ty
 %%[3
 SEM Ty
   | Quant       (loc.parNeed,ty.parNeed)        =   (ParNotNeeded,ParNotNeeded)
+%%]
+
+%%[6_2
+SEM TyL
+  | Cons        hd      .   parNeed             =   ParNotNeeded
+                        .   parNeedL            =   []
+
+SEM Ty
+  | Bind        loc     .   parNeed             =   ParNotNeeded
 %%]
 
 %%[7

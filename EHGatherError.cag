@@ -127,6 +127,12 @@ SEM Expr
                 lhs         .  errL         =   []
 %%]
 
+%%[6_2
+SEM Expr
+  | Let         loc         .  gamErrL      =   concat . map (\(n,e) -> mkNestErr (pp n) e) . gamToAssocL $ @errGam
+                loc         .  errLetPP     :=  ppErrs (@dupErrs ++ @gamErrL)
+%%]
+
 %%[9
 SEM Decl
   | Instance    loc         .  lErrL        =   @ctxtPrExprs.errL ++ @prExpr.errL ++ @nmErrs ++ @predNotPrfErrs ++ @supPrfErrs ++ @prfErrs
@@ -144,9 +150,6 @@ SEM Expr
 SEM AGItf
   | AGItf       loc         .  errTopPP     =   ppErrs (@predNotPrfErrs)
 %%]
-
-SEM AGItf
-  | AGItf       loc         .  errTopPP     =   ppErrs (@predNotPrfErrs ++ @prfErrs)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gather all errors, for further processing elsewhere

@@ -15,15 +15,15 @@
 
 %%[1.Base
 DATA Err
-  | UnifyClash          ty1        : Ty                  ^^  ty2        : Ty
-                        ty1detail  : Ty                  ^^  ty2detail  : Ty
+  | UnifyClash          ty1        : {Ty}                ^^  ty2        : {Ty}
+                        ty1detail  : {Ty}                ^^  ty2detail  : {Ty}
   | NamesNotIntrod      nmL        : {[HsName]}
 %%]
 
 %%[1.Rest
 DATA Err
   | NamesDupIntrod      nmL        : {[HsName]}
-  | PatArity            ty         : Ty                  ^^  arity      : {Int}
+  | PatArity            ty         : {Ty}                ^^  arity      : {Int}
   | NestedIn            wher       : {PP_Doc}            ^^  errL       : ErrL
 
 TYPE ErrL       = [Err]
@@ -36,14 +36,20 @@ DATA Err
 
 %%[2 -1.MissingSig
 DATA Err
-  | UnifyOccurs         ty1        : Ty                  ^^  ty2        : Ty
-                        tvar       : {TyVarId}           ^^  ty2detail  : Ty
+  | UnifyOccurs         ty1        : {Ty}                ^^  ty2        : {Ty}
+                        tvar       : {TyVarId}           ^^  ty2detail  : {Ty}
+%%]
+
+%%[6_2
+DATA Err
+  | InconsistentBind    ty         : {Ty}                ^^  tvar       : {TyVarId}
+                        tyL        : {TyL}
 %%]
 
 %%[7
 DATA Err
-  | MissingRowLabels    nmL        : {[HsName]}          ^^  ty         : Ty
-  | TooManyRowLabels    nmL        : {[HsName]}          ^^  ty         : Ty
+  | MissingRowLabels    nmL        : {[HsName]}          ^^  ty         : {Ty}
+  | TooManyRowLabels    nmL        : {[HsName]}          ^^  ty         : {Ty}
 %%]
 
 %%[8
@@ -56,6 +62,6 @@ DATA Err
 DATA Err
   | NotProvenPreds      preds      : {[PredOcc]}
   | OverlapPreds        overl      : {AssocL Pred [CExpr]}
-  | TyHasFreeTVars      ty         : Ty
+  | TyHasFreeTVars      ty         : {Ty}
 %%]
 

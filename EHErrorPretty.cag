@@ -106,6 +106,15 @@ SEM Err
                                                         @ty1 @ty2 (mkTyVar @tvar) @ty2detail
 %%]
 
+%%[6_2
+SEM Err
+  | InconsistentBind    lhs     .  pp   =   ppMsgErr    "Inconsistent binds for tvar"
+                                                        (    "in type :" >#< pp @ty
+                                                         >-< "for tvar:" >#< pp @tvar
+                                                         >-< "types   :" >#< vlist (map ppTy @tyL)
+                                                        )
+%%]
+
 %%[7
 SEM Err
   | MissingRowLabels    lhs     .  pp   =   ppMsgErr    "Missing label(s) in row"
