@@ -132,9 +132,10 @@ pAGItf
                                                <*> (Just <$ pKey "." <*> pNm' <|> pSucceed Nothing)
                                                <*> pString <* pKey "=" <*> pRules
         pRules              =   pFoldr (sem_Rules_Cons,sem_Rules_Nil) pRule
-        pRule               =   sem_Rule_Rule
-                                <$> (True <$ pKey "&" <|> pSucceed False)
-                                <*  pKey "rule" <*> pNm <* pKey "=" <*> pRExprs <* pKey "-" <*> pRExprs
+        pRule               =   ((,) <$> (True <$ pKey "&" <|> pSucceed False) <*  pKey "rule" <*> pNm <* pKey "=")
+                                <**> (   (\pre post (hor,nm) -> sem_Rule_Rule hor nm pre post) <$> pRExprs <* pKey "-" <*> pRExprs
+                                     <|> (\alias (hor,nm) -> sem_Rule_RuleUse hor nm alias) <$ pKey "rule" <*> pList1Sep (pKey ".") pNm'
+                                     )
         pNm                 =   pVarid <|> pConid
         pNm'                =   pNm <|> pInteger
         pSym                =   pVarsym <|> pConsym <|> (\q n -> q ++ n ++ q) <$> pKey "`" <*> pNm <* pKey "`"
@@ -192,6 +193,9 @@ DATA Rule
                         nm          : {String}
                         pre         : RExprs
                         post        : RExprs
+  | RuleUse             horizontal  : {Bool}
+                        nm          : {String}
+                        nmAlias     : {[String]}
 
 TYPE Rules = [Rule]
 
@@ -390,6 +394,8 @@ SEM RExpr
 -------------------------------------------------------------------------
 
 {
+rulesCmdPre = "rules"
+
 mkLaTeXNm :: String -> String
 mkLaTeXNm = map (\c -> if isAlphaNum c then c else '-')
 
@@ -433,7 +439,7 @@ SEM AGItf
 
 SEM Decl
   | Judge       lhs     .   ppLaTeX     =   "%%" >#< @nm >#< "=" >#< ppJTy @jExpr.ty >#< "=" >#< ppJTy @jExprRepl.ty
-  | Rules       lhs     .   ppLaTeX     =   let nm = ppDots (["rules",@nm] ++ maybeToList @mbNmSuff)
+  | Rules       lhs     .   ppLaTeX     =   let nm = ppDots ([rulesCmdPre,@nm] ++ maybeToList @mbNmSuff)
                                                 rs = map (\(n,h,c) -> (ppDots [nm,n],h,c)) @rules.ppLaTeXMp
                                                 ru = concat . map (\(n,h,_) -> [text (if h then "\\qquad" else "\\\\"),mkCmdNmUse n]) $ rs
                                                 rschm = ensureTeXMath (mkInLhs2Tex @ppFmt)
@@ -511,6 +517,11 @@ SEM Rule
                                                     >-< ppListSepVV "{%" "}" "\\\\" @pre.ppLaTeXL
                                                     >-< ppListSepVV "{%" "}" "\\\\"  @post.ppLaTeXL
                                              in (r,[(pp n,@horizontal,r)])
+  | RuleUse     lhs     .   (ppLaTeX,ppLaTeXMp)
+                                        =   let n = mkLaTeXNm @nm
+                                                r = mkCmdNmUse (ppDots (rulesCmdPre : map mkLaTeXNm @nmAlias))
+                                             in (r,[(pp n,@horizontal,r)])
+
 SEM Rules
   | Nil         lhs     .   ppLaTeXL    =   []
   | Cons        lhs     .   ppLaTeXL    =   @hd.ppLaTeX : @tl.ppLaTeXL
