@@ -125,7 +125,7 @@ SEM Err
                                                         @ty1 @ty2 @fiMode (mkTyVar @tvar) @ty2detail @fiModeD
 %%]
 
-%%[4_1
+%%[4_2
 SEM Err
   | InconsistentAlts    lhs     .  pp   =   ppMsgErr    "Inconsistent type alternatives for type variable"
                                                         (    "in type :" >#< pp @ty

@@ -1,12 +1,12 @@
 %% configuration
 
-%if forPHD || forAfpTRUU1 || onlyCurrentWork
+%if storyPHD || storyAfpTRUU1 || onlyCurrentWork
 %let inclChunkMarks	= True
 %else
 %let inclChunkMarks	= False
 %endif
 
-%if forESOP05
+%if storyExplImpl
 %let chapAsArticle	= True
 %else
 %let chapAsArticle	= False

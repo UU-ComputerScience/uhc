@@ -12,7 +12,7 @@
 %%[4 import(List,EHCommon,EHOpts,EHTy,EHTyFitsIn,EHError,EHGam,EHCnstr,EHSubstitutable)
 %%]
 
-%%[4_1 import(EHTyElimAlts) export(valGamElimAlts)
+%%[4_2 import(EHTyElimAlts) export(valGamElimAlts)
 %%]
 
 %%[11 import(EHTyElimEqual) export(valGamElimEqual)
@@ -36,20 +36,6 @@ valGamElimAlts opts env globTvL uniq gCnstr g
           c2 = cnstrDelAlphaRename c
           c3 = cnstrKeys c2 `cnstrDel` cnstrFilterAlphaRename gCnstr
      in   (g',c2 |=> c3,eg)
-%%]
-
-%%[4_3.valGamElimAlts
-valGamElimAlts :: FIOpts -> FIEnv -> UID -> ValGam -> (ValGam,Cnstr,Gam HsName ErrL)
-valGamElimAlts opts env uniq g
-  =  let  (g',(c,eg,_))
-            =  gamMapThr
-                  (\(n,vgi) (c,eg,u)
-                  	->  let  (u',u1) = mkNewLevUID u
-                  	         (t,ce,e) = tyElimAlts (mkElimAltsWrap env) opts u1 (c |=> vgiTy vgi)
-                  	    in   ((n,vgi {vgiTy = t}),(ce |=> c,gamAdd n e eg,u'))
-                  )
-                  (emptyCnstr,emptyGam,uniq) g
-     in   (g',c,eg)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

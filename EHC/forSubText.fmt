@@ -1,0 +1,23 @@
+%if style == poly
+
+%include greek_indices.fmt
+%include indices.fmt
+%include more_indices.fmt
+% include lang.fmt
+% include types.fmt
+% include judgments.fmt
+%endif
+
+%include afp.fmt
+
+% All sorts of predefined formatting directives ...
+
+% include spacing.fmt
+
+% Better formatting of code blocks ...
+
+%if not asSlides
+%include kscode.fmt
+%endif
+
+

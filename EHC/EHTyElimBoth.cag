@@ -9,14 +9,14 @@
 %%% Haskell importable interface to eliminate 'Both' types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1 hs import(EHCommon,EHTy,EHCnstr,EHSubstitutable) export(tyElimBoth)
+%%[4_2 hs import(EHCommon,EHTy,EHCnstr,EHSubstitutable) export(tyElimBoth)
 %%]
 
-%%[4_1.WRAPPER import(EHTyAbsSyn)
+%%[4_2.WRAPPER import(EHTyAbsSyn)
 WRAPPER TyAGItf
 %%]
 
-%%[4_1 hs
+%%[4_2 hs
 tyElimBoth :: TyVarIdL -> Ty -> (Ty,Cnstr)
 tyElimBoth elimTvL ty
   =  let  t =  wrap_TyAGItf
@@ -29,7 +29,7 @@ tyElimBoth elimTvL ty
 %%% Tvars to eliminate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1
+%%[4_2
 ATTR AllAllTy TyAGItf [ elimTvL: TyVarIdL | | ]
 %%]
 
@@ -37,7 +37,7 @@ ATTR AllAllTy TyAGItf [ elimTvL: TyVarIdL | | ]
 %%% Replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1
+%%[4_2
 ATTR AllAllTy [ | | repl: SELF  ]
 ATTR TyAGItf  [ | | repl: Ty    ]
 
@@ -49,7 +49,7 @@ SEM Ty
 %%% Unification of all binds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1
+%%[4_2
 ATTR AllAllTy [ | | replExpose: SELF  ]
 ATTR AllAllTy [ | cnstr: Cnstr | ]
 ATTR TyAGItf  [ | | cnstr: Cnstr ]

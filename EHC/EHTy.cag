@@ -30,16 +30,13 @@
 %%[4 hs import(Maybe) export(tyVar) 
 %%]
 
-%%[4_1 hs export(tyIsQu,tyIsVar,tyMbVar) 
+%%[4_2 hs export(tyIsQu,tyIsVar,tyMbVar) 
 %%]
 
-%%[4_1 hs export(TyPlus(..),TyPlusL,tyPlusTy) 
+%%[4_2 hs export(TyPlus(..),TyPlusL,tyPlusTy) 
 %%]
 
 %%[4_2 hs export(TyHardness(..)) 
-%%]
-
-%%[4_3 hs export(tyAltsTy) 
 %%]
 
 %%[6 hs export(kiStar) 
@@ -95,7 +92,7 @@ type TyVarId    = UID
 type TyVarIdL   = [TyVarId]
 %%]
 
-%%[4_1 -1.TyL
+%%[4_2 -1.TyL
 %%]
 
 %%[9 hs
@@ -205,7 +202,7 @@ showTyQu  TyQu_KiExists   =  "Exists"
 %%% Properties of type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1 hs
+%%[4_2 hs
 tyMbVar :: Ty -> Maybe TyVarId
 tyMbVar t = case t of {Ty_Var v _ -> Just v ; _ -> Nothing}
 
@@ -399,12 +396,7 @@ tyVar (Ty_Var v _)  = v
 tyVar _             = uidStart
 %%]
 
-%%[4_1.tyPlusTy hs
-tyPlusTy :: TyPlus -> Ty
-tyPlusTy (TyPlus_Ty t) = t
-%%]
-
-%%[4_2.tyPlusTy -4_1.tyPlusTy hs
+%%[4_2.tyPlusTy hs
 tyPlusTy :: TyPlus -> Ty
 tyPlusTy (TyPlus_Ty t _) = t
 %%]
@@ -412,11 +404,6 @@ tyPlusTy (TyPlus_Ty t _) = t
 %%[9_1.tyPlusTy -4_1.tyPlusTy hs
 tyPlusTy :: TyPlus -> Ty
 tyPlusTy (TyPlus_Ty t _) = t
-%%]
-
-%%[4_3 hs
-tyAltsTy :: Ty -> Ty
-tyAltsTy t = case t of {Ty_Alts _ tl -> tyPlusTy (last tl); _ -> t}
 %%]
 
 %%[7.tyProdArgs -1.tyProdArgs hs
