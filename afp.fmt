@@ -87,12 +87,17 @@
 %format Gammab      = Gamma "^{b}"
 
 %format sigmak      = sigma "^{k}"
+%format sigman      = sigma "_{n}"
 %format sigmapk     = sigma "_{p}^{k}"
 %format sigmaq      = sigma "^{q}"
 %format sigmab      = sigma "^{b}"
 %format sigmal      = sigma "^{l}"
 %format sigmar      = sigma "^{r}"
 %format sigma'
+%format sigma1
+%format sigma2
+%format sigma3
+%format sigma4
 
 %format Cnstr       = "\mathcal{C}"
 %format Cnstrp		= Cnstr "^{p}"
@@ -132,10 +137,9 @@
 %format instc		= inst "_{" tvarc "}"
 %format instE		= inst "^{" exists "}"
 
-%format sigma1
-%format sigma2
-%format sigma3
-%format sigma4
+%format lbl			= l
+%format lbln		= lbl "_{n}"
+%format lbl1
 
 %format // 	    		= "/"
 %format /=/ 	    	= "{\eqcirc}"

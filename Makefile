@@ -84,7 +84,7 @@ AGCC				= cd `dirname $2` ; $(AGC) $1 `basename $2`
 AFP_FMT_OTHER		:= lag2TeX.fmt pretty.fmt parsing.fmt
 
 # type rules, in ruler format
-AFP_RULES			:= rules.rul
+AFP_RULES			:= rules.rul rules2.rul
 AFP_RULES_TEX		:= $(AFP_RULES:.rul=.tex)
 
 # pictures in pgf format
@@ -314,13 +314,13 @@ SHUFFLE_LHS_TEX		= \
 	$(call SHUFFLE_LHS,$1,$2,--latex --xref-except=shuffleXRefExcept,$(LHS2TEX) $(LHS2TEX_POLY_MODE),`dirname $2`,$4)
 #	$(call SHUFFLE_LHS,$1,$2,--latex --index --xref-except=shuffleXRefExcept,$(LHS2TEX) --poly,$3,$4)
 
-# RULER_LHS(src file, dst file, lhs2tex)
+# RULER_LHS(base, src file, dst file, lhs2tex)
 RULER_LHS		= \
-	$(RULER) --latex $1 | $3 > $2
+	$(RULER) --latex --base $1 $2 | $4 > $3
 
-# RULER_LHS_TEX(src file, dst file)
+# RULER_LHS_TEX(base, src file, dst file)
 RULER_LHS_TEX		= \
-	$(call RULER_LHS,$1,$2,$(LHS2TEX) --poly)
+	$(call RULER_LHS,$1,$2,$3,$(LHS2TEX) --poly)
 
 
 ### Version 1
@@ -490,7 +490,7 @@ $(AFP_STY): afp.lsty Makefile
 	$(call LHS2TEX_POLY_3,$<,$@)
 
 $(AFP_RULES_TEX): %.tex: %.rul $(RULER) $(AFP_FMT)
-	$(call RULER_LHS_TEX,$<,$@)
+	$(call RULER_LHS_TEX,$(*F),$<,$@)
 
 agprimer: $(D_BUILD_BIN)/repminag $(D_BUILD_BIN)/repminhs $(D_BUILD_BIN)/expr
 
