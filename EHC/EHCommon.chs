@@ -75,7 +75,7 @@
 %%[8 export(groupSortOn)
 %%]
 
-%%[9 export(hsnOImpl,hsnCImpl)
+%%[9 export(hsnOImpl,hsnCImpl,hsnIsUnknown)
 %%]
 
 %%[9 export(showPP,ppPair)
@@ -182,6 +182,10 @@ hsnUndefined                        =   HNm "undefined"
 %%[9
 hsnOImpl                            =   HNm "(#"
 hsnCImpl                            =   HNm "#)"
+%%]
+
+%%[9
+hsnIsUnknown                        =   (==hsnUnknown)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

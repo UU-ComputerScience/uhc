@@ -77,11 +77,13 @@ SEM Expr
                             .   knPrUid             =   @lUniq
                             .   knPrL               =   [PredOcc @knPr @knPrUid]
                             .   prElimGam           =   peGamAddKnPr @arg.topNm @knPrUid @knPr (gamPushNew @lhs.prElimGam)
+                            .   prfFE               =   emptyFE {fePrElimGam = @prElimGam, feDontBind = ftv @knPr}
   | AppTop Lam  loc         .   (knPrL,knImplsTl)   =   implsPredsTail . tyImpls $ @imSubsTy
                             .   prElimGam           =   foldr (\p g -> peGamAddKnPr (uidHNm (poId p)) (poId p) (poPr p) g) (gamPushNew @lhs.prElimGam) @knPrL
+                            .   prfFE               =   emptyFE {fePrElimGam = @prElimGam}
   | AppTop Lam LamImpl
                 loc         .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs)
-                                                    =   prfPreds @lUniq3 (emptyFE {fePrElimGam = @prElimGam}) @inKnGathPrL
+                                                    =   prfPreds @lUniq3 @prfFE @inKnGathPrL
                             .   gathPredL           =   @remPrfPrL ++ @remGathPrL
 
 SEM Decl
