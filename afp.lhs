@@ -8960,6 +8960,7 @@ the result are assumed via the context and thus passed as as arguments of a lamb
 The translation of the application reflects this.
 
 \rulerCmdUse{rules.expr9.app}
+\rulerCmdUse{rules.expr9X.app}
 \rulerCmdUse{rules.expr9.part2}
 
 

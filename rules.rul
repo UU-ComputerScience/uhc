@@ -31,7 +31,7 @@ rules expr1A "Type rules for expressions" =
     judge expr1A (i :-> sigma..i, Gamma) :- e..i : sigma..i
     judge expr1A (i :-> sigma..i, Gamma) :- e : sigma..e
     -
-    judge expr1A Gamma :- (let i :: sigma..i; i (=) e..i in e) : sigma..e
+    judge expr1A Gamma :- ((let) i :: sigma..i; i (=) e..i (in) e) : sigma..e
   
   rule e_ident1 =
     cond (i :-> sigma) `elem` Gamma
@@ -69,7 +69,7 @@ rules expr1B "Type checking for expression (checking variant)" =
     judge expr1B (i :-> sigma..i, Gamma); sigma..i :- e..i : _
     judge expr1B (i :-> sigma..i, Gamma); sigma..k :- e : sigma..e
     -
-    judge expr1B Gamma; sigma..k :- (let i :: sigma..i; i (=) e..i in e) : sigma..e
+    judge expr1B Gamma; sigma..k :- ((let) i :: sigma..i; i (=) e..i (in) e) : sigma..e
   
   rule e_ident1B =
     cond (i :-> sigma..i) `elem` Gamma
@@ -90,7 +90,7 @@ rules expr1B.C "Type checking for let-expression with pattern" =
     judge pat1 sigma..i :- p : Gamma..p
     cond p == i || p == i@(...)
     -
-    judge expr1B Gamma; sigma..k :- (let i :: sigma..i; p (=) e..i in e) : sigma..e
+    judge expr1B Gamma; sigma..k :- ((let) i :: sigma..i; p (=) e..i (in) e) : sigma..e
 
   rule e_lam1C =
     judge expr1B (Gamma..p , Gamma); sigma..r :- e : sigma..e
@@ -161,7 +161,7 @@ rules expr2.3 "Type inferencing for expressions with quantifier |forall|" =
     judge expr2 (Gamma..p , Gamma); sigma..p :- e..i : _ ~> Cnstr.2
     judge pat2 ANY :- p : sigma..p; Gamma..p ~> Cnstr.1
     -
-    judge expr2 Gamma; sigma..k :- (let p (=) e..i in e) : sigma..e ~> Cnstr.(3(..)1)
+    judge expr2 Gamma; sigma..k :- ((let) p (=) e..i (in) e) : sigma..e ~> Cnstr.(3(..)1)
 
   rule e_let_tysig3 =
     judge expr2 ((Gamma..q `minusset` [i :-> _] ++ [i :-> sigma..q]) ++ Gamma); sigma..k :- e : sigma..e ~> Cnstr.3
@@ -176,7 +176,7 @@ rules expr2.3 "Type inferencing for expressions with quantifier |forall|" =
     cond p == i || p == i@(...)
     judge pat2 sigma..i :- p : _; Gamma..p ~> Cnstr.1
     -
-    judge expr2 Gamma; sigma..k :- (let i :: sigma..i; p (=) e..i in e) : sigma..e ~> Cnstr.(3(..)1)
+    judge expr2 Gamma; sigma..k :- ((let) i :: sigma..i; p (=) e..i (in) e) : sigma..e ~> Cnstr.(3(..)1)
 
   rule e_ident3 =
     cond (i :-> forall ^ [alpha.j] (.) sigma..i) `elem` Gamma
@@ -219,7 +219,7 @@ rules expr4 "Type checking/inferencing for expression" =
     judge expr4 strongFIOpts; (Gamma..p , Gamma); sigma..p :- e..i : _ ~> Cnstr.2
     judge pat4 strongFIOpts; Gamma; ANY :- p : sigma..p; Gamma..p ~> Cnstr.1
     -
-    judge expr4 fiopt; Gamma; sigma..k :- (let p (=) e..i in e) : sigma..e ~> Cnstr.(3(..)1)
+    judge expr4 fiopt; Gamma; sigma..k :- ((let) p (=) e..i (in) e) : sigma..e ~> Cnstr.(3(..)1)
 
   rule e_let_tysig4 =
     judge expr4 fiopt; ((Gamma.exists.p `minusset` [i :-> _] ++ [i :-> sigma..q]) ++ Gamma); sigma..k :- e : sigma..e ~> Cnstr.3
@@ -230,7 +230,7 @@ rules expr4 "Type checking/inferencing for expression" =
     cond p == i || p == i@(...)
     judge pat4 strongFIOpts; Gamma; sigma..i :- p : _; Gamma..p ~> Cnstr.1
     -
-    judge expr4 fiopt; Gamma; sigma..k :- (let i :: sigma..i; p (=) e..i in e) : sigma..e ~> Cnstr.(3(..)1)
+    judge expr4 fiopt; Gamma; sigma..k :- ((let) i :: sigma..i; p (=) e..i (in) e) : sigma..e ~> Cnstr.(3(..)1)
 
   rule e_int4 =
     judge fit4 fiopt :- Int <= sigma..k : sigma ~> Cnstr
@@ -252,7 +252,7 @@ rules expr4.bind "Type checking/inferencing for expression with bind intro/elim"
     judge expr4 strongFIOpts; (Gamma..p , Gamma); sigma..p :- e..i : _ ~> Cnstr.2
     judge pat4 strongFIOpts; Gamma; ANY :- p : sigma..p; Gamma..p ~> Cnstr.1
     -
-    judge expr4 fiopt; Gamma; sigma..k :- (let p (=) e..i in e) : sigma..e ~> Cnstr.(4(..)1)
+    judge expr4 fiopt; Gamma; sigma..k :- ((let) p (=) e..i (in) e) : sigma..e ~> Cnstr.(4(..)1)
 
 scheme expr9A
   = (Gamma) :- (e) : (sigma) ~> (Transl)
@@ -279,6 +279,8 @@ rules expr9B "Implicit parameter passing with expected type" =
 scheme expr9
   = (fiopt); (Gamma); (sigmak) :- (e) : (sigma) ~> (Cnstr); (Transl)
   = fiopt; Gamma; sigmak :-...expr e : sigma ~> Cnstr; Transl
+  view X = let Cnstr =
+           in  Gamma; sigmak :-...expr e : sigma
 
 rules expr9.C "Type checking/inferencing for expression application with implicit parameters" =
   rule app_impl = rule expr9.app.e_app_impl9_impl
@@ -628,6 +630,7 @@ rules fit4.bind "Fitting/subsumption for tvar binds" =
 scheme fit9
   = (fiopt); (Gamma) :- (sigmal) <= (sigmar) : (sigma) ~> (Cnstr) ; (coe)
   = fiopt; Gamma :-...fit sigmal <= sigmar : sigma ~> Cnstr ; coe
+  view X = Gamma :-...fit sigmal <= sigmar : sigma
 
 rules fit9.predSymmetric "Fitting/subsumption for predicates (impl/expl match)" =
   rule f_pred9_expl_impl =
@@ -687,7 +690,7 @@ rules fit9.app "Fitting/subsumption for type applications" =
     judge fit9 fiopt; Gamma :- sigma.1.r <= sigma.2.r : sigma..r ~> Cnstr.1; coe.r
     -
     judge fit9 fiopt; Gamma :- ((sigma.1.l,sigma.1.r)) <= ((sigma.2.l,sigma.2.r)) : ((sigma..l,Cnstr.2 sigma..r))
-          ~> Cnstr.(2(..)1); (let (l,r) (=) _ in (coe.l ^^ l, coe.r ^^ r))
+          ~> Cnstr.(2(..)1); ((let) (l,r) (=) _ (in) (coe.l ^^ l, coe.r ^^ r))
 
 rules fit9.rec "Fitting/subsumption for records" =
   rule f_rec9_empty =
@@ -704,7 +707,7 @@ rules fit9.rec "Fitting/subsumption for records" =
     judge fit9 fiopt; Gamma :- r.1 <= r.2 : r ~> Cnstr.1 ; coe.r
     -
     judge fit9 fiopt; Gamma :- ((r.1 | l :: sigma.1)) <= ((r.2 | l :: sigma.2)) : ((r | l :: sigma))
-          ~> Cnstr.(1(..)2) ; (let r (=) _ in (coe.r (r (-) l) | l (=) coe.sigma (r(.)l)))
+          ~> Cnstr.(1(..)2) ; ((let) r (=) _ (in) (coe.r (r (-) l) | l (=) coe.sigma (r(.)l)))
 
   rule f_rec9_ext_neq =
     cond l.1 /= l.2
