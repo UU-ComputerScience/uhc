@@ -192,6 +192,15 @@ SEM AGItf
 ATTR AllDecl [ | gathPatTyCnstr: Cnstr | ]
 
 SEM AGItf
+  | AGItf       loc         .   elimImprTyCnstr     =   let  (c,e) = cnstrElimAlts (mkElimAltsWrap emptyFE) joinFIOpts [] @lUniq @expr.imprTyCnstr
+                                                        in   cnstrDelAlphaRename c
+                expr        .   tyCnstr             :=  @expr.quTyCnstr
+
+SEM Decl
+  | Val         loc         .   imprFO              =   fitsIn impredFIOpts emptyFE uidStart (@expr.imprTyCnstr |=> @patExpr.ty) @expr.imprTy
+                lhs         .   imprTyCnstr         =   foCnstr @imprFO |=> @expr.imprTyCnstr
+%%]
+SEM AGItf
   | AGItf       loc         .   (elimImprTyCnstr,_) =   foldr  (\(v,t) (c,u)
                                                                   ->  let  (u',u1) = mkNewLevUID u
                                                                            (t',ce,_) = tyElimAlts (mkElimAltsWrap emptyFE) joinFIOpts [] u1 (c |=> t)
@@ -202,11 +211,6 @@ SEM AGItf
                                                         .  cnstrToAssocTyL
                                                         $  @expr.imprTyCnstr
                 expr        .   tyCnstr             :=  @expr.quTyCnstr
-
-SEM Decl
-  | Val         loc         .   imprFO              =   fitsIn impredFIOpts emptyFE uidStart (@expr.imprTyCnstr |=> @patExpr.ty) @expr.imprTy
-                lhs         .   imprTyCnstr         =   foCnstr @imprFO |=> @expr.imprTyCnstr
-%%]
 
 %%[5
 ATTR AllCase [ | tyCnstr: Cnstr | ]

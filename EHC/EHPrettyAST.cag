@@ -57,12 +57,13 @@ SEM Expr
                 loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         , mkInfo1 "ty" (ppTy @ty)
                                         ]
-  | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Var"] [ppNm @nm] [] (@info ++ @info2 ++ @info3)
+  | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Var"] [ppNm @nm] [] (@info ++ @info2 ++ @info3 ++ @infoImpr)
                 loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         , mkInfo1 "ty" (ppTy @ty)
                                         ]
                         .  info2    =   []
                         .  info3    =   []
+                        .  infoImpr =   []
   | Con         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Con"] [ppNm @nm] [] (@info ++ @info2)
                 loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         , mkInfo1 "ty" (ppTy @ty)
@@ -212,6 +213,8 @@ SEM AGItf
                                         ]
 
 SEM Expr
+  | Var         loc     .  infoImpr :=  [ mkInfo1 "imprTy" (ppTy @imprTy)
+                                        ]
   | App         loc     .  infoImpr :=  [ mkInfo1 "foTy imprFO1 (arg)" (ppTy (foTy @imprFO1))
                                         , mkInfo1 "foTy imprFO2 (fun)" (ppTy (foTy @imprFO2))
                                         , mkInfo1 "imprTy" (ppTy @imprTy)

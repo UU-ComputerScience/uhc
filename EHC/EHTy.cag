@@ -30,7 +30,7 @@
 %%[4 hs export(tyVar) 
 %%]
 
-%%[4_1 hs export(tyAltsTy,tyIsQu) 
+%%[4_1 hs export(tyAltsTy,tyIsQu,tyIsVar) 
 %%]
 
 %%[4_1 hs export(TyPlus(..),TyPlusL,tyPlusTy) 
@@ -117,12 +117,37 @@ data PredOcc
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Properties of quantifier
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4 hs
+tyquIsExists, tyquIsForall :: TyQu -> Bool
+%%]
+
+%%[4.tyQuProps hs
+tyquIsForall TyQu_Forall              = True
+tyquIsForall _                        = False
+
+tyquIsExists TyQu_Exists              = True
+tyquIsExists _                        = False
+%%]
+
+%%[6.tyQuProps -4.tyQuProps hs
+tyquIsForall TyQu_Forall              = True
+tyquIsForall TyQu_KiForall            = True
+tyquIsForall _                        = False
+
+tyquIsExists TyQu_Exists              = True
+tyquIsExists TyQu_KiExists            = True
+tyquIsExists _                        = False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type quantifier utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4 hs
 tyquExists, tyquForall :: TyQu -> TyQu
-tyquIsExists, tyquIsForall :: TyQu -> Bool
 %%]
 
 %%[4.tyquMisc hs
@@ -131,12 +156,6 @@ tyquForall   q                        = q
 
 tyquExists   TyQu_Forall              = TyQu_Exists
 tyquExists   q                        = q
-
-tyquIsForall TyQu_Forall              = True
-tyquIsForall _                        = False
-
-tyquIsExists TyQu_Exists              = True
-tyquIsExists _                        = False
 %%]
 
 %%[6.tyquMisc -4.tyquMisc hs
@@ -147,14 +166,6 @@ tyquForall   q                        = q
 tyquExists   TyQu_Forall              = TyQu_Exists
 tyquExists   TyQu_KiForall            = TyQu_KiExists
 tyquExists   q                        = q
-
-tyquIsForall TyQu_Forall              = True
-tyquIsForall TyQu_KiForall            = True
-tyquIsForall _                        = False
-
-tyquIsExists TyQu_Exists              = True
-tyquIsExists TyQu_KiExists            = True
-tyquIsExists _                        = False
 %%]
 
 %%[showTyQu.4
@@ -173,7 +184,19 @@ showTyQu  TyQu_KiExists   =  "Exists"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Construction
+%%% Properties of type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_1 hs
+tyIsVar :: Ty -> Bool
+tyIsVar t = case t of {Ty_Var _ _ -> True; _ -> False}
+
+tyIsQu :: Ty -> Bool
+tyIsQu t = case t of {Ty_Quant _ _ _ -> True; _ -> False}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Construction of type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.mkTy hs
@@ -368,9 +391,6 @@ tyPlusTy (TyPlus_Ty t _) = t
 %%[4_1 hs
 tyAltsTy :: Ty -> Ty
 tyAltsTy t = case t of {Ty_Alts _ tl -> tyPlusTy (last tl); _ -> t}
-
-tyIsQu :: Ty -> Bool
-tyIsQu t = case t of {Ty_Quant _ _ _ -> True; _ -> False}
 %%]
 
 %%[7.tyProdArgs -1.tyProdArgs hs

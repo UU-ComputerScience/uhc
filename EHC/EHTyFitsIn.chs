@@ -765,13 +765,20 @@ fitsIn opts env uniq ty1 ty2
                 where (fi1,uqt1,back1) = unquant fi t1 False instCoConst
 %%]
 
-%%[4_1.fitsIn.QL
+%%[4_1.fitsIn.QL1
             f fi t1@(Ty_Quant q1 _ _)   t2
                 |     fioMode (fiFIOpts fi) == FitMeet && tyquIsForall q1
                   ||  fioMode (fiFIOpts fi) == FitJoin && tyquIsExists q1
                                                     = manyFO [fo,fo2]
                 where  (u',u1,u2) = mkNewLevUID2 (fiUniq fi)
+%%]
+%%[4_2
+                       elimBind fi u t = (t,emptyCnstr,[])
+%%]
+%%[4_3
                        elimBind fi u t = tyElimAlts (mkElimAltsWrap emptyFE) (fiFIOpts fi) [] u t
+%%]
+%%[4_1.fitsIn.QL2
                        (t1',ct1,e1) = elimBind fi u1 t1
                        (t2',ct2,e2) = elimBind fi u2 (ct1 |=> t2)
                        (fi1,uqt1,rtvs1) = unquant' (fi {fiUniq = u'}) (ct2 |=> t1') instMeet
