@@ -84,27 +84,24 @@ SEM Decl
 %%[9
 SEM Decl
   | Instance    tyPrExpr        .   tyGam           =   gamPushNew @lhs.patTyGam
-                loc             .   prTyFix         =   tyFixTyVars @tyPrExpr.ty
-                                .   (ctxtPrTyL,hdPrTy)
-                                                    =   tyArrowArgsRes @tyPrExpr.ty
+                loc             .   prTyFix         =   tyFixTyVars . tyQuantifyRank [2..] $ @tyPrExpr.ty
                                 .   (ctxtPrTyFixL,hdPrTyFix)
                                                     =   tyArrowArgsRes @prTyFix
-                                .   instClsNm       =   tyPredMatchNm @hdPrTy
-                                .   ctxtClsNmL      =   map tyPredMatchNm @ctxtPrTyL
+                                .   instClsNm       =   tyPredMatchNm @hdPrTyFix
+                                .   ctxtClsNmL      =   map tyPredMatchNm @ctxtPrTyFixL
                                 .   instId          =   @lUniq
                                 .   (dictNm,inclForElim)
                                                     =   maybe (uidHNm @instId,True) id @mbNmElim
                                 .   pigi            =   fromJust (gamLookup @instClsNm @lhs.prIntroGam)
-                                .   prTyL           =   tyFixTyVars (@hdPrTy : @ctxtPrTyL)
                                 .   supPrTyL        =   let  t      =  rulRuleTy . pigiRule $ @pigi
                                                              st     =  mkNewTyVarL (tyArrowArity . tyQuant $ t) @lUniq4 `mkTyArrow` @hdPrTyFix
                                                              fo     =  fitsIn predFIOpts emptyFE @lUniq3 t st
                                                         in   tyArrowArgs . foTy $ fo
                                 .   supClsNmL       =   tyPrLToSupNmL @supPrTyL
                                 .   ctxtPrFixL      =   map tyPred @ctxtPrTyFixL
-                                .   recTy           =   tyArrowRes @tyPrExpr.evTy
-                decls           .   tySigGam        =   assocLToGam . assocLMapSnd ValGamInfo . snd . tyRecExts . tyFixTyVars $ @recTy
-                loc             .   elimRule        =   mkInstElimRule @dictNm @instId (length @ctxtPrTyL) (tyQuantifyClosed @tyPrExpr.ty)
+                                .   recTy           =   tyFixTyVars . tyQuantifyRank [2..] . tyArrowRes $ @tyPrExpr.evTy
+                decls           .   tySigGam        =   assocLToGam . assocLMapSnd ValGamInfo . snd . tyRecExts $ @recTy
+                loc             .   elimRule        =   mkInstElimRule @dictNm @instId (length @ctxtPrTyFixL) (tyQuantifyClosed @prTyFix)
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   tyGam           =   @lhs.tyGam
                                 .   gathTySigGam    =   (maybe id (\(n,_) g -> gamAdd n (ValGamInfo (tyQuantifyClosed @tyPrExpr.evTy)) g) @mbNmElim) @lhs.gathTySigGam

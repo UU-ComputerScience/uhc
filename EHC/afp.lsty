@@ -128,9 +128,15 @@
 % referencing
 % \newcommand{\figRef}[1]{figure~\ref{#1}}
 % \newcommand{\FigRef}[1]{Figure~\ref{#1}}
-\newcommand{\figRef}[1]{Fig.~\ref{#1}}
-\newcommand{\FigRef}[1]{Fig.~\ref{#1}}
-\newcommand{\secRef}[1]{section~\ref{#1}}
+\let\myRef=\ref
+%if acm
+\newcommand{\figRef}[1]{Figure~\myRef{#1}}
+\newcommand{\FigRef}[1]{Figure~\myRef{#1}}
+%else
+\newcommand{\figRef}[1]{Fig.~\myRef{#1}}
+\newcommand{\FigRef}[1]{Fig.~\myRef{#1}}
+%endif
+\newcommand{\secRef}[1]{section~\myRef{#1}}
 %if llncs || acm
 \newcommand{\pageRef}[1]{}
 \newcommand{\figPageRef}[1]{\figRef{#1}}
@@ -144,14 +150,14 @@
 %if asArticle
 \secRef{#1}
 %else
-chapter~\ref{#1}
+chapter~\myRef{#1}
 %endif
 }
 \newcommand{\appRef}[1]{%
 %if omitAppendix
 \chapterRef{#1}
 %else
-appendix~\ref{#1}
+appendix~\myRef{#1}
 %endif
 }
 

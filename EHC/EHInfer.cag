@@ -412,7 +412,7 @@ SEM Decl
 
 %%[9
 SEM Decl
-  | TySig       loc         .   sigTy               :=  tqoTy (tyQuantifyPr  (TyQuOpts {tqoptLeaveImpls=True})
+  | TySig       loc         .   sigTy               :=  tqoTy (tyQuantifyPr  (defaultTyQuOpts {tqoptLeaveImpls=True})
                                                                              (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL))
                                                                              TyQu_Forall [] @tyExpr.ty)
 %%]
