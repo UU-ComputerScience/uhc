@@ -296,8 +296,8 @@ rules expr9.lam "Type checking/inferencing for lambda expressions with implicit 
     judge expr9 fiopt; ((pi.i.p ~> Transl.i.p)..._,Gamma..p,Gamma); sigma..r :- e : sigma..e ~> Cnstr.3 ; Transl..e
     cond (pi.i.p ~> Transl.i.p)..._ == inst.pi(pi..p._)
     judge pat4 fiopt; Gamma; sigma..p :- p : _; Gamma..p ~> Cnstr.2
-    judge fit9 fiopt; Gamma :- (pvar -> tvar.1 -> tvar.2) <= sigma..k : (pi..p._ -> sigma..p->sigma..r) ~> Cnstr.1; _
-    cond pvar, tvar.i "fresh"
+    judge fit9 fiopt; Gamma :- (pvar.1 -> tvar.1 -> pvar.2 -> tvar.2) <= sigma..k : (pi..p._ -> sigma..p->sigma..r) ~> Cnstr.1; _
+    cond pvar.i, tvar.i "fresh"
     -
     judge expr9 fiopt; Gamma; sigma..k :- (\p -> e) : (Cnstr.3 sigma..p -> sigma..e) ~> Cnstr.(3(..)1) ; (\Transl.i.p._ -> \p -> Transl..e)
 

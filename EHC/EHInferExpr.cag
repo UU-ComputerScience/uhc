@@ -146,8 +146,10 @@ SEM Expr
 
 %%[9.Lam
 SEM Expr
-  | Lam         loc         .  funTy                :=  let  [i,a,r] = mkNewUIDL 3 @lUniq
-                                                        in   [mkImplsVar i,mkTyVar a] `mkTyArrow` mkTyVar r
+  | Lam         loc         .  (funTy,im1Ty,im2Ty)  :=  let  [i1,a,i2,r] = mkNewUIDL 4 @lUniq
+                                                             im1 = mkImplsVar i1
+                                                             im2 = mkImplsVar i2
+                                                        in   ([im1,mkTyVar a,im2] `mkTyArrow` mkTyVar r,im1,im2)
                 (loc.knImpls,arg.knTy,body.knTy)    :=  tyArrowImplsArgRes (foTy @foKnFun)
                 loc         .  ty                   :=  ((@body.tyCnstr |=> @knImpls) ++ [@body.tyCnstr |=> @arg.ty])
                                                         `mkTyArrow` @body.ty

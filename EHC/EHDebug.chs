@@ -9,7 +9,7 @@
 %%% Tracing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 import(Debug.Trace,UU.Pretty) export(trPP)
+%%[1 import(Debug.Trace,UU.Pretty) export(tr,trPP)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -19,6 +19,9 @@
 %%[1
 showPP :: PP a => a -> String
 showPP p = disp (pp p) 1000 ""
+
+tr :: String -> PP_Doc -> a -> a
+tr msg p x = trace (showPP (msg >|< ":" >|< p)) x
 
 trPP :: PP a => String -> a -> a
 trPP msg x = trace (showPP (msg >|< ":" >|< x)) x

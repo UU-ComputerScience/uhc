@@ -48,7 +48,7 @@
 %%[8 import(Maybe) export(gamUpd)
 %%]
 
-%%[9 export(gamUpdAdd,gamLookupAll,gamSubstTop)
+%%[9 export(gamUpdAdd,gamLookupAll,gamSubstTop,gamValues)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -118,6 +118,9 @@ gamUpd k upd = fromJust . gamMbUpd k upd
 %%]
 
 %%[9
+gamValues :: Gam k v -> [v]
+gamValues = assocLValues . gamToAssocL
+
 gamLookupAll :: Eq k => k -> Gam k v -> [v]
 gamLookupAll k (Gam ll) = catMaybes (map (lookup k) ll)
 
@@ -162,9 +165,17 @@ valGamQuantify globTvL
 %%]
 
 %%[9.valGamQuantify -3.valGamQuantify
-valGamQuantify :: TyVarIdL -> [PredOcc] -> ValGam -> ValGam
-valGamQuantify globTvL prL
-  = gamMap (\(n,t) -> (n,t {vgiTy = tyQuantifyPr (`elem` globTvL) TyQu_Forall prL (vgiTy t)}))
+gamUnzip :: Gam k (v1,v2) -> (Gam k v1,Gam k v2)
+gamUnzip (Gam ll)
+  =  let  (ll1,ll2) = unzip . map (unzip . map (\(n,(v1,v2)) -> ((n,v1),(n,v2)))) $ ll
+     in   (Gam ll1,Gam ll2)
+
+valGamQuantify :: TyVarIdL -> [PredOcc] -> ValGam -> (ValGam,Gam HsName TyQuOut)
+valGamQuantify globTvL prL g
+  =  let  g' = gamMap  (\(n,t) ->  let  tqo = tyQuantifyPr (`elem` globTvL) TyQu_Forall prL (vgiTy t)
+                                   in   (n,(t {vgiTy = tqoTy tqo},tqo))
+                       ) g
+     in   gamUnzip g'
 %%]
 
 %%[4.valGamInst1Exists
