@@ -66,13 +66,16 @@
 %%[7 export(assocLElts,assocLKeys,uidHNm)
 %%]
 
-%%[8 import (FPath,IO) export(hsnUndefined,putPPLn,putPPFile,Verbosity(..),putCompileMsg)
+%%[8 import (FPath,IO,Char) export(hsnUndefined,putPPLn,putPPFile,Verbosity(..),putCompileMsg)
 %%]
 
 %%[8 export(hsnPrefix,hsnSuffix)
 %%]
 
-%%[8 export(groupSortOn)
+%%[8 export(cmdLineTrfs,trfOptOverrides)
+%%]
+
+%%[8 export(sortOn,groupSortOn)
 %%]
 
 %%[8 export(showPP,ppPair)
@@ -374,10 +377,10 @@ showPP x = disp (pp x) 100 ""
 putPPLn :: PP_Doc -> IO ()
 putPPLn pp = putStrLn (disp pp 4000 "")
 
-putCompileMsg :: EHCOpts -> String -> HsName -> FPath -> IO ()
-putCompileMsg opts msg modNm fNm
-  = if ehcoptVerbosity opts >= VerboseNormal
-    then putStrLn (strBlankPad 25 msg ++ " " ++ strBlankPad 15 (show modNm) ++ " (" ++ fpathToStr fNm ++ ")")
+putCompileMsg :: Verbosity -> EHCOpts -> String -> Maybe String -> HsName -> FPath -> IO ()
+putCompileMsg v opts msg mbMsg2 modNm fNm
+  = if ehcoptVerbosity opts >= v
+    then putStrLn (strBlankPad 25 msg ++ " " ++ strBlankPad 15 (show modNm) ++ " (" ++ fpathToStr fNm ++ maybe "" (\m -> ", " ++ m) mbMsg2 ++ ")")
     else return ()
 
 putPPFile :: String -> PP_Doc -> Int -> IO ()
@@ -426,6 +429,32 @@ cocoOpp  _              =   CoContraVariant
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+data TrfOpt = TrfYes String | TrfNo String | TrfAllYes | TrfAllNo
+
+cmdLineTrfs :: AssocL String String
+cmdLineTrfs
+  = [ ("CRU", "Core Rename Unique (all identifiers)")
+    , ("CLU", "Core Let Unrec (remove unnecessary recursive defs)")
+    , ("CFL", "Core Full Laziness (give names to all expressions and float them outwards)")
+    , ("CLL", "Core Lambda Lift")
+    ]
+
+trfOptOverrides :: [TrfOpt] -> String -> Maybe Bool
+trfOptOverrides opts trf
+  =  ovr opts
+  where  ovr [] = Nothing
+         ovr (TrfYes s   :os) | trf == s  = Just True
+         ovr (TrfNo s    :os) | trf == s  = Just False
+         ovr (TrfAllYes  :os)             = Just True
+         ovr (TrfAllNo   :os)             = Just False
+         ovr (_          :os)             = ovr os
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Verbosity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -451,6 +480,7 @@ data EHCOpts    = EHCOptions    {  ehcoptDumpPP         ::  Maybe String
                                 ,  ehcoptCoreJava       ::  Bool
                                 ,  ehcoptSearchPath     ::  [String]
                                 ,  ehcoptVerbosity      ::  Verbosity
+                                ,  ehcoptTrf            ::  [TrfOpt]
 %%]
 
 %%[defaultEHCOpts.1
@@ -465,6 +495,7 @@ defaultEHCOpts  = EHCOptions    {  ehcoptDumpPP         =   Just "pp"
                                 ,  ehcoptCoreJava       =   False
                                 ,  ehcoptSearchPath     =   []
                                 ,  ehcoptVerbosity      =   VerboseQuiet
+                                ,  ehcoptTrf            =   []
 %%]
 
 %%[cmdLineOptsA.1
@@ -482,6 +513,10 @@ cmdLineOpts
 %%[cmdLineOptsA.8
      ,  Option "c"  ["code"]          (OptArg oCode "java")
           "dump code (java -> .java) on file, default=core (-> .core)"
+     ,  Option ""   ["trf"]           (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
+          "switch on/off transformations"
+     ,  Option "v"  ["verbose"]       (OptArg oVerbose "0|1|2")
+          "be verbose, 0=quiet 1=normal 2=noisy, default=1"
 %%]
 
 %%[cmdLineOptsB.1
@@ -500,6 +535,23 @@ cmdLineOpts
          oCode       ms  o =  case ms of
                                 Just "java"  -> o { ehcoptCoreJava     = True      }
                                 _            -> o { ehcoptCore         = True      }
+         oTrf        s   o =  o { ehcoptTrf           = opt s   }
+                           where  opt "" =  []
+                                  opt o  =  let  (pm,o2) = span (\c -> c == '+' || c == '-') o
+                                                 (tr,o3) = span isAlpha o2
+                                                 opt2    = opt o3
+                                            in   case (pm,tr) of
+                                                   ("+",_:_)  -> TrfYes tr : opt2
+                                                   ("-",_:_)  -> TrfNo tr : opt2
+                                                   ("+",_)    -> [TrfAllYes]
+                                                   ("-",_)    -> [TrfAllNo]
+                                                   _          -> []
+         oVerbose    ms  o =  case ms of
+                                Just "0"    -> o { ehcoptVerbosity     = VerboseQuiet       }
+                                Just "1"    -> o { ehcoptVerbosity     = VerboseNormal      }
+                                Just "2"    -> o { ehcoptVerbosity     = VerboseALot        }
+                                Nothing     -> o { ehcoptVerbosity     = VerboseNormal      }
+                                _           -> o
 %%]
 
 %%[1.Options
@@ -584,8 +636,11 @@ listCombineUniq = nub . concat
 %%]
 
 %%[8
+sortOn :: Ord b => (a -> b) -> [a] -> [a]
+sortOn sel = sortBy (\e1 e2 -> sel e1 `compare` sel e2)
+
 groupSortOn :: Ord b => (a -> b) -> [a] -> [[a]]
-groupSortOn sel = groupBy (\e1 e2 -> sel e1 == sel e2) . sortBy (\e1 e2 -> sel e1 `compare` sel e2)
+groupSortOn sel = groupBy (\e1 e2 -> sel e1 == sel e2) . sortOn sel
 %%]
 
 %%[8

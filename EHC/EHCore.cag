@@ -27,11 +27,14 @@
 %%[8 hs export(ceStrictIn)
 %%]
 
+%%[8 hs import(FiniteMap,Set) export(FvS,FvSMp,cLevOuter,LevMp,fvLev,fvsLev,levMpAdd)
+%%]
+
 %%[8 import(EHCoreAbsSyn)
 DERIVING *     : Show, Eq
 %%]
 
-%%[9 hs import(FiniteMap,Set,EHTy) export(CBindLMap, emptyCBindLMap, Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLetRecCoe, cbindLMapBinds, mkCBindLForUIDL)
+%%[9 hs import(EHTy) export(CBindLMap, emptyCBindLMap, Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLetRecCoe, cbindLMapBinds, mkCBindLForUIDL)
 %%]
 
 %%[10 hs export(mkCExprAddInt)
@@ -148,6 +151,32 @@ cvarUndefined = CExpr_Var hsnUndefined
 
 ceStrictIn :: HsName -> CExpr -> (CExpr -> CExpr) -> CExpr
 ceStrictIn nm e mkC = CExpr_Let CBindStrict [CBind_Bind nm e] (mkC (CExpr_Var nm))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Support for transformations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type FvS = Set HsName
+type FvSMp = FiniteMap HsName FvS
+%%]
+
+%%[8 hs
+cLevOuter = 0
+%%]
+
+%%[8 hs
+type LevMp = FiniteMap HsName Int
+
+fvLev :: LevMp -> HsName -> Int
+fvLev lm = lookupWithDefaultFM lm cLevOuter
+
+fvsLev :: LevMp -> FvS -> Int
+fvsLev lm fvs = foldr (\n l -> fvLev lm n `max` l) cLevOuter . setToList $ fvs
+
+levMpAdd :: LevMp -> FvSMp -> LevMp
+levMpAdd lm fvm = lm `plusFM` mapFM  (\_ fv -> fvsLev lm fv) fvm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

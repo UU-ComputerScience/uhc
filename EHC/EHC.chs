@@ -12,13 +12,13 @@
 %%[1 module Main import(System, GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, EHCommon, EHParser, EHMainAG)
 %%]
 
-%%[8 import (EHScanner,EHError,EHErrorPretty,FPath,FiniteMap,Maybe,Directory)
+%%[8 import (EHScanner,EHError,EHErrorPretty,FPath,FiniteMap,Maybe,List,Directory)
 %%]
 
 %%[8 import (EHCoreJava,EHCoreGrin,EHCorePretty)
 %%]
 
-%%[8 import (EHCoreTrfRenUniq,EHCoreTrfFullLazy,EHCoreTrfLetUnrec)
+%%[8 import (EHCoreTrfRenUniq,EHCoreTrfFullLazy,EHCoreTrfLetUnrec,EHCoreTrfLamLift)
 %%]
 
 %%[8 import (GrinCodePretty)
@@ -35,7 +35,23 @@ main
          ;  let  oo@(o,n,errs)  = getOpt Permute cmdLineOpts args
                  opts           = foldr ($) defaultEHCOpts o
          ;  if ehcoptHelp opts
-            then  putStrLn (usageInfo "Usage ehc [options] [file]\n\noptions:" cmdLineOpts)
+            then  putStrLn (usageInfo "Usage: ehc [options] [file]\n\noptions:" cmdLineOpts)
+            else  if null errs
+                  then  doCompileRun (if null n then "" else head n) opts
+                  else  putStr (head errs)
+         }
+%%]
+
+%%[8.main -1.main
+main :: IO ()
+main
+  =  do  {  args <- getArgs
+         ;  let  oo@(o,n,errs)  = getOpt Permute cmdLineOpts args
+                 opts           = foldr ($) defaultEHCOpts o
+         ;  if ehcoptHelp opts
+            then  do  {  putStrLn (usageInfo "Usage ehc [options] [file]\n\noptions:" cmdLineOpts)
+                      ;  putStrLn ("Transformations:\n" ++ (unlines . map (\(n,t) -> "  " ++ n ++ ": " ++ t) $ cmdLineTrfs))
+                      }
             else  if null errs
                   then  doCompileRun (if null n then "" else head n) opts
                   else  putStr (head errs)
@@ -292,10 +308,14 @@ crFindFPath mbModNm suffs fp cr
 crFindTopLevelModule :: FPath -> CompileRun -> IO (CompileRun,Maybe FPath)
 crFindTopLevelModule
   = crFindFPath Nothing []
+%%]
 
+%%[8
 crFindModule :: HsName -> FileSuffMp -> CompileRun -> IO (CompileRun,Maybe FPath)
 crFindModule modNm suffs = crFindFPath (Just modNm) suffs (mkFPath (show modNm))
+%%]
 
+%%[8
 crCompileCUParseHS :: HsName -> CompileRun -> IO CompileRun
 crCompileCUParseHS modNm cr
   = do {  let cu     = crCU modNm cr
@@ -316,7 +336,9 @@ crCompileCUParseHS modNm cr
        ;  cr' <- crUpdCU modNm (\cu -> return (cu {cuMbOut = Just p1ob})) cr
        ;  return (crSetInfos "Parse of module" True errL cr')
        }
+%%]
 
+%%[8
 crCompileCUPass1HS :: HsName -> CompileRun -> IO CompileRun
 crCompileCUPass1HS modNm cr
   = do { let p1ob   = fromJust (cuMbOut (crCU modNm cr))
@@ -326,21 +348,39 @@ crCompileCUPass1HS modNm cr
               _           ->  return ()
        ; return (cr {crState = CRSErrInfoL "Type checking" False (allErrL_Syn_AGItf p1ob)})
        }
+%%]
 
-crTrfCore :: HsName -> CompileRun -> IO CompileRun
-crTrfCore modNm cr
+%%[8
+crCore1Trf :: HsName -> String -> CompileRun -> IO CompileRun
+crCore1Trf modNm trfNm cr
   =  do  {  let  cu     = crCU modNm cr
                  synAG  = fromJust (cuMbOut cu)
-                 [u1,u2] = mkNewLevUIDL 2 . snd . mkNewLevUID . crHereUID $ cr
+                 [u1]   = mkNewLevUIDL 1 . snd . mkNewLevUID . crHereUID $ cr
                  synAG' = synAG {cmodule_Syn_AGItf
-                                    = cmodTrfFullLazy u2
-                                    . cmodTrfLetUnrec
-                                    . cmodTrfRenUniq u1
+                                    = ( case trfNm of
+                                          "CRU" -> cmodTrfRenUniq u1
+                                          "CLU" -> cmodTrfLetUnrec
+                                          "CFL" -> cmodTrfFullLazy u1
+                                          "CLL" -> cmodTrfLamLift
+                                          _     -> id
+                                      )
                                     . cmodule_Syn_AGItf
                                     $ synAG}
+         ;  putCompileMsg VerboseALot (crOpts cr) "Transforming" (lookup trfNm cmdLineTrfs) modNm (cuFilePath cu)
          ;  crUpdCU modNm (\cu -> return (cu {cuMbOut = Just synAG'})) cr
          }
+%%]
 
+%%[8
+crCoreTrf :: HsName -> [String] -> CompileRun -> IO CompileRun
+crCoreTrf modNm trfNmL cr
+  = trf cr
+  where trf  =  crSeq . intersperse crStepUID . map (crCore1Trf modNm)
+             .  filter (maybe True id . trfOptOverrides (ehcoptTrf . crOpts $ cr))
+             $  trfNmL
+%%]
+
+%%[8
 crOutputCore :: HsName -> CompileRun -> IO CompileRun
 crOutputCore modNm cr
   =  do  {  let  cu     = crCU modNm cr
@@ -360,24 +400,28 @@ crOutputCore modNm cr
             else  return ()
          ;  return cr
          }
+%%]
 
+%%[8
 crStepUID :: CompileRun -> IO CompileRun
 crStepUID cr
   = let (n,h) = mkNewLevUID (crNextUID cr)
      in return (cr {crNextUID = n, crHereUID = h})
+%%]
 
+%%[8
 crCompileCU :: HsName -> CompileRun -> IO CompileRun
 crCompileCU modNm cr
   = do { let cu    = crCU modNm cr
              opts  = crOpts cr
-             msg m = putCompileMsg opts m modNm (cuFilePath cu)
+             msg m = putCompileMsg VerboseNormal opts m Nothing modNm (cuFilePath cu)
        ; case cuState cu of
            CUEH
              -> do { msg "Compiling"
                    ; crSeq
                        [ crStepUID, crCompileCUParseHS modNm
                                   , crCompileCUPass1HS modNm
-                       , crStepUID, crTrfCore modNm
+                       , crStepUID, crCoreTrf modNm (assocLKeys cmdLineTrfs)
                        , crStepUID, crOutputCore modNm
                        ] cr
                    }
@@ -389,6 +433,8 @@ crCompileCU modNm cr
 crCompileOrderedCUs :: [[HsName]] -> CompileRun -> IO CompileRun
 crCompileOrderedCUs modNmLL = crSeq (map (crCompileCU . head) modNmLL)
 %%]
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compiler driver

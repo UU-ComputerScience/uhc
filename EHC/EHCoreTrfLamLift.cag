@@ -1,0 +1,188 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fully lazy code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs import(Maybe,Set,List,FiniteMap,EHCommon,EHCore) export(cmodTrfLamLift)
+%%]
+
+%%[8 hs import(EHDebug)
+%%]
+
+%%[9 hs import(EHTy)
+%%]
+
+%%[8.WRAPPER import(EHCoreAbsSyn,EHCoreTrfCommonFv,EHCoreTrfCommonLev)
+WRAPPER CodeAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+cmodTrfLamLift :: CModule -> CModule
+cmodTrfLamLift cmod
+  =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                              (Inh_CodeAGItf)
+     in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Which id's are functions resp values
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR CExpr [ | | isLam: Bool ]
+
+SEM CExpr
+  | Lam         lhs         .   isLam       =   True
+  | * - Lam     lhs         .   isLam       =   False
+%%]
+
+%%[8
+ATTR AllBind [ | | bindVarS, bindLamS USE {`Set.union`} {emptySet}: FvS ]
+
+SEM CBind
+  | Bind        lhs         .   (bindVarS,bindLamS)
+                                            =   if @expr.isLam
+                                                then (emptySet,unitSet @nm)
+                                                else (unitSet @nm,emptySet)
+%%]
+
+%%[8
+ATTR AllCodeNT [ varS, lamS: FvS | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   varS        =   emptySet
+                            .   lamS        =   emptySet
+
+SEM CExpr
+  | Let         loc         .   varS        =   @lhs.varS `Set.union` @binds.bindVarS
+                            .   lamS        =   @lhs.lamS `Set.union` @binds.bindLamS
+  | Lam         loc         .   varS        =   @lhs.varS `addToSet` @arg
+
+SEM CAlt
+  | Alt         expr        .   varS        =   @lhs.varS `Set.union` mkSet @pats.nmL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Free var of lam's for which arg lifting is done
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+startFvSLamMp :: FvS -> FvS -> FvS -> FvSMp -> FvSMp -> (FvSMp,FvSMp)
+startFvSLamMp bLamS lamS varS fvm bFvm
+  =  let  bFvm2    =  filterFM (\n _ -> n `elementOf` bLamS) bFvm
+          fvlam  s =  lamS `Set.intersect` s
+          fvvar  s =  varS `Set.intersect` s
+          fv     s =  fvvar s `Set.union`
+                        (unionManySets . map (lookupWithDefaultFM fvm emptySet) . setToList . fvlam $ s)
+     in   (mapFM (\_ s -> fv s) bFvm2,mapFM (\_ s -> s `Set.intersect` bLamS) bFvm2)
+
+iterFvSLamMp :: FvSMp -> FvSMp -> FvSMp
+iterFvSLamMp frLamMp frVarMp
+  =  let  frVarMp2 = mapFM (\n s -> s `Set.union` (unionManySets . map (fromJust . lookupFM frVarMp) . setToList . fromJust . lookupFM frLamMp $ n)) frVarMp
+          sz = sum . map cardinality . eltsFM
+     in   if sz frVarMp2 > sz frVarMp
+          then iterFvSLamMp frLamMp frVarMp2
+          else frVarMp
+%%]
+
+map (fromJust . lookupFM frVarMp) . setToList . fromJust . lookupFM frLamMp $ n
+
+%%[8
+ATTR AllCodeNT [ fvSLamMp: FvSMp | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   fvSLamMp    =   emptyFM
+
+SEM CExpr
+  | Let         loc         .   fvSLamMp    =   @lhs.fvSLamMp `plusFM`
+                                                    (let  start varS = startFvSLamMp @binds.bindLamS @lhs.lamS varS @lhs.fvSLamMp @binds.fvSMp
+                                                     in   case @categ of
+                                                            CBindRec  ->  let  (m,lm)  = start (@lhs.varS `Set.union` @binds.bindVarS)
+                                                                          in   iterFvSLamMp lm m
+                                                            _         ->  let  (m,_)   = start @lhs.varS
+                                                                          in   m
+                                                    )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Mapping of argument names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+%%]
+ATTR AllCodeNT [ argSubst: {FiniteMap HsName HsName} | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   argSubst    =   emptyFM
+
+SEM CBind
+  | Bind        expr        .   argSubst    =   @lhs.argSubst `plusFM` @argMp
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Adding parameters to lam call sites
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type LamArgMp = FiniteMap HsName [CExpr]
+%%]
+
+%%[8
+ATTR AllBind [ | | bindLamArgMp USE {`plusFM`} {emptyFM}: LamArgMp ]
+ATTR AllCodeNT [ lamArgMp: LamArgMp | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   lamArgMp    =   emptyFM
+
+SEM CExpr
+  | Let         loc         .   lamArgMp    =   @lhs.lamArgMp `plusFM` @binds.bindLamArgMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type LamBindL = AssocL CBindCateg CBindL
+%%]
+
+%%[8
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+
+ATTR AllCodeNT [ | | lamBindL USE {++} {[]}: LamBindL ]
+ATTR AllBind [ | | bindLamBindL, bindVarBindL USE {++} {[]}: CBindL ]
+
+SEM CBind
+  | Bind        loc         .   (bindLamBindL,bindVarBindL,bindLamArgMp)
+                                            =   if @expr.isLam
+                                                then  let  argLevL = sortOn snd . filter (\(_,l) -> l > cLevOuter) . map (\n -> (n,fvLev @lhs.levMp n)) . setToList . fromJust . lookupFM @lhs.fvSLamMp $ @nm
+                                                           argNmL = assocLKeys argLevL
+                                                      in   ([CBind_Bind @nm (mkCExprLam argNmL @expr.cTrf)],[]
+                                                           ,@nm `unitFM` map CExpr_Var argNmL
+                                                           )
+                                                else  ([],[@cTrf],emptyFM)
+
+SEM CExpr
+  | Var         lhs         .   cTrf        =   maybe @cTrf (mkCExprApp @cTrf) . lookupFM @lhs.lamArgMp $ @nm
+  | Let         (loc.hereBindL,lhs.lamBindL)
+                                            =   let  b1    = @binds.lamBindL
+                                                     b2l   = [(@categ,@binds.bindLamBindL)]
+                                                     b2v   = [(@categ,@binds.bindVarBindL)]
+                                                     b2lv  = [(@categ,@binds.bindLamBindL ++ @binds.bindVarBindL)]
+                                                     b3    = @body.lamBindL
+                                                in   if @lhs.lev == cLevOuter
+                                                     then  (b1 ++ b2lv ++ b3,[])
+                                                     else  (b2v,b1 ++ b2l ++ b3)
+                lhs         .   cTrf        =   foldr (\(c,b) e -> mkCExprLet c b e) @body.cTrf @hereBindL
+%%]
+
