@@ -71,6 +71,9 @@ SEM TyVar
   
 SEM CaseAlts
   | Cons            (hd.gUniq,loc.lUniq)                            =   mkNewLevUID     @lhs.gUniq
+
+SEM Expr
+  | Case            (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
 %%]
 
 %%[6
@@ -114,7 +117,7 @@ SEM AGItf
 
 SEM Expr
   | Rec             (recExpr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3) :=  mkNewLevUID3    @lhs.gUniq
-  | Case            (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
+  | Case            (expr.gUniq,loc.lUniq,loc.lUniq2)               :=  mkNewLevUID2    @lhs.gUniq
   | Undefined       (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
 
 SEM PatExpr

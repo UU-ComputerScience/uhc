@@ -115,7 +115,7 @@ EHC					:= ehc
 EHC_MAIN			:= EHC
 EHC_LAG_FOR_AG		:= $(EHC_DPDS_ALL_MIN_TARG:.ag=.lag)
 EHC_LAG				:= $(EHC_LAG_FOR_AG) $(EHC_LAG_FOR_HS)
-EHC_LHS_FOR_HS		:= $(addsuffix .lhs,$(EHC_MAIN) EHCommon EHOpts EHCnstr EHSubstitutable EHTyFitsIn EHGam EHGamUtils EHPred EHParser FPath EHScanner EHScannerMachine EHCoreUtils EHDebug)
+EHC_LHS_FOR_HS		:= $(addsuffix .lhs,$(EHC_MAIN) EHCommon EHOpts EHCnstr EHSubstitutable EHTyFitsIn EHTyFitsInCommon EHGam EHGamUtils EHPred EHParser FPath EHScanner EHScannerMachine EHCoreUtils EHDebug)
 EHC_LHS				:= $(EHC_LHS_FOR_HS)
 EHC_HS				:= $(EHC_LAG_FOR_HS:.lag=.hs) $(EHC_LHS_FOR_HS:.lhs=.hs)
 
@@ -495,7 +495,7 @@ $(BREW): $(BREW_DIR)/$(BREW_AG) $(wildcard lib/*.hs)
 $(BREW_DOC_PDF): $(BREW_DIR)/RulerDoc.tex $(BREW)
 	cd `dirname $<` ; pdflatex `basename $<`
 
-ehcs: $(EHC_V1) $(EHC_V2) $(EHC_V3) $(EHC_V4) $(EHC_V5) $(EHC_V6) $(EHC_V7) $(EHC_V8) $(EHC_V9)
+ehcs: $(EHC_V1) $(EHC_V2) $(EHC_V3) $(EHC_V4) $(EHC_V5) $(EHC_V6) $(EHC_V7) $(EHC_V8) $(EHC_V9) $(EHC_V10)
 
 gris: $(GRI_V8) $(GRI_V9)
 

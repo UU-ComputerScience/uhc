@@ -12,6 +12,9 @@
 %%[3 hs import(EHCommon,EHTy,EHCnstr,EHSubstitutable) export(tyQuantify, tyQuantifyClosed)
 %%]
 
+%%[4 hs import(EHDebug,UU.Pretty)
+%%]
+
 %%[4 hs import(List)
 %%]
 
@@ -23,9 +26,6 @@ WRAPPER TyAGItf
 %%]
 
 %%[9 hs import(Maybe,Set,UU.Pretty) export(tyQuantifyPr,TyQuOut(..),TyQuOpts(..),defaultTyQuOpts)
-%%]
-
-%%[9 hs import(EHDebug)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -302,15 +302,6 @@ SEM Ty
                 loc         .   mbPrLoc                 =   Nothing
 %%]
 
-data HowToBuildImpls = BuildNoImpls | BuildTailImpls | BuildPrImpls
-
-                                                        =   case @func.mbImpls of
-                                                                (Just i) -> case implsPredsMbTail i of
-                                                                              (prL,Just iv) | null prL && @lhs.tvIsBound iv
-                                                                                     -> ([],Nothing,BuildTailImpls)
-                                                                              (p,t)  -> (p,t,BuildPrImpls)
-                                                                _                    -> ([],Nothing,BuildNoImpls)
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Determine insertable preds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -441,6 +432,7 @@ SEM Ty
   | App         loc         .   quTy            =   mkTyQu @hereQu @qBndTvL (Ty_App @func.quTy @arg.quTy)
   | Quant       lhs         .   quTy            =   Ty_Quant @qu.self @tv @ty.quTy
 %%]
+                lhs         .   quTy            =   trm "App" (\t -> pp t >#< pp @qBndTvL) @quTy
 
 %%[9
 SEM Ty

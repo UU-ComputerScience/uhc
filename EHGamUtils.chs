@@ -26,8 +26,8 @@ valGamElimBinds env uniq g
             =  gamMapThr
                   (\(n,vgi) (c,eg,u)
                   	->  let  (u',u1) = mkNewLevUID u
-                  	         (t,ci,ce,e) = tyElimBinds emptyEBOpts (mkElimBindsWrap env) joinFIOpts u1 (c |=> vgiTy vgi)
-                  	    in   ((n,vgi {vgiTy = t}),(ce |=> ci |=> c,gamAdd n e eg,u'))
+                  	         (t,ce,e) = tyElimBinds (mkElimBindsWrap env) joinFIOpts u1 (c |=> vgiTy vgi)
+                  	    in   ((n,vgi {vgiTy = t}),(ce |=> c,gamAdd n e eg,u'))
                   )
                   (emptyCnstr,emptyGam,uniq) g
      in   (g',c,eg)

@@ -30,7 +30,7 @@
 %%[4 import(EHOpts,EHTyInstantiate) export(valGamInst1Exists)
 %%]
 
-%%[4 export(AppSpineInfo(..), AppSpineGamInfo(..), unknownAppSpineInfoL, AppSpineGam, appSpineGam, asGamLookup)
+%%[4 import(EHTyFitsInCommon) export(AppSpineGam, appSpineGam, asGamLookup)
 %%]
 
 %%[4_1 export(gamMapThr)
@@ -54,7 +54,7 @@
 %%[8 import(Maybe,FiniteMap,EHCore) export(gamUpd,DataTagMp)
 %%]
 
-%%[9 import(EHDebug,EHCoreSubst) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
+%%[9 import(EHDebug,EHCoreSubst,EHTyFitsInCommon) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -322,57 +322,6 @@ tyGamQuantify globTvL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% "Ty app spine" gam, to be merged with tyGam in the future
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[4.AppSpine
-data AppSpineInfo
-  =  AppSpineInfo
-       { asCoCo         :: CoContraVariance
-       , asFIO          :: FIOpts -> FIOpts
-       }
-
-unknownAppSpineInfoL :: [AppSpineInfo]
-unknownAppSpineInfoL = repeat (AppSpineInfo CoContraVariant fioMkUnify)
-
-arrowAppSpineInfoL :: [AppSpineInfo]
-arrowAppSpineInfoL = [AppSpineInfo ContraVariant fioMkStrong, AppSpineInfo CoVariant id]
-
-prodAppSpineInfoL :: [AppSpineInfo]
-prodAppSpineInfoL = repeat (AppSpineInfo CoVariant id)
-%%]
-
-%%[9.AppSpine -4.AppSpine
-data AppSpineInfo
-  =  AppSpineInfo
-       { asCoCo         :: CoContraVariance
-       , asFIO          :: FIOpts -> FIOpts
-       , asFOUpdCoe     :: FIOut -> FIOut -> FIOut
-       }
-
-unknownAppSpineInfoL :: [AppSpineInfo]
-unknownAppSpineInfoL = repeat (AppSpineInfo CoContraVariant fioMkUnify (\_ x -> x))
-
-arrowAppSpineInfoL :: [AppSpineInfo]
-arrowAppSpineInfoL
-  =  [  AppSpineInfo ContraVariant fioMkStrong
-            (\_ x -> x)
-     ,  AppSpineInfo CoVariant id
-            (\ffo afo
-                ->  let  (u',u1) = mkNewUID (foUniq afo)
-                         n = uidHNm u1
-                         r = mkCoe (\e ->  CExpr_Lam n e)
-                         l = mkCoe (\e ->  CExpr_App e
-                                             (coeWipeWeave emptyCnstr (foCSubst afo) (foLCoeL ffo) (foRCoeL ffo)
-                                               `coeEvalOn` CExpr_Var n)
-                                   )
-                    in   afo  { foRCoeL = r : foRCoeL afo, foLCoeL = l : foLCoeL afo
-                              , foUniq = u'
-                              }
-            )
-     ]
-
-prodAppSpineInfoL :: [AppSpineInfo]
-prodAppSpineInfoL = repeat (AppSpineInfo CoVariant id (\_ x -> x))
-%%]
 
 %%[4.AppSpineGam
 data AppSpineGamInfo = AppSpineGamInfo { asgiInfoL :: [AppSpineInfo] }

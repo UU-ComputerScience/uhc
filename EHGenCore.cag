@@ -43,7 +43,7 @@ SEM Expr
   | App         loc         .   cexpr       =   CExpr_App @func.cexpr @arg.cexpr
   | Lam         loc         .   cexpr       =   CExpr_Lam @arg.topNm
                                                     (rceMatch @rceEnv [@arg.topNm] [CAlt_Alt [@arg.cpat] @body.cexpr] cvarUndefined)
-  | Case        loc         .   cexpr       =   let  n = uidHNm @lUniq
+  | Case        loc         .   cexpr       =   let  n = uidHNm @lUniq2
                                                 in   mkCExprLet CBindPlain [CBind_Bind n @expr.cexpr]
                                                         (rceMatch @rceEnv [n] @alts.caltL cvarUndefined)
   | AppTop      loc         .   cexpr       =   @expr.cexpr
