@@ -3,7 +3,7 @@ let  class A a where
      instance dAInt <: A Int where
        aa = \x -> x
 in
-let  f  ::  (# A a #) -> a -> Int
+let  f  ::  A a => a -> Int
      f  =   \x -> aa x
 in
 let  v  = f 3

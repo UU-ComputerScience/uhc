@@ -9,7 +9,7 @@ let  instance A Int where
      instance B Int where
        bb = \x -> x
 in
-let  f  ::  ((# B a #) -> a -> Int) -> Int
+let  f  ::  (B a => a -> Int) -> Int
      f  =   \g -> g 4
      v  =   f aa
 in   v

@@ -351,6 +351,8 @@ DATA Decl
                     ctxtPrExprs     : PrExprs
                     prExpr          : PrExpr
                     decls           : Decls
+  | InstanceIntro   nm              : {HsName}
+                    prExpr          : PrExpr
 
 DATA FuncDep
   | Dep             fromTvs         : TyVars

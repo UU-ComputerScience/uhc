@@ -200,7 +200,7 @@ SEM Decl
 ATTR PrExprs FuncDeps [ | | ppL: PP_DocL ]
 
 SEM Expr
-  | AppImpl     loc     .   argPP   =   @argPr.pp >#< ":>" >#< @arg.pp >#< hsnCImpl
+  | AppImpl     loc     .   argPP   =   @arg.pp >#< "<:" >#< @argPr.pp >#< hsnCImpl
                         .   pp      =   @func.pp >#< hsnOImpl >#< @argPP
 
 SEM RowTyExpr

@@ -5,6 +5,6 @@ let  class A a where
      instance dAL1 <: A a => A (L a) where
        aa = \x -> x
 in
-let  v = aa (# A (L Int) :> dAL1 (aa = \x -> x) #) (C 3 N)
+let  v = aa (# dAL1 (aa = \x -> x) <: A (L Int) #) (C 3 N)
 in   v
 
