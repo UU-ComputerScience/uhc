@@ -1,3 +1,5 @@
+let  foreign import jazy "primAddInt" primAddInt :: Int -> Int -> Int
+in
 let  r  ::  (e :: Int, a :: Int, c :: Char)
      r  =   (a = 3, e = 4, c = 'x')
      v  =   (r|d = 3, b='z')

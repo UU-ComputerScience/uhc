@@ -1,3 +1,5 @@
+let  foreign import jazy "primAddInt" primAddInt :: Int -> Int -> Int
+in
 let  class A a where
        aa :: a -> a
 in

@@ -100,6 +100,7 @@ SEM GrVal
 SEM GrAdapt
   | Upd         lhs         .   pp          =   @off.pp >|< ":=" >|< @val.pp
   | Ins         lhs         .   pp          =   @off.pp >|< "+=" >|< @val.pp
+  | Del         lhs         .   pp          =   @off.pp >|< "-="
 
 SEM GrPat
   | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : map @lhs.ppGrNm @fldL)

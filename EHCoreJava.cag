@@ -218,7 +218,6 @@ SEM CExpr
                             .   jvCaseResult
                                             =   HNm (show @expr.varNm ++ "_result")
   | Tup         loc         .   jvSrc       =   ctag (pp "new Object[0]") (\t _ _ -> jvTupApp ["new Int" >|< pp_parens (pp t)]) @tag
-  | TupSel      loc         .   jvSrc       =   jvApp (jvNmPP (ctag (jvSelNm) (\_ _ _ -> jvSel1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc]
   | TupDel      loc         .   jvSrc       =   empty
   | TupIns      loc         .   jvSrc       =   jvApp (jvNmPP (ctag (jvInsNm) (\_ _ _ -> jvIns1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
   | TupUpd      loc         .   jvSrc       =   jvApp (jvNmPP (ctag (jvUpdNm) (\_ _ _ -> jvUpd1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]

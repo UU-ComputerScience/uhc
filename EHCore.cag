@@ -18,7 +18,7 @@
 %%[8 hs export(CPatNm(..), cpatNmEither,cpatNmNone)
 %%]
 
-%%[8 hs export(CTag(..),ctag,cpatVarNm,caltTag,caltIsVar,caltPatL,caltPat,caltLPatNms,cvarUndefined,ppCTag,ppCTagInt) 
+%%[8 hs export(cpatVarNm,caltTag,caltIsVar,caltPatL,caltPat,caltLPatNms,cvarUndefined) 
 %%]
 
 %%[8 hs export(mkCExprLet,mkCExprLetRec,mkCExprLam,mkCExprApp)
@@ -33,11 +33,30 @@
 %%[8 hs export(mkCExprAddInt)
 %%]
 
+%%[8 hs export(cTupLbl)
+%%]
+
+%%[8 hs export(CTag(..),ctag,ppCTag,ppCTagInt) 
+%%]
+
 %%[9 hs export(CBindLMap, emptyCBindLMap, Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLetRecCoe, cbindLMapBinds, mkCBindLForUIDL)
 %%]
 
 %%[8 import(EHCoreAbsSyn)
 DERIVING *     : Show, Eq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tuple operator label
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+cTupLbl :: CExpr -> HsName
+cTupLbl e
+  =  case e of
+         CExpr_TupIns _ _ l _ _ -> l
+         CExpr_TupUpd _ _ l _ _ -> l
+         CExpr_TupDel _ _ l _   -> l
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -129,12 +148,12 @@ mkCExprStrictIn nm e mkC = CExpr_Let CBindStrict [CBind_Bind nm e] (mkC (CExpr_V
 %%]
 
 %%[8 hs
-mkCExprAddInt :: CExpr -> CExpr -> CExpr
-mkCExprAddInt e1 e2 = CExpr_Var hsnPrimAddInt `mkCExprApp` [e1,e2]
+mkCExprAddInt :: CExpr -> Int -> CExpr
+mkCExprAddInt e i = if i == 0 then e else CExpr_Var hsnPrimAddInt `mkCExprApp` [e,CExpr_Int i]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Destruction
+%%% Misc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs

@@ -38,11 +38,9 @@ DATA CExpr
   | Int         int             : {Int}
   | Char        char            : {Char}
   | Tup         tag             : {CTag}
-  | TupSel      expr            : CExpr
-                tag             : {CTag}
-                offset          : CExpr
   | TupDel      expr            : CExpr
                 tag             : {CTag}
+                nm              : {HsName}
                 offset          : CExpr
   | TupIns      expr            : CExpr
                 tag             : {CTag}

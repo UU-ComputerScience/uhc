@@ -44,7 +44,7 @@ SEM CExpr
   | Lam         (body.gUniq,loc.lUniq,loc.lUniq2)
                                             =   mkNewLevUID2 @lhs.gUniq
   | Let         (binds.gUniq,loc.lUniq)     =   mkNewUID @lhs.gUniq
-  | Case TupSel TupDel TupIns TupUpd
+  | Case TupDel TupIns TupUpd
                 (expr.gUniq,loc.lUniq)      =   mkNewUID @lhs.gUniq
 %%]
 
@@ -68,8 +68,7 @@ ATTR AllBind [ | | bindL USE {++} {[]}: {AssocL Int CBind} ]
 SEM CExpr
   | App         lhs         .   levBindSq   =   @arg.levBindSq <+> @func.levBindSq <+> @levBindSq
   | Case        lhs         .   levBindSq   =   @expr.levBindSq <+> @alts.levBindSq <+> @dflt.levBindSq <+> @levBindSq
-  | TupSel TupDel
-                lhs         .   levBindSq   =   @expr.levBindSq <+> @offset.levBindSq <+> @levBindSq
+  | TupDel      lhs         .   levBindSq   =   @expr.levBindSq <+> @offset.levBindSq <+> @levBindSq
   | TupIns TupUpd
                 lhs         .   levBindSq   =   @expr.levBindSq <+> @offset.levBindSq <+> @fldExpr.levBindSq <+> @levBindSq
   | Let         (loc.hereBindSq,loc.remBindSq)
@@ -120,10 +119,10 @@ SEM CPatBind
 SEM CExpr
   | App         func        .   appTrfIsOk  =   AppNoLet
                 arg         .   appTrfIsOk  =   AppYesLet
-  | TupIns TupUpd
+  | TupIns TupUpd TupDel
                 loc         .   appTrfIsOk  =   AppYesLet
   | Lam Let     body        .   appTrfIsOk  =   AppNoLet
-  | * - App Lam Let TupIns TupUpd
+  | * - App Lam Let TupIns TupUpd TupDel
                 loc         .   appTrfIsOk  =   AppYesLet
 
 SEM CAlt
@@ -201,26 +200,26 @@ ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CExpr
-  | App Lam Case TupSel TupDel TupIns TupUpd Let
-                loc         .   nm          =   uidHNm @lUniq
-  | Lam         loc         .   nm2         =   uidHNm @lUniq2
-  | TupIns TupUpd
+  | App Lam Case TupDel TupIns TupUpd Let
+                loc         .   trNm        =   uidHNm @lUniq
+  | Lam         loc         .   trNm2       =   uidHNm @lUniq2
+  | TupIns TupUpd TupDel
                 loc         .   trfIsOk     =   @lhs.appTrfIsOk == AppYesLet && @lhs.isTopTup
-                (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @nm @cTrf
-  | App Case TupSel TupDel
+                (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @cTrf
+  | App Case
                 loc         .   trfIsOk     =   @lhs.appTrfIsOk == AppYesLet && @lhs.isTopApp
-                (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @nm @cTrf
+                (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @cTrf
   | Lam         loc         .   trfIsOk     =   @lhs.lamTrfIsOk == LamYesLet
-                (lhs.cTrf,loc.levBindSq)    =   let mkTLB = mkTrf @trfIsOk @lhs.lev @levOf @nm
+                (lhs.cTrf,loc.levBindSq)    =   let mkTLB = mkTrf @trfIsOk @lhs.lev @levOf @trNm
                                                           . CExpr_Lam @arg
                                                           . mkLetTrf @hereBindSq
                                                 in  case @body.cTrf of
                                                         CExpr_Lam _ _ | not (null (seqToList @hereBindSq))
-                                                            -> mkTLB (CExpr_Let CBindPlain [CBind_Bind @nm2 @body.cTrf] (CExpr_Var @nm2))
+                                                            -> mkTLB (CExpr_Let CBindPlain [CBind_Bind @trNm2 @body.cTrf] (CExpr_Var @trNm2))
                                                         _   -> mkTLB @body.cTrf
   | Let         loc         .   trfIsOk     =   @lhs.letTrfIsOk
                 (lhs.cTrf,loc.levBindSq)    =   let  lt = mkLetTrf @hereBindSq @body.cTrf
-                                                in   mkTrf @trfIsOk @lhs.lev @levOf @nm lt
+                                                in   mkTrf @trfIsOk @lhs.lev @levOf @trNm lt
 
 SEM CAlt
   | Alt         lhs         .   cTrf        =   CAlt_Alt @pats.cTrf (mkLetTrf @hereBindSq @expr.cTrf)

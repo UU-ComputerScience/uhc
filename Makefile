@@ -112,7 +112,7 @@ EHC					:= ehc
 EHC_MAIN			:= EHC
 EHC_LAG_FOR_AG		:= $(EHC_DPDS_ALL_MIN_TARG:.ag=.lag)
 EHC_LAG				:= $(EHC_LAG_FOR_AG) $(EHC_LAG_FOR_HS)
-EHC_LHS_FOR_HS		:= $(addsuffix .lhs,$(EHC_MAIN) EHCommon EHCnstr EHSubstitutable EHTyFitsIn EHGam EHPred EHParser FPath EHScanner EHScannerMachine EHDebug)
+EHC_LHS_FOR_HS		:= $(addsuffix .lhs,$(EHC_MAIN) EHCommon EHCnstr EHSubstitutable EHTyFitsIn EHGam EHPred EHParser FPath EHScanner EHScannerMachine EHCoreUtils EHDebug)
 EHC_LHS				:= $(EHC_LHS_FOR_HS)
 EHC_HS				:= $(EHC_LAG_FOR_HS:.lag=.hs) $(EHC_LHS_FOR_HS:.lhs=.hs)
 
@@ -231,14 +231,14 @@ doc: $(SHUFFLE_DOC_PDF)
 #include $(MK_EHFILES)
 
 ### Versioned ehc's, gri's
-VERSIONS			:= $(sort 1 2 3 4 5 6 7 8 9)
+VERSIONS			:= 1 2 3 4 5 6 7 8 9 10
 VERSION_LAST		:= $(word $(words $(VERSIONS)), $(VERSIONS))
 VERSION_FIRST		:= $(word 1, $(VERSIONS))
 
 EHC_CAG				:= $(EHC_LAG:.lag=.cag)
 EHC_CHS				:= $(EHC_LHS:.lhs=.chs)
 
-GRI_VERSIONS		:= $(sort 8 9)
+GRI_VERSIONS		:= 8 9
 
 GRI_CAG				:= $(GRI_LAG:.lag=.cag)
 GRI_CHS				:= $(GRI_LHS:.lhs=.chs)
@@ -615,7 +615,7 @@ $(DIST_ZIP): $(addprefix $(VERSION_LAST)/,$(EHC_DPDS_ALL_MIN_TARG)) Makefile tes
 wc:
 	grep frametitle $(AFP_LHS) | wc
 
-WWW_EXAMPLES_TMPL			:=	www/ehc-examples.tmpl
+WWW_EXAMPLES_TMPL			:=	www/ehc-examples-templ.html
 WWW_EXAMPLES_HTML			:=	www/ehc-examples.html
 
 www-ex: $(WWW_EXAMPLES_HTML)

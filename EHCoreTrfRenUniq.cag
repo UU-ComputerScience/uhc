@@ -21,10 +21,10 @@ WRAPPER CodeAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-cmodTrfRenUniq :: UID -> CModule -> CModule
-cmodTrfRenUniq uniq cmod
+cmodTrfRenUniq :: CModule -> CModule
+cmodTrfRenUniq cmod
   =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
-                              (Inh_CodeAGItf {gUniq_Inh_CodeAGItf = uniq})
+                              (Inh_CodeAGItf {gUniq_Inh_CodeAGItf = uidStart})
      in   cTrf_Syn_CodeAGItf t
 %%]
 
@@ -37,11 +37,11 @@ ATTR AllCodeNT [ | gUniq: UID | ]
 ATTR CodeAGItf [ gUniq: UID | | ]
 
 SEM CExpr
-  | Let         (binds.gUniq,loc.lUniq)     =   mkNewLevUID @lhs.gUniq
-  | Lam         (body.gUniq,loc.lUniq)      =   mkNewLevUID @lhs.gUniq
+  | Let         (binds.gUniq,loc.lUniq)     =   mkNewLevUID  @lhs.gUniq
+  | Lam         (body.gUniq,loc.lUniq)      =   mkNewUID     @lhs.gUniq
 
 SEM CAlt
-  | Alt         (pats.gUniq,loc.lUniq)      =   mkNewLevUID @lhs.gUniq
+  | Alt         (pats.gUniq,loc.lUniq)      =   mkNewLevUID  @lhs.gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

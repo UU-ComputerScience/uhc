@@ -72,6 +72,7 @@ DATA GrAdapt
                 val             : GrVal
   | Ins         off             : GrVal
                 val             : GrVal
+  | Del         off             : GrVal
 
 TYPE GrAdaptL   =   [GrAdapt]
 

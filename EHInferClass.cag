@@ -60,10 +60,6 @@ SEM Decl
                                 .   patPrElimGam    =   foldr (uncurry peGamAdd) @lhs.patPrElimGam @elimRules
 %%]
 
-
-                                                                    , rulMkEvid    = \[sub] -> CExpr_TupSel sub CTagRec
-                                                                                                 (CExpr_Int . tyRecOffset supNm $ @clsTyRec)
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Functional dependency
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

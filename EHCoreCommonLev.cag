@@ -75,11 +75,10 @@ SEM CExpr
   | App         func        .   isTopApp    =   False
                 arg         .   isTopApp    =   True
   | * - App     loc         .   isTopApp    =   True
-  | TupUpd TupIns
+  | TupUpd TupIns TupDel
                 expr        .   isTopTup    =   False
-                fldExpr     .   isTopTup    =   True
-                offset      .   isTopTup    =   True
-  | * - TupUpd TupIns
+                loc         .   isTopTup    =   True
+  | * - TupUpd TupIns TupDel
                 loc         .   isTopTup    =   True
 
 SEM CModule
