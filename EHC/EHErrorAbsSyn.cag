@@ -45,3 +45,8 @@ DATA Err
   | MissingRowLabel     nm         : {HsName}            ^^  ty         : Ty
 %%]
 
+%%[8
+DATA Err
+  | FileNotFound        fileName   : {String}            ^^  locations  : {[String]}
+  | Parse               expecting  : {String}            ^^  repaired   : {String}
+%%]

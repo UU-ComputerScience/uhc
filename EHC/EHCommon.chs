@@ -66,7 +66,7 @@
 %%[7 export(uidHNm)
 %%]
 
-%%[8 export(hsnUndefined)
+%%[8 import (FPath) export(hsnUndefined,putPPLn,Verbosity(..),putCompileMsg)
 %%]
 
 %%[8 export(hsnPrefix,hsnSuffix)
@@ -334,6 +334,21 @@ showPP x = disp (pp x) 100 ""
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Putting stuff on output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+putPPLn :: PP_Doc -> IO ()
+putPPLn pp = putStrLn (disp pp 4000 "")
+
+putCompileMsg :: EHCOpts -> String -> HsName -> FPath -> IO ()
+putCompileMsg opts msg modNm fNm
+  = if ehcoptVerbosity opts >= VerboseNormal
+    then putStrLn (strBlankPad 25 msg ++ " " ++ strBlankPad 15 (show modNm) ++ " (" ++ fpathToStr fNm ++ ")")
+    else return ()
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Prio computation for need of parenthesis
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -372,6 +387,16 @@ cocoOpp  _              =   CoContraVariant
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Verbosity
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+data Verbosity
+  = VerboseQuiet | VerboseNormal | VerboseALot
+  deriving (Eq,Ord)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -385,6 +410,8 @@ data EHCOpts    = EHCOptions    {  ehcoptDumpPP         ::  Maybe String
 %%[EHCOpts.8
                                 ,  ehcoptCode           ::  Bool
                                 ,  ehcoptCodeJava       ::  Bool
+                                ,  ehcoptSearchPath     ::  [String]
+                                ,  ehcoptVerbosity      ::  Verbosity
 %%]
 
 %%[defaultEHCOpts.1
@@ -397,6 +424,8 @@ defaultEHCOpts  = EHCOptions    {  ehcoptDumpPP         =   Just "pp"
 %%[defaultEHCOpts.8
                                 ,  ehcoptCode           =   True
                                 ,  ehcoptCodeJava       =   False
+                                ,  ehcoptSearchPath     =   []
+                                ,  ehcoptVerbosity      =   VerboseQuiet
 %%]
 
 %%[cmdLineOptsA.1
@@ -505,5 +534,10 @@ unionL = foldr union []
 %%[4.listCombineUniq
 listCombineUniq :: Eq a => [[a]] -> [a]
 listCombineUniq = nub . concat
+%%]
+
+%%[8
+strBlankPad :: Int -> String -> String
+strBlankPad n s = s ++ replicate (n - length s) ' '
 %%]
 

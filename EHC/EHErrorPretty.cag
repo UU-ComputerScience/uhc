@@ -105,3 +105,17 @@ SEM Err
                                                         ("Label:" >#< @nm >-< "Row  :" >#< ppTy @ty)
 %%]
 
+%%[8
+  | FileNotFound        lhs     .  pp   =   ppMsgErr    "File not found"
+                                                        (    "file name         :" >#< @fileName
+                                                         >-< "searched locations:" >#< vlist (map (text.show) @locations)
+                                                        )
+  | Parse               lhs     .  pp   =   ppMsgErr    "Parse error"
+                                                        (    "expecting  :" >#< text @expecting
+                                                         >-< "repaired by:" >#< text @repaired
+                                                        )
+%%]
+
+
+
+
