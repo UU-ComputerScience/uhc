@@ -15,7 +15,7 @@
 %%[8 import (EHScanner,EHError,EHErrorPretty,FPath,FiniteMap,Maybe,Directory)
 %%]
 
-%%[8 import (EHCodeJava,EHCodeGrin,EHCodePretty,EHCodeSimplify)
+%%[8 import (EHCoreJava,EHCoreGrin,EHCorePretty,EHCoreTrfRenUniq)
 %%]
 
 %%[8 import (GrinCodePretty)
@@ -330,7 +330,7 @@ crCompileCUPass2HS modNm cr
                  p1ob   = fromJust (cuMbOut (crCU modNm cr))
                  fp     = cuFilePath cu
                  opts   = crOpts cr
-                 cMod	= cmodSimplify . cmodule_Syn_AGItf $ p1ob
+                 cMod	= cmodRenameUniq . cmodule_Syn_AGItf $ p1ob
                  codePP = ppCModule cMod 
          ;  if ehcoptCode opts
             then  putPPFile (fpathToStr (fpathSetSuff "code" fp)) codePP 120

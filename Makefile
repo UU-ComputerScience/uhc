@@ -41,6 +41,8 @@ SUBSTSH				:= bin/substsh.pl
 SUBST_BAR_IN_TT		:= sed -e '/begin{TT}/,/end{TT}/s/|/||/g'
 SUBST_LINE_CMT		:= sed -e 's/{-\# LINE[^\#]*\#-}//' -e '/{-\#  \#-}/d'
 
+MK_EHFILES			:= mk/ehfiles.mk
+
 # AGC(opts, file)
 AGCC				= cd `dirname $2` ; $(AGC) $1 `basename $2`
 
@@ -52,9 +54,9 @@ AFP_PGF_TEX			:= afp-pgf.tex
 ALL_AFP_SRC			:= $(AFP_LHS) $(AFP_RULES)
 
 EHC_LAG_FOR_HS_TY			:= $(addsuffix .lag,EHTyQuantify EHTySubst EHTyFtv EHTyPretty EHTyInstantiate )
-EHC_LAG_FOR_HS_CODE			:= $(addsuffix .lag,EHCodeJava EHCodeGrin EHCodeSimplify EHCodePretty EHCodeSubst)
+EHC_LAG_FOR_HS_CORE			:= $(addsuffix .lag,EHCoreJava EHCoreGrin EHCoreTrfRenUniq EHCorePretty EHCoreSubst)
 EHC_LAG_FOR_HS_GRIN_CODE	:= $(addsuffix .lag,GrinCodePretty)
-EHC_LAG_FOR_HS				:= $(addsuffix .lag,EHMainAG EHTy EHCode EHError EHErrorPretty GrinCode) $(EHC_LAG_FOR_HS_TY) $(EHC_LAG_FOR_HS_CODE) $(EHC_LAG_FOR_HS_GRIN_CODE)
+EHC_LAG_FOR_HS				:= $(addsuffix .lag,EHMainAG EHTy EHCore EHError EHErrorPretty GrinCode) $(EHC_LAG_FOR_HS_TY) $(EHC_LAG_FOR_HS_CORE) $(EHC_LAG_FOR_HS_GRIN_CODE)
 
 DPDS_MAIN					:= EHMainAG.ag EHInfer.ag EHInferExpr.ag \
 								EHInferPatExpr.ag EHInferTyExpr.ag EHInferKiExpr.ag EHInferData.ag \
@@ -70,15 +72,15 @@ DPDS_TY_FTV					:= EHTyFtv.ag EHTyAbsSyn.ag
 DPDS_TY_INST				:= EHTyInstantiate.ag EHTyCommonAG.ag EHTyAbsSyn.ag
 DPDS_ERR					:= EHError.ag EHErrorAbsSyn.ag
 DPDS_ERR_PRETTY				:= EHErrorPretty.ag EHErrorAbsSyn.ag
-DPDS_CODE					:= EHCode.ag EHCodeAbsSyn.ag
-DPDS_CODE_JAVA				:= EHCodeJava.ag EHCodeAbsSyn.ag
-DPDS_CODE_GRIN				:= EHCodeGrin.ag EHCodeAbsSyn.ag
-DPDS_CODE_PRETTY			:= EHCodePretty.ag EHCodeAbsSyn.ag
-DPDS_CODE_SIMPL				:= EHCodeSimplify.ag EHCodeAbsSyn.ag
+DPDS_CORE					:= EHCore.ag EHCoreAbsSyn.ag
+DPDS_CORE_JAVA				:= EHCoreJava.ag EHCoreAbsSyn.ag
+DPDS_CORE_GRIN				:= EHCoreGrin.ag EHCoreAbsSyn.ag
+DPDS_CORE_PRETTY			:= EHCorePretty.ag EHCoreAbsSyn.ag
+DPDS_CORE_TRF_RENUNQ		:= EHCoreTrfRenUniq.ag EHCoreAbsSyn.ag
 DPDS_GRIN_CODE				:= GrinCode.ag GrinCodeAbsSyn.ag
 DPDS_GRIN_CODE_PRETTY		:= GrinCodePretty.ag GrinCodeAbsSyn.ag
 DPDS_ALL					:= $(sort $(DPDS_MAIN) \
-										$(DPDS_CODE) $(DPDS_CODE_JAVA) $(DPDS_CODE_GRIN) $(DPDS_CODE_PRETTY) $(DPDS_CODE_SIMPL) \
+										$(DPDS_CORE) $(DPDS_CORE_JAVA) $(DPDS_CORE_GRIN) $(DPDS_CORE_PRETTY) $(DPDS_CORE_TRF_RENUNQ) \
 										$(DPDS_TY) $(DPDS_TY_PRETTY) $(DPDS_TY_QUANT) $(DPDS_TY_SUBST) $(DPDS_TY_FTV) $(DPDS_TY_INST) \
 										$(DPDS_GRIN_CODE) $(DPDS_GRIN_CODE_PRETTY) \
 										$(DPDS_ERR) $(DPDS_ERR_PRETTY) \
@@ -184,7 +186,7 @@ doc: $(SHUFFLE_DOC_PDF)
 	cd `dirname $<` ; $(AGC) -dcfspr `basename $< .ag`
 
 #VPREFIX				:=
-#include mk/ehfiles.mk
+#include $(MK_EHFILES)
 
 ### Versioned ehc's
 VERSIONS			:= $(sort 1 2 3 4 5 6 7 8 9)
@@ -225,7 +227,7 @@ RULER_LHS_TEX		= \
 ### Version 1
 V					:= 1
 VF					:= $(V)
-include mk/ehfiles.mk
+include $(MK_EHFILES)
 EHC_V1				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 1
 
@@ -233,7 +235,7 @@ EHC_V1				:= $(addprefix $(VF)/,$(EHC))
 ### Version 2
 V					:= 2
 VF					:= $(V)
-include mk/ehfiles.mk
+include $(MK_EHFILES)
 EHC_V2				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 2
 
@@ -241,7 +243,7 @@ EHC_V2				:= $(addprefix $(VF)/,$(EHC))
 ### Version 3
 V					:= 3
 VF					:= $(V)
-include mk/ehfiles.mk
+include $(MK_EHFILES)
 EHC_V3				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 3
 
@@ -249,7 +251,7 @@ EHC_V3				:= $(addprefix $(VF)/,$(EHC))
 ### Version 4
 V					:= 4
 VF					:= $(V)
-include mk/ehfiles.mk
+include $(MK_EHFILES)
 EHC_V4				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 4
 
@@ -257,7 +259,7 @@ EHC_V4				:= $(addprefix $(VF)/,$(EHC))
 ### Version 5
 V					:= 5
 VF					:= $(V)
-include mk/ehfiles.mk
+include $(MK_EHFILES)
 EHC_V5				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 5
 
@@ -265,7 +267,7 @@ EHC_V5				:= $(addprefix $(VF)/,$(EHC))
 ### Version 6
 V					:= 6
 VF					:= $(V)
-include mk/ehfiles.mk
+include $(MK_EHFILES)
 EHC_V6				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 6
 
@@ -273,7 +275,7 @@ EHC_V6				:= $(addprefix $(VF)/,$(EHC))
 ### Version 6:1
 V					:= 6_1
 VF					:= 6_1
-include mk/ehfiles.mk
+include $(MK_EHFILES)
 EHC_V6_1			:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 6
 
@@ -281,7 +283,7 @@ EHC_V6_1			:= $(addprefix $(VF)/,$(EHC))
 ### Version 7
 V					:= 7
 VF					:= $(V)
-include mk/ehfiles.mk
+include $(MK_EHFILES)
 EHC_V7				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 7
 
@@ -289,7 +291,7 @@ EHC_V7				:= $(addprefix $(VF)/,$(EHC))
 ### Version 8
 V					:= 8
 VF					:= $(V)
-include mk/ehfiles.mk
+include $(MK_EHFILES)
 EHC_V8				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 8
 
@@ -297,7 +299,7 @@ EHC_V8				:= $(addprefix $(VF)/,$(EHC))
 ### Version 9
 V					:= 9
 VF					:= $(V)
-include mk/ehfiles.mk
+include $(MK_EHFILES)
 EHC_V9				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 9
 
@@ -305,7 +307,7 @@ EHC_V9				:= $(addprefix $(VF)/,$(EHC))
 ### Version 10
 V					:= 10
 VF					:= $(V)
-include mk/ehfiles.mk
+include $(MK_EHFILES)
 EHC_V10				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 10
 
@@ -313,7 +315,7 @@ EHC_V10				:= $(addprefix $(VF)/,$(EHC))
 ### Version 11
 V					:= 11
 VF					:= $(V)
-include mk/ehfiles.mk
+include $(MK_EHFILES)
 EHC_V11				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 11
 
@@ -420,7 +422,7 @@ clean-test:
 	rm -rf test/*.reg* test/*.exp*
 
 edit:
-	bbedit $(EHC_CAG) $(EHC_CHS) $(ALL_AFP_SRC) $(SHUFFLE_SRC) Makefile $(TMPL_TEST)
+	bbedit $(EHC_CAG) $(EHC_CHS) $(ALL_AFP_SRC) $(SHUFFLE_SRC) Makefile $(TMPL_TEST) $(MK_EHFILES)
 
 A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
@@ -484,11 +486,11 @@ MK_EHC_MKF			= \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_TY_INST),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_ERR),-dr) ; \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_ERR_PRETTY),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_CODE),-dr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_CODE_PRETTY),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_CODE_SIMPL),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_CODE_JAVA),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_CODE_GRIN),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE),-dr) ; \
+	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE_PRETTY),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE_TRF_RENUNQ),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE_JAVA),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE_GRIN),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_GRIN_CODE),-dr) ; \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_GRIN_CODE_PRETTY),-cfspr) ; \
 	) > Makefile

@@ -15,7 +15,7 @@
 %%[1 import(EHErrorAbsSyn)
 %%]
 
-%%[9 hs import(EHCode)
+%%[9 hs import(EHCore)
 %%]
 
 %%[9
