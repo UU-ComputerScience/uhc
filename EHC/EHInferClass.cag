@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -24,24 +24,26 @@ tyPrLToSupNmL = zipWith (\i p -> hsnSuffix (tyPredNm p) (show i)) [1..]
 
 %%[9
 SEM Decl
-  | Class       ctxtPrExprs     .   tyGam           =   gamPushNew @lhs.patTyGam
+  | Class       tyPrExpr        .   tyGam           =   gamPushNew @lhs.patTyGam
+                loc             .   (ctxtPrTyL,hdPrTy)
+                									=   tyArrowArgsRes @tyPrExpr.ty
                 decls           .   gathTySigGam    =   gamPushNew @lhs.gathTySigGam
                 loc             .   (lSigGam,_)     =   gamPop @decls.gathTySigGam
-                                .   clsTySigGam     =   valGamMapTy (\t -> [@prExpr.ty] `mkTyArrow` t) @lSigGam
-                                .   supClsNmL       =   tyPrLToSupNmL @ctxtPrExprs.tyL
+                                .   clsTySigGam     =   valGamMapTy (\t -> [@hdPrTy] `mkTyArrow` t) @lSigGam
+                                .   supClsNmL       =   tyPrLToSupNmL @ctxtPrTyL
                                 .   clsFldL         =   assocLMapSnd vgiTy (gamToAssocL @clsTySigGam)
                                 .   clsTyRec        =   mkTyRec (@clsFldL ++ zip @supClsNmL (repeat Ty_Any))
                                 .   pigi            =   let  k =  mkNewTyVar @lUniq
                                                              n =  uidHNm @lUniq
                                                              r =  Rule
-                                                                    { rulRuleTy    = tyQuantifyClosed (@ctxtPrExprs.tyL `mkTyArrow` @prExpr.ty)
+                                                                    { rulRuleTy    = tyQuantifyClosed @tyPrExpr.ty
                                                                     , rulMkEvid    = \_ -> CExpr_Var n
                                                                     , rulNmEvid    = n
                                                                     , rulId        = @lUniq
                                                                     , rulCost      = CostInt 10
                                                                     , rulFuncDeps  = @funcDeps.funcDeps
                                                                     }
-                                                        in   PrIntroGamInfo (tyQuantifyClosed ([@prExpr.ty] `mkTyArrow` @clsTyRec)) k r
+                                                        in   PrIntroGamInfo (tyQuantifyClosed ([@hdPrTy] `mkTyArrow` @clsTyRec)) k r
                                 .   elimRules       =   let  mkR sub sup supNm
                                                                =  Rule
                                                                     { rulRuleTy    = tyQuantifyClosed ([sub] `mkTyArrow` sup)
@@ -52,11 +54,11 @@ SEM Decl
                                                                     , rulCost      = CostInt (2 * costBase)
                                                                     , rulFuncDeps  = []
                                                                     }
-                                                        in   zipWith (\p n -> (tyPredMatchNm p,mkR @prExpr.ty p n)) @ctxtPrExprs.tyL @supClsNmL
+                                                        in   zipWith (\p n -> (tyPredMatchNm p,mkR @hdPrTy p n)) @ctxtPrTyL @supClsNmL
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   tyGam           =   @lhs.tyGam
                                 .   gathTySigGam    =   gamAddGam (valGamMapTy tyQuantifyClosed @clsTySigGam) @lhs.gathTySigGam
-                                .   patPrIntroGam   =   gamAdd (tyPredMatchNm @prExpr.ty) @pigi @lhs.patPrIntroGam
+                                .   patPrIntroGam   =   gamAdd (tyPredMatchNm @hdPrTy) @pigi @lhs.patPrIntroGam
                                 .   patPrElimGam    =   foldr (uncurry peGamAdd) @lhs.patPrElimGam @elimRules
 %%]
 
@@ -72,7 +74,7 @@ SEM FuncDep
                                                         in   [(map l @fromTvs.tyL, map l @toTvs.tyL)]
 
 SEM Decl
-  | Class       loc             .   clsTyArgs       =   tyAppArgs . predTy . tyPred $ @prExpr.ty
+  | Class       loc             .   clsTyArgs       =   tyAppArgs . predTy . tyPred $ @hdPrTy
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -81,19 +83,21 @@ SEM Decl
 
 %%[9
 SEM Decl
-  | Instance    ctxtPrExprs     .   tyGam           =   gamPushNew @lhs.patTyGam
-                loc             .   instClsNm       =   tyPredMatchNm @prExpr.ty
+  | Instance    tyPrExpr        .   tyGam           =   gamPushNew @lhs.patTyGam
+                loc             .   (ctxtPrTyL,hdPrTy)
+                									=   tyArrowArgsRes @tyPrExpr.ty
+                                .   instClsNm       =   tyPredMatchNm @hdPrTy
+                                .   ctxtClsNmL      =   map tyPredMatchNm @ctxtPrTyL
                                 .   instId          =   @lUniq
                                 .   (dictNm,inclForElim)
                                                     =   maybe (uidHNm @instId,True) id @mbNmElim
-                                .   ctxtClsNmL      =   map tyPredMatchNm @ctxtPrExprs.tyL
                                 .   (pigiL,nmErrs)  =   let  (pL,nLL)  = unzip
                                                                        . map (\n -> maybe (emptyPIGI,[n]) (\p -> (p,[])) . gamLookup n $ @lhs.prIntroGam)
                                                                        $ (@instClsNm : @ctxtClsNmL)
                                                              nL        = concat nLL
                                                         in   (pL,if null nL then [] else [Err_NamesNotIntrod nL])
                                 .   pigi            =   head @pigiL
-                                .   prTyL           =   tyFixTyVars (@prExpr.ty : @ctxtPrExprs.tyL)
+                                .   prTyL           =   tyFixTyVars (@hdPrTy : @ctxtPrTyL)
                                 .   supPrTyL        =   let  t      =  rulRuleTy . pigiRule $ @pigi
                                                              st     =  mkNewTyVarL (tyArrowArity . tyQuant $ t) @lUniq4 `mkTyArrow` head @prTyL
                                                              fo     =  fitsIn predFIOpts emptyFE @lUniq3 t st
@@ -111,7 +115,7 @@ SEM Decl
                                 .   ctxtRecToInstRecTy
                                                     =   tail @recTyL `mkTyArrow` head @recTyL
                 decls           .   tySigGam        =   assocLToGam . assocLMapSnd ValGamInfo . snd . tyRecExts . head $ @recTyL
-                loc             .   elimRule        =   mkInstElimRule @dictNm @instId (length @ctxtPrExprs.tyL) (tyQuantifyClosed @ctxtToInstTy)
+                loc             .   elimRule        =   mkInstElimRule @dictNm @instId (length @ctxtPrTyL) (tyQuantifyClosed @ctxtToInstTy)
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   tyGam           =   @lhs.tyGam
                                 .   gathTySigGam    =   (maybe id (\(n,_) g -> gamAdd n (ValGamInfo (tyQuantifyClosed @ctxtRecToInstRecTy)) g) @mbNmElim) @lhs.gathTySigGam
@@ -127,14 +131,3 @@ SEM Decl
                 expr            .   knTy            =   foTy @foPr
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Kind inference
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-SEM Decl
-  | Class       loc             .   fo              =   fitsIn  weakFIOpts emptyFE @lUniq2
-                                                                (@lhs.kiCnstr |=> (@prExpr.kiL `mkTyArrow` kiStar))
-                                                                (@lhs.kiCnstr |=> (pigiKi @pigi))
-                decls           .   kiCnstr         =   foCnstr @fo |=> @prExpr.kiCnstr
-%%]

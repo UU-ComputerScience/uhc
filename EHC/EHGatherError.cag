@@ -22,121 +22,121 @@ gamErrToL = concat . map (\(n,e) -> mkNestErr (pp n) e) . gamToAssocL
 ATTR AllNT [ | | errL USE {++} {[]} : ErrL ]
 
 SEM Expr
-  | App         lhs         .  errL         =   mkNestErr @pp
+  | App         lhs         .   errL        =   mkNestErr @pp
                                                     (@func.errL ++ @arg.errL)
-  | Lam         lhs         .  errL         =   mkNestErr @pp
+  | Lam         lhs         .   errL        =   mkNestErr @pp
                                                     (foErrL @foKnFun ++ @arg.errL
                                                       ++ @body.errL)
-  | Var         lhs         .  errL         =   mkNestErr @pp
+  | Var         lhs         .   errL        =   mkNestErr @pp
                                                     (@nmErrs ++ foErrL @fo)
-  | AppTop      lhs         .  errL         =   mkNestErr @pp (@expr.errL)
+  | AppTop      lhs         .   errL        =   mkNestErr @pp (@expr.errL)
   | IConst CConst
-                lhs         .  errL         =   mkNestErr @pp (foErrL @fo)
-  | TypeAs      lhs         .  errL         =   mkNestErr @pp
+                lhs         .   errL        =   mkNestErr @pp (foErrL @fo)
+  | TypeAs      lhs         .   errL        =   mkNestErr @pp
                                                     (@expr.errL ++ @tyExpr.errL ++ foErrL @fo)
 %%]
 
 %%[1.GatherRest
 SEM TyExpr
-  | Con         lhs         .  errL         =   mkNestErr @pp (@nmErrs)
+  | Con         lhs         .   errL        =   mkNestErr @pp (@nmErrs)
 
 SEM PatExpr
-  | AppTop      lhs         .  errL         =   mkNestErr @pp (@patExpr.errL ++ @aErrs)
+  | AppTop      lhs         .   errL        =   mkNestErr @pp (@patExpr.errL ++ @aErrs)
 
 SEM Decl
-  | Val         lhs         .  errL         =   @patExpr.errL ++ @expr.errL ++ @sigMissErrs
+  | Val         lhs         .   errL        =   @patExpr.errL ++ @expr.errL ++ @sigMissErrs
 %%]
 
 %%[2
 SEM Expr
-  | Con         lhs         .  errL         =   mkNestErr @pp (foErrL @fo)
+  | Con         lhs         .   errL        =   mkNestErr @pp (foErrL @fo)
 
 SEM PatExpr
-  | AppTop      lhs         .  errL         :=  mkNestErr @pp (@patExpr.errL ++ @aErrs ++ foErrL @fo)
+  | AppTop      lhs         .   errL        :=  mkNestErr @pp (@patExpr.errL ++ @aErrs ++ foErrL @fo)
 
 SEM Decl
-  | Val         lhs         .  errL         :=  @patExpr.errL ++ @expr.errL
+  | Val         lhs         .   errL        :=  @patExpr.errL ++ @expr.errL
 %%]
 
 %%[4
 SEM Expr
-  | Con         lhs         .  errL         :=  mkNestErr @pp (@nmErrs ++ foErrL @fo)
+  | Con         lhs         .   errL        :=  mkNestErr @pp (@nmErrs ++ foErrL @fo)
 
 SEM PatExpr
-  | Con         lhs         .  errL         =   mkNestErr @pp (@nmErrs ++ foErrL @fo)
-  | TypeAs      lhs         .  errL         =   mkNestErr @pp (@patExpr.errL ++ @tyExpr.errL ++ foErrL @fo)
+  | Con         lhs         .   errL        =   mkNestErr @pp (@nmErrs ++ foErrL @fo)
+  | TypeAs      lhs         .   errL        =   mkNestErr @pp (@patExpr.errL ++ @tyExpr.errL ++ foErrL @fo)
 %%]
 
 %%[4_2
 SEM Expr
-  | Lam         loc         .  gamErrL      =   gamErrToL @errGam
-                lhs         .  errL         :=  mkNestErr @pp
+  | Lam         loc         .   gamErrL     =   gamErrToL @errGam
+                lhs         .   errL        :=  mkNestErr @pp
                                                     (foErrL @foKnFun ++ @arg.errL ++ @body.errL ++ @gamErrL)
 %%]
 
 %%[5
 %%]
 SEM CaseAlts
-  | Cons        lhs         .  errL         =   mkNestErr @hd.pp (@hd.errL ++ foErrL @fo) ++ @tl.errL
+  | Cons        lhs         .   errL        =   mkNestErr @hd.pp (@hd.errL ++ foErrL @fo) ++ @tl.errL
 
 %%[5_1
 SEM Expr
-  | Case        lhs         .  errL         =   @expr.errL ++ @alts.errL ++ mkNestErr @expr.pp @ebErrs
+  | Case        lhs         .   errL        =   @expr.errL ++ @alts.errL ++ mkNestErr @expr.pp @ebErrs
 %%]
 
 %%[6
 SEM TyExpr
-  | App         lhs         .  errL         =   mkNestErr @pp (@func.errL ++ @arg.errL ++ foErrL @fo)
-  | AppTop      lhs         .  errL         =   mkNestErr @pp (@tyExpr.errL)
+  | App         lhs         .   errL        =   mkNestErr @pp (@func.errL ++ @arg.errL ++ foErrL @fo)
+  | AppTop      lhs         .   errL        =   mkNestErr @pp (@tyExpr.errL)
 
 SEM Decl
-  | TySig       lhs         .  errL         =   mkNestErr @tyExpr.pp (@tyExpr.errL ++ foErrL @fo)
-  | Data        lhs         .  errL         =   mkNestErr @pp (@tyVars.errL ++ @constrs.errL ++ foErrL @fo)
+  | TySig       lhs         .   errL        =   mkNestErr @tyExpr.pp (@tyExpr.errL ++ foErrL @fo)
+  | Data        lhs         .   errL        =   mkNestErr @pp (@tyVars.errL ++ @constrs.errL ++ foErrL @fo)
 
 SEM DataConstr
-  | Constr      lhs         .  errL         =   mkNestErr @pp (@fields.errL ++ foErrL @fo)
+  | Constr      lhs         .   errL        =   mkNestErr @pp (@fields.errL ++ foErrL @fo)
 
 SEM KiExpr
-  | Con         lhs         .  errL         =   mkNestErr @pp (@nmErrs)
+  | Con         lhs         .   errL        =   mkNestErr @pp (@nmErrs)
 %%]
 
 %%[7
 SEM PatExpr
-  | Rec         lhs         .  errL         =   mkNestErr @pp (@recPatExpr.errL)
+  | Rec         lhs         .   errL        =   mkNestErr @pp (@recPatExpr.errL)
 
 SEM RecPatExpr
-  | Empty       lhs         .  errL         =   mkNestErr @pp (foErrL @fo)
-  | Ext         lhs         .  errL         =   mkNestErr @pp (@recPatExpr.errL ++ @patExpr.errL ++ foErrL @fo)
+  | Empty       lhs         .   errL        =   mkNestErr @pp (foErrL @fo)
+  | Ext         lhs         .   errL        =   mkNestErr @pp (@recPatExpr.errL ++ @patExpr.errL ++ foErrL @fo)
 
 SEM Expr
-  | Rec         lhs         .  errL         =   mkNestErr @pp (@recExpr.errL ++ foErrL @fo)
+  | Rec         lhs         .   errL        =   mkNestErr @pp (@recExpr.errL ++ foErrL @fo)
 
 SEM RecExpr
-  | Empty       lhs         .  errL         =   mkNestErr @pp (foErrL @fo)
-  | Ext Upd     lhs         .  errL         =   mkNestErr @pp (@recExpr.errL ++ @expr.errL ++ foErrL @foKnRec)
+  | Empty       lhs         .   errL        =   mkNestErr @pp (foErrL @fo)
+  | Ext Upd     lhs         .   errL        =   mkNestErr @pp (@recExpr.errL ++ @expr.errL ++ foErrL @foKnRec)
 %%]
 
 %%[9
 SEM RowTyExpr
-  | Var         lhs         .  errL         =   mkNestErr @pp (foErrL @fo)
+  | Var         lhs         .   errL        =   mkNestErr @pp (foErrL @fo)
 
 SEM TyExpr
-  | Pred        lhs         .  errL         =   mkNestErr @pp (@prExpr.errL ++ @nmErrs)
+  | Pred        lhs         .   errL        =   mkNestErr @pp (@prExpr.errL ++ @nmErrs)
 
 SEM Expr
-  | Lam         lhs         .  errL         :=  mkNestErr @pp
+  | Lam         lhs         .   errL        :=  mkNestErr @pp
                                                     (foErrL @foKnFun ++ @prfErrs
                                                       ++ @arg.errL ++ @body.errL)
-  | AppTop      lhs         .  errL         :=  mkNestErr @pp (@prfErrs ++ @expr.errL)
-  | AppImpl     lhs         .  errL         =   mkNestErr @pp
+  | AppTop      lhs         .   errL        :=  mkNestErr @pp (@prfErrs ++ @expr.errL)
+  | AppImpl     lhs         .   errL        =   mkNestErr @pp
                                                     (@nmErrs ++ foErrL @foPr ++ @func.errL ++ @arg.errL ++ @argPr.errL)
-  | LamImpl     lhs         .  errL         =   mkNestErr @pp
+  | LamImpl     lhs         .   errL        =   mkNestErr @pp
                                                     (@nmErrs ++ foErrL @foPr ++ @prfErrs ++ @arg.errL ++ @argPr.errL ++ @body.errL)
 %%]
 
 %%[11
 SEM DataConstr
-  | Constr      lhs         .  errL         :=  mkNestErr @pp (@fields.errL ++ @eqs.errL ++ foErrL @fo)
+  | Constr      lhs         .   errL        :=  mkNestErr @pp (@fields.errL ++ @eqs.errL ++ foErrL @fo)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -145,45 +145,48 @@ SEM DataConstr
 
 %%[1.PP
 SEM Decls
-  | Cons        loc         .  errPP        =   ppErrs @hd.errL
-                lhs         .  errL         =   []
+  | Cons        loc         .   errPP       =   ppErrs @hd.errL
+                lhs         .   errL        =   []
 
 SEM Expr
-  | Let         loc         .  letErrL      =   @dupErrs
-                            .  errLetPP     =   ppErrs @letErrL
-                            .  errBodyPP    =   ppErrs @body.errL
-                lhs         .  errL         =   []
+  | Let         loc         .   letErrL     =   @dupErrs
+                            .   errLetPP    =   ppErrs @letErrL
+                            .   errBodyPP   =   ppErrs @body.errL
+                lhs         .   errL        =   []
 
 SEM AGItf
-  | AGItf       loc         .  errTopPP     =   empty
+  | AGItf       loc         .   errTopPP    =   empty
 %%]
 
 %%[4_2
 %%]
 SEM AGItf
-  | AGItf       loc         .  errTopPP     :=  ppErrs (@elimImprErrs)
+  | AGItf       loc         .   errTopPP    :=  ppErrs (@elimImprErrs)
 
 %%[9
 SEM Decl
-  | Instance    loc         .  lErrL        =   @ctxtPrExprs.errL ++ @prExpr.errL ++ @nmErrs ++ @predNotPrfErrs ++ @supPrfErrs ++ @prfErrs
-                            .  errInstPP    =   ppErrs @lErrL
-                            .  errDeclsPP   =   ppErrs @decls.errL
-                lhs         .  errL         =   []
+  | Instance    loc         .   lErrL       =   @tyPrExpr.errL ++ @nmErrs ++ @predNotPrfErrs ++ @supPrfErrs ++ @prfErrs
+                            .   errInstPP   =   ppErrs @lErrL
+                            .   errDeclsPP  =   ppErrs @decls.errL
+                lhs         .   errL        =   []
   | InstanceIntro
-                loc         .  lErrL        =   @expr.errL ++ @prExpr.errL ++ foErrL @foPr ++ @predErrs
-                            .  errInstPP    =   ppErrs @lErrL
-                lhs         .  errL         =   []
+                loc         .   lErrL       =   @expr.errL ++ @prExpr.errL ++ foErrL @foPr ++ @predErrs
+                            .   errInstPP   =   ppErrs @lErrL
+                lhs         .   errL        =   []
 
 SEM Expr
-  | Let         loc         .  letErrL      :=  @dupErrs ++ @prfErrs
+  | Let         loc         .   letErrL     :=  @dupErrs ++ @prfErrs
+
+SEM PrExpr
+  | Class       lhs         .   errL        =   @tyExprs.errL ++ foErrL @fo
 
 SEM AGItf
-  | AGItf       loc         .  errTopPP     :=  ppErrs (@predNotPrfErrs)
+  | AGItf       loc         .   errTopPP    :=  ppErrs (@predNotPrfErrs)
 %%]
 
 %%[9_1
 SEM Expr
-  | Let         loc         .  letErrL      :=  @dupErrs ++ @gamErrL ++ @prfErrs
+  | Let         loc         .   letErrL     :=  @dupErrs ++ @gamErrL ++ @prfErrs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -194,19 +197,19 @@ SEM Expr
 ATTR AllNT AGItf [ | | allErrL USE {++} {[]} : ErrL ]
 
 SEM Decls
-  | Cons        lhs         .  allErrL      =   @hd.errL ++ @hd.allErrL ++ @tl.allErrL
+  | Cons        lhs         .   allErrL     =   @hd.errL ++ @hd.allErrL ++ @tl.allErrL
 
 SEM Expr
-  | Let         lhs         .  allErrL      =   @letErrL ++ @body.errL ++ @decls.allErrL ++ @body.allErrL
+  | Let         lhs         .   allErrL     =   @letErrL ++ @body.errL ++ @decls.allErrL ++ @body.allErrL
 %%]
 
 %%[9
 SEM Decl
-  | Instance    lhs         .  allErrL      =   @lErrL ++ @decls.allErrL
+  | Instance    lhs         .   allErrL     =   @lErrL ++ @decls.allErrL
   | InstanceIntro
-                lhs         .  allErrL      =   @lErrL
+                lhs         .   allErrL     =   @lErrL
 
 SEM AGItf
-  | AGItf       lhs         .  allErrL      =   @predNotPrfErrs ++ @expr.allErrL
+  | AGItf       lhs         .   allErrL     =   @predNotPrfErrs ++ @expr.allErrL
 %%]
 

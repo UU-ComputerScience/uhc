@@ -357,11 +357,12 @@ SEM TyExpr
 
 SEM PrExpr
   | Class       loc     .  ppAST    =   ppNest ["PrExpr","Class"] [ppNm @nm] [@tyExprs.ppAST]
+  | Arrow       loc     .  ppAST    =   ppNest ["PrExpr","Arrow"] [] [@arg.ppAST,@res.ppAST]
 
 SEM Decl
-  | Class       loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Class"] [] [@ctxtPrExprs.ppAST,@prExpr.ppAST,@funcDeps.ppAST,@decls.ppAST] @info
+  | Class       loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Class"] [] [@tyPrExpr.ppAST,@funcDeps.ppAST,@decls.ppAST] @info
                         .  info     =   []
-  | Instance    loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Instance"] (maybe [] (\(n,_) -> [ppNm n]) @mbNmElim) [@ctxtPrExprs.ppAST,@prExpr.ppAST,@decls.ppAST] @info
+  | Instance    loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Instance"] (maybe [] (\(n,_) -> [ppNm n]) @mbNmElim) [@tyPrExpr.ppAST,@decls.ppAST] @info
                         .  info     =   [ mkInfo1 "ctxtToInstTy" (ppTy @ctxtToInstTy)
                                         , mkInfo1 "ctxtRecToInstRecTy" (ppTy @ctxtRecToInstRecTy)
                                         , mkInfo1 "supPrElimGam" (ppGam @supPrElimGam)
@@ -429,6 +430,7 @@ SEM Expr
                                         , mkInfo1 "lamArgCoeL" (ppCommaList @lamArgCoeL)
                                         ]
 %%]
+  | Instance    loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Instance"] (maybe [] (\(n,_) -> [ppNm n]) @mbNmElim) [@ctxtPrExprs.ppAST,@prExpr.ppAST,@decls.ppAST] @info
 
 %%[10
 SEM PrExpr

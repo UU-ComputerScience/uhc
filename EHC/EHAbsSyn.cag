@@ -185,9 +185,9 @@ DATA Expr
 %%[9
 DATA Expr
   | AppImpl         func            : Expr
-                    argPr           : TyExpr
+                    argPr           : PrExpr
                     arg             : Expr
-  | LamImpl         argPr           : TyExpr
+  | LamImpl         argPr           : PrExpr
                     arg             : PatExpr
                     body            : Expr
 %%]
@@ -353,6 +353,8 @@ DATA RowTyExpr
 DATA PrExpr
   | Class           nm              : {HsName}
                     tyExprs         : TyExprs
+  | Arrow           arg             : PrExpr
+                    res             : PrExpr
 
 TYPE PrExprs        = [PrExpr]
 %%]
@@ -373,13 +375,11 @@ SET AllPrExpr       = PrExpr PrExprs
 
 %%[9
 DATA Decl
-  | Class           ctxtPrExprs     : PrExprs
-                    prExpr          : PrExpr
+  | Class           tyPrExpr        : TyExpr
                     funcDeps        : FuncDeps
                     decls           : Decls
   | Instance        mbNmElim        : {Maybe (HsName,Bool)}
-                    ctxtPrExprs     : PrExprs
-                    prExpr          : PrExpr
+                    tyPrExpr        : TyExpr
                     decls           : Decls
   | InstanceIntro   expr            : Expr
                     prExpr          : PrExpr
@@ -392,6 +392,10 @@ TYPE FuncDeps       = [FuncDep]
 
 SET AllFuncDep      = FuncDep FuncDeps
 %%]
+  | Instance        mbNmElim        : {Maybe (HsName,Bool)}
+                    ctxtPrExprs     : PrExprs
+                    prExpr          : PrExpr
+                    decls           : Decls
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Groups of nonterminals

@@ -88,7 +88,7 @@ scanOpts
                 , ":="
 %%]
 %%[9
-                , "=>", "<:"
+                , show hsnPrArrow, "<:"
 %%]
 %%[1
                 ]
@@ -390,20 +390,21 @@ pTyExprPrefix   =    sem_TyExpr_Quant
 pTyPrExprPrefix ::   EHParser (T_TyExpr -> T_TyExpr)
 pTyPrExprPrefix =    mkArrow tyExprAlg
                      <$>  pPackImpl
-                            (    pPr
-                            <|>  pIm
+                            (    pPr <|> pIm
                             <|>  pSucceed  sem_TyExpr_NoImpls
                             )
                      <*   pKeyw hsnArrow
-                <|>  (    mkArrow tyExprAlg <$> (pPr <|> pIm)
+                <|>  (    mkArrow tyExprAlg <$> (pPrB <|> pIm)
                      <|>  flip (foldr (mkArrow tyExprAlg))
-                          <$> pParens ((++) <$> pList1Sep pComma pPr <*> ((:[]) <$ pComma <*> pIm `opt` []))
+                          <$> pParens ((:) <$> pPr <*> (pImO <|> (++) <$> pList1 (pComma *> pPr) <*> pImO))
                      )
-                     <*   pKey "=>"
-                where  pPr = sem_TyExpr_Pred   <$>  pPrExprBase
-                       pPr :: EHParser T_TyExpr
-                       pIm = sem_TyExpr_Impls  <$   pKey "..."
-                       pIm :: EHParser T_TyExpr
+                     <*   pKeyw hsnPrArrow
+                where  pPrB  =   sem_TyExpr_Pred   <$>  pPrExprBase
+                       pPr   ::  EHParser T_TyExpr
+                       pPr   =   sem_TyExpr_Pred   <$>  pPrExpr
+                       pIm   ::  EHParser T_TyExpr
+                       pIm   =   sem_TyExpr_Impls  <$   pKey "..."
+                       pImO  =   (:[]) <$ pComma <*> pIm `opt` []
 %%]
 
 %%[4.pTyExprApp
@@ -465,7 +466,7 @@ pExprApp        =    pApp exprAlg (pExprBase <**> pExprSelSuffix)
 %%[9.pExprApp -7.pExprApp
 pExprApp        =    let  pE = pExprBase <**> pExprSelSuffix
                           pA = flip sem_Expr_App <$> pE
-                          pI = pPackImpl ((\a p e -> sem_Expr_AppImpl e p a) <$> pExpr <* pKey "<:" <*> pTyPrExpr)
+                          pI = pPackImpl ((\a p e -> sem_Expr_AppImpl e p a) <$> pExpr <* pKey "<:" <*> pPrExpr)
                      in   pE <??> ((\l e -> sem_Expr_AppTop (foldl (flip ($)) e l)) <$> pList1 (pA <|> pI))
 %%]
 
@@ -493,7 +494,7 @@ pExprPrefix     =    sem_Expr_Let  <$ pKey "let"
                 <|>  (flip (foldr ($)))
                      <$   pKey "\\"
                      <*>  pList1  (    sem_Expr_Lam <$> pPatExprBase
-                                  <|>  pPackImpl (flip sem_Expr_LamImpl <$> pPatExpr <* pKey "<:" <*> pTyPrExpr)
+                                  <|>  pPackImpl (flip sem_Expr_LamImpl <$> pPatExpr <* pKey "<:" <*> pPrExpr)
                                   )
                      <*   pKey "->"
 %%]
@@ -597,6 +598,17 @@ pPrExprClass    =    sem_PrExpr_Class  <$> pCon <*> pTyExprs
 %%]
 
 %%[9
+pPrExprPrefix   ::   EHParser (T_PrExpr -> T_PrExpr)
+pPrExprPrefix   =    sem_PrExpr_Arrow <$> pPrExprBase <* pKeyw hsnPrArrow
+%%]
+
+%%[9
+pPrExpr         ::   EHParser T_PrExpr
+pPrExpr         =    pPrExprPrefix <*> pPrExpr
+                <|>  pPrExprBase
+%%]
+
+%%[9
 pTyPrExpr       ::   EHParser T_TyExpr
 pTyPrExpr       =    pTyPrExprPrefix <*> pTyPrExpr
                 <|>  sem_TyExpr_Pred <$> pPrExprBase
@@ -605,6 +617,7 @@ pTyPrExpr       =    pTyPrExprPrefix <*> pTyPrExpr
 %%[9
 pPrExprBase     ::   EHParser T_PrExpr
 pPrExprBase     =    pPrExprClass
+                <|>  pParens pPrExpr
 %%]
 %%[10
                 <|>  pVar <**>  (    (\s v -> sem_PrExpr_Lacks (sem_RowTyExpr_Var v) s)
@@ -623,16 +636,12 @@ pPrExprBase     =    pPrExprClass
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-pClassHead      ::   EHParser (T_PrExprs,T_PrExpr)
-pClassHead      =    pPrExprClass <**>  (    (\p c -> (sem_PrExprs_Cons c sem_PrExprs_Nil,p))
-                                             <$ pKey "=>" <*> pPrExprClass
-                                        <|>  pSucceed (\p -> (sem_PrExprs_Nil,p))
-                                        )
-                <|>  (,) <$> pParens (pFoldrSep (sem_PrExprs_Cons,sem_PrExprs_Nil) pComma pPrExprClass)
-                     <* pKey "=>" <*> pPrExprClass
+pClassHead      ::   EHParser T_TyExpr
+pClassHead 		=	 pTyPrExprPrefix <*> pHd <|> pHd
+                where pHd = sem_TyExpr_Pred <$> pPrExprClass
 
 pDeclClass      ::   EHParser T_Decl
-pDeclClass      =    (uncurry sem_Decl_Class)
+pDeclClass      =    sem_Decl_Class
                      <$   pKey "class"
                      <*>  pClassHead
                      <*>  (pKey "|" *> pFoldrSep  (sem_FuncDeps_Cons,sem_FuncDeps_Nil) pComma
@@ -643,11 +652,27 @@ pDeclClass      =    (uncurry sem_Decl_Class)
 
 pDeclInstance   ::   EHParser T_Decl
 pDeclInstance   =    pKey "instance"
-                     *>   (    (\ne -> uncurry (sem_Decl_Instance ne))
+                     *>   (    sem_Decl_Instance
                                <$>  ((\n e -> Just (n,e)) <$> pVar <*> (True <$ pKey "<:" <|> False <$ pKey "::") `opt` Nothing)
                                <*>  pClassHead
                                <*   pKey "where" <*> pDecls
                           <|>  sem_Decl_InstanceIntro <$> pExpr <* pKey "<:" <*> pPrExprClass
                           )
 %%]
+pClassHead      ::   EHParser (T_PrExprs,T_PrExpr)
+pClassHead      =    pPrExprClass <**>  (    (\p c -> (sem_PrExprs_Cons c sem_PrExprs_Nil,p))
+                                             <$ pKeyw hsnPrArrow <*> pPrExprClass
+                                        <|>  pSucceed (\p -> (sem_PrExprs_Nil,p))
+                                        )
+                <|>  (,) <$> pParens (pFoldrSep (sem_PrExprs_Cons,sem_PrExprs_Nil) pComma pPrExprClass)
+                     <* pKeyw hsnPrArrow <*> pPrExprClass
+
+pDeclInstance   ::   EHParser T_Decl
+pDeclInstance   =    pKey "instance"
+                     *>   (    (\ne -> uncurry (sem_Decl_Instance ne))
+                               <$>  ((\n e -> Just (n,e)) <$> pVar <*> (True <$ pKey "<:" <|> False <$ pKey "::") `opt` Nothing)
+                               <*>  pClassHead
+                               <*   pKey "where" <*> pDecls
+                          <|>  sem_Decl_InstanceIntro <$> pExpr <* pKey "<:" <*> pPrExprClass
+                          )
 
