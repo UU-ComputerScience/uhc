@@ -71,8 +71,8 @@
 
 
 
-%format forall      = "\forall "
-%format exists      = "\exists "
+%format forall      = "{\forall}"
+%format exists      = "{\exists}"
 
 %format ^ 			= " "
 %format ^^ 			= "\;"

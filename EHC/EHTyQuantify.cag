@@ -101,7 +101,7 @@ tyQuantifyPr opts tvIsBound baseQuant prL ty
     in   TyQuOut
             { tqoTy = quTy_Syn_TyAGItf t
             , tqoInsPrIdSet = insPrIdSet_Syn_TyAGItf t
-            , tqoImplsCnstr = listToCnstrImpls (prImpls_Syn_TyAGItf t)
+            , tqoImplsCnstr = assocLToCnstrImpls (prImpls_Syn_TyAGItf t)
             }
 %%]
 

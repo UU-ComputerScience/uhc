@@ -6115,6 +6115,8 @@ The fitting of quantified types uses |unquant| which removes all top level quant
 
 \restorecolumns
 \chunkCmdUseMark{EHTyFitsIn.4.fitsIn.unquant}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.FOUtils}
 
 The instantiation is parameterized a flag |hide|
 telling if any found constraints for the fresh

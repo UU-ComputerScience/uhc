@@ -179,7 +179,7 @@ rules expr2.3 "Type inferencing for expressions with quantifier |forall|" =
     judge expr2 Gamma; sigma..k :- (let i :: sigma..i; p (=) e..i in e) : sigma..e ~> Cnstr.(3(..)1)
 
   rule e_ident3 =
-    cond (i :-> forall [alpha.j] (.) sigma..i) `elem` Gamma
+    cond (i :-> forall ^ [alpha.j] (.) sigma..i) `elem` Gamma
     judge fit2 :- ([alpha.j :-> tvar.j] sigma..i) <= sigma..k : sigma ~> Cnstr
     cond tvar.j "fresh"
     -
@@ -567,9 +567,9 @@ rules fit4.bind "Fitting/subsumption for tvar binds" =
     judge fit4 fiopt :- sigma.1 <= (tvar.2 // sigma..({(..),i,(..)})) : (tvar.2 // sigma..({(..),i,(..)})) ~> _
 
   rule f_bind_l1 =
-    judge fit4 fiopt :- (forall alpha (.) rho.1) <= sigma.2 : sigma ~> Cnstr
+    judge fit4 fiopt :- (forall ^ alpha (.) rho.1) <= sigma.2 : sigma ~> Cnstr
     -
-    judge fit4 fiopt :- (tvar.1 // forall alpha (.) rho.1) <= sigma.2 : sigma ~> Cnstr
+    judge fit4 fiopt :- (tvar.1 // forall ^ alpha (.) rho.1) <= sigma.2 : sigma ~> Cnstr
 
   rule f_bind_l2 =
     cond sigma.2 /= forall ^ (...)
@@ -577,9 +577,9 @@ rules fit4.bind "Fitting/subsumption for tvar binds" =
     judge fit4 fiopt :- (tvar.1 // sigma.1.._) <= sigma.2 : (tvar.1 // sigma.2,sigma.1.._) ~> _
   &
   rule f_bind_l3 =
-    judge fit4 fiopt :- (forall alpha (.) rho.2) <= sigma.1.i : _ ~> Cnstr.i
+    judge fit4 fiopt :- (forall ^ alpha (.) rho.2) <= sigma.1.i : _ ~> Cnstr.i
     -
-    judge fit4 fiopt :- (tvar.1 // sigma.1.({i})) <= (forall alpha (.) rho.2) : (tvar.1 // forall alpha (.) rho.2) ~> Cnstr.({i})
+    judge fit4 fiopt :- (tvar.1 // sigma.1.({i})) <= (forall ^ alpha (.) rho.2) : (tvar.1 // forall ^ alpha (.) rho.2) ~> Cnstr.({i})
 
 -- 9
 scheme fit9
@@ -686,26 +686,26 @@ rules qu4 "Quantifier location inferencing" =
   rule q_var_co =
     cond v `notElem` bv
     -
-    judge qu4 bv; CoVariant :- v : (forall v(.)v) ~> ([v])
+    judge qu4 bv; CoVariant :- v : (forall ^ v(.)v) ~> ([v])
   &
   rule q_var_contra =
     cond v `notElem` bv
     -
-    judge qu4 bv; ContraVariant :- v : (exists v(.)v) ~> ([v])
+    judge qu4 bv; ContraVariant :- v : (exits ^ v(.)v) ~> ([v])
 
   rule q_arrow =
     cond v `elem` (fv.1 `intersect` fv.2) `setdiff` bv
     judge qu4 (v, bv); ContraVariant :- sigma.1 : sigma.1.q ~> fv.1
     judge qu4 (v, bv); CoVariant :- sigma.2 : sigma.2.q ~> fv.2
     -
-    judge qu4 bv; _ :- (sigma.1 -> sigma.2) : (forall v (.) sigma.1.q -> sigma.2.q) ~> ((fv.1 `union` fv.2) `setdiff` [v])
+    judge qu4 bv; _ :- (sigma.1 -> sigma.2) : (forall ^ v (.) sigma.1.q -> sigma.2.q) ~> ((fv.1 `union` fv.2) `setdiff` [v])
 
   rule q_prod =
     cond v `elem` (fv.1 `intersect` fv.2) `setdiff` bv
     judge qu4 (v, bv); CoVariant :- sigma.1 : sigma.1.q ~> fv.1
     judge qu4 (v, bv); CoVariant :- sigma.2 : sigma.2.q ~> fv.2
     -
-    judge qu4 bv; _ :- ((sigma.1,sigma.2)) : (exists v (.) (sigma.1.q,sigma.2.q)) ~> ((fv.1 `union` fv.2) `setdiff` [v])
+    judge qu4 bv; _ :- ((sigma.1,sigma.2)) : (exits ^ v (.) (sigma.1.q,sigma.2.q)) ~> ((fv.1 `union` fv.2) `setdiff` [v])
 
   rule q_app =
     cond v `elem` (fv.1 `intersect` fv.2) `setdiff` bv

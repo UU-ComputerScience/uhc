@@ -34,7 +34,7 @@
 %%[2 import(EHCnstr,EHSubstitutable)
 %%]
 
-%%[4 import(EHTyInstantiate, EHGam) export(FIOpts(..), strongFIOpts, instFIOpts, instLFIOpts)
+%%[4 import(EHTyInstantiate, EHGam,List) export(FIOpts(..), strongFIOpts, instFIOpts, instLFIOpts)
 %%]
 
 %%[4 export(FIEnv(..),emptyFE)
@@ -46,10 +46,7 @@
 %%[6 export(fitsInL)
 %%]
 
-%%[6_2 export(unifyFIOpts,foHasErrs)
-%%]
-
-%%[7 import(List)
+%%[6_2 export(unifyFIOpts,meetFIOpts,foHasErrs)
 %%]
 
 %%[9 import(Maybe,FiniteMap,Set,UU.Pretty,EHCorePretty,EHPred,EHCore,EHCoreSubst) export(predFIOpts,implFIOpts,prfPreds,foAppCoe,fitPredToEvid)
@@ -71,7 +68,7 @@ data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindR
                         ,  fioCoContra       ::  CoContraVariance 
 %%]
 %%[6_2
-                        ,  fioBindToTyBind   ::  Bool
+                        ,  fioBindToTyBind   ::  Bool                ,  fioMeet                 ::  Bool
 %%]
 %%[7.FIOpts
                         ,  fioNoRLabElimFor  ::  [HsName]
@@ -91,7 +88,7 @@ strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindR
                         ,  fioCoContra       =   CoVariant
 %%]
 %%[6_2
-                        ,  fioBindToTyBind   =   False
+                        ,  fioBindToTyBind   =   False               ,  fioMeet                 =   False
 %%]
 %%[7.strongFIOpts
                         ,  fioNoRLabElimFor  =   []
@@ -120,6 +117,9 @@ weakFIOpts = strongFIOpts {fioLeaveRInst = True, fioBindRFirst = False}
 %%[6_2
 unifyFIOpts :: FIOpts
 unifyFIOpts = strongFIOpts {fioCoContra = CoContraVariant}
+
+meetFIOpts :: FIOpts
+meetFIOpts = unifyFIOpts {fioMeet = True}
 %%]
 
 %%[9
@@ -517,18 +517,35 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[4.fitsIn.unquant
-            unquant fi t@(Ty_Quant _ _ _) hide howToInst
-                =   let  (u,uq)         = mkNewLevUID (fiUniq fi)
-                         (uqt,rtvs)     = tyInst1Quants uq howToInst t
-                         back           = if hide  then  \fo ->  let  s = cnstrFilter (const.not.(`elem` rtvs)) (foCnstr fo)
-                                                                 in   fo {foCnstr = s, foTy = s |=> t}
-                                                   else  id
-                    in   (fi {fiUniq = u},uqt,back)
+            unquant fi t hide howToInst
+                =   (fi {fiUniq = u},uqt,back)
+                where  (u,uq)         = mkNewLevUID (fiUniq fi)
+                       (uqt,rtvs)     = tyInst1Quants uq howToInst t
+                       back           = if hide  then  \fo ->  let  s = cnstrDel rtvs (foCnstr fo)
+                                                               in   fo {foCnstr = s, foTy = s |=> t}
+                                                 else  id
+%%]
+%%[6_2.fitsIn.unquant -4.fitsIn.unquant
+            unquant fi t hide howToInst
+                =   (fi2,uqt,back)
+                where  (fi2,uqt,rtvs) = unquant' fi t howToInst
+                       back           = if hide  then  \fo ->  let  s = cnstrDel rtvs (foCnstr fo)
+                                                               in   fo {foCnstr = s, foTy = s |=> t}
+                                                 else  id
+            unquant' fi t howToInst
+                =   (fi {fiUniq = u},uqt,rtvs)
+                where  (u,uq)         = mkNewLevUID (fiUniq fi)
+                       (uqt,rtvs)     = tyInst1Quants uq howToInst t
 %%]
 
-%%[4
-            foUpdTy  t   fo = fo {foTy = t}
-            foUpdCnstr c fo = fo {foCnstr = c |=> foCnstr fo}
+%%[4.fitsIn.FOUtils
+            foUpdTy  t   fo  = fo {foTy = t}
+            foUpdCnstr c fo  = fo {foCnstr = c |=> foCnstr fo}
+            cnstrDel tvL c   = cnstrFilter (const.not.(`elem` tvL)) c
+%%]
+
+%%[6_2.fitsIn.FOUtils
+            foNoErr      fo  = fo {foErrL = []}
 %%]
 
 %%[4.fitsIn.foCmb
@@ -581,14 +598,15 @@ fitsIn opts env uniq ty1 ty2
             fPairWise' cCmb fi tL1 tL2
               =  foldr  (\(t1,t2) (foL,fii,c)
                            -> let  fo = f (fii) (c |=> t1) (c |=> t2)
-                              in   (fo:foL,fii {fiUniq = foUniq fo},foCnstr fo `cCmb` c))
+                              in   (fo:foL,fii {fiUniq = foUniq fo},fo `cCmb` c))
                         ([],fi,emptyCnstr)
                         (zip tL1 tL2)
-            fPairWise = fPairWise' (|=>)
-            fPairWiseAlt = fPairWise' (\_ _ -> emptyCnstr)
+            fPairWise = fPairWise' (\fo c -> foCnstr fo |=> c)
 %%]
 
 %%[6_2
+            fPairWiseAlt = fPairWise' (\_ _ -> emptyCnstr)
+            fPairWiseNoErr = fPairWise' (\fo c -> if foHasErrs fo then c else foCnstr fo |=> c)
             foLCnstr (fo:foL) = if null foL then foCnstr fo else emptyCnstr
 %%]
 
@@ -778,32 +796,40 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[6_2
-            f fi t1 t2@(Ty_Bind v2 t2L)             = fo2
+            f fi t1 t2@(Ty_Bind v2 t2L)             = fob
                 where  (foL@(fo:_),_,_) = fPairWiseAlt fi (repeat t1) t2L
                        c = foLCnstr foL
-                       fo2 =  if any (not.foHasErrs) foL
+                       fob =  if any (not.foHasErrs) foL
+                              then  foUpdTy (c |=> t2) . foUpdCnstr c . foNoErr $ fo
+                              else  foBind v2 (Ty_Bind v2 (t1:t2L)) (emptyFO {foUniq = fiUniq fi})
+            f fi t1@(Ty_Bind v1 t1L@(_:_))  t2      = fob
+                where  fob =  case t2 of
+                                  Ty_Quant q2 _ _ | tyquIsForall q2
+                                      ->  foBind v1 (Ty_Bind v1 (c |=> t2 : map foTy foLFail)) . foUpdCnstr c . foNoErr $ fo
+                                          where  (foL@(fo:_),_,c) = fPairWiseNoErr fi (repeat t2) t1L
+                                                 foLFail = filter foHasErrs foL
+                                  _   ->  foBind v1 (Ty_Bind v1 (t1L ++ [t2])) (emptyFO {foUniq = fiUniq fi})
+%%]
+            f fi t1 t2@(Ty_Bind v2 t2L)             = fob
+                where  (foL@(fo:_),_,_) = fPairWiseAlt fi (repeat t1) t2L
+                       c = foLCnstr foL
+                       fob =  if any (not.foHasErrs) foL
                               then  foUpdTy (c |=> t2) . foUpdCnstr c $ (fo {foErrL = []})
                               else  foBind v2 (Ty_Bind v2 (t1:t2L)) (emptyFO {foUniq = fiUniq fi})
-            f fi t1@(Ty_Bind v1 [t1b@(Ty_Quant q1 _ _)])  t2
-                | tyquIsForall q1                   = fo2
-                where  fo2 = f fi t1b t2
-            f fi t1@(Ty_Bind v1 t1L@(_:_))  t2      = fo2
-                where  fo2 =  case t2 of
+            f fi t1@(Ty_Bind v1 t1L@(t1b@(Ty_Quant q1 _ _):_))  t2
+                | tyquIsForall q1                   = fob
+                where  fo = f fi2 t1b t2
+                       fi2 = fi {fiFIOpts = (fiFIOpts fi) {fioBindToTyBind = False}}
+                       fob =  if foHasErrs fo
+                              then foBind v1 (Ty_Bind v1 (t1L ++ [t2])) (emptyFO {foUniq = fiUniq fi})
+                              else foBind v1 (Ty_Bind v1 (t1L ++ [foTy fo])) fo
+            f fi t1@(Ty_Bind v1 t1L@(_:_))  t2      = fob
+                where  fob =  case t2 of
                                   Ty_Quant q2 _ _ | tyquIsForall q2
-                                      ->  foBind v1 (Ty_Bind v1 [c |=> t2]) . foUpdCnstr c $ fo
-                                          where  (foL@(fo:_),_,c) = fPairWise fi (repeat t2) t1L
-                                  _   ->  foBind v1 (Ty_Bind v1 (t2:t1L)) (emptyFO {foUniq = fiUniq fi})
-%%]
-                where  (foL@(fo:_),_,_) = fPairWiseAlt fi t1L (repeat t2)
-                       c = foLCnstr foL
-                       fo2 =  if any foHasErrs foL
-                              then  case t2 of
-                                      Ty_Quant q2 _ _ | tyquIsForall q2
-                                        ->  manyFO (foL ++ [foBind v1 (Ty_Bind v1 [c |=> t2]) . foUpdCnstr c $ fo])
-                                            where  (foL@(fo:_),_,_) = fPairWiseAlt fi (repeat t2) t1L
-                                                   c = foLCnstr foL
-                                      _ ->  foBind v1 (Ty_Bind v1 (t2:t1L)) (emptyFO {foUniq = fiUniq fi})
-                              else  foBind v1 (Ty_Bind v1 [c |=> t2]) . foUpdCnstr c $ fo
+                                      ->  foBind v1 (Ty_Bind v1 (c |=> t2 : map foTy foLFail)) . foUpdCnstr c $ fo
+                                          where  (foL@(fo:_),_,c) = fPairWiseNoErr fi (repeat t2) t1L
+                                                 foLFail = filter foHasErrs foL
+                                  _   ->  foBind v1 (Ty_Bind v1 (t1L ++ [t2])) (emptyFO {foUniq = fiUniq fi})
 
 %%[9
             f fi t1@(Ty_Pred (Pred_Class ct1)) t2@(Ty_Pred (Pred_Class ct2))
@@ -817,6 +843,35 @@ fitsIn opts env uniq ty1 ty2
                                                     = fo {foTy = Ty_Pred (Pred_Lacks (foTy fo) l1)} 
                 where  fo = f fi lt1 lt2
 %%]
+
+%%[6_2.fitsIn.QLR
+            f fi t1@(Ty_Quant q1 _ _)   t2@(Ty_Quant q2 _ _)
+                | fiCoContra fi == CoContraVariant && fioMeet (fiFIOpts fi) && q1 == q2 && tyquIsForall q1
+                                                    = foUpdTy (mkTyQu q1 tvs (cb |=> c |=> uqt2)) (fo {foCnstr = c})
+                where  (fi1,uqt1,rtvs1) = unquant' fi   t1 instCoConst
+                       (fi2,uqt2,rtvs2) = unquant' fi1  t2 instCoConst
+                       fo = f fi2 uqt1 uqt2
+                       rtvs = rtvs1 ++ rtvs2
+                       c = cnstrDel rtvs (foCnstr fo)
+                       b = [ b | b@(_,Ty_Var _ TyVarCateg_Plain) <- map (\v -> (v,foCnstr fo |=> mkTyVar v)) rtvs ]
+                       cb = assocLToCnstr b
+                       tvs = nub . map ((\(Ty_Var v _) -> v) . (cb |=>) . mkTyVar) $ rtvs
+%%]
+            f fi t1@(Ty_Quant q1 _ _)   t2@(Ty_Quant q2 _ _)
+                | fiCoContra fi == CoContraVariant && fioMeet (fiFIOpts fi) && q1 == q2 && tyquIsForall q1
+                                                    = foUpdTy (mkTyQu q1 tvs (c |=> uqt1)) (fo {foCnstr = c})
+                where  (fi1,uqt1,rtvs1) = unquant' fi   t1 instCoConst
+                       (fi2,uqt2,rtvs2) = unquant' fi1  t2 instCoConst
+                       fo = f fi2 uqt1 uqt2
+                       rtvs = rtvs1 ++ rtvs2
+                       c = cnstrDel rtvs (foCnstr fo)
+                       tvs = nub
+                             .  map  (\v -> let v' = case foCnstr fo |=> mkTyVar v of
+                                                       Ty_Var tv TyVarCateg_Plain  -> tv
+                                                       _                           -> v
+                                            in  v'
+                                     )
+                             $ rtvs
 
 %%[4.fitsIn.QLR
             f fi t1@(Ty_Quant q1 _ _)   t2@(Ty_Quant q2 _ _)
