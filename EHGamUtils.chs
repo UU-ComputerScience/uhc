@@ -33,7 +33,7 @@ valGamElimAlts opts env globTvL uniq g
                   	    in   ((n,vgi {vgiTy = t}),(ce |=> c,gamAdd n e eg,u'))
                   )
                   (emptyCnstr,emptyGam,uniq) g
-     in   (g',c,eg)
+     in   (g',cnstrDelAlphaRename c,eg)
 %%]
 
 %%[4_3.valGamElimAlts

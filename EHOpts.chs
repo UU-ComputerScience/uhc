@@ -295,7 +295,7 @@ fioMkUnify :: FIOpts -> FIOpts
 fioMkUnify fi = fi {fioMode = FitUnify}
 %%]
 
-%%[4_1.fioMkStrong -4.fioMkStrong
+%%[4_3.fioMkStrong -4.fioMkStrong
 fioMkStrong :: FIOpts -> FIOpts
 fioMkStrong fi = fi {fioLeaveRInst = False, fioBindRFirst = True, fioBindLFirst = True, fioBindToTyAlts = False}
 %%]

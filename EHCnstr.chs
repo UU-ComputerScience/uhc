@@ -22,10 +22,13 @@
 %%[2 import(UU.Pretty, EHTyPretty) export(ppCnstrV)
 %%]
 
-%%[4 export(cnstrFilter,cnstrDel,cnstrPlus,cnstrMap)
+%%[4 export(cnstrFilter,cnstrDel,cnstrPlus)
 %%]
 
 %%[4 export(assocLToCnstr,cnstrToAssocTyL)
+%%]
+
+%%[4_2 export(cnstrMapThrTy,cnstrDelAlphaRename)
 %%]
 
 %%[4_2 export(tyAsCnstr)
@@ -35,6 +38,9 @@
 %%]
 
 %%[11 export(cnstrKeys)
+%%]
+
+%%[99 export(cnstrMapTy)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -118,14 +124,39 @@ cnstrPlus :: Cnstr -> Cnstr -> Cnstr
 cnstrPlus (Cnstr l1) (Cnstr l2) = Cnstr (l2 `plusFM` l1)
 %%]
 
-%%[2.cnstrMap
-cnstrMap :: ((TyVarId,Ty) -> (TyVarId,Ty)) -> Cnstr -> Cnstr
-cnstrMap f (Cnstr l) = Cnstr (map f l)
+%%[4_2.cnstrMapThr
+cnstrMapThrTy :: (TyVarId -> Ty -> thr -> (Ty,thr)) -> thr -> Cnstr -> (Cnstr,thr)
+cnstrMapThrTy f thr (Cnstr l)
+  =  let (l',thr')
+           =  foldr    (\(v,t) (l,thr)
+           				  ->  let  (t',thr') = f v t thr
+           				      in   ((v,t'):l,thr')
+                       )
+                       ([],thr) l
+     in  (Cnstr l',thr')
 %%]
 
-%%[9.cnstrMap -2.cnstrMap
-cnstrMap :: ((TyVarId,CnstrInfo) -> (TyVarId,CnstrInfo)) -> Cnstr -> Cnstr
-cnstrMap f (Cnstr l) = Cnstr (mapFM (\k e -> snd (f (k,e))) l)
+%%[9 -4_2.cnstrMapThr
+cnstrMapThr :: (TyVarId -> CnstrInfo -> thr -> (CnstrInfo,thr)) -> thr -> Cnstr -> (Cnstr,thr)
+cnstrMapThr f thr (Cnstr fm)
+  =  let (fm',thr')
+           =  foldFM   (\v i (fm,thr)
+           				  ->  let  (i',thr') = f v i thr
+           				      in   (addToFM fm v i',thr')
+                       )
+                       (emptyFM,thr) fm
+     in  (Cnstr fm',thr')
+
+cnstrMapThrTy :: (TyVarId -> Ty -> thr -> (Ty,thr)) -> thr -> Cnstr -> (Cnstr,thr)
+cnstrMapThrTy f = cnstrMapThr (\v i thr -> case i of {CITy t -> let (t',thr') = f v t thr in (CITy t,thr'); _ -> (i,thr)})
+%%]
+
+%%[99.cnstrMapTy
+cnstrMap :: (TyVarId -> CnstrInfo -> CnstrInfo) -> Cnstr -> Cnstr
+cnstrMap f (Cnstr l) = Cnstr (mapFM f l)
+
+cnstrMapTy :: (TyVarId -> Ty -> Ty) -> Cnstr -> Cnstr
+cnstrMapTy f = cnstrMap (\v i -> case i of {CITy t -> CITy (f v t); _ -> i})
 %%]
 
 %%[4.assocLToCnstr
@@ -169,6 +200,15 @@ cnstrSize (Cnstr m) = sizeFM m
 %%[11
 cnstrKeys :: Cnstr -> TyVarIdL
 cnstrKeys = assocLKeys . cnstrToAssocL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Remove alpha rename of tvars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+cnstrDelAlphaRename :: Cnstr -> Cnstr
+cnstrDelAlphaRename = cnstrFilter (\_ t -> not (tyIsVar t))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
