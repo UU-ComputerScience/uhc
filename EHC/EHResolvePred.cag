@@ -24,7 +24,7 @@ SEM Expr
 %%[9
 SEM Expr
   | Let         loc         .   gathFixPredL        =   tyFixTyVars (@decls.tyCnstr |=> @decls.gathPredL)
-                            .   prvnGraph           =   prfPreds @lUniq (emptyFE {fePrElimGam = @prElimGam}) @gathFixPredL
-                            .   prvnPrune           =   prfPrune @gathFixPredL @prvnGraph
+                            .   prvnGraph           =   prfPredsToProvenGraph @lUniq (emptyFE {fePrElimGam = @prElimGam}) @gathFixPredL
+                            .   prvnPrune           =   prfPredsPruneProvenGraph @gathFixPredL @prvnGraph
 %%]
 

@@ -52,7 +52,7 @@ AFP_PGF_TEX			:= afp-pgf.tex
 ALL_AFP_SRC			:= $(AFP_LHS) $(AFP_RULES)
 
 EHC_LAG_FOR_HS_TY	:= $(addsuffix .lag,EHTyQuantify EHTyPretty EHTyInstantiate )
-EHC_LAG_FOR_HS_CODE	:= $(addsuffix .lag,EHCodeJava EHCodePretty)
+EHC_LAG_FOR_HS_CODE	:= $(addsuffix .lag,EHCodeJava EHCodePretty EHCodeSubst)
 EHC_LAG_FOR_HS		:= $(addsuffix .lag,EHMainAG EHTy EHCode EHError EHErrorPretty) $(EHC_LAG_FOR_HS_TY) $(EHC_LAG_FOR_HS_CODE)
 
 DPDS_MAIN			:= EHMainAG.ag EHInfer.ag EHInferExpr.ag \

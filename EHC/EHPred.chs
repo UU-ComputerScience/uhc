@@ -9,19 +9,19 @@
 %%% Pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 import(FiniteMap,UU.Pretty)
+%%[9 import(FiniteMap,Set,UU.Pretty)
 %%]
 
-%%[9 import(EHTy,EHTyPretty,EHCode,EHCodePretty,EHCommon,EHGam,EHCnstr)
+%%[9 import(EHTy,EHTyPretty,EHCode,EHCodePretty,EHCodeSubst,EHCommon,EHGam,EHCnstr)
 %%]
 
-%%[9 export(PredOcc(..),ProofState(..))
+%%[9 export(PredOccId,PredOcc(..),ProofState(..))
 %%]
 
-%%[9 export(ProvenNode(..),ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,ProofCost)
+%%[9 export(ProvenNode(..),ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,ProofCost,prvgCode)
 %%]
 
-%%[9 export(Rule(..),emptyRule)
+%%[9 export(Rule(..),emptyRule,costALot)
 %%]
 
 %%[9 export(PrIntroGamInfo(..),PrElimGamInfo(..),PrIntroGam,PrElimGam,emptyPIGI)
@@ -32,18 +32,21 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
+type PredOccId
+  =  UID
+
 data PredOcc
   =  PredOcc
        { poPr               :: Pred
-       , poId               :: UID
+       , poId               :: PredOccId
        }
 
 data ProofState
   =  ProofState
-       { prfsProvenGraph    	:: ProvenGraph
-       , prfsUniq           	:: UID
-       , prfsPredsToProve   	:: [PredOcc]
-       , prfsPredsOrigToProve	:: [Pred]
+       { prfsProvenGraph        :: ProvenGraph
+       , prfsUniq               :: UID
+       , prfsPredsToProve       :: [PredOcc]
+       , prfsPredsOrigToProve   :: [Pred]
        }
 
 type ProofCost
@@ -68,7 +71,6 @@ data ProvenNode
   |  ProvenArg
        { prvnPred           :: Pred
        , prvnCost           :: ProofCost
-       , prvnEvidence       :: CExpr
        }
   
 data ProvenGraph
@@ -103,10 +105,31 @@ instance PP ProvenNode where
   pp (ProvenOr  pr es c)     = "OR:"    >#< "pr=" >|< pp pr >#< "edges=" >|< ppCommaList es >#< "cost=" >|< pp c
   pp (ProvenAnd pr es c ev)  = "AND:"   >#< "pr=" >|< pp pr >#< "edges=" >|< ppCommaList es >#< "cost=" >|< pp c >#< "evid=" >|< pp ev
   pp (ProvenShare pr e    )  = "SHARE:" >#< "pr=" >|< pp pr >#< "edge="  >|< ppCommaList [e]
-  pp (ProvenArg pr c ev)     = "ARG:"   >#< "pr=" >|< pp pr                                 >#< "cost=" >|< pp c >#< "evid=" >|< pp ev
+  pp (ProvenArg pr c)        = "ARG:"   >#< "pr=" >|< pp pr                                 >#< "cost=" >|< pp c
 
 instance PP ProvenGraph where
   pp (ProvenGraph i2n p2i) = (ppAssocL . assocLMapSnd ppCommaList . fmToList $ p2i) >-< ppAssocL (fmToList i2n)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code for a ProvenGraph
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+prvgCode :: ProvenGraph -> (CBindL,CSubst,Set PredOccId)
+prvgCode (ProvenGraph i2n p2i)
+  =  let  c i n
+            =  case n of
+                 ProvenAnd _ _ _ ev
+                   -> [CBind_Bind (uidHNm i) (m `cAppSubst` ev)]
+                 _ -> []
+          i2nL = fmToList i2n
+          p2iL = fmToList p2i
+          r = [ uid | (uid,ProvenArg _ _) <- i2nL ]
+          b = concat . map (uncurry c) $ i2nL
+          m = assocLToCSubst . concat . map (\(_,uidL@(uid:_)) -> zip uidL (repeat (CExpr_Var (uidHNm uid)))) $ p2iL
+          rem = concat [ uidL | (_,uidL) <- p2iL, any (`elem` r) uidL ]
+     in   (b,m,mkSet rem)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -114,6 +137,9 @@ instance PP ProvenGraph where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
+costALot :: Int
+costALot = 100
+
 data Rule
   =  Rule
        { rulRuleTy          :: Ty
@@ -122,7 +148,7 @@ data Rule
        , rulCost            :: ProofCost
        }
 
-emptyRule = Rule Ty_Any head hsnUnknown 100
+emptyRule = Rule Ty_Any head hsnUnknown costALot
 
 instance Show Rule where
   show r = show (rulNmEvid r) ++ "::" ++ show (rulRuleTy r)

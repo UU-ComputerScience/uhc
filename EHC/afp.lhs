@@ -537,7 +537,12 @@ This concerns mainly future design decisions which have an influence on design d
 %%% Intro
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section*{Introduction and overview}
+%if phd
+\section*%
+%else
+\section%
+%endif
+{Introduction and overview}
 
 %if not onlyCurrentWork
 
@@ -573,7 +578,12 @@ the intentions and purpose of this paper in more detail.
 This is followed by a short description
 of the final language for which we develop compilers throughout this paper.
 
-\subsection{Purpose}
+%if phd
+\subsection*%
+%else
+\subsection%
+%endif
+{Purpose}
 
 \frame<presentation>
 {
@@ -782,7 +792,12 @@ the following chapters.
 Only short examples are given, intended to get a feel for what is explained in more detail
 and implemented in the relevant versions of the compiler.
 
-\subsection{A short tour}
+%if phd
+\subsection*%
+%else
+\subsection%
+%endif
+{A short tour}
 
 Though all compilers described in this paper deal with a different aspect,
 they all have in common that they are based on the \IxAsIs{|lambda|-calculus},
@@ -1191,7 +1206,12 @@ Kind signatures for types (similar to type signatures for values)
 
 %endif omitEH5Onwards
 
-\subsection{Haskell language elements not described}
+%if phd
+\subsection*%
+%else
+\subsection%
+%endif
+{Haskell language elements not described}
 
 The last compiler in the series of compilers in this paper still lacks
 many features available in Haskell.
@@ -1217,7 +1237,12 @@ Code generation
 \end{itemize}
 
 %if False
-\subsubsection{Untackled newly arisen issues}
+%if phd
+\subsection*%
+%else
+\subsection%
+%endif
+{Untackled newly arisen issues}
 The extra features on occasions also add new issues...
 
 \paragraph{Kind checking required during type inferencing}
@@ -1240,7 +1265,12 @@ in   let  maf :: (a -> Eq a a) -> Eq L L
 \TBD{}
 %endif
 
-\subsection{About the presented code}
+%if phd
+\subsection*%
+%else
+\subsection%
+%endif
+{About the presented code}
 
 The fact that multiple versions of a compiler are described and
 are the basis of the story around which the explanation has been woven brings
@@ -1270,7 +1300,12 @@ this paper \cite{dijkstra04ehc-web}.
 \end{itemize}
 
 %if not omitLitDiscuss
-\subsection<article>{Literature}
+%if phd
+\subsection*%
+%else
+\subsection%
+%endif
+<article>{Literature}
 
 \TBD{}
 
