@@ -104,7 +104,10 @@ cmdLineOpts
 specialChars  =  "().`"
 opChars       =  "!#$%&*+/<=>?@\\^|-:;,[]{}~"
 
-keywordsText  =  [ "judge", "rule", "rules", "cond", "preamble", "scheme", "view", "viewset", "viewas", "let", "in" ]
+keywordsTextEscapable
+  =  [ "judge", "rule", "rules", "cond", "preamble", "scheme", "view", "viewset", "let", "in" ]
+keywordsText
+  =  [ "viewas" ] ++ keywordsTextEscapable
 keywordsOps   =  [ "=", "-", "&", "\\\\" ]
 
 scanHandle :: [String] -> [String] -> String -> String -> FilePath -> Handle -> IO [Token]
@@ -136,7 +139,8 @@ pAGItf
                                                 <*> pJExpr
                                                 <*> pViews
                             <|> sem_Decl_Rules <$  pKey "rules" <*> pNmSuff
-                                               <*> pString <* pKey "=" <*> pRules
+                                               <*> pString <*> pOptViewSels
+                                               <*  pKey "=" <*> pRules
                             <|> sem_Decl_ViewSet <$  pKey "viewset" <*> pNm
                                                  <*  pKey "=" <*> pViewSels
                             <|> sem_Decl_View <$> pView
@@ -144,7 +148,8 @@ pAGItf
         pView               =   sem_View_View <$ pKey "view" <*> pViewSels <* pKey "=" <*> pJExprLet
         pViewSel            =   sem_ViewSel_One <$> pNm'
         pViewSels           =   pFoldr (sem_ViewSels_Cons,sem_ViewSels_Nil) pViewSel
-        pOptViewSels        =   pKey "viewas" *> pViewSels `opt` sem_ViewSels_Nil
+        pViewAsSels         =   pKey "viewas" *> pViewSels
+        pOptViewSels        =   pViewAsSels `opt` sem_ViewSels_Nil
         pRules              =   pFoldr (sem_Rules_Cons,sem_Rules_Nil) pRule
         pRule               =   ((,,) <$> (True <$ pKey "&" <|> pSucceed False) <*  pKey "rule" <*> pNm <*> pOptViewSels <* pKey "=")
                                 <**> (   (\pre post (hor,nm,vsel) -> sem_Rule_Rule hor nm vsel pre post) <$> pRExprViews <* pKey "-" <*> pRExprViews
@@ -152,7 +157,7 @@ pAGItf
                                      )
         pNm                 =   pVarid <|> pConid
         pNm'                =   pNm <|> pInteger
-        pNmSuff				=	(:) <$> pNm <*> pList (pKey "." *> pNm')
+        pNmSuff             =   (:) <$> pNm <*> pList (pKey "." *> pNm')
         pSym                =   pVarsym <|> pConsym <|> (\q n -> q ++ n ++ q) <$> pKey "`" <*> pNm <* pKey "`"
         pRExpr              =   sem_RExpr_Judge <$> pJudge
                             <|> sem_RExpr_Cond <$ pKey "cond" <*> pJExpr
@@ -167,8 +172,9 @@ pAGItf
         pJExprBase          =   sem_JExpr_Paren <$> pParens pJExpr
                             <|> sem_JExpr_Var <$> pNm'
                             <|> sem_JExpr_Str <$> pString
-                            <|> pParens pJExprEsc
-        pJExprEsc           =   (sem_JExpr_StrAsIs . concat) <$> pList1 (foldr1 (<|>) . map pKey $ (["."] ++ keywordsOps ++ keywordsText))
+                            <|> pParens (pJExprEsc <|> pJExprViewAs)
+        pJExprViewAs        =   mkApp alg <$> pList1 (sem_JExpr_ViewAs <$> pViewAsSels <* pKey "=" <*> pJExpr)
+        pJExprEsc           =   (sem_JExpr_StrAsIs . concat) <$> pList1 (foldr1 (<|>) . map pKey $ (["."] ++ keywordsOps ++ keywordsTextEscapable))
         pJExprMbBase        =   sem_MbJExpr_Just <$> pJExprBase <|> pSucceed sem_MbJExpr_Nothing
         pJExprSel           =   pJExprSel1 <|> pSucceed id
         pJExprSel1          =   (\ss s -> \e -> sem_JExpr_SelTop (sem_JExpr_Sel (ss e) (sem_MbJExpr_Just s))) <$> pDots <*> pJExprBase
@@ -220,6 +226,7 @@ DATA Decl
                         views       : Views
   | Rules               nmL         : {[String]}
                         info        : {String}
+                        viewSels    : ViewSels
                         rules       : Rules
   | ViewSet             nm          : {String}
                         viewSels    : ViewSels
@@ -282,6 +289,8 @@ DATA JExpr
   | SelTop              jExpr       : JExpr
   | Sel                 jExpr       : JExpr
                         selMbJExpr  : MbJExpr
+  | ViewAs              viewSels    : ViewSels
+                        jExpr       : JExpr
   | Empty
 
 DATA MbJExpr
@@ -313,7 +322,7 @@ SEM Decl
 
 SEM Rule
   | RuleUse     loc     .   (aliasNm,aliasNmSuff)
-  										=   hdAndTl @aliasNmL
+                                        =   hdAndTl @aliasNmL
 
 -------------------------------------------------------------------------
 -- Ty of JExpr
@@ -591,8 +600,12 @@ mkLaTeXNm = map (\c -> if isAlphaNum c then c else '-')
 mkLhs2TeXSafe :: String -> String
 mkLhs2TeXSafe = concat . map (\c -> if c == '|' then "||" else [c])
 
-mkMBox :: PP_Doc -> PP_Doc
+mkMBox :: PP a => a -> PP_Doc
 mkMBox p = "\\;\\mbox" >|< ppCurly p
+
+mkRuleNm :: String -> String -> PP_Doc
+mkRuleNm r v = "\\textsc" >|< ppCurly (mkLaTeXNm r) >|< (if null v then empty else "_" >|< ppCurly v)
+-- mkRuleNm r v = mkMBox (mkLaTeXNm r ++ if null v then "" else ("$_{" ++ v ++ "}$"))
 
 mkVerb :: PP_Doc -> PP_Doc
 mkVerb p = ppPacked "@" "@" p
@@ -655,7 +668,10 @@ SEM Decl
                                                                      >-< "\\end{RulesFigure}"
                                                                     )
                                                      in ppRs >-< ppSc >-< ppRu
-                lhs     .   ppLaTeX     =   vlist . map @mkPP $ @scmViewNmL
+                lhs     .   ppLaTeX     =   vlist [ @mkPP v
+                                                  | v <- @scmViewNmL
+                                                  , isEmptySet @viewSels.viewS || v `elementOf` viewExpandNm @lhs.jViewSetGam (setToList @viewSels.viewS)
+                                                  ]
 
 SEM Judge
   | Judge       lhs     .   ppLaTeX     =   if null @errs then mkInLhs2Tex (ppJTy @ty) else mkInLhs2Tex (ppListSep "" "" "," @errs)
@@ -698,6 +714,7 @@ SEM JExpr
                                                     -> x
                 loc     .   ppLaTeX     =   if @jExpr.isEmpty then empty else @ppLaTeXSel
   | Op          loc     .   ppLaTeX     =   @lExpr.ppLaTeX >#< mkLhs2TeXSafe @nm >#< @rExpr.ppLaTeX
+  | ViewAs      loc     .   ppLaTeX     =   if @viewIsSel then @jExpr.ppLaTeX else empty
   | Empty       loc     .   ppLaTeX     =   empty
 
 SEM JExpr
@@ -718,7 +735,7 @@ SEM RExprViews
   | Cons        lhs     .   ppLaTeXL    =   if @hd.viewIsSel then @hd.ppLaTeX : @tl.ppLaTeXL else @tl.ppLaTeXL
 
 SEM Rule
-  | Rule        lhs     .   ppLaTeX     =   "\\infrule" >|< ppArg (mkLaTeXNm @nm ++ @lhs.view)
+  | Rule        lhs     .   ppLaTeX     =   "\\ehinfrule" >|< ppArg (mkRuleNm @nm @lhs.view)
                                             >-< ppListSepVV "{%" "}" "\\\\" @pre.ppLaTeXL
                                             >-< ppListSepVV "{%" "}" "\\\\"  @post.ppLaTeXL
   | RuleUse     lhs     .   ppLaTeX     =   mkCmdNmUse (ppDots (optBaseNm @lhs.opts : mkLaTeXNm (@aliasNm ++ @lhs.view) : map mkLaTeXNm @aliasNmSuff))
@@ -762,6 +779,9 @@ SEM ViewSels
 SEM RExprView
   | RExpr       lhs     .   viewIsSel   =   @viewSels.isEmpty || @lhs.view == "" || @viewSels.viewIsSel
 
+SEM JExpr
+  | ViewAs      loc     .   viewIsSel   =   @viewSels.isEmpty || @lhs.view == "" || @viewSels.viewIsSel
+
 SEM Rule
   | *           lhs     .   viewIsSel   =   @viewSels.isEmpty || @lhs.view == "" || @viewSels.viewIsSel
 
@@ -778,14 +798,13 @@ SEM ViewSel
 -- Empty expr?
 -------------------------------------------------------------------------
 
-ATTR JExpr [ | | isEmpty: Bool ]
+ATTR JExpr [ | | isEmpty USE {&&} {False}: Bool ]
 
 SEM JExpr
   | Empty       lhs     .   isEmpty     =   True
   | Sel         lhs     .   isEmpty     =   @jExpr.isEmpty
   | Let         lhs     .   isEmpty     =   @bExpr.isEmpty
-  | * - Empty Var Sel Let
-                lhs     .   isEmpty     =   False
+  | ViewAs      lhs     .   isEmpty     =   not @viewIsSel
 
 -------------------------------------------------------------------------
 -- Self

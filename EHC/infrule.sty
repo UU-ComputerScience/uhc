@@ -4,6 +4,15 @@
 
 \newcounter{rules}
 
+\newcommand{\ehinfrule}[3]{%
+  \frac{%
+    \begin{array}{@{}c@{}}#2\end{array}%
+  }{%
+    \begin{array}{@{}c@{}}#3\end{array}%
+  }%
+  \, #1%
+}
+
 \newcommand*{\infrule}[4][\relax]{%
   \refstepcounter{rules}%
   \def\@currentlabelname{#2}%
@@ -14,7 +23,7 @@
   \fi
   \frac{%
     \primhs
-    \ \begin{array}{c}#3\end{array}\ %
+    \ \begin{array}{@{}c@{}}#3\end{array}\ %
   }{%
     \primhs
     \ \begin{parray}
@@ -29,7 +38,8 @@
       \def\M##1##2{\L{\fracspacecorrection{##1}}\nextline\R{##2}}
       \infrule@@ #4\infrule@@end
       \end{parray}\ }%
-  \quad \text{(#2)}}
+   \quad \text{(#2)}%
+  }
 
 \newcommand*{\xinfrule}[2]{%
   \frac{%
