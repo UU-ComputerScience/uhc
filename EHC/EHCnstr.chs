@@ -31,6 +31,9 @@
 %%[9 import(FiniteMap,EHDebug) export(CnstrInfo(..),cnstrImplsLookup,cnstrImplsUnit,assocLToCnstrImpls,cnstrToAssocL)
 %%]
 
+%%[11 export(cnstrKeys)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Operator prio
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -158,6 +161,11 @@ cnstrToAssocL (Cnstr l) = fmToList l
 %%[9
 cnstrSize :: Cnstr -> Int
 cnstrSize (Cnstr m) = sizeFM m
+%%]
+
+%%[11
+cnstrKeys :: Cnstr -> TyVarIdL
+cnstrKeys = assocLKeys . cnstrToAssocL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -143,51 +143,59 @@ SEM Expr
 
 %%[9.AppImpl
 SEM Expr
-  | AppImpl     loc         .  knFunTy              =   [@argPr.ty] `mkTyArrow` (@lhs.tyCnstr |=> @lhs.knTy)
-                func        .  knTy                 =   @knFunTy
-                loc         .  (knImpls,fTy)        =   tyArrowImplsRes @func.ty
-                            .  (knArgImpl,knResImpls)
+  | AppImpl     loc         .   knFunTy             =   [@argPr.ty] `mkTyArrow` (@lhs.tyCnstr |=> @lhs.knTy)
+                func        .   knTy                =   @knFunTy
+                loc         .   (knImpls,fTy)       =   tyArrowImplsRes @func.ty
+                            .   (knArgImpl,knResImpls)
                                                     =   case @knImpls of
                                                             (a:r)  -> (a,r)
                                                             []     -> (Ty_Any,[])
-                            .  foPr                 =   fitPredToEvid @lUniq @knArgImpl @lhs.prIntroGam
-                arg         .  knTy                 =   @func.tyCnstr |=> foTy @foPr
-                            .  tyCnstr              =   foCnstr @foPr |=> @func.tyCnstr
-                loc         .  ty                   =   @arg.tyCnstr |=> (@knResImpls `mkTyArrow` @fTy)
+                            .   foPr                =   fitPredToEvid @lUniq @knArgImpl @lhs.prIntroGam
+                arg         .   knTy                =   @func.tyCnstr |=> foTy @foPr
+                            .   tyCnstr             =   foCnstr @foPr |=> @func.tyCnstr
+                loc         .   ty                  =   @arg.tyCnstr |=> (@knResImpls `mkTyArrow` @fTy)
 %%]
 
 %%[1.Lam
 SEM Expr
-  | Lam         loc         .  funTy                =   [Ty_Any] `mkTyArrow` Ty_Any
-                            .  foKnFun              =   @funTy `fitsIn` @lhs.knTy
+  | Lam         loc         .   funTy               =   [Ty_Any] `mkTyArrow` Ty_Any
+                            .   foKnFun             =   @funTy `fitsIn` @lhs.knTy
                 (arg.knTy,body.knTy)                =   tyArrowArgRes (foTy @foKnFun)
-                arg         .  valGam               =   gamPushNew @lhs.valGam
-                loc         .  ty                   =   @lhs.knTy
+                arg         .   valGam              =   gamPushNew @lhs.valGam
+                loc         .   ty                  =   @lhs.knTy
 %%]
 
 %%[2.Lam
 SEM Expr
-  | Lam         loc         .  funTy                :=  let  [a,r] = mkNewTyVarL 2 @lUniq
+  | Lam         loc         .   funTy               :=  let  [a,r] = mkNewTyVarL 2 @lUniq
                                                         in   [a] `mkTyArrow` r
-                            .  foKnFun              :=  @funTy `fitsIn` (@lhs.tyCnstr |=> @lhs.knTy)
-                arg         .  tyCnstr              =   foCnstr @foKnFun |=> @lhs.tyCnstr
-                loc         .  ty                   :=  [@body.tyCnstr |=> @arg.ty] `mkTyArrow` @body.ty
+                            .   foKnFun             :=  @funTy `fitsIn` (@lhs.tyCnstr |=> @lhs.knTy)
+                arg         .   tyCnstr             =   foCnstr @foKnFun |=> @lhs.tyCnstr
+                loc         .   bodyTyCnstr         =   @body.tyCnstr
+                            .   ty                  :=  [@bodyTyCnstr |=> @arg.ty] `mkTyArrow` @body.ty
 %%]
 
 %%[4.Lam
 SEM Expr
-  | Lam         loc         .  foKnFun              :=  let  fo = fitsIn (@lhs.fiOpts {fioBindRFirst=True}) @fe @lUniq2 @funTy (@lhs.tyCnstr |=> @lhs.knTy)
+  | Lam         loc         .   foKnFun             :=  let  fo = fitsIn (@lhs.fiOpts {fioBindRFirst=True}) @fe @lUniq2 @funTy (@lhs.tyCnstr |=> @lhs.knTy)
                                                         in   fo {foTy = foCnstr fo |=> @funTy}
 %%]
 
 %%[9.Lam
 SEM Expr
-  | Lam         loc         .  (funTy,imTy)         :=  let  [i,a,r] = mkNewUIDL 3 @lUniq
+  | Lam         loc         .   (funTy,imTy)        :=  let  [i,a,r] = mkNewUIDL 3 @lUniq
                                                              im = mkImplsVar i
                                                         in   ([im,mkTyVar a] `mkTyArrow` mkTyVar r,im)
                 (loc.knImpls,arg.knTy,body.knTy)    :=  tyArrowImplsArgRes (foTy @foKnFun)
-                loc         .  ty                   :=  ((@body.tyCnstr |=> @knImpls) ++ [@body.tyCnstr |=> @arg.ty])
+                loc         .   ty                  :=  ((@bodyTyCnstr |=> @knImpls) ++ [@bodyTyCnstr |=> @arg.ty])
                                                           `mkTyArrow` @body.ty
+%%]
+
+%%[11.Lam
+SEM Expr
+  | Lam         body        .   tyCnstr             =   @arg.tyEqCnstr |=> @arg.tyCnstr
+                loc         .   bodyTyCnstr         :=  cnstrDel  (cnstrKeys @arg.tyEqCnstr)
+                                                                  @body.tyCnstr
 %%]
 
 %%[9.LamImpl

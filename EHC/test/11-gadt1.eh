@@ -2,7 +2,6 @@ let  data Bool = False | True
      data Term a
        = Lit a, a = Int
        | Pair (Term b) (Term c), a = (b,c)
-       | Pair2 (Term b) (Term c)
        | Fst (Term (b,c)), a = b
        | Inc (Term Int), a = Int
        | IsZ (Term Int), a = Bool
@@ -32,4 +31,11 @@ let  test :: Term a -> Term b -> Maybe (Eq a b)
                                     Just Eq ->
                                         case test x2 y2 of
                                             Just Eq -> Just Eq
-in   eval (Lit 3)
+                                            _ -> Nothing
+                                    _ -> Nothing
+                            _ -> Nothing
+                    Lit x1 ->
+                        case y of
+                            Lit y1 -> Just Eq
+                            _ -> Nothing
+in   test (Pair (Lit 3) (Lit 4)) (Pair (Lit 5) (Lit 6))
