@@ -18,7 +18,7 @@
 %%[8 hs export(CPatNm(..), cpatNmEither)
 %%]
 
-%%[8 hs export(CTag,ctagNone,cpatVarNm,caltTag,caltIsVar,caltPatL,caltPat,caltLPatNms,cvarUndefined,ppCTag) 
+%%[8 hs export(CTag(..),ctagNone,ctag,cpatVarNm,caltTag,caltIsVar,caltPatL,caltPat,caltLPatNms,cvarUndefined,ppCTag) 
 %%]
 
 %%[8 hs export(mkCExprLet,mkCExprLetRec,mkCExprLam,mkCExprApp)
@@ -45,13 +45,19 @@ DERIVING *     : Show, Eq
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-type CTag = Maybe Int
+data CTag = CTagNone | CTag Int HsName deriving (Show,Eq,Ord)
 
 ctagNone  ::  CTag
-ctagNone  =   Nothing
+ctagNone  =   CTagNone
+
+ctag :: a -> (Int -> HsName -> a) -> CTag -> a
+ctag n t tg = case tg of {CTag i l -> t i l; _ -> n}
 
 ppCTag :: CTag -> PP_Doc
-ppCTag = pp . maybe 0 id
+ppCTag = ctag (pp "?") (\t _ -> pp t)
+
+instance PP CTag where
+  pp = ppCTag
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

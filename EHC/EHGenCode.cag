@@ -72,7 +72,7 @@ SEM Expr
 %%[8
 SEM Expr
   | Rec         loc         .   rcexpr          =   if @recExpr.isExtFromEmpty
-                                                    then foldl CExpr_App CExpr_Tup (map snd . tyRowCanonOrder $ @recExpr.cexprL)
+                                                    then foldl CExpr_App (CExpr_Tup ctagNone) (map snd . tyRowCanonOrder $ @recExpr.cexprL)
                                                     else @recExpr.cexpr
                 loc         .   cexpr           =   @rcexpr
   | Sel         loc         .   offset          =   CExpr_Int (tyRecOffset @lbl (@lhs.finTyCnstr |=> @expr.ty))
@@ -96,7 +96,7 @@ SEM RecExpr
 
 SEM RecExpr
   | Ext Upd     loc         .   offset          =   CExpr_Int (tyRecOffset @nm (@lhs.finTyCnstr |=> @recExpr.ty))
-  | Empty       loc         .   cexpr           =   CExpr_Tup
+  | Empty       loc         .   cexpr           =   CExpr_Tup ctagNone
                 lhs         .   cexprL          =   []
   | Expr        loc         .   cexpr           =   @expr.cexpr
                 lhs         .   cexprL          =   []
@@ -167,7 +167,7 @@ SEM Decl
                                                      dDflt = mkCExprLam [nD]
                                                                 (mkCExprLetRec
                                                                     [CBind_Bind nR
-                                                                        (mkCExprApp CExpr_Tup
+                                                                        (mkCExprApp (CExpr_Tup ctagNone)
                                                                             (map (\(n,_) -> maybe cvarUndefined id (lookupBnd n)) . tyRowCanonOrder . snd . tyRecExts $ @clsTyRec))]
                                                                     (CExpr_Var nR)
                                                                 )
@@ -241,7 +241,7 @@ SEM PatExpr
                                             =   let  (c,_)  = tyAppFunArgs @finResTy
                                                      n      = tyConNm c
                                                 in   tgiData . fromJust . tyGamLookup n $ @lhs.tyGam
-                            .   tag         =   Just (tyRecOffset @appFunNm @finResTyData)
+                            .   tag         =   CTag (tyRecOffset @appFunNm @finResTyData) @appFunNm
   | Rec         loc         .   tag         =   ctagNone
   | AppTop Con Rec
                 loc         .   cpatBinds   =   map (\(o,(n,p)) -> CPatBind_Bind (CExpr_Int o) n p) . zip [0..] . tyRowCanonOrder . reverse $ @cpbindL
@@ -391,7 +391,7 @@ SEM DataConstr
                                                      nms = map (\i -> HNm ("x" ++ show i)) [1..len]
                                                 in   [CBind_Bind @conNm
                                                         (mkCExprLam nms
-                                                          (mkCExprApp (CExpr_App CExpr_Tup (CExpr_Int @tag))
+                                                          (mkCExprApp (CExpr_Tup (CTag @tag @conNm))
                                                             (map CExpr_Var nms)))
                                                      ]
 %%]

@@ -27,12 +27,76 @@ ppGrModule cmod
 %%% Pretty printed code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[8 hs
+ppCurlyV :: [PP_Doc] -> PP_Doc
+ppCurlyV pL = pp_block "{ " "} " "; " pL
+
+ppGrNm :: HsName -> PP_Doc
+ppGrNm n = "$" >|< pp n
+%%]
+
 %%[8
-ATTR GrAGItf AllGrNT [ | | pp USE {>-<} {empty} : PP_Doc ]
+ATTR GrAGItf AllGrNT [ | | pp USE {>-<} {empty}: PP_Doc ]
 
 SEM GrModule
-  | Mod         lhs         .   pp          =   "module" >#< @baseName >-< @bindL.pp
+  | Mod         lhs         .   pp          =   "module" >#< ppGrNm @baseName >-< ppCurlyV @bindL.ppL
 
+SEM GrBind
+  | Bind        lhs         .   pp          =   ppGrNm @nm >#< ppSpaced (map ppGrNm @argNmL) >-<
+                                                    indent 2 ("=" >#< @expr.pp)
+  | Rec         lhs         .   pp          =   "rec" >-< indent 2 (ppCurlyV @bindL.ppL)
+
+SEM GrExpr
+  | Seq         lhs         .   pp          =   @expr.pp >#< ";" >#< "\\" >|< @pat.pp >#< "->"
+                                                >-< @body.pp
+  | Case        lhs         .   pp          =   "case" >#< @val.pp >#< "of" >-<
+                                                    indent 2 (ppCurlyV @altL.ppL)
+  | App         lhs         .   pp          =   ppSpaced (ppGrNm @nm : @argL.ppL)
+  | Eval        lhs         .   pp          =   "eval" >#< @val.pp
+  | Unit        lhs         .   pp          =   "unit" >#< @val.pp
+  | Store       lhs         .   pp          =   "store" >#< @val.pp
+  | Fetch       lhs         .   pp          =   "fetch" >#< ppGrNm @nm >#< maybe empty pp @mbOffset
+  | Update      lhs         .   pp          =   "update" >#< ppGrNm @nm >#< @val
+
+SEM GrAlt
+  | Alt         lhs         .   pp          =   @pat.pp >-< indent 4 ("->" >#< @expr.pp)
+
+SEM GrVal
+  | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : @fldL.ppL)
+  | Empty       lhs         .   pp          =   pp "()"
+  | LitInt      lhs         .   pp          =   pp @int
+  | Var         lhs         .   pp          =   ppGrNm @nm
+
+SEM GrPat
+  | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : map ppGrNm @fldL)
+  | Empty       lhs         .   pp          =   pp "()"
+  | LitInt      lhs         .   pp          =   pp @int
+  | Var         lhs         .   pp          =   ppGrNm @nm
+
+SEM GrTag
+  | Lit         lhs         .   pp          =   "#" >|< @int >|< "/" >|< pp @categ >|< ppGrNm @nm
+  | Var         lhs         .   pp          =   ppGrNm @nm
+  | None        lhs         .   pp          =   pp "()"
+%%]
+
+%%[8
+ATTR GrBindL GrAltL GrPatL GrValL [ | | ppL: PP_DocL ]
+
+SEM GrBindL
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+  | Nil         lhs         .   ppL         =   []
+
+SEM GrAltL
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+  | Nil         lhs         .   ppL         =   []
+
+SEM GrPatL
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+  | Nil         lhs         .   ppL         =   []
+
+SEM GrValL
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+  | Nil         lhs         .   ppL         =   []
 %%]
 
 

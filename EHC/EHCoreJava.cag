@@ -12,7 +12,7 @@
 %%[8 hs import(UU.Pretty,EHCommon,EHTy,EHCore,Char) export(cmodJavaSrc)
 %%]
 
-%%[8.WRAPPER import(EHCoreAbsSyn)
+%%[8.WRAPPER import(EHCoreCommonLev,EHCoreAbsSyn)
 WRAPPER CodeAGItf
 %%]
 
@@ -186,7 +186,10 @@ SEM CExpr
   | Char        loc         .   jvSrc       =   "new Char" >|< pp_parens (pp (show @char))
   | Var         loc         .   jvSrc       =   maybe (jvNmPP @nm) (jvNmPP) . lookup @nm $ primToJavaMp
   | App         loc         .   jvSrc       =   let  (f:as) = reverse @jvSrcL
-                                                in   if @func.isTupApp then jvTupApp as else jvApp f as
+  												in   case @func.mbTupApp of
+  												       Just (CTag t l)  -> jvTupApp (("new Int" >|< pp_parens (pp t)) : as)
+  												       Just CTagNone    -> jvTupApp (as)
+  												       Nothing          -> jvApp f as
   | Let         loc         .   jvBinds     =   case @categ of
                                                     CBindPlain   -> @binds.jvSrc
                                                     CBindStrict  -> @binds.jvSrcStrict
@@ -213,11 +216,11 @@ SEM CExpr
                                             =   HNm (show @expr.varNm ++ "_scrutinee")
                             .   jvCaseResult
                                             =   HNm (show @expr.varNm ++ "_result")
-  | Tup         loc         .   jvSrc       =   pp "new Object[0]"
-  | TupSel      loc         .   jvSrc       =   jvApp (jvNmPP (maybe (jvSelNm) (const jvSel1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc]
+  | Tup         loc         .   jvSrc       =   ctag (pp "new Object[0]") (\t _ -> jvTupApp ["new Int" >|< pp_parens (pp t)]) @tag
+  | TupSel      loc         .   jvSrc       =   jvApp (jvNmPP (ctag (jvSelNm) (\_ _ -> jvSel1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc]
   | TupDel      loc         .   jvSrc       =   empty
-  | TupIns      loc         .   jvSrc       =   jvApp (jvNmPP (maybe (jvInsNm) (const jvIns1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
-  | TupUpd      loc         .   jvSrc       =   jvApp (jvNmPP (maybe (jvUpdNm) (const jvUpd1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
+  | TupIns      loc         .   jvSrc       =   jvApp (jvNmPP (ctag (jvInsNm) (\_ _ -> jvIns1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
+  | TupUpd      loc         .   jvSrc       =   jvApp (jvNmPP (ctag (jvUpdNm) (\_ _ -> jvUpd1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
 
 SEM CBind
   | Bind        lhs         .   jvSrcInd    =   jvBind "Indirection" @nm "new Indirection()"
@@ -296,7 +299,7 @@ ATTR CPatBindL CPatBind [ tagSz: Int | | ]
 ATTR CPatL CPat CAltL CAlt [ | | tagSz USE {`const`} {0}: Int ]
 
 SEM CPat
-  | Con         loc         .   tagSz       =   maybe 0 (const 1) @tag
+  | Con         loc         .   tagSz       =   ctag 0 (\_ _ -> 1) @tag
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -323,20 +326,6 @@ SEM CExpr
                             .   jvBody      =   @body.jvBody
   | * - Lam     lhs         .   jvArgL      =   []
                             .   jvBody      =   @jvSrc
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Is CExpr the creation of a tuple?
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-ATTR CExpr [ | | isTupApp: Bool ]
-
-SEM CExpr
-  | Tup         lhs         .   isTupApp    =   True
-  | App         lhs         .   isTupApp    =   @func.isTupApp
-  | * - Tup App
-                lhs         .   isTupApp    =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -863,7 +863,8 @@ For this intended audience this paper provides
 \item
 A description of the implementation of a type checker/inferencer for an
 extended subset of Haskell.
-Extended in the sense of allowing higher ranked polymorphism
+Extended
+in the sense of allowing higher ranked polymorphism
 \cite{peytonjones03pract-inf-rank,botlan03ml-power-f,odersky97putting-ann}
 and existentials \cite{perry91phd,laufer94poly-absdata,mitchell88absty-exist}.
 A subset in the sense of (e.g.) leaving out the class system.
@@ -874,7 +875,8 @@ A description of the semantics of Haskell, lying between the
 more formal
 \cite{hall96type-class-haskell,faxen02semantics-haskell}
 and more implementation oriented
-\cite{jones00thih,ipt:impl-func-prog-lang} or similar to \cite{typing:types-prog-lang:pierce}.
+\cite{jones00thih,ipt:impl-func-prog-lang} or similar to other combinations of
+theory and practice \cite{typing:types-prog-lang:pierce}.
 \item
 A gradual instead of a big bang explanation. It should be noted however that
 gradual explanation is different from gradual evolution; the former being based
@@ -885,6 +887,14 @@ can be managed by splitting the implementation of the compiler into separate asp
 \item
 A working combination of otherwise usually separately proven or implemented features.
 \end{itemize}
+
+%if forAFP04Notes
+It should be noted that because of space limitations 
+\footnote{Because of the restricted space available this paper only describes the first of
+four steps originally described in the extended version of this paper, handed out during the AFP04 summerschool
+\cite{dijkstra04thag-part1}.}
+%endif
+
 
 However, this paper does \emph{not} provide
 \begin{itemize}
@@ -910,12 +920,12 @@ Type systems, |lambda|-calculus
 
 
 It is our belief and hope that by following this fine line between theory and its implementation,
-we serve both who want to learn and those who want to do research are served.
+we serve both who want to learn and those who want to do research.
 It is also our belief that by splitting the big problem into smaller aspects the combination can
 be explained in an easier way.
 Finally, we believe that this can only be accomplished if supported by proper tooling,
-currently the AG system and a weaving system
-\TBD{[cite...]},
+currently the AG system and a weaving system,
+\TBD{[cite...]}
 and in the future perhaps by integrated environments
 \cite{schrage04www-proxima}.
 \TBD{[cite Proxima, Programmatica]}

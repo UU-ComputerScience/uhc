@@ -18,13 +18,14 @@ DATA GrAGItf
   | AGItf       module          : GrModule
 
 DATA GrModule
-  | Mod         baseName        : {String}
+  | Mod         baseName        : {HsName}
                 bindL           : GrBindL
 
 DATA GrBind
   | Bind        nm              : {HsName}
                 argNmL          : {[HsName]}
                 expr            : GrExpr
+  | Rec         bindL           : GrBindL
 
 TYPE GrBindL    =   [GrBind]
 
@@ -36,6 +37,7 @@ DATA GrExpr
                 altL            : GrAltL
   | App         nm              : {HsName}
                 argL            : GrValL
+  | Eval        val             : GrVal
   | Unit        val             : GrVal
   | Store       val             : GrVal
   | Fetch       nm              : {HsName}
@@ -61,7 +63,7 @@ TYPE GrValL     =   [GrVal]
 
 DATA GrPat
   | Node        tag             : GrTag
-                fldL            : GrPatL
+                fldL            : {[HsName]}
   | Tag         tag             : GrTag
   | Empty
   | LitInt      int             : {Int}
@@ -70,7 +72,9 @@ DATA GrPat
 TYPE GrPatL     =   [GrPat]
 
 DATA GrTag
-  | Lit         int             : {Int}
+  | Lit         categ           : {GrTagCateg}
+                int             : {Int}
+                nm              : {HsName}
   | Var         nm              : {HsName}
   | None
 

@@ -110,28 +110,6 @@ doCompileRun filename opts
          }
 %%]
 
-%%[88.doCompile -1.doCompile
-doCompileRun :: String -> EHCOpts -> IO ()
-doCompileRun filename opts
-%%@doCompileA.1
-%%@doCompileB.8
-%%@doCompileC.8
-%%@doCompileD.1
-         ;  if ehcoptCore opts
-            then  do  {  writeFile (fpathToStr (fpathSetSuff "core" fp))
-                            (disp codePP 120 "")
-                      }
-            else  return ()
-         ;  if ehcoptCoreJava opts
-            then  do  {  let (jBase,jPP) = cmodJavaSrc (cmodule_Syn_AGItf wrRes)
-                             jFP = fpathSetBase jBase fp
-                      ;  writeFile (fpathToStr (fpathSetSuff "java" jFP))
-                            (disp jPP 120 "")
-                      }
-            else  return ()
-         }
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Messages
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -388,6 +366,7 @@ crOutputCore modNm cr
                  fp     = cuFilePath cu
                  opts   = crOpts cr
                  cMod   = cmodule_Syn_AGItf p1ob
+                 [u1]   = mkNewLevUIDL 1 . snd . mkNewLevUID . crHereUID $ cr
                  codePP = ppCModule cMod 
          ;  if ehcoptCore opts
             then  putPPFile (fpathToStr (fpathSetSuff "core" fp)) codePP 120
@@ -396,6 +375,12 @@ crOutputCore modNm cr
             then  do  {  let (jBase,jPP) = cmodJavaSrc cMod
                              jFP = fpathSetBase jBase fp
                       ;  putPPFile (fpathToStr (fpathSetSuff "java" jFP)) jPP 120
+                      }
+            else  return ()
+         ;  if ehcoptCoreGrin opts
+            then  do  {  let grin = cmodGrin u1 cMod
+                             grPP = ppGrModule grin
+                      ;  putPPFile (fpathToStr (fpathSetSuff "grin" fp)) grPP 1000
                       }
             else  return ()
          ;  return cr
@@ -421,7 +406,7 @@ crCompileCU modNm cr
                    ; crSeq
                        [ crStepUID, crCompileCUParseHS modNm
                                   , crCompileCUPass1HS modNm
-                       , crStepUID, crCoreTrf modNm (assocLKeys cmdLineTrfs)
+                       , crStepUID, crCoreTrf modNm ["CRU", "CLU", "CFL", "CLL"]
                        , crStepUID, crOutputCore modNm
                        ] cr
                    }
