@@ -160,10 +160,10 @@ prvgReachableFrom (ProvenGraph i2n _ _)
             =  if uid `elementOf` reachSet
                then  reachSet
                else  let  reachSet' = addToSet reachSet uid
-                     in   case fromJust (lookupFM i2n uid) of
-                                ProvenAnd _ es _ _  -> rr reachSet' es
-                                ProvenOr  _ es _    -> rr reachSet' es
-                                _                   -> reachSet'
+                     in   case lookupFM i2n uid of
+                                Just (ProvenAnd _ es _ _ ) -> rr reachSet' es
+                                Just (ProvenOr  _ es _   ) -> rr reachSet' es
+                                _                          -> reachSet'
           rr = foldr r
      in   rr emptySet
 

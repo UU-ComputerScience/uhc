@@ -44,9 +44,7 @@ SEM PatExpr
 
 %%[4.patFunTy
 SEM PatExpr
-  | Con         loc         .  (knUnTy,nmErrs)      =   case valGamLookup (hsnUn @nm) @lhs.valGam of
-                                                          Nothing    ->  (Ty_Any,[Err_NamesNotIntrod [@nm]])
-                                                          Just vgi   ->  (vgiTy vgi,[])
+  | Con         loc         .  (knUnTy,nmErrs)      =   valGamLookupTy (hsnUn @nm) @lhs.valGam
                             .  patFunTy             :=  let  [a,r]  = mkNewTyVarL 2 @lUniq
                                                              fo     = fitsIn instFIOpts emptyFE @lUniq2 @knUnTy ([a] `mkTyArrow` r)
                                                         in   foTy fo

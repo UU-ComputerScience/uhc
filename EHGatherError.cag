@@ -128,6 +128,10 @@ SEM Decl
                             .  errInstPP    =   ppErrs @lErrL
                             .  errDeclsPP   =   ppErrs @decls.errL
                 lhs         .  errL         =   []
+  | InstanceIntro
+                loc         .  lErrL        =   @expr.errL ++ @prExpr.errL ++ @prRecErrs ++ @predErrs
+                            .  errInstPP    =   ppErrs @lErrL
+                lhs         .  errL         =   []
 
 SEM Expr
   | Let         loc         .  errLetPP     :=  ppErrs (@dupErrs ++ @prfErrs)
@@ -156,6 +160,8 @@ SEM Expr
 %%[9
 SEM Decl
   | Instance    lhs         .  allErrL      =   @lErrL ++ @decls.allErrL
+  | InstanceIntro
+                lhs         .  allErrL      =   @lErrL
 
 SEM Expr
   | Let         lhs         .  allErrL      :=  @dupErrs ++ @prfErrs ++ @body.errL ++ @decls.allErrL ++ @body.allErrL

@@ -55,5 +55,6 @@ DATA Err
 DATA Err
   | NotProvenPreds      preds      : {[PredOcc]}
   | OverlapPreds        overl      : {AssocL Pred [CExpr]}
+  | TyHasFreeTVars      ty         : Ty
 %%]
 

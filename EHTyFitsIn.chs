@@ -899,12 +899,12 @@ prfOneStep env (PredOcc pr prUid) st@(ProofState g@(ProvenGraph i2n p2i p2oi) u 
                                ndFail               = mkNdFail (if isInOrig then CostInt 1 else CostInt costALot) prUid
                           in   case gamLookupAll nm (fePrElimGam env) of
                                  pegis@(_:_)
-                                     ->  let  rs            = concat . zipWith (\lev pegi -> map (\r -> r {rulCost = rulCost r `costAdd` CostInt (lev*10)}) (pegiRuleL pegi)) [0..] $ pegis
-                                              (u',u1,u2)    = mkNewLevUID2 u
-                                              matches       = catMaybes . zipWith (\u r -> matchRule u pr r) (mkNewUIDL (length rs) u1) $ rs
+                                     ->  let  (u',u1,u2)    = mkNewLevUID2 u
+                                              rules         = concat . zipWith (\lev pegi -> map (\r -> r {rulCost = rulCost r `costAdd` CostInt (lev*10)}) (pegiRuleL pegi)) [0..] $ pegis
+                                              ruleMatches   = catMaybes . zipWith (\u r -> matchRule u pr r) (mkNewUIDL (length rules) u1) $ rules
                                               costOfOr      = if isInOrig then CostInt (-costALot) else CostInt 0 
                                               (g',newPr)
-                                                 = case matches of
+                                                 = case ruleMatches of
                                                        [] ->  (prvgAddPrNd pr [prUid] ndFail g,[])
                                                        ms ->  let  orUids@(uidFail:uidRest) = mkNewUIDL (length ms + 1) u2
                                                               in   foldr
@@ -944,35 +944,36 @@ prfPredsPruneProvenGraph :: [PredOcc] -> ProvenGraph -> (ProvenGraph,ProvenGraph
 prfPredsPruneProvenGraph prL (ProvenGraph i2n p2i p2oi)
   =  let  costOf uid costMp gPrune
             =  case lookupFM costMp uid of
-                 Just c
-                   ->  (uid,c,costMp,gPrune)
+                 Just (Just c)  -> (uid,c,costMp,gPrune)
+                 Just (Nothing) -> (uid,CostInt costALot,costMp,gPrune)
                  Nothing
                    ->  let  prvgAddPrevPrNd pr uid prf g
                               =  let  otherUids = maybe [] id (lookupFM p2i pr)
                                  in   prvgAddPrNd pr (uid : otherUids) prf g
+                            costMp' = addToFM costMp uid Nothing
                        in   case fromJust (lookupFM i2n uid) of
                                  ProvenAnd pr es c ev
-                                   ->  let  (cs,cm,gp)          = costOfL es costMp gPrune
+                                   ->  let  (cs,cm,gp)          = costOfL es costMp' gPrune
                                             c'                  = foldr costAdd c (map snd cs)
-                                            cm'                 = addToFM cm uid c'
+                                            cm'                 = addToFM cm uid (Just c')
                                             gp'                 = prvgAddPrevPrNd pr uid (ProvenAnd pr (map fst cs) c' ev) gp
                                        in   (uid,c',cm',gp')
                                  ProvenOr pr es c
-                                   ->  let  (cs,cm,gp)          = costOfL es costMp gPrune
+                                   ->  let  (cs,cm,gp)          = costOfL es costMp' gPrune
                                             alts@((_,calt):_)   = head (groupSortOn snd cs)
                                             c'                  = c `costAdd` calt
                                             (uid',gp',c'')
                                               = case alts of
                                                     [(uida,_)]  -> (uida,prvgAddPrUids pr [uid] gp,calt)
                                                     _           -> (uid,prvgAddNd uid (ProvenOr pr (map fst alts) c') gp,c')
-                                            cm'                 = addToFM cm uid' c''
+                                            cm'                 = addToFM cm uid' (Just c'')
                                        in   (uid',c',cm',gp')
                                  ProvenShare pr e
-                                   ->  let  (uid',c,cm,gp)      = costOf e costMp gPrune
+                                   ->  let  (uid',c,cm,gp)      = costOf e costMp' gPrune
                                             gp'                 = prvgAddPrUids pr [uid] gp
                                        in   (uid',c,cm,gp')
                                  prf@(ProvenArg pr c)
-                                   ->  let  cm'                 = addToFM costMp uid c
+                                   ->  let  cm'                 = addToFM costMp' uid (Just c)
                                             gp'                 = prvgAddPrevPrNd pr uid prf gPrune
                                        in   (uid,c,cm',gp')
           costOfL uidL costMp gPrune

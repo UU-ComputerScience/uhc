@@ -232,6 +232,9 @@ SEM Decl
                                                     >#< "where" >-< indent 2 @decls.pp
                                                     >-< @errInstPP
                                                     >-< @errDeclsPP
+  | InstanceIntro
+                loc     .   pp      =   "instance"  >#< @expr.pp >#< "<:" >#< @prExpr.pp
+                                                    >-< @errInstPP
 
 SEM FuncDep
   | Dep         lhs     .   pp      =   @fromTvs.pp >#< "->" >#< @toTvs.pp

@@ -31,3 +31,6 @@ $(VPREFIX)EHMainAG.hs: $(addprefix $(VPREFIX),$(DPDS_MAIN))
 
 $(VPREFIX)$(EHC): $(addprefix $(VPREFIX),$(EHC_MAIN).hs $(EHC_HS))
 	cd `dirname $@` ; $(GHC) -package uust -package data -o `basename $@` --make `basename $<`
+
+#$(VPREFIX)$(EHC): $(addprefix $(VPREFIX),$(EHC_MAIN).hs $(EHC_HS))
+#	cd `dirname $@` ; $(GHC) -fglasgow-exts -package data -prof -auto-all -o `basename $@` --make `basename $<`

@@ -557,8 +557,10 @@ WWW home page:
 \frame<presentation>{\titlepage}
 
 % Avoid indentation
+%if not forESOP05
 \setlength{\parindent}{0mm}
 \addtolength{\parskip}{0.4\baselineskip}
+%endif
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Abstract
@@ -2722,9 +2724,12 @@ A specialization |ValGam| of |Gam| is used to store and lookup the type of value
 
 \chunkCmdUseMark{EHGam.1.ValGam.Base}
 \chunkCmdUseMark{EHGam.1.valGamLookup}
+\chunkCmdUseMark{EHGam.1.valGamLookupTy}
 
 Later on the variant |valGamLookup| will do some additional work, for now it
 does not differ from |gamLookup|.
+The additional variant |valGamLookupTy| is specialized further to produce
+an error message in case the looked for identifier is missing from the |ValGam|.
 
 \subsubsection{Checking Expr}
 

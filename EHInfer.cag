@@ -507,6 +507,10 @@ SEM CaseAlt
 SEM Expr
   | App         func        .  fiOpts               :=  strongFIOpts {fioImplsRepos = False}
   | AppImpl     arg         .  fiOpts               =   strongFIOpts
+
+SEM Decl
+  | InstanceIntro
+                expr        .  fiOpts               =   strongFIOpts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
