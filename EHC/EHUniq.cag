@@ -66,6 +66,9 @@ SEM TyExpr
 %%]
 
 %%[4_2
+SEM AGItf
+  | AGItf           (expr.gUniq,loc.lUniq)                          :=  mkNewLevUID     uidStart
+
 SEM Expr
   | App             (func.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)    :=  mkNewLevUID3    @lhs.gUniq
   | Lam             (arg.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)     :=  mkNewLevUID3    @lhs.gUniq

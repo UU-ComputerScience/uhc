@@ -1,5 +1,5 @@
 let data L a = N | C a (L a)
-in  let data Mon m = MkMon (a -> m a)
+in  let data Mon m = MkMon (forall a . a -> m a)
         map :: (a -> b) -> L a -> L b
         map = \f -> \l ->
                  case l of

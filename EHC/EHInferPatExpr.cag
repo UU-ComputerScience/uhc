@@ -167,10 +167,19 @@ SEM PatExpr
 %%]
 
 %%[4_2.Var
+ATTR AllPatExpr [ | gathPatTyCnstr: Cnstr | ]
+
 SEM PatExpr
   | Var VarAs   loc         .   (varTy,varTyCnstr)  :=  tyAsCnstr @lUniq @ty
   | Var         lhs         .   tyCnstr             =   @varTyCnstr |=> @lhs.tyCnstr
   | VarAs       patExpr     .   tyCnstr             =   @varTyCnstr |=> @lhs.tyCnstr
+
+SEM PatExpr
+  | AppTop TypeAs
+                patExpr     .   gathPatTyCnstr      =   foCnstr @fo |=> @lhs.gathPatTyCnstr
+  | Con         lhs         .   gathPatTyCnstr      =   foCnstr @fo |=> @lhs.gathPatTyCnstr
+  | Var         lhs         .   gathPatTyCnstr      =   @varTyCnstr |=> @lhs.gathPatTyCnstr
+  | VarAs       patExpr     .   gathPatTyCnstr      =   @varTyCnstr |=> @lhs.gathPatTyCnstr
 %%]
 
 %%[11.ApptopCon
