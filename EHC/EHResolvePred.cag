@@ -18,6 +18,17 @@ SEM Expr
   | App         lhs         .   gathPredL           =   @prOccL ++ @func.gathPredL ++ @arg.gathPredL
 %%]
 
+%%[10
+SEM Expr
+  | Sel         loc         .   prUid               =   @lUniq2
+                lhs         .   gathPredL           =   [PredOcc (Pred_Lacks (tyRecRow @recTy) @lbl) @prUid] ++ @expr.gathPredL
+
+SEM RecExpr
+  | Ext         loc         .   prUid               =   @lUniq3
+  | Upd         loc         .   prUid               =   @lUniq4
+  | Ext Upd     lhs         .   gathPredL           =   [PredOcc (Pred_Lacks (tyRecRow @recTy) @nm) @prUid] ++ @recExpr.gathPredL ++ @expr.gathPredL
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pred resolution for super classes of instance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -33,15 +44,6 @@ SEM Decl
                                                     =   prfPreds @lUniq5 (emptyFE {fePrElimGam = @supPrElimGam}) (zipWith PredOcc @supPrL @supPrUIDL)
                 decls       .   prElimGam           =   @declsPrElimGam
 %%]
-
-SEM Decl
-  | Instance    loc         .   (declsPrElimGam,ctxtArgNmL,prUIDL)
-                                                    =   peGamAddKnPrL @lUniq6 (tail @prL) @lhs.prElimGam
-                            .   supPrUIDL           =   mkNewUIDL (length @supPrTyL) @lUniq4
-                            .   supPrElimGam        =   peGamDel @instClsNm @elimRule @declsPrElimGam
-                            .   (supPrfCBindLMap,supCSubst,supRemPrfPrL,supEvidL,supPrfErrs)
-                                                    =   prfPreds @lUniq5 (emptyFE {fePrElimGam = @supPrElimGam}) (zipWith PredOcc @supPrL @supPrUIDL)
-                decls       .   prElimGam           =   @declsPrElimGam
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pred resolution for expressions
@@ -71,7 +73,7 @@ SEM Expr
                                                                           in  null fv || any (`elem` ftv @knPrL) fv
                                                                    )
                                                                    @gathSubsPredL
-  | LamImpl     loc         .   knPr                =   tyPred . tyFixTyVars . (@body.tyCnstr |=>) $ @knArgImpl
+  | LamImpl     loc         .   knPr                =   tyPred . (@body.tyCnstr |=>) $ @knArgImpl
                             .   knPrUid             =   @lUniq
                             .   knPrL               =   [PredOcc @knPr @knPrUid]
                             .   prElimGam           =   peGamAddKnPr @arg.topNm @knPrUid @knPr (gamPushNew @lhs.prElimGam)
@@ -89,6 +91,8 @@ SEM Decl
                 lhs         .   gathPredL           =   []
 
 %%]
+
+  | LamImpl     loc         .   knPr                =   tyPred . tyFixTyVars . (@body.tyCnstr |=>) $ @knArgImpl
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Passing back additional bindings using a pred

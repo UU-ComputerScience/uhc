@@ -51,6 +51,9 @@
 %%[9 hs export(PredOccId,PredOcc(..))
 %%]
 
+%%[10 hs export(tyExtsOffset)
+%%]
+
 %%[1 import(EHTyAbsSyn)
 DERIVING *     : Show, Eq, Ord
 %%]

@@ -228,13 +228,13 @@ SEM RecExpr
   | Ext         loc     .  ppAST    =   ppNestInfo @lhs.opts ["RecExpr","Ext"] [ppNm @nm] [@recExpr.ppAST,@expr.ppAST] @info
                         .  info     =   [ mkInfo1 "lhs.knTy" (pp @lhs.knTy)
                                         , mkInfo1 "foTy foKnRec" (pp (foTy @foKnRec))
-                                        , mkInfo1 "recExpr.ty" (pp @recExpr.ty)
-                                        , mkInfo1 "recExpr.ty+subst" (pp (@expr.tyCnstr |=> @recExpr.ty))
+                                        , mkInfo1 "recTy" (pp @recTy)
                                         , mkInfo1 "ty" (pp @ty)
                                         ]
   | Upd         loc     .  ppAST    =   ppNestInfo @lhs.opts ["RecExpr","Upd"] [ppNm @nm] [@recExpr.ppAST,@expr.ppAST] @info
                         .  info     =   [ mkInfo1 "lhs.knTy" (pp @lhs.knTy)
                                         , mkInfo1 "foTy foKnRec" (pp (foTy @foKnRec))
+                                        , mkInfo1 "recTy" (pp @recTy)
                                         , mkInfo1 "ty" (pp @ty)
                                         , mkInfo1 "finRecTy" (pp (@lhs.finTyCnstr |=> @recExpr.ty))
                                         ]

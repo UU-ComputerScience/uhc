@@ -70,15 +70,22 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR RecExpr [ | | cexpr: CExpr ^^ cexprL: {AssocL HsName CExpr} ]
-ATTR RecExpr [ | | isExtFromEmpty: Bool ]
-
 SEM Expr
   | Rec         loc         .   cexpr           =   if @recExpr.isExtFromEmpty
                                                     then foldl CExpr_App CExpr_Tup (map snd . tyRowCanonOrder $ @recExpr.cexprL)
                                                     else @recExpr.cexpr
-  | Sel         loc         .   offset          =   tyRecOffset @lbl (@lhs.finTyCnstr |=> @expr.ty)
-                            .   cexpr           =   CExpr_TupSel @expr.cexpr ctagNone (CExpr_Int @offset)
+  | Sel         loc         .   offset          =   CExpr_Int (tyRecOffset @lbl (@lhs.finTyCnstr |=> @expr.ty))
+                            .   cexpr           =   CExpr_TupSel @expr.cexpr ctagNone @offset
+%%]
+
+%%[10
+SEM Expr
+  | Sel         loc         .   offset          :=  @lhs.cSubst `cAppSubst` CExpr_Hole @prUid
+%%]
+
+%%[8
+ATTR RecExpr [ | | cexpr: CExpr ^^ cexprL: {AssocL HsName CExpr} ]
+ATTR RecExpr [ | | isExtFromEmpty: Bool ]
 
 SEM RecExpr
   | Empty       lhs         .   isExtFromEmpty  =   True
@@ -86,15 +93,20 @@ SEM RecExpr
   | Ext         lhs         .   isExtFromEmpty  =   @recExpr.isExtFromEmpty
 
 SEM RecExpr
-  | Ext Upd     loc         .   offset          =   tyRecOffset @nm (@lhs.finTyCnstr |=> @recExpr.ty)
+  | Ext Upd     loc         .   offset          =   CExpr_Int (tyRecOffset @nm (@lhs.finTyCnstr |=> @recExpr.ty))
   | Empty       loc         .   cexpr           =   CExpr_Tup
                 lhs         .   cexprL          =   []
   | Expr        loc         .   cexpr           =   @expr.cexpr
                 lhs         .   cexprL          =   []
-  | Ext         loc         .   cexpr           =   CExpr_TupIns @recExpr.cexpr ctagNone (CExpr_Int @offset) @expr.cexpr
+  | Ext         loc         .   cexpr           =   CExpr_TupIns @recExpr.cexpr ctagNone @offset @expr.cexpr
                 lhs         .   cexprL          =   (@nm,@expr.cexpr) : @recExpr.cexprL
-  | Upd         loc         .   cexpr           =   CExpr_TupUpd @recExpr.cexpr ctagNone (CExpr_Int @offset) @expr.cexpr
+  | Upd         loc         .   cexpr           =   CExpr_TupUpd @recExpr.cexpr ctagNone @offset @expr.cexpr
                 lhs         .   cexprL          =   (@nm,@expr.cexpr) : @recExpr.cexprL
+%%]
+
+%%[10
+SEM RecExpr
+  | Ext Upd     loc         .   offset          :=  @lhs.cSubst `cAppSubst` CExpr_Hole @prUid
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -123,7 +123,7 @@ SEM Decl
                                 .   dictNm          =   uidHNm @instId
                                 .   elimRule        =   mkInstElimRule @dictNm @instId 0 @prExpr.ty
                 lhs             .   patPrElimGam    =   peGamAdd @instClsNm @elimRule @lhs.patPrElimGam
-                loc             .   foPr            =   prFitToEvid @lUniq @prExpr.ty @lhs.prIntroGam
+                loc             .   foPr            =   fitPredToEvid @lUniq @prExpr.ty @lhs.prIntroGam
                 expr            .   knTy            =   foTy @foPr
 %%]
 

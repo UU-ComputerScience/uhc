@@ -18,12 +18,16 @@
 %%[9 hs import(EHCode)
 %%]
 
+%%[9
+DERIVING *     : Show
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Nested error
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 hs
 mkNestErr :: PP_Doc -> ErrL -> ErrL
-mkNestErr wher errL
-  = if null errL then [] else [Err_NestedIn wher errL]
+mkNestErr wher errL | null errL = []
+                    | otherwise = [Err_NestedIn wher errL]
 %%]
