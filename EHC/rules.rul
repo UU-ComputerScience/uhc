@@ -279,8 +279,6 @@ rules expr9B "Implicit parameter passing with expected type" =
 scheme expr9
   = (fiopt); (Gamma); (sigmak) :- (e) : (sigma) ~> (Cnstr); (Transl)
   = fiopt; Gamma; sigmak :-...expr e : sigma ~> Cnstr; Transl
-  view X = let Cnstr =
-           in  Gamma; sigmak :-...expr e : sigma
 
 rules expr9.C "Type checking/inferencing for expression application with implicit parameters" =
   rule app_impl = rule expr9.app.e_app_impl9_impl
@@ -630,7 +628,6 @@ rules fit4.bind "Fitting/subsumption for tvar binds" =
 scheme fit9
   = (fiopt); (Gamma) :- (sigmal) <= (sigmar) : (sigma) ~> (Cnstr) ; (coe)
   = fiopt; Gamma :-...fit sigmal <= sigmar : sigma ~> Cnstr ; coe
-  view X = Gamma :-...fit sigmal <= sigmar : sigma
 
 rules fit9.predSymmetric "Fitting/subsumption for predicates (impl/expl match)" =
   rule f_pred9_expl_impl =
@@ -795,10 +792,6 @@ scheme quGam4
   = (bv); (coco) :- (Gamma) : (Gammaq)
   = bv; coco :-...quGam Gamma : Gammaq
 
-scheme quGam4B
-  = (bv); (coco) :- (Gamma) : (Gammaq) ~> (Cnstr)
-  = bv; coco :-...quGam Gamma : Gammaq ~> Cnstr
-
 rules qu4 "Quantifier location inferencing" =
   rule q_var_co =
     cond v `notElem` bv
@@ -902,5 +895,4 @@ rules expr9.case "Case expression" =
 scheme pred9
   = (Gamma) :- (pi) ~> (Transl) : (sigma)
   = Gamma :-...pred pi ~> Transl : sigma
-
 

@@ -596,6 +596,7 @@ WWW home page:
 
 % rules
 \input rules.tex
+\input rules2.tex
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pictures
@@ -7988,6 +7989,134 @@ like higher ranked types, existential types, partial type signatures and records
 Syntactic sugar has been kept to a minimum in order to ease experimentation with and understanding
 of the implementation.
 
+\begin{figure}
+\begin{center}
+\begin{tabular}{||r@@{\;}c@@{\;}ll||}
+\hline
+\multicolumn{4}{||l||}{Values (terms):} \\
+|e| & |::=| &
+|int || char |
+ & literals
+ \\
+& | || | &
+|identv|
+ & value variable
+ \\
+& | || | &
+|e e|
+ & application
+ \\
+& | || | &
+|e (# e <: pi #)|
+ & explicit implicit application
+ \\
+& | || | &
+|\p -> e|
+ & abstraction
+ \\
+& | || | &
+|\(# p #) -> e|
+ & explicit implicit abstraction
+ \\
+& | || | &
+|let Vec(d) in e|
+ & binding
+ \\
+& | || | &
+|(lbl = e,...)|
+ & record
+ \\
+& | || | &
+|(e || lbl = e,...)|
+ & record extension
+ \\
+& | || | &
+|(e || lbl := e,...)|
+ & record update
+ \\
+\multicolumn{4}{||l||}{} \\
+\multicolumn{4}{||l||}{Declarations of bindings:} \\
+|d| & |::=| &
+|identv = e|
+ & value binding
+ \\
+& | || | &
+|identv :: sigma|
+ & value type signature
+ \\
+& | || | &
+|data sigma = Vec(identc ^^ Vec(sigma))|
+ & data type
+ \\
+& | || | &
+|class Vec(pi) => pi where Vec(d)|
+ & class
+ \\
+& | || | &
+|instance Vec(pi) => pi where Vec(d)|
+ & introduced instance
+ \\
+& | || | &
+|instance identv <: Vec(pi) => pi where Vec(d)|
+ & named introduced instance
+ \\
+& | || | &
+|instance identv :: Vec(pi) => pi where Vec(d)|
+ & named instance
+ \\
+& | || | &
+|instance e <: pi|
+ & value introduced instance
+ \\
+\hline
+\end{tabular}
+\end{center}
+\caption{EH terms}
+\label{exim-eh-lang-terms}
+\end{figure}
+
+\begin{figure}
+\begin{center}
+\begin{tabular}{||r@@{\;}c@@{\;}ll||}
+\hline
+\multicolumn{4}{||l||}{Types:} \\
+|sigma| & |::=| &
+|Int || Char|
+ & literals
+ \\
+& | || | &
+|tvarv|
+ & variable
+ \\
+& | || | &
+|sigma -> sigma|
+ & abstraction
+ \\
+& | || | &
+|pi -> sigma|
+ & implicit abstraction
+ \\
+& | || | &
+|forall ^ alpha . sigma|
+ & universally quantified type
+ \\
+& | || | &
+|(lbl :: sigma,...)|
+ & record
+ \\
+\multicolumn{4}{||l||}{} \\
+\multicolumn{4}{||l||}{Predicates:} \\
+|pi| & |::=| &
+|identc ^^ Vec(sigma)|
+ & predicate
+ \\
+\hline
+\end{tabular}
+\end{center}
+\caption{EH types}
+\label{exim-eh-lang-types}
+\end{figure}
+
 In this section we will first give an example of an EH program using most of the features
 related to implicit parameters.
 After pointing out these features and
@@ -8316,7 +8445,7 @@ The rule uses types described by the type language consisting of basic types, ty
 functions (taking normal and implicit parameters), universally quantified types and predicates respectively:
 
 \begin{code}
-sigma  =  Int | Char | tvarv | (l1 :: sigma1,...,ln :: sigman) | sigma -> sigma | pi -> sigma | forall alpha . sigma
+sigma  =  Int | Char | tvarv | (lbl1 :: sigma1,...,lbln :: sigman) | sigma -> sigma | pi -> sigma | forall alpha . sigma
 pi     =  identc ^^ Vec(sigma)
 \end{code}
 
@@ -8438,6 +8567,8 @@ Also, the rule is more explicit in its handling of constraints computed by the r
 for the subsumption |<=|:
 
 \rulerCmdUse{rules.expr9.C}
+\rulerCmdUse{rules2.expr1.typeRules}
+\rulerCmdUse{rules2.expr9.typeRules}
 
 \begin{code}
 Cnstr  =  tvarv :-> sigma | pvar :-> pi , pvar | pvar :-> pempty
@@ -8960,8 +9091,21 @@ the result are assumed via the context and thus passed as as arguments of a lamb
 The translation of the application reflects this.
 
 \rulerCmdUse{rules.expr9.app}
-\rulerCmdUse{rules.expr9X.app}
 \rulerCmdUse{rules.expr9.part2}
+
+\rulerCmdUse{rules2.expr4}
+\rulerCmdUse{rules2.expr3}
+\rulerCmdUse{rules2.expr2}
+\rulerCmdUse{rules2.expr1}
+\rulerCmdUse{rules2.exprB1}
+\rulerCmdUse{rules2.exprA1}
+\rulerCmdUse{rules2.pat4}
+\rulerCmdUse{rules2.pat2}
+\rulerCmdUse{rules2.pat1}
+\rulerCmdUse{rules2.fit9.base}
+\rulerCmdUse{rules2.fit1.base}
+
+
 
 
 \subsection{Fitting rules}
