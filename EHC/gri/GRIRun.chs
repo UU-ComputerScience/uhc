@@ -324,26 +324,43 @@ grEvalExpr rs e
                                        ->  do  { rs' <- halt rs ("No case alt for:" >#< pp nd >-< indent 2 ("in:" >#< ppGrExpr e))
                                                ; return (rs',Nothing)
                                                }
-                        (RVCat NdRec:_:ndAL)
+                        (RVCat NdRec:_)
                           ->  return (rs',Nothing)
-                              where  (GrAlt_Alt (GrPat_Node _ fL) e:_) = altL
-                                     re = rsEnv rs `plusFM` listToFM (zip fL ndAL)
+                              where  (GrAlt_Alt p e:_) = altL
+                                     re = grPatBind rs (rsEnv rs) nd p
                                      rs'= rs {rsEnv = re, rsNext = Just e}
 %%]
 
 %%[8
-grPatBind :: RunEnv -> RunVal -> GrPat -> RunEnv
-grPatBind re v p
+grPatBind :: RunState -> RunEnv -> RunVal -> GrPat -> RunEnv
+grPatBind rs re v p
   =  case p of
         GrPat_Var n
           ->  addToFM re n v
         GrPat_Empty
           ->  re
-        GrPat_Node pt pfL
+        GrPat_Node _ pfL
           ->  case v of
                 RVNode a
                   ->  case elems a of
-                        (RVCat _:_:vfL) -> re `plusFM` listToFM (zip pfL vfL)
+                        (RVCat _:_:vfL)
+                          ->  re `plusFM` listToFM (zip pfL vfL)
+        GrPat_NodeSplit rNm splL
+          ->  case v of
+                RVNode a
+                  ->  case elems a of
+                        (c@(RVCat _):t:_:vfL)
+                          ->  re `plusFM` unitFM rNm (mkRN (c:t:RVInt (length r):r)) `plusFM` listToFM bL
+                              where  (r,bL) = spl splL vfL 0
+                                     spl (GrSplit_Sel n o:splL) (f:fL) fO | o' == fO
+                                        =  (rfL,(n,f):bfL)
+                                           where  (rfL,bfL) = spl splL fL (fO+1)
+                                                  (RVInt o') = grEvalVal rs o
+                                     spl splL (f:fL) fO
+                                        =  (f:rfL,bfL)
+                                           where  (rfL,bfL) = spl splL fL (fO+1)
+                                     spl [] fL fO
+                                        =  (fL,[])
 %%]
 
 %%[8
@@ -367,7 +384,7 @@ run1Expr rs e
               (rs,Just v)
                   ->  return rs2
                       where  ((np,ne,re):stk) = rsStack rs
-                             re' = v `seq` grPatBind re v np
+                             re' = v `seq` grPatBind rs re v np
                              rs2 = rs {rsEnv = re', rsNext = Just ne, rsStack = stk}
               (rs,_)
                     ->  return rs

@@ -73,7 +73,7 @@ ATTR AllBind AllPat [ | | nmL USE {++} {[]}: {[HsName]} ]
 
 SEM CodeAGItf
   | AGItf       module      .   aRenMp      =   emptyFM
-                            .   lev         =   0
+                            .   lev         =   cLevOuter
 
 SEM CBind
   | Bind        lhs         .   nmL         =   [@nm]
@@ -90,7 +90,7 @@ SEM CPatRest
   | Var         lhs         .   nmL         =   [@nm]
 
 SEM CExpr
-  | Let         loc         .   aRenMp      =   if @lhs.lev == 0
+  | Let         loc         .   aRenMp      =   if @lhs.lev == cLevOuter
                                                 then @lhs.aRenMp
                                                 else aRenAdd @binds.nmL @lUniq @lhs.aRenMp
                 binds       .   lev         =   @lhs.lev + 1

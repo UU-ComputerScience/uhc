@@ -156,6 +156,10 @@ RULER_SRC			:= $(RULER_DIR)/$(RULER_AG)
 CORE_TARG			:= grin
 
 
+# LHS2TEX_POLY(src file, dst file)
+PERL_SUBST_EHC			= \
+	perl $(SUBSTEHC) < $(1) > $(2)
+
 LHS2TEX_POLY_MODE	:= --poly
 # LHS2TEX_POLY(src file, dst file)
 LHS2TEX_POLY			= \
@@ -593,13 +597,21 @@ $(DIST_ZIP): $(addprefix $(VERSION_LAST)/,$(EHC_DPDS_ALL_MIN_TARG)) Makefile tes
 wc:
 	grep frametitle $(AFP_LHS) | wc
 
-www: $(WWW_SRC_ZIP) $(WWW_SRC_TGZ) $(WWW_DOC_PDF)
+WWW_EXAMPLES_TMPL			:=	www/ehc-examples.tmpl
+WWW_EXAMPLES_HTML			:=	www/ehc-examples.html
 
-www/DoneSyncStamp: $(WWW_SRC_ZIP) $(WWW_SRC_TGZ) $(WWW_DOC_PDF)
+www-ex: $(WWW_EXAMPLES_HTML)
+
+www: $(WWW_SRC_ZIP) $(WWW_SRC_TGZ) $(WWW_DOC_PDF) www-ex
+
+www/DoneSyncStamp: www-ex
 	(date; echo -n ", " ; svn up) > www/DoneSyncStamp ; \
 	rsync --progress -azv -e ssh www/* atze@modena.cs.uu.nl:/users/www/groups/ST/Projects/ehc
 
 www-sync: www/DoneSyncStamp
+
+$(WWW_EXAMPLES_HTML): $(WWW_EXAMPLES_TMPL)
+	$(call PERL_SUBST_EHC,$(WWW_EXAMPLES_TMPL),$(WWW_EXAMPLES_HTML))
 
 $(WWW_SRC_ZIP): $(DIST_ZIP)
 	cp $< $@
