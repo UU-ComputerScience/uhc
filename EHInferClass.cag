@@ -32,6 +32,7 @@ SEM Decl
                                                                     , rulNmEvid    = n
                                                                     , rulId        = @lUniq
                                                                     , rulCost      = CostInt 10
+                                                                    , rulFuncDeps  = @funcDeps.funcDeps
                                                                     }
                                                         in   PrIntroGamInfo (tyQuantifyClosed ([@prExpr.ty] `mkTyArrow` @clsTyRec)) k r
                                 .   elimRules       =   let  mkR sub sup supNm
@@ -42,6 +43,7 @@ SEM Decl
                                                                     , rulNmEvid    = hsnUnknown
                                                                     , rulId        = uidStart
                                                                     , rulCost      = CostInt (2 * costBase)
+                                                                    , rulFuncDeps  = []
                                                                     }
                                                         in   zipWith (\p n -> (tyPredNm p,mkR @prExpr.ty p n)) @ctxtPrExprs.tyL @supClsNmL
                 lhs             .   patTyGam        =   @lhs.patTyGam
@@ -54,6 +56,21 @@ SEM Decl
                                                             @lhs.gathTySigGam
                                 .   patPrIntroGam   =   gamAdd (tyPredNm @prExpr.ty) @pigi @lhs.patPrIntroGam
                                 .   patPrElimGam    =   foldr (uncurry peGamAdd) @lhs.patPrElimGam @elimRules
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Functional dependency
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR AllFuncDep [ clsTyArgs: TyL | | funcDeps USE {++} {[]} : {[ClsFuncDep]} ]
+
+SEM FuncDep
+  | Dep         lhs             .   funcDeps        =   let  l v = maybe (-1) id . elemIndex v $ @lhs.clsTyArgs
+                                                        in   [(map l @fromTvs.tyL, map l @toTvs.tyL)]
+
+SEM Decl
+  | Class       loc             .   clsTyArgs       =   tyAppArgs . predTy . tyPred $ @prExpr.ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -183,6 +183,10 @@ SEM Decl
 %%[9
 ATTR PrExprs FuncDeps [ | | ppL: PP_DocL ]
 
+SEM Expr
+  | AppImpl     loc     .  argPP	=	@arg.pp >|< "::" >|< @argPr.pp >#< hsnCImpl
+                        .  pp       =   @func.pp >#< hsnOImpl >#< @argPP
+
 SEM RowTyExpr
   | Var         loc     .  pp       =   pp @nm
                 lhs     .  ppL      =   []
@@ -342,6 +346,13 @@ SEM Expr
   | Rec         loc     .  appFunNm     :=  @recExpr.extNm
                 lhs     .  appArgPPL    :=  reverse @recExpr.ppL
                         .  appFunPP     :=  @recExpr.pp
+%%]
+
+%%[9
+SEM Expr
+  | AppImpl     lhs     .  appFunNm     :=  @func.appFunNm
+                        .  appArgPPL    :=  @func.appArgPPL ++ [@argPP]
+                        .  appFunPP     :=  @func.appFunPP
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

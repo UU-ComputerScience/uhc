@@ -57,12 +57,14 @@ SEM Expr
   | Parens      lhs     .  ppAST    =   ppNest ["Expr","Parens"] [] [@expr.ppAST]
   | AppTop      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","AppTop"] [] [@expr.ppAST] @info
                 loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
+                                        , mkInfo1 "expr.ty" (ppTy @expr.ty)
                                         ]
-  | Lam         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Lam"] [] [@arg.ppAST,@body.ppAST] (@info ++ @info2)
-                loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
-                                        , mkInfo1 "gam" (ppGam @arg.valGam)
+  | Lam         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Lam"] [] [@arg.ppAST,@body.ppAST] (@info ++ @info2 ++ @info3)
+                loc     .  info     =   [ mkInfo1 "lhs.knTy" (ppTy @lhs.knTy)
+                                        , mkInfo1 "arg.valGam" (ppGam @arg.valGam)
                                         ]
                         .  info2    =   []
+                        .  info3    =   []
 
 SEM PatExpr
   | IConst      lhs     .  ppAST    =   ppNest ["PatExpr","IConst"] [@pp] []
@@ -110,10 +112,11 @@ SEM Expr
                                         , mkInfo1 "func.ty" (ppTy @func.ty)
                                         , mkInfo1 "ty" (ppTy @ty)
                                         ]
-  | Lam         loc     .  info     :=  [ mkInfo1 "knTy" (ppTy (@lhs.tyCnstr |=> @lhs.knTy))
-                                        , mkInfo1 "knFun" (ppTy (foTy @foKnFun))
+  | Lam         loc     .  info2    :=  [ mkInfo1 "knTy" (ppTy (@lhs.tyCnstr |=> @lhs.knTy))
+                                        , mkInfo1 "funTy" (ppTy @funTy)
+                                        , mkInfo1 "foTy @foKnFun" (ppTy (foTy @foKnFun))
+                                        , mkInfo1 "foCnstr @foKnFun" (pp (foCnstr @foKnFun))
                                         , mkInfo1 "ty" (ppTy @ty)
-                                        , mkInfo1 "gam" (ppGam @arg.valGam)
                                         , mkInfo1 "body.tyCnstr" (pp @body.tyCnstr)
                                         , mkInfo1 "lhs.finTyCnstr" (pp @lhs.finTyCnstr)
                                         ]
@@ -249,13 +252,14 @@ SEM FuncDeps
 
 SEM Expr
   | Let         loc     .  info     :=  [ mkInfo1 "gathSubsPredL" (ppCommaList @gathSubsPredL)
+                                        , mkInfo1 "lSubsValGam" (ppGam @lSubsValGam)
                                         , mkInfo1 "cbindLMap" (ppCBindLMap @prfCBindLMap)
                                         , mkInfo1 "lhs.cSubst" (ppAssocL . fmToList $ @lhs.cSubst)
                                         , mkInfo1 "cSubst" (ppAssocL . fmToList $ @cSubst)
                                         , mkInfo1 "remPrfPrL" (ppCommaList @remPrfPrL)
                                         , mkInfo1 "tqoGam" (pp @tqoGam)
                                         ]
-  | Lam         loc     .  info2    :=  [ mkInfo1 "knPrL" (ppCommaList @knPrL)
+  | Lam         loc     .  info3    :=  [ mkInfo1 "knPrL" (ppCommaList @knPrL)
                                         , mkInfo1 "inKnGathPrL" (ppCommaList @inKnGathPrL)
                                         , mkInfo1 "cbindL" (ppAssocL . map (\(CBind_Bind n v) -> (n,v)) $ @cbindL)
                                         , mkInfo1 "remPrfPrL" (ppCommaList @remPrfPrL)

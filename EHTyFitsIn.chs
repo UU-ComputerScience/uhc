@@ -458,20 +458,16 @@ fitsIn opts env uniq ty1 ty2
 
 %%[4.fitsIn.allowImpredTVBind
             allowImpredTVBindL fi (Ty_Var _ f) _
-                | fioBindLFirst (fiFIOpts fi) && f == TyVarCateg_Plain =  True
-                | otherwise = False
+                = fioBindLFirst (fiFIOpts fi) && f == TyVarCateg_Plain
             allowImpredTVBindR fi (Ty_Var _ f) _
-                | fioBindRFirst (fiFIOpts fi) && f == TyVarCateg_Plain =  True
-                | otherwise = False
+                = fioBindRFirst (fiFIOpts fi) && f == TyVarCateg_Plain
 %%]
 
 %%[99.fitsIn.allowImpredTVBind -4.fitsIn.allowImpredTVBind
             allowImpredTVBindL fi (Ty_Var _ f) t
-                | fioBindLFirst (fiFIOpts fi) && f == TyVarCateg_Plain && not (tyIsImplsTail . fst . tyArrowArgRes $ t) =  True
-                | otherwise = False
+                = fioBindLFirst (fiFIOpts fi) && f == TyVarCateg_Plain && not (tyIsImplsTail . fst . tyArrowArgRes $ t)
             allowImpredTVBindR fi (Ty_Var _ f) t
-                | fioBindRFirst (fiFIOpts fi) && f == TyVarCateg_Plain && not (tyIsImplsTail . fst . tyArrowArgRes $ t) =  True
-                | otherwise = False
+                = fioBindRFirst (fiFIOpts fi) && f == TyVarCateg_Plain && not (tyIsImplsTail . fst . tyArrowArgRes $ t)
 %%]
 
 %%[4.fitsIn.unquant
@@ -537,7 +533,7 @@ fitsIn opts env uniq ty1 ty2
                 | v1 == v2 && f1 == f2              = res fi t1
             f fi t1@(Ty_Var v1 _)       t2
                 | allowImpredTVBindL fi t1 t2       = occurBind fi v1 t2
-            f fi t1                     t2@(Ty_Var v2 f)
+            f fi t1                     t2@(Ty_Var v2 _)
                 | allowImpredTVBindR fi t2 t1       = occurBind fi v2 t1
 %%]
 
@@ -768,18 +764,20 @@ prfPreds u env prL
 
 %%[9
 matchRule :: UID -> Pred -> Rule -> Maybe ([PredOcc],CExpr,PredOccId,ProofCost)
-matchRule u pr r@(Rule rt mkEv _ rid cost)
+matchRule u pr r
   =  let  (_,u1,u2,u3)   = mkNewLevUID3 u
-          (rTy,_)        = tyInst1Quants u1 instCoConst rt
+          (rTy,_)        = tyInst1Quants u1 instCoConst (rulRuleTy r)
           (us,vs)        = mkNewUIDTyVarL (tyArrowArity rTy) u2
           fo             = fitsIn predFIOpts emptyFE u3 rTy (vs `mkTyArrow` Ty_Pred pr)
      in   if foHasErrs fo
           then Nothing
           else Just  ( zipWith PredOcc (map tyPred . fst . tyArrowArgsRes . foTy $ fo) us
-                     , mkEv (map CExpr_Hole us)
-                     , rid, cost
+                     , rulMkEvid r (map CExpr_Hole us)
+                     , rulId r, rulCost r
                      )
+%%]
 
+%%[9
 prfOneStep :: FIEnv -> PredOcc -> ProofState -> ProofState
 prfOneStep env (PredOcc pr prUid) st@(ProofState g@(ProvenGraph i2n p2i p2oi) u toProof origToProof)
   =  let  isInOrig  = pr `elem` origToProof

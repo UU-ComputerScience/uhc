@@ -129,6 +129,7 @@ default:
 	echo  "make ehcs        : make all compiler versions (where <n> in {$(VERSIONS)})" ; \
 	echo  "make afp         : make afp.pdf, by running latex once" ; \
 	echo  "make afp-full    : make afp.pdf, with bib/index" ; \
+	echo  "make doc         : make doc of tools" ; \
 	echo  "make all         : make all of the above" ; \
 	echo ; \
 	echo  "make afp-slides  : make slides afp-slides.pdf" ; \
@@ -140,8 +141,10 @@ default:
 	echo  "make www         : make 'current' www dist (based on dist)" ; \
 	echo  "make www-sync    : sync www dist (proper ssh access required)"
 
-all: afp-full ehcs $(SHUFFLE_DOC_PDF)
+all: afp-full ehcs doc
 	$(MAKE) initial-test-expect
+
+doc: $(SHUFFLE_DOC_PDF)
 
 #%.lag:%.cag
 #	$(SHUFFLE) --ag $< > $@

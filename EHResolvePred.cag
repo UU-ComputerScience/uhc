@@ -86,6 +86,7 @@ SEM Expr
 %%[9
 SEM Expr
   | App         loc         .   appImplsCoeL        =   mkImplsAppCoe . tyImpls . (@lhs.finTyCnstr |=>) $ @imTy
+  | AppImpl     loc         .   appImplsCoeL        =   []
   | Lam AppTop  loc         .   implsKnHd           =   tyImpls @imSubsTy
                             .   implsKnTl           =   @lhs.finTyCnstr |=> @knImplsTl
                             .   uidLKnHd            =   implsUIDs @implsKnHd

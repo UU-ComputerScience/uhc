@@ -447,13 +447,18 @@ pTyExprPrefix   =    sem_TyExpr_Quant
                      <*>  pVar <* pKey "."
 %%]
 
+%%[pPackImpl.9
+pPackImpl       ::   EHParser p -> EHParser p
+pPackImpl       =    pPacked (pKeyw hsnOImpl) (pKeyw hsnCImpl)
+%%]
+
 %%[pTyExprPrefix.9
                 <|>  mkArrow tyExprAlg
-                     <$>  pPacked  (pKeyw hsnOImpl) (pKeyw hsnCImpl)
-                                   (    sem_TyExpr_Pred   <$>  pPrExpr
-                                   <|>  sem_TyExpr_Impls  <$   pKey "..."
-                                   <|>  pSucceed  sem_TyExpr_NoImpls
-                                   )
+                     <$>  pPackImpl
+                            (    sem_TyExpr_Pred   <$>  pPrExpr
+                            <|>  sem_TyExpr_Impls  <$   pKey "..."
+                            <|>  pSucceed  sem_TyExpr_NoImpls
+                            )
                      <*   pKeyw hsnArrow
 %%]
 
@@ -512,6 +517,7 @@ pTyExprPrefix   =    sem_TyExpr_Quant
 %%[9.pTyExprPrefix -4.pTyExprPrefix
 %%@pTyExprPrefix.4
 %%@pTyExprPrefix.9
+%%@pPackImpl.9
 %%]
 
 %%[5
@@ -539,12 +545,23 @@ pExprBase       =    sem_Expr_IConst  <$>  pInt
                 <|>  sem_Expr_Case    <$   pKey "case" <*> pExpr <* pKey "of" <*> pCaseAlts
 %%]
 
+%%[pExprBase.9
+                <|>  pPackImpl (sem_Expr_AppImpl <$> pExpr <* pKey "::" <*> pCaseAlts)
+%%]
+
 %%[pExprApp.1
 pExprApp        =    pApp exprAlg pExprBase
 %%]
 
 %%[pExprApp.7
 pExprApp        =    pApp exprAlg (pExprBase <**> pExprSelSuffix)
+%%]
+
+%%[pExprApp.9
+pExprApp        =    let  pE = pExprBase <**> pExprSelSuffix
+                          pA = flip sem_Expr_App <$> pE
+                          pI = pPackImpl ((\a p e -> sem_Expr_AppImpl e a p) <$> pExpr <* pKey "::" <*> pPrExpr)
+                     in   pE <??> ((\l e -> sem_Expr_AppTop (foldl (flip ($)) e l)) <$> pList1 (pA <|> pI))
 %%]
 
 %%[pExprPrefix.1
@@ -624,6 +641,14 @@ pExpr           =    pExprPrefix <*> pExpr
 %%[7.pExpr -5.pExpr
 %%@pExpr.1
 %%@pExprApp.7
+%%@pExprPrefix.1
+%%@pExprPrefix.7.Lam
+%%@pExprPrefix.5.If
+%%]
+
+%%[9.pExpr -7.pExpr
+%%@pExpr.1
+%%@pExprApp.9
 %%@pExprPrefix.1
 %%@pExprPrefix.7.Lam
 %%@pExprPrefix.5.If

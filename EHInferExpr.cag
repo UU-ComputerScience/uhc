@@ -156,7 +156,7 @@ SEM Expr
                                                         in   ([im,mkTyVar a] `mkTyArrow` mkTyVar r,im)
                 (loc.knImpls,arg.knTy,body.knTy)    :=  tyArrowImplsArgRes (foTy @foKnFun)
                 loc         .  ty                   :=  ((@body.tyCnstr |=> @knImpls) ++ [@body.tyCnstr |=> @arg.ty])
-                                                        `mkTyArrow` @body.ty
+                                                          `mkTyArrow` @body.ty
 %%]
 
 %%[2.AppTop
@@ -171,6 +171,7 @@ SEM Expr
                             .  foKnRes              =   let  fo = fitsIn @lhs.fiOpts @fe @lUniq2 @resTy (@lhs.tyCnstr |=> @lhs.knTy)
                                                         in   fo {foTy = foCnstr fo |=> @resTy}
                             .  (imTy,knTy)          :=  tyArrowArgRes (foTy @foKnRes)
+                expr        .  tyCnstr              =   foCnstr @foKnRes |=> @lhs.tyCnstr
 %%]
 
 %%[4.Rest
