@@ -9,7 +9,7 @@
 %%% Haskell importable interface to check/elimination for/of inconsistent/ binds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1 hs import(EHCommon,EHOpts,EHTy,EHError,EHCnstr,EHSubstitutable,EHGam,EHTyFitsInCommon) export(tyElimBinds)
+%%[4_1 hs import(EHCommon,EHOpts,EHTy,EHError,EHCnstr,EHSubstitutable,EHGam,EHTyFitsInCommon) export(tyElimAlts)
 %%]
 
 %%[4_1 hs import(EHDebug,UU.Pretty,EHErrorPretty)
@@ -19,11 +19,11 @@
 WRAPPER TyAGItf
 %%]
 
-%%[4_1.tyElimBinds hs
+%%[4_1.tyElimAlts hs
 type FitsIn = FIOpts -> UID -> Ty -> Ty -> (Ty,Cnstr,ErrL)
 
-tyElimBinds :: FitsIn -> FIOpts -> UID -> Ty -> (Ty,Cnstr,ErrL)
-tyElimBinds fitsIn fio uniq ty
+tyElimAlts :: FitsIn -> FIOpts -> UID -> Ty -> (Ty,Cnstr,ErrL)
+tyElimAlts fitsIn fio uniq ty
   =  let  t =  wrap_TyAGItf
                  (sem_TyAGItf (TyAGItf_AGItf ty))
                  (Inh_TyAGItf {fitsIn_Inh_TyAGItf = fitsIn, fio_Inh_TyAGItf = fio, gUniq_Inh_TyAGItf = uniq})
@@ -74,7 +74,7 @@ SEM Ty
                                             =   case cnstrTyLookup @tv @lhs.tyCnstr of
                                                     Just t
                                                         ->  (t,[],emptyCnstr)
-                                                    _   ->  let  (t,ci,e) = tyElimBinds @lhs.fitsIn @lhs.fio @lUniq @tyL.resTy
+                                                    _   ->  let  (t,ci,e) = tyElimAlts @lhs.fitsIn @lhs.fio @lUniq @tyL.resTy
                                                             in   if @tyL.canMeet && null e
                                                                  then  (t,[],ci)
                                                                  else  (mkTyVar @tv

@@ -44,7 +44,7 @@ SEM Expr
 %%[4_1
 SEM Expr
   | Let         loc         .  (lElimValGam,elimTyCnstr,errGam)
-                                                    =   valGamElimBinds @fe @lUniq4 (@decls.tyCnstr |=> @lValGam)
+                                                    =   valGamElimAlts @fe @lUniq4 (@decls.tyCnstr |=> @lValGam)
                             .  lSubsValGam          :=  @elimTyCnstr |=> @lElimValGam
                             .  gSubsValGam          :=  @elimTyCnstr |=> @decls.tyCnstr |=> @gValGam
                 body        .  tyCnstr              =   @elimTyCnstr |=> @decls.tyCnstr
