@@ -33,7 +33,7 @@
 %%[1 export(ParNeed(..), ParNeedL, parNeedApp, ppParNeed)
 %%]
 
-%%[2 export(UID, mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, nextUID, mkNewUID, mkNewUIDL, startUID)
+%%[2 export(UID, mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, uidNext, mkNewUID, mkNewUIDL, uidStart)
 %%]
 
 %%[2 export(assocLMapSnd)
@@ -63,13 +63,16 @@
 %%[7 export(positionalFldNames,ppFld,mkExtAppPP,mkPPAppFun)
 %%]
 
+%%[7 export(uidHNm)
+%%]
+
 %%[8 export(ppAssocL)
 %%]
 
 %%[8 export(hsnUndefined)
 %%]
 
-%%[8 export(hsnPrefix)
+%%[8 export(hsnPrefix,hsnSuffix)
 %%]
 
 %%[9 export(hsnOImpl,hsnCImpl)
@@ -159,8 +162,11 @@ positionalFldNames                  =   map HNPos [1..]
 %%]
 
 %%[8
-hsnPrefix						 	::  String -> HsName -> HsName
-hsnPrefix	p	hsn					=	HNm (p ++ show hsn)
+hsnPrefix                           ::  String -> HsName -> HsName
+hsnPrefix   p   hsn                 =   HNm (p ++ show hsn)
+
+hsnSuffix                           ::  HsName -> String -> HsName
+hsnSuffix       hsn   p             =   HNm (show hsn ++ p)
 %%]
 
 %%[8
@@ -188,11 +194,11 @@ instance Show UID where
 %%]
 
 %%[2.UID.mkNewLevUID
-nextUID :: UID -> UID
-nextUID (UID (l:ls)) = UID (l+1:ls)
+uidNext :: UID -> UID
+uidNext (UID (l:ls)) = UID (l+1:ls)
 
 mkNewLevUID :: UID -> (UID,UID)
-mkNewLevUID u@(UID ls) = (nextUID u,UID (0:ls))
+mkNewLevUID u@(UID ls) = (uidNext u,UID (0:ls))
 %%]
 
 %%[2.UID.Utils
@@ -201,11 +207,11 @@ mkNewLevUID3 u = let { (u',u1,u2)  = mkNewLevUID2  u; (u'',u3)        = mkNewLev
 mkNewLevUID4 u = let { (u',u1,u2)  = mkNewLevUID2  u; (u'',u3,u4)     = mkNewLevUID2  u'} in (u'',u1,u2,u3,u4)
 mkNewLevUID5 u = let { (u',u1,u2)  = mkNewLevUID2  u; (u'',u3,u4,u5)  = mkNewLevUID3  u'} in (u'',u1,u2,u3,u4,u5)
 
-startUID :: UID
-startUID = UID [0]
+uidStart :: UID
+uidStart = UID [0]
 
 mkNewUID :: UID -> (UID,UID)
-mkNewUID   uid = (nextUID uid,uid)
+mkNewUID   uid = (uidNext uid,uid)
 
 mkNewUIDL :: Int -> UID -> (UID,[UID]) -- assume sz > 0
 mkNewUIDL sz uid
@@ -214,6 +220,11 @@ mkNewUIDL sz uid
 
 instance PP UID where
   pp uid = text (show uid)
+%%]
+
+%%[7
+uidHNm :: UID -> HsName
+uidHNm = HNm . show
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

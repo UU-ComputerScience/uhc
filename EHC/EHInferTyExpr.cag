@@ -237,13 +237,6 @@ SEM PrExprs
 %%]
 
 %%[9
-ATTR PrExpr [ | | nm: HsName ]
-
-SEM PrExpr
-  | *           lhs         .   nm                  =   @nm 
-%%]
-
-%%[9
 ATTR PrExpr [ | | kiL: TyL ]
 
 SEM PrExpr

@@ -516,19 +516,19 @@ This concerns mainly future design decisions which have an influence on design d
 }
 %endif
 
-\frame<presentation>{
-%\setlength{\parskip}{.25ex}
-\tableofcontents[hidesubsections]
-}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Part I
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%if forAfpTRUU1
+%if forAfpTRUU1 || asSlides
 \part{Type checking, inference and polymorphism}
 %endif
+
+\frame<presentation>{
+\tableofcontents[hidesubsections]
+}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Intro
@@ -4160,23 +4160,24 @@ together with |AGPat(Multipass)|
 \item<3-> |cp|: constraints found in patterns (attribute |patTyCnstr|)
 \item<4-> |ce|: constraints found in expressions (attribute |tyCnstr|)
 \end{itemize}
+
 \begin{overprint}
 \onslide<1>
-\includegraphics[height=25cm]{figs/cycle-case1.pdf}
+\includegraphics[height=20cm]{figs/cycle-case1.pdf}
 \onslide<2>
-\includegraphics[height=25cm]{figs/cycle-case2.pdf}
+\includegraphics[height=20cm]{figs/cycle-case2.pdf}
 \onslide<3>
-\includegraphics[height=25cm]{figs/cycle-case3.pdf}
+\includegraphics[height=20cm]{figs/cycle-case3.pdf}
 \onslide<4>
-\includegraphics[height=25cm]{figs/cycle-case4.pdf}
+\includegraphics[height=20cm]{figs/cycle-case4.pdf}
 \onslide<5>
-\includegraphics[height=25cm]{figs/cycle-case4b.pdf}
+\includegraphics[height=20cm]{figs/cycle-case4b.pdf}
 \onslide<6>
-\includegraphics[height=25cm]{figs/cycle-case5.pdf}
+\includegraphics[height=20cm]{figs/cycle-case5.pdf}
 \onslide<7>
-\includegraphics[height=25cm]{figs/cycle-case6.pdf}
+\includegraphics[height=20cm]{figs/cycle-case6.pdf}
 \onslide<8>
-\includegraphics[height=25cm]{figs/cycle-case7.pdf}
+\includegraphics[height=20cm]{figs/cycle-case7.pdf}
 \end{overprint}
 }
 
@@ -5050,7 +5051,7 @@ gives
 %%4ppfile<test/4-ex-extr3.eh%%>
 \end{TT}
 
-\frame<presentation>[containsverbatim]
+\frame<presentation>[containsverbatim,plain]
 {
 \frametitle{Opening an existential}
 \begin{itemize}
@@ -5307,7 +5308,7 @@ has to deal with.
 {
 \frametitle{Issue: asymmetry |fitsIn|/|<=|}
 \begin{itemize}
-\item Instantiation polymorphism is ok,
+\item Instantiation of polymorphism is ok,
 but the reverse only if it can be guaranteed no additional
 constraints will be found for the quantified type variable
 \SafeCode{%
@@ -6068,6 +6069,13 @@ Existentials, via universal \cite{laufer96class-existential}
 %endif not onlyCurrentWork
 
 
+%if asSlides
+\part{Structure types}
+
+\frame<presentation>{
+\tableofcontents[hidesubsections]
+}
+%endif
 
 
 %if omitEH5Onwards

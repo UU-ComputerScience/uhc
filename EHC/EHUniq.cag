@@ -26,7 +26,7 @@ SEM PatExpr
   | Con             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
   
 SEM AGItf
-  | AGItf           expr        .   gUniq                           =   startUID
+  | AGItf           expr        .   gUniq                           =   uidStart
 %%]
 
 %%[2.Wild
@@ -117,5 +117,8 @@ SEM PrExpr
 
 SEM Decl
   | Class           (ctxtPrExprs.gUniq,loc.lUniq,loc.lUniq2)        =   mkNewLevUID2    @lhs.gUniq
+
+SEM Decl
+  | Instance        (ctxtPrExprs.gUniq,loc.lUniq)                   =   mkNewLevUID     @lhs.gUniq
 %%]
 

@@ -58,7 +58,7 @@ data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindR
 
 strongFIOpts :: FIOpts
 strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindRFirst     =   True
-                        ,  fioBindLFirst     =   True                ,  fioUniq           =   startUID
+                        ,  fioBindLFirst     =   True                ,  fioUniq           =   uidStart
                         ,  fioCoContra       =   CoVariant
                         }
 
@@ -125,7 +125,7 @@ data FIIn   =  FIIn     {  fiFIOpts          ::  FIOpts              ,  fiUniq  
                         ,  fiCoContra        ::  CoContraVariance
                         }
 
-emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts        ,  fiUniq            =   startUID
+emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts        ,  fiUniq            =   uidStart
                         ,  fiCoContra        =   CoVariant
                         }
 %%]
@@ -155,7 +155,7 @@ data FIOut  =  FIOut    {  foCnstr           ::  Cnstr               ,  foTy    
                         }
 
 emptyFO     =  FIOut    {  foCnstr           =   emptyCnstr          ,  foTy              =   Ty_Any
-                        ,  foUniq            =   startUID            ,  foCoContraL       =   []
+                        ,  foUniq            =   uidStart            ,  foCoContraL       =   []
                         ,  foErrL            =   []
                         }
 %%]

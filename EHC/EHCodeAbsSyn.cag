@@ -30,7 +30,7 @@ DATA CExpr
   | Lam         arg             : {HsName}
                 body            : CExpr
   | Var         nm              : {HsName}
-  | Tup         arity           : {Int}
+  | Tup
   | Sel         expr            : CExpr
                 tag             : {Int}
                 offset          : CExpr

@@ -36,7 +36,7 @@
 %%[8 hs import(List) export(tyRowCanonOrder,tyRecOffset) 
 %%]
 
-%%[9 hs export(Pred(..))
+%%[9 hs export(Pred(..),tyPredNm)
 %%]
 
 %%[1 import(EHTyAbsSyn)
@@ -188,7 +188,7 @@ mkTyFreshProdFrom :: UID -> Int -> Ty
 mkTyFreshProdFrom uid arity =  mkTyProdApp . map mkTyVar . snd . mkNewUIDL arity $ uid
 
 mkTyFreshProd :: Int -> Ty
-mkTyFreshProd = mkTyFreshProdFrom startUID
+mkTyFreshProd = mkTyFreshProdFrom uidStart
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -315,5 +315,17 @@ tyRecOffset :: HsName -> Ty -> Maybe Int
 tyRecOffset lbl t
   =  let (_,exts) = tyRecExts t
       in findIndex ((==lbl).fst) . tyRowCanonOrder $ exts
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Destruction for predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+tyPredNm :: Ty -> HsName
+tyPredNm t
+  =  case t of
+       Ty_Pred (Pred_Class pt)  -> tyConNm . fst . tyAppFunArgs $ pt
+       _                        -> hsnUnknown
 %%]
 

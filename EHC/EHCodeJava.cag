@@ -165,17 +165,17 @@ SEM CExpr
                                                     CBindRec     -> @binds.jvSrcInd >-< @binds.jvSrcSetInd
                             .   jvSrc       =   jvCAF (@lhs.jvBuiltin >-< @jvBinds) @body.jvSrc
   | Lam         loc         .   jvSrc       =   jvLam (maybe hsnUnknown id @lhs.mbLamNm) @jvArgL (jvRet @jvBody)
-  | Tup         loc         .   jvSrc       =   text "new Object" >|< pp_brackets (pp @arity)
+  | Tup         loc         .   jvSrc       =   empty
   | Sel         loc         .   jvSrc       =   jvApp (jvNmPP (if @tag >= 0 then jvSel1Nm else jvSelNm)) [@expr.jvSrc,@offset.jvSrc]
   | Case        loc         .   jvSrc       =   jvCAF
                                                     (    jvBind "Object[]" @jvCaseScrutinee (jvCast "Object[]" @expr.jvSrc)
                                                      >-< jvDeclare "Object" @jvCaseResult
                                                      >-< "switch"
                                                      >|< pp_parens
-                                                           (if @alts.tagSz > 0
-                                                            then jvForceInt (jvInx (jvNmPP @jvCaseScrutinee) 0)
-                                                            else pp ctagNone
-                                                           )
+                                                            (if @alts.tagSz > 0
+                                                             then jvForceInt (jvInx (jvNmPP @jvCaseScrutinee) 0)
+                                                             else pp ctagNone
+                                                            )
                                                      >-< pp_braces
                                                             (   @alts.jvSrc
                                                             >-< "default :"

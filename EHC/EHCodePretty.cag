@@ -50,7 +50,7 @@ SEM CExpr
                                                     _            -> empty
                             .   pp          =   ppDef ("let" >#< @ppCateg) @binds.pp >-< ppDef "in" @body.pp
   | Lam         loc         .   pp          =   ppDef ("\\" >|< @arg) ("->" >#< @body.pp)
-  | Tup         loc         .   pp          =   "#" >|< pp (hsnProd @arity)
+  | Tup         loc         .   pp          =   pp "#()"
   | Sel         loc         .   pp          =   ppDef (pp_parens @expr.pp) ("." >|< pp @tag >|< "." >|< pp_parens @offset.pp)
   | Case        loc         .   pp          =   ppDef ("case" >#< @expr.pp)
                                                     (ppDef "of"
