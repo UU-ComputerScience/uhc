@@ -408,7 +408,7 @@ crCompileCU modNm cr
                    ; crSeq
                        [ crStepUID, crCompileCUParseHS modNm
                                   , crCompileCUPass1HS modNm
-                       , crStepUID, crCoreTrf modNm ["CCP", "CRU", "CLU", "CILA", "CFL", "CLL", "CFL"]
+                       , crStepUID, crCoreTrf modNm ["CCP", "CRU", "CLU", "CILA", "CFL", "CLL", "CFL", "CLU"]
                        , crStepUID, crOutputCore modNm
                        ] cr
                    }
