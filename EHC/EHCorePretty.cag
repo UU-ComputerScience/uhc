@@ -70,7 +70,7 @@ SEM CExpr
   | Case        loc         .   pp          =   ppDef ("case" >#< @expr.pp)
                                                     (ppDef "of"
                                                         (@alts.pp >-< "_->" >#< @dflt.pp))
-  | Tup         loc         .   pp          =   "#" >|< pp_parens (ctag empty (\t l -> pp t >|< "/" >|< pp l) @tag)
+  | Tup         loc         .   pp          =   "#" >|< pp_parens (pp @tag)
   | TupSel      loc         .   pp          =   ppDef (pp_parens @expr.pp) ("." >|< pp_parens (pp @tag >|< ":" >|< @offset.pp))
   | TupDel      loc         .   pp          =   ppDef (pp_parens @expr.pp) (".-" >|< pp_parens (pp @tag >|< ":" >|< @offset.pp))
   | TupIns      loc         .   pp          =   ppDef (pp_parens @expr.pp) (ppDef (".+" >|< pp_parens (pp @tag >|< ":" >|< @offset.pp >|< ":" >|< @nm)) (@fldExpr.pp))
@@ -90,8 +90,8 @@ SEM CAlt
 SEM CPat
   | Var         lhs         .   pp          =   pp (cpatNmNm @pnm)
   | Con         lhs         .   pp          =   (cpatNmEither ((>|< "@") . pp) (const empty) @pnm)
-                                                >|< pp_parens   (   @tag >|< "=" >|< @tagNm >|< ":"
-                                                                >|< ppListSep "(" ")" "," @binds.ppL
+                                                >|< pp_parens   (   @tag >|< ":"
+                                                                >|< pp_parens (@rest.pp >|< "|" >|< ppListSep "" "" "," @binds.ppL)
                                                                 )
   | Undef       lhs         .   pp          =   pp hsnUnknown
 
@@ -100,12 +100,18 @@ SEM CPatL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 
 SEM CPatBind
-  | Bind        lhs         .   pp          =   @offset.pp >|< "=" >|< @pat.pp
+  | Bind        lhs         .   pp          =   @lbl >|< "/" >|< @offset.pp >|< "=" >|< @pat.pp
+
+SEM CPatRest
+  | Var         lhs         .   pp          =   pp @nm
 
 SEM CPatBindL
   | Nil         lhs         .   ppL         =   []
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 %%]
+
+  | TupSplit    lhs         .   pp          =   (cpatNmEither ((>|< "@") . pp) (const empty) @pnm)
+                                                >|< pp_parens (@pat.pp >|< "|">|< pp @tag >|< ":" >|< @offset.pp >|< "=" >|< @fldPat.pp)
 
 %%[9
 SEM CExpr

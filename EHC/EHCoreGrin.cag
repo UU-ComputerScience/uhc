@@ -9,7 +9,7 @@
 %%% Haskell importable interface to Code's GRIN gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Maybe,List,FiniteMap,UU.Pretty,EHCommon,EHCore,EHTy,GrinCode,Char) export(cmodGrin)
+%%[8 hs import(Maybe,List,Set,FiniteMap,UU.Pretty,EHCommon,EHCore,EHTy,GrinCode,Char) export(cmodGrin)
 %%]
 
 %%[8.WRAPPER import(EHCoreAbsSyn,EHCoreCommonLev)
@@ -38,6 +38,9 @@ cmodGrin uniq cmod
 %%[8
 ATTR AllCodeNT [ | gUniq: UID | ]
 ATTR CodeAGItf [ gUniq: UID | | ]
+
+SEM CModule
+  | Mod         (expr.gUniq,loc.lUniq)      =   mkNewLevUID   @lhs.gUniq
 
 SEM CExpr
   | Var         (lhs.gUniq,loc.lUniq)       =   mkNewLevUID   @lhs.gUniq
@@ -107,6 +110,123 @@ SEM CExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% All tags
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type TagInfoMp = FiniteMap HsName CTag
+
+mkTMp :: CTag -> TagInfoMp
+mkTMp t@(CTag _ _ l)  = l `unitFM` t
+mkTMp _               = emptyFM
+%%]
+
+%%[8
+ATTR AllCodeNT [ | | tagNmMp USE {`plusFM`} {emptyFM}: TagInfoMp ]
+
+SEM CExpr
+  | TupIns TupUpd
+                lhs         .   tagNmMp     =   @expr.tagNmMp `plusFM` @offset.tagNmMp `plusFM` @fldExpr.tagNmMp `plusFM` mkTMp @tag
+  | TupSel TupDel
+                lhs         .   tagNmMp     =   @expr.tagNmMp `plusFM` @offset.tagNmMp `plusFM` mkTMp @tag
+  | Tup         lhs         .   tagNmMp     =   mkTMp @tag
+
+SEM CPat
+  | Con         lhs         .   tagNmMp     =   @binds.tagNmMp `plusFM` mkTMp @tag
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% All function names (which only live on top level after lambda lifting)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR CExpr [ | | lamNmMp USE {`plusFM`} {emptyFM}: LamInfoMp ]
+
+SEM CExpr
+  | Let         lhs         .   lamNmMp     =   @body.lamNmMp `plusFM` @binds.bindLamMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Variables which are passed as parameter
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllCodeNT [ | | asArgNmS USE {`Set.union`} {emptySet}: FvS ]
+
+SEM CExpr
+  | Var         loc         .   mbLam       =   case lookupFM @lhs.lamMp @nm of
+                                                    Just arity | @lhs.isTopApp
+                                                        -> Just arity
+                                                    _   -> Nothing
+                lhs         .   asArgNmS    =   maybe emptySet (const (unitSet @nm)) @mbLam
+  | App         loc         .   mbLam       =   lookupFM @lhs.lamMp @grAppFun
+                            .   appArity    =   length @grAppArgL
+                lhs         .   asArgNmS    =   @func.asArgNmS
+                                                    `Set.union`  maybe @arg.asArgNmS unitSet @arg.mbVar
+                                                    `Set.union`  (case @mbLam of
+                                                                    Just a | @lhs.isTopApp && @appArity < a
+                                                                      -> unitSet @grAppFun
+                                                                    _ -> emptySet
+                                                                 )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Grin code, top level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR CodeAGItf CModule [ | | grMod: GrModule ]
+
+SEM CModule
+  | Mod         loc         .   applyBind   =   let  nF = HNm "f"
+                                                     nA = HNm "a"
+                                                     mkAlt n arity nArg alt
+                                                        = GrAlt_Alt
+                                                              (mkGrPatTagNode (GrTagPApp (arity-nArg+1)) 0 n (take (nArg-1) grLclNmSupplyL))
+                                                              alt
+                                                     mkMissAlt n arity nArg
+                                                        = mkAlt n arity nArg
+                                                              (GrExpr_Unit (mkNdPApp n (arity-nArg) (map GrVal_Var (take (nArg-1) grLclNmSupplyL ++ [nA]))))
+                                                     mkCallAlt n arity
+                                                        = mkAlt n arity arity
+                                                              (GrExpr_Call n (map GrVal_Var (take (arity-1) grLclNmSupplyL ++ [nA])))
+                                                in   GrBind_Bind hsnGrApply [nF,nA]
+                                                          (GrExpr_Case (GrVal_Var nF)
+                                                              (concat
+                                                              . map (\(n,arity) -> mkCallAlt n arity : map (mkMissAlt n arity) [1..arity-1])
+                                                              . fmToList
+                                                              . filterFM (\n _ -> n `elementOf` @expr.asArgNmS)
+                                                              $ @expr.lamNmMp
+                                                              )
+                                                          )
+                            .   evalBind    =   let  [u1,u2,u3] = mkNewUIDL 3 @lUniq
+                                                     n1 = uidHNm u1
+                                                     n2 = uidHNm u2
+                                                     n3 = uidHNm u3
+                                                     mkCAlt (CTag t a l)
+                                                        = GrAlt_Alt
+                                                            (mkGrPatTagNode GrTagCon t l (take (a+1) grLclNmSupplyL))
+                                                            (GrExpr_Unit (GrVal_Var n2))
+                                                     mkFAlt n arity
+                                                        = GrAlt_Alt
+                                                            (mkGrPatTagNode GrTagFun 0 n argL)
+                                                            (GrExpr_Seq (GrExpr_Call n (map GrVal_Var argL)) (GrPat_Var n3)
+                                                                (GrExpr_Seq (GrExpr_Update n1 (GrVal_Var n3)) GrPat_Empty
+                                                                    (GrExpr_Unit (GrVal_Var n3))))
+                                                        where argL = take arity grLclNmSupplyL
+                                                in   GrBind_Bind hsnGrEval [n1]
+                                                        (GrExpr_Seq (GrExpr_Fetch n1 Nothing) (GrPat_Var n2)
+                                                          (GrExpr_Case (GrVal_Var n2)
+                                                              (   (map mkCAlt (map (\n -> CTag 0 1 n) grBuiltinTyNmL ++ eltsFM @expr.tagNmMp))
+                                                              ++  (map (uncurry mkFAlt) . fmToList $ @expr.lamNmMp)
+                                                              )
+                                                          ))
+                            .   mainBind    =   GrBind_Bind hsnGrMain [] @expr.grLetBody
+                lhs         .   grMod       =   GrModule_Mod (HNm @baseName)
+                                                    (@expr.grBindL ++ [@mainBind,@applyBind,@evalBind])
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Grin code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -132,10 +252,10 @@ retStrict isStrict = if isStrict then GrExpr_Unit else GrExpr_Store
 
 %%[8 hs
 mkNdPApp :: HsName -> Int -> GrValL -> GrVal
-mkNdPApp f nMiss argL = mkGrTagNode (GrTagPApp nMiss) 0 (HNm "papply") (GrVal_Var f : argL)
+mkNdPApp f nMiss argL = mkGrTagNode (GrTagPApp nMiss) 0 f argL
 
 mkNdApp :: HsName -> GrValL -> GrVal
-mkNdApp f argL = mkGrTagNode GrTagApp 0 (HNm "apply") (GrVal_Var f : argL)
+mkNdApp f argL = mkGrTagNode GrTagApp 0 hsnGrApply (GrVal_Var f : argL)
 
 mkSq :: GrExpr -> HsName -> GrExpr -> GrExpr
 mkSq e1 p e2 = GrExpr_Seq e1 (GrPat_Var p) e2
@@ -166,13 +286,6 @@ unboxArgL uniq tyNm vL
                  )
                  ([],id)
           $ zip nL vL
-%%]
-
-%%[8
-ATTR CodeAGItf CModule [ | | grMod: GrModule ]
-
-SEM CModule
-  | Mod         lhs         .   grMod       =   GrModule_Mod (HNm @baseName) (@expr.grBindL ++ [GrBind_Bind (HNm "main") [] @expr.grLetBody])
 %%]
 
 %%[8
@@ -207,7 +320,6 @@ SEM CExpr
                                                       )
   | Case        loc         .   grExpr      =   GrExpr_Case @expr.grVal @alts.grAltL
   | App         loc         .   grExpr      =   let  argL = reverse @grAppArgL
-                                                     apArity = length argL
                                                      funNm = @grAppFun
                                                      mkE  = retStrict @lhs.isStrict
                                                      n = uidHNm @lUniq
@@ -215,19 +327,19 @@ SEM CExpr
                                                 in   case @func.mbTupApp of
                                                         Just t
                                                             ->  let  v  =  case t of
-                                                                             CTagRec   -> mkGrRecNode argL'
-                                                                             CTag t l  -> mkGrConNode t l argL'
+                                                                             CTagRec     -> mkGrRecNode argL'
+                                                                             CTag t _ l  -> mkGrConNode t l argL'
                                                                 in   wrapGr (mkE v)
                                                         Nothing
-                                                            ->  let  ap = case lookupFM @lhs.lamMp funNm of
+                                                            ->  let  ap = case @mbLam of
                                                                              Just arity
-                                                                               | arity == apArity && @lhs.isStrict
+                                                                               | arity == @appArity && @lhs.isStrict
                                                                                    -> GrExpr_Call funNm argL'
-                                                                               | arity == apArity
+                                                                               | arity == @appArity
                                                                                    -> GrExpr_Store (mkGrTagNode GrTagFun 0 funNm argL')
-                                                                               | arity > apArity
-                                                                                   -> mkE (mkNdPApp funNm (arity - apArity) argL')
-                                                                               | arity < apArity && @lhs.isStrict
+                                                                               | arity > @appArity
+                                                                                   -> mkE (mkNdPApp funNm (arity - @appArity) argL')
+                                                                               | arity < @appArity && @lhs.isStrict
                                                                                    -> mkSq (GrExpr_Call funNm (take arity argL')) n (GrExpr_App n (drop arity argL'))
                                                                                | otherwise
                                                                                    -> mkSq (GrExpr_Store (mkNdPApp funNm 0 (take arity argL'))) n (GrExpr_Store (mkNdApp n (drop arity argL')))
@@ -255,8 +367,8 @@ SEM CExpr
 ATTR CExpr   [ | | grVal: GrVal ]
 
 SEM CExpr
-  | Tup         loc         .   grVal       =   ctag GrVal_Empty (\t l -> mkGrConNode t l []) @tag
-  | Var         loc         .   grVal       =   GrVal_Var @nm
+  | Tup         loc         .   grVal       =   ctag (mkGrRecNode []) (\t _ l -> mkGrConNode t l []) @tag
+  | Var         loc         .   grVal       =   maybe (GrVal_Var @nm) (\a -> mkNdPApp @nm a []) @mbLam
   | Int         loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnInt  else id)  (GrVal_LitInt @int)
   | Char        loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnChar else id)  (GrVal_LitInt (ord @char))
   | * - Int Char Var Tup
@@ -352,7 +464,8 @@ ATTR CPatL   [ | | grPatL: GrPatL ]
 
 SEM CPat
   | Var         lhs         .   grPat       =   GrPat_Var @patNm
-  | Con         lhs         .   grPat       =   ctag mkGrPatRecNode mkGrPatConNode @tag @binds.patBindL
+  | Con         lhs         .   grPat       =   let mk = ctag mkGrPatRecNode (\t _ l -> mkGrPatConNode t l) @tag
+                                                in  mk @binds.patBindL
   | Undef       lhs         .   grPat       =   GrPat_Empty
 
 SEM CPatL

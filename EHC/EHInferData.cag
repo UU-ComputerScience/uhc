@@ -86,7 +86,7 @@ SEM Decl
 %%[8
 SEM Decl
   | Data        loc         .  dataTgi              :=  mkTGIData  (Ty_Con @tyNm) (tyEnsureNonBotTop @lUniq @knKi)
-                                                                   @dataAltTy @constrs.dataTagArityMp
+                                                                   @dataAltTy @constrs.dataTagMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -94,12 +94,13 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllDataConstr [ | | dataTagArityMp USE {`plusFM`} {emptyFM}: DataTagArityMp ]
+ATTR AllDataConstr [ | | dataTagMp USE {`plusFM`} {emptyFM}: DataTagMp ]
 
 SEM DataConstr
   | Constr      loc         .   tag                 =   tyRecOffset @conNm @lhs.dataAltTy
-                            .   ctag                =   CTag @tag @conNm
-                lhs         .   dataTagArityMp      =   @conNm `unitFM` (@ctag,length @fields.tyL)
+                            .   arity               =   length @fields.tyL
+                            .   ctag                =   CTag @tag @arity @conNm
+                lhs         .   dataTagMp           =   @conNm `unitFM` @ctag
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

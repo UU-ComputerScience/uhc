@@ -9,7 +9,7 @@
 %%% Haskell importable interface to Code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(EHCommon,List,UU.Pretty) export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBindL, CBindCateg(..)) 
+%%[8 hs import(EHCommon,List,UU.Pretty) export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBindL, CBindCateg(..), CPatRest(..)) 
 %%]
 
 %%[8 hs export(CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL) 
@@ -45,16 +45,19 @@ DERIVING *     : Show, Eq
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-data CTag = CTagRec | CTag Int HsName deriving (Show,Eq,Ord)
+data CTag
+  = CTagRec
+  | CTag {ctagTag :: Int, ctagArity :: Int, ctagNm :: HsName}
+  deriving (Show,Eq,Ord)
 
-ctag :: a -> (Int -> HsName -> a) -> CTag -> a
-ctag n t tg = case tg of {CTag i l -> t i l; _ -> n}
+ctag :: a -> (Int -> Int -> HsName -> a) -> CTag -> a
+ctag n t tg = case tg of {CTag i a l -> t i a l; _ -> n}
 
 ppCTag :: CTag -> PP_Doc
-ppCTag = ctag (pp "?") (\t _ -> pp t)
+ppCTag = ctag (pp "Rec") (\t a n -> pp t >|< "/" >|< pp n >|< "/" >|< pp a)
 
 ppCTagInt :: CTag -> PP_Doc
-ppCTagInt = ctag (pp "-1") (\t _ -> pp t)
+ppCTagInt = ctag (pp "-1") (\t _ _ -> pp t)
 
 instance PP CTag where
   pp = ppCTag

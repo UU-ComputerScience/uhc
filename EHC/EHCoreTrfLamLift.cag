@@ -43,6 +43,15 @@ SEM CodeAGItf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM CExpr
+  | Let         binds       .   lev         =   @lhs.lev + 1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Which id's are functions resp values
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -96,8 +105,6 @@ iterFvSLamMp frLamMp frVarMp
           else frVarMp
 %%]
 
-map (fromJust . lookupFM frVarMp) . setToList . fromJust . lookupFM frLamMp $ n
-
 %%[8
 ATTR AllCodeNT [ fvSLamMp: FvSMp | | ]
 
@@ -113,6 +120,18 @@ SEM CExpr
                                                             _         ->  let  (m,_)   = start @lhs.varS
                                                                           in   m
                                                     )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Has a strict let inside
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR CExpr [ | | hasStrict: Bool ]
+
+SEM CExpr
+  | Let         lhs         .   hasStrict   =   @categ == CBindStrict || @body.hasStrict
+  | * - Let     lhs         .   hasStrict   =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -154,6 +173,20 @@ SEM CExpr
 
 %%[8 hs
 type LamBindSq = Seq (CBindCateg,CBindL)
+
+fvLAsArg :: LevMp -> FvS -> AssocL HsName Int
+fvLAsArg levMp fvS
+  =  sortOn snd . filter (\(_,l) -> l > cLevOuter)
+     . map (\n -> (n,fvLev levMp n)) . setToList $ fvS
+
+mkFvNm :: Int -> HsName -> HsName
+mkFvNm i n = hsnSuffix n ("~" ++ show i)
+
+fvLArgRepl :: Int -> AssocL HsName Int -> ([HsName],[HsName],FiniteMap HsName HsName)
+fvLArgRepl uniq argLevL
+  =  let  argOL = assocLKeys argLevL
+          argNL = zipWith (\u n -> mkFvNm u n) [uniq..] argOL
+     in   (argOL,argNL,listToFM (zip argOL argNL))
 %%]
 
 %%[8
@@ -161,21 +194,30 @@ ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
 ATTR AllCodeNT [ | | lamBindSq USE {<+>} {emptySeq}: LamBindSq ]
-ATTR AllBind [ | | bindLamBindL, bindVarBindL USE {++} {[]}: CBindL ]
+ATTR AllBind [ | | bindLamBindL, bindCAFBindL, bindVarBindL USE {++} {[]}: CBindL ]
 
 SEM CBind
-  | Bind        (expr.gUniq,loc.argMp,loc.bindLamBindL,loc.bindVarBindL,loc.bindLamArgMp)
+  | Bind        (expr.gUniq,loc.argMp,loc.bindLamBindL,loc.bindCAFBindL,loc.bindVarBindL,loc.bindLamArgMp)
                                             =   if @expr.isLam
-                                                then  let  argLevL = sortOn snd . filter (\(_,l) -> l > cLevOuter)
-                                                                   . map (\n -> (n,fvLev @lhs.levMp n)) . setToList
-                                                                   . fromJust . lookupFM @lhs.fvSLamMp $ @nm
-                                                           argOL = assocLKeys argLevL
-                                                           argNL = zipWith (\u n -> hsnSuffix n ("~" ++ show u)) [@lhs.gUniq..] argOL
-                                                      in   (@lhs.gUniq + length argOL,listToFM (zip argOL argNL)
-                                                           ,[CBind_Bind @nm (mkCExprLam argNL @expr.cTrf)],[]
+                                                then  let  argLevL = fvLAsArg @lhs.levMp . fromJust . lookupFM @lhs.fvSLamMp $ @nm
+                                                           (argOL,argNL,argONMp) = fvLArgRepl @lhs.gUniq argLevL
+                                                      in   (@lhs.gUniq + length argOL,argONMp
+                                                           ,[CBind_Bind @nm (mkCExprLam argNL @expr.cTrf)],[],[]
                                                            ,@nm `unitFM` argOL
                                                            )
-                                                else  (@lhs.gUniq,emptyFM,[],[@cTrf],emptyFM)
+                                                else  if @expr.isLet
+                                                then  let  argLevL = fvLAsArg @lhs.levMp @expr.fvS
+                                                           cafLamNm = mkFvNm @lhs.gUniq @nm
+                                                           (argOL,argNL,argONMp) = fvLArgRepl (@lhs.gUniq + 1) argLevL
+                                                      in   if null argLevL
+                                                           then  (@lhs.gUniq,emptyFM,[],[@cTrf],[],emptyFM)
+                                                           else  (@lhs.gUniq + 1 + length argOL,argONMp
+                                                                 ,[CBind_Bind cafLamNm (mkCExprLam argNL @expr.cTrf)]
+                                                                 ,[]
+                                                                 ,[CBind_Bind @nm (mkCExprApp (CExpr_Var cafLamNm) (map CExpr_Var argOL))]
+                                                                 ,emptyFM
+                                                                 )
+                                                else  (@lhs.gUniq,emptyFM,[],[],[@cTrf],emptyFM)
   | FFI         loc         .   bindVarBindL=   [@cTrf]
 
 SEM CExpr
@@ -184,14 +226,16 @@ SEM CExpr
                                                      v2 = maybe v1 (mkCExprApp v1 . map r) . lookupFM @lhs.lamArgMp $ @nm
                                                 in   v2
   | Let         (loc.hereBindSq,lhs.lamBindSq)
-                                            =   let  b1     = @binds.lamBindSq
-                                                     b2l    = unitSeq (@categ,@binds.bindLamBindL)
-                                                     b2v    = unitSeq (@categ,@binds.bindVarBindL)
-                                                     b12lv  = unitSeq (@categ,(concat . map snd . seqToList $ b1) ++ @binds.bindLamBindL ++ @binds.bindVarBindL)
-                                                     b3     = @body.lamBindSq
+                                            =   let  b1      = @binds.lamBindSq
+                                                     b2l     = unitSeq (@categ,@binds.bindLamBindL)
+                                                     b2c     = unitSeq (@categ,@binds.bindCAFBindL)
+                                                     b2v     = unitSeq (@categ,@binds.bindVarBindL)
+                                                     b12lcv  = unitSeq (@categ,(concat . map snd . seqToList $ b1)
+                                                                                ++ @binds.bindLamBindL ++ @binds.bindCAFBindL ++ @binds.bindVarBindL)
+                                                     b3      = @body.lamBindSq
                                                 in   if @lhs.lev == cLevOuter
-                                                     then  (b12lv <+> b3,emptySeq)
-                                                     else  (b2v,b1 <+> b2l <+> b3)
+                                                     then  (b12lcv <+> b3,emptySeq)
+                                                     else  (b2v,b1 <+> b2l <+> b2c <+> b3)
                 lhs         .   cTrf        =   foldr (\(c,b) e -> mkCExprLet c b e) @body.cTrf . seqToList $ @hereBindSq
 %%]
 

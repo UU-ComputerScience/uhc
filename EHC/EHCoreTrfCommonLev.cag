@@ -48,6 +48,7 @@ SEM CExpr
   | TupIns TupUpd
                 loc         .   levOf       =   @expr.levOf `max` @offset.levOf `max` @fldExpr.levOf
   | Lam         loc         .   levOf       =   fvsLev @lhs.levMp @body.fvS
+  | Let         loc         .   levOf       =   fvsLev @lhs.levMp @fvS
 
 SEM CAlt
   | Alt         lhs         .   levOf       =   fvsLev @lhs.levMp @expr.fvS

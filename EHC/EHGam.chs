@@ -45,7 +45,7 @@
 %%[7 export(mkTGIData)
 %%]
 
-%%[8 import(Maybe,FiniteMap,EHCore) export(gamUpd,DataTagArityMp)
+%%[8 import(Maybe,FiniteMap,EHCore) export(gamUpd,DataTagMp)
 %%]
 
 %%[9 import(EHDebug) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
@@ -56,38 +56,37 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.Base.sigs
-newtype Gam k v     =   Gam [AssocL k v]
-                    deriving Show
+newtype Gam k v     =   Gam [AssocL k v]  deriving Show
 
 emptyGam            ::  Gam k v
 gamLookup           ::  Eq k => k   -> Gam k v -> Maybe v
+gamToAssocL         ::  Gam k v     -> AssocL k v
 gamPushNew          ::  Gam k v     -> Gam k v
 gamPushGam          ::  Gam k v     -> Gam k v -> Gam k v
+gamAddGam           ::  Gam k v     -> Gam k v -> Gam k v
 gamAdd              ::  k -> v      -> Gam k v -> Gam k v
 %%]
 
 %%[1.Base.funs
 emptyGam                            = Gam [[]]
 gamLookup       k (Gam ll)          = foldr (\l mv -> maybe mv Just (lookup k l)) Nothing ll
+gamToAssocL     (Gam ll)            = concat ll
 gamPushNew      (Gam ll)            = Gam ([]:ll)
 gamPushGam g1   (Gam ll2)           = Gam (gamToAssocL g1 : ll2)
+gamAddGam       g1 (Gam (l2:ll2))   = Gam ((gamToAssocL g1 ++ l2):ll2)
 gamAdd          k v                 = gamAddGam (k `gamUnit` v)
 %%]
 
 %%[1.Rest.sigs
 gamUnit             ::  k -> v      -> Gam k v
 gamPop              ::  Gam k v     -> (Gam k v,Gam k v)
-gamToAssocL         ::  Gam k v     -> AssocL k v
 assocLToGam         ::  AssocL k v  -> Gam k v
-gamAddGam           ::  Gam k v     -> Gam k v -> Gam k v
 %%]
 
 %%[1.Rest.funs
 gamUnit         k v                 = Gam [[(k,v)]]
 gamPop          (Gam (l:ll))        = (Gam [l],Gam ll)
-gamToAssocL     (Gam ll)            = concat ll
 assocLToGam     l                   = Gam [l]
-gamAddGam       g1 (Gam (l2:ll2))   = Gam ((gamToAssocL g1 ++ l2):ll2)
 %%]
 
 %%[3.gamMap
@@ -260,14 +259,14 @@ mkTGI t k = mkTGIData t k Ty_Any
 %%]
 
 %%[8.TyGamInfo -7.TyGamInfo
-type DataTagArityMp = FiniteMap HsName (CTag,Int)
+type DataTagMp = FiniteMap HsName CTag
 
-data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty, tgiData :: Ty, tgiDataTagArityMp :: DataTagArityMp }
+data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty, tgiData :: Ty, tgiDataTagMp :: DataTagMp }
 
 instance Show TyGamInfo where
   show _ = "TyGamInfo"
 
-mkTGIData :: Ty -> Ty -> Ty -> DataTagArityMp -> TyGamInfo
+mkTGIData :: Ty -> Ty -> Ty -> DataTagMp -> TyGamInfo
 mkTGIData t k d m = TyGamInfo t k d m
 
 mkTGI :: Ty -> Ty -> TyGamInfo

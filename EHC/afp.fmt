@@ -166,7 +166,7 @@
 
 %format Top         	= "\top "
 %format Bot         	= "\bot "
-%format ANY				= Top "\hspace*{-0.8em}" Bot
+%format ANY				= "\makebox[0cm][l]{\(\top\)}\bot{}"
 
 %format `union`			= "\cup "
 %format `setdiff`		= "-"

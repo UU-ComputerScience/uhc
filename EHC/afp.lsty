@@ -122,12 +122,18 @@
 \newcommand{\RuleRef}[1]{Rule~\textsf{#1}}
 
 % referencing
-\newcommand{\pageRef}[1]{page~\pageref{#1}}
 \newcommand{\figRef}[1]{figure~\ref{#1}}
-\newcommand{\figPageRef}[1]{\figRef{#1}, \pageRef{#1}}
 \newcommand{\FigRef}[1]{Figure~\ref{#1}}
 \newcommand{\secRef}[1]{section~\ref{#1}}
+%if llncs
+\newcommand{\pageRef}[1]{}
+\newcommand{\figPageRef}[1]{\figRef{#1}}
+\newcommand{\secPageRef}[1]{\secRef{#1}}
+%else
+\newcommand{\pageRef}[1]{page~\pageref{#1}}
+\newcommand{\figPageRef}[1]{\figRef{#1}, \pageRef{#1}}
 \newcommand{\secPageRef}[1]{\secRef{#1}, \pageRef{#1}}
+%endif
 \newcommand{\chapterRef}[1]{%
 %if asArticle
 \secRef{#1}
