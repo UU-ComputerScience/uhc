@@ -54,7 +54,7 @@ AFP_PGF_TEX			:= afp-pgf.tex
 ALL_AFP_SRC			:= $(AFP_LHS) $(AFP_RULES)
 
 EHC_LAG_FOR_HS_TY			:= $(addsuffix .lag,EHTyQuantify EHTySubst EHTyFtv EHTyPretty EHTyInstantiate )
-EHC_LAG_FOR_HS_CORE			:= $(addsuffix .lag,EHCoreJava EHCoreGrin EHCoreTrfRenUniq EHCorePretty EHCoreSubst)
+EHC_LAG_FOR_HS_CORE			:= $(addsuffix .lag,EHCoreJava EHCoreGrin EHCoreTrfRenUniq EHCoreTrfFullLazy EHCoreTrfLetUnrec EHCorePretty EHCoreSubst)
 EHC_LAG_FOR_HS_GRIN_CODE	:= $(addsuffix .lag,GrinCodePretty)
 EHC_LAG_FOR_HS				:= $(addsuffix .lag,EHMainAG EHTy EHCore EHError EHErrorPretty GrinCode) $(EHC_LAG_FOR_HS_TY) $(EHC_LAG_FOR_HS_CORE) $(EHC_LAG_FOR_HS_GRIN_CODE)
 
@@ -77,10 +77,14 @@ DPDS_CORE_JAVA				:= EHCoreJava.ag EHCoreAbsSyn.ag
 DPDS_CORE_GRIN				:= EHCoreGrin.ag EHCoreAbsSyn.ag
 DPDS_CORE_PRETTY			:= EHCorePretty.ag EHCoreAbsSyn.ag
 DPDS_CORE_TRF_RENUNQ		:= EHCoreTrfRenUniq.ag EHCoreAbsSyn.ag
+DPDS_CORE_TRF_FULLAZY		:= EHCoreTrfFullLazy.ag EHCoreAbsSyn.ag
+DPDS_CORE_TRF_LETUNREC		:= EHCoreTrfLetUnrec.ag EHCoreAbsSyn.ag
 DPDS_GRIN_CODE				:= GrinCode.ag GrinCodeAbsSyn.ag
 DPDS_GRIN_CODE_PRETTY		:= GrinCodePretty.ag GrinCodeAbsSyn.ag
+
+DPDS_CORE_TRF				:= $(DPDS_CORE_TRF_RENUNQ) $(DPDS_CORE_TRF_FULLAZY) $(DPDS_CORE_TRF_LETUNREC)
 DPDS_ALL					:= $(sort $(DPDS_MAIN) \
-										$(DPDS_CORE) $(DPDS_CORE_JAVA) $(DPDS_CORE_GRIN) $(DPDS_CORE_PRETTY) $(DPDS_CORE_TRF_RENUNQ) \
+										$(DPDS_CORE) $(DPDS_CORE_JAVA) $(DPDS_CORE_GRIN) $(DPDS_CORE_PRETTY) $(DPDS_CORE_TRF) \
 										$(DPDS_TY) $(DPDS_TY_PRETTY) $(DPDS_TY_QUANT) $(DPDS_TY_SUBST) $(DPDS_TY_FTV) $(DPDS_TY_INST) \
 										$(DPDS_GRIN_CODE) $(DPDS_GRIN_CODE_PRETTY) \
 										$(DPDS_ERR) $(DPDS_ERR_PRETTY) \
@@ -489,6 +493,8 @@ MK_EHC_MKF			= \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE),-dr) ; \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE_PRETTY),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE_TRF_RENUNQ),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE_TRF_FULLAZY),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE_TRF_LETUNREC),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE_JAVA),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE_GRIN),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_GRIN_CODE),-dr) ; \
