@@ -20,7 +20,7 @@ data ScanOpts
 %%[8
         ,   scoDollarIdent      ::  Bool
 %%]
-%%[1
+%%[7
         }
 %%]
 
@@ -74,14 +74,18 @@ scan opts pos input
 
    scanIdent p s = let (name,rest) = span isIdChar s
                    in (name,advc (length name) p,rest)
+%%]
 
+%%[8
    scanDollarIdent :: String -> (String,Int,String)
    scanDollarIdent []           = ("",0,[])
    scanDollarIdent cs@(c:s)     | isSpace c || isSymbol c
                                 = ("",0,cs)
    scanDollarIdent cs@(c:s)     = let (str,w,s') = scanDollarIdent s
                                   in  (c:str,w+1,s')
+%%]
 
+%%[7
    doScan p [] = []
    doScan p (c:s)        | isSpace c = let (sp,next) = span isSpace s
                                        in  doScan (foldl adv p (c:sp)) next
@@ -93,14 +97,18 @@ scan opts pos input
        in if null rest || head rest /= '"'
              then errToken "Unterminated string literal" p : doScan (advc swidth p) rest
              else valueToken TkString s p : doScan (advc (swidth+2) p) (tail rest)
+%%]
 
+%%[8
    doScan p ('$':ss)
      | scoDollarIdent opts   = tok : doScan (advc w p) ss'
          where (ident,w,ss') = scanDollarIdent ss
                tok = if null ident
                      then errToken "Zero length $identifier" p
                      else valueToken TkVarid ident p
+%%]
 
+%%[7
    doScan p ('\'':ss)
      = let (mc,cwidth,rest) = scanChar ss
        in case mc of

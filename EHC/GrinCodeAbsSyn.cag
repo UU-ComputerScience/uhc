@@ -39,7 +39,7 @@ DATA GrExpr
                 argL            : GrValL
   | App         nm              : {HsName}
                 argL            : GrValL
-  | Eval        val             : GrVal
+  | Eval        nm              : {HsName}
   | Unit        val             : GrVal
   | Store       val             : GrVal
   | Fetch       nm              : {HsName}
@@ -83,6 +83,8 @@ DATA GrTag
 %%]
 
 %%[8
-SET AllGrNT     =   GrModule GrExpr GrBind GrBindL GrAlt GrAltL
-                    GrPat GrPatL GrTag GrVal GrValL
+SET AllBind     =   GrBind GrBindL
+SET AllExpr		=	GrExpr GrAlt GrAltL GrPat GrPatL GrTag GrVal GrValL
+SET AllGrNT     =   GrModule AllExpr AllBind 
+                    
 %%]

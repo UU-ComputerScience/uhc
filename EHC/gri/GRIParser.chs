@@ -20,7 +20,7 @@
 scanOpts :: ScanOpts
 scanOpts
   =  defaultScanOpts
-        {   scoKeywordsTxt      =   [ "eval", "apply", "module", "update", "fetch", "store", "unit", "of", "rec"
+        {   scoKeywordsTxt      =   [ "eval", "apply", "module", "update", "fetch", "store", "unit", "of", "rec", "case"
                                     , "C", "F", "P", "A"
                                     ]
         ,   scoKeywordsOps      =   [ "->" ]
@@ -51,20 +51,20 @@ pExprSeq        ::   GRIParser GrExpr
 pExprSeq        =    pChainr ((\p e1 e2 -> GrExpr_Seq e1 p e2) <$ pSemi <* pKey "\\" <*> pPat <* pKey "->") pExpr
 
 pExpr           ::   GRIParser GrExpr
-pExpr           =    GrExpr_Unit <$ pKey "unit" <*> pVal
-                <|>  GrExpr_Store <$ pKey "store" <*> pVal
-                <|>  GrExpr_Eval <$ pKey "eval" <*> pVal
-                <|>  GrExpr_Fetch <$ pKey "fetch" <*> pGrNm <*> (Just <$> pInt `opt` Nothing)
-                <|>  GrExpr_Update <$ pKey "update" <*> pGrNm <*> pVal
-                <|>  GrExpr_Case <$ pKey "case" <*> pVal <* pKey "of" <*> pCurly_pSemics pAlt
-                <|>  GrExpr_App <$ pKey "apply" <*> pGrNm <*> pValL
-                <|>  GrExpr_Call <$> pGrNm <*> pValL
+pExpr           =    GrExpr_Unit    <$  pKey "unit"     <*> pVal
+                <|>  GrExpr_Store   <$  pKey "store"    <*> pVal
+                <|>  GrExpr_Eval    <$  pKey "eval"     <*> pGrNm
+                <|>  GrExpr_Fetch   <$  pKey "fetch"    <*> pGrNm   <*> (Just <$> pInt `opt` Nothing)
+                <|>  GrExpr_Update  <$  pKey "update"   <*> pGrNm   <*> pVal
+                <|>  GrExpr_Case    <$  pKey "case"     <*> pVal    <*  pKey "of" <*> pCurly_pSemics pAlt
+                <|>  GrExpr_App     <$  pKey "apply"    <*> pGrNm   <*> pValL
+                <|>  GrExpr_Call                        <$> pGrNm   <*> pValL
 
 pVal            ::   GRIParser GrVal
-pVal            =    GrVal_Var <$> pGrNm
-                <|>  GrVal_LitInt <$> pInt
-                <|>  GrVal_Tag <$> pTag
-                <|>  pParens (GrVal_Node <$> pTag <*> pValL `opt` GrVal_Empty)
+pVal            =    GrVal_Var      <$> pGrNm
+                <|>  GrVal_LitInt   <$> pInt
+                <|>  GrVal_Tag      <$> pTag
+                <|>  pParens (GrVal_Node <$> (pTag <|> pTagVar) <*> pValL `opt` GrVal_Empty)
 
 pValL           ::   GRIParser GrValL
 pValL           =    pList pVal
@@ -73,20 +73,22 @@ pAlt            ::   GRIParser GrAlt
 pAlt            =    GrAlt_Alt <$> pPat <* pKey "->" <*> pCurly pExprSeq
 
 pPat            ::   GRIParser GrPat
-pPat            =    GrPat_Var <$> pGrNm
-                <|>  GrPat_LitInt <$> pInt
-                <|>  GrPat_Tag <$> pTag
-                <|>  pParens (GrPat_Node <$> pTag <*> pGrNmL `opt` GrPat_Empty)
+pPat            =    GrPat_Var      <$> pGrNm
+                <|>  GrPat_LitInt   <$> pInt
+                <|>  GrPat_Tag      <$> pTag
+                <|>  pParens (GrPat_Node <$> (pTag <|> pTagVar) <*> pGrNmL `opt` GrPat_Empty)
 
 pTag            ::   GRIParser GrTag
-pTag            =    GrTag_Var <$> pGrNm
-                <|>  (\i c n -> GrTag_Lit c i n) <$ pKey "#" <*> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> pGrNm
+pTag            =    (\i c n -> GrTag_Lit c i n) <$ pKey "#" <*> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> pGrNm
+
+pTagVar         ::   GRIParser GrTag
+pTagVar         =    GrTag_Var <$> pGrNm
 
 pTagCateg       ::   GRIParser GrTagCateg
-pTagCateg       =    GrTagCon <$ pKey "C"
-                <|>  GrTagApp <$ pKey "A"
-                <|>  GrTagFun <$ pKey "F"
-                <|>  GrTagPartial <$ pKey "P" <*> pInt
+pTagCateg       =    GrTagCon       <$ pKey "C"
+                <|>  GrTagApp       <$ pKey "A"
+                <|>  GrTagFun       <$ pKey "F"
+                <|>  GrTagPApp   <$ pKey "P" <* pKey "/" <*> pInt
 
 pGrNmL          ::   GRIParser [HsName]
 pGrNmL          =    pList pGrNm

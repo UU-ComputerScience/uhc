@@ -112,7 +112,7 @@ mbMkStrict :: UID -> Bool -> GrVal -> GrExpr
 mbMkStrict u isStrict v
   =  if isStrict
      then  let  n = uidHNm u
-           in   GrExpr_Seq (GrExpr_Unit v) (GrPat_Var n) (GrExpr_Eval (GrVal_Var n))
+           in   GrExpr_Seq (GrExpr_Unit v) (GrPat_Var n) (GrExpr_Eval n)
      else  GrExpr_Unit v
 
 retStrict :: Bool -> GrVal -> GrExpr
@@ -121,7 +121,10 @@ retStrict isStrict = if isStrict then GrExpr_Unit else GrExpr_Store
 
 %%[8 hs
 mkNdPApp :: HsName -> Int -> GrValL -> GrVal
-mkNdPApp f nMiss argL = GrVal_Node (GrTag_Lit (GrTagPartial nMiss) 0 f) argL
+mkNdPApp f nMiss argL = GrVal_Node (GrTag_Lit (GrTagPApp nMiss) 0 (HNm "papply")) (GrVal_Var f : argL)
+
+mkNdApp :: HsName -> GrValL -> GrVal
+mkNdApp f argL = GrVal_Node (GrTag_Lit GrTagApp 0 (HNm "apply")) (GrVal_Var f : argL)
 
 mkSq :: GrExpr -> HsName -> GrExpr -> GrExpr
 mkSq e1 p e2 = GrExpr_Seq e1 (GrPat_Var p) e2
@@ -191,12 +194,12 @@ SEM CExpr
                                                                                | arity < apArity && @lhs.isStrict
                                                                                    -> mkSq (GrExpr_Call funNm (take arity argL')) n (GrExpr_App n (drop arity argL'))
                                                                                | otherwise
-                                                                                   -> GrExpr_Store (GrVal_Node (GrTag_Lit GrTagApp 0 (HNm "apply")) (GrVal_Var funNm : argL'))
+                                                                                   -> GrExpr_Store (mkNdApp funNm argL')
                                                                              Nothing
                                                                                | @lhs.isStrict
-                                                                                   -> mkSq (GrExpr_Eval (GrVal_Var funNm)) n (GrExpr_App n argL')
+                                                                                   -> mkSq (GrExpr_Eval funNm) n (GrExpr_App n argL')
                                                                                | otherwise
-                                                                                   -> GrExpr_Store (GrVal_Node (GrTag_Lit GrTagApp 0 (HNm "apply")) (GrVal_Var funNm : argL'))
+                                                                                   -> GrExpr_Store (mkNdApp funNm argL')
                                                                 in   wrapGr ap
   | Var         loc         .   grExpr      =   mbMkStrict @lUniq @lhs.isStrict @grVal
   | Tup Int Char

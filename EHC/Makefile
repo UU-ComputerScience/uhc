@@ -65,7 +65,8 @@ EHC_LAG_FOR_HS				:= $(addsuffix .lag,EHMainAG EHTy EHCore EHError EHErrorPretty
 
 GRI_SRC_PREFIX				:= gri/
 
-GRI_LAG_FOR_HS				:= $(addsuffix .lag,GrinCode)
+GRI_LAG_FOR_HS_GRIN_CODE	:= $(addsuffix .lag,GRISetup)
+GRI_LAG_FOR_HS				:= $(GRI_LAG_FOR_HS_GRIN_CODE)
 
 
 
@@ -113,12 +114,15 @@ EHC_LHS				:= $(EHC_LHS_FOR_HS)
 EHC_HS				:= $(EHC_LAG_FOR_HS:.lag=.hs) $(EHC_LHS_FOR_HS:.lhs=.hs)
 
 GRI_DPDS_GRI					:= GRI.hs EHScanner.hs EHScannerMachine.hs EHCommon.hs GRIParser.hs GrinCode.hs GRICommon.hs
+GRI_DPDS_GRIN_CODE_SETUP		:= GRISetup.ag
+GRI_DPDS_ALL					:= $(sort $(GRI_DPDS_GRIN_CODE_SETUP))
+GRI_DPDS_ALL_MIN_TARG			:= $(filter-out $(GRI_LAG_FOR_HS:.lag=.ag),$(GRI_DPDS_ALL))
 
 GRI					:= gri
 GRI_MAIN			:= GRI
 GRI_LAG_FOR_AG		:= $(GRI_DPDS_ALL_MIN_TARG:.ag=.lag)
 GRI_LAG				:= $(GRI_LAG_FOR_AG) $(GRI_LAG_FOR_HS)
-GRI_LHS_FOR_HS		:= $(addsuffix .lhs,$(GRI_MAIN) GRICommon GRIParser)
+GRI_LHS_FOR_HS		:= $(addsuffix .lhs,$(GRI_MAIN) GRICommon GRIParser GRIRun)
 GRI_LHS				:= $(GRI_LHS_FOR_HS)
 GRI_HS				:= $(GRI_LAG_FOR_HS:.lag=.hs) $(GRI_LHS_FOR_HS:.lhs=.hs) $(GRI_DPDS_GRI)
 
@@ -227,26 +231,27 @@ EHC_CHS				:= $(EHC_LHS:.lhs=.chs)
 
 GRI_VERSIONS		:= $(sort 8 9)
 
+GRI_CAG				:= $(GRI_LAG:.lag=.cag)
 GRI_CHS				:= $(GRI_LHS:.lhs=.chs)
 
-# SHUFFLE_LHS(src file, dst file, how, lhs2tex, version)
+# SHUFFLE_LHS(src file, dst file, how, lhs2tex, version, base)
 SHUFFLE_LHS		= \
 	dir=`dirname $2` ; \
 	mkdir -p $$dir ; \
-	$(SHUFFLE) --gen=$$dir $3 $1 --order="$(SHUFFLE_ORDER)" | $4 > $2
+	$(SHUFFLE) --gen=$$dir --base=$6 $3 $1 --order="$(SHUFFLE_ORDER)" | $4 > $2
 
-# SHUFFLE_LHS_AG(src file, dst file, version)
+# SHUFFLE_LHS_AG(src file, dst file, version, base)
 SHUFFLE_LHS_AG		= \
-	$(call SHUFFLE_LHS,$1,$2,--ag,$(LHS2TEX) --newcode,$3)
+	$(call SHUFFLE_LHS,$1,$2,--ag,$(LHS2TEX) --newcode,$3,$4)
 
-# SHUFFLE_LHS_HS(src file, dst file, version)
+# SHUFFLE_LHS_HS(src file, dst file, version, base)
 SHUFFLE_LHS_HS		= \
-	$(call SHUFFLE_LHS,$1,$2,--hs,$(LHS2TEX) --newcode | $(SUBST_LINE_CMT),$3)
+	$(call SHUFFLE_LHS,$1,$2,--hs,$(LHS2TEX) --newcode | $(SUBST_LINE_CMT),$3,$4)
 
-# SHUFFLE_LHS_TEX(src file, dst file, version)
+# SHUFFLE_LHS_TEX(src file, dst file, version,base)
 SHUFFLE_LHS_TEX		= \
-	$(call SHUFFLE_LHS,$1,$2,--latex --xref-except=shuffleXRefExcept,$(LHS2TEX) $(LHS2TEX_POLY_MODE),$3)
-#	$(call SHUFFLE_LHS,$1,$2,--latex --index --xref-except=shuffleXRefExcept,$(LHS2TEX) --poly,$3)
+	$(call SHUFFLE_LHS,$1,$2,--latex --xref-except=shuffleXRefExcept,$(LHS2TEX) $(LHS2TEX_POLY_MODE),$3,$4)
+#	$(call SHUFFLE_LHS,$1,$2,--latex --index --xref-except=shuffleXRefExcept,$(LHS2TEX) --poly,$3,$4)
 
 # RULER_LHS(src file, dst file, lhs2tex)
 RULER_LHS		= \
@@ -363,10 +368,10 @@ EHC_VLAST_HS_TEX	:= $(addprefix $(AFP_TMPDIR),$(EHC_CHS:.chs=.tex))
 EHC_VLAST_TEX		:= $(EHC_VLAST_AG_TEX) $(EHC_VLAST_HS_TEX)
 
 $(EHC_VLAST_HS_TEX): $(AFP_TMPDIR)%.tex: %.chs $(SHUFFLE) Makefile
-	$(call SHUFFLE_LHS_TEX,$<,$@,all)
+	$(call SHUFFLE_LHS_TEX,$<,$@,all,$(*F))
 
 $(EHC_VLAST_AG_TEX): $(AFP_TMPDIR)%.tex: %.cag $(SHUFFLE) Makefile
-	$(call SHUFFLE_LHS_TEX,$<,$@,all)
+	$(call SHUFFLE_LHS_TEX,$<,$@,all,$(*F))
 ### End of TeX
 
 
