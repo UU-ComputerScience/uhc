@@ -187,6 +187,11 @@ SEM Expr
                 expr        .  tyCnstr              =   foCnstr @foKnRes |=> @lhs.tyCnstr
 %%]
 
+%%[8.Undefined
+SEM Expr
+  | Undefined   loc         .  ty                   =   @lhs.tyCnstr |=> @lhs.knTy
+%%]
+
 %%[4.TypeAs
 SEM Expr
   | TypeAs      loc         .  gTyTvL               =   let  ftvVal  = ftv (@lhs.tyCnstr |=> @lhs.valGam)
@@ -235,22 +240,20 @@ SEM RecExpr
   | Empty       loc         .   fo                  =   fitsIn (@lhs.fiOpts) @fe @lUniq tyRecEmpty (@lhs.tyCnstr |=> @lhs.knTy)
                             .   ty                  =   foTy @fo
                 lhs         .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
-  | Ext         loc         .   recTy               =   let  [r,e] = mkNewTyVarL 2 @lUniq
+  | Ext Upd     loc         .   recTy               =   let  [r,e] = mkNewTyVarL 2 @lUniq
                                                         in   (hsnRec `mkTyConApp` [r]) `mkTyRecExt` [(@nm,e)]
-                            .   foKnRec             =   let  fo = fitsIn (@lhs.fiOpts) @fe @lUniq2 @recTy (@lhs.tyCnstr |=> @lhs.knTy)
+                            .   foKnRec             =   let  fo = fitsIn (strongFIOpts) @fe @lUniq2 @recTy (@lhs.tyCnstr |=> @lhs.knTy)
                                                         in   fo {foTy = foCnstr fo |=> @recTy}
-                (recExpr.knTy,expr.knTy)            =   fromJust . tyRecExtr @nm . foTy $ @foKnRec
+                (loc.recKnTlTy,expr.knTy)           =   fromJust . tyRecExtr @nm . foTy $ @foKnRec
                 recExpr     .   tyCnstr             =   foCnstr @foKnRec |=> @lhs.tyCnstr
+  | Ext         recExpr     .   knTy                =   @recKnTlTy
                 loc         .   ty                  =   (@expr.tyCnstr |=> @recExpr.ty) `mkTyRecExt` [(@nm,@expr.ty)]
+  | Upd         recExpr     .   knTy                =   @recKnTlTy `mkTyRecExt` [(@nm,mkNewTyVar @lUniq3)]
+                loc         .   ty                  =   ((@expr.tyCnstr |=>) . maybe Ty_Any fst . tyRecExtr @nm $ @recExpr.ty)
+                                                          `mkTyRecExt` [(@nm,@expr.ty)]
 
 SEM Expr
   | Sel         expr        .   knTy                =   (hsnRec `mkTyConApp` [mkNewTyVar @lUniq]) `mkTyRecExt` [(@lbl,@lhs.knTy)]
                 loc         .   ty                  =   snd . fromJust . tyRecExtr @lbl $ @expr.ty
 %%]
 
-  | Rec         loc         .   recTy               =   hsnRec `mkTyConApp` [mkNewTyVar @lUniq]
-                            .   foKnRec             =   let  fo = fitsIn @lhs.fiOpts @fe @lUniq2 @recTy (@lhs.tyCnstr |=> @lhs.knTy)
-                                                        in   fo {foTy = foCnstr fo |=> @recTy}
-                recExpr     .   knTy                =   foTy @foKnRec
-                            .   tyCnstr             =   foCnstr @foKnRec |=> @lhs.tyCnstr
-                loc         .   ty                  =   @recExpr.ty

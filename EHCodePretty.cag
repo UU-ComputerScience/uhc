@@ -66,11 +66,14 @@ SEM CExpr
                                                     _            -> empty
                             .   pp          =   ppDef ("let" >#< @ppCateg) @binds.pp >-< ppDef "in" @body.pp
   | Lam         loc         .   pp          =   ppDef ("\\" >|< @arg) ("->" >#< @body.pp)
-  | Tup         loc         .   pp          =   pp "#()"
-  | Sel         loc         .   pp          =   ppDef (pp_parens @expr.pp) ("." >|< pp_parens (pp @tag >|< ":" >|< @offset.pp))
   | Case        loc         .   pp          =   ppDef ("case" >#< @expr.pp)
                                                     (ppDef "of"
                                                         (@alts.pp >-< "_->" >#< @dflt.pp))
+  | Tup         loc         .   pp          =   pp "#()"
+  | TupSel      loc         .   pp          =   ppDef (pp_parens @expr.pp) ("." >|< pp_parens (pp @tag >|< ":" >|< @offset.pp))
+  | TupDel      loc         .   pp          =   ppDef (pp_parens @expr.pp) (".-" >|< pp_parens (pp @tag >|< ":" >|< @offset.pp))
+  | TupIns      loc         .   pp          =   ppDef (pp_parens @expr.pp) (ppDef (".+" >|< pp_parens (pp @tag >|< ":" >|< @offset.pp)) (@fldExpr.pp))
+  | TupUpd      loc         .   pp          =   ppDef (pp_parens @expr.pp) (ppDef (".-+" >|< pp_parens (pp @tag >|< ":" >|< @offset.pp)) (@fldExpr.pp))
 
 SEM CBind
   | Bind        lhs         .   pp          =   ppDef @nm ("=" >#< @expr.pp)
@@ -104,7 +107,6 @@ SEM CPatBindL
 
 %%[9
 SEM CExpr
-  | Set         loc         .   pp          =   ppDef (pp_parens @expr.pp) ("." >|< pp_parens (pp @tag >|< ":" >|< @offset.pp) >|< "<-" >|< @fldExpr.pp)
   | Hole        loc         .   pp          =   "<" >|< pp @uid >|< ">"
   | CoeArg      loc         .   pp          =   pp "<_>"
   | ImplsApp    loc         .   pp          =   ppDef @func.pp ("<" >|< pp @uid >|< ">")

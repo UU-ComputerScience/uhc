@@ -334,6 +334,28 @@ rules expr9.proving "Proving for lambda expressions with implicit parameters" =
     -
     judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- (e.1 ^^ (# e.2 #)) : (Cnstr.2 sigma) ~> Cnstr.(2(..)1) ; (Transl.1 ^^ Transl.2)
 
+rules expr9.rec "Type checking for records" =
+  rule e_rec9_ext =
+    judge expr9 fiopt; Gamma; (Cnstr.(2(..)1) tvar.e) :- e : sigma..e ~> Cnstr.3 ; Transl.e
+    judge expr9 fiopt; Gamma; (Cnstr.1 tvar.r) :- r : sigma..r ~> Cnstr.2 ; Transl.r
+    judge fit9 strongFIOpts; Gamma :- ((tvar.r | l :: tvar.e)) <= sigma..k : ((sigma.r.k | l :: sigma.e.k)) ~> Cnstr.1; _
+    cond tvar.r, tvar.e "fresh"
+    -
+    judge expr9 fiopt; Gamma; sigma..k :- ((r | l (=) e)) : ((Cnstr.3 sigma..r | l :: sigma..e)) ~> Cnstr.(3(..)1) ; ((Transl.r | l (=) Transl.e))
+
+  rule e_rec9_upd =
+    judge expr9 fiopt; Gamma; (Cnstr.(2(..)1) tvar.e) :- e : sigma..e ~> Cnstr.3 ; Transl.e
+    judge expr9 fiopt; Gamma; ((Cnstr.1 tvar.r | l :: ANY)) :- r : ((sigma..r | l :: _)) ~> Cnstr.2 ; Transl.r
+    judge fit9 strongFIOpts; Gamma :- ((tvar.r | l :: tvar.e)) <= sigma..k : ((sigma.r.k | l :: sigma.e.k)) ~> Cnstr.1; _
+    cond tvar.r, tvar.e "fresh"
+    -
+    judge expr9 fiopt; Gamma; sigma..k :- ((r | l := e)) : ((Cnstr.3 sigma..r | l :: sigma..e)) ~> Cnstr.(3(..)1) ; ((Transl.r | l := Transl.e))
+
+  rule e_rec9_sel =
+    judge expr9 fiopt; Gamma; ((ANY | l :: sigma..k)) :- r : ((_ | l :: sigma..e)) ~> Cnstr ; Transl.r
+    -
+    judge expr9 fiopt; Gamma; sigma..k :- (r (.) l) : sigma..e ~> Cnstr ; (Transl.r (.) l)
+
 -------------------------------------------------------------------------
 -- Pat
 -------------------------------------------------------------------------

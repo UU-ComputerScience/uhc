@@ -20,7 +20,7 @@ gamToDups g = [ n | ns@(n:_) <- group . sort . map fst . gamToAssocL $ g, length
 
 %%[1
 SEM Expr
-  | Let         loc         .  dupErrs              =   let  nms = gamToDups @lValGam
+  | Let         loc         .   dupErrs             =   let  nms = gamToDups @lValGam
                                                         in   if null nms then [] else [Err_NamesDupIntrod nms]
 %%]
 
@@ -30,7 +30,7 @@ SEM Expr
 
 %%[1.sigMissErrs
 SEM Decl
-  | Val         loc         .  sigMissErrs          =   if @hasTySig then [] else [Err_MissingSig @patExpr.pp]
+  | Val         loc         .   sigMissErrs         =   if @hasTySig then [] else [Err_MissingSig @patExpr.pp]
 %%]
 
 %%[2 -1.sigMissErrs
@@ -42,7 +42,7 @@ SEM Decl
 
 %%[9
 SEM AGItf
-  | AGItf       loc         .   predNotPrfErrs      =   if null @expr.gathPredL then [] else [Err_NotProvenPreds @expr.gathPredL]
+  | AGItf       loc         .   predNotPrfErrs      =   if null @remPrfPrL then [] else [Err_NotProvenPreds @remPrfPrL]
 
 SEM Decl
   | Instance    loc         .   predNotPrfErrs      =   if null @supRemPrfPrL then [] else [Err_NotProvenPreds @supRemPrfPrL]

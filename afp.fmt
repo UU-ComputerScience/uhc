@@ -142,6 +142,7 @@
 %format :>   			= "\rightsquigarrow "
 %format <:   			= "\leftsquigarrow "
 %format .    			= "."
+%format :=	 			= "{\coloneqq}"
 
 
 %format fiopt			= nu

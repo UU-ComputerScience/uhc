@@ -426,10 +426,18 @@ tyRowCanonOrder = sortBy rowExtCmp
 %%]
 
 %%[8 hs
-tyRecOffset :: HsName -> Ty -> Maybe Int
+tyExtsOffset :: HsName -> AssocL HsName a -> Int
+tyExtsOffset lbl exts
+  = find 0 lbl exts
+  where find o l (e:es) = case (l,undefined) `rowExtCmp` e of
+                            GT -> find (o+1) l es
+                            _  -> o
+        find o _ []     = o
+
+tyRecOffset :: HsName -> Ty -> Int
 tyRecOffset lbl t
   =  let (_,exts) = tyRecExts t
-      in findIndex ((==lbl).fst) . tyRowCanonOrder $ exts
+      in tyExtsOffset lbl . tyRowCanonOrder $ exts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

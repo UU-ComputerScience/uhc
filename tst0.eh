@@ -25,14 +25,14 @@ let class Eq a where
       gt = \_ _ -> True
 in
 let 
-{-
     f1 = eq (Cons 3 Nil) (Cons 4 Nil)
+{-
 -}
 {-
     f2 = eq 3 4
 -}
-    f3 = Cons (eq 3 4) (Cons (lt 5 6) Nil)
 {-
+    f3 = Cons (eq 3 4) (Cons (lt 5 6) Nil)
 -}
 {-
     f4 = \x -> Cons (eq x x) (Cons (lt x x) Nil)

@@ -45,7 +45,7 @@ SEM Expr
 SEM Expr
   | Let         loc         .  (lQuValGam,tqoGam)   :=  let  (vg,tqog) = valGamQuantify @gTyTvL @remPrfPrL @lSubsValGam
                                                         in   (valGamInst1Exists @lUniq2 vg,tqog)
-                            .  tqoTyCnstr           =   foldr (\tqo c -> tqoImplsCnstr tqo |=> c) emptyCnstr (gamValues @tqoGam)
+                            .  tqoTyCnstr           =   foldr (\tqo c -> tqoImplsCnstr tqo |=> c) emptyCnstr (gamElts @tqoGam)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -336,7 +336,9 @@ SEM Decl
 
 %%[9
 SEM Decl
-  | TySig       loc         .  sigTy                :=  tqoTy (tyQuantifyPr (TyQuOpts True) (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) TyQu_Forall [] @tyExpr.ty)
+  | TySig       loc         .  sigTy                :=  tqoTy (tyQuantifyPr  (TyQuOpts {tqoptLeaveImpls=True})
+                                                                             (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL))
+                                                                             TyQu_Forall [] @tyExpr.ty)
 %%]
 
 %%[8
@@ -504,6 +506,7 @@ SEM CaseAlt
 %%[9
 SEM Expr
   | App         func        .  fiOpts               :=  strongFIOpts {fioImplsRepos = False}
+  | AppImpl     arg         .  fiOpts               =   strongFIOpts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -512,7 +515,7 @@ SEM Expr
 
 %%[9
 ATTR AllDecl [ | patPrElimGam: PrElimGam | ]
-ATTR AllDecl AllExpr AllCase [ prElimGam: PrElimGam | | ]
+ATTR AllDecl AllExpr AllCase [ | prElimGam: PrElimGam | ]
 
 SEM Expr
   | Let         decls       .   patPrElimGam        =   gamPushNew @lhs.prElimGam

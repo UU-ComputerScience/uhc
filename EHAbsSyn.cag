@@ -180,6 +180,11 @@ DATA Expr
                     lbl             : {HsName}
 %%]
 
+%%[8
+DATA Expr
+  | Undefined
+%%]
+
 %%[9
 DATA Expr
   | AppImpl         func            : Expr
@@ -292,10 +297,6 @@ DATA RecExpr
   | Upd             recExpr         : RecExpr
                     nm              : {HsName}
                     expr            : Expr
-%%]
-
-%%[9
-DATA RecExpr
   | Expr            expr            : Expr
 %%]
 
@@ -346,7 +347,7 @@ DATA Decl
                     prExpr          : PrExpr
                     funcDeps        : FuncDeps
                     decls           : Decls
-  | Instance        mbNm            : {Maybe HsName}
+  | Instance        mbNmElim        : {Maybe (HsName,Bool)}
                     ctxtPrExprs     : PrExprs
                     prExpr          : PrExpr
                     decls           : Decls

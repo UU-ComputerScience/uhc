@@ -4959,6 +4959,7 @@ and local (|lValGam|) |Gamma|.
 All types in the resulting local |lSubsValGam| are then quantified over their free type variables,
 with the exception of those available more globally, the |gTyTvL|.
 
+\chunkCmdUseMark{EHGam.3.valGamMapTy}
 \chunkCmdUseMark{EHGam.3.valGamQuantify}
 \chunkCmdUseMark{EHGam.3.gamMap}
 
@@ -6663,6 +6664,10 @@ Open & Close & |Expr| & |PatExpr| & |TyExpr| \\
 Consequence: scanner requires adaptation, @{(@ and @)}@ are used inconsistently in
 |PatExpr| and |TyExpr|, keeping backwards compatibility for tuple alike (i.e. positional) match.
 
+\subsection{Rules}
+
+\rulerCmdUse{rules.expr9.rec}
+
 
 \subsection<article>{Literature}
 
@@ -6970,7 +6975,29 @@ example in the presence of overlapping instances:
 The dictionaries computed as a result of an instance declaration can be given a name (denoted by |<:|)
 for later use.
 In the example the overlapping instance error is avoided by letting the programmer instead
-of the compiler make the choice.
+of the compiler make the choice by specifying explicitly which dictionaries should be passed to
+the call |f 3 4 5 6|.
+
+Overlapping instances of course can also be avoided by not introducing those overlapping instances in the first place.
+However, this conflicts with our goal of allowing the programmer to use different instances at different places
+in a program.
+This problem can be overcome by letting only one instance participate in the predicate proving machinery of the
+compiler:
+
+\begin{code}
+instance dEqInt2 :: Eq Int where
+  eq = \_ _ -> False 
+\end{code}
+
+Instead of introducing the named dictionary via |<:|, the dictionary is introduced by means of |::|,
+stating that the dictionary is of the proper type required from a dictionary for |Eq Int| but
+it is not to participate in predicate proving by the compiler.
+However, if one at a later point wants to introduce the dictionary for use by the compiler this can be done by:
+
+\begin{code}
+instance Eq Int :> dEqInt2
+\end{code}
+
 It is precisely this feature that opens up the possibility of getting rid of Haskell library functions like
 |nubBy| \cite{kahl01named-instance}.
 Haskell's List module defines |nub| in terms of |nubBy|:
@@ -6986,16 +7013,18 @@ nubBy eq (x:xs)          =   x : nubBy eq (filter (\y -> not (eq x y)) xs)
 
 whereas the use of explicitly passed implicit parameters allows
 the removal of |nubBy| from the library as |nub| may now
-directly be parameterized with a different equality function,
-defined in EH:
+directly be parameterized with a different equality function:
 
 \begin{code}
-nub                      ::  (Eq a) => [a] -> [a]
-nub []                   =   []
-nub (x:xs)               =   x : nub (filter (x /=) xs)
-
-f ... = ... nub (# Eq a :> 
+%%9srcfile<test/9-eq-nub.eh%%>
 \end{code}
+
+However, this particular use of a record as an instance dictionary does not come without a subtlety.
+To make this work we may no longer assume that all bindings to dictionaries can be made when the
+instance dictionary for |Eq Int| is created.
+If that were the case, |ne| would use |eq| with |dEqInt|, not with the newly adapted variant
+of |dEqInt|.
+We will discuss this further in \secRef{ehc09-implem}.
 
 
 \subsection{Type system}
@@ -7003,6 +7032,12 @@ f ... = ... nub (# Eq a :>
 
 \subsection{Implementation}
 \label{ehc09-implem}
+
+\begin{itemize}
+\item Inferencing combined with checking, structure of functions need to be inferred as well as checked.
+\item Binding time of instances, self, late binding by lambda lifting dict param, ...
+\item Overlapping instances.
+\end{itemize}
 
 \subsection{Related work}
 \label{ehc09-others}
@@ -7017,6 +7052,9 @@ Named instances do not participate in the normal resolution process.
 Named instances populate a module name space.
 Vice versa, modules can be used as implicit parameters.
 Our approach does not introduce a new name space but uses the already available records.
+\item
+Participating in the proving is implicity by being ordered (no) or unordered (yes).
+We explicitly state for each instance if it will participate.
 \item
 Predicates are partitioned in ordered and unordered predicates.
 This is visible in the type signature.
@@ -7408,10 +7446,8 @@ Named instances \cite{kahl01named-instance}.
 
 %if incl10
 
-\section{EH 10: generalized abstract data types}
+\section{EH 10: Extensible records}
 \label{ehc10}
-
-built on implicit params, Arthur's Eq type...
 
 \subsection<article>{Literature}
 
@@ -7426,8 +7462,26 @@ built on implicit params, Arthur's Eq type...
 
 %if incl11
 
-\section{EH 11: type synonyms}
+\section{EH 11: generalized abstract data types}
 \label{ehc11}
+
+built on implicit params, Arthur's Eq type...
+
+\subsection<article>{Literature}
+
+%endif %% incl11
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EHC 12
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%if incl12
+
+\section{EH 12: type synonyms}
+\label{ehc12}
 
 with explicit kinding, plus checking thereof
 
@@ -7440,27 +7494,8 @@ data L a = N | C a (L a)
 
 \subsection<article>{Literature}
 
-%endif %% incl11
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% EHC 12
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%if incl12
-
-\section{EH 12: modules}
-\label{ehc12}
-
-built on records
-
-\subsection<article>{Literature}
-
-\cite{mitchell88absty-exist,leroy94manif-ty-mod,leroy95appl-func-mod}
-\cite{laufer96class-existential}
-
 %endif %% incl12
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -7469,16 +7504,15 @@ built on records
 
 %if incl13
 
-\section{EH 13: type property propagation}
+\section{EH 13: modules}
 \label{ehc13}
 
-co-contra variance
-
-uniqueness??
-
-coercions
+built on records
 
 \subsection<article>{Literature}
+
+\cite{mitchell88absty-exist,leroy94manif-ty-mod,leroy95appl-func-mod}
+\cite{laufer96class-existential}
 
 %endif %% incl13
 
@@ -7489,8 +7523,28 @@ coercions
 
 %if incl14
 
-\section{EH 14: syntax macro's}
+\section{EH 14: type property propagation}
 \label{ehc14}
+
+co-contra variance
+
+uniqueness??
+
+coercions
+
+\subsection<article>{Literature}
+
+%endif %% incl14
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EHC 15
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%if incl15
+
+\section{EH 15: syntax macro's}
+\label{ehc15}
 
 or other rewritings in the form a pre parser ??
 
@@ -7508,7 +7562,7 @@ binding group analysis, dependency analysis
 
 \subsection<article>{Literature}
 
-%endif %% incl14
+%endif %% incl15
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC ??

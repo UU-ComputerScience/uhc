@@ -347,14 +347,14 @@ pPatExpr        =    pP <??> (sem_PatExpr_TypeAs <$ pKey "::" <*> pTyExpr)
 
 %%[7.pPatExprBase -1.pPatExprBase
 %%@pPatExprBase.1
-                <|>  pParenRow True (show hsnORec) (show hsnCRec) "="
+                <|>  pParenRow True (show hsnORec) (show hsnCRec) "=" Nothing
                         (sem_RecPatExpr_Empty,const sem_RecPatExpr_Empty,sem_RecPatExpr_Ext,sem_PatExpr_Rec,sem_PatExpr_Parens)
                         pSel pPatExpr
 %%]
 
 %%[9.pPatExprBase -7.pPatExprBase
 %%@pPatExprBase.1
-                <|>  pParenRow True (show hsnORec) (show hsnCRec) "="
+                <|>  pParenRow True (show hsnORec) (show hsnCRec) "=" Nothing
                         (sem_RecPatExpr_Empty,const sem_RecPatExpr_Empty,sem_RecPatExpr_Ext,sem_PatExpr_Rec,sem_PatExpr_Parens)
                         pSel pPatExpr
 %%]
@@ -415,15 +415,15 @@ pTyExprBase     =    sem_TyExpr_Con   <$>  pCon
 %%]
 
 %%[pTyExprBase.7
-                <|>  pParenRow False (show hsnORow) (show hsnCRow) "::"
+                <|>  pParenRow False (show hsnORow) (show hsnCRow) "::" Nothing
                         (sem_RowTyExpr_Empty,const sem_RowTyExpr_Empty,sem_RowTyExpr_Ext,sem_TyExpr_Row,id)
                         pVar pTyExpr
-                <|>  pParenRow True (show hsnORec) (show hsnCRec) "::"
+                <|>  pParenRow True (show hsnORec) (show hsnCRec) "::" Nothing
                         (sem_RowTyExpr_Empty,const sem_RowTyExpr_Empty,sem_RowTyExpr_Ext
                             ,\r -> mkConApp tyExprAlg hsnRec [sem_TyExpr_Row r]
                             ,sem_TyExpr_Parens)
                         pVar pTyExpr
-                <|>  pParenRow False (show hsnOSum) (show hsnCSum) "::"
+                <|>  pParenRow False (show hsnOSum) (show hsnCSum) "::" Nothing
                         (sem_RowTyExpr_Empty,const sem_RowTyExpr_Empty,sem_RowTyExpr_Ext
                             ,\r -> mkConApp tyExprAlg hsnSum [sem_TyExpr_Row r]
                             ,id)
@@ -431,15 +431,15 @@ pTyExprBase     =    sem_TyExpr_Con   <$>  pCon
 %%]
 
 %%[pTyExprBase.9
-                <|>  pParenRow False (show hsnORow) (show hsnCRow) "::"
+                <|>  pParenRow False (show hsnORow) (show hsnCRow) "::" Nothing
                         (sem_RowTyExpr_Empty,sem_RowTyExpr_Var,sem_RowTyExpr_Ext,sem_TyExpr_Row,id)
                         pVar pTyExpr
-                <|>  pParenRow True (show hsnORec) (show hsnCRec) "::"
+                <|>  pParenRow True (show hsnORec) (show hsnCRec) "::" Nothing
                         (sem_RowTyExpr_Empty,sem_RowTyExpr_Var,sem_RowTyExpr_Ext
                             ,\r -> mkConApp tyExprAlg hsnRec [sem_TyExpr_Row r]
                             ,sem_TyExpr_Parens)
                         pVar pTyExpr
-                <|>  pParenRow False (show hsnOSum) (show hsnCSum) "::"
+                <|>  pParenRow False (show hsnOSum) (show hsnCSum) "::" Nothing
                         (sem_RowTyExpr_Empty,sem_RowTyExpr_Var,sem_RowTyExpr_Ext
                             ,\r -> mkConApp tyExprAlg hsnSum [sem_TyExpr_Row r]
                             ,id)
@@ -553,10 +553,10 @@ pTyExprs        =    pFoldr (sem_TyExprs_Cons,sem_TyExprs_Nil) pTyExprBase
 
 -- common
 %%[pExprBaseCommon.1
-pExprBase       =    sem_Expr_IConst  <$>  pInt
-                <|>  sem_Expr_CConst  <$>  pChr
-                <|>  sem_Expr_Var     <$>  pVar
-                <|>  sem_Expr_Con     <$>  pCon
+pExprBase       =    sem_Expr_IConst     <$>  pInt
+                <|>  sem_Expr_CConst     <$>  pChr
+                <|>  sem_Expr_Var        <$>  pVar
+                <|>  sem_Expr_Con        <$>  pCon
 %%]
 
 %%[pExprBaseParenProd.1
@@ -564,11 +564,17 @@ pExprBase       =    sem_Expr_IConst  <$>  pInt
 %%]
 
 %%[pExprBaseCommon.5
-                <|>  sem_Expr_Case    <$   pKey "case" <*> pExpr <* pKey "of" <*> pCaseAlts
+                <|>  sem_Expr_Case       <$   pKey "case" <*> pExpr <* pKey "of" <*> pCaseAlts
 %%]
 
-%%[pExprBase.9
-                <|>  pPackImpl (sem_Expr_AppImpl <$> pExpr <* pKey "::" <*> pCaseAlts)
+%%[pExprBase.7
+                <|>  pParenRow True (show hsnORec) (show hsnCRec) "=" (Just (":=",sem_RecExpr_Upd))
+                        (sem_RecExpr_Empty,sem_RecExpr_Expr . sem_Expr_Var,sem_RecExpr_Ext,sem_Expr_Rec,sem_Expr_Parens)
+                        pVar pExpr
+%%]
+
+%%[pExprBase.8
+                <|>  sem_Expr_Undefined  <$   pKey "..."
 %%]
 
 %%[pExprApp.1
@@ -641,17 +647,14 @@ pExpr           =    pE <??> (sem_Expr_TypeAs <$ pKey "::" <*> pTyExpr)
 %%[7.pExprBase -5.pExprBase
 %%@pExprBaseCommon.1
 %%@pExprBaseCommon.5
-                <|>  pParenRow True (show hsnORec) (show hsnCRec) "="
-                        (sem_RecExpr_Empty,const sem_RecExpr_Empty,sem_RecExpr_Ext,sem_Expr_Rec,sem_Expr_Parens)
-                        pVar pExpr
+%%@pExprBase.7
 %%]
 
-%%[9.pExprBase -7.pExprBase
+%%[8.pExprBase -7.pExprBase
 %%@pExprBaseCommon.1
 %%@pExprBaseCommon.5
-                <|>  pParenRow True (show hsnORec) (show hsnCRec) "="
-                        (sem_RecExpr_Empty,sem_RecExpr_Expr . sem_Expr_Var,sem_RecExpr_Ext,sem_Expr_Rec,sem_Expr_Parens)
-                        pVar pExpr
+%%@pExprBase.7
+%%@pExprBase.8
 %%]
 
 %%[1.pExpr
@@ -739,26 +742,35 @@ pTyVars1        =    pFoldr1 (sem_TyVars_Cons,sem_TyVars_Nil) pTyVar
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[7.pParenRow -1.pParenProd
-pParenRow       ::   Bool -> String -> String -> String
+data RowFld a = FldSel HsName a | FldNoSel a | FldUpd HsName a
+
+pParenRow       ::   Bool -> String -> String -> String -> Maybe (String,r -> HsName -> e -> r)
                      -> (r,HsName -> r,r -> Maybe HsName -> e -> r,r -> e,e -> e)
                      -> EHParser HsName -> EHParser e -> EHParser e
 
-pParenRow singleAsIs o c sep (semEmpty,semVar,semExt,semRow,semParens) pSel pE
+pParenRow singleAsIs o c sep mbUpd (semEmpty,semVar,semExt,semRow,semParens) pSel pE
                 =    pKey o *> pRowFlds <* pKey c
-                where  pFld          =    (,) <$> (Just <$> pSel <* pKey sep <|> pSucceed Nothing) <*> pE
+                where  pFld          =    ((pSel <**> pSep) <|> pSucceed FldNoSel) <*> pE
                        pFlds         =    pListSep pComma pFld
                        pExtFlds      =    mkE <$> (pRowNested <|> semVar <$> pVar) <* pKey "|" <*> pFlds
                        pFldsOrExt    =    mkE semEmpty <$> pFlds <|> pExtFlds
                        pRowNested    =    pKey o *> pFldsOrExt <* pKey c
                        pRowFlds      =    if singleAsIs
                                           then       pFld <**>  (    (\fs f -> mkR (f:fs)) <$ pComma <*> pFlds
-                                                                <|>  pSucceed (\le@(ml,e) -> maybe (semParens e) (\_ -> mkR [le]) ml)
+                                                                <|>  pSucceed (\le -> case le of {FldNoSel e -> semParens e; _ -> mkR [le]})
                                                                 )
                                                 <|>  semRow <$> pExtFlds
                                                 <|>  pSucceed (mkR [])
                                           else  semRow <$> pFldsOrExt
                        mkR fs        =    semRow (mkE semEmpty fs )
-                       mkE ext fs    =    foldl (\r (l,f) -> semExt r l f) ext fs
+                       mkE ext fs    =    foldl (\r f -> case f of 
+                                                            FldSel l e -> semExt r (Just l) e
+                                                            FldNoSel e -> semExt r Nothing e
+                                                            FldUpd l e -> semUpd r l e
+                                                ) ext fs
+                       (pSep,semUpd) =    case mbUpd of
+                                            Just (sepUpd,sem) -> (FldSel <$ pKey sep <|> FldUpd <$ pKey sepUpd,sem)
+                                            Nothing           -> (FldSel <$ pKey sep,\r _ _ -> r)
 %%]
 
 %%[7
@@ -811,9 +823,15 @@ pDeclClass      =    (uncurry sem_Decl_Class)
                      <*   pKey "where" <*> pDecls
 
 pDeclInstance   ::   EHParser T_Decl
-pDeclInstance   =    (\n -> uncurry (sem_Decl_Instance n))
-                     <$   pKey "instance"  <*> (Just <$> pVar <* pKey "<:" `opt` Nothing)
+pDeclInstance   =    (\ne -> uncurry (sem_Decl_Instance ne))
+                     <$   pKey "instance"  <*> ((\n e -> Just (n,e)) <$> pVar <*> (True <$ pKey "<:" <|> False <$ pKey "::") `opt` Nothing)
                      <*>  pClassHead
                      <*   pKey "where" <*> pDecls
 %%]
 
+pDeclInstance   =    pKey "instance"
+                     *>   (  (\mbNe (cp,p) d -> maybe () () mb)
+                             <$> ((\n e -> Just (n,e)) <$> pVar <*> (True <$ pKey "<:" <|> False <$ pKey "::") `opt` Nothing)
+                             <*>  pClassHead
+                             <*   pKey "where" <*> pDecls
+                          )

@@ -16,6 +16,12 @@ SEM AGItf
   | AGItf       lhs         .   cmodule     =   CModule_Mod @lhs.baseName @expr.cexpr
 %%]
 
+%%[9
+SEM AGItf
+  | AGItf       lhs         .   cmodule     :=  CModule_Mod @lhs.baseName
+  													(mkCExprLet CBindRec (mkCBindLForUIDL @prfCBindLMap (const True)) @expr.cexpr)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -31,20 +37,11 @@ SEM Expr
   | Let         loc         .   cexpr       =   mkCExprLet CBindRec @decls.cbindL @body.cexpr
   | App         loc         .   cexpr       =   CExpr_App @func.cexpr @arg.cexpr
   | Lam         loc         .   cexpr       =   CExpr_Lam @arg.topNm (rceMatch [@arg.topNm] [CAlt_Alt [@arg.cpat] @body.cexpr] cvarUndefined)
-  | Rec         loc         .   cexpr       =   foldl CExpr_App CExpr_Tup (map snd . tyRowCanonOrder $ @recExpr.cexprL)
-  | Sel         loc         .   offset      =   maybe (-1) id (tyRecOffset @lbl @expr.ty)
-                            .   cexpr       =   CExpr_Sel @expr.cexpr ctagNone (CExpr_Int @offset)
   | Case        loc         .   cexpr       =   let  n = uidHNm @lUniq
                                                 in   mkCExprLet CBindPlain [CBind_Bind n @expr.cexpr]
                                                         (rceMatch [n] @alts.caltL cvarUndefined)
   | TypeAs      loc         .   cexpr       =   @expr.cexpr
-
-ATTR RecExpr [ | | cexprL: {AssocL HsName CExpr} ]
-
-SEM RecExpr
-  | Empty       lhs         .   cexprL      =   []
-  | Ext         lhs         .   cexprL      =   (@nm,@expr.cexpr) : @recExpr.cexprL
-  | Upd         lhs         .   cexprL      =   (@nm,@expr.cexpr) : @recExpr.cexprL
+  | Undefined   loc         .   cexpr       =   cvarUndefined
 %%]
 
 %%[9
@@ -62,9 +59,38 @@ SEM Expr
   | AppTop      loc         .   cexpr       =   coeWipeWeave @lhs.finTyCnstr @cSubst [] @lamArgCoeL `coeEvalOn` @expr.cexpr
   | Parens      loc         .   cexpr       =   @expr.cexpr
   | TypeAs      loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst @expr.cexpr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Records
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR RecExpr [ | | cexpr: CExpr ^^ cexprL: {AssocL HsName CExpr} ]
+ATTR RecExpr [ | | isExtFromEmpty: Bool ]
+
+SEM Expr
+  | Rec         loc         .   cexpr           =   if @recExpr.isExtFromEmpty
+                                                    then foldl CExpr_App CExpr_Tup (map snd . tyRowCanonOrder $ @recExpr.cexprL)
+                                                    else @recExpr.cexpr
+  | Sel         loc         .   offset          =   tyRecOffset @lbl (@lhs.finTyCnstr |=> @expr.ty)
+                            .   cexpr           =   CExpr_TupSel @expr.cexpr ctagNone (CExpr_Int @offset)
 
 SEM RecExpr
-  | Expr        lhs         .   cexprL      =   []
+  | Empty       lhs         .   isExtFromEmpty  =   True
+  | Expr Upd    lhs         .   isExtFromEmpty  =   False
+  | Ext         lhs         .   isExtFromEmpty  =   @recExpr.isExtFromEmpty
+
+SEM RecExpr
+  | Ext Upd     loc         .   offset          =   tyRecOffset @nm (@lhs.finTyCnstr |=> @recExpr.ty)
+  | Empty       loc         .   cexpr           =   CExpr_Tup
+                lhs         .   cexprL          =   []
+  | Expr        loc         .   cexpr           =   @expr.cexpr
+                lhs         .   cexprL          =   []
+  | Ext         loc         .   cexpr           =   CExpr_TupIns @recExpr.cexpr ctagNone (CExpr_Int @offset) @expr.cexpr
+                lhs         .   cexprL          =   (@nm,@expr.cexpr) : @recExpr.cexprL
+  | Upd         loc         .   cexpr           =   CExpr_TupUpd @recExpr.cexpr ctagNone (CExpr_Int @offset) @expr.cexpr
+                lhs         .   cexprL          =   (@nm,@expr.cexpr) : @recExpr.cexprL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -106,7 +132,7 @@ SEM Decl
 
 %%[9 hs
 cdictOffset :: HsName -> Ty -> CExpr
-cdictOffset n r = CExpr_Int . fromJust . tyRecOffset n $ r
+cdictOffset n r = CExpr_Int . tyRecOffset n $ r
 %%]
 
 %%[9
@@ -122,8 +148,11 @@ SEM Decl
                                                                     (CExpr_Var nR)
                                                                 )
                                                      x = HNm "x"
+                                                     vx = CExpr_Var x
                                                 in   [CBind_Bind nDflt dDflt]
-                                                     ++ [ CBind_Bind n (x `CExpr_Lam` CExpr_Sel (CExpr_Var x) ctagNone (cdictOffset n @clsTyRec)) | (n,_) <- @clsFldL ]
+                                                     ++ [ CBind_Bind n (x `CExpr_Lam` (CExpr_TupSel vx ctagNone (cdictOffset n @clsTyRec) `CExpr_App` vx))
+                                                        | (n,_) <- @clsFldL
+                                                        ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -134,7 +163,7 @@ SEM Decl
 SEM Decl
   | Instance    lhs         .   cbindL      =   let  nDflt = rulNmEvid . pigiRule $ @pigi
                                                      nR = hsnPrefix "$res_" @dictNm
-                                                     mkSet d n v = CExpr_Set d ctagNone (cdictOffset n . head $ @recTyL) v
+                                                     mkSet d n v = CExpr_TupUpd d ctagNone (cdictOffset n . head $ @recTyL) v
                                                      dD = mkCExprLam @ctxtArgNmL
                                                                 (mkCExprLetRec
                                                                     ([CBind_Bind nR
@@ -186,7 +215,7 @@ SEM PatExpr
                                             =   let  (c,_)  = tyAppFunArgs @finResTy
                                                      n      = tyConNm c
                                                 in   tgiData . fromJust . tyGamLookup n $ @lhs.tyGam
-                            .   tag         =   fromJust (tyRecOffset @appFunNm @finResTyData)
+                            .   tag         =   tyRecOffset @appFunNm @finResTyData
   | Rec         loc         .   tag         =   ctagNone
   | AppTop Con Rec
                 loc         .   cpatBinds   =   map (\(o,(n,p)) -> CPatBind_Bind o n p) . zip [0..] . tyRowCanonOrder . reverse $ @cpbindL
@@ -220,7 +249,7 @@ ATTR AllPatExpr [ ceParentNm: HsName | | ]
 SEM PatExpr
   | AppTop Rec  loc         .   cbindL      =   concat
                                                 .  map  (\(CPatBind_Bind o _ p)
-                                                            -> let  b n = [CBind_Bind n (CExpr_Sel (CExpr_Var @lhs.ceParentNm) @tag (CExpr_Int o))]
+                                                            -> let  b n = [CBind_Bind n (CExpr_TupSel (CExpr_Var @lhs.ceParentNm) @tag (CExpr_Int o))]
                                                                in   case cpatVarNm p of
                                                                         CPatNmOrig n                          -> b n
                                                                         CPatNmUniq n | not (null @cbindLSub)  -> b n
@@ -326,7 +355,7 @@ rceMatch args alts ce
 ATTR AllDataConstr [ dataAltTy: Ty | | ]
 
 SEM DataConstr
-  | Constr      loc         .   tag         =   fromJust (tyRecOffset @conNm @lhs.dataAltTy)
+  | Constr      loc         .   tag         =   tyRecOffset @conNm @lhs.dataAltTy
                 lhs         .   cbindL      =   let  len = length @fields.tyL
                                                      nms = map (\i -> HNm ("x" ++ show i)) [1..len]
                                                 in   [CBind_Bind @conNm
