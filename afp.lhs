@@ -8567,7 +8567,11 @@ Also, the rule is more explicit in its handling of constraints computed by the r
 for the subsumption |<=|:
 
 \rulerCmdUse{rules.expr9.C}
+\rulerCmdUse{rules2.exprE.typeRules}
+\rulerCmdUse{rules2.exprK.typeRules}
 \rulerCmdUse{rules2.expr1.typeRules}
+\rulerCmdUse{rules2.expr2.typeRules}
+\rulerCmdUse{rules2.expr4.typeRules}
 \rulerCmdUse{rules2.expr9.typeRules}
 
 \begin{code}
