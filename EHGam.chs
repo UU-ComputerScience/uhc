@@ -30,6 +30,9 @@
 %%[4 import(EHTyInstantiate) export(valGamInst1Exists)
 %%]
 
+%%[5 export(gamTop)
+%%]
+
 %%[6 export(tyGamQuantify, tyGamInst1Exists)
 %%]
 
@@ -89,6 +92,11 @@ gamAddGam       g1 (Gam (l2:ll2))   = Gam ((gamToAssocL g1 ++ l2):ll2)
 %%[3.gamMap
 gamMap :: ((k,v) -> (k',v')) -> Gam k v -> Gam k' v'
 gamMap f (Gam ll) = Gam (map (map f) ll)
+%%]
+
+%%[5
+gamTop ::  Gam k v -> Gam k v
+gamTop  (Gam (l:ll)) = Gam [l]
 %%]
 
 %%[8.gamUpd

@@ -50,9 +50,11 @@ SEM TyExpr
 ATTR AllTyVar [ | tyGam: TyGam | ]
 
 SEM TyVar
-  | Var         (loc.tgi,lhs.tyGam)                 =   let  t    =  mkTyVar @lUniq
-                                                             tgi  =  TyGamInfo t
-                                                        in   (tgi,(@nm `gamUnit` tgi) `gamAddGam` @lhs.tyGam)
+  | Var         (loc.tgi,lhs.tyGam)                 =   case tyGamLookup @nm (gamTop @lhs.tyGam) of
+                                                          Nothing    ->  let  t    =  mkNewTyVar @lUniq
+                                                                              tgi  =  TyGamInfo t
+                                                                         in   (tgi,gamAdd @nm tgi @lhs.tyGam)
+                                                          Just tgi   ->  (tgi,@lhs.tyGam)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -105,9 +107,11 @@ SEM TyExprs
   | Cons        lhs         .  kiL                  =   @hd.ki : @tl.kiL
 
 SEM TyVar
-  | Var         (loc.tgi,lhs.tyGam)                 :=  let  t    =  Ty_Var @lUniq TyVarCateg_Plain
-                                                             tgi  =  mkTGI t t
-                                                        in   (tgi,(@nm `gamUnit` tgi) `gamAddGam` @lhs.tyGam)
+  | Var         (loc.tgi,lhs.tyGam)                 :=  case tyGamLookup @nm (gamTop @lhs.tyGam) of
+                                                          Nothing    ->  let  t    =  Ty_Var @lUniq TyVarCateg_Plain
+                                                                              tgi  =  mkTGI t t
+                                                                         in   (tgi,gamAdd @nm tgi @lhs.tyGam)
+                                                          Just tgi   ->  (tgi,@lhs.tyGam)
                 loc         .  ki                   =   tgiKi @tgi
 
 SEM TyVars

@@ -245,7 +245,7 @@ DATA DataConstr
   | Constr          conNm           : {HsName}
                     fields          : DataFields
 
-TYPE DataConstrs    =  [DataConstr]
+TYPE DataConstrs    =   [DataConstr]
 
 DATA DataField
   | Field           mbLabels        : {Maybe [HsName]}
@@ -304,7 +304,7 @@ DATA PrExpr
   | Equal           nm              : {HsName}
                     tyExpr          : TyExpr
 
-TYPE PrExprs        =  [PrExpr]
+TYPE PrExprs        =   [PrExpr]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -315,11 +315,20 @@ TYPE PrExprs        =  [PrExpr]
 DATA Decl
   | Class           ctxtPrExprs     : PrExprs
                     prExpr          : PrExpr
+                    funcDeps        : FuncDeps
                     decls           : Decls
   | Instance        mbNm            : {Maybe HsName}
                     ctxtPrExprs     : PrExprs
                     prExpr          : PrExpr
                     decls           : Decls
+
+DATA FuncDep
+  | Dep             fromTvs         : TyVars
+                    toTvs           : TyVars
+
+TYPE FuncDeps       =   [FuncDep]
+
+SET AllFuncDep      =   FuncDep FuncDeps
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -336,6 +345,12 @@ SET AllNT           =   AllData AllCase AllTyExpr AllTyVar AllDecl AllPatExpr Al
 %%]
 
 %%[6.AllNT -5.AllNT
-SET AllNT           =   AllData AllCase AllTyExpr AllTyVar AllDecl AllPatExpr AllExpr AllKiExpr
+SET AllNT           =   AllData AllCase AllTyExpr AllTyVar AllDecl AllPatExpr AllExpr
+                        AllKiExpr
+%%]
+
+%%[9.AllNT -6.AllNT
+SET AllNT           =   AllData AllCase AllTyExpr AllTyVar AllDecl AllPatExpr AllExpr
+                        AllKiExpr AllFuncDep
 %%]
 

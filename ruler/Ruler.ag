@@ -350,15 +350,14 @@ SEM Decl
                                                            in (ppJTy (foBinds fo `jtyAppBinds` jgiReplTy jgi),foErrL fo)
 
 -------------------------------------------------------------------------
--- Depth of selection
+-- Selections
 -------------------------------------------------------------------------
 
-ATTR JExpr [ | | selL: {[Maybe PP_Doc]}]
+ATTR JExpr [ | | selL: {[Maybe (String,PP_Doc)]}]
 
 SEM JExpr
   | Sel         lhs     .   selL        =   @selMbJExpr.mbPPLaTeX : @jExpr.selL
-  | Var Str Paren App AppTop Op SelTop Empty StrAsIs
-                lhs     .   selL        =   []
+  | * - Sel     lhs     .   selL        =   []
 
 -------------------------------------------------------------------------
 -- Depth of selection
@@ -420,8 +419,9 @@ mkCmdNmUse = mkTexCmdUse "rulerCmdUse"
 
 ATTR AGItf AllDecl AllJudge RExpr Rule [ | | ppLaTeX USE {>-<} {empty} : PP_Doc ]
 ATTR RExprs Rules [ | | ppLaTeXL: PP_DocL ]
-ATTR MbJExpr [ | | mbPPLaTeX: {Maybe PP_Doc} ]
+ATTR MbJExpr [ | | mbPPLaTeX: {Maybe (String,PP_Doc)} ]
 ATTR AllRule [ | | ppLaTeXMp USE {++} {[]}: {[(PP_Doc,Bool,PP_Doc)]} ]
+ATTR JExpr [ | | txt USE {`const`} {""}: String ]
 
 SEM AGItf
   | AGItf       lhs     .   ppLaTeX     =   (vlist . map text . lines $ @preamble) >-< @decls.ppLaTeX
@@ -450,20 +450,47 @@ SEM JExpr
   | Paren       loc     .   ppLaTeX     =   (if @lhs.needToParen then ppParens else id) @jExpr.ppLaTeX
   | AppTop      loc     .   ppLaTeX     =   @jExpr.ppLaTeX
   | App         loc     .   ppLaTeX     =   @lExpr.ppLaTeX >#< @rExpr.ppLaTeX
-  | SelTop      loc     .   ppLaTeX     =   let sw = switchLaTeXLhs
+  | SelTop      loc     .   ppLaTeX     =   let sw = (" " >|<) . switchLaTeXLhs
+                                                over n s = case n of
+                                                             "_" -> sw (text "\\overline{")
+                                                             _   -> sw ("\\stackrel{" >|< sw s >|< "}{")
                                              in case (@jExpr.ppLaTeX,reverse @jExpr.selL) of
-                                                  (x,[Nothing,Nothing,Just s3])     -> sw ("\\stackrel{" >|< sw s3 >|< "}{") >|< x >|< sw (text "}")
-                                                  (x,[Nothing,Just s2,Just s3])     -> sw ("\\stackrel{" >|< sw s3 >|< "}{") >|< x >|< sw ("^{" >|< sw s2 >|< "}}")
-                                                  (x,(Just s1:Just s2:_))           -> x >|< sw ("_{" >|< sw s1 >|< "}^{" >|< sw s2 >|< "}")
-                                                  (x,(Nothing:Just s2:_))           -> x >|< sw ("^{" >|< sw s2 >|< "}")
-                                                  (x,(Just s1:_))                   -> x >|< sw ("_{" >|< sw s1 >|< "}")
-                                                  (x,_)                             -> x
+                                                  (x,[Nothing,Nothing,Just (n3,s3)])
+                                                    -> over n3 s3
+                                                       >|< x
+                                                       >|< sw (text "}")
+                                                  (x,[Nothing,Just (_,s2),Just (n3,s3)])
+                                                    -> over n3 s3
+                                                       >|< x
+                                                       >|< sw ("^{" >|< sw s2 >|< "}}")
+                                                  (x,[Just (_,s1),Nothing,Just (n3,s3)])
+                                                    -> over n3 s3
+                                                       >|< x
+                                                       >|< sw ("_{" >|< sw s1 >|< "}}")
+                                                  (x,[Just (_,s1),Just (_,s2),Just (n3,s3)])
+                                                    -> over n3 s3
+                                                       >|< x
+                                                       >|< sw ("_{" >|< sw s1 >|< "}^{" >|< sw s2 >|< "}}")
+                                                  (x,(Just (_,s1):Just (_,s2):_))
+                                                    -> x >|< sw ("_{" >|< sw s1 >|< "}^{" >|< sw s2 >|< "}")
+                                                  (x,(Nothing:Just (_,s2):_))
+                                                    -> x >|< sw ("^{" >|< sw s2 >|< "}")
+                                                  (x,(Just (_,s1):_))
+                                                    -> x >|< sw ("_{" >|< sw s1 >|< "}")
+                                                  (x,_)
+                                                    -> x
   | Op          loc     .   ppLaTeX     =   @lExpr.ppLaTeX >#< mkLhs2TeXSafe @nm >#< @rExpr.ppLaTeX
   | Empty       loc     .   ppLaTeX     =   empty
 
+SEM JExpr
+  | Var         lhs     .   txt         =   @nm
+  | Str StrAsIs lhs     .   txt         =   @str
+  | App SelTop AppTop Op
+                lhs     .   txt         =   ""
+
 SEM MbJExpr
   | Nothing     lhs     .   mbPPLaTeX   =   Nothing
-  | Just        lhs     .   mbPPLaTeX   =   Just @jExpr.ppLaTeX
+  | Just        lhs     .   mbPPLaTeX   =   Just (@jExpr.txt,@jExpr.ppLaTeX)
 
 SEM RExpr
   | Cond        lhs     .   ppLaTeX     =   mkInLhs2Tex @jExpr.ppLaTeX

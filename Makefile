@@ -19,6 +19,8 @@ INDENT4				:= sed -e 's/^/    /'
 
 AFP_LATEX			:= pdflatex --jobname $(AFP)
 
+AFP_TEX_DPDS		:= ehcs
+
 DATE				:= $(shell /bin/date +%Y%m%d)
 
 DIST				:= $(DATE)-ehc
@@ -27,6 +29,7 @@ DIST_ZIP			:= $(DIST_PREFIX)$(DIST).zip
 DIST_TGZ			:= $(DIST_PREFIX)$(DIST).tgz
 
 WWW_SRC_ZIP			:= www/current-ehc-src.zip
+WWW_SRC_TGZ			:= www/current-ehc-src.tgz
 WWW_DOC_PDF			:= www/current-ehc-doc.pdf
 
 AGC					:= uuagc
@@ -299,7 +302,7 @@ $(EHC_VLAST_AG_TEX): $(AFP_TMPDIR)%.tex: %.cag $(SHUFFLE) Makefile
 $(AFP_PDF): $(AFP_TEX) $(AFP_STY) $(EHC_VLAST_TEX) $(AFP_RULES_TEX) $(AFP_PGF_TEX)
 	$(AFP_LATEX) $(AFP_TEX)
 
-$(AFP_TEX): $(AFP_LHS) ehcs
+$(AFP_TEX): $(AFP_LHS) $(AFP_TEX_DPDS)
 	$(call LHS2TEX_POLY,$<,$@)
 
 $(AFP_STY): afp.lsty Makefile
@@ -326,8 +329,8 @@ afp-llncs:
 afp-all:
 	$(MAKE) AFP=$@ LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=asArticle --set=refToPDF --set=inclFuture --set=inclOmitted" afp
 
-afp-work:
-	$(MAKE) AFP=$@ LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=asArticle --set=refToPDF --set=inclFuture --set=inclOmitted --set=onlyCurrentWork" afp
+eh-work:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=asArticle --set=refToPDF --set=inclFuture --set=inclOmitted --set=onlyCurrentWork" afp
 
 afp-slides:
 	$(MAKE) AFP=$@ LHS2TEX_POLY_MODE=--poly LHS2TEX_OPTS="$(LHS2TEX_OPTS) --set=asSlides --set=omitTBD --set=omitLitDiscuss" afp
@@ -369,7 +372,7 @@ clean:
 	test/*.reg* test/*.class *.class test/*.java test/*.code \
 	$(DIST_PREFIX)*.zip $(DIST_PREFIX)*.tgz \
 	20??????-ehc \
-	$(WWW_SRC_ZIP) $(WWW_DOC_PDF) \
+	$(WWW_SRC_ZIP) $(WWW_SRC_TGZ) $(WWW_DOC_PDF) \
 	tmp-* \
 	*.log *.lof *.ilg *.out *.toc *.ind *.idx *.aux
 
@@ -444,7 +447,9 @@ MK_EHC_MKF			= \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_CODE_JAVA),-cfspr) ; \
 	) > Makefile
 
-dist: $(DIST_ZIP)
+dist: $(DIST_ZIP) 
+
+$(DIST_TGZ): $(DIST_ZIP)
 
 $(DIST_ZIP): $(addprefix $(VERSION_LAST)/,$(DPDS_ALL_MIN_TARG)) Makefile test-lists $(TMPL_TEST)
 	@rm -rf $(DIST) ; \
@@ -487,15 +492,18 @@ $(DIST_ZIP): $(addprefix $(VERSION_LAST)/,$(DPDS_ALL_MIN_TARG)) Makefile test-li
 wc:
 	grep frametitle $(AFP_LHS) | wc
 
-www: $(WWW_SRC_ZIP) $(WWW_DOC_PDF)
+www: $(WWW_SRC_ZIP) $(WWW_SRC_TGZ) $(WWW_DOC_PDF)
 
-www/DoneSyncStamp: $(WWW_SRC_ZIP) $(WWW_DOC_PDF)
+www/DoneSyncStamp: $(WWW_SRC_ZIP) $(WWW_SRC_TGZ) $(WWW_DOC_PDF)
 	(date; echo -n ", " ; svn up) > www/DoneSyncStamp ; \
 	rsync --progress -azv -e ssh www/* atze@modena.cs.uu.nl:/users/www/groups/ST/Projects/ehc
 
 www-sync: www/DoneSyncStamp
 
 $(WWW_SRC_ZIP): $(DIST_ZIP)
+	cp $< $@
+
+$(WWW_SRC_TGZ): $(DIST_TGZ)
 	cp $< $@
 
 $(WWW_DOC_PDF): $(AFP_PDF)

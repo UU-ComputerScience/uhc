@@ -443,6 +443,20 @@ fitsIn opts uniq ty1 ty2
                        rfo  = afo {foTy = rt, foCnstr = as |=> fs, foCoContraL = cor}
 %%]
 
+%%[9.fitsIn.App -4.fitsIn.App
+            u fi t1@(Ty_App tf1 ta1)    t2@(Ty_App tf2 ta2)
+                = manyFO [ffo,afo,rfo]
+                where  ffo  = u fi tf1 tf2
+                       fs   = foCnstr ffo
+                       ((coUpd,fiUpd):cor) = foCoContraL ffo
+                       fi'  = fi  { fiCoContra  = coUpd (fiCoContra fi), fiFIOpts = fiUpd (fiFIOpts fi)
+                                  , fiUniq      = foUniq ffo }
+                       afo  = u fi' (fs |=> ta1) (fs |=> ta2)
+                       as   = foCnstr afo
+                       rt   = Ty_App (as |=> foTy ffo) (foTy afo)
+                       rfo  = afo {foTy = rt, foCnstr = as |=> fs, foCoContraL = cor, foPredOccL = foPredOccL afo ++ foPredOccL ffo}
+%%]
+
 %%[7
             u fi t1@(Ty_Ext tr1 l1 te1)   t2@(Ty_Ext _ _ _)
                 =  case tyRowExtr l1 t2 of
@@ -501,35 +515,36 @@ prfOneStep :: PrElimGam -> PredOcc -> ProofState -> ProofState
 prfOneStep eGam (PredOcc pr prUid) st@(ProofState g@(ProvenGraph i2n p2i) u toProof)
   =  let  
      in   case lookupFM p2i pr of
-            Just uid | uid /= prUid
-              ->  let  nd = ProvenAnd pr [uid] (CExpr_Hole uid) 0
-                  in   st {prfsProvenGraph = prvgAddPrNd pr prUid nd g}
+            Just uidL | prUid `notElem` uidL
+              ->  let  uid = last uidL
+                       nd = ProvenAnd pr [uid] (CExpr_Hole uid) 0
+                  in   st {prfsProvenGraph = prvgAddPrNd pr (prUid : uidL) nd g}
             Nothing
               ->  case pr of
                     Pred_Class t
                       ->  let  nm = tyAppFunConNm t
+                               mkNdFail uid = ProvenArg pr (CExpr_Hole uid) 111
+                               ndFail = mkNdFail prUid
                           in   case gamLookupAll nm eGam of
                                  pegis@(_:_)
-                                   ->  let  rs = concat . map pegiRuleL $ pegis
-                                            (u',u1,u2) = mkNewLevUID2 u
-                                            matches = catMaybes . zipWith (\u r -> matchRule u pr r) (mkNewUIDL (length rs) u1) $ rs
-                                            mkPrf pr (prOccL,evid,cost) = ProvenAnd pr (map poId prOccL) evid cost
-                                            (g',newPr)
-                                               = case matches of
-                                                     [m@(prOccL,_,_)]
-                                                        ->  (prvgAddPrNd pr prUid (mkPrf pr m) g,prOccL)
-                                                     [] ->  (prvgAddPrNd pr prUid (ProvenFail pr) g,[])
-                                                     ms ->  let  orUids = mkNewUIDL (length ms) u2
-                                                            in   foldr
-                                                                     (\(uid,m@(prOccL,_,_)) (g,newPr)
-                                                                        -> (prvgAddNd uid (mkPrf pr m) g,prOccL ++ newPr)
-                                                                     )
-                                                                     (prvgAddPrNd pr prUid (ProvenOr pr orUids) g,[])
-                                                                     (zip orUids ms)
-                                       in   st {prfsUniq = u', prfsProvenGraph = g', prfsPredsToProve = newPr ++ toProof}
-                                 []
-                                   ->  let  nd = ProvenFail pr
-                                       in   st {prfsProvenGraph = prvgAddPrNd pr prUid nd g}
+                                     ->  let  rs = concat . map pegiRuleL $ pegis
+                                              (u',u1,u2) = mkNewLevUID2 u
+                                              matches = catMaybes . zipWith (\u r -> matchRule u pr r) (mkNewUIDL (length rs) u1) $ rs
+                                              mkPrf pr (prOccL,evid,cost) = ProvenAnd pr (map poId prOccL) evid cost
+                                              (g',newPr)
+                                                 = case matches of
+                                                       [] ->  (prvgAddPrNd pr [prUid] ndFail g,[])
+                                                       ms ->  let  orUids@(uidFail:uidRest) = mkNewUIDL (length ms + 1) u2
+                                                              in   foldr
+                                                                       (\(uid,m@(prOccL,_,_)) (g,newPr)
+                                                                          -> (prvgAddNd uid (mkPrf pr m) g,prOccL ++ newPr)
+                                                                       )
+                                                                       (prvgAddPrNd pr [prUid] (ProvenOr pr orUids)
+                                                                          (prvgAddNd uidFail (mkNdFail uidFail) g)
+                                                                       ,[])
+                                                                       (zip uidRest ms)
+                                         in   st {prfsUniq = u', prfsProvenGraph = g', prfsPredsToProve = newPr ++ toProof}
+                                 []  ->  st {prfsProvenGraph = prvgAddPrNd pr [prUid] ndFail g}
                     _ ->  st
             _ ->  st
 
