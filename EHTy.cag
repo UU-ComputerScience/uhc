@@ -36,13 +36,13 @@
 %%[8 hs import(List) export(tyRowCanonOrder,tyRecOffset) 
 %%]
 
-%%[9 hs export(Pred(..),tyPredNm,tyPred,tyImplsPreds,tyArrowImplsArgRes,mkTyPr)
+%%[9 hs export(Pred(..),predNm,tyPredNm,tyPred,tyLImplsPreds,tyArrowImplsArgRes,mkTyPr)
 %%]
 
 %%[9 hs export(tyRecExts,tyAppFunConNm,tyArrowArity)
 %%]
 
-%%[9 hs export(tyImpls,Impls(..),ImplsVarId,mkImplsVar,implsPredsTail)
+%%[9 hs export(tyImpls,Impls(..),ImplsVarId,mkImplsVar,implsPredsTail,implsPredsMbTail,tyImplsPreds)
 %%]
 
 %%[9 hs export(PredOccId,PredOcc(..))
@@ -327,8 +327,8 @@ tyArrowImplsArgRes t
           (a,r)   = tyArrowArgRes    t'
      in   (i,a,r)
 
-tyImplsPreds :: TyL -> ([Pred],Impls)
-tyImplsPreds = foldr (\t (ps,i) -> case t of {Ty_Pred p -> (p:ps,i); Ty_Impls i -> (ps,i)}) ([],Impls_Nil)
+tyLImplsPreds :: TyL -> ([Pred],Impls)
+tyLImplsPreds = foldr (\t (ps,i) -> case t of {Ty_Pred p -> (p:ps,i); Ty_Impls i -> (ps,i)}) ([],Impls_Nil)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -403,11 +403,14 @@ tyPred t
   =  case t of
        Ty_Pred pt  -> pt
 
+predNm :: Pred -> HsName
+predNm p
+  =  case p of
+       Pred_Class pt  -> tyAppFunConNm pt
+       _              -> hsnUnknown
+
 tyPredNm :: Ty -> HsName
-tyPredNm t
-  =  case t of
-       Ty_Pred (Pred_Class pt)  -> tyAppFunConNm pt
-       _                        -> hsnUnknown
+tyPredNm = predNm . tyPred
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -418,10 +421,17 @@ tyPredNm t
 tyImpls :: Ty -> Impls
 tyImpls (Ty_Impls i) = i
 
-implsPredsTail :: Impls -> ([PredOcc],Maybe ImplsVarId)
+implsPredsTail :: Impls -> ([PredOcc],Impls)
 implsPredsTail (Impls_Cons v p pv t)  =  let  (p',mi) = implsPredsTail t
                                          in   (PredOcc p pv : p',mi)
-implsPredsTail (Impls_Tail v       )  =  ([],Just v)
-implsPredsTail (Impls_Nil          )  =  ([],Nothing)
+implsPredsTail t                      =  ([],t)
+
+implsPredsMbTail :: Impls -> ([PredOcc],Maybe ImplsVarId)
+implsPredsMbTail i =  case implsPredsTail i of
+                        (i',Impls_Tail v  ) -> (i',Just v)
+                        (i',Impls_Nil     ) -> (i',Nothing)
+
+tyImplsPreds :: Ty -> [PredOcc]
+tyImplsPreds = fst . implsPredsTail . tyImpls
 %%]
 

@@ -218,6 +218,9 @@ SEM FuncDep
 SEM FuncDeps
   | Nil         lhs     .  ppL      =   []
   | Cons        lhs     .  ppL      =   @hd.pp : @tl.ppL
+
+SEM AGItf
+  | AGItf       lhs     .  pp       =   @expr.pp >-< @errTopPP
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

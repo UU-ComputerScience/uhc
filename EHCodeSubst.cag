@@ -51,7 +51,7 @@ cnstrImplsToCSubst :: Cnstr -> CSubst
 cnstrImplsToCSubst c
   =  assocLImplsToCSubst
         [ (iv,(mkImplsAppCoe i,mkImplsLamCoe i))
-        | (iv,CIImpls i) <- cnstrToAssocL c, let (_,mbTl) = implsPredsTail i, isNothing mbTl
+        | (iv,CIImpls i) <- cnstrToAssocL c, let (_,mbTl) = implsPredsMbTail i, isNothing mbTl
         ]
 
 instance Show CSubst where

@@ -58,10 +58,11 @@ SEM Expr
   | AppTop      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","AppTop"] [] [@expr.ppAST] @info
                 loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         ]
-  | Lam         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Lam"] [] [@arg.ppAST,@body.ppAST] @info
+  | Lam         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Lam"] [] [@arg.ppAST,@body.ppAST] (@info ++ @info2)
                 loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         , mkInfo1 "gam" (ppGam @arg.valGam)
                                         ]
+                        .  info2    =   []
 
 SEM PatExpr
   | IConst      lhs     .  ppAST    =   ppNest ["PatExpr","IConst"] [@pp] []
@@ -73,26 +74,14 @@ SEM PatExpr
   | VarAs       lhs     .  ppAST    =   ppNest ["PatExpr","VarAs"] [ppNm @nm] [@patExpr.ppAST]
   | Con         lhs     .  ppAST    =   ppNest ["PatExpr","Con"] [ppNm @nm] []
   | App         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","App"] [] [@func.ppAST,@arg.ppAST] @info
-                loc     .  info     =   [ mkInfo1 "appFunNm" (ppNm @func.appFunNm)
-                                        , mkInfo1 "appFunPP" (@func.appFunPP)
-                                        , mkInfo1 "appFunPPL" (ppCommaList @func.appArgPPL)
-                                        , mkInfo1 "appArgNm" (ppNm @arg.appFunNm)
-                                        , mkInfo1 "appArgPP" (@arg.appFunPP)
-                                        , mkInfo1 "appArgPPL" (ppCommaList @arg.appArgPPL)
-                                        ]
+                loc     .  info     =   []
   | Parens      lhs     .  ppAST    =   ppNest ["PatExpr","Parens"] [] [@patExpr.ppAST]
   | AppTop      lhs     .  ppAST    =   ppNest ["PatExpr","AppTop"] [] [@patExpr.ppAST]
   
 SEM TyExpr
   | Con         lhs     .  ppAST    =   ppNest ["TyExpr","Con"] [ppNm @nm] []
   | App         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["TyExpr","App"] [] [@func.ppAST,@arg.ppAST] @info
-                loc     .  info     =   [ mkInfo1 "appFunNm" (ppNm @func.appFunNm)
-                                        , mkInfo1 "appFunPP" (@func.appFunPP)
-                                        , mkInfo1 "appFunPPL" (ppCommaList @func.appArgPPL)
-                                        , mkInfo1 "appArgNm" (ppNm @arg.appFunNm)
-                                        , mkInfo1 "appArgPP" (@arg.appFunPP)
-                                        , mkInfo1 "appArgPPL" (ppCommaList @arg.appArgPPL)
-                                        ]
+                loc     .  info     =   []
   | Parens      lhs     .  ppAST    =   ppNest ["TyExpr","Parens"] [] [@tyExpr.ppAST]
   | AppTop      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["TyExpr","AppTop"] [] [@tyExpr.ppAST] @info
                 loc     .  info     =   [ mkInfo1 "appFunNm" (ppNm @tyExpr.appFunNm)
@@ -256,11 +245,18 @@ SEM FuncDeps
 
 SEM Expr
   | Let         loc     .  info     :=  [ mkInfo1 "gathSubsPredL" (ppCommaList @gathSubsPredL)
-                                        , mkInfo1 "cbindL" (ppAssocL . map (\(CBind_Bind n v) -> (n,v)) $ @cbindL)
+                                        , mkInfo1 "cbindLMap" (ppAssocL . map (\(i,b) -> (i,ppAssocL . map (\(CBind_Bind n v) -> (n,v)) $ b)) . fmToList $ @prfCBindLMap)
                                         , mkInfo1 "lhs.cSubst" (ppAssocL . fmToList $ @lhs.cSubst)
                                         , mkInfo1 "cSubst" (ppAssocL . fmToList $ @cSubst)
-                                        , mkInfo1 "remPrOccL" (ppCommaList @remPrOccL)
+                                        , mkInfo1 "remPrfPrL" (ppCommaList @remPrfPrL)
                                         , mkInfo1 "tqoGam" (pp @tqoGam)
+                                        ]
+  | Lam         loc     .  info2    :=  [ mkInfo1 "knPrL" (ppCommaList @knPrL)
+                                        , mkInfo1 "inKnGathPrL" (ppCommaList @inKnGathPrL)
+                                        , mkInfo1 "cbindL" (ppAssocL . map (\(CBind_Bind n v) -> (n,v)) $ @cbindL)
+                                        , mkInfo1 "remPrfPrL" (ppCommaList @remPrfPrL)
+                                        , mkInfo1 "csubst" (ppAssocL . fmToList $ @csubst)
+                                        , mkInfo1 "cSubst" (ppAssocL . fmToList $ @cSubst)
                                         ]
 %%]
 

@@ -129,8 +129,7 @@ SEM Expr
                                                                `mkTyArrow` (@lhs.tyCnstr |=> @lhs.knTy)
                                                              ,im)
                 (loc.knImpls,arg.knTy,loc.fTy)      :=  tyArrowImplsArgRes @func.ty
-                loc         .  (prL,impls)          =   tyImplsPreds @knImpls
-                            .  prOccL               =   fst . implsPredsTail . tyImpls . (@arg.tyCnstr |=>) $ @imTy
+                loc         .  prOccL               =   tyImplsPreds (@arg.tyCnstr |=> @imTy)
 %%]
 
 %%[1.Lam
@@ -149,6 +148,12 @@ SEM Expr
                             .  foKnFun              :=  @funTy `fitsIn` (@lhs.tyCnstr |=> @lhs.knTy)
                 arg         .  tyCnstr              =   foCnstr @foKnFun |=> @lhs.tyCnstr
                 loc         .  ty                   :=  [@body.tyCnstr |=> @arg.ty] `mkTyArrow` @body.ty
+%%]
+
+%%[4.Lam
+SEM Expr
+  | Lam         loc         .  foKnFun              :=  let  fo = fitsIn @lhs.fiOpts @fe @lUniq2 @funTy (@lhs.tyCnstr |=> @lhs.knTy)
+                                                        in   fo {foTy = foCnstr fo |=> @funTy}
 %%]
 
 %%[9.Lam
@@ -171,8 +176,6 @@ SEM Expr
 SEM Expr
   | IConst CConst Var
                 loc         .  fo                   :=  fitsIn @lhs.fiOpts @fe @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
-  | Lam         loc         .  foKnFun              :=  let  fo = fitsIn @lhs.fiOpts @fe @lUniq2 @funTy (@lhs.tyCnstr |=> @lhs.knTy)
-                                                        in   fo {foTy = foCnstr fo |=> @funTy}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -25,8 +25,38 @@ SEM Expr
 %%[9
 SEM Expr
   | Let         loc         .   gathSubsPredL       =   @decls.tyCnstr |=> @decls.gathPredL
-                            .   (cbindL,csubst,remPrOccL,_)
-                                                    =   prfPreds @lUniq (emptyFE {fePrElimGam = @prElimGam}) @gathSubsPredL
+                            .   (prfCBindLMap,csubst,remPrfPrL,_)
+                                                    =   prfPreds @lUniq4 (emptyFE {fePrElimGam = @prElimGam}) @gathSubsPredL
+                            .   gathPredL           =   let  usedPrIds = unionManySets . map tqoInsPrIdSet . gamValues $ @tqoGam
+                                                        in   filter (not . (`elementOf` usedPrIds) . poId) @remPrfPrL
+                lhs         .   gathPredL           =   @gathPredL ++ @body.gathPredL
+  | Lam         loc         .   im1SubsTy           =   @body.tyCnstr |=> @im1Ty
+                            .   (knPrL,knImplsTl)   =   implsPredsTail . tyImpls $ @im1SubsTy
+                            .   prElimGam           =   foldr (\p g -> peGamAddKnPr (uidHNm (poId p)) (poPr p) g) @lhs.prElimGam @knPrL
+                            .   (inKnGathPrL,remGathPrL)
+                                                    =   partition  (\p -> let fv = ftv p
+                                                                          in  null fv || any (`elem` ftv @knPrL) fv
+                                                                   )
+                                                                   (@body.tyCnstr |=> @body.gathPredL)
+                            .   (prfCBindLMap,csubst,remPrfPrL,_)
+                                                    =   prfPreds @lUniq3 (emptyFE {fePrElimGam = @prElimGam}) @inKnGathPrL
+                            .   gathPredL           =   @remPrfPrL ++ @remGathPrL
+  | Let Lam     loc         .   cbindL              =   concat (eltsFM @prfCBindLMap)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Passing back additional bindings using a pred
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR AllDecl AllCase AllExpr [ cbindLMap: CBindLMap | | ]
+
+SEM AGItf
+  | AGItf       loc         .   cbindLMap           =   emptyFM
+
+SEM Expr
+  | Lam Let     loc         .   cbindLMap           =   @lhs.cbindLMap `plusFM` @prfCBindLMap
+  | Let         body        .   cbindLMap           =   @lhs.cbindLMap
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,6 +71,7 @@ SEM AGItf
 
 SEM Expr
   | Let         loc         .   cSubst              =   cnstrImplsToCSubst @tqoTyCnstr `cAppSubst` @lhs.cSubst `cAppSubst` @csubst
+  | Lam         loc         .   cSubst              =   @lhs.cSubst `cAppSubst` @csubst
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -49,6 +80,12 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | App			loc			.	coe					=	@lhs.finTyCnstr |=> @imTy
+  | App         loc         .   coe                 =   coeWipeWeave @lhs.finTyCnstr @lhs.cSubst
+                                                            (mkImplsAppCoe . tyImpls . (@lhs.finTyCnstr |=>) $ @imTy)
+                                                            []
+  | Lam         loc         .   implsKnHd           =   tyImpls @im1SubsTy
+                            .   implsKnTl           =   @lhs.finTyCnstr |=> @knImplsTl
+                            .   coeKnHd             =   coeWipeWeave @lhs.finTyCnstr @cSubst [] (mkImplsLamCoe @implsKnHd)
+                            .   coeKnTl             =   coeWipeWeave @lhs.finTyCnstr @cSubst [] (mkImplsLamCoe @implsKnTl)
 %%]
 

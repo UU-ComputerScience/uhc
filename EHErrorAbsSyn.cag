@@ -50,3 +50,9 @@ DATA Err
   | FileNotFound        fileName   : {String}            ^^  locations  : {[String]}
   | Parse               expecting  : {String}            ^^  repaired   : {String}
 %%]
+
+%%[9
+DATA Err
+  | NotProvenPreds      preds      : {[PredOcc]}
+%%]
+
