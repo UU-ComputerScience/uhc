@@ -1,0 +1,104 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fully lazy code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs import(Maybe,FiniteMap,EHCommon,EHCore) export(cmodTrfLetUnrec)
+%%]
+
+%%[8 hs import(EHDebug,UU.DData.Scc)
+%%]
+
+%%[9 hs import(EHTy)
+%%]
+
+%%[8.WRAPPER import(EHCoreAbsSyn)
+WRAPPER CodeAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+cmodTrfLetUnrec :: CModule -> CModule
+cmodTrfLetUnrec cmod
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
+     in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Usage (assumption: unique names)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type UseMp = FiniteMap HsName [HsName]
+
+useMpComb :: UseMp -> UseMp -> UseMp
+useMpComb = plusFM_C (++)
+%%]
+
+%%[8
+ATTR AllCodeNT [ inNmL: {[HsName]} | | useMp USE {`useMpComb`} {emptyFM}: UseMp ]
+
+SEM CodeAGItf
+  | AGItf       module      .   inNmL       =   []
+
+SEM CExpr
+  | Var         lhs         .   useMp       =   listToFM (zip @lhs.inNmL (repeat [@nm]))
+  | Let         lhs         .   useMp       =   @remUseMp `useMpComb` @body.useMp
+
+SEM CBind
+  | Bind        expr        .   inNmL       =   @nm : @lhs.inNmL
+                lhs         .   useMp       =   (@nm `unitFM` []) `useMpComb` @expr.useMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bound id's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR CBindL CBind [ | | bindMp USE {`plusFM`} {emptyFM}: {FiniteMap HsName CExpr} ]
+
+SEM CBind
+  | Bind        lhs         .   bindMp      =   @nm `unitFM` @expr.cTrf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Finding SCC's, constructing transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM CExpr
+  | Let         loc         .   (remUseMp,cTrf)
+                                            =   if @categ == CBindRec
+                                                then  let  h = filterFM (\k e -> k `elemFM` @binds.bindMp) @binds.useMp
+                                                           o = scc . fmToList $ h
+                                                           mk c ns b = mkCExprLet c [ CBind_Bind n e | n <- ns, e <- maybeToList (lookupFM @binds.bindMp n) ] b
+                                                           t = foldr (\bs b
+                                                                         -> case bs of
+                                                                               [n] | n `elem` lookupWithDefaultFM h [] n
+                                                                                                -> mk CBindRec bs b
+                                                                                   | otherwise  -> mk CBindPlain bs b
+                                                                               _                -> mk CBindRec bs b
+                                                                     )
+                                                                     @body.cTrf o
+                                                      in   (@binds.useMp `minusFM` h,t)
+                                                else  (@binds.useMp,CExpr_Let @categ @binds.cTrf @body.cTrf)
+%%]
+

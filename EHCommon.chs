@@ -75,13 +75,13 @@
 %%[8 export(groupSortOn)
 %%]
 
+%%[8 export(showPP,ppPair)
+%%]
+
+%%[8 export(mkNewLevUIDL)
+%%]
+
 %%[9 export(hsnOImpl,hsnCImpl,hsnIsUnknown)
-%%]
-
-%%[9 export(showPP,ppPair)
-%%]
-
-%%[9 export(mkNewLevUIDL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -241,7 +241,7 @@ uidHNm :: UID -> HsName
 uidHNm = HNm . show
 %%]
 
-%%[9
+%%[8
 mkNewLevUIDL :: Int -> UID -> [UID]
 mkNewLevUIDL = mkNewUIDL' mkNewLevUID
 %%]
@@ -356,12 +356,12 @@ mkExtAppPP (funNm,funNmPP,funPPL) (argNm,argNmPP,argPPL,argPP)
      else (funNmPP,funPPL ++ [argPP])
 %%]
 
-%%[9
+%%[8
 ppPair :: (PP a, PP b) => (a,b) -> PP_Doc
 ppPair (x,y) = pp_parens (pp x >|< "," >|< pp y)
 %%]
 
-%%[9
+%%[8
 showPP :: PP a => a -> String
 showPP x = disp (pp x) 100 ""
 %%]
@@ -447,8 +447,8 @@ data EHCOpts    = EHCOptions    {  ehcoptDumpPP         ::  Maybe String
 %%]
 
 %%[EHCOpts.8
-                                ,  ehcoptCode           ::  Bool
-                                ,  ehcoptCodeJava       ::  Bool
+                                ,  ehcoptCore           ::  Bool
+                                ,  ehcoptCoreJava       ::  Bool
                                 ,  ehcoptSearchPath     ::  [String]
                                 ,  ehcoptVerbosity      ::  Verbosity
 %%]
@@ -461,8 +461,8 @@ defaultEHCOpts  = EHCOptions    {  ehcoptDumpPP         =   Just "pp"
 %%]
 
 %%[defaultEHCOpts.8
-                                ,  ehcoptCode           =   True
-                                ,  ehcoptCodeJava       =   False
+                                ,  ehcoptCore           =   True
+                                ,  ehcoptCoreJava       =   False
                                 ,  ehcoptSearchPath     =   []
                                 ,  ehcoptVerbosity      =   VerboseQuiet
 %%]
@@ -480,8 +480,8 @@ cmdLineOpts
 %%]
 
 %%[cmdLineOptsA.8
-     ,  Option "c"  ["code"]   (OptArg oCode "java")
-          "dump code (java -> .java) on file, default=code (-> .code)"
+     ,  Option "c"  ["code"]          (OptArg oCode "java")
+          "dump code (java -> .java) on file, default=core (-> .core)"
 %%]
 
 %%[cmdLineOptsB.1
@@ -498,8 +498,8 @@ cmdLineOpts
 
 %%[cmdLineOptsB.8
          oCode       ms  o =  case ms of
-                                Just "java"  -> o { ehcoptCodeJava     = True      }
-                                _            -> o { ehcoptCode         = True      }
+                                Just "java"  -> o { ehcoptCoreJava     = True      }
+                                _            -> o { ehcoptCore         = True      }
 %%]
 
 %%[1.Options

@@ -13,7 +13,7 @@ test-expect test-regress: test-lists
 	      if test -r $$t -a -x $$ehc ; \
 	      then \
 	        te=$${t}.exp$${v} ; tr=$${t}.reg$${v} ; th=$${t}.$${how}$${v} ; \
-	        tc=$${tb}.code ; \
+	        tc=$${tb}.core ; \
 	        rm -f $${tc} ; \
 	        $$ehc $$t > $$th 2>&1 ; \
 	        if test -r $${tc} ; \

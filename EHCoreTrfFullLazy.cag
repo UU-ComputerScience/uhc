@@ -1,0 +1,178 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fully lazy code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs import(Maybe,Set,FiniteMap,EHCommon,EHCore) export(cmodTrfFullLazy)
+%%]
+
+%%[9 hs import(EHTy)
+%%]
+
+%%[8.WRAPPER import(EHCoreAbsSyn)
+WRAPPER CodeAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+cmodTrfFullLazy :: UID -> CModule -> CModule
+cmodTrfFullLazy uniq cmod
+  =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                              (Inh_CodeAGItf {gUniq_Inh_CodeAGItf = uniq})
+     in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllCodeNT [ | gUniq: UID | ]
+ATTR CodeAGItf [ gUniq: UID | | ]
+
+SEM CExpr
+  | App         (func.gUniq,loc.lUniq)      =   mkNewUID @lhs.gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+mkTrf :: Int -> Int -> HsName -> CExpr -> CExpr
+mkTrf outerLev hereLev n e
+  =  if outerLev == hereLev
+     then e
+     else mkCExprLet CBindPlain [CBind_Bind n e] (CExpr_Var n)
+%%]
+
+%%[8
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+
+SEM CExpr
+  | App         lhs         .   cTrf        =   if @lhs.isTopApp
+                                                then mkTrf @lhs.lev (fvLev @lhs.levMp @fvS) (uidHNm @lUniq) @cTrf
+                                                else @cTrf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is App a top App?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR CExpr [ isTopApp: Bool | | ]
+
+SEM CModule
+  | Mod         expr        .   isTopApp    =   True
+
+SEM CBind
+  | Bind        expr        .   isTopApp    =   True
+
+SEM CPatBind
+  | Bind        offset      .   isTopApp    =   True
+
+SEM CExpr
+  | App         func        .   isTopApp    =   False
+                arg         .   isTopApp    =   True
+  | * - App     loc         .   isTopApp    =   True
+
+SEM CAlt
+  | Alt         expr        .   isTopApp    =   True
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+levOuter = 0
+%%]
+
+%%[8
+ATTR AllCodeNT [ lev: Int | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   lev         =   levOuter
+
+SEM CExpr
+  | Lam         loc         .   lev         =   @lhs.lev + 1
+
+SEM CAlt
+  | Alt         loc         .   lev         =   @lhs.lev + 1
+%%]
+  | Let         loc         .   lev         =   @lhs.lev + 1
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Free vars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type FvS = Set HsName
+type FvSMp = FiniteMap HsName FvS
+%%]
+
+%%[8
+ATTR AllCodeNT [ | | fvS USE {`Set.union`} {emptySet}: FvS ]
+ATTR AllBind [ | | fvSMp USE {`plusFM`} {emptyFM}: FvSMp ]
+
+SEM CExpr
+  | Lam         lhs         .   fvS         =   @body.fvS `delFromSet` @arg
+  | Let         lhs         .   fvS         =   (@body.fvS `Set.union` @binds.fvS) `minusSet` mkSet @binds.nmL
+  | Var         lhs         .   fvS         =   unitSet @nm
+  | App         loc         .   fvS         =   @func.fvS `Set.union` @arg.fvS
+
+SEM CBind
+  | Bind        lhs         .   fvSMp       =   unitFM @nm @expr.fvS
+
+SEM CAlt
+  | Alt         lhs         .   fvS         =   @expr.fvS `minusSet` mkSet @pats.nmL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Binding to id's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type LevMp = FiniteMap HsName Int
+
+fvLev :: LevMp -> FvS -> Int
+fvLev lm fvs = foldr (\n l -> lookupWithDefaultFM lm levOuter n `max` l) levOuter . setToList $ fvs
+
+addLevMp :: LevMp -> FvSMp -> LevMp
+addLevMp lm fvm = lm `plusFM` mapFM  (\_ fv -> fvLev lm fv) fvm
+%%]
+
+%%[8
+ATTR AllCodeNT [ levMp: LevMp | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   levMp       =   emptyFM
+
+SEM CExpr
+  | Lam         body        .   levMp       =   addToFM @lhs.levMp @arg @lev
+  | Let         body        .   levMp       =   @lhs.levMp `addLevMp` @binds.fvSMp
+
+SEM CAlt
+  | Alt         expr        .   levMp       =   addListToFM @lhs.levMp (zip @pats.nmL (repeat @lev))
+%%]
+
+%%[8
+ATTR AllBind AllPat [ | | nmL USE {++} {[]}: {[HsName]} ]
+
+SEM CBind
+  | Bind        lhs         .   nmL         =   [@nm]
+
+SEM CPatBind
+  | Bind        lhs         .   nmL         =   [@nm] ++ @pat.nmL
+%%]
+

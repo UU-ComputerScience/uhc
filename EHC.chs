@@ -15,7 +15,10 @@
 %%[8 import (EHScanner,EHError,EHErrorPretty,FPath,FiniteMap,Maybe,Directory)
 %%]
 
-%%[8 import (EHCoreJava,EHCoreGrin,EHCorePretty,EHCoreTrfRenUniq)
+%%[8 import (EHCoreJava,EHCoreGrin,EHCorePretty)
+%%]
+
+%%[8 import (EHCoreTrfRenUniq,EHCoreTrfFullLazy,EHCoreTrfLetUnrec)
 %%]
 
 %%[8 import (GrinCodePretty)
@@ -98,12 +101,12 @@ doCompileRun filename opts
 %%@doCompileB.8
 %%@doCompileC.8
 %%@doCompileD.1
-         ;  if ehcoptCode opts
-            then  do  {  writeFile (fpathToStr (fpathSetSuff "code" fp))
+         ;  if ehcoptCore opts
+            then  do  {  writeFile (fpathToStr (fpathSetSuff "core" fp))
                             (disp codePP 120 "")
                       }
             else  return ()
-         ;  if ehcoptCodeJava opts
+         ;  if ehcoptCoreJava opts
             then  do  {  let (jBase,jPP) = cmodJavaSrc (cmodule_Syn_AGItf wrRes)
                              jFP = fpathSetBase jBase fp
                       ;  writeFile (fpathToStr (fpathSetSuff "java" jFP))
@@ -324,18 +327,32 @@ crCompileCUPass1HS modNm cr
        ; return (cr {crState = CRSErrInfoL "Type checking" False (allErrL_Syn_AGItf p1ob)})
        }
 
-crCompileCUPass2HS :: HsName -> CompileRun -> IO CompileRun
-crCompileCUPass2HS modNm cr
+crTrfCore :: HsName -> CompileRun -> IO CompileRun
+crTrfCore modNm cr
   =  do  {  let  cu     = crCU modNm cr
-                 p1ob   = fromJust (cuMbOut (crCU modNm cr))
+                 synAG  = fromJust (cuMbOut cu)
+                 [u1,u2] = mkNewLevUIDL 2 . snd . mkNewLevUID . crHereUID $ cr
+                 synAG' = synAG {cmodule_Syn_AGItf
+                                    = {- cmodTrfFullLazy u2
+                                    . -} cmodTrfLetUnrec
+                                    . cmodTrfRenUniq u1
+                                    . cmodule_Syn_AGItf
+                                    $ synAG}
+         ;  crUpdCU modNm (\cu -> return (cu {cuMbOut = Just synAG'})) cr
+         }
+
+crOutputCore :: HsName -> CompileRun -> IO CompileRun
+crOutputCore modNm cr
+  =  do  {  let  cu     = crCU modNm cr
+                 p1ob   = fromJust (cuMbOut cu)
                  fp     = cuFilePath cu
                  opts   = crOpts cr
-                 cMod	= cmodRenameUniq . cmodule_Syn_AGItf $ p1ob
+                 cMod   = cmodule_Syn_AGItf p1ob
                  codePP = ppCModule cMod 
-         ;  if ehcoptCode opts
-            then  putPPFile (fpathToStr (fpathSetSuff "code" fp)) codePP 120
+         ;  if ehcoptCore opts
+            then  putPPFile (fpathToStr (fpathSetSuff "core" fp)) codePP 120
             else  return ()
-         ;  if ehcoptCodeJava opts
+         ;  if ehcoptCoreJava opts
             then  do  {  let (jBase,jPP) = cmodJavaSrc cMod
                              jFP = fpathSetBase jBase fp
                       ;  putPPFile (fpathToStr (fpathSetSuff "java" jFP)) jPP 120
@@ -360,7 +377,8 @@ crCompileCU modNm cr
                    ; crSeq
                        [ crStepUID, crCompileCUParseHS modNm
                                   , crCompileCUPass1HS modNm
-                       , crStepUID, crCompileCUPass2HS modNm
+                       , crStepUID, crTrfCore modNm
+                       , crStepUID, crOutputCore modNm
                        ] cr
                    }
            _ -> do { msg "Skipping"

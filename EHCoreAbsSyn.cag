@@ -93,7 +93,10 @@ DATA CPatBind
                 pat             : CPat
 
 TYPE CPatBindL  =   [CPatBind]
+%%]
 
-SET AllCodeNT   =   CModule CExpr CBind CBindL CAlt CAltL
-                    CPat CPatL CPatBind CPatBindL
+%%[8
+SET AllBind     =   CBind CBindL
+SET AllPat      =   CPat CPatL CPatBind CPatBindL
+SET AllCodeNT   =   CModule CExpr AllBind CAlt CAltL AllPat
 %%]
