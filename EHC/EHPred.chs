@@ -21,7 +21,7 @@
 %%[9 export(ProofState(..))
 %%]
 
-%%[9 export(ProvenNode(..),ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,ProofCost(..),prvgCode,prvgReachableFrom)
+%%[9 export(ProvenNode(..),ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,ProofCost(..),prvgCode,prvgBackToOrig,prvgReachableFrom)
 %%]
 
 %%[9 export(Rule(..),emptyRule,mkInstElimRule,costAdd,costALot,costBase)
@@ -173,6 +173,30 @@ prvgReachableTo (ProvenGraph i2n _ _)
                      in   rr reachSet' (keysFM . filterFM (\i n -> reachFrom n uid) $ i2n)
           rr = foldr r
      in   rr emptySet
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Back to orginal nodes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+prvgBackToOrig :: ProvenGraph -> ProvenGraph
+prvgBackToOrig g@(ProvenGraph i2n p2i p2oi)
+  =  let  backL         =  [ (uid,o)  | (p,uidL@(i:is)) <- fmToList p2i
+                                      , let {mo = lookupFM p2oi p; o = maybe i head mo}
+                                      , uid <- maybe is (const uidL) mo
+                           ]
+          backFM        =  listToFM backL
+          backUid uid   =  maybe uid id (lookupFM backFM uid)
+          backCSubst    =  assocLCExprToCSubst . assocLMapSnd (CExpr_Hole) $ backL
+          backN n       =  case n of
+                             ProvenAnd pr es c ev    -> ProvenAnd pr (map backUid es) c (backCSubst `cAppSubst` ev)
+                             ProvenOr pr es c        -> ProvenOr pr (map backUid es) c
+                             ProvenShare pr e        -> ProvenShare pr (backUid e)
+                             _                       -> n
+     in   g  { prvgIdNdMp = listToFM . map (\(i,n) -> (backUid i,backN n)) . fmToList $ i2n
+             , prvgPrIdMp = mapFM (\p l -> maybe l (\(i:_) -> [i]) (lookupFM p2oi p)) $ p2i
+             }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
