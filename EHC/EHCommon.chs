@@ -81,7 +81,7 @@
 %%[8 export(Seq,mkSeq,unitSeq,concatSeq,"(<+>)",seqToList,emptySeq)
 %%]
 
-%%[8 export(showPP,ppPair)
+%%[8 import (FiniteMap) export(showPP,ppPair,ppFM)
 %%]
 
 %%[8 export(mkNewLevUIDL)
@@ -397,6 +397,11 @@ ppPair (x,y) = pp_parens (pp x >|< "," >|< pp y)
 %%[8
 showPP :: PP a => a -> String
 showPP x = disp (pp x) 100 ""
+%%]
+
+%%[8
+ppFM :: (PP k,PP v) => FiniteMap k v -> PP_Doc
+ppFM = ppAssocL . fmToList
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

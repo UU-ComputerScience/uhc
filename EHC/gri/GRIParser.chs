@@ -21,11 +21,11 @@ scanOpts :: ScanOpts
 scanOpts
   =  defaultScanOpts
         {   scoKeywordsTxt      =   [ "eval", "apply", "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi"
-                                    , "C", "F", "P", "A"
+                                    , "C", "F", "P", "A", "R", "H"
                                     ]
-        ,   scoKeywordsOps      =   [ "->" ]
-        ,   scoSpecChars        =   "();{}=#/\\"
-        ,   scoOpChars          =   "->"
+        ,   scoKeywordsOps      =   [ "->", "=", "+=", ":=" ]
+        ,   scoSpecChars        =   "();{}#/\\|,"
+        ,   scoOpChars          =   "->:=+"
         ,   scoDollarIdent      =   True
         }
 %%]
@@ -57,27 +57,50 @@ pExpr           =    GrExpr_Unit    <$  pKey "unit"     <*> pVal
                 <|>  GrExpr_Fetch   <$  pKey "fetch"    <*> pGrNm   <*> (Just <$> pInt `opt` Nothing)
                 <|>  GrExpr_Update  <$  pKey "update"   <*> pGrNm   <*> pVal
                 <|>  GrExpr_Case    <$  pKey "case"     <*> pVal    <*  pKey "of" <*> pCurly_pSemics pAlt
-                <|>  GrExpr_App     <$  pKey "apply"    <*> pGrNm   <*> pValL
+                <|>  GrExpr_App     <$  pKey "apply"    <*> pGrNm   <*> pSValL
                 <|>  GrExpr_FFI     <$  pKey "ffi"      <*> pVarid  <*> pGrNmL
-                <|>  GrExpr_Call                        <$> pGrNm   <*> pValL
+                <|>  GrExpr_Call                        <$> pGrNm   <*> pSValL
+
+pSVal           ::   GRIParser GrVal
+pSVal           =    GrVal_Var      <$> pGrNm
+                <|>  GrVal_LitInt   <$> pInt
 
 pVal            ::   GRIParser GrVal
-pVal            =    GrVal_Var      <$> pGrNm
-                <|>  GrVal_LitInt   <$> pInt
+pVal            =    pSVal
                 <|>  GrVal_Tag      <$> pTag
-                <|>  pParens (GrVal_Node <$> (pTag <|> pTagVar) <*> pValL `opt` GrVal_Empty)
+                <|>  pParens
+                        (    GrVal_Node <$> (pTag <|> pTagVar) <*> pSValL
+                        <|>  GrVal_NodeAdapt <$> pGrNm <* pKey "|" <*> pList1Sep pComma pAdapt
+                        <|>  pSucceed GrVal_Empty
+                        )
+
+pSValL          ::   GRIParser GrValL
+pSValL          =    pList pSVal
 
 pValL           ::   GRIParser GrValL
 pValL           =    pList pVal
 
+pAdapt          ::   GRIParser GrAdapt
+pAdapt          =    pSVal <**> (GrAdapt_Ext <$ pKey "+=" <|> GrAdapt_Upd <$ pKey ":=") <*> pSVal
+
 pAlt            ::   GRIParser GrAlt
 pAlt            =    GrAlt_Alt <$> pPat <* pKey "->" <*> pCurly pExprSeq
 
-pPat            ::   GRIParser GrPat
-pPat            =    GrPat_Var      <$> pGrNm
+pSPat           ::   GRIParser GrPat
+pSPat           =    GrPat_Var      <$> pGrNm
                 <|>  GrPat_LitInt   <$> pInt
+
+pPat            ::   GRIParser GrPat
+pPat            =    pSPat
                 <|>  GrPat_Tag      <$> pTag
-                <|>  pParens (GrPat_Node <$> (pTag <|> pTagVar) <*> pGrNmL `opt` GrPat_Empty)
+                <|>  pParens
+                        (    GrPat_Node <$> (pTag <|> pTagVar) <*> pGrNmL
+                        <|>  GrPat_NodeSplit <$> pGrNm <* pKey "|" <*> pList1Sep pComma pSplit
+                        <|>  pSucceed GrPat_Empty
+                        )
+
+pSplit          ::   GRIParser GrSplit
+pSplit          =    GrSplit_Sel <$> pGrNm <* pKey "=" <*> pVal
 
 pTag            ::   GRIParser GrTag
 pTag            =    (\i c n -> GrTag_Lit c i n) <$ pKey "#" <*> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> pGrNm
@@ -88,9 +111,11 @@ pTagVar         =    GrTag_Var <$> pGrNm
 
 pTagCateg       ::   GRIParser GrTagCateg
 pTagCateg       =    GrTagCon       <$ pKey "C"
+                <|>  GrTagRec       <$ pKey "R"
+                <|>  GrTagHole      <$ pKey "H"
                 <|>  GrTagApp       <$ pKey "A"
                 <|>  GrTagFun       <$ pKey "F"
-                <|>  GrTagPApp   <$ pKey "P" <* pKey "/" <*> pInt
+                <|>  GrTagPApp      <$ pKey "P" <* pKey "/" <*> pInt
 
 pGrNmL          ::   GRIParser [HsName]
 pGrNmL          =    pList pGrNm

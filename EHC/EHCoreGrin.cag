@@ -150,7 +150,16 @@ SEM CExpr
                                                       ,True
                                                       )
                                                 else  (case @categ of
-                                                          CBindRec     ->  emptyGrExpr
+                                                          CBindRec     ->  mkSt (map (\(GrBind_Bind n _ _) -> n) @binds.grBindL)
+                                                                           . mkVs @binds.grBindL
+                                                                           $ @body.grExpr
+                                                                           where  h             = GrVal_Node (GrTag_Lit GrTagHole 0 hsnUnknown) []
+                                                                                  mkSt nmL e    = foldr (\n e -> GrExpr_Seq (GrExpr_Store h) (GrPat_Var n) e) e nmL
+                                                                                  mkV b n n' n'' e
+                                                                                                = GrExpr_Seq b (GrPat_Var n')
+                                                                                                    (GrExpr_Seq (GrExpr_Fetch n' Nothing) (GrPat_Var n'')
+                                                                                                        (GrExpr_Seq (GrExpr_Update n (GrVal_Var n'')) GrPat_Empty e))
+                                                                                  mkVs bs e     = foldr (\(GrBind_Bind n _ v) e -> mkV v n (hsnPrefix "_" n) (hsnPrefix "__" n) e) e bs
                                                           _            ->  foldr  (\(GrBind_Bind n _ v) e -> GrExpr_Seq v (GrPat_Var n) e)
                                                                                   @body.grExpr @binds.grBindL
                                                       ,[]
@@ -178,7 +187,7 @@ SEM CExpr
                                                 in   case @func.mbTupApp of
                                                         Just t
                                                             ->  let  v  =  case t of
-                                                                             CTagNone  -> GrVal_Node GrTag_None argL'
+                                                                             CTagNone  -> GrVal_Node grRecTag argL'
                                                                              CTag t l  -> GrVal_Node (GrTag_Lit GrTagCon t l) argL'
                                                                 in   wrapGr (mkE v)
                                                         Nothing
@@ -272,7 +281,7 @@ ATTR CPatL   [ | | grPatL: GrPatL ]
 
 SEM CPat
   | Var         lhs         .   grPat       =   GrPat_Var @patNm
-  | Con         lhs         .   grPat       =   GrPat_Node (ctag GrTag_None (GrTag_Lit GrTagCon) @tag) @binds.patBindL
+  | Con         lhs         .   grPat       =   GrPat_Node (ctag grRecTag (GrTag_Lit GrTagCon) @tag) @binds.patBindL
   | Undef       lhs         .   grPat       =   GrPat_Empty
 
 SEM CPatL

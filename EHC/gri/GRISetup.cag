@@ -20,7 +20,7 @@ WRAPPER GrAGItf
 %%]
 
 %%[8 hs
-grGriSetup :: GrModule -> RunState
+grGriSetup :: GrModule -> IO RunState
 grGriSetup cmod
   =  let  t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf cmod)) Inh_GrAGItf
      in   (rs_Syn_GrAGItf t)
@@ -50,7 +50,7 @@ mkCafGlob st g
 %%]
 
 %%[8
-ATTR GrAGItf GrModule [ | | rs: RunState ]
+ATTR GrAGItf GrModule [ | | rs: {IO RunState} ]
 
 SEM GrModule
   | Mod         lhs         .   rs          =   let  (n2pLam,p2vLam)
@@ -58,17 +58,21 @@ SEM GrModule
                                                      (p2vCode,n2pCaf,p2vCaf)
                                                                  = mkCafGlob (length n2pLam) @bindL.cafGlobL
                                                      n2p'        = listToFM n2pLam `plusFM` listToFM n2pCaf
-                                                     p2v'        = listToFM p2vLam `plusFM` listToFM p2vCaf `plusFM` listToFM p2vCode
-                                                     sz          = sizeFM p2v'
-                                                     h           = RunHeap { rhMem = p2v', rhSize = sz, rhFree = sz }
+                                                     p2v         = p2vLam ++ p2vCaf ++ p2vCode
+                                                     sz          = length p2v
+                                                     szAll       = sz + sz `div` 2
                                                      initGrExpr  = GrExpr_Eval (HNm "_main")
-                                                in   RunState
-                                                        { rsNext = Just initGrExpr
-                                                        , rsStack = []
-                                                        , rsEnv = n2p', rsGlobEnv = n2p'
-                                                        , rsHeap = h
-                                                        , rsHalted = Nothing, rsNrSteps = 0
-                                                        }
+                                                in   do  {  m <- newListArray (0,szAll-1) ((assocLElts . sortOn fst $ p2v) ++ replicate (szAll-sz) RVNil)
+                                                         ;  let  h = RunHeap { rhMem = m, rhSize = sz, rhFree = sz }
+                                                         ;  return
+                                                                (RunState
+                                                                    { rsNext = Just initGrExpr
+                                                                    , rsStack = []
+                                                                    , rsEnv = n2p', rsGlobEnv = n2p'
+                                                                    , rsHeap = h
+                                                                    , rsHalted = Nothing, rsNrSteps = 0
+                                                                    })
+                                                         }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -77,7 +81,7 @@ SEM GrModule
 
 %%[8
 ATTR AllBind [ | | lamGlobL, cafGlobL USE {++} {[]}: {AssocL HsName RunVal} ]
-ATTR AllExpr [ | | self: SELF ]
+ATTR AllExpr AllAdapt AllSplit [ | | self: SELF ]
 
 SEM GrBind
   | Bind        lhs         .   (lamGlobL,cafGlobL)

@@ -28,7 +28,7 @@
 %%[1.main
 main :: IO ()
 main
-  =  putStrLn "gri: not available at this version (of gri)"
+  =  putStrLn "gri: not available for this version (of ehc/gri)"
 %%]
 
 %%[8.main -1.main
@@ -74,7 +74,8 @@ runGrin opts rs
               Nothing
                 ->  do  {  if grioptDebug opts
                            then do  {  putPPLn (pp "-------")
-                                    ;  putPPLn (pp rs')
+                                    ;  prs <- ppRunState rs'
+                                    ;  putPPLn prs
                                     }
                            else return ()
                         ;  runGrin opts rs'
@@ -87,9 +88,11 @@ doCompileRun :: String -> GRIOpts -> IO ()
 doCompileRun fn opts
   = do { let fp = mkTopLevelFPath "grin" fn
        ; gr <- parseGrin fp opts
-       ; let rs = grGriSetup gr
+       ; rs <- grGriSetup gr
        ; if grioptDebug opts
-         then putPPLn (pp rs)
+         then do  {  prs <- ppRunState rs
+                  ;  putPPLn prs
+                  }
          else return ()
        ; rs' <- runGrin opts rs
        ; putPPLn (fromJust . rsHalted $ rs')

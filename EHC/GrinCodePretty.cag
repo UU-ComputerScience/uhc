@@ -56,7 +56,9 @@ ppCurlyV :: [PP_Doc] -> PP_Doc
 ppCurlyV pL = pp_block "{ " "} " "; " pL
 
 ppGrNm :: HsName -> PP_Doc
-ppGrNm n = "$" >|< pp n
+ppGrNm n
+  =  let  s = concat . map (\c -> if c `elem` "$()[]+=:;/{}#->|," then ['$',c] else [c]) . show $ n
+     in   "$" >|< pp s
 %%]
 
 %%[8
@@ -89,15 +91,24 @@ SEM GrAlt
 
 SEM GrVal
   | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : @fldL.ppL)
+  | NodeAdapt   lhs         .   pp          =   pp_parens (@nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
   | Empty       lhs         .   pp          =   pp "()"
   | LitInt      lhs         .   pp          =   pp @int
   | Var         lhs         .   pp          =   @lhs.ppGrNm @nm
 
+SEM GrAdapt
+  | Upd         lhs         .   pp          =   @off.pp >|< ":=" >|< @val.pp
+  | Ext         lhs         .   pp          =   @off.pp >|< "+=" >|< @val.pp
+
 SEM GrPat
   | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : map @lhs.ppGrNm @fldL)
+  | NodeSplit   lhs         .   pp          =   pp_parens (@nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
   | Empty       lhs         .   pp          =   pp "()"
   | LitInt      lhs         .   pp          =   pp @int
   | Var         lhs         .   pp          =   @lhs.ppGrNm @nm
+
+SEM GrSplit
+  | Sel         lhs         .   pp          =   @nm >|< "=" >|< @off.pp
 
 SEM GrTag
   | Lit         lhs         .   pp          =   "#" >|< @int >|< "/" >|< pp @categ >|< "/" >|< @lhs.ppGrNm @nm
@@ -106,7 +117,7 @@ SEM GrTag
 %%]
 
 %%[8
-ATTR GrBindL GrAltL GrPatL GrValL [ | | ppL: PP_DocL ]
+ATTR GrBindL GrAltL GrPatL GrValL GrAdaptL GrSplitL [ | | ppL: PP_DocL ]
 
 SEM GrBindL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
@@ -121,6 +132,14 @@ SEM GrPatL
   | Nil         lhs         .   ppL         =   []
 
 SEM GrValL
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+  | Nil         lhs         .   ppL         =   []
+
+SEM GrAdaptL
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+  | Nil         lhs         .   ppL         =   []
+
+SEM GrSplitL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
   | Nil         lhs         .   ppL         =   []
 %%]
