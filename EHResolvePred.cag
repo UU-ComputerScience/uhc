@@ -25,7 +25,7 @@ SEM Expr
 %%[9
 SEM Expr
   | Let         loc         .   gathSubsPredL       =   @decls.tyCnstr |=> @decls.gathPredL
-                            .   (prfCBindLMap,csubst,remPrfPrL,_)
+                            .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs)
                                                     =   prfPreds @lUniq4 (emptyFE {fePrElimGam = @prElimGam}) @gathSubsPredL
                             .   gathPredL           =   let  usedPrIds = unionManySets . map tqoInsPrIdSet . gamValues $ @tqoGam
                                                         in   filter (not . (`elementOf` usedPrIds) . poId) @remPrfPrL
@@ -41,7 +41,7 @@ SEM Expr
                                                                    )
                                                                    @gathSubsPredL
                             .   prElimGam           =   foldr (\p g -> peGamAddKnPr (uidHNm (poId p)) (poId p) (poPr p) g) @lhs.prElimGam @knPrL
-                            .   (prfCBindLMap,csubst,remPrfPrL,_)
+                            .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs)
                                                     =   prfPreds @lUniq3 (emptyFE {fePrElimGam = @prElimGam}) @inKnGathPrL
                             .   gathPredL           =   @remPrfPrL ++ @remGathPrL
   | Let Lam     loc         .   cbindL              =   concat (eltsFM @prfCBindLMap)

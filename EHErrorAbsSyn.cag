@@ -54,5 +54,6 @@ DATA Err
 %%[9
 DATA Err
   | NotProvenPreds      preds      : {[PredOcc]}
+  | OverlapPreds        overl      : {AssocL Pred [CExpr]}
 %%]
 
