@@ -45,8 +45,8 @@ SEM Decl
                                 .   elimRules       =   let  mkR sub sup supNm
                                                                =  Rule
                                                                     { rulRuleTy    = tyQuantifyClosed ([sub] `mkTyArrow` sup)
-                                                                    , rulMkEvid    = \[sub] -> CExpr_TupSel sub CTagRec
-                                                                                                 (CExpr_Int . tyRecOffset supNm $ @clsTyRec)
+                                                                    , rulMkEvid    = let  o = (CExpr_Int . tyRecOffset supNm $ @clsTyRec)
+                                                                                     in   \[sub] -> mkCExprSelCase emptyRCEEnv (hsnSuffix supNm "!") sub CTagRec supNm supNm o
                                                                     , rulNmEvid    = hsnUnknown
                                                                     , rulId        = uidStart
                                                                     , rulCost      = CostInt (2 * costBase)
@@ -59,6 +59,10 @@ SEM Decl
                                 .   patPrIntroGam   =   gamAdd (tyPredMatchNm @prExpr.ty) @pigi @lhs.patPrIntroGam
                                 .   patPrElimGam    =   foldr (uncurry peGamAdd) @lhs.patPrElimGam @elimRules
 %%]
+
+
+                                                                    , rulMkEvid    = \[sub] -> CExpr_TupSel sub CTagRec
+                                                                                                 (CExpr_Int . tyRecOffset supNm $ @clsTyRec)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Functional dependency

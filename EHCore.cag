@@ -24,7 +24,7 @@
 %%[8 hs export(mkCExprLet,mkCExprLetRec,mkCExprLam,mkCExprApp)
 %%]
 
-%%[8 hs export(ceStrictIn)
+%%[8 hs export(mkCExprStrictIn)
 %%]
 
 %%[8 hs import(FiniteMap,Set,EHTy) export(FvS,FvSMp,cLevOuter,LevMp,fvLev,fvsLev,levMpAdd)
@@ -123,6 +123,9 @@ mkCExprLam as e = foldr (\n e -> CExpr_Lam n e) e as
 
 mkCExprApp :: CExpr -> [CExpr] -> CExpr
 mkCExprApp f as = foldl (\f a -> CExpr_App f a) f as
+
+mkCExprStrictIn :: HsName -> CExpr -> (CExpr -> CExpr) -> CExpr
+mkCExprStrictIn nm e mkC = CExpr_Let CBindStrict [CBind_Bind nm e] (mkC (CExpr_Var nm))
 %%]
 
 %%[8 hs
@@ -160,9 +163,6 @@ caltLPatNms = nub . sort . map (cpatVarNm . caltPat)
 
 cvarUndefined :: CExpr
 cvarUndefined = CExpr_Var hsnUndefined
-
-ceStrictIn :: HsName -> CExpr -> (CExpr -> CExpr) -> CExpr
-ceStrictIn nm e mkC = CExpr_Let CBindStrict [CBind_Bind nm e] (mkC (CExpr_Var nm))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -310,15 +310,17 @@ grEvalExpr rs e
           ->  case grEvalVal rs v of
                 nd@(RVNode a)
                   ->  case elems a of
-                        (RVCat NdCon:RVInt ndTg:ndAL)
+                        (RVCat NdCon:RVInt ndTg:_)
                           ->  let  lookup t []    = Nothing
-                                   lookup t (GrAlt_Alt (GrPat_Node (GrTag_Lit _ t' _) fL) e:aL)
-                                     | t == t'    = Just (fL,e)
-                                     | otherwise  = lookup t aL
+                                   lookup t (GrAlt_Alt p@(GrPat_Node (GrTag_Lit _ t' _) _) e:aL)
+                                     | t == t'    = Just (\rs -> grPatBind rs (rsEnv rs) nd p,e)
+                                   lookup t (GrAlt_Alt p@(GrPat_NodeSplit (GrTag_Lit _ t' _) _ _) e:aL)
+                                     | t == t'    = Just (\rs -> grPatBind rs (rsEnv rs) nd p,e)
+                                   lookup t (_:aL)= lookup t aL
                               in   case lookup ndTg altL of
-                                     Just (fL,e)
+                                     Just (extRE,e)
                                        ->  return (rs',Nothing)
-                                           where  re = rsEnv rs `plusFM` listToFM (zip fL ndAL)
+                                           where  re = extRE rs
                                                   rs'= rs {rsEnv = re, rsNext = Just e}
                                      Nothing
                                        ->  do  { rs' <- halt rs ("No case alt for:" >#< pp nd >-< indent 2 ("in:" >#< ppGrExpr e))
@@ -345,7 +347,7 @@ grPatBind rs re v p
                   ->  case elems a of
                         (RVCat _:_:vfL)
                           ->  re `plusFM` listToFM (zip pfL vfL)
-        GrPat_NodeSplit rNm splL
+        GrPat_NodeSplit _ rNm splL
           ->  case v of
                 RVNode a
                   ->  case elems a of

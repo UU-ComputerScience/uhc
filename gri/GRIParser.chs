@@ -95,8 +95,13 @@ pPat            ::   GRIParser GrPat
 pPat            =    pSPat
                 <|>  GrPat_Tag      <$> pTag
                 <|>  pParens
-                        (    GrPat_Node <$> (pTag <|> pTagVar) <*> pGrNmL
-                        <|>  GrPat_NodeSplit <$> pGrNm <* pKey "|" <*> pList1Sep pComma pSplit
+                        (    (pTag <|> pTagVar)
+                             <**>  (pGrNm
+                                    <**>  (    (\sL r t -> GrPat_NodeSplit t r sL) <$ pKey "|" <*> pList1Sep pComma pSplit
+                                          <|>  (\nL n t -> GrPat_Node t (n:nL)) <$> pGrNmL
+                                          )
+                                   <|> pSucceed (flip GrPat_Node [])
+                                   )
                         <|>  pSucceed GrPat_Empty
                         )
 

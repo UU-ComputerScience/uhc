@@ -410,13 +410,16 @@ afp-bib: afp
 	$(AFP_LATEX) $(AFP_TEX)
 
 afp-tr:
-	$(MAKE) AFP=$@ LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=asArticle --set=forAfpTRUU1 --set=omitTBD --set=omitLitDiscuss" afp-full
+	$(MAKE) AFP=$@ LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=asArticle --set=truu --set=forAfpTRUU1 --set=omitTBD --set=omitLitDiscuss" afp-full
 
 afp04:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=forAFP04Notes --set=omitTBD --set=omitLitDiscuss" afp-bib
 
 esop05:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=forESOP05 --set=omitTBD --set=omitLitDiscuss" afp
+
+esop05-tr:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=truu --set=forESOP05 --set=omitTBD --set=omitLitDiscuss" afp-bib
 
 eh-work:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=asArticle --set=refToPDF --set=inclOmitted --set=onlyCurrentWork" afp

@@ -34,7 +34,8 @@ SEM Decl
 
 %%[8
 SEM Decl
-  | Data        lhs         .  patTyGam             :=  if @hasKiSig  then gamUpd @tyNm (\_ t -> t {tgiData = tgiData @dataTgi}) @lhs.patTyGam
+  | Data        loc         .  updTGI               =   \tgi -> tgi {tgiData = tgiData @dataTgi, tgiDataTagMp = tgiDataTagMp @dataTgi}
+                lhs         .  patTyGam             :=  if @hasKiSig  then gamUpd @tyNm (\_ t -> @updTGI t) @lhs.patTyGam
                                                                       else gamAdd @tyNm @dataTgi @lhs.patTyGam
 %%]
 

@@ -224,9 +224,8 @@ SEM CModule
                                                               ++  (map (uncurry mkFAlt) . fmToList $ @expr.lamNmMp)
                                                               )
                                                           ))
-                            .   mainBind    =   GrBind_Bind hsnGrMain [] @expr.grLetBody
                 lhs         .   grMod       =   GrModule_Mod (HNm @baseName)
-                                                    (@expr.grBindL ++ [@mainBind,@applyBind,@evalBind])
+                                                    (@expr.grBindL ++ [@applyBind,@evalBind])
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -285,7 +284,10 @@ unboxArgL :: UID -> HsName -> GrValL -> (GrValL,GrExpr->GrExpr)
 unboxArgL uniq tyNm vL
   =  let  nL = map uidHNm . mkNewUIDL (length vL) $ uniq
      in   foldr  (\(n,a) (aL,wG)
-                    ->  (GrVal_Var n : aL,GrExpr_Seq (GrExpr_Unit a) (mkGrUnbox tyNm n) . wG)
+                    ->  case a of
+                            GrVal_Node _ _
+                                -> (GrVal_Var n : aL,GrExpr_Seq (GrExpr_Unit a) (mkGrUnbox tyNm n) . wG)
+                            _   -> (a:aL,wG)
                  )
                  ([],id)
           $ zip nL vL
@@ -470,13 +472,14 @@ ATTR CPatL   [ | | grPatL: GrPatL ]
 SEM CPat
   | Var         lhs         .   grPat       =   GrPat_Var @patNm
   | Con         lhs         .   (grPat,grWrapCase)
-                                            =   case @rest.self of
-                                                    CPatRest_Empty
-                                                      ->  (ctag mkGrPatRecNode (\t _ l -> mkGrPatConNode t l) @tag @binds.patNmL,id)
-                                                    CPatRest_Var r
-                                                      ->  let  (oL,mkSL) = unzip @binds.grTupFldL
-                                                               (oL',wrO) = unboxArgL @lUniq hsnInt oL
-                                                          in   (GrPat_NodeSplit r . zipWith ($) mkSL $ oL',wrO)
+                                            =   let
+                                                in   case @rest.self of
+                                                        CPatRest_Empty
+                                                          ->  (ctag mkGrPatRecNode (\t _ l -> mkGrPatConNode t l) @tag @binds.patNmL,id)
+                                                        CPatRest_Var r
+                                                          ->  let  (oL,mkSL) = unzip @binds.grTupFldL
+                                                                   (oL',wrO) = unboxArgL @lUniq hsnInt oL
+                                                              in   (ctag mkGrPatRecSplit (\t _ l -> mkGrPatConSplit t l) @tag r . zipWith ($) mkSL $ oL',wrO)
   | Undef       lhs         .   grPat       =   GrPat_Empty
 
 SEM CPatL

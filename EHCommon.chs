@@ -72,7 +72,7 @@
 %%[8 export(hsnPrefix,hsnSuffix)
 %%]
 
-%%[8 export(hsnUndefined,hsnPrimAddInt)
+%%[8 export(hsnUndefined,hsnPrimAddInt,hsnMain)
 %%]
 
 %%[8 export(cmdLineTrfs,trfOptOverrides)
@@ -185,6 +185,7 @@ hsnSuffix       hsn   p             =   HNm (show hsn ++ p)
 %%]
 
 %%[8
+hsnMain                             =   HNm "main"
 hsnUndefined                        =   HNm "undefined"
 hsnPrimAddInt						=	HNm "primAddInt"
 %%]
@@ -555,7 +556,7 @@ ehcCmdLineOpts
 
 %%[ehcCmdLineOptsA.8
      ,  Option "c"  ["code"]          (OptArg oCode "java|grin")
-          "dump code (java->.java, grin->.grin) on file, default=core (-> .core)"
+          "dump code (java- > .java, grin -> .grin, - -> none) on file, default=core (-> .core)"
      ,  Option ""   ["trf"]           (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
           "switch on/off transformations"
      ,  Option "v"  ["verbose"]       (OptArg oVerbose "0|1|2")
@@ -578,6 +579,7 @@ ehcCmdLineOpts
          oCode       ms  o =  case ms of
                                 Just "java"  -> o { ehcoptCoreJava     = True      }
                                 Just "grin"  -> o { ehcoptCoreGrin     = True      }
+                                Just "-"     -> o { ehcoptCore         = False     }
                                 _            -> o { ehcoptCore         = True      }
          oTrf        s   o =  o { ehcoptTrf           = opt s   }
                            where  opt "" =  []

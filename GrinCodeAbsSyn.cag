@@ -78,7 +78,8 @@ TYPE GrAdaptL   =   [GrAdapt]
 DATA GrPat
   | Node        tag             : GrTag
                 fldL            : {[HsName]}
-  | NodeSplit   nm              : {HsName}
+  | NodeSplit   tag             : GrTag
+                nm              : {HsName}
                 fldL            : GrSplitL
   | Tag         tag             : GrTag
   | Empty

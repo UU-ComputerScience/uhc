@@ -37,11 +37,11 @@ ATTR AllCodeNT [ | gUniq: UID | ]
 ATTR CodeAGItf [ gUniq: UID | | ]
 
 SEM CExpr
-  | Let         (binds.gUniq,loc.lUniq)     =   mkNewUID @lhs.gUniq
-  | Lam         (body.gUniq,loc.lUniq)      =   mkNewUID @lhs.gUniq
+  | Let         (binds.gUniq,loc.lUniq)     =   mkNewLevUID @lhs.gUniq
+  | Lam         (body.gUniq,loc.lUniq)      =   mkNewLevUID @lhs.gUniq
 
 SEM CAlt
-  | Alt         (pats.gUniq,loc.lUniq)      =   mkNewUID @lhs.gUniq
+  | Alt         (pats.gUniq,loc.lUniq)      =   mkNewLevUID @lhs.gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -61,7 +61,9 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 type ARenMp = FiniteMap HsName HsName
 
 aRenAdd :: [HsName] -> UID -> ARenMp -> ARenMp
-aRenAdd nL u m = addListToFM m [ (n,hsnSuffix n ("~" ++ show u)) | n <- nL, isAlpha (head (show n))]
+aRenAdd nL u m
+  =  let  uL = mkNewUIDL (length nL) u
+     in   addListToFM m [ (n,hsnSuffix n ("~" ++ show u)) | (n,u) <- zip nL uL, (not . isDigit . head . show $ n)]
 
 aRenRepl :: ARenMp -> HsName -> HsName
 aRenRepl m n = maybe n id . lookupFM m $ n
