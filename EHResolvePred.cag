@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -41,12 +41,12 @@ SEM RecPatExpr
 %%[9
 SEM Decl
   | Instance    loc         .   (instPrElimGam,ctxtArgNmL,prUIDL)
-                                                    =   peGamAddKnPrL @lUniq6 (tail @prL) @lhs.prElimGam
+                                                    =   peGamAddKnPrL @lUniq6 @ctxtPrFixL @lhs.prElimGam
                             .   supPrUIDL           =   mkNewUIDL (length @supPrTyL) @lUniq4
                             .   supPrElimGam        =   peGamDel @instClsNm @elimRule @instPrElimGam
                             .   declsPrElimGam      =   peGamDel @instClsNm @elimRule @instPrElimGam
                             .   (supPrfCBindLMap,supCSubst,supRemPrfPrL,supEvidL,supPrfErrs)
-                                                    =   prfPreds @lUniq5 (emptyFE {fePrElimGam = @supPrElimGam}) (zipWith PredOcc @supPrL @supPrUIDL)
+                                                    =   prfPreds @lUniq5 (emptyFE {fePrElimGam = @supPrElimGam}) (zipWith PredOcc (map tyPred @supPrTyL) @supPrUIDL)
                 decls       .   prElimGam           =   @declsPrElimGam
 %%]
 

@@ -120,8 +120,8 @@ SEM RecExpr
 SEM RowTyExpr
   | Var         lhs         .   errL        =   mkNestErr @pp (foErrL @fo)
 
-SEM TyExpr
-  | Pred        lhs         .   errL        =   mkNestErr @pp (@prExpr.errL ++ @nmErrs)
+SEM PrExpr
+  | Class       lhs         .   errL        =   mkNestErr @pp (@tyExprs.errL ++ @nmErrs ++ foErrL @fo)
 
 SEM Expr
   | Lam         lhs         .   errL        :=  mkNestErr @pp
@@ -165,7 +165,7 @@ SEM AGItf
 
 %%[9
 SEM Decl
-  | Instance    loc         .   lErrL       =   @tyPrExpr.errL ++ @nmErrs ++ @predNotPrfErrs ++ @supPrfErrs ++ @prfErrs
+  | Instance    loc         .   lErrL       =   @tyPrExpr.errL ++ @predNotPrfErrs ++ @supPrfErrs ++ @prfErrs
                             .   errInstPP   =   ppErrs @lErrL
                             .   errDeclsPP  =   ppErrs @decls.errL
                 lhs         .   errL        =   []
@@ -176,9 +176,6 @@ SEM Decl
 
 SEM Expr
   | Let         loc         .   letErrL     :=  @dupErrs ++ @prfErrs
-
-SEM PrExpr
-  | Class       lhs         .   errL        =   @tyExprs.errL ++ foErrL @fo
 
 SEM AGItf
   | AGItf       loc         .   errTopPP    :=  ppErrs (@predNotPrfErrs)

@@ -204,11 +204,11 @@ SEM PrExprs
   | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 
 SEM Decl
-  | Class       loc     .   pp      =   "class"     >#< (ppTyPr . tyQuantifyClosed $ @tyPrExpr.ty)
+  | Class       loc     .   pp      =   "class"     >#< @tyPrExpr.pp
                                                     >#< "|" >#< ppListSep "" "" ", " @funcDeps.ppL
                                                     >#< "where" >-< indent 2 @decls.pp
   | Instance    loc     .   pp      =   "instance"  >|< maybe empty (\(n,e) -> " " >|< n >#< (if e then "<:" else "::")) @mbNmElim
-                                                    >#< (ppTyPr . tyQuantifyClosed $ @tyPrExpr.ty)
+                                                    >#< @tyPrExpr.pp
                                                     >#< "where" >-< indent 2 @decls.pp
                                                     >-< @errInstPP
                                                     >-< @errDeclsPP
@@ -223,12 +223,6 @@ SEM FuncDeps
   | Nil         lhs     .   ppL     =   []
   | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 %%]
-  | Instance    loc     .   pp      =   "instance"  >|< maybe empty (\(n,e) -> " " >|< n >#< (if e then "<:" else "::")) @mbNmElim
-                                                    >#< ppListSep "(" ")" ", " @ctxtPrExprs.ppL
-                                                    >#< hsnPrArrow >#< @prExpr.pp
-                                                    >#< "where" >-< indent 2 @decls.pp
-                                                    >-< @errInstPP
-                                                    >-< @errDeclsPP
 
 %%[10
 SEM PrExpr

@@ -54,7 +54,7 @@
 %%[8 hs export(tyRecOffset) 
 %%]
 
-%%[9 hs export(Pred(..),predNm,predTy,tyPredNm,tyPredMatchNm,predMatchNm,tyPred,tyLImplsPreds,tyArrowImplsRes,tyArrowImplsArgRes,mkTyPr)
+%%[9 hs export(Pred(..),predNm,predTy,tyPredNm,tyPredMatchNm,predMatchNm,tyPred,tyLImplsPreds,tyArrowImplsRes,tyArrowImplsArgRes,mkTyPr,tyPrArrowArgsRes)
 %%]
 
 %%[9 hs export(tyRecExts,tyRecRow,tyArrowArity,tyQuant)
@@ -565,6 +565,9 @@ predNm = tyAppFunConNm . predTy
 
 tyPredNm :: Ty -> HsName
 tyPredNm = predNm . tyPred
+
+tyPrArrowArgsRes :: Ty -> ([Pred],Pred)
+tyPrArrowArgsRes tp = let (tl,t) = tyArrowArgsRes tp in (map tyPred tl, tyPred t)
 %%]
 
 %%[9 hs
@@ -575,6 +578,7 @@ predMatchNm :: Pred -> HsName
 predMatchNm p
   =  case p of
        Pred_Class t    -> tyAppFunConNm t
+       Pred_Pred  t    -> predMatchNm . snd . tyPrArrowArgsRes $ t
 %%]
 %%[10 hs
        Pred_Lacks _ l  -> hsnPrefix "_Lab_" l
