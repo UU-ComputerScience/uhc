@@ -346,7 +346,7 @@ peGamDel n r g
      in   h' `gamPushGam` t
 
 peGamAddKnPr :: HsName -> PredOccId -> Pred -> PrElimGam -> PrElimGam
-peGamAddKnPr n i p = peGamAdd (predNm p) (mkInstElimRule n i 0 (Ty_Pred p))
+peGamAddKnPr n i p = peGamAdd (predMatchNm p) (mkInstElimRule n i 0 (Ty_Pred p))
 
 peGamAddKnPrL :: PredOccId -> [Pred] -> PrElimGam -> (PrElimGam,[HsName],[PredOccId])
 peGamAddKnPrL i prL g

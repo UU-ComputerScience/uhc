@@ -339,15 +339,28 @@ data FIOut  =  FIOut    {  foCnstr           ::  Cnstr               ,  foTy    
                         ,  foErrL            ::  ErrL                ,  foPredOccL        ::  [PredOcc]
                         ,  foLCoeL           ::  [Coe]               ,  foRCoeL           ::  [Coe]
                         ,  foCSubst          ::  CSubst
+%%]
+%%[10
+                        ,  foRowCoeL         ::  AssocL HsName Coe
+%%]
+%%[9
                         }
+%%]
 
+%%[9.emptyFO
 emptyFO     =  FIOut    {  foCnstr           =   emptyCnstr          ,  foTy              =   Ty_Any
                         ,  foUniq            =   uidStart            ,  foAppSpineL       =   []
                         ,  foErrL            =   []                  ,  foPredOccL        =   []
                         ,  foLCoeL           =   []                  ,  foRCoeL           =   []
                         ,  foCSubst          =   emptyCSubst
+%%]
+%%[10
+                        ,  foRowCoeL         =   []
+%%]
+%%[9
                         }
 %%]
+                        }
 
 %%[1.foHasErrs
 foHasErrs :: FIOut -> Bool
@@ -584,6 +597,9 @@ fitsIn opts env uniq ty1 ty2
                        mkTv fi    = (fi',mkTyVar u)
                          where  (u',u) = mkNewUID (fiUniq fi)
                                 fi' = fi {fiUniq = u'}
+                       bind fo v r e = manyFO [fo,foUpdTy (foTy fo `mkTyRow` e') . foUpdCnstr (v `cnstrTyUnit` mkTyRow r' e') $ fo]
+                         where  e' = foCnstr fo |=> e
+                                r' = foCnstr fo |=> r
                        (u',u1)    = mkNewLevUID (fiUniq fi)
                        fi2        = fi {fiUniq = u'}
 
@@ -596,20 +612,12 @@ fitsIn opts env uniq ty1 ty2
                        
                        fR fi r1 r2@(Ty_Var v2 f2) e1@(_:_) e12 e2
                          | f2 == TyVarCateg_Plain
-                         = foR
+                         = bind (fR fi2 r1 rv [] e12 e2) v2 rv e1
                          where  (fi2,rv) = mkTv fi
-                                fo = fR fi2 r1 rv [] e12 e2
-                                e1' = foCnstr fo |=> e1
-                                rv' = foCnstr fo |=> rv
-                                foR = manyFO [fo,foUpdTy (foTy fo `mkTyRow` e1') . foUpdCnstr (v2 `cnstrTyUnit` mkTyRow rv' e1') $ fo]
                        fR fi r1@(Ty_Var v1 f1) r2 e1 e12 e2@(_:_)
                          | f1 == TyVarCateg_Plain
-                         = foR
+                         = bind (fR fi2 rv r2 e1 e12 []) v1 rv e2
                          where  (fi2,rv) = mkTv fi
-                                fo = fR fi2 rv r2 e1 e12 []
-                                e2' = foCnstr fo |=> e2
-                                rv' = foCnstr fo |=> rv
-                                foR = manyFO [fo,foUpdTy (foTy fo `mkTyRow` e2') . foUpdCnstr (v1 `cnstrTyUnit` mkTyRow rv' e2') $ fo]
                        fR fi r1@(Ty_Con n1) _ _ _ e2@(_:_)
                          | n1 == hsnRowEmpty && isRec
                          = err fi [Err_MissingRowLabels (assocLKeys e2) tr1]
@@ -634,11 +642,9 @@ fitsIn opts env uniq ty1 ty2
                                foR = manyFO ([fo] ++ foL ++ [foRes])
                                foRes = (\fo -> foldr foCmbPrfRes fo foL)
 %%]
-
 %%[10
                                        . foUpdRecFldsCoe eKeys foL tr1
 %%]
-
 %%[7
                                        . foUpdTy (foTy fo `mkTyRow` eL)
                                        . foUpdCnstr fCnstr $ fo
@@ -650,6 +656,9 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[10.fitsIn.fRow.fRFinal -7.fitsIn.fRow.fRFinal
+                       fR fi r1@(Ty_Var _ TyVarCateg_Fixed) r2@(Ty_Con n2) [] [] []
+                         | n2 == hsnRowEmpty && isRec
+                         = res fi r2
                        fR fi r1 r2 [] [] []
                          = (f fi r1 r2) {foLCoeL = [], foRCoeL = []}
 %%]
@@ -664,28 +673,56 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[10.fitsIn.fRow.foR -7.fitsIn.fRow.foR
-                       foR        = foUpdRecCoe $ fR fi2 r1 r2 extsIn1 extsIn12 extsIn2
-                       foUpdRecCoe fo
-                         =  case foLCoeL fo of
-                              [] -> fo
-                              cL -> fo {foLCoeL = [Coe (\e -> mkCExprLet CBindPlain [CBind_Bind rn e] (coeWipeWeave emptyCnstr (foCSubst fo) (foLCoeL fo) (foRCoeL fo) `coeEvalOn` r))]}
+                       foR        = (if isRec then foUpdRecCoe r1 r2 extsIn1 extsIn12 extsIn2 else id) $ fR fi2 r1 r2 extsIn1 extsIn12 extsIn2
+                       foUpdRecCoe r1 r2 e1 e12 e2 fo
+                         =  let  rn = uidHNm u1
+                                 r = CExpr_Var rn
+                                 tr1s = foCnstr fo |=> tr1
+                                 lL1 = assocLKeys e1
+                                 lL2 = assocLKeys e2
+                                 lL12 = assocLKeys . map fst $ e12
+                                 (u',u2,u3) = mkNewLevUID2 (foUniq fo)
+                                 uL = mkNewUIDL (length lL1 + length lL12 + length lL2) u2
+                                 mkLSel u = CExpr_TupSel r ctagNone (CExpr_Hole u)
+                                 mkLDel u e = CExpr_TupDel e ctagNone (CExpr_Hole u)
+                                 mkLLet r e = mkCExprLet CBindPlain [CBind_Bind rn e] r
+                                 mkLPred' r l u
+                                   =  let  r' = maybe Ty_Any fst . tyRowExtr l $ r
+                                      in   (PredOcc (Pred_Lacks r' l) u,r')
+                                 mkLPred l u = fst (mkLPred' tr1s l u)
+                                 mkUpd lL uL e
+                                   = foldr  (\(l,u) e
+                                               -> case lookup l (foRowCoeL fo) of
+                                                    Just c | not (coeIsId c)
+                                                      -> CExpr_TupUpd e ctagNone (CExpr_Hole u) (c `coeEvalOn` mkLSel u)
+                                                    _ -> e
+                                            )
+                                            e (zip lL uL)
+                            in   case (foRowCoeL fo,r1,r2,lL1) of
+                                   ([],Ty_Con n1,Ty_Con n2,[]) | n1 == hsnRowEmpty && n2 == hsnRowEmpty
+                                     -> fo {foLCoeL = []}
+                                   (_,_,Ty_Con n2,_) | n2 == hsnRowEmpty
+                                     -> fo {foLCoeL = [Coe (mkLLet (CExpr_Tup `mkCExprApp` vL))], foPredOccL = zipWith mkLPred lL uL ++ foPredOccL fo, foUniq = u'}
+                                     where  lL  = sortBy rowLabCmp (lL12 ++ lL2)
+                                            vL  = zipWith (\l u -> (maybe id coeEvalOn (lookup l (foRowCoeL fo)) $ mkLSel u)) lL uL
+                                   (_,Ty_Var _ TyVarCateg_Fixed,_,_:_)
+                                     -> fo {foLCoeL = [Coe (mkLLet (cDel . mkUpd lL12 uL $ r))], foPredOccL = zipWith mkLPred lL12 uL ++ pDelL ++ foPredOccL fo, foUniq = u'}
+                                     where  (cDel,pDelL,_)
+                                              = foldr  (\(l,u) (c,pL,r) -> let (p,r') = mkLPred' r l u in (mkLDel u . c,p:pL,r'))
+                                                       (id,[],tr1s) (zip lL1 (drop (length lL12) uL))
+                                   (_:_,_,_,_)
+                                     -> fo {foLCoeL = [Coe (mkLLet (mkUpd lL12 uL r))], foPredOccL = zipWith mkLPred lL12 uL ++ foPredOccL fo, foUniq = u'}
+                                   _ -> fo {foLCoeL = []}
 %%]
 
 %%[10.fitsIn.fRow.Coe
-                       rn = uidHNm u1
-                       r = CExpr_Var rn
                        foUpdRecFldsCoe eKeys foL tr1 foR
-                         =  let (u',u2) = mkNewLevUID (foUniq foR)
-                                (cL,pL)
-                                  =  unzip
-                                       [  ( Coe (\e -> CExpr_TupUpd e ctagNone (CExpr_Hole u) (c `coeEvalOn` CExpr_TupSel r ctagNone (CExpr_Hole u)))
-                                          , PredOcc (Pred_Lacks (maybe Ty_Any fst . tyRowExtr l $ tr1) l) u
-                                          )
-                                       |  (l,fo,u) <- zip3 eKeys foL (mkNewUIDL (length foL) $ u2)
+                         =  let cL =   [  (l,c)
+                                       |  (l,fo) <- zip eKeys foL
                                        ,  let c = coeWipeWeave (foCnstr foR) (foCSubst foR) (foLCoeL fo) (foRCoeL fo)
                                        ,  not (coeIsId c)
                                        ]
-                            in  foR {foLCoeL = cL ++ foLCoeL foR, foPredOccL = pL ++ foPredOccL foR, foUniq = u'}
+                            in  foR {foRowCoeL = cL}
 %%]
 
 %%[4.fitsIn.Base
@@ -709,6 +746,13 @@ fitsIn opts env uniq ty1 ty2
             f fi t1@(Ty_Pred (Pred_Class ct1)) t2@(Ty_Pred (Pred_Class ct2))
                 | fioPredAsTy (fiFIOpts fi)         = fo {foTy = Ty_Pred (Pred_Class (foTy fo))} 
                 where  fo = f fi ct1 ct2
+%%]
+
+%%[10
+            f fi t1@(Ty_Pred (Pred_Lacks lt1 l1)) t2@(Ty_Pred (Pred_Lacks lt2 l2))
+                | fioPredAsTy (fiFIOpts fi) && l1 == l2
+                                                    = fo {foTy = Ty_Pred (Pred_Lacks (foTy fo) l1)} 
+                where  fo = f fi lt1 lt2
 %%]
 
 %%[4.fitsIn.QLR
@@ -987,6 +1031,9 @@ matchRule u pr r
 %%]
 
 %%[9
+prvgAddOrig :: UID -> Pred -> ProvenGraph -> ProvenGraph
+prvgAddOrig uid pr g = g {prvgPrOrigIdMp = addToFM_C (flip (++)) (prvgPrOrigIdMp g) pr [uid]}
+
 prfOneStepClass :: FIEnv -> Pred -> UID -> ProofState -> ProofState
 prfOneStepClass env pr@(Pred_Class t) prUid st@(ProofState g@(ProvenGraph i2n p2i p2oi) u toProof origToProof _)
   =   let  isInOrig             = pr `elem` origToProof
@@ -1006,8 +1053,7 @@ prfOneStepClass env pr@(Pred_Class t) prUid st@(ProofState g@(ProvenGraph i2n p2
                                           in   foldr
                                                    (\(uid,m@(prOccL,evid,rid,cost)) (g,newPr)
                                                       -> let hasNoPre   =  null prOccL
-                                                             addOrig g  =  if hasNoPre then g {prvgPrOrigIdMp = addToFM_C (flip (++)) (prvgPrOrigIdMp g) pr [rid]}
-                                                                                       else g
+                                                             addOrig    =  if hasNoPre then prvgAddOrig rid pr else id
                                                              prf        =  ProvenAnd pr (map poId prOccL)
                                                                              (if isInOrig && hasNoPre then CostAvailImpl (costCost cost) else cost) evid
                                                          in  (addOrig . prvgAddNd uid prf $ g,prOccL ++ newPr)
@@ -1030,7 +1076,20 @@ prfOneStepLacks env pr@(Pred_Lacks r l) prUid st@(ProofState g@(ProvenGraph i2n 
                             offset = tyExtsOffset l . tyRowCanonOrder $ exts
                        in   case row of
                               Ty_Var _ _ 
-                                | null exts ->  st {prfsProvenGraph = prvgAddPrNd pr [prUid] (ProvenArg pr zeroCost) g}
+                                | null exts ->  case gamLookupAll (predMatchNm pr) (fePrElimGam env) of  
+                                                  pegis@(_:_) | isJust mbMatch
+                                                      -> fromJust mbMatch
+                                                      where    (u',u1,u2)    = mkNewLevUID2 u
+                                                               rules         = concat . map pegiRuleL $ pegis
+                                                               ruleMatches   = catMaybes . zipWith (\u r -> matchRule u pr r) (mkNewUIDL (length rules) u1) $ rules
+                                                               mbMatch
+                                                                 =  case ruleMatches of
+                                                                      [] ->  Nothing
+                                                                      ((_,evid,rid,cost):_)
+                                                                         ->  let  prf = ProvenAnd pr [] cost evid
+                                                                                  g'  = prvgAddOrig rid pr . prvgAddNd prUid prf $ g
+                                                                             in   Just (st {prfsProvenGraph = g', prfsUniq = u'})
+                                                  []  ->  st {prfsProvenGraph = prvgAddPrNd pr [prUid] (ProvenArg pr zeroCost) g}
                                 | otherwise ->  let  (u',u2) = mkNewUID u
                                                      newPr = PredOcc (Pred_Lacks row l) u2
                                                      g2 = prvgAddPrNd pr [prUid] (ProvenAnd pr [u2] zeroCost (CExpr_Hole u2 `mkCExprAddInt` CExpr_Int offset)) g
@@ -1138,10 +1197,10 @@ fitPredToEvid :: UID -> Ty -> PrIntroGam -> FIOut
 fitPredToEvid u prTy g
   =  case prTy of
        Ty_Any -> emptyFO
-       _ ->  case gamLookup (tyPredNm prTy) g of
+       _ ->  case gamLookup (tyPredMatchNm prTy) g of
                Just pigi
                  -> let (u',u1) = mkNewUID u
                         fo = fitsIn predFIOpts emptyFE u (pigiPrToEvidTy pigi) ([prTy] `mkTyArrow` mkTyVar u1)
                     in  fo {foTy = snd (tyArrowArgRes (foTy fo))}
-               _ -> emptyFO {foErrL = [Err_NamesNotIntrod [tyPredNm prTy]]}
+               _ -> emptyFO {foErrL = [Err_NamesNotIntrod [tyPredMatchNm prTy]]}
 %%]

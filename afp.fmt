@@ -1,24 +1,18 @@
 %% configuration
 
+%if phd || forAfpTRUU1 || onlyCurrentWork
+%let inclChunkMarks	= True
+%else
+%let inclChunkMarks	= False
+%endif
+
 %if forESOP05
 %let chapAsArticle	= True
 %else
 %let chapAsArticle	= False
 %endif
 
-%if yesAFP04
-%let noAFP04 		= False
-%let inclOmitted 	= False
-%else
-%let noAFP04 		= True
-%endif
-
 %% end of configuration
-
-%if yesAFP04
-%% CONFIG: For AFP04
-%else
-%endif
 
 %if inclOmitted
 %% CONFIG: Omitted material included
