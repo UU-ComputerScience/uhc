@@ -286,6 +286,9 @@ gamSubstTop s g
 ppGam :: (PP k, PP v) => Gam k v -> PP_Doc
 ppGam g = ppAssocL (gamToAssocL g)
 
+instance (PP k, PP v) => PP (Gam k v) where
+  pp = ppGam
+
 instance PP ValGamInfo where
   pp vgi = ppTy (vgiTy vgi)
 %%]

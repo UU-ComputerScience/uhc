@@ -224,17 +224,17 @@ instance Substitutable Cnstr where
 
 %%[9
 instance Substitutable Pred where
-  s |=>  p =  (\(Ty_Pred p) -> p) (s |=> (Ty_Pred p))
-  ftv    p =  ftv (Ty_Pred p)
+  s |=>  p  =  (\(Ty_Pred p) -> p) (s |=> (Ty_Pred p))
+  ftv    p  =  ftv (Ty_Pred p)
 
 instance Substitutable Impls where
-  s |=>  i =  case i of
-                Impls_Cons p t  -> Impls_Cons (s |=> p) (s |=> t)
-                Impls_Tail iv   -> maybe i id (cnstrImplsLookup iv s)
-                _               -> i
-  ftv    i =  case i of
-                Impls_Cons p t  -> ftv p `union` ftv t
-                _               -> []
+  s |=>  i  =  case i of
+                 Impls_Cons v p t  -> Impls_Cons v (s |=> p) (s |=> t)
+                 Impls_Tail v      -> maybe i id (cnstrImplsLookup v s)
+                 _                 -> i
+  ftv    i  =  case i of
+                 Impls_Cons _ p t  -> ftv p `union` ftv t
+                 _                 -> []
 
 instance Substitutable CnstrInfo where
   s |=>  ci =  case ci of

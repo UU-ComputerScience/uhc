@@ -152,7 +152,7 @@ data CompileRunState
   = CRSOk
   | CRSFail
   | CRSFailErrL ErrL
-  | CRSErrInfoL String ErrL -- [(ErrorCateg,Error)]
+  | CRSErrInfoL String Bool ErrL -- [(ErrorCateg,Error)]
 
 data CompileRun
   = CompileRun
@@ -173,10 +173,11 @@ crHandle1 action err errs it
              -> do { putPPLn (ppErrL es)
                    ; return (err v)
                    }
-           CRSErrInfoL about is
-             -> do { if null is then return () else putPPLn (about >#< "found errors" {- >-< ppErrL is -} )
+           CRSErrInfoL about doPrint is
+             -> do { if null is then return () else putPPLn (about >#< "found errors" >-< e)
                    ; if not (null is) then return (err v) else action v
                    }
+             where e = if doPrint then ppErrL is else empty
            CRSFail
              -> return (err v)
            CRSOk
@@ -195,11 +196,11 @@ crSetErrs es cr
       [] -> cr
       _  -> cr {crState = CRSFailErrL es}
 
-crSetInfos :: String -> ErrL -> CompileRun -> CompileRun
-crSetInfos msg is cr
+crSetInfos :: String -> Bool -> ErrL -> CompileRun -> CompileRun
+crSetInfos msg dp is cr
   = case is of
       [] -> cr
-      _  -> cr {crState = CRSErrInfoL msg is}
+      _  -> cr {crState = CRSErrInfoL msg dp is}
 
 crMbCU :: HsName -> CompileRun -> Maybe CompileUnit
 crMbCU modNm cr = lookupFM (crCUCache cr) modNm
@@ -304,7 +305,7 @@ crCompileCUParseHS modNm cr
               p1ob = wrap_AGItf res p1ib
               errL = mkParseErrInfoL (getMsgs steps)
        ;  cr' <- crUpdCU modNm (\cu -> return (cu {cuMbOut = Just p1ob})) cr
-       ;  return (crSetInfos "Parse of module" errL cr')
+       ;  return (crSetInfos "Parse of module" True errL cr')
        }
 
 crCompileCUPass1HS :: HsName -> CompileRun -> IO CompileRun
@@ -314,7 +315,7 @@ crCompileCUPass1HS modNm cr
               Just "pp"   ->  putPPLn (pp_Syn_AGItf p1ob)
               Just "ast"  ->  putPPLn (ppAST_Syn_AGItf p1ob)
               _           ->  return ()
-       ; return (cr {crState = CRSErrInfoL "Type checking" (allErrL_Syn_AGItf p1ob)})
+       ; return (cr {crState = CRSErrInfoL "Type checking" False (allErrL_Syn_AGItf p1ob)})
        }
 
 crCompileCUPass2HS :: HsName -> CompileRun -> IO CompileRun

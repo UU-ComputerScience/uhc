@@ -9,7 +9,7 @@
 %%% Substituting holes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs import(FiniteMap,EHCommon,EHCode) export(CSubstitutable(..),cAppCoeArg,CSubst,emptyCSubst,assocLToCSubst)
+%%[9 hs import(FiniteMap,UU.Pretty,EHCommon,EHCode,EHCodePretty) export(CSubstitutable(..),cAppCoeArg,CSubst,emptyCSubst,assocLToCSubst)
 %%]
 
 %%[9 hs export(coeWeave,coeEvalOn)
@@ -89,21 +89,24 @@ coeEvalOn coe ce
 coeWeave :: CSubst -> [Coe] -> [Coe] -> Coe
 coeWeave cs lCoeL rCoeL
   =  let  (lCoeL',rCoeL') = coeWipe cs lCoeL rCoeL
-          ev c e = c `coeEvalOn` (cAppSubst cs e)
+          ev c e = cs `cAppSubst` (c `coeEvalOn` e)
      in   CoeC (foldr ev (foldr ev CExpr_CoeArg (reverse lCoeL')) rCoeL')
 
 coeWipe :: CSubst -> [Coe] -> [Coe] -> ([Coe],[Coe])
-coeWipe cs (lCoe:lCoeL) (rCoe:rCoeL)
-  =  let  (lCoeL',rCoeL') = w (lCoeL,rCoeL)
-          w ([lc],[rc]) | match      = ([],[])
-                        | otherwise  = ([CoeC lce],[CoeC rce])
-            where  lce    =  cs `cAppSubst` (lc `coeEvalOn` CExpr_CoeArg)
-                   rce    =  cs `cAppSubst` (rc `coeEvalOn` CExpr_CoeArg)
-                   match  =  case (lce,rce) of
-                               (CExpr_App _ (CExpr_Var ln),CExpr_Lam rn _) | ln == rn  -> True
-                               _                                                       -> False
-          w c = c
-     in   w (lCoe:lCoeL',rCoe:rCoeL')
-coeWipe _ [] [] = ([],[])
+coeWipe cs l r
+  =  let  w l r =  case (l,r) of
+                     (lc:ls,rc:rs)  | match      -> w ls rs
+                                    | otherwise  -> (CoeC lce : ls, CoeC rce : rs)
+                         where  lce    =  cs `cAppSubst` (lc `coeEvalOn` CExpr_CoeArg)
+                                rce    =  cs `cAppSubst` (rc `coeEvalOn` CExpr_CoeArg)
+                                match  =  case (lce,rce) of
+                                            (CExpr_App _ (CExpr_Var ln),CExpr_Lam rn _) | ln == rn  -> True
+                                            _                                                       -> False
+                     _ -> (l,r)
+          (l',r') = w (reverse l) (reverse r)
+     in   (reverse l',reverse r')
+
+instance PP Coe where
+  pp c = "<" >|< pp (c `coeEvalOn` CExpr_CoeArg) >|< ">"
 %%]
 

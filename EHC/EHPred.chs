@@ -15,7 +15,7 @@
 %%[9 import(EHTy,EHTyPretty,EHTyQuantify,EHCode,EHCodePretty,EHCodeSubst,EHCommon,EHGam,EHCnstr)
 %%]
 
-%%[9 import(EHTrace)
+%%[9 import(EHDebug)
 %%]
 
 %%[9 export(PredOccId,PredOcc(..),ProofState(..))
