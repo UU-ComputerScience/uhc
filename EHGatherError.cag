@@ -138,7 +138,7 @@ SEM Expr
                 lhs         .  errL         =   []
 %%]
 
-%%[4_1
+%%[4_3
 SEM Expr
   | Let         loc         .  gamErrL      =   concat . map (\(n,e) -> mkNestErr (pp n) e) . gamToAssocL $ @errGam
                             .  letErrL      :=  @dupErrs ++ @gamErrL

@@ -64,12 +64,13 @@
 
 %if forPHD  || onlyCurrentWork
 %let incl10     = True
+%let incl11     = True
 %else
 %let incl10     = False
+%let incl11     = False
 %endif
 
 %if forPHD 
-%let incl11     = True
 %let incl12     = True
 %let incl13     = True
 %let incl14     = True
@@ -78,7 +79,6 @@
 %let incl17     = True
 %let inclXX     = True
 %else
-%let incl11     = False
 %let incl12     = False
 %let incl13     = False
 %let incl14     = False
@@ -4167,7 +4167,7 @@ In order to be able to represent yet unknown types the type language needs
 sigma  =  Int | Char
        |  (sigma,...,sigma)
        |  sigma -> sigma
-       |  tvar
+       |  tvarv
 \end{code}
 
 The type structure |Ty| also needs to be extended with an alternative for a variable
@@ -4200,10 +4200,10 @@ For now we will ignore this aspect and just assume a unique |UID| can be obtaine
 sigma  =  Int | Char
        |  (sigma,...,sigma)
        |  sigma -> sigma
-       |  tvar
+       |  tvarv
 \end{code}
 }
-\item Type variable |tvar| represents yet unknown type
+\item Type variable |tvarv| represents yet unknown type
 \item AG extension of type structure:
 \chunkCmdFrameUse{EHTyAbsSyn.2}
 \chunkCmdFrameUse{EHCommon.2.UID.Base}
@@ -4218,19 +4218,19 @@ Although the typing rules at \figPageRef{rules.expr1B.C} still hold
 we need to look at the meaning of |<=| (or |fitsIn|) in the presence of
 type variables.
 The idea here is that what is unknown may be replaced by that which is known.
-For example, if the check |tvar <= sigma| is encountered
-making the previously unknown type |tvar| equal to |sigma|
-is the easiest way to make |tvar <= sigma| true.
-An alternative way to look at this is that |tvar <= sigma| is true under the
-constraint that |tvar| equals |sigma|.
+For example, if the check |tvarv <= sigma| is encountered
+making the previously unknown type |tvarv| equal to |sigma|
+is the easiest way to make |tvarv <= sigma| true.
+An alternative way to look at this is that |tvarv <= sigma| is true under the
+constraint that |tvarv| equals |sigma|.
 
 \subsubsection{Remembering and applying constraints}
 
-Next we can observe that once a certain type |tvar| is declared to be
+Next we can observe that once a certain type |tvarv| is declared to be
 equal to a type |sigma| this fact has to be remembered.
 
 \begin{code}
-Cnstr                       =  [tvar :-> sigma]
+Cnstr                       =  [tvarv :-> sigma]
 \end{code}
 
 A set of \IxAsDef{constraint}s |Cnstr| is a set of bindings for type variables,
@@ -4247,7 +4247,7 @@ Different strategies can be used to cope with constraints
 \cite{heeren02hm-constr,sulzmann97constrained-type}.
 Here
 constraints |Cnstr| are used to replace all other
-references to |tvar| by |sigma|,
+references to |tvarv| by |sigma|,
 for this reason often named a \IxAsDef{substitution}.
 Mostly this will be done immediately after constraints are obtained as
 to avoid finding a new and probably conflicting constraint for
@@ -4315,7 +4315,7 @@ even though for a list implementation this would not be required.
 \item New constraint for type variable
 \SafeCode{%
 \begin{code}
-Cnstr                       =  [tvar :-> sigma]
+Cnstr                       =  [tvarv :-> sigma]
 \end{code}
 }
 \begin{itemize}
@@ -4584,16 +4584,16 @@ let  id = \x -> x
 in   id 3
 \end{code}
 the conclusion would be drawn that |id :: ANY -> ANY|,
-whereas |id :: tvar -> tvar| would later on have bound |tvar :-> Int| (at the application |id 3|).
+whereas |id :: tvarv -> tvarv| would later on have bound |tvarv :-> Int| (at the application |id 3|).
 So, |ANY| represents ``unknown knowledge'',
-a type variable |tvar| represents ``not yet known knowledge''
+a type variable |tvarv| represents ``not yet known knowledge''
 to which the inferencing process later has to refer to make it ``known knowledge''.
 \item
 Type variables are introduced under the condition that they are
 \Ix{fresh type variable}``fresh''.
 For a typing rule this means that these type
 variables are not in use elsewhere,
-often more concretely specified with a condition |tvar `notElem` ftv(Gamma)|.
+often more concretely specified with a condition |tvarv `notElem` ftv(Gamma)|.
 Freshness in the implementation is implemented via unique identifiers UID.
 \end{itemize}
 
@@ -5124,8 +5124,9 @@ The type language for this version of EH adds quantification with the universal 
 sigma  =  Int | Char
        |  (sigma,...,sigma)
        |  sigma -> sigma
-       |  tvar | tvarf
+       |  tvar
        |  forall alpha . sigma
+tvar   =  tvarv | tvarf
 \end{code}
 
 \frame<presentation>
@@ -5138,8 +5139,9 @@ sigma  =  Int | Char
 sigma  =  Int | Char
        |  (sigma,...,sigma)
        |  sigma -> sigma
-       |  tvar | tvarf
+       |  tvar
        |  forall alpha . sigma
+tvar   =  tvarv | tvarf
 \end{code}
 }
 \onslide
@@ -5271,8 +5273,8 @@ let  id :: a -> a
      id = \x -> 3
 in   ...
 \end{code}
-we end up with fitting |tvar1 -> Int <= a -> a|.
-This can be done via constraints |[tvar1 :-> Int, a :-> Int]|.
+we end up with fitting |tvarv1 -> Int <= a -> a|.
+This can be done via constraints |[tvarv1 :-> Int, a :-> Int]|.
 However, |a| was supposed to be chosen by the caller of |id|
 while now it is constrained by the body of |id| to be an |Int|.
 Somehow constraining |a| whilst being used as part of a known type for the body of
@@ -5316,8 +5318,8 @@ in   ...
 \end{code}
 The only way the value associated with |id| ever will be used outside the
 body expression bound to |id|, is via the identifier |id|.
-So, if the inferred type |tvar1 -> tvar1| for the expression |\x -> x| has free type variables
-(here: |[tvar1]|)
+So, if the inferred type |tvarv1 -> tvarv1| for the expression |\x -> x| has free type variables
+(here: |[tvarv1]|)
 and these type variables are not used in the types of other bindings, in particular those
 in the global |Gamma|,
 we know that the expression |\x -> x| nor any other type will constrain those free type variables.
@@ -5373,9 +5375,9 @@ may no be so in conjunction with an additional declaration which uses the previo
 \end{code}
 
 The types of the function |id1| and value |v1| are inferred in the same binding group.
-However, in this binding group the type for |id1| is |tvar1 -> tvar1| for some type variable |tvar1|,
+However, in this binding group the type for |id1| is |tvarv1 -> tvarv1| for some type variable |tvarv1|,
 without any quantifier around the type.
-The application |id1 3| therefore infers an additional constraint |tvar1 :-> Int|, resulting
+The application |id1 3| therefore infers an additional constraint |tvarv1 :-> Int|, resulting
 in type |Int -> Int| for |id1|
 
 \begin{TT}
@@ -5406,8 +5408,8 @@ This results in
 %%3ppfile(test/3-mut-rec.eh%%)
 \end{TT}
 
-For |f1| it is only known that its type is |tvar1 -> tvar2|.
-Similarly |g1| has a type |tvar3 -> tvar4|.
+For |f1| it is only known that its type is |tvarv1 -> tvarv2|.
+Similarly |g1| has a type |tvarv3 -> tvarv4|.
 More type information cannot be constructed unless more information
 is given as is done for |f2|.
 Then also for |g2| may the type |forall a.a->a| be reconstructed.
@@ -5743,8 +5745,9 @@ The type language for this version of EH adds quantification with the existentia
 sigma  =  Int | Char | tcon
        |  (sigma,...,sigma)
        |  sigma -> sigma
-       |  tvar | tvarf
+       |  tvar
        |  Qu alpha . sigma, Qu `elem` {forall, exists}
+tvar   =  tvarv | tvarf
 \end{code}
 We also need an infinite supply of type constants |tcon|.
 Quantifiers |Qu| may now appear anywhere in a type.
@@ -5910,7 +5913,7 @@ This answer is given because all types are monomorphic, that is,
 without quantifiers during inferencing.
 The type variable |a| of the type of |choose| is bound to the instantiated
 type if |id|.
-So, |id| is instantiated to |tvar1 -> tvar1|, giving |choose id :: (tvar1 -> tvar1) -> tvar1 -> tvar1|
+So, |id| is instantiated to |tvarv1 -> tvarv1|, giving |choose id :: (tvarv1 -> tvarv1) -> tvarv1 -> tvarv1|
 resulting in the given quantified type.
 Function |v| can safely be applied to a function of type |Int -> Int|.
 \item
@@ -5991,8 +5994,8 @@ to check the type |sigma1| of an actual argument against
 the type |sigma2| of an expected
 via |sigma1 <= sigma2|.
 As we learned from looking at the |choose| example, Haskell's convention
-is to instantiate |sigma1| before binding it to a type variable |tvar|
-in the case |sigma2 == tvar|.
+is to instantiate |sigma1| before binding it to a type variable |tvarv|
+in the case |sigma2 == tvarv|.
 This information is passed as an additional parameter to |fitsIn|, notated
 by |instLFIOpts|, named an \IxAsDef{instantiating context}.
 \item
@@ -6001,9 +6004,9 @@ For checking an expression |e :: sigma2| of a declaration |v :: sigma1; v = e| t
 we check |sigma2 <= sigma1|.
 In this case we want to avoid instantiating |sigma2|.
 The necessity of avoiding this becomes clear if we look at a situation where
-|sigma2 == (exists a . a, ...)| and |sigma1 == (tvar,...)|,
+|sigma2 == (exists a . a, ...)| and |sigma1 == (tvarv,...)|,
 coinciding with a situation where an explicit type signature is absent.
-Now, if |exists a . a| is instantiated with type constants before it is bound to |tvar|
+Now, if |exists a . a| is instantiated with type constants before it is bound to |tvarv|
 all information about the existential is irretrievably lost,
 something we do only when an existential is bound to an identifier.
 So, in this case we say that |fitsIn| needs to told
@@ -6042,11 +6045,11 @@ fioLeaveRInst   =   fioLeaveRInstY       ^^ -- leave rhs (of fitsIn) instantiate
 \end{code}
 
 where the |+| variants stand for |True|.
-A |True| value for the flag |fioBindRFirst| states that in case of |sigma <= tvar|
-a constraint |(tvar :-> sigma)| will result,
-otherwise first |sigma| will be instantiated and |tvar| be bound to
+A |True| value for the flag |fioBindRFirst| states that in case of |sigma <= tvarv|
+a constraint |(tvarv :-> sigma)| will result,
+otherwise first |sigma| will be instantiated and |tvarv| be bound to
 the instantiated |sigma|.
-Similary we have |fioBindLFirst| for |tvar <= sigma|.
+Similary we have |fioBindLFirst| for |tvarv <= sigma|.
 Finally, |fioLeaveRInst| determines if an instantiation done for |sigma|
 in |... <= sigma| will return the instantiated |sigma| or |sigma| itself.
 Summarizing, |fioBindRFirst| and |fioBindLFirst| turn off greedy
@@ -6153,8 +6156,8 @@ The rules for quantified types also deserve a bit more attention.
 %%srcfile(test/4-forall-sub.eh%%)
 \end{code}
 to the check |Int -> Int <= forall a . a -> a| which has to be done for |id = ii|.
-If |forall a . a -> a| is instantiated with type variables |tvar|,
-the check would succeed with a constraint |(tvar :-> Int)|.
+If |forall a . a -> a| is instantiated with type variables |tvarv|,
+the check would succeed with a constraint |(tvarv :-> Int)|.
 This is not correct.
 Recall that by succesfully passing this check |Int -> Int| will be used
 as if it were a |forall a . a -> a|, which definitely will not work for
@@ -6176,7 +6179,7 @@ The body of |f| only knows it gets passed a value of some unknown type,
 no assumptions about it are made in the body of |f|.
 Consequently, type variable may be instantiated with any type by the caller of
 |f|.
-This is simulated by instantiating with fresh constrainable type variables |tvar|,
+This is simulated by instantiating with fresh constrainable type variables |tvarv|,
 via |instv|.
 In that case we also are not interested in any found constraints
 concerning the fresh type variables, so these are removed.
@@ -6700,12 +6703,12 @@ This can be remembered by just relating the type variable to its type(s):
 
 \begin{code}
 sigma  =  ...
-       |  tvar//Vec(sigma)
+       |  tvarv//Vec(sigma)
 \end{code}
 
-The notation |tvar//Vec(sigma)| associates to a set of types |Vec(sigma)|.
-The type variable |tvar| is bound to each of them during type inferencing, hence the name \IxAsDef{bind type} for this type variant.
-The idea is that as soon as an attempt is made to bind |tvar| to a polymorphic
+The notation |tvarv//Vec(sigma)| associates to a set of types |Vec(sigma)|.
+The type variable |tvarv| is bound to each of them during type inferencing, hence the name \IxAsDef{bind type} for this type variant.
+The idea is that as soon as an attempt is made to bind |tvarv| to a polymorphic
 type we check if all types in |Vec(sigma)| are an instance of the polymorphic type.
 If this is the case we can forget all types |Vec(sigma)| and go on with the polymorphic type.
 
@@ -7735,7 +7738,7 @@ and related design issues.
 %format Transle = Transl "_e"
 %format Translp = Transl "_{" pi "}"
 %format pvark   = pvar "^k"
-%format tvark   = tvar "^k"
+%format tvark   = tvarv "^k"
 %format pia     = pi "^a"
 %format piak    = pi "_a^k"
 %format sigmark = sigma "_r^k"
@@ -7768,7 +7771,7 @@ The rule uses types described by the type language consisting of basic types, ty
 functions (taking normal and implicit parameters), universally quantified types and predicates respectively:
 
 \begin{code}
-sigma  =  Int | Char | tvar | (l1 :: sigma1,...,ln :: sigman) | sigma -> sigma | pi -> sigma | forall alpha . sigma
+sigma  =  Int | Char | tvarv | (l1 :: sigma1,...,ln :: sigman) | sigma -> sigma | pi -> sigma | forall alpha . sigma
 pi     =  identc ^^ Vec(sigma)
 \end{code}
 
@@ -7892,10 +7895,10 @@ for the subsumption |<=|:
 \rulerCmdUse{rules.expr9.C}
 
 \begin{code}
-Cnstr  =  tvar :-> sigma | pvar :-> pi , pvar | pvar :-> pempty
+Cnstr  =  tvarv :-> sigma | pvar :-> pi , pvar | pvar :-> pempty
 \end{code}
 
-The mapping from type variables |tvar| constitutes the usual substitution for type variables.
+The mapping from type variables |tvarv| constitutes the usual substitution for type variables.
 The second alternative maps an implicit variable to a list of predicates.
 
 From bottom to top, the first rule in \figRef{rules.expr9.C} reads as follows.
@@ -7912,7 +7915,7 @@ In other words, we start with assuming that implicits may be everywhere and atte
 to proof the contrary.
 The subsumption check |<=| gives a possible empty sequence of predicates |Vec(piak)| and the
 result type |sigmark|.
-The result type is used to construct the expected type |pvar -> tvar -> sigmark| for |e1|.
+The result type is used to construct the expected type |pvar -> tvarv -> sigmark| for |e1|.
 As it is the responsibility of the application |e1 ^^ e2| to return something which
 accepts |Vec(piak)|, fresh names for those predicates are created by |instpi|.
 Its binding with the predicates is used to extend the environment in which
@@ -8540,7 +8543,35 @@ This allows the mentioned algorithm.
 \section{EH 11: generalized abstract data types}
 \label{ehc11}
 
-built on implicit params, Arthur's Eq type...
+\subsection{Type language}
+
+\begin{code}
+sigma  =  ...
+       |  tvare /=/ sigma
+\end{code}
+
+\subsection{Type rules}
+
+A few notes:
+\begin{itemize}
+\item
+Threading of constraints/substitution until now has been implicit.
+Only result constraints have been compositionally described.
+This bites back now because a more precise manipulation of constraints is required.
+The implementation correctly expresses the required threading but the type rules here/currently handle it via the
+immediate application of constraints to |Gamma| and the expected type |sigmak|.
+This requires fixing in all type rules dealing with constraints and/or see remarks in \secRef{ehc2}.
+\item
+A pattern in a lambda expression require similar treatment as a pattern in a case alternative.
+This has been omitted.
+\end{itemize}
+
+\rulerCmdUse{rules.fit11.varGADT}
+\rulerCmdUse{rules.fit11.gadt}
+\rulerCmdUse{rules.pat11}
+\rulerCmdUse{rules.casealt11}
+\rulerCmdUse{rules.casealts11}
+\rulerCmdUse{rules.expr9.case}
 
 \subsection<article>{Literature}
 
