@@ -117,6 +117,7 @@ SEM Expr
   | AppTop          (expr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)    :=  mkNewLevUID3    @lhs.gUniq
   | App             (func.gUniq,loc.lUniq,loc.lUniq2)               :=  mkNewLevUID2    @lhs.gUniq
   | Lam             (arg.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)     :=  mkNewLevUID3    @lhs.gUniq
+  | AppImpl         (func.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
 
 SEM RowTyExpr
   | Var             (lhs.gUniq,loc.lUniq,loc.lUniq2)                =   mkNewLevUID2    @lhs.gUniq

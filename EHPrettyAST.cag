@@ -240,7 +240,7 @@ SEM Decl
                         .  info     =   []
   | Instance    loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Instance"] (maybe [] (\n -> [ppNm n]) @mbNm) [@ctxtPrExprs.ppAST,@prExpr.ppAST,@decls.ppAST] @info
                         .  info     =   [ mkInfo1 "ctxtToInstTy" (ppTy @ctxtToInstTy)
-                                        , mkInfo1 "instTyRec" (ppTy @instTyRec)
+                                        , mkInfo1 "ctxtRecToInstRecTy" (ppTy @ctxtRecToInstRecTy)
                                         ]
 
 SEM FuncDep
@@ -267,6 +267,9 @@ SEM Expr
                                         , mkInfo1 "cSubst" (ppAssocL . fmToList $ @cSubst)
                                         , mkInfo1 "lamBodyCoeL" (ppCommaList @lamBodyCoeL)
                                         , mkInfo1 "lamArgCoeL" (ppCommaList @lamArgCoeL)
+                                        ]
+  | AppImpl     lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","AppImpl"] [] [@func.ppAST,@arg.ppAST,@argPr.ppAST] @info
+                loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         ]
 %%]
 

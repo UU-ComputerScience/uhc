@@ -207,7 +207,7 @@ prvgBackToOrig g@(ProvenGraph i2n p2i p2oi)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-data ProofCost  = CostLow | CostInt Int
+data ProofCost  = CostAvailExpl | CostAvailImpl | CostInt Int
                 deriving (Eq,Show,Ord)
 
 costALot, costBase :: Int
@@ -215,13 +215,15 @@ costALot  = 100
 costBase  = 1
 
 costAdd :: ProofCost -> ProofCost -> ProofCost
-costAdd (CostInt c1) (CostInt c2)  = CostInt (c1 + c2)
-costAdd CostLow      c2            = c2
-costAdd c1           _             = c1
+costAdd (CostInt c1)        (CostInt c2)  = CostInt (c1 + c2)
+costAdd CostAvailImpl       c2            = c2
+costAdd CostAvailExpl       c2            = c2
+costAdd c1                  _             = c1
 
 instance PP ProofCost where
-  pp (CostInt c) = pp c
-  pp CostLow     = pp "-Inf"
+  pp (CostInt c)       = pp c
+  pp CostAvailImpl     = pp "-Inf"
+  pp CostAvailExpl     = pp "--Inf"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

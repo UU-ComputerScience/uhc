@@ -81,21 +81,29 @@ SEM Decl
 SEM Decl
   | Instance    ctxtPrExprs     .   tyGam           =   gamPushNew @lhs.patTyGam
                 loc             .   introNm         =   tyPredNm @prExpr.ty
-                                .   (pigi,nmErrs)   =   case gamLookup @introNm @lhs.prIntroGam of
-                                                            Just p   -> (p,[])
-                                                            Nothing  -> (emptyPIGI,[Err_NamesNotIntrod [@introNm]])
-                                .   ctxtToInstTy    =   tyFixTyVars (@ctxtPrExprs.tyL `mkTyArrow` @prExpr.ty)
-                                .   fo              =   fitsIn  predFIOpts emptyFE @lUniq2
-                                                                (pigiPrToEvidTy @pigi)
-                                                                ([snd (tyArrowArgRes @ctxtToInstTy)] `mkTyArrow` mkNewTyVar @lUniq)
-                                .   instTyRec       =   snd (tyArrowArgRes (foTy @fo))
-                decls           .   tySigGam        =   assocLToGam . assocLMapSnd ValGamInfo . snd . tyRecExts $ @instTyRec
+                                .   ctxtNmL         =   map tyPredNm @ctxtPrExprs.tyL
+                                .   (pigiL,nmErrs)  =   let  (pL,nLL)  = unzip
+                                                                       . map (\n -> maybe (emptyPIGI,[n]) (\p -> (p,[])) . gamLookup n $ @lhs.prIntroGam)
+                                                                       $ (@introNm : @ctxtNmL)
+                                                             nL        = concat nLL
+                                                        in   (pL,if null nL then [] else [Err_NamesNotIntrod nL])
+                                .   prTyL           =   tyFixTyVars (@prExpr.ty : @ctxtPrExprs.tyL)
+                                .   recTyL          =   let  f u p pr
+                                                               =  let  v = mkNewTyVar @lUniq
+                                                                       fo = fitsIn predFIOpts emptyFE u (pigiPrToEvidTy p) ([pr] `mkTyArrow` v)
+                                                                  in   snd (tyArrowArgRes (foTy fo))
+                                                        in   zipWith3 f  (mkNewLevUIDL (1 + length @ctxtNmL) @lUniq2)
+                                                                         @pigiL @prTyL
+                                .   ctxtToInstTy    =   tail @prTyL `mkTyArrow` head @prTyL
+                                .   ctxtRecToInstRecTy
+                                					=   tail @recTyL `mkTyArrow` head @recTyL
+                decls           .   tySigGam        =   assocLToGam . assocLMapSnd ValGamInfo . snd . tyRecExts $ (head @recTyL)
                 loc             .   elimRule        =   let  n =  maybe (uidHNm @lUniq) id @mbNm
                                                              r =  mkInstElimRule n @lUniq (length @ctxtPrExprs.tyL) (tyQuantifyClosed @ctxtToInstTy)
                                                         in   r
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   tyGam           =   @lhs.tyGam
-                                .   gathTySigGam    =   @lhs.gathTySigGam
+                                .   gathTySigGam    =   (maybe id (\n g -> gamAdd n (ValGamInfo (tyQuantifyClosed @ctxtRecToInstRecTy)) g) @mbNm) @lhs.gathTySigGam
                                 .   patValGam       =   @lhs.patValGam
                                 .   patPrElimGam    =   peGamAdd @introNm @elimRule @lhs.patPrElimGam
 %%]

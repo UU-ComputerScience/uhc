@@ -46,7 +46,7 @@
 %%[6 export(fitsInL)
 %%]
 
-%%[9 import(Maybe,FiniteMap,Set,List,UU.Pretty,EHCodePretty,EHPred,EHCode,EHCodeSubst) export(predFIOpts,prfPreds,foAppCoe)
+%%[9 import(Maybe,FiniteMap,Set,List,UU.Pretty,EHCodePretty,EHPred,EHCode,EHCodeSubst) export(predFIOpts,prfPreds,foAppCoe,prFitToEvid)
 %%]
 
 %%[9 import(EHDebug)
@@ -577,6 +577,15 @@ fitsIn opts env uniq ty1 ty2
                        fi2              = fi {fiUniq = u'}
                        mbfp             = fp tpr1 tpr2
                        mberr            = Just (err fi [Err_UnifyClash ty1 ty2 t1 t2])
+                       fp tpr1@(Ty_Pred _)              tpr2@(Ty_Pred _)
+                            =  if foHasErrs pfo
+                               then Nothing
+                               else Just  ( foUpdTy ([foCnstr fo |=> foTy pfo] `mkTyArrow` foTy fo)
+                                          . foUpdLRCoe (mkAppCoe emptyFM [CExpr_Var n]) (mkLamCoe n)
+                                          $ fo)
+                            where  pfo   = f (fi2 {fiFIOpts = predFIOpts}) tpr2 tpr1
+                                   n     = uidHNm u2
+                                   fo    = f (fi2 {fiUniq = foUniq pfo}) (foCnstr pfo |=> tr1) (foCnstr pfo |=> tr2)
                        fp tpr1@(Ty_Pred pr1)            (Ty_Impls (Impls_Tail iv2))
                             =  Just (foUpdImplExpl iv2 (Impls_Cons iv2 pr1 u2 im2) tpr1 (mkAppCoe emptyFM [CExpr_Var n]) (mkLamCoe n) fo)
                             where  im2   = Impls_Tail u1
@@ -807,7 +816,7 @@ prfOneStep env (PredOcc pr prUid) st@(ProofState g@(ProvenGraph i2n p2i p2oi) u 
                                                                           -> let hasNoPre   =  null prOccL
                                                                                  addOrig g  =  if hasNoPre then g {prvgPrOrigIdMp = addToFM_C (++) (prvgPrOrigIdMp g) pr [rid]} else g
                                                                                  prf        =  ProvenAnd pr (map poId prOccL)
-                                                                                                 (if isInOrig && hasNoPre then CostLow else cost) evid
+                                                                                                 (if isInOrig && hasNoPre then CostAvailImpl else cost) evid
                                                                              in  (addOrig . prvgAddNd uid prf $ g,prOccL ++ newPr)
                                                                        )
                                                                        (prvgAddPrNd pr [prUid] (ProvenOr pr orUids costOfOr)
@@ -878,6 +887,21 @@ prfPredsPruneProvenGraph prL (ProvenGraph i2n p2i p2oi)
             =  onlyReachables [ uid | (uid,ProvenOr _ _ _) <- fmToList i2n ] g
           (cs,_,gPrune) = costOfL (map poId prL) emptyFM (ProvenGraph emptyFM emptyFM p2oi)
      in   (prvgBackToOrig . onlyReachables (map fst cs) $ gPrune, onlyOr gPrune)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Retrieving evidence type for predicate
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+prFitToEvid :: UID -> Ty -> PrIntroGam -> (Ty,ErrL)
+prFitToEvid u prTy g
+  =  case gamLookup (tyPredNm prTy) g of
+       Just pigi
+         -> let (u',u1) = mkNewUID u
+                fo = fitsIn predFIOpts emptyFE u (pigiPrToEvidTy pigi) ([prTy] `mkTyArrow` mkTyVar u1)
+            in  (snd (tyArrowArgRes (foTy fo)),foErrL fo)
+       _ -> (Ty_Any,[Err_NamesNotIntrod [tyPredNm prTy]])
 %%]
 
 

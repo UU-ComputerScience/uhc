@@ -132,10 +132,12 @@
 
 %format |=>     		= "\Yright "
 %format :->         	= "\mapsto "
+%format ~>	         	= "\leadsto "
 %format :-  			= "\vdash "
 %format **  			= ".."
 %format ::- 			= "\Vdash "
-%format ~>   			= "\leadsto "
+%format :~>   			= "\rightsquigarrow "
+%format <~:   			= "\leftsquigarrow "
 %format .    			= "."
 
 

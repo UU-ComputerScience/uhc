@@ -66,7 +66,7 @@
 %%[7 export(uidHNm)
 %%]
 
-%%[8 import (FPath) export(hsnUndefined,putPPLn,Verbosity(..),putCompileMsg)
+%%[8 import (FPath,IO) export(hsnUndefined,putPPLn,putPPFile,Verbosity(..),putCompileMsg)
 %%]
 
 %%[8 export(hsnPrefix,hsnSuffix)
@@ -81,7 +81,7 @@
 %%[9 export(showPP)
 %%]
 
-%%[9 export(assocLValues)
+%%[9 export(assocLValues,mkNewLevUIDL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -219,10 +219,13 @@ uidStart = UID [0]
 mkNewUID :: UID -> (UID,UID)
 mkNewUID   uid = (uidNext uid,uid)
 
-mkNewUIDL :: Int -> UID -> [UID] -- assume sz > 0
-mkNewUIDL sz uid
-  =  let  l = take sz . iterate (\(nxt,uid) -> mkNewUID nxt) . mkNewUID $ uid
+mkNewUIDL' :: (UID -> (UID,UID)) -> Int -> UID -> [UID] -- assume sz > 0
+mkNewUIDL' mk sz uid
+  =  let  l = take sz . iterate (\(nxt,uid) -> mk nxt) . mkNewUID $ uid
      in   map snd l
+
+mkNewUIDL :: Int -> UID -> [UID] -- assume sz > 0
+mkNewUIDL = mkNewUIDL' mkNewUID
 
 instance PP UID where
   pp uid = text (show uid)
@@ -232,6 +235,12 @@ instance PP UID where
 uidHNm :: UID -> HsName
 uidHNm = HNm . show
 %%]
+
+%%[9
+mkNewLevUIDL :: Int -> UID -> [UID]
+mkNewLevUIDL = mkNewUIDL' mkNewLevUID
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Building specific structures
@@ -352,6 +361,12 @@ putCompileMsg opts msg modNm fNm
   = if ehcoptVerbosity opts >= VerboseNormal
     then putStrLn (strBlankPad 25 msg ++ " " ++ strBlankPad 15 (show modNm) ++ " (" ++ fpathToStr fNm ++ ")")
     else return ()
+
+putPPFile :: String -> PP_Doc -> Int -> IO ()
+putPPFile fn pp wid
+  =  do  {  h <- openFile fn WriteMode
+         ;  hPutStrLn h (disp pp wid "")
+         }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

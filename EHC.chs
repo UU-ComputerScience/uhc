@@ -326,12 +326,12 @@ crCompileCUPass2HS modNm cr
                  opts   = crOpts cr
                  codePP = ppCModule (cmodule_Syn_AGItf p1ob)
          ;  if ehcoptCode opts
-            then  writeFile (fpathToStr (fpathSetSuff "code" fp)) (disp codePP 120 "")
+            then  putPPFile (fpathToStr (fpathSetSuff "code" fp)) codePP 120
             else  return ()
          ;  if ehcoptCodeJava opts
             then  do  {  let (jBase,jPP) = cexprJavaSrc (cmodule_Syn_AGItf p1ob)
                              jFP = fpathSetBase jBase fp
-                      ;  writeFile (fpathToStr (fpathSetSuff "java" jFP)) (disp jPP 120 "")
+                      ;  putPPFile (fpathToStr (fpathSetSuff "java" jFP)) jPP 120
                       }
             else  return ()
          ;  return cr
