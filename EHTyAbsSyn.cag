@@ -68,12 +68,6 @@ DATA TyQu
   | KiExists
 %%]
 
-%%[6_1
-DATA Ty
-  | Eq          tv              : {TyVarId}
-                ty              : Ty
-%%]
-
 %%[7
 DATA Ty
   | Ext         ty              : Ty

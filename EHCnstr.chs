@@ -22,7 +22,7 @@
 %%[4 export(cnstrFilter)
 %%]
 
-%%[9 export(fixTyVarsCnstr,tyFixTyVars,cnstrImplsLookup,cnstrImplsUnit)
+%%[9 export(fixTyVarsCnstr,tyFixTyVars,cnstrImplsLookup,cnstrImplsUnit,listToCnstrImpls)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -78,6 +78,9 @@ cnstrFilter f (Cnstr l) = Cnstr (filter (uncurry f) l)
 %%[9
 cnstrImplsUnit :: ImplsVarId -> Impls -> Cnstr
 cnstrImplsUnit v i = Cnstr [(v,CIImpls i)]
+
+listToCnstrImpls :: AssocL ImplsVarId Impls -> Cnstr
+listToCnstrImpls = Cnstr . assocLMapSnd CIImpls
 
 cnstrImplsLookup :: ImplsVarId -> Cnstr -> Maybe Impls
 cnstrImplsLookup v (Cnstr s)
@@ -192,21 +195,30 @@ instance Substitutable Ty where
 %%@SubstitutableTyQuant.4
                                Ty_Ext t l e     ->  Ty_Ext (st isBound t) l (st isBound e)
                                Ty_Pred p        ->  Ty_Pred (sp isBound p)
+                               Ty_Impls i       ->  Ty_Impls (si isBound i)
                                otherwise        ->  t
           sp isBound p    =  case p of
                                Pred_Class t     ->  Pred_Class (st isBound t)
                                Pred_Lacks t n   ->  Pred_Lacks (st isBound t) n
                                Pred_Equal v t   ->  Pred_Equal v (st isBound t)
+          si isBound i    =  case i of
+                               Impls_Cons v p t  -> Impls_Cons v (sp isBound p) (si isBound t)
+                               Impls_Tail v     ->  maybe i id (cnstrImplsLookup v s)
+                               _                ->  i
 %%@SubstitutableTyTVarsHead
 %%@SubstitutableTyTVarsVar.3
 %%@SubstitutableTyTVarsQuant.4
                  Ty_Ext t _ e                   ->  ftv t `union` ftv e
                  Ty_Pred p                      ->  fpv p
+                 Ty_Impls i                     ->  fiv i
                  otherwise                      ->  []
     where fpv p           =  case p of
                                Pred_Class t     ->  ftv t
                                Pred_Lacks t n   ->  ftv t
                                Pred_Equal v t   ->  ftv t
+          fiv i           =  case i of
+                               Impls_Cons _ p t  -> fpv p `union` fiv t
+                               _                ->  []
 %%]
 
 %%[2.SubstitutableList
@@ -232,13 +244,8 @@ instance Substitutable PredOcc where
   ftv    (PredOcc pr _)   = ftv (Ty_Pred pr)
 
 instance Substitutable Impls where
-  s |=>  i  =  case i of
-                 Impls_Cons v p t  -> Impls_Cons v (s |=> p) (s |=> t)
-                 Impls_Tail v      -> maybe i id (cnstrImplsLookup v s)
-                 _                 -> i
-  ftv    i  =  case i of
-                 Impls_Cons _ p t  -> ftv p `union` ftv t
-                 _                 -> []
+  s |=>  i  =  (\(Ty_Impls i) -> i) (s |=> (Ty_Impls i))
+  ftv    i  =  ftv (Ty_Impls i)
 
 instance Substitutable CnstrInfo where
   s |=>  ci =  case ci of

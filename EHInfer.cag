@@ -43,7 +43,8 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | Let         loc         .  lQuValGam            :=  valGamInst1Exists @lUniq2 . valGamQuantify @gTyTvL @remPrOccL $ @lSubsValGam
+  | Let         loc         .  (lQuValGam,tqoGam)   :=  let  (vg,tqog) = valGamQuantify @gTyTvL @remPrOccL @lSubsValGam
+                                                        in   (valGamInst1Exists @lUniq2 vg,tqog)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -70,6 +71,13 @@ SEM Decl
   | Val         loc         .  knTy                 :=  @sigTy
 %%]
 
+%%[9.tyInstKnown
+%%]
+
+SEM Decl
+  | Val         expr        .  knTy                 :=  if @hasTySig  then @knTy
+                                                                      else [mkImplsVar @lUniq2] `mkTyArrow` @patExpr.ty
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Final type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -92,6 +100,11 @@ SEM AGItf
 %%[3.finValGam
 SEM Expr
   | Let         decls       .   finValGam           :=  @lhs.finTyCnstr |=> @lQuValGam
+%%]
+
+%%[9
+SEM Expr
+  | Let         loc         .   finTyCnstr          =   foldr (\tqo c -> tqoImplsCnstr tqo |=> c) @lhs.finTyCnstr (gamValues @tqoGam)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
