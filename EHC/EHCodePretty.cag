@@ -12,6 +12,9 @@
 %%[8 hs import(UU.Pretty,EHCommon,EHTy,EHCode) export(ppCModule)
 %%]
 
+%%[9 hs import(FiniteMap) export(ppCBindLMap)
+%%]
+
 %%[8.WRAPPER import(EHCodeAbsSyn)
 WRAPPER CodeAGItf CExpr
 %%]
@@ -29,6 +32,11 @@ ppCExpr ce
 
 instance PP CExpr where
   pp ce = ppCExpr ce
+%%]
+
+%%[9 hs
+ppCBindLMap :: CBindLMap -> PP_Doc
+ppCBindLMap = ppAssocL . map (\(i,b) -> (i,ppAssocL . map (\(CBind_Bind n v) -> (n,v)) $ b)) . fmToList
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

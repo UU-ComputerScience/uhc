@@ -95,6 +95,7 @@ DATA TyExpr
 DATA TyExpr
   | Pred            prExpr          : PrExpr
   | Impls
+  | NoImpls
 %%]
 
 %%[5

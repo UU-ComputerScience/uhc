@@ -330,6 +330,11 @@ SEM Decl
                             .  sigTy                :=  tyQuantify (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyExpr.ty
 %%]
 
+%%[9
+SEM Decl
+  | TySig       loc         .  sigTy                :=  tqoTy (tyQuantifyPr (TyQuOpts True) (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) TyQu_Forall [] @tyExpr.ty)
+%%]
+
 %%[8
 SEM Decl
   | FFI         loc         .  sigTy                =   tyQuantifyClosed @tyExpr.ty

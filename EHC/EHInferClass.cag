@@ -30,6 +30,7 @@ SEM Decl
                                                                     { rulRuleTy    = tyQuantifyClosed (@ctxtPrExprs.tyL `mkTyArrow` @prExpr.ty)
                                                                     , rulMkEvid    = \_ -> CExpr_Var n
                                                                     , rulNmEvid    = n
+                                                                    , rulId        = @lUniq
                                                                     , rulCost      = CostInt 10
                                                                     }
                                                         in   PrIntroGamInfo (tyQuantifyClosed ([@prExpr.ty] `mkTyArrow` @clsTyRec)) k r
@@ -39,6 +40,7 @@ SEM Decl
                                                                     , rulMkEvid    = \[sub] -> CExpr_Sel sub ctagNone
                                                                                                  (CExpr_Int . fromJust . tyRecOffset supNm $ @clsTyRec)
                                                                     , rulNmEvid    = hsnUnknown
+                                                                    , rulId        = uidStart
                                                                     , rulCost      = CostInt (2 * costBase)
                                                                     }
                                                         in   zipWith (\p n -> (tyPredNm p,mkR @prExpr.ty p n)) @ctxtPrExprs.tyL @supClsNmL
@@ -72,7 +74,7 @@ SEM Decl
                                 .   instTyRec       =   snd (tyArrowArgRes (foTy @fo))
                 decls           .   tySigGam        =   assocLToGam . assocLMapSnd ValGamInfo . snd . tyRecExts $ @instTyRec
                 loc             .   elimRule        =   let  n =  maybe (uidHNm @lUniq) id @mbNm
-                                                             r =  mkInstElimRule n (length @ctxtPrExprs.tyL) (tyQuantifyClosed @ctxtToInstTy)
+                                                             r =  mkInstElimRule n @lUniq (length @ctxtPrExprs.tyL) (tyQuantifyClosed @ctxtToInstTy)
                                                         in   r
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   tyGam           =   @lhs.tyGam

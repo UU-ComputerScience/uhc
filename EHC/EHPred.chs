@@ -34,61 +34,21 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Pred resolver
+%%% Pred resolver, proven nodes in proven graph
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-data ProofState
-  =  ProofState
-       { prfsProvenGraph        :: ProvenGraph
-       , prfsUniq               :: UID
-       , prfsPredsToProve       :: [PredOcc]
-       , prfsPredsOrigToProve   :: [PredOcc]
-       }
-
 data ProvenNode
-  =  ProvenOr
-       { prvnPred           :: Pred
-       , prvnOrEdges        :: [UID]
-       , prvnCost           :: ProofCost
-       }
-  |  ProvenAnd
-       { prvnPred           :: Pred
-       , prvnAndEdges       :: [UID]
-       , prvnCost           :: ProofCost
-       , prvnEvidence       :: CExpr
-       }
-  |  ProvenShare
-       { prvnPred           :: Pred
-       , prvnShareEdge      :: UID
-       }
-  |  ProvenArg
-       { prvnPred           :: Pred
-       , prvnCost           :: ProofCost
-       }
-  
-data ProvenGraph
-  =  ProvenGraph
-       { prvgIdNdMp         :: FiniteMap UID ProvenNode
-       , prvgPrIdMp         :: FiniteMap Pred (Maybe UID,[UID])
-       }
-
-prvgAddPrUids :: Pred -> Maybe UID -> [UID] -> ProvenGraph -> ProvenGraph
-prvgAddPrUids pr mbOrig uidL g@(ProvenGraph _ p2i)
-  =  g {prvgPrIdMp = addToFM_C (\(mo,o) (mn,n) -> (maybe mo Just mn,o++n)) p2i pr (mbOrig,uidL)}
-
-prvgAddPrNd :: Pred -> Maybe UID -> [UID] -> ProvenNode -> ProvenGraph -> ProvenGraph
-prvgAddPrNd pr mbOrig uidL@(uid:_) nd g@(ProvenGraph i2n p2i)
-  =  (prvgAddPrUids pr mbOrig uidL g) {prvgIdNdMp = addToFM i2n uid nd}
-
-prvgAddNd :: UID -> ProvenNode -> ProvenGraph -> ProvenGraph
-prvgAddNd uid nd g@(ProvenGraph i2n _)
-  =  g {prvgIdNdMp = addToFM i2n uid nd}
+  =  ProvenOr       { prvnPred           :: Pred        , prvnEdges         :: [UID]
+                    , prvnCost           :: ProofCost
+                    }
+  |  ProvenAnd      { prvnPred           :: Pred        , prvnEdges         :: [UID]
+                    , prvnCost           :: ProofCost   , prvnEvid          :: CExpr
+                    }
+  |  ProvenShare    { prvnPred           :: Pred        , prvnEdge          :: UID          }
+  |  ProvenArg      { prvnPred           :: Pred        , prvnCost          :: ProofCost    }
 
 instance Show ProvenNode where
-  show _ = ""
-
-instance Show ProvenGraph where
   show _ = ""
 
 instance PP ProvenNode where
@@ -96,36 +56,73 @@ instance PP ProvenNode where
   pp (ProvenAnd pr es c ev)  = "AND:"   >#< "pr=" >|< pp pr >#< "edges=" >|< ppCommaList es >#< "cost=" >|< pp c >#< "evid=" >|< pp ev
   pp (ProvenShare pr e    )  = "SHARE:" >#< "pr=" >|< pp pr >#< "edge="  >|< ppCommaList [e]
   pp (ProvenArg pr c)        = "ARG:"   >#< "pr=" >|< pp pr                                 >#< "cost=" >|< pp c
-
-instance PP ProvenGraph where
-  pp (ProvenGraph i2n p2i)
-    =  (ppAssocL
-       . assocLMapSnd (\(mbOrig,uidL) -> maybe (pp "-") pp mbOrig >|< "/" >|< ppCommaList uidL)
-       . fmToList $ p2i)
-       >-< ppAssocL (fmToList i2n)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Code for a ProvenGraph
+%%% Pred resolver, proven graph
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+data ProvenGraph
+  =  ProvenGraph
+       { prvgIdNdMp         :: FiniteMap UID ProvenNode
+       , prvgPrIdMp         :: FiniteMap Pred [UID]
+       , prvgPrOrigIdMp     :: FiniteMap Pred [UID]
+       }
+
+prvgAddPrUids :: Pred -> [UID] -> ProvenGraph -> ProvenGraph
+prvgAddPrUids pr uidL g@(ProvenGraph _ p2i _)
+  =  g {prvgPrIdMp = addToFM_C (++) p2i pr uidL}
+
+prvgAddPrNd :: Pred -> [UID] -> ProvenNode -> ProvenGraph -> ProvenGraph
+prvgAddPrNd pr uidL@(uid:_) nd g@(ProvenGraph i2n p2i _)
+  =  (prvgAddPrUids pr uidL g) {prvgIdNdMp = addToFM i2n uid nd}
+
+prvgAddNd :: UID -> ProvenNode -> ProvenGraph -> ProvenGraph
+prvgAddNd uid nd g@(ProvenGraph i2n _ _)
+  =  g {prvgIdNdMp = addToFM i2n uid nd}
+
+instance Show ProvenGraph where
+  show _ = ""
+
+instance PP ProvenGraph where
+  pp (ProvenGraph i2n p2i p2oi)
+    =  (ppAssocL . assocLMapSnd ppCommaList . fmToList $ p2i)
+       >-< ppAssocL (fmToList i2n)
+       >-< ppAssocL (fmToList p2oi)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pred resolver, state of prover
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+data ProofState
+  =  ProofState     { prfsProvenGraph        :: ProvenGraph     , prfsUniq               :: UID
+                    , prfsPredsToProve       :: [PredOcc]       , prfsPredsOrigToProve   :: [Pred]
+                    }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code gen for a ProvenGraph
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
 prvgCode :: [PredOcc] -> ProvenGraph -> (CBindLMap,CSubst,Set PredOccId)
-prvgCode prL g@(ProvenGraph i2n p2i)
+prvgCode prL g@(ProvenGraph i2n p2i p2oi)
   =  let  i2nL = fmToList i2n
           p2iL = fmToList p2i
-          i2i  = listToFM [ (i,ii) | (_,(_,ii)) <- p2iL, i <- ii ]
-          canAsSubst (_,CExpr_Var _)  = True
-          canAsSubst _                = False
+          i2i  = listToFM [ (i,ii) | (_,ii) <- p2iL, i <- ii ]
           (provenL,argL,overlapL)
             = (concat p, concat a, concat o)
             where  spl n@(_,ProvenAnd _ _ _ _) = ([n],[],[])
                    spl n@(_,ProvenArg _ _    ) = ([],[n],[])
                    spl n                       = ([],[],[n])
                    (p,a,o) = unzip3 . map spl $ i2nL
+          canAsSubst (_,CExpr_Var _)  = True
+          canAsSubst _                = False
           (provenAsCSubst,(_,provenForBind))
-            = head
-            . dropWhile (\(_,(l,_)) -> not (null l))
+            = head . dropWhile (\(_,(l,_)) -> not (null l))
             . iterate
                 (\(s,(asS,asB))
                     -> let asS' = concat . map (\(i,n) -> zip (maybe [] id . lookupFM i2i $ i) (repeat n)) $ asS
@@ -135,15 +132,13 @@ prvgCode prL g@(ProvenGraph i2n p2i)
             $ (emptyCSubst,partition canAsSubst (map (\(i,ProvenAnd _ _ _ e) -> (i,e)) provenL))
           r = map fst argL
           m1 = provenAsCSubst `cAppSubst` assocLCExprToCSubst [ (i,CExpr_Var (uidHNm i)) | (i,_) <- provenForBind ]
-          m2 = assocLCExprToCSubst . concat . map (\(_,(_,uidL@(uid:_))) -> zip uidL (repeat (m1 `cAppSubst` CExpr_Hole uid))) $ p2iL
+          m2 = assocLCExprToCSubst . concat . map (\(_,(uid:uidL)) -> zip uidL (repeat (CExpr_Hole uid))) $ p2iL
           b = let s p = let r = prvgReachableTo g [poId p] `delFromSet` poId p
                         in  (poId p,[ CBind_Bind (uidHNm i) ev | (i,ev) <- provenForBind, i `elementOf` r ])
-              in  map s prL
-          rem = concat [ uidL | (_,(_,uidL)) <- p2iL, any (`elem` r) uidL ]
-     in   (listToFM b,m2,mkSet rem)
+              in  map s . map (\(p,(i:_)) -> PredOcc p (maybe i head . lookupFM p2oi $ p)) $ p2iL
+          rem = concat [ uidL | (_,uidL) <- p2iL, any (`elem` r) uidL ]
+     in   (listToFM b,m1 `cAppSubst` m2,mkSet rem)
 %%]
-
-          b = map (\(i,ev) -> CBind_Bind (uidHNm i) (m2 `cAppSubst` ev)) provenForBind
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Reachable nodes
@@ -151,7 +146,7 @@ prvgCode prL g@(ProvenGraph i2n p2i)
 
 %%[9
 prvgReachableFrom :: ProvenGraph -> [UID] -> Set UID
-prvgReachableFrom (ProvenGraph i2n _)
+prvgReachableFrom (ProvenGraph i2n _ _)
   =  let  r uid reachSet
             =  if uid `elementOf` reachSet
                then  reachSet
@@ -164,7 +159,7 @@ prvgReachableFrom (ProvenGraph i2n _)
      in   rr emptySet
 
 prvgReachableTo :: ProvenGraph -> [UID] -> Set UID
-prvgReachableTo (ProvenGraph i2n _)
+prvgReachableTo (ProvenGraph i2n _ _)
   =  let  allNd = eltsFM i2n
           r uid reachSet
             =  if uid `elementOf` reachSet
@@ -212,16 +207,18 @@ data Rule
        { rulRuleTy          :: Ty
        , rulMkEvid          :: [CExpr] -> CExpr
        , rulNmEvid          :: HsName
+       , rulId              :: PredOccId
        , rulCost            :: ProofCost
        }
 
-emptyRule = Rule Ty_Any head hsnUnknown (CostInt costALot)
+emptyRule = Rule Ty_Any head hsnUnknown uidStart (CostInt costALot)
 
-mkInstElimRule :: HsName -> Int -> Ty -> Rule
-mkInstElimRule n sz ctxtToInstTy
+mkInstElimRule :: HsName -> PredOccId -> Int -> Ty -> Rule
+mkInstElimRule n i sz ctxtToInstTy
   =  let  r =  Rule  { rulRuleTy    = ctxtToInstTy
                      , rulMkEvid    = \ctxt -> CExpr_Var n `mkCExprApp` ctxt
                      , rulNmEvid    = n
+                     , rulId        = i
                      , rulCost      = CostInt (costBase + 2 * costBase * sz)
                      }
      in   r
@@ -234,7 +231,7 @@ instance Show Rule where
   show r = show (rulNmEvid r) ++ "::" ++ show (rulRuleTy r)
 
 instance PP Rule where
-  pp r = ppTy (rulRuleTy r) >#< "~>" >#< pp (rulNmEvid r)
+  pp r = ppTy (rulRuleTy r) >#< "~>" >#< pp (rulNmEvid r) >|< "/" >|< pp (rulId r)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -286,8 +283,8 @@ peGamAdd n r g
           h' = gamUpdAdd n (PrElimGamInfo [r]) (\_ p -> p {pegiRuleL = r : pegiRuleL p}) h
      in   h' `gamPushGam` t
 
-peGamAddKnPr :: HsName -> Pred -> PrElimGam -> PrElimGam
-peGamAddKnPr n p = peGamAdd (predNm p) (mkInstElimRule n 0 (Ty_Pred p))
+peGamAddKnPr :: HsName -> PredOccId -> Pred -> PrElimGam -> PrElimGam
+peGamAddKnPr n i p = peGamAdd (predNm p) (mkInstElimRule n i 0 (Ty_Pred p))
 %%]
 
 

@@ -5731,6 +5731,7 @@ parameter and some work has to be done for extracting and passing variance infor
 
 \savecolumns
 \chunkCmdUseMark{EHTyFitsIn.4.fitsIn.Prelim}
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.allowImpredTVBind}
 
 The fitting of quantified types uses |unquant| which removes all top level quantifiers.
 
@@ -6573,7 +6574,7 @@ Coercion (of records), related to subsumption
 \part{Implicitness}
 %endif
 
-\section{EH 9: Explicit Implicitness}
+\section{EH 9: explicit implicitness}
 \label{ehc9}
 
 %{
@@ -6883,8 +6884,49 @@ deals with instances of class |Eq|.
 
 \paragraph{Case analysis on context.}
 
+We have to look at the three base cases, lambda expression, application and the atomic expressions (identifier, ...).
+We now assume that the context of a rule specifies if implicit variables are allowed, encoded as discussed earlier by means
+of a implicits variable |pvar|. The basic idea is to match a fresh type containing a |pvar| via |fitsIn| to the known type.
+The type rule for identifiers reflects this:
+
+\[
+\rulerCmdUse{rules.expr9.part2.e-ident9}
+\]
+
+In principle we could do the same for the other cases were it not for the fact that the coercions computed by
+|fitsIn| cannot use of not yet inferred information about predicates.
+This would lead to many lambda abstractions and applications which could be removed by |eta|-reduction in a later stage,
+but clutter resulting translations in the meantime.
+So, for now, both the rules for application and lambda abstraction introduce implicits variables which can be referred to
+later on to find out which implicit values need to passed.
+Only after the type inferencer is ready this information becomes available.
+
+Now let us first look at the rule for lambda abstraction:
+
+\[
+\rulerCmdUse{rules.expr9.part2.e-lam9}
+\]
+
+The use of |pvar| allows for implicit parameters in front of the first argument.
+The fitting gives us the actual list of implicit parameters.
+The typing rule  assumes this list is fully known but in the implementation this only
+partially true, a part of the implicit parameters is known and can be used as the context for
+typing the body, whereas additional implicit parameters may be inferred later on.
+This is ignored in the rule.
+
+Similarly for an application, both the applied function as well as the result may accept implicit parameters:
+
+\[
+\rulerCmdUse{rules.expr9.app.e-app9-impl}
+\]
+
+However, the implicit parameters for the function need to be passed as arguments to
+the function, whereas the implicit parameters for
+the result are assumed via the context and thus passed as as arguments of a lambda expression to the complete expression.
+The translation of the application reflects this.
+
 \rulerCmdUse{rules.expr9.app}
-\rulerCmdUse{rules.expr9.lam}
+\rulerCmdUse{rules.expr9.part2}
 
 
 \subsection{Fitting rules}
@@ -6905,8 +6947,24 @@ Named instances \cite{kahl01named-instance}.
 %%% EHC 10
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{EH 10: type synonyms}
+\section{EH 10: generalized abstract data types}
 \label{ehc10}
+
+built on implicit params, Arthur's Eq type...
+
+\subsection<article>{Literature}
+
+\cite{laufer96class-existential}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EHC 11
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{EH 11: type synonyms}
+\label{ehc11}
 
 with explicit kinding, plus checking thereof
 
@@ -6918,22 +6976,6 @@ data L a = N | C a (L a)
 \end{code}
 
 \subsection<article>{Literature}
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% EHC 11
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{EH 11: classes}
-\label{ehc11}
-
-built on implicit params
-
-\subsection<article>{Literature}
-
-\cite{laufer96class-existential}
 
 
 

@@ -284,22 +284,30 @@ rules expr9.app "Type checking/inferencing for expression application with impli
     judge expr9 fiopt; Gamma; (pvar -> sigma..k) :- (e.1 ^^ (# e.2 #)) : (Cnstr.2 sigma) ~> Cnstr.(2(..)1) ; (Transl.1 ^^ Transl.2)
 
   rule e_app9_impl =
-    judge pred9 Gamma :- (Cnstr.2 pi..a._) ~> Transl..a._ : _
+    judge pred9 ((pi.i.k ~> Transl.i.k)..._,Gamma) :- (Cnstr.2 pi..a._) ~> Transl..a._ : _
     judge expr9 instLFIOpts; Gamma; sigma..a :- e.2 : _ ~> Cnstr.2 ; Transl.2
-    judge expr9 fiopt; Gamma; (pvar -> tvar -> sigma..k) :- e.1 : (pi..a._ -> sigma..a -> sigma) ~> Cnstr.1 ; Transl.1
-    cond pvar, tvar "fresh"
+    judge expr9 fiopt; ((pi.i.k ~> Transl.i.k)..._,Gamma); (pvar -> tvar -> sigma.r.k) :- e.1 : (pi..a._ -> sigma..a -> sigma) ~> Cnstr.1 ; Transl.1
+    cond (pi.i.k ~> Transl.i.k)..._ == inst.pi(pi.a.k._)
+    judge fit9 fiopt; Gamma :- (pvar..k -> tvar..k) <= sigma..k : (pi.a.k._ -> sigma.r.k) ~> _ ; _
+    cond pvar, pvar..k, tvar, tvar..k "fresh"
     -
-    judge expr9 fiopt; Gamma; sigma..k :- (e.1 ^^ e.2) : (Cnstr.2 sigma) ~> Cnstr.(2(..)1) ; (Transl.1 ^^ Transl..a._ ^^ Transl.2)
+    judge expr9 fiopt; Gamma; sigma..k :- (e.1 ^^ e.2) : (Cnstr.2 sigma) ~> Cnstr.(2(..)1) ; (\Transl.i.k._ -> Transl.1 ^^ Transl..a._ ^^ Transl.2)
 
-rules expr9.lam "Type checking/inferencing for lambda expressions with implicit parameters" =
+rules expr9.part2 "Type checking/inferencing for lambda expressions with implicit parameters" =
   rule e_lam9 =
     judge expr9 fiopt; ((pi.i.p ~> Transl.i.p)..._,Gamma..p,Gamma); sigma..r :- e : sigma..e ~> Cnstr.3 ; Transl..e
     cond (pi.i.p ~> Transl.i.p)..._ == inst.pi(pi..p._)
     judge pat4 fiopt; Gamma; sigma..p :- p : _; Gamma..p ~> Cnstr.2
-    judge fit9 fiopt; Gamma :- (pvar.1 -> tvar.1 -> pvar.2 -> tvar.2) <= sigma..k : (pi..p._ -> sigma..p->sigma..r) ~> Cnstr.1; _
-    cond pvar.i, tvar.i "fresh"
+    judge fit9 fiopt; Gamma :- (pvar -> tvar.1 -> tvar.2) <= sigma..k : (pi..p._ -> sigma..p->sigma..r) ~> Cnstr.1; _
+    cond pvar, tvar.i "fresh"
     -
     judge expr9 fiopt; Gamma; sigma..k :- (\p -> e) : (Cnstr.3 sigma..p -> sigma..e) ~> Cnstr.(3(..)1) ; (\Transl.i.p._ -> \p -> Transl..e)
+
+  rule e_ident9 =
+    cond (ident :-> sigma) `elem` Gamma
+    judge fit9 fiopt; Gamma :- sigma <= sigma..k : sigma ~> Cnstr; coe
+    -
+    judge expr9 fiopt; Gamma; sigma..k :- ident : sigma ~> Cnstr ; (coe ^^ ident)
 
 -------------------------------------------------------------------------
 -- Pat
@@ -493,7 +501,7 @@ rules fit9.predSymmetric "Fitting/subsumption for predicates (impl/expl match)" 
     cond Cnstr.1 == pvar.2 :-> pi.1 : pvar
     cond pvar "fresh"
     -
-    judge fit9 fiopt; Gamma :- (pi.1 -> sigma.1) <= (pvar.2 -> sigma.2) : (pi.1 -> sigma) ~> (Cnstr.1, Cnstr); (\n -> coe (_ n))
+    judge fit9 fiopt; Gamma :- (pi.1 -> sigma.1) <= (pvar.2 -> sigma.2) : (pi.1 -> sigma) ~> (Cnstr.1, Cnstr); (\n -> coe (_ ^^ n))
 
   rule f_pred9_impl_expl =
     judge fit9 fiopt; (pi.2.i ~> Transl.pi, Gamma) :- (pvar -> sigma.1) <= sigma.2 : sigma ~> Cnstr; coe
@@ -501,13 +509,13 @@ rules fit9.predSymmetric "Fitting/subsumption for predicates (impl/expl match)" 
     cond Cnstr.1 == pvar.1 :-> pi.2 : pvar
     cond pvar "fresh"
     -
-    judge fit9 fiopt; Gamma :- (pvar.1 -> sigma.1) <= (pi.2 -> sigma.2) : (pi.2 -> sigma) ~> (Cnstr.1, Cnstr); (\Transl.pi -> coe (_ Transl.pi))
+    judge fit9 fiopt; Gamma :- (pvar.1 -> sigma.1) <= (pi.2 -> sigma.2) : (pi.2 -> sigma) ~> (Cnstr.1, Cnstr); (\Transl.pi -> coe (_ ^^ Transl.pi))
 
   rule f_pred9_impl_impl =
     judge fit9 fiopt; Gamma :- sigma.1 <= sigma.2 : sigma ~> Cnstr; coe
     cond pvar.2.i ~> Transl.pi.._ == inst.pi(pvar.2)
     -
-    judge fit9 fiopt; Gamma :- (pvar.1 -> sigma.1) <= (pvar.2 -> sigma.2) : (pvar.2 -> sigma) ~> (pvar.1 :-> pvar.2, Cnstr); (\Transl.pi.._ -> coe (_ Transl.pi.._))
+    judge fit9 fiopt; Gamma :- (pvar.1 -> sigma.1) <= (pvar.2 -> sigma.2) : (pvar.2 -> sigma) ~> (pvar.1 :-> pvar.2, Cnstr); (\Transl.pi.._ -> coe (_ ^^ Transl.pi.._))
 
 rules fit9.predAsymmetric "Fitting/subsumption for predicates (only impl or expl)" =
   rule f_pred9_expl_l =
@@ -538,14 +546,14 @@ rules fit9.app "Fitting/subsumption for type applications" =
     judge fit9 fiopt; Gamma :- sigma.1.r <= sigma.2.r : sigma..r ~> Cnstr.1; coe.r
     -
     judge fit9 fiopt; Gamma  :- (sigma.1.a -> sigma.1.r) <= (sigma.2.a -> sigma.2.r) : (sigma..a -> Cnstr.2 sigma..r)
-          ~> Cnstr.(2(..)1); (\a -> coe.r (_ (coe.a a)))
+          ~> Cnstr.(2(..)1); (\a -> coe.r (_ (coe.a ^^ a)))
 
   rule f_prod9 =
     judge fit9 fiopt; Gamma :- (Cnstr.1 sigma.1.l) <= (Cnstr.1 sigma.2.l) : sigma..l ~> Cnstr.2; coe.l
     judge fit9 fiopt; Gamma :- sigma.1.r <= sigma.2.r : sigma..r ~> Cnstr.1; coe.r
     -
     judge fit9 fiopt; Gamma :- ((sigma.1.l,sigma.1.r)) <= ((sigma.2.l,sigma.2.r)) : ((sigma..l,Cnstr.2 sigma..r))
-          ~> Cnstr.(2(..)1); (let (l,r) (=) _ in (coe.l l, coe.r r))
+          ~> Cnstr.(2(..)1); (let (l,r) (=) _ in (coe.l ^^ l, coe.r ^^ r))
 
 -------------------------------------------------------------------------
 -- Quantify
