@@ -57,7 +57,7 @@ ALL_AFP_SRC			:= $(AFP_LHS) $(AFP_RULES)
 EHC_SRC_PREFIX				:=
 EHC_LAG_FOR_HS_TY			:= $(addsuffix .lag,EHTyQuantify EHTySubst EHTyFtv EHTyPretty EHTyInstantiate )
 EHC_LAG_FOR_HS_CORE			:= $(addsuffix .lag,EHCoreJava EHCoreGrin EHCoreTrfRenUniq EHCoreTrfFullLazy EHCoreTrfLamLift \
-												EHCoreTrfInlineLetAlias EHCoreTrfLetUnrec EHCorePretty EHCoreSubst)
+												EHCoreTrfInlineLetAlias EHCoreTrfLetUnrec EHCorePretty EHCoreSubst EHCoreTrfConstProp)
 EHC_LAG_FOR_HS_GRIN_CODE	:= $(addsuffix .lag,GrinCodePretty)
 EHC_LAG_FOR_HS				:= $(addsuffix .lag,EHMainAG EHTy EHCore EHError EHErrorPretty GrinCode) \
 								$(EHC_LAG_FOR_HS_TY) $(EHC_LAG_FOR_HS_CORE) $(EHC_LAG_FOR_HS_GRIN_CODE)
@@ -93,10 +93,12 @@ EHC_DPDS_CORE_TRF_INLLETALI		:= EHCoreTrfInlineLetAlias.ag EHCoreAbsSyn.ag
 EHC_DPDS_CORE_TRF_FULLAZY		:= EHCoreTrfFullLazy.ag EHCoreTrfCommonFv.ag EHCoreTrfCommonLev.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
 EHC_DPDS_CORE_TRF_LAMLIFT		:= EHCoreTrfLamLift.ag EHCoreTrfCommonFv.ag EHCoreTrfCommonLev.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
 EHC_DPDS_CORE_TRF_LETUNREC		:= EHCoreTrfLetUnrec.ag EHCoreAbsSyn.ag
+EHC_DPDS_CORE_TRF_CONSTPROP		:= EHCoreTrfConstProp.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
 EHC_DPDS_GRIN_CODE				:= GrinCode.ag GrinCodeAbsSyn.ag
 EHC_DPDS_GRIN_CODE_PRETTY		:= GrinCodePretty.ag GrinCodeAbsSyn.ag
 
-EHC_DPDS_CORE_TRF				:= $(EHC_DPDS_CORE_TRF_RENUNQ) $(EHC_DPDS_CORE_TRF_INLLETALI) $(EHC_DPDS_CORE_TRF_FULLAZY) $(EHC_DPDS_CORE_TRF_LETUNREC) $(EHC_DPDS_CORE_TRF_LAMLIFT)
+EHC_DPDS_CORE_TRF				:= $(EHC_DPDS_CORE_TRF_CONSTPROP) $(EHC_DPDS_CORE_TRF_RENUNQ) $(EHC_DPDS_CORE_TRF_INLLETALI) \
+									$(EHC_DPDS_CORE_TRF_FULLAZY) $(EHC_DPDS_CORE_TRF_LETUNREC) $(EHC_DPDS_CORE_TRF_LAMLIFT)
 EHC_DPDS_ALL					:= $(sort $(EHC_DPDS_MAIN) \
 										$(EHC_DPDS_CORE) $(EHC_DPDS_CORE_JAVA) $(EHC_DPDS_CORE_GRIN) $(EHC_DPDS_CORE_PRETTY) $(EHC_DPDS_CORE_TRF) \
 										$(EHC_DPDS_TY) $(EHC_DPDS_TY_PRETTY) $(EHC_DPDS_TY_QUANT) $(EHC_DPDS_TY_SUBST) $(EHC_DPDS_TY_FTV) $(EHC_DPDS_TY_INST) \
@@ -539,6 +541,7 @@ MK_EHC_MKF			= \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_FULLAZY),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_LAMLIFT),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_LETUNREC),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_CONSTPROP),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_JAVA),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_GRIN),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_GRIN_CODE),-dr) ; \

@@ -701,7 +701,7 @@ fitsIn opts env uniq ty1 ty2
                                    = foldr  (\(l,u) e
                                                -> case lookup l (foRowCoeL fo) of
                                                     Just c | not (coeIsId c)
-                                                      -> CExpr_TupUpd e CTagRec (CExpr_Hole u) (c `coeEvalOn` mkLSel u)
+                                                      -> CExpr_TupUpd e CTagRec l (CExpr_Hole u) (c `coeEvalOn` mkLSel u)
                                                     _ -> e
                                             )
                                             e (zip lL uL)

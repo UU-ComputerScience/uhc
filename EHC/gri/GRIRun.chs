@@ -112,6 +112,33 @@ ppRunState rs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Primitives
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+primMp :: FiniteMap String (RunState -> [RunVal] -> IO (RunState,Maybe RunVal))
+primMp
+  =  listToFM
+        [ (show hsnPrimAddInt
+            ,\rs [RVInt i1,RVInt i2]    ->  return (rs,Just (RVInt (i1 + i2)))
+          )
+        , ("primDivInt"
+            ,\rs [RVInt i1,RVInt i2]    ->  return (rs,Just (RVInt (i1 `div` i2)))
+          )
+        , ("primMulInt"
+            ,\rs [RVInt i1,RVInt i2]    ->  return (rs,Just (RVInt (i1 * i2)))
+          )
+        , ("primSubInt"
+            ,\rs [RVInt i1,RVInt i2]    ->  return (rs,Just (RVInt (i1 - i2)))
+          )
+        , ("primCmpInt"
+            ,\rs [RVInt i1,RVInt i2]    ->  let  c = case i1 `compare` i2 of {EQ->0; GT->1; LT->2}
+                                            in   return (rs,Just (mkRN [RVCat NdCon,RVInt c,RVInt 0]))
+          )
+        ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Running the machine
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -119,9 +146,9 @@ ppRunState rs
 grEvalTag :: RunState -> GrTag -> Int -> [RunVal]
 grEvalTag rs t sz
   =  case t of
-        GrTag_Lit GrTagCon           i _    ->  [RVCat NdCon,RVInt i,RVInt sz]
+        GrTag_Lit GrTagCon           i _    ->  [RVCat NdCon,RVInt i] -- ,RVInt sz]
         GrTag_Lit GrTagHole          _ _    ->  [RVCat NdHole]
-        GrTag_Lit GrTagRec           _ _    ->  [RVCat NdRec,RVInt 0,RVInt sz]
+        GrTag_Lit GrTagRec           _ _    ->  [RVCat NdRec,RVInt 0] -- ,RVInt sz]
         GrTag_Lit GrTagFun           i n    ->  [RVCat NdFun,rsVar rs n]
         GrTag_Lit GrTagApp           _ _    ->  [RVCat NdApp]
         GrTag_Lit (GrTagPApp nMiss)  _ _    ->  [RVCat NdPApp,RVInt nMiss]
@@ -131,10 +158,29 @@ grEvalTag rs t sz
 grEvalVal :: RunState -> GrVal -> RunVal
 grEvalVal rs v
   =  case v of
-        GrVal_Node t    fL  ->  mkRN (grEvalTag rs t (length fL) ++ map (grEvalVal rs) fL)
-        GrVal_LitInt    i   ->  RVInt i
-        GrVal_Var       n   ->  rsVar rs n
-        GrVal_Empty         ->  RVNil
+        GrVal_Node t    fL      ->  mkRN (grEvalTag rs t (length fL) ++ map (grEvalVal rs) fL)
+        GrVal_NodeAdapt r adL   ->  case rsVar rs r of
+                                        RVNode a
+                                          ->  case elems a of
+                                                (c:t:RVInt sz:fL)
+                                                  ->  mkRN (c:t:RVInt (length fL'):fL')
+                                                      where  fL' = ad adL fL 0
+                                                             ad (GrAdapt_Ins o v:adL') fL fO | o' == fO
+                                                                =  grEvalVal rs v : fL'
+                                                                   where  fL' = ad adL' fL fO
+                                                                          (RVInt o') = grEvalVal rs o
+                                                             ad (GrAdapt_Upd o v:adL') (_:fL) fO | o' == fO
+                                                                =  grEvalVal rs v : fL'
+                                                                   where  fL' = ad adL' fL (fO+1)
+                                                                          (RVInt o') = grEvalVal rs o
+                                                             ad adL (f:fL) fO
+                                                                =  f : fL'
+                                                                   where  fL' = ad adL fL (fO+1)
+                                                             ad [] fL _
+                                                                =  fL
+        GrVal_LitInt    i       ->  RVInt i
+        GrVal_Var       n       ->  rsVar rs n
+        GrVal_Empty             ->  RVNil
 %%]
 
 %%[8
@@ -150,13 +196,9 @@ grCall rs f aL
 %%[8
 grFFI :: RunState -> String -> [RunVal] -> IO (RunState,Maybe RunVal)
 grFFI rs f aL
-  =  case (f,aL) of
-        ("primAddInt",[RVInt i1,RVInt i2])              ->  return (rs,Just (RVInt (i1 + i2)))
-        ("primDivInt",[RVInt i1,RVInt i2])              ->  return (rs,Just (RVInt (i1 `div` i2)))
-        ("primMulInt",[RVInt i1,RVInt i2])              ->  return (rs,Just (RVInt (i1 * i2)))
-        ("primSubInt",[RVInt i1,RVInt i2])              ->  return (rs,Just (RVInt (i1 - i2)))
-        ("primCmpInt",[RVInt i1,RVInt i2])              ->  return (rs,Just (mkRN [RVCat NdCon,RVInt c,RVInt 0]))
-                                                            where c = case i1 `compare` i2 of {EQ->0; GT->1; LT->2}
+  =  case lookupFM primMp f of
+        Just f'
+            ->  f' rs aL
         _   ->  do  { rs' <- halt rs ("No ffi for:" >#< f >-< indent 2 ("with args:" >#< (ppCommaList . map pp $ aL)))
                     ; return (rs',Nothing)
                     }
@@ -268,7 +310,7 @@ grEvalExpr rs e
           ->  case grEvalVal rs v of
                 nd@(RVNode a)
                   ->  case elems a of
-                        (RVCat NdCon:RVInt ndTg:_:ndAL)
+                        (RVCat NdCon:RVInt ndTg:ndAL)
                           ->  let  lookup t []    = Nothing
                                    lookup t (GrAlt_Alt (GrPat_Node (GrTag_Lit _ t' _) fL) e:aL)
                                      | t == t'    = Just (fL,e)
@@ -282,7 +324,7 @@ grEvalExpr rs e
                                        ->  do  { rs' <- halt rs ("No case alt for:" >#< pp nd >-< indent 2 ("in:" >#< ppGrExpr e))
                                                ; return (rs',Nothing)
                                                }
-                        (RVCat NdRec:_:RVInt ndSz:ndAL)
+                        (RVCat NdRec:_:ndAL)
                           ->  return (rs',Nothing)
                               where  (GrAlt_Alt (GrPat_Node _ fL) e:_) = altL
                                      re = rsEnv rs `plusFM` listToFM (zip fL ndAL)
@@ -301,7 +343,7 @@ grPatBind re v p
           ->  case v of
                 RVNode a
                   ->  case elems a of
-                        (RVCat _:_:_:vfL) -> re `plusFM` listToFM (zip pfL vfL)
+                        (RVCat _:_:vfL) -> re `plusFM` listToFM (zip pfL vfL)
 %%]
 
 %%[8

@@ -75,8 +75,14 @@ SEM Expr
 %%[8
 SEM Expr
   | Rec         loc         .   rcexpr          =   if @recExpr.isExtFromEmpty
-                                                    then foldl CExpr_App (CExpr_Tup CTagRec) (map snd . tyRowCanonOrder $ @recExpr.cexprL)
-                                                    else @recExpr.cexpr
+                                                    then  foldl CExpr_App (CExpr_Tup CTagRec)
+                                                          . map (\(_,CExpr_TupIns _ _ _ _ e) -> e)
+                                                          . tyRowCanonOrder
+                                                          $ @recExpr.fuCExprL
+                                                    else  let  (n:nL) = map uidHNm . mkNewLevUIDL (length @recExpr.fuCExprL + 1) $ @lUniq3
+                                                               (oL,fu) = rfuReorder nL . reverse $ @recExpr.fuCExprL
+                                                               bL = CBind_Bind n @recExpr.recCExpr : zipWith CBind_Bind nL oL
+                                                          in   mkCExprLet CBindStrict bL . foldl (\r (_,f) -> f r) (CExpr_Var n) $ fu 
                 loc         .   cexpr           =   @rcexpr
   | Sel         loc         .   offset          =   CExpr_Int (tyRecOffset @lbl (@lhs.finTyCnstr |=> @expr.ty))
                             .   cexpr           =   CExpr_TupSel @expr.cexpr CTagRec @offset
@@ -89,33 +95,61 @@ SEM Expr
   | Rec         loc         .   cexpr           :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst @rcexpr
 
 %%[8
-ATTR RecExpr [ | | cexpr: CExpr ^^ cexprL: {AssocL HsName CExpr} ]
+ATTR RecExpr [ | | recCExpr: CExpr ^^ fuCExprL: {FieldUpdateL CExpr} ]
+
+SEM RecExpr
+  | Empty       loc         .   recCExpr        =   CExpr_Tup CTagRec
+                lhs         .   fuCExprL        =   []
+  | Expr        loc         .   recCExpr        =   @expr.cexpr
+                lhs         .   fuCExprL        =   []
+  | Ext         loc         .   rcexpr          =   CExpr_TupIns @recExpr.recCExpr CTagRec @nm @offset @expr.cexpr
+  | Upd         loc         .   rcexpr          =   CExpr_TupUpd @recExpr.recCExpr CTagRec @nm @offset @expr.cexpr
+  | Ext Upd     loc         .   offset          =   CExpr_Int (tyRecOffset @nm (@lhs.finTyCnstr |=> @recExpr.ty))
+                lhs         .   fuCExprL        =   if @knRecHasLab
+                                                    then (@nm,@rcexpr) : @recExpr.fuCExprL
+                                                    else @recExpr.fuCExprL
+%%]
+
+%%[8
 ATTR RecExpr [ | | isExtFromEmpty: Bool ]
 
 SEM RecExpr
   | Empty       lhs         .   isExtFromEmpty  =   True
-  | Expr Upd    lhs         .   isExtFromEmpty  =   False
+  | Expr        lhs         .   isExtFromEmpty  =   False
+  | Upd         lhs         .   isExtFromEmpty  =   not @knRecHasLab && @recExpr.isExtFromEmpty
   | Ext         lhs         .   isExtFromEmpty  =   @recExpr.isExtFromEmpty
-
-SEM RecExpr
-  | Ext Upd     loc         .   offset          =   CExpr_Int (tyRecOffset @nm (@lhs.finTyCnstr |=> @recExpr.ty))
-  | Empty       loc         .   cexpr           =   CExpr_Tup CTagRec
-                lhs         .   cexprL          =   []
-  | Expr        loc         .   cexpr           =   @expr.cexpr
-                lhs         .   cexprL          =   []
-  | Ext         (loc.cexpr,lhs.cexprL)          =   if @knRecHasLab
-                                                    then (CExpr_TupIns @recExpr.cexpr CTagRec @offset @expr.cexpr
-                                                         ,(@nm,@expr.cexpr) : @recExpr.cexprL)
-                                                    else (@recExpr.cexpr,@recExpr.cexprL)
-  | Upd         (loc.cexpr,lhs.cexprL)          =   if @knRecHasLab
-                                                    then (CExpr_TupUpd @recExpr.cexpr CTagRec @offset @expr.cexpr
-                                                         ,(@nm,@expr.cexpr) : @recExpr.cexprL)
-                                                    else (@recExpr.cexpr,@recExpr.cexprL)
 %%]
 
 %%[10
 SEM RecExpr
   | Ext Upd     loc         .   offset          :=  @lhs.cSubst `cAppSubst` CExpr_Hole @prUid
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Reorder record Field Update (to sorted on label, upd's first, then ext's)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type FieldUpdateL e = AssocL HsName e
+
+rfuReorder :: [HsName] -> FieldUpdateL CExpr -> ([CExpr],FieldUpdateL (CExpr -> CExpr))
+rfuReorder nL fuL
+  =  let  (fuL',offL,_)
+            =  foldl
+                 (\(fuL,offL,exts) (n,(lbl,f))
+                     ->  let  mkOff lbl exts o
+                                =  let nrSmaller = length . filter (\e -> rowLabCmp e lbl == LT) $ exts
+                                   in  if nrSmaller == 0 then o else mkCExprAddInt o (CExpr_Int (-nrSmaller))
+                              o' = CExpr_Var n
+                         in   case f of
+                                 CExpr_TupIns _ t l o e -> ((l,True,\r -> CExpr_TupIns r t l o' e) : fuL,(mkOff l exts o):offL,l:exts)
+                                 CExpr_TupUpd _ t l o e -> ((l,False,\r -> CExpr_TupUpd r t l o' e) : fuL,(mkOff l exts o):offL,exts)
+                 )
+                 ([],[],[])
+            .  zip nL
+            $  fuL
+          cmpFU (n1,_,_    )  (n2,_,_    )                          = rowLabCmp n1 n2
+     in   (offL, map (\(n,_,fu) -> (n,fu)) . sortBy cmpFU $ fuL')
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -190,7 +224,7 @@ SEM Decl
 SEM Decl
   | Instance    lhs         .   cbindL      =   let  nDflt = rulNmEvid . pigiRule $ @pigi
                                                      nR = hsnPrefix "$res_" @dictNm
-                                                     mkSet d n v = CExpr_TupUpd d CTagRec (cdictOffset n . head $ @recTyL) v
+                                                     mkSet d n v = CExpr_TupUpd d CTagRec n (cdictOffset n . head $ @recTyL) v
                                                      dD = mkCExprLam @ctxtArgNmL
                                                                 (mkCExprLetRec
                                                                     ([CBind_Bind nR

@@ -9,7 +9,7 @@
 %%% Haskell importable interface to Code's GRIN gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Maybe,FiniteMap,UU.Pretty,EHCommon,EHCore,EHTy,GrinCode,Char) export(cmodGrin)
+%%[8 hs import(Maybe,List,FiniteMap,UU.Pretty,EHCommon,EHCore,EHTy,GrinCode,Char) export(cmodGrin)
 %%]
 
 %%[8.WRAPPER import(EHCoreAbsSyn,EHCoreCommonLev)
@@ -40,8 +40,21 @@ ATTR AllCodeNT [ | gUniq: UID | ]
 ATTR CodeAGItf [ gUniq: UID | | ]
 
 SEM CExpr
-  | Var         (lhs.gUniq,loc.lUniq)       =   mkNewLevUID @lhs.gUniq
-  | App         (func.gUniq,loc.lUniq)      =   mkNewLevUID @lhs.gUniq
+  | Var         (lhs.gUniq,loc.lUniq)       =   mkNewLevUID   @lhs.gUniq
+  | TupIns TupUpd
+                (expr.gUniq,loc.lUniq,loc.lUniq2)
+                                            =   mkNewLevUID2  @lhs.gUniq
+  | App         (func.gUniq,loc.lUniq,loc.lUniq2)
+                                            =   mkNewLevUID2  @lhs.gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Level, Let's also one level higher
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM CExpr
+  | Let         binds       .   lev         =   @lhs.lev + 1
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -128,6 +141,33 @@ mkSq :: GrExpr -> HsName -> GrExpr -> GrExpr
 mkSq e1 p e2 = GrExpr_Seq e1 (GrPat_Var p) e2
 %%]
 
+%%[8 hs
+simplArgL :: UID -> LamInfoMp -> GrValL -> (GrValL,GrExpr->GrExpr)
+simplArgL uniq lamMp vL
+  =  let  nL = map uidHNm . mkNewUIDL (length vL) $ uniq
+     in   foldr  (\(n,a) (aL,wG)
+                    ->  case a of
+                            GrVal_Var v | isJust mbArity
+                                -> (GrVal_Var n : aL,mkSq a' n . wG)
+                                where mbArity = lookupFM lamMp v
+                                      a' = GrExpr_Store (mkNdPApp v (fromJust mbArity) [])
+                            GrVal_Node _ _
+                                -> (GrVal_Var n : aL,mkSq (GrExpr_Store a) n . wG)
+                            _   -> (a:aL,wG)
+                 )
+                 ([],id)
+          $ zip nL vL
+
+unboxArgL :: UID -> HsName -> GrValL -> (GrValL,GrExpr->GrExpr)
+unboxArgL uniq tyNm vL
+  =  let  nL = map uidHNm . mkNewUIDL (length vL) $ uniq
+     in   foldr  (\(n,a) (aL,wG)
+                    ->  (GrVal_Var n : aL,GrExpr_Seq (GrExpr_Unit a) (mkGrUnbox tyNm n) . wG)
+                 )
+                 ([],id)
+          $ zip nL vL
+%%]
+
 %%[8
 ATTR CodeAGItf CModule [ | | grMod: GrModule ]
 
@@ -170,20 +210,8 @@ SEM CExpr
                                                      apArity = length argL
                                                      funNm = @grAppFun
                                                      mkE  = retStrict @lhs.isStrict
-                                                     (n:nL) = map uidHNm . mkNewUIDL (apArity + 1) $ @lUniq
-                                                     (argL',wrapGr)
-                                                            = foldr  (\(n,a) (aL,wG)
-                                                                        ->  case a of
-                                                                                GrVal_Var v | isJust mbArity
-                                                                                    -> (GrVal_Var n : aL,mkSq a' n . wG)
-                                                                                    where mbArity = lookupFM @lhs.lamMp v
-                                                                                          a' = GrExpr_Store (mkNdPApp v (fromJust mbArity) [])
-                                                                                GrVal_Node _ _
-                                                                                    -> (GrVal_Var n : aL,mkSq (GrExpr_Store a) n . wG)
-                                                                                _   -> (a:aL,wG)
-                                                                     )
-                                                                     ([],id)
-                                                            $ zip nL argL
+                                                     n = uidHNm @lUniq
+                                                     (argL',wrapGr) = simplArgL @lUniq2 @lhs.lamMp argL
                                                 in   case @func.mbTupApp of
                                                         Just t
                                                             ->  let  v  =  case t of
@@ -212,21 +240,60 @@ SEM CExpr
   | Var         loc         .   grExpr      =   mbMkStrict @lUniq @lhs.isStrict @grVal
   | Tup Int Char
                 loc         .   grExpr      =   retStrict @lhs.isStrict @grVal
-  | * - Let App Case Var Tup Int Char
+  | TupIns TupUpd
+                loc         .   grExpr      =   if @lhs.isTopTup
+                                                then  let  (oL,vL,mkAL) = unzip3 . reverse $ @grTupFldL
+                                                           (oL',wrO) = unboxArgL @lUniq hsnInt oL
+                                                           (vL',wrV) = simplArgL @lUniq2 @lhs.lamMp vL
+                                                      in   wrV . wrO . retStrict @lhs.isStrict . GrVal_NodeAdapt (maybe hsnUnknown id (grV2HNm @grTupRec)) . zipWith3 ($) mkAL oL' $ vL'
+                                                else  GrExpr_Unit GrVal_Empty
+  | * - Let Case App Var Tup Int Char TupIns TupUpd
                 loc         .   grExpr      =   GrExpr_Unit @grVal
 %%]
 
 %%[8
-ATTR CExpr   [ | | grVal USE {`const`} {GrVal_Empty}: GrVal ]
+ATTR CExpr   [ | | grVal: GrVal ]
 
 SEM CExpr
   | Tup         loc         .   grVal       =   ctag GrVal_Empty (\t l -> mkGrConNode t l []) @tag
   | Var         loc         .   grVal       =   GrVal_Var @nm
-  | Int         loc         .   grVal       =   mkGrBox hsnInt (GrVal_LitInt @int)
-  | Char        loc         .   grVal       =   mkGrBox hsnChar (GrVal_LitInt (ord @char))
+  | Int         loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnInt  else id)  (GrVal_LitInt @int)
+  | Char        loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnChar else id)  (GrVal_LitInt (ord @char))
   | * - Int Char Var Tup
                 loc         .   grVal       =   GrVal_Empty
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Do boxing?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR CExpr [ doBox: Bool | | ]
+
+SEM CExpr
+  | TupUpd TupIns
+                offset      .   doBox       =   False
+                expr        .   doBox       =   True
+                fldExpr     .   doBox       =   True
+  | * - TupUpd TupIns
+                loc         .   doBox       =   True
+
+SEM CModule
+  | Mod         expr        .   doBox       =   True
+
+SEM CBind
+  | Bind        expr        .   doBox       =   True
+
+SEM CPatBind
+  | Bind        offset      .   doBox       =   True
+
+SEM CAlt
+  | Alt         expr        .   doBox       =   True
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bindings
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 ATTR CBind CBindL  [ | | grBindL USE {++} {[]}: GrBindL ]
@@ -254,6 +321,10 @@ SEM CBind
                                                         )
                                                      ]
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Case, pattern
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 ATTR CAlt    [ | | grAlt: GrAlt ]
@@ -294,6 +365,26 @@ ATTR CPatBind CPatBindL [ | | patBindL USE {++} {[]}: {[HsName]} ]
 
 SEM CPatBind
   | Bind        lhs         .   patBindL    =   [@pat.patNm]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Record fields
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+%%]
+
+%%[8
+ATTR CExpr [ | | grTupRec: GrVal ^^ grTupFldL: {[(GrVal,GrVal,GrVal->GrVal->GrAdapt)]} ]
+
+SEM CExpr
+  | TupIns TupUpd
+                loc         .   grTupRec    =   @expr.grTupRec
+  | TupIns      loc         .   grTupFldL   =   (@offset.grVal,@fldExpr.grVal,\o v -> GrAdapt_Ins o v) : @expr.grTupFldL
+  | TupUpd      loc         .   grTupFldL   =   (@offset.grVal,@fldExpr.grVal,\o v -> GrAdapt_Upd o v) : @expr.grTupFldL
+  | * - TupIns TupUpd
+                loc         .   grTupRec    =   @grVal
+                            .   grTupFldL   =   []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

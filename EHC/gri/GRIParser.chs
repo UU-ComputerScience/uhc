@@ -23,7 +23,7 @@ scanOpts
         {   scoKeywordsTxt      =   [ "eval", "apply", "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi"
                                     , "C", "F", "P", "A", "R", "H"
                                     ]
-        ,   scoKeywordsOps      =   [ "->", "=", "+=", ":=" ]
+        ,   scoKeywordsOps      =   [ "->", "=", "+=", ":=", "-" ]
         ,   scoSpecChars        =   "();{}#/\\|,"
         ,   scoOpChars          =   "->:=+"
         ,   scoDollarIdent      =   True
@@ -81,7 +81,7 @@ pValL           ::   GRIParser GrValL
 pValL           =    pList pVal
 
 pAdapt          ::   GRIParser GrAdapt
-pAdapt          =    pSVal <**> (GrAdapt_Ext <$ pKey "+=" <|> GrAdapt_Upd <$ pKey ":=") <*> pSVal
+pAdapt          =    pSVal <**> (GrAdapt_Ins <$ pKey "+=" <|> GrAdapt_Upd <$ pKey ":=") <*> pVal
 
 pAlt            ::   GRIParser GrAlt
 pAlt            =    GrAlt_Alt <$> pPat <* pKey "->" <*> pCurly pExprSeq
@@ -126,6 +126,6 @@ pId             ::   GRIParser String
 pId             =    pConid <|> pVarid
 
 pInt            ::   GRIParser Int
-pInt            =    read <$> pInteger
+pInt            =    (negate <$ pKey "-" `opt` id) <*> (read <$> pInteger)
 %%]
 

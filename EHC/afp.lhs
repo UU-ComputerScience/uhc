@@ -7945,9 +7945,15 @@ Notes:
 \item
 All offsets are expressed in terms of the original/old record.
 \item
+All offsets relate to labels for which it can be assumed that they only occur once.
+In particular for equal offsets for insertions we may assume that those offsets occur in the order
+of their corresponding labels.
+\item
 The @upd[..].offset@'s should be sorted.
 If this can statically be determined, loop unrolling can be done.
 This cannot be determined statically for label polymorphism.
+Sorting is done on offset, and where equal extensions before updates.
+This allows the mentioned algorithm.
 \end{itemize}
 
 \subsection<article>{Literature}

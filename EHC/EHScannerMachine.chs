@@ -104,7 +104,7 @@ scan opts pos input
 
 %%[8
    doScan p ('$':ss)
-     | scoDollarIdent opts   = tok : doScan (advc w p) ss'
+     | scoDollarIdent opts   = tok : doScan (advc (w+1) p) ss'
          where (ident,w,ss') = scanDollarIdent ss
                tok = if null ident
                      then errToken "Zero length $identifier" p

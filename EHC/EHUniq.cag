@@ -115,6 +115,7 @@ SEM AGItf
   | AGItf           expr        .   gUniq                           :=  @lhs.gUniq
 
 SEM Expr
+  | Rec             (recExpr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3) :=  mkNewLevUID3    @lhs.gUniq
   | Case            (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
   | Undefined       (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
 %%]
