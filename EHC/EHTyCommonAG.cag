@@ -17,19 +17,24 @@
 ATTR Ty [ | | appFunNm: HsName ]
 
 SEM Ty
-  | Con         lhs       .  appFunNm  =  @nm
-  | App         loc       .  appFunNm  =  @func.appFunNm
-  | Any         lhs       .  appFunNm  =  hsnUnknown
+  | Con         lhs       .  appFunNm  =   @nm
+  | App         loc       .  appFunNm  =   @func.appFunNm
+  | Any         lhs       .  appFunNm  =   hsnUnknown
 %%]
 
 %%[2
 SEM Ty
-  | Var         lhs       .  appFunNm  =  hsnUnknown
+  | Var         lhs       .  appFunNm  =   hsnUnknown
 %%]
 
 %%[7
 SEM Ty
-  | Ext         loc       .  appFunNm  =  @ty.appFunNm
+  | Ext         loc       .  appFunNm  =   @ty.appFunNm
+%%]
+
+%%[9
+SEM Ty
+  | Pred        lhs       .  appFunNm  =   hsnUnknown
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -77,6 +82,12 @@ SEM Ty
 SEM Ty
   | Ext         ty          .   appSpinePos     =   0
                 extTy       .   appSpinePos     =   0
+%%]
+
+%%[9
+SEM Pred
+  | Class Eq Lacks
+                loc         .   appSpinePos     =   0
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -265,8 +265,7 @@ ATTR CExpr [ | | jvSrcL: PP_DocL ]
 
 SEM CExpr
   | App         loc         .   jvSrcL      =   @arg.jvSrc : @func.jvSrcL
-  | Int Var Let Lam Tup Char Sel
-                lhs         .   jvSrcL      =   [@jvSrc]
+  | * - App     lhs         .   jvSrcL      =   [@jvSrc]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -279,8 +278,7 @@ ATTR CExpr [ | | jvArgL: {[HsName]} ^^ jvBody: PP_Doc ]
 SEM CExpr
   | Lam         loc         .   jvArgL      =   @arg : @body.jvArgL
                             .   jvBody      =   @body.jvBody
-  | Int Var Let App Tup Char Sel Case
-                lhs         .   jvArgL      =   []
+  | * - Lam     lhs         .   jvArgL      =   []
                             .   jvBody      =   @jvSrc
 %%]
 
@@ -294,7 +292,7 @@ ATTR CExpr [ | | isTupApp: Bool ]
 SEM CExpr
   | Tup         lhs         .   isTupApp    =   True
   | App         lhs         .   isTupApp    =   @func.isTupApp
-  | Var Int Lam Let Char Sel Case
+  | * - Tup App
                 lhs         .   isTupApp    =   False
 %%]
 

@@ -91,6 +91,11 @@ DATA TyExpr
   | Row             rowTyExpr       : RowTyExpr
 %%]
 
+%%[9
+DATA TyExpr
+  | Pred            prExpr          : PrExpr
+%%]
+
 %%[5
 TYPE TyExprs        =   [TyExpr]
 
@@ -112,6 +117,10 @@ SET AllTyExpr       =   TyExpr TyExprs
 
 %%[7.AllTyExpr -5.AllTyExpr
 SET AllTyExpr       =   TyExpr TyExprs RowTyExpr
+%%]
+
+%%[9.AllTyExpr -7.AllTyExpr
+SET AllTyExpr       =   TyExpr TyExprs RowTyExpr PrExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -280,6 +289,20 @@ DATA RowTyExpr
 %%[9
 DATA RowTyExpr
   | Var             nm              : {HsName}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+DATA PrExpr
+  | Class           nm              : {HsName}
+                    tyExprs         : TyExprs
+  | Lacks           rowTyExpr       : RowTyExpr
+                    nm              : {HsName}
+  | Eq              nm              : {HsName}
+                    tyExpr          : TyExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -112,7 +112,7 @@ SEM PatExpr
   | AppTop      loc         .   cpbindL     =   @patExpr.cpbindL
   | Rec         loc         .   cpbindL     =   @recPatExpr.cpbindL
   | Con         loc         .   cpbindL     =   []
-  | IConst CConst AppTop Rec Var
+  | * - App Con
                 lhs         .   cpbindL     =   []
 %%]
 

@@ -85,6 +85,7 @@ SEM Ty
 %%[9
 SEM Ty
   | App         loc         .   frTvL       :=  listCombineUniq (@frRowTvL : @frTvLL)
+  | Pred		loc			.	frTvL		=	listCombineUniq @pr.frTvLL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -96,9 +97,9 @@ ATTR Ty [ | | frRowTvL: TyVarIdL ]
 
 SEM Ty
   | Ext         lhs         .   frRowTvL    =   @ty.frRowTvL
-  | Var Quant Any Con
-                lhs         .   frRowTvL    =   @frTvL
   | App         loc         .   frRowTvL    =   @func.frRowTvL `union` @arg.frRowTvL
+  | * - App Ext
+                lhs         .   frRowTvL    =   @frTvL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

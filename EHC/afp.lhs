@@ -4342,8 +4342,6 @@ can be found in \appRef{app-ag-pattern-uid}.
 \chunkCmdFrameUse{EHInferTyExpr.2.ty}
 \item Pretty printing, |pp| part
 \chunkCmdFrameUse{EHPretty.2.Wild.pp}
-\item Pretty printing, remainder (previously omitted)
-\chunkCmdFrameUse{EHPretty.2.Wild.appFunNm}
 \item Uniq
 \chunkCmdFrameUse{EHUniq.2.Wild}
 \end{itemize}

@@ -30,6 +30,7 @@ WWW_SRC_ZIP			:= www/current-ehc-src.zip
 WWW_DOC_PDF			:= www/current-ehc-doc.pdf
 
 AGC					:= uuagc
+#AGC					:= /Volumes/Tmp/Tmp/uuag/a.out
 GHC					:= ghc
 SUBSTEHC			:= bin/substehc.pl
 SUBSTSH				:= bin/substsh.pl
@@ -55,7 +56,7 @@ DPDS_MAIN			:= EHMainAG.ag EHInfer.ag EHInferExpr.ag \
 						EHInferPatExpr.ag EHInferTyExpr.ag EHInferKiExpr.ag EHInferData.ag \
 						EHInferCaseExpr.ag EHPretty.ag EHPrettyAST.ag EHAbsSyn.ag \
 						EHUniq.ag EHExtraChecks.ag EHGatherError.ag \
-						EHGenCode.ag
+						EHGenCode.ag EHResolvePred.ag
 DPDS_TY				:= EHTy.ag EHTyAbsSyn.ag
 DPDS_TY_PRETTY		:= EHTyPretty.ag EHTyCommonAG.ag EHTyAbsSyn.ag
 DPDS_TY_QUANT		:= EHTyQuantify.ag EHTyCommonAG.ag EHTyAbsSyn.ag

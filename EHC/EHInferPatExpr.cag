@@ -38,7 +38,7 @@ SEM PatExpr
   | Con         loc         .  patFunTy             =   let  prTy = mkTyFreshProdFrom @lUniq (hsnProdArity @nm)
                                                         in   ([prTy] `mkTyArrow` prTy)
   | App         lhs         .  patFunTy             =   @func.patFunTy
-  | IConst CConst Var AppTop
+  | * - App Con
                 lhs         .  patFunTy             =   Ty_Any
 %%]
 
@@ -50,11 +50,6 @@ SEM PatExpr
                             .  patFunTy             :=  let  [a,r]  = mkNewTyVarL 2 @lUniq
                                                              fo     = fitsIn instFIOpts @lUniq2 @knUnTy ([a] `mkTyArrow` r)
                                                         in   foTy fo
-%%]
-
-%%[7
-SEM PatExpr
-  | Rec         lhs         .  patFunTy             =   Ty_Any
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
