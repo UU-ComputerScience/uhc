@@ -263,7 +263,7 @@ SEM TyAGItf
   | AGItf       ty          .   mbPrLoc                 =   Nothing
 
 SEM Ty
-  | App         loc         .   (implsPrL,mbTail)       =   maybe ([],Nothing) implsPredsTail @func.mbImpls
+  | App         loc         .   (implsPrL,mbTail)       =   maybe ([],Nothing) implsPredsMbTail @func.mbImpls
                 arg         .   mbPrLoc                 =   @mbTail
   | Var         loc         .   implsPrL                =   []
   | * - App Var Con Any

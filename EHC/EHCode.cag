@@ -31,7 +31,7 @@
 DERIVING *     : Show, Eq
 %%]
 
-%%[9 hs import(EHTy) export(Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkImplsAppCoe, mkImplsLamCoe)
+%%[9 hs import(FiniteMap,EHTy) export(CBindLMap, Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkImplsAppCoe, mkImplsLamCoe)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -49,6 +49,14 @@ ctagNone  =   -1
 
 %%[8 hs
 data CBindCateg = CBindRec | CBindStrict | CBindPlain deriving (Show,Eq)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bindings using a pred
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+type CBindLMap = FiniteMap PredOccId CBindL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -135,14 +143,14 @@ coeIsId _                   = False
 mkCoe :: (CExpr -> CExpr) -> Coe
 mkCoe = Coe
 
-mkAppCoe :: CBindL -> [CExpr] -> Coe
-mkAppCoe bL eL = mkCoe (\e -> bL `mkCExprLetRec` (e `mkCExprApp` eL))
+mkAppCoe :: CBindLMap -> [CExpr] -> Coe
+mkAppCoe bL eL = mkCoe (\e -> (concat . eltsFM $ bL) `mkCExprLetRec` (e `mkCExprApp` eL))
 
 mkLamCoe :: HsName -> Coe
 mkLamCoe n = mkCoe (\e -> n `CExpr_Lam` e)
 
 mkImplsAppCoe :: Impls -> [Coe]
-mkImplsAppCoe = map (\p -> mkAppCoe [] [CExpr_Var . uidHNm . poId $ p]) . fst . implsPredsTail
+mkImplsAppCoe = map (\p -> mkAppCoe emptyFM [CExpr_Hole . poId $ p]) . fst . implsPredsTail
 
 mkImplsLamCoe :: Impls -> [Coe]
 mkImplsLamCoe = map (\p -> mkLamCoe (uidHNm (poId p))) . fst . implsPredsTail

@@ -30,7 +30,7 @@ SEM Decl
                                                                     { rulRuleTy    = tyQuantifyClosed (@ctxtPrExprs.tyL `mkTyArrow` @prExpr.ty)
                                                                     , rulMkEvid    = \_ -> CExpr_Var n
                                                                     , rulNmEvid    = n
-                                                                    , rulCost      = 10
+                                                                    , rulCost      = CostInt 10
                                                                     }
                                                         in   PrIntroGamInfo (tyQuantifyClosed ([@prExpr.ty] `mkTyArrow` @clsTyRec)) k r
                                 .   elimRules       =   let  mkR sub sup supNm
@@ -39,7 +39,7 @@ SEM Decl
                                                                     , rulMkEvid    = \[sub] -> CExpr_Sel sub ctagNone
                                                                                                  (CExpr_Int . fromJust . tyRecOffset supNm $ @clsTyRec)
                                                                     , rulNmEvid    = hsnUnknown
-                                                                    , rulCost      = 2 * costBase
+                                                                    , rulCost      = CostInt (2 * costBase)
                                                                     }
                                                         in   zipWith (\p n -> (tyPredNm p,mkR @prExpr.ty p n)) @ctxtPrExprs.tyL @supClsNmL
                 lhs             .   patTyGam        =   @lhs.patTyGam

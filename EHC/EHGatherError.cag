@@ -111,6 +111,9 @@ SEM Decl
                             .  errInstPP    =   ppErrs @lErrL
                             .  errDeclsPP   =   ppErrs @decls.errL
                 lhs         .  errL         =   []
+
+SEM AGItf
+  | AGItf       loc         .  errTopPP     =   ppErrs @predNotPrfErrs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -130,5 +133,8 @@ SEM Expr
 %%[9
 SEM Decl
   | Instance    lhs         .  allErrL      =   @lErrL ++ @decls.allErrL
+
+SEM AGItf
+  | AGItf       lhs         .  allErrL      =   @predNotPrfErrs ++ @expr.allErrL
 %%]
 

@@ -37,9 +37,11 @@ SEM Decl
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Class
+%%% Predicates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
+SEM AGItf
+  | AGItf       loc         .   predNotPrfErrs      =   if null @expr.gathPredL then [] else [Err_NotProvenPreds @expr.gathPredL]
 %%]
 

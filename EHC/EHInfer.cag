@@ -43,7 +43,7 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | Let         loc         .  (lQuValGam,tqoGam)   :=  let  (vg,tqog) = valGamQuantify @gTyTvL @remPrOccL @lSubsValGam
+  | Let         loc         .  (lQuValGam,tqoGam)   :=  let  (vg,tqog) = valGamQuantify @gTyTvL @remPrfPrL @lSubsValGam
                                                         in   (valGamInst1Exists @lUniq2 vg,tqog)
                             .  tqoTyCnstr           =   foldr (\tqo c -> tqoImplsCnstr tqo |=> c) emptyCnstr (gamValues @tqoGam)
 %%]
@@ -523,7 +523,7 @@ SEM Expr
                 decls       .   prIntroGam          =   @lPrIGam `gamPushGam` @lhs.prIntroGam
                 loc         .   lSubsPrIGam         =   @decls.kiCnstr |=> @lPrIGam
                             .   gSubsPrIGam         =   @decls.kiCnstr |=> @gPrIGam
-                            .   gKiTvL              :=  ftv @gSubsTyGam `union` ftv @gSubsPrIGam
+                            .   gKiTvL              :=  ftv @gSubsTyGam `List.union` ftv @gSubsPrIGam
                             .   lQuPrIGam           =   gamMap
                                                             (\(n,t) -> (n,t {pigiKi = tyQuantify (`elem` @gKiTvL) (pigiKi t)}))
                                                             @lSubsPrIGam

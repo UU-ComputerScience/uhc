@@ -116,6 +116,12 @@ SEM Err
                                                         )
 %%]
 
+%%[9
+  | NotProvenPreds      lhs     .  pp   =   ppMsgErr    "Predicates did remain unproven"
+                                                        (    "preds:" >#< ppCommaList @preds
+                                                        )
+%%]
+
 
 
 
