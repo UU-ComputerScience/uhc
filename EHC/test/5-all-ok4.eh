@@ -1,5 +1,6 @@
 let data I = I (a -> a)
     id = \x -> x
  in let v1 = case I id of
-               I i -> (i 3, i 'x')
+               I i -> let (a,b) = (i 3, i 'x')
+                      in  b
      in v1

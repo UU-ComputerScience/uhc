@@ -92,17 +92,19 @@ SEM KiExpr
 
 %%[7
 SEM Expr
-  | Rec             (recExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
-  | Sel             (expr.gUniq,loc.lUniq,loc.lUniq2)               =   mkNewLevUID2    @lhs.gUniq
+  | Rec             (recExpr.gUniq,loc.lUniq,loc.lUniq2)            =   mkNewLevUID2    @lhs.gUniq
+  | Sel             (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
 
 SEM RecExpr
-  | Ext             (recExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
+  | Empty           (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+  | Ext             (recExpr.gUniq,loc.lUniq,loc.lUniq2)            =   mkNewLevUID2    @lhs.gUniq
 
 SEM PatExpr
-  | Rec             (recPatExpr.gUniq,loc.lUniq)                    =   mkNewLevUID     @lhs.gUniq
+  | Rec             (recPatExpr.gUniq,loc.lUniq,loc.lUniq2)         =   mkNewLevUID2    @lhs.gUniq
 
 SEM RecPatExpr
-  | Ext             (recPatExpr.gUniq,loc.lUniq)                    =   mkNewLevUID     @lhs.gUniq
+  | Empty           (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+  | Ext             (recPatExpr.gUniq,loc.lUniq,loc.lUniq2)         =   mkNewLevUID2    @lhs.gUniq
 %%]
 
 %%[8
@@ -120,6 +122,9 @@ SEM Expr
   | App             (func.gUniq,loc.lUniq,loc.lUniq2)               :=  mkNewLevUID2    @lhs.gUniq
   | Lam             (arg.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)     :=  mkNewLevUID3    @lhs.gUniq
   | AppImpl         (func.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
+
+SEM RecExpr
+  | Expr            (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
 
 SEM RowTyExpr
   | Var             (lhs.gUniq,loc.lUniq,loc.lUniq2)                =   mkNewLevUID2    @lhs.gUniq

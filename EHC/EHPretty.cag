@@ -91,90 +91,94 @@ ATTR TyVars DataConstrs CaseAlts [ | | ppL: PP_DocL ]
 ATTR TyExprs [ | | ppL: PP_DocL ]
 
 SEM Decl
-  | Data        loc     .  pp       =   "data"  >#< @tyNm >#< ppSpaced @tyVars.ppL
+  | Data        loc     .   pp      =   "data"  >#< @tyNm >#< ppSpaced @tyVars.ppL
                                                 >#< "=" >#< ppListSepFill "" "" " | " @constrs.ppL
 
 SEM Expr
-  | Case        loc     .  pp       =   "case"  >#< @expr.pp >#< "of"
+  | Case        loc     .   pp      =   "case"  >#< @expr.pp >#< "of"
                                                 >-< indent 2 (vlist @alts.ppL)
 
 SEM CaseAlt
-  | Pat         loc     .  pp       =   @patExpr.pp >|< @ppExtra >#< "->" >#< @expr.pp
-                        .  ppExtra  =   empty
+  | Pat         loc     .   pp      =   @patExpr.pp >|< @ppExtra >#< "->" >#< @expr.pp
+                        .   ppExtra =   empty
 
 SEM CaseAlts
-  | Nil         lhs     .  ppL      =   []
-  | Cons        lhs     .  ppL      =   (@hd.pp >|< @ppExtra) : @tl.ppL
-                loc     .  ppExtra  =   empty
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   (@hd.pp >|< @ppExtra) : @tl.ppL
+                loc     .   ppExtra =   empty
 
 SEM TyExprs
-  | Nil         lhs     .  ppL      =   []
-  | Cons        lhs     .  ppL      =   @hd.pp : @tl.ppL
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 
 SEM TyVar
-  | Var         lhs     .  pp       =   pp @nm
+  | Var         lhs     .   pp      =   pp @nm
 
 SEM TyVars
-  | Nil         lhs     .  ppL      =   []
-  | Cons        lhs     .  ppL      =   @hd.pp : @tl.ppL
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 
 SEM DataConstr
-  | Constr      loc     .  pp       =   pp @conNm >#< ppSpaced @fields.ppL
+  | Constr      loc     .   pp      =   pp @conNm >#< ppSpaced @fields.ppL
 
 SEM DataConstrs
-  | Nil         lhs     .  ppL      =   []
-  | Cons        lhs     .  ppL      =   @hd.pp : @tl.ppL
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 %%]
 
 %%[6
 SEM KiExpr
-  | Con Var     loc     .  pp       =   pp @nm
-  | App         loc     .  pp       =   @func.pp >#< @arg.pp
-  | AppTop      loc     .  pp       =   ppAppTop  (@kiExpr.appFunNm,@kiExpr.appFunPP)
+  | Con Var     loc     .   pp      =   pp @nm
+  | App         loc     .   pp      =   @func.pp >#< @arg.pp
+  | AppTop      loc     .   pp      =   ppAppTop  (@kiExpr.appFunNm,@kiExpr.appFunPP)
                                                   @kiExpr.appArgPPL @kiExpr.pp
-  | Parens      loc     .  pp       =   pp_parens @kiExpr.pp
+  | Parens      loc     .   pp      =   pp_parens @kiExpr.pp
 
 SEM Decl
-  | KiSig       loc     .  pp       =   @nm >#< "::" >#< @kiExpr.pp
+  | KiSig       loc     .   pp      =   @nm >#< "::" >#< @kiExpr.pp
 %%]
 
 %%[7
 ATTR RecExpr RowTyExpr RecPatExpr DataFields [ | | ppL: PP_DocL ]
 
 SEM Expr
-  | Rec         loc     .  pp       =   ppAppTop  (hsnRec,mkPPAppFun @appFunNm @recExpr.pp)
+  | Rec         loc     .   pp      =   ppAppTop  (hsnRec,mkPPAppFun @appFunNm @recExpr.pp)
                                                   (reverse @recExpr.ppL) @recExpr.pp
-  | Sel         loc     .  pp       =   @expr.pp >|< "." >|< @lbl
+  | Sel         loc     .   pp      =   @expr.pp >|< "." >|< @lbl
 
 SEM RecExpr
-  | Empty       lhs     .  ppL      =   []
-  | Ext         lhs     .  pp       =   @recExpr.pp
-                        .  ppL      =   ppFld "=" @positionalNm @nm @expr.pp : @recExpr.ppL
+  | Empty       loc     .   pp      =   hsnORec >|< hsnCRec
+                lhs     .   ppL     =   []
+  | Ext         loc     .   pp      =   ppFld "=" @positionalNm @nm @expr.pp
+                lhs     .   ppL     =   @pp : @recExpr.ppL
+  | Upd         loc     .   pp      =   ppFld ":=" hsnUnknown @nm @expr.pp
+                lhs     .   ppL     =   @pp : @recExpr.ppL
 
 SEM PatExpr
-  | Rec         loc     .  pp       =   ppAppTop  (hsnRec,mkPPAppFun @appFunNm @recPatExpr.pp)
+  | Rec         loc     .   pp      =   ppAppTop  (hsnRec,mkPPAppFun @appFunNm @recPatExpr.pp)
                                                   (reverse @recPatExpr.ppL) @recPatExpr.pp
 
 SEM RecPatExpr
-  | Empty       lhs     .  ppL      =   []
-  | Ext         lhs     .  pp       =   @recPatExpr.pp
-                        .  ppL      =   ppFld "=" @positionalNm @nm @patExpr.pp : @recPatExpr.ppL
+  | Empty       loc     .   pp      =   hsnORec >|< hsnCRec
+                lhs     .   ppL     =   []
+  | Ext         loc     .   pp      =   @recPatExpr.pp
+                lhs     .   ppL     =   ppFld "=" @positionalNm @nm @patExpr.pp : @recPatExpr.ppL
 
 SEM TyExpr
-  | Row         loc     .  pp       =   ppAppTop  (hsnRow,mkPPAppFun hsnRow @rowTyExpr.pp)
+  | Row         loc     .   pp      =   ppAppTop  (hsnRow,mkPPAppFun hsnRow @rowTyExpr.pp)
                                                   (reverse @rowTyExpr.ppL) @rowTyExpr.pp
 
 SEM RowTyExpr
-  | Empty       lhs     .  ppL      =   []
-  | Ext         lhs     .  pp       =   @rowTyExpr.pp
-                        .  ppL      =   ppFld "::" @positionalNm @nm @tyExpr.pp : @rowTyExpr.ppL
+  | Empty       lhs     .   ppL     =   []
+  | Ext         lhs     .   pp      =   @rowTyExpr.pp
+                        .   ppL     =   ppFld "::" @positionalNm @nm @tyExpr.pp : @rowTyExpr.ppL
 
 SEM DataFields
-  | Nil         lhs     .  ppL      =   []
-  | Cons        lhs     .  ppL      =   @hd.pp : @tl.ppL
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 
 SEM DataConstr
-  | Constr      loc     .  pp       :=  pp @conNm
+  | Constr      loc     .   pp      :=  pp @conNm
                                         >#<  (if null . catMaybes $ @fields.lblL
                                               then ppSpaced @fields.ppL
                                               else ppListSep "{" "}" "," (zipWith (\(Just l) f -> l >#< "::" >#< f) @fields.lblL @fields.ppL)
@@ -183,15 +187,19 @@ SEM DataConstr
 
 %%[8
 SEM Decl
-  | FFI         loc     .  pp       =   "foreign" >#< pp (show @impEnt) >#< @nm >#< "::" >#< @tyExpr.pp
+  | FFI         loc     .   pp      =   "foreign" >#< pp (show @impEnt) >#< @nm >#< "::" >#< @tyExpr.pp
 %%]
 
 %%[9
 ATTR PrExprs FuncDeps [ | | ppL: PP_DocL ]
 
 SEM Expr
-  | AppImpl     loc     .  argPP    =   @argPr.pp >#< "~>" >#< @arg.pp >#< hsnCImpl
+  | AppImpl     loc     .  argPP    =   @argPr.pp >#< ":>" >#< @arg.pp >#< hsnCImpl
                         .  pp       =   @func.pp >#< hsnOImpl >#< @argPP
+
+SEM RecExpr
+  | Expr        loc     .  pp       =   @expr.pp
+                lhs     .  ppL      =   [@pp]
 
 SEM RowTyExpr
   | Var         loc     .  pp       =   pp @nm
@@ -216,7 +224,7 @@ SEM Decl
                                                     >#< "=>" >#< @prExpr.pp
                                                     >#< "|" >#< ppListSep "" "" ", " @funcDeps.ppL
                                                     >#< "where" >-< indent 2 @decls.pp
-  | Instance    loc     .  pp       =   "instance"  >|< maybe empty (\n -> " " >|< n >#< "<~") @mbNm
+  | Instance    loc     .  pp       =   "instance"  >|< maybe empty (\n -> " " >|< n >#< "<:") @mbNm
                                                     >#< ppListSep "(" ")" ", " @ctxtPrExprs.ppL
                                                     >#< "=>" >#< @prExpr.pp
                                                     >#< "where" >-< indent 2 @decls.pp

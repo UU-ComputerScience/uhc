@@ -119,7 +119,7 @@ gamUpd k upd = fromJust . gamMbUpd k upd
 
 %%[9
 gamValues :: Gam k v -> [v]
-gamValues = assocLValues . gamToAssocL
+gamValues = assocLElts . gamToAssocL
 
 gamLookupAll :: Eq k => k -> Gam k v -> [v]
 gamLookupAll k (Gam ll) = catMaybes (map (lookup k) ll)

@@ -334,8 +334,8 @@ afp-tr:
 afp-llncs:
 	$(MAKE) AFP=$@ LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=forAfpLLNCS --set=omitTBD --set=omitLitDiscuss" afp
 
-cc2005:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=forCC2005 --set=omitTBD --set=omitLitDiscuss" afp
+esop05:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=forESOP05 --set=omitTBD --set=omitLitDiscuss" afp
 
 eh-work:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=asArticle --set=refToPDF --set=inclOmitted --set=onlyCurrentWork" afp

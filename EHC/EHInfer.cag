@@ -501,6 +501,11 @@ SEM CaseAlt
   | Pat         patExpr     .  fiOpts               =   strongFIOpts
 %%]
 
+%%[9
+SEM Expr
+  | App         func        .  fiOpts               :=  strongFIOpts {fioImplsRepos = False}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Predicate, for elim of predicates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -580,6 +580,30 @@ rules fit9.app "Fitting/subsumption for type applications" =
     judge fit9 fiopt; Gamma :- ((sigma.1.l,sigma.1.r)) <= ((sigma.2.l,sigma.2.r)) : ((sigma..l,Cnstr.2 sigma..r))
           ~> Cnstr.(2(..)1); (let (l,r) (=) _ in (coe.l ^^ l, coe.r ^^ r))
 
+rules fit9.rec "Fitting/subsumption for records" =
+  rule f_rec9_empty =
+    -
+    judge fit9 fiopt; Gamma :- (()) <= (()) : (()) ~> ([]) ; id
+
+  rule f_rec9_empty_r =
+    judge fit9 fiopt; Gamma :- r.1 <= (()) : r ~> Cnstr ; coe
+    -
+    judge fit9 fiopt; Gamma :- ((r.1 | l :: _)) <= (()) : r ~> Cnstr ; (coe (_ (-) l))
+
+  rule f_rec9_ext_eq =
+    judge fit9 fiopt; Gamma :- (Cnstr.1 sigma.1) <= (Cnstr.1 sigma.2) : sigma ~> Cnstr.2 ; coe.sigma
+    judge fit9 fiopt; Gamma :- r.1 <= r.2 : r ~> Cnstr.1 ; coe.r
+    -
+    judge fit9 fiopt; Gamma :- ((r.1 | l :: sigma.1)) <= ((r.2 | l :: sigma.2)) : ((r | l :: sigma))
+          ~> Cnstr.(1(..)2) ; (let r (=) _ in (coe.r (r (-) l) | l (=) coe.sigma (r(.)l)))
+
+  rule f_rec9_ext_neq =
+    cond l.1 /= l.2
+    cond rvar "fresh"
+    -
+    judge fit9 fiopt; Gamma :- ((rvar.1 | l.1 :: sigma.1)) <= ((rvar.2 | l.2 :: sigma.2)) : ((rvar | l.1 :: sigma.1 , l.2 :: sigma.2))
+          ~> (rvar.1 :-> (rvar | l.2 :: sigma.2), rvar.2 :-> (rvar | l.1 :: sigma.1)) ; id
+
 -------------------------------------------------------------------------
 -- Quantify
 -------------------------------------------------------------------------

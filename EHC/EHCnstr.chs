@@ -245,6 +245,12 @@ instance Substitutable Cnstr where
   ftv                  (Cnstr sl)      =   ftv . map snd $ sl
 %%]
 
+%%[7
+instance Substitutable v => Substitutable (HsName,v) where
+  s |=>  (k,v) =  (k,s |=> v)
+  ftv    (_,v) =  ftv v
+%%]
+
 %%[9.SubstitutableCnstr -2.SubstitutableCnstr
 instance Substitutable Cnstr where
   s1@(Cnstr sl1) |=>   s2@(Cnstr sl2)  =   Cnstr (mapFM (\v t -> s1 |=> t) sl2 `plusFM` sl1)

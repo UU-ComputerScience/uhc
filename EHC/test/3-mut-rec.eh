@@ -3,4 +3,4 @@ let  f1 = \x -> g1 x
      f2 :: a -> a
      f2 = \x -> g2 x
      g2 = \y -> f2 y
-in   f1 3
+in   3

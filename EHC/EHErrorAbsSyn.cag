@@ -42,7 +42,7 @@ DATA Err
 
 %%[7
 DATA Err
-  | MissingRowLabel     nm         : {HsName}            ^^  ty         : Ty
+  | MissingRowLabels    nmL        : {[HsName]}          ^^  ty         : Ty
 %%]
 
 %%[8

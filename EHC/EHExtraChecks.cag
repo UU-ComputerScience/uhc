@@ -45,6 +45,6 @@ SEM AGItf
   | AGItf       loc         .   predNotPrfErrs      =   if null @expr.gathPredL then [] else [Err_NotProvenPreds @expr.gathPredL]
 
 SEM Decl
-  | Instance    loc         .   predNotPrfErrs      =   if null @remPrfPrL then [] else [Err_NotProvenPreds @supRemPrfPrL]
+  | Instance    loc         .   predNotPrfErrs      =   if null @supRemPrfPrL then [] else [Err_NotProvenPreds @supRemPrfPrL]
 %%]
 

@@ -108,8 +108,8 @@ SEM Err
 
 %%[7
 SEM Err
-  | MissingRowLabel     lhs     .  pp   =   ppMsgErr    "Missing label in row"
-                                                        ("Label:" >#< @nm >-< "Row  :" >#< ppTy @ty)
+  | MissingRowLabels    lhs     .  pp   =   ppMsgErr    "Missing label(s) in row"
+                                                        ("Label(s):" >#< ppListSep "" "" ", " @nmL >-< "Row     :" >#< ppTy @ty)
 %%]
 
 %%[8
