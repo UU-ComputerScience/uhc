@@ -150,6 +150,7 @@
 %format weakFIOpts		= fiopt "_{w}"
 %format instFIOpts		= fiopt "_{i}"
 %format instLFIOpts		= fiopt "_{il}"
+%format predFIOpts		= fiopt "_{p}"
 
 %format	fioptBase		= "fi"
 %format fioLeaveRInstY	= fioptBase "_{r-inst}^{+}"
