@@ -315,7 +315,7 @@
 
 \usepackage{txfonts}
 
-%if forAfpTRUU1
+%if truu
 \usepackage{TRtitlepage}
 %endif
 
@@ -465,7 +465,7 @@
 \setlength{\mathindent}{.05\textwidth}
 %endif
 
-%if forAfpTRUU1
+%if truu
 \setlength{\marginparsep}{.015\textwidth}
 %endif
 
@@ -479,7 +479,7 @@
 %if phd
 \author{Atze Dijkstra}
 %else
-\author{Atze Dijkstra and Doaitse Swierstra}
+\author{Atze Dijkstra and S. Doaitse Swierstra}
 %endif
 \date{\today}
 %if llncs
@@ -563,6 +563,12 @@ WWW home page:
 {Typing Haskell with an Attribute Grammar (Part I)}
 {Atze Dijkstra \\ Doaitse Swierstra}
 {UU-CS-2004-037}
+%elif forESOP05 && truu
+\TRtitlepage
+{Explicit implicit parameters}
+{Atze Dijkstra \\ S. Doaitse Swierstra}
+{UU-CS-2004-059}
+\maketitle
 %else
 \maketitle
 %endif
@@ -570,7 +576,7 @@ WWW home page:
 \frame<presentation>{\titlepage}
 
 % Avoid indentation
-%if not forESOP05
+%if not (forESOP05 && llncs)
 \setlength{\parindent}{0mm}
 \addtolength{\parskip}{0.4\baselineskip}
 %endif
@@ -6894,11 +6900,13 @@ val         ::=     (tag {sval}+)                   --  complete node (constant 
             |       ()                              --  empty
             |       sval                            --  simple value
 
-adapt       ::=     posint += sval                  --  insertion at offset
-            |       posint := sval                  --  update at offset
+adapt       ::=     offset += sval                  --  insertion at offset
+            |       offset := sval                  --  update at offset
 
 sval        ::=     literal                         --  constant, basic value
             |       var                             --  variable
+
+offset      ::=     sval                            --  offset in record
 
 literal     ::=     posint                          --  integer literal
             |       negint
@@ -6925,7 +6933,7 @@ cpat        ::=     (tag {var}*)                    --  constant node pattern
             |       tag                             --  constant tag pattern
             |       literal                         --  constant
 
-split       ::=     var = posint                    --  extraction at offset
+split       ::=     var = offset                    --  extraction at offset
 \end{code}
 \end{Figure}
 %}

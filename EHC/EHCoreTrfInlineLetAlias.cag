@@ -71,7 +71,7 @@ ATTR AllBind [ | | bindL USE {++} {[]}: CBindL ]
 
 SEM CBind
   | Bind        lhs         .   (bindNmMp,bindL)
-                                            =   if isJust @expr.mbVar
+                                            =   if isJust @expr.mbVar && @nm /= hsnMain
                                                 then (@nm `unitFM` fromJust @expr.mbVar,[])
                                                 else (emptyFM,[@cTrf])
 %%]

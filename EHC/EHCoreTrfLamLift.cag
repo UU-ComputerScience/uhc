@@ -123,15 +123,29 @@ SEM CExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Has a strict let inside
+%%% Is expr a let?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR CExpr [ | | isLet: Bool ]
+
+SEM CExpr
+  | Let         lhs         .   isLet       =   True
+  | * - Let     lhs         .   isLet       =   False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Has a strictness?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 ATTR CExpr [ | | hasStrict: Bool ]
 
 SEM CExpr
-  | Let         lhs         .   hasStrict   =   @categ == CBindStrict || @body.hasStrict
-  | * - Let     lhs         .   hasStrict   =   False
+  | TupIns TupDel Case
+                lhs         .   hasStrict   =   True
+  | * - TupIns TupDel Case
+                lhs         .   hasStrict   =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -165,6 +179,17 @@ SEM CodeAGItf
 
 SEM CExpr
   | Let         loc         .   lamArgMp    =   @lhs.lamArgMp `plusFM` @binds.bindLamArgMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional used identifiers for mutual recursive definitions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllBind [ mutRecNmL: {[HsName]} | | ]
+
+SEM CExpr
+  | Let         binds       .   mutRecNmL   =   if @categ == CBindRec then @binds.nmL else []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -206,7 +231,7 @@ SEM CBind
                                                            ,@nm `unitFM` argOL
                                                            )
                                                 else  if @expr.isLet
-                                                then  let  argLevL = fvLAsArg @lhs.levMp @expr.fvS
+                                                then  let  argLevL = zip @lhs.mutRecNmL (repeat cLevOuter) ++ fvLAsArg @lhs.levMp @expr.fvS
                                                            cafLamNm = mkFvNm @lhs.gUniq @nm
                                                            (argOL,argNL,argONMp) = fvLArgRepl (@lhs.gUniq + 1) argLevL
                                                       in   if null argLevL

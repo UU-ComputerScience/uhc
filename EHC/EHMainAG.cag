@@ -18,10 +18,10 @@
 %%[3 hs import(EHTyQuantify,EHTyInstantiate)
 %%]
 
-%%[8 hs import(FiniteMap,EHCore)
+%%[8 hs import(FiniteMap,EHCore,EHDebug)
 %%]
 
-%%[9 hs import(Set,FiniteMap,EHPred,EHCorePretty,EHCoreSubst,EHDebug)
+%%[9 hs import(Set,FiniteMap,EHPred,EHCorePretty,EHCoreSubst)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
