@@ -41,6 +41,7 @@ jvNm hn
          jSymChs  =  [ ((=='\''),const "squot")
                      , ((=='-'),const "dash")
                      , ((=='!'),const "bang")
+                     , ((=='$'),const "doll")
                      ]
          surr x   =  "_" ++ x ++ "_"
          lookup v [] = Nothing
@@ -120,6 +121,8 @@ jvCAF stats body = jvBody "new Apply0()" "void evalSet" [] empty (pp stats) (jvC
 
 jvSelNm   = HNm "_sel"
 jvSel1Nm  = HNm "_sel1"
+jvSetNm   = HNm "_set"
+jvSet1Nm  = HNm "_set1"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -138,6 +141,15 @@ SEM CModule
                                                         (jvLam jvSelNm [HNm "tup",HNm "off"] (jvRet (jvForceCast "Object[]" "tup" >|< pp_brackets (jvForceInt "off"))))
                                                     >-< jvBind "Function2" jvSel1Nm
                                                         (jvLam jvSel1Nm [HNm "tup",HNm "off"] (jvRet (jvForceCast "Object[]" "tup" >|< pp_brackets ("1+" >|< jvForceInt "off"))))
+                                                    >-< jvBind "Function3" jvSetNm
+                                                        (jvLam jvSetNm [HNm "tup",HNm "off",HNm "val"]
+                                                            (   jvBind "Object[]" (HNm "_t") (jvForceCast "Object[]" "tup")
+                                                            >-< jvBind "Object[]" (HNm "_nt") ("new Object[_t.length]")
+                                                            >-< jvBind "int" (HNm "_o") (jvForceInt "off")
+                                                            >-< jvCall "java.lang.System.arraycopy" (map pp ["_t","0","_nt","0","_o"]) >#< ";"
+                                                            >-< "_nt[_o] = val ;"
+                                                            >-< jvRet (pp "_nt")
+                                                            ))
                                                     >-< jvBind "Object" hsnUndefined "null"
                                                     >-< jvBind "Function2" primCmpIntNm
                                                             (jvLam primCmpIntNm [HNm "i1",HNm "i2"]
@@ -216,6 +228,7 @@ SEM CPat
 
 %%[9
 SEM CExpr
+  | Set         loc         .   jvSrc       =   jvApp (jvNmPP (if @tag >= 0 then jvSet1Nm else jvSetNm)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
   | Hole        loc         .   jvSrc       =   jvNmPP (uidHNm @uid)
   | CoeArg      loc         .   jvSrc       =   jvNmPP hsnUnknown
   | ImplsApp    loc         .   jvSrc       =   @func.jvSrc

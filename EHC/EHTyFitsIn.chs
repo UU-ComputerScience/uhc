@@ -780,7 +780,7 @@ matchRule u pr r
           fo             = fitsIn predFIOpts emptyFE u3 rTy (vs `mkTyArrow` Ty_Pred pr)
      in   if foHasErrs fo
           then Nothing
-          else Just  ( zipWith PredOcc (map tyPred . fst . tyArrowArgsRes . foTy $ fo) us
+          else Just  ( zipWith PredOcc (map tyPred . tyArrowArgs . foTy $ fo) us
                      , rulMkEvid r (map CExpr_Hole us)
                      , rulId r, rulCost r
                      )
@@ -832,7 +832,10 @@ prfOneStep env (PredOcc pr prUid) st@(ProofState g@(ProvenGraph i2n p2i p2oi) u 
 %%[9
 prfPredsToProvenGraph :: UID -> FIEnv -> [PredOcc] -> ProvenGraph
 prfPredsToProvenGraph u env prL
-  =  let  initState = ProofState (ProvenGraph emptyFM emptyFM (listToFM . map (\p -> (poPr p,[poId p])) $ prL)) u prL (map poPr prL)
+  =  let  initState = ProofState
+                        (ProvenGraph emptyFM emptyFM
+                            (foldr (\p m -> addToFM_C (++) m (poPr p) [poId p]) (emptyFM) prL))
+                        u prL (map poPr prL)
           resolve st@(ProofState _ _ (pr:prL) _)
             =  let  st' = prfOneStep env pr (st {prfsPredsToProve = prL})
                in   resolve st'

@@ -12,7 +12,7 @@
 %%[8 hs import(UU.Pretty,EHCommon,EHTy,EHCode) export(ppCModule)
 %%]
 
-%%[9 hs import(FiniteMap) export(ppCBindLMap)
+%%[9 hs import(FiniteMap,Set) export(ppCBindLMap)
 %%]
 
 %%[8.WRAPPER import(EHCodeAbsSyn)
@@ -36,7 +36,7 @@ instance PP CExpr where
 
 %%[9 hs
 ppCBindLMap :: CBindLMap -> PP_Doc
-ppCBindLMap = ppAssocL . map (\(i,b) -> (i,ppAssocL . map (\(CBind_Bind n v) -> (n,v)) $ b)) . fmToList
+ppCBindLMap = ppAssocL . assocLMapSnd (\(i,b) -> (ppAssocL . map (\(CBind_Bind n v) -> (n,v)) $ b) >-< (ppCommaList . setToList $ i)) . fmToList
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -104,6 +104,7 @@ SEM CPatBindL
 
 %%[9
 SEM CExpr
+  | Set         loc         .   pp          =   ppDef (pp_parens @expr.pp) ("." >|< pp_parens (pp @tag >|< ":" >|< @offset.pp) >|< "<-" >|< @fldExpr.pp)
   | Hole        loc         .   pp          =   "<" >|< pp @uid >|< ">"
   | CoeArg      loc         .   pp          =   pp "<_>"
   | ImplsApp    loc         .   pp          =   ppDef @func.pp ("<" >|< pp @uid >|< ">")

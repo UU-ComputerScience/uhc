@@ -12,7 +12,7 @@
 %%[1 hs import(EHCommon) export(TyAGItf(..), Ty(..), TyL, tyInt, tyChar, mkTyArrow, mkTyApp, mkTyConApp, mkTyProdApp, mkTyCon)
 %%]
 
-%%[1 hs export(tyArrowArgRes, tyArrowArgsRes, tyAppFunArgs, tyProdArgs, tyAppArgs) 
+%%[1 hs export(tyArrowArgRes, tyArrowArgsRes, tyArrowArgs, tyArrowRes, tyAppFunArgs, tyProdArgs, tyAppArgs) 
 %%]
 
 %%[2 hs export(TyVarId, TyVarIdL, mkTyVar, mkNewTyVar, mkNewUIDTyVarL, mkNewTyVarL, mkTyFreshProd, mkTyFreshProdFrom, tyEnsureNonBotTop) 
@@ -39,7 +39,7 @@
 %%[9 hs export(Pred(..),predNm,predTy,tyPredNm,tyPred,tyLImplsPreds,tyArrowImplsRes,tyArrowImplsArgRes,mkTyPr)
 %%]
 
-%%[9 hs export(tyRecExts,tyAppFunConNm,tyArrowArity)
+%%[9 hs export(tyRecExts,tyAppFunConNm,tyArrowArity,tyQuant)
 %%]
 
 %%[9 hs export(tyImpls,Impls(..),ImplsVarId,mkImplsVar,implsPredsTail,implsUIDs,implsPredsMbTail,tyIsImplsTail,tyImplsPreds)
@@ -264,6 +264,8 @@ tyArrowArgRes   :: Ty -> (Ty,Ty)
 tyArrowArgsRes  :: Ty -> (TyL,Ty)
 tyAppFunArgs    :: Ty -> (Ty,TyL)
 tyAppArgs       :: Ty -> TyL
+tyArrowArgs     :: Ty -> TyL
+tyArrowRes      :: Ty -> Ty
 tyProdArgs      :: Ty -> TyL
 %%]
 
@@ -287,7 +289,9 @@ tyAppFunArgs
                 Ty_App f a  -> extr (a:as) f
                 _           -> (t,as)
 
-tyAppArgs = snd . tyAppFunArgs
+tyArrowArgs  = fst . tyArrowArgsRes
+tyArrowRes   = snd . tyArrowArgsRes
+tyAppArgs    = snd . tyAppFunArgs
 %%]
 
 %%[1.tyProdArgs hs
@@ -308,8 +312,14 @@ tyConNm  _            = hsnUnknown
 tyAppFunConNm :: Ty -> HsName
 tyAppFunConNm = tyConNm . fst . tyAppFunArgs
 
+tyQuant :: Ty -> Ty
+tyQuant t
+  =  case t of
+       Ty_Quant _ _ t'  -> tyQuant t'
+       _                -> t
+
 tyArrowArity :: Ty -> Int
-tyArrowArity = length . fst . tyArrowArgsRes
+tyArrowArity = length . tyArrowArgs
 %%]
 
 %%[9 hs

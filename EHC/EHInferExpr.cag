@@ -79,14 +79,14 @@ SEM Expr
 
 %%[1.Con
 SEM Expr
-  | Con         loc         .  ty                   =   let  resTy = snd (tyArrowArgsRes @lhs.knTy)
+  | Con         loc         .  ty                   =   let  resTy = tyArrowRes @lhs.knTy
                                                         in   tyProdArgs resTy `mkTyArrow` resTy
 %%]
 
 %%[2.Con
 SEM Expr
   | Con         loc         .  fo                   =   let  gTy      = mkTyFreshProdFrom @lUniq (hsnProdArity @nm)
-                                                             foKnRes  = gTy `fitsIn` (@lhs.tyCnstr |=> snd (tyArrowArgsRes @lhs.knTy))
+                                                             foKnRes  = gTy `fitsIn` (@lhs.tyCnstr |=> tyArrowRes @lhs.knTy)
                                                         in   foKnRes {foTy = tyProdArgs (foTy foKnRes) `mkTyArrow` (foTy foKnRes)}
                             .  ty                   :=  foTy @fo
                 lhs         .  tyCnstr              =   foCnstr @fo |=> @lhs.tyCnstr
@@ -183,6 +183,17 @@ SEM Expr
                                                         in   fo {foTy = foCnstr fo |=> @resTy}
                             .  (imTy,knTy)          :=  tyArrowArgRes (foTy @foKnRes)
                 expr        .  tyCnstr              =   foCnstr @foKnRes |=> @lhs.tyCnstr
+%%]
+
+%%[4.TypeAs
+SEM Expr
+  | TypeAs      loc         .  gTyTvL               =   let  ftvVal  = ftv (@lhs.tyCnstr |=> @lhs.valGam)
+                                                             ftvTy   = ftv . (@lhs.tyCnstr |=>) . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
+                                                        in   ftvVal ++ ftvTy
+                            .  asTy                 =   tyQuantify (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) (@lhs.tyCnstr |=> @tyExpr.ty)
+                            .  fo                   :=  fitsIn @lhs.fiOpts emptyFE @lUniq @asTy @lhs.knTy
+                expr        .  knTy                 =   foCnstr @fo |=> @asTy
+                            .  tyCnstr              =   foCnstr @fo |=> @lhs.tyCnstr
 %%]
 
 %%[4.Rest

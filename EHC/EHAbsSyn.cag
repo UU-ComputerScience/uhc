@@ -161,6 +161,12 @@ DATA Expr
   | Parens          expr            : Expr
 %%]
 
+%%[4
+DATA Expr
+  | TypeAs          tyExpr          : TyExpr
+                    expr            : Expr
+%%]
+
 %%[5
 DATA Expr
   | Case            expr            : Expr
@@ -207,6 +213,12 @@ DATA PatExpr
   | Parens          patExpr         : PatExpr
 %%]
       
+%%[4
+DATA PatExpr
+  | TypeAs          tyExpr          : TyExpr
+                    patExpr         : PatExpr
+%%]
+
 %%[7
 DATA PatExpr
   | Rec             recPatExpr      : RecPatExpr

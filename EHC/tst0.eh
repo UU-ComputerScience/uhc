@@ -7,16 +7,20 @@ let class Eq a where
     class Eq a => Ord a where
       lt :: a -> a -> Bool
       gt :: a -> a -> Bool
-    instance dEqInt = Eq Int where
+    instance dEqInt <~ Eq Int where
       eq = \_ _ -> True
       ne = \_ _ -> True
-    instance dEqList = Eq a => Eq (List a) where
+{-
+-}
+    instance dEqList <~ Eq a => Eq (List a) where
       eq = \_ _ -> True
       ne = \_ _ -> True
-    instance dOrdInt = Ord Int where
+    instance dOrdInt <~ Ord Int where
       lt = \_ _ -> True
       gt = \_ _ -> True
-    instance dOrdList = Ord a => Ord (List a) where
+{-
+-}
+    instance dOrdList <~ Ord a => Ord (List a) where
       lt = \_ _ -> True
       gt = \_ _ -> True
 in

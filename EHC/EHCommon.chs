@@ -208,10 +208,10 @@ mkNewLevUID u@(UID ls) = (uidNext u,UID (0:ls))
 %%]
 
 %%[2.UID.Utils
-mkNewLevUID2 u = let { (u',u1)     = mkNewLevUID   u; (u'',u2)        = mkNewLevUID   u'} in (u'',u1,u2)
-mkNewLevUID3 u = let { (u',u1,u2)  = mkNewLevUID2  u; (u'',u3)        = mkNewLevUID   u'} in (u'',u1,u2,u3)
-mkNewLevUID4 u = let { (u',u1,u2)  = mkNewLevUID2  u; (u'',u3,u4)     = mkNewLevUID2  u'} in (u'',u1,u2,u3,u4)
-mkNewLevUID5 u = let { (u',u1,u2)  = mkNewLevUID2  u; (u'',u3,u4,u5)  = mkNewLevUID3  u'} in (u'',u1,u2,u3,u4,u5)
+mkNewLevUID2 u = let { (u',u1)          = mkNewLevUID   u; (u'',u2)         = mkNewLevUID   u'} in (u'',u1,u2)
+mkNewLevUID3 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3)         = mkNewLevUID   u'} in (u'',u1,u2,u3)
+mkNewLevUID4 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3,u4)      = mkNewLevUID2  u'} in (u'',u1,u2,u3,u4)
+mkNewLevUID5 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3,u4,u5)   = mkNewLevUID3  u'} in (u'',u1,u2,u3,u4,u5)
 
 uidStart :: UID
 uidStart = UID [0]

@@ -1,9 +1,14 @@
 %% configuration
 
+%if forCC2005
+%let chapAsArticle	= True
+%else
+%let chapAsArticle	= False
+%endif
+
 %if yesAFP04
 %let noAFP04 		= False
 %let inclOmitted 	= False
-%let inclFuture 	= False
 %else
 %let noAFP04 		= True
 %endif
@@ -19,12 +24,6 @@
 %% CONFIG: Omitted material included
 %else
 %% CONFIG: Omitted material excluded
-%endif
-
-%if inclFuture
-%% CONFIG: Future material included
-%else
-%% CONFIG: Future material excluded
 %endif
 
 %if asSlides

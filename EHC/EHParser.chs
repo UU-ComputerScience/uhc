@@ -322,6 +322,19 @@ pPatExprBase    =    pVar <**>  (    flip sem_PatExpr_VarAs <$ pKey "@" <*> pPat
                 <|>  pParenProd patExprAlg pPatExpr
 %%]
 
+%%[patExprAlg.1
+patExprAlg      =    (sem_PatExpr_Con,sem_PatExpr_App,sem_PatExpr_AppTop,sem_PatExpr_Parens)
+%%]
+
+%%[patExpr.1
+pPatExpr        =    pApp patExprAlg pPatExprBase
+%%]
+
+%%[patExpr.4
+pPatExpr        =    pP <??> (sem_PatExpr_TypeAs <$ pKey "::" <*> pTyExpr)
+                where pP = pApp patExprAlg pPatExprBase
+%%]
+
 -- versions
 %%[1.pPatExprBase
 %%@pPatExprBase.1
@@ -343,8 +356,13 @@ pPatExprBase    =    pVar <**>  (    flip sem_PatExpr_VarAs <$ pKey "@" <*> pPat
 %%]
 
 %%[1.pPatExpr
-patExprAlg      =    (sem_PatExpr_Con,sem_PatExpr_App,sem_PatExpr_AppTop,sem_PatExpr_Parens)
-pPatExpr        =    pApp patExprAlg pPatExprBase
+%%@patExprAlg.1
+%%@patExpr.1
+%%]
+
+%%[4.pPatExpr -1.pPatExpr
+%%@patExprAlg.1
+%%@patExpr.4
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -588,11 +606,20 @@ pExprPrefix     =    sem_Expr_Let      <$ pKey "let"
                      <*> pList1 pPatExprBase                 <* pKey "->"
 %%]
 
-%%[pExpr.1
+%%[exprAlg.1
 exprAlg         =    (sem_Expr_Con,sem_Expr_App
                      ,sem_Expr_AppTop,sem_Expr_Parens)
+%%]
+
+%%[pExpr.1
 pExpr           =    pExprPrefix <*> pExpr
                 <|>  pExprApp
+%%]
+
+%%[pExpr.4
+pExpr           =    pE <??> (sem_Expr_TypeAs <$ pKey "::" <*> pTyExpr)
+                where pE  =    pExprPrefix <*> pE
+                          <|>  pExprApp
 %%]
 
 -- versions
@@ -624,14 +651,24 @@ pExpr           =    pExprPrefix <*> pExpr
 %%]
 
 %%[1.pExpr
+%%@exprAlg.1
 %%@pExpr.1
 %%@pExprApp.1
 %%@pExprPrefix.1
 %%@pExprPrefix.1.Lam
 %%]
 
-%%[5.pExpr -1.pExpr
-%%@pExpr.1
+%%[4.pExpr -1.pExpr
+%%@exprAlg.1
+%%@pExpr.4
+%%@pExprApp.1
+%%@pExprPrefix.1
+%%@pExprPrefix.1.Lam
+%%]
+
+%%[5.pExpr -4.pExpr
+%%@exprAlg.1
+%%@pExpr.4
 %%@pExprApp.1
 %%@pExprPrefix.1
 %%@pExprPrefix.1.Lam
@@ -639,7 +676,8 @@ pExpr           =    pExprPrefix <*> pExpr
 %%]
 
 %%[7.pExpr -5.pExpr
-%%@pExpr.1
+%%@exprAlg.1
+%%@pExpr.4
 %%@pExprApp.7
 %%@pExprPrefix.1
 %%@pExprPrefix.7.Lam
@@ -647,7 +685,8 @@ pExpr           =    pExprPrefix <*> pExpr
 %%]
 
 %%[9.pExpr -7.pExpr
-%%@pExpr.1
+%%@exprAlg.1
+%%@pExpr.4
 %%@pExprApp.9
 %%@pExprPrefix.1
 %%@pExprPrefix.7.Lam

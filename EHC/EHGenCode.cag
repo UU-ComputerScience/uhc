@@ -37,6 +37,7 @@ SEM Expr
   | Case        loc         .   cexpr       =   let  n = uidHNm @lUniq
                                                 in   mkCExprLet CBindPlain [CBind_Bind n @expr.cexpr]
                                                         (rceMatch [n] @alts.caltL cvarUndefined)
+  | TypeAs      loc         .   cexpr       =   @expr.cexpr
 
 ATTR RecExpr [ | | cexprL: {AssocL HsName CExpr} ]
 
@@ -50,7 +51,7 @@ SEM Expr
   | Var Con     loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst (CExpr_Var @nm)
   | IConst      loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst (CExpr_Int @int)
   | CConst      loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst (CExpr_Char @char)
-  | Let         loc         .   cexpr       :=  mkCExprLet CBindRec (@decls.cbindL) @body.cexpr
+  | Let         loc         .   cexpr       :=  mkCExprLet CBindRec (@decls.cbindL ++ mkCBindLForUIDL @prfCBindLMap (not.(`elementOf` @quantPrIdSet))) @body.cexpr
   | App AppImpl
                 loc         .   cexpr       :=  CExpr_App
                                                     (coeWipeWeave @lhs.finTyCnstr @lhs.cSubst @appImplsCoeL []
@@ -59,6 +60,7 @@ SEM Expr
   | Lam         loc         .   cexpr       :=  coeWipeWeave @lhs.finTyCnstr @cSubst @lamBodyCoeL @lamArgCoeL `coeEvalOn` @body.appFunCExpr
   | AppTop      loc         .   cexpr       =   coeWipeWeave @lhs.finTyCnstr @cSubst [] @lamArgCoeL `coeEvalOn` @expr.cexpr
   | Parens      loc         .   cexpr       =   @expr.cexpr
+  | TypeAs      loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst @expr.cexpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -92,6 +94,57 @@ SEM Decl
   | Val         lhs         .   cbindL      =   [CBind_Bind @patExpr.topNm @expr.cexpr] ++ @patExpr.cbindL
   | TySig       lhs         .   cbindL      =   []
   | FFI         lhs         .   cbindL      =   [CBind_Bind @nm (CExpr_Var (HNm @impEnt))]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Class
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+cdictOffset :: HsName -> Ty -> CExpr
+cdictOffset n r = CExpr_Int . fromJust . tyRecOffset n $ r
+%%]
+
+%%[9
+SEM Decl
+  | Class       lhs         .   cbindL      =   let  nDflt = rulNmEvid . pigiRule $ @pigi
+                                                     nD = hsnPrefix "$self_" nDflt
+                                                     nR = hsnPrefix "$res_" nDflt
+                                                     dDflt = mkCExprLam [nD]
+                                                                (mkCExprLetRec
+                                                                    [CBind_Bind nR
+                                                                        (mkCExprApp CExpr_Tup
+                                                                            (flip replicate cvarUndefined . length . snd . tyRecExts $ @clsTyRec))]
+                                                                    (CExpr_Var nR)
+                                                                )
+                                                     x = HNm "x"
+                                                in   [CBind_Bind nDflt dDflt]
+                                                     ++ [ CBind_Bind n (x `CExpr_Lam` CExpr_Sel (CExpr_Var x) ctagNone (cdictOffset n @clsTyRec)) | (n,_) <- @clsFldL ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instance
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+SEM Decl
+  | Instance    lhs         .   cbindL      =   let  nDflt = rulNmEvid . pigiRule $ @pigi
+                                                     nR = hsnPrefix "$res_" @dictNm
+                                                     mkSet d n v = CExpr_Set d ctagNone (cdictOffset n . head $ @recTyL) v
+                                                     dD = mkCExprLam @ctxtArgNmL
+                                                                (mkCExprLetRec
+                                                                    ([CBind_Bind nR
+                                                                        (foldr
+                                                                            (\(CBind_Bind n v) d -> mkSet d n v)
+                                                                            (foldr
+                                                                                (\(n,e) d -> mkSet d n e)
+                                                                                (CExpr_App (CExpr_Var nDflt) (CExpr_Var nR))
+                                                                                (zip @supClsNmL @supEvidL))
+                                                                            @decls.cbindL)]
+                                                                     ++ mkCBindLForUIDL (@prfCBindLMap `plusFM` @supPrfCBindLMap) (const True))
+                                                                    (CExpr_Var nR)
+                                                                )
+                                                in   [CBind_Bind @dictNm (@cSubst `cAppSubst` dD)]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

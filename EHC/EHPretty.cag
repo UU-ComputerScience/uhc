@@ -76,6 +76,12 @@ SEM TyExpr
 %%]
 
 %%[4
+SEM Expr
+  | TypeAs      loc     .  pp       =   @expr.pp >#< "::" >#< @tyExpr.pp
+
+SEM PatExpr
+  | TypeAs      loc     .  pp       =   @patExpr.pp >#< "::" >#< @tyExpr.pp
+
 SEM TyExpr
   | Quant       loc     .  pp       =   showTyQu @qu >#< @tyVar >#< "." >#< @tyExpr.pp
 %%]
@@ -184,7 +190,7 @@ SEM Decl
 ATTR PrExprs FuncDeps [ | | ppL: PP_DocL ]
 
 SEM Expr
-  | AppImpl     loc     .  argPP	=	@argPr.pp >#< "~>" >#< @arg.pp >#< hsnCImpl
+  | AppImpl     loc     .  argPP    =   @argPr.pp >#< "~>" >#< @arg.pp >#< hsnCImpl
                         .  pp       =   @func.pp >#< hsnOImpl >#< @argPP
 
 SEM RowTyExpr
@@ -213,8 +219,8 @@ SEM Decl
   | Instance    loc     .  pp       =   "instance"  >|< maybe empty (\n -> " " >|< n >#< "<~") @mbNm
                                                     >#< ppListSep "(" ")" ", " @ctxtPrExprs.ppL
                                                     >#< "=>" >#< @prExpr.pp
-                                                    >-< @errInstPP
                                                     >#< "where" >-< indent 2 @decls.pp
+                                                    >-< @errInstPP
                                                     >-< @errDeclsPP
 
 SEM FuncDep

@@ -33,7 +33,7 @@
 %%[9 export(PrIntroGamInfo(..),PrIntroGam,emptyPIGI)
 %%]
 
-%%[9 export(PrElimGamInfo(..),PrElimGam,peGamAdd,peGamAddKnPr)
+%%[9 export(PrElimGamInfo(..),PrElimGam,peGamAdd,peGamDel,peGamAddKnPr,peGamAddKnPrL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -135,9 +135,15 @@ prvgCode prL g@(ProvenGraph i2n p2i p2oi)
             $ (emptyCSubst,partition canAsSubst (map (\(i,ProvenAnd _ _ _ e) -> (i,e)) provenL))
           r = map fst argL
           m1 = provenAsCSubst `cAppSubst` assocLCExprToCSubst [ (i,CExpr_Var (uidHNm i)) | (i,_) <- provenForBind ]
-          m2 = assocLCExprToCSubst . concat . map (\(_,(uid:uidL)) -> zip uidL (repeat (CExpr_Hole uid))) $ p2iL
-          b = let s p = let r = prvgReachableTo g [poId p] `delFromSet` poId p
-                        in  (poId p,[ CBind_Bind (uidHNm i) ev | (i,ev) <- provenForBind, i `elementOf` r ])
+          m2 = assocLCExprToCSubst . concat
+             . map (\(p,(uid:uidL))
+                        -> let allUidL = (uidL `List.union` maybe [] id (lookupFM p2oi p)) \\ [uid]
+                           in  zip allUidL (repeat (CExpr_Hole uid))
+                   )
+             $ p2iL
+          b = let s p = let rAll = prvgReachableTo g [poId p]
+                            r = rAll `delFromSet` poId p
+                        in  (poId p,(rAll,[ CBind_Bind (uidHNm i) ev | (i,ev) <- provenForBind, i `elementOf` r ]))
               in  map s . map (\(p,(i:_)) -> PredOcc p (maybe i head . lookupFM p2oi $ p)) $ p2iL
           rem = concat [ uidL | (_,uidL) <- p2iL, any (`elem` r) uidL ]
      in   (listToFM b,m1 `cAppSubst` m2,mkSet rem)
@@ -325,8 +331,20 @@ peGamAdd n r g
           h' = gamUpdAdd n (PrElimGamInfo [r]) (\_ p -> p {pegiRuleL = r : pegiRuleL p}) h
      in   h' `gamPushGam` t
 
+peGamDel :: HsName -> Rule -> PrElimGam -> PrElimGam
+peGamDel n r g
+  =  let  (h,t) = gamPop g
+          h' = gamUpd n (\_ p -> p {pegiRuleL = deleteBy (\r1 r2 -> rulId r1 == rulId r2) r . pegiRuleL $ p}) g
+     in   h' `gamPushGam` t
+
 peGamAddKnPr :: HsName -> PredOccId -> Pred -> PrElimGam -> PrElimGam
 peGamAddKnPr n i p = peGamAdd (predNm p) (mkInstElimRule n i 0 (Ty_Pred p))
+
+peGamAddKnPrL :: PredOccId -> [Pred] -> PrElimGam -> (PrElimGam,[HsName],[PredOccId])
+peGamAddKnPrL i prL g
+  =  foldr  (\(i,p) (g,nL,idL) -> let n = uidHNm i in (peGamAddKnPr n i p g,n:nL,i:idL))
+            (g,[],[])
+            (zip (mkNewUIDL (length prL) i) prL)
 %%]
 
 

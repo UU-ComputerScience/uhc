@@ -1,5 +1,97 @@
 % $Id: afp.lhs 199 2004-05-12 19:11:13Z andres $
 
+%% configuration of what to include
+
+%if phd || forAfpTRUU1 || asSlides
+%let inclParts	= True
+%else
+%let inclParts	= False
+%endif
+
+%if phd || forAfpTRUU1
+%let inclTOC	= True
+%else
+%let inclTOC	= False
+%endif
+
+%if forAfpLLNCS || phd || asSlides || forAfpTRUU1
+%let incl00		= True
+%else
+%let incl00		= False
+%endif
+
+%if forAfpLLNCS || phd || asSlides || forAfpTRUU1
+%let incl01		= True
+%let incl02		= True
+%let incl03		= True
+%let incl04		= True
+%else
+%let incl01		= False
+%let incl02		= False
+%let incl03		= False
+%let incl04		= False
+%endif
+
+%if phd || asSlides || onlyCurrentWork
+%let incl05		= True
+%let incl06		= True
+%let incl07		= True
+%else
+%let incl05		= False
+%let incl06		= False
+%let incl07		= False
+%endif
+
+%if phd || asSlides || onlyCurrentWork
+%let incl08		= True
+%else
+%let incl08		= False
+%endif
+
+%if phd || forCC2005 || asSlides || onlyCurrentWork
+%let incl09		= True
+%else
+%let incl09		= False
+%endif
+
+%if phd || asSlides
+%let incl10		= True
+%let incl11		= True
+%let incl12		= True
+%let incl13		= True
+%let incl14		= True
+%let incl15		= True
+%let incl16		= True
+%let incl17		= True
+%let inclXX		= True
+%else
+%let incl10		= False
+%let incl11		= False
+%let incl12		= False
+%let incl13		= False
+%let incl14		= False
+%let incl15		= False
+%let incl16		= False
+%let incl17		= False
+%let inclXX		= False
+%endif
+
+%if phd
+%let inclApp	= True
+%let inclInx	= True
+%else
+%let inclApp	= False
+%let inclInx	= False
+%endif
+
+%if forCC2005
+%let chapAsArticle	= True
+%else
+%let chapAsArticle	= False
+%endif
+
+
+
 %let a4       = True
 %let noprelim = True
 %let color    = False
@@ -10,7 +102,7 @@
                ignorenonframetext,
 %else
 %if asArticle
-%if forAfpLLNCS
+%if llncs
                class=llncs,
 %else
                class=article,
@@ -68,7 +160,7 @@
 \beamertemplatetransparentcovereddynamic
 %else
 \usepackage
-%if forAfpLLNCS
+%if llncs
 [noamsthm]
 %endif
 {beamerbasearticle}
@@ -82,7 +174,7 @@
 \bibpunct{(}{)}{;}{a}{}{,}
 %endif
 
-%if not (asSlides || forAfpLLNCS)
+%if not (asSlides || llncs)
 % the following statement deviates from the default in that
 % we use nothing (a space) to separate author from year in citations
 %if wide
@@ -125,7 +217,7 @@
 \usepackage{array}
 
 % experimental \DeclareMathOperator redefinition to use sf font
-%if forAfpLLNCS
+%if llncs
 \newcommand{\DeclareMathOperator}[2]{%
   \newcommand*{#1}{\textsf{#2}}}
 %else
@@ -203,11 +295,12 @@
 %endif
 %endif
 
-%if asArticle
-%else
+%if not asArticle || chapAsArticle
 \let\prevSection=\section
 \let\prevSubsection=\subsection
+%if not chapAsArticle
 \def\section{\chapter}
+%endif
 \def\subsection{\prevSection}
 \def\subsubsection{\prevSubsection}
 %endif
@@ -218,7 +311,7 @@
 \usepackage{TRtitlepage}
 %endif
 
-%if forAfpLLNCS
+%if llncs
 % \usepackage{makeidx}
 %endif
 
@@ -358,7 +451,7 @@
 
 %%% sizes
 
-%if forAfpLLNCS
+%if llncs
 \setlength{\mathindent}{.03\textwidth}
 %else
 \setlength{\mathindent}{.05\textwidth}
@@ -369,14 +462,19 @@
 %endif
 
 % title
-\title{Typing Haskell with an Attribute Grammar}
-%if phd
-\author{Atze Dijkstra and Doaitse Swierstra}
+%if forCC2005
+\title{Explicit implicit parameters}
 %else
+\title{Typing Haskell with an Attribute Grammar}
+%endif
+
+%if phd
 \author{Atze Dijkstra}
+%else
+\author{Atze Dijkstra and Doaitse Swierstra}
 %endif
 \date{\today}
-%if forAfpLLNCS
+%if llncs
 \institute{Institute of Information and Computing Sciences,\\
 Utrecht University,\\
 P.O.Box 80.089, \\
@@ -388,9 +486,9 @@ WWW home page:
 }
 %endif
 
-%if not forAfpLLNCS
+%if inclInx
 \mode<article>{\makeindex}
-%endif
+%endif %% inclInx
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Import of all code chunks in lhs2tex'd format
@@ -443,7 +541,7 @@ WWW home page:
 
 \begin{document}
 
-%if forAfpLLNCS
+%if llncs
 \frontmatter
 %endif
 
@@ -468,14 +566,29 @@ WWW home page:
 
 %if forAfpTRUU1
 \section*{Preface}
+\subsection*{Type systems for functional languages (abstract)}
 %endif
 
 %if asArticle
 \begin{abstract}
 %endif
-%if forAfpTRUU1
-\subsection*{Type systems for functional languages (abstract)}
-%endif
+
+%if forCC2005
+In functional languages functions take arguments which are either passed explicitly or implicitly.
+Probably the best known example of the latter is the class system in Haskell where
+dictionaries are passed as evidence for class predicates.
+However, the computation as well as the passing of these dictionaries
+is hidden from the programmer, thereby effectively crippling an otherwise
+convenient abstraction mechanism.
+In this paper we propose, in the context of Haskell, a way of allowing a programmer to explicitly pass
+implicit parameters.
+This extension blends well with existing resolution mechanisms for determining which
+implicit parameters have to be passed because it only overrides default the behavior of
+such mechanisms.
+We also describe how this extension can be implemented for Haskell.
+The implementation also gives us the additional bonus of partial type signatures,
+liberating the programmer from the obligation to specify full signatures.
+%else
 Much has been written about type systems.
 Much less has been written about implementing type systems.
 Even less has been written about implementations of real compilers where
@@ -489,6 +602,7 @@ thereby giving a series of increasingly complex (working) compilers.
 Also, the source text of both paper and executable compilers come
 from the same source files by an underlying minimal weaving system.
 Therefore, sources and (this) explanation are kept consistent.
+%endif
 %if asArticle
 \end{abstract}
 %endif
@@ -514,20 +628,20 @@ This concerns mainly future design decisions which have an influence on design d
 %%% Preamble
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%if not forAfpLLNCS
+%if inclTOC
+
 {\setlength{\parskip}{0cm}
 \tableofcontents
 \listoffigures
 }
-%endif
 
-
+%endif %% inclTOC
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Part I
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%if forAfpTRUU1 || asSlides || phd
+%if inclParts
 \part{Type checking, inference and polymorphism}
 %endif
 
@@ -539,14 +653,14 @@ This concerns mainly future design decisions which have an influence on design d
 %%% Intro
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%if incl00
+
 %if phd
 \section*%
 %else
 \section%
 %endif
 {Introduction and overview}
-
-%if not onlyCurrentWork
 
 Haskell98\cite{peytonjones03has98-rev-rep} is a complex language,
 not to mention its more experimental incarnations.
@@ -785,7 +899,7 @@ and in the future perhaps by integrated environments
 In the following sections we give examples of the Haskell features
 present in the
 series of compilers described in
-%if omitEH5Onwards
+%if not incl06
 the following chapters.
 %else
 \chapterRef{ehc1} throughout
@@ -1076,8 +1190,8 @@ Existential quantification: hiding/forgetting type information
 \end{itemize}
 }
 
-%if omitEH5Onwards
-%else
+%if incl05
+
 \paragraph{EH version 5: Data types.}
 The fifth version (EH version 5, \chapterRef{ehc5})
 adds |data| types and opening/unpacking/scrutinizing
@@ -1100,6 +1214,10 @@ User defined data types
 \item Unpacking via case expression
 \end{itemize}
 }
+
+%endif %% incl05
+
+%if incl06
 
 \paragraph{EH version 6: Kinding.}
 The previous version allows incorrect programs because
@@ -1206,7 +1324,7 @@ Kind signatures for types (similar to type signatures for values)
 \end{itemize}
 }
 
-%endif omitEH5Onwards
+%endif %% incl06
 
 %if phd
 \subsection*%
@@ -1321,16 +1439,16 @@ Rules only
 Haskell
 %endif
 
-%endif not onlyCurrentWork
+%endif %% incl00
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 1
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%if incl01
+
 \section{EH 1: typed |lambda|-calculus}
 \label{ehc1}
-
-%if not onlyCurrentWork
 
 \frame<presentation>{\tableofcontents[current,hidesubsections]}
 
@@ -3504,17 +3622,16 @@ generated functions
 Local type inference \cite{pierce00local-type-inference} also has top-down, bottom-up mixing.
 %endif
 
-%endif not onlyCurrentWork
-
+%endif %% incl01
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%if incl02
+
 \section{EH 2: monomorphic type inference}
 \label{ehc2}
-
-%if not onlyCurrentWork
 
 \frame<presentation>{\tableofcontents[current,hidesubsections]}
 
@@ -4295,7 +4412,7 @@ by means of |tyEnsureNonBotTop|
 
 For tuples we again make use of the fact that the |Con| alternative will always
 represent a tuple.
-%if omitEH5Onwards
+%if not incl05
 When datatypes are introduced (not part of this paper) this will no longer be the case.
 %else
 From \chapterRef{ehc5} when datatypes are introduced
@@ -4441,16 +4558,16 @@ Pretty printing then uses the final type which has all found constraints incorpo
 
 \chunkCmdUseMark{EHInfer.2.finValGam}
 
-%endif not onlyCurrentWork
+%endif %% incl02
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 3
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%if incl03
+
 \section{EH 3: polymorphic type inference}
 \label{ehc3}
-
-%if not onlyCurrentWork
 
 \frame<presentation>{\tableofcontents[current,hidesubsections]}
 
@@ -4947,9 +5064,8 @@ Polymorphic recursion
 \cite{kfoury93recursivetype,hallet04polyrec-ex,vasconcellos03polyrec-impl,henglein91polyrec-infer,figueiredo01polyrec-princ}
 %endif
 
-%endif not onlyCurrentWork
 
-
+%endif %% incl03
 
 
 
@@ -4957,10 +5073,10 @@ Polymorphic recursion
 %%% EHC 4
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%if incl04
+
 \section{EH 4: |forall| and |exists| everywhere}
 \label{ehc4}
-
-%if not onlyCurrentWork
 
 \frame<presentation>{\tableofcontents[current,hidesubsections]}
 
@@ -5258,7 +5374,7 @@ to be able to encode |exists| too.
 Some additional functions on quantifiers |TyQu| are defined here too.
 These may seem unnecessary but the extra layer of abstraction
 is convenient when the range of quantifiers is extended
-%if omitEH5Onwards
+%if not incl06
 later on (not included in this paper):
 %else
 in \chapterRef{ehc6}:
@@ -5515,7 +5631,7 @@ a so called \IxAsDef{weak context} |weakFIOpts|.
 It is used whenever an expression can have |>1| alternative expressions as a result,
 which is the case for |case|-expressions,
 to be dealt with no sooner than the introduction of datatypes in the next version of EH
-%if omitEH5Onwards
+%if not incl05
 (not included in this paper).
 %else
 (\chapterRef{ehc5}).
@@ -5695,7 +5811,7 @@ encoding this information
 
 It also shows that only for function and tuple types we know what to do in such a situation.
 Complications in this area will arise with the introduction of datatypes
-%if omitEH5Onwards
+%if not incl05
 later on (not included in this paper).
 %else
 in \chapterRef{ehc5}.
@@ -5781,7 +5897,7 @@ Compared to the rules in \figRef{rules.fit4.quant}
 an additional case has been included for an exact match of
 two quantified types when we want |t1 <= t2| and |t2 <= t1| both
 to hold. We will postpone discussion until
-%if omitEH5Onwards
+%if not incl05
 later (not included in this paper).
 %else
 \chapterRef{ehc5}.
@@ -5912,7 +6028,7 @@ The \ruleRef{q-app} covers remaining type constructors,
 which is irrelevant for this version of EH as there are no other type constructors.
 It becomes relevant for the next version of EH,
 when datatypes are introduced
-%if omitEH5Onwards
+%if not incl05
 later on (not included in this paper).
 %else
 (\chapterRef{ehc5}).
@@ -6140,10 +6256,16 @@ Existentials, via universal \cite{laufer96class-existential}
 
 
 
-%endif not onlyCurrentWork
+%endif %% incl04
 
 
-%if asSlides || phd
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EHC 5
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%if incl05
+
+%if inclParts
 \part{Structure types}
 %endif
 
@@ -6152,14 +6274,6 @@ Existentials, via universal \cite{laufer96class-existential}
 \tableofcontents[hidesubsections]
 }
 %endif
-
-
-%if omitEH5Onwards
-%else
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% EHC 5
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{EH 5: data types}
 \label{ehc5}
@@ -6308,6 +6422,7 @@ Error gathering, pretty printing, uniq
 
 %endif
 
+%endif %% incl05
 
 
 
@@ -6316,6 +6431,8 @@ Error gathering, pretty printing, uniq
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 6
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%if incl06
 
 \section{EH 6: kind inference}
 \label{ehc6}
@@ -6361,9 +6478,13 @@ Error gathering, pretty printing, uniq
 
 %endif
 
+%endif %% incl06
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 7
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%if incl07
 
 \section{EH 7: non extensible records}
 \label{ehc7}
@@ -6452,8 +6573,6 @@ This proposal also deviates from TRex (by extending from left to right) and is i
 with Haskell because of the use of @'.'@ as the builtin selection operator.
 
 \subsection{Issues, partly resolved or previous}
-
-%if inclFuture
 
 Merge with tuples, merge with data (which is tagged record).
 
@@ -6547,16 +6666,15 @@ Consequence: scanner requires adaptation, @{(@ and @)}@ are used inconsistently 
 
 \subsection<article>{Literature}
 
-%endif inclFuture
+%endif %% incl07
 
 
-
-
-%if inclFuture
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 8
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%if incl08
 
 \section{EH 8: code generation}
 \label{ehc8}
@@ -6565,25 +6683,215 @@ Coercion (of records), related to subsumption
 
 \subsection<article>{Literature}
 
-
+%endif %% incl08
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 9
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%if asSlides || phd
+%if incl09
+
+%if inclParts
 \part{Implicitness}
 %endif
 
+%if not forCC2005
 \section{EH 9: explicit implicitness}
 \label{ehc9}
+%endif
 
 %{
 %format pred        = "\mathbf{pred}"
 %format rule        = "\mathbf{rule}"
 %format pia         = pi "^a"
 %format piasigma    = pia "_{" sigma "}"
+
+%if forCC2005
+\subsection{Introduction}
+
+The Haskell class system originally introduced by both Wadler \cite{wadler88how-ad-hoc-poly}
+and Kaes \cite{kaes88parametric-overl} offers a powerful abstraction mechanism
+for dealing with overloading (or ad-hoc polymorphism).
+The basic idea is to restrict the polymorphism of a parameter by specifying
+that a predicate should be specified:
+
+\begin{code}
+f :: Eq a => a -> a -> Int
+\end{code}
+
+In this example the type signature for |f| specifies that any type |a| can be passed as an argument
+as long as it satisfies predicate |Eq a|.
+A predicate itself is introduced in a \IxAsDef{class declaration}:
+
+\begin{code}
+class Eq a where
+  (==) :: a -> a -> Bool
+  ...
+\end{code}
+
+A class declaration also introduces functions (and values) which can only be used
+on a type |a| for which the predicate |Eq a| is satisfied:
+
+\begin{code}
+f = \x y -> if x == y then 3 else 4
+\end{code}
+
+A class declaration alone is not sufficient, \IxAsDef{instance declarations} are needed
+to specify for which types a predicate is true.
+Because a class declaration also guarantees the existence of its associated functions,
+an instance declaration is also required to specify the implementation for those functions:
+
+\begin{code}
+instance Eq Int where
+  x == y = ...
+  ...
+
+instance Eq Bool where
+  x == y = ...
+  ...
+\end{code}
+
+The compiler turns these declarations into records containing the functions as its fields,
+usually called a \IxAsDef{dictionary}:
+
+\begin{code}
+data EqDict a  = EqDict {eqDictEq :: a -> a -> Bool}
+eqDictInt      = EqDict ...
+eqDictBool     = EqDict ...
+\end{code}
+
+Functions with a predicate on a type variable in their signature can use the class functions on
+its predicated type. A dictionary for the actual type is required as an additional argument
+to be able to invoke the type specific variant of the class functions.
+For example, the actual implementation of |f| would be:
+
+\begin{code}
+f = \dEq x y -> if eqDictEq dEq x y then 3 else 4
+\end{code}
+
+The invocation of |f| is passed the dictionary corresponding to the type of its parameters,
+for example |f True False| is translated to |f eqDictBool True False|.
+
+Haskell's class system has turned out to be theoretically sound \cite{jones94phd-qual-types}
+as well as generalizable to incorporate ... \cite{jones93constr-class,jones00class-fundep}.
+Its role in Haskell has been described in terms of an implementation \cite{jones99thih}
+as well as its semantics \cite{hall96type-class-haskell,faxen02semantics-haskell}.
+Nevertheless, some observations with respect to its design and implementation can be made.
+
+First, to start with the issue we will deal with in this paper,
+the compiler determines which dictionary is passed for a predicate.
+This is both a blessing and a curse.
+It is a blessing because it silently solves a problem (i.e. overloading). It is a curse
+because as a programmer we cannot easily override the choices made by the compiler.
+
+...
+
+These problems also have been addressed by Scheffczyk \cite{scheffczyk01mth-namedinst,kahl01named-instance}.
+In \secRef{ehc09-others} we will discuss the differences between our and their approach.
+
+
+
+...
+
+Implicit parameters in general \cite{lewis00implicit-param,jones99impl-param}
+
+
+In the remainder of this paper we will first explore the use of implicit parameters further in
+\secRef{ehc09-implparam}.
+We will then look at both the type rules (\secRef{ehc09-typesystem}) and
+give a sketch of the implementation (\secRef{ehc09-implem}).
+Finally, we relate our work to others in \secRef{ehc09-others} and conclude in \secRef{ehc09-concl}.
+
+\subsection{Implicit parameters}
+\label{ehc09-implparam}
+
+The exploration of explicit implicit parameters will be presented in the context of a
+Haskell variant named EH (Essential Haskell)
+\cite{dijkstra04ehc-web,dijkstra04thag,dijkstra04thag-part1}.
+Meant as a platform for education and research, EH already offers advanced features
+like higher ranked types, existential types, partial type signatures and records.
+Syntactic sugar has been kept to a minimum in order to ease experimentation with and understanding
+of the implementation.
+An EH program therefore simply is an expression instead of a module:
+
+\begin{code}
+%%9srcfile<test/9-eq1.eh%%>
+\end{code}
+
+Though we assume that the differences with Haskell are obvious and self-explanatory we
+mention a few:
+\begin{itemize}
+\item
+All declaration variants (value bindings, type signatures, data types, etc.) take place in a |let|-expression.
+For all declarations in a |let|-expression mutually recursion is allowed, thereby automatically constituting
+a Haskell binding group.
+As a consequence no dependency analysis is performed; the order of declarations is defined by the sequencing of |let .. in let .. in ...|.
+\item
+Programs are standalone in the sense that no Prelude or any other library module is available.
+Though a subset of the foreign function interface \cite{chakravarty03hask-ffi}
+is available, bindings with underlying primitives are omitted, hence the nonsensical implementation of |instance Eq Int|.
+\end{itemize}
+
+The syntax for predicates appearing in types however differs from the notation used in Haskell.
+For example, the type of |f| from the example would be printed by a Haskell compiler as:
+
+\begin{code}
+f :: forall a b . (Eq a, Eq b) => b -> b -> a -> a -> (Bool,Bool)
+\end{code}
+
+On the other hand, EH would infer for |f|:
+
+\begin{code}
+f :: forall a . (# Eq a #) -> a -> a -> forall b . (# Eq b #) -> b -> b -> (Bool,Bool)
+\end{code}
+
+The Haskell notation emphasizes the predicate nature of an implicit parameter.
+The EH notation with |(#| and |#)| surrounding the predicate and
+a function arrow |->| instead of a predicate arrow |=>|
+stresses the fact that an implicit parameter is what in the end is, a parameter,
+be it a special one.
+
+
+
+\subsection{Type system}
+\label{ehc09-typesystem}
+
+\subsection{Implementation}
+\label{ehc09-implem}
+
+\subsection{Related work}
+\label{ehc09-others}
+
+Implicit parameters \cite{lewis00implicit-param}.
+
+In Scheffczyk's work \cite{kahl01named-instance,scheffczyk01mth-namedinst}:
+\begin{itemize}
+\item
+Named instances do not participate in the normal resolution process.
+\item
+Named instances populate a module name space.
+Vice versa, modules can be used as implicit parameters.
+Our approach does not introduce a new name space but uses the already available records.
+\item
+Predicates are partitioned in ordered and unordered predicates.
+This is visible in the type signature.
+Ordered predicates and ...
+By not partitioning inferencing and providing explicit signatures better merge and do not
+provide an artificial barrier between two worlds.
+\item
+The syntax for passing an implicit parameter is shorter than ours.
+\end{itemize}
+
+\subsection{Conclusion}
+\label{ehc09-concl}
+
+
+
+
+
+
+%else
 
 Extensible records as case study
 
@@ -6919,7 +7227,7 @@ This is ignored in the rule.
 Similarly for an application, both the applied function as well as the result may accept implicit parameters:
 
 \[
-\rulerCmdUse{rules.expr9.app.e-app9-impl}
+\rulerCmdUse{rules.expr9.app.e-app-impl9-impl}
 \]
 
 However, the implicit parameters for the function need to be passed as arguments to
@@ -6938,16 +7246,22 @@ The translation of the application reflects this.
 \rulerCmdUse{rules.fit9.predAsymmetric}
 
 
-%}
 
 \subsection<article>{Literature}
 
 Named instances \cite{kahl01named-instance}.
 
+%endif %% forCC2005
+
+%}
+
+%endif %% incl09
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 10
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%if incl10
 
 \section{EH 10: generalized abstract data types}
 \label{ehc10}
@@ -6956,7 +7270,7 @@ built on implicit params, Arthur's Eq type...
 
 \subsection<article>{Literature}
 
-\cite{laufer96class-existential}
+%endif %% incl10
 
 
 
@@ -6964,6 +7278,8 @@ built on implicit params, Arthur's Eq type...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 11
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%if incl11
 
 \section{EH 11: type synonyms}
 \label{ehc11}
@@ -6979,12 +7295,15 @@ data L a = N | C a (L a)
 
 \subsection<article>{Literature}
 
+%endif %% incl11
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 12
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%if incl12
 
 \section{EH 12: modules}
 \label{ehc12}
@@ -6994,12 +7313,16 @@ built on records
 \subsection<article>{Literature}
 
 \cite{mitchell88absty-exist,leroy94manif-ty-mod,leroy95appl-func-mod}
+\cite{laufer96class-existential}
 
+%endif %% incl12
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 13
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%if incl13
 
 \section{EH 13: type property propagation}
 \label{ehc13}
@@ -7012,11 +7335,14 @@ coercions
 
 \subsection<article>{Literature}
 
+%endif %% incl13
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 14
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%if incl14
 
 \section{EH 14: syntax macro's}
 \label{ehc14}
@@ -7037,19 +7363,26 @@ binding group analysis, dependency analysis
 
 \subsection<article>{Literature}
 
+%endif %% incl14
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC ??
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%if inclXX
 
 \section{EH ??: genericity, |deriving|}
 
 |deriving| for data structures
 
+%endif %% inclXX
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC XX-1
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%if inclXX
 
 \section{EH XX-1: data structure optimizing}
 \label{ehcXX1}
@@ -7058,12 +7391,15 @@ Converting O(n) structures to faster (i.e., [] -> Set, assoc list -> Map)
 
 \subsection<article>{Literature}
 
+%endif %% inclXX
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC XX
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%if inclXX
 
 \section{EH XX: Haskell front end}
 \label{ehcXX}
@@ -7074,10 +7410,8 @@ error messaging, line/col position, comment ????
 
 \subsection<article>{Literature}
 
+%endif %% inclXX
 
-%endif %%inclFuture
-
-%endif omitEH5Onwards
 
 
 
@@ -7102,7 +7436,7 @@ error messaging, line/col position, comment ????
 %%% Appendices
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%if not omitAppendix && not onlyCurrentWork
+%if inclApp
 
 \appendix
 
@@ -7316,18 +7650,22 @@ Error gathering, pretty printing, uniq
 
 %endif
 
-%endif omitAppendix
+%endif %% inclApp
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Index
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%if not asSlides && not onlyCurrentWork
+%if inclInx
+
 \AddContentsLine{Index}
 {\small
 \Input{\jobname.ind}
 }
-%endif
+
+%endif %% inclInx
+
 
 \end{document}
 
