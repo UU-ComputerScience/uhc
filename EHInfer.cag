@@ -515,7 +515,7 @@ SEM Expr
 
 %%[9
 ATTR AllDecl [ | patPrElimGam: PrElimGam | ]
-ATTR AllDecl AllExpr AllCase [ | prElimGam: PrElimGam | ]
+ATTR AllDecl AllExpr AllCase [ prElimGam: PrElimGam | | ]
 
 SEM Expr
   | Let         decls       .   patPrElimGam        =   gamPushNew @lhs.prElimGam

@@ -50,13 +50,16 @@ SEM Decl
 %%[9
 SEM Expr
   | Let         loc         .   gathSubsPredL       =   @decls.tyCnstr |=> @decls.gathPredL
+                            .   gathBodySubsPredL   =   @body.tyCnstr |=> @body.gathPredL
                             .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs)
                                                     =   prfPreds @lUniq4 (emptyFE {fePrElimGam = @prElimGam}) @gathSubsPredL
+                            .   (bodyPrfCBindLMap,bodyCSubst,bodyRemPrfPrL,_,bodyPrfErrs)
+                                                    =   prfPreds @lUniq5 (emptyFE {fePrElimGam = @prElimGam}) @gathBodySubsPredL
                             .   quantPrIdSet        =   unionManySets
                                                         . map (unionManySets . map (maybe emptySet fst . lookupFM @prfCBindLMap) . setToList . tqoInsPrIdSet)
                                                         . gamElts $ @tqoGam
-                            .   gathPredL           =   filter (not . (`elementOf` @quantPrIdSet) . poId) @remPrfPrL
-                lhs         .   gathPredL           =   @gathPredL ++ @body.gathPredL
+                            .   gathPredL           =   filter (not . (`elementOf` @quantPrIdSet) . poId) @remPrfPrL ++ @bodyRemPrfPrL
+                lhs         .   gathPredL           =   @gathPredL
   | AppTop      loc         .   imSubsTy            =   @expr.tyCnstr |=> @imTy
                             .   gathSubsPredL       =   @expr.tyCnstr |=> @expr.gathPredL
                             .   (inKnGathPrL,remGathPrL)
@@ -73,7 +76,6 @@ SEM Expr
                             .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs)
                                                     =   prfPreds @lUniq3 (emptyFE {fePrElimGam = @prElimGam}) @inKnGathPrL
                             .   gathPredL           =   @remPrfPrL ++ @remGathPrL
-                lhs         .   prElimGam           =   @lhs.prElimGam
 
 SEM Decl
   | Instance    loc         .   gathSubsPredL       =   @decls.tyCnstr |=> @decls.gathPredL
@@ -81,11 +83,12 @@ SEM Decl
                                                     =   prfPreds @lUniq7 (emptyFE {fePrElimGam = @declsPrElimGam}) @gathSubsPredL
                 lhs         .   gathPredL           =   []
 
+%%]
+
 SEM AGItf
   | AGItf       loc         .   gathSubsPredL       =   @expr.tyCnstr |=> @expr.gathPredL
                             .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs)
                                                     =   prfPreds @lUniq (emptyFE {fePrElimGam = @expr.prElimGam}) @gathSubsPredL
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Passing back additional bindings using a pred
@@ -95,13 +98,16 @@ SEM AGItf
 ATTR AllDecl AllCase AllExpr [ cbindLMap: CBindLMap | | ]
 
 SEM AGItf
-  | AGItf       loc         .   cbindLMap           =   @prfCBindLMap
+  | AGItf       loc         .   cbindLMap           =   emptyCBindLMap
 
 SEM Expr
   | Lam Let AppTop
                 loc         .   cbindLMap           =   @lhs.cbindLMap `plusFM` @prfCBindLMap
   | Let         body        .   cbindLMap           =   @lhs.cbindLMap
 %%]
+
+SEM AGItf
+  | AGItf       loc         .   cbindLMap           =   @prfCBindLMap
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Passing back code substitution
@@ -111,16 +117,19 @@ SEM Expr
 ATTR AllNT [ cSubst: CSubst | | ]
 
 SEM AGItf
-  | AGItf       loc         .   cSubst              =   cnstrImplsToCSubst @expr.tyCnstr `cAppSubst` @csubst
+  | AGItf       loc         .   cSubst              =   emptyCSubst
 
 SEM Decl
   | Instance    loc         .   cSubst              =   @lhs.cSubst `cAppSubst` @supCSubst `cAppSubst` @csubst
 
 SEM Expr
-  | Let         loc         .   cSubst              =   cnstrImplsToCSubst @tqoTyCnstr `cAppSubst` @lhs.cSubst `cAppSubst` @csubst
+  | Let         loc         .   cSubst              =   cnstrImplsToCSubst @tqoTyCnstr `cAppSubst` @lhs.cSubst `cAppSubst` @bodyCSubst `cAppSubst` @csubst
   | Lam AppTop  loc         .   cSubst              =   (assocLCExprToCSubst . map (\i -> (i,CExpr_Var (uidHNm i))) $ (@uidLKnHd ++ @uidLKnTl))
                                                             `cAppSubst` @lhs.cSubst `cAppSubst` @csubst
 %%]
+
+SEM AGItf
+  | AGItf       loc         .   cSubst              =   cnstrImplsToCSubst @expr.tyCnstr `cAppSubst` @csubst
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Coercions resulting from pred usage
