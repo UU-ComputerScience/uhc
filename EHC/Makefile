@@ -76,31 +76,32 @@ EHC_DPDS_MAIN					:= EHMainAG.ag EHInfer.ag EHInferExpr.ag \
 									EHUniq.ag EHExtraChecks.ag EHGatherError.ag \
 									EHGenCore.ag \
 									EHResolvePred.ag EHInferClass.ag
+EHC_DPDS_CORE					:= EHCore.ag EHCoreAbsSyn.ag
+EHC_DPDS_CORE_GRIN				:= EHCoreGrin.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
+EHC_DPDS_CORE_JAVA				:= EHCoreJava.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
+EHC_DPDS_CORE_PRETTY			:= EHCorePretty.ag EHCoreAbsSyn.ag
+EHC_DPDS_CORE_SUBST				:= EHCoreSubst.ag EHCoreAbsSyn.ag
+EHC_DPDS_CORE_TRF_CONSTPROP		:= EHCoreTrfConstProp.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
+EHC_DPDS_CORE_TRF_FULLAZY		:= EHCoreTrfFullLazy.ag EHCoreTrfCommonFv.ag EHCoreTrfCommonLev.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
+EHC_DPDS_CORE_TRF_INLLETALI		:= EHCoreTrfInlineLetAlias.ag EHCoreAbsSyn.ag
+EHC_DPDS_CORE_TRF_LAMLIFT		:= EHCoreTrfLamLift.ag EHCoreTrfCommonFv.ag EHCoreTrfCommonLev.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
+EHC_DPDS_CORE_TRF_LETUNREC		:= EHCoreTrfLetUnrec.ag EHCoreAbsSyn.ag
+EHC_DPDS_CORE_TRF_RENUNQ		:= EHCoreTrfRenUniq.ag EHCoreAbsSyn.ag
+EHC_DPDS_ERR					:= EHError.ag EHErrorAbsSyn.ag
+EHC_DPDS_ERR_PRETTY				:= EHErrorPretty.ag EHErrorAbsSyn.ag
+EHC_DPDS_GRIN_CODE				:= GrinCode.ag GrinCodeAbsSyn.ag
+EHC_DPDS_GRIN_CODE_PRETTY		:= GrinCodePretty.ag GrinCodeAbsSyn.ag
 EHC_DPDS_TY						:= EHTy.ag EHTyAbsSyn.ag
+EHC_DPDS_TY_FTV					:= EHTyFtv.ag EHTyAbsSyn.ag
+EHC_DPDS_TY_INST				:= EHTyInstantiate.ag EHTyCommonAG.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_PRETTY				:= EHTyPretty.ag EHTyCommonAG.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_QUANT				:= EHTyQuantify.ag EHTyCommonAG.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_SUBST				:= EHTySubst.ag EHTyAbsSyn.ag
-EHC_DPDS_TY_FTV					:= EHTyFtv.ag EHTyAbsSyn.ag
-EHC_DPDS_TY_INST				:= EHTyInstantiate.ag EHTyCommonAG.ag EHTyAbsSyn.ag
-EHC_DPDS_ERR					:= EHError.ag EHErrorAbsSyn.ag
-EHC_DPDS_ERR_PRETTY				:= EHErrorPretty.ag EHErrorAbsSyn.ag
-EHC_DPDS_CORE					:= EHCore.ag EHCoreAbsSyn.ag
-EHC_DPDS_CORE_JAVA				:= EHCoreJava.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
-EHC_DPDS_CORE_GRIN				:= EHCoreGrin.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
-EHC_DPDS_CORE_PRETTY			:= EHCorePretty.ag EHCoreAbsSyn.ag
-EHC_DPDS_CORE_TRF_RENUNQ		:= EHCoreTrfRenUniq.ag EHCoreAbsSyn.ag
-EHC_DPDS_CORE_TRF_INLLETALI		:= EHCoreTrfInlineLetAlias.ag EHCoreAbsSyn.ag
-EHC_DPDS_CORE_TRF_FULLAZY		:= EHCoreTrfFullLazy.ag EHCoreTrfCommonFv.ag EHCoreTrfCommonLev.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
-EHC_DPDS_CORE_TRF_LAMLIFT		:= EHCoreTrfLamLift.ag EHCoreTrfCommonFv.ag EHCoreTrfCommonLev.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
-EHC_DPDS_CORE_TRF_LETUNREC		:= EHCoreTrfLetUnrec.ag EHCoreAbsSyn.ag
-EHC_DPDS_CORE_TRF_CONSTPROP		:= EHCoreTrfConstProp.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
-EHC_DPDS_GRIN_CODE				:= GrinCode.ag GrinCodeAbsSyn.ag
-EHC_DPDS_GRIN_CODE_PRETTY		:= GrinCodePretty.ag GrinCodeAbsSyn.ag
 
 EHC_DPDS_CORE_TRF				:= $(EHC_DPDS_CORE_TRF_CONSTPROP) $(EHC_DPDS_CORE_TRF_RENUNQ) $(EHC_DPDS_CORE_TRF_INLLETALI) \
 									$(EHC_DPDS_CORE_TRF_FULLAZY) $(EHC_DPDS_CORE_TRF_LETUNREC) $(EHC_DPDS_CORE_TRF_LAMLIFT)
 EHC_DPDS_ALL					:= $(sort $(EHC_DPDS_MAIN) \
-										$(EHC_DPDS_CORE) $(EHC_DPDS_CORE_JAVA) $(EHC_DPDS_CORE_GRIN) $(EHC_DPDS_CORE_PRETTY) $(EHC_DPDS_CORE_TRF) \
+										$(EHC_DPDS_CORE) $(EHC_DPDS_CORE_JAVA) $(EHC_DPDS_CORE_GRIN) $(EHC_DPDS_CORE_PRETTY) $(EHC_DPDS_CORE_SUBST) $(EHC_DPDS_CORE_TRF) \
 										$(EHC_DPDS_TY) $(EHC_DPDS_TY_PRETTY) $(EHC_DPDS_TY_QUANT) $(EHC_DPDS_TY_SUBST) $(EHC_DPDS_TY_FTV) $(EHC_DPDS_TY_INST) \
 										$(EHC_DPDS_GRIN_CODE) $(EHC_DPDS_GRIN_CODE_PRETTY) \
 										$(EHC_DPDS_ERR) $(EHC_DPDS_ERR_PRETTY) \
@@ -528,31 +529,43 @@ MK_EHC_MKF_FOR		= \
 MK_EHC_MKF			= \
 	( echo "\# Generated for distribution $(DATE) (`date`)" ; \
 	  echo ; \
+	  echo "all: $(EHC) $(GRI)"  ; \
+	  echo "	@echo 'Type make test-regress to compare with expected test results'" ; \
+	  echo ; \
 	  echo -n "$(EHC): $(EHC_MAIN).hs"  ; \
 	  $(call FILTER_EXISTS_HS_OR_AG,$(EHC_HS)) ; \
 	  echo ; \
 	  echo "	$(GHC) -package uust -package data --make -o $(EHC) $$<" ; \
+	  echo ; \
+	  echo -n "$(GRI): $(GRI_MAIN).hs $(EHC)"  ; \
+	  $(call FILTER_EXISTS_HS_OR_AG,$(GRI_HS)) ; \
+	  echo ; \
+	  echo "	$(GHC) -package uust -package data --make -o $(GRI) $$<" ; \
+	  echo ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_GRIN),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_JAVA),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_PRETTY),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_SUBST),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_CONSTPROP),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_FULLAZY),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_INLLETALI),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_LAMLIFT),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_LETUNREC),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_RENUNQ),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE),-dr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_ERR_PRETTY),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_ERR),-dr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_GRIN_CODE_PRETTY),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_GRIN_CODE),-dr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_MAIN),-dcfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY),-dr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_FTV),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_INST),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_PRETTY),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_QUANT),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_SUBST),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_FTV),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_INST),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_ERR),-dr) ; \
-	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_ERR_PRETTY),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE),-dr) ; \
-	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_PRETTY),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_RENUNQ),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_INLLETALI),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_FULLAZY),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_LAMLIFT),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_LETUNREC),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_CONSTPROP),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_JAVA),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_GRIN),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_GRIN_CODE),-dr) ; \
-	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_GRIN_CODE_PRETTY),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY),-dr) ; \
+	  $(call MK_EHC_MKF_FOR,$(GRI_DPDS_GRI),-dcfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(GRI_DPDS_GRIN_CODE_SETUP),-cfspr) ; \
 	) > Makefile
 
 dist: $(DIST_ZIP) 
@@ -583,7 +596,9 @@ $(DIST_ZIP): $(addprefix $(VERSION_LAST)/,$(EHC_DPDS_ALL_MIN_TARG)) Makefile tes
 	      -e "s/\$$(VERSIONS)/$$v/g" \
 	      -e "s/test-lists//g" \
 	      -e "s,\$$\$$v/\$$(EHC),$(EHC),g" \
+	      -e "s,\$$\$$v/\$$(GRI),$(GRI),g" \
 	      -e "s/\`cat \$$\$$v.lst\`/*.eh/g" \
+	      -e "s,\$$(CORE_TARG),$(CORE_TARG),g" \
 	      -e "s,\$$(INDENT2),$(INDENT2),g" \
 	      -e "s,\$$(INDENT4),$(INDENT4),g" \
 	      -e "s/\$$\$$v/$$v/g" \
@@ -605,7 +620,7 @@ WWW_EXAMPLES_HTML			:=	www/ehc-examples.html
 
 www-ex: $(WWW_EXAMPLES_HTML)
 
-www: $(WWW_SRC_ZIP) $(WWW_SRC_TGZ) $(WWW_DOC_PDF) www-ex
+www: $(WWW_SRC_ZIP) $(WWW_SRC_TGZ) www-ex # $(WWW_DOC_PDF)
 
 www/DoneSyncStamp: www-ex
 	(date; echo -n ", " ; svn up) > www/DoneSyncStamp ; \
