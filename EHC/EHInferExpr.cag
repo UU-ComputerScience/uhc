@@ -75,7 +75,7 @@ SEM Expr
                             .  fTy                  :=  @lhs.tyCnstr |=> @gTy
 %%]
 
-%%[4_1
+%%[4_3
 SEM Expr
   | Var         loc         .  fo                   :=  fitsIn (@howToBind @lhs.fiOpts) @fe @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
 %%]
@@ -102,7 +102,7 @@ SEM Expr
                             .  fo                   :=  fitsIn @lhs.fiOpts @fe @lUniq2 @fTy (@lhs.tyCnstr |=> @lhs.knTy)
 %%]
 
-%%[4_1
+%%[4_3
 SEM Expr
   | Con         loc         .  fo                   :=  fitsIn (@howToBind @lhs.fiOpts) @fe @lUniq2 @fTy (@lhs.tyCnstr |=> @lhs.knTy)
 %%]
@@ -122,7 +122,7 @@ SEM Expr
                             .  ty                   :=  @arg.tyCnstr |=> @fTy
 %%]
 
-%%[4_1.App
+%%[4_3.App
 SEM Expr
   | App         (arg.knTy,loc.fTy)                  :=  tyArrowArgRes . tyAltsTy $ @func.ty
 %%]
@@ -252,7 +252,7 @@ SEM Expr
                 loc         .  fo                   :=  fitsIn @lhs.fiOpts @fe @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
 %%]
 
-%%[4_1.Rest
+%%[4_3.Rest
 %%]
 SEM Expr
   | IConst CConst

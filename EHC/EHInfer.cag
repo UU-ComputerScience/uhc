@@ -41,7 +41,7 @@ SEM Expr
                 loc         .  lQuValGam            :=  valGamInst1Exists @lUniq2 . valGamQuantify @gTyTvL $ @lSubsValGam
 %%]
 
-%%[4_1
+%%[4_3
 SEM Expr
   | Let         loc         .  (lElimValGam,elimTyCnstr,errGam)
                                                     =   valGamElimAlts @fe @lUniq4 (@decls.tyCnstr |=> @lValGam)
@@ -56,6 +56,12 @@ SEM Expr
                                                         in   (valGamInst1Exists @lUniq2 vg,tqog)
                             .  tqoTyCnstr           =   foldr (\tqo c -> tqoImplsCnstr tqo |=> c) emptyCnstr (gamElts @tqoGam)
 %%]
+
+%%[11
+%%]
+SEM Expr
+  | Let         loc         .  lElimEqualValGam     =   valGamElimEqual (@decls.tyCnstr |=> @lValGam)
+                            .  lSubsValGam          :=  @lElimEqualValGam
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known type and instantiation required
@@ -134,33 +140,39 @@ SEM Decl
 ATTR AllDecl AllExpr [ valGam: ValGam | | ]
 
 SEM AGItf
-  | AGItf       expr        .  valGam               =   emptyGam
+  | AGItf       expr        .   valGam              =   emptyGam
 %%]
 
 %%[1.patValGam
 ATTR AllDecl [ | patValGam: ValGam | ]
 
 SEM Decl
-  | Val         patExpr     .  valGam               =   @lhs.patValGam
-                lhs         .  patValGam            =   @patExpr.valGam
-                expr        .  valGam               =   @lhs.valGam
+  | Val         patExpr     .   valGam              =   @lhs.patValGam
+                lhs         .   patValGam           =   @patExpr.valGam
+                expr        .   valGam              =   @lhs.valGam
 %%]
 
 %%[2.Rest
 ATTR AllDecl [ | tyCnstr: Cnstr ^^^ patTyCnstr: Cnstr | ]
 
 SEM Decl
-  | Val         patExpr     .  tyCnstr              =   @lhs.patTyCnstr
-                lhs         .  patTyCnstr           =   @patExpr.tyCnstr
-                expr        .  tyCnstr              =   @lhs.tyCnstr
+  | Val         patExpr     .   tyCnstr             =   @lhs.patTyCnstr
+                lhs         .   patTyCnstr          =   @patExpr.tyCnstr
+                expr        .   tyCnstr             =   @lhs.tyCnstr
 
 SEM AGItf
-  | AGItf       expr        .  tyCnstr              =   emptyCnstr
+  | AGItf       expr        .   tyCnstr             =   emptyCnstr
 %%]
 
 %%[5
 ATTR AllCase [ | tyCnstr: Cnstr | ]
 ATTR AllDataConstr AllCase [ valGam: ValGam | | ]
+%%]
+
+%%[11
+SEM Decl
+  | Val         loc         .   (_,elimEqCnstr)     =   tyElimEqual @expr.ty
+                lhs         .   tyCnstr             =   @elimEqCnstr |=> @expr.tyCnstr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -543,7 +555,7 @@ SEM Decl
 %%% How to do binding during subsumption
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1
+%%[4_3
 ATTR Expr [ | | howToBind: {FIOpts -> FIOpts} ]
 
 SEM Expr

@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -18,13 +18,16 @@
 %%[3 hs import(EHTyQuantify,EHTyInstantiate)
 %%]
 
-%%[4_1 hs import(EHGamUtils,EHTyElimAlts)
+%%[4_3 hs import(EHGamUtils,EHTyElimAlts)
 %%]
 
 %%[8 hs import(FiniteMap,EHCore,EHCoreUtils,EHDebug)
 %%]
 
 %%[9 hs import(Set,FiniteMap,EHPred,EHCorePretty,EHCoreSubst)
+%%]
+
+%%[11 hs import(EHTyElimEqual,EHGamUtils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,6 +39,9 @@ WRAPPER AGItf
 %%]
 
 %%[2 import(EHUniq)
+%%]
+
+%%[4_2 import(EHInferImpred)
 %%]
 
 %%[5 import(EHInferCaseExpr,EHInferData)

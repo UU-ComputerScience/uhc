@@ -87,6 +87,7 @@
 %format Gammab      = Gamma "^{b}"
 
 %format sigmak      = sigma "^{k}"
+%format sigmapk     = sigma "_{p}^{k}"
 %format sigmaq      = sigma "^{q}"
 %format sigmab      = sigma "^{b}"
 %format sigmal      = sigma "^{l}"
@@ -94,20 +95,24 @@
 %format sigma'
 
 %format Cnstr       = "\mathcal{C}"
+%format Cnstrp		= Cnstr "^{p}"
 %format Cnstrk		= Cnstr "^{k}"
+%format CnstrEq		= Cnstr "^{eq}"
 %format `cnstrTyUnit`	= :->
 
 %format Qu          = "\mathcal{Q}"
 
 %format ident       = "{\xi}"
 
-%format tvar        = v
-%format tvari       = tvar "_i"
+%format tvar        = "{\nu}"
+%format tvarv       = v
+%format tvare       = tvarv
+%format tvarf       = f
+%format tvari       = tvarv "_i"
 %format tvar1
 %format tvar2
 %format tvar3
 %format tvar4
-%format tvarf       = f
 
 %format tcon        = c
 
@@ -129,6 +134,7 @@
 %format sigma4
 
 %format // 	    		= "/"
+%format /=/ 	    	= "{\eqcirc}"
 %format |=>     		= "\Yright "
 %format :->         	= "\mapsto "
 %format ~>	         	= "\leadsto "
@@ -166,6 +172,9 @@
 %format fioMeet			= fioptBase "_{meet}"
 %format fioMeetY		= fioMeet "^{+}"
 %format fioMeetN		= fioMeet "^{-}"
+%format fioAllowEqOpen	= fioptBase "_{eq-open}"
+%format fioAllowEqOpenY	= fioAllowEqOpen "^{+}"
+%format fioAllowEqOpenN	= fioAllowEqOpen "^{-}"
 
 %format coco        	= "\mathcal{V}"
 %format cocovar     	= coco

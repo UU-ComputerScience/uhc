@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -33,7 +33,7 @@
 %%[4 import(EHTyFitsInCommon) export(AppSpineGam, appSpineGam, asGamLookup)
 %%]
 
-%%[4_1 export(gamMapThr)
+%%[4 export(gamMapThr)
 %%]
 
 %%[5 export(gamTop)
@@ -103,7 +103,7 @@ gamMapElts :: (v -> v') -> Gam k v -> Gam k v'
 gamMapElts f = gamMap (\(n,v) -> (n,f v))
 %%]
 
-%%[4_1
+%%[4
 gamMapThr :: ((k,v) -> t -> ((k',v'),t)) -> t -> Gam k v -> (Gam k' v',t)
 gamMapThr f thr (Gam ll)
   =  let (ll',thr')

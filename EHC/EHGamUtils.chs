@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -9,17 +9,20 @@
 %%% Gamma utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1 import(List,EHCommon,EHOpts,EHTy,EHTyFitsIn,EHError,EHGam,EHCnstr,EHSubstitutable)
+%%[4 import(List,EHCommon,EHOpts,EHTy,EHTyFitsIn,EHError,EHGam,EHCnstr,EHSubstitutable)
 %%]
 
-%%[4_1 import(EHTyElimAlts) export(valGamElimAlts)
+%%[4_3 import(EHTyElimAlts) export(valGamElimAlts)
+%%]
+
+%%[11 import(EHTyElimEqual) export(valGamElimEqual)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% App of bind elim
+%%% Alts elim
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1.valGamElimAlts
+%%[4_3.valGamElimAlts
 valGamElimAlts :: FIEnv -> UID -> ValGam -> (ValGam,Cnstr,Gam HsName ErrL)
 valGamElimAlts env uniq g
   =  let  (g',(c,eg,_))
@@ -31,5 +34,22 @@ valGamElimAlts env uniq g
                   )
                   (emptyCnstr,emptyGam,uniq) g
      in   (g',c,eg)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Equal elim
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[11.valGamElimEqual
+valGamElimEqual :: ValGam -> ValGam
+valGamElimEqual g
+  =  let  (g',_)
+            =  gamMapThr
+                  (\(n,vgi) _
+                  	->  let  (t,_) = tyElimEqual (vgiTy vgi)
+                  	    in   ((n,vgi {vgiTy = t}),())
+                  )
+                  () g
+     in   g'
 %%]
 

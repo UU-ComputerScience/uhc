@@ -9,17 +9,17 @@
 %%% Haskell importable interface to check/elimination for/of inconsistent/ binds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1 hs import(EHCommon,EHOpts,EHTy,EHError,EHCnstr,EHSubstitutable,EHGam,EHTyFitsInCommon) export(tyElimAlts)
+%%[4_3 hs import(EHCommon,EHOpts,EHTy,EHError,EHCnstr,EHSubstitutable,EHGam,EHTyFitsInCommon) export(tyElimAlts)
 %%]
 
-%%[4_1 hs import(EHDebug,UU.Pretty,EHErrorPretty)
+%%[4_3 hs import(EHDebug,UU.Pretty,EHErrorPretty)
 %%]
 
-%%[4_1.WRAPPER import(EHTyAbsSyn)
+%%[4_3.WRAPPER import(EHTyAbsSyn)
 WRAPPER TyAGItf
 %%]
 
-%%[4_1.tyElimAlts hs
+%%[4_3.tyElimAlts hs
 type FitsIn = FIOpts -> UID -> Ty -> Ty -> (Ty,Cnstr,ErrL)
 
 tyElimAlts :: FitsIn -> FIOpts -> UID -> Ty -> (Ty,Cnstr,ErrL)
@@ -34,7 +34,7 @@ tyElimAlts fitsIn fio uniq ty
 %%% fitsIn, parameterized with env+opts, passed as param to avoid mutual module recursion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1
+%%[4_3
 ATTR TyAGItf AllAllTy [ fitsIn: FitsIn | | ]
 %%]
 
@@ -42,7 +42,7 @@ ATTR TyAGItf AllAllTy [ fitsIn: FitsIn | | ]
 %%% Other flags: is it a meet?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1
+%%[4_3
 ATTR TyAGItf AllAllTy [ fio: FIOpts | | ]
 %%]
 
@@ -50,7 +50,7 @@ ATTR TyAGItf AllAllTy [ fio: FIOpts | | ]
 %%% Uniq
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1
+%%[4_3
 ATTR TyAGItf [ gUniq: UID | | ]
 ATTR AllAllTy [ | gUniq: UID | ]
 
@@ -65,7 +65,7 @@ SEM TyPlusL
 %%% Check/elim
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1
+%%[4_3
 ATTR AllAllTy [ | | repl: SELF  ]
 ATTR TyAGItf  [ | | repl: Ty    ]
 
@@ -84,7 +84,7 @@ SEM Ty
 %%]
                     lhs     .   tyCnstr =   tr "QQ" (pp @self >#< ":->" >#< pp @repl >#< ", icnstr" >#< pp @iCnstr >#< ", ecnstr" >#< pp @eCnstr >#< ", lhs.tyCnstr" >#< pp @tyL.tyCnstr) (@iCnstr |=> @tyL.tyCnstr)
 
-%%[4_1
+%%[4_3
 ATTR TyPlusL [ | | replL: TyPlusL ]
 
 SEM TyPlusL
@@ -96,7 +96,7 @@ SEM TyPlusL
 %%% Errors
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1
+%%[4_3
 ATTR TyAGItf AllAllTy [ | | errL USE {++} {[]}: ErrL ]
 ATTR TyPlusL [ | | canMeet: Bool ]
 
@@ -115,7 +115,7 @@ SEM TyAGItf
 %%% Unification of all binds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1
+%%[4_3
 ATTR AllAllTy [ | tyCnstr: Cnstr | ]
 ATTR TyAGItf  [ | | tyCnstr: Cnstr ]
 ATTR TyPlusL [ ty: Ty | | resTy: Ty ]
@@ -144,7 +144,7 @@ SEM TyAGItf
 %%% Orig type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1
+%%[4_3
 ATTR AllTy [ selfRepl: Ty | | ]
 ATTR AllAllTy [ | | self: SELF ]
 
@@ -156,7 +156,7 @@ SEM TyAGItf
 %%% App spine info, coco variance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1
+%%[4_3
 ATTR Ty [ | | appSpineInfoL: {[AppSpineInfo]} ]
 
 SEM Ty

@@ -18,6 +18,9 @@
 %%[4_1 export(unifyFIOpts,meetFIOpts,joinFIOpts)
 %%]
 
+%%[4_2 export(impredFIOpts)
+%%]
+
 %%[5 export(weakFIOpts)
 %%]
 
@@ -254,6 +257,11 @@ meetFIOpts = unifyFIOpts {fioMode = FitMeet}
 
 joinFIOpts :: FIOpts
 joinFIOpts = unifyFIOpts {fioMode = FitJoin}
+%%]
+
+%%[4_2.FIOpts.defaults
+impredFIOpts :: FIOpts
+impredFIOpts = strongFIOpts {fioBindToTyAlts = True}
 %%]
 
 %%[5

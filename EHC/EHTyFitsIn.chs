@@ -43,7 +43,10 @@
 %%[4 import(EHDebug)
 %%]
 
-%%[4_1 import(EHTyElimAlts,EHTyElimBoth) export(foHasErrs,mkElimAltsWrap)
+%%[4_1 import(EHTyElimBoth) export(foHasErrs)
+%%]
+
+%%[4_3 import(EHTyElimAlts) export(mkElimAltsWrap)
 %%]
 
 %%[6 export(fitsInL)
@@ -100,9 +103,6 @@ foAppCoe fo c cs ce
 %%[4.FIIn.hd
 data FIIn   =  FIIn     {  fiFIOpts          ::  FIOpts              ,  fiUniq            ::  UID
 %%]
-%%[4_1
-                        ,  fiMeetTvL         ::  TyVarIdL
-%%]
 %%[9
                         ,  fiEnv             ::  FIEnv
 %%]
@@ -112,9 +112,6 @@ data FIIn   =  FIIn     {  fiFIOpts          ::  FIOpts              ,  fiUniq  
 
 %%[4.FIn.emptyFI.hd
 emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts        ,  fiUniq            =   uidStart
-%%]
-%%[4_1
-                        ,  fiMeetTvL         =   []
 %%]
 %%[9
                         ,  fiEnv             =   emptyFE
@@ -311,13 +308,13 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[4_1.fitsIn.mkTyAlts
-            mkTyAlts fi tv t        =  if fioBindToTyAlts (fiFIOpts fi) || (fioIsMeetJoin (fiFIOpts fi) && tv `elem` fiMeetTvL fi)
+            mkTyAlts fi tv t        =  if fioBindToTyAlts (fiFIOpts fi)
                                        then Ty_Alts tv [TyPlus_Ty t]
                                        else t
 %%]
 
 %%[9_1.fitsIn.mkTyAlts -4_1.fitsIn.mkTyAlts
-            mkTyAlts fi tv t pl     =  if fioBindToTyAlts (fiFIOpts fi) || (fioIsMeetJoin (fiFIOpts fi) && tv `elem` fiMeetTvL fi)
+            mkTyAlts fi tv t pl     =  if fioBindToTyAlts (fiFIOpts fi)
                                        then Ty_Alts tv [TyPlus_Ty t pl]
                                        else t
 %%]
@@ -448,7 +445,7 @@ fitsIn opts env uniq ty1 ty2
             fPairWise = fPairWise' (\fo c -> foCnstr fo |=> c)
 %%]
 
-%%[4_1
+%%[4_3
             fPairWiseNoErr = fPairWise' (\fo c -> if foHasErrs fo then c else foCnstr fo |=> c)
 %%]
             fPairWiseAlt = fPairWise' (\_ _ -> emptyCnstr)
@@ -637,6 +634,12 @@ fitsIn opts env uniq ty1 ty2
                 where  fo = f fi t1 t2b
 %%]
 
+%%[11.fitsIn.EqualVar
+            f fi t1@(Ty_Var v1 _) t2@(Ty_Equal v2 t2e)
+                | fioAllowEqOpen (fiFIOpts fi)      = (bind fi v2 t2e) {foEqCnstr = ce}
+                where  ce = v1 `cnstrTyUnit` Ty_Equal v1 t2e
+%%]
+
 %%[4.fitsIn.Var1
             f fi t1@(Ty_Var v1 _)       t2
                 | allowImpredTVBindL fi t1 t2       = occurBind fi v1 t2
@@ -658,7 +661,18 @@ fitsIn opts env uniq ty1 ty2
                 | allowImpredTVBindR fi t2 t1       = bindAlt fi v2 t1
 %%]
 
-%%[4_1
+%%[4_2.fitsIn.Alts
+            f fi t1@(Ty_Alts v1 t1L)    t2@(Ty_Alts v2 t2L)
+                                                    = bindMany fi [v1,v2] (Ty_Alts v1 (t1L `cmbTyAltsL` t2L))
+            f fi t1@(Ty_Alts v1 t1L)    t2
+                                                    = bind fipl v1 (Ty_Alts v1 (t1L `cmbTyAltsL` [t2pl]))
+                where  (fipl,t2pl) = mkTyPlus fi t2
+            f fi t1                     t2@(Ty_Alts v2 t2L)
+                                                    = bind fipl v2 (Ty_Alts v2 ([t1pl] `cmbTyAltsL` t2L))
+                where  (fipl,t1pl) = mkTyPlus fi t1
+%%]
+
+%%[4_3.fitsIn.Alts
             f fi t1@(Ty_Alts v1 t1L)    t2@(Ty_Alts v2 t2L)
                 | fioIsMeetJoin (fiFIOpts fi)       = bindMany fi [v1,v2] (Ty_Alts v1 (t1L `cmbTyAltsL` t2L))
             f fi t1@(Ty_Alts v1 t1L)    t2
@@ -681,25 +695,23 @@ fitsIn opts env uniq ty1 ty2
                                   _   ->  foBind v1 (Ty_Alts v1 (t1L  ++ [t2pl])) (emptyFO {foUniq = fiUniq fipl})
 %%]
 
-%%[11
-            f fi t1@(Ty_Var v1 TyVarCateg_Fixed) t2@(Ty_Equal v2 t2e)
-                | fioAllowEqOpen (fiFIOpts fi)      = (bind fi v2 t2e) {foEqCnstr = ce}
-                where  ce = v1 `cnstrTyUnit` Ty_Equal v1 t2e
+%%[11.fitsIn.Equal
             f fi t1@(Ty_Equal v1 t1e)   t2@(Ty_Equal v2 t2e)
                 | v1 == v2                          = rfo
                 where  fo = f fi t1e t2e
                        rfo = if foHasErrs fo
                              then res fi (Ty_Var v1 TyVarCateg_Fixed)
                              else foUpdTy (Ty_Equal v2 (foTy fo)) fo
+            f fi t1@(Ty_Equal v1 t1e)   t2          = f fi t1e t2
+            f fi t1                     t2@(Ty_Equal v2 t2e)
+                                                    = manyFO [fo,rfo]
+                where  fo = f fi t1 t2e
+                       rfo = foUpdTy (Ty_Equal v2 (foTy fo)) fo
+%%]
             f fi t1@(Ty_Equal v1 t1e)   t2@(Ty_Equal v2 t2e)
                 | v1 /= v2                          = manyFO [fo,rfo]
                 where  fo = f fi t1e t2e
                        rfo = foUpdTy (Ty_Equal v2 (foTy fo)) fo
-            f fi t1                     t2@(Ty_Equal v2 t2e)
-                                                    = manyFO[fo,rfo]
-                where  fo = f fi t1 t2e
-                       rfo = foUpdTy (Ty_Equal v2 (foTy fo)) fo
-%%]
 
 %%[9
             f fi t1@(Ty_Pred (Pred_Class ct1)) t2@(Ty_Pred (Pred_Class ct2))
@@ -753,7 +765,7 @@ fitsIn opts env uniq ty1 ty2
                 where (fi1,uqt1,back1) = unquant fi t1 False instCoConst
 %%]
 
-%%[4_1.fitsIn.QL
+%%[4_3.fitsIn.QL
             f fi t1@(Ty_Quant q1 _ _)   t2
                 |     fioMode (fiFIOpts fi) == FitMeet && tyquIsForall q1
                   ||  fioMode (fiFIOpts fi) == FitJoin && tyquIsExists q1
@@ -1212,7 +1224,7 @@ fitPredToEvid u prTy g
 %%% Wrapper for elimbinds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_1
+%%[4_3
 mkElimAltsWrap :: FIEnv -> (FIOpts -> UID -> Ty -> Ty -> (Ty,Cnstr,ErrL))
 mkElimAltsWrap env
   =  \opt u t1 t2 ->  let  fo = fitsIn opt env u t1 t2
