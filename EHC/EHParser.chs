@@ -659,20 +659,3 @@ pDeclInstance   =    pKey "instance"
                           <|>  sem_Decl_InstanceIntro <$> pExpr <* pKey "<:" <*> pPrExprClass
                           )
 %%]
-pClassHead      ::   EHParser (T_PrExprs,T_PrExpr)
-pClassHead      =    pPrExprClass <**>  (    (\p c -> (sem_PrExprs_Cons c sem_PrExprs_Nil,p))
-                                             <$ pKeyw hsnPrArrow <*> pPrExprClass
-                                        <|>  pSucceed (\p -> (sem_PrExprs_Nil,p))
-                                        )
-                <|>  (,) <$> pParens (pFoldrSep (sem_PrExprs_Cons,sem_PrExprs_Nil) pComma pPrExprClass)
-                     <* pKeyw hsnPrArrow <*> pPrExprClass
-
-pDeclInstance   ::   EHParser T_Decl
-pDeclInstance   =    pKey "instance"
-                     *>   (    (\ne -> uncurry (sem_Decl_Instance ne))
-                               <$>  ((\n e -> Just (n,e)) <$> pVar <*> (True <$ pKey "<:" <|> False <$ pKey "::") `opt` Nothing)
-                               <*>  pClassHead
-                               <*   pKey "where" <*> pDecls
-                          <|>  sem_Decl_InstanceIntro <$> pExpr <* pKey "<:" <*> pPrExprClass
-                          )
-
