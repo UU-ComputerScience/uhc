@@ -125,27 +125,32 @@ DATA Pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.AllTy
-SET AllTy       = Ty
+SET AllTyTy     = Ty
+SET AllTy       = AllTyTy
 SET AllAllTy    = AllTy
 %%]
 
 %%[3.AllTy -1.AllTy
-SET AllTy       = Ty
+SET AllTyTy     = Ty
+SET AllTy       = AllTyTy
 SET AllAllTy    = AllTy TyVarCateg
 %%]
 
 %%[4.AllTy -3.AllTy
-SET AllTy       = Ty
+SET AllTyTy     = Ty
+SET AllTy       = AllTyTy
 SET AllAllTy    = AllTy TyVarCateg TyQu
 %%]
 
 %%[4_1.AllTy -4.AllTy
-SET AllTy       = Ty TyL
+SET AllTyTy     = Ty TyL
+SET AllTy       = AllTyTy
 SET AllAllTy    = AllTy TyVarCateg TyQu
 %%]
 
 %%[9.AllTy -4_1.AllTy
-SET AllTy       = Ty TyL Pred Impls
+SET AllTyTy     = Ty TyL
+SET AllTy       = AllTyTy Pred Impls
 SET AllAllTy    = AllTy TyVarCateg TyQu
 %%]
 

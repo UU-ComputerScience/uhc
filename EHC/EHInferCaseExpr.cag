@@ -17,20 +17,20 @@
 ATTR AllCase [ knPatTy: Ty | patTyCnstr: Cnstr | patTy: Ty ]
 
 SEM Expr
-  | Case        alts        .  knPatTy              =  @expr.ty
-                            .  patTyCnstr           =  @expr.tyCnstr
-                            .  tyCnstr              =  @alts.patTyCnstr
+  | Case        alts        .   knPatTy             =   @expr.ty
+                            .   patTyCnstr          =   @expr.tyCnstr
+                            .   tyCnstr             =   @alts.patTyCnstr
 
 SEM CaseAlt
-  | Pat         patExpr     .  tyCnstr              =  @lhs.patTyCnstr
-                            .  knTy                 =  @lhs.knPatTy
-                            .  valGam               =  gamPushNew @lhs.valGam
-                lhs         .  patTyCnstr           =  @patExpr.tyCnstr
-                            .  patTy                =  @patExpr.ty
+  | Pat         patExpr     .   tyCnstr             =   @lhs.patTyCnstr
+                            .   knTy                =   @lhs.knPatTy
+                            .   valGam              =   gamPushNew @lhs.valGam
+                lhs         .   patTyCnstr          =   @patExpr.tyCnstr
+                            .   patTy               =   @patExpr.ty
 
 SEM CaseAlts
-  | Nil         lhs         .  patTy                =  @lhs.knPatTy
-  | Cons        tl          .  knPatTy              =  @hd.patTy
+  | Nil         lhs         .   patTy               =   @lhs.knPatTy
+  | Cons        tl          .   knPatTy             =   @hd.patTy
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,17 +41,19 @@ SEM CaseAlts
 ATTR AllCase [ knTy: Ty | | ty: Ty ]
 
 SEM Expr
-  | Case        expr        .  knTy                 =  Ty_Any
-                alts        .  knTy                 =  @lhs.knTy
+  | Case        expr        .   knTy                =   Ty_Any
+                alts        .   knTy                =   @lhs.knTy
+                loc         .   (_,ebCnstr,ebErrs)  =   tyElimBinds (mkElimBindsWrap @fe) joinFIOpts @lUniq (@alts.tyCnstr |=> @expr.ty)
+                lhs         .   tyCnstr             =   @ebCnstr |=> @alts.tyCnstr
 
 SEM CaseAlt
-  | Pat         expr        .  tyCnstr              =  @lhs.tyCnstr
-                lhs         .  ty                   =  @expr.ty
-                            .  tyCnstr              =  @expr.tyCnstr
+  | Pat         expr        .   tyCnstr             =   @lhs.tyCnstr
+                lhs         .   ty                  =   @expr.ty
+                            .   tyCnstr             =   @expr.tyCnstr
 
 SEM CaseAlts
-  | Nil         lhs         .  ty                   =  @lhs.knTy
-  | Cons        hd          .  knTy                 =  @lhs.knTy
-                tl          .  knTy                 =  @hd.ty
+  | Nil         lhs         .   ty                  =   @lhs.knTy
+  | Cons        hd          .   knTy                =   @lhs.knTy
+                tl          .   knTy                =   @hd.ty
 %%]
 

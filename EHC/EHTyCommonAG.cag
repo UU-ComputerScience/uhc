@@ -76,7 +76,7 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.SpinePos
-ATTR Ty [ appSpinePos : Int | | ]
+ATTR AllTyTy [ appSpinePos : Int | | ]
 
 SEM TyAGItf
   | AGItf       ty          .   appSpinePos     =   0
@@ -95,11 +95,6 @@ SEM Ty
 %%[4.whereIAm
 SEM Ty
   | App         loc         .   isArrowRoot     =   @appIsArrow && @isSpineRoot
-%%]
-
-%%[4_1
-SEM TyL
-  | Cons        hd          .   appSpinePos     =   0
 %%]
 
 %%[7

@@ -121,7 +121,7 @@ ehcCmdLineOpts
                                 Just "yes"  -> o { ehcoptShowTopTyPP   = True      }
                                 _           -> o
          oHelp           o =  o { ehcoptHelp          = True    }
-         oDebug          o =  o { ehcoptDebug         = True    }
+         oDebug          o =  (oPretty (Just "ast") o) { ehcoptDebug         = True    }
 %%]
 
 %%[ehcCmdLineOptsB.8

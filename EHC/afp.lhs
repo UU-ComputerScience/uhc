@@ -541,6 +541,7 @@ WWW home page:
 \inputEHCTex{\EHCTexVersion}{EHTyAbsSyn.tex}
 \inputEHCTex{\EHCTexVersion}{EHTyCommonAG.tex}
 \inputEHCTex{\EHCTexVersion}{EHTyFitsIn.tex}
+\inputEHCTex{\EHCTexVersion}{EHTyFitsInCommon.tex}
 \inputEHCTex{\EHCTexVersion}{EHTyFtv.tex}
 \inputEHCTex{\EHCTexVersion}{EHTyInstantiate.tex}
 \inputEHCTex{\EHCTexVersion}{EHTyPretty.tex}
@@ -3062,7 +3063,7 @@ In infix notation |fitsIn| prints as |<=|.
 from which the resulting
 type can be retrieved by using the accessor function |foTy|:
 
-\chunkCmdUseMark{EHTyFitsIn.1.FIOut}
+\chunkCmdUseMark{EHTyFitsInCommon.1.FIOut}
 
 Using a separate attribute |fTy| instead of using its value directly has been
 done in order to prepare for a redefinition of |fTy| in later versions.
@@ -3198,7 +3199,7 @@ decombine2 :: A -> (A,A)
 \rulerCmdUse{rules.fit1.scheme}
 \]
 \item And implemented by |fitsIn| which returns
-\chunkCmdFrameUse{EHTyFitsIn.1.FIOut}
+\chunkCmdFrameUse{EHTyFitsInCommon.1.FIOut}
 \begin{itemize}
 \item a type to continue checking with
 \item errors (if any) to incorporate in pretty printed program
@@ -4374,9 +4375,9 @@ The implementation |fitsIn| of |<=| has to be rewritten to include additional ca
 for type variables and the return of constraints
 
 \savecolumns
-\chunkCmdUseMark{EHTyFitsIn.2.FIOut}
+\chunkCmdUseMark{EHTyFitsInCommon.2.FIOut}
 \restorecolumns
-\chunkCmdUseMark{EHTyFitsIn.2.FIOut.empty}
+\chunkCmdUseMark{EHTyFitsInCommon.2.FIOut.empty}
 \savecolumns
 \chunkCmdUseMark{EHTyFitsIn.2.fitsIn.Base}
 \restorecolumns
@@ -4438,7 +4439,7 @@ constraints
 \item |fitsIn| binds a type variable |v| by returning
 a |Cnstr = [v :-> ...]| for it.
 \item Result of |fitsIn| has an additional |foCnstr :: Cnstr|
-\chunkCmdFrameUse{EHTyFitsIn.2.FIOut}
+\chunkCmdFrameUse{EHTyFitsInCommon.2.FIOut}
 \item Binding
 \chunkCmdFrameUse{EHTyFitsIn.2.fitsIn.Bind}
 \begin{itemize}
@@ -6188,8 +6189,8 @@ the first argument should be fitted with the opposite variance and
 options |fiopt| should be made strong. This is described via a environment
 encoding this information
 
-\chunkCmdUseMark{EHGam.4.AppSpine}
-\chunkCmdUseMark{EHCommon.4.fioMkStrong}
+\chunkCmdUseMark{EHTyFitsInCommon.4.AppSpine}
+\chunkCmdUseMark{EHOpts.4.fioMkStrong}
 \chunkCmdUseMark{EHGam.4.AppSpineGam}
 \chunkCmdUseMark{EHGam.4.appSpineGam}
 
@@ -6207,7 +6208,7 @@ and redo the implementation of |fitsIn|.
 First, |fitsIn| needs to pass information both up and downwards.
 Upwards was already implemented via
 
-\chunkCmdUseMark{EHTyFitsIn.4.FIOut}
+\chunkCmdUseMark{EHTyFitsInCommon.4.FIOut}
 
 which is extended with |CoContraVariant| information and threads a UID value
 needed for instantiating types together with the downward information stored in
