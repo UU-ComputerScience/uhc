@@ -24,12 +24,13 @@ SEM Expr
 
 %%[9
 SEM Decl
-  | Instance    loc         .   (prElimGam,ctxtArgNmL,prUIDL)
+  | Instance    loc         .   (declsPrElimGam,ctxtArgNmL,prUIDL)
                                                     =   peGamAddKnPrL @lUniq6 (tail @prL) @lhs.prElimGam
                             .   supPrUIDL           =   mkNewUIDL (length @supPrTyL) @lUniq4
-                            .   supPrElimGam        =   peGamDel @instClsNm @elimRule @prElimGam
+                            .   supPrElimGam        =   peGamDel @instClsNm @elimRule @declsPrElimGam
                             .   (supPrfCBindLMap,supCSubst,supRemPrfPrL,supEvidL,supPrfErrs)
                                                     =   prfPreds @lUniq5 (emptyFE {fePrElimGam = @supPrElimGam}) (zipWith PredOcc @supPrL @supPrUIDL)
+                decls       .   prElimGam           =   @declsPrElimGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -66,7 +67,7 @@ SEM Expr
 SEM Decl
   | Instance    loc         .   gathSubsPredL       =   @decls.tyCnstr |=> @decls.gathPredL
                             .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs)
-                                                    =   prfPreds @lUniq7 (emptyFE {fePrElimGam = @prElimGam}) @gathSubsPredL
+                                                    =   prfPreds @lUniq7 (emptyFE {fePrElimGam = @declsPrElimGam}) @gathSubsPredL
                 lhs         .   gathPredL           =   []
 %%]
 

@@ -289,6 +289,14 @@ DATA RecExpr
   | Ext             recExpr         : RecExpr
                     mbNm            : {Maybe HsName}
                     expr            : Expr
+  | Upd             recExpr         : RecExpr
+                    nm              : {HsName}
+                    expr            : Expr
+%%]
+
+%%[9
+DATA RecExpr
+  | Expr            expr            : Expr
 %%]
 
 %%[7

@@ -1,6 +1,6 @@
 %% configuration
 
-%if forCC2005
+%if forESOP05
 %let chapAsArticle	= True
 %else
 %let chapAsArticle	= False
@@ -118,6 +118,8 @@
 %format pivar       = p
 %format pempty      = emptyset
 
+%format rvar        = "{\varrho}"
+
 %format inst		= "inst"
 %format instv		= inst "_{" tvar  "}"
 %format instf		= inst "_{" tvarf "}"
@@ -137,6 +139,8 @@
 %format ::- 			= "\Vdash "
 %format :~>   			= "\rightsquigarrow "
 %format <~:   			= "\leftsquigarrow "
+%format :>   			= "\rightsquigarrow "
+%format <:   			= "\leftsquigarrow "
 %format .    			= "."
 
 

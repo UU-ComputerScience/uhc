@@ -116,7 +116,7 @@ prvgCode prL g@(ProvenGraph i2n p2i p2oi)
   =  let  i2nL = fmToList i2n
           p2iL = fmToList p2i
           i2i  = listToFM [ (i,ii) | (_,ii) <- p2iL, i <- ii ]
-          (provenL,argL,overlapL)
+          (provenPrL,argPrL,overlapPrL)
             = (concat p, concat a, concat o)
             where  spl n@(_,ProvenAnd _ _ _ _) = ([n],[],[])
                    spl n@(_,ProvenArg _ _    ) = ([],[n],[])
@@ -132,8 +132,8 @@ prvgCode prL g@(ProvenGraph i2n p2i p2oi)
                            s' = s `cAppSubst` assocLCExprToCSubst asS'
                        in  (s',partition canAsSubst (s' `cAppSubst` asB))
                 )
-            $ (emptyCSubst,partition canAsSubst (map (\(i,ProvenAnd _ _ _ e) -> (i,e)) provenL))
-          r = map fst argL
+            $ (emptyCSubst,partition canAsSubst (map (\(i,ProvenAnd _ _ _ e) -> (i,e)) provenPrL))
+          r = map fst argPrL
           m1 = provenAsCSubst `cAppSubst` assocLCExprToCSubst [ (i,CExpr_Var (uidHNm i)) | (i,_) <- provenForBind ]
           m2 = assocLCExprToCSubst . concat
              . map (\(p,(uid:uidL))
@@ -279,7 +279,7 @@ instance Show Rule where
   show r = show (rulNmEvid r) ++ "::" ++ show (rulRuleTy r)
 
 instance PP Rule where
-  pp r = ppTy (rulRuleTy r) >#< "~>" >#< pp (rulNmEvid r) >|< "/" >|< pp (rulId r) >#< "|" >|< ppCommaList (rulFuncDeps r)
+  pp r = ppTy (rulRuleTy r) >#< ":>" >#< pp (rulNmEvid r) >|< "/" >|< pp (rulId r) >#< "|" >|< ppCommaList (rulFuncDeps r)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -334,7 +334,7 @@ peGamAdd n r g
 peGamDel :: HsName -> Rule -> PrElimGam -> PrElimGam
 peGamDel n r g
   =  let  (h,t) = gamPop g
-          h' = gamUpd n (\_ p -> p {pegiRuleL = deleteBy (\r1 r2 -> rulId r1 == rulId r2) r . pegiRuleL $ p}) g
+          h' = gamUpd n (\_ p -> p {pegiRuleL = deleteBy (\r1 r2 -> rulId r1 == rulId r2) r . pegiRuleL $ p}) h
      in   h' `gamPushGam` t
 
 peGamAddKnPr :: HsName -> PredOccId -> Pred -> PrElimGam -> PrElimGam

@@ -20,6 +20,18 @@ test-expect test-regress: test-lists
 	        then \
 	          echo "== code ==" >> $${th} ; \
 	          cat $${tc} >> $${th} ; \
+	          if test -x ../bin/jc -a -x ../bin/jr ; \
+	          then \
+	            cp $$t t.eh ; \
+	            $$ehc --code=java t.eh > /dev/null ; \
+	            rm -f t.class ; \
+	            ../bin/jc t &> /dev/null ; \
+	            if test -r t.class ; \
+	            then \
+	              echo "== execution ==" >> $${th} ; \
+	              ../bin/jr t >> $${th} 2>&1 ; \
+	            fi \
+	          fi \
 	        fi ; \
 	        if test $$tr = $$th -a -r $$te ; \
 	        then \

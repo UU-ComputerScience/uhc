@@ -57,7 +57,8 @@ SEM PatExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.knTy
-ATTR PatExpr [ knTy: Ty ^^^ knTyL: TyL | | ]
+ATTR AllPatExpr [ knTy: Ty | | ]
+ATTR PatExpr [ knTyL: TyL | | ]
 
 SEM PatExpr
   | AppTop      loc         .  knProdTy
@@ -104,7 +105,7 @@ SEM RecPatExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.valGam
-ATTR PatExpr [ | valGam: ValGam | ]
+ATTR AllPatExpr [ | valGam: ValGam | ]
 
 SEM PatExpr
   | Var VarAs   loc         .   ty                  =   @lhs.knTy
@@ -117,7 +118,7 @@ SEM PatExpr
 %%]
 
 %%[2.Var
-ATTR PatExpr [ | tyCnstr: Cnstr | ty: Ty ]
+ATTR AllPatExpr [ | tyCnstr: Cnstr | ty: Ty ]
 
 SEM PatExpr
   | Var VarAs   loc         .   ty                  :=  tyEnsureNonBotTop @lUniq @lhs.knTy
@@ -162,24 +163,34 @@ SEM PatExpr
   | *           loc         .   fe                  =   emptyFE
 %%]
 
+%%[7.FIEnv
+SEM RecPatExpr
+  | *           loc         .   fe                  =   emptyFE
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[7
-ATTR RecPatExpr [ | valGam: ValGam ^^ tyCnstr: Cnstr | knTyRow: Ty ]
-
 SEM RecPatExpr
-  | Empty       lhs         .  knTyRow              =   tyRowEmpty
-  | Ext         loc         .  patTy                =   mkNewTyVar @lUniq
-                lhs         .  knTyRow              =   Ty_Ext @recPatExpr.knTyRow @nm @patTy
-                patExpr     .  knTy                 =   @recPatExpr.tyCnstr |=> @patTy
-
-SEM PatExpr
-  | Rec         loc         .  fTy                  =   hsnRec `mkTyConApp` [@recPatExpr.knTyRow]
-                            .  fo                   =   fitsIn @lhs.fiOpts emptyFE @lUniq @lhs.knTy @fTy
-                            .  ty                   =   foTy @fo
-                recPatExpr  .  tyCnstr              =   foCnstr @fo |=> @lhs.tyCnstr
-                lhs         .  ty                   =   @recPatExpr.tyCnstr |=> @ty
+  | Empty       loc         .   fo                  =   fitsIn (@lhs.fiOpts) @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) tyRecEmpty
+                            .   ty                  =   foTy @fo
+                lhs         .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
+  | Ext         loc         .   recTy               =   let  [r,e] = mkNewTyVarL 2 @lUniq
+                                                        in   (hsnRec `mkTyConApp` [r]) `mkTyRecExt` [(@nm,e)]
+                            .   fo                  =   fitsIn (@lhs.fiOpts) @fe @lUniq2 (@lhs.tyCnstr |=> @lhs.knTy) @recTy
+                            .   ty                  =   foTy @fo
+                (recPatExpr.knTy,patExpr.knTy)      =   maybe (Ty_Any,Ty_Any) id . tyRecExtr @nm $ @ty
+                recPatExpr  .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
+                lhs         .   ty                  =   @patExpr.tyCnstr |=> @ty
 %%]
 
+
+SEM PatExpr
+  | Rec         loc         .   fTy                 =   hsnRec `mkTyConApp` [mkNewTyVar @lUniq]
+                            .   fo                  =   fitsIn @lhs.fiOpts emptyFE @lUniq2 @lhs.knTy @fTy
+                            .   ty                  =   foTy @fo
+                recPatExpr  .   knTy				=	@ty
+                			.	tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
+                lhs         .   ty                  =   @recPatExpr.tyCnstr |=> @ty

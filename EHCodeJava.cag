@@ -163,7 +163,7 @@ SEM CModule
                                                 >-< jvBody ("public class " ++ @jvBasename) "static void main" [text "String args[]"]
                                                       empty empty
                                                       (   "// EvalFollower.setupVisualTrace() ;"
-                                                      >-< jvCall "IO.timeNShowln" [@expr.jvSrc] >#< ";")
+                                                      >-< jvCall "IO.nrEvalNShowln" [@expr.jvSrc] >#< ";")
 
 SEM CExpr
   | Int         loc         .   jvSrc       =   "new Int" >|< pp_parens (pp @int)

@@ -201,7 +201,11 @@ SEM Decl
 
 %%[7
 SEM Expr
-  | Rec         loc     .  ppAST    =   ppNest ["Expr","Rec"] [] [@recExpr.ppAST]
+  | Rec         loc     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Rec"] [] [@recExpr.ppAST] @info
+                        .  info     =   []
+  | Sel         loc     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Sel"] [ppNm @lbl] [@expr.ppAST] @info
+                        .  info     =   [ mkInfo1 "lhs.knTy" (pp @lhs.knTy)
+                                        ]
 
 SEM PatExpr
   | Rec         loc     .  ppAST    =   ppNest ["PatExpr","Rec"] [] [@recPatExpr.ppAST]
@@ -210,8 +214,14 @@ SEM TyExpr
   | Row         loc     .  ppAST    =   ppNest ["TyExpr","Row"] [] [@rowTyExpr.ppAST]
 
 SEM RecExpr
-  | Empty       loc     .  ppAST    =   ppNest ["RecExpr","Empty"] [] []
-  | Ext         loc     .  ppAST    =   ppNest ["RecExpr","Ext"] [ppNm @nm] [@recExpr.ppAST,@expr.ppAST]
+  | Empty       loc     .  ppAST    =   ppNestInfo @lhs.opts ["RecExpr","Empty"] [] [] @info
+                        .  info     =   [ mkInfo1 "lhs.knTy" (pp @lhs.knTy)
+                                        , mkInfo1 "ty" (pp @ty)
+                                        ]
+  | Ext         loc     .  ppAST    =   ppNestInfo @lhs.opts ["RecExpr","Ext"] [ppNm @nm] [@recExpr.ppAST,@expr.ppAST] @info
+                        .  info     =   [ mkInfo1 "lhs.knTy" (pp @lhs.knTy)
+                                        , mkInfo1 "ty" (pp @ty)
+                                        ]
 
 SEM RecPatExpr
   | Empty       loc     .  ppAST    =   ppNest ["RecPatExpr","Empty"] [] []
@@ -239,6 +249,11 @@ SEM Decl
 SEM RowTyExpr
   | Var         loc     .  ppAST    =   ppNest ["RowTyExpr","Var"] [ppNm @nm] []
 
+SEM RecExpr
+  | Expr        loc     .  ppAST    =   ppNestInfo @lhs.opts ["RecExpr","Expr"] [] [@expr.ppAST] @info
+                        .  info     =   [ mkInfo1 "expr.ty" (pp @expr.ty)
+                                        ]
+
 SEM TyExpr
   | Pred        loc     .  ppAST    =   ppNest ["TyExpr","Pred"] [] [@prExpr.ppAST]
 
@@ -253,6 +268,8 @@ SEM Decl
   | Instance    loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Instance"] (maybe [] (\n -> [ppNm n]) @mbNm) [@ctxtPrExprs.ppAST,@prExpr.ppAST,@decls.ppAST] @info
                         .  info     =   [ mkInfo1 "ctxtToInstTy" (ppTy @ctxtToInstTy)
                                         , mkInfo1 "ctxtRecToInstRecTy" (ppTy @ctxtRecToInstRecTy)
+                                        , mkInfo1 "supPrElimGam" (ppGam @supPrElimGam)
+                                        , mkInfo1 "declsPrElimGam" (ppGam @declsPrElimGam)
                                         , mkInfo1 "supPrL" (ppCommaList @supPrL)
                                         , mkInfo1 "supPrUIDL" (ppCommaList @supPrUIDL)
                                         , mkInfo1 "prfCBindLMap" (ppCBindLMap @prfCBindLMap)

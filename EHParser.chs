@@ -82,8 +82,12 @@ keywordsOps   =  [ "=", "\\", show hsnArrow, "::", "@", "...", ".", "|" ]
 keywordsOps   =  [ "=", "\\", show hsnArrow, "::", "@", "...", ".", "|", "*" ]
 %%]
 
-%%[9.keywordsOps -6.keywordsOps
-keywordsOps   =  [ "=", "\\", show hsnArrow, "::", "@", "...", ".", "|", "*", "=>", "<~", "~>" ]
+%%[7.keywordsOps -6.keywordsOps
+keywordsOps   =  [ "=", "\\", show hsnArrow, "::", "@", "...", ".", "|", "*", ":=" ]
+%%]
+
+%%[9.keywordsOps -7.keywordsOps
+keywordsOps   =  [ "=", "\\", show hsnArrow, "::", "@", "...", ".", "|", "*", ":=", "=>", "<:", ":>" ]
 %%]
 
 %%[1.offsideTrigs
@@ -578,7 +582,7 @@ pExprApp        =    pApp exprAlg (pExprBase <**> pExprSelSuffix)
 %%[pExprApp.9
 pExprApp        =    let  pE = pExprBase <**> pExprSelSuffix
                           pA = flip sem_Expr_App <$> pE
-                          pI = pPackImpl ((\p a e -> sem_Expr_AppImpl e a p) <$> pPrExpr <* pKey "~>" <*> pExpr)
+                          pI = pPackImpl ((\p a e -> sem_Expr_AppImpl e a p) <$> pPrExpr <* pKey ":>" <*> pExpr)
                      in   pE <??> ((\l e -> sem_Expr_AppTop (foldl (flip ($)) e l)) <$> pList1 (pA <|> pI))
 %%]
 
@@ -646,7 +650,7 @@ pExpr           =    pE <??> (sem_Expr_TypeAs <$ pKey "::" <*> pTyExpr)
 %%@pExprBaseCommon.1
 %%@pExprBaseCommon.5
                 <|>  pParenRow True (show hsnORec) (show hsnCRec) "="
-                        (sem_RecExpr_Empty,const sem_RecExpr_Empty,sem_RecExpr_Ext,sem_Expr_Rec,sem_Expr_Parens)
+                        (sem_RecExpr_Empty,sem_RecExpr_Expr . sem_Expr_Var,sem_RecExpr_Ext,sem_Expr_Rec,sem_Expr_Parens)
                         pVar pExpr
 %%]
 
@@ -808,7 +812,7 @@ pDeclClass      =    (uncurry sem_Decl_Class)
 
 pDeclInstance   ::   EHParser T_Decl
 pDeclInstance   =    (\n -> uncurry (sem_Decl_Instance n))
-                     <$   pKey "instance"  <*> (Just <$> pVar <* pKey "<~" `opt` Nothing)
+                     <$   pKey "instance"  <*> (Just <$> pVar <* pKey "<:" `opt` Nothing)
                      <*>  pClassHead
                      <*   pKey "where" <*> pDecls
 %%]

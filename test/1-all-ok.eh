@@ -10,4 +10,4 @@ let i :: Int
     fst = \(a,b) -> a
     unit :: ()
     unit = ()
- in i
+ in v

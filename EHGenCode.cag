@@ -44,6 +44,7 @@ ATTR RecExpr [ | | cexprL: {AssocL HsName CExpr} ]
 SEM RecExpr
   | Empty       lhs         .   cexprL      =   []
   | Ext         lhs         .   cexprL      =   (@nm,@expr.cexpr) : @recExpr.cexprL
+  | Upd         lhs         .   cexprL      =   (@nm,@expr.cexpr) : @recExpr.cexprL
 %%]
 
 %%[9
@@ -61,6 +62,9 @@ SEM Expr
   | AppTop      loc         .   cexpr       =   coeWipeWeave @lhs.finTyCnstr @cSubst [] @lamArgCoeL `coeEvalOn` @expr.cexpr
   | Parens      loc         .   cexpr       =   @expr.cexpr
   | TypeAs      loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst @expr.cexpr
+
+SEM RecExpr
+  | Expr        lhs         .   cexprL      =   []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -91,9 +95,9 @@ SEM Expr
 ATTR Decls Decl AllDataConstr [ | | cbindL USE {++} {[]}: CBindL ]
 
 SEM Decl
-  | Val         lhs         .   cbindL      =   [CBind_Bind @patExpr.topNm @expr.cexpr] ++ @patExpr.cbindL
-  | TySig       lhs         .   cbindL      =   []
-  | FFI         lhs         .   cbindL      =   [CBind_Bind @nm (CExpr_Var (HNm @impEnt))]
+  | Val         lhs         .   cbindL          =   [CBind_Bind @patExpr.topNm @expr.cexpr] ++ @patExpr.cbindL
+  | TySig       lhs         .   cbindL          =   []
+  | FFI         lhs         .   cbindL          =   [CBind_Bind @nm (CExpr_Var (HNm @impEnt))]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

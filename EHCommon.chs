@@ -63,7 +63,7 @@
 %%[7 export(positionalFldNames,ppFld,mkExtAppPP,mkPPAppFun)
 %%]
 
-%%[7 export(uidHNm)
+%%[7 export(assocLElts,assocLKeys,uidHNm)
 %%]
 
 %%[8 import (FPath,IO) export(hsnUndefined,putPPLn,putPPFile,Verbosity(..),putCompileMsg)
@@ -81,7 +81,7 @@
 %%[9 export(showPP)
 %%]
 
-%%[9 export(assocLValues,mkNewLevUIDL)
+%%[9 export(mkNewLevUIDL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -538,9 +538,12 @@ assocLMapSnd :: (v -> v') -> AssocL k v -> AssocL k v'
 assocLMapSnd f = assocLMap (\k v -> (k,f v))
 %%]
 
-%%[9
-assocLValues :: AssocL k v -> [v]
-assocLValues = map snd
+%%[7
+assocLElts :: AssocL k v -> [v]
+assocLElts = map snd
+
+assocLKeys :: AssocL k v -> [k]
+assocLKeys = map fst
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

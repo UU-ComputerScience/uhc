@@ -45,4 +45,4 @@ let notMultiple
     from
         = \s ->
             Cons s (from (add s 1))
-in  length (take 200 (sieve (from 2)))
+in  length (take 50 (sieve (from 2)))

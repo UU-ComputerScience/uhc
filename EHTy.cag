@@ -27,19 +27,22 @@
 %%[6 hs export(kiStar) 
 %%]
 
-%%[7 hs export(kiRow,tyRowEmpty,tyRowExtr,tyRecExtr,mkTyRec,mkTySum) 
+%%[7 hs import(List) export(rowExtCmp,tyRowCanonOrder,kiRow,tyRowEmpty,tyRecEmpty,tySumEmpty,tyRowExtr,tyRecExtr,mkTyRow,mkTyRec,mkTySum,mkTyRecExt,tyRowExts) 
+%%]
+
+%%[7 hs export(tyAppFunArg) 
 %%]
 
 %%[8 hs export(tyConNm) 
 %%]
 
-%%[8 hs import(List) export(tyRowCanonOrder,tyRecOffset) 
+%%[8 hs export(tyRecOffset) 
 %%]
 
 %%[9 hs export(Pred(..),predNm,predTy,tyPredNm,tyPred,tyLImplsPreds,tyArrowImplsRes,tyArrowImplsArgRes,mkTyPr)
 %%]
 
-%%[9 hs export(tyRecExts,tyAppFunConNm,tyArrowArity,tyQuant)
+%%[9 hs export(tyRecExts,tyRecRow,tyAppFunConNm,tyArrowArity,tyQuant)
 %%]
 
 %%[9 hs export(tyImpls,Impls(..),ImplsVarId,mkImplsVar,implsPredsTail,implsUIDs,implsPredsMbTail,tyIsImplsTail,tyImplsPreds)
@@ -253,6 +256,8 @@ kiStar  = Ty_Con hsnStar
 %%[7 hs
 kiRow       = Ty_Con hsnRow
 tyRowEmpty  = Ty_Con hsnRowEmpty
+tyRecEmpty	= mkTyRec []
+tySumEmpty	= mkTySum []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -302,6 +307,11 @@ tyProdArgs = tyAppArgs
 tyProdArgs ty = let (t,al) = tyRecExts ty in map snd al
 %%]
 
+%%[7 hs
+tyAppFunArg :: Ty -> (Ty,Ty)
+tyAppFunArg t =  case t of {Ty_App f a -> (f,a); _ -> (Ty_Any,Ty_Any)}
+%%]
+
 %%[8 hs
 tyConNm :: Ty -> HsName
 tyConNm  (Ty_Con nm)  = nm
@@ -349,14 +359,19 @@ tyLImplsPreds = foldr (\t (ps,i) -> case t of {Ty_Pred p -> (p:ps,i); Ty_Impls i
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[7 hs
-mkTyRow :: AssocL HsName Ty -> Ty
-mkTyRow = foldl (\t (n,e) -> Ty_Ext t n e) tyRowEmpty
+mkTyRow :: Ty -> AssocL HsName Ty -> Ty
+mkTyRow r = foldl (\t (n,e) -> Ty_Ext t n e) r
 
 mkTyRec :: AssocL HsName Ty -> Ty
-mkTyRec al = hsnRec `mkTyConApp` [mkTyRow al]
+mkTyRec al = hsnRec `mkTyConApp` [tyRowEmpty `mkTyRow` al]
+
+mkTyRecExt :: Ty -> AssocL HsName Ty -> Ty
+mkTyRecExt rec al
+  =  let  (row,exts) = tyRowExts (tyRecRow rec)
+     in   hsnRec `mkTyConApp` [row `mkTyRow` (exts ++ al)]
 
 mkTySum :: AssocL HsName Ty -> Ty
-mkTySum al = hsnSum `mkTyConApp` [mkTyRow al]
+mkTySum al = hsnSum `mkTyConApp` [tyRowEmpty `mkTyRow` al]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -364,6 +379,12 @@ mkTySum al = hsnSum `mkTyConApp` [mkTyRow al]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[7 hs
+tyRecRow :: Ty -> Ty
+tyRecRow t
+  =  case tyAppFunArgs t of
+       (Ty_Con n,[row]) | hsnIsRec n || hsnIsSum n -> row
+       _                                           -> Ty_Any
+
 tyRowExts :: Ty -> (Ty,AssocL HsName Ty)
 tyRowExts
   =  extr []
@@ -374,9 +395,9 @@ tyRowExts
 
 tyRecExts :: Ty -> (Ty,AssocL HsName Ty)
 tyRecExts t
-  =  case tyAppFunArgs t of
-       (Ty_Con n,[row]) | hsnIsRec n || hsnIsSum n  -> tyRowExts row
-       _                                            -> (Ty_Any,[])
+  =  case tyRecRow t of
+       Ty_Any  -> (Ty_Any,[])
+       row     -> tyRowExts row
 
 tyRowExtr :: HsName -> Ty -> Maybe (Ty,Ty)
 tyRowExtr lbl t
@@ -387,19 +408,24 @@ tyRowExtr lbl t
 
 tyRecExtr :: HsName -> Ty -> Maybe (Ty,Ty)
 tyRecExtr lbl t
-  =  case tyAppFunArgs t of
-       (Ty_Con n,[row]) | hsnIsRec n || hsnIsSum n  -> tyRowExtr lbl row
-       _                                            -> Nothing
+  =  case tyRowExtr lbl (tyRecRow t) of
+       Nothing    -> Nothing
+       Just (r,e) -> Just (hsnRec `mkTyConApp` [r],e)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Canonical ordering of fields of record
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
-tyRowCanonOrder :: AssocL HsName a -> AssocL HsName a
-tyRowCanonOrder = sortBy (\(n1,_) (n2,_) -> n1 `compare` n2)
+%%[7 hs
+rowExtCmp :: (HsName,a) -> (HsName,a) -> Ordering
+rowExtCmp (n1,_) (n2,_) = n1 `compare` n2
 
+tyRowCanonOrder :: AssocL HsName a -> AssocL HsName a
+tyRowCanonOrder = sortBy rowExtCmp
+%%]
+
+%%[8 hs
 tyRecOffset :: HsName -> Ty -> Maybe Int
 tyRecOffset lbl t
   =  let (_,exts) = tyRecExts t

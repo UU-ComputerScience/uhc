@@ -101,7 +101,7 @@ specialChars  =  "().`"
 opChars       =  "!#$%&*+/<=>?@\\^|-:;,[]{}~"
 
 keywordsText  =  [ "judge", "rule", "rules", "cond", "preamble", "scheme" ]
-keywordsOps   =  [ "=", "-", "&" ]
+keywordsOps   =  [ "=", "-", "&", "\\\\" ]
 
 scanHandle :: [String] -> [String] -> String -> String -> FilePath -> Handle -> IO [Token]
 scanHandle keywordstxt keywordsops specchars opchars fn fh
@@ -128,7 +128,9 @@ pAGItf
         pAGItf              =   sem_AGItf_AGItf <$ pKey "preamble" <*> pString <*> pDecls
         pDecls              =   pFoldr (sem_Decls_Cons,sem_Decls_Nil) pDecl
         pDecl               =   sem_Decl_Judge <$ pKey "scheme" <*> pNm <* pKey "=" <*> pJExpr <* pKey "=" <*> pJExpr
-                            <|> sem_Decl_Rules <$ pKey "rules" <*> pNm <*> (Just <$ pKey "." <*> pNm' <|> pSucceed Nothing) <*> pString <* pKey "=" <*> pRules
+                            <|> sem_Decl_Rules <$  pKey "rules" <*> pNm
+                                               <*> (Just <$ pKey "." <*> pNm' <|> pSucceed Nothing)
+                                               <*> pString <* pKey "=" <*> pRules
         pRules              =   pFoldr (sem_Rules_Cons,sem_Rules_Nil) pRule
         pRule               =   sem_Rule_Rule
                                 <$> (True <$ pKey "&" <|> pSucceed False)
@@ -141,7 +143,7 @@ pAGItf
                             <|> sem_RExpr_Cond <$ pKey "cond" <*> pJExpr
         pJudge              =   sem_Judge_Judge <$ pKey "judge" <*> pNm <*> pJExpr
         pJExpr              =   pChainr pOp pJExprApp
-                            where pOp = (\s ss -> sem_JExpr_Op s (ss (sem_JExpr_Var (mkLhs2TeXSafe s)))) <$> pSym <*> pJExprSel
+                            where pOp = (\s ss -> sem_JExpr_Op s (ss (sem_JExpr_Var s))) <$> pSym <*> pJExprSel
         pJExprApp           =   mkApp alg <$> pList1 (pJExprBase <**> pJExprSel) <|> pSucceed sem_JExpr_Empty
         pJExprBase          =   sem_JExpr_Paren <$> pParens pJExpr
                             <|> sem_JExpr_Var <$> pNm'
@@ -401,7 +403,7 @@ mkVerb :: PP_Doc -> PP_Doc
 mkVerb p = ppPacked "@" "@" p
 
 switchLaTeXLhs :: PP a => a -> PP_Doc
-switchLaTeXLhs = ppVBar
+switchLaTeXLhs p = ppVBar (" " >|< p >|< " ")
 
 mkInLhs2Tex :: PP_Doc -> PP_Doc
 mkInLhs2Tex p = ppVBar (p >|< " ")

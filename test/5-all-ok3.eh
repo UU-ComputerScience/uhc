@@ -4,4 +4,4 @@ let data X a = X b (b->a)
         v1 = X (3,4) (\(x,y) -> x)
         v2 = X 3 id
         f = \(X x g) -> g x
-     in v1
+     in f (X (f v1) id)

@@ -1,0 +1,4 @@
+#!/bin/sh
+P=/usr/local/lib/uust/jar/jazy.jar
+cd `dirname $1`
+java -classpath $P:. `basename $1`

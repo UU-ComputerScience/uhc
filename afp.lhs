@@ -48,7 +48,7 @@
 %let incl08		= False
 %endif
 
-%if phd || forCC2005 || asSlides || onlyCurrentWork
+%if phd || forESOP05 || asSlides || onlyCurrentWork
 %let incl09		= True
 %else
 %let incl09		= False
@@ -84,7 +84,7 @@
 %let inclInx	= False
 %endif
 
-%if forCC2005
+%if forESOP05
 %let chapAsArticle	= True
 %else
 %let chapAsArticle	= False
@@ -462,7 +462,7 @@
 %endif
 
 % title
-%if forCC2005
+%if forESOP05
 \title{Explicit implicit parameters}
 %else
 \title{Typing Haskell with an Attribute Grammar}
@@ -573,7 +573,7 @@ WWW home page:
 \begin{abstract}
 %endif
 
-%if forCC2005
+%if forESOP05
 In functional languages functions take arguments which are either passed explicitly or implicitly.
 Probably the best known example of the latter is the class system in Haskell where
 dictionaries are passed as evidence for class predicates.
@@ -6696,7 +6696,7 @@ Coercion (of records), related to subsumption
 \part{Implicitness}
 %endif
 
-%if not forCC2005
+%if not forESOP05
 \section{EH 9: explicit implicitness}
 \label{ehc9}
 %endif
@@ -6707,7 +6707,7 @@ Coercion (of records), related to subsumption
 %format pia         = pi "^a"
 %format piasigma    = pia "_{" sigma "}"
 
-%if forCC2005
+%if forESOP05
 \subsection{Introduction}
 
 The Haskell class system originally introduced by both Wadler \cite{wadler88how-ad-hoc-poly}
@@ -6834,7 +6834,7 @@ is available, bindings with underlying primitives are omitted, hence the nonsens
 \end{itemize}
 
 The syntax for predicates appearing in types however differs from the notation used in Haskell.
-For example, the type of |f| from the example would be printed by a Haskell compiler as:
+For example, the type of |f| from the example would be printed by Hugs \cite{www03hugs} as:
 
 \begin{code}
 f :: forall a b . (Eq a, Eq b) => b -> b -> a -> a -> (Bool,Bool)
@@ -6851,7 +6851,151 @@ The EH notation with |(#| and |#)| surrounding the predicate and
 a function arrow |->| instead of a predicate arrow |=>|
 stresses the fact that an implicit parameter is what in the end is, a parameter,
 be it a special one.
+The difference is purely a syntactic one as the notation used by Haskell can be seen
+as syntactic sugar for EH's notation.
 
+The inferred type for |f| also reflects another design choice, namely to place
+predicates and quantifiers in a type signature for a function as much to the right as possible.
+If quantification over a type variable can take place, the quantifier is placed just before the first occurrence of the
+type variable in the type signature.
+This is also done for a predicate referring to a type variable.
+The idea is to instantiate a quantified type variable or pass an implicit parameter
+corresponding to a predicate as late as possible, later being defined as the
+order in which parameters are passed.
+In this way polymorphism can be retained as long as possible by the type inferencer.
+
+The position of predicates in a type signatures corresponds to the actual passing
+of their implicit parameters.
+A function expects its arguments in the order specified by the type signature.
+However, if the type inferencer is not given any clue about a implicit parameters of a function,
+an arbitrary order will be chosen.
+The type signature for |f| inferred by Hugs demonstrates this.
+In the presence of explicit passing of implicit parameters this does not work anymore as
+the programmer has to know at which parameter position an implicit parameter must be passed.
+For example, if the implicit parameter for the predicate |Eq a| for the third and fourth
+regular parameter must be passed as the first implicit parameter the EH type signature for |f| should
+be explicitly specified as:
+
+\begin{code}
+f :: (# Eq b #) -> (# Eq a #) -> a -> a -> b -> b -> (Bool,Bool)
+\end{code}
+
+However, the obligation to specify a full type signature may become a problem if those type signatures
+become too large. Very often a programmer only wants to be explicit about a certain part of the
+type for a function.
+EH allows this by means of partial type signatures.
+The type signature for |f| with the aforementioned restriction alternatively can be specified as:
+
+\begin{code}
+f :: (# Eq b #) -> (# ... #) -> ... -> ... -> b -> b -> ...
+\end{code}
+
+Or, if the implicit parameter related to the first and second parameter needs to have
+a fixed position:
+
+\begin{code}
+f :: (# Eq a #) -> (# ... #) -> a -> a -> ...
+\end{code}
+
+The EH type inferencer will fill in (or infer) the missing parts yielding
+|forall a . (# Eq a #) -> forall b . (# Eq b #) -> b -> b -> a -> a -> (Bool,Bool)|
+and
+|forall a . (# Eq a #) -> a -> a -> forall b . (# Eq b #) -> b -> b -> (Bool,Bool)|
+respectively.
+
+The |...| in the type signature specifies a part of the signature for which the programmer
+leaves the task of finding what it should be to the type inferencer.
+For the remainder of this paper we will call |...| a \IxAsDef{type wildcard} or an \IxAsDef{implicits wildcard}
+if between |(#| and |#)|.
+Although the given example may suggest that a type wildcard may be used anywhere in a type,
+the use of a type wildcard actually has some restrictions.
+\begin{itemize}
+\item
+A type wildcard can only occur between |->|'s, if any, that is on argument or result positions.
+A type wildcard itself may bind to a polymorphic type with predicates.
+In other words, impredicativeness is allowed.
+This is particularly convenient for type wildcards on a function result position as
+demonstrated by
+|f :: (# Eq a #) -> (# ... #) -> a -> a -> ...|
+yielding
+|forall a . (# Eq a #) -> a -> a -> forall b . (# Eq b #) -> b -> b -> (Bool,Bool)|
+after further type inferencing.
+\item
+If the non type wildcard part of the type signature refers to type variables, all uses of
+this type variable must be specified.
+This is necessary because the type signature will be quantified over the explicitly introduced
+type variables in order to allow its polymorphic use.
+If this restriction is not satisfied the type variable may end up on a type wildcard position without
+being quantified over, creating a kind of dangling type reference.
+\item
+An implicits wildcard stands for |>= 0| predicates, in an unspecified order.
+For a sequence of explicit predicates and implicits wildcards there may only be one implicits wildcard, at
+the end of this sequence.
+Multiple occurrences of an implicits wildcard or in between explicit predicates would defeat the purpose
+of being partially explicit. For example, the type signature |(# Eq b #) -> (# ... #) -> (# Eq c #) -> ...|
+would make the position of |(# Eq c #)| unknown.
+\item
+The absence of an implicits wildcard means \emph{no} predicates are allowed.
+\end{itemize}
+
+We make use of the fact that predicates also stand for actual values in the implementation when
+passing an implicit parameter explicitly.
+A class declaration introduces a record type for the predicate introduced by the class declaration.
+For example, the class declaration for |Eq| introduces |(eq :: a -> a -> Bool)| as the type
+of the dictionary to be passed as evidence for predicate |Eq a|.
+Now, instead of letting the compiler determine which implicit parameter should be passed we construct
+a dictionary ourselves:
+
+\begin{code}
+%%9srcfile<test/9-eq2.eh%%>
+\end{code}
+
+The constructed dictionary must be of the expected dictionary type.
+This condition is made explicit by means of |:>| (appearing in the source text as @:>@).
+The used notation suggests a combination of ``is of type'' and ``is evidence for''.
+Here ``is of type'' means that the dictionary must be of the record type introduced by the class
+The phrase ``is evidence for'' means that the dictionary is used instead of
+the proof evidence which by default is computed by the predicate proving machinery of the compiler
+\cite{jones94phd-qual-types}.
+In the example these conditions are fullfilled.
+
+By explicitly providing a dictionary the default choice made by the compiler is overridden.
+This can also be used in situations where the compiler fails to make a choice, for
+example in the presence of overlapping instances:
+
+\begin{code}
+%%9srcfile<test/9-eq3.eh%%>
+\end{code}
+
+The dictionaries computed as a result of an instance declaration can be given a name (denoted by |<:|)
+for later use.
+In the example the overlapping instance error is avoided by letting the programmer instead
+of the compiler make the choice.
+It is precisely this feature that opens up the possibility of getting rid of Haskell library functions like
+|nubBy| \cite{kahl01named-instance}.
+Haskell's List module defines |nub| in terms of |nubBy|:
+
+\begin{code}
+nub                      ::  (Eq a) => [a] -> [a]
+nub                      =   nubBy (==)
+
+nubBy                    ::  (a -> a -> Bool) -> [a] -> [a]
+nubBy eq []              =   []
+nubBy eq (x:xs)          =   x : nubBy eq (filter (\y -> not (eq x y)) xs)
+\end{code}
+
+whereas the use of explicitly passed implicit parameters allows
+the removal of |nubBy| from the library as |nub| may now
+directly be parameterized with a different equality function,
+defined in EH:
+
+\begin{code}
+nub                      ::  (Eq a) => [a] -> [a]
+nub []                   =   []
+nub (x:xs)               =   x : nub (filter (x /=) xs)
+
+f ... = ... nub (# Eq a :> 
+\end{code}
 
 
 \subsection{Type system}
@@ -6863,7 +7007,7 @@ be it a special one.
 \subsection{Related work}
 \label{ehc09-others}
 
-Implicit parameters \cite{lewis00implicit-param}.
+Implicit parameters \cite{jones99impl-param,lewis00implicit-param}.
 
 In Scheffczyk's work \cite{kahl01named-instance,scheffczyk01mth-namedinst}:
 \begin{itemize}
@@ -7244,6 +7388,7 @@ The translation of the application reflects this.
 \rulerCmdUse{rules.fit9.app}
 \rulerCmdUse{rules.fit9.predSymmetric}
 \rulerCmdUse{rules.fit9.predAsymmetric}
+\rulerCmdUse{rules.fit9.rec}
 
 
 
@@ -7251,7 +7396,7 @@ The translation of the application reflects this.
 
 Named instances \cite{kahl01named-instance}.
 
-%endif %% forCC2005
+%endif %% forESOP05
 
 %}
 

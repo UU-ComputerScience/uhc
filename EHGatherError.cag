@@ -50,6 +50,7 @@ SEM Decl
 %%[4
 SEM Expr
   | Con         lhs         .  errL         :=  mkNestErr @pp (@nmErrs ++ foErrL @fo)
+  | TypeAs      lhs         .  errL         =   mkNestErr @pp (@expr.errL ++ @tyExpr.errL ++ foErrL @fo)
 
 SEM PatExpr
   | Con         lhs         .  errL         =   mkNestErr @pp (@nmErrs ++ foErrL @fo)
@@ -79,11 +80,18 @@ SEM KiExpr
 
 %%[7
 SEM PatExpr
-  | Rec         lhs         .  errL         =   mkNestErr @pp (@recPatExpr.errL ++ foErrL @fo)
+  | Rec         lhs         .  errL         =   mkNestErr @pp (@recPatExpr.errL)
+
+SEM RecPatExpr
+  | Empty       lhs         .  errL         =   mkNestErr @pp (foErrL @fo)
+  | Ext         lhs         .  errL         =   mkNestErr @pp (@recPatExpr.errL ++ @patExpr.errL ++ foErrL @fo)
 
 SEM Expr
-  | Rec         lhs         .  errL         =   mkNestErr @pp (@recExpr.errL ++ foErrL @fo)
-  | Sel         lhs         .  errL         =   mkNestErr @pp (@expr.errL ++ @nmErrs ++ foErrL @fo)
+  | Rec         lhs         .  errL         =   mkNestErr @pp (@recExpr.errL)
+
+SEM RecExpr
+  | Empty       lhs         .  errL         =   mkNestErr @pp (foErrL @fo)
+  | Ext         lhs         .  errL         =   mkNestErr @pp (@recExpr.errL ++ @expr.errL ++ foErrL @foKnRec)
 %%]
 
 %%[9
@@ -96,7 +104,7 @@ SEM Expr
                                                       ++ @arg.errL ++ @body.errL)
   | AppTop      lhs         .  errL         :=  mkNestErr @pp (@prfErrs ++ @expr.errL)
   | AppImpl     lhs         .  errL         =   mkNestErr @pp
-                                                    (@argErrs ++ @func.errL ++ @arg.errL ++ @argPr.errL)
+                                                    (@knImplsErrs ++ @argErrs ++ @func.errL ++ @arg.errL ++ @argPr.errL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
