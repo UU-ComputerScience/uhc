@@ -12,10 +12,13 @@
 %%[8 hs import(EHCommon,UU.Pretty) export(GrAGItf(..), GrModule(..), GrExpr(..), GrBind(..), GrBindL) 
 %%]
 
-%%[8 hs export(GrAlt(..), GrAltL, GrPat(..), GrPatL, GrVal(..), GrValL, GrTag(..)) 
+%%[8 hs export(GrAlt(..), GrAltL, GrPat(..), GrPatL, GrVal(..), GrValL, GrTag(..),GrAdapt(..),GrAdaptL,GrSplit(..),GrSplitL) 
 %%]
 
 %%[8 hs export(GrTagCateg(..),grBox,grLclNmSupplyL) 
+%%]
+
+%%[8 hs export(GrNodeAdapt(..),grRecTag) 
 %%]
 
 %%[8 import(GrinCodeAbsSyn)
@@ -29,16 +32,31 @@ DERIVING *     : Show, Eq
 %%[8 hs
 data GrTagCateg
   =  GrTagCon
+  |  GrTagHole
+  |  GrTagRec
   |  GrTagApp
   |  GrTagFun
   |  GrTagPApp {grtgNeeds :: Int}
-  deriving (Show,Eq,Ord)
+  deriving (Show,Eq)
 
 instance PP GrTagCateg where
-  pp GrTagCon = pp "C"
-  pp GrTagApp = pp "A"
-  pp GrTagFun = pp "F"
+  pp GrTagCon   = pp "C"
+  pp GrTagHole  = pp "H"
+  pp GrTagRec   = pp "R"
+  pp GrTagApp   = pp "A"
+  pp GrTagFun   = pp "F"
   pp (GrTagPApp need) = pp "P/" >|< pp need
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Row/record
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+data GrNodeAdapt = GrNodeUpd | GrNodeExt deriving (Show,Eq)
+
+grRecTag :: GrTag
+grRecTag = GrTag_Lit GrTagRec 0 hsnRec
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

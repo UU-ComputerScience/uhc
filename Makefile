@@ -151,6 +151,8 @@ RULER_DOC_PDF		:= $(RULER_DIR)/RulerDoc.pdf
 
 RULER_SRC			:= $(RULER_DIR)/$(RULER_AG)
 
+CORE_TARG			:= grin
+
 
 LHS2TEX_POLY_MODE	:= --poly
 # LHS2TEX_POLY(src file, dst file)

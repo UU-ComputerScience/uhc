@@ -79,9 +79,12 @@ scan opts pos input
 %%[8
    scanDollarIdent :: String -> (String,Int,String)
    scanDollarIdent []           = ("",0,[])
-   scanDollarIdent cs@(c:s)     | isSpace c || isSymbol c
+   scanDollarIdent ('$':c:s)    | not (isSpace c)
+                                = let (str,w,s') = scanDollarIdent s
+                                  in  (c:str,w+2,s')
+   scanDollarIdent cs@(c:s)     | isSpace c || isSymbol c || isOpsym c
                                 = ("",0,cs)
-   scanDollarIdent cs@(c:s)     = let (str,w,s') = scanDollarIdent s
+   scanDollarIdent (c:s)        = let (str,w,s') = scanDollarIdent s
                                   in  (c:str,w+1,s')
 %%]
 

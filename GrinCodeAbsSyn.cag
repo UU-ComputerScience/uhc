@@ -58,6 +58,8 @@ TYPE GrAltL     =   [GrAlt]
 DATA GrVal
   | Node        tag             : GrTag
                 fldL            : GrValL
+  | NodeAdapt   nm              : {HsName}
+                fldL            : GrAdaptL
   | Tag         tag             : GrTag
   | Empty
   | LitInt      int             : {Int}
@@ -65,15 +67,31 @@ DATA GrVal
 
 TYPE GrValL     =   [GrVal]
 
+DATA GrAdapt
+  | Upd         off             : GrVal
+                val             : GrVal
+  | Ext         off             : GrVal
+                val             : GrVal
+
+TYPE GrAdaptL   =   [GrAdapt]
+
 DATA GrPat
   | Node        tag             : GrTag
                 fldL            : {[HsName]}
+  | NodeSplit   nm              : {HsName}
+                fldL            : GrSplitL
   | Tag         tag             : GrTag
   | Empty
   | LitInt      int             : {Int}
   | Var         nm              : {HsName}
 
 TYPE GrPatL     =   [GrPat]
+
+DATA GrSplit
+  | Sel         nm              : {HsName}
+                off             : GrVal
+
+TYPE GrSplitL   =   [GrSplit]
 
 DATA GrTag
   | Lit         categ           : {GrTagCateg}
@@ -85,6 +103,8 @@ DATA GrTag
 
 %%[8
 SET AllBind     =   GrBind GrBindL
-SET AllExpr		=	GrExpr GrAlt GrAltL GrPat GrPatL GrTag GrVal GrValL
-SET AllGrNT     =   GrModule AllExpr AllBind 
+SET AllAdapt    =   GrAdapt GrAdaptL
+SET AllSplit    =   GrSplit GrSplitL
+SET AllExpr     =   GrExpr GrAlt GrAltL GrPat GrPatL GrTag GrVal GrValL
+SET AllGrNT     =   GrModule AllExpr AllBind AllAdapt AllSplit
 %%]
