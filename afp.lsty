@@ -23,7 +23,11 @@
 \newenvironment{RulesFigure}[3]{%
   \def\RFCap{#2}
   \def\RFLab{#3}
+%if forESOP05
+  \begin{figure}[t]
+%else
   \begin{figure}[htbp]
+%endif
   \begin{tabular}{P}
   \hline
   \fbox{#1}

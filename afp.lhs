@@ -593,6 +593,8 @@ We also describe how this extension can be implemented for Haskell.
 The implementation also gives us the additional bonus of partial type signatures,
 liberating the programmer from the obligation to specify either full signatures
 or not to specify a signature at all.
+To our knowledge the implementation is the first to handle these features
+in combination with existentials and higher ranked polymorphic types.
 %else
 Much has been written about type systems.
 Much less has been written about implementing type systems.
@@ -6758,9 +6760,8 @@ instance Eq Bool where
   ...
 \end{code}
 
-The compiler turns these declarations into records (dictionaries) containing the functions as fields,
-usually called a \IxAsDef{dictionary}.
-An explicit verson of this internal machinery reads:
+The compiler turns these declarations into records (dictionaries) containing the functions as fields.
+An explicit version of this internal machinery reads:
 
 \begin{code}
 data EqDict a  = EqDict {eqDictEq :: a -> a -> Bool}
@@ -6798,7 +6799,7 @@ because as a programmer we cannot easily override the choices made by the compil
 Second, class predicates are considered somewhat special in the sense that
 in a type signature predicates may only occur at the beginning, preceding the
 rest of the type in which no predicates may occur, forming what usually is called a type scheme.
-In this way predicates as seen from a programmers viewpoint loose some of its first-classness.
+In this way predicates as seen from a programmers point of view loose some of its first-classness.
 This is the price to be paid for keeping the type inferencing process decidable.
 
 We intend to remedy these limitations in this paper by allowing
@@ -6808,7 +6809,7 @@ We intend to remedy these limitations in this paper by allowing
 \item explicit specification of (parts of a) type.
 \end{itemize}
 
-These problems also have been addressed by Scheffczyk \cite{scheffczyk01mth-namedinst,kahl01named-instance}
+Some of these problems also have been addressed by Scheffczyk \cite{scheffczyk01mth-namedinst,kahl01named-instance}
 by giving names to dictionaries for later use.
 In \secRef{ehc09-others} we will discuss the differences between our and their approach.
 
@@ -6840,9 +6841,10 @@ elements from a list:
 %%9srcfile<test/9-eq-nub.eh%%>
 \end{code}
 
-Backwards compatibility of EH with Haskell is maintained as much as possible.
-However, at the same time EH is also kept as simple as possible yet includes additional
-features too. We point out some of these, each item corresponding to the commented number in the example.
+In general, we designed EH to be as compatible as possible with Haskell,
+as simple as possible and to be an extension of Haskell.
+By definition these design constraints are contradictory.
+We point out some of the differences; each item corresponds to the commented number in the example.
 
 \begin{enumerate}
 \item
@@ -6906,18 +6908,20 @@ is an unordered set for which Haskell does not prescribe an order.
 However, if implicit parameter are to be passed explicitly, the order of the predicates
 is important as it tells us on which argument position a value for a predicate is expected.
 In EH, the order of the predicates in a type signatures also specifies the order
-in which the corresponding implicit parameter need to be passed.
+in which the corresponding implicit parameters need to be passed.
 If |f| needs to be passed implicit parameters explicitly,
-a type signature is required to be explicit in the implicit parameter passing order.
-For example, if indeed the dictionary corresponding to the predicate over the
+a type signature is required for |f|.
+The type signature explicitly states the order of implicit parameters.
+For example, if the dictionary corresponding to the predicate over the
 type of the third and fourth parameter of |f| needs to be passed first,
+as suggested by the type inferred by Hugs,
 its type signature has to be specfied accordingly:
 
 \begin{code}
 f :: forall a b . (Eq b, Eq a) => a -> a -> b -> b -> (Bool,Bool)
 \end{code}
 
-If, for example, the dictionary for the first and second argument needs to be passed,
+If, for example, the dictionary for the first and second argument needs to be passed first,
 this is specified by swapping the two predicates:
 
 \begin{code}
@@ -6935,14 +6939,15 @@ This notation more closely corresponds to the nature of its implementation,
 namely parameter passing.
 The use of |->| instead of |=>| reflects this interpretation.
 For the remainder of this paper we will not use this notation for types;
-only value expressions will use |(#| and |#)| to denote an implicit parameter.
+only value expressions will use |(#| and |#)| to denote an explicitly passed
+implicit parameter.
 
 Explicitly specifying type signatures can be a burden for the programmer,
 especially when
 types become large and only a specific part of the type needs to be specified
 explicitly. EH therefore allows partial type signatures. For example,
-if we only want to specify the restriction of the third and fourth parameter,
-the following signature will be sufficient:
+if we only want to specify the aforementioned restriction of the third and fourth parameter,
+the following signature is be sufficient:
 
 \begin{code}
 f :: forall    b . (Eq b,  ...   ) => ...  -> ...  -> b -> b -> ...
@@ -6989,7 +6994,7 @@ This is necessary because the type signature will be quantified over explicitly 
 type variables in order to allow its polymorphic use.
 \item
 An implicits wildcard stands for |>= 0| predicates, in an unspecified order.
-For a sequence of explicit predicates and implicits wildcards there may only be one implicits wildcard, at
+For a sequence of explicit predicates and implicits wildcards only one implicits wildcard is allowed, at
 the end of this sequence.
 Multiple occurrences of an implicits wildcard or in between explicit predicates would defeat the purpose
 of being partially explicit. For example, the type signature |(Eq b, ..., Eq c) => ...|
@@ -7025,7 +7030,6 @@ The phrase ``is evidence for'' means that the dictionary |e| is used instead of
 the proof evidence for an implicit parameter of a function (|f|).
 By default, this value is computed by the predicate proving machinery of the compiler
 \cite{jones94phd-qual-types}.
-In the example these conditions are fulfilled.
 
 By explicitly providing a dictionary the default choice made by the compiler is overridden.
 This can also be used in situations where the compiler fails to make a choice, for
@@ -7171,11 +7175,11 @@ For convenience, the environment |Gamma| holds bindings for value identifiers as
 We allow ourselves the omission of
 a vector notation if this is evident from the context.
 Concatenation is denoted with a comma ','.
-Identifiers can be lowercase |ident| for values as well as uppercase |identc| of type, class names and data constructors,
+Identifiers |ident| can be lowercase |identv| for values as well as uppercase |identc| of type, class names and data constructors,
 thereby following the Haskell convention.
 If the |sigma| in |pi :> Transl : sigma| is irrelevant in the context of a rule it is omitted.
 
-Furthermore, we use a term language based on Haskell, that is, lambda calculus with EHC specific extensions
+Furthermore, we use a term language based on Haskell, that is, lambda calculus with EH specific extensions
 which in turn are similar to those in Haskell unless explicitly stated otherwise.
 A translation |Transl| itself is also a term, be it of a restricted form.
 We will not make this more explicit.
@@ -7194,32 +7198,28 @@ It is then at least clear which rule applies for a particular language construct
 Algorithmic variants of typing rules usually also incorporate additional information which
 is passed from and to the premises and conclusions of a rule.
 This additional information corresponds to information passing up and down a syntax tree,
-or in terms of an attribute grammar, they are the synthesized and inherited attributes.
+or in terms of an attribute grammar, this information is encoded as synthesized and inherited attributes.
 For the implementation of explicit implicit parameters this is also the case,
 or even worse,
 in particular due to a combination of several factors:
 
-=====================================================
-
-
-
 \begin{itemize}
 \item
-The structure of the source language cannot be used to determine if the rule should be applied,
-the term in both the premise and the conclusion is the same.
+The structure of the source language cannot be used to determine if the rule should be applied:
+the term |e| in the premise and the conclusion is the same.
 As a consequence, the structure of the corresponding abstract syntax tree cannot drive the
 decision to use the rule or not.
 Furthermore, the predicate |pi| is not mentioned in the conclusion so the structure of a syntax tree
 will not help here too.
-In other words, the necessity to pass implicit parameter may spontaneously pop up at any expression.
+In other words, the necessity to pass an implicit parameter may spontaneously pop up at any expression.
 \item
 In the presence of type inferencing nothing may be known about |e| at all, let alone which implicit parameters it
-might take.
+may take.
 This information usually only becomes available after generalization of the inferred type of |e|.
 \item
 These problems are usually circumvented by limiting the type language for types used during
-inferencing to those types which do not contain a predicate.
-By effectively stripping a type from both predicates and quantifiers standard Hindley-Milner type
+inferencing to those types which do not contain predicates.
+By effectively stripping a type from both its predicates and quantifiers standard Hindley-Milner type
 inference then still is possible.
 However, we allow predicated as well as quantified types to participate in type inferencing.
 Consequently, a predicate as well as a quantifier can be present in any type encountered during
@@ -7238,44 +7238,70 @@ representing a yet unknown series (|>= 0|) of implicit parameters, or,
 more accurately their corresponding predicates.
 These implicits variables are used in a type inferencing/checking algorithm which explicitly
 deals with expected (or known) types |sigmak| as well as inferred type information.
-The key aspects are expressed in a slightly adapted typing rule which now makes explicit
-that we can expect implicit parameters anywhere:
 
-\[
-\rulerCmdUse{rules.expr9B.e-pred9B}
-\]
+\rulerCmdUse{rules.expr9B}
 
-The known type |sigmak| belongs to the context making a judgement true.
-In terms of an implementation this type travels top-to-bottom
-and is used for type checking.
+These key aspects are expressed in a slightly adapted typing rule shown
+in \figRef{rules.expr9B}.
+This rule makes two things explicit:
 
-The type language needs to be extended by an implicits variable |pvar|.
-An implicits variable can be introduced in a type signature
-by means of an implicits wildcard |(# ... #)|.
+\begin{itemize}
+\item
+The context contains the expected type |sigmak| of |e|.
+The implementation of this rules maintains the invariant that |e| has a type |sigma|
+which is a subtype of |sigmak|, |sigma| is said to be subsumed by |sigmak|.
+This also involves coercions but in this paper we will not concern us with that additional aspect.
+\item
+An explicit parameter can be expected anywhere, this is now made explicit by stating that
+the known type of |e| can have an additional sequence of implicit parameters in front.
+This is expressed by letting the expected type in the premise be |pvar -> sigmak|.
+\end{itemize}
+
+The idea is that this implicits variable makes explicit that we can expect a sequence of |>= 0| implicits parameters
+and at the same time gives an identity to this sequence.
+It requires the type language to be extended by an implicits variable |pvar| (or `pivar'),
+also corresponding to the dots "..." in the source language for predicates:
 
 \begin{code}
-pi     =  C ^^ Vec(sigma) | pvar
+pi     =  identc ^^ Vec(sigma) | pvar
 \end{code}
 
-This typing \ruleRef{e-pred9B} still does not give much of a help as to when it should be applied.
-However, as we only have to deal with a limited amount of language constructs,
-we can use case analysis on the source language constructs.
-In this paper we only look at function application:
+In terms of an algorithm, the expected type |sigmak| travels top-to-bottom in the
+abstract syntax tree and is used for type checking, whereas |sigma| travels bottom-to-top
+and holds the inferred type.
+If a fully specified expected type |sigmak| is passed downwards, |sigma| will be equal to this type.
 
-\[
-\rulerCmdUse{rules.expr9.app.e-app-impl9-impl}
-\]
+
+This typing \ruleRef{e-pred9B} still does not give much of a help as to when it should be applied.
+However, as we only have to deal with a limited number of language constructs,
+we can use case analysis on the source language constructs.
+In this paper we only look at function application, for which the relevant rules are shown
+in \figRef{rules.expr9.C}.
+These rules also use an additional parameter |fiopt| influencing 
+certain aspects of subsumption |<=|.
+Also, the rule is more explicit in its handling of constraints computed by the rule labeled |fit|
+for the subsumption |<=|:
+
+\rulerCmdUse{rules.expr9.C}
+
+\begin{code}
+Cnstr  =  tvar :-> sigma | pvar :-> pi , pvar | pvar :-> pempty
+\end{code}
+
+The mapping from type variables |tvar| constitutes the usual substitution for type variables.
+The second alternative maps an implicit variable to a list of predicates.
 
 From bottom to top, this rule reads as follows.
+To keep matters simple we ignore the handling of constraints and the use of |fiopt|.
 The type for the application itself is expected to be |sigmak|,
 which in general will have the structure |pvark -> tvark|.
 This structure is enforced and checked by the subsumption check described
 by the rule |fit|.
 We will not look into the subsumption rules; it performs unification, subsumption,
 predicate entailment and computation of necessary coercions.
-For this discussion it only is relevant to know that if a |pvar| cannot be matched to
+For this discussion it only is relevant to know that if an |pvar| cannot be matched to
 a predicate it will be constrained to |pvar :-> pempty|.
-In other words, we start with assuming that implicits may be anywhere and attempt
+In other words, we start with assuming that implicits may be everywhere and attempt
 to proof the contrary.
 The subsumption check |<=| gives a possible empty sequence of predicates |Vec(piak)| and the
 result type |sigmark|.
@@ -7289,50 +7315,39 @@ forms the expected type for |e2|.
 The predicates |Vec(pia)| need to be proven and evidence computed.
 Finally, all the translations together with the computed evidence forming the actual implicit parameters |Vec(pia)|
 are used to compute a translation for the application which accepts the implicit parameters it is supposed to accept.
-The body of this lambda expression first applies the proven implicit parameters followed
-by the normal parameter.
+The body of this lambda expression contains the actual application itself.
+The implicit parameters are passed before the argument itself.
 
-The subsumption check |<=| also computes constraints for type variables and implicits variables:
-
-\begin{code}
-Cnstr  =  tvar :-> sigma | pvar :-> pi , pvar | pvar :-> pempty
-\end{code}
-
-The mapping from type variables |tvar| constitute the usual substitution for type variables.
-The constraints for implicits variables map implicits variables to a list of predicates.
-
-Even though the preceding rule already provides a fair amount of detail,
+Even though the rule for implicitly passing an implicit parameter already provides a fair amount of detail,
 some issues remain hidden.
 For example, the typing judgement for |e1| gives a set of predicates |pia| for which the corresponding
 evidence is passed as implicit parameters.
-The rule suggest this information is readily available in an actual implementation of the rule.
-However, assuming |e1| is a |let| bound function for which the type is inferred, this information will become available
+The rule suggests that this information is readily available in an actual implementation of the rule.
+However, assuming |e1| is a |let| bound function for which the type is being inferred,
+this information will become available
 when the bindings in a |let| expression are generalized \cite{jones99thih},
 higher in the corresponding abstract syntax tree.
-Only then the presence and positioning of predicates in the type of |e1| is determined.
+Only then the presence and positioning of predicates in the type of |e1| can be determined.
 This complicates the implementation because this information has to be redistributed over
 the abstract syntax tree.
 
-Of all remaining rules we only show the explicit parameterization of an implicit parameter:
-
-\[
-\rulerCmdUse{rules.expr9.app.e-app-impl9-expl}
-\]
-
-This rule is simpler than the rule for normal application because all the required type information
+The second rule in \figRef{rules.expr9.C} for explicitly passing an implicit parameter
+is simpler than the rule for normal application because all the required type information
 has been made explicit.
 We now only have to supply the judgement for |e2| with the type |sigmaa| of the evidence for |pia|
 as the expected type for |e2|.
 
+%if False
 The preceding description gives a sketch of the type checking and inferencing performed by EHC,
 many details are omitted.
 For example, the explanation about the subsumption |<=| check implemented by
 the |fit| judgement and its parameterization with additional contextual information |fiopt|.
+%endif
 
 %}
 
 \paragraph{Binding time of instances.}
-One other topic in particular deserves some attention, especially since it deviates from the
+One other topic in particular deserves attention, especially since it deviates from the
 standard semantics of Haskell.
 In the example for |nub|, the invocation of |nub| is parameterized with a modified record:
 
@@ -7344,20 +7359,22 @@ nub  (# (dEqInt | eq := \_ _ -> False) <: Eq Int #)
 In our implementation |Eq|'s function |ne| invokes |eq|, in particular the one provided by
 means of the explicit parameterization.
 In essence, this means a late binding, much in the style employed by object oriented languages.
-This is a choice out of (at least) three alternatives:
+This is a choice out of (at least) three equally expressive alternatives:
 
 \begin{itemize}
 \item Our current solution, late binding as described. The consequence is that
 all class functions now take an additional (implicit) parameter, namely the dictionary where
-the dictionary function has been retrieved from.
-\item Haskell's solution, bind all functions at instance creation time.
+this dictionary function has been retrieved from.
+\item Haskell's solution, where we bind all functions at instance creation time.
 In our |nub| example this would mean that |ne| still will use |dEqInt|'s |eq| instead of the |eq|
 provided in the updated |(dEqInt || eq := \_ _ -> False)|.
 \item A combination of these solutions, for example, default definitions use late binding, instances use Haskell's
 binding.
 \end{itemize}
 
-It is yet unclear which solutions is the best one.
+It is yet unclear which solutions is the best one,
+but we notice that whatever approach is taken the programmer has all the means available to
+express his differing intentions.
 
 
 \subsection{Related work}
@@ -7379,38 +7396,39 @@ Our work differs in several aspects.
 \begin{itemize}
 \item
 Scheffczyk partitions predicates in a type signature into ordered and unordered ones.
-Ordered predicates need to be passed a dictionary explicitly, unordered ones are those
+For ordered predicates one needs to pass an explicit dictionary, unordered ones are those
 participating in the normal predicate proving of the compiler.
 Instances are split likewise into named and unnamed instances.
 Named instances are used for explicit passing and do not participate in the predicate proving of
 the compiler.
 For unnamed instances this is the other way around.
 Our approach allows a programmer to make this partitioning by explicitly stating which
-instances should participate in the proving process.
+instances should participate in the proof process.
 In other words, the policy of how to use the implicit parameter passing mechanism
 is made by the programmer.
 \item
 Named instances and modules populate the same name space, separate from
-the names space occupied by normal values.
+the name space occupied by normal values.
 This is used to implement functors as available in ML \cite{leroy94manif-ty-mod,leroy95appl-func-mod}
 and as described by Jones \cite{jones96paramsig-mod} for Haskell.
 Our approach is solely based on normal values already available.
-Named instances populate a module name space.
+In Scheffczyk work
+named instances populate a module name space.
 Vice versa, modules can be used as implicit parameters.
-Our approach does not introduce a new name space but uses normal values.
+Our approach does not introduce a new name space, but uses normal values.
 These values are explicitly lifted to the `evidence for predicate' domain of the compiler.
 No special syntax is required to perform computations on these values.
 \item
 Our syntax is less concise than the syntax used by Scheffczyk.
 This is probably difficult to repair because of the additional notation
-required to lift normal values to evidence domain. 
+required to lift normal values to the evidence domain. 
 \end{itemize}
 
 The type inferencing/checking algorithm employed in this paper is described
 in greater detail in
 \cite{dijkstra04thag,dijkstra04thag-part1}
-and its implementation is publicly available \cite{dijkstra04ehc-web}
-yet under development.
+and its implementation is publicly available \cite{dijkstra04ehc-web},
+where it is part of a work in progress.
 Similar strategies are described by Pierce
 \cite{pierce00local-type-inference}
 and Peyton-Jones
@@ -7428,19 +7446,17 @@ We feel that this a 'good thing', it should be possible to override decisions ma
 
 The approach taken in this paper still leaves much to be sorted out.
 In particular the relation with functional dependencies of multiparameter type classes,
-existentials,
-dictionary transformers participating in the proving process
+existentials and
+dictionary transformers participating in the proof process
 (as required by Hinze for generics \cite{hinze00derive-type-class})
 
 On a metalevel one can observe that the typing rules incorporate many details,
-up to a point where their simplicity may easily become lost.
+up to a point where their simplicity may easily get lost.
 A typing rule serves well as a specification of the semantics of a language construct,
 but as soon as a typing rule evolves towards an algorithmic variant
 it may well turn out that other ways of describing, in particular attribute grammars
 as used for the implementation of EHC \cite{dijkstra04ehc-web},
 are a better vehicle for expressing implementation aspects.
-
-From a theoretically point of view we have not dealt with ...
 
 %else
 
