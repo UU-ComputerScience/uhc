@@ -32,6 +32,8 @@ SEM Expr
   | AppTop      lhs         .  errL         =   mkNestErr @pp (@expr.errL)
   | IConst CConst
                 lhs         .  errL         =   mkNestErr @pp (foErrL @fo)
+  | TypeAs      lhs         .  errL         =   mkNestErr @pp
+                                                    (@expr.errL ++ @tyExpr.errL ++ foErrL @fo)
 %%]
 
 %%[1.GatherRest
@@ -59,7 +61,6 @@ SEM Decl
 %%[4
 SEM Expr
   | Con         lhs         .  errL         :=  mkNestErr @pp (@nmErrs ++ foErrL @fo)
-  | TypeAs      lhs         .  errL         =   mkNestErr @pp (@expr.errL ++ @tyExpr.errL ++ foErrL @fo)
 
 SEM PatExpr
   | Con         lhs         .  errL         =   mkNestErr @pp (@nmErrs ++ foErrL @fo)

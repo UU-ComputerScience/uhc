@@ -24,6 +24,7 @@ SEM Expr
                                         >-< @errBodyPP
   | App         loc     .   pp      =   @func.pp >#< @arg.pp
   | Parens      loc     .   pp      =   pp_parens @expr.pp
+  | TypeAs      loc     .   pp      =   @expr.pp >#< "::" >#< @tyExpr.pp
 %%]
 
 %%[1.Base.ExprComplex
@@ -79,9 +80,6 @@ SEM TyExpr
 %%]
 
 %%[4
-SEM Expr
-  | TypeAs      loc     .   pp      =   @expr.pp >#< "::" >#< @tyExpr.pp
-
 SEM PatExpr
   | TypeAs      loc     .   pp      =   @patExpr.pp >#< "::" >#< @tyExpr.pp
 

@@ -113,6 +113,10 @@
 %format tvar2
 %format tvar3
 %format tvar4
+%format tvarv1
+%format tvarv2
+%format tvarv3
+%format tvarv4
 
 %format tcon        = c
 
@@ -187,7 +191,8 @@
 
 %format Top         	= "\top "
 %format Bot         	= "\bot "
-%format ANY				= "\makebox[0cm][l]{\(\top\)}\bot{}"
+% format ANY				= "\makebox[0cm][l]{\(\top\)}\bot{}"
+%format ANY				= "{\aleph}"
 
 %format `union`			= "\cup "
 %format `subset`		= "{\subset}"
@@ -214,7 +219,10 @@
 
 %format AGFeature		= "\mathcal{AG}"
 
-
+%format attr1
+%format attr2
+%format node1
+%format node2
 
 
 %elif style == newcode

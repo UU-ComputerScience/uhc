@@ -159,10 +159,6 @@ DATA Expr
                     body            : Expr
   | AppTop          expr            : Expr
   | Parens          expr            : Expr
-%%]
-
-%%[4
-DATA Expr
   | TypeAs          tyExpr          : TyExpr
                     expr            : Expr
 %%]

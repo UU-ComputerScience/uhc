@@ -98,13 +98,14 @@
  \chunkCmdUse{#1}
 %endif
 }
-\newcommand{\chunkCmdUsePrevLit}[1]{{{\color{blue}\chunkCmdUse{#1}}}}
+\newcommand{\chunkCmdUsePrevLit}[1]{{\color{blue}\chunkCmdUse{#1}}}
 \newcommand{\chunkCmdUsePrev}[1]{\par\chunkRefsExpanded{#1}}
 \newcommand{\chunkCmdUseOnPrev}[2]{%
 %if optExpandPrevRef
 {\par\chunkRefsExpanded{#1}\chunkCmdUseMark{#2}}
 %else
-{\par{\color{blue}...page(s)~\chunkRefs{#1}}\setlength{\parskip}{0cm}\chunkCmdUseMark{#2}}
+{\par{[see page(s)~\chunkRefs{#1}]}\setlength{\parskip}{0cm}\chunkCmdUseMark{#2}}
+% {\par{\color{blue}...page(s)~\chunkRefs{#1}}\setlength{\parskip}{0cm}\chunkCmdUseMark{#2}}
 %endif
 }
 \newcommand{\chunkMark}[1]{%
@@ -124,8 +125,10 @@
 \newcommand{\RuleRef}[1]{Rule~\textsf{#1}}
 
 % referencing
-\newcommand{\figRef}[1]{figure~\ref{#1}}
-\newcommand{\FigRef}[1]{Figure~\ref{#1}}
+% \newcommand{\figRef}[1]{figure~\ref{#1}}
+% \newcommand{\FigRef}[1]{Figure~\ref{#1}}
+\newcommand{\figRef}[1]{Fig.~\ref{#1}}
+\newcommand{\FigRef}[1]{Fig.~\ref{#1}}
 \newcommand{\secRef}[1]{section~\ref{#1}}
 %if llncs || acm
 \newcommand{\pageRef}[1]{}

@@ -15,7 +15,7 @@
 %%[1 hs export(tyArrowArgRes, tyArrowArgsRes, tyArrowArgs, tyArrowRes, tyAppFunArgs, tyProdArgs, tyAppArgs) 
 %%]
 
-%%[2 hs export(TyVarId, TyVarIdL, mkTyVar, mkNewTyVar, mkNewUIDTyVarL, mkNewTyVarL, mkTyFreshProd, mkTyFreshProdFrom, tyEnsureNonBotTop) 
+%%[2 hs export(TyVarId, TyVarIdL, mkTyVar, mkNewTyVar, mkNewUIDTyVarL, mkNewTyVarL, mkTyFreshProd, mkTyFreshProdFrom, tyEnsureNonAny) 
 %%]
 
 %%[3 hs export(mkTyQu, TyVarCateg(..))
@@ -269,9 +269,9 @@ mkNewTyVarL :: Int -> UID -> TyL
 mkNewTyVarL sz u = snd (mkNewUIDTyVarL sz u)
 %%]
 
-%%[2.tyEnsureNonBotTop hs
-tyEnsureNonBotTop :: UID -> Ty -> Ty
-tyEnsureNonBotTop u t = if t /= Ty_Any then t else mkNewTyVar u
+%%[2.tyEnsureNonAny hs
+tyEnsureNonAny :: UID -> Ty -> Ty
+tyEnsureNonAny u t = if t /= Ty_Any then t else mkNewTyVar u
 %%]
 
 %%[3.mkTyQu hs
@@ -381,7 +381,7 @@ tyAppArgs    = snd . tyAppFunArgs
 %%]
 
 %%[1.tyProdArgs hs
-tyProdArgs = tyAppArgs
+tyProdArgs   = tyAppArgs
 %%]
 
 %%[4 hs

@@ -133,7 +133,7 @@ SEM PatExpr
 ATTR AllPatExpr [ | tyCnstr: Cnstr | ty: Ty ]
 
 SEM PatExpr
-  | Var VarAs   loc         .   ty                  :=  tyEnsureNonBotTop @lUniq @lhs.knTy
+  | Var VarAs   loc         .   ty                  :=  tyEnsureNonAny @lUniq @lhs.knTy
   | VarAs       patExpr     .   knTy                =   @ty
 %%]
 
@@ -163,7 +163,7 @@ SEM PatExpr
   | Con         loc         .   (knResTy,_)         =   tyArrowArgRes @patFunTy
                             .   ty                  :=  foTy @fo
                 lhs         .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
-  | Var VarAs   loc         .   ty                  :=  tyInst1Exists @lUniq2 (tyEnsureNonBotTop @lUniq @lhs.knTy)
+  | Var VarAs   loc         .   ty                  :=  tyInst1Exists @lUniq2 (tyEnsureNonAny @lUniq @lhs.knTy)
 %%]
 
 %%[4_2.Var

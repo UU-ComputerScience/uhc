@@ -502,13 +502,13 @@ rules fit1 "Rules for fit" =
     judge fit1 :- sigma.1.r <= sigma.2.r : sigma..r
     -
     judge fit1 :- (sigma.1.a -> sigma.1.r) <= (sigma.2.a -> sigma.2.r) : (sigma..a -> sigma..r)
-  &
+
   rule f_prod1 =
     judge fit1 :- sigma.1.l <= sigma.2.l : sigma..l
     judge fit1 :- sigma.1.r <= sigma.2.r : sigma..r
     -
     judge fit1 :- ((sigma.1.l,sigma.1.r)) <= ((sigma.2.l,sigma.2.r)) : ((sigma..l,sigma..r))
-
+  &
   rule f_con1 =
     cond I.1 == I.2
     -

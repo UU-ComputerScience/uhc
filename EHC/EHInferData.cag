@@ -20,7 +20,7 @@ SEM Decl
 
 %%[6
 SEM Decl
-  | Data        loc         .   dataTgi             =   mkTGI (Ty_Con @tyNm) (tyEnsureNonBotTop @lUniq @knKi)
+  | Data        loc         .   dataTgi             =   mkTGI (Ty_Con @tyNm) (tyEnsureNonAny @lUniq @knKi)
                 lhs         .   patTyGam            :=  if @hasKiSig  then @lhs.patTyGam
                                                                       else gamAdd @tyNm @dataTgi @lhs.patTyGam
                 loc         .   fo                  =   fitsIn  strongFIOpts emptyFE @lUniq2
@@ -96,12 +96,12 @@ SEM DataConstr
 
 SEM Decl
   | Data        loc         .   dataAltTy           =   mkTySum @constrs.dataAltTyL
-                            .   dataTgi             :=  mkTGIData (Ty_Con @tyNm) (tyEnsureNonBotTop @lUniq @knKi) @dataAltTy
+                            .   dataTgi             :=  mkTGIData (Ty_Con @tyNm) (tyEnsureNonAny @lUniq @knKi) @dataAltTy
 %%]
 
 %%[8
 SEM Decl
-  | Data        loc         .   dataTgi             :=  mkTGIData  (Ty_Con @tyNm) (tyEnsureNonBotTop @lUniq @knKi)
+  | Data        loc         .   dataTgi             :=  mkTGIData  (Ty_Con @tyNm) (tyEnsureNonAny @lUniq @knKi)
                                                                    @dataAltTy @constrs.dataTagMp
 %%]
 
