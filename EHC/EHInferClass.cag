@@ -30,7 +30,7 @@ SEM Decl
                                                                     { rulRuleTy    = tyQuantifyClosed (@ctxtPrExprs.tyL `mkTyArrow` @prExpr.ty)
                                                                     , rulMkEvid    = \_ -> CExpr_Var n
                                                                     , rulNmEvid    = n
-                                                                    , rulCost	   = 10
+                                                                    , rulCost      = 10
                                                                     }
                                                         in   PrIntroGamInfo (tyQuantifyClosed ([@prExpr.ty] `mkTyArrow` @clsTyRec)) k r
                                 .   elimRules       =   let  mkR sub sup supNm
@@ -39,7 +39,7 @@ SEM Decl
                                                                     , rulMkEvid    = \[sub] -> CExpr_Sel sub ctagNone
                                                                                                  (CExpr_Int . fromJust . tyRecOffset supNm $ @clsTyRec)
                                                                     , rulNmEvid    = hsnUnknown
-                                                                    , rulCost	   = 2
+                                                                    , rulCost      = 2
                                                                     }
                                                         in   zipWith (\p n -> (tyPredNm p,mkR @prExpr.ty p n)) @ctxtPrExprs.tyL @supClsNmL
                 lhs             .   patTyGam        =   @lhs.patTyGam
@@ -70,8 +70,9 @@ SEM Decl
                                                             Just p   -> (p,[])
                                                             Nothing  -> (emptyPIGI,[Err_NamesNotIntrod [@introNm]])
                                 .   ctxtToInstTy    =   tyFixTyVars (@ctxtPrExprs.tyL `mkTyArrow` @prExpr.ty)
-                                .   fo              =   fitsIn predFIOpts @lUniq2  (pigiPrToEvidTy @pigi)
-                                                                                   ([snd (tyArrowArgRes @ctxtToInstTy)] `mkTyArrow` mkNewTyVar @lUniq)
+                                .   fo              =   fitsIn  predFIOpts emptyFE @lUniq2
+                                                                (pigiPrToEvidTy @pigi)
+                                                                ([snd (tyArrowArgRes @ctxtToInstTy)] `mkTyArrow` mkNewTyVar @lUniq)
                                 .   instTyRec       =   snd (tyArrowArgRes (foTy @fo))
                 decls           .   tySigGam        =   assocLToGam . assocLMapSnd ValGamInfo . snd . tyRecExts $ @instTyRec
                 loc             .   pegi            =   let  n =  maybe (uidHNm @lUniq) id @mbNm
@@ -79,7 +80,7 @@ SEM Decl
                                                                     { rulRuleTy    = tyQuantifyClosed @ctxtToInstTy
                                                                     , rulMkEvid    = \ctxt -> CExpr_Var n `mkCExprApp` ctxt
                                                                     , rulNmEvid    = n
-                                                                    , rulCost	   = 1 + 2 * length @ctxtPrExprs.tyL
+                                                                    , rulCost      = 1 + 2 * length @ctxtPrExprs.tyL
                                                                     }
                                                         in   PrElimGamInfo [r]
                 lhs             .   patTyGam        =   @lhs.patTyGam
@@ -97,7 +98,8 @@ SEM Decl
 
 %%[9
 SEM Decl
-  | Class       loc             .   fo              =   fitsIn weakFIOpts @lUniq2  (@lhs.kiCnstr |=> (@prExpr.kiL `mkTyArrow` kiStar))
-                                                                                   (@lhs.kiCnstr |=> (pigiKi @pigi))
+  | Class       loc             .   fo              =   fitsIn  weakFIOpts emptyFE @lUniq2
+                                                                (@lhs.kiCnstr |=> (@prExpr.kiL `mkTyArrow` kiStar))
+                                                                (@lhs.kiCnstr |=> (pigiKi @pigi))
                 decls           .   kiCnstr         =   foCnstr @fo |=> @prExpr.kiCnstr
 %%]

@@ -48,7 +48,7 @@ SEM PatExpr
                                                           Nothing    ->  (Ty_Any,[Err_NamesNotIntrod [@nm]])
                                                           Just vgi   ->  (vgiTy vgi,[])
                             .  patFunTy             :=  let  [a,r]  = mkNewTyVarL 2 @lUniq
-                                                             fo     = fitsIn instFIOpts @lUniq2 @knUnTy ([a] `mkTyArrow` r)
+                                                             fo     = fitsIn instFIOpts emptyFE @lUniq2 @knUnTy ([a] `mkTyArrow` r)
                                                         in   foTy fo
 %%]
 
@@ -138,11 +138,20 @@ SEM PatExpr
 
 %%[4.Rest
 SEM PatExpr
-  | AppTop Con  loc         .  fo                   :=  fitsIn @lhs.fiOpts @lUniq @lhs.knTy @knResTy
+  | AppTop Con  loc         .  fo                   :=  fitsIn @lhs.fiOpts emptyFE @lUniq @lhs.knTy @knResTy
   | Con         loc         .  (knResTy,_)          =   tyArrowArgRes @patFunTy
                             .  ty                   :=  foTy @fo
                 lhs         .  tyCnstr              =   foCnstr @fo |=> @lhs.tyCnstr
   | Var VarAs   loc         .  ty                   :=  tyInst1Exists @lUniq2 (tyEnsureNonBotTop @lUniq @lhs.knTy)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gamma/Environment for fitting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4.FIEnv
+SEM PatExpr
+  | *           loc         .   fe                  =   emptyFE
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -160,7 +169,7 @@ SEM RecPatExpr
 
 SEM PatExpr
   | Rec         loc         .  fTy                  =   hsnRec `mkTyConApp` [@recPatExpr.knTyRow]
-                            .  fo                   =   fitsIn @lhs.fiOpts @lUniq @lhs.knTy @fTy
+                            .  fo                   =   fitsIn @lhs.fiOpts emptyFE @lUniq @lhs.knTy @fTy
                             .  ty                   =   foTy @fo
                 recPatExpr  .  tyCnstr              =   foCnstr @fo |=> @lhs.tyCnstr
                 lhs         .  ty                   =   @recPatExpr.tyCnstr |=> @ty

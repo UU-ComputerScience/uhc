@@ -23,8 +23,9 @@ SEM Decl
   | Data        loc         .  dataTgi              =   mkTGI (Ty_Con @tyNm) (tyEnsureNonBotTop @lUniq @knKi)
                 lhs         .  patTyGam             :=  if @hasKiSig  then @lhs.patTyGam
                                                                       else gamAdd @tyNm @dataTgi @lhs.patTyGam
-                loc         .  fo                   =   fitsIn strongFIOpts @lUniq2  (@lhs.patKiCnstr |=> (@tyVars.kiL `mkTyArrow` kiStar))
-                                                                                     (@lhs.patKiCnstr |=> (tgiKi @dataTgi))
+                loc         .  fo                   =   fitsIn  strongFIOpts emptyFE @lUniq2
+                                                                (@lhs.patKiCnstr |=> (@tyVars.kiL `mkTyArrow` kiStar))
+                                                                (@lhs.patKiCnstr |=> (tgiKi @dataTgi))
                             .  dataKi               =   foTy @fo
                 lhs         .  patKiCnstr           =   foCnstr @fo |=> @lhs.patKiCnstr
                 constrs     .  tyGam                :=  tyGamInst1Exists @lUniq3 (@lhs.kiCnstr |=> @lTyGam)
@@ -43,8 +44,9 @@ SEM Decl
 
 %%[6
 SEM DataConstr
-  | Constr      loc         .  (_,fo)               =   fitsInL weakFIOpts @lUniq  (@fields.kiCnstr |=> @fields.kiL)
-                                                                                   (repeat kiStar)
+  | Constr      loc         .  (_,fo)               =   fitsInL  weakFIOpts emptyFE @lUniq
+                                                                 (@fields.kiCnstr |=> @fields.kiL)
+                                                                 (repeat kiStar)
                 lhs         .  kiCnstr              =   foCnstr @fo |=> @fields.kiCnstr
 %%]
 

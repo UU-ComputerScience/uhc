@@ -254,6 +254,7 @@ SEM FuncDeps
 
 SEM Expr
   | Let         loc     .  info     :=  [ mkInfo1 "prvnGraph" (pp @prvnGraph)
+                                        , mkInfo1 "prvnPrune" (pp @prvnPrune)
                                         ]
 %%]
 

@@ -72,6 +72,9 @@
 %%[8 export(hsnPrefix,hsnSuffix)
 %%]
 
+%%[8 export(groupSortOn)
+%%]
+
 %%[9 export(hsnOImpl,hsnCImpl)
 %%]
 
@@ -534,6 +537,11 @@ unionL = foldr union []
 %%[4.listCombineUniq
 listCombineUniq :: Eq a => [[a]] -> [a]
 listCombineUniq = nub . concat
+%%]
+
+%%[8
+groupSortOn :: Ord b => (a -> b) -> [a] -> [[a]]
+groupSortOn sel = groupBy (\e1 e2 -> sel e1 == sel e2) . sortBy (\e1 e2 -> sel e1 `compare` sel e2)
 %%]
 
 %%[8

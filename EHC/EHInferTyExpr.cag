@@ -97,7 +97,7 @@ SEM TyExpr
   | Quant       loc         .  (tv,tgi)             :=  let  t = Ty_Var @lUniq TyVarCateg_Plain
                                                         in   (@lUniq,mkTGI t t)
   | App         loc         .  knFunKi              =   [@arg.ki] `mkTyArrow` mkNewTyVar @lUniq
-                            .  fo                   =   fitsIn weakFIOpts @lUniq2 (@arg.kiCnstr |=> @func.ki) @knFunKi
+                            .  fo                   =   fitsIn weakFIOpts emptyFE @lUniq2 (@arg.kiCnstr |=> @func.ki) @knFunKi
                             .  fKi                  =   foTy @fo
                             .  (_,ki)               =   tyArrowArgRes @fKi
                 lhs         .  kiCnstr              =   foCnstr @fo |=> @arg.kiCnstr
@@ -131,7 +131,7 @@ SEM TyExpr
 
 SEM RowTyExpr
   | Var         (loc.tgi,lhs.tyGam)                 =   tyGamLookupOrAdd @nm @lUniq @lhs.kiCnstr @lhs.tyGam
-                loc         .  fo                   =   fitsIn weakFIOpts @lUniq2 (tgiKi @tgi) kiRow
+                loc         .  fo                   =   fitsIn weakFIOpts emptyFE @lUniq2 (tgiKi @tgi) kiRow
                             .  ki                   =   foTy @fo
 %%]
 
@@ -142,6 +142,15 @@ SEM PrExpr
   | Equal       (loc.tgi,tyExpr.tyGam)              =   tyGamLookupOrAdd @nm @lUniq @lhs.kiCnstr @lhs.tyGam
                 loc         .   ki                  =   tgiKi @tgi
   | * - Equal   loc         .   ki                  =   kiStar
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gamma/Environment for fitting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4.FIEnv
+SEM TyExpr
+  | *           loc         .   fe                  =   emptyFE
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
