@@ -9,7 +9,7 @@
 %%% Haskell importable interface to Code's GRIN gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(UU.Pretty,EHCommon,EHCore,GrinCode,Char) export(cmodGrin)
+%%[8 hs import(Maybe,FiniteMap,UU.Pretty,EHCommon,EHCore,GrinCode,Char) export(cmodGrin)
 %%]
 
 %%[9 hs import(EHTy)
@@ -44,6 +44,7 @@ ATTR CodeAGItf [ gUniq: UID | | ]
 
 SEM CExpr
   | Var         (lhs.gUniq,loc.lUniq)       =   mkNewLevUID @lhs.gUniq
+  | App         (func.gUniq,loc.lUniq)      =   mkNewLevUID @lhs.gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -66,6 +67,35 @@ SEM CPatBind
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known function arity
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type LamInfoMp = FiniteMap HsName Int
+%%]
+
+%%[8
+ATTR AllCodeNT [ lamMp: LamInfoMp | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   lamMp       =   emptyFM
+
+SEM CBind
+%%]
+
+%%[8
+ATTR AllBind [ | | bindLamMp USE {`plusFM`} {emptyFM}: LamInfoMp ]
+
+SEM CBind
+  | Bind        lhs         .   bindLamMp   =   if @expr.isLam
+                                                then @nm `unitFM` length @expr.grLamArgL
+                                                else emptyFM
+
+SEM CExpr
+  | Let         loc         .   lamMp       =   @lhs.lamMp `plusFM` @binds.bindLamMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Grin code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -84,6 +114,17 @@ mbMkStrict u isStrict v
      then  let  n = uidHNm u
            in   GrExpr_Seq (GrExpr_Unit v) (GrPat_Var n) (GrExpr_Eval (GrVal_Var n))
      else  GrExpr_Unit v
+
+retStrict :: Bool -> GrVal -> GrExpr
+retStrict isStrict = if isStrict then GrExpr_Unit else GrExpr_Store
+%%]
+
+%%[8 hs
+mkNdPApp :: HsName -> Int -> GrValL -> GrVal
+mkNdPApp f nMiss argL = GrVal_Node (GrTag_Lit (GrTagPartial nMiss) 0 f) argL
+
+mkSq :: GrExpr -> HsName -> GrExpr -> GrExpr
+mkSq e1 p e2 = GrExpr_Seq e1 (GrPat_Var p) e2
 %%]
 
 %%[8
@@ -114,19 +155,52 @@ SEM CExpr
                                                       ,@categ == CBindStrict
                                                       )
   | Case        loc         .   grExpr      =   GrExpr_Case @expr.grVal @alts.grAltL
-  | App         loc         .   (grVal,grExpr)
-                                            =   case @func.mbTupApp of
-                                                    Just t   ->  let  v  =  case t of
-                                                                              CTagNone  -> GrVal_Node GrTag_None (reverse @grAppArgL)
-                                                                              CTag t l  -> GrVal_Node (GrTag_Lit GrTagCon t l) (reverse @grAppArgL)
-                                                                 in   (v,(if @lhs.isStrict then GrExpr_Unit else GrExpr_Store) v)
-                                                    Nothing  ->  if @lhs.isStrict
-                                                                 then (GrVal_Empty,GrExpr_App @grAppFun (reverse @grAppArgL))
-                                                                 else let v = GrVal_Node (GrTag_Lit GrTagFun 0 @grAppFun) (reverse @grAppArgL)
-                                                                      in  (v,GrExpr_Store v)
+  | App         loc         .   grExpr      =   let  argL = reverse @grAppArgL
+                                                     apArity = length argL
+                                                     funNm = @grAppFun
+                                                     mkE  = retStrict @lhs.isStrict
+                                                     (n:nL) = map uidHNm . mkNewUIDL (apArity + 1) $ @lUniq
+                                                     (argL',wrapGr)
+                                                            = foldr  (\(n,a) (aL,wG)
+                                                                        ->  case a of
+                                                                                GrVal_Var v | isJust mbArity
+                                                                                    -> (GrVal_Var n : aL,mkSq a' n . wG)
+                                                                                    where mbArity = lookupFM @lhs.lamMp v
+                                                                                          a' = GrExpr_Store (mkNdPApp v (fromJust mbArity) [])
+                                                                                GrVal_Node _ _
+                                                                                    -> (GrVal_Var n : aL,mkSq (GrExpr_Store a) n . wG)
+                                                                                _   -> (a:aL,wG)
+                                                                     )
+                                                                     ([],id)
+                                                            $ zip nL argL
+                                                in   case @func.mbTupApp of
+                                                        Just t
+                                                            ->  let  v  =  case t of
+                                                                             CTagNone  -> GrVal_Node GrTag_None argL'
+                                                                             CTag t l  -> GrVal_Node (GrTag_Lit GrTagCon t l) argL'
+                                                                in   wrapGr (mkE v)
+                                                        Nothing
+                                                            ->  let  ap = case lookupFM @lhs.lamMp funNm of
+                                                                             Just arity
+                                                                               | arity == apArity && @lhs.isStrict
+                                                                                   -> GrExpr_Call funNm argL'
+                                                                               | arity == apArity
+                                                                                   -> GrExpr_Store (GrVal_Node (GrTag_Lit GrTagFun 0 funNm) argL')
+                                                                               | arity > apArity
+                                                                                   -> mkE (mkNdPApp funNm (arity - apArity) argL')
+                                                                               | arity < apArity && @lhs.isStrict
+                                                                                   -> mkSq (GrExpr_Call funNm (take arity argL')) n (GrExpr_App n (drop arity argL'))
+                                                                               | otherwise
+                                                                                   -> GrExpr_Store (GrVal_Node (GrTag_Lit GrTagApp 0 (HNm "apply")) (GrVal_Var funNm : argL'))
+                                                                             Nothing
+                                                                               | @lhs.isStrict
+                                                                                   -> mkSq (GrExpr_Eval (GrVal_Var funNm)) n (GrExpr_App n argL')
+                                                                               | otherwise
+                                                                                   -> GrExpr_Store (GrVal_Node (GrTag_Lit GrTagApp 0 (HNm "apply")) (GrVal_Var funNm : argL'))
+                                                                in   wrapGr ap
   | Var         loc         .   grExpr      =   mbMkStrict @lUniq @lhs.isStrict @grVal
   | Tup Int Char
-                loc         .   grExpr      =   (if @lhs.isStrict then GrExpr_Unit else GrExpr_Store) @grVal
+                loc         .   grExpr      =   retStrict @lhs.isStrict @grVal
   | * - Let App Case Var Tup Int Char
                 loc         .   grExpr      =   GrExpr_Unit @grVal
 %%]
@@ -139,7 +213,7 @@ SEM CExpr
   | Var         loc         .   grVal       =   GrVal_Var @nm
   | Int         loc         .   grVal       =   GrVal_Node (GrTag_Lit GrTagCon 0 hsnInt) [GrVal_LitInt @int]
   | Char        loc         .   grVal       =   GrVal_Node (GrTag_Lit GrTagCon 1 hsnChar) [GrVal_LitInt (ord @char)]
-  | * - Int Char Var App Tup
+  | * - Int Char Var Tup
                 loc         .   grVal       =   GrVal_Empty
 %%]
 

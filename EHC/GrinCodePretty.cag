@@ -51,7 +51,8 @@ SEM GrExpr
                                                 >-< @body.pp
   | Case        lhs         .   pp          =   "case" >#< @val.pp >#< "of" >-<
                                                     indent 2 (ppCurlyV @altL.ppL)
-  | App         lhs         .   pp          =   ppSpaced (ppGrNm @nm : @argL.ppL)
+  | App         lhs         .   pp          =   "apply" >#< ppSpaced (ppGrNm @nm : @argL.ppL)
+  | Call        lhs         .   pp          =   ppSpaced (ppGrNm @nm : @argL.ppL)
   | Eval        lhs         .   pp          =   "eval" >#< @val.pp
   | Unit        lhs         .   pp          =   "unit" >#< @val.pp
   | Store       lhs         .   pp          =   "store" >#< @val.pp

@@ -467,10 +467,11 @@ data TrfOpt = TrfYes String | TrfNo String | TrfAllYes | TrfAllNo
 
 cmdLineTrfs :: AssocL String String
 cmdLineTrfs
-  = [ ("CRU", "Core Rename Unique (all identifiers)")
-    , ("CLU", "Core Let Unrec (remove unnecessary recursive defs)")
-    , ("CFL", "Core Full Laziness (give names to all expressions and float them outwards)")
-    , ("CLL", "Core Lambda Lift")
+  = [ ("CRU"    , "Core Rename Unique (all identifiers)")
+    , ("CLU"    , "Core Let Unrec (remove unnecessary recursive defs)")
+    , ("CILA"   , "Core Inline Let Alias (remove unnecessary alpha renamings)")
+    , ("CFL"    , "Core Full Laziness (give names to all expressions and float them outwards)")
+    , ("CLL"    , "Core Lambda Lift")
     ]
 
 trfOptOverrides :: [TrfOpt] -> String -> Maybe Bool
