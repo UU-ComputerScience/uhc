@@ -21,7 +21,7 @@
 %%[1 import(UU.Pretty,EHTyPretty) export(ppGam)
 %%]
 
-%%[2 import(EHCnstr)
+%%[2 import(EHCnstr,EHSubstitutable)
 %%]
 
 %%[3 import(EHTyQuantify) export(valGamQuantify, gamMap,gamMapElts,valGamMapTy)

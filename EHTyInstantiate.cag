@@ -9,10 +9,10 @@
 %%% Haskell importable interface to Ty instantiate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[3.tyInst hs import(EHCommon,EHTy,EHCnstr) export(tyInst)
+%%[3.tyInst hs import(EHCommon,EHTy,EHCnstr,EHSubstitutable) export(tyInst)
 %%]
 
-%%[4.tyInst -3.tyInst hs import(EHCommon,EHTy,EHCnstr)
+%%[4.tyInst -3.tyInst hs import(EHCommon,EHTy,EHCnstr,EHSubstitutable)
 %%]
 
 %%[4 hs import(List) export(tyInst1Quants, tyInst1Exists, instCoConst, instContra)

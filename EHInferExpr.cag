@@ -125,11 +125,13 @@ SEM Expr
   | AppImpl     loc         .  knFunTy              =   [@argPr.ty] `mkTyArrow` (@lhs.tyCnstr |=> @lhs.knTy)
                 func        .  knTy                 =   @knFunTy
                 loc         .  (knImpls,fTy)        =   tyArrowImplsRes @func.ty
-                            .  (knArgImpl,knResImpls,knImplsErrs)
+                            .  (knArgImpl,knResImpls)
                                                     =   case @knImpls of
-                                                            (a:r)  -> (a,r,[])
-                                                            []     -> (Ty_Any,[],[])
-                (arg.knTy,loc.argErrs)              =   prFitToEvid @lUniq @knArgImpl @lhs.prIntroGam
+                                                            (a:r)  -> (a,r)
+                                                            []     -> (Ty_Any,[])
+                            .  foPr                 =   prFitToEvid @lUniq @knArgImpl @lhs.prIntroGam
+                arg         .  knTy                 =   @func.tyCnstr |=> foTy @foPr
+                            .  tyCnstr              =   foCnstr @foPr |=> @func.tyCnstr
                 loc         .  ty                   =   @arg.tyCnstr |=> (@knResImpls `mkTyArrow` @fTy)
 %%]
 
@@ -165,6 +167,21 @@ SEM Expr
                 (loc.knImpls,arg.knTy,body.knTy)    :=  tyArrowImplsArgRes (foTy @foKnFun)
                 loc         .  ty                   :=  ((@body.tyCnstr |=> @knImpls) ++ [@body.tyCnstr |=> @arg.ty])
                                                           `mkTyArrow` @body.ty
+%%]
+
+%%[9.LamImpl
+SEM Expr
+  | LamImpl     loc         .  funTy                =   let  r = mkNewTyVar @lUniq
+                                                        in   [@lhs.tyCnstr |=> @argPr.ty] `mkTyArrow` r
+                            .  foKnFun              =   let  fo = fitsIn (implFIOpts {fioBindRFirst=True}) @fe @lUniq2 @funTy (@lhs.tyCnstr |=> @lhs.knTy)
+                                                        in   fo {foTy = foCnstr fo |=> @funTy}
+                            .  (knImpls,fTy)        =   tyArrowImplsRes (foTy @foKnFun)
+                            .  (knArgImpl,knResImpls)
+                                                    =   hdAndTl @knImpls
+                            .  foPr                 =   prFitToEvid @lUniq4 @knArgImpl @lhs.prIntroGam
+                arg         .  knTy                 =   foTy @foPr
+                            .  tyCnstr              =   foCnstr @foPr |=> foCnstr @foKnFun |=> @lhs.tyCnstr
+                loc         .  ty                   =   @arg.tyCnstr |=> (@knResImpls `mkTyArrow` @fTy)
 %%]
 
 %%[2.AppTop

@@ -188,8 +188,11 @@ DATA Expr
 %%[9
 DATA Expr
   | AppImpl         func            : Expr
-                    arg             : Expr
                     argPr           : PrExpr
+                    arg             : Expr
+  | LamImpl         argPr           : PrExpr
+                    arg             : PatExpr
+                    body            : Expr
 %%]
 
 %%[1.AllExpr
@@ -335,6 +338,10 @@ DATA PrExpr
                     tyExpr          : TyExpr
 
 TYPE PrExprs        =   [PrExpr]
+%%]
+
+%%[9
+SET AllPrExpr       =   PrExpr PrExprs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

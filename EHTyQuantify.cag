@@ -9,7 +9,7 @@
 %%% Module itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[3 hs import(EHCommon,EHTy,EHCnstr) export(tyQuantify, tyQuantifyClosed)
+%%[3 hs import(EHCommon,EHTy,EHCnstr,EHSubstitutable) export(tyQuantify, tyQuantifyClosed)
 %%]
 
 %%[4 hs import(List)

@@ -200,8 +200,9 @@ SEM Decl
 ATTR PrExprs FuncDeps [ | | ppL: PP_DocL ]
 
 SEM Expr
-  | AppImpl     loc     .   argPP   =   @arg.pp >#< "<:" >#< @argPr.pp >#< hsnCImpl
-                        .   pp      =   @func.pp >#< hsnOImpl >#< @argPP
+  | AppImpl     loc     .   argPP   =   @arg.pp >#< "<:" >#< @argPr.pp
+                        .   pp      =   @func.pp >#< hsnOImpl >#< @argPP >#< hsnCImpl
+  | LamImpl     loc     .   pp      =   "\\" >|< hsnOImpl >#< @arg.pp >#< "<:" >#< @argPr.pp >#< hsnCImpl >#< "->" >#< @body.pp
 
 SEM RowTyExpr
   | Var         loc     .   pp      =   pp @nm
@@ -367,13 +368,6 @@ SEM Expr
                         .  appFunPP     :=  @recExpr.pp
 %%]
 
-%%[9
-SEM Expr
-  | AppImpl     lhs     .  appFunNm     :=  @func.appFunNm
-                        .  appArgPPL    :=  @func.appArgPPL ++ [@argPP]
-                        .  appFunPP     :=  @func.appFunPP
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% PatExpr constr name of app + args
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -408,6 +402,13 @@ SEM PatExpr
   | Rec         loc     .  appFunNm     :=  @recPatExpr.extNm
                 lhs     .  appArgPPL    :=  reverse @recPatExpr.ppL
                         .  appFunPP     :=  @recPatExpr.pp
+%%]
+
+%%[9
+SEM Expr
+  | AppImpl     lhs     .  appFunNm     :=  @func.appFunNm
+                        .  appArgPPL    :=  @func.appArgPPL ++ [@argPP]
+                        .  appFunPP     :=  @func.appFunPP
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

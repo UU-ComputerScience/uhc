@@ -59,7 +59,7 @@ SEM Expr
                                                     (coeWipeWeave @lhs.finTyCnstr @lhs.cSubst @appImplsCoeL []
                                                       `coeEvalOn` @func.cexpr)
                                                     @arg.cexpr
-  | Lam         loc         .   cexpr       :=  coeWipeWeave @lhs.finTyCnstr @cSubst @lamBodyCoeL @lamArgCoeL `coeEvalOn` @body.appFunCExpr
+  | Lam LamImpl loc         .   cexpr       :=  coeWipeWeave @lhs.finTyCnstr @cSubst @lamBodyCoeL @lamArgCoeL `coeEvalOn` @body.appFunCExpr
   | AppTop      loc         .   cexpr       =   coeWipeWeave @lhs.finTyCnstr @cSubst [] @lamArgCoeL `coeEvalOn` @expr.cexpr
   | Parens      loc         .   cexpr       =   @expr.cexpr
   | TypeAs      loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst @expr.cexpr
@@ -280,6 +280,11 @@ SEM CaseAlt
 
 SEM Expr
   | Lam         arg         .   ceParentNm  =   @arg.topNm
+%%]
+
+%%[9
+SEM Expr
+  | LamImpl     arg         .   ceParentNm  =   @arg.topNm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

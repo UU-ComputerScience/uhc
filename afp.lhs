@@ -497,34 +497,40 @@ WWW home page:
 
 \newcommand{\EHCTexVersion}{tmp-\jobname}
 \newcommand{\inputEHCTex}[2]{\input #1/#2}
+\inputEHCTex{\EHCTexVersion}{EHAbsSyn.tex}
+\inputEHCTex{\EHCTexVersion}{EHC.tex}
+\inputEHCTex{\EHCTexVersion}{EHCnstr.tex}
+\inputEHCTex{\EHCTexVersion}{EHCommon.tex}
+\inputEHCTex{\EHCTexVersion}{EHError.tex}
+\inputEHCTex{\EHCTexVersion}{EHErrorAbsSyn.tex}
+\inputEHCTex{\EHCTexVersion}{EHErrorPretty.tex}
+\inputEHCTex{\EHCTexVersion}{EHExtraChecks.tex}
+\inputEHCTex{\EHCTexVersion}{EHGam.tex}
+\inputEHCTex{\EHCTexVersion}{EHGatherError.tex}
 \inputEHCTex{\EHCTexVersion}{EHInfer.tex}
+\inputEHCTex{\EHCTexVersion}{EHInferCaseExpr.tex}
+\inputEHCTex{\EHCTexVersion}{EHInferClass.tex}
+\inputEHCTex{\EHCTexVersion}{EHInferData.tex}
 \inputEHCTex{\EHCTexVersion}{EHInferExpr.tex}
+\inputEHCTex{\EHCTexVersion}{EHInferKiExpr.tex}
 \inputEHCTex{\EHCTexVersion}{EHInferPatExpr.tex}
 \inputEHCTex{\EHCTexVersion}{EHInferTyExpr.tex}
-\inputEHCTex{\EHCTexVersion}{EHInferKiExpr.tex}
-\inputEHCTex{\EHCTexVersion}{EHInferData.tex}
-\inputEHCTex{\EHCTexVersion}{EHInferCaseExpr.tex}
-\inputEHCTex{\EHCTexVersion}{EHGatherError.tex}
-\inputEHCTex{\EHCTexVersion}{EHAbsSyn.tex}
-\inputEHCTex{\EHCTexVersion}{EHTyAbsSyn.tex}
-\inputEHCTex{\EHCTexVersion}{EHErrorAbsSyn.tex}
-\inputEHCTex{\EHCTexVersion}{EHPretty.tex}
-\inputEHCTex{\EHCTexVersion}{EHUniq.tex}
-\inputEHCTex{\EHCTexVersion}{EHTyCommonAG.tex}
-\inputEHCTex{\EHCTexVersion}{EHExtraChecks.tex}
 \inputEHCTex{\EHCTexVersion}{EHMainAG.tex}
-\inputEHCTex{\EHCTexVersion}{EHTy.tex}
-\inputEHCTex{\EHCTexVersion}{EHError.tex}
-\inputEHCTex{\EHCTexVersion}{EHErrorPretty.tex}
-\inputEHCTex{\EHCTexVersion}{EHTyQuantify.tex}
-\inputEHCTex{\EHCTexVersion}{EHTyPretty.tex}
-\inputEHCTex{\EHCTexVersion}{EHTyInstantiate.tex}
-\inputEHCTex{\EHCTexVersion}{EHC.tex}
 \inputEHCTex{\EHCTexVersion}{EHParser.tex}
-\inputEHCTex{\EHCTexVersion}{EHCommon.tex}
-\inputEHCTex{\EHCTexVersion}{EHCnstr.tex}
+\inputEHCTex{\EHCTexVersion}{EHPred.tex}
+\inputEHCTex{\EHCTexVersion}{EHPretty.tex}
+\inputEHCTex{\EHCTexVersion}{EHResolvePred.tex}
+\inputEHCTex{\EHCTexVersion}{EHSubstitutable.tex}
+\inputEHCTex{\EHCTexVersion}{EHTy.tex}
+\inputEHCTex{\EHCTexVersion}{EHTyAbsSyn.tex}
+\inputEHCTex{\EHCTexVersion}{EHTyCommonAG.tex}
 \inputEHCTex{\EHCTexVersion}{EHTyFitsIn.tex}
-\inputEHCTex{\EHCTexVersion}{EHGam.tex}
+\inputEHCTex{\EHCTexVersion}{EHTyFtv.tex}
+\inputEHCTex{\EHCTexVersion}{EHTyInstantiate.tex}
+\inputEHCTex{\EHCTexVersion}{EHTyPretty.tex}
+\inputEHCTex{\EHCTexVersion}{EHTyQuantify.tex}
+\inputEHCTex{\EHCTexVersion}{EHTySubst.tex}
+\inputEHCTex{\EHCTexVersion}{EHUniq.tex}
 %\inputEHCTex{\EHCTexVersion}{EHCodeAbsSyn.tex}
 %\inputEHCTex{\EHCTexVersion}{EHCode.tex}
 %\inputEHCTex{\EHCTexVersion}{EHCodePretty.tex}
@@ -3877,7 +3883,7 @@ Cnstr                       =  [tvar :-> sigma]
 A set of \IxAsDef{constraint}s |Cnstr| is a set of bindings for type variables,
 represented as
 
-\chunkCmdUseMark{EHCnstr.2.Cnstr.Base}
+\chunkCmdUseMark{EHCommon.2.Cnstr.Base}
 \chunkCmdUseMark{EHCnstr.2.Cnstr.emptyCnstr}
 \chunkCmdUseMark{EHCnstr.2.Cnstr.cnstrTyUnit}
 
@@ -3900,24 +3906,33 @@ the constraints, hence the class
 for those structures which have references to type
 variables hidden inside and can replace, or substitute those type variables
 
-\chunkCmdUseMark{EHCnstr.2.Substitutable}
+\chunkCmdUseMark{EHSubstitutable.2.Substitutable}
 
 The operator | ||=>| applies constraints |Cnstr| to a
 |Substitutable|.
 Function |ftv| extracts the free type variable references as a set of
 |TVarId|'s.
 
-A |Cnstr| can be applied to a type
+A |Cnstr| can be applied to a type:
 
-\chunkCmdUseMark{EHCnstr.2.SubstitutableTy}
+\chunkCmdUseMark{EHSubstitutable.2.SubstitutableTy}
 
-and is lifted straightforwardly to lists
+This is another place where we use the AG notation and the automatic propagation of values
+as attributes throughout the type representation to make the description of the application of
+a |Cnstr| to a |Ty| easier.
+The function |tyAppCnstr| is defined in terms of the following AG.
+The plumbing required to provide it as a Haskell function has been omitted:
 
-\chunkCmdUseMark{EHCnstr.2.SubstitutableList}
+\chunkCmdUseMark{EHTySubst.2.TySubst}
+\chunkCmdUseMark{EHTyFtv.2.TyFtv}
+
+The application of a |Cnstr| is lifted straightforwardly to lists
+
+\chunkCmdUseMark{EHSubstitutable.2.SubstitutableList}
 
 A |Cnstr| can also be applied to another |Cnstr|
 
-\chunkCmdUseMark{EHCnstr.2.SubstitutableCnstr}
+\chunkCmdUseMark{EHSubstitutable.2.SubstitutableCnstr}
 
 but one must be aware that | ||=>| is non-commutative as constraints |s1| in |s1 ||=> s2| take precedence
 over |s2|.
@@ -3980,7 +3995,7 @@ Cnstr sigma
 }
 \end{itemize}
 \item Constraints/substitution can be applied to |Substitutable|
-\chunkCmdFrameUse{EHCnstr.2.Substitutable}
+\chunkCmdFrameUse{EHSubstitutable.2.Substitutable}
 \end{itemize}
 }
 
@@ -3989,7 +4004,9 @@ Cnstr sigma
 \frametitle{Type substitution}
 \begin{itemize}
 \item Replacing type variables in a |Ty|:
-\chunkCmdFrameUse{EHCnstr.2.SubstitutableTy}
+\chunkCmdFrameUse{EHSubstitutable.2.SubstitutableTy}
+\chunkCmdFrameUse{EHTySubst.2.TySubst}
+\chunkCmdUseMark{EHTyFtv.2.TyFtv}
 \item Other datatypes (like |Cnstr|) are instances of |Substitutable| too
 \end{itemize}
 }
