@@ -40,19 +40,22 @@
 %%[4 export(FIEnv(..),emptyFE)
 %%]
 
+%%[4 import(EHDebug)
+%%]
+
 %%[5 export(weakFIOpts)
 %%]
 
 %%[6 export(fitsInL)
 %%]
 
-%%[6_2 export(unifyFIOpts,meetFIOpts,foHasErrs)
+%%[6_2 import(EHTyElimBinds) export(unifyFIOpts,meetFIOpts,foHasErrs,mkElimBindsWrap)
 %%]
 
 %%[9 import(Maybe,FiniteMap,Set,UU.Pretty,EHCorePretty,EHPred,EHCore,EHCoreSubst) export(predFIOpts,implFIOpts,prfPreds,foAppCoe,fitPredToEvid)
 %%]
 
-%%[9 import(EHDebug) export(fitsIn')
+%%[9 export(fitsIn')
 %%]
 
 %%[10 import(EHCoreUtils)
@@ -197,7 +200,7 @@ mkStrong fi = fi {fioLeaveRInst = False, fioBindRFirst = True, fioBindLFirst = T
 
 %%[6_2.mkStrong -4.mkStrong
 mkStrong :: FIOpts -> FIOpts
-mkStrong fi = fi {fioLeaveRInst = False, fioBindRFirst = True, fioBindLFirst = True, fioBindToTyBind = False}
+mkStrong fi = fi {fioLeaveRInst = False, fioBindRFirst = True, fioBindLFirst = True, fioBindToTyBind = fioMeet fi && fioBindToTyBind fi}
 %%]
 
 %%[4.AppSpineGam
@@ -245,24 +248,31 @@ foAppCoe fo c cs ce
 %%% Internal interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4.FIIn
+%%[4.FIIn.hd
 data FIIn   =  FIIn     {  fiFIOpts          ::  FIOpts              ,  fiUniq            ::  UID
                         ,  fiCoContra        ::  CoContraVariance
-                        }
-
-emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts        ,  fiUniq            =   uidStart
-                        ,  fiCoContra        =   CoVariant
+%%]
+%%[6_2
+%%]
+                        ,  fiMeetTVarL       ::  TyVarIdL
+%%[9
+                        ,  fiEnv             ::  FIEnv
+%%]
+%%[4.FIn.tl
                         }
 %%]
 
-%%[9.FIIn -4.FIIn
-data FIIn   =  FIIn     {  fiFIOpts          ::  FIOpts              ,  fiUniq            ::  UID
-                        ,  fiCoContra        ::  CoContraVariance    ,  fiEnv             ::  FIEnv
-                        }
-                        deriving Show
-
+%%[4.FIn.emptyFI.hd
 emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts        ,  fiUniq            =   uidStart
-                        ,  fiCoContra        =   CoVariant           ,  fiEnv             =   emptyFE
+                        ,  fiCoContra        =   CoVariant
+%%]
+%%[6_2
+%%]
+                        ,  fiMeetTVarL       =   []
+%%[9
+                        ,  fiEnv             =   emptyFE
+%%]
+%%[4.FIn.emptyFI.tl
                         }
 %%]
 
@@ -280,6 +290,9 @@ instance PP FIIn where
 data FIEnv  =   FIEnv
 
 emptyFE     =   FIEnv
+
+fiUpdOpts :: (FIOpts -> FIOpts) -> FIIn -> FIIn
+fiUpdOpts upd fi = fi {fiFIOpts = upd (fiFIOpts fi)}
 %%]
 
 %%[9.FIEnv -4.FIEnv
@@ -794,6 +807,21 @@ fitsIn opts env uniq ty1 ty2
             f fi t1                     t2@(Ty_Var v2 _)
                 | allowImpredTVBindR fi t2 t1       = occurBind fi v2 (mkTyBind fi v2 t1)
 %%]
+            f fi t1@(Ty_Var v1 _)       t2@(Ty_Var v2 _)
+                | allowBind fi t1                   = bind fi v1 t2
+                | allowBind fi t2                   = bind fi v2 t1
+            f fi t1@(Ty_Var v1 _)       t2@(Ty_Bind _ _)
+                | v1 `elem` fiMeetTVarL fi          = res fi t1
+                | allowBind fi t1                   = bind fi v1 t2
+            f fi t1@(Ty_Bind _ _)       t2@(Ty_Var v2 _)
+                | v2 `elem` fiMeetTVarL fi          = res fi t2
+                | allowBind fi t2                   = bind fi v2 t1
+            f fi t1@(Ty_Var v1 _)       t2
+                | v1 `elem` fiMeetTVarL fi          = res fi t1
+                | allowImpredTVBindL fi t1 t2       = occurBind fi v1 (mkTyBind fi v1 t2)
+            f fi t1                     t2@(Ty_Var v2 _)
+                | v2 `elem` fiMeetTVarL fi          = res fi t2
+                | allowImpredTVBindR fi t2 t1       = occurBind fi v2 (mkTyBind fi v2 t1)
 
 %%[6_2
             f fi t1 t2@(Ty_Bind v2 t2L)             = fob
@@ -819,7 +847,7 @@ fitsIn opts env uniq ty1 ty2
             f fi t1@(Ty_Bind v1 t1L@(t1b@(Ty_Quant q1 _ _):_))  t2
                 | tyquIsForall q1                   = fob
                 where  fo = f fi2 t1b t2
-                       fi2 = fi {fiFIOpts = (fiFIOpts fi) {fioBindToTyBind = False}}
+                       fi2 = fiUpdOpts (\o -> o {fioBindToTyBind = False}) fi
                        fob =  if foHasErrs fo
                               then foBind v1 (Ty_Bind v1 (t1L ++ [t2])) (emptyFO {foUniq = fiUniq fi})
                               else foBind v1 (Ty_Bind v1 (t1L ++ [foTy fo])) fo
@@ -847,31 +875,34 @@ fitsIn opts env uniq ty1 ty2
 %%[6_2.fitsIn.QLR
             f fi t1@(Ty_Quant q1 _ _)   t2@(Ty_Quant q2 _ _)
                 | fiCoContra fi == CoContraVariant && fioMeet (fiFIOpts fi) && q1 == q2 && tyquIsForall q1
-                                                    = foUpdTy (mkTyQu q1 tvs (cb |=> c |=> uqt2)) (fo {foCnstr = c})
+                                                    = manyFO [fo,fo2]
+                where  (u',u1) = mkNewLevUID (fiUniq fi)
+                       (fi1,uqt1,rtvs1) = unquant' (fi {fiUniq = u'})  t1 instCoConst
+                       (fi2,uqt2,rtvs2) = unquant' fi1                 t2 instCoConst
+                       rtvs = rtvs1 ++ rtvs2
+                       fo = f (fiUpdOpts (\o -> o {fioBindToTyBind = True}) fi2) uqt1 uqt2
+                       (ebTy,ebCnstr,ebErrL) = tyElimBinds (mkElimBindsWrap unifyFIOpts (emptyFE)) u1 rtvs (foTy fo)
+                       fo2 =  if null ebErrL
+                              then  let  b = [ b | b@(_,Ty_Var _ TyVarCateg_Plain) <- map (\v -> (v,foCnstr fo |=> mkTyVar v)) rtvs ]
+                                         cb = assocLToCnstr b
+                                         tvs = nub . map ((\(Ty_Var v _) -> v) . (cb |=>) . mkTyVar) $ rtvs
+                                    in   foUpdTy (mkTyQu q1 tvs ebTy) (fo {foCnstr = ebCnstr |=> cnstrDel rtvs (foCnstr fo)})
+                              else  err fi ebErrL
+%%]
+
+%%[66_2.fitsIn.QLR
+            f fi t1@(Ty_Quant q1 _ _)   t2@(Ty_Quant q2 _ _)
+                | fiCoContra fi == CoContraVariant && fioMeet (fiFIOpts fi) && q1 == q2 && tyquIsForall q1
+                                                    = foUpdTy (mkTyQu q1 tvs (cb |=> c |=> foTy fo)) (fo {foCnstr = c})
                 where  (fi1,uqt1,rtvs1) = unquant' fi   t1 instCoConst
                        (fi2,uqt2,rtvs2) = unquant' fi1  t2 instCoConst
-                       fo = f fi2 uqt1 uqt2
                        rtvs = rtvs1 ++ rtvs2
+                       fo = f (fi2 {fiMeetTVarL = rtvs ++ fiMeetTVarL fi2}) uqt1 uqt2
                        c = cnstrDel rtvs (foCnstr fo)
                        b = [ b | b@(_,Ty_Var _ TyVarCateg_Plain) <- map (\v -> (v,foCnstr fo |=> mkTyVar v)) rtvs ]
                        cb = assocLToCnstr b
                        tvs = nub . map ((\(Ty_Var v _) -> v) . (cb |=>) . mkTyVar) $ rtvs
 %%]
-            f fi t1@(Ty_Quant q1 _ _)   t2@(Ty_Quant q2 _ _)
-                | fiCoContra fi == CoContraVariant && fioMeet (fiFIOpts fi) && q1 == q2 && tyquIsForall q1
-                                                    = foUpdTy (mkTyQu q1 tvs (c |=> uqt1)) (fo {foCnstr = c})
-                where  (fi1,uqt1,rtvs1) = unquant' fi   t1 instCoConst
-                       (fi2,uqt2,rtvs2) = unquant' fi1  t2 instCoConst
-                       fo = f fi2 uqt1 uqt2
-                       rtvs = rtvs1 ++ rtvs2
-                       c = cnstrDel rtvs (foCnstr fo)
-                       tvs = nub
-                             .  map  (\v -> let v' = case foCnstr fo |=> mkTyVar v of
-                                                       Ty_Var tv TyVarCateg_Plain  -> tv
-                                                       _                           -> v
-                                            in  v'
-                                     )
-                             $ rtvs
 
 %%[4.fitsIn.QLR
             f fi t1@(Ty_Quant q1 _ _)   t2@(Ty_Quant q2 _ _)
@@ -892,10 +923,36 @@ fitsIn opts env uniq ty1 ty2
                 where (fi2,uqt2,back2) = unquant fi t2 True instContra
 %%]
 
+%%[6_2.fitsIn.QR
+            f fi t1                     t2@(Ty_Quant q2 _ _)
+                | fiCoContra fi == CoContraVariant && fioMeet (fiFIOpts fi) && tyquIsForall q2
+                                                    = f  (fi  {fiFIOpts = fioSwapVariance (fiFIOpts fi)})
+                                                         t2 t1
+%%]
+
 %%[4.fitsIn.QL
             f fi t1@(Ty_Quant _ _ _)    t2
                 | fiCoContra fi /= CoContraVariant  = f fi1 uqt1 t2
                 where (fi1,uqt1,back1) = unquant fi t1 False instCoConst
+%%]
+
+%%[6_2.fitsIn.QL
+            f fi t1@(Ty_Quant q1 _ _)   t2
+                | fiCoContra fi == CoContraVariant && fioMeet (fiFIOpts fi) && tyquIsForall q1
+                                                    = manyFO [fo,fo2]
+                where  (u',u1) = mkNewLevUID (fiUniq fi)
+                       (fi1,uqt1,rtvs1) = unquant' (fi {fiUniq = u'}) t1 instCoConst
+                       fo = f (fiUpdOpts (\o -> o {fioBindToTyBind = True}) fi1) uqt1 t2
+                       tvOf c v = case c |=> mkTyVar v of
+                                    Ty_Var v' TyVarCateg_Plain -> v'
+                                    Ty_Bind v' _ -> v'
+                                    _ -> v
+                       rtvs1' = nub . map (tvOf . foCnstr $ fo) $ rtvs1
+                       (ebTy,ebCnstr,ebErrL) = tyElimBinds (mkElimBindsWrap unifyFIOpts (emptyFE)) u1 rtvs1' (foTy fo)
+                       fo2 =  if null ebErrL
+                              then  let  tvs = rtvs1' `intersect` ftv ebTy
+                                    in   foUpdTy (mkTyQu q1 tvs ebTy) (fo {foCnstr = ebCnstr |=> cnstrDel rtvs1 (foCnstr fo)})
+                              else  err fi ebErrL
 %%]
 
 %%[9
@@ -1327,3 +1384,15 @@ fitPredToEvid u prTy g
                     in  fo {foTy = snd (tyArrowArgRes (foTy fo))}
                _ -> emptyFO {foErrL = [Err_NamesNotIntrod [tyPredMatchNm prTy]]}
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapper for elimbinds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6_2
+mkElimBindsWrap :: FIOpts -> FIEnv -> (UID -> Ty -> Ty -> (Ty,Cnstr,ErrL))
+mkElimBindsWrap opt env
+  =  \u t1 t2 ->  let  fo = fitsIn opt env u t1 t2
+                  in   (foTy fo, foCnstr fo, foErrL fo)
+%%]
+

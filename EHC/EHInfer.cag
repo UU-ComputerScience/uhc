@@ -496,7 +496,7 @@ ATTR AllExpr AllPatExpr [ fiOpts: FIOpts | | ]
 
 SEM Expr
   | App         func        .  fiOpts               =   strongFIOpts
-                arg         .  fiOpts               =   instLFIOpts
+                arg         .  fiOpts               =   if @arg.isForcedTy then strongFIOpts else instLFIOpts
 
 SEM Decl
   | Val         expr        .  fiOpts               =   strongFIOpts

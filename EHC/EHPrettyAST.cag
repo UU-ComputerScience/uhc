@@ -144,6 +144,7 @@ SEM Expr
 %%[2
 SEM Expr
   | Let         loc     .  info     :=  [ mkInfo1 "lValGam" (ppGam @lValGam)
+                                        , mkInfo1 "lValGam+subs" (ppGam (@decls.tyCnstr |=> @lValGam))
                                         , mkInfo1 "lSubsValGam" (ppGam @lSubsValGam)
                                         ]
 %%]
