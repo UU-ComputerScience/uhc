@@ -87,7 +87,7 @@ SEM RecPatExpr
   | Ext         lhs         .  errL         =   mkNestErr @pp (@recPatExpr.errL ++ @patExpr.errL ++ foErrL @fo)
 
 SEM Expr
-  | Rec         lhs         .  errL         =   mkNestErr @pp (@recExpr.errL)
+  | Rec         lhs         .  errL         =   mkNestErr @pp (@recExpr.errL ++ foErrL @fo)
 
 SEM RecExpr
   | Empty       lhs         .  errL         =   mkNestErr @pp (foErrL @fo)

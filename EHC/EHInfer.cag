@@ -503,9 +503,18 @@ SEM CaseAlt
   | Pat         patExpr     .  fiOpts               =   strongFIOpts
 %%]
 
+%%[7
+SEM RecExpr
+  | Ext Upd     recExpr     .  fiOpts               =   strongFIOpts {fioAllowRLabElim = False}
+                expr        .  fiOpts               =   strongFIOpts
+
+SEM Expr
+  | Rec         loc         .  fiOpts               =   strongFIOpts
+%%]
+
 %%[9
 SEM Expr
-  | App         func        .  fiOpts               :=  strongFIOpts {fioImplsRepos = False}
+  | App         func        .  fiOpts               :=  strongFIOpts {fioAllowRPredElim = False}
   | AppImpl     arg         .  fiOpts               =   strongFIOpts
 
 SEM Decl
@@ -522,13 +531,21 @@ ATTR AllDecl [ | patPrElimGam: PrElimGam | ]
 ATTR AllDecl AllExpr AllCase [ prElimGam: PrElimGam | | ]
 
 SEM Expr
-  | Let         decls       .   patPrElimGam        =   gamPushNew @lhs.prElimGam
-                loc         .   (lPrEGam,gPrEGam)   =   gamPop @decls.patPrElimGam
-                            .   prElimGam           =   @lPrEGam `gamPushGam` @lhs.prElimGam
+  | Let         decls       .   patPrElimGam        =   emptyGam
+                loc         .   prElimGam           =   @decls.patPrElimGam `gamPushGam` @lhs.prElimGam
 
 SEM AGItf
   | AGItf       loc         .   prElimGam           =   emptyGam
 %%]
+
+SEM Expr
+  | Let         decls       .   patPrElimGam        =   emptyGam
+                loc         .   prElimGam           =   @decls.patPrElimGam `gamPushGam` @lhs.prElimGam
+
+SEM Expr
+  | Let         decls       .   patPrElimGam        =   gamPushNew @lhs.prElimGam
+                loc         .   (lPrEGam,gPrEGam)   =   gamPop @decls.patPrElimGam
+                            .   prElimGam           =   @lPrEGam `gamPushGam` @lhs.prElimGam
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Predicate, for intro of predicates

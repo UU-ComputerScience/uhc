@@ -60,11 +60,11 @@ SEM Expr
                                                         . gamElts $ @tqoGam
                             .   gathPredL           =   filter (not . (`elementOf` @quantPrIdSet) . poId) @remPrfPrL ++ @bodyRemPrfPrL
                 lhs         .   gathPredL           =   @gathPredL
-  | AppTop      loc         .   imSubsTy            =   @expr.tyCnstr |=> @imTy
+  | AppTop      loc         .   imSubsTy            =   @imTy
                             .   gathSubsPredL       =   @expr.tyCnstr |=> @expr.gathPredL
                             .   (inKnGathPrL,remGathPrL)
                                                     =   partition  (\p -> any (`elem` ftv @knPrL) (ftv p)) @gathSubsPredL
-  | Lam         loc         .   imSubsTy            =   @body.tyCnstr |=> @imTy
+  | Lam         loc         .   imSubsTy            =   foCnstr @foKnFun |=> @imTy
                             .   gathSubsPredL       =   @body.tyCnstr |=> @body.gathPredL
                             .   (inKnGathPrL,remGathPrL)
                                                     =   partition  (\p -> let fv = ftv p
@@ -84,11 +84,6 @@ SEM Decl
                 lhs         .   gathPredL           =   []
 
 %%]
-
-SEM AGItf
-  | AGItf       loc         .   gathSubsPredL       =   @expr.tyCnstr |=> @expr.gathPredL
-                            .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs)
-                                                    =   prfPreds @lUniq (emptyFE {fePrElimGam = @expr.prElimGam}) @gathSubsPredL
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Passing back additional bindings using a pred

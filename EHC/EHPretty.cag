@@ -328,7 +328,7 @@ SEM Expr
 %%[9
 SEM Expr
   | Let         loc     .  ppExtra  :=  ppCmt  (   ppGam @lQuTyGam   >-< ppGam @lQuValGam
-                                               >-< ppGam @lQuPrIGam  >-< ppGam @lPrEGam
+                                               >-< ppGam @lQuPrIGam  >-< ppGam @decls.patPrElimGam
                                                )
 %%]
 

@@ -22,7 +22,7 @@
 %%[4 export(cnstrFilter)
 %%]
 
-%%[9 import(FiniteMap) export(CnstrInfo(..),fixTyVarsCnstr,tyFixTyVars,cnstrImplsLookup,cnstrImplsUnit,listToCnstrImpls,cnstrToAssocL)
+%%[9 import(FiniteMap,EHDebug) export(CnstrInfo(..),fixTyVarsCnstr,tyFixTyVars,cnstrImplsLookup,cnstrImplsUnit,listToCnstrImpls,cnstrToAssocL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -98,6 +98,10 @@ cnstrImplsLookup v (Cnstr s)
 
 cnstrToAssocL :: Cnstr -> AssocL UID CnstrInfo
 cnstrToAssocL (Cnstr l) = fmToList l
+%%]
+
+%%[9
+cnstrSize (Cnstr m) = sizeFM m
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -253,7 +257,7 @@ instance Substitutable v => Substitutable (HsName,v) where
 
 %%[9.SubstitutableCnstr -2.SubstitutableCnstr
 instance Substitutable Cnstr where
-  s1@(Cnstr sl1) |=>   s2@(Cnstr sl2)  =   Cnstr (mapFM (\v t -> s1 |=> t) sl2 `plusFM` sl1)
+  s1@(Cnstr sl1) |=>   s2@(Cnstr sl2)  =   Cnstr (mapFM (\v t -> s1 |=> t) (sl2) `plusFM` (sl1))
   ftv                  (Cnstr sl)      =   ftv . eltsFM $ sl
 %%]
 

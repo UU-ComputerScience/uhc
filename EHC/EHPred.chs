@@ -104,6 +104,13 @@ data ProofState
   =  ProofState     { prfsProvenGraph        :: ProvenGraph     , prfsUniq               :: UID
                     , prfsPredsToProve       :: [PredOcc]       , prfsPredsOrigToProve   :: [Pred]
                     }
+                    deriving Show
+
+instance PP ProofState where
+  pp s = "PrfSt:" >#< (pp (prfsProvenGraph s)
+                       >-< pp (prfsUniq s)
+                       >-< ppCommaList (prfsPredsToProve s)
+                       >-< ppCommaList (prfsPredsOrigToProve s))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -204,7 +204,11 @@ SEM Decl
 %%[7
 SEM Expr
   | Rec         loc     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Rec"] [] [@recExpr.ppAST] @info
-                        .  info     =   []
+                        .  info     =   [ mkInfo1 "lhs.knTy" (pp @lhs.knTy)
+                                        , mkInfo1 "lhs.knTy+subst" (pp (@recExpr.tyCnstr |=> @lhs.knTy))
+                                        , mkInfo1 "recExpr.ty" (pp @recExpr.ty)
+                                        , mkInfo1 "ty" (pp @ty)
+                                        ]
   | Sel         loc     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Sel"] [ppNm @lbl] [@expr.ppAST] @info
                         .  info     =   [ mkInfo1 "lhs.knTy" (pp @lhs.knTy)
                                         ]
@@ -222,10 +226,14 @@ SEM RecExpr
                                         ]
   | Ext         loc     .  ppAST    =   ppNestInfo @lhs.opts ["RecExpr","Ext"] [ppNm @nm] [@recExpr.ppAST,@expr.ppAST] @info
                         .  info     =   [ mkInfo1 "lhs.knTy" (pp @lhs.knTy)
+                                        , mkInfo1 "foTy foKnRec" (pp (foTy @foKnRec))
+                                        , mkInfo1 "recExpr.ty" (pp @recExpr.ty)
+                                        , mkInfo1 "recExpr.ty+subst" (pp (@expr.tyCnstr |=> @recExpr.ty))
                                         , mkInfo1 "ty" (pp @ty)
                                         ]
   | Upd         loc     .  ppAST    =   ppNestInfo @lhs.opts ["RecExpr","Upd"] [ppNm @nm] [@recExpr.ppAST,@expr.ppAST] @info
                         .  info     =   [ mkInfo1 "lhs.knTy" (pp @lhs.knTy)
+                                        , mkInfo1 "foTy foKnRec" (pp (foTy @foKnRec))
                                         , mkInfo1 "ty" (pp @ty)
                                         , mkInfo1 "finRecTy" (pp (@lhs.finTyCnstr |=> @recExpr.ty))
                                         ]
@@ -301,7 +309,10 @@ SEM Expr
                                         , mkInfo1 "remPrfPrL" (ppCommaList @remPrfPrL)
                                         , mkInfo1 "tqoGam" (pp @tqoGam)
                                         ]
-  | Lam         loc     .  info3    :=  [ mkInfo1 "knPrL" (ppCommaList @knPrL)
+  | Lam         loc     .  info3    :=  [ mkInfo1 "imTy" (pp @imTy)
+                                        , mkInfo1 "imTy+subst" (pp (@body.tyCnstr |=> @imTy))
+                                        , mkInfo1 "knImpls" (pp @knImpls)
+                                        , mkInfo1 "knPrL" (ppCommaList @knPrL)
                                         , mkInfo1 "gathSubsPredL" (ppCommaList @gathSubsPredL)
                                         , mkInfo1 "inKnGathPrL" (ppCommaList @inKnGathPrL)
                                         , mkInfo1 "remPrfPrL" (ppCommaList @remPrfPrL)
@@ -309,7 +320,11 @@ SEM Expr
                                         , mkInfo1 "lamBodyCoeL" (ppCommaList @lamBodyCoeL)
                                         , mkInfo1 "lamArgCoeL" (ppCommaList @lamArgCoeL)
                                         ]
-  | AppTop      loc     .  info2    :=  [ mkInfo1 "gathSubsPredL" (ppCommaList @gathSubsPredL)
+  | AppTop      loc     .  info2    :=  [ mkInfo1 "resTy" (pp @resTy)
+                                        , mkInfo1 "ty" (pp @ty)
+                                        , mkInfo1 "imTy" (pp @imTy)
+                                        , mkInfo1 "imTy+subst" (pp (@expr.tyCnstr |=> @imTy))
+                                        , mkInfo1 "gathSubsPredL" (ppCommaList @gathSubsPredL)
                                         , mkInfo1 "inKnGathPrL" (ppCommaList @inKnGathPrL)
                                         , mkInfo1 "remGathPrL" (ppCommaList @remGathPrL)
                                         , mkInfo1 "remPrfPrL" (ppCommaList @remPrfPrL)
