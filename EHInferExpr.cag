@@ -77,7 +77,7 @@ SEM Expr
 
 %%[4_1
 SEM Expr
-  | Var         loc         .  fo                   :=  fitsIn (@lhs.fiOpts {fioBindToTyBind = True}) @fe @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
+  | Var         loc         .  fo                   :=  fitsIn (@howToBind @lhs.fiOpts) @fe @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
 %%]
 
 %%[1.Con
@@ -102,6 +102,11 @@ SEM Expr
                             .  fo                   :=  fitsIn @lhs.fiOpts @fe @lUniq2 @fTy (@lhs.tyCnstr |=> @lhs.knTy)
 %%]
 
+%%[4_1
+SEM Expr
+  | Con         loc         .  fo                   :=  fitsIn (@howToBind @lhs.fiOpts) @fe @lUniq2 @fTy (@lhs.tyCnstr |=> @lhs.knTy)
+%%]
+
 %%[1.App
 SEM Expr
   | App         loc         .  knFunTy              =   [Ty_Any] `mkTyArrow` @lhs.knTy
@@ -119,7 +124,7 @@ SEM Expr
 
 %%[4_1.App
 SEM Expr
-  | App         (arg.knTy,loc.fTy)                  :=  tyArrowArgRes . tyBindTy $ @func.ty
+  | App         (arg.knTy,loc.fTy)                  :=  tyArrowArgRes . tyAltsTy $ @func.ty
 %%]
 
 %%[9.App
@@ -127,7 +132,7 @@ SEM Expr
   | App         loc         .  (knFunTy,imTy)       :=  let  [i,a] = mkNewUIDL 2 @lUniq
                                                              im = mkImplsVar i
                                                         in   ([im,mkTyVar a] `mkTyArrow` (@lhs.tyCnstr |=> @lhs.knTy),im)
-                (_,arg.knTy,loc.fTy)                :=  tyArrowImplsArgRes . tyBindTy $ @func.ty
+                (_,arg.knTy,loc.fTy)                :=  tyArrowImplsArgRes . tyAltsTy $ @func.ty
                 loc         .  prOccL               =   tyImplsPreds (@arg.tyCnstr |=> @imTy)
 %%]
 
@@ -238,7 +243,7 @@ SEM Expr
 %%]
 SEM Expr
   | IConst CConst
-                loc         .  fo                   :=  fitsIn (@lhs.fiOpts {fioBindToTyBind = True}) @fe @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
+                loc         .  fo                   :=  fitsIn (@lhs.fiOpts {fioBindToTyAlts = True}) @fe @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type is enforced?

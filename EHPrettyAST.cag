@@ -114,7 +114,7 @@ SEM Decl
                                         , mkInfo1 "sigTy" (ppTy @sigTy)
                                         , mkInfo1 "patExpr.ty" (ppTy @patExpr.ty)
                                         , mkInfo1 "expr.ty" (ppTy @expr.ty)
-                                        , mkInfo1 "expr.tyCnstr" (pp @expr.tyCnstr)
+                                        , mkInfo1 "expr.tyCnstr" (ppCnstrV @expr.tyCnstr)
                                         ]
 
 SEM Expr

@@ -1,0 +1,58 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to eliminate 'Both' types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_1 hs import(EHCommon,EHTy,EHCnstr,EHSubstitutable) export(tyElimBoth)
+%%]
+
+%%[4_1.WRAPPER import(EHTyAbsSyn)
+WRAPPER TyAGItf
+%%]
+
+%%[4_1 hs
+tyElimBoth :: Ty -> (Ty,Cnstr)
+tyElimBoth ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf)
+     in   (repl_Syn_TyAGItf t,cnstr_Syn_TyAGItf t)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replacement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_1
+ATTR AllAllTy [ | | repl: SELF  ]
+ATTR TyAGItf  [ | | repl: Ty    ]
+
+SEM Ty
+  | Both            loc     .   repl        =   mkTyVar @tv
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unification of all binds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_1
+ATTR AllAllTy [ | | replExpose: SELF  ]
+ATTR AllAllTy [ | cnstr: Cnstr | ]
+ATTR TyAGItf  [ | | cnstr: Cnstr ]
+
+SEM Ty
+  | Both            lhs     .   (replExpose,cnstr)
+                                            =   case @tyL.replExpose of
+                                                    []      ->  (@repl,@lhs.cnstr)
+                                                    (r:_)   ->  (r,(@tv `cnstrTyUnit` r) |=> @tyL.cnstr)
+
+SEM TyAGItf
+  | AGItf           ty      .   cnstr       =   emptyCnstr
+%%]
+

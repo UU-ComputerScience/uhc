@@ -130,8 +130,12 @@ SEM TyQu
 
 %%[4_1
 SEM Ty
-  | Bind            loc     .   pp      =   ppParNeed  @parNeed @lhs.parNeed
-                                                       (maybe (pp @tv) id (lookup @tv @lhs.tnMap) >|< ppListSep "[" "]" "/" @tyL.ppL)
+  | Alts            loc     .   o       =   "["
+                    loc     .   c       =   "]"
+  | Both            loc     .   o       =   "<"
+                    loc     .   c       =   ">"
+  | Alts Both       loc     .   pp      =   ppParNeed  @parNeed @lhs.parNeed
+                                                       (maybe (pp @tv) id (lookup @tv @lhs.tnMap) >|< ppListSep @o @c "/" @tyL.ppL)
 
 SEM TyL [ | | ppL: PP_DocL ]
   | Nil             lhs     .   ppL     =   []
@@ -255,7 +259,7 @@ SEM TyL
                         .   parNeedL            =   []
 
 SEM Ty
-  | Bind        loc     .   parNeed             =   ParNotNeeded
+  | Alts Both   loc     .   parNeed             =   ParNotNeeded
 %%]
 
 %%[7

@@ -1,6 +1,6 @@
 %% configuration
 
-%if phd || forAfpTRUU1 || onlyCurrentWork
+%if forPHD || forAfpTRUU1 || onlyCurrentWork
 %let inclChunkMarks	= True
 %else
 %let inclChunkMarks	= False

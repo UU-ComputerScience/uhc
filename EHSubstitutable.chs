@@ -115,7 +115,7 @@ tvUnderCnstr :: Cnstr -> TyVarId -> TyVarId
 tvUnderCnstr c v
   =  case c |=> mkTyVar v of
 		Ty_Var   v' TyVarCateg_Plain  -> v'
-		Ty_Bind  v' _                 -> v'
+		Ty_Alts  v' _                 -> v'
 		_                             -> v
 %%]
 

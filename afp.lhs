@@ -2,31 +2,31 @@
 
 %% configuration of what to include
 
-%if phd || forAfpTRUU1 || asSlides
+%if forPHD || forAfpTRUU1
 %let inclParts  = True
 %else
 %let inclParts  = False
 %endif
 
-%if phd || forAfpTRUU1
+%if forPHD || forAfpTRUU1
 %let inclTOC    = True
 %else
 %let inclTOC    = False
 %endif
 
-%if forAFP04Notes || phd || asSlides || forAfpTRUU1
+%if forAFP04Notes || forPHD || forEHIntro || forAfpTRUU1
 %let incl00     = True
 %else
 %let incl00     = False
 %endif
 
-%if forAFP04Notes || phd || asSlides || forAfpTRUU1
+%if forAFP04Notes || forPHD || forAfpTRUU1
 %let incl01     = True
 %else
 %let incl01     = False
 %endif
 
-%if phd || asSlides || forAfpTRUU1
+%if forPHD  || forAfpTRUU1
 %let incl02     = True
 %let incl03     = True
 %else
@@ -34,13 +34,13 @@
 %let incl03     = False
 %endif
 
-%if phd || asSlides || forAfpTRUU1 || onlyCurrentWork
+%if forPHD  || forAfpTRUU1 || onlyCurrentWork
 %let incl04     = True
 %else
 %let incl04     = False
 %endif
 
-%if phd || asSlides || onlyCurrentWork
+%if forPHD  || onlyCurrentWork
 %let incl05     = True
 %let incl06     = True
 %let incl07     = True
@@ -50,25 +50,25 @@
 %let incl07     = False
 %endif
 
-%if phd || asSlides || onlyCurrentWork
+%if forPHD  || onlyCurrentWork
 %let incl08     = True
 %else
 %let incl08     = False
 %endif
 
-%if phd || forESOP05 || asSlides || onlyCurrentWork
+%if forPHD || forESOP05  || onlyCurrentWork
 %let incl09     = True
 %else
 %let incl09     = False
 %endif
 
-%if phd || asSlides || onlyCurrentWork
+%if forPHD  || onlyCurrentWork
 %let incl10     = True
 %else
 %let incl10     = False
 %endif
 
-%if phd || asSlides
+%if forPHD 
 %let incl11     = True
 %let incl12     = True
 %let incl13     = True
@@ -88,7 +88,7 @@
 %let inclXX     = False
 %endif
 
-%if phd
+%if forPHD
 %let inclApp    = True
 %let inclInx    = True
 %else
@@ -307,7 +307,7 @@
 %endif
 %endif
 
-%if not asArticle || chapAsArticle
+%if not asArticle || chapAsArticle || forEHIntro
 \let\prevSection=\section
 \let\prevSubsection=\subsection
 %if not chapAsArticle
@@ -315,6 +315,9 @@
 %endif
 \def\subsection{\prevSection}
 \def\subsubsection{\prevSubsection}
+%endif
+%if forEHIntro
+\def\paragraph{\prevSubsection}
 %endif
 
 \usepackage{txfonts}
@@ -476,11 +479,13 @@
 % title
 %if forESOP05
 \title{Explicit implicit parameters}
+%elif forEHIntro
+\title{Essential Haskell Compiler overview}
 %else
 \title{Typing Haskell with an Attribute Grammar}
 %endif
 
-%if phd
+%if forPHD
 \author{Atze Dijkstra}
 %else
 \author{Atze Dijkstra and S. Doaitse Swierstra}
@@ -685,9 +690,12 @@ This concerns mainly future design decisions which have an influence on design d
 \part{Type checking, inference and polymorphism}
 %endif
 
+%if not forEHIntro
 \frame<presentation>{
+\frametitle{Topics}
 \tableofcontents[hidesubsections]
 }
+%endif
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Intro
@@ -695,12 +703,14 @@ This concerns mainly future design decisions which have an influence on design d
 
 %if incl00
 
-%if phd
+%if not forEHIntro
+%if forPHD
 \section*%
 %else
 \section%
 %endif
 {Introduction and overview}
+%endif
 
 Haskell98 \cite{peytonjones03has98-rev-rep} is a complex language,
 not to mention its more experimental incarnations.
@@ -732,16 +742,42 @@ the intentions and purpose of this paper in more detail.
 This is followed by a short description
 of the final language for which we develop compilers throughout this paper.
 
-%if phd
+%if forPHD
 \subsection*%
 %else
 \subsection%
 %endif
 {Purpose}
 
+%if forEHIntro
 \frame<presentation>
 {
-\frametitle{What do we hope to have achieved by this talk?}
+\frametitle{Why and what?}
+\begin{itemize}
+\item EHC (Essential Haskell compiler) is a compiler
+\begin{itemize}
+\item For Haskell restricted to its essentials
+\item Each language feature as general as possible
+\item For experimentation and education
+\end{itemize}
+\item The implementation of the compiler
+\begin{itemize}
+\item Is partitioned into steps, building on top of each other
+\item Each step adds a language feature
+\item Each step implements a working compiler which can be used as starting point for changes
+\end{itemize}
+\item Design starting point
+\begin{itemize}
+\item Use explicit (type) information provided by programmer
+\item And make best effort to propagate this information to where it is needed
+\end{itemize}
+\end{itemize}
+}
+
+%else
+\frame<presentation>
+{
+\frametitle{What do we hope to have achieved?}
 \begin{itemize}
 \item Show how a compiler for an extended subset of Haskell can be implemented
 \item While at the same time minimizing complexity and maximizing generality
@@ -797,20 +833,44 @@ of the final language for which we develop compilers throughout this paper.
 \end{itemize}
 \end{itemize}
 }
+%endif
 
 \frame<presentation>
 {
-\frametitle{What do we hope to achieve in the near future?}
+\frametitle{And then?}
 \begin{itemize}
 \item Extend the set of compilers up to a full Haskell++ compiler
 \item Keep it understandable
-\item So it can be used for both experimentation and education
-\begin{itemize}
-\item by anybody, by ourselves
-\end{itemize}
+\item So it can still be used for experimentation and education
 \item Will grow over time
+\begin{itemize}
+\item see @http://www.cs.uu.nl/groups/ST/Ehc/WebHome@
+\end{itemize}
 \end{itemize}
 }
+
+%if forEHIntro
+\frame<presentation>
+{
+\frametitle{How is it implemented?}
+\begin{itemize}
+\item Tools
+\begin{itemize}
+\item Attribute grammar system
+\item Parser combinators
+\item Code weaving tools
+\end{itemize}
+\item Design starting points
+\begin{itemize}
+\item Stick to standard (Hindley/Milner) type inference
+\item Use explicit (type) information provided by programmer
+\item And make best effort to propagate this information to where it is needed
+\item So we are not limited by type inference
+\end{itemize}
+\end{itemize}
+}
+
+%else
 
 \frame<presentation>
 {
@@ -830,7 +890,6 @@ of the final language for which we develop compilers throughout this paper.
 \item Or is ``not interesting'' or straightforward
 \item So presented code in slides has loose ends
 \item Which partially can be found in the paper
-\item And most recent sources at @http://www.cs.uu.nl/groups/ST/Ehc/WebHome@
 \end{itemize}
 \item We will primarily look at the AG for EH 1 and 2
 \end{itemize}
@@ -853,6 +912,7 @@ of the final language for which we develop compilers throughout this paper.
 \end{itemize}
 \end{itemize}
 }
+%endif
 
 For whom is this paper intended?
 \begin{itemize}
@@ -967,7 +1027,7 @@ the following chapters.
 Only short examples are given, so the reader gets an impression of what is explained in more detail
 and implemented in the relevant versions of the compiler.
 
-%if phd
+%if forPHD
 \subsection*%
 %else
 \subsection%
@@ -985,7 +1045,7 @@ and some basic types like |Int|, |Char| and tuples.
 An EH program is a single expression, contrary to a Haskell program which consists of a set of declarations forming a module.
 
 \begin{code}
-%%1srcfile(test/1-all-ok2.eh%%)
+%%1srcfile(test/1-demo2.eh%%)
 \end{code}
 
 All variables need to be typed explicitly, absence of an explicit type is considered to be an error.
@@ -1001,7 +1061,7 @@ is not accepted.
 Besides the basic types |Int| and |Char|, composite types can be formed by building tuples and defining functions:
 
 \begin{code}
-%%1srcfile(test/1-all-ok3.eh%%)
+%%1srcfile(test/1-demo3.eh%%)
 \end{code}
 
 Functions accept one parameter only, which can be a pattern.
@@ -1014,13 +1074,13 @@ No polymorphic types exist yet.
 \item EH program is single expression
 \SafeCode{%
 \begin{code}
-%%1srcfile(test/1-all-ok2.eh%%)
+%%1srcfile(test/1-demo2.eh%%)
 \end{code}
 }
 \item Types |Int|, |Char|, tuples and functions
 \SafeCode{%
 \begin{code}
-%%1srcfile(test/1-all-ok3.eh%%)
+%%1srcfile(test/1-demo3.eh%%)
 \end{code}
 }
 \end{itemize}
@@ -1065,10 +1125,10 @@ the compiler will reconstruct the type specification |i :: %%2file(test/1-sig-fa
 The reconstructed type information is monomorphic, for example for the identity function in:
 
 \begin{code}
-%%2srcfile(test/2-id-int.eh%%)
+%%2srcfile(test/2-demo1.eh%%)
 \end{code}
 
-the type |id :: %%2file(test/2-id-int.eh%%)|
+the type |id :: %%2file(test/2-demo1.eh%%)|
 is reconstructed.
 
 \frame<presentation>
@@ -1086,11 +1146,11 @@ Missing type is inferred: |i :: %%2file(test/1-sig-fail.eh%%)|
 \item Inferred types are monomorphic
 \SafeCode{%
 \begin{code}
-%%2srcfile(test/2-id-int.eh%%)
+%%2srcfile(test/2-demo1.eh%%)
 \end{code}
 }
 gives rise to type
-|id :: %%2file(test/2-id-int.eh%%)|
+|id :: %%2file(test/2-demo1.eh%%)|
 \end{itemize}
 }
 
@@ -1202,7 +1262,7 @@ For |f| only the part that cannot be inferred is given in the signature.
 Finally, type information can be hidden, or encapsulated,
 by using existential quantification:
 \begin{code}
-%%4srcfile(test/4-ex-extr.eh%%)
+%%4srcfile(test/4-demo1.eh%%)
 \end{code}
 The tuple |xy| contains an |Int| and a function making an |Int| from the
 value of which the type has been hidden.
@@ -1220,7 +1280,7 @@ The explicit |exists| may also be omitted, for example
 {
 \frametitle{EH version 4: Higher ranked types}
 \begin{itemize}
-\item<+->
+\item
 Type signatures for quantifiers on argument (higher ranked) positions
 \SafeCode{%
 \begin{code}
@@ -1229,7 +1289,7 @@ let  f :: (forall a . a -> a) -> (Int,Char)
 in   f
 \end{code}
 }
-\item<+-> Notational sugaring allows omission of quantifier
+\item Notational sugaring allows omission of quantifier
 \SafeCode{%
 \begin{code}
 let  f :: (a -> a) -> (Int,Char)
@@ -1248,7 +1308,7 @@ in   f
 Existential quantification: hiding/forgetting type information
 \SafeCode{%
 \begin{code}
-%%4srcfile(test/4-ex-extr.eh%%)
+%%4srcfile(test/4-demo1.eh%%)
 \end{code}
 }
 \end{itemize}
@@ -1273,7 +1333,7 @@ Existential quantification: hiding/forgetting type information
 \end{itemize}
 }
 
-%if incl05
+%if incl05 || forEHIntro
 
 \paragraph{EH version 5: Data types.}
 The fifth version (EH version 5, \chapterRef{ehc5})
@@ -1300,7 +1360,7 @@ User defined data types
 
 %endif %% incl05
 
-%if incl06
+%if incl06 || forEHIntro
 
 \paragraph{EH version 6: Kinding.}
 The previous version allows incorrect programs because
@@ -1385,31 +1445,100 @@ Kind signatures for types (similar to type signatures for values)
 \end{itemize}
 }
 
+%endif %% incl06
+
+%if incl07 || forEHIntro
 \frame<presentation>
 {
-\frametitle{EH version 7: non extensible records}
+\frametitle{EH version 7: Non extensible records}
 \begin{itemize}
 \item Replacement for tuples
 \SafeCode{%
 \begin{code}
-%%6srcfile(test/7-all-ok2.eh%%)
+%%7srcfile(test/7-demo1.eh%%)
 \end{code}
 }
 \end{itemize}
 }
 
+%endif %% incl07
+
+%if incl08 || forEHIntro
 \frame<presentation>
 {
-\frametitle{EH version [8..]}
+\frametitle{EH version 8: Code generation}
 \begin{itemize}
-\item 8: Code generation
-\item{} [9..]: Extensible records, class system, modules, ...
+\item In phases
+ \begin{itemize}
+ \item to core representation (removing syntactic sugar, ...)
+ \item via transformations (lambda lifting, ...)
+ \item to code for abstract sequential machine
+ \end{itemize}
+\item Interpreter for abstract sequential machine
+\end{itemize}
+}
+%endif %% incl08
+
+%if incl09 || forEHIntro
+\frame<presentation>
+{
+\frametitle{EH version 9: Class system, explicit implicit parameters}
+\begin{itemize}
+\item Class system
+\item + named instances
+\item + explicit dictionary passing
+\item + scoping for instances
+\item + coercions
 \end{itemize}
 }
 
-%endif %% incl06
+\frame<presentation>[plain]
+{
+%\frametitle{EH version 9: class system, explicit implicit parameters}
+\SafeCode{%
+\begin{code}
+%%9srcfile(eh-frags/9-eq-nub.eh%%)
+\end{code}
+}
+}
+%endif %% incl09
 
-%if phd
+%if incl10 || forEHIntro
+\frame<presentation>
+{
+\frametitle{EH version 10: Extensible records}
+\begin{itemize}
+\item Flexibility w.r.t. presence of labels
+\SafeCode{%
+\begin{code}
+%%10srcfile(test/10-demo1.eh%%)
+\end{code}
+}
+\item More general tuple access
+\SafeCode{%
+\begin{code}
+%%10srcfile(test/10-snd.eh%%)
+\end{code}
+}
+\end{itemize}
+}
+%endif %% incl10
+
+%if incl11 || forEHIntro
+\frame<presentation>
+{
+\frametitle{EH version [11..]: ...}
+\begin{itemize}
+\item (Student) projects
+\begin{itemize}
+\item Support for Attribute Grammars
+\item Efficient code generation
+\end{itemize}
+\end{itemize}
+}
+%endif %% incl11
+
+%if forPHD
 \subsection*%
 %else
 \subsection%
@@ -1456,7 +1585,7 @@ incorporates most of the abovementioned features:
 \end{description}
 
 %if False
-%if phd
+%if forPHD
 \subsection*%
 %else
 \subsection%
@@ -1484,7 +1613,7 @@ in   let  maf :: (a -> Eq a a) -> Eq L L
 \TBD{}
 %endif
 
-%if phd
+%if forPHD
 \subsection*%
 %else
 \subsection%
@@ -1519,7 +1648,7 @@ this paper \cite{dijkstra04ehc-web}.
 \end{itemize}
 
 %if not omitLitDiscuss
-%if phd
+%if forPHD
 \subsection*%
 %else
 \subsection%
@@ -1559,7 +1688,7 @@ value definitions.
 For example
 
 \begin{code}
-%%1srcfile(test/1-all-ok2.eh%%)
+%%1srcfile(test/1-demo2.eh%%)
 \end{code}
 
 is accepted, whereas
@@ -3922,11 +4051,11 @@ the used type language, that is, basic types, tuples and functions.
 
 So
 \begin{code}
-%%2srcfile(test/2-id-int.eh%%)
+%%2srcfile(test/2-demo1.eh%%)
 \end{code}
 will give
 \begin{TT}
-%%2ppfile(test/2-id-int.eh%%)
+%%2ppfile(test/2-demo1.eh%%)
 \end{TT}
 
 \frame<presentation>[containsverbatim]
@@ -3937,12 +4066,12 @@ will give
 \item For example
 \SafeCode{%
 \begin{code}
-%%2srcfile(test/2-id-int.eh%%)
+%%2srcfile(test/2-demo1.eh%%)
 \end{code}
 }
 \item infers
 \begin{TT}
-%%2ppfile(test/2-id-int.eh%%)
+%%2ppfile(test/2-demo1.eh%%)
 \end{TT}
 \end{itemize}
 }
@@ -5399,7 +5528,7 @@ implemented by not forgetting higher ranked type information.
 Quantifiers on higher ranked positions are also necessary to make existential types useful
 
 \begin{code}
-%%4srcfile(test/4-ex-extr.eh%%)
+%%4srcfile(test/4-demo1.eh%%)
 \end{code}
 
 An existentially quantified type \Ix{existential quantification}
@@ -5414,7 +5543,7 @@ All we know is that we can apply the second component to the first component
 This constraint is not upheld for |pq|, so an error is produced:
 
 \begin{TT}
-%%4ppfile(test/4-ex-extr.eh%%)
+%%4ppfile(test/4-demo1.eh%%)
 \end{TT}
 
 \frame<presentation>
@@ -5424,7 +5553,7 @@ This constraint is not upheld for |pq|, so an error is produced:
 \item ``It exists, but I've forgotten what it was''
 \SafeCode{%
 \begin{code}
-%%4srcfile(test/4-ex-extr.eh%%)
+%%4srcfile(test/4-demo1.eh%%)
 \end{code}
 }
 \item |xy| created with |a = Int|, quantifier hides this information
@@ -5436,7 +5565,7 @@ This constraint is not upheld for |pq|, so an error is produced:
 {
 \frametitle{Existential types}
 \begin{TT}
-%%4ppfile(test/4-ex-extr.eh%%)
+%%4ppfile(test/4-demo1.eh%%)
 \end{TT}
 }
 
@@ -6059,10 +6188,10 @@ the first argument should be fitted with the opposite variance and
 options |fiopt| should be made strong. This is described via a environment
 encoding this information
 
-\chunkCmdUseMark{EHTyFitsIn.4.AppSpine}
-\chunkCmdUseMark{EHTyFitsIn.4.fioMkStrong}
-\chunkCmdUseMark{EHTyFitsIn.4.AppSpineGam}
-\chunkCmdUseMark{EHTyFitsIn.4.appSpineGam}
+\chunkCmdUseMark{EHGam.4.AppSpine}
+\chunkCmdUseMark{EHCommon.4.fioMkStrong}
+\chunkCmdUseMark{EHGam.4.AppSpineGam}
+\chunkCmdUseMark{EHGam.4.appSpineGam}
 
 It also shows that only for function and tuple types we know what to do in such a situation.
 Complications in this area will arise with the introduction of datatypes
@@ -6580,7 +6709,7 @@ If this is the case we can forget all types |Vec(sigma)| and go on with the poly
 The rules for |<=| in \figRef{rules.fit4.bind} make this more precise.
 A bind type is introduced in \ruleRef{f-var-l1}.
 The introduction is also influenced by the context in which |<=| is used; this is expressed by
-the boolean flag |fioBindToTyBindY|, part of the set of options |fiopt|.
+the boolean flag |fioBindToTyAltsY|, part of the set of options |fiopt|.
 The modified \ruleRef{e-ident4B} \figRef{rules.expr4.B} for checking the type of an identifier sets this flag.
 
 A bind type can only be introduced when checking an identifier.

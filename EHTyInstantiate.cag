@@ -18,6 +18,9 @@
 %%[4 hs import(List) export(tyInst1Quants, tyInst1Exists, instCoConst, instContra)
 %%]
 
+%%[4_1 hs export(instPlain,instFixed,instMeet)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% tyInst
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -47,6 +50,13 @@ type HowToInst = TyQu -> TyVarId -> Ty
 instCoConst, instContra :: HowToInst
 instCoConst  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else mkTyCon ("C_" ++ show v)
 instContra   q v = if tyquIsForall q then Ty_Var v TyVarCateg_Fixed else Ty_Var v TyVarCateg_Plain
+%%]
+
+%%[4_1 hs
+instPlain, instFixed, instMeet :: HowToInst
+instPlain  _    = mkTyVar
+instFixed  _ v  = Ty_Var v TyVarCateg_Fixed
+instMeet   _ v  = Ty_Both v []
 %%]
 
 %%[4.tyInst -(3.tyInst 3.tyInstKnown) hs
