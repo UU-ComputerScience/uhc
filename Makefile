@@ -74,7 +74,7 @@ EHC_DPDS_MAIN					:= EHMainAG.ag EHInfer.ag EHInferExpr.ag \
 									EHInferPatExpr.ag EHInferTyExpr.ag EHInferKiExpr.ag EHInferData.ag \
 									EHInferCaseExpr.ag EHPretty.ag EHPrettyAST.ag EHAbsSyn.ag \
 									EHUniq.ag EHExtraChecks.ag EHGatherError.ag \
-									EHGenCode.ag \
+									EHGenCore.ag \
 									EHResolvePred.ag EHInferClass.ag
 EHC_DPDS_TY						:= EHTy.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_PRETTY				:= EHTyPretty.ag EHTyCommonAG.ag EHTyAbsSyn.ag

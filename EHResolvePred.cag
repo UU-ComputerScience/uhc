@@ -154,7 +154,7 @@ SEM Expr
                             .   uidLKnHd            =   implsUIDs @implsKnHd
                             .   uidLKnTl            =   implsUIDs @implsKnTl
   | Lam LamImpl loc         .   lamBodyCoeL         =   mkLamBodyCoe
-                                                                (mkCoe (\e -> rceMatch [@arg.topNm] [CAlt_Alt [@arg.cpat] e] cvarUndefined))
+                                                                (mkCoe (\e -> rceMatch (RCEEnv @lhs.valGam @lhs.tyGam) [@arg.topNm] [CAlt_Alt [@arg.cpat] e] cvarUndefined))
                                                                 @body.appArgCoeL
   | Lam         loc         .   lamArgCoeL          =   mkImplsLamCoe (mkLetRecCoe (mkCBindLForUIDL @cbindLMap (`elem` @uidLKnHd))) @implsKnHd
                                                         ++ mkImplsLamCoe (mkLetRecCoe (mkCBindLForUIDL @cbindLMap (`elem` @uidLKnTl))) @implsKnTl

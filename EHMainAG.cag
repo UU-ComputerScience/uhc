@@ -18,7 +18,7 @@
 %%[3 hs import(EHTyQuantify,EHTyInstantiate)
 %%]
 
-%%[8 hs import(EHCore)
+%%[8 hs import(FiniteMap,EHCore)
 %%]
 
 %%[9 hs import(Set,FiniteMap,EHPred,EHCorePretty,EHCoreSubst,EHDebug)
@@ -41,7 +41,7 @@ WRAPPER AGItf
 %%[6 import(EHInferKiExpr)
 %%]
 
-%%[8 import(EHGenCode)
+%%[8 import(EHGenCore)
 %%]
 
 %%[9 import(EHResolvePred,EHInferClass)

@@ -6,7 +6,7 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Generation of code
+%%% Generation of core
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -37,10 +37,11 @@ SEM Expr
   | Let         loc         .   mkFFILet    =   mkCExprLet CBindFFI @decls.cbindFFIL
                             .   cexpr       =   @mkFFILet . mkCExprLet CBindRec @decls.cbindL $ @body.cexpr
   | App         loc         .   cexpr       =   CExpr_App @func.cexpr @arg.cexpr
-  | Lam         loc         .   cexpr       =   CExpr_Lam @arg.topNm (rceMatch [@arg.topNm] [CAlt_Alt [@arg.cpat] @body.cexpr] cvarUndefined)
+  | Lam         loc         .   cexpr       =   CExpr_Lam @arg.topNm
+                                                    (rceMatch (RCEEnv @lhs.valGam @lhs.tyGam) [@arg.topNm] [CAlt_Alt [@arg.cpat] @body.cexpr] cvarUndefined)
   | Case        loc         .   cexpr       =   let  n = uidHNm @lUniq
                                                 in   mkCExprLet CBindPlain [CBind_Bind n @expr.cexpr]
-                                                        (rceMatch [n] @alts.caltL cvarUndefined)
+                                                        (rceMatch (RCEEnv @lhs.valGam @lhs.tyGam) [n] @alts.caltL cvarUndefined)
   | TypeAs      loc         .   cexpr       =   @expr.cexpr
   | Undefined   loc         .   cexpr       =   cvarUndefined
 %%]
@@ -308,8 +309,23 @@ SEM Expr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Reordering of case expression
+%%% Reordering of Case Expression (RCE)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+data RCEEnv = RCEEnv {rceValGam :: ValGam, rceTyGam :: TyGam}
+
+rceEnvDataAlts :: RCEEnv -> CTag -> [(CTag,Int)]
+rceEnvDataAlts env t
+  =  case t of
+       CTag _ conNm
+          ->  case valGamLookup conNm . rceValGam $ env of
+                Just vgi
+                   ->  let  tyNm = tyAppFunConNm . snd . tyArrowArgsRes . vgiTy $ vgi
+                       in   maybe [] (assocLElts . fmToList . tgiDataTagArityMp) . tyGamLookup tyNm . rceTyGam $ env
+                _  ->  []
+       _  ->  []
+%%]
 
 %%[8 hs
 rceSplit :: (CAlt -> Bool) -> CAltL -> [CAltL]
@@ -327,14 +343,15 @@ rceAltsForCon alts conNm
 rceRebinds :: HsName -> CAltL -> CBindL
 rceRebinds nm alts = [ CBind_Bind n (CExpr_Var nm) | (CPatNmOrig n) <- caltLPatNms alts, n /= nm ]
 
-rceMatchVar :: [HsName] -> CAltL -> CExpr -> CExpr
-rceMatchVar (arg:args') alts ce
-  =  let  remMatch  = rceMatch args' [CAlt_Alt remPats e | (CAlt_Alt (CPat_Var n : remPats) e) <- alts] ce
+rceMatchVar :: RCEEnv ->  [HsName] -> CAltL -> CExpr -> CExpr
+rceMatchVar env (arg:args') alts ce
+  =  let  remMatch  = rceMatch env args' [CAlt_Alt remPats e | (CAlt_Alt (CPat_Var n : remPats) e) <- alts] ce
      in   mkCExprLet CBindPlain (rceRebinds arg alts) remMatch
 
-rceMatchCon :: [HsName] -> CAltL -> CExpr -> CExpr
-rceMatchCon args@(arg:args') alts ce
+rceMatchCon :: RCEEnv -> [HsName] -> CAltL -> CExpr -> CExpr
+rceMatchCon env args@(arg:args') alts ce
   =  let  arg'   =  hsnPrefix "!" arg
+          sortAltsOnTag = sortBy (\a1 a2 -> caltTag a1 `compare` caltTag a2)
           alts'  =  map
                       (\alts
                         ->  let  (subAlts,subAltSubNms)
@@ -343,42 +360,59 @@ rceMatchCon args@(arg:args') alts ce
                                                     | (CAlt_Alt (CPat_Con _ _ _ pbinds : ps) e) <- alts,
                                                       let pats = [ p | (CPatBind_Bind _ _ p) <- pbinds ]
                                                     ]
-                                 subMatch      =  rceMatch (head subAltSubNms ++ args') subAlts ce
+                                 subMatch      =  rceMatch env (head subAltSubNms ++ args') subAlts ce
                                  altPat        =  case head alts of
                                                     CAlt_Alt (CPat_Con n t tn pbinds : _) _
                                                       -> CPat_Con n t tn [ CPatBind_Bind o n (CPat_Var (cpatVarNm p))| (CPatBind_Bind o n p) <- pbinds ]
                             in   CAlt_Alt [altPat] (mkCExprLet CBindPlain (rceRebinds arg' alts) subMatch)
                       )
                  .  groupBy (\a1 a2 -> caltTag a1 == caltTag a2)
-                 .  sortBy (\a1 a2 -> caltTag a1 `compare` caltTag a2)
+                 .  sortAltsOnTag
                  .  filter (not . null . caltPatL)
                  $  alts
-     in   ceStrictIn arg' (CExpr_Var arg) (\n -> CExpr_Case n alts' ce)
+          altTags = [ t | (CAlt_Alt (CPat_Con _ t _ _ : _) _) <- alts' ]
+          absentTagArities = filter (\(t,_) -> t `notElem` altTags) . rceEnvDataAlts env . head $ altTags
+          absentAlts
+                 =  [ CAlt_Alt [mkP ct n a] ce | (ct@(CTag t n),a) <- absentTagArities ]
+                 where  mkB o = CPatBind_Bind (CExpr_Int o) (cpatNmNm cpatNmNone) (CPat_Var cpatNmNone)
+                        mkP ct n a = CPat_Con cpatNmNone ct n [mkB o | o <- [0..a-1]]
+     in   ceStrictIn arg' (CExpr_Var arg) (\n -> CExpr_Case n (sortAltsOnTag (alts' ++ absentAlts)) ce)
 
-rceMatchVarCon :: [HsName] -> CAltL -> CExpr -> CExpr
-rceMatchVarCon args alts@(alt:_) ce
-  |  caltIsVar alt  = rceMatchVar args alts ce
-  |  otherwise      = rceMatchCon args alts ce
+rceMatchVarCon :: RCEEnv -> [HsName] -> CAltL -> CExpr -> CExpr
+rceMatchVarCon env args alts@(alt:_) ce
+  |  caltIsVar alt  = rceMatchVar env args alts ce
+  |  otherwise      = rceMatchCon env args alts ce
 
-rceMatch :: [HsName] -> CAltL -> CExpr -> CExpr
-rceMatch [] []    ce =  ce
-rceMatch [] alts  ce
+rceMatch :: RCEEnv -> [HsName] -> CAltL -> CExpr -> CExpr
+rceMatch _ [] []    ce =  ce
+rceMatch _ [] alts  ce
   =  case [ e | (CAlt_Alt [] e) <- alts ] of
        (e:_)  -> e
        _      -> ce
-rceMatch args alts ce
+rceMatch env args alts ce
   =  foldr
         (\alts e
            ->  case e of
                   CExpr_Var _
-                     ->  rceMatchVarCon args alts e
-                  _  ->  let  bnm = HNm ("_casecont_" ++ (show . cpatVarNm . caltPat . head $ alts))
-                              vc = rceMatchVarCon args alts (CExpr_Var bnm)
+                     ->  rceMatchVarCon env args alts e
+                  _  ->  let  bnm = hsnPrefix "_casecont_" (cpatNmNm . cpatVarNm . caltPat . head $ alts)
+                              vc = rceMatchVarCon env args alts (CExpr_Var bnm)
                          in   mkCExprLet CBindPlain [CBind_Bind bnm e] vc
         )
         ce
      $ (rceSplit caltIsVar alts)
 %%]
+
+rceMatch env args alts ce
+  =  foldr
+        (\alts e
+           ->  let  bnm = hsnPrefix "_casecont_" (cpatNmNm . cpatVarNm . caltPat . head $ alts)
+                    vc = rceMatchVarCon env args alts (CExpr_Var bnm)
+               in   mkCExprLet CBindPlain [CBind_Bind bnm e] vc
+        )
+        ce
+     $ (rceSplit caltIsVar alts)
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Data
@@ -388,12 +422,11 @@ rceMatch args alts ce
 ATTR AllDataConstr [ dataAltTy: Ty | | ]
 
 SEM DataConstr
-  | Constr      loc         .   tag         =   tyRecOffset @conNm @lhs.dataAltTy
-                lhs         .   cbindL      =   let  len = length @fields.tyL
+  | Constr      lhs         .   cbindL      =   let  len = length @fields.tyL
                                                      nms = map (\i -> HNm ("x" ++ show i)) [1..len]
                                                 in   [CBind_Bind @conNm
                                                         (mkCExprLam nms
-                                                          (mkCExprApp (CExpr_Tup (CTag @tag @conNm))
+                                                          (mkCExprApp (CExpr_Tup @ctag)
                                                             (map CExpr_Var nms)))
                                                      ]
 %%]

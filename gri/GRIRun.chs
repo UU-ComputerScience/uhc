@@ -187,7 +187,7 @@ grEvalApp rs f aL
               ->  case elems a of
                     (RVCat NdPApp:RVInt ndMiss:ndF:ndAL) | aLSz > ndMiss
                         ->  (grCall rs' (rsDeref rs' ndF) (ndAL ++ (map (grEvalVal rs) (take ndMiss aL))),Nothing)
-                            where  n = HNm "_"
+                            where  n = hsnWild
                                    e = GrExpr_App n (drop ndMiss aL)
                                    stk = (GrPat_Var n,e,rsEnv rs) : rsStack rs
                                    rs' = rs {rsStack = stk, rsNext = Just e}
@@ -228,7 +228,7 @@ grEvalExpr rs e
           ->  return (grEvalApp rs (rsVar rs fn) aL)
         GrExpr_Eval n
           ->  let  upd rs n
-                     =  let  n2 = HNm "_"
+                     =  let  n2 = hsnWild
                              e = GrExpr_Seq (GrExpr_Update n (GrVal_Var n2)) (GrPat_Empty) (GrExpr_Unit (GrVal_Var n2))
                              stk = (GrPat_Var n2,e,rsEnv rs) : rsStack rs
                         in   rs {rsStack = stk, rsNext = Just e}
@@ -240,7 +240,7 @@ grEvalExpr rs e
                              (RVCat NdApp:ndFAL)
                                ->  return (rs3,Nothing)
                                    where  rs2 = upd rs n
-                                          n2 = HNm "_"
+                                          n2 = hsnWild
                                           nL@(nF:nAL) = take (length ndFAL) grLclNmSupplyL
                                           e = GrExpr_Seq (GrExpr_Eval nF) (GrPat_Var n2) (GrExpr_App n2 (map GrVal_Var nAL))
                                           re = rsGlobEnv rs `plusFM` listToFM (zip nL ndFAL)

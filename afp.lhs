@@ -542,7 +542,7 @@ WWW home page:
 %\inputEHCTex{\EHCTexVersion}{EHCore.tex}
 %\inputEHCTex{\EHCTexVersion}{EHCorePretty.tex}
 %\inputEHCTex{\EHCTexVersion}{EHCoreJava.tex}
-%\inputEHCTex{\EHCTexVersion}{EHGenCode.tex}
+%\inputEHCTex{\EHCTexVersion}{EHGenCore.tex}
 
 % rules
 \input rules.tex
@@ -3095,6 +3095,9 @@ type and deconstructing it are required.
 \chunkCmdUseMark{EHTy.1.mkTy}
 \chunkCmdUseMark{EHTy.1.mkTyProdApp}
 \chunkCmdUseMark{EHTy.1.unMkTy.sigs}
+\chunkCmdUseMark{EHTy.1.unMkTy.tyArrowArgRes}
+\chunkCmdUseMark{EHTy.1.unMkTy.tyArrowArgsRes}
+\chunkCmdUseMark{EHTy.1.unMkTy.tyAppFunArgs}
 \chunkCmdUseMark{EHTy.1.unMkTy.funs}
 \chunkCmdUseMark{EHTy.1.tyProgArgs}
 

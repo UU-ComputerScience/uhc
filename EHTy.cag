@@ -33,7 +33,7 @@
 %%[7 hs export(tyAppFunArg) 
 %%]
 
-%%[8 hs export(tyConNm) 
+%%[8 hs export(tyConNm,tyAppFunConNm) 
 %%]
 
 %%[8 hs export(tyRecOffset) 
@@ -42,7 +42,7 @@
 %%[9 hs export(Pred(..),predNm,predTy,tyPredNm,tyPredMatchNm,predMatchNm,tyPred,tyLImplsPreds,tyArrowImplsRes,tyArrowImplsArgRes,mkTyPr)
 %%]
 
-%%[9 hs export(tyRecExts,tyRecRow,tyAppFunConNm,tyArrowArity,tyQuant)
+%%[9 hs export(tyRecExts,tyRecRow,tyArrowArity,tyQuant)
 %%]
 
 %%[9 hs export(tyImpls,Impls(..),ImplsVarId,mkImplsVar,implsPredsTail,implsUIDs,implsPredsMbTail,tyIsImplsTail,tyImplsPreds)
@@ -277,26 +277,41 @@ tyArrowRes      :: Ty -> Ty
 tyProdArgs      :: Ty -> TyL
 %%]
 
-%%[1.unMkTy.funs hs
+%%[1.unMkTy.tyArrowArgRes hs
 tyArrowArgRes t
   =  case t of
-       (Ty_App (Ty_App (Ty_Con nm) a) r)
+       Ty_App (Ty_App (Ty_Con nm) a) r
          | hsnIsArrow nm  -> (a,r)
        _                  -> (Ty_Any,t)
+%%]
 
+%%[1.unMkTy.tyArrowArgsRes hs
 tyArrowArgsRes t
   =  case t of
-       (Ty_App (Ty_App (Ty_Con nm) a) r)
+       Ty_App (Ty_App (Ty_Con nm) a) r
          | hsnIsArrow nm  -> let (as,r') = tyArrowArgsRes r in (a:as,r')
        _                  -> ([],t)
+%%]
 
+%%[8.unMkTy.tyArrowArgsRes -1.unMkTy.tyArrowArgsRes hs
+tyArrowArgsRes t
+  =  case t of
+       Ty_Quant _ _ t     -> tyArrowArgsRes t
+       Ty_App (Ty_App (Ty_Con nm) a) r
+         | hsnIsArrow nm  -> let (as,r') = tyArrowArgsRes r in (a:as,r')
+       _                  -> ([],t)
+%%]
+
+%%[1.unMkTy.tyAppFunArgs hs
 tyAppFunArgs
   =  extr []
   where  extr as t
            =  case t of
                 Ty_App f a  -> extr (a:as) f
                 _           -> (t,as)
+%%]
 
+%%[1.unMkTy.funs hs
 tyArrowArgs  = fst . tyArrowArgsRes
 tyArrowRes   = snd . tyArrowArgsRes
 tyAppArgs    = snd . tyAppFunArgs
@@ -321,10 +336,12 @@ tyConNm  (Ty_Con nm)  = nm
 tyConNm  _            = hsnUnknown
 %%]
 
-%%[9 hs
+%%[8 hs
 tyAppFunConNm :: Ty -> HsName
 tyAppFunConNm = tyConNm . fst . tyAppFunArgs
+%%]
 
+%%[9 hs
 tyQuant :: Ty -> Ty
 tyQuant t
   =  case t of
