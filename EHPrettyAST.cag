@@ -159,9 +159,9 @@ SEM Expr
                                         , mkInfo1 "body.tyCnstr" (pp @body.tyCnstr)
                                         , mkInfo1 "lhs.finTyCnstr" (pp @lhs.finTyCnstr)
                                         ]
-  | Let         loc     .  info_2   :=  [ mkInfo1 "decls.gathTySigGam" (ppGam @decls.gathTySigGam)
-                                        , mkInfo1 "lValGam" (ppGam @lValGam)
-                                        , mkInfo1 "lValGam+decls.tyCnstr" (ppGam (@decls.tyCnstr |=> @lValGam))
+  | Let         loc     .  info_2   :=  [ mkInfo1 "decls.gathTySigGam" (pp @decls.gathTySigGam)
+                                        , mkInfo1 "lValGam" (pp @lValGam)
+                                        , mkInfo1 "lValGam+decls.tyCnstr" (pp (@decls.tyCnstr |=> @lValGam))
                                         ]
 
 SEM PatExpr

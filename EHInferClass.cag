@@ -40,7 +40,7 @@ SEM Decl
                                                                     , rulMkEvid    = \_ -> CExpr_Var n
                                                                     , rulNmEvid    = n
                                                                     , rulId        = mkPrId @lUniq
-                                                                    , rulCost      = CostInt 10
+                                                                    , rulCost      = mkCost 10
                                                                     , rulFuncDeps  = @funcDeps.funcDeps
                                                                     }
                                                         in   PrIntroGamInfo (tyQuantifyClosed ([@hdPrTy] `mkTyArrow` @clsTyRec)) k r
@@ -51,7 +51,7 @@ SEM Decl
                                                                                      in   \[sub] -> mkCExprSelCase emptyRCEEnv (hsnSuffix supNm "!") sub CTagRec supNm supNm o
                                                                     , rulNmEvid    = hsnUnknown
                                                                     , rulId        = mkPrId uidStart
-                                                                    , rulCost      = CostInt (2 * costBase)
+                                                                    , rulCost      = mkCost (2 * costBase)
                                                                     , rulFuncDeps  = []
                                                                     }
                                                         in   zipWith (\p n -> (tyPredMatchNm p,mkR @hdPrTy p n)) @ctxtPrTyL @supClsNmL

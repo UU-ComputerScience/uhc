@@ -27,6 +27,9 @@
 %%[7.mkProdApp.exp -1.mkProdApp.exp
 %%]
 
+%%[1 export(assocLKeys)
+%%]
+
 %%[1 export(ParNeed(..), ParNeedL, parNeedApp, ppParNeed)
 %%]
 
@@ -49,9 +52,6 @@
 %%]
 
 %%[4 export(FIMode(..),fimOpp,fimSwapCoCo)
-%%]
-
-%%[4 export(assocLKeys)
 %%]
 
 %%[6 export(hsnStar)
@@ -97,6 +97,12 @@
 %%]
 
 %%[9 hs export(PredOccId(..),mkPrId,poiHNm)
+%%]
+
+%%[9 hs export(PrfCtxtId)
+%%]
+
+%%[9 hs export(snd3)
 %%]
 
 %%[10 export(hsnDynVar)
@@ -285,20 +291,28 @@ mkNewLevUIDL = mkNewUIDL' mkNewLevUID
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Proof context id
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+type PrfCtxtId = UID
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pred occurrence id
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
-data PredOccId =  PredOccId {poiId :: UID} deriving (Show,Eq,Ord)
+data PredOccId =  PredOccId {poiCxId :: PrfCtxtId, poiId :: UID} deriving (Show,Eq,Ord)
 
 mkPrId :: UID -> PredOccId
-mkPrId u = PredOccId u
+mkPrId u = PredOccId uidStart u
 
 poiHNm :: PredOccId -> HsName
 poiHNm = uidHNm . poiId
 
 instance PP PredOccId where
-  pp = pp . poiId
+  pp poi = "Cx:" >|< pp (poiCxId poi) >|< "/Pr:" >|< pp (poiId poi)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -546,7 +560,7 @@ assocLMapFst :: (k -> k') -> AssocL k v -> AssocL k' v
 assocLMapFst f = assocLMap (\k v -> (f k,v))
 %%]
 
-%%[4
+%%[1
 assocLKeys :: AssocL k v -> [k]
 assocLKeys = map fst
 %%]
@@ -645,6 +659,11 @@ groupSortOn sel = groupOn sel . sortOn sel
 %%[8
 strBlankPad :: Int -> String -> String
 strBlankPad n s = s ++ replicate (n - length s) ' '
+%%]
+
+%%[9
+snd3 :: (a,b,c) -> b
+snd3 (a,b,c) = b
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -3257,6 +3257,7 @@ cannot be used to detect multiple occurrences caused by duplicate introductions.
 Thus in our implementation we use a stack of lists instead:
 
 \chunkCmdUseMark{EHCommon.1.AssocL}
+\chunkCmdUseMark{EHGam.1.Base.type}
 \chunkCmdUseMark{EHGam.1.Base.sigs}
 \chunkCmdUseMark{EHGam.1.Base.funs}
 
@@ -5910,6 +5911,7 @@ We use |valGamQuantify| to accomplish this:
 \chunkCmdUseMark{EHGam.3.valGamQuantify}
 \chunkCmdUseMark{EHGam.3.valGamMapTy}
 \chunkCmdUseMark{EHGam.3.gamMap}
+\chunkCmdUseMark{EHGam.3.gamMapElts}
 
 The condition that quantification only may be done for type variables not occurring in
 the global |Gamma| is a necessary one.
@@ -6775,7 +6777,10 @@ and redo the implementation of |fitsIn|.
 First, |fitsIn| needs to pass information both up and downwards.
 Upwards was already implemented via
 
+\savecolumns
 \chunkCmdUseMark{EHTyFitsInCommon.4.FIOut}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsInCommon.4.FIOut.tl}
 
 which is extended with |CoContraVariant| information and threads a UID value
 needed for instantiating types together with the downward information stored in
