@@ -19,8 +19,9 @@ WRAPPER GrAGItf GrExpr GrPat
 %%[8 hs
 ppGrModule :: Maybe [HsName] -> GrModule -> PP_Doc
 ppGrModule mbNmAdapt cmod
-  =  let  t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf cmod))
-                            (Inh_GrAGItf {ppGrNm_Inh_GrAGItf = maybe ppGrNm (const (ppGrNm . hsnPrefix "_")) (mbNmAdapt)})
+  =  let  ppNm ad n = if n `elem` grSpecialNmL then pp n else ppGrNm (ad n)
+          t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf cmod))
+                            (Inh_GrAGItf {ppGrNm_Inh_GrAGItf = maybe (ppNm id) (const (ppNm (hsnPrefix "_"))) (mbNmAdapt)})
      in   (pp_Syn_GrAGItf t)
 
 ppGrExpr :: GrExpr -> PP_Doc
@@ -65,7 +66,7 @@ ppGrNm n
 ATTR GrAGItf AllGrNT [ | | pp USE {>-<} {empty}: PP_Doc ]
 
 SEM GrModule
-  | Mod         lhs         .   pp          =   "module" >#< @lhs.ppGrNm @baseName >-< ppCurlyV @bindL.ppL
+  | Mod         lhs         .   pp          =   "module" >#< @baseName >-< ppCurlyV @bindL.ppL
 
 SEM GrBind
   | Bind        lhs         .   pp          =   @lhs.ppGrNm @nm >#< ppSpaced (map @lhs.ppGrNm @argNmL) >-<
@@ -77,10 +78,10 @@ SEM GrExpr
                                                 >-< @body.pp
   | Case        lhs         .   pp          =   "case" >#< @val.pp >#< "of" >-<
                                                     indent 2 (ppCurlyV @altL.ppL)
-  | App         lhs         .   pp          =   "apply" >#< ppSpaced (@lhs.ppGrNm @nm : @argL.ppL)
+  | App         lhs         .   pp          =   hsnGrApply >#< ppSpaced (@lhs.ppGrNm @nm : @argL.ppL)
   | Call        lhs         .   pp          =   ppSpaced (@lhs.ppGrNm @nm : @argL.ppL)
   | FFI         lhs         .   pp          =   "ffi" >#< ppSpaced (pp @nm : map @lhs.ppGrNm @argL)
-  | Eval        lhs         .   pp          =   "eval" >#< @lhs.ppGrNm @nm
+  | Eval        lhs         .   pp          =   hsnGrEval >#< @lhs.ppGrNm @nm
   | Unit        lhs         .   pp          =   "unit" >#< @val.pp
   | Store       lhs         .   pp          =   "store" >#< @val.pp
   | Fetch       lhs         .   pp          =   "fetch" >#< @lhs.ppGrNm @nm >#< maybe empty pp @mbOffset

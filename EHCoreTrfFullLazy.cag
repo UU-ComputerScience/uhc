@@ -43,6 +43,7 @@ SEM CExpr
   | App         (func.gUniq,loc.lUniq)      =   mkNewUID @lhs.gUniq
   | Lam         (body.gUniq,loc.lUniq,loc.lUniq2)
                                             =   mkNewLevUID2 @lhs.gUniq
+  | Let         (binds.gUniq,loc.lUniq)     =   mkNewUID @lhs.gUniq
   | Case TupSel TupDel TupIns TupUpd
                 (expr.gUniq,loc.lUniq)      =   mkNewUID @lhs.gUniq
 %%]
@@ -69,7 +70,7 @@ SEM CExpr
   | Case        lhs         .   levBindSq   =   @expr.levBindSq <+> @alts.levBindSq <+> @dflt.levBindSq <+> @levBindSq
   | TupSel TupDel
                 lhs         .   levBindSq   =   @expr.levBindSq <+> @offset.levBindSq <+> @levBindSq
-  | Let         (loc.hereBindSq,lhs.levBindSq)
+  | Let         (loc.hereBindSq,loc.remBindSq)
                                             =   let ((hl,_):_) = @binds.bindL
                                                     b1  = @binds.levBindSq
                                                     b2  = unitSeq (@strLev hl,(@categ,assocLElts @binds.bindL))
@@ -78,9 +79,8 @@ SEM CExpr
                                                     b   = case @categ of 
                                                             CBindRec  -> b12 <+> b3
                                                             _         -> b1  <+> b2 <+> b3
-                                                in  if @lhs.lev == cLevOuter
-                                                    then (b,emptySeq)
-                                                    else (emptySeq,b)
+                                                in  (b,emptySeq)
+                lhs         .   levBindSq   =   @remBindSq <+> @levBindSq
   | Lam         loc         .   (hereBindSq,remBindSq)
                                             =   levBindSplit @lev @body.levBindSq
                 lhs         .   levBindSq   =   @remBindSq <+> @levBindSq
@@ -93,6 +93,20 @@ SEM CAlt
   | Alt         (loc.hereBindSq,lhs.levBindSq)
                                             =   levBindSplit @lev @expr.levBindSq
 %%]
+
+  | Let         (loc.hereBindSq,loc.remBindSq)
+                                            =   let ((hl,_):_) = @binds.bindL
+                                                    b1  = @binds.levBindSq
+                                                    b2  = unitSeq (@strLev hl,(@categ,assocLElts @binds.bindL))
+                                                    b12 = unitSeq (@maxBindLev,(CBindRec,concat . map (\(_,(_,b)) -> b) . seqToList $ (b1 <+> b2)))
+                                                    b3  = @body.levBindSq
+                                                    b   = case @categ of 
+                                                            CBindRec  -> b12 <+> b3
+                                                            _         -> b1  <+> b2 <+> b3
+                                                in  if @lhs.lev == cLevOuter
+                                                    then (b,emptySeq)
+                                                    else (emptySeq,b)
+                lhs         .   levBindSq   =   @remBindSq <+> @levBindSq
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Allow trf?
@@ -146,6 +160,26 @@ SEM CAlt
   | Alt         expr        .   lamTrfIsOk  =   LamYesLet
 %%]
 
+%%[8
+ATTR CExpr [ letTrfIsOk: Bool | | ]
+
+SEM CModule
+  | Mod         expr        .   letTrfIsOk  =   False
+
+SEM CBind
+  | Bind        expr        .   letTrfIsOk  =   False
+
+SEM CPatBind
+  | Bind        offset      .   letTrfIsOk  =   True
+
+SEM CExpr
+  | App         loc         .   letTrfIsOk  =   True
+  | * - App     loc         .   letTrfIsOk  =   False
+
+SEM CAlt
+  | Alt         expr        .   letTrfIsOk  =   False
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -171,7 +205,7 @@ ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CExpr
-  | App Lam Case TupSel TupDel
+  | App Lam Case TupSel TupDel Let
                 loc         .   nm          =   uidHNm @lUniq
   | Lam         loc         .   nm2         =   uidHNm @lUniq2
   | App Case TupSel TupDel
@@ -185,10 +219,11 @@ SEM CExpr
                                                         CExpr_Lam _ _ | not (null (seqToList @hereBindSq))
                                                             -> mkTLB (CExpr_Let CBindPlain [CBind_Bind @nm2 @body.cTrf] (CExpr_Var @nm2))
                                                         _   -> mkTLB @body.cTrf
-  | Let         lhs         .   cTrf        =   mkLetTrf @hereBindSq @body.cTrf
+  | Let         loc         .   trfIsOk     =   @lhs.letTrfIsOk
+                (lhs.cTrf,loc.levBindSq)    =   let  lt = mkLetTrf @hereBindSq @body.cTrf
+                                                in   mkTrf @trfIsOk @lhs.lev @levOf @nm lt
 
 SEM CAlt
   | Alt         lhs         .   cTrf        =   CAlt_Alt @pats.cTrf (mkLetTrf @hereBindSq @expr.cTrf)
-
 %%]
 

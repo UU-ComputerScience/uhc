@@ -84,7 +84,10 @@ SEM CPatBind
 SEM CPat
   | Var Con     loc         .   nm          =   cpatNmEither id id @pnm
   | Var         lhs         .   nmL         =   [@nm]
-  | Con         lhs         .   nmL         =   [@nm] ++ @binds.nmL
+  | Con         lhs         .   nmL         =   [@nm] ++ @rest.nmL ++ @binds.nmL
+
+SEM CPatRest
+  | Var         lhs         .   nmL         =   [@nm]
 
 SEM CExpr
   | Let         loc         .   aRenMp      =   if @lhs.lev == 0
@@ -116,11 +119,13 @@ SEM CBind
   | Bind        lhs         .   cTrf        =   CBind_Bind (aRenRepl @lhs.aRenMp @nm) @expr.cTrf
 
 SEM CPatBind
-  | Bind        lhs         .   cTrf        =   CPatBind_Bind @offset.cTrf (aRenRepl @lhs.aRenMp @nm) @pat.cTrf
+  | Bind        lhs         .   cTrf        =   CPatBind_Bind @lbl @offset.cTrf (aRenRepl @lhs.aRenMp @nm) @pat.cTrf
 
 SEM CPat
   | Var         lhs         .   cTrf        =   CPat_Var (CPatNmOrig . aRenRepl @lhs.aRenMp $ @nm)
-  | Con         lhs         .   cTrf        =   CPat_Con (CPatNmOrig . aRenRepl @lhs.aRenMp $ @nm)
-                                                    @tag (aRenRepl @lhs.aRenMp @tagNm) @binds.cTrf
+  | Con         lhs         .   cTrf        =   CPat_Con (CPatNmOrig . aRenRepl @lhs.aRenMp $ @nm) @tag @rest.cTrf @binds.cTrf
+
+SEM CPatRest
+  | Var         lhs         .   cTrf        =   CPatRest_Var (aRenRepl @lhs.aRenMp @nm)
 %%]
 

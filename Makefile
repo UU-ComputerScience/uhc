@@ -174,10 +174,10 @@ LHS2TEX_CODE			= \
 	$(LHS2TEX) --newcode $(1) > $(2)
 
 default:
-	@echo "make <n>/ehc     : make compiler version <n>" ; \
-	echo  "make <n>/gri     : make grin interpreter version <n>" ; \
-	echo  "make ehcs        : make all compiler (ehc) versions (where <n> in {$(VERSIONS)})" ; \
-	echo  "make gris        : make all grin interpreter (gri) versions (where <n> in {$(GRI_VERSIONS)})" ; \
+	@echo "make <n>/ehc     : make compiler version <n> (where <n> in {$(VERSIONS)})" ; \
+	echo  "make <n>/gri     : make grin interpreter version <n> (where <n> in {$(GRI_VERSIONS)})" ; \
+	echo  "make ehcs        : make all compiler (ehc) versions" ; \
+	echo  "make gris        : make all grin interpreter (gri) versions" ; \
 	echo  "make afp         : make afp.pdf, by running latex once" ; \
 	echo  "make afp-full    : make afp.pdf, with bib/index" ; \
 	echo  "make doc         : make doc of tools" ; \

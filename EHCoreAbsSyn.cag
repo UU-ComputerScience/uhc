@@ -88,23 +88,35 @@ DATA CPat
   | Var         pnm             : {CPatNm}
   | Con         pnm             : {CPatNm}
                 tag             : {CTag}
-                tagNm           : {HsName}
+                rest            : CPatRest
                 binds           : CPatBindL
   | Undef
 
 TYPE CPatL      =   [CPat]
 
+DATA CPatRest
+  | Var         nm              : {HsName}
+  | Empty
+
 DATA CPatBind
-  | Bind        offset          : CExpr
+  | Bind        lbl             : {HsName}
+                offset          : CExpr
                 nm              : {HsName}
                 pat             : CPat
 
 TYPE CPatBindL  =   [CPatBind]
 %%]
 
+  | TupSplit    pnm             : {CPatNm}
+                pat             : CPat
+                tag             : {CTag}
+                nm              : {HsName}
+                offset          : CExpr
+                fldPat          : CPat
+
 %%[8
 SET AllBind     =   CBind CBindL
-SET AllPat      =   CPat CPatL CPatBind CPatBindL
+SET AllPat      =   CPatRest CPat CPatL CPatBind CPatBindL
 SET AllAlt      =   CAlt CAltL
 SET AllCodeNT   =   CModule CExpr AllBind AllAlt AllPat
 %%]

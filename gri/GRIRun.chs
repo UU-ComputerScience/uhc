@@ -151,7 +151,7 @@ grEvalTag rs t sz
         GrTag_Lit GrTagRec           _ _    ->  [RVCat NdRec,RVInt 0] -- ,RVInt sz]
         GrTag_Lit GrTagFun           i n    ->  [RVCat NdFun,rsVar rs n]
         GrTag_Lit GrTagApp           _ _    ->  [RVCat NdApp]
-        GrTag_Lit (GrTagPApp nMiss)  _ _    ->  [RVCat NdPApp,RVInt nMiss]
+        GrTag_Lit (GrTagPApp nMiss)  _ n    ->  [RVCat NdPApp,RVInt nMiss,rsVar rs n]
 %%]
 
 %%[8
