@@ -30,6 +30,6 @@ tr   = Tree_Bin (Tree_Leaf 3) (Tree_Bin (Tree_Leaf 4) (Tree_Leaf 5))
 tr'  = repmin tr
 
 main  ::  IO ()
-main  =   putStr (show tr')
+main  =   print tr'
 %%]
 

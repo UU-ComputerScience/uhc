@@ -355,17 +355,24 @@ SEM AGItf
 %%% Type signatures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.tySigGam.TysigLet
-ATTR AllDecl [ tySigGam: ValGam | gathTySigGam: ValGam | ]
+%%[1.gathTySigGam
+ATTR AllDecl [ | gathTySigGam: ValGam | ]
 
 SEM Decl
-  | TySig       lhs         .   gathTySigGam        =   gamAdd
+  | TySig       loc         .   gamSigTy            =   @tyExpr.ty
+                            .   gathTySigGam        =   gamAdd
                                                             @nm (ValGamInfo @gamSigTy)
                                                             @lhs.gathTySigGam
 
 SEM Expr
   | Let         decls       .   gathTySigGam        =   emptyGam
-                            .   tySigGam            =   @decls.gathTySigGam
+%%]
+
+%%[1.tySigGam.TysigLet
+ATTR AllDecl [ tySigGam: ValGam | | ]
+
+SEM Expr
+  | Let         decls       .   tySigGam            =   @decls.gathTySigGam
 %%]
 
 %%[1.tySigGam.Val
@@ -379,15 +386,10 @@ SEM Decl
                                                                   Just vgi  -> (vgiTy vgi,True)
 %%]
 
-%%[1.TySig
-SEM Decl
-  | TySig       loc         .   sigTy               =   @tyExpr.ty
-                            .   gamSigTy            =   @sigTy
-%%]
-
 %%[3.TySig
 SEM Decl
-  | TySig       loc         .   sigTy               :=  tyQuantify (`elem` @tyExpr.tyVarWildL) @tyExpr.ty
+  | TySig       loc         .   sigTy               =   tyQuantify (`elem` @tyExpr.tyVarWildL) @tyExpr.ty
+                            .   gamSigTy            :=  @sigTy
 %%]
 
 %%[4_2

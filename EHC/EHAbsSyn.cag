@@ -29,9 +29,9 @@ DATA Decl
   | Val             patExpr         : PatExpr
                     expr            : Expr
 
-TYPE Decls          =  [Decl]
+TYPE Decls          = [Decl]
 
-SET AllDecl         =  Decl Decls
+SET AllDecl         = Decl Decls
 %%]
 
 %%[5
@@ -99,30 +99,30 @@ DATA TyExpr
 %%]
 
 %%[5
-TYPE TyExprs        =   [TyExpr]
+TYPE TyExprs        = [TyExpr]
 
 DATA TyVar
   | Var             nm              : {HsName}
 
-TYPE TyVars         =   [TyVar]
+TYPE TyVars         = [TyVar]
 
-SET AllTyVar        =   TyVar TyVars
+SET AllTyVar        = TyVar TyVars
 %%]
 
 %%[1.AllTyExpr
-SET AllTyExpr       =   TyExpr
+SET AllTyExpr       = TyExpr
 %%]
 
 %%[5.AllTyExpr -1.AllTyExpr
-SET AllTyExpr       =   TyExpr TyExprs
+SET AllTyExpr       = TyExpr TyExprs
 %%]
 
 %%[7.AllTyExpr -5.AllTyExpr
-SET AllTyExpr       =   TyExpr TyExprs RowTyExpr
+SET AllTyExpr       = TyExpr TyExprs RowTyExpr
 %%]
 
 %%[9.AllTyExpr -7.AllTyExpr
-SET AllTyExpr       =   TyExpr TyExprs RowTyExpr PrExpr PrExprs
+SET AllTyExpr       = TyExpr TyExprs RowTyExpr PrExpr PrExprs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -138,7 +138,7 @@ DATA KiExpr
   | AppTop          kiExpr          : KiExpr
   | Parens          kiExpr          : KiExpr
 
-SET AllKiExpr       =   KiExpr
+SET AllKiExpr       = KiExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -192,11 +192,11 @@ DATA Expr
 %%]
 
 %%[1.AllExpr
-SET AllExpr         =  Expr
+SET AllExpr         = Expr
 %%]
 
 %%[7.AllExpr -1.AllExpr
-SET AllExpr         =  Expr RecExpr
+SET AllExpr         = Expr RecExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -229,11 +229,11 @@ DATA PatExpr
 %%]
 
 %%[1.AllPatExpr
-SET AllPatExpr      =   PatExpr
+SET AllPatExpr      = PatExpr
 %%]
 
 %%[7.AllPatExpr -1.AllPatExpr
-SET AllPatExpr      =   PatExpr RecPatExpr
+SET AllPatExpr      = PatExpr RecPatExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -245,9 +245,9 @@ DATA CaseAlt
   | Pat             patExpr         : PatExpr
                     expr            : Expr
 
-TYPE CaseAlts       =   [CaseAlt]
+TYPE CaseAlts       = [CaseAlt]
 
-SET AllCase         =   CaseAlt CaseAlts
+SET AllCase         = CaseAlt CaseAlts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -269,7 +269,7 @@ DATA DataConstr
 %%]
 
 %%[5.DataConstr2
-TYPE DataConstrs    =   [DataConstr]
+TYPE DataConstrs    = [DataConstr]
 %%]
 
 %%[7.Data
@@ -277,7 +277,7 @@ DATA DataField
   | Field           mbLabels        : {Maybe [HsName]}
                     tyExpr          : TyExpr
 
-TYPE DataFields     =   [DataField]
+TYPE DataFields     = [DataField]
 %%]
 
 %%[11.Data
@@ -285,25 +285,25 @@ DATA DataConstrEq
   | Eq              tyVar           : TyVar
                     tyExpr          : TyExpr
 
-TYPE DataConstrEqs  =   [DataConstrEq]
+TYPE DataConstrEqs  = [DataConstrEq]
 %%]
 
 %%[5.SetsData
-SET AllDataConstr   =   DataConstr DataConstrs
-SET AllData         =   AllDataConstr
+SET AllDataConstr   = DataConstr DataConstrs
+SET AllData         = AllDataConstr
 %%]
 
 %%[7.SetsData -5.SetsData
-SET AllDataConstr   =   DataConstr DataConstrs
-SET AllDataField    =   DataField DataFields
-SET AllData         =   AllDataField AllDataConstr
+SET AllDataConstr   = DataConstr DataConstrs
+SET AllDataField    = DataField DataFields
+SET AllData         = AllDataField AllDataConstr
 %%]
 
 %%[11.SetsData -7.SetsData
-SET AllDataConstrEq =   DataConstrEq DataConstrEqs
-SET AllDataConstr   =   DataConstr DataConstrs
-SET AllDataField    =   DataField DataFields
-SET AllData         =   AllDataField AllDataConstr AllDataConstrEq
+SET AllDataConstrEq = DataConstrEq DataConstrEqs
+SET AllDataConstr   = DataConstr DataConstrs
+SET AllDataField    = DataField DataFields
+SET AllData         = AllDataField AllDataConstr AllDataConstrEq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -353,7 +353,7 @@ DATA PrExpr
   | Class           nm              : {HsName}
                     tyExprs         : TyExprs
 
-TYPE PrExprs        =   [PrExpr]
+TYPE PrExprs        = [PrExpr]
 %%]
 
 %%[10
@@ -363,7 +363,7 @@ DATA PrExpr
 %%]
 
 %%[9
-SET AllPrExpr       =   PrExpr PrExprs
+SET AllPrExpr       = PrExpr PrExprs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -387,9 +387,9 @@ DATA FuncDep
   | Dep             fromTvs         : TyVars
                     toTvs           : TyVars
 
-TYPE FuncDeps       =   [FuncDep]
+TYPE FuncDeps       = [FuncDep]
 
-SET AllFuncDep      =   FuncDep FuncDeps
+SET AllFuncDep      = FuncDep FuncDeps
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -397,12 +397,11 @@ SET AllFuncDep      =   FuncDep FuncDeps
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.AllNT
-SET AllNT           =   AllTyExpr AllDecl
-                        AllPatExpr AllExpr
+SET AllNT           = AllTyExpr AllDecl AllPatExpr AllExpr
 %%]
 
 %%[5.AllNT -1.AllNT
-SET AllNT           =   AllData AllCase AllTyExpr AllTyVar AllDecl AllPatExpr AllExpr
+SET AllNT           = AllData AllCase AllTyExpr AllTyVar AllDecl AllPatExpr AllExpr
 %%]
 
 %%[6.AllNT -5.AllNT

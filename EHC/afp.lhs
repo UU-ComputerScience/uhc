@@ -726,12 +726,12 @@ To our knowledge the implementation is the first to handle these features
 in combination with existentials and higher ranked polymorphic types.
 %endif
 %else
-Much has been written about type systems.
+A great deal has been written about type systems.
 Much less has been written about implementing them.
 Even less has been written about implementations of complete compilers in which
 all aspects come together.
 %if storyAFP04Notes
-This paper fills this gap by describing the implementation of the first
+This paper fills this gap by describing the implementation
 of a series of compilers
 for a simplified variant of Haskell.
 %else
@@ -739,12 +739,12 @@ This paper fills this gap by describing the implementation of a compiler
 for a simplified variant of Haskell.
 %endif
 By using an attribute grammar system, aspects of a compiler implementation
-are described separately and
+can be described separately and
 added in a sequence of steps,
 thereby giving a series of increasingly complex (working) compilers.
-Also, the source text of both paper and executable compilers come
+Also, the source text of both this paper and the executable compilers come
 from the same source files by an underlying minimal weaving system.
-Therefore, sources and (this) explanation are kept consistent.
+Therefore, source and explanation is kept consistent.
 %endif
 %if asArticle
 \end{abstract}
@@ -756,7 +756,7 @@ A previous version of \thispaper\ has been presented and
 distributed at the AFP2004 summerschool\footnote{The proceedings
 for the AFP2004 summerschool have yet to appear.}.
 This paper describes a part of a Haskell compiler under development \cite{dijkstra04ehc-web},
-focussing on the type system of the langauge and its implementation.
+focusing on the type system of the langauge and its implementation.
 Subsequent papers will describe the remaining parts of the implementation.
 
 Not all parts of the implementation are explained in \thispaper.
@@ -779,6 +779,8 @@ This concerns mainly future design decisions which have an influence on design d
 }
 
 %endif %% inclTOC
+
+\raggedbottom
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Part I
@@ -814,10 +816,10 @@ Haskell98 \cite{peytonjones03has98-rev-rep} is a complex language,
 not to mention its more experimental incarnations.
 Though also intended as a research platform, realistic compilers for Haskell \cite{www04ghc}
 have grown over the years
-and understanding of and experimentation with
+and understanding and experimenting with
 those compilers is not an easy task.
 Experimentation on a smaller scale usually is based upon relatively simple and restricted implementations
-\cite{jones99thih}, often focussing only on a particular aspect of
+\cite{jones99thih}, often focusing only on a particular aspect of
 the language and/or its implementation.
 This paper aims at walking somewhere between this complexity and simplicity by
 \begin{itemize}
@@ -833,19 +835,24 @@ Describing these aspects separately in order to provide a better understanding.
 Adding these aspects on top of each other
 in an incremental way, thus leading to a sequence of compilers, each for a larger subset of complete Haskell (and extensions).
 \item
-Using tools like the AG system, to allow for separate descriptions of the various aspects.
+Using tools like the Utrecht University Attribute Grammar (UUAG) system
+\cite{baars04ag-www},
+hereafter referred to as the AG system,
+to allow for separate descriptions for the various aspects.
 \end{itemize}
 
 The remaining sections of this introduction will expand on this by looking at
 the intentions, purpose and limitations of \thispaper\ in more detail.
 This is followed by a short description
-of the final language for which we develop compilers throughout \thispaper.
-The last part of the introduction contains a small tutorial on the AG system used to
-describe the compilers in the remainder of \thispaper.
-
-Sections \ref{ehc1}, \ref{ehc2} and \ref{ehc3} discuss the implementation of the first three compilers.
-On the web site \cite{dijkstra04ehc-web} for this project the  full distribution of the code for \thispaper\ can be found.
-We conclude \thispaper\ in \secRef{ehcConcl} by reflecting upon our experiences with the AG system and the creation of \thispaper.
+of the individual languages for which we develop compilers throughout \thispaper.
+The last part of the introduction contains a small tutorial on the AG system used 
+in \thispaper.
+After the introduction we continue with discussing the implementation
+of the first three compilers
+(sections \ref{ehc1}, \ref{ehc2} and \ref{ehc3})
+out of a (currently) sequence of ten compilers.
+On the web site \cite{dijkstra04ehc-web} for this project the  full distribution of the code for these compilers can be found.
+We conclude \thispaper\ by reflecting upon our experiences with the AG system and the creation of \thispaper\ (\secRef{ehcConcl}).
 
 %if storyPHD
 \subsection*%
@@ -1019,18 +1026,18 @@ We conclude \thispaper\ in \secRef{ehcConcl} by reflecting upon our experiences 
 }
 %endif
 
-For whom is material intended?
+For whom is this material intended?
 \begin{itemize}
 \item
 For students who wish to learn more about the implementation of functional languages.
-This paper also informally explains required theory, in particular theory about type systems.
+This paper also informally explains the required theory, in particular about type systems.
 \item
 For researchers who want to build (e.g.) a prototype and to experiment
 with extensions to the type system and need a non-trivial and realistic starting point.
 This paper provides documentation, design rationales and an implementation for such a starting point.
 \item
 For those who wish to study a larger example of the tools used to build the compilers in \thispaper.
-We demonstrate the use of the AG system \cite{baars04ag-www},
+We demonstrate the use of the AG system,
 which allows us to separately describe the various aspects of a language implementation.
 %if incl01TopicParsing
 Parser combinators \cite{swierstra00parser-toytool,swierstra99parser-tutor}
@@ -1040,20 +1047,25 @@ Other tools for maintaining consistency between different versions of the result
 and the source code text included in \thispaper\ are also used, but will not be discussed.
 \end{itemize}
 
-For this intended audience \thispaper\ provides:
+For this intended audience \thispaper
+%if llncs
+provide:
+%else
+provides:
+%endif
 
 \begin{itemize}
 \item
 A description of the implementation of a type checker/inferencer for
 a subset of Haskell.
 We describe the first three languages of a (currently) sequence of ten,
-eventually leading to a full implementation of an extended Haskell.
+that end in a full implementation of an extended Haskell.
 \item
 A description of the semantics of Haskell, lying between the
 more formal
 \cite{hall96type-class-haskell,faxen02semantics-haskell}
 and more implementation oriented
-\cite{jones00thih,ipt:impl-func-prog-lang} or similar to other combinations of
+\cite{jones00thih,ipt:impl-func-prog-lang} and similar to other combinations of
 theory and practice \cite{typing:types-prog-lang:pierce}.
 \item
 A gradual instead of a big bang explanation.
@@ -1077,11 +1089,11 @@ with respect to Haskell features.
 %endif
 \item
 We concern ourselves with typing only.
-Other aspects like pretty printing and parsing are not discussed.
+Other aspects, like pretty printing and parsing, are not discussed.
 However, the introduction to the AG system (see \secRef{ag-primer}) gives some examples
 of the pretty printing and the interaction between parsing, AG code and Haskell code.
 \item
-Type theory or parsing theory as a subject on its own.
+We do not deal with type theory or parsing theory as a subject on its own.
 This paper is intended to describe ``how to implement'' and
 will use theory from that point of view.
 Theoretical aspects are touched upon from a more intuitive point of view.
@@ -1107,17 +1119,10 @@ It also demonstrates the use of the parser combinators used throughout the imple
 all EH versions.
 %endif
 
-We expect that by following the fine line between theory and implementation,
+We expect that by finding a balance between theory and implementation,
 we serve both those who want to learn and those who want to do research.
 It is also our belief that by splitting the big problem into smaller aspects the combination can
-be explained in an easier way; in the conclusion (\secRef{ehcConcl}) we will discuss whether our experience
-with the AG system supports this belief.
-Finally, we believe that this can only be accomplished if supported by proper tooling:
-currently the AG system and a weaving system,
-\TBD{[cite...]}
-and in the future perhaps by using more integrated environments
-\cite{schrage04www-proxima}.
-\TBD{[cite Proxima, Programmatica]}
+be explained in an easier way.
 
 In the following sections we give examples of the Haskell features
 present in the
@@ -1138,12 +1143,12 @@ and implemented in the relevant versions of the compiler.
 %endif
 {A short tour}
 
-Though all compilers described in \thispaper\ deal with a different aspect,
+Though all compilers described in \thispaper\ deal with a different issue,
 they all have in common that they are based on the \IxAsIs{|lambda|-calculus},
 most of the time using the syntax and semantics of Haskell.
-The first version of our series of compilers therefore most closely resembles the
+The first version of our series of compilers therefore accepts a language that most closely resembles the
 |lambda|-calculus, in particular typed |lambda|-calculus extended with |let| expressions
-and some basic types like |Int|, |Char| and tuples.
+and some basic types and type constructors such as |Int|, |Char| and tuples.
 
 \paragraph{EH version 1: |lambda|-calculus.}
 An EH program is a single expression, contrary to a Haskell program which consists of a set of declarations forming a module.
@@ -1152,15 +1157,18 @@ An EH program is a single expression, contrary to a Haskell program which consis
 %%1srcfile(test/1-demo2.eh%%)
 \end{code}
 
-All variables need to be typed explicitly, absence of an explicit type is considered to be an error.
+All variables need to be typed explicitly; absence of an explicit type is considered to be an error.
 The corresponding compiler (EH version 1, \chapterRef{ehc1}) checks the explicit types against
-actual types. For example:
+actual types.
+%if not storyAFP04Notes
+For example:
 
 \begin{code}
 %%1srcfile(test/1-all-fail2.eh%%)
 \end{code}
 
 is not accepted.
+%endif
 
 Besides the basic types |Int| and |Char|, composite types can be formed by building tuples and defining functions:
 
@@ -1169,7 +1177,7 @@ Besides the basic types |Int| and |Char|, composite types can be formed by build
 \end{code}
 
 Functions accept one parameter only, which can be a pattern.
-No polymorphic types exist yet.
+All types are monomorphic.
 
 \frame<presentation>
 {
@@ -1213,22 +1221,23 @@ gives rise to error annotated representation of program:
 The next version
 (EH version 2, \chapterRef{ehc2})
 no longer requires the explicit type specifications, which thus may have to be inferred by the compiler.
+%if not storyAFP04Notes
 For example for:
 
 \begin{code}
 %%2srcfile(test/1-sig-fail.eh%%)
 \end{code}
 
-the compiler will reconstruct the type specification |i :: %%2file(test/1-sig-fail.eh%%)|.
+the compiler will infer the type specification |i :: %%2file(test/1-sig-fail.eh%%)|.
+%endif
 
-The reconstructed type information is monomorphic, for example for the identity function in:
+The reconstructed type information is monomorphic, for example the identity function in:
 
 \begin{code}
 %%2srcfile(test/2-demo1.eh%%)
 \end{code}
 
-the type |id :: %%2file(test/2-demo1.eh%%)|
-is reconstructed.
+is inferred to have the type |id :: %%2file(test/2-demo1.eh%%)|.
 
 \frame<presentation>
 {
@@ -1262,14 +1271,15 @@ The third version
 (EH version 3, \chapterRef{ehc3})
 performs standard
 Hindley-Milner type inferencing \cite{ipt:type-infer-milner,damas82principal-type}
-which infers also parametric polymorphism.
+which also supports parametric polymorphism.
 For example,
 \begin{code}
 let  id = \x -> x
 in   id 3
 \end{code}
-infers type |id :: %%3(let id = \x -> x in id%%)|.
+is inferred to have type |id :: %%3(let id = \x -> x in id%%)|.
 
+%if not storyAFP04Notes
 A type for a value can also be specified explicitly
 \begin{code}
 let  id :: a -> a
@@ -1277,6 +1287,7 @@ let  id :: a -> a
 in   id 3
 \end{code}
 The type signature is checked against the inferred type.
+%endif
 
 \frame<presentation>
 {
@@ -1648,16 +1659,16 @@ Kind signatures for types (similar to type signatures for values)
 {Haskell language elements not described}
 \label{eh-not-described}
 
-As mentioned before only a subset of the full sequence of compilers are described in \thispaper.
+As mentioned before, only a subset of the full sequence of compilers is described in \thispaper.
 Currently, as part of an ongoing work \cite{dijkstra04ehc-web},
-in the compilers following the compilers described in \thispaper\ the following Haskell features are dealt with:
+in the compilers following the compilers described in \thispaper, the following Haskell features are dealt with:
 
 \begin{description}
 %if not incl04
 \item[EH 4.] Quantifiers everywhere: higher ranked types
 \cite{shan04sexy-types,peytonjones04pract-inf-rank,botlan03ml-power-f,odersky97putting-ann}
 and existentials \cite{perry91phd,laufer94poly-absdata,mitchell88absty-exist}.
-See also the version of \thispaper\ handed out during the AFP04 summerschool
+See also the longer version of \thispaper\ handed out during the AFP04 summerschool
 \cite{dijkstra04thag-part1}.
 %endif
 %if not incl05
@@ -1699,8 +1710,8 @@ Syntactic sugar for |if|, |do|, list notation and comprehension.
 \end{itemize}
 
 We have deliberately not dealt with these issues.
-Though necessary and convenient we feel that these features should be added after all else has been dealt with
-so as not to make understanding and implementation of essential features more difficult.
+Though necessary and convenient we feel that these features should be added after all else has been dealt with,
+so as not to make understanding and implementating essential features more difficult.
 
 %if False
 %if storyPHD
@@ -1777,11 +1788,11 @@ The complete compiler text can be found on the website accompanying
 \subsection%
 %endif
 {An AG mini tutorial}
-The remaining part of the introduction contains a small tutorial to the AG system.
+The remaining part of the introduction contains a small tutorial on the AG system.
 The tutorial explains the basic features of the AG system.
 The explanation of remaining features is postponed to its first use throughout the main text.
 These places are marked with |AGFeature|.
-The tutorial can safely be skipped if already familiar with the AG system.
+The tutorial can safely be skipped if the reader is already familiar with the AG system.
 
 
 \inputEHCTex{\EHCTexVersion}{AGMiniPrimer.tex}
@@ -1822,7 +1833,7 @@ Haskell
 
 In this section we build the first version of our series of compilers:
 the typed |lambda|-calculus packaged in Haskell syntax in which
-all values need explicitly be given a type.
+all values need to explicitly be given a type.
 The compiler checks if the specified types are in agreement with actual
 value definitions.
 For example
@@ -1843,16 +1854,15 @@ annotated with errors:
 \end{TT}
 
 Type signatures have to be specified for identifiers bound in a |let| expression.
-For |lambda|-expressions the types of identifiers bound as a parameter can be extracted from
-these type signatures unless a |lambda|-expression is `hidden' behind its application to an argument.
-In that case a type signature for the |lambda|-expression should be provided in the expression itself:
+For |lambda|-expressions the type of the parameter can be extracted from
+these type signatures unless a |lambda|-expression occurs at the position of an applied function.
+In that case a type signature for the |lambda|-expression is required in the expression itself.
+This program will not typecheck because this EH version does not allow polymorphic types in general and
+on higher ranked (that is, parameter) positions in particular.
 
 \begin{code}
 %%1srcfile(test/1-polylam1.eh%%)
 \end{code}
-
-This program will not typecheck because this EH version does not allow polymorphic types in general and
-on higher ranked (that is, parameter) positions in particular.
 
 %if incl01TopicPP
 
@@ -1893,7 +1903,7 @@ analysis and code generation.
 Translation from the more user friendly concrete syntax to the machine friendly abstract syntax is done by a
 parser; from the abstract to the concrete representation is done by a pretty printer.
 
-Let us focus our attention on the abstract syntax for EH, in particular the part
+Let us focus our attention first on the abstract syntax for EH1, in particular the part
 defining the structure for expressions (the remaining syntax can be found in \figRef{abs-syn-eh1}).
 %if not incl00TopicAGPrimer
 A |DATA| definition in the AG (Attribute Grammar) language corresponds closely to a Haskell |data| definition,
@@ -1966,7 +1976,7 @@ TYPE L = [<node>]
 \end{AGFeature}
 %}
 
-The EH fragment
+The EH fragment (which is incorrect for this version of because type signatures are missing)
 \begin{code}
 %%1srcfile(afp-eh/02.eh%%)
 \end{code}
@@ -1974,8 +1984,9 @@ is represented by the following piece of abstract syntax tree:
 \begin{TT}
 %%1astfile(afp-eh/02.eh%%)
 \end{TT}
-Note that the program is incorrect for this version of EH because type
-signatures are missing.
+The example also demonstrates the use of patterns, which is
+almost the same as in Haskell:
+EH does not allow a type signature for the elements of a tuple.
 
 \mode<all>{%
 \newcommand{\PGFAppAA}[3]{%
@@ -2149,8 +2160,9 @@ Looking at this example and the rest of the abstract syntax in \figRef{abs-syn-e
 observations of what one is allowed to write in EH and what can be expected from the implementation.
 \begin{itemize}
 \item
-Applications (|App|) and constructors (|Con|) occur in expressions (|Expr|), patterns (|PatExpr|)
-and type expressions (|TyExpr|).
+There is a striking similarity between the structure of expressions |Expr|
+and patterns |PatExpr| (and as we will see later type expressions |TyExpr|):
+they all contain |App| and |Con| variants.
 This similarity will sometimes be exploited to factor out common code, and, if
 factoring out cannot be done, leads to similarities between pieces of code.
 This is the case with pretty printing%
@@ -2174,17 +2186,19 @@ where it is required that all constructors for all data types to be different.}.
 \item
 Type signatures (|Decl_TySig|) and value definitions (|Decl_Val|) may be freely mixed.
 However, type signatures and value definitions for the same identifier are still related.
+%if False
 For this version of EH, each identifier introduced by means of a value definition must
 have a corresponding type signature specification.
+%endif
 \item
 Because of the textual decoupling of value definitions and type signatures,
-a type signature might specify the type for an identifier occurring inside a pattern:
+a type signature may specify the type for an identifier occurring inside a pattern:
 \begin{code}
 let  a      ::  Int
      (a,b)  =   (3,4)
 in   ...
 \end{code}
-Currently we do not allow this, but the following is allowed:
+Currently we do not allow this, but the following however is:
 \begin{code}
 let  ab        ::  (Int,Int)
      ab@(a,b)  =   (3,4)
@@ -2195,12 +2209,14 @@ because the specified type for |ab| corresponds to the top of a pattern of a val
 In EH composite values are created by tupling, denoted by |(..,..)|.
 The same notation is also used for patterns (for unpacking a composite value) and
 types (describing the structure of the composite).
-In all these cases the corresponding AST structure consists of a |Con| applied to the elements
+In all these cases the corresponding AST consists of a |Con| applied to the elements
 of the tuple.
-On the value level a |Con| stands for a value constructor, on the type level for
-a type constructor.
-For now there is only one constructor: for tuples.
+For example, the value |(2,3)| corresponds to
+\begin{code}
+Expr_App (Expr_App (Expr_Con ",2") (Expr_IConst 2)) (Expr_IConst 3)
+\end{code}
 \item
+For now there is only one value constructor: for tuples.
 The EH constructor for tuples also is the one which needs special treatment because it
 actually stands for a infinite family of constructors.
 This can be seen in the encoding of the name of the constructor which is composed of
@@ -2208,17 +2224,8 @@ a |","| together with the arity of the constructor.
 For example, the expression |(3,4)| is encoded as an application |App| of |Con ",2"|
 to the two |Int| arguments: (,2 3 4).
 In our examples we will follow the Haskell convention, in which we write (,) instead of `,2'.
-
-By using this encoding we get the unit type |()| for free as it is encoded
+By using this encoding we also get the unit type |()| as it is encoded
 by the name |",0"|.
-We also can encode a tuple with exactly one element,
-which is for tuples themselves quite useless
-as tuples have at least two elements.
-However, when describing data types
-%if not storyAFP04Notes
-later on, in \chapterRef{ehc5},
-%endif
-this turns out to be convenient.
 \item
 The naming convention for tuples and other naming conventions are available through the following definitions
 for Haskell names |HsName|.
@@ -2238,9 +2245,7 @@ simplifies the pretty printing of expressions\footnote{As it also complicates pa
 We need |AppTop| for patterns, but for the rest it can be ignored.
 \item
 The location of parentheses around an expression is remembered by a |Parens| alternative.
-This is to avoid the effort of finding back appropriate places to insert parentheses
-when pretty printing.
-It can also safely be ignored.
+We need this for the reconstruction of the parenthesis in the input.
 \item
 |AGItf| is the top of a complete abstract syntax tree.
 %if incl00TopicAGPrimer
@@ -2452,8 +2457,9 @@ the application from, and the specific variants for |Con|, |App| and |AppTop|.
 Note that no |AppTop| is placed around a singleton list since this is not an application
 and the function |mkApp| is never used on an empty list.
 
+\chunkCmdUseMark{EHCommon.1.MkConApp}
 \chunkCmdUseMark{EHCommon.1.mkApp.Base}
-\chunkCmdUseMark{EHCommon.1.mkApp.Rest}
+\chunkCmdUseMark{EHCommon.1.mkApp.mkArrow}
 \chunkCmdUseMark{EHCommon.1.mkApp.mkConApp}
 \chunkCmdUseMark{EHCommon.1.mkApp.mkProdApp}
 
@@ -2464,6 +2470,7 @@ and the function |mkApp| is never used on an empty list.
 \item Abstraction for parsing |App| structures
 \chunkCmdFrameUse{EHParser.1.pApp}
 \item |App| building functions:
+\chunkCmdFrameUse{EHCommon.1.MkConApp}
 \chunkCmdFrameUse{EHCommon.1.mkApp.Base}
 \item Parameterized with ``what to build'' (as an algebra)
 \end{itemize}
@@ -2480,9 +2487,9 @@ and the function |mkApp| is never used on an empty list.
 \begin{code}
 data Expr  = Con String | App Expr Expr | Top Expr | Int Int
 
-type MkConAppAlg t = (String -> t,t -> t -> t,t -> t,Int -> t)
+type MkConApp t = (String -> t,t -> t -> t,t -> t,Int -> t)
 
-eCata  :: MkConAppAlg t -> Expr -> t
+eCata  :: MkConApp t -> Expr -> t
 eCata  alg@(  con  ,  _    ,  _    ,  _    )   (Con     s       )  = con  s
 eCata  alg@(  _    ,  app  ,  _    ,  _    )   (App     e1  e2  )  = app  (eCata alg e1)
                                                                           (eCata alg e2)
@@ -2754,8 +2761,8 @@ We focus on the pragmatics of the implementation and less on the corresponding t
 
 \subsubsection{What is a type}
 
-A \IxAsDef{type} is a description of the interpretation of a value
-whereas value is to be understood as a bitpattern.
+Compiler builders consider a \IxAsDef{type} to be a description of the interpretation of a value
+whereas a value is to be understood as a bitpattern.
 This means in particular that machine operations such as integer addition,
 are only applied to patterns that are to be interpreted as integers.
 More generally, we want to prevent unintended interpretations of bitpatterns,
@@ -2764,7 +2771,7 @@ likely lead to the crash of a program.
 
 The flow of values, that is, the copying between memory locations,
 through the execution of a program may
-only be such that the a copy is allowed only if the corresponding types
+only be such that a copy is allowed only if the corresponding types
 relate to each other in some proper fashion.
 A compiler uses a type system to analyse this flow and to make sure that built-in functions are only
 applied to patterns that they are intended to work on.
@@ -2809,10 +2816,13 @@ sigma  =  Int | Char | ^^ -> ^^ | ^^ , ^^ | ^^ ,, ^^ | ^^ ...
 \end{itemize}
 }
 
-In this section we start by introducing a type language: in a more formal setting for use
-in typing rules, and in a more practical setting using the AG system, that gives us an implementation too.
-In the following section we discuss the typing rules, the mechanism for enforcing the fitting of types and the checking itself.
-Types will be introduced informally and from a practical point of view
+In this section we start by introducing a type language in a more formal setting 
+as well as a more practical setting.
+The formal setting uses
+typing rules to specify the static semantics of EH whereas in the practical setting the AG system is used, providing an implementation.
+In the following section we discuss the typing rules, the mechanism for enforcing the equality of types (called \IxAsDef{fitting})
+and the checking itself.
+Types will be introduced informally,
 instead of taking a more formal approach
 \cite{fp:type-theory:func-prog,wadler89theorems-for-free,typing:types-prog-lang:pierce,ipt:theory-of-objects}.
 
@@ -2836,12 +2846,12 @@ The following definition however is closer to the one used in our implementation
 
 \EHCOneTyLangB
 
-This definition also introduces the possibility of describing types like |Int Int|.
-We nevertheless use the second one since it is 
+The latter definition also introduces the possibility of describing types like |Int Int|.
+We nevertheless use this one since it is 
 used in the implementation of later versions
 of EH where it will prove useful in expressing the application of type constructors to types.
 Here we just have to make sure no types like |Int Int| will be created;
-in a (omitted) later version of EH we perform kind inferencing/checking to prevent the creation of such types from happening.
+in a (omitted) later version of EH we perform kind inferencing/checking to prevent the creation of such types from showing up.
 
 The corresponding encoding using AG notation differs in the
 presence of an |Any| type, also denoted by |ANY|.
@@ -2876,18 +2886,23 @@ AG computations via semantic functions
 \end{itemize}
 }
 
-This definition will be used in both the Haskell world and the AG world.
-In Haskell we use the corresponding |data| type generated by the AG compiler;
-the data type is used to construct type representations.
-In the AG world we define computations over the type structure in terms of attributes.
-The corresponding semantic functions generated by the AG system can then be applied to types in Haskell.
+The formal system and implementation of this system use different symbols to refer to the same concept.
+For example, |Any| in the implementation is the same as |ANY| in the typing rules.
+Not always is such a similarity pointed out explicitly but instead a notation |name1 =@= name2|
+is used to simultaneously refer to both symbols |name1| and |name2|,
+for example |Any =@= ANY|.
+The notation also implies that the identifiers and symbols separated by '|=@=|' are referring
+to the same concept.
 
-No |AppTop| alternative is present since we want to keep this definition as simple as possible.
-No |Parens| alternative is present either, again to keep the type structure as simple as possible.
-%if incl01TopicPP
-However, this makes pretty printing more complicated because the proper locations for parenthesis
-have to be computed as part of the pretty printing computation.
-%endif
+The definition of |Ty| will be used in both the Haskell world and the AG world.
+In Haskell we use the corresponding |data| type generated by the AG compiler,
+for example in the derived type |TyL|:
+
+\chunkCmdUseMark{EHTy.1.TyL}
+
+The data type is used to construct type representations.
+In the AG world we define computations over the type structure in terms of attributes.
+The corresponding semantic functions generated by the AG system can then be applied to Haskell values.
 
 %if incl01TopicPP
 
@@ -2991,7 +3006,7 @@ synthesized |pp| attribute at an attributed non-terminal
 
 \subsection{Checking types}
 \label{sec-check-type}
-The type system of a programming language is usually described by typing rules.
+The type system of a programming language is described by typing rules.
 A \IxAsDef{typing rule}
 \begin{itemize}
 \item
@@ -3020,11 +3035,13 @@ All rules we will use are of the form
 with the meaning that if all $prerequisite_i$ can be proven we may conclude the $consequence$.
 
 A |prerequisite| can take the form of any logical predicate or has 
-a more structured form called a \IxAsDef{judgement}:
+a more structured form, usually called a \IxAsDef{judgement}:
 \[
 |context |\stackrel{|judgetype|}{|:-|}| construct : property ~> more ^^ results |
 \]
-This reads as
+The part ``|~> more ^^ results|'' needs not always be present if there are no more results for
+a judgement.
+The notation reads as
 \begin{quote}
 In the interpretation |judgetype| the |construct| has property |property| assuming
 |context| and with optional additional |more ^^ results|.
@@ -3035,9 +3052,9 @@ a semicolon '|;|'.
 An underscore '|_|' has a similar role as in Haskell to indicate a property is not relevant for a type rule
 (see \ruleRef{e-app1B}, \figRef{rules.expr1B})
 
-Although a rule formally is to be interpreted purely equationally, it may help to realise
+Although a rule formally is to be interpreted purely equational, it may help to realise
 that from an implementors point of view this (more or less)
-corresponds to an implementation template, either in the form of a function:
+corresponds to an implementation template, either in the form of a function |judgetype|:
 
 \begin{code}
 judgetype =  \construct ->
@@ -3182,8 +3199,8 @@ DATA Expr
 }
 
 \subsubsection{Environment}
-The rules in \figRef{rules.expr1A} also refer to |Gamma|,
-often called \IxAsDef{assumptions}, \IxAsDef{environment} or
+The rules in \figRef{rules.expr1A} refer to |Gamma|,
+which is often called \IxAsDef{assumptions}, \IxAsDef{environment} or
 \IxAsDef{context} because it provides information about what may
 be assumed about identifiers.
 Identifiers |ident| are distinguished on the case of the first character,
@@ -3196,7 +3213,7 @@ For type constants we will use capitalized identifiers |identc|,
 whereas for identifiers bound to an expression in a |let|-expression
 we will use lower case identifiers |(identv, j, ...)|.
 
-An environment |Gamma| is a set of bindings notated as a vector:
+An environment |Gamma| is a vector of bindings, a partial finite map from identifiers to types:
 \begin{code}
 Gamma = Vec(ident :-> sigma)
 \end{code}
@@ -3207,7 +3224,7 @@ For rules this does not make a difference, for the implementation there is a dir
 from smaller parts or deconstruct (pattern match) into smaller parts.
 
 If shadowing is involved, that is duplicate entries are added, left/first (w.r.t. to the comma '|,|') entries shadow right/later entries.
-In particular, when lookup up something in a |Gamma| the first occurrence will be taken.
+In particular, when we locate some variable in a |Gamma| the first occurrence will be taken.
 
 If convenient we will also use a list notation:
 \begin{code}
@@ -3219,7 +3236,7 @@ For simplicity we also use (assocation) lists in our implementation.
 
 A list structure suffices to encode the presence of an identifier in a |Gamma|, but it
 cannot be used to detect multiple occurrences caused by duplicate introductions.
-In our implementation we use a stack of lists instead:
+Thus in our implementation we use a stack of lists instead:
 
 \chunkCmdUseMark{EHCommon.1.AssocL}
 \chunkCmdUseMark{EHGam.1.Base.sigs}
@@ -3255,19 +3272,22 @@ because the programmer has supplied it somewhere or because the compiler can rec
 For types given by a programmer the compiler has to check if such a type correctly
 describes the value of an expression for which the type is given.
 This is called \IxAsDef{type checking}.
-If no type information has been given for a value the compiler needs
+If no type information has been given for a value,
+the compiler needs
 to reconstruct or infer this type based on the structure of the abstract syntax
 tree and the semantics of the language as defined by the typing rules.
 This is called \IxAsDef{type inferencing}.
 In EH1 we exclusively deal with type checking.
 
-\rulerCmdUse{rules.fit1}
 \rulerCmdUse{rules.expr1B}
 
 We now can tailor the type rules in \figRef{rules.expr1A} towards an implementation
 which performs type checking, in \figRef{rules.expr1B}.
+We also start with the discussion of
+the corresponding AG implementation.
 The rules now take an additional context, the expected (or known) type |sigmak|
-(attribute |knTy|) as specified by the programmer, defined in terms of AG as follows:
+(attribute |knTy|, simultaneously referred to by |sigmak =@= knTy|)
+as specified by the programmer, defined in terms of AG as follows:
 
 \chunkCmdUseMark{EHInferExpr.1.knTy}
 
@@ -3277,24 +3297,42 @@ The basic idea underlying this implementation for type checking, as well as in l
 for type inferencing, is that
 \begin{itemize}
 \item
-A known/expected type |sigmak|/|knTy| is passed top-down through the syntax tree of an expression,
-representing the maximum type (in terms of |<=|, see \figRef{rules.fit1} and discussion below) the type of an expression can be.
+A \IxAsDef{known} (or \IxAsDef{expected})
+type |sigmak =@= knTy| is passed top-down through the syntax tree of an expression,
+representing the maximal type (in terms of |<=|, see \figRef{rules.fit1} and discussion below) the type of an expression can be.
 At all places where this expression is used it also is assumed that the type of this expression equals |sigmak|.
 \item
-A result type |sigma|/|ty| is computed bottom-up for each expression,
-representing the smallest type (in terms of |<=|) the expression can have.
+A result type |sigma =@= ty| is computed bottom-up for each expression,
+representing the minimal type (in terms of |<=|) the expression can have.
 \item
-At each node in the abstract syntax tree it is checked that |sigma <= sigmak| holds.
-The result of |lhs <= rhs| is |rhs| which is subsequently used by the type checking,
-for example to simply return or use in the construction of another, usually composite, type.
+At each node in the abstract syntax tree it is checked whether |sigma <= sigmak| holds.
+The result of |lhs <= rhs| is |rhs| which is subsequently used by the type checker,
+for example to simply return or use in constructing another, usually composite, type.
 \item
 In general, for |lhs <= rhs| the |rhs| is an expected type whereas |lhs| is the bottom-up computed result type.
 \end{itemize}
 %}
 
+\rulerCmdUse{rules.fit1}
 
-An additional judgement type named |fit| (\figRef{rules.fit1}) is needed to check an actual type against a known type.
-For example, the \ruleRef{e-int1B} checks that its actual |Int| type matches the
+An additional judgement type named |fit| (\figRef{rules.fit1}) is needed to check an actual type against an expected (known) type.
+The judgement specifies the matching |sigma1 <= sigma2| of two types |sigma1| and |sigma2|.
+The meaning of |<=| is that the left hand side (lhs) type |sigma1| of |<=| can be used where the right hand side (rhs)
+type |sigma2| is expected.
+Expressed differently, |<=| checks whether a value of type |sigma1| can flow (that is, be stored) into a memory location
+of type |sigma2|.
+This is an asymmetric relation because ``a value flowing into a location'' does not imply that it can flow
+the other way,
+so |<=| conceptually has a direction, even though in the
+rules in \figRef{rules.fit1} |<=| is a test on equality of the two type arguments.
+
+The rules for |<=| also specify a result type.
+Strictly this result is not required for the |fit| judgement to hold but in the implementation it is convenient
+to have the implementation |fitsIn| of |<=| return the smallest type |sigma| for which of |sigma1 <= sigma| and |sigma2 <= sigma| hold.
+This is useful in particular in relation to the use of |ANY| in
+in \ruleRef{f-anyl1} and \ruleRef{f-anyr1}; we will come back to this later. 
+
+For example, |<=| is used in \ruleRef{e-int1B} which checks that its actual |Int| type matches the
 known type |sigmak|.
 The implementation of the type \ruleRef{e-int1B} performs this check and returns the type |sigma| in attribute |ty|:
 
@@ -3311,42 +3349,42 @@ For example: |* - IConst CConst| if the rule was to be defined for all variants 
 
 \begin{AGFeature}{ag-loc-attr}{Local attributes}
 The attribute |fTy| is declared locally.
-In this context local means that the scope is limited to the variant of a node.
+In this context `local' means that the scope is limited to the variant of a node.
 Attribute |fTy| defined for variant |IConst| is available only for other attribute
 rules for variant |IConst| of |Expr|.
 
 Note that no explicit rule for synthesized attribute |ty| is required;
-a copy rule is inserted to copy the value from the locally declared attribute |ty|.
-This is a common AG idiom when a value is required for later use as well and/or
+a copy rule is inserted to use the value of the locally declared attribute |ty|.
+This is a common AG idiom when a value is required for later use as well or
 needs to be redefined in later versions of EH.
 \end{AGFeature}
 
-Some additional constants representing builtin types are also required:
+Some additional constants representing built-in types are also required:
 
 \chunkCmdUseMark{EHTy.1.tyConsts}
 
 The local attribute |fTy| (by convention) holds the type
 as computed on the basis of the abstract syntax tree.
-This type |fTy| is then compared to the expected type |lhs.knTy|
-via the implementation |fitsIn| of the rules for |fit|/|<=|.
+This type |fTy| is subsequently compared to the expected type |lhs.knTy|
+via the implementation |fitsIn| of the rules for |fit =@= <=|.
 In infix notation |fitsIn| prints as |<=|.
-|fitsIn| returns a |FIOut| (\textbf{f}its\textbf{I}n \textbf{out}put) datastructure in attribute |fo|
-from which the resulting
-type can be retrieved by using the accessor function |foTy|:
+The function |fitsIn| returns a |FIOut| (\textbf{f}its\textbf{I}n \textbf{out}put) data structure in attribute |fo|.
+|FIOut| consists of a record containing amongst other things field |foTy|:
 
 \chunkCmdUseMark{EHTyFitsInCommon.1.FIOut}
+\chunkCmdUseMark{EHTyFitsInCommon.1.foHasErrs}
 
 Using a separate attribute |fTy| instead of using its value directly has been
 done in order to prepare for a redefinition of |fTy| in later versions\footnote{This will happen with other attributes as well.}.
 
-|Ty_Any| denoted by |Any|/|ANY| plays a special role.
+|Ty_Any =@= Any =@= ANY| plays a special role.
 This type appears at two places in the implementation of the type system
 as a solution to the following problems:
 
 \begin{itemize}
 \item
 Invariant to our implementation is the top-down passing of an expected type.
-However, this type is not always known in a top-down order.
+However, this type is not always fully known in a top-down order.
 For example, in \ruleRef{e-app1B} (\figRef{rules.expr1B}) the argument of the expected function type
 |ANY -> sigmak| is not known because this information is only available from the environment |Gamma| which is
 used further down in the AST via \ruleRef{e-ident1B}.
@@ -3361,31 +3399,25 @@ As such |ANY| will be replaced by more a more specific type as soon as it matche
 
 In both cases |ANY| is a type exclusively used by the implementation to smoothen type checking.
 The rules for |<=| for |ANY| in \figRef{rules.fit1} state that |ANY| is equal to any type.
-The effect is that the result of |<=| is any more specific type required to equal |ANY|.
+The effect is that the result of |<=| is a more specific type.
 This suits our ``dont't know'' and ``dont't care'' use.
 Later, when discussing the AG implementation for these rules this issue reappears.
+In later EH versions we will split the use of |ANY| into the proper use of a type lattice,
+and will it thus disappear.
 
 The role of |ANY| may appear to be similar to |Top| and |Bot| known from type theory.
 However, |ANY| is used only as a mechanism for the type system implementation.
-It is not offered as a feature to the user (i.e. the programmer) of the type system.
+It is not offered as a feature to the user (i.e. the EH programmer) of the type system.
 
 
-|Ty_Any|/|Any|/|ANY| is also used at the top level where the actual expected type of the expression neither is
+|Ty_Any =@= Any =@= ANY| is also used at the top level where the actual expected type of the expression neither is
 specified nor matters
 because it is not used:
 
 \chunkCmdUseMark{EHInferExpr.1.knTy.AGItf}
 
-The Haskell counterpart of |jfit sigma1 <= sigma2 : sigma|
-is implemented by |fitsIn|.
-The function |fitsIn| checks if a value of type |sigma1| can flow (that is, stored) into a memory location
-of type |sigma2|.
-This is an asymmetric relation because ``a value flowing into a location'' does not imply that it can flow
-the other way around, so |<=|, or |fitsIn| conceptually has a direction, even though our
-implementation here is a test on equality of the two type arguments.
-
 The \ruleRef{f-arrow1} in \figRef{rules.fit1} for comparing function types compares the
-types for arguments in the other direction relative to the function type itself.
+types for arguments in the opposite direction.
 Only in
 %if storyAFP04Notes
 later versions of EH
@@ -3408,8 +3440,8 @@ the correct use of the direction for now only anticipates issues yet to come.
 \item Structure/attribution of AG
 \PGFExprIBScheme
 \begin{itemize}
-\item Environment |Gamma|/|valGam| holds assumptions (types) about value identifiers
-\item Expected/known/top-down type |sigmak|/|knTy| together with bottom-up type |sigma|/|ty| from child expression
+\item Environment |Gamma =@= valGam| holds assumptions (types) about value identifiers
+\item Expected/known/top-down type |sigmak =@= knTy| together with bottom-up type |sigma =@= ty| from child expression
 compute type of expression,
 \item but: here mostly known type is used: all types are explicitly specified
 \end{itemize}
@@ -3474,7 +3506,9 @@ decombine2 :: A -> (A,A)
 \end{itemize}
 }
 
-\chunkCmdUseMark{EHTyFitsIn.1.foHasErrs}
+The Haskell counterpart of |jfit sigma1 <= sigma2 : sigma|
+is implemented by |fitsIn|:
+
 \savecolumns
 \chunkCmdUseMark{EHTyFitsIn.1.fitsIn.Base}
 \restorecolumns
@@ -3573,7 +3607,7 @@ decombine2 :: A -> (A,A)
 \frametitle{Type decomposing utilities}
 \begin{itemize}
 \item Decompose into constituents
-\chunkCmdFrameUse{EHTy.1.unMkTy.sigs}
+\chunkCmdFrameUse{EHTy.1.unMkTy.sigs.tyArrow}
 \item In case of failure, return ``will do'' values:
 \begin{itemize}
 \item |Ty_Any| (for |Ty|)
@@ -3583,9 +3617,15 @@ decombine2 :: A -> (A,A)
 }
 
 
-The function |fitsIn| checks if the |Ty_App| structure
+The function |fitsIn| checks whether the |Ty_App| structure
 and all type constants |Ty_Con| are equal.
-If not, a non-empty list of errors will be returned as well as type |Ty_Any| (|Any|/|ANY|).
+If not, a non-empty list of errors is returned as well as type |Ty_Any =@= Any =@= ANY|.
+Matching a composite type is split in two cases for |Ty_App|, one for function types (the first case),
+and one for the remaining type applications
+(the second case).
+For the current EH version the second case only concerns tuple types.
+Both matches for composite types use |comp| wich performs multiple |<=|'s and combines the results.
+The difference lies in the treatment of contravariant behavior as discussed earlier.
 
 The type rules leave in the open how to handle a situation when a required
 constraint is broken.
@@ -3600,13 +3640,30 @@ Errors themselves are also described via AG:
 \chunkCmdUseMark{EHErrorAbsSyn.1.UnifyClash}
 \chunkCmdUseMark{EHErrorAbsSyn.1.NamesNotIntrod}
 
-The |Err| datatype is available as a datatype in the same way a |Ty| is.
+The |Err| datatype is available as a datatype in the same way |Ty| is.
 The error datatype is also used for signalling undeclared identifiers: 
 
 \chunkCmdUseMark{EHInferExpr.1.Var}
 
+%{
+
+%format < 		= "{\langle}"
+%format > 		= "{\rangle}"
+\begin{AGFeature}{ag-lhs-pat}{Left hand side patterns}
+The simplest way to define a value for an attribute is to define one value for one attribute
+at a time.
+However, if this value is a tuple, its fields are to be extracted and assigned to individual attributes
+(as in |tyArrowArgRes|).
+AG allows a pattern notation of the form(s) to make the notation for this situation more concise:
+\begin{code}
+| <variant>  ^^^^  <node> . ( <attr1>   , <attr2>            , ...  )  = 
+| <variant>  ^^^^  ( <node1> . <attr1>  , <node1> . <attr2>  , ...  )  = 
+\end{code}
+\end{AGFeature}
+%}
+
 Again, the error condition is signalled by a non empty list of errors
-if a lookup in the |Gamma| fails.
+if a lookup in |Gamma| fails.
 %if incl01TopicErr
 Later, in \secRef{sec-error1}, these
 %else
@@ -3626,8 +3683,8 @@ It is only extended with new bindings for identifiers at a declaration of an ide
 \chunkCmdUseMark{EHInfer.1.valGam}
 
 One may wonder why the judgement |jfit sigma1 <= sigma2 : sigma|
-and its implementation |fitsIn| do return a type at all.
-For the idea of checking was to only pass explicit type information |sigmak| (or |knTy|)
+and its implementation |fitsIn| returns a type at all;
+the idea of checking was to only pass explicit type information |sigmak| (or |knTy|)
 from the top of the abstract syntax tree to the leaf nodes.
 Note that this idea breaks when we try to check the expression |id 3| in
 
@@ -3640,47 +3697,40 @@ let  id :: Int -> Int
 What is the |knTy| against which |3| will be checked?
 It is the argument type of the type of |id|.
 However, in \ruleRef{e-app1B} and its AG implementation,
-the type of |id| is not the (top-to-bottom travelling) |sigmak|/|knTy|, but it
-will be the argument part of the (bottom-to-top travelling) resulting function type of $e_1$/|func.ty|:
+the type of |id| is not the (top-to-bottom travelling) |sigmak =@= knTy|, but it
+will be the argument part of the (bottom-to-top travelling) resulting function type of
+%{
+%format e1
+|e1 =@= func.ty|:
+%}
 
 \chunkCmdUseMark{EHInferExpr.1.App}
 
-%{
-
-%format < 		= "{\langle}"
-%format > 		= "{\rangle}"
-\begin{AGFeature}{ag-lhs-pat}{Left hand side patterns}
-The simplest way to define a value for an attribute is to define one value for one attribute
-at a time.
-However, if this value is a tuple, its fields are to be extracted and assigned to individual attributes
-(as in |tyArrowArgRes|).
-AG allows a pattern notation of the form(s) to make the notation for this situation more concise:
-\begin{code}
-| <variant>  ^^^^  <node> . ( <attr1>   , <attr2>            , ...  )  = 
-| <variant>  ^^^^  ( <node1> . <attr1>  , <node1> . <attr2>  , ...  )  = 
-\end{code}
-\end{AGFeature}
-%}
-
-The idea here is to encode as |ANY -> sigmak| (passed to |func.knTy|) the partially
-known function type and let
-|fitsIn| fill in the missing details, that is find a type for |ANY|.
+The idea here is to encode the partially
+known function type as |ANY -> sigmak| (passed to |fun.knTy|)  and let
+|fitsIn| fill in the missing details, that is to find a type for |ANY|.
+This is the place where it is convenient to have |fitsIn| return a type in which
+|ANY =@= Ty_Any|'s are replaced by a more concrete type.
 From that result the known/expected type of the argument can be extracted.
-So we are already performing a little bit of type inferencing.
+
+Note that we are already performing a little bit of type inferencing.
+This is however only done locally to |App| as the |ANY| in
+|ANY -> sigmak| is guaranteed to have disappeared in the result type of |fitsIn|.
+If this is not the case, the EH program contains an error.
 This is a mechanism we repeatedly use, so we summarize it here:
 
 \begin{itemize}
 \item
-Generally, the semantics of the language requires a type |sigma| to be of a specific form |sigma'|.
+Generally, the semantics of the language requires a type |sigma| to be of a specific form.
 Here |sigma| equals the type of the function (not known at the |App| location in the AST)
-and |sigma'| equals the required form |ANY -> sigmak|.
+which should have the form |ANY -> sigmak|.
 \item
-The specific form |sigma'| may contain types about which we know nothing, here encoded by
+The specific form may contain types about which we know nothing, here encoded by
 |ANY|, in later EH versions by type variables.
 \item
-|fitsIn/<=| is used to enforce |sigma| to have form |sigma'|.
-Here this is done by pushing |sigma'| as |sigmak| down the AST for the function (attribute |@func.knTy|).
-The check |sigma `fitsIn` sigma'| is then done in the |Var| variant of |Expr|.
+|fitsIn =@= <=| is used to enforce |sigma| to have the right form.
+Here this is done by pushing the form as |sigmak| down the AST for the function (attribute |func.knTy|).
+The check |sigma `fitsIn` sigmak| is then performed in the |Var| variant of |Expr|.
 \item
 Enforcing may or may not succeed.
 In the latter case error messages are generated and the result of
@@ -3688,41 +3738,41 @@ enforcing is |ANY|.
 \end{itemize}
 
 The type construction and inspection done in the |App| variant of |Expr|
-requires some straightforward additional functions.
-Because they are used quite often we have incorporated the complete set of these functions.
+requires some additional type construction functions, of which we only include |mkTyArrow|:
 
-\chunkCmdUseMark{EHTy.1.mkTy}
-\chunkCmdUseMark{EHTy.1.mkTyProdApp}
+\chunkCmdUseMark{EHTy.1.mkTyArrow}
 
-For constructing type representations we reuse the
-algebra based |mkArrow| (and other similar functions)
-previously used for building abstract syntax trees.
-%if not incl01TopicParsing
-Because these aspects have not been discussed in \thispaper\ the relevant
-functions are included in \figRef{eh-mkApp} without further explanation.
+The function is derived from a more general function |mkArrow|:
 
-\begin{Figure}{Algebra based construction functions for |App| like structures}{eh-mkApp}
+\chunkCmdUseMark{EHCommon.1.MkConApp}
+\chunkCmdUseMark{EHCommon.1.mkApp.mkArrow}
 \chunkCmdUseMark{EHCommon.1.mkApp.Base}
-\chunkCmdUseMark{EHCommon.1.mkApp.mkConApp}
-\chunkCmdUseMark{EHCommon.1.mkApp.mkProdApp}
-\chunkCmdUseMark{EHCommon.1.mkApp.Rest}
-\end{Figure}
-%endif
 
-The functions used for scrutinizing a type are given names reflecting the parts returned by
-the dissection into constituents.
-To improve tolerance against program errors, that is, errors in an EH program,
-these functions return ``will do'' default values in case the dissection fails.
+A |MkConApp| contains four functions, for constructing a value similar to |Con|, |App|, |AppTop| and |IConst| respectively.
+These functions are used by |mkApp| to build an |App| like structure and by |mkArrow| to build function like structures.
+The code for (e.g.) parsers (omitted from \thispaper),
+uses these functions parameterized with the proper four semantics functions as generated by the AG system.
+So this additional layer of abstraction improves code reuse.
+Similarly, function |mkTyProdApp| constructs a tuple type out of types for the elements.
 
-\chunkCmdUseMark{EHTy.1.unMkTy.sigs}
+The functions used for scrutinizing a type are given names in which (by convention)
+the following is encoded:
+
+\begin{itemize}
+\item
+What is scrutinized.
+\item
+What is the result of scrutinizing.
+\end{itemize}
+
+For example, |tyArrowArgRes| dissects a function type into its argument and result type.
+If the scrutinized type is not a function, ``will do'' values are returned:
+
+\chunkCmdUseMark{EHTy.1.unMkTy.sigs.tyArrow}
 \chunkCmdUseMark{EHTy.1.unMkTy.tyArrowArgRes}
-\chunkCmdUseMark{EHTy.1.unMkTy.tyArrowArgsRes}
-\chunkCmdUseMark{EHTy.1.unMkTy.tyAppFunArgs}
-\savecolumns
-\chunkCmdUseMark{EHTy.1.unMkTy.funs}
-\restorecolumns
-\chunkCmdUseMark{EHTy.1.tyProdArgs}
 
+Similarly |tyProdArgs| is defined to return the types of the elements of a tuple type.
+The code for this and other similar functions have been omitted for brevity.
 
 \paragraph{Constructor |Con|, tuples.}
 
@@ -3794,17 +3844,19 @@ to construct the type |a -> b -> (a,b)| for the constructor |(,)|.
 
 \paragraph{|lambda|-expression |Lam|.}
 
-For \ruleRef{e-lam1B} the check if |knTy| has the form |sigma1 -> sigma2|
+For \ruleRef{e-lam1B} the check whether |knTy| has the form |sigma1 -> sigma2|
 is done by letting |fitsIn| match the |knTy| with |ANY -> ANY|.
 The result (forced to be a function type) is split up by
-|tyArrowArgRes|.
+|tyArrowArgRes| into argument and result type.
+The function |gamPushNew| opens a new scope on top of |valGam| so as to be able
+to check duplicate names introduced by the pattern |arg|:
 
 \chunkCmdUseMark{EHInferExpr.1.Lam}
 
 \paragraph{Type annotations (for |lambda|-expression).}
 
 In order to make |lambda|-expressions typecheck correctly it is the responsibility of
-the EH programmer to supply a type signature.
+the EH programmer to supply the correct type signature.
 The |TypeAs| variant of |Expr| takes care of this by simply passing the type signature as the expected type:
 
 \chunkCmdUseMark{EHInferExpr.1.TypeAs}
@@ -3815,7 +3867,7 @@ The obligation for the EH programmer to specify a type is dropped in later versi
 
 Before we can look into more detail at the way new identifiers are
 introduced in |let|- and |lambda|-expressions
-we have to look at patterns.
+we take a look at patterns.
 The \ruleRef{e-let1B} is too restrictive for the actual language construct supported by EH
 because the rule only allows a single identifier to be introduced.
 The following program allows inspection of parts of a composite value by
@@ -3842,33 +3894,48 @@ by dissecting it into its constituents.
 However, patterns do not return a type but
 type bindings for the identifiers inside a pattern instead.
 The new bindings are subsequently used in
-|let|- and the bodies of |lambda|-expressions.
+|let|- and |lambda|-expressions bodies.
 
 A tuple pattern with \ruleRef{p-prod1} is encoded in the same way
-as tuple expressions, that is, pattern |(a,b)| is encoded as
+as tuple expressions; that is, pattern |(a,b)| is encoded as
 an application |(,) a b| with an |AppTop| on top of it.
+We dissect the known type of a tuple in \ruleRef{p-prod1} into its element types
+at |AppTop| using function |tyProdArgs|.
+For this version of EH
+we only have tuple patterns; we can indeed assume that we are dealing with a tuple type.
 
 \chunkCmdUseMark{EHInferPatExpr.1.knTy}
-\chunkCmdUseMark{EHInferPatExpr.1.knTy.Init}
+\chunkCmdUseMark{EHInferPatExpr.1.knTy.App}
 
-For this version of EH
-we only have tuple patterns.
-Therefore, we can use
-this (current) limitation to unpack a known product type |knTy| into its elements
-distributed over its arguments via |knTyL|. The complexity in the |AppTop| alternative
+The list of these elements is passed through attribute |knTyL| to all |App|'s of the pattern.
+At each |App| one element of this list is taken as the |knTy| of the element AST.
+
+The complexity in the |AppTop| alternative
 of |PatExpr| arises
 from repair actions in case the arity of the pattern and its known type do not match.
-In that case the subpatterns are given as many |ANY|'s as known type as necessary,
-the number of |ANY|'s determined by the actual arity of the application:
+In that case the subpatterns are given as many |ANY|'s as known type as necessary.
+
+Finally, for the distribution of the known type throughout a pattern we
+need to properly initialize |knTyL|:
+
+\chunkCmdUseMark{EHInferPatExpr.1.knTy.Init}
+
+The arity of the patterns is needed as well:
 
 \chunkCmdUseMark{EHInferPatExpr.1.arity}
 
 As a result of this unpacking, at a
-|Var| alternative |knTy| holds the type of the variable name introduced.
-The type is added to the |valGam| that is threaded through the pattern, in the mean time gathering
-all introduced bindings.
+|Var| alternative attribute |knTy| holds the type of the variable name introduced.
+The type is added to attribute |valGam| that is threaded through the pattern for gathering
+all introduced bindings:
 
 \chunkCmdUseMark{EHInferPatExpr.1.valGam}
+
+The addition to |valGam| is encoded in the attribute |addToGam|, a function
+which only adds a new entry if the variable name is not equal to an underscore '|_|'
+and
+has not been added previously via a type signature for the variable name, signalled
+by attribute |inclVarBind| (defined later).
 
 \subsubsection{Checking declarations}
 
@@ -3924,25 +3991,30 @@ So, first all signatures are collected:
 \TBD{AG pattern: gather, walk, update (via gamAdd)}
 
 \savecolumns
-\chunkCmdUseMark{EHInfer.1.tySigGam.TysigLet}
-\restorecolumns
-\chunkCmdUseMark{EHInfer.1.tySigGam.Val}
-\restorecolumns
-\chunkCmdUseMark{EHInfer.1.TySig}
+\chunkCmdUseMark{EHInfer.1.gathTySigGam}
 
 Attribute |gathTySigGam| is used to gather type signatures.
+The gathered signatures are then passed back into the declarations.
 Attribute |tySigGam| is used to distribute the gathered type signatures over the declarations.
+
+\restorecolumns
+\chunkCmdUseMark{EHInfer.1.tySigGam.TysigLet}
+
 At a value declaration we extract the the type signature from |tySigGam| and
-use it to check whether a pattern has a type signature.
-This type signature then is
+use it to check whether a pattern has a type signature:
+
+\restorecolumns
+\chunkCmdUseMark{EHInfer.1.tySigGam.Val}
+
+This type signature is then
 used as the known type of the pattern and the expression.
 
 \chunkCmdUseMark{EHInfer.1.tyInstKnown}
 
 The flag |hasTySig| is used to signal the presence of a type signature for a value and a correct
 form of the pattern.
-We allow patterns of the form |ab@(a,b)| to have a type signature associated with |ab|.
-No type signatures are allowed for |(a,b)| as a whole (because there is no way to refer to the
+We allow patterns of the form `|ab@(a,b)|' to have a type signature associated with |ab|.
+No type signatures are allowed for `|(a,b)|' without the `|ab@|' alias (because there is no way to refer to the
 anonymous tuple) nor is it allowed to specify type signature for the fields of the tuple (because of simplicity,
 additional plumbing would be required).
 
@@ -3967,7 +4039,6 @@ as |gathTySigGam| is used.
 
 Newly gathered bindings are stacked on top of the inherited |valGam| before passing them
 on to both declarations and body.
-Note that this implicitly makes this a three-pass algorithm over declarations.
 
 Some additional functionality for pushing and popping the stack |valGam| is also needed:
 
@@ -3986,20 +4057,29 @@ if any duplicate bindings are present in |lValGam|.
 
 All that is left to do now is to use the type expressions to extract type signatures.
 This is straightforward as type expressions (abstract syntax for what the programmer specified)
-and types (as internally used by the compiler) have almost the same structure.
+and types (as internally used by the compiler) have almost the same structure:
 
-\chunkCmdUseMark{EHInferTyExpr.1}
+\chunkCmdUseMark{EHInferTyExpr.1.ty}
 
-A variant of |Gamma| is used to hold type constants:
+Actually, we need to do more because we also have to check whether a type is defined.
+A variant of |Gam| is used to hold type constants:
 
 \chunkCmdUseMark{EHGam.1.TyGamInfo}
 \chunkCmdUseMark{EHGam.1.TyGam}
 \chunkCmdUseMark{EHGam.1.tyGamLookup}
 
+This |Gamma| is threaded through |TyExpr|:
+
+\chunkCmdUseMark{EHInferTyExpr.1.tyGam}
+
 At the root of the AST |tyGam| is initialized with the fixed set of types available
 in this version of the compiler:
 
 \chunkCmdUseMark{EHInfer.1.initTyGam}
+
+Finally, at the |Con| alternative of |TyExpr| we need to check if a type is defined:
+
+\chunkCmdUseMark{EHInferTyExpr.1.check}
 
 \frame<presentation>
 {
@@ -4037,6 +4117,7 @@ let  f = ... g ...
 \frametitle{Gathering and distribution for let}
 \begin{itemize}
 \item
+\chunkCmdFrameUse{EHInfer.1.gathTySigGam}
 \chunkCmdFrameUse{EHInfer.1.tySigGam.TysigLet}
 \item Gather in |gathTySigGam|, distribute in |tySigGam|
 \end{itemize}
@@ -4129,7 +4210,7 @@ let  v         ::  Int
 \[
 \rulerCmdUse{rules.pat1.p-var1}
 \]
-\item |sigmak|/|knTy| is decomposed via |AGPat(DeCompose)| pattern
+\item |sigmak =@= knTy| is decomposed via |AGPat(DeCompose)| pattern
 \[
 \rulerCmdUse{rules.pat1.p-prod1}
 \]
@@ -4152,6 +4233,7 @@ let  v         ::  Int
 \begin{itemize}
 \item |knTy| used in |AGPat(DeCompose)|
 \chunkCmdFrameUse{EHInferPatExpr.1.knTy}
+\chunkCmdFrameUse{EHInferPatExpr.1.knTy.App}
 \item Uses also |AGPat(DeCompose)| for |knTyL|
 \item For |AGPat(DeCompose)| of product |knTy| the arity of the product expression is required
 \end{itemize}
@@ -4360,12 +4442,12 @@ Local type inference \cite{pierce00local-type-inference} also has top-down, bott
 
 The next version of EH drops the requirement that all value definitions
 need to be accompanied by an explicit type signature.
-For example, repeating the example from the introduction
+For example, the example from the introduction:
 
 \begin{code}
 %%2srcfile(test/1-sig-fail.eh%%)
 \end{code}
-gives
+is accepted by this version of EH:
 \begin{TT}
 %%2ppfile(test/1-sig-fail.eh%%)
 \end{TT}
@@ -4401,6 +4483,8 @@ from a program
 to reconstruct (or infer) types for type variables.
 However, the types it can reconstruct are limited to those allowed by
 the used type language, that is, basic types, tuples and functions.
+All types are assumed to be monomorphic, that is, polymorphism is not yet allowed.
+The next version of EH deals with polymorphism.
 
 So
 \begin{code}
@@ -4429,7 +4513,11 @@ will give
 \end{itemize}
 }
 
-If the use of |id| to define |v| is omitted less information (namely the argument of |id| is an int) to infer a type for |id| is available
+If the use of |id| to define |v| is omitted,
+less information (namely the argument of |id| is an int) to infer a type for |id| is available.
+Because no more specific type information for the argument (and result) of |id| could be retrieved 
+the representation for ``not knowing which type'', that is, a type variable, is shown:
+
 \begin{TT}
 %%2ppinline(let id = \x -> x in id%%)
 \end{TT}
@@ -4438,8 +4526,8 @@ On the other hand, if contradictory information is found we will have
 \begin{TT}
 %%2ppfile(test/2-id-intchar.eh%%)
 \end{TT}
-This may look a bit strange for a Haskell programmer, but we will concern ourselves 
-with polymorphism no sooner then with the next version of EH (\chapterRef{ehc3}).
+However, the next version of EH dealing with Haskell style polymorphism
+(\chapterRef{ehc3}) accepts this program.
 
 \frame<presentation>[containsverbatim]
 {
@@ -4461,7 +4549,7 @@ with polymorphism no sooner then with the next version of EH (\chapterRef{ehc3})
 
 Partial type signatures are also allowed.
 A partial type signature specifies a type only for a part, allowing
-a cooperation between the programmer who specifies what is (e.g.) already
+a co\"operation between the programmer who specifies what is (e.g.) already
 known about a type signature and the type inferencer filling in the unspecified details.
 For example:
 
@@ -4471,9 +4559,9 @@ For example:
 
 The type inferencer pretty prints the inferred type instead of the explicity type signature:
 
-\begin{code}
-%%2srcfile(test/2-ty-wild.eh%%)
-\end{code}
+\begin{TT}
+%%2ppfile(test/2-ty-wild.eh%%)
+\end{TT}
 
 The discussion of the implementation of this feature is postponed until
 \secRef{ehc2partial-sig} in order to demonstrate the effects of an additional feature
@@ -4511,7 +4599,7 @@ As an afterthought to see how well an additional feature can be added
 \subsection{Type variables}
 
 In order to be able to represent yet unknown types the type language needs
-\IxAsDef{type variable}s to represent this.
+\IxAsDef{type variable}s to represent this:
 
 \begin{code}
 sigma  =  Int | Char
@@ -4520,7 +4608,7 @@ sigma  =  Int | Char
        |  tvarv
 \end{code}
 
-The type structure |Ty| also needs to be extended with an alternative for a variable
+The corresponding type structure |Ty| needs to be extended with an alternative for a variable:
 
 \chunkCmdUseMark{EHTyAbsSyn.2}
 
@@ -4544,12 +4632,13 @@ A type variable is identified by a unique identifier, a |UID|:
 
 The idea is to thread a counter as global variable through the AST,
 incrementing it whenever a new unique value is required.
-The implementation used throughout all EH compiler versions is more complex because it allows nested counters.
+The implementation used throughout all EH compiler versions is more complex because
+an |UID| actually is a hierarchy of counters, each level counting in the context of an outer level.
 This is not discussed any further;
 we will ignore this aspect and just assume a unique |UID| can be obtained.
 However, a bit of its implementation is visible in the pretty printed representation as a underscore separated
 list of integer values,
-occasionaly visible in example output of the compiler.
+occasionaly visible in sample output of the compiler.
 
 \frame<presentation>
 {
@@ -4579,9 +4668,9 @@ Although the typing rules at \figPageRef{rules.expr1B.C} still hold
 we need to look at the meaning of |<=| (or |fitsIn|) in the presence of
 type variables.
 The idea here is that what is unknown may be replaced by that which is known.
-For example, if the check |tvarv <= sigma| is encountered,
-making the previously unknown type |tvarv| equal to |sigma|
-is the easiest way to make |tvarv <= sigma| true.
+For example, when the check |tvarv <= sigma| is encountered,
+the easiest way to make |tvarv <= sigma| true
+is to state that the (previously) unknown type |tvarv| equals |sigma|.
 An alternative way to look at this is that |tvarv <= sigma| is true under the
 constraint that |tvarv| equals |sigma|.
 
@@ -4594,10 +4683,11 @@ equal to a type |sigma| this fact has to be remembered.
 Cnstr                       =  [tvarv :-> sigma]
 \end{code}
 
-A set of \IxAsDef{constraint}s |Cnstr| is a set of bindings for type variables,
+A set of \IxAsDef{constraint}s |Cnstr| (appearing in its non pretty printed form as @Cnstr@ in the source text)
+is a set of bindings for type variables,
 represented as an association list:
 
-\chunkCmdUseMark{EHCommon.2.Cnstr.Base}
+\chunkCmdUseMark{EHCnstr.2.Cnstr.Base}
 \chunkCmdUseMark{EHCnstr.2.Cnstr.emptyCnstr}
 \chunkCmdUseMark{EHCnstr.2.Cnstr.cnstrTyUnit}
 
@@ -4610,7 +4700,8 @@ Here
 constraints |Cnstr| are used to replace all other
 references to |tvarv| by |sigma|,
 for this reason often named a \IxAsDef{substitution}.
-Mostly this will be done immediately after constraints are obtained as
+In this version of EH the replacement of type variables
+with newly types is done immediately after constraints are obtained as
 to avoid finding a new and probably conflicting constraint for
 a type variable.
 Applying constraints means substituting type
@@ -4635,25 +4726,33 @@ This is another place where we use the AG notation and the automatic propagation
 as attributes throughout the type representation to make the description of the application of
 a |Cnstr| to a |Ty| easier.
 The function |tyAppCnstr| is defined in terms of the following AG.
-The plumbing required to provide it as a Haskell function has been omitted:
+The plumbing required to provide the value of attribute |repl| (|tvs|) available as
+the result of Haskell function |tyAppCnstr| (|tyFtv|)
+has been omitted:
 
 \chunkCmdUseMark{EHTySubst.2.TySubst}
 \chunkCmdUseMark{EHTyFtv.2.TyFtv}
+
+%{
+
+%format < 		= "{\langle}"
+%format > 		= "{\rangle}"
 
 \begin{AGFeature}{ag-self-attr}{Attribute of type SELF}
 The type of an attribute of type |SELF| depends on the node in which a rule is defined for
 the attribute.
 The generated type of an attribute |<attr>| for |<node>| is equal to the generated Haskell datatype
 of the same name |<node>|.
+The AG compiler inserts code for building |<node>|'s from the |<attr>| of the children and other fields.
+Insertion of this code can be overridden by providing a definition ourselves.
 In this way a complete copy of the AST can be built as a Haskell value.
-For example, via attribute |repl| a copy of the type is built which only may differ from the original
+For example, via attribute |repl| a copy of the type is built which only differs (or, may differ) in the original
 in the value for the type variable.
 \end{AGFeature}
 
 \begin{AGFeature}{ag-use-attr}{Attribute together with USE}
-Declaring an attribute |<attr>| together with |USE {<op>} {<zero>}| including two additional pieces of text |<op>| and |<zero>| enables
-the insertion of an additional copy rule variant
-resembling Haskell's |foldr|.
+A synthesized attribute |<attr>| may be declared together with |USE {<op>} {<zero>}|.
+The |<op>| and |<zero>| allow the insertion of copy rules which behave similar to Haskell's |foldr|.
 The first piece of text |<op>| is used to combine the attribute values of two children by textually placing this text as an
 operator between references to the attributes of the children.
 If no child has an |<attr>|, the second piece of text |<zero>| is used as a default value for |<attr>|.
@@ -4661,15 +4760,18 @@ For example, @tvs USE {`union`} {[]}@ (appearing in pretty printed form as |tvs 
 gathers bottom-up the free type variables of a type.
 \end{AGFeature}
 
-The application of a |Cnstr| is lifted straightforwardly to lists:
+%}
+
+The application of a |Cnstr| is straightforwardly lifted to lists:
 
 \chunkCmdUseMark{EHSubstitutable.2.SubstitutableList}
+\chunkCmdUseMark{EHCommon.2.unionL}
 
 A |Cnstr| can also be applied to another |Cnstr|:
 
 \chunkCmdUseMark{EHSubstitutable.2.SubstitutableCnstr}
 
-but one must be aware that | ||=>| is non-commutative as constraints |s1| in |s1 ||=> s2| take precedence
+Substituting a substitution is non-commutative as constraints |s1| in |s1 ||=> s2| take precedence
 over |s2|.
 To make this even clearer all constraints for type variables in |s1| are removed from |s2|,
 even though for a list implementation this would not be required.
@@ -4749,19 +4851,22 @@ Cnstr sigma
 \subsubsection{Computing constraints}
 
 The only source of constraints is the check |fitsIn| which determines
-whether a type can flow into another.
+whether one type can flow into another one.
 The previous version of EH could only do one thing in case a type could not fit
 in another: report an error.
 Now,
 if one of the types is unknown, which means that it is a type variable, we have the additional possibility of
 returning a constraint on that type variable.
-The implementation |fitsIn| of |<=| has to be rewritten to include additional cases
-for type variables and the return of constraints:
+The implementation |fitsIn| of |<=| additionaly has to return constraints:
 
 \savecolumns
 \chunkCmdUseOnPrev{EHTyFitsInCommon.1.FIOut}{EHTyFitsInCommon.2.FIOut}
 \restorecolumns
 \chunkCmdUseMark{EHTyFitsInCommon.2.FIOut.empty}
+
+Computation and proper combination of constraints necessitates
+|fitsIn| to be rewritten:
+
 \savecolumns
 \chunkCmdUseOnPrev{EHTyFitsIn.1.fitsIn.Base}{EHTyFitsIn.2.fitsIn.Base}
 \restorecolumns
@@ -4780,16 +4885,18 @@ it differs in the following aspects:
 
 \begin{itemize}
 \item
-The datatype |FIOut| returned by has an additional field |foCnstr| holding found constraints.
+The datatype |FIOut| returned by |fitsIn| has an additional field |foCnstr| holding found constraints.
+This requires constraints to be combined for composite types
+like the |App| variant of |Ty|.
 \item
 The function |bind| creates a binding for a type variable to a type.
 The use of |bind| is shielded by |occurBind| which checks if the type variable for
-which a binding is created does not occur free in the type bound to.
+which a binding is created does not occur free in the bound type too.
 This is to prevent (e.g.) |a <= a -> a| to succeed.
 This is because it is not clear if |a :-> a -> a| should be the resulting constraint
 or |a :-> (a -> a) -> (a -> a)| or one of infinitely many other possible solutions.
 A so called \IxAsDef{infinite type}
-like this is inhibited by the so called \IxAsDef{occur check}.
+like this is inhibited by the so called \IxAsDef{occurs check}.
 \item
 An application |App| recursively fits its components with components of another |App|.
 The constraints from the first fit |ffo| are applied immediately to the following component
@@ -4851,10 +4958,10 @@ to a type variable |v| when |v| is used
 
 \subsection{Reconstructing types for Expr}
 
-Constraints are used to make found knowledge about previously unknown
+Constraints are used to make knowledge found about previously unknown
 types explicit.
 The typing rules in \figRef{rules.expr1A} (and \figRef{rules.expr1B}, \figRef{rules.expr1B.C})
-in principle need to be changed.
+in principle do not need to be changed.
 The only reason to adapt some of the rules to the variant in
 \figRef{rules.expr2}
 is to clarify the way constraints are used.
@@ -4866,12 +4973,16 @@ checking and inferring types has to be done.
 
 \TBD{...}
 
-Actually, the rules in \figRef{rules.expr2} are more
-cluttered with constraints flowing around if we want to approximate
-the corresponding AG description, for example for expression application
+Actually, the rules in \figRef{rules.expr2} should be even more
+specific in how constraints flow around if we want to be closer to
+the corresponding AG description.
+The AG specifies a |Cnstr| to be threaded instead of just returned bottom-up:
 
 % \chunkCmdUsePrevLit{EHInferExpr.1.App}
 \chunkCmdUseMark{EHInferExpr.2.tyCnstr}
+
+Its use in an expression application is as follows:
+
 \chunkCmdUseOnPrev{EHInferExpr.1.App}{EHInferExpr.2.App}
 
 \begin{AGFeature}{ag-redef-rule}{Redefining an attribute value}
@@ -4881,9 +4992,9 @@ It is an error if multiple rules for an attribute are present.
 If |:=| is used instead, any previous definition is overridden and no error message is generated.
 In this context previous means ``textually occurring earlier''.
 Because the AG system's flexibility finds its origin in the independence of textual locations of
-declarations and definitions, |:=| should be used with caution.
-For \thispaper\ the order in which redefinitions appear is the same order as their textual appearance
-in \thispaper\ which is also the same as the sequence of versions of EH.
+declarations and definitions, |:=| should be used with care.
+For \thispaper\ the order in which redefinitions appear is the same as their textual appearance
+in \thispaper, which again is the same as the sequence of versions of EH.
 \end{AGFeature}
 
 This definition builds on top of the previous version by
@@ -4906,11 +5017,11 @@ It is our opinion that
 typing rules serve their purpose best by providing a basis for proof as well
 as understanding and discussion.
 An AG description serves its purpose best by showing how it really is implemented.
-Used in tandem they strengthen eachother.
+Used in tandem they strengthen each other.
 
-An implementation by necessity imposes additional choices to make a typing
+An implementation by necessity imposes additional choices, in order to make a typing
 rule into an algorithmic solution.
-For example, our description preserves the following invariant:
+For example, our AG description preserves the following invariant:
 \begin{itemize}
 \item
 A resulting type has all known constraints applied to it, here |ty|.
@@ -4925,7 +5036,7 @@ Explicitly apply known constraints to types from a |Gamma|, here |valGam|.
 
 The type rules in \figRef{rules.expr2} do not mention the last two constraint applications
 (\ruleRef{e-app2B} does),
-this will also be omitted for later typing rules.
+and this will also be omitted for later typing rules.
 However, the constraint applications are shown by the AG code for
 the |App| alternative and the following |Var| alternative:
 
@@ -4965,7 +5076,7 @@ Previously |ANY| was used for that purpose, for example,
 the \ruleRef{e-lam2} and its implementation show that fresh
 type variables |tvari| in |tvar1 -> tvar2| are used instead
 of |ANY -> ANY| to enforce a |.. -> ..| structure.
-If |ANY| still would be used, for
+If |ANY| still would be used, for example in:
 \begin{code}
 let  id = \x -> x
 in   id 3
@@ -5085,6 +5196,7 @@ together with |AGPat(Multipass)|
 \end{itemize}
 }
 
+%if not dist
 \frame<presentation>[plain]
 {
 \frametitle{Cyclic AG}
@@ -5114,6 +5226,7 @@ together with |AGPat(Multipass)|
 \includegraphics[height=20cm]{figs/cycle-case7.pdf}
 \end{overprint}
 }
+%endif
 
 \frame<presentation>
 {
@@ -5206,15 +5319,15 @@ in |patFunTy|:
 \chunkCmdUseMark{EHInferPatExpr.2.patFunTy}
 
 The dissecting function type |patFunTy| is constructed from fresh type variables.
-Each occurrence of a tuple pattern deals with different unknown types hence fresh type variables are needed.
-The introduction of polymorphism in later versions of EH allows us to describe this in a more general way.
+Each occurrence of a tuple pattern deals with different unknown types and hence fresh type variables are needed.
+The availability of polymorphism in later versions of EH allows us to describe this in a more general way.
 
 At |AppTop| of |PatExpr| the function type |sigma -> (sigma1,...)| describing the dissection is split into
 the type |sigma| (attribute |knResTy|) of the pattern and the tuple type |(sigma1,...)| (attribute |knProdTy|)
 holding its constituents.
 The distribution of the types of the fields of |knProdTy| was described in the previous version of EH.
 
-\chunkCmdUseOnPrev{EHInferPatExpr.1.knTy}{EHInferPatExpr.2.knTy}
+\chunkCmdUseOnPrev{EHInferPatExpr.1.knTy.App}{EHInferPatExpr.2.knTy}
 
 Finally, the type itself and additional constraints are returned:
 
@@ -5227,7 +5340,7 @@ This is a result of a difference in the meaning of an expression and a pattern.
 An expression builds a value from bottom to top as seen in the context of an abstract syntax
 tree.
 A pattern dissects a value from top to bottom.
-The flow of data is opposite, hence the direction of |<=| also.
+The flow of data is opposite, hence the direction of |<=| too.
 
 \subsection{Declarations}
 
@@ -5310,7 +5423,7 @@ Partial type signatures allow the programmer to specify only a part of a type
 in a type signature. The description of the implementation of this feature is
 separated from the discussion of other features to show the effects of an additional
 feature on the compiler.
-In other words, an impact analysis.
+In other words, the following is an impact analysis.
 
 First, both abstract syntax and the parser
 %if not incl01TopicParsing
@@ -5330,7 +5443,7 @@ type information:
 \chunkCmdUseMark{EHInferTyExpr.2.tyVarGather}
 \chunkCmdUseMark{EHInferTyExpr.2.ty}
 
-Changes also have to be made to omitted parts of the implementation, in particular the pretty printing
+Changes also have to be made to the omitted parts of the implementation, in particular the pretty printing
 of the AST
 and generation of unique identifiers.
 We mention the necessity of this but omit the relevant code.
@@ -5392,7 +5505,7 @@ type can be used with different types for the quantified type variables.
 \end{itemize}
 }
 
-The type signature may be omitted, in that case the same type will still be inferred.
+The type signature may be omitted, and in that case the same type will still be inferred.
 However, the reconstruction of the type of a value for which
 the type signature is omitted has its limitations,
 the same as for Haskell98 \cite{peytonjones03has98-rev-rep}.
@@ -5448,11 +5561,11 @@ The use of type constants will be explained later.
 }
 
 Another example of the limitations of polymorphism in this version of EH is the following
-variation
+variation:
 \begin{code}
 %%3srcfile(test/3-mono-arg2.eh%%)
 \end{code}
-for which the compiler will infer types
+for which the compiler will infer the following types:
 \begin{TT}
 %%3ppfile(test/3-mono-arg2.eh%%)
 \end{TT}
@@ -5481,13 +5594,13 @@ for which the compiler will infer types
 \end{itemize}
 }
 
-EH version 3 allows parametric polymorphism but not polymorphic parameters.
+EH version 3 allows parametric polymorphism but not yet polymorphic parameters.
 The parameter |i| has a monomorphic type, which is made even more clear when
-we make an attempt to use this |i| polymorphically in
+we make an attempt to use this |i| polymorphically in:
 \begin{code}
 %%3srcfile(test/3-mono-arg3.eh%%)
 \end{code}
-for which the compiler will infer types
+about which the compiler will complain:
 \begin{TT}
 %%3ppfile(test/3-mono-arg3.eh%%)
 \end{TT}
@@ -5525,19 +5638,18 @@ the type signatures are a special case of the inferred types.
 This guarantee is called the principal type property
 \cite{damas82principal-type,milner78type-poly,hindley69princ-type}.
 However, type inferencing also has its limits\TBD{[cite...]}.
-In fact, the richer a type system becomes, the more difficulty a type inferencing algorithm
-has in making the right choice for a type without the programmer specifying additional type information.
+In fact, the richer a type system becomes, the more difficult it is for a type inferencing algorithm
+to make the right choice for a type without the programmer specifying additional helpful type information.
 
 \subsection{Type language}
 
-The type language for this version of EH adds quantification by means the universal quantifier |forall|:
+The type language for this version of EH adds quantification by means of the universal quantifier |forall|:
 \begin{code}
 sigma  =  Int | Char
        |  (sigma,...,sigma)
        |  sigma -> sigma
-       |  tvar
+       |  tvarv | tvarf
        |  forall ^ alpha . sigma
-tvar   =  tvarv | tvarf
 \end{code}
 
 \frame<presentation>
@@ -5550,15 +5662,14 @@ tvar   =  tvarv | tvarf
 sigma  =  Int | Char
        |  (sigma,...,sigma)
        |  sigma -> sigma
-       |  tvar
+       |  tvarv | tvarf
        |  forall ^ alpha . sigma
-tvar   =  tvarv | tvarf
 \end{code}
 }
 \onslide
 \item AG:
 \chunkCmdFrameUse{EHTyAbsSyn.3}
-\item (more about |tvarf|/|Fixed| later)
+\item (more about |tvarf =@= Fixed| later)
 \end{itemize}
 }
 
@@ -5566,24 +5677,35 @@ A |tvarf| stands for
 a fixed type variable,
 a type variable which may not be constrained but still stands for
 an unknown type.
+A |tvarv| stands for a plain type variable as used in the previous EH version.
 A series of consecutive quantifiers in |forall ^ alpha1 . forall ^ alpha2 . ... sigma|
 is abbreviated to |forall ^ Vec(alpha) . sigma|.
 
-The corresponding abstract syntax for type expressions
-also need an additional alternative:
+The type language suggests that a quantifier may occur anywhere in a type.
+This is not the case, quantifiers may only be on the top of a type;
+this version of EH takes care to ensure this.
+A second restriction is that quantified types
+are present only in a |Gamma| whereas no |forall|'s are
+present in types used throughout type inferencing expressions and patterns.
+This is to guarantee the principle type property. \TBD{more refs [..]}
+
+The corresponding abstract syntax for a type needs
+additional alternative to represent a quantified type.
+For a type variable we also have to remember to which category it belongs,
+either \IxAsDef{plain} or \IxAsDef{fixed}:
 
 \chunkCmdUseMark{EHTyAbsSyn.3}
 
-together with a convenience functions for making such a quantified type
+together with convenience functions for constructing these types:
 
-\chunkCmdUseMark{EHTy.3}
+\chunkCmdUseMark{EHTy.3.mkTyVar}
+\chunkCmdUseMark{EHTy.3.mkTyQu}
 
-A type variable now comes in different variaties.
-However, we will postpone the discussion of type variable categories
+We will postpone the discussion of type variable categories
 until \secRef{ehc3instantiation}.
 
 The syntax of this version of EH only allows type variables to be specified as part
-of a type signatures.
+of a type signature.
 The quantifier |forall| cannot be explicitly denoted.
 We only need to extend the abstract syntax for types with an alternative for type variables:
 
@@ -5595,17 +5717,9 @@ in |pTyExprBase| to parse type variables.
 
 \chunkCmdUseMark{EHParser.3}
 %else
-The code for changes to the parser has been omitted.
 %endif
 
-The type language suggests that a quantifier may occur anywhere in a type.
-This is not the case, quantifiers may only be on the top of a type.
-A second restriction is that quantified types
-are present only in a |Gamma| whereas no |forall|'s are
-present in types used throughout type inferencing expressions and patterns.
-This is to guarantee the principle type property. \TBD{more refs [..]}
-
-\subsection{Type inference}
+\subsection{Type inferencing}
 
 Compared to the previous version the type inferencing process does not change much.
 Because types used throughout the type inferencing of expressions and patterns
@@ -5635,7 +5749,7 @@ values are introduced and used.
 
 \rulerCmdUse{rules.expr2.3}
 
-A quantified type, or also often named \IxAsDef{type scheme},
+A quantified type, also often named \IxAsDef{type scheme},
 is introduced in \ruleRef{e-let3} and \ruleRef{e-let-tysig3} and instantiated
 in \ruleRef{e-ident3}, see \figRef{rules.expr2.3}.
 We will first look at the \IxAsIs{instantiation}.
@@ -5643,7 +5757,7 @@ We will first look at the \IxAsIs{instantiation}.
 \subsubsection{Instantiation}
 \label{ehc3instantiation}
 
-A quantified type is introduced in the type inferencing process whenever a value identifier having that type is referred to
+A quantified type is introduced in the type inferencing process whenever a value identifier having that type is occurs
 in an expression:
 
 \chunkCmdUseOnPrev{EHInferExpr.1.Var,EHInferExpr.2.Var}{EHInferExpr.3.Var}
@@ -5651,17 +5765,19 @@ in an expression:
 We may freely decide what type the quantified type variables may have as long
 as each type variable stands for a monomorphic type.
 However, at this point it is not known which type a type variable
-stands for so fresh type variables are
+stands for, so fresh type variables are
 used instead.
 This is called \IxAsDef{instantiation}, or \IxAsIs{specialization}.
 The resulting instantiated type partakes in the inference process as usual.
 
-The removal of the quantifier and replacement with all quantified type variables
+The removal of the quantifier and replacement of all quantified type variables
+with fresh type variables
 is done by |tyInst|:
 
 \chunkCmdUseMark{EHTyInstantiate.3.tyInst}
 
 Function |tyInst| strips all quantifiers and substitutes the quantified type variables with fresh ones.
+It is assumed that quantifiers occur only at the top of a type.
 
 \subsubsection{Quantification}
 
@@ -5669,19 +5785,25 @@ The other way around, quantifying a type, happens when a type is
 bound to a value identifier and added to a |Gamma|.
 The way this is done varies with the presence of a type signature.
 \RuleRef{e-let3} and \ruleRef{e-let-tysig3} (\figRef{rules.expr2.3})
-differ only in the use of a type signature, if present.
+specify the respective variations.
 
-\chunkCmdUseOnPrev{EHInfer.1.TySig}{EHInfer.3.TySig}
+A type signature itself is specified without explicit use of quantifiers.
+These need to be added for all introduced type variables, except the ones specified
+by means of `@...@' in a partial type signature:
+
+\chunkCmdUseOnPrev{EHInfer.1.gathTySigGam}{EHInfer.3.TySig}
 
 A type signature simply is quantified over all free type variables in the type using
 
 \chunkCmdUseMark{EHTyQuantify.3.tyQuantify}
 % \chunkCmdUseMark{EHTyQuantify.3.tyQuantifyClosed}
 
-Type variables introduced by a wildcard may not be quantified over.
+Type variables introduced by a wildcard may not be quantified over because the type inferencer will fill in the
+type for those type variables.
 
 We now run into a problem which will be solved no sooner than the next version of EH.
-The type signature acts as a known type |knTy| against which checking takes place.
+In a declaration of a value (variant |Val| of |Decl|)
+the type signature acts as a known type |knTy| against which checking of the value expression takes place.
 Which type do we use for that purpose, the quantified |sigTy| or the unquantified |tyExpr.ty|?
 \begin{itemize}
 \item
@@ -5709,23 +5831,24 @@ with type constants:
 
 \chunkCmdUseOnPrev{EHInfer.1.tyInstKnown}{EHInfer.3.tyInstKnown}
 
-by using a variant of |tyInst|
+by using a variant of |tyInst|:
 
 \chunkCmdUseMark{EHTyInstantiate.3.tyInstKnown}
 
-This changes the category of a type variable to `fixed'.
+This changes the category of the fresh type variable replacing the quantified type variable to `fixed'.
 A \IxAsDef{fixed type variable} is like a plain type variable but may not be constrained,
 that is, bound to another type.
-This means that |fitsIn| has to be adapted to prevent that from happening.
+This means that |fitsIn| has to be adapted to prevent this from happening.
 The difference with the previous version only lies in the handling of type variables.
-Type variables now may be bound if not fixed and are equal only if their categories match too.
+Type variables now may be bound if not fixed, and to be equal only if their categories match too.
 For brevity the new version of |fitsIn| is omitted.
 
 
 \subsubsection{Generalization/quantification of inferred types}
 
-How do we determine if a type for some expression is polymorphic?
-If a type signature is given, the signature itself describes the
+How do we determine if a type for some expression bound to an identifier in
+a value declaration is polymorphic?
+If a (non partial) type signature is given, the signature itself describes the
 polymorphism via type variables explicitly.
 However, if for a value definition a corresponding type signature is missing,
 the value definition itself gives us all the information we need.
@@ -5736,7 +5859,7 @@ let  id = \x -> x
 in   ...
 \end{code}
 The only way the value associated with |id| ever will be used outside the
-body expression bound to |id|, is via the identifier |id|.
+expression bound to |id|, is via the identifier |id|.
 So, if the inferred type |tvarv1 -> tvarv1| for the expression |\x -> x| has free type variables
 (here: |[tvarv1]|)
 and these type variables are not used in the types of other bindings, in particular those
@@ -5763,14 +5886,15 @@ All available constraints in the form of |decls.tyCnstr| are applied to both glo
 and local (|lValGam|) |Gamma|.
 All types in the resulting local |lSubsValGam| are then quantified over their free type variables,
 with the exception of those referred to more globally, the |gTyTvL|.
+We use |valGamQuantify| to accomplish this:
 
-\chunkCmdUseMark{EHGam.3.valGamMapTy}
 \chunkCmdUseMark{EHGam.3.valGamQuantify}
+\chunkCmdUseMark{EHGam.3.valGamMapTy}
 \chunkCmdUseMark{EHGam.3.gamMap}
 
 The condition that quantification only may be done for type variables not occurring in
 the global |Gamma| is a necessary one.
-Take for example,
+For example:
 \begin{code}
 %%3srcfile(test/3-mono-glob.eh%%)
 \end{code}
@@ -5811,7 +5935,7 @@ In Haskell binding group analysis will find groups of mutually dependent definit
 each of these called a binding group. These groups are then ordered
 according to ``define before use'' order.
 Here, for EH, all declarations in a |let|-expression
-automatically form a binding group, the ordering of to binding groups |d1| and |d2| has
+automatically form a binding group, the ordering of two binding groups |d1| and |d2| has
 to be done explicitly using sequences of |let| expressions: |let d1 in let d2 in ...|.
 
 Being together in a binding group can create a problem for inferencing mutually recursive definitions,
@@ -6235,7 +6359,7 @@ a place where any other type is expected, say some type |sigma| (e.g. an |Int|),
 which in turn can be used at a place where all is forgotten about a type.
 Or, in other words, first we choose some type for |a|, then we forget this choice.
 
-Let us look at some other examples to get a better idea of what |fitsIn|/|<=|
+Let us look at some other examples to get a better idea of what |fitsIn =@= <=|
 has to deal with.
 
 \frame<presentation>
@@ -6248,14 +6372,14 @@ has to deal with.
 \end{itemize}
 \item Quantified types are encountered during type inferencing/checking
 \begin{itemize}
-\item |fitsIn|/|<=| compares types with quantifiers
+\item |fitsIn =@= <=| compares types with quantifiers
 \end{itemize}
 \end{itemize}
 }
 
 \frame<presentation>
 {
-\frametitle{Issue: asymmetry |fitsIn|/|<=|}
+\frametitle{Issue: asymmetry |fitsIn =@= <=|}
 \begin{itemize}
 \item Forgetting type information is ok, but irreversible
 \SafeCode{%
@@ -6273,7 +6397,7 @@ has to deal with.
 
 \frame<presentation>
 {
-\frametitle{Issue: asymmetry |fitsIn|/|<=|}
+\frametitle{Issue: asymmetry |fitsIn =@= <=|}
 \begin{itemize}
 \item Instantiation of polymorphism is ok,
 but the reverse only if it can be guaranteed no additional
@@ -6293,7 +6417,7 @@ constraints will be found for the quantified type variable
 
 \frame<presentation>
 {
-\frametitle{Issue: asymmetry |fitsIn|/|<=|}
+\frametitle{Issue: asymmetry |fitsIn =@= <=|}
 \begin{itemize}
 \item Partial ordering of types where
 \[
@@ -6357,7 +6481,7 @@ but that it is relatively easy not to forget that a type is quantified if
 we already knew in the first place that it was quantified.
 The latter is what we do except in situations where it would break Haskell's choice,
 thereby still inferring types in a standard Hindley-Milner way but
-using |fitsIn|/|<=| to allow richer types still to match properly.
+using |fitsIn =@= <=| to allow richer types still to match properly.
 
 \frame<presentation>
 {
@@ -6444,7 +6568,7 @@ to be dealt with no sooner than the introduction of datatypes in the next versio
 \end{itemize}
 
 \label{ehc4-fitsIn-strength}
-|fitsIn|/|<=| therefore needs an option |fiopt| to describe these variations
+|fitsIn =@= <=| therefore needs an option |fiopt| to describe these variations
 \begin{code}
 fiopt  =  strongFIOpts  ^^ -- strong context
        |  instLFIOpts   ^^ -- instantiating context, for expr |App|
@@ -9156,39 +9280,38 @@ error messaging, line/col position, comment ????
 At the start of \thispaper\ we did make a claim that our ``describe separately'' approach contributes
 to a better understood implementation of a compiler, in particular a Haskell compiler.
 Is this true?
-We feel that is the case, and the benefits outweigh the drawbacks, based on some observations made during this project:
+We feel that this is the case, and thus the benefits outweigh the drawbacks, based on some observations made during this project:
 
 The AG system provides mechanisms to split a description into smaller fragments, combine those fragments and redefine part
 of those fragments.
 An additional fragment management system did allow us to do the same with Haskell fragments.
 Both are essential in the sense that the simultaneous `existence' of a sequence of compiler versions,
 all in working order when compiled, with all aspects described with the least amount of duplication,
-presentable in a consistent form in \thispaper\ could not have been achieved without these mechanism and supporting tools.
+presentable in a consistent form in \thispaper\ could not have been achieved without these mechanisms and supporting tools.
 
-The AG system allows focussing on the places where something unusual needs to be done, similar to other approaches
+The AG system allows focusing on the places where something unusual needs to be done, similar to other approaches
 \cite{laemmel03boilerplate}.
 In particular, copy rules allow us to forget about a large amount of plumbing.
 
-The complexity of the language Haskell, its semantics, the interaction between features is not reduced.
+The complexity of the language Haskell, its semantics, and the interaction between features is not reduced.
 However, it becomes manageable and explainable when divided into small fragments.
-Features which are indeed independent can also be described independent of each other by different attributes.
+Features which are indeed independent can also be described independently of each other by different attributes.
 Features which evolve through different versions, like the type system, can also be described separately,
 but can still be looked upon as a group of fragments.
-This makes the variation in the solutions explicit and hence the understanding of what really makes the difference
+This makes the variation in the solutions explicit and hence increases the understanding of what really makes the difference
 between two subsequent versions.
 
-On the downside, in \thispaper\ the description of the different versions a grouping of fragments related to eachother is lost.
-Related fragments end up in different sections of \thispaper\ because in order to appear on paper and be explained
-some flattening has to be done.
-We feel that proper tool support (like a fragment editor/browser) could alleviate this problem.
-Other mechanisms like an index, use of color, incorporation of references to related definitions merged
-with the main text will probably be helpful too.
-However, the process of explaining remains a process in which explanations are ordered in a linear fashion;
-this will always be tension with a non-linear approach as used by the AG system.
+On the downside, fragments for one aspect but for different compiler versions end up in different sections of \thispaper.
+This makes their understanding more difficult because one now has to jump between pages.
+This is a consequence of the multiple dimensions we describe: variation in language elements (new AST), additional semantics (new attributes) and
+variation in the implementation.
+Paper, on the other hand, provides by definition a linear, one dimensional rendering of this multidimensional view.
+We can only expect this to be remedied by the use of proper tool support (like a fragment editor or browser).
+On paper, proper cross referencing, colors, indexing or accumulative merging of text are most likely to be helpful.
 
 The AG system, though in its simplicity surprisingly usable and helpful, could be improved in many areas.
-For example, no type checking related to Haskell code for attribute definitions is performed.
-Nor will the generated Haskell code when compiled by a Haskell compiler produce sensible error messages in terms of the
+For example, no type checking related to Haskell code for attribute definitions is performed,
+nor will the generated Haskell code when compiled by a Haskell compiler produce sensible error messages in terms of the
 original AG code.
 The AG system also lacks features necessary for programming in the large.
 For example, all attributes for a node live in a global namespace for that node instead of being packaged in some form of module.
@@ -9196,64 +9319,70 @@ For example, all attributes for a node live in a global namespace for that node 
 Performance is expected to give problems for large systems.
 This seems to be primarily caused by the simple translation scheme in which all attributes together live in a tuple just until the program
 completes.
-This inhibits garbage collection of intermediate attributes no longer required.
+This inhibits garbage collection of intermediate attributes that are no longer required.
 It also stops GHC from performing optimizations;
 informal experimentation with a large AG program resulted in GHC taking approximately 10 times more time with optimization flags on.
 The resulting program only ran approximately 15\% faster.
+The next version of the AG system will be improved in this area \cite{saraiva99phd-funcimpl-ag}.
 
 \paragraph{AG vs Haskell.}
 Is the AG system a better way to do Haskell programming? In general, no, but for Haskell programs
 which can be described by a catamorphism the answer is yes (see also \secRef{ag-primer}).
 In general, if the choices made by a function are mainly driven by some datastructure,
-it is likely that the function can be described by the AG notation.
+it is likely that this datastructure can be described by an AST and the function can be described by the AG's attribution.
 This is the case for an abstract syntax tree or analysis of a single type.
 It is not the case for a function like |fitsIn| (\secPageRef{EHTyFitsIn.1.fitsIn.Base}) in which
 decisions are made based on the combination of two (instead of just one) type.
 
 \paragraph{About \thispaper\, EH and its code.}
 The linear presentation of code and explanation might suggest that this is also
-the order of how the code and \thispaper\ came into being.
+the order in which the code and \thispaper\ came into existence.
 This is not the case.
-A starting point was created by programming the final version (at that time EH version 6, not included in \thispaper).
+A starting point was created by programming a final version (at that time EH version 6, not included in \thispaper).
 From this version the earlier versions were constructed.
-After that, higher versions were added.
-However, these higher versions usually needed some tweaking of earlier versions.
+After that, later versions were added.
+However, these later versions usually needed some tweaking of earlier versions.
 The consequence of this approach is that the rationale for design decisions in earlier versions become clear only
 in later versions.
-This could be remedied by completely redefining larger program fragments.
-This in turn decreases reuse of code.
+For example, an attribute is introduced only so later versions only need to redefine the rule for this single attribute.
+However, the initial rule for such an attribute often just is the value of another attribute.
+At such a place the reader is left wondering.
+This problem could be remedied by completely redefining larger program fragments.
+This in turn decreases code reuse.
 Reuse, that is, sharing of common code turned out to be beneficial for the development process as the
-use of different contexts provides more opportunities to test correctness.
+use of different contexts provides more opportunities to test for correctness.
 No conclusion is attached to this observation, other than being another example of the tension between clarity
-of explanation and the logistics of the compiler code.
+of explanation and the logistics of compiler code management.
 
 \paragraph{Combining theory and practice.}
 Others have described type systems in a practical setting as well.
 For example, Jones \cite{jones00thih} describes the core of Haskell98 by a monadic style type inferencer.
 Pierce \cite{typing:types-prog-lang:pierce} explains type theory and provides many small implementations performing
 (mainly) type checking for the described type systems in his book.
-On the other hand, only recently the semantics of Haskell has been described formally \cite{faxen02semantics-haskell}.
+On the other hand, only recently the static semantics of Haskell has been described formally \cite{faxen02semantics-haskell}.
 Extensions to Haskell usually are formally described but once they find their way into a production compiler the interaction
-with other parts of Haskell is left in the open or at best described in the manual.
+with other parts of Haskell is left in the open or is at best described in the manual.
 
 The conclusion of these observations might be that a combined description of a language, its semantics,
-its formal analysis (like type system),
+its formal analysis (like the type system),
 and its implementation is not feasible.
 Whatever the cause of this is, certainly one contributing factor is the sheer size of all these
-aspects in its combination.
+aspects in combination.
 We feel that our approach contributes towards a completer description of Haskell,
-or another language if described by the AG system.
+or any other language if described by the AG system.
 Our angle of approach is to keep the implementation and its explanation consistent and understandable
 at the same time.
-However, \thispaper\ clearly is not complete either.
-Formal aspects are not present, let alone a proof that the implementation is sound and complete with respect
-to a formal semantics.
+However, this document clearly is not complete either.
+Formal aspects are present, let alone a proof that the implementation is sound and complete
+with respect to the formal semantics.
+Of course one may wonder if this is at all possible; in that case our approach may well
+be a feasible second best way of describing a compiler implementation.
 
 \paragraph{EH vs Haskell.}
 The claim of our title also is that we provide an implementation of Haskell,
 thereby implying recent versions of Haskell, or at least Haskell98.
 However, \thispaper\ does not include the description of (e.g.) a class system;
-the full version of EH does.
+the full version of EH however does.
 
 %endif %% inclConcl
 
@@ -9263,7 +9392,7 @@ the full version of EH does.
 
 %if inclAck
 \paragraph{Acknowledgements.}
-We thank the (anonymous) reviewers for their valuable and helpful comment.
+We thank both (anonymous) reviewers for their extremely valuable and helpful comments.
 %endif %% inclAck
 
 
@@ -9278,6 +9407,8 @@ We thank the (anonymous) reviewers for their valuable and helpful comment.
 
 %if not asSlides
 \AddContentsLine{References}
+%if dist
+%%1srcfile(afp04.bbl%%)%else
 %if refToPDF
 \bibliographystyle{uhcbook}
 %else
@@ -9286,7 +9417,8 @@ We thank the (anonymous) reviewers for their valuable and helpful comment.
 {\sloppy
 \bibliography{LitAdm}
 }
-%endif
+%endif %% dist
+%endif %% not asSlides
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Appendices

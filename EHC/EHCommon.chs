@@ -18,7 +18,7 @@
 %%[1 import(UU.Pretty, List) export(PP_DocL, ppListSep, ppCommaList, ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
 %%]
 
-%%[1 export(MkConAppAlg, mkApp, mkConApp, mkArrow)
+%%[1 export(MkConApp, mkApp, mkConApp, mkArrow)
 %%]
 
 %%[1.mkProdApp.exp export(mkProdApp)
@@ -302,10 +302,12 @@ seqToList (Seq s) = s []
 %%% Building specific structures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.mkApp.Base
-type MkConAppAlg t = (HsName -> t,t -> t -> t,t -> t,t -> t)
+%%[1.MkConApp
+type MkConApp t = (HsName -> t,t -> t -> t,t -> t,t -> t)
+%%]
 
-mkApp :: MkConAppAlg t -> [t] -> t
+%%[1.mkApp.Base
+mkApp :: MkConApp t -> [t] -> t
 mkApp (_,app,top,_) ts
   =  case ts of
        [t]  ->  t
@@ -313,20 +315,20 @@ mkApp (_,app,top,_) ts
 %%]
 
 %%[1.mkApp.mkConApp
-mkConApp :: MkConAppAlg t -> HsName -> [t] -> t
+mkConApp :: MkConApp t -> HsName -> [t] -> t
 mkConApp alg@(con,_,_,_) c ts = mkApp alg (con c : ts)
 %%]
 
 %%[1.mkApp.mkProdApp
-mkProdApp :: MkConAppAlg t -> [t] -> t
+mkProdApp :: MkConApp t -> [t] -> t
 mkProdApp alg ts = mkConApp alg (hsnProd (length ts)) ts
 %%]
 
 %%[7 -1.mkApp.mkProdApp
 %%]
 
-%%[1.mkApp.Rest
-mkArrow :: MkConAppAlg t -> t -> t -> t
+%%[1.mkApp.mkArrow
+mkArrow :: MkConApp t -> t -> t -> t
 mkArrow alg@(con,_,_,_) a r = mkApp alg [con hsnArrow,a,r]
 %%]
 
@@ -582,7 +584,7 @@ hdAndTl :: [a] -> (a,[a])
 hdAndTl (a:as) = (a,as)
 %%]
 
-%%[2.Misc
+%%[2.unionL
 unionL :: Eq a => [[a]] -> [a]
 unionL = foldr union []
 %%]

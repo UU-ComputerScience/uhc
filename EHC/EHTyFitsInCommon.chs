@@ -33,15 +33,11 @@ emptyFO     =   FIOut   { foTy     =   Ty_Any  ,  foErrL   =   []      }
 %%]
 
 %%[2.FIOut -1.FIOut
-data FIOut  =  FIOut  {  foTy     ::  Ty      ,  foCnstr           ::  Cnstr
-                      ,  foErrL   ::  ErrL
-                      }
+data FIOut  =  FIOut  {  foTy     ::  Ty      ,  foErrL   ::  ErrL  ,  foCnstr           ::  Cnstr           }
 %%]
 
 %%[2.FIOut.empty
-emptyFO     =  FIOut  {  foTy     =   Ty_Any  ,  foCnstr           =   emptyCnstr
-                      ,  foErrL   =   []
-                      }
+emptyFO     =  FIOut  {  foTy     =   Ty_Any  ,  foErrL   =   []    ,  foCnstr           =   emptyCnstr      }
 %%]
 
 %%[4.FIOut -(2.FIOut 2.FIOut.empty)

@@ -151,6 +151,7 @@
 %format <:   			= "\leftsquigarrow "
 %format .    			= "."
 %format :=	 			= "{\coloneqq}"
+%format =@= 			= "{\varparallel}"
 
 
 %format fiopt			= iota
@@ -192,7 +193,7 @@
 %format Top         	= "\top "
 %format Bot         	= "\bot "
 % format ANY				= "\makebox[0cm][l]{\(\top\)}\bot{}"
-%format ANY				= "{\aleph}"
+%format ANY				= "{\Box}"
 
 %format `union`			= "\cup "
 %format `subset`		= "{\subset}"
@@ -202,7 +203,7 @@
 
 %format InstUnExists    = "inst^{" exists "}"
 
-%format ftv				= "\ftv "
+% format ftv				= "\ftv "
 
 %format `gamUnit`		= :->
 %format `fitsIn`		= <=
@@ -219,6 +220,8 @@
 
 %format AGFeature		= "\mathcal{AG}"
 
+%format name1
+%format name2
 %format attr1
 %format attr2
 %format node1
