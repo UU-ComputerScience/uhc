@@ -300,6 +300,7 @@ SEM FuncDeps
   | Nil         lhs     .  ppAST    =   ppNest ["FuncDeps","Nil"] [] []
   | Cons        lhs     .  ppAST    =   ppNest ["FuncDeps","Cons"] [] [@hd.ppAST,@tl.ppAST]
 
+
 SEM Expr
   | Let         loc     .  info     :=  [ mkInfo1 "prElimGam" (ppGam @prElimGam)
                                         , mkInfo1 "gathSubsPredL" (ppCommaList @gathSubsPredL)
@@ -333,6 +334,8 @@ SEM Expr
   | AppImpl     lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","AppImpl"] [] [@func.ppAST,@arg.ppAST,@argPr.ppAST] @info
                 loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         ]
+  | LamImpl     lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","LamImpl"] [] [@arg.ppAST,@argPr.ppAST,@body.ppAST] @info
+                loc     .  info     =   []
 %%]
 
 

@@ -51,7 +51,7 @@ AFP_PGF_TEX			:= afp-pgf.tex
 
 ALL_AFP_SRC			:= $(AFP_LHS) $(AFP_RULES)
 
-EHC_LAG_FOR_HS_TY	:= $(addsuffix .lag,EHTyQuantify EHTyPretty EHTyInstantiate )
+EHC_LAG_FOR_HS_TY	:= $(addsuffix .lag,EHTyQuantify EHTySubst EHTyFtv EHTyPretty EHTyInstantiate )
 EHC_LAG_FOR_HS_CODE	:= $(addsuffix .lag,EHCodeJava EHCodePretty EHCodeSubst)
 EHC_LAG_FOR_HS		:= $(addsuffix .lag,EHMainAG EHTy EHCode EHError EHErrorPretty) $(EHC_LAG_FOR_HS_TY) $(EHC_LAG_FOR_HS_CODE)
 
@@ -64,20 +64,22 @@ DPDS_MAIN			:= EHMainAG.ag EHInfer.ag EHInferExpr.ag \
 DPDS_TY				:= EHTy.ag EHTyAbsSyn.ag
 DPDS_TY_PRETTY		:= EHTyPretty.ag EHTyCommonAG.ag EHTyAbsSyn.ag
 DPDS_TY_QUANT		:= EHTyQuantify.ag EHTyCommonAG.ag EHTyAbsSyn.ag
+DPDS_TY_SUBST		:= EHTySubst.ag EHTyAbsSyn.ag
+DPDS_TY_FTV			:= EHTyFtv.ag EHTyAbsSyn.ag
 DPDS_TY_INST		:= EHTyInstantiate.ag EHTyCommonAG.ag EHTyAbsSyn.ag
 DPDS_ERR			:= EHError.ag EHErrorAbsSyn.ag
 DPDS_ERR_PRETTY		:= EHErrorPretty.ag EHErrorAbsSyn.ag
 DPDS_CODE			:= EHCode.ag EHCodeAbsSyn.ag
 DPDS_CODE_JAVA		:= EHCodeJava.ag EHCodeAbsSyn.ag
 DPDS_CODE_PRETTY	:= EHCodePretty.ag EHCodeAbsSyn.ag
-DPDS_ALL			:= $(sort $(DPDS_MAIN) $(DPDS_CODE) $(DPDS_CODE_JAVA) $(DPDS_CODE_PRETTY) $(DPDS_TY) $(DPDS_TY_PRETTY) $(DPDS_TY_QUANT) $(DPDS_MAIN) $(DPDS_TY_INST) $(DPDS_ERR) $(DPDS_ERR_PRETTY))
+DPDS_ALL			:= $(sort $(DPDS_MAIN) $(DPDS_CODE) $(DPDS_CODE_JAVA) $(DPDS_CODE_PRETTY) $(DPDS_TY) $(DPDS_TY_PRETTY) $(DPDS_TY_QUANT) $(DPDS_TY_SUBST) $(DPDS_TY_FTV) $(DPDS_MAIN) $(DPDS_TY_INST) $(DPDS_ERR) $(DPDS_ERR_PRETTY))
 DPDS_ALL_MIN_TARG	:= $(filter-out $(EHC_LAG_FOR_HS:.lag=.ag),$(DPDS_ALL))
 
 EHC					:= ehc
 EHC_MAIN			:= EHC
 EHC_LAG_FOR_AG		:= $(DPDS_ALL_MIN_TARG:.ag=.lag)
 EHC_LAG				:= $(EHC_LAG_FOR_AG) $(EHC_LAG_FOR_HS)
-EHC_LHS_FOR_HS		:= $(addsuffix .lhs,$(EHC_MAIN) EHCommon EHCnstr EHTyFitsIn EHGam EHPred EHParser FPath EHScanner EHScannerMachine EHDebug)
+EHC_LHS_FOR_HS		:= $(addsuffix .lhs,$(EHC_MAIN) EHCommon EHCnstr EHSubstitutable EHTyFitsIn EHGam EHPred EHParser FPath EHScanner EHScannerMachine EHDebug)
 EHC_LHS				:= $(EHC_LHS_FOR_HS)
 EHC_HS				:= $(EHC_LAG_FOR_HS:.lag=.hs) $(EHC_LHS_FOR_HS:.lhs=.hs)
 
@@ -450,6 +452,8 @@ MK_EHC_MKF			= \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_TY),-dr) ; \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_TY_PRETTY),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_TY_QUANT),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(DPDS_TY_SUBST),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(DPDS_TY_FTV),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_TY_INST),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_ERR),-dr) ; \
 	  $(call MK_EHC_MKF_FOR,$(DPDS_ERR_PRETTY),-cfspr) ; \

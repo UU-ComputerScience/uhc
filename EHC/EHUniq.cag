@@ -128,8 +128,10 @@ SEM Expr
                                                                     :=  mkNewLevUID5    @lhs.gUniq
   | AppTop          (expr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)    :=  mkNewLevUID3    @lhs.gUniq
   | App             (func.gUniq,loc.lUniq,loc.lUniq2)               :=  mkNewLevUID2    @lhs.gUniq
-  | Lam             (arg.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)     :=  mkNewLevUID3    @lhs.gUniq
   | AppImpl         (func.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
+  | Lam             (arg.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)     :=  mkNewLevUID3    @lhs.gUniq
+  | LamImpl         (arg.gUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4,loc.lUniq)
+                                                                    =   mkNewLevUID4    @lhs.gUniq
 
 SEM RecExpr
   | Expr            (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq

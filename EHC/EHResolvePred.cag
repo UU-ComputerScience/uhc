@@ -65,15 +65,20 @@ SEM Expr
                             .   (inKnGathPrL,remGathPrL)
                                                     =   partition  (\p -> any (`elem` ftv @knPrL) (ftv p)) @gathSubsPredL
   | Lam         loc         .   imSubsTy            =   foCnstr @foKnFun |=> @imTy
-                            .   gathSubsPredL       =   @body.tyCnstr |=> @body.gathPredL
+  | Lam LamImpl loc         .   gathSubsPredL       =   @body.tyCnstr |=> @body.gathPredL
                             .   (inKnGathPrL,remGathPrL)
                                                     =   partition  (\p -> let fv = ftv p
                                                                           in  null fv || any (`elem` ftv @knPrL) fv
                                                                    )
                                                                    @gathSubsPredL
+  | LamImpl     loc         .   knPr                =   tyPred @knArgImpl
+                            .   knPrUid             =   @lUniq
+                            .   knPrL               =   [PredOcc @knPr @knPrUid]
+                            .   prElimGam           =   peGamAddKnPr @arg.topNm @knPrUid @knPr (gamPushNew @lhs.prElimGam)
   | AppTop Lam  loc         .   (knPrL,knImplsTl)   =   implsPredsTail . tyImpls $ @imSubsTy
                             .   prElimGam           =   foldr (\p g -> peGamAddKnPr (uidHNm (poId p)) (poId p) (poPr p) g) (gamPushNew @lhs.prElimGam) @knPrL
-                            .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs)
+  | AppTop Lam LamImpl
+                loc         .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs)
                                                     =   prfPreds @lUniq3 (emptyFE {fePrElimGam = @prElimGam}) @inKnGathPrL
                             .   gathPredL           =   @remPrfPrL ++ @remGathPrL
 
@@ -96,7 +101,7 @@ SEM AGItf
   | AGItf       loc         .   cbindLMap           =   emptyCBindLMap
 
 SEM Expr
-  | Lam Let AppTop
+  | Lam Let AppTop LamImpl
                 loc         .   cbindLMap           =   @lhs.cbindLMap `plusFM` @prfCBindLMap
   | Let         body        .   cbindLMap           =   @lhs.cbindLMap
 %%]
@@ -121,6 +126,7 @@ SEM Expr
   | Let         loc         .   cSubst              =   cnstrImplsToCSubst @tqoTyCnstr `cAppSubst` @lhs.cSubst `cAppSubst` @bodyCSubst `cAppSubst` @csubst
   | Lam AppTop  loc         .   cSubst              =   (assocLCExprToCSubst . map (\i -> (i,CExpr_Var (uidHNm i))) $ (@uidLKnHd ++ @uidLKnTl))
                                                             `cAppSubst` @lhs.cSubst `cAppSubst` @csubst
+  | LamImpl     loc         .   cSubst              =   @lhs.cSubst `cAppSubst` @csubst
 %%]
 
 SEM AGItf
@@ -138,12 +144,13 @@ SEM Expr
                             .   implsKnTl           =   @lhs.finTyCnstr |=> @knImplsTl
                             .   uidLKnHd            =   implsUIDs @implsKnHd
                             .   uidLKnTl            =   implsUIDs @implsKnTl
-  | Lam         loc         .   lamBodyCoeL         =   mkLamBodyCoe
+  | Lam LamImpl loc         .   lamBodyCoeL         =   mkLamBodyCoe
                                                                 (mkCoe (\e -> rceMatch [@arg.topNm] [CAlt_Alt [@arg.cpat] e] cvarUndefined))
                                                                 @body.appArgCoeL
-                            .   lamArgCoeL          =   mkImplsLamCoe (mkLetRecCoe (mkCBindLForUIDL @cbindLMap (`elem` @uidLKnHd))) @implsKnHd
+  | Lam         loc         .   lamArgCoeL          =   mkImplsLamCoe (mkLetRecCoe (mkCBindLForUIDL @cbindLMap (`elem` @uidLKnHd))) @implsKnHd
                                                         ++ mkImplsLamCoe (mkLetRecCoe (mkCBindLForUIDL @cbindLMap (`elem` @uidLKnTl))) @implsKnTl
                                                         ++ [mkLamCoe @arg.topNm]
+  | LamImpl     loc         .   lamArgCoeL          =   [mkLamCoe @arg.topNm `coeCompose` mkLetRecCoe (mkCBindLForUIDL @cbindLMap (== @knPrUid))]
   | AppTop      loc         .   lamArgCoeL          =   mkImplsLamCoe
                                                             (mkLetRecCoe (mkCBindLForUIDL @cbindLMap (`elem` (@uidLKnHd ++ @uidLKnTl))))
                                                             (@lhs.finTyCnstr |=> @implsKnHd)

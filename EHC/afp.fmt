@@ -146,11 +146,12 @@
 
 
 %format fiopt			= nu
-%format strongFIOpts	= fiopt "_{s}"
-%format weakFIOpts		= fiopt "_{w}"
-%format instFIOpts		= fiopt "_{i}"
-%format instLFIOpts		= fiopt "_{il}"
-%format predFIOpts		= fiopt "_{p}"
+%format strongFIOpts	= fiopt "_{str}"
+%format weakFIOpts		= fiopt "_{wk}"
+%format instFIOpts		= fiopt "_{inst}"
+%format instLFIOpts		= fiopt "_{inst-l}"
+%format predFIOpts		= fiopt "_{pred}"
+%format implFIOpts		= fiopt "_{impl}"
 
 %format	fioptBase		= "fi"
 %format fioLeaveRInstY	= fioptBase "_{r-inst}^{+}"

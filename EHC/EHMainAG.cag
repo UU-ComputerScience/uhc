@@ -12,7 +12,7 @@
 %%[1 hs import(Char,IOExts,List,UU.Pretty,EHCommon,EHTy,EHGam,EHError,EHErrorPretty,EHTyFitsIn,EHTyPretty)
 %%]
 
-%%[2 hs import(EHCnstr,Maybe)
+%%[2 hs import(EHCnstr,EHSubstitutable,Maybe)
 %%]
 
 %%[3 hs import(EHTyQuantify,EHTyInstantiate)

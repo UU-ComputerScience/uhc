@@ -603,7 +603,7 @@ pExprApp        =    pApp exprAlg (pExprBase <**> pExprSelSuffix)
 %%[pExprApp.9
 pExprApp        =    let  pE = pExprBase <**> pExprSelSuffix
                           pA = flip sem_Expr_App <$> pE
-                          pI = pPackImpl ((\a p e -> sem_Expr_AppImpl e a p) <$> pExpr <* pKey "<:" <*> pPrExpr)
+                          pI = pPackImpl ((\a p e -> sem_Expr_AppImpl e p a) <$> pExpr <* pKey "<:" <*> pPrExpr)
                      in   pE <??> ((\l e -> sem_Expr_AppTop (foldl (flip ($)) e l)) <$> pList1 (pA <|> pI))
 %%]
 
@@ -617,6 +617,20 @@ pExprPrefix     =    sem_Expr_Let      <$ pKey "let"
                      <*> pPatExprBase  <* pKey "->"
 %%]
 
+%%[pExprPrefix.7.Lam
+                <|>  (\ps -> \e -> foldr sem_Expr_Lam e ps)  <$ pKey "\\"
+                     <*> pList1 pPatExprBase                 <* pKey "->"
+%%]
+
+%%[pExprPrefix.9.Lam
+                <|>  (flip (foldr ($)))
+                     <$   pKey "\\"
+                     <*>  pList1  (    sem_Expr_Lam <$> pPatExprBase
+                                  <|>  pPackImpl (flip sem_Expr_LamImpl <$> pPatExpr <* pKey "<:" <*> pPrExpr)
+                                  )
+                     <*   pKey "->"
+%%]
+
 %%[pExprPrefix.5.If
                 <|>  (\c t e ->  sem_Expr_Case c
                                    (sem_CaseAlts_Cons (sem_CaseAlt_Pat (sem_PatExpr_Con (HNm "True")) t)
@@ -624,11 +638,6 @@ pExprPrefix     =    sem_Expr_Let      <$ pKey "let"
                                          sem_CaseAlts_Nil
                      )             )  )
                      <$ pKey "if" <*> pExpr <* pKey "then" <*> pExpr <* pKey "else"
-%%]
-
-%%[pExprPrefix.7.Lam
-                <|>  (\ps -> \e -> foldr sem_Expr_Lam e ps)  <$ pKey "\\"
-                     <*> pList1 pPatExprBase                 <* pKey "->"
 %%]
 
 %%[exprAlg.1
@@ -711,7 +720,7 @@ pExpr           =    pE <??> (sem_Expr_TypeAs <$ pKey "::" <*> pTyExpr)
 %%@pExpr.4
 %%@pExprApp.9
 %%@pExprPrefix.1
-%%@pExprPrefix.7.Lam
+%%@pExprPrefix.9.Lam
 %%@pExprPrefix.5.If
 %%]
 

@@ -401,6 +401,11 @@ SEM RecPatExpr
   | Ext         patExpr     .   inclVarBind         =   True
 %%]
 
+%%[9
+SEM Expr
+  | LamImpl     arg         .   inclVarBind         =   True
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Top name of pattern
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -514,7 +519,7 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | App         func        .  fiOpts               :=  strongFIOpts {fioAllowRPredElim = False}
+  | App         func        .  fiOpts               :=  implFIOpts
   | AppImpl     arg         .  fiOpts               =   strongFIOpts
 
 SEM Decl
@@ -553,7 +558,7 @@ SEM Expr
 
 %%[9
 ATTR AllDecl [ | patPrIntroGam: PrIntroGam | ]
-ATTR AllDecl AllExpr AllCase [ prIntroGam: PrIntroGam | | ]
+ATTR AllDecl AllExpr AllCase AllPrExpr AllPatExpr AllTyExpr AllData [ prIntroGam: PrIntroGam | | ]
 
 SEM Expr
   | Let         decls       .   patPrIntroGam       =   gamPushNew @lhs.prIntroGam

@@ -1,0 +1,59 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Ty subst
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2 hs import(EHCommon,EHTy,EHCnstr) export(tyAppCnstr)
+%%]
+
+
+%%[2.WRAPPER import(EHTyAbsSyn)
+WRAPPER TyAGItf
+%%]
+
+%%[2.tyAppCnstr hs
+tyAppCnstr :: Cnstr -> Ty -> Ty
+tyAppCnstr cnstr ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf {cnstr_Inh_TyAGItf = cnstr})
+     in   repl_Syn_TyAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Apply substitution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2.TySubst
+ATTR TyAGItf AllTy  [ cnstr: Cnstr  | |             ]
+ATTR AllAllTy       [               | | repl: SELF  ]
+ATTR TyAGItf        [               | | repl: Ty    ]
+
+SEM Ty
+  | Var             lhs     .   repl        =   maybe @repl id (cnstrTyLookup @tv @lhs.cnstr)
+%%]
+
+%%[3
+ATTR AllTy [ isBound: {TyVarId -> Bool} | | ]
+
+SEM TyAGItf
+  | AGItf           ty      .   isBound     =   const False
+
+SEM Ty
+  | Var             lhs     .   repl        :=  case (cnstrTyLookup @tv @lhs.cnstr) of
+                                                    Just t | not (@lhs.isBound @tv)  -> t
+                                                    _                                -> @repl
+  | Quant           ty      .   isBound     =   (\v -> v == @tv || @lhs.isBound v)
+%%]
+
+%%[9
+SEM Impls
+  | Tail            lhs     .   repl        =   maybe @repl id (cnstrImplsLookup @iv @lhs.cnstr)
+%%]
+

@@ -98,13 +98,18 @@ SEM RecExpr
 SEM RowTyExpr
   | Var         lhs         .  errL         =   mkNestErr @pp (foErrL @fo)
 
+SEM TyExpr
+  | Pred        lhs         .  errL         =   mkNestErr @pp (@prExpr.errL ++ @nmErrs)
+
 SEM Expr
   | Lam         lhs         .  errL         :=  mkNestErr @pp
                                                     (foErrL @foKnFun ++ @prfErrs
                                                       ++ @arg.errL ++ @body.errL)
   | AppTop      lhs         .  errL         :=  mkNestErr @pp (@prfErrs ++ @expr.errL)
   | AppImpl     lhs         .  errL         =   mkNestErr @pp
-                                                    (@knImplsErrs ++ @argErrs ++ @func.errL ++ @arg.errL ++ @argPr.errL)
+                                                    (@nmErrs ++ foErrL @foPr ++ @func.errL ++ @arg.errL ++ @argPr.errL)
+  | LamImpl     lhs         .  errL         =   mkNestErr @pp
+                                                    (@nmErrs ++ foErrL @foPr ++ @arg.errL ++ @argPr.errL ++ @body.errL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -129,7 +134,7 @@ SEM Decl
                             .  errDeclsPP   =   ppErrs @decls.errL
                 lhs         .  errL         =   []
   | InstanceIntro
-                loc         .  lErrL        =   @expr.errL ++ @prExpr.errL ++ @prRecErrs ++ @predErrs
+                loc         .  lErrL        =   @expr.errL ++ @prExpr.errL ++ foErrL @foPr ++ @predErrs
                             .  errInstPP    =   ppErrs @lErrL
                 lhs         .  errL         =   []
 

@@ -31,7 +31,7 @@
 %%[1 import(EHCommon, EHTy, EHError) export (fitsIn, FIOut(..), emptyFO)
 %%]
 
-%%[2 import(EHCnstr)
+%%[2 import(EHCnstr,EHSubstitutable)
 %%]
 
 %%[4 import(EHTyInstantiate, EHGam) export(FIOpts(..), strongFIOpts, instFIOpts, instLFIOpts)
@@ -46,7 +46,7 @@
 %%[6 export(fitsInL)
 %%]
 
-%%[9 import(Maybe,FiniteMap,Set,List,UU.Pretty,EHCodePretty,EHPred,EHCode,EHCodeSubst) export(predFIOpts,prfPreds,foAppCoe,prFitToEvid)
+%%[9 import(Maybe,FiniteMap,Set,List,UU.Pretty,EHCodePretty,EHPred,EHCode,EHCodeSubst) export(predFIOpts,implFIOpts,prfPreds,foAppCoe,prFitToEvid)
 %%]
 
 %%[9 import(EHDebug) export(fitsIn')
@@ -141,6 +141,9 @@ weakFIOpts = strongFIOpts {fioLeaveRInst = True, fioBindRFirst = False}
 %%[9
 predFIOpts :: FIOpts
 predFIOpts = strongFIOpts {fioPredAsTy = True, fioLeaveRInst = True}
+
+implFIOpts  :: FIOpts
+implFIOpts = strongFIOpts {fioAllowRPredElim = False}
 %%]
 
 %%[4
@@ -1069,14 +1072,14 @@ prfPredsPruneProvenGraph prL (ProvenGraph i2n p2i p2oi)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-prFitToEvid :: UID -> Ty -> PrIntroGam -> (Ty,ErrL)
+prFitToEvid :: UID -> Ty -> PrIntroGam -> FIOut
 prFitToEvid u prTy g
   =  case prTy of
-       Ty_Any -> (Ty_Any,[])
+       Ty_Any -> emptyFO
        _ ->  case gamLookup (tyPredNm prTy) g of
                Just pigi
                  -> let (u',u1) = mkNewUID u
                         fo = fitsIn predFIOpts emptyFE u (pigiPrToEvidTy pigi) ([prTy] `mkTyArrow` mkTyVar u1)
-                    in  (snd (tyArrowArgRes (foTy fo)),foErrL fo)
-               _ -> (Ty_Any,[Err_NamesNotIntrod [tyPredNm prTy]])
+                    in  fo {foTy = snd (tyArrowArgRes (foTy fo))}
+               _ -> emptyFO {foErrL = [Err_NamesNotIntrod [tyPredNm prTy]]}
 %%]
