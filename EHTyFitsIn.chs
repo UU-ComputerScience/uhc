@@ -311,6 +311,12 @@ fitsIn opts env uniq ty1 ty2
             mkTyPlus fi t           =  (fi,TyPlus_Ty t)
 %%]
 
+%%[4_2.fitsIn.mkTyPlus -4_1.fitsIn.mkTyPlus
+            mkTyPlus     fi t       =  (fi,TyPlus_Ty t TySoft)
+            mkTyPlusHard fi t       =  (fi,TyPlus_Ty t h)
+                                       where h = if fioIsMeetJoin (fiFIOpts fi) then TyHard else TySoft
+%%]
+
 %%[9_1.fitsIn.mkTyPlus -4_1.fitsIn.mkTyPlus
             mkTyPlus fi t           =  (fi {fiUniq = u'},TyPlus_Ty t u)
                                        where (u',u)  = mkNewUID (fiUniq fi)
@@ -318,7 +324,13 @@ fitsIn opts env uniq ty1 ty2
 
 %%[4_1.fitsIn.mkTyAlts
             mkTyAlts fi tv t        =  if fioBindToTyAlts (fiFIOpts fi)
-                                       then Ty_Alts tv [TyPlus_Ty t]
+                                       then Ty_Alts tv [snd (mkTyPlus fi t)]
+                                       else t
+%%]
+
+%%[4_2.fitsIn.mkTyAlts -4_1.fitsIn.mkTyAlts
+            mkTyAlts fi tv t        =  if fioBindToTyAlts (fiFIOpts fi)
+                                       then Ty_Alts tv [snd (mkTyPlusHard fi t)]
                                        else t
 %%]
 
@@ -631,6 +643,12 @@ fitsIn opts env uniq ty1 ty2
                 | v1 == v2 && f1 == f2              = res fi t1
 %%]
 
+%%[4_2.fitsIn.Both
+            f fi t1@(Ty_Both _ _)       t2@(Ty_Alts _ _)
+                                                    = res fi t1
+            f fi t1@(Ty_Alts _ _)       t2@(Ty_Both _ _)
+                                                    = res fi t2
+%%]
 %%[4_1.fitsIn.Both
             f fi t1@(Ty_Both v1 [t1b])  t2@(Ty_Both v2 [t2b])
                                                     = manyFO [fo,foBind v2 (Ty_Both v2 [foTy fo]) fo]
@@ -679,10 +697,10 @@ fitsIn opts env uniq ty1 ty2
                                                     = bindMany fi [v1,v2] (Ty_Alts v1 (t1L `cmbTyAltsL` t2L))
             f fi t1@(Ty_Alts v1 t1L)    t2
                                                     = bind fipl v1 (Ty_Alts v1 (t1L `cmbTyAltsL` [t2pl]))
-                where  (fipl,t2pl) = mkTyPlus fi t2
+                where  (fipl,t2pl) = mkTyPlusHard fi t2
             f fi t1                     t2@(Ty_Alts v2 t2L)
                                                     = bind fipl v2 (Ty_Alts v2 ([t1pl] `cmbTyAltsL` t2L))
-                where  (fipl,t1pl) = mkTyPlus fi t1
+                where  (fipl,t1pl) = mkTyPlusHard fi t1
 %%]
 
 %%[4_3.fitsIn.Alts

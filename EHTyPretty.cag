@@ -31,6 +31,11 @@ instance PP Ty where
   pp t = ppTy t
 %%]
 
+%%[4_2 hs
+instance PP TyHardness where
+  pp h = pp (show h)
+%%]
+
 %%[9 hs
 instance PP Pred where
   pp p = ppTy (Ty_Pred p)
@@ -144,6 +149,11 @@ SEM TyL [ | | ppL: PP_DocL ]
 SEM TyPlusL [ | | ppL: PP_DocL ]
   | Nil             lhs     .   ppL     =   []
   | Cons            lhs     .   ppL     =   @hd.pp : @tl.ppL
+%%]
+
+%%[4_2
+SEM TyPlus
+  | Ty              lhs     .   pp      =   pp @hardness >|< ":" >|< @ty.pp
 %%]
 
 %%[6

@@ -114,10 +114,13 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2
-ATTR AllTy [ | | hasQu USE {||} {False}: Bool ]
+ATTR AllTy [ | | hasHardTy USE {||} {False}: Bool ]
 
 SEM Ty
-  | Quant           lhs     .   hasQu       =   True
+  | Quant           lhs     .   hasHardTy   =   True
+
+SEM TyPlus
+  | Ty              lhs     .   hasHardTy   =   @hardness == TyHard || @ty.hasHardTy
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -141,8 +144,32 @@ fitAlts elimFits fio u startTy tL
                       (startTy,emptyCnstr,[],u) tL
      in   (t,c,e)
 %%]
+                              in   if null e && null e2 then (tr "XX" (pp t2 >#< fioMode fio >#< pp t1 >#< "=" >#< pp t) t,c |=> c2,[],u') else (Ty_Any,emptyCnstr,if null e then e2 else e,u)
+                              in   if null e && null e2 then (t,c |=> c2,[],u') else (Ty_Any,emptyCnstr,if null e then e2 else e,u)
 
 %%[4_2
+SEM Ty
+  | Alts            loc     .   (repl,errL,quTyCnstr)
+                                            =   case cnstrTyLookup @tv @lhs.tyCnstr of
+                                                    Nothing | @tv `notElem` @lhs.globTvL
+                                                        ->  if null @tyL.yesQuTyL
+                                                            then  (mkTyVar @tv,[],@tv `cnstrTyUnit` mkTyVar @tv)
+                                                            else  let  (ht,hc,he) = fitAlts @lhs.fitsIn (@lhs.fio {fioBindToTyAlts = True}) @lUniq Ty_Any (@tyL.yesQuTyL)
+                                                                  in   if null he
+                                                                       then  let  (st,_,se) = fitAlts @lhs.fitsIn (@lhs.fio {fioBindToTyAlts = True}) @lUniq2 ht (hc |=> @tyL.noQuTyL)
+                                                                                  (t,c,e) = tyElimAlts @lhs.fitsIn @lhs.fio @lhs.globTvL @lUniq3 (if null se then st else ht)
+                                                                             in   (t,e,(@tv `cnstrTyUnit` t) |=> c |=> hc)
+                                                                       else  (mkTyVar @tv
+                                                                             ,[Err_InconsistentAlts @lhs.selfRepl @tv @tyL.yesQuTyL (fioMode @lhs.fio)]
+                                                                             ,@tv `cnstrTyUnit` Ty_Any
+                                                                             )
+                                                    Just t
+                                                        ->  (t,[],emptyCnstr)
+                                                    _   ->  (@self,[],emptyCnstr)
+                    lhs     .   tyCnstr     =   @quTyCnstr `cnstrPlus` @lhs.tyCnstr
+  | Quant           lhs     .   repl        =   mkTyQu @qu.self ([@tv] `List.intersect` ftv @ty.repl) @ty.repl
+%%]
+                                                                             in   (tr "YY" (pp @self >#< "=>" >#< pp t) t,e,(@tv `cnstrTyUnit` t) |=> c |=> hc)
 SEM Ty
   | Alts            loc     .   (repl,errL,quTyCnstr)
                                             =   case cnstrTyLookup @tv @lhs.tyCnstr of
@@ -161,8 +188,6 @@ SEM Ty
                                                         ->  (t,[],emptyCnstr)
                                                     _   ->  (@self,[],emptyCnstr)
                     lhs     .   tyCnstr     =   @quTyCnstr `cnstrPlus` @lhs.tyCnstr
-  | Quant           lhs     .   repl        =   mkTyQu @qu.self ([@tv] `List.intersect` ftv @ty.repl) @ty.repl
-%%]
 SEM Ty
   | Alts            loc     .   (repl,errL,quTyCnstr)
                                             =   case cnstrTyLookup @tv @lhs.tyCnstr of
@@ -187,7 +212,7 @@ SEM Ty
   | Alts            loc     .   (repl,quTyCnstr)
                                             =   case cnstrTyLookup @tv @lhs.tyCnstr of
                                                     Nothing | @tv `notElem` @lhs.globTvL
-                                                        ->  if null @tyL.errL && @tyL.hasQu
+                                                        ->  if null @tyL.errL && @tyL.hasHardTy
                                                             then  let  (t,c,_) = tyElimAlts @lhs.fitsIn @lhs.fio @lhs.globTvL @lUniq @tyL.quTy
                                                                   in   (t,(@tv `cnstrTyUnit` t) `cnstrPlus` c)
                                                             else (mkTyVar @tv,emptyCnstr)
@@ -250,8 +275,8 @@ ATTR TyPlusL [ | | yesQuTyL: TyL ^^^ noQuTyL: TyL ]
 
 SEM TyPlusL
   | Cons            lhs     .   (yesQuTyL,noQuTyL)
-                                            =   if @hd.hasQu
-                                                then (tyPlusTy @hd.selfTvRen : @tl.yesQuTyL, @tl.noQuTyL)
+                                            =   if @hd.hasHardTy
+                                                then (tyPlusTy @hd.self : @tl.yesQuTyL, @tl.noQuTyL)
                                                 else (@tl.yesQuTyL, tyPlusTy @hd.self : @tl.noQuTyL)
   | Nil             lhs     .   yesQuTyL    =   []
                             .   noQuTyL     =   []
@@ -275,7 +300,7 @@ ATTR TyPlusL [ | | quTy: Ty ]
 
 SEM TyPlusL
   | Cons            loc     .   (quTy,_,errL)
-                                            =   if null @tl.errL && @hd.hasQu
+                                            =   if null @tl.errL && @hd.hasHardTy
                                                 then @lhs.fitsIn @lhs.fio @lUniq @tl.quTy (tyPlusTy @hd.selfTvRen)
                                                 else (@tl.quTy,emptyCnstr,@tl.errL)
   | Nil             lhs     .   quTy        =   Ty_Any
