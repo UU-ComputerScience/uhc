@@ -102,7 +102,7 @@ jvLam fNm as b
      in   if n <= 5
           then jvBody ("new Function" ++ show n ++ "(\"" ++ show fNm ++ "\")") ("Object eval" ++ show n) (map (\a -> "final Object" >#< jvNmPP a) as) empty empty b
           else jvBody ("new FunctionN(" ++ show n ++ ",\"" ++ show fNm ++ "\")") ("Object evalN") [pp "Object[] _x_"] empty empty
-                    (vlist (zipWith (\i a -> jvBind "Object" a (jvInx "_x_" i)) [0..] as) >-< b)
+                    (vlist (zipWith (\i a -> jvBind "Object" a (jvInx "_x_" i)) [(0::Int)..] as) >-< b)
 
 jvAssign :: HsName -> PP_Doc -> PP_Doc
 jvAssign nm val = (jvNmPP nm >#< "=") >-< jvInd val >#< ";"
@@ -113,8 +113,8 @@ jvDeclare jvtp nm = jvtp >#< jvNmPP nm >#< ";"
 jvBind :: PP a => String -> HsName -> a -> PP_Doc
 jvBind jvtp nm val = "final" >#< jvtp >-< jvInd (jvAssign nm (pp val))
 
-jvInx :: PP a => a -> Int -> PP_Doc
-jvInx ar i = ar >|< pp_brackets (pp i)
+jvInx :: (PP a,PP i) => a -> i -> PP_Doc
+jvInx ar i = pp ar >|< pp_brackets (pp i)
 
 jvCAF :: (PP a, PP b) => a -> b -> PP_Doc
 jvCAF stats body = jvBody "new Apply0()" "void evalSet" [] empty (pp stats) (jvCall "setValue" [pp body] >#< ";")
@@ -197,8 +197,8 @@ SEM CExpr
                                                      >-< "switch"
                                                      >|< pp_parens
                                                             (if @alts.tagSz > 0
-                                                             then jvForceInt (jvInx (jvNmPP @jvCaseScrutinee) 0)
-                                                             else pp ctagNone
+                                                             then jvForceInt (jvInx (jvNmPP @jvCaseScrutinee) (0::Int))
+                                                             else ppCTag ctagNone
                                                             )
                                                      >-< pp_braces
                                                             (   @alts.jvSrc
@@ -212,10 +212,10 @@ SEM CExpr
                             .   jvCaseResult
                                             =   HNm (show @expr.varNm ++ "_result")
   | Tup         loc         .   jvSrc       =   pp "new Object[0]"
-  | TupSel      loc         .   jvSrc       =   jvApp (jvNmPP (if @tag >= 0 then jvSel1Nm else jvSelNm)) [@expr.jvSrc,@offset.jvSrc]
+  | TupSel      loc         .   jvSrc       =   jvApp (jvNmPP (maybe (jvSelNm) (const jvSel1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc]
   | TupDel      loc         .   jvSrc       =   empty
-  | TupIns      loc         .   jvSrc       =   jvApp (jvNmPP (if @tag >= 0 then jvIns1Nm else jvInsNm)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
-  | TupUpd      loc         .   jvSrc       =   jvApp (jvNmPP (if @tag >= 0 then jvUpd1Nm else jvUpdNm)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
+  | TupIns      loc         .   jvSrc       =   jvApp (jvNmPP (maybe (jvInsNm) (const jvIns1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
+  | TupUpd      loc         .   jvSrc       =   jvApp (jvNmPP (maybe (jvUpdNm) (const jvUpd1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
 
 SEM CBind
   | Bind        lhs         .   jvSrcInd    =   jvBind "Indirection" @nm "new Indirection()"
@@ -231,7 +231,9 @@ SEM CPat
   | Undef       lhs         .   fldNm       =   hsnUnknown
 
 SEM CPatBind
-  | Bind        lhs         .   jvSrc       =   jvBind "Object" @pat.fldNm (jvInx (jvNmPP @lhs.jvCaseScrutinee) (@offset + @lhs.tagSz))
+  | Bind        lhs         .   jvSrc       =   jvBind  "Object" @pat.fldNm
+                                                        (jvInx  (jvNmPP @lhs.jvCaseScrutinee)
+                                                                (jvForceInt @offset.jvSrc >|< (if @lhs.tagSz == 0 then empty else ("+" >|< pp @lhs.tagSz))))
 
 SEM CAlt
   | Alt         lhs         .   jvSrc       =   @pats.jvSrc
@@ -239,7 +241,7 @@ SEM CAlt
                                                 >-< "break ;"
 
 SEM CPat
-  | Con         lhs         .   jvSrc       =   "case" >#< @tag >#< ":"
+  | Con         lhs         .   jvSrc       =   "case" >#< ppCTag @tag >#< ":"
                                                 >-< @binds.jvSrc
 %%]
 
@@ -263,6 +265,9 @@ SEM CExpr
 
 SEM CBind
   | Bind        expr        .   jvBuiltin   =   empty
+
+SEM CPatBind
+  | Bind        offset      .   jvBuiltin   =   empty
 
 SEM CAlt
   | Alt         expr        .   jvBuiltin   =   empty
@@ -289,7 +294,7 @@ ATTR CPatBindL CPatBind [ tagSz: Int | | ]
 ATTR CPatL CPat CAltL CAlt [ | | tagSz USE {`const`} {0}: Int ]
 
 SEM CPat
-  | Con         loc         .   tagSz       =   if @tag >= 0 then 1 else 0
+  | Con         loc         .   tagSz       =   maybe 0 (const 1) @tag
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -362,6 +367,9 @@ SEM CAlt
 
 SEM CBind
   | Bind        expr        .   mbLamNm     =   Just @nm
+
+SEM CPatBind
+  | Bind        offset      .   mbLamNm     =   Nothing
 
 SEM CModule
   | Mod         expr        .   mbLamNm     =   Nothing

@@ -92,7 +92,7 @@ SEM KiExpr
 
 %%[7
 SEM Expr
-  | Rec             (recExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
+  | Rec             (recExpr.gUniq,loc.lUniq,loc.lUniq2)            =   mkNewLevUID2    @lhs.gUniq
   | Sel             (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
 
 SEM RecExpr
@@ -160,6 +160,10 @@ SEM RecExpr
   | Ext             (recExpr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3) :=  mkNewLevUID3    @lhs.gUniq
   | Upd             (recExpr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
                                                                     :=  mkNewLevUID4    @lhs.gUniq
+
+SEM RecPatExpr
+  | Ext             (recPatExpr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)
+                                                                    :=  mkNewLevUID3    @lhs.gUniq
 %%]
 
 %%[11

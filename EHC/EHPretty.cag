@@ -166,6 +166,8 @@ SEM RecPatExpr
                 lhs     .   ppL     =   []
   | Ext         loc     .   pp      =   @recPatExpr.pp
                 lhs     .   ppL     =   ppFld "=" @positionalNm @nm @patExpr.pp : @recPatExpr.ppL
+  | Expr        loc     .   pp      =   @patExpr.pp
+                lhs     .   ppL     =   []
 
 SEM TyExpr
   | Row         loc     .   pp      =   ppAppTop  (hsnRow,mkPPAppFun hsnRow @rowTyExpr.pp)

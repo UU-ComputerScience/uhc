@@ -348,14 +348,7 @@ pPatExpr        =    pP <??> (sem_PatExpr_TypeAs <$ pKey "::" <*> pTyExpr)
 %%[7.pPatExprBase -1.pPatExprBase
 %%@pPatExprBase.1
                 <|>  pParenRow True (show hsnORec) (show hsnCRec) "=" Nothing
-                        (sem_RecPatExpr_Empty,const sem_RecPatExpr_Empty,sem_RecPatExpr_Ext,sem_PatExpr_Rec,sem_PatExpr_Parens)
-                        pSel pPatExpr
-%%]
-
-%%[9.pPatExprBase -7.pPatExprBase
-%%@pPatExprBase.1
-                <|>  pParenRow True (show hsnORec) (show hsnCRec) "=" Nothing
-                        (sem_RecPatExpr_Empty,const sem_RecPatExpr_Empty,sem_RecPatExpr_Ext,sem_PatExpr_Rec,sem_PatExpr_Parens)
+                        (sem_RecPatExpr_Empty,sem_RecPatExpr_Expr . sem_PatExpr_Var,sem_RecPatExpr_Ext,sem_PatExpr_Rec,sem_PatExpr_Parens)
                         pSel pPatExpr
 %%]
 
@@ -817,17 +810,14 @@ pPrExprClass    =    sem_PrExpr_Class  <$> pCon <*> pTyExprs
 pPrExpr         ::   EHParser T_PrExpr
 pPrExpr         =    pPrExprClass
 %%]
-
 %%[10
                 <|>  pVar <**>  (    (\s v -> sem_PrExpr_Lacks (sem_RowTyExpr_Var v) s)
                                      <$ pKey "\\" <*> pSel
 %%]
-
 %%[11
                                 <|>  (flip sem_PrExpr_Equal)
                                      <$ pKey "=" <*> pTyExpr
 %%]
-
 %%[10
                                 )
 %%]

@@ -71,9 +71,10 @@ SEM Expr
 
 %%[8
 SEM Expr
-  | Rec         loc         .   cexpr           =   if @recExpr.isExtFromEmpty
+  | Rec         loc         .   rcexpr          =   if @recExpr.isExtFromEmpty
                                                     then foldl CExpr_App CExpr_Tup (map snd . tyRowCanonOrder $ @recExpr.cexprL)
                                                     else @recExpr.cexpr
+                loc         .   cexpr           =   @rcexpr
   | Sel         loc         .   offset          =   CExpr_Int (tyRecOffset @lbl (@lhs.finTyCnstr |=> @expr.ty))
                             .   cexpr           =   CExpr_TupSel @expr.cexpr ctagNone @offset
 %%]
@@ -82,6 +83,7 @@ SEM Expr
 SEM Expr
   | Sel         loc         .   offset          :=  @lhs.cSubst `cAppSubst` CExpr_Hole @prUid
 %%]
+  | Rec         loc         .   cexpr           :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst @rcexpr
 
 %%[8
 ATTR RecExpr [ | | cexpr: CExpr ^^ cexprL: {AssocL HsName CExpr} ]
@@ -98,10 +100,14 @@ SEM RecExpr
                 lhs         .   cexprL          =   []
   | Expr        loc         .   cexpr           =   @expr.cexpr
                 lhs         .   cexprL          =   []
-  | Ext         loc         .   cexpr           =   CExpr_TupIns @recExpr.cexpr ctagNone @offset @expr.cexpr
-                lhs         .   cexprL          =   (@nm,@expr.cexpr) : @recExpr.cexprL
-  | Upd         loc         .   cexpr           =   CExpr_TupUpd @recExpr.cexpr ctagNone @offset @expr.cexpr
-                lhs         .   cexprL          =   (@nm,@expr.cexpr) : @recExpr.cexprL
+  | Ext         (loc.cexpr,lhs.cexprL)          =   if @knRecHasLab
+                                                    then (CExpr_TupIns @recExpr.cexpr ctagNone @offset @expr.cexpr
+                                                         ,(@nm,@expr.cexpr) : @recExpr.cexprL)
+                                                    else (@recExpr.cexpr,@recExpr.cexprL)
+  | Upd         (loc.cexpr,lhs.cexprL)          =   if @knRecHasLab
+                                                    then (CExpr_TupUpd @recExpr.cexpr ctagNone @offset @expr.cexpr
+                                                         ,(@nm,@expr.cexpr) : @recExpr.cexprL)
+                                                    else (@recExpr.cexpr,@recExpr.cexprL)
 %%]
 
 %%[10
@@ -235,10 +241,10 @@ SEM PatExpr
                                             =   let  (c,_)  = tyAppFunArgs @finResTy
                                                      n      = tyConNm c
                                                 in   tgiData . fromJust . tyGamLookup n $ @lhs.tyGam
-                            .   tag         =   tyRecOffset @appFunNm @finResTyData
+                            .   tag         =   Just (tyRecOffset @appFunNm @finResTyData)
   | Rec         loc         .   tag         =   ctagNone
   | AppTop Con Rec
-                loc         .   cpatBinds   =   map (\(o,(n,p)) -> CPatBind_Bind o n p) . zip [0..] . tyRowCanonOrder . reverse $ @cpbindL
+                loc         .   cpatBinds   =   map (\(o,(n,p)) -> CPatBind_Bind (CExpr_Int o) n p) . zip [0..] . tyRowCanonOrder . reverse $ @cpbindL
                 lhs         .   cpat        =   CPat_Con @cpNm @tag @appFunNm @cpatBinds
   | CConst IConst
                 lhs         .   cpat        =   CPat_Undef
@@ -269,7 +275,7 @@ ATTR AllPatExpr [ ceParentNm: HsName | | ]
 SEM PatExpr
   | AppTop Rec  loc         .   cbindL      =   concat
                                                 .  map  (\(CPatBind_Bind o _ p)
-                                                            -> let  b n = [CBind_Bind n (CExpr_TupSel (CExpr_Var @lhs.ceParentNm) @tag (CExpr_Int o))]
+                                                            -> let  b n = [CBind_Bind n (CExpr_TupSel (CExpr_Var @lhs.ceParentNm) @tag o)]
                                                                in   case cpatVarNm p of
                                                                         CPatNmOrig n                          -> b n
                                                                         CPatNmUniq n | not (null @cbindLSub)  -> b n
