@@ -281,8 +281,10 @@ rules expr9.app "Type checking/inferencing for expression application with impli
 
   rule e_app_impl9_expl =
     judge expr9 strongFIOpts; Gamma; sigma..a :- e.2 : _ ~> Cnstr.2 ; Transl.2
-    judge pred9 Gamma :- pi..a ~> _ : sigma..a
+    judge fit9 predFIOpts; _ :- (pi..Gamma -> sigma..Gamma) <= (pi..a -> tvar) : (_ -> sigma..a) ~> _ ; _
+    cond pi..Gamma ~> _ : sigma..Gamma `elem` Gamma
     judge expr9 implFIOpts; Gamma; (pi.2 -> sigma..k) :- e.1 : (pi..a -> sigma) ~> Cnstr.1 ; Transl.1
+    cond tvar "fresh"
     -
     judge expr9 fiopt; Gamma; (sigma..k) :- (e.1 ^^ (# e.2 <: pi.2 #)) : (Cnstr.2 sigma) ~> (Cnstr.2 Cnstr.1) ; (Transl.1 ^^ Transl.2)
 
@@ -299,9 +301,10 @@ rules expr9.part2 "Type checking/inferencing for lambda expressions with implici
   rule e_lam_impl9_expl =
     judge expr9 fiopt; (pi..a :~> Transl..a,Gamma..p,Gamma); sigma..r :- e : sigma..e ~> Cnstr.3 ; Transl..e
     judge pat4 fiopt; Gamma; sigma..a :- p : _; Gamma..p ~> Cnstr.2
-    judge pred9 Gamma :- pi..a ~> Transl..a : sigma..a
-    judge fit9 implFIOpts; Gamma :- (pi -> tvar) <= sigma..k : (pi..a -> sigma..r) ~> Cnstr.1; _
-    cond tvar "fresh"
+    judge fit9 predFIOpts; _ :- (pi..Gamma -> sigma..Gamma) <= (pi..a -> tvar.2) : (_ -> sigma..a) ~> _ ; _
+    cond pi..Gamma ~> Transl..a : sigma..Gamma `elem` Gamma
+    judge fit9 implFIOpts; Gamma :- (pi -> tvar.1) <= sigma..k : (pi..a -> sigma..r) ~> Cnstr.1; _
+    cond tvar.1, tvar.2 "fresh"
     -
     judge expr9 fiopt; Gamma; sigma..k :- (\(# p <: pi #) -> e) : (Cnstr.(3(..)2) pi..a -> sigma..e) ~> Cnstr.(3(..)1) ; (\Transl..a -> Transl..e)
 

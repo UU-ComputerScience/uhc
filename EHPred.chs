@@ -18,7 +18,7 @@
 %%[9 import(EHDebug)
 %%]
 
-%%[9 export(ProofState(..))
+%%[9 import(EHError) export(ProofState(..))
 %%]
 
 %%[9 export(ProvenNode(..),ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,ProofCost(..),prvgCode,prvgBackToOrig,prvgReachableFrom)
@@ -103,6 +103,7 @@ instance PP ProvenGraph where
 data ProofState
   =  ProofState     { prfsProvenGraph        :: ProvenGraph     , prfsUniq               :: UID
                     , prfsPredsToProve       :: [PredOcc]       , prfsPredsOrigToProve   :: [Pred]
+                    , prfsErrL               :: [Err]
                     }
                     deriving Show
 
@@ -130,6 +131,7 @@ prvgCode prL g@(ProvenGraph i2n p2i p2oi)
                    spl n                       = ([],[],[n])
                    (p,a,o) = unzip3 . map spl $ i2nL
           canAsSubst (_,CExpr_Var _)  = True
+          canAsSubst (_,CExpr_Int _)  = True
           canAsSubst _                = False
           (provenAsCSubst,(_,provenForBind))
             = head . dropWhile (\(_,(l,_)) -> not (null l))

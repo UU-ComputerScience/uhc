@@ -130,7 +130,7 @@ SEM Expr
   | App             (func.gUniq,loc.lUniq,loc.lUniq2)               :=  mkNewLevUID2    @lhs.gUniq
   | AppImpl         (func.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
   | Lam             (arg.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)     :=  mkNewLevUID3    @lhs.gUniq
-  | LamImpl         (arg.gUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4,loc.lUniq)
+  | LamImpl         (argPr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
                                                                     =   mkNewLevUID4    @lhs.gUniq
 
 SEM RecExpr
@@ -150,6 +150,16 @@ SEM Decl
                                                                     =   mkNewLevUID2    @gUniq2
   | InstanceIntro   (expr.gUniq,loc.lUniq,loc.lUniq2)               =   mkNewLevUID2    @lhs.gUniq
   | Val             (patExpr.gUniq,loc.lUniq,loc.lUniq2)            :=  mkNewLevUID2    @lhs.gUniq
+%%]
+
+%%[10
+SEM Expr
+  | Sel             (expr.gUniq,loc.lUniq,loc.lUniq2)               :=  mkNewLevUID2    @lhs.gUniq
+
+SEM RecExpr
+  | Ext             (recExpr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3) :=  mkNewLevUID3    @lhs.gUniq
+  | Upd             (recExpr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
+                                                                    :=  mkNewLevUID4    @lhs.gUniq
 %%]
 
 %%[11

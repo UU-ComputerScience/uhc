@@ -34,6 +34,9 @@ DERIVING *     : Show, Eq
 %%[9 hs import(FiniteMap,Set,EHTy) export(CBindLMap, emptyCBindLMap, Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLetRecCoe, cbindLMapBinds, mkCBindLForUIDL)
 %%]
 
+%%[10 hs export(mkCExprAddInt)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Tag indicating a non-data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -100,6 +103,11 @@ mkCExprLam as e = foldr (\n e -> CExpr_Lam n e) e as
 
 mkCExprApp :: CExpr -> [CExpr] -> CExpr
 mkCExprApp f as = foldl (\f a -> CExpr_App f a) f as
+%%]
+
+%%[10 hs
+mkCExprAddInt :: CExpr -> CExpr -> CExpr
+mkCExprAddInt e1 e2 = CExpr_Var (HNm "primAddInt") `mkCExprApp` [e1,e2]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
