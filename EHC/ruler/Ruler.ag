@@ -735,7 +735,7 @@ SEM RExprViews
   | Cons        lhs     .   ppLaTeXL    =   if @hd.viewIsSel then @hd.ppLaTeX : @tl.ppLaTeXL else @tl.ppLaTeXL
 
 SEM Rule
-  | Rule        lhs     .   ppLaTeX     =   "\\ehinfrule" >|< ppArg (mkRuleNm @nm @lhs.view)
+  | Rule        lhs     .   ppLaTeX     =   "\\ehinfrule" >|< ppCurly (mkLaTeXNm @nm) >|< ppCurly @lhs.view
                                             >-< ppListSepVV "{%" "}" "\\\\" @pre.ppLaTeXL
                                             >-< ppListSepVV "{%" "}" "\\\\"  @post.ppLaTeXL
   | RuleUse     lhs     .   ppLaTeX     =   mkCmdNmUse (ppDots (optBaseNm @lhs.opts : mkLaTeXNm (@aliasNm ++ @lhs.view) : map mkLaTeXNm @aliasNmSuff))

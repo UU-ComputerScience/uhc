@@ -39,7 +39,7 @@ SEM Expr
   | Var             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
 
 SEM TyExpr
-  | Var             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+  | Var VarWild     (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
   
 SEM Decl
   | Val             (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq

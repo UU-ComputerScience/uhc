@@ -33,8 +33,9 @@ SEM TyExpr
 
 %%[3.tyVarGather
 SEM TyExpr
-  | Var         (loc.tgi,lhs.tyGam)                 =   case tyGamLookup @nm @lhs.tyGam of
-                                                          Nothing    ->  let  t    =  mkNewTyVar @lUniq
+  | Var VarWild loc         .   tyVarId             =   @lUniq
+                (loc.tgi,lhs.tyGam)                 =   case tyGamLookup @nm @lhs.tyGam of
+                                                          Nothing    ->  let  t    =  mkNewTyVar @tyVarId
                                                                               tgi  =  TyGamInfo t
                                                                          in   (tgi,gamAdd @nm tgi @lhs.tyGam)
                                                           Just tgi   ->  (tgi,@lhs.tyGam)
@@ -72,6 +73,11 @@ SEM TyExpr
   | Wild        lhs         .   tyVarWildL          =   [@tyVarId]
 %%]
 
+%%[3.tyVarWildL
+SEM TyExpr
+  | VarWild     lhs         .   tyVarWildL          =   [@tyVarId]
+%%]
+
 %%[9
 SEM TyExpr
   | Impls       lhs         .   tyVarWildL          =   [@implsVarId]
@@ -97,7 +103,8 @@ ATTR TyExpr TyVar [ | | ki: Ty ]
 ATTR TyExprs TyVars [ | | kiL: TyL ]
 
 SEM TyExpr
-  | Var         (loc.tgi,lhs.tyGam)                 :=  tyGamLookupOrAdd @nm @lUniq @lhs.kiCnstr @lhs.tyGam
+  | Var VarWild
+                (loc.tgi,lhs.tyGam)                 :=  tyGamLookupOrAdd @nm @lUniq @lhs.kiCnstr @lhs.tyGam
                 loc         .   ki                  =   tgiKi @tgi
   | Wild        loc         .   tgi                 :=  let t = mkNewTyVar @tyVarId in mkTGI t t
                             .   ki                  =   tgiKi @tgi
@@ -189,7 +196,8 @@ SEM TyExpr
 
 %%[3
 SEM TyExpr
-  | Var         lhs         .   ty                  =   tgiTy @tgi
+  | Var VarWild
+                lhs         .   ty                  =   tgiTy @tgi
 %%]
 
 %%[4

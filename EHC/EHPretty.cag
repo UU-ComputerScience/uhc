@@ -77,6 +77,7 @@ SEM Decl
 %%[3
 SEM TyExpr
   | Var         loc     .   pp      =   pp @nm
+  | VarWild     loc     .   pp      =   "%" >|< pp @nm
 %%]
 
 %%[4
@@ -181,9 +182,9 @@ SEM Decl
 ATTR PrExprs FuncDeps [ | | ppL: PP_DocL ]
 
 SEM Expr
-  | AppImpl     loc     .   argPP   =   @arg.pp >#< "<:" >#< @argPr.pp
+  | AppImpl     loc     .   argPP   =   @arg.pp >#< "<:" >#< @argPr.prPP
                         .   pp      =   @func.pp >#< hsnOImpl >#< @argPP >#< hsnCImpl
-  | LamImpl     loc     .   pp      =   "\\" >|< hsnOImpl >#< @arg.pp >#< "<:" >#< @argPr.pp >#< hsnCImpl >#< "->" >#< @body.pp
+  | LamImpl     loc     .   pp      =   "\\" >|< hsnOImpl >#< @arg.pp >#< "<:" >#< @argPr.prPP >#< hsnCImpl >#< "->" >#< @body.pp
 
 SEM RowTyExpr
   | Var         loc     .   pp      =   pp @nm
@@ -222,6 +223,12 @@ SEM FuncDep
 SEM FuncDeps
   | Nil         lhs     .   ppL     =   []
   | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
+
+ATTR TyExpr [ | | prPP: PP_Doc ]
+
+SEM TyExpr
+  | Pred        lhs     .   prPP    =   @prExpr.pp
+  | * - Pred    lhs     .   prPP    =   pp "??"
 %%]
 
 %%[10

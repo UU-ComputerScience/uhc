@@ -4,11 +4,11 @@ preamble "%include lhs2TeX.fmt\n%include afp.fmt"
 -- Views
 -------------------------------------------------------------------------
 
-view to1 =
+view to1 C9 =
   let Cnstr =
   in  
 
-viewset from9 = 9 10 11
+viewset from9 = 9 C9 10 11
 viewset from8 = 8 from9
 viewset from4 = 4 5 6 7 from8
 viewset from3 = 3 from4
@@ -29,21 +29,28 @@ scheme expr
   = (fiopt); (Gamma); (sigmak) :- (e) : (sigma) ~> (Cnstr); (Transl)
   = fiopt; Gamma; sigmak :-...expr e : sigma ~> Cnstr; Transl
   view 9  = fiopt; Gamma; sigmak :-...expr e : sigma ~> Cnstr; Transl
+  view C9  = fiopt; Gamma; sigmak :-...expr e : sigma ~> Transl
   view 4 5 6 7 8 = fiopt; Gamma; sigmak :-...expr e : sigma ~> Cnstr
   view 2 3 = Gamma; sigmak :-...expr e : sigma ~> Cnstr
   view K 1 = Gamma; sigmak :-...expr e : sigma
   view E = Gamma :-...expr e : sigma
 
-rules expr.typeRules "Type rules for terms" =
-  rule e_int = rule expr.e_int
-  &
-  rule e_var = rule expr.e_ident
-  rule e_app = rule expr.e_app
-  rule e_lam = rule expr.e_lam
-  rule e_let = rule expr.e_let
-  rule e_let_tysig = rule expr.e_let_tysig
+rules expr.baseExplImpl "Type rules for implicit parameters" viewas C9 9 =
+  rule e_app = rule expr.base.e_app
+  rule e_lam = rule expr.base.e_lam
 
-rules expr "Type checking/inferencing for expression" =
+rules expr.base "Type rules for expressions" =
+  rule e_int =
+    judge fit fiopt ; Gamma :- Int <= sigma..k : sigma ~> Cnstr ; CnstrEq ; coe viewas fromK
+    -
+    judge expr fiopt; Gamma; sigma..k :- (minint(..)maxint) : (viewas toE = Int viewas fromK = sigma) ~> Cnstr; Transl
+  &
+  rule e_id =
+    cond (ident :-> sigma) `elem` Gamma
+    judge fit fiopt ; Gamma :- sigma <= sigma..k : sigma ~> Cnstr ; CnstrEq ; coe viewas fromK
+    -
+    judge expr fiopt; Gamma; sigma..k :- ident : sigma ~> Cnstr ; (coe ^^ ident)
+  
   rule e_app =
     judge pred ((pi.i.k :~> Transl.i.k)..._,Gamma) :- (Cnstr.3 pi..a._) ~> Transl..a._ : _ viewas from9
     judge expr instLFIOpts
@@ -63,7 +70,7 @@ rules expr "Type checking/inferencing for expression" =
     cond (viewas from9 = pvar, pvar..k, tvarv..k,) tvarv "fresh" viewas from2
     -
     judge expr fiopt; Gamma; sigma..k :- (e.1 ^^ e.2) : (Cnstr.3 sigma)
-        ~> (Cnstr.3 Cnstr.2 (viewas from9 = Cnstr.1))
+        ~> (Cnstr.(3(..)2) (viewas from9 = Cnstr.1))
         ; (\Transl.i.k._ -> Transl.1 ^^ Transl..a._ ^^ Transl.2)
   &
   rule e_lam =
@@ -84,29 +91,21 @@ rules expr "Type checking/inferencing for expression" =
         : ((viewas from9 = Cnstr.(3(..)2) pi..p._ ->) Cnstr.(3(..)2) sigma..(viewas toK = i viewas from1 = p) -> sigma..e)
         ~> Cnstr.(3(..)1) ; ((viewas from9 = \Transl.i.p._ ->) \p -> Transl..e)
 
-  rule e_ident =
-    cond (ident :-> sigma) `elem` Gamma
-    judge fit fiopt ; Gamma :- sigma <= sigma..k : sigma ~> Cnstr ; CnstrEq ; coe viewas fromK
-    -
-    judge expr fiopt; Gamma; sigma..k :- ident : sigma ~> Cnstr ; (coe ^^ ident)
-  
-  rule e_let =
-    judge expr fiopt ; ((viewas toK = i :-> sigma..i viewas 1 2 = Gamma..p viewas 3 = Gamma..q viewas from4 = Gamma.exists.p) , Gamma) ; sigma..k
-        :- e : sigma..e ~> Cnstr.3 ; Transl
-    cond Gamma.exists.p (=) [ (n,instE(sigma)) | (n,sigma) <- Gamma.q.p ] viewas from4
-    cond Gamma..q == [ (i :-> forall ^ Vec(alpha) (.) sigma)
+  rule e_let viewas from2 =
+    judge expr fiopt
+        ; ((viewas 1 2 = Gamma..p viewas 3 = Gamma..q viewas from4 = Gamma.exists.p) , Gamma)
+        ; sigma..k
+        :- e : sigma ~> Cnstr.3; Transl
+    cond Gamma.exists.p (=) [ n :-> instE(sigma) | (n :-> sigma) <- Gamma.q.p ] viewas from4
+    cond Gamma..q == [ i :-> forall ^ Vec(alpha) (.) sigma
                      | (i :-> sigma) <- Cnstr.(2(..)1) Gamma..p
                      , Vec(alpha) == ftv(sigma) `minusset` ftv(Cnstr.(2(..)1) Gamma)
                      ] viewas 3
     judge quGam (ftv(Cnstr.(2(..)1) Gamma)); CoVariant :- (Cnstr.2 Gamma..p) : Gamma.q.p viewas from4
-    judge expr strongFIOpts; ((viewas toK = i :-> sigma..i viewas from1 = Gamma..p) , Gamma); sigma..(viewas toK = i viewas from1 = p)
-        :- e..i : _ ~> Cnstr.2 ; Transl
-    judge pat strongFIOpts; Gamma; ANY :- p : sigma..p; Gamma..p ~> Cnstr.1 viewas from1
-    cond Gamma..p == i :-> sigma..i viewas toK
-    cond p == i || p == i@(...) viewas from1
+    judge expr strongFIOpts ; (Gamma..p, Gamma) ; sigma..p :- e..i : _ ~> Cnstr.2 ; Transl
+    judge pat strongFIOpts; Gamma; ANY :- p : _; Gamma..p ~> Cnstr.1 viewas from1
     -
-    judge expr fiopt ; Gamma ; sigma..k :- ((let) i :: sigma..i; i (=) e..i (in) e) : sigma..e ~> Cnstr ; Transl viewas toK
-    judge expr fiopt ; Gamma ; sigma..k :- ((let) p (=) e..i (in) e) : sigma..e ~> Cnstr.(3(..)1) ; Transl viewas from1
+    judge expr fiopt; Gamma; sigma..k :- ((let) i :: sigma..i; (viewas toK = i viewas from1 = p) (=) e..i (in) e) : sigma ~> Cnstr.(3(..)1); Transl
 
   rule e_let_tysig =
     judge expr fiopt
@@ -115,40 +114,35 @@ rules expr "Type checking/inferencing for expression" =
           , Gamma
           )
         ; sigma..k
-        :- e : sigma..e ~> Cnstr.3; Transl
-    cond Gamma.exists.p (=) [ (n,instE(sigma)) | (n,sigma) <- Gamma.q.p ] viewas from4
-    cond Gamma..q == [ (i :-> forall ^ Vec(alpha) (.) sigma)
+        :- e : sigma ~> Cnstr.3; Transl
+    cond Gamma.exists.p (=) [ n :-> instE(sigma) | (n :-> sigma) <- Gamma.q.p ] viewas from4
+    cond Gamma..q == [ i :-> forall ^ Vec(alpha) (.) sigma
                      | (i :-> sigma) <- Cnstr.(2(..)1) Gamma..p
                      , Vec(alpha) == ftv(sigma) `minusset` ftv(Cnstr.(2(..)1) Gamma)
                      ] viewas 3
     judge quGam (ftv(Cnstr.(2(..)1) Gamma)); CoVariant :- (Cnstr.2 Gamma..p) : Gamma.q.p viewas from4
     judge expr strongFIOpts
         ; (i :-> sigma..(viewas to2 = i viewas from3 = q)
-          (viewas from1 = , (viewas from2 = Gamma..p))
+          (viewas from1 = , (viewas from1 = Gamma..p))
           , Gamma
           )
         ; sigma..(viewas to2 = i viewas from3 = q)
-        :- e..i : _ ~> Cnstr.2; Transl
+        :- e..i : (viewas to1 = sigma..i viewas from2 = _) ~> Cnstr.2; Transl
     judge qu ([]); CoVariant :- sigma..i : sigma..q ~> _ viewas from4
     cond sigma..q == forall ^ Vec(alpha) (.) sigma..i viewas 3
-    cond sigma..j == [alpha.j :-> tvarf.j] sigma..i, tvarf.j "fresh" viewas 3
+    cond sigma..j == ((alpha.j :-> tvarf.j)..._) sigma..i, tvarf.j "fresh" viewas 3
     cond Vec(alpha) == ftv(sigma..i) viewas 3
-    cond p == i || p == i@(...)
     judge pat strongFIOpts; Gamma; sigma..i :- p : _; Gamma..p ~> Cnstr.1 viewas from1
+    cond p == i || p == i@(...) viewas from1
     -
-    judge expr fiopt; Gamma; sigma..k :- ((let) i :: sigma..i; p (=) e..i (in) e) : sigma..e ~> Cnstr.(3(..)1); Transl
-
-  rule e_int =
-    judge fit fiopt ; Gamma :- Int <= sigma..k : sigma ~> Cnstr ; CnstrEq ; coe viewas fromK
-    -
-    judge expr fiopt; Gamma; sigma..k :- (minint(..)maxint) : (viewas toE = Int viewas fromK = sigma) ~> Cnstr; Transl
+    judge expr fiopt; Gamma; sigma..k :- ((let) i :: sigma..i; (viewas toK = i viewas from1 = p) (=) e..i (in) e) : sigma ~> Cnstr.(3(..)1); Transl
 
 rules expr.C "Type checking/inferencing for expression application with implicit parameters" =
   rule app_impl = rule expr.app.e_app_impl_impl
   rule app_expl = rule expr.app.e_app_impl_expl
 
-rules expr.app "Type checking/inferencing for expression application with implicit parameters" viewas from9 =
-  rule e_app_impl_expl =
+rules expr.explimpl "Type rules for explicit implicit parameters" viewas from9 =
+  rule e_iapp =
     judge expr strongFIOpts; Gamma; sigma..a :- e.2 : _ ~> Cnstr.2 ; Transl.2
     judge fit predFIOpts; _ :- (pi..Gamma -> sigma..Gamma) <= (pi..a -> tvarv) : (_ -> sigma..a) ~> _ ; CnstrEq ; _
     cond pi..Gamma ~> _ : sigma..Gamma `elem` Gamma
@@ -157,8 +151,7 @@ rules expr.app "Type checking/inferencing for expression application with implic
     -
     judge expr fiopt; Gamma; (sigma..k) :- (e.1 ^^ (# e.2 <: pi.2 #)) : (Cnstr.2 sigma) ~> Cnstr.(2(..)1) ; (Transl.1 ^^ Transl.2)
 
-rules expr.part2 "Type checking/inferencing for lambda expressions with implicit parameters" viewas from9 =
-  rule e_lam_impl_expl =
+  rule e_ilam =
     judge expr fiopt; (pi..a :~> Transl..a,Gamma..p,Gamma); sigma..r :- e : sigma..e ~> Cnstr.3 ; Transl..e
     judge pat fiopt; Gamma; sigma..a :- p : _; Gamma..p ~> Cnstr.2
     judge fit predFIOpts; _ :- (pi..Gamma -> sigma..Gamma) <= (pi..a -> tvarv.2) : (_ -> sigma..a) ~> _  ; CnstrEq; _
@@ -233,8 +226,9 @@ rules expr.rec "Type checking for records" viewas from9 =
 scheme pat
   = (fiopt); (Gamma); (sigmak) :- (p) : (sigma); (Gammap) ~> (Cnstr)
   = fiopt; Gamma; sigmak :-...pat p : sigma; Gammap ~> Cnstr
+  view C9 = fiopt; Gamma; sigmak :-...pat p : sigma; Gammap
   view 4 9 = fiopt; Gamma; sigmak :-...pat p : sigma; Gammap ~> Cnstr
-  view 2 = sigmak :-...pat p : sigma; Gammap ~> Cnstr
+  view 2 3 = sigmak :-...pat p : sigma; Gammap ~> Cnstr
   view 1 = sigmak :-...pat p : Gammap
 
 rules pat "Type checking/inferencing for pattern" =
@@ -282,9 +276,10 @@ scheme fit
   = (fiopt); (Gamma) :- (sigmal) <= (sigmar) : (sigma) ~> (Cnstr) ; (CnstrEq) ; (coe)
   = fiopt; Gamma :-...fit sigmal <= sigmar : sigma ~> Cnstr ; CnstrEq ; coe
   view 11 = fiopt; Gamma :-...fit sigmal <= sigmar : sigma ~> Cnstr ; CnstrEq ; coe
+  view C9  = fiopt; Gamma :-...fit sigmal <= sigmar : sigma ~> coe
   view 9  = fiopt; Gamma :-...fit sigmal <= sigmar : sigma ~> Cnstr ; coe
   view 4  = fiopt :-...fit sigmal <= sigmar : sigma ~> Cnstr
-  view 2  = :-...fit sigmal <= sigmar : sigma ~> Cnstr
+  view 2 3 = :-...fit sigmal <= sigmar : sigma ~> Cnstr
   view 1 K = :-...fit sigmal <= sigmar : sigma
 
 rules fit.base "Rules for fit" =
@@ -495,12 +490,12 @@ rules fit.gadt "Fitting/subsumption for GADT related types" viewas from11 =
 scheme qu
   = (bv); (coco) :- (sigma) : (sigmaq) ~> (fv)
   = bv; coco :-...qu sigma : sigmaq ~> fv
-  view 4 = bv; coco :-...qu sigma : sigmaq ~> fv
+  view 4 9 = bv; coco :-...qu sigma : sigmaq ~> fv
 
 scheme quGam
   = (bv); (coco) :- (Gamma) : (Gammaq)
   = bv; coco :-...quGam Gamma : Gammaq
-  view 4 = bv; coco :-...quGam Gamma : Gammaq
+  view 4 9 = bv; coco :-...quGam Gamma : Gammaq
 
 rules qu "Quantifier location inferencing" =
   rule q_var_co =
@@ -553,8 +548,8 @@ rules quGam "Quantifier location inferencing for types in a Gamma" =
 -- Predicates
 -------------------------------------------------------------------------
 
-scheme pred9
+scheme pred
   = (Gamma) :- (pi) ~> (Transl) : (sigma)
   = Gamma :-...pred pi ~> Transl : sigma
-  view 9 = Gamma :-...pred pi ~> Transl : sigma
+  view 9 C9 = Gamma :-...pred pi ~> Transl : sigma
 
