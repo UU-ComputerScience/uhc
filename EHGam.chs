@@ -48,7 +48,7 @@
 %%[8 import(Maybe) export(gamUpd)
 %%]
 
-%%[9 export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
+%%[9 import(EHDebug) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -106,6 +106,19 @@ gamTop  (Gam (l:ll)) = Gam [l]
 %%[8.gamUpd
 gamMbUpd :: Eq k => k -> (k -> v -> v) -> Gam k v -> Maybe (Gam k v)
 gamMbUpd k upd (Gam ll)
+  =  let u ((kv@(k',v):ls):lss)
+             | k' == k    = Just (((k',upd k v):ls):lss)
+             | otherwise  = maybe Nothing (\(ls:lss) -> Just ((kv:ls):lss)) (u (ls:lss))
+         u ([]:lss)       = maybe Nothing (\lss -> Just ([] : lss)) (u lss)
+         u []             = Nothing
+     in  fmap Gam (u ll)
+
+gamUpd :: Eq k => k -> (k -> v -> v) -> Gam k v -> Gam k v
+gamUpd k upd = fromJust . gamMbUpd k upd
+%%]
+
+gamMbUpd :: Eq k => k -> (k -> v -> v) -> Gam k v -> Maybe (Gam k v)
+gamMbUpd k upd (Gam ll)
   =  let  (didUpd,ll')
             = foldr  (\l (didUpd,ll')
                          ->  let  (didUpd',l')
@@ -115,10 +128,6 @@ gamMbUpd k upd (Gam ll)
                              in   (didUpd',l' : ll')
                      ) (False,[]) ll
      in   if didUpd then Just (Gam ll') else Nothing
-
-gamUpd :: Eq k => k -> (k -> v -> v) -> Gam k v -> Gam k v
-gamUpd k upd = fromJust . gamMbUpd k upd
-%%]
 
 %%[9
 gamElts :: Gam k v -> [v]

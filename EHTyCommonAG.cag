@@ -48,7 +48,24 @@ SEM Ty
 
 %%[7
 SEM Ty
-  | App         loc         .  appIsLikeProd    :=  hsnIsProd @func.appFunNm || hsnIsRec @func.appFunNm
+  | App         loc         .  appIsRecOrSum    =   hsnIsSum @func.appFunNm || hsnIsRec @func.appFunNm
+                            .  appIsLikeProd    :=  hsnIsProd @func.appFunNm || hsnIsRec @func.appFunNm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is ty a row?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+ATTR AllTy [ isRow: Bool | | ]
+
+SEM TyAGItf
+  | AGItf       ty          .   isRow           =   False
+
+SEM Ty
+  | App         loc         .   argIsRow        =   @isSpineRoot && @appIsRecOrSum
+                arg         .   isRow           =   @argIsRow
+  | * - App     loc         .   isRow           =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

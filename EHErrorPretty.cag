@@ -110,6 +110,8 @@ SEM Err
 SEM Err
   | MissingRowLabels    lhs     .  pp   =   ppMsgErr    "Missing label(s) in row"
                                                         ("Label(s):" >#< ppListSep "" "" ", " @nmL >-< "Row     :" >#< ppTy @ty)
+  | TooManyRowLabels    lhs     .  pp   =   ppMsgErr    "Too many label(s) to fit in row"
+                                                        ("Label(s):" >#< ppListSep "" "" ", " @nmL >-< "Row     :" >#< ppTy @ty)
 %%]
 
 %%[8

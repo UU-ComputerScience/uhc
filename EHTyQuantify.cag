@@ -141,7 +141,10 @@ SEM Ty
 
 %%[9
 SEM Ty
-  | App         loc         .   frTvL       :=  listCombineUniq (@frRowTvL : @frTvLL)
+  | App         (loc.frRowTvL,loc.frTvLL)   :=  if @argIsRow
+                                                then hdAndTl (reverse @arg.frTvLL)
+                                                else ([],@arg.frTvLL ++ @func.frTvLL)
+                loc         .   frTvL       :=  listCombineUniq (@frRowTvL : @frTvLL)
                             .   arrArgTvL   =   @frTvLL !! 1
   | Pred        loc         .   frTvL       =   listCombineUniq @pr.frTvLL
   | Impls       loc         .   frTvL       =   listCombineUniq @impls.frTvLL
@@ -156,7 +159,7 @@ SEM Impls
 %%% Free row vars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[99
 ATTR Ty [ | | frRowTvL: TyVarIdL ]
 
 SEM Ty
@@ -429,20 +432,15 @@ SEM Ty
 %%[9
 SEM Ty
   | Var         lhs         .   quTy            :=  mkTyQu @hereQu @qBndTvL . mkTyPr (map poPr @insPrL) $ Ty_Var @tv @categ.quTy
-  | App         loc         .   quTy            :=  mkTyQu @hereQu @qBndTvL . mkTyPr (map poPr @insPrL)
+  | App         loc         .   quTy            :=  mkTyQu @hereQu (filter (`notElem` @frRowTvL) @qBndTvL)
+                                                    .  mkTyQu @lhs.baseQu (filter (`elem` @frRowTvL) @qBndTvL)
+                                                    .  mkTyPr (map poPr @insPrL)
                                                     $  (if tqoptLeaveImpls @lhs.opts
                                                         then Ty_App @func.quTy @arg.quTy
                                                         else maybe (Ty_App @func.quTy @arg.quTy) (const @arg.quTy) @func.mbImpls
                                                        )
   | Pred        lhs         .   quTy            =   mkTyQu @hereQu @qBndTvL (Ty_Pred @pr.quTy)
 %%]
-                                                    $  (case @bldImpls of
-                                                          BuildNoImpls -> Ty_App @func.quTy @arg.quTy
-                                                          BuildTailImpls -> Ty_App @func.quTy @arg.quTy
-                                                          BuildPrImpls -> @arg.quTy
-                                                       )
-
-                                                    $ maybe (Ty_App @func.quTy @arg.quTy) (const @arg.quTy) @func.mbImpls
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Preds which have been inserted (from the given ones)

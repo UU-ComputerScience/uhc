@@ -180,6 +180,7 @@ SEM Expr
                                                         in   fo {foTy = foCnstr fo |=> @resTy}
                             .  (imTy,knTy)          :=  tyArrowArgRes (foTy @foKnRes)
                 expr        .  tyCnstr              =   foCnstr @foKnRes |=> @lhs.tyCnstr
+                loc         .  ty                   =   [@expr.tyCnstr |=> @imTy] `mkTyArrow` @expr.ty
 %%]
 
 %%[8.Undefined
@@ -237,7 +238,7 @@ SEM RecExpr
                 lhs         .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
   | Ext Upd     loc         .   recTy               =   let  [r,e] = mkNewTyVarL 2 @lUniq
                                                         in   (hsnRec `mkTyConApp` [r]) `mkTyRecExt` [(@nm,e)]
-                            .   foKnRec             =   let  fo = fitsIn (strongFIOpts) @fe @lUniq2 @recTy (@lhs.tyCnstr |=> @lhs.knTy)
+                            .   foKnRec             =   let  fo = fitsIn strongFIOpts @fe @lUniq2 @recTy (@lhs.tyCnstr |=> @lhs.knTy)
                                                         in   fo {foTy = foCnstr fo |=> @recTy}
                 (loc.recKnTlTy,expr.knTy)           =   fromJust . tyRecExtr @nm . foTy $ @foKnRec
                 recExpr     .   tyCnstr             =   foCnstr @foKnRec |=> @lhs.tyCnstr
@@ -250,5 +251,13 @@ SEM RecExpr
 SEM Expr
   | Sel         expr        .   knTy                =   (hsnRec `mkTyConApp` [mkNewTyVar @lUniq]) `mkTyRecExt` [(@lbl,@lhs.knTy)]
                 loc         .   ty                  =   snd . fromJust . tyRecExtr @lbl $ @expr.ty
+  | Rec         loc         .   fo                  =   fitsIn @fiOpts @fe @lUniq @recExpr.ty (@recExpr.tyCnstr |=> @lhs.knTy)
+                            .   ty                  =   foTy @fo
+                lhs         .   tyCnstr             =   foCnstr @fo |=> @recExpr.tyCnstr
 %%]
 
+  | Rec         loc         .   ty                  =   @recExpr.ty
+
+  | Rec         loc         .   fo                  =   fitsIn @fiOpts @fe @lUniq @recExpr.ty (@recExpr.tyCnstr |=> @lhs.knTy)
+                            .   ty                  =   foTy @fo
+                lhs         .   tyCnstr             =   foCnstr @fo |=> @recExpr.tyCnstr
