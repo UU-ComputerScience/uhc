@@ -363,11 +363,11 @@ SEM Decl
   | Class       loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Class"] [] [@tyPrExpr.ppAST,@funcDeps.ppAST,@decls.ppAST] @info
                         .  info     =   []
   | Instance    loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Instance"] (maybe [] (\(n,_) -> [ppNm n]) @mbNmElim) [@tyPrExpr.ppAST,@decls.ppAST] @info
-                        .  info     =   [ mkInfo1 "ctxtToInstTy" (ppTy @ctxtToInstTy)
-                                        , mkInfo1 "ctxtRecToInstRecTy" (ppTy @ctxtRecToInstRecTy)
+                        .  info     =   [ mkInfo1 "tyPrExpr.ty" (ppTy @tyPrExpr.ty)
+                                        , mkInfo1 "tyPrExpr.evTy" (ppTy @tyPrExpr.evTy)
                                         , mkInfo1 "supPrElimGam" (ppGam @supPrElimGam)
                                         , mkInfo1 "declsPrElimGam" (ppGam @declsPrElimGam)
-                                        , mkInfo1 "supPrL" (ppCommaList @supPrL)
+                                        , mkInfo1 "supPrTyL" (ppCommaList @supPrTyL)
                                         , mkInfo1 "supPrUIDL" (ppCommaList @supPrUIDL)
                                         , mkInfo1 "prfCBindLMap" (ppCBindLMap @prfCBindLMap)
                                         , mkInfo1 "csubst" (ppAssocL . fmToList $ @csubst)

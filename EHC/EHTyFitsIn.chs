@@ -1021,7 +1021,36 @@ matchRule u pr r
 %%[9
 prvgAddOrig :: UID -> Pred -> ProvenGraph -> ProvenGraph
 prvgAddOrig uid pr g = g {prvgPrOrigIdMp = addToFM_C (flip (++)) (prvgPrOrigIdMp g) pr [uid]}
+%%]
 
+%%[9
+prfOneStep :: FIEnv -> PredOcc -> ProofState -> ProofState
+prfOneStep env (PredOcc pr prUid) st@(ProofState g@(ProvenGraph _ p2i _) _ _ _ _)
+  =  case lookupFM p2i pr of
+        Just uidL | prUid `notElem` uidL
+          ->  let  uid  = last uidL
+                   nd   = ProvenShare pr uid
+              in   st {prfsProvenGraph = prvgAddPrNd pr (prUid : uidL) nd g}
+        Nothing
+          ->  case pr of
+                Pred_Class  _    ->  prfOneStepClass  env pr prUid st
+                Pred_Pred   _    ->  prfOneStepPred   env pr prUid st
+%%]
+%%[10
+                Pred_Lacks  _ _  ->  prfOneStepLacks  env pr prUid st
+%%]
+%%[9
+        _ ->  st
+%%]
+
+%%[9
+prfOneStepPred :: FIEnv -> Pred -> UID -> ProofState -> ProofState
+prfOneStepPred env pr@(Pred_Pred t) prUid st@(ProofState g@(ProvenGraph i2n p2i p2oi) u toProof origToProof _)
+  =   let  (prArgL,prRes) = tyPrArrowArgsRes t
+      in   st
+%%]
+
+%%[9
 prfOneStepClass :: FIEnv -> Pred -> UID -> ProofState -> ProofState
 prfOneStepClass env pr@(Pred_Class t) prUid st@(ProofState g@(ProvenGraph i2n p2i p2oi) u toProof origToProof _)
   =   let  isInOrig             = pr `elem` origToProof
@@ -1084,25 +1113,6 @@ prfOneStepLacks env pr@(Pred_Lacks r l) prUid st@(ProofState g@(ProvenGraph i2n 
                                                 in   st {prfsProvenGraph = g2, prfsUniq = u', prfsPredsToProve = newPr : toProof}
                               _             ->  let  g2 = prvgAddPrNd pr [prUid] (ProvenAnd pr [] zeroCost (CExpr_Int offset)) g
                                                 in   st {prfsProvenGraph = g2}
-%%]
-
-%%[9
-prfOneStep :: FIEnv -> PredOcc -> ProofState -> ProofState
-prfOneStep env (PredOcc pr prUid) st@(ProofState g@(ProvenGraph _ p2i _) _ _ _ _)
-  =  case lookupFM p2i pr of
-        Just uidL | prUid `notElem` uidL
-          ->  let  uid  = last uidL
-                   nd   = ProvenShare pr uid
-              in   st {prfsProvenGraph = prvgAddPrNd pr (prUid : uidL) nd g}
-        Nothing
-          ->  case pr of
-                Pred_Class _    -> prfOneStepClass env pr prUid st
-%%]
-%%[10
-                Pred_Lacks _ _  -> prfOneStepLacks env pr prUid st
-%%]
-%%[9
-        _ ->  st
 %%]
 
 %%[9

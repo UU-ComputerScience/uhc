@@ -41,18 +41,13 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
+checkClNms :: Set HsName -> [Err]
+checkClNms s = if isEmptySet s then [] else [Err_NamesNotIntrod (setToList s)]
+%%]
 checkPrClassName :: PrIntroGam -> [HsName] -> [Err]
 checkPrClassName g pl
   =  let  nms = nub . concat . map (\n -> maybe [n] (const []) (gamLookup n g)) . filter (not.hsnIsUnknown) $ pl
      in   if null nms then [] else [Err_NamesNotIntrod nms]
-%%]
-
-%%[9
-ATTR PrExpr [ | | clNmL USE {++} {[]}: {[HsName]} ]
-
-SEM PrExpr
-  | Class		lhs			.	clNmL				=	[@nm]
-%%]
 
 %%[9
 SEM AGItf
@@ -63,11 +58,11 @@ SEM Decl
   | InstanceIntro
                 loc         .   predErrs            =   if null (ftv @prExpr.ty) then [] else [Err_TyHasFreeTVars @prExpr.ty]
 
-SEM TyExpr
-  | Pred        loc         .   nmErrs              =   checkPrClassName @lhs.prIntroGam @prExpr.clNmL
+SEM PrExpr
+  | Class       loc         .   nmErrs              =   checkClNms @clMissNmS
 
 SEM Expr
   | AppImpl LamImpl
-  				loc         .   nmErrs              =   checkPrClassName @lhs.prIntroGam @argPr.clNmL
+  				loc         .   nmErrs              =   []
 %%]
 

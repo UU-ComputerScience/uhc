@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -98,11 +98,13 @@ SEM CodeAGItf
 
 %%[8
 ATTR AllBind [ | | bindLamMp USE {`plusFM`} {emptyFM}: LamInfoMp ]
+ATTR AllBind [ | | bindCafMp USE {`plusFM`} {emptyFM}: LamInfoMp ]
 
 SEM CBind
-  | Bind        lhs         .   bindLamMp   =   if @expr.isLam
-                                                then @nm `unitFM` length @expr.grLamArgL
-                                                else emptyFM
+  | Bind        lhs         .   (bindLamMp,bindCafMp)
+                                            =   if @expr.isLam
+                                                then (@nm `unitFM` length @expr.grLamArgL,emptyFM)
+                                                else (emptyFM,@nm `unitFM` 0)
   | FFI         loc         .   (argTyL,resTy)
                                             =   tyArrowArgsRes @ty
                 lhs         .   bindLamMp   =   @nm `unitFM` length @argTyL
@@ -137,14 +139,16 @@ SEM CPat
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% All function names (which only live on top level after lambda lifting)
+%%% All function names (which only live on top level after lambda lifting), ditto CAF's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 ATTR CExpr [ | | lamNmMp USE {`plusFM`} {emptyFM}: LamInfoMp ]
+ATTR CExpr [ | | cafNmMp USE {`plusFM`} {emptyFM}: LamInfoMp ]
 
 SEM CExpr
   | Let         lhs         .   lamNmMp     =   @body.lamNmMp `plusFM` @binds.bindLamMp
+                            .   cafNmMp     =   @body.cafNmMp `plusFM` @binds.bindCafMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -220,6 +224,7 @@ SEM CModule
                                                           (GrExpr_Case (GrVal_Var n2)
                                                               (   (map mkCAlt (map (\n -> CTag 0 1 n) grBuiltinTyNmL ++ eltsFM @expr.tagNmMp))
                                                               ++  (map (uncurry mkFAlt) . fmToList $ @expr.lamNmMp)
+                                                              ++  (map (uncurry mkFAlt) . fmToList $ @expr.cafNmMp)
                                                               )
                                                           ))
                 lhs         .   grMod       =   GrModule_Mod (HNm @baseName)

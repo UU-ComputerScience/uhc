@@ -332,7 +332,9 @@ SEM Ty
 
 %%[9
 SEM Pred
-  | *           loc     .   parNeed             =   ParNotNeeded
+  | Pred        loc     .   parNeed             =   ParNeeded
+                        .   parNeedL            =   []
+  | * - Pred    loc     .   parNeed             =   ParNotNeeded
                         .   parNeedL            =   []
 %%]
 
