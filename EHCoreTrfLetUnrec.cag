@@ -73,7 +73,7 @@ SEM CBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR CBindL CBind [ | | bindMp USE {`plusFM`} {emptyFM}: {FiniteMap HsName CExpr} ]
+ATTR AllBind [ | | bindMp USE {`plusFM`} {emptyFM}: {FiniteMap HsName CExpr} ]
 
 SEM CBind
   | Bind        lhs         .   bindMp      =   @nm `unitFM` @expr.cTrf

@@ -50,14 +50,6 @@ SEM CodeAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR CExpr [ | | isLam: Bool ]
-
-SEM CExpr
-  | Lam         lhs         .   isLam       =   True
-  | * - Lam     lhs         .   isLam       =   False
-%%]
-
-%%[8
 ATTR AllBind [ | | bindVarS, bindLamS USE {`Set.union`} {emptySet}: FvS ]
 
 SEM CBind

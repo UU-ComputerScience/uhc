@@ -35,6 +35,8 @@ DATA GrExpr
                 body            : GrExpr
   | Case        val             : GrVal
                 altL            : GrAltL
+  | Call        nm              : {HsName}
+                argL            : GrValL
   | App         nm              : {HsName}
                 argL            : GrValL
   | Eval        val             : GrVal
