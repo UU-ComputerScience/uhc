@@ -96,10 +96,10 @@ defaultEHCOpts  = EHCOptions    {  ehcoptDumpPP         =   Just "pp"
 
 %%[ehcCmdLineOptsA.1
 ehcCmdLineOpts  
-  =  [  Option "p"  ["pretty"]        (OptArg oPretty "pp|ast|no")
-          "do output pretty printed version of src, default=pp"
+  =  [  Option "p"  ["pretty"]        (OptArg oPretty "pp|ast|no|off")
+          "do output pretty printed version of src (pp), abstract syntax tree (ast) or nothing (no|off), default=pp"
      ,  Option "d"  ["debug"]         (NoArg oDebug)
-          "include debug info, for now: dump extra info in ast pretty print"
+          "same as --pretty=ast + extra debug info"
      ,  Option ""   ["show-top-ty"]   (OptArg oShowTopTy "yes|no")
           "show top ty, default=no"
      ,  Option "h"  ["help"]          (NoArg oHelp)
@@ -118,6 +118,7 @@ ehcCmdLineOpts
 %%[ehcCmdLineOptsB.1
   where  oPretty     ms  o =  case ms of
                                 Just "no"   -> o { ehcoptDumpPP        = Nothing   }
+                                Just "off"  -> o { ehcoptDumpPP        = Nothing   }
                                 Just p      -> o { ehcoptDumpPP        = Just p    }
                                 _           -> o
          oShowTopTy  ms  o =  case ms of

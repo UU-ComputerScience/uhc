@@ -79,7 +79,7 @@ SEM PatExpr
 
 SEM CaseAlt
   | Pat         expr        .   tyCnstr             :=  @patExpr.tyEqCnstr |=> @lhs.tyCnstr
-                lhs         .   tyCnstr             :=  cnstrDel  (assocLKeys . cnstrToAssocL $ @patExpr.tyEqCnstr)
+                lhs         .   tyCnstr             :=  cnstrDel  (cnstrKeys @patExpr.tyEqCnstr)
                                                                   @expr.tyCnstr
 %%]
 
