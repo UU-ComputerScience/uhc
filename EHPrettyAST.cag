@@ -31,6 +31,13 @@ mkInfo1 = (,)
 %%[1
 ATTR AllNT AGItf [ | | ppAST USE {>-<} {empty} : PP_Doc ]
 
+SEM AGItf
+  | AGItf       lhs     .  ppAST    =   ppNestInfo @lhs.opts ["AGItf","AGItf"] [] [@expr.ppAST] (@info ++ @info2 ++ @info3 ++ @infoImpr)
+                loc     .  info     =   []
+                        .  info2    =   []
+                        .  info3    =   []
+                        .  infoImpr =   []
+
 SEM Decl
   | Val         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Val"] [] [@patExpr.ppAST,@expr.ppAST] @info
                 loc     .  info     =   [ mkInfo1 "lhs.tySigGam" (ppGam @lhs.tySigGam)
@@ -78,12 +85,13 @@ SEM Expr
                                         , mkInfo1 "expr.ty" (ppTy @expr.ty)
                                         ]
                         .  info2    =   []
-  | Lam         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Lam"] [] [@arg.ppAST,@body.ppAST] (@info ++ @info2 ++ @info3)
+  | Lam         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Lam"] [] [@arg.ppAST,@body.ppAST] (@info ++ @info2 ++ @info3 ++ @infoImpr)
                 loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         , mkInfo1 "arg.valGam" (ppGam @arg.valGam)
                                         ]
                         .  info2    =   []
                         .  info3    =   []
+                        .  infoImpr =   []
 
 SEM PatExpr
   | IConst      lhs     .  ppAST    =   ppNest ["PatExpr","IConst"] [@pp] []
@@ -131,7 +139,8 @@ SEM Decl
 SEM Expr
   | IConst      loc     .  info2    :=  [ mkInfo1 "foCnstr fo" (pp (foCnstr @fo))
                                         ]
-  | Var         loc     .  info2    :=  [ mkInfo1 "fTy" (ppTy @fTy)
+  | Var         loc     .  info2    :=  [ mkInfo1 "knTy+lhs.cnstr" (ppTy (@lhs.tyCnstr |=> @lhs.knTy))
+                                        , mkInfo1 "fTy" (ppTy @fTy)
                                         , mkInfo1 "foCnstr fo" (pp (foCnstr @fo))
                                         ]
   | App         loc     .  info     :=  [ mkInfo1 "knTy" (ppTy (@lhs.tyCnstr |=> @lhs.knTy))
@@ -146,8 +155,10 @@ SEM Expr
                                         , mkInfo1 "body.tyCnstr" (pp @body.tyCnstr)
                                         , mkInfo1 "lhs.finTyCnstr" (pp @lhs.finTyCnstr)
                                         ]
-  | Let         loc     .  info     :=  [ mkInfo1 "lValGam" (ppGam @lValGam)
+  | Let         loc     .  info     :=  [ mkInfo1 "decls.gathTySigGam" (ppGam @decls.gathTySigGam)
+                                        , mkInfo1 "lValGam" (ppGam @lValGam)
                                         , mkInfo1 "lValGam+subs" (ppGam (@decls.tyCnstr |=> @lValGam))
+                                        , mkInfo1 "decls.tyCnstr" (ppCnstrV @decls.tyCnstr)
                                         ]
 
 SEM PatExpr
@@ -191,13 +202,25 @@ SEM TyExpr
 %%]
 
 %%[4_2
-SEM Expr
-  | App         loc     .  infoImpr :=  [ mkInfo1 "foTy imprFO" (ppTy (foTy @imprFO))
-  										, mkInfo1 "imprTy" (ppTy @imprTy)
+SEM AGItf
+  | AGItf       loc     .  infoImpr :=  [ mkInfo1 "expr.quTyCnstr" (ppCnstrV @expr.quTyCnstr)
                                         ]
-  | Let         loc     .  infoImpr :=  [ mkInfo1 "lValGam+imprCnstr" (ppGam (@decls.imprTyCnstr |=> @lValGam))
+
+SEM Expr
+  | App         loc     .  infoImpr :=  [ mkInfo1 "foTy imprFO1 (arg)" (ppTy (foTy @imprFO1))
+                                        , mkInfo1 "foTy imprFO2 (fun)" (ppTy (foTy @imprFO2))
+                                        , mkInfo1 "imprTy" (ppTy @imprTy)
+                                        ]
+  | Lam         loc     .  infoImpr :=  [ mkInfo1 "lArgElimValGam" (ppGam @lArgElimValGam)
+                                        , mkInfo1 "body.imprTyCnstr" (ppCnstrV @body.imprTyCnstr)
+                                        , mkInfo1 "imprElimTyCnstr" (ppCnstrV @imprElimTyCnstr)
                                         ]
 %%]
+  | Let         loc     .  infoImpr :=  [ mkInfo1 "lValGam+imprCnstr" (ppGam (@decls.imprTyCnstr |=> @lValGam))
+                                        , mkInfo1 "lElimValGam" (ppGam @lElimValGam)
+                                        , mkInfo1 "decls.imprTyCnstr" (ppCnstrV @decls.imprTyCnstr)
+                                        , mkInfo1 "imprElimTyCnstr" (ppCnstrV @imprElimTyCnstr)
+                                        ]
 
 %%[4_3
 SEM Expr

@@ -14,45 +14,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2
-ATTR AllDecl AllExpr [ | imprTyCnstr: Cnstr | ]
+ATTR AllDecl AllExpr [ | imprTyCnstr: Cnstr ^^^ quTyCnstr: Cnstr | ]
 
 SEM AGItf
   | AGItf       expr        .   imprTyCnstr         =   emptyCnstr
+                            .   quTyCnstr           =   emptyCnstr
 %%]
 
 %%[5
 ATTR AllCase [ | imprTyCnstr: Cnstr | ]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Decl
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[4_2
-SEM Decl
-  | Val         loc         .   imprFO              =   fitsIn impredFIOpts emptyFE uidStart (@expr.imprTyCnstr |=> @patExpr.ty) @expr.imprTy
-                lhs         .   imprTyCnstr         =   foCnstr @imprFO |=> @expr.imprTyCnstr
-%%]
-SEM Expr
-  | Let         decls       .   imprTyCnstr         =   emptyCnstr
-                body        .   imprTyCnstr         =   @lhs.imprTyCnstr
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Impredicative ty inference
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[4_2
-ATTR AllExpr [ | | imprTy: Ty ]
-
-SEM Expr
-  | CConst IConst
-                loc         .   imprTy              =   @fTy
-  | Var Con     loc         .   imprTy              =   @lhs.imprTyCnstr |=> @gTy
-  | App         loc         .   imprResTy           =   mkNewTyVar @lUniq
-                            .   imprFunTy           =   [@arg.imprTy] `mkTyArrow` @imprResTy
-                            .   imprFO              =   fitsIn impredFIOpts @fe uidStart (@arg.imprTyCnstr |=> @func.imprTy) @imprFunTy
-                            .   imprTy              =   foCnstr @imprFO |=> @imprResTy
-                lhs         .   imprTyCnstr         =   foCnstr @imprFO |=> @arg.imprTyCnstr
-  | Lam         loc         .   imprTy              =   [@body.imprTyCnstr |=> @arg.ty] `mkTyArrow` @body.imprTy
 %%]
 
