@@ -184,13 +184,14 @@ SEM CModule
 SEM CExpr
   | Int         loc         .   jvSrc       =   "new Int" >|< pp_parens (pp @int)
   | Char        loc         .   jvSrc       =   "new Char" >|< pp_parens (pp (show @char))
-  | Var         loc         .   jvSrc       =   maybe (jvNmPP @nm) (jvNmPP) . lookup @nm $ primToJavaMp
+  | Var         loc         .   jvSrc       =   jvNmPP @nm
   | App         loc         .   jvSrc       =   let  (f:as) = reverse @jvSrcL
   												in   case @func.mbTupApp of
   												       Just (CTag t l)  -> jvTupApp (("new Int" >|< pp_parens (pp t)) : as)
   												       Just CTagNone    -> jvTupApp (as)
   												       Nothing          -> jvApp f as
   | Let         loc         .   jvBinds     =   case @categ of
+                                                    CBindFFI     -> @binds.jvSrc
                                                     CBindPlain   -> @binds.jvSrc
                                                     CBindStrict  -> @binds.jvSrcStrict
                                                     CBindRec     -> @binds.jvSrcInd >-< @binds.jvSrcSetInd
@@ -227,6 +228,7 @@ SEM CBind
                             .   jvSrcSetInd =   jvCall (jvNmPP @nm >|< ".set") [@expr.jvSrc] >#< ";"
                             .   jvSrc       =   jvBind "Object" @nm @expr.jvSrc
                             .   jvSrcStrict =   jvBind "Object" @nm (jvForceEval @expr.jvSrc)
+  | FFI         lhs         .   jvSrc       =   jvBind "Object" @nm . maybe (jvNmPP hsnUnknown) (jvNmPP) . lookup @impEnt $ primToJavaMp
 
 ATTR CAlt CAltL CPat CPatL CPatBind CPatBindL [ jvCaseScrutinee: HsName ^^^ jvCaseResult: HsName | | ]
 ATTR CPat [ | | fldNm: HsName ]
@@ -333,13 +335,13 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-primToJavaMp :: AssocL HsName HsName
+primToJavaMp :: AssocL String HsName
 primToJavaMp
-  =  [ ( HNm "primAddInt", HNm "uu.jazy.prelude.Int.add" )
-     , ( HNm "primDivInt", HNm "uu.jazy.prelude.Int.div" )
-     , ( HNm "primMulInt", HNm "uu.jazy.prelude.Int.mul" )
-     , ( HNm "primSubInt", HNm "uu.jazy.prelude.Int.sub" )
-     , ( HNm "primCmpInt", HNm "primCmpInt" )
+  =  [ ( "primAddInt", HNm "uu.jazy.prelude.Int.add" )
+     , ( "primDivInt", HNm "uu.jazy.prelude.Int.div" )
+     , ( "primMulInt", HNm "uu.jazy.prelude.Int.mul" )
+     , ( "primSubInt", HNm "uu.jazy.prelude.Int.sub" )
+     , ( "primCmpInt", HNm "primCmpInt" )
      ]
 %%]
 

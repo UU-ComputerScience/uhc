@@ -9,13 +9,10 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Maybe,FiniteMap,EHCommon,EHCore) export(cmodTrfLetUnrec)
+%%[8 hs import(Maybe,FiniteMap,EHCommon,EHCore,EHTy) export(cmodTrfLetUnrec)
 %%]
 
 %%[8 hs import(EHDebug,UU.DData.Scc)
-%%]
-
-%%[9 hs import(EHTy)
 %%]
 
 %%[8.WRAPPER import(EHCoreAbsSyn)

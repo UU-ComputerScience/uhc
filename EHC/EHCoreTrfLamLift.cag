@@ -9,13 +9,10 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Maybe,Set,List,FiniteMap,EHCommon,EHCore) export(cmodTrfLamLift)
+%%[8 hs import(Maybe,Set,List,FiniteMap,EHCommon,EHCore,EHTy) export(cmodTrfLamLift)
 %%]
 
 %%[8 hs import(EHDebug)
-%%]
-
-%%[9 hs import(EHTy)
 %%]
 
 %%[8.WRAPPER import(EHCoreAbsSyn,EHCoreCommonLev,EHCoreTrfCommonFv,EHCoreTrfCommonLev)
@@ -57,6 +54,7 @@ SEM CBind
                                             =   if @expr.isLam
                                                 then (emptySet,unitSet @nm)
                                                 else (unitSet @nm,emptySet)
+  | FFI         lhs         .   bindVarS    =   unitSet @nm
 %%]
 
 %%[8
@@ -178,6 +176,7 @@ SEM CBind
                                                            ,@nm `unitFM` argOL
                                                            )
                                                 else  (@lhs.gUniq,emptyFM,[],[@cTrf],emptyFM)
+  | FFI         loc         .   bindVarBindL=   [@cTrf]
 
 SEM CExpr
   | Var         lhs         .   cTrf        =   let  r n = maybe (CExpr_Var n) CExpr_Var . lookupFM @lhs.argSubst $ n

@@ -37,6 +37,8 @@ DATA GrExpr
                 altL            : GrAltL
   | Call        nm              : {HsName}
                 argL            : GrValL
+  | FFI         nm              : {String}
+                argL            : {[HsName]}
   | App         nm              : {HsName}
                 argL            : GrValL
   | Eval        nm              : {HsName}
@@ -79,12 +81,10 @@ DATA GrTag
                 nm              : {HsName}
   | Var         nm              : {HsName}
   | None
-
 %%]
 
 %%[8
 SET AllBind     =   GrBind GrBindL
 SET AllExpr		=	GrExpr GrAlt GrAltL GrPat GrPatL GrTag GrVal GrValL
 SET AllGrNT     =   GrModule AllExpr AllBind 
-                    
 %%]

@@ -9,10 +9,7 @@
 %%% Inline let bindings for variables
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Maybe,FiniteMap,EHCommon,EHCore) export(cmodTrfInlineLetAlias)
-%%]
-
-%%[9 hs import(EHTy)
+%%[8 hs import(Maybe,FiniteMap,EHCommon,EHCore,EHTy) export(cmodTrfInlineLetAlias)
 %%]
 
 %%[8.WRAPPER import(EHCoreAbsSyn)
@@ -45,10 +42,11 @@ SEM CodeAGItf
   | AGItf       module      .   nmMp        =   emptyFM
 
 SEM CExpr
-  | Let         loc         .   nmMp        =   if @categ == CBindStrict
-                                                then @lhs.nmMp
-                                                else @lhs.nmMp `plusFM`
+  | Let         loc         .   allowTrf    =   not (@categ == CBindStrict || @categ == CBindFFI)
+                            .   nmMp        =   if @allowTrf
+                                                then  @lhs.nmMp `plusFM`
                                                         mapFM (\n r -> maybe r id . lookupFM @lhs.nmMp $ r) @binds.bindNmMp
+                                                else  @lhs.nmMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -89,9 +87,9 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 
 %%[8
 SEM CExpr
-  | Let         lhs         .   cTrf        =   if @categ == CBindStrict
-                                                then @cTrf
-                                                else mkCExprLet @categ @binds.bindL @body.cTrf
+  | Let         lhs         .   cTrf        =   if @allowTrf
+                                                then mkCExprLet @categ @binds.bindL @body.cTrf
+                                                else @cTrf
   | Var         lhs         .   cTrf        =   maybe @cTrf CExpr_Var . lookupFM @lhs.nmMp $ @nm
 %%]
 

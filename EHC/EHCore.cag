@@ -27,14 +27,14 @@
 %%[8 hs export(ceStrictIn)
 %%]
 
-%%[8 hs import(FiniteMap,Set) export(FvS,FvSMp,cLevOuter,LevMp,fvLev,fvsLev,levMpAdd)
+%%[8 hs import(FiniteMap,Set,EHTy) export(FvS,FvSMp,cLevOuter,LevMp,fvLev,fvsLev,levMpAdd)
 %%]
 
 %%[8 import(EHCoreAbsSyn)
 DERIVING *     : Show, Eq
 %%]
 
-%%[9 hs import(EHTy) export(CBindLMap, emptyCBindLMap, Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLetRecCoe, cbindLMapBinds, mkCBindLForUIDL)
+%%[9 hs export(CBindLMap, emptyCBindLMap, Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLetRecCoe, cbindLMapBinds, mkCBindLForUIDL)
 %%]
 
 %%[10 hs export(mkCExprAddInt)
@@ -68,7 +68,7 @@ instance PP CTag where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-data CBindCateg = CBindRec | CBindStrict | CBindPlain deriving (Show,Eq)
+data CBindCateg = CBindRec | CBindStrict | CBindPlain | CBindFFI deriving (Show,Eq)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

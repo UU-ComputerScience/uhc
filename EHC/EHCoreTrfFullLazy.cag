@@ -9,13 +9,10 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Maybe,Set,List,FiniteMap,EHCommon,EHCore) export(cmodTrfFullLazy)
+%%[8 hs import(Maybe,Set,List,FiniteMap,EHCommon,EHCore,EHTy) export(cmodTrfFullLazy)
 %%]
 
 %%[8 hs import(EHDebug)
-%%]
-
-%%[9 hs import(EHTy)
 %%]
 
 %%[8.WRAPPER import(EHCoreAbsSyn,EHCoreCommonLev,EHCoreTrfCommonFv,EHCoreTrfCommonLev)
@@ -117,6 +114,7 @@ SEM CExpr
 
 SEM CBind
   | Bind        lhs         .   bindL       =   [(@expr.levOf,@cTrf)]
+  | FFI         lhs         .   bindL       =   [(cLevOuter,@cTrf)]
 
 SEM CAlt
   | Alt         (loc.hereBindSq,lhs.levBindSq)

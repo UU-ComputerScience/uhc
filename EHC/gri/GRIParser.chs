@@ -20,7 +20,7 @@
 scanOpts :: ScanOpts
 scanOpts
   =  defaultScanOpts
-        {   scoKeywordsTxt      =   [ "eval", "apply", "module", "update", "fetch", "store", "unit", "of", "rec", "case"
+        {   scoKeywordsTxt      =   [ "eval", "apply", "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi"
                                     , "C", "F", "P", "A"
                                     ]
         ,   scoKeywordsOps      =   [ "->" ]
@@ -58,6 +58,7 @@ pExpr           =    GrExpr_Unit    <$  pKey "unit"     <*> pVal
                 <|>  GrExpr_Update  <$  pKey "update"   <*> pGrNm   <*> pVal
                 <|>  GrExpr_Case    <$  pKey "case"     <*> pVal    <*  pKey "of" <*> pCurly_pSemics pAlt
                 <|>  GrExpr_App     <$  pKey "apply"    <*> pGrNm   <*> pValL
+                <|>  GrExpr_FFI     <$  pKey "ffi"      <*> pVarid  <*> pGrNmL
                 <|>  GrExpr_Call                        <$> pGrNm   <*> pValL
 
 pVal            ::   GRIParser GrVal
@@ -80,6 +81,7 @@ pPat            =    GrPat_Var      <$> pGrNm
 
 pTag            ::   GRIParser GrTag
 pTag            =    (\i c n -> GrTag_Lit c i n) <$ pKey "#" <*> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> pGrNm
+                <|>  pParens (pSucceed GrTag_None)
 
 pTagVar         ::   GRIParser GrTag
 pTagVar         =    GrTag_Var <$> pGrNm
