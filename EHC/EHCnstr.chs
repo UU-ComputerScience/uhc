@@ -22,7 +22,7 @@
 %%[4 export(cnstrFilter)
 %%]
 
-%%[9 export(fixTyVarsCnstr,tyFixTyVars,cnstrImplsLookup,cnstrImplsUnit,listToCnstrImpls)
+%%[9 import(FiniteMap) export(CnstrInfo(..),fixTyVarsCnstr,tyFixTyVars,cnstrImplsLookup,cnstrImplsUnit,listToCnstrImpls,cnstrToAssocL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,11 +41,14 @@ data CnstrInfo  = CITy Ty
                 | CIImpls Impls
                 deriving (Eq,Show)
 
-newtype Cnstr   = Cnstr (AssocL TyVarId CnstrInfo) deriving Show
+newtype Cnstr   = Cnstr (FiniteMap TyVarId CnstrInfo)
+
+instance Show Cnstr where
+  show (Cnstr c) = show (fmToList c)
 
 cnstrTyLookup :: TyVarId -> Cnstr -> Maybe Ty
 cnstrTyLookup v (Cnstr s)
-  = case lookup v s of
+  = case lookupFM s v of
       Just (CITy t)  -> Just t
       _              -> Nothing
 %%]
@@ -55,6 +58,11 @@ emptyCnstr :: Cnstr
 emptyCnstr = Cnstr []
 %%]
 
+%%[9.Cnstr.emptyCnstr -2.Cnstr.emptyCnstr
+emptyCnstr :: Cnstr
+emptyCnstr = Cnstr emptyFM
+%%]
+
 %%[2.Cnstr.cnstrTyUnit
 cnstrTyUnit :: TyVarId -> Ty -> Cnstr
 cnstrTyUnit tv t = Cnstr [(tv,t)]
@@ -62,7 +70,7 @@ cnstrTyUnit tv t = Cnstr [(tv,t)]
 
 %%[9.Cnstr.cnstrTyUnit -2.Cnstr.cnstrTyUnit
 cnstrTyUnit :: TyVarId -> Ty -> Cnstr
-cnstrTyUnit v t = Cnstr [(v,CITy t)]
+cnstrTyUnit v t = Cnstr (listToFM [(v,CITy t)])
 %%]
 
 %%[4.cnstrFilter
@@ -72,21 +80,24 @@ cnstrFilter f (Cnstr l) = Cnstr (filter (uncurry f) l)
 
 %%[9.cnstrFilter -4.cnstrFilter
 cnstrFilter :: (TyVarId -> CnstrInfo -> Bool) -> Cnstr -> Cnstr
-cnstrFilter f (Cnstr l) = Cnstr (filter (uncurry f) l)
+cnstrFilter f (Cnstr c) = Cnstr (filterFM f c)
 %%]
 
 %%[9
 cnstrImplsUnit :: ImplsVarId -> Impls -> Cnstr
-cnstrImplsUnit v i = Cnstr [(v,CIImpls i)]
+cnstrImplsUnit v i = Cnstr (listToFM [(v,CIImpls i)])
 
 listToCnstrImpls :: AssocL ImplsVarId Impls -> Cnstr
-listToCnstrImpls = Cnstr . assocLMapSnd CIImpls
+listToCnstrImpls = Cnstr . listToFM . assocLMapSnd CIImpls
 
 cnstrImplsLookup :: ImplsVarId -> Cnstr -> Maybe Impls
 cnstrImplsLookup v (Cnstr s)
-  = case lookup v s of
+  = case lookupFM s v of
       Just (CIImpls i)  -> Just i
       _                 -> Nothing
+
+cnstrToAssocL :: Cnstr -> AssocL UID CnstrInfo
+cnstrToAssocL (Cnstr l) = fmToList l
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -202,7 +213,7 @@ instance Substitutable Ty where
                                Pred_Lacks t n   ->  Pred_Lacks (st isBound t) n
                                Pred_Equal v t   ->  Pred_Equal v (st isBound t)
           si isBound i    =  case i of
-                               Impls_Cons v p t  -> Impls_Cons v (sp isBound p) (si isBound t)
+                               Impls_Cons v p pv t  -> Impls_Cons v (sp isBound p) pv (si isBound t)
                                Impls_Tail v     ->  maybe i id (cnstrImplsLookup v s)
                                _                ->  i
 %%@SubstitutableTyTVarsHead
@@ -217,7 +228,7 @@ instance Substitutable Ty where
                                Pred_Lacks t n   ->  ftv t
                                Pred_Equal v t   ->  ftv t
           fiv i           =  case i of
-                               Impls_Cons _ p t  -> fpv p `union` fiv t
+                               Impls_Cons _ p _ t  -> fpv p `union` fiv t
                                _                ->  []
 %%]
 
@@ -232,6 +243,12 @@ instance Substitutable Cnstr where
   s1@(Cnstr sl1) |=>   s2@(Cnstr sl2)  =   Cnstr (sl1 ++ map (\(v,t) -> (v,s1 |=> t)) sl2')
                                            where sl2' = deleteFirstsBy (\(v1,_) (v2,_) -> v1 == v2) sl2 sl1
   ftv                  (Cnstr sl)      =   ftv . map snd $ sl
+%%]
+
+%%[9.SubstitutableCnstr -2.SubstitutableCnstr
+instance Substitutable Cnstr where
+  s1@(Cnstr sl1) |=>   s2@(Cnstr sl2)  =   Cnstr (mapFM (\v t -> s1 |=> t) sl2 `plusFM` sl1)
+  ftv                  (Cnstr sl)      =   ftv . eltsFM $ sl
 %%]
 
 %%[9
@@ -262,7 +279,7 @@ instance Substitutable CnstrInfo where
 
 %%[9
 fixTyVarsCnstr :: Substitutable s => s -> Cnstr
-fixTyVarsCnstr = Cnstr . map (\v -> (v,CITy (Ty_Var v TyVarCateg_Fixed))) . ftv
+fixTyVarsCnstr = Cnstr . listToFM . map (\v -> (v,CITy (Ty_Var v TyVarCateg_Fixed))) . ftv
 
 tyFixTyVars :: Substitutable s => s -> s
 tyFixTyVars s = fixTyVarsCnstr s |=> s
@@ -272,9 +289,14 @@ tyFixTyVars s = fixTyVarsCnstr s |=> s
 %%% Pretty printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2
+%%[2.PP
 instance PP Cnstr where
   pp (Cnstr l) = ppListSepFill "" "" ", " (map (\(n,v) -> pp n >|< ":->" >|< pp v) l)
+%%]
+
+%%[9 -2.PP
+instance PP Cnstr where
+  pp (Cnstr l) = ppListSepFill "" "" ", " (map (\(n,v) -> pp n >|< ":->" >|< pp v) . fmToList $ l)
 %%]
 
 %%[9

@@ -295,10 +295,10 @@
 %format CoeR        = "{" Coe "_{r}}"
 %format CoeR'
 %format CoeR''
-%format coeWeave    = "weave_{" coe "}"
-%format coeWipe     = "wipe_{" coe "}"
-%format coeCode     = "code"
-%format coeEval     = "eval_{" coe "}"
+% format coeWeave    = "weave_{" coe "}"
+% format coeWipe     = "wipe_{" coe "}"
+% format coeCode     = "code"
+% format coeEval     = "eval_{" coe "}"
 
 %format e1
 %format e2
@@ -6106,6 +6106,7 @@ the parts between |->| but still applies right associatively.
 \TBD{until here}
 
 
+\chunkCmdUseMark{EHInferExpr.4.Var}
 \chunkCmdUseMark{EHInferExpr.4.Rest}
 
 \chunkCmdUseMark{EHInferPatExpr.4.Rest}

@@ -47,7 +47,7 @@ SEM RecExpr
 
 %%[9
 SEM Expr
-  | Var         loc         .   cexpr       :=  foAppCoe @fo @lhs.cSubst (CExpr_Var @nm)
+  | Var         loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst (CExpr_Var @nm)
   | Let         loc         .   cexpr       :=  mkCExprLet CBindRec (@cbindL ++ @decls.cbindL) @body.cexpr
 %%]
 

@@ -47,6 +47,10 @@ DATA CExpr
 DATA CExpr
   | Hole        uid             : {UID}
   | CoeArg
+  | ImplsApp    func            : CExpr
+                uid             : {ImplsVarId}
+  | ImplsLam    uid             : {ImplsVarId}
+                body            : CExpr
 %%]
 
 %%[8

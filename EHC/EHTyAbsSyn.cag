@@ -84,6 +84,7 @@ DATA Impls
   | Tail        iv              : {ImplsVarId}
   | Cons        iv              : {ImplsVarId}
                 pr              : Pred
+                pv              : {PredOccId}
                 tl              : Impls
   | Nil
 %%]

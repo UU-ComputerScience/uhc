@@ -37,9 +37,18 @@ SEM Expr
 ATTR AllNT [ cSubst: CSubst | | ]
 
 SEM AGItf
-  | AGItf       loc         .   cSubst              =   emptyCSubst
+  | AGItf       loc         .   cSubst              =   cnstrImplsToCSubst @expr.tyCnstr
 
 SEM Expr
-  | Let         loc         .   cSubst              =   @lhs.cSubst `cAppSubst` @csubst
+  | Let         loc         .   cSubst              =   cnstrImplsToCSubst @tqoTyCnstr `cAppSubst` @lhs.cSubst `cAppSubst` @csubst
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Coercions resulting from pred usage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+SEM Expr
+  | App			loc			.	coe					=	@lhs.finTyCnstr |=> @imTy
 %%]
 

@@ -77,6 +77,11 @@ SEM Expr
   | Var         loc         .  fTy                  :=  @lhs.tyCnstr |=> tyInst @lUniq @gTy
 %%]
 
+%%[4.Var
+SEM Expr
+  | Var         loc         .  fTy                  :=  @lhs.tyCnstr |=> @gTy
+%%]
+
 %%[1.Con
 SEM Expr
   | Con         loc         .  ty                   =   let  resTy = snd (tyArrowArgsRes @lhs.knTy)
@@ -118,12 +123,14 @@ SEM Expr
 
 %%[9.App
 SEM Expr
-  | App         loc         .  knFunTy              :=  let  [i,a] = mkNewUIDL 2 @lUniq
-                                                        in   [mkImplsVar i,mkTyVar a]
+  | App         loc         .  (knFunTy,imTy)       :=  let  [i,a] = mkNewUIDL 2 @lUniq
+                                                             im = mkImplsVar i
+                                                        in   ([im,mkTyVar a]
                                                                `mkTyArrow` (@lhs.tyCnstr |=> @lhs.knTy)
+                                                             ,im)
                 (loc.knImpls,arg.knTy,loc.fTy)      :=  tyArrowImplsArgRes @func.ty
                 loc         .  (prL,impls)          =   tyImplsPreds @knImpls
-                            .  prOccL               =   zipWith PredOcc @prL (mkNewUIDL (length @prL) @lUniq2)
+                            .  prOccL               =   fst . implsPredsTail . tyImpls . (@arg.tyCnstr |=>) $ @imTy
 %%]
 
 %%[1.Lam
@@ -162,7 +169,6 @@ SEM Expr
 
 %%[4.Rest
 SEM Expr
-  | Var         loc         .  fTy                  :=  @lhs.tyCnstr |=> @gTy
   | IConst CConst Var
                 loc         .  fo                   :=  fitsIn @lhs.fiOpts @fe @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
   | Lam         loc         .  foKnFun              :=  let  fo = fitsIn @lhs.fiOpts @fe @lUniq2 @funTy (@lhs.tyCnstr |=> @lhs.knTy)
