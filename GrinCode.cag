@@ -18,7 +18,7 @@
 %%[8 hs export(GrTagCateg(..),mkGrBox,mkGrTagNode,mkGrRecNode,mkGrConNode,grLclNmSupplyL) 
 %%]
 
-%%[8 hs export(mkGrPatRecNode,mkGrPatConNode) 
+%%[8 hs export(mkGrPatRecNode,mkGrPatConNode,mkGrUnbox) 
 %%]
 
 %%[8 hs export(GrNodeAdapt(..),grRecTag) 
@@ -83,10 +83,10 @@ mkGrTagNode :: GrTagCateg -> Int -> HsName -> GrValL -> GrVal
 mkGrTagNode c t n vL = mkGrNode (GrTag_Lit c t n) vL
 
 mkGrConNode ::  Int -> HsName -> GrValL -> GrVal
-mkGrConNode t n vL = mkGrTagNode GrTagCon t n vL -- (GrVal_LitInt (length vL) : vL)
+mkGrConNode t n vL = mkGrTagNode GrTagCon t n (GrVal_LitInt (length vL) : vL)
 
 mkGrRecNode ::  GrValL -> GrVal
-mkGrRecNode vL = mkGrTagNode GrTagRec 0 hsnRec vL -- (GrVal_LitInt (length vL) : vL)
+mkGrRecNode vL = mkGrTagNode GrTagRec 0 hsnRec (GrVal_LitInt (length vL) : vL)
 
 mkGrBox :: HsName -> GrVal -> GrVal
 mkGrBox tyNm v = mkGrConNode 0 tyNm [v]
@@ -95,10 +95,13 @@ mkGrPatTagNode :: GrTagCateg -> Int -> HsName -> [HsName] -> GrPat
 mkGrPatTagNode c t n pL = GrPat_Node (GrTag_Lit c t n) pL
 
 mkGrPatConNode :: Int -> HsName -> [HsName] -> GrPat
-mkGrPatConNode t n pL = mkGrPatTagNode GrTagCon t n pL
+mkGrPatConNode t n pL = mkGrPatTagNode GrTagCon t n (hsnWild : pL)
 
 mkGrPatRecNode :: [HsName] -> GrPat
-mkGrPatRecNode pL = mkGrPatTagNode GrTagRec 0 hsnRec pL
+mkGrPatRecNode pL = mkGrPatTagNode GrTagRec 0 hsnRec (hsnWild : pL)
+
+mkGrUnbox :: HsName -> HsName -> GrPat
+mkGrUnbox tyNm n = mkGrPatConNode 0 tyNm [n]
 %%]
 
 

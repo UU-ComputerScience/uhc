@@ -30,14 +30,14 @@
 %%[8 hs import(FiniteMap,Set,EHTy) export(FvS,FvSMp,cLevOuter,LevMp,fvLev,fvsLev,levMpAdd)
 %%]
 
-%%[8 import(EHCoreAbsSyn)
-DERIVING *     : Show, Eq
+%%[8 hs export(mkCExprAddInt)
 %%]
 
 %%[9 hs export(CBindLMap, emptyCBindLMap, Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLetRecCoe, cbindLMapBinds, mkCBindLForUIDL)
 %%]
 
-%%[10 hs export(mkCExprAddInt)
+%%[8 import(EHCoreAbsSyn)
+DERIVING *     : Show, Eq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -122,9 +122,9 @@ mkCExprApp :: CExpr -> [CExpr] -> CExpr
 mkCExprApp f as = foldl (\f a -> CExpr_App f a) f as
 %%]
 
-%%[10 hs
+%%[8 hs
 mkCExprAddInt :: CExpr -> CExpr -> CExpr
-mkCExprAddInt e1 e2 = CExpr_Var (HNm "primAddInt") `mkCExprApp` [e1,e2]
+mkCExprAddInt e1 e2 = CExpr_Var hsnPrimAddInt `mkCExprApp` [e1,e2]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

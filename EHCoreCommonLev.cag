@@ -52,4 +52,39 @@ SEM CExpr
   | * - Lam     lhs         .   isLam       =   False
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is top App? Is top Tup adapt?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR CExpr [ isTopApp: Bool ^^ isTopTup: Bool | | ]
+
+SEM CExpr
+  | App         func        .   isTopApp    =   False
+                arg         .   isTopApp    =   True
+  | * - App     loc         .   isTopApp    =   True
+  | TupUpd TupIns
+                expr        .   isTopTup    =   False
+                fldExpr     .   isTopTup    =   True
+                offset      .   isTopTup    =   True
+  | * - TupUpd TupIns
+                loc         .   isTopTup    =   True
+
+SEM CModule
+  | Mod         expr        .   isTopApp    =   True
+                            .   isTopTup    =   True
+
+SEM CBind
+  | Bind        expr        .   isTopApp    =   True
+                            .   isTopTup    =   True
+
+SEM CPatBind
+  | Bind        offset      .   isTopApp    =   True
+                            .   isTopTup    =   True
+
+SEM CAlt
+  | Alt         expr        .   isTopApp    =   True
+                            .   isTopTup    =   True
+%%]
+
 

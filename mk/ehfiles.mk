@@ -57,5 +57,5 @@ $(addprefix $(VPREFIX),$(GRI_LAG_FOR_HS_GRIN_CODE:.lag=.hs)): %.hs: %.ag $(addpr
 	$(call AGCC,-cfspr,$<)
 
 $(VPREFIX)$(GRI): $(addprefix $(VPREFIX),$(GRI_MAIN).hs $(GRI_HS))
-	cd `dirname $@` ; $(GHC) -package uust -package data -o `basename $@` --make `basename $<`
+	cd `dirname $@` ; $(GHC) -O2 -package uust -package data -o `basename $@` --make `basename $<`
 

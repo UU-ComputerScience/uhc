@@ -46,10 +46,12 @@ DATA CExpr
                 offset          : CExpr
   | TupIns      expr            : CExpr
                 tag             : {CTag}
+                nm              : {HsName}
                 offset          : CExpr
                 fldExpr         : CExpr
   | TupUpd      expr            : CExpr
                 tag             : {CTag}
+                nm              : {HsName}
                 offset          : CExpr
                 fldExpr         : CExpr
 %%]

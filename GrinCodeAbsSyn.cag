@@ -70,7 +70,7 @@ TYPE GrValL     =   [GrVal]
 DATA GrAdapt
   | Upd         off             : GrVal
                 val             : GrVal
-  | Ext         off             : GrVal
+  | Ins         off             : GrVal
                 val             : GrVal
 
 TYPE GrAdaptL   =   [GrAdapt]

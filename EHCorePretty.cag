@@ -73,8 +73,8 @@ SEM CExpr
   | Tup         loc         .   pp          =   "#" >|< pp_parens (ctag empty (\t l -> pp t >|< "/" >|< pp l) @tag)
   | TupSel      loc         .   pp          =   ppDef (pp_parens @expr.pp) ("." >|< pp_parens (pp @tag >|< ":" >|< @offset.pp))
   | TupDel      loc         .   pp          =   ppDef (pp_parens @expr.pp) (".-" >|< pp_parens (pp @tag >|< ":" >|< @offset.pp))
-  | TupIns      loc         .   pp          =   ppDef (pp_parens @expr.pp) (ppDef (".+" >|< pp_parens (pp @tag >|< ":" >|< @offset.pp)) (@fldExpr.pp))
-  | TupUpd      loc         .   pp          =   ppDef (pp_parens @expr.pp) (ppDef (".-+" >|< pp_parens (pp @tag >|< ":" >|< @offset.pp)) (@fldExpr.pp))
+  | TupIns      loc         .   pp          =   ppDef (pp_parens @expr.pp) (ppDef (".+" >|< pp_parens (pp @tag >|< ":" >|< @offset.pp >|< ":" >|< @nm)) (@fldExpr.pp))
+  | TupUpd      loc         .   pp          =   ppDef (pp_parens @expr.pp) (ppDef (".-+" >|< pp_parens (pp @tag >|< ":" >|< @offset.pp >|< ":" >|< @nm)) (@fldExpr.pp))
 
 SEM CBind
   | Bind        lhs         .   pp          =   ppDef @nm ("=" >#< @expr.pp)

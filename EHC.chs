@@ -18,7 +18,7 @@
 %%[8 import (EHCoreJava,EHCoreGrin,EHCorePretty)
 %%]
 
-%%[8 import (EHCoreTrfRenUniq,EHCoreTrfFullLazy,EHCoreTrfInlineLetAlias,EHCoreTrfLetUnrec,EHCoreTrfLamLift)
+%%[8 import (EHCoreTrfRenUniq,EHCoreTrfFullLazy,EHCoreTrfInlineLetAlias,EHCoreTrfLetUnrec,EHCoreTrfLamLift,EHCoreTrfConstProp)
 %%]
 
 %%[8 import (GrinCodePretty)
@@ -336,6 +336,7 @@ crCore1Trf modNm trfNm cr
                  [u1]   = mkNewLevUIDL 1 . snd . mkNewLevUID . crHereUID $ cr
                  synAG' = synAG {cmodule_Syn_AGItf
                                     = ( case trfNm of
+                                          "CCP"     -> cmodTrfConstProp
                                           "CRU"     -> cmodTrfRenUniq u1
                                           "CLU"     -> cmodTrfLetUnrec
                                           "CILA"    -> cmodTrfInlineLetAlias
@@ -407,7 +408,7 @@ crCompileCU modNm cr
                    ; crSeq
                        [ crStepUID, crCompileCUParseHS modNm
                                   , crCompileCUPass1HS modNm
-                       , crStepUID, crCoreTrf modNm ["CRU", "CLU", "CILA", "CFL", "CLL"]
+                       , crStepUID, crCoreTrf modNm ["CCP", "CRU", "CLU", "CILA", "CFL", "CLL"]
                        , crStepUID, crOutputCore modNm
                        ] cr
                    }

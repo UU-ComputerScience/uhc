@@ -66,10 +66,13 @@
 %%[7 export(assocLElts,assocLKeys,uidHNm)
 %%]
 
-%%[8 import (FPath,IO,Char) export(hsnUndefined,putPPLn,putPPFile,Verbosity(..),putCompileMsg)
+%%[8 import (FPath,IO,Char) export(putPPLn,putPPFile,Verbosity(..),putCompileMsg)
 %%]
 
 %%[8 export(hsnPrefix,hsnSuffix)
+%%]
+
+%%[8 export(hsnUndefined,hsnPrimAddInt)
 %%]
 
 %%[8 export(cmdLineTrfs,trfOptOverrides)
@@ -183,6 +186,7 @@ hsnSuffix       hsn   p             =   HNm (show hsn ++ p)
 
 %%[8
 hsnUndefined                        =   HNm "undefined"
+hsnPrimAddInt						=	HNm "primAddInt"
 %%]
 
 %%[9
@@ -472,7 +476,8 @@ data TrfOpt = TrfYes String | TrfNo String | TrfAllYes | TrfAllNo
 
 cmdLineTrfs :: AssocL String String
 cmdLineTrfs
-  = [ ("CRU"    , "Core Rename Unique (all identifiers)")
+  = [ ("CCP"    , "Core Constant Propagation (simple ones introduced by frontend)")
+    , ("CRU"    , "Core Rename Unique (all identifiers)")
     , ("CLU"    , "Core Let Unrec (remove unnecessary recursive defs)")
     , ("CILA"   , "Core Inline Let Alias (remove unnecessary alpha renamings)")
     , ("CFL"    , "Core Full Laziness (give names to all expressions and float them outwards)")
