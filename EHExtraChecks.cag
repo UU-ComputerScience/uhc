@@ -43,7 +43,7 @@ SEM Decl
 %%[9 hs
 checkPrClassName :: PrIntroGam -> [Ty] -> [Err]
 checkPrClassName g pl
-  =  let  nms = concat . map (\n -> maybe [n] (const []) (gamLookup n g)) . map tyPredNm $ pl
+  =  let  nms = concat . map (\n -> maybe [n] (const []) (gamLookup n g)) . filter (not.hsnIsUnknown) . map tyPredNm $ pl
      in   if null nms then [] else [Err_NamesNotIntrod nms]
 %%]
 
