@@ -68,14 +68,24 @@ DATA TyQu
   | KiExists
 %%]
 
-%%[4_1.Ty
+%%[4_1.TyBoth
 DATA Ty
-  | Alts        tv              : {TyVarId}
-                tyL             : TyPlusL
   | Both        tv              : {TyVarId}
                 tyL             : TyL
 
 TYPE TyL        =   [Ty]
+%%]
+
+%%[4_2.TyAlts
+DATA Ty
+  | Alts        tv              : {TyVarId}
+                tyL             : TyPlusL
+%%]
+
+%%[4_3.TyAlts
+DATA Ty
+  | Alts        tv              : {TyVarId}
+                tyL             : TyPlusL
 %%]
 
 %%[7.Ty

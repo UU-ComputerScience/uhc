@@ -30,13 +30,16 @@
 %%[4 hs import(Maybe) export(tyVar) 
 %%]
 
-%%[4_1 hs export(tyAltsTy,tyIsQu,tyIsVar,tyMbVar) 
+%%[4_1 hs export(tyIsQu,tyIsVar,tyMbVar) 
 %%]
 
 %%[4_1 hs export(TyPlus(..),TyPlusL,tyPlusTy) 
 %%]
 
 %%[4_2 hs export(TyHardness(..)) 
+%%]
+
+%%[4_3 hs export(tyAltsTy) 
 %%]
 
 %%[6 hs export(kiStar) 
@@ -411,7 +414,7 @@ tyPlusTy :: TyPlus -> Ty
 tyPlusTy (TyPlus_Ty t _) = t
 %%]
 
-%%[4_1 hs
+%%[4_3 hs
 tyAltsTy :: Ty -> Ty
 tyAltsTy t = case t of {Ty_Alts _ tl -> tyPlusTy (last tl); _ -> t}
 %%]

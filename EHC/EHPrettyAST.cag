@@ -208,7 +208,7 @@ SEM TyExpr
 %%[4_2
 SEM AGItf
   | AGItf       loc     .  infoImpr :=  [ mkInfo1 "expr.imprTyCnstr" (ppCnstrV @expr.imprTyCnstr)
-                                        , mkInfo1 "expr.quTyCnstr" (ppCnstrV @expr.quTyCnstr)
+                                        , mkInfo1 "exprTyCnstr" (ppCnstrV @exprTyCnstr)
                                         ]
 
 SEM Expr

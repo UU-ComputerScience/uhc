@@ -24,6 +24,9 @@
 %%[4_1 hs import(EHGamUtils,EHTyElimAlts)
 %%]
 
+%%[4_2 hs import(Set,EHTyFreshVar)
+%%]
+
 %%[8 hs import(FiniteMap,EHCore,EHCoreUtils)
 %%]
 
@@ -42,9 +45,6 @@ WRAPPER AGItf
 %%]
 
 %%[2 import(EHUniq)
-%%]
-
-%%[4_2 import(EHInferImpred)
 %%]
 
 %%[5 import(EHInferCaseExpr,EHInferData)

@@ -28,7 +28,7 @@
 %%[4 export(assocLToCnstr,cnstrToAssocTyL,cnstrKeys)
 %%]
 
-%%[4_2 export(cnstrMapThrTy,cnstrDelAlphaRename)
+%%[4_2 export(cnstrMapThrTy,cnstrMapTy,cnstrDelAlphaRename,cnstrFilterAlphaRename)
 %%]
 
 %%[4_2 export(tyAsCnstr,cnstrTyRevUnit)
@@ -142,6 +142,9 @@ cnstrMapThrTy f thr (Cnstr l)
                        )
                        ([],thr) l
      in  (Cnstr l',thr')
+
+cnstrMapTy :: (TyVarId -> Ty -> Ty) -> Cnstr -> Cnstr
+cnstrMapTy f = fst . cnstrMapThrTy (\v t _ -> (f v t,())) ()
 %%]
 
 %%[9 -4_2.cnstrMapThr
@@ -227,6 +230,9 @@ cnstrKeys = assocLKeys . cnstrToAssocL
 %%[4_2
 cnstrDelAlphaRename :: Cnstr -> Cnstr
 cnstrDelAlphaRename = cnstrFilterTy (\_ t -> not (tyIsVar t))
+
+cnstrFilterAlphaRename :: Cnstr -> Cnstr
+cnstrFilterAlphaRename = cnstrFilterTy (\_ t -> case t of {Ty_Var _ TyVarCateg_Plain -> True ; _ -> False})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
