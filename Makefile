@@ -34,7 +34,7 @@ AG_PRIMER_TEX		:= $(AG_PRIMER_CAG_TEX) $(AG_PRIMER_CHS_TEX)
 
 # lhs2tex
 LHS2TEX_PATH 		:=
-LHS2TEX_OPTS_BASE	:= --set=asArticle --set=wide --set=expandPrevRef --set=yesBeamer --set=useHyperref
+LHS2TEX_OPTS_BASE	:= --set=asArticle --set=wide --unset=optExpandPrevRef --set=yesBeamer --set=useHyperref
 LHS2TEX_OPTS		:= $(LHS2TEX_OPTS_BASE) --set=forAfpHandout
 LHS2TEX				:= lhs2TeX $(LHS2TEX_OPTS) $(LHS2TEX_PATH)
 
@@ -255,9 +255,6 @@ all: afp-full ehcs doc gris
 
 doc: $(SHUFFLE_DOC_PDF)
 
-#%.lag:%.cag
-#	$(SHUFFLE) --ag $< > $@
-
 %.tex:%.lag
 	$(call LHS2TEX_POLY,$<,$@)
 
@@ -299,19 +296,19 @@ GRI_CHS				:= $(GRI_LHS:.lhs=.chs)
 SHUFFLE_LHS		= \
 	dir=`dirname $2` ; \
 	mkdir -p $$dir ; \
-	$(SHUFFLE) --gen=$$dir --base=$6 $3 $1 --order="$(SHUFFLE_ORDER)" | $4 > $2
+	$(SHUFFLE) --gen=$5 --base=$6 $3 $1 --order="$(SHUFFLE_ORDER)" | $4 > $2
 
 # SHUFFLE_LHS_AG(src file, dst file, version, base)
 SHUFFLE_LHS_AG		= \
-	$(call SHUFFLE_LHS,$1,$2,--ag,$(LHS2TEX) --newcode,$3,$4)
+	$(call SHUFFLE_LHS,$1,$2,--ag,$(LHS2TEX) --newcode,`dirname $2`,$4)
 
 # SHUFFLE_LHS_HS(src file, dst file, version, base)
 SHUFFLE_LHS_HS		= \
-	$(call SHUFFLE_LHS,$1,$2,--hs,$(LHS2TEX) --newcode | $(SUBST_LINE_CMT),$3,$4)
+	$(call SHUFFLE_LHS,$1,$2,--hs,$(LHS2TEX) --newcode | $(SUBST_LINE_CMT),`dirname $2`,$4)
 
 # SHUFFLE_LHS_TEX(src file, dst file, version,base)
 SHUFFLE_LHS_TEX		= \
-	$(call SHUFFLE_LHS,$1,$2,--latex --xref-except=shuffleXRefExcept,$(LHS2TEX) $(LHS2TEX_POLY_MODE),$3,$4)
+	$(call SHUFFLE_LHS,$1,$2,--latex --xref-except=shuffleXRefExcept,$(LHS2TEX) $(LHS2TEX_POLY_MODE),`dirname $2`,$4)
 #	$(call SHUFFLE_LHS,$1,$2,--latex --index --xref-except=shuffleXRefExcept,$(LHS2TEX) --poly,$3,$4)
 
 # RULER_LHS(src file, dst file, lhs2tex)
@@ -433,7 +430,7 @@ GRI_V11				:= $(addprefix $(VF)/,$(GRI))
 
 ### AG Primer's Repmin AG variant
 $(AG_PRIMER_CAG:.cag=.ag): %.ag: %.cag $(SHUFFLE)
-	$(call SHUFFLE_LHS_AG,$<,$@,1,Main) ; \
+	$(call SHUFFLE_LHS,$<,$@,--ag,$(LHS2TEX) --newcode,1,Main) ; \
 	touch $@
 
 $(D_BUILD_BIN)/repminag: $(AG_PRIMER)RepminAG.hs

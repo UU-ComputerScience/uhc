@@ -514,6 +514,14 @@ rules fit1 "Rules for fit" =
     -
     judge fit1 :- I.1 <= I.2 : I.2
 
+  rule f_any_l =
+    -
+    judge fit1 :- ANY <= sigma : sigma
+  &
+  rule f_any_r =
+    -
+    judge fit1 :- sigma <= ANY : sigma
+
 
 -- 2
 scheme fit2

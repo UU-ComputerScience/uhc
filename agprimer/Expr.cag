@@ -56,7 +56,7 @@ SEM AGItf
 ATTR AllNT [ | | val: Int ]
 
 SEM Expr
-  | Var             lhs     .   val     =   maybe 0 id . lookup @nm $ @lhs.env
+  | Var             lhs     .   val     =   maybe 0 id (lookup @nm @lhs.env)
   | Add             lhs     .   val     =   @e1.val + @e2.val
   | Let             lhs     .   val     =   @body.val
   | IConst          lhs     .   val     =   @int
@@ -79,9 +79,9 @@ pAGItf   =   pRoot
                 pExprBase  =    (sem_Expr_IConst . foldl (\l r -> l*10 + r) 0)
                                 <$> pList1 ((\c -> ord c - ord '0') <$> '0' <..> '9')
                            <|>  sem_Expr_Let
-                                <$ pSym '['  <*>  pNm <* pSym '=' <*>  pExpr
-                                <* pSym ':'  <*>                       pExpr
-                                <* pSym ']'
+                                <$  pSym '['  <*>  pNm <* pSym '=' <*>  pExpr
+                                <*  pSym ':'  <*>                       pExpr
+                                <*  pSym ']'
                            <|>  sem_Expr_Var <$>  pNm
                 pNm        =    (:"") <$> 'a' <..> 'z'
 %%]
@@ -98,9 +98,9 @@ run     count
          l <- getLine
          r <- parseIOMessage show pAGItf l
          let r' = wrap_AGItf r (Inh_AGItf {count_Inh_AGItf = count})
-         putStrLn  (  "Expr='" ++ disp (pp_Syn_AGItf r') 40 "" ++
-                      "', val=" ++ show (val_Syn_AGItf r') ++
-                      ", count=" ++ show (count_Syn_AGItf r')
+         putStrLn  (  "Expr='"        ++ disp (pp_Syn_AGItf r') 40 ""  ++
+                      "', val="       ++ show (val_Syn_AGItf r')       ++
+                      ", add count="  ++ show (count_Syn_AGItf r')
                    )
          run (count_Syn_AGItf r')
 

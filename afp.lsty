@@ -1,4 +1,5 @@
 %include lhs2TeX.fmt
+%include afp.fmt
 
 % xfig figure
 \newcommand{\XFigLatex}[1]{%
@@ -97,10 +98,10 @@
  \chunkCmdUse{#1}
 %endif
 }
-\newcommand{\chunkCmdUsePrevLit}[1]{{\color{blue}\chunkCmdUse{#1}}}
+\newcommand{\chunkCmdUsePrevLit}[1]{{{\color{blue}\chunkCmdUse{#1}}}}
 \newcommand{\chunkCmdUsePrev}[1]{\par\chunkRefsExpanded{#1}}
 \newcommand{\chunkCmdUseOnPrev}[2]{%
-%if expandPrevRef
+%if optExpandPrevRef
 {\par\chunkRefsExpanded{#1}\chunkCmdUseMark{#2}}
 %else
 {\par{\color{blue}...page(s)~\chunkRefs{#1}}\setlength{\parskip}{0cm}\chunkCmdUseMark{#2}}
@@ -170,6 +171,15 @@ appendix~\ref{#1}
 \DefineVerbatimEnvironment%
  {TTtiny}{Verbatim}
  {fontsize=\tiny}
+
+% AG feature appearing later in the text, after the primer
+\newenvironment{AGFeature}[2]{%
+\label{#1}
+\begin{description}
+\item[|AGFeature|: #2.]
+}{%
+\end{description}
+}
 
 % Indexing
 \newcommand{\Ix}[1]{\index{#1}}

@@ -23,27 +23,29 @@ SEM Tree
   | Bin   lhs   .   min     =   @lt.min `min` @rt.min
 %%]
 
+%%[1.repmin
+ATTR Tree [ rmin: Int | | ]
+
+SEM Tree
+  | Bin   lt    .   rmin    =   @lhs.rmin
+          rt    .   rmin    =   @lhs.rmin
+%%]
+
 %%[1.data2
 DATA Root
    | Root  tree  :  Tree
 %%]
 
-%%[1.repmin
-ATTR Tree [ repmin: Int | | ]
-
-SEM Tree
-  | Bin   lt    .   repmin  =   @lhs.repmin
-          rt    .   repmin  =   @lhs.repmin
-
+%%[1.repminroot
 SEM Root
-  | Root  tree  .   repmin  =   @tree.min
+  | Root  tree  .   rmin    =   @tree.min
 %%]
 
 %%[1.tree
 ATTR Root Tree [ | | tree: Tree ]
 
 SEM Tree
-  | Leaf  lhs   .   tree    =   Tree_Leaf  @lhs.repmin
+  | Leaf  lhs   .   tree    =   Tree_Leaf  @lhs.rmin
   | Bin   lhs   .   tree    =   Tree_Bin   @lt.tree @rt.tree
 
 SEM Root
@@ -64,20 +66,20 @@ main = putStr (show tr')
 }
 %%]
 
-%%[1.parser hs
+%%[2.parser hs
 instance Symbol Char
 
 pRepmin :: IsParser p Char => p T_Root
 pRepmin  = pRoot
-         where  pRoot  =    sem_Root_Root <$>  pTree
-                pTree  =    sem_Tree_Leaf <$>  pInt
-                       <|>  sem_Tree_Bin  <$   pSym 'B' <*> pTree <*> pTree
+         where  pRoot  =    sem_Root_Root  <$>  pTree
+                pTree  =    sem_Tree_Leaf  <$>  pInt
+                       <|>  sem_Tree_Bin   <$   pSym 'B' <*> pTree <*> pTree
                 pInt   =    (\c -> ord c - ord '0') <$> '0' <..> '9'
 %%]
 
-%%[1.main2 hs
-main2 :: IO ()
-main2 =  do  tr <- parseIOMessage show pRepmin "B3B45"
-             putStr (show tr)
+%%[2.main hs
+main :: IO ()
+main =  do  tr <- parseIOMessage show pRepmin "B3B45"
+            putStr (show tr)
 %%]
 
