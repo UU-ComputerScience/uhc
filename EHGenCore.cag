@@ -182,7 +182,7 @@ SEM PatExpr
   | AppTop Con  loc         .   finResTy    =   @lhs.finTyCnstr |=> @knResTy
                             .   finResTGI   =   let  (c,_)  = tyAppFunArgs @finResTy
                                                      n      = tyConNm c
-                                                in   fromJust . tyGamLookup n $ @lhs.tyGam
+                                                in   fromJust . tyGamLookup @lhs.tyGam $ n
                             .   tag         =   fromJust . lookupFM (tgiDataTagMp @finResTGI) $ @appFunNm
                             .   rest        =   CPatRest_Empty
   | Rec         loc         .   tag         =   CTagRec

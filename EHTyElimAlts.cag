@@ -258,7 +258,7 @@ SEM TyAGItf
 ATTR Ty [ | | appSpineInfoL: {[AppSpineInfo]} ]
 
 SEM Ty
-  | Con             lhs     .   appSpineInfoL       =   asGamLookup @nm appSpineGam
+  | Con             lhs     .   appSpineInfoL       =   asGamLookup appSpineGam @nm
   | App             (loc.asi,lhs.appSpineInfoL)     =   hdAndTl @func.appSpineInfoL
   | * - Con App     lhs     .   appSpineInfoL       =   unknownAppSpineInfoL
 

@@ -30,7 +30,7 @@ valGamElimAlts opts env globTvL uniq gCnstr g
                   (\(n,vgi) (c,eg,u)
                   	->  let  (u',u1) = mkNewLevUID u
                   	         (t,ce,e) = tyElimAlts (mkElimAltsWrap env) opts globTvL u1 (c |=> vgiTy vgi)
-                  	    in   ((n,vgi {vgiTy = t}),(ce |=> c,gamAdd n e eg,u'))
+                  	    in   ((n,vgi {vgiTy = t}),(ce |=> c,gamAdd eg n e,u'))
                   )
                   (emptyCnstr,emptyGam,uniq) (gCnstr |=> g)
           c2 = cnstrDelAlphaRename c

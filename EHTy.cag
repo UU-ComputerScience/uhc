@@ -128,7 +128,7 @@ data PredOcc
        { poPr               :: Pred
        , poPrId             :: PredOccId
        }
-  deriving Show
+  deriving (Show,Eq)
 
 poId :: PredOcc -> UID
 poId = poiId . poPrId

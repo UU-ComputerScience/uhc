@@ -93,7 +93,13 @@
 %%[8 export(hsnLclSupplyL)
 %%]
 
+%%[9 export(groupSortByOn)
+%%]
+
 %%[9 export(hsnOImpl,hsnCImpl,hsnPrArrow,hsnIsPrArrow,hsnIsUnknown)
+%%]
+
+%%[9 export(ppListV,ppAssocLV)
 %%]
 
 %%[9 hs export(PredOccId(..),mkPrId,poiHNm)
@@ -305,8 +311,8 @@ type PrfCtxtId = UID
 %%[9 hs
 data PredOccId =  PredOccId {poiCxId :: PrfCtxtId, poiId :: UID} deriving (Show,Eq,Ord)
 
-mkPrId :: UID -> PredOccId
-mkPrId u = PredOccId uidStart u
+mkPrId :: PrfCtxtId -> UID -> PredOccId
+mkPrId ci u = PredOccId ci u
 
 poiHNm :: PredOccId -> HsName
 poiHNm = uidHNm . poiId
@@ -431,14 +437,6 @@ ppListSepFill o c s pps
         l (p:ps)  = fill ((o >|< pp p) : map (s >|<) ps) >|< c
 %%]
 
-%%[8
-instance PP a => PP (Maybe a) where
-  pp m = maybe (pp "?") pp m
-
-instance PP Bool where
-  pp b = pp (show b)
-%%]
-
 %%[7
 ppFld :: String -> HsName -> HsName -> PP_Doc -> PP_Doc
 ppFld sep positionalNm nm f
@@ -455,6 +453,14 @@ mkExtAppPP (funNm,funNmPP,funPPL) (argNm,argNmPP,argPPL,argPP)
 %%]
 
 %%[8
+instance PP a => PP (Maybe a) where
+  pp m = maybe (pp "?") pp m
+
+instance PP Bool where
+  pp b = pp (show b)
+%%]
+
+%%[8
 ppPair :: (PP a, PP b) => (a,b) -> PP_Doc
 ppPair (x,y) = pp_parens (pp x >|< "," >|< pp y)
 %%]
@@ -467,6 +473,11 @@ showPP x = disp (pp x) 100 ""
 %%[8
 ppFM :: (PP k,PP v) => FiniteMap k v -> PP_Doc
 ppFM = ppAssocL . fmToList
+%%]
+
+%%[9
+ppListV :: PP a => [a] -> PP_Doc
+ppListV = vlist . map pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -545,8 +556,14 @@ ppAssocL al = ppListSepFill "[ " " ]" ", " (map (\(k,v) -> pp k >|< ":" >|< pp v
 %%]
 
 %%[9.ppAssocL -1.ppAssocL
+ppAssocL' :: (PP k, PP v) => ([PP_Doc] -> PP_Doc) -> AssocL k v -> PP_Doc
+ppAssocL' ppL al = ppL (map (\(k,v) -> pp k >|< ":" >|< pp v) al)
+
 ppAssocL :: (PP k, PP v) => AssocL k v -> PP_Doc
-ppAssocL al = pp_block "[" "]" "," (map (\(k,v) -> pp k >|< ":" >|< pp v) al)
+ppAssocL = ppAssocL' (pp_block "[" "]" ",")
+
+ppAssocLV :: (PP k, PP v) => AssocL k v -> PP_Doc
+ppAssocLV = ppAssocL' vlist
 %%]
 
 %%[2
@@ -654,6 +671,14 @@ groupOn sel = groupBy (\e1 e2 -> sel e1 == sel e2)
 
 groupSortOn :: Ord b => (a -> b) -> [a] -> [[a]]
 groupSortOn sel = groupOn sel . sortOn sel
+%%]
+
+%%[9
+groupByOn :: (b -> b -> Bool) -> (a -> b) -> [a] -> [[a]]
+groupByOn eq sel = groupBy (\e1 e2 -> sel e1 `eq` sel e2)
+
+groupSortByOn :: (b -> b -> Ordering) -> (a -> b) -> [a] -> [[a]]
+groupSortByOn cmp sel = groupByOn (\e1 e2 -> cmp e1 e2 == EQ) sel . sortByOn cmp sel
 %%]
 
 %%[8
