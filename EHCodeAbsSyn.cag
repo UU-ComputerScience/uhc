@@ -39,17 +39,17 @@ DATA CExpr
   | Char        char            : {Char}
   | Tup
   | TupSel      expr            : CExpr
-                tag             : {Int}
+                tag             : {CTag}
                 offset          : CExpr
   | TupDel      expr            : CExpr
-                tag             : {Int}
+                tag             : {CTag}
                 offset          : CExpr
   | TupIns      expr            : CExpr
-                tag             : {Int}
+                tag             : {CTag}
                 offset          : CExpr
                 fldExpr         : CExpr
   | TupUpd      expr            : CExpr
-                tag             : {Int}
+                tag             : {CTag}
                 offset          : CExpr
                 fldExpr         : CExpr
 %%]
@@ -80,7 +80,7 @@ TYPE CAltL      =   [CAlt]
 DATA CPat
   | Var         pnm             : {CPatNm}
   | Con         pnm             : {CPatNm}
-                tag             : {Int}
+                tag             : {CTag}
                 tagNm           : {HsName}
                 binds           : CPatBindL
   | Undef
@@ -88,7 +88,7 @@ DATA CPat
 TYPE CPatL      =   [CPat]
 
 DATA CPatBind
-  | Bind        offset          : {Int}
+  | Bind        offset          : CExpr
                 nm              : {HsName}
                 pat             : CPat
 

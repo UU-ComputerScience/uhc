@@ -245,6 +245,8 @@ SEM RecExpr
 SEM RecPatExpr
   | Empty       loc     .  ppAST    =   ppNest ["RecPatExpr","Empty"] [] []
   | Ext         loc     .  ppAST    =   ppNest ["RecPatExpr","Ext"] [ppNm @nm] [@recPatExpr.ppAST,@patExpr.ppAST]
+  | Expr        loc     .  ppAST    =   ppNestInfo @lhs.opts ["RecPatExpr","Expr"] [] [@patExpr.ppAST] @info
+                        .  info     =   []
 
 SEM RowTyExpr
   | Empty       loc     .  ppAST    =   ppNest ["RowTyExpr","Empty"] [] []

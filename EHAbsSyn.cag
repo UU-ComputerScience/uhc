@@ -309,6 +309,7 @@ DATA RecPatExpr
   | Ext             recPatExpr      : RecPatExpr
                     mbNm            : {Maybe HsName}
                     patExpr         : PatExpr
+  | Expr            patExpr         : PatExpr
 %%]
 
 %%[7

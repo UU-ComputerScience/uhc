@@ -22,11 +22,16 @@ SEM Expr
 SEM Expr
   | Sel         loc         .   prUid               =   @lUniq2
                 lhs         .   gathPredL           =   [PredOcc (Pred_Lacks (tyRecRow @recTy) @lbl) @prUid] ++ @expr.gathPredL
+  | Rec         lhs         .   gathPredL           =   foPredOccL @fo ++ @recExpr.gathPredL
 
 SEM RecExpr
   | Ext         loc         .   prUid               =   @lUniq3
   | Upd         loc         .   prUid               =   @lUniq4
   | Ext Upd     lhs         .   gathPredL           =   [PredOcc (Pred_Lacks (tyRecRow @recTy) @nm) @prUid] ++ @recExpr.gathPredL ++ @expr.gathPredL
+
+SEM RecPatExpr
+  | Ext         loc         .   prUid               =   @lUniq3
+                lhs         .   gathPredL           =   [PredOcc (Pred_Lacks (tyRecRow @knRecTy) @nm) @prUid] ++ @recPatExpr.gathPredL ++ @patExpr.gathPredL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -67,7 +72,7 @@ SEM Expr
                             .   (inKnGathPrL,remGathPrL)
                                                     =   partition  (\p -> any (`elem` ftv @knPrL) (ftv p)) @gathSubsPredL
   | Lam         loc         .   imSubsTy            =   foCnstr @foKnFun |=> @imTy
-  | Lam LamImpl loc         .   gathSubsPredL       =   @body.tyCnstr |=> @body.gathPredL
+  | Lam LamImpl loc         .   gathSubsPredL       =   @body.tyCnstr |=> (@arg.gathPredL ++ @body.gathPredL)
                             .   (inKnGathPrL,remGathPrL)
                                                     =   partition  (\p -> let fv = ftv p
                                                                           in  null fv || any (`elem` ftv @knPrL) fv
@@ -93,8 +98,6 @@ SEM Decl
                 lhs         .   gathPredL           =   []
 
 %%]
-
-  | LamImpl     loc         .   knPr                =   tyPred . tyFixTyVars . (@body.tyCnstr |=>) $ @knArgImpl
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Passing back additional bindings using a pred

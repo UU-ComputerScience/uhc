@@ -9,7 +9,7 @@
 %%% Haskell importable interface to Code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(EHCommon,List) export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBindL, CBindCateg(..)) 
+%%[8 hs import(EHCommon,List,UU.Pretty) export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBindL, CBindCateg(..)) 
 %%]
 
 %%[8 hs export(CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL) 
@@ -18,7 +18,7 @@
 %%[8 hs export(CPatNm(..), cpatNmEither)
 %%]
 
-%%[8 hs export(ctagNone,cpatVarNm,caltTag,caltIsVar,caltPatL,caltPat,caltLPatNms,cvarUndefined) 
+%%[8 hs export(CTag,ctagNone,cpatVarNm,caltTag,caltIsVar,caltPatL,caltPat,caltLPatNms,cvarUndefined,ppCTag) 
 %%]
 
 %%[8 hs export(mkCExprLet,mkCExprLetRec,mkCExprLam,mkCExprApp)
@@ -38,12 +38,17 @@ DERIVING *     : Show, Eq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Tag indicating a non-data
+%%% Tag
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-ctagNone  ::  Int
-ctagNone  =   -1
+type CTag = Maybe Int
+
+ctagNone  ::  CTag
+ctagNone  =   Nothing
+
+ppCTag :: CTag -> PP_Doc
+ppCTag = pp . maybe 0 id
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -119,10 +124,10 @@ cpatVarNm :: CPat -> CPatNm
 cpatVarNm (CPat_Var n)        = n
 cpatVarNm (CPat_Con n _ _ _)  = n
 
-cpatConTag :: CPat -> Int
+cpatConTag :: CPat -> CTag
 cpatConTag (CPat_Con _ t _ _)  = t
 
-caltTag :: CAlt -> Int
+caltTag :: CAlt -> CTag
 caltTag (CAlt_Alt (p : _) _) = cpatConTag p
 
 caltIsVar :: CAlt -> Bool

@@ -332,9 +332,12 @@ ppListSepFill o c s pps
         l (p:ps)  = fill ((o >|< pp p) : map (s >|<) ps) >|< c
 %%]
 
-%%[9
+%%[8
 instance PP a => PP (Maybe a) where
-  pp m = "?(" >|< maybe empty pp m >|< ")?"
+  pp m = maybe (pp "?") pp m
+
+instance PP Bool where
+  pp b = pp (show b)
 %%]
 
 %%[7

@@ -398,7 +398,7 @@ SEM CaseAlt
 
 %%[7
 SEM RecPatExpr
-  | Ext         patExpr     .   inclVarBind         =   True
+  | Ext Expr    patExpr     .   inclVarBind         =   True
 %%]
 
 %%[9
@@ -454,7 +454,6 @@ SEM PatExpr
                             .   matchOnFld          =   @recPatExpr.hasAFldRef
 
 SEM RecPatExpr
-  | Empty       lhs         .   hasAFldRef          =   False
   | Ext         lhs         .   hasAFldRef          =   maybe @recPatExpr.hasAFldRef (const True) @mbNm
                 (loc.positionalNm,lhs.positionalFldNmL)
                                                     =   hdAndTl @recPatExpr.positionalFldNmL
@@ -462,6 +461,7 @@ SEM RecPatExpr
                                                           Just nm                     -> nm
                                                           Nothing  | @lhs.matchOnFld  -> @patExpr.topNm
                                                                    | otherwise        -> @positionalNm
+  | * - Ext     lhs         .   hasAFldRef          =   False
  
 SEM RowTyExpr
   | Ext         (loc.positionalNm,lhs.positionalFldNmL)
@@ -510,8 +510,7 @@ SEM CaseAlt
 
 %%[7
 SEM RecExpr
-  | Ext Upd     recExpr     .  fiOpts               =   strongFIOpts {fioAllowRLabElim = False}
-                expr        .  fiOpts               =   strongFIOpts
+  | Ext Upd     expr        .  fiOpts               =   strongFIOpts
 
 SEM Expr
   | Rec         loc         .  fiOpts               =   strongFIOpts

@@ -46,7 +46,10 @@
 %%[6 export(fitsInL)
 %%]
 
-%%[9 import(Maybe,FiniteMap,Set,List,UU.Pretty,EHCodePretty,EHPred,EHCode,EHCodeSubst) export(predFIOpts,implFIOpts,prfPreds,foAppCoe,fitPredToEvid)
+%%[7 import(List)
+%%]
+
+%%[9 import(Maybe,FiniteMap,Set,UU.Pretty,EHCodePretty,EHPred,EHCode,EHCodeSubst) export(predFIOpts,implFIOpts,prfPreds,foAppCoe,fitPredToEvid)
 %%]
 
 %%[9 import(EHDebug) export(fitsIn')
@@ -79,11 +82,11 @@ strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindR
 %%]
 
 %%[FIOpts.7
-                        ,  fioAllowRLabElim  ::  Bool
+                        ,  fioNoRLabElimFor  ::  [HsName]
 %%]
 
 %%[FIOpts.7.strongFIOpts
-                        ,  fioAllowRLabElim  =   True
+                        ,  fioNoRLabElimFor  =   []
 %%]
 
 %%[FIOpts.9
@@ -623,7 +626,7 @@ fitsIn opts env uniq ty1 ty2
                          = err fi [Err_MissingRowLabels (assocLKeys e2) tr1]
                        fR fi _ r2@(Ty_Con n2) e1@(_:_) e12 e2
                          | n2 == hsnRowEmpty && isRec
-                         =  if fioAllowRLabElim (fiFIOpts fi)
+                         =  if null (fioNoRLabElimFor (fiFIOpts fi) `List.intersect` assocLKeys e1)
                             then fR fi r2 r2 [] e12 e2
                             else err fi [Err_TooManyRowLabels (assocLKeys e1) tr2]
                        fR fi r1@(Ty_Con n1) _ e1 e12 e2@(_:_)
@@ -642,6 +645,9 @@ fitsIn opts env uniq ty1 ty2
                                foR = manyFO ([fo] ++ foL ++ [foRes])
                                foRes = (\fo -> foldr foCmbPrfRes fo foL)
 %%]
+                         =  if isNothing (fioNoRLabElimFor (fiFIOpts fi))
+                            then fR fi r2 r2 [] e12 e2
+                            else err fi [Err_TooManyRowLabels (assocLKeys e1) tr2]
 %%[10
                                        . foUpdRecFldsCoe eKeys foL tr1
 %%]
@@ -673,7 +679,8 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[10.fitsIn.fRow.foR -7.fitsIn.fRow.foR
-                       foR        = (if isRec then foUpdRecCoe r1 r2 extsIn1 extsIn12 extsIn2 else id) $ fR fi2 r1 r2 extsIn1 extsIn12 extsIn2
+                       fo         = fR fi2 r1 r2 extsIn1 extsIn12 extsIn2
+                       foR        = (if isRec then foUpdRecCoe (foCnstr fo |=> r1) (foCnstr fo |=> r2) extsIn1 extsIn12 extsIn2 else id) fo 
                        foUpdRecCoe r1 r2 e1 e12 e2 fo
                          =  let  rn = uidHNm u1
                                  r = CExpr_Var rn

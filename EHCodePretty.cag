@@ -98,7 +98,7 @@ SEM CPatL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 
 SEM CPatBind
-  | Bind        lhs         .   pp          =   @offset >|< "=" >|< @pat.pp
+  | Bind        lhs         .   pp          =   @offset.pp >|< "=" >|< @pat.pp
 
 SEM CPatBindL
   | Nil         lhs         .   ppL         =   []

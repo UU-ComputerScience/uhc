@@ -256,22 +256,26 @@ SEM RecExpr
                 lhs         .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
   | Ext Upd     loc         .   knRecTy             =   let  [r,e] = mkNewTyVarL 2 @lUniq
                                                         in   (hsnRec `mkTyConApp` [r]) `mkTyRecExt` [(@nm,e)]
-                            .   foKnRec             =   let  fo = fitsIn strongFIOpts @fe @lUniq2 @knRecTy (@lhs.tyCnstr |=> @lhs.knTy)
-                                                        in   fo {foTy = foCnstr fo |=> @knRecTy}
-                (loc.recKnTlTy,expr.knTy)           =   fromJust . tyRecExtr @nm . foTy $ @foKnRec
+                            .   foKnRec             =   fitsIn strongFIOpts @fe @lUniq2 @knRecTy (@lhs.tyCnstr |=> @lhs.knTy)
+                (loc.knRecHasLab,loc.recKnTlTy,expr.knTy)
+                                                    =   maybe (False,foTy @foKnRec,Ty_Any) (\(r,e) -> (True,r,e)) . tyRecExtr @nm . foTy $ @foKnRec
                 recExpr     .   tyCnstr             =   foCnstr @foKnRec |=> @lhs.tyCnstr
-                loc         .   ty                  =   @recTy `mkTyRecExt` [(@nm,@expr.ty)]
+                loc         .   ty                  =   @expr.tyCnstr |=> foTy @foKnRec
   | Ext         recExpr     .   knTy                =   @recKnTlTy
+                            .   fiOpts              =   @lhs.fiOpts {fioNoRLabElimFor = @nm : fioNoRLabElimFor @lhs.fiOpts}
                 loc         .   recTy               =   @expr.tyCnstr |=> @recExpr.ty
-  | Upd         recExpr     .   knTy                =   @recKnTlTy `mkTyRecExt` [(@nm,mkNewTyVar @lUniq3)]
+  | Upd         recExpr     .   knTy                =   if @knRecHasLab then @recKnTlTy `mkTyRecExt` [(@nm,mkNewTyVar @lUniq3)] else @recKnTlTy
                 loc         .   recTy               =   (@expr.tyCnstr |=>) . maybe Ty_Any fst . tyRecExtr @nm $ @recExpr.ty
 
 SEM Expr
   | Sel         expr        .   knTy                =   (hsnRec `mkTyConApp` [mkNewTyVar @lUniq]) `mkTyRecExt` [(@lbl,@lhs.knTy)]
                 loc         .   (recTy,ty)          =   maybe (Ty_Any,Ty_Any) id (tyRecExtr @lbl @expr.ty)
-  | Rec         loc         .   fo                  =   fitsIn @fiOpts @fe @lUniq @recExpr.ty (@recExpr.tyCnstr |=> @lhs.knTy)
-                            .   ty                  =   foTy @fo
-                lhs         .   tyCnstr             =   foCnstr @fo |=> @recExpr.tyCnstr
+  | Rec         loc         .   knRecTy             =   let  r = mkNewTyVar @lUniq
+                                                        in   hsnRec `mkTyConApp` [r]
+                            .   fo                  =   fitsIn @fiOpts @fe @lUniq2 @knRecTy (@lhs.tyCnstr |=> @lhs.knTy)
+                recExpr     .   knTy                =   foCnstr @fo |=> @knRecTy
+                            .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
+                loc         .   ty                  =   @recExpr.tyCnstr |=> foTy @fo
 %%]
 
 %%[9

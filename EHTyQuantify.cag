@@ -178,7 +178,8 @@ ATTR AllTy [ coco: CoContraVariance | | ]
 
 SEM Ty
   | App         func        .   coco        =   CoContraVariant
-                arg         .   coco        =   if          @appIsLikeProd || @isArrowRoot  then  CoVariant
+                arg         .   coco        =   if          @appIsLikeProd                  then  @lhs.coco
+                                                else  if    @isArrowRoot                    then  CoVariant
                                                 else  if    @appIsArrow                     then  ContraVariant
                                                                                             else  CoContraVariant
 
@@ -190,6 +191,12 @@ SEM TyAGItf
 SEM Ty
   | Pred        pr          .   coco        =   CoContraVariant
 %%]
+
+SEM Ty
+  | App         func        .   coco        =   CoContraVariant
+                arg         .   coco        =   if          @appIsLikeProd || @isArrowRoot  then  CoVariant
+                                                else  if    @appIsArrow                     then  ContraVariant
+                                                                                            else  CoContraVariant
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Is type a candidate where quantification can take place?
