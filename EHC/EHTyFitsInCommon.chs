@@ -43,21 +43,11 @@ emptyFO     =  FIOut  {  foTy     =   Ty_Any  ,  foErrL   =   []    ,  foCnstr  
 %%[4.FIOut -(2.FIOut 2.FIOut.empty)
 data FIOut  =  FIOut    {  foCnstr           ::  Cnstr               ,  foTy              ::  Ty
                         ,  foUniq            ::  UID                 ,  foAppSpineL       ::  [AppSpineInfo]
-                        ,  foErrL            ::  ErrL
-                        }
-
-emptyFO     =  FIOut    {  foCnstr           =   emptyCnstr          ,  foTy              =   Ty_Any
-                        ,  foUniq            =   uidStart            ,  foAppSpineL       =   []
-                        ,  foErrL            =   []
-                        }
+                        ,  foErrL            ::  ErrL  
 %%]
-
-%%[9.FIOut -4.FIOut
-data FIOut  =  FIOut    {  foCnstr           ::  Cnstr               ,  foTy              ::  Ty
-                        ,  foUniq            ::  UID                 ,  foAppSpineL       ::  [AppSpineInfo]
-                        ,  foErrL            ::  ErrL                ,  foPredOccL        ::  [PredOcc]
+%%[9
+                        ,  foCSubst          ::  CSubst              ,  foPredOccL        ::  [PredOcc]
                         ,  foLCoeL           ::  [Coe]               ,  foRCoeL           ::  [Coe]
-                        ,  foCSubst          ::  CSubst
 %%]
 %%[10
                         ,  foRowCoeL         ::  AssocL HsName Coe
@@ -65,16 +55,18 @@ data FIOut  =  FIOut    {  foCnstr           ::  Cnstr               ,  foTy    
 %%[11
                         ,  foEqCnstr         ::  Cnstr
 %%]
-%%[9
+%%[4.FIOut.tl
                         }
 %%]
 
-%%[9.emptyFO
+%%[4.emptyFO
 emptyFO     =  FIOut    {  foCnstr           =   emptyCnstr          ,  foTy              =   Ty_Any
                         ,  foUniq            =   uidStart            ,  foAppSpineL       =   []
-                        ,  foErrL            =   []                  ,  foPredOccL        =   []
+                        ,  foErrL            =   []         
+%%]
+%%[9
+                        ,  foCSubst          =   emptyCSubst         ,  foPredOccL        =   []
                         ,  foLCoeL           =   []                  ,  foRCoeL           =   []
-                        ,  foCSubst          =   emptyCSubst
 %%]
 %%[10
                         ,  foRowCoeL         =   []
@@ -82,7 +74,7 @@ emptyFO     =  FIOut    {  foCnstr           =   emptyCnstr          ,  foTy    
 %%[11
                         ,  foEqCnstr         =   emptyCnstr
 %%]
-%%[9
+%%[4.emptyFO.tl
                         }
 %%]
 

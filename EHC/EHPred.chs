@@ -21,10 +21,13 @@
 %%[9 import(EHError) export(ProofState(..))
 %%]
 
-%%[9 export(ProvenNode(..),ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,ProofCost(..),prvgCode,prvgBackToOrig,prvgReachableFrom)
+%%[9 export(ProvenNode(..),ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,prvgCode,prvgBackToOrig,prvgReachableFrom)
 %%]
 
-%%[9 export(Rule(..),emptyRule,mkInstElimRule,costAdd,costALot,costBase)
+%%[9 export(Rule(..),emptyRule,mkInstElimRule)
+%%]
+
+%%[9 export(ProofCost(..),mkCost,mkCostAvailImpl,costAdd,costALot,costBase,costAddHi)
 %%]
 
 %%[9 export(ClsFuncDep)
@@ -34,6 +37,70 @@
 %%]
 
 %%[9 export(PrElimGamInfo(..),PrElimGam,peGamAdd,peGamDel,peGamAddKnPr,peGamAddKnPrL)
+%%]
+
+%%[9 export(ProofCtxt(..),emptyProofCtxt)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Cost
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+data ProofCost  = Cost {costHi, costLo :: Int}
+                deriving (Eq,Show)
+
+instance Ord ProofCost where
+  (Cost h1 l1) `compare` (Cost h2 l2)
+    | h1 == h2   = l1 `compare` l2
+    | otherwise  = h1 `compare` h2
+
+mkCost :: Int -> ProofCost
+mkCost c = Cost 1 c
+
+mkCostAvailImpl :: Int -> ProofCost
+mkCostAvailImpl c = Cost 0 c
+
+costALot, costBase :: Int
+costALot  = 100
+costBase  = 1
+
+costAdd :: ProofCost -> ProofCost -> ProofCost
+c1@(Cost h1 l1) `costAdd` c2@(Cost h2 l2) = Cost (h1 `max` h2) (l1 + l2)
+
+costAddHi :: ProofCost -> Int -> ProofCost
+(Cost h l) `costAddHi` i = Cost (h+i) l
+
+instance PP ProofCost where
+  pp (Cost h l) = "C:" >|< pp h >|< ":" >|< l
+%%]
+data ProofCost  = CostAvailImpl {costCost :: Int} | CostInt {costCost :: Int}
+                deriving (Eq,Show,Ord)
+
+costAdd :: ProofCost -> ProofCost -> ProofCost
+costAdd (CostInt c1)            (CostInt c2)            = CostInt (c1 + c2)
+costAdd (CostAvailImpl c1)      (CostAvailImpl c2)      = CostAvailImpl (c1 + c2)
+costAdd (CostAvailImpl _ )      c2                      = c2
+costAdd c1                      _                       = c1
+
+instance PP ProofCost where
+  pp (CostInt c)       = pp c
+  pp (CostAvailImpl c) = pp "-Inf:" >|< pp c
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Proof context
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+data ProofCtxt
+  =  ProofCtxt
+        { prcxElimGam   ::  PrElimGam
+        }
+
+emptyProofCtxt
+  =  ProofCtxt
+        { prcxElimGam   =   emptyGam
+        }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -262,29 +329,6 @@ prvgBackToOrig g@(ProvenGraph i2n p2i p2oi)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Cost
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-data ProofCost  = CostAvailImpl {costCost :: Int} | CostInt {costCost :: Int}
-                deriving (Eq,Show,Ord)
-
-costALot, costBase :: Int
-costALot  = 100
-costBase  = 1
-
-costAdd :: ProofCost -> ProofCost -> ProofCost
-costAdd (CostInt c1)            (CostInt c2)            = CostInt (c1 + c2)
-costAdd (CostAvailImpl c1)      (CostAvailImpl c2)      = CostAvailImpl (c1 + c2)
-costAdd (CostAvailImpl _ )      c2                      = c2
-costAdd c1                      _                       = c1
-
-instance PP ProofCost where
-  pp (CostInt c)       = pp c
-  pp (CostAvailImpl c) = pp "-Inf:" >|< pp c
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Functional dependency
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -310,7 +354,7 @@ data Rule
        , rulFuncDeps        :: [ClsFuncDep]
        }
 
-emptyRule = Rule Ty_Any head hsnUnknown (mkPrId uidStart) (CostInt costALot) []
+emptyRule = Rule Ty_Any head hsnUnknown (mkPrId uidStart) (mkCost costALot) []
 
 mkInstElimRule :: HsName -> PredOccId -> Int -> Ty -> Rule
 mkInstElimRule n i sz ctxtToInstTy
@@ -318,7 +362,7 @@ mkInstElimRule n i sz ctxtToInstTy
                      , rulMkEvid    = \ctxt -> CExpr_Var n `mkCExprApp` ctxt
                      , rulNmEvid    = n
                      , rulId        = i
-                     , rulCost      = CostInt (costBase + 2 * costBase * sz)
+                     , rulCost      = mkCost (costBase + 2 * costBase * sz)
                      , rulFuncDeps  = []
                      }
      in   r

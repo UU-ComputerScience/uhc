@@ -1049,7 +1049,7 @@ prfOneStepPred env pr@(Pred_Pred t) prUid st@(ProofState g@(ProvenGraph i2n p2i 
            prfCtxtPrL       = map tyPred prfCtxtTyPrL
            (prfElimGam,prfCtxtNmL,prfCtxtUIDL)
                             = peGamAddKnPrL u3 prfCtxtPrL (fePrElimGam env)
-           prf              = ProvenAnd (pr) (poi4 : prfCtxtUIDL) (CostInt 1) (prfCtxtNmL `mkCExprLam` CExpr_Hole u4)
+           prf              = ProvenAnd (pr) (poi4 : prfCtxtUIDL) (mkCost 1) (prfCtxtNmL `mkCExprLam` CExpr_Hole u4)
            g'               = prvgAddPrNd pr [prUid] prf g
            g''              = foldr (\(i,p,n) g -> prvgAddPrNd p [i] (ProvenLcl p (CExpr_Var n)) g) g' (zip3 prfCtxtUIDL prfCtxtPrL prfCtxtNmL)
            st'              = st {prfsUniq = u', prfsProvenGraph = g'', prfsPredsToProve = [PredOcc (tyPred prfTyPr) poi4] ++ toProof}
@@ -1062,14 +1062,14 @@ prfOneStepClass env pr@(Pred_Class t) prUid st@(ProofState g@(ProvenGraph i2n p2
   =   let  isInOrig             = pr `elem` origToProof
            nm                   = tyAppFunConNm t
            mkNdFail cost uid    = ProvenArg pr cost
-           ndFail               = mkNdFail (if isInOrig then CostInt 1 else CostInt costALot) prUid
+           ndFail               = mkNdFail (if isInOrig then mkCost 1 else mkCost costALot) prUid
       in   case gamLookupAll nm (fePrElimGam env) of
              pegis@(_:_)
                  ->  let  (u',u1,u2)    = mkNewLevUID2 u
                           rules         :: [Rule]
                           rules         = concat
                                           . zipWith (\lev pegi
-                                                       -> map (\r -> r {rulCost = rulCost r `costAdd` CostInt (lev*10)})
+                                                       -> map (\r -> r {rulCost = rulCost r `costAdd` mkCost (lev*10)})
                                                               (pegiRuleL pegi)
                                                     ) [0..]
                                           $ pegis
@@ -1078,7 +1078,7 @@ prfOneStepClass env pr@(Pred_Class t) prUid st@(ProofState g@(ProvenGraph i2n p2
                                           . zipWith (\u r -> matchRule u pr r)
                                                     (mkNewUIDL (length rules) u1)
                                           $ rules
-                          costOfOr      = if isInOrig then CostInt (-costALot) else CostInt 0 
+                          costOfOr      = if isInOrig then mkCost (-costALot) else mkCost 0 
                           (g',newPr)
                              = case ruleMatches of
                                    [] ->  (prvgAddPrNd pr [prUid] ndFail g,[])
@@ -1092,19 +1092,19 @@ prfOneStepClass env pr@(Pred_Class t) prUid st@(ProofState g@(ProvenGraph i2n p2
                                                                            then (prvgAddOrig matchId pr
                                                                                 ,map poPrId needPrOccL
                                                                                 )
-                                                                           else (prvgAddPrNd matchPr [matchId] (ProvenAnd matchPr [] (CostInt 0) matchEv)                                                                             
+                                                                           else (prvgAddPrNd matchPr [matchId] (ProvenAnd matchPr [] (mkCost 0) matchEv)                                                                             
                                                                                  . prvgAddOrig matchId matchPr
                                                                                 ,matchId : map poPrId needPrOccL
                                                                                 )
                                                              prf        =  ProvenAnd pr dpdIdL
                                                                              (if isInOrig && hasNoPre
-                                                                              then CostAvailImpl (costCost cost)
+                                                                              then mkCostAvailImpl (costLo cost)
                                                                               else cost
                                                                              ) evid
                                                          in  (addOrig . prvgAddNd uid prf $ g,needPrOccL ++ newPr)
                                                    )
                                                    (prvgAddPrNd pr [prUid] (ProvenOr pr orUids costOfOr)
-                                                      (prvgAddNd uidFail (mkNdFail (CostInt costALot) uidFail) g)
+                                                      (prvgAddNd uidFail (mkNdFail (mkCost costALot) uidFail) g)
                                                    ,[])
                                                    (zip uidRest ms)
                      in   st {prfsUniq = u', prfsProvenGraph = g', prfsPredsToProve = newPr ++ toProof}
@@ -1115,7 +1115,7 @@ prfOneStepClass env pr@(Pred_Class t) prUid st@(ProofState g@(ProvenGraph i2n p2
 %%[10
 prfOneStepLacks :: FIEnv -> Pred -> PredOccId -> ProofState -> ProofState
 prfOneStepLacks env pr@(Pred_Lacks r l) prUid st@(ProofState g@(ProvenGraph i2n _ _) u toProof _ _ errs)
-  =  let  zeroCost = CostInt 0
+  =  let  zeroCost = mkCost 0
      in   case tyRowExtr l r of
             Just _ ->  st {prfsErrL = [Err_TooManyRowLabels [l] r] ++ errs}
             _      ->  let  (row,exts) = tyRowExts r
@@ -1166,7 +1166,7 @@ prfPredsPruneProvenGraph prL (ProvenGraph i2n p2i p2oi)
   =  let  costOf uid costMp gPrune
             =  case lookupFM costMp uid of
                  Just (Just c)  -> (uid,c,costMp,gPrune)
-                 Just (Nothing) -> (uid,CostInt costALot,costMp,gPrune)
+                 Just (Nothing) -> (uid,mkCost costALot,costMp,gPrune)
                  Nothing
                    ->  let  prvgAddPrevPrNd pr uid prf g
                               =  let  otherUids = maybe [] id (lookupFM p2i pr)
@@ -1174,7 +1174,7 @@ prfPredsPruneProvenGraph prL (ProvenGraph i2n p2i p2oi)
                             costMp' = addToFM costMp uid Nothing
                        in   case fromJust (lookupFM i2n uid) of
                                  prf@(ProvenLcl pr ev)
-                                   ->  let  c                   = CostInt 0
+                                   ->  let  c                   = mkCost 0
                                             cm                  = addToFM costMp' uid (Just c)
                                             gp                  = prvgAddPrevPrNd pr uid prf gPrune
                                        in   (uid,c,cm,gp)
