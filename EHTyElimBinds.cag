@@ -9,7 +9,7 @@
 %%% Haskell importable interface to check/elimination for/of inconsistent/ binds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6_2 hs import(EHCommon,EHTy,EHError,EHTyFitsIn,EHCnstr,EHSubstitutable) export(tyElimBinds)
+%%[6_2 hs import(EHCommon,EHTy,EHError,EHCnstr,EHSubstitutable) export(tyElimBinds)
 %%]
 
 
@@ -18,20 +18,30 @@ WRAPPER TyAGItf
 %%]
 
 %%[6_2.tyElimBinds hs
-tyElimBinds :: FIEnv -> UID -> Ty -> (Ty,Cnstr,ErrL)
-tyElimBinds env uniq ty
+type FitsIn = UID -> Ty -> Ty -> (Ty,Cnstr,ErrL)
+
+tyElimBinds :: FitsIn -> UID -> TyVarIdL -> Ty -> (Ty,Cnstr,ErrL)
+tyElimBinds fitsIn uniq meetTvL ty
   =  let  t =  wrap_TyAGItf
                  (sem_TyAGItf (TyAGItf_AGItf ty))
-                 (Inh_TyAGItf {gUniq_Inh_TyAGItf = uniq, fe_Inh_TyAGItf = env})
+                 (Inh_TyAGItf {fitsIn_Inh_TyAGItf = fitsIn, meetTvL_Inh_TyAGItf = meetTvL, gUniq_Inh_TyAGItf = uniq})
      in   (repl_Syn_TyAGItf t,tyCnstr_Syn_TyAGItf t,errL_Syn_TyAGItf t)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% FIEnv
+%%% fitsIn, parameterized with env+opts, passed as param to avoid mutual module recursion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[6_2
-ATTR TyAGItf AllAllTy [ fe: FIEnv | | ]
+ATTR TyAGItf AllAllTy [ fitsIn: FitsIn | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Other flags: is it a meet?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6_2
+ATTR TyAGItf AllAllTy [ meetTvL: TyVarIdL | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -51,21 +61,14 @@ SEM TyL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[6_2
-ATTR TyAGItf AllAllTy [ | | errL USE {++} {[]}: ErrL ]
 ATTR AllAllTy [ | | repl: SELF  ]
 ATTR TyAGItf  [ | | repl: Ty    ]
 
 SEM Ty
-  | Bind            (lhs.repl,loc.errL)     =   if foHasErrs @tyL.fo
-                                                then (mkTyVar @tv,[Err_InconsistentBind @lhs.self @tv @tyL.replL])
-                                                else (foTy @tyL.fo,[])
-                    lhs     .   errL        =   @errL ++ @tyL.errL
+  | Bind            (lhs.repl,loc.errL)     =   if null @tyL.bndErrL
+                                                then (if @tv `elem` @lhs.meetTvL then mkTyVar @tv else @tyL.resTy,[])
+                                                else (mkTyVar @tv,[Err_InconsistentBind @lhs.self @tv @tyL.replL])
 %%]
-SEM Ty
-  | Bind            (lhs.repl,loc.errL)     =   case @tyL.replL of
-                                                  l@(_:_:_) -> (mkTyVar @tv,[Err_InconsistentBind @lhs.self @tv l])
-                                                  [t] -> (t,[])
-                    lhs     .   errL        =   @errL ++ @tyL.errL
 
 %%[6_2
 ATTR TyL [ | | replL: TyL ]
@@ -76,23 +79,39 @@ SEM TyL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Errors
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6_2
+ATTR TyAGItf AllAllTy [ | | errL USE {++} {[]}: ErrL ]
+ATTR TyL [ | | bndErrL: ErrL ]
+
+SEM Ty
+  | Bind            lhs     .   errL        =   @errL ++ @tyL.errL
+
+SEM TyL
+  | Nil             lhs     .   bndErrL     =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Unification of all binds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[6_2
 ATTR AllAllTy [ | tyCnstr: Cnstr | ]
 ATTR TyAGItf  [ | | tyCnstr: Cnstr ]
-ATTR TyL [ ty: Ty | | fo: FIOut ]
+ATTR TyL [ ty: Ty | | resTy: Ty ]
 
 SEM TyL
-  | Cons            loc     .   fo          =   fitsIn meetFIOpts @lhs.fe @lUniq @lhs.ty (@hd.tyCnstr |=> @hd.repl)
-                    tl      .   ty          =   foTy @fo
-                            .   tyCnstr     =   foCnstr @fo |=> @hd.tyCnstr
-                    lhs     .   (fo,tyCnstr)
-                                            =   if foHasErrs @fo
-                                                then (@fo,@lhs.tyCnstr)
-                                                else (@tl.fo,@tl.tyCnstr)
-  | Nil             lhs     .   fo          =   emptyFO {foTy = @lhs.ty}
+  | Cons            loc     .   (ty,cnstr,errL)
+                                            =   @lhs.fitsIn @lUniq @lhs.ty (@hd.tyCnstr |=> @hd.repl)
+                    tl      .   ty          =   @ty
+                            .   tyCnstr     =   @cnstr |=> @hd.tyCnstr
+                    lhs     .   (resTy,tyCnstr,bndErrL,errL)
+                                            =   if null @errL
+                                                then (@tl.resTy,@tl.tyCnstr,[],@hd.errL ++ @tl.errL)
+                                                else (@lhs.ty,@lhs.tyCnstr,@errL,[])
+  | Nil             lhs     .   resTy       =   @lhs.ty
 
 SEM Ty
   | Bind            tyL     .   ty          =   Ty_Any

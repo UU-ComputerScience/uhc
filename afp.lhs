@@ -6083,7 +6083,14 @@ Upwards was already implemented via
 which is extended with |CoContraVariant| information and threads a UID value
 needed for instantiating types together with the downward information stored in
 
-\chunkCmdUseMark{EHTyFitsIn.4.FIIn}
+\savecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.FIIn.hd}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.FIIn.tl}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.FIIn.emptyFI.hd}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.4.FIIn.emptyFI.tl}
 
 The parameter |fiCoContra| is used to indicate if the comparison |<=| is flipped.
 

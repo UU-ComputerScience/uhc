@@ -241,6 +241,18 @@ SEM Expr
                 loc         .  fo                   :=  fitsIn (@lhs.fiOpts {fioBindToTyBind = True}) @fe @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type is enforced?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4
+ATTR Expr [ | | isForcedTy: Bool ]
+SEM Expr
+  | TypeAs      lhs         .   isForcedTy          =   True
+  | * - TypeAs Parens
+                lhs         .   isForcedTy          =   False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gamma/Environment for fitting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
