@@ -28,6 +28,9 @@ ppGrModule cmod
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
+ppCurly :: PP_Doc -> PP_Doc
+ppCurly p = pp_block "{ " "} " "; " [p]
+
 ppCurlyV :: [PP_Doc] -> PP_Doc
 ppCurlyV pL = pp_block "{ " "} " "; " pL
 
@@ -43,7 +46,7 @@ SEM GrModule
 
 SEM GrBind
   | Bind        lhs         .   pp          =   ppGrNm @nm >#< ppSpaced (map ppGrNm @argNmL) >-<
-                                                    indent 2 ("=" >#< @expr.pp)
+                                                    indent 2 ("=" >#< ppCurly @expr.pp)
   | Rec         lhs         .   pp          =   "rec" >-< indent 2 (ppCurlyV @bindL.ppL)
 
 SEM GrExpr
@@ -60,7 +63,7 @@ SEM GrExpr
   | Update      lhs         .   pp          =   "update" >#< ppGrNm @nm >#< @val
 
 SEM GrAlt
-  | Alt         lhs         .   pp          =   @pat.pp >-< indent 4 ("->" >#< @expr.pp)
+  | Alt         lhs         .   pp          =   @pat.pp >-< indent 4 ("->" >#< ppCurly @expr.pp)
 
 SEM GrVal
   | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : @fldL.ppL)
@@ -75,7 +78,7 @@ SEM GrPat
   | Var         lhs         .   pp          =   ppGrNm @nm
 
 SEM GrTag
-  | Lit         lhs         .   pp          =   "#" >|< @int >|< "/" >|< pp @categ >|< ppGrNm @nm
+  | Lit         lhs         .   pp          =   "#" >|< @int >|< "/" >|< pp @categ >|< "/" >|< ppGrNm @nm
   | Var         lhs         .   pp          =   ppGrNm @nm
   | None        lhs         .   pp          =   pp "()"
 %%]

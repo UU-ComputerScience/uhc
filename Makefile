@@ -53,53 +53,74 @@ AFP_PGF_TEX			:= afp-pgf.tex
 
 ALL_AFP_SRC			:= $(AFP_LHS) $(AFP_RULES)
 
+
+EHC_SRC_PREFIX				:=
 EHC_LAG_FOR_HS_TY			:= $(addsuffix .lag,EHTyQuantify EHTySubst EHTyFtv EHTyPretty EHTyInstantiate )
-EHC_LAG_FOR_HS_CORE			:= $(addsuffix .lag,EHCoreJava EHCoreGrin EHCoreTrfRenUniq EHCoreTrfFullLazy EHCoreTrfLamLift EHCoreTrfInlineLetAlias EHCoreTrfLetUnrec EHCorePretty EHCoreSubst)
+EHC_LAG_FOR_HS_CORE			:= $(addsuffix .lag,EHCoreJava EHCoreGrin EHCoreTrfRenUniq EHCoreTrfFullLazy EHCoreTrfLamLift \
+												EHCoreTrfInlineLetAlias EHCoreTrfLetUnrec EHCorePretty EHCoreSubst)
 EHC_LAG_FOR_HS_GRIN_CODE	:= $(addsuffix .lag,GrinCodePretty)
-EHC_LAG_FOR_HS				:= $(addsuffix .lag,EHMainAG EHTy EHCore EHError EHErrorPretty GrinCode) $(EHC_LAG_FOR_HS_TY) $(EHC_LAG_FOR_HS_CORE) $(EHC_LAG_FOR_HS_GRIN_CODE)
+EHC_LAG_FOR_HS				:= $(addsuffix .lag,EHMainAG EHTy EHCore EHError EHErrorPretty GrinCode) \
+								$(EHC_LAG_FOR_HS_TY) $(EHC_LAG_FOR_HS_CORE) $(EHC_LAG_FOR_HS_GRIN_CODE)
 
-DPDS_MAIN					:= EHMainAG.ag EHInfer.ag EHInferExpr.ag \
-								EHInferPatExpr.ag EHInferTyExpr.ag EHInferKiExpr.ag EHInferData.ag \
-								EHInferCaseExpr.ag EHPretty.ag EHPrettyAST.ag EHAbsSyn.ag \
-								EHUniq.ag EHExtraChecks.ag EHGatherError.ag \
-								EHGenCode.ag \
-								EHResolvePred.ag EHInferClass.ag
-DPDS_TY						:= EHTy.ag EHTyAbsSyn.ag
-DPDS_TY_PRETTY				:= EHTyPretty.ag EHTyCommonAG.ag EHTyAbsSyn.ag
-DPDS_TY_QUANT				:= EHTyQuantify.ag EHTyCommonAG.ag EHTyAbsSyn.ag
-DPDS_TY_SUBST				:= EHTySubst.ag EHTyAbsSyn.ag
-DPDS_TY_FTV					:= EHTyFtv.ag EHTyAbsSyn.ag
-DPDS_TY_INST				:= EHTyInstantiate.ag EHTyCommonAG.ag EHTyAbsSyn.ag
-DPDS_ERR					:= EHError.ag EHErrorAbsSyn.ag
-DPDS_ERR_PRETTY				:= EHErrorPretty.ag EHErrorAbsSyn.ag
-DPDS_CORE					:= EHCore.ag EHCoreAbsSyn.ag
-DPDS_CORE_JAVA				:= EHCoreJava.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
-DPDS_CORE_GRIN				:= EHCoreGrin.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
-DPDS_CORE_PRETTY			:= EHCorePretty.ag EHCoreAbsSyn.ag
-DPDS_CORE_TRF_RENUNQ		:= EHCoreTrfRenUniq.ag EHCoreAbsSyn.ag
-DPDS_CORE_TRF_INLLETALI		:= EHCoreTrfInlineLetAlias.ag EHCoreAbsSyn.ag
-DPDS_CORE_TRF_FULLAZY		:= EHCoreTrfFullLazy.ag EHCoreTrfCommonFv.ag EHCoreTrfCommonLev.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
-DPDS_CORE_TRF_LAMLIFT		:= EHCoreTrfLamLift.ag EHCoreTrfCommonFv.ag EHCoreTrfCommonLev.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
-DPDS_CORE_TRF_LETUNREC		:= EHCoreTrfLetUnrec.ag EHCoreAbsSyn.ag
-DPDS_GRIN_CODE				:= GrinCode.ag GrinCodeAbsSyn.ag
-DPDS_GRIN_CODE_PRETTY		:= GrinCodePretty.ag GrinCodeAbsSyn.ag
 
-DPDS_CORE_TRF				:= $(DPDS_CORE_TRF_RENUNQ) $(DPDS_CORE_TRF_INLLETALI) $(DPDS_CORE_TRF_FULLAZY) $(DPDS_CORE_TRF_LETUNREC) $(DPDS_CORE_TRF_LAMLIFT)
-DPDS_ALL					:= $(sort $(DPDS_MAIN) \
-										$(DPDS_CORE) $(DPDS_CORE_JAVA) $(DPDS_CORE_GRIN) $(DPDS_CORE_PRETTY) $(DPDS_CORE_TRF) \
-										$(DPDS_TY) $(DPDS_TY_PRETTY) $(DPDS_TY_QUANT) $(DPDS_TY_SUBST) $(DPDS_TY_FTV) $(DPDS_TY_INST) \
-										$(DPDS_GRIN_CODE) $(DPDS_GRIN_CODE_PRETTY) \
-										$(DPDS_ERR) $(DPDS_ERR_PRETTY) \
+GRI_SRC_PREFIX				:= gri/
+
+GRI_LAG_FOR_HS				:= $(addsuffix .lag,GrinCode)
+
+
+
+EHC_DPDS_MAIN					:= EHMainAG.ag EHInfer.ag EHInferExpr.ag \
+									EHInferPatExpr.ag EHInferTyExpr.ag EHInferKiExpr.ag EHInferData.ag \
+									EHInferCaseExpr.ag EHPretty.ag EHPrettyAST.ag EHAbsSyn.ag \
+									EHUniq.ag EHExtraChecks.ag EHGatherError.ag \
+									EHGenCode.ag \
+									EHResolvePred.ag EHInferClass.ag
+EHC_DPDS_TY						:= EHTy.ag EHTyAbsSyn.ag
+EHC_DPDS_TY_PRETTY				:= EHTyPretty.ag EHTyCommonAG.ag EHTyAbsSyn.ag
+EHC_DPDS_TY_QUANT				:= EHTyQuantify.ag EHTyCommonAG.ag EHTyAbsSyn.ag
+EHC_DPDS_TY_SUBST				:= EHTySubst.ag EHTyAbsSyn.ag
+EHC_DPDS_TY_FTV					:= EHTyFtv.ag EHTyAbsSyn.ag
+EHC_DPDS_TY_INST				:= EHTyInstantiate.ag EHTyCommonAG.ag EHTyAbsSyn.ag
+EHC_DPDS_ERR					:= EHError.ag EHErrorAbsSyn.ag
+EHC_DPDS_ERR_PRETTY				:= EHErrorPretty.ag EHErrorAbsSyn.ag
+EHC_DPDS_CORE					:= EHCore.ag EHCoreAbsSyn.ag
+EHC_DPDS_CORE_JAVA				:= EHCoreJava.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
+EHC_DPDS_CORE_GRIN				:= EHCoreGrin.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
+EHC_DPDS_CORE_PRETTY			:= EHCorePretty.ag EHCoreAbsSyn.ag
+EHC_DPDS_CORE_TRF_RENUNQ		:= EHCoreTrfRenUniq.ag EHCoreAbsSyn.ag
+EHC_DPDS_CORE_TRF_INLLETALI		:= EHCoreTrfInlineLetAlias.ag EHCoreAbsSyn.ag
+EHC_DPDS_CORE_TRF_FULLAZY		:= EHCoreTrfFullLazy.ag EHCoreTrfCommonFv.ag EHCoreTrfCommonLev.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
+EHC_DPDS_CORE_TRF_LAMLIFT		:= EHCoreTrfLamLift.ag EHCoreTrfCommonFv.ag EHCoreTrfCommonLev.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
+EHC_DPDS_CORE_TRF_LETUNREC		:= EHCoreTrfLetUnrec.ag EHCoreAbsSyn.ag
+EHC_DPDS_GRIN_CODE				:= GrinCode.ag GrinCodeAbsSyn.ag
+EHC_DPDS_GRIN_CODE_PRETTY		:= GrinCodePretty.ag GrinCodeAbsSyn.ag
+
+EHC_DPDS_CORE_TRF				:= $(EHC_DPDS_CORE_TRF_RENUNQ) $(EHC_DPDS_CORE_TRF_INLLETALI) $(EHC_DPDS_CORE_TRF_FULLAZY) $(EHC_DPDS_CORE_TRF_LETUNREC) $(EHC_DPDS_CORE_TRF_LAMLIFT)
+EHC_DPDS_ALL					:= $(sort $(EHC_DPDS_MAIN) \
+										$(EHC_DPDS_CORE) $(EHC_DPDS_CORE_JAVA) $(EHC_DPDS_CORE_GRIN) $(EHC_DPDS_CORE_PRETTY) $(EHC_DPDS_CORE_TRF) \
+										$(EHC_DPDS_TY) $(EHC_DPDS_TY_PRETTY) $(EHC_DPDS_TY_QUANT) $(EHC_DPDS_TY_SUBST) $(EHC_DPDS_TY_FTV) $(EHC_DPDS_TY_INST) \
+										$(EHC_DPDS_GRIN_CODE) $(EHC_DPDS_GRIN_CODE_PRETTY) \
+										$(EHC_DPDS_ERR) $(EHC_DPDS_ERR_PRETTY) \
 										)
-DPDS_ALL_MIN_TARG			:= $(filter-out $(EHC_LAG_FOR_HS:.lag=.ag),$(DPDS_ALL))
+EHC_DPDS_ALL_MIN_TARG			:= $(filter-out $(EHC_LAG_FOR_HS:.lag=.ag),$(EHC_DPDS_ALL))
 
 EHC					:= ehc
 EHC_MAIN			:= EHC
-EHC_LAG_FOR_AG		:= $(DPDS_ALL_MIN_TARG:.ag=.lag)
+EHC_LAG_FOR_AG		:= $(EHC_DPDS_ALL_MIN_TARG:.ag=.lag)
 EHC_LAG				:= $(EHC_LAG_FOR_AG) $(EHC_LAG_FOR_HS)
 EHC_LHS_FOR_HS		:= $(addsuffix .lhs,$(EHC_MAIN) EHCommon EHCnstr EHSubstitutable EHTyFitsIn EHGam EHPred EHParser FPath EHScanner EHScannerMachine EHDebug)
 EHC_LHS				:= $(EHC_LHS_FOR_HS)
 EHC_HS				:= $(EHC_LAG_FOR_HS:.lag=.hs) $(EHC_LHS_FOR_HS:.lhs=.hs)
+
+GRI_DPDS_GRI					:= GRI.hs EHScanner.hs EHScannerMachine.hs EHCommon.hs GRIParser.hs GrinCode.hs GRICommon.hs
+
+GRI					:= gri
+GRI_MAIN			:= GRI
+GRI_LAG_FOR_AG		:= $(GRI_DPDS_ALL_MIN_TARG:.ag=.lag)
+GRI_LAG				:= $(GRI_LAG_FOR_AG) $(GRI_LAG_FOR_HS)
+GRI_LHS_FOR_HS		:= $(addsuffix .lhs,$(GRI_MAIN) GRICommon GRIParser)
+GRI_LHS				:= $(GRI_LHS_FOR_HS)
+GRI_HS				:= $(GRI_LAG_FOR_HS:.lag=.hs) $(GRI_LHS_FOR_HS:.lhs=.hs) $(GRI_DPDS_GRI)
 
 AFP_DERIV			:= $(addprefix $(AFP),.toc .bbl .blg .aux .tex .log .ind .idx) $(AFP_STY)
 
@@ -146,7 +167,9 @@ LHS2TEX_CODE			= \
 
 default:
 	@echo "make <n>/ehc     : make compiler version <n>" ; \
-	echo  "make ehcs        : make all compiler versions (where <n> in {$(VERSIONS)})" ; \
+	echo  "make <n>/gri     : make grin interpreter version <n>" ; \
+	echo  "make ehcs        : make all compiler (ehc) versions (where <n> in {$(VERSIONS)})" ; \
+	echo  "make gris        : make all grin interpreter (gri) versions (where <n> in {$(GRI_VERSIONS)})" ; \
 	echo  "make afp         : make afp.pdf, by running latex once" ; \
 	echo  "make afp-full    : make afp.pdf, with bib/index" ; \
 	echo  "make doc         : make doc of tools" ; \
@@ -162,7 +185,7 @@ default:
 	echo  "make www         : make 'current' www dist (based on dist)" ; \
 	echo  "make www-sync    : sync www dist (proper ssh access required)"
 
-all: afp-full ehcs doc
+all: afp-full ehcs doc gris
 	$(MAKE) initial-test-expect
 
 doc: $(SHUFFLE_DOC_PDF)
@@ -194,13 +217,17 @@ doc: $(SHUFFLE_DOC_PDF)
 #VPREFIX				:=
 #include $(MK_EHFILES)
 
-### Versioned ehc's
+### Versioned ehc's, gri's
 VERSIONS			:= $(sort 1 2 3 4 5 6 7 8 9)
 VERSION_LAST		:= $(word $(words $(VERSIONS)), $(VERSIONS))
 VERSION_FIRST		:= $(word 1, $(VERSIONS))
 
 EHC_CAG				:= $(EHC_LAG:.lag=.cag)
 EHC_CHS				:= $(EHC_LHS:.lhs=.chs)
+
+GRI_VERSIONS		:= $(sort 8 9)
+
+GRI_CHS				:= $(GRI_LHS:.lhs=.chs)
 
 # SHUFFLE_LHS(src file, dst file, how, lhs2tex, version)
 SHUFFLE_LHS		= \
@@ -299,6 +326,7 @@ V					:= 8
 VF					:= $(V)
 include $(MK_EHFILES)
 EHC_V8				:= $(addprefix $(VF)/,$(EHC))
+GRI_V8				:= $(addprefix $(VF)/,$(GRI))
 ### End of Version 8
 
 
@@ -307,6 +335,7 @@ V					:= 9
 VF					:= $(V)
 include $(MK_EHFILES)
 EHC_V9				:= $(addprefix $(VF)/,$(EHC))
+GRI_V9				:= $(addprefix $(VF)/,$(GRI))
 ### End of Version 9
 
 
@@ -315,6 +344,7 @@ V					:= 10
 VF					:= $(V)
 include $(MK_EHFILES)
 EHC_V10				:= $(addprefix $(VF)/,$(EHC))
+GRI_V10				:= $(addprefix $(VF)/,$(GRI))
 ### End of Version 10
 
 
@@ -323,6 +353,7 @@ V					:= 11
 VF					:= $(V)
 include $(MK_EHFILES)
 EHC_V11				:= $(addprefix $(VF)/,$(EHC))
+GRI_V11				:= $(addprefix $(VF)/,$(GRI))
 ### End of Version 11
 
 
@@ -383,7 +414,7 @@ phd:
 afp-slides:
 	$(MAKE) AFP=$@ LHS2TEX_POLY_MODE=--poly LHS2TEX_OPTS="$(LHS2TEX_OPTS) --set=asSlides --set=omitTBD --set=omitLitDiscuss" afp
 
-.PHONY: shuffle ruler ehcs dist www www-sync
+.PHONY: shuffle ruler ehcs dist www www-sync gri gris
 
 shuffle: $(SHUFFLE)
 
@@ -411,6 +442,8 @@ $(RULER_DOC_PDF): $(RULER_DIR)/RulerDoc.tex $(RULER)
 
 ehcs: $(EHC_V1) $(EHC_V2) $(EHC_V3) $(EHC_V4) $(EHC_V5) $(EHC_V6) $(EHC_V7) $(EHC_V8) $(EHC_V9)
 
+gris: $(GRI_V8) $(GRI_V9)
+
 clean:
 	rm -rf $(AFP_DERIV) $(SHUFFLE_DERIV) a.out \
 	$(addprefix $(SHUFFLE_DIR)/,*.o *.hi *.pdf) $(SHUFFLE) \
@@ -428,7 +461,7 @@ clean-test:
 	rm -rf test/*.reg* test/*.exp*
 
 edit:
-	bbedit $(EHC_CAG) $(EHC_CHS) $(ALL_AFP_SRC) $(SHUFFLE_SRC) Makefile $(TMPL_TEST) $(MK_EHFILES)
+	bbedit $(EHC_CAG) $(EHC_CHS) $(GRI_CAG) $(GRI_CHS) $(ALL_AFP_SRC) $(SHUFFLE_SRC) Makefile $(TMPL_TEST) $(MK_EHFILES)
 
 A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
@@ -483,33 +516,33 @@ MK_EHC_MKF			= \
 	  $(call FILTER_EXISTS_HS_OR_AG,$(EHC_HS)) ; \
 	  echo ; \
 	  echo "	$(GHC) -package uust -package data --make -o $(EHC) $$<" ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_MAIN),-dcfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_TY),-dr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_TY_PRETTY),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_TY_QUANT),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_TY_SUBST),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_TY_FTV),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_TY_INST),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_ERR),-dr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_ERR_PRETTY),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE),-dr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE_PRETTY),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE_TRF_RENUNQ),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE_TRF_INLLETALI),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE_TRF_FULLAZY),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE_TRF_LAMLIFT),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE_TRF_LETUNREC),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE_JAVA),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_CORE_GRIN),-cfspr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_GRIN_CODE),-dr) ; \
-	  $(call MK_EHC_MKF_FOR,$(DPDS_GRIN_CODE_PRETTY),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_MAIN),-dcfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY),-dr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_PRETTY),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_QUANT),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_SUBST),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_FTV),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_INST),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_ERR),-dr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_ERR_PRETTY),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE),-dr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_PRETTY),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_RENUNQ),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_INLLETALI),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_FULLAZY),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_LAMLIFT),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_TRF_LETUNREC),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_JAVA),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_GRIN),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_GRIN_CODE),-dr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_GRIN_CODE_PRETTY),-cfspr) ; \
 	) > Makefile
 
 dist: $(DIST_ZIP) 
 
 $(DIST_TGZ): $(DIST_ZIP)
 
-$(DIST_ZIP): $(addprefix $(VERSION_LAST)/,$(DPDS_ALL_MIN_TARG)) Makefile test-lists $(TMPL_TEST)
+$(DIST_ZIP): $(addprefix $(VERSION_LAST)/,$(EHC_DPDS_ALL_MIN_TARG)) Makefile test-lists $(TMPL_TEST)
 	@rm -rf $(DIST) ; \
 	mkdir -p $(addprefix $(DIST)/,$(VERSIONS)) $(addsuffix /test,$(addprefix $(DIST)/,$(VERSIONS))) ; \
 	for v in $(VERSIONS) ; do \

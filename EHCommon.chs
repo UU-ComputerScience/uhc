@@ -18,7 +18,7 @@
 %%[1 import(UU.Pretty, List) export(PP_DocL, ppListSep, ppCommaList, ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
 %%]
 
-%%[1 import(GetOpt) export(EHCOpts(..), defaultEHCOpts, cmdLineOpts)
+%%[1 import(GetOpt) export(EHCOpts(..), defaultEHCOpts, ehcCmdLineOpts)
 %%]
 
 %%[1 export(MkConAppAlg, mkApp, mkConApp, mkArrow)
@@ -531,8 +531,8 @@ defaultEHCOpts  = EHCOptions    {  ehcoptDumpPP         =   Just "pp"
                                 ,  ehcoptTrf            =   []
 %%]
 
-%%[cmdLineOptsA.1
-cmdLineOpts  
+%%[ehcCmdLineOptsA.1
+ehcCmdLineOpts  
   =  [  Option "p"  ["pretty"]        (OptArg oPretty "pp|ast|no")
           "do output pretty printed version of src, default=pp"
      ,  Option "d"  ["debug"]         (NoArg oDebug)
@@ -543,7 +543,7 @@ cmdLineOpts
           "output this help"
 %%]
 
-%%[cmdLineOptsA.8
+%%[ehcCmdLineOptsA.8
      ,  Option "c"  ["code"]          (OptArg oCode "java|grin")
           "dump code (java->.java, grin->.grin) on file, default=core (-> .core)"
      ,  Option ""   ["trf"]           (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
@@ -552,7 +552,7 @@ cmdLineOpts
           "be verbose, 0=quiet 1=normal 2=noisy, default=1"
 %%]
 
-%%[cmdLineOptsB.1
+%%[ehcCmdLineOptsB.1
   where  oPretty     ms  o =  case ms of
                                 Just "no"   -> o { ehcoptDumpPP        = Nothing   }
                                 Just p      -> o { ehcoptDumpPP        = Just p    }
@@ -564,7 +564,7 @@ cmdLineOpts
          oDebug          o =  o { ehcoptDebug         = True    }
 %%]
 
-%%[cmdLineOptsB.8
+%%[ehcCmdLineOptsB.8
          oCode       ms  o =  case ms of
                                 Just "java"  -> o { ehcoptCoreJava     = True      }
                                 Just "grin"  -> o { ehcoptCoreGrin     = True      }
@@ -595,9 +595,9 @@ cmdLineOpts
 %%@defaultEHCOpts.1
                                 }
 
-%%@cmdLineOptsA.1
+%%@ehcCmdLineOptsA.1
      ]
-%%@cmdLineOptsB.1
+%%@ehcCmdLineOptsB.1
 %%]
 
 %%[8.Options -1.Options
@@ -609,11 +609,11 @@ cmdLineOpts
 %%@defaultEHCOpts.8
                                 }
 
-%%@cmdLineOptsA.1
-%%@cmdLineOptsA.8
+%%@ehcCmdLineOptsA.1
+%%@ehcCmdLineOptsA.8
      ]
-%%@cmdLineOptsB.1
-%%@cmdLineOptsB.8
+%%@ehcCmdLineOptsB.1
+%%@ehcCmdLineOptsB.8
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

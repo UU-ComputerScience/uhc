@@ -28,66 +28,85 @@
 %%% Scanner
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.commonScannerConfig
-specialChars  =  "();,[]{}"
-opChars       =  "!#$%&*+/<=>?@\\^|-:.~"
+%%[1.ScanOpts
+data ScanOpts
+  =  ScanOpts
+        {   scoKeywordsTxt      ::  [String]
+        ,   scoKeywordsOps      ::  [String]
+        ,   scoSpecChars        ::  String
+        ,   scoOpChars          ::  String
+        }
 %%]
 
-%%[1.keywordsText
-keywordsText  =  [ "in" ] ++ offsideTrigs
+%%[1.scanOpts
+scanOpts :: ScanOpts
+scanOpts
 %%]
-
-%%[4.keywordsText -1.keywordsText
-keywordsText  =  [ "in", "forall", "exists" ] ++ offsideTrigs
+%%[1.defaultScanOpts
+  =  ScanOpts
 %%]
-
-%%[5.keywordsText -4.keywordsText
-keywordsText  =  [ "in", "forall", "exists", "data"
-                 , "case", "if", "then", "else"
-                 ] ++ offsideTrigs
+%%[7 -1.defaultScanOpts
+  =  defaultScanOpts
 %%]
-
-%%[8.keywordsText -5.keywordsText
-keywordsText  =  [ "in", "forall", "exists", "data"
-                 , "case", "if", "then", "else"
-                 , "foreign", "import", "jazy"
-                 ] ++ offsideTrigs
+%%[1
+        {   scoKeywordsTxt      =   
+                [ "in"
 %%]
-
-%%[9.keywordsText -8.keywordsText
-keywordsText  =  [ "in", "forall", "exists", "data"
-                 , "case", "if", "then", "else"
-                 , "foreign", "import", "jazy"
-                 , "class", "instance"
-                 ] ++ offsideTrigs
+%%[4
+                , "forall", "exists"
 %%]
-
-%%[1.keywordsOps
-keywordsOps   =  [ "=", "\\", show hsnArrow, "::", "@" ]
+%%[5
+                , "data", "case", "if", "then", "else"
 %%]
-
-%%[2.keywordsOps -1.keywordsOps
-keywordsOps   =  [ "=", "\\", show hsnArrow, "::", "@", "..." ]
+%%[8
+                , "foreign", "import", "jazy"
 %%]
-
-%%[4.keywordsOps -2.keywordsOps
-keywordsOps   =  [ "=", "\\", show hsnArrow, "::", "@", "...", "." ]
+%%[9
+                , "class", "instance"
 %%]
-
-%%[5.keywordsOps -4.keywordsOps
-keywordsOps   =  [ "=", "\\", show hsnArrow, "::", "@", "...", ".", "|" ]
+%%[1
+                ] ++ offsideTrigs
+        ,   scoKeywordsOps      =
+                [ "=", "\\", show hsnArrow, "::", "@"
 %%]
-
-%%[6.keywordsOps -5.keywordsOps
-keywordsOps   =  [ "=", "\\", show hsnArrow, "::", "@", "...", ".", "|", "*" ]
+%%[2
+                , "..."
 %%]
-
-%%[7.keywordsOps -6.keywordsOps
-keywordsOps   =  [ "=", "\\", show hsnArrow, "::", "@", "...", ".", "|", "*", ":=" ]
+%%[4
+                , "."
 %%]
-
-%%[9.keywordsOps -7.keywordsOps
-keywordsOps   =  [ "=", "\\", show hsnArrow, "::", "@", "...", ".", "|", "*", ":=", "=>", "<:" ]
+%%[5
+                , "|"
+%%]
+%%[6
+                , "*"
+%%]
+%%[7
+                , ":="
+%%]
+%%[9
+                , "=>", "<:"
+%%]
+%%[1
+                ]
+        ,   scoSpecChars        =
+                "();,[]{}"
+        ,   scoOpChars          =
+                "!#$%&*+/<=>?@\\^|-:.~"
+%%]
+%%[7 -1.ScanOpts
+        ,   scoSpecPairs        =
+                [  show hsnORow, show hsnCRow
+                ,  show hsnOSum, show hsnCSum
+%%]
+%%[9
+                ,  show hsnOImpl, show hsnCImpl
+%%]
+%%[7
+                ]
+%%]
+%%[1
+        }
 %%]
 
 %%[1.offsideTrigs
@@ -102,45 +121,20 @@ offsideTrigs  =  [ "let", "of" ]
 offsideTrigs  =  [ "let", "of", "where" ]
 %%]
 
-%%[7.specPairs
-specPairs     =  [  show hsnORow, show hsnCRow
-                 ,  show hsnOSum, show hsnCSum
-                 ]
-%%]
-
-%%[9.specPairs -7.specPairs
-specPairs     =  [  show hsnORow,   show hsnCRow
-                 ,  show hsnOSum,   show hsnCSum
-                 ,  show hsnOImpl,  show hsnCImpl
-                 ]
-%%]
-
 %%[1.scanHandle
-scanHandle :: [String] -> [String] -> String -> String -> FilePath -> Handle -> IO [Token]
-scanHandle keywordstxt keywordsops specchars opchars fn fh
+scanHandle :: ScanOpts -> FilePath -> Handle -> IO [Token]
+scanHandle opts fn fh
   = do  {  txt <- hGetContents fh
-        ;  return (scan keywordstxt keywordsops specchars opchars (initPos fn) txt) 
+        ;  return (scan (scoKeywordsTxt opts) (scoKeywordsOps opts) (scoSpecChars opts) (scoOpChars opts) (initPos fn) txt) 
         }
-
-offsideScanHandle fn fh
-  = do  {  tokens <- scanHandle keywordsText keywordsOps specialChars opChars fn fh
-        ;  return (scanOffside moduleT oBrace cBrace triggers tokens)
-        }
-  where   moduleT   = reserved "let" noPos
-          oBrace    = reserved "{" noPos
-          cBrace    = reserved "}" noPos
-          triggers  = [ reserved x noPos | x <- offsideTrigs ]
 %%]
 
-%%[7.scanHandle -1.scanHandle
-scanHandle :: [String] -> [String] -> String -> String -> [String] -> FilePath -> Handle -> IO [Token]
-scanHandle keywordstxt keywordsops specchars opchars specpairs fn fh
-  = do  {  txt <- hGetContents fh
-        ;  return (scan keywordstxt keywordsops specchars opchars specpairs (initPos fn) txt) 
-        }
+%%[7 -1.scanHandle
+%%]
 
+%%[1.offsideScanHandle
 offsideScanHandle fn fh
-  = do  {  tokens <- scanHandle keywordsText keywordsOps specialChars opChars specPairs fn fh
+  = do  {  tokens <- scanHandle scanOpts fn fh
         ;  return (scanOffside moduleT oBrace cBrace triggers tokens)
         }
   where   moduleT   = reserved "let" noPos
@@ -855,24 +849,3 @@ pDeclInstance   =    pKey "instance"
                           )
 %%]
 
-
-pDeclInstance   =    pKey "instance"
-                     *>   (    (\ne -> uncurry (sem_Decl_Instance ne))
-                               <$>  ((\n e -> Just (n,e)) <$> pVar <*> (True <$ pKey "<:" <|> False <$ pKey "::") `opt` Nothing)
-                               <*>  pClassHead
-                               <*   pKey "where" <*> pDecls
-                          <|>  sem_Decl_InstanceIntro <$> pVar <* pKey "<:" <*> pPrExprClass
-                          )
-
-
-pDeclInstance   =    (\ne -> uncurry (sem_Decl_Instance ne))
-                     <$   pKey "instance"  <*> ((\n e -> Just (n,e)) <$> pVar <*> (True <$ pKey "<:" <|> False <$ pKey "::") `opt` Nothing)
-                     <*>  pClassHead
-                     <*   pKey "where" <*> pDecls
-
-pDeclInstance   =    pKey "instance"
-                     *>   (  (\mbNe (cp,p) d -> maybe () () mb)
-                             <$> ((\n e -> Just (n,e)) <$> pVar <*> (True <$ pKey "<:" <|> False <$ pKey "::") `opt` Nothing)
-                             <*>  pClassHead
-                             <*   pKey "where" <*> pDecls
-                          )
