@@ -527,7 +527,7 @@ data FIMode  =  FitSubLR
              |  FitSubRL
              |  FitUnify
 %%]
-%%[4_1
+%%[4_2
              |  FitMeet
              |  FitJoin
 %%]
@@ -542,7 +542,7 @@ fimOpp m
        FitSubLR  -> FitSubRL
        FitSubRL  -> FitSubLR
 %%]
-%%[4_1
+%%[4_2
        FitMeet   -> FitJoin
        FitJoin   -> FitMeet
 %%]
@@ -561,7 +561,7 @@ instance Show FIMode where
   show FitSubRL  = ">="
   show FitUnify  = "=="
 %%]
-%%[4_1
+%%[4_2
   show FitMeet   = "=^="
   show FitJoin   = "=v="
 %%]

@@ -73,12 +73,6 @@ SEM Expr
                                                     (foErrL @foKnFun ++ @arg.errL ++ @body.errL ++ @gamErrL)
 %%]
 
-%%[4_3
-SEM Expr
-  | Let         loc         .  gamErrL      =   gamErrToL @errGam
-                            .  letErrL      :=  @dupErrs ++ @gamErrL
-%%]
-
 %%[5
 %%]
 SEM CaseAlts

@@ -2,31 +2,31 @@
 
 %% configuration of what to include
 
-%if forPHD || forAfpTRUU1
+%if storyPHD || storyAfpTRUU1
 %let inclParts  = True
 %else
 %let inclParts  = False
 %endif
 
-%if forPHD || forAfpTRUU1
+%if storyPHD || storyAfpTRUU1
 %let inclTOC    = True
 %else
 %let inclTOC    = False
 %endif
 
-%if forAFP04Notes || forPHD || forEHIntro || forAfpTRUU1
+%if storyAFP04Notes || storyPHD || storyEHIntro || storyAfpTRUU1
 %let incl00     = True
 %else
 %let incl00     = False
 %endif
 
-%if forAFP04Notes || forPHD || forAfpTRUU1
+%if storyAFP04Notes || storyPHD || storyAfpTRUU1
 %let incl01     = True
 %else
 %let incl01     = False
 %endif
 
-%if forPHD  || forAfpTRUU1
+%if storyPHD  || storyAfpTRUU1
 %let incl02     = True
 %let incl03     = True
 %else
@@ -34,13 +34,13 @@
 %let incl03     = False
 %endif
 
-%if forPHD  || forAfpTRUU1 || onlyCurrentWork
+%if storyPHD  || storyAfpTRUU1 || onlyCurrentWork
 %let incl04     = True
 %else
 %let incl04     = False
 %endif
 
-%if forPHD  || onlyCurrentWork
+%if storyPHD  || onlyCurrentWork
 %let incl05     = True
 %let incl06     = True
 %let incl07     = True
@@ -50,19 +50,19 @@
 %let incl07     = False
 %endif
 
-%if forPHD  || onlyCurrentWork
+%if storyPHD  || onlyCurrentWork
 %let incl08     = True
 %else
 %let incl08     = False
 %endif
 
-%if forPHD || forESOP05  || onlyCurrentWork
+%if storyPHD || storyExplImpl  || onlyCurrentWork
 %let incl09     = True
 %else
 %let incl09     = False
 %endif
 
-%if forPHD  || onlyCurrentWork
+%if storyPHD  || onlyCurrentWork
 %let incl10     = True
 %let incl11     = True
 %else
@@ -70,7 +70,7 @@
 %let incl11     = False
 %endif
 
-%if forPHD 
+%if storyPHD 
 %let incl12     = True
 %let incl13     = True
 %let incl14     = True
@@ -88,7 +88,7 @@
 %let inclXX     = False
 %endif
 
-%if forPHD
+%if storyPHD
 %let inclApp    = True
 %let inclInx    = True
 %else
@@ -96,7 +96,7 @@
 %let inclInx    = False
 %endif
 
-%if forESOP05
+%if storyExplImpl
 %let chapAsArticle  = True
 %else
 %let chapAsArticle  = False
@@ -116,30 +116,36 @@
 %if asArticle
 %if llncs
                class=llncs,
+%elif acm
+               class=sigplan-proc,preprint,
 %else
                class=article,
-%endif
+%endif %% llncs
 %else
                class=book,
-%endif
-%endif
-%endif
-%if not asSlides
+%endif %% asArticle
+%endif %% asSlides
+%endif %% yesBeamer
+%if not (asSlides || acm)
                a4paper,
 %if veryWide
                11pt,
 %else
                10pt,
-%endif
+%endif %% veryWide
                headinclude,% new for typearea
                footexclude,% new for typearea
                nopictures%
+%elif acm
+               preprint
 %endif
 ]
 %if yesBeamer
                {beamer}
 %else
-%if asArticle
+%if acm
+               {sigplan-proc}%{article}
+%elif asArticle
                {beamer}%{article}
 %else
                {beamer}%{book}
@@ -147,18 +153,11 @@
 %endif
 
 %include lhs2TeX.fmt
+%include forText.fmt
 
-%if style == poly
-
-%include greek_indices.fmt
-%include indices.fmt
-%include more_indices.fmt
-% include lang.fmt
-% include types.fmt
-% include judgments.fmt
+%if not asSlides
+\usepackage{kscode}
 %endif
-
-%include afp.fmt
 
 \usepackage{fancyvrb}
 \usepackage{\jobname} %%% needs: fancyvrb
@@ -172,39 +171,42 @@
 \beamertemplatetransparentcovereddynamic
 %else
 \usepackage
-%if llncs
+%if llncs || acm
 [noamsthm]
-%endif
+%elif acm
+%endif %% llncs ...
 {beamerbasearticle}
-%endif
+%endif %% asSlides
 %else
 %\usepackage[absolute]{textpos}%
 \usepackage{color}
 \usepackage[fleqn]{amsmath}
+%if not acm
 \usepackage{mparhack}% to get marginpars to show up correctly
 \usepackage{natbib}
 \bibpunct{(}{)}{;}{a}{}{,}
-%endif
+%endif %% not acm
+%endif %% yesBeamer
 
-%if not (asSlides || llncs)
-% the following statement deviates from the default in that
-% we use nothing (a space) to separate author from year in citations
+%if not (asSlides || llncs || acm)
 %if wide
 %if asArticle
 \usepackage[left=2.75cm,right=2.75cm,top=3cm,bottom=3cm,nohead]{geometry}
 %else
 \usepackage[left=2.75cm,right=2.75cm,top=3cm,bottom=3cm,asymmetric]{geometry}
-%endif
+%endif %% asArticle
 %elif veryWide
 \usepackage[left=2.25cm,right=2.25cm,top=2.5cm,bottom=2.5cm,nohead]{geometry}
-%endif
-%endif
+%endif %% wide
+%endif %% not (...)
 
 \usepackage{pgf}
 \usepackage{pgfarrows}
 \usepackage{pgfnodes}
 
-%if not asSlides
+%if asSlides
+%elif acm
+%else
 \usepackage
 %if fontsite
            [sc]%
@@ -212,9 +214,7 @@
            {mathpazo}% change main font
 \linespread{1.05}% larger line spacing due to palatino
 \renewcommand{\bfdefault}{b}% bx palatino isn't available anyway
-%if not fontsite
-\usepackage[scaled=.95]{helvet}% change sf font
-%else
+%if fontsite
 \usepackage{grotesk}
 \let\originaltextsc=\textsc
 \renewcommand{\textsc}[1]{%
@@ -222,14 +222,16 @@
   \fontfamily{5plj}\selectfont
   \originaltextsc{#1}%
   \endgroup}
-%endif
+%else
+\usepackage[scaled=.95]{helvet}% change sf font
+%endif %% fontsite
 \usepackage{calc}
-%endif
+%endif %% asSlides
 
 \usepackage{array}
 
 % experimental \DeclareMathOperator redefinition to use sf font
-%if llncs
+%if llncs || (acm && yesBeamer)
 \newcommand{\DeclareMathOperator}[2]{%
   \newcommand*{#1}{\textsf{#2}}}
 %else
@@ -243,19 +245,11 @@
 % Hyperref should be the last package loaded. The final online
 % version should use something different than the ugly boxes.
 
+%if useHyperref
 \usepackage{hyperref}
-
-%include lhs2TeX.sty
-
-% Better formatting of code blocks ...
-
-%if not asSlides
-%include kscode.fmt
 %endif
 
-% All sorts of predefined formatting directives ...
-
-%include spacing.fmt
+%include lhs2TeX.sty
 
 % Done with lhs2TeX stuff ...
 
@@ -307,7 +301,7 @@
 %endif
 %endif
 
-%if not asArticle || chapAsArticle || forEHIntro
+%if not asArticle || chapAsArticle || storyEHIntro
 \let\prevSection=\section
 \let\prevSubsection=\subsection
 %if not chapAsArticle
@@ -316,7 +310,7 @@
 \def\subsection{\prevSection}
 \def\subsubsection{\prevSubsection}
 %endif
-%if forEHIntro
+%if storyEHIntro
 \def\paragraph{\prevSubsection}
 %endif
 
@@ -466,7 +460,7 @@
 
 %%% sizes
 
-%if llncs
+%if llncs || acm
 \setlength{\mathindent}{.03\textwidth}
 %else
 \setlength{\mathindent}{.05\textwidth}
@@ -477,16 +471,36 @@
 %endif
 
 % title
-%if forESOP05
+%if storyExplImpl
 \title{Explicit implicit parameters}
-%elif forEHIntro
+%elif storyEHIntro
 \title{Essential Haskell Compiler overview}
 %else
 \title{Typing Haskell with an Attribute Grammar}
 %endif
 
-%if forPHD
+%if storyPHD
 \author{Atze Dijkstra}
+%elif acm && storyExplImpl
+\numberofauthors{2}
+\author{
+%
+% The command \alignauthor (no curly braces needed) should
+% precede each author name, affiliation/snail-mail address and
+% e-mail address. Additionally, tag each line of
+% affiliation/address with \affaddr, and tag the
+%% e-mail address with \email.
+\alignauthor Atze Dijkstra\\
+       \affaddr{Institute of Information and Computing Sciences}\\
+       \affaddr{Utrecht University}\\
+       \affaddr{P.O.Box 80.089, 3508 TB Utrecht, The Netherlands}\\
+       \email{atze@cs.uu.nl}
+\alignauthor Doaitse S. Swierstra\\
+       \affaddr{Institute of Information and Computing Sciences}\\
+       \affaddr{Utrecht University}\\
+       \affaddr{P.O.Box 80.089, 3508 TB Utrecht, The Netherlands}\\
+       \email{doaitse@cs.uu.nl}
+}
 %else
 \author{Atze Dijkstra and S. Doaitse Swierstra}
 %endif
@@ -554,6 +568,11 @@ WWW home page:
 %\inputEHCTex{\EHCTexVersion}{EHCoreJava.tex}
 %\inputEHCTex{\EHCTexVersion}{EHGenCore.tex}
 
+%% AG primer
+\inputEHCTex{\EHCTexVersion}{RepminAG.tex}
+\inputEHCTex{\EHCTexVersion}{RepminHS.tex}
+\inputEHCTex{\EHCTexVersion}{Expr.tex}
+
 % rules
 \input rules.tex
 
@@ -568,12 +587,12 @@ WWW home page:
 \frontmatter
 %endif
 
-%if forAfpTRUU1
+%if storyAfpTRUU1
 \TRtitlepage
 {Typing Haskell with an Attribute Grammar (Part I)}
 {Atze Dijkstra \\ Doaitse Swierstra}
 {UU-CS-2004-037}
-%elif forESOP05 && truu
+%elif storyExplImpl && truu
 \TRtitlepage
 {Explicit implicit parameters}
 {Atze Dijkstra \\ S. Doaitse Swierstra}
@@ -583,10 +602,12 @@ WWW home page:
 \maketitle
 %endif
 
+%if asSlides
 \frame<presentation>{\titlepage}
+%endif
 
 % Avoid indentation
-%if not (forESOP05 && llncs)
+%if not (acm || llncs)
 \setlength{\parindent}{0mm}
 \addtolength{\parskip}{0.4\baselineskip}
 %endif
@@ -595,7 +616,7 @@ WWW home page:
 %%% Abstract
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%if forAfpTRUU1
+%if storyAfpTRUU1
 \section*{Preface}
 \subsection*{Type systems for functional languages (abstract)}
 %endif
@@ -604,7 +625,7 @@ WWW home page:
 \begin{abstract}
 %endif
 
-%if forESOP05
+%if storyExplImpl
 In almost all languages arguments to functions are to be given explicitly in the program text.
 There are however a few interesting exceptions to this rule.
 In Haskell functions take arguments which are either passed explicitly or implicitly.
@@ -633,7 +654,7 @@ Much has been written about type systems.
 Much less has been written about implementing them.
 Even less has been written about implementations of complete compilers in which
 all aspects come together.
-%if forAFP04Notes
+%if storyAFP04Notes
 This paper fills this gap by describing the implementation of the first
 of a series of compilers
 for a simplified variant of Haskell.
@@ -653,7 +674,7 @@ Therefore, sources and (this) explanation are kept consistent.
 \end{abstract}
 %endif
 
-%if forAfpTRUU1
+%if storyAfpTRUU1
 \subsection*{Context of this paper}
 A previous version of this paper has been presented and
 distributed at the AFP2004 summerschool\footnote{The proceedings
@@ -691,7 +712,7 @@ This concerns mainly future design decisions which have an influence on design d
 \part{Type checking, inference and polymorphism}
 %endif
 
-%if not forEHIntro
+%if not (storyEHIntro || acm)
 \frame<presentation>{
 \frametitle{Topics}
 \tableofcontents[hidesubsections]
@@ -704,8 +725,8 @@ This concerns mainly future design decisions which have an influence on design d
 
 %if incl00
 
-%if not forEHIntro
-%if forPHD
+%if not storyEHIntro
+%if storyPHD
 \section*%
 %else
 \section%
@@ -743,14 +764,14 @@ the intentions and purpose of this paper in more detail.
 This is followed by a short description
 of the final language for which we develop compilers throughout this paper.
 
-%if forPHD
+%if storyPHD
 \subsection*%
 %else
 \subsection%
 %endif
 {Purpose}
 
-%if forEHIntro
+%if storyEHIntro
 \frame<presentation>
 {
 \frametitle{Why and what?}
@@ -850,7 +871,7 @@ of the final language for which we develop compilers throughout this paper.
 \end{itemize}
 }
 
-%if forEHIntro
+%if storyEHIntro
 \frame<presentation>
 {
 \frametitle{How is it implemented?}
@@ -972,7 +993,7 @@ can be managed by splitting the implementation of the compiler into separate asp
 A working combination of otherwise usually separately proven or implemented features.
 \end{itemize}
 
-%if forAFP04Notes
+%if storyAFP04Notes
 It should be noted that because of space limitations these notes only describe the first
 four steps originally described in the extended version of this paper, handed out during the AFP04 summerschool
 \cite{dijkstra04thag-part1}.
@@ -1028,7 +1049,7 @@ the following chapters.
 Only short examples are given, so the reader gets an impression of what is explained in more detail
 and implemented in the relevant versions of the compiler.
 
-%if forPHD
+%if storyPHD
 \subsection*%
 %else
 \subsection%
@@ -1108,7 +1129,7 @@ gives rise to error annotated representation of program:
 \paragraph{EH version 2: Explicit/implicit typing.}
 The next version
 (EH version 2,
-%if forAFP04Notes
+%if storyAFP04Notes
 describe elsewhere \cite{dijkstra04thag-part1}
 %else
 \chapterRef{ehc2}%
@@ -1158,7 +1179,7 @@ gives rise to type
 \paragraph{EH version 3: Polymorphism.}
 The third version
 (EH version 3,
-%if forAFP04Notes
+%if storyAFP04Notes
 describe elsewhere \cite{dijkstra04thag-part1}
 %else
 \chapterRef{ehc3}%
@@ -1222,7 +1243,7 @@ In general, this is a hard thing to do and even impossible for rank-3 (and highe
 \cite{jim95rank,kfoury94direct,kfoury99rank2-decid,kfoury03rank2-princ},
 so the fourth version
 (EH version 4,
-%if forAFP04Notes
+%if storyAFP04Notes
 describe elsewhere \cite{dijkstra04thag-part1}
 %else
 \chapterRef{ehc4}%
@@ -1334,7 +1355,7 @@ Existential quantification: hiding/forgetting type information
 \end{itemize}
 }
 
-%if incl05 || forEHIntro
+%if incl05 || storyEHIntro
 
 \paragraph{EH version 5: Data types.}
 The fifth version (EH version 5, \chapterRef{ehc5})
@@ -1361,7 +1382,7 @@ User defined data types
 
 %endif %% incl05
 
-%if incl06 || forEHIntro
+%if incl06 || storyEHIntro
 
 \paragraph{EH version 6: Kinding.}
 The previous version allows incorrect programs because
@@ -1448,7 +1469,7 @@ Kind signatures for types (similar to type signatures for values)
 
 %endif %% incl06
 
-%if incl07 || forEHIntro
+%if incl07 || storyEHIntro
 \frame<presentation>
 {
 \frametitle{EH version 7: Non extensible records}
@@ -1464,7 +1485,7 @@ Kind signatures for types (similar to type signatures for values)
 
 %endif %% incl07
 
-%if incl08 || forEHIntro
+%if incl08 || storyEHIntro
 \frame<presentation>
 {
 \frametitle{EH version 8: Code generation}
@@ -1480,7 +1501,7 @@ Kind signatures for types (similar to type signatures for values)
 }
 %endif %% incl08
 
-%if incl09 || forEHIntro
+%if incl09 || storyEHIntro
 \frame<presentation>
 {
 \frametitle{EH version 9: Class system, explicit implicit parameters}
@@ -1504,7 +1525,7 @@ Kind signatures for types (similar to type signatures for values)
 }
 %endif %% incl09
 
-%if incl10 || forEHIntro
+%if incl10 || storyEHIntro
 \frame<presentation>
 {
 \frametitle{EH version 10: Extensible records}
@@ -1525,7 +1546,7 @@ Kind signatures for types (similar to type signatures for values)
 }
 %endif %% incl10
 
-%if incl11 || forEHIntro
+%if incl11 || storyEHIntro
 \frame<presentation>
 {
 \frametitle{EH version [11..]: ...}
@@ -1539,7 +1560,7 @@ Kind signatures for types (similar to type signatures for values)
 }
 %endif %% incl11
 
-%if forPHD
+%if storyPHD
 \subsection*%
 %else
 \subsection%
@@ -1586,7 +1607,7 @@ incorporates most of the abovementioned features:
 \end{description}
 
 %if False
-%if forPHD
+%if storyPHD
 \subsection*%
 %else
 \subsection%
@@ -1614,7 +1635,7 @@ in   let  maf :: (a -> Eq a a) -> Eq L L
 \TBD{}
 %endif
 
-%if forPHD
+%if storyPHD
 \subsection*%
 %else
 \subsection%
@@ -1648,8 +1669,24 @@ The complete compiler text can be found on the website accompanying
 this paper \cite{dijkstra04ehc-web}.
 \end{itemize}
 
+%if storyPHD
+\subsection*%
+%else
+\subsection%
+%endif
+{An AG mini primer}
+\inputEHCTex{\EHCTexVersion}{AGMiniPrimer.tex}
+
+%if storyPHD
+\subsection*%
+%else
+\subsection%
+%endif
+{Typical AG usage}
+\inputEHCTex{\EHCTexVersion}{AGPatterns.tex}
+
 %if not omitLitDiscuss
-%if forPHD
+%if storyPHD
 \subsection*%
 %else
 \subsection%
@@ -2014,7 +2051,7 @@ We also can encode a tuple with exactly one element,
 which is for tuples themselves quite useless
 as tuples have at least two elements.
 However, when describing data types
-%if not forAFP04Notes
+%if not storyAFP04Notes
 later on, in \chapterRef{ehc5},
 %endif
 this turns out to be convenient.
@@ -3126,7 +3163,7 @@ implementation here is a test on equality of the two type arguments.
 The \ruleRef{f-arrow1} in \figRef{rules.fit1} for comparing function types compares the
 types for arguments in the other direction relative to the function type itself.
 Only in
-%if forAFP04Notes
+%if storyAFP04Notes
 later versions of EH
 %else
 \secPageRef{ehc4-fitsin}
@@ -3860,7 +3897,7 @@ bindings for identifiers (|AGPat(State Gather)| via |patValGam|) first, passing 
 \label{sec-error1}
 
 Errors too are defined using AG%
-%if forAFP04Notes
+%if storyAFP04Notes
 .
 %else
 (see also \pageRef{EHErrorAbsSyn.1.UnifyClash}).
@@ -3877,7 +3914,7 @@ This is only shown for expressions:
 
 Pretty printed collected errors are made available for
 inclusion in the pretty printing of the abstract syntax tree%
-%if forAFP04Notes
+%if storyAFP04Notes
 .
 %else
 (see \pageRef{EHPretty.1.Base.ExprSimple}).
@@ -7323,7 +7360,7 @@ split       ::=     var = offset                    --  extraction at offset
 \part{Implicitness}
 %endif
 
-%if not forESOP05
+%if not storyExplImpl
 \section{EH 9: explicit implicitness, classes}
 \label{ehc9}
 %endif
@@ -7334,7 +7371,7 @@ split       ::=     var = offset                    --  extraction at offset
 %format pia         = pi "^a"
 %format piasigma    = pia "_{" sigma "}"
 
-%if forESOP05
+%if storyExplImpl
 \subsection{Introduction}
 
 The Haskell class system originally introduced by both Wadler \cite{wadler88how-ad-hoc-poly}
@@ -7549,7 +7586,7 @@ only value expressions will use |(#| and |#)| to denote an explicitly passed
 implicit parameter.
 %endif
 
-\paragraph{Partial type signatures.}
+\paragraph*{Partial type signatures.}
 Explicitly specifying type signatures can be a burden for the programmer,
 especially when
 types become large and only a specific part of the type needs to be specified
@@ -7559,7 +7596,8 @@ the following signature is sufficient:
 
 \begin{code}
 f :: forall    b . (Eq b,  ...   ) => ...  -> ...  -> b -> b -> ...
-f :: forall a  b . (Eq b,  Eq a  ) => a    -> a    -> b -> b -> (Bool,Bool) -- INFERRED
+-- INFERRED:
+f :: forall a  b . (Eq b,  Eq a  ) => a    -> a    -> b -> b -> (Bool,Bool)
 \end{code}
 
 Or, if instead the predicate associated with the first and second parameter needs
@@ -7567,7 +7605,8 @@ to have a fixed position:
 
 \begin{code}
 f :: forall a   . (  Eq a,  ...   )  => a -> a -> ...
-f :: forall a   .    Eq a            => a -> a -> forall b . Eq b => b -> b -> (Bool,Bool) -- INFERRED
+-- INFERRED:
+f :: forall a   .    Eq a            => a -> a -> forall b . Eq b => b -> b -> (Bool,Bool)
 \end{code}
 
 The dots "|...|" in the type signature specify a part of the signature for which the programmer
@@ -7744,7 +7783,7 @@ and related design issues.
 %format sigmark = sigma "_r^k"
 %format instpi  = inst "_{" pi "}"
 
-\paragraph{Combining type inferencing and type checking.}
+\paragraph*{Combining type inferencing and type checking.}
 Of all the typing rules normally used to describe the semantics of Haskell
 and qualified types
 \cite{faxen02semantics-haskell,jones94phd-qual-types},
@@ -7956,7 +7995,7 @@ the |fit| judgement and its parameterization with additional contextual informat
 
 %}
 
-\paragraph{Binding time of instances.}
+\paragraph*{Binding time of instances.}
 One other topic in particular deserves attention, especially since it deviates from the
 standard semantics of Haskell.
 In the example for |nub|, the invocation of |nub| is parameterized with a modified record:
@@ -8431,7 +8470,7 @@ The translation of the application reflects this.
 
 Named instances \cite{kahl01named-instance}.
 
-%endif %% forESOP05
+%endif %% storyExplImpl
 
 %}
 

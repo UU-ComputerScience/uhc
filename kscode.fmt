@@ -1,26 +1,6 @@
-
-%subst code a           = "\begingroup\parskip=\abovedisplayskip\par\noindent\advance\leftskip\mathindent\('n\begin{pboxed}\SaveRestoreHook'n" a "\ColumnHook'n\end{pboxed}'n\)\parskip=\belowdisplayskip\par\noindent\endgroup\resethooks'n"
-
+% split of kscode into sty and fmt (this one)
 
 %subst code a = "\begin{hscode}\SaveRestoreHook'n" a "\ColumnHook'n\end{hscode}\resethooks'n"
-
-\newenvironment{plainhscode}%
-  {\parskip=\abovedisplayskip\par\noindent
-   \advance\leftskip\mathindent
-   \(\pboxed}%
-  {\endpboxed\)%
-   \parskip=\belowdisplayskip\par\noindent}
-
-
-\let\hscode=\plainhscode
-\let\endhscode=\endplainhscode
-
-\newenvironment{arrayhscode}%
-  {\parray}{\endparray}
-
-\newcommand*{\arrayhs}%
-  {\let\hscode=\arrayhscode
-   \let\endhscode=\endarrayhscode}
 
 % the following two are not needed, because the {} are
 % already in %subst fromto ...
@@ -35,10 +15,3 @@
 % To prevent that, we make the first column special.
 
 %subst fromto b e x = "\fromto{" b "}{" e "}{\BF " b "\relax{" x "}}"
-
-\def\BF#1#2\relax#3{%
-  \if B#1%
-    {#3{}}%
-  \else
-    {{}#3{}}%
-  \fi}

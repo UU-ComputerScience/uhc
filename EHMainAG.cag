@@ -21,10 +21,7 @@
 %%[4 hs import(EHDebug)
 %%]
 
-%%[4_1 hs import(EHGamUtils,EHTyElimAlts)
-%%]
-
-%%[4_2 hs import(Set,EHTyFreshVar)
+%%[4_2 hs import(Set,EHGamUtils,EHTyElimAlts)
 %%]
 
 %%[8 hs import(FiniteMap,EHCore,EHCoreUtils)

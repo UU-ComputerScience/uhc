@@ -60,7 +60,7 @@ DATA Err
                         fiModeD    : {FIMode}
 %%]
 
-%%[4_1
+%%[4_2
 DATA Err
   | InconsistentAlts    ty         : {Ty}                ^^  tvar       : {TyVarId}
                         tyL        : {TyL}               ^^  fiMode     : FIMode

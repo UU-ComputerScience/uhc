@@ -23,7 +23,7 @@
 \newenvironment{RulesFigure}[3]{%
   \def\RFCap{#2}
   \def\RFLab{#3}
-%if forESOP05
+%if storyExplImpl
   \begin{figure}[t]
 %else
   \begin{figure}[htbp]
@@ -88,7 +88,8 @@
 %if asSlides
  \parbox{\textwidth}{\csname #1\endcsname}
 %else
- \csname #1\endcsname\vspace{-1.5\parskip}
+ \csname #1\endcsname
+ \vspace{-1.5\parskip}
 %endif
 }
 \newcommand{\chunkCmdFrameUse}[1]{%
@@ -125,7 +126,7 @@
 \newcommand{\figRef}[1]{figure~\ref{#1}}
 \newcommand{\FigRef}[1]{Figure~\ref{#1}}
 \newcommand{\secRef}[1]{section~\ref{#1}}
-%if llncs
+%if llncs || acm
 \newcommand{\pageRef}[1]{}
 \newcommand{\figPageRef}[1]{\figRef{#1}}
 \newcommand{\secPageRef}[1]{\secRef{#1}}
@@ -151,7 +152,7 @@ appendix~\ref{#1}
 
 % citations
 \newcommand{\refPDF}[1]{%
-%if refToPDF
+%if refToPDF && useHyperref
 \IfInputExists{#1}{({\color{blue}\href{#1}{pdf}})}{}
 %else
 %endif

@@ -1,39 +1,69 @@
 .SUFFIXES:
 .SUFFIXES: .pdf .tex .bib .html .lhs .sty .lag .cag .chs
 
+# build dir's for AG primer related programs
+D_BUILD				:= build
+D_BUILD_BIN			:= $(D_BUILD)/bin
+
+# main document
 AFP					:= afp
-AFP_LHS				:= afp.lhs
-AFP_PDF				:= $(AFP).pdf
-AFP_TEX				:= $(AFP).tex
-AFP_STY				:= $(AFP).sty
+
+# tmp dir, specifically for each document variant,
 # assumed to be prefixed by tmp- inside afp.lsty/lhs:
 AFP_TMPDIR			:= tmp-$(AFP)/
 AFP_FMT				:= afp.fmt
 
+# main text
+AFP_LHS				:= afp.lhs
+AFP_PDF				:= $(AFP).pdf
+AFP_TEX				:= $(AFP).tex
+AFP_STY				:= $(AFP).sty
+
+# sub texts
+AFP_TEXTS			:= text/
+AFP_TEXTS_LHS		:= $(addprefix $(AFP_TEXTS),AGMiniPrimer.lhs AGPatterns.lhs)
+AFP_TEXTS_TEX		:= $(patsubst $(AFP_TEXTS)%.lhs,$(AFP_TMPDIR)%.tex,$(AFP_TEXTS_LHS))
+
+# AG primer
+AG_PRIMER			:= agprimer/
+AG_PRIMER_CAG		:= $(addsuffix .cag,$(addprefix $(AG_PRIMER),RepminAG Expr))
+AG_PRIMER_CHS		:= $(addsuffix .chs,$(addprefix $(AG_PRIMER),RepminHS))
+AG_PRIMER_CAG_TEX	:= $(patsubst $(AG_PRIMER)%,$(AFP_TMPDIR)%,$(AG_PRIMER_CAG:.cag=.tex))
+AG_PRIMER_CHS_TEX	:= $(patsubst $(AG_PRIMER)%,$(AFP_TMPDIR)%,$(AG_PRIMER_CHS:.chs=.tex))
+AG_PRIMER_TEX		:= $(AG_PRIMER_CAG_TEX) $(AG_PRIMER_CHS_TEX)
+
+# lhs2tex
 LHS2TEX_PATH 		:=
-LHS2TEX_OPTS_BASE	:= --set=asArticle --set=wide --set=expandPrevRef --set=yesBeamer
+LHS2TEX_OPTS_BASE	:= --set=asArticle --set=wide --set=expandPrevRef --set=yesBeamer --set=useHyperref
 LHS2TEX_OPTS		:= $(LHS2TEX_OPTS_BASE) --set=forAfpHandout
 LHS2TEX				:= lhs2TeX $(LHS2TEX_OPTS) $(LHS2TEX_PATH)
+
+# indentation of (test) output
 INDENT2				:= sed -e 's/^/  /'
 INDENT4				:= sed -e 's/^/    /'
 
+# how to latex
 AFP_LATEX			:= pdflatex --jobname $(AFP)
 
+# on what AFP.tex depends w.r.t. inclusion of compiler output (from ehc versions)
 AFP_TEX_DPDS		:= ehcs
 
+# date
 DATE				:= $(shell /bin/date +%Y%m%d)
 
+# pre generated distribution
 DIST				:= $(DATE)-ehc
 DIST_PREFIX			:= 
 DIST_ZIP			:= $(DIST_PREFIX)$(DIST).zip
 DIST_TGZ			:= $(DIST_PREFIX)$(DIST).tgz
 
+# distributed/published stuff for WWW
 WWW_SRC_ZIP			:= www/current-ehc-src.zip
 WWW_SRC_TGZ			:= www/current-ehc-src.tgz
 WWW_DOC_PDF			:= www/current-ehc-doc.pdf
 
+# compilers and tools used
 AGC					:= uuagc
-#AGC					:= /Volumes/Tmp/Tmp/uuag/a.out
 GHC					:= ghc
 SUBSTEHC			:= bin/substehc.pl
 SUBSTSH				:= bin/substsh.pl
@@ -41,16 +71,23 @@ SUBSTSH				:= bin/substsh.pl
 SUBST_BAR_IN_TT		:= sed -e '/begin{TT}/,/end{TT}/s/|/||/g'
 SUBST_LINE_CMT		:= sed -e 's/{-\# LINE[^\#]*\#-}//' -e '/{-\#  \#-}/d'
 
+# Makefile template for making a ehc version
 MK_EHFILES			:= mk/ehfiles.mk
 
 # AGC(opts, file)
 AGCC				= cd `dirname $2` ; $(AGC) $1 `basename $2`
 
+# lhs2tex format files used
 AFP_FMT_OTHER		:= lag2TeX.fmt pretty.fmt parsing.fmt
+
+# type rules, in ruler format
 AFP_RULES			:= rules.rul
 AFP_RULES_TEX		:= $(AFP_RULES:.rul=.tex)
+
+# pictures in pgf format
 AFP_PGF_TEX			:= afp-pgf.tex
 
+# all text sources
 ALL_AFP_SRC			:= $(AFP_LHS) $(AFP_RULES)
 
 
@@ -146,7 +183,7 @@ SHUFFLE_DOC_PDF		:= $(SHUFFLE_DIR)/ShuffleDoc.pdf
 
 SHUFFLE_SRC			:= $(SHUFFLE_DIR)/$(SHUFFLE_AG)
 
-SHUFFLE_ORDER		:= 1 < 2 < 3 < 4 < 5 < 6 < 7 < 8 < 9 < 10 < 11, 4 < 4_1 < 4_3, 4 < 4_1 < 4_2
+SHUFFLE_ORDER		:= 1 < 2 < 3 < 4 < 5 < 6 < 7 < 8 < 9 < 10 < 11, 4 < 4_2
 
 
 RULER				:= bin/ruler
@@ -326,14 +363,6 @@ EHC_V4_2			:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 4_2
 
 
-### Version 4:3
-V					:= 4_3
-VF					:= 4_3
-include $(MK_EHFILES)
-EHC_V4_3			:= $(addprefix $(VF)/,$(EHC))
-### End of Version 4_3
-
-
 ### Version 5
 V					:= 5
 VF					:= $(V)
@@ -402,6 +431,32 @@ GRI_V11				:= $(addprefix $(VF)/,$(GRI))
 ### End of Version 11
 
 
+### AG Primer's Repmin AG variant
+$(AG_PRIMER_CAG:.cag=.ag): %.ag: %.cag $(SHUFFLE)
+	$(call SHUFFLE_LHS_AG,$<,$@,1,Main) ; \
+	touch $@
+
+$(D_BUILD_BIN)/repminag: $(AG_PRIMER)RepminAG.hs
+	d=`dirname $@` ; mkdir -p $$d ; $(GHC) -package uust -package data -o $@ --make $<
+### End of Repmin AG variant
+
+
+### AG Primer's Expr
+$(D_BUILD_BIN)/expr: $(AG_PRIMER)Expr.hs
+	d=`dirname $@` ; mkdir -p $$d ; $(GHC) -package uust -package data -o $@ --make $<
+### End of Expr
+
+
+### AG Primer's Repmin Haskell variant
+$(AG_PRIMER_CHS:.chs=.hs): %.hs: %.chs $(SHUFFLE)
+	$(call SHUFFLE_LHS_HS,$<,$@,1,Main) ; \
+	touch $@
+
+$(D_BUILD_BIN)/repminhs: $(AG_PRIMER)RepminHS.hs
+	d=`dirname $@` ; mkdir -p $$d ; $(GHC) -package uust -package data -o $@ --make $<
+### End of Repmin Haskell variant
+
+
 ### TeX production upto a version
 EHC_VLAST_AG_TEX	:= $(addprefix $(AFP_TMPDIR),$(EHC_CAG:.cag=.tex))
 EHC_VLAST_HS_TEX	:= $(addprefix $(AFP_TMPDIR),$(EHC_CHS:.chs=.tex))
@@ -412,10 +467,20 @@ $(EHC_VLAST_HS_TEX): $(AFP_TMPDIR)%.tex: %.chs $(SHUFFLE) Makefile
 
 $(EHC_VLAST_AG_TEX): $(AFP_TMPDIR)%.tex: %.cag $(SHUFFLE) Makefile
 	$(call SHUFFLE_LHS_TEX,$<,$@,all,$(*F))
-### End of TeX
 
+### TeX production of AG primer code
+$(AG_PRIMER_CAG_TEX): $(AFP_TMPDIR)%.tex: $(AG_PRIMER)%.cag $(SHUFFLE) Makefile
+	$(call SHUFFLE_LHS_TEX,$<,$@,all,$(*F))
 
-$(AFP_PDF): $(AFP_TEX) $(AFP_STY) $(EHC_VLAST_TEX) $(AFP_RULES_TEX) $(AFP_PGF_TEX)
+$(AG_PRIMER_CHS_TEX): $(AFP_TMPDIR)%.tex: $(AG_PRIMER)%.chs $(SHUFFLE) Makefile
+	$(call SHUFFLE_LHS_TEX,$<,$@,all,$(*F))
+
+### TeX production of sub texts
+$(AFP_TEXTS_TEX): $(AFP_TMPDIR)%.tex: $(AFP_TEXTS)%.lhs Makefile
+	$(call LHS2TEX_POLY,$<,$@)
+
+### Dpds for main text
+$(AFP_PDF): $(AFP_TEX) $(AFP_STY) $(EHC_VLAST_TEX) $(AFP_RULES_TEX) $(AFP_PGF_TEX) $(AFP_TEXTS_TEX) $(AG_PRIMER_TEX)
 	$(AFP_LATEX) $(AFP_TEX)
 
 $(AFP_TEX): $(AFP_LHS) $(AFP_TEX_DPDS)
@@ -426,6 +491,8 @@ $(AFP_STY): afp.lsty Makefile
 
 $(AFP_RULES_TEX): %.tex: %.rul $(RULER) $(AFP_FMT)
 	$(call RULER_LHS_TEX,$<,$@)
+
+agprimer: $(D_BUILD_BIN)/repminag $(D_BUILD_BIN)/repminhs $(D_BUILD_BIN)/expr
 
 afp: $(AFP_PDF)
 
@@ -442,33 +509,36 @@ afp-bib: afp
 	$(AFP_LATEX) $(AFP_TEX)
 
 afp-tr:
-	$(MAKE) AFP=$@ LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=asArticle --set=truu --set=forAfpTRUU1 --set=omitTBD --set=omitLitDiscuss" afp-full
+	$(MAKE) AFP=$@ LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=asArticle --set=truu --set=storyAfpTRUU1 --set=omitTBD --set=omitLitDiscuss" afp-full
 
 afp04:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=forAFP04Notes --set=omitTBD --set=omitLitDiscuss" afp-bib
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=storyAFP04Notes --set=omitTBD --set=omitLitDiscuss" afp-bib
 
 afp-tst:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=forAFP04Notes --set=omitTBD --set=omitLitDiscuss" afp
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=storyAFP04Notes --set=omitTBD --set=omitLitDiscuss" afp
+
+icfp05-explimpl:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=omitTBD --set=omitLitDiscuss" afp
 
 esop05:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=forESOP05 --set=omitTBD --set=omitLitDiscuss" afp
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=storyExplImpl --set=omitTBD --set=omitLitDiscuss" afp
 
 esop05-tr:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=truu --set=forESOP05 --set=omitTBD --set=omitLitDiscuss" afp-bib
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=truu --set=storyExplImpl --set=omitTBD --set=omitLitDiscuss" afp-bib
 
 eh-work:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=onlyCurrentWork --unset=asArticle --set=refToPDF --set=inclOmitted" afp
 
 phd:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=forPHD --unset=asArticle --set=refToPDF --set=inclOmitted" afp
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=storyPHD --unset=asArticle --set=refToPDF --set=inclOmitted" afp
 
 afp-slides:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_POLY_MODE=--poly LHS2TEX_OPTS="$(LHS2TEX_OPTS) --set=forPHD --set=asSlides --set=omitTBD --set=omitLitDiscuss" afp
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_POLY_MODE=--poly LHS2TEX_OPTS="$(LHS2TEX_OPTS) --set=storyPHD --set=asSlides --set=omitTBD --set=omitLitDiscuss" afp
 
 eh-intro:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_POLY_MODE=--poly LHS2TEX_OPTS="$(LHS2TEX_OPTS) --set=forEHIntro --set=asSlides --set=omitTBD --set=omitLitDiscuss" afp
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_POLY_MODE=--poly LHS2TEX_OPTS="$(LHS2TEX_OPTS) --set=storyEHIntro --set=asSlides --set=omitTBD --set=omitLitDiscuss" afp
 
-.PHONY: shuffle ruler brew ehcs dist www www-sync gri gris
+.PHONY: shuffle ruler brew ehcs dist www www-sync gri gris agprimer
 
 shuffle: $(SHUFFLE)
 
@@ -514,7 +584,7 @@ clean:
 	$(addprefix $(SHUFFLE_DIR)/,*.o *.hi *.pdf) $(SHUFFLE) \
 	$(addprefix $(RULER_DIR)/,*.o *.hi *.pdf) $(RULER) \
 	$(AFP_PDF) \
-	*.o *.hi $(VERSIONS) \
+	*.o *.hi $(VERSIONS) $(D_BUILD) \
 	test/*.reg* test/*.class *.class test/*.java test/*.code \
 	$(DIST_PREFIX)*.zip $(DIST_PREFIX)*.tgz \
 	20??????-ehc \
@@ -526,7 +596,7 @@ clean-test:
 	rm -rf test/*.reg* test/*.exp*
 
 edit:
-	bbedit $(EHC_CAG) $(EHC_CHS) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CAG)) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CHS)) $(ALL_AFP_SRC) $(SHUFFLE_SRC) Makefile $(TMPL_TEST) $(MK_EHFILES)
+	bbedit $(EHC_CAG) $(EHC_CHS) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CAG)) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CHS)) $(ALL_AFP_SRC) afp.lsty afp.fmt $(SHUFFLE_SRC) Makefile $(TMPL_TEST) $(MK_EHFILES)
 
 A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))

@@ -59,7 +59,7 @@ SEM Ty
   | Quant           ty      .   isBound     =   (\v -> v == @tv || @lhs.isBound v)
 %%]
 
-%%[4_1
+%%[4_2
 SEM Ty
   | Alts Both       lhs     .   repl        =   tvRepl @tv @lhs.cnstr @lhs.isBound @repl
 %%]

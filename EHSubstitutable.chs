@@ -56,16 +56,6 @@ instance Substitutable Cnstr where
                                            where sl2' = deleteFirstsBy (\(v1,_) (v2,_) -> v1 == v2) sl2 sl1
   ftv                  (Cnstr sl)      =   ftv . map snd $ sl
 %%]
-instance Substitutable Cnstr where
-  s1@(Cnstr sl1) |=>   s2@(Cnstr sl2)  =   Cnstr (sl1 ++ map (\(v,t) -> (v,s1 |=> t)) sl2')
-                                           where sl2' = deleteFirstsBy (\(v1,_) (v2,_) -> v1 == v2) sl2 sl1
-  ftv                  (Cnstr sl)      =   ftv . map snd $ sl
-
-%%[4_1.SubstitutableTyPlus
-%%]
-instance Substitutable TyPlus where
-  s |=>  (TyPlus_Ty t)  =   TyPlus_Ty (s |=> t)
-  ftv    (TyPlus_Ty t)  =   ftv t
 
 %%[7
 instance Substitutable v => Substitutable (HsName,v) where

@@ -133,7 +133,7 @@ SEM TyQu
   | Forall Exists   lhs     .   pp      =   text (showTyQu @self)
 %%]
 
-%%[4_1
+%%[4_2
 SEM Ty
   | Alts            loc     .   o       =   "["
                     loc     .   c       =   "]"
@@ -149,9 +149,7 @@ SEM TyL [ | | ppL: PP_DocL ]
 SEM TyPlusL [ | | ppL: PP_DocL ]
   | Nil             lhs     .   ppL     =   []
   | Cons            lhs     .   ppL     =   @hd.pp : @tl.ppL
-%%]
 
-%%[4_2
 SEM TyPlus
   | Ty              lhs     .   pp      =   pp @hardness >|< ":" >|< @ty.pp
 %%]
@@ -277,7 +275,7 @@ SEM Ty
   | Quant       loc     .   parNeed             =   ParNotNeeded
 %%]
 
-%%[4_1
+%%[4_2
 SEM TyL
   | Cons        hd      .   parNeed             =   ParNotNeeded
                         .   parNeedL            =   []

@@ -15,10 +15,7 @@
 %%[4 import(EHTy) export(FIOpts(..), fioSwapCoCo, fioSwapOpts, strongFIOpts, instFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)
 %%]
 
-%%[4_1 export(unifyFIOpts,meetFIOpts,joinFIOpts)
-%%]
-
-%%[4_2 export(impredFIOpts)
+%%[4_2 export(unifyFIOpts,meetFIOpts,joinFIOpts,impredFIOpts)
 %%]
 
 %%[5 export(weakFIOpts)
@@ -193,10 +190,8 @@ data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindR
                         ,  fioBindLFirst     ::  Bool                ,  fioUniq                 ::  UID
                         ,  fioMode           ::  FIMode
 %%]
-%%[4_1
-                        ,  fioBindToTyAlts   ::  Bool
-%%]
 %%[4_2
+                        ,  fioBindToTyAlts   ::  Bool
                         ,  fioDontBind       ::  TyVarIdL
 %%]
 %%[7.FIOpts
@@ -219,10 +214,8 @@ strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindR
                         ,  fioBindLFirst     =   True                ,  fioUniq                 =   uidStart
                         ,  fioMode           =   FitSubLR
 %%]
-%%[4_1
-                        ,  fioBindToTyAlts   =   False
-%%]
 %%[4_2
+                        ,  fioBindToTyAlts   =   False
                         ,  fioDontBind       =   []
 %%]
 %%[7.strongFIOpts
@@ -254,7 +247,7 @@ instFIOpts :: FIOpts
 instFIOpts = instLFIOpts {fioLeaveRInst = True, fioBindLFirst = False}
 %%]
 
-%%[4_1.FIOpts.defaults
+%%[4_2.FIOpts.defaults
 unifyFIOpts :: FIOpts
 unifyFIOpts = strongFIOpts {fioMode = FitUnify}
 
@@ -263,9 +256,7 @@ meetFIOpts = unifyFIOpts {fioMode = FitMeet}
 
 joinFIOpts :: FIOpts
 joinFIOpts = unifyFIOpts {fioMode = FitJoin}
-%%]
 
-%%[4_2.FIOpts.defaults
 impredFIOpts :: FIOpts
 impredFIOpts = strongFIOpts {fioBindToTyAlts = True}
 %%]
@@ -299,10 +290,5 @@ fioMkStrong fi = fi {fioLeaveRInst = False, fioBindRFirst = True, fioBindLFirst 
 %%[4.fioMkUnify
 fioMkUnify :: FIOpts -> FIOpts
 fioMkUnify fi = fi {fioMode = FitUnify}
-%%]
-
-%%[4_3.fioMkStrong -4.fioMkStrong
-fioMkStrong :: FIOpts -> FIOpts
-fioMkStrong fi = fi {fioLeaveRInst = False, fioBindRFirst = True, fioBindLFirst = True, fioBindToTyAlts = False}
 %%]
 
