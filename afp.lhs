@@ -6482,6 +6482,12 @@ For LL(k) parsers such as the parser combinators used here this is not a good id
 Hence the construction where the quantifier is parsed as a prefix of
 the parts between |->| but still applies right associatively.
 
+\chunkCmdUseMark{EHInferExpr.4.Var}
+\chunkCmdUseMark{EHInferExpr.4.Rest}
+
+\chunkCmdUseMark{EHInferPatExpr.4.Rest}
+
+
 \TBD{previous should be redone.}
 
 %if onlyCurrentWork
@@ -6505,24 +6511,85 @@ This idea works well for the examples encountered so far, for example:
 
 Polymorphism for |i| has been declared explicitly before any use of this information in de type checking of the body of |f| is done or any parameter is
 passed to |f|.
-Because we allow type variables to be bound to quantified types the following example also works:
+Because we allow type variables to be bound to quantified types the following example also infers |f :: (forall a . a -> a) -> Int| correctly:
 
 \begin{code}
 %%4srcfile(test/4-impred2.eh%%)
 \end{code}
 
+This works because initially we assign a type variable to the type of |h| which is later bound to |forall a . a -> a| when it is used as an argument of |g|.
+However, the following example breaks because we first bind the type of |h| to a monomorphic type:
+
+\begin{code}
+%%4srcfile(test/4-impred1.eh%%)
+\end{code}
+
+This example breaks at three different places:
+\begin{itemize}
+\item
+The first use of |h| for the computation of |x1| concludes |h :: Int -> v_7|. This conflicts with the second use in the computation of |x2| where
+|h| is expected to accept a |Char|.
+\item
+|h| is also not polymorphic enough to be passed as a parameter to |g|.
+\item
+The type inferencer will conclude |f :: (Int -> forall a . a) -> Int| (or something similar) which is not polymorphic enough in its argument
+to be able to accept |id| as its parameter.
+\end{itemize}
+
+These problems are caused by the interaction of the following design choices:
+\begin{itemize}
+\item
+If the type inferencer finds more information about a type variable it immediately applies this knowledge to all types.
+This is done in a left-to-right order through the abstract syntax tree.
+\item
+No polymorphism for parameters is inferred. See ... for the a discussion of the reasons to avoid the complexity of ... .
+\end{itemize}
+
+In other words, once a type is monomorphic we don't allow it to become polymorphic, not even if we encounter the `right' to do so elsewhere in
+a program.
+We will not introduce inferencing polymorphism for parameters in our inferencing machinery because of its complexity, so we cannot repair the problem
+by inventing polymorphism whenever it would be convenient to do so.
+However, the problem could be fixed because in our example program the use of |h| as a parameter to |g| tells us that |h| must be polymorphic anyway.
+If only this information could be available in an earlier stage of type inferencing,
+or alternatively, if only the decision to let |h| be monomorphic could be delayed for a while!
+We choose the latter, that is, we introduce a way of delaying a binding decision for a type variable.
+
+In order to be able to rebind a type variable to a more polymorphic we may not forget to which type variable a type was assigned.
+This can be remembered by just relating the type variable to its type:
+
+\begin{code}
+sigma  =  ...
+       |  tvar//Vec(sigma)
+\end{code}
+
+The notation |tvar//Vec(sigma)| associates to a set of types |Vec(sigma)|.
+The type variable |tvar| is bound to each of them during type inferencing, hence the name \IxAsDef{bind type} for this type variant.
+The idea is that as soon as an attempt is made to bind |tvar| to a polymorphic
+type we check if all types in |Vec(sigma)| are an instance of the polymorphic type.
+If this is the case we can forget all types |Vec(sigma)| and go on with the polymorphic type.
+
+The rules for |<=| in \figRef{rules.fit4.bind} make this more precise.
+A bind type is introduced in \ruleRef{f-var-l1}.
+The introduction is also influenced by the context in which |<=| is used; this is expressed by
+the boolean flag |fioBindToTyBindY|, part of the set of options |fiopt|.
+The modified \ruleRef{e-ident4B} \figRef{rules.expr4.B} for checking the type of an identifier sets this flag.
+
+A bind type can only be introduced when checking an identifier.
+Traditionally, this is the place where a quantified type is instantiated when it is extracted from an environment |Gamma|.
+Quantified types usually live in a |Gamma| as a so called \IxAsDef{type scheme} and are introduced into the type checking/inferencing world
+by instantiating the type scheme to a monomorphic type.
+Here, in a similar manner, if nothing is known about an identifier, its type variable will be bound to a bind type which will hold
+all possible instantiations found during type inferencing.
+The remaining rules of \figRef{rules.fit4.bind} specify what should be done if a bind type is encountered in |<=|.
+
+\rulerCmdUse{rules.fit4.bind}
+\rulerCmdUse{rules.expr4.B}
 
 
 
 %endif % onlyCurrentWork
 
 
-
-
-\chunkCmdUseMark{EHInferExpr.4.Var}
-\chunkCmdUseMark{EHInferExpr.4.Rest}
-
-\chunkCmdUseMark{EHInferPatExpr.4.Rest}
 
 
 
@@ -6603,7 +6670,7 @@ Data type co/contra inference (not done here??, perhaps EHC6)
 coco    =  CoVariant        -- co variant
         |  CoVariantn       -- contra variant
         |  CoVariantCon     -- both/neither
-        |  cocovar       -- variant variable
+        |  cocovar          -- variant variable
 \end{code}
 
 \subsubsection{Examples}

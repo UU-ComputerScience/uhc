@@ -125,6 +125,7 @@
 %format sigma3
 %format sigma4
 
+%format // 	    		= "/"
 %format |=>     		= "\Yright "
 %format :->         	= "\mapsto "
 %format ~>	         	= "\leadsto "
@@ -139,7 +140,7 @@
 %format :=	 			= "{\coloneqq}"
 
 
-%format fiopt			= nu
+%format fiopt			= iota
 %format strongFIOpts	= fiopt "_{str}"
 %format weakFIOpts		= fiopt "_{wk}"
 %format instFIOpts		= fiopt "_{inst}"
@@ -154,6 +155,8 @@
 %format fioBindRFirstN	= fioptBase "_{r-bind}^{-}"
 %format fioBindLFirstY	= fioptBase "_{l-bind}^{+}"
 %format fioBindLFirstN	= fioptBase "_{l-bind}^{-}"
+%format fioBindToTyBindY	= fioptBase "_{delay-bind}^{+}"
+%format fioBindToTyBindN	= fioptBase "_{delay-bind}^{-}"
 
 %format coco        	= "\mathcal{V}"
 %format cocovar     	= coco
