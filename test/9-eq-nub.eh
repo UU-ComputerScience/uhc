@@ -15,5 +15,5 @@ let  filter  ::  (a -> Bool) -> List a -> List a
      nub     =   \xx ->  case xx of
                            Nil        -> Nil
                            Cons x xs  -> Cons x (nub (filter (ne x) xs))
-in   nub  (# (dEqInt | eq := \_ _ -> False) <: Eq Int #)                            -- (3)
+in   nub  (# (dEqInt | eq := ...) <: Eq Int #)                            -- (3)
           (Cons 3 (Cons 3 (Cons 4 Nil)))
