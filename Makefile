@@ -55,7 +55,7 @@ ALL_AFP_SRC			:= $(AFP_LHS) $(AFP_RULES)
 
 
 EHC_SRC_PREFIX				:=
-EHC_LAG_FOR_HS_TY			:= $(addsuffix .lag,EHTyQuantify EHTySubst EHTyElimAlts EHTyElimBoth EHTyElimEqual EHTyFtv EHTyPretty EHTyInstantiate )
+EHC_LAG_FOR_HS_TY			:= $(addsuffix .lag,EHTyQuantify EHTySubst EHTyElimAlts EHTyFreshVar EHTyElimBoth EHTyElimEqual EHTyFtv EHTyPretty EHTyInstantiate )
 EHC_LAG_FOR_HS_CORE			:= $(addsuffix .lag,EHCoreJava EHCoreGrin EHCoreTrfRenUniq EHCoreTrfFullLazy EHCoreTrfLamLift \
 												EHCoreTrfInlineLetAlias EHCoreTrfLetUnrec EHCorePretty EHCoreSubst EHCoreTrfConstProp)
 EHC_LAG_FOR_HS_GRIN_CODE	:= $(addsuffix .lag,GrinCodePretty)
@@ -75,8 +75,7 @@ EHC_DPDS_MAIN					:= EHMainAG.ag EHInfer.ag EHInferExpr.ag \
 									EHInferCaseExpr.ag EHPretty.ag EHPrettyAST.ag EHAbsSyn.ag \
 									EHUniq.ag EHExtraChecks.ag EHGatherError.ag \
 									EHGenCore.ag \
-									EHResolvePred.ag EHInferClass.ag \
-									EHInferImpred.ag
+									EHResolvePred.ag EHInferClass.ag
 EHC_DPDS_CORE					:= EHCore.ag EHCoreAbsSyn.ag
 EHC_DPDS_CORE_GRIN				:= EHCoreGrin.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
 EHC_DPDS_CORE_JAVA				:= EHCoreJava.ag EHCoreCommonLev.ag EHCoreAbsSyn.ag
@@ -101,6 +100,7 @@ EHC_DPDS_TY_SUBST				:= EHTySubst.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_ELIMB				:= EHTyElimAlts.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_ELIMBOTH			:= EHTyElimBoth.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_ELIMEQUAL			:= EHTyElimEqual.ag EHTyAbsSyn.ag
+EHC_DPDS_TY_FRESHVAR			:= EHTyFreshVar.ag EHTyAbsSyn.ag
 
 EHC_DPDS_CORE_TRF				:= $(EHC_DPDS_CORE_TRF_CONSTPROP) $(EHC_DPDS_CORE_TRF_RENUNQ) $(EHC_DPDS_CORE_TRF_INLLETALI) \
 									$(EHC_DPDS_CORE_TRF_FULLAZY) $(EHC_DPDS_CORE_TRF_LETUNREC) $(EHC_DPDS_CORE_TRF_LAMLIFT)
@@ -109,7 +109,7 @@ EHC_DPDS_ALL					:= $(sort $(EHC_DPDS_MAIN) \
 										$(EHC_DPDS_TY) $(EHC_DPDS_TY_PRETTY) $(EHC_DPDS_TY_QUANT) $(EHC_DPDS_TY_SUBST) $(EHC_DPDS_TY_FTV) $(EHC_DPDS_TY_INST) \
 										$(EHC_DPDS_GRIN_CODE) $(EHC_DPDS_GRIN_CODE_PRETTY) \
 										$(EHC_DPDS_ERR) $(EHC_DPDS_ERR_PRETTY) \
-										$(EHC_DPDS_TY_ELIMBOTH) $(EHC_DPDS_TY_ELIMB) $(EHC_DPDS_TY_ELIMEQUAL) \
+										$(EHC_DPDS_TY_ELIMBOTH) $(EHC_DPDS_TY_FRESHVAR) $(EHC_DPDS_TY_ELIMB) $(EHC_DPDS_TY_ELIMEQUAL) \
 										)
 EHC_DPDS_ALL_MIN_TARG			:= $(filter-out $(EHC_LAG_FOR_HS:.lag=.ag),$(EHC_DPDS_ALL))
 
@@ -615,6 +615,7 @@ MK_EHC_MKF			= \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_ELIMB),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_ELIMBOTH),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_ELIMEQUAL),-cfspr) ; \
+	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY_FRESHVAR),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_TY),-dr) ; \
 	  $(call MK_EHC_MKF_FOR,$(GRI_DPDS_GRI),-dcfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(GRI_DPDS_GRIN_CODE_SETUP),-cfspr) ; \

@@ -1,0 +1,62 @@
+% $Id: EHTyElimAlts.cag 149 2005-02-11 13:59:25Z atze $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to refresh tvars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2 hs import(EHCommon,EHTy) export(tyFreshVar)
+%%]
+
+%%[4_2.WRAPPER import(EHTyAbsSyn)
+WRAPPER TyAGItf
+%%]
+
+%%[4_2.tyFreshVar hs
+tyFreshVar :: (TyVarId -> Bool) -> UID -> Ty -> Ty
+tyFreshVar allowFresh uniq ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf {allowFresh_Inh_TyAGItf = allowFresh, gUniq_Inh_TyAGItf = uniq})
+     in   (repl_Syn_TyAGItf t)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Check if allowed
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR TyAGItf AllAllTy [ allowFresh: {TyVarId -> Bool} | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Uniq
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR TyAGItf [ gUniq: UID | | ]
+ATTR AllAllTy [ | gUniq: UID | ]
+
+SEM Ty
+  | Var             (lhs.gUniq,loc.lUniq)   =   mkNewUID @lhs.gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replacement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR AllAllTy [ | | repl: SELF  ]
+ATTR TyAGItf  [ | | repl: Ty    ]
+%%]
+
+%%[4_2
+SEM Ty
+  | Var             lhs     .   repl		=	if @lhs.allowFresh @tv then Ty_Var @lUniq @categ.repl else @repl
+  | Quant           ty      .   allowFresh  =   \v -> v /= @tv && @lhs.allowFresh v
+%%]
+

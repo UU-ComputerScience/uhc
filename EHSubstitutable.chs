@@ -19,9 +19,6 @@
 %%[2 import(List, EHCommon, EHTy, EHCnstr,EHTySubst,EHTyFtv) export(Substitutable(..))
 %%]
 
-%%[4_1 export(tvUnderCnstr,tvLMbAlphaRename)
-%%]
-
 %%[9 import(FiniteMap) export(fixTyVarsCnstr,tyFixTyVars)
 %%]
 
@@ -121,24 +118,24 @@ tyFixTyVars s = fixTyVarsCnstr s |=> s
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_1 hs
+%%]
 tvUnderCnstr :: Cnstr -> TyVarId -> TyVarId
 tvUnderCnstr c v
   =  case c |=> mkTyVar v of
 		Ty_Var   v' TyVarCateg_Plain  -> v'
 		Ty_Alts  v' _                 -> v'
 		_                             -> v
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Are tvars alpha renaming of eachother?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_1 hs
+%%]
 tvLMbAlphaRename :: Cnstr -> TyVarIdL -> TyVarIdL -> Maybe TyVarIdL
 tvLMbAlphaRename c l1 l2
   =  if l1' == l2' && length l1' == length l1 then Just l1' else Nothing
   where  r = sort . nub . map (tvUnderCnstr c)
          l1' = r l1
          l2' = r l2
-%%]
 

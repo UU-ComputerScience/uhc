@@ -324,12 +324,6 @@ fitsIn opts env uniq ty1 ty2
 
 %%[4_1.fitsIn.mkTyAlts
             mkTyAlts fi tv t        =  if fioBindToTyAlts (fiFIOpts fi)
-                                       then Ty_Alts tv [snd (mkTyPlus fi t)]
-                                       else t
-%%]
-
-%%[4_2.fitsIn.mkTyAlts -4_1.fitsIn.mkTyAlts
-            mkTyAlts fi tv t        =  if fioBindToTyAlts (fiFIOpts fi)
                                        then Ty_Alts tv [snd (mkTyPlusHard fi t)]
                                        else t
 %%]

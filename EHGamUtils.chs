@@ -23,8 +23,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2.valGamElimAlts
-valGamElimAlts :: FIOpts -> FIEnv -> TyVarIdL -> UID -> ValGam -> (ValGam,Cnstr,Gam HsName ErrL)
-valGamElimAlts opts env globTvL uniq g
+valGamElimAlts :: FIOpts -> FIEnv -> TyVarIdL -> UID -> Cnstr -> ValGam -> (ValGam,Cnstr,Gam HsName ErrL)
+valGamElimAlts opts env globTvL uniq gCnstr g
   =  let  (g',(c,eg,_))
             =  gamMapThr
                   (\(n,vgi) (c,eg,u)
@@ -32,8 +32,10 @@ valGamElimAlts opts env globTvL uniq g
                   	         (t,ce,e) = tyElimAlts (mkElimAltsWrap env) opts globTvL u1 (c |=> vgiTy vgi)
                   	    in   ((n,vgi {vgiTy = t}),(ce |=> c,gamAdd n e eg,u'))
                   )
-                  (emptyCnstr,emptyGam,uniq) g
-     in   (g',cnstrDelAlphaRename c,eg)
+                  (emptyCnstr,emptyGam,uniq) (gCnstr |=> g)
+          c2 = cnstrDelAlphaRename c
+          c3 = cnstrKeys c2 `cnstrDel` cnstrFilterAlphaRename gCnstr
+     in   (g',c2 |=> c3,eg)
 %%]
 
 %%[4_3.valGamElimAlts

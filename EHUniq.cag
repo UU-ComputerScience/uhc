@@ -72,6 +72,7 @@ SEM AGItf
 SEM Expr
   | App             (func.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)    :=  mkNewLevUID3    @lhs.gUniq
   | Lam             (arg.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)     :=  mkNewLevUID3    @lhs.gUniq
+  | TypeAs          (tyExpr.gUniq,loc.lUniq,loc.lUniq2)             :=  mkNewLevUID2    @lhs.gUniq
 
 SEM Decl
   | TySig           (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
