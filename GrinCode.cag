@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -18,7 +18,7 @@
 %%[8 hs export(GrTagCateg(..),mkGrBox,mkGrTagNode,mkGrRecNode,mkGrConNode) 
 %%]
 
-%%[8 hs export(mkGrPatRecNode,mkGrPatConNode,mkGrPatTagNode,mkGrPatRecSplit,mkGrPatConSplit,mkGrUnbox) 
+%%[8 hs export(mkGrPatRecNode,mkGrPatConNode,mkGrPatTagNode,mkGrPatRecSplit,mkGrPatConSplit,mkGrUnbox,mkGrUnboxFFI) 
 %%]
 
 %%[8 hs export(GrNodeAdapt(..),grRecTag,hsnGrApply,hsnGrEval,hsnGrMain,grSpecialNmL,grBuiltinTyNmL) 
@@ -56,11 +56,11 @@ data GrTagCateg
   deriving (Show,Eq)
 
 instance PP GrTagCateg where
-  pp GrTagCon   = pp "C"
-  pp GrTagHole  = pp "H"
-  pp GrTagRec   = pp "R"
-  pp GrTagApp   = pp "A"
-  pp GrTagFun   = pp "F"
+  pp GrTagCon       = pp "C"
+  pp GrTagHole      = pp "H"
+  pp GrTagRec       = pp "R"
+  pp GrTagApp       = pp "A"
+  pp GrTagFun       = pp "F"
   pp (GrTagPApp need) = pp "P/" >|< pp need
 %%]
 
@@ -115,6 +115,9 @@ mkGrPatRecSplit r sL = mkGrPatTagSplit GrTagRec 0 hsnRec r (sL)
 
 mkGrUnbox :: HsName -> HsName -> GrPat
 mkGrUnbox tyNm n = mkGrPatConNode 0 tyNm [n]
+
+mkGrUnboxFFI :: HsName -> GrPat
+mkGrUnboxFFI n = GrPat_Node GrTag_Unboxed [n]
 %%]
 
 
