@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -258,33 +258,56 @@ SET AllCase         =   CaseAlt CaseAlts
 %%% Data constructor
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[5.Data
+%%[5.DataConstr1
 DATA DataConstr
   | Constr          conNm           : {HsName}
                     fields          : TyExprs
-
-TYPE DataConstrs    =   [DataConstr]
-
-SET AllDataConstr   =   DataConstr DataConstrs
-SET AllData         =   AllDataConstr
 %%]
-
-%%[7 -5.Data
+%%[7.DataConstr1 -5.DataConstr1
 DATA DataConstr
   | Constr          conNm           : {HsName}
                     fields          : DataFields
+%%]
+%%[11.DataConstr
+                    eqs             : DataConstrEqs
+%%]
 
+%%[5.DataConstr2
 TYPE DataConstrs    =   [DataConstr]
+%%]
 
+%%[7.Data
 DATA DataField
   | Field           mbLabels        : {Maybe [HsName]}
                     tyExpr          : TyExpr
 
 TYPE DataFields     =   [DataField]
+%%]
 
+%%[11.Data
+DATA DataConstrEq
+  | Eq              tyVar           : TyVar
+                    tyExpr          : TyExpr
+
+TYPE DataConstrEqs  =   [DataConstrEq]
+%%]
+
+%%[5.SetsData
+SET AllDataConstr   =   DataConstr DataConstrs
+SET AllData         =   AllDataConstr
+%%]
+
+%%[7.SetsData -5.SetsData
 SET AllDataConstr   =   DataConstr DataConstrs
 SET AllDataField    =   DataField DataFields
 SET AllData         =   AllDataField AllDataConstr
+%%]
+
+%%[11.SetsData -7.SetsData
+SET AllDataConstrEq =   DataConstrEq DataConstrEqs
+SET AllDataConstr   =   DataConstr DataConstrs
+SET AllDataField    =   DataField DataFields
+SET AllData         =   AllDataField AllDataConstr AllDataConstrEq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -341,12 +364,6 @@ TYPE PrExprs        =   [PrExpr]
 DATA PrExpr
   | Lacks           rowTyExpr       : RowTyExpr
                     nm              : {HsName}
-%%]
-
-%%[11
-DATA PrExpr
-  | Equal           nm              : {HsName}
-                    tyExpr          : TyExpr
 %%]
 
 %%[9

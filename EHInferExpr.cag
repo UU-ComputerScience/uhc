@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -132,8 +132,13 @@ SEM Expr
   | App         loc         .  (knFunTy,imTy)       :=  let  [i,a] = mkNewUIDL 2 @lUniq
                                                              im = mkImplsVar i
                                                         in   ([im,mkTyVar a] `mkTyArrow` (@lhs.tyCnstr |=> @lhs.knTy),im)
-                (_,arg.knTy,loc.fTy)                :=  tyArrowImplsArgRes . tyAltsTy $ @func.ty
+                (_,arg.knTy,loc.fTy)                :=  tyArrowImplsArgRes @func.ty
                 loc         .  prOccL               =   tyImplsPreds (@arg.tyCnstr |=> @imTy)
+%%]
+
+%%[9_1.App
+SEM Expr
+  | App         (_,arg.knTy,loc.fTy)                :=  tyArrowImplsArgRes . tyAltsTy $ @func.ty
 %%]
 
 %%[9.AppImpl

@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -62,30 +62,30 @@ DATA TyQu
   | Exists
 %%]
 
-%%[6
+%%[6.TyQu
 DATA TyQu
   | KiForall
   | KiExists
 %%]
 
-%%[4_1
+%%[4_1.Ty
 DATA Ty
   | Alts        tv              : {TyVarId}
-                tyL             : TyL
+                tyL             : TyPlusL
   | Both        tv              : {TyVarId}
                 tyL             : TyL
 
 TYPE TyL        =   [Ty]
 %%]
 
-%%[7
+%%[7.Ty
 DATA Ty
   | Ext         ty              : Ty
                 nm              : {HsName}
                 extTy           : Ty
 %%]
 
-%%[9
+%%[9.Ty
 DATA Ty
   | Pred        pr              : Pred
   | Impls       impls           : Impls
@@ -97,6 +97,31 @@ DATA Impls
                 pv              : {PredOccId}
                 tl              : Impls
   | Nil
+%%]
+
+%%[11.Ty
+DATA Ty
+  | Equal       tv              : {TyVarId}
+                ty              : Ty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type plus additional info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_1.TyPlus
+DATA TyPlus
+  | Ty          ty              : Ty
+%%]
+
+%%[9_1.TyPlus -4_1.TyPlus
+DATA TyPlus
+  | Ty          ty              : Ty
+                plv             : {TyPlusId}
+%%]
+
+%%[4_1.TyPlusL
+TYPE TyPlusL    =   [TyPlus]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -112,12 +137,6 @@ DATA Pred
 DATA Pred
   | Lacks       ty              : Ty
                 nm              : {HsName}
-%%]
-
-%%[11
-DATA Pred
-  | Equal       tvTy            : Ty
-                ty              : Ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -143,13 +162,19 @@ SET AllAllTy    = AllTy TyVarCateg TyQu
 %%]
 
 %%[4_1.AllTy -4.AllTy
-SET AllTyTy     = Ty TyL
+SET AllTyTy     = Ty TyL TyPlus TyPlusL
 SET AllTy       = AllTyTy
 SET AllAllTy    = AllTy TyVarCateg TyQu
 %%]
 
-%%[9.AllTy -4_1.AllTy
-SET AllTyTy     = Ty TyL
+%%[9.AllTy -4.AllTy
+SET AllTyTy     = Ty
+SET AllTy       = AllTyTy Pred Impls
+SET AllAllTy    = AllTy TyVarCateg TyQu
+%%]
+
+%%[9_1.AllTy -4_1.AllTy
+SET AllTyTy     = Ty TyL TyPlus TyPlusL
 SET AllTy       = AllTyTy Pred Impls
 SET AllAllTy    = AllTy TyVarCateg TyQu
 %%]

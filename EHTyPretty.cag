@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -140,6 +140,10 @@ SEM Ty
 SEM TyL [ | | ppL: PP_DocL ]
   | Nil             lhs     .   ppL     =   []
   | Cons            lhs     .   ppL     =   @hd.pp : @tl.ppL
+
+SEM TyPlusL [ | | ppL: PP_DocL ]
+  | Nil             lhs     .   ppL     =   []
+  | Cons            lhs     .   ppL     =   @hd.pp : @tl.ppL
 %%]
 
 %%[6
@@ -167,14 +171,19 @@ SEM Impls
   | Nil             lhs     .   pp      =   pp "_"
 %%]
 
+%%[9_1
+SEM TyPlus
+  | Ty              lhs     .   pp      =   pp @plv >|< ";" >|< @ty.pp
+%%]
+
 %%[10
 SEM Pred
   | Lacks           lhs     .   pp      =   @ty.pp >|< "\\" >|< @nm
 %%]
 
 %%[11
-SEM Pred
-  | Equal           lhs     .   pp      =   @tvTy.pp >|< "=" >|< @ty.pp
+SEM Ty
+  | Equal           loc     .   pp      =   pp_parens (maybe (mkDefaultTvNm "e" @tv) id (lookup @tv @lhs.tnMap) >|< "=" >|< @ty.pp)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -187,13 +196,18 @@ ATTR Ty [ | positionalFldNmL: {[HsName]} | ]
 SEM TyAGItf
   | AGItf           ty      .   positionalFldNmL    =   positionalFldNames
 
-SEM TyL
-  | Cons            hd      .   positionalFldNmL    =   positionalFldNames
-
 SEM Ty
   | Ext             (loc.positionalNm,lhs.positionalFldNmL)
                                                     =   hdAndTl @ty.positionalFldNmL
   | * - Ext         lhs     .   positionalFldNmL    =   @lhs.positionalFldNmL
+%%]
+
+%%[7_1
+SEM TyL
+  | Cons            hd      .   positionalFldNmL    =   positionalFldNames
+
+SEM TyPlus
+  | Ty              ty      .   positionalFldNmL    =   positionalFldNames
 %%]
 
 %%[9
@@ -250,12 +264,16 @@ SEM Ty
 
 %%[3
 SEM Ty
-  | Quant       (loc.parNeed,ty.parNeed)        =   (ParNotNeeded,ParNotNeeded)
+  | Quant       loc     .   parNeed             =   ParNotNeeded
 %%]
 
 %%[4_1
 SEM TyL
   | Cons        hd      .   parNeed             =   ParNotNeeded
+                        .   parNeedL            =   []
+
+SEM TyPlus
+  | Ty          ty      .   parNeed             =   ParNotNeeded
                         .   parNeedL            =   []
 
 SEM Ty
@@ -273,5 +291,10 @@ SEM Ty
 SEM Pred
   | *           loc     .   parNeed             =   ParNotNeeded
                         .   parNeedL            =   []
+%%]
+
+%%[11
+SEM Ty
+  | Equal       loc     .   parNeed             =   ParNotNeeded
 %%]
 

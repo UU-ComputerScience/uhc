@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -87,12 +87,8 @@ SEM TyExpr
 %%]
 
 %%[5
-ATTR TyVars DataConstrs CaseAlts [ | | ppL: PP_DocL ]
+ATTR TyVars CaseAlts [ | | ppL: PP_DocL ]
 ATTR TyExprs [ | | ppL: PP_DocL ]
-
-SEM Decl
-  | Data        loc     .   pp      =   "data"  >#< @tyNm >#< ppSpaced @tyVars.ppL
-                                                >#< "=" >#< ppListSepFill "" "" " | " @constrs.ppL
 
 SEM Expr
   | Case        loc     .   pp      =   "case"  >#< @expr.pp >#< "of"
@@ -115,13 +111,6 @@ SEM TyVar
   | Var         lhs     .   pp      =   pp @nm
 
 SEM TyVars
-  | Nil         lhs     .   ppL     =   []
-  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
-
-SEM DataConstr
-  | Constr      loc     .   pp      =   pp @conNm >#< ppSpaced @fields.ppL
-
-SEM DataConstrs
   | Nil         lhs     .   ppL     =   []
   | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 %%]
@@ -177,17 +166,6 @@ SEM RowTyExpr
   | Empty       lhs     .   ppL     =   []
   | Ext         lhs     .   pp      =   @rowTyExpr.pp
                         .   ppL     =   ppFld "::" @positionalNm @nm @tyExpr.pp : @rowTyExpr.ppL
-
-SEM DataFields
-  | Nil         lhs     .   ppL     =   []
-  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
-
-SEM DataConstr
-  | Constr      loc     .   pp      :=  pp @conNm
-                                        >#<  (if null . catMaybes $ @fields.lblL
-                                              then ppSpaced @fields.ppL
-                                              else ppListSep "{" "}" "," (zipWith (\(Just l) f -> l >#< "::" >#< f) @fields.lblL @fields.ppL)
-                                             )
 %%]
 
 %%[8
@@ -253,9 +231,53 @@ SEM PrExpr
   | Lacks       loc     .   pp      =   @rowTyExpr.pp >|< "\\" >|< pp @nm
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+ATTR DataConstrs [ | | ppL: PP_DocL ]
+
+SEM Decl
+  | Data        loc     .   pp      =   "data"  >#< @tyNm >#< ppSpaced @tyVars.ppL
+                                                >#< "=" >#< ppListSepFill "" "" " | " @constrs.ppL
+
+SEM DataConstr
+  | Constr      loc     .   pp      =   pp @conNm >#< ppSpaced @fields.ppL
+
+SEM DataConstrs
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
+%%]
+
+%%[7
+SEM DataFields
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
+
+SEM DataConstr
+  | Constr      loc     .   pp      :=  pp @conNm
+                                        >#<  (if null . catMaybes $ @fields.lblL
+                                              then ppSpaced @fields.ppL
+                                              else ppListSep "{" "}" "," (zipWith (\(Just l) f -> l >#< "::" >#< f) @fields.lblL @fields.ppL)
+                                             )
+                                        >|<  @ppExtra
+                        .   ppExtra =   empty
+%%]
 %%[11
-SEM PrExpr
-  | Equal       loc     .   pp      =   pp @nm >|< "=" >|< @tyExpr.pp
+SEM DataConstr
+  | Constr      loc     .   ppExtra :=  hlist . map ("," >#<) $ @eqs.ppL
+%%]
+
+%%[11
+ATTR DataConstrEqs [ | | ppL: PP_DocL ]
+
+SEM DataConstrEq
+  | Eq          loc     .   pp      =   @tyVar.pp >|< "=" >|< @tyExpr.pp
+
+SEM DataConstrEqs
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

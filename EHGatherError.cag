@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -58,11 +58,14 @@ SEM PatExpr
 %%]
 
 %%[5
-SEM Expr
-  | Case        lhs         .  errL         =   @expr.errL ++ @alts.errL ++ mkNestErr @expr.pp @ebErrs
 %%]
 SEM CaseAlts
   | Cons        lhs         .  errL         =   mkNestErr @hd.pp (@hd.errL ++ foErrL @fo) ++ @tl.errL
+
+%%[5_1
+SEM Expr
+  | Case        lhs         .  errL         =   @expr.errL ++ @alts.errL ++ mkNestErr @expr.pp @ebErrs
+%%]
 
 %%[6
 SEM TyExpr
@@ -114,6 +117,11 @@ SEM Expr
                                                     (@nmErrs ++ foErrL @foPr ++ @prfErrs ++ @arg.errL ++ @argPr.errL ++ @body.errL)
 %%]
 
+%%[11
+SEM DataConstr
+  | Constr      lhs         .  errL         :=  mkNestErr @pp (@fields.errL ++ @eqs.errL ++ foErrL @fo)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% PP of error
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -148,10 +156,15 @@ SEM Decl
                 lhs         .  errL         =   []
 
 SEM Expr
-  | Let         loc         .  letErrL      :=  @dupErrs ++ @gamErrL ++ @prfErrs
+  | Let         loc         .  letErrL      :=  @dupErrs ++ @prfErrs
 
 SEM AGItf
   | AGItf       loc         .  errTopPP     =   ppErrs (@predNotPrfErrs)
+%%]
+
+%%[9_1
+SEM Expr
+  | Let         loc         .  letErrL      :=  @dupErrs ++ @gamErrL ++ @prfErrs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -716,24 +716,31 @@ pExpr           =    pE <??> (sem_Expr_TypeAs <$ pKey "::" <*> pTyExpr)
 %%% Parser for Case/Data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[pDataConstrs.5
+-- data type
+
+%%[5.DataConstr1
+pDataConstr     =    sem_DataConstr_Constr <$> pCon <*> pTyExprs
+%%]
+%%[7.DataConstr1 -5.DataConstr1
+pDataConstr     =    sem_DataConstr_Constr
+                     <$> pCon <*> (pDataFields <|> pCurly pDataLabFields)
+%%]
+%%[11.DataConstr
+                     <*> pFoldr  (sem_DataConstrEqs_Cons,sem_DataConstrEqs_Nil)
+                                 (sem_DataConstrEq_Eq <$ pComma <*> pTyVar <* pKey "=" <*> pTyExpr)
+%%]
+%%[5.DataConstr2
 pDataConstrs    =    pFoldrSep (sem_DataConstrs_Cons,sem_DataConstrs_Nil) (pKey "|") pDataConstr
 %%]
 
-%%[5.DataConstr
-pDataConstr     =    sem_DataConstr_Constr <$> pCon <*> pTyExprs
-%%@pDataConstrs.5
-%%]
-
-%%[7.DataConstr -5.DataConstr
-pDataConstr     =    sem_DataConstr_Constr
-                     <$> pCon <*> (pDataFields <|> pCurly pDataLabFields)
+%%[7.Data
 pDataField      =    sem_DataField_Field Nothing <$> pTyExprBase
 pDataLabField   =    sem_DataField_Field <$> (Just <$> pList1Sep pComma pVar) <* pKey "::" <*> pTyExpr
 pDataFields     =    pFoldr (sem_DataFields_Cons,sem_DataFields_Nil) pDataField
 pDataLabFields  =    pFoldr1Sep (sem_DataFields_Cons,sem_DataFields_Nil) pComma pDataLabField
-%%@pDataConstrs.5
 %%]
+
+-- case expr
 
 %%[5
 pCaseAlts       =    foldr sem_CaseAlts_Cons sem_CaseAlts_Nil
@@ -810,9 +817,9 @@ pPrExpr         =    pPrExprClass
                                      <$ pKey "\\" <*> pSel
 %%]
 %%[11
+%%]
                                 <|>  (flip sem_PrExpr_Equal)
                                      <$ pKey "=" <*> pTyExpr
-%%]
 %%[10
                                 )
 %%]

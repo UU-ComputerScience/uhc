@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -57,7 +57,7 @@ ATTR AllAllTy [ | gUniq: UID | ]
 SEM Ty
   | Alts            (tyL.gUniq,loc.lUniq)   =   mkNewLevUID @lhs.gUniq
 
-SEM TyL
+SEM TyPlusL
   | Cons            (hd.gUniq,loc.lUniq)    =   mkNewLevUID @lhs.gUniq
 %%]
 
@@ -78,16 +78,16 @@ SEM Ty
                                                             in   if @tyL.canMeet && null e
                                                                  then  (t,[],ci)
                                                                  else  (mkTyVar @tv
-                                                                       ,if null e then [Err_InconsistentAlts @lhs.selfRepl @tv @tyL.replL (fioMode @lhs.fio)] else e
+                                                                       ,if null e then [Err_InconsistentAlts @lhs.selfRepl @tv (map tyPlusTy @tyL.replL) (fioMode @lhs.fio)] else e
                                                                        ,@tv `cnstrTyUnit` mkTyVar @tv)
                     lhs     .   tyCnstr     =   @iCnstr |=> @tyL.tyCnstr
 %%]
                     lhs     .   tyCnstr =   tr "QQ" (pp @self >#< ":->" >#< pp @repl >#< ", icnstr" >#< pp @iCnstr >#< ", ecnstr" >#< pp @eCnstr >#< ", lhs.tyCnstr" >#< pp @tyL.tyCnstr) (@iCnstr |=> @tyL.tyCnstr)
 
 %%[4_1
-ATTR TyL [ | | replL: TyL ]
+ATTR TyPlusL [ | | replL: TyPlusL ]
 
-SEM TyL
+SEM TyPlusL
   | Cons            lhs     .   replL       =   @hd.repl : @tl.replL
   | Nil             lhs     .   replL       =   []
 %%]
@@ -98,12 +98,12 @@ SEM TyL
 
 %%[4_1
 ATTR TyAGItf AllAllTy [ | | errL USE {++} {[]}: ErrL ]
-ATTR TyL [ | | canMeet: Bool ]
+ATTR TyPlusL [ | | canMeet: Bool ]
 
 SEM Ty
   | Alts            lhs     .   errL        =   @errL ++ @tyL.errL
 
-SEM TyL
+SEM TyPlusL
   | Nil             lhs     .   canMeet     =   True
 
 SEM TyAGItf
@@ -118,11 +118,11 @@ SEM TyAGItf
 %%[4_1
 ATTR AllAllTy [ | tyCnstr: Cnstr | ]
 ATTR TyAGItf  [ | | tyCnstr: Cnstr ]
-ATTR TyL [ ty: Ty | | resTy: Ty ]
+ATTR TyPlusL [ ty: Ty | | resTy: Ty ]
 
-SEM TyL
+SEM TyPlusL
   | Cons            loc     .   (ty,cnstr,errL)
-                                            =   @lhs.fitsIn @lhs.fio @lUniq @lhs.ty (@lhs.tyCnstr |=> @hd.self)
+                                            =   @lhs.fitsIn @lhs.fio @lUniq @lhs.ty (@lhs.tyCnstr |=> tyPlusTy @hd.self)
                     tl      .   ty          =   @ty
                             .   tyCnstr     =   @cnstr |=> @lhs.tyCnstr
                     lhs     .   (resTy,tyCnstr,canMeet)
@@ -132,7 +132,7 @@ SEM TyL
   | Nil             lhs     .   resTy       =   @lhs.ty
 
 SEM Ty
-  | Alts Both       tyL     .   ty          =   Ty_Any
+  | Alts            tyL     .   ty          =   Ty_Any
 
 SEM TyAGItf
   | AGItf           ty      .   tyCnstr     =   emptyCnstr

@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -25,6 +25,9 @@
 %%]
 
 %%[9 import(EHTy) export(predFIOpts,implFIOpts)
+%%]
+
+%%[11 import(EHTyInstantiate)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -196,8 +199,11 @@ data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindR
                         ,  fioPredAsTy       ::  Bool                ,  fioAllowRPredElim       ::  Bool
                         ,  fioDontBind       ::  TyVarIdL
 %%]
+%%[11.FIOpts
+                        ,  fioAllowEqOpen    ::  Bool                ,  fioInstCoConst          ::  HowToInst
+%%]
 %%[4.FIOpts.tl
-                        } deriving Show
+                        }
 %%]
 
 %%[4.strongFIOpts.hd
@@ -216,8 +222,18 @@ strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindR
                         ,  fioPredAsTy       =   False               ,  fioAllowRPredElim       =   True
                         ,  fioDontBind       =   []
 %%]
+%%[11.FIOpts
+                        ,  fioAllowEqOpen    =   False               ,  fioInstCoConst          =   instCoConst
+%%]
 %%[4.strongFIOpts.tl
                         }
+%%]
+
+%%[4
+instance Show FIOpts where
+  show o =  "FIOpts{"
+            ++ " fioLeaveRInst=" ++ show (fioLeaveRInst o)
+            ++ " }"
 %%]
 
 %%[4.FIOpts.defaults

@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -62,13 +62,15 @@ ATTR AllTy [ isRow: Bool | | ]
 SEM TyAGItf
   | AGItf       ty          .   isRow           =   False
 
-SEM TyL
-  | Cons        hd          .   isRow           =   False
-
 SEM Ty
   | App         loc         .   argIsRow        =   @isSpineRoot && @appIsRecOrSum
                 arg         .   isRow           =   @argIsRow
   | * - App     loc         .   isRow           =   False
+%%]
+
+%%[7_1
+SEM TyL
+  | Cons        hd          .   isRow           =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -66,7 +66,7 @@
 %%[7 export(assocLElts,assocLKeys,uidHNm)
 %%]
 
-%%[8 import (FPath,IO,Char) export(putPPLn,putPPFile,Verbosity(..),putCompileMsg)
+%%[8 import (FPath,IO,Char) export(putPPLn,putWidthPPLn,putPPFile,Verbosity(..),putCompileMsg)
 %%]
 
 %%[8 export(hsnPrefix,hsnSuffix)
@@ -422,8 +422,11 @@ ppFM = ppAssocL . fmToList
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+putWidthPPLn :: Int -> PP_Doc -> IO ()
+putWidthPPLn w pp = putStrLn (disp pp w "")
+
 putPPLn :: PP_Doc -> IO ()
-putPPLn pp = putStrLn (disp pp 4000 "")
+putPPLn = putWidthPPLn 4000
 
 putCompileMsg :: Verbosity -> Verbosity -> String -> Maybe String -> HsName -> FPath -> IO ()
 putCompileMsg v optsVerbosity msg mbMsg2 modNm fNm
@@ -524,7 +527,7 @@ data FIMode  =  FitSubLR
              |  FitJoin
 %%]
 %%[4
-             deriving (Eq,Ord,Show)
+             deriving (Eq,Ord)
 %%]
 
 %%[4
@@ -545,6 +548,17 @@ fimOpp m
 %%[4
 fimSwapCoCo :: CoContraVariance -> FIMode -> FIMode
 fimSwapCoCo coco m = case coco of {ContraVariant -> fimOpp m; _ -> m}
+%%]
+
+%%[4
+instance Show FIMode where
+  show FitSubLR  = "<="
+  show FitSubRL  = ">="
+  show FitUnify  = "=="
+%%]
+%%[4_1
+  show FitMeet   = "=v="
+  show FitJoin   = "=^="
 %%]
 
 %%[4

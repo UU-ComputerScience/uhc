@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -13,10 +13,22 @@
 %%% Error structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.Base
+%%[1.UnifyClash
 DATA Err
   | UnifyClash          ty1        : {Ty}                ^^  ty2        : {Ty}
                         ty1detail  : {Ty}                ^^  ty2detail  : {Ty}
+%%]
+
+%%[4.UnifyClash -1.UnifyClash
+DATA Err
+  | UnifyClash          ty1        : {Ty}                ^^  ty2        : {Ty}
+                        fiMode     : {FIMode}
+                        ty1detail  : {Ty}                ^^  ty2detail  : {Ty}
+                        fiModeD    : {FIMode}
+%%]
+
+%%[1.NamesNotIntrod
+DATA Err
   | NamesNotIntrod      nmL        : {[HsName]}
 %%]
 
@@ -34,10 +46,18 @@ DATA Err
   | MissingSig          wher       : {PP_Doc}
 %%]
 
-%%[2 -1.MissingSig
+%%[2.UnifyOccurs -1.MissingSig
 DATA Err
   | UnifyOccurs         ty1        : {Ty}                ^^  ty2        : {Ty}
                         tvar       : {TyVarId}           ^^  ty2detail  : {Ty}
+%%]
+
+%%[4 -2.UnifyOccurs
+DATA Err
+  | UnifyOccurs         ty1        : {Ty}                ^^  ty2        : {Ty}
+                        fiMode     : {FIMode}
+                        tvar       : {TyVarId}           ^^  ty2detail  : {Ty}
+                        fiModeD    : {FIMode}
 %%]
 
 %%[4_1

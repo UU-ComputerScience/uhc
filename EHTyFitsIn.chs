@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -281,10 +281,10 @@ fitsIn opts env uniq ty1 ty2
             res fi t                =  emptyFO  { foUniq = fiUniq fi, foTy = t
                                                 , foAppSpineL = asGamLookup (tyConNm t) appSpineGam}
             err    e                =  emptyFO {foUniq = fioUniq opts, foErrL = e}
-            errClash t1 t2          =  err [Err_UnifyClash ty1 ty2 t1 t2]
+            errClash fi t1 t2       =  err [Err_UnifyClash ty1 ty2 (fioMode opts) t1 t2 (fioMode (fiFIOpts fi))]
             manyFO                  =  foldr1 (\fo1 fo2 -> if foHasErrs fo1 then fo1 else fo2)
             occurBind fi v t
-                | v `elem` ftv t    =  err [Err_UnifyOccurs ty1 ty2 v t]
+                | v `elem` ftv t    =  err [Err_UnifyOccurs ty1 ty2 (fioMode opts) v t (fioMode (fiFIOpts fi))]
                 | otherwise         =  bind fi v t
 %%]
 
@@ -292,14 +292,42 @@ fitsIn opts env uniq ty1 ty2
             bind fi tv t            =  (res fi t) {foCnstr = tv `cnstrTyUnit` t}
 %%]
 
+%%[4_1.fitsIn.bind
+            bindAlt fi tv t         =  occurBind fi tv (mkTyAlts fi tv t)
+%%]
+
+%%[9_1.fitsIn.bind -4_1.fitsIn.bind
+            bindAlt fi tv t         =  occurBind (fi {fiUniq = u'}) tv (mkTyAlts fi tv t u)
+                                       where (u',u)  = mkNewUID (fiUniq fi)
+%%]
+
+%%[4_1.fitsIn.mkTyPlus
+            mkTyPlus fi t           =  (fi,TyPlus_Ty t)
+%%]
+
+%%[9_1.fitsIn.mkTyPlus -4_1.fitsIn.mkTyPlus
+            mkTyPlus fi t           =  (fi {fiUniq = u'},TyPlus_Ty t u)
+                                       where (u',u)  = mkNewUID (fiUniq fi)
+%%]
+
+%%[4_1.fitsIn.mkTyAlts
+            mkTyAlts fi tv t        =  if fioBindToTyAlts (fiFIOpts fi) || (fioIsMeetJoin (fiFIOpts fi) && tv `elem` fiMeetTvL fi)
+                                       then Ty_Alts tv [TyPlus_Ty t]
+                                       else t
+%%]
+
+%%[9_1.fitsIn.mkTyAlts -4_1.fitsIn.mkTyAlts
+            mkTyAlts fi tv t pl     =  if fioBindToTyAlts (fiFIOpts fi) || (fioIsMeetJoin (fiFIOpts fi) && tv `elem` fiMeetTvL fi)
+                                       then Ty_Alts tv [TyPlus_Ty t pl]
+                                       else t
+%%]
+
 %%[4_1
             bindMany fi tvL t       =  (res fi t) {foCnstr = assocLToCnstr .  map (flip (,) t) $ tvL}
-            mkTyAlts fi tv t        =  if fioBindToTyAlts (fiFIOpts fi) || (fioIsMeetJoin (fiFIOpts fi) && tv `elem` fiMeetTvL fi)
-                                       then Ty_Alts tv [t]
-                                       else t
             cmbTyAltsL t1L t2L      =  q1 ++ q2 ++ r1 ++ r2
-                                       where  (q1,r1) = partition tyIsQu t1L
-                                              (q2,r2) = partition tyIsQu t2L
+                                       where  p = partition (tyIsQu . tyPlusTy)
+                                              (q1,r1) = p t1L
+                                              (q2,r2) = p t2L
             foBind tv t fo          =  foUpdCnstr (tv `cnstrTyUnit` t) . foUpdTy t $ fo
 %%]
 
@@ -350,7 +378,6 @@ fitsIn opts env uniq ty1 ty2
 %%[4.fitsIn.FOUtils
             foUpdTy  t   fo  = fo {foTy = t}
             foUpdCnstr c fo  = fo {foCnstr = c |=> foCnstr fo}
-            cnstrDel tvL c   = cnstrFilter (const.not.(`elem` tvL)) c
 %%]
 
 %%[4_1.fitsIn.FOUtils
@@ -368,12 +395,20 @@ fitsIn opts env uniq ty1 ty2
             foCmbCSubst  ffo afo  = afo {foCSubst = foCSubst afo `cAppSubst` foCSubst ffo}
 %%]
 
+%%[11.fitsIn.foCmb
+            foCmbEqCnstr ffo afo  = afo {foEqCnstr = foEqCnstr afo |=> foEqCnstr ffo}
+%%]
+
 %%[4.fitsIn.foCmbApp
             foCmbApp     ffo      = foCmbCoCon ffo . foCmbCnstr ffo . foCmbAppTy ffo
 %%]
 
 %%[9.fitsIn.foCmbApp -4.fitsIn.foCmbApp
             foCmbApp     ffo      = foCmbPrfRes ffo . foCmbCoCon ffo . foCmbCnstr ffo . foCmbAppTy ffo
+%%]
+
+%%[11.fitsIn.foCmbApp -9.fitsIn.foCmbApp
+            foCmbApp     ffo      = foCmbEqCnstr ffo . foCmbPrfRes ffo . foCmbCoCon ffo . foCmbCnstr ffo . foCmbAppTy ffo
 %%]
 
 %%[7.fitsIn.foCmbPrfRes
@@ -418,6 +453,10 @@ fitsIn opts env uniq ty1 ty2
 %%]
             fPairWiseAlt = fPairWise' (\_ _ -> emptyCnstr)
             foLCnstr (fo:foL) = if null foL then foCnstr fo else emptyCnstr
+
+%%[11
+            instCoConst = fioInstCoConst opts
+%%]
 
 %%[7.fitsIn.fRow.Base
             fRow fi tr1 tr2 isRec isSum
@@ -496,7 +535,7 @@ fitsIn opts env uniq ty1 ty2
 
 %%[7.fitsIn.fRow.Final1
                        fR fi _ _ _ _ _
-                         = errClash tr1 tr2
+                         = errClash fi tr1 tr2
 %%]
 
 %%[7.fitsIn.fRow.foR
@@ -605,7 +644,7 @@ fitsIn opts env uniq ty1 ty2
                 | allowImpredTVBindR fi t2 t1       = occurBind fi v2 t1
 %%]
 
-%%[4_1.fitsIn.Var1 -4.fitsIn.Var1
+%%[4_1.fitsIn.Var1Alts1 -4.fitsIn.Var1
             f fi t1@(Ty_Var v1 _)       t2@(Ty_Var v2 _)
                 | allowBind fi t1                   = bind fi v1 t2
                 | allowBind fi t2                   = bind fi v2 t1
@@ -614,28 +653,52 @@ fitsIn opts env uniq ty1 ty2
             f fi t1@(Ty_Alts _ _)       t2@(Ty_Var v2 _)
                 | allowBind fi t2                   = bind fi v2 t1
             f fi t1@(Ty_Var v1 _)       t2
-                | allowImpredTVBindL fi t1 t2       = occurBind fi v1 (mkTyAlts fi v1 t2)
+                | allowImpredTVBindL fi t1 t2       = bindAlt fi v1 t2
             f fi t1                     t2@(Ty_Var v2 _)
-                | allowImpredTVBindR fi t2 t1       = occurBind fi v2 (mkTyAlts fi v2 t1)
+                | allowImpredTVBindR fi t2 t1       = bindAlt fi v2 t1
 %%]
 
 %%[4_1
             f fi t1@(Ty_Alts v1 t1L)    t2@(Ty_Alts v2 t2L)
                 | fioIsMeetJoin (fiFIOpts fi)       = bindMany fi [v1,v2] (Ty_Alts v1 (t1L `cmbTyAltsL` t2L))
             f fi t1@(Ty_Alts v1 t1L)    t2
-                | fioIsMeetJoin (fiFIOpts fi)       = bind fi v1 (Ty_Alts v1 (t1L `cmbTyAltsL` [t2]))
+                | fioIsMeetJoin (fiFIOpts fi)       = bind fipl v1 (Ty_Alts v1 (t1L `cmbTyAltsL` [t2pl]))
+                where  (fipl,t2pl) = mkTyPlus fi t2
             f fi t1                     t2@(Ty_Alts v2 t2L)
-                | fioIsMeetJoin (fiFIOpts fi)       = bind fi v2 (Ty_Alts v2 ([t1] `cmbTyAltsL` t2L))
-                | otherwise                         = fob
-                where  (foL@(fo:_),_,c) = fPairWiseNoErr fi (repeat t1) t2L
-                       fob =  if any (not.foHasErrs) foL
+                | fioIsMeetJoin (fiFIOpts fi)       = bind fipl v2 (Ty_Alts v2 ([t1pl] `cmbTyAltsL` t2L))
+                where  (fipl,t1pl) = mkTyPlus fi t1
+            f fi t1                     t2@(Ty_Alts v2 t2L)
+                | otherwise                         = rfo
+                where  (foL@(fo:_),_,c) = fPairWiseNoErr fi (repeat t1) (map tyPlusTy t2L)
+                       rfo =  if any (not.foHasErrs) foL
                               then  foUpdTy (c |=> t2) . foUpdCnstr c . foNoErr $ fo
                               else  ((head . filter foHasErrs $ foL) {foCnstr = emptyCnstr, foUniq = fiUniq fi})
-            f fi t1@(Ty_Alts v1 t1L@(_:_))  t2      = fob
-                where  fob =  case t2 of
+            f fi t1@(Ty_Alts v1 t1L@(_:_))  t2      = rfo
+                where  (fipl,t2pl) = mkTyPlus fi t2
+                       rfo =  case t2 of
                                   Ty_Quant q2 _ _
-                                      ->  foBind v1 (Ty_Alts v1 ([t2] ++ t1L )) (emptyFO {foUniq = fiUniq fi})
-                                  _   ->  foBind v1 (Ty_Alts v1 (t1L  ++ [t2])) (emptyFO {foUniq = fiUniq fi})
+                                      ->  foBind v1 (Ty_Alts v1 ([t2pl] ++ t1L )) (emptyFO {foUniq = fiUniq fipl})
+                                  _   ->  foBind v1 (Ty_Alts v1 (t1L  ++ [t2pl])) (emptyFO {foUniq = fiUniq fipl})
+%%]
+
+%%[11
+            f fi t1@(Ty_Var v1 TyVarCateg_Fixed) t2@(Ty_Equal v2 t2e)
+                | fioAllowEqOpen (fiFIOpts fi)      = (bind fi v2 t2e) {foEqCnstr = ce}
+                where  ce = v1 `cnstrTyUnit` Ty_Equal v1 t2e
+            f fi t1@(Ty_Equal v1 t1e)   t2@(Ty_Equal v2 t2e)
+                | v1 == v2                          = rfo
+                where  fo = f fi t1e t2e
+                       rfo = if foHasErrs fo
+                             then res fi (Ty_Var v1 TyVarCateg_Fixed)
+                             else foUpdTy (Ty_Equal v2 (foTy fo)) fo
+            f fi t1@(Ty_Equal v1 t1e)   t2@(Ty_Equal v2 t2e)
+                | v1 /= v2                          = manyFO [fo,rfo]
+                where  fo = f fi t1e t2e
+                       rfo = foUpdTy (Ty_Equal v2 (foTy fo)) fo
+            f fi t1                     t2@(Ty_Equal v2 t2e)
+                                                    = manyFO[fo,rfo]
+                where  fo = f fi t1 t2e
+                       rfo = foUpdTy (Ty_Equal v2 (foTy fo)) fo
 %%]
 
 %%[9
@@ -670,7 +733,7 @@ fitsIn opts env uniq ty1 ty2
                        fo = f fi2 uqt1 uqt2
                        rfo =  case tvLMbAlphaRename (foCnstr fo) rtvs1 rtvs2 of
                                 Just tvL  -> foUpdTy (mkTyQu q1 tvL (foTy fo)) . foUpdCnstr (cnstrDel (rtvs1++rtvs2) (foCnstr fo)) $ fo
-                                Nothing   -> errClash t1 t2
+                                Nothing   -> errClash fi t1 t2
 %%]
 
 %%[4.fitsIn.QR
@@ -729,7 +792,7 @@ fitsIn opts env uniq ty1 ty2
                 where  (u',u1,u2,u3)    = mkNewLevUID3 (fiUniq fi)
                        fi2              = fi {fiUniq = u'}
                        mbfp             = fP tpr1 tpr2
-                       mberr            = Just (errClash t1 t2)
+                       mberr            = Just (errClash fi t1 t2)
                        fP tpr1@(Ty_Pred _)              tpr2@(Ty_Pred _)
                             =  if foHasErrs pfo
                                then Nothing
@@ -843,9 +906,9 @@ fitsIn opts env uniq ty1 ty2
 
 %%[4_1.fitsIn.Var2 -4.fitsIn.Var2
             f fi t1@(Ty_Var v1 _)       t2
-                | allowBind fi t1                   = occurBind fi v1 (mkTyAlts fi v1 t2)
+                | allowBind fi t1                   = bindAlt fi v1 t2
             f fi t1                     t2@(Ty_Var v2 _)
-                | allowBind fi t2                   = occurBind fi v2 (mkTyAlts fi v2 t1)
+                | allowBind fi t2                   = bindAlt fi v2 t1
 %%]
 
 %%[4.fitsIn.App
@@ -877,7 +940,7 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[4.fitsIn.DefaultCase
-            f fi t1                     t2          = errClash t1 t2
+            f fi t1                     t2          = errClash fi t1 t2
 %%]
 
 %%[4.fitsIn.SetupAndResult
@@ -1056,15 +1119,9 @@ prfOneStep env (PredOcc pr prUid) st@(ProofState g@(ProvenGraph _ p2i _) _ _ _ _
           ->  case pr of
                 Pred_Class _    -> prfOneStepClass env pr prUid st
 %%]
-
 %%[10
                 Pred_Lacks _ _  -> prfOneStepLacks env pr prUid st
 %%]
-
-%%[11
-                _               -> st
-%%]
-
 %%[9
         _ ->  st
 %%]
