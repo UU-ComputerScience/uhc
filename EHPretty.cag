@@ -194,6 +194,14 @@ SEM Decl
 SEM RowTyExpr
   | Var         loc     .  pp       =   pp @nm
                 lhs     .  ppL      =   []
+
+SEM TyExpr
+  | Pred        loc     .  pp       =   hsnOImpl >#< @prExpr.pp >#< hsnCImpl
+
+SEM PrExpr
+  | Class       loc     .  pp       =   ppListSep "" "" " " (pp @nm : @tyExprs.ppL)
+  | Lacks       loc     .  pp       =   @rowTyExpr.pp >|< "\\" >|< pp @nm
+  | Eq          loc     .  pp       =   pp @nm >|< "=" >|< @tyExpr.pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -204,43 +212,15 @@ SEM RowTyExpr
 ATTR TyExpr [ | | appFunNm: {HsName} ^^ appFunPP: PP_Doc ^^ appArgPPL: PP_DocL ]
 
 SEM TyExpr
-  | Con         lhs     .  appFunNm     =  @nm
-  | App         lhs     .  appFunNm     =  @func.appFunNm
-                        .  appArgPPL    =  @func.appArgPPL ++ [@arg.pp]
-                        .  appFunPP     =  @func.appFunPP
-  | AppTop Parens
-                lhs     .  appFunNm     =  hsnUnknown
-  | Con AppTop Parens
-                lhs     .  appArgPPL    =  []
-                lhs     .  appFunPP     =  @pp
-%%]
-
-%%[2.Wild.appFunNm
-SEM TyExpr
-  | Wild        lhs     .  appFunNm     =  hsnUnknown
-                        .  appArgPPL    =  []
-                        .  appFunPP     =  @pp
-%%]
-
-%%[3
-SEM TyExpr
-  | Var         lhs     .  appFunNm     =  hsnUnknown
-                        .  appArgPPL    =  []
-                        .  appFunPP     =  @pp
-%%]
-
-%%[4
-SEM TyExpr
-  | Quant       lhs     .  appFunNm     =  hsnUnknown
-                        .  appArgPPL    =  []
-                        .  appFunPP     =  @pp
-%%]
-
-%%[7
-SEM TyExpr
-  | Row         lhs     .  appFunNm     =  hsnUnknown
-                        .  appArgPPL    =  []
-                        .  appFunPP     =  @pp
+  | Con         lhs     .  appFunNm     =   @nm
+  | App         lhs     .  appFunNm     =   @func.appFunNm
+                        .  appArgPPL    =   @func.appArgPPL ++ [@arg.pp]
+                        .  appFunPP     =   @func.appFunPP
+  | * - App Con
+                lhs     .  appFunNm     =   hsnUnknown
+  | * - App
+                lhs     .  appArgPPL    =   []
+                lhs     .  appFunPP     =   @pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -251,15 +231,14 @@ SEM TyExpr
 ATTR KiExpr [ | | appFunNm: {HsName} ^^ appFunPP: PP_Doc ^^ appArgPPL: PP_DocL ]
 
 SEM KiExpr
-  | Con Var     lhs     .  appFunNm     =  @nm
-  | App         lhs     .  appFunNm     =  @func.appFunNm
-                        .  appArgPPL    =  @func.appArgPPL ++ [@arg.pp]
-                        .  appFunPP     =  @func.appFunPP
-  | AppTop Parens
-                lhs     .  appFunNm     =  hsnUnknown
-  | Con Var AppTop Parens
-                lhs     .  appArgPPL    =  []
-                lhs     .  appFunPP     =  @pp
+  | Con         lhs     .  appFunNm     =   @nm
+  | App         lhs     .  appFunNm     =   @func.appFunNm
+                        .  appArgPPL    =   @func.appArgPPL ++ [@arg.pp]
+                        .  appFunPP     =   @func.appFunPP
+  | * - Con App
+                lhs     .  appFunNm     =   hsnUnknown
+  | * - App     lhs     .  appArgPPL    =   []
+                lhs     .  appFunPP     =   @pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -270,30 +249,14 @@ SEM KiExpr
 ATTR Expr [ | | appFunNm: {HsName} ^^ appFunPP: PP_Doc ^^ appArgPPL: PP_DocL ]
 
 SEM Expr
-  | Con         lhs     .  appFunNm     =  @nm
-  | App         lhs     .  appFunNm     =  @func.appFunNm
-                        .  appArgPPL    =  @func.appArgPPL ++ [@arg.pp]
-                        .  appFunPP     =  @func.appFunPP
-  | Var AppTop IConst CConst Lam Parens
-                lhs     .  appFunNm     =  hsnUnknown
-  | Var Con AppTop IConst CConst Lam Parens
-                lhs     .  appArgPPL    =  []
-  | Var Con AppTop IConst CConst Lam Parens
-                lhs     .  appFunPP     =  @pp
-%%]
-
-%%[5
-SEM Expr
-  | Case        lhs     .  appFunNm     =  hsnUnknown
-                        .  appArgPPL    =  []
-                        .  appFunPP     =  @pp
-%%]
-
-%%[7
-SEM Expr
-  | Rec Sel     lhs     .  appFunNm     =  hsnUnknown
-                        .  appArgPPL    =  []
-                        .  appFunPP     =  @pp
+  | Con         lhs     .  appFunNm     =   @nm
+  | App         lhs     .  appFunNm     =   @func.appFunNm
+                        .  appArgPPL    =   @func.appArgPPL ++ [@arg.pp]
+                        .  appFunPP     =   @func.appFunPP
+  | * - Con App
+                lhs     .  appFunNm     =   hsnUnknown
+  | * - App     lhs     .  appArgPPL    =   []
+                        .  appFunPP     =   @pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -304,24 +267,20 @@ SEM Expr
 ATTR PatExpr [ | | appFunNm: {HsName} ^^ appFunPP: PP_Doc ^^ appArgPPL: PP_DocL ]
 
 SEM PatExpr
-  | Con         loc     .  appFunNm     =  @nm
-  | AppTop      loc     .  appFunNm     =  @patExpr.appFunNm
-  | App         lhs     .  appFunNm     =  @func.appFunNm
-                        .  appArgPPL    =  @func.appArgPPL ++ [@arg.pp]
-                        .  appFunPP     =  @func.appFunPP
-  | Var AppTop IConst CConst Parens
-                lhs     .  appFunNm     =  hsnUnknown
-  | Var Con AppTop IConst CConst Parens
-                lhs     .  appArgPPL    =  []
-  | Var Con AppTop IConst CConst Parens
-                lhs     .  appFunPP     =  @pp
+  | Con         loc     .  appFunNm     =   @nm
+  | AppTop      loc     .  appFunNm     =   @patExpr.appFunNm
+  | App         lhs     .  appFunNm     =   @func.appFunNm
+                        .  appArgPPL    =   @func.appArgPPL ++ [@arg.pp]
+                        .  appFunPP     =   @func.appFunPP
+  | * - App Con
+                lhs     .  appFunNm     =   hsnUnknown
+  | * - App     lhs     .  appArgPPL    =   []
+                        .  appFunPP     =   @pp
 %%]
 
 %%[7
 SEM PatExpr
-  | Rec         loc     .  appFunNm     =  hsnUnknown
-                lhs     .  appArgPPL    =  []
-                        .  appFunPP     =  @pp
+  | Rec         loc     .  appFunNm     :=  hsnUnknown
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -332,11 +291,11 @@ SEM PatExpr
 ATTR AGItf [ | | topTyPP: PP_Doc ]
 
 SEM AGItf
-  | AGItf   lhs     .   topTyPP     =   ppTy @expr.ty
+  | AGItf       lhs     .   topTyPP     =   ppTy @expr.ty
 %%]
 
 %%[3.AGItf.topTyPP
 SEM AGItf
-  | AGItf   lhs     .   topTyPP     :=  ppTy (tyQuantifyClosed @expr.ty)
+  | AGItf       lhs     .   topTyPP     :=  ppTy (tyQuantifyClosed @expr.ty)
 %%]
 

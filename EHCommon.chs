@@ -165,8 +165,8 @@ hsnUndefined                        =   HNm "undefined"
 %%]
 
 %%[9
-hsnOImpl                            =   HNm "(="
-hsnCImpl                            =   HNm "=)"
+hsnOImpl                            =   HNm "(#"
+hsnCImpl                            =   HNm "#)"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

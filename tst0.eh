@@ -1,10 +1,4 @@
-let i :: Int
-    i = 4
-    f :: Int -> Int
-    f = \x -> x
-    ab :: (Int,Int)
-    ab = (3,4)
-    v :: Int
-    v = (\x -> x) 3
-    (a,b) = ab
- in i
+let f1 :: (# X a #) -> a -> Int
+    f2 :: (# r \ l #) -> (r | l :: a ) -> a
+    f3 :: (# a = Int #) -> a -> Int
+in  3

@@ -127,6 +127,15 @@ SEM RowTyExpr
                             .  ki                   =   foTy @fo
 %%]
 
+%%[9
+ATTR PrExpr [ | | ki: Ty ]
+
+SEM PrExpr
+  | Eq          (loc.tgi,tyExpr.tyGam)              =   tyGamLookupOrAdd @nm @lUniq @lhs.kiCnstr @lhs.tyGam
+                loc         .   ki                  =   tgiKi @tgi
+  | * - Eq      loc         .   ki                  =   kiStar
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type of TyExpr, TyVar
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -174,6 +183,11 @@ SEM TyVars
   | Cons        lhs         .  tyL                  =   @hd.ty : @tl.tyL
 %%]
 
+%%[9
+SEM TyExpr
+  | Pred        lhs         .  ty                   =   Ty_Pred @prExpr.pr
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -194,3 +208,15 @@ SEM RowTyExpr
   | Var         lhs         .  tyRow                =   tgiTy @tgi
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR PrExpr [ | | pr: Pred ]
+
+SEM PrExpr
+  | Class       lhs         .   pr                  =   Pred_Class (@nm `mkTyConApp` @tyExprs.tyL)
+  | Lacks       lhs         .   pr                  =   Pred_Lacks @rowTyExpr.tyRow @nm
+  | Eq          lhs         .   pr                  =   Pred_Eq (tgiTy @tgi) @tyExpr.ty
+%%]

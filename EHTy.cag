@@ -36,6 +36,9 @@
 %%[8 hs import(List) export(tyRowCanonOrder,tyRecOffset) 
 %%]
 
+%%[9 hs export(Pred(..))
+%%]
+
 %%[1 import(EHTyAbsSyn)
 DERIVING *     : Show, Eq
 %%]

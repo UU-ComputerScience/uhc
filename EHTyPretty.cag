@@ -121,7 +121,17 @@ SEM TyQu
 
 %%[7
 SEM Ty
-  | Ext             loc     .   pp      =   ppAppTop (hsnRow,@mkPPAppFun @appFunNm @appFunPP) @appArgPPL empty
+  | Ext             loc     .   pp      =   ppAppTop  (hsnRow,@mkPPAppFun @appFunNm @appFunPP)
+                                                      @appArgPPL empty
+%%]
+
+%%[9
+SEM Ty
+  | Pred            loc     .   pp      =   hsnOImpl >#< @pr.pp >#< hsnCImpl
+
+SEM Pred
+  | Lacks           lhs     .   pp      =   @ty.pp >|< "\\" >|< @nm
+  | Eq              lhs     .   pp      =   @tvTy.pp >|< "=" >|< @ty.pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -137,8 +147,12 @@ SEM TyAGItf
 SEM Ty
   | Ext             (loc.positionalNm,lhs.positionalFldNmL)
                                                     =   hdAndTl @ty.positionalFldNmL
-  | Con App Any Var Quant
-                    lhs     .   positionalFldNmL    =   @lhs.positionalFldNmL
+  | * - Ext         lhs     .   positionalFldNmL    =   @lhs.positionalFldNmL
+%%]
+
+%%[9
+SEM Pred
+  | Class Lacks Eq  loc     .   positionalFldNmL    =   positionalFldNames
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -178,6 +192,12 @@ SEM Ty
                         .  appFunPP     =   @ty.appFunPP
 %%]
 
+%%[9
+SEM Ty
+  | Pred        lhs     .  appArgPPL    =   []
+                        .  appFunPP     =   @pp
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Need for parenthesis
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -209,5 +229,12 @@ SEM Ty
   | Ext         ty      .   parNeed             =   ParNotNeeded
                 extTy   .   parNeed             =   ParNotNeeded
                 loc     .   parNeed             =   ParNotNeeded
+%%]
+
+%%[9
+SEM Pred
+  | Class Lacks Eq  
+                loc     .   parNeed             =   ParNotNeeded
+                        .   parNeedL            =   []
 %%]
 

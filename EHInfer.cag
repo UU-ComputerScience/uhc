@@ -420,6 +420,11 @@ SEM RecExpr
                 loc         .   nm                  =   maybe @positionalNm id @mbNm
 %%]
 
+%%[9
+SEM PrExpr
+  | Lacks       rowTyExpr   .   positionalFldNmL    =   positionalFldNames
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% How to do subsumption
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

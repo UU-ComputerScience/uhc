@@ -111,5 +111,8 @@ SEM Expr
 %%[9
 SEM RowTyExpr
   | Var             (lhs.gUniq,loc.lUniq,loc.lUniq2)                =   mkNewLevUID2    @lhs.gUniq
+
+SEM PrExpr
+  | Eq              (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
 %%]
 
