@@ -18,7 +18,7 @@
 %%[9 export(PredOcc(..),ProofState(..))
 %%]
 
-%%[9 export(ProvenNode(..),ProvenGraph(..),prvgAddPrNd,prvgAddNd,ProofCost)
+%%[9 export(ProvenNode(..),ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,ProofCost)
 %%]
 
 %%[9 export(Rule(..),emptyRule)
@@ -40,9 +40,10 @@ data PredOcc
 
 data ProofState
   =  ProofState
-       { prfsProvenGraph    :: ProvenGraph
-       , prfsUniq           :: UID
-       , prfsPredsToProve   :: [PredOcc]
+       { prfsProvenGraph    	:: ProvenGraph
+       , prfsUniq           	:: UID
+       , prfsPredsToProve   	:: [PredOcc]
+       , prfsPredsOrigToProve	:: [Pred]
        }
 
 type ProofCost
@@ -52,17 +53,22 @@ data ProvenNode
   =  ProvenOr
        { prvnPred           :: Pred
        , prvnOrEdges        :: [UID]
+       , prvnCost           :: ProofCost
        }
   |  ProvenAnd
        { prvnPred           :: Pred
        , prvnAndEdges       :: [UID]
-       , prvnEvidence       :: CExpr
        , prvnCost           :: ProofCost
+       , prvnEvidence       :: CExpr
+       }
+  |  ProvenShare
+       { prvnPred           :: Pred
+       , prvnShareEdge      :: UID
        }
   |  ProvenArg
        { prvnPred           :: Pred
-       , prvnEvidence       :: CExpr
        , prvnCost           :: ProofCost
+       , prvnEvidence       :: CExpr
        }
   
 data ProvenGraph
@@ -71,9 +77,13 @@ data ProvenGraph
        , prvgPrIdMp         :: FiniteMap Pred [UID]
        }
 
+prvgAddPrUids :: Pred -> [UID] -> ProvenGraph -> ProvenGraph
+prvgAddPrUids pr uidL g@(ProvenGraph _ p2i)
+  =  g {prvgPrIdMp = addToFM_C (++) p2i pr uidL}
+
 prvgAddPrNd :: Pred -> [UID] -> ProvenNode -> ProvenGraph -> ProvenGraph
 prvgAddPrNd pr uidL@(uid:_) nd g@(ProvenGraph i2n p2i)
-  =  g {prvgIdNdMp = addToFM i2n uid nd, prvgPrIdMp = addToFM p2i pr uidL}
+  =  (prvgAddPrUids pr uidL g) {prvgIdNdMp = addToFM i2n uid nd}
 
 prvgAddNd :: UID -> ProvenNode -> ProvenGraph -> ProvenGraph
 prvgAddNd uid nd g@(ProvenGraph i2n _)
@@ -90,9 +100,10 @@ instance Show ProvenGraph where
   show _ = ""
 
 instance PP ProvenNode where
-  pp (ProvenOr  pr es)       = "OR:"    >#< "pr=" >|< pp pr >#< "edges=" >|< ppCommaList es
-  pp (ProvenAnd pr es ev c)  = "AND:"   >#< "pr=" >|< pp pr >#< "edges=" >|< ppCommaList es >#< "cost=" >|< pp c >#< "evid=" >|< pp ev
-  pp (ProvenArg pr ev c)     = "ARG:"   >#< "pr=" >|< pp pr                                 >#< "cost=" >|< pp c >#< "evid=" >|< pp ev
+  pp (ProvenOr  pr es c)     = "OR:"    >#< "pr=" >|< pp pr >#< "edges=" >|< ppCommaList es >#< "cost=" >|< pp c
+  pp (ProvenAnd pr es c ev)  = "AND:"   >#< "pr=" >|< pp pr >#< "edges=" >|< ppCommaList es >#< "cost=" >|< pp c >#< "evid=" >|< pp ev
+  pp (ProvenShare pr e    )  = "SHARE:" >#< "pr=" >|< pp pr >#< "edge="  >|< ppCommaList [e]
+  pp (ProvenArg pr c ev)     = "ARG:"   >#< "pr=" >|< pp pr                                 >#< "cost=" >|< pp c >#< "evid=" >|< pp ev
 
 instance PP ProvenGraph where
   pp (ProvenGraph i2n p2i) = (ppAssocL . assocLMapSnd ppCommaList . fmToList $ p2i) >-< ppAssocL (fmToList i2n)

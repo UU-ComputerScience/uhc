@@ -52,7 +52,21 @@ SEM CaseAlt
 SEM CaseAlts
   | Nil         lhs         .  ty                   =  @lhs.knTy
   | Cons        hd          .  knTy                 =  @lhs.knTy
-                loc         .  fo                   =  fitsIn @lhs.fiOpts @lUniq @hd.ty (@hd.tyCnstr |=> @lhs.knTy)
+                loc         .  fo                   =  fitsIn @lhs.fiOpts @fe @lUniq @hd.ty (@hd.tyCnstr |=> @lhs.knTy)
                             .  knTy                 =  foTy @fo
                 tl          .  tyCnstr              =  foCnstr @fo |=> @hd.tyCnstr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gamma/Environment for fitting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4
+SEM CaseAlts
+  | Cons        loc         .   fe                  =   emptyFE
+%%]
+
+%%[9
+SEM CaseAlts
+  | Cons        loc         .   fe                  :=  emptyFE {fePrElimGam = @lhs.prElimGam}
 %%]

@@ -368,7 +368,11 @@
 
 % title
 \title{Typing Haskell with an Attribute Grammar}
+%if phd
 \author{Atze Dijkstra and Doaitse Swierstra}
+%else
+\author{Atze Dijkstra}
+%endif
 \date{\today}
 %if forAfpLLNCS
 \institute{Institute of Information and Computing Sciences,\\
@@ -521,7 +525,7 @@ This concerns mainly future design decisions which have an influence on design d
 %%% Part I
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%if forAfpTRUU1 || asSlides
+%if forAfpTRUU1 || asSlides || phd
 \part{Type checking, inference and polymorphism}
 %endif
 
@@ -533,7 +537,7 @@ This concerns mainly future design decisions which have an influence on design d
 %%% Intro
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Introduction and overview}
+\section*{Introduction and overview}
 
 %if not onlyCurrentWork
 
@@ -5674,6 +5678,14 @@ needed for instantiating types together with the downward information stored in
 
 The parameter |fiCoContra| is used to indicate if the comparison |<=| is flipped.
 
+Finally, an environment is passed to |fitsIn|:
+
+\chunkCmdUseMark{EHTyFitsIn.4.FIEnv}
+
+In this version |FIEnv| acts as a placeholder for use in later versions.
+The intention of a |FIEnv| is to pass environmental information needed by |fitsIn|,
+usually stored in |Gamma|'s throughout the type rules and attribute grammar implementation.
+
 \paragraph{The fitting.}
 The preliminaries of |fitsIn| have not changed much compared to
 the previous version (\pageRef{EHTyFitsIn.2.fitsIn.Base}).
@@ -5769,7 +5781,8 @@ All is left of |fitsIn| are the remaining cases for type variables, now for the
 and starting it all
 
 \restorecolumns
-\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.Rest}
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.DefaultCase}
+\chunkCmdUseMark{EHTyFitsIn.4.fitsIn.SetupAndResult}
 
 \subsection{Instantiation}
 \label{ehc4-inst}
@@ -6075,9 +6088,11 @@ Existentials, via universal \cite{laufer96class-existential}
 %endif not onlyCurrentWork
 
 
-%if asSlides
+%if asSlides || phd
 \part{Structure types}
+%endif
 
+%if asSlides
 \frame<presentation>{
 \tableofcontents[hidesubsections]
 }
@@ -6501,6 +6516,10 @@ Coercion (of records), related to subsumption
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 9
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%if asSlides || phd
+\part{Implicitness}
+%endif
 
 \section{EH 9: Explicit Implicitness}
 \label{ehc9}

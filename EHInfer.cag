@@ -166,13 +166,27 @@ SEM Expr
 
 SEM Decl
   | TySig       tyExpr      .  tyGam                =   gamPushNew @lhs.tyGam
-                loc         .  fo                   =   fitsIn weakFIOpts @lUniq @tyExpr.ki kiStar
+                loc         .  fo                   =   fitsIn weakFIOpts @fe @lUniq @tyExpr.ki kiStar
                 lhs         .  tyGam                =   @lhs.tyGam
                             .  kiCnstr              =   foCnstr @fo |=> @tyExpr.kiCnstr
 %%]
 
 %%[7
 ATTR AllDataField [ | tyGam: TyGam | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gamma/Environment for fitting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4
+SEM Decl
+  | TySig       loc         .   fe                  =   emptyFE
+%%]
+
+%%[9
+SEM Decl
+  | TySig       loc         .   fe                  :=  emptyFE {fePrElimGam = @lhs.prElimGam}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

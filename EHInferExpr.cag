@@ -98,7 +98,7 @@ SEM Expr
                                                           Nothing    ->  (Ty_Any,[Err_NamesNotIntrod [@nm]])
                                                           Just vgi   ->  (vgiTy vgi,[])
                             .  fTy                  :=  @lhs.tyCnstr |=> @gTy
-                            .  fo                   :=  fitsIn @lhs.fiOpts @lUniq2 @fTy (@lhs.tyCnstr |=> @lhs.knTy)
+                            .  fo                   :=  fitsIn @lhs.fiOpts @fe @lUniq2 @fTy (@lhs.tyCnstr |=> @lhs.knTy)
 %%]
 
 %%[1.App
@@ -143,9 +143,23 @@ SEM Expr
 SEM Expr
   | Var         loc         .  fTy                  :=  @lhs.tyCnstr |=> @gTy
   | IConst CConst Var
-                loc         .  fo                   :=  fitsIn @lhs.fiOpts @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
-  | Lam         loc         .  foKnFun              :=  let  fo = fitsIn @lhs.fiOpts @lUniq2 @funTy (@lhs.tyCnstr |=> @lhs.knTy)
+                loc         .  fo                   :=  fitsIn @lhs.fiOpts @fe @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
+  | Lam         loc         .  foKnFun              :=  let  fo = fitsIn @lhs.fiOpts @fe @lUniq2 @funTy (@lhs.tyCnstr |=> @lhs.knTy)
                                                         in   fo {foTy = foCnstr fo |=> @funTy}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gamma/Environment for fitting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4.FIEnv
+SEM Expr
+  | *           loc         .   fe                  =   emptyFE
+%%]
+
+%%[9.FIEnv -4.FIEnv
+SEM Expr
+  | *           loc         .   fe                  =   emptyFE {fePrElimGam = @lhs.prElimGam}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -162,7 +176,7 @@ SEM RecExpr
 
 SEM Expr
   | Rec         loc         .  fTy                  =   hsnRec `mkTyConApp` [@recExpr.knTyRow]
-                            .  fo                   =   fitsIn @lhs.fiOpts @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
+                            .  fo                   =   fitsIn @lhs.fiOpts @fe @lUniq @fTy (@lhs.tyCnstr |=> @lhs.knTy)
                             .  ty                   =   foTy @fo
                 recExpr     .  tyCnstr              =   foCnstr @fo |=> @lhs.tyCnstr
                 lhs         .  ty                   =   @recExpr.tyCnstr |=> @ty
@@ -170,7 +184,7 @@ SEM Expr
                 loc         .  (fTy,nmErrs)         =   case tyRecExtr @lbl @expr.ty of
                                                           Just (_,e)  ->  (e,[])
                                                           Nothing     ->  (Ty_Any,[Err_MissingRowLabel @lbl @expr.ty])
-                            .  fo                   =   fitsIn @lhs.fiOpts @lUniq2 @fTy (@expr.tyCnstr |=> @lhs.knTy)
+                            .  fo                   =   fitsIn @lhs.fiOpts @fe @lUniq2 @fTy (@expr.tyCnstr |=> @lhs.knTy)
                             .  ty                   =   foTy @fo
                 lhs         .  tyCnstr              =   foCnstr @fo |=> @expr.tyCnstr
 %%]
