@@ -32,23 +32,30 @@ DATA CExpr
   | Lam         arg             : {HsName}
                 body            : CExpr
   | Var         nm              : {HsName}
-  | Tup
-  | Sel         expr            : CExpr
-                tag             : {Int}
-                offset          : CExpr
   | Case        expr            : CExpr
                 alts            : CAltL
                 dflt            : CExpr
   | Int         int             : {Int}
   | Char        char            : {Char}
+  | Tup
+  | TupSel      expr            : CExpr
+                tag             : {Int}
+                offset          : CExpr
+  | TupDel      expr            : CExpr
+                tag             : {Int}
+                offset          : CExpr
+  | TupIns      expr            : CExpr
+                tag             : {Int}
+                offset          : CExpr
+                fldExpr         : CExpr
+  | TupUpd      expr            : CExpr
+                tag             : {Int}
+                offset          : CExpr
+                fldExpr         : CExpr
 %%]
 
 %%[9
 DATA CExpr
-  | Set         expr            : CExpr
-                tag             : {Int}
-                offset          : CExpr
-                fldExpr         : CExpr
   | Hole        uid             : {UID}
   | CoeArg
   | ImplsApp    func            : CExpr

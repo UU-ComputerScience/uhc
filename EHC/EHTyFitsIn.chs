@@ -584,7 +584,7 @@ fitsIn opts env uniq ty1 ty2
                        fR fi r1 r2 e1 e12@(_:_) e2
                          = manyFO ([fo] ++ foL ++ [foUpdTy (foTy fo `mkTyRow` eL) . foUpdCnstr fCnstr $ fo])
                          where (e1L,e2L) = unzip e12
-                               (foL,fi2,fCnstr) = fL fi (assocLElts e1L) (assocLElts e2L)
+                               (foL,fi2,fCnstr) = fL (fi {fiFIOpts = strongFIOpts}) (assocLElts e1L) (assocLElts e2L)
                                eL = zip (assocLKeys e1L) (map ((fCnstr |=>) . foTy) foL)
                                fo = fR fi2 r1 r2 e1 [] e2
                        fR fi r1 r2 [] [] []
@@ -593,6 +593,13 @@ fitsIn opts env uniq ty1 ty2
                          = err fi [Err_UnifyClash ty1 ty2 tr1 tr2]
                        fo = fR fi r1 r2 extsIn1 extsIn12 extsIn2
 %%]
+
+                       fR fi r1 r2 e1 e12@(_:_) e2
+                         = manyFO ([fo] ++ foL ++ [foUpdTy (foTy fo `mkTyRow` eL) . foUpdCnstr fCnstr $ fo])
+                         where (e1L,e2L) = unzip e12
+                               (foL,fi2,fCnstr) = fL (fi {fiFIOpts = strongFIOpts}) (assocLElts e1L) (assocLElts e2L)
+                               eL = zip (assocLKeys e1L) (map ((fCnstr |=>) . foTy) foL)
+                               fo = fR fi2 r1 r2 e1 [] e2
 
 %%[4.fitsIn.Base
             f fi t1                     t2
@@ -733,13 +740,6 @@ fitsIn opts env uniq ty1 ty2
                        fp _ =  Nothing
 %%]
 
-%%[4.fitsIn.Var2
-            f fi t1@(Ty_Var v1 f)       t2
-                | f == TyVarCateg_Plain             = occurBind fi v1 t2
-            f fi t1                     t2@(Ty_Var v2 f)
-                | f == TyVarCateg_Plain             = occurBind fi v2 t1
-%%]
-
 %%[7
             f fi  t1@(Ty_App (Ty_Con n1) tr1)
                   t2@(Ty_App (Ty_Con n2) tr2)
@@ -748,6 +748,13 @@ fitsIn opts env uniq ty1 ty2
                 where  isRec = hsnIsRec n1
                        isSum = hsnIsSum n1
                        fo = fRow fi tr1 tr2 isRec isSum
+%%]
+
+%%[4.fitsIn.Var2
+            f fi t1@(Ty_Var v1 f)       t2
+                | f == TyVarCateg_Plain             = occurBind fi v1 t2
+            f fi t1                     t2@(Ty_Var v2 f)
+                | f == TyVarCateg_Plain             = occurBind fi v2 t1
 %%]
 
 %%[4.fitsIn.App
@@ -892,7 +899,7 @@ prfOneStep env (PredOcc pr prUid) st@(ProofState g@(ProvenGraph i2n p2i p2oi) u 
                                ndFail               = mkNdFail (if isInOrig then CostInt 1 else CostInt costALot) prUid
                           in   case gamLookupAll nm (fePrElimGam env) of
                                  pegis@(_:_)
-                                     ->  let  rs            = concat . map pegiRuleL $ pegis
+                                     ->  let  rs            = concat . zipWith (\lev pegi -> map (\r -> r {rulCost = rulCost r `costAdd` CostInt (lev*10)}) (pegiRuleL pegi)) [0..] $ pegis
                                               (u',u1,u2)    = mkNewLevUID2 u
                                               matches       = catMaybes . zipWith (\u r -> matchRule u pr r) (mkNewUIDL (length rs) u1) $ rs
                                               costOfOr      = if isInOrig then CostInt (-costALot) else CostInt 0 
@@ -905,7 +912,7 @@ prfOneStep env (PredOcc pr prUid) st@(ProofState g@(ProvenGraph i2n p2i p2oi) u 
                                                                           -> let hasNoPre   =  null prOccL
                                                                                  addOrig g  =  if hasNoPre then g {prvgPrOrigIdMp = addToFM_C (++) (prvgPrOrigIdMp g) pr [rid]} else g
                                                                                  prf        =  ProvenAnd pr (map poId prOccL)
-                                                                                                 (if isInOrig && hasNoPre then CostAvailImpl else cost) evid
+                                                                                                 (if isInOrig && hasNoPre then CostAvailImpl (costCost cost) else cost) evid
                                                                              in  (addOrig . prvgAddNd uid prf $ g,prOccL ++ newPr)
                                                                        )
                                                                        (prvgAddPrNd pr [prUid] (ProvenOr pr orUids costOfOr)
@@ -997,11 +1004,3 @@ prFitToEvid u prTy g
                     in  (snd (tyArrowArgRes (foTy fo)),foErrL fo)
                _ -> (Ty_Any,[Err_NamesNotIntrod [tyPredNm prTy]])
 %%]
-
-  =  case gamLookup (tyPredNm prTy) g of
-       Just pigi
-         -> let (u',u1) = mkNewUID u
-                fo = fitsIn predFIOpts emptyFE u (pigiPrToEvidTy pigi) ([prTy] `mkTyArrow` mkTyVar u1)
-            in  (snd (tyArrowArgRes (foTy fo)),foErrL fo)
-       _ -> (Ty_Any,[Err_NamesNotIntrod [tyPredNm prTy]])
-

@@ -15,7 +15,7 @@ test-expect test-regress: test-lists
 	        te=$${t}.exp$${v} ; tr=$${t}.reg$${v} ; th=$${t}.$${how}$${v} ; \
 	        tc=$${tb}.code ; \
 	        rm -f $${tc} ; \
-	        $$ehc $$t > $$th ; \
+	        $$ehc $$t > $$th 2>&1 ; \
 	        if test -r $${tc} ; \
 	        then \
 	          echo "== code ==" >> $${th} ; \

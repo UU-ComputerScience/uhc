@@ -43,9 +43,11 @@ SEM Decl
 SEM Expr
   | IConst      lhs     .  ppAST    =   ppNest ["Expr","IConst"] [@pp] []
   | CConst      lhs     .  ppAST    =   ppNest ["Expr","CConst"] [@pp] []
-  | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Var"] [ppNm @nm] [] @info
+  | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Var"] [ppNm @nm] [] (@info ++ @info2 ++ @info3)
                 loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         ]
+                        .  info2    =   []
+                        .  info3    =   []
   | Con         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Con"] [ppNm @nm] [] @info
                 loc     .  info     =   [ mkInfo1 "ty" (ppTy @ty)
                                         ]
@@ -104,10 +106,8 @@ SEM Decl
                                         ]
 
 SEM Expr
-  | Var         loc     .  info     :=  [ mkInfo1 "knTy" (ppTy (@lhs.tyCnstr |=> @lhs.knTy))
-                                        , mkInfo1 "fTy" (ppTy @fTy)
+  | Var         loc     .  info2    :=  [ mkInfo1 "fTy" (ppTy @fTy)
                                         , mkInfo1 "ty" (ppTy @ty)
-                                        , mkInfo1 "lhs.tyCnstr" (pp @lhs.tyCnstr)
                                         ]
   | App         loc     .  info     :=  [ mkInfo1 "knTy" (ppTy (@lhs.tyCnstr |=> @lhs.knTy))
                                         , mkInfo1 "func.ty" (ppTy @func.ty)
@@ -133,6 +133,8 @@ SEM TyExpr
 SEM Expr
   | TypeAs      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","TypeAs"] [] [@expr.ppAST,@tyExpr.ppAST] @info
                 loc     .  info     =   [ mkInfo1 "asTy" (ppTy @asTy)
+                                        ]
+  | Var         loc     .  info3    :=  [ mkInfo1 "lhs.fiOpts" (pp . show $ @lhs.fiOpts)
                                         ]
 
 SEM PatExpr
@@ -222,6 +224,14 @@ SEM RecExpr
                         .  info     =   [ mkInfo1 "lhs.knTy" (pp @lhs.knTy)
                                         , mkInfo1 "ty" (pp @ty)
                                         ]
+  | Upd         loc     .  ppAST    =   ppNestInfo @lhs.opts ["RecExpr","Upd"] [ppNm @nm] [@recExpr.ppAST,@expr.ppAST] @info
+                        .  info     =   [ mkInfo1 "lhs.knTy" (pp @lhs.knTy)
+                                        , mkInfo1 "ty" (pp @ty)
+                                        , mkInfo1 "finRecTy" (pp (@lhs.finTyCnstr |=> @recExpr.ty))
+                                        ]
+  | Expr        loc     .  ppAST    =   ppNestInfo @lhs.opts ["RecExpr","Expr"] [] [@expr.ppAST] @info
+                        .  info     =   [ mkInfo1 "expr.ty" (pp @expr.ty)
+                                        ]
 
 SEM RecPatExpr
   | Empty       loc     .  ppAST    =   ppNest ["RecPatExpr","Empty"] [] []
@@ -249,11 +259,6 @@ SEM Decl
 SEM RowTyExpr
   | Var         loc     .  ppAST    =   ppNest ["RowTyExpr","Var"] [ppNm @nm] []
 
-SEM RecExpr
-  | Expr        loc     .  ppAST    =   ppNestInfo @lhs.opts ["RecExpr","Expr"] [] [@expr.ppAST] @info
-                        .  info     =   [ mkInfo1 "expr.ty" (pp @expr.ty)
-                                        ]
-
 SEM TyExpr
   | Pred        loc     .  ppAST    =   ppNest ["TyExpr","Pred"] [] [@prExpr.ppAST]
 
@@ -265,7 +270,7 @@ SEM PrExpr
 SEM Decl
   | Class       loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Class"] [] [@ctxtPrExprs.ppAST,@prExpr.ppAST,@funcDeps.ppAST,@decls.ppAST] @info
                         .  info     =   []
-  | Instance    loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Instance"] (maybe [] (\n -> [ppNm n]) @mbNm) [@ctxtPrExprs.ppAST,@prExpr.ppAST,@decls.ppAST] @info
+  | Instance    loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Instance"] (maybe [] (\(n,_) -> [ppNm n]) @mbNmElim) [@ctxtPrExprs.ppAST,@prExpr.ppAST,@decls.ppAST] @info
                         .  info     =   [ mkInfo1 "ctxtToInstTy" (ppTy @ctxtToInstTy)
                                         , mkInfo1 "ctxtRecToInstRecTy" (ppTy @ctxtRecToInstRecTy)
                                         , mkInfo1 "supPrElimGam" (ppGam @supPrElimGam)
@@ -289,7 +294,6 @@ SEM Expr
                                         , mkInfo1 "lSubsValGam" (ppGam @lSubsValGam)
                                         , mkInfo1 "prfCBindLMap" (ppCBindLMap @prfCBindLMap)
                                         , mkInfo1 "csubst" (ppAssocL . fmToList $ @csubst)
-                                        , mkInfo1 "lhs.cSubst" (ppAssocL . fmToList $ @lhs.cSubst)
                                         , mkInfo1 "remPrfPrL" (ppCommaList @remPrfPrL)
                                         , mkInfo1 "tqoGam" (pp @tqoGam)
                                         ]
@@ -298,7 +302,6 @@ SEM Expr
                                         , mkInfo1 "inKnGathPrL" (ppCommaList @inKnGathPrL)
                                         , mkInfo1 "remPrfPrL" (ppCommaList @remPrfPrL)
                                         , mkInfo1 "csubst" (ppAssocL . fmToList $ @csubst)
-                                        , mkInfo1 "lhs.cSubst" (ppAssocL . fmToList $ @lhs.cSubst)
                                         , mkInfo1 "lamBodyCoeL" (ppCommaList @lamBodyCoeL)
                                         , mkInfo1 "lamArgCoeL" (ppCommaList @lamArgCoeL)
                                         ]

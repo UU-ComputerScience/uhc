@@ -98,6 +98,7 @@ SEM Expr
 SEM RecExpr
   | Empty           (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
   | Ext             (recExpr.gUniq,loc.lUniq,loc.lUniq2)            =   mkNewLevUID2    @lhs.gUniq
+  | Upd             (recExpr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3) =   mkNewLevUID3    @lhs.gUniq
 
 SEM PatExpr
   | Rec             (recPatExpr.gUniq,loc.lUniq,loc.lUniq2)         =   mkNewLevUID2    @lhs.gUniq
@@ -110,11 +111,17 @@ SEM RecPatExpr
 %%[8
 ATTR AGItf [ gUniq: UID | | ]
 
+SEM AGItf
+  | AGItf           expr        .   gUniq                           :=  @lhs.gUniq
+
 SEM Expr
   | Case            (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
 %%]
 
 %%[9
+SEM AGItf
+  | AGItf           (expr.gUniq,loc.lUniq)                          :=  mkNewLevUID     @lhs.gUniq
+
 SEM Expr
   | Let             (decls.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
                                                                     :=  mkNewLevUID4    @lhs.gUniq

@@ -24,6 +24,17 @@ SEM Expr
 
 %%[9
 SEM Decl
+  | Instance    loc         .   (instPrElimGam,ctxtArgNmL,prUIDL)
+                                                    =   peGamAddKnPrL @lUniq6 (tail @prL) @lhs.prElimGam
+                            .   supPrUIDL           =   mkNewUIDL (length @supPrTyL) @lUniq4
+                            .   supPrElimGam        =   peGamDel @instClsNm @elimRule @instPrElimGam
+                            .   declsPrElimGam      =   peGamDel @instClsNm @elimRule @instPrElimGam
+                            .   (supPrfCBindLMap,supCSubst,supRemPrfPrL,supEvidL,supPrfErrs)
+                                                    =   prfPreds @lUniq5 (emptyFE {fePrElimGam = @supPrElimGam}) (zipWith PredOcc @supPrL @supPrUIDL)
+                decls       .   prElimGam           =   @declsPrElimGam
+%%]
+
+SEM Decl
   | Instance    loc         .   (declsPrElimGam,ctxtArgNmL,prUIDL)
                                                     =   peGamAddKnPrL @lUniq6 (tail @prL) @lhs.prElimGam
                             .   supPrUIDL           =   mkNewUIDL (length @supPrTyL) @lUniq4
@@ -31,7 +42,6 @@ SEM Decl
                             .   (supPrfCBindLMap,supCSubst,supRemPrfPrL,supEvidL,supPrfErrs)
                                                     =   prfPreds @lUniq5 (emptyFE {fePrElimGam = @supPrElimGam}) (zipWith PredOcc @supPrL @supPrUIDL)
                 decls       .   prElimGam           =   @declsPrElimGam
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pred resolution for expressions
@@ -44,7 +54,7 @@ SEM Expr
                                                     =   prfPreds @lUniq4 (emptyFE {fePrElimGam = @prElimGam}) @gathSubsPredL
                             .   quantPrIdSet        =   unionManySets
                                                         . map (unionManySets . map (maybe emptySet fst . lookupFM @prfCBindLMap) . setToList . tqoInsPrIdSet)
-                                                        . gamValues $ @tqoGam
+                                                        . gamElts $ @tqoGam
                             .   gathPredL           =   filter (not . (`elementOf` @quantPrIdSet) . poId) @remPrfPrL
                 lhs         .   gathPredL           =   @gathPredL ++ @body.gathPredL
   | AppTop      loc         .   imSubsTy            =   @expr.tyCnstr |=> @imTy
@@ -59,16 +69,22 @@ SEM Expr
                                                                    )
                                                                    @gathSubsPredL
   | AppTop Lam  loc         .   (knPrL,knImplsTl)   =   implsPredsTail . tyImpls $ @imSubsTy
-                            .   prElimGam           =   foldr (\p g -> peGamAddKnPr (uidHNm (poId p)) (poId p) (poPr p) g) @lhs.prElimGam @knPrL
+                            .   prElimGam           =   foldr (\p g -> peGamAddKnPr (uidHNm (poId p)) (poId p) (poPr p) g) (gamPushNew @lhs.prElimGam) @knPrL
                             .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs)
                                                     =   prfPreds @lUniq3 (emptyFE {fePrElimGam = @prElimGam}) @inKnGathPrL
                             .   gathPredL           =   @remPrfPrL ++ @remGathPrL
+                lhs         .   prElimGam           =   @lhs.prElimGam
 
 SEM Decl
   | Instance    loc         .   gathSubsPredL       =   @decls.tyCnstr |=> @decls.gathPredL
                             .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs)
                                                     =   prfPreds @lUniq7 (emptyFE {fePrElimGam = @declsPrElimGam}) @gathSubsPredL
                 lhs         .   gathPredL           =   []
+
+SEM AGItf
+  | AGItf       loc         .   gathSubsPredL       =   @expr.tyCnstr |=> @expr.gathPredL
+                            .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs)
+                                                    =   prfPreds @lUniq (emptyFE {fePrElimGam = @expr.prElimGam}) @gathSubsPredL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -79,7 +95,7 @@ SEM Decl
 ATTR AllDecl AllCase AllExpr [ cbindLMap: CBindLMap | | ]
 
 SEM AGItf
-  | AGItf       loc         .   cbindLMap           =   emptyFM
+  | AGItf       loc         .   cbindLMap           =   @prfCBindLMap
 
 SEM Expr
   | Lam Let AppTop
@@ -95,7 +111,7 @@ SEM Expr
 ATTR AllNT [ cSubst: CSubst | | ]
 
 SEM AGItf
-  | AGItf       loc         .   cSubst              =   cnstrImplsToCSubst @expr.tyCnstr
+  | AGItf       loc         .   cSubst              =   cnstrImplsToCSubst @expr.tyCnstr `cAppSubst` @csubst
 
 SEM Decl
   | Instance    loc         .   cSubst              =   @lhs.cSubst `cAppSubst` @supCSubst `cAppSubst` @csubst

@@ -150,9 +150,12 @@ SEM RecExpr
   | Empty       loc     .   pp      =   hsnORec >|< hsnCRec
                 lhs     .   ppL     =   []
   | Ext         loc     .   pp      =   ppFld "=" @positionalNm @nm @expr.pp
-                lhs     .   ppL     =   @pp : @recExpr.ppL
   | Upd         loc     .   pp      =   ppFld ":=" hsnUnknown @nm @expr.pp
-                lhs     .   ppL     =   @pp : @recExpr.ppL
+  | Ext Upd     lhs     .   ppL     =   @pp : @recExpr.ppL
+                        .   pp      =   @recExpr.pp
+  | Expr        loc     .   pp      =   @expr.pp
+                lhs     .   ppL     =   []
+
 
 SEM PatExpr
   | Rec         loc     .   pp      =   ppAppTop  (hsnRec,mkPPAppFun @appFunNm @recPatExpr.pp)
@@ -186,6 +189,9 @@ SEM DataConstr
 %%]
 
 %%[8
+SEM Expr
+  | Undefined   loc     .   pp      =   pp "..."
+
 SEM Decl
   | FFI         loc     .   pp      =   "foreign" >#< pp (show @impEnt) >#< @nm >#< "::" >#< @tyExpr.pp
 %%]
@@ -194,37 +200,33 @@ SEM Decl
 ATTR PrExprs FuncDeps [ | | ppL: PP_DocL ]
 
 SEM Expr
-  | AppImpl     loc     .  argPP    =   @argPr.pp >#< ":>" >#< @arg.pp >#< hsnCImpl
-                        .  pp       =   @func.pp >#< hsnOImpl >#< @argPP
-
-SEM RecExpr
-  | Expr        loc     .  pp       =   @expr.pp
-                lhs     .  ppL      =   [@pp]
+  | AppImpl     loc     .   argPP   =   @argPr.pp >#< ":>" >#< @arg.pp >#< hsnCImpl
+                        .   pp      =   @func.pp >#< hsnOImpl >#< @argPP
 
 SEM RowTyExpr
-  | Var         loc     .  pp       =   pp @nm
-                lhs     .  ppL      =   []
+  | Var         loc     .   pp      =   pp @nm
+                lhs     .   ppL     =   []
 
 SEM TyExpr
-  | Pred        loc     .  pp       =   hsnOImpl >#< @prExpr.pp >#< hsnCImpl
-  | Impls       loc     .  pp       =   hsnOImpl >#< "..." >#< hsnCImpl
-  | NoImpls     loc     .  pp       =   hsnOImpl >#< "_" >#< hsnCImpl
+  | Pred        loc     .   pp      =   hsnOImpl >#< @prExpr.pp >#< hsnCImpl
+  | Impls       loc     .   pp      =   hsnOImpl >#< "..." >#< hsnCImpl
+  | NoImpls     loc     .   pp      =   hsnOImpl >#< "_" >#< hsnCImpl
 
 SEM PrExpr
-  | Class       loc     .  pp       =   ppSpaced (pp @nm : @tyExprs.ppL)
-  | Lacks       loc     .  pp       =   @rowTyExpr.pp >|< "\\" >|< pp @nm
-  | Equal       loc     .  pp       =   pp @nm >|< "=" >|< @tyExpr.pp
+  | Class       loc     .   pp      =   ppSpaced (pp @nm : @tyExprs.ppL)
+  | Lacks       loc     .   pp      =   @rowTyExpr.pp >|< "\\" >|< pp @nm
+  | Equal       loc     .   pp      =   pp @nm >|< "=" >|< @tyExpr.pp
 
 SEM PrExprs
-  | Nil         lhs     .  ppL      =   []
-  | Cons        lhs     .  ppL      =   @hd.pp : @tl.ppL
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 
 SEM Decl
-  | Class       loc     .  pp       =   "class"     >#< ppListSep "(" ")" ", " @ctxtPrExprs.ppL
+  | Class       loc     .   pp      =   "class"     >#< ppListSep "(" ")" ", " @ctxtPrExprs.ppL
                                                     >#< "=>" >#< @prExpr.pp
                                                     >#< "|" >#< ppListSep "" "" ", " @funcDeps.ppL
                                                     >#< "where" >-< indent 2 @decls.pp
-  | Instance    loc     .  pp       =   "instance"  >|< maybe empty (\n -> " " >|< n >#< "<:") @mbNm
+  | Instance    loc     .   pp      =   "instance"  >|< maybe empty (\(n,e) -> " " >|< n >#< (if e then "<:" else "::")) @mbNmElim
                                                     >#< ppListSep "(" ")" ", " @ctxtPrExprs.ppL
                                                     >#< "=>" >#< @prExpr.pp
                                                     >#< "where" >-< indent 2 @decls.pp
@@ -232,14 +234,14 @@ SEM Decl
                                                     >-< @errDeclsPP
 
 SEM FuncDep
-  | Dep         lhs     .  pp       =   @fromTvs.pp >#< "->" >#< @toTvs.pp
+  | Dep         lhs     .   pp      =   @fromTvs.pp >#< "->" >#< @toTvs.pp
 
 SEM FuncDeps
-  | Nil         lhs     .  ppL      =   []
-  | Cons        lhs     .  ppL      =   @hd.pp : @tl.ppL
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 
 SEM AGItf
-  | AGItf       lhs     .  pp       =   @expr.pp >-< @errTopPP
+  | AGItf       lhs     .   pp      =   @expr.pp >-< @errTopPP
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -350,7 +352,7 @@ ATTR RecExpr [ | | extNm: {HsName} ]
 
 SEM RecExpr
   | Empty       lhs     .  extNm        =   hsnRowEmpty
-  | * - Empty Ext
+  | * - Empty Ext Upd
                 lhs     .  extNm        =   hsnUnknown
 
 SEM Expr

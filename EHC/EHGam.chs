@@ -24,7 +24,7 @@
 %%[2 import(EHCnstr)
 %%]
 
-%%[3 import(EHTyQuantify) export(valGamQuantify, gamMap)
+%%[3 import(EHTyQuantify) export(valGamQuantify, gamMap,gamMapElts,valGamMapTy)
 %%]
 
 %%[4 import(EHTyInstantiate) export(valGamInst1Exists)
@@ -48,7 +48,7 @@
 %%[8 import(Maybe) export(gamUpd)
 %%]
 
-%%[9 export(gamUpdAdd,gamLookupAll,gamSubstTop,gamValues)
+%%[9 export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -93,6 +93,9 @@ gamAddGam       g1 (Gam (l2:ll2))   = Gam ((gamToAssocL g1 ++ l2):ll2)
 %%[3.gamMap
 gamMap :: ((k,v) -> (k',v')) -> Gam k v -> Gam k' v'
 gamMap f (Gam ll) = Gam (map (map f) ll)
+
+gamMapElts :: (v -> v') -> Gam k v -> Gam k v'
+gamMapElts f = gamMap (\(n,v) -> (n,f v))
 %%]
 
 %%[5
@@ -118,8 +121,8 @@ gamUpd k upd = fromJust . gamMbUpd k upd
 %%]
 
 %%[9
-gamValues :: Gam k v -> [v]
-gamValues = assocLElts . gamToAssocL
+gamElts :: Gam k v -> [v]
+gamElts = assocLElts . gamToAssocL
 
 gamLookupAll :: Eq k => k -> Gam k v -> [v]
 gamLookupAll k (Gam ll) = catMaybes (map (lookup k) ll)
@@ -158,10 +161,14 @@ valGamLookup nm g
        _         -> Nothing
 %%]
 
+%%[3.valGamMapTy
+valGamMapTy :: (Ty -> Ty) -> ValGam -> ValGam
+valGamMapTy f = gamMapElts (\vgi -> vgi {vgiTy = f (vgiTy vgi)})
+%%]
+
 %%[3.valGamQuantify
 valGamQuantify :: TyVarIdL -> ValGam -> ValGam
-valGamQuantify globTvL
-  = gamMap (\(n,t) -> (n,t {vgiTy = tyQuantify (`elem` globTvL) (vgiTy t)}))
+valGamQuantify globTvL = valGamMapTy (\t -> tyQuantify (`elem` globTvL) t)
 %%]
 
 %%[9.valGamQuantify -3.valGamQuantify
@@ -172,9 +179,9 @@ gamUnzip (Gam ll)
 
 valGamQuantify :: TyVarIdL -> [PredOcc] -> ValGam -> (ValGam,Gam HsName TyQuOut)
 valGamQuantify globTvL prL g
-  =  let  g' = gamMap  (\(n,t) ->  let  tqo = tyQuantifyPr defaultTyQuOpts (`elem` globTvL) TyQu_Forall prL (vgiTy t)
-                                   in   (n,(t {vgiTy = tqoTy tqo},tqo))
-                       ) g
+  =  let  g' = gamMapElts  (\vgi ->  let  tqo = tyQuantifyPr defaultTyQuOpts (`elem` globTvL) TyQu_Forall prL (vgiTy vgi)
+                                     in   (vgi {vgiTy = tqoTy tqo},tqo)
+                           ) g
      in   gamUnzip g'
 %%]
 
