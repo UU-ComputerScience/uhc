@@ -63,8 +63,8 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 %%[8 hs
 type ARenMp = FiniteMap HsName HsName
 
-aRenAdd :: [HsName] -> Int -> UID -> ARenMp -> ARenMp
-aRenAdd nL l u m = addListToFM m [ (n,hsnSuffix n ("~" ++ show l ++ "~" ++ show u)) | n <- nL, isAlpha (head (show n))]
+aRenAdd :: [HsName] -> UID -> ARenMp -> ARenMp
+aRenAdd nL u m = addListToFM m [ (n,hsnSuffix n ("~" ++ show u)) | n <- nL, isAlpha (head (show n))]
 
 aRenRepl :: ARenMp -> HsName -> HsName
 aRenRepl m n = maybe n id . lookupFM m $ n
@@ -94,13 +94,13 @@ SEM CPat
 SEM CExpr
   | Let         loc         .   aRenMp      =   if @lhs.lev == 0
                                                 then @lhs.aRenMp
-                                                else aRenAdd @binds.nmL @lhs.lev @lUniq @lhs.aRenMp
+                                                else aRenAdd @binds.nmL @lUniq @lhs.aRenMp
                 binds       .   lev         =   @lhs.lev + 1
-  | Lam         loc         .   aRenMp      =   aRenAdd [@arg] @lhs.lev @lUniq @lhs.aRenMp
+  | Lam         loc         .   aRenMp      =   aRenAdd [@arg] @lUniq @lhs.aRenMp
                 body        .   lev         =   if @body.isLamBody then @lhs.lev + 1 else @lhs.lev
 
 SEM CAlt
-  | Alt         loc         .   aRenMp      =   aRenAdd @pats.nmL @lhs.lev @lUniq @lhs.aRenMp
+  | Alt         loc         .   aRenMp      =   aRenAdd @pats.nmL @lUniq @lhs.aRenMp
                 expr        .   lev         =   @lhs.lev + 1
 %%]
 
