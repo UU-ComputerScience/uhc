@@ -43,7 +43,7 @@ ATTR AllCase [ knTy: Ty | | ty: Ty ]
 SEM Expr
   | Case        expr        .   knTy                =   Ty_Any
                 alts        .   knTy                =   @lhs.knTy
-                loc         .   (_,ebCnstr,ebErrs)  =   tyElimBinds (mkElimBindsWrap @fe) joinFIOpts @lUniq (@alts.tyCnstr |=> @expr.ty)
+                loc         .   (_,ebCnstr,ebErrs)  =   tyElimAlts (mkElimAltsWrap @fe) joinFIOpts @lUniq (@alts.tyCnstr |=> @expr.ty)
                 lhs         .   tyCnstr             =   @ebCnstr |=> @alts.tyCnstr
 
 SEM CaseAlt

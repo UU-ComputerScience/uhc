@@ -55,7 +55,7 @@ ALL_AFP_SRC			:= $(AFP_LHS) $(AFP_RULES)
 
 
 EHC_SRC_PREFIX				:=
-EHC_LAG_FOR_HS_TY			:= $(addsuffix .lag,EHTyQuantify EHTySubst EHTyElimBinds EHTyElimBoth EHTyFtv EHTyPretty EHTyInstantiate )
+EHC_LAG_FOR_HS_TY			:= $(addsuffix .lag,EHTyQuantify EHTySubst EHTyElimAlts EHTyElimBoth EHTyFtv EHTyPretty EHTyInstantiate )
 EHC_LAG_FOR_HS_CORE			:= $(addsuffix .lag,EHCoreJava EHCoreGrin EHCoreTrfRenUniq EHCoreTrfFullLazy EHCoreTrfLamLift \
 												EHCoreTrfInlineLetAlias EHCoreTrfLetUnrec EHCorePretty EHCoreSubst EHCoreTrfConstProp)
 EHC_LAG_FOR_HS_GRIN_CODE	:= $(addsuffix .lag,GrinCodePretty)
@@ -97,7 +97,7 @@ EHC_DPDS_TY_INST				:= EHTyInstantiate.ag EHTyCommonAG.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_PRETTY				:= EHTyPretty.ag EHTyCommonAG.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_QUANT				:= EHTyQuantify.ag EHTyCommonAG.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_SUBST				:= EHTySubst.ag EHTyAbsSyn.ag
-EHC_DPDS_TY_ELIMB				:= EHTyElimBinds.ag EHTyAbsSyn.ag
+EHC_DPDS_TY_ELIMB				:= EHTyElimAlts.ag EHTyAbsSyn.ag
 EHC_DPDS_TY_ELIMBOTH			:= EHTyElimBoth.ag EHTyAbsSyn.ag
 
 EHC_DPDS_CORE_TRF				:= $(EHC_DPDS_CORE_TRF_CONSTPROP) $(EHC_DPDS_CORE_TRF_RENUNQ) $(EHC_DPDS_CORE_TRF_INLLETALI) \
@@ -497,7 +497,7 @@ $(BREW_DOC_PDF): $(BREW_DIR)/RulerDoc.tex $(BREW)
 
 ehcs: $(EHC_V1) $(EHC_V2) $(EHC_V3) $(EHC_V4) $(EHC_V5) $(EHC_V6) $(EHC_V7) $(EHC_V8) $(EHC_V9) $(EHC_V10)
 
-gris: $(GRI_V8) $(GRI_V9)
+gris: $(GRI_V8) $(GRI_V9) $(GRI_V10)
 
 clean:
 	rm -rf $(AFP_DERIV) $(SHUFFLE_DERIV) a.out \

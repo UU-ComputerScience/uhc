@@ -148,7 +148,7 @@ SEM Decl
                 lhs         .  errL         =   []
 
 SEM Expr
-  | Let         loc         .  letErrL      :=  @dupErrs ++ @prfErrs
+  | Let         loc         .  letErrL      :=  @dupErrs ++ @gamErrL ++ @prfErrs
 
 SEM AGItf
   | AGItf       loc         .  errTopPP     =   ppErrs (@predNotPrfErrs)

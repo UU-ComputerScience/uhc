@@ -18,7 +18,7 @@
 %%[3 hs import(EHTyQuantify,EHTyInstantiate)
 %%]
 
-%%[4_1 hs import(EHGamUtils,EHTyElimBinds)
+%%[4_1 hs import(EHGamUtils,EHTyElimAlts)
 %%]
 
 %%[8 hs import(FiniteMap,EHCore,EHCoreUtils,EHDebug)

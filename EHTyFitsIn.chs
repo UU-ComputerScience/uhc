@@ -43,7 +43,7 @@
 %%[4 import(EHDebug)
 %%]
 
-%%[4_1 import(EHTyElimBinds,EHTyElimBoth) export(foHasErrs,mkElimBindsWrap)
+%%[4_1 import(EHTyElimAlts,EHTyElimBoth) export(foHasErrs,mkElimAltsWrap)
 %%]
 
 %%[6 export(fitsInL)
@@ -280,10 +280,11 @@ fitsIn opts env uniq ty1 ty2
   where
             res fi t                =  emptyFO  { foUniq = fiUniq fi, foTy = t
                                                 , foAppSpineL = asGamLookup (tyConNm t) appSpineGam}
-            err fi e                =  emptyFO {foUniq = fioUniq opts, foErrL = e}
+            err    e                =  emptyFO {foUniq = fioUniq opts, foErrL = e}
+            errClash t1 t2          =  err [Err_UnifyClash ty1 ty2 t1 t2]
             manyFO                  =  foldr1 (\fo1 fo2 -> if foHasErrs fo1 then fo1 else fo2)
             occurBind fi v t
-                | v `elem` ftv t    =  err fi [Err_UnifyOccurs ty1 ty2 v t]
+                | v `elem` ftv t    =  err [Err_UnifyOccurs ty1 ty2 v t]
                 | otherwise         =  bind fi v t
 %%]
 
@@ -450,18 +451,18 @@ fitsIn opts env uniq ty1 ty2
                          where  (fi2,rv) = mkTv fi
                        fR fi r1@(Ty_Con n1) _ _ _ e2@(_:_)
                          | n1 == hsnRowEmpty && isRec
-                         = err fi [Err_MissingRowLabels (assocLKeys e2) tr1]
+                         = err [Err_MissingRowLabels (assocLKeys e2) tr1]
                        fR fi _ r2@(Ty_Con n2) e1@(_:_) e12 e2
                          | n2 == hsnRowEmpty && isRec
                          =  if null (fioNoRLabElimFor (fiFIOpts fi) `List.intersect` assocLKeys e1)
                             then fR fi r2 r2 [] e12 e2
-                            else err fi [Err_TooManyRowLabels (assocLKeys e1) tr2]
+                            else err [Err_TooManyRowLabels (assocLKeys e1) tr2]
                        fR fi r1@(Ty_Con n1) _ e1 e12 e2@(_:_)
                          | n1 == hsnRowEmpty && isSum
                          = fR fi r1 r1 e1 e12 []
                        fR fi r1 r2@(Ty_Con n2) e1@(_:_) e12 e2
                          | n2 == hsnRowEmpty && isSum
-                         = err fi [Err_MissingRowLabels (assocLKeys e1) tr2]
+                         = err [Err_MissingRowLabels (assocLKeys e1) tr2]
                        fR fi r1 r2 e1 e12@(_:_) e2
                          = foR
                          where (e1L,e2L) = unzip e12
@@ -495,7 +496,7 @@ fitsIn opts env uniq ty1 ty2
 
 %%[7.fitsIn.fRow.Final1
                        fR fi _ _ _ _ _
-                         = err fi [Err_UnifyClash ty1 ty2 tr1 tr2]
+                         = errClash tr1 tr2
 %%]
 
 %%[7.fitsIn.fRow.foR
@@ -658,6 +659,20 @@ fitsIn opts env uniq ty1 ty2
                        (fi2,uqt2,_) = unquant fi1  t2 False instCoConst
 %%]
 
+%%[4_1.fitsIn.QLR
+            f fi t1@(Ty_Quant q1 _ _)   t2@(Ty_Quant q2 _ _)
+                |  q1 == q2
+                   &&  (   fioMode (fiFIOpts fi) == FitMeet && tyquIsExists q1
+                       ||  fioMode (fiFIOpts fi) == FitJoin && tyquIsForall q1
+                       )                            = manyFO [fo,rfo]
+                where  (fi1,uqt1,rtvs1) = unquant' fi   t1 instPlain
+                       (fi2,uqt2,rtvs2) = unquant' fi1  t2 instPlain
+                       fo = f fi2 uqt1 uqt2
+                       rfo =  case tvLMbAlphaRename (foCnstr fo) rtvs1 rtvs2 of
+                                Just tvL  -> foUpdTy (mkTyQu q1 tvL (foTy fo)) . foUpdCnstr (cnstrDel (rtvs1++rtvs2) (foCnstr fo)) $ fo
+                                Nothing   -> errClash t1 t2
+%%]
+
 %%[4.fitsIn.QR
             f fi t1                     t2@(Ty_Quant _ _ _)
                 | fioIsSubsume (fiFIOpts fi) && fioLeaveRInst (fiFIOpts fi)
@@ -681,14 +696,14 @@ fitsIn opts env uniq ty1 ty2
                   ||  fioMode (fiFIOpts fi) == FitJoin && tyquIsExists q1
                                                     = manyFO [fo,fo2]
                 where  (u',u1,u2) = mkNewLevUID2 (fiUniq fi)
-                       elimBind fi u t = tyElimBinds (mkElimBindsWrap emptyFE) (fiFIOpts fi) u t
+                       elimBind fi u t = tyElimAlts (mkElimAltsWrap emptyFE) (fiFIOpts fi) u t
                        (t1',ct1,e1) = elimBind fi u1 t1
                        (t2',ct2,e2) = elimBind fi u2 (ct1 |=> t2)
                        (fi1,uqt1,rtvs1) = unquant' (fi {fiUniq = u'}) (ct2 |=> t1') instMeet
                        fo = f fi1 uqt1 t2'
                        (ebTy,ebCnstr) = tyElimBoth (foTy fo)
                        tvs = rtvs1 `List.intersect` ftv ebTy
-                       fo1 = err fi (e1 ++ e2)
+                       fo1 = err (e1 ++ e2)
                        fo2 = foUpdTy (mkTyQu q1 tvs ebTy) . foUpdCnstr ebCnstr $ fo
             f fi t1@(Ty_Quant q1 _ _)   t2
                 |     fioMode (fiFIOpts fi) == FitMeet && tyquIsExists q1
@@ -698,34 +713,6 @@ fitsIn opts env uniq ty1 ty2
                        fo = f fi1 uqt1 t2
                        tvs = rtvs1 `List.intersect` ftv (foTy fo)
                        fo2 = foUpdTy (mkTyQu q1 tvs (foTy fo)) fo
-%%]
-
-%%[44_1.fitsIn.QLPrev
-            f fi t1@(Ty_Quant q1 _ _)   t2
-                |     fioMode (fiFIOpts fi) == FitMeet && tyquIsForall q1
-                  ||  fioMode (fiFIOpts fi) == FitJoin && tyquIsExists q1
-                                                    = manyFO [fo,fo2]
-                where  (u',u1) = mkNewLevUID (fiUniq fi)
-                       (fi1,uqt1,rtvs1) = unquant' (fi {fiUniq = u'}) t1 instPlain
-                       fi2 = fi1 {fiMeetTvL = rtvs1 ++ fiMeetTvL fi1}
-                       fo = f (fi2) uqt1 t2
-                       rtvs1' = nub . map (tvUnderCnstr . foCnstr $ fo) $ rtvs1
-                       (ebTy,ebICnstr,ebECnstr,ebErrL)
-                           = tyElimBinds  (emptyEBOpts {eboMeetTvL = rtvs1' ++ fiMeetTvL fi2})
-                                          (mkElimBindsWrap emptyFE) (fiFIOpts fi2) u1
-                                          (if tyquIsExists q1 then foCnstr fo |=> uqt1 else foTy fo)
-                       fo2 =  if null ebErrL
-                              then  let  tvs = rtvs1' `List.intersect` ftv ebTy
-                                    in   foUpdTy (mkTyQu q1 tvs ebTy) (fo {foCnstr = ebECnstr |=> ebICnstr |=> cnstrDel rtvs1 (foCnstr fo)})
-                              else  err fi ebErrL
-            f fi t1@(Ty_Quant q1 _ _)   t2
-                |     fioMode (fiFIOpts fi) == FitMeet && tyquIsExists q1
-                  ||  fioMode (fiFIOpts fi) == FitJoin && tyquIsForall q1
-                                                    = manyFO [fo,fo2]
-                where  (fi1,uqt1,rtvs1) = unquant' fi t1 instFixed
-                       fo = f (fi1) uqt1 t2
-                       tvs = rtvs1 `List.intersect` ftv (foTy fo)
-                       fo2 =  foUpdTy (mkTyQu q1 tvs (foTy fo)) (fo {foCnstr = cnstrDel rtvs1 (foCnstr fo)})
 %%]
 
 %%[4_1.fitsIn.QR
@@ -742,7 +729,7 @@ fitsIn opts env uniq ty1 ty2
                 where  (u',u1,u2,u3)    = mkNewLevUID3 (fiUniq fi)
                        fi2              = fi {fiUniq = u'}
                        mbfp             = fP tpr1 tpr2
-                       mberr            = Just (err fi [Err_UnifyClash ty1 ty2 t1 t2])
+                       mberr            = Just (errClash t1 t2)
                        fP tpr1@(Ty_Pred _)              tpr2@(Ty_Pred _)
                             =  if foHasErrs pfo
                                then Nothing
@@ -890,7 +877,7 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[4.fitsIn.DefaultCase
-            f fi t1                     t2          = err fi [Err_UnifyClash ty1 ty2 t1 t2]
+            f fi t1                     t2          = errClash t1 t2
 %%]
 
 %%[4.fitsIn.SetupAndResult
@@ -1169,8 +1156,8 @@ fitPredToEvid u prTy g
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_1
-mkElimBindsWrap :: FIEnv -> (FIOpts -> UID -> Ty -> Ty -> (Ty,Cnstr,ErrL))
-mkElimBindsWrap env
+mkElimAltsWrap :: FIEnv -> (FIOpts -> UID -> Ty -> Ty -> (Ty,Cnstr,ErrL))
+mkElimAltsWrap env
   =  \opt u t1 t2 ->  let  fo = fitsIn opt env u t1 t2
                       in   (foTy fo, foCnstr fo, foErrL fo)
 %%]
