@@ -351,22 +351,6 @@ SEM Decl
                                                         ]
 %%]
 
-                            .   cexpr           =   let  [n1,n2] = map uidHNm . mkNewUIDL 2 $ @lUniq
-                                                    in   mkCExprSelCase (RCEEnv @lhs.valGam @lhs.tyGam) n1 @expr.cexpr CTagRec n2 @lbl @offset
-
-
-                                                     mkSel n = mkCExprSelCase emptyRCEEnv (hsnSuffix x "!") vx CTagRec n n (cdictOffset n @clsTyRec)
-                                                in   [CBind_Bind nDflt dDflt]
-                                                     ++ [ CBind_Bind n (x `CExpr_Lam` (mkSel n `CExpr_App` vx))
-                                                        | (n,_) <- @clsFldL
-                                                        ]
-
-                                                     mkSel n = mkCExprSelCase emptyRCEEnv (hsnSuffix x "!") vx CTagRec n n (cdictOffset n @clsTyRec)
-                                                in   [CBind_Bind nDflt dDflt]
-                                                     ++ [ CBind_Bind n (x `CExpr_Lam` (CExpr_TupSel vx CTagRec (cdictOffset n @clsTyRec) `CExpr_App` vx))
-                                                        | (n,_) <- @clsFldL
-                                                        ]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -374,13 +358,13 @@ SEM Decl
 %%[9
 SEM Decl
   | Instance    lhs         .   cbindL      =   let  nDflt = rulNmEvid . pigiRule $ @pigi
+                                                     nStrictDflt = hsnSuffix nDflt "!"
                                                      nR = hsnPrefix "$res_" @dictNm
                                                      nStrictR = hsnSuffix nR "!"
                                                      mkSet d n v = CExpr_TupUpd d CTagRec n (cdictOffset n . head $ @recTyL) v
-                                                     dDflt = foldr
-                                                                (\(n,e) d -> mkSet d n e)
-                                                                (CExpr_App (CExpr_Var nDflt) (CExpr_Var nR))
-                                                                (zip @supClsNmL @supEvidL)
+                                                     dDflt
+                                                        = mkCExprStrictIn nStrictDflt (CExpr_App (CExpr_Var nDflt) (CExpr_Var nR))
+                                                        	(\d -> mkSetFlds d (zipWith CBind_Bind @supClsNmL @supEvidL))
                                                      mkSetFlds d bs = foldr (\(CBind_Bind n v) d -> mkSet d n v) d bs
                                                      dD = mkCExprLam @ctxtArgNmL
                                                                 (mkCExprLetRec
@@ -394,8 +378,10 @@ SEM Decl
                 lhs         .   cbindL      =   [CBind_Bind @dictNm @expr.cexpr]
 %%]
 
-mkCExprStrictIn :: HsName -> CExpr -> (CExpr -> CExpr) -> CExpr
-mkCExprStrictIn nm e mkC = CExpr_Let CBindStrict [CBind_Bind nm e] (mkC (CExpr_Var nm))
+                                                     dDflt = foldr
+                                                                (\(n,e) d -> mkSet d n e)
+                                                                (CExpr_App (CExpr_Var nDflt) (CExpr_Var nR))
+                                                                (zip @supClsNmL @supEvidL)
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
