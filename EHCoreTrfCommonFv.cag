@@ -1,0 +1,51 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common AG for Core transformations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Free vars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllCodeNT [ | | fvS USE {`Set.union`} {emptySet}: FvS ]
+ATTR AllBind [ | | fvSMp USE {`plusFM`} {emptyFM}: FvSMp ]
+
+SEM CExpr
+  | Lam         loc         .   fvS         =   @body.fvS `delFromSet` @arg
+  | Let         lhs         .   fvS         =   (@body.fvS `Set.union` @binds.fvS) `minusSet` mkSet @binds.nmL
+  | Var         lhs         .   fvS         =   unitSet @nm
+  | App         loc         .   fvS         =   @func.fvS `Set.union` @arg.fvS
+
+SEM CBind
+  | Bind        lhs         .   fvSMp       =   unitFM @nm @expr.fvS
+
+SEM CAlt
+  | Alt         loc         .   fvS         =   @expr.fvS `minusSet` mkSet @pats.nmL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Binding to id's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllBind AllPat [ | | nmL USE {++} {[]}: {[HsName]} ]
+
+SEM CBind
+  | Bind        lhs         .   nmL         =   [@nm]
+
+SEM CPatBind
+  | Bind        lhs         .   nmL         =   [@nm] ++ @pat.nmL
+
+SEM CPat
+  | Var Con     loc         .   nm          =   cpatNmEither id id @pnm
+  | Var         lhs         .   nmL         =   [@nm]
+  | Con         lhs         .   nmL         =   [@nm] ++ @binds.nmL
+%%]
+
