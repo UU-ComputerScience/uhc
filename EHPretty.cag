@@ -99,8 +99,8 @@ SEM Decl
                                                 >#< "=" >#< ppListSepFill "" "" " | " @constrs.ppL
 
 SEM Expr
-  | Case        loc     .  pp       =   "case" >#< @expr.pp >#< "of"
-                                        >-< indent 2 (vlist @alts.ppL)
+  | Case        loc     .  pp       =   "case"  >#< @expr.pp >#< "of"
+                                                >-< indent 2 (vlist @alts.ppL)
 
 SEM CaseAlt
   | Pat         loc     .  pp       =   @patExpr.pp >|< @ppExtra >#< "->" >#< @expr.pp
@@ -191,6 +191,8 @@ SEM Decl
 %%]
 
 %%[9
+ATTR PrExprL [ | | ppL: PP_DocL ]
+
 SEM RowTyExpr
   | Var         loc     .  pp       =   pp @nm
                 lhs     .  ppL      =   []
@@ -202,6 +204,19 @@ SEM PrExpr
   | Class       loc     .  pp       =   ppListSep "" "" " " (pp @nm : @tyExprs.ppL)
   | Lacks       loc     .  pp       =   @rowTyExpr.pp >|< "\\" >|< pp @nm
   | Eq          loc     .  pp       =   pp @nm >|< "=" >|< @tyExpr.pp
+
+SEM PrExprL
+  | Nil         lhs     .  ppL      =   []
+  | Cons        lhs     .  ppL      =   @hd.pp : @tl.ppL
+
+SEM Decl
+  | Class       loc     .  pp       =   "class"     >#< ppListSep "(" ")" ", " @ctxtPrExprL.ppL
+                                                    >#< "=>" >#< @prExpr.pp
+                                                    >#< "where" >-< indent 2 @decls.pp
+  | Instance    loc     .  pp       =   "instance"  >|< maybe empty (\n -> " " >|< n >#< "=") @mbNm
+                                                    >#< ppListSep "(" ")" ", " @ctxtPrExprL.ppL
+                                                    >#< "=>" >#< @prExpr.pp
+                                                    >#< "where" >-< indent 2 @decls.pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

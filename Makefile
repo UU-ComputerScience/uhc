@@ -56,7 +56,8 @@ DPDS_MAIN			:= EHMainAG.ag EHInfer.ag EHInferExpr.ag \
 						EHInferPatExpr.ag EHInferTyExpr.ag EHInferKiExpr.ag EHInferData.ag \
 						EHInferCaseExpr.ag EHPretty.ag EHPrettyAST.ag EHAbsSyn.ag \
 						EHUniq.ag EHExtraChecks.ag EHGatherError.ag \
-						EHGenCode.ag EHResolvePred.ag
+						EHGenCode.ag \
+						EHResolvePred.ag EHInferClass.ag
 DPDS_TY				:= EHTy.ag EHTyAbsSyn.ag
 DPDS_TY_PRETTY		:= EHTyPretty.ag EHTyCommonAG.ag EHTyAbsSyn.ag
 DPDS_TY_QUANT		:= EHTyQuantify.ag EHTyCommonAG.ag EHTyAbsSyn.ag
@@ -73,7 +74,7 @@ EHC					:= ehc
 EHC_MAIN			:= EHC
 EHC_LAG_FOR_AG		:= $(DPDS_ALL_MIN_TARG:.ag=.lag)
 EHC_LAG				:= $(EHC_LAG_FOR_AG) $(EHC_LAG_FOR_HS)
-EHC_LHS_FOR_HS		:= $(addsuffix .lhs,$(EHC_MAIN) EHCommon EHCnstr EHTyFitsIn EHGam EHParser FPath EHScanner EHScannerMachine)
+EHC_LHS_FOR_HS		:= $(addsuffix .lhs,$(EHC_MAIN) EHCommon EHCnstr EHTyFitsIn EHGam EHPred EHParser FPath EHScanner EHScannerMachine)
 EHC_LHS				:= $(EHC_LHS_FOR_HS)
 EHC_HS				:= $(EHC_LAG_FOR_HS:.lag=.hs) $(EHC_LHS_FOR_HS:.lhs=.hs)
 

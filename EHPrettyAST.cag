@@ -196,4 +196,15 @@ SEM DataFields
   | Cons        lhs     .  ppAST    =   ppNest ["DataFields","Cons"] [] [@hd.ppAST,@tl.ppAST]
 %%]
 
+%%[9
+SEM TyExpr
+  | Pred        loc     .  ppAST    =   ppNest ["TyExpr","Pred"] [] [@prExpr.ppAST]
+
+SEM PrExpr
+  | Class       loc     .  ppAST    =   ppNest ["PrExpr","Class"] [pp (show @nm)] [@tyExprs.ppAST]
+  | Lacks       loc     .  ppAST    =   ppNest ["PrExpr","Lacks"] [pp (show @nm)] [@rowTyExpr.ppAST]
+  | Eq          loc     .  ppAST    =   ppNest ["PrExpr","Eq"] [pp (show @nm)] [@tyExpr.ppAST]
+%%]
+
+
 
