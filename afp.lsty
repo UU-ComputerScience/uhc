@@ -90,7 +90,7 @@
  \parbox{\textwidth}{\csname #1\endcsname}
 %else
  \csname #1\endcsname
- \vspace{-1.5\parskip}
+ \vspace{-1.1ex}
 %endif
 }
 \newcommand{\chunkCmdFrameUse}[1]{%
@@ -104,7 +104,8 @@
 %if optExpandPrevRef
 {\par\chunkRefsExpanded{#1}\chunkCmdUseMark{#2}}
 %else
-{\par{[see page(s)~\chunkRefs{#1}]}\setlength{\parskip}{0cm}\chunkCmdUseMark{#2}}
+{\chunkCmdUseMark{#2}}
+% {\par{[see page(s)~\chunkRefs{#1}]}\setlength{\parskip}{0cm}\chunkCmdUseMark{#2}}
 % {\par{\color{blue}...page(s)~\chunkRefs{#1}}\setlength{\parskip}{0cm}\chunkCmdUseMark{#2}}
 %endif
 }

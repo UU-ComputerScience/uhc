@@ -217,23 +217,25 @@ tyIsQu t = case t of {Ty_Quant _ _ _ -> True; _ -> False}
 %%% Construction of type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[1.mkTyArrow hs
+algTy        ::  MkConApp Ty
+algTy        =   (Ty_Con,Ty_App,id,id)
+
+mkTyArrow    ::  TyL -> Ty -> Ty
+mkTyArrow    =   flip (foldr (mkArrow algTy))
+%%]
+
 %%[1.mkTy hs
-algTy :: MkConAppAlg Ty
-algTy = (Ty_Con,Ty_App,id,id)
+mkTyApp      ::  TyL -> Ty
+mkTyApp      =   mkApp algTy
 
-mkTyArrow :: TyL -> Ty -> Ty
-mkTyArrow = let mk = mkArrow algTy in flip (foldr mk)
-
-mkTyApp :: TyL -> Ty
-mkTyApp = mkApp algTy
-
-mkTyConApp :: HsName -> TyL -> Ty
-mkTyConApp = mkConApp algTy
+mkTyConApp   ::  HsName -> TyL -> Ty
+mkTyConApp   =   mkConApp algTy
 %%]
 
 %%[1.mkTyProdApp hs
-mkTyProdApp :: TyL -> Ty
-mkTyProdApp = mkProdApp algTy
+mkTyProdApp  ::  TyL -> Ty
+mkTyProdApp  =   mkProdApp algTy
 %%]
 
 %%[7.mkTyProdApp -1.mkTyProdApp hs
@@ -330,8 +332,11 @@ tySumEmpty	= mkTySum []
 %%% Destruction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.unMkTy.sigs hs
+%%[1.unMkTy.sigs.tyArrow hs
 tyArrowArgRes   :: Ty -> (Ty,Ty)
+%%]
+
+%%[1.unMkTy.sigs.Rest hs
 tyArrowArgsRes  :: Ty -> (TyL,Ty)
 tyAppFunArgs    :: Ty -> (Ty,TyL)
 tyAppArgs       :: Ty -> TyL

@@ -91,7 +91,7 @@ rules expr1B.C "Type checking for let-expression with pattern" =
     cond p == i || p == i@(...)
     -
     judge expr1B Gamma; sigma..k :- (let i :: sigma..i; p (=) e..i in e) : sigma..e
-  &
+
   rule e_lam1C =
     judge expr1B (Gamma..p , Gamma); sigma..r :- e : sigma..e
     judge pat1 sigma..p :- p : Gamma..p
@@ -514,11 +514,11 @@ rules fit1 "Rules for fit" =
     -
     judge fit1 :- I.1 <= I.2 : I.2
 
-  rule f_any_l =
+  rule f_anyl1 =
     -
     judge fit1 :- ANY <= sigma : sigma
   &
-  rule f_any_r =
+  rule f_anyr1 =
     -
     judge fit1 :- sigma <= ANY : sigma
 

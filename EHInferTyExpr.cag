@@ -11,7 +11,9 @@
 
 %%[1.tyGam
 ATTR AllTyExpr [ | tyGam: TyGam | ]
+%%]
 
+%%[1.check
 SEM TyExpr
   | Con         loc         .  (tgi,nmErrs)         =   case tyGamLookup @nm @lhs.tyGam of
                                                           Nothing    ->  (TyGamInfo Ty_Any
@@ -172,7 +174,7 @@ SEM TyExpr
 %%% Type of TyExpr, TyVar
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1
+%%[1.ty
 ATTR TyExpr [ | | ty: Ty ]
 
 SEM TyExpr

@@ -44,7 +44,7 @@ SEM Decl
                                         ]
   | TySig       lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","TySig"] [ppNm @nm] [@tyExpr.ppAST] @info
                 loc     .  info     =   [ mkInfo1 "tyExpr.ty" (ppTy @tyExpr.ty)
-                                        , mkInfo1 "sigTy" (ppTy @sigTy)
+                                        , mkInfo1 "gamSigTy" (ppTy @gamSigTy)
                                         ]
 
 SEM Expr

@@ -305,15 +305,16 @@ SEM Expr
 
 %%[1.TypeAs
 SEM Expr
-  | TypeAs      loc         .   tyTy                =   @tyExpr.ty
-                            .   asTy                =   @tyTy
-                            .   fo                  =   @asTy `fitsIn` @lhs.knTy
-                expr        .   knTy                =   @asTy
+  | TypeAs      loc         .   fo                  =   @tyExpr.ty `fitsIn` @lhs.knTy
+                expr        .   knTy                =   @tyExpr.ty
 %%]
 
 %%[2.TypeAs
 SEM Expr
-  | TypeAs      expr        .   knTy                :=  foCnstr @fo |=> @asTy
+  | TypeAs      loc         .   tyTy                =   @tyExpr.ty
+                            .   asTy                =   @tyTy
+                            .   fo                  :=  @asTy `fitsIn` @lhs.knTy
+                expr        .   knTy                :=  foCnstr @fo |=> @asTy
                             .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
 %%]
 

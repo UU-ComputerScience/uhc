@@ -14,8 +14,7 @@ DATA AGItf
 
 DATA Expr
    | IConst         int     :  {Int}
-   | Add            e1      :  Expr
-                    e2      :  Expr
+   | Add            e1      :  Expr   ^^^  e2      :  Expr
 
 SET AllNT = AGItf Expr
 %%]
@@ -25,20 +24,18 @@ ATTR AllNT [ | | pp: PP_Doc ]
 
 SEM Expr
   | IConst          lhs     .   pp      =   pp @int
-  | Add             lhs     .   pp      =   @e1.pp >#< "+" >#< @e2.pp
+  | Add             lhs     .   pp      =   @e1.pp >|< "+" >|< @e2.pp
 %%]
 
 %%[1.letdata
 DATA Expr
-   | Let            nm      :  {String}
-                    val     :  Expr
-                    body    :  Expr
+   | Let            nm      :  {String}  ^^^  val     :  Expr  ^^^  body    :  Expr
    | Var            nm      :  {String}
 %%]
 
 %%[1.letpp
 SEM Expr
-  | Let             lhs     .   pp      =   "let" >#< @nm >|< "=" >|< @val.pp >#< "in" >#< @body.pp
+  | Let             lhs     .   pp      =   "[" >|< @nm >|< "=" >|< @val.pp >|< ":" >|< @body.pp >|< "]"
   | Var             lhs     .   pp      =   pp @nm
 %%]
 
@@ -98,9 +95,9 @@ run     count
          l <- getLine
          r <- parseIOMessage show pAGItf l
          let r' = wrap_AGItf r (Inh_AGItf {count_Inh_AGItf = count})
-         putStrLn  (  "Expr='"        ++ disp (pp_Syn_AGItf r') 40 ""  ++
-                      "', val="       ++ show (val_Syn_AGItf r')       ++
-                      ", add count="  ++ show (count_Syn_AGItf r')
+         putStrLn  (  "Expr='"                 ++ disp (pp_Syn_AGItf r') 40 ""  ++
+                      "', val="                ++ show (val_Syn_AGItf r')       ++
+                      ", add count thus far="  ++ show (count_Syn_AGItf r')
                    )
          run (count_Syn_AGItf r')
 

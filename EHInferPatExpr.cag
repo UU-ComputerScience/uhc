@@ -65,7 +65,23 @@ SEM PatExpr
 %%[1.knTy
 ATTR AllPatExpr [ knTy: Ty | | ]
 ATTR PatExpr [ knTyL: TyL | | ]
+%%]
 
+%%[1.knTy.App
+SEM PatExpr
+  | AppTop      loc         .  knProdTy
+                                                    =   @lhs.knTy
+                            .  (knTyL,aErrs)
+                                                    =   case tyProdArgs @knProdTy of
+                                                            tL | @patExpr.arity == length tL
+                                                                ->  (reverse tL,[])
+                                                            _   ->  (repeat Ty_Any
+                                                                    ,  [Err_PatArity
+                                                                         @knProdTy @patExpr.arity])
+  | App         loc         .  (knArgTy,knTyL)
+                                                    =   hdAndTl @lhs.knTyL
+                arg         .  knTy                 =   @knArgTy
+%%]
 SEM PatExpr
   | AppTop      loc         .  knProdTy
                                                     =   @lhs.knTy
@@ -77,10 +93,6 @@ SEM PatExpr
                                                                       . (++ repeat Ty_Any) $ tL
                                                                     ,[Err_PatArity
                                                                       @knProdTy @patExpr.arity])
-  | App         loc         .  (knArgTy,knTyL)
-                                                    =   hdAndTl @lhs.knTyL
-                arg         .  knTy                 =   @knArgTy
-%%]
 
 %%[1.knTy.Init
 SEM Decl

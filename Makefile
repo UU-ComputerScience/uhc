@@ -57,6 +57,9 @@ DIST_PREFIX			:=
 DIST_ZIP			:= $(DIST_PREFIX)$(DIST).zip
 DIST_TGZ			:= $(DIST_PREFIX)$(DIST).tgz
 
+# distribution for afp04 lecture notes
+DIST_AFP04			:= dist-afp04
+
 # distributed/published stuff for WWW
 WWW_SRC_ZIP			:= www/current-ehc-src.zip
 WWW_SRC_TGZ			:= www/current-ehc-src.tgz
@@ -511,6 +514,9 @@ afp-tr:
 afp04:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=storyAFP04Notes --set=omitTBD --set=omitLitDiscuss" afp-bib
 
+afp04-dist-tex:
+	$(MAKE) AFP=afp04-dist AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=storyAFP04Notes --set=omitTBD --set=omitLitDiscuss --set=dist" afp04-dist.tex
+
 afp-tst:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=storyAFP04Notes --set=omitTBD --set=omitLitDiscuss" afp
 
@@ -535,7 +541,7 @@ afp-slides:
 eh-intro:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_POLY_MODE=--poly LHS2TEX_OPTS="$(LHS2TEX_OPTS) --set=storyEHIntro --set=asSlides --set=omitTBD --set=omitLitDiscuss" afp
 
-.PHONY: shuffle ruler brew ehcs dist www www-sync gri gris agprimer
+.PHONY: shuffle ruler brew ehcs dist www www-sync gri gris agprimer dist-afp04
 
 shuffle: $(SHUFFLE)
 
@@ -731,6 +737,20 @@ $(DIST_ZIP): $(addprefix $(VERSION_LAST)/,$(EHC_DPDS_ALL_MIN_TARG)) Makefile tes
 	tar cfz $(DIST_TGZ) $(DIST) ; \
 	echo "== tar ==" ; \
 	zip -qur $(DIST_ZIP) $(DIST)
+
+dist-afp04: afp04-dist-tex
+	@rm -rf $(DIST_AFP04) ; \
+	mkdir -p $(DIST_AFP04) ; \
+	latex --jobname afp04 afp04 ; \
+	cp $(addprefix afp04.,pdf dvi aux toc) rules.tex afp-pgf.tex $(DIST_AFP04) ; \
+	cp afp04-dist.tex $(DIST_AFP04)/afp04.tex ; \
+	cp -r tmp-afp04 figs $(DIST_AFP04) ; \
+	cp $(addsuffix .sty,afp04 doubleequals infrule beamerthemeafp kscode textpos) llncs.cls $(DIST_AFP04) ; \
+	cp $(addprefix /Volumes/Apps/Install/LaTeX/,latex-beamer-2.21.tar.gz pgf-0.62.tar.gz xcolor-2.00.tar.gz xkeyval.tar.gz) $(DIST_AFP04) ; \
+	cp /Volumes/Apps/Install/lhs2TeX/lhs2tex-1.9.tar.bz2 $(DIST_AFP04) ; \
+	cp -r /Volumes/Work/Library/texmf $(DIST_AFP04) ; \
+	cp -r /usr/local/share/lhs2tex/lhs2TeX.sty $(DIST_AFP04) ; \
+	tar cfz $(DIST_AFP04).tgz $(DIST_AFP04)
 
 wc:
 	grep frametitle $(AFP_LHS) | wc

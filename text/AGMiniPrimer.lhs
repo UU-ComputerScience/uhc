@@ -14,7 +14,7 @@ Vice versa, the class of functional programs
 (catamorphisms \cite{swierstra99comb-lang})
 mapped onto can be described by attribute grammars.
 The AG system exploits this correspondence by providing a notation (attribute grammar) for
-computations over a structure
+computations over trees
 which additionally allows
 program fragments to be described separately.
 The AG compiler gathers these fragments, combines these fragments, and generates a corresponding
@@ -42,15 +42,10 @@ The computation itself simultaneously computes the minimum of all integers found
 the new tree with this minimum value.
 The result is returned as a tuple computed by function |r|:
 
+\savecolumns
 \chunkCmdUse{RepminHS.1.repmin}
-
-The computation of the new tree requires the minimum.
-This minimum is passed as a parameter |m| to |r| at the root of the tree by extracting it from the result of |r|.
-It looks as if this is indeed a circular program because the minimum required for the result of |r|
-seems to depend on the result of |r| itself.
-However, the real dependency is not on the tupled result of |r| but on its fields.
-The fields are not cyclically dependent so Haskell's laziness prevents
-a too eager computation of the fields of the tuple which might otherwise have caused a cycle.
+\restorecolumns
+\chunkCmdUse{RepminHS.1.repminBin}
 
 We can use this function in some setting, for example:
 
@@ -62,23 +57,37 @@ The resulting program produces the following output:
 Tree_Bin (Tree_Leaf 3) (Tree_Bin (Tree_Leaf 3) (Tree_Leaf 3))
 \end{TT}
 
+The computation of the new tree requires the minimum.
+This minimum is passed as a parameter |m| to |r| at the root of the tree by extracting it from the result of |r|.
+The result tuple of the invocation |r t tmin|
+depends on itself via the minimum |tmin| so it would seem we have a cyclic definition.
+However, the real dependency is not on the tupled result of |r| but on its elements because
+it is the element |tmin| of the result tuple which is passed back and not the tuple itself.
+The elements are not cyclically dependent so Haskell's laziness prevents
+a too eager computation of the elements of the tuple which might otherwise have caused an infinite loop during
+execution.
+Note that we have two more or less independent computations that both follow
+the tree structure,
+and a weak interaction, when passing the |tmin| value back in the tree.
+
 \paragraph{Repmin a la AG.}
 The structure of |repmin| is similar to the structure required by a compiler.
-A compiler uses an \IxAsDef{abstract syntax tree} (\IxAsDef{AST}) and performs several computations over this tree, for example a type
-and code for a target machine.
+A compiler performs several computations
+over an \IxAsDef{abstract syntax tree} (\IxAsDef{AST}), for example for computing its type
+and code.
 This corresponds to the |Tree| structure used by |repmin| and the tupled results.
-In the context of attribute grammars the fields of this tuple are called \IxAsDef{attribute}'s.
-Occasionaly the word \IxAsDef{aspect} is used as well but an aspect may also mean a group of attributes usually associated with
-one particular feature of the AST/language/problem at hand.
+In the context of attribute grammars the elements of this tuple are called \IxAsDef{attribute}'s.
+Occasionaly the word \IxAsDef{aspect} is used as well, but an aspect may also refer to a group of attributes associated with
+one particular feature of the AST, language or problem at hand.
 
-To be more precise, result fields are called \IxAsDef{synthesized} attributes.
+Result elements are called \IxAsDef{synthesized} attributes.
 On the other hand,
-a compiler also requires information known only higher in an AST to be available for use lower in an AST.
-This corresponds to the |m| parameter passed to |r| in |repmin|.
+a compiler may also require information that becomes available at higher nodes in an AST to be available at lower nodes in an AST.
+The |m| parameter passed to |r| in |repmin| is an example of this situation.
 In the context of attribute grammars this is called an \IxAsDef{inherited} \IxAsDef{attribute}.
 
-Using AG notation we first define the AST of the problem
-(for which the complete compilable solution can be found in \figRef{ag-primer-full-repmin}):
+Using AG notation we first define the AST corresponding to our problem
+(for which the complete compilable solution is given in \figRef{ag-primer-full-repmin}):
 
 \chunkCmdUse{RepminAG.1.data1}
 
@@ -90,11 +99,19 @@ Using AG notation we first define the AST of the problem
 \restorecolumns
 \chunkCmdUse{RepminAG.1.repmin}
 \restorecolumns
+\chunkCmdUse{RepminAG.1.copyRule1}
+\restorecolumns
+\chunkCmdUse{RepminAG.1.repminBin}
+\restorecolumns
 \chunkCmdUse{RepminAG.1.data2}
 \restorecolumns
 \chunkCmdUse{RepminAG.1.repminroot}
 \restorecolumns
 \chunkCmdUse{RepminAG.1.tree}
+\restorecolumns
+\chunkCmdUse{RepminAG.1.copyRule2}
+\restorecolumns
+\chunkCmdUse{RepminAG.1.treeRoot}
 \restorecolumns
 \chunkCmdUse{RepminAG.1.show}
 \restorecolumns
@@ -104,59 +121,78 @@ Using AG notation we first define the AST of the problem
 
 
 The |DATA| keyword is used to introduce the equivalent of Haskell's |data| type.
-The introduced |DATA| is sometimes called a \IxAsDef{node} and the alternatives are called
-\IxAsDef{variant} or \IxAsDef{production}.
-The members of a variant are called \IxAsDef{child}ren.
-Each child has a name (before the colon) and a type (after the colon).
-The type may be either another |DATA| node or a monomorphic Haskell type, delimited by curly braces.
+A |DATA <node>| defines a \IxAsDef{node} |<node>| (or \IxAsDef{nonterminal})
+of an AST.
+Its alternatives, enumerated one by one after the vertical bar | || |, are called
+\IxAsDef{variants}, \IxAsDef{productions}.
+The term \IxAsDef{constructor} is occasionally used to stress the similarity with
+its Haskell counterpart.
+Each variant has members,
+called \IxAsDef{children} if they refer to other nodes of the AST and \IxAsDef{fields} otherwise.
+Each child and field has a name (before the colon) and a type (after the colon).
+The type may be either another |DATA| node (if a child) or a monomorphic Haskell type (if a field), delimited by curly braces.
 The curly braces may be omitted if the Haskell type is a single identifier.
+For example, the |DATA| definition for the repmin problem introduces a node (nonterminal) |Tree|,
+with variants (productions) |Leaf| and |Bin|.
+A |Bin| has children |lt| and |rt| of type |Tree|.
+A |Leaf| has no children but contains only a field |int| holding a Haskell |Int| value.
 
-The keyword |ATTR| is used to declare an attribute for a node, here the synthesized attribute |min|:
+The keyword |ATTR| is used to declare an attribute for a node, for instance the synthesized attribute |min|:
 
 \chunkCmdUse{RepminAG.1.min}
 
-An attribute is declared for the nonempty whitespace separated list of nodes after |ATTR|.
+A synthesized attribute is declared for the node after |ATTR|.
+Multiple declarations of the same attribute for different nonterminals
+can be grouped on one line by enumerating the nonterminals after the |ATTR| keyword, separated by whitespace.
 The attribute declaration is placed inside the square brackets at one or more of three different possible places.
 All attributes before the first vertical bar | || | are inherited, after the last bar synthesized, and in between both
 inherited and synthesized.
-Attribute |min| is a result and therefore as a synthesized attribute positioned after the last bar.
-
-Each attribute declaration introduces the name and type of the attribute.
-The type may only be a monomorphic Haskell type.
-Lexicographically it may be a single capitalized identifier (as all Haskell type constants).
-More complex types consisting of multiple identifiers must be delimited by curly braces |{| and |}|.
-This is the same as for the type of the children of a node variant.
+For example, attribute |min| is a result and therefore positioned as a synthesized attribute, after the last bar.
 
 Rules relating an attribute to its value are introduced using the keyword |SEM|.
+For each production we distinguish a set of input attributes, consisting of the synthesized attributes of the children
+referred to by |@ <child> . <attr>| and the inherited attributes of the parent referred to by |@lhs. <attr>|.
+For each output attribute we need a rule that expresses its value in terms of input attributes and fields.
+
+%if False
 Rules relate attributes from a \IxAsDef{parent} node to the attributes of its
-\IxAsDef{child}ren nodes.
-Synthesized attributes must be defined for the parent, inherited for the children.
+\IxAsDef{child} nodes.
+Synthesized attributes travel upwards in the AST and must be defined for a parent in terms
+of inherited attributes of the parent or synthesized attributes of the children.
+Inherited attributes travel downwards in the AST and must be defined for each child for which it
+has been declared.
+Inherited attributes are defined in terms of inherited attributes of the parent of synthesized attributes
+of neighbouring children.
+%endif
 
 The computation for a synthesized attribute for a node
 has to be defined for each variant individually as
 it usually will differ between variants.
-Each rule is of the form | || <variant> <node> . <attr> = <Haskell expr>|.
-For now |<node>| is equal to the keyword |lhs| indicating that the value is defined for the left hand side or parent
-of the production, or said more simply, there is only one way to go for a synthesized attribute namely upwards in
-the AST.
-If multiple rules are declared for a |<variant>| of a node, the |<variant>| part may be omitted.
-The same holds for multiple rules for a child (or |lhs|) of a |<variant>|, the child (or |lhs|) may then be omitted.
+Each rule is of the form
 
-The text representing the computation for an attribute is assumed to be a Haskell expression.
-Currently this is not checked.
-Only the presence of a use of an attributes, indicated by |@|, has meaning to the AG system.
+\begin{code}
+| <variant> ^^^ <node> . <attr> = <Haskell expr>
+\end{code}
+
+If multiple rules are declared for a |<variant>| of a node, the |<variant>| part may be shared.
+The same holds for multiple rules for a child (or |lhs|) of a |<variant>|, the child (or |lhs|) may then be shared.
+
+The text representing the computation for an attribute has to be a Haskell expression
+and will end up almost unmodified in the generated program,
+without any form of checking.
+Only attribute and field references, starting with a |@|, have meaning to the AG system.
 The text, possibly stretching over multiple lines,
-is assumed to be not less indented than its first line.
-If not, it should be delimited by curly braces.
+has to be indented at least as far as its first line.
+Otherwise it is to be delimited by curly braces.
 
-The use of an attribute\Ix{attribute use} is indicated by |@|.
-Its basic form is |@ <node> . <attr>| referring to a synthesized attribute |<attr>| of child node |<node>|.
+The basic form of an attribute reference
+is |@ <node> . <attr>| referring to a synthesized attribute |<attr>| of child node |<node>|.
 For example, |@lt.min| refers to the synthesized attribute |min| of child |lt| of the |Bin| variant of node |Tree|.
 
 The |<node> .| part of |@ <node> . <attr>| may be omitted.
 For example, |min| for the |Leaf| alternative is defined in terms of |@int|.
 In that case |@ <attr>| refers to a locally (to a variant for a node) declared attribute, or to
-the value with the same name as defined in the |DATA| definition for that variant.
+the field with the same name as defined in the |DATA| definition for that variant.
 This is the case for the |Leaf| variant's |int|.
 We postpone the discussion of locally declared attributes.
 
@@ -164,22 +200,27 @@ The minimum value of |repmin| passed as a parameter corresponds to an inherited 
 
 \chunkCmdUse{RepminAG.1.repmin}
 
+%if False
 An inherited attribute is referred to by |@lhs. <attr>|; similar to |@ <node> . <attr>| for synthesized attributes
 but with |<node> == lhs|.
 The rule for an inherited attribute is also the other way around compared to a synthesized attribute.
-In | || <variant> <node> . <attr> = <Haskell expr>|
-|<node>| must now explicitly refer to child of which an attribute has to be given a value
+In
+\begin{code}
+| <variant> ^^^ <node> . <attr> = <Haskell expr>
+\end{code}
+|<node>| must now explicitly refer to a child of which an attribute has to be given a value
 to be passed further down the AST.
 For the |rmin| attribute this is the |lt| as well as the |rt| child of the |Bin| variant of node |Tree|.
+%endif
 
 The value of |rmin| is straightforwardly copied to its children.
 This ``simply copy'' behavior occurs so often that we may omit its specification.
-The AG system uses so called copy rules to automically incorporate code for copying
+The AG system uses so called copy rules to automically generate code for copying
 if the value of an attribute is not specified explicitly.
-This is to prevent clutter and thus allow the programmer to focus on programming
+This is to prevent program clutter and thus allows the programmer to focus on programming
 the exception instead of the usual.
-We will come back to this later, for now it suffices to mention that the rules for |rmin|
-might well have been omitted.
+We will come back to this later; for now it suffices to mention that all the rules for |rmin|
+might as well have been omitted.
 
 The original |repmin| function did pass the minimum value coming out |r| back into |r| itself.
 This did happen at the top of the tree.
@@ -193,26 +234,32 @@ At the root the |min| attribute is passed back into the tree via attribute |rmin
 
 The value of |rmin| is used to construct a new tree:
 
+\savecolumns
 \chunkCmdUse{RepminAG.1.tree}
+\restorecolumns
+\chunkCmdUse{RepminAG.1.treeRoot}
 
-The AG compiler also generates for each |DATA| a corresponding Haskell |data| type declaration.
+For each |DATA| the AG compiler generates a corresponding Haskell |data| type declaration.
 For each node |<node>| a data type with the same name |<node>| is generated.
-Each constructor of the data type has a name of the form |<node>_<variant>|.
-The constructed new tree is returned as the one and only attribute of |Root|.
+Since Haskell requires all constructors to
+be unique, each constructor of the data type gets a name of the form |<node>_<variant>|.
+
+In our example the constructed tree is returned as the one and only attribute of |Root|.
 It can be shown if we tell the AG compiler to make the generated data type an
-instance of class |Show|:
+instance of the |Show| class:
 
 \chunkCmdUse{RepminAG.1.show}
 
-Similarly to the Haskell version of |repmin| we can now show the result of the attribute computation as a plain Haskell value:
+Similarly to the Haskell version of |repmin| we can now show the result of the attribute computation as a plain Haskell value
+by using the function |sem_Root| generated by the AG compiler:
 
 \chunkCmdUse{RepminAG.1.main}
 
-Because this part is Haskell code it has to be delimited by curly braces.
-The AG compiler copies it unchanged to the generated Haskell program.
+Because this part is Haskell code it has to be delimited by curly braces, indicating that
+the AG compiler should copy it unchanged into the generated Haskell program.
 
-In order to understand what is happening here we have to look at the Haskell code as generated by the AG compiler,
-because this code is used from the Haskell world to compute the synthesized attributes we are interested in.
+In order to understand what is happening here,
+we take a look at the generated Haskell code.
 For the above example the following code will be generated (edited to remove clutter):
 
 \begin{TT}
@@ -258,14 +305,18 @@ sem_Tree_Leaf (int_) =
         in  ( _lhsOmin,_lhsOtree)
 \end{TT}
 
-In general, generated code is not the most pleasant of prose to look at, but we will have to use the generated
+In general, generated code is not the most pleasant\footnote{In addition, because generated code can be generated differently,
+one cannot count on it being generated in a specific way.
+Such is the case here too, this part of the AG implementation may well change in the future.}
+of prose to look at, but we will have to use the generated
 functions in order to access the AG computations of attributes from the Haskell world.
 The following observations should be kept in mind when doing so:
 \begin{itemize}
 \item
-For node |<node>| also a type |T_<node>| is generated, describing the function type computing attribute values.
+For node |<node>| also a type |T_<node>| is generated, describing the function type
+that maps inherited to synthesized attributes.
 This type corresponds one-to-one to the attributes defined for |<node>|: inherited attributes to parameters, synthesized attributes
-to fields of the result tuple (or single type if only one synthesized attribute is defined).
+to elements of the result tuple (or single type if exactly one synthesized attribute is defined).
 \item
 Computation of attribute values is done by semantic functions with a name of the form |sem_<node>_<variant>|.
 These functions have exactly the same type as their constructor counterpart of the generated data type.
@@ -276,25 +327,27 @@ For example, data constructor |Tree_Bin :: Tree -> Tree -> Tree| corresponds to 
 \item
 A mapping from the Haskell |data| type to the corresponding semantic function is available with
 the name |sem_<node>|.
-There is no easy way back\footnote{Reconstructing the original AST can be done via |SELF|, explained at its first
-use in the main text.}.
 \end{itemize}
 
-In the Haskell world one now can follow the different routes to compute the attributes:
+In the Haskell world one now can follow different routes to compute the attributes:
 \begin{itemize}
 \item
-First construct a Haskell value of type |<node>|, then apply |sem_<node>| to this value and additionally required inherited attributes values.
+First construct a Haskell value of type |<node>|, then apply |sem_<node>| to this value and the
+additionally required inherited attributes values.
 The given function |main| from AG variant of repmin takes this approach.
 \item
 Circumvent the construction of Haskell values of type |<node>| by using the semantic functions |sem_<node>_<variant>|
-directly instead of the data constructor |<node>_<variant>|.
+directly when building the AST instead of the data constructor |<node>_<variant>|
+(This technique is called deforestation \cite{wadler90deforest}.).
 \end{itemize}
 
 In both cases a tuple holding all synthesized attributes is returned.
-The order of the fields in the tuple is unspecified.
+Elements in the tuple are sorted lexicographically on attribute name,
+but it still is awkward to extract an attribute via pattern matching because
+the size of the tuple and position of elements changes with adding and renaming attributes.
 For now, this is not a problem as |sem_Root| will only return one value, a |Tree|.
 Later we will see the use of wrapper functions to pass inherited attributes and extract synthesized attributes
-via additional wrapper data types holding attributes via labeled fields.
+via additional wrapper data types holding attributes in labeled fields.
 
 \paragraph{Parsing directly to semantic functions.}
 The given |main| function uses the first approach: construct a |Tree|, wrap it inside a |Root|, and
@@ -331,19 +384,19 @@ An interactive terminal session of the pocket calculator looks as follows:
 \begin{TT}
 $ build/bin/expr
 Enter expression: 3+4
-Expr='3 + 4', val=7, add count=1
+Expr='3+4', val=7, add count thus far=1
 Enter expression: [a=3+4:a+a]
-Expr='let a=3 + 4 in a + a', val=14, add count=3
+Expr='[a=3+4:a+a]', val=14, add count thus far=3
 Enter expression: ^Cexpr: interrupted
 $
 \end{TT}
 
 This rudimentary calculator allows integer values, their addition and binding to identifiers.
-Parsing is character based, no scanner is used transform raw text into tokens.
-No whitespace may occur and a |let| expression is syntactically denoted by @[<nm>=<expr>:<expr>]@.
+Parsing is character based, no scanner is used to transform raw text into tokens.
+No whitespace is allowed and a |let| expression is syntactically denoted by @[<nm>=<expr>:<expr>]@.
 
 The example will allow us to discuss more AG features as well as typical use of AG.
-We start with integer constants, addition, and an attribute computation for the pretty printing:
+We start with integer constants, addition followed by an attribute computation for the pretty printing:
 
 \chunkCmdUse{Expr.1.data}
 
@@ -351,16 +404,19 @@ The root of the tree is now called |AGItf| to indicate (as a naming convention)
 that this is the place where interfacing between the Haskell world
 and the AG world takes place.
 
-The definition also demonstrates the use of the |SET| keyword which allows the naming of a group of nodes.
-This name can later be used to declare attributes for the named group of nodes.
+The definition demonstrates the use of the |SET| keyword which allows the naming of a group of nodes.
+This name can later be used to declare attributes for all the named group of nodes at once.
 
 The computation of a pretty printed representation follows the same pattern as the computation of |min| and |tree|
-in the |repmin| example because of its compositional and bottom-up nature.
+in the |repmin| example, because of its compositional and bottom-up nature.
 The synthesized attribute |pp| is synthesized from the values of the |pp| attribute of the children of a node:
 
 \chunkCmdUse{Expr.1.pp}
 
-The pretty printing uses a pretty printing library not further discussed here; an overview of some of
+The pretty printing uses a pretty printing library with
+combinators for values of type |PP_Doc| representing
+pretty printed documents.
+The library is not further discussed here; an overview of some of
 the available combinators can be found in \figRef{pretty-printing-combinators}.
 
 \begin{Figure}{Pretty printing combinators}{pretty-printing-combinators}
@@ -378,35 +434,39 @@ Combinator & Result
 \end{center}
 \end{Figure}
 
-The following step is to add |let| expressions and the use of identifiers.
-This demonstrates an important feature of the AG system, namely to extend a previously defined AST
-with new alternatives for a |<node>| as well as to add new attribute computations independently.
+As a next step we add |let| expressions and use of identifiers in expressions.
+This demonstrates an important feature of the AG system:
+we may introduce new alternatives for a |<node>| as well as may introduce new attribute computations
+in a separate piece of program text.
 We first add new AST alternatives for |Expr|:
 
 \chunkCmdUse{Expr.1.letdata}
 
-One should keep in mind that the exensibility offered is simplistic of nature but surprisingly flexible at the same time.
-The idea is that node variants, attribute declarations and attribute rules for node variants can all be textually separated.
-The AG compiler gathers all definitions, combines them, performs several checks (e.g. are attribute rules missing), and generates
+One should keep in mind that the exensibility offered is simplistic of nature, but surprisingly flexible at the same time.
+The idea is that node variants, attribute declarations and attribute rules for node variants can all occur textually separated.
+The AG compiler gathers all definitions, combines, performs several checks (e.g. are attribute rules missing), and generates
 the corresponding Haskell code.
-Text can reside in different text files to be included with a |INCLUDE| directive (not discussed any further).
-However, no module mechanism is offered nor any encapsulation mechanism for attributes.
-This may change in the future.
+All kinds of declarations can be distributed over several
+text files to be included with a |INCLUDE| directive (not discussed any further).
 
-Any addition of new AST node variants requires also the definition of already declared attributes:
+Any addition of new node variants requires also the corresponding definitions
+of already introduced attributes:
 
 \chunkCmdUse{Expr.1.letpp}
 
-The use of variables in the pocket calculator requires us to keep an administration of the values bound to variables.
+The use of variables in the pocket calculator requires us to keep an administration of values bound to variables.
 An association list is used to provide this environmental and scoped information:
 
 \chunkCmdUse{Expr.1.env}
 
 The scope is enforced by extending the inherited attribute |env| top-down in the AST.
-The |Let| variant adds a new entry on top of the environment.
-This solution usually is deployed whenever contextual and scoped information needs to
-be made available in lower parts of the AST.
-The environment |env| is queried when the value of an expression is computed:
+Note that there is no need to specify a value for |@val.env| because
+of the copy rules discussed later.
+In the |Let| variant the inherited environment,
+which is used for evaluating the right hand sided of the bound expression,
+is extended with the new binding,
+before being used as the inherited |env| attribute of the body.
+The environment |env| is queried when the value of an expression is to be computed:
 
 \chunkCmdUse{Expr.1.val}
 
@@ -414,7 +474,7 @@ The attribute |val| holds this computed value.
 Because its value is needed in the `outside' Haskell world it is passed through |AGItf| (as part of |SET AllNT|)
 as a synthesized attribute.
 This is also the case for the previously introduced |pp| attribute as well as the following |count| attribute
-holding the number of additions performed.
+used to keep track of the number of additions performed.
 However, the |count| attribute is also passed as an inherited attribute.
 Being both inherited and synthesized it is defined between the two vertical bars in the
 |ATTR| declaration for |count|:
@@ -422,22 +482,23 @@ Being both inherited and synthesized it is defined between the two vertical bars
 \chunkCmdUse{Expr.1.count}
 
 The attribute |count| is said to be \IxAsDef{threaded} through the AST,
-the AG solution to a global variable.
+the AG solution to a global variable
+or the use of state monad.
 This is a result of the attribute being inherited as well as synthesized and
 the copy rules.
+Its effect is an automatic copying of the attribute in a preorder traversal of the AST.
 
 \IxAsDef{Copy rule}s are attribute rules inserted by the AG system if a rule for an attribute |<attr>|
 in a production of |<node>| is missing.
-The attribute may be synthesized in which case its rule should have the form |lhs . <attr> = ...|
-or inherited with form |<child> . <attr> = ...|.
-AG inserts a rule to copy the value of another attribute |<attr'>| if this other attribute has the same name,
-and can be found (in this order) among the following available attributes (with the same name) for a |<node>| variant:
+AG tries to insert a rule that copies the value of another attribute with the same name,
+searching in the following order:
 
 \begin{enumerate}
 \item
 Local attributes.
 \item
-The synthesized attribute of the rightmost child at the left of the child for which an inherited |<attr>| is to be defined.
+The synthesized attribute of the children to the left of the child for which an inherited |<attr>| definition is missing,
+with priority given to the nearest child fulfilling the condition.
 A synthesized |<attr>| of a parent is considered to be at the right of any child's |<attr'>|.
 \item
 Inherited attributes (of the parent).
@@ -455,21 +516,23 @@ In our example the effect is that for the |Let| variant of |Expr|
 \end{itemize}
 
 Similar copy rules are inserted for the other variants.
-Only for variant |Add| of |Expr| a different rule for |@lhs.count| is explicitly specified.
+Only for variant |Add| of |Expr| a different rule for |@lhs.count| is explicitly specified,
+since here we have a non-trivial piece of semantics: i.e. we actually want to count something.
 
 Automatic copy rule insertion can be both a blessing and curse.
-A blessing because it takes a lot of otherwise tedious work out of the hands of a programmer and minimises clutter
+A blessing because it takes away a lot of tedious work and minimises clutter
 in the AG source text.
-On the other hand it can be a curse because a programmer may have forgotten an otherwise required rule. If a copy rule can be inserted
-the AG compiler will silently do this, and
-the programmer will not be warned about the missing rule.
+On the other hand it can be a curse,
+because a programmer may have forgotten an otherwise required rule. If a copy rule can be inserted
+the AG compiler will silently do so, and
+the programmer will not be warned.
 
-As with our previous example we can let a parser map input text to the invocation of semantic functions.
+As with our previous example we can let a parser map input text to the invocations of semantic functions.
 For completeness this source text has been included in \figRef{ag-primer-parser-expr}.
 The result of parsing combined with the invocation of semantic functions will be a function taking inherited attributes
 to a tuple holding all synthesized attributes.
-However, the order in which these attributes can be found in the result tuple is not specified.
-This is a direct consequence of the freedom to specify AG fragments in any order (textually) independently of eachother.
+Even though the order of the attributes in the result tuple is specified, its extraction via pattern matching
+should be avoided.
 The AG system can be instructed to create a wrapper function which knows how to extract the attributes out of the
 result tuple:
 
@@ -482,15 +545,14 @@ and a data type holding inherited attributes:
 
 \chunkCmdUse{Expr.1.main}
 
-The order in which inherited attributes need to be passed to the semantic function is also unspecified.
-Inherited attributes are passed to the wrapper function via a data type with name |Inh_<node>| and one constructor with the same name.
-Its fields have labels of the form |<attr>_Inh_<node>|.
+We face a similar problem with the passing of inherited attributes to the semantic function.
+Hence inherited attributes are passed to the wrapper function via a data type with name |Inh_<node>| and a constructor with the same name,
+with fields having labels of the form |<attr>_Inh_<node>|.
 The |count| attribute is an example of an attribute which must be passed as an inherited attribute as well
 as extracted as a synthesized attribute.
 
-\paragraph{The rest...}
 This concludes our introduction to the AG system.
-However, some topics have either not been mentioned at all or only shortly touched upon.
+Some topics have either not been mentioned at all or only shortly touched upon.
 We provide a list of those topics together with a reference to the first use of the features which
 are actually used later in \thispaper.
 Each of these items is marked with |AGFeature| to indicate that it is about the AG system.
