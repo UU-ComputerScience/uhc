@@ -63,6 +63,7 @@ SEM CExpr
   | Let         loc         .   ppCateg     =   case @categ of
                                                     CBindRec     -> pp "rec"
                                                     CBindStrict  -> pp "!"
+                                                    CBindFFI     -> pp "ffi"
                                                     _            -> empty
                             .   pp          =   ppDef ("let" >#< @ppCateg) @binds.pp >-< ppDef "in" @body.pp
   | Lam         loc         .   pp          =   ppDef ("\\" >|< @arg) ("->" >#< @body.pp)
@@ -77,6 +78,7 @@ SEM CExpr
 
 SEM CBind
   | Bind        lhs         .   pp          =   ppDef @nm ("=" >#< @expr.pp)
+  | FFI         lhs         .   pp          =   ppDef @nm ("=" >#< "ffi" >#< pp (show @impEnt))
 
 SEM CBindL
   | Nil         lhs         .   ppL         =   []

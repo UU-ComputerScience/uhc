@@ -9,10 +9,7 @@
 %%% Simplify code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Maybe,Char,FiniteMap,EHCommon,EHCore) export(cmodTrfRenUniq)
-%%]
-
-%%[9 hs import(EHTy)
+%%[8 hs import(Maybe,Char,FiniteMap,EHCommon,EHCore,EHTy) export(cmodTrfRenUniq)
 %%]
 
 %%[8.WRAPPER import(EHCoreAbsSyn)

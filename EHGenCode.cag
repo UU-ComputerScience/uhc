@@ -34,7 +34,8 @@ SEM Expr
   | CConst      loc         .   cexpr       =   CExpr_Char @char
   | Var         loc         .   cexpr       =   CExpr_Var @nm
   | Con         loc         .   cexpr       =   CExpr_Var @nm
-  | Let         loc         .   cexpr       =   mkCExprLet CBindRec @decls.cbindL @body.cexpr
+  | Let         loc         .   mkFFILet    =   mkCExprLet CBindFFI @decls.cbindFFIL
+                            .   cexpr       =   @mkFFILet . mkCExprLet CBindRec @decls.cbindL $ @body.cexpr
   | App         loc         .   cexpr       =   CExpr_App @func.cexpr @arg.cexpr
   | Lam         loc         .   cexpr       =   CExpr_Lam @arg.topNm (rceMatch [@arg.topNm] [CAlt_Alt [@arg.cpat] @body.cexpr] cvarUndefined)
   | Case        loc         .   cexpr       =   let  n = uidHNm @lUniq
@@ -49,11 +50,12 @@ SEM Expr
   | Var Con     loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst (CExpr_Var @nm)
   | IConst      loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst (CExpr_Int @int)
   | CConst      loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst (CExpr_Char @char)
-  | Let         loc         .   cexpr       :=  mkCExprLet CBindRec
-                                                    (@decls.cbindL
-                                                        ++ mkCBindLForUIDL @prfCBindLMap (not.(`elementOf` @quantPrIdSet))
-                                                        ++ mkCBindLForUIDL @bodyPrfCBindLMap (const True))
-                                                    @body.cexpr
+  | Let         loc         .   cexpr       :=  @mkFFILet
+                                                .  mkCExprLet CBindRec
+                                                     (@decls.cbindL
+                                                         ++ mkCBindLForUIDL @prfCBindLMap (not.(`elementOf` @quantPrIdSet))
+                                                         ++ mkCBindLForUIDL @bodyPrfCBindLMap (const True))
+                                                $  @body.cexpr
   | App AppImpl
                 loc         .   cexpr       :=  CExpr_App
                                                     (coeWipeWeave @lhs.finTyCnstr @lhs.cSubst @appImplsCoeL []
@@ -140,12 +142,12 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR Decls Decl AllDataConstr [ | | cbindL USE {++} {[]}: CBindL ]
+ATTR Decls Decl AllDataConstr [ | | cbindL, cbindFFIL USE {++} {[]}: CBindL ]
 
 SEM Decl
   | Val         lhs         .   cbindL          =   [CBind_Bind @patExpr.topNm @expr.cexpr] ++ @patExpr.cbindL
   | TySig       lhs         .   cbindL          =   []
-  | FFI         lhs         .   cbindL          =   [CBind_Bind @nm (CExpr_Var (HNm @impEnt))]
+  | FFI         lhs         .   cbindFFIL       =   [CBind_FFI @callconv @safety @impEnt @nm @sigTy]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

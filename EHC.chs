@@ -380,7 +380,7 @@ crOutputCore modNm cr
             else  return ()
          ;  if ehcoptCoreGrin opts
             then  do  {  let grin = cmodGrin u1 cMod
-                             grPP = ppGrModule grin
+                             grPP = ppGrModule (Just []) grin
                       ;  putPPFile (fpathToStr (fpathSetSuff "grin" fp)) grPP 1000
                       }
             else  return ()

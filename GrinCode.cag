@@ -15,7 +15,7 @@
 %%[8 hs export(GrAlt(..), GrAltL, GrPat(..), GrPatL, GrVal(..), GrValL, GrTag(..)) 
 %%]
 
-%%[8 hs export(GrTagCateg(..)) 
+%%[8 hs export(GrTagCateg(..),grBox,grLclNmSupplyL) 
 %%]
 
 %%[8 import(GrinCodeAbsSyn)
@@ -39,5 +39,23 @@ instance PP GrTagCateg where
   pp GrTagApp = pp "A"
   pp GrTagFun = pp "F"
   pp (GrTagPApp need) = pp "P/" >|< pp need
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name supply for local use
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+grLclNmSupplyL :: [HsName]
+grLclNmSupplyL = map (\i -> HNm ("_" ++ show i)) [1..]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Boxing code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+grBox :: HsName -> GrVal -> GrVal
+grBox tyNm v = GrVal_Node (GrTag_Lit GrTagCon 0 tyNm) [v]
 %%]
 

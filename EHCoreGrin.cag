@@ -9,10 +9,7 @@
 %%% Haskell importable interface to Code's GRIN gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Maybe,FiniteMap,UU.Pretty,EHCommon,EHCore,GrinCode,Char) export(cmodGrin)
-%%]
-
-%%[9 hs import(EHTy)
+%%[8 hs import(Maybe,FiniteMap,UU.Pretty,EHCommon,EHCore,EHTy,GrinCode,Char) export(cmodGrin)
 %%]
 
 %%[8.WRAPPER import(EHCoreAbsSyn,EHCoreCommonLev)
@@ -79,8 +76,6 @@ ATTR AllCodeNT [ lamMp: LamInfoMp | | ]
 
 SEM CodeAGItf
   | AGItf       module      .   lamMp       =   emptyFM
-
-SEM CBind
 %%]
 
 %%[8
@@ -90,6 +85,9 @@ SEM CBind
   | Bind        lhs         .   bindLamMp   =   if @expr.isLam
                                                 then @nm `unitFM` length @expr.grLamArgL
                                                 else emptyFM
+  | FFI         loc         .   (argTyL,resTy)
+                                            =   tyArrowArgsRes @ty
+                lhs         .   bindLamMp   =   @nm `unitFM` length @argTyL
 
 SEM CExpr
   | Let         loc         .   lamMp       =   @lhs.lamMp `plusFM` @binds.bindLamMp
@@ -134,7 +132,7 @@ mkSq e1 p e2 = GrExpr_Seq e1 (GrPat_Var p) e2
 ATTR CodeAGItf CModule [ | | grMod: GrModule ]
 
 SEM CModule
-  | Mod         lhs         .   grMod       =   GrModule_Mod (HNm @baseName) @expr.grBindL
+  | Mod         lhs         .   grMod       =   GrModule_Mod (HNm @baseName) (@expr.grBindL ++ [GrBind_Bind (HNm "main") [] @expr.grLetBody])
 %%]
 
 %%[8
@@ -145,9 +143,10 @@ SEM CExpr
   | Let         (loc.grExpr,lhs.grBindL,binds.isStrict)
                                             =   if @lhs.lev == cLevOuter
                                                 then  (emptyGrExpr
-                                                      ,case @categ of
-                                                          CBindRec     ->  [GrBind_Rec @binds.grBindL] ++ @body.grBindL
-                                                          _            ->  @binds.grBindL ++ @body.grBindL
+                                                      ,let  
+                                                       in   case @categ of
+                                                              CBindRec     ->  [GrBind_Rec @binds.grBindL] ++ @body.grBindL
+                                                              _            ->  @binds.grBindL ++ @body.grBindL
                                                       ,True
                                                       )
                                                 else  (case @categ of
@@ -214,22 +213,37 @@ ATTR CExpr   [ | | grVal USE {`const`} {GrVal_Empty}: GrVal ]
 SEM CExpr
   | Tup         loc         .   grVal       =   ctag GrVal_Empty (\t l -> GrVal_Node (GrTag_Lit GrTagCon t l) []) @tag
   | Var         loc         .   grVal       =   GrVal_Var @nm
-  | Int         loc         .   grVal       =   GrVal_Node (GrTag_Lit GrTagCon 0 hsnInt) [GrVal_LitInt @int]
-  | Char        loc         .   grVal       =   GrVal_Node (GrTag_Lit GrTagCon 1 hsnChar) [GrVal_LitInt (ord @char)]
+  | Int         loc         .   grVal       =   grBox hsnInt (GrVal_LitInt @int)
+  | Char        loc         .   grVal       =   grBox hsnChar (GrVal_LitInt (ord @char))
   | * - Int Char Var Tup
                 loc         .   grVal       =   GrVal_Empty
 %%]
 
 %%[8
-ATTR CBind   [ | | grBind: GrBind ]
-ATTR CBindL  [ | | grBindL: GrBindL ]
+ATTR CBind CBindL  [ | | grBindL USE {++} {[]}: GrBindL ]
 
 SEM CBind
-  | Bind        lhs         .   grBind      =   GrBind_Bind @nm @expr.grLamArgL @expr.grLamBody
-
-SEM CBindL
-  | Cons        lhs         .   grBindL     =   @hd.grBind : @tl.grBindL
-  | Nil         lhs         .   grBindL     =   []
+  | Bind        lhs         .   grBindL     =   [GrBind_Bind @nm @expr.grLamArgL @expr.grLamBody]
+  | FFI         loc         .   (nmRes,nmArgL,nmArgPatL)
+                                            =   let  (nmRes:nmArgL) = take (length @argTyL + 1) grLclNmSupplyL
+                                                     nmArgPatL = map (hsnPrefix "_") nmArgL
+                                                in   (nmRes,nmArgL,nmArgPatL)
+                lhs         .   grBindL     =   let  mkPat ty n
+                                                       =  case tyConNm ty of
+                                                            t | t == hsnInt -> GrPat_Node (GrTag_Lit GrTagCon 0 t) [n]
+                                                            _               -> GrPat_Var n
+                                                     mkRes ty v
+                                                       =  case tyConNm ty of
+                                                            t | t == hsnInt -> \e -> GrExpr_Seq e (GrPat_Var @nmRes) (GrExpr_Unit (grBox t (GrVal_Var v)))
+                                                            _               -> id
+                                                in   [GrBind_Bind @nm @nmArgL
+                                                        (foldr  (\(n,p) e -> GrExpr_Seq (GrExpr_Eval n) p e)
+                                                                (mkRes @resTy @nmRes (GrExpr_FFI @impEnt @nmArgPatL))
+                                                        . zip @nmArgL
+                                                        . zipWith mkPat @argTyL
+                                                        $ @nmArgPatL
+                                                        )
+                                                     ]
 %%]
 
 %%[8
@@ -271,6 +285,18 @@ ATTR CPatBind CPatBindL [ | | patBindL USE {++} {[]}: {[HsName]} ]
 
 SEM CPatBind
   | Bind        lhs         .   patBindL    =   [@pat.patNm]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Let body
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR CExpr [ | | grLetBody: GrExpr ]
+
+SEM CExpr
+  | Let         lhs         .   grLetBody   =   @body.grLetBody
+  | * - Let     lhs         .   grLetBody   =   @grExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

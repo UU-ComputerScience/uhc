@@ -30,34 +30,44 @@ grGriSetup cmod
 %%% Initial run state
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[8 hs
+mkLamGlob :: Int -> AssocL HsName RunVal -> (AssocL HsName RunVal,AssocL Int RunVal)
+mkLamGlob st = unzip . zipWith (\p (n,v) -> ((n,RVPtr p),(p,v))) [st..]
+
+mkCafGlob :: Int -> AssocL HsName RunVal -> (AssocL Int RunVal,AssocL HsName RunVal,AssocL Int RunVal)
+mkCafGlob st g
+  =  let  (p2vCode,binds)
+            = unzip
+            . zipWith (\p (n,v)
+                         ->  ((p,v)
+                             ,((n,RVPtr (p+1)),(p+1,mkRN [RVCat NdFun,RVPtr p]))
+                             )
+                      ) [st,st+2..]
+            $ g
+          (n2pCaf,p2vCaf)
+            = unzip binds
+     in   (p2vCode,n2pCaf,p2vCaf)
+%%]
+
 %%[8
 ATTR GrAGItf GrModule [ | | rs: RunState ]
 
 SEM GrModule
-  | Mod         lhs         .   rs          =   let  (n2p,p2v)
-                                                        = unzip
-                                                        . zipWith (\p (n,v) -> ((n,p),(p,v))) [0..]
-                                                        $ @bindL.globL
-                                                     n2p' = listToFM . assocLMapSnd RVPtr $ n2p
-                                                     p2v' = listToFM p2v
-                                                     sz = length n2p
-                                                     h = RunHeap
-                                                            { rhMem = p2v'
-                                                            , rhSize = sz
-                                                            , rhFree = sz
-                                                            }
+  | Mod         lhs         .   rs          =   let  (n2pLam,p2vLam)
+                                                                 = mkLamGlob 0 @bindL.lamGlobL
+                                                     (p2vCode,n2pCaf,p2vCaf)
+                                                                 = mkCafGlob (length n2pLam) @bindL.cafGlobL
+                                                     n2p'        = listToFM n2pLam `plusFM` listToFM n2pCaf
+                                                     p2v'        = listToFM p2vLam `plusFM` listToFM p2vCaf `plusFM` listToFM p2vCode
+                                                     sz          = sizeFM p2v'
+                                                     h           = RunHeap { rhMem = p2v', rhSize = sz, rhFree = sz }
+                                                     initGrExpr  = GrExpr_Eval (HNm "_main")
                                                 in   RunState
-                                                        { rsNext = do { p <- lookupFM n2p' (HNm "main")
-                                                                      ; let (RVPtr i) = p
-                                                                      ; n <- lookupFM p2v' i
-                                                                      ; let (RVGlob _ _ m) = n
-                                                                      ; return m
-                                                        			  }
+                                                        { rsNext = Just initGrExpr
                                                         , rsStack = []
-                                                        , rsEnv = n2p'
-                                                        , rsGlobEnv = n2p'
+                                                        , rsEnv = n2p', rsGlobEnv = n2p'
                                                         , rsHeap = h
-                                                        , rsHalted = Nothing
+                                                        , rsHalted = Nothing, rsNrSteps = 0
                                                         }
 %%]
 
@@ -66,10 +76,12 @@ SEM GrModule
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllBind [ | | globL USE {++} {[]}: {AssocL HsName RunVal} ]
+ATTR AllBind [ | | lamGlobL, cafGlobL USE {++} {[]}: {AssocL HsName RunVal} ]
 ATTR AllExpr [ | | self: SELF ]
 
 SEM GrBind
-  | Bind        lhs         .   globL       =   [(@nm,RVGlob @nm @argNmL @expr.self)]
+  | Bind        lhs         .   (lamGlobL,cafGlobL)
+                                            =   let g = [(@nm,RVGlob @nm @argNmL @expr.self)]
+                                                in  if null @argNmL then ([],g) else (g,[])
 %%]
 

@@ -466,7 +466,7 @@ clean-test:
 	rm -rf test/*.reg* test/*.exp*
 
 edit:
-	bbedit $(EHC_CAG) $(EHC_CHS) $(GRI_CAG) $(GRI_CHS) $(ALL_AFP_SRC) $(SHUFFLE_SRC) Makefile $(TMPL_TEST) $(MK_EHFILES)
+	bbedit $(EHC_CAG) $(EHC_CHS) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CAG)) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CHS)) $(ALL_AFP_SRC) $(SHUFFLE_SRC) Makefile $(TMPL_TEST) $(MK_EHFILES)
 
 A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
