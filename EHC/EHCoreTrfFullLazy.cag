@@ -9,7 +9,7 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Maybe,Set,FiniteMap,EHCommon,EHCore) export(cmodTrfFullLazy)
+%%[8 hs import(Maybe,Set,List,FiniteMap,EHCommon,EHCore) export(cmodTrfFullLazy)
 %%]
 
 %%[9 hs import(EHTy)
@@ -48,11 +48,14 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-mkTrf :: Int -> Int -> HsName -> CExpr -> CExpr
+mkTrf :: Int -> Int -> HsName -> CExpr -> (CExpr,LevBindL)
 mkTrf outerLev hereLev n e
   =  if outerLev == hereLev
-     then e
-     else mkCExprLet CBindPlain [CBind_Bind n e] (CExpr_Var n)
+     then (e,[])
+     else (CExpr_Var n,[(hereLev,(CBindPlain,[CBind_Bind n e]))])
+
+mkLetTrf :: LevBindL -> CExpr -> CExpr
+mkLetTrf bs ce = foldr (\(_,(c,b)) e -> mkCExprLet c b e) ce bs
 %%]
 
 %%[8
@@ -60,9 +63,15 @@ ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CExpr
-  | App         lhs         .   cTrf        =   if @lhs.isTopApp
-                                                then mkTrf @lhs.lev (fvLev @lhs.levMp @fvS) (uidHNm @lUniq) @cTrf
-                                                else @cTrf
+  | App         loc         .   nm          =   uidHNm @lUniq
+                (lhs.cTrf,loc.levBindL)     =   if @lhs.isTopApp
+                                                then mkTrf @lhs.lev @levOf @nm @cTrf
+                                                else (@cTrf,[])
+  | Lam         lhs         .   cTrf        =   CExpr_Lam @arg (mkLetTrf @hereBindL @body.cTrf)
+  | Let         lhs         .   cTrf        =   mkLetTrf @hereBindL @body.cTrf
+
+SEM CAlt
+  | Alt         lhs         .   cTrf        =   CAlt_Alt @pats.cTrf (mkLetTrf @hereBindL @expr.cTrf)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -110,7 +119,6 @@ SEM CExpr
 SEM CAlt
   | Alt         loc         .   lev         =   @lhs.lev + 1
 %%]
-  | Let         loc         .   lev         =   @lhs.lev + 1
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Free vars
@@ -126,8 +134,8 @@ ATTR AllCodeNT [ | | fvS USE {`Set.union`} {emptySet}: FvS ]
 ATTR AllBind [ | | fvSMp USE {`plusFM`} {emptyFM}: FvSMp ]
 
 SEM CExpr
-  | Lam         lhs         .   fvS         =   @body.fvS `delFromSet` @arg
-  | Let         lhs         .   fvS         =   (@body.fvS `Set.union` @binds.fvS) `minusSet` mkSet @binds.nmL
+  | Lam         loc         .   fvS         =   @body.fvS `delFromSet` @arg
+  | Let         lhs         .   fvS         =   (@body.fvS `Set.union` @binds.fvS) `minusSet` mkSet (keysFM @binds.levOfMp)
   | Var         lhs         .   fvS         =   unitSet @nm
   | App         loc         .   fvS         =   @func.fvS `Set.union` @arg.fvS
 
@@ -135,7 +143,7 @@ SEM CBind
   | Bind        lhs         .   fvSMp       =   unitFM @nm @expr.fvS
 
 SEM CAlt
-  | Alt         lhs         .   fvS         =   @expr.fvS `minusSet` mkSet @pats.nmL
+  | Alt         loc         .   fvS         =   @expr.fvS `minusSet` mkSet @pats.nmL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -160,7 +168,7 @@ SEM CodeAGItf
 
 SEM CExpr
   | Lam         body        .   levMp       =   addToFM @lhs.levMp @arg @lev
-  | Let         body        .   levMp       =   @lhs.levMp `addLevMp` @binds.fvSMp
+  | Let         body        .   levMp       =   @lhs.levMp `plusFM` @binds.levOfMp
 
 SEM CAlt
   | Alt         expr        .   levMp       =   addListToFM @lhs.levMp (zip @pats.nmL (repeat @lev))
@@ -169,10 +177,63 @@ SEM CAlt
 %%[8
 ATTR AllBind AllPat [ | | nmL USE {++} {[]}: {[HsName]} ]
 
-SEM CBind
-  | Bind        lhs         .   nmL         =   [@nm]
-
 SEM CPatBind
   | Bind        lhs         .   nmL         =   [@nm] ++ @pat.nmL
+
+SEM CPat
+  | Var Con     loc         .   nm          =   cpatNmEither id id @pnm
+  | Var         lhs         .   nmL         =   [@nm]
+  | Con         lhs         .   nmL         =   [@nm] ++ @binds.nmL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Level of expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllCodeNT [ | | levOf USE {`max`} {0}: Int ]
+
+SEM CExpr
+  | Var         lhs         .   levOf       =   lookupWithDefaultFM @lhs.levMp levOuter @nm
+  | App         loc         .   levOf       =   @func.levOf `max` @arg.levOf
+  | Lam         lhs         .   levOf       =   fvLev @lhs.levMp @body.fvS
+
+SEM CAlt
+  | Alt         lhs         .   levOf       =   fvLev @lhs.levMp @expr.fvS
+
+ATTR AllBind [ | | levOfMp USE {`plusFM`} {emptyFM}: LevMp ]
+
+SEM CBind
+  | Bind        lhs         .   levOfMp     =   unitFM @nm @expr.levOf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering let's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type LevBindL = AssocL Int (CBindCateg,CBindL)
+
+levBindSplit :: Int -> LevBindL -> (LevBindL,LevBindL)
+levBindSplit lev b = partition (\(l,_) -> l >= lev) b
+%%]
+
+%%[8
+ATTR AllCodeNT [ | | levBindL USE {++} {[]}: LevBindL ]
+ATTR AllBind [ | | bindL USE {++} {[]}: {AssocL Int CBind} ]
+
+SEM CExpr
+  | App         lhs         .   levBindL    =   @arg.levBindL ++ @func.levBindL ++ @levBindL
+  | Let         loc         .   levBindL    =   @binds.levBindL ++ [(@lhs.lev,(@categ,@binds.cTrf))] ++ @body.levBindL
+  | Let         (loc.hereBindL,lhs.levBindL)=   let ((hl,_):_) = @binds.bindL
+                                                    b = @binds.levBindL ++ [(hl,(@categ,assocLElts @binds.bindL))] ++ @body.levBindL
+                                                in  if @lhs.lev == levOuter then (b,[]) else ([],b)
+  | Lam         (loc.hereBindL,lhs.levBindL)=   levBindSplit @lev @body.levBindL
+
+SEM CBind
+  | Bind        lhs         .   bindL       =   [(@expr.levOf,@cTrf)]
+
+SEM CAlt
+  | Alt         (loc.hereBindL,lhs.levBindL)=   levBindSplit @lev @expr.levBindL
 %%]
 
