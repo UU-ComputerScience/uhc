@@ -52,11 +52,11 @@ SEM Decl
                                                                     , rulCost      = CostInt (2 * costBase)
                                                                     , rulFuncDeps  = []
                                                                     }
-                                                        in   zipWith (\p n -> (tyPredNm p,mkR @prExpr.ty p n)) @ctxtPrExprs.tyL @supClsNmL
+                                                        in   zipWith (\p n -> (tyPredMatchNm p,mkR @prExpr.ty p n)) @ctxtPrExprs.tyL @supClsNmL
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   tyGam           =   @lhs.tyGam
                                 .   gathTySigGam    =   gamAddGam (valGamMapTy tyQuantifyClosed @clsTySigGam) @lhs.gathTySigGam
-                                .   patPrIntroGam   =   gamAdd (tyPredNm @prExpr.ty) @pigi @lhs.patPrIntroGam
+                                .   patPrIntroGam   =   gamAdd (tyPredMatchNm @prExpr.ty) @pigi @lhs.patPrIntroGam
                                 .   patPrElimGam    =   foldr (uncurry peGamAdd) @lhs.patPrElimGam @elimRules
 %%]
 
@@ -82,11 +82,11 @@ SEM Decl
 %%[9
 SEM Decl
   | Instance    ctxtPrExprs     .   tyGam           =   gamPushNew @lhs.patTyGam
-                loc             .   instClsNm       =   tyPredNm @prExpr.ty
+                loc             .   instClsNm       =   tyPredMatchNm @prExpr.ty
                                 .   instId          =   @lUniq
                                 .   (dictNm,inclForElim)
                                                     =   maybe (uidHNm @instId,True) id @mbNmElim
-                                .   ctxtClsNmL      =   map tyPredNm @ctxtPrExprs.tyL
+                                .   ctxtClsNmL      =   map tyPredMatchNm @ctxtPrExprs.tyL
                                 .   (pigiL,nmErrs)  =   let  (pL,nLL)  = unzip
                                                                        . map (\n -> maybe (emptyPIGI,[n]) (\p -> (p,[])) . gamLookup n $ @lhs.prIntroGam)
                                                                        $ (@instClsNm : @ctxtClsNmL)
@@ -118,7 +118,7 @@ SEM Decl
                                 .   patValGam       =   @lhs.patValGam
                                 .   patPrElimGam    =   (if @inclForElim then peGamAdd @instClsNm @elimRule else id) @lhs.patPrElimGam
   | InstanceIntro
-                loc             .   instClsNm       =   tyPredNm @prExpr.ty
+                loc             .   instClsNm       =   tyPredMatchNm @prExpr.ty
                                 .   instId          =   @lUniq
                                 .   dictNm          =   uidHNm @instId
                                 .   elimRule        =   mkInstElimRule @dictNm @instId 0 @prExpr.ty

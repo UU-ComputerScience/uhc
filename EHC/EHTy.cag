@@ -27,7 +27,7 @@
 %%[6 hs export(kiStar) 
 %%]
 
-%%[7 hs import(List) export(rowExtCmp,tyRowCanonOrder,kiRow,tyRowEmpty,tyRecEmpty,tySumEmpty,tyRowExtr,tyRecExtr,mkTyRow,mkTyRec,mkTySum,mkTyRecExt,tyRowExts) 
+%%[7 hs import(List) export(rowExtCmp,rowLabCmp,tyRowCanonOrder,kiRow,tyRowEmpty,tyRecEmpty,tySumEmpty,tyRowExtr,tyRecExtr,mkTyRow,mkTyRec,mkTySum,mkTyRecExt,tyRowExts) 
 %%]
 
 %%[7 hs export(tyAppFunArg) 
@@ -39,7 +39,7 @@
 %%[8 hs export(tyRecOffset) 
 %%]
 
-%%[9 hs export(Pred(..),predNm,predTy,tyPredNm,tyPred,tyLImplsPreds,tyArrowImplsRes,tyArrowImplsArgRes,mkTyPr)
+%%[9 hs export(Pred(..),predNm,predTy,tyPredNm,tyPredMatchNm,predMatchNm,tyPred,tyLImplsPreds,tyArrowImplsRes,tyArrowImplsArgRes,mkTyPr)
 %%]
 
 %%[9 hs export(tyRecExts,tyRecRow,tyAppFunConNm,tyArrowArity,tyQuant)
@@ -421,8 +421,11 @@ tyRecExtr lbl t
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[7 hs
+rowLabCmp :: HsName -> HsName -> Ordering
+rowLabCmp = compare
+
 rowExtCmp :: (HsName,a) -> (HsName,a) -> Ordering
-rowExtCmp (n1,_) (n2,_) = n1 `compare` n2
+rowExtCmp (n1,_) (n2,_) = n1 `rowLabCmp` n2
 
 tyRowCanonOrder :: AssocL HsName a -> AssocL HsName a
 tyRowCanonOrder = sortBy rowExtCmp
@@ -458,6 +461,22 @@ predNm = tyAppFunConNm . predTy
 
 tyPredNm :: Ty -> HsName
 tyPredNm = predNm . tyPred
+%%]
+
+%%[9 hs
+tyPredMatchNm :: Ty -> HsName
+tyPredMatchNm = predMatchNm . tyPred
+
+predMatchNm :: Pred -> HsName
+predMatchNm p
+  =  case p of
+       Pred_Class t    -> tyAppFunConNm t
+%%]
+%%[10 hs
+       Pred_Lacks _ l  -> hsnPrefix "_Lab_" l
+%%]
+%%[11 hs
+       Pred_Equal _ t  -> tyAppFunConNm t -- ??
 %%]
 
 %%[9 hs

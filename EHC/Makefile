@@ -135,7 +135,8 @@ default:
 	echo  "make all         : make all of the above" ; \
 	echo ; \
 	echo  "make afp-slides  : make slides afp-slides.pdf" ; \
-	echo  "make afp-llncs   : make LLNCS variant of afp.pdf" ; \
+	echo  "make afp04       : make LLNCS variant of afp.pdf, for proceedings" ; \
+	echo  "make esop05      : make ESOP2005 article Explicit implicit parameters" ; \
 	echo  "make afp-tr      : make UU techreport variant of afp.pdf" ; \
 	echo  "make test-regress: run regression test" ; \
 	echo  "make test-expect : make expected output (for later comparison with test-regress)" ; \
@@ -349,8 +350,8 @@ afp-bib: afp
 afp-tr:
 	$(MAKE) AFP=$@ LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=asArticle --set=forAfpTRUU1 --set=omitTBD --set=omitLitDiscuss" afp-full
 
-afp-llncs:
-	$(MAKE) AFP=$@ LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=forAfpLLNCS --set=omitTBD --set=omitLitDiscuss" afp
+afp04:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=forAFP04Notes --set=omitTBD --set=omitLitDiscuss" afp-bib
 
 esop05:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=forESOP05 --set=omitTBD --set=omitLitDiscuss" afp

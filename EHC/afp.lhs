@@ -14,19 +14,23 @@
 %let inclTOC	= False
 %endif
 
-%if forAfpLLNCS || phd || asSlides || forAfpTRUU1
+%if forAFP04Notes || phd || asSlides || forAfpTRUU1
 %let incl00		= True
 %else
 %let incl00		= False
 %endif
 
-%if forAfpLLNCS || phd || asSlides || forAfpTRUU1
+%if forAFP04Notes || phd || asSlides || forAfpTRUU1
 %let incl01		= True
+%else
+%let incl01		= False
+%endif
+
+%if phd || asSlides || forAfpTRUU1
 %let incl02		= True
 %let incl03		= True
 %let incl04		= True
 %else
-%let incl01		= False
 %let incl02		= False
 %let incl03		= False
 %let incl04		= False
@@ -54,8 +58,13 @@
 %let incl09		= False
 %endif
 
-%if phd || asSlides
+%if phd || asSlides || onlyCurrentWork
 %let incl10		= True
+%else
+%let incl10		= False
+%endif
+
+%if phd || asSlides
 %let incl11		= True
 %let incl12		= True
 %let incl13		= True
@@ -65,7 +74,6 @@
 %let incl17		= True
 %let inclXX		= True
 %else
-%let incl10		= False
 %let incl11		= False
 %let incl12		= False
 %let incl13		= False
@@ -479,8 +487,7 @@
 Utrecht University,\\
 P.O.Box 80.089, \\
 Padualaan 14, Utrecht, Netherlands,\\
-\email{@atze@@cs.uu.nl@},
-\email{@doaitse@@cs.uu.nl@},\\
+\email{@{atze,doaitse}@@cs.uu.nl@},\\
 WWW home page:
 \texttt{http://www.cs.uu.nl}
 }
@@ -7854,6 +7861,48 @@ Named instances \cite{kahl01named-instance}.
 
 \section{EH 10: Extensible records}
 \label{ehc10}
+
+\begin{center}
+\begin{tabular}{l||||p{.12\textwidth}p{.14\textwidth}||p{.12\textwidth}p{.12\textwidth}||p{.12\textwidth}p{.12\textwidth}}
+|<=| 			& |(x)|	& |(x,y)|	& |(c2||x)|	& |(c2||x,y)|	& |(r2||x)|	& |(r2||x,y)| 	\\
+\hline
+\hline
+|(x)|			&
+& |fail|		&
+|fail| & |fail|			&
+|r2 :-> ()| & |fail|								\\
+|(x,y)|			&
+|\r -> (r.x)| &		&
+|fail| & |fail|			&
+|r2 :-> (y)| & |r2 :-> ()|								\\
+\hline
+|(c1||x)|		&
+|\r -> (r.x)| & |fail|		&
+|c1 == c2| & |fail|			&
+|r2 :-> c1| & |fail|						\\
+|(c1||x,y)|		&
+|\r -> (r.x)| & |\r -> (r.x,r.y)|		&
+|c1 == c2|, |\r -> r - y| &	|c1 == c2|		&
+|r2 :-> (c1||y)| & |r2 :-> c1|								\\
+\hline
+|(r1||x)|		&
+|\r -> (r.x)| & |r1 :-> (r'||y)|, |\r -> (r.x,r.y)|		&
+|r1 :-> c2| & |r1 :-> (c2||y)|			&
+|r1 :-> r2| & |r1 :-> (r2||y)|								\\
+|(r1||x,y)|		&
+|\r -> (r.x)| & |\r -> (r.x,r.y)|		&
+|r1 :-> c2|, |\r -> r - y| & |r1 :-> c2|			&
+|r2 :-> (r1||y)| & |r1 :-> r2|								\\
+\end{tabular}
+\end{center}
+
+Notes:
+\begin{itemize}
+\item
+By rebuilding a record if the |rhs| of |<=| is fully known,
+we can be more liberal in constraining the |lhs|.
+For example, in |(r1||x) <= (x)| it is not necessary to restrict |r1 :-> ()|.
+\end{itemize}
 
 \subsection<article>{Literature}
 

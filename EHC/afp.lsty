@@ -106,7 +106,7 @@
 %endif
 }
 \newcommand{\chunkMark}[1]{%
-%if not asSlides
+%if inclChunkMarks
  \expandafter\marginpar{\footnotesize\color{blue}\@@stripAfterDot#1;}
 %endif
 }
