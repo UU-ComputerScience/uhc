@@ -1,7 +1,7 @@
-let t :: (a->a) -> Int
-    -- test :: (a -> a) -> Test
-    test = \a -> let x1 = a 3
-                     -- x2 = a 'x'
-                     y = t a
-                 in  y
-in  3
+let  g   ::  (a->a) -> Int
+     id  =   \x -> x
+     f   =   \h -> let  x1  = h 3
+                        x2  = h 'x'
+                        y   = g h
+                   in   y
+in   f id

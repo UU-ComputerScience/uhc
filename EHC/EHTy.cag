@@ -27,6 +27,9 @@
 %%[6 hs export(kiStar) 
 %%]
 
+%%[6_2 hs export(tyBindTy) 
+%%]
+
 %%[7 hs import(List) export(rowExtCmp,rowLabCmp,tyRowCanonOrder,kiRow,tyRowEmpty,tyRecEmpty,tySumEmpty,tyRowExtr,tyRecExtr,mkTyRow,mkTyRec,mkTySum,mkTyRecExt,tyRowExts) 
 %%]
 
@@ -326,6 +329,11 @@ tyProdArgs = tyAppArgs
 
 %%[7.tyProdArgs -1.tyProdArgs hs
 tyProdArgs ty = let (t,al) = tyRecExts ty in map snd al
+%%]
+
+%%[6_2 hs
+tyBindTy :: Ty -> Ty
+tyBindTy t = case t of {Ty_Bind _ (bt:_) -> bt; _ -> t}
 %%]
 
 %%[7 hs

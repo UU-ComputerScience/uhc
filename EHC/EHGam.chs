@@ -33,7 +33,7 @@
 %%[5 export(gamTop)
 %%]
 
-%%[6 export(tyGamQuantify, tyGamInst1Exists)
+%%[6 export(tyGamQuantify, tyGamInst1Exists,gamUnzip)
 %%]
 
 %%[6 export(KiGam, KiGamInfo(..))
@@ -42,7 +42,7 @@
 %%[6 export(mkTGI)
 %%]
 
-%%[6_2 import(EHTyInconsistentBind) export(valGamElimBinds)
+%%[6_2 export(gamMapThr)
 %%]
 
 %%[7 export(mkTGIData)
@@ -103,6 +103,21 @@ gamMapElts f = gamMap (\(n,v) -> (n,f v))
 %%[5
 gamTop ::  Gam k v -> Gam k v
 gamTop  (Gam (l:ll)) = Gam [l]
+%%]
+
+%%[6_2
+gamMapThr :: ((k,v) -> t -> ((k',v'),t)) -> t -> Gam k v -> (Gam k' v',t)
+gamMapThr f thr (Gam ll)
+  =  let (ll',thr')
+           =  (foldr  (\l (ll,thr)
+                        ->  let  (l',thr')
+                                    =  foldr  (\kv (l,thr)
+                                                ->  let (kv',thr') = f kv thr in (kv':l,thr')
+                                              ) ([],thr) l
+                            in   (l':ll,thr')
+                      ) ([],thr) ll
+              )
+     in  (Gam ll',thr')
 %%]
 
 %%[8.gamUpd
@@ -195,15 +210,6 @@ gamUnzip :: Gam k (v1,v2) -> (Gam k v1,Gam k v2)
 gamUnzip (Gam ll)
   =  let  (ll1,ll2) = unzip . map (unzip . map (\(n,(v1,v2)) -> ((n,v1),(n,v2)))) $ ll
      in   (Gam ll1,Gam ll2)
-%%]
-
-%%[6_2.valGamElimBinds
-valGamElimBinds :: ValGam -> (ValGam,Gam HsName ErrL)
-valGamElimBinds g
-  =  let  g' = gamMapElts  (\vgi ->  let  (t,e) = tyElimBinds (vgiTy vgi)
-                                     in   (vgi {vgiTy = t},e)
-                           ) g
-     in   gamUnzip g'
 %%]
 
 %%[9.valGamQuantify -3.valGamQuantify
