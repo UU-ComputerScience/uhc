@@ -46,7 +46,7 @@
 %%[6 export(fitsInL)
 %%]
 
-%%[9 import(Maybe,FiniteMap,Set,List,EHPred,EHCode) export(predFIOpts,prfPreds,prfPrune)
+%%[9 import(Maybe,FiniteMap,Set,List,EHPred,EHCode,EHCodeSubst) export(predFIOpts,prfPredsToProvenGraph,prfPredsPruneProvenGraph)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -178,7 +178,7 @@ emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts        ,  fiUniq  
 
 %%[9.FIIn -4.FIIn
 data FIIn   =  FIIn     {  fiFIOpts          ::  FIOpts              ,  fiUniq            ::  UID
-                        ,  fiCoContra        ::  CoContraVariance    ,  fiPrElimGam       ::  emptyGam
+                        ,  fiCoContra        ::  CoContraVariance    ,  fiPrElimGam       ::  PrElimGam
                         }
 
 emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts        ,  fiUniq            =   uidStart
@@ -446,6 +446,15 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[9
+            u fi  t1@(Ty_App (Ty_App (Ty_Con c1) tpr1) tr1)
+                  t2@(Ty_App (Ty_App (Ty_Con c2) tpr2) tr2)
+                    | False && hsnIsArrow c1 && c1 == c2 && not (fioPredAsTy (fiFIOpts fi))
+                = fo
+                where  (u',u1) = mkNewUID (fiUniq fi)
+                       fo = u (fi {fiUniq = u'}) tr1 t2
+                       up (Ty_Pred pr1) (Ty_Pred pr2)
+                       		=  let  eGam = fiPrElimGam fi
+                       		   in   ()
             u fi  t1@(Ty_App (Ty_App (Ty_Con c1) (Ty_Pred pr)) tr1)
                   t2@(Ty_App (Ty_App (Ty_Con c2) _) _)
                     | hsnIsArrow c1 && c1 == c2 && not (fioPredAsTy (fiFIOpts fi))
@@ -505,7 +514,7 @@ fitsIn opts env uniq ty1 ty2
 
 %%[9.fitsIn.SetupAndResult -4.fitsIn.SetupAndResult
             fo  = u  (emptyFI  { fiUniq = uniq, fiFIOpts = opts, fiCoContra = fioCoContra opts
-                               , fiPrElimGam = fePrElimGam env }
+                               , fiPrElimGam = gamPushNew (fePrElimGam env) }
                      ) ty1 ty2
 %%]
 
@@ -531,6 +540,14 @@ fitsInL opts env uniq tyl1 tyl2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
+prfPreds :: UID -> FIEnv -> [PredOcc] -> (CBindL,CSubst,[PredOcc])
+prfPreds u env prL
+  =  let  prL'                          = tyFixTyVars prL
+          g                             = prfPredsToProvenGraph u env prL'
+          g'                            = prfPredsPruneProvenGraph prL' g
+          (cbindL,csubst,remPrIdSet)    = prvgCode g'
+     in   (cbindL,csubst,filter (\p -> poId p `elementOf` remPrIdSet) prL)
+
 matchRule :: UID -> Pred -> Rule -> Maybe ([PredOcc],CExpr,ProofCost)
 matchRule u pr r@(Rule rt mkEv _ cost)
   =  let  (_,u1,u2,u3)   = mkNewLevUID3 u
@@ -556,15 +573,15 @@ prfOneStep env (PredOcc pr prUid) st@(ProofState g@(ProvenGraph i2n p2i) u toPro
               ->  case pr of
                     Pred_Class t
                       ->  let  nm = tyAppFunConNm t
-                               mkNdFail cost uid = ProvenArg pr cost (CExpr_Hole uid)
-                               ndFail = mkNdFail (if pr `elem` origToProof then 1 else 100) prUid
+                               mkNdFail cost uid = ProvenArg pr cost
+                               ndFail = mkNdFail (if pr `elem` origToProof then 1 else costALot) prUid
                           in   case gamLookupAll nm (fePrElimGam env) of
                                  pegis@(_:_)
                                      ->  let  rs = concat . map pegiRuleL $ pegis
                                               (u',u1,u2) = mkNewLevUID2 u
                                               matches = catMaybes . zipWith (\u r -> matchRule u pr r) (mkNewUIDL (length rs) u1) $ rs
                                               mkPrf pr (prOccL,evid,cost) = ProvenAnd pr (map poId prOccL) cost evid
-                                              costLess = if pr `elem` origToProof then -2 else 0 
+                                              costLess = if pr `elem` origToProof then -costALot else 0 
                                               (g',newPr)
                                                  = case matches of
                                                        [] ->  (prvgAddPrNd pr [prUid] ndFail g,[])
@@ -581,9 +598,11 @@ prfOneStep env (PredOcc pr prUid) st@(ProofState g@(ProvenGraph i2n p2i) u toPro
                                  []  ->  st {prfsProvenGraph = prvgAddPrNd pr [prUid] ndFail g}
                     _ ->  st
             _ ->  st
+%%]
 
-prfPreds :: UID -> FIEnv -> [PredOcc] -> ProvenGraph
-prfPreds u env prL
+%%[9
+prfPredsToProvenGraph :: UID -> FIEnv -> [PredOcc] -> ProvenGraph
+prfPredsToProvenGraph u env prL
   =  let  initState = ProofState (ProvenGraph emptyFM emptyFM) u prL (map poPr prL)
           resolve st@(ProofState _ _ (pr:prL) _)
             =  let  st' = prfOneStep env pr (st {prfsPredsToProve = prL})
@@ -591,8 +610,8 @@ prfPreds u env prL
           resolve st@(ProofState _ _ [] _) = st
      in   prfsProvenGraph (resolve initState)
 
-prfPrune :: [PredOcc] -> ProvenGraph -> ProvenGraph
-prfPrune prL (ProvenGraph i2n p2i)
+prfPredsPruneProvenGraph :: [PredOcc] -> ProvenGraph -> ProvenGraph
+prfPredsPruneProvenGraph prL (ProvenGraph i2n p2i)
   =  let  costOf uid costMp gPrune
             =  case lookupFM costMp uid of
                  Just c
@@ -623,7 +642,7 @@ prfPrune prL (ProvenGraph i2n p2i)
                                    ->  let  (uid',c,cm,gp) = costOf e costMp gPrune
                                             gp' = prvgAddPrUids pr [uid] gp
                                        in   (uid',c,cm,gp')
-                                 prf@(ProvenArg pr c ev)
+                                 prf@(ProvenArg pr c)
                                    ->  let  cm' = addToFM costMp uid c
                                             gp' = prvgAddPrevPrNd pr uid prf gPrune
                                        in   (uid,c,cm',gp')

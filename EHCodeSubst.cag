@@ -1,0 +1,42 @@
+% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Substituting holes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs import(FiniteMap,EHCommon,EHCode) export(cAppSubst,CSubst,assocLToCSubst)
+%%]
+
+%%[9.WRAPPER import(EHCodeAbsSyn)
+WRAPPER CExpr
+%%]
+
+%%[9 hs
+type CSubst = FiniteMap UID CExpr
+
+cAppSubst :: CSubst -> CExpr -> CExpr
+cAppSubst cs ce
+  =  let  t = wrap_CExpr (sem_CExpr ce) (Inh_CExpr {cSubst_Inh_CExpr = cs})
+     in   (cRepl_Syn_CExpr t)
+
+assocLToCSubst :: AssocL UID CExpr -> CSubst
+assocLToCSubst = listToFM
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR AllCodeNT CodeAGItf [ cSubst: CSubst | | cRepl: SELF ]
+
+SEM CExpr
+  | Hole        lhs         .   cRepl       =   maybe  (CExpr_Var (uidHNm @uid)) id
+                                                       (lookupFM @lhs.cSubst @uid)
+%%]
+

@@ -48,7 +48,7 @@
 %%[8 import(Maybe) export(gamUpd)
 %%]
 
-%%[9 export(gamUpdAdd,gamLookupAll)
+%%[9 export(gamUpdAdd,gamLookupAll,gamSubstTop)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -251,7 +251,7 @@ type KiGam = Gam HsName KiGamInfo
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Instances
+%%% Instances for Substitutable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2
@@ -268,6 +268,13 @@ instance Substitutable ValGamInfo where
 instance Substitutable TyGamInfo where
   s |=> tgi         =   tgi { tgiKi = s |=> tgiKi tgi }
   ftv   tgi         =   ftv (tgiKi tgi)
+%%]
+
+%%[9
+gamSubstTop :: Substitutable v => Cnstr -> Gam k v -> Gam k v
+gamSubstTop s g
+  =  let  (h,t) = gamPop g
+     in   (s |=> h) `gamPushGam` t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
