@@ -42,18 +42,21 @@ keywordsText  =  [ "in", "forall", "exists" ] ++ offsideTrigs
 %%]
 
 %%[5.keywordsText -4.keywordsText
-keywordsText  =  [ "in", "forall", "exists", "data", "case"
+keywordsText  =  [ "in", "forall", "exists", "data"
+                 , "case", "if", "then", "else"
                  ] ++ offsideTrigs
 %%]
 
 %%[8.keywordsText -5.keywordsText
-keywordsText  =  [ "in", "forall", "exists", "data", "case"
+keywordsText  =  [ "in", "forall", "exists", "data"
+                 , "case", "if", "then", "else"
                  , "foreign", "import", "jazy"
                  ] ++ offsideTrigs
 %%]
 
 %%[9.keywordsText -8.keywordsText
-keywordsText  =  [ "in", "forall", "exists", "data", "case"
+keywordsText  =  [ "in", "forall", "exists", "data"
+                 , "case", "if", "then", "else"
                  , "foreign", "import", "jazy"
                  , "class", "instance"
                  ] ++ offsideTrigs
@@ -550,6 +553,15 @@ pExprPrefix     =    sem_Expr_Let      <$ pKey "let"
                      <*> pPatExprBase  <* pKey "->"
 %%]
 
+%%[pExprPrefix.5.If
+                <|>  (\c t e ->  sem_Expr_Case c
+                                   (sem_CaseAlts_Cons (sem_CaseAlt_Pat (sem_PatExpr_Con (HNm "True")) t)
+                                      (sem_CaseAlts_Cons (sem_CaseAlt_Pat (sem_PatExpr_Con (HNm "False")) e)
+                                         sem_CaseAlts_Nil
+                     )             )  )
+                     <$ pKey "if" <*> pExpr <* pKey "then" <*> pExpr <* pKey "else"
+%%]
+
 %%[pExprPrefix.7.Lam
                 <|>  (\ps -> \e -> foldr sem_Expr_Lam e ps)  <$ pKey "\\"
                      <*> pList1 pPatExprBase                 <* pKey "->"
@@ -597,11 +609,20 @@ pExpr           =    pExprPrefix <*> pExpr
 %%@pExprPrefix.1.Lam
 %%]
 
-%%[7.pExpr -1.pExpr
+%%[5.pExpr -1.pExpr
+%%@pExpr.1
+%%@pExprApp.1
+%%@pExprPrefix.1
+%%@pExprPrefix.1.Lam
+%%@pExprPrefix.5.If
+%%]
+
+%%[7.pExpr -5.pExpr
 %%@pExpr.1
 %%@pExprApp.7
 %%@pExprPrefix.1
 %%@pExprPrefix.7.Lam
+%%@pExprPrefix.5.If
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -634,6 +655,11 @@ pCaseAlt        =    sem_CaseAlt_Pat  <$>  pPatExpr <* pKey "->" <*> pExpr
 
 pTyVars         =    pFoldr (sem_TyVars_Cons,sem_TyVars_Nil) pTyVar
 pTyVar          =    sem_TyVar_Var <$> pVar
+%%]
+
+%%[9
+pTyVars1        ::   EHParser T_TyVars
+pTyVars1        =    pFoldr1 (sem_TyVars_Cons,sem_TyVars_Nil) pTyVar
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -705,11 +731,17 @@ pClassHead      =    pPrExprClass <**>  (    (\p c -> (sem_PrExprs_Cons c sem_Pr
 pDeclClass      ::   EHParser T_Decl
 pDeclClass      =    (uncurry sem_Decl_Class)
                      <$   pKey "class"
-                     <*>  pClassHead <*  pKey "where"  <*> pDecls
+                     <*>  pClassHead
+                     <*>  (pKey "|" *> pFoldrSep  (sem_FuncDeps_Cons,sem_FuncDeps_Nil) pComma
+                                                  (sem_FuncDep_Dep <$> pTyVars1 <* pKey "->" <*> pTyVars1)
+                          `opt` sem_FuncDeps_Nil
+                          )
+                     <*   pKey "where" <*> pDecls
 
 pDeclInstance   ::   EHParser T_Decl
 pDeclInstance   =    (\n -> uncurry (sem_Decl_Instance n))
                      <$   pKey "instance"  <*> (Just <$> pVar <* pKey "=" `opt` Nothing)
-                     <*>  pClassHead <*  pKey "where"  <*> pDecls
+                     <*>  pClassHead
+                     <*   pKey "where" <*> pDecls
 %%]
 

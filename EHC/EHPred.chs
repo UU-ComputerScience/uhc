@@ -59,19 +59,21 @@ data ProvenNode
        , prvnEvidence       :: CExpr
        , prvnCost           :: ProofCost
        }
-  |  ProvenFail
+  |  ProvenArg
        { prvnPred           :: Pred
+       , prvnEvidence       :: CExpr
+       , prvnCost           :: ProofCost
        }
   
 data ProvenGraph
   =  ProvenGraph
        { prvgIdNdMp         :: FiniteMap UID ProvenNode
-       , prvgPrIdMp         :: FiniteMap Pred UID
+       , prvgPrIdMp         :: FiniteMap Pred [UID]
        }
 
-prvgAddPrNd :: Pred -> UID -> ProvenNode -> ProvenGraph -> ProvenGraph
-prvgAddPrNd pr uid nd g@(ProvenGraph i2n p2i)
-  =  g {prvgIdNdMp = addToFM i2n uid nd, prvgPrIdMp = addToFM p2i pr uid}
+prvgAddPrNd :: Pred -> [UID] -> ProvenNode -> ProvenGraph -> ProvenGraph
+prvgAddPrNd pr uidL@(uid:_) nd g@(ProvenGraph i2n p2i)
+  =  g {prvgIdNdMp = addToFM i2n uid nd, prvgPrIdMp = addToFM p2i pr uidL}
 
 prvgAddNd :: UID -> ProvenNode -> ProvenGraph -> ProvenGraph
 prvgAddNd uid nd g@(ProvenGraph i2n _)
@@ -88,12 +90,12 @@ instance Show ProvenGraph where
   show _ = ""
 
 instance PP ProvenNode where
-  pp (ProvenOr pr es) 		 = "OR:" 	>#< "pr=" >|< pp pr >#< "edges=" >|< ppListSep "[" "]" "," es
-  pp (ProvenAnd pr es ev c)  = "AND:" 	>#< "pr=" >|< pp pr >#< "edges=" >|< ppListSep "[" "]" "," es >#< "cost=" >|< pp c >#< "evid=" >|< pp ev
-  pp (ProvenFail pr) 		 = "FAIL:" 	>#< "pr=" >|< pp pr
+  pp (ProvenOr  pr es)       = "OR:"    >#< "pr=" >|< pp pr >#< "edges=" >|< ppCommaList es
+  pp (ProvenAnd pr es ev c)  = "AND:"   >#< "pr=" >|< pp pr >#< "edges=" >|< ppCommaList es >#< "cost=" >|< pp c >#< "evid=" >|< pp ev
+  pp (ProvenArg pr ev c)     = "ARG:"   >#< "pr=" >|< pp pr                                 >#< "cost=" >|< pp c >#< "evid=" >|< pp ev
 
 instance PP ProvenGraph where
-  pp (ProvenGraph i2n p2i) = ppAssocL (fmToList p2i) >-< ppAssocL (fmToList i2n)
+  pp (ProvenGraph i2n p2i) = (ppAssocL . assocLMapSnd ppCommaList . fmToList $ p2i) >-< ppAssocL (fmToList i2n)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -144,7 +146,7 @@ instance PP PrIntroGamInfo where
   pp pigi = pp (pigiRule pigi) >#< "::" >#< ppTy (pigiPrToEvidTy pigi) >#< ":::" >#< ppTy (pigiKi pigi)
 
 instance PP PrElimGamInfo where
-  pp pegi = ppListSep "[" "]" "," (pegiRuleL pegi)
+  pp pegi = ppCommaList (pegiRuleL pegi)
 
 instance Substitutable PrIntroGamInfo where
   s |=> pigi        =   pigi { pigiKi = s |=> pigiKi pigi }

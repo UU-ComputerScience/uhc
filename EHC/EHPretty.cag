@@ -85,7 +85,7 @@ ATTR TyVars DataConstrs CaseAlts [ | | ppL: PP_DocL ]
 ATTR TyExprs [ | | ppL: PP_DocL ]
 
 SEM Decl
-  | Data        loc     .  pp       =   "data"  >#< @tyNm >#< ppListSep "" "" " " @tyVars.ppL
+  | Data        loc     .  pp       =   "data"  >#< @tyNm >#< ppSpaced @tyVars.ppL
                                                 >#< "=" >#< ppListSepFill "" "" " | " @constrs.ppL
 
 SEM Expr
@@ -113,7 +113,7 @@ SEM TyVars
   | Cons        lhs     .  ppL      =   @hd.pp : @tl.ppL
 
 SEM DataConstr
-  | Constr      loc     .  pp       =   pp @conNm >#< ppListSep "" "" " " @fields.ppL
+  | Constr      loc     .  pp       =   pp @conNm >#< ppSpaced @fields.ppL
 
 SEM DataConstrs
   | Nil         lhs     .  ppL      =   []
@@ -170,7 +170,7 @@ SEM DataFields
 SEM DataConstr
   | Constr      loc     .  pp       :=  pp @conNm
                                         >#<  (if null . catMaybes $ @fields.lblL
-                                              then ppListSep "" "" " " @fields.ppL
+                                              then ppSpaced @fields.ppL
                                               else ppListSep "{" "}" "," (zipWith (\(Just l) f -> l >#< "::" >#< f) @fields.lblL @fields.ppL)
                                              )
 %%]
@@ -181,7 +181,7 @@ SEM Decl
 %%]
 
 %%[9
-ATTR PrExprs [ | | ppL: PP_DocL ]
+ATTR PrExprs FuncDeps [ | | ppL: PP_DocL ]
 
 SEM RowTyExpr
   | Var         loc     .  pp       =   pp @nm
@@ -191,7 +191,7 @@ SEM TyExpr
   | Pred        loc     .  pp       =   hsnOImpl >#< @prExpr.pp >#< hsnCImpl
 
 SEM PrExpr
-  | Class       loc     .  pp       =   ppListSep "" "" " " (pp @nm : @tyExprs.ppL)
+  | Class       loc     .  pp       =   ppSpaced (pp @nm : @tyExprs.ppL)
   | Lacks       loc     .  pp       =   @rowTyExpr.pp >|< "\\" >|< pp @nm
   | Equal       loc     .  pp       =   pp @nm >|< "=" >|< @tyExpr.pp
 
@@ -202,6 +202,7 @@ SEM PrExprs
 SEM Decl
   | Class       loc     .  pp       =   "class"     >#< ppListSep "(" ")" ", " @ctxtPrExprs.ppL
                                                     >#< "=>" >#< @prExpr.pp
+                                                    >#< "|" >#< ppListSep "" "" ", " @funcDeps.ppL
                                                     >#< "where" >-< indent 2 @decls.pp
   | Instance    loc     .  pp       =   "instance"  >|< maybe empty (\n -> " " >|< n >#< "=") @mbNm
                                                     >#< ppListSep "(" ")" ", " @ctxtPrExprs.ppL
@@ -209,6 +210,13 @@ SEM Decl
                                                     >-< @errInstPP
                                                     >#< "where" >-< indent 2 @decls.pp
                                                     >-< @errDeclsPP
+
+SEM FuncDep
+  | Dep         lhs     .  pp       =   @fromTvs.pp >#< "->" >#< @toTvs.pp
+
+SEM FuncDeps
+  | Nil         lhs     .  ppL      =   []
+  | Cons        lhs     .  ppL      =   @hd.pp : @tl.ppL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

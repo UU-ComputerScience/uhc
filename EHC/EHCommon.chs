@@ -15,7 +15,7 @@
 %%[1 export(AssocL, hdAndTl, ppAssocL)
 %%]
 
-%%[1 import(UU.Pretty, List) export(PP_DocL, ppListSep, ppListSepFill, ppAppTop, ppCon, ppCmt)
+%%[1 import(UU.Pretty, List) export(PP_DocL, ppListSep, ppCommaList, ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
 %%]
 
 %%[1 import(GetOpt) export(EHCOpts(..), defaultEHCOpts, cmdLineOpts)
@@ -299,6 +299,12 @@ ppCmt p = "{-" >#< p >#< "-}"
 %%]
 
 %%[1.PP.Rest
+ppCommaList :: PP a => [a] -> PP_Doc
+ppCommaList = ppListSep "[" "]" ","
+
+ppSpaced :: PP a => [a] -> PP_Doc
+ppSpaced = ppListSep "" "" " "
+
 ppListSepFill :: (PP s, PP c, PP o, PP a) => o -> c -> s -> [a] -> PP_Doc
 ppListSepFill o c s pps
   = l pps

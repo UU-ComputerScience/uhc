@@ -115,6 +115,8 @@
 
 %format tcon        = c
 
+%format pvar        = "{\varpi}"
+
 %format inst		= "inst"
 %format instv		= inst "_{" tvar  "}"
 %format instf		= inst "_{" tvarf "}"
@@ -175,10 +177,13 @@
 %format `fitsIn`		= <=
 %format </=				= "\not" <=
 
-%format Transl			= delta
+%format Transl			= "{\vartheta}"
 %format Transl2
 %format Transl2pi		= Transl2 "^{" pi "}"
 %format lacks			= "\backslash "
+
+%format coe         	= "{\delta}"
+
 
 %elif style == newcode
 %format ^ =

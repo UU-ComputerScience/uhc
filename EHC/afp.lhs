@@ -276,7 +276,6 @@
 %format (CnstrNR(i)(f)(t))          = Cnstr "^{" i "}_{" f .. t "}"
 %format (CnstrPlus(x)(y))           = x +++ "_{" Cnstr "}" y
 
-%format coe         = "{\delta}"
 %format coe1
 %format coe2
 %format coeL        = "{" coe "_{l}}"
@@ -6512,6 +6511,11 @@ Subsumption and proof of impl params
 
 Prolog alike proof system/rules combined with coercion terms ????
 
+Key sentence: instead of leaving the location implicit parameters open we make possible locations for
+impl params explicit.
+Absence of a possible location now explicitly means no impl param is allowed instead of 'maybe allowed'.
+
+
 \subsection{Proposal}
 
 An implicit parameter is like a normal parameter but the actual passing of it
@@ -6559,7 +6563,7 @@ On the other hand, a value given as a parameter is added to the implicit value w
 the proof machinery can use this value too to determine the appropriate parameter value.
 The following typing rule attempts to express this:
 \[
-\rulerCmdUse{rules.expr9.e-app9}
+\rulerCmdUse{rules.expr9.app.e-app9-expl-expl}
 \]
 
 This involves some additional notation:
@@ -6575,12 +6579,15 @@ The type language has an additional alternative:
 \begin{code}
 sigma  =  ..
        |  (# pi #)
+       |  (# ... #)
 pi     =  r lacks \
        |  C ^^ Vec(sigma)
        |  v = sigma
 \end{code}
 The alternatives for |pi| respectively denote the lacking constraint for extensible records, class constraint and equality constraint
 (for use by generalized data types).
+Partial type signatures w.r.t. predicates are denoted by |(# ... #)|.
+Alternatively, the more concise denotations |pi| and |pvar| are used for |(# pi #)| and |(# ... #)| respectively.
 \end{itemize}
 
 The idea here is that if an implicit parameter |pia| is expected, whereas an expression translating to |Transl2| is given,
@@ -6724,6 +6731,16 @@ but also deduced from |Eq a| combined with |Eq a => Eq [a]|.
 It probably would be even nicer if the specification of |OnePredProof| could be done
 by the Haskell programmer itself.
 
+\subsection{Expr rules}
+
+\rulerCmdUse{rules.expr9.app}
+
+
+\subsection{Fitting rules}
+
+\rulerCmdUse{rules.fit9.pred}
+
+
 %}
 
 \subsection<article>{Literature}
@@ -6787,8 +6804,25 @@ built on records
 %%% EHC 13
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{EH 13: syntax macro's}
+\section{EH 13: type property propagation}
 \label{ehc13}
+
+co-contra variance
+
+uniqueness??
+
+coercions
+
+\subsection<article>{Literature}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EHC 14
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{EH 14: syntax macro's}
+\label{ehc14}
 
 or other rewritings in the form a pre parser ??
 
