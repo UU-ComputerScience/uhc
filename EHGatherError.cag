@@ -65,7 +65,9 @@ SEM Expr
 SEM PatExpr
   | Con         lhs         .   errL        =   mkNestErr @pp (@nmErrs ++ foErrL @fo)
   | TypeAs      lhs         .   errL        =   mkNestErr @pp (@patExpr.errL ++ @tyExpr.errL ++ foErrL @fo)
+  | AppTop      lhs         .   errL        :=  mkNestErr @pp (@patExpr.errL ++ @aErrs ++ foErrL @fo)
 %%]
+  | AppTop      lhs         .   errL        :=  mkNestErr @pp (@patExpr.errL ++ @aErrs ++ foErrL @fo ++ foErrL @patFunFo)
 
 %%[4_2
 SEM Expr

@@ -12,6 +12,8 @@
 %%[2 hs import(List,EHCommon,EHTy) export(tyFtv)
 %%]
 
+%%[4 hs import(FiniteMap) export(tyFtvMp)
+%%]
 
 %%[2.WRAPPER import(EHTyAbsSyn)
 WRAPPER TyAGItf
@@ -26,6 +28,18 @@ tyFtv ty
      in   tvs_Syn_TyAGItf t
 %%]
 
+%%[4.tyFtv -2.tyFtv hs
+tyFtvMp :: Ty -> TvCatMp
+tyFtvMp ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf)
+     in   tvMp_Syn_TyAGItf t
+
+tyFtv :: Ty -> TyVarIdL
+tyFtv = keysFM . tyFtvMp
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Apply substitution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -37,9 +51,18 @@ SEM Ty
   | Var             lhs     .   tvs         =   [@tv]
 %%]
 
-%%[3
+%%[3.TyFtv
 SEM Ty
   | Quant           lhs     .   tvs         =   @tv `delete` @ty.tvs
+%%]
+
+%%[4 -(2.TyFtv 3.TyFtv)
+ATTR TyAGItf AllTy  [ | | tvMp USE {`plusFM`} {emptyFM}: TvCatMp ]
+ATTR TyVarCateg [ | | self: SELF ]
+
+SEM Ty
+  | Var             lhs     .   tvMp        =   @tv `unitFM` @categ.self
+  | Quant           lhs     .   tvMp        =   @ty.tvMp `delFromFM` @tv 
 %%]
 
 %%[11

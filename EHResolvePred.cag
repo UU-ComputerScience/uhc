@@ -47,6 +47,18 @@ SEM Expr
   | App         lhs         .   gath2PredL          =   @prOccL ++ @func.gath2PredL ++ @arg.gath2PredL
 %%]
 
+%%[10
+SEM Expr
+  | Sel         lhs         .   gath2PredL          =   [PredOcc (Pred_Lacks (tyRecRow @recTy) @lbl) @prUid] ++ @expr.gath2PredL
+  | Rec         lhs         .   gath2PredL          =   foPredOccL @fo ++ @recExpr.gath2PredL
+
+SEM RecExpr
+  | Ext Upd     lhs         .   gath2PredL          =   [PredOcc (Pred_Lacks (tyRecRow @recTy) @nm) @prUid] ++ @recExpr.gath2PredL++ @expr.gath2PredL
+
+SEM RecPatExpr
+  | Ext         lhs         .   gath2PredL          =   [PredOcc (Pred_Lacks (tyRecRow @knRecTy) @nm) @prUid] ++ @recPatExpr.gath2PredL++ @patExpr.gath2PredL
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pred resolution for super classes of instance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -71,8 +83,9 @@ SEM Decl
 SEM Decl
   | Instance    loc         .   (instPrElimTGam,_,_)
                                                     =   peTGamAddKnPrL @prfCtxtId @lUniq6 @ctxtPrFixL (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam)
-                            .   supPrElimTGam       =   peTGamDel @prfCtxtId @instClsNm @elimRule @instPrElimTGam
-                            .   declsPrElimTGam     =   peTGamDel @prfCtxtId @instClsNm @elimRule @instPrElimTGam
+                            .   delPrElimTGam       =   peTGamDel @prfCtxtId @instClsNm @elimRule @instPrElimTGam
+                            .   supPrElimTGam       =   @delPrElimTGam
+                            .   declsPrElimTGam     =   @delPrElimTGam
                 decls       .   prElimTGam          =   @declsPrElimTGam
                 lhs         .   prElimTGam          =   @lhs.prElimTGam
 %%]
@@ -170,16 +183,34 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | Let         loc         .   gath2SubsPredL      =   @decls.tyCnstr |=> @decls.gath2PredL
+  | Let         loc         .   gath2DeclSubsPredL  =   @decls.tyCnstr |=> @decls.gath2PredL
+                            .   (gath2PrfPrOccL,gath2RemPrOccL)
+                                                    =   partition  (\p -> let fv = ftv p
+                                                                          in  null fv || all (`notElem` @gTyTvL) fv
+                                                                   )
+                                                                   @gath2DeclSubsPredL
                             .   gath2BodySubsPredL  =   @body.tyCnstr |=> @body.gath2PredL
 %%]
 
 %%[9
 SEM Expr
-  | Let         loc         .   (_,prfPoiBackMp,_,(dbg2PrfG,dbg2PrfPruneG,dbg2PrfOrG,dbg2PrLeaves,_))
-                                                    =   prf2Preds @lUniq4 (emptyFE {fePrElimTGam = @decls.prElimTGam}) @gath2SubsPredL
-                            .   (_,_,_,(dbg2PrfG2,_,_,_,_))
+  | Let         loc         .   (prfFrPoiCxBindLM,prfIntroCBindL,prfArgPrOccL,prfPoiFwdMp,prfPoiBackMp,_,(dbg2PrfG,dbg2PrfPruneG,dbg2PrfOrG,dbg2PrLeaves,_))
+                                                    =   prf2Preds @lUniq4 (emptyFE {fePrElimTGam = @decls.prElimTGam}) @gath2PrfPrOccL
+                            .   (bodyPrfFrPoiCxBindLM,bodyPrfIntroCBindL,bodyPrfArgPrOccL,_,_,_,(dbg2PrfG2,_,_,_,_))
                                                     =   prf2Preds @lUniq5 (emptyFE {fePrElimTGam = @body.prElimTGam}) @gath2BodySubsPredL
+                            .   quant2PrIdSet       =   unionManySets
+                                                        . map (unionManySets . map (cxbmDpdPoiS @prfFrPoiCxBindLM) . setToList . tqoInsPrIdSet)
+                                                        . gamElts $ @tqo2Gam
+                            .   gath2PredL          =   @gath2RemPrOccL ++ filter (not . (`elementOf` @quant2PrIdSet) . poPrId) @prfArgPrOccL ++ @bodyPrfArgPrOccL
+                lhs         .   gath2PredL          =   @gath2PredL
+%%]
+
+%%[9
+SEM Decl
+  | Instance    loc         .   gath2DeclSubsPredL      =   @decls.tyCnstr |=> @decls.gath2PredL
+                            .   (prfFrPoiCxBindLM,prfIntroCBindL,prfArgPrOccL,_,_,_,(dbg2PrfG,dbg2PrfPruneG,dbg2PrfOrG,dbg2PrLeaves,_))
+                                                    =   prf2Preds @lUniq7 (emptyFE {fePrElimTGam = @declsPrElimTGam}) @gath2DeclSubsPredL
+                lhs         .   gath2PredL          =   []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -205,23 +236,15 @@ SEM Expr
                 loc         .   prfCtxtId           =   @lUniq
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% All PrfCtxtId's gathered
+%%% Available introduced predicates (tgam version), after pred resolution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-ATTR NTPrf [ | | allPrfCtxtId USE {`Set.union`} {emptySet} : {Set PrfCtxtId} ]
-
 SEM Expr
-  | Let         loc         .   allPrfCtxtId        =   unionManySets [@body.allPrfCtxtId,@decls.allPrfCtxtId] `addToSet` @prfCtxtId
-  | AppTop      loc         .   allPrfCtxtId        =   unionManySets [@expr.allPrfCtxtId] `addToSet` @prfCtxtId
-  | Lam LamImpl
-                loc         .   allPrfCtxtId        =   unionManySets [@body.allPrfCtxtId] `addToSet` @prfCtxtId
-
-SEM Decl
-  | Instance Class
-                loc         .   allPrfCtxtId        =   emptySet
+  | Lam AppTop  loc         .   availPoiS           =   peTGamPoiS @prfCtxtId @lPrElimTGam `Set.union` mkSet @poiLKnTl
+  | Let LamImpl
+                loc         .   availPoiS           =   peTGamPoiS @prfCtxtId @lPrElimTGam
 %%]
-  | AppImpl     loc         .   allPrfCtxtId        =   unionManySets [@func.allPrfCtxtId,@arg.allPrfCtxtId] `addToSet` @prfCtxtId
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Passing back additional bindings using a pred
@@ -241,6 +264,24 @@ SEM Expr
 
 SEM AGItf
   | AGItf       loc         .   cbindLMap           =   @prfCBindLMap
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Passing back additional bindings using a pred (tgam version)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR NTPrf [ cxbindLMap: CxBindLMap | | ]
+
+SEM AGItf
+  | AGItf       loc         .   cxbindLMap          =   emptyCxBindLMap
+
+SEM Expr
+  | Let         loc         .   cxbindLMap          =   @lhs.cxbindLMap `plusCxBM` @prfFrPoiCxBindLM
+                body        .   cxbindLMap          =   @lhs.cxbindLMap `plusCxBM` @bodyPrfFrPoiCxBindLM
+
+SEM Decl
+  | Instance    loc         .   cxbindLMap          =   @lhs.cxbindLMap `plusCxBM` @prfFrPoiCxBindLM
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Passing back code substitution
@@ -297,5 +338,48 @@ SEM Expr
   | AppTop      loc         .   lamArgCoeL          =   mkImplsLamCoe
                                                             (mkLetRecCoe (mkCBindLForUIDL @cbindLMap (`elem` @knPrUidL)))
                                                             (@lhs.finTyCnstr |=> @implsKnHd)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bindings for preds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+SEM Expr
+  | Lam AppTop  loc         .   impls2KnHd          =   tyImpls @imSubsTy
+                            .   impls2KnTl          =   @lhs.fin2TyCnstr |=> @knImplsTl
+                            .   poiLKnTl            =   implsPrIds @impls2KnTl
+                            .   poiL                =   implsPrIds @impls2KnHd ++ @poiLKnTl
+  | LamImpl     loc         .   poiL                =   [@knPrUid]
+%%]
+
+%%[9
+SEM Expr
+  | Lam AppTop LamImpl
+                loc         .   poiBindL            =   mkCxBindLForPoiL @lhs.cxbindLMap @poiL @availPoiS
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Coercions resulting from pred usage (tgam version)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+SEM Expr
+  | App         loc         .   app2ImplsCoeL       =   mkImplsAppCoe . tyImpls . (@lhs.fin2TyCnstr |=>) $ @imTy
+  | AppImpl     loc         .   app2ImplsCoeL       =   []
+%%]
+
+%%[9
+SEM Expr
+  | Lam LamImpl loc         .   lam2BodyCoeL        =   mkLamBodyCoe
+                                                            (mkCoe (\e -> rceMatch (RCEEnv @lhs.valGam @lhs.tyGam) [@arg.topNm] [CAlt_Alt [@arg.cpat] e] cvarUndefined))
+                                                            @body.app2ArgCoeL
+%%]
+
+%%[9
+SEM Expr
+  | Lam         loc         .   lam2ArgCoeL         =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL ++ [mkLamCoe @arg.topNm]
+  | AppTop      loc         .   lam2ArgCoeL         =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL
+  | LamImpl     loc         .   lam2ArgCoeL         =   [mkLamCoe @arg.topNm `coeCompose` mkLetRecCoe @poiBindL]
 %%]
 

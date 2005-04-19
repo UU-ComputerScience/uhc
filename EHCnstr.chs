@@ -180,7 +180,7 @@ cnstrToAssocTyL (Cnstr l) = l
 
 %%[9.assocLToCnstr -4.assocLToCnstr
 assocLToCnstr :: AssocL TyVarId Ty -> Cnstr
-assocLToCnstr = Cnstr . listToFM . assocLMapSnd CITy
+assocLToCnstr = Cnstr . listToFM . assocLMapElt CITy
 
 cnstrToAssocTyL :: Cnstr -> AssocL TyVarId Ty
 cnstrToAssocTyL c = [ (v,t) | (v,CITy t) <- cnstrToAssocL c ]
@@ -201,7 +201,7 @@ cnstrImplsUnit :: ImplsVarId -> Impls -> Cnstr
 cnstrImplsUnit v i = Cnstr (listToFM [(v,CIImpls i)])
 
 assocLToCnstrImpls :: AssocL ImplsVarId Impls -> Cnstr
-assocLToCnstrImpls = Cnstr . listToFM . assocLMapSnd CIImpls
+assocLToCnstrImpls = Cnstr . listToFM . assocLMapElt CIImpls
 
 cnstrImplsLookup :: ImplsVarId -> Cnstr -> Maybe Impls
 cnstrImplsLookup v (Cnstr s)

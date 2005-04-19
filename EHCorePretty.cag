@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -12,7 +12,7 @@
 %%[8 hs import(UU.Pretty,EHCommon,EHTy,EHCore) export(ppCModule)
 %%]
 
-%%[9 hs import(FiniteMap,Set) export(ppCBindLMap)
+%%[9 hs import(FiniteMap,Set,EHTyPretty) export(ppCBindLMap,ppCxBindLMap)
 %%]
 
 %%[8.WRAPPER import(EHCoreAbsSyn)
@@ -36,8 +36,27 @@ instance PP CExpr where
 
 %%[9 hs
 ppCBindLMap :: CBindLMap -> PP_Doc
-ppCBindLMap = ppAssocL . assocLMapSnd (\(i,b) -> (ppAssocL . map (\(CBind_Bind n v) -> (n,v)) $ b) >-< (ppCommaList . setToList $ i)) . fmToList
+ppCBindLMap = ppAssocL . assocLMapElt (\(i,b) -> (ppAssocL . map (\(CBind_Bind n v) -> (n,v)) $ b) >-< (ppCommaList . setToList $ i)) . fmToList
 %%]
+
+%%[9 hs
+ppCxBindLMap :: CxBindLMap -> PP_Doc
+ppCxBindLMap (CxBindLMap m)
+  =  ppAssocLV
+  .  assocLMapElt
+        (\cbs
+            -> ppAssocL . map (\(CBind_Bind n v,dpds) -> (n,pp v >-< (ppCommaList . setToList $ dpds))) $ cbs
+        )
+  .  fmToList $ m
+%%]
+ppCxBindLMap :: CxBindLMap -> PP_Doc
+ppCxBindLMap
+  =  ppAssocLV
+  .  assocLMapElt
+        (\(i,b)
+            -> (ppAssocL . map (\(CBind_Bind n v) -> (n,v)) $ b) >-< (ppCommaList . setToList $ i)
+        )
+  .  fmToList
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pretty printed code

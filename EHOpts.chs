@@ -246,6 +246,8 @@ instLFIOpts = strongFIOpts {fioBindRFirst = False}
 instFIOpts :: FIOpts
 instFIOpts = instLFIOpts {fioLeaveRInst = True, fioBindLFirst = False}
 %%]
+instFIOpts :: FIOpts
+instFIOpts = instLFIOpts {fioLeaveRInst = True, fioBindLFirst = False}
 
 %%[4_2.FIOpts.defaults
 unifyFIOpts :: FIOpts

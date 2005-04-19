@@ -44,6 +44,7 @@ SEM Ty
 SEM Ty
   | App         loc         .   appIsArrow      =   hsnIsArrow @func.appFunNm
                             .   appIsLikeProd   =   hsnIsProd @func.appFunNm
+                            .   appIsOther      =   not (@appIsArrow || @appIsLikeProd)
 %%]
 
 %%[7
@@ -77,7 +78,7 @@ SEM TyL
 %%% Position on app spine, ==0 implies at a root
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.SpinePos
+%%[1.appSpinePos
 ATTR AllTyTy [ appSpinePos : Int | | ]
 
 SEM TyAGItf
@@ -86,17 +87,11 @@ SEM TyAGItf
 SEM Ty
   | App         func        .   appSpinePos     =   @lhs.appSpinePos + 1
                 arg         .   appSpinePos     =   0
-                loc         .   isSpineRoot     =   @lhs.appSpinePos == 0
 %%]
 
 %%[3
 SEM Ty
   | Quant       ty          .   appSpinePos     =   0
-%%]
-
-%%[4.whereIAm
-SEM Ty
-  | App         loc         .   isArrowRoot     =   @appIsArrow && @isSpineRoot
 %%]
 
 %%[7
@@ -110,9 +105,44 @@ SEM Pred
   | *           loc         .   appSpinePos     =   0
 %%]
 
-%%[9
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context of type, i.e. where it is
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4 hs
+data TyQuCtxt = TyQuCtxtArrow | TyQuCtxtProd | TyQuCtxtOnTop | TyQuCtxtOther deriving (Show,Eq)
+%%]
+
+%%[1
 SEM Ty
-  | App         loc         .   isArrowArg      =   @appIsArrow && @lhs.appSpinePos == 1
+  | App         loc         .   isSpineRoot     =   @lhs.appSpinePos == 0
+%%]
+
+%%[4
+SEM Ty
+  | App         loc         .   isArrowRoot     =   @appIsArrow && @isSpineRoot
+                            .   isArrowArg      =   @appIsArrow && @lhs.appSpinePos == 1
+%%]
+
+%%[4
+ATTR Ty [ | | isArrow: Bool ]
+
+SEM Ty
+  | App         lhs         .   isArrow         =   @isArrowRoot
+  | * - App     lhs         .   isArrow         =   False
+%%]
+
+%%[4
+ATTR AllTy [ tyCtxt: TyQuCtxt | | ]
+
+SEM Ty
+  | App         loc         .   tyCtxt          =   if      @appIsArrow     then TyQuCtxtArrow
+                                                    else if @appIsLikeProd  then TyQuCtxtProd
+                                                                            else TyQuCtxtOther
+  | * - App     loc         .   tyCtxt          =   TyQuCtxtOther
+
+SEM TyAGItf
+  | AGItf       ty          .   tyCtxt          =   TyQuCtxtOnTop
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -134,5 +164,9 @@ ATTR TyVarCateg [ | | self: SELF ]
 
 %%[4
 ATTR TyQu [ | | self: SELF ]
+%%]
+
+%%[4
+ATTR AllTy [ | | self: SELF ]
 %%]
 

@@ -30,6 +30,12 @@
 %%[4 hs import(Maybe) export(tyVar) 
 %%]
 
+%%[4 hs export(tvCatIsFixed) 
+%%]
+
+%%[4 hs import(FiniteMap) export(TvCatMp) 
+%%]
+
 %%[4_2 hs export(tyIsQu,tyIsVar,tyMbVar) 
 %%]
 
@@ -40,6 +46,9 @@
 %%]
 
 %%[6 hs export(kiStar) 
+%%]
+
+%%[6_4 hs export(tvIsEx) 
 %%]
 
 %%[7 hs import(List) export(rowExtCmp,rowLabCmp,tyRowCanonOrder,kiRow,tyRowEmpty,tyRecEmpty,tySumEmpty,tyRowExtr,tyRecExtr,mkTyRow,mkTyRec,mkTySum,mkTyRecExt,tyRowExts) 
@@ -70,6 +79,9 @@
 %%]
 
 %%[9 hs export(PredOcc(..),poId)
+%%]
+
+%%[99 hs export(PredAsArgLocs)
 %%]
 
 %%[10 hs export(tyExtsOffset)
@@ -107,6 +119,25 @@ type TyPlusId      = UID
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tyvar category
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4 hs
+tvCatIsFixed :: TyVarCateg -> Bool
+tvCatIsFixed TyVarCateg_Plain  = False
+tvCatIsFixed _                 = True
+%%]
+
+%%[4 hs
+type TvCatMp = FiniteMap TyVarId TyVarCateg
+%%]
+
+%%[6_4 hs
+tvIsEx :: TvCatMp -> TyVarId -> Bool
+tvIsEx fvM tv = maybe False (== TyVarCateg_Exist) (lookupFM fvM tv)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Hardness of type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -133,6 +164,14 @@ data PredOcc
 poId :: PredOcc -> UID
 poId = poiId . poPrId
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Description of predicate locations in lambda (after quantification)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+%%]
+type PredAsArgLocs = [Maybe PredOcc]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Properties of quantifier
@@ -392,6 +431,16 @@ tyAppFunArgs
            =  case t of
                 Ty_App f a  -> extr (a:as) f
                 _           -> (t,as)
+%%]
+
+%%[6.unMkTy.tyAppFunArgs -1.unMkTy.tyAppFunArgs hs
+tyAppFunArgs
+  =  extr []
+  where  extr as t
+           =  case t of
+                Ty_Quant _ _ t  -> tyAppFunArgs t
+                Ty_App f a      -> extr (a:as) f
+                _               -> (t,as)
 %%]
 
 %%[1.unMkTy.funs hs

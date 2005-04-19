@@ -1,10 +1,10 @@
-let  data Bit        = Zero  | One
-     data List a     = Nil   | Cons a (List a)
+let  data Bit        = Zero | One
+     data List a     = Nil | Cons a (List a)
      data GRose f a  = GBranch a (f (GRose f a))
      concat :: List a -> List a -> List a
 in   let  class Binary a where
             showBin :: a -> List Bit
-          instance dBI <: Binary Int where
+in   let  instance dBI <: Binary Int where
             showBin  = ...
           instance dBL <: Binary a => Binary (List a) where
             showBin  = ...

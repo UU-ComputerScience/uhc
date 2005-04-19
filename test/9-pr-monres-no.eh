@@ -1,6 +1,6 @@
 let  class A a where
        aa :: a
 in
-let  v  ::  (#  #) -> ...
+let  v  ::  (!  !) -> ...
      v  =   aa        
 in   v

@@ -78,6 +78,35 @@ SEM Expr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expr (tgam version)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR Expr [ | | c2expr: CExpr ]
+
+SEM Expr
+  | Var Con     loc         .   c2exprBase  :=  CExpr_Var @nm
+  | IConst      loc         .   c2exprBase  :=  CExpr_Int @int
+  | CConst      loc         .   c2exprBase  :=  CExpr_Char @char
+  | Var Con IConst CConst
+                loc         .   c2expr      :=  foAppCoe @fo @lhs.fin2TyCnstr emptyCSubst @c2exprBase
+  | Let         loc         .   let2CBindL  :=  [(CBindFFI,@decls.ffiCBindL)
+                                                ,(CBindRec,@decls.c2bindL ++ @prfIntroCBindL ++ @bodyPrfIntroCBindL)
+                                                ]
+                            .   c2expr      =   foldr (\(c,b) e -> mkCExprLet c b e) @body.c2expr @let2CBindL
+  | App AppImpl
+                loc         .   c2expr      :=  CExpr_App
+                                                    (coeWipeWeave @lhs.fin2TyCnstr emptyCSubst @app2ImplsCoeL []
+                                                      `coeEvalOn` @func.c2expr)
+                                                    @arg.c2expr
+  | Lam LamImpl loc         .   c2expr      :=  coeWipeWeave @lhs.fin2TyCnstr emptyCSubst @lam2BodyCoeL @lam2ArgCoeL `coeEvalOn` @body.app2FunCExpr
+  | AppTop      loc         .   c2expr      :=  coeWipeWeave @lhs.fin2TyCnstr emptyCSubst [] @lam2ArgCoeL `coeEvalOn` @expr.c2expr
+  | TypeAs      loc         .   c2expr      :=  foAppCoe @fo @lhs.fin2TyCnstr emptyCSubst @expr.c2expr
+  | Undefined Rec Case Parens Sel
+                loc         .   c2expr      =   cvarUndefined
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Records, construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -277,7 +306,7 @@ ATTR Expr [ | | appArgCoeL: {[Coe]} ^^ appFunCExpr: CExpr ]
 
 SEM Expr
   | App AppImpl
-                lhs         .   appArgCoeL      =   @func.appArgCoeL ++ @appImplsCoeL ++ [mkAppCoe emptyCBindLMap [@arg.cexpr]]
+                lhs         .   appArgCoeL      =   @func.appArgCoeL ++ @appImplsCoeL ++ [mkAppCoe [@arg.cexpr]]
                             .   appFunCExpr     =   @func.appFunCExpr
   | AppTop      lhs         .   (appArgCoeL,appFunCExpr)
                                                 =   if null @lamArgCoeL
@@ -286,6 +315,26 @@ SEM Expr
   | * - App AppImpl AppTop
                 lhs         .   appArgCoeL      =   []
                             .   appFunCExpr     =   @cexpr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering coercions/cexpr for app args for optimization by weaving above apptop (tgam version)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR Expr [ | | app2ArgCoeL: {[Coe]} ^^ app2FunCExpr: CExpr ]
+
+SEM Expr
+  | App AppImpl
+                lhs         .   app2ArgCoeL     =   @func.app2ArgCoeL ++ @app2ImplsCoeL ++ [mkAppCoe [@arg.c2expr]]
+                            .   app2FunCExpr    =   @func.app2FunCExpr
+  | AppTop      lhs         .   (app2ArgCoeL,app2FunCExpr)
+                                                =   if null @lam2ArgCoeL
+                                                    then (@expr.app2ArgCoeL,@expr.app2FunCExpr)
+                                                    else ([],@c2expr)
+  | * - App AppImpl AppTop
+                lhs         .   app2ArgCoeL     =   []
+                            .   app2FunCExpr    =   @c2expr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -302,6 +351,18 @@ SEM Decl
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Decl (tgam version)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR Decls Decl AllDataConstr [ | | c2bindL USE {++} {[]}: CBindL ]
+
+SEM Decl
+  | Val         lhs         .   c2bindL         =   [CBind_Bind @patExpr.topNm @expr.c2expr] ++ @patExpr.cbindL
+  | TySig       lhs         .   c2bindL         =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Let bindings + body separately
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -313,6 +374,20 @@ SEM Expr
                             .   letCBindL       =   @letCBindL ++ @body.letCBindL
   | * - Let     lhs         .   letCBody        =   @cexpr
                             .   letCBindL       =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Let bindings + body separately
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR Expr [ | | let2CBindL: {[(CBindCateg,CBindL)]} ^^ let2CBody: CExpr ]
+
+SEM Expr
+  | Let         lhs         .   let2CBody       =   @body.let2CBody
+                            .   let2CBindL      =   @let2CBindL ++ @body.let2CBindL
+  | * - Let     lhs         .   let2CBody       =   @c2expr
+                            .   let2CBindL      =   []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

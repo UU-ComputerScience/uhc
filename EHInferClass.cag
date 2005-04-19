@@ -31,7 +31,7 @@ SEM Decl
                 loc             .   (lSigGam,_)     =   gamPop @decls.gathTySigGam
                                 .   clsTySigGam     =   valGamMapTy (\t -> [@hdPrTy] `mkTyArrow` t) @lSigGam
                                 .   supClsNmL       =   tyPrLToSupNmL @ctxtPrTyL
-                                .   clsFldL         =   assocLMapSnd vgiTy (gamToAssocL @clsTySigGam)
+                                .   clsFldL         =   assocLMapElt vgiTy (gamToAssocL @clsTySigGam)
                                 .   clsTyRec        =   mkTyRec (@clsFldL ++ zip @supClsNmL (repeat Ty_Any))
                                 .   pigi            =   let  k =  mkNewTyVar @lUniq
                                                              n =  uidHNm @lUniq
@@ -80,7 +80,7 @@ ATTR AllFuncDep [ clsTyArgs: TyL | | funcDeps USE {++} {[]} : {[ClsFuncDep]} ]
 
 SEM FuncDep
   | Dep         lhs             .   funcDeps        =   let  l v = maybe (-1) id . elemIndex v $ @lhs.clsTyArgs
-                                                        in   [(map l @fromTvs.tyL, map l @toTvs.tyL)]
+                                                        in   [ClsFuncDep (map l @fromTvs.tyL) (map l @toTvs.tyL)]
 
 SEM Decl
   | Class       loc             .   clsTyArgs       =   tyAppArgs . predTy . tyPred $ @hdPrTy
@@ -110,7 +110,7 @@ SEM Decl
                                 .   supClsNmL       =   tyPrLToSupNmL @supPrTyL
                                 .   ctxtPrFixL      =   map tyPred @ctxtPrTyFixL
                                 .   recTy           =   tyFixTyVars . tyQuantifyRank [2..] . tyArrowRes $ @tyPrExpr.evTy
-                decls           .   tySigGam        =   assocLToGam . assocLMapSnd ValGamInfo . snd . tyRecExts $ @recTy
+                decls           .   tySigGam        =   assocLToGam . assocLMapElt ValGamInfo . snd . tyRecExts $ @recTy
                 loc             .   elimRule        =   mkInstElimRule @dictNm @instId (length @ctxtPrTyFixL + length @supPrTyL) (tyQuantifyClosed @prTyFix)
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   tyGam           =   @lhs.tyGam

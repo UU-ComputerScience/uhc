@@ -107,6 +107,9 @@ tvCategPrefix :: TyVarCateg -> String
 tvCategPrefix TyVarCateg_Fixed = "c"
 tvCategPrefix TyVarCateg_Plain = "v"
 %%]
+%%[6_4 hs
+tvCategPrefix TyVarCateg_Exist = "C"
+%%]
 
 %%[3
 ATTR AllTy [ | tnUniq: {Int} ^^ tnMap: TVarNameMap | ]

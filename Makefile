@@ -186,7 +186,7 @@ SHUFFLE_DOC_PDF		:= $(SHUFFLE_DIR)/ShuffleDoc.pdf
 
 SHUFFLE_SRC			:= $(SHUFFLE_DIR)/$(SHUFFLE_AG)
 
-SHUFFLE_ORDER		:= 1 < 2 < 3 < 4 < 5 < 6 < 7 < 8 < 9 < 10 < 11, 4 < 4_2
+SHUFFLE_ORDER		:= 1 < 2 < 3 < 4 < 5 < 6 < 7 < 8 < 9 < 10 < 11, 4 < 4_2, 6 < 6_4
 
 
 RULER				:= bin/ruler
@@ -387,6 +387,14 @@ EHC_V6_1			:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 6_1
 
 
+### Version 6:4
+V					:= 6_4
+VF					:= 6_4
+include $(MK_EHFILES)
+EHC_V6_4			:= $(addprefix $(VF)/,$(EHC))
+### End of Version 6_4
+
+
 ### Version 7
 V					:= 7
 VF					:= $(V)
@@ -521,10 +529,13 @@ afp-tst:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=storyAFP04Notes --set=omitTBD --set=omitLitDiscuss" afp
 
 icfp05-explimpl-tst:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set icfp05 --set=omitTBD --set=omitLitDiscuss" afp
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=icfp05 --set=omitTBD --set=omitLitDiscuss" afp
 
 icfp05-explimpl:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set icfp05 --set=omitTBD --set=omitLitDiscuss" afp-bib
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=icfp05 --set=asDraft --set=omitTBD --set=omitLitDiscuss" afp-bib
+
+icfp05-explimpl-final:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=icfp05 --set=omitTBD --set=omitLitDiscuss" afp-bib
 
 esop05:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=storyExplImpl --set=omitTBD --set=omitLitDiscuss" afp
@@ -543,6 +554,9 @@ afp-slides:
 
 eh-intro:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_POLY_MODE=--poly LHS2TEX_OPTS="$(LHS2TEX_OPTS) --set=storyEHIntro --set=asSlides --set=omitTBD --set=omitLitDiscuss" afp
+
+eh-introETAPSLinks:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_POLY_MODE=--poly LHS2TEX_OPTS="$(LHS2TEX_OPTS) --set=storyEHIntro --set=storyVariantETAPSLinks --set=asSlides --set=omitTBD --set=omitLitDiscuss" afp
 
 .PHONY: shuffle ruler brew ehcs dist www www-sync gri gris agprimer dist-afp04
 

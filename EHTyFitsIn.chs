@@ -544,8 +544,8 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[10.fitsIn.fRow.fRFinal -7.fitsIn.fRow.fRFinal
-                       fR fi r1@(Ty_Var _ TyVarCateg_Fixed) r2@(Ty_Con n2) [] [] []
-                         | n2 == hsnRowEmpty && isRec
+                       fR fi r1@(Ty_Var _ cat) r2@(Ty_Con n2) [] [] []
+                         | tvCatIsFixed cat && n2 == hsnRowEmpty && isRec
                          = res fi r2
                        fR fi r1 r2 [] [] []
                          = (f fi r1 r2) {foLCoeL = [], foRCoeL = []}
@@ -604,7 +604,7 @@ fitsIn opts env uniq ty1 ty2
                                              ,  foPredOccL = prBldL ++ foPredOccL fo
                                              ,  foUniq = u'
                                              }
-                                   Ty_Var _ TyVarCateg_Fixed | not (null fuL)
+                                   Ty_Var _ cat | tvCatIsFixed cat && not (null fuL)
                                      ->  fo  {  foLCoeL = [Coe (\e -> mkCExprLet CBindPlain [CBind_Bind rn e] (fuMkCExpr u4 fuL r))]
                                              ,  foPredOccL = prUpdL ++ prDelL ++ foPredOccL fo
                                              ,  foUniq = u'
@@ -758,10 +758,27 @@ fitsIn opts env uniq ty1 ty2
                 where (fi2,uqt2,back2) = unquant fi t2 True instContra
 %%]
 
+%%[6_4.fitsIn.QR -4.fitsIn.QR
+            f fi t1                     t2@(Ty_Quant _ _ _)
+                | fioIsSubsume (fiFIOpts fi) && fioLeaveRInst (fiFIOpts fi)
+                                                    = back2 (f fi2 t1 uqt2)
+                where (fi2,uqt2,back2) = unquant fi t2 False instCoExist
+            f fi t1                     t2@(Ty_Quant _ _ _)
+                | fioIsSubsume (fiFIOpts fi) && not (fioLeaveRInst (fiFIOpts fi))
+                                                    = back2 (f fi2 t1 uqt2)
+                where (fi2,uqt2,back2) = unquant fi t2 True instContra
+%%]
+
 %%[4.fitsIn.QL
             f fi t1@(Ty_Quant _ _ _)    t2
                 | fioIsSubsume (fiFIOpts fi)        = f fi1 uqt1 t2
                 where (fi1,uqt1,back1) = unquant fi t1 False instCoConst
+%%]
+
+%%[6_4.fitsIn.QL -4.fitsIn.QL
+            f fi t1@(Ty_Quant _ _ _)    t2
+                | fioIsSubsume (fiFIOpts fi)        = f fi1 uqt1 t2
+                where (fi1,uqt1,back1) = unquant fi t1 False instCoExist
 %%]
 
 %%[4_2.fitsIn.QL1
@@ -800,18 +817,18 @@ fitsIn opts env uniq ty1 ty2
                             =  if foHasErrs pfo
                                then Nothing
                                else Just  ( foUpdTy ([foCnstr fo |=> foTy pfo] `mkTyArrow` foTy fo)
-                                          . foUpdLRCoe (mkAppCoe emptyFM [CExpr_Var n]) (mkLamCoe n)
+                                          . foUpdLRCoe (mkAppCoe [CExpr_Var n]) (mkLamCoe n)
                                           $ fo)
                             where  pfo   = f (fi2 {fiFIOpts = predFIOpts}) tpr2 tpr1
                                    n     = uidHNm u2
                                    fo    = f (fi2 {fiUniq = foUniq pfo}) (foCnstr pfo |=> tr1) (foCnstr pfo |=> tr2)
                        fP tpr1@(Ty_Pred pr1)            (Ty_Impls (Impls_Tail iv2))
-                            =  Just (foUpdImplExplCoe iv2 (Impls_Cons iv2 pr1 (mkPrId prfCxId u2) im2) tpr1 (mkAppCoe emptyFM [CExpr_Var n]) (mkLamCoe n) fo)
+                            =  Just (foUpdImplExplCoe iv2 (Impls_Cons iv2 pr1 (mkPrId prfCxId u2) im2) tpr1 (mkAppCoe [CExpr_Var n]) (mkLamCoe n) fo)
                             where  im2   = Impls_Tail u1
                                    n     = uidHNm u2
                                    fo    = f fi2 tr1 ([Ty_Impls im2] `mkTyArrow` tr2)
                        fP (Ty_Impls (Impls_Tail iv1))   tpr2@(Ty_Pred pr2)
-                            =  Just (foUpdImplExplCoe iv1 (Impls_Cons iv1 pr2 (mkPrId prfCxId u2) im1) tpr2 (mkAppCoe emptyFM [CExpr_Var n]) (mkLamCoe n) fo)
+                            =  Just (foUpdImplExplCoe iv1 (Impls_Cons iv1 pr2 (mkPrId prfCxId u2) im1) tpr2 (mkAppCoe [CExpr_Var n]) (mkLamCoe n) fo)
                             where  im1   = Impls_Tail u1
                                    n     = uidHNm u2
                                    fo    = f fi2 ([Ty_Impls im1] `mkTyArrow` tr1) tr2
@@ -872,7 +889,7 @@ fitsIn opts env uniq ty1 ty2
                             =  let  fo    = f fi2 tr1 t2
                                     fs    = foCnstr fo
                                     (cbindLMap,csubst,remPrfPrL,evidL,prfErrs,_) = prfPreds u3 (fiEnv (fs |=> fi2)) [PredOcc (fs |=> pr1) pv1]
-                               in   (foUpdErrs prfErrs fo,mkAppCoe cbindLMap evidL,csubst,remPrfPrL)
+                               in   (foUpdErrs prfErrs fo,mkBindsAppCoe cbindLMap evidL,csubst,remPrfPrL)
                        fP (Ty_Impls (Impls_Nil))
                             =  Just (f fi2 tr1 t2)
                        fP (Ty_Impls (Impls_Tail iv1))
@@ -1012,12 +1029,25 @@ prfPreds u env prL
 %%]
 
 %%[9
-prf2Preds :: UID -> FIEnv -> [PredOcc] -> ([PredOcc],FiniteMap PredOccId PredOccId,[Err],(ProvenGraph,ProvenGraph,ProvenGraph,[(Pred,PrfCtxtId)],PP_DocL))
+prf2Preds  :: UID -> FIEnv -> [PredOcc]
+           ->  (CxBindLMap,CBindL,[PredOcc],FiniteMap PredOccId [PredOccId],FiniteMap PredOccId PredOccId,[Err]
+               ,(ProvenGraph,ProvenGraph,ProvenGraph,[Pred],PP_DocL)
+               )
 prf2Preds u fe prOccL
   =  let  (g,prvnErrs)                  = prf2PredsToProvenGraph u fe prOccL
-          prLeaves                      = prvgLeaves g
-          (gPrune,gOr,backMp)           = prf2PredsPruneProvenGraph (\pr cx -> pr `elem` map fst prLeaves) g
-     in   ( [], backMp
+          prOrigs                       = prvgOrigs g
+          (_,revTopSort)                = prvg2ReachableFrom g prOrigs
+          prLeaves                      = prvgArgLeaves g (reverse revTopSort)
+          (gPrune@(ProvenGraph i2n _ _ _),gOr,backMp)
+                                        = prf2PredsPruneProvenGraph (\pr cx -> pr `elem` prLeaves) g
+          isFact                        = prvgIsFact gPrune
+          cSubst                        = poiCExprLToCSubst . assocLMapElt (CExpr_Var . poiHNm) . fmToList $ backMp
+          argPrOccL                     = [ PredOcc p i | (i,ProvenArg p _) <- fmToList i2n ]
+          argDpdsPoiS                   = prvgReachableTo gPrune (map poPrId argPrOccL)
+          prfIntroCBindL                = [ CBind_Bind (poiHNm i) (cSubst `cAppSubst` ev) | (i,ProvenAnd _ _ _ ev) <- fmToList i2n, not (isFact i || i `elementOf` argDpdsPoiS) ]
+          prfFrPoiCxBindLM              = prvgCxBindLMap gPrune cSubst
+          fwdMp                         = listToFM . map (\l@((_,i):_) -> (i,map fst l)) . groupSortOn snd . fmToList $ backMp
+     in   ( prfFrPoiCxBindLM, prfIntroCBindL, argPrOccL, fwdMp, backMp
           , prvnErrs
           , (g,gPrune,gOr,prLeaves,[])
           )
@@ -1103,14 +1133,14 @@ prf2OneStep fe prOcc@(PredOcc pr prPoi) st@(ProofState2 g@(ProvenGraph _ p2i _ _
   where  prf pr
            =  case pr of
                 Pred_Class  _    ->  prf2OneStepClass  fe prOcc st
-%%]
                 Pred_Pred   _    ->  prf2OneStepPred   fe prOcc st
+%%]
 %%[10
                 Pred_Lacks  _ _  ->  prf2OneStepLacks  fe prOcc st
 %%]
 %%[9
-                _                ->  st
 %%]
+                _                ->  st
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% One proof step for higher order predicates
@@ -1137,6 +1167,28 @@ prfOneStepPred  env prOcc@(PredOcc pr@(Pred_Pred t) prUid)
            g'               = prvgAddPrNd pr [prUid] prf g
            g''              = foldr (\(i,p,n) g -> prvgAddPrNd p [i] (ProvenLcl p (CExpr_Var n)) g) g' (zip3 prfCtxtUIDL prfCtxtPrL prfCtxtNmL)
            st'              = st {prfsUniq = u', prfsProvenGraph = g'', prfsPredsToProve = [PredOcc (tyPred prfTyPr) poi4] ++ toProof}
+      in   st'
+%%]
+
+%%[9
+prf2OneStepPred :: FIEnv -> PredOcc -> ProofState2 -> ProofState2
+prf2OneStepPred  fe prOcc@(PredOcc pr@(Pred_Pred t) prPoi)
+                 st@(ProofState2 g@(ProvenGraph i2n p2i p2oi p2fi) u toPrfPrOccL _ _)
+  =   let  (u',u1,u2,u3,u4) = mkNewLevUID4 u
+           ci               = u4
+           poi4             = mkPrId ci u4
+           (us,vs)          = mkNewUIDTyVarL (tyArrowArity t + 1) u1
+           t'               = tail vs `mkTyArrow` head vs
+           fo               = fitsIn (predFIOpts {fioLeaveRInst = False}) emptyFE u2 t' t
+           (prfCtxtTyPrL,prfTyPr)
+                            = tyArrowArgsRes (foCnstr fo |=> t')
+           prfCtxtPrL       = map tyPred prfCtxtTyPrL
+           (prfElimTGam,prfCtxtNmL,prfCtxtUIDL)
+                            = peTGamAddKnPrL ci u3 prfCtxtPrL (tgamPushNew (poiCxId prPoi) ci (fePrElimTGam fe))
+           prf              = ProvenAnd (pr) (poi4 : prfCtxtUIDL) (mkCost 1) (prfCtxtNmL `mkCExprLam` CExpr_Hole u4)
+           g'               = prvgAddPrNd pr [prPoi] prf g
+           g''              = foldr (\(i,p,n) g -> prvgAddPrNd p [i] (ProvenAnd p [] costZero (CExpr_Var n)) g) g' (zip3 prfCtxtUIDL prfCtxtPrL prfCtxtNmL)
+           st'              = st {prfs2Uniq = u', prfs2ProvenGraph = g'', prfs2PredsToProve = [PredOcc (tyPred prfTyPr) poi4] ++ toPrfPrOccL, prfs2PrElimTGam = prfElimTGam}
       in   st'
 %%]
 

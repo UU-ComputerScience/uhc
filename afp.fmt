@@ -1,5 +1,9 @@
 %% configuration
 
+%if acm
+%let useSigplanconfSty = True
+%endif
+
 %if storyPHD || storyAfpTRUU1 || onlyCurrentWork
 %let inclChunkMarks	= True
 %else
@@ -204,6 +208,8 @@
 %format `minusset`		= "-"
 %format `intersect`		= "\cap "
 %format emptyset		= "\emptyset "
+%format not		        = "not"
+%format ==		        = "=="
 
 %format InstUnExists    = "inst^{" exists "}"
 
