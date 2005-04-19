@@ -5,5 +5,5 @@ let class A a where
 in
 let f :: A a => a -> a -> Int
 in
-let v = f 3 (# (aa = \x -> x) <: A Int #) 4
+let v = f 3 (! (aa = \x -> x) <: A Int !) 4
 in  v

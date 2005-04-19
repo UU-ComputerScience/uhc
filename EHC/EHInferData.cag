@@ -71,10 +71,9 @@ ATTR AllDataConstr [ dataTy: Ty | patValGam: ValGam | ]
 SEM DataConstr
   | Constr      loc         .   dataConTy           =   @fields.tyL `mkTyArrow` @lhs.dataTy
                             .   dataConProdTy       =   mkTyProdApp @fields.tyL
-                            .   dataUnConTy         =   [@lhs.dataTy] `mkTyArrow` @dataConProdTy
                             .   dataQuUnConTy       =   let  fvD = ftv @lhs.dataTy
-                                                             fvU = ftv @dataUnConTy
-                                                        in   mkTyQu TyQu_Forall fvD . mkTyQu TyQu_Exists (fvU \\ fvD) $ @dataUnConTy
+                                                             fvU = ftv @dataConProdTy
+                                                        in   mkTyQu TyQu_Forall fvD ([@lhs.dataTy] `mkTyArrow` mkTyQu TyQu_Exists (fvU \\ fvD) @dataConProdTy)
                 lhs         .   patValGam           =   gamAdd
                                                           (gamAdd @lhs.patValGam (hsnUn @conNm) (ValGamInfo @dataQuUnConTy))
                                                           @conNm (ValGamInfo @dataConTy)
@@ -82,6 +81,7 @@ SEM DataConstr
 SEM Decl
   | Data        loc         .   dataTy              =   @tyNm `mkTyConApp` @tyVars.tyL
 %%]
+                            .   dataUnConTy         =   [@lhs.dataTy] `mkTyArrow` @dataConProdTy
                             .   dataQuUnConTy       =   let  fvD = ftv @lhs.dataTy
                                                              fvU = ftv @dataUnConTy
                                                         in   mkTyQu TyQu_Forall fvD . mkTyQu TyQu_Exists (fvU \\ fvD) $ @dataUnConTy
@@ -105,6 +105,7 @@ SEM Decl
                                                                    @dataAltTy @constrs.dataTagMp
 %%]
 
+!!!!! Fix following w.r.t. dataUnConTy
 %%[11
 SEM DataConstr
   | Constr      loc         .   dataConTy           :=  @eqs.eqTyCnstr |=> (@fields.tyL `mkTyArrow` @lhs.dataTy)

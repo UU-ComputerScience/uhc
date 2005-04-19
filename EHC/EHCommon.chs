@@ -36,7 +36,7 @@
 %%[2 export(UID, mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, uidNext, mkNewUID, mkNewUIDL, uidStart)
 %%]
 
-%%[2 export(assocLMapSnd,assocLMapFst)
+%%[2 export(assocLMapElt,assocLMapKey)
 %%]
 
 %%[2 import(List) export(unionL)
@@ -215,8 +215,8 @@ hsnPrimAddInt						=	HNm "primAddInt"
 %%]
 
 %%[9
-hsnOImpl                            =   HNm "(#"
-hsnCImpl                            =   HNm "#)"
+hsnOImpl                            =   HNm "(!"
+hsnCImpl                            =   HNm "!)"
 hsnPrArrow                          =   HNm "=>"
 
 hsnIsPrArrow                        ::  HsName -> Bool
@@ -452,12 +452,17 @@ mkExtAppPP (funNm,funNmPP,funPPL) (argNm,argNmPP,argPPL,argPP)
      else (funNmPP,funPPL ++ [argPP])
 %%]
 
-%%[8
+%%[4
 instance PP a => PP (Maybe a) where
   pp m = maybe (pp "?") pp m
 
 instance PP Bool where
   pp b = pp (show b)
+%%]
+
+%%[9
+instance (PP a, PP b) => PP (a,b) where
+  pp (a,b) = ppListSep "(" ")" "," [pp a,pp b]
 %%]
 
 %%[8
@@ -535,6 +540,13 @@ ppParNeed locNeed globNeed p
 data CoContraVariance =  CoVariant | ContraVariant | CoContraVariant deriving (Show,Eq)
 %%]
 
+%%[4
+instance PP CoContraVariance where
+  pp CoVariant        = pp "CC+"
+  pp ContraVariant    = pp "CC-"
+  pp CoContraVariant  = pp "CCo"
+%%]
+
 %%[4.cocoOpp
 cocoOpp :: CoContraVariance -> CoContraVariance
 cocoOpp  CoVariant      =   ContraVariant
@@ -570,11 +582,11 @@ ppAssocLV = ppAssocL' vlist
 assocLMap :: (k -> v -> (k',v')) -> AssocL k v -> AssocL k' v'
 assocLMap f = map (uncurry f)
 
-assocLMapSnd :: (v -> v') -> AssocL k v -> AssocL k v'
-assocLMapSnd f = assocLMap (\k v -> (k,f v))
+assocLMapElt :: (v -> v') -> AssocL k v -> AssocL k v'
+assocLMapElt f = assocLMap (\k v -> (k,f v))
 
-assocLMapFst :: (k -> k') -> AssocL k v -> AssocL k' v
-assocLMapFst f = assocLMap (\k v -> (f k,v))
+assocLMapKey :: (k -> k') -> AssocL k v -> AssocL k' v
+assocLMapKey f = assocLMap (\k v -> (f k,v))
 %%]
 
 %%[1

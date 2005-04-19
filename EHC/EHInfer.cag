@@ -68,6 +68,13 @@ SEM Expr
                             .   tqoTyCnstr          =   foldr (\tqo c -> tqoImplsCnstr tqo |=> c) emptyCnstr (gamElts @tqoGam)
 %%]
 
+%%[9
+SEM Expr
+  | Let         loc         .   (l2QuValGam,tqo2Gam)=   let  (vg,tqog) = valGamQuantify @gTyTvL @prfArgPrOccL @lSubsValGam
+                                                        in   (valGamInst1Exists @lUniq2 vg,tqog)
+                            .   tqo2TyCnstr         =   foldr (\tqo c -> tqoImplsCnstr tqo |=> c) emptyCnstr (gamElts @tqo2Gam)
+%%]
+
 %%[11
 %%]
 SEM Expr
@@ -137,6 +144,16 @@ SEM Expr
 %%[9
 SEM Expr
   | Let         loc         .   finTyCnstr          =   @tqoTyCnstr |=> @lhs.finTyCnstr
+%%]
+
+%%[9
+ATTR AllNT [ fin2TyCnstr: Cnstr | | ]
+
+SEM Expr
+  | Let         loc         .   fin2TyCnstr         =   @tqo2TyCnstr |=> @lhs.fin2TyCnstr
+
+SEM AGItf
+  | AGItf       expr        .   fin2TyCnstr         =   @expr.tyCnstr
 %%]
 
 %%[10

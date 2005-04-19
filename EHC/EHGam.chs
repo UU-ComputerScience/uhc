@@ -60,7 +60,7 @@
 %%[9 import(EHDebug,EHCoreSubst,EHTyFitsInCommon) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
 %%]
 
-%%[9 export(TreeGam,emptyTGam,tgamUnit,tgamLookup,tgamLookupAll,tgamPushNew,tgamAddGam,tgamPushGam,tgamAdd,tgamPop,tgamUpdAdd,tgamUpd,tgamInScopes,tgamIsInScope)
+%%[9 export(TreeGam,emptyTGam,tgamUnit,tgamLookup,tgamLookupAll,tgamElts,tgamPushNew,tgamAddGam,tgamPushGam,tgamAdd,tgamPop,tgamUpdAdd,tgamUpd,tgamInScopes,tgamIsInScope)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -337,7 +337,7 @@ tgamTop :: Ord i => i -> i -> TreeGam i k v -> TreeGam i k v
 tgamTop i iTop g = let (g',_,_) = tgamPop i iTop g in g'
 
 assocLToTGam :: Ord k => i -> AssocL k v -> TreeGam i k v
-assocLToTGam i l = TreeGam (i `unitFM` (Nothing,listToFM . assocLMapSnd (:[]) $ l))
+assocLToTGam i l = TreeGam (i `unitFM` (Nothing,listToFM . assocLMapElt (:[]) $ l))
 
 tgamMbUpd :: (Ord i,Ord k) => i -> k -> (k -> v -> v) -> TreeGam i k v -> Maybe (TreeGam i k v)
 tgamMbUpd i k f g
@@ -359,6 +359,8 @@ tgamIsInScope i iQuery g = iQuery `elem` tgamInScopes i g
 tgamInScopes :: Ord i => i -> TreeGam i k v -> [i]
 tgamInScopes i = tgamFoldr1 i (\i _ _ r -> i : r) []
 
+tgamElts :: Ord i => i -> TreeGam i k v -> [v]
+tgamElts i = assocLElts . tgamToAssocL i
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -430,17 +432,6 @@ valGamDoWithCnstr f gamCnstr thr gam
 valGamQuantifyWithCnstr :: Cnstr -> TyVarIdL -> ValGam -> (ValGam,Cnstr)
 valGamQuantifyWithCnstr = valGamDoWithCnstr (\t globTvL -> (tyQuantify (`elem` globTvL) t,globTvL))
 %%]
-valGamQuantifyWithCnstr gamCnstr globTvL
-  =  gamMapThr
-        (\(n,vgi) c
-            ->  let  t = vgiTy vgi
-                     tq = tyQuantify (`elem` globTvL) (gamCnstr |=> t)
-                     (tg,cg) =  case t of
-                                    Ty_Var v _ -> (t,v `cnstrTyUnit` tq)
-                                    _ -> (tq,emptyCnstr)
-                in   ((n,vgi {vgiTy = tg}),cg `cnstrPlus` c)
-        )
-        emptyCnstr
 
 %%[6.gamUnzip
 gamUnzip :: Gam k (v1,v2) -> (Gam k v1,Gam k v2)
@@ -471,13 +462,11 @@ gamInst1Exists (extr,upd) u
 valGamInst1Exists :: UID -> ValGam -> ValGam
 valGamInst1Exists = gamInst1Exists (vgiTy,(\vgi t -> vgi {vgiTy=t}))
 %%]
-gamInst1Exists (extr,upd) u
-  =  let  ex = foldr  (\(n,t) (u,ts)
-                          ->  let  (u',ue) = mkNewLevUID u
-                              in   (u', (n,upd t (tyInst1Exists ue (extr t))) : ts)
-                      )
-                      (u,[])
-     in   assocLToGam . snd . ex . gamToAssocL
+
+%%[66_4.valGamCloseExists
+valGamCloseExists :: ValGam -> ValGam
+valGamCloseExists = valGamMapTy (\t -> tyQuantify (not . tvIsEx (tyFtvMp t)) t)
+%%]
 
 %%[4_2.valGamInst1ExistsWithCnstr
 valGamInst1ExistsWithCnstr :: Cnstr -> UID -> ValGam -> (ValGam,Cnstr)
@@ -486,11 +475,6 @@ valGamInst1ExistsWithCnstr
         (\t u ->  let  (u',ue) = mkNewLevUID u
                   in   (tyInst1Exists ue t,u')
         )
-%%]
-
-%%[6
-tyGamInst1Exists :: UID -> TyGam -> TyGam
-tyGamInst1Exists = gamInst1Exists (tgiKi,(\tgi k -> tgi {tgiKi=k}))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -569,6 +553,11 @@ tyGamQuantify globTvL
   = gamMap (\(n,k) -> (n,k {tgiKi = kiQuantify (`elem` globTvL) (tgiKi k)}))
 %%]
 
+%%[6
+tyGamInst1Exists :: UID -> TyGam -> TyGam
+tyGamInst1Exists = gamInst1Exists (tgiKi,(\tgi k -> tgi {tgiKi=k}))
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% "Ty app spine" gam, to be merged with tyGam in the future
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -615,7 +604,7 @@ type KiGam = Gam HsName KiGamInfo
 
 %%[2.Substitutable.Gam
 instance Substitutable v => Substitutable (Gam k v) where
-  s |=> (Gam ll)    =   Gam (map (assocLMapSnd (s |=>)) ll)
+  s |=> (Gam ll)    =   Gam (map (assocLMapElt (s |=>)) ll)
   ftv   (Gam ll)    =   unionL . map ftv . map snd . concat $ ll
 %%]
 
@@ -660,10 +649,10 @@ instance (PP k, PP v) => PP (Gam k v) where
 
 %%[9.PP.Gam -1.PP.Gam
 instance (PP i, PP k, PP v) => PP (TreeGam i k v) where
-  pp g = ppAssocLV . assocLMapSnd (\(n,e) -> pp n >|< ":" >|< (ppAssocL . fmToList $ e)) . fmToList . tgamEntriesOf $ g
+  pp g = ppAssocLV . assocLMapElt (\(n,e) -> pp n >|< ":" >|< (ppAssocL . fmToList $ e)) . fmToList . tgamEntriesOf $ g
 %%]
-  pp g = ppAssocLV . assocLMapSnd (\(n,e) -> pp n >|< ":" >|< (ppAssocL . fmToList $ e)) . fmToList . tgamEntriesOf $ g
-  pp g = ppAssocL . assocLMapSnd (\(n,e) -> pp n >|< ":" >|< (ppAssocL . fmToList $ e)) . fmToList . tgamEntriesOf $ g
+  pp g = ppAssocLV . assocLMapElt (\(n,e) -> pp n >|< ":" >|< (ppAssocL . fmToList $ e)) . fmToList . tgamEntriesOf $ g
+  pp g = ppAssocL . assocLMapElt (\(n,e) -> pp n >|< ":" >|< (ppAssocL . fmToList $ e)) . fmToList . tgamEntriesOf $ g
 
 %%[1.PP.ValGamInfo
 instance PP ValGamInfo where

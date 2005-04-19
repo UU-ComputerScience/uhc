@@ -5,5 +5,5 @@ let  class A a where
      instance A Int where
        aa = \x -> 2
 in
-let  v  =   aa (# dAInt1 <: A Int #) 3
+let  v  =   aa (! dAInt1 <: A Int !) 3
 in   v

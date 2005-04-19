@@ -91,6 +91,9 @@ SEM Expr
 %%]
 
 %%[6
+SEM PatExpr
+  | AppTop          (patExpr.gUniq,loc.lUniq,loc.lUniq2)            :=  mkNewLevUID2    @lhs.gUniq
+
 SEM TyExpr
   | App             (func.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)    =   mkNewLevUID3    @lhs.gUniq
   

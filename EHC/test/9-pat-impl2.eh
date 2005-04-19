@@ -4,5 +4,5 @@ let  class Eq a where
        lt :: a -> a -> Int
      c :: Int -> Int -> Int
 in
-let  f = \(# d <: Ord a #) (x::a) y -> c (eq x y) (lt x y)
+let  f = \(! d <: Ord a !) (x::a) y -> c (eq x y) (lt x y)
 in   5

@@ -15,7 +15,7 @@
 %%[9 hs export(CSubst,emptyCSubst,uidCExprLToCSubst,poiCExprLToCSubst,cnstrImplsToCSubst)
 %%]
 
-%%[9 hs export(coeWipeWeave,coeEvalOn,coeCompose,mkImplsAppCoe, mkImplsLamCoe,mkLamBodyCoe)
+%%[9 hs export(coeWipeWeave,coeEvalOn,coeCompose,mkImplsAppCoe, mkImplsLamCoe,mkLamBodyCoe,mkPoiLLamCoe)
 %%]
 
 %%[9.WRAPPER import(EHCoreAbsSyn)
@@ -42,13 +42,13 @@ cAppCoeArg ce coeArg
      in   (cRepl_Syn_CExpr t)
 
 uidCExprLToCSubst :: AssocL UID CExpr -> CSubst
-uidCExprLToCSubst = listToFM . assocLMapSnd CSIExpr
+uidCExprLToCSubst = listToFM . assocLMapElt CSIExpr
 
 poiCExprLToCSubst :: AssocL PredOccId CExpr -> CSubst
-poiCExprLToCSubst = uidCExprLToCSubst . assocLMapFst poiId
+poiCExprLToCSubst = uidCExprLToCSubst . assocLMapKey poiId
 
 uidImplsLToCSubst :: AssocL UID ([Coe],[Coe]) -> CSubst
-uidImplsLToCSubst = listToFM . assocLMapSnd (uncurry CSIImpls)
+uidImplsLToCSubst = listToFM . assocLMapElt (uncurry CSIImpls)
 
 cnstrImplsToCSubst :: Cnstr -> CSubst
 cnstrImplsToCSubst c
@@ -87,11 +87,14 @@ instance CSubstitutable CSubstInfo where
   cAppSubst  _   csi           = csi
 
 instance CSubstitutable v => CSubstitutable (AssocL k v) where
-  cAppSubst cs l = assocLMapSnd (cAppSubst cs) l
+  cAppSubst cs l = assocLMapElt (cAppSubst cs) l
 
 instance CSubstitutable CSubst where
   cAppSubst cs s = mapFM (const (cAppSubst cs)) s `plusFM` cs
+
 %%]
+instance CSubstitutable CxBindLMap where
+  cAppSubst cs (CxBindLMap m) = CxBindLMap (mapFM (const (cAppSubst cs)) m)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Generation
@@ -177,15 +180,18 @@ coeWipe cs l r
      in   (reverse l',reverse r')
 
 mkImplsAppCoe :: Impls -> [Coe]
-mkImplsAppCoe = map (\i -> mkAppCoe emptyFM [mkCExprPrHole i]) . implsPrIds
+mkImplsAppCoe = map (\i -> mkAppCoe [mkCExprPrHole i]) . implsPrIds
 
-mkImplsLamCoe :: Coe -> Impls -> [Coe]
-mkImplsLamCoe onLast is
-  =  case map (mkLamCoe . poiHNm) (implsPrIds is) of
+mkPoiLLamCoe :: Coe -> [PredOccId] -> [Coe]
+mkPoiLLamCoe onLast poiL
+  =  case map (mkLamCoe . poiHNm) poiL of
        l@(_:_)  ->  let  h = init l
                          t = last l
                     in   h ++ [t `coeCompose` onLast]
        _        ->  []
+
+mkImplsLamCoe :: Coe -> Impls -> [Coe]
+mkImplsLamCoe onLast is = mkPoiLLamCoe onLast (implsPrIds is)
 
 mkLamBodyCoe :: Coe -> [Coe] -> [Coe]
 mkLamBodyCoe onLast l

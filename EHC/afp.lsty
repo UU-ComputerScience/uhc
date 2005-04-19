@@ -30,12 +30,16 @@
   \begin{figure}[htbp]
 %endif
   \begin{tabular}{P}
+%if not useSigplanconfSty
   \hline
+%endif
   \fbox{#1}
   \\
 }{%
   \\
+%if not useSigplanconfSty
   \hline
+%endif
   \end{tabular}
   \caption{\RFCap}
   \label{\RFLab}
@@ -136,7 +140,7 @@
 \newcommand{\figRef}[1]{Fig.~\myRef{#1}}
 \newcommand{\FigRef}[1]{Fig.~\myRef{#1}}
 %endif
-\newcommand{\secRef}[1]{section~\myRef{#1}}
+\newcommand{\secRef}[1]{Section~\myRef{#1}}
 %if llncs || acm
 \newcommand{\pageRef}[1]{}
 \newcommand{\figPageRef}[1]{\figRef{#1}}

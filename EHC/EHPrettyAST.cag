@@ -32,11 +32,12 @@ mkInfo1 = (,)
 ATTR AllNT AGItf [ | | ppAST USE {>-<} {empty} : PP_Doc ]
 
 SEM AGItf
-  | AGItf       lhs     .  ppAST    =   ppNestInfo @lhs.opts ["AGItf","AGItf"] [] [@expr.ppAST] (@info ++ @info2 ++ @info3 ++ @info_4_2)
+  | AGItf       lhs     .  ppAST    =   ppNestInfo @lhs.opts ["AGItf","AGItf"] [] [@expr.ppAST] (@info ++ @info2 ++ @info3 ++ @info_4_2 ++ @info_9)
                 loc     .  info     =   []
                         .  info2    =   []
                         .  info3    =   []
                         .  info_4_2 =   []
+                        .  info_9   =   []
 
 SEM Decl
   | Val         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Val"] [] [@patExpr.ppAST,@expr.ppAST] @info
@@ -81,12 +82,12 @@ SEM Expr
                         .  info2    =   []
                         .  info_4_2 =   []
   | Parens      lhs     .  ppAST    =   ppNest ["Expr","Parens"] [] [@expr.ppAST]
-  | AppTop      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","AppTop"] [] [@expr.ppAST] (@info ++ @info2 ++ @info9)
+  | AppTop      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","AppTop"] [] [@expr.ppAST] (@info ++ @info2 ++ @info_9)
                 loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         , mkInfo1 "expr.ty" (ppTy @expr.ty)
                                         ]
                         .  info2    =   []
-                        .  info9    =   []
+                        .  info_9   =   []
   | Lam         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Lam"] [] [@arg.ppAST,@body.ppAST] (@info ++ @info2 ++ @info_9 ++ @info_4_2)
                 loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         , mkInfo1 "arg.valGam" (ppGam @arg.valGam)
@@ -103,10 +104,11 @@ SEM PatExpr
                                         , mkInfo1 "ty" (ppTy @ty)
                                         ]
   | VarAs       lhs     .  ppAST    =   ppNest ["PatExpr","VarAs"] [ppNm @nm] [@patExpr.ppAST]
-  | Con         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","Con"] [ppNm @nm] [] (@info ++ @info2)
+  | Con         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","Con"] [ppNm @nm] [] (@info ++ @info_2 ++ @info_4)
                 loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         ]
-                        .  info2    =   []
+                        .  info_2   =   []
+                        .  info_4   =   []
   | App         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","App"] [] [@func.ppAST,@arg.ppAST] @info
                 loc     .  info     =   []
   | Parens      lhs     .  ppAST    =   ppNest ["PatExpr","Parens"] [] [@patExpr.ppAST]
@@ -168,7 +170,7 @@ SEM PatExpr
   | AppTop      loc     .  info2    :=  [ mkInfo1 "patFunTy" (ppTy @patFunTy)
                                         , mkInfo1 "patExpr.ty" (ppTy @patExpr.ty)
                                         ]
-  | Con         loc     .  info2    :=  [ mkInfo1 "patFunTy" (ppTy @patFunTy)
+  | Con         loc     .  info_2   :=  [ mkInfo1 "patFunTy" (ppTy @patFunTy)
                                         , mkInfo1 "ty" (ppTy @ty)
                                         ]
 %%]
@@ -181,6 +183,7 @@ SEM TyExpr
 
 SEM Expr
   | Let         loc     .  info_3   :=  [ mkInfo1 "lSubsValGam" (ppGam @lSubsValGam)
+                                        , mkInfo1 "lQuValGam" (ppGam @lQuValGam)
                                         ]
 %%]
 
@@ -199,6 +202,8 @@ SEM PatExpr
   | TypeAs      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","TypeAs"] [] [@patExpr.ppAST,@tyExpr.ppAST] @info
                 loc     .  info     =   [ mkInfo1 "asTy" (ppTy @asTy)
                                         , mkInfo1 "tyExpr.tyGam" (ppGam @tyExpr.tyGam)
+                                        ]
+  | Con         loc     .  info_4   :=  [ mkInfo1 "knResTy" (ppTy @knResTy)
                                         ]
 
 SEM TyExpr
@@ -394,13 +399,17 @@ SEM Expr
   | Let         loc     .  info_9   :=  [ mkInfo1 "prfCtxtId's" (pp @lhs.prfCtxtId >#< "-" >#< pp @prfCtxtId)
                                         , mkInfo1 "prElimGam" (ppGam @prElimGam)
                                         , mkInfo1 "decls.prElimTGam" (pp @decls.prElimTGam)
-                                        , mkInfo1 "body.prElimTGam" (pp @body.prElimTGam)
-                                        , mkInfo1 "gath2SubsPredL" (ppCommaList @gathSubsPredL)
+                                        , mkInfo1 "gath2DeclSubsPredL" (ppCommaList @gath2DeclSubsPredL)
                                         , mkInfo1 "dbg2PrfG (decl)" (pp @dbg2PrfG)
                                         , mkInfo1 "dbg2PrfPruneG (decl)" (pp @dbg2PrfPruneG)
                                         , mkInfo1 "dbg2PrfOrG (decl)" (pp @dbg2PrfOrG)
-                                        , mkInfo1 "dbg2PrLeaves (decl)" (ppAssocL @dbg2PrLeaves)
-                                        , mkInfo1 "prfPoiBackMp (decl)" (ppAssocL . fmToList $ @prfPoiBackMp)
+                                        , mkInfo1 "dbg2PrLeaves (decl)" (ppCommaList @dbg2PrLeaves)
+                                        , mkInfo1 "prfFrPoiCxBindLM" (ppCxBindLMap @prfFrPoiCxBindLM)
+                                        , mkInfo1 "prfPoiFwdMp (decl)" (ppAssocLV . assocLMapElt ppCommaList . fmToList $ @prfPoiFwdMp)
+                                        , mkInfo1 "prfPoiBackMp (decl)" (ppAssocLV . fmToList $ @prfPoiBackMp)
+                                        , mkInfo1 "prfArgPrOccL (decl)" (ppCommaList @prfArgPrOccL)
+                                        , mkInfo1 "l2QuValGam" (ppGam @l2QuValGam)
+                                        , mkInfo1 "tqo2Gam" (pp @tqo2Gam)
                                         , mkInfo1 "gathSubsPredL" (ppCommaList @gathSubsPredL)
                                         , mkInfo1 "dbgPrfG (decl)" (pp @dbgPrfG1)
                                         , mkInfo1 "dbgPrfPruneG (decl)" (pp @dbgPrfPruneG1)
@@ -415,8 +424,8 @@ SEM Expr
                                         , mkInfo1 "bodyPrfCBindLMap" (ppCBindLMap @bodyPrfCBindLMap)
                                         , mkInfo1 "bodyCSubst" (ppAssocL . fmToList $ @bodyCSubst)
                                         , mkInfo1 "bodyRemPrfPrL" (ppCommaList @bodyRemPrfPrL)
-                                        , mkInfo1 "tqoGam" (pp @tqoGam)
                                         , mkInfo1 "cSubst" (ppAssocL . fmToList $ @cSubst)
+                                        , mkInfo1 "tqoGam" (pp @tqoGam)
                                         ]
   | Lam         loc     .  info_9   :=  [ mkInfo1 "prfCtxtId's" (pp @lhs.prfCtxtId >#< "-" >#< pp @prfCtxtId)
                                         , mkInfo1 "imTy" (pp @imTy)
@@ -435,9 +444,15 @@ SEM Expr
                                         , mkInfo1 "prfCBindLMap" (ppCBindLMap @prfCBindLMap)
                                         , mkInfo1 "csubst" (ppAssocL . fmToList $ @csubst)
                                         , mkInfo1 "lamBodyCoeL" (ppCommaList @lamBodyCoeL)
+                                        , mkInfo1 "lam2BodyCoeL" (ppCommaList @lam2BodyCoeL)
                                         , mkInfo1 "lamArgCoeL" (ppCommaList @lamArgCoeL)
+                                        , mkInfo1 "lam2ArgCoeL" (ppCommaList @lam2ArgCoeL)
+                                        , mkInfo1 "impls2KnHd" (pp @impls2KnHd)
+                                        , mkInfo1 "impls2KnTl" (pp @impls2KnTl)
+                                        , mkInfo1 "poiL" (ppCommaList @poiL)
+                                        , mkInfo1 "availPoiS" (ppCommaList . setToList $ @availPoiS)
                                         ]
-  | AppTop      loc     .  info9    :=  [ mkInfo1 "prfCtxtId's" (pp @lhs.prfCtxtId >#< "-" >#< pp @prfCtxtId)
+  | AppTop      loc     .  info_9   :=  [ mkInfo1 "prfCtxtId's" (pp @lhs.prfCtxtId >#< "-" >#< pp @prfCtxtId)
                                         , mkInfo1 "resTy" (pp @resTy)
                                         , mkInfo1 "ty" (pp @ty)
                                         , mkInfo1 "imTy" (pp @imTy)
@@ -466,6 +481,13 @@ SEM Expr
                                         , mkInfo1 "prfCBindLMap" (ppCBindLMap @prfCBindLMap)
                                         , mkInfo1 "lamBodyCoeL" (ppCommaList @lamBodyCoeL)
                                         , mkInfo1 "lamArgCoeL" (ppCommaList @lamArgCoeL)
+                                        ]
+%%]
+
+%%[9
+SEM AGItf
+  | AGItf       loc     .  info_9   :=  [ mkInfo1 "expr.cexpr" (pp @expr.cexpr)
+                                        , mkInfo1 "expr.c2expr" (pp @expr.c2expr)
                                         ]
 %%]
 

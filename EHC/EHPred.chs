@@ -24,7 +24,13 @@
 %%[9 export(ProofState2(..))
 %%]
 
-%%[9 export(ProvenNode(..),ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,prvgCode,prvgBackToOrig,prvgReachableFrom)
+%%[9 export(ProvenNode(..),prvnIsAnd)
+%%]
+
+%%[9 export(ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,prvgCode,prvgCxBindLMap,prvgBackToOrig,prvgReachableFrom,prvgReachableTo,prvgIsFact)
+%%]
+
+%%[9 export(prvg2ReachableFrom)
 %%]
 
 %%[9 export(Rule(..),emptyRule,mkInstElimRule)
@@ -33,7 +39,7 @@
 %%[9 export(ProofCost(..),mkCost,mkCostAvailImpl,costVeryMuch,costZero,costNeg,costAdd,costALot,costBase,costAddHi)
 %%]
 
-%%[9 export(ClsFuncDep)
+%%[9 export(ClsFuncDep(..))
 %%]
 
 %%[9 export(PrIntroGamInfo(..),PrIntroGam,emptyPIGI)
@@ -45,13 +51,13 @@
 %%[9 export(PrElimGam,peGamAdd,peGamDel,peGamAddKnPr,peGamAddKnPrL)
 %%]
 
-%%[9 export(PrElimTGam,peTGamAdd,peTGamDel,peTGamAddKnPr,peTGamAddKnPrL)
+%%[9 export(PrElimTGam,peTGamAdd,peTGamDel,peTGamAddKnPr,peTGamAddKnPrL,peTGamPoiS)
 %%]
 
 %%[9 export(ProofCtxt(..),emptyProofCtxt)
 %%]
 
-%%[9 export(prvgLeaves,prvg2BackToOrig,prvg2BackMp)
+%%[9 import(EHTyFtv) export(prvgArgLeaves,prvgOrigs,prvg2BackToOrig,prvg2BackMp)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -136,6 +142,10 @@ data ProvenNode
   |  ProvenArg      { prvnPred           :: Pred        , prvnCost          :: ProofCost    }
   |  ProvenLcl      { prvnPred           :: Pred        , prvnEvid          :: CExpr        }
 
+prvnIsAnd :: ProvenNode -> Bool
+prvnIsAnd (ProvenAnd _ _ _ _) = True
+prvnIsAnd _                   = False
+
 instance Show ProvenNode where
   show _ = ""
 
@@ -177,10 +187,11 @@ instance Show ProvenGraph where
 
 instance PP ProvenGraph where
   pp (ProvenGraph i2n p2i p2oi p2fi)
-    =      "Pr->Ids  :" >#< (ppAssocLV . assocLMapSnd ppCommaList . fmToList $ p2i)
+    =      "Pr->Ids  :" >#< pp2i p2i
        >-< "Id->Nd   :" >#< ppAssocLV (fmToList i2n)
-       >-< "Pr->Orig :" >#< ppAssocLV (fmToList p2oi)
-       >-< "Pr->Facts:" >#< ppAssocLV (fmToList p2fi)
+       >-< "Pr->Orig :" >#< pp2i p2oi
+       >-< "Pr->Facts:" >#< pp2i p2fi
+    where pp2i = ppAssocLV . assocLMapElt ppCommaList . fmToList
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -246,7 +257,7 @@ prvgSplitIntoSubstBind g@(ProvenGraph _ p2i _ _) provenNdL
                          in  (s',partition canAsSubst (s' `cAppSubst` asB))
                   )
               $ (emptyCSubst
-                ,partition canAsSubst (assocLMapSnd prvnEvid provenNdL)
+                ,partition canAsSubst (assocLMapElt prvnEvid provenNdL)
                 )
 
 prvgCode :: [PredOcc] -> ProvenGraph -> (CBindLMap,CSubst,Set PredOccId,PP_DocL)
@@ -294,6 +305,43 @@ prvgCode prL g@(ProvenGraph i2n p2i _ p2fi)
               in  map s . map (\(p,(i:_)) -> PredOcc p (maybe i head . lookupFM p2oi $ p)) $ p2iL
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code gen for a ProvenGraph
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+prvgCxBindLMap :: ProvenGraph -> CSubst -> CxBindLMap
+prvgCxBindLMap g@(ProvenGraph i2n _ _ p2fi) cSubst
+  =  let  factPoiL = concat (eltsFM p2fi)
+          leaveL = prvgAllLeaves g
+          leaveS = mkSet leaveL
+          binds  = [ (i,(CBind_Bind (poiHNm i) (cSubst `cAppSubst` prvnEvid n),r `Set.intersect` leaveS))
+                   | (i,n) <- fmToList i2n
+                   , prvnIsAnd n && not (i `elem` factPoiL)
+                   , let (r,_) = prvg2ReachableFrom g [i]
+                   ]
+     in   CxBindLMap
+          .  listToFM
+          .  map  (\i -> let dpdS = prvgReachableTo g [i]
+                         in  (i,[ b | (i,b) <- binds, i `elementOf` dpdS ])
+                  )
+          $  leaveL
+%%]
+prvgCxBindLMap :: ProvenGraph -> CxBindLMap
+prvgCxBindLMap (ProvenGraph i2n _ _ p2fi)
+  =  let  factPoiL = concat (eltsFM p2fi)
+          m =  map  (\l@((poi,n):_)
+                      ->  ((poiCxId poi,prvnPred n)
+                          ,(mkSet (assocLKeys l)
+                           ,[ CBind_Bind (poiHNm i) (prvnEvid p) | (i,p) <- l ]
+                          ))
+                    )
+               . groupSortOn (poiCxId . fst)
+               . filter (\(i,n) -> prvnIsAnd n && not (i `elem` factPoiL))
+               . fmToList
+               $ i2n
+     in   listToFM m
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Reachable nodes in a ProvenGraph
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -311,20 +359,22 @@ prvgReachableFrom (ProvenGraph i2n _ _ _)
           rr = foldr r
      in   rr emptySet
 %%]
-prvgReachableFrom :: ProvenGraph -> [PredOccId] -> Set PredOccId
-prvgReachableFrom (ProvenGraph i2n _ _ _)
-  =  let  r uid rh@(reachSet,hideSet)
-            =  if uid `elementOf` reachSet || uid `elementOf` hideSet
-               then  rh
-               else  let  reachSet' = addToSet reachSet uid
-                     in   case lookupFM i2n uid of
-                                Just (ProvenAnd _ es _ _ ) -> rr (reachSet',hideSet `Set.union` mkSet h) r
-                                                              where (r,h) = partition (\i -> case lookupFM i2n i of {Just (ProvenLcl _ _) -> False ; _ -> True})
-                                                                                      es
-                                Just (ProvenOr  _ es _   ) -> rr (reachSet',hideSet) es
-                                _                          -> (reachSet',hideSet)
-          rr = foldr r
-     in   fst . rr (emptySet,emptySet)
+
+%%[9
+prvg2ReachableFrom :: ProvenGraph -> [PredOccId] -> (Set PredOccId,[PredOccId])
+prvg2ReachableFrom (ProvenGraph i2n _ _ _) poiL
+  =  let  nextOf poi
+            =  case lookupFM i2n poi of
+                  Just (ProvenAnd _ es _ _ ) -> es
+                  Just (ProvenOr  _ es _   ) -> es
+                  _                          -> []
+          rr r@(reachSet,revTopSort) poiL
+            =  let  newPoiL = filter (not . (`elementOf` reachSet)) . concat . map nextOf $ poiL
+               in   if null newPoiL
+                    then r
+                    else rr (reachSet `Set.union` mkSet newPoiL,newPoiL ++ revTopSort) newPoiL
+     in   rr (mkSet poiL,poiL) poiL
+%%]
 
 %%[9
 prvgReachableTo :: ProvenGraph -> [PredOccId] -> Set PredOccId
@@ -346,15 +396,85 @@ prvgReachableTo (ProvenGraph i2n _ _ _)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Original nodes, fact nodes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+prvgOrigs :: ProvenGraph -> [PredOccId]
+prvgOrigs (ProvenGraph _ _ p2oi _)
+  =  concat (eltsFM p2oi)
+%%]
+
+%%[9
+prvgFacts :: ProvenGraph -> [PredOccId]
+prvgFacts (ProvenGraph _ _ _ p2fi)
+  =  concat (eltsFM p2fi)
+
+prvgIsFact :: ProvenGraph -> PredOccId -> Bool
+prvgIsFact g = (`elem` prvgFacts g)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Nodes which do not depend on others
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-prvgLeaves :: ProvenGraph -> [(Pred,PrfCtxtId)]
-prvgLeaves (ProvenGraph i2n _ p2oi _)
-  =  [(pr,poiCxId poi) | (pr,poiL) <- fmToList p2oi, isNotProvenAnd pr, poi <- poiL ]
-  where isNotProvenAnd pr = null [ ndPr | (ProvenAnd ndPr _ _ _) <- eltsFM i2n, ndPr == pr ]
+prvgAllLeaves :: ProvenGraph -> [PredOccId]
+prvgAllLeaves g@(ProvenGraph i2n _ p2oi _)
+  = keysFM (filterFM (const isLf) i2n) ++ prvgFacts g
+  where  isLf (ProvenArg _ _) = True
+         isLf _               = False
+         isFact = prvgIsFact g
 %%]
+prvgAllLeaves :: ProvenGraph -> [PredOccId]
+prvgAllLeaves g@(ProvenGraph i2n _ p2oi _)
+  = keysFM (filterFM (\i n -> not (isFact i) && isLf n) i2n)
+  where  isLf (ProvenArg _ _     ) = True
+         isLf (ProvenAnd _ es _ _) = null es || all isFact es
+         isLf _               = False
+         isFact = prvgIsFact g
+
+%%[9
+prvgArgLeaves :: ProvenGraph -> [PredOccId] -> [Pred]
+prvgArgLeaves g@(ProvenGraph i2n _ p2oi _) topSort
+  =  filter (any (not . tvCatIsFixed) . eltsFM . tyFtvMp . predTy) l
+  where  provenAnds pr = [ n | n@(ProvenAnd ndPr _ _ _) <- eltsFM i2n, ndPr == pr ]
+         isFact = prvgIsFact g
+         (l,_)
+           = foldr  (\poi sl@(l,d) ->
+                        let  n = fromJust . lookupFM i2n $ poi
+                             pr = prvnPred n
+                             isOrig = pr `elemFM` p2oi
+                             done = pr `elementOf` d
+                             dpdPrsOf (ProvenAnd _ es _ _)
+                               = catMaybes . map (fmap prvnPred . lookupFM i2n) . filter (not . isFact) $ es
+                             needed n = any (`elementOf` d) (dpdPrsOf n)
+                        in   case n of
+                                 ProvenAnd _ es _ _ | not isOrig && not done
+                                       ->  if needed n
+                                           then (l,addToSet d pr)
+                                           else sl
+                                 _ | isOrig && not done
+                                       ->  let  ands = provenAnds pr
+                                           in   if null ands || all (not . needed) ands
+                                                then (pr:l,addToSet d pr)
+                                                else sl
+                                   | otherwise
+                                       ->  sl
+                    )
+                    ([],emptySet)
+                    topSort
+%%]
+
+prvgArgLeaves :: ProvenGraph -> [(Pred,PrfCtxtId)]
+prvgArgLeaves (ProvenGraph i2n _ p2oi _)
+  =  [(pr,poiCxId poi) | (pr,poiL) <- fmToList p2oi, isNotProvenAnd pr, poi <- poiL ]
+  where isNotProvenAnd pr = null [ ndPr | prvn <- eltsFM i2n, prvnIsAnd prvn, let ndPr = prvnPred prvn, ndPr == pr ]
+
+prvgArgLeaves :: ProvenGraph -> [(Pred,PrfCtxtId)]
+prvgArgLeaves (ProvenGraph i2n _ p2oi _)
+  =  [(pr,ci) | (pr,poiL) <- fmToList p2oi, poi <- poiL, let ci = poiCxId poi, isNotProvenAnd ci pr ]
+  where isNotProvenAnd ci pr = null [ ndPr | (poi,prvn) <- fmToList i2n, prvnIsAnd prvn, let ndPr = prvnPred prvn, ci == poiCxId poi, ndPr == pr ]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Back to orginal nodes
@@ -369,7 +489,7 @@ prvgBackToOrig g@(ProvenGraph i2n p2i _ p2fi)
                            ]
           backFM        =  listToFM backL
           backUid uid   =  maybe uid id (lookupFM backFM uid)
-          backCSubst    =  poiCExprLToCSubst . assocLMapSnd mkCExprPrHole $ backL
+          backCSubst    =  poiCExprLToCSubst . assocLMapElt mkCExprPrHole $ backL
           backN n       =  case n of
                              ProvenAnd pr es c ev    -> ProvenAnd pr (map backUid es) c (backCSubst `cAppSubst` ev)
                              ProvenOr pr es c        -> ProvenOr pr (map backUid es) c
@@ -412,10 +532,10 @@ prvg2BackToOrig poiBackMp g@(ProvenGraph i2n p2i p2oi p2fi)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-type ClsFuncDep = ([Int],[Int])
+data ClsFuncDep = ClsFuncDep [Int] [Int] deriving Show
 
 instance PP ClsFuncDep where
-  pp (f,t) = ppCommaList f >|< "->" >|< ppCommaList t
+  pp (ClsFuncDep f t) = ppCommaList f >|< "->" >|< ppCommaList t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -559,6 +679,9 @@ peTGamAddKnPrL ci i prL g
   =  foldr  (\(i,p) (g,nL,idL) -> let n = poiHNm i in (peTGamAddKnPr ci n i p g,n:nL,i:idL))
             (g,[],[])
             (zip (map (mkPrId ci) . mkNewUIDL (length prL) $ i) prL)
+
+peTGamPoiS :: PrfCtxtId -> PrElimTGam -> Set PredOccId
+peTGamPoiS ci = unionManySets . map (mkSet . map rulId . pegiRuleL) . tgamElts ci
 %%]
 
 

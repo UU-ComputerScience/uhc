@@ -18,10 +18,13 @@
 %%[4 hs import(EHDebug,UU.Pretty)
 %%]
 
-%%[4 hs import(List) export(tyInst1Quants, tyInst1Exists, instCoConst, instContra)
+%%[4 hs import(List) export(tyInst1Quants, tyInst1Exists, instCoConst, instContra,instCo)
 %%]
 
 %%[4_2 hs export(instPlain,instFixed,instMeet)
+%%]
+
+%%[6_4 hs export(instCoExist)
 %%]
 
 %%[4 import(EHTyAbsSyn)
@@ -57,16 +60,24 @@ tyInstKnown = tyInst' (\tv -> Ty_Var tv TyVarCateg_Fixed)
 %%[4.HowToInst hs
 type HowToInst = TyQu -> TyVarId -> Ty
 
-instCoConst, instContra :: HowToInst
+instCoConst, instContra, instCo :: HowToInst
 instCoConst  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else mkTyCon ("C_" ++ show v)
 instContra   q v = if tyquIsForall q then Ty_Var v TyVarCateg_Fixed else Ty_Var v TyVarCateg_Plain
+instCo       q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else Ty_Var v TyVarCateg_Fixed
 %%]
+instCoConst      = instCo
+instCoConst  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else mkTyCon ("C_" ++ show v)
 
 %%[4_2 hs
 instPlain, instFixed, instMeet :: HowToInst
 instPlain  _    = mkTyVar
 instFixed  _ v  = Ty_Var v TyVarCateg_Fixed
 instMeet   _ v  = Ty_Both v []
+%%]
+
+%%[6_4 hs
+instCoExist :: HowToInst
+instCoExist  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else Ty_Var v TyVarCateg_Exist
 %%]
 
 %%[11 hs
@@ -84,9 +95,16 @@ tyInst uniq onlyExists howToInst ty
 
 tyInst1Quants :: UID -> HowToInst -> Ty -> (Ty,TyVarIdL)
 tyInst1Quants uniq howToInst ty = tyInst uniq False howToInst ty
+%%]
 
+%%[4.tyInst1Exists hs
 tyInst1Exists :: UID -> Ty -> Ty
 tyInst1Exists uniq ty = fst (tyInst uniq True instCoConst ty)
+%%]
+
+%%[6_4.tyInst1Exists -4.tyInst1Exists hs
+tyInst1Exists :: UID -> Ty -> Ty
+tyInst1Exists uniq ty = fst (tyInst uniq True instCoExist ty)
 %%]
 
 tyInst :: UID -> Bool -> HowToInst -> Ty -> (Ty,TyVarIdL)
