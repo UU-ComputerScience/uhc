@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -254,6 +254,7 @@ SEM CPat
 %%[9
 SEM CExpr
   | Hole        loc         .   jvSrc       =   jvNmPP (uidHNm @uid)
+  | HoleLet     loc         .   jvSrc       =   @body.jvSrc
   | CoeArg      loc         .   jvSrc       =   jvNmPP hsnUnknown
   | ImplsApp    loc         .   jvSrc       =   @func.jvSrc
   | ImplsLam    loc         .   jvSrc       =   @body.jvSrc

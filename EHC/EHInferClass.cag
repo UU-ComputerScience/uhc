@@ -51,7 +51,7 @@ SEM Decl
                                                                                      in   \[sub] -> mkCExprSelCase emptyRCEEnv (hsnSuffix supNm "!") sub CTagRec supNm supNm o
                                                                     , rulNmEvid    = hsnUnknown
                                                                     , rulId        = mkPrId @lhs.prfCtxtId u
-                                                                    , rulCost      = mkCost (2 * costBase)
+                                                                    , rulCost      = costBase `costMulBy` 2
                                                                     , rulFuncDeps  = []
                                                                     }
                                                         in   zipWith3 (\p n u -> (tyPredMatchNm p,mkR u @hdPrTy p n)) @ctxtPrTyL @supClsNmL (mkNewUIDL (length @ctxtPrTyL) @lUniq2)
@@ -102,7 +102,7 @@ SEM Decl
                                 .   ctxtClsNmL      =   map tyPredMatchNm @ctxtPrTyFixL
                                 .   (dictNm,inclForElim)
                                                     =   maybe (poiHNm @instId,True) id @mbNmElim
-                                .   pigi            =   fromJust (gamLookup @lhs.prIntroGam @instClsNm)
+                                .   pigi            =   maybe emptyPIGI id (gamLookup @lhs.prIntroGam @instClsNm)
                                 .   supPrTyL        =   let  t      =  rulRuleTy . pigiRule $ @pigi
                                                              st     =  mkNewTyVarL (tyArrowArity . tyQuant $ t) @lUniq4 `mkTyArrow` @hdPrTyFix
                                                              fo     =  fitsIn predFIOpts emptyFE @lUniq3 t st

@@ -60,7 +60,7 @@
 %%[9 import(EHDebug,EHCoreSubst,EHTyFitsInCommon) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
 %%]
 
-%%[9 export(TreeGam,emptyTGam,tgamUnit,tgamLookup,tgamLookupAll,tgamElts,tgamPushNew,tgamAddGam,tgamPushGam,tgamAdd,tgamPop,tgamUpdAdd,tgamUpd,tgamInScopes,tgamIsInScope)
+%%[9 export(TreeGam,emptyTGam,tgamUnit,tgamLookup,tgamLookupAll,tgamElts,tgamPushNew,tgamAddGam,tgamPushGam,tgamAdd,tgamPop,tgamUpdAdd,tgamUpd,tgamMbUpd,tgamInScopes,tgamIsInScope)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

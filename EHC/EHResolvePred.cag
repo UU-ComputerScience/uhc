@@ -70,7 +70,7 @@ SEM Decl
                             .   supPrUIDL           =   map (mkPrId @prfCtxtId) . mkNewUIDL (length @supPrTyL) $ @lUniq4
                             .   supPrElimGam        =   peGamDel @instClsNm @elimRule @instPrElimGam
                             .   declsPrElimGam      =   peGamDel @instClsNm @elimRule @instPrElimGam
-                            .   (supPrfCBindLMap,supCSubst,supRemPrfPrL,supEvidL,supPrfErrs,(dbgPrfG1,dbgPrfPruneG1,dbgPrfTr1))
+                            .   (supPrfCBindLMap,supCSubst,supRemPrfPrL,supEvidL,_,(dbgPrfG1,dbgPrfPruneG1,dbgPrfTr1))
                                                     =   prfPreds @lUniq5 (emptyFE {fePrElimGam = @supPrElimGam}) (zipWith PredOcc (map tyPred @supPrTyL) @supPrUIDL)
                 decls       .   prElimGam           =   @declsPrElimGam
 %%]
@@ -106,9 +106,9 @@ SEM Expr
 SEM Expr
   | Let         loc         .   gathSubsPredL       =   @decls.tyCnstr |=> @decls.gathPredL
                             .   gathBodySubsPredL   =   @body.tyCnstr |=> @body.gathPredL
-                            .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs,(dbgPrfG1,dbgPrfPruneG1,dbgPrfTr1))
+                            .   (prfCBindLMap,csubst,remPrfPrL,_,_,(dbgPrfG1,dbgPrfPruneG1,dbgPrfTr1))
                                                     =   prfPreds @lUniq4 (emptyFE {fePrElimGam = @prElimGam}) @gathSubsPredL
-                            .   (bodyPrfCBindLMap,bodyCSubst,bodyRemPrfPrL,_,bodyPrfErrs,(dbgPrfG2,dbgPrfPruneG2,dbgPrfTr2))
+                            .   (bodyPrfCBindLMap,bodyCSubst,bodyRemPrfPrL,_,_,(dbgPrfG2,dbgPrfPruneG2,dbgPrfTr2))
                                                     =   prfPreds @lUniq5 (emptyFE {fePrElimGam = @prElimGam}) @gathBodySubsPredL
                             .   quantPrIdSet        =   unionManySets
                                                         . map (unionManySets . map (maybe emptySet fst . lookupFM @prfCBindLMap) . setToList . tqoInsPrIdSet)
@@ -133,13 +133,13 @@ SEM Expr
   | AppTop Lam  loc         .   (knPrL,knImplsTl)   =   implsPredsTail . tyImpls $ @imSubsTy
                             .   prfFE               =   emptyFE {fePrElimGam = @prElimGam}
   | AppTop Lam LamImpl
-                loc         .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs,(dbgPrfG,dbgPrfPruneG,dbgPrfTr))
+                loc         .   (prfCBindLMap,csubst,remPrfPrL,_,_,(dbgPrfG,dbgPrfPruneG,dbgPrfTr))
                                                     =   prfPreds @lUniq3 @prfFE @inKnGathPrL
                             .   gathPredL           =   @remPrfPrL ++ @remGathPrL
 
 SEM Decl
   | Instance    loc         .   gathSubsPredL       =   @decls.tyCnstr |=> @decls.gathPredL
-                            .   (prfCBindLMap,csubst,remPrfPrL,_,prfErrs,(dbgPrfG2,dbgPrfPruneG2,dbgPrfTr2))
+                            .   (prfCBindLMap,csubst,remPrfPrL,_,_,(dbgPrfG2,dbgPrfPruneG2,dbgPrfTr2))
                                                     =   prfPreds @lUniq7 (emptyFE {fePrElimGam = @declsPrElimGam}) @gathSubsPredL
                 lhs         .   gathPredL           =   []
 %%]
@@ -154,7 +154,7 @@ SEM Decl
                                                                    @gathSubsPredL
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Pred resolution for expressions (tgam version)
+%%% Pred env (tgam version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
@@ -181,6 +181,10 @@ SEM Expr
   | AppTop      loc         .   prf2FE              =   emptyFE {fePrElimTGam = @expr.prElimTGam}
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pred resolution (tgam version)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[9
 SEM Expr
   | Let         loc         .   gath2DeclSubsPredL  =   @decls.tyCnstr |=> @decls.gath2PredL
@@ -194,22 +198,29 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | Let         loc         .   (prfFrPoiCxBindLM,prfIntroCBindL,prfArgPrOccL,prfPoiFwdMp,prfPoiBackMp,_,(dbg2PrfG,dbg2PrfPruneG,dbg2PrfOrG,dbg2PrLeaves,_))
-                                                    =   prf2Preds @lUniq4 (emptyFE {fePrElimTGam = @decls.prElimTGam}) @gath2PrfPrOccL
-                            .   (bodyPrfFrPoiCxBindLM,bodyPrfIntroCBindL,bodyPrfArgPrOccL,_,_,_,(dbg2PrfG2,_,_,_,_))
-                                                    =   prf2Preds @lUniq5 (emptyFE {fePrElimTGam = @body.prElimTGam}) @gath2BodySubsPredL
+  | Let         loc         .   letFE               =   emptyFE {fePrfCtxtId = @prfCtxtId}
+                            .   (prfFrPoiCxBindLM,prfIntroCBindL,prfCSubst,prfArgPrOccL,_,prfErrs
+                                  ,(dbg2PrfG,dbg2PrfPruneG,dbg2PrfOrG,dbg2PrfIntermG1,dbg2PrfIntermG2,dbg2PrElimTGam,dbg2PrLeaves,prfPoiFwdMp,prfPoiBackMp,dbg2TrPPL))
+                                                    =   prf2PredsDbg @lUniq4 (@letFE {fePrElimTGam = @decls.prElimTGam}) @gath2PrfPrOccL
+                            .   (bodyPrfFrPoiCxBindLM,bodyPrfIntroCBindL,bodyPrfCSubst,bodyPrfArgPrOccL,_,bodyPrfErrs)
+                                                    =   prf2Preds @lUniq5 (@letFE {fePrElimTGam = @body.prElimTGam}) @gath2BodySubsPredL
                             .   quant2PrIdSet       =   unionManySets
                                                         . map (unionManySets . map (cxbmDpdPoiS @prfFrPoiCxBindLM) . setToList . tqoInsPrIdSet)
-                                                        . gamElts $ @tqo2Gam
+                                                        . gamElts $ @tqoGam
                             .   gath2PredL          =   @gath2RemPrOccL ++ filter (not . (`elementOf` @quant2PrIdSet) . poPrId) @prfArgPrOccL ++ @bodyPrfArgPrOccL
                 lhs         .   gath2PredL          =   @gath2PredL
 %%]
 
 %%[9
 SEM Decl
-  | Instance    loc         .   gath2DeclSubsPredL      =   @decls.tyCnstr |=> @decls.gath2PredL
-                            .   (prfFrPoiCxBindLM,prfIntroCBindL,prfArgPrOccL,_,_,_,(dbg2PrfG,dbg2PrfPruneG,dbg2PrfOrG,dbg2PrLeaves,_))
-                                                    =   prf2Preds @lUniq7 (emptyFE {fePrElimTGam = @declsPrElimTGam}) @gath2DeclSubsPredL
+  | Instance    loc         .   instFE              =   emptyFE {fePrfCtxtId = @prfCtxtId}
+                            .   gath2DeclSubsPredL  =   @decls.tyCnstr |=> @decls.gath2PredL
+                            .   (prfFrPoiCxBindLM,prfIntroCBindL,prfCSubst,prfArgPrOccL,_,prfErrs
+                                  ,(dbg2PrfG,dbg2PrfPruneG,dbg2PrfOrG,dbg2PrfIntermG1,dbg2PrfIntermG2,dbg2PrElimTGam,dbg2PrLeaves,prfPoiFwdMp,prfPoiBackMp,dbg2TrPPL))
+                                                    =   prf2PredsDbg @lUniq7 (@instFE {fePrElimTGam = @decls.prElimTGam}) @gath2DeclSubsPredL
+                            .   supForPrfPrOccL     =   zipWith PredOcc (map tyPred @supPrTyL) @supPrUIDL
+                            .   (supPrfFrPoiCxBindLM,supPrfIntroCBindL,supPrfCSubst,supPrfArgPrOccL,supPrfEvidL,supPrfErrs)
+                                                    =   prf2Preds @lUniq5 (@instFE {fePrElimTGam = @supPrElimTGam}) @supForPrfPrOccL
                 lhs         .   gath2PredL          =   []
 %%]
 
@@ -294,40 +305,73 @@ SEM AGItf
   | AGItf       loc         .   cSubst              =   emptyCSubst
 
 SEM Decl
-  | Instance    loc         .   cSubst              =   @lhs.cSubst `cAppSubst` @supCSubst `cAppSubst` @csubst
+  | Instance    loc         .   cSubst              =   @lhs.cSubst `cSubstApp` @supPrfCSubst `cSubstApp` @prfCSubst
 
 SEM Expr
-  | Let         loc         .   cSubst              =   cnstrImplsToCSubst @tqoTyCnstr `cAppSubst` @lhs.cSubst `cAppSubst` @bodyCSubst `cAppSubst` @csubst
-  | Lam AppTop  loc         .   cSubst              =   (poiCExprLToCSubst . map (\i -> (i,CExpr_Var (poiHNm i))) $ (@uidLKnHd ++ @uidLKnTl))
-                                                            `cAppSubst` @lhs.cSubst `cAppSubst` @csubst
-  | LamImpl     loc         .   cSubst              =   @lhs.cSubst `cAppSubst` @csubst
+  | Let         loc         .   cSubst              =   cnstrImplsToCSubst @tqoTyCnstr `cSubstApp` @lhs.cSubst
+                                                          `cSubstApp` @bodyPrfCSubst `cSubstApp` @prfCSubst
 %%]
+ATTR AllNT [ cSubst: CSubst | | ]
 
 SEM AGItf
-  | AGItf       loc         .   cSubst              =   cnstrImplsToCSubst @expr.tyCnstr `cAppSubst` @csubst
+  | AGItf       loc         .   cSubst              =   emptyCSubst
+
+SEM Decl
+  | Instance    loc         .   cSubst              =   @lhs.cSubst `cSubstApp` @supCSubst `cSubstApp` @csubst
+
+SEM Expr
+  | Let         loc         .   cSubst              =   cnstrImplsToCSubst @tqoTyCnstr `cSubstApp` @lhs.cSubst `cSubstApp` @bodyCSubst `cSubstApp` @csubst
+  | Lam AppTop  loc         .   cSubst              =   (poiCExprLToCSubst . map (\i -> (i,CExpr_Var (poiHNm i))) $ (@uidLKnHd ++ @uidLKnTl))
+                                                            `cSubstApp` @lhs.cSubst `cSubstApp` @csubst
+  | LamImpl     loc         .   cSubst              =   @lhs.cSubst `cSubstApp` @csubst
+
+SEM AGItf
+  | AGItf       loc         .   cSubst              =   cnstrImplsToCSubst @expr.tyCnstr `cSubstApp` @csubst
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% UID's of known predicates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
+%%]
 SEM Expr
   | Lam AppTop  loc         .   uidLKnHd            =   implsPrIds @implsKnHd
                             .   uidLKnTl            =   implsPrIds @implsKnTl
                             .   knPrUidL            =   @uidLKnHd ++ @uidLKnTl
   | LamImpl     loc         .   knPrUidL            =   [@knPrUid]
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Coercions resulting from pred usage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
+%%]
+SEM Expr
+  | Lam AppTop  loc         .   implsKnHd           =   tyImpls @imSubsTy
+                            .   implsKnTl           =   @lhs.finTyCnstr |=> @knImplsTl
+
+%%[9
 SEM Expr
   | App         loc         .   appImplsCoeL        =   mkImplsAppCoe . tyImpls . (@lhs.finTyCnstr |=>) $ @imTy
   | AppImpl     loc         .   appImplsCoeL        =   []
-  | Lam AppTop  loc         .   implsKnHd           =   tyImpls @imSubsTy
-                            .   implsKnTl           =   @lhs.finTyCnstr |=> @knImplsTl
+%%]
+
+%%[9
+SEM Expr
+  | Lam LamImpl loc         .   lamBodyCoeL         =   mkLamBodyCoe
+                                                            (mkCoe (\e -> rceMatch (RCEEnv @lhs.valGam @lhs.tyGam) [@arg.topNm] [CAlt_Alt [@arg.cpat] e] cvarUndefined))
+                                                            @body.appArgCoeL
+%%]
+
+%%[9
+SEM Expr
+  | Lam         loc         .   lamArgCoeL          =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL ++ [mkLamCoe @arg.topNm]
+  | AppTop      loc         .   lamArgCoeL          =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL
+  | LamImpl     loc         .   lamArgCoeL          =   [mkLamCoe @arg.topNm `coeCompose` mkLetRecCoe @poiBindL]
+%%]
+SEM Expr
+  | App         loc         .   appImplsCoeL        =   mkImplsAppCoe . tyImpls . (@lhs.finTyCnstr |=>) $ @imTy
+  | AppImpl     loc         .   appImplsCoeL        =   []
   | Lam LamImpl loc         .   lamBodyCoeL         =   mkLamBodyCoe
                                                                 (mkCoe (\e -> rceMatch (RCEEnv @lhs.valGam @lhs.tyGam) [@arg.topNm] [CAlt_Alt [@arg.cpat] e] cvarUndefined))
                                                                 @body.appArgCoeL
@@ -338,7 +382,6 @@ SEM Expr
   | AppTop      loc         .   lamArgCoeL          =   mkImplsLamCoe
                                                             (mkLetRecCoe (mkCBindLForUIDL @cbindLMap (`elem` @knPrUidL)))
                                                             (@lhs.finTyCnstr |=> @implsKnHd)
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Bindings for preds
@@ -347,7 +390,7 @@ SEM Expr
 %%[9
 SEM Expr
   | Lam AppTop  loc         .   impls2KnHd          =   tyImpls @imSubsTy
-                            .   impls2KnTl          =   @lhs.fin2TyCnstr |=> @knImplsTl
+                            .   impls2KnTl          =   @lhs.finTyCnstr |=> @knImplsTl
                             .   poiLKnTl            =   implsPrIds @impls2KnTl
                             .   poiL                =   implsPrIds @impls2KnHd ++ @poiLKnTl
   | LamImpl     loc         .   poiL                =   [@knPrUid]
@@ -356,7 +399,7 @@ SEM Expr
 %%[9
 SEM Expr
   | Lam AppTop LamImpl
-                loc         .   poiBindL            =   mkCxBindLForPoiL @lhs.cxbindLMap @poiL @availPoiS
+                loc         .   poiBindL            =   mkCxBindLForPoiL @availPoiS @lhs.cxbindLMap @poiL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -364,22 +407,22 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
+%%]
 SEM Expr
   | App         loc         .   app2ImplsCoeL       =   mkImplsAppCoe . tyImpls . (@lhs.fin2TyCnstr |=>) $ @imTy
   | AppImpl     loc         .   app2ImplsCoeL       =   []
-%%]
 
 %%[9
+%%]
 SEM Expr
   | Lam LamImpl loc         .   lam2BodyCoeL        =   mkLamBodyCoe
                                                             (mkCoe (\e -> rceMatch (RCEEnv @lhs.valGam @lhs.tyGam) [@arg.topNm] [CAlt_Alt [@arg.cpat] e] cvarUndefined))
                                                             @body.app2ArgCoeL
-%%]
 
 %%[9
+%%]
 SEM Expr
   | Lam         loc         .   lam2ArgCoeL         =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL ++ [mkLamCoe @arg.topNm]
   | AppTop      loc         .   lam2ArgCoeL         =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL
   | LamImpl     loc         .   lam2ArgCoeL         =   [mkLamCoe @arg.topNm `coeCompose` mkLetRecCoe @poiBindL]
-%%]
 

@@ -1,3 +1,4 @@
+-- simple pred check
 let  class A a where
        aa :: a -> a
 in

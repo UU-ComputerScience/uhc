@@ -46,10 +46,12 @@ checkPrClassName g pl
 
 %%[9
 SEM AGItf
-  | AGItf       loc         .   predNotPrfErrs      =   if null @expr.gathPredL then [] else [Err_NotProvenPreds @expr.gathPredL]
+  | AGItf       loc         .   predNotPrfErrs      =   if null @expr.gath2PredL then [] else [Err_NotProvenPreds @expr.gath2PredL]
 
 SEM Decl
-  | Instance    loc         .   predNotPrfErrs      =   if null @supRemPrfPrL then [] else [Err_NotProvenPreds @supRemPrfPrL]
+  | Instance    loc         .   predNotPrfErrs      =   if null @supPrfArgPrOccL && null @prfArgPrOccL 
+                                                        then []
+                                                        else [Err_NotProvenPreds (@prfArgPrOccL ++ @supPrfArgPrOccL)]
   | InstanceIntro
                 loc         .   predErrs            =   if null (ftv @prExpr.ty) then [] else [Err_TyHasFreeTVars @prExpr.ty]
 
@@ -58,6 +60,11 @@ SEM PrExpr
 
 SEM Expr
   | AppImpl LamImpl
-  				loc         .   nmErrs              =   []
+                loc         .   nmErrs              =   []
 %%]
+SEM AGItf
+  | AGItf       loc         .   predNotPrfErrs      =   if null @expr.gathPredL then [] else [Err_NotProvenPreds @expr.gathPredL]
+
+SEM Decl
+  | Instance    loc         .   predNotPrfErrs      =   if null @supRemPrfPrL then [] else [Err_NotProvenPreds @supRemPrfPrL]
 

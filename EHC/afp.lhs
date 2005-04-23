@@ -527,6 +527,7 @@
    P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
   }
   {\{atze,doaitse\}@@cs.uu.nl}
+\toappear{Submitted to the International Conference onf Functional Programming 2005 (ICFP 2005), September 26-28, Tallin, Estonia}
 %else %% useSigplanconfSty
 \numberofauthors{1}
 \author{
