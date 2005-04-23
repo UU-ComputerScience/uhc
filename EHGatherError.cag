@@ -127,13 +127,13 @@ SEM PrExpr
 
 SEM Expr
   | Lam         lhs         .   errL        :=  mkNestErr @pp
-                                                    (foErrL @foKnFun ++ @prfErrs
+                                                    (foErrL @foKnFun
                                                       ++ @arg.errL ++ @body.errL)
-  | AppTop      lhs         .   errL        :=  mkNestErr @pp (@prfErrs ++ @expr.errL)
+  | AppTop      lhs         .   errL        :=  mkNestErr @pp (@expr.errL)
   | AppImpl     lhs         .   errL        =   mkNestErr @pp
                                                     (@nmErrs ++ foErrL @foPr ++ @func.errL ++ @arg.errL ++ @argPr.errL)
   | LamImpl     lhs         .   errL        =   mkNestErr @pp
-                                                    (@nmErrs ++ foErrL @foKnFun ++ foErrL @foPr ++ @prfErrs ++ @arg.errL ++ @argPr.errL ++ @body.errL)
+                                                    (@nmErrs ++ foErrL @foKnFun ++ foErrL @foPr ++ @arg.errL ++ @argPr.errL ++ @body.errL)
 %%]
 
 %%[11
@@ -177,7 +177,7 @@ SEM Decl
                 lhs         .   errL        =   []
 
 SEM Expr
-  | Let         loc         .   letErrL     :=  @dupErrs ++ @prfErrs
+  | Let         loc         .   letErrL     :=  @dupErrs ++ @prfErrs ++ @bodyPrfErrs
 
 SEM AGItf
   | AGItf       loc         .   errTopPP    :=  ppErrs (@predNotPrfErrs)
@@ -185,7 +185,7 @@ SEM AGItf
 
 %%[9_1
 SEM Expr
-  | Let         loc         .   letErrL     :=  @dupErrs ++ @gamErrL ++ @prfErrs
+  | Let         loc         .   letErrL     :=  @dupErrs ++ @gamErrL ++ @prfErrs ++ @bodyPrfErrs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

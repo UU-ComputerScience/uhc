@@ -12,7 +12,7 @@
 %%[8 hs import(UU.Pretty,EHCommon,EHTy,EHCore) export(ppCModule)
 %%]
 
-%%[9 hs import(FiniteMap,Set,EHTyPretty) export(ppCBindLMap,ppCxBindLMap)
+%%[9 hs import(FiniteMap,Set,EHTyPretty) export(ppCBindLMap,ppCxBindLMap,ppCBindL)
 %%]
 
 %%[8.WRAPPER import(EHCoreAbsSyn)
@@ -35,8 +35,18 @@ instance PP CExpr where
 %%]
 
 %%[9 hs
+ppCBindL :: CBindL -> PP_Doc
+ppCBindL = ppAssocL . map (\(CBind_Bind n v) -> (n,v))
+%%]
+
+%%[9 hs
 ppCBindLMap :: CBindLMap -> PP_Doc
-ppCBindLMap = ppAssocL . assocLMapElt (\(i,b) -> (ppAssocL . map (\(CBind_Bind n v) -> (n,v)) $ b) >-< (ppCommaList . setToList $ i)) . fmToList
+ppCBindLMap = ppAssocL . assocLMapElt (\(i,b) -> (ppCBindL b) >-< (ppCommaList . setToList $ i)) . fmToList
+%%]
+
+%%[9 hs
+ppHole :: UID -> PP_Doc
+ppHole i = "<" >|< pp i >|< ">"
 %%]
 
 %%[9 hs
@@ -45,7 +55,7 @@ ppCxBindLMap (CxBindLMap m)
   =  ppAssocLV
   .  assocLMapElt
         (\cbs
-            -> ppAssocL . map (\(CBind_Bind n v,dpds) -> (n,pp v >-< (ppCommaList . setToList $ dpds))) $ cbs
+            -> ppAssocL . map (\(CBind_Bind n v,i,dpds) -> (n,pp v >-< (ppCommaList . setToList $ dpds) >#< "->" >#< pp i)) $ cbs
         )
   .  fmToList $ m
 %%]
@@ -133,10 +143,11 @@ SEM CPatBindL
 
 %%[9
 SEM CExpr
-  | Hole        loc         .   pp          =   "<" >|< pp @uid >|< ">"
+  | Hole        loc         .   pp          =   ppHole @uid
+  | HoleLet     loc         .   pp          =   "let" >#< ppHole @bindsUid >-< ppDef "in" @body.pp
   | CoeArg      loc         .   pp          =   pp "<_>"
-  | ImplsApp    loc         .   pp          =   ppDef @func.pp ("<" >|< pp @uid >|< ">")
-  | ImplsLam    loc         .   pp          =   ppDef ("\\" >|< "<" >|< pp @uid >|< ">") ("->" >#< @body.pp)
+  | ImplsApp    loc         .   pp          =   ppDef @func.pp (ppHole @uid)
+  | ImplsLam    loc         .   pp          =   ppDef ("\\" >|< ppHole @uid) ("->" >#< @body.pp)
 %%]
 
 

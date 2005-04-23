@@ -1,3 +1,4 @@
+-- simple pred inference
 let  class A a where
        aa :: a -> a
 in

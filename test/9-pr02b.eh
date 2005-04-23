@@ -1,3 +1,4 @@
+-- subclass pred check
 let  class A a where
        aa :: a -> a
      class A a => B a where

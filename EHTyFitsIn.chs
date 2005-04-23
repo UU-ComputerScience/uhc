@@ -55,7 +55,7 @@
 %%[9 import(FiniteMap,Set,UU.Pretty,EHCorePretty,EHPred,EHCore,EHCoreSubst) export(prfPreds,foAppCoe,fitPredToEvid)
 %%]
 
-%%[9 export(prf2Preds)
+%%[9 export(prf2Preds,prf2PredsDbg)
 %%]
 
 %%[9 export(fitsIn')
@@ -95,8 +95,8 @@ fioIsMeetJoin fio =  case fioMode fio of {FitMeet -> True ; FitJoin -> True ; _ 
 %%[9
 foAppCoe :: FIOut -> Cnstr -> CSubst -> CExpr -> CExpr
 foAppCoe fo c cs ce
-  =  let  s = cs `cAppSubst` foCSubst fo
-     in   cAppSubst s (coeWipeWeave c s (foLCoeL fo) (foRCoeL fo) `coeEvalOn` ce)
+  =  let  s = cs `cSubstApp` foCSubst fo
+     in   cSubstApp s (coeWipeWeave c s (foLCoeL fo) (foRCoeL fo) `coeEvalOn` ce)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -126,7 +126,9 @@ emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts        ,  fiUniq  
 %%[9
 instance Substitutable FIIn where
   s |=> fi  =  let  e = fiEnv fi
-               in   fi {fiEnv = e {fePrElimGam = s `gamSubstTop` fePrElimGam e}}
+               in   fi {fiEnv = e { fePrElimGam = s `gamSubstTop` fePrElimGam e
+                                  , fePrElimTGam = s |=> fePrElimTGam e
+                                  }}
   ftv       =  ftv . gamTop . fePrElimGam . fiEnv
 
 instance Show FIIn where
@@ -160,7 +162,7 @@ emptyFE
               }
 
 instance PP FIEnv where
-  pp e = pp (fePrElimGam e)
+  pp e = pp (fePrElimGam e) >-< pp (fePrElimTGam e)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -415,7 +417,7 @@ fitsIn opts env uniq ty1 ty2
 
 %%[9
             foCmbPrL     ffo afo  = afo {foPredOccL = foPredOccL afo ++ foPredOccL ffo}
-            foCmbCSubst  ffo afo  = afo {foCSubst = foCSubst afo `cAppSubst` foCSubst ffo}
+            foCmbCSubst  ffo afo  = afo {foCSubst = foCSubst afo `cSubstApp` foCSubst ffo}
 %%]
 
 %%[11.fitsIn.foCmb
@@ -453,7 +455,7 @@ fitsIn opts env uniq ty1 ty2
             foUpdRCoe r fo = fo {foRCoeL = r : foRCoeL fo}
             foUpdLRCoe l r = foUpdLCoe l . foUpdRCoe r
             foUpdPrL prL fo = fo {foPredOccL = prL ++ foPredOccL fo}
-            foUpdCSubst s fo = fo {foCSubst = s `cAppSubst` foCSubst fo}
+            foUpdCSubst s fo = fo {foCSubst = s `cSubstApp` foCSubst fo}
             foUpdImplExpl iv im tpr fo
                             = foUpdCnstr (iv `cnstrImplsUnit` (foCnstr fo |=> im))
                             . foUpdTy ([foCnstr fo |=> tpr] `mkTyArrow` foTy fo)
@@ -888,8 +890,10 @@ fitsIn opts env uniq ty1 ty2
                        fSub pv1 pr1 tr1
                             =  let  fo    = f fi2 tr1 t2
                                     fs    = foCnstr fo
-                                    (cbindLMap,csubst,remPrfPrL,evidL,prfErrs,_) = prfPreds u3 (fiEnv (fs |=> fi2)) [PredOcc (fs |=> pr1) pv1]
-                               in   (foUpdErrs prfErrs fo,mkBindsAppCoe cbindLMap evidL,csubst,remPrfPrL)
+                                    (cxbindLMap,introCBindL,csubst,remPrfPrL,evidL,prfErrs)
+                                          = prf2Preds u3 (fiEnv (fs |=> fi2)) [PredOcc (fs |=> pr1) pv1]
+                                    coe   = mkCoe (\e -> (csubst `cSubstApp` introCBindL) `mkCExprLetRec` (e `mkCExprApp` evidL))
+                               in   (foUpdErrs prfErrs fo,coe,csubst,remPrfPrL)
                        fP (Ty_Impls (Impls_Nil))
                             =  Just (f fi2 tr1 t2)
                        fP (Ty_Impls (Impls_Tail iv1))
@@ -909,6 +913,11 @@ fitsIn opts env uniq ty1 ty2
                        fP (Ty_Impls (Impls_Tail iv2))
                             =  Just (foUpdCnstr (iv2 `cnstrImplsUnit` Impls_Nil) . foUpdTy ([Ty_Impls (Impls_Nil)] `mkTyArrow` foTy fo) $ fo)
                             where fo = f fi2 t1 tr2
+
+(bodyPrfFrPoiCxBindLM,bodyPrfIntroCBindL,bodyPrfCSubst,bodyPrfArgPrOccL,_,_)
+                                                    =   prf2Preds @lUniq5 (@letFE {fePrElimTGam = @body.prElimTGam}) @gath2BodySubsPredL
+
+                                    (cbindLMap,csubst,remPrfPrL,evidL,prfErrs,_) = prfPreds u3 (fiEnv (fs |=> fi2)) [PredOcc (fs |=> pr1) pv1]
 
 %%[7
             f fi  t1@(Ty_App (Ty_Con n1) tr1)
@@ -1016,7 +1025,7 @@ prfPreds u env prL
           prL'                          = prL
           (g,prvnErrs)                  = prfPredsToProvenGraph u env' prL'
           (g',gOr)                      = prfPredsPruneProvenGraph prL' g
-          overl                         = [ (pr,map (\e -> case lookupFM (prvgIdNdMp gOr) e of {Just (ProvenAnd _ _ _ ev) -> ev; _ -> mkCExprPrHole e}) es)
+          overl                         = [ (pr,map (\e -> case lookupFM (prvgIdNdMp gOr) e of {Just (ProvenAnd _ _ _ _ ev) -> ev; _ -> mkCExprPrHole e}) es)
                                           | (ProvenOr pr es _) <- eltsFM (prvgIdNdMp gOr)
                                           ]
           (cbindLMap,csubst,remPrIdSet,(trC))
@@ -1029,29 +1038,58 @@ prfPreds u env prL
 %%]
 
 %%[9
-prf2Preds  :: UID -> FIEnv -> [PredOcc]
-           ->  (CxBindLMap,CBindL,[PredOcc],FiniteMap PredOccId [PredOccId],FiniteMap PredOccId PredOccId,[Err]
-               ,(ProvenGraph,ProvenGraph,ProvenGraph,[Pred],PP_DocL)
-               )
+prf2Preds  :: UID -> FIEnv -> [PredOcc] -> (CxBindLMap,CBindL,CSubst,[PredOcc],[CExpr],[Err])
 prf2Preds u fe prOccL
-  =  let  (g,prvnErrs)                  = prf2PredsToProvenGraph u fe prOccL
+  = (prfFrPoiCxBindLM, prfIntroCBindL, cSubst, argPrOccL, prvnOrigEvidL, prvnErrs)
+  where  (prfFrPoiCxBindLM, prfIntroCBindL, cSubst, argPrOccL, prvnOrigEvidL, prvnErrs, _)
+            = prf2PredsDbg u fe prOccL
+%%]
+
+%%[9
+prf2PredsDbg  :: UID -> FIEnv -> [PredOcc]
+                    ->  (CxBindLMap,CBindL,CSubst,[PredOcc],[CExpr],[Err]
+                        ,(ProvenGraph,ProvenGraph,ProvenGraph,ProvenGraph,ProvenGraph,PrElimTGam,[Pred]
+                         ,FiniteMap PredOccId [PredOccId],FiniteMap PredOccId PredOccId,PP_DocL
+                        ))
+prf2PredsDbg u fe prOccL
+  =  ( prfFrPoiCxBindLM, prfIntroCBindL, cSubstLetHole `cSubstApp` cSubst, argPrOccL, prvnOrigEvidL
+     , overlErrs ++ prvnErrs
+     , (g,gPrune,gOr,gInterm1,gInterm2,eGam,prLeaves, fwdMp, backMp,[])
+     )
+  where   (g,prvnErrs,eGam)             = prf2PredsToProvenGraph u fe prOccL
           prOrigs                       = prvgOrigs g
           (_,revTopSort)                = prvg2ReachableFrom g prOrigs
-          prLeaves                      = prvgArgLeaves g (reverse revTopSort)
-          (gPrune@(ProvenGraph i2n _ _ _),gOr,backMp)
+          topSort                       = reverse revTopSort
+          prLeaves                      = prvgArgLeaves g topSort
+          (gPrune@(ProvenGraph i2n _ _ _),gOr,backMp,(gInterm1,gInterm2))
                                         = prf2PredsPruneProvenGraph (\pr cx -> pr `elem` prLeaves) g
-          isFact                        = prvgIsFact gPrune
+          factPoiS                      = mkSet (prvgFactL gPrune)
+          isFact                        = (`elementOf` factPoiS)
           cSubst                        = poiCExprLToCSubst . assocLMapElt (CExpr_Var . poiHNm) . fmToList $ backMp
           argPrOccL                     = [ PredOcc p i | (i,ProvenArg p _) <- fmToList i2n ]
-          argDpdsPoiS                   = prvgReachableTo gPrune (map poPrId argPrOccL)
-          prfIntroCBindL                = [ CBind_Bind (poiHNm i) (cSubst `cAppSubst` ev) | (i,ProvenAnd _ _ _ ev) <- fmToList i2n, not (isFact i || i `elementOf` argDpdsPoiS) ]
-          prfFrPoiCxBindLM              = prvgCxBindLMap gPrune cSubst
+          overl                         = [ (pr,map (\e -> case lookupFM (prvgIdNdMp gOr) e of {Just (ProvenAnd _ _ _ _ ev) -> ev; _ -> mkCExprPrHole e}) es)
+                                          | (ProvenOr pr es _) <- eltsFM (prvgIdNdMp gOr)
+                                          ]
+          overlErrs                     = if null overl then [] else [Err_OverlapPreds overl]
+          prfFrPoiCxBindLM              = prvgCxBindLMap gPrune
+          prfIntroCBindL                = [ CBind_Bind (poiHNm i) (cSubst `cSubstApp` ev)
+                                          | i <- setToList (prvgSatisfiedNodeS True poiIsGlob gPrune topSort)
+                                          , not (isFact i)
+                                          , (ProvenAnd _ _ _ _ ev) <- maybeToList (lookupFM i2n i)
+                                          ]
+                                        where poiIsGlob poi = tgamIsInScope (fePrfCtxtId fe) (poiCxId poi) (fePrElimTGam fe)
+          cSubstLetHole                 = prvgLetHoleCSubst gPrune eGam prfFrPoiCxBindLM
           fwdMp                         = listToFM . map (\l@((_,i):_) -> (i,map fst l)) . groupSortOn snd . fmToList $ backMp
-     in   ( prfFrPoiCxBindLM, prfIntroCBindL, argPrOccL, fwdMp, backMp
-          , prvnErrs
-          , (g,gPrune,gOr,prLeaves,[])
-          )
+          prvnOrigEvidL                 = map (\po -> mkCExprPrHole . poPrId $ po) prOccL
 %%]
+          prfIntroCBindL                = mkCxBindLForPoiL globPoiS prfFrPoiCxBindLM poiL
+          globPoiS = prvgSatisfiedNodeS poiIsGlob gPrune topSort `Set.union` factPoiS
+          poiIsGlob poi = tgamIsInScope (fePrfCtxtId fe) (poiCxId poi) (fePrElimTGam fe)
+          poiL = filter (not . isFact) . setToList $ prvgSatisfiedNodeS poiIsGlob gPrune topSort
+          tr m v                        = pp m >|< ":" >#< pp v
+          t                             = [ tr "poiL" (ppCommaList $ poiL)
+                                          , tr "globPoiS" (ppCommaList . setToList $ globPoiS)
+                                          ]
 
 %%[9
 prvgAddUsedAsFact :: PredOccId -> Pred -> ProvenGraph -> ProvenGraph
@@ -1079,7 +1117,7 @@ prfPredsToProvenGraph u env prL
 %%]
 
 %%[9
-prf2PredsToProvenGraph :: UID -> FIEnv -> [PredOcc] -> (ProvenGraph,[Err])
+prf2PredsToProvenGraph :: UID -> FIEnv -> [PredOcc] -> (ProvenGraph,[Err],PrElimTGam)
 prf2PredsToProvenGraph u fe prOccL
   =  let  initState = ProofState2
                         (ProvenGraph emptyFM emptyFM
@@ -1091,7 +1129,7 @@ prf2PredsToProvenGraph u fe prOccL
                in   resolve st'
           resolve st@(ProofState2 _ _ [] _ _) = st
           prvnState = resolve initState
-     in   (prfs2ProvenGraph prvnState, prfs2ErrL prvnState)
+     in   (prfs2ProvenGraph prvnState, prfs2ErrL prvnState,prfs2PrElimTGam prvnState)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1163,7 +1201,7 @@ prfOneStepPred  env prOcc@(PredOcc pr@(Pred_Pred t) prUid)
                             = peGamAddKnPrL ci u3 prfCtxtPrL (fePrElimGam env)
            (prfElimTGam,_,_)
                             = peTGamAddKnPrL ci u3 prfCtxtPrL (tgamPushNew (poiCxId prUid) ci (fePrElimTGam env))
-           prf              = ProvenAnd (pr) (poi4 : prfCtxtUIDL) (mkCost 1) (prfCtxtNmL `mkCExprLam` CExpr_Hole u4)
+           prf              = ProvenAnd (pr) (poi4 : prfCtxtUIDL) [] (mkCost 1) (prfCtxtNmL `mkCExprLam` CExpr_Hole u4)
            g'               = prvgAddPrNd pr [prUid] prf g
            g''              = foldr (\(i,p,n) g -> prvgAddPrNd p [i] (ProvenLcl p (CExpr_Var n)) g) g' (zip3 prfCtxtUIDL prfCtxtPrL prfCtxtNmL)
            st'              = st {prfsUniq = u', prfsProvenGraph = g'', prfsPredsToProve = [PredOcc (tyPred prfTyPr) poi4] ++ toProof}
@@ -1174,9 +1212,11 @@ prfOneStepPred  env prOcc@(PredOcc pr@(Pred_Pred t) prUid)
 prf2OneStepPred :: FIEnv -> PredOcc -> ProofState2 -> ProofState2
 prf2OneStepPred  fe prOcc@(PredOcc pr@(Pred_Pred t) prPoi)
                  st@(ProofState2 g@(ProvenGraph i2n p2i p2oi p2fi) u toPrfPrOccL _ _)
-  =   let  (u',u1,u2,u3,u4) = mkNewLevUID4 u
-           ci               = u4
-           poi4             = mkPrId ci u4
+  =   let  (u',u1,u2,u3,u4,u5)
+                            = mkNewLevUID5 u
+           newCxId          = u4
+           poi4             = mkPrId newCxId u4
+           poi5             = mkPrId newCxId u5
            (us,vs)          = mkNewUIDTyVarL (tyArrowArity t + 1) u1
            t'               = tail vs `mkTyArrow` head vs
            fo               = fitsIn (predFIOpts {fioLeaveRInst = False}) emptyFE u2 t' t
@@ -1184,13 +1224,18 @@ prf2OneStepPred  fe prOcc@(PredOcc pr@(Pred_Pred t) prPoi)
                             = tyArrowArgsRes (foCnstr fo |=> t')
            prfCtxtPrL       = map tyPred prfCtxtTyPrL
            (prfElimTGam,prfCtxtNmL,prfCtxtUIDL)
-                            = peTGamAddKnPrL ci u3 prfCtxtPrL (tgamPushNew (poiCxId prPoi) ci (fePrElimTGam fe))
-           prf              = ProvenAnd (pr) (poi4 : prfCtxtUIDL) (mkCost 1) (prfCtxtNmL `mkCExprLam` CExpr_Hole u4)
+                            = peTGamAddKnPrL newCxId u3 prfCtxtPrL (tgamPushNew (poiCxId prPoi) newCxId (fePrElimTGam fe))
+           prf              = ProvenAnd (pr) (poi4 : []) (poi5 : poi4 : prfCtxtUIDL) (mkCost 1) (prfCtxtNmL `mkCExprLam` (poiId poi5 `CExpr_HoleLet` CExpr_Hole u4))
            g'               = prvgAddPrNd pr [prPoi] prf g
-           g''              = foldr (\(i,p,n) g -> prvgAddPrNd p [i] (ProvenAnd p [] costZero (CExpr_Var n)) g) g' (zip3 prfCtxtUIDL prfCtxtPrL prfCtxtNmL)
+           g''              = g'
            st'              = st {prfs2Uniq = u', prfs2ProvenGraph = g'', prfs2PredsToProve = [PredOcc (tyPred prfTyPr) poi4] ++ toPrfPrOccL, prfs2PrElimTGam = prfElimTGam}
       in   st'
 %%]
+           prf              = ProvenAnd (pr) (poi4 : []) (poi4 : prfCtxtUIDL) (mkCost 1) (prfCtxtNmL `mkCExprLam` (poiId prPoi `CExpr_HoleLet` CExpr_Hole u4))
+           prf              = ProvenAnd (pr) (poi4 : prfCtxtUIDL) (mkCost 1) (prfCtxtNmL `mkCExprLam` CExpr_Hole u4)
+           g'               = flip (foldr (\(i,pr) -> prvgAddUsedAsFact i pr)) (zip prfCtxtUIDL prfCtxtPrL) . prvgAddPrNd pr [prPoi] prf $ g
+           g'               = prvgAddPrNd pr [prPoi] prf g
+           g''              = foldr (\(i,p,n) g -> prvgAddPrNd p [i] (ProvenAnd p [] costZero (CExpr_Var n)) g) g' (zip3 prfCtxtUIDL prfCtxtPrL prfCtxtNmL)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% One proof step for class predicates
@@ -1233,11 +1278,11 @@ prfOneStepClass  env prOcc@(PredOcc pr@(Pred_Class t) prUid)
                                                                            then (prvgAddUsedAsFact matchId pr
                                                                                 ,map poPrId needPrOccL
                                                                                 )
-                                                                           else (prvgAddPrNd matchPr [matchId] (ProvenAnd matchPr [] (mkCost 0) matchEv)                                                                             
+                                                                           else (prvgAddPrNd matchPr [matchId] (ProvenAnd matchPr [] [] (mkCost 0) matchEv)                                                                             
                                                                                  . prvgAddUsedAsFact matchId matchPr
                                                                                 ,matchId : map poPrId needPrOccL
                                                                                 )
-                                                             prf        =  ProvenAnd pr dpdIdL
+                                                             prf        =  ProvenAnd pr dpdIdL []
                                                                              (if isInOrig && hasNoPre
                                                                               then mkCostAvailImpl (costLo cost)
                                                                               else cost
@@ -1279,8 +1324,8 @@ prf2OneStepClass  fe prOcc@(PredOcc pr@(Pred_Class t) prPoi)
                                                    (\(poi,(needPrOccL,(matchPr,matchPoi,matchEv),evid,cost))
                                                      (g,newPrOccL)
                                                        ->  let  hasNoPre   =  null needPrOccL
-                                                                matchPrf   =  ProvenAnd matchPr [] costZero matchEv
-                                                                prf        =  ProvenAnd pr (matchPoi : map poPrId needPrOccL) cost evid
+                                                                matchPrf   =  ProvenAnd matchPr [] [] costZero matchEv
+                                                                prf        =  ProvenAnd pr (matchPoi : map poPrId needPrOccL) [] cost evid
                                                            in   (prvgAddNd poi prf
                                                                   . prvgAddPrNd matchPr [matchPoi] matchPrf
                                                                   . prvgAddUsedAsFact matchPoi (if hasNoPre then pr else matchPr)
@@ -1324,7 +1369,7 @@ prfOneStepLacks  env prOcc@(PredOcc pr@(Pred_Lacks r l) prUid)
                                                          =  case ruleMatches of
                                                               [] ->  Nothing
                                                               ((_,(_,matchId,_),evid,cost):_)
-                                                                 ->  let  prf = ProvenAnd pr [] cost evid
+                                                                 ->  let  prf = ProvenAnd pr [] [] cost evid
                                                                           g'  = prvgAddUsedAsFact matchId pr . prvgAddNd prUid prf $ g
                                                                      in   Just (st {prfsProvenGraph = g', prfsUniq = u'})
                                           []  ->  st {prfsProvenGraph = prvgAddPrNd pr [prUid] (ProvenArg pr zeroCost) g}
@@ -1332,9 +1377,9 @@ prfOneStepLacks  env prOcc@(PredOcc pr@(Pred_Lacks r l) prUid)
                                     ->  let  (u',u2) = mkNewUID u
                                              poi2 = mkPrId (poiCxId prUid) u2
                                              newPr = PredOcc (Pred_Lacks row l) poi2
-                                             g2 = prvgAddPrNd pr [prUid] (ProvenAnd pr [poi2] zeroCost (CExpr_Hole u2 `mkCExprAddInt` offset)) g
+                                             g2 = prvgAddPrNd pr [prUid] (ProvenAnd pr [poi2] [] zeroCost (CExpr_Hole u2 `mkCExprAddInt` offset)) g
                                         in   st {prfsProvenGraph = g2, prfsUniq = u', prfsPredsToProve = newPr : toProof}
-                              _     ->  let  g2 = prvgAddPrNd pr [prUid] (ProvenAnd pr [] zeroCost (CExpr_Int offset)) g
+                              _     ->  let  g2 = prvgAddPrNd pr [prUid] (ProvenAnd pr [] [] zeroCost (CExpr_Int offset)) g
                                         in   st {prfsProvenGraph = g2}
 %%]
 
@@ -1367,11 +1412,11 @@ prfPredsPruneProvenGraph prL (ProvenGraph i2n p2i p2oi p2fi)
                                             cm                  = addToFM costMp' uid (Just c)
                                             gp                  = prvgAddPrevPrNd pr uid prf gPrune
                                        in   (uid,c,cm,gp)
-                                 ProvenAnd pr es c ev
+                                 ProvenAnd pr es les c ev
                                    ->  let  (cs,cm,gp)          = costOfL es costMp' gPrune
                                             c'                  = foldr costAdd c (map snd cs)
                                             cm'                 = addToFM cm uid (Just c')
-                                            gp'                 = prvgAddPrevPrNd pr uid (ProvenAnd pr (map fst cs) c' ev) gp
+                                            gp'                 = prvgAddPrevPrNd pr uid (ProvenAnd pr (map fst cs) les c' ev) gp
                                        in   (uid,c',cm',gp')
                                  ProvenOr pr es c
                                    ->  let  (cs,cm,gp)          = costOfL es costMp' gPrune
@@ -1405,70 +1450,95 @@ prfPredsPruneProvenGraph prL (ProvenGraph i2n p2i p2oi p2fi)
 %%]
 
 %%[9
-prf2PredsPruneProvenGraph :: (Pred -> PrfCtxtId -> Bool) -> ProvenGraph -> (ProvenGraph,ProvenGraph,FiniteMap PredOccId PredOccId)
-prf2PredsPruneProvenGraph isPrCheap (ProvenGraph i2n p2i p2oi p2fi)
-  =  let  costOf poi costMp gPrune
+prvnPruneHighCost :: (Pred -> PrfCtxtId -> Bool) -> ProvenGraph -> (ProvenGraph,PoiSubst)
+prvnPruneHighCost isPrCheap g@(ProvenGraph i2n p2i p2oi p2fi)
+  =  (gPrune,PoiSubst pruneBackMp)
+  where   costOf poi costMp pruneBackMp gPrune
             =  case lookupFM costMp poi of
-                 Just (Just c)  -> (poi,c,costMp,gPrune)
-                 Just (Nothing) -> (poi,costVeryMuch,costMp,gPrune)
+                 Just (Just c)  -> (poi,c,costMp,pruneBackMp,gPrune)
+                 Just (Nothing) -> (poi,costVeryMuch,costMp,pruneBackMp,gPrune)
                  Nothing
                    ->  let  prvgAddPrevPrNd pr poi prf g
                               =  prvgAddPrNd pr [poi] prf g
                             costMp' = addToFM costMp poi Nothing
                        in   case fromJust (lookupFM i2n poi) of
-                                 prf@(ProvenLcl pr ev)
-                                   ->  let  c                   = mkCost 0
-                                            cm                  = addToFM costMp' poi (Just c)
-                                            gp                  = prvgAddPrevPrNd pr poi prf gPrune
-                                       in   (poi,c,cm,gp)
-                                 ProvenAnd pr es c ev
-                                   ->  let  (cs,cm,gp)          = costOfL es costMp' gPrune
-                                            c'                  = foldr costAdd c (map snd cs)
-                                            cm'                 = addToFM cm poi (Just c')
-                                            gp'                 = prvgAddPrevPrNd pr poi (ProvenAnd pr (map fst cs) c' ev) gp
-                                       in   (poi,c',cm',gp')
-                                 ProvenOr pr es _
-                                   ->  let  (cs,cm,gp)          = costOfL es costMp' gPrune
-                                            alts@((_,calt):_)   = head . groupSortOn snd $ cs
-                                            (poi',gp',c')
-                                              =  case alts of
-                                                   [(poia,_)]    ->  (poia,prvgAddPrUids pr [poi] gp,calt)
-                                                   ((poia,_):_)  ->  (poia,prvgAddNd poi (ProvenOr pr (map fst alts) calt) gp,calt)
-                                            cm'                 = addToFM (delFromFM cm poi) poi' (Just c')
-                                       in   (poi',c',cm',gp')
-                                 ProvenShare pr e
-                                   ->  let  (poi',c,cm,gp)      = costOf e costMp' gPrune
-                                            gp'                 = prvgAddPrUids pr [poi] gp
-                                       in   (poi',c,delFromFM cm poi,gp')
-                                 ProvenArg pr c
-                                   ->  let  c'                  = if isPrCheap pr (poiCxId poi) then costZero else c
-                                            cm                  = addToFM costMp' poi (Just c')
-                                            gp                  = prvgAddPrevPrNd pr poi (ProvenArg pr c') gPrune
-                                       in   (poi,c',cm,gp)
-          costOfL poiL costMp gPrune
-            =  foldr  (\poi (cs,cm,g) ->  let  (poi',c,cm',g') = costOf poi cm g
-                                          in   ((poi',c):cs,cm',g'))
-                      ([],costMp,gPrune) poiL
-          onlyReachables poiL g@(ProvenGraph i2n _ _ _)
-            =  let  reachableUIDs = prvgReachableFrom g poiL
+                              prf@(ProvenLcl pr ev)
+                                ->  let  c                   = mkCost 0
+                                         cm                  = addToFM costMp' poi (Just c)
+                                         pbm                 = addToFM pruneBackMp poi poi
+                                         gp                  = prvgAddPrevPrNd pr poi prf gPrune
+                                    in   (poi,c,cm,pbm,gp)
+                              ProvenAnd pr es les c ev
+                                ->  let  (cs,cm,pbm,gp)      = costOfL es costMp' pruneBackMp gPrune
+                                         c'                  = foldr costAdd c (map snd cs)
+                                         cm'                 = addToFM cm poi (Just c')
+                                         pbm'                = addToFM pbm poi poi
+                                         gp'                 = prvgAddPrevPrNd pr poi (ProvenAnd pr (map fst cs) les c' ev) gp
+                                    in   (poi,c',cm',pbm',gp')
+                              ProvenOr pr es _
+                                ->  let  (cs,cm,pbm,gp)      = costOfL es costMp' pruneBackMp gPrune
+                                         alts@((_,calt):_)   = head . groupSortOn snd $ cs
+                                         (poi',gp',c')
+                                           =  case alts of
+                                                [(poia,_)]    ->  (poia,prvgAddPrUids pr [poi] gp,calt)
+                                                ((poia,_):_)  ->  (poia,prvgAddNd poi (ProvenOr pr (map fst alts) calt) gp,calt)
+                                         cm'                 = addToFM (delFromFM cm poi) poi' (Just c')
+                                         pbm'                = addToFM pbm poi poi'
+                                    in   (poi',c',cm',pbm',gp')
+                              ProvenShare pr e
+                                ->  let  (poi',c,cm,pbm,gp)  = costOf e costMp' pruneBackMp gPrune
+                                         gp'                 = prvgAddPrUids pr [poi] gp
+                                         pbm'                = addToFM pbm poi poi'
+                                    in   (poi',c,delFromFM cm poi,pbm',gp')
+                              ProvenArg pr c
+                                ->  let  c'                  = if isPrCheap pr (poiCxId poi) then costAvailArg else c
+                                         cm                  = addToFM costMp' poi (Just c')
+                                         pbm                 = addToFM pruneBackMp poi poi
+                                         gp                  = prvgAddPrevPrNd pr poi (ProvenArg pr c') gPrune
+                                    in   (poi,c',cm,pbm,gp)
+          costOfL poiL costMp pruneBackMp gPrune
+            =  foldr  (\poi (cs,cm,pbm,g) ->  let  (poi',c,cm',pbm',g') = costOf poi cm pbm g
+                                              in   ((poi',c):cs,cm',addToFM pbm' poi poi',g'))
+                      ([],costMp,pruneBackMp,gPrune) poiL
+          (_,_,pruneBackMp,gPrune)
+            = costOfL (prvgOrigs g) emptyFM emptyFM (ProvenGraph emptyFM emptyFM p2oi p2fi)
+%%]
+
+%%[9
+prf2PredsPruneProvenGraph ::  (Pred -> PrfCtxtId -> Bool) -> ProvenGraph
+                                 ->  (ProvenGraph,ProvenGraph,FiniteMap PredOccId PredOccId
+                                     ,(ProvenGraph,ProvenGraph)
+                                     )
+prf2PredsPruneProvenGraph isPrCheap g@(ProvenGraph i2n p2i p2oi p2fi)
+  =  let  onlyReachables poiL g@(ProvenGraph i2n _ _ _)
+            =  let  (reachableUIDs,_) = prvg2ReachableFrom g poiL
                in   g { prvgIdNdMp  = filterFM (\poi _ -> poi `elementOf` reachableUIDs) i2n }
           splitOr g@(ProvenGraph i2n _ _ _)
             =  let (yesOr,noOr) = partition (\(_,n) -> case n of {ProvenOr _ _ _ -> True; _ -> False}) . fmToList $ i2n
                in  (g {prvgIdNdMp = listToFM noOr}, g {prvgIdNdMp = listToFM yesOr}, assocLKeys yesOr)
-          (cs,_,gPrune) = costOfL (concat . eltsFM $ p2oi) emptyFM (ProvenGraph emptyFM emptyFM p2oi p2fi)
-          (gPruneNoOr,gPruneOr,orPoiL) = splitOr gPrune
-          poiBackMp = prvg2BackMp gPruneNoOr
-          gPruneReached = onlyReachables (map fst cs) gPruneNoOr
-          gPruneBack = prvg2BackToOrig poiBackMp gPruneReached
-     in   (gPruneBack, onlyReachables orPoiL gPruneOr, poiBackMp)
+          (gPrune,prunePois)
+            = prvnPruneHighCost isPrCheap g
+          pruneStartPoiL
+            = prunePois `poisApp` prvgOrigs g
+          (gPruneNoOr,gPruneOr,orPoiL)
+            = splitOr gPrune
+          gPruneReached
+            = onlyReachables pruneStartPoiL gPruneNoOr
+          (_,pruneRevTopSort)
+            = prvg2ReachableFrom gPruneReached pruneStartPoiL
+          sharePois
+            = prvgShareMp gPruneReached (reverse pruneRevTopSort)
+          backPois
+            = sharePois `poisApp` prunePois
+          origRestorePois
+            = PoiSubst (listToFM [ (i,o) | o <- prvgOrigs g, n <- maybeToList (lookupFM m o), o /= n, (i,n') <- fmToList m, n' == n ])
+            where m = poisMp backPois
+          fullBackPois
+            = origRestorePois `poisApp` backPois
+          gPruneBack
+            = prvgAppPoiSubst fullBackPois gPruneReached
+     in   (gPruneBack, onlyReachables orPoiL gPruneOr, poisMp fullBackPois, (gPrune,gPruneReached))
 %%]
-     in   (tr "ZZ" (ppAssocL cs) gPruneNoOr, onlyReachables orPoiL gPruneOr, poiBackMp)
-     in   (gPruneBack, onlyReachables orPoiL gPruneOr, poiBackMp)
-     in   (onlyReachables (map (fromJust . lookupFM backFM . fst) cs) gPruneBack, onlyReachables orPoiL gPruneOr, backFM)
-                   ->  let  prvgAddPrevPrNd pr poi prf g
-                              =  let  otherPoiL = maybe [] id (lookupFM p2i pr)
-                                 in   prvgAddPrNd pr (poi : otherPoiL) prf g
-     in   (prvg2BackToOrig . onlyReachables (map fst cs) $ gPrune, onlyOr gPrune)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Rule matching

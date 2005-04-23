@@ -1,3 +1,4 @@
+-- subclass pred check + instance (missing A,B,C)
 let  class A a where
        aa :: a -> a
      class A a => B a where

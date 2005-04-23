@@ -63,17 +63,21 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | Let         loc         .   (lQuValGam,tqoGam)  :=  let  (vg,tqog) = valGamQuantify @gTyTvL @remPrfPrL @lSubsValGam
+  | Let         loc         .   (lQuValGam,tqoGam)  :=  let  (vg,tqog) = valGamQuantify @gTyTvL @prfArgPrOccL @lSubsValGam
                                                         in   (valGamInst1Exists @lUniq2 vg,tqog)
                             .   tqoTyCnstr          =   foldr (\tqo c -> tqoImplsCnstr tqo |=> c) emptyCnstr (gamElts @tqoGam)
 %%]
+SEM Expr
+  | Let         loc         .   (lQuValGam,tqoGam)  :=  let  (vg,tqog) = valGamQuantify @gTyTvL @remPrfPrL @lSubsValGam
+                                                        in   (valGamInst1Exists @lUniq2 vg,tqog)
+                            .   tqoTyCnstr          =   foldr (\tqo c -> tqoImplsCnstr tqo |=> c) emptyCnstr (gamElts @tqoGam)
 
 %%[9
+%%]
 SEM Expr
   | Let         loc         .   (l2QuValGam,tqo2Gam)=   let  (vg,tqog) = valGamQuantify @gTyTvL @prfArgPrOccL @lSubsValGam
                                                         in   (valGamInst1Exists @lUniq2 vg,tqog)
                             .   tqo2TyCnstr         =   foldr (\tqo c -> tqoImplsCnstr tqo |=> c) emptyCnstr (gamElts @tqo2Gam)
-%%]
 
 %%[11
 %%]
@@ -147,6 +151,7 @@ SEM Expr
 %%]
 
 %%[9
+%%]
 ATTR AllNT [ fin2TyCnstr: Cnstr | | ]
 
 SEM Expr
@@ -154,7 +159,6 @@ SEM Expr
 
 SEM AGItf
   | AGItf       expr        .   fin2TyCnstr         =   @expr.tyCnstr
-%%]
 
 %%[10
 SEM Decl
@@ -300,7 +304,7 @@ SEM Decl
 
 %%[9
 SEM Decl
-  | TySig       loc         .   fe                  :=  emptyFE {fePrElimGam = @lhs.prElimGam}
+  | TySig       loc         .   fe                  :=  emptyFE {fePrElimGam = @lhs.prElimGam, fePrElimTGam = @lhs.prElimTGam}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

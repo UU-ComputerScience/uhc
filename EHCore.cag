@@ -45,7 +45,10 @@
 %%[9 hs export(CBindLMap, emptyCBindLMap, cbindLMapBinds, mkCBindLForUIDL',mkCBindLForUIDL)
 %%]
 
-%%[9 hs import(Maybe) export(CxBindLMap(..), emptyCxBindLMap, mkCxBindLForPoiL, plusCxBM, cxbmDpdPoiS)
+%%[9 hs import(Maybe) export(CxBindLMap(..), emptyCxBindLMap, mkCxBindLForPoiL, mkCxBindLForPoiL', plusCxBM, cxbmDpdPoiS, cxbmIntroPoiL)
+%%]
+
+%%[9 hs export(cbindLNub)
 %%]
 
 %%[9 hs export(mkCExprPrHole)
@@ -100,6 +103,15 @@ data CBindCateg = CBindRec | CBindStrict | CBindPlain | CBindFFI deriving (Show,
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Remove duplicate bindings
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+cbindLNub :: CBindL -> CBindL
+cbindLNub = nubBy (\(CBind_Bind n1 _) (CBind_Bind n2 _) -> n1 == n2)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Bindings using a pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -128,7 +140,7 @@ mkCBindLForUIDL cbindLMap doIncl = fst (mkCBindLForUIDL' cbindLMap doIncl)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
-newtype CxBindLMap = CxBindLMap (FiniteMap PredOccId [(CBind,Set PredOccId)])
+newtype CxBindLMap = CxBindLMap (FiniteMap PredOccId [(CBind,PredOccId,Set PredOccId)])
 
 emptyCxBindLMap = CxBindLMap emptyFM
 
@@ -138,7 +150,10 @@ plusCxBM :: CxBindLMap -> CxBindLMap -> CxBindLMap
 plusCxBM (CxBindLMap m1) (CxBindLMap m2) = CxBindLMap (m1 `plusFM` m2)
 
 cxbmDpdPoiS :: CxBindLMap -> PredOccId -> Set PredOccId
-cxbmDpdPoiS (CxBindLMap m) = maybe emptySet (unionManySets . map snd) . lookupFM m
+cxbmDpdPoiS (CxBindLMap m) poi = maybe emptySet (unionManySets . map thd) (lookupFM m poi) `Set.union` unitSet poi
+
+cxbmIntroPoiL :: CxBindLMap -> [PredOccId]
+cxbmIntroPoiL (CxBindLMap m) = nub [ i | l <- eltsFM m, (_,i,_) <- l ]
 %%]
 type CxBindLMap = FiniteMap (PrfCtxtId,Pred) (Set PredOccId,CBindL)
 
@@ -147,10 +162,17 @@ type CxBindLMap = FiniteMap (PrfCtxtId,Pred) (Set PredOccId,CBindL)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
-mkCxBindLForPoiL :: CxBindLMap -> [PredOccId] -> Set PredOccId -> CBindL
-mkCxBindLForPoiL (CxBindLMap m) inclPoiL availPoiS
-  =  [ b | i <- inclPoiL, bs <- maybeToList (lookupFM m i), (b,dpd) <- bs, isEmptySet (dpd `minusSet` availPoiS) ]
+mkCxBindLForPoiL' :: (PredOccId -> Bool) -> CxBindLMap -> [PredOccId] -> CBindL
+mkCxBindLForPoiL' isAvailPoi (CxBindLMap m) inclPoiL
+  = cbindLNub [ b | i <- inclPoiL, bs <- maybeToList (lookupFM m i), (b,_,dpd) <- bs, all isAvailPoi . setToList $ dpd ]
 %%]
+
+%%[9 hs
+mkCxBindLForPoiL :: Set PredOccId -> CxBindLMap -> [PredOccId] -> CBindL
+mkCxBindLForPoiL availPoiS = mkCxBindLForPoiL' (`elementOf` availPoiS)
+%%]
+mkCxBindLForPoiL (CxBindLMap m) inclPoiL availPoiS
+  = cbindLNub [ b | i <- inclPoiL, bs <- maybeToList (lookupFM m i), (b,_,dpd) <- bs, isEmptySet (dpd `minusSet` availPoiS) ]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Name of a pattern var/con
