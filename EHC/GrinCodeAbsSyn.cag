@@ -26,6 +26,8 @@ DATA GrBind
                 argNmL          : {[HsName]}
                 expr            : GrExpr
   | Rec         bindL           : GrBindL
+  | Tags        nm              : {HsName}
+                tagSizes        : {AssocL HsName CTag}
 
 TYPE GrBindL    =   [GrBind]
 

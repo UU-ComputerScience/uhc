@@ -17,6 +17,7 @@ SEM AGItf
                                                     (foldr (\(c,b) e -> mkCExprLet c b e)
                                                         (mkCExprLet CBindPlain [CBind_Bind hsnMain @expr.letCBody] (CExpr_Var hsnMain))
                                                         @expr.letCBindL)
+                                                    [ (tn,fmToList m) | (tn,dgi) <- gamToAssocL @expr.gathDataGam, let m = dgiDataTagMp dgi ]
 %%]
 
 %%[9
@@ -226,10 +227,9 @@ SEM PatExpr
                                                     CPat_Con _ t r ps  -> CPat_Con @cpNm t r ps
                                                     _                  -> @patExpr.cpat
   | AppTop Con  loc         .   finResTy    =   @lhs.finTyCnstr |=> @knResTy
-                            .   finResTGI   =   let  (c,_)  = tyAppFunArgs @finResTy
-                                                     n      = tyConNm c
-                                                in   fromJust . tyGamLookup @lhs.tyGam $ n
-                            .   tag         =   fromJust . lookupFM (tgiDataTagMp @finResTGI) $ @appFunNm
+                            .   tag         =   let  (c,_)  = tyAppFunArgs @finResTy
+                                                     dgi    = fromJust . gamLookup @lhs.dataGam . tyConNm $ c
+                                                in   fromJust . lookupFM (dgiDataTagMp dgi) $ @appFunNm
                             .   rest        =   CPatRest_Empty
   | Rec         loc         .   tag         =   CTagRec
                             .   rest        =   @recPatExpr.patCRest
@@ -245,6 +245,10 @@ SEM PatExpr
   | CConst IConst
                 lhs         .   cpat        =   CPat_Undef
 %%]
+                            .   finResTGI   =   let  (c,_)  = tyAppFunArgs @finResTy
+                                                     n      = tyConNm c
+                                                in   fromJust . tyGamLookup @lhs.tyGam $ n
+                            .   tag         =   fromJust . lookupFM (tgiDataTagMp @finResTGI) $ @appFunNm
 
 %%[8 hs
 type FieldSplitL = AssocL HsName (CExpr,CPat)
@@ -586,7 +590,7 @@ rceMkAltAndSubAlts env (arg:args) ce alts@(alt:_)
 rceMatchCon :: RCEEnv -> [HsName] -> CAltL -> CExpr -> CExpr
 rceMatchCon env (arg:args) alts ce
   =  let  arg'   =  hsnSuffix arg "!"
-          alts'  =  map (rceMkAltAndSubAlts env (arg':args) ce) . groupSortOn caltTag
+          alts'  =  map (rceMkAltAndSubAlts env (arg':args) ce) . groupSortOn (ctagTag . caltTag)
                  .  filter (not . null . caltPatL) $ alts
      in   mkCExprStrictSatCase env arg' (CExpr_Var arg) alts' ce
 
@@ -639,12 +643,12 @@ SEM DataConstr
 %%[8
 SEM Expr
   | Lam Case Sel
-                loc         .   rceEnv      =   RCEEnv @lhs.valGam @lhs.tyGam
+                loc         .   rceEnv      =   RCEEnv @lhs.valGam @lhs.dataGam
 %%]
 
 %%[8
 SEM PatExpr
   | AppTop Rec
-                loc         .   rceEnv      =   RCEEnv @lhs.valGam @lhs.tyGam
+                loc         .   rceEnv      =   RCEEnv @lhs.valGam @lhs.dataGam
 %%]
 

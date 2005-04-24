@@ -57,6 +57,9 @@
 %%[8 import(Maybe,FiniteMap,EHCore) export(gamUpd,DataTagMp)
 %%]
 
+%%[8 export(DataGam,DataGamInfo(..),mkDGI)
+%%]
+
 %%[9 import(EHDebug,EHCoreSubst,EHTyFitsInCommon) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
 %%]
 
@@ -515,8 +518,12 @@ mkTGI :: Ty -> Ty -> TyGamInfo
 mkTGI t k = mkTGIData t k Ty_Any
 %%]
 
-%%[8.TyGamInfo -7.TyGamInfo
+%%[8.DataTagMp
 type DataTagMp = FiniteMap HsName CTag
+%%]
+
+%%[8.TyGamInfo
+%%]
 
 data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty, tgiData :: Ty, tgiDataTagMp :: DataTagMp }
 
@@ -528,7 +535,6 @@ mkTGIData t k d m = TyGamInfo t k d m
 
 mkTGI :: Ty -> Ty -> TyGamInfo
 mkTGI t k = mkTGIData t k Ty_Any emptyFM
-%%]
 
 %%[6.tyGamLookup -1.tyGamLookup
 tyGamLookup :: TyGam -> HsName -> Maybe TyGamInfo
@@ -556,6 +562,22 @@ tyGamQuantify globTvL
 %%[6
 tyGamInst1Exists :: UID -> TyGam -> TyGam
 tyGamInst1Exists = gamInst1Exists (tgiKi,(\tgi k -> tgi {tgiKi=k}))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data tag info gam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8.DataGamInfo
+data DataGamInfo = DataGamInfo { dgiDataTagMp :: DataTagMp }
+
+type DataGam = Gam HsName DataGamInfo
+
+instance Show DataGamInfo where
+  show _ = "DataGamInfo"
+
+mkDGI :: DataTagMp -> DataGamInfo
+mkDGI m = DataGamInfo m
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

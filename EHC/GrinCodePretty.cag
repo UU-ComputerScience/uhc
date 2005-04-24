@@ -72,6 +72,8 @@ SEM GrBind
   | Bind        lhs         .   pp          =   @lhs.ppGrNm @nm >#< ppSpaced (map @lhs.ppGrNm @argNmL) >-<
                                                     indent 2 ("=" >#< ppCurly @expr.pp)
   | Rec         lhs         .   pp          =   "rec" >-< indent 2 (ppCurlyV @bindL.ppL)
+  | Tags        lhs         .   pp          =   "tags" >#< @lhs.ppGrNm @nm >#<
+                                                    "=" >#< ppListSep "" "" " | " (map (\(n,CTag _ _ t a) -> @lhs.ppGrNm n >#< t >#< a) @tagSizes)
 
 SEM GrExpr
   | Seq         lhs         .   pp          =   @expr.pp >#< ";" >#< "\\" >|< @pat.pp >#< "->"

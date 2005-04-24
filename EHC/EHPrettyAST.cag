@@ -32,12 +32,12 @@ mkInfo1 = (,)
 ATTR AllNT AGItf [ | | ppAST USE {>-<} {empty} : PP_Doc ]
 
 SEM AGItf
-  | AGItf       lhs     .  ppAST    =   ppNestInfo @lhs.opts ["AGItf","AGItf"] [] [@expr.ppAST] (@info ++ @info2 ++ @info3 ++ @info_4_2 ++ @info_9)
+  | AGItf       lhs     .  ppAST    =   ppNestInfo @lhs.opts ["AGItf","AGItf"] [] [@expr.ppAST] (@info ++ @info2 ++ @info3 ++ @info_4_2 ++ @info_8)
                 loc     .  info     =   []
                         .  info2    =   []
                         .  info3    =   []
                         .  info_4_2 =   []
-                        .  info_9   =   []
+                        .  info_8   =   []
 
 SEM Decl
   | Val         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Val"] [] [@patExpr.ppAST,@expr.ppAST] @info
@@ -351,6 +351,10 @@ SEM DataFields
 SEM Decl
   | FFI         loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","FFI"] [pp (show @impEnt),ppNm @nm] [@tyExpr.ppAST] @info
                         .  info     =   []
+
+SEM AGItf
+  | AGItf       loc     .  info_8   :=  [ mkInfo1 "expr.cexpr" (pp @expr.cexpr)
+                                        ]
 %%]
 
 %%[9
@@ -473,12 +477,6 @@ SEM Expr
                                         , mkInfo1 "prfCBindLMap" (ppCBindLMap @prfCBindLMap)
                                         , mkInfo1 "lamBodyCoeL" (ppCommaList @lamBodyCoeL)
                                         , mkInfo1 "lamArgCoeL" (ppCommaList @lamArgCoeL)
-                                        ]
-%%]
-
-%%[9
-SEM AGItf
-  | AGItf       loc     .  info_9   :=  [ mkInfo1 "expr.cexpr" (pp @expr.cexpr)
                                         ]
 %%]
 

@@ -24,7 +24,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-data RCEEnv = RCEEnv {rceValGam :: ValGam, rceTyGam :: TyGam}
+data RCEEnv = RCEEnv {rceValGam :: ValGam, rceDataGam :: DataGam}
 
 emptyRCEEnv :: RCEEnv
 emptyRCEEnv = RCEEnv emptyGam emptyGam
@@ -32,11 +32,11 @@ emptyRCEEnv = RCEEnv emptyGam emptyGam
 rceEnvDataAlts :: RCEEnv -> CTag -> [CTag]
 rceEnvDataAlts env t
   =  case t of
-       CTag _ _ conNm
+       CTag _ conNm _ _
           ->  case valGamLookup (rceValGam env) conNm of
                 Just vgi
                    ->  let  tyNm = tyAppFunConNm . snd . tyArrowArgsRes . vgiTy $ vgi
-                       in   maybe [] (assocLElts . fmToList . tgiDataTagMp) . tyGamLookup (rceTyGam env) $ tyNm
+                       in   maybe [] (eltsFM . dgiDataTagMp) . gamLookup (rceDataGam env) $ tyNm
                 _  ->  []
        _  ->  []
 %%]
@@ -51,7 +51,7 @@ caltLSaturate env alts ce
   =  let  altTags = [ t | (CAlt_Alt (CPat_Con _ t _ _ : _) _) <- alts ]
           absentTagArities = filter (\t -> t `notElem` altTags) . rceEnvDataAlts env . head $ altTags
           absentAlts
-                 =  [ CAlt_Alt [mkP ct a] ce | ct@(CTag _ a _) <- absentTagArities ]
+                 =  [ CAlt_Alt [mkP ct a] ce | ct@(CTag _ _ _ a) <- absentTagArities ]
                  where  mkB o = CPatBind_Bind hsnUnknown (CExpr_Int o) (cpatNmNm cpatNmNone) (CPat_Var cpatNmNone)
                         mkP ct a = CPat_Con cpatNmNone ct CPatRest_Empty [mkB o | o <- [0..a-1]]
      in   sortOn caltTag (alts ++ absentAlts)

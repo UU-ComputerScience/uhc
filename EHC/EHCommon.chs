@@ -93,6 +93,9 @@
 %%[8 export(hsnUniqSupplyL,hsnLclSupplyL)
 %%]
 
+%%[8 export(CTag(..))
+%%]
+
 %%[9 export(groupSortByOn)
 %%]
 
@@ -566,6 +569,17 @@ cocoOpp :: CoContraVariance -> CoContraVariance
 cocoOpp  CoVariant      =   ContraVariant
 cocoOpp  ContraVariant  =   CoVariant
 cocoOpp  _              =   CoContraVariant
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tags (of data)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+data CTag
+  = CTagRec
+  | CTag {ctagTyNm :: HsName, ctagNm :: HsName, ctagTag :: Int, ctagArity :: Int}
+  deriving (Show,Eq,Ord)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

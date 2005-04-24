@@ -24,10 +24,10 @@
 %%[4_2 hs import(Set,EHGamUtils,EHTyElimAlts)
 %%]
 
-%%[8 hs import(FiniteMap,EHCore,EHCoreUtils)
+%%[8 hs import(FiniteMap,EHCore,EHCoreUtils,EHCorePretty)
 %%]
 
-%%[9 hs import(Set,FiniteMap,EHPred,EHCorePretty,EHCoreSubst)
+%%[9 hs import(Set,FiniteMap,EHPred,EHCoreSubst)
 %%]
 
 %%[11 hs import(EHTyElimEqual,EHGamUtils)
