@@ -27,7 +27,10 @@
 %%[9 export(ProvenNode(..),prvnIsAnd)
 %%]
 
-%%[9 export(ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,prvgCode,prvgCxBindLMap,prvgBackToOrig,prvgReachableFrom,prvgReachableTo,prvgIsFact,prvgFactL,prvgLetHoleCSubst)
+%%[9 export(ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,prvgCode,prvgBackToOrig,prvgReachableFrom,prvgReachableTo,prvgIsFact,prvgFactL)
+%%]
+
+%%[9 export(prvgCxBindLMap,prvgIntroBindL,prvgLetHoleCSubst)
 %%]
 
 %%[9 export(prvg2ReachableFrom)
@@ -357,6 +360,19 @@ prvgCxBindLMap g@(ProvenGraph i2n _ _ p2fi)
                    , not (i `elem` factPoiL)
                    , let (r,_) = prvg2ReachableFrom g [i]
                    ]
+%%]
+
+%%[9
+prvgIntroBindL :: (PredOccId -> Bool) -> [PredOccId] -> ProvenGraph -> CBindL
+prvgIntroBindL poiIsGlob topSort g@(ProvenGraph i2n _ _ _)
+  = [ CBind_Bind (poiHNm i) ev
+    | (i,ProvenAnd _ _ _ _ ev) <- introNoDpd ++ introGlob, not (isFact i)
+    ]
+  where  introNoDpd     = [ nn | nn@(i,ProvenAnd _ es les _ _) <- fmToList i2n, null es, null les ]
+         introGlob      = [ (i,n) | i <- setToList (prvgSatisfiedNodeS True poiIsGlob g topSort)
+                                  , n <- maybeToList (lookupFM i2n i)
+                          ]
+         isFact         = prvgIsFact g
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
