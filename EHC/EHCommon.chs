@@ -87,10 +87,10 @@
 %%[8 import (FiniteMap) export(showPP,ppPair,ppFM)
 %%]
 
-%%[8 export(mkNewLevUIDL)
+%%[8 export(mkNewLevUIDL,mkInfNewLevUIDL)
 %%]
 
-%%[8 export(hsnLclSupplyL)
+%%[8 export(hsnUniqSupplyL,hsnLclSupplyL)
 %%]
 
 %%[9 export(groupSortByOn)
@@ -229,10 +229,13 @@ hsnDynVar                           =   HNm "?"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Name supply, no uniqueness required
+%%% Name supply, with/without uniqueness required
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
+hsnUniqSupplyL :: UID -> [HsName]
+hsnUniqSupplyL = map uidHNm . iterate uidNext
+
 hsnLclSupplyL :: [HsName]
 hsnLclSupplyL = map (\i -> HNm ("_" ++ show i)) [1..]
 %%]
@@ -274,10 +277,14 @@ uidStart = UID [0]
 mkNewUID :: UID -> (UID,UID)
 mkNewUID   uid = (uidNext uid,uid)
 
+mkInfNewUIDL' :: (UID -> (UID,UID)) -> UID -> [UID]
+mkInfNewUIDL' mk uid
+  =  let  l = iterate (\(nxt,uid) -> mk nxt) . mkNewUID $ uid
+     in   map snd l
+
 mkNewUIDL' :: (UID -> (UID,UID)) -> Int -> UID -> [UID] -- assume sz > 0
 mkNewUIDL' mk sz uid
-  =  let  l = take sz . iterate (\(nxt,uid) -> mk nxt) . mkNewUID $ uid
-     in   map snd l
+  =  take sz (mkInfNewUIDL' mk uid)
 
 mkNewUIDL :: Int -> UID -> [UID] -- assume sz > 0
 mkNewUIDL = mkNewUIDL' mkNewUID
@@ -285,6 +292,10 @@ mkNewUIDL = mkNewUIDL' mkNewUID
 instance PP UID where
   pp = text . show
 %%]
+mkNewUIDL' :: (UID -> (UID,UID)) -> Int -> UID -> [UID] -- assume sz > 0
+mkNewUIDL' mk sz uid
+  =  let  l = take sz . iterate (\(nxt,uid) -> mk nxt) . mkNewUID $ uid
+     in   map snd l
 
 %%[7
 uidHNm :: UID -> HsName
@@ -292,6 +303,9 @@ uidHNm = HNm . show
 %%]
 
 %%[8
+mkInfNewLevUIDL :: UID -> [UID]
+mkInfNewLevUIDL = mkInfNewUIDL' mkNewLevUID
+
 mkNewLevUIDL :: Int -> UID -> [UID]
 mkNewLevUIDL = mkNewUIDL' mkNewLevUID
 %%]
