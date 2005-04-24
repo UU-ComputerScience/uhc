@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -6,7 +6,7 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Inline let bindings for variables
+%%% Inline let bindings for variables and constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs import(Maybe,FiniteMap,EHCommon,EHCore,EHTy) export(cmodTrfInlineLetAlias)
@@ -32,8 +32,9 @@ cmodTrfInlineLetAlias cmod
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-type NmMp = FiniteMap HsName HsName
+type NmMp = FiniteMap HsName CExpr
 %%]
+type NmMp = FiniteMap HsName HsName
 
 %%[8
 ATTR AllCodeNT [ nmMp: NmMp | | ]
@@ -45,21 +46,50 @@ SEM CExpr
   | Let         loc         .   allowTrf    =   not (@categ == CBindStrict || @categ == CBindFFI)
                             .   nmMp        =   if @allowTrf
                                                 then  @lhs.nmMp `plusFM`
-                                                        mapFM (\n r -> maybe r id . lookupFM @lhs.nmMp $ r) @binds.bindNmMp
+                                                        mapFM  (\n r ->  case r of
+                                                                           CExpr_Var nm -> maybe r id . lookupFM @lhs.nmMp $ nm
+                                                                           _            -> r
+                                                               )
+                                                               @binds.bindNmMp
                                                 else  @lhs.nmMp
 %%]
+                            .   nmMp        =   if @allowTrf
+                                                then  @lhs.nmMp `plusFM`
+                                                        mapFM (\n r -> maybe r id . lookupFM @lhs.nmMp $ r) @binds.bindNmMp
+                                                else  @lhs.nmMp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Is expr a var?
+%%% Is expr a substitutable value?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+ATTR CExpr [ | | mbRepl: {Maybe CExpr} ]
+
+SEM CExpr
+  | Var         lhs         .   mbRepl      =   Just @cTrf
+  | Int         lhs         .   mbRepl      =   Just @cTrf
+  | * - Var Int
+                lhs         .   mbRepl      =   Nothing
+%%]
 ATTR CExpr [ | | mbVar: {Maybe HsName} ]
 
 SEM CExpr
   | Var         lhs         .   mbVar       =   Just @nm
   | * - Var     lhs         .   mbVar       =   Nothing
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% If in strict let, allow trf?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
 %%]
+ATTR CExpr [ | | mbRepl: {Maybe CExpr} ]
+
+SEM CExpr
+  | Var         lhs         .   mbRepl      =   Just @cTrf
+  | Int         lhs         .   mbRepl      =   Just @cTrf
+  | * - Var Int
+                lhs         .   mbRepl      =   Nothing
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Bound id's
@@ -71,8 +101,8 @@ ATTR AllBind [ | | bindL USE {++} {[]}: CBindL ]
 
 SEM CBind
   | Bind        lhs         .   (bindNmMp,bindL)
-                                            =   if isJust @expr.mbVar && @nm /= hsnMain
-                                                then (@nm `unitFM` fromJust @expr.mbVar,[])
+                                            =   if isJust @expr.mbRepl && @nm /= hsnMain
+                                                then (@nm `unitFM` fromJust @expr.mbRepl,[])
                                                 else (emptyFM,[@cTrf])
 %%]
 
@@ -90,6 +120,6 @@ SEM CExpr
   | Let         lhs         .   cTrf        =   if @allowTrf
                                                 then mkCExprLet @categ @binds.bindL @body.cTrf
                                                 else @cTrf
-  | Var         lhs         .   cTrf        =   maybe @cTrf CExpr_Var . lookupFM @lhs.nmMp $ @nm
+  | Var         lhs         .   cTrf        =   maybe @cTrf id . lookupFM @lhs.nmMp $ @nm
 %%]
 
