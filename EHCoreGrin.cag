@@ -209,18 +209,15 @@ SEM CModule
                                                 $ @expr.lamNmMp
                             .   allPPatVal  =   concat
                                                 .  map  (\((arity,n,nL),missAlts)
-                                                            ->  ((@mkPAppPat n nL arity,GrExpr_Call n (map GrVal_Var (nL ++ [@nmPArg])))
-                                                                :map  (\(a,n,nL) -> (@mkPAppPat n nL arity
-                                                                                    ,GrExpr_Unit (mkNdPApp n (arity-a) (map GrVal_Var (nL ++ [@nmPArg])))
-                                                                      )             )
-                                                                      missAlts
-                                                                )
+                                                            ->  (@mkPAppPat n nL arity,GrExpr_Call n (map GrVal_Var (nL ++ [@nmPArg])))
+                                                                : map  (\(a,n,nL) -> (@mkPAppPat n nL arity
+                                                                                     ,GrExpr_Unit (mkNdPApp n (arity-a) (map GrVal_Var (nL ++ [@nmPArg])))
+                                                                       )             )
+                                                                       missAlts
                                                         )
                                                 $  @allPAlt
-                            .   applyBindL  =   let  applyAlts =  map (uncurry GrAlt_Alt) @allPPatVal
-                                                in   if null applyAlts
-                                                     then []
-                                                     else [GrBind_Bind hsnGrApply [@nmPFun,@nmPArg] (GrExpr_Case (GrVal_Var @nmPFun) applyAlts)]
+                            .   applyBind   =   let  applyAlts =  map (uncurry GrAlt_Alt) @allPPatVal
+                                                in   GrBind_Bind hsnGrApply [@nmPFun,@nmPArg] (GrExpr_Case (GrVal_Var @nmPFun) applyAlts)
                             .   evalBind    =   let  [n1,n2,n3] = map uidHNm . mkNewUIDL 3 $ @lUniq
                                                      mkCAlt u (CTag _ l t a)
                                                         = GrAlt_Alt
@@ -244,7 +241,7 @@ SEM CModule
                                                               (   (zipWith mkCAlt (mkInfNewLevUIDL @lUniq3) $ [ t | (_,ll) <- @allCTags, (_,t) <- ll ])
                                                               ++  [ mkPAlt n nL arity | ((arity,n,nL),_) <- @allPAlt ]
                                                               ++  [ mkPAlt n nL arity | ((arity,_,_),as) <- @allPAlt, (_,n,nL) <- as ]
-                                                              ++  (zipWith mkFAlt (mkInfNewLevUIDL @lUniq4) . fmToList $ @expr.lamNmMp)
+                                                              ++  (zipWith mkFAlt (mkInfNewLevUIDL @lUniq4) . fmToList $ addToFM @expr.lamNmMp hsnGrApply 2)
                                                               ++  (zipWith mkFAlt (mkInfNewLevUIDL @lUniq5) . fmToList $ @expr.cafNmMp)
                                                               )
                                                           ))
@@ -252,7 +249,7 @@ SEM CModule
                             .   allCTags    =   @builtinTags ++ @tagSizes
                             .   tagsBindL   =   map (uncurry GrBind_Tags) @allCTags
                 lhs         .   grMod       =   GrModule_Mod (HNm @baseName)
-                                                    (@expr.grBindL ++ @applyBindL ++ [@evalBind] ++ @tagsBindL)
+                                                    (@expr.grBindL ++ [@applyBind,@evalBind] ++ @tagsBindL)
 %%]
   | Mod         loc         .   applyBindL  =   let  [u1,u2] = mkNewUIDL 2 @lUniq2
                                                      nF = HNm ("f_" ++ show u1)
