@@ -20,6 +20,7 @@ DATA CodeAGItf
 DATA CModule
   | Mod         baseName        : {String}
                 expr            : CExpr
+                tagSizes        : {AssocL HsName (AssocL HsName CTag)}
 %%]
 
 %%[8

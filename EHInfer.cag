@@ -294,6 +294,19 @@ ATTR AllDataConstrEq [ | tyGam: TyGam | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data info gam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8.dataGam
+ATTR AllDecl AllExpr AllCase [ | gathDataGam: DataGam | ]
+ATTR AllDecl AllExpr AllCase AllPatExpr [ dataGam: DataGam | | ]
+
+SEM AGItf
+  | AGItf       expr        .   gathDataGam         =   emptyGam
+                            .   dataGam             =   @expr.gathDataGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gamma/Environment for fitting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

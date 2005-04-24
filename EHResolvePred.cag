@@ -359,7 +359,7 @@ SEM Expr
 %%[9
 SEM Expr
   | Lam LamImpl loc         .   lamBodyCoeL         =   mkLamBodyCoe
-                                                            (mkCoe (\e -> rceMatch (RCEEnv @lhs.valGam @lhs.tyGam) [@arg.topNm] [CAlt_Alt [@arg.cpat] e] cvarUndefined))
+                                                            (mkCoe (\e -> rceMatch (RCEEnv @lhs.valGam @lhs.dataGam) [@arg.topNm] [CAlt_Alt [@arg.cpat] e] cvarUndefined))
                                                             @body.appArgCoeL
 %%]
 
@@ -373,7 +373,7 @@ SEM Expr
   | App         loc         .   appImplsCoeL        =   mkImplsAppCoe . tyImpls . (@lhs.finTyCnstr |=>) $ @imTy
   | AppImpl     loc         .   appImplsCoeL        =   []
   | Lam LamImpl loc         .   lamBodyCoeL         =   mkLamBodyCoe
-                                                                (mkCoe (\e -> rceMatch (RCEEnv @lhs.valGam @lhs.tyGam) [@arg.topNm] [CAlt_Alt [@arg.cpat] e] cvarUndefined))
+                                                                (mkCoe (\e -> rceMatch (RCEEnv @lhs.valGam @lhs.dataGam) [@arg.topNm] [CAlt_Alt [@arg.cpat] e] cvarUndefined))
                                                                 @body.appArgCoeL
   | Lam         loc         .   lamArgCoeL          =   mkImplsLamCoe (mkLetRecCoe (mkCBindLForUIDL @cbindLMap (`elem` @uidLKnHd))) @implsKnHd
                                                         ++ mkImplsLamCoe (mkLetRecCoe (mkCBindLForUIDL @cbindLMap (`elem` @uidLKnTl))) @implsKnTl
@@ -416,7 +416,7 @@ SEM Expr
 %%]
 SEM Expr
   | Lam LamImpl loc         .   lam2BodyCoeL        =   mkLamBodyCoe
-                                                            (mkCoe (\e -> rceMatch (RCEEnv @lhs.valGam @lhs.tyGam) [@arg.topNm] [CAlt_Alt [@arg.cpat] e] cvarUndefined))
+                                                            (mkCoe (\e -> rceMatch (RCEEnv @lhs.valGam @lhs.dataGam) [@arg.topNm] [CAlt_Alt [@arg.cpat] e] cvarUndefined))
                                                             @body.app2ArgCoeL
 
 %%[9

@@ -36,7 +36,7 @@
 %%[8 hs export(cTupLbl)
 %%]
 
-%%[8 hs export(CTag(..),ctag,ppCTag,ppCTagInt) 
+%%[8 hs export(ctag,ppCTag,ppCTagInt) 
 %%]
 
 %%[9 hs export(Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkBindsAppCoe, mkLamCoe, mkLetRecCoe)
@@ -76,19 +76,14 @@ cTupLbl e
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-data CTag
-  = CTagRec
-  | CTag {ctagTag :: Int, ctagArity :: Int, ctagNm :: HsName}
-  deriving (Show,Eq,Ord)
-
-ctag :: a -> (Int -> Int -> HsName -> a) -> CTag -> a
-ctag n t tg = case tg of {CTag i a l -> t i a l; _ -> n}
+ctag :: a -> (HsName -> HsName -> Int -> Int -> a) -> CTag -> a
+ctag n t tg = case tg of {CTag tn cn i a -> t tn cn i a; _ -> n}
 
 ppCTag :: CTag -> PP_Doc
-ppCTag = ctag (pp "Rec") (\t a n -> pp t >|< "/" >|< pp n >|< "/" >|< pp a)
+ppCTag = ctag (pp "Rec") (\tn cn t a -> pp t >|< "/" >|< pp cn >|< "/" >|< pp a)
 
 ppCTagInt :: CTag -> PP_Doc
-ppCTagInt = ctag (pp "-1") (\t _ _ -> pp t)
+ppCTagInt = ctag (pp "-1") (\_ _ t _ -> pp t)
 
 instance PP CTag where
   pp = ppCTag

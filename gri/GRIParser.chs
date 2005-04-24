@@ -21,7 +21,7 @@ scanOpts :: ScanOpts
 scanOpts
   =  defaultScanOpts
         {   scoKeywordsTxt      =   [ show hsnGrEval, show hsnGrApply
-                                    , "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi"
+                                    , "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi", "tags"
                                     , "C", "F", "P", "A", "R", "H", "U"
                                     ]
         ,   scoKeywordsOps      =   [ "->", "=", "+=", "-=", ":=", "-" ]
@@ -47,6 +47,8 @@ pBindL          =    pCurly_pSemics pBind
 pBind           ::   GRIParser GrBind
 pBind           =    GrBind_Bind <$> (pGrNm <|> pGrSpecialNm) <*> pGrNmL <* pKey "=" <*> pCurly pExprSeq
                 <|>  GrBind_Rec <$ pKey "rec" <*> pBindL
+                <|>  (\tn ts -> GrBind_Tags tn (map (\(n,t,a) -> (n,CTag tn n t a)) ts))
+                     <$ pKey "tags" <*> pGrNm <* pKey "=" <*> pListSep (pKey "|") ((,,) <$> pGrNm <*> pInt <*> pInt)
 
 pExprSeq        ::   GRIParser GrExpr
 pExprSeq        =    pChainr ((\p e1 e2 -> GrExpr_Seq e1 p e2) <$ pSemi <* pKey "\\" <*> pPat <* pKey "->") pExpr
