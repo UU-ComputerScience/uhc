@@ -223,8 +223,8 @@ SEM CModule
                                                         ->  let  (GrPat_Node grT pL) = p
                                                             in   ( (grT,length pL)
                                                                  , case v of
-                                                                        GrExpr_Unit _    -> EvApTagUnit
-                                                                        GrExpr_Call n _  -> EvApTagVar n
+                                                                        GrExpr_Unit (GrVal_Node grT' _)    -> EvApTagTag grT'
+                                                                        GrExpr_Call n _                    -> EvApTagVar n
                                                                  )
                                                      )
                                                      @applyPPatValL
