@@ -96,6 +96,9 @@
 %%[8 export(CTag(..))
 %%]
 
+%%[8 export(CTagsMp)
+%%]
+
 %%[9 export(groupSortByOn)
 %%]
 
@@ -580,6 +583,14 @@ data CTag
   = CTagRec
   | CTag {ctagTyNm :: HsName, ctagNm :: HsName, ctagTag :: Int, ctagArity :: Int}
   deriving (Show,Eq,Ord)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc info passed to backend
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type CTagsMp = AssocL HsName (AssocL HsName CTag)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

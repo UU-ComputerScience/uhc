@@ -24,6 +24,9 @@
 %%[8 hs export(GrNodeAdapt(..),grRecTag,hsnGrApply,hsnGrEval,hsnGrMain,grSpecialNmL,grBuiltinTyNmL) 
 %%]
 
+%%[8 hs export(EvApTagKey,EvApTagElt(..),EvApTagMp) 
+%%]
+
 %%[8 import(GrinCodeAbsSyn)
 DERIVING *     : Show, Eq
 %%]
@@ -62,6 +65,16 @@ instance PP GrTagCateg where
   pp GrTagApp       = pp "A"
   pp GrTagFun       = pp "F"
   pp (GrTagPApp need) = pp "P/" >|< pp need
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc info passed to backend
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type EvApTagKey   = (GrTag,Int)
+data EvApTagElt   = EvApTagTag GrTag | EvApTagVar HsName | EvApTagUnit deriving (Eq,Show)
+type EvApTagMp    = AssocL EvApTagKey EvApTagElt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

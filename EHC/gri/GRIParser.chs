@@ -21,7 +21,8 @@ scanOpts :: ScanOpts
 scanOpts
   =  defaultScanOpts
         {   scoKeywordsTxt      =   [ show hsnGrEval, show hsnGrApply
-                                    , "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi", "tags"
+                                    , "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi"
+                                    , "ctags", "applymap", "evalmap"
                                     , "C", "F", "P", "A", "R", "H", "U"
                                     ]
         ,   scoKeywordsOps      =   [ "->", "=", "+=", "-=", ":=", "-" ]
@@ -39,7 +40,11 @@ scanOpts
 type GRIParser       gp     =    IsParser p Token => p gp
 
 pModule         ::   GRIParser GrModule
-pModule         =    GrModule_Mod <$ pKey "module" <*> (HNm <$> pString) <*> pBindL
+pModule         =    GrModule_Mod <$ pKey "module" <*> (HNm <$> pString)
+                     <*> pBindL
+                     <*  pKey "ctags"     <*> pCTags
+                     <*  pKey "evalmap"   <*> pEvApTagMp
+                     <*  pKey "applymap"  <*> pEvApTagMp
 
 pBindL          ::   GRIParser GrBindL
 pBindL          =    pCurly_pSemics pBind
@@ -47,8 +52,19 @@ pBindL          =    pCurly_pSemics pBind
 pBind           ::   GRIParser GrBind
 pBind           =    GrBind_Bind <$> (pGrNm <|> pGrSpecialNm) <*> pGrNmL <* pKey "=" <*> pCurly pExprSeq
                 <|>  GrBind_Rec <$ pKey "rec" <*> pBindL
-                <|>  (\tn ts -> GrBind_Tags tn (map (\(n,t,a) -> (n,CTag tn n t a)) ts))
-                     <$ pKey "tags" <*> pGrNm <* pKey "=" <*> pListSep (pKey "|") ((,,) <$> pGrNm <*> pInt <*> pInt)
+
+pCTags          ::   GRIParser CTagsMp
+pCTags          =    pCurly_pSemics
+                        ((\tn ts -> (tn,map (\(n,t,a) -> (n,CTag tn n t a)) ts))
+                        <$> pGrNm <* pKey "=" <*> pListSep (pKey "|") ((,,) <$> pGrNm <*> pInt <*> pInt)
+                        )
+
+pEvApTagMp      ::   GRIParser EvApTagMp
+pEvApTagMp      =    pCurly_pSemics
+                        ((\t a ea -> ((t,a),ea))
+                        <$> pTag <*> pInt <* pKey "->"
+                            <*> (EvApTagTag <$> pTag <|> EvApTagUnit <$ pKey "unit" <|> EvApTagVar <$> pGrNm)
+                        )
 
 pExprSeq        ::   GRIParser GrExpr
 pExprSeq        =    pChainr ((\p e1 e2 -> GrExpr_Seq e1 p e2) <$ pSemi <* pKey "\\" <*> pPat <* pKey "->") pExpr

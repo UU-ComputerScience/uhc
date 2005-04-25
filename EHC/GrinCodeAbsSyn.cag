@@ -20,14 +20,15 @@ DATA GrAGItf
 DATA GrModule
   | Mod         baseName        : {HsName}
                 bindL           : GrBindL
+                ctagsMp         : {CTagsMp}
+                evalTagMp       : {EvApTagMp}
+                applyTagMp      : {EvApTagMp}
 
 DATA GrBind
   | Bind        nm              : {HsName}
                 argNmL          : {[HsName]}
                 expr            : GrExpr
   | Rec         bindL           : GrBindL
-  | Tags        nm              : {HsName}
-                tagSizes        : {AssocL HsName CTag}
 
 TYPE GrBindL    =   [GrBind]
 
