@@ -20,6 +20,8 @@ sub ehc {
      $repl = `$ehcVersion/ehc '$src' --pretty=pp` ;
    } elsif ( $opt eq "astfile" ) {
      $repl = `$ehcVersion/ehc '$src' --pretty=ast` ;
+   } elsif ( $opt eq "grinfile" ) {
+     $repl = `$ehcVersion/ehc '$src' --pretty=grin` ;
    } elsif ( $opt eq "file" ) {
      $repl = `$ehcVersion/ehc '$src' --pretty=no --show-top-ty=yes` ;
    } else {

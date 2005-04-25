@@ -379,12 +379,15 @@ crOutputCore modNm cr
                       ;  putPPFile (fpathToStr (fpathSetSuff "java" jFP)) jPP 120
                       }
             else  return ()
+         ;  let  grin = cmodGrin u1 cMod
+                 grinPP = ppGrModule (Just []) grin
          ;  if ehcoptCoreGrin opts
-            then  do  {  let grin = cmodGrin u1 cMod
-                             grPP = ppGrModule (Just []) grin
-                      ;  putPPFile (fpathToStr (fpathSetSuff "grin" fp)) grPP 1000
+            then  do  {  putPPFile (fpathToStr (fpathSetSuff "grin" fp)) grinPP 1000
                       }
             else  return ()
+         ;  case ehcoptDumpPP (crOpts cr) of
+              Just "grin"  ->  putPPLn grinPP
+              _            ->  return ()
          ;  return cr
          }
 %%]
