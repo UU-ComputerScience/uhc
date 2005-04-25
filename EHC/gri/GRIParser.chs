@@ -63,7 +63,7 @@ pEvApTagMp      ::   GRIParser EvApTagMp
 pEvApTagMp      =    pCurly_pSemics
                         ((\t a ea -> ((t,a),ea))
                         <$> pTag <*> pInt <* pKey "->"
-                            <*> (EvApTagTag <$> pTag <|> EvApTagUnit <$ pKey "unit" <|> EvApTagVar <$> pGrNm)
+                            <*> (EvApTagTag <$> pTag <|> EvApTagUnit <$ pKey "unit" <|> EvApTagVar <$> pGrOrSpecialNm)
                         )
 
 pExprSeq        ::   GRIParser GrExpr
@@ -128,7 +128,7 @@ pSplit          =    GrSplit_Sel <$> pGrNm <* pKey "=" <*> pVal
 
 pTag            ::   GRIParser GrTag
 pTag            =    pKey "#"
-                     *>  (   (\i c n -> GrTag_Lit c i n) <$> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> (pGrNm <|> pGrSpecialNm)
+                     *>  (   (\i c n -> GrTag_Lit c i n) <$> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> pGrOrSpecialNm
                          <|> GrTag_Unboxed <$ pKey "U"
                          )
 
@@ -151,6 +151,9 @@ pGrNm           =    HNm <$> pVarid
 
 pGrSpecialNm    ::   GRIParser HsName
 pGrSpecialNm    =    pGrKey hsnGrEval <|> pGrKey hsnGrApply
+
+pGrOrSpecialNm  ::   GRIParser HsName
+pGrOrSpecialNm  =    pGrNm <|> pGrSpecialNm
 
 pGrKey          ::   HsName -> GRIParser HsName
 pGrKey k        =    HNm <$> pKey (show k)

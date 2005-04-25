@@ -96,7 +96,7 @@ defaultEHCOpts  = EHCOptions    {  ehcoptDumpPP         =   Just "pp"
 
 %%[ehcCmdLineOptsA.1
 ehcCmdLineOpts  
-  =  [  Option "p"  ["pretty"]        (OptArg oPretty "pp|ast|no|off")
+  =  [  Option "p"  ["pretty"]        (OptArg oPretty "pp|ast|grin|no|off")
           "do output pretty printed version of src (pp), abstract syntax tree (ast) or nothing (no|off), default=pp"
      ,  Option "d"  ["debug"]         (NoArg oDebug)
           "same as --pretty=ast + extra debug info"

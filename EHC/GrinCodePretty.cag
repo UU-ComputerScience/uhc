@@ -36,8 +36,8 @@ ppGrPat p
                           (Inh_GrPat {ppGrNm_Inh_GrPat = ppGrNm})
      in   (pp_Syn_GrPat t)
 
-ppGrTag :: GrTag -> PP_Doc
-ppGrTag tg
+ppGrTag :: (HsName -> PP_Doc) -> GrTag -> PP_Doc
+ppGrTag ppGrNm tg
   =  let  t = wrap_GrTag  (sem_GrTag tg)
                           (Inh_GrTag {ppGrNm_Inh_GrTag = ppGrNm})
      in   (pp_Syn_GrTag t)
@@ -68,9 +68,9 @@ ppGrNm n
      in   "$" >|< pp s
 
 ppEvApTagElt :: (HsName -> PP_Doc) -> EvApTagElt -> PP_Doc
-ppEvApTagElt _ e
+ppEvApTagElt ppGrNm e
   =  case e of
-    	EvApTagTag t -> ppGrTag t
+    	EvApTagTag t -> ppGrTag ppGrNm t
     	EvApTagVar n -> ppGrNm n
     	EvApTagUnit  -> pp "unit"
 
@@ -78,7 +78,7 @@ ppEvApTagMp :: (HsName -> PP_Doc) -> EvApTagMp -> PP_Doc
 ppEvApTagMp ppGrNm m
   =  ppCurlyV
         (map  (\((tag,arity),evap)
-                  ->  ppGrTag tag >#< pp arity >#< "->" >#< ppEvApTagElt ppGrNm evap
+                  ->  ppGrTag ppGrNm tag >#< pp arity >#< "->" >#< ppEvApTagElt ppGrNm evap
               )
               m
         )      
