@@ -13,7 +13,7 @@
 %%]
 
 %%[8.WRAPPER import(GrinCodeAbsSyn)
-WRAPPER GrAGItf GrExpr GrPat
+WRAPPER GrAGItf GrExpr GrPat GrTag
 %%]
 
 %%[8 hs
@@ -25,16 +25,22 @@ ppGrModule mbNmAdapt cmod
      in   (pp_Syn_GrAGItf t)
 
 ppGrExpr :: GrExpr -> PP_Doc
-ppGrExpr ce
-  =  let  t = wrap_GrExpr  (sem_GrExpr ce)
+ppGrExpr e
+  =  let  t = wrap_GrExpr  (sem_GrExpr e)
                            (Inh_GrExpr {ppGrNm_Inh_GrExpr = ppGrNm})
      in   (pp_Syn_GrExpr t)
 
 ppGrPat :: GrPat -> PP_Doc
-ppGrPat ce
-  =  let  t = wrap_GrPat  (sem_GrPat ce)
+ppGrPat p
+  =  let  t = wrap_GrPat  (sem_GrPat p)
                           (Inh_GrPat {ppGrNm_Inh_GrPat = ppGrNm})
      in   (pp_Syn_GrPat t)
+
+ppGrTag :: GrTag -> PP_Doc
+ppGrTag tg
+  =  let  t = wrap_GrTag  (sem_GrTag tg)
+                          (Inh_GrTag {ppGrNm_Inh_GrTag = ppGrNm})
+     in   (pp_Syn_GrTag t)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -60,20 +66,49 @@ ppGrNm :: HsName -> PP_Doc
 ppGrNm n
   =  let  s = concat . map (\c -> if c `elem` "$()[]+=:;/{}#->|," then ['$',c] else [c]) . show $ n
      in   "$" >|< pp s
+
+ppEvApTagElt :: (HsName -> PP_Doc) -> EvApTagElt -> PP_Doc
+ppEvApTagElt _ e
+  =  case e of
+    	EvApTagTag t -> ppGrTag t
+    	EvApTagVar n -> ppGrNm n
+    	EvApTagUnit  -> pp "unit"
+
+ppEvApTagMp :: (HsName -> PP_Doc) -> EvApTagMp -> PP_Doc
+ppEvApTagMp ppGrNm m
+  =  ppCurlyV
+        (map  (\((tag,arity),evap)
+                  ->  ppGrTag tag >#< pp arity >#< "->" >#< ppEvApTagElt ppGrNm evap
+              )
+              m
+        )      
 %%]
 
 %%[8
 ATTR GrAGItf AllGrNT [ | | pp USE {>-<} {empty}: PP_Doc ]
 
 SEM GrModule
-  | Mod         lhs         .   pp          =   "module" >#< show (show @baseName) >-< ppCurlyV @bindL.ppL
+  | Mod         lhs         .   pp          =   "module" >#< show (show @baseName)
+                                                >-< ppCurlyV @bindL.ppL
+                                                >-< "ctags"
+                                                >-< ppCurlyV
+                                                         (map  (\(tn,ts)
+                                                                    ->  @lhs.ppGrNm tn >#< "="
+                                                                        >#< ( ppListSep "" "" " | "
+                                                                            . map  (\(n,CTag _ _ t a) -> @lhs.ppGrNm n >#< t >#< a)
+                                                                            $ ts
+                                                                            )
+                                                               )
+                                                               @ctagsMp)
+                                                >-< "evalmap"
+                                                >-< ppEvApTagMp @lhs.ppGrNm @evalTagMp
+                                                >-< "applymap"
+                                                >-< ppEvApTagMp @lhs.ppGrNm @applyTagMp
 
 SEM GrBind
   | Bind        lhs         .   pp          =   @lhs.ppGrNm @nm >#< ppSpaced (map @lhs.ppGrNm @argNmL) >-<
                                                     indent 2 ("=" >#< ppCurly @expr.pp)
   | Rec         lhs         .   pp          =   "rec" >-< indent 2 (ppCurlyV @bindL.ppL)
-  | Tags        lhs         .   pp          =   "tags" >#< @lhs.ppGrNm @nm >#<
-                                                    "=" >#< ppListSep "" "" " | " (map (\(n,CTag _ _ t a) -> @lhs.ppGrNm n >#< t >#< a) @tagSizes)
 
 SEM GrExpr
   | Seq         lhs         .   pp          =   @expr.pp >#< ";" >#< "\\" >|< @pat.pp >#< "->"
