@@ -647,20 +647,3 @@ SEM Ty
   | Var         lhs         .   prImpls         =   prOccLImpls @lhs.mbPrLoc @insHerePrL ++ @lhs.prImpls
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Pred locations in lambda
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-%%]
-ATTR TyAGItf Ty [ | | predAsArgsLocs: PredAsArgLocs ]
-
-SEM Ty
-  | App         lhs         .   predAsArgsLocs  =   if @isArrowRoot
-                                                    then  map Just @insPrL
-                                                          ++ (if isJust @func.mbImpls then [] else [Nothing])
-                                                          ++ @arg.predAsArgsLocs
-                                                    else  []
-  | Var         lhs         .   predAsArgsLocs  =   map Just @insHerePrL
-  | * - App Var lhs         .   predAsArgsLocs  =   []
-

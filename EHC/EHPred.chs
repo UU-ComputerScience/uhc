@@ -21,13 +21,10 @@
 %%[9 import(EHError) export(ProofState(..))
 %%]
 
-%%[9 export(ProofState2(..))
-%%]
-
 %%[9 export(ProvenNode(..),prvnIsAnd)
 %%]
 
-%%[9 export(ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,prvgCode,prvgBackToOrig,prvgReachableFrom,prvgReachableTo,prvgIsFact,prvgFactL)
+%%[9 export(ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,prvgBackToOrig,prvgReachableFrom,prvgReachableTo,prvgIsFact,prvgFactL)
 %%]
 
 %%[9 export(prvgCxBindLMap,prvgIntroBindL,prvgLetHoleCSubst)
@@ -39,7 +36,7 @@
 %%[9 export(Rule(..),emptyRule,mkInstElimRule)
 %%]
 
-%%[9 export(ProofCost(..),mkCost,mkCostAvailImpl,costVeryMuch,costAvailArg,costZero,costNeg,costAdd,costALot,costBase,costAddHi,costMulBy)
+%%[9 export(ProofCost(..),mkCost,mkCostAvailImpl,costVeryMuch,costAvailArg,costZero,costNeg,costAdd,costBase,costAddHi,costMulBy)
 %%]
 
 %%[9 export(ClsFuncDep(..))
@@ -51,13 +48,7 @@
 %%[9 export(PrElimGamInfo(..))
 %%]
 
-%%[9 export(PrElimGam,peGamAdd,peGamDel,peGamAddKnPr,peGamAddKnPrL)
-%%]
-
 %%[9 export(PrElimTGam,peTGamAdd,peTGamDel,peTGamAddKnPr,peTGamAddKnPrL,peTGamPoiS)
-%%]
-
-%%[9 export(ProofCtxt(..),emptyProofCtxt)
 %%]
 
 %%[9 import(EHTyFtv) export(prvgArgLeaves,prvgSatisfiedNodeS,prvgOrigs,prvgAppPoiSubst,prvg2BackMp,prvgShareMp)
@@ -117,9 +108,6 @@ costNeg 		= Cost (-2) 0
 mkCostAvailImpl :: Int -> ProofCost
 mkCostAvailImpl c = Cost (-1) c
 
-costALot :: Int
-costALot  = 100
-
 infixr 2 `costAdd`, `costAddHi`
 infixr 3 `costMulBy`
 
@@ -134,34 +122,6 @@ costAddHi :: ProofCost -> Int -> ProofCost
 
 instance PP ProofCost where
   pp (Cost h l) = "C:" >|< pp h >|< ":" >|< l
-%%]
-data ProofCost  = CostAvailImpl {costCost :: Int} | CostInt {costCost :: Int}
-                deriving (Eq,Show,Ord)
-
-costAdd :: ProofCost -> ProofCost -> ProofCost
-costAdd (CostInt c1)            (CostInt c2)            = CostInt (c1 + c2)
-costAdd (CostAvailImpl c1)      (CostAvailImpl c2)      = CostAvailImpl (c1 + c2)
-costAdd (CostAvailImpl _ )      c2                      = c2
-costAdd c1                      _                       = c1
-
-instance PP ProofCost where
-  pp (CostInt c)       = pp c
-  pp (CostAvailImpl c) = pp "-Inf:" >|< pp c
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Proof context
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-data ProofCtxt
-  =  ProofCtxt
-        { prcxElimGam   ::  PrElimGam
-        }
-
-emptyProofCtxt
-  =  ProofCtxt
-        { prcxElimGam   =   emptyGam
-        }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -179,7 +139,6 @@ data ProvenNode
                     }
   |  ProvenShare    { prvnPred           :: Pred            , prvnEdge          :: PredOccId    }
   |  ProvenArg      { prvnPred           :: Pred            , prvnCost          :: ProofCost    }
-  |  ProvenLcl      { prvnPred           :: Pred            , prvnEvid          :: CExpr        }
 
 prvnIsAnd :: ProvenNode -> Bool
 prvnIsAnd (ProvenAnd _ _ _ _ _) = True
@@ -197,7 +156,6 @@ instance PP ProvenNode where
   pp (ProvenAnd pr es les c ev  )   = "AND:"   >#< "pr=" >|< pp pr >#< "edges=" >|< ppCommaList es >#< "lamedges=" >|< ppCommaList les  >#< "cost=" >|< pp c >#< "evid=" >|< pp ev
   pp (ProvenShare pr e          )   = "SHARE:" >#< "pr=" >|< pp pr >#< "edge="  >|< ppCommaList [e]
   pp (ProvenArg pr c            )   = "ARG:"   >#< "pr=" >|< pp pr                                                                      >#< "cost=" >|< pp c
-  pp (ProvenLcl pr ev           )   = "LCL:"   >#< "pr=" >|< pp pr                                                                      >#< "evid=" >|< pp ev
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -243,100 +201,19 @@ instance PP ProvenGraph where
 
 %%[9
 data ProofState
-  =  ProofState     { prfsProvenGraph        :: ProvenGraph     , prfsUniq               :: UID
-                    , prfsPredsToProve       :: [PredOcc]       , prfsPredsOrigToProve   :: [Pred]
-                    , prfsPrElimGam          :: PrElimGam       , prfsErrL               :: [Err]
-                    }
-                    deriving Show
-
-instance PP ProofState where
-  pp s = "PrfSt:" >#< (pp (prfsProvenGraph s)
-                       >-< pp (prfsUniq s)
-                       >-< ppListV (prfsPredsToProve s)
-                       >-< ppListV (prfsPredsOrigToProve s))
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Pred resolver, state of prover (tgam version)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-data ProofState2
-  =  ProofState2    { prfs2ProvenGraph        :: ProvenGraph     , prfs2Uniq               :: UID
+  =  ProofState     { prfs2ProvenGraph        :: ProvenGraph     , prfs2Uniq               :: UID
                     , prfs2PredsToProve       :: [PredOcc]
                     , prfs2PrElimTGam         :: PrElimTGam      , prfs2ErrL               :: [Err]
                     }
 
-instance Show ProofState2 where
-  show _ = "ProofState2"
+instance Show ProofState where
+  show _ = "ProofState"
 
-instance PP ProofState2 where
-  pp s = "PrfSt2:" >#< (pp (prfs2ProvenGraph s)
+instance PP ProofState where
+  pp s = "PrfSt:" >#<  (pp (prfs2ProvenGraph s)
                        >-< pp (prfs2Uniq s)
                        >-< ppCommaList (prfs2PredsToProve s)
                        )
-%%]
-                       >-< (ppCommaList . setToList . prfs2PredsOrigToProve $ s)
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Code gen for a ProvenGraph
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-prvgSplitIntoSubstBind :: ProvenGraph -> AssocL PredOccId ProvenNode -> (CSubst,AssocL PredOccId CExpr)
-prvgSplitIntoSubstBind g@(ProvenGraph _ p2i _ _) provenNdL
-  = (provenAsCSubst,provenForBind)
-  where   i2i  = listToFM [ (i,ii) | (_,ii) <- fmToList p2i, i <- ii ]
-          canAsSubst (_,CExpr_Var _)  = True
-          canAsSubst (_,CExpr_Int _)  = True
-          canAsSubst _                = False
-          (provenAsCSubst,(_,provenForBind))
-            = head
-              . dropWhile (\(_,(l,_)) -> not (null l))
-              . iterate
-                  (\(s,(asS,asB))
-                      -> let asS' = concat . map (\(i,n) -> zip (maybe [] id . lookupFM i2i $ i) (repeat n)) $ asS
-                             s' = s `cSubstApp` poiCExprLToCSubst asS'
-                         in  (s',partition canAsSubst (s' `cSubstApp` asB))
-                  )
-              $ (emptyCSubst
-                ,partition canAsSubst (assocLMapElt prvnEvid provenNdL)
-                )
-
-prvgCode :: [PredOcc] -> ProvenGraph -> (CBindLMap,CSubst,Set PredOccId,PP_DocL)
-prvgCode prL g@(ProvenGraph i2n p2i _ p2fi)
-  =  let  i2nL = fmToList i2n
-          p2iL = fmToList p2i
-          (provenNdL,argNdL,overlapNdL)
-            = (concat p, concat a, concat o)
-            where  spl n@(_,ProvenAnd _ _ _ _ _) = ([n],[],[])
-                   spl n@(_,ProvenLcl _ _      ) = ([n],[],[])
-                   spl n@(_,ProvenArg _ _      ) = ([],[n],[])
-                   spl n                         = ([],[],[n])
-                   (p,a,o) = unzip3 . map spl $ i2nL
-          (provenAsCSubst,provenForBind) = prvgSplitIntoSubstBind g provenNdL
-          provenRefToBoundCSubst = poiCExprLToCSubst [ (i,CExpr_Var (poiHNm i)) | (i,_) <- provenForBind ]
-          aliasRefCSubst
-            = poiCExprLToCSubst
-             . concat
-             . map (\(p,(i:iL))
-                        -> let allI = (iL `List.union` maybe [] id (lookupFM p2fi p)) \\ [i]
-                           in  zip allI (repeat (mkCExprPrHole i))
-                   )
-             $ p2iL
-          allCSubst = provenAsCSubst `cSubstApp` provenRefToBoundCSubst `cSubstApp` aliasRefCSubst
-          bindMp
-            = let s p = let rAll = prvgReachableTo g [poPrId p]
-                            r = rAll `delFromSet` poPrId p
-                        in  (poPrId p
-                            ,(rAll
-                             ,[ CBind_Bind (poiHNm i) ev | (i,ev) <- provenForBind, i `elementOf` r ]
-                            ))
-              in  map s . map (\(p,(i:_)) -> PredOcc p (maybe i head . lookupFM p2fi $ p)) $ p2iL
-          remIdL = concat [ uidL | (_,uidL) <- p2iL, any (`elem` map fst argNdL) uidL ]
-     in   (listToFM bindMp ,allCSubst,mkSet remIdL
-          ,[]
-          )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -434,19 +311,6 @@ prvg2ReachableFrom' hideLamArg (ProvenGraph i2n _ _ _) poiL
 prvg2ReachableFrom :: ProvenGraph -> [PredOccId] -> (Set PredOccId,[PredOccId])
 prvg2ReachableFrom = prvg2ReachableFrom' False
 %%]
-prvg2ReachableFrom :: ProvenGraph -> [PredOccId] -> (Set PredOccId,[PredOccId])
-prvg2ReachableFrom (ProvenGraph i2n _ _ _) poiL
-  =  let  nextOf poi
-            =  case lookupFM i2n poi of
-                  Just (ProvenAnd _ es _ _ _ ) -> es
-                  Just (ProvenOr  _ es _     ) -> es
-                  _                            -> []
-          rr r@(reachSet,revTopSort) poiL
-            =  let  newPoiL = filter (not . (`elementOf` reachSet)) . concat . map nextOf $ poiL
-               in   if null newPoiL
-                    then r
-                    else rr (reachSet `Set.union` mkSet newPoiL,newPoiL ++ revTopSort) newPoiL
-     in   rr (mkSet poiL,poiL) poiL
 
 %%[9
 prvgReachableTo' :: Bool -> ProvenGraph -> [PredOccId] -> Set PredOccId
@@ -476,22 +340,6 @@ prvgReachableTo' hideLamArg (ProvenGraph i2n _ _ _)
 prvgReachableTo :: ProvenGraph -> [PredOccId] -> Set PredOccId
 prvgReachableTo = prvgReachableTo' False
 %%]
-prvgReachableTo :: ProvenGraph -> [PredOccId] -> Set PredOccId
-prvgReachableTo (ProvenGraph i2n _ _ _)
-  =  let  allNd = eltsFM i2n
-          r uid reachSet
-            =  if uid `elementOf` reachSet
-               then  reachSet
-               else  let  reachSet' = addToSet reachSet uid
-                          reachFrom fromNd toUid
-                            =  case fromNd of
-                                 ProvenAnd _ es _ _ _  | toUid `elem` (filter (\i -> case lookupFM i2n i of {Just (ProvenLcl _ _) -> False ; _ -> True}) es)
-                                                                          -> True
-                                 ProvenOr  _ es _      | toUid `elem` es  -> True
-                                 _                                        -> False
-                     in   rr reachSet' (keysFM . filterFM (\i n -> reachFrom n uid) $ i2n)
-          rr = foldr r
-     in   rr emptySet
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Original nodes, fact nodes
@@ -554,13 +402,6 @@ prvgAllLeaves g@(ProvenGraph i2n _ p2oi _)
   where  isLf (ProvenArg _ _) = True
          isLf _               = False
 %%]
-prvgAllLeaves :: ProvenGraph -> [PredOccId]
-prvgAllLeaves g@(ProvenGraph i2n _ p2oi _)
-  = keysFM (filterFM (\i n -> not (isFact i) && isLf n) i2n)
-  where  isLf (ProvenArg _ _       )  = True
-         isLf (ProvenAnd _ es _ _ _)  = null es || all isFact es
-         isLf _                       = False
-         isFact = prvgIsFact g
 
 %%[9
 prvgArgLeaves :: ProvenGraph -> [PredOccId] -> [Pred]
@@ -588,38 +429,6 @@ prvgArgLeaves g@(ProvenGraph i2n _ p2oi _) topSort
            where  isOrig = pr `elemFM` p2oi
                   needed n = any (`elementOf` prDoneS) (dpdPrsOf n)
 %%]
-
-%%[9
-%%]
-prvgArgLeaves :: ProvenGraph -> [PredOccId] -> [Pred]
-prvgArgLeaves g@(ProvenGraph i2n _ p2oi _) topSort
-  =  filter (any (not . tvCatIsFixed) . eltsFM . tyFtvMp . predTy) l
-  where  provenAnds pr = [ n | n@(ProvenAnd ndPr _ _ _ _) <- eltsFM i2n, ndPr == pr ]
-         isFact = prvgIsFact g
-         (l,_)
-           = foldr  (\poi sl@(l,d) ->
-                        let  n = fromJust . lookupFM i2n $ poi
-                             pr = prvnPred n
-                             isOrig = pr `elemFM` p2oi
-                             done = pr `elementOf` d
-                             dpdPrsOf (ProvenAnd _ es _ _ _)
-                               = catMaybes . map (fmap prvnPred . lookupFM i2n) . filter (not . isFact) $ es
-                             needed n = any (`elementOf` d) (dpdPrsOf n)
-                        in   case n of
-                                 ProvenAnd _ es _ _ _ | not isOrig && not done
-                                       ->  if needed n
-                                           then (l,addToSet d pr)
-                                           else sl
-                                 _ | isOrig && not done
-                                       ->  let  ands = provenAnds pr
-                                           in   if null ands || all (not . needed) ands
-                                                then (pr:l,addToSet d pr)
-                                                else sl
-                                   | otherwise
-                                       ->  sl
-                    )
-                    ([],emptySet)
-                    topSort
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% All nodes only (indirectly) satisfying a condition
@@ -747,18 +556,17 @@ data Rule
        , rulFuncDeps        :: [ClsFuncDep]
        }
 
-emptyRule = Rule Ty_Any head hsnUnknown (mkPrId uidStart uidStart) (mkCost costALot) []
+emptyRule = Rule Ty_Any head hsnUnknown (mkPrId uidStart uidStart) costVeryMuch []
 
 mkInstElimRule :: HsName -> PredOccId -> Int -> Ty -> Rule
 mkInstElimRule n i sz ctxtToInstTy
-  =  let  r =  Rule  { rulRuleTy    = ctxtToInstTy
-                     , rulMkEvid    = \ctxt -> CExpr_Var n `mkCExprApp` ctxt
-                     , rulNmEvid    = n
-                     , rulId        = i
-                     , rulCost      = costBase `costAdd` (costBase `costMulBy` 2 * sz)
-                     , rulFuncDeps  = []
-                     }
-     in   r
+  =  Rule  { rulRuleTy    = ctxtToInstTy
+           , rulMkEvid    = \ctxt -> CExpr_Var n `mkCExprApp` ctxt
+           , rulNmEvid    = n
+           , rulId        = i
+           , rulCost      = costBase `costAdd` (costBase `costMulBy` 2 * sz)
+           , rulFuncDeps  = []
+           }
 
 instance Substitutable Rule where
   s |=>  r = r { rulRuleTy = s |=> rulRuleTy r }
@@ -770,8 +578,6 @@ instance Show Rule where
 instance PP Rule where
   pp r = pp (rulRuleTy r) >#< ":>" >#< pp (rulNmEvid r) >|< "/" >|< pp (rulId r) >#< "|" >|< ppCommaList (rulFuncDeps r)
 %%]
-instance PP Rule where
-  pp r = ppTyPr (rulRuleTy r) >#< ":>" >#< pp (rulNmEvid r) >|< "/" >|< pp (rulId r) >#< "|" >|< ppCommaList (rulFuncDeps r)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gamma for intro rules
@@ -816,36 +622,6 @@ instance PP PrElimGamInfo where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Gamma for elim rules
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-type PrElimGam      = Gam HsName PrElimGamInfo
-
-peGamAdd :: HsName -> Rule -> PrElimGam -> PrElimGam
-peGamAdd n r g
-  =  let  (h,t) = gamPop g
-          h' = gamUpdAdd n (PrElimGamInfo [r]) (\_ p -> p {pegiRuleL = r : pegiRuleL p}) h
-     in   t `gamPushGam` h'
-
-peGamDel :: HsName -> Rule -> PrElimGam -> PrElimGam
-peGamDel n r g
-  =  let  (h,t) = gamPop g
-          h' = gamUpd n (\_ p -> p {pegiRuleL = deleteBy (\r1 r2 -> rulId r1 == rulId r2) r . pegiRuleL $ p}) h
-     in   t `gamPushGam` h'
-
-peGamAddKnPr :: HsName -> PredOccId -> Pred -> PrElimGam -> PrElimGam
-peGamAddKnPr n i p
-  = peGamAdd (predMatchNm p) (mkInstElimRule n i 0 (mkTyPr p))
-
-peGamAddKnPrL :: PrfCtxtId -> UID -> [Pred] -> PrElimGam -> (PrElimGam,[HsName],[PredOccId])
-peGamAddKnPrL ci i prL g
-  =  foldr  (\(i,p) (g,nL,idL) -> let n = poiHNm i in (peGamAddKnPr n i p g,n:nL,i:idL))
-            (g,[],[])
-            (zip (map (mkPrId ci) . mkNewUIDL (length prL) $ i) prL)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gamma for elim rules (tgam version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -875,10 +651,5 @@ peTGamAddKnPrL ci i prL g
 peTGamPoiS :: PrfCtxtId -> PrElimTGam -> Set PredOccId
 peTGamPoiS ci = unionManySets . map (mkSet . map rulId . pegiRuleL) . tgamElts ci
 %%]
-peTGamDel :: PrfCtxtId -> HsName -> Rule -> PrElimTGam -> PrElimTGam
-peTGamDel ci n r g
-  =  let  (h,mnci,t) = tgamPop ci ci g
-          h' = maybe h id . tgamMbUpd ci n (\_ p -> p {pegiRuleL = deleteBy (\r1 r2 -> rulId r1 == rulId r2) r . pegiRuleL $ p}) $ h
-     in   maybe h' (\nci -> tgamPushGam nci ci ci t h') mnci
 
 

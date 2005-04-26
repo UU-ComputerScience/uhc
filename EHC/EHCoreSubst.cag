@@ -105,11 +105,6 @@ instance CSubstitutable CSubst where
   cSubstApp cs s = mapFM (const (cSubstApp cs)) s `plusFM` cs
 
 %%]
-instance CSubstitutable v => CSubstitutable (AssocL k v) where
-  cSubstApp cs l = assocLMapElt (cSubstApp cs) l
-
-instance CSubstitutable CxBindLMap where
-  cSubstApp cs (CxBindLMap m) = CxBindLMap (mapFM (const (cSubstApp cs)) m)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Generation
@@ -224,32 +219,5 @@ mkLamBodyCoe onLast l
 instance PP Coe where
   pp c = "<" >|< pp (c `coeEvalOn` CExpr_CoeArg) >|< ">"
 %%]
-mkImplsLamCoe :: Coe -> Impls -> [Coe]
-mkImplsLamCoe onLast is
-  =  case map (mkLamCoe . poiHNm) (implsPrIds is) of
-       l@(_:_)  ->  let  h = init l
-                         t = last l
-                    in   h ++ [t `coeCompose` onLast]
-       l        ->  [onLast]
 
-coeWipe :: CSubst -> [Coe] -> [Coe] -> ([Coe],[Coe])
-coeWipe cs l r
-  =  let  eval coe = cs `cSubstApp` (coe `coeEvalOn` CExpr_CoeArg)
-          w l r =  case (l,r) of
-                     (CoeImplApp li:ls,CoeImplLam ri:rs)
-                                    | li == ri   -> w ls rs
-                                    | otherwise  -> (l,r)
-                     (lc:ls,rc:rs)  | match      -> w ls rs
-                                    | otherwise  -> (CoeC lce : ls, CoeC rce : rs)
-                         where  lce    =  eval lc
-                                rce    =  eval rc
-                                match  =  case (lce,rce) of
-                                            (CExpr_App _ (CExpr_Var  ln),CExpr_Lam rn CExpr_CoeArg)
-                                              | ln == rn            -> True
-                                            (CExpr_App _ (CExpr_Hole li),CExpr_Lam rn CExpr_CoeArg)
-                                              | show li == show rn  -> True
-                                            _                       -> False
-                     _ -> (l,r)
-          (l',r') = w (reverse l) (reverse r)
-     in   (reverse l',reverse r')
 

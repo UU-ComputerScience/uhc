@@ -364,12 +364,12 @@ SEM RecExpr
 %%[9.FIEnv -(4.FIEnv 7.FIEnv)
 SEM Expr
   | Lam AppTop LamImpl
-                loc         .   fe                  =   emptyFE {fePrElimTGam = @lhs.prElimTGam, fePrElimGam = @lhs.prElimGam, fePrfCtxtId = @prfCtxtId}
+                loc         .   fe                  =   emptyFE {fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @prfCtxtId}
   | * - Lam AppTop LamImpl
-                loc         .   fe                  =   emptyFE {fePrElimTGam = @lhs.prElimTGam, fePrElimGam = @lhs.prElimGam, fePrfCtxtId = @lhs.prfCtxtId}
+                loc         .   fe                  =   emptyFE {fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId}
 
 SEM RecExpr
-  | *           loc         .   fe                  =   emptyFE {fePrElimTGam = @lhs.prElimTGam, fePrElimGam = @lhs.prElimGam, fePrfCtxtId = @lhs.prfCtxtId}
+  | *           loc         .   fe                  =   emptyFE {fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

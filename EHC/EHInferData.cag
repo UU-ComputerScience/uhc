@@ -32,13 +32,6 @@ SEM Decl
                                                           tyGamInst1Exists @lUniq3 (@lhs.kiCnstr |=> @lTyGam)
 %%]
 
-%%[8
-%%]
-SEM Decl
-  | Data        loc         .   updTGI              =   \tgi -> tgi {tgiData = tgiData @dataTgi, tgiDataTagMp = tgiDataTagMp @dataTgi}
-                lhs         .   patTyGam            :=  if @hasKiSig  then gamUpd @tyNm (\_ t -> @updTGI t) @lhs.patTyGam
-                                                                      else gamAdd @lhs.patTyGam @tyNm @dataTgi
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Kind inferencing for data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -107,12 +100,6 @@ SEM Decl
   | Data        loc         .   dataAltTy           =   mkTySum @constrs.dataAltTyL
                             .   dataTgi             :=  mkTGIData (Ty_Con @tyNm) (tyEnsureNonAny @lUniq @knKi) @dataAltTy
 %%]
-
-%%[8
-%%]
-SEM Decl
-  | Data        loc         .   dataTgi             :=  mkTGIData  (Ty_Con @tyNm) (tyEnsureNonAny @lUniq @knKi)
-                                                                   @dataAltTy @constrs.dataTagMp
 
 !!!!! Fix following w.r.t. dataUnConTy
 %%[11

@@ -59,16 +59,7 @@ SEM Decl
                                 .   tyGam           =   @lhs.tyGam
                                 .   gathTySigGam    =   gamAddGam @lhs.gathTySigGam (valGamMapTy tyQuantifyClosed @clsTySigGam)
                                 .   patPrIntroGam   =   gamAdd @lhs.patPrIntroGam (tyPredMatchNm @hdPrTy) @pigi
-                                .   patPrElimGam    =   foldr (uncurry peGamAdd) @lhs.patPrElimGam @elimRules
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Class (tgam version)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-SEM Decl
-  | Class       lhs             .   patPrElimTGam   =   foldr (\(n,r) g -> peTGamAdd @lhs.prfCtxtId n r g) @lhs.patPrElimTGam @elimRules
+                                .   patPrElimTGam   =   foldr (\(n,r) g -> peTGamAdd @lhs.prfCtxtId n r g) @lhs.patPrElimTGam @elimRules
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -116,25 +107,14 @@ SEM Decl
                                 .   tyGam           =   @lhs.tyGam
                                 .   gathTySigGam    =   (maybe id (\(n,_) g -> gamAdd g n (ValGamInfo (tyQuantifyClosed @tyPrExpr.evTy))) @mbNmElim) @lhs.gathTySigGam
                                 .   patValGam       =   @lhs.patValGam
-                                .   patPrElimGam    =   (if @inclForElim then peGamAdd @instClsNm @elimRule else id) @lhs.patPrElimGam
+                                .   patPrElimTGam   =   (if @inclForElim then peTGamAdd @lhs.prfCtxtId @instClsNm @elimRule else id) @lhs.patPrElimTGam
   | InstanceIntro
                 loc             .   instClsNm       =   tyPredMatchNm @prExpr.ty
                                 .   dictNm          =   poiHNm @instId
                                 .   elimRule        =   mkInstElimRule @dictNm @instId 0 @prExpr.ty
-                lhs             .   patPrElimGam    =   peGamAdd @instClsNm @elimRule @lhs.patPrElimGam
+                                .   patPrElimTGam   =   peTGamAdd @lhs.prfCtxtId @instClsNm @elimRule @lhs.patPrElimTGam
                 loc             .   foPr            =   fitPredToEvid @lUniq @prExpr.ty @lhs.prIntroGam
                 expr            .   knTy            =   foTy @foPr
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Instance (tgam version)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-SEM Decl
-  | Instance    lhs             .   patPrElimTGam   =   (if @inclForElim then peTGamAdd @lhs.prfCtxtId @instClsNm @elimRule else id) @lhs.patPrElimTGam
-  | InstanceIntro
-                lhs             .   patPrElimTGam   =   peTGamAdd @lhs.prfCtxtId @instClsNm @elimRule @lhs.patPrElimTGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

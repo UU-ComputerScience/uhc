@@ -50,14 +50,6 @@ SEM PatExpr
                                                         in   fitsIn  instFIOpts emptyFE @lUniq2 @knUnTy ([a] `mkTyArrow` r)
                             .  patFunTy             :=  foTy @patFunFo
 %%]
-SEM PatExpr
-  | Con         loc         .  (knUnTy,nmErrs)      =   valGamLookupTy @lhs.valGam (hsnUn @nm)
-                            .  patFunTy             :=  let  [a,r]  = mkNewTyVarL 2 @lUniq
-                                                             fo     = fitsIn  instFIOpts emptyFE @lUniq2 @knUnTy ([a] `mkTyArrow` r)
-                                                        in   foTy fo
-  | AppTop      loc         .  patFunFo             =   let  (a:r)  = mkNewTyVarL (1 + @patExpr.arity) @lUniq
-                                                        in   fitsIn  instFIOpts emptyFE @lUniq2 @patExpr.patFunTy ([a] `mkTyArrow` mkTyProdApp r)
-  | Con AppTop  loc         .  patFunTy             :=  foTy @patFunFo
 
 !!!!!!! fix following later (20050407)
 %%[11.patFunTy

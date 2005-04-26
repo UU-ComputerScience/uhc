@@ -66,6 +66,9 @@
 %%[9 export(TreeGam,emptyTGam,tgamUnit,tgamLookup,tgamLookupAll,tgamElts,tgamPushNew,tgamAddGam,tgamPushGam,tgamAdd,tgamPop,tgamUpdAdd,tgamUpd,tgamMbUpd,tgamInScopes,tgamIsInScope)
 %%]
 
+%%[9 export(ppTGam)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -212,15 +215,11 @@ gamElts = assocLElts . gamToAssocL
 gamLookupAll :: Ord k => Gam k v -> k -> [v]
 gamLookupAll g = tgamLookupAll (tgamSize1 g) g
 %%]
-gamLookupAll :: Eq k => k -> Gam k v -> [v]
-gamLookupAll k (Gam ll) = catMaybes (map (lookup k) ll)
 
 %%[9
 gamUpdAdd :: Ord k => k -> v -> (k -> v -> v) -> Gam k v -> Gam k v
 gamUpdAdd k v upd g = tgamUpdAdd (tgamSize1 g) k v upd g
 %%]
-gamUpdAdd :: Ord k => k -> v -> (k -> v -> v) -> Gam k v -> Gam k v
-gamUpdAdd k v upd g = maybe (gamAdd g k v) id (gamMbUpd k upd g)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Tree Gam, a Gam with multiple (search) entry points
@@ -662,6 +661,11 @@ gamSubstTop s g
 %%[1.ppGam
 ppGam :: (PP k, PP v) => Gam k v -> PP_Doc
 ppGam g = ppAssocL (gamToAssocL g)
+%%]
+
+%%[9.ppTGam
+ppTGam :: (Ord i, PP k, PP v) => i -> TreeGam i k v -> PP_Doc
+ppTGam i g = ppAssocL (tgamToAssocL i g)
 %%]
 
 %%[1.PP.Gam

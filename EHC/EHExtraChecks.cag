@@ -39,14 +39,10 @@ SEM Decl
 checkClNms :: Set HsName -> [Err]
 checkClNms s = if isEmptySet s then [] else [Err_NamesNotIntrod (setToList s)]
 %%]
-checkPrClassName :: PrIntroGam -> [HsName] -> [Err]
-checkPrClassName g pl
-  =  let  nms = nub . concat . map (\n -> maybe [n] (const []) (gamLookup g n)) . filter (not.hsnIsUnknown) $ pl
-     in   if null nms then [] else [Err_NamesNotIntrod nms]
 
 %%[9
 SEM AGItf
-  | AGItf       loc         .   predNotPrfErrs      =   if null @expr.gath2PredL then [] else [Err_NotProvenPreds @expr.gath2PredL]
+  | AGItf       loc         .   predNotPrfErrs      =   if null @expr.gathPredL then [] else [Err_NotProvenPreds @expr.gathPredL]
 
 SEM Decl
   | Instance    loc         .   predNotPrfErrs      =   if null @supPrfArgPrOccL && null @prfArgPrOccL 
@@ -62,9 +58,3 @@ SEM Expr
   | AppImpl LamImpl
                 loc         .   nmErrs              =   []
 %%]
-SEM AGItf
-  | AGItf       loc         .   predNotPrfErrs      =   if null @expr.gathPredL then [] else [Err_NotProvenPreds @expr.gathPredL]
-
-SEM Decl
-  | Instance    loc         .   predNotPrfErrs      =   if null @supRemPrfPrL then [] else [Err_NotProvenPreds @supRemPrfPrL]
-
