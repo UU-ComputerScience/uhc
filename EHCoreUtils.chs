@@ -14,7 +14,6 @@
 
 %%[8 export(mkCExprStrictSatCase,mkCExprSelCase)
 %%]
-,mkCExprDelCase
 
 %%[8 import(List) export(FieldUpdateL,fuMkCExpr)
 %%]
@@ -104,14 +103,6 @@ mkCExprSelCase env ne e ct n lbl off
                     (CExpr_Var n)
      in   mkCExprStrictSatCase env ne e [alt] cvarUndefined
 %%]
-mkCExprDelCase :: RCEEnv -> CExpr -> CTag -> AssocL HsName CExpr -> CExpr
-mkCExprDelCase env e ct lblOffL
-  =  let  (ne:nr:_) = hsnLclSupplyL
-          alt = CAlt_Alt
-                    [CPat_Con (CPatNmOrig ne) ct (CPatRest_Var nr)
-                        [CPatBind_Bind l o hsnWild (CPat_Var (CPatNmOrig hsnWild)) | (l,o) <- lblOffL]]
-                    (CExpr_Var nr)
-     in   mkCExprStrictSatCase env ne e [alt] cvarUndefined
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Reorder record Field Update (to sorted on label, upd's first, then ext's)

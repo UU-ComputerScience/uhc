@@ -67,17 +67,6 @@ SEM Expr
                                                         in   (valGamInst1Exists @lUniq2 vg,tqog)
                             .   tqoTyCnstr          =   foldr (\tqo c -> tqoImplsCnstr tqo |=> c) emptyCnstr (gamElts @tqoGam)
 %%]
-SEM Expr
-  | Let         loc         .   (lQuValGam,tqoGam)  :=  let  (vg,tqog) = valGamQuantify @gTyTvL @remPrfPrL @lSubsValGam
-                                                        in   (valGamInst1Exists @lUniq2 vg,tqog)
-                            .   tqoTyCnstr          =   foldr (\tqo c -> tqoImplsCnstr tqo |=> c) emptyCnstr (gamElts @tqoGam)
-
-%%[9
-%%]
-SEM Expr
-  | Let         loc         .   (l2QuValGam,tqo2Gam)=   let  (vg,tqog) = valGamQuantify @gTyTvL @prfArgPrOccL @lSubsValGam
-                                                        in   (valGamInst1Exists @lUniq2 vg,tqog)
-                            .   tqo2TyCnstr         =   foldr (\tqo c -> tqoImplsCnstr tqo |=> c) emptyCnstr (gamElts @tqo2Gam)
 
 %%[11
 %%]
@@ -149,16 +138,6 @@ SEM Expr
 SEM Expr
   | Let         loc         .   finTyCnstr          =   @tqoTyCnstr |=> @lhs.finTyCnstr
 %%]
-
-%%[9
-%%]
-ATTR AllNT [ fin2TyCnstr: Cnstr | | ]
-
-SEM Expr
-  | Let         loc         .   fin2TyCnstr         =   @tqo2TyCnstr |=> @lhs.fin2TyCnstr
-
-SEM AGItf
-  | AGItf       expr        .   fin2TyCnstr         =   @expr.tyCnstr
 
 %%[10
 SEM Decl
@@ -317,7 +296,7 @@ SEM Decl
 
 %%[9
 SEM Decl
-  | TySig       loc         .   fe                  :=  emptyFE {fePrElimGam = @lhs.prElimGam, fePrElimTGam = @lhs.prElimTGam}
+  | TySig       loc         .   fe                  :=  emptyFE {fePrElimTGam = @lhs.prElimTGam}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -648,7 +627,7 @@ SEM Decl
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Predicate env, for elim of predicates (tgam version)
+%%% Predicate env, for elim of predicates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
@@ -657,18 +636,6 @@ ATTR NTPrf [ | prElimTGam: PrElimTGam | ]
 
 SEM AGItf
   | AGItf       loc         .   prElimTGam          =   emptyTGam @prfCtxtId
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Predicate env, for elim of predicates
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-ATTR AllDecl [ | patPrElimGam: PrElimGam | ]
-ATTR NTPrf [ prElimGam: PrElimGam | | ]
-
-SEM AGItf
-  | AGItf       loc         .   prElimGam           =   emptyGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

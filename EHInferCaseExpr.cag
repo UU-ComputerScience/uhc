@@ -32,9 +32,6 @@ SEM CaseAlts
   | Nil         lhs         .   patTy               =   @lhs.patTyCnstr |=> @lhs.knPatTy
   | Cons        tl          .   knPatTy             =   @hd.patTyCnstr |=> @lhs.knPatTy
 %%]
-SEM CaseAlts
-  | Nil         lhs         .   patTy               =   @lhs.knPatTy
-  | Cons        tl          .   knPatTy             =   @hd.patTy
 
 %%[5_1
 SEM Expr

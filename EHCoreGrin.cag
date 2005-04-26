@@ -119,31 +119,6 @@ SEM CExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% All tags
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 hs
-%%]
-type TagInfoMp = FiniteMap HsName CTag
-
-mkTMp :: CTag -> TagInfoMp
-mkTMp t@(CTag _ _ l)  = l `unitFM` t
-mkTMp _               = emptyFM
-
-%%[8
-%%]
-ATTR AllCodeNT [ | | tagNmMp USE {`plusFM`} {emptyFM}: TagInfoMp ]
-
-SEM CExpr
-  | TupIns TupUpd
-                lhs         .   tagNmMp     =   @expr.tagNmMp `plusFM` @offset.tagNmMp `plusFM` @fldExpr.tagNmMp `plusFM` mkTMp @tag
-  | TupDel      lhs         .   tagNmMp     =   @expr.tagNmMp `plusFM` @offset.tagNmMp `plusFM` mkTMp @tag
-  | Tup         lhs         .   tagNmMp     =   mkTMp @tag
-
-SEM CPat
-  | Con         lhs         .   tagNmMp     =   @binds.tagNmMp `plusFM` mkTMp @tag
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% All function names (which only live on top level after lambda lifting), ditto CAF's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

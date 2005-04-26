@@ -12,7 +12,7 @@
 %%[8 hs import(UU.Pretty,EHCommon,EHTy,EHCore) export(ppCModule)
 %%]
 
-%%[9 hs import(FiniteMap,Set,EHTyPretty) export(ppCBindLMap,ppCxBindLMap,ppCBindL)
+%%[9 hs import(FiniteMap,Set,EHTyPretty) export(ppCxBindLMap,ppCBindL)
 %%]
 
 %%[8.WRAPPER import(EHCoreAbsSyn)
@@ -40,11 +40,6 @@ ppCBindL = ppAssocL . map (\(CBind_Bind n v) -> (n,v))
 %%]
 
 %%[9 hs
-ppCBindLMap :: CBindLMap -> PP_Doc
-ppCBindLMap = ppAssocL . assocLMapElt (\(i,b) -> (ppCBindL b) >-< (ppCommaList . setToList $ i)) . fmToList
-%%]
-
-%%[9 hs
 ppHole :: UID -> PP_Doc
 ppHole i = "<" >|< pp i >|< ">"
 %%]
@@ -59,14 +54,6 @@ ppCxBindLMap (CxBindLMap m)
         )
   .  fmToList $ m
 %%]
-ppCxBindLMap :: CxBindLMap -> PP_Doc
-ppCxBindLMap
-  =  ppAssocLV
-  .  assocLMapElt
-        (\(i,b)
-            -> (ppAssocL . map (\(CBind_Bind n v) -> (n,v)) $ b) >-< (ppCommaList . setToList $ i)
-        )
-  .  fmToList
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pretty printed code

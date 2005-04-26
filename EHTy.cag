@@ -81,9 +81,6 @@
 %%[9 hs export(PredOcc(..),poId)
 %%]
 
-%%[99 hs export(PredAsArgLocs)
-%%]
-
 %%[10 hs export(tyExtsOffset)
 %%]
 
@@ -164,14 +161,6 @@ data PredOcc
 poId :: PredOcc -> UID
 poId = poiId . poPrId
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Description of predicate locations in lambda (after quantification)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9 hs
-%%]
-type PredAsArgLocs = [Maybe PredOcc]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Properties of quantifier

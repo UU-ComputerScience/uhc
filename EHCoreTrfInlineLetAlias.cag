@@ -34,7 +34,6 @@ cmodTrfInlineLetAlias cmod
 %%[8 hs
 type NmMp = FiniteMap HsName CExpr
 %%]
-type NmMp = FiniteMap HsName HsName
 
 %%[8
 ATTR AllCodeNT [ nmMp: NmMp | | ]
@@ -71,25 +70,6 @@ SEM CExpr
   | * - Var Int
                 lhs         .   mbRepl      =   Nothing
 %%]
-ATTR CExpr [ | | mbVar: {Maybe HsName} ]
-
-SEM CExpr
-  | Var         lhs         .   mbVar       =   Just @nm
-  | * - Var     lhs         .   mbVar       =   Nothing
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% If in strict let, allow trf?
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-%%]
-ATTR CExpr [ | | mbRepl: {Maybe CExpr} ]
-
-SEM CExpr
-  | Var         lhs         .   mbRepl      =   Just @cTrf
-  | Int         lhs         .   mbRepl      =   Just @cTrf
-  | * - Var Int
-                lhs         .   mbRepl      =   Nothing
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Bound id's

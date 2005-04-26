@@ -78,8 +78,6 @@ SEM Expr
 
 %%[5
 %%]
-SEM CaseAlts
-  | Cons        lhs         .   errL        =   mkNestErr @hd.pp (@hd.errL ++ foErrL @fo) ++ @tl.errL
 
 %%[5_1
 SEM Expr

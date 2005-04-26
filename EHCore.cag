@@ -39,10 +39,7 @@
 %%[8 hs export(ctag,ppCTag,ppCTagInt) 
 %%]
 
-%%[9 hs export(Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkBindsAppCoe, mkLamCoe, mkLetRecCoe)
-%%]
-
-%%[9 hs export(CBindLMap, emptyCBindLMap, cbindLMapBinds, mkCBindLForUIDL',mkCBindLForUIDL)
+%%[9 hs export(Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLetRecCoe)
 %%]
 
 %%[9 hs import(Maybe) export(CxBindLMap(..), emptyCxBindLMap, mkCxBindLForPoiL, mkCxBindLForPoiL', plusCxBM, cxbmDpdPoiS, cxbmIntroPoiL)
@@ -111,30 +108,6 @@ cbindLNub = nubBy (\(CBind_Bind n1 _) (CBind_Bind n2 _) -> n1 == n2)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
-type CBindLMap = FiniteMap PredOccId (Set PredOccId,CBindL)
-
-emptyCBindLMap = emptyFM
-
-cbindLMapBinds :: CBindLMap -> [CBindL]
-cbindLMapBinds = map snd . eltsFM
-
-mkCBindLForUIDL' :: CBindLMap -> (PredOccId -> Bool) -> (CBindL,[PredOccId])
-mkCBindLForUIDL' cbindLMap doIncl
-  =  (nubBy (\(CBind_Bind n1 _) (CBind_Bind n2 _) -> n1 == n2)
-      . concat . cbindLMapBinds $ b
-     ,keysFM b
-     )
-  where  b = filterFM (\i _ -> doIncl i) cbindLMap
-
-mkCBindLForUIDL :: CBindLMap -> (PredOccId -> Bool) -> CBindL
-mkCBindLForUIDL cbindLMap doIncl = fst (mkCBindLForUIDL' cbindLMap doIncl)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Bindings using a pred (tgam version)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9 hs
 newtype CxBindLMap = CxBindLMap (FiniteMap PredOccId [(CBind,PredOccId,Set PredOccId)])
 
 emptyCxBindLMap = CxBindLMap emptyFM
@@ -150,10 +123,9 @@ cxbmDpdPoiS (CxBindLMap m) poi = maybe emptySet (unionManySets . map thd) (looku
 cxbmIntroPoiL :: CxBindLMap -> [PredOccId]
 cxbmIntroPoiL (CxBindLMap m) = nub [ i | l <- eltsFM m, (_,i,_) <- l ]
 %%]
-type CxBindLMap = FiniteMap (PrfCtxtId,Pred) (Set PredOccId,CBindL)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Bindings using a pred (tgam version)
+%%% Bindings using a pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
@@ -166,8 +138,6 @@ mkCxBindLForPoiL' isAvailPoi (CxBindLMap m) inclPoiL
 mkCxBindLForPoiL :: Set PredOccId -> CxBindLMap -> [PredOccId] -> CBindL
 mkCxBindLForPoiL availPoiS = mkCxBindLForPoiL' (`elementOf` availPoiS)
 %%]
-mkCxBindLForPoiL (CxBindLMap m) inclPoiL availPoiS
-  = cbindLNub [ b | i <- inclPoiL, bs <- maybeToList (lookupFM m i), (b,_,dpd) <- bs, isEmptySet (dpd `minusSet` availPoiS) ]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Name of a pattern var/con
@@ -296,9 +266,6 @@ coeIsId _                   = False
 mkCoe :: (CExpr -> CExpr) -> Coe
 mkCoe = Coe
 
-mkBindsAppCoe :: CBindLMap -> [CExpr] -> Coe
-mkBindsAppCoe bL eL = mkCoe (\e -> (concat . cbindLMapBinds $ bL) `mkCExprLetRec` (e `mkCExprApp` eL))
-
 mkAppCoe :: [CExpr] -> Coe
 mkAppCoe eL = mkCoe (\e -> e `mkCExprApp` eL)
 
@@ -311,4 +278,5 @@ mkLetRecCoe b = mkCoe (\e -> mkCExprLet CBindRec b e)
 instance Show Coe where
   show _ = "COE"
 %%]
+
 
