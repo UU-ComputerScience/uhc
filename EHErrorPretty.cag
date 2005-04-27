@@ -144,6 +144,7 @@ SEM Err
 %%]
 
 %%[8
+SEM Err
   | FileNotFound        lhs     .  pp   =   ppMsgErr    "File not found"
                                                         (    "file name         :" >#< @fileName
                                                          >-< "searched locations:" >#< vlist (map (text.show) @locations)
@@ -155,6 +156,11 @@ SEM Err
 %%]
 
 %%[9
+SEM Err
+  | PrfCutOffReached    lhs     .  pp   =   ppMsgErr    "Proof cut off limit reached"
+                                                        (    "limit:" >#< pp @depth
+                                                         >-< "pred :" >#< pp @pred
+                                                        )
   | NotProvenPreds      lhs     .  pp   =   ppMsgErr    "Predicates did remain unproven"
                                                         (    "preds:" >#< ppCommaList @preds
                                                         )

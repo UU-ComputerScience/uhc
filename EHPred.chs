@@ -57,6 +57,9 @@
 %%[9 export(PoiSubst(..),PoiSubstitutable(..))
 %%]
 
+%%[9 export(prfsAddPrOccL)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Substitution for PredOccId
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -99,11 +102,11 @@ instance Ord ProofCost where
 mkCost :: Int -> ProofCost
 mkCost c = Cost 0 c
 
-costVeryMuch 	= Cost 100 0
-costZero 		= mkCost 0
-costBase  		= mkCost 1
-costAvailArg 	= mkCost 2
-costNeg 		= Cost (-2) 0
+costVeryMuch    = Cost 100 0
+costZero        = mkCost 0
+costBase        = mkCost 1
+costAvailArg    = mkCost 2
+costNeg         = Cost (-2) 0
 
 mkCostAvailImpl :: Int -> ProofCost
 mkCostAvailImpl c = Cost (-1) c
@@ -193,27 +196,6 @@ instance PP ProvenGraph where
        >-< "Pr->Orig :" >#< pp2i p2oi
        >-< "Pr->Facts:" >#< pp2i p2fi
     where pp2i = ppAssocLV . assocLMapElt ppCommaList . fmToList
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Pred resolver, state of prover
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-data ProofState
-  =  ProofState     { prfs2ProvenGraph        :: ProvenGraph     , prfs2Uniq               :: UID
-                    , prfs2PredsToProve       :: [PredOcc]
-                    , prfs2PrElimTGam         :: PrElimTGam      , prfs2ErrL               :: [Err]
-                    }
-
-instance Show ProofState where
-  show _ = "ProofState"
-
-instance PP ProofState where
-  pp s = "PrfSt:" >#<  (pp (prfs2ProvenGraph s)
-                       >-< pp (prfs2Uniq s)
-                       >-< ppCommaList (prfs2PredsToProve s)
-                       )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -528,6 +510,39 @@ prvgAppPoiSubst pois g@(ProvenGraph i2n p2i p2oi p2fi)
              , prvgPrIdMp = backPrFM p2i
              , prvgPrOrigIdMp = backPrFM p2oi
              }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pred resolver, state of prover
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+data ProofState
+  =  ProofState     { prfs2ProvenGraph        :: ProvenGraph     , prfs2Uniq               :: UID
+                    , prfs2PredsToProve       :: [PredOcc]       , prfsId2Depth            :: FiniteMap PredOccId Int
+                    , prfs2PrElimTGam         :: PrElimTGam      , prfs2ErrL               :: [Err]
+                    }
+
+instance Show ProofState where
+  show _ = "ProofState"
+
+instance PP ProofState where
+  pp s = "PrfSt:" >#<  (pp (prfs2ProvenGraph s)
+                       >-< pp (prfs2Uniq s)
+                       >-< ppCommaList (prfs2PredsToProve s)
+                       )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Add new preds to prove to proof state
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+prfsAddPrOccL :: [PredOcc] -> Int -> ProofState -> ProofState
+prfsAddPrOccL prOccL depth st
+  =  st  { prfs2PredsToProve = prOccL ++ prfs2PredsToProve st
+         , prfsId2Depth = prfsId2Depth st `plusFM` listToFM [ (poPoi po,depth) | po <- prOccL ]
+         }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

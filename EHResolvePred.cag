@@ -75,7 +75,7 @@ SEM Expr
 %%[9
 SEM Expr
   | LamImpl     loc         .   lPrElimTGam         =   peTGamAddKnPr @prfCtxtId @arg.topNm @knPrUid @knPr (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam)
-  | AppTop Lam  loc         .   lPrElimTGam         =   foldr  (\p g -> peTGamAddKnPr @prfCtxtId (poiHNm (poPrId p)) (poPrId p) (poPr p) g)
+  | AppTop Lam  loc         .   lPrElimTGam         =   foldr  (\p g -> peTGamAddKnPr @prfCtxtId (poiHNm (poPoi p)) (poPoi p) (poPr p) g)
                                                                (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam) @knPrL
   | Let         decls       .   patPrElimTGam       =   emptyTGam @prfCtxtId
                 loc         .   lPrElimTGam         =   tgamPushGam @lhs.prfCtxtId @prfCtxtId @prfCtxtId @lhs.prElimTGam @decls.patPrElimTGam
@@ -90,11 +90,11 @@ SEM Expr
 %%]
 
 %%[9
+%%]
 SEM Expr
   | LamImpl     loc         .   prf2FE              =   emptyFE {fePrElimTGam = @body.prElimTGam, feDontBind = ftv @knPr}
   | Lam         loc         .   prf2FE              =   emptyFE {fePrElimTGam = @body.prElimTGam}
   | AppTop      loc         .   prf2FE              =   emptyFE {fePrElimTGam = @expr.prElimTGam}
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pred resolution (tgam version)
@@ -113,29 +113,27 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | Let         loc         .   letFE               =   emptyFE {fePrfCtxtId = @prfCtxtId}
-                            .   (prfFrPoiCxBindLM,prfIntroCBindL,prfCSubst,prfArgPrOccL,_,prfErrs
+  | Let         loc         .   (prfFrPoiCxBindLM,prfIntroCBindL,prfCSubst,prfArgPrOccL,_,prfErrs
                                   ,(dbg2PrfG,dbg2PrfPruneG,dbg2PrfOrG,dbg2PrfIntermG1,dbg2PrfIntermG2,dbg2PrElimTGam,dbg2PrLeaves,prfPoiFwdMp,prfPoiBackMp,dbg2TrPPL))
-                                                    =   prfPredsDbg @lUniq4 (@letFE {fePrElimTGam = @decls.prElimTGam}) @gath2PrfPrOccL
+                                                    =   prfPredsDbg @lUniq4 (@fe {fePrElimTGam = @decls.prElimTGam}) @gath2PrfPrOccL
                             .   (bodyPrfFrPoiCxBindLM,bodyPrfIntroCBindL,bodyPrfCSubst,bodyPrfArgPrOccL,_,bodyPrfErrs)
-                                                    =   prfPreds @lUniq5 (@letFE {fePrElimTGam = @body.prElimTGam}) @gath2BodySubsPredL
+                                                    =   prfPreds @lUniq5 (@fe {fePrElimTGam = @body.prElimTGam}) @gath2BodySubsPredL
                             .   quantPrIdSet        =   unionManySets
                                                         . map (unionManySets . map (cxbmDpdPoiS @prfFrPoiCxBindLM) . setToList . tqoInsPrIdSet)
                                                         . gamElts $ @tqoGam
-                            .   gathPredL           =   @gath2RemPrOccL ++ filter (not . (`elementOf` @quantPrIdSet) . poPrId) @prfArgPrOccL ++ @bodyPrfArgPrOccL
+                            .   gathPredL           =   @gath2RemPrOccL ++ filter (not . (`elementOf` @quantPrIdSet) . poPoi) @prfArgPrOccL ++ @bodyPrfArgPrOccL
                 lhs         .   gathPredL           =   @gathPredL
 %%]
 
 %%[9
 SEM Decl
-  | Instance    loc         .   instFE              =   emptyFE {fePrfCtxtId = @prfCtxtId}
-                            .   gathDeclSubsPredL   =   @decls.tyCnstr |=> @decls.gathPredL
+  | Instance    loc         .   gathDeclSubsPredL   =   @decls.tyCnstr |=> @decls.gathPredL
                             .   (prfFrPoiCxBindLM,prfIntroCBindL,prfCSubst,prfArgPrOccL,_,prfErrs
                                   ,(dbg2PrfG,dbg2PrfPruneG,dbg2PrfOrG,dbg2PrfIntermG1,dbg2PrfIntermG2,dbg2PrElimTGam,dbg2PrLeaves,prfPoiFwdMp,prfPoiBackMp,dbg2TrPPL))
-                                                    =   prfPredsDbg @lUniq7 (@instFE {fePrElimTGam = @decls.prElimTGam}) @gathDeclSubsPredL
+                                                    =   prfPredsDbg @lUniq7 (@fe {fePrElimTGam = @decls.prElimTGam}) @gathDeclSubsPredL
                             .   supForPrfPrOccL     =   zipWith PredOcc (map tyPred @supPrTyL) @supPrUIDL
                             .   (supPrfFrPoiCxBindLM,supPrfIntroCBindL,supPrfCSubst,supPrfArgPrOccL,supPrfEvidL,supPrfErrs)
-                                                    =   prfPreds @lUniq5 (@instFE {fePrElimTGam = @supPrElimTGam}) @supForPrfPrOccL
+                                                    =   prfPreds @lUniq5 (@fe {fePrElimTGam = @supPrElimTGam}) @supForPrfPrOccL
                 lhs         .   gathPredL           =   []
 %%]
 

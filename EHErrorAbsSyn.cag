@@ -80,6 +80,7 @@ DATA Err
 
 %%[9
 DATA Err
+  | PrfCutOffReached    pred       : {PredOcc}           ^^  depth      : {Int}
   | NotProvenPreds      preds      : {[PredOcc]}
   | OverlapPreds        overl      : {AssocL Pred [CExpr]}
   | TyHasFreeTVars      ty         : {Ty}

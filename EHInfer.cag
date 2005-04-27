@@ -296,7 +296,7 @@ SEM Decl
 
 %%[9
 SEM Decl
-  | TySig       loc         .   fe                  :=  emptyFE {fePrElimTGam = @lhs.prElimTGam}
+  | Instance    loc         .   fe                  =   emptyFE {fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

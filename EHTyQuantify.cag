@@ -621,8 +621,8 @@ SEM Ty
 ATTR TyAGItf AllTy [ | | insPrIdSet USE {`Set.union`} {emptySet} : {Set PredOccId} ]
 
 SEM Ty
-  | App         lhs         .   insPrIdSet      =   mkSet (map poPrId @insHerePrL) `Set.union` @func.insPrIdSet `Set.union` @arg.insPrIdSet
-  | Var         lhs         .   insPrIdSet      =   mkSet (map poPrId @insHerePrL)
+  | App         lhs         .   insPrIdSet      =   mkSet (map poPoi @insHerePrL) `Set.union` @func.insPrIdSet `Set.union` @arg.insPrIdSet
+  | Var         lhs         .   insPrIdSet      =   mkSet (map poPoi @insHerePrL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -632,7 +632,7 @@ SEM Ty
 %%[9 hs
 prOccLImpls :: Maybe ImplsVarId -> [PredOcc] -> AssocL ImplsVarId Impls
 prOccLImpls mbI prL
-  = maybe [] (\i -> [(i,foldr (\p im -> Impls_Cons (poId p) (poPr p) (poPrId p) im) Impls_Nil prL)]) mbI
+  = maybe [] (\i -> [(i,foldr (\p im -> Impls_Cons (poId p) (poPr p) (poPoi p) im) Impls_Nil prL)]) mbI
 %%]
 
 %%[9

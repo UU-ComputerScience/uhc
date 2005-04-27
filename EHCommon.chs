@@ -298,10 +298,6 @@ mkNewUIDL = mkNewUIDL' mkNewUID
 instance PP UID where
   pp = text . show
 %%]
-mkNewUIDL' :: (UID -> (UID,UID)) -> Int -> UID -> [UID] -- assume sz > 0
-mkNewUIDL' mk sz uid
-  =  let  l = take sz . iterate (\(nxt,uid) -> mk nxt) . mkNewUID $ uid
-     in   map snd l
 
 %%[7
 uidHNm :: UID -> HsName
