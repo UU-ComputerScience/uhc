@@ -310,7 +310,7 @@ SEM Expr
                                                         in   ftvVal ++ ftvTy
                             .   tyTy                :=  @lhs.tyCnstr |=> @tyExpr.ty
                             .   asTy                :=  tyQuantify (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyTy
-                            .   fo                  :=  fitsIn @lhs.fiOpts emptyFE @lUniq (@lhs.tyCnstr |=> @asTy) (@lhs.tyCnstr |=> @lhs.knTy)
+                            .   fo                  :=  fitsIn @lhs.fiOpts @fe @lUniq (@lhs.tyCnstr |=> @asTy) (@lhs.tyCnstr |=> @lhs.knTy)
 %%]
 
 %%[4_2
@@ -319,7 +319,7 @@ SEM Expr
                                                              ftvTy   = ftv . (@lhs.imprTyCnstr |=>) . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
                                                         in   ftvVal ++ ftvTy
                             .   tyTy                :=  @lhs.imprTyCnstr |=> @tyExpr.ty
-                            .   imprFO              =   fitsIn (@lhs.fiOpts {fioBindToTyAlts = True}) emptyFE @lUniq2 @expr.imprTy @asTy
+                            .   imprFO              =   fitsIn (@lhs.fiOpts {fioBindToTyAlts = True}) @fe @lUniq2 @expr.imprTy @asTy
                 lhs         .   imprTy              =   foTy @imprFO
                             .   imprTyCnstr         =   foCnstr @imprFO |=> @expr.imprTyCnstr
 %%]
@@ -363,13 +363,14 @@ SEM RecExpr
 
 %%[9.FIEnv -(4.FIEnv 7.FIEnv)
 SEM Expr
+  | Let         loc         .   fe                  =   emptyFE {fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts}
   | Lam AppTop LamImpl
-                loc         .   fe                  =   emptyFE {fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @prfCtxtId}
-  | * - Lam AppTop LamImpl
-                loc         .   fe                  =   emptyFE {fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId}
+                loc         .   fe                  =   emptyFE {fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts}
+  | * - Lam AppTop LamImpl Let
+                loc         .   fe                  =   emptyFE {fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts}
 
 SEM RecExpr
-  | *           loc         .   fe                  =   emptyFE {fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId}
+  | *           loc         .   fe                  =   emptyFE {fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

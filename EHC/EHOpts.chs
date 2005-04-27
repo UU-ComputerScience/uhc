@@ -62,14 +62,13 @@ trfOptOverrides opts trf
 %%% Compiler options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[EHCOpts.1
+%%[1.EHCOpts
 data EHCOpts    = EHCOptions    {  ehcoptDumpPP         ::  Maybe String
                                 ,  ehcoptShowTopTyPP    ::  Bool
                                 ,  ehcoptHelp           ::  Bool
                                 ,  ehcoptDebug          ::  Bool
 %%]
-
-%%[EHCOpts.8
+%%[8.EHCOpts
                                 ,  ehcoptCore           ::  Bool
                                 ,  ehcoptCoreJava       ::  Bool
                                 ,  ehcoptCoreGrin       ::  Bool
@@ -77,15 +76,20 @@ data EHCOpts    = EHCOptions    {  ehcoptDumpPP         ::  Maybe String
                                 ,  ehcoptVerbosity      ::  Verbosity
                                 ,  ehcoptTrf            ::  [TrfOpt]
 %%]
+%%[9.EHCOpts
+                                ,  ehcoptPrfCutOffAt    ::  Int
+%%]
+%%[1
+                                }
+%%]
 
-%%[defaultEHCOpts.1
+%%[1.defaultEHCOpts
 defaultEHCOpts  = EHCOptions    {  ehcoptDumpPP         =   Just "pp"
                                 ,  ehcoptShowTopTyPP    =   False
                                 ,  ehcoptHelp           =   False
                                 ,  ehcoptDebug          =   False
 %%]
-
-%%[defaultEHCOpts.8
+%%[8.defaultEHCOpts
                                 ,  ehcoptCore           =   True
                                 ,  ehcoptCoreJava       =   False
                                 ,  ehcoptCoreGrin       =   False
@@ -93,8 +97,14 @@ defaultEHCOpts  = EHCOptions    {  ehcoptDumpPP         =   Just "pp"
                                 ,  ehcoptVerbosity      =   VerboseQuiet
                                 ,  ehcoptTrf            =   []
 %%]
+%%[9.defaultEHCOpts
+                                ,  ehcoptPrfCutOffAt    =   20
+%%]
+%%[1
+                                }
+%%]
 
-%%[ehcCmdLineOptsA.1
+%%[1.ehcCmdLineOptsA
 ehcCmdLineOpts  
   =  [  Option "p"  ["pretty"]        (OptArg oPretty "pp|ast|grin|no|off")
           "do output pretty printed version of src (pp), abstract syntax tree (ast) or nothing (no|off), default=pp"
@@ -105,8 +115,7 @@ ehcCmdLineOpts
      ,  Option "h"  ["help"]          (NoArg oHelp)
           "output this help"
 %%]
-
-%%[ehcCmdLineOptsA.8
+%%[8.ehcCmdLineOptsA
      ,  Option "c"  ["code"]          (OptArg oCode "java|grin")
           "dump code (java- > .java, grin -> .grin, - -> none) on file, default=core (-> .core)"
      ,  Option ""   ["trf"]           (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
@@ -114,8 +123,10 @@ ehcCmdLineOpts
      ,  Option "v"  ["verbose"]       (OptArg oVerbose "0|1|2")
           "be verbose, 0=quiet 1=normal 2=noisy, default=1"
 %%]
-
-%%[ehcCmdLineOptsB.1
+%%[1
+     ]
+%%]
+%%[1.ehcCmdLineOptsB
   where  oPretty     ms  o =  case ms of
                                 Just "no"   -> o { ehcoptDumpPP        = Nothing   }
                                 Just "off"  -> o { ehcoptDumpPP        = Nothing   }
@@ -127,8 +138,7 @@ ehcCmdLineOpts
          oHelp           o =  o { ehcoptHelp          = True    }
          oDebug          o =  (oPretty (Just "ast") o) { ehcoptDebug         = True    }
 %%]
-
-%%[ehcCmdLineOptsB.8
+%%[8.ehcCmdLineOptsB
          oCode       ms  o =  case ms of
                                 Just "java"  -> o { ehcoptCoreJava     = True      }
                                 Just "grin"  -> o { ehcoptCoreGrin     = True      }
@@ -151,34 +161,6 @@ ehcCmdLineOpts
                                 Just "2"    -> o { ehcoptVerbosity     = VerboseALot        }
                                 Nothing     -> o { ehcoptVerbosity     = VerboseNormal      }
                                 _           -> o
-%%]
-
-%%[1.Options
-%%@EHCOpts.1
-                                }
-
-%%@defaultEHCOpts.1
-                                }
-
-%%@ehcCmdLineOptsA.1
-     ]
-%%@ehcCmdLineOptsB.1
-%%]
-
-%%[8.Options -1.Options
-%%@EHCOpts.1
-%%@EHCOpts.8
-                                }
-
-%%@defaultEHCOpts.1
-%%@defaultEHCOpts.8
-                                }
-
-%%@ehcCmdLineOptsA.1
-%%@ehcCmdLineOptsA.8
-     ]
-%%@ehcCmdLineOptsB.1
-%%@ehcCmdLineOptsB.8
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

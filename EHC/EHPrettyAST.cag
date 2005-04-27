@@ -372,12 +372,12 @@ SEM Decl
   | Class       loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Class"] [] [@tyPrExpr.ppAST,@funcDeps.ppAST,@decls.ppAST] @info
                         .  info     =   []
   | Instance    loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Instance"] (maybe [] (\(n,_) -> [ppNm n]) @mbNmElim) [@tyPrExpr.ppAST,@decls.ppAST] @info
-                        .  info     =   [ mkInfo1 "prTyFix" (ppTy @prTyFix)
+                        .  info     =   [ mkInfo1 "prfCtxtId's" (pp @lhs.prfCtxtId >#< "-" >#< pp @prfCtxtId)
+                                        , mkInfo1 "prTyFix" (ppTy @prTyFix)
                                         , mkInfo1 "tyPrExpr.evTy" (ppTy @tyPrExpr.evTy)
                                         , mkInfo1 "recTy" (ppTy @recTy)
-                                        , mkInfo1 "instPrElimTGam" (pp @instPrElimTGam)
-                                        , mkInfo1 "supPrElimTGam" (pp @supPrElimTGam)
-                                        , mkInfo1 "declsPrElimTGam" (pp @declsPrElimTGam)
+                                        , mkInfo1 "decls.prElimTGam" (pp @decls.prElimTGam)
+                                        , mkInfo1 "gathDeclSubsPredL" (ppCommaList @gathDeclSubsPredL)
                                         , mkInfo1 "dbg2PrfG (decl)" (pp @dbg2PrfG)
                                         , mkInfo1 "dbg2PrfPruneG (decl)" (pp @dbg2PrfPruneG)
                                         , mkInfo1 "dbg2PrfOrG (decl)" (pp @dbg2PrfOrG)

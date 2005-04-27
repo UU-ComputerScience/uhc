@@ -154,12 +154,12 @@ instance Show TyHardness where
 data PredOcc
   =  PredOcc
        { poPr               :: Pred
-       , poPrId             :: PredOccId
+       , poPoi              :: PredOccId
        }
   deriving (Show,Eq)
 
 poId :: PredOcc -> UID
-poId = poiId . poPrId
+poId = poiId . poPoi
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -672,7 +672,7 @@ tyIsImplsTail (Ty_Impls (Impls_Tail _))  = True
 tyIsImplsTail _                          = False
 
 implsPrIds :: Impls -> [PredOccId]
-implsPrIds = map poPrId . fst . implsPredsTail
+implsPrIds = map poPoi . fst . implsPredsTail
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
