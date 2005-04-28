@@ -143,22 +143,25 @@ primMp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-grEvalTag :: RunState -> GrTag -> Int -> [RunVal]
+grEvalTag :: RunState -> GrTag -> Int -> ([RunVal],RunVal->[RunVal])
 grEvalTag rs t sz
   =  case t of
-        GrTag_Lit GrTagCon           i _    ->  [RVCat NdCon,RVInt i] -- ,RVInt sz]
-        GrTag_Lit GrTagHole          _ _    ->  [RVCat NdHole]
-        GrTag_Lit GrTagRec           _ _    ->  [RVCat NdRec,RVInt 0] -- ,RVInt sz]
-        GrTag_Lit GrTagFun           i n    ->  [RVCat NdFun,rsVar rs n]
-        GrTag_Lit GrTagApp           _ _    ->  [RVCat NdApp]
-        GrTag_Lit (GrTagPApp nMiss)  _ n    ->  [RVCat NdPApp,RVInt nMiss,rsVar rs n]
+        GrTag_Lit GrTagCon           i _    ->  ([RVCat NdCon,RVInt i],szYes)
+        GrTag_Lit GrTagHole          _ _    ->  ([RVCat NdHole],szNo)
+        GrTag_Lit GrTagRec           _ _    ->  ([RVCat NdRec,RVInt 0],szYes)
+        GrTag_Lit GrTagFun           i n    ->  ([RVCat NdFun,rsVar rs n],szNo)
+        GrTag_Lit GrTagApp           _ _    ->  ([RVCat NdApp],szNo)
+        GrTag_Lit (GrTagPApp nMiss)  _ n    ->  ([RVCat NdPApp,RVInt nMiss,rsVar rs n],szNo)
+  where  szNo   = const []
+         szYes  = (:[])
 %%]
 
 %%[8
 grEvalVal :: RunState -> GrVal -> RunVal
 grEvalVal rs v
   =  case v of
-        GrVal_Node t    fL      ->  mkRN (grEvalTag rs t (length fL) ++ map (grEvalVal rs) fL)
+        GrVal_Node t    (s:fL)  ->  mkRN (tgL ++ mkSz (grEvalVal rs s) ++ map (grEvalVal rs) fL)
+                                    where (tgL,mkSz) = grEvalTag rs t (length fL)
         GrVal_NodeAdapt r adL   ->  case rsVar rs r of
                                         RVNode a
                                           ->  case elems a of
