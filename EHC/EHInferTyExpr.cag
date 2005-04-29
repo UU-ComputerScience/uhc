@@ -114,7 +114,7 @@ SEM TyExpr
                 loc         .   ki                  =   tgiKi @tgi
   | Quant       loc         .   (tv,tgi)            :=  let  t = Ty_Var @lUniq TyVarCateg_Plain
                                                         in   (@lUniq,mkTGI t t)
-  | App         loc         .   knFunKi             =   [@arg.ki] `mkTyArrow` mkNewTyVar @lUniq
+  | App         loc         .   knFunKi             =   [@arg.ki] `mkArrow` mkNewTyVar @lUniq
                             .   fo                  =   fitsIn weakFIOpts emptyFE @lUniq2 (@arg.kiCnstr |=> @func.ki) @knFunKi
                             .   fKi                 =   foTy @fo
                             .   (_,ki)              =   tyArrowArgRes @fKi
@@ -163,7 +163,7 @@ SEM PrExpr
   | *           lhs         .   ki                  =   kiStar
   | Class       loc         .   fo                  =   if @nmIsDef
                                                         then fitsIn weakFIOpts emptyFE @lUniq
-                                                                (@tyExprs.kiCnstr |=> (@tyExprs.kiL `mkTyArrow` kiStar))
+                                                                (@tyExprs.kiCnstr |=> (@tyExprs.kiL `mkArrow` kiStar))
                                                                 (@tyExprs.kiCnstr |=> pigiKi @pigi)
                                                         else emptyFO
                 lhs         .   kiCnstr             =   foCnstr @fo |=> @tyExprs.kiCnstr
@@ -260,7 +260,7 @@ SEM RowTyExpr
 ATTR PrExpr [ | | pr: Pred ]
 
 SEM PrExpr
-  | Class       loc         .   pr                  =   Pred_Class (@nm `mkTyConApp` @tyExprs.tyL)
+  | Class       loc         .   pr                  =   Pred_Class (@nm `mkConApp` @tyExprs.tyL)
   | Arrow       loc         .   pr                  =   Pred_Pred @prTy
 %%]
 
@@ -268,14 +268,14 @@ SEM PrExpr
 ATTR PrExpr [ | | prTy: Ty ]
 
 SEM PrExpr
-  | Arrow       loc         .   prTy                =   [@arg.prTy] `mkTyArrow` @res.prTy
+  | Arrow       loc         .   prTy                =   [@arg.prTy] `mkArrow` @res.prTy
   | * - Arrow   loc         .   prTy                =   @ty
 %%]
 
 %%[10
 SEM PrExpr
   | Lacks       loc         .   pr                  =   Pred_Lacks @rowTyExpr.tyRow @nm
-  | DynVar      loc         .   pr                  =   Pred_Class ((hsnDynVar `hsnConcat` @nm) `mkTyConApp` [@tyExpr.ty])
+  | DynVar      loc         .   pr                  =   Pred_Class ((hsnDynVar `hsnConcat` @nm) `mkConApp` [@tyExpr.ty])
 %%]
 
 %%[9

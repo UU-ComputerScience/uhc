@@ -24,7 +24,7 @@ SEM Decl
                 lhs         .   patTyGam            :=  if @hasKiSig  then @lhs.patTyGam
                                                                       else gamAdd @lhs.patTyGam @tyNm @dataTgi
                 loc         .   fo                  =   fitsIn  strongFIOpts emptyFE @lUniq2
-                                                                (@lhs.patKiCnstr |=> (@tyVars.kiL `mkTyArrow` kiStar))
+                                                                (@lhs.patKiCnstr |=> (@tyVars.kiL `mkArrow` kiStar))
                                                                 (@lhs.patKiCnstr |=> (tgiKi @dataTgi))
                             .   dataKi              =   foTy @fo
                 lhs         .   patKiCnstr          =   foCnstr @fo |=> @lhs.patKiCnstr
@@ -71,19 +71,19 @@ SEM Decl
 ATTR AllDataConstr [ dataTy: Ty | patValGam: ValGam | ]
 
 SEM DataConstr
-  | Constr      loc         .   dataConTy           =   @fields.tyL `mkTyArrow` @lhs.dataTy
-                            .   dataConProdTy       =   mkTyProdApp @fields.tyL
+  | Constr      loc         .   dataConTy           =   @fields.tyL `mkArrow` @lhs.dataTy
+                            .   dataConProdTy       =   mkProdApp @fields.tyL
                             .   dataQuUnConTy       =   let  fvD = ftv @lhs.dataTy
                                                              fvU = ftv @dataConProdTy
-                                                        in   mkTyQu TyQu_Forall fvD ([@lhs.dataTy] `mkTyArrow` mkTyQu TyQu_Exists (fvU \\ fvD) @dataConProdTy)
+                                                        in   mkTyQu TyQu_Forall fvD ([@lhs.dataTy] `mkArrow` mkTyQu TyQu_Exists (fvU \\ fvD) @dataConProdTy)
                 lhs         .   patValGam           =   gamAdd
                                                           (gamAdd @lhs.patValGam (hsnUn @conNm) (ValGamInfo @dataQuUnConTy))
                                                           @conNm (ValGamInfo @dataConTy)
 
 SEM Decl
-  | Data        loc         .   dataTy              =   @tyNm `mkTyConApp` @tyVars.tyL
+  | Data        loc         .   dataTy              =   @tyNm `mkConApp` @tyVars.tyL
 %%]
-                            .   dataUnConTy         =   [@lhs.dataTy] `mkTyArrow` @dataConProdTy
+                            .   dataUnConTy         =   [@lhs.dataTy] `mkArrow` @dataConProdTy
                             .   dataQuUnConTy       =   let  fvD = ftv @lhs.dataTy
                                                              fvU = ftv @dataUnConTy
                                                         in   mkTyQu TyQu_Forall fvD . mkTyQu TyQu_Exists (fvU \\ fvD) $ @dataUnConTy
@@ -104,9 +104,9 @@ SEM Decl
 !!!!! Fix following w.r.t. dataUnConTy
 %%[11
 SEM DataConstr
-  | Constr      loc         .   dataConTy           :=  @eqs.eqTyCnstr |=> (@fields.tyL `mkTyArrow` @lhs.dataTy)
+  | Constr      loc         .   dataConTy           :=  @eqs.eqTyCnstr |=> (@fields.tyL `mkArrow` @lhs.dataTy)
                             .   eqEqCnstr           =   assocLToCnstr . map (\(v,t) -> (v,Ty_Equal v t)) . cnstrToAssocTyL $ @eqs.eqTyCnstr
-                            .   dataUnConTy         :=  [@eqEqCnstr |=> @lhs.dataTy] `mkTyArrow` (@eqs.eqTyCnstr |=> @dataConProdTy)
+                            .   dataUnConTy         :=  [@eqEqCnstr |=> @lhs.dataTy] `mkArrow` (@eqs.eqTyCnstr |=> @dataConProdTy)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
