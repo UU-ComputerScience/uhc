@@ -103,7 +103,7 @@ SEM Decl
 
 SEM Decl
   | Val         expr        .   knTy                :=  if @hasTySig  then @knTy
-                                                                      else [mkImplsVar @lUniq2] `mkTyArrow` @patExpr.ty
+                                                                      else [mkImplsVar @lUniq2] `mkArrow` @patExpr.ty
 
 %%[10.tyInstKnown
 SEM Decl
@@ -310,15 +310,15 @@ SEM Decl
 %%]
 
 %%[initTyGam.6
-                                                          [ (hsnArrow,  mkTGI (Ty_Con hsnArrow) ([kiStar,kiStar] `mkTyArrow` kiStar))
+                                                          [ (hsnArrow,  mkTGI (Ty_Con hsnArrow) ([kiStar,kiStar] `mkArrow` kiStar))
                                                           , (hsnInt,    mkTGI tyInt kiStar)
                                                           , (hsnChar,   mkTGI tyChar kiStar)
 %%]
 
 %%[initTyGam.7
                                                           , (hsnRow,    mkTGI (Ty_Con hsnUnknown) kiRow)
-                                                          , (hsnRec,    mkTGI (Ty_Con hsnRec) ([kiRow] `mkTyArrow` kiStar))
-                                                          , (hsnSum,    mkTGI (Ty_Con hsnSum) ([kiRow] `mkTyArrow` kiStar))
+                                                          , (hsnRec,    mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
+                                                          , (hsnSum,    mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
 %%]
 
 %%[1.initTyGam

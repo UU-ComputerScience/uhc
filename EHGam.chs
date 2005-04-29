@@ -394,9 +394,9 @@ valGamLookup g nm
   =  case gamLookup g nm of
        Nothing
          |  hsnIsProd nm
-                 -> let pr = mkPr nm in mkRes (tyProdArgs pr `mkTyArrow` pr)
+                 -> let pr = mkPr nm in mkRes (tyProdArgs pr `mkArrow` pr)
          |  hsnIsUn nm && hsnIsProd (hsnUnUn nm)
-                 -> let pr = mkPr (hsnUnUn nm) in mkRes ([pr] `mkTyArrow` pr)
+                 -> let pr = mkPr (hsnUnUn nm) in mkRes ([pr] `mkArrow` pr)
          where  mkPr nm  = mkTyFreshProd (hsnProdArity nm)
                 mkRes t  = Just (ValGamInfo (tyQuantifyClosed t))
        Just vgi  -> Just vgi
@@ -542,7 +542,7 @@ tyGamLookup g nm
        Nothing
          |  hsnIsProd nm
                  -> Just (TyGamInfo  (Ty_Con nm)
-                                     (replicate (hsnProdArity nm) kiStar `mkTyArrow` kiStar))
+                                     (replicate (hsnProdArity nm) kiStar `mkArrow` kiStar))
        Just tgi  -> Just tgi
        _         -> Nothing
 %%]

@@ -9,7 +9,7 @@
 %%% Haskell importable interface to Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs import(EHCommon) export(TyAGItf(..), Ty(..), TyL, tyInt, tyChar, mkTyArrow, mkTyApp, mkTyConApp, mkTyProdApp, mkTyCon)
+%%[1 hs import(EHCommon) export(TyAGItf(..), Ty(..), TyL, tyInt, tyChar, mkTyCon)
 %%]
 
 %%[1 hs export(tyArrowArgRes, tyArrowArgsRes, tyArrowArgs, tyArrowRes, tyAppFunArgs, tyProdArgs, tyAppArgs) 
@@ -73,6 +73,9 @@
 %%]
 
 %%[9 hs export(TyCtxt(..))
+%%]
+
+%%[9 hs export(tyEnsureNonAnyImpl)
 %%]
 
 %%[9_1 hs export(TyPlusId)
@@ -248,35 +251,46 @@ tyIsQu t = case t of {Ty_Quant _ _ _ -> True; _ -> False}
 %%% Construction of type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[1.SemApp hs
+instance SemApp Ty where
+  semApp         = Ty_App
+  semAppTop      = id
+  semCon         = Ty_Con
+  semParens      = id
+%%]
+%%[7 hs
+  mkProdApp tyL  = mkTyRec (zip positionalFldNames tyL)
+%%]
+
 %%[1.mkTyArrow hs
+%%]
+mkTyArrow    ::  TyL -> Ty -> Ty
+mkTyArrow    =   flip (foldr mkArrow)
+
 algTy        ::  MkConApp Ty
 algTy        =   (Ty_Con,Ty_App,id,id)
 
-mkTyArrow    ::  TyL -> Ty -> Ty
-mkTyArrow    =   flip (foldr (mkArrow algTy))
-%%]
-
 %%[1.mkTy hs
+%%]
 mkTyApp      ::  TyL -> Ty
-mkTyApp      =   mkApp algTy
+mkTyApp      =   mkApp
 
 mkTyConApp   ::  HsName -> TyL -> Ty
-mkTyConApp   =   mkConApp algTy
-%%]
+mkTyConApp   =   mkConApp
 
 %%[1.mkTyProdApp hs
-mkTyProdApp  ::  TyL -> Ty
-mkTyProdApp  =   mkProdApp algTy
 %%]
+mkTyProdApp  ::  TyL -> Ty
+mkTyProdApp  =   mkProdApp
 
 %%[7.mkTyProdApp -1.mkTyProdApp hs
+%%]
 mkTyProdApp :: TyL -> Ty
 mkTyProdApp tyL = mkTyRec (zip positionalFldNames tyL)
-%%]
 
 %%[1.mkTyCon hs
 mkTyCon :: String -> Ty
-mkTyCon n = Ty_Con (HNm n)
+mkTyCon n = semCon (HNm n)
 %%]
 
 %%[2.mkTyVar hs
@@ -307,6 +321,14 @@ tyEnsureNonAny :: UID -> Ty -> Ty
 tyEnsureNonAny u t = if t /= Ty_Any then t else mkNewTyVar u
 %%]
 
+%%[9.tyEnsureNonAnyImpl hs
+tyEnsureNonAnyImpl :: UID -> Ty -> Ty
+tyEnsureNonAnyImpl u t
+  = if t /= Ty_Any then  t
+                   else  let  [i,r] = mkNewUIDL 2 u
+                         in   [mkImplsVar i] `mkArrow` mkTyVar r
+%%]
+
 %%[3.mkTyQu hs
 mkTyQu :: TyVarIdL -> Ty -> Ty
 mkTyQu tvL t = foldr (\tv t -> Ty_Quant tv t) t tvL
@@ -319,7 +341,7 @@ mkTyQu q tvL t = foldr (\tv t -> Ty_Quant q tv t) t tvL
 
 %%[2.mkTyFreshProd hs
 mkTyFreshProdFrom :: UID -> Int -> Ty
-mkTyFreshProdFrom uid arity =  mkTyProdApp . map mkTyVar . mkNewUIDL arity $ uid
+mkTyFreshProdFrom uid arity =  mkProdApp . map mkTyVar . mkNewUIDL arity $ uid
 
 mkTyFreshProd :: Int -> Ty
 mkTyFreshProd = mkTyFreshProdFrom uidStart
@@ -336,7 +358,7 @@ mkImplsVar v = Ty_Impls (Impls_Tail v)
 
 %%[9 hs
 mkTyImpls :: [Pred] -> Ty -> Ty
-mkTyImpls prL t = map Ty_Pred prL `mkTyArrow` t
+mkTyImpls prL t = map Ty_Pred prL `mkArrow` t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -520,15 +542,15 @@ mkTyRow :: Ty -> AssocL HsName Ty -> Ty
 mkTyRow r = foldl (\t (n,e) -> Ty_Ext t n e) r
 
 mkTyRec :: AssocL HsName Ty -> Ty
-mkTyRec al = hsnRec `mkTyConApp` [tyRowEmpty `mkTyRow` al]
+mkTyRec al = hsnRec `mkConApp` [tyRowEmpty `mkTyRow` al]
 
 mkTyRecExt :: Ty -> AssocL HsName Ty -> Ty
 mkTyRecExt rec al
   =  let  (row,exts) = tyRowExts (tyRecRow rec)
-     in   hsnRec `mkTyConApp` [row `mkTyRow` (exts ++ al)]
+     in   hsnRec `mkConApp` [row `mkTyRow` (exts ++ al)]
 
 mkTySum :: AssocL HsName Ty -> Ty
-mkTySum al = hsnSum `mkTyConApp` [tyRowEmpty `mkTyRow` al]
+mkTySum al = hsnSum `mkConApp` [tyRowEmpty `mkTyRow` al]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -567,7 +589,7 @@ tyRecExtr :: HsName -> Ty -> Maybe (Ty,Ty)
 tyRecExtr lbl t
   =  case tyRowExtr lbl (tyRecRow t) of
        Nothing    -> Nothing
-       Just (r,e) -> Just (hsnRec `mkTyConApp` [r],e)
+       Just (r,e) -> Just (hsnRec `mkConApp` [r],e)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

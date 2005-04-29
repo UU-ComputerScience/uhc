@@ -18,13 +18,10 @@
 %%[1 import(UU.Pretty, List) export(PP_DocL, ppListSep, ppCommaList, ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
 %%]
 
-%%[1 export(MkConApp, mkApp, mkConApp, mkArrow)
+%%[1 export(SemApp(..))
 %%]
 
-%%[1.mkProdApp.exp export(mkProdApp)
-%%]
-
-%%[7.mkProdApp.exp -1.mkProdApp.exp
+%%[1 export(mkApp, mkConApp, mk1Arrow, mkArrow)
 %%]
 
 %%[1 export(assocLKeys)
@@ -366,37 +363,54 @@ seqToList (Seq s) = s []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Semantics classes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.SemApp
+class SemApp res where
+  semApp       ::  res -> res -> res
+  semAppTop    ::  res -> res
+  semCon       ::  HsName -> res
+  semParens    ::  res -> res
+  mkProdApp    ::  [res] -> res
+  mkProdApp rs =   mkConApp (hsnProd (length rs)) rs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Building specific structures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.MkConApp
-type MkConApp t = (HsName -> t,t -> t -> t,t -> t,t -> t)
 %%]
+type MkConApp t = (HsName -> t,t -> t -> t,t -> t,t -> t)
 
 %%[1.mkApp.Base
-mkApp :: MkConApp t -> [t] -> t
-mkApp (_,app,top,_) ts
+mkApp :: SemApp t => [t] -> t
+mkApp ts
   =  case ts of
        [t]  ->  t
-       _    ->  top (foldl1 app ts)
+       _    ->  semAppTop (foldl1 semApp ts)
 %%]
 
 %%[1.mkApp.mkConApp
-mkConApp :: MkConApp t -> HsName -> [t] -> t
-mkConApp alg@(con,_,_,_) c ts = mkApp alg (con c : ts)
+mkConApp :: SemApp t => HsName -> [t] -> t
+mkConApp c ts = mkApp (semCon c : ts)
 %%]
 
 %%[1.mkApp.mkProdApp
-mkProdApp :: MkConApp t -> [t] -> t
-mkProdApp alg ts = mkConApp alg (hsnProd (length ts)) ts
 %%]
+mkProdApp :: SemApp t => [t] -> t
+mkProdApp ts = mkConApp (hsnProd (length ts)) ts
 
 %%[7 -1.mkApp.mkProdApp
 %%]
 
 %%[1.mkApp.mkArrow
-mkArrow :: MkConApp t -> t -> t -> t
-mkArrow alg@(con,_,_,_) a r = mkApp alg [con hsnArrow,a,r]
+mk1Arrow :: SemApp t => t -> t -> t
+mk1Arrow a r = mkApp [semCon hsnArrow,a,r]
+
+mkArrow :: SemApp t => [t] -> t -> t
+mkArrow = flip (foldr mk1Arrow)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

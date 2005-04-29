@@ -266,11 +266,25 @@ SEM Pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4
+%%]
 ATTR Ty [ | | isVar: Bool ]
 
 SEM Ty
   | Var         lhs         .   isVar       =   True
   | * - Var     lhs         .   isVar       =   False
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is location in type a place where we treat quantification specally?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6_4.isSpecLoc
+ATTR Ty [ | | isSpecLoc: Bool ^^ isSpecLocL: [Bool] ]
+
+SEM Ty
+  | App         loc         .   isSpecLoc   =   @isSpineRoot && (@appIsArrow || @appIsLikeProd)
+                            .   isSpecLocL  =   @arg.isSpecLoc : @func.isSpecLocL
+  | * - App     loc         .   isSpecLoc   =   False
+                            .   isSpecLocL  =   []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -289,19 +303,45 @@ ATTR AllTy [ isQuLoc: Bool | | ]
 SEM Ty
   | Var         loc         .   isQuLoc     =   @lhs.isQuLoc
   | App         func        .   isQuLoc     =   False
+                (loc.isQuLoc,arg.isQuLoc)   =   if          @isArrowRoot    then    (@lhs.isQuLoc,True)
+                                                else  if    @isArrowArg     then    (False,True)
+                                                else  if    @appIsLikeProd  then    (@lhs.isQuLoc,True)
+                                                                            else    (@lhs.isQuLoc,True)
+
+SEM TyAGItf
+  | AGItf       ty          .   isQuLoc     =   True
+%%]
+SEM Ty
+  | Var         loc         .   isQuLoc     =   @lhs.isQuLoc
+  | App         func        .   isQuLoc     =   False
                 loc         .   argIsQuLoc  =   not @arg.isVar
                 (loc.isQuLoc,arg.isQuLoc)   =   if          @isArrowRoot    then    (@lhs.isQuLoc,True)
                                                 else  if    @isArrowArg     then    (False,True)
                                                 else  if    @appIsLikeProd  then    (@lhs.isQuLoc,True)
                                                                             else    (@lhs.isQuLoc,@argIsQuLoc)
 
-SEM TyAGItf
-  | AGItf       ty          .   isQuLoc     =   True
+%%[9
+SEM Ty
+  | Pred        loc         .   isQuLoc     =   @lhs.coco /= CoContraVariant
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is location in type a place where quantification of previously existentialized tvar may be done?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4
+SEM Ty
+  | App         loc         .   isReQuExLoc =   @lhs.rank > 1
+                                                ||  @lhs.rank == 1
+                                                    &&  (@lhs.tyCtxt == TyQuCtxtArrow && not @arg.isArrow
+                                                        || @lhs.tyCtxt /= TyQuCtxtArrow
+                                                        )
+  | Var         loc         .   isReQuExLoc =   True
 %%]
 
 %%[9
 SEM Ty
-  | Pred        loc         .   isQuLoc     =   @lhs.coco /= CoContraVariant
+  | Pred        loc         .   isReQuExLoc =   True
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -350,12 +390,24 @@ SEM Ty
 
 %%[6_4
 SEM Ty
+  | Var         loc         .   qHereTvL        =   if @isQuLoc && @isReQuExLoc
+                                                    then  filter (tvIsEx @lhs.fxTvM) [@tv]
+                                                    else  []
   | App         loc         .   qHereTvL        :=  if @isQuLoc
-                                                    then  if    @appIsArrow || @appIsLikeProd
+                                                    then  if    @isSpecLoc
                                                           then  tvarOccurGE2 @frTvLL
                                                           else  filter (not . tvIsEx @lhs.fxTvM) @frTvL
                                                     else  []
 %%]
+SEM Ty
+  | Var         loc         .   qHereTvL        =   if @isQuLoc
+                                                    then  [@tv]
+                                                    else  []
+  | App         loc         .   qHereTvL        :=  if @isQuLoc
+                                                    then  if    @isSpecLoc
+                                                          then  tvarOccurGE2 @frTvLL
+                                                          else  filter (not . tvIsEx @lhs.fxTvM) @frTvL
+                                                    else  []
 
 %%[9
 SEM Ty
