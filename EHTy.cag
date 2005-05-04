@@ -33,7 +33,7 @@
 %%[4 hs export(tvCatIsFixed) 
 %%]
 
-%%[4 hs import(Data.FiniteMap) export(TvCatMp) 
+%%[4 hs import(qualified Data.Map as Map) export(TvCatMp) 
 %%]
 
 %%[4_2 hs export(tyIsQu,tyIsVar,tyMbVar) 
@@ -129,12 +129,12 @@ tvCatIsFixed _                 = True
 %%]
 
 %%[4 hs
-type TvCatMp = FiniteMap TyVarId TyVarCateg
+type TvCatMp = Map.Map TyVarId TyVarCateg
 %%]
 
 %%[6_4 hs
 tvIsEx :: TvCatMp -> TyVarId -> Bool
-tvIsEx fvM tv = maybe False (== TyVarCateg_Exist) (lookupFM fvM tv)
+tvIsEx fvM tv = maybe False (== TyVarCateg_Exist) (Map.lookup tv fvM)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

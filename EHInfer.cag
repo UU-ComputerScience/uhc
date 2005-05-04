@@ -225,7 +225,7 @@ SEM AGItf
                                                     =   cnstrElimForgetAlts @expr.imprTyCnstr
                             .   exprTyCnstr         =   let (eC,(vC,_))
                                                               =  cnstrMapThrTy  (\v t (c,u) ->  let  (u',u1) = mkNewLevUID u
-                                                                                                     (t',c') = tyFreshVar (`elementOf` @ambTvS) u1 c t
+                                                                                                     (t',c') = tyFreshVar (`Set.member` @ambTvS) u1 c t
                                                                                                 in   (t',(c',u'))
                                                                                 )
                                                                                 (emptyCnstr,@lUniq)
@@ -242,7 +242,7 @@ SEM AGItf
                                                     =   cnstrElimForgetAlts @expr.imprTyCnstr
                             .   exprTyCnstr         =   let (eC,(vC,_))
                                                               =  cnstrMapThrTy  (\v t (c,u) ->  let  (u',u1) = mkNewLevUID u
-                                                                                                     (t',c') = tyFreshVar (`elementOf` @ambTvS) u1 c t
+                                                                                                     (t',c') = tyFreshVar (`Set.member` @ambTvS) u1 c t
                                                                                                 in   (t',(c',u'))
                                                                                 )
                                                                                 (emptyCnstr,@lUniq)

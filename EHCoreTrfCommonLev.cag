@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -17,19 +17,19 @@
 ATTR AllCodeNT [ levMp: LevMp | | ]
 
 SEM CodeAGItf
-  | AGItf       module      .   levMp       =   emptyFM
+  | AGItf       module      .   levMp       =   Map.empty
 
 SEM CExpr
-  | Lam         body        .   levMp       =   addToFM @lhs.levMp @arg @lev
+  | Lam         body        .   levMp       =   Map.insert @arg @lev @lhs.levMp
   | Let         loc         .   maxBindLev  =   fvsLev @lhs.levMp @binds.fvS
                 (loc.strLev,binds.levMp)    =   case @categ of
                                                     CBindStrict -> (const @lhs.lev,@lhs.levMp)
-                                                    CBindRec    -> (const @maxBindLev,@lhs.levMp `plusFM` (listToFM . zipWith (\l n -> (n,l)) (repeat @maxBindLev) . keysFM $ @binds.levOfMp))
+                                                    CBindRec    -> (const @maxBindLev,(Map.fromList . zipWith (\l n -> (n,l)) (repeat @maxBindLev) . Map.keys $ @binds.levOfMp) `Map.union` @lhs.levMp)
                                                     _           -> (id,@lhs.levMp)
-                body        .   levMp       =   @lhs.levMp `plusFM` mapFM (\_ l -> @strLev l) @binds.levOfMp
+                body        .   levMp       =   Map.map @strLev @binds.levOfMp `Map.union` @lhs.levMp
 
 SEM CAlt
-  | Alt         expr        .   levMp       =   addListToFM @lhs.levMp (zip @pats.nmL (repeat @lev))
+  | Alt         expr        .   levMp       =   Map.fromList (zip @pats.nmL (repeat @lev)) `Map.union` @lhs.levMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,7 +40,7 @@ SEM CAlt
 ATTR AllCodeNT [ | | levOf USE {`max`} {0}: Int ]
 
 SEM CExpr
-  | Var         lhs         .   levOf       =   lookupWithDefaultFM @lhs.levMp cLevOuter @nm
+  | Var         lhs         .   levOf       =   Map.findWithDefault cLevOuter @nm @lhs.levMp
   | App         loc         .   levOf       =   @func.levOf `max` @arg.levOf
   | Case        loc         .   levOf       =   @expr.levOf `max` @alts.levOf `max` @dflt.levOf
   | TupDel      loc         .   levOf       =   @expr.levOf `max` @offset.levOf
@@ -52,9 +52,9 @@ SEM CExpr
 SEM CAlt
   | Alt         lhs         .   levOf       =   fvsLev @lhs.levMp @expr.fvS
 
-ATTR AllBind [ | | levOfMp USE {`plusFM`} {emptyFM}: LevMp ]
+ATTR AllBind [ | | levOfMp USE {`Map.union`} {Map.empty}: LevMp ]
 
 SEM CBind
-  | Bind        lhs         .   levOfMp     =   unitFM @nm @expr.levOf
+  | Bind        lhs         .   levOfMp     =   Map.singleton @nm @expr.levOf
 %%]
 

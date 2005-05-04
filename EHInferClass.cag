@@ -122,14 +122,14 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-ATTR AllTyExpr [ | | clNmS USE {`Set.union`} {emptySet}: {Set HsName} ^^ clMissNmS USE {`Set.union`} {emptySet}: {Set HsName} ]
+ATTR AllTyExpr [ | | clNmS USE {`Set.union`} {Set.empty}: {Set.Set HsName} ^^ clMissNmS USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
 
 SEM PrExpr
   | Class       loc             .   (pigi,clNmS,clMissNmS)
                                                     =   case gamLookup @lhs.prIntroGam @nm of
-                                                            Just p   -> (p          ,unitSet @nm  ,emptySet     )
-                                                            Nothing  -> (emptyPIGI  ,emptySet     ,unitSet @nm  )
-                                .   nmIsDef         =   isEmptySet @clMissNmS
+                                                            Just p   -> (p          ,Set.singleton @nm  ,Set.empty     )
+                                                            Nothing  -> (emptyPIGI  ,Set.empty     ,Set.singleton @nm  )
+                                .   nmIsDef         =   Set.null @clMissNmS
                 lhs             .   clNmS           =   @clNmS      `Set.union`  @tyExprs.clNmS
                                 .   clMissNmS       =   @clMissNmS  `Set.union`  @tyExprs.clMissNmS
 %%]

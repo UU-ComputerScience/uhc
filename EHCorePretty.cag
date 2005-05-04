@@ -12,7 +12,7 @@
 %%[8 hs import(UU.Pretty,EHCommon,EHTy,EHCore) export(ppCModule)
 %%]
 
-%%[9 hs import(Data.FiniteMap,Set,EHTyPretty) export(ppCxBindLMap,ppCBindL)
+%%[9 hs import(qualified Data.Map as Map,qualified Data.Set as Set,EHTyPretty) export(ppCxBindLMap,ppCBindL)
 %%]
 
 %%[8.WRAPPER import(EHCoreAbsSyn)
@@ -50,9 +50,9 @@ ppCxBindLMap (CxBindLMap m)
   =  ppAssocLV
   .  assocLMapElt
         (\cbs
-            -> ppAssocL . map (\(CBind_Bind n v,i,dpds) -> (n,pp v >-< (ppCommaList . setToList $ dpds) >#< "->" >#< pp i)) $ cbs
+            -> ppAssocL . map (\(CBind_Bind n v,i,dpds) -> (n,pp v >-< (ppCommaList . Set.toList $ dpds) >#< "->" >#< pp i)) $ cbs
         )
-  .  fmToList $ m
+  .  Map.toList $ m
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

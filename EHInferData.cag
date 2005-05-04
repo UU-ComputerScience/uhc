@@ -139,13 +139,13 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllDataConstr [ | | dataTagMp USE {`plusFM`} {emptyFM}: DataTagMp ]
+ATTR AllDataConstr [ | | dataTagMp USE {`Map.union`} {Map.empty}: DataTagMp ]
 
 SEM DataConstr
   | Constr      loc         .   tag                 =   tyRecOffset @conNm @lhs.dataAltTy
                             .   arity               =   length @fields.tyL
                             .   ctag                =   CTag @lhs.tyNm @conNm @tag @arity
-                lhs         .   dataTagMp           =   @conNm `unitFM` @ctag
+                lhs         .   dataTagMp           =   @conNm `Map.singleton` @ctag
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

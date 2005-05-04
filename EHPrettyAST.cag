@@ -401,7 +401,7 @@ SEM Decl
                                         , mkInfo1 "dbg2PrElimTGam" (pp @dbg2PrElimTGam)
                                         , mkInfo1 "dbg2TrPPL (decl)" (vlist @dbg2TrPPL)
                                         , mkInfo1 "prfFrPoiCxBindLM" (ppCxBindLMap @prfFrPoiCxBindLM)
-                                        , mkInfo1 "prfCSubst" (ppAssocLV . fmToList $ @prfCSubst)
+                                        , mkInfo1 "prfCSubst" (ppAssocLV . Map.toList $ @prfCSubst)
                                         ]
   | InstanceIntro
                 loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","InstanceIntro"] [] [@expr.ppAST,@prExpr.ppAST] @info
@@ -432,9 +432,9 @@ SEM Expr
                                         , mkInfo1 "dbg2PrElimTGam" (pp @dbg2PrElimTGam)
                                         , mkInfo1 "dbg2TrPPL (decl)" (vlist @dbg2TrPPL)
                                         , mkInfo1 "prfFrPoiCxBindLM" (ppCxBindLMap @prfFrPoiCxBindLM)
-                                        , mkInfo1 "prfCSubst" (ppAssocLV . fmToList $ @prfCSubst)
-                                        , mkInfo1 "prfPoiFwdMp (decl)" (ppAssocLV . assocLMapElt ppCommaList . fmToList $ @prfPoiFwdMp)
-                                        , mkInfo1 "prfPoiBackMp (decl)" (ppAssocLV . fmToList $ @prfPoiBackMp)
+                                        , mkInfo1 "prfCSubst" (ppAssocLV . Map.toList $ @prfCSubst)
+                                        , mkInfo1 "prfPoiFwdMp (decl)" (ppAssocLV . assocLMapElt ppCommaList . Map.toList $ @prfPoiFwdMp)
+                                        , mkInfo1 "prfPoiBackMp (decl)" (ppAssocLV . Map.toList $ @prfPoiBackMp)
                                         , mkInfo1 "prfArgPrOccL (decl)" (ppCommaList @prfArgPrOccL)
                                         , mkInfo1 "gathPredL (decl)" (ppCommaList @gathPredL)
                                         , mkInfo1 "tqoGam" (pp @tqoGam)
@@ -450,7 +450,7 @@ SEM Expr
                                         , mkInfo1 "impls2KnHd" (pp @impls2KnHd)
                                         , mkInfo1 "impls2KnTl" (pp @impls2KnTl)
                                         , mkInfo1 "poiL" (ppCommaList @poiL)
-                                        , mkInfo1 "availPoiS" (ppCommaList . setToList $ @availPoiS)
+                                        , mkInfo1 "availPoiS" (ppCommaList . Set.toList $ @availPoiS)
                                         ]
   | AppTop      loc     .  info_9   :=  [ mkInfo1 "prfCtxtId's" (pp @lhs.prfCtxtId >#< "-" >#< pp @prfCtxtId)
                                         , mkInfo1 "resTy" (pp @resTy)

@@ -81,7 +81,7 @@
 %%[8 export(Seq,mkSeq,unitSeq,concatSeq,"(<+>)",seqToList,emptySeq)
 %%]
 
-%%[8 import (Data.FiniteMap) export(showPP,ppPair,ppFM)
+%%[8 import (qualified Data.Map as Map) export(showPP,ppPair,ppFM)
 %%]
 
 %%[8 export(mkNewLevUIDL,mkInfNewLevUIDL)
@@ -506,8 +506,8 @@ showPP x = disp (pp x) 100 ""
 %%]
 
 %%[8
-ppFM :: (PP k,PP v) => FiniteMap k v -> PP_Doc
-ppFM = ppAssocL . fmToList
+ppFM :: (PP k,PP v) => Map.Map k v -> PP_Doc
+ppFM = ppAssocL . Map.toList
 %%]
 
 %%[9
@@ -536,6 +536,7 @@ putPPFile :: String -> PP_Doc -> Int -> IO ()
 putPPFile fn pp wid
   =  do  {  h <- openFile fn WriteMode
          ;  hPutStrLn h (disp pp wid "")
+         ;  hClose h
          }
 %%]
 

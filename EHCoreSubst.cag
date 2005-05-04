@@ -9,7 +9,7 @@
 %%% Substituting holes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs import(Data.Maybe,Data.FiniteMap,UU.Pretty,EHCommon,EHTy,EHCore,EHCnstr,EHCorePretty) export(CSubstitutable(..),cAppCoeArg)
+%%[9 hs import(Data.Maybe,qualified Data.Map as Map,UU.Pretty,EHCommon,EHTy,EHCore,EHCnstr,EHCorePretty) export(CSubstitutable(..),cAppCoeArg)
 %%]
 
 %%[9 hs export(CSubst,emptyCSubst,uidCBindLLToCSubst,uidCExprLToCSubst,poiCExprLToCSubst,cnstrImplsToCSubst)
@@ -33,10 +33,10 @@ data CSubstInfo
     |  CSIBinds     {csiBindL   ::  CBindL                                          }
     deriving Show
 
-type CSubst = FiniteMap UID CSubstInfo
+type CSubst = Map.Map UID CSubstInfo
 
 emptyCSubst :: CSubst
-emptyCSubst = emptyFM
+emptyCSubst = Map.empty
 
 cAppCoeArg :: CExpr -> CExpr -> CExpr
 cAppCoeArg ce coeArg
@@ -44,16 +44,16 @@ cAppCoeArg ce coeArg
      in   (cRepl_Syn_CExpr t)
 
 uidCExprLToCSubst :: AssocL UID CExpr -> CSubst
-uidCExprLToCSubst = listToFM . assocLMapElt CSIExpr
+uidCExprLToCSubst = Map.fromList . assocLMapElt CSIExpr
 
 uidCBindLLToCSubst :: AssocL UID CBindL -> CSubst
-uidCBindLLToCSubst = listToFM . assocLMapElt CSIBinds
+uidCBindLLToCSubst = Map.fromList . assocLMapElt CSIBinds
 
 poiCExprLToCSubst :: AssocL PredOccId CExpr -> CSubst
 poiCExprLToCSubst = uidCExprLToCSubst . assocLMapKey poiId
 
 uidImplsLToCSubst :: AssocL UID ([Coe],[Coe]) -> CSubst
-uidImplsLToCSubst = listToFM . assocLMapElt (uncurry CSIImpls)
+uidImplsLToCSubst = Map.fromList . assocLMapElt (uncurry CSIImpls)
 
 cnstrImplsToCSubst :: Cnstr -> CSubst
 cnstrImplsToCSubst c
@@ -62,14 +62,13 @@ cnstrImplsToCSubst c
         | (iv,CIImpls i) <- cnstrToAssocL c, let (_,mbTl) = implsPredsMbTail i, isNothing mbTl
         ]
 
-instance Show CSubst where
-  show = show . fmToList
-
 instance PP CSubstInfo where
   pp (CSIExpr       ce   )  = pp ce
   pp (CSIImpls      l r  )  = pp (coeWeaveOn emptyCSubst l r CExpr_CoeArg)
   pp (CSIBinds      b    )  = ppCBindL b
 %%]
+instance Show CSubst where
+  show = show . Map.toList
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Code substitution as class
@@ -82,7 +81,7 @@ class CSubstitutable a where
   cSubstApp :: CSubst -> a -> a
 
 instance CSubstitutable CExpr where
-  cSubstApp cs ce | isEmptyFM cs
+  cSubstApp cs ce | Map.null cs
     =  ce
   cSubstApp cs ce
     =  let  t = wrap_CExpr (sem_CExpr ce) (Inh_CExpr {cSubst_Inh_CExpr = cs, coeArg_Inh_CExpr = CExpr_CoeArg})
@@ -102,7 +101,7 @@ instance CSubstitutable CSubstInfo where
   cSubstApp  _   csi           = csi
 
 instance CSubstitutable CSubst where
-  cSubstApp cs s = mapFM (const (cSubstApp cs)) s `plusFM` cs
+  cSubstApp cs s = cs `Map.union` Map.map (cSubstApp cs) s
 
 %%]
 
@@ -114,16 +113,16 @@ instance CSubstitutable CSubst where
 ATTR AllCodeNT CodeAGItf [ cSubst: CSubst ^^^ coeArg: CExpr | | cRepl: SELF ]
 
 SEM CExpr
-  | Hole        lhs         .   cRepl       =   case lookupFM @lhs.cSubst @uid of
+  | Hole        lhs         .   cRepl       =   case Map.lookup @uid @lhs.cSubst of
                                                   Just (CSIExpr ce)  -> ce
                                                   _                  -> @cRepl
-  | HoleLet     lhs         .   cRepl       =   case lookupFM @lhs.cSubst @bindsUid of
+  | HoleLet     lhs         .   cRepl       =   case Map.lookup @bindsUid @lhs.cSubst of
                                                   Just (CSIBinds b)  -> @lhs.cSubst `cSubstApp` mkCExprLetRec b @body.cRepl
                                                   _                  -> @cRepl
   | CoeArg      lhs         .   cRepl       =   @lhs.coeArg
   | ImplsApp ImplsLam
                 loc         .   (coeAppL,coeLamL)
-                                            =   case lookupFM @lhs.cSubst @uid of
+                                            =   case Map.lookup @uid @lhs.cSubst of
                                                   Just (CSIImpls ca cl)  -> (ca,cl)
                                                   _                      -> ([],[])
   | ImplsApp    lhs         .   cRepl       =   coeWeaveOn emptyCSubst @coeAppL [] @func.cRepl

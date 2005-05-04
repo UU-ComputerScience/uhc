@@ -9,7 +9,7 @@
 %%% Haskell importable interface to Code's GRIN gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Data.Maybe,Data.List,Data.Set as Set,Data.FiniteMap,UU.Pretty,EHCommon,EHCore,EHTy,GrinCode,Char) export(cmodGrin)
+%%[8 hs import(Data.Maybe,Data.List,qualified Data.Set as Set,qualified Data.Map as Map,UU.Pretty,EHCommon,EHCore,EHTy,GrinCode,Char) export(cmodGrin)
 %%]
 
 %%[8.WRAPPER import(EHCoreAbsSyn,EHCoreCommonLev)
@@ -91,31 +91,31 @@ SEM CPatBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-type LamInfoMp = FiniteMap HsName Int
+type LamInfoMp = Map.Map HsName Int
 %%]
 
 %%[8
 ATTR AllCodeNT [ lamMp: LamInfoMp | | ]
 
 SEM CodeAGItf
-  | AGItf       module      .   lamMp       =   emptyFM
+  | AGItf       module      .   lamMp       =   Map.empty
 %%]
 
 %%[8
-ATTR AllBind [ | | bindLamMp USE {`plusFM`} {emptyFM}: LamInfoMp ]
-ATTR AllBind [ | | bindCafMp USE {`plusFM`} {emptyFM}: LamInfoMp ]
+ATTR AllBind [ | | bindLamMp USE {`Map.union`} {Map.empty}: LamInfoMp ]
+ATTR AllBind [ | | bindCafMp USE {`Map.union`} {Map.empty}: LamInfoMp ]
 
 SEM CBind
   | Bind        lhs         .   (bindLamMp,bindCafMp)
                                             =   if @expr.isLam
-                                                then (@nm `unitFM` length @expr.grLamArgL,emptyFM)
-                                                else (emptyFM,@nm `unitFM` 0)
+                                                then (@nm `Map.singleton` length @expr.grLamArgL,Map.empty)
+                                                else (Map.empty,@nm `Map.singleton` 0)
   | FFI         loc         .   (argTyL,resTy)
                                             =   tyArrowArgsRes @ty
-                lhs         .   bindLamMp   =   @nm `unitFM` length @argTyL
+                lhs         .   bindLamMp   =   @nm `Map.singleton` length @argTyL
 
 SEM CExpr
-  | Let         loc         .   lamMp       =   @lhs.lamMp `plusFM` @binds.bindLamMp
+  | Let         loc         .   lamMp       =   @binds.bindLamMp `Map.union` @lhs.lamMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -123,12 +123,12 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR CExpr [ | | lamNmMp USE {`plusFM`} {emptyFM}: LamInfoMp ]
-ATTR CExpr [ | | cafNmMp USE {`plusFM`} {emptyFM}: LamInfoMp ]
+ATTR CExpr [ | | lamNmMp USE {`Map.union`} {Map.empty}: LamInfoMp ]
+ATTR CExpr [ | | cafNmMp USE {`Map.union`} {Map.empty}: LamInfoMp ]
 
 SEM CExpr
-  | Let         lhs         .   lamNmMp     =   @body.lamNmMp `plusFM` @binds.bindLamMp
-                            .   cafNmMp     =   @body.cafNmMp `plusFM` @binds.bindCafMp
+  | Let         lhs         .   lamNmMp     =   @binds.bindLamMp `Map.union` @body.lamNmMp
+                            .   cafNmMp     =   @binds.bindCafMp `Map.union` @body.cafNmMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -136,22 +136,22 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllCodeNT [ | | asArgNmS USE {`Set.union`} {emptySet}: FvS ]
+ATTR AllCodeNT [ | | asArgNmS USE {`Set.union`} {Set.empty}: FvS ]
 
 SEM CExpr
-  | Var         loc         .   mbLam       =   case lookupFM @lhs.lamMp @nm of
+  | Var         loc         .   mbLam       =   case Map.lookup @nm @lhs.lamMp of
                                                     Just arity | @lhs.isTopApp
                                                         -> Just arity
                                                     _   -> Nothing
-                lhs         .   asArgNmS    =   maybe emptySet (const (unitSet @nm)) @mbLam
-  | App         loc         .   mbLam       =   lookupFM @lhs.lamMp @grAppFun
+                lhs         .   asArgNmS    =   maybe Set.empty (const (Set.singleton @nm)) @mbLam
+  | App         loc         .   mbLam       =   Map.lookup @grAppFun @lhs.lamMp
                             .   appArity    =   length @grAppArgL
                 lhs         .   asArgNmS    =   @func.asArgNmS
-                                                    `Set.union`  maybe @arg.asArgNmS unitSet @arg.mbVar
+                                                    `Set.union`  maybe @arg.asArgNmS Set.singleton @arg.mbVar
                                                     `Set.union`  (case @mbLam of
                                                                     Just a | @lhs.isTopApp && @appArity < a
-                                                                      -> unitSet @grAppFun
-                                                                    _ -> emptySet
+                                                                      -> Set.singleton @grAppFun
+                                                                    _ -> Set.empty
                                                                  )
 %%]
 
@@ -179,8 +179,8 @@ SEM CModule
                                                      )         )
                                                      (mkInfNewLevUIDL @lUniq6)
                                                 . ((hsnGrApply,2):)
-                                                . fmToList
-                                                . filterFM (\n _ -> n `elementOf` @expr.asArgNmS)
+                                                . Map.toList
+                                                . Map.filterWithKey (\n _ -> n `Set.member` @expr.asArgNmS)
                                                 $ @expr.lamNmMp
                             .   applyPPatValL
                                             =   concat
@@ -226,8 +226,8 @@ SEM CModule
                                                 in   (    (zipWith mkCAlt (mkInfNewLevUIDL @lUniq3) $ [ t | (_,ll) <- @allCTags, (_,t) <- ll ])
                                                       ++  [ mkPAlt n nL arity | ((arity,n,nL),_) <- @applyPAltL ]
                                                       ++  [ mkPAlt n nL arity | ((arity,_,_),as) <- @applyPAltL, (_,n,nL) <- as ]
-                                                      ++  (zipWith mkFAlt (mkInfNewLevUIDL @lUniq4) . fmToList $ addToFM @expr.lamNmMp hsnGrApply 2)
-                                                      ++  (zipWith mkFAlt (mkInfNewLevUIDL @lUniq5) . fmToList $ @expr.cafNmMp)
+                                                      ++  (zipWith mkFAlt (mkInfNewLevUIDL @lUniq4) . Map.toList $ Map.insert hsnGrApply 2 @expr.lamNmMp)
+                                                      ++  (zipWith mkFAlt (mkInfNewLevUIDL @lUniq5) . Map.toList $ @expr.cafNmMp)
                                                      ,\alts ->  GrBind_Bind hsnGrEval [n1]
                                                                     (GrExpr_Seq (GrExpr_Fetch n1 Nothing) (GrPat_Var n2)
                                                                       (GrExpr_Case (GrVal_Var n2) alts))
@@ -287,7 +287,7 @@ simplArgL uniq lamMp vL
                     ->  case a of
                             GrVal_Var v | isJust mbArity
                                 -> (GrVal_Var n : aL,mkSq a' n . wG)
-                                where mbArity = lookupFM lamMp v
+                                where mbArity = Map.lookup v lamMp
                                       a' = GrExpr_Store (mkNdPApp v (fromJust mbArity) [])
                             GrVal_Node _ _
                                 -> (GrVal_Var n : aL,mkSq (GrExpr_Store a) n . wG)

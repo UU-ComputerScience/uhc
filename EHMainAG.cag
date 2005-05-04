@@ -9,7 +9,7 @@
 %%% Haskell interface to AG generated code for compiler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs import(Data.Char,IOExts,Data.List as List,UU.Pretty,EHCommon,EHOpts, EHTy,EHGam,EHError,EHErrorPretty,EHTyFitsIn,EHTyFitsInCommon,EHTyPretty)
+%%[1 hs import(Data.Char,Data.List as List,UU.Pretty,EHCommon,EHOpts, EHTy,EHGam,EHError,EHErrorPretty,EHTyFitsIn,EHTyFitsInCommon,EHTyPretty)
 %%]
 
 %%[2 hs import(EHCnstr,EHSubstitutable,Data.Maybe)
@@ -21,13 +21,13 @@
 %%[4 hs import(EHDebug)
 %%]
 
-%%[4_2 hs import(Data.Set,EHGamUtils,EHTyElimAlts,EHTyFreshVar)
+%%[4_2 hs import(qualified Data.Set as Set,EHGamUtils,EHTyElimAlts,EHTyFreshVar)
 %%]
 
-%%[8 hs import(Data.FiniteMap,EHCore,EHCoreUtils,EHCorePretty)
+%%[8 hs import(qualified Data.Map as Map,EHCore,EHCoreUtils,EHCorePretty)
 %%]
 
-%%[9 hs import(Data.Set as Set,EHPred,EHCoreSubst)
+%%[9 hs import(qualified Data.Set as Set,EHPred,EHCoreSubst)
 %%]
 
 %%[11 hs import(EHTyElimEqual,EHGamUtils)

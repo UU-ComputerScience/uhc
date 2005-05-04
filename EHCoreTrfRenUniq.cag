@@ -9,7 +9,7 @@
 %%% Simplify code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Data.Maybe,Data.Char,Data.FiniteMap,EHCommon,EHCore,EHTy) export(cmodTrfRenUniq)
+%%[8 hs import(Data.Maybe,Data.Char,qualified Data.Map as Map,EHCommon,EHCore,EHTy) export(cmodTrfRenUniq)
 %%]
 
 %%[8.WRAPPER import(EHCoreAbsSyn)
@@ -58,15 +58,15 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-type ARenMp = FiniteMap HsName HsName
+type ARenMp = Map.Map HsName HsName
 
 aRenAdd :: [HsName] -> UID -> ARenMp -> ARenMp
 aRenAdd nL u m
   =  let  uL = mkNewUIDL (length nL) u
-     in   addListToFM m [ (n,hsnSuffix n ("~" ++ show u)) | (n,u) <- zip nL uL]
+     in   Map.fromList [ (n,hsnSuffix n ("~" ++ show u)) | (n,u) <- zip nL uL] `Map.union` m
 
 aRenRepl :: ARenMp -> HsName -> HsName
-aRenRepl m n = maybe n id . lookupFM m $ n
+aRenRepl m n = maybe n id . Map.lookup n $ m
 %%]
 
 %%[8
@@ -74,7 +74,7 @@ ATTR AllCodeNT [ aRenMp: ARenMp ^^ lev: Int | | ]
 ATTR AllBind AllPat [ | | nmL USE {++} {[]}: {[HsName]} ]
 
 SEM CodeAGItf
-  | AGItf       module      .   aRenMp      =   emptyFM
+  | AGItf       module      .   aRenMp      =   Map.empty
                             .   lev         =   cLevOuter
 
 SEM CBind

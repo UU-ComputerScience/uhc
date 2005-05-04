@@ -12,7 +12,7 @@
 %%[8 module GRIRun import(EHCommon,GRICommon,GrinCode,GrinCodePretty)
 %%]
 
-%%[8 import(Data.FiniteMap,Data.Maybe,Data.Array,Data.Array.IO)
+%%[8 import(qualified Data.Map as Map,Data.Maybe,Data.Array,Data.Array.IO)
 %%]
 
 %%[8 import(UU.Pretty) export(ppRunState)
@@ -63,7 +63,7 @@ type RunLoc = Maybe GrExpr
 
 data RunHeap = RunHeap {rhMem :: !(IOArray Int RunVal), rhSize :: !Int, rhFree :: !Int}
 
-type RunEnv = FiniteMap HsName RunVal
+type RunEnv = Map.Map HsName RunVal
 
 data RunState
   =  RunState
@@ -77,7 +77,7 @@ data RunState
         }
 
 rsVar :: RunState -> HsName -> RunVal
-rsVar rs = lookupWithDefaultFM (rsEnv rs) RVNil
+rsVar rs n = Map.findWithDefault RVNil n (rsEnv rs)
 
 rsDeref :: RunState -> RunVal -> IO RunVal
 rsDeref rs r
@@ -116,9 +116,9 @@ ppRunState rs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-primMp :: FiniteMap String (RunState -> [RunVal] -> IO (RunState,Maybe RunVal))
+primMp :: Map.Map String (RunState -> [RunVal] -> IO (RunState,Maybe RunVal))
 primMp
-  =  listToFM
+  =  Map.fromList
         [ (show hsnPrimAddInt
             ,\rs [RVInt i1,RVInt i2]    ->  return (rs,Just (RVInt (i1 + i2)))
           )
@@ -196,14 +196,14 @@ grCall rs f aL
   =  case f of
         RVGlob _ nL e
           ->  rs'
-              where  re = rsGlobEnv rs `plusFM` listToFM (zip nL aL)
+              where  re = Map.fromList (zip nL aL) `Map.union` rsGlobEnv rs
                      rs' = rs {rsEnv = re, rsNext = Just e}
 %%]
 
 %%[8
 grFFI :: RunState -> String -> [RunVal] -> IO (RunState,Maybe RunVal)
 grFFI rs f aL
-  =  case lookupFM primMp f of
+  =  case Map.lookup f primMp of
         Just f'
             ->  f' rs aL
         _   ->  do  { rs' <- halt rs ("No ffi for:" >#< f >-< indent 2 ("with args:" >#< (ppCommaList . map pp $ aL)))
@@ -304,7 +304,7 @@ grEvalExpr rs e
                                                  n2 = hsnWild
                                                  nL@(nF:nAL) = take (length ndFAL) hsnLclSupplyL
                                                  e = GrExpr_Seq (GrExpr_Eval nF) (GrPat_Var n2) (GrExpr_App n2 (map GrVal_Var nAL))
-                                                 re = rsGlobEnv rs `plusFM` listToFM (zip nL ndFAL)
+                                                 re = Map.fromList (zip nL ndFAL) `Map.union` rsGlobEnv rs
                                                  rs3 = rs2 {rsNext = Just e, rsEnv = re}
                                     _ ->  return (rs,Just v)
                             v@RVNil
@@ -345,23 +345,23 @@ grPatBind :: RunState -> RunEnv -> RunVal -> GrPat -> RunEnv
 grPatBind rs re v p
   =  case p of
         GrPat_Var n
-          ->  addToFM re n v
+          ->  Map.insert n v re
         GrPat_Empty
           ->  re
         GrPat_Node GrTag_Unboxed (pf:_)
-          ->  addToFM re pf v
+          ->  Map.insert pf v re
         GrPat_Node _ pfL
           ->  case v of
                 RVNode a
                   ->  case elems a of
                         (RVCat _:_:vfL)
-                          ->  re `plusFM` listToFM (zip pfL vfL)
+                          ->  Map.fromList (zip pfL vfL) `Map.union` re
         GrPat_NodeSplit _ rNm splL
           ->  case v of
                 RVNode a
                   ->  case elems a of
                         (c@(RVCat _):t:_:vfL)
-                          ->  re `plusFM` unitFM rNm (mkRN (c:t:RVInt (length r):r)) `plusFM` listToFM bL
+                          ->  Map.singleton rNm (mkRN (c:t:RVInt (length r):r)) `Map.union` Map.fromList bL `Map.union` re
                               where  (r,bL) = spl splL vfL 0
                                      spl (GrSplit_Sel n o:splL) (f:fL) fO | o' == fO
                                         =  (rfL,(n,f):bfL)

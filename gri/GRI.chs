@@ -15,7 +15,7 @@
 %%[8 import(UU.Parsing, UU.Pretty, EHCommon,GRICommon,EHScanner)
 %%]
 
-%%[8 import (FPath,Data.FiniteMap,Data.Maybe,Data.List,Directory)
+%%[8 import (FPath,qualified Data.Map as Map,Data.Maybe,Data.List,Directory)
 %%]
 
 %%[8 import (GRICommon,GRIParser,GRIRun,GRISetup,GrinCode)

@@ -8,7 +8,7 @@ import IO
 import Monad
 import Array
 import Data.List
-import Data.FiniteMap
+import qualified Data.Map as Map
 import FPath
 import Utils
 import PPUtils
@@ -669,21 +669,21 @@ data NamedChunkInfo
       , nciMbPP     :: Maybe PP_Doc
       }
 
-type NamedChunkInfoMp = FiniteMap String NamedChunkInfo
+type NamedChunkInfoMp = Map.Map String NamedChunkInfo
 }
 
-ATTR AllChunk [ | | nmChInfoMp USE {`plusFM`} {emptyFM}: NamedChunkInfoMp ]
+ATTR AllChunk [ | | nmChInfoMp USE {`Map.union`} {Map.empty}: NamedChunkInfoMp ]
 ATTR AllChunk AllLine [ allNmChInfoMp: NamedChunkInfoMp | | ]
 
 SEM Chunk
   | Named       loc         . chInfo    = NamedChunkInfo @nm @lines.mbPP
-                lhs         . nmChInfoMp= unitFM @nm @chInfo
+                lhs         . nmChInfoMp= Map.singleton @nm @chInfo
 
 SEM AGItf
   | AGItf       chunks      . allNmChInfoMp
                                         = @chunks.nmChInfoMp
                 dumLines    . allNmChInfoMp
-                                        = emptyFM
+                                        = Map.empty
 
 -------------------------------------------------------------------------
 -- Content replica
@@ -703,7 +703,7 @@ SEM Words
 
 SEM Line
   | AsIs        lhs         . mbPP      = Just (if null @words.charsL then text "" else hlist @words.charsL)
-  | Named       lhs         . mbPP      = maybe (Just ("<<" >|< @nm >|< ">>")) nciMbPP (lookupFM @lhs.allNmChInfoMp @nm)
+  | Named       lhs         . mbPP      = maybe (Just ("<<" >|< @nm >|< ">>")) nciMbPP (Map.lookup @nm @lhs.allNmChInfoMp)
 
 SEM Lines
   | Nil         lhs         . mbPP      = Nothing
