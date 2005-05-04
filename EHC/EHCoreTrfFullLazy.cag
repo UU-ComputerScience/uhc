@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -9,7 +9,7 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Maybe,Set,List,FiniteMap,EHCommon,EHCore,EHTy) export(cmodTrfFullLazy)
+%%[8 hs import(Data.Maybe,Data.Set as Set,Data.List,Data.FiniteMap,EHCommon,EHCore,EHTy) export(cmodTrfFullLazy)
 %%]
 
 %%[8 hs import(EHDebug)

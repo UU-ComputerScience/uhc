@@ -9,7 +9,7 @@
 %%% Pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 import(Maybe,List,FiniteMap,Set,UU.Pretty)
+%%[9 import(Data.Maybe,Data.List,Data.FiniteMap,Data.Set as Set,UU.Pretty)
 %%]
 
 %%[9 import(EHTy,EHTyPretty,EHTyFitsInCommon,EHTyQuantify,EHCore,EHCorePretty,EHCoreSubst,EHCommon,EHGam,EHCnstr,EHSubstitutable)

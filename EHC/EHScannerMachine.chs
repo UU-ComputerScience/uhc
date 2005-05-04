@@ -1,11 +1,11 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
 
-%%[7 module EHScannerMachine import(Char,List,Maybe,IO,UU.Util.BinaryTrees,UU.Scanner.Token,UU.Scanner.Position)
+%%[7 module EHScannerMachine import(Data.Char,Data.List,Data.Maybe,IO,UU.Util.BinaryTrees,UU.Scanner.Token,UU.Scanner.Position)
 %%]
 
 %%[7

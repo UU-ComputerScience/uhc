@@ -9,7 +9,7 @@
 %%% Haskell importable interface to refresh tvars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_2 hs import(EHCommon,EHTy) export(tyFreshVar)
+%%[4_2 hs import(EHCommon,EHTy,EHCnstr,EHSubstitutable) export(tyFreshVar)
 %%]
 
 %%[4_2.WRAPPER import(EHTyAbsSyn)
@@ -17,12 +17,12 @@ WRAPPER TyAGItf
 %%]
 
 %%[4_2.tyFreshVar hs
-tyFreshVar :: (TyVarId -> Bool) -> UID -> Ty -> Ty
-tyFreshVar allowFresh uniq ty
+tyFreshVar :: (TyVarId -> Bool) -> UID -> Cnstr -> Ty -> (Ty,Cnstr)
+tyFreshVar allowFresh uniq tvCnstr ty
   =  let  t =  wrap_TyAGItf
                  (sem_TyAGItf (TyAGItf_AGItf ty))
-                 (Inh_TyAGItf {allowFresh_Inh_TyAGItf = allowFresh, gUniq_Inh_TyAGItf = uniq})
-     in   (repl_Syn_TyAGItf t)
+                 (Inh_TyAGItf {tvCnstr_Inh_TyAGItf = tvCnstr, allowFresh_Inh_TyAGItf = allowFresh, gUniq_Inh_TyAGItf = uniq})
+     in   (repl_Syn_TyAGItf t,tvCnstr_Syn_TyAGItf t)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -31,6 +31,9 @@ tyFreshVar allowFresh uniq ty
 
 %%[4_2
 ATTR TyAGItf AllAllTy [ allowFresh: {TyVarId -> Bool} | | ]
+
+SEM Ty
+  | Quant           ty      .   allowFresh  =   \v -> v /= @tv && @lhs.allowFresh v
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,14 +42,14 @@ ATTR TyAGItf AllAllTy [ allowFresh: {TyVarId -> Bool} | | ]
 
 %%[4_2
 ATTR TyAGItf [ gUniq: UID | | ]
-ATTR AllAllTy [ | gUniq: UID | ]
+ATTR AllTy [ | gUniq: UID | ]
 
 SEM Ty
   | Var             (lhs.gUniq,loc.lUniq)   =   mkNewUID @lhs.gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Replacement
+%%% New tvar map as Cnstr, replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2
@@ -55,8 +58,28 @@ ATTR TyAGItf  [ | | repl: Ty    ]
 %%]
 
 %%[4_2
+ATTR AllTy TyAGItf [ | tvCnstr: Cnstr | ]
+
 SEM Ty
-  | Var             lhs     .   repl		=	if @lhs.allowFresh @tv then Ty_Var @lUniq @categ.repl else @repl
-  | Quant           ty      .   allowFresh  =   \v -> v /= @tv && @lhs.allowFresh v
+  | Var             lhs     .   (repl,tvCnstr)
+                                            =   if @lhs.allowFresh @tv
+                                                then  case cnstrTyLookup @tv @lhs.tvCnstr of
+                                                        Just t   -> (t,@lhs.tvCnstr)
+                                                        Nothing  -> (t,(@tv `cnstrTyUnit` t) |=> @lhs.tvCnstr)
+                                                                 where t = Ty_Var @lUniq @categ.repl
+                                                else  (@repl,@lhs.tvCnstr)
 %%]
+SEM TyAGItf
+  | AGItf           ty      .   tvCnstr     =   emptyCnstr
+
+SEM Ty
+  | Var             lhs     .   repl        =   if @lhs.allowFresh @tv then Ty_Var @lUniq @categ.repl else @repl
+SEM Ty
+  | Var             lhs     .   (repl,tvCnstr)
+                                            =   if @lhs.allowFresh @tv
+                                                then  case cnstrTyLookup @tv @lhs.tvCnstr of
+                                                        Just t   -> (t,@lhs.tvCnstr)
+                                                        Nothing  -> (t,(@tv `cnstrTyUnit` t) |=> @lhs.tvCnstr)
+                                                                 where t = Ty_Var @lUniq @categ.repl
+                                                else  (@repl,@lhs.tvCnstr)
 

@@ -12,7 +12,7 @@
 %%[8 module GRIRun import(EHCommon,GRICommon,GrinCode,GrinCodePretty)
 %%]
 
-%%[8 import(FiniteMap,Maybe,Data.Array,Data.Array.IO)
+%%[8 import(Data.FiniteMap,Data.Maybe,Data.Array,Data.Array.IO)
 %%]
 
 %%[8 import(UU.Pretty) export(ppRunState)

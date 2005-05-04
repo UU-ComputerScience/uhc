@@ -16,7 +16,7 @@
 %%% Substitution for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 import(List, EHCommon, EHTy) export(Cnstr(..), emptyCnstr, cnstrTyUnit, cnstrTyLookup, unionL)
+%%[2 import(Data.List, EHCommon, EHTy) export(Cnstr(..), emptyCnstr, cnstrTyUnit, cnstrTyLookup, unionL)
 %%]
 
 %%[2 import(UU.Pretty, EHTyPretty) export(ppCnstrV)
@@ -34,7 +34,7 @@
 %%[4_2 export(tyAsCnstr,cnstrTyRevUnit)
 %%]
 
-%%[9 import(FiniteMap,EHDebug) export(CnstrInfo(..),cnstrImplsLookup,cnstrImplsUnit,assocLToCnstrImpls,cnstrToAssocL)
+%%[9 import(Data.FiniteMap,EHDebug) export(CnstrInfo(..),cnstrImplsLookup,cnstrImplsUnit,assocLToCnstrImpls,cnstrToAssocL)
 %%]
 
 %%[11 export(cnstrKeys)

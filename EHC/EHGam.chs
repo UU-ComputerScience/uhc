@@ -9,7 +9,7 @@
 %%% Gamma (aka Assumptions, Environment)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 import(List,EHCommon) export(Gam,emptyGam,gamLookup, gamPushNew, gamPop, gamAddGam, gamUnit, gamAdd, gamPushGam, gamToAssocL, assocLToGam, gamToDups)
+%%[1 import(Data.List,EHCommon) export(Gam,emptyGam,gamLookup, gamPushNew, gamPop, gamAddGam, gamUnit, gamAdd, gamPushGam, gamToAssocL, assocLToGam, gamToDups)
 %%]
 
 %%[1 import(EHTy,EHError) export(ValGam, ValGamInfo(..), valGamLookup,valGamLookupTy)
@@ -39,6 +39,9 @@
 %%[4 export(gamTop)
 %%]
 
+%%[4_2 export(ErrGam)
+%%]
+
 %%[4_2 export(valGamQuantifyWithCnstr,valGamInst1ExistsWithCnstr)
 %%]
 
@@ -54,7 +57,7 @@
 %%[7 export(mkTGIData)
 %%]
 
-%%[8 import(Maybe,FiniteMap,EHCore) export(gamUpd,DataTagMp)
+%%[8 import(Data.Maybe,Data.FiniteMap,EHCore) export(gamUpd,DataTagMp)
 %%]
 
 %%[8 export(DataGam,DataGamInfo(..),mkDGI)
@@ -363,6 +366,14 @@ tgamInScopes i = tgamFoldr1 i (\i _ _ r -> i : r) []
 
 tgamElts :: Ord i => i -> TreeGam i k v -> [v]
 tgamElts i = assocLElts . tgamToAssocL i
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% "Error" gam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+type ErrGam = Gam HsName ErrL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

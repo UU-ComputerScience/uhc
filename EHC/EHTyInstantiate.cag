@@ -18,7 +18,7 @@
 %%[4 hs import(EHDebug,UU.Pretty)
 %%]
 
-%%[4 hs import(List) export(tyInst1Quants, tyInst1Exists, instCoConst, instContra,instCo)
+%%[4 hs import(Data.List) export(tyInst1Quants, tyInst1Exists, instCoConst, instContra,instCo)
 %%]
 
 %%[4_2 hs export(instPlain,instFixed,instMeet)

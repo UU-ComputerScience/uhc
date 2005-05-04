@@ -9,10 +9,10 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module Main import(System, GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, EHCommon, EHOpts,EHParser, EHMainAG)
+%%[1 module Main import(System, System.Console.GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, EHCommon, EHOpts,EHParser, EHMainAG)
 %%]
 
-%%[8 import (EHScanner,EHError,EHErrorPretty,FPath,FiniteMap,Maybe,List,Directory)
+%%[8 import (EHScanner,EHError,EHErrorPretty,FPath,Data.FiniteMap,Data.Maybe,Data.List,Directory)
 %%]
 
 %%[8 import (EHCoreJava,EHCoreGrin,EHCorePretty)

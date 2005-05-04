@@ -1,4 +1,4 @@
-% $Id: GRI.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -9,13 +9,13 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module Main import(System, GetOpt, IO)
+%%[1 module Main import(System, System.Console.GetOpt, IO)
 %%]
 
 %%[8 import(UU.Parsing, UU.Pretty, EHCommon,GRICommon,EHScanner)
 %%]
 
-%%[8 import (FPath,FiniteMap,Maybe,List,Directory)
+%%[8 import (FPath,Data.FiniteMap,Data.Maybe,Data.List,Directory)
 %%]
 
 %%[8 import (GRICommon,GRIParser,GRIRun,GRISetup,GrinCode)

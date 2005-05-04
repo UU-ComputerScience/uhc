@@ -16,10 +16,10 @@
 %%% Substitution for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 import(List, EHCommon, EHTy, EHCnstr,EHTySubst,EHTyFtv) export(Substitutable(..))
+%%[2 import(Data.List, EHCommon, EHTy, EHCnstr,EHTySubst,EHTyFtv) export(Substitutable(..))
 %%]
 
-%%[9 import(FiniteMap) export(fixTyVarsCnstr,tyFixTyVars)
+%%[9 import(Data.FiniteMap) export(fixTyVarsCnstr,tyFixTyVars)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

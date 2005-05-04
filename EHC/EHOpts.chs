@@ -9,7 +9,7 @@
 %%% Options of all sorts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 import(GetOpt,EHCommon) export(EHCOpts(..), defaultEHCOpts, ehcCmdLineOpts)
+%%[1 import(System.Console.GetOpt,EHCommon) export(EHCOpts(..), defaultEHCOpts, ehcCmdLineOpts)
 %%]
 
 %%[4 import(EHTy,UU.Pretty) export(FIOpts(..), fioSwapCoCo, fioSwapOpts, strongFIOpts, instFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)
@@ -21,7 +21,7 @@
 %%[5 export(weakFIOpts)
 %%]
 
-%%[8 import(List,Char) export(cmdLineTrfs,trfOptOverrides)
+%%[8 import(Data.List,Data.Char) export(cmdLineTrfs,trfOptOverrides)
 %%]
 
 %%[9 export(predFIOpts,implFIOpts)
