@@ -52,7 +52,7 @@
 %%[6 export(fitsInL)
 %%]
 
-%%[9 import(Data.FiniteMap,Data.Set,UU.Pretty,EHCorePretty,EHPred,EHCore,EHCoreSubst) export(foAppCoe,fitPredToEvid)
+%%[9 import(qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty,EHCorePretty,EHPred,EHCore,EHCoreSubst) export(foAppCoe,fitPredToEvid)
 %%]
 
 %%[9 export(prfPreds,prfPredsDbg)
@@ -1031,7 +1031,7 @@ prfPreds u fe prOccL
 prfPredsDbg  :: UID -> FIEnv -> [PredOcc]
                     ->  (CxBindLMap,CBindL,CSubst,[PredOcc],[CExpr],[Err]
                         ,(ProvenGraph,ProvenGraph,ProvenGraph,ProvenGraph,ProvenGraph,PrElimTGam,[Pred]
-                         ,FiniteMap PredOccId [PredOccId],FiniteMap PredOccId PredOccId,PP_DocL
+                         ,Map.Map PredOccId [PredOccId],Map.Map PredOccId PredOccId,PP_DocL
                         ))
 prfPredsDbg u fe prOccL
   =  case prvnErrs of
@@ -1039,7 +1039,7 @@ prfPredsDbg u fe prOccL
 				 , overlErrs ++ prvnErrs
 				 , (g,gPrune,gOr,gInterm1,gInterm2,eGam,prLeaves, fwdMp, backMp,[])
 				 )
-       _   ->    ( emptyCxBindLMap, [], emptyCSubst, prOccL, [], prvnErrs, (g,g,g,g,g,fePrElimTGam fe,[],emptyFM,emptyFM,[]))
+       _   ->    ( emptyCxBindLMap, [], emptyCSubst, prOccL, [], prvnErrs, (g,g,g,g,g,fePrElimTGam fe,[],Map.empty,Map.empty,[]))
   where   (g,prvnErrs,eGam)             = prfPredsToProvenGraph u fe prOccL
           prOrigs                       = prvgOrigs g
           (_,revTopSort)                = prvg2ReachableFrom g prOrigs
@@ -1047,25 +1047,25 @@ prfPredsDbg u fe prOccL
           prLeaves                      = prvgArgLeaves g topSort
           (gPrune@(ProvenGraph i2n _ _ _),gOr,backMp,(gInterm1,gInterm2))
                                         = prfPredsPruneProvenGraph (\pr cx -> pr `elem` prLeaves) g
-          factPoiS                      = mkSet (prvgFactL gPrune)
-          isFact                        = (`elementOf` factPoiS)
-          cSubst                        = poiCExprLToCSubst . assocLMapElt (CExpr_Var . poiHNm) . fmToList $ backMp
-          argPrOccL                     = [ PredOcc p i | (i,ProvenArg p _) <- fmToList i2n ]
-          overl                         = [ (pr,map (\e -> case lookupFM (prvgIdNdMp gOr) e of {Just (ProvenAnd _ _ _ _ ev) -> ev; _ -> mkCExprPrHole e}) es)
-                                          | (ProvenOr pr es _) <- eltsFM (prvgIdNdMp gOr)
+          factPoiS                      = Set.fromList (prvgFactL gPrune)
+          isFact                        = (`Set.member` factPoiS)
+          cSubst                        = poiCExprLToCSubst . assocLMapElt (CExpr_Var . poiHNm) . Map.toList $ backMp
+          argPrOccL                     = [ PredOcc p i | (i,ProvenArg p _) <- Map.toList i2n ]
+          overl                         = [ (pr,map (\e -> case Map.lookup e (prvgIdNdMp gOr) of {Just (ProvenAnd _ _ _ _ ev) -> ev; _ -> mkCExprPrHole e}) es)
+                                          | (ProvenOr pr es _) <- Map.elems (prvgIdNdMp gOr)
                                           ]
           overlErrs                     = if null overl then [] else [Err_OverlapPreds overl]
           prfFrPoiCxBindLM              = prvgCxBindLMap gPrune
           prfIntroCBindL                = prvgIntroBindL poiIsGlob topSort gPrune
                                         where poiIsGlob poi = tgamIsInScope (fePrfCtxtId fe) (poiCxId poi) (fePrElimTGam fe)
           cSubstLetHole                 = prvgLetHoleCSubst gPrune eGam prfFrPoiCxBindLM
-          fwdMp                         = listToFM . map (\l@((_,i):_) -> (i,map fst l)) . groupSortOn snd . fmToList $ backMp
+          fwdMp                         = Map.fromList . map (\l@((_,i):_) -> (i,map fst l)) . groupSortOn snd . Map.toList $ backMp
           prvnOrigEvidL                 = map (\po -> mkCExprPrHole . poPoi $ po) prOccL
 %%]
 
 %%[9
 prvgAddUsedAsFact :: PredOccId -> Pred -> ProvenGraph -> ProvenGraph
-prvgAddUsedAsFact uid pr g = g {prvgPrUsedFactIdMp = addToFM_C (flip (++)) (prvgPrUsedFactIdMp g) pr [uid]}
+prvgAddUsedAsFact uid pr g = g {prvgPrUsedFactIdMp = Map.insertWith (++) pr [uid] (prvgPrUsedFactIdMp g)}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1076,10 +1076,10 @@ prvgAddUsedAsFact uid pr g = g {prvgPrUsedFactIdMp = addToFM_C (flip (++)) (prvg
 prfPredsToProvenGraph :: UID -> FIEnv -> [PredOcc] -> (ProvenGraph,[Err],PrElimTGam)
 prfPredsToProvenGraph u fe prOccL
   =  let  initState1 = ProofState
-                        (ProvenGraph emptyFM emptyFM
-                            (foldr (\p m -> addToFM_C (++) m (poPr p) [poPoi p]) (emptyFM) prOccL)
-                            emptyFM)
-                        u [] emptyFM (fePrElimTGam fe) []
+                        (ProvenGraph Map.empty Map.empty
+                            (foldr (\p m -> Map.insertWith (++) (poPr p) [poPoi p] m) (Map.empty) prOccL)
+                            Map.empty)
+                        u [] Map.empty (fePrElimTGam fe) []
           initState2 = prfsAddPrOccL prOccL 0 initState1
           resolve st@(ProofState _ _ (po:poL) _ peg [])
             =  let  st' = prfOneStep (fe {fePrElimTGam = peg}) po (st {prfs2PredsToProve = poL})
@@ -1097,10 +1097,10 @@ prfPredsToProvenGraph u fe prOccL
 %%[9
 prfOneStep :: FIEnv -> PredOcc -> ProofState -> ProofState
 prfOneStep fe prOcc@(PredOcc pr prPoi) st@(ProofState g@(ProvenGraph _ p2i _ _) _ _ i2d _ errL)
-  =  case lookupFM i2d prPoi of
+  =  case Map.lookup prPoi i2d of
         Just depth
           | depth < ehcoptPrfCutOffAt (feEHCOpts fe)
-              ->  case lookupFM p2i pr of
+              ->  case Map.lookup pr p2i of
                     Just poiL@(poi:_)
                       | poiCxId prPoi `notElem` map poiCxId poiL
                           ->  prf pr
@@ -1272,19 +1272,19 @@ prvnPruneHighCost :: (Pred -> PrfCtxtId -> Bool) -> ProvenGraph -> (ProvenGraph,
 prvnPruneHighCost isPrCheap g@(ProvenGraph i2n p2i p2oi p2fi)
   =  (gPrune,PoiSubst pruneBackMp)
   where   costOf poi costMp pruneBackMp gPrune
-            =  case lookupFM costMp poi of
+            =  case Map.lookup poi costMp of
                  Just (Just c)  -> (poi,c,costMp,pruneBackMp,gPrune)
                  Just (Nothing) -> (poi,costVeryMuch,costMp,pruneBackMp,gPrune)
                  Nothing
                    ->  let  prvgAddPrevPrNd pr poi prf g
                               =  prvgAddPrNd pr [poi] prf g
-                            costMp' = addToFM costMp poi Nothing
-                       in   case fromJust (lookupFM i2n poi) of
+                            costMp' = Map.insert poi Nothing costMp
+                       in   case fromJust (Map.lookup poi i2n) of
                               ProvenAnd pr es les c ev
                                 ->  let  (cs,cm,pbm,gp)      = costOfL es costMp' pruneBackMp gPrune
                                          c'                  = foldr costAdd c (map snd cs)
-                                         cm'                 = addToFM cm poi (Just c')
-                                         pbm'                = addToFM pbm poi poi
+                                         cm'                 = Map.insert poi (Just c') cm
+                                         pbm'                = Map.insert poi poi pbm
                                          gp'                 = prvgAddPrevPrNd pr poi (ProvenAnd pr (map fst cs) les c' ev) gp
                                     in   (poi,c',cm',pbm',gp')
                               ProvenOr pr es _
@@ -1294,40 +1294,40 @@ prvnPruneHighCost isPrCheap g@(ProvenGraph i2n p2i p2oi p2fi)
                                            =  case alts of
                                                 [(poia,_)]    ->  (poia,prvgAddPrUids pr [poi] gp,calt)
                                                 ((poia,_):_)  ->  (poia,prvgAddNd poi (ProvenOr pr (map fst alts) calt) gp,calt)
-                                         cm'                 = addToFM (delFromFM cm poi) poi' (Just c')
-                                         pbm'                = addToFM pbm poi poi'
+                                         cm'                 = Map.insert poi' (Just c') (Map.delete poi cm)
+                                         pbm'                = Map.insert poi poi' pbm
                                     in   (poi',c',cm',pbm',gp')
                               ProvenShare pr e
                                 ->  let  (poi',c,cm,pbm,gp)  = costOf e costMp' pruneBackMp gPrune
                                          gp'                 = prvgAddPrUids pr [poi] gp
-                                         pbm'                = addToFM pbm poi poi'
-                                    in   (poi',c,delFromFM cm poi,pbm',gp')
+                                         pbm'                = Map.insert poi poi' pbm
+                                    in   (poi',c,Map.delete poi cm,pbm',gp')
                               ProvenArg pr c
                                 ->  let  c'                  = if isPrCheap pr (poiCxId poi) then costAvailArg else c
-                                         cm                  = addToFM costMp' poi (Just c')
-                                         pbm                 = addToFM pruneBackMp poi poi
+                                         cm                  = Map.insert poi (Just c') costMp'
+                                         pbm                 = Map.insert poi poi pruneBackMp
                                          gp                  = prvgAddPrevPrNd pr poi (ProvenArg pr c') gPrune
                                     in   (poi,c',cm,pbm,gp)
           costOfL poiL costMp pruneBackMp gPrune
             =  foldr  (\poi (cs,cm,pbm,g) ->  let  (poi',c,cm',pbm',g') = costOf poi cm pbm g
-                                              in   ((poi',c):cs,cm',addToFM pbm' poi poi',g'))
+                                              in   ((poi',c):cs,cm',Map.insert poi poi' pbm',g'))
                       ([],costMp,pruneBackMp,gPrune) poiL
           (_,_,pruneBackMp,gPrune)
-            = costOfL (prvgOrigs g) emptyFM emptyFM (ProvenGraph emptyFM emptyFM p2oi p2fi)
+            = costOfL (prvgOrigs g) Map.empty Map.empty (ProvenGraph Map.empty Map.empty p2oi p2fi)
 %%]
 
 %%[9
 prfPredsPruneProvenGraph ::  (Pred -> PrfCtxtId -> Bool) -> ProvenGraph
-                                 ->  (ProvenGraph,ProvenGraph,FiniteMap PredOccId PredOccId
+                                 ->  (ProvenGraph,ProvenGraph,Map.Map PredOccId PredOccId
                                      ,(ProvenGraph,ProvenGraph)
                                      )
 prfPredsPruneProvenGraph isPrCheap g@(ProvenGraph i2n p2i p2oi p2fi)
   =  let  onlyReachables poiL g@(ProvenGraph i2n _ _ _)
             =  let  (reachableUIDs,_) = prvg2ReachableFrom g poiL
-               in   g { prvgIdNdMp  = filterFM (\poi _ -> poi `elementOf` reachableUIDs) i2n }
+               in   g { prvgIdNdMp  = Map.filterWithKey (\poi _ -> poi `Set.member` reachableUIDs) i2n }
           splitOr g@(ProvenGraph i2n _ _ _)
-            =  let (yesOr,noOr) = partition (\(_,n) -> case n of {ProvenOr _ _ _ -> True; _ -> False}) . fmToList $ i2n
-               in  (g {prvgIdNdMp = listToFM noOr}, g {prvgIdNdMp = listToFM yesOr}, assocLKeys yesOr)
+            =  let (yesOr,noOr) = partition (\(_,n) -> case n of {ProvenOr _ _ _ -> True; _ -> False}) . Map.toList $ i2n
+               in  (g {prvgIdNdMp = Map.fromList noOr}, g {prvgIdNdMp = Map.fromList yesOr}, assocLKeys yesOr)
           (gPrune,prunePois)
             = prvnPruneHighCost isPrCheap g
           pruneStartPoiL
@@ -1343,7 +1343,7 @@ prfPredsPruneProvenGraph isPrCheap g@(ProvenGraph i2n p2i p2oi p2fi)
           backPois
             = sharePois `poisApp` prunePois
           origRestorePois
-            = PoiSubst (listToFM [ (i,o) | o <- prvgOrigs g, n <- maybeToList (lookupFM m o), o /= n, (i,n') <- fmToList m, n' == n ])
+            = PoiSubst (Map.fromList [ (i,o) | o <- prvgOrigs g, n <- maybeToList (Map.lookup o m), o /= n, (i,n') <- Map.toList m, n' == n ])
             where m = poisMp backPois
           fullBackPois
             = origRestorePois `poisApp` backPois

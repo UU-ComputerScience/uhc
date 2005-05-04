@@ -9,7 +9,7 @@
 %%% Pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 import(Data.Maybe,Data.List,Data.FiniteMap,Data.Set as Set,UU.Pretty)
+%%[9 import(Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty)
 %%]
 
 %%[9 import(EHTy,EHTyPretty,EHTyFitsInCommon,EHTyQuantify,EHCore,EHCorePretty,EHCoreSubst,EHCommon,EHGam,EHCnstr,EHSubstitutable)
@@ -65,7 +65,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-newtype PoiSubst = PoiSubst {poisMp :: FiniteMap PredOccId PredOccId}
+newtype PoiSubst = PoiSubst {poisMp :: Map.Map PredOccId PredOccId}
 %%]
 
 %%[9
@@ -75,14 +75,14 @@ class PoiSubstitutable a where
   poisApp :: PoiSubst -> a -> a
 
 instance PoiSubstitutable PredOccId where
-  poisApp (PoiSubst m) poi = maybe poi id . lookupFM m $ poi
+  poisApp (PoiSubst m) poi = maybe poi id . Map.lookup poi $ m
 
 instance PoiSubstitutable a => PoiSubstitutable [a] where
   poisApp s = map (poisApp s)
 
 instance PoiSubstitutable PoiSubst where
   poisApp (PoiSubst m1) (PoiSubst m2)
-    = PoiSubst (mapFM (\_ i -> maybe i id (lookupFM m1 i)) m2 `plusFM` m1)
+    = PoiSubst (m1 `Map.union` Map.map (\i -> maybe i id (Map.lookup i m1)) m2)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -168,19 +168,19 @@ instance PP ProvenNode where
 %%[9
 data ProvenGraph
   =  ProvenGraph
-       { prvgIdNdMp             :: FiniteMap PredOccId ProvenNode
-       , prvgPrIdMp             :: FiniteMap Pred [PredOccId]
-       , prvgPrOrigIdMp         :: FiniteMap Pred [PredOccId]
-       , prvgPrUsedFactIdMp     :: FiniteMap Pred [PredOccId]
+       { prvgIdNdMp             :: Map.Map PredOccId ProvenNode
+       , prvgPrIdMp             :: Map.Map Pred [PredOccId]
+       , prvgPrOrigIdMp         :: Map.Map Pred [PredOccId]
+       , prvgPrUsedFactIdMp     :: Map.Map Pred [PredOccId]
        }
 
 prvgAddPrUids :: Pred -> [PredOccId] -> ProvenGraph -> ProvenGraph
 prvgAddPrUids pr uidL g@(ProvenGraph _ p2i _ _)
-  =  g {prvgPrIdMp = addToFM_C (++) p2i pr uidL}
+  =  g {prvgPrIdMp = Map.insertWith (++) pr uidL p2i}
 
 prvgAddNd :: PredOccId -> ProvenNode -> ProvenGraph -> ProvenGraph
 prvgAddNd uid nd g@(ProvenGraph i2n _ _ _)
-  =  g {prvgIdNdMp = addToFM i2n uid nd}
+  =  g {prvgIdNdMp = Map.insert uid nd i2n}
 
 prvgAddPrNd :: Pred -> [PredOccId] -> ProvenNode -> ProvenGraph -> ProvenGraph
 prvgAddPrNd pr uidL@(uid:_) nd
@@ -192,10 +192,10 @@ instance Show ProvenGraph where
 instance PP ProvenGraph where
   pp (ProvenGraph i2n p2i p2oi p2fi)
     =      "Pr->Ids  :" >#< pp2i p2i
-       >-< "Id->Nd   :" >#< ppAssocLV (fmToList i2n)
+       >-< "Id->Nd   :" >#< ppAssocLV (Map.toList i2n)
        >-< "Pr->Orig :" >#< pp2i p2oi
        >-< "Pr->Facts:" >#< pp2i p2fi
-    where pp2i = ppAssocLV . assocLMapElt ppCommaList . fmToList
+    where pp2i = ppAssocLV . assocLMapElt ppCommaList . Map.toList
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -206,16 +206,16 @@ instance PP ProvenGraph where
 prvgCxBindLMap :: ProvenGraph -> CxBindLMap
 prvgCxBindLMap g@(ProvenGraph i2n _ _ p2fi)
   =  CxBindLMap
-     .  listToFM
+     .  Map.fromList
      .  map  (\i -> let dpdS = prvgReachableTo' True g [i]
-                    in  (i,[ b | (i,b) <- binds, i `elementOf` dpdS ])
+                    in  (i,[ b | (i,b) <- binds, i `Set.member` dpdS ])
              )
      $  leaveL
-  where   factPoiL = concat (eltsFM p2fi)
+  where   factPoiL = concat (Map.elems p2fi)
           leaveL = prvgAllLeaves g
-          leaveS = mkSet leaveL
-          binds  = [ (i,(CBind_Bind (poiHNm i) ev,i,(r `minusSet` mkSet les) `Set.intersect` leaveS))
-                   | (i,ProvenAnd _ _ les _ ev) <- fmToList i2n
+          leaveS = Set.fromList leaveL
+          binds  = [ (i,(CBind_Bind (poiHNm i) ev,i,(r `Set.minusSet` Set.fromList les) `Set.intersect` leaveS))
+                   | (i,ProvenAnd _ _ les _ ev) <- Map.toList i2n
                    , not (i `elem` factPoiL)
                    , let (r,_) = prvg2ReachableFrom g [i]
                    ]
@@ -227,9 +227,9 @@ prvgIntroBindL poiIsGlob topSort g@(ProvenGraph i2n _ _ _)
   = [ CBind_Bind (poiHNm i) ev
     | (i,ProvenAnd _ _ _ _ ev) <- introNoDpd ++ introGlob, not (isFact i)
     ]
-  where  introNoDpd     = [ nn | nn@(i,ProvenAnd _ es les _ _) <- fmToList i2n, null es, null les ]
-         introGlob      = [ (i,n) | i <- setToList (prvgSatisfiedNodeS True poiIsGlob g topSort)
-                                  , n <- maybeToList (lookupFM i2n i)
+  where  introNoDpd     = [ nn | nn@(i,ProvenAnd _ es les _ _) <- Map.toList i2n, null es, null les ]
+         introGlob      = [ (i,n) | i <- Set.toList (prvgSatisfiedNodeS True poiIsGlob g topSort)
+                                  , n <- maybeToList (Map.lookup i i2n)
                           ]
          isFact         = prvgIsFact g
 %%]
@@ -244,10 +244,10 @@ prvgLetHoleCSubst g@(ProvenGraph i2n _ _ _) peTGam cxBindLM
   = uidCBindLLToCSubst sBinds
   where  sBinds
            = [ (poiId iHole,mkCxBindLForPoiL (availPoiS i iArgs) cxBindLM iArgs)
-             | (i,ProvenAnd _ _ (iHole:iArgs) _ _) <- fmToList i2n
+             | (i,ProvenAnd _ _ (iHole:iArgs) _ _) <- Map.toList i2n
              ]
          availPoiS i iArgs
-           = peTGamPoiS (poiCxId i) peTGam `Set.union` mkSet iArgs `delFromSet` i
+           = i `Set.delete` (peTGamPoiS (poiCxId i) peTGam `Set.union` Set.fromList iArgs)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -255,53 +255,53 @@ prvgLetHoleCSubst g@(ProvenGraph i2n _ _ _) peTGam cxBindLM
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-prvgReachableFrom :: ProvenGraph -> [PredOccId] -> Set PredOccId
+prvgReachableFrom :: ProvenGraph -> [PredOccId] -> Set.Set PredOccId
 prvgReachableFrom (ProvenGraph i2n _ _ _)
   =  let  r uid reachSet
-            =  if uid `elementOf` reachSet
+            =  if uid `Set.member` reachSet
                then  reachSet
-               else  let  reachSet' = addToSet reachSet uid
-                     in   case lookupFM i2n uid of
+               else  let  reachSet' = Set.insert uid reachSet
+                     in   case Map.lookup uid i2n of
                                 Just (ProvenAnd _ es _ _ _ ) -> rr reachSet' es
                                 Just (ProvenOr  _ es _     ) -> rr reachSet' es
                                 _                            -> reachSet'
           rr = foldr r
-     in   rr emptySet
+     in   rr Set.empty
 %%]
 
 %%[9
-prvg2ReachableFrom' :: Bool -> ProvenGraph -> [PredOccId] -> (Set PredOccId,[PredOccId])
+prvg2ReachableFrom' :: Bool -> ProvenGraph -> [PredOccId] -> (Set.Set PredOccId,[PredOccId])
 prvg2ReachableFrom' hideLamArg (ProvenGraph i2n _ _ _) poiL
-  =  let  allPoiS = mkSet (keysFM i2n)
+  =  let  allPoiS = Set.fromList (Map.keys i2n)
           nextOf poi
-            =  case lookupFM i2n poi of
-                  Just (ProvenAnd _ es les _ _ ) -> mkSet es `minusSet` les'
-                                                 where les' = if hideLamArg then emptySet else mkSet les
-                  Just (ProvenOr  _ es _     )   -> mkSet es
-                  _                              -> emptySet
+            =  case Map.lookup poi i2n of
+                  Just (ProvenAnd _ es les _ _ ) -> Set.fromList es `Set.minusSet` les'
+                                                 where les' = if hideLamArg then Set.empty else Set.fromList les
+                  Just (ProvenOr  _ es _     )   -> Set.fromList es
+                  _                              -> Set.empty
           rr r@(reachSet,revTopSort) poiL
-            =  let  newPoiL = setToList newPoiS
-                    newPoiS = (unionManySets . map nextOf $ poiL) `minusSet` reachSet
-               in   if isEmptySet newPoiS
+            =  let  newPoiL = Set.toList newPoiS
+                    newPoiS = (Set.unions . map nextOf $ poiL) `Set.minusSet` reachSet
+               in   if Set.null newPoiS
                     then r
                     else rr (reachSet `Set.union` newPoiS,newPoiL ++ revTopSort) newPoiL
-          (s,l) = rr (mkSet poiL,poiL) poiL
-     in   (s `Set.intersect` allPoiS,filter (`elementOf` allPoiS) l)
+          (s,l) = rr (Set.fromList poiL,poiL) poiL
+     in   (s `Set.intersect` allPoiS,filter (`Set.member` allPoiS) l)
 %%]
 
 %%[9
-prvg2ReachableFrom :: ProvenGraph -> [PredOccId] -> (Set PredOccId,[PredOccId])
+prvg2ReachableFrom :: ProvenGraph -> [PredOccId] -> (Set.Set PredOccId,[PredOccId])
 prvg2ReachableFrom = prvg2ReachableFrom' False
 %%]
 
 %%[9
-prvgReachableTo' :: Bool -> ProvenGraph -> [PredOccId] -> Set PredOccId
+prvgReachableTo' :: Bool -> ProvenGraph -> [PredOccId] -> Set.Set PredOccId
 prvgReachableTo' hideLamArg (ProvenGraph i2n _ _ _)
-  =  let  allNd = eltsFM i2n
+  =  let  allNd = Map.elems i2n
           r uid reachSet
-            =  if uid `elementOf` reachSet
+            =  if uid `Set.member` reachSet
                then  reachSet
-               else  let  reachSet' = addToSet reachSet uid
+               else  let  reachSet' = Set.insert uid reachSet
                           reachFrom fromNd toUid
                             =  case fromNd of
                                  ProvenAnd _ es les _ _
@@ -313,13 +313,13 @@ prvgReachableTo' hideLamArg (ProvenGraph i2n _ _ _)
                                  ProvenOr  _ es _
                                     -> toUid `elem` es
                                  _  -> False
-                     in   rr reachSet' (keysFM . filterFM (\i n -> reachFrom n uid) $ i2n)
+                     in   rr reachSet' (Map.keys . Map.filter (\n -> reachFrom n uid) $ i2n)
           rr = foldr r
-     in   rr emptySet
+     in   rr Set.empty
 %%]
 
 %%[9
-prvgReachableTo :: ProvenGraph -> [PredOccId] -> Set PredOccId
+prvgReachableTo :: ProvenGraph -> [PredOccId] -> Set.Set PredOccId
 prvgReachableTo = prvgReachableTo' False
 %%]
 
@@ -330,13 +330,13 @@ prvgReachableTo = prvgReachableTo' False
 %%[9
 prvgOrigs :: ProvenGraph -> [PredOccId]
 prvgOrigs (ProvenGraph _ _ p2oi _)
-  =  concat (eltsFM p2oi)
+  =  concat (Map.elems p2oi)
 %%]
 
 %%[9
 prvgFactL :: ProvenGraph -> [PredOccId]
 prvgFactL (ProvenGraph _ _ _ p2fi)
-  =  concat (eltsFM p2fi)
+  =  concat (Map.elems p2fi)
 
 prvgIsFact :: ProvenGraph -> PredOccId -> Bool
 prvgIsFact g = (`elem` prvgFactL g)
@@ -349,19 +349,19 @@ prvgIsFact g = (`elem` prvgFactL g)
 
 %%[9
 prvgTopsortCompute
-  ::  Ord val =>  (val -> ProvenNode -> Set val -> res -> (Maybe val,Maybe upd)
+  ::  Ord val =>  (val -> ProvenNode -> Set.Set val -> res -> (Maybe val,Maybe upd)
                   ,PredOccId -> Maybe ProvenNode -> Maybe val
-                  ,Set val -> val -> Set val,res -> upd -> res,res
+                  ,Set.Set val -> val -> Set.Set val,res -> upd -> res,res
                   )
                   -> ProvenGraph -> [PredOccId] -> res
 prvgTopsortCompute (sat,valOf,updDone,updRes,stRes) g@(ProvenGraph i2n _ p2oi _) topSort
   = res
   where  (_,res)
            = foldr  (\poi rd@(done,res)
-                        ->  let  mbN = lookupFM i2n poi
+                        ->  let  mbN = Map.lookup poi i2n
                                  mbPoiVal = valOf poi mbN
                             in   case mbN of
-                                   Just n | isJust mbPoiVal && not (poiVal `elementOf` done)
+                                   Just n | isJust mbPoiVal && not (poiVal `Set.member` done)
                                        ->  (maybe done (updDone done) mbVal
                                            ,maybe res (updRes res) mbRes
                                            )
@@ -369,7 +369,7 @@ prvgTopsortCompute (sat,valOf,updDone,updRes,stRes) g@(ProvenGraph i2n _ p2oi _)
                                               poiVal = fromJust mbPoiVal
                                    _   ->  rd
                     )
-                    (emptySet,stRes)
+                    (Set.empty,stRes)
                     topSort
 %%]
 
@@ -380,7 +380,7 @@ prvgTopsortCompute (sat,valOf,updDone,updRes,stRes) g@(ProvenGraph i2n _ p2oi _)
 %%[9
 prvgAllLeaves :: ProvenGraph -> [PredOccId]
 prvgAllLeaves g@(ProvenGraph i2n _ p2oi _)
-  = keysFM (filterFM (const isLf) i2n) ++ prvgFactL g
+  = Map.keys (Map.filter isLf i2n) ++ prvgFactL g
   where  isLf (ProvenArg _ _) = True
          isLf _               = False
 %%]
@@ -388,12 +388,12 @@ prvgAllLeaves g@(ProvenGraph i2n _ p2oi _)
 %%[9
 prvgArgLeaves :: ProvenGraph -> [PredOccId] -> [Pred]
 prvgArgLeaves g@(ProvenGraph i2n _ p2oi _) topSort
-  =  filter (any (not . tvCatIsFixed) . eltsFM . tyFtvMp . predTy) l
-  where  provenAnds pr = [ n | n@(ProvenAnd ndPr _ _ _ _) <- eltsFM i2n, ndPr == pr ]
-         l = prvgTopsortCompute (sat,\_ mn -> fmap prvnPred mn,addToSet,flip (:),[]) g topSort
+  =  filter (any (not . tvCatIsFixed) . Map.elems . tyFtvMp . predTy) l
+  where  provenAnds pr = [ n | n@(ProvenAnd ndPr _ _ _ _) <- Map.elems i2n, ndPr == pr ]
+         l = prvgTopsortCompute (sat,\_ mn -> fmap prvnPred mn,flip Set.insert,flip (:),[]) g topSort
          isFact = prvgIsFact g
          dpdPrsOf (ProvenAnd _ es _ _ _)
-           = catMaybes . map (fmap prvnPred . lookupFM i2n) . filter (not . isFact) $ es
+           = catMaybes . map (\n -> fmap prvnPred . Map.lookup n $ i2n) . filter (not . isFact) $ es
          sat pr n prDoneS _
            =  case n of
                 ProvenAnd _ es _ _ _
@@ -408,8 +408,8 @@ prvgArgLeaves g@(ProvenGraph i2n _ p2oi _) topSort
                                  else (Nothing,Nothing)
                     | otherwise
                         ->  (Nothing,Nothing)
-           where  isOrig = pr `elemFM` p2oi
-                  needed n = any (`elementOf` prDoneS) (dpdPrsOf n)
+           where  isOrig = pr `Map.member` p2oi
+                  needed n = any (`Set.member` prDoneS) (dpdPrsOf n)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -417,15 +417,15 @@ prvgArgLeaves g@(ProvenGraph i2n _ p2oi _) topSort
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-prvgSatisfiedNodeS :: Bool -> (PredOccId -> Bool) -> ProvenGraph -> [PredOccId] -> Set PredOccId
+prvgSatisfiedNodeS :: Bool -> (PredOccId -> Bool) -> ProvenGraph -> [PredOccId] -> Set.Set PredOccId
 prvgSatisfiedNodeS hideLamArg satPoi
-  =  prvgTopsortCompute (sat,\i _ -> Just i,addToSet,addToSet,emptySet)
+  =  prvgTopsortCompute (sat,\i _ -> Just i,flip Set.insert,flip Set.insert,Set.empty)
   where  sat poi n _ res
            =  (Just poi,r)
            where  r =  case n of
                          ProvenAnd _ es les _ _
                            | satPoi poi || not (null es)
-                                           && all (\i -> i `elementOf` res || satPoi i || hideLamArg && i `elem` les) es
+                                           && all (\i -> i `Set.member` res || satPoi i || hideLamArg && i `elem` les) es
                              ->  Just poi
                          _   ->  Nothing
 %%]
@@ -437,20 +437,20 @@ prvgSatisfiedNodeS hideLamArg satPoi
 %%[9
 prvgBackToOrig :: ProvenGraph -> ProvenGraph
 prvgBackToOrig g@(ProvenGraph i2n p2i _ p2fi)
-  =  let  backL         =  [ (uid,o)  | (p,uidL@(i:is)) <- fmToList p2i
-                                      , let {mo = lookupFM p2fi p; o = maybe i head mo}
+  =  let  backL         =  [ (uid,o)  | (p,uidL@(i:is)) <- Map.toList p2i
+                                      , let {mo = Map.lookup p p2fi; o = maybe i head mo}
                                       , uid <- maybe is (const uidL) mo
                            ]
-          backFM        =  listToFM backL
-          backUid uid   =  maybe uid id (lookupFM backFM uid)
+          backFM        =  Map.fromList backL
+          backUid uid   =  maybe uid id (Map.lookup uid backFM)
           backCSubst    =  poiCExprLToCSubst . assocLMapElt mkCExprPrHole $ backL
           backN n       =  case n of
                              ProvenAnd pr es les c ev    -> ProvenAnd pr (map backUid es) (map backUid les) c (backCSubst `cSubstApp` ev)
                              ProvenOr pr es c            -> ProvenOr pr (map backUid es) c
                              ProvenShare pr e            -> ProvenShare pr (backUid e)
                              _                           -> n
-     in   g  { prvgIdNdMp = listToFM . map (\(i,n) -> (backUid i,backN n)) . fmToList $ i2n
-             , prvgPrIdMp = mapFM (\p l -> maybe l (\(i:_) -> [i]) (lookupFM p2fi p)) $ p2i
+     in   g  { prvgIdNdMp = Map.fromList . map (\(i,n) -> (backUid i,backN n)) . Map.toList $ i2n
+             , prvgPrIdMp = Map.mapWithKey (\p l -> maybe l (\(i:_) -> [i]) (Map.lookup p p2fi)) $ p2i
              }
 %%]
 
@@ -458,9 +458,9 @@ prvgBackToOrig g@(ProvenGraph i2n p2i _ p2fi)
 prvgShareMp :: ProvenGraph -> [PredOccId] -> PoiSubst
 prvgShareMp g@(ProvenGraph _ p2i p2oi _) topSort
   =  PoiSubst m
-  where  (m,_) = prvgTopsortCompute (sat,\i _ -> Just i,addToSet,upd,(emptyFM,emptyFM)) g topSort
-         upd (i2i,p2ii) (i1,i2,Just (pr,ii))  = (addToFM i2i i1 i2,addToFM p2ii pr (i2,ii))
-         upd (i2i,p2ii) (i1,i2,Nothing)       = (addToFM i2i i1 i2,p2ii)
+  where  (m,_) = prvgTopsortCompute (sat,\i _ -> Just i,flip Set.insert,upd,(Map.empty,Map.empty)) g topSort
+         upd (i2i,p2ii) (i1,i2,Just (pr,ii))  = (Map.insert i1 i2 i2i,Map.insert pr (i2,ii) p2ii)
+         upd (i2i,p2ii) (i1,i2,Nothing)       = (Map.insert i1 i2 i2i,p2ii)
          sat i n _ res@(i2i,p2ii)
            =  (Just i,r)
            where r =  case n of
@@ -476,23 +476,23 @@ prvgShareMp g@(ProvenGraph _ p2i p2oi _) topSort
                                 ->  Just (i,shI,Nothing)
                             | otherwise
                                 ->  Just (i,i,Just (pr,esShL))
-                            where  esShL = map (\i -> maybe i id (lookupFM i2i i)) es
+                            where  esShL = map (\i -> maybe i id (Map.lookup i i2i)) es
                         _   ->  Nothing
-                   where  mbSh        = lookupFM p2ii (prvnPred n)
+                   where  mbSh        = Map.lookup (prvnPred n) p2ii
                           (shI,shEs)  = fromJust mbSh
 %%]
 
 %%[9
-prvg2BackMp :: ProvenGraph -> FiniteMap PredOccId PredOccId
+prvg2BackMp :: ProvenGraph -> Map.Map PredOccId PredOccId
 prvg2BackMp g@(ProvenGraph i2n p2i p2oi _)
   =  let  isFact         =  prvgIsFact g
-          argPoiS        =  mkSet [ i | (i,n) <- fmToList i2n, prvnIsArg n ]
-          isArg          =  (`elementOf` argPoiS)
-          mkBack b       =  listToFM [ (bp,p) | (pr,(p:pL)) <- b, bp <- maybe [] id (lookupFM p2i pr) ++ pL, not (isFact bp) ]
-          backL          =  fmToList p2oi
+          argPoiS        =  Set.fromList [ i | (i,n) <- Map.toList i2n, prvnIsArg n ]
+          isArg          =  (`Set.member` argPoiS)
+          mkBack b       =  Map.fromList [ (bp,p) | (pr,(p:pL)) <- b, bp <- maybe [] id (Map.lookup pr p2i) ++ pL, not (isFact bp) ]
+          backL          =  Map.toList p2oi
           backOrigMp     =  mkBack backL
-          backIntermMp   =  mkBack (fmToList p2i)
-     in   backIntermMp `plusFM` backOrigMp
+          backIntermMp   =  mkBack (Map.toList p2i)
+     in   backOrigMp `Map.union` backIntermMp
 %%]
 
 %%[9
@@ -500,13 +500,13 @@ prvgAppPoiSubst :: PoiSubst -> ProvenGraph -> ProvenGraph
 prvgAppPoiSubst pois g@(ProvenGraph i2n p2i p2oi p2fi)
   =  let  backPoi       =  (pois `poisApp`)
           backPoiL      =  nub . map backPoi
-          backPrFM      =  mapFM (\_ l -> backPoiL l)
+          backPrFM      =  Map.map backPoiL
           backN n       =  case n of
                              ProvenAnd pr es les c ev    -> ProvenAnd pr (backPoiL es) (backPoiL les) c ev
                              ProvenOr pr es c            -> ProvenOr pr (backPoiL es) c
                              ProvenShare pr e            -> ProvenShare pr (backPoi e)
                              _                           -> n
-     in   g  { prvgIdNdMp = listToFM . map (\(i,n) -> (backPoi i,backN n)) . fmToList $ i2n
+     in   g  { prvgIdNdMp = Map.fromList . map (\(i,n) -> (backPoi i,backN n)) . Map.toList $ i2n
              , prvgPrIdMp = backPrFM p2i
              , prvgPrOrigIdMp = backPrFM p2oi
              }
@@ -519,7 +519,7 @@ prvgAppPoiSubst pois g@(ProvenGraph i2n p2i p2oi p2fi)
 %%[9
 data ProofState
   =  ProofState     { prfs2ProvenGraph        :: ProvenGraph     , prfs2Uniq               :: UID
-                    , prfs2PredsToProve       :: [PredOcc]       , prfsId2Depth            :: FiniteMap PredOccId Int
+                    , prfs2PredsToProve       :: [PredOcc]       , prfsId2Depth            :: Map.Map PredOccId Int
                     , prfs2PrElimTGam         :: PrElimTGam      , prfs2ErrL               :: [Err]
                     }
 
@@ -541,7 +541,7 @@ instance PP ProofState where
 prfsAddPrOccL :: [PredOcc] -> Int -> ProofState -> ProofState
 prfsAddPrOccL prOccL depth st
   =  st  { prfs2PredsToProve = prOccL ++ prfs2PredsToProve st
-         , prfsId2Depth = prfsId2Depth st `plusFM` listToFM [ (poPoi po,depth) | po <- prOccL ]
+         , prfsId2Depth = Map.fromList [ (poPoi po,depth) | po <- prOccL ] `Map.union` prfsId2Depth st
          }
 %%]
 
@@ -663,8 +663,8 @@ peTGamAddKnPrL ci i prL g
             (g,[],[])
             (zip (map (mkPrId ci) . mkNewUIDL (length prL) $ i) prL)
 
-peTGamPoiS :: PrfCtxtId -> PrElimTGam -> Set PredOccId
-peTGamPoiS ci = unionManySets . map (mkSet . map rulId . pegiRuleL) . tgamElts ci
+peTGamPoiS :: PrfCtxtId -> PrElimTGam -> Set.Set PredOccId
+peTGamPoiS ci = Set.unions . map (Set.fromList . map rulId . pegiRuleL) . tgamElts ci
 %%]
 
 

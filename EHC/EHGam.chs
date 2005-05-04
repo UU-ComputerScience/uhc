@@ -57,7 +57,7 @@
 %%[7 export(mkTGIData)
 %%]
 
-%%[8 import(Data.Maybe,Data.FiniteMap,EHCore) export(gamUpd,DataTagMp)
+%%[8 import(Data.Maybe,qualified Data.Map as Map,EHCore) export(gamUpd,DataTagMp)
 %%]
 
 %%[8 export(DataGam,DataGamInfo(..),mkDGI)
@@ -231,47 +231,47 @@ gamUpdAdd k v upd g = tgamUpdAdd (tgamSize1 g) k v upd g
 %%[9
 data TreeGam i k v
   =  TreeGam
-        { tgamEntriesOf :: FiniteMap i (Maybe i,FiniteMap k [v])
+        { tgamEntriesOf :: Map.Map i (Maybe i,Map.Map k [v])
         }
 
 instance Show (TreeGam i k v) where
   show _ = "TreeGam"
 
 emptyTGam1 :: TreeGam i k v
-emptyTGam1 = TreeGam emptyFM
+emptyTGam1 = TreeGam Map.empty
 
 emptyTGam :: Ord i => i -> TreeGam i k v
-emptyTGam i = TreeGam (i `unitFM` (Nothing,emptyFM))
+emptyTGam i = TreeGam (i `Map.singleton` (Nothing,Map.empty))
 
 tgamSize1 :: TreeGam i k v -> Int
-tgamSize1 = sizeFM . tgamEntriesOf
+tgamSize1 = Map.size . tgamEntriesOf
 
 tgamUnit :: i -> k -> v -> TreeGam i k v
-tgamUnit i k v = TreeGam (i `unitFM` (Nothing,k `unitFM` [v]))
+tgamUnit i k v = TreeGam (i `Map.singleton` (Nothing,k `Map.singleton` [v]))
 
-tgamFoldr1 :: Ord i => i -> (i -> Maybe i -> FiniteMap k [v] -> r -> r) -> r -> TreeGam i k v -> r
+tgamFoldr1 :: Ord i => i -> (i -> Maybe i -> Map.Map k [v] -> r -> r) -> r -> TreeGam i k v -> r
 tgamFoldr1 i fr r g
-  =  case lookupFM (tgamEntriesOf g) i of
+  =  case Map.lookup i (tgamEntriesOf g) of
         Just (n,e)  -> fr i n e (maybe r (\i' -> tgamFoldr1 i' fr r g) n)
         Nothing     -> r
 
 tgamFoldr2 :: Ord i => i -> (k -> [v] -> r -> r) -> r -> TreeGam i k v -> r
-tgamFoldr2 i fr r g = tgamFoldr1 i (\_ _ e r -> foldFM fr r e) r g
+tgamFoldr2 i fr r g = tgamFoldr1 i (\_ _ e r -> Map.foldWithKey fr r e) r g
 
 tgamFoldr :: Ord i => i -> (k -> v -> r -> r) -> r -> TreeGam i k v -> r
 tgamFoldr i fr r g = tgamFoldr2 i (\k (v:_) r -> fr k v r) r g
 
-tgamMapThr1 :: Ord i => i -> (FiniteMap k [v] -> t -> (FiniteMap k' [v'],t)) -> t -> TreeGam i k v -> (TreeGam i k' v',t)
+tgamMapThr1 :: Ord i => i -> (Map.Map k [v] -> t -> (Map.Map k' [v'],t)) -> t -> TreeGam i k v -> (TreeGam i k' v',t)
 tgamMapThr1 i f thr
   =  tgamFoldr1 i  (\i n e (g,t) ->  let  (e',t') = f e t
-                                     in   (g {tgamEntriesOf = addToFM (tgamEntriesOf g) i (n,e')},t')
+                                     in   (g {tgamEntriesOf = Map.insert i (n,e') (tgamEntriesOf g)},t')
                    )
                    (emptyTGam1,thr)
 
 tgamMapThr2 :: (Ord i,Ord k') => i -> (k -> [v] -> t -> (k',[v'],t)) -> t -> TreeGam i k v -> (TreeGam i k' v',t)
 tgamMapThr2 i f
-  =  tgamMapThr1 i  (\e t -> foldFM (\k vs (e,t) -> let (k',vs',t') = f k vs t in (addToFM e k' vs',t'))
-                                    (emptyFM,t) e
+  =  tgamMapThr1 i  (\e t -> Map.foldWithKey (\k vs (e,t) -> let (k',vs',t') = f k vs t in (Map.insert k' vs' e,t'))
+                                             (Map.empty,t) e
                     )
 
 tgamMapThr :: (Ord i,Ord k') => i -> (k -> v -> t -> (k',v',t)) -> t -> TreeGam i k v -> (TreeGam i k' v',t)
@@ -283,30 +283,30 @@ tgamMap i f = fst . tgamMapThr i (\k v _ -> let (k',v') = f (k,v) in (k',v',()))
 tgamUnzip :: (Ord i,Ord k) => i -> TreeGam i k (v1,v2) -> (TreeGam i k v1,TreeGam i k v2)
 tgamUnzip i
   =  tgamFoldr1 i  (\i n e (g1,g2)
-                        ->  let (e1,e2) = foldFM (\k ((v1,v2):_) (e1,e2) -> (addToFM e1 k [v1],addToFM e2 k [v2])) (emptyFM,emptyFM) e
-                            in  (g1 {tgamEntriesOf = addToFM (tgamEntriesOf g1) i (n,e1)}
-                                ,g2 {tgamEntriesOf = addToFM (tgamEntriesOf g2) i (n,e2)}
+                        ->  let (e1,e2) = Map.foldWithKey (\k ((v1,v2):_) (e1,e2) -> (Map.insert k [v1] e1,Map.insert k [v2] e2)) (Map.empty,Map.empty) e
+                            in  (g1 {tgamEntriesOf = Map.insert i (n,e1) (tgamEntriesOf g1)}
+                                ,g2 {tgamEntriesOf = Map.insert i (n,e2) (tgamEntriesOf g2)}
                                 )
                    )
                    (emptyTGam1,emptyTGam1)
 
 tgamLookupAll1 :: (Ord i,Ord k) => i -> TreeGam i k v -> k -> [[v]]
-tgamLookupAll1 i g k = tgamFoldr1 i (\_ _ e r -> maybe r (:r) (lookupFM e k)) [] g
+tgamLookupAll1 i g k = tgamFoldr1 i (\_ _ e r -> maybe r (:r) (Map.lookup k e)) [] g
 
 tgamLookupAll :: (Ord i,Ord k) => i -> TreeGam i k v -> k -> [v]
 tgamLookupAll i g = map head . tgamLookupAll1 i g
 
 tgamLookup1 :: (Ord i,Ord k) => i -> TreeGam i k v -> k -> Maybe [v]
-tgamLookup1 i g k = tgamFoldr1 i (\_ _ e r -> maybe r Just (lookupFM e k)) Nothing g
+tgamLookup1 i g k = tgamFoldr1 i (\_ _ e r -> maybe r Just (Map.lookup k e)) Nothing g
 
 tgamLookup :: (Ord i,Ord k) => i -> TreeGam i k v -> k -> Maybe v
 tgamLookup i g = fmap head . tgamLookup1 i g
 
-tgamToFM1 :: (Ord i,Ord k) => i -> TreeGam i k v -> FiniteMap k [v]
-tgamToFM1 i = tgamFoldr1 i (\_ _ e e' -> e' `plusFM` e) emptyFM
+tgamToFM1 :: (Ord i,Ord k) => i -> TreeGam i k v -> Map.Map k [v]
+tgamToFM1 i = tgamFoldr1 i (\_ _ e e' -> e `Map.union` e') Map.empty
 
-tgamToFM :: (Ord i,Ord k) => i -> TreeGam i k v -> FiniteMap k v
-tgamToFM i = mapFM (\k (v:_) -> v) . tgamToFM1 i
+tgamToFM :: (Ord i,Ord k) => i -> TreeGam i k v -> Map.Map k v
+tgamToFM i = Map.map (\(v:_) -> v) . tgamToFM1 i
 
 tgamToAssocL2 :: Ord i => i -> TreeGam i k v -> AssocL k [v]
 tgamToAssocL2 i = tgamFoldr2 i (\k vs kvs -> (k,vs) : kvs) []
@@ -315,12 +315,12 @@ tgamToAssocL :: Ord i => i -> TreeGam i k v -> AssocL k v
 tgamToAssocL i = tgamFoldr i (\k v kvs -> (k,v) : kvs) []
 
 tgamPushNew :: Ord i => i -> i -> TreeGam i k v -> TreeGam i k v
-tgamPushNew i iNew g = g {tgamEntriesOf = addToFM (tgamEntriesOf g) iNew (Just i,emptyFM)}
+tgamPushNew i iNew g = g {tgamEntriesOf = Map.insert iNew (Just i,Map.empty) (tgamEntriesOf g)}
 
 tgamAddGam :: (Ord i,Ord k) => i -> i -> TreeGam i k v -> TreeGam i k v -> TreeGam i k v
 tgamAddGam i1 i2 g1 g2
-  =  case lookupFM (tgamEntriesOf g1) i1 of
-        Just (n,e)  -> g1 {tgamEntriesOf = addToFM (tgamEntriesOf g1) i1 (n,plusFM_C (flip (++)) e (tgamToFM1 i2 g2))}
+  =  case Map.lookup i1 (tgamEntriesOf g1) of
+        Just (n,e)  -> g1 {tgamEntriesOf = Map.insert i1 (n,Map.unionWith (++) (tgamToFM1 i2 g2) e) (tgamEntriesOf g1)}
         Nothing     -> g1
 
 tgamPushGam :: (Ord i,Ord k) => i -> i -> i -> TreeGam i k v -> TreeGam i k v -> TreeGam i k v
@@ -331,10 +331,10 @@ tgamAdd i g k v = tgamAddGam i i g (tgamUnit i k v)
 
 tgamPop :: Ord i => i -> i -> TreeGam i k v -> (TreeGam i k v,Maybe i,TreeGam i k v)
 tgamPop i iPop g
-  =  case lookupFM (tgamEntriesOf g) i of
-        Just (n,e)  ->  (TreeGam (iPop `unitFM` (Nothing,e))
+  =  case Map.lookup i (tgamEntriesOf g) of
+        Just (n,e)  ->  (TreeGam (iPop `Map.singleton` (Nothing,e))
                         ,n
-                        ,g {tgamEntriesOf = delFromFM (tgamEntriesOf g) i}
+                        ,g {tgamEntriesOf = Map.delete i (tgamEntriesOf g)}
                         )
         Nothing     ->  (emptyTGam iPop,Nothing,g)
 
@@ -342,12 +342,12 @@ tgamTop :: Ord i => i -> i -> TreeGam i k v -> TreeGam i k v
 tgamTop i iTop g = let (g',_,_) = tgamPop i iTop g in g'
 
 assocLToTGam :: Ord k => i -> AssocL k v -> TreeGam i k v
-assocLToTGam i l = TreeGam (i `unitFM` (Nothing,listToFM . assocLMapElt (:[]) $ l))
+assocLToTGam i l = TreeGam (i `Map.singleton` (Nothing,Map.fromList . assocLMapElt (:[]) $ l))
 
 tgamMbUpd :: (Ord i,Ord k) => i -> k -> (k -> v -> v) -> TreeGam i k v -> Maybe (TreeGam i k v)
 tgamMbUpd i k f g
-  =  tgamFoldr1 i  (\i n e mg -> case lookupFM e k of
-                                   Just (v:_)   -> Just (g {tgamEntriesOf = addToFM (tgamEntriesOf g) i (n,addToFM e k [f k v])})
+  =  tgamFoldr1 i  (\i n e mg -> case Map.lookup k e of
+                                   Just (v:_)   -> Just (g {tgamEntriesOf = Map.insert i (n,Map.insert k [f k v] e) (tgamEntriesOf g)})
                                    Nothing      -> mg
                    )
                    Nothing g
@@ -529,7 +529,7 @@ mkTGI t k = mkTGIData t k Ty_Any
 %%]
 
 %%[8.DataTagMp
-type DataTagMp = FiniteMap HsName CTag
+type DataTagMp = Map.Map HsName CTag
 %%]
 
 %%[8.TyGamInfo
@@ -544,7 +544,7 @@ mkTGIData :: Ty -> Ty -> Ty -> DataTagMp -> TyGamInfo
 mkTGIData t k d m = TyGamInfo t k d m
 
 mkTGI :: Ty -> Ty -> TyGamInfo
-mkTGI t k = mkTGIData t k Ty_Any emptyFM
+mkTGI t k = mkTGIData t k Ty_Any Map.empty
 
 %%[6.tyGamLookup -1.tyGamLookup
 tyGamLookup :: TyGam -> HsName -> Maybe TyGamInfo
@@ -642,8 +642,8 @@ instance Substitutable v => Substitutable (Gam k v) where
 
 %%[9.Substitutable.TreeGam -2.Substitutable.Gam
 instance Substitutable v => Substitutable (TreeGam i k v) where
-  s |=> g    =   g {tgamEntriesOf = mapFM (\_ (n,e) -> (n,mapFM (\k v -> s |=> v) e)) (tgamEntriesOf g)}
-  ftv   g    =   unionL . map (ftv . map head . eltsFM . snd) . eltsFM . tgamEntriesOf $ g
+  s |=> g    =   g {tgamEntriesOf = Map.map (\(n,e) -> (n,Map.map (s |=>) e)) (tgamEntriesOf g)}
+  ftv   g    =   unionL . map (ftv . map head . Map.elems . snd) . Map.elems . tgamEntriesOf $ g
 %%]
 
 %%[2
@@ -686,10 +686,10 @@ instance (PP k, PP v) => PP (Gam k v) where
 
 %%[9.PP.Gam -1.PP.Gam
 instance (PP i, PP k, PP v) => PP (TreeGam i k v) where
-  pp g = ppAssocLV . assocLMapElt (\(n,e) -> pp n >|< ":" >|< (ppAssocL . fmToList $ e)) . fmToList . tgamEntriesOf $ g
+  pp g = ppAssocLV . assocLMapElt (\(n,e) -> pp n >|< ":" >|< (ppAssocL . Map.toList $ e)) . Map.toList . tgamEntriesOf $ g
 %%]
-  pp g = ppAssocLV . assocLMapElt (\(n,e) -> pp n >|< ":" >|< (ppAssocL . fmToList $ e)) . fmToList . tgamEntriesOf $ g
-  pp g = ppAssocL . assocLMapElt (\(n,e) -> pp n >|< ":" >|< (ppAssocL . fmToList $ e)) . fmToList . tgamEntriesOf $ g
+  pp g = ppAssocLV . assocLMapElt (\(n,e) -> pp n >|< ":" >|< (ppAssocL . Map.toList $ e)) . Map.toList . tgamEntriesOf $ g
+  pp g = ppAssocL . assocLMapElt (\(n,e) -> pp n >|< ":" >|< (ppAssocL . Map.toList $ e)) . Map.toList . tgamEntriesOf $ g
 
 %%[1.PP.ValGamInfo
 instance PP ValGamInfo where

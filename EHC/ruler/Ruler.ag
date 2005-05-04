@@ -6,8 +6,8 @@ import Data.Maybe
 import Data.Char
 import IO
 import Data.List
-import Data.Set as Set
-import Data.FiniteMap
+import qualified Data.Set as Set
+import qualified Data.Map as Map
 import FPath
 import Utils
 import PPUtils
@@ -354,10 +354,10 @@ jtyUnPPify t
       JTy_PP p          -> JTy_Any
       _                 -> t
 
-type Binds = FiniteMap String JTy
+type Binds = Map.Map String JTy
 data FIOut = FIOut {foTy :: JTy, foErrL :: PP_DocL, foCoe :: JTy -> JTy, foBinds :: Binds}
 
-emptyFIOut = FIOut {foTy = JTy_Any, foErrL = [], foCoe = id, foBinds = emptyFM}
+emptyFIOut = FIOut {foTy = JTy_Any, foErrL = [], foCoe = id, foBinds = Map.empty}
 
 foHasErrs :: FIOut -> Bool
 foHasErrs = not . null . foErrL
@@ -367,8 +367,8 @@ jtyFitsIn ty1 ty2
   = let res t = emptyFIOut {foTy = t}
         err p = emptyFIOut {foErrL = [p]}
         coe fo c = fo {foCoe = c}
-        bnd fo n t = fo {foBinds = addToFM (foBinds fo) n t}
-        bnds fo fo1 fo2 = fo {foBinds = foBinds fo `plusFM` foBinds fo1 `plusFM` foBinds fo2}
+        bnd fo n t = fo {foBinds = Map.insert n t (foBinds fo)}
+        bnds fo fo1 fo2 = fo {foBinds = foBinds fo2 `Map.union` foBinds fo1 `Map.union` foBinds fo}
         f t1 JTy_Any
             = res t1
         f (JTy_Paren t1) (JTy_Paren t2)
@@ -393,7 +393,7 @@ jtyAppBinds b jt
   = let app t = case t of
                   JTy_Op nm p l r   -> JTy_Op nm p (app l) (app r)
                   JTy_Paren t'      -> JTy_Paren (app t')
-                  JTy_Var nm        -> maybe t id (lookupFM b nm)
+                  JTy_Var nm        -> maybe t id (Map.lookup nm b)
                   _                 -> t
      in app jt
 }
@@ -413,19 +413,20 @@ SEM JExpr
 -------------------------------------------------------------------------
 
 {
-data JViewSetGamInfo = JViewSetGamInfo {vwsgiViewNmS :: Set String}
-type JViewSetGam = FiniteMap String JViewSetGamInfo
+data JViewSetGamInfo = JViewSetGamInfo {vwsgiViewNmS :: Set.Set String}
+type JViewSetGam = Map.Map String JViewSetGamInfo
 }
 
 ATTR AllDecl [ | gathJViewSetGam: JViewSetGam | ]
 ATTR AllDecl AllRule AllRExpr AllJudge MbJExpr AllViewSel AllView AGRuleItf [ jViewSetGam: JViewSetGam | | ]
 
 SEM Decl
-  | ViewSet     lhs     .   gathJViewSetGam     =   addToFM @lhs.gathJViewSetGam @nm
+  | ViewSet     lhs     .   gathJViewSetGam     =   Map.insert @nm
                                                         (JViewSetGamInfo {vwsgiViewNmS = @viewSels.viewS})
+                                                        @lhs.gathJViewSetGam
 
 SEM AGItf
-  | AGItf       decls   .   gathJViewSetGam     =   emptyFM
+  | AGItf       decls   .   gathJViewSetGam     =   Map.empty
                         .   jViewSetGam         =   @decls.gathJViewSetGam
 
 -------------------------------------------------------------------------
@@ -434,7 +435,7 @@ SEM AGItf
 
 {
 data JGlobViewGamInfo = JGlobViewGamInfo {gvwgiVarGam :: JVarGam }
-type JGlobViewGam = FiniteMap String JGlobViewGamInfo
+type JGlobViewGam = Map.Map String JGlobViewGamInfo
 }
 
 ATTR AllDecl [ | gathJGlobViewGam: JGlobViewGam | ]
@@ -444,15 +445,15 @@ SEM Decl
   | View        view    .   viewJFmtMp          =   []
                         .   schemeTy            =   JTy_Any
                 lhs     .   gathJGlobViewGam    =   foldr (\n g
-                                                            -> addToFM g n . JGlobViewGamInfo
-                                                               . maybe @view.jVarGam ((`plusFM` @view.jVarGam) . gvwgiVarGam)
-                                                               . lookupFM g $ n
+                                                            -> (\v -> Map.insert n v g) . JGlobViewGamInfo
+                                                               . maybe @view.jVarGam ((@view.jVarGam `Map.union`) . gvwgiVarGam)
+                                                               . Map.lookup n $ g
                                                           )
                                                           @lhs.gathJGlobViewGam
                                                           (viewExpandNmL @lhs.jViewSetGam @view.nmL)
 
 SEM AGItf
-  | AGItf       decls   .   gathJGlobViewGam    =   emptyFM
+  | AGItf       decls   .   gathJGlobViewGam    =   Map.empty
                         .   jGlobViewGam        =   @decls.gathJGlobViewGam
 
 -------------------------------------------------------------------------
@@ -461,18 +462,19 @@ SEM AGItf
 
 {
 data JScmGamInfo = JScmGamInfo {sgiAllViewNmL :: [String], sgiViewNmL :: [String] }
-type JScmGam = FiniteMap String JScmGamInfo
+type JScmGam = Map.Map String JScmGamInfo
 }
 
 ATTR AllDecl [ | gathJScmGam: JScmGam | ]
 ATTR AllDecl AllRule AllRExpr Judge AllView AGRuleItf [ jScmGam: JScmGam | | ]
 
 SEM Decl
-  | Scheme      lhs     .   gathJScmGam =   addToFM @lhs.gathJScmGam @nm
-                                                (JScmGamInfo {sgiAllViewNmL= keysFM @viewJFmtGam, sgiViewNmL= map fst @allJFmtMp})
+  | Scheme      lhs     .   gathJScmGam =   Map.insert @nm
+                                                (JScmGamInfo {sgiAllViewNmL= Map.keys @viewJFmtGam, sgiViewNmL= map fst @allJFmtMp})
+                                                @lhs.gathJScmGam
 
 SEM AGItf
-  | AGItf       decls   .   gathJScmGam =   emptyFM
+  | AGItf       decls   .   gathJScmGam =   Map.empty
                         .   jScmGam     =   @decls.gathJScmGam
 
 -------------------------------------------------------------------------
@@ -481,7 +483,7 @@ SEM AGItf
 
 {
 data JFmtGamInfo = JFmtGamInfo {fgiTy :: JTy, fgiFullTy :: JTy, fgiReplTy :: JTy, fgiVarGam :: JVarGam }
-type JFmtGam = FiniteMap String JFmtGamInfo
+type JFmtGam = Map.Map String JFmtGamInfo
 }
 
 ATTR AllDecl [ | gathJFmtGam: JFmtGam | ]
@@ -491,21 +493,21 @@ ATTR AllView [ schemeTy: JTy | | ]
 
 SEM Decl
   | Scheme      loc     .   schemeTy    =   @jExpr.ty
-                        .   dfltJFmtMp  =   [("",JFmtGamInfo (jtyUnPPify @schemeTy) @schemeTy @jExprRepl.ty emptyFM)]
+                        .   dfltJFmtMp  =   [("",JFmtGamInfo (jtyUnPPify @schemeTy) @schemeTy @jExprRepl.ty Map.empty)]
                 views   .   viewJFmtMp  =   []
                 loc     .   allJFmtMp   =   @dfltJFmtMp ++ @views.viewJFmtMp
-                        .   viewJFmtGam =   listToFM . map (\(n,f) -> (@nm ++ n,f)) $ @allJFmtMp
-                lhs     .   gathJFmtGam =   plusFM @lhs.gathJFmtGam @viewJFmtGam
+                        .   viewJFmtGam =   Map.fromList . map (\(n,f) -> (@nm ++ n,f)) $ @allJFmtMp
+                lhs     .   gathJFmtGam =   Map.union @viewJFmtGam @lhs.gathJFmtGam
 
 SEM View
   | View        jExprRepl
-                        .   jVarGam     =   emptyFM
+                        .   jVarGam     =   Map.empty
                 lhs     .   viewJFmtMp  =   zip (viewExpandNmL @lhs.jViewSetGam @nmL) (repeat (JFmtGamInfo (jtyUnPPify @lhs.schemeTy) @lhs.schemeTy @jExprRepl.ty @jExprRepl.jVarGam))
                                             ++ @lhs.viewJFmtMp
 
 
 SEM AGItf
-  | AGItf       decls   .   gathJFmtGam =   emptyFM
+  | AGItf       decls   .   gathJFmtGam =   Map.empty
                         .   jFmtGam     =   @decls.gathJFmtGam
 
 -------------------------------------------------------------------------
@@ -515,7 +517,7 @@ SEM AGItf
 {
 mkScmFmt :: String -> (JFmtGamInfo -> JTy) -> JFmtGam -> (JTy,[PP_Doc])
 mkScmFmt n t g
-  = case lookupFM g n of
+  = case Map.lookup n g of
       Nothing  -> (JTy_Any,["RULER error, undefined:" >#< n])
       Just fgi -> let fo = jtyFitsIn (t fgi) (fgiTy fgi)
                    in (foBinds fo `jtyAppBinds` fgiReplTy fgi,foErrL fo)
@@ -526,7 +528,7 @@ SEM Judge
 
 SEM Decl
   | Rules       loc     .   (scmTy,errs)=   mkScmFmt @nm fgiFullTy @lhs.jFmtGam
-                        .   scmViewNmL  =   maybe [] sgiViewNmL (lookupFM @lhs.jScmGam @nm)
+                        .   scmViewNmL  =   maybe [] sgiViewNmL (Map.lookup @nm @lhs.jScmGam)
 
 -------------------------------------------------------------------------
 -- Environment for let bound redefs
@@ -534,19 +536,19 @@ SEM Decl
 
 {
 data JVarGamInfo = JVarGamInfo {vgiPP :: PP_Doc, vgiIsEmpty :: Bool}
-type JVarGam = FiniteMap String JVarGamInfo
+type JVarGam = Map.Map String JVarGamInfo
 }
 
 ATTR AllNT AGRuleItf [ jVarGam: JVarGam | | ]
 ATTR JExpr View [ | | jVarGam: JVarGam ]
 
 SEM AGItf
-  | AGItf       decls   .   jVarGam     =   emptyFM
+  | AGItf       decls   .   jVarGam     =   Map.empty
 
 SEM JExpr
-  | Let         bExpr   .   jVarGam     =   addToFM @lhs.jVarGam @nm (JVarGamInfo @vExpr.ppLaTeX @vExpr.isEmpty)
+  | Let         bExpr   .   jVarGam     =   Map.insert @nm (JVarGamInfo @vExpr.ppLaTeX @vExpr.isEmpty) @lhs.jVarGam
   | Var         loc     .   (ppLaTeX,isEmpty)
-                                        =   case lookupFM @lhs.jVarGam @nm of
+                                        =   case Map.lookup @nm @lhs.jVarGam of
                                               Nothing -> (text (mkLhs2TeXSafe @nm),False)
                                               Just v -> (vgiPP v,vgiIsEmpty v)
 
@@ -641,7 +643,7 @@ SEM AGItf
 SEM Decl
   | Scheme      loc     .   ppScmCmt    =   vlist
                                             . map (\(n,j) -> "%%" >#< n >#< ", template=" >#< ppJTy (fgiFullTy j) >#< ", view=" >#< ppJTy (fgiReplTy j))
-                                            . fmToList
+                                            . Map.toList
                                             $ @viewJFmtGam
                 lhs     .   ppLaTeX     =   @ppScmCmt
   | Rules       loc     .   mkNmBase    =   \n -> ppDots ([pp (optBaseNm @lhs.opts),n] ++ map pp @nmSuff)
@@ -651,9 +653,9 @@ SEM Decl
                                                         nBase = @mkNmBase (pp scm)
                                                         nScm = @mkNmScm (pp scm)
                                                         varGam
-                                                          = @lhs.jVarGam
-                                                            `plusFM` maybe emptyFM gvwgiVarGam (lookupFM @lhs.jGlobViewGam vw)
-                                                            `plusFM` maybe emptyFM fgiVarGam (lookupFM @lhs.jFmtGam scm)
+                                                          = maybe Map.empty fgiVarGam (Map.lookup scm @lhs.jFmtGam)
+                                                            `Map.union` maybe Map.empty gvwgiVarGam (Map.lookup vw @lhs.jGlobViewGam)
+                                                            `Map.union` @lhs.jVarGam
                                                         rs = [ (ppDots [nBase,n],h,rPP)
                                                              | (n,h,r) <- @rules.rules
                                                              , let (rPP,rSel) = ruleEval r vw @lhs.opts @lhs.jGlobViewGam @lhs.jViewSetGam @lhs.jScmGam @lhs.jFmtGam varGam
@@ -670,7 +672,7 @@ SEM Decl
                                                      in ppRs >-< ppSc >-< ppRu
                 lhs     .   ppLaTeX     =   vlist [ @mkPP v
                                                   | v <- @scmViewNmL
-                                                  , isEmptySet @viewSels.viewS || v `elementOf` viewExpandNm @lhs.jViewSetGam (setToList @viewSels.viewS)
+                                                  , Set.null @viewSels.viewS || v `Set.member` viewExpandNm @lhs.jViewSetGam (Set.toList @viewSels.viewS)
                                                   ]
 
 SEM Judge
@@ -756,15 +758,15 @@ SEM Rule
 
 {
 viewIsInSel :: JViewSetGam -> String -> String -> Bool
-viewIsInSel g vw selVw = selVw `elementOf` viewExpandNm g [vw]
+viewIsInSel g vw selVw = selVw `Set.member` viewExpandNm g [vw]
 
-viewExpandNm :: JViewSetGam -> [String] -> Set String
+viewExpandNm :: JViewSetGam -> [String] -> Set.Set String
 viewExpandNm g
-  = unionManySets . map e
-  where e v = maybe (unitSet v) (unionManySets . map e . setToList . vwsgiViewNmS) (lookupFM g v)
+  = Set.unions . map e
+  where e v = maybe (Set.singleton v) (Set.unions . map e . Set.toList . vwsgiViewNmS) (Map.lookup v g)
   
 viewExpandNmL :: JViewSetGam -> [String] -> [String]
-viewExpandNmL g = setToList . viewExpandNm g
+viewExpandNmL g = Set.toList . viewExpandNm g
 }
 
 ATTR AllViewSel RExprView Rule AGRuleItf [ | | viewIsSel USE {||} {False}: Bool ]
@@ -789,10 +791,10 @@ SEM Rule
 -- All views
 -------------------------------------------------------------------------
 
-ATTR AllViewSel [ | | viewS USE {`Set.union`} {emptySet}: {Set String} ]
+ATTR AllViewSel [ | | viewS USE {`Set.union`} {Set.empty}: {Set.Set String} ]
 
 SEM ViewSel
-  | One         lhs     .   viewS       =   unitSet @nm
+  | One         lhs     .   viewS       =   Set.singleton @nm
 
 -------------------------------------------------------------------------
 -- Empty expr?
@@ -829,6 +831,6 @@ SEM View
 -------------------------------------------------------------------------
 
 SEM View [ | | nmL: {[String]} ]
-  | View        loc     .   nmL         =   setToList @viewSels.viewS
+  | View        loc     .   nmL         =   Set.toList @viewSels.viewS
 
 

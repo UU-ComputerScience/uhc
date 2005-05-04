@@ -9,7 +9,7 @@
 %%% Inline let bindings for variables and constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Data.Maybe,Data.FiniteMap,EHCommon,EHCore,EHTy) export(cmodTrfInlineLetAlias)
+%%[8 hs import(Data.Maybe,qualified Data.Map as Map,EHCommon,EHCore,EHTy) export(cmodTrfInlineLetAlias)
 %%]
 
 %%[8.WRAPPER import(EHCoreAbsSyn)
@@ -32,29 +32,29 @@ cmodTrfInlineLetAlias cmod
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-type NmMp = FiniteMap HsName CExpr
+type NmMp = Map.Map HsName CExpr
 %%]
 
 %%[8
 ATTR AllCodeNT [ nmMp: NmMp | | ]
 
 SEM CodeAGItf
-  | AGItf       module      .   nmMp        =   emptyFM
+  | AGItf       module      .   nmMp        =   Map.empty
 
 SEM CExpr
   | Let         loc         .   allowTrf    =   not (@categ == CBindStrict || @categ == CBindFFI)
                             .   nmMp        =   if @allowTrf
-                                                then  @lhs.nmMp `plusFM`
-                                                        mapFM  (\n r ->  case r of
-                                                                           CExpr_Var nm -> maybe r id . lookupFM @lhs.nmMp $ nm
-                                                                           _            -> r
+                                                then  Map.map  (\r ->  case r of
+                                                                         CExpr_Var nm -> maybe r id . Map.lookup nm $ @lhs.nmMp
+                                                                         _            -> r
                                                                )
                                                                @binds.bindNmMp
+                                                      `Map.union` @lhs.nmMp
                                                 else  @lhs.nmMp
 %%]
                             .   nmMp        =   if @allowTrf
-                                                then  @lhs.nmMp `plusFM`
-                                                        mapFM (\n r -> maybe r id . lookupFM @lhs.nmMp $ r) @binds.bindNmMp
+                                                then  Map.map (\n r -> maybe r id . Map.lookup r $ @lhs.nmMp) @binds.bindNmMp
+                                                      `Map.union` @lhs.nmMp
                                                 else  @lhs.nmMp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -76,14 +76,14 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllBind [ | | bindNmMp USE {`plusFM`} {emptyFM}: NmMp ]
+ATTR AllBind [ | | bindNmMp USE {`Map.union`} {Map.empty}: NmMp ]
 ATTR AllBind [ | | bindL USE {++} {[]}: CBindL ]
 
 SEM CBind
   | Bind        lhs         .   (bindNmMp,bindL)
                                             =   if isJust @expr.mbRepl && @nm /= hsnMain
-                                                then (@nm `unitFM` fromJust @expr.mbRepl,[])
-                                                else (emptyFM,[@cTrf])
+                                                then (@nm `Map.singleton` fromJust @expr.mbRepl,[])
+                                                else (Map.empty,[@cTrf])
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -100,6 +100,6 @@ SEM CExpr
   | Let         lhs         .   cTrf        =   if @allowTrf
                                                 then mkCExprLet @categ @binds.bindL @body.cTrf
                                                 else @cTrf
-  | Var         lhs         .   cTrf        =   maybe @cTrf id . lookupFM @lhs.nmMp $ @nm
+  | Var         lhs         .   cTrf        =   maybe @cTrf id . Map.lookup @nm $ @lhs.nmMp
 %%]
 

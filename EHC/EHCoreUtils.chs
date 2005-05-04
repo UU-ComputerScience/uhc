@@ -9,7 +9,7 @@
 %%% Core utilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 import(Data.FiniteMap,EHCommon,EHTy,EHCore,EHGam) export(RCEEnv(..),emptyRCEEnv)
+%%[8 import(qualified Data.Map as Map,EHCommon,EHTy,EHCore,EHGam) export(RCEEnv(..),emptyRCEEnv)
 %%]
 
 %%[8 export(mkCExprStrictSatCase,mkCExprSelCase)
@@ -35,7 +35,7 @@ rceEnvDataAlts env t
           ->  case valGamLookup (rceValGam env) conNm of
                 Just vgi
                    ->  let  tyNm = tyAppFunConNm . snd . tyArrowArgsRes . vgiTy $ vgi
-                       in   maybe [] (eltsFM . dgiDataTagMp) . gamLookup (rceDataGam env) $ tyNm
+                       in   maybe [] (Map.elems . dgiDataTagMp) . gamLookup (rceDataGam env) $ tyNm
                 _  ->  []
        _  ->  []
 %%]

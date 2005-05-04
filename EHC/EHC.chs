@@ -12,7 +12,7 @@
 %%[1 module Main import(System, System.Console.GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, EHCommon, EHOpts,EHParser, EHMainAG)
 %%]
 
-%%[8 import (EHScanner,EHError,EHErrorPretty,FPath,Data.FiniteMap,Data.Maybe,Data.List,Directory)
+%%[8 import (EHScanner,EHError,EHErrorPretty,FPath,qualified Data.Map as Map,Data.Maybe,Data.List,Directory)
 %%]
 
 %%[8 import (EHCoreJava,EHCoreGrin,EHCorePretty)
@@ -100,7 +100,7 @@ data CompileRunState
 
 data CompileRun
   = CompileRun
-      { crCUCache       :: FiniteMap HsName CompileUnit
+      { crCUCache       :: Map.Map HsName CompileUnit
       , crCompileOrder  :: [[HsName]]
       , crOpts          :: EHCOpts
       , crState         :: CompileRunState
@@ -147,7 +147,7 @@ crSetInfos msg dp is cr
       _  -> cr {crState = CRSErrInfoL msg dp is}
 
 crMbCU :: HsName -> CompileRun -> Maybe CompileUnit
-crMbCU modNm cr = lookupFM (crCUCache cr) modNm
+crMbCU modNm cr = Map.lookup modNm (crCUCache cr)
 
 crCU :: HsName -> CompileRun -> CompileUnit
 crCU modNm = fromJust . crMbCU modNm
@@ -161,7 +161,7 @@ crCUFPath modNm cr = maybe emptyFPath cuFilePath (crMbCU modNm cr)
 crUpdCU :: HsName -> (CompileUnit -> IO CompileUnit) -> CompileRun -> IO CompileRun
 crUpdCU modNm upd cr
   = do { cu <- maybe (upd emptyCU) upd (crMbCU modNm cr)
-       ; return (cr {crCUCache = addToFM (crCUCache cr) modNm cu})
+       ; return (cr {crCUCache = Map.insert modNm cu (crCUCache cr)})
        }
 
 crSeq :: [CompileRun -> IO CompileRun] -> CompileRun -> IO CompileRun
@@ -406,7 +406,7 @@ doCompileRun fn opts
              aCompile cr    = crCompileOrderedCUs (crCompileOrder cr) cr
        ; cr <- crSeq [ aSetup, aCompile ]
                  (CompileRun
-                    { crCUCache = emptyFM, crCompileOrder = []
+                    { crCUCache = Map.empty, crCompileOrder = []
                     , crOpts = opts', crP1In = p1ib
                     , crState = CRSOk, crNextUID = uidStart, crHereUID = uidStart
                     })

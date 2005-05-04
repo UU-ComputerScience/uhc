@@ -118,10 +118,10 @@ SEM Expr
                                                     =   prfPredsDbg @lUniq4 (@fe {fePrElimTGam = @decls.prElimTGam}) @gath2PrfPrOccL
                             .   (bodyPrfFrPoiCxBindLM,bodyPrfIntroCBindL,bodyPrfCSubst,bodyPrfArgPrOccL,_,bodyPrfErrs)
                                                     =   prfPreds @lUniq5 (@fe {fePrElimTGam = @body.prElimTGam}) @gath2BodySubsPredL
-                            .   quantPrIdSet        =   unionManySets
-                                                        . map (unionManySets . map (cxbmDpdPoiS @prfFrPoiCxBindLM) . setToList . tqoInsPrIdSet)
+                            .   quantPrIdSet        =   Set.unions
+                                                        . map (Set.unions . map (cxbmDpdPoiS @prfFrPoiCxBindLM) . Set.toList . tqoInsPrIdSet)
                                                         . gamElts $ @tqoGam
-                            .   gathPredL           =   @gath2RemPrOccL ++ filter (not . (`elementOf` @quantPrIdSet) . poPoi) @prfArgPrOccL ++ @bodyPrfArgPrOccL
+                            .   gathPredL           =   @gath2RemPrOccL ++ filter (not . (`Set.member` @quantPrIdSet) . poPoi) @prfArgPrOccL ++ @bodyPrfArgPrOccL
                 lhs         .   gathPredL           =   @gathPredL
 %%]
 
@@ -162,7 +162,7 @@ SEM AGItf
 
 %%[9
 SEM Expr
-  | Lam AppTop  loc         .   availPoiS           =   peTGamPoiS @prfCtxtId @lPrElimTGam `Set.union` mkSet @poiLKnTl
+  | Lam AppTop  loc         .   availPoiS           =   peTGamPoiS @prfCtxtId @lPrElimTGam `Set.union` Set.fromList @poiLKnTl
   | Let LamImpl
                 loc         .   availPoiS           =   peTGamPoiS @prfCtxtId @lPrElimTGam
 %%]

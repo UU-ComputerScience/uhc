@@ -9,7 +9,7 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Data.Maybe,Data.FiniteMap,EHCommon,EHCore,EHTy) export(cmodTrfLetUnrec)
+%%[8 hs import(Data.Maybe,qualified Data.Map as Map,EHCommon,EHCore,EHTy) export(cmodTrfLetUnrec)
 %%]
 
 %%[8 hs import(EHDebug,UU.DData.Scc)
@@ -44,25 +44,25 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-type UseMp = FiniteMap HsName [HsName]
+type UseMp = Map.Map HsName [HsName]
 
 useMpComb :: UseMp -> UseMp -> UseMp
-useMpComb = plusFM_C (++)
+useMpComb = Map.unionWith (++)
 %%]
 
 %%[8
-ATTR AllCodeNT [ inNmL: {[HsName]} | | useMp USE {`useMpComb`} {emptyFM}: UseMp ]
+ATTR AllCodeNT [ inNmL: {[HsName]} | | useMp USE {`useMpComb`} {Map.empty}: UseMp ]
 
 SEM CodeAGItf
   | AGItf       module      .   inNmL       =   []
 
 SEM CExpr
-  | Var         lhs         .   useMp       =   listToFM (zip @lhs.inNmL (repeat [@nm]))
+  | Var         lhs         .   useMp       =   Map.fromList (zip @lhs.inNmL (repeat [@nm]))
   | Let         lhs         .   useMp       =   @remUseMp `useMpComb` @body.useMp
 
 SEM CBind
   | Bind        expr        .   inNmL       =   @nm : @lhs.inNmL
-                lhs         .   useMp       =   (@nm `unitFM` []) `useMpComb` @expr.useMp
+                lhs         .   useMp       =   (@nm `Map.singleton` []) `useMpComb` @expr.useMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -70,10 +70,10 @@ SEM CBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllBind [ | | bindMp USE {`plusFM`} {emptyFM}: {FiniteMap HsName CExpr} ]
+ATTR AllBind [ | | bindMp USE {`Map.union`} {Map.empty}: {Map.Map HsName CExpr} ]
 
 SEM CBind
-  | Bind        lhs         .   bindMp      =   @nm `unitFM` @expr.cTrf
+  | Bind        lhs         .   bindMp      =   @nm `Map.singleton` @expr.cTrf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -84,18 +84,18 @@ SEM CBind
 SEM CExpr
   | Let         loc         .   (remUseMp,cTrf)
                                             =   if @categ == CBindRec
-                                                then  let  h = filterFM (\k e -> k `elemFM` @binds.bindMp) @binds.useMp
-                                                           o = scc . fmToList $ h
-                                                           mk c ns b = mkCExprLet c [ CBind_Bind n e | n <- ns, e <- maybeToList (lookupFM @binds.bindMp n) ] b
+                                                then  let  h = Map.filterWithKey (\k e -> k `Map.member` @binds.bindMp) @binds.useMp
+                                                           o = scc . Map.toList $ h
+                                                           mk c ns b = mkCExprLet c [ CBind_Bind n e | n <- ns, e <- maybeToList (Map.lookup n @binds.bindMp) ] b
                                                            t = foldr (\bs b
                                                                          -> case bs of
-                                                                               [n] | n `elem` lookupWithDefaultFM h [] n
+                                                                               [n] | n `elem` Map.findWithDefault [] n h
                                                                                                 -> mk CBindRec bs b
                                                                                    | otherwise  -> mk CBindPlain bs b
                                                                                _                -> mk CBindRec bs b
                                                                      )
                                                                      @body.cTrf o
-                                                      in   (@binds.useMp `minusFM` h,t)
+                                                      in   (@binds.useMp `Map.difference` h,t)
                                                 else  (@binds.useMp,CExpr_Let @categ @binds.cTrf @body.cTrf)
 %%]
 

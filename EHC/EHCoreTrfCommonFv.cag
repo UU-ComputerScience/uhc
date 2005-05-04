@@ -1,4 +1,4 @@
-% $Id: EHC.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -14,20 +14,20 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllCodeNT [ | | fvS USE {`Set.union`} {emptySet}: FvS ]
-ATTR AllBind [ | | fvSMp USE {`plusFM`} {emptyFM}: FvSMp ]
+ATTR AllCodeNT [ | | fvS USE {`Set.union`} {Set.empty}: FvS ]
+ATTR AllBind [ | | fvSMp USE {`Map.union`} {Map.empty}: FvSMp ]
 
 SEM CExpr
-  | Lam         loc         .   fvS         =   @body.fvS `delFromSet` @arg
-  | Let         loc         .   fvS         =   (@body.fvS `Set.union` @binds.fvS) `minusSet` mkSet @binds.nmL
-  | Var         lhs         .   fvS         =   unitSet @nm
+  | Lam         loc         .   fvS         =   @arg `Set.delete` @body.fvS
+  | Let         loc         .   fvS         =   (@body.fvS `Set.union` @binds.fvS) `Set.minusSet` Set.fromList @binds.nmL
+  | Var         lhs         .   fvS         =   Set.singleton @nm
   | App         loc         .   fvS         =   @func.fvS `Set.union` @arg.fvS
 
 SEM CBind
-  | Bind        lhs         .   fvSMp       =   unitFM @nm @expr.fvS
+  | Bind        lhs         .   fvSMp       =   Map.singleton @nm @expr.fvS
 
 SEM CAlt
-  | Alt         loc         .   fvS         =   @expr.fvS `minusSet` mkSet @pats.nmL
+  | Alt         loc         .   fvS         =   @expr.fvS `Set.minusSet` Set.fromList @pats.nmL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

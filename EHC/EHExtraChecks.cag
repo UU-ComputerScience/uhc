@@ -36,8 +36,8 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
-checkClNms :: Set HsName -> [Err]
-checkClNms s = if isEmptySet s then [] else [Err_NamesNotIntrod (setToList s)]
+checkClNms :: Set.Set HsName -> [Err]
+checkClNms s = if Set.null s then [] else [Err_NamesNotIntrod (Set.toList s)]
 %%]
 
 %%[9

@@ -27,7 +27,7 @@
 %%[8 hs export(mkCExprStrictIn)
 %%]
 
-%%[8 hs import(Data.FiniteMap,Set,EHTy) export(FvS,FvSMp,cLevOuter,LevMp,fvLev,fvsLev,levMpAdd)
+%%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set,EHTy) export(FvS,FvSMp,cLevOuter,LevMp,fvLev,fvsLev,levMpAdd)
 %%]
 
 %%[8 hs export(mkCExprAddInt)
@@ -108,20 +108,20 @@ cbindLNub = nubBy (\(CBind_Bind n1 _) (CBind_Bind n2 _) -> n1 == n2)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
-newtype CxBindLMap = CxBindLMap (FiniteMap PredOccId [(CBind,PredOccId,Set PredOccId)])
+newtype CxBindLMap = CxBindLMap (Map.Map PredOccId [(CBind,PredOccId,Set.Set PredOccId)])
 
-emptyCxBindLMap = CxBindLMap emptyFM
+emptyCxBindLMap = CxBindLMap Map.empty
 
 infixr `plusCxBM`
 
 plusCxBM :: CxBindLMap -> CxBindLMap -> CxBindLMap
-plusCxBM (CxBindLMap m1) (CxBindLMap m2) = CxBindLMap (m1 `plusFM` m2)
+plusCxBM (CxBindLMap m1) (CxBindLMap m2) = CxBindLMap (m2 `Map.union` m1)
 
-cxbmDpdPoiS :: CxBindLMap -> PredOccId -> Set PredOccId
-cxbmDpdPoiS (CxBindLMap m) poi = maybe emptySet (unionManySets . map thd) (lookupFM m poi) `Set.union` unitSet poi
+cxbmDpdPoiS :: CxBindLMap -> PredOccId -> Set.Set PredOccId
+cxbmDpdPoiS (CxBindLMap m) poi = maybe Set.empty (Set.unions . map thd) (Map.lookup poi m) `Set.union` Set.singleton poi
 
 cxbmIntroPoiL :: CxBindLMap -> [PredOccId]
-cxbmIntroPoiL (CxBindLMap m) = nub [ i | l <- eltsFM m, (_,i,_) <- l ]
+cxbmIntroPoiL (CxBindLMap m) = nub [ i | l <- Map.elems m, (_,i,_) <- l ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -131,12 +131,12 @@ cxbmIntroPoiL (CxBindLMap m) = nub [ i | l <- eltsFM m, (_,i,_) <- l ]
 %%[9 hs
 mkCxBindLForPoiL' :: (PredOccId -> Bool) -> CxBindLMap -> [PredOccId] -> CBindL
 mkCxBindLForPoiL' isAvailPoi (CxBindLMap m) inclPoiL
-  = cbindLNub [ b | i <- inclPoiL, bs <- maybeToList (lookupFM m i), (b,_,dpd) <- bs, all isAvailPoi . setToList $ dpd ]
+  = cbindLNub [ b | i <- inclPoiL, bs <- maybeToList (Map.lookup i m), (b,_,dpd) <- bs, all isAvailPoi . Set.toList $ dpd ]
 %%]
 
 %%[9 hs
-mkCxBindLForPoiL :: Set PredOccId -> CxBindLMap -> [PredOccId] -> CBindL
-mkCxBindLForPoiL availPoiS = mkCxBindLForPoiL' (`elementOf` availPoiS)
+mkCxBindLForPoiL :: Set.Set PredOccId -> CxBindLMap -> [PredOccId] -> CBindL
+mkCxBindLForPoiL availPoiS = mkCxBindLForPoiL' (`Set.member` availPoiS)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -219,8 +219,8 @@ cvarUndefined = CExpr_Var hsnUndefined
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-type FvS = Set HsName
-type FvSMp = FiniteMap HsName FvS
+type FvS = Set.Set HsName
+type FvSMp = Map.Map HsName FvS
 %%]
 
 %%[8 hs
@@ -228,16 +228,16 @@ cLevOuter = 0
 %%]
 
 %%[8 hs
-type LevMp = FiniteMap HsName Int
+type LevMp = Map.Map HsName Int
 
 fvLev :: LevMp -> HsName -> Int
-fvLev lm = lookupWithDefaultFM lm cLevOuter
+fvLev lm n = Map.findWithDefault cLevOuter n lm
 
 fvsLev :: LevMp -> FvS -> Int
-fvsLev lm fvs = foldr (\n l -> fvLev lm n `max` l) cLevOuter . setToList $ fvs
+fvsLev lm fvs = foldr (\n l -> fvLev lm n `max` l) cLevOuter . Set.toList $ fvs
 
 levMpAdd :: LevMp -> FvSMp -> LevMp
-levMpAdd lm fvm = lm `plusFM` mapFM  (\_ fv -> fvsLev lm fv) fvm
+levMpAdd lm fvm = Map.map (fvsLev lm) fvm `Map.union` lm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

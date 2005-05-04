@@ -17,7 +17,7 @@ SEM AGItf
                                                     (foldr (\(c,b) e -> mkCExprLet c b e)
                                                         (mkCExprLet CBindPlain [CBind_Bind hsnMain @expr.letCBody] (CExpr_Var hsnMain))
                                                         @expr.letCBindL)
-                                                    [ (tn,fmToList m) | (tn,dgi) <- gamToAssocL @expr.gathDataGam, let m = dgiDataTagMp dgi ]
+                                                    [ (tn,Map.toList m) | (tn,dgi) <- gamToAssocL @expr.gathDataGam, let m = dgiDataTagMp dgi ]
 %%]
 
 %%[9
@@ -171,7 +171,7 @@ SEM PatExpr
   | AppTop Con  loc         .   finResTy    =   @lhs.finTyCnstr |=> @knResTy
                             .   tag         =   let  (c,_)  = tyAppFunArgs @finResTy
                                                      dgi    = fromJust . gamLookup @lhs.dataGam . tyConNm $ c
-                                                in   fromJust . lookupFM (dgiDataTagMp dgi) $ @appFunNm
+                                                in   fromJust . Map.lookup @appFunNm . dgiDataTagMp $ dgi
                             .   rest        =   CPatRest_Empty
   | Rec         loc         .   tag         =   CTagRec
                             .   rest        =   @recPatExpr.patCRest
@@ -190,7 +190,7 @@ SEM PatExpr
                             .   finResTGI   =   let  (c,_)  = tyAppFunArgs @finResTy
                                                      n      = tyConNm c
                                                 in   fromJust . tyGamLookup @lhs.tyGam $ n
-                            .   tag         =   fromJust . lookupFM (tgiDataTagMp @finResTGI) $ @appFunNm
+                            .   tag         =   fromJust . Map.lookup @appFunNm . tgiDataTagMp $ @finResTGI
 
 %%[8 hs
 type FieldSplitL = AssocL HsName (CExpr,CPat)

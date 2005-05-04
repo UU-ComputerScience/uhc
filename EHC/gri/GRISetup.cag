@@ -12,7 +12,7 @@
 %%[8 hs import(GRIRun,EHCommon,GrinCode) export(grGriSetup)
 %%]
 
-%%[8 hs import(Data.FiniteMap,Data.Array,Data.Array.IO)
+%%[8 hs import(qualified Data.Map as Map,Data.Array,Data.Array.IO)
 %%]
 
 %%[8.WRAPPER import(GrinCodeAbsSyn)
@@ -57,7 +57,7 @@ SEM GrModule
                                                                  = mkLamGlob 0 @bindL.lamGlobL
                                                      (p2vCode,n2pCaf,p2vCaf)
                                                                  = mkCafGlob (length n2pLam) @bindL.cafGlobL
-                                                     n2p'        = listToFM n2pLam `plusFM` listToFM n2pCaf
+                                                     n2p'        = Map.fromList n2pLam `Map.union` Map.fromList n2pCaf
                                                      p2v         = p2vLam ++ p2vCaf ++ p2vCode
                                                      sz          = length p2v
                                                      szAll       = sz + sz `div` 2

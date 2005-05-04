@@ -15,7 +15,7 @@
 %%[4 hs import(EHDebug,UU.Pretty)
 %%]
 
-%%[4 hs import(Data.Set as Set,Data.FiniteMap,Data.List as List)
+%%[4 hs import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List)
 %%]
 
 %%[4 import(EHTyAbsSyn,EHTyCommonAG)
@@ -92,7 +92,7 @@ defaultTyQuOpts = TyQuOpts False [1..]
 
 data TyQuOut
   = TyQuOut   { tqoTy               ::  Ty
-              , tqoInsPrIdSet       ::  Set PredOccId
+              , tqoInsPrIdSet       ::  Set.Set PredOccId
               , tqoImplsCnstr       ::  Cnstr
               }
 
@@ -190,11 +190,11 @@ SEM Impls
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4
-ATTR AllTy [ | | gathFxTvM USE {`plusFM`} {emptyFM}: TvCatMp ]
+ATTR AllTy [ | | gathFxTvM USE {`Map.union`} {Map.empty}: TvCatMp ]
 ATTR AllTy [ fxTvM: TvCatMp | | ]
 
 SEM Ty
-  | Var         lhs         .   gathFxTvM   =   if tvCatIsFixed @categ.self then @tv `unitFM` @categ.self else emptyFM
+  | Var         lhs         .   gathFxTvM   =   if tvCatIsFixed @categ.self then @tv `Map.singleton` @categ.self else Map.empty
 
 SEM TyAGItf
   | AGItf       loc         .   fxTvM       =   @ty.gathFxTvM
@@ -670,11 +670,11 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-ATTR TyAGItf AllTy [ | | insPrIdSet USE {`Set.union`} {emptySet} : {Set PredOccId} ]
+ATTR TyAGItf AllTy [ | | insPrIdSet USE {`Set.union`} {Set.empty} : {Set.Set PredOccId} ]
 
 SEM Ty
-  | App         lhs         .   insPrIdSet      =   mkSet (map poPoi @insHerePrL) `Set.union` @func.insPrIdSet `Set.union` @arg.insPrIdSet
-  | Var         lhs         .   insPrIdSet      =   mkSet (map poPoi @insHerePrL)
+  | App         lhs         .   insPrIdSet      =   Set.fromList (map poPoi @insHerePrL) `Set.union` @func.insPrIdSet `Set.union` @arg.insPrIdSet
+  | Var         lhs         .   insPrIdSet      =   Set.fromList (map poPoi @insHerePrL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

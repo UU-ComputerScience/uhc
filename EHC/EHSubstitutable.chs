@@ -19,7 +19,7 @@
 %%[2 import(Data.List, EHCommon, EHTy, EHCnstr,EHTySubst,EHTyFtv) export(Substitutable(..))
 %%]
 
-%%[9 import(Data.FiniteMap) export(fixTyVarsCnstr,tyFixTyVars)
+%%[9 import(qualified Data.Map as Map) export(fixTyVarsCnstr,tyFixTyVars)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -67,8 +67,8 @@ instance Substitutable v => Substitutable (HsName,v) where
 
 %%[9.SubstitutableCnstr -2.SubstitutableCnstr
 instance Substitutable Cnstr where
-  s1@(Cnstr sl1) |=>   s2@(Cnstr sl2)  =   Cnstr (mapFM (\v t -> s1 |=> t) (sl2) `plusFM` (sl1))
-  ftv                  (Cnstr sl)      =   ftv . eltsFM $ sl
+  s1@(Cnstr sl1) |=>   s2@(Cnstr sl2)  =   Cnstr (sl1 `Map.union` Map.map (s1 |=>) sl2)
+  ftv                  (Cnstr sl)      =   ftv . Map.elems $ sl
 %%]
 
 %%[9
@@ -99,7 +99,7 @@ instance Substitutable CnstrInfo where
 
 %%[9
 fixTyVarsCnstr :: Substitutable s => s -> Cnstr
-fixTyVarsCnstr = Cnstr . listToFM . map (\v -> (v,CITy (Ty_Var v TyVarCateg_Fixed))) . ftv
+fixTyVarsCnstr = Cnstr . Map.fromList . map (\v -> (v,CITy (Ty_Var v TyVarCateg_Fixed))) . ftv
 
 tyFixTyVars :: Substitutable s => s -> s
 tyFixTyVars s = fixTyVarsCnstr s |=> s
