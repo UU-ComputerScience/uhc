@@ -140,6 +140,7 @@ SEM Decl
                                         , mkInfo1 "sigTy" (ppTy @sigTy)
                                         , mkInfo1 "patExpr.ty" (ppTy @patExpr.ty)
                                         , mkInfo1 "expr.ty" (ppTy @expr.ty)
+                                        , mkInfo1 "lhs.tyCnstr" (ppCnstrV @lhs.tyCnstr)
                                         , mkInfo1 "expr.tyCnstr" (ppCnstrV @expr.tyCnstr)
                                         ]
 
@@ -156,7 +157,8 @@ SEM Expr
                                         , mkInfo1 "func.ty" (ppTy @func.ty)
                                         , mkInfo1 "ty" (ppTy @ty)
                                         ]
-  | AppTop      loc     .  info2    :=  [ mkInfo1 "expr.tyCnstr" (ppCnstrV @expr.tyCnstr)
+  | AppTop      loc     .  info2    :=  [ mkInfo1 "lhs.tyCnstr" (ppCnstrV @lhs.tyCnstr)
+                                        , mkInfo1 "expr.tyCnstr" (ppCnstrV @expr.tyCnstr)
                                         ]
   | Lam         loc     .  info2    :=  [ mkInfo1 "knTy" (ppTy (@lhs.tyCnstr |=> @lhs.knTy))
                                         , mkInfo1 "funTy" (ppTy @funTy)
@@ -220,6 +222,7 @@ SEM TyExpr
 %%[4_2
 SEM AGItf
   | AGItf       loc     .  info_4_2 :=  [ mkInfo1 "expr.imprTyCnstr" (ppCnstrV @expr.imprTyCnstr)
+                                        , mkInfo1 "exprTyCnstr1" (ppCnstrV @exprTyCnstr1)
                                         , mkInfo1 "exprTyCnstr" (ppCnstrV @exprTyCnstr)
                                         ]
 
@@ -228,6 +231,7 @@ SEM Expr
                                         ]
   | Let         loc     .  info_4_2 :=  [ mkInfo1 "decls.imprTyCnstr" (ppCnstrV @decls.imprTyCnstr)
                                         , mkInfo1 "body.imprTyCnstr" (ppCnstrV @body.imprTyCnstr)
+                                        , mkInfo1 "elimImprTyCnstr" (ppCnstrV @elimImprTyCnstr)
                                         , mkInfo1 "lExplTyCnstr" (ppCnstrV @lExplTyCnstr)
                                         , mkInfo1 "lQuTyCnstr" (ppCnstrV @lQuTyCnstr)
                                         , mkInfo1 "@lQuTyCnstr |=> @decls.tyCnstr" (ppCnstrV (@lQuTyCnstr |=> @decls.tyCnstr))

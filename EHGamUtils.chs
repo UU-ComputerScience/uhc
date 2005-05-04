@@ -9,7 +9,7 @@
 %%% Gamma utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 import(List,EHCommon,EHOpts,EHTy,EHTyFitsIn,EHError,EHGam,EHCnstr,EHSubstitutable)
+%%[4 import(Data.List,EHCommon,EHOpts,EHTy,EHTyFitsIn,EHError,EHGam,EHCnstr,EHSubstitutable)
 %%]
 
 %%[4_2 import(EHTyElimAlts) export(valGamElimAlts)
@@ -23,7 +23,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2.valGamElimAlts
-valGamElimAlts :: FIOpts -> FIEnv -> TyVarIdL -> UID -> Cnstr -> ValGam -> (ValGam,Cnstr,Gam HsName ErrL)
+valGamElimAlts :: FIOpts -> FIEnv -> TyVarIdL -> UID -> Cnstr -> ValGam -> (ValGam,Cnstr,ErrGam)
 valGamElimAlts opts env globTvL uniq gCnstr g
   =  let  (g',(c,eg,_))
             =  gamMapThr

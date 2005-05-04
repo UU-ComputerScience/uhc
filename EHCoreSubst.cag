@@ -9,7 +9,7 @@
 %%% Substituting holes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs import(Maybe,FiniteMap,UU.Pretty,EHCommon,EHTy,EHCore,EHCnstr,EHCorePretty) export(CSubstitutable(..),cAppCoeArg)
+%%[9 hs import(Data.Maybe,Data.FiniteMap,UU.Pretty,EHCommon,EHTy,EHCore,EHCnstr,EHCorePretty) export(CSubstitutable(..),cAppCoeArg)
 %%]
 
 %%[9 hs export(CSubst,emptyCSubst,uidCBindLLToCSubst,uidCExprLToCSubst,poiCExprLToCSubst,cnstrImplsToCSubst)

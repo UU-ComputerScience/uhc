@@ -80,6 +80,9 @@ MK_EHFILES			:= mk/ehfiles.mk
 # AGC(opts, file)
 AGCC				= cd `dirname $2` ; $(AGC) $1 `basename $2`
 
+# GHC options
+GHC_OPTS			= -fglasgow-exts -package util -package lang -package data -package uust
+
 # lhs2tex format files used
 AFP_FMT_OTHER		:= lag2TeX.fmt pretty.fmt parsing.fmt
 
@@ -445,13 +448,13 @@ $(AG_PRIMER_CAG:.cag=.ag): %.ag: %.cag $(SHUFFLE)
 	touch $@
 
 $(D_BUILD_BIN)/repminag: $(AG_PRIMER)RepminAG.hs
-	d=`dirname $@` ; mkdir -p $$d ; $(GHC) -package uust -package data -o $@ --make $<
+	d=`dirname $@` ; mkdir -p $$d ; $(GHC) $(GHC_OPTS) -o $@ --make $<
 ### End of Repmin AG variant
 
 
 ### AG Primer's Expr
 $(D_BUILD_BIN)/expr: $(AG_PRIMER)Expr.hs
-	d=`dirname $@` ; mkdir -p $$d ; $(GHC) -package uust -package data -o $@ --make $<
+	d=`dirname $@` ; mkdir -p $$d ; $(GHC) $(GHC_OPTS) -o $@ --make $<
 ### End of Expr
 
 
@@ -461,7 +464,7 @@ $(AG_PRIMER_CHS:.chs=.hs): %.hs: %.chs $(SHUFFLE)
 	touch $@
 
 $(D_BUILD_BIN)/repminhs: $(AG_PRIMER)RepminHS.hs
-	d=`dirname $@` ; mkdir -p $$d ; $(GHC) -package uust -package data -o $@ --make $<
+	d=`dirname $@` ; mkdir -p $$d ; $(GHC) $(GHC_OPTS) -o $@ --make $<
 ### End of Repmin Haskell variant
 
 
@@ -565,7 +568,7 @@ shuffle: $(SHUFFLE)
 $(SHUFFLE): $(SHUFFLE_DIR)/$(SHUFFLE_AG) $(wildcard lib/*.hs)
 	cd $(SHUFFLE_DIR) ; \
 	$(AGC) -csdfr --module=Main `basename $<` ; \
-	$(GHC) --make -package uust -package data -i../lib $(SHUFFLE_HS) -o ../$@ ; \
+	$(GHC) --make $(GHC_OPTS) -i../lib $(SHUFFLE_HS) -o ../$@ ; \
 	strip ../$@
 
 $(SHUFFLE_DIR)/ShuffleDoc.tex: $(SHUFFLE)
@@ -578,7 +581,7 @@ ruler: $(RULER)
 $(RULER): $(RULER_DIR)/$(RULER_AG) $(wildcard lib/*.hs)
 	cd $(RULER_DIR) ; \
 	$(AGC) -csdfr --module=Main `basename $<` ; \
-	$(GHC) --make -package uust -package data -i../lib $(RULER_HS) -o ../$@ ; \
+	$(GHC) --make $(GHC_OPTS) -i../lib $(RULER_HS) -o ../$@ ; \
 	strip ../$@
 
 $(RULER_DOC_PDF): $(RULER_DIR)/RulerDoc.tex $(RULER)
@@ -589,7 +592,7 @@ brew: $(BREW)
 $(BREW): $(BREW_DIR)/$(BREW_AG) $(wildcard lib/*.hs)
 	cd $(BREW_DIR) ; \
 	$(AGC) -csdfr --module=Main `basename $<` ; \
-	$(GHC) --make -package uust -package data -i../lib $(BREW_HS) -o ../$@ ; \
+	$(GHC) --make $(GHC_OPTS) -i../lib $(BREW_HS) -o ../$@ ; \
 	strip ../$@
 
 $(BREW_DOC_PDF): $(BREW_DIR)/RulerDoc.tex $(BREW)
@@ -616,7 +619,7 @@ clean-test:
 	rm -rf test/*.reg* test/*.exp*
 
 edit:
-	bbedit $(EHC_CAG) $(EHC_CHS) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CAG)) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CHS)) $(ALL_AFP_SRC) afp.lsty afp.fmt $(SHUFFLE_SRC) Makefile $(TMPL_TEST) $(MK_EHFILES)
+	bbedit $(EHC_CAG) $(EHC_CHS) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CAG)) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CHS)) $(ALL_AFP_SRC) afp.lsty afp.fmt $(SHUFFLE_SRC) $(RULER_SRC) Makefile $(TMPL_TEST) $(MK_EHFILES)
 
 A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
@@ -674,12 +677,12 @@ MK_EHC_MKF			= \
 	  echo -n "$(EHC): $(EHC_MAIN).hs"  ; \
 	  $(call FILTER_EXISTS_HS_OR_AG,$(EHC_HS)) ; \
 	  echo ; \
-	  echo "	$(GHC) -package uust -package data --make -o $(EHC) $$<" ; \
+	  echo "	$(GHC) $(GHC_OPTS) --make -o $(EHC) $$<" ; \
 	  echo ; \
 	  echo -n "$(GRI): $(GRI_MAIN).hs $(EHC)"  ; \
 	  $(call FILTER_EXISTS_HS_OR_AG,$(GRI_HS)) ; \
 	  echo ; \
-	  echo "	$(GHC) -package uust -package data --make -o $(GRI) $$<" ; \
+	  echo "	$(GHC) $(GHC_OPTS) --make -o $(GRI) $$<" ; \
 	  echo ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_GRIN),-cfspr) ; \
 	  $(call MK_EHC_MKF_FOR,$(EHC_DPDS_CORE_JAVA),-cfspr) ; \

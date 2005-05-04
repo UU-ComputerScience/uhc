@@ -41,7 +41,34 @@ SEM Expr
                 loc         .   lQuValGam           :=  valGamInst1Exists @lUniq2 . valGamQuantify @gTyTvL $ @lSubsValGam
 %%]
 
+%%[4_2 hs
+valElimExprAlts :: FIOpts -> FIEnv -> TyVarIdL -> UID -> Cnstr -> ValGam -> (ValGam,Cnstr,ErrGam)
+valElimExprAlts fio fe globTvL u c g
+  = (g',c'',eg)
+  where  (g',c',eg) = valGamElimAlts fio fe globTvL u c g
+         c'' = cnstrFilterTy  (\_ t -> not (tyIsVar t)) c'
+%%]
+
 %%[4_2
+SEM Expr
+  | Let         decls       .   tySigTyCnstr        =   emptyCnstr
+                loc         .   (_,lExSigTyCnstr)   =   valGamInst1ExistsWithCnstr @decls.tySigTyCnstr @lUniq @decls.gathTySigGam
+                            .   lExplTyCnstr        =   @lExSigTyCnstr |=> @decls.tySigTyCnstr
+                decls       .   patValGam           :=  gamPushGam @lhs.valGam @decls.gathTySigGam
+                            .   patTyCnstr          :=  @lExplTyCnstr
+                            .   imprTyCnstr         =   @decls.patTyCnstr |=> @lhs.imprTyCnstr
+                loc         .   (_,elimImprTyCnstr,_)
+                                                    =   valElimExprAlts joinFIOpts @fe (ftv @gValGam) @lUniq4 @decls.imprTyCnstr @lValGam
+                decls       .   tyCnstr             :=  @lhs.tyCnstr |=> @elimImprTyCnstr |=> @decls.patTyCnstr
+                loc         .   (lQuValGam,lQuTyCnstr)
+                                                    :=  let  (g1,c1) = valGamQuantifyWithCnstr @decls.tyCnstr @gTyTvL @lValGam
+                                                             (g2,c2) = valGamInst1ExistsWithCnstr (c1 |=> @decls.tyCnstr) @lUniq2 g1
+                                                        in   (g2,c2 |=> c1)
+                body        .   imprTyCnstr         =   @elimImprTyCnstr |=> @decls.imprTyCnstr
+                            .   tyCnstr             :=  @lQuTyCnstr |=> @decls.tyCnstr
+                            .   valGam              :=  @decls.patValGam
+%%]
+                body        .   imprTyCnstr         =   @lQuTyCnstr |=> @elimImprTyCnstr |=> @decls.imprTyCnstr
 SEM Expr
   | Let         decls       .   tySigTyCnstr        =   emptyCnstr
                 loc         .   (_,lExSigTyCnstr)   =   valGamInst1ExistsWithCnstr (@decls.tySigTyCnstr |=> @lhs.imprTyCnstr) @lUniq @decls.gathTySigGam
@@ -49,17 +76,16 @@ SEM Expr
                 decls       .   patValGam           :=  gamPushGam @lhs.valGam @decls.gathTySigGam
                             .   patTyCnstr          :=  @lExplTyCnstr |=> @lhs.imprTyCnstr
                             .   imprTyCnstr         =   @decls.patTyCnstr
-                loc         .   (lElimValGam,elimImprTyCnstr,_)
-                                                    =   valGamElimAlts joinFIOpts @fe (ftv @gValGam) @lUniq4 @decls.imprTyCnstr @lValGam
+                loc         .   elimImprTyCnstr     =   let  (_,c,_) = valGamElimAlts joinFIOpts @fe (ftv @gValGam) @lUniq4 @decls.imprTyCnstr @lValGam
+                                                        in   c
                 body        .   imprTyCnstr         =   @elimImprTyCnstr |=> @decls.imprTyCnstr
+                decls       .   tyCnstr             :=  @lhs.tyCnstr |=> @decls.patTyCnstr
                 loc         .   (lQuValGam,lQuTyCnstr)
                                                     :=  let  (g1,c1) = valGamQuantifyWithCnstr @decls.tyCnstr @gTyTvL @lValGam
                                                              (g2,c2) = valGamInst1ExistsWithCnstr (c1 |=> @decls.tyCnstr) @lUniq2 g1
                                                         in   (g2,c2 |=> c1)
-                decls       .   tyCnstr             :=  @lhs.tyCnstr |=> @decls.patTyCnstr
                 body        .   tyCnstr             :=  @lQuTyCnstr |=> @decls.tyCnstr
                             .   valGam              :=  @decls.patValGam
-%%]
 
 %%[9
 SEM Expr
@@ -195,15 +221,38 @@ SEM AGItf
 
 %%[4_2
 SEM AGItf
-  | AGItf       loc         .   exprTyCnstr         =   cnstrFilterTy  (\_ t -> not (tyIsVar t))
-                                                        .  cnstrMapTy  (\_ t -> tyElimForgetAlts t)
-                                                        $  @expr.imprTyCnstr
-                expr        .   tyCnstr             :=  @exprTyCnstr
+  | AGItf       loc         .   (exprTyCnstr1,ambTvS)
+                                                    =   cnstrElimForgetAlts @expr.imprTyCnstr
+                            .   exprTyCnstr         =   let (eC,(vC,_))
+                                                              =  cnstrMapThrTy  (\v t (c,u) ->  let  (u',u1) = mkNewLevUID u
+                                                                                                     (t',c') = tyFreshVar (`elementOf` @ambTvS) u1 c t
+                                                                                                in   (t',(c',u'))
+                                                                                )
+                                                                                (emptyCnstr,@lUniq)
+                                                                 @exprTyCnstr1
+                                                        in  eC
+                expr        .   tyCnstr             :=  emptyCnstr
 
 SEM Decl
   | Val         loc         .   imprFO              =   fitsIn impredFIOpts emptyFE uidStart (@expr.imprTyCnstr |=> @patExpr.ty) @expr.imprTy
                 lhs         .   imprTyCnstr         =   foCnstr @imprFO |=> @expr.imprTyCnstr
 %%]
+SEM AGItf
+  | AGItf       loc         .   (exprTyCnstr1,ambTvS)
+                                                    =   cnstrElimForgetAlts @expr.imprTyCnstr
+                            .   exprTyCnstr         =   let (eC,(vC,_))
+                                                              =  cnstrMapThrTy  (\v t (c,u) ->  let  (u',u1) = mkNewLevUID u
+                                                                                                     (t',c') = tyFreshVar (`elementOf` @ambTvS) u1 c t
+                                                                                                in   (t',(c',u'))
+                                                                                )
+                                                                                (emptyCnstr,@lUniq)
+                                                                 @exprTyCnstr1
+                                                        in  eC
+                expr        .   tyCnstr             :=  @exprTyCnstr1
+
+                            .   exprTyCnstr         =   fst
+                                                        .  cnstrMapThrTy (\v t u -> let (u',u1) = mkNewLevUID u in (tyFreshVar (const True) u1 t,u')) @lUniq
+                                                        $  @exprTyCnstr1
 
 %%[5
 ATTR AllCase [ | tyCnstr: Cnstr | ]

@@ -12,7 +12,7 @@
 %%[8 hs import(GRIRun,EHCommon,GrinCode) export(grGriSetup)
 %%]
 
-%%[8 hs import(FiniteMap,Data.Array,Data.Array.IO)
+%%[8 hs import(Data.FiniteMap,Data.Array,Data.Array.IO)
 %%]
 
 %%[8.WRAPPER import(GrinCodeAbsSyn)

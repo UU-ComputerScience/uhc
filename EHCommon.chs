@@ -15,7 +15,7 @@
 %%[1 export(AssocL, hdAndTl, ppAssocL)
 %%]
 
-%%[1 import(UU.Pretty, List) export(PP_DocL, ppListSep, ppCommaList, ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
+%%[1 import(UU.Pretty, Data.List) export(PP_DocL, ppListSep, ppCommaList, ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
 %%]
 
 %%[1 export(SemApp(..))
@@ -36,7 +36,7 @@
 %%[2 export(assocLMapElt,assocLMapKey)
 %%]
 
-%%[2 import(List) export(unionL)
+%%[2 export(unionL)
 %%]
 
 %%[3 export(hsnUn, hsnIsUn, hsnUnUn)
@@ -81,7 +81,7 @@
 %%[8 export(Seq,mkSeq,unitSeq,concatSeq,"(<+>)",seqToList,emptySeq)
 %%]
 
-%%[8 import (FiniteMap) export(showPP,ppPair,ppFM)
+%%[8 import (Data.FiniteMap) export(showPP,ppPair,ppFM)
 %%]
 
 %%[8 export(mkNewLevUIDL,mkInfNewLevUIDL)

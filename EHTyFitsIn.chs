@@ -34,7 +34,7 @@
 %%[2 import(EHCnstr,EHSubstitutable)
 %%]
 
-%%[4 import(EHTyInstantiate, EHOpts, EHGam, Maybe,List)
+%%[4 import(EHTyInstantiate, EHOpts, EHGam, Data.Maybe,Data.List as List)
 %%]
 
 %%[4 export(FIEnv(..),emptyFE)
@@ -52,7 +52,7 @@
 %%[6 export(fitsInL)
 %%]
 
-%%[9 import(FiniteMap,Set,UU.Pretty,EHCorePretty,EHPred,EHCore,EHCoreSubst) export(foAppCoe,fitPredToEvid)
+%%[9 import(Data.FiniteMap,Data.Set,UU.Pretty,EHCorePretty,EHPred,EHCore,EHCoreSubst) export(foAppCoe,fitPredToEvid)
 %%]
 
 %%[9 export(prfPreds,prfPredsDbg)

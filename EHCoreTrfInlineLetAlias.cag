@@ -9,7 +9,7 @@
 %%% Inline let bindings for variables and constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Maybe,FiniteMap,EHCommon,EHCore,EHTy) export(cmodTrfInlineLetAlias)
+%%[8 hs import(Data.Maybe,Data.FiniteMap,EHCommon,EHCore,EHTy) export(cmodTrfInlineLetAlias)
 %%]
 
 %%[8.WRAPPER import(EHCoreAbsSyn)

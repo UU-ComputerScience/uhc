@@ -1,13 +1,13 @@
 imports
 {
 import System
-import GetOpt
-import Maybe
-import Char
+import System.Console.GetOpt
+import Data.Maybe
+import Data.Char
 import IO
-import List
-import Set
-import FiniteMap
+import Data.List
+import Data.Set as Set
+import Data.FiniteMap
 import FPath
 import Utils
 import PPUtils

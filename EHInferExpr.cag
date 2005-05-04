@@ -218,6 +218,23 @@ SEM Expr
 SEM Expr
   | Lam         loc         .   imprFoKnFun         =   let  fo = fitsIn @knFunFIOpts @fe @lUniq2 @funTy (@lhs.imprTyCnstr |=> @lhs.knTy)
                                                         in   fo {foTy = foCnstr fo |=> @funTy}
+                arg         .   knTy                :=  foCnstr @imprFoKnFun |=> @argTy
+                            .   tyCnstr             :=  emptyCnstr
+                loc         .   imprArgTyCnstr      =   @arg.tyCnstr |=> foCnstr @imprFoKnFun
+                body        .   imprTyCnstr         =   @imprArgTyCnstr |=> @lhs.imprTyCnstr
+                loc         .   (lArgElimValGam,elimImprTyCnstr,errGam)
+                                                    =   valElimExprAlts meetFIOpts @fe (ftv @lhs.valGam) @lUniq3 @body.imprTyCnstr (gamTop @arg.valGam)
+                loc         .   imprBodyTyCnstr     =   @elimImprTyCnstr |=> @body.imprTyCnstr
+                            .   imprTy              =   [@imprBodyTyCnstr |=> @arg.ty] `mkArrow` @body.imprTy
+                lhs         .   imprTyCnstr         =   @imprBodyTyCnstr
+  | Lam         loc         .   lamKnTyCnstr        :=  @lhs.tyCnstr |=> @elimImprTyCnstr |=> @imprArgTyCnstr
+                            .   foKnFun             :=  let  fo = fitsIn @knFunFIOpts @fe @lUniq2 (@lamKnTyCnstr |=> @funTy) (@lamKnTyCnstr |=> @lhs.knTy)
+                                                        in   fo {foTy = foCnstr fo |=> @funTy}
+                body        .   tyCnstr             =   foCnstr @foKnFun |=> @lamKnTyCnstr
+%%]
+SEM Expr
+  | Lam         loc         .   imprFoKnFun         =   let  fo = fitsIn @knFunFIOpts @fe @lUniq2 @funTy (@lhs.imprTyCnstr |=> @lhs.knTy)
+                                                        in   fo {foTy = foCnstr fo |=> @funTy}
                 arg         .   tyCnstr             :=  foCnstr @imprFoKnFun |=> @lhs.imprTyCnstr
                 body        .   imprTyCnstr         =   @arg.tyCnstr
                 loc         .   (lArgElimValGam,elimImprTyCnstr,errGam)
@@ -229,7 +246,6 @@ SEM Expr
                             .   foKnFun             :=  let  fo = fitsIn @knFunFIOpts @fe @lUniq2 (@lamKnTyCnstr |=> @funTy) (@lamKnTyCnstr |=> @lhs.knTy)
                                                         in   fo {foTy = foCnstr fo |=> @funTy}
                 body        .   tyCnstr             =   foCnstr @foKnFun |=> @lamKnTyCnstr
-%%]
 
 %%[9.Lam
 SEM Expr

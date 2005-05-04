@@ -1,4 +1,4 @@
-% $Id: GRI.lag 199 2004-05-12 19:11:13Z andres $
+% $Id$
 
 %%[0
 %include lhs2TeX.fmt
@@ -9,7 +9,7 @@
 %%% Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module GRICommon import(GetOpt,EHCommon) export(GRIOpts(..), defaultGRIOpts, griCmdLineOpts)
+%%[8 module GRICommon import(System.Console.GetOpt,EHCommon) export(GRIOpts(..), defaultGRIOpts, griCmdLineOpts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

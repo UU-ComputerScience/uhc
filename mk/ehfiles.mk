@@ -38,7 +38,7 @@ $(VPREFIX)EHMainAG.hs: $(addprefix $(VPREFIX),$(EHC_DPDS_MAIN))
 	$(call AGCC,-dcfspr,$<)
 
 $(VPREFIX)$(EHC): $(addprefix $(VPREFIX),$(EHC_MAIN).hs $(EHC_HS))
-	cd `dirname $@` ; $(GHC) -package uust -package data -o `basename $@` --make `basename $<`
+	cd `dirname $@` ; $(GHC) $(GHC_OPTS) -o `basename $@` --make `basename $<`
 
 #$(VPREFIX)$(EHC): $(addprefix $(VPREFIX),$(EHC_MAIN).hs $(EHC_HS))
 #	cd `dirname $@` ; $(GHC) -fglasgow-exts -package data -prof -auto-all -o `basename $@` --make `basename $<`
@@ -57,5 +57,5 @@ $(addprefix $(VPREFIX),$(GRI_LAG_FOR_HS_GRIN_CODE:.lag=.hs)): %.hs: %.ag $(addpr
 	$(call AGCC,-cfspr,$<)
 
 $(VPREFIX)$(GRI): $(addprefix $(VPREFIX),$(GRI_MAIN).hs $(GRI_HS))
-	cd `dirname $@` ; $(GHC) -O2 -package uust -package data -o `basename $@` --make `basename $<`
+	cd `dirname $@` ; $(GHC) -O2 $(GHC_OPTS) -o `basename $@` --make `basename $<`
 

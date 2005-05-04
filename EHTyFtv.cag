@@ -9,10 +9,10 @@
 %%% Haskell importable interface to Ty subst
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 hs import(List,EHCommon,EHTy) export(tyFtv)
+%%[2 hs import(Data.List,EHCommon,EHTy) export(tyFtv)
 %%]
 
-%%[4 hs import(FiniteMap) export(tyFtvMp)
+%%[4 hs import(Data.FiniteMap) export(tyFtvMp)
 %%]
 
 %%[2.WRAPPER import(EHTyAbsSyn)

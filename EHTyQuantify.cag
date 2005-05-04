@@ -15,7 +15,7 @@
 %%[4 hs import(EHDebug,UU.Pretty)
 %%]
 
-%%[4 hs import(Set,FiniteMap,List)
+%%[4 hs import(Data.Set as Set,Data.FiniteMap,Data.List as List)
 %%]
 
 %%[4 import(EHTyAbsSyn,EHTyCommonAG)
@@ -25,7 +25,7 @@ WRAPPER TyAGItf
 %%[6 hs export(kiQuantify)
 %%]
 
-%%[9 hs import(Maybe,UU.Pretty) export(tyQuantifyPr,tyQuantifyRank,TyQuOut(..),TyQuOpts(..),defaultTyQuOpts)
+%%[9 hs import(Data.Maybe,UU.Pretty) export(tyQuantifyPr,tyQuantifyRank,TyQuOut(..),TyQuOpts(..),defaultTyQuOpts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
