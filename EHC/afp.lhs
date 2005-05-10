@@ -33,7 +33,7 @@
 %let incl03     = False
 %endif
 
-%if storyPHD  || storyAfpTRUU1 || onlyCurrentWork
+%if storyPHD  || storyAfpTRUU1 || storyImpred || onlyCurrentWork
 %let incl04     = True
 %else
 %let incl04     = False
@@ -113,7 +113,7 @@
 %let incl01TopicParsing  	= False
 %endif
 
-%if storyExplImpl
+%if storyExplImpl || storyImpred
 %let chapAsArticle  = True
 %else
 %let chapAsArticle  = False
@@ -135,7 +135,7 @@
 %if llncs
                class=llncs,
 %elif acm
-%if icfp05
+%if icfp05 || hw05
 %if asDraft
                class=sigplanconf,onecolumn,11pt,preprint,
 %else
@@ -349,6 +349,7 @@
 %endif
 
 \usepackage{txfonts}
+\usepackage[bbgreekl]{mathbbol}
 
 %if truu
 \usepackage{TRtitlepage}
@@ -507,19 +508,23 @@
 % title
 %if storyExplImpl
 \title{Explicit implicit parameters}
+%elif storyImpred
+\title{Exploiting type signatures}
 %elif storyEHIntro
 %if storyVariantETAPSLinks
 \title{Essential Haskell Compiler Highlights}
 %else
 \title{Essential Haskell Compiler Overview}
 %endif
+%elif storyPHD
+\title{Haskell, explicitly}
 %else
 \title{Typing Haskell with an Attribute Grammar}
 %endif
 
 %if storyPHD
 \author{Atze Dijkstra}
-%elif acm && storyExplImpl
+%elif acm && (storyExplImpl || storyImpred)
 %if useSigplanconfSty
 \authorinfo{Atze Dijkstra \and Doaitse S. Swierstra}
   {Institute of Information and Computing Sciences \\
@@ -527,7 +532,12 @@
    P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
   }
   {\{atze,doaitse\}@@cs.uu.nl}
+%if icfp05
 \toappear{Submitted to the International Conference onf Functional Programming 2005 (ICFP 2005), September 26-28, Tallin, Estonia}
+%elif hw05
+\toappear{In preparation for the Haskell Workshop 2005 (HW2005), September 30, Tallin, Estonia}
+%else
+%endif
 %else %% useSigplanconfSty
 \numberofauthors{1}
 \author{
@@ -710,7 +720,7 @@ Combinator & Meaning & Result
 %elif llncs
 \setlength{\parindent}{0mm}
 \addtolength{\parskip}{0.25\baselineskip}
-%elif acm && icfp05
+%elif acm && (icfp05 || hw05)
 %else
 \setlength{\parindent}{0mm}
 \addtolength{\parskip}{0.4\baselineskip}
@@ -777,7 +787,10 @@ enabling the elegant formulation of some form of generic programming.
 To our knowledge the implementation is the first to handle these features
 in combination with existentials and higher ranked polymorphic types.
 %endif
-%else
+
+%elif storyImpred
+...
+%else %% afp04
 A great deal has been written about type systems.
 Much less has been written about implementing them.
 Even less has been written about implementations of complete compilers in which
@@ -2266,7 +2279,7 @@ of nodes/nonterminals
 }
 
 
-\begin{Figure}{Abstract syntax for EH (without Expr)}{abs-syn-eh1}
+\begin{CodeFigure}{Abstract syntax for EH (without Expr)}{abs-syn-eh1}
 \savecolumns
 \chunkCmdUse{EHAbsSyn.1.AGItf}
 \restorecolumns
@@ -2283,7 +2296,7 @@ of nodes/nonterminals
 \chunkCmdUse{EHAbsSyn.1.AllExpr}
 \restorecolumns
 \chunkCmdUse{EHAbsSyn.1.AllNT}
-\end{Figure}
+\end{CodeFigure}
 
 Looking at this example and the rest of the abstract syntax in \figRef{abs-syn-eh1} we can make several
 observations of what one is allowed to write in EH and what can be expected from the implementation.
@@ -2467,13 +2480,13 @@ For all practical purposes, for now, this is all we need in order to be able to 
 these functions
 (see also \cite{swierstra99comb-lang}).
 
-\begin{Figure}{Parser combinators}{parser-combinators}
+\begin{CodeFigure}{Parser combinators}{parser-combinators}
 \begin{tabular}{lll}
 \ParserCombTableHead
 \ParserCombTableA
 \ParserCombTableB
 \end{tabular}
-\end{Figure}
+\end{CodeFigure}
 
 \frame<presentation>
 {
@@ -2823,7 +2836,7 @@ If a rule for |pp| for an alternative of a nonterminal is missing, the default d
 is based on |USE| which provides a default value for alternatives without nonterminals as children (here: |empty|)
 and a function used to compose new values based on the values of the children (here: |>-<|).
 
-\begin{Figure}{Pretty printing combinators}{pretty-printing-combinators}
+\begin{CodeFigure}{Pretty printing combinators}{pretty-printing-combinators}
 \begin{center}
 \begin{tabular}{ll}
 Combinator & Result
@@ -2836,7 +2849,7 @@ Combinator & Result
 |pp x| & pretty print |x| (assuming instance |PP x|) resulting in a |PP_Doc| \\
 \end{tabular}
 \end{center}
-\end{Figure}
+\end{CodeFigure}
 
 The attribute |pp| is defined as a local (to a production alternative)
 attribute (by means of the |loc| keyword) so it can be referred to by
@@ -6151,8 +6164,220 @@ Polymorphic recursion
 
 %if incl04
 
+%if not storyImpred
 \section{EH 4: |forall| and |exists| everywhere}
 \label{ehc4}
+%endif
+
+%if storyImpred
+
+\subsection{Introduction}
+\label{eh-impred-intro}
+
+\subsection{What we want}
+\label{eh-impred-reqm}
+
+\begin{TabularFigure}{EH terms}{eh-impred-lang-terms}{r@@{\;}c@@{\;}ll}
+\multicolumn{4}{l}{Values (expressions, terms):} \\
+|e| & |::=| &
+|int || char |
+ & literals
+ \\
+& | || | &
+|identv|
+ & value variable
+ \\
+& | || | &
+|e e|
+ & application
+ \\
+& | || | &
+|\i -> e|
+ & abstraction
+ \\
+& | || | &
+|(e,e)|
+ & tuple
+ \\
+& | || | &
+|let Vec(d) in e|
+ & binding
+ \\
+\multicolumn{4}{l}{} \\
+\multicolumn{4}{l}{Declarations of bindings:} \\
+|d| & |::=| &
+|identv = e|
+ & value binding
+ \\
+& | || | &
+|identv :: sigma|
+ & value type signature
+ \\
+\multicolumn{4}{l}{} \\
+\multicolumn{4}{l}{Identifiers:} \\
+|ident| & |::=| &
+|identv|
+ & lowercase: (type) variables
+ \\
+& | || | &
+|identc|
+ & uppercase: (type) constructors
+ \\
+\end{TabularFigure}
+
+\subsection{Implementation}
+\label{eh-impred-impl}
+
+\begin{TabularFigure}{EH types}{eh-impred-lang-types}{r@@{\;}c@@{\;}ll}
+\multicolumn{4}{l}{Types:} \\
+|sigma| & |::=| &
+|Int || Char|
+ & literals
+ \\
+& | || | &
+|tvarv|
+ & variable
+ \\
+& | || | &
+|sigma -> sigma|
+ & abstraction
+ \\
+& | || | &
+|pi -> sigma|
+ & implicit abstraction
+ \\
+%if False
+& | || | &
+|sigma ^^ sigma|
+ & type application
+ \\
+%endif
+& | || | &
+|forall ^ alpha . sigma|
+ & universally quantified type
+ \\
+& | || | &
+|exists ^ alpha . sigma|
+ & existentially quantified type
+ \\
+\multicolumn{4}{l}{} \\
+\multicolumn{4}{l}{Types for impredicativity inferencing:} \\
+|isigma| & |::=| &
+|sigma|
+ & 
+ \\
+& | || | &
+|tvarv [Vec(talt)]|
+ & type alternatives
+ \\
+|sigma| & |::=| &
+|isigma|
+ & 
+ \\
+& | || | &
+|...|
+ & 
+ \\
+\multicolumn{4}{l}{} \\
+\multicolumn{4}{l}{Type alternative:} \\
+|talt| & |::=| &
+|isigma :: tctxt|
+ & type alternative
+ \\
+|tctxt| & |::=| &
+|tctxtH|
+ & `hard' context
+ \\
+& | || | &
+|tctxtS|
+ & `soft' context
+ \\
+\end{TabularFigure}
+
+\begin{TabularFigure}{Notation and abbreviation legenda}{eh-impred-legenda-notation}{ll}
+Notation & Meaning \\
+\hline
+|sigma|
+ & type
+ \\
+|isigma|
+ & |sigma| for impredicativity inferencing
+ \\
+|sigmak|
+ & expected/known type
+ \\
+|sigmaQu|
+ & |sigma| with a quantifier
+ \\
+|tvarv|
+ & type variable
+ \\
+|Transl|
+ & translated code
+ \\
+|ident|
+ & identifier
+ \\
+|identv|
+ & value identifier
+ \\
+|identc|
+ & (type) constructor identifier
+ \\
+|Gamma|
+ & assumptions, environment, context
+ \\
+|Cnstr|
+ & constraints, substitution
+ \\
+|ICnstr|
+ & |Cnstr| for impredicativity inferencing
+ \\
+|Cnstr|$_{k..l}$
+ & constraint composition of |Cnstr|$_k ...$ |Cnstr|$_l$
+ \\
+|<=|
+ & subsumption, ``fits in'' relation
+ \\
+|<+>|
+ & meet of two types
+ \\
+|<->|
+ & join of two types
+ \\
+|fiopt|
+ & options to |<=|
+ \\
+|talt|
+ & type alternative
+ \\
+|Vec(taltcx(tctxt))|
+ & |[ talt || talt@(_::tctxt) <- Vec(taltcx(tctxt))]|
+ \\
+|Vec(taltcx(Qu))|
+ & |[ talt || talt@(sigmaQu::_) <- Vec(taltcx(Qu))]|
+ \\
+\end{TabularFigure}
+
+\rulerCmdUse{rules2.exprIm.base}
+
+\rulerCmdUse{rules2.taltGamIm}
+
+\rulerCmdUse{rules2.taltIm}
+
+\subsection{Existential types}
+\label{eh-impred-existential}
+
+\subsection{Interaction with implicit parameters}
+\label{eh-impred-implparam}
+
+\subsection{Related work}
+\label{eh-impred-relwork}
+
+\subsection{Conclusion}
+\label{eh-impred-concl}
+
+%else %% storyImpred
 
 \frame<presentation>{\tableofcontents[current,hidesubsections]}
 
@@ -7488,9 +7713,9 @@ Cannot do inference for rank3, \cite{jim95rank,kfoury94direct,kfoury99rank2-deci
 
 Existentials, via universal \cite{laufer96class-existential}
 
-%endif
+%endif %% not omitLitDiscuss
 
-
+%endif %% storyImpred
 
 
 %endif %% incl04
@@ -7934,7 +8159,7 @@ Coercion (of records), related to subsumption
 %format eval    = "\mathbf{eval}"
 %format apply   = "\mathbf{eval}"
 
-\begin{Figure}{Extended GRIN syntax}{grin-ext}
+\begin{CodeFigure}{Extended GRIN syntax}{grin-ext}
 \begin{code}
 prog        ::=     { binding } +                   --  program
 
@@ -7998,7 +8223,7 @@ cpat        ::=     (tag {var}*)                    --  constant node pattern
 
 split       ::=     var = offset                    --  extraction at offset
 \end{code}
-\end{Figure}
+\end{CodeFigure}
 %}
 
 \subsection<article>{Literature}
@@ -8252,17 +8477,8 @@ The compiler for EH actually is a series of ten compilers, each of which adds fe
 the previous one.
 The features presented in \thispaper\ are part of the ninth version.
 
-\begin{figure}
-\begin{center}
-\begin{tabular}%
-%if useSigplanconfSty
-{r@@{\;}c@@{\;}ll}
+\begin{TabularFigure}{EH terms}{exim-eh-lang-terms}{r@@{\;}c@@{\;}ll}
 \multicolumn{4}{l}{Values (expressions, terms):} \\
-%else
-{||r@@{\;}c@@{\;}ll||}
-\multicolumn{4}{||l||}{Values (expressions, terms):} \\
-\hline
-%endif
 |e| & |::=| &
 |int || char |
  & literals
@@ -8303,13 +8519,8 @@ The features presented in \thispaper\ are part of the ninth version.
 |(e || lbl := e,...)|
  & record update
  \\
-%if useSigplanconfSty
 \multicolumn{4}{l}{} \\
 \multicolumn{4}{l}{Declarations of bindings:} \\
-%else
-\multicolumn{4}{||l||}{} \\
-\multicolumn{4}{||l||}{Declarations of bindings:} \\
-%endif
 |d| & |::=| &
 |identv = e|
  & value binding
@@ -8342,13 +8553,8 @@ The features presented in \thispaper\ are part of the ninth version.
 |instance e <: pi|
  & value introduced instance
  \\
-%if useSigplanconfSty
 \multicolumn{4}{l}{} \\
 \multicolumn{4}{l}{Identifiers:} \\
-%else
-\multicolumn{4}{||l||}{} \\
-\multicolumn{4}{||l||}{Identifiers:} \\
-%endif
 |ident| & |::=| &
 |identv|
  & lowercase: (type) variables
@@ -8361,14 +8567,7 @@ The features presented in \thispaper\ are part of the ninth version.
 |lbl|
  & field labels
  \\
-%if not useSigplanconfSty
-\hline
-%endif
-\end{tabular}
-\end{center}
-\caption{EH terms}
-\label{exim-eh-lang-terms}
-\end{figure}
+\end{TabularFigure}
 
 \figRef{exim-eh-lang-terms} and \figRef{exim-eh-lang-types} show the terms and types featured in EH.
 Throughout \thispaper\ all language constructs will be gradually introduced and explained.
@@ -8443,17 +8642,8 @@ We make no attempt to infer higher ranked types
 \cite{kfoury94direct,kfoury99rank2-decid,jim95rank};
 instead we propogate explicitly specified types as good as possible to wherever this information is needed.
 
-\begin{figure}
-\begin{center}
-\begin{tabular}%
-%if useSigplanconfSty
-{r@@{\;}c@@{\;}ll}
+\begin{TabularFigure}{EH types}{exim-eh-lang-types}{r@@{\;}c@@{\;}ll}
 \multicolumn{4}{l}{Types:} \\
-%else
-{||r@@{\;}c@@{\;}ll||}
-\hline
-\multicolumn{4}{||l||}{Types:} \\
-%endif
 |sigma| & |::=| &
 |Int || Char|
  & literals
@@ -8488,13 +8678,8 @@ instead we propogate explicitly specified types as good as possible to wherever 
 |(lbl :: sigma,...)|
  & record
  \\
-%if useSigplanconfSty
 \multicolumn{4}{l}{} \\
 \multicolumn{4}{l}{Predicates:} \\
-%else
-\multicolumn{4}{||l||}{} \\
-\multicolumn{4}{||l||}{Predicates:} \\
-%endif
 |pi| & |::=| &
 |identc ^^ Vec(sigma)|
  & predicate
@@ -8503,14 +8688,7 @@ instead we propogate explicitly specified types as good as possible to wherever 
 |pi => pi|
  & predicate transformer/abstraction
  \\
-%if not useSigplanconfSty
-\hline
-%endif
-\end{tabular}
-\end{center}
-\caption{EH types}
-\label{exim-eh-lang-types}
-\end{figure}
+\end{TabularFigure}
 
 
 
@@ -9094,12 +9272,7 @@ more accurately their corresponding predicates.
 These predicate wildcard variables are used in a type inferencing/checking algorithm which explicitly
 deals with expected (or known) types |sigmak| as well as extra inferred type information.
 
-\begin{figure}
-\begin{center}
-\begin{tabular}{ll}
-%if not useSigplanconfSty
-\hline
-%endif
+\begin{TabularFigure}{Legenda of type related notation}{exim-eh-legenda-symbols}{ll}
 Notation & Meaning \\
 \hline
 |sigma|
@@ -9144,14 +9317,7 @@ Notation & Meaning \\
 |fiopt|
  & options to |<=|
  \\
-%if not useSigplanconfSty
-\hline
-%endif
-\end{tabular}
-\end{center}
-\caption{Legenda of type related notation}
-\label{exim-eh-legenda-symbols}
-\end{figure}
+\end{TabularFigure}
 
 \rulerCmdUse{rules2.exprEvK.pred}
 

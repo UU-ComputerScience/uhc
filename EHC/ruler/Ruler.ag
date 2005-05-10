@@ -164,7 +164,7 @@ pAGItf
         pRExprViews         =   pFoldr (sem_RExprViews_Cons,sem_RExprViews_Nil) pRExprView
         pRExprView          =   sem_RExprView_RExpr <$> pRExpr <*> pOptViewSels
         pJudge              =   sem_Judge_Judge <$ pKey "judge" <*> pNm <*> pJExpr
-        pJExprLet           =   (\d b -> foldr (\(n,v) b -> sem_JExpr_Let n v b) b d) <$ pKey "let" <*> pList ((,) <$> pNm <* pKey "=" <*> pJExpr) <* pKey "in" <*> pJExpr
+        pJExprLet           =   (\d b -> foldr (\(n,v) b -> sem_JExpr_Let n v b) b d) <$ pKey "let" <*> pListSep (pKey "&") ((,) <$> pNm <* pKey "=" <*> pJExpr) <* pKey "in" <*> pJExpr
                             <|> pJExpr
         pJExpr              =   pChainr pOp pJExprApp
                             where pOp = (\s ss -> sem_JExpr_Op s (ss (sem_JExpr_Var s))) <$> pSym <*> pJExprSel

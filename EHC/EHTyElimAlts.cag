@@ -43,7 +43,7 @@ cnstrElimForgetAlts :: Cnstr -> (Cnstr,Set.Set TyVarId)
 cnstrElimForgetAlts c
   = (c'',s)
   where  (c',s) = cnstrMapThrTy  (\_ t s -> let (t',s') = tyElimForgetAlts t in (t',s `Set.union` s')) Set.empty c
-         c'' = cnstrFilterTy  (\_ t -> not (tyIsVar t)) c'
+         c'' = cnstrDelAlphaRename c'
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -125,10 +125,80 @@ fitAlts elimFits fio u startTy tL
                       (startTy,emptyCnstr,[],u) tL
      in   (t,c,e)
 %%]
-                              in   if null e && null e2 then (tr "XX" (pp t2 >#< fioMode fio >#< pp t1 >#< "=" >#< pp t) t,c |=> c2,[],u') else (Ty_Any,emptyCnstr,if null e then e2 else e,u)
+                              in   tr "XX" (pp t2 >#< fioMode fio >#< pp t1 >-< "res=" >#< pp t >-< "cnstr=" >#< ppCnstrV c >-< ppErrL e)
+                                     (if null e && null e2 then (t,c |=> c2,[],u') else (Ty_Any,emptyCnstr,if null e then e2 else e,u)
+                                     )
                               in   if null e && null e2 then (t,c |=> c2,[],u') else (Ty_Any,emptyCnstr,if null e then e2 else e,u)
 
 %%[4_2
+SEM Ty
+  | Alts            loc     .   (repl,quTyCnstr,errL)
+                                            =   case cnstrTyLookup @tv @lhs.tyCnstr of
+                                                    Nothing | @tv `notElem` @lhs.globTvL
+                                                        ->  if null @tyL.yesQuTyL
+                                                            then  (mkTyVar @tv,@tv `cnstrTyUnit` mkTyVar @tv,[])
+                                                            else  let  (ht,hc,he) = fitAlts @lhs.fitsIn (@lhs.fio {fioBindToTyAlts = True}) @lUniq Ty_Any (@tyL.yesQuTyL)
+                                                                  in   if null he
+                                                                       then  let  (st,sc,se) = fitAlts @lhs.fitsIn (@lhs.fio {fioBindToTyAlts = True}) @lUniq2 ht (hc |=> @tyL.noQuTyL)
+                                                                                  mkTvCnstr t = @tv `cnstrTyUnit` t
+                                                                                  (eat,eac) = if null se then (st,emptyCnstr) else (ht,emptyCnstr)
+                                                                                  (t,c,e) = tyElimAlts @lhs.fitsIn @lhs.fio @lhs.globTvL @lUniq3 eat
+                                                                             in   (t,mkTvCnstr t |=> c |=> eac |=> hc,e)
+                                                                       else  (mkTyVar @tv
+                                                                             ,@tv `cnstrTyUnit` Ty_Any
+                                                                             ,[Err_InconsistentAlts @lhs.selfRepl @tv @tyL.yesQuTyL (fioMode @lhs.fio)]
+                                                                             )
+                                                    Just t
+                                                        ->  (t,emptyCnstr,[])
+                                                    _   ->  (@self,emptyCnstr,[])
+  | Quant           lhs     .   repl        =   mkTyQu @qu.self ([@tv] `intersect` ftv @ty.repl) @ty.repl
+%%]
+                                                                                  (eat,eac) = if null se then (st,tr "ZZ" (ppCnstrV sc) emptyCnstr) else (ht,emptyCnstr)
+SEM Ty
+  | Alts            loc     .   (repl,quTyCnstr,errL)
+                                            =   case cnstrTyLookup @tv @lhs.tyCnstr of
+                                                    Nothing | @tv `notElem` @lhs.globTvL
+                                                        ->  if null @tyL.yesQuTyL
+                                                            then  (mkTyVar @tv,@tv `cnstrTyUnit` mkTyVar @tv,[])
+                                                            else  let  (ht,hc,he) = fitAlts @lhs.fitsIn (@lhs.fio {fioBindToTyAlts = True}) @lUniq Ty_Any (@tyL.yesQuTyL)
+                                                                  in   if null he
+                                                                       then  let  (st,_,se) = fitAlts @lhs.fitsIn (@lhs.fio {fioBindToTyAlts = True}) @lUniq2 ht (hc |=> @tyL.noQuTyL)
+                                                                                  mkTvCnstr t = @tv `cnstrTyUnit` t
+                                                                                  (t,c,e) = tyElimAlts @lhs.fitsIn @lhs.fio @lhs.globTvL @lUniq3 (if null se then st else ht)
+                                                                             in   (t,mkTvCnstr t |=> c |=> hc,e)
+                                                                       else  (mkTyVar @tv
+                                                                             ,@tv `cnstrTyUnit` Ty_Any
+                                                                             ,[Err_InconsistentAlts @lhs.selfRepl @tv @tyL.yesQuTyL (fioMode @lhs.fio)]
+                                                                             )
+                                                    Just t
+                                                        ->  (t,emptyCnstr,[])
+                                                    _   ->  (@self,emptyCnstr,[])
+  | Quant           lhs     .   repl        =   mkTyQu @qu.self ([@tv] `intersect` ftv @ty.repl) @ty.repl
+SEM Ty
+  | Alts            loc     .   (repl,quTyCnstr,errL,internErrL)
+                                            =   case cnstrTyLookup @tv @lhs.tyCnstr of
+                                                    Nothing | @tv `notElem` @lhs.globTvL
+                                                        ->  if null @tyL.yesQuTyL
+                                                            then  (mkTyVar @tv,@tv `cnstrTyUnit` mkTyVar @tv,[],[])
+                                                            else  let  (ht,hc,he) = fitAlts @lhs.fitsIn (@lhs.fio {fioBindToTyAlts = True}) @lUniq Ty_Any (@tyL.yesQuTyL)
+                                                                  in   if null he
+                                                                       then  let  (st,sc,se) = fitAlts @lhs.fitsIn (@lhs.fio {fioBindToTyAlts = True}) @lUniq2 ht (hc |=> @tyL.noQuTyL)
+                                                                                  mkTvCnstr t = @tv `cnstrTyUnit` t
+                                                                             in   if null se
+                                                                                  then  let (t,c,e,ie) = tyElimAlts @lhs.fitsIn @lhs.fio @lhs.globTvL @lUniq3 st
+                                                                                        in  if null e && null ie
+                                                                                            then (t,mkTvCnstr t |=> c |=> sc |=> hc,[],[])
+                                                                                            else (ht,mkTvCnstr ht |=> hc,[],e++ie)
+                                                                                  else  (ht,mkTvCnstr ht |=> hc,se,[])
+                                                                       else  (mkTyVar @tv
+                                                                             ,@tv `cnstrTyUnit` Ty_Any
+                                                                             ,[Err_InconsistentAlts @lhs.selfRepl @tv @tyL.yesQuTyL (fioMode @lhs.fio)]
+                                                                             ,[]
+                                                                             )
+                                                    Just t
+                                                        ->  (t,emptyCnstr,[],[])
+                                                    _   ->  (@self,emptyCnstr,[],[])
+  | Quant           lhs     .   repl        =   mkTyQu @qu.self ([@tv] `intersect` ftv @ty.repl) @ty.repl
 SEM Ty
   | Alts            loc     .   (repl,errL,quTyCnstr)
                                             =   case cnstrTyLookup @tv @lhs.tyCnstr of
@@ -147,9 +217,7 @@ SEM Ty
                                                     Just t
                                                         ->  (t,[],emptyCnstr)
                                                     _   ->  (@self,[],emptyCnstr)
-                    lhs     .   tyCnstr     =   @quTyCnstr `cnstrPlus` @lhs.tyCnstr
   | Quant           lhs     .   repl        =   mkTyQu @qu.self ([@tv] `intersect` ftv @ty.repl) @ty.repl
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Errors
@@ -161,6 +229,11 @@ ATTR TyAGItf AllAllTy [ | | errL USE {++} {[]}: ErrL ]
 SEM Ty
   | Alts            lhs     .   errL        =   @errL
 %%]
+ATTR TyAGItf AllAllTy [ | | errL, internErrL USE {++} {[]}: ErrL ]
+
+SEM Ty
+  | Alts            lhs     .   errL        =   @errL
+                            .   internErrL  =   @internErrL
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gathering of yes/not quant types
@@ -188,7 +261,15 @@ ATTR TyAGItf  [ | | tyCnstr: Cnstr ]
 
 SEM TyAGItf
   | AGItf           ty      .   tyCnstr     =   emptyCnstr
+
+SEM Ty
+  | Alts            loc     .   tyCnstr     =   @quTyCnstr `cnstrPlus` @lhs.tyCnstr
+                    lhs     .   tyCnstr     =   @tyCnstr
 %%]
+                    lhs     .   tyCnstr     =   @tyCnstr
+                    lhs     .   tyCnstr     =   tr "YY" ("ty=" >#< pp @self >-< "l.cnstr=" >#< ppCnstrV @lhs.tyCnstr >-< "cnstr=" >#< ppCnstrV @quTyCnstr >-< "err=" >#< ppErrL @errL) @tyCnstr
+                    lhs     .   tyCnstr     =   tr "YY" ("ty=" >#< pp @self >-< "cnstr=" >#< ppCnstrV @tyCnstr >-< "err=" >#< ppErrL @errL) @tyCnstr
+                    lhs     .   tyCnstr     =   tr "YY" ("ty=" >#< pp @self >-< "cnstr=" >#< ppCnstrV @tyCnstr >-< "err=" >#< ppErrL @errL >-< "ierr=" >#< ppErrL @internErrL) @tyCnstr
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Replacement of free tvars with fresh ones (alpha rename)

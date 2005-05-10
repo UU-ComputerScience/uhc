@@ -102,12 +102,18 @@
 %format sigma2
 %format sigma3
 %format sigma4
+%format sigmaQu     = sigma "_{" Qu "}"
+
+%format isigma      = "\mathbb{\bbsigma}"
 
 %format Cnstr       = "\mathcal{C}"
 %format Cnstrp		= Cnstr "^{p}"
 %format Cnstrk		= Cnstr "^{k}"
 %format CnstrEq		= Cnstr "^{eq}"
 %format `cnstrTyUnit`	= :->
+
+%format ICnstr      = "\mathbb{C}"
+%format ICnstrk		= ICnstr "^{k}"
 
 %format Qu          = "\mathcal{Q}"
 
@@ -146,6 +152,7 @@
 %format lbl1
 
 %format // 	    		= "/"
+%format /^/ 	    	= "/"
 %format /=/ 	    	= "{\eqcirc}"
 %format |=>     		= "\Yright "
 %format :->         	= "\mapsto "
@@ -159,8 +166,18 @@
 %format <:   			= "\leftsquigarrow "
 %format .    			= "."
 %format :=	 			= "{\coloneqq}"
+%format === 			= "{\equiv}"
 %format =@= 			= "{\varparallel}"
+%format <+> 			= "{\vartriangle}"
+%format <-> 			= "{\triangledown}"
 
+%format talt			= phi
+%format tctxt			= "\mathcal{X}"
+%format tctxtH			= tctxt "_{H}"
+%format tctxtS			= tctxt "_{S}"
+%format tctxtU			= tctxt "_{U}"
+%format tctxtL			= tctxt "_{L}"
+%format taltcx(cx)		= talt "_{" cx "}"
 
 %format fiopt			= iota
 %format strongFIOpts	= fiopt "_{str}"

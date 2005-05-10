@@ -29,17 +29,19 @@ viewset toK = toE K
 viewset toEvK = toEv EvK
 viewset toEv = toE Ev
 viewset toE = E
+viewset toIm = to4 Im
 
 -------------------------------------------------------------------------
 -- Expr
 -------------------------------------------------------------------------
 
 scheme expr
-  = (fiopt); (Gamma); (sigmak) :- (e) : (sigma) ~> (Cnstr); (Transl)
+  = (fiopt); (Gamma); (ICnstrk); (Cnstrk); (sigmak) :- (e) : (isigma); (sigma) ~> (ICnstr); (Cnstr); (Transl)
   = fiopt; Gamma; sigmak :-...expr e : sigma ~> Cnstr; Transl
   view 9  = fiopt; Gamma; sigmak :-...expr e : sigma ~> Cnstr; Transl
   view C9  = fiopt; Gamma; sigmak :-...expr e : sigma ~> Transl
   view 4 5 6 7 8 = fiopt; Gamma; sigmak :-...expr e : sigma ~> Cnstr
+  view Im = Gamma; ICnstrk; sigmak :-...expr e : isigma ~> ICnstr
   view 2 3 = Gamma; sigmak :-...expr e : sigma ~> Cnstr
   view K 1 = Gamma; sigmak :-...expr e : sigma
   view E = Gamma :-...expr e : sigma
@@ -58,72 +60,86 @@ rules expr.base "Type rules for expressions" =
   rule e_int viewas fromE toEv =
     judge fit fiopt ; Gamma :- Int <= sigma..k : sigma ~> Cnstr ; CnstrEq ; coe viewas fromK
     -
-    judge expr fiopt; Gamma; sigma..k :- (minint(..)maxint) : (viewas toEv = Int viewas fromK = sigma) ~> Cnstr; int
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; sigma..k :- (minint(..)maxint) : isigma; (viewas toEv = Int viewas fromK = sigma) ~> ICnstr; Cnstr; int
   &
   rule e_id viewas fromE toEvK =
     cond (ident :-> sigma) `elem` Gamma
     judge fit fiopt ; Gamma :- sigma <= sigma..k : sigma ~> Cnstr ; CnstrEq ; coe viewas EvK fromK
     -
-    judge expr fiopt; Gamma; sigma..k :- ident : sigma ~> Cnstr ; ((viewas fromK = coe ^^) ident)
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; sigma..k :- ident : isigma; sigma ~> ICnstr; Cnstr ; ((viewas fromK = coe ^^) ident)
   
-  rule e_app viewas fromE toEv =
+  rule e_app viewas fromE toEv Im =
     judge pred ((pi.i.k :~> Transl.i.k)..._,Gamma) :- (Cnstr.3 pi.a.._) ~> Transl.a.._ : _ viewas from9
     judge expr instLFIOpts
-        ; ((viewas from9 = (pi.i.k :~> Transl.i.k)..._,) Gamma); sigma.a
+        ; ((viewas from9 = (pi.i.k :~> Transl.i.k)..._,) Gamma)
+        ; ICnstrk; Cnstrk
+        ; sigma.a
         :- e.2
-        : (viewas toEv = sigma.a viewas fromK = _)
-        ~> Cnstr.3 ; Transl.2
+        : isigma
+        ; (viewas toEv = sigma.a viewas fromK = _)
+        ~> ICnstr; Cnstr.3 ; Transl.2
     judge expr fiopt; ((viewas from9 = (pi.i.k :~> Transl.i.k)..._,) Gamma)
+        ; ICnstrk; Cnstrk
         ; ((viewas from9 = pvar ->)
            (viewas to1 = ANY viewas from2 = tvarv) -> sigma.(viewas from9 = r).k
           )
         :- e.1
-        : ((viewas from9 = pi.a.._ ->) sigma.a -> sigma)
-        ~> Cnstr.2 ; Transl.1
-    cond (pi.i.k :~> Transl.i.k)..._ == inst.pi(pi.a.k._) viewas from9
+        : isigma
+        ; ((viewas from9 = pi.a.._ ->) sigma.a -> sigma)
+        ~> ICnstr; Cnstr.2 ; Transl.1
+    cond (pi.i.k :~> Transl.i.k)..._ === inst.pi(pi.a.k._) viewas from9
     judge fit fiopt; Gamma :- (pvar..k -> tvarv..k) <= sigma..k : (pi.a.k._ -> sigma.r.k) ~> Cnstr.1 ; CnstrEq ; _ viewas from9
     cond (viewas from9 = pvar, pvar..k, tvarv..k,) tvarv "fresh" viewas from2
     -
-    judge expr fiopt; Gamma; sigma..k :- (e.1 ^^ e.2) : ((viewas from2 = Cnstr.3) sigma)
-        ~> (Cnstr.(3(..)(viewas to8 = 2 viewas from9 = 1)))
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; sigma..k :- (e.1 ^^ e.2)
+        : isigma
+        ; ((viewas from2 = Cnstr.3) sigma)
+        ~> ICnstr; (Cnstr.(3(..)(viewas to8 = 2 viewas from9 = 1)))
         ; ((viewas from9 = \Transl.i.k._ ->) Transl.1 ^^ (viewas from9 = Transl.a.._ ^^) Transl.2)
 
-  rule e_lam viewas fromE toEv =
-    judge expr fiopt; ((viewas from9 = (pi.i.p :~> Transl.i.p)..._,) (viewas toK Ev = i :-> sigma.i viewas from1 = Gamma..p), Gamma) ; sigma..r
-        :- e : sigma.e ~> Cnstr.3 ; Transl.e
-    cond (pi.i.p :~> Transl.i.p)..._ == inst.pi(pi.a.._) viewas from9
-    judge pat fiopt; Gamma; sigma..p :- p : _; Gamma..p ~> Cnstr.2 viewas from1
+  rule e_lam viewas fromE toEv Im =
+    judge taltGam meetFIOpts; ICnstr.3 :- Gamma.p : ICnstr.4 viewas Im
+    judge expr fiopt; ((viewas from9 = (pi.i.p :~> Transl.i.p)..._,) (viewas toK Ev = i :-> sigma.i viewas from1 Im = Gamma.p), Gamma)
+        ; (Cnstr.(2(..)1) ICnstrk); Cnstrk
+        ; sigma.r
+        :- e : isigma.e; sigma.e ~> ICnstr.3; Cnstr.3 ; Transl.e
+    cond (pi.i.p :~> Transl.i.p)..._ === inst.pi(pi.a.._) viewas from9
+    judge pat fiopt; Gamma; sigma.p :- p : _; Gamma.p ~> Cnstr.2 viewas from1 Im
     judge fit fiopt; Gamma
-        :- ((viewas from9 = pvar ->) tvarv.1 -> tvarv.2) <= sigma..k
-        : ((viewas from9 = pi.a.._ ->) sigma..p -> sigma..r)
+        :- ((viewas from9 = pvar ->) tvarv.1 -> tvarv.2) <= ((viewas Im = ICnstr..k) sigma..k)
+        : ((viewas from9 = pi.a.._ ->) sigma.p -> sigma.r)
         ~> Cnstr.1 ; CnstrEq ; _
-        viewas from2
-    cond (viewas from9 = pvar,) tvarv.i "fresh" viewas from2
+        viewas from2 Im
+    cond (viewas from9 = pvar,) tvarv.i "fresh" viewas from2 Im
     -
     judge expr fiopt; Gamma
-        ; (viewas to1 = sigma..(viewas toK Ev = i viewas from1 = p)->sigma..r viewas from2 = sigma..k)
-        :- (\(viewas toK Ev = i viewas from1 = p) -> e)
-        : ((viewas from9 = Cnstr.(3(..)2) pi.a.._ ->)
+        ; ICnstrk; Cnstrk
+        ; (viewas to1 = sigma..(viewas toK Ev = i viewas from1 Im = p)->sigma.r viewas from2 Im = sigma..k)
+        :- (\(viewas toK Ev = i viewas from1 Im = p) -> e)
+        : (ICnstr.4 (sigma.p -> isigma.e))
+        ; ((viewas from9 = Cnstr.(3(..)2) pi.a.._ ->)
            (viewas from2 = Cnstr.(3(..)2)) sigma.(viewas toK Ev = i viewas from1 = p) -> sigma.e)
-        ~> Cnstr.(3(..)1)
+        ~> ICnstr.4
+        ; Cnstr.(3(..)1)
         ; ((viewas from9 = \ Transl.i.p._ -> viewas Ev = )
-          \(viewas toK Ev = i viewas from1 = p) -> Transl.e)
+          \(viewas toK Ev = i viewas from1 Im = p) -> Transl.e)
 
   rule e_let viewas from2 =
     judge expr fiopt
         ; ((viewas from1 = (viewas 1 2 = Gamma..p viewas 3 = Gamma..q viewas from4 = Gamma.exists.p) ,) Gamma)
+        ; ICnstrk; Cnstrk
         ; sigma..k
-        :- e : sigma ~> Cnstr.3; Transl
+        :- e : isigma; sigma ~> ICnstr; Cnstr.3; Transl
     cond Gamma.exists.p (=) [ n :-> instE(sigma) | (n :-> sigma) <- Gamma.q.p ] viewas from4
-    cond Gamma..q == [ i :-> forall ^ Vec(alpha) (.) sigma
-                     | (i :-> sigma) <- Cnstr.(2(..)1) Gamma..p
-                     , Vec(alpha) == ftv(sigma) `minusset` ftv(Cnstr.(2(..)1) Gamma)
-                     ] viewas 3
+    cond Gamma..q === [ i :-> forall ^ Vec(alpha) (.) sigma
+                      | (i :-> sigma) <- Cnstr.(2(..)1) Gamma..p
+                      , Vec(alpha) === ftv(sigma) `minusset` ftv(Cnstr.(2(..)1) Gamma)
+                      ] viewas 3
     judge quGam (ftv(Cnstr.(2(..)1) Gamma)); CoVariant :- (Cnstr.2 Gamma..p) : Gamma.q.p viewas from4
-    judge expr strongFIOpts ; (Gamma..p, Gamma) ; sigma..p :- e.i : _ ~> Cnstr.2 ; Transl
+    judge expr strongFIOpts ; (Gamma..p, Gamma) ; ICnstrk; Cnstrk; sigma..p :- e.i : isigma; _ ~> ICnstr; Cnstr.2 ; Transl
     judge pat strongFIOpts; Gamma; ANY :- p : _; Gamma..p ~> Cnstr.1 viewas from1
     -
-    judge expr fiopt; Gamma; sigma..k :- ((let) i :: sigma.i; (viewas toK toEv = i viewas from1 = p) (=) e.i (in) e) : sigma ~> Cnstr.(3(..)1); Transl
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; sigma..k :- ((let) i :: sigma.i; (viewas toK toEv = i viewas from1 = p) (=) e.i (in) e) : isigma; sigma ~> ICnstr; Cnstr.(3(..)1); Transl
 
   rule e_let_tysig viewas fromE toEv =
     judge expr fiopt
@@ -131,38 +147,46 @@ rules expr.base "Type rules for expressions" =
           (viewas from1 = , (viewas 1 2 = Gamma..p viewas 3 = Gamma..q viewas from4 = Gamma.exists.p))
           , Gamma
           )
+        ; ICnstrk; Cnstrk
         ; sigma..k
-        :- e : sigma ~> Cnstr.3; Transl.e
+        :- e : isigma; sigma ~> ICnstr; Cnstr.3; Transl.e
     cond Gamma.exists.p (=) [ n :-> instE(sigma) | (n :-> sigma) <- Gamma.q.p ] viewas from4
-    cond Gamma..q == [ i :-> forall ^ Vec(alpha) (.) sigma
-                     | (i :-> sigma) <- Cnstr.(2(..)1) Gamma..p
-                     , Vec(alpha) == ftv(sigma) `minusset` ftv(Cnstr.(2(..)1) Gamma)
-                     ] viewas 3
+    cond Gamma..q === [ i :-> forall ^ Vec(alpha) (.) sigma
+                      | (i :-> sigma) <- Cnstr.(2(..)1) Gamma..p
+                      , Vec(alpha) === ftv(sigma) `minusset` ftv(Cnstr.(2(..)1) Gamma)
+                      ] viewas 3
     judge quGam (ftv(Cnstr.(2(..)1) Gamma)); CoVariant :- (Cnstr.2 Gamma..p) : Gamma.q.p viewas from4
     judge expr strongFIOpts
         ; (i :-> sigma..(viewas to2 = i viewas from3 = q)
           (viewas from1 = , (viewas from1 = Gamma..p))
           , Gamma
           )
+        ; ICnstrk; Cnstrk
         ; sigma..(viewas to2 = i viewas from3 = q)
-        :- e.i : (viewas to1 = sigma.i viewas from2 = _) ~> Cnstr.2; Transl.i
+        :- e.i
+        : isigma
+        ; (viewas to1 = sigma.i viewas from2 = _) ~> ICnstr; Cnstr.2; Transl.i
     judge qu ([]); CoVariant :- sigma.i : sigma..q ~> _ viewas from4
-    cond sigma..q == forall ^ Vec(alpha) (.) sigma.i viewas 3
-    cond sigma..j == ((alpha.j :-> tvarf.j)..._) sigma.i, tvarf.j "fresh" viewas 3
-    cond Vec(alpha) == ftv(sigma.i) viewas 3
+    cond sigma..q === forall ^ Vec(alpha) (.) sigma.i viewas 3
+    cond sigma..j === ((alpha.j :-> tvarf.j)..._) sigma.i, tvarf.j "fresh" viewas 3
+    cond Vec(alpha) === ftv(sigma.i) viewas 3
     judge pat strongFIOpts; Gamma; sigma.i :- p : _; Gamma..p ~> Cnstr.1 viewas from1
-    cond p == i || p == i@(...) viewas from1
+    cond p === i || p === i@(...) viewas from1
     -
-    judge expr fiopt; Gamma; sigma..k
-        :- ((let) i :: sigma.i; (viewas toK Ev = i viewas from1 = p) (=) e.i (in) e) : sigma
-        ~> Cnstr.(3(..)1)
+    judge expr fiopt; Gamma
+        ; ICnstrk; Cnstrk
+        ; sigma..k
+        :- ((let) i :: sigma.i; (viewas toK Ev = i viewas from1 = p) (=) e.i (in) e)
+        : isigma
+        ; sigma
+        ~> ICnstr; Cnstr.(3(..)1)
         ; ((let) i (=) Transl.i (in) Transl.e)
 
   rule e_pred viewas toEvK =
     judge pred Gamma :- pi ~> Transl.pi : sigma.pi
-    judge expr fiopt; Gamma; (pvar -> sigmak) :- e : (pi -> sigma) ~> Cnstr; Transl.e
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; (pvar -> sigmak) :- e : isigma; (pi -> sigma) ~> ICnstr; Cnstr; Transl.e
     -
-    judge expr fiopt; Gamma; sigmak :- e : sigma ~> Cnstr; (Transl.e Transl.pi)
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; sigmak :- e : isigma; sigma ~> ICnstr; Cnstr; (Transl.e Transl.pi)
 
 rules expr.C "Type checking/inferencing for expression application with implicit parameters" =
   rule app_impl = rule expr.app.e_app_impl_impl
@@ -170,81 +194,81 @@ rules expr.C "Type checking/inferencing for expression application with implicit
 
 rules expr.explimpl "Type rules for explicit implicit parameters" viewas from9 =
   rule e_iapp =
-    judge expr strongFIOpts; Gamma; sigma.a :- e.2 : _ ~> Cnstr.2 ; Transl.2
+    judge expr strongFIOpts; Gamma; ICnstrk; Cnstrk; sigma.a :- e.2 : isigma; _ ~> ICnstr; Cnstr.2 ; Transl.2
     judge fit predFIOpts; _ :- (pi.d -> sigma.d) <= (pi.a -> tvarv) : (_ -> sigma.a) ~> _ ; CnstrEq ; _
     cond pi.d ~> _ : sigma.d `elem` Gamma
-    judge expr implFIOpts; Gamma; (pi.2 -> sigma..k) :- e.1 : (pi.a -> sigma) ~> Cnstr.1 ; Transl.1
+    judge expr implFIOpts; Gamma; ICnstrk; Cnstrk; (pi.2 -> sigma..k) :- e.1 : isigma; (pi.a -> sigma) ~> ICnstr; Cnstr.1 ; Transl.1
     cond tvarv "fresh"
     -
-    judge expr fiopt; Gamma; (sigma..k) :- (e.1 ^^ (! e.2 <: pi.2 !)) : (Cnstr.2 sigma) ~> Cnstr.(2(..)1) ; (Transl.1 ^^ Transl.2)
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; (sigma..k) :- (e.1 ^^ (! e.2 <: pi.2 !)) : isigma; (Cnstr.2 sigma) ~> ICnstr; Cnstr.(2(..)1) ; (Transl.1 ^^ Transl.2)
 
   rule e_ilam =
-    judge expr fiopt; (pi.a :~> Transl.a,Gamma..p,Gamma); sigma..r :- e : sigma.e ~> Cnstr.3 ; Transl.e
+    judge expr fiopt; (pi.a :~> Transl.a,Gamma..p,Gamma); ICnstrk; Cnstrk; sigma.r :- e : isigma; sigma.e ~> ICnstr; Cnstr.3 ; Transl.e
     judge pat fiopt; Gamma; sigma.a :- p : _; Gamma..p ~> Cnstr.2
     judge fit predFIOpts; _ :- (pi.d -> sigma.d) <= (pi.a -> tvarv.2) : (_ -> sigma.a) ~> _  ; CnstrEq; _
     cond pi.d ~> Transl.a : sigma.d `elem` Gamma
-    judge fit implFIOpts; Gamma :- (pi -> tvarv.1) <= sigma..k : (pi.a -> sigma..r) ~> Cnstr.1 ; CnstrEq ; _
+    judge fit implFIOpts; Gamma :- (pi -> tvarv.1) <= sigma..k : (pi.a -> sigma.r) ~> Cnstr.1 ; CnstrEq ; _
     cond tvarv.1, tvarv.2 "fresh"
     -
-    judge expr fiopt; Gamma; sigma..k :- (\(! p <: pi !) -> e) : (Cnstr.(3(..)2) pi.a -> sigma.e) ~> Cnstr.(3(..)1) ; (\Transl.a -> Transl.e)
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; sigma..k :- (\(! p <: pi !) -> e) : isigma; (Cnstr.(3(..)2) pi.a -> sigma.e) ~> ICnstr; Cnstr.(3(..)1) ; (\Transl.a -> Transl.e)
 
 rules expr.proving "Proving for lambda expressions with implicit parameters" viewas from9 =
   rule e_app_expl_known viewas from9 =
     judge pred (Cnstr.(2(..)1) pi.2 :~> Transl.2,Gamma) :- Cnstr.2 pi.a ~> Transl.a : _
-    judge expr instLFIOpts; Gamma; sigma..pi :- e.2 : _ ~> Cnstr.2 ; Transl.2
+    judge expr instLFIOpts; Gamma; ICnstrk; Cnstrk; sigma..pi :- e.2 : isigma; _ ~> ICnstr; Cnstr.2 ; Transl.2
     judge pred Gamma :- pi.2 ~> _ : sigma..pi
-    judge expr fiopt; Gamma; (pvar -> sigma..k) :- e.1 : (pi.a -> sigma) ~> Cnstr.1 ; Transl.1
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; (pvar -> sigma..k) :- e.1 : isigma; (pi.a -> sigma) ~> ICnstr; Cnstr.1 ; Transl.1
     -
-    judge expr fiopt; Gamma; (sigma..k) :- (e.1 ^^ (! e.2 <~: pi.2 !)) : (Cnstr.2 sigma) ~> Cnstr.(2(..)1) ; (Transl.1 ^^ Transl.a)
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; (sigma..k) :- (e.1 ^^ (! e.2 <~: pi.2 !)) : isigma; (Cnstr.2 sigma) ~> ICnstr; Cnstr.(2(..)1) ; (Transl.1 ^^ Transl.a)
 
   rule e_app_expl_infer viewas from9 =
-    judge expr instLFIOpts; Gamma; sigma..pi :- e.2 : _ ~> Cnstr.2 ; Transl.2
+    judge expr instLFIOpts; Gamma; ICnstrk; Cnstrk; sigma..pi :- e.2 : isigma; _ ~> ICnstr; Cnstr.2 ; Transl.2
     judge pred Gamma :- Cnstr.1 pi.2 ~> _ : sigma..pi
-    judge expr fiopt; Gamma; (pvar -> sigma..k) :- e.1 : (pvar..a -> sigma) ~> Cnstr.1 ; Transl.1
-    cond Cnstr.3 == pvar..a :-> pi.2 , pvar..r
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; (pvar -> sigma..k) :- e.1 : isigma; (pvar..a -> sigma) ~> ICnstr; Cnstr.1 ; Transl.1
+    cond Cnstr.3 === pvar..a :-> pi.2 , pvar..r
     cond pvar..r "fresh"
     -
-    judge expr fiopt; Gamma; (sigma..k) :- (e.1 ^^ (! e.2 <~: pi.2 !)) : (pvar..r -> Cnstr.2 sigma) ~> Cnstr.(3(..)1) ; (Transl.1 ^^ Transl.2)
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; (sigma..k) :- (e.1 ^^ (! e.2 <~: pi.2 !)) : isigma; (pvar..r -> Cnstr.2 sigma) ~> ICnstr; Cnstr.(3(..)1) ; (Transl.1 ^^ Transl.2)
 
   rule e_app_impl_expl_infer viewas from9 =
     judge pred (pi.a :~> Transl.a, Gamma) :- (Cnstr.2 pi.2) ~> Transl.2 : _
     judge pred Gamma :- pi.a ~> Transl.a : sigma.a
-    judge expr instLFIOpts; Gamma; ANY :- e.2 : sigma.a ~> Cnstr.2 ; Transl.2
-    judge expr fiopt; Gamma; (pvar -> sigma..k) :- e.1 : (pvar.1 -> sigma) ~> Cnstr.1 ; Transl.1
+    judge expr instLFIOpts; Gamma; ICnstrk; Cnstrk; ANY :- e.2 : isigma; sigma.a ~> ICnstr; Cnstr.2 ; Transl.2
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; (pvar -> sigma..k) :- e.1 : isigma; (pvar.1 -> sigma) ~> ICnstr; Cnstr.1 ; Transl.1
     cond pvar..a "fresh"
-    cond Cnstr.3 == pvar.1 :-> pi.2 , pvar..a
+    cond Cnstr.3 === pvar.1 :-> pi.2 , pvar..a
     -
-    judge expr fiopt; Gamma; (pvar -> sigma..k) :- (e.1 ^^ (! e.2 !)) : (pvar..a -> Cnstr.2 sigma) ~> (Cnstr.3,Cnstr.(2(..)1)) ; (Transl.1 ^^ Transl.2)
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; (pvar -> sigma..k) :- (e.1 ^^ (! e.2 !)) : isigma; (pvar..a -> Cnstr.2 sigma) ~> ICnstr; (Cnstr.3,Cnstr.(2(..)1)) ; (Transl.1 ^^ Transl.2)
 
   rule e_app_expl_expl_known viewas from9 =
     judge pred (pi.a :~> Transl.a, Gamma) :- (Cnstr.2 pi.2) ~> Transl.2 : _
     judge pred Gamma :- pi.a ~> Transl.a : sigma.a
-    judge expr instLFIOpts; Gamma; ANY :- e.2 : sigma.a ~> Cnstr.2 ; Transl.2
-    judge expr fiopt; Gamma; (pvar -> sigma..k) :- e.1 : (pi.2 -> sigma) ~> Cnstr.1 ; Transl.1
+    judge expr instLFIOpts; Gamma; ICnstrk; Cnstrk; ANY :- e.2 : isigma; sigma.a ~> ICnstr; Cnstr.2 ; Transl.2
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; (pvar -> sigma..k) :- e.1 : isigma; (pi.2 -> sigma) ~> ICnstr; Cnstr.1 ; Transl.1
     -
-    judge expr fiopt; Gamma; (pvar -> sigma..k) :- (e.1 ^^ (! e.2 !)) : (Cnstr.2 sigma) ~> Cnstr.(2(..)1) ; (Transl.1 ^^ Transl.2)
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; (pvar -> sigma..k) :- (e.1 ^^ (! e.2 !)) : isigma; (Cnstr.2 sigma) ~> ICnstr; Cnstr.(2(..)1) ; (Transl.1 ^^ Transl.2)
 
 rules expr.rec "Type checking for records" viewas from9 =
   rule e_rec_ext viewas from8 =
-    judge expr fiopt; Gamma; (Cnstr.(2(..)1) tvarv.e) :- e : sigma.e ~> Cnstr.3 ; Transl.e
-    judge expr fiopt; Gamma; (Cnstr.1 tvarv.r) :- r : sigma..r ~> Cnstr.2 ; Transl.r
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; (Cnstr.(2(..)1) tvarv.e) :- e : isigma; sigma.e ~> ICnstr; Cnstr.3 ; Transl.e
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; (Cnstr.1 tvarv.r) :- r : isigma; sigma.r ~> ICnstr; Cnstr.2 ; Transl.r
     judge fit strongFIOpts; Gamma :- ((tvarv.r | l :: tvarv.e)) <= sigma..k : ((sigma.r.k | l :: sigma.e.k)) ~> Cnstr.1 ; CnstrEq ; _
     cond tvarv.r, tvarv.e "fresh"
     -
-    judge expr fiopt; Gamma; sigma..k :- ((r | l (=) e)) : ((Cnstr.3 sigma..r | l :: sigma.e)) ~> Cnstr.(3(..)1) ; ((Transl.r | l (=) Transl.e))
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; sigma..k :- ((r | l (=) e)) : isigma; ((Cnstr.3 sigma.r | l :: sigma.e)) ~> ICnstr; Cnstr.(3(..)1) ; ((Transl.r | l (=) Transl.e))
 
   rule e_rec_upd viewas from8 =
-    judge expr fiopt; Gamma; (Cnstr.(2(..)1) tvarv.e) :- e : sigma.e ~> Cnstr.3 ; Transl.e
-    judge expr fiopt; Gamma; ((Cnstr.1 tvarv.r | l :: ANY)) :- r : ((sigma..r | l :: _)) ~> Cnstr.2 ; Transl.r
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; (Cnstr.(2(..)1) tvarv.e) :- e : isigma; sigma.e ~> ICnstr; Cnstr.3 ; Transl.e
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; ((Cnstr.1 tvarv.r | l :: ANY)) :- r : isigma; ((sigma.r | l :: _)) ~> ICnstr; Cnstr.2 ; Transl.r
     judge fit strongFIOpts; Gamma :- ((tvarv.r | l :: tvarv.e)) <= sigma..k : ((sigma.r.k | l :: sigma.e.k)) ~> Cnstr.1 ; CnstrEq ; _
     cond tvarv.r, tvarv.e "fresh"
     -
-    judge expr fiopt; Gamma; sigma..k :- ((r | l := e)) : ((Cnstr.3 sigma..r | l :: sigma.e)) ~> Cnstr.(3(..)1) ; ((Transl.r | l := Transl.e))
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; sigma..k :- ((r | l := e)) : isigma; ((Cnstr.3 sigma.r | l :: sigma.e)) ~> ICnstr; Cnstr.(3(..)1) ; ((Transl.r | l := Transl.e))
 
   rule e_rec_sel viewas from8 =
-    judge expr fiopt; Gamma; ((ANY | l :: sigma..k)) :- r : ((_ | l :: sigma.e)) ~> Cnstr ; Transl.r
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; ((ANY | l :: sigma..k)) :- r : isigma; ((_ | l :: sigma.e)) ~> ICnstr; Cnstr ; Transl.r
     -
-    judge expr fiopt; Gamma; sigma..k :- (r (.) l) : sigma.e ~> Cnstr ; (Transl.r (.) l)
+    judge expr fiopt; Gamma; ICnstrk; Cnstrk; sigma..k :- (r (.) l) : isigma; sigma.e ~> ICnstr; Cnstr ; (Transl.r (.) l)
 
 -------------------------------------------------------------------------
 -- Pat
@@ -254,16 +278,16 @@ scheme pat
   = (fiopt); (Gamma); (sigmak) :- (p) : (sigma); (Gammap) ~> (Cnstr)
   = fiopt; Gamma; sigmak :-...pat p : sigma; Gammap ~> Cnstr
   view C9 = fiopt; Gamma; sigmak :-...pat p : sigma; Gammap
-  view 4 9 = fiopt; Gamma; sigmak :-...pat p : sigma; Gammap ~> Cnstr
+  view 4 9 Im = fiopt; Gamma; sigmak :-...pat p : sigma; Gammap ~> Cnstr
   view 2 3 = sigmak :-...pat p : sigma; Gammap ~> Cnstr
   view 1 = sigmak :-...pat p : Gammap
 
 rules pat "Type checking/inferencing for pattern" =
   rule p_apptop viewas from2 =
     judge fit fiopt ; Gamma :- (Cnstr.1 sigma..k) <= sigma..d : sigma ~> Cnstr.2 ; CnstrEq ; coe
-    cond sigma..d -> () == sigma..p
+    cond sigma..d -> () === sigma..p
     judge pat fiopt; Gamma; _ :- p : sigma..p; Gamma..p ~> Cnstr.1
-    cond p == p.1 ^^ p.2 (...) p.n, n >= 1
+    cond p === p.1 ^^ p.2 (...) p.n, n >= 1
     -
     judge pat fiopt; Gamma; sigma..k :- p : sigma; Gamma..p ~> Cnstr.(2(..)1)
 
@@ -276,7 +300,7 @@ rules pat "Type checking/inferencing for pattern" =
 
   rule p_var =
     cond sigma..k /= ANY viewas 2
-    cond sigma == InstUnExists(sigma..k) viewas from4
+    cond sigma === InstUnExists(sigma..k) viewas from4
     -
     judge pat fiopt; Gamma; sigma..k :- i : sigma; ([i :-> sigma]) ~> ([])
   &
@@ -305,13 +329,13 @@ scheme fit
   view 11 = fiopt; Gamma :-...fit sigmal <= sigmar : sigma ~> Cnstr ; CnstrEq ; coe
   view C9  = fiopt; Gamma :-...fit sigmal <= sigmar : sigma ~> coe
   view 9  = fiopt; Gamma :-...fit sigmal <= sigmar : sigma ~> Cnstr ; coe
-  view 4  = fiopt :-...fit sigmal <= sigmar : sigma ~> Cnstr
+  view 4 Im = fiopt :-...fit sigmal <= sigmar : sigma ~> Cnstr
   view 2 3 = :-...fit sigmal <= sigmar : sigma ~> Cnstr
   view 1 K EvK = :-...fit sigmal <= sigmar : sigma
 
 rules fit.base "Rules for fit" =
   rule f_con =
-    cond I.1 == I.2
+    cond I.1 === I.2
     -
     judge fit fiopt; Gamma :- I.1 <= I.2 : I.2 ~> ([]) ; ([]) ; id
 
@@ -326,37 +350,37 @@ rules fit.base "Rules for fit" =
 rules fit.quant "Fitting/subsumption for quantified types" viewas from4 =
   rule f_forall_l =
     judge fit fiopt ; Gamma :- rho..i <= sigma.2 : sigma ~> Cnstr ; CnstrEq ; coe
-    cond (_,rho..i) == inst.tvarv(Vec(alpha),rho.1)
+    cond (_,rho..i) === inst.tvarv(Vec(alpha),rho.1)
     -
     judge fit fiopt ; Gamma :- (forall ^ Vec(alpha) (.) rho.1) <= sigma.2 : sigma ~> Cnstr ; CnstrEq ; coe
 
   rule f_forall_r1 =
     judge fit fioLeaveRInstY ; Gamma :- sigma.1 <= rho..i : sigma ~> Cnstr ; CnstrEq ; coe
-    cond (_,rho..i) == inst.tvarv(Vec(beta),rho.2)
+    cond (_,rho..i) === inst.tvarv(Vec(beta),rho.2)
     -
     judge fit fioLeaveRInstY ; Gamma :- sigma.1 <= (forall ^ Vec(beta) (.) rho.2) : sigma ~> Cnstr ; CnstrEq ; coe
   &
   rule f_forall_r2 =
     judge fit fioLeaveRInstN ; Gamma :- sigma.1 <= rho..i : _ ~> Cnstr ; CnstrEq ; coe
-    cond (_,rho..i) == inst.tvarf(Vec(beta),rho.2)
+    cond (_,rho..i) === inst.tvarf(Vec(beta),rho.2)
     -
     judge fit fioLeaveRInstN ; Gamma :- sigma.1 <= (forall ^ Vec(beta) (.) rho.2) : (Cnstr (forall ^ Vec(beta) (.) rho.2)) ~> Cnstr ; CnstrEq ; coe
 
   rule f_exists_l =
     judge fit fiopt ; Gamma :- rho..i <= sigma.2 : sigma ~> Cnstr ; CnstrEq ; coe
-    cond (_,rho..i) == inst.tcon(Vec(alpha),rho.1)
+    cond (_,rho..i) === inst.tcon(Vec(alpha),rho.1)
     -
     judge fit fiopt ; Gamma :- (exists ^ Vec(alpha) (.) rho.1) <= sigma.2 : sigma ~> Cnstr ; CnstrEq ; coe
 
   rule f_exists_r1 =
     judge fit fioLeaveRInstY ; Gamma :- sigma.1 <= rho..i : sigma ~> Cnstr ; CnstrEq ; coe
-    cond (_,rho..i) == inst.tcon(Vec(beta),rho.2)
+    cond (_,rho..i) === inst.tcon(Vec(beta),rho.2)
     -
     judge fit fioLeaveRInstY ; Gamma :- sigma.1 <= (exists ^ Vec(beta) (.) rho.2) : sigma ~> Cnstr ; CnstrEq ; coe
   &
   rule f_exists_r2 =
     judge fit fioLeaveRInstN ; Gamma :- sigma.1 <= rho..i : sigma ~> Cnstr ; CnstrEq ; coe
-    cond (Vec(tvarv),rho..i) == inst.tvarv(Vec(beta),rho.2)
+    cond (Vec(tvarv),rho..i) === inst.tvarv(Vec(beta),rho.2)
     -
     judge fit fioLeaveRInstN ; Gamma :- sigma.1 <= (exists ^ Vec(beta) (.) rho.2) : (Cnstr (exists ^ Vec(beta) (.) rho.2)) ~> (Cnstr restr.(tvarv..._).dom) ; CnstrEq ; coe
 
@@ -377,7 +401,7 @@ rules fit.bind "Fitting/subsumption for tvar binds" viewas from2 =
   &
   rule f_bind_r2 =
     judge fit fiopt ; Gamma :- sigma.1 <= sigma.2.({j}) : _ ~> _ ; CnstrEq ; coe
-    cond {j} == emptyset
+    cond {j} === emptyset
     cond sigma (=) tvarv.2 // sigma.1, sigma.2.({i})
     -
     judge fit fiopt ; Gamma :- sigma.1 <= (tvarv.2 // sigma.2.({i})) : sigma ~> (tvarv.1 :-> sigma) ; CnstrEq ; coe
@@ -397,29 +421,29 @@ rules fit.bind "Fitting/subsumption for tvar binds" viewas from2 =
   rule f_forall_l =
     judge elimb unifyFIOpts; tvarv..._ :- rho..i : rho ~> Cnstr.2
     judge fit (fioBindToTyAltsY, meetFIOpts) ; Gamma :- rho..i <= sigma.2 : sigma ~> Cnstr.1 ; CnstrEq ; coe
-    cond (tvarv..._,rho..i) == inst.tvarv(alpha..._,rho.1)
+    cond (tvarv..._,rho..i) === inst.tvarv(alpha..._,rho.1)
     -
     judge fit meetFIOpts ; Gamma :- (forall ^ alpha..._ (.) rho.1) <= sigma.2 : (forall ^ (tvarv..._ `intersect` ftv(rho)) (.) rho) ~> (Cnstr.2 (Cnstr.1 restr.(tvarv..._).dom)) ; CnstrEq ; coe
 
 rules fit.predSymmetric "Fitting/subsumption for predicates (impl/expl match)" viewas from9 =
   rule f_pred_expl_impl =
     judge fit fiopt; Gamma :- sigma.1 <= (pvar -> sigma.2) : sigma ~> Cnstr ; CnstrEq ; coe
-    cond Cnstr.1 == pvar.2 :-> pi.1 , pvar
+    cond Cnstr.1 === pvar.2 :-> pi.1 , pvar
     cond pvar "fresh"
     -
     judge fit fiopt; Gamma :- (pi.1 -> sigma.1) <= (pvar.2 -> sigma.2) : (pi.1 -> sigma) ~> (Cnstr.1, Cnstr) ; CnstrEq ; (\n -> coe (_ ^^ n))
 
   rule f_pred_impl_expl =
     judge fit fiopt; (pi.2.i :~> Transl.pi, Gamma) :- (pvar -> sigma.1) <= sigma.2 : sigma ~> Cnstr ; CnstrEq ; coe
-    cond pi.2.i :~> Transl.pi == inst.pi(pi.2)
-    cond Cnstr.1 == pvar.1 :-> pi.2 , pvar
+    cond pi.2.i :~> Transl.pi === inst.pi(pi.2)
+    cond Cnstr.1 === pvar.1 :-> pi.2 , pvar
     cond pvar "fresh"
     -
     judge fit fiopt; Gamma :- (pvar.1 -> sigma.1) <= (pi.2 -> sigma.2) : (pi.2 -> sigma) ~> (Cnstr.1, Cnstr) ; CnstrEq ; (\Transl.pi -> coe (_ ^^ Transl.pi))
 
   rule f_pred_impl_impl =
     judge fit fiopt; Gamma :- sigma.1 <= sigma.2 : sigma ~> Cnstr ; CnstrEq ; coe
-    cond pvar.2.i :~> Transl.pi.._ == inst.pi(pvar.2)
+    cond pvar.2.i :~> Transl.pi.._ === inst.pi(pvar.2)
     -
     judge fit fiopt; Gamma :- (pvar.1 -> sigma.1) <= (pvar.2 -> sigma.2) : (pvar.2 -> sigma) ~> (pvar.1 :-> pvar.2, Cnstr) ; CnstrEq ; (\Transl.pi.._ -> coe (_ ^^ Transl.pi.._))
 
@@ -432,7 +456,7 @@ rules fit.predAsymmetric "Fitting/subsumption for predicates (only impl or expl)
 
   rule f_pred_expl_r =
     judge fit fiopt; (pi.2.i :~> Transl.pi, Gamma) :- sigma.1 <= sigma.2 : sigma ~> Cnstr ; CnstrEq ; coe
-    cond pi.2.i :~> Transl.pi == inst.pi(pi.2)
+    cond pi.2.i :~> Transl.pi === inst.pi(pi.2)
     -
     judge fit fiopt; Gamma :- sigma.1 <= (pi.2 -> sigma.2) : (Cnstr pi.2 -> sigma) ~> Cnstr ; CnstrEq ; (\ Transl.pi -> coe _)
 
@@ -553,7 +577,7 @@ rules qu "Quantifier location inferencing" =
     cond v `elem` (fv.1 `intersect` fv.2) `minusset` bv
     judge qu (v, bv); CoContraVariant :- sigma.1 : sigma.1.q ~> fv.1
     judge qu (v, bv); CoContraVariant :- sigma.2 : sigma.2.q ~> fv.2
-    cond Qu == if coco == CoVariant then forall else exists
+    cond Qu === if coco === CoVariant then forall else exists
     cond coco `elem` {CoVariant, ContraVariant}
     -
     judge qu bv; coco :- (sigma.1 ^^ sigma.2) : (Qu v (.) sigma.1.q ^^ sigma.2.q) ~> ((fv.1 `union` fv.2) `minusset` [v])
@@ -580,4 +604,31 @@ scheme pred
   = Gamma :-...pred pi ~> Transl : sigma
   view 9 C9 Ev EvK = Gamma :-...pred pi ~> Transl : sigma
   view E = Gamma :-...pred pi : sigma
+
+-------------------------------------------------------------------------
+-- Type alternative elimination
+-------------------------------------------------------------------------
+
+scheme talt
+  = (fiopt); (ICnstrk) :- (isigma) : (ICnstr)
+  = fiopt; ICnstrk :-...alt isigma : ICnstr
+  view Im = fiopt; ICnstrk :-...alt isigma : ICnstr
+
+rules talt "Type alternative elimination" =
+  rule alts =
+    cond tvar [ talt.tctxtH.._, talt.Qu.._, talt.tctxtS.._ ] === ICnstr..k isigma
+    -
+    judge talt fiopt; ICnstr..k :- isigma : ICnstr
+
+scheme taltGam
+  = (fiopt); (ICnstrk) :- (Gamma) : (ICnstr)
+  = fiopt; ICnstrk :-...(Gamma alt) Gamma : ICnstr
+  view Im = fiopt; ICnstrk :-...(Gamma alt) Gamma : ICnstr
+
+rules taltGam "Type alternative elimination" =
+  rule alts =
+    judge taltGam fiopt; ICnstr.e :- Gamma : ICnstr
+    judge talt fiopt; ICnstr..k :- isigma : ICnstr.e
+    -
+    judge taltGam fiopt; ICnstr..k :- (i :-> isigma, Gamma) : ICnstr
 

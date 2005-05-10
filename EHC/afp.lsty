@@ -20,52 +20,56 @@
   \fi
   \next}
 
-% Env for rules in a figure
-\newenvironment{RulesFigure}[3]{%
-  \def\RFCap{#2}
-  \def\RFLab{#3}
-%if storyExplImpl
+% Env for figure
+\newenvironment{Figure}[2]{%
+  \def\F@@Cap{#1}
+  \def\F@@Lab{#2}
+%if acm
   \begin{figure}[t]
 %else
   \begin{figure}[htbp]
 %endif
-  \begin{tabular}{P}
-%if not useSigplanconfSty
-  \hline
-%endif
-  \fbox{#1}
-  \\
 }{%
-  \\
-%if not useSigplanconfSty
-  \hline
-%endif
-  \end{tabular}
-  \caption{\RFCap}
-  \label{\RFLab}
+  \caption{\F@@Cap}
+  \label{\F@@Lab}
   \end{figure}
 }
 
-% Env for code in a figure
-\newenvironment{Figure}[2]{%
-  \def\RFCap{#1}
-  \def\RFLab{#2}
-  \begin{figure}[htbp]
-  \begin{center}
-  \begin{tabular}{c}
+% Env for tabular figure
+\newenvironment{TabularFigure}[3]{%
+  \begin{Figure}{#1}{#2}
+  \begin{tabular}{#3}
+%if not useSigplanconfSty
   \hline
+  \\
+%endif
+}{%
+%if not useSigplanconfSty
+  \\
+  \hline
+%endif
+  \end{tabular}
+  \end{Figure}
+}
+
+% Env for rules in a figure
+\newenvironment{RulesFigure}[3]{%
+  \begin{TabularFigure}{#2}{#3}{P}
+  \fbox{#1}
+  \\
+}{%
+  \end{TabularFigure}
+}
+
+% Env for code in a figure
+\newenvironment{CodeFigure}[2]{%
+  \begin{TabularFigure}{#1}{#2}{c}
   \begin{minipage}{0.9\textwidth}
   %\vspace{.5ex}
 }{%
   %\vspace{.5ex}
   \end{minipage}
-  \\
-  \hline
-  \end{tabular}
-  \end{center}
-  \caption{\RFCap}
-  \label{\RFLab}
-  \end{figure}
+  \end{TabularFigure}
 }
 
 % safe way of using code env in slides
