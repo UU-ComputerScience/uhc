@@ -35,7 +35,7 @@ SEM CaseAlts
 
 %%[5_1
 SEM Expr
-  | Case        loc         .   (ebTy,ebCnstr,ebErrs)
+  | Case        loc         .   (ebTy,ebCnstr,ebErrs,_)
                                                     =   tyElimAlts (mkElimAltsWrap @fe) joinFIOpts @lUniq (@expr.ty)
                 alts        .   knPatTy             :=  @ebTy
                             .   patTyCnstr          :=  @ebCnstr |=> @expr.tyCnstr

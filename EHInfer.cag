@@ -46,7 +46,7 @@ valElimExprAlts :: FIOpts -> FIEnv -> TyVarIdL -> UID -> Cnstr -> ValGam -> (Val
 valElimExprAlts fio fe globTvL u c g
   = (g',c'',eg)
   where  (g',c',eg) = valGamElimAlts fio fe globTvL u c g
-         c'' = cnstrFilterTy  (\_ t -> not (tyIsVar t)) c'
+         c'' = cnstrDelAlphaRename c'
 %%]
 
 %%[4_2
@@ -59,7 +59,7 @@ SEM Expr
                             .   imprTyCnstr         =   @decls.patTyCnstr |=> @lhs.imprTyCnstr
                 loc         .   (_,elimImprTyCnstr,_)
                                                     =   valElimExprAlts joinFIOpts @fe (ftv @gValGam) @lUniq4 @decls.imprTyCnstr @lValGam
-                decls       .   tyCnstr             :=  @lhs.tyCnstr |=> @elimImprTyCnstr |=> @decls.patTyCnstr
+                decls       .   tyCnstr             :=  @elimImprTyCnstr |=> @decls.patTyCnstr |=> @lhs.tyCnstr
                 loc         .   (lQuValGam,lQuTyCnstr)
                                                     :=  let  (g1,c1) = valGamQuantifyWithCnstr @decls.tyCnstr @gTyTvL @lValGam
                                                              (g2,c2) = valGamInst1ExistsWithCnstr (c1 |=> @decls.tyCnstr) @lUniq2 g1
@@ -86,6 +86,8 @@ SEM Expr
                                                         in   (g2,c2 |=> c1)
                 body        .   tyCnstr             :=  @lQuTyCnstr |=> @decls.tyCnstr
                             .   valGam              :=  @decls.patValGam
+
+                decls       .   tyCnstr             :=  @lhs.tyCnstr |=> @elimImprTyCnstr |=> @decls.patTyCnstr
 
 %%[9
 SEM Expr

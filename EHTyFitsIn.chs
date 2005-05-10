@@ -304,10 +304,10 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[4_2.fitsIn.bind
-            occurBindAlt fi tv t    =  case t of
+            occurBindAlt fi isR tv t=  case t of
                                          Ty_Quant q _ _ | tyquIsForall q
                                             -> occurBind fi tv t
-                                         _  -> occurBind fi tv (mkTyAlts fi tv t)
+                                         _  -> occurBind fi tv (mkTyAlts fi isR tv t)
 %%]
 
             f fi t1@(Ty_Quant q1 _ _)   t2@(Ty_Quant q2 _ _)
@@ -317,15 +317,18 @@ fitsIn opts env uniq ty1 ty2
                        )                            = manyFO [fo,rfo]
 
 %%[9_1.fitsIn.bind -4_1.fitsIn.bind
-            occurBindAlt fi tv t    =  occurBind (fi {fiUniq = u'}) tv (mkTyAlts fi tv t u)
+            occurBindAlt fi isR tv t
+                                    =  occurBind (fi {fiUniq = u'}) tv (mkTyAlts fi tv t u)
                                        where (u',u)  = mkNewUID (fiUniq fi)
 %%]
 
 %%[4_2.fitsIn.mkTyPlus
-            mkTyPlus     fi t       =  (fi,TyPlus_Ty t TySoft)
-            mkTyPlusHard fi t       =  (fi,TyPlus_Ty t h)
-                                       where h = if fioIsMeetJoin (fiFIOpts fi) then TyHard else TySoft
+            mkTyPlusHard fi isR v t =  (fi,TyPlus_Ty t h)
+                                       where h =  if fioIsMeetJoin (fiFIOpts fi) then TyHard
+                                                  else if isR && fioIsSubsume (fiFIOpts fi) then TyUpBound v
+                                                  else TySoft v
 %%]
+            mkTyPlus     fi t       =  (fi,TyPlus_Ty t TySoft)
 
 %%[9_1.fitsIn.mkTyPlus -4_1.fitsIn.mkTyPlus
             mkTyPlus fi t           =  (fi {fiUniq = u'},TyPlus_Ty t u)
@@ -333,8 +336,8 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[4_2.fitsIn.mkTyAlts
-            mkTyAlts fi tv t        =  if fioBindToTyAlts (fiFIOpts fi)
-                                       then Ty_Alts tv [snd (mkTyPlusHard fi t)]
+            mkTyAlts fi isR tv t    =  if fioBindToTyAlts (fiFIOpts fi)
+                                       then Ty_Alts tv [snd (mkTyPlusHard fi isR tv t)]
                                        else t
 %%]
 
@@ -684,9 +687,9 @@ fitsIn opts env uniq ty1 ty2
             f fi t1@(Ty_Alts _ _)       t2@(Ty_Var v2 _)
                 | allowBind fi t2                   = bind fi v2 t1
             f fi t1@(Ty_Var v1 _)       t2
-                | allowImpredTVBindL fi t1 t2       = occurBindAlt fi v1 t2
+                | allowImpredTVBindL fi t1 t2       = occurBindAlt fi True v1 t2
             f fi t1                     t2@(Ty_Var v2 _)
-                | allowImpredTVBindR fi t2 t1       = occurBindAlt fi v2 t1
+                | allowImpredTVBindR fi t2 t1       = occurBindAlt fi False v2 t1
 %%]
 
 %%[4_2.fitsIn.Alts
@@ -694,10 +697,10 @@ fitsIn opts env uniq ty1 ty2
                                                     = bindMany fi [v1,v2] (Ty_Alts v1 (t1L `cmbTyAltsL` t2L))
             f fi t1@(Ty_Alts v1 t1L)    t2
                                                     = bind fipl v1 (Ty_Alts v1 (t1L `cmbTyAltsL` [t2pl]))
-                where  (fipl,t2pl) = mkTyPlusHard fi t2
+                where  (fipl,t2pl) = mkTyPlusHard fi True v1 t2
             f fi t1                     t2@(Ty_Alts v2 t2L)
                                                     = bind fipl v2 (Ty_Alts v2 ([t1pl] `cmbTyAltsL` t2L))
-                where  (fipl,t1pl) = mkTyPlusHard fi t1
+                where  (fipl,t1pl) = mkTyPlusHard fi False v2 t1
 %%]
 
 %%[11.fitsIn.Equal
@@ -938,9 +941,9 @@ fitsIn opts env uniq ty1 ty2
 
 %%[4_2.fitsIn.Var2 -4.fitsIn.Var2
             f fi t1@(Ty_Var v1 _)       t2
-                | allowBind fi t1                   = occurBindAlt fi v1 t2
+                | allowBind fi t1                   = occurBindAlt fi True v1 t2
             f fi t1                     t2@(Ty_Var v2 _)
-                | allowBind fi t2                   = occurBindAlt fi v2 t1
+                | allowBind fi t2                   = occurBindAlt fi False v2 t1
 %%]
 
 %%[4.fitsIn.App

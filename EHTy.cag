@@ -36,7 +36,7 @@
 %%[4 hs import(qualified Data.Map as Map) export(TvCatMp) 
 %%]
 
-%%[4_2 hs export(tyIsQu,tyIsVar,tyMbVar) 
+%%[4_2 hs export(tyIsQu,tyIsVar,tyMbVar,tyIsAlts) 
 %%]
 
 %%[4_2 hs export(TyPlus(..),TyPlusL,tyPlusTy) 
@@ -142,11 +142,14 @@ tvIsEx fvM tv = maybe False (== TyVarCateg_Exist) (Map.lookup tv fvM)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2 hs
-data TyHardness = TyHard | TySoft deriving (Eq,Ord)
+data TyHardness
+  = TyHard | TySoft TyVarId | TyUpBound TyVarId
+  deriving (Eq,Ord)
 
 instance Show TyHardness where
-  show TyHard = "H"
-  show TySoft = "S"
+  show TyHard         = "H"
+  show (TySoft    i)  = "S:" ++ show i
+  show (TyUpBound i)  = "U:" ++ show i
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -242,6 +245,9 @@ tyMbVar t = case t of {Ty_Var v _ -> Just v ; _ -> Nothing}
 
 tyIsVar :: Ty -> Bool
 tyIsVar = isJust . tyMbVar
+
+tyIsAlts :: Ty -> Bool
+tyIsAlts t = case t of {Ty_Alts _ _ -> True; _ -> False}
 
 tyIsQu :: Ty -> Bool
 tyIsQu t = case t of {Ty_Quant _ _ _ -> True; _ -> False}
