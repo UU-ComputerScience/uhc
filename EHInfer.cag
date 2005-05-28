@@ -223,6 +223,13 @@ SEM AGItf
 
 %%[4_2
 SEM AGItf
+  | AGItf       expr        .   tyCnstr             :=  emptyCnstr
+
+SEM Decl
+  | Val         loc         .   imprFO              =   fitsIn impredFIOpts emptyFE uidStart (@expr.imprTyCnstr |=> @patExpr.ty) @expr.imprTy
+                lhs         .   imprTyCnstr         =   foCnstr @imprFO |=> @expr.imprTyCnstr
+%%]
+SEM AGItf
   | AGItf       loc         .   (exprTyCnstr1,ambTvS)
                                                     =   cnstrElimForgetAlts @expr.imprTyCnstr
                             .   exprTyCnstr         =   let (eC,(vC,_))
@@ -235,10 +242,6 @@ SEM AGItf
                                                         in  eC
                 expr        .   tyCnstr             :=  emptyCnstr
 
-SEM Decl
-  | Val         loc         .   imprFO              =   fitsIn impredFIOpts emptyFE uidStart (@expr.imprTyCnstr |=> @patExpr.ty) @expr.imprTy
-                lhs         .   imprTyCnstr         =   foCnstr @imprFO |=> @expr.imprTyCnstr
-%%]
 SEM AGItf
   | AGItf       loc         .   (exprTyCnstr1,ambTvS)
                                                     =   cnstrElimForgetAlts @expr.imprTyCnstr

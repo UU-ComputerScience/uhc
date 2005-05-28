@@ -47,9 +47,8 @@ SEM Expr
   | Case        loc         .   cexpr       =   let  n = uidHNm @lUniq2
                                                 in   mkCExprLet CBindPlain [CBind_Bind n @expr.cexpr]
                                                         (rceMatch @rceEnv [n] @alts.caltL cvarUndefined)
-  | AppTop      loc         .   cexpr       =   @expr.cexpr
-  | Parens      loc         .   cexpr       =   @expr.cexpr
-  | TypeAs      loc         .   cexpr       =   @expr.cexpr
+  | AppTop Parens TypeAs Impred
+                loc         .   cexpr       =   @expr.cexpr
   | Undefined   loc         .   cexpr       =   cvarUndefined
 %%]
 

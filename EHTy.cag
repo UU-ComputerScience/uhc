@@ -36,7 +36,7 @@
 %%[4 hs import(qualified Data.Map as Map) export(TvCatMp) 
 %%]
 
-%%[4_2 hs export(tyIsQu,tyIsVar,tyMbVar,tyIsAlts) 
+%%[4_2 hs export(tyMbQu,tyIsQu,tyIsVar,tyMbVar,tyIsAlts) 
 %%]
 
 %%[4_2 hs export(TyPlus(..),TyPlusL,tyPlusTy) 
@@ -249,8 +249,11 @@ tyIsVar = isJust . tyMbVar
 tyIsAlts :: Ty -> Bool
 tyIsAlts t = case t of {Ty_Alts _ _ -> True; _ -> False}
 
+tyMbQu :: Ty -> Maybe TyQu
+tyMbQu t = case t of {Ty_Quant q _ _ -> Just q; _ -> Nothing}
+
 tyIsQu :: Ty -> Bool
-tyIsQu t = case t of {Ty_Quant _ _ _ -> True; _ -> False}
+tyIsQu = isJust . tyMbQu
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

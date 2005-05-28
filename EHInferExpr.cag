@@ -145,13 +145,14 @@ SEM Expr
                             .   knFunTy             :=  [@imprArgTy] `mkArrow` @imprResTy
                 arg         .   knTy                :=  @imprArgTy
                 loc         .   imprFO1             =   fitsIn  (@argFIOpts {fioBindToTyAlts = True}) @fe @lUniq2
-                                                                @arg.imprTy @imprArgTy
+                                                                @arg.imprTy (@arg.imprTyCnstr |=> @imprArgTy)
                             .   imprTyCnstr1        =   foCnstr @imprFO1 |=> @arg.imprTyCnstr
                             .   imprFO2             =   fitsIn  impredFIOpts @fe @lUniq3
                                                                 (@imprTyCnstr1 |=> @func.imprTy)
                                                                 (@imprTyCnstr1 |=> @knFunTy)
-                            .   imprTy              =   foCnstr @imprFO2 |=> @imprResTy
-                lhs         .   imprTyCnstr         =   foCnstr @imprFO2 |=> @imprTyCnstr1
+                            .   imprTyCnstr2        =   foCnstr @imprFO2 |=> @imprTyCnstr1
+                            .   imprTy              =   @imprTyCnstr2 |=> @imprResTy
+                lhs         .   imprTyCnstr         =   @imprTyCnstr2
   | App         loc         .   fo                  =   fitsIn strongFIOpts @fe @lUniq4 (@lhs.tyCnstr |=> @imprResTy) (@lhs.tyCnstr |=> @lhs.knTy)
                 func        .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
 %%]
@@ -377,8 +378,9 @@ SEM Expr
 %%[4
 ATTR Expr [ | | isForcedTy: Bool ]
 SEM Expr
-  | TypeAs      lhs         .   isForcedTy          =   True
-  | * - TypeAs Parens
+  | TypeAs Impred
+                lhs         .   isForcedTy          =   True
+  | * - TypeAs Parens Impred
                 lhs         .   isForcedTy          =   False
 %%]
 

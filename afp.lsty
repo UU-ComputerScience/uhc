@@ -216,3 +216,6 @@ appendix~\myRef{#1}
 % \def\frame#1{}
 %endif
 
+% binary operators
+%\newcommand{\bvartriangle}{\mathrel{\vartriangle}}
+%\newcommand{\btriangledown}{\mathrel{\triangledown}}

@@ -99,6 +99,8 @@ SEM Expr
                         .  info2    =   []
                         .  info_9   =   []
                         .  info_4_2 =   []
+  | TypeAs      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","TypeAs"] [] [@expr.ppAST,@tyExpr.ppAST] @info_2
+                loc     .  info_2   =   []
 
 SEM PatExpr
   | IConst      lhs     .  ppAST    =   ppNest ["PatExpr","IConst"] [@pp] []
@@ -174,6 +176,8 @@ SEM Expr
                                         , mkInfo1 "lValGam" (pp @lValGam)
                                         , mkInfo1 "lValGam+decls.tyCnstr" (pp (@decls.tyCnstr |=> @lValGam))
                                         ]
+  | TypeAs      loc     .  info_2   :=  [ mkInfo1 "asTy" (ppTy @asTy)
+                                        ]
 
 SEM PatExpr
   | AppTop      loc     .  info2    :=  [ mkInfo1 "patFunTy" (ppTy @patFunTy)
@@ -198,15 +202,15 @@ SEM Expr
 
 %%[4
 SEM Expr
-  | TypeAs      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","TypeAs"] [] [@expr.ppAST,@tyExpr.ppAST] @info
-                loc     .  info     =   [ mkInfo1 "asTy" (ppTy @asTy)
-                                        ]
   | Var         loc     .  info3    :=  [ mkInfo1 "lhs.fiOpts" (pp @lhs.fiOpts)
                                         ]
   | AppTop      loc     .  info_4   :=  [ mkInfo1 "lhs.fiOpts" (pp @lhs.fiOpts)
                                         ]
   | Con         loc     .  info2    :=  [ mkInfo1 "fTy" (ppTy @fTy)
                                         , mkInfo1 "foCnstr" (pp (foCnstr @fo))
+                                        ]
+  | Impred      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Impred"] [] [@expr.ppAST] @info_4
+                loc     .  info_4   =   [ 
                                         ]
 
 SEM PatExpr
@@ -224,12 +228,11 @@ SEM TyExpr
 %%[4_2
 SEM AGItf
   | AGItf       loc     .  info_4_2 :=  [ mkInfo1 "expr.imprTyCnstr" (ppCnstrV @expr.imprTyCnstr)
-                                        , mkInfo1 "exprTyCnstr1" (ppCnstrV @exprTyCnstr1)
-                                        , mkInfo1 "exprTyCnstr" (ppCnstrV @exprTyCnstr)
                                         ]
 
 SEM Expr
   | Var         loc     .  info_4_2 :=  [ mkInfo1 "imprTy" (ppTy @imprTy)
+                                        , mkInfo1 "lhs.imprTyCnstr" (ppCnstrV @lhs.imprTyCnstr)
                                         ]
   | Let         loc     .  info_4_2 :=  [ mkInfo1 "decls.imprTyCnstr" (ppCnstrV @decls.imprTyCnstr)
                                         , mkInfo1 "lhs.tyCnstr" (ppCnstrV @lhs.tyCnstr)

@@ -1,0 +1,122 @@
+preamble tex "%include lhs2TeX.fmt\n%include afp.fmt"
+
+format ag ty.identv = gTy
+{-
+format ag ty.syn = ty
+format ag ty.inh = knTy
+format ag tyCnstr.inh = tyCnstr
+format ag tyCnstr.syn = tyCnstr
+-}
+
+format ag in (a) -> (r) = a `mkTyArrow` r
+format ag out ((a) -> (r)) `=` (v) = (a,r) `=` tyArgRes v
+
+format ag eFun = func
+format ag eArg = arg
+
+format tex ty = sigma
+format tex ty.inh = sigma..k
+format tex ty.syn = sigma
+format tex tyCnstr = Cnstr
+format tex tyCnstr.inh = Cnstr..k
+format tex tyCnstr.syn = Cnstr
+format tex tyCnstr.fun = Cnstr.f
+format tex tyCnstr.arg = Cnstr.a
+format tex valGam = Gamma
+
+format tex eFun = e.1
+format tex eArg = e.2
+
+viewhierarchy = E K 1 2 --, K K1, 1 11
+
+relation bindIdTy =
+  view E =
+    attr [ nm: Nm, valGam: ValGam | | ty: Ty ]
+    judge tex nm :-> ty `elem` valGam
+    judge ag ty `=` valGamLookup nm valGam
+
+scheme expr =
+  view E =
+    attr [ node e: Expr, valGam: ValGam | ty: Ty | ]
+    judge tex valGam :-.."e" e : ty
+  view K =
+    attr [ | updown ty: Ty |  ]
+    judge tex valGam; ty.inh :-.."e" e : ty.syn
+  view 2 =
+    attr [ | thread tyCnstr: Cnstr | ]
+    judge tex valGam ; tyCnstr.inh ; ty.inh :-.."e" e : ty.syn ~> tyCnstr.syn
+
+rules expr.base scheme expr "Expr type rules" =
+  rule e.var =
+    view E =
+      judge G = bindIdTy = identv :-> ty `elem` valGam
+      -
+      judge R = expr = valGam :- identv : ty
+
+    view K =
+      judge G = bindIdTy
+          | ty = ty.identv
+      judge F = fit
+          | lty = (ltyPrev= ty.identv)
+          | rty = ty.inh
+          | ty = ty.syn
+      -
+
+    view 2 =
+      judge F = fit
+          | lty = tyCnstr.inh ltyPrev
+          | rty = tyCnstr.inh ty.inh
+          | cnstr = tyCnstr
+      -
+      judge R = expr
+          | tyCnstr.syn = tyCnstr tyCnstr.inh
+
+  rule e.app =
+    view E =
+      judge F = expr = valGam :- eFun : (tyFun= ty.a -> ty)
+      judge A = expr = valGam :- eArg : ty.a
+      -
+      judge R = expr = valGam :- (eFun ^^ eArg) : ty
+
+    view K =
+      judge F = expr
+          | ty.inh = _ -> ty.inh
+          | ty.syn = tyFun
+      judge A = expr
+          | ty.inh = ty.a
+          | ty.syn = _
+      -
+      judge R = expr
+          | ty.syn = ty
+
+    view 2 =
+      judge V = fresh
+      judge F = expr
+          | ty.inh = tvarv -> ty.inh
+          | tyCnstr.inh = tyCnstr.inh
+          | tyCnstr.syn = tyCnstr.fun
+      judge A = expr
+          | tyCnstr.inh = tyCnstr.fun
+          | tyCnstr.syn = tyCnstr.arg
+      -
+      judge R = expr
+          | ty.syn = tyCnstr.arg ty
+          | tyCnstr.syn = tyCnstr.arg
+
+relation fit =
+  view K =
+    attr [ lty: Ty, rty: Ty | | ty: Ty ]
+    judge tex :-.."f" lty <= rty : ty
+    judge ag ty `=` lty `fitsIn` rty
+  view 2 =
+    attr [ | | cnstr: Cnstr ]
+    judge tex :-.."f" lty <= rty : ty ~> cnstr
+    judge ag (ty,cnstr) `=` lty `fitsIn` rty
+
+relation fresh =
+  view 2 =
+    attr [ | | tvarv: UID ]
+    judge tex tvarv (text "fresh")
+    judge ag (gUniq,tvarv) `=` mkNewLevUID "@lhs.gUniq"
+
+

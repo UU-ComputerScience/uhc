@@ -6,12 +6,12 @@ import UU.Pretty
 -- Utils for tools
 -------------------------------------------------------------------------
 
-mkTexCmdDef :: String -> PP_Doc -> PP_Doc -> PP_Doc
-mkTexCmdDef cmd nm def = "\\" >|< cmd >|< "{" >|< nm >|< "}{%" >-< def >-< "}"
+mkTexCmdDef :: (PP a, PP b) => String -> a -> b -> PP_Doc
+mkTexCmdDef cmd nm def = "\\" >|< cmd >|< "{" >|< pp nm >|< "}{%" >-< pp def >-< "}"
 
-mkTexCmdUse :: String -> PP_Doc -> PP_Doc
-mkTexCmdUse cmd nm = "\\" >|< cmd >|< "{" >|< nm >|< "}"
+mkTexCmdUse :: PP a => String -> a -> PP_Doc
+mkTexCmdUse cmd nm = "\\" >|< cmd >|< "{" >|< pp nm >|< "}"
 
-mkTexCmdUse' :: String -> PP_Doc -> PP_Doc
+mkTexCmdUse' :: PP a => String -> a -> PP_Doc
 mkTexCmdUse' cmd nm = mkTexCmdUse cmd nm >|< "%"
 

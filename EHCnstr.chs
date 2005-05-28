@@ -96,7 +96,7 @@ cnstrTyUnit tv t = Cnstr [(tv,t)]
 
 %%[4_2.cnstrTyRevUnit
 cnstrTyRevUnit :: TyVarId -> Ty -> (Ty,Cnstr)
-cnstrTyRevUnit tv t = maybe (t,cnstrTyUnit tv t) (\v -> let t = mkTyVar tv in (t,cnstrTyUnit v t)) . tyMbVar $ t
+cnstrTyRevUnit tv t = maybe (t,cnstrTyUnit tv t) (\v -> let t' = mkTyVar tv in (t',cnstrTyUnit v t')) . tyMbVar $ t
 %%]
 
 %%[9.Cnstr.cnstrTyUnit -2.Cnstr.cnstrTyUnit

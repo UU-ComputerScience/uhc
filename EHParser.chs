@@ -76,7 +76,7 @@ scanOpts
                 , "%"
 %%]
 %%[4
-                , "."
+                , ".", "~"
 %%]
 %%[5
                 , "|"
@@ -500,13 +500,16 @@ pExprBase       =    sem_Expr_IConst     <$>  pInt
 %%[1.pExprBaseParenProd
                 <|>  pParenProd pExpr
 %%]
+%%[4.pExprBase
+                <|>  sem_Expr_Impred     <$   pKey "~"    <*> pExprBase
+%%]
+%%[5.pExprBase
+                <|>  sem_Expr_Case       <$   pKey "case" <*> pExpr <* pKey "of" <*> pCaseAlts
+%%]
 %%[7.pExprBase -1.pExprBaseParenProd
                 <|>  pParenRow True (show hsnORec) (show hsnCRec) "=" (Just (":=",sem_RecExpr_Upd))
                         (sem_RecExpr_Empty,sem_RecExpr_Expr . sem_Expr_Var,sem_RecExpr_Ext,sem_Expr_Rec,semParens)
                         pVar pExpr
-%%]
-%%[5.pExprBase
-                <|>  sem_Expr_Case       <$   pKey "case" <*> pExpr <* pKey "of" <*> pCaseAlts
 %%]
 %%[8.pExprBase
                 <|>  sem_Expr_Undefined  <$   pKey "..."
