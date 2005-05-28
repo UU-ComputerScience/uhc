@@ -87,11 +87,15 @@
 %let inclXX     = False
 %endif
 
-%if storyPHD
+%if storyPHD || storyImpred
 %let inclApp    = True
-%let inclInx    = True
 %else
 %let inclApp    = False
+%endif
+
+%if storyPHD
+%let inclInx    = True
+%else
 %let inclInx    = False
 %endif
 
@@ -185,6 +189,8 @@
                {beamer}%{book}
 %endif
 %endif
+
+% \newcommand\bmmax{0}
 
 %if not asSlides
 \usepackage{kscode}
@@ -349,7 +355,9 @@
 %endif
 
 \usepackage{txfonts}
+%if not asSlides
 \usepackage[bbgreekl]{mathbbol}
+%endif
 
 %if truu
 \usepackage{TRtitlepage}
@@ -450,11 +458,11 @@
 % format exprc           = expr "_c"
 % format (exprNN(i)(j))  = expr "^{" i "}_{" j "}"
 
-%format pat         = p
-%format pat1
-%format pat2
-%format pati        = pat "_i"
-%format patn        = pat "_n"
+% format pat         = p
+% format pat1
+% format pat2
+% format pati        = pat "_i"
+% format patn        = pat "_n"
 
 %format cod         = "{\mu}"
 %format cod1
@@ -478,8 +486,6 @@
 %format predi2
 
 %format (identNN(i)(j))     = ident "^{" i "}_{" j "}"
-%format identv              = i
-%format identc              = I
 %format (identcNN(i)(j))    = identc "^{" i "}_{" j "}"
 %format unIdent(i)          = "un" i
 
@@ -634,6 +640,9 @@ WWW home page:
 % rules
 \input rules.tex
 \input rules2.tex
+%if onlyCurrentWork
+\input klad.tex
+%endif
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pictures
@@ -855,7 +864,7 @@ This concerns mainly future design decisions which have an influence on design d
 \part{Type checking, inference and polymorphism}
 %endif
 
-%if not (storyEHIntro || acm)
+%if not (storyEHIntro || storyExplImpl || acm)
 \frame<presentation>{
 \frametitle{Topics}
 \tableofcontents[hidesubsections]
@@ -1488,7 +1497,7 @@ Type signatures for quantifiers on argument (higher ranked) positions
 Impredicativity
 \SafeCode{%
 \begin{code}
-%%4srcfile(test/4-impred1.eh%%)
+%%4srcfile(test/4-impred-demo1.eh%%)
 \end{code}
 }
 \begin{itemize}
@@ -6174,6 +6183,20 @@ Polymorphic recursion
 \subsection{Introduction}
 \label{eh-impred-intro}
 
+Basic idea: polymorphism for all values bound to identifiers, irrespective of their |let| or |lambda| bound introduction:
+\begin{code}
+id  ::  forall a . a -> a
+v1  =   (id 3, id 'x')
+f   ::  (forall a . a -> a) -> (Int,Char)
+f   =   \i -> (i 3, i 'x')
+v2  =   f id
+\end{code}
+
+Problem: for |let| bound identifiers polymorphism can be inferred; for |lambda| bound in general not
+\cite{kfoury93recursivetype,hallet04polyrec-ex,vasconcellos03polyrec-impl,henglein91polyrec-infer,figueiredo01polyrec-princ}.
+
+Repeat some motivating examples \cite{shan04sexy-types,peytonjones04pract-inf-rank,vytiniotis05boxy-impred} showing usefulness.
+
 \subsection{What we want}
 \label{eh-impred-reqm}
 
@@ -6203,6 +6226,10 @@ Polymorphic recursion
 |let Vec(d) in e|
  & binding
  \\
+& | || | &
+|~ e|
+ & use type of |e| without instantiation (as argument)
+ \\
 \multicolumn{4}{l}{} \\
 \multicolumn{4}{l}{Declarations of bindings:} \\
 |d| & |::=| &
@@ -6224,6 +6251,67 @@ Polymorphic recursion
  & uppercase: (type) constructors
  \\
 \end{TabularFigure}
+\FigRef{eh-impred-lang-terms} shows the term language we use.
+
+Basic (introductory example): type signature information bound to identifier
+
+Polymorphism can be deduced from occurrences at parameter positions:
+\begin{code}
+%%4_2srcfile(test/4-impred-demo1.eh%%)
+\end{code}
+
+Type for |f :: (forall ^ a . a -> a) -> Int|,
+but absence of |g h| gives `normal' type error.
+
+Most general type:
+\begin{code}
+%%4_2srcfile(test/4-impred-demo3.eh%%)
+\end{code}
+
+Type for |f :: (forall ^ a . a -> a) -> Int|.
+
+Which in contravariant position is least general:
+\begin{code}
+%%4_2srcfile(test/4-impred-demo4.eh%%)
+\end{code}
+
+Type for |f :: %%4_2file(test/4-impred-demo4.eh%%)|.
+
+Partial polymorphism can be combined:
+\begin{code}
+%%4_2srcfile(test/4-impred-demo2.eh%%)
+\end{code}
+
+Type for |f :: (forall ^ a . forall ^ b . (a,b) -> (a,b)) -> Int|.
+
+Yes/no propagation (or: System F/Haskell):
+\begin{code}
+%%4_2srcfile(test/4-choose.eh%%)
+\end{code}
+
+Type of |v1 :: forall a . (a -> a) -> a -> a|, |v2 :: (forall a . a -> a) -> forall b . b -> b|.
+
+\paragraph{Outline of our contribution}
+
+Design starting point:
+\begin{itemize}
+\item
+Stick to Hindley-Milner
+\item
+Allow the programmer to explicitly specify (higher-rank) polymorphism
+\item
+Employ a two-stage inferencing strategy:
+ \begin{itemize}
+ \item
+ Impredicativity inferencing: propagate explicitly provided polymorphism
+ \item
+ Standard type inferencing: 
+ \end{itemize}
+\end{itemize}
+
+\paragraph{Outline of this paper}
+
+Point out what we can do extra relative to Vytiniotis \cite{vytiniotis05boxy-impred}: meet/join combination, propagation not only top-down through AST but also more globally.
 
 \subsection{Implementation}
 \label{eh-impred-impl}
@@ -6239,19 +6327,23 @@ Polymorphic recursion
  & variable
  \\
 & | || | &
+|tvarf|
+ & (fresh) type constant (a.k.a. fixed type variable)
+ \\
+& | || | &
 |sigma -> sigma|
  & abstraction
  \\
+%if False
 & | || | &
 |pi -> sigma|
  & implicit abstraction
  \\
-%if False
+%endif
 & | || | &
 |sigma ^^ sigma|
  & type application
  \\
-%endif
 & | || | &
 |forall ^ alpha . sigma|
  & universally quantified type
@@ -6262,21 +6354,31 @@ Polymorphic recursion
  \\
 \multicolumn{4}{l}{} \\
 \multicolumn{4}{l}{Types for impredicativity inferencing:} \\
-|isigma| & |::=| &
-|sigma|
+|sigma| & |::=| &
+|...|
  & 
  \\
 & | || | &
 |tvarv [Vec(talt)]|
  & type alternatives
  \\
+|isigma| & |::=| &
+|sigma|
+ & distinguishing notation for |sigma| with |tvarv [Vec(talt)]|
+ \\
+\multicolumn{4}{l}{} \\
+\multicolumn{4}{l}{Types for computing meet/join:} \\
 |sigma| & |::=| &
-|isigma|
+|...|
  & 
  \\
 & | || | &
-|...|
- & 
+|tvar /=/ sigma|
+ & both
+ \\
+& | || | &
+|ANY|
+ & absence of type information
  \\
 \multicolumn{4}{l}{} \\
 \multicolumn{4}{l}{Type alternative:} \\
@@ -6312,9 +6414,14 @@ Notation & Meaning \\
 |tvarv|
  & type variable
  \\
+|tvarf|
+ & fixed type variable (a.k.a. skolem type)
+ \\
+%if False
 |Transl|
  & translated code
  \\
+%endif
 |ident|
  & identifier
  \\
@@ -6322,7 +6429,7 @@ Notation & Meaning \\
  & value identifier
  \\
 |identc|
- & (type) constructor identifier
+ & (type) constructor identifier, type constant
  \\
 |Gamma|
  & assumptions, environment, context
@@ -6345,34 +6452,212 @@ Notation & Meaning \\
 |<->|
  & join of two types
  \\
+|<=>|
+ & |<=|, |<+>| or |<->|
+ \\
 |fiopt|
- & options to |<=|
+ & options to |<=>|
  \\
 |talt|
  & type alternative
  \\
 |Vec(taltcx(tctxt))|
- & |[ talt || talt@(_::tctxt) <- Vec(taltcx(tctxt))]|
+ & |[ talt || talt@(_::tctxt) <- Vec(talt)]|
  \\
 |Vec(taltcx(Qu))|
- & |[ talt || talt@(sigmaQu::_) <- Vec(taltcx(Qu))]|
+ & |[ talt || talt@(sigmaQu::_) <- Vec(talt)]|
  \\
 \end{TabularFigure}
 
+An environment |Gamma|
+binds value identifiers to types and predicates to translations (dictionary evidence) paired with their type:
+
+\begin{code}
+bind   =  ident :-> sigma |  pi :> Transl : sigma
+Gamma  =  Vec(bind)
+\end{code}
+
+We use vector notation for any ordered collection, denoted with a horizontal bar on top.
+Concatenation of vectors and pattern matching on a vector is denoted by a comma ','.
+
+Constraints:
+\begin{code}
+bindv  =  tvarv :-> sigma
+Cnstr  =  Vec(bindv)
+\end{code}
+
+
+
+\rulerCmdUse{rules2.exprE.baseImpredE}
+\FigRef{rules2.exprE.baseImpredE} shows the basic equational type rules.
+
+\rulerCmdUse{rules2.declE}
+\FigRef{rules2.declE} shows the equational rules for declarations, to be used by |let| expressions.
+
+%\rulerCmdUse{rules2.expr2.base}
+
+\rulerCmdUse{rules2.expr4.base}
+\rulerCmdUse{rules2.expr4.prog}
+\FigRef{rules2.expr4.base} shows the inference rules combining known (checkable) type and inferred type.
+The environment is set up in \FigRef{rules2.expr4.prog}.
+
+\rulerCmdUse{rules2.decl4}
+\FigRef{rules2.decl4} shows the inference rules for declarations, to be used by |let| expressions.
+
 \rulerCmdUse{rules2.exprIm.base}
+\FigRef{rules2.exprIm.base} shows the inferencing of impredicativity.
+Type alternatives are introduced in this stage.
+Idea: application is where polymorphism matters, so there binding of type variables is to type alternatives.
+These are not introduced at variable introduction places (an obvious alternative as we want to find polymorphism is tied up to identifier occurrences)
+because intermediate/anonymous functions also must be allowed to participate in this process.
+A second reason is the mixture of yes/no quantified, i.e. holes in a type may have type alternatives.
+
+\rulerCmdUse{rules2.exprIm4.base}
+\FigRef{rules2.exprIm4.base} shows the use of inferenced impredicativity, overriding \figRef{rules2.expr4.base}.
 
 \rulerCmdUse{rules2.taltGamIm}
+\FigRef{rules2.taltGamIm} shows the elimination of type alternatives, used in between impredicativity inferencing and normal inferencing.
 
 \rulerCmdUse{rules2.taltIm}
+\FigRef{rules2.taltIm} is used as part of \figRef{rules2.taltGamIm}.
+
+\rulerCmdUse{rules2.fit4.baseImpred4part1}
+\rulerCmdUse{rules2.fit4.baseImpred4part2}
+\FigRef{rules2.fit4.baseImpred4part1} and \FigRef{rules2.fit4.baseImpred4part2} show the rules for fitting (subsumption).
+The order in which the rules appear is important. Of two matching rules the textually preceding one takes precedence.
+In case of commutativity only a `left' variant has been included (perhaps an explicit summary where this applies).
+
+\begin{TabularFigure}{Quantified type instantiation variants}{eh-impred-legenda-inst}{l@@{=}ll}
+\multicolumn{2}{l}{Variant} & instantiate |Vec(alpha)| with fresh \\
+\hline
+|(Vec(tvarv),sigma') | & | instWith(tvarv)(Qu ^ Vec(alpha) . sigma)|
+ &  type variables |Vec(tvarv)|
+ \\
+|(Vec(tvarf),sigma') | & | instWith(tvarf)(Qu ^ Vec(alpha) . sigma)|
+ &  fixed type variables |Vec(tvarf)|
+ \\
+|(Vec(tvarv),sigma') | & | instWith(<+>)(Qu ^ Vec(alpha) . sigma)|
+ &  `both' types |Vec(tvarv /=/ ANY)|
+ \\
+%if False
+|(sigma') | & | instWith(exists)(exists ^ Vec(alpha) . sigma)|
+ &  non reproducible type constants |Vec(identc)|
+ \\
+%endif
+\end{TabularFigure}
+\FigRef{eh-impred-legenda-inst} shows how quantified types can be instantiated.
+All instantiation variants only instantiate top level quantified type variables.
+instWith(exists)(Gamma) is defined in the obvious way.
+
+\begin{TabularFigure}{Options to fit}{eh-impred-fit-options}{lll}
+Option & meaning & default \\
+\hline
+|fioBindRFirst|
+ & prefer binding of a rhs tvar over instantiating
+ & |fioBindRFirstY|
+ \\
+|fioBindLFirst|
+ & prefer binding of a lhs tvar over instantiating
+ & |fioBindLFirstY|
+ \\
+|fioLeaveRInst|
+ & leave rhs (of fitsIn) instantiated
+ & |fioLeaveRInstN|
+ \\
+|fioMeet|
+ & meet
+ & |fioMeetN|
+ \\
+|fioJoin|
+ & join
+ & |fioJoinN|
+ \\
+\end{TabularFigure}
+\FigRef{eh-impred-fit-options} shows the options which can be passed to |<=| (and |<+>|, |<->|, |<=>|).
+Often used combinations of these options are found in \FigRef{eh-impred-fit-option-combis}.
+|True| and |False| values are denoted by a an additional |+| or |-| respectively,
+for example for |fioLeaveRInst| with |fioLeaveRInstY| and |fioLeaveRInstN| respectively.
+
+\begin{TabularFigure}{Option combinations}{eh-impred-fit-option-combis}{ll}
+Combination & options (relative to the default) \\
+\hline
+|strongFIOpts|
+ &  
+ \\
+|instLFIOpts|
+ &  |fioBindRFirstN|
+ \\
+|instFIOpts|
+ &  |fioBindRFirstN|, |fioBindLFirstN|, |fioLeaveRInstY|
+ \\
+|weakFIOpts|
+ &  |fioBindRFirstN|, |fioLeaveRInstY|
+ \\
+|impredFIOpts|
+ &  |fioBindToTyAltsY|
+ \\
+|meetFIOpts|
+ &  |fioMeetY|
+ \\
+|joinFIOpts|
+ &  |fioJoinY|
+ \\
+\end{TabularFigure}
+\FigRef{eh-impred-fit-option-combis} shows combinations |fiopt| of options to |fit|.
+
+\rulerCmdUse{rules2.meetIm}
+\FigRef{rules2.meetIm} shows the rules for the meet of types.
+The `meet' |sigma1 <+> sigma2| is defined to be the greatest (w.r.t. |<=|) |sigma| which satisfies
+|sigma <= sigma1| and |sigma <= sigma2|.
+Default behavior is specified by the rules for fit.
+Meet is commutative and associative.
+The notation |sigma <+> sigma| is extended in the obvious way to |Vec(sigma) <+> sigma|.
+
+\rulerCmdUse{rules2.joinIm}
+\FigRef{rules2.joinIm} shows the rules for the join of types.
+The `join' |sigma1 <-> sigma2| is defined to be the smallest (w.r.t. |<=|) |sigma| which satisfies
+|sigma1 <= sigma| and |sigma2 <= sigma|.
+As the dual of meet, similar remarks apply.
+Default behavior is specified by the rules for fit and meet.
+
+\rulerCmdUse{rules2.matchIm}
+\FigRef{rules2.matchIm} shows the general purpose match which simply dispatches based on options |fiopt|.
+
+\rulerCmdUse{rules2.tbothIm}
+\FigRef{rules2.tbothIm} shows the elimination of temporary `both' assumptions used by meet/join.
+
+\paragraph{Omissions}
+Rules for |qu|, |quGam| (insertion of quantifiers, just assume explicit quantification and no partial type signatures) and |pat| (obvious :-)).
 
 \subsection{Existential types}
 \label{eh-impred-existential}
 
+Trouble:
+
+\begin{code}
+%%4_2srcfile(test/4-impred9.eh%%)
+\end{code}
+
+Too forgetful w.r.t. |v1 :: %%4_2file(test/4-impred9.eh%%)|.
+The algorithm is pessimistic and takes the least general type (i.e. |<->|) of the existential and the actual value.
+This is ok for identifiers in parameter positions because we do not say anything about their actual value.
+It is not ok when actual values are involved because we do not want to forget types there.
+To remedy this problem it is likely that some additional administration in this area must be kept.
+Not (yet) sorted out.
+
+
 \subsection{Interaction with implicit parameters}
 \label{eh-impred-implparam}
 
-\subsection{Related work}
+\paragraph{Subsumption and coercion}
+
+\subsection{Discussion, related work}
 \label{eh-impred-relwork}
+
+\paragraph{When to report errors}
+
+\paragraph{Related work}
+\cite{vytiniotis05boxy-impred}
 
 \subsection{Conclusion}
 \label{eh-impred-concl}
@@ -7583,7 +7868,7 @@ This works because initially we assign a type variable to the type of |h| which 
 However, the following example breaks because we first bind the type of |h| to a monomorphic type:
 
 \begin{code}
-%%4srcfile(test/4-impred1.eh%%)
+%%4srcfile(test/4-impred-demo1.eh%%)
 \end{code}
 
 This example breaks at three different places:
@@ -7798,56 +8083,56 @@ X ::< (c -> d) -> c -> d
 
 \subsection{Type inference}
 
-\subsubsection{Data}
-
-\begin{RulesFigure}{|TypeDD()(data ..)(Gamma)()|}{Type of data}{type-data}
-\infrule{d-data-type}
-  {|TypeDC(identc (Vec(tvar)))(constr (identcNN()(i)) (Vec(sigma)))(GammaNN()(i))()|
-  }
-  {|TypeDD()(data identc (Vec(tvar)) = Vec(identcNN()(i) (Vec(sigma))))(+++ GammaNN()(i))()|}
-\end{RulesFigure}
-
-
-\begin{RulesFigure}{|TypeDC(sigmaNN(d)())(constr ..)(Gamma)()|}{Type of data constructor}{type-data-constr}
-\infrule{d-data-constr-type}
-  {|QuantT([],CoVariant)(sigma1 -> .. -> sigmaNN()(n) -> sigmaNN(d)())(sigmaNN(mk)())(**)|\\
-   |QuantT([],CoVariant)(forall (ftv(sigmaNN(d)())) . sigmaNN(d)() -> (sigma1,..,sigmaNN()(n)))(sigmaNN(un)())(**)|\\
-   |i `elem` 1..n|
-  }
-  {|TypeDC(sigmaNN(d)())(constr identc (Vec(sigmaNN()(i))))([Bind(identc)(sigmaNN(mk)()),Bind(unIdent(identc))(sigmaNN(un)())])()|}
-\end{RulesFigure}
-
-\subsubsection{Case}
-
-\begin{RulesFigure}{|TypeCA(Gamma,sigmac,sigmak)(e)(sigma)(Cnstrp,Cnstre)(cod)|}{Inference for alternatives of case expression}{inference-case-rules-alts}
-\infrule{e-alts-nil}
-  {
-  }
-  {|TypeCA(Gamma,**,sigmak)(alts [])(sigmak)([],[])|}
-\\
-\infrule{e-alts-cons}
-  {|TypeCA(Gamma,sigmap,sigmae)(alts (Vec(pati -> expri)))(sigmaeN(i))(CnstrNN(p)(i),CnstrNN(e)(i))|\\
-   |TypeE(Gammap +++ Gamma,sigmak)(expr)(sigmae)(Cnstre)()|\\
-   |TypeP(Gamma,sigmac)(pat)(sigmap,Gammap)(Cnstrp)|
-  }
-  {|TypeCA(Gamma,sigmac,sigmak)(alts (pat -> expr) : (Vec(pati -> expri)))(sigmaeN(i))(CnstrNN(p)(i) Cnstrp,CnstrNN(e)(i) Cnstre)|}
-\end{RulesFigure}
-
-\subsubsection{Expr}
-
-\begin{RulesFigure}{|TypeE(Gamma,sigmak)(e)(sigma)(Cnstr)(cod)|}{Inference for expressions}{inference-expr-rules-data}
-\infrule{e-case-known}
-  {|TypeCA(Gamma,sigmac,Cnstrp sigmak)(alts (Vec(pati -> expri)))(sigmae)(Cnstrp,Cnstre)|\\
-   |TypeE(Gamma,Top)(exprc)(sigmac)(Cnstrc)()|
-  }
-  {|TypeE(Gamma,sigmak)(case exprc of Vec(pati -> expri))(sigmae)(Cnstre Cnstrp Cnstrc)|}
-\\
-\infrule{e-let-data}
-  {|TypeE(GammaNN(d)() ++ Gamma,sigmak)(expr)(sigmae)(Cnstr)()|\\
-   |TypeDD()(data identc (Vec(tvar)) = Vec(identcNN()(i) (Vec(sigma))))(GammaNN(d)())()|
-  }
-  {|TypeE(Gamma,sigmak)(let data identc (Vec(tvar)) = Vec(identcNN()(i) (Vec(sigma))) in expr)(sigmae)(Cnstr)()|}
-\end{RulesFigure}
+% \subsubsection{Data}
+% 
+% \begin{RulesFigure}{|TypeDD()(data ..)(Gamma)()|}{Type of data}{type-data}
+% \infrule{d-data-type}
+%   {|TypeDC(identc (Vec(tvar)))(constr (identcNN()(i)) (Vec(sigma)))(GammaNN()(i))()|
+%   }
+%   {|TypeDD()(data identc (Vec(tvar)) = Vec(identcNN()(i) (Vec(sigma))))(+++ GammaNN()(i))()|}
+% \end{RulesFigure}
+% 
+% 
+% \begin{RulesFigure}{|TypeDC(sigmaNN(d)())(constr ..)(Gamma)()|}{Type of data constructor}{type-data-constr}
+% \infrule{d-data-constr-type}
+%   {|QuantT([],CoVariant)(sigma1 -> .. -> sigmaNN()(n) -> sigmaNN(d)())(sigmaNN(mk)())(**)|\\
+%    |QuantT([],CoVariant)(forall (ftv(sigmaNN(d)())) . sigmaNN(d)() -> (sigma1,..,sigmaNN()(n)))(sigmaNN(un)())(**)|\\
+%    |i `elem` 1..n|
+%   }
+%   {|TypeDC(sigmaNN(d)())(constr identc (Vec(sigmaNN()(i))))([Bind(identc)(sigmaNN(mk)()),Bind(unIdent(identc))(sigmaNN(un)())])()|}
+% \end{RulesFigure}
+% 
+% \subsubsection{Case}
+% 
+% \begin{RulesFigure}{|TypeCA(Gamma,sigmac,sigmak)(e)(sigma)(Cnstrp,Cnstre)(cod)|}{Inference for alternatives of case expression}{inference-case-rules-alts}
+% \infrule{e-alts-nil}
+%   {
+%   }
+%   {|TypeCA(Gamma,**,sigmak)(alts [])(sigmak)([],[])|}
+% \\
+% \infrule{e-alts-cons}
+%   {|TypeCA(Gamma,sigmap,sigmae)(alts (Vec(pati -> expri)))(sigmaeN(i))(CnstrNN(p)(i),CnstrNN(e)(i))|\\
+%    |TypeE(Gammap +++ Gamma,sigmak)(expr)(sigmae)(Cnstre)()|\\
+%    |TypeP(Gamma,sigmac)(pat)(sigmap,Gammap)(Cnstrp)|
+%   }
+%   {|TypeCA(Gamma,sigmac,sigmak)(alts (pat -> expr) : (Vec(pati -> expri)))(sigmaeN(i))(CnstrNN(p)(i) Cnstrp,CnstrNN(e)(i) Cnstre)|}
+% \end{RulesFigure}
+% 
+% \subsubsection{Expr}
+% 
+% \begin{RulesFigure}{|TypeE(Gamma,sigmak)(e)(sigma)(Cnstr)(cod)|}{Inference for expressions}{inference-expr-rules-data}
+% \infrule{e-case-known}
+%   {|TypeCA(Gamma,sigmac,Cnstrp sigmak)(alts (Vec(pati -> expri)))(sigmae)(Cnstrp,Cnstre)|\\
+%    |TypeE(Gamma,Top)(exprc)(sigmac)(Cnstrc)()|
+%   }
+%   {|TypeE(Gamma,sigmak)(case exprc of Vec(pati -> expri))(sigmae)(Cnstre Cnstrp Cnstrc)|}
+% \\
+% \infrule{e-let-data}
+%   {|TypeE(GammaNN(d)() ++ Gamma,sigmak)(expr)(sigmae)(Cnstr)()|\\
+%    |TypeDD()(data identc (Vec(tvar)) = Vec(identcNN()(i) (Vec(sigma))))(GammaNN(d)())()|
+%   }
+%   {|TypeE(Gamma,sigmak)(let data identc (Vec(tvar)) = Vec(identcNN()(i) (Vec(sigma))) in expr)(sigmae)(Cnstr)()|}
+% \end{RulesFigure}
 
 Representing a data type as constructors + unconstructors
 
@@ -8253,6 +8538,626 @@ split       ::=     var = offset                    --  extraction at offset
 %format piasigma    = pia "_{" sigma "}"
 
 %if storyExplImpl
+
+%if asSlides
+\frame<presentation>
+{
+\frametitle{Explicit parameters}
+\begin{itemize}
+\item `Explicit': corresponds to program text specified by programmer
+\item We all are familiar with it
+\item Haskell:
+\SafeCode{%
+\begin{code}
+square  ::  Int  ->  Int
+square      x    =   x * x
+\end{code}
+}
+\item C:
+\SafeCode{%
+\begin{code}
+int square(int x) {
+  return x * x ;
+}
+\end{code}
+}
+\item ...
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Implicit parameters}
+\begin{itemize}
+\item `Implicit': not specified explicitly
+\item Also familiar?
+\begin{itemize}
+\item Yes!
+\item functions often are parameterized by data without the data being explicitly passed
+\end{itemize}
+\item Haskell's class system:
+\SafeCode{%
+\begin{code}
+class Num a where
+  (*) :: a -> a -> a
+
+instance Num Int where
+  (*) = primMulInt
+
+square  ::  Num a => a  ->  a
+square               x  =   x * x
+
+... square 2 ...
+\end{code}
+}
+\item
+Implicit parameter: how multiplication should be done
+\begin{itemize}
+\item fully determined by language
+\item type describes implicit behavior
+\end{itemize}
+\end{itemize}
+}
+
+%if False
+\frame<presentation>
+{
+\frametitle{Implicit parameters}
+\begin{itemize}
+\item Explicit equivalent
+\SafeCode{%
+\begin{code}
+data DictNum a = DictNum (a -> a -> a)
+dictNum = DictNum primMulInt
+
+square  ::  DictNum a ->  a  ->  a
+square      (DictNum m)   x  =   m x x
+
+... square dictNum y ...
+\end{code}
+}
+\end{itemize}
+}
+%endif
+
+\frame<presentation>
+{
+\frametitle{Implicit parameters}
+\begin{itemize}
+\item C too, e.g. global values:
+\SafeCode{%
+\begin{code}
+int factor = ... ;
+
+int square(int x) {
+  return factor * x * x ;
+}
+\end{code}
+}
+\item
+But the type does not include a description of this behavior
+\begin{itemize}
+\item that's `cheating'!
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Explicit implicit parameters}
+\begin{itemize}
+\item Haskell views explicit and implicit parameter passing as separate
+\begin{itemize}
+\item function requires implicit parameter?
+\item programmer cannot directly pass a value for the implicit parameter
+\item only indirectly via |instance| declarations, used by the language to automatically determine the proper implicit parameter
+\end{itemize}
+\item Language defines what to pass implicitly
+\begin{itemize}
+\item breaks when no automatic choice can be made
+\item breaks when a wrong choice is made
+\end{itemize}
+\item Our approach: provide the means to allow programmer and compiler jointly specify a program
+\begin{itemize}
+\item language fills in the parts (types, implicit parameter passing) as far as it is capable of
+\item programmer specifies the remaining parts
+\item gradual shift between implicit and explicit
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Content of this talk}
+\begin{itemize}
+\item Context
+\begin{itemize}
+\item Haskell, EH
+\end{itemize}
+\item Haskell's solution
+\item EH mechanism's for explicitly passing values for implicit parameters
+\item Partial type signatures
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Context}
+\begin{itemize}
+\item Starting point: Haskell
+\begin{itemize}
+\item already provides combination of strong type checking and class system
+\end{itemize}
+\item Explicit implicit parameter passing situated in context of Explicit Haskell (EH)
+\begin{itemize}
+\item core (|lambda|-calculus) of Haskell
+\begin{tabular}{r@@{\;}c@@{\;}ll}
+|e| & |::=| &
+|int || char |
+ & literals
+ \\
+& | || | &
+|identv|
+ & value variable
+ \\
+& | || | &
+|e e|
+ & application
+ \\
+& | || | &
+|\i -> e|
+ & abstraction
+ \\
+& | || | &
+|let Vec(d) in e|
+ & binding
+ \\
+\end{tabular}
+\item + extensions (records, higher rank polymorphism, existentials, ...)
+\begin{tabular}{r@@{\;}c@@{\;}ll}
+|e| & |::=| &
+|...|
+ & 
+ \\
+& | || | &
+|(lbl = e,...)|
+ & record
+ \\
+%if False
+& | || | &
+|(e || lbl = e,...)|
+ & record extension
+ \\
+%endif
+& | || | &
+|(e || lbl := e,...)|
+ & record update
+ \\
+& | || | &
+|e.lbl|
+ & record selection
+ \\
+\end{tabular}
+\item used for research and education
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Haskell's class system}
+\begin{itemize}
+\item Class defines a predicate over type(s)
+\begin{itemize}
+\item together with values (class members)
+\item which are available when predicate is satisfied
+\end{itemize}
+\item Example: equality on values of type |a|:
+\SafeCode{%
+\begin{code}
+class Eq a where
+  (==) :: a -> a -> Bool
+\end{code}
+}
+\SafeCode{%
+\item Predicate is part of type of value
+\begin{code}
+f  ::    Eq a =>  a ->  a ->  Int
+f  =   \          x     y ->  if x == y then 3 else 4
+\end{code}
+}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Haskell's class system}
+\begin{itemize}
+\item Meaning (in practical terms):
+\begin{itemize}
+\item for body of |f|: |Eq a| is satisfied hence |==| on values of type |a| can be used
+\item for caller of |f|: has to prove |Eq a| if values of type |a| are passed
+\end{itemize}
+\item Implementation via evidence for proof of satisfaction:
+\begin{itemize}
+\item for body of |f|: is passed a dictionary (record) holding value for |==| (and other class members)
+\item for caller of |f|: constructs and passes this dictionary
+\end{itemize}
+\item Basic proofs (instances) given by programmer
+\SafeCode{%
+\begin{code}
+instance Eq Int where
+  x == y = primEqInt x y
+
+instance Eq Char where
+  x == y = primEqChar x y
+\end{code}
+}
+\item Used under the hood to construct dictionaries to be passed
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Haskell's class system}
+\begin{itemize}
+\item Do it ourselves Haskell implementation
+\SafeCode{%
+\begin{code}
+data EqD a  = EqD ^^ {eqEqD :: a -> a -> Bool}  -- class Eq
+eqDInt      = EqD primEqInt                     -- Eq Int
+eqDChar     = EqD primEqChar                    -- Eq Char
+
+f  ::         EqD a ->  a ->  a ->  Int
+f  =   \  ^^  dEq       x     y ->  if (eqEqD dEq) x y then 3 else 4
+\end{code}
+}
+\item Is the usual translation to internal machinery
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{EH: explicit passing for implicit parameter}
+\begin{itemize}
+\item Class and instance
+\SafeCode{%
+\begin{code}
+let  class Eq a where
+       eq :: a -> a -> Bool                                                         
+     instance Eq Int where
+       eq = primEqInt
+     ...
+\end{code}
+}
+\item Dictionary is record, each field corresponds to member of class
+\begin{itemize}
+\item class translates to record type
+\item instance translates to record value
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Explicit passing for implicit parameter}
+\begin{itemize}
+\item Parameter passing
+\SafeCode{%
+\begin{code}
+     ...
+     f :: forall ^ a . Eq a => a -> a -> forall ^ b . Eq b => b -> b -> (Bool,Bool)
+     f = \p q r s -> (eq p q, eq r s)
+     eqMod2 = \x y -> eq (mod x 2) (mod y 2)
+in   f  ^                              3 4
+        (! (eq = eqMod2) <: Eq Int !)  5 6
+\end{code}
+}
+\item Predicate position in type determines parameter passing position
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Explicit passing for implicit parameter}
+\begin{itemize}
+\item |(! ^^ !)| specifies value to be passed for an implicit parameter
+\begin{itemize}
+\item implicitly passed: dictionary for |Eq a| for |eq p q|
+\item explicitly passed: dictionary for |Eq b| for |eq r s|
+\end{itemize}
+\item |(! (eq = eqMod2) <: Eq Int !)|
+\begin{itemize}
+\item |(eq = eqMod2)| must be evidence for predicate |Eq Int|
+\end{itemize}
+\item |<:| appears as @<:@ in program text
+\begin{itemize}
+\item resembles @::@ (explicit typing, type annotation)
+\item resembles an arrow @<-@ (leads to, proves)
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Overlapping instances}
+\begin{itemize}
+\item Multiple instances for same predicate
+\SafeCode{%
+\begin{code}
+let  instance Eq Int where
+       eq = primEqInt
+     instance Eq Int where
+       eq = eqMod2
+     f = ...
+in   f 3 4 5 6
+\end{code}
+}
+\item Overlapping instances
+\begin{itemize}
+\item Which dictionary must be passed?
+\item Language definition does not specify a choice
+\end{itemize}
+\item Solutions:
+\begin{itemize}
+\item give a name to the dictionary for each instance, use it to pass dictionary explicitly
+\item avoid multiple instances for use by implicit parameter mechanism
+\item allow scoped instances, a shadowing mechanism
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Named instance}
+\begin{itemize}
+\item Bind dictionary for an instance to value identifier
+\SafeCode{%
+\begin{code}
+let  instance dEqInt1 <: Eq Int where
+       eq = primEqInt
+     instance dEqInt2 <: Eq Int where
+       eq = eqMod2
+     f = ...
+in   f  (! dEqInt1 <: Eq Int !) 3 4
+        (! dEqInt2 <: Eq Int !) 5 6
+\end{code}
+}
+\item |<:| binds to identifier + allows participation in underlying machinery
+\item At parameter passing location: override automatic decisions made by underlying machinery
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Selectively naming an instance}
+\begin{itemize}
+\item Don't let instance participate in automatic choice for implicit parameter
+\SafeCode{%
+\begin{code}
+let  instance Eq Int where
+       eq = primEqInt
+     instance dEqInt2 :: Eq Int where
+       eq = eqMod2
+     f = ...
+in   f  ^                        3 4
+        (! dEqInt2 <: Eq Int !)  5 6
+\end{code}
+}
+\item |::| (only) binds to identifier
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Scoped instances}
+\begin{itemize}
+\item Shadow previous instances
+\SafeCode{%
+\begin{code}
+let  instance dEqInt1  <:  Eq Int where ...
+     instance dEqInt2  ::  Eq Int where ...
+     g  = \x y -> eq x y
+in   let  v1 =  g 3 4                              -- (1)
+          v2 =  let  instance dEqInt2 <: Eq Int    ^
+                in   g 3 4                         -- (2)
+in   ...
+\end{code}
+}
+\item |instance dEqInt2 <: Eq Int| without |where| introduces |dEqInt2| for use by internal machinery
+\begin{itemize}
+\item shadows outer |Eq Int| instances
+\end{itemize}
+\item Actual values used
+\begin{itemize}
+\item (1): dEqInt1
+\item (2): dEqInt2
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Instances which require other instances}
+\begin{itemize}
+\item Equality on lists needs equality on elements
+\SafeCode{%
+\begin{code}
+let  data List a = Nil | Cons a (List a)
+     instance dEqInt <: Eq Int where
+       eq = primEqInt
+     instance dEqList <: Eq a => Eq (List a) where
+       eq = ...
+     f :: forall a . Eq a => a -> List a -> Bool
+     f = \p q -> eq (Cons p Nil) q
+in   f 3 (Cons 4 Nil)
+\end{code}
+}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Instances which require other instances}
+\begin{itemize}
+\item Dictionary for |List| instance needs dictionary for elements
+\item Translation:
+\SafeCode{%
+\begin{code}
+let  dEqInt   ::  (eq :: Int -> Int -> Bool)
+     dEqList  ::  forall ^ a .  (eq :: a -> a -> Bool)
+                                  -> (eq :: List a -> List a -> Bool)
+     eq       =   \dEq    x y -> dEq.eq x y
+     f        =   \dEq_a  p q -> eq (dEqList dEq_a) (Cons p Nil) q
+in   f dEqInt 3 (Cons 4 Nil)
+\end{code}
+}
+\item |dEqList|: dictionary transformer
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Dictionary transformers}
+\begin{itemize}
+\item Implicit variant
+\SafeCode{%
+\begin{code}
+f :: forall a . Eq a => a -> List a -> Bool
+f = \p q -> eq (Cons p Nil) q
+\end{code}
+}
+\item Explicit variant
+\SafeCode{%
+\begin{code}
+f :: forall a . Eq a  =>  a ->  List a  -> Bool
+f = \(! dEq_a <: Eq a !)
+                      ->  \p    q       -> eq  (! dEqList dEq_a <: Eq (List a) !)
+                                               (Cons p Nil) q
+\end{code}
+}
+\item Translated variant
+\SafeCode{%
+\begin{code}
+f = \dEq_a p q -> eq (dEqList dEq_a) (Cons p Nil) q
+\end{code}
+}
+\item We can do it ourselves, explicitly, if necessary!
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Dictionary transformers}
+\begin{itemize}
+\item Are first class
+\SafeCode{%
+\begin{code}
+f  ::  (forall ^ a . Eq a => Eq (List a))  =>  Int ->  List Int  -> Bool
+f  =   \(! dEq_La <: Eq a => Eq (List a) !)
+          ->  \p  q  -> eq  (! dEq_La dEqInt <: Eq (List Int) !)
+                            (Cons p Nil) q
+\end{code}
+}
+\item Here explicit passing may be ommitted to achieve same effect
+\begin{itemize}
+\item but done by underlying machinery
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Dictionary transformers}
+\begin{itemize}
+\item Useful in class based implementation of generics
+\SafeCode{%
+\begin{code}
+%%9srcfile(eh-frags/9-snd-order1.eh%%)
+\end{code}
+}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Partial type signatures}
+\begin{itemize}
+\item Specifying full type signatures becomes cumbersome
+\item Idea:
+\begin{itemize}
+\item programmer specifies explicitly what cannot be inferred
+\item system infers the rest
+\end{itemize}
+\item Fully explicit
+\SafeCode{%
+\begin{code}
+f ::  forall ^ a . Eq a =>     a ->  a -> forall ^ b . Eq b =>  b ->  b  ->  (Bool    , Bool    )
+f =                         \  p     q                          r     s  ->  (eq p q  , eq r s  )
+\end{code}
+}
+\item If dictionary for |Eq b| needs to be passed before others
+\SafeCode{%
+\begin{code}
+f :: forall    b . (Eq b,  ...   ) => ...  -> ...  -> b -> b -> ...
+-- INFERRED:
+f :: forall a  b . (Eq b,  Eq a  ) => a    -> a    -> b -> b -> (Bool,Bool)
+\end{code}
+}
+\item `|...|' is inferred
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Partial type signatures}
+\begin{itemize}
+\item Monomorphic as well as polymorphic
+\SafeCode{%
+\begin{code}
+f  ::  forall ^ a . (  Eq a,  ...   )  =>     a ->  a ->  ...
+f  =                                       \  p     q     r       s                 ->  (eq p q  ,  eq r 3  )
+-- INFERRED:
+f  ::  forall ^ a .    Eq a            =>     a ->  a ->  Int ->  forall ^ b . b    ->  (Bool    ,  Bool    )
+\end{code}
+}
+\item Type variables for monomorphic types
+\SafeCode{%
+\begin{code}
+f  ::  forall ^ a . (  Eq a,  ...   )  =>     a ->  a ->  %b   ->  %b              ->  ...
+-- INFERRED:
+f  ::  forall ^ a .    Eq a            =>     a ->  a ->  Int  ->  Int             ->  (Bool    ,  Bool    )
+\end{code}
+}
+\end{itemize}
+}
+
+%if False
+\frame<presentation>
+{
+\frametitle{XX}
+\begin{itemize}
+\item XX
+\begin{itemize}
+\item XX
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{XX}
+\begin{itemize}
+\item XX
+\begin{itemize}
+\item XX
+\end{itemize}
+\end{itemize}
+}
+%endif
+
+%else %% asSlides
+
 \subsection{Introduction}
 
 The Haskell class system, originally introduced by both Wadler \cite{wadler88how-ad-hoc-poly}
@@ -8511,13 +9416,19 @@ The features presented in \thispaper\ are part of the ninth version.
 |(lbl = e,...)|
  & record
  \\
+%if False
 & | || | &
 |(e || lbl = e,...)|
  & record extension
  \\
+%endif
 & | || | &
 |(e || lbl := e,...)|
  & record update
+ \\
+& | || | &
+|e.lbl|
+ & record selection
  \\
 \multicolumn{4}{l}{} \\
 \multicolumn{4}{l}{Declarations of bindings:} \\
@@ -8907,7 +9818,7 @@ example in the presence of overlapping instances:
 let  instance dEqInt1 <: Eq Int where
        eq = primEqInt
      instance dEqInt2 <: Eq Int where
-       eq = dEqMod2
+       eq = eqMod2
      f = ...
 in   f  (! dEqInt1 <: Eq Int !) 3 4
         (! dEqInt2 <: Eq Int !) 5 6
@@ -8953,7 +9864,7 @@ active at any point in the program text:
 \begin{code}
 let  instance dEqInt1  <:  Eq Int where ...
      instance dEqInt2  ::  Eq Int where ...
-in   let  g  = \x y -> eq x y
+     g  = \x y -> eq x y
 in   let  v1 =  g 3 4
           v2 =  let  instance dEqInt2 <: Eq Int
                 in   g 3 4
@@ -8973,7 +9884,7 @@ as arguments:
 %% test/9-eq4.eh
 \begin{code}
 let  instance dEqInt <: Eq Int where
-       eq = ...
+       eq = primEqInt
      instance dEqList <: Eq a => Eq (List a) where
        eq = ...
      f :: forall a . Eq a => a -> List a -> Bool
@@ -8992,12 +9903,13 @@ to evidence for the proof of |Eq (List a)|
 dEqInt   ::  (eq :: Int -> Int -> Bool)
 dEqList  ::  forall a .  (eq :: a -> a -> Bool)
                            -> (eq :: List a -> List a -> Bool)
+eq       =   \dEq x y -> dEq.eq x y
 \end{code}
 
 With these values, the body of |f| is mapped to:
 
 \begin{code}
-f = \dEq_a p -> eq (dEqList dEq_a) (Cons p Nil)
+f = \dEq_a p q -> eq (dEqList dEq_a) (Cons p Nil) q
 \end{code}
 
 This translation can now be expressed explicitly as well;
@@ -9020,7 +9932,7 @@ Such transformers can also be made explicit in the following variant:
 
 %% 9-eq6.eh
 \begin{code}
-f  ::  (forall a . Eq a => Eq (List a))  =>  Int ->  List Int  -> Bool
+f  ::  (forall ^ a . Eq a => Eq (List a))  =>  Int ->  List Int  -> Bool
 f  =   \(! dEq_La <: Eq a => Eq (List a) !)
           ->  \p  q  -> eq  (! dEq_La dEqInt <: Eq (List Int) !)
                             (Cons p Nil) q
@@ -9663,7 +10575,9 @@ but as soon as a typing rule evolves towards an algorithmic variant
 it may well turn out that other ways of describing, in particular attribute grammars,
 are a better vehicle for expressing implementation aspects.
 
-%else
+%endif %% asSlides
+
+%else %% storyExplImpl
 
 Extensible records as case study
 
@@ -10330,6 +11244,24 @@ error messaging, line/col position, comment ????
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Scratch
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%if onlyCurrentWork
+
+\section{Scratch}
+
+\rulerCmdUse{rules.E.expr.base}
+\rulerCmdUse{rules.2.expr.base}
+
+%endif %% onlyCurrentWork
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Conclusion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -10491,214 +11423,34 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 \appendix
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% AG Patterns
+%%% Typing rules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{AG pattern: global variable simulation}
+%if storyImpred
+\rulerCmdUse{rules2.patE.baseImpred}
+\FigRef{rules2.patE.baseImpred} shows the equational rules for patterns.
 
-%if forAfpHandout
-This part is not included in this version of \thispaper.
-%else
-|Int| unique thread as an example
-%endif
+\rulerCmdUse{rules2.pat4.baseImpred}
+\FigRef{rules2.pat4.baseImpred} shows the inferencing rules for patterns.
 
-\section{AG pattern: unique value generation}
-\label{app-ag-pattern-uid}
-%if forAfpHandout
-This part is not included in this version of \thispaper.
-%else
+%endif %% storyImpred
 
-UID
-\chunkCmdUseMark{EHCommon.2.UID.Utils}
-\chunkCmdUseMark{EHCommon.2.UID.mkNewLevUID}
-
-Threading as global
-\chunkCmdUseMark{EHUniq.2}
-
-%endif
-
-
-\section{AG pattern: gathering}
-\label{app-agpattern-gathering}
-
-%if forAfpHandout
-This part is not included in this version of \thispaper.
-%else
-
-Via threading
-
-Via collecting, via |USE|.
-
-\section{AG pattern: mutual dependent info}
-
-Gathering placeholders and later updating them
-
-ty inference + pat name gathering
-
-%endif
-
-\section{AG pattern: gathering from within and usage higher up}
-
-%if forAfpHandout
-This part is not included in this version of \thispaper.
-%else
-%endif
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AG Patterns
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Additional checks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{EH: Additional checks}
-\chunkCmdUseMark{EHExtraChecks.1}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC Glue
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{EH: Missing glue}
-
-%if forAfpHandout
-This part is not included in this version of \thispaper.
-%else
-
-Scanner config
-%endif
-
-\section{EH: Connecting with the outside world}
-\label{app-outside-connect}
-
-%if forAfpHandout
-This part is not included in this version of \thispaper.
-%else
-%endif
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Omitted
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%if inclOmitted
-\section{Omitted}
-\subsection{EH version 1}
-\subsubsection{Pretty printing}
-\chunkCmdUseMark{EHPretty.1.Base.Rest}
-\chunkCmdUseMark{EHPretty.1.TyExpr.ConNm}
-\chunkCmdUseMark{EHPretty.1.ParNeed.Rest}
-\chunkCmdUseMark{EHPretty.1.PatExpr}
-\chunkCmdUseMark{EHPretty.1.AGItf.topTyPP}
-
-\subsubsection{Pretty printing |Gamma|}
-\chunkCmdUseMark{EHGam.1.ppGam}
-
-\subsubsection{Type pretty printing}
-\chunkCmdUseMark{EHTyPretty.1.appFunPP}
-\chunkCmdUseMark{EHTyPretty.1.ParNeed}
-
-\subsubsection{Error pretty printing}
-\chunkCmdUseMark{EHErrorPretty.1}
-
-\subsubsection{Connecting to the outside world}
-Haskell Main
-\label{app-main-eh}
-\chunkCmdUseMark{EHC.1.main}
-\chunkCmdUseMark{EHC.1.doCompile}
-
-Scanning
-\chunkCmdUseMark{EHC.1.commonScannerConfig}
-\chunkCmdUseMark{EHC.1.scannerConfig}
-\chunkCmdUseMark{EHC.1.scanHandle}
-
-Options to the compiler
-\chunkCmdUseMark{EHCommon.1.Options}
-
-\subsubsection{Misc}
-PP utils
-\chunkCmdUseMark{EHCommon.1.PP.Rest}
-
-Misc
-\chunkCmdUseMark{EHCommon.1.Misc}
-
-AG main
-\chunkCmdUseMark{EHMainAG.1}
-
-
-
-\subsection{EH version 2}
-Error gathering, additional errors, type common AG, pretty printing
-\subsubsection{Error structure}
-\chunkCmdUseMark{EHErrorAbsSyn.2}
-\chunkCmdUseMark{EHError.2}
-\chunkCmdUseMark{EHErrorPretty.2}
-
-\subsubsection{Error gathering}
-\chunkCmdUseMark{EHGatherError.2}
-
-\subsubsection{Type common AG}
-\chunkCmdUseMark{EHTyCommonAG.2}
-
-\subsubsection{Pretty printing}
-\chunkCmdUseMark{EHPretty.2}
-
-\subsection{EH version 3}
-Common, pretty printing, uniq
-\subsubsection{Common}
-\chunkCmdUseMark{EHCommon.3}
-
-\subsubsection{Type pretty printing}
-Pretty printing
-
-This can also be used as example of unique threading.
-\chunkCmdUseMark{EHTyPretty.3}
-\chunkCmdUseMark{EHTyCommonAG.3}
-
-\subsubsection{Pretty printing}
-\chunkCmdUseMark{EHPretty.3}
-
-\subsubsection{Unique id}
-\chunkCmdUseMark{EHUniq.3}
-
-\subsubsection{Gam}
-\chunkCmdUseMark{EHGam.3}
-
-\subsection{EH version 4}
-Substitution, error gathering, pretty printing, uniq, common
-\subsubsection{Substitution}
-\chunkCmdUseMark{EHCnstr.4}
-
-\subsubsection{Error gathering}
-\chunkCmdUseMark{EHGatherError.4}
-
-\subsubsection{Type pretty printing}
-\chunkCmdUseMark{EHTyPretty.4}
-
-\subsubsection{Pretty printing}
-\chunkCmdUseMark{EHPretty.4}
-
-\subsubsection{Unique id}
-\chunkCmdUseMark{EHUniq.4}
-
-\subsection{EH version 5}
-Error gathering, pretty printing, uniq
-\subsubsection{Error gathering}
-\chunkCmdUseMark{EHGatherError.5}
-
-\subsubsection{Pretty printing}
-\chunkCmdUseMark{EHPretty.5}
-
-\subsubsection{Unique id}
-\chunkCmdUseMark{EHUniq.5}
-
-\subsection{EH version 6}
-Error gathering, pretty printing, uniq
-\subsubsection{Error gathering}
-\chunkCmdUseMark{EHGatherError.6}
-
-\subsubsection{Pretty printing}
-\chunkCmdUseMark{EHPretty.6}
-
-\subsubsection{Unique id}
-\chunkCmdUseMark{EHUniq.6}
-
-%endif
 
 %endif %% inclApp
 

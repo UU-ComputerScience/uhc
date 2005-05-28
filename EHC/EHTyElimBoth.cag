@@ -51,7 +51,7 @@ SEM Ty
 
 %%[4_2
 ATTR AllAllTy [ | | replExpose: SELF  ]
-ATTR AllAllTy [ | cnstr: Cnstr | ]
+ATTR AllTy [ | cnstr: Cnstr | ]
 ATTR TyAGItf  [ | | cnstr: Cnstr ]
 
 SEM Ty
@@ -61,24 +61,9 @@ SEM Ty
                                                         []      ->  (@replTv,@lhs.cnstr)
                                                         (r:_)   ->  let  (r',c) = @tv `cnstrTyRevUnit` r
                                                                     in   (r',c |=> @tyL.cnstr)
-                                                else  let  r = Ty_Both @tv @tyL.replExpose
-                                                      in   (r,@tyL.cnstr)
-                    lhs     .   repl        =   if @tv `elem` @lhs.elimTvL then @replTv else @repl
+                                                else  (Ty_Both @tv @tyL.replExpose,@tyL.cnstr)
+                            .   repl        =   if @tv `elem` @lhs.elimTvL then @replTv else @repl
 
 SEM TyAGItf
   | AGItf           ty      .   cnstr       =   emptyCnstr
 %%]
-SEM Ty
-  | Both            lhs     .   (replExpose,cnstr)
-                                            =   if @tv `elem` @lhs.elimTvL
-                                                then  case @tyL.replExpose of
-                                                        []      ->  (@replTv,@lhs.cnstr)
-                                                        (r:_)   ->  (r,(@tv `cnstrTyUnit` r) |=> @tyL.cnstr)
-                                                else  let  r = Ty_Both @tv @tyL.replExpose
-                                                      in   (r,@tyL.cnstr)
-SEM Ty
-  | Both            lhs     .   (replExpose,cnstr)
-                                            =   case @tyL.replExpose of
-                                                    []      ->  (@replTv,@lhs.cnstr)
-                                                    (r:_)   ->  (r,(@tv `cnstrTyUnit` r) |=> @tyL.cnstr)
-

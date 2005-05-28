@@ -172,6 +172,11 @@ DATA Expr
                     expr            : Expr
 %%]
 
+%%[4
+DATA Expr
+  | Impred          expr            : Expr
+%%]
+
 %%[5
 DATA Expr
   | Case            expr            : Expr

@@ -81,6 +81,9 @@ SEM TyExpr
 %%]
 
 %%[4
+SEM Expr
+  | Impred      loc     .   pp      =   "~" >#< @expr.pp
+
 SEM PatExpr
   | TypeAs      loc     .   pp      =   @patExpr.pp >#< "::" >#< @tyExpr.pp
 

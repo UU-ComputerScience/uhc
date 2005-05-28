@@ -140,7 +140,7 @@ pAGItf
                                                 <*> pViews
                             <|> sem_Decl_Rules <$  pKey "rules" <*> pNmSuff
                                                <*> pString <*> pOptViewSels
-                                               <*  pKey "=" <*> pRules
+                                               <*  pKey "=" <*> pViews <*> pRules
                             <|> sem_Decl_ViewSet <$  pKey "viewset" <*> pNm
                                                  <*  pKey "=" <*> pViewSels
                             <|> sem_Decl_View <$> pView
@@ -227,6 +227,7 @@ DATA Decl
   | Rules               nmL         : {[String]}
                         info        : {String}
                         viewSels    : ViewSels
+                        views       : Views
                         rules       : Rules
   | ViewSet             nm          : {String}
                         viewSels    : ViewSels
@@ -484,6 +485,9 @@ SEM AGItf
 {
 data JFmtGamInfo = JFmtGamInfo {fgiTy :: JTy, fgiFullTy :: JTy, fgiReplTy :: JTy, fgiVarGam :: JVarGam }
 type JFmtGam = Map.Map String JFmtGamInfo
+
+fmtAscL2JFmtGam :: String -> [(String,JFmtGamInfo)] -> JFmtGam
+fmtAscL2JFmtGam prefix = Map.fromList . map (\(n,f) -> (prefix ++ n,f))
 }
 
 ATTR AllDecl [ | gathJFmtGam: JFmtGam | ]
@@ -496,8 +500,12 @@ SEM Decl
                         .   dfltJFmtMp  =   [("",JFmtGamInfo (jtyUnPPify @schemeTy) @schemeTy @jExprRepl.ty Map.empty)]
                 views   .   viewJFmtMp  =   []
                 loc     .   allJFmtMp   =   @dfltJFmtMp ++ @views.viewJFmtMp
-                        .   viewJFmtGam =   Map.fromList . map (\(n,f) -> (@nm ++ n,f)) $ @allJFmtMp
+                        .   viewJFmtGam =   fmtAscL2JFmtGam @nm @allJFmtMp
                 lhs     .   gathJFmtGam =   Map.union @viewJFmtGam @lhs.gathJFmtGam
+
+SEM Decl
+  | Rules       views   .   viewJFmtMp  =   []
+                loc     .   jFmtGam     =   fmtAscL2JFmtGam @nm @views.viewJFmtMp `Map.union` @lhs.jFmtGam
 
 SEM View
   | View        jExprRepl
@@ -527,7 +535,10 @@ SEM Judge
   | Judge       loc     .   (ty,errs)   =   mkScmFmt (@nm ++ @lhs.view) (const @jExpr.ty) @lhs.jFmtGam
 
 SEM Decl
-  | Rules       loc     .   (scmTy,errs)=   mkScmFmt @nm fgiFullTy @lhs.jFmtGam
+  | Rules       loc     .   (schemeTy,errs)
+                                        =   case Map.lookup @nm @lhs.jFmtGam of
+                                              Nothing -> (JTy_Any,["RULER error, no scheme for:" >#< @nm])
+                                              Just fgi -> (fgiTy fgi,[])
                         .   scmViewNmL  =   maybe [] sgiViewNmL (Map.lookup @nm @lhs.jScmGam)
 
 -------------------------------------------------------------------------
@@ -653,16 +664,16 @@ SEM Decl
                                                         nBase = @mkNmBase (pp scm)
                                                         nScm = @mkNmScm (pp scm)
                                                         varGam
-                                                          = maybe Map.empty fgiVarGam (Map.lookup scm @lhs.jFmtGam)
+                                                          = maybe Map.empty fgiVarGam (Map.lookup scm @jFmtGam)
                                                             `Map.union` maybe Map.empty gvwgiVarGam (Map.lookup vw @lhs.jGlobViewGam)
                                                             `Map.union` @lhs.jVarGam
                                                         rs = [ (ppDots [nBase,n],h,rPP)
                                                              | (n,h,r) <- @rules.rules
-                                                             , let (rPP,rSel) = ruleEval r vw @lhs.opts @lhs.jGlobViewGam @lhs.jViewSetGam @lhs.jScmGam @lhs.jFmtGam varGam
+                                                             , let (rPP,rSel) = ruleEval r vw @lhs.opts @lhs.jGlobViewGam @lhs.jViewSetGam @lhs.jScmGam @jFmtGam varGam
                                                              , rSel
                                                              ]
                                                         ru = concat . map (\(n,h,_) -> [text (if h then "\\qquad" else "\\\\"),mkCmdNmUse n]) $ rs
-                                                        ppSc = mkCmdNmDef nScm (ensureTeXMath . mkInLhs2Tex . ppJTy . fst . mkScmFmt scm fgiFullTy $ @lhs.jFmtGam)
+                                                        ppSc = mkCmdNmDef nScm (ensureTeXMath . mkInLhs2Tex . ppJTy . fst . mkScmFmt scm fgiFullTy $ @jFmtGam)
                                                         ppRs = vlist (map (\(n,_,c) -> mkCmdNmDef n c) rs)
                                                         ppRu = mkCmdNmDef nBase
                                                                     (    "\\begin{RulesFigure}" >|< ppCurly (mkCmdNmUse nScm) >|< ppCurly (text @info) >|< ppCurly nBase

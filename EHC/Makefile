@@ -60,6 +60,9 @@ DIST_TGZ			:= $(DIST_PREFIX)$(DIST).tgz
 # distribution for afp04 lecture notes
 DIST_AFP04			:= dist-afp04
 
+# distribution for icfp05 slides (for SDS)
+DIST_ICFP05_SLIDES	:= dist-icfp05-slides
+
 # distributed/published stuff for WWW
 WWW_SRC_ZIP			:= www/current-ehc-src.zip
 WWW_SRC_TGZ			:= www/current-ehc-src.tgz
@@ -201,6 +204,17 @@ RULER_DERIV			:= $(RULER_DIR)/$(RULER_HS)
 RULER_DOC_PDF		:= $(RULER_DIR)/RulerDoc.pdf
 
 RULER_SRC			:= $(RULER_DIR)/$(RULER_AG)
+
+RULER2				:= bin/ruler2
+RULER2_DIR			:= ruler2
+RULER2_MAIN			:= Ruler
+RULER2_AG			:= $(RULER2_MAIN).ag
+RULER2_AG_HS		:= $(RULER2_AG:.ag=.hs)
+RULER2_HS			:= RulerUtils.hs
+RULER2_DERIV		:= $(RULER2_DIR)/$(RULER2_AG_HS)
+RULER2_DOC_PDF		:= $(RULER2_DIR)/RulerDoc.pdf
+
+RULER2_SRC			:= $(RULER2_DIR)/$(RULER2_AG)
 
 BREW				:= bin/brew
 BREW_DIR			:= brew
@@ -534,6 +548,9 @@ afp-tst:
 hw05-impred-tst:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyImpred --set=hw05 --set=omitTBD --set=omitLitDiscuss" afp
 
+hw05-impred-final:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyImpred --set=hw05 --set=omitTBD --set=omitLitDiscuss" afp-bib
+
 icfp05-explimpl-tst:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=icfp05 --set=omitTBD --set=omitLitDiscuss" afp
 
@@ -542,6 +559,12 @@ icfp05-explimpl:
 
 icfp05-explimpl-final:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=icfp05 --set=omitTBD --set=omitLitDiscuss" afp-bib
+
+icfp05-explimpl-slides:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=yesBeamer --set=asSlides --set=storyExplImpl --set=icfp05 --set=omitTBD --set=omitLitDiscuss" afp
+
+icfp05-slides-dist-tex:
+	$(MAKE) AFP=icfp05-slides-dist AFP_TEX_DPDS= LHS2TEX_OPTS="--set=yesBeamer --set=asSlides --set=storyExplImpl --set=icfp05 --set=omitTBD --set=omitLitDiscuss --set=dist" icfp05-slides-dist.tex
 
 esop05:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=llncs --set=storyExplImpl --set=omitTBD --set=omitLitDiscuss" afp
@@ -564,7 +587,7 @@ eh-intro:
 eh-introETAPSLinks:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_POLY_MODE=--poly LHS2TEX_OPTS="$(LHS2TEX_OPTS) --set=storyEHIntro --set=storyVariantETAPSLinks --set=asSlides --set=omitTBD --set=omitLitDiscuss" afp
 
-.PHONY: shuffle ruler brew ehcs dist www www-sync gri gris agprimer dist-afp04
+.PHONY: shuffle ruler ruler2 brew ehcs dist www www-sync gri gris agprimer $(DIST_AFP04) $(DIST_ICFP05_SLIDES)
 
 shuffle: $(SHUFFLE)
 
@@ -590,6 +613,17 @@ $(RULER): $(RULER_DIR)/$(RULER_AG) $(wildcard lib/*.hs)
 $(RULER_DOC_PDF): $(RULER_DIR)/RulerDoc.tex $(RULER)
 	cd `dirname $<` ; pdflatex `basename $<`
 
+ruler2: $(RULER2)
+
+$(RULER2): $(RULER2_DIR)/$(RULER2_AG) $(wildcard lib/*.hs) $(addprefix $(RULER2_DIR)/,$(RULER2_HS) $(RULER2_AG_HS))
+	cd $(RULER2_DIR) ; \
+	$(AGC) -csdfr --module=Main `basename $<` ; \
+	$(GHC) --make $(GHC_OPTS) -i../lib $(RULER2_HS) $(RULER2_AG_HS) -o ../$@ ; \
+	strip ../$@
+
+$(RULER2_DOC_PDF): $(RULER2_DIR)/RulerDoc.tex $(RULER2)
+	cd `dirname $<` ; pdflatex `basename $<`
+
 brew: $(BREW)
 
 $(BREW): $(BREW_DIR)/$(BREW_AG) $(wildcard lib/*.hs)
@@ -609,6 +643,7 @@ clean:
 	rm -rf $(AFP_DERIV) $(SHUFFLE_DERIV) a.out \
 	$(addprefix $(SHUFFLE_DIR)/,*.o *.hi *.pdf) $(SHUFFLE) \
 	$(addprefix $(RULER_DIR)/,*.o *.hi *.pdf) $(RULER) \
+	$(addprefix $(RULER2_DIR)/,*.o *.hi *.pdf) $(RULER2) \
 	$(AFP_PDF) \
 	*.o *.hi $(VERSIONS) $(D_BUILD) \
 	test/*.reg* test/*.class *.class test/*.java test/*.code \
@@ -622,7 +657,12 @@ clean-test:
 	rm -rf test/*.reg* test/*.exp*
 
 edit:
-	bbedit $(EHC_CAG) $(EHC_CHS) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CAG)) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CHS)) $(ALL_AFP_SRC) afp.lsty afp.fmt $(SHUFFLE_SRC) $(RULER_SRC) Makefile $(TMPL_TEST) $(MK_EHFILES)
+	bbedit \
+	$(EHC_CAG) $(EHC_CHS) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CAG)) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CHS)) \
+	$(ALL_AFP_SRC) afp.lsty afp.fmt \
+	$(SHUFFLE_SRC) $(RULER_SRC) $(RULER2_SRC) \
+	Makefile \
+	$(TMPL_TEST) $(MK_EHFILES)
 
 A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
@@ -760,6 +800,15 @@ $(DIST_ZIP): $(addprefix $(VERSION_LAST)/,$(EHC_DPDS_ALL_MIN_TARG)) Makefile tes
 	tar cfz $(DIST_TGZ) $(DIST) ; \
 	echo "== tar ==" ; \
 	zip -qur $(DIST_ZIP) $(DIST)
+
+dist-icfp05-slides: icfp05-slides-dist-tex
+	@rm -rf $(DIST_ICFP05_SLIDES) ; \
+	mkdir -p $(DIST_ICFP05_SLIDES) ; \
+	cp rules*.tex afp-pgf.tex $(DIST_ICFP05_SLIDES) ; \
+	cp icfp05-explimpl-slides.tex $(DIST_ICFP05_SLIDES)/icfp05-explimpl-slides.tex ; \
+	cp -r tmp-icfp05-explimpl-slides figs $(DIST_ICFP05_SLIDES) ; \
+	cp $(addsuffix .sty,icfp05-explimpl-slides doubleequals infrule beamerthemeafp kscode textpos) llncs.cls $(DIST_ICFP05_SLIDES) ; \
+	tar cfz $(DIST_ICFP05_SLIDES).tgz $(DIST_ICFP05_SLIDES)
 
 dist-afp04: afp04-dist-tex
 	@rm -rf $(DIST_AFP04) ; \

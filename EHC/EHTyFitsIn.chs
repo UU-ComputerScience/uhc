@@ -304,11 +304,12 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[4_2.fitsIn.bind
+            occurBindAlt fi isR tv t=  occurBind fi tv (mkTyAlts fi isR tv t)
+%%]
             occurBindAlt fi isR tv t=  case t of
                                          Ty_Quant q _ _ | tyquIsForall q
                                             -> occurBind fi tv t
                                          _  -> occurBind fi tv (mkTyAlts fi isR tv t)
-%%]
 
             f fi t1@(Ty_Quant q1 _ _)   t2@(Ty_Quant q2 _ _)
                 |  q1 == q2
@@ -348,12 +349,14 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[4_2
-            bindMany fi tvL t       =  (res fi t) {foCnstr = assocLToCnstr .  map (flip (,) t) $ tvL}
+            bindMany fi tvL t       =  (res fi t) {foCnstr = mkCnstr tvL t}
+            mkCnstr tvL t           =  assocLToCnstr .  map (flip (,) t) $ tvL
             cmbTyAltsL t1L t2L      =  q1 ++ q2 ++ r1 ++ r2
                                        where  p = partition (tyIsQu . tyPlusTy)
                                               (q1,r1) = p t1L
                                               (q2,r2) = p t2L
-            foBind tv t fo          =  foUpdCnstr (tv `cnstrTyUnit` t) . foUpdTy t $ fo
+            foBindMany tvL t fo     =  foUpdCnstr (mkCnstr tvL t) . foUpdTy t $ fo
+            foBind tv               =  foBindMany [tv]
 %%]
 
 %%[4.fitsIn.allowBind
@@ -624,7 +627,7 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[10.fitsIn.fRow.Coe
-                       foUpdRecFldsCoe eKeys foL tr1 foR
+                       foUpdRecFldsCoe eKeys foL tr1 foR===
                          =  let cL =   [  (l,c)
                                        |  (l,fo) <- zip eKeys foL
                                        ,  let c = coeWipeWeave (foCnstr foR) (foCSubst foR) (foLCoeL fo) (foRCoeL fo)
@@ -651,7 +654,7 @@ fitsIn opts env uniq ty1 ty2
             f fi t1@(Ty_Alts _ _)       t2@(Ty_Both _ _)
                                                     = res fi t2
             f fi t1@(Ty_Both v1 [t1b])  t2@(Ty_Both v2 [t2b])
-                                                    = manyFO [fo,foBind v2 (Ty_Both v2 [foTy fo]) fo]
+                                                    = manyFO [fo,foBindMany [v1,v2] (Ty_Both v2 [foTy fo]) fo]
                 where  fo = f fi t1b t2b
             f fi t1@(Ty_Both v1 [])     t2@(Ty_Both v2 _)
                                                     = bind fi v1 t2
