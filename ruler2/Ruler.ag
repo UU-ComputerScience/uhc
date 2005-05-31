@@ -58,15 +58,13 @@ doCompile fp opts
        ; if null errL
          then do { putBld (optGenFM opts /= FmAll) (mkPP_Syn_AGItf res (optGenFM opts))
                  }
-         else do { putBld True (vlist . map pp $ errL)
+         else do { hPutBld True stderr (vlist . map pp $ errL)
                  ; exitFailure
                  }
        ; return ()
        }
-  where putBld f b
-          = if f
-            then putStrLn (disp b 2000 "")
-            else return ()
+  where hPutBld f h b = if f then hPutPPFile h b 2000 else return ()
+        putBld  f   b = hPutBld f stdout b
 
 -------------------------------------------------------------------------
 -- Defaults
@@ -82,7 +80,6 @@ data Opts
   = Opts
       { optGenFM        :: FmKind
       , optAtDir        :: AtDir    -- used internally only
-      , optNmSubstExact :: Bool     -- used internally only
       , optHelp         :: Bool
       , optDebug        :: Bool
       , optBaseNm       :: String
@@ -92,7 +89,6 @@ defaultOpts
   = Opts
       { optGenFM        =  FmAll
       , optAtDir        =  AtInOut
-      , optNmSubstExact =  False
       , optHelp         =  False
       , optDebug        =  False
       , optBaseNm       =  rulesCmdPre
@@ -134,9 +130,9 @@ keywordsTextProps
   =  Map.keys propsMp
 keywordsTextEscapable
   =  keywordsTextProps
-     ++ [ "judge", "relation", "rule", "rules", "scheme", "view", "attr"
+     ++ [ "judge", "relation", "rule", "rules", "scheme", "view", "attr", "viewsel"
         -- related to global info
-        , "viewhierarchy", "format", "preamble"
+        , "viewhierarchy", "format", "preamble", "extern"
         -- related to formatting (styles)
         , "tex", "ag", "in", "out"
         -- related to attributes (flags)
@@ -147,7 +143,7 @@ keywordsTextEscapable
 keywordsText
   =  [  ] ++ keywordsTextEscapable
 keywordsOpsEsc
-  =  [ ",", ":", "[", "]" ]
+  =  [ ",", ":", "[", "]", "*" ]
 keywordsOpsParenEsc
   =  [ "=", "-", "|" ]
 keywordsOps
@@ -177,10 +173,10 @@ pAGItf
   = let alg                 =   (undefined,sem_Expr_App,sem_Expr_AppTop)
         pAGItf              =   sem_AGItf_AGItf <$> pDecls' pDeclGlob
         pDecls' pD          =   pFoldr (sem_Decls_Cons,sem_Decls_Nil) pD
-        pDeclRule           =   sem_Decl_Rule          <$> pKeySPos "rule"  <*> pNm     <*> pMbString
+        pDeclRule           =   sem_Decl_Rule          <$> pKeySPos "rule"  <*> pNm     <*> pViewSel        <*> pMbString
                                                                                         <* pKey "="         <*> pDecls' pDeclRulView
-        pDeclRulView        =   sem_Decl_RulView       <$  pKey "view"      <*> pNmI    <* pKey "="         <*> pRExprs <* pKey "-" <*> pRExprs
-        pDeclScm            =   sem_Decl_ScmView       <$  pKey "view"      <*> pNmI    <* pKey "="         <*> pDecls' pDeclScmView
+        pDeclRulView        =   sem_Decl_RulView       <$  pKey "view"      <*> pNmVw   <* pKey "="         <*> pRExprs <* pKey "-" <*> pRExprs
+        pDeclScm            =   sem_Decl_ScmView       <$  pKey "view"      <*> pNmVw   <* pKey "="         <*> pDecls' pDeclScmView
         pDeclScmView        =   sem_Decl_FmtJudge      <$> pKeySPos "judge" <*> pFmKind                     <*> pExpr
                             <|> sem_Decl_Attr          <$  pKey "attr"                  <* pKey "["         <*> pAttrIntros
                                                                                         <* pKey "|"         <*> pAttrIntros
@@ -192,22 +188,28 @@ pAGItf
                             <|> sem_Decl_Fmt           <$  pKey "format"    <*> pFmKind <*> pAtIO
                                                                             <*> pExpr   <* pKey "="         <*> pExpr
                             <|> sem_Decl_Rules         <$  pKey "rules"     <*> pNm     <* pKey "scheme"    <*> pNm   <*> pString <* pKey "=" <*> pDecls' pDeclRule
-                            <|> sem_Decl_ViewHierarchy <$  pKey "viewhierarchy"         <* pKey "="         <*> pList1Sep pComma (pList1 pNmI)
+                            <|> sem_Decl_ViewHierarchy <$  pKey "viewhierarchy"         <* pKey "="         <*> pList1Sep pComma (pList1 pNmVw)
                             <|> sem_Decl_Preamble      <$  pKey "preamble"  <*> pFmKind                     <*> pString
+                            <|> sem_Decl_Extern        <$  pKey "extern"    <*> pList1 pNm
+        pViewSel            =   pMb' id sem_ViewSel_All
+                                     (pKey "viewsel" *> (pV <??> ((flip sem_ViewSel_Range) <$ pKey "-" <*> pV)))
+                            where pV = sem_ViewSel_View <$> pNmVw <|> sem_ViewSel_All <$ pKey "*"
         pFmKind             =   pMb' id FmAll (FmTeX <$ pKey "tex" <|> FmAG <$ pKey "ag")
         pAtIO               =   pMb' id AtInOut (AtIn <$ pKey "in" <|> AtOut <$ pKey "out")
         pNmStr              =   pVarid <|> pConid
         pNmStrI             =   pNmStr <|> pInteger
         pNm' pN             =   (Nm <$> pN) <**> pNmSel
         pNm                 =   pNm' pNmStr
-        pNmI                =   pNm' pNmStrI
-        pNmIL               =   pList1 pNmI
+        pNmVw               =   pNm' pNmStrI
         pSymStr             =   pVarsym <|> pConsym
                             <|> pAnyKey keywordsOpsEsc
                             <|> pKey "`" *> ((\n -> "`" ++ n ++ "`") <$> pNmStr <|> pAnyKey keywordsOpsParenEsc) <* pKey "`"
         pSym                =   Nm <$> pSymStr
         pRExprs             =   pFoldr (sem_RExprs_Cons,sem_RExprs_Nil) pRExpr
-        pRExpr              =   sem_RExpr_Judge <$> pKeySPos "judge" <*> pMbRNm <*> pNm <*> pRExprEqn
+        pRExpr              =   pKeySPos "judge"
+                                <**> ((\rn n e p -> sem_RExpr_Judge p rn n e) <$> pMbRNm <*> pNm <*> pRExprEqn
+                                     <|> (flip sem_RExpr_Del) <$ pKey "-" <*> pNm
+                                     )
         pRExprEqn           =   sem_RExprEqn_Attrs <$> pAttrEqns
                             <|> sem_RExprEqn_Expr  <$  pKey "=" <*> pExpr
         pExpr               =   pExprApp <??> ((\es e1 -> let (op,e2) = foldr (\(op,e1) (f2,e2) -> (op,f2 e1 e2)) (const,undefined) es
@@ -325,6 +327,7 @@ DATA AGExprItf
 DATA Decl
   | Preamble            fmKind      : {FmKind}
                         preamble    : {String}
+  | Extern              nms         : {[Nm]}
   | Scheme              scKind      : {ScKind}
                         nm          : {Nm}
                         mbAGNm      : {Maybe String}
@@ -339,6 +342,7 @@ DATA Decl
                         decls       : Decls
   | Rule                pos         : {SPos}
                         nm          : {Nm}
+                        viewSel     : ViewSel
                         mbAGNm      : {Maybe String}
                         decls       : Decls
   | RulView             nm          : {Nm}
@@ -358,6 +362,14 @@ TYPE Decls = [Decl]
 
 SET AllDecl = Decl Decls
 
+DATA ViewSel
+  | All
+  | View                nm          : {Nm}
+  | Range               vwFr        : ViewSel
+                        vwTo        : ViewSel
+
+SET AllViewSel = ViewSel
+
 DATA AttrIntro
   | Intro               props       : {[AtProp]}
                         nm          : {Nm}
@@ -372,6 +384,8 @@ DATA RExpr
                         mbRNm       : {Maybe Nm}
                         schemeNm    : {Nm}
                         eqns        : RExprEqn
+  | Del                 pos         : {SPos}
+                        nm          : {Nm}
 
 DATA RExprEqn
   | Attrs               eqns        : AttrEqns
@@ -414,7 +428,7 @@ TYPE MbExpr = MAYBE Expr
 
 SET AllExpr = Expr MbExpr
 
-SET AllNT = AllRExpr AllExpr AllAttrEqn AllAttrIntro AllDecl
+SET AllNT = AllRExpr AllExpr AllAttrEqn AllAttrIntro AllDecl AllViewSel
 
 -------------------------------------------------------------------------
 -- Misc functions dependend on AST
@@ -501,10 +515,7 @@ SEM Expr
 -- View order
 -------------------------------------------------------------------------
 
-ATTR AllDecl [ vwOrder: {[Nm]} | | gathVwOrder USE {++} {[]}: {[[[Nm]]]} ]
-
-SEM AGItf
-  | AGItf           loc     .   vwOrder     =   head $ head $ @decls.gathVwOrder
+ATTR AllDecl [ | | gathVwOrder USE {++} {[]}: {[[[Nm]]]} ]
 
 SEM Decl
   | ViewHierarchy   lhs     .   gathVwOrder =   [@nmOrder]
@@ -513,10 +524,23 @@ SEM Decl
 -- View dpd graph
 -------------------------------------------------------------------------
 
-ATTR AllDecl [ vwDpdGr: {DpdGr Nm} | | ]
+ATTR AllDecl AllViewSel [ vwDpdGr: {DpdGr Nm} | | ]
 
 SEM AGItf
-  | AGItf           loc     .   vwDpdGr     =   mkVwDpdGr $ head $ @decls.gathVwOrder
+  | AGItf           loc     .   vwDpdGr     =   mkVwDpdGr $ concat $ @decls.gathVwOrder
+
+-------------------------------------------------------------------------
+-- View selection
+-------------------------------------------------------------------------
+
+ATTR AllViewSel [ | | vwSelNmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
+
+SEM ViewSel
+  | View            lhs     .   vwSelNmS    =   Set.singleton @nm
+  | All             lhs     .   vwSelNmS    =   vgVertices @lhs.vwDpdGr
+  | Range           lhs     .   vwSelNmS    =   let toS = Set.fold (\n r -> vgReachableFrom @lhs.vwDpdGr n `Set.union` r) Set.empty @vwTo.vwSelNmS
+                                                    frSL = [ vgReachableTo @lhs.vwDpdGr n | n <- Set.toList @vwFr.vwSelNmS ]
+                                                in  Set.filter (\n -> any (\s -> n `Set.member` s) frSL) toS
 
 -------------------------------------------------------------------------
 -- Attr
@@ -532,6 +556,18 @@ SEM Decl
   | Attr            inhs    .   atDirs      =   [AtInh]
                     inhsyns .   atDirs      =   [AtInh,AtSyn]
                     syns    .   atDirs      =   [AtSyn]
+
+-------------------------------------------------------------------------
+-- Externally declared identifiers
+-------------------------------------------------------------------------
+
+ATTR AllDecl [ extNmS: {Set.Set Nm} | | gathExtNmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
+
+SEM AGItf
+  | AGItf           loc     .   extNmS      =   @decls.gathExtNmS
+
+SEM Decl
+  | Extern          lhs     .   gathExtNmS  =   Set.fromList @nms
 
 -------------------------------------------------------------------------
 -- View (related to scheme)
@@ -649,7 +685,7 @@ SEM RExpr
                                             =   let aDirMp = Map.mapWithKey (\n _ -> maybe [] atDirs . Map.lookup n . vwscFullAtGam $ @vwScInfo) @eqns.jaGam
                                                     aDirMissMp = Map.filter null aDirMp
                                                 in  (REInfoJudge @nm @schemeNm Set.empty Set.empty @eqns.jaGam
-                                                    ,if Map.null aDirMissMp then [] else [Err_UndefNm @pos @cxStr2 "attr" (Map.keys aDirMissMp)]
+                                                    ,[] -- if Map.null aDirMissMp then [] else [Err_UndefNm @pos @cxStr2 "attr" (Map.keys aDirMissMp)]
                                                     )
                     lhs     .   reGam       =   Map.singleton @nm @reInfo
 
@@ -770,7 +806,8 @@ ATTR AllDecl [ | | rlGam USE {`Map.union`} {Map.empty}: {RlGam Expr} ]
 
 SEM Decl
   | Rule            loc     .   (rlGam,errUndefs)
-                                            =   let (g,_,eg)
+                                            =   let vwIsIncl n = n `Set.member` @viewSel.vwSelNmS
+                                                    (g,_,eg)
                                                         = foldr
                                                             (\nVw (vrg,prePostGamMp,errg)
                                                               -> let (preg,postg) = prevWRTDpd nVw @lhs.vwDpdGr prePostGamMp (emptyGam,emptyGam)
@@ -780,22 +817,24 @@ SEM Decl
                                                                                -> (vw,reGamExtWithNew nVw @lhs.scGam (reGamExtDflt nVw @lhs.scGam preg) (vwrlPreGam vw)
                                                                                      ,reGamExtWithNew nVw @lhs.scGam (reGamExtDflt nVw @lhs.scGam postg) (vwrlPostGam vw))
                                                                              Nothing
-                                                                               -> (emptyVwRlInfo {vwrlNm=nVw},reGamExtWithNew nVw @lhs.scGam preg emptyGam
-                                                                                                             ,reGamExtWithNew nVw @lhs.scGam postg emptyGam)
+                                                                               -> (emptyVwRlInfo {vwrlNm=nVw},reGamExtWithNew nVw @lhs.scGam (reGamExtDflt nVw @lhs.scGam preg) emptyGam
+                                                                                                             ,reGamExtWithNew nVw @lhs.scGam (reGamExtDflt nVw @lhs.scGam postg) emptyGam)
                                                                      vw' = vw {vwrlFullPreGam = reGamUpdInOut nVw @lhs.scGam preg'
                                                                               ,vwrlFullPostGam = reGamUpdInOut nVw @lhs.scGam  postg'}
                                                                      vw'' = vw' {vwrlPreScc = vwrlScc vw'}
-                                                                     vwUndefs = vwrlUndefs vw''
+                                                                     vwUndefs = vwrlUndefs vw'' `Set.difference` @lhs.extNmS
                                                                  in  (Map.insert nVw vw'' vrg
                                                                      ,Map.insert nVw (preg',postg') prePostGamMp
-                                                                     ,if Set.null vwUndefs then errg else Map.insert nVw (Set.toList vwUndefs) errg
+                                                                     ,if Set.null vwUndefs
+                                                                      then errg
+                                                                      else Map.insert nVw (Set.toList vwUndefs) errg
                                                                      )
                                                             )
                                                             (@decls.vwRlGam,Map.empty,emptyGam)
                                                             (vgTopSort @lhs.vwDpdGr)
-                                                in  (Map.singleton @nm (RlInfo @nm @mbAGNm @lhs.rlSeqNr g)
+                                                in  (Map.singleton @nm (RlInfo @nm @mbAGNm @lhs.rlSeqNr (Map.filterWithKey (\n _ -> vwIsIncl n) g))
                                                     ,[ Err_UndefNm @pos ("view '" ++ show n ++ "' for rule '" ++ show @nm ++ "'") "attr" nms
-                                                     | (n,nms) <- Map.toList eg
+                                                     | (n,nms) <- Map.toList eg, vwIsIncl n
                                                      ]
                                                     )
 
@@ -1001,10 +1040,15 @@ SEM Decl
   | ScmView         lhs     .   pp          =   "view"          >#< @nm >-< "=" >#< @decls.pp
   | RulView         lhs     .   pp          =   "view"          >#< @nm >-< "=" >#< (@pre.pp >-< "-" >-< @post.pp)
   | Rules           lhs     .   pp          =   "rules"         >#< @nm >#< "scheme" >#< @schemeNm >-< "=" >#< @decls.pp
-  | Rule            lhs     .   pp          =   "rule"          >#< @nm >-< "=" >#< @decls.pp
+  | Rule            lhs     .   pp          =   "rule"          >#< @nm >#< "viewsel" >#< pp (show @viewSel.vwSelNmS) >-< "=" >#< @decls.pp
   | ViewHierarchy   lhs     .   pp          =   "viewhierarchy" >#< text (show @nmOrder)
   | FmtJudge        lhs     .   pp          =   "judge"         >#< @expr.pp
   | Attr            lhs     .   pp          =   "attr"          >#< ("inh" >#< @inhs.pp >-< "i+s" >#< @inhsyns.pp >-< "syn" >#< @syns.pp)
+
+SEM ViewSel
+  | All             lhs     .   pp          =   pp "*"
+  | View            lhs     .   pp          =   pp @nm
+  | Range           lhs     .   pp          =   @vwFr.pp >#< ".." >#< @vwTo.pp
 
 SEM RExpr
   | Judge           lhs     .   pp          =   "judge" >#< maybe empty (\n -> pp n >#< "=") @mbRNm >#< pp @schemeNm >#< @eqns.pp
@@ -1087,15 +1131,15 @@ genDflt
 genTeX
   = genDflt
       { genRl = \(nFull,nSc,nScAG,nVw,nRl,nRlAG) pre post ->
-          let r = "\\ehinfrule" >|< ppCurly nRl >|< ppCurly nVw
+          let r = "\\ehinfruleB" >|< ppCurly nRl >|< ppCurly nVw
                   >-< ppListSepVV "{%" "}" "\\\\" pre
                   >-< ppListSepVV "{%" "}" "\\\\" post
           in  mkCmdNmDef nFull r
       , genRs = \(nScMeta,nVwFull) rsInfo meta defNms defVals ->
           let eFigPP
-                = "\\begin{RulesFigure}" >|< ppCurly (mkCmdNmUse nScMeta) >|< ppCurly (pp (rsDescr rsInfo)) >|< ppCurly nVwFull
-                  >-< vlist (intersperse (pp "\\quad") . map mkCmdNmUse $ defNms)
-                  >-< "\\end{RulesFigure}"
+                = "\\begin{RulesFigureB}" >|< ppCurly (mkCmdNmUse nScMeta) >|< ppCurly (pp (rsDescr rsInfo)) >|< ppCurly nVwFull
+                  >-< vlist (intersperse (pp "\\hspace{1ex}") . map mkCmdNmUse $ defNms)
+                  >-< "\\end{RulesFigureB}"
           in  vlist defVals
               >-< mkCmdNmDef nScMeta (ensureTeXMath . mkInLhs2Tex $ meta)
               >-< mkCmdNmDef nVwFull eFigPP

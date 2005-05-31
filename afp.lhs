@@ -33,13 +33,13 @@
 %let incl03     = False
 %endif
 
-%if storyPHD  || storyAfpTRUU1 || storyImpred || onlyCurrentWork
+%if storyPHD  || storyAfpTRUU1 || storyImpred
 %let incl04     = True
 %else
 %let incl04     = False
 %endif
 
-%if storyPHD  || onlyCurrentWork
+%if storyPHD
 %let incl05     = True
 %let incl06     = True
 %let incl07     = True
@@ -49,19 +49,19 @@
 %let incl07     = False
 %endif
 
-%if storyPHD  || onlyCurrentWork
+%if storyPHD 
 %let incl08     = True
 %else
 %let incl08     = False
 %endif
 
-%if storyPHD || storyExplImpl  || onlyCurrentWork
+%if storyPHD || storyExplImpl
 %let incl09     = True
 %else
 %let incl09     = False
 %endif
 
-%if storyPHD  || onlyCurrentWork
+%if storyPHD 
 %let incl10     = True
 %let incl11     = True
 %else
@@ -11253,7 +11253,35 @@ error messaging, line/col position, comment ????
 \section{Scratch}
 
 \rulerCmdUse{rules3.E.expr.base}
-\rulerCmdUse{rules3.2.expr.base}
+\rulerCmdUse{rules2.exprE.base}
+
+\rulerCmdUse{rules3.K.expr.base}
+\rulerCmdUse{rules2.exprK.base}
+
+\rulerCmdUse{rules3.C.expr.base}
+\rulerCmdUse{rules2.expr2.base}
+
+\rulerCmdUse{rules3.I1.expr.base}
+\rulerCmdUse{rules2.expr4.base}
+
+---------------------
+
+---------------------
+
+\rulerCmdUse{rules3.E.decl.base}
+\rulerCmdUse{rules2.declE}
+
+\rulerCmdUse{rules3.K.decl.base}
+\rulerCmdUse{rules2.declK}
+
+\rulerCmdUse{rules3.C.decl.base}
+\rulerCmdUse{rules2.decl2}
+
+\rulerCmdUse{rules3.I1.decl.base}
+\rulerCmdUse{rules2.decl4}
+
+---------------------
+
 
 %endif %% onlyCurrentWork
 

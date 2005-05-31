@@ -92,8 +92,8 @@ AFP_FMT_OTHER		:= lag2TeX.fmt pretty.fmt parsing.fmt
 # type rules, in ruler format
 AFP_RULES			:= rules.rul rules2.rul
 AFP_RULES_TEX		:= $(AFP_RULES:.rul=.tex)
-AFP_RULES2			:= rules3.rul2
-AFP_RULES2_TEX		:= $(AFP_RULES2:.rul=.tex)
+AFP_RULES2			:= rules3.rl2
+AFP_RULES2_TEX		:= $(AFP_RULES2:.rl2=.tex)
 
 # pictures in pgf format
 AFP_PGF_TEX			:= afp-pgf.tex
@@ -523,7 +523,7 @@ $(AFP_STY): afp.lsty Makefile
 $(AFP_RULES_TEX): %.tex: %.rul $(RULER) $(AFP_FMT)
 	$(call RULER_LHS_TEX,$(*F),$<,$@)
 
-$(AFP_RULES2_TEX): %.tex: %.rul2 $(RULER2) $(AFP_FMT)
+$(AFP_RULES2_TEX): %.tex: %.rl2 $(RULER2) $(AFP_FMT)
 	$(call RULER2_LHS_TEX,$(*F),$<,$@)
 
 agprimer: $(D_BUILD_BIN)/repminag $(D_BUILD_BIN)/repminhs $(D_BUILD_BIN)/expr

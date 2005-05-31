@@ -1,0 +1,307 @@
+-------------------------------------------------------------------------
+-- Preliminaries
+-------------------------------------------------------------------------
+
+preamble tex "%include lhs2TeX.fmt\n%include afp.fmt"
+
+extern emptyGam emptyCnstr minint maxint tyInt ANY
+
+-------------------------------------------------------------------------
+-- Formatting
+-------------------------------------------------------------------------
+
+format ag ty.ident = gTy
+{-
+format ag ty.syn = ty
+format ag ty.inh = knTy
+format ag tyCnstr.inh = tyCnstr
+format ag tyCnstr.syn = tyCnstr
+-}
+
+format ag in (a) -> (r) = a `mkTyArrow` r
+format ag in ((c) (v)) = c |=> v
+format ag out ((a) -> (r)) `=` (v) = (a,r) `=` tyArgRes v
+
+format ag eFun = func
+format ag eArg = arg
+format ag lamPat = arg
+format ag declPat = patExpr
+
+format tex tyInt = Int
+format tex emptyGam = []
+format tex emptyCnstr = []
+format tex sigValGam = Gamma.sig
+format tex patValGam = Gamma.p
+format tex ty = sigma
+format tex knTy = sigma..k
+format tex patTyCnstr = Cnstr.p
+format tex tyCnstr = Cnstr
+format tex tyCnstr.inh = Cnstr..k
+format tex tyCnstr.syn = Cnstr
+format tex tyCnstr.fun = Cnstr.f
+format tex tyCnstr.fitF = Cnstr.f
+format tex tyCnstr.arg = Cnstr.a
+format tex valGam = Gamma
+
+format tex declPat = p
+format tex lamPat = p
+format tex eFun = e.1
+format tex eArg = e.2
+
+viewhierarchy = E K C I1 I2
+
+-------------------------------------------------------------------------
+-- Expr
+-------------------------------------------------------------------------
+
+scheme expr "Expr" =
+  view E =
+    attr [ node e: Expr, valGam: ValGam | ty: Ty | ]
+    judge tex valGam :-.."e" e : ty
+  view K =
+    attr [ knTy: Ty | | ty: Ty ]
+    judge tex valGam; knTy :-.."e" e : ty
+  view C =
+    attr [ | thread tyCnstr: Cnstr | ]
+    judge tex valGam ; tyCnstr.inh ; knTy :-.."e" e : ty ~> tyCnstr.syn
+
+rules expr.base scheme expr "Expression type rules" =
+  rule e.int "IConst" =
+    view E =
+      -
+      judge R = expr = valGam :- (minint (..) maxint) : tyInt
+
+    view K =
+      judge F = fit = :- tyInt <= knTy : ty
+      -
+      judge R = expr
+          | ty = ty
+
+    view C =
+      judge F = fit
+          | cnstr = tyCnstr
+      -
+      judge R = expr
+          | tyCnstr.syn = tyCnstr tyCnstr.inh
+
+  rule e.var "Var" =
+    view E =
+      judge G = bindIdTy = ident :-> ty `elem` valGam
+      -
+      judge R = expr = valGam :- ident : ty
+
+    view K =
+      judge G = bindIdTy
+          | ty = ty.ident
+      judge F = fit
+          | lty = (ltyPrev= ty.ident)
+          | rty = knTy
+      -
+
+    view C =
+      judge F = fit
+          | lty = tyCnstr.inh ltyPrev
+          | rty = tyCnstr.inh knTy
+          | cnstr = tyCnstr
+      -
+      judge R = expr
+          | tyCnstr.syn = tyCnstr tyCnstr.inh
+
+  rule e.app "App" =
+    view E =
+      judge F = expr = valGam :- eFun : (tyFun= ty.a -> ty)
+      judge A = expr = valGam :- eArg : ty.a
+      -
+      judge R = expr = valGam :- (eFun ^^ eArg) : ty
+
+    view K =
+      judge F = expr
+          | knTy = ANY -> knTy
+          | ty = tyFun
+      judge A = expr
+          | knTy = ty.a
+          | ty = _
+      -
+
+    view C =
+      judge V = fresh
+      judge F = expr
+          | knTy = tvarv -> knTy
+          | tyCnstr.inh = tyCnstr.inh
+          | tyCnstr.syn = tyCnstr.fun
+      judge A = expr
+          | tyCnstr.inh = tyCnstr.fun
+          | tyCnstr.syn = tyCnstr.arg
+      -
+      judge R = expr
+          | ty = tyCnstr.arg ty
+          | tyCnstr.syn = tyCnstr.arg
+
+  rule e.lam "Lam" =
+    view E =
+      judge B = expr = (identv :-> ty.identv, valGam) :- e : ty.e
+      -
+      judge R = expr = valGam :- (\identv -> e) : (ty.identv -> ty.e)
+
+    view K =
+      judge B = expr
+          | knTy = ty.r
+      -
+      judge R = expr
+          | knTy = ty.identv -> ty.r
+
+    view C =
+      judge V = fresh2
+      judge fitF = fit = :- (tvarv1 -> tvarv2) <= (tyCnstr.inh knTy) : (ty.p -> ty.r) ~> tyCnstr.fitF
+      judge B = expr
+          | tyCnstr.inh = tyCnstr.p tyCnstr.fitF tyCnstr.inh
+          | tyCnstr.syn = tyCnstr.e
+          | valGam = patValGam, valGam
+      judge P = pat = emptyCnstr ; ty.p :- lamPat : _ ; patValGam ~> tyCnstr.p
+      -
+      judge R = expr
+          | e = \lamPat -> e
+          | ty = tyCnstr.e ty.p -> ty.e
+          | tyCnstr.syn = tyCnstr.e
+          | knTy = knTy
+
+  rule e.let "Let" =
+    view E =
+      judge B = expr = (sigValGam, patValGam, valGam) :- e : ty
+      judge D = decl = (sigValGam, patValGam, valGam) :- d : sigValGam ; patValGam
+      -
+      judge R = expr = valGam :- (let d (in) e) : ty
+
+-------------------------------------------------------------------------
+-- Declaration
+-------------------------------------------------------------------------
+
+scheme decl "Decl" =
+  view E =
+    attr [ valGam: Gam, node d: Decl | | sigValGam: Gam, patValGam: Gam ]
+    judge tex valGam :-.."d" d : sigValGam ; patValGam
+  view C =
+    attr [ | thread tyCnstr: Cnstr | patTyCnstr: Constr ]
+    judge tex valGam ; tyCnstr.inh :-.."d" d : sigValGam ; patValGam ~> patTyCnstr ; tyCnstr.syn
+
+rules decl.base scheme decl "Declaration type rules" =
+  rule d.sig.val = 
+    view E =
+      judge E = expr = valGam :- e.identv : ty.identv
+      judge B = bind1IdToTy = valGam.identv === [identv :-> ty.identv]
+      -
+      judge R = decl = valGam :- (identv :: ty.identv ; identv `=` e.identv) : valGam.identv ; emptyGam
+
+    view K =
+      judge E = expr
+          | knTy = ty.identv
+      -
+
+    view C =
+      judge okP = properLetPat
+          | p = declPat
+      judge P = pat = emptyCnstr ; ty.identv :- declPat : _ ; patValGam ~> tyCnstr.p
+      judge E = expr
+          | tyCnstr.syn = tyCnstr.e
+          | ty = _
+      -
+      judge R = expr
+          | d = identv :: ty.identv ; declPat `=` e.identv
+          | patTyCnstr = tyCnstr.p
+          | tyCnstr.syn = tyCnstr.e
+          | patValGam = patValGam `-` valGam.identv
+
+  rule d.val = 
+    view E =
+      judge E = expr = valGam :- e.identv : ty.identv
+      judge B = bind1IdToTy = valGam.identv === [identv :-> ty.identv]
+      -
+      judge R = decl = valGam :- (identv `=` e.identv) : emptyGam ; valGam.identv
+
+    view K =
+      judge E = expr
+          | knTy = ty.identv
+      -
+
+    view C =
+      judge V = fresh
+      judge P = pat = emptyCnstr ; tvarv :- declPat : ty.p ; patValGam ~> tyCnstr.p
+      judge - B
+      judge E = expr
+          | tyCnstr.syn = tyCnstr.e
+          | ty = _
+          | knTy = tvarv
+      -
+      judge R = expr
+          | d = declPat `=` e.identv
+          | patTyCnstr = tyCnstr.p
+          | tyCnstr.syn = tyCnstr.e
+
+-------------------------------------------------------------------------
+-- Patterns
+-------------------------------------------------------------------------
+
+scheme pat "PatExpr" =
+  view C =
+    attr [ knTy: Ty, node p: PatExpr | thread tyCnstr: Cnstr | ty: Ty, patValGam: Gam ]
+    judge tex tyCnstr.inh ; knTy :-.."p" p : ty ; patValGam ~> tyCnstr.syn
+
+-------------------------------------------------------------------------
+-- Fit, subsumption
+-------------------------------------------------------------------------
+
+relation fit =
+  view K =
+    attr [ lty: Ty, rty: Ty | | ty: Ty ]
+    judge tex :-.."f" lty <= rty : ty
+    judge ag ty `=` lty `fitsIn` rty
+  view C =
+    attr [ | | cnstr: Cnstr ]
+    judge tex :-.."f" lty <= rty : ty ~> cnstr
+    judge ag (ty,cnstr) `=` (lty) `fitsIn` (rty)
+
+-------------------------------------------------------------------------
+-- Binding from a Gamma
+-------------------------------------------------------------------------
+
+relation bindIdTy =
+  view E =
+    attr [ nm: Nm, valGam: ValGam | | ty: Ty ]
+    judge tex nm :-> ty `elem` valGam
+    judge ag ty `=` valGamLookup (nm) (valGam)
+
+-------------------------------------------------------------------------
+-- Make a singleton Gamma
+-------------------------------------------------------------------------
+
+relation bind1IdToTy =
+  view E =
+    attr [ nm: Nm, ty: Ty | | valGam: ValGam ]
+    judge tex valGam === [nm :-> ty]
+    judge ag valGam `=` gamUnit (nm) (ty)
+
+-------------------------------------------------------------------------
+-- Fresh type variables
+-------------------------------------------------------------------------
+
+relation fresh =
+  view C =
+    attr [ | | tvarv: UID ]
+    judge tex tvarv (text "fresh")
+    judge ag ("loc.gUniq",tvarv) `=` mkNewLevUID "@lhs.gUniq"
+
+relation fresh2 =
+  view C =
+    attr [ | | tvarv1: UID, tvarv2: UID  ]
+    judge tex tvarv1, tvarv2 (text "fresh")
+    judge ag ("loc.gUniq",tvarv1,tvarv2) `=` mkNewLevUID2 "@lhs.gUniq"
+
+-------------------------------------------------------------------------
+-- Binding from a Gamma
+-------------------------------------------------------------------------
+
+relation properLetPat =
+  view C =
+    attr [ p: PatExpr, identv: Nm | | ]
+    judge tex p === identv || p === identv@
+

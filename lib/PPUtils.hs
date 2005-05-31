@@ -1,6 +1,7 @@
 module PPUtils where
 
 import UU.Pretty
+import IO
 
 -------------------------------------------------------------------------
 -- PP utils
@@ -66,3 +67,19 @@ ppMb = maybe empty pp
 instance PP a => PP [a] where
   pp = ppCommaList
 -}
+
+-------------------------------------------------------------------------
+-- PP printing to file
+-------------------------------------------------------------------------
+
+hPutPPFile :: Handle -> PP_Doc -> Int -> IO ()
+hPutPPFile h pp wid
+  =  do  {  hPutStrLn h (disp pp wid "")
+         }
+
+putPPFile :: String -> PP_Doc -> Int -> IO ()
+putPPFile fn pp wid
+  =  do  {  h <- openFile fn WriteMode
+         ;  hPutPPFile h pp wid
+         ;  hClose h
+         }

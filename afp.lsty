@@ -41,7 +41,7 @@
   \begin{tabular}{#3}
 %if not useSigplanconfSty
   \hline
-  \\
+%  \\
 %endif
 }{%
 %if not useSigplanconfSty
@@ -58,6 +58,19 @@
   \fbox{#1}
   \\
 }{%
+  \end{TabularFigure}
+}
+
+% Env for rules in a figure
+\newenvironment{RulesFigureB}[3]{%
+  \begin{TabularFigure}{#2}{#3}{p{0.95\textwidth}}
+%  \linespread{1.5}\selectfont
+  \begin{center}
+  \fbox{#1}
+  \\
+}{%
+  \par
+  \end{center}
   \end{TabularFigure}
 }
 
