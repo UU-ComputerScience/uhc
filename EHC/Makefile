@@ -90,14 +90,16 @@ GHC_OPTS			= -fglasgow-exts -package util -package lang -package data -package u
 AFP_FMT_OTHER		:= lag2TeX.fmt pretty.fmt parsing.fmt
 
 # type rules, in ruler format
-AFP_RULES			:= rules.rul rules2.rul rules3.rul
+AFP_RULES			:= rules.rul rules2.rul
 AFP_RULES_TEX		:= $(AFP_RULES:.rul=.tex)
+AFP_RULES2			:= rules3.rul2
+AFP_RULES2_TEX		:= $(AFP_RULES2:.rul=.tex)
 
 # pictures in pgf format
 AFP_PGF_TEX			:= afp-pgf.tex
 
 # all text sources
-ALL_AFP_SRC			:= $(AFP_LHS) $(AFP_RULES)
+ALL_AFP_SRC			:= $(AFP_LHS) $(AFP_RULES) $(AFP_RULES2)
 
 
 EHC_SRC_PREFIX				:=
@@ -334,10 +336,14 @@ SHUFFLE_LHS_TEX		= \
 # RULER_LHS(base, src file, dst file, lhs2tex)
 RULER_LHS		= \
 	$(RULER) --latex --base $1 $2 | $4 > $3
+RULER2_LHS		= \
+	$(RULER2) --lhs2tex --base $1 $2 | $4 > $3
 
 # RULER_LHS_TEX(base, src file, dst file)
 RULER_LHS_TEX		= \
 	$(call RULER_LHS,$1,$2,$3,$(LHS2TEX) --poly)
+RULER2_LHS_TEX		= \
+	$(call RULER2_LHS,$1,$2,$3,$(LHS2TEX) --poly)
 
 
 ### Version 1
@@ -505,7 +511,7 @@ $(AFP_TEXTS_TEX): $(AFP_TMPDIR)%.tex: $(AFP_TEXTS)%.lhs Makefile
 	$(call LHS2TEX_POLY,$<,$@)
 
 ### Dpds for main text
-$(AFP_PDF): $(AFP_TEX) $(AFP_STY) $(EHC_VLAST_TEX) $(AFP_RULES_TEX) $(AFP_PGF_TEX) $(AFP_TEXTS_TEX) $(AG_PRIMER_TEX)
+$(AFP_PDF): $(AFP_TEX) $(AFP_STY) $(EHC_VLAST_TEX) $(AFP_RULES_TEX) $(AFP_RULES2_TEX) $(AFP_PGF_TEX) $(AFP_TEXTS_TEX) $(AG_PRIMER_TEX)
 	$(AFP_LATEX) $(AFP_TEX)
 
 $(AFP_TEX): $(AFP_LHS) $(AFP_TEX_DPDS)
@@ -516,6 +522,9 @@ $(AFP_STY): afp.lsty Makefile
 
 $(AFP_RULES_TEX): %.tex: %.rul $(RULER) $(AFP_FMT)
 	$(call RULER_LHS_TEX,$(*F),$<,$@)
+
+$(AFP_RULES2_TEX): %.tex: %.rul2 $(RULER2) $(AFP_FMT)
+	$(call RULER2_LHS_TEX,$(*F),$<,$@)
 
 agprimer: $(D_BUILD_BIN)/repminag $(D_BUILD_BIN)/repminhs $(D_BUILD_BIN)/expr
 
