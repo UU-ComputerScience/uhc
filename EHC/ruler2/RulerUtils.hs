@@ -28,9 +28,13 @@ data DpdGr n
   = DpdGr
       { vgDpd   :: [[n]]
       , vgGr    :: Graph
+      , vgGrT   :: Graph
       , vgV2N   :: Vertex -> (n, [n])
       , vgK2V   :: n -> Maybe Vertex
       }
+
+vgVsToNs :: DpdGr n -> [Vertex] -> [n]
+vgVsToNs g = map (\v -> fst (vgV2N g v))
 
 mkDpdGr :: Ord n => [[n]] -> (Graph, Vertex -> (n, n, [n]), n -> Maybe Vertex)
 mkDpdGr
@@ -41,12 +45,28 @@ mkDpdGr
 
 mkVwDpdGr :: [[Nm]] -> DpdGr Nm
 mkVwDpdGr nLL
-  = DpdGr nLL g (\v -> let (n,_,ns) = n2 v in (n,ns)) v2
+  = DpdGr nLL g (transposeG g) (\v -> let (n,_,ns) = n2 v in (n,ns)) v2
   where (g,n2,v2) = mkDpdGr nLL
 
 vgTopSort :: DpdGr n -> [n]
 vgTopSort g
-  = map (\v -> fst (vgV2N g v)) . topSort . vgGr $ g
+  = vgVsToNs g . topSort . vgGr $ g
+
+vgVertices :: Ord n => DpdGr n -> Set.Set n
+vgVertices g
+  = Set.fromList . vgVsToNs g . vertices . vgGr $ g
+
+vgReachable :: Ord n => (DpdGr n -> Graph) -> DpdGr n -> n -> Set.Set n
+vgReachable gOf g n
+  = case vgK2V g n of
+      Just n' -> Set.fromList . vgVsToNs g $ reachable (gOf g) n'
+      Nothing -> Set.empty
+
+vgReachableFrom :: Ord n => DpdGr n -> n -> Set.Set n
+vgReachableFrom = vgReachable vgGr 
+
+vgReachableTo :: Ord n => DpdGr n -> n -> Set.Set n
+vgReachableTo = vgReachable vgGrT 
 
 vgDpdsOn :: DpdGr n -> n -> [n]
 vgDpdsOn g n
@@ -377,7 +397,7 @@ vwrlUndefs i
   = (prei `Set.union` posto) `Set.difference` (preo `Set.union` posti)
   where nms g
           = (Set.unions iss,Set.unions oss)
-          where (iss,oss) = unzip [ (is,os) | (REInfoJudge n _ is os _) <- Map.elems g ]
+          where (iss,oss) = unzip [ (reInNmS i,reOutNmS i) | i <- Map.elems g ]
         (prei,preo) = nms (vwrlFullPreGam i)
         (posti,posto) = nms (vwrlFullPostGam i)
 
