@@ -11252,8 +11252,8 @@ error messaging, line/col position, comment ????
 
 \section{Scratch}
 
-\rulerCmdUse{rules.E.expr.base}
-\rulerCmdUse{rules.2.expr.base}
+\rulerCmdUse{rules3.E.expr.base}
+\rulerCmdUse{rules3.2.expr.base}
 
 %endif %% onlyCurrentWork
 
