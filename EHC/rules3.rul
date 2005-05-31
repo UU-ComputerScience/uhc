@@ -1,5 +1,9 @@
 preamble tex "%include lhs2TeX.fmt\n%include afp.fmt"
 
+-------------------------------------------------------------------------
+-- Formatting
+-------------------------------------------------------------------------
+
 format ag ty.identv = gTy
 {-
 format ag ty.syn = ty
@@ -30,11 +34,9 @@ format tex eArg = e.2
 
 viewhierarchy = E K 1 2 --, K K1, 1 11
 
-relation bindIdTy =
-  view E =
-    attr [ nm: Nm, valGam: ValGam | | ty: Ty ]
-    judge tex nm :-> ty `elem` valGam
-    judge ag ty `=` valGamLookup (nm) (valGam)
+-------------------------------------------------------------------------
+-- Expr
+-------------------------------------------------------------------------
 
 scheme expr "Expr" =
   view E =
@@ -105,6 +107,10 @@ rules expr.base scheme expr "Expr type rules" =
           | ty.syn = tyCnstr.arg ty
           | tyCnstr.syn = tyCnstr.arg
 
+-------------------------------------------------------------------------
+-- Fit, subsumption
+-------------------------------------------------------------------------
+
 relation fit =
   view K =
     attr [ lty: Ty, rty: Ty | | ty: Ty ]
@@ -114,6 +120,20 @@ relation fit =
     attr [ | | cnstr: Cnstr ]
     judge tex :-.."f" lty <= rty : ty ~> cnstr
     judge ag (ty,cnstr) `=` (lty) `fitsIn` (rty)
+
+-------------------------------------------------------------------------
+-- Binding from a Gamma
+-------------------------------------------------------------------------
+
+relation bindIdTy =
+  view E =
+    attr [ nm: Nm, valGam: ValGam | | ty: Ty ]
+    judge tex nm :-> ty `elem` valGam
+    judge ag ty `=` valGamLookup (nm) (valGam)
+
+-------------------------------------------------------------------------
+-- Fresh type variables
+-------------------------------------------------------------------------
 
 relation fresh =
   view 2 =

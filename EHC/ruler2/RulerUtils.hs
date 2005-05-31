@@ -128,8 +128,14 @@ nmStrApd n1 n2
   where s1 = show n1
         s2 = show n2
 
+nmShow' :: String -> Nm -> String
+nmShow' sep = concat . intersperse sep . nmToL
+
+nmShowAG :: Nm -> String
+nmShowAG = nmShow' "_"
+
 instance Show Nm where
-  show = concat . intersperse "." . nmToL
+  show = nmShow' "."
 
 instance PP Nm where
   pp = ppListSep "" "" "." . nmToL
@@ -138,12 +144,13 @@ instance Functor Nm' where
   fmap f (Nm s) = Nm (f s)
   fmap f (NmSel n ms) = NmSel (fmap f n) (fmap f ms)
 
-strVec = "-"
+strVec = "_"
 
-nmVec, nmUnk, nmApp :: Nm
-nmVec = Nm strVec
-nmUnk = Nm "??"
-nmApp = Nm "$"
+nmVec, nmUnk, nmApp, nmWild :: Nm
+nmVec  = Nm strVec
+nmWild = nmVec
+nmUnk  = Nm "??"
+nmApp  = Nm "$"
 
 -------------------------------------------------------------------------
 -- Errors
@@ -254,12 +261,13 @@ type VwScGam e = Gam Nm (VwScInfo e)
 
 data ScInfo e
   = ScInfo
-      { scNm    :: Nm
-      , scKind  :: ScKind
-      , scVwGam :: VwScGam e
+      { scNm        :: Nm
+      , scMbAGStr   :: Maybe String
+      , scKind      :: ScKind
+      , scVwGam     :: VwScGam e
       }
 
-emptyScInfo = ScInfo (Nm "") ScJudge emptyGam
+emptyScInfo = ScInfo (Nm "") Nothing ScJudge emptyGam
 
 instance Show (ScInfo e) where
   show _ = "ScInfo"
@@ -379,9 +387,10 @@ vwrlUndefs i
 
 data RlInfo e
   = RlInfo
-      { rlNm    :: Nm
-      , rlSeqNr :: Int
-      , rlVwGam :: VwRlGam e
+      { rlNm        :: Nm
+      , rlMbAGStr   :: Maybe String
+      , rlSeqNr     :: Int
+      , rlVwGam     :: VwRlGam e
       }
 
 instance Show (RlInfo e) where
@@ -440,11 +449,17 @@ type FmGam e = Gam Nm (FmInfo e)
 fmSingleton :: Nm -> FmKind -> e -> FmGam e
 fmSingleton n k e = Map.singleton n (FmInfo n (Map.singleton k e))
 
+fmNull :: FmGam e -> Bool
+fmNull = all (Map.null . fmKdGam) . Map.elems
+
 fmGamFromList :: [(Nm,e)] -> FmGam e
 fmGamFromList = Map.unions . map (\(n,e) -> fmSingleton n FmAll e)
 
 fmGamUnion :: FmGam e -> FmGam e -> FmGam e
 fmGamUnion = Map.unionWith (\i1 i2 -> i1 {fmKdGam = fmKdGam i1 `Map.union` fmKdGam i2})
+
+fmGamUnions :: [FmGam e] -> FmGam e
+fmGamUnions = foldr fmGamUnion emptyGam
 
 fmLGamUnion :: FmGam [e] -> FmGam [e] -> FmGam [e]
 fmLGamUnion = Map.unionWith (\i1 i2 -> i1 {fmKdGam = Map.unionWith (++) (fmKdGam i1) (fmKdGam i2)})

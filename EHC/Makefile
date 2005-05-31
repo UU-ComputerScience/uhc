@@ -90,7 +90,7 @@ GHC_OPTS			= -fglasgow-exts -package util -package lang -package data -package u
 AFP_FMT_OTHER		:= lag2TeX.fmt pretty.fmt parsing.fmt
 
 # type rules, in ruler format
-AFP_RULES			:= rules.rul rules2.rul
+AFP_RULES			:= rules.rul rules2.rul rules3.rul
 AFP_RULES_TEX		:= $(AFP_RULES:.rul=.tex)
 
 # pictures in pgf format
