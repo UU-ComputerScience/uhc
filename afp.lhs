@@ -640,6 +640,7 @@ WWW home page:
 % rules
 \input rules.tex
 \input rules2.tex
+\input rules3.tex
 %if onlyCurrentWork
 \input klad.tex
 %endif
