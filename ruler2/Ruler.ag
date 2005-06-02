@@ -1050,9 +1050,9 @@ emptyMtOut = MtOut {mtMatches = True, mtExpr = Expr_Empty, mtFmGam = emptyGam}
 -- lhs into rhs matching
 exprMatch :: Expr -> Expr -> MtOut
 exprMatch e1 e2
-  = r'
+  = r
   where r = mt e1 e2
-        r' = trp "XX" (pp e1 >-< pp e2 >-< pp r) $ r
+        -- r' = trp "XX" (pp e1 >-< pp e2 >-< pp r) $ r
         mt (Expr_Int i1)            e2@(Expr_Int i2)        | i1 == i2      = res e2
         mt (Expr_StrText s1)        e2@(Expr_StrText s2)    | s1 == s2      = res e2
         mt (Expr_StrAsIs s1)        e2@(Expr_StrAsIs s2)    | s1 == s2      = res e2
