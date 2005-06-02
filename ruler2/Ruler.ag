@@ -511,7 +511,7 @@ ATTR AllExpr AGExprItf [ | | nmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
 
 SEM Expr
   | Var             lhs     .   nmS         =   Set.singleton @nm
-  | Op              lhs     .   nmS         =   @lExpr.nmS `Set.union` @rExpr.nmS
+  | Op              lhs     .   nmS         =   @nmExpr.nmS `Set.union` @lExpr.nmS `Set.union` @rExpr.nmS
 
 -------------------------------------------------------------------------
 -- Internal marked/named fragments
@@ -1036,15 +1036,24 @@ SEM Expr
 -------------------------------------------------------------------------
 
 {
-data MtOut = MtOut {mtMatches :: Bool, mtExpr :: Expr, mtFmGam :: FmGam Expr}
+data MtOut
+  = MtOut {mtMatches :: Bool, mtExpr :: Expr, mtFmGam :: FmGam Expr}
+
+instance Show MtOut where
+  show _ = "MtOut"
+
+instance PP MtOut where
+  pp i = "Mt" >#< pp (mtMatches i) >#< pp (mtExpr i) >#< ppGam (mtFmGam i)
 
 emptyMtOut = MtOut {mtMatches = True, mtExpr = Expr_Empty, mtFmGam = emptyGam}
 
 -- lhs into rhs matching
 exprMatch :: Expr -> Expr -> MtOut
 exprMatch e1 e2
-  = mt e1 e2
-  where mt (Expr_Int i1)            e2@(Expr_Int i2)        | i1 == i2      = res e2
+  = r'
+  where r = mt e1 e2
+        r' = trp "XX" (pp e1 >-< pp e2 >-< pp r) $ r
+        mt (Expr_Int i1)            e2@(Expr_Int i2)        | i1 == i2      = res e2
         mt (Expr_StrText s1)        e2@(Expr_StrText s2)    | s1 == s2      = res e2
         mt (Expr_StrAsIs s1)        e2@(Expr_StrAsIs s2)    | s1 == s2      = res e2
         mt (Expr_Empty)             (Expr_Empty)                            = res Expr_Empty
@@ -1054,8 +1063,13 @@ exprMatch e1 e2
         mt (Expr_Paren e1)          (Expr_Paren e2)                         = let m = mt e1 e2 in res' (Expr_Paren (mtExpr m)) m
         mt e1                       (Expr_Paren e2)                         = mt e1 e2
         mt e1                       e2@(Expr_Var n2)                        = bnd n2 e1 $ res e2
-        mt (Expr_Op n1 ne1 l1 r1)   (Expr_Op n2 ne2 l2 r2)  | n1 == n2      = app l1 l2 r1 r2 (\l r -> Expr_Op n2 ne2 l r)
+        mt (Expr_Op n1 ne1 l1 r1)   (Expr_Op n2 ne2 l2 r2)  | n1 == n2
+          = bnd' (m2 {mtFmGam = n1 `Map.delete` mtFmGam m2}) m1
+          where m1 = app l1 l2 r1 r2 (\l r -> Expr_Op n2 ne2 l r)
+                m2 = mt ne1 ne2
         mt (Expr_App l1 r1)         (Expr_App l2 r2)                        = app l1 l2 r1 r2 Expr_App
+        mt (Expr_SelTop t1)         e2@(Expr_SelTop t2)                     = bnd' (mt t1 t2) $ res e2
+        mt (Expr_Sel e1 (Just s1))  (Expr_Sel e2 (Just s2))                 = app e1 e2 s1 s2 (\l r -> Expr_Sel l (Just r))
         mt _                        _                                       = err
         app l1 l2 r1 r2 mk
           = foldr1 (\m1 m2 -> if mtMatches m1 then m2 else m1) [ml,mr,m]

@@ -350,7 +350,7 @@ ppJTy t
 jtyUnPPify :: JTy -> JTy
 jtyUnPPify t
   = case t of
-      JTy_Op nm p l r   -> JTy_Op nm p (jtyUnPPify l) (jtyUnPPify r)
+      JTy_Op nm p l r   -> JTy_Op nm (jtyUnPPify p) (jtyUnPPify l) (jtyUnPPify r)
       JTy_Paren t'      -> JTy_Paren (jtyUnPPify t')
       JTy_PP p          -> JTy_Any
       _                 -> t
