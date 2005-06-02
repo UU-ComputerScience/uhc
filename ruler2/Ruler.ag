@@ -134,7 +134,7 @@ keywordsTextEscapable
         -- related to global info
         , "viewhierarchy", "format", "preamble", "extern"
         -- related to formatting (styles)
-        , "tex", "ag", "in", "out"
+        , "tex", "ag", "in", "out", "spec"
         -- related to attributes (flags)
         , "node"
         -- related to Expr
@@ -175,33 +175,43 @@ pAGItf
         pDecls'  pD         =   pFoldr  (sem_Decls_Cons,sem_Decls_Nil) pD
         pDecls1' pD         =   pFoldr1 (sem_Decls_Cons,sem_Decls_Nil) pD
         pDeclRule           =   sem_Decl_Rule          <$> pKeySPos "rule"      <*> pNm <*> pMb (pKey ":" *> pNm) <*> pViewSel <*> pMbString
-                                                       <*  pKey "="             <*> pDecls1' pDeclRulView
-        pDeclRulView        =   sem_Decl_RulView       <$  pKey "view"          <*> pNmVw
-                                                       <*  pKey "="             <*> pRExprs <* pKey "-" <*> pRExprs
+                                                       <*  pKey "="             <*> (pDeclRuleDflt <|> pDecls1' pDeclRulView)
+        pDeclRuleDflt       =   (\(pre,post) -> sem_Decls_Cons (sem_Decl_RulView nmWild pre post) sem_Decls_Nil)
+                                                       <$> pRExprsPrePost
+        pDeclRulView        =   (\v (pre,post) -> sem_Decl_RulView v pre post)
+                                                       <$  pKey "view"          <*> pNmVw
+                                                       <*  pKey "="             <*> pRExprsPrePost
+        pRExprsPrePost      =   (,) <$> pRExprs <* pKey "-" <*> pRExprs
         pDeclScm            =   sem_Decl_ScmView       <$  pKey "view"          <*> pNmVw
-                                                       <*  pKey "="             <*> pDecls' pDeclScmView
-        pDeclScmView        =   sem_Decl_FmtJudge      <$> pKeySPos "judge"     <*> pFmKind          <*> pExpr
-                            <|> sem_Decl_Attr          <$  pKey "attr"                  <* pKey "["  <*> pAttrIntros
-                                                                                        <* pKey "|"  <*> pAttrIntros
-                                                                                        <* pKey "|"  <*> pAttrIntros
-                                                                                        <* pKey "]"
+                                                       <*  pKey "="             <*> pDeclsScmView
+        pDeclScmDflt        =   (\v -> sem_Decls_Cons (sem_Decl_ScmView nmWild v) sem_Decls_Nil)
+                                                       <$> pDeclsScmView
+        pDeclScmView        =   sem_Decl_FmtJudge      <$> pKeySPos "judge"     <*> pFmKd3WithDflt <*> pExpr
+                            <|> sem_Decl_Attr          <$  pKey "attr"          <*  pKey "["       <*> pAttrIntros
+                                                                                <*  pKey "|"       <*> pAttrIntros
+                                                                                <*  pKey "|"       <*> pAttrIntros
+                                                                                <*  pKey "]"
+        pDeclsScmView       =   pDecls1' pDeclScmView
         pDeclGlob           =   sem_Decl_Scheme        <$> (ScJudge <$ pKey "scheme" <|> ScRelation <$ pKey "relation")
                                                                                 <*> pNm     <*> pMbString
-                                                       <*  pKey "="             <*> pDecls' pDeclScm
-                            <|> sem_Decl_Fmt           <$  pKey "format"        <*> pFmKind <*> pAtIO           <*> pExpr
+                                                       <*  pKey "="             <*> (pDeclScmDflt <|> pDecls1' pDeclScm)
+                            <|> sem_Decl_Fmt           <$  pKey "format"        <*> pFmKd2WithDflt <*> pAtIO           <*> pExpr
                                                        <*  pKey "="             <*> pExpr
-                            <|> sem_Decl_Rules         <$  pKey "rules"         <*> pNm     <* pKey "scheme"    <*> pNm   <*> pString
+                            <|> sem_Decl_Rules         <$  pKey "rules"         <*> pNm            <* pKey "scheme"    <*> pNm   <*> pString
                                                        <*  pKey "=" <*> pDecls' pDeclRule
-                            <|> sem_Decl_RulesGroup    <$  pKey "rulesgroup"    <*> pNm     <* pKey "scheme"    <*> pNm   <*> pString
+                            <|> sem_Decl_RulesGroup    <$  pKey "rulesgroup"    <*> pNm            <* pKey "scheme"    <*> pNm   <*> pString
                                                        <*  pKey "=" <*> pList1 ((,) <$ pKey "rule" <*> pNm <*> pNm)
                             <|> sem_Decl_ViewHierarchy <$  pKey "viewhierarchy"
                                                        <*  pKey "="             <*> pList1Sep pComma (pList1 pNmVw)
-                            <|> sem_Decl_Preamble      <$  pKey "preamble"      <*> pFmKind                     <*> pString
+                            <|> sem_Decl_Preamble      <$  pKey "preamble"      <*> pFmKd2WithDflt <*> pString
                             <|> sem_Decl_Extern        <$  pKey "extern"        <*> pList1 pNm
         pViewSel            =   pMb' id sem_ViewSel_All
                                      (pKey "viewsel" *> (pV <??> ((flip sem_ViewSel_Range) <$ pKey "-" <*> pV)))
                             where pV = sem_ViewSel_View <$> pNmVw <|> sem_ViewSel_All <$ pKey "*"
-        pFmKind             =   pMb' id FmAll (FmTeX <$ pKey "tex" <|> FmAG <$ pKey "ag")
+        pFmKd2WithDflt      =   pMb' id FmAll pFmKd2
+        pFmKd3WithDflt      =   pMb' id FmAll pFmKd3
+        pFmKd2              =   FmTeX <$ pKey "tex" <|> FmAG <$ pKey "ag"
+        pFmKd3              =   FmSpec <$ pKey "spec" <|> pFmKd2
         pAtIO               =   pMb' id AtInOut (AtIn <$ pKey "in" <|> AtOut <$ pKey "out")
         pNmStr              =   pVarid <|> pConid
         pNmStrI             =   pNmStr <|> pInteger
@@ -511,7 +521,7 @@ ATTR AllExpr AGExprItf [ | | nmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
 
 SEM Expr
   | Var             lhs     .   nmS         =   Set.singleton @nm
-  | Op              lhs     .   nmS         =   @nmExpr.nmS `Set.union` @lExpr.nmS `Set.union` @rExpr.nmS
+  | Op              lhs     .   nmS         =   (@nm `Set.delete` @nmExpr.nmS) `Set.union` @lExpr.nmS `Set.union` @rExpr.nmS
 
 -------------------------------------------------------------------------
 -- Internal marked/named fragments
@@ -522,6 +532,16 @@ ATTR AllExpr AGExprItf [ | | reGamExprFmGam USE {`fmGamUnion`} {Map.empty}: {FmG
 SEM Expr
   | Named           lhs     .   reGamExprFmGam
                                             =   fmSingleton @nm FmAll @expr.self `fmGamUnion` @expr.reGamExprFmGam
+
+-------------------------------------------------------------------------
+-- All used views
+-------------------------------------------------------------------------
+
+ATTR AllDecl [ | | allVwNmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
+
+SEM Decl
+  | RulView ScmView
+                    lhs     .   allVwNmS    =   Set.singleton @nm
 
 -------------------------------------------------------------------------
 -- View order
@@ -539,7 +559,9 @@ SEM Decl
 ATTR AllDecl AllViewSel [ vwDpdGr: {DpdGr Nm} | | ]
 
 SEM AGItf
-  | AGItf           loc     .   vwDpdGr     =   mkVwDpdGr $ concat $ @decls.gathVwOrder
+  | AGItf           loc     .   vwDpdGr     =   let vwOrderL = concat @decls.gathVwOrder
+                                                    missing = @decls.allVwNmS `Set.difference` Set.fromList (concat vwOrderL)
+                                                in  mkVwDpdGr (vwOrderL ++ [ [v] | v <- Set.toList missing ])
 
 -------------------------------------------------------------------------
 -- View selection
@@ -670,9 +692,9 @@ ATTR RExprEqn [ vwScInfo: {VwScInfo Expr}  pos: SPos  cxStr: String  schemeNm: N
 
 SEM RExprEqn
   | Expr            loc     .   (jdExpr,errJd)
-                                            =   fkGamLookup (Expr_Empty,[Err_NoJdSc @lhs.pos @lhs.cxStr [@lhs.schemeNm]])
-                                                            (\i -> (jdExpr i,[]))
-                                                            FmTeX (vwscJdGam @lhs.vwScInfo)
+                                            =   gamTryLookups (Expr_Empty,[Err_NoJdSc @lhs.pos @lhs.cxStr [@lhs.schemeNm]])
+                                                              (\i -> (jdExpr i,[]))
+                                                              [FmSpec,FmTeX,FmAll] (vwscJdGam @lhs.vwScInfo)
                             .   mt          =   exprMatch @expr.self @jdExpr
                             .   errMt       =   if mtMatches @mt then [] else [Err_Match @lhs.pos @lhs.cxStr (pp @expr.self) (pp @jdExpr)]
                     lhs     .   jaGam       =   fmGamToJaGam FmAll (mtFmGam @mt)
@@ -1442,7 +1464,8 @@ rsGen gen vwOrder rsGam
       )
       rsGam
   where nBs = Nm (optBaseNm (genOpts gen))
-        mkRlNm b v rs r = b `nmApd` v `nmApd` rs `nmApd` r
+        mkRlNm b v rs r
+          = nmApd b $ (if v == nmWild then id else nmApd v) $ nmApd rs $ r
         rlVwIsDef rs r v
           = isJust (do rsInfo <- Map.lookup rs rsGam
                        rlGam <- rsInfoMbRlGam rsInfo

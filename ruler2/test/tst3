@@ -1,31 +1,28 @@
-preamble "%include lhs2TeX.fmt´n%include afp.fmt"
+preamble "%include lhs2TeX.fmt\n%include afp.fmt"
 
 extern Int
 
-viewhierarchy = E
-
 scheme expr "Expr" =
-  view E =
-    attr [ node e: Expr, gam: Gamma, dir: Dir | | ty: Ty ]
-    judge tex gam :-.dir ; e : ty
+  attr [ node e: Expr, gam: Gamma, dir: Dir | | ty: Ty ]
+  judge tex gam :-.dir e : ty
+  judge spec gam :- dir ; e : ty
 
 rules expr scheme expr "ALALALA" =
   rule int =
-    view E =
-      -
-      judge expr
-          | e = i
-          | ty = Int 
-          | dir = delta
+    -
+    judge expr
+        | e = i
+        | ty = Int 
+        | dir = delta
+        | gam = Gamma
 
   rule int2 =
-    view E =
-      -
-      judge expr = gam :-.delta ; i : Int
+    -
+    judge expr = Gamma :- delta ; i : Int
 
 
 {-
-preamble "%include lhs2TeX.fmt´n%include afp.fmt"
+preamble "%include lhs2TeX.fmt\n%include afp.fmt"
 
 -------------------------------------------------------------------------
 -- Expr
