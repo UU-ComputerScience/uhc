@@ -486,7 +486,7 @@ rsInfoMbRlGam _                = Nothing
 -------------------------------------------------------------------------
 
 data FmKind
-  = FmTeX | FmAG | FmAll
+  = FmTeX | FmAG | FmSpec | FmAll
   deriving (Show,Eq,Ord)
 
 instance PP FmKind where
@@ -538,14 +538,17 @@ fmGamMap f = Map.map (\i -> i {fmKdGam = Map.map f (fmKdGam i)})
 -- General purpose lookup with a default key
 -------------------------------------------------------------------------
 
+gamTryLookups :: Ord k => v -> (e -> v) -> [k] -> Gam k e -> v
+gamTryLookups dflt extr keys g
+  = case keys of
+      (k:ks) -> case Map.lookup k g of
+                  Just i  -> extr i
+                  Nothing -> gamTryLookups dflt extr ks g
+      _      -> dflt
+
 gamLookupWithDefault :: Ord k => k -> v -> (e -> v) -> k -> Gam k e -> v
 gamLookupWithDefault dfltKey dflt extr key g
-  = case Map.lookup key g of
-      Just i
-        -> extr i
-      Nothing | key /= dfltKey
-        -> gamLookupWithDefault dfltKey dflt extr dfltKey g
-      _ -> dflt
+  = gamTryLookups dflt extr [key,dfltKey] g
 
 -------------------------------------------------------------------------
 -- FmGam for FmKind
