@@ -47,6 +47,9 @@ scheme expr "Expr" =
     attr [ | thread tyCnstr: Cnstr | ]
     judge tex valGam ; tyCnstr.inh ; ty.inh :-.."e" e : ty.syn ~> tyCnstr.syn
 
+rulesgroup expr.subset scheme expr "Subset of Expr type rules" =
+  rule expr.base e.var 
+
 rules expr.base scheme expr "Expr type rules" =
   rule e.var "Var" =
     view E =

@@ -130,7 +130,7 @@ keywordsTextProps
   =  Map.keys propsMp
 keywordsTextEscapable
   =  keywordsTextProps
-     ++ [ "judge", "relation", "rule", "rules", "scheme", "view", "attr", "viewsel"
+     ++ [ "judge", "relation", "rule", "rules", "scheme", "view", "attr", "viewsel", "rulesgroup"
         -- related to global info
         , "viewhierarchy", "format", "preamble", "extern"
         -- related to formatting (styles)
@@ -172,25 +172,32 @@ pAGItf :: (IsParser p Token) => p T_AGItf
 pAGItf
   = let alg                 =   (undefined,sem_Expr_App,sem_Expr_AppTop)
         pAGItf              =   sem_AGItf_AGItf <$> pDecls' pDeclGlob
-        pDecls' pD          =   pFoldr (sem_Decls_Cons,sem_Decls_Nil) pD
-        pDeclRule           =   sem_Decl_Rule          <$> pKeySPos "rule"  <*> pNm     <*> pViewSel        <*> pMbString
-                                                                                        <* pKey "="         <*> pDecls' pDeclRulView
-        pDeclRulView        =   sem_Decl_RulView       <$  pKey "view"      <*> pNmVw   <* pKey "="         <*> pRExprs <* pKey "-" <*> pRExprs
-        pDeclScm            =   sem_Decl_ScmView       <$  pKey "view"      <*> pNmVw   <* pKey "="         <*> pDecls' pDeclScmView
-        pDeclScmView        =   sem_Decl_FmtJudge      <$> pKeySPos "judge" <*> pFmKind                     <*> pExpr
-                            <|> sem_Decl_Attr          <$  pKey "attr"                  <* pKey "["         <*> pAttrIntros
-                                                                                        <* pKey "|"         <*> pAttrIntros
-                                                                                        <* pKey "|"         <*> pAttrIntros
+        pDecls'  pD         =   pFoldr  (sem_Decls_Cons,sem_Decls_Nil) pD
+        pDecls1' pD         =   pFoldr1 (sem_Decls_Cons,sem_Decls_Nil) pD
+        pDeclRule           =   sem_Decl_Rule          <$> pKeySPos "rule"      <*> pNm <*> pMb (pKey ":" *> pNm) <*> pViewSel <*> pMbString
+                                                       <*  pKey "="             <*> pDecls1' pDeclRulView
+        pDeclRulView        =   sem_Decl_RulView       <$  pKey "view"          <*> pNmVw
+                                                       <*  pKey "="             <*> pRExprs <* pKey "-" <*> pRExprs
+        pDeclScm            =   sem_Decl_ScmView       <$  pKey "view"          <*> pNmVw
+                                                       <*  pKey "="             <*> pDecls' pDeclScmView
+        pDeclScmView        =   sem_Decl_FmtJudge      <$> pKeySPos "judge"     <*> pFmKind          <*> pExpr
+                            <|> sem_Decl_Attr          <$  pKey "attr"                  <* pKey "["  <*> pAttrIntros
+                                                                                        <* pKey "|"  <*> pAttrIntros
+                                                                                        <* pKey "|"  <*> pAttrIntros
                                                                                         <* pKey "]"
         pDeclGlob           =   sem_Decl_Scheme        <$> (ScJudge <$ pKey "scheme" <|> ScRelation <$ pKey "relation")
-                                                                            <*> pNm     <*> pMbString
-                                                                                        <* pKey "="         <*> pDecls' pDeclScm
-                            <|> sem_Decl_Fmt           <$  pKey "format"    <*> pFmKind <*> pAtIO
-                                                                            <*> pExpr   <* pKey "="         <*> pExpr
-                            <|> sem_Decl_Rules         <$  pKey "rules"     <*> pNm     <* pKey "scheme"    <*> pNm   <*> pString <* pKey "=" <*> pDecls' pDeclRule
-                            <|> sem_Decl_ViewHierarchy <$  pKey "viewhierarchy"         <* pKey "="         <*> pList1Sep pComma (pList1 pNmVw)
-                            <|> sem_Decl_Preamble      <$  pKey "preamble"  <*> pFmKind                     <*> pString
-                            <|> sem_Decl_Extern        <$  pKey "extern"    <*> pList1 pNm
+                                                                                <*> pNm     <*> pMbString
+                                                       <*  pKey "="             <*> pDecls' pDeclScm
+                            <|> sem_Decl_Fmt           <$  pKey "format"        <*> pFmKind <*> pAtIO           <*> pExpr
+                                                       <*  pKey "="             <*> pExpr
+                            <|> sem_Decl_Rules         <$  pKey "rules"         <*> pNm     <* pKey "scheme"    <*> pNm   <*> pString
+                                                       <*  pKey "=" <*> pDecls' pDeclRule
+                            <|> sem_Decl_RulesGroup    <$  pKey "rulesgroup"    <*> pNm     <* pKey "scheme"    <*> pNm   <*> pString
+                                                       <*  pKey "=" <*> pList1 ((,) <$ pKey "rule" <*> pNm <*> pNm)
+                            <|> sem_Decl_ViewHierarchy <$  pKey "viewhierarchy"
+                                                       <*  pKey "="             <*> pList1Sep pComma (pList1 pNmVw)
+                            <|> sem_Decl_Preamble      <$  pKey "preamble"      <*> pFmKind                     <*> pString
+                            <|> sem_Decl_Extern        <$  pKey "extern"        <*> pList1 pNm
         pViewSel            =   pMb' id sem_ViewSel_All
                                      (pKey "viewsel" *> (pV <??> ((flip sem_ViewSel_Range) <$ pKey "-" <*> pV)))
                             where pV = sem_ViewSel_View <$> pNmVw <|> sem_ViewSel_All <$ pKey "*"
@@ -208,7 +215,7 @@ pAGItf
         pRExprs             =   pFoldr (sem_RExprs_Cons,sem_RExprs_Nil) pRExpr
         pRExpr              =   pKeySPos "judge"
                                 <**> ((\rn n e p -> sem_RExpr_Judge p rn n e) <$> pMbRNm <*> pNm <*> pRExprEqn
-                                     <|> (flip sem_RExpr_Del) <$ pKey "-" <*> pNm
+                                     <|> (flip sem_RExpr_Del) <$ pKey "-" <*> pList1 pNm
                                      )
         pRExprEqn           =   sem_RExprEqn_Attrs <$> pAttrEqns
                             <|> sem_RExprEqn_Expr  <$  pKey "=" <*> pExpr
@@ -340,8 +347,13 @@ DATA Decl
                         schemeNm    : {Nm}
                         info        : {String}
                         decls       : Decls
+  | RulesGroup          nm          : {Nm}
+                        schemeNm    : {Nm}
+                        info        : {String}
+                        rlNms       : {[(Nm,Nm)]}
   | Rule                pos         : {SPos}
                         nm          : {Nm}
+                        mbBasedOnNm : {Maybe Nm}
                         viewSel     : ViewSel
                         mbAGNm      : {Maybe String}
                         decls       : Decls
@@ -385,7 +397,7 @@ DATA RExpr
                         schemeNm    : {Nm}
                         eqns        : RExprEqn
   | Del                 pos         : {SPos}
-                        nm          : {Nm}
+                        nms         : {[Nm]}
 
 DATA RExprEqn
   | Attrs               eqns        : AttrEqns
@@ -483,7 +495,7 @@ SEM Decl
                                                     else []
                                                    )
                                                 ++ @expr.errL
-  | Rule            lhs     .   errL        =   @errUndefs ++ @decls.errL
+  | Rules           lhs     .   errL        =   @errUndefs ++ @decls.errL
 
 -------------------------------------------------------------------------
 -- Self
@@ -688,6 +700,7 @@ SEM RExpr
                                                     ,[] -- if Map.null aDirMissMp then [] else [Err_UndefNm @pos @cxStr2 "attr" (Map.keys aDirMissMp)]
                                                     )
                     lhs     .   reGam       =   Map.singleton @nm @reInfo
+  | Del             lhs     .   reGam       =   Map.singleton (head @nms) (REInfoDel @nms)
 
 -------------------------------------------------------------------------
 -- Rules, names
@@ -724,9 +737,18 @@ SEM Decl
 -- Rules, individual rules for rule set
 -------------------------------------------------------------------------
 
+ATTR AllDecl [ | | rlGam USE {`Map.union`} {Map.empty}: {RlGam Expr} ]
+
+SEM Decl
+  | Rule            lhs     .   rlGam       =   Map.singleton @nm (RlInfo @nm @pos @mbBasedOnNm @mbAGNm @lhs.rlSeqNr @viewSel.vwSelNmS @decls.vwRlGam)
+
+-------------------------------------------------------------------------
+-- Rules, all rule sets
+-------------------------------------------------------------------------
+
 {
 tr m s v = trace (m ++ show s) v
-trp m s v = trace (m ++ disp s 1000 "") v
+trp m s v = trace (m ++ "\n" ++ disp (m >|< ":" >#< s) 1000 "") v
 }
 
 {
@@ -761,21 +783,21 @@ reGamUpdInOut nVw scGam pg
                REInfoJudge _ sn _ _ jg | isJust mvi
                  -> i  {reInNmS = jaGamUseInS jg aInhS, reOutNmS = jaGamUseInS jg aSynS}
                  where mvi = scVwGamLookup sn nVw scGam
-                       aDirMp = gamAtDirMp (snd . fromJust $ mvi) jg
+                       aDirMp = gamAtDirMp (snd . maybe (panic "reGamUpdInOut") id $ mvi) jg
                        (aSynS,aInhS) = atDirMpSynInh aDirMp
                _ -> i
        )
        pg
 
 -- extend rule expr's gam with defaults
-reGamExtDflt :: Nm -> ScGam Expr -> REGam Expr -> REGam Expr
-reGamExtDflt nVw scGam g
+reGamExtDflt :: (Nm -> Nm -> JAGam Expr) -> Nm -> ScGam Expr -> REGam Expr -> REGam Expr
+reGamExtDflt dfltScJaGam nVw scGam g
   = Map.mapWithKey
       (\n i
         -> case i of
              REInfoJudge _ sn _ _ jg
                -> i {reJAGam = jg'}
-               where jg' = jg `Map.union` jaGamDflt sn nVw scGam
+               where jg' = jg `Map.union` dfltScJaGam sn n
       )
       g
 
@@ -785,67 +807,92 @@ reGamExprFmGam
   = Map.map (Map.fold (\i g -> exprNmGam (jaExpr i) `Map.union` g) emptyGam . reJAGam)
 
 -- extend rule expr's gam with new one
-reGamExtWithNew :: Nm -> ScGam Expr -> REGam Expr -> REGam Expr -> REGam Expr
-reGamExtWithNew nVw scGam gamPrev g
+reGamExtWithNew :: (Nm -> Nm -> JAGam Expr) -> Nm -> ScGam Expr -> REGam Expr -> REGam Expr -> REGam Expr
+reGamExtWithNew dfltJaGam nVw scGam gamPrev g
   = Map.foldWithKey
       (\n i gamPrev
         -> case i of
              REInfoJudge _ sn _ _ jg
                -> Map.insert n (pi {reJAGam = jg'}) gamPrev
-               where (base,pi) = maybe (jaGamDflt sn nVw scGam,i) (\pi -> (reJAGam pi,pi)) (Map.lookup n gamPrev)
+               where (base,pi) = maybe (dfltJaGam sn n,i) (\pi -> (reJAGam pi,pi)) (Map.lookup n gamPrev)
                      jg' = Map.map (\i -> let e = exprSubst defaultOpts nmfg (jaExpr i)
                                           in  i {jaExpr = e,jaNmS = exprNmS e})
                                    (jg `Map.union` base)
                      nmfg = Map.findWithDefault emptyGam n nmFmGams
+             REInfoDel ns
+               -> foldr Map.delete gamPrev ns
       )
       gamPrev g
   where nmFmGams = reGamExprFmGam gamPrev
+
+-- build views of a rule by extending each view along view order dependency
+rlGamUpdVws :: DpdGr Nm -> Set.Set Nm -> ScGam Expr -> RlGam Expr -> RlInfo Expr -> (RlInfo Expr,[Err])
+rlGamUpdVws vwDpdGr extNmS scGam rlGam rlInfo
+  = let vwIsIncl n = n `Set.member` rlInclVwS rlInfo
+        mbOnVwRlInfo = maybe Nothing (\n -> Map.lookup n rlGam) (rlMbOnNm rlInfo)
+        (g,_,eg)
+            = foldr
+                (\nVw (vrg,prePostGamMp,errg)
+                  -> let (preg,postg) = prevWRTDpd nVw vwDpdGr prePostGamMp (emptyGam,emptyGam)
+                         pregDflt = reGamExtDflt dfltJaGam nVw scGam preg
+                         postgDflt = reGamExtDflt dfltJaGam nVw scGam postg
+                         ext prevG newG = reGamExtWithNew dfltJaGam nVw scGam prevG newG
+                         vrgOfVwRlInfo = Map.lookup nVw . rlVwGam
+                         dfltJaGam
+                           = case mbOnVwRlInfo of
+                               Just i  -> \sn jn -> maybe (jaGamDflt sn nVw scGam) reJAGam . Map.lookup jn $ g
+                                       where g = maybe emptyGam (\i -> vwrlFullPreGam i `Map.union` vwrlFullPostGam i) (vrgOfVwRlInfo i)
+                               Nothing -> \sn _  -> jaGamDflt sn nVw scGam
+                         (vw,preg',postg')
+                           = case (Map.lookup nVw vrg,maybe Nothing vrgOfVwRlInfo mbOnVwRlInfo) of
+                                 (Just vw,Just i)
+                                   -> (vw,ext (ext pregDflt (vwrlFullPreGam i)) (vwrlPreGam vw),ext (ext postgDflt (vwrlFullPostGam i)) (vwrlPostGam vw))
+                                 (Nothing,Just i)
+                                   -> (emptyVwRlInfo {vwrlNm=nVw},ext (ext pregDflt (vwrlFullPreGam i)) emptyGam,ext (ext postgDflt (vwrlFullPostGam i)) emptyGam)
+                                 (Just vw,Nothing)
+                                   -> (vw,ext pregDflt (vwrlPreGam vw),ext postgDflt (vwrlPostGam vw))
+                                 (Nothing,Nothing)
+                                   -> (emptyVwRlInfo {vwrlNm=nVw},ext pregDflt emptyGam,ext postgDflt emptyGam)
+                         vw2 = vw {vwrlFullPreGam = reGamUpdInOut nVw scGam preg'
+                                  ,vwrlFullPostGam = reGamUpdInOut nVw scGam  postg'}
+                         vw3 = vwrlDelEmptyJd vw2
+                         vw4 = vw3 {vwrlPreScc = vwrlScc vw3}
+                         vwUndefs = vwrlUndefs vw3 `Set.difference` extNmS
+                     in  (if vrwlIsEmpty vw4 then Map.delete nVw vrg else Map.insert nVw vw4 vrg
+                         ,Map.insert nVw (preg',postg') prePostGamMp
+                         ,if Set.null vwUndefs
+                          then errg
+                          else Map.insert nVw (Set.toList vwUndefs) errg
+                         )
+                )
+                (rlVwGam rlInfo,Map.empty,emptyGam)
+                (vgTopSort vwDpdGr)
+    in  (rlInfo { rlVwGam = Map.filterWithKey (\n _ -> vwIsIncl n) g
+                }
+        ,[ Err_UndefNm (rlPos rlInfo) ("view '" ++ show n ++ "' for rule '" ++ show (rlNm rlInfo) ++ "'") "attr" nms
+         | (n,nms) <- Map.toList eg, vwIsIncl n
+         ]
+        )
 }
-
-ATTR AllDecl [ | | rlGam USE {`Map.union`} {Map.empty}: {RlGam Expr} ]
-
-SEM Decl
-  | Rule            loc     .   (rlGam,errUndefs)
-                                            =   let vwIsIncl n = n `Set.member` @viewSel.vwSelNmS
-                                                    (g,_,eg)
-                                                        = foldr
-                                                            (\nVw (vrg,prePostGamMp,errg)
-                                                              -> let (preg,postg) = prevWRTDpd nVw @lhs.vwDpdGr prePostGamMp (emptyGam,emptyGam)
-                                                                     (vw,preg',postg')
-                                                                       = case Map.lookup nVw vrg of
-                                                                             Just vw
-                                                                               -> (vw,reGamExtWithNew nVw @lhs.scGam (reGamExtDflt nVw @lhs.scGam preg) (vwrlPreGam vw)
-                                                                                     ,reGamExtWithNew nVw @lhs.scGam (reGamExtDflt nVw @lhs.scGam postg) (vwrlPostGam vw))
-                                                                             Nothing
-                                                                               -> (emptyVwRlInfo {vwrlNm=nVw},reGamExtWithNew nVw @lhs.scGam (reGamExtDflt nVw @lhs.scGam preg) emptyGam
-                                                                                                             ,reGamExtWithNew nVw @lhs.scGam (reGamExtDflt nVw @lhs.scGam postg) emptyGam)
-                                                                     vw' = vw {vwrlFullPreGam = reGamUpdInOut nVw @lhs.scGam preg'
-                                                                              ,vwrlFullPostGam = reGamUpdInOut nVw @lhs.scGam  postg'}
-                                                                     vw'' = vw' {vwrlPreScc = vwrlScc vw'}
-                                                                     vwUndefs = vwrlUndefs vw'' `Set.difference` @lhs.extNmS
-                                                                 in  (Map.insert nVw vw'' vrg
-                                                                     ,Map.insert nVw (preg',postg') prePostGamMp
-                                                                     ,if Set.null vwUndefs
-                                                                      then errg
-                                                                      else Map.insert nVw (Set.toList vwUndefs) errg
-                                                                     )
-                                                            )
-                                                            (@decls.vwRlGam,Map.empty,emptyGam)
-                                                            (vgTopSort @lhs.vwDpdGr)
-                                                in  (Map.singleton @nm (RlInfo @nm @mbAGNm @lhs.rlSeqNr (Map.filterWithKey (\n _ -> vwIsIncl n) g))
-                                                    ,[ Err_UndefNm @pos ("view '" ++ show n ++ "' for rule '" ++ show @nm ++ "'") "attr" nms
-                                                     | (n,nms) <- Map.toList eg, vwIsIncl n
-                                                     ]
-                                                    )
-
--------------------------------------------------------------------------
--- Rules, all rule sets
--------------------------------------------------------------------------
 
 ATTR AllDecl [ rsGam: {RsGam Expr} | | gathRsGam USE {`Map.union`} {Map.empty}: {RsGam Expr} ]
 
 SEM Decl
-  | Rules           lhs     .   gathRsGam   =   Map.singleton @nm (RsInfo @nm @schemeNm @info @decls.rlGam)
+  | Rules           loc     .   rlDpdTopsort=   let dpdL = [ [n] | n <- Map.keys @decls.rlGam ]
+                                                           ++ [ [onNm,n] | i <- Map.elems @decls.rlGam, onNm <- maybeToList (rlMbOnNm i), let n = rlNm i ]
+                                                    dpdG = mkVwDpdGr dpdL
+                                                in  vgTopSort dpdG
+                            .   (rlGam,errUndefs)
+                                            =   foldr
+                                                  (\rNm (rlGam,errs)
+                                                    -> let (rlInfo,errs')
+                                                             = rlGamUpdVws @lhs.vwDpdGr @lhs.extNmS @lhs.scGam rlGam (maybe (panic "(rlGam,errUndefs)") id . Map.lookup rNm $ rlGam)
+                                                       in  (Map.insert rNm rlInfo rlGam,errs' ++ errs)
+                                                  )
+                                                  (@decls.rlGam,[])
+                                                  @rlDpdTopsort
+                    lhs     .   gathRsGam   =   Map.singleton @nm (RsInfo @nm @schemeNm @info @rlGam)
+  | RulesGroup      lhs     .   gathRsGam   =   Map.singleton @nm (RsInfoGroup @nm @schemeNm @info @rlNms)
 
 SEM AGItf
   | AGItf           loc     .   rsGam       =   @decls.gathRsGam
@@ -973,7 +1020,7 @@ mkRwExpr opts fmGam rwGam repl
                                  else r
                         )
                         (repl,emptyMtOut)
-                        (fromJust mbRw)
+                        (maybe (panic "mkRwExpr") id mbRw)
       _ -> (repl,emptyGam)
 }
 
@@ -1040,6 +1087,7 @@ SEM Decl
   | ScmView         lhs     .   pp          =   "view"          >#< @nm >-< "=" >#< @decls.pp
   | RulView         lhs     .   pp          =   "view"          >#< @nm >-< "=" >#< (@pre.pp >-< "-" >-< @post.pp)
   | Rules           lhs     .   pp          =   "rules"         >#< @nm >#< "scheme" >#< @schemeNm >-< "=" >#< @decls.pp
+  | RulesGroup      lhs     .   pp          =   "rulesgroup"    >#< @nm >#< "scheme" >#< @schemeNm >-< "=" >#< (vlist . map (\(rs,r) -> "rule" >#< rs >#< r) $ @rlNms)
   | Rule            lhs     .   pp          =   "rule"          >#< @nm >#< "viewsel" >#< pp (show @viewSel.vwSelNmS) >-< "=" >#< @decls.pp
   | ViewHierarchy   lhs     .   pp          =   "viewhierarchy" >#< text (show @nmOrder)
   | FmtJudge        lhs     .   pp          =   "judge"         >#< @expr.pp
@@ -1052,6 +1100,7 @@ SEM ViewSel
 
 SEM RExpr
   | Judge           lhs     .   pp          =   "judge" >#< maybe empty (\n -> pp n >#< "=") @mbRNm >#< pp @schemeNm >#< @eqns.pp
+  | Del             lhs     .   pp          =   "judge" >#< "-" >#< ppCommas @nms
 
 SEM Expr
   | App             lhs     .   pp          =   @lExpr.pp >#< @rExpr.pp
@@ -1109,6 +1158,8 @@ data Gen
       , genInFmGam  :: FmGam Expr
       , genRwGam    :: RwExprGam
         -- functions
+      , genNmDef    :: Nm -> PP_Doc -> PP_Doc
+      , genNmUse    :: Nm -> PP_Doc
       , genRl       :: (Nm,Nm,Nm,Nm,Nm,Nm) -> [PP_Doc] -> [PP_Doc] -> PP_Doc
       , genRs       :: (Nm,Nm) -> RsInfo Expr -> PP_Doc -> [Nm] -> [PP_Doc] -> PP_Doc
       , genJdExpr   :: ScInfo Expr -> VwScInfo Expr -> Bool -> Opts -> AtUsInfo -> FmGam Expr -> FmGam Expr -> FmGam Expr -> RwExprGam -> Expr -> PP_Doc
@@ -1122,6 +1173,8 @@ genDflt
       , genFmGam    = emptyGam
       , genInFmGam  = emptyGam
       , genRwGam    = emptyGam
+      , genNmDef    = \n def -> empty
+      , genNmUse    = \n -> empty
       , genRl       = \(nFull,nSc,nScAG,nVw,nRl,nRlAG) pre post -> empty
       , genRs       = \(nScMeta,nVwFull) rsInfo meta defNms defVals -> empty
       , genJdExpr   = \scInfo vwScInfo isPre opts atUsInfo atUseFmGam jaFmGam fmGam rwGam e -> empty
@@ -1130,7 +1183,11 @@ genDflt
 
 genTeX
   = genDflt
-      { genRl = \(nFull,nSc,nScAG,nVw,nRl,nRlAG) pre post ->
+      { genNmDef = \n def ->
+          mkCmdNmDef n def
+      , genNmUse = \n ->
+          mkCmdNmUse n
+      , genRl = \(nFull,nSc,nScAG,nVw,nRl,nRlAG) pre post ->
           let r = "\\ehinfruleB" >|< ppCurly nRl >|< ppCurly nVw
                   >-< ppListSepVV "{%" "}" "\\\\" pre
                   >-< ppListSepVV "{%" "}" "\\\\" post
@@ -1216,8 +1273,8 @@ jdGen gen atUsInfo atUseFmGam isPre nSc nVw reInfo
 jdsGen :: Gen -> AtUsGam -> FmGam Expr -> Bool -> Nm -> [Nm] -> REGam Expr -> [PP_Doc]
 jdsGen gen atUsGam atUseFmGam isPre nVw order g
   = map (\nJd
-            -> let reInfo = fromJust (Map.lookup nJd g)
-                   atUsInfo = fromJust (Map.lookup nJd atUsGam)
+            -> let reInfo = maybe (panic "jdsGen1") id (Map.lookup nJd g)
+                   atUsInfo = maybe (panic "jdsGen2") id (Map.lookup nJd atUsGam)
                in  jdGen gen atUsInfo atUseFmGam isPre (reScNm reInfo) nVw reInfo
         )
         order
@@ -1323,7 +1380,7 @@ vwRlLtxGen :: Gen -> Nm -> Gam Nm (Gam Nm (Nm,PP_Doc)) -> RsInfo Expr -> Gam Nm 
 vwRlLtxGen gen nSc vwRlLtxGam rsInfo
   = Map.mapWithKey
       (\nVw rMp
-        ->  let rs = [ fromJust (Map.lookup n rMp) | (_,n) <- rOrder ]
+        ->  let rs = catMaybes [ Map.lookup n rMp | n<- rsRlOrder rsInfo ]
                 nVwFull = nmInit . fst . head $ rs
                 nScMeta = nVwFull `nmApd` Nm "scheme"
                 (Just (scInfo,vwScInfo)) = scVwGamLookup nSc nVw (genScGam gen)
@@ -1337,28 +1394,47 @@ vwRlLtxGen gen nSc vwRlLtxGam rsInfo
                       eScmPP (map fst rs) (map snd rs)
       )
       vwRlLtxGam
-  where rOrder = sort [ (rlSeqNr i,rlNm i) | i <- Map.elems (rsRlGam rsInfo) ]
 
-rsGen :: Gen -> RsGam Expr -> Gam Nm (Gam Nm PP_Doc)
-rsGen gen rsGam
+rsGen :: Gen -> [Nm] -> RsGam Expr -> Gam Nm (Gam Nm PP_Doc)
+rsGen gen vwOrder rsGam
   = Map.mapWithKey
       (\nRs rsInfo
-        ->  let nRs = rsNm rsInfo
-                nSc = rsScNm rsInfo
-                (Just scInfo) = Map.lookup nSc (genScGam gen)
-                r = Map.mapWithKey
-                      (\nRl rlInfo
-                        ->  let nRl' = Nm (nmLaTeX nRl)
-                            in  rlGen gen
-                                      (nSc,maybe nSc Nm (scMbAGStr scInfo),nRl',maybe nRl' Nm (rlMbAGStr rlInfo)
-                                       ,\nVw -> nBs `nmApd` nVw `nmApd` nRs `nmApd` nRl')
-                                      rlInfo
-                      )
-                      (rsRlGam rsInfo)
-            in  vwRlLtxGen gen nSc (rlLtxGamTranspose r) rsInfo
+        -> case rsInfo of
+             RsInfo nRs nSc _ rlGam
+               -> vwRlLtxGen gen nSc (rlLtxGamTranspose r) rsInfo
+               where (Just scInfo) = Map.lookup nSc (genScGam gen)
+                     r = Map.mapWithKey
+                           (\nRl rlInfo
+                             -> let nRl' = nmLaTeX nRl
+                                in  rlGen gen
+                                          (nSc,maybe nSc Nm (scMbAGStr scInfo),nRl',maybe nRl' Nm (rlMbAGStr rlInfo)
+                                           ,\nVw -> mkRlNm nBs nVw nRs nRl')
+                                          rlInfo
+                           )
+                           rlGam
+             RsInfoGroup nRs nSc _ rlNms
+               -> vwRlLtxGen gen nSc (Map.unions r) rsInfo
+               where r = map
+                           (\nVw
+                             -> let rs = [ let nRl' = nmLaTeX nRl
+                                               nd = mkRlNm nBs nVw nRs nRl'
+                                               nu = mkRlNm nBs nVw nRs' nRl'
+                                           in  Map.singleton nRl (nd,genNmDef gen nd (genNmUse gen nu))
+                                         | (nRs',nRl) <- rlNms, rlVwIsDef nRs' nRl nVw
+                                         ]
+                                in  if null rs then emptyGam else Map.singleton nVw (Map.unions rs)
+                           )
+                           vwOrder
       )
       rsGam
   where nBs = Nm (optBaseNm (genOpts gen))
+        mkRlNm b v rs r = b `nmApd` v `nmApd` rs `nmApd` r
+        rlVwIsDef rs r v
+          = isJust (do rsInfo <- Map.lookup rs rsGam
+                       rlGam <- rsInfoMbRlGam rsInfo
+                       rlVwGamLookup r v rlGam
+                   )
+
 }
 
 ATTR AllDecl [ | | mkRsFmtGam USE {++} {[]} : {[FmKind -> Gam Nm (Gam Nm PP_Doc)]} ]
@@ -1369,9 +1445,10 @@ SEM AGItf
                                                        >-< (vlist . Map.elems . Map.map (vlist . Map.elems) . Map.unions . map ($ fm) $ @decls.mkRsFmtGam)
 
 SEM Decl
-  | Rules           lhs     .   mkRsFmtGam  =   [\fm -> let gen = (fromJust (Map.lookup fm genGam))
-                                                                    {genOpts = @lhs.opts, genScGam = @lhs.scGam, genFmGam = @lhs.fmGam, genRwGam = @lhs.rwGam}
-                                                        in  rsGen gen @lhs.rsGam
+  | Rules RulesGroup
+                    loc     .   mkGen       =   \gen -> gen {genOpts = @lhs.opts, genScGam = @lhs.scGam, genFmGam = @lhs.fmGam, genRwGam = @lhs.rwGam}
+                    lhs     .   mkRsFmtGam  =   [\fm -> let gen = @mkGen (maybe genDflt id (Map.lookup fm genGam))
+                                                        in  rsGen gen (vgTopSort @lhs.vwDpdGr) @lhs.rsGam
                                                 ]
 
 -------------------------------------------------------------------------
@@ -1457,7 +1534,7 @@ ATTR Expr AGExprItf [ | | exprIsRw: ExprIsRw ]
 
 SEM Expr
   | Op              lhs     .   exprIsRw    =   let nm e = case e of {ExprIsRw n -> (`nmApd` n) ; _ -> id}
-                                                in  ExprIsRw . nm @lExpr.exprIsRw . nm @rExpr.exprIsRw $ @nm
+                                                in  ExprIsRw . {- nm @lExpr.exprIsRw . -} nm @rExpr.exprIsRw $ @nm
   | App             lhs     .   exprIsRw    =   ExprIsRw nmApp
   | Var             lhs     .   exprIsRw    =   ExprIsVar @nm
   | * - Op Var AppTop App Paren

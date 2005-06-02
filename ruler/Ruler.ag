@@ -331,7 +331,7 @@ SEM Rule
 
 {
 data JTy
-  = JTy_Op      String PP_Doc JTy JTy
+  = JTy_Op      String JTy JTy JTy
   | JTy_Paren   JTy
   | JTy_Var     String
   | JTy_PP      PP_Doc
@@ -341,7 +341,7 @@ data JTy
 ppJTy :: JTy -> PP_Doc
 ppJTy t
   = case t of
-      JTy_Op _ p l r    -> ppJTy l >#< p >#< ppJTy r
+      JTy_Op _ p l r    -> ppJTy l >#< ppJTy p >#< ppJTy r
       JTy_Paren t'      -> ppParens (ppJTy t')
       JTy_Var n         -> text (mkLhs2TeXSafe n)
       JTy_PP p          -> p
@@ -392,7 +392,7 @@ jtyFitsIn ty1 ty2
 jtyAppBinds :: Binds -> JTy -> JTy
 jtyAppBinds b jt
   = let app t = case t of
-                  JTy_Op nm p l r   -> JTy_Op nm p (app l) (app r)
+                  JTy_Op nm p l r   -> JTy_Op nm (app p) (app l) (app r)
                   JTy_Paren t'      -> JTy_Paren (app t')
                   JTy_Var nm        -> maybe t id (Map.lookup nm b)
                   _                 -> t
@@ -403,7 +403,7 @@ jtyAppBinds b jt
 ATTR JExpr [ | | ty: JTy ]
 
 SEM JExpr
-  | Op          lhs     .   ty          =   JTy_Op @nm @nmExpr.ppLaTeX @lExpr.ty @rExpr.ty
+  | Op          lhs     .   ty          =   JTy_Op @nm @nmExpr.ty @lExpr.ty @rExpr.ty
   | Paren       lhs     .   ty          =   JTy_Paren @jExpr.ty
   | Var         lhs     .   ty          =   JTy_Var @nm
   | AppTop SelTop Str Empty StrAsIs

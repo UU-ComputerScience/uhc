@@ -212,6 +212,13 @@ ppGam = ppListSepV "[" "]" "," . map (\(k,v) -> pp k >#< ":->" >#< pp v) . Map.t
 ppGam' :: (PP k, PP v) => Gam k v -> PP_Doc
 ppGam' = vlist . map (\(k,v) -> pp k >#< ":->" >#< pp v) . Map.toList
 
+dblGamLookup :: Ord k => (i1 -> Gam k i2) -> k -> k -> Gam k i1 -> Maybe (i1,i2)
+dblGamLookup gOf sn vn g
+  = case Map.lookup sn g of
+      Just si
+        -> fmap ((,) si) . Map.lookup vn . gOf $ si
+      _ -> Nothing
+
 -------------------------------------------------------------------------
 -- Attr
 -------------------------------------------------------------------------
@@ -298,11 +305,7 @@ instance PP (ScInfo e) where
 type ScGam e = Gam Nm (ScInfo e)
 
 scVwGamLookup :: Nm -> Nm -> ScGam e -> Maybe (ScInfo e,VwScInfo e)
-scVwGamLookup sn vn g
-  = case Map.lookup sn g of
-      Just si
-        -> fmap ((,) si) . Map.lookup vn . scVwGam $ si
-      _ -> Nothing
+scVwGamLookup = dblGamLookup scVwGam
 
 -------------------------------------------------------------------------
 -- RExpr's judgement attr equations
@@ -331,7 +334,7 @@ jaGamToFmGam :: (e -> e) -> JAGam e -> FmGam e
 jaGamToFmGam f = fmGamFromList . map (\(n,i) -> (n,f (jaExpr i))) . Map.toList
 
 fmGamToJaGam :: FmKind -> FmGam e -> JAGam e
-fmGamToJaGam fm = Map.fromList . map (\(n,e) -> (n,JAInfo n e Set.empty)) . Map.toList . Map.map (fkGamLookup (error "cannot happen in 'fmGamToJaGam'") id fm . fmKdGam)
+fmGamToJaGam fm = Map.fromList . map (\(n,e) -> (n,JAInfo n e Set.empty)) . Map.toList . Map.map (fkGamLookup (panic "fmGamToJaGam") id fm . fmKdGam)
 
 -------------------------------------------------------------------------
 -- RExpr
@@ -344,12 +347,16 @@ data REInfo e
       , reInNmS, reOutNmS   :: Set.Set Nm
       , reJAGam             :: JAGam e
       }
+  | REInfoDel
+      { reNms               :: [Nm]
+      }
 
 instance Show (REInfo e) where
   show _ = "REInfo"
 
 instance PP e => PP (REInfo e) where
   pp (REInfoJudge n sn i o g) = "REJdg" >#< pp n >#< pp sn >#< (pp (show i) >#< pp (show o) >-< ppGam g)
+  pp (REInfoDel   ns        ) = "REDel" >#< ppCommas ns
 
 type REGam e = Gam Nm (REInfo e)
 
@@ -380,6 +387,16 @@ instance PP e => PP (VwRlInfo e) where
 
 type VwRlGam e = Gam Nm (VwRlInfo e)
 
+vwrlDelEmptyJd :: VwRlInfo e -> VwRlInfo e
+vwrlDelEmptyJd i
+  = i { vwrlFullPreGam = rgDel (vwrlFullPreGam i), vwrlFullPostGam = rgDel (vwrlFullPostGam i) }
+  where jgIsEmp = Map.null
+        rgDel = Map.filter (not . jgIsEmp . reJAGam)
+        
+vrwlIsEmpty :: VwRlInfo e -> Bool
+vrwlIsEmpty i
+  = Map.null (vwrlFullPreGam i) && Map.null (vwrlFullPostGam i)
+
 vwrlScc :: VwRlInfo e -> [[Nm]]
 vwrlScc 
   = unNm . Scc.scc . concat . dpd . vwrlFullPreGam
@@ -408,8 +425,11 @@ vwrlUndefs i
 data RlInfo e
   = RlInfo
       { rlNm        :: Nm
+      , rlPos       :: SPos
+      , rlMbOnNm    :: Maybe Nm
       , rlMbAGStr   :: Maybe String
       , rlSeqNr     :: Int
+      , rlInclVwS   :: Set.Set Nm
       , rlVwGam     :: VwRlGam e
       }
 
@@ -420,6 +440,9 @@ instance PP e => PP (RlInfo e) where
   pp i = "RL" >#< pp (rlNm i) >#< ppGam (rlVwGam i)
 
 type RlGam e = Gam Nm (RlInfo e)
+
+rlVwGamLookup :: Nm -> Nm -> RlGam e -> Maybe (RlInfo e,VwRlInfo e)
+rlVwGamLookup = dblGamLookup rlVwGam
 
 -------------------------------------------------------------------------
 -- Rules
@@ -432,14 +455,31 @@ data RsInfo e
       , rsDescr :: String
       , rsRlGam :: RlGam e
       }
+  | RsInfoGroup
+      { rsNm    :: Nm
+      , rsScNm  :: Nm
+      , rsDescr :: String
+      , rsRlNms :: [(Nm,Nm)]
+      }
 
 instance Show (RsInfo e) where
   show _ = "RsInfo"
 
 instance PP e => PP (RsInfo e) where
-  pp i = "RS" >#< pp (rsNm i) >#< ppGam (rsRlGam i)
+  pp (RsInfo      n _ _ g) = "RS" >#< pp n >#< ppGam g
+  pp (RsInfoGroup n _ _ _) = "RSGrp" >#< pp n
 
 type RsGam e = Gam Nm (RsInfo e)
+
+rsRlOrder :: RsInfo e -> [Nm]
+rsRlOrder i
+  = case i of
+      RsInfo      _ _ _ g  -> map snd . sort $ [ (rlSeqNr i,rlNm i) | i <- Map.elems g ]
+      RsInfoGroup _ _ _ ns -> map snd ns
+
+rsInfoMbRlGam :: RsInfo e -> Maybe (RlGam e)
+rsInfoMbRlGam (RsInfo _ _ _ g) = Just g
+rsInfoMbRlGam _                = Nothing
 
 -------------------------------------------------------------------------
 -- Formats
@@ -551,8 +591,8 @@ rwGamUnion = Map.unionWith (\i1 i2 -> i1 {fmKdGam = Map.unionWith (Map.unionWith
 mkLaTeXNm :: String -> String
 mkLaTeXNm = map (\c -> if isAlphaNum c then c else '-')
 
-nmLaTeX :: Nm -> String
-nmLaTeX = mkLaTeXNm . show
+nmLaTeX :: Nm -> Nm
+nmLaTeX = Nm . mkLaTeXNm . show
 
 strLhs2TeXSafe :: String -> String
 strLhs2TeXSafe = concat . map (\c -> if c == '|' then "||" else [c])
@@ -629,5 +669,7 @@ hdAndTl (x:xs) = (x,xs)
 
 maybeHd :: r -> (a -> r) -> [a] -> r
 maybeHd n f l = if null l then n else f (head l)
+
+panic m = error ("panic: " ++ m)
 
 
