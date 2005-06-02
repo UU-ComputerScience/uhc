@@ -642,7 +642,7 @@ WWW home page:
 \input rules2.tex
 \input rules3.tex
 %if onlyCurrentWork
-\input klad.tex
+%\input klad.tex
 %endif
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -8691,6 +8691,19 @@ But the type does not include a description of this behavior
 \end{itemize}
 \item Explicit implicit parameter passing situated in context of Explicit Haskell (EH)
 \begin{itemize}
+\item `as simple as possible' Haskell
+\item while also providing extensions: higher ranked types, existentials, records
+\item used for research and education
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{EH language}
+\begin{itemize}
+\item Language constructs
+\begin{itemize}
 \item core (|lambda|-calculus) of Haskell
 \begin{tabular}{r@@{\;}c@@{\;}ll}
 |e| & |::=| &
@@ -8739,7 +8752,6 @@ But the type does not include a description of this behavior
  & record selection
  \\
 \end{tabular}
-\item used for research and education
 \end{itemize}
 \end{itemize}
 }
@@ -8813,7 +8825,7 @@ f  ::         EqD a ->  a ->  a ->  Int
 f  =   \  ^^  dEq       x     y ->  if (eqEqD dEq) x y then 3 else 4
 \end{code}
 }
-\item Is the usual translation to internal machinery
+\item Usual translation to internal machinery
 \end{itemize}
 }
 
@@ -8890,7 +8902,7 @@ let  instance Eq Int where
        eq = primEqInt
      instance Eq Int where
        eq = eqMod2
-     f = ...
+     f = \p q r s -> ...
 in   f 3 4 5 6
 \end{code}
 }
@@ -8919,7 +8931,7 @@ let  instance dEqInt1 <: Eq Int where
        eq = primEqInt
      instance dEqInt2 <: Eq Int where
        eq = eqMod2
-     f = ...
+     f = \p q r s -> ...
 in   f  (! dEqInt1 <: Eq Int !) 3 4
         (! dEqInt2 <: Eq Int !) 5 6
 \end{code}
@@ -8940,7 +8952,7 @@ let  instance Eq Int where
        eq = primEqInt
      instance dEqInt2 :: Eq Int where
        eq = eqMod2
-     f = ...
+     f = \p q r s -> ...
 in   f  ^                        3 4
         (! dEqInt2 <: Eq Int !)  5 6
 \end{code}
@@ -8988,7 +9000,7 @@ let  data List a = Nil | Cons a (List a)
      instance dEqInt <: Eq Int where
        eq = primEqInt
      instance dEqList <: Eq a => Eq (List a) where
-       eq = ...
+       eq = \l1 l2 -> ...
      f :: forall a . Eq a => a -> List a -> Bool
      f = \p q -> eq (Cons p Nil) q
 in   f 3 (Cons 4 Nil)
@@ -9024,8 +9036,8 @@ in   f dEqInt 3 (Cons 4 Nil)
 \item Implicit variant
 \SafeCode{%
 \begin{code}
-f :: forall a . Eq a => a -> List a -> Bool
-f = \p q -> eq (Cons p Nil) q
+f ::  forall a . Eq a  =>  a ->  List a  -> Bool
+f =   \                    p     q       -> eq (Cons p Nil) q
 \end{code}
 }
 \item Explicit variant
@@ -9105,7 +9117,7 @@ f :: forall    b . (Eq b,  ...   ) => ...  -> ...  -> b -> b -> ...
 f :: forall a  b . (Eq b,  Eq a  ) => a    -> a    -> b -> b -> (Bool,Bool)
 \end{code}
 }
-\item `|...|' is inferred
+\item `|...|': explicit notation for missing type information to be inferred
 \end{itemize}
 }
 
@@ -9130,6 +9142,32 @@ f  ::  forall ^ a . (  Eq a,  ...   )  =>     a ->  a ->  %b   ->  %b           
 f  ::  forall ^ a .    Eq a            =>     a ->  a ->  Int  ->  Int             ->  (Bool    ,  Bool    )
 \end{code}
 }
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Summary}
+\begin{itemize}
+\item Explicit mechanisms (for parameter passing and/or in general)
+\begin{itemize}
+\item allow full control by programmer
+\item but also burden the programmer
+\end{itemize}
+\item Implicit mechanisms
+\begin{itemize}
+\item allow the language to do `boring' stuff for the programmer
+\item but limit expressiveness if the programmer cannot intervene when the language fails
+\end{itemize}
+\item Explicit and implicit
+\begin{itemize}
+\item Haskell: black and white only
+\item EH: also the grey in between
+\end{itemize}
+\item The message: grey is good
+\begin{itemize}
+\item co\"operation with compiler instead of fighting against
+\end{itemize}
 \end{itemize}
 }
 
@@ -11252,33 +11290,53 @@ error messaging, line/col position, comment ????
 
 \section{Scratch}
 
-\rulerCmdUse{rules3.E.expr.base}
-\rulerCmdUse{rules2.exprE.base}
+%\rulerCmdUse{rules3.E.expr.base}
+%\rulerCmdUse{rules2.exprE.base}
 
-\rulerCmdUse{rules3.K.expr.base}
-\rulerCmdUse{rules2.exprK.base}
+%\rulerCmdUse{rules3.K.expr.base}
+%\rulerCmdUse{rules2.exprK.base}
 
-\rulerCmdUse{rules3.C.expr.base}
-\rulerCmdUse{rules2.expr2.base}
+%\rulerCmdUse{rules3.C.expr.base}
+%\rulerCmdUse{rules2.expr2.base}
+
+%\rulerCmdUse{rules3.HM.expr.base}
+%\rulerCmdUse{rules2.expr3.base}
+
+blabla
 
 \rulerCmdUse{rules3.I1.expr.base}
 \rulerCmdUse{rules2.expr4.base}
 
----------------------
+\rulerCmdUse{rules3.I2.expr.base}
+\rulerCmdUse{rules2.exprIm.base}
+\rulerCmdUse{rules2.exprIm4.base}
 
 ---------------------
 
-\rulerCmdUse{rules3.E.decl.base}
-\rulerCmdUse{rules2.declE}
+---------------------
 
-\rulerCmdUse{rules3.K.decl.base}
-\rulerCmdUse{rules2.declK}
+%\rulerCmdUse{rules3.E.decl.base}
+%\rulerCmdUse{rules2.declE}
 
-\rulerCmdUse{rules3.C.decl.base}
-\rulerCmdUse{rules2.decl2}
+%\rulerCmdUse{rules3.K.decl.base}
+%\rulerCmdUse{rules2.declK}
+
+%\rulerCmdUse{rules3.C.decl.base}
+%\rulerCmdUse{rules2.decl2}
+
+%\rulerCmdUse{rules3.HM.decl.base}
+%\rulerCmdUse{rules2.decl3}
 
 \rulerCmdUse{rules3.I1.decl.base}
 \rulerCmdUse{rules2.decl4}
+
+\rulerCmdUse{rules3.I2.decl.base}
+\rulerCmdUse{rules2.declIm}
+\rulerCmdUse{rules2.declIm4}
+
+\rulerCmdUse{rules3.I2.match.base}
+\rulerCmdUse{rules3.I1.fit}
+
 
 ---------------------
 
