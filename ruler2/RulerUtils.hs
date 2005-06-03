@@ -166,11 +166,12 @@ instance Functor Nm' where
 
 strVec = "_"
 
-nmVec, nmUnk, nmApp, nmWild :: Nm
+nmVec, nmUnk, nmApp, nmWild, nmNone :: Nm
 nmVec  = Nm strVec
 nmWild = nmVec
 nmUnk  = Nm "??"
 nmApp  = Nm "$"
+nmNone = Nm ""
 
 -------------------------------------------------------------------------
 -- Errors

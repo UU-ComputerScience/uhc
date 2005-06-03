@@ -11305,11 +11305,11 @@ error messaging, line/col position, comment ????
 blabla
 
 \rulerCmdUse{rules3.I1.expr.base}
-\rulerCmdUse{rules2.expr4.base}
+%\rulerCmdUse{rules2.expr4.base}
 
 \rulerCmdUse{rules3.I2.expr.base}
-\rulerCmdUse{rules2.exprIm.base}
-\rulerCmdUse{rules2.exprIm4.base}
+%\rulerCmdUse{rules2.exprIm.base}
+%\rulerCmdUse{rules2.exprIm4.base}
 
 ---------------------
 
@@ -11328,15 +11328,22 @@ blabla
 %\rulerCmdUse{rules2.decl3}
 
 \rulerCmdUse{rules3.I1.decl.base}
-\rulerCmdUse{rules2.decl4}
+%\rulerCmdUse{rules2.decl4}
 
 \rulerCmdUse{rules3.I2.decl.base}
-\rulerCmdUse{rules2.declIm}
-\rulerCmdUse{rules2.declIm4}
+%\rulerCmdUse{rules2.declIm}
+%\rulerCmdUse{rules2.declIm4}
 
 \rulerCmdUse{rules3.I2.match.base}
+\rulerCmdUse{rules3.I2.match.forall}
+\rulerCmdUse{rules3.I2.match.exists}
 \rulerCmdUse{rules3.I1.fit}
+\rulerCmdUse{rules3.I1.meet}
+\rulerCmdUse{rules3.I1.join}
+\rulerCmdUse{rules3.I2.tyAltTyElim}
 
+%\rulerCmdUse{rules3.K.match.all}
+\rulerCmdUse{rules3.I2.match.all}
 
 ---------------------
 

@@ -137,15 +137,14 @@ keywordsTextEscapable
         , "tex", "ag", "in", "out", "spec"
         -- related to attributes (flags)
         , "node"
-        -- related to Expr
-        , "text"
         ]
 keywordsText
-  =  [  ] ++ keywordsTextEscapable
+  =  [ "text"
+     ] ++ keywordsTextEscapable
 keywordsOpsEsc
   =  [ ",", ":", "[", "]", "*" ]
 keywordsOpsParenEsc
-  =  [ "=", "-", "|" ]
+  =  [ "=", "-", "|", "." ]
 keywordsOps
   =  keywordsOpsParenEsc ++ keywordsOpsEsc
 
@@ -176,7 +175,7 @@ pAGItf
         pDecls1' pD         =   pFoldr1 (sem_Decls_Cons,sem_Decls_Nil) pD
         pDeclRule           =   sem_Decl_Rule          <$> pKeySPos "rule"      <*> pNm <*> pMb (pKey ":" *> pNm) <*> pViewSel <*> pMbString
                                                        <*  pKey "="             <*> (pDeclRuleDflt <|> pDecls1' pDeclRulView)
-        pDeclRuleDflt       =   (\(pre,post) -> sem_Decls_Cons (sem_Decl_RulView nmWild pre post) sem_Decls_Nil)
+        pDeclRuleDflt       =   (\(pre,post) -> sem_Decls_Cons (sem_Decl_RulView nmNone pre post) sem_Decls_Nil)
                                                        <$> pRExprsPrePost
         pDeclRulView        =   (\v (pre,post) -> sem_Decl_RulView v pre post)
                                                        <$  pKey "view"          <*> pNmVw
@@ -184,7 +183,7 @@ pAGItf
         pRExprsPrePost      =   (,) <$> pRExprs <* pKey "-" <*> pRExprs
         pDeclScm            =   sem_Decl_ScmView       <$  pKey "view"          <*> pNmVw
                                                        <*  pKey "="             <*> pDeclsScmView
-        pDeclScmDflt        =   (\v -> sem_Decls_Cons (sem_Decl_ScmView nmWild v) sem_Decls_Nil)
+        pDeclScmDflt        =   (\v -> sem_Decls_Cons (sem_Decl_ScmView nmNone v) sem_Decls_Nil)
                                                        <$> pDeclsScmView
         pDeclScmView        =   sem_Decl_FmtJudge      <$> pKeySPos "judge"     <*> pFmKd3WithDflt <*> pExpr
                             <|> sem_Decl_Attr          <$  pKey "attr"          <*  pKey "["       <*> pAttrIntros
@@ -235,19 +234,20 @@ pAGItf
                                                <$> pList1 ((,) <$> pOp <*> pExprApp)
                                               )
                             where pOp = (\s ss -> sem_Expr_Op s (ss (sem_Expr_Var s))) <$> pSym <*> pExprSel
-        pMbRNm              =   pMb (pNm <* pKey "=")
+        pMbRNm              =   pMb (pNm <* pKey ":")
         pMbString           =   pMb pString
         pExprApp            =   mkApp alg <$> pList1 pExprBase <|> pSucceed sem_Expr_Empty
-        pExprBase           =   pParens (sem_Expr_Paren <$> pExpr <|> pExprEsc <|> pExprText <|> pExprNamed) <**> pExprSel
+        pExprBase           =   pParens (sem_Expr_Paren <$> pExpr <|> pExprEsc <|> pExprText {- <|> pExprNamed -} ) <**> pExprSel
                             <|> sem_Expr_Var <$> pNm
                             <|> sem_Expr_Int <$> pInteger
                             <|> sem_Expr_StrAsIs <$> pString
-        pExprEsc            =   (sem_Expr_StrAsIs . concat) <$> pList1 (pAnyKey (["."] ++ keywordsTextEscapable))
+        pExprEsc            =   (sem_Expr_StrAsIs . concat) <$> pList1 (pAnyKey (keywordsOpsParenEsc ++ keywordsTextEscapable))
         pExprNamed          =   sem_Expr_Named <$> pNm <* pKey "=" <*> pExpr
         pExprText           =   sem_Expr_StrText <$ pKey "text" <*> pString
         pExprMbBase         =   sem_MbExpr_Just <$> pExprBase <|> pSucceed sem_MbExpr_Nothing
         pExprSel            =   pSel (sem_Expr_SelTop,sem_Expr_Sel,sem_MbExpr_Just) (pExprBase,pExprMbBase)
-        pNmSel              =   pSel (id,NmSel,Just) (pNmStrI,pMb (pNmStrI))
+        pNmSel              =   pSel (id,NmSel,Just) (pN,pMb pN)
+                            where pN = pNmStrI <|> pSymStr
         pSel alg ps         =   pSel1 alg ps <|> pSucceed id
         pSel1 (top,sel,jst) (pE,pMbE)
                             =   (\ss s -> \e -> top (sel (ss e) (jst s))) <$> pDots <*> pE
@@ -1465,7 +1465,7 @@ rsGen gen vwOrder rsGam
       rsGam
   where nBs = Nm (optBaseNm (genOpts gen))
         mkRlNm b v rs r
-          = nmApd b $ (if v == nmWild then id else nmApd v) $ nmApd rs $ r
+          = nmApd b $ (if v == nmNone then id else nmApd v) $ nmApd rs $ r
         rlVwIsDef rs r v
           = isJust (do rsInfo <- Map.lookup rs rsGam
                        rlGam <- rsInfoMbRlGam rsInfo
