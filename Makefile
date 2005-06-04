@@ -212,7 +212,7 @@ RULER2_DIR			:= ruler2
 RULER2_MAIN			:= Ruler
 RULER2_AG			:= $(RULER2_MAIN).ag
 RULER2_AG_HS		:= $(RULER2_AG:.ag=.hs)
-RULER2_HS			:= RulerUtils.hs
+RULER2_HS			:= RulerUtils.hs RulerAdmin.hs
 RULER2_DERIV		:= $(RULER2_DIR)/$(RULER2_AG_HS)
 RULER2_DOC_PDF		:= $(RULER2_DIR)/RulerDoc.pdf
 
@@ -337,7 +337,7 @@ SHUFFLE_LHS_TEX		= \
 RULER_LHS		= \
 	$(RULER) --latex --base $1 $2 | $4 > $3
 RULER2_LHS		= \
-	$(RULER2) --lhs2tex --base $1 $2 | $4 > $3
+	$(RULER2) --markchanges="K E" --lhs2tex --base $1 $2 | $4 > $3
 
 # RULER_LHS_TEX(base, src file, dst file)
 RULER_LHS_TEX		= \
