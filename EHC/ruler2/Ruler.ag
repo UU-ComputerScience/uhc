@@ -1,3 +1,5 @@
+-- $Id$
+
 imports
 {
 import System
@@ -11,12 +13,13 @@ import qualified Data.Map as Map
 import FPath
 import Utils
 import PPUtils
-import RulerUtils
 import UU.Pretty
 import UU.Parsing
 import UU.Scanner
 import UU.Scanner.Position( initPos, Pos )
 import System.Exit
+import RulerUtils
+import RulerAdmin
 
 import Debug.Trace
 }
@@ -32,10 +35,11 @@ main
        ; let oo@(o,n,errs)  = getOpt Permute cmdLineOpts args
              opts           = foldr ($) defaultOpts o
        ; if optHelp opts
-         then putStrLn (usageInfo "Usage ruler [options] [file]\n\noptions:" cmdLineOpts)
+         then putStrLn (usageInfo ("version: " ++ versionInfo ++ "\n\nUsage ruler [options] [file]\n\noptions:") cmdLineOpts)
          else if null errs
               then  doCompile (if null n then emptyFPath else mkFPath (head n)) opts
-              else  putStr (head errs)
+              else  do hPutStr stderr (head errs)
+                       exitFailure
        }
 
 doCompile :: FPath -> Opts -> IO ()
@@ -80,8 +84,10 @@ data Opts
   = Opts
       { optGenFM        :: FmKind
       , optAtDir        :: AtDir    -- used internally only
+      , optSubstFullNm  :: Bool     -- used internally only
       , optHelp         :: Bool
       , optDebug        :: Bool
+      , optMbMarkChange :: Maybe [Nm]
       , optBaseNm       :: String
       }
 
@@ -89,8 +95,10 @@ defaultOpts
   = Opts
       { optGenFM        =  FmAll
       , optAtDir        =  AtInOut
+      , optSubstFullNm  =  False
       , optHelp         =  False
       , optDebug        =  False
+      , optMbMarkChange =  Nothing
       , optBaseNm       =  rulesCmdPre
       }
 
@@ -99,6 +107,8 @@ cmdLineOpts
           "generate code for lhs2tex, default=no"
      , Option "a"  ["ag"]        (NoArg oGenAG)
           "generate code for AG, default=no"
+     , Option "c"  ["markchanges"]        (OptArg oMarkCh "<views>")
+          "mark changes between specified views (in combi with --lhs2tex)"
      , Option ""   ["help"]      (NoArg oHelp)
           "output this help"
      , Option "d"  ["debug"]     (NoArg oDebug)
@@ -111,6 +121,9 @@ cmdLineOpts
          oHelp           o =  o {optHelp = True}
          oDebug          o =  o {optDebug = True}
          oBase       s   o =  o {optBaseNm = s}
+         oMarkCh     ms  o =  case ms of
+                                Just s  -> o {optMbMarkChange = Just . map Nm . words $ s}
+                                Nothing -> o
          yesno updO  ms  o =  case ms of
                                 Just "yes"  -> updO True o
                                 Just "no"   -> updO False o
@@ -440,6 +453,8 @@ DATA Expr
   | StrAsIs             str         : {String}
   | Named               nm          : {Nm}
                         expr        : Expr
+  | Wrap                wrKind      : {WrKind}
+                        expr        : Expr
   | Paren               expr        : Expr
   | SelTop              expr        : Expr
   | Sel                 expr        : Expr
@@ -753,7 +768,7 @@ SEM AGItf
 ATTR AllDecl [ | | vwRlGam USE {`Map.union`} {Map.empty}: {VwRlGam Expr} ]
 
 SEM Decl
-  | RulView         lhs     .   vwRlGam     =   Map.singleton @nm (VwRlInfo @nm @pre.reGam @post.reGam emptyGam emptyGam [])
+  | RulView         lhs     .   vwRlGam     =   Map.singleton @nm (VwRlInfo @nm @pre.reGam @post.reGam emptyGam emptyGam [] emptyGam)
 
 -------------------------------------------------------------------------
 -- Rules, individual rules for rule set
@@ -811,17 +826,21 @@ reGamUpdInOut nVw scGam pg
        )
        pg
 
--- extend rule expr's gam with defaults
-reGamExtDflt :: (Nm -> Nm -> JAGam Expr) -> Nm -> ScGam Expr -> REGam Expr -> REGam Expr
-reGamExtDflt dfltScJaGam nVw scGam g
-  = Map.mapWithKey
-      (\n i
+-- extend rule expr's gam with defaults, additionaly return increment
+reGamExtDflt' :: (Nm -> Nm -> JAGam Expr) -> Nm -> ScGam Expr -> REGam Expr -> (REGam Expr,REGam Expr)
+reGamExtDflt' dfltScJaGam nVw scGam g
+  = Map.mapAccumWithKey
+      (\gIncr n i
         -> case i of
              REInfoJudge _ sn _ _ jg
-               -> i {reJAGam = jg'}
-               where jg' = jg `Map.union` dfltScJaGam sn n
+               -> (Map.insert n (i {reJAGam = d `Map.difference` jg}) gIncr,i {reJAGam = jg `Map.union` d})
+               where d = dfltScJaGam sn n
       )
-      g
+      emptyGam g
+
+reGamExtDflt :: (Nm -> Nm -> JAGam Expr) -> Nm -> ScGam Expr -> REGam Expr -> REGam Expr
+reGamExtDflt dfltScJaGam nVw scGam
+  = snd . reGamExtDflt' dfltScJaGam nVw scGam
 
 -- named expressions for each judgement
 reGamExprFmGam :: REGam Expr -> Gam Nm (FmGam Expr)
@@ -856,8 +875,8 @@ rlGamUpdVws vwDpdGr extNmS scGam rlGam rlInfo
             = foldr
                 (\nVw (vrg,prePostGamMp,errg)
                   -> let (preg,postg) = prevWRTDpd nVw vwDpdGr prePostGamMp (emptyGam,emptyGam)
-                         pregDflt = reGamExtDflt dfltJaGam nVw scGam preg
-                         postgDflt = reGamExtDflt dfltJaGam nVw scGam postg
+                         (pregIncr,pregDflt) = reGamExtDflt' dfltJaGam nVw scGam preg
+                         (postgIncr,postgDflt) = reGamExtDflt' dfltJaGam nVw scGam postg
                          ext prevG newG = reGamExtWithNew dfltJaGam nVw scGam prevG newG
                          vrgOfVwRlInfo = Map.lookup nVw . rlVwGam
                          dfltJaGam
@@ -866,17 +885,29 @@ rlGamUpdVws vwDpdGr extNmS scGam rlGam rlInfo
                                        where g = maybe emptyGam (\i -> vwrlFullPreGam i `Map.union` vwrlFullPostGam i) (vrgOfVwRlInfo i)
                                Nothing -> \sn _  -> jaGamDflt sn nVw scGam
                          (vw,preg',postg')
-                           = case (Map.lookup nVw vrg,maybe Nothing vrgOfVwRlInfo mbOnVwRlInfo) of
-                                 (Just vw,Just i)
-                                   -> (vw,ext (ext pregDflt (vwrlFullPreGam i)) (vwrlPreGam vw),ext (ext postgDflt (vwrlFullPostGam i)) (vwrlPostGam vw))
-                                 (Nothing,Just i)
-                                   -> (emptyVwRlInfo {vwrlNm=nVw},ext (ext pregDflt (vwrlFullPreGam i)) emptyGam,ext (ext postgDflt (vwrlFullPostGam i)) emptyGam)
-                                 (Just vw,Nothing)
-                                   -> (vw,ext pregDflt (vwrlPreGam vw),ext postgDflt (vwrlPostGam vw))
-                                 (Nothing,Nothing)
-                                   -> (emptyVwRlInfo {vwrlNm=nVw},ext pregDflt emptyGam,ext postgDflt emptyGam)
+                           = case maybe Nothing vrgOfVwRlInfo mbOnVwRlInfo of
+                               Just i
+                                 -> case Map.lookup nVw vrg of
+                                      Just vw -> (vw,ext preD (vwrlPreGam vw),ext postD (vwrlPostGam vw))
+                                      Nothing -> (emptyVwRlInfo {vwrlNm=nVw},ext preD emptyGam,ext postD emptyGam)
+                                 where preD  = ext pregDflt  (vwrlFullPreGam  i)
+                                       postD = ext postgDflt (vwrlFullPostGam i)
+                               Nothing
+                                 -> case Map.lookup nVw vrg of
+                                      Just vw -> (vw,ext pregDflt (vwrlPreGam vw),ext postgDflt (vwrlPostGam vw))
+                                      Nothing -> (emptyVwRlInfo {vwrlNm=nVw},ext pregDflt emptyGam,ext postgDflt emptyGam)
+                         vwRlChs
+                           = let pg  = preg `Map.union` postg
+                                 pg' = preg' `Map.union` postg'
+                                 pd  = pg' `Map.difference` pg
+                                 un  = Map.unionWith (\i1 i2 -> i1 {reJAGam = reJAGam i1 `Map.union` reJAGam i2})
+                                 pn  = (vwrlPreGam vw `Map.union` vwrlPostGam vw) `un` pregIncr `un` postgIncr
+                             in  Map.mapWithKey (\jn ji -> Map.mapWithKey (\an _ -> RlChInfo jn an) (maybe emptyGam id $ reMbJAGam ji))
+                                 $ pd `Map.union` (pn `Map.difference` pd)
                          vw2 = vw {vwrlFullPreGam = reGamUpdInOut nVw scGam preg'
-                                  ,vwrlFullPostGam = reGamUpdInOut nVw scGam  postg'}
+                                  ,vwrlFullPostGam = reGamUpdInOut nVw scGam  postg'
+                                  ,vwrlChGam = vwRlChs
+                                  }
                          vw3 = vwrlDelEmptyJd vw2
                          vw4 = vw3 {vwrlPreScc = vwrlScc vw3}
                          vwUndefs = vwrlUndefs vw3 `Set.difference` extNmS
@@ -1013,7 +1044,7 @@ ATTR AGExprItf [ | | repl: Expr ]
 
 SEM Expr
   | Var             loc     .   replVar     =   let r = case nmMatch (optGenFM @lhs.opts) @nm @lhs.fmGam of
-                                                            Just (matchNmL,remNmL,matchExpr)
+                                                            Just (matchNmL,remNmL,matchExpr) | null remNmL || not (optSubstFullNm @lhs.opts)
                                                               -> case mbNmLOfSel se of
                                                                    Just sNmL
                                                                      -> Expr_Var (nmFromL (sNmL ++ remNmL))
@@ -1171,6 +1202,11 @@ SEM Expr
   | SelTop          loc     .   ppLaTeXSel  =   ppSelLaTeX (== nmVec) @expr.ppLaTeX (reverse @expr.selL)
                     loc     .   ppLaTeX     =   if @expr.isEmpty then empty else @ppLaTeXSel
   | Var             loc     .   ppLaTeX     =   ppNmLaTeX . nmLhs2TeXSafe $ @nm
+  | Wrap            loc     .   ppLaTeX     =   let wr o c e = switchLaTeXLhs (mkTexCmdUse (show o) empty) >#< e >#< switchLaTeXLhs (mkTexCmdUse (show c) empty)
+                                                in  case @wrKind of
+                                                      WrIsChanged -> wr nmCmdBegChng nmCmdEndChng @expr.ppLaTeX
+                                                      WrIsSame    -> wr nmCmdBegSame nmCmdEndSame @expr.ppLaTeX
+                                                      _           -> @expr.ppLaTeX
   | Empty           loc     .   ppLaTeX     =   empty
 
 -------------------------------------------------------------------------
@@ -1198,7 +1234,7 @@ data Gen
       , genNmUse    :: Nm -> PP_Doc
       , genRl       :: (Nm,Nm,Nm,Nm,Nm,Nm) -> [PP_Doc] -> [PP_Doc] -> PP_Doc
       , genRs       :: (Nm,Nm) -> RsInfo Expr -> PP_Doc -> [Nm] -> [PP_Doc] -> PP_Doc
-      , genJdExpr   :: ScInfo Expr -> VwScInfo Expr -> Bool -> Opts -> AtUsInfo -> FmGam Expr -> FmGam Expr -> FmGam Expr -> RwExprGam -> Expr -> PP_Doc
+      , genJdExpr   :: ScInfo Expr -> VwScInfo Expr -> Bool -> (Nm -> Bool) -> Opts -> AtUsInfo -> FmGam Expr -> FmGam Expr -> FmGam Expr -> RwExprGam -> Expr -> PP_Doc
       , genJdWrap   :: PP_Doc -> PP_Doc
       }
 
@@ -1213,7 +1249,7 @@ genDflt
       , genNmUse    = \n -> empty
       , genRl       = \(nFull,nSc,nScAG,nVw,nRl,nRlAG) pre post -> empty
       , genRs       = \(nScMeta,nVwFull) rsInfo meta defNms defVals -> empty
-      , genJdExpr   = \scInfo vwScInfo isPre opts atUsInfo atUseFmGam jaFmGam fmGam rwGam e -> empty
+      , genJdExpr   = \scInfo vwScInfo isPre atIsChanged opts atUsInfo atUseFmGam jaFmGam fmGam rwGam e -> empty
       , genJdWrap   = \jd -> empty
       }
 
@@ -1236,10 +1272,26 @@ genTeX
           in  vlist defVals
               >-< mkCmdNmDef nScMeta (ensureTeXMath . mkInLhs2Tex $ meta)
               >-< mkCmdNmDef nVwFull eFigPP
-      , genJdExpr   = \scInfo vwScInfo isPre opts atUsInfo atUseFmGam jaFmGam fmGam rwGam e ->
-          exprFmtTeXSubst opts (jaFmGam `Map.union` fmGam) e
-      , genJdWrap   = mkInLhs2Tex
+      , genJdExpr   = \scInfo vwScInfo isPre atIsChanged opts atUsInfo atUseFmGam jaFmGam fmGam rwGam e ->
+          let mkChng
+                = case optMbMarkChange opts of
+                    Just _  -> \nAt -> Expr_Wrap (if atIsChanged nAt then WrIsChanged else WrIsSame)
+                    Nothing -> \_   -> id
+              jaFmGam' = fmGamMap mkChng jaFmGam
+          in  exprFmtTeXSubst opts ( fmGam) . exprSubst (opts {optSubstFullNm = True}) jaFmGam' $ e
+      , genJdWrap   = switchLaTeXLhs
       }
+
+{-
+      , genJdExpr   = \scInfo vwScInfo isPre atIsChanged opts atUsInfo atUseFmGam jaFmGam fmGam rwGam e ->
+          let mkChng
+                = case optMbMarkChange opts of
+                    Just _  -> \nAt -> if atIsChanged nAt then mk nmMkBegChng nmMkEndChng else mk nmMkBegSame nmMkEndSame
+                    Nothing -> \_   -> id
+                where mk o c e = Expr_AppTop (Expr_App (Expr_App (Expr_Var o) e) (Expr_Var c))
+              jaFmGam' = fmGamMap mkChng jaFmGam
+          in  exprFmtTeXSubst opts ( fmGam) . exprSubst (opts {optSubstFullNm = True}) jaFmGam' $ e
+-}
 
 genAG
   = genDflt
@@ -1254,31 +1306,19 @@ genAG
                 = "--" >#< pp (rsDescr rsInfo) >#< nVwFull
                   >-< vlist defVals
           in  eFigPP
-      , genJdExpr   = \scInfo vwScInfo isPre opts atUsInfo@(eNdNm,atDefFmGam,atL) atUseFmGam jaFmGam fmGam rwGam e ->
+      , genJdExpr   = \scInfo vwScInfo isPre atIsChanged opts atUsInfo@(eNdNm,atDefFmGam,atL) atUseFmGam jaFmGam fmGam rwGam e ->
           let cmtPP = empty
-          in  case scKind scInfo of
-                ScRelation | False
-                  -> (cmtPP
-                      -- >-< ppExpr (exprSubst opts (atDefFmGam `fmGamUnion` atUseFmGam) e)
-                      >-< (ppExpr . sbsu . sbsd  $ e)
-                      >#< "--" >#< (ppCommas . map pp $ [e, sbsd e, sbsu . sbsd $ e])
-                     )
-                  where sbsa = exprSubst opts jaFmGam
-                        sbsd = exprSubst opts atDefFmGam
-                        sbsu = exprSubst opts atUseFmGam
-                _
-                  -> (cmtPP
-                      >-< mkInPP atL
-                      >-< mkOuPP atL
-                      >-< mkInOuPP atL
-                     )
-                  where sbs = exprSubst opts atUseFmGam
-                        mk (_,(eqn,_)) = eqn
-                        mkPP dir = ppExpr . exprRewrite (opts {optAtDir = dir}) atUseFmGam rwGam
-                        mkIOPP d l = vlist . map (mkPP d) . map mk . filter ((==d) . fst) $ l
-                        mkInPP = mkIOPP AtIn
-                        mkOuPP = mkIOPP AtOut
-                        mkInOuPP = mkIOPP AtInOut
+              sbs = exprSubst opts atUseFmGam
+              mk (_,(eqn,_)) = eqn
+              mkPP dir = ppExpr . exprRewrite (opts {optAtDir = dir, optSubstFullNm = True}) atUseFmGam rwGam
+              mkIOPP d l = vlist . map (mkPP d) . map mk . filter ((==d) . fst) $ l
+              mkInPP = mkIOPP AtIn
+              mkOuPP = mkIOPP AtOut
+              mkInOuPP = mkIOPP AtInOut
+          in  cmtPP
+              >-< mkInPP atL
+              >-< mkOuPP atL
+              >-< mkInOuPP atL
       , genJdWrap   = id
       }
 {-
@@ -1298,20 +1338,20 @@ genGam = Map.fromList [ (FmTeX,genTeX), (FmAG,genAG) ]
 -------------------------------------------------------------------------
 
 {
-jdGen :: Gen -> AtUsInfo -> FmGam Expr -> Bool -> Nm -> Nm -> REInfo Expr -> PP_Doc
-jdGen gen atUsInfo atUseFmGam isPre nSc nVw reInfo
+jdGen :: Gen -> AtUsInfo -> FmGam Expr -> Bool -> (Nm -> Bool) -> Nm -> Nm -> REInfo Expr -> PP_Doc
+jdGen gen atUsInfo atUseFmGam isPre atIsChanged nSc nVw reInfo
   = genJdWrap gen ePP
   where (Just (scInfo,vwScInfo)) = scVwGamLookup nSc nVw (genScGam gen)
         fg = jaGamToFmGam (exprSubst (genOpts gen) (genFmGam gen)) . reJAGam $ reInfo
         scVwExpr = jdGamFmExpr (optGenFM . genOpts $ gen) . vwscJdGam $ vwScInfo
-        ePP = genJdExpr gen scInfo vwScInfo isPre (genOpts gen) atUsInfo atUseFmGam fg (genFmGam gen) (genRwGam gen) scVwExpr
+        ePP = genJdExpr gen scInfo vwScInfo isPre atIsChanged (genOpts gen) atUsInfo atUseFmGam fg (genFmGam gen) (genRwGam gen) scVwExpr
 
-jdsGen :: Gen -> AtUsGam -> FmGam Expr -> Bool -> Nm -> [Nm] -> REGam Expr -> [PP_Doc]
-jdsGen gen atUsGam atUseFmGam isPre nVw order g
+jdsGen :: Gen -> AtUsGam -> FmGam Expr -> Bool -> (Nm -> Nm -> Bool) -> Nm -> [Nm] -> REGam Expr -> [PP_Doc]
+jdsGen gen atUsGam atUseFmGam isPre atIsChanged nVw order g
   = map (\nJd
             -> let reInfo = maybe (panic "jdsGen1") id (Map.lookup nJd g)
                    atUsInfo = maybe (panic "jdsGen2") id (Map.lookup nJd atUsGam)
-               in  jdGen gen atUsInfo atUseFmGam isPre (reScNm reInfo) nVw reInfo
+               in  jdGen gen atUsInfo atUseFmGam isPre (atIsChanged nJd) (reScNm reInfo) nVw reInfo
         )
         order
 
@@ -1322,7 +1362,8 @@ rlGen gen (nSc,nScAG,nRl',nRlAG,mkFullNm) rlInfo
         ->  let nRlFull = mkFullNm nVw
                 (atUsGam,fmNd) = rlAtUsage (genOpts gen) (genScGam gen) (genFmGam gen) vwRlInfo
                 atUseFmGam = Map.unions [ g | (_,_,as) <- Map.elems atUsGam, (_,(_,g)) <- as ]
-                mkJd isPre g order     = jdsGen gen atUsGam (atUseFmGam `fmGamUnion` fmNd) isPre nVw order $ g
+                atIsChanged j a = maybe False (const True) $ dblGamLookup id j a (vwrlChGam vwRlInfo)
+                mkJd isPre g order     = jdsGen gen atUsGam (atUseFmGam `fmGamUnion` fmNd) isPre atIsChanged nVw order $ g
                 prePPL    = mkJd True (vwrlFullPreGam vwRlInfo) (concat . vwrlPreScc $ vwRlInfo)
                 postPPL  = mkJd False (vwrlFullPostGam vwRlInfo) (Map.keys . vwrlFullPostGam $ vwRlInfo)
                 r = genRl (gen)
@@ -1421,7 +1462,7 @@ vwRlLtxGen gen nSc vwRlLtxGam rsInfo
                 nScMeta = nVwFull `nmApd` Nm "scheme"
                 (Just (scInfo,vwScInfo)) = scVwGamLookup nSc nVw (genScGam gen)
                 eScmPP
-                  = genJdExpr gen scInfo vwScInfo True (genOpts gen) emptyAtUsInfo emptyGam emptyGam (genFmGam gen) emptyGam
+                  = genJdExpr gen scInfo vwScInfo True (const True) (genOpts gen) emptyAtUsInfo emptyGam emptyGam (genFmGam gen) emptyGam
                     . jdGamFmExpr (optGenFM . genOpts $ gen)
                     . vwscJdGam
                     $ vwScInfo

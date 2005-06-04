@@ -145,6 +145,11 @@
 \newcommand{\rulerCmdUse}[1]{\csname #1\endcsname}
 \newcommand{\ruleRef}[1]{rule~\textsc{#1}}
 \newcommand{\RuleRef}[1]{Rule~\textsc{#1}}
+\newcommand{\rulerChngBegMark}{\color{blue}}
+\newcommand{\rulerChngEndMark}{\color{black}}
+\newcommand{\rulerSameBegMark}{\color{lightgray}}
+\newcommand{\rulerSameEndMark}{\color{black}}
+
 
 % referencing
 % \newcommand{\figRef}[1]{figure~\ref{#1}}

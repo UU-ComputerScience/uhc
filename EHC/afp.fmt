@@ -158,6 +158,12 @@
 %format lbln		= lbl "_{n}"
 %format lbl1
 
+%format red				= "\color{red}"
+%format rcOMark			= "\color{blue}"
+%format rcCMark			= "\color{black}"
+%format rsOMark			= "\color{lightgray}"
+%format rsCMark			= "\color{black}"
+
 %format \\ 	    		= "{\backslash}"
 %format // 	    		= "/"
 %format /^/ 	    	= "/"
@@ -179,6 +185,8 @@
 %format =@= 			= "{\varparallel}"
 % format <=> 			= "\mathrel{\cong}"
 %format <=> 			= "\cong "
+%format <+-> 			= "\mathrel{\vartriangle}\hspace{-.25em}\mathrel{\triangledown}"
+% format <+-> 			= "\setbox0=\hbox{\ensuremath{\mathrel{\vartriangle}}}\copy0\kern-.4\wd0\mathrel{\triangledown}"
 %format <+> 			= "\mathrel{\vartriangle}"
 %format <-> 			= "\mathrel{\triangledown}"
 
