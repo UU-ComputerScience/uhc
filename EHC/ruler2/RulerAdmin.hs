@@ -39,6 +39,31 @@ dblGamLookup gOf sn vn g
       _ -> Nothing
 
 -------------------------------------------------------------------------
+-- WrKind
+-------------------------------------------------------------------------
+
+data WrKindInfo
+  = WrKindInfo
+      { wkBegCmd   :: Nm
+      , wkEndCmd   :: Nm
+      }
+
+instance Show WrKindInfo where
+  show _ = "WrKindInfo"
+
+instance PP WrKindInfo where
+  pp i = pp "WK"
+
+type WrKindGam = Gam WrKind WrKindInfo
+
+wrKindGam :: WrKindGam
+wrKindGam
+  = Map.fromList
+  	  [ (WrIsChanged,WrKindInfo nmCmdBegChng nmCmdEndChng)
+  	  , (WrIsSame   ,WrKindInfo nmCmdBegSame nmCmdEndSame)
+  	  ]
+
+-------------------------------------------------------------------------
 -- Attr
 -------------------------------------------------------------------------
 
@@ -91,7 +116,7 @@ data VwScInfo e
       , vwscFullAtGam   :: AtGam
       }
 
-emptyVwScInfo = VwScInfo (Nm "") emptyGam emptyGam emptyGam
+emptyVwScInfo = VwScInfo nmNone emptyGam emptyGam emptyGam
 
 instance Show (VwScInfo e) where
   show _ = "VwScInfo"
@@ -113,7 +138,7 @@ data ScInfo e
       , scVwGam     :: VwScGam e
       }
 
-emptyScInfo = ScInfo (Nm "") Nothing ScJudge emptyGam
+emptyScInfo = ScInfo nmNone Nothing ScJudge emptyGam
 
 instance Show (ScInfo e) where
   show _ = "ScInfo"
@@ -214,10 +239,10 @@ data VwRlInfo e
       , vwrlPreGam, vwrlPostGam             :: REGam e
       , vwrlFullPreGam, vwrlFullPostGam     :: REGam e
       , vwrlPreScc                          :: [[Nm]]
-      , vwrlChGam     						:: RlChGam
+      , vwrlMbChGam                         :: Maybe RlChGam
       }
 
-emptyVwRlInfo = VwRlInfo (Nm "") emptyGam emptyGam emptyGam emptyGam [] emptyGam
+emptyVwRlInfo = VwRlInfo nmNone emptyGam emptyGam emptyGam emptyGam [] Nothing
 
 instance Show (VwRlInfo e) where
   show _ = "VwRlInfo"
@@ -228,7 +253,7 @@ instance PP e => PP (VwRlInfo e) where
                                        >-< ppGam (vwrlFullPreGam i)
                                        >-< ppGam (vwrlFullPostGam i)
                                        >-< pp (show (vwrlPreScc i))
-                                       >-< ppGam (Map.map ppGam $ vwrlChGam i)
+                                       >-< maybe empty (ppGam . Map.map ppGam) (vwrlMbChGam i)
                                       )
 
 type VwRlGam e = Gam Nm (VwRlInfo e)

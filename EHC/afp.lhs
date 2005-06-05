@@ -640,7 +640,7 @@ WWW home page:
 % rules
 \input rules.tex
 \input rules2.tex
-\input rules3.tex
+\inputEHCTex{\EHCTexVersion}{rules3.tex}
 %if onlyCurrentWork
 %\input klad.tex
 %endif
@@ -11304,57 +11304,18 @@ error messaging, line/col position, comment ????
 
 blabla
 
-\[
-\ehinfruleB{e-let}{HM}
-{%
-\ensuremath{\Gamma } _{ \ensuremath{\Varid{sig}}} \ensuremath{,\Gamma } _{ \ensuremath{\Varid{p}}} \ensuremath{,\Gamma ;\mathcal{C}} _{ \ensuremath{\Varid{p}}} \ensuremath{\mathcal{C}} ^{ \ensuremath{\Varid{k}}} \ensuremath{\vdash } ^{ \ensuremath{\Varid{d}}} \ensuremath{\Varid{d}\mathbin{:}\Gamma } _{ \ensuremath{\Varid{sig}}} \ensuremath{;\Gamma } _{ \ensuremath{\Varid{p}}} \ensuremath{\leadsto \mathcal{C}} _{ \ensuremath{\Varid{p}}} \ensuremath{;\mathcal{C}} _{ \ensuremath{\Varid{d}}} \ensuremath{}
-\\
-\ensuremath{\Gamma } _{ \ensuremath{\Varid{q}}} \ensuremath{\equiv [\mskip1.5mu\allowforspacecorrection \Varid{i}\mapsto {\forall}} \overline{ \ensuremath{\alpha } } \ensuremath{.\sigma \mid (\allowforspacecorrection \Varid{i}\mapsto \sigma )\leftarrow \mathcal{C}} _{ \ensuremath{\Varid{d}}} \ensuremath{\Gamma } _{ \ensuremath{\Varid{p}}} \ensuremath{,} \overline{ \ensuremath{\alpha } } \ensuremath{\equiv \Varid{ftv}\;(\allowforspacecorrection \sigma )\mathbin{-}\Varid{ftv}\;(\allowforspacecorrection \mathcal{C}} _{ \ensuremath{\Varid{d}}} \ensuremath{\Gamma )\mskip1.5mu]}
-\\
-\ensuremath{\Gamma } _{ \ensuremath{\Varid{sig}}} \ensuremath{,\Gamma } _{ \ensuremath{\Varid{q}}} \ensuremath{,\Gamma ;\mathcal{C}} _{ \ensuremath{\Varid{d}}} \ensuremath{;\sigma } ^{ \ensuremath{\Varid{k}}} \ensuremath{\vdash } ^{ \ensuremath{\Varid{e}}} \ensuremath{\Varid{e}\mathbin{:}\sigma \leadsto \mathcal{C}} _{ \ensuremath{\Varid{e}}} \ensuremath{}
-}
-{%
-\ensuremath{\Gamma ;\mathcal{C}} ^{ \ensuremath{\Varid{k}}} \ensuremath{;\sigma } ^{ \ensuremath{\Varid{k}}} \ensuremath{\vdash } ^{ \ensuremath{\Varid{e}}} \ensuremath{\mathbf{let}\;\Varid{d}\;\mathbf{in}\;\Varid{e}\mathbin{:}\sigma \leadsto \mathcal{C}} _{ \ensuremath{\Varid{e}}} \ensuremath{}
-}
-\]
-
-\[
-\ehinfruleB{e-let}{HM}
-{%
-|rcOMark Gamma | _{ | sig |} | , Gamma | _{ | p |} | , Gamma rcCMark ; rsOMark Cnstr | _{ | p |} | Cnstr | ^{ | k |} | :- | ^{ | d |} | d : Gamma | _{ | sig |} | rsCMark ; rcOMark Gamma | _{ | p |} | ~> Cnstr | _{ | p |} | rcCMark ; rsOMark Cnstr | _{ | d |} | rsCMark | 
-\\
-|Gamma | _{ | q |} | ===  [ i :-> forall  | \overline{ |alpha | } | . sigma || (i :-> sigma) <- Cnstr | _{ | d |} | Gamma | _{ | p |} | ,  | \overline{ |alpha | } | === ftv (sigma) - ftv (Cnstr | _{ | d |} | Gamma) ]  |
-\\
-|Gamma | _{ | sig |} | , Gamma | _{ | q |} | , Gamma ; Cnstr | _{ | d |} | ; sigma | ^{ | k |} | :- | ^{ | e |} | e : sigma ~> Cnstr | _{ | e |} | |
-}
-{%
-|Gamma ; Cnstr | ^{ | k |} | ; sigma | ^{ | k |} | :- | ^{ | e |} | let d in e : sigma ~> Cnstr | _{ | e |} | |
-}
-\]
-
-\[
-\ehinfruleB{e-let}{HM}
-{%
-|rcOMark Gamma | _{ | sig |} | , Gamma | _{ | p |} | , Gamma rcCMark ; | \color{lightgray} | Cnstr | _{ | p |} | Cnstr | ^{ | k |} | :- | ^{ | d |} | d : Gamma | _{ | sig |} | | \color{black} | ; rcOMark Gamma | _{ | p |} | ~> Cnstr | _{ | p |} | rcCMark ; rsOMark Cnstr | _{ | d |} | rsCMark | 
-\\
-|Gamma | _{ | q |} | ===  [ i :-> forall  | \overline{ |alpha | } | . sigma || (i :-> sigma) <- Cnstr | _{ | d |} | Gamma | _{ | p |} | ,  | \overline{ |alpha | } | === ftv (sigma) - ftv (Cnstr | _{ | d |} | Gamma) ]  |
-\\
-|Gamma | _{ | sig |} | , Gamma | _{ | q |} | , Gamma ; Cnstr | _{ | d |} | ; sigma | ^{ | k |} | :- | ^{ | e |} | e : sigma ~> Cnstr | _{ | e |} | |
-}
-{%
-|Gamma ; Cnstr | ^{ | k |} | ; sigma | ^{ | k |} | :- | ^{ | e |} | let d in e : sigma ~> Cnstr | _{ | e |} | |
-}
-\]
-
-\rulerCmdUse{rules3.E.expr.base}
-\rulerCmdUse{rules3.K.expr.base}
-\rulerCmdUse{rules3.C.expr.base}
+%\rulerCmdUse{rules3.E.expr.base}
+%\rulerCmdUse{rules3.K.expr.base}
+%\rulerCmdUse{rules3.C.expr.base}
+%\rulerCmdUse{rules3.HM.expr.base}
 
 
 \rulerCmdUse{rules3.I1.expr.base}
+\rulerCmdUse{rules3.CG.expr.base}
+\rulerCmdUse{rules3.P.expr.base}
 %\rulerCmdUse{rules2.expr4.base}
 
-\rulerCmdUse{rules3.I2.expr.base}
+%\rulerCmdUse{rules3.I2.expr.base}
 %\rulerCmdUse{rules2.exprIm.base}
 %\rulerCmdUse{rules2.exprIm4.base}
 
@@ -11375,18 +11336,19 @@ blabla
 %\rulerCmdUse{rules2.decl3}
 
 \rulerCmdUse{rules3.I1.decl.base}
+\rulerCmdUse{rules3.CG.decl.base}
 %\rulerCmdUse{rules2.decl4}
 
-\rulerCmdUse{rules3.I2.decl.base}
+%\rulerCmdUse{rules3.I2.decl.base}
 %\rulerCmdUse{rules2.declIm}
 %\rulerCmdUse{rules2.declIm4}
 
-\rulerCmdUse{rules3.I2.match.base}
-\rulerCmdUse{rules3.I2.match.forall}
-\rulerCmdUse{rules3.I2.match.exists}
+\rulerCmdUse{rules3.I1.match.base}
+\rulerCmdUse{rules3.I1.match.forall}
+\rulerCmdUse{rules3.I1.match.exists}
 \rulerCmdUse{rules3.I1.fit}
-\rulerCmdUse{rules3.I1.meet}
-\rulerCmdUse{rules3.I1.join}
+\rulerCmdUse{rules3.I2.meet}
+\rulerCmdUse{rules3.I2.join}
 \rulerCmdUse{rules3.I2.tyAltTyElim}
 
 %\rulerCmdUse{rules3.K.match.all}
