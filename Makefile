@@ -92,14 +92,16 @@ AFP_FMT_OTHER		:= lag2TeX.fmt pretty.fmt parsing.fmt
 # type rules, in ruler format
 AFP_RULES			:= rules.rul rules2.rul
 AFP_RULES_TEX		:= $(AFP_RULES:.rul=.tex)
-AFP_RULES2			:= rules3.rl2
-AFP_RULES2_TEX		:= $(AFP_RULES2:.rl2=.tex)
+AFP_RULES2			:= rules3
+AFP_RULES2_RUL		:= $(AFP_RULES2).rl2
+AFP_RULES2_TEX		:= $(patsubst %.rl2,$(AFP_TMPDIR)%.tex,$(AFP_RULES2_RUL))
+AFP_RULES2_RULER_OPTS	:=
 
 # pictures in pgf format
 AFP_PGF_TEX			:= afp-pgf.tex
 
 # all text sources
-ALL_AFP_SRC			:= $(AFP_LHS) $(AFP_RULES) $(AFP_RULES2)
+ALL_AFP_SRC			:= $(AFP_LHS) $(AFP_RULES) $(AFP_RULES2_RUL)
 
 
 EHC_SRC_PREFIX				:=
@@ -337,7 +339,7 @@ SHUFFLE_LHS_TEX		= \
 RULER_LHS		= \
 	$(RULER) --latex --base $1 $2 | $4 > $3
 RULER2_LHS		= \
-	$(RULER2) --markchanges="K E" --lhs2tex --base $1 $2 | $4 > $3
+	$(RULER2) $(AFP_RULES2_RULER_OPTS) --lhs2tex --base $1 $2 | $4 > $3
 
 # RULER_LHS_TEX(base, src file, dst file)
 RULER_LHS_TEX		= \
@@ -510,6 +512,10 @@ $(AG_PRIMER_CHS_TEX): $(AFP_TMPDIR)%.tex: $(AG_PRIMER)%.chs $(SHUFFLE) Makefile
 $(AFP_TEXTS_TEX): $(AFP_TMPDIR)%.tex: $(AFP_TEXTS)%.lhs Makefile
 	$(call LHS2TEX_POLY,$<,$@)
 
+### TeX production of ruler text
+$(AFP_RULES2_TEX): $(AFP_TMPDIR)%.tex: %.rl2 Makefile $(RULER2) $(AFP_FMT)
+	$(call RULER2_LHS_TEX,$(*F),$<,$@)
+
 ### Dpds for main text
 $(AFP_PDF): $(AFP_TEX) $(AFP_STY) $(EHC_VLAST_TEX) $(AFP_RULES_TEX) $(AFP_RULES2_TEX) $(AFP_PGF_TEX) $(AFP_TEXTS_TEX) $(AG_PRIMER_TEX)
 	$(AFP_LATEX) $(AFP_TEX)
@@ -523,8 +529,8 @@ $(AFP_STY): afp.lsty Makefile
 $(AFP_RULES_TEX): %.tex: %.rul $(RULER) $(AFP_FMT)
 	$(call RULER_LHS_TEX,$(*F),$<,$@)
 
-$(AFP_RULES2_TEX): %.tex: %.rl2 $(RULER2) $(AFP_FMT)
-	$(call RULER2_LHS_TEX,$(*F),$<,$@)
+#$(AFP_RULES2_TEX): %.tex: %.rl2 $(RULER2) $(AFP_FMT)
+#	$(call RULER2_LHS_TEX,$(*F),$<,$@)
 
 agprimer: $(D_BUILD_BIN)/repminag $(D_BUILD_BIN)/repminhs $(D_BUILD_BIN)/expr
 
@@ -582,7 +588,7 @@ esop05-tr:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=truu --set=storyExplImpl --set=omitTBD --set=omitLitDiscuss" afp-bib
 
 eh-work:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=onlyCurrentWork --unset=asArticle --set=refToPDF --set=inclOmitted" afp
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= AFP_RULES2_RULER_OPTS="--markchanges='I1 - *'" LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=onlyCurrentWork --unset=asArticle --set=refToPDF --set=inclOmitted" afp
 
 phd:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=storyPHD --unset=asArticle --set=refToPDF --set=inclOmitted" afp

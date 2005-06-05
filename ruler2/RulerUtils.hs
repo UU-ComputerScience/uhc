@@ -14,21 +14,83 @@ import Utils
 import PPUtils
 import UU.Pretty
 import qualified UU.DData.Scc as Scc
-import UU.Scanner.Position( Pos )
-
--------------------------------------------------------------------------
--- Version of program
--------------------------------------------------------------------------
-
-versionSvn = "$Id: EHTyFitsIn.chs 214 2005-05-28 17:52:29Z atze $"
-versionDist = "0.1alpha"
-versionInfo = versionDist ++ ", " ++ versionSvn
+import UU.Scanner.Position( noPos, Pos, Position(..) )
+import UU.Scanner.GenToken
+import UU.Parsing
 
 -------------------------------------------------------------------------
 -- Symbol position
 -------------------------------------------------------------------------
 
 type SPos = (String,Pos)
+
+-------------------------------------------------------------------------
+-- Errors
+-------------------------------------------------------------------------
+
+data Err
+  = Err_UndefNm SPos String String [Nm]
+  | Err_NoJdSc  SPos String [Nm]
+  | Err_Match   SPos String PP_Doc PP_Doc
+  deriving Show
+
+ppErr :: Position pos => (String,pos) -> PP_Doc -> PP_Doc
+ppErr (sym,pos) p
+  = "*** ERROR ***"
+    >-< ppPos pos >|< (if null sym then empty else ", at symbol '" >|< pp sym >|< "'") >|< ":"
+    >-< indent 4 p
+
+ppErrPPL :: PP a => [a] -> PP_Doc
+ppErrPPL = vlist . map pp
+
+instance PP Err where
+  pp (Err_UndefNm pos cx knd nmL)
+    = ppErr pos ("In" >#< cx >#< knd >|< "(s) are undefined:" >#< ppCommas nmL)
+  pp (Err_NoJdSc pos cx nmL)
+    = ppErr pos ("In" >#< cx >#< "no (tex) judgement scheme for:" >#< ppCommas nmL)
+  pp (Err_Match pos cx given reqd)
+    = ppErr pos ("In" >#< cx >#< "could not match"
+                 >-< indent 2
+                       (    "scheme judgement expr:" >#< reqd
+                        >-< "given view expr      :" >#< given
+                       )
+                )
+
+-------------------------------------------------------------------------
+-- Parsing
+-------------------------------------------------------------------------
+
+parseToResMsgs :: (Symbol s,InputState inp s pos) => AnaParser inp Pair s pos a -> inp -> (a,[Message s pos])
+parseToResMsgs p inp
+  = (r,getMsgs steps)
+  where steps = parse p inp
+        (Pair r _) = evalSteps steps
+
+instance (Eq s, Show s, Show p, Position p) => PP (Message s p) where
+  pp (Msg expecting position action)  
+    = ppErr ("",position)
+            (   "Expecting  :" >#< (fillblock 120 . intersperse (pp " ") . map pp $ showExp)
+                               >#< (if null omitExp then empty else pp "...")
+            >-< "Repaired by:" >#< show action
+            )
+    where (showExp,omitExp) = splitAt 20 . words $ show expecting
+
+instance Position p => Position (Maybe p) where
+  line   = maybe (line   noPos) line
+  column = maybe (column noPos) column
+  file   = maybe (file   noPos) file
+
+ppPos :: Position p => p -> PP_Doc
+ppPos p
+  = if l < 0 then empty else pp f >|< ppListSep "(" ")" "," [pp l,pp c]
+  where l = line p
+        c = column p
+        f = file p
+
+instance Position (GenToken k t v) where
+  line   = line   . position
+  column = column . position
+  file   = file   . position
 
 -------------------------------------------------------------------------
 -- Graph for version/view dpd
@@ -42,6 +104,9 @@ data DpdGr n
       , vgV2N   :: Vertex -> (n, [n])
       , vgK2V   :: n -> Maybe Vertex
       }
+
+emptyVwDpdGr :: DpdGr Nm
+emptyVwDpdGr = mkVwDpdGr [] 
 
 vgVsToNs :: DpdGr n -> [Vertex] -> [n]
 vgVsToNs g = map (\v -> fst (vgV2N g v))
@@ -199,32 +264,6 @@ nmCmdBegChng = Nm "rulerChngBegMark"
 nmCmdEndChng = Nm "rulerChngEndMark"
 nmCmdBegSame = Nm "rulerSameBegMark"
 nmCmdEndSame = Nm "rulerSameEndMark"
-
--------------------------------------------------------------------------
--- Errors
--------------------------------------------------------------------------
-
-data Err
-  = Err_UndefNm SPos String String [Nm]
-  | Err_NoJdSc  SPos String [Nm]
-  | Err_Match   SPos String PP_Doc PP_Doc
-  deriving Show
-
-ppErr :: SPos -> PP_Doc -> PP_Doc
-ppErr (sym,pos) p = "**** ERROR" >#< pp (show pos) >|< ", symbol '" >|< pp sym >|< "':" >-< indent 2 p
-
-instance PP Err where
-  pp (Err_UndefNm pos cx knd nmL)
-    = ppErr pos ("In" >#< cx >#< knd >|< "(s) are undefined:" >#< ppCommas nmL)
-  pp (Err_NoJdSc pos cx nmL)
-    = ppErr pos ("In" >#< cx >#< "no (tex) judgement scheme for:" >#< ppCommas nmL)
-  pp (Err_Match pos cx given reqd)
-    = ppErr pos ("In" >#< cx >#< "could not match"
-                 >-< indent 2
-                       (    "scheme judgement expr:" >#< reqd
-                        >-< "given view expr      :" >#< given
-                       )
-                )
 
 -------------------------------------------------------------------------
 -- LaTeX

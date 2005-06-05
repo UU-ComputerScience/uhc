@@ -26,6 +26,18 @@ import Debug.Trace
 
 {
 -------------------------------------------------------------------------
+-- Version of program
+-------------------------------------------------------------------------
+
+versionSvn      = "$Id$"
+versionMajor    = "0"
+versionMinor    = "1"
+versionQuality  = "alpha"
+versionDist     = versionMajor ++ "." ++ versionMinor ++ versionQuality
+versionProg     = "ruler"
+versionInfo     = versionProg ++ versionDist ++ ", " ++ versionSvn
+
+-------------------------------------------------------------------------
 -- Main
 -------------------------------------------------------------------------
 
@@ -36,6 +48,8 @@ main
              opts           = foldr ($) defaultOpts o
        ; if optHelp opts
          then putStrLn (usageInfo ("version: " ++ versionInfo ++ "\n\nUsage ruler [options] [file]\n\noptions:") cmdLineOpts)
+         else if optVersion opts
+         then putStrLn versionDist
          else if null errs
               then  doCompile (if null n then emptyFPath else mkFPath (head n)) opts
               else  do hPutStr stderr (head errs)
@@ -51,21 +65,30 @@ doCompile fp opts
                         ; h <- openFile fn ReadMode
                         ; return (fn,fpathToStr (fpathRemoveSuff fp),h)
                         }
-       ; tokens <- scanHandle keywordsText keywordsOps specialChars opChars fn fh
-       ; pres <- parseIO (pAGItf) tokens
-       ; let res = wrap_AGItf pres
-                     (Inh_AGItf
-                        { opts_Inh_AGItf = opts
-                        })
-       ; putBld (optDebug opts) (pp_Syn_AGItf res)
-       ; let errL = errL_Syn_AGItf res
-       ; if null errL
-         then do { putBld (optGenFM opts /= FmAll) (mkPP_Syn_AGItf res (optGenFM opts))
+       ; tokens <- mkHScan fn fh
+       ; let (pres,perrs) = parseToResMsgs pAGItf tokens
+       ; if null perrs
+         then do { let res = wrap_AGItf pres
+                               (Inh_AGItf
+                                  { opts_Inh_AGItf = opts
+                                  })
+                 ; let putDbg = putBld (optDebug opts) (pp_Syn_AGItf res)
+                       errL = errL_Syn_AGItf res
+                 ; if null errL
+                   then do { putDbg
+                           ; putBld (optGenFM opts /= FmAll) (mkPP_Syn_AGItf res (optGenFM opts))
+                           }
+                   else do { hPutBld True stderr (ppErrPPL errL)
+                           ; putDbg
+                           ; exitFailure
+                           }
                  }
-         else do { hPutBld True stderr (vlist . map pp $ errL)
-                 ; exitFailure
+         else do { let (showErrs,omitErrs) = splitAt 5 perrs
+                 ; hPutBld True stderr (ppErrPPL showErrs)
+                 ; if null omitErrs
+                   then return ()
+                   else hPutStrLn stderr "... and more parsing errors"
                  }
-       ; return ()
        }
   where hPutBld f h b = if f then hPutPPFile h b 2000 else return ()
         putBld  f   b = hPutBld f stdout b
@@ -87,7 +110,8 @@ data Opts
       , optSubstFullNm  :: Bool     -- used internally only
       , optHelp         :: Bool
       , optDebug        :: Bool
-      , optMbMarkChange :: Maybe [Nm]
+      , optVersion      :: Bool
+      , optMbMarkChange :: Maybe ViewSels
       , optBaseNm       :: String
       }
 
@@ -98,32 +122,34 @@ defaultOpts
       , optSubstFullNm  =  False
       , optHelp         =  False
       , optDebug        =  False
+      , optVersion      =  False
       , optMbMarkChange =  Nothing
       , optBaseNm       =  rulesCmdPre
       }
 
 cmdLineOpts  
-  =  [ Option "l"  ["lhs2tex"]   (NoArg oGenLhs2tex)
+  =  [ Option "l"  ["lhs2tex"]          (NoArg oGenLhs2tex)
           "generate code for lhs2tex, default=no"
-     , Option "a"  ["ag"]        (NoArg oGenAG)
+     , Option "v"  ["version"]          (NoArg oVersion)
+          "print version info"
+     , Option "a"  ["ag"]               (NoArg oGenAG)
           "generate code for AG, default=no"
-     , Option "c"  ["markchanges"]        (OptArg oMarkCh "<views>")
+     , Option "c"  ["markchanges"]      (OptArg oMarkCh "<views>")
           "mark changes between specified views (in combi with --lhs2tex)"
-     , Option ""   ["help"]      (NoArg oHelp)
+     , Option ""   ["help"]             (NoArg oHelp)
           "output this help"
-     , Option "d"  ["debug"]     (NoArg oDebug)
+     , Option "d"  ["debug"]            (NoArg oDebug)
           "output debugging info"
-     , Option "b"  ["base"]      (ReqArg oBase "<name>")
+     , Option "b"  ["base"]             (ReqArg oBase "<name>")
           "base name, default = 'rules'"
      ]
   where  oGenLhs2tex     o =  o {optGenFM = FmTeX}
          oGenAG          o =  o {optGenFM = FmAG}
          oHelp           o =  o {optHelp = True}
          oDebug          o =  o {optDebug = True}
+         oVersion        o =  o {optVersion = True}
          oBase       s   o =  o {optBaseNm = s}
-         oMarkCh     ms  o =  case ms of
-                                Just s  -> o {optMbMarkChange = Just . map Nm . words $ s}
-                                Nothing -> o
+         oMarkCh     ms  o =  o {optMbMarkChange = fmap (viewSelsSelf' . fst . parseToResMsgs pViewSels . mkScan "") ms}
          yesno updO  ms  o =  case ms of
                                 Just "yes"  -> updO True o
                                 Just "no"   -> updO False o
@@ -161,10 +187,21 @@ keywordsOpsParenEsc
 keywordsOps
   =  keywordsOpsParenEsc ++ keywordsOpsEsc
 
+{-
 scanHandle :: [String] -> [String] -> String -> String -> FilePath -> Handle -> IO [Token]
 scanHandle keywordstxt keywordsops specchars opchars fn fh
   = do  {  txt <- hGetContents fh
         ;  return (scan keywordstxt keywordsops specchars opchars (initPos fn) txt) 
+        }
+-}
+
+mkScan :: FilePath -> String -> [Token]
+mkScan fn txt = scan keywordsText keywordsOps specialChars opChars (initPos fn) txt
+
+mkHScan :: FilePath -> Handle -> IO [Token]
+mkHScan fn fh
+  = do  {  txt <- hGetContents fh
+        ;  return (mkScan fn txt) 
         }
 
 -------------------------------------------------------------------------
@@ -180,13 +217,13 @@ mkApp (_,app,top) ts
       _    -> top t
   where t = foldl1 app ts
 
-pAGItf :: (IsParser p Token) => p T_AGItf
-pAGItf
+pAllParsers :: (IsParser p Token) => (p T_AGItf,p T_ViewSels)
+pAllParsers
   = let alg                 =   (undefined,sem_Expr_App,sem_Expr_AppTop)
         pAGItf              =   sem_AGItf_AGItf <$> pDecls' pDeclGlob
         pDecls'  pD         =   pFoldr  (sem_Decls_Cons,sem_Decls_Nil) pD
         pDecls1' pD         =   pFoldr1 (sem_Decls_Cons,sem_Decls_Nil) pD
-        pDeclRule           =   sem_Decl_Rule          <$> pKeySPos "rule"      <*> pNm <*> pMb (pKey ":" *> pNm) <*> pViewSel <*> pMbString
+        pDeclRule           =   sem_Decl_Rule          <$> pKeySPos "rule"      <*> pNm <*> pMb (pKey ":" *> pNm) <*> pMbViewSel <*> pMbString
                                                        <*  pKey "="             <*> (pDeclRuleDflt <|> pDecls1' pDeclRulView)
         pDeclRuleDflt       =   (\(pre,post) -> sem_Decls_Cons (sem_Decl_RulView nmNone pre post) sem_Decls_Nil)
                                                        <$> pRExprsPrePost
@@ -217,9 +254,10 @@ pAGItf
                                                        <*  pKey "="             <*> pList1Sep pComma (pList1 pNmVw)
                             <|> sem_Decl_Preamble      <$  pKey "preamble"      <*> pFmKd2WithDflt <*> pString
                             <|> sem_Decl_Extern        <$  pKey "extern"        <*> pList1 pNm
-        pViewSel            =   pMb' id sem_ViewSel_All
-                                     (pKey "viewsel" *> (pV <??> ((flip sem_ViewSel_Range) <$ pKey "-" <*> pV)))
+        pMbViewSel          =   pMb' id sem_ViewSel_All (pKey "viewsel" *> pViewSel)
+        pViewSel            =   pV <??> ((flip sem_ViewSel_Range) <$ pKey "-" <*> pV)
                             where pV = sem_ViewSel_View <$> pNmVw <|> sem_ViewSel_All <$ pKey "*"
+        pViewSels           =   pFoldrSep (sem_ViewSels_Cons,sem_ViewSels_Nil) pComma pViewSel
         pFmKd2WithDflt      =   pMb' id FmAll pFmKd2
         pFmKd3WithDflt      =   pMb' id FmAll pFmKd3
         pFmKd2              =   FmTeX <$ pKey "tex" <|> FmAG <$ pKey "ag"
@@ -250,7 +288,7 @@ pAGItf
         pMbRNm              =   pMb (pNm <* pKey ":")
         pMbString           =   pMb pString
         pExprApp            =   mkApp alg <$> pList1 pExprBase <|> pSucceed sem_Expr_Empty
-        pExprBase           =   pParens (sem_Expr_Paren <$> pExpr <|> pExprEsc <|> pExprText {- <|> pExprNamed -} ) <**> pExprSel
+        pExprBase           =   pParens (sem_Expr_Paren <$> pExpr <|> pExprEsc <|> pExprText <|> pExprNamed) <**> pExprSel
                             <|> sem_Expr_Var <$> pNm
                             <|> sem_Expr_Int <$> pInteger
                             <|> sem_Expr_StrAsIs <$> pString
@@ -276,16 +314,60 @@ pAGItf
         pMb' j n p          =   j <$> p <|> pSucceed n
         pMb                 =   pMb' Just Nothing
         pKeySPos k          =   (\p -> (k,p)) <$> pKeyPos k
-     in pAGItf
+     in (pAGItf,pViewSels)
+
+(pAGItf,pViewSels)
+  = pAllParsers
 }
+
+-------------------------------------------------------------------------
+-- Interfacing to ViewSel
+-------------------------------------------------------------------------
+
+WRAPPER AGViewSelsItf
+
+{
+wrapViewSels :: DpdGr Nm -> ViewSels -> Syn_AGViewSelsItf
+wrapViewSels vwDpdGr vs
+  = let r1 = sem_AGViewSelsItf (AGViewSelsItf_AGItf vs)
+    in  wrap_AGViewSelsItf r1
+            (Inh_AGViewSelsItf {vwDpdGr_Inh_AGViewSelsItf = vwDpdGr
+                               })
+
+wrapViewSels' :: DpdGr Nm -> T_ViewSels -> Syn_AGViewSelsItf
+wrapViewSels' vwDpdGr vs
+  = let r1 = sem_AGViewSelsItf_AGItf vs
+    in  wrap_AGViewSelsItf r1
+            (Inh_AGViewSelsItf {vwDpdGr_Inh_AGViewSelsItf = vwDpdGr
+                               })
+
+viewSelsNmS :: DpdGr Nm -> ViewSels -> Set.Set Nm
+viewSelsNmS vwDpdGr vs
+  = vwSelNmS_Syn_AGViewSelsItf r
+  where r = wrapViewSels vwDpdGr vs
+
+viewSelsNmS' :: DpdGr Nm -> T_ViewSels -> Set.Set Nm
+viewSelsNmS' vwDpdGr vs
+  = vwSelNmS_Syn_AGViewSelsItf r
+  where r = wrapViewSels' vwDpdGr vs
+
+viewSelsSelf' :: T_ViewSels -> ViewSels
+viewSelsSelf' vs
+  = self_Syn_AGViewSelsItf r
+  where r = wrapViewSels' emptyVwDpdGr vs
+}
+
+-------------------------------------------------------------------------
+-- Global info
+-------------------------------------------------------------------------
+
+ATTR AllNTButViewSel AGItf AGExprItf [ opts: {Opts} | | ]
 
 -------------------------------------------------------------------------
 -- Interfacing to Expr
 -------------------------------------------------------------------------
 
 WRAPPER AGItf AGExprItf
-
-ATTR AllNT AGItf AGExprItf [ opts: {Opts} | | ]
 
 {
 wrapExpr' :: Opts -> FmGam Expr -> RwExprGam -> Expr -> Syn_AGExprItf
@@ -354,6 +436,9 @@ DATA AGItf
 DATA AGExprItf
   | AGItf               expr        : Expr
 
+DATA AGViewSelsItf
+  | AGItf               viewSels    : ViewSels
+
 DATA Decl
   | Preamble            fmKind      : {FmKind}
                         preamble    : {String}
@@ -403,7 +488,9 @@ DATA ViewSel
   | Range               vwFr        : ViewSel
                         vwTo        : ViewSel
 
-SET AllViewSel = ViewSel
+TYPE ViewSels = [ViewSel]
+
+SET AllViewSel = ViewSel ViewSels
 
 DATA AttrIntro
   | Intro               props       : {[AtProp]}
@@ -465,7 +552,9 @@ TYPE MbExpr = MAYBE Expr
 
 SET AllExpr = Expr MbExpr
 
-SET AllNT = AllRExpr AllExpr AllAttrEqn AllAttrIntro AllDecl AllViewSel
+SET AllNTButViewSel = AllRExpr AllExpr AllAttrEqn AllAttrIntro AllDecl
+
+SET AllNT = AllNTButViewSel AllViewSel
 
 -------------------------------------------------------------------------
 -- Misc functions dependend on AST
@@ -480,7 +569,7 @@ jdGamFmExpr = fkGamLookup exprUnk jdExpr
 -- Unique
 -------------------------------------------------------------------------
 
-ATTR AllNT [ | uniq: Int | ]
+ATTR AllNTButViewSel [ | uniq: Int | ]
 
 SEM AGItf
   | AGItf           decls   .   uniq        =   0
@@ -526,7 +615,8 @@ SEM Decl
 -- Self
 -------------------------------------------------------------------------
 
-ATTR AllExpr [ | | self: SELF ]
+ATTR AllExpr AllViewSel [ | | self: SELF ]
+ATTR AGViewSelsItf [ | | self: ViewSels ]
 
 -------------------------------------------------------------------------
 -- Name occurrences
@@ -571,7 +661,7 @@ SEM Decl
 -- View dpd graph
 -------------------------------------------------------------------------
 
-ATTR AllDecl AllViewSel [ vwDpdGr: {DpdGr Nm} | | ]
+ATTR AGViewSelsItf AllDecl AllViewSel [ vwDpdGr: {DpdGr Nm} | | ]
 
 SEM AGItf
   | AGItf           loc     .   vwDpdGr     =   let vwOrderL = concat @decls.gathVwOrder
@@ -582,7 +672,7 @@ SEM AGItf
 -- View selection
 -------------------------------------------------------------------------
 
-ATTR AllViewSel [ | | vwSelNmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
+ATTR AGViewSelsItf AllViewSel [ | | vwSelNmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
 
 SEM ViewSel
   | View            lhs     .   vwSelNmS    =   Set.singleton @nm
@@ -757,9 +847,9 @@ SEM Decl
   | RulView ScmView loc     .   viewNm      =   @nm
 
 SEM AGItf
-  | AGItf           decls   .   ruleNm      =   Nm ""
-                            .   scmNm       =   Nm ""
-                            .   viewNm      =   Nm ""
+  | AGItf           decls   .   ruleNm      =   nmNone
+                            .   scmNm       =   nmNone
+                            .   viewNm      =   nmNone
 
 -------------------------------------------------------------------------
 -- Rules, views for rule
@@ -768,7 +858,7 @@ SEM AGItf
 ATTR AllDecl [ | | vwRlGam USE {`Map.union`} {Map.empty}: {VwRlGam Expr} ]
 
 SEM Decl
-  | RulView         lhs     .   vwRlGam     =   Map.singleton @nm (VwRlInfo @nm @pre.reGam @post.reGam emptyGam emptyGam [] emptyGam)
+  | RulView         lhs     .   vwRlGam     =   Map.singleton @nm (VwRlInfo @nm @pre.reGam @post.reGam emptyGam emptyGam [] Nothing)
 
 -------------------------------------------------------------------------
 -- Rules, individual rules for rule set
@@ -855,7 +945,12 @@ reGamExtWithNew dfltJaGam nVw scGam gamPrev g
         -> case i of
              REInfoJudge _ sn _ _ jg
                -> Map.insert n (pi {reJAGam = jg'}) gamPrev
-               where (base,pi) = maybe (dfltJaGam sn n,i) (\pi -> (reJAGam pi,pi)) (Map.lookup n gamPrev)
+               where (base,pi)
+                       = case Map.lookup n gamPrev of
+                           Just pi | reScNm pi == sn
+                             -> (reJAGam pi,pi)
+                           _ -> (dfltJG,i)
+                     dfltJG = dfltJaGam sn n
                      jg' = Map.map (\i -> let e = exprSubst defaultOpts nmfg (jaExpr i)
                                           in  i {jaExpr = e,jaNmS = exprNmS e})
                                    (jg `Map.union` base)
@@ -867,18 +962,25 @@ reGamExtWithNew dfltJaGam nVw scGam gamPrev g
   where nmFmGams = reGamExprFmGam gamPrev
 
 -- build views of a rule by extending each view along view order dependency
-rlGamUpdVws :: DpdGr Nm -> Set.Set Nm -> ScGam Expr -> RlGam Expr -> RlInfo Expr -> (RlInfo Expr,[Err])
-rlGamUpdVws vwDpdGr extNmS scGam rlGam rlInfo
+rlGamUpdVws :: Opts -> DpdGr Nm -> Set.Set Nm -> ScGam Expr -> RlGam Expr -> RlInfo Expr -> (RlInfo Expr,[Err])
+rlGamUpdVws opts vwDpdGr extNmS scGam rlGam rlInfo
   = let vwIsIncl n = n `Set.member` rlInclVwS rlInfo
+        doMarkChngForVw
+          = case optMbMarkChange opts of
+              Just vs
+                -> (`Set.member` vs')
+                where vs' = viewSelsNmS vwDpdGr vs
+              _ -> const False
         mbOnVwRlInfo = maybe Nothing (\n -> Map.lookup n rlGam) (rlMbOnNm rlInfo)
         (g,_,eg)
             = foldr
                 (\nVw (vrg,prePostGamMp,errg)
-                  -> let (preg,postg) = prevWRTDpd nVw vwDpdGr prePostGamMp (emptyGam,emptyGam)
+                  -> let (preg,postg,prevVwRlChs) = prevWRTDpd nVw vwDpdGr prePostGamMp (emptyGam,emptyGam,emptyGam)
                          (pregIncr,pregDflt) = reGamExtDflt' dfltJaGam nVw scGam preg
                          (postgIncr,postgDflt) = reGamExtDflt' dfltJaGam nVw scGam postg
-                         ext prevG newG = reGamExtWithNew dfltJaGam nVw scGam prevG newG
+                         ext newG prevG = reGamExtWithNew dfltJaGam nVw scGam prevG newG
                          vrgOfVwRlInfo = Map.lookup nVw . rlVwGam
+                         doMarkChng = doMarkChngForVw nVw
                          dfltJaGam
                            = case mbOnVwRlInfo of
                                Just i  -> \sn jn -> maybe (jaGamDflt sn nVw scGam) reJAGam . Map.lookup jn $ g
@@ -888,14 +990,14 @@ rlGamUpdVws vwDpdGr extNmS scGam rlGam rlInfo
                            = case maybe Nothing vrgOfVwRlInfo mbOnVwRlInfo of
                                Just i
                                  -> case Map.lookup nVw vrg of
-                                      Just vw -> (vw,ext preD (vwrlPreGam vw),ext postD (vwrlPostGam vw))
-                                      Nothing -> (emptyVwRlInfo {vwrlNm=nVw},ext preD emptyGam,ext postD emptyGam)
-                                 where preD  = ext pregDflt  (vwrlFullPreGam  i)
-                                       postD = ext postgDflt (vwrlFullPostGam i)
+                                      Just vw -> (vw                        ,ext (vwrlPreGam vw) preD,ext (vwrlPostGam vw) postD)
+                                      Nothing -> (emptyVwRlInfo {vwrlNm=nVw},ext emptyGam        preD,ext emptyGam         postD)
+                                 where preD  = ext (vwrlFullPreGam  i) pregDflt
+                                       postD = ext (vwrlFullPostGam i) postgDflt
                                Nothing
                                  -> case Map.lookup nVw vrg of
-                                      Just vw -> (vw,ext pregDflt (vwrlPreGam vw),ext postgDflt (vwrlPostGam vw))
-                                      Nothing -> (emptyVwRlInfo {vwrlNm=nVw},ext pregDflt emptyGam,ext postgDflt emptyGam)
+                                      Just vw -> (vw                        ,ext (vwrlPreGam vw) pregDflt,ext (vwrlPostGam vw) postgDflt)
+                                      Nothing -> (emptyVwRlInfo {vwrlNm=nVw},ext emptyGam        pregDflt,ext emptyGam         postgDflt)
                          vwRlChs
                            = let pg  = preg `Map.union` postg
                                  pg' = preg' `Map.union` postg'
@@ -904,15 +1006,18 @@ rlGamUpdVws vwDpdGr extNmS scGam rlGam rlInfo
                                  pn  = (vwrlPreGam vw `Map.union` vwrlPostGam vw) `un` pregIncr `un` postgIncr
                              in  Map.mapWithKey (\jn ji -> Map.mapWithKey (\an _ -> RlChInfo jn an) (maybe emptyGam id $ reMbJAGam ji))
                                  $ pd `Map.union` (pn `Map.difference` pd)
+                         vwRlChsWtPrev = vwRlChs `rcGamUnion` prevVwRlChs
                          vw2 = vw {vwrlFullPreGam = reGamUpdInOut nVw scGam preg'
                                   ,vwrlFullPostGam = reGamUpdInOut nVw scGam  postg'
-                                  ,vwrlChGam = vwRlChs
+                                  ,vwrlMbChGam = if doMarkChng then Just vwRlChsWtPrev else Nothing
                                   }
                          vw3 = vwrlDelEmptyJd vw2
                          vw4 = vw3 {vwrlPreScc = vwrlScc vw3}
                          vwUndefs = vwrlUndefs vw3 `Set.difference` extNmS
                      in  (if vrwlIsEmpty vw4 then Map.delete nVw vrg else Map.insert nVw vw4 vrg
-                         ,Map.insert nVw (preg',postg') prePostGamMp
+                         ,Map.insert nVw
+                                     (preg',postg',if doMarkChng then emptyGam else vwRlChsWtPrev)
+                                     prePostGamMp
                          ,if Set.null vwUndefs
                           then errg
                           else Map.insert nVw (Set.toList vwUndefs) errg
@@ -920,9 +1025,8 @@ rlGamUpdVws vwDpdGr extNmS scGam rlGam rlInfo
                 )
                 (rlVwGam rlInfo,Map.empty,emptyGam)
                 (vgTopSort vwDpdGr)
-    in  (rlInfo { rlVwGam = Map.filterWithKey (\n _ -> vwIsIncl n) g
-                }
-        ,[ Err_UndefNm (rlPos rlInfo) ("view '" ++ show n ++ "' for rule '" ++ show (rlNm rlInfo) ++ "'") "attr" nms
+    in  (rlInfo { rlVwGam = Map.filterWithKey (\n _ -> vwIsIncl n) g }
+        ,[ Err_UndefNm (rlPos rlInfo) ("view '" ++ show n ++ "' for rule '" ++ show (rlNm rlInfo) ++ "'") "identifier" nms
          | (n,nms) <- Map.toList eg, vwIsIncl n
          ]
         )
@@ -939,7 +1043,7 @@ SEM Decl
                                             =   foldr
                                                   (\rNm (rlGam,errs)
                                                     -> let (rlInfo,errs')
-                                                             = rlGamUpdVws @lhs.vwDpdGr @lhs.extNmS @lhs.scGam rlGam (maybe (panic "(rlGam,errUndefs)") id . Map.lookup rNm $ rlGam)
+                                                             = rlGamUpdVws @lhs.opts @lhs.vwDpdGr @lhs.extNmS @lhs.scGam rlGam (maybe (panic "(rlGam,errUndefs)") id . Map.lookup rNm $ rlGam)
                                                        in  (Map.insert rNm rlInfo rlGam,errs' ++ errs)
                                                   )
                                                   (@decls.rlGam,[])
@@ -1138,6 +1242,30 @@ exprMatch e1 e2
 }
 
 -------------------------------------------------------------------------
+-- Wrapping context (stack)
+-------------------------------------------------------------------------
+
+ATTR AllExpr [ wrKindStk: {[WrKind]} | | ]
+
+SEM Expr
+  | Wrap            expr    .   wrKindStk   =   @wrKind : @lhs.wrKindStk
+
+SEM AGExprItf
+  | AGItf           expr    .   wrKindStk   =   [WrNone]
+
+SEM Decl
+  | Fmt             loc     .   wrKindStk   =   [WrNone]
+
+SEM RExprEqn
+  | Expr            loc     .   wrKindStk   =   [WrNone]
+
+SEM AttrEqn
+  | Eqn             loc     .   wrKindStk   =   [WrNone]
+
+SEM Decl
+  | Fmt FmtJudge    expr    .   wrKindStk   =   [WrNone]
+
+-------------------------------------------------------------------------
 -- Pretty printing
 -------------------------------------------------------------------------
 
@@ -1164,6 +1292,9 @@ SEM ViewSel
   | All             lhs     .   pp          =   pp "*"
   | View            lhs     .   pp          =   pp @nm
   | Range           lhs     .   pp          =   @vwFr.pp >#< ".." >#< @vwTo.pp
+
+SEM ViewSels
+  | Cons            lhs     .   pp          =   @hd.pp >|< "," >#< @tl.pp
 
 SEM RExpr
   | Judge           lhs     .   pp          =   "judge" >#< maybe empty (\n -> pp n >#< "=") @mbRNm >#< pp @schemeNm >#< @eqns.pp
@@ -1203,10 +1334,9 @@ SEM Expr
                     loc     .   ppLaTeX     =   if @expr.isEmpty then empty else @ppLaTeXSel
   | Var             loc     .   ppLaTeX     =   ppNmLaTeX . nmLhs2TeXSafe $ @nm
   | Wrap            loc     .   ppLaTeX     =   let wr o c e = switchLaTeXLhs (mkTexCmdUse (show o) empty) >#< e >#< switchLaTeXLhs (mkTexCmdUse (show c) empty)
-                                                in  case @wrKind of
-                                                      WrIsChanged -> wr nmCmdBegChng nmCmdEndChng @expr.ppLaTeX
-                                                      WrIsSame    -> wr nmCmdBegSame nmCmdEndSame @expr.ppLaTeX
-                                                      _           -> @expr.ppLaTeX
+                                                in  case Map.lookup @wrKind wrKindGam of
+                                                      Just i -> wr (wkBegCmd i) (wkEndCmd i) @expr.ppLaTeX
+                                                      _      -> @expr.ppLaTeX
   | Empty           loc     .   ppLaTeX     =   empty
 
 -------------------------------------------------------------------------
@@ -1234,7 +1364,7 @@ data Gen
       , genNmUse    :: Nm -> PP_Doc
       , genRl       :: (Nm,Nm,Nm,Nm,Nm,Nm) -> [PP_Doc] -> [PP_Doc] -> PP_Doc
       , genRs       :: (Nm,Nm) -> RsInfo Expr -> PP_Doc -> [Nm] -> [PP_Doc] -> PP_Doc
-      , genJdExpr   :: ScInfo Expr -> VwScInfo Expr -> Bool -> (Nm -> Bool) -> Opts -> AtUsInfo -> FmGam Expr -> FmGam Expr -> FmGam Expr -> RwExprGam -> Expr -> PP_Doc
+      , genJdExpr   :: ScInfo Expr -> VwScInfo Expr -> Bool -> (Nm -> Maybe Bool) -> Opts -> AtUsInfo -> FmGam Expr -> FmGam Expr -> FmGam Expr -> RwExprGam -> Expr -> PP_Doc
       , genJdWrap   :: PP_Doc -> PP_Doc
       }
 
@@ -1275,23 +1405,18 @@ genTeX
       , genJdExpr   = \scInfo vwScInfo isPre atIsChanged opts atUsInfo atUseFmGam jaFmGam fmGam rwGam e ->
           let mkChng
                 = case optMbMarkChange opts of
-                    Just _  -> \nAt -> Expr_Wrap (if atIsChanged nAt then WrIsChanged else WrIsSame)
+                    Just _  -> \nAt -> case atIsChanged nAt of
+                                         Just isCh -> Expr_Wrap (if isCh then WrIsChanged else WrIsSame)
+                                         Nothing   -> id
                     Nothing -> \_   -> id
-              jaFmGam' = fmGamMap mkChng jaFmGam
-          in  exprFmtTeXSubst opts ( fmGam) . exprSubst (opts {optSubstFullNm = True}) jaFmGam' $ e
+              (jaFmGam',wrFullJd)
+                = if null chs    then (jaFmGam,id)
+                  else if or chs then (fmGamMap mkChng jaFmGam,id)
+                                 else (jaFmGam,Expr_Wrap WrIsSame)
+                where chs = catMaybes . map atIsChanged . Map.keys $ jaFmGam
+          in  exprFmtTeXSubst opts ( fmGam) . wrFullJd . exprSubst (opts {optSubstFullNm = True}) jaFmGam' $ e
       , genJdWrap   = switchLaTeXLhs
       }
-
-{-
-      , genJdExpr   = \scInfo vwScInfo isPre atIsChanged opts atUsInfo atUseFmGam jaFmGam fmGam rwGam e ->
-          let mkChng
-                = case optMbMarkChange opts of
-                    Just _  -> \nAt -> if atIsChanged nAt then mk nmMkBegChng nmMkEndChng else mk nmMkBegSame nmMkEndSame
-                    Nothing -> \_   -> id
-                where mk o c e = Expr_AppTop (Expr_App (Expr_App (Expr_Var o) e) (Expr_Var c))
-              jaFmGam' = fmGamMap mkChng jaFmGam
-          in  exprFmtTeXSubst opts ( fmGam) . exprSubst (opts {optSubstFullNm = True}) jaFmGam' $ e
--}
 
 genAG
   = genDflt
@@ -1338,7 +1463,7 @@ genGam = Map.fromList [ (FmTeX,genTeX), (FmAG,genAG) ]
 -------------------------------------------------------------------------
 
 {
-jdGen :: Gen -> AtUsInfo -> FmGam Expr -> Bool -> (Nm -> Bool) -> Nm -> Nm -> REInfo Expr -> PP_Doc
+jdGen :: Gen -> AtUsInfo -> FmGam Expr -> Bool -> (Nm -> Maybe Bool) -> Nm -> Nm -> REInfo Expr -> PP_Doc
 jdGen gen atUsInfo atUseFmGam isPre atIsChanged nSc nVw reInfo
   = genJdWrap gen ePP
   where (Just (scInfo,vwScInfo)) = scVwGamLookup nSc nVw (genScGam gen)
@@ -1346,7 +1471,7 @@ jdGen gen atUsInfo atUseFmGam isPre atIsChanged nSc nVw reInfo
         scVwExpr = jdGamFmExpr (optGenFM . genOpts $ gen) . vwscJdGam $ vwScInfo
         ePP = genJdExpr gen scInfo vwScInfo isPre atIsChanged (genOpts gen) atUsInfo atUseFmGam fg (genFmGam gen) (genRwGam gen) scVwExpr
 
-jdsGen :: Gen -> AtUsGam -> FmGam Expr -> Bool -> (Nm -> Nm -> Bool) -> Nm -> [Nm] -> REGam Expr -> [PP_Doc]
+jdsGen :: Gen -> AtUsGam -> FmGam Expr -> Bool -> (Nm -> Nm -> Maybe Bool) -> Nm -> [Nm] -> REGam Expr -> [PP_Doc]
 jdsGen gen atUsGam atUseFmGam isPre atIsChanged nVw order g
   = map (\nJd
             -> let reInfo = maybe (panic "jdsGen1") id (Map.lookup nJd g)
@@ -1362,7 +1487,10 @@ rlGen gen (nSc,nScAG,nRl',nRlAG,mkFullNm) rlInfo
         ->  let nRlFull = mkFullNm nVw
                 (atUsGam,fmNd) = rlAtUsage (genOpts gen) (genScGam gen) (genFmGam gen) vwRlInfo
                 atUseFmGam = Map.unions [ g | (_,_,as) <- Map.elems atUsGam, (_,(_,g)) <- as ]
-                atIsChanged j a = maybe False (const True) $ dblGamLookup id j a (vwrlChGam vwRlInfo)
+                atIsChanged
+                  = case vwrlMbChGam vwRlInfo of
+                      Just g  -> \j a -> maybe (Just False) (const (Just True)) $ dblGamLookup id j a g
+                      Nothing -> \_ _ -> Nothing
                 mkJd isPre g order     = jdsGen gen atUsGam (atUseFmGam `fmGamUnion` fmNd) isPre atIsChanged nVw order $ g
                 prePPL    = mkJd True (vwrlFullPreGam vwRlInfo) (concat . vwrlPreScc $ vwRlInfo)
                 postPPL  = mkJd False (vwrlFullPostGam vwRlInfo) (Map.keys . vwrlFullPostGam $ vwRlInfo)
@@ -1462,7 +1590,7 @@ vwRlLtxGen gen nSc vwRlLtxGam rsInfo
                 nScMeta = nVwFull `nmApd` Nm "scheme"
                 (Just (scInfo,vwScInfo)) = scVwGamLookup nSc nVw (genScGam gen)
                 eScmPP
-                  = genJdExpr gen scInfo vwScInfo True (const True) (genOpts gen) emptyAtUsInfo emptyGam emptyGam (genFmGam gen) emptyGam
+                  = genJdExpr gen scInfo vwScInfo True (const Nothing) (genOpts gen) emptyAtUsInfo emptyGam emptyGam (genFmGam gen) emptyGam
                     . jdGamFmExpr (optGenFM . genOpts $ gen)
                     . vwscJdGam
                     $ vwScInfo
@@ -1543,12 +1671,12 @@ SEM MbExpr
 -- Just the text of a name
 -------------------------------------------------------------------------
 
-ATTR Expr [ | | txt USE {`const`} {Nm ""}: Nm ]
+ATTR Expr [ | | txt USE {`const`} {nmNone}: Nm ]
 
 SEM Expr
   | Var             lhs     .   txt         =   @nm
   | StrText StrAsIs lhs     .   txt         =   Nm @str
-  | App SelTop Op   lhs     .   txt         =   Nm ""
+  | App SelTop Op   lhs     .   txt         =   nmNone
 
 -------------------------------------------------------------------------
 -- Selections info
