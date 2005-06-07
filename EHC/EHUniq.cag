@@ -167,6 +167,7 @@ SEM TyExpr
 
 SEM PrExpr
   | Class           (tyExprs.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3) =   mkNewLevUID3    @lhs.gUniq
+  | Forall          (prExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
 
 SEM Decl
   | Class           (tyPrExpr.gUniq,loc.lUniq,loc.lUniq2)           =   mkNewLevUID2    @lhs.gUniq

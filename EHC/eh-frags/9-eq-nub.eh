@@ -11,5 +11,7 @@ let  data List a  = Nil | Cons a (List a)
                            Cons x xs  -> Cons x (nub (filter (ne x) xs))
      eqMod2 :: Int -> Int -> Bool
      eqMod2 = \x y -> eq (mod x 2) (mod y 2)
-in   nub  (! (dEqInt | eq := eqMod2) <: Eq Int !)                                   -- (2)
+in   nub  (!  ( eq =  eqMod2                                                        -- (2)
+              , ne =  \x y -> not (eqMod2 x y)
+              )  <: Eq Int  !)
           (Cons 3 (Cons 3 (Cons 4 Nil)))

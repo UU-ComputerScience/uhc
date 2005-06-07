@@ -672,7 +672,8 @@ pPrExprClass    =    sem_PrExpr_Class  <$> pCon <*> pTyExprs
 
 %%[9
 pPrExprPrefix   ::   EHParser (T_PrExpr -> T_PrExpr)
-pPrExprPrefix   =    sem_PrExpr_Arrow <$> pPrExprBase <* pKeyw hsnPrArrow
+pPrExprPrefix   =    sem_PrExpr_Arrow  <$> pPrExprBase <* pKeyw hsnPrArrow
+                <|>  sem_PrExpr_Forall <$  pKey "forall" <*> pVar <* pKey "."
 %%]
 
 %%[9
