@@ -63,7 +63,7 @@
 
 % Env for rules in a figure
 \newenvironment{RulesFigureB}[3]{%
-  \begin{TabularFigure}{#2}{#3}{p{0.95\textwidth}}
+  \begin{TabularFigure}{#2}{#3}{p{0.95\linewidth}}
 %  \linespread{1.5}\selectfont
   \begin{center}
   \fbox{#1}
@@ -147,7 +147,7 @@
 \newcommand{\RuleRef}[1]{Rule~\textsc{#1}}
 \newcommand{\rulerChngBegMark}{\color{blue}}
 \newcommand{\rulerChngEndMark}{\color{black}}
-\newcommand{\rulerSameBegMark}{\color{lightgray}}
+\newcommand{\rulerSameBegMark}{\color{gray!75}}
 \newcommand{\rulerSameEndMark}{\color{black}}
 
 

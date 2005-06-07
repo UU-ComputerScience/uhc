@@ -373,6 +373,8 @@ DATA PrExpr
                     tyExprs         : TyExprs
   | Arrow           arg             : PrExpr
                     res             : PrExpr
+  | Forall          tyVar           : {HsName}
+                    prExpr          : PrExpr
 
 TYPE PrExprs        = [PrExpr]
 %%]

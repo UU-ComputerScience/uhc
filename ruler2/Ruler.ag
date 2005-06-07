@@ -223,7 +223,7 @@ pAllParsers
         pAGItf              =   sem_AGItf_AGItf <$> pDecls' pDeclGlob
         pDecls'  pD         =   pFoldr  (sem_Decls_Cons,sem_Decls_Nil) pD
         pDecls1' pD         =   pFoldr1 (sem_Decls_Cons,sem_Decls_Nil) pD
-        pDeclRule           =   sem_Decl_Rule          <$> pKeySPos "rule"      <*> pNm <*> pMb (pKey ":" *> pNm) <*> pMbViewSel <*> pMbString
+        pDeclRule           =   sem_Decl_Rule          <$> pKeySPos "rule"      <*> (pNm <|> Nm <$> pString) <*> pMb (pKey ":" *> pNm) <*> pMbViewSel <*> pMbString
                                                        <*  pKey "="             <*> (pDeclRuleDflt <|> pDecls1' pDeclRulView)
         pDeclRuleDflt       =   (\(pre,post) -> sem_Decls_Cons (sem_Decl_RulView nmNone pre post) sem_Decls_Nil)
                                                        <$> pRExprsPrePost

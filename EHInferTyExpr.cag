@@ -25,6 +25,15 @@ SEM TyExpr
 %%% Ty var gathering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[4 hs
+tvGathFlow :: TyGam -> TyGam -> TyGam -> (TyGam,TyGam)
+tvGathFlow newG lhsG insideG
+  = (insideG',lhsG')
+  where  insideG'  = gamPushNew (lhsG `gamPushGam` newG)
+         (l,g)     = gamPop insideG
+         lhsG'     = lhsG `gamAddGam` l 
+%%]
+
 %%[2.tyVarGather
 SEM TyExpr
   | Wild        loc         .   tyVarId             =   @lUniq
@@ -45,10 +54,11 @@ SEM TyExpr
 SEM TyExpr
   | Quant       loc         .   (tv,tgi)            =   let  t = mkTyVar @lUniq
                                                         in   (@lUniq,TyGamInfo t)
+                (tyExpr.tyGam,lhs.tyGam)            =   tvGathFlow (@tyVar `gamUnit` @tgi) @lhs.tyGam @tyExpr.tyGam
+%%]
                 tyExpr      .   tyGam               =   gamPushNew (@lhs.tyGam `gamPushGam` (@tyVar `gamUnit` @tgi))
                 lhs         .   tyGam               =   let  (l,g) = gamPop @tyExpr.tyGam
                                                         in   @lhs.tyGam `gamAddGam` l 
-%%]
 
 %%[5.tyVarGather
 ATTR AllTyVar [ | tyGam: TyGam | ]
@@ -60,6 +70,13 @@ SEM TyVar
                                                                          in   (tgi,gamAdd @lhs.tyGam @nm tgi)
                                                           Just tgi   ->  (tgi,@lhs.tyGam)
                 loc         .   tv                  =   tyVar . tgiTy $ @tgi
+%%]
+
+%%[9.tyVarGather
+SEM PrExpr
+  | Forall      loc         .   (tv,tgi)            =   let  t = mkTyVar @lUniq
+                                                        in   (@lUniq,mkTGI t t)
+                (prExpr.tyGam,lhs.tyGam)            =   tvGathFlow (@tyVar `gamUnit` @tgi) @lhs.tyGam @prExpr.tyGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -112,7 +129,7 @@ SEM TyExpr
                                                           Nothing    ->  (mkTGI Ty_Any kiStar,[Err_NamesNotIntrod [@nm]])
                                                           Just tgi   ->  (@lhs.kiCnstr |=> tgi,[])
                 loc         .   ki                  =   tgiKi @tgi
-  | Quant       loc         .   (tv,tgi)            :=  let  t = Ty_Var @lUniq TyVarCateg_Plain
+  | Quant       loc         .   (tv,tgi)            :=  let  t = mkTyVar @lUniq
                                                         in   (@lUniq,mkTGI t t)
   | App         loc         .   knFunKi             =   [@arg.ki] `mkArrow` mkNewTyVar @lUniq
                             .   fo                  =   fitsIn weakFIOpts emptyFE @lUniq2 (@arg.kiCnstr |=> @func.ki) @knFunKi
@@ -261,7 +278,8 @@ ATTR PrExpr [ | | pr: Pred ]
 
 SEM PrExpr
   | Class       loc         .   pr                  =   Pred_Class (@nm `mkConApp` @tyExprs.tyL)
-  | Arrow       loc         .   pr                  =   Pred_Pred @prTy
+  | Arrow Forall
+                loc         .   pr                  =   Pred_Pred @prTy
 %%]
 
 %%[9
@@ -269,7 +287,9 @@ ATTR PrExpr [ | | prTy: Ty ]
 
 SEM PrExpr
   | Arrow       loc         .   prTy                =   [@arg.prTy] `mkArrow` @res.prTy
-  | * - Arrow   loc         .   prTy                =   @ty
+  | Forall      loc         .   prTy                =   mkTyQu TyQu_Forall [@tv] @prExpr.prTy
+  | * - Arrow Forall
+                loc         .   prTy                =   @ty
 %%]
 
 %%[10

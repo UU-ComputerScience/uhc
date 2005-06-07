@@ -572,6 +572,15 @@ icfp05-explimpl-tst:
 icfp05-explimpl:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=icfp05 --set=asDraft --set=omitTBD --set=omitLitDiscuss" afp-bib
 
+hw05-explimpl-tst:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=hw05 --set=withChangeBar --set=omitTBD --set=omitLitDiscuss" afp
+
+hw05-explimpl-final:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=hw05 --set=omitTBD --set=omitLitDiscuss" afp-bib
+
+hw05-explimpl:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=hw05 --set=withChangeBar --set=omitTBD --set=omitLitDiscuss" afp-bib
+
 icfp05-explimpl-final:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=icfp05 --set=omitTBD --set=omitLitDiscuss" afp-bib
 
@@ -588,7 +597,7 @@ esop05-tr:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=truu --set=storyExplImpl --set=omitTBD --set=omitLitDiscuss" afp-bib
 
 eh-work:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= AFP_RULES2_RULER_OPTS="--markchanges='I1 - *'" LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=onlyCurrentWork --unset=asArticle --set=refToPDF --set=inclOmitted" afp
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= AFP_RULES2_RULER_OPTS="--markchanges='*'" LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=onlyCurrentWork --unset=asArticle --set=refToPDF --set=inclOmitted" afp
 
 phd:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=storyPHD --unset=asArticle --set=refToPDF --set=inclOmitted" afp

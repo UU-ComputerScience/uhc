@@ -201,6 +201,7 @@ SEM TyExpr
 SEM PrExpr
   | Class       loc     .   pp      =   ppSpaced (pp @nm : @tyExprs.ppL)
   | Arrow       loc     .   pp      =   @arg.pp >#< hsnPrArrow >#< @res.pp
+  | Forall      loc     .   pp      =   "forall" >#< @tyVar >#< "." >#< @prExpr.pp
 
 SEM PrExprs
   | Nil         lhs     .   ppL     =   []
