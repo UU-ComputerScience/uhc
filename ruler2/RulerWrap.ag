@@ -1,0 +1,140 @@
+-- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
+
+-------------------------------------------------------------------------
+-- Interfacing to top level
+-------------------------------------------------------------------------
+
+WRAPPER AGItf 
+
+-------------------------------------------------------------------------
+-- Interfacing to ViewSel
+-------------------------------------------------------------------------
+
+WRAPPER AGViewSelsItf
+
+{
+wrapViewSels :: DpdGr Nm -> ViewSels -> Syn_AGViewSelsItf
+wrapViewSels vwDpdGr vs
+  = let r1 = sem_AGViewSelsItf (AGViewSelsItf_AGItf vs)
+    in  wrap_AGViewSelsItf r1
+            (Inh_AGViewSelsItf {vwDpdGr_Inh_AGViewSelsItf = vwDpdGr
+                               })
+
+wrapViewSels' :: DpdGr Nm -> T_ViewSels -> Syn_AGViewSelsItf
+wrapViewSels' vwDpdGr vs
+  = let r1 = sem_AGViewSelsItf_AGItf vs
+    in  wrap_AGViewSelsItf r1
+            (Inh_AGViewSelsItf {vwDpdGr_Inh_AGViewSelsItf = vwDpdGr
+                               })
+
+viewSelsNmS :: DpdGr Nm -> ViewSels -> Set.Set Nm
+viewSelsNmS vwDpdGr vs
+  = vwSelNmS_Syn_AGViewSelsItf r
+  where r = wrapViewSels vwDpdGr vs
+
+viewSelsNmS' :: DpdGr Nm -> T_ViewSels -> Set.Set Nm
+viewSelsNmS' vwDpdGr vs
+  = vwSelNmS_Syn_AGViewSelsItf r
+  where r = wrapViewSels' vwDpdGr vs
+
+viewSelsSelf' :: T_ViewSels -> ViewSels
+viewSelsSelf' vs
+  = self_Syn_AGViewSelsItf r
+  where r = wrapViewSels' emptyVwDpdGr vs
+}
+
+-------------------------------------------------------------------------
+-- Interfacing to ARule
+-------------------------------------------------------------------------
+
+WRAPPER AGARuleItf
+
+{
+wrapARule' :: Opts -> ARule -> Syn_AGARuleItf
+wrapARule' o rl
+  = let r1 = sem_AGARuleItf (AGARuleItf_AGItf rl)
+    in  wrap_AGARuleItf r1
+            (Inh_AGARuleItf {opts_Inh_AGARuleItf = o
+                            })
+
+ppARule :: ARule -> PP_Doc
+ppARule = pp_Syn_AGARuleItf . wrapARule' defaultOpts
+}
+
+-------------------------------------------------------------------------
+-- Interfacing to Expr
+-------------------------------------------------------------------------
+
+WRAPPER AGExprItf
+
+{
+wrapExpr' :: Opts -> FmGam Expr -> RwExprGam -> Expr -> Syn_AGExprItf
+wrapExpr' o fmg rwg e
+  = let r1 = sem_AGExprItf (AGExprItf_AGItf e)
+    in  wrap_AGExprItf r1
+            (Inh_AGExprItf {opts_Inh_AGExprItf = o, fmGam_Inh_AGExprItf = fmg, rwGam_Inh_AGExprItf = rwg
+                           })
+
+exprNmS :: Expr -> Set.Set Nm
+exprNmS = nmS_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam
+
+exprFmtTeX :: Opts -> Expr -> PP_Doc
+exprFmtTeX o = ppLaTeX_Syn_AGExprItf . wrapExpr' o emptyGam emptyGam
+
+ppExpr :: Expr -> PP_Doc
+ppExpr = pp_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam
+
+exprSubst :: Opts -> FmGam Expr -> Expr -> Expr
+exprSubst o fmg = repl_Syn_AGExprItf . wrapExpr' o fmg emptyGam
+
+exprRewrite :: Opts -> FmGam Expr -> RwExprGam -> Expr -> Expr
+exprRewrite o fmg rwg = repl_Syn_AGExprItf . wrapExpr' o fmg rwg
+
+exprRewrite' :: Opts -> FmGam Expr -> RwExprGam -> Expr -> (Expr,FmGam Expr)
+exprRewrite' o fmg rwg e
+  = (repl_Syn_AGExprItf r,rwMtGam_Syn_AGExprItf r)
+  where r = wrapExpr' o fmg rwg e
+
+exprIsRw :: Expr -> ExprIsRw
+exprIsRw = exprIsRw_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam
+
+exprNmGam :: Expr -> FmGam Expr
+exprNmGam = reGamExprFmGam_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam
+
+exprFmtTeXSubst :: Opts -> FmGam Expr -> Expr -> PP_Doc
+exprFmtTeXSubst o fmg = exprFmtTeX o . exprSubst o fmg
+
+exprMbNm :: Expr -> Maybe Nm
+exprMbNm (Expr_Var n) = Just n
+exprMbNm _            = Nothing
+
+exprAsNm :: Expr -> Nm
+exprAsNm = maybe nmUnk id . exprMbNm
+
+exprUnk :: Expr
+exprUnk = Expr_Var nmUnk
+
+nmSubst :: Opts -> FmGam Expr -> Nm -> Nm
+nmSubst o g = exprAsNm . exprSubst o g . Expr_Var
+
+instance Show Expr where
+  show _ = "Expr"
+
+instance PP Expr where
+  pp = ppExpr
+}
+
+-------------------------------------------------------------------------
+-- Construction
+-------------------------------------------------------------------------
+
+{
+mkALoc :: Nm -> Expr
+mkALoc n = Expr_AVar (ANm_Loc n)
+
+mkALhs :: Nm -> Expr
+mkALhs n = Expr_AVar (ANm_Lhs n)
+
+mkANd :: Nm -> Nm -> Expr
+mkANd n a = Expr_AVar (ANm_Node n a)
+}

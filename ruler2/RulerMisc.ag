@@ -1,0 +1,46 @@
+-- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
+
+-------------------------------------------------------------------------
+-- Global info
+-------------------------------------------------------------------------
+
+ATTR AllNTButViewSel AGItf AGExprItf AGARuleItf [ opts: {Opts} | | ]
+
+-------------------------------------------------------------------------
+-- Unique
+-------------------------------------------------------------------------
+
+ATTR AllNTButViewSel [ | uniq: Int | ]
+
+SEM AGItf
+  | AGItf           decls   .   uniq        =   0
+
+SEM AGExprItf
+  | AGItf           expr    .   uniq        =   0
+
+SEM AGARuleItf
+  | AGItf           rule    .   uniq        =   0
+
+SEM RExpr
+  | Judge           (eqns.uniq,loc.lUniq)   =   (@lhs.uniq+1,@lhs.uniq)
+
+-------------------------------------------------------------------------
+-- Self
+-------------------------------------------------------------------------
+
+ATTR AllExpr AllViewSel AllARule [ | | self: SELF ]
+ATTR AGViewSelsItf [ | | self: ViewSels ]
+
+-------------------------------------------------------------------------
+-- Rule seq nr
+-------------------------------------------------------------------------
+
+ATTR AllDecl [ | rlSeqNr: Int | ]
+
+SEM Decl
+  | Rules           decls   .   rlSeqNr     =   1
+  | Rule            lhs     .   rlSeqNr     =   @lhs.rlSeqNr + 1
+
+SEM AGItf
+  | AGItf           decls   .   rlSeqNr     =   1
+

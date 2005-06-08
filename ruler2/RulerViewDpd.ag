@@ -1,0 +1,32 @@
+-- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
+
+-------------------------------------------------------------------------
+-- All used views
+-------------------------------------------------------------------------
+
+ATTR AllDecl [ | | allVwNmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
+
+SEM Decl
+  | RulView ScmView
+                    lhs     .   allVwNmS    =   Set.singleton @nm
+
+-------------------------------------------------------------------------
+-- View order
+-------------------------------------------------------------------------
+
+ATTR AllDecl [ | | gathVwOrder USE {++} {[]}: {[[[Nm]]]} ]
+
+SEM Decl
+  | ViewHierarchy   lhs     .   gathVwOrder =   [@nmOrder]
+
+-------------------------------------------------------------------------
+-- View dpd graph
+-------------------------------------------------------------------------
+
+ATTR AGViewSelsItf AllDecl AllViewSel [ vwDpdGr: {DpdGr Nm} | | ]
+
+SEM AGItf
+  | AGItf           loc     .   vwDpdGr     =   let vwOrderL = concat @decls.gathVwOrder
+                                                    missing = @decls.allVwNmS `Set.difference` Set.fromList (concat vwOrderL)
+                                                in  mkVwDpdGr (vwOrderL ++ [ [v] | v <- Set.toList missing ])
+
