@@ -53,58 +53,58 @@ rulesgroup expr.subset scheme expr "Subset of Expr type rules" =
 rules expr.base scheme expr "Expr type rules" =
   rule e.var "Var" =
     view E =
-      judge G = bindIdTy = identv :-> ty `elem` valGam
+      judge G : bindIdTy = identv :-> ty `elem` valGam
       -
-      judge R = expr = valGam :- identv : ty
+      judge R : expr = valGam :- identv : ty
 
     view K =
-      judge G = bindIdTy
+      judge G : bindIdTy
           | ty = ty.identv
-      judge F = fit
+      judge F : fit
           | lty = (ltyPrev= ty.identv)
           | rty = ty.inh
       -
-      judge R = expr
+      judge R : expr
           | ty.syn = ty
 
     view 2 =
-      judge F = fit
+      judge F : fit
           | lty = tyCnstr.inh ltyPrev
           | rty = tyCnstr.inh ty.inh
           | cnstr = tyCnstr
       -
-      judge R = expr
+      judge R : expr
           | tyCnstr.syn = tyCnstr tyCnstr.inh
 
   rule e.app viewsel K - 1 "App" =
     view E =
-      judge F = expr = valGam :- eFun : (tyFun= ty.a -> ty)
-      judge A = expr = valGam :- eArg : ty.a
+      judge F : expr = valGam :- eFun : (tyFun= ty.a -> ty)
+      judge A : expr = valGam :- eArg : ty.a
       -
-      judge R = expr = valGam :- (eFun ^^ eArg) : ty
+      judge R : expr = valGam :- (eFun ^^ eArg) : ty
 
     view K =
-      judge F = expr
+      judge F : expr
           | ty.inh = _ -> ty.inh
           | ty.syn = tyFun
-      judge A = expr
+      judge A : expr
           | ty.inh = ty.a
           | ty.syn = _
       -
-      judge R = expr
+      judge R : expr
           | ty.syn = ty
 
     view 2 =
-      judge V = fresh
-      judge F = expr
+      judge V : fresh
+      judge F : expr
           | ty.inh = tvarv -> ty.inh
           | tyCnstr.inh = tyCnstr.inh
           | tyCnstr.syn = tyCnstr.fun
-      judge A = expr
+      judge A : expr
           | tyCnstr.inh = tyCnstr.fun
           | tyCnstr.syn = tyCnstr.arg
       -
-      judge R = expr
+      judge R : expr
           | ty.syn = tyCnstr.arg ty
           | tyCnstr.syn = tyCnstr.arg
 

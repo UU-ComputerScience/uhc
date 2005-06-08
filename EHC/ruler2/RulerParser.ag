@@ -1,0 +1,178 @@
+-- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
+
+-------------------------------------------------------------------------
+-- Scanning
+-------------------------------------------------------------------------
+
+{
+specialChars  =  "().`"
+opChars       =  "!#$%&*+/<=>?@\\^|-:;,[]{}~"
+
+propsMp
+  =  Map.fromList [ ("thread",AtThread), ("updown",AtUpdown) ]
+keywordsTextProps
+  =  Map.keys propsMp
+keywordsTextEscapable
+  =  keywordsTextProps
+     ++ [ "judge", "relation", "rule", "rules", "scheme", "view", "attr", "viewsel", "rulesgroup"
+        -- related to global info
+        , "viewhierarchy", "format", "preamble", "extern"
+        -- related to formatting (styles)
+        , "tex", "ag", "in", "out", "spec"
+        -- related to attributes (flags)
+        , "node"
+        ]
+keywordsText
+  =  [ "text"
+     ] ++ keywordsTextEscapable
+keywordsOpsEsc
+  =  [ ",", ":", "[", "]", "*" ]
+keywordsOpsParenEsc
+  =  [ "=", "-", "|", "." ]
+keywordsOps
+  =  keywordsOpsParenEsc ++ keywordsOpsEsc
+
+{-
+scanHandle :: [String] -> [String] -> String -> String -> FilePath -> Handle -> IO [Token]
+scanHandle keywordstxt keywordsops specchars opchars fn fh
+  = do  {  txt <- hGetContents fh
+        ;  return (scan keywordstxt keywordsops specchars opchars (initPos fn) txt) 
+        }
+-}
+
+mkScan :: FilePath -> String -> [Token]
+mkScan fn txt = scan keywordsText keywordsOps specialChars opChars (initPos fn) txt
+
+mkHScan :: FilePath -> Handle -> IO [Token]
+mkHScan fn fh
+  = do  {  txt <- hGetContents fh
+        ;  return (mkScan fn txt) 
+        }
+
+}
+
+-------------------------------------------------------------------------
+-- Parser
+-------------------------------------------------------------------------
+
+{
+type MkConAppAlg t = (String -> t,t -> t -> t,t -> t)
+
+mkApp :: MkConAppAlg t -> [t] -> t
+mkApp (_,app,top) ts
+  = case ts of
+      [t]  -> t
+      _    -> top t
+  where t = foldl1 app ts
+
+pAllParsers :: (IsParser p Token) => (p T_AGItf,p T_ViewSels)
+pAllParsers
+  = let alg                 =   (undefined,sem_Expr_App,sem_Expr_AppTop)
+        pAGItf              =   sem_AGItf_AGItf <$> pDecls' pDeclGlob
+        pDecls'  pD         =   pFoldr  (sem_Decls_Cons,sem_Decls_Nil) pD
+        pDecls1' pD         =   pFoldr1 (sem_Decls_Cons,sem_Decls_Nil) pD
+        pDeclRule           =   sem_Decl_Rule          <$> pKeySPos "rule"      <*> (pNm <|> Nm <$> pString)
+                                                       <*> pMb (pKey ":" *> pNm)
+                                                       <*> pMbViewSel
+                                                       <*> pMbString
+                                                       <*  pKey "="             <*> (pDeclRuleDflt <|> pDecls1' pDeclRulView)
+        pDeclRuleDflt       =   (\(pre,post) -> sem_Decls_Cons (sem_Decl_RulView nmNone pre post) sem_Decls_Nil)
+                                                       <$> pRExprsPrePost
+        pDeclRulView        =   (\v (pre,post) -> sem_Decl_RulView v pre post)
+                                                       <$  pKey "view"          <*> pNmVw
+                                                       <*  pKey "="             <*> pRExprsPrePost
+        pRExprsPrePost      =   (,) <$> pRExprs <* pKey "-" <*> pRExprs
+        pDeclScm            =   sem_Decl_ScmView       <$  pKey "view"          <*> pNmVw
+                                                       <*  pKey "="             <*> pDeclsScmView
+        pDeclScmDflt        =   (\v -> sem_Decls_Cons (sem_Decl_ScmView nmNone v) sem_Decls_Nil)
+                                                       <$> pDeclsScmView
+        pDeclScmView        =   sem_Decl_FmtJudge      <$> pKeySPos "judge"     <*> pFmKd3WithDflt <*> pExpr
+                            <|> sem_Decl_Attr          <$  pKey "attr"
+                                                       <*  pKey "["             <*> pAttrIntros
+                                                       <*  pKey "|"             <*> pAttrIntros
+                                                       <*  pKey "|"             <*> pAttrIntros
+                                                       <*  pKey "]"
+        pDeclsScmView       =   pDecls1' pDeclScmView
+        pDeclGlob           =   sem_Decl_Scheme        <$> (ScJudge <$ pKey "scheme" <|> ScRelation <$ pKey "relation")
+                                                       <*> pNm <*> pMbString
+                                                       <*  pKey "="             <*> (pDeclScmDflt <|> pDecls1' pDeclScm)
+                            <|> sem_Decl_Fmt           <$  pKey "format"
+                                                       <*> pFmKd2WithDflt
+                                                       <*> pAtIO
+                                                       <*> pExpr
+                                                       <*  pKey "="             <*> pExpr
+                            <|> sem_Decl_Rules         <$  pKey "rules"         <*> pNm
+                                                       <*  pKey "scheme"        <*> pNm   <*> pString
+                                                       <*  pKey "=" <*> pDecls' pDeclRule
+                            <|> sem_Decl_RulesGroup    <$  pKey "rulesgroup"    <*> pNm            <* pKey "scheme"    <*> pNm   <*> pString
+                                                       <*  pKey "="             <*> pList1 ((,) <$ pKey "rule" <*> pNm <*> pNm)
+                            <|> sem_Decl_ViewHierarchy <$  pKey "viewhierarchy"
+                                                       <*  pKey "="             <*> pList1Sep pComma (pList1 pNmVw)
+                            <|> sem_Decl_Preamble      <$  pKey "preamble"      <*> pFmKd2WithDflt <*> pString
+                            <|> sem_Decl_Extern        <$  pKey "extern"        <*> pList1 pNm
+        pMbViewSel          =   pMb' id sem_ViewSel_All (pKey "viewsel" *> pViewSel)
+        pViewSel            =   pV <??> ((flip sem_ViewSel_Range) <$ pKey "-" <*> pV)
+                            where pV = sem_ViewSel_View <$> pNmVw <|> sem_ViewSel_All <$ pKey "*"
+        pViewSels           =   pFoldrSep (sem_ViewSels_Cons,sem_ViewSels_Nil) pComma pViewSel
+        pFmKd2WithDflt      =   pMb' id FmAll pFmKd2
+        pFmKd3WithDflt      =   pMb' id FmAll pFmKd3
+        pFmKd2              =   FmTeX <$ pKey "tex" <|> FmAG <$ pKey "ag"
+        pFmKd3              =   FmSpec <$ pKey "spec" <|> pFmKd2
+        pAtIO               =   pMb' id AtInOut (AtIn <$ pKey "in" <|> AtOut <$ pKey "out")
+        pNmStr              =   pVarid <|> pConid
+        pNmStrI             =   pNmStr <|> pInteger
+        pNm' pN             =   (Nm <$> pN) <**> pNmSel
+        pNm                 =   pNm' pNmStr
+        pNmVw               =   pNm' pNmStrI
+        pSymStr             =   pVarsym <|> pConsym
+                            <|> pAnyKey keywordsOpsEsc
+                            <|> pKey "`" *> ((\n -> "`" ++ n ++ "`") <$> pNmStr <|> pAnyKey keywordsOpsParenEsc) <* pKey "`"
+        pSym                =   Nm <$> pSymStr
+        pRExprs             =   pFoldr (sem_RExprs_Cons,sem_RExprs_Nil) pRExpr
+        pRExpr              =   pKeySPos "judge"
+                                <**> ((\rn n e p -> sem_RExpr_Judge p rn n e) <$> pMbRNm <*> pNm <*> pRExprEqn
+                                     <|> (flip sem_RExpr_Del) <$ pKey "-" <*> pList1 pNm
+                                     )
+        pRExprEqn           =   sem_RExprEqn_Attrs <$> pAttrEqns
+                            <|> sem_RExprEqn_Expr  <$  pKey "=" <*> pExpr
+        pExpr               =   pExprApp <??> ((\es e1 -> let (op,e2) = foldr (\(op,e1) (f2,e2) -> (op,f2 e1 e2)) (const,undefined) es
+                                                          in sem_Expr_AppTop (op e1 e2)
+                                               )
+                                               <$> pList1 ((,) <$> pOp <*> pExprApp)
+                                              )
+                            where pOp = (\s ss -> sem_Expr_Op s (ss (sem_Expr_Var s))) <$> pSym <*> pExprSel
+        pMbRNm              =   pMb (pNm <* pKey ":")
+        pMbString           =   pMb pString
+        pExprApp            =   mkApp alg <$> pList1 pExprBase <|> pSucceed sem_Expr_Empty
+        pExprBase           =   pParens (sem_Expr_Paren <$> pExpr <|> pExprEsc <|> pExprText <|> pExprNamed) <**> pExprSel
+                            <|> sem_Expr_Var <$> pNm
+                            <|> sem_Expr_Int <$> pInteger
+                            <|> sem_Expr_StrAsIs <$> pString
+        pExprEsc            =   (sem_Expr_StrAsIs . concat) <$> pList1 (pAnyKey (keywordsOpsParenEsc ++ keywordsTextEscapable))
+        pExprNamed          =   sem_Expr_Named <$> pNm <* pKey "=" <*> pExpr
+        pExprText           =   sem_Expr_StrText <$ pKey "text" <*> pString
+        pExprMbBase         =   sem_MbExpr_Just <$> pExprBase <|> pSucceed sem_MbExpr_Nothing
+        pExprSel            =   pSel (sem_Expr_SelTop,sem_Expr_Sel,sem_MbExpr_Just) (pExprBase,pExprMbBase)
+        pNmSel              =   pSel (id,NmSel,Just) (pN,pMb pN)
+                            where pN = pNmStrI <|> pSymStr
+        pSel alg ps         =   pSel1 alg ps <|> pSucceed id
+        pSel1 (top,sel,jst) (pE,pMbE)
+                            =   (\ss s -> \e -> top (sel (ss e) (jst s))) <$> pDots <*> pE
+                            where pSel' = flip sel <$> pMbE
+                                  pDots = pChainr_ng ((\s -> \_ r -> \e -> r (s e)) <$> pSel') (id <$ pKey ".")
+        pAnyKey             =   foldr1 (<|>) . map pKey
+        pAttrIntros         =   pFoldrSep (sem_AttrIntros_Cons,sem_AttrIntros_Nil) pComma pAttrIntro
+        pAttrIntro          =   sem_AttrIntro_Intro <$> pList pAttrProp <*> pNm <* pKey ":" <*> pNm
+        pAttrEqns           =   pFoldr (sem_AttrEqns_Cons,sem_AttrEqns_Nil) (pKey "|" *> pAttrEqn)
+        pAttrEqn            =   sem_AttrEqn_Eqn <$>              pNm <* pKey "=" <*> pExpr
+                            <|> sem_AttrEqn_Del <$  pKey "-" <*> pNm
+        pAttrProp           =   AtNode <$ pKey "node" <|> AtThread <$ pKey "thread" <|> AtUpdown <$ pKey "updown"
+        pMb' j n p          =   j <$> p <|> pSucceed n
+        pMb                 =   pMb' Just Nothing
+        pKeySPos k          =   (\p -> (k,p)) <$> pKeyPos k
+     in (pAGItf,pViewSels)
+
+(pAGItf,pViewSels)
+  = pAllParsers
+}
+

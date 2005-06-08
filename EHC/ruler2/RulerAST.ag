@@ -1,0 +1,196 @@
+-- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
+
+-------------------------------------------------------------------------
+-- AST
+-------------------------------------------------------------------------
+
+-------------------------------------------------------------------------
+-- Interfacing
+-------------------------------------------------------------------------
+
+DATA AGItf
+  | AGItf               decls       : Decls
+
+DATA AGExprItf
+  | AGItf               expr        : Expr
+
+DATA AGViewSelsItf
+  | AGItf               viewSels    : ViewSels
+
+DATA AGARuleItf
+  | AGItf               rule        : ARule
+
+-------------------------------------------------------------------------
+-- Declarations
+-------------------------------------------------------------------------
+
+DATA Decl
+  | Preamble            fmKind      : {FmKind}
+                        preamble    : {String}
+  | Extern              nms         : {[Nm]}
+  | Scheme              scKind      : {ScKind}
+                        nm          : {Nm}
+                        mbAGNm      : {Maybe String}
+                        decls       : Decls
+  | Fmt                 fmKind      : {FmKind}
+                        atIO        : {AtDir}
+                        matchExpr   : Expr
+                        expr        : Expr
+  | Rules               nm          : {Nm}
+                        schemeNm    : {Nm}
+                        info        : {String}
+                        decls       : Decls
+  | RulesGroup          nm          : {Nm}
+                        schemeNm    : {Nm}
+                        info        : {String}
+                        rlNms       : {[(Nm,Nm)]}
+  | Rule                pos         : {SPos}
+                        nm          : {Nm}
+                        mbBasedOnNm : {Maybe Nm}
+                        viewSel     : ViewSel
+                        mbAGNm      : {Maybe String}
+                        decls       : Decls
+  | RulView             nm          : {Nm}
+                        pre         : RExprs
+                        post        : RExprs
+  | FmtJudge            pos         : {SPos}
+                        fmKind      : {FmKind}
+                        expr        : Expr
+  | ScmView             nm          : {Nm}
+                        decls       : Decls
+  | ViewHierarchy       nmOrder     : {[[Nm]]}
+  | Attr                inhs        : AttrIntros
+                        inhsyns     : AttrIntros
+                        syns        : AttrIntros
+
+TYPE Decls = [Decl]
+
+SET AllDecl = Decl Decls
+
+-------------------------------------------------------------------------
+-- View selection
+-------------------------------------------------------------------------
+
+DATA ViewSel
+  | All
+  | View                nm          : {Nm}
+  | Range               vwFr        : ViewSel
+                        vwTo        : ViewSel
+
+TYPE ViewSels = [ViewSel]
+
+SET AllViewSel = ViewSel ViewSels
+
+-------------------------------------------------------------------------
+-- Attr defs
+-------------------------------------------------------------------------
+
+DATA AttrIntro
+  | Intro               props       : {[AtProp]}
+                        nm          : {Nm}
+                        ty          : {Nm}
+
+TYPE AttrIntros = [AttrIntro]
+
+SET AllAttrIntro = AttrIntro AttrIntros
+
+-------------------------------------------------------------------------
+-- Rule expr's
+-------------------------------------------------------------------------
+
+DATA RExpr
+  | Judge               pos         : {SPos}
+                        mbRNm       : {Maybe Nm}
+                        schemeNm    : {Nm}
+                        eqns        : RExprEqn
+  | Del                 pos         : {SPos}
+                        nms         : {[Nm]}
+
+DATA RExprEqn
+  | Attrs               eqns        : AttrEqns
+  | Expr                expr        : Expr
+
+TYPE RExprs = [RExpr]
+
+SET AllRExpr = RExpr RExprs
+
+DATA AttrEqn
+  | Eqn                 nm          : {Nm}
+                        expr        : Expr
+  | Del                 nm          : {Nm}
+
+TYPE AttrEqns = [AttrEqn]
+
+SET AllAttrEqn = RExprEqn AttrEqn AttrEqns
+
+-------------------------------------------------------------------------
+-- Expr
+-------------------------------------------------------------------------
+
+DATA Expr
+  | AppTop              expr        : Expr
+  | App                 lExpr       : Expr
+                        rExpr       : Expr
+  | Op                  nm          : {Nm}
+                        nmExpr      : Expr
+                        lExpr       : Expr
+                        rExpr       : Expr
+  | Var                 nm          : {Nm}
+  | AVar                anm         : ANm
+  | Int                 int         : {String}
+  | StrText             str         : {String}
+  | StrAsIs             str         : {String}
+  | Named               nm          : {Nm}
+                        expr        : Expr
+  | Wrap                wrKind      : {WrKind}
+                        expr        : Expr
+  | Paren               expr        : Expr
+  | SelTop              expr        : Expr
+  | Sel                 expr        : Expr
+                        selMbExpr   : MbExpr
+  | Empty
+
+DATA ANm
+  | Loc                 nm          : {Nm}
+  | Lhs                 nm          : {Nm}
+  | Node                ndNm        : {Nm}
+                        nm          : {Nm}
+
+TYPE MbExpr = MAYBE Expr
+
+SET AllExpr = Expr MbExpr
+
+-------------------------------------------------------------------------
+-- Rule in AG form
+-------------------------------------------------------------------------
+
+DATA ARule
+  | Rule                ndNmL       : {[Nm]}
+                        rlNm        : {Nm}
+                        eqns        : AEqns
+
+DATA AEqn
+  | Eqn                 dest        : AEqnDest
+                        val         : AExpr
+
+DATA AExpr
+  | Expr                expr        : Expr
+
+DATA AEqnDest
+  | One                 anm         : ANm
+  | Many                dests       : AEqnDests
+
+TYPE AEqns = [AEqn]
+
+TYPE AEqnDests = [AEqnDest]
+
+SET AllARule = ARule AEqn AEqns AExpr AEqnDest AEqnDests ANm
+
+-------------------------------------------------------------------------
+-- Sets of AST data's
+-------------------------------------------------------------------------
+
+SET AllNTButViewSel = AllRExpr AllExpr AllAttrEqn AllAttrIntro AllDecl AllARule
+
+SET AllNT = AllNTButViewSel AllViewSel
+
