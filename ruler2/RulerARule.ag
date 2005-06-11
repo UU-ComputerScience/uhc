@@ -1,0 +1,66 @@
+-- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
+
+-------------------------------------------------------------------------
+-- Expr as AEqn
+-------------------------------------------------------------------------
+
+{
+exprMbAEqn :: Expr -> Maybe AEqn
+exprMbAEqn expr
+  = eE expr
+  where eE (Expr_Op n _ d s) | n == nmEql
+          = do d' <- dE d
+               s' <- sE s
+               return (AEqn_Eqn d' s')
+        eE (Expr_AppTop e)      = eE e
+        eE _                    = Nothing
+        dE (Expr_AVar n)        = return (AEqnDest_One n)
+        dE (Expr_Var n)         = nE (show n)
+        dE (Expr_StrAsIs s)     = nE s
+        dE (Expr_Paren e)       = dE e
+        dE (Expr_AppTop e)      = dE e
+        dE e@(Expr_Op n _ _ _) | n == nmComma
+          = do dL <- oE e
+               return (AEqnDest_Many dL)
+        dE _                    = Nothing
+        oE (Expr_Op n _ e1 e2) | n == nmComma
+          = do e1' <- dE e1
+               e2' <- oE e2
+               return (e1' : e2')
+        oE e
+          = do e' <- dE e
+               return [e']
+        sE e                    = return (AExpr_Expr e)
+        nE n
+          = case n of
+              ('l':'o':'c':'.':nm) -> Just (AEqnDest_One (ANm_Loc (Nm nm)))
+              ('l':'h':'s':'.':nm) -> Just (AEqnDest_One (ANm_Lhs (Nm nm)))
+              _ -> Nothing
+}
+
+{-
+exprMbAEqn :: Expr -> Maybe AEqn
+exprMbAEqn expr
+  = eE expr
+  where eE (Expr_Op o _ d s) | o == nmEql
+          = do d' <- dE d
+               s' <- sE s
+               return (AEqn_Eqn d' s')
+        eE (Expr_AppTop e)      = eE e
+        eE _                    = Nothing
+        dE (Expr_AVar n)        = return (AEqnDest_One n)
+        dE (Expr_Paren e)       = dE e
+        dE (Expr_Op o1 _ Expr_Empty e@(Expr_Op o2 _ _ _)) | o1 == nmOParen && o2 == nmComma
+          = do dL <- oE e
+               return (AEqnDest_Many dL)
+        dE _                    = Nothing
+        oE (Expr_Op o _ e1 e2) | o == nmComma
+          = do e1' <- dE e1
+               e2' <- oE e2
+               return (e1' : e2')
+        oE (Expr_Op o _ e Expr_Empty) | o == nmCParen
+          = do e' <- dE e
+               return [e']
+        oE _                    = Nothing
+        sE e                    = return (AExpr_Expr e)
+-}

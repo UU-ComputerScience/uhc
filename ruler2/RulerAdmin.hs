@@ -304,6 +304,8 @@ data RlInfo e
       , rlVwGam     :: VwRlGam e
       }
 
+emptyRlInfo = RlInfo nmUnk emptySPos Nothing Nothing 0 Set.empty emptyGam
+
 instance Show (RlInfo e) where
   show _ = "RlInfo"
 
@@ -332,6 +334,8 @@ data RsInfo e
       , rsDescr :: String
       , rsRlNms :: [(Nm,Nm)]
       }
+
+emptyRsInfo = RsInfo nmUnk nmUnk "" emptyGam
 
 instance Show (RsInfo e) where
   show _ = "RsInfo"

@@ -26,6 +26,8 @@ import Debug.Trace
 
 type SPos = (String,Pos)
 
+emptySPos = ("",noPos)
+
 -------------------------------------------------------------------------
 -- Errors
 -------------------------------------------------------------------------
@@ -263,12 +265,16 @@ instance Functor Nm' where
 
 strVec = "_"
 
-nmVec, nmUnk, nmApp, nmWild, nmNone :: Nm
-nmVec  = Nm strVec
-nmWild = nmVec
-nmUnk  = Nm "??"
-nmApp  = Nm "$"
-nmNone = Nm ""
+nmVec, nmUnk, nmApp, nmWild, nmNone, nmEql, nmComma, nmOParen, nmCParen :: Nm
+nmVec     = Nm strVec
+nmWild    = nmVec
+nmUnk     = Nm "??"
+nmEql     = Nm "="
+nmApp     = Nm "$"
+nmNone    = Nm ""
+nmComma   = Nm ","
+nmOParen  = Nm "("
+nmCParen  = Nm ")"
 
 nmCmdBegChng, nmCmdEndChng, nmCmdBegSame, nmCmdEndSame :: Nm
 nmCmdBegChng = Nm "rulerChngBegMark"
@@ -368,6 +374,9 @@ hdAndTl (x:xs) = (x,xs)
 
 maybeHd :: r -> (a -> r) -> [a] -> r
 maybeHd n f l = if null l then n else f (head l)
+
+strPad :: String -> Int -> String
+strPad s sz = s ++ replicate (sz - length s) ' '
 
 panic m = error ("panic: " ++ m)
 

@@ -42,7 +42,7 @@ SEM RExpr
 SEM Expr
   | App             lhs     .   pp          =   @lExpr.pp >#< @rExpr.pp
   | Op              lhs     .   pp          =   @lExpr.pp >#< @nmExpr.pp >#< @rExpr.pp
-  | Sel             lhs     .   pp          =   @expr.pp >|< "." >|< @selMbExpr.pp
+  | Sel             lhs     .   pp          =   pp_brackets @expr.pp >|< "." >|< @selMbExpr.pp
   | Var             lhs     .   pp          =   pp @nm
   | Int             lhs     .   pp          =   pp @int
   | StrText StrAsIs lhs     .   pp          =   pp @str
@@ -57,20 +57,22 @@ SEM AttrEqn
   | Eqn             lhs     .   pp          =   "|" >#< pp @nm >#< "=" >#< @expr.pp
 
 SEM ANm
-  | Loc             lhs     .   pp          =   ppDest @lhs.isDest ("loc." >|< @nm)
-  | Lhs             lhs     .   pp          =   ppDest @lhs.isDest ("lhs." >|< @nm)
-  | Node            lhs     .   pp          =   ppDest @lhs.isDest (@ndNm >|< "." >|< @nm)
+  | Loc             lhs     .   pp          =   ppDest "L" @lhs.isDest @lhs.mbDstWd @lhs.mbPrevNdStr @ndStr ""     @nm
+  | Lhs             lhs     .   pp          =   ppDest "P" @lhs.isDest @lhs.mbDstWd @lhs.mbPrevNdStr @ndStr @ndStr @nm
+  | Fld             lhs     .   pp          =   ppDest "F" @lhs.isDest @lhs.mbDstWd @lhs.mbPrevNdStr "??"   @ndStr @nm
+  | Node            lhs     .   pp          =   ppDest "N" @lhs.isDest @lhs.mbDstWd @lhs.mbPrevNdStr @ndStr @ndStr @nm
 
 -------------------------------------------------------------------------
--- ARule
+-- ARule's PP
 -------------------------------------------------------------------------
 
 SEM ARule
-  | Rule            lhs     .   pp          =   "SEM" >#< pp (head @ndNmL)
-                                                >-< indent 2 ("|" >#< @rlNm >#< @eqns.pp)
+  | Rule            lhs     .   pp          =   "SEM" >#< pp (head @ndNmL) >#< "--" >#< ppCommas @info
+                                                >-< indent 2 ("|" >#< @rlNm >|< indent 2 @eqns.pp)
 
 SEM AEqn
   | Eqn             lhs     .   pp          =   @dest.pp >#< "=" >#< @val.pp
+  | Err             lhs     .   pp          =   "ERR" >#< @expr.pp
 
 SEM AEqnDest
   | Many            lhs     .   pp          =   ppListSep "(" ")" "," @dests.ppL
@@ -80,12 +82,99 @@ SEM AEqnDests [ | | ppL: {[PP_Doc]} ]
   | Nil             lhs     .   ppL         =   []
 
 -------------------------------------------------------------------------
+-- ARule max column width info, for tabular like PP
+-------------------------------------------------------------------------
+
+ATTR AllARuleButARule [ mbDstWd: {Maybe (Int,Int)} | | mxDstNdWd, mxDstAtWd USE {`max`} {0}: Int ]
+
+SEM ANm
+  | Loc Lhs         lhs     .   mxDstNdWd   =   3
+  | Node            lhs     .   mxDstNdWd   =   length @ndStr
+  | *               lhs     .   mxDstAtWd   =   length . show $ @nm
+
+SEM ARule
+  | Rule            loc     .   mbDstWd     =   Just (@eqns.mxDstNdWd,@eqns.mxDstAtWd)
+
+SEM Expr
+  | AVar            loc     .   mbDstWd     =   Nothing
+
+SEM AEqnDest
+  | Many            dests   .   mbDstWd     =   Nothing
+
+-------------------------------------------------------------------------
+-- ARule dest width info, for lining up multidestination AEqn
+-------------------------------------------------------------------------
+
+ATTR AEqnDest [ | | dstWd: Int ]
+ATTR AEqnDests [ | | dstWdL: {[Int]} ]
+
+SEM AEqnDest
+  | Many            lhs     .   dstWd       =   sum @dests.dstWdL + length @dests.dstWdL + 1
+  | One             lhs     .   dstWd       =   @anm.mxDstNdWd + @anm.mxDstAtWd
+
+SEM AEqnDests
+  | Cons            lhs     .   dstWdL      =   @hd.dstWd : @tl.dstWdL
+  | Nil             lhs     .   dstWdL      =   []
+
+SEM AEqn
+  | Eqn             loc     .   needsNl     =   let (w1,w2) = fromJust @lhs.mbDstWd
+                                                    w = w1 + w2 + atDstFillLen
+                                                in  False
+
+-------------------------------------------------------------------------
+-- Node name of AEqnDest in an AEqn, for emitting only first of a series of same node names
+-------------------------------------------------------------------------
+
+ATTR ANm AEqnDest AEqn [ | | ndStr: String ]
+ATTR ANm AEqnDest AEqn AEqns [ mbPrevNdStr: {Maybe String} | | ]
+
+SEM ANm
+  | Loc             loc     .   ndStr       =   "loc"
+  | Lhs             loc     .   ndStr       =   "lhs"
+  | Node            loc     .   ndStr       =   show @ndNm
+  | Fld             loc     .   ndStr       =   ""
+
+SEM AEqnDest
+  | Many            lhs     .   ndStr       =   "??"
+
+SEM AEqn
+  | Err             lhs     .   ndStr       =   "??"
+
+SEM AEqns
+  | Cons            tl      .   mbPrevNdStr =   fmap (const @hd.ndStr) @lhs.mbDstWd
+
+SEM ARule
+  | Rule            loc     .   mbPrevNdStr =   Nothing
+
+SEM AEqnDests
+  | Cons            loc     .   mbPrevNdStr =   Nothing
+
+SEM AEqnDest
+  | Many            loc     .   mbPrevNdStr =   Nothing
+
+SEM Expr
+  | AVar            loc     .   mbPrevNdStr =   Nothing
+
+-------------------------------------------------------------------------
 -- Context of ANm
 -------------------------------------------------------------------------
 
 {
-ppDest :: PP a => Bool -> a -> PP_Doc
-ppDest isDest n = if isDest then pp n else "@" >|< n
+atDstFill1 = "  .  "
+atDstFill2 = "  "
+atDstFillLen = length atDstFill1 + length atDstFill2
+
+ppDest :: String -> Bool -> Maybe (Int,Int) -> Maybe String -> String -> String -> Nm -> PP_Doc
+ppDest k isDest mbDstWd mbPrevNdStr dstPre srcPre n
+  = tr $ if isDest
+         then case mbDstWd of
+                Just (ndW,atW)
+                  -> strPad (if maybe False (==dstPre) mbPrevNdStr then "" else dstPre) ndW
+                     >|< atDstFill1 >|< strPad (show n) atW >|< atDstFill2
+                _ -> mkPre dstPre n
+         else "@" >|< mkPre srcPre n
+  where mkPre s n = if null s then pp n else s >|< "." >|< pp n
+        tr x = x -- (pp k >|< pp_braces x)
 }
 
 ATTR ANm [ isDest: Bool | | ]
@@ -188,4 +277,7 @@ SEM AttrEqn
   
 SEM AExpr
   | Expr            loc         .   needToParen =   True
+  
+SEM AEqn
+  | Err             loc         .   needToParen =   True
   

@@ -1,7 +1,7 @@
 -- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
 
 -------------------------------------------------------------------------
--- Abstractions for generation
+-- Use of attrs
 -------------------------------------------------------------------------
 
 {
@@ -12,167 +12,14 @@ emptyAtUsInfo = (nmUnk,emptyGam,[])
 
 type AtUsGam = Gam Nm AtUsInfo
 
-data Gen
-  = Gen
-      { -- data
-        genOpts     :: Opts
-      , genScGam    :: ScGam Expr
-      , genFmGam    :: FmGam Expr
-      , genInFmGam  :: FmGam Expr
-      , genRwGam    :: RwExprGam
-        -- functions
-      , genNmDef    :: Nm -> PP_Doc -> PP_Doc
-      , genNmUse    :: Nm -> PP_Doc
-      , genRl       :: (Nm,Nm,Nm,Nm,Nm,Nm) -> [PP_Doc] -> [PP_Doc] -> PP_Doc
-      , genRs       :: (Nm,Nm) -> RsInfo Expr -> PP_Doc -> [Nm] -> [PP_Doc] -> PP_Doc
-      , genJdExpr   :: ScInfo Expr -> VwScInfo Expr -> Bool -> (Nm -> Maybe Bool) -> Opts -> AtUsInfo -> FmGam Expr -> FmGam Expr -> FmGam Expr -> RwExprGam -> Expr -> PP_Doc
-      , genJdWrap   :: PP_Doc -> PP_Doc
-      }
-
-genDflt
-  = Gen
-      { genOpts     = defaultOpts
-      , genScGam    = emptyGam
-      , genFmGam    = emptyGam
-      , genInFmGam  = emptyGam
-      , genRwGam    = emptyGam
-      , genNmDef    = \n def -> empty
-      , genNmUse    = \n -> empty
-      , genRl       = \(nFull,nSc,nScAG,nVw,nRl,nRlAG) pre post -> empty
-      , genRs       = \(nScMeta,nVwFull) rsInfo meta defNms defVals -> empty
-      , genJdExpr   = \scInfo vwScInfo isPre atIsChanged opts atUsInfo atUseFmGam jaFmGam fmGam rwGam e -> empty
-      , genJdWrap   = \jd -> empty
-      }
-
-genTeX
-  = genDflt
-      { genNmDef = \n def ->
-          mkCmdNmDef n def
-      , genNmUse = \n ->
-          mkCmdNmUse n
-      , genRl = \(nFull,nSc,nScAG,nVw,nRl,nRlAG) pre post ->
-          let r = "\\ehinfruleB" >|< ppCurly nRl >|< ppCurly nVw
-                  >-< ppListSepVV "{%" "}" "\\\\" pre
-                  >-< ppListSepVV "{%" "}" "\\\\" post
-          in  mkCmdNmDef nFull r
-      , genRs = \(nScMeta,nVwFull) rsInfo meta defNms defVals ->
-          let eFigPP
-                = "\\begin{RulesFigureB}" >|< ppCurly (mkCmdNmUse nScMeta) >|< ppCurly (pp (rsDescr rsInfo)) >|< ppCurly nVwFull
-                  >-< vlist (intersperse (pp "\\hspace{1ex}") . map mkCmdNmUse $ defNms)
-                  >-< "\\end{RulesFigureB}"
-          in  vlist defVals
-              >-< mkCmdNmDef nScMeta (ensureTeXMath . mkInLhs2Tex $ meta)
-              >-< mkCmdNmDef nVwFull eFigPP
-      , genJdExpr   = \scInfo vwScInfo isPre atIsChanged opts atUsInfo atUseFmGam jaFmGam fmGam rwGam e ->
-          let mkChng
-                = case optMbMarkChange opts of
-                    Just _  -> \nAt -> case atIsChanged nAt of
-                                         Just isCh -> Expr_Wrap (if isCh then WrIsChanged else WrIsSame)
-                                         Nothing   -> id
-                    Nothing -> \_   -> id
-              (jaFmGam',wrFullJd)
-                = if null chs    then (jaFmGam,id)
-                  else if or chs then (fmGamMap mkChng jaFmGam,id)
-                                 else (jaFmGam,Expr_Wrap WrIsSame)
-                where chs = catMaybes . map atIsChanged . Map.keys $ jaFmGam
-          in  exprFmtTeXSubst opts ( fmGam) . wrFullJd . exprSubst (opts {optSubstFullNm = True}) jaFmGam' $ e
-      , genJdWrap   = switchLaTeXLhs
-      }
-
-genAG
-  = genDflt
-      { genRl = \(nFull,nSc,nScAG,nVw,nRl,nRlAG) pre post ->
-          let r = "SEM" >#< nScAG >#< "--" >#< nRl >#< nVw
-                  >-< indent 2
-                        ("|" >#< nRlAG >#< (vlist pre >-< vlist post)
-                        )
-          in  r
-      , genRs = \(nScMeta,nVwFull) rsInfo meta defNms defVals ->
-          let eFigPP
-                = "--" >#< pp (rsDescr rsInfo) >#< nVwFull
-                  >-< vlist defVals
-          in  eFigPP
-      , genJdExpr   = \scInfo vwScInfo isPre atIsChanged opts atUsInfo@(eNdNm,atDefFmGam,atL) atUseFmGam jaFmGam fmGam rwGam e ->
-          let cmtPP = empty
-              sbs = exprSubst opts atUseFmGam
-              mk (_,(eqn,_)) = eqn
-              mkPP dir = ppExpr . exprRewrite (opts {optAtDir = dir, optSubstFullNm = True}) atUseFmGam rwGam
-              mkIOPP d l = vlist . map (mkPP d) . map mk . filter ((==d) . fst) $ l
-              mkInPP = mkIOPP AtIn
-              mkOuPP = mkIOPP AtOut
-              mkInOuPP = mkIOPP AtInOut
-          in  cmtPP
-              >-< mkInPP atL
-              >-< mkOuPP atL
-              >-< mkInOuPP atL
-      , genJdWrap   = id
-      }
-{-
-          let cmtPP = "{-" >#< (pp (if isPre then "pre:" else "post:")
-                               >-< ("def gam:" >#< ppGam atDefFmGam >-< "use gam:" >#< ppGam atUseFmGam >-< "at gam:" >#< ppGam jaFmGam)
-                               ) >#< "-}"
--}
-
-type GenGam = Gam FmKind Gen
-
-genGam :: GenGam
-genGam = Map.fromList [ (FmTeX,genTeX), (FmAG,genAG) ]
-}
-
--------------------------------------------------------------------------
--- Generation of lhs2tex/AG for rules
--------------------------------------------------------------------------
-
-{
-jdGen :: Gen -> AtUsInfo -> FmGam Expr -> Bool -> (Nm -> Maybe Bool) -> Nm -> Nm -> REInfo Expr -> PP_Doc
-jdGen gen atUsInfo atUseFmGam isPre atIsChanged nSc nVw reInfo
-  = genJdWrap gen ePP
-  where (Just (scInfo,vwScInfo)) = scVwGamLookup nSc nVw (genScGam gen)
-        fg = jaGamToFmGam (exprSubst (genOpts gen) (genFmGam gen)) . reJAGam $ reInfo
-        scVwExpr = jdGamFmExpr (optGenFM . genOpts $ gen) . vwscJdGam $ vwScInfo
-        ePP = genJdExpr gen scInfo vwScInfo isPre atIsChanged (genOpts gen) atUsInfo atUseFmGam fg (genFmGam gen) (genRwGam gen) scVwExpr
-
-jdsGen :: Gen -> AtUsGam -> FmGam Expr -> Bool -> (Nm -> Nm -> Maybe Bool) -> Nm -> [Nm] -> REGam Expr -> [PP_Doc]
-jdsGen gen atUsGam atUseFmGam isPre atIsChanged nVw order g
-  = map (\nJd
-            -> let reInfo = maybe (panic "jdsGen1") id (Map.lookup nJd g)
-                   atUsInfo = maybe (panic "jdsGen2") id (Map.lookup nJd atUsGam)
-               in  jdGen gen atUsInfo atUseFmGam isPre (atIsChanged nJd) (reScNm reInfo) nVw reInfo
-        )
-        order
-
-rlGen :: Gen -> (Nm,Nm,Nm,Nm,Nm->Nm) -> RlInfo Expr -> Gam Nm (Nm,PP_Doc)
-rlGen gen (nSc,nScAG,nRl',nRlAG,mkFullNm) rlInfo
-  = Map.mapWithKey
-      (\nVw vwRlInfo
-        ->  let nRlFull = mkFullNm nVw
-                (atUsGam,fmNd) = rlAtUsage (genOpts gen) (genScGam gen) (genFmGam gen) vwRlInfo
-                atUseFmGam = Map.unions [ g | (_,_,as) <- Map.elems atUsGam, (_,(_,g)) <- as ]
-                atIsChanged
-                  = case vwrlMbChGam vwRlInfo of
-                      Just g  -> \j a -> maybe (Just False) (const (Just True)) $ dblGamLookup id j a g
-                      Nothing -> \_ _ -> Nothing
-                mkJd isPre g order     = jdsGen gen atUsGam (atUseFmGam `fmGamUnion` fmNd) isPre atIsChanged nVw order g
-                prePPL    = mkJd True (vwrlFullPreGam vwRlInfo) (concat . vwrlPreScc $ vwRlInfo)
-                postPPL  = mkJd False (vwrlFullPostGam vwRlInfo) (Map.keys . vwrlFullPostGam $ vwRlInfo)
-                r = genRl (gen)
-                          (nRlFull,nSc,nScAG,nVw,nRl',nRlAG)
-                          prePPL postPPL
-            in  (nRlFull,r)
-      )
-      (rlVwGam rlInfo)
-
-rlLtxGamTranspose :: Ord k => Gam k (Gam k (n,v)) -> Gam k (Gam k (n,v))
-rlLtxGamTranspose g
-  = Map.fromListWith Map.union [ (v,Map.singleton r (n,d)) | (r,vm) <- Map.toList g, (v,(n,d)) <- Map.toList vm ]
-
 rlAtUsage :: Opts -> ScGam Expr ->  FmGam Expr -> VwRlInfo Expr -> (AtUsGam,FmGam Expr)
 rlAtUsage opts scGam fmGam vwRlInfo
   = (preDfG `Map.union` postDfG,preExtraG `fmGamUnion` postExtraG)
   where (preDfG,preExtraG) = mk True (vwrlFullPreGam vwRlInfo)
         (postDfG,postExtraG) = mk False (vwrlFullPostGam vwRlInfo)
-        sbsn = nmSubst opts fmGam
-        sbse = exprSubst opts fmGam
+        opts' = opts {optSubstFullNm=False}
+        sbsn = nmSubst opts' fmGam
+        sbse = exprSubst opts' fmGam
         mk isPre g
           = Map.foldWithKey
               (\jdNm reInfo (atDefG,atExtraG)
@@ -190,18 +37,17 @@ rlAtUsage opts scGam fmGam vwRlInfo
                        nInL         = nmWtDir (if flipDir then AtSyn else AtInh)
                        nOuL         = nmWtDir (if flipDir then AtInh else AtSyn)
                        nBiDirL      = nmWtProp atProps (let ps = Map.elems propsMp in \psn -> not (null (psn `intersect` ps)))
-                       preDef       = if flipDir then Nm "lhs" else eNdNm
                        mkInLhs _ _ n n'
-                                    = (Expr_Var nd,fmGamFromList [(n,Expr_Var nd)],fmGamFromList [(n,atUse n')])
-                                    where nd = preDef `nmApd` n'
+                                    = (nd,fmGamFromList [(n,nd)],fmGamFromList [(n,atUse n')])
+                                    where nd = if flipDir then mkALhs n' else mkANd eNdNm n'
                                           atUse = if flipDir then mkANd eNdNm else mkALhs
                        mkInRhs n n' = atLkup n
-                       mkOuLhs preUse nmAdapt n n' = (r',fmr,fmr')
+                       mkOuLhs atUse nmAdapt n n' = (r',fmr,fmr')
                                     where r = atLkup n
                                           b = [ (n,Nm . nmShowAG . nmAdapt $ sbsn n) | n <- Set.toList (exprNmS r), n /= nmWild ]
-                                          fmr  = fmGamFromList [ (n,Expr_Var (Nm "loc" `nmApd` n')) | (n,n') <- b ]
-                                          fmr' = fmGamFromList [ (n,Expr_Var (preUse `nmStrApd` n')) | (n,n') <- b ]
-                                          r' = exprSubst opts fmr r
+                                          fmr  = fmGamFromList [ (n,mkALoc n') | (n,n') <- b ]
+                                          fmr' = fmGamFromList [ (n,atUse n') | (n,n') <- b ]
+                                          r' = exprSubst opts' fmr r
                        mkOuRhs n n' = atUse n'
                                     where atUse = if flipDir then mkALhs else mkANd eNdNm
                        mkDef dir nmAdapt mkL mkR mkEqn n
@@ -209,16 +55,16 @@ rlAtUsage opts scGam fmGam vwRlInfo
                                     where n' = Nm . nmShowAG . sbsn . nmAdapt $ n
                                           (l,fmDef,fmUse) = mkL preUse' nmAdapt' n n'
                                           r = mkR n n'
-                                          (nmAdapt',preUse') = if flipDir then (nmInit,Nm "@lhs.") else (id,Nm "@")
+                                          (nmAdapt',preUse') = if flipDir then (nmInit,mkALhs) else (id,mkALoc)
                        mkDefs mk    = unzip3 . concat . map mk
-                       mkEqn l r    = Expr_AppTop (Expr_Op (Nm "=") (Expr_Var (Nm "=")) l r)
+                       mkEqn l r    = Expr_AppTop (Expr_Op (nmEql) (Expr_Var (nmEql)) l r)
                        fmIOUnion g1 g2 = fmGamUnions g1 `fmGamUnion` fmGamUnions g2
                        (fmInBi   ,inBiL   ,_     ) = mkDefs (mkDef AtIn nmInit  mkInLhs mkInRhs mkEqn) $ (nInL `intersect` nBiDirL)
                        (fmInNonBi,inNonBiL,_     ) = mkDefs (mkDef AtIn id      mkInLhs mkInRhs mkEqn) $ (nInL \\          nBiDirL)
                        (fmOuBi   ,ouBiL   ,_     ) = mkDefs (mkDef AtOut nmInit mkOuLhs mkOuRhs mkEqn) $ (nOuL `intersect` nBiDirL)
                        (fmOuNonBi,ouNonBiL,ouAscL) = mkDefs (mkDef AtOut id     mkOuLhs mkOuRhs mkEqn) $ (nOuL \\          nBiDirL)
                        fmOf l = fmGamUnions [ g | (_,(_,g)) <- l ]
-                       fmNd = fmGamFromList [(eNdNm,Expr_Var (Nm "@" `nmStrApd` eNdNm))]
+                       fmNd = fmGamFromList [(eNdNm,mkALoc eNdNm)]
                        (r,extraG)
                          = if isJd
                            then if isPre
@@ -232,7 +78,7 @@ rlAtUsage opts scGam fmGam vwRlInfo
                                       ),fmOf ouBiL `fmGamUnion` fmOf ouNonBiL
                                      )
                            else let fm = fmGamUnions fmOuNonBi
-                                    fma = fmGamFromList ouAscL -- jaGamToFmGam (exprSubst opts fm) jaGam
+                                    fma = fmGamFromList ouAscL
                                     fmja = fma `Map.union` jaGamToFmGam id jaGam
                                     jd = fkGamLookup exprUnk jdExpr FmAG . vwscJdGam $ vwScInfo
                                     jd' = exprSubst opts fmja jd
@@ -241,22 +87,196 @@ rlAtUsage opts scGam fmGam vwRlInfo
               )
               (emptyGam,emptyGam)
               g
+}
 
-vwRlLtxGen :: Gen -> Nm -> Gam Nm (Gam Nm (Nm,PP_Doc)) -> RsInfo Expr -> Gam Nm PP_Doc
-vwRlLtxGen gen nSc vwRlLtxGam rsInfo
+-------------------------------------------------------------------------
+-- Abstractions for generation
+-------------------------------------------------------------------------
+
+{
+data Gen
+  = Gen
+      { -- data
+        genOpts     :: Opts
+      , genScGam    :: ScGam Expr
+      , genFmGam    :: FmGam Expr
+      , genInFmGam  :: FmGam Expr
+      , genRwGam    :: RwExprGam
+      , genRsInfo   :: RsInfo Expr
+      , genRlInfo   :: RlInfo Expr
+      , genScInfo   :: ScInfo Expr
+      , genVwScInfo :: VwScInfo Expr
+      , genVwRlInfo :: VwRlInfo Expr
+        -- functions
+      , genNmDef    :: Nm -> PP_Doc -> PP_Doc
+      , genNmUse    :: Nm -> PP_Doc
+      , genRl       :: Gen -> (Nm,Nm,Nm) -> PP_Doc
+      , genRs       :: Gen -> (Nm,Nm) -> PP_Doc -> [Nm] -> [PP_Doc] -> PP_Doc
+      , genJdExpr   :: Gen -> (Nm -> Maybe Bool) -> FmGam Expr -> FmGam Expr -> Expr -> PP_Doc
+      , genMkJdInfo :: Gen -> (Nm,Nm) -> REGam Expr -> (ScInfo Expr,VwScInfo Expr,REInfo Expr,FmGam Expr,Expr)
+      }
+
+genDflt
+  = Gen
+      { genOpts     = defaultOpts
+      , genScGam    = emptyGam
+      , genFmGam    = emptyGam
+      , genInFmGam  = emptyGam
+      , genRwGam    = emptyGam
+      , genRlInfo   = emptyRlInfo
+      , genRsInfo   = emptyRsInfo
+      , genScInfo   = emptyScInfo
+      , genVwScInfo = emptyVwScInfo
+      , genVwRlInfo = emptyVwRlInfo
+      --
+      , genNmDef    = \n def -> empty
+      , genNmUse    = \n -> empty
+      , genRl       = \gen (nFull,nVw,nRl) -> empty
+      , genRs       = \gen (nScMeta,nVwFull) meta defNms defVals -> empty
+      , genJdExpr   = \gen atIsChanged jaFmGam fmGam e -> empty
+      , genMkJdInfo = \gen (nVw,nJd) reGam ->
+          let reInfo = maybe (panic "genMkJdInfo") id (Map.lookup nJd reGam)
+              (scInfo,vwScInfo) = fromJust (scVwGamLookup (reScNm reInfo) nVw (genScGam gen))
+              fg = jaGamToFmGam (exprSubst (genOpts gen) (genFmGam gen)) . reJAGam $ reInfo
+              scVwExpr = jdGamFmExpr (optGenFM . genOpts $ gen) . vwscJdGam $ vwScInfo
+          in  (scInfo,vwScInfo,reInfo,fg,scVwExpr)
+      }
+
+genTeX
+  = genDflt
+      { genNmDef = \n def ->
+          mkCmdNmDef n def
+      , genNmUse = \n ->
+          mkCmdNmUse n
+      , genRl = \gen (nRlFull,nVw,nRl) ->
+      	  let atIsChanged
+                = case vwrlMbChGam (genVwRlInfo gen) of
+                    Just g  -> \j a -> maybe (Just False) (const (Just True)) $ dblGamLookup id j a g
+                    Nothing -> \_ _ -> Nothing
+              mkJd nJd atIsChanged reGam
+                = switchLaTeXLhs ePP
+                where (scInfo,vwScInfo,reInfo,fg,scVwExpr) = genMkJdInfo gen (gen {genOpts = (genOpts gen) {optSubstFullNm=False}}) (nVw,nJd) reGam
+                      gen' = gen {genScInfo=scInfo, genVwScInfo=vwScInfo}
+                      ePP = genJdExpr gen' gen' atIsChanged fg (genFmGam gen') scVwExpr
+              mkJds reGam order
+                = map (\nJd -> mkJd nJd (atIsChanged nJd) reGam) order
+              prePPL   = mkJds (vwrlFullPreGam (genVwRlInfo gen)) (concat . vwrlPreScc $ genVwRlInfo gen)
+              postPPL  = mkJds (vwrlFullPostGam (genVwRlInfo gen)) (Map.keys . vwrlFullPostGam $ genVwRlInfo gen)
+              r = "\\ehinfruleB" >|< ppCurly nRl >|< ppCurly nVw
+                  >-< ppListSepVV "{%" "}" "\\\\" prePPL
+                  >-< ppListSepVV "{%" "}" "\\\\" postPPL
+      	  in  mkCmdNmDef nRlFull r
+      , genRs = \gen (nScMeta,nVwFull) meta defNms defVals ->
+          let eFigPP
+                = "\\begin{RulesFigureB}" >|< ppCurly (mkCmdNmUse nScMeta) >|< ppCurly (pp (rsDescr (genRsInfo gen))) >|< ppCurly nVwFull
+                  >-< vlist (intersperse (pp "\\hspace{1ex}") . map mkCmdNmUse $ defNms)
+                  >-< "\\end{RulesFigureB}"
+          in  vlist defVals
+              >-< mkCmdNmDef nScMeta (ensureTeXMath . mkInLhs2Tex $ meta)
+              >-< mkCmdNmDef nVwFull eFigPP
+      , genJdExpr   = \gen atIsChanged jaFmGam fmGam e ->
+          let mkChng
+                = case optMbMarkChange (genOpts gen) of
+                    Just _  -> \nAt -> case atIsChanged nAt of
+                                         Just isCh -> Expr_Wrap (if isCh then WrIsChanged else WrIsSame)
+                                         Nothing   -> id
+                    Nothing -> \_   -> id
+              (jaFmGam',wrFullJd)
+                = if null chs    then (jaFmGam,id)
+                  else if or chs then (fmGamMap mkChng jaFmGam,id)
+                                 else (jaFmGam,Expr_Wrap WrIsSame)
+                where chs = catMaybes . map atIsChanged . Map.keys $ jaFmGam
+          in  exprFmtTeXSubst (genOpts gen) fmGam . wrFullJd . exprSubst (genOpts gen) jaFmGam' $ e
+      }
+
+genAG
+  = genDflt
+      { genRl = \gen (nRlFull,nVw,nRl) ->
+      	  let (atUsGam,fmNd) = rlAtUsage (genOpts gen) (genScGam gen) (genFmGam gen) (genVwRlInfo gen)
+      	      atUseFmGam
+      	        = Map.unions [ g | (_,_,as) <- Map.elems atUsGam, (_,(_,g)) <- as ]
+      	          `fmGamUnion` fmNd
+      	      mkJds reGam order
+      	        = map (\nJd
+                          -> let (scInfo,vwScInfo,reInfo,fg,scVwExpr) = genMkJdInfo gen gen (nVw,nJd) reGam
+                                 atUsInfo@(_,_,atL) = maybe (panic "genRl") id (Map.lookup nJd atUsGam)
+                                 gen' = gen {genScInfo=scInfo, genVwScInfo=vwScInfo}
+                                 atEqn (_,(eqn,_)) = eqn
+                                 opts = genOpts gen'
+                                 mk dir e
+                                   = maybe (AEqn_Err e') id (exprMbAEqn e')
+                                   where e' = exprRewrite (opts {optAtDir = dir}) atUseFmGam (genRwGam gen') e
+                                 mkIO d l = map (mk d) . map atEqn . filter ((==d) . fst) $ l
+                                 mkIn = mkIO AtIn
+                                 mkOu = mkIO AtOut
+                                 mkInOu = mkIO AtInOut
+                             in  mkIn atL ++ mkOu atL ++ mkInOu atL
+                      )
+                      order
+              preL   = mkJds (vwrlFullPreGam (genVwRlInfo gen)) (concat . vwrlPreScc $ genVwRlInfo gen)
+              postL  = mkJds (vwrlFullPostGam (genVwRlInfo gen)) (Map.keys . vwrlFullPostGam $ genVwRlInfo gen)
+              rl = ARule_Rule [maybe (scNm (genScInfo gen)) Nm (scMbAGStr (genScInfo gen))]
+                              (maybe nRl Nm (rlMbAGStr (genRlInfo gen)))
+                              ["rule " ++ show nRl,"view " ++ show nVw]
+                              (concat preL ++ concat postL)
+              r = ppARule rl
+      	  in  r
+      , genRs = \gen (_,nVwFull) _ _ defVals ->
+          "--" >#< pp (rsDescr (genRsInfo gen)) >#< nVwFull
+          >-< vlist defVals
+      }
+{-
+          let cmtPP = "{-" >#< (pp (if isPre then "pre:" else "post:")
+                               >-< ("def gam:" >#< ppGam atDefFmGam
+                                    >-< "use gam:" >#< ppGam atUseFmGam
+                                    >-< "at gam:" >#< ppGam jaFmGam
+                                   )
+                               )
+                       >#< "-}"
+-}
+
+type GenGam = Gam FmKind Gen
+
+genGam :: GenGam
+genGam = Map.fromList [ (FmTeX,genTeX), (FmAG,genAG) ]
+}
+
+-------------------------------------------------------------------------
+-- Generation of lhs2tex/AG for rules
+-------------------------------------------------------------------------
+
+{
+rlGen :: Gen -> (Nm,Nm->Nm) -> Gam Nm (Nm,PP_Doc)
+rlGen gen (nRl',mkFullNm)
+  = Map.mapWithKey
+      (\nVw vwRlInfo
+        ->  let nRlFull = mkFullNm nVw
+                gen' = gen {genVwRlInfo=vwRlInfo}
+                r = genRl gen' gen' (nRlFull,nVw,nRl')
+            in  (nRlFull,r)
+      )
+      (rlVwGam (genRlInfo gen))
+
+rlLtxGamTranspose :: Ord k => Gam k (Gam k (n,v)) -> Gam k (Gam k (n,v))
+rlLtxGamTranspose g
+  = Map.fromListWith Map.union [ (v,Map.singleton r (n,d)) | (r,vm) <- Map.toList g, (v,(n,d)) <- Map.toList vm ]
+
+vwRlLtxGen :: Gen -> Gam Nm (Gam Nm (Nm,PP_Doc)) -> Gam Nm PP_Doc
+vwRlLtxGen gen vwRlLtxGam
   = Map.mapWithKey
       (\nVw rMp
-        ->  let rs = catMaybes [ Map.lookup n rMp | n<- rsRlOrder rsInfo ]
+        ->  let rs = catMaybes [ Map.lookup n rMp | n <- rsRlOrder (genRsInfo gen) ]
                 nVwFull = nmInit . fst . head $ rs
                 nScMeta = nVwFull `nmApd` Nm "scheme"
-                (Just (scInfo,vwScInfo)) = scVwGamLookup nSc nVw (genScGam gen)
+                vwScInfo = fromJust $ Map.lookup nVw $ scVwGam $ genScInfo gen
+                gen' = gen {genVwScInfo=vwScInfo}
                 eScmPP
-                  = genJdExpr gen scInfo vwScInfo True (const Nothing) (genOpts gen) emptyAtUsInfo emptyGam emptyGam (genFmGam gen) emptyGam
-                    . jdGamFmExpr (optGenFM . genOpts $ gen)
+                  = genJdExpr gen' gen' (const Nothing) emptyGam (genFmGam gen')
+                    . jdGamFmExpr (optGenFM . genOpts $ gen')
                     . vwscJdGam
                     $ vwScInfo
-            in  genRs gen
-                      (nScMeta,nVwFull) rsInfo
+            in  genRs gen' gen'
+                      (nScMeta,nVwFull)
                       eScmPP (map fst rs) (map snd rs)
       )
       vwRlLtxGam
@@ -265,32 +285,34 @@ rsGen :: Gen -> [Nm] -> RsGam Expr -> Gam Nm (Gam Nm PP_Doc)
 rsGen gen vwOrder rsGam
   = Map.mapWithKey
       (\nRs rsInfo
-        -> case rsInfo of
-             RsInfo nRs nSc _ rlGam
-               -> vwRlLtxGen gen nSc (rlLtxGamTranspose r) rsInfo
-               where (Just scInfo) = Map.lookup nSc (genScGam gen)
-                     r = Map.mapWithKey
-                           (\nRl rlInfo
-                             -> let nRl' = nmLaTeX nRl
-                                in  rlGen gen
-                                          (nSc,maybe nSc Nm (scMbAGStr scInfo),nRl',maybe nRl' Nm (rlMbAGStr rlInfo)
-                                           ,\nVw -> mkRlNm nBs nVw nRs nRl')
-                                          rlInfo
-                           )
-                           rlGam
-             RsInfoGroup nRs nSc _ rlNms
-               -> vwRlLtxGen gen nSc (Map.unions r) rsInfo
-               where r = map
-                           (\nVw
-                             -> let rs = [ let nRl' = nmLaTeX nRl
-                                               nd = mkRlNm nBs nVw nRs nRl'
-                                               nu = mkRlNm nBs nVw nRs' nRl'
-                                           in  Map.singleton nRl (nd,genNmDef gen nd (genNmUse gen nu))
-                                         | (nRs',nRl) <- rlNms, rlVwIsDef nRs' nRl nVw
-                                         ]
-                                in  if null rs then emptyGam else Map.singleton nVw (Map.unions rs)
-                           )
-                           vwOrder
+        -> let gen' = gen {genRsInfo=rsInfo}
+           in  case rsInfo of
+                 RsInfo nRs nSc _ rlGam
+                   -> vwRlLtxGen gen'' (rlLtxGamTranspose r)
+                   where scInfo = fromJust (Map.lookup nSc (genScGam gen'))
+                         gen'' = gen' {genScInfo=scInfo}
+                         r = Map.mapWithKey
+                               (\nRl rlInfo
+                                 -> let nRl' = nmLaTeX nRl
+                                    in  rlGen (gen'' {genRlInfo=rlInfo})
+                                              (nRl',\nVw -> mkRlNm nBs nVw nRs nRl')
+                               )
+                               rlGam
+                 RsInfoGroup nRs nSc _ rlNms
+                   -> vwRlLtxGen gen'' (Map.unions r)
+                   where scInfo = fromJust (Map.lookup nSc (genScGam gen'))
+                         gen'' = gen' {genScInfo=scInfo}
+                         r = map
+                               (\nVw
+                                 -> let rs = [ let nRl' = nmLaTeX nRl
+                                                   nd = mkRlNm nBs nVw nRs nRl'
+                                                   nu = mkRlNm nBs nVw nRs' nRl'
+                                               in  Map.singleton nRl (nd,genNmDef gen'' nd (genNmUse gen'' nu))
+                                             | (nRs',nRl) <- rlNms, rlVwIsDef nRs' nRl nVw
+                                             ]
+                                    in  if null rs then emptyGam else Map.singleton nVw (Map.unions rs)
+                               )
+                               vwOrder
       )
       rsGam
   where nBs = Nm (optBaseNm (genOpts gen))

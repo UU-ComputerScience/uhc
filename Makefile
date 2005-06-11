@@ -213,7 +213,7 @@ RULER2				:= bin/ruler2
 RULER2_DIR			:= ruler2
 RULER2_MAIN			:= Ruler
 RULER2_AG			:= $(RULER2_MAIN).ag
-RULER2_AG_INCLS		:= RulerPretty.ag RulerAST.ag RulerGen.ag RulerParser.ag RulerExprMatchSubst.ag RulerWrap.ag RulerViewDpd.ag RulerMisc.ag
+RULER2_AG_INCLS		:= RulerPretty.ag RulerAST.ag RulerGen.ag RulerParser.ag RulerExprMatchSubst.ag RulerWrap.ag RulerViewDpd.ag RulerMisc.ag RulerARule.ag
 RULER2_AG_HS		:= $(RULER2_AG:.ag=.hs)
 RULER2_HS			:= RulerUtils.hs RulerAdmin.hs RulerMkAdmin.hs
 RULER2_DERIV		:= $(RULER2_DIR)/$(RULER2_AG_HS)

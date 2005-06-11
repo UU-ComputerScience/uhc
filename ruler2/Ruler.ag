@@ -124,7 +124,7 @@ defaultOpts
   = Opts
       { optGenFM        =  FmAll
       , optAtDir        =  AtInOut
-      , optSubstFullNm  =  False
+      , optSubstFullNm  =  True
       , optHelp         =  False
       , optDebug        =  False
       , optVersion      =  False
@@ -173,6 +173,7 @@ INCLUDE "RulerPretty.ag"
 INCLUDE "RulerAST.ag"
 INCLUDE "RulerGen.ag"
 INCLUDE "RulerExprMatchSubst.ag"
+INCLUDE "RulerARule.ag"
 
 -------------------------------------------------------------------------
 -- Misc functions dependent on AST
@@ -444,7 +445,7 @@ rlGamUpdVws opts vwDpdGr extNmS scGam rlGam rlInfo
                   -> let (preg,postg,prevVwRlChs) = prevWRTDpd nVw vwDpdGr prePostGamMp (emptyGam,emptyGam,emptyGam)
                          (pregIncr,pregDflt) = reGamExtDflt' dfltJaGam nVw scGam preg
                          (postgIncr,postgDflt) = reGamExtDflt' dfltJaGam nVw scGam postg
-                         ext newG prevG = reGamExtWithNew exprNmGam (exprSubst defaultOpts) exprNmS dfltJaGam nVw scGam prevG newG
+                         ext newG prevG = reGamExtWithNew exprNmGam (exprSubst (defaultOpts {optSubstFullNm=False})) exprNmS dfltJaGam nVw scGam prevG newG
                          vrgOfVwRlInfo = Map.lookup nVw . rlVwGam
                          doMarkChng = doMarkChngForVw nVw
                          dfltJaGam
@@ -557,6 +558,10 @@ SEM AExpr
   | Expr            loc     .   fmGam       =   emptyGam
                             .   rwGam       =   emptyGam
 
+SEM AEqn
+  | Err             loc     .   fmGam       =   emptyGam
+                            .   rwGam       =   emptyGam
+
 SEM Decl
   | Fmt FmtJudge    expr    .   fmGam       =   emptyGam
                             .   rwGam       =   emptyGam
@@ -593,6 +598,9 @@ SEM AttrEqn
 
 SEM AExpr
   | Expr            loc     .   wrKindStk   =   [WrNone]
+
+SEM AEqn
+  | Err             loc     .   wrKindStk   =   [WrNone]
 
 SEM Decl
   | Fmt FmtJudge    expr    .   wrKindStk   =   [WrNone]
