@@ -153,6 +153,7 @@ DATA Expr
 DATA ANm
   | Loc                 nm          : {Nm}
   | Lhs                 nm          : {Nm}
+  | Fld                 nm          : {Nm}
   | Node                ndNm        : {Nm}
                         nm          : {Nm}
 
@@ -167,11 +168,13 @@ SET AllExpr = Expr MbExpr
 DATA ARule
   | Rule                ndNmL       : {[Nm]}
                         rlNm        : {Nm}
+                        info        : {[String]}
                         eqns        : AEqns
 
 DATA AEqn
   | Eqn                 dest        : AEqnDest
                         val         : AExpr
+  | Err                 expr        : Expr
 
 DATA AExpr
   | Expr                expr        : Expr
@@ -184,7 +187,9 @@ TYPE AEqns = [AEqn]
 
 TYPE AEqnDests = [AEqnDest]
 
-SET AllARule = ARule AEqn AEqns AExpr AEqnDest AEqnDests ANm
+SET AllARuleButARule = AEqn AEqns AExpr AEqnDest AEqnDests ANm
+
+SET AllARule = ARule AllARuleButARule
 
 -------------------------------------------------------------------------
 -- Sets of AST data's

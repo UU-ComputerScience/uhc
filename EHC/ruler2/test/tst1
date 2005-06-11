@@ -76,7 +76,7 @@ rules expr.base scheme expr "Expr type rules" =
       judge R : expr
           | tyCnstr.syn = tyCnstr tyCnstr.inh
 
-  rule e.app viewsel K - 1 "App" =
+  rule e.app "App" =
     view E =
       judge F : expr = valGam :- eFun : (tyFun= ty.a -> ty)
       judge A : expr = valGam :- eArg : ty.a

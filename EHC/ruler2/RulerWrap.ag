@@ -86,9 +86,15 @@ ppExpr = pp_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam
 
 exprSubst :: Opts -> FmGam Expr -> Expr -> Expr
 exprSubst o fmg = repl_Syn_AGExprItf . wrapExpr' o fmg emptyGam
+{-
+exprSubst :: Opts -> FmGam Expr -> Expr -> Expr
+exprSubst o fmg e
+  = tr "XX" (pp e >#< pp () >|<  "-->" >#< pp e') e'
+  where e' = . repl_Syn_AGExprItf . wrapExpr' o fmg emptyGam $ e
+-}
 
 exprRewrite :: Opts -> FmGam Expr -> RwExprGam -> Expr -> Expr
-exprRewrite o fmg rwg = repl_Syn_AGExprItf . wrapExpr' o fmg rwg
+exprRewrite o fmg rwg = fst . exprRewrite' o fmg rwg
 
 exprRewrite' :: Opts -> FmGam Expr -> RwExprGam -> Expr -> (Expr,FmGam Expr)
 exprRewrite' o fmg rwg e
@@ -138,3 +144,4 @@ mkALhs n = Expr_AVar (ANm_Lhs n)
 mkANd :: Nm -> Nm -> Expr
 mkANd n a = Expr_AVar (ANm_Node n a)
 }
+
