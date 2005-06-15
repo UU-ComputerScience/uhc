@@ -144,6 +144,8 @@ DATA Expr
                         expr        : Expr
   | Wrap                wrKind      : {WrKind}
                         expr        : Expr
+  | Cnstr               expr        : Expr
+                        cnstr       : ECnstr
   | Paren               expr        : Expr
   | SelTop              expr        : Expr
   | Sel                 expr        : Expr
@@ -161,9 +163,16 @@ DATA ANm
 
 TYPE MbExpr = MAYBE Expr
 
-SET AllExpr = Expr MbExpr
+SET AllExpr = Expr MbExpr ECnstr
 
 DERIVING ANm: Eq,Ord
+
+-------------------------------------------------------------------------
+-- Expr constraint
+-------------------------------------------------------------------------
+
+DATA ECnstr
+  | Ty					nm			: {Nm}
 
 -------------------------------------------------------------------------
 -- Rule in AG form
