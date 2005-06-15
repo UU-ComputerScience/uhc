@@ -68,10 +68,17 @@ SEM ANm
 
 SEM ARule
   | Rule            lhs     .   pp          =   "SEM" >#< pp (head @ndNmL) >#< "--" >#< ppCommas @info
-                                                >-< indent 2 ("|" >#< @rlNm >|< indent 2 @eqns.pp)
+                                                >-< indent atLhs2texDist ("|" >#< @rlNm >|< indent atLhs2texDist @eqns.pp)
 
 SEM AEqn
-  | Eqn             lhs     .   pp          =   @dest.pp >#< "=" >#< @val.pp
+  | Eqn             lhs     .   pp          =   let (w1,w2) = fromJust @lhs.mbDstWd
+                                                    w = w1 + w2 + atDstFillLen
+                                                    cmb l r = if @dest.isComposite
+                                                              then if @dest.dstWd > w - atLhs2texDist
+                                                                   then l >-< strWhite w >|< r
+                                                                   else l >|< strWhite (w - @dest.dstWd) >|< r
+                                                              else l >|< r
+                                                in  cmb @dest.pp ("=" >|< strWhite atLhs2texDist >|< @val.pp)
   | Err             lhs     .   pp          =   "ERR" >#< @expr.pp
 
 SEM AEqnDest
@@ -110,16 +117,21 @@ ATTR AEqnDests [ | | dstWdL: {[Int]} ]
 
 SEM AEqnDest
   | Many            lhs     .   dstWd       =   sum @dests.dstWdL + length @dests.dstWdL + 1
-  | One             lhs     .   dstWd       =   @anm.mxDstNdWd + @anm.mxDstAtWd
+  | One             lhs     .   dstWd       =   @anm.mxDstNdWd + @anm.mxDstAtWd + 1
 
 SEM AEqnDests
   | Cons            lhs     .   dstWdL      =   @hd.dstWd : @tl.dstWdL
   | Nil             lhs     .   dstWdL      =   []
 
-SEM AEqn
-  | Eqn             loc     .   needsNl     =   let (w1,w2) = fromJust @lhs.mbDstWd
-                                                    w = w1 + w2 + atDstFillLen
-                                                in  False
+-------------------------------------------------------------------------
+-- Kind of lhs of eqn, composite?
+-------------------------------------------------------------------------
+
+ATTR AEqnDest [ | | isComposite: Bool ]
+
+SEM AEqnDest
+  | Many            lhs     .   isComposite =   True
+  | One             lhs     .   isComposite =   False
 
 -------------------------------------------------------------------------
 -- Node name of AEqnDest in an AEqn, for emitting only first of a series of same node names
@@ -130,7 +142,7 @@ ATTR ANm AEqnDest AEqn AEqns [ mbPrevNdStr: {Maybe String} | | ]
 
 SEM ANm
   | Loc             loc     .   ndStr       =   "loc"
-  | Lhs             loc     .   ndStr       =   "lhs"
+  | Lhs             loc     .   ndStr       =   strLhs
   | Node            loc     .   ndStr       =   show @ndNm
   | Fld             loc     .   ndStr       =   ""
 
@@ -160,9 +172,11 @@ SEM Expr
 -------------------------------------------------------------------------
 
 {
-atDstFill1 = "  .  "
-atDstFill2 = "  "
-atDstFillLen = length atDstFill1 + length atDstFill2
+atLhs2texDist   = 2
+atLhs2texFill   = strWhite atLhs2texDist
+atDstFill1      = atLhs2texFill ++ "." ++ atLhs2texFill
+atDstFill2      = atLhs2texFill
+atDstFillLen    = length atDstFill1 + length atDstFill2
 
 ppDest :: String -> Bool -> Maybe (Int,Int) -> Maybe String -> String -> String -> Nm -> PP_Doc
 ppDest k isDest mbDstWd mbPrevNdStr dstPre srcPre n
@@ -205,6 +219,7 @@ SEM Expr
                                                 in  case Map.lookup @wrKind wrKindGam of
                                                       Just i -> wr (wkBegCmd i) (wkEndCmd i) @expr.ppLaTeX
                                                       _      -> @expr.ppLaTeX
+  | ChildOrder      loc     .   ppLaTeX     =   @expr.ppLaTeX
   | Empty           loc     .   ppLaTeX     =   empty
 
 -------------------------------------------------------------------------

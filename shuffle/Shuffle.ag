@@ -20,11 +20,11 @@ import qualified UU.DData.Set as Set
 import qualified UU.DData.Seq as Seq
 }
 
-{
 -------------------------------------------------------------------------
 -- Main
 -------------------------------------------------------------------------
 
+{
 main :: IO ()
 main
   = do { args <- getArgs
@@ -52,7 +52,7 @@ doCompile fp opts
                         }
        ; xrefExceptFileContent
            <- maybe (return "") readFile (optMbXRefExcept opts)
-       ; pres <- parseHandle show (pAGItf) fn fh
+       ; pres <- parseHandle pAGItf fn fh
        ; let res = wrap_AGItf pres
                      (Inh_AGItf
                         { opts_Inh_AGItf = opts {optBaseName = maybe (Just fb) Just (optBaseName opts)}
@@ -68,24 +68,79 @@ doCompile fp opts
           = if f
             then putStrLn (disp (vlist (map bldPP b)) 200 "")
             else return ()
+}
 
 -------------------------------------------------------------------------------------------
 -- Scanning
 -------------------------------------------------------------------------------------------
 
+{
+data ScanOpts
+  =  ScanOpts
+        {   scoKeywordsTxt      ::  Set.Set String
+        ,   scoSpecChars        ::  Set.Set Char
+        ,   scoOpChars          ::  Set.Set Char
 {-
+        ,   scoKeywordsOps      ::  [String]
+        ,   scoOpChars          ::  String
+        ,   scoSpecPairs        ::  [String]
+        ,   scoDollarIdent      ::  Bool
+-}
+        }
+
+type ScanOptsMp = Map.Map ScState ScanOpts
+
+shuffleScanOpts :: ScanOptsMp
+shuffleScanOpts
+  = Map.fromList
+        [ ( ScLexMeta
+          , ScanOpts
+              { scoKeywordsTxt      =   Set.fromList [ "module", "import", "export", "hs", "ag", "_", "-", ".", "<" ]
+              , scoSpecChars        =   Set.fromList "(),"
+              , scoOpChars          =   Set.fromList "+-=*&^%$#@!''\\|><~`;:?/_."
+              }
+          )
+        ]
+
+data ScState
+  = ScChunk | ScLexMeta | ScSkip
+  deriving (Show,Eq,Ord)
+
+data TokPos
+  = TokPos { tkpLine, tkpColumn :: Int }
+  deriving (Eq,Ord)
+
+instance Show TokPos where
+  show (TokPos l c) = if l < 0 || c < 0 then "" else "(" ++ show l ++ ":" ++ show c ++ ")"
+
+tkpStart :: TokPos
+tkpStart = TokPos 1 1
+
+tkpNone :: TokPos
+tkpNone = TokPos (-1) (-1)
+
 data TokKind
-  = TKBegChunk | TKEndChunk | TKNameRef | TKNl | TKText
+  = TKBegChunk | TKEndChunk | TKNameRef | TKNl | TkText | TkInt | TkStr | TkEOF | TkReserved
   deriving (Show,Eq,Ord)
 
 data Tok
-  = Tok { tokKind :: TokKind, tokWhite :: String, tokBlack :: String }
-  deriving (Show)
+  = Tok { tokKind :: TokKind, tokWhite :: String, tokBlack :: String, tokPos :: TokPos, tokState :: ScState }
+  deriving (Ord)
 
 instance Eq Tok where
-  (Tok k1 _ b1) == (Tok k2 _ b2) = k1 == k2
+  (Tok k1 _ b1 _ _) == (Tok k2 _ b2 _ _) = k1 == k2 && (k1 /= TkReserved || b1 == b2)
+
+instance Show Tok where
+  show t = show (tokPos t) ++ show (tokBlack t)
+--  show t = show (tokPos t) ++ "/" ++ show (tokKind t) ++ "/" ++ show (tokState t) ++ " " ++ show (tokBlack t)
 
 instance Symbol Tok
+
+isVarStart :: Char -> Bool
+isVarStart c = c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'
+
+isVarRest :: Char -> Bool
+isVarRest c = isVarStart c || isDigit c || c `elem` "_"
 
 isWhite :: Char -> Bool
 isWhite = (`elem` " \t")
@@ -96,75 +151,182 @@ isLF = (`elem` "\n\r")
 isBlack :: Char -> Bool
 isBlack c = not (isWhite c || isLF c)
 
-scan :: String -> [Tok]
-scan s
-  = let sc p []                     = []
-        sc p s@(c:_)
-          | isWhite c               = let (w,s') = span isWhite s
-                                          (t:ts) = sc (a w p) s'
-                                       in (t {tokWhite = w} : ts)
-        sc p s@(c:s')
-          | isLF c                  = Tok TKNl "" [c] : sc 0 s'
-        sc 0 s@('%':'%':'[':s')     = Tok TKBegChunk "" "%%[" : sc 3 s'
-        sc 0 s@('%':'%':']':s')     = Tok TKEndChunk "" "%%]" : sc 3 s'
-        sc 0 s@('%':'%':'@':s')     = Tok TKNameRef "" "%%@" : sc 3 s'
-        sc p s@(c:_)
-          | isBlack c               = let (b,s') = span isBlack s
-                                       in (Tok TKText "" b : sc (a b p) s')
-        a s p                       = p + length s
-     in sc 0 s
+isStrQuote :: Char -> Bool
+isStrQuote c = c == '"'
+
+isStr :: Char -> Bool
+isStr c = not (isStrQuote c || isLF c)
+
+scan :: ScanOptsMp -> ScState -> String -> [Tok]
+scan scoMp st s
+  = takeWhile ((/=TkEOF) . tokKind) (sc tkpStart st s)
+  where sc p st             ""                      = [Tok TkEOF "" "" p st]
+        sc p ScChunk        s@(c:_)
+          | isWhite c                               = t {tokWhite = w} : ts
+                                                    where (w,s') = span isWhite s
+                                                          (t:ts) = sc (a w p) ScChunk s'
+        sc p ScLexMeta      s@(c:_)
+          | isWhite c                               = sc (a w p) ScLexMeta s'
+                                                    where (w,s') = span isWhite s
+        sc p st             s@(c:s')
+          | isLF c                                  = Tok TKNl       ""   [c] p st : sc (al p) st' s'
+                                                    where st' = if st == ScLexMeta then ScChunk else st
+        sc p st@ScLexMeta   s@(c:s')
+          | isSpec st c                             = Tok TkReserved ""   [c] p st : sc (ai 1 p) st s'
+        sc p st@ScLexMeta   s@(c:_)
+          | isVarStart c                            = scKw isVarRest p st s
+        sc p st@ScLexMeta   s@(c:_)
+          | isDigit c                               = Tok TkInt      ""   w   p st : sc (a w p) st s'
+                                                    where (w,s') = span isDigit s
+        sc p st@ScLexMeta   s@(c:s')
+          | isStrQuote c                            = Tok TkStr      ""   w   p st : sc (a w . ai 2 $ p) st s3
+                                                    where (w,s2) = span isStr s'
+                                                          s3 = case s2 of
+                                                                 (c:s) | isStrQuote c -> s
+                                                                 _                    -> s2
+        sc p st@ScLexMeta   s@(c:_)
+          | isOpch st c                             = scKw (isOpch st) p st s
+        sc p@(TokPos _ 1) ScSkip  s@('%':'%':'[':s')= Tok TKBegChunk "" "%%[" p ScSkip  : sc (ai 3 p) ScLexMeta s'
+        sc p@(TokPos _ 1) ScChunk s@('%':'%':']':s')= Tok TKEndChunk "" "%%]" p ScChunk : sc (ai 3 p) ScSkip s'
+        sc p@(TokPos _ 1) ScChunk s@('%':'%':'@':s')= Tok TKNameRef  "" "%%@" p ScChunk : sc (ai 3 p) ScChunk s'
+        sc p ScChunk        s@(c:_)
+          | isBlack c                               = Tok TkText     ""   b   p ScChunk : sc (a b p) ScChunk s'
+                                                    where (b,s') = span isBlack s
+        sc p st             s@(c:s')                = sc (ai 1 p) st s'
+        scKw f p st s                               = Tok tk         ""   w   p st  : sc (a w p) st s'
+                                                    where (w,s') = span f s
+                                                          tk = if isKeyw st w then TkReserved else TkText
+        a s                                         = ai (length s)
+        ai i p                                      = p {tkpColumn = i + tkpColumn p}
+        al   p                                      = p {tkpLine = 1 + tkpLine p, tkpColumn = 1}
+        opt st p                                    = maybe False p $ Map.lookup st scoMp
+        isSpec st c                                 = opt st (\o -> c `Set.member` scoSpecChars o)
+        isOpch st c                                 = opt st (\o -> c `Set.member` scoOpChars o)
+        isKeyw st w                                 = opt st (\o -> w `Set.member` scoKeywordsTxt o)
 
 pBegChunk, pEndChunk, pBegNameRef, pNl :: (IsParser p Tok) => p Tok
-pBegChunk   = pSym (Tok TKBegChunk "" "%%[")
-pEndChunk   = pSym (Tok TKEndChunk "" "%%]")
-pBegNameRef = pSym (Tok TKNameRef "" "%%@")
-pNl         = pSym (Tok TKNl "" "\n")
+pBegChunk   = pSym (Tok TKBegChunk "" "%%[" tkpNone ScSkip)
+pEndChunk   = pSym (Tok TKEndChunk "" "%%]" tkpNone ScSkip)
+pBegNameRef = pSym (Tok TKNameRef  "" "%%@" tkpNone ScSkip)
+pNl         = pSym (Tok TKNl       "" "LF"  tkpNone ScSkip)
+
+pKey :: (IsParser p Tok) => String -> p String
+pKey k = tokBlack <$> pSym (Tok TkReserved "" k tkpNone ScSkip)
+
+pVar :: (IsParser p Tok) => p String
+pVar = tokBlack <$> pSym (Tok TkText "" "<ident>" tkpNone ScSkip)
+
+pInt :: (IsParser p Tok) => p String
+pInt = tokBlack <$> pSym (Tok TkInt "" "0" tkpNone ScSkip)
+
+pInt' :: (IsParser p Tok) => p Int
+pInt' = read <$> pInt
+
+pStr :: (IsParser p Tok) => p String
+pStr = tokBlack <$> pSym (Tok TkStr "" "<string>" tkpNone ScSkip)
 
 pBlack :: (IsParser p Tok) => p (Maybe String,String)
-pBlack      = (\(Tok _ w b) -> (if null w then Nothing else Just w,b)) <$> pSym (Tok TKText "" "<text>")
--}
+pBlack = (\(Tok _ w b _ _) -> (if null w then Nothing else Just w,b)) <$> pSym (Tok TkText "" "<text>" tkpNone ScSkip)
+}
 
 
 -------------------------------------------------------------------------
 -- Parsing
 -------------------------------------------------------------------------
 
+{-
 parseHandle :: (Message Char Pos -> String) -> CharParser a -> FilePath -> Handle -> IO a
 parseHandle showM p fn fh
   = do { txt <- hGetContents fh
        ; parseIOMessage showM p (Input txt (initPos fn))
        }
+-}
+
+{
+parseHandle :: ShPr a -> FilePath -> Handle -> IO a
+parseHandle p fn fh
+  = do { txt <- hGetContents fh
+       ; let toks = scan shuffleScanOpts ScSkip txt
+       -- ; putStrLn (unlines . map show $ toks)
+       ; parseIOMessage show p toks
+       }
+}
+
+-------------------------------------------------------------------------
+-- New Parser
+-------------------------------------------------------------------------
+
+{
+type ShPr  c = (IsParser p Tok) => p c
+type ShPr2 c = (IsParser p Tok) => p c -> p c
+
+pAGItf :: ShPr T_AGItf
+pAGItf = sem_AGItf_AGItf <$> (sem_Lines_Nil <$ pList pNl) <*> pChunks
+-- pAGItf = sem_AGItf_AGItf <$> pLines <*> pChunks
+
+pVersion           :: ShPr Version
+pVersion           = mkVerFromIntL <$> pList1Sep (pKey "_") pInt'
+
+pVerOrder          :: ShPr VersionOrder
+pVerOrder          =   pListSep (pKey ",") (pList1Sep (pKey "<") pVersion)
+
+pId, pIdNest, pIdNestPart :: ShPr String
+pId                 =   (\h t -> concat . intersperse "." $ h : t) <$> pVar <*> pList (pKey "." *> (pVar <|> pInt))
+pIdNest             =   (concat . intersperse " ") <$> pList1 pIdNestPart
+pIdNestPart         =   pId
+                    <|> (\l -> "(" ++ concat (intersperse "," l) ++ ")") <$> pParens pIdNests
+                    <|> pStr
+
+pIdNests            :: ShPr [String]
+pIdNests            =   pListSep (pKey ",") pIdNest
+
+pChunkId            :: ShPr (Version,String)
+pChunkId            =   (,) <$> pVersion <* pKey "." <*> pId
+
+pParens             :: ShPr2 p
+pParens p           =   pKey "(" *> p <* pKey ")"
+
+pChunks             :: ShPr T_Chunks
+pChunks             =   pFoldr (sem_Chunks_Cons,sem_Chunks_Nil) pChunk
+
+pChunk              :: ShPr T_Chunk 
+pChunk              =   pBegChunk
+                         *> ((   sem_Chunk_Ver
+                                 <$> pVersion
+                                 <*> ((:[]) <$ pKey "." <*> pId <|> pSucceed [])
+                                 <*> (pKey "-" *> ((:[]) <$> pChunkId <|> pParens (pList1 pChunkId)) <|> pSucceed [])
+                                 <*> (True <$ pKey "hs" <|> pSucceed False)
+                                 <*> (Just <$ pKey "module" <*> pId <|> pSucceed Nothing)
+                                 <*> (pKey "import" *> pParens pIdNests <|> pSucceed [])
+                                 <*> (pKey "export" *> pParens pIdNests <|> pSucceed [])
+                             <|> sem_Chunk_Named
+                                 <$> pId
+                             )
+                             <*  pNl
+                             <*> pLines
+                             <*  pEndChunk
+                             <*> pLines
+                            )
+                    <?> "a chunk"
+
+pLines              :: ShPr T_Lines
+pLines              =   pFoldr (sem_Lines_Cons,sem_Lines_Nil) pLine
+
+pLine               :: ShPr T_Line
+pLine               =   sem_Line_AsIs  <$> pLineChars  <*  pNl
+                    <|> sem_Line_Named <$  pBegNameRef <*> pId <* pNl
+                    <?> "a line"
+
+pLineChars          :: ShPr T_Words
+pLineChars          =   (foldr sem_Words_Cons sem_Words_Nil . concat)
+                        <$> pList ((\(mw,b) -> maybe [] (\w -> [sem_Word_White w]) mw ++ [sem_Word_Black b]) <$> pBlack)
+}
 
 -------------------------------------------------------------------------
 -- Parser
 -------------------------------------------------------------------------
 
 {-
-pChunks :: (IsParser p Tok) => p T_AGItf
-pChunks
-  = let pAGItf              =   sem_AGItf_AGItf <$> pLines <*> pChunks
-        pChunks             =   pFoldr_ng (sem_Chunks_Cons,sem_Chunks_Nil) pChunk
-        pChunk              =   pBegChunk
-                                 *> ((   sem_Chunk_Ver
-                                         <$> (mkVerFromInt <$> pInt)
-                                         <*> ((:[]) <$ pKey "." <*> pId <|> pSucceed [])
-                                         <*> (pKey "-" *> ((:[]) <$> pChunkId <|> pParens' (pList1 pChunkId)) <|> pSucceed [])
-                                         <*> (True <$ pKey "hs" <|> pSucceed False)
-                                         <*> (Just <$ pKey "module" <*> pId <|> pSucceed Nothing)
-                                         <*> (pKey "import" *> pParens pIdNests <|> pSucceed [])
-                                         <*> (pKey "export" *> pParens pIdNests <|> pSucceed [])
-                                     <|> sem_Chunk_Named
-                                         <$> pId
-                                     )
-                                     <*  pChunkBegTail
-                                     <*> pLines
-                                     <*  pChunkEnd
-                                     <*> pLines
-                                    )
-                            <?> "a chunk"
-     in pAGItf
--}
-
 pAGItf :: (IsParser p Char) => p T_AGItf
 pAGItf
   = let pAGItf              =   sem_AGItf_AGItf <$> pLines <*> pChunks
@@ -232,15 +394,6 @@ pAGItf
         pNonComma           =   pExceptSym "\r\n,() \t\""
         pIdNonComma         =   pList1 pNonComma
         pIdNonCommas        =   pListSep (pKey "," <* pSpaces) pIdNonComma
-{-
-        pIdNest             =   (\h mh2 t -> concat ([h] ++ maybe [] (\h2 -> [" " ++ h2]) mh2 ++ t))
-                                <$> pIdNonComma
-                                <*  pSpaces
-                                <*> (Just <$> pIdNonComma `opt` Nothing)
-                                <*> ((\x -> ["("] ++ x ++ [")"]) 
-                                     <$> pParens' pIdNonCommas <|> pSucceed [])
-                            <|> pDQuote *> pList pNonDQuote <* pDQuote
--}
         pIdNest             =   (concat . intersperse " ") <$> pList1Sep pSpaces pIdNestPart
         pIdNestPart         =   pIdNonComma
                             <|> (\l -> "(" ++ concat (intersperse "," l) ++ ")") <$> psParens pIdNests
@@ -283,19 +436,25 @@ pNonSpaceGroups gs
 
 pKey :: (IsParser p Char) => String -> p String
 pKey s = pSpaces *> pToks s
+-}
 
-parseAndGetRes :: (Symbol s, InputState inp s pos) => AnaParser inp Pair s pos a -> inp -> a
-parseAndGetRes p s = case evalSteps (parse p s) of {Pair v _ -> v}
-
+{
+parseAndGetRes :: ShPr a -> String -> a
+parseAndGetRes p s
+  = case evalSteps (parse p toks) of {Pair v _ -> v}
+  where toks = scan shuffleScanOpts ScLexMeta s
+}
 
 -------------------------------------------------------------------------
 -- Options
 -------------------------------------------------------------------------
 
+{
 data Opts 
   = Opts
       { optAG           :: Bool
       , optHS           :: Bool
+      , optNewParser    :: Bool
       , optLaTeX        :: Bool
       , optIndex        :: Bool
       , optHelp         :: Bool
@@ -311,6 +470,7 @@ defaultOpts
       { optAG           =  False
       , optHS           =  False
       , optLaTeX        =  False
+      , optNewParser    =  False
       , optIndex        =  False
       , optHelp         =  False
       , optGenVersion   =  VNone
@@ -330,6 +490,8 @@ cmdLineOpts
           "generate code for haskell, default=no"
      ,  Option "l"  ["latex"]     (NoArg oLaTeX)
           "generate code for latex, default=no"
+     ,  Option "p"  ["newparser"] (NoArg oNewParser)
+          "new parser (temp option)"
      ,  Option ""   ["index"]     (NoArg oIndex)
           "combined with latex, generate index entries, default=no"
      ,  Option "g"  ["gen"]       (ReqArg oGen "all|<nr>")
@@ -348,6 +510,7 @@ cmdLineOpts
   where  oAG             o =  o {optAG = True}
          oHS             o =  o {optHS = True}
          oLaTeX          o =  o {optLaTeX = True}
+         oNewParser      o =  o {optNewParser = True}
          oIndex          o =  o {optIndex = True}
          oLhs2tex    ms  o =  yesno (\f o -> o {optWrapLhs2tex = f}) ms o
          oBase        s  o =  o {optBaseName = Just s}

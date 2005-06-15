@@ -1,6 +1,7 @@
 preamble tex "%include lhs2TeX.fmt\n%include afp.fmt"
 
 format ag ty.identv = gTy
+format ag identv = nm
 {-
 format ag ty.syn = ty
 format ag ty.inh = knTy
@@ -81,7 +82,7 @@ rules expr.base scheme expr "Expr type rules" =
       judge F : expr = valGam :- eFun : (tyFun= ty.a -> ty)
       judge A : expr = valGam :- eArg : ty.a
       -
-      judge R : expr = valGam :- (eFun ^^ eArg) : ty
+      judge R : expr = valGam :- ((node 1 = eFun) ^^ (node 2 = eArg)) : ty
 
     view K =
       judge F : expr

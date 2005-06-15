@@ -50,15 +50,23 @@ viewSelsSelf' vs
 WRAPPER AGARuleItf
 
 {
-wrapARule' :: Opts -> ARule -> Syn_AGARuleItf
-wrapARule' o rl
+wrapARule' :: Opts -> CrOrdGam -> AtDefdGam -> ARule -> Syn_AGARuleItf
+wrapARule' o cg ag rl
   = let r1 = sem_AGARuleItf (AGARuleItf_AGItf rl)
     in  wrap_AGARuleItf r1
             (Inh_AGARuleItf {opts_Inh_AGARuleItf = o
+                            ,croGam_Inh_AGARuleItf = cg
+                            ,adGam_Inh_AGARuleItf = ag
                             })
 
+arlElimAlphaRename :: ARule -> ARule
+arlElimAlphaRename = replRn_Syn_AGARuleItf . wrapARule' defaultOpts emptyGam emptyGam
+
+arlElimCopyRule :: CrOrdGam -> AtDefdGam -> ARule -> ARule
+arlElimCopyRule cg ag = replCr_Syn_AGARuleItf . wrapARule' defaultOpts cg ag
+
 ppARule :: ARule -> PP_Doc
-ppARule = pp_Syn_AGARuleItf . wrapARule' defaultOpts
+ppARule = pp_Syn_AGARuleItf . wrapARule' defaultOpts emptyGam emptyGam
 }
 
 -------------------------------------------------------------------------
@@ -107,6 +115,9 @@ exprIsRw = exprIsRw_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam
 exprNmGam :: Expr -> FmGam Expr
 exprNmGam = reGamExprFmGam_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam
 
+exprCoGam :: Expr -> ChOrdGam
+exprCoGam = coGam_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam
+
 exprFmtTeXSubst :: Opts -> FmGam Expr -> Expr -> PP_Doc
 exprFmtTeXSubst o fmg = exprFmtTeX o . exprSubst o fmg
 
@@ -135,8 +146,14 @@ instance PP Expr where
 -------------------------------------------------------------------------
 
 {
+mkAFld :: Nm -> Expr
+mkAFld n = Expr_AVar (ANm_Fld n)
+
 mkALoc :: Nm -> Expr
 mkALoc n = Expr_AVar (ANm_Loc n)
+
+mkALoc' :: Nm -> Expr
+mkALoc' = mkALoc . nmStrApd nmWild
 
 mkALhs :: Nm -> Expr
 mkALhs n = Expr_AVar (ANm_Lhs n)
