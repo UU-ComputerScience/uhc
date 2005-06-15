@@ -90,14 +90,16 @@ data ScanOpts
 
 type ScanOptsMp = Map.Map ScState ScanOpts
 
+kwTxtAsVarToo = [ "module", "import", "export", "hs", "ag" ]
+
 shuffleScanOpts :: ScanOptsMp
 shuffleScanOpts
   = Map.fromList
         [ ( ScLexMeta
           , ScanOpts
-              { scoKeywordsTxt      =   Set.fromList [ "module", "import", "export", "hs", "ag", "_", "-", ".", "<" ]
+              { scoKeywordsTxt      =   Set.fromList (kwTxtAsVarToo ++ [ "_", "-", ".", "<" ])
               , scoSpecChars        =   Set.fromList "(),"
-              , scoOpChars          =   Set.fromList "+-=*&^%$#@!''\\|><~`;:?/_."
+              , scoOpChars          =   Set.fromList "+-=*&^%$#@!\\|><~`;:?/_."
               }
           )
         ]
@@ -125,10 +127,16 @@ data TokKind
 
 data Tok
   = Tok { tokKind :: TokKind, tokWhite :: String, tokBlack :: String, tokPos :: TokPos, tokState :: ScState }
-  deriving (Ord)
 
 instance Eq Tok where
   (Tok k1 _ b1 _ _) == (Tok k2 _ b2 _ _) = k1 == k2 && (k1 /= TkReserved || b1 == b2)
+
+instance Ord Tok where
+  (Tok k1 _ b1 _ _) `compare` (Tok k2 _ b2 _ _)
+    = if ck == EQ
+      then if k1 == TkReserved then b1 `compare` b2 else ck
+      else ck
+    where ck = k1 `compare` k2
 
 instance Show Tok where
   show t = show (tokPos t) ++ show (tokBlack t)
@@ -140,7 +148,7 @@ isVarStart :: Char -> Bool
 isVarStart c = c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'
 
 isVarRest :: Char -> Bool
-isVarRest c = isVarStart c || isDigit c || c `elem` "_"
+isVarRest c = isVarStart c || isDigit c || c `elem` "'_"
 
 isWhite :: Char -> Bool
 isWhite = (`elem` " \t")
@@ -270,15 +278,17 @@ pVersion           = mkVerFromIntL <$> pList1Sep (pKey "_") pInt'
 pVerOrder          :: ShPr VersionOrder
 pVerOrder          =   pListSep (pKey ",") (pList1Sep (pKey "<") pVersion)
 
-pId, pIdNest, pIdNestPart :: ShPr String
+pId, pIdNest, pIdNest2, pIdNestPart :: ShPr String
 pId                 =   (\h t -> concat . intersperse "." $ h : t) <$> pVar <*> pList (pKey "." *> (pVar <|> pInt))
 pIdNest             =   (concat . intersperse " ") <$> pList1 pIdNestPart
+pIdNest2            =   (concat . intersperse " ") <$> pList1 (pIdNestPart <|> foldl1 (<|>) (map pKey kwTxtAsVarToo))
 pIdNestPart         =   pId
-                    <|> (\l -> "(" ++ concat (intersperse "," l) ++ ")") <$> pParens pIdNests
+                    <|> (\l -> "(" ++ concat (intersperse "," l) ++ ")") <$> pParens pIdNests2
                     <|> pStr
 
-pIdNests            :: ShPr [String]
+pIdNests, pIdNests2 :: ShPr [String]
 pIdNests            =   pListSep (pKey ",") pIdNest
+pIdNests2           =   pListSep (pKey ",") pIdNest2
 
 pChunkId            :: ShPr (Version,String)
 pChunkId            =   (,) <$> pVersion <* pKey "." <*> pId
@@ -297,8 +307,8 @@ pChunk              =   pBegChunk
                                  <*> (pKey "-" *> ((:[]) <$> pChunkId <|> pParens (pList1 pChunkId)) <|> pSucceed [])
                                  <*> (True <$ pKey "hs" <|> pSucceed False)
                                  <*> (Just <$ pKey "module" <*> pId <|> pSucceed Nothing)
-                                 <*> (pKey "import" *> pParens pIdNests <|> pSucceed [])
-                                 <*> (pKey "export" *> pParens pIdNests <|> pSucceed [])
+                                 <*> (pKey "import" *> pParens pIdNests2 <|> pSucceed [])
+                                 <*> (pKey "export" *> pParens pIdNests2 <|> pSucceed [])
                              <|> sem_Chunk_Named
                                  <$> pId
                              )
@@ -454,7 +464,9 @@ data Opts
   = Opts
       { optAG           :: Bool
       , optHS           :: Bool
+{-
       , optNewParser    :: Bool
+-}
       , optLaTeX        :: Bool
       , optIndex        :: Bool
       , optHelp         :: Bool
@@ -470,7 +482,9 @@ defaultOpts
       { optAG           =  False
       , optHS           =  False
       , optLaTeX        =  False
+{-
       , optNewParser    =  False
+-}
       , optIndex        =  False
       , optHelp         =  False
       , optGenVersion   =  VNone
@@ -490,8 +504,10 @@ cmdLineOpts
           "generate code for haskell, default=no"
      ,  Option "l"  ["latex"]     (NoArg oLaTeX)
           "generate code for latex, default=no"
+{-
      ,  Option "p"  ["newparser"] (NoArg oNewParser)
           "new parser (temp option)"
+-}
      ,  Option ""   ["index"]     (NoArg oIndex)
           "combined with latex, generate index entries, default=no"
      ,  Option "g"  ["gen"]       (ReqArg oGen "all|<nr>")
@@ -510,7 +526,9 @@ cmdLineOpts
   where  oAG             o =  o {optAG = True}
          oHS             o =  o {optHS = True}
          oLaTeX          o =  o {optLaTeX = True}
+{-
          oNewParser      o =  o {optNewParser = True}
+-}
          oIndex          o =  o {optIndex = True}
          oLhs2tex    ms  o =  yesno (\f o -> o {optWrapLhs2tex = f}) ms o
          oBase        s  o =  o {optBaseName = Just s}

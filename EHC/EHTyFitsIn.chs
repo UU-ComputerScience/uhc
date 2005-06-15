@@ -627,7 +627,7 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[10.fitsIn.fRow.Coe
-                       foUpdRecFldsCoe eKeys foL tr1 foR===
+                       foUpdRecFldsCoe eKeys foL tr1 foR
                          =  let cL =   [  (l,c)
                                        |  (l,fo) <- zip eKeys foL
                                        ,  let c = coeWipeWeave (foCnstr foR) (foCSubst foR) (foLCoeL fo) (foRCoeL fo)

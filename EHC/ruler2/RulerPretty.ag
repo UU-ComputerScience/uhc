@@ -49,6 +49,7 @@ SEM Expr
   | Paren           lhs     .   pp          =   pp_parens @expr.pp
   | AppTop          lhs     .   pp          =   @expr.pp
   | Named           lhs     .   pp          =   @expr.pp
+  | Cnstr           lhs     .   pp          =   @expr.pp
 
 SEM AttrIntro
   | Intro           lhs     .   pp          =   pp @props >#< pp @nm >#< ":" >#< pp @ty
@@ -212,6 +213,7 @@ SEM Expr
   | App             loc     .   ppLaTeX     =   @lExpr.ppLaTeX >#< @rExpr.ppLaTeX
   | Op              loc     .   ppLaTeX     =   @lExpr.ppLaTeX >#< @nmExpr.ppLaTeX >#< @rExpr.ppLaTeX
   | Paren           loc     .   ppLaTeX     =   (if @lhs.needToParen then ppParens else id) @expr.ppLaTeX
+  | Cnstr           loc     .   ppLaTeX     =   @expr.ppLaTeX
   | SelTop          loc     .   ppLaTeXSel  =   ppSelLaTeX (== nmVec) @expr.ppLaTeX (reverse @expr.selL)
                     loc     .   ppLaTeX     =   if @expr.isEmpty then empty else @ppLaTeXSel
   | Var             loc     .   ppLaTeX     =   ppNmLaTeX . nmLhs2TeXSafe $ @nm
