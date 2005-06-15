@@ -1,0 +1,104 @@
+-- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
+
+-------------------------------------------------------------------------
+-- Optimisation
+-------------------------------------------------------------------------
+
+-------------------------------------------------------------------------
+-- Common to other optimisations
+-------------------------------------------------------------------------
+
+-- Context: is in composite dest?
+
+ATTR AEqnDest AEqnDests [ isInComposite: Bool | | ]
+
+SEM AEqn
+  | Eqn             dest    .   isInComposite
+                                            =   False
+
+SEM AEqnDest
+  | Many            dests   .   isInComposite
+                                            =   True
+
+-------------------------------------------------------------------------
+-- Is lhs a single name?
+-------------------------------------------------------------------------
+
+ATTR AEqnDest [ | | mbSingleANm: {Maybe ANm} ]
+
+SEM AEqnDest
+  | One             lhs     .   mbSingleANm =   if @lhs.isInComposite then Nothing else Just @anm.replRn
+  | Many            lhs     .   mbSingleANm =   Nothing
+
+-------------------------------------------------------------------------
+-- Is rhs a single name?
+-------------------------------------------------------------------------
+
+ATTR Expr AExpr [ | | mbSingleANm: {Maybe ANm} ]
+
+SEM Expr
+  | AVar            lhs     .   mbSingleANm =   Just @anm.replRn
+  | * - AppTop Paren AVar
+                    lhs     .   mbSingleANm =   Nothing
+
+-------------------------------------------------------------------------
+-- Part I: Elimination of alpha renaming
+-------------------------------------------------------------------------
+
+-------------------------------------------------------------------------
+-- Rename map gather
+-------------------------------------------------------------------------
+
+{
+type RnMp = Map.Map Nm ANm
+
+rnRepl :: RnMp -> ANm -> ANm
+rnRepl m an@(ANm_Loc n) = maybe an id (Map.lookup n m)
+rnRepl _ an             = an
+
+rnMpUnion :: RnMp -> RnMp -> RnMp
+rnMpUnion m1 m2 = m1 `Map.union` Map.map (rnRepl m1) m2
+}
+
+ATTR AEqns AEqn [ | | gathRnMp USE {`rnMpUnion`} {Map.empty}: RnMp ]
+ATTR AllARuleButARule AllExpr [ rnMp: RnMp | | ]
+
+SEM AEqn
+  | Eqn             loc     .   gathRnMp    =   case (@dest.mbSingleANm,@val.mbSingleANm) of
+                                                    (Just (ANm_Loc dn),Just sn)
+                                                      -> Map.singleton dn sn
+                                                    _ -> Map.empty
+
+SEM ARule
+  | Rule            eqns    .   rnMp        =   @eqns.gathRnMp
+
+SEM AGExprItf
+  | AGItf           loc     .   rnMp        =   Map.empty
+
+SEM AttrEqn
+  | Eqn             loc     .   rnMp        =   Map.empty
+
+SEM RExprEqn
+  | Expr            loc     .   rnMp        =   Map.empty
+
+SEM Decl
+  | Fmt FmtJudge    loc     .   rnMp        =   Map.empty
+
+-------------------------------------------------------------------------
+-- Replica
+-------------------------------------------------------------------------
+
+ATTR AllARule AllExpr [ | | replRn: SELF ]
+ATTR AGARuleItf [ | | replRn: ARule ]
+ATTR AEqns AEqn [ | | replRnEqns USE {++} {[]}: {[AEqn]} ]
+
+SEM Expr
+  | AVar            lhs     .   replRn      =   Expr_AVar (rnRepl @lhs.rnMp @anm.replRn)
+
+SEM AEqn
+  | Eqn             lhs     .   replRnEqns  =   if Map.null @gathRnMp then [@replRn] else []
+  | * - Eqn         lhs     .   replRnEqns  =   [@replRn]
+
+SEM ARule
+  | Rule            lhs     .   replRn      =   ARule_Rule @ndNmL @rlNm @info @eqns.replRnEqns
+

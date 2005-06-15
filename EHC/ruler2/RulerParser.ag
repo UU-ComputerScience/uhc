@@ -144,13 +144,14 @@ pAllParsers
         pMbRNm              =   pMb (pNm <* pKey ":")
         pMbString           =   pMb pString
         pExprApp            =   mkApp alg <$> pList1 pExprBase <|> pSucceed sem_Expr_Empty
-        pExprBase           =   pParens (sem_Expr_Paren <$> pExpr <|> pExprEsc <|> pExprText <|> pExprNamed) <**> pExprSel
+        pExprBase           =   pParens (sem_Expr_Paren <$> pExpr <|> pExprSpecial) <**> pExprSel
                             <|> sem_Expr_Var <$> pNm
                             <|> sem_Expr_Int <$> pInteger
                             <|> sem_Expr_StrAsIs <$> pString
-        pExprEsc            =   (sem_Expr_StrAsIs . concat) <$> pList1 (pAnyKey (keywordsOpsParenEsc ++ keywordsTextEscapable))
-        pExprNamed          =   sem_Expr_Named <$> pNm <* pKey "=" <*> pExpr
-        pExprText           =   sem_Expr_StrText <$ pKey "text" <*> pString
+        pExprSpecial        =   (sem_Expr_StrAsIs . concat)     <$> pList1 (pAnyKey (keywordsOpsParenEsc ++ keywordsTextEscapable))
+                            <|> sem_Expr_Named                  <$> pNm <* pKey "=" <*> pExpr
+                            <|> sem_Expr_StrText                <$  pKey "text" <*> pString
+                            <|> sem_Expr_ChildOrder             <$  pKey "node" <*> pInt <* pKey "=" <*> pExpr
         pExprMbBase         =   sem_MbExpr_Just <$> pExprBase <|> pSucceed sem_MbExpr_Nothing
         pExprSel            =   pSel (sem_Expr_SelTop,sem_Expr_Sel,sem_MbExpr_Just) (pExprBase,pExprMbBase)
         pNmSel              =   pSel (id,NmSel,Just) (pN,pMb pN)
@@ -170,6 +171,7 @@ pAllParsers
         pMb' j n p          =   j <$> p <|> pSucceed n
         pMb                 =   pMb' Just Nothing
         pKeySPos k          =   (\p -> (k,p)) <$> pKeyPos k
+        pInt                =   read <$> pInteger
      in (pAGItf,pViewSels)
 
 (pAGItf,pViewSels)

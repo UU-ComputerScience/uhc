@@ -264,9 +264,11 @@ instance Functor Nm' where
   fmap f (NmSel n ms) = NmSel (fmap f n) (fmap f ms)
 
 strVec = "_"
+strLhs = "lhs"
 
-nmVec, nmUnk, nmApp, nmWild, nmNone, nmEql, nmComma, nmOParen, nmCParen :: Nm
+nmVec, nmUnk, nmApp, nmWild, nmNone, nmEql, nmComma, nmOParen, nmCParen, nmLhs :: Nm
 nmVec     = Nm strVec
+nmLhs     = Nm strLhs
 nmWild    = nmVec
 nmUnk     = Nm "??"
 nmEql     = Nm "="
@@ -375,8 +377,11 @@ hdAndTl (x:xs) = (x,xs)
 maybeHd :: r -> (a -> r) -> [a] -> r
 maybeHd n f l = if null l then n else f (head l)
 
+strWhite :: Int -> String
+strWhite sz = replicate sz ' '
+
 strPad :: String -> Int -> String
-strPad s sz = s ++ replicate (sz - length s) ' '
+strPad s sz = s ++ strWhite (sz - length s)
 
 panic m = error ("panic: " ++ m)
 

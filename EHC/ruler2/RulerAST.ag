@@ -148,6 +148,8 @@ DATA Expr
   | SelTop              expr        : Expr
   | Sel                 expr        : Expr
                         selMbExpr   : MbExpr
+  | ChildOrder          seqNr       : {Int}
+                        expr        : Expr
   | Empty
 
 DATA ANm
@@ -160,6 +162,8 @@ DATA ANm
 TYPE MbExpr = MAYBE Expr
 
 SET AllExpr = Expr MbExpr
+
+DERIVING ANm: Eq,Ord
 
 -------------------------------------------------------------------------
 -- Rule in AG form

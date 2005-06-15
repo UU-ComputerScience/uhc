@@ -462,3 +462,21 @@ rwSingleton n k d e = Map.singleton n (FmInfo n (Map.singleton k (Map.singleton 
 rwGamUnion :: RwGam e -> RwGam e -> RwGam e
 rwGamUnion = Map.unionWith (\i1 i2 -> i1 {fmKdGam = Map.unionWith (Map.unionWith (++)) (fmKdGam i1) (fmKdGam i2)})
 
+-------------------------------------------------------------------------
+-- Child order
+-------------------------------------------------------------------------
+
+type ChOrdGam = Gam Nm Int
+
+-------------------------------------------------------------------------
+-- Copy rule order, ref to previous node
+-------------------------------------------------------------------------
+
+type CrOrdGam = Gam Nm Nm
+
+-------------------------------------------------------------------------
+-- Non local attr's defined, threaded?
+-------------------------------------------------------------------------
+
+type AtDefdGam = Gam Nm Bool
+
