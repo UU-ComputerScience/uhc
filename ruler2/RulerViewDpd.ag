@@ -23,7 +23,7 @@ SEM Decl
 -- View dpd graph
 -------------------------------------------------------------------------
 
-ATTR AGViewSelsItf AllDecl AllViewSel [ vwDpdGr: {DpdGr Nm} | | ]
+ATTR AGViewSelsItf AGRlSelItf AllDecl AllViewSel AllRlSel [ vwDpdGr: {DpdGr Nm} | | ]
 
 SEM AGItf
   | AGItf           loc     .   vwDpdGr     =   let vwOrderL = concat @decls.gathVwOrder

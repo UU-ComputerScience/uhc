@@ -1,0 +1,38 @@
+-- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
+
+-------------------------------------------------------------------------
+-- Is it selected?
+-------------------------------------------------------------------------
+
+{
+type RlSelIsSel = Nm -> Nm -> Nm -> Bool
+}
+
+ATTR RlSel AGRlSelItf [ | | rlSelIsSel: RlSelIsSel ]
+
+SEM RlSel
+  | Sel             lhs     .   rlSelIsSel  =   \nVw nRs nRl
+                                                    ->  (nVw == nmAny || nVw `Set.member` @vwSel.vwSelNmS)
+                                                        && (nRs == nmAny || @rsSel.isSel nRs)
+                                                        && (nRl == nmAny || @rlSel.isSel nRl)
+
+-------------------------------------------------------------------------
+-- Is name selected?
+-------------------------------------------------------------------------
+
+ATTR NmSel [ | | isSel: {Nm -> Bool} ]
+
+SEM NmSel
+  | All             lhs     .   isSel       =   const True
+  | Nms             lhs     .   isSel       =   (`elem` @nms)
+
+-------------------------------------------------------------------------
+-- Query function to be used
+-------------------------------------------------------------------------
+
+ATTR AllDecl [ rlSelIsSel: RlSelIsSel | | ]
+
+SEM AGItf
+  | AGItf           loc     .   rlSelIsSel  =   case optMbRlSel @lhs.opts of
+                                                    Just rs -> rlSelIsSel @vwDpdGr rs
+                                                    _       -> \_ _ _ -> True

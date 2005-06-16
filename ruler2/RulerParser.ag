@@ -65,7 +65,7 @@ mkApp (_,app,top) ts
       _    -> top t
   where t = foldl1 app ts
 
-pAllParsers :: (IsParser p Token) => (p T_AGItf,p T_ViewSels)
+pAllParsers :: (IsParser p Token) => (p T_AGItf,p T_ViewSels, p T_RlSel)
 pAllParsers
   = let alg                 =   (undefined,sem_Expr_App,sem_Expr_AppTop)
         pAGItf              =   sem_AGItf_AGItf <$> pDecls' pDeclGlob
@@ -114,6 +114,8 @@ pAllParsers
         pViewSel            =   pV <??> ((flip sem_ViewSel_Range) <$ pKey "-" <*> pV)
                             where pV = sem_ViewSel_View <$> pNmVw <|> sem_ViewSel_All <$ pKey "*"
         pViewSels           =   pFoldrSep (sem_ViewSels_Cons,sem_ViewSels_Nil) pComma pViewSel
+        pNmSel              =   sem_NmSel_All <$ pKey "*" <|> sem_NmSel_Nms <$> pList pNm
+        pRlSel              =   sem_RlSel_Sel <$> pParens pViewSels <* pKey "." <*> pParens pNmSel <* pKey "." <*> pParens pNmSel
         pFmKd2WithDflt      =   pMb' id FmAll pFmKd2
         pFmKd3WithDflt      =   pMb' id FmAll pFmKd3
         pFmKd2              =   FmTeX <$ pKey "tex" <|> FmAG <$ pKey "ag"
@@ -121,8 +123,10 @@ pAllParsers
         pAtIO               =   pMb' id AtInOut (AtIn <$ pKey "in" <|> AtOut <$ pKey "out")
         pNmStr              =   pVarid <|> pConid
         pNmStrI             =   pNmStr <|> pInteger
-        pNm' pN             =   (Nm <$> pN) <**> pNmSel
+        pNm' pN             =   (Nm <$> pN) <**> pNmDot
         pNm                 =   pNm' pNmStr
+        pNmC                =   Nm <$> pConid
+        pNmV                =   Nm <$> pVarid
         pNmVw               =   pNm' pNmStrI
         pSymStr             =   pVarsym <|> pConsym
                             <|> pAnyKey keywordsOpsEsc
@@ -140,30 +144,33 @@ pAllParsers
                                                )
                                                <$> pList1 ((,) <$> pOp <*> pExprApp)
                                               )
-                            where pOp = (\s ss -> sem_Expr_Op s (ss (sem_Expr_Var s))) <$> pSym <*> pExprSel
+                            where pOp = (\s ss -> sem_Expr_Op s (ss (sem_Expr_Var s))) <$> pSym <*> pExprDot
         pMbRNm              =   pMb (pNm <* pKey ":")
         pMbString           =   pMb pString
         pExprApp            =   mkApp alg <$> pList1 pExprBase <|> pSucceed sem_Expr_Empty
-        pExprBase           =   pParens (sem_Expr_Paren <$> pExpr <|> pExprSpecial) <**> pExprSel
+        pExprBase           =   pParens (pExprInParen <|> pExprSpecial) <**> pExprDot
                             <|> sem_Expr_Var <$> pNm
                             <|> sem_Expr_Int <$> pInteger
                             <|> sem_Expr_StrAsIs <$> pString
+        pExprInParen        =   pExpr <**> (flip sem_Expr_Cnstr <$  pKey "|" <*> pECnstr `opt` sem_Expr_Paren)
         pExprSpecial        =   (sem_Expr_StrAsIs . concat)     <$> pList1 (pAnyKey (keywordsOpsParenEsc ++ keywordsTextEscapable))
                             <|> sem_Expr_Named                  <$> pNm <* pKey "=" <*> pExpr
                             <|> sem_Expr_StrText                <$  pKey "text" <*> pString
                             <|> sem_Expr_ChildOrder             <$  pKey "node" <*> pInt <* pKey "=" <*> pExpr
         pExprMbBase         =   sem_MbExpr_Just <$> pExprBase <|> pSucceed sem_MbExpr_Nothing
-        pExprSel            =   pSel (sem_Expr_SelTop,sem_Expr_Sel,sem_MbExpr_Just) (pExprBase,pExprMbBase)
-        pNmSel              =   pSel (id,NmSel,Just) (pN,pMb pN)
+        pExprDot            =   pSel (sem_Expr_SelTop,sem_Expr_Sel,sem_MbExpr_Just) (pExprBase,pExprMbBase)
+        pNmDot              =   pSel (id,NmSel,Just) (pN,pMb pN)
                             where pN = pNmStrI <|> pSymStr
         pSel alg ps         =   pSel1 alg ps <|> pSucceed id
         pSel1 (top,sel,jst) (pE,pMbE)
                             =   (\ss s -> \e -> top (sel (ss e) (jst s))) <$> pDots <*> pE
                             where pSel' = flip sel <$> pMbE
                                   pDots = pChainr_ng ((\s -> \_ r -> \e -> r (s e)) <$> pSel') (id <$ pKey ".")
+        pECnstr             =   sem_ECnstr_Ty  <$> pNmC
+                            <|> sem_ECnstr_Var <$> pNmV
         pAnyKey             =   foldr1 (<|>) . map pKey
         pAttrIntros         =   pFoldrSep (sem_AttrIntros_Cons,sem_AttrIntros_Nil) pComma pAttrIntro
-        pAttrIntro          =   sem_AttrIntro_Intro <$> pList pAttrProp <*> pNm <* pKey ":" <*> pNm
+        pAttrIntro          =   sem_AttrIntro_Intro <$> pList pAttrProp <*> pNm <* pKey ":" <*> pNmC
         pAttrEqns           =   pFoldr (sem_AttrEqns_Cons,sem_AttrEqns_Nil) (pKey "|" *> pAttrEqn)
         pAttrEqn            =   sem_AttrEqn_Eqn <$>              pNm <* pKey "=" <*> pExpr
                             <|> sem_AttrEqn_Del <$  pKey "-" <*> pNm
@@ -172,9 +179,9 @@ pAllParsers
         pMb                 =   pMb' Just Nothing
         pKeySPos k          =   (\p -> (k,p)) <$> pKeyPos k
         pInt                =   read <$> pInteger
-     in (pAGItf,pViewSels)
+     in (pAGItf,pViewSels,pRlSel)
 
-(pAGItf,pViewSels)
+(pAGItf,pViewSels,pRlSel)
   = pAllParsers
 }
 

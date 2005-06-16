@@ -1,6 +1,21 @@
 -- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
 
 -------------------------------------------------------------------------
+-- Map through eqn structure over lhs/rhs
+-------------------------------------------------------------------------
+
+{-
+exprAsEqnMap :: (Expr -> Expr) -> (Expr -> Expr) -> Expr -> Expr
+exprAsEqnMap l r e
+  = case e of
+      (Expr_AppTop e)
+        -> Expr_AppTop (exprAsEqnMap l r e)
+      (Expr_Op n ne d s) | n == nmEql
+        -> Expr_Op n ne (l d) (r s)
+      _ -> e
+-}
+
+-------------------------------------------------------------------------
 -- Expr as AEqn
 -------------------------------------------------------------------------
 
@@ -13,12 +28,14 @@ exprMbAEqn expr
                s' <- sE s
                return (AEqn_Eqn d' s')
         eE (Expr_AppTop e)      = eE e
+        eE (Expr_Named _ e)     = eE e
         eE _                    = Nothing
         dE (Expr_AVar n)        = return (AEqnDest_One n)
         dE (Expr_Var n)         = nE (show n)
         dE (Expr_StrAsIs s)     = nE s
         dE (Expr_Paren e)       = dE e
         dE (Expr_AppTop e)      = dE e
+        dE (Expr_Named _ e)     = dE e
         dE e@(Expr_Op n _ _ _) | n == nmComma
           = do dL <- oE e
                return (AEqnDest_Many dL)

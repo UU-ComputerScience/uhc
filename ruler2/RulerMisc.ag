@@ -28,8 +28,9 @@ SEM RExpr
 -- Self
 -------------------------------------------------------------------------
 
-ATTR AllExpr AllViewSel AllARule [ | | self: SELF ]
+ATTR AllExpr AllViewSel AllRlSel AllNmSel AllARule [ | | self: SELF ]
 ATTR AGViewSelsItf [ | | self: ViewSels ]
+ATTR AGRlSelItf [ | | self: RlSel ]
 
 -------------------------------------------------------------------------
 -- Rule seq nr
@@ -62,3 +63,4 @@ SEM Expr
   | ChildOrder      lhs     .   coGam       =   case @expr.mbChNm of
                                                     Just n -> Map.singleton n @seqNr
                                                     Nothing -> Map.empty
+

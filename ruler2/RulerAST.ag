@@ -17,6 +17,9 @@ DATA AGExprItf
 DATA AGViewSelsItf
   | AGItf               viewSels    : ViewSels
 
+DATA AGRlSelItf
+  | AGItf               rlSel       : RlSel
+
 DATA AGARuleItf
   | AGItf               rule        : ARule
 
@@ -66,6 +69,27 @@ DATA Decl
 TYPE Decls = [Decl]
 
 SET AllDecl = Decl Decls
+
+-------------------------------------------------------------------------
+-- Rule selection
+-------------------------------------------------------------------------
+
+DATA RlSel
+  | Sel                 vwSel       : ViewSels
+                        rsSel       : NmSel
+                        rlSel       : NmSel
+
+SET AllRlSel = RlSel
+
+-------------------------------------------------------------------------
+-- Nm selection
+-------------------------------------------------------------------------
+
+DATA NmSel
+  | All
+  | Nms                 nms         : {[Nm]}
+
+SET AllNmSel = NmSel
 
 -------------------------------------------------------------------------
 -- View selection
@@ -146,6 +170,7 @@ DATA Expr
                         expr        : Expr
   | Cnstr               expr        : Expr
                         cnstr       : ECnstr
+  | WrapCnstr           cnstr       : ECnstr
   | Paren               expr        : Expr
   | SelTop              expr        : Expr
   | Sel                 expr        : Expr
@@ -165,14 +190,16 @@ TYPE MbExpr = MAYBE Expr
 
 SET AllExpr = Expr MbExpr ECnstr
 
-DERIVING ANm: Eq,Ord
+DERIVING AllExpr ANm: Eq,Ord
 
 -------------------------------------------------------------------------
 -- Expr constraint
 -------------------------------------------------------------------------
 
 DATA ECnstr
-  | Ty					nm			: {Nm}
+  | Ty                  nm          : {Nm}
+  | Var                 nm          : {Nm}
+  | Empty
 
 -------------------------------------------------------------------------
 -- Rule in AG form

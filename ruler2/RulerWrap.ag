@@ -7,6 +7,38 @@
 WRAPPER AGItf 
 
 -------------------------------------------------------------------------
+-- Interfacing to RlSel
+-------------------------------------------------------------------------
+
+WRAPPER AGRlSelItf
+
+{
+wrapRlSel :: DpdGr Nm -> RlSel -> Syn_AGRlSelItf
+wrapRlSel vwDpdGr vs
+  = let r1 = sem_AGRlSelItf (AGRlSelItf_AGItf vs)
+    in  wrap_AGRlSelItf r1
+            (Inh_AGRlSelItf {vwDpdGr_Inh_AGRlSelItf = vwDpdGr
+                            })
+
+wrapRlSelT :: DpdGr Nm -> T_RlSel -> Syn_AGRlSelItf
+wrapRlSelT vwDpdGr vs
+  = let r1 = sem_AGRlSelItf_AGItf vs
+    in  wrap_AGRlSelItf r1
+            (Inh_AGRlSelItf {vwDpdGr_Inh_AGRlSelItf = vwDpdGr
+                            })
+
+rlSelSelfT :: T_RlSel -> RlSel
+rlSelSelfT vs
+  = self_Syn_AGRlSelItf r
+  where r = wrapRlSelT emptyVwDpdGr vs
+
+rlSelIsSel :: DpdGr Nm -> RlSel -> RlSelIsSel
+rlSelIsSel vwDpdGr rs
+  = rlSelIsSel_Syn_AGRlSelItf r
+  where r = wrapRlSel vwDpdGr rs
+}
+
+-------------------------------------------------------------------------
 -- Interfacing to ViewSel
 -------------------------------------------------------------------------
 
@@ -20,8 +52,8 @@ wrapViewSels vwDpdGr vs
             (Inh_AGViewSelsItf {vwDpdGr_Inh_AGViewSelsItf = vwDpdGr
                                })
 
-wrapViewSels' :: DpdGr Nm -> T_ViewSels -> Syn_AGViewSelsItf
-wrapViewSels' vwDpdGr vs
+wrapViewSelsT :: DpdGr Nm -> T_ViewSels -> Syn_AGViewSelsItf
+wrapViewSelsT vwDpdGr vs
   = let r1 = sem_AGViewSelsItf_AGItf vs
     in  wrap_AGViewSelsItf r1
             (Inh_AGViewSelsItf {vwDpdGr_Inh_AGViewSelsItf = vwDpdGr
@@ -32,15 +64,17 @@ viewSelsNmS vwDpdGr vs
   = vwSelNmS_Syn_AGViewSelsItf r
   where r = wrapViewSels vwDpdGr vs
 
+{-
 viewSelsNmS' :: DpdGr Nm -> T_ViewSels -> Set.Set Nm
 viewSelsNmS' vwDpdGr vs
   = vwSelNmS_Syn_AGViewSelsItf r
-  where r = wrapViewSels' vwDpdGr vs
+  where r = wrapViewSelsT vwDpdGr vs
+-}
 
-viewSelsSelf' :: T_ViewSels -> ViewSels
-viewSelsSelf' vs
+viewSelsSelfT :: T_ViewSels -> ViewSels
+viewSelsSelfT vs
   = self_Syn_AGViewSelsItf r
-  where r = wrapViewSels' emptyVwDpdGr vs
+  where r = wrapViewSelsT emptyVwDpdGr vs
 }
 
 -------------------------------------------------------------------------
@@ -76,24 +110,25 @@ ppARule = pp_Syn_AGARuleItf . wrapARule' defaultOpts emptyGam emptyGam
 WRAPPER AGExprItf
 
 {
-wrapExpr' :: Opts -> FmGam Expr -> RwExprGam -> Expr -> Syn_AGExprItf
-wrapExpr' o fmg rwg e
+wrapExpr' :: Opts -> FmGam Expr -> RwExprGam -> ECnstrGam -> Expr -> Syn_AGExprItf
+wrapExpr' o fmg rwg ecg e
   = let r1 = sem_AGExprItf (AGExprItf_AGItf e)
     in  wrap_AGExprItf r1
-            (Inh_AGExprItf {opts_Inh_AGExprItf = o, fmGam_Inh_AGExprItf = fmg, rwGam_Inh_AGExprItf = rwg
+            (Inh_AGExprItf { opts_Inh_AGExprItf = o
+                           , fmGam_Inh_AGExprItf = fmg, rwGam_Inh_AGExprItf = rwg, ecGam_Inh_AGExprItf = ecg
                            })
 
 exprNmS :: Expr -> Set.Set Nm
-exprNmS = nmS_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam
+exprNmS = nmS_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam emptyGam
 
 exprFmtTeX :: Opts -> Expr -> PP_Doc
-exprFmtTeX o = ppLaTeX_Syn_AGExprItf . wrapExpr' o emptyGam emptyGam
+exprFmtTeX o = ppLaTeX_Syn_AGExprItf . wrapExpr' o emptyGam emptyGam emptyGam
 
 ppExpr :: Expr -> PP_Doc
-ppExpr = pp_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam
+ppExpr = pp_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam emptyGam
 
 exprSubst :: Opts -> FmGam Expr -> Expr -> Expr
-exprSubst o fmg = repl_Syn_AGExprItf . wrapExpr' o fmg emptyGam
+exprSubst o fmg = repl_Syn_AGExprItf . wrapExpr' o fmg emptyGam emptyGam
 {-
 exprSubst :: Opts -> FmGam Expr -> Expr -> Expr
 exprSubst o fmg e
@@ -101,22 +136,34 @@ exprSubst o fmg e
   where e' = . repl_Syn_AGExprItf . wrapExpr' o fmg emptyGam $ e
 -}
 
-exprRewrite :: Opts -> FmGam Expr -> RwExprGam -> Expr -> Expr
-exprRewrite o fmg rwg = fst . exprRewrite' o fmg rwg
+exprRewrite :: Opts -> FmGam Expr -> RwExprGam -> ECnstrGam -> Expr -> Expr
+exprRewrite o fmg rwg ecg e
+  = r
+  where (r,_,_) = exprRewrite' o fmg rwg ecg e
 
-exprRewrite' :: Opts -> FmGam Expr -> RwExprGam -> Expr -> (Expr,FmGam Expr)
-exprRewrite' o fmg rwg e
-  = (repl_Syn_AGExprItf r,rwMtGam_Syn_AGExprItf r)
-  where r = wrapExpr' o fmg rwg e
+exprRewrite2 :: Opts -> FmGam Expr -> RwExprGam -> ECnstrGam -> Expr -> (Expr,ECnstrGam)
+exprRewrite2 o fmg rwg ecg e
+  = (r,g)
+  where (r,_,g) = exprRewrite' o fmg rwg ecg e
+
+exprRewrite' :: Opts -> FmGam Expr -> RwExprGam -> ECnstrGam -> Expr -> (Expr,FmGam Expr,ECnstrGam)
+exprRewrite' o fmg rwg ecg e
+  = (repl_Syn_AGExprItf r,rwMtGam_Syn_AGExprItf r,rwEcGam_Syn_AGExprItf r)
+  where r = wrapExpr' o fmg rwg ecg e
+
+exprElimCnstr :: Expr -> (Expr,ECnstrGam)
+exprElimCnstr e
+  = (replEc_Syn_AGExprItf r,ecElimGam_Syn_AGExprItf r)
+  where r = wrapExpr' defaultOpts emptyGam emptyGam emptyGam e
 
 exprIsRw :: Expr -> ExprIsRw
-exprIsRw = exprIsRw_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam
+exprIsRw = exprIsRw_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam emptyGam
 
 exprNmGam :: Expr -> FmGam Expr
-exprNmGam = reGamExprFmGam_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam
+exprNmGam = reGamExprFmGam_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam emptyGam
 
 exprCoGam :: Expr -> ChOrdGam
-exprCoGam = coGam_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam
+exprCoGam = coGam_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam emptyGam
 
 exprFmtTeXSubst :: Opts -> FmGam Expr -> Expr -> PP_Doc
 exprFmtTeXSubst o fmg = exprFmtTeX o . exprSubst o fmg
