@@ -266,11 +266,12 @@ instance Functor Nm' where
 strVec = "_"
 strLhs = "lhs"
 
-nmVec, nmUnk, nmApp, nmWild, nmNone, nmEql, nmComma, nmOParen, nmCParen, nmLhs :: Nm
+nmVec, nmUnk, nmApp, nmWild, nmNone, nmEql, nmComma, nmOParen, nmCParen, nmLhs, nmAny :: Nm
 nmVec     = Nm strVec
 nmLhs     = Nm strLhs
 nmWild    = nmVec
 nmUnk     = Nm "??"
+nmAny     = Nm "*"
 nmEql     = Nm "="
 nmApp     = Nm "$"
 nmNone    = Nm ""

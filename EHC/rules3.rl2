@@ -30,7 +30,7 @@ viewhierarchy = E K C HM I1 I2, I1 CG P
 -------------------------------------------------------------------------
 
 format ag in (a) -> (r) = a `mkTyArrow` r
-format ag in ((c) (v)) = c |=> v
+format ag in ((c | Cnstr) (v | a)) = (c |=> v | a)
 format ag out ((a) -> (r)) `=` (v) = (a,r) `=` tyArgRes v
 
 -------------------------------------------------------------------------
@@ -198,10 +198,10 @@ rules expr.base scheme expr "Expression type rules" =
 
   rule e.app "App" =
     view E =
-      judge F : expr = valGam :- eFun : (tyPrev= ty.a -> ty)
+      judge F : expr = valGam :- eFun : (tyPrev= ty.a -> (ty|Ty))
       judge A : expr = valGam :- eArg : ty.a
       -
-      judge R : expr = valGam :- (eFun ^^ eArg) : ty
+      judge R : expr = valGam :- ((node 1 = eFun) ^^ (node 2 = eArg)) : ty
 
     view K =
       judge F : expr

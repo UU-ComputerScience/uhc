@@ -80,6 +80,7 @@ data AtInfo
       { atNm    :: Nm
       , atDirs  :: [AtDir]
       , atProps :: [AtProp]
+      , atTy    :: Nm
       }
 
 instance PP AtProp where

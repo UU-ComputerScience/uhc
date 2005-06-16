@@ -45,8 +45,8 @@ mbNmOfSel e
 mbNmLOfSel :: Expr -> Maybe [Maybe String]
 mbNmLOfSel = fmap nmToMbL . mbNmOfSel
 
-exprVarSubst :: Opts -> FmGam Expr -> RwExprGam -> Expr -> Nm -> Expr
-exprVarSubst opts fmGam rwGam dfltRepl nm
+exprVarSubst :: Opts -> FmGam Expr -> RwExprGam -> ECnstrGam -> Expr -> Nm -> Expr
+exprVarSubst opts fmGam rwGam ecGam dfltRepl nm
   = case nmMatch opts nm fmGam of
       Just (matchNmL,remNmL,matchExpr)
         -> case mbNmLOfSel se of
@@ -54,7 +54,7 @@ exprVarSubst opts fmGam rwGam dfltRepl nm
                -> Expr_Var (nmFromL (sNmL ++ remNmL))
              _ -> nmLAsSelExpr id se remNmL
         where se = sbsWoNm matchExpr
-              sbsWoNm = exprRewrite opts (nmFromL matchNmL `Map.delete` fmGam) rwGam
+              sbsWoNm = exprRewrite opts (nmFromL matchNmL `Map.delete` fmGam) rwGam ecGam
       _ -> dfltRepl
 }
 {-
@@ -65,57 +65,71 @@ ATTR AllExpr ANm [ | | repl: SELF ]
 ATTR AGExprItf [ | | repl: Expr ]
 
 SEM Expr
-  | Var             loc     .   replVar     =   exprVarSubst @lhs.opts @lhs.fmGam @lhs.rwGam @repl @nm
+  | Var             loc     .   replVar     =   exprVarSubst @lhs.opts @lhs.fmGam @lhs.rwGam @lhs.ecGam @repl @nm
+
+SEM ECnstr
+  | Var             lhs     .   repl        =   case nmMatch @lhs.opts @nm @lhs.fmGam of
+                                                    Just (_,_,Expr_WrapCnstr c)
+                                                      -> c
+                                                    _ -> @repl
 
 -------------------------------------------------------------------------
 -- Rewriting (merged with variable substition)
 -------------------------------------------------------------------------
 
 {
-mkRwExpr :: Opts -> FmGam Expr -> RwExprGam -> Expr -> (Expr,FmGam Expr)
-mkRwExpr opts fmGam rwGam repl
+mkRwExpr :: Opts -> FmGam Expr -> RwExprGam -> ECnstrGam -> Expr -> (Expr,FmGam Expr,ECnstrGam)
+mkRwExpr opts fmGam rwGam ecGam repl
   = case exprIsRw repl of
       ExprIsRw n | isJust mbRw
-        -> (r,mtFmGam mt)
+        -> (r,mtFmGam mt,ecg)
         where mbRw = rwGamLookup n (optGenFM opts) (optAtDir opts) rwGam
-              (r,mt)
+              (r,mt,ecg)
                 = foldr (\(me,e) r
-                          -> let mt = exprMatch repl me
+                          -> let mt = exprMatch ecGam repl me
                              in  if mtMatches mt
-                                 then (exprSubst opts (mtFmGam mt `Map.union` fmGam) e,mt)
+                                 then let e2 = exprSubst opts (mtFmGam mt `Map.union` fmGam) e
+                                          (e3,ecg) = exprElimCnstr e2
+                                      in  (e3,mt,ecg)
                                  else r
                         )
-                        (repl,emptyMtOut)
+                        (repl,emptyEMtOut,emptyGam)
                         (maybe (panic "mkRwExpr") id mbRw)
-      _ -> (repl,emptyGam)
+      _ -> (repl,emptyGam,emptyGam)
 }
 
 ATTR AllExpr AGExprItf [ | | rwMtGam USE {`fmGamUnion`} {emptyGam}: {FmGam Expr} ]
+ATTR AllExpr AGExprItf [ | | rwEcGam USE {`Map.union`} {emptyGam}: {ECnstrGam} ]
 
 SEM Expr
-  | Var             (lhs.repl,loc.rwMtGam)  =   mkRwExpr @lhs.opts @lhs.fmGam @lhs.rwGam @replVar
-  | AppTop          (lhs.repl,loc.rwMtGam)  =   mkRwExpr @lhs.opts @lhs.fmGam @lhs.rwGam @repl
+  | Var             (lhs.repl,lhs.rwMtGam,lhs.rwEcGam)
+                                            =   mkRwExpr @lhs.opts @lhs.fmGam @lhs.rwGam @lhs.ecGam @replVar
+  | AppTop          (lhs.repl,loc.rwMtGam,loc.rwEcGam)
+                                            =   mkRwExpr @lhs.opts @lhs.fmGam @lhs.rwGam (@expr.rwEcGam `Map.union` @lhs.ecGam) @repl
                     lhs     .   rwMtGam     =   @rwMtGam `fmGamUnion` @expr.rwMtGam
+                            .   rwEcGam     =   @rwEcGam `Map.union` @expr.rwEcGam
 
 -------------------------------------------------------------------------
 -- Matching
 -------------------------------------------------------------------------
 
 {
-data MtOut
-  = MtOut {mtMatches :: Bool, mtExpr :: Expr, mtFmGam :: FmGam Expr}
+data MtOut e
+  = MtOut {mtMatches :: Bool, mtExpr :: e, mtFmGam :: FmGam Expr}
 
-instance Show MtOut where
+instance Show (MtOut e) where
   show _ = "MtOut"
 
-instance PP MtOut where
+instance PP e => PP (MtOut e) where
   pp i = "Mt" >#< pp (mtMatches i) >#< pp (mtExpr i) >#< ppGam (mtFmGam i)
 
-emptyMtOut = MtOut {mtMatches = True, mtExpr = Expr_Empty, mtFmGam = emptyGam}
+emptyMtOut e = MtOut {mtMatches = True, mtExpr = e, mtFmGam = emptyGam}
+emptyEMtOut = emptyMtOut Expr_Empty
+emptyCMtOut = emptyMtOut ECnstr_Empty
 
--- lhs into rhs matching
-exprMatch :: Expr -> Expr -> MtOut
-exprMatch e1 e2
+-- lhs into rhs matching, expects rhs, given lhs
+exprMatch :: ECnstrGam -> Expr -> Expr -> MtOut Expr
+exprMatch ecGam e1 e2
   = r
   where r = mt e1 e2
         -- r' = trp "XX" (pp e1 >-< pp e2 >-< pp r) $ r
@@ -136,17 +150,50 @@ exprMatch e1 e2
         mt (Expr_App l1 r1)         (Expr_App l2 r2)                        = app l1 l2 r1 r2 Expr_App
         mt (Expr_SelTop t1)         e2@(Expr_SelTop t2)                     = bnd' (mt t1 t2) $ res e2
         mt (Expr_Sel e1 (Just s1))  (Expr_Sel e2 (Just s2))                 = app e1 e2 s1 s2 (\l r -> Expr_Sel l (Just r))
+        mt (Expr_Named n e1)        e2                                      = let m = mt e1 e2 in res' (Expr_Named n (mtExpr m)) m
+        mt e1                       (Expr_Cnstr e2 c2)
+          = case Map.lookup e1 ecGam of
+              Just c1 | mtMatches mc
+                -> bnd' mc $ mt e1 e2
+                where mc = mtc c1 c2
+              _ -> err
         mt _                        _                                       = err
+        mtc (ECnstr_Ty t1)          c2@(ECnstr_Ty t2)       | t1 == t2      = resc c2
+        mtc c1                      c2@(ECnstr_Var n2)                      = bndc n2 c1 $ resc c2
+        mtc _                       _                                       = errc
         app l1 l2 r1 r2 mk
           = foldr1 (\m1 m2 -> if mtMatches m1 then m2 else m1) [ml,mr,m]
           where ml = mt l1 l2
                 mr = mt r1 r2
                 m  = bnd' ml . res' (mk (mtExpr ml) (mtExpr mr)) $ mr
         bnd' mn m = m {mtFmGam = mtFmGam mn `fmGamUnion` mtFmGam m}
-        bnd n e m = bnd' (emptyMtOut {mtFmGam = fmSingleton n FmAll e}) m
+        bnd n e m = bnd' (emptyEMtOut {mtFmGam = fmSingleton n FmAll e}) m
+        bndc n e m = bnd' (emptyCMtOut {mtFmGam = fmSingleton n FmAll (Expr_WrapCnstr e)}) m
         res' e m = m {mtExpr = e}
-        res e = res' e emptyMtOut
+        res e = res' e emptyEMtOut
+        resc e = res' e emptyEMtOut
         err' m = m {mtMatches = False}
-        err = err' emptyMtOut
+        err = err' emptyEMtOut
+        errc = err' emptyCMtOut
 }
 
+-------------------------------------------------------------------------
+-- Constraint info about Expr
+-------------------------------------------------------------------------
+
+{
+type ECnstrGam = Gam Expr ECnstr
+type ECnstrAsc = [(Expr,ECnstr)]
+}
+
+-------------------------------------------------------------------------
+-- Elimination of Expr_Cnstr
+-------------------------------------------------------------------------
+
+ATTR AllExpr ANm [ | | replEc: SELF ]
+ATTR AGExprItf [ | | replEc: Expr ]
+ATTR AGExprItf AllExpr [ | | ecElimGam USE {`Map.union`} {Map.empty}: ECnstrGam ]
+
+SEM Expr
+  | Cnstr           lhs     .   replEc      =   @expr.replEc
+                            .   ecElimGam   =   Map.insert @expr.replEc @cnstr.replEc @expr.ecElimGam

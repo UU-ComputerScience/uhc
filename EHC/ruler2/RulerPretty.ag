@@ -49,7 +49,10 @@ SEM Expr
   | Paren           lhs     .   pp          =   pp_parens @expr.pp
   | AppTop          lhs     .   pp          =   @expr.pp
   | Named           lhs     .   pp          =   @expr.pp
-  | Cnstr           lhs     .   pp          =   @expr.pp
+  | Cnstr           lhs     .   pp          =   pp_braces (@expr.pp >|< "|" >|< @cnstr.pp)
+
+SEM ECnstr
+  | Ty Var          lhs     .   pp          =   pp @nm
 
 SEM AttrIntro
   | Intro           lhs     .   pp          =   pp @props >#< pp @nm >#< ":" >#< pp @ty

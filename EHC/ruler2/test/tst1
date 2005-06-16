@@ -10,7 +10,7 @@ format ag tyCnstr.syn = tyCnstr
 -}
 
 format ag in (a) -> (r) = a `mkTyArrow` r
-format ag in ((c) (v)) = c |=> v
+format ag in ((c | Cnstr) (v | a)) = (c |=> v | a)
 format ag out ((a) -> (r)) `=` (v) = (a,r) `=` tyArgRes v
 
 format ag eFun = func
@@ -118,6 +118,7 @@ relation fit =
     attr [ | | cnstr: Cnstr ]
     judge tex :-.."f" lty <= rty : ty ~> cnstr
     judge ag (ty,cnstr) `=` (lty) `fitsIn` (rty)
+--    judge ag (ty,cnstr) `=` fitsIn (lty) (rty)
 
 relation fresh =
   view 2 =

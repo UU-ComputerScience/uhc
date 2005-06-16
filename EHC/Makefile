@@ -214,13 +214,13 @@ RULER2_DIR			:= ruler2
 RULER2_MAIN			:= Ruler
 RULER2_AG			:= $(RULER2_MAIN).ag
 RULER2_AG_INCLS		:= RulerPretty.ag RulerAST.ag RulerGen.ag RulerParser.ag RulerExprMatchSubst.ag RulerWrap.ag \
-						RulerViewDpd.ag RulerMisc.ag RulerARule.ag RulerARuleOptim.ag RulerARuleOptim2.ag
+						RulerViewDpd.ag RulerMisc.ag RulerARule.ag RulerARuleOptim.ag RulerARuleOptim2.ag RulerRlSel.ag
 RULER2_AG_HS		:= $(RULER2_AG:.ag=.hs)
 RULER2_HS			:= RulerUtils.hs RulerAdmin.hs RulerMkAdmin.hs
 RULER2_DERIV		:= $(RULER2_DIR)/$(RULER2_AG_HS)
 RULER2_DOC_PDF		:= $(RULER2_DIR)/RulerDoc.pdf
 
-RULER2_SRC			:= $(addprefix $(RULER2_DIR)/,$(RULER2_AG) $(RULER2_AG_INCLS)) $(RULER2_HS)
+RULER2_SRC			:= $(addprefix $(RULER2_DIR)/,$(RULER2_AG) $(RULER2_HS) $(RULER2_AG_INCLS))
 
 BREW				:= bin/brew
 BREW_DIR			:= brew

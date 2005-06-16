@@ -118,6 +118,7 @@ data Opts
       , optVersion      :: Bool
       , optFragWrap		:: Bool
       , optMbMarkChange :: Maybe ViewSels
+      , optMbRlSel      :: Maybe RlSel
       , optBaseNm       :: String
       }
 
@@ -131,6 +132,7 @@ defaultOpts
       , optVersion      =  False
       , optFragWrap		=  False
       , optMbMarkChange =  Nothing
+      , optMbRlSel		=  Nothing
       , optBaseNm       =  rulesCmdPre
       }
 
@@ -141,8 +143,10 @@ cmdLineOpts
           "print version info"
      , Option "a"  ["ag"]               (NoArg oGenAG)
           "generate code for AG, default=no"
-     , Option "c"  ["markchanges"]      (OptArg oMarkCh "<views>")
+     , Option "c"  ["markchanges"]      (OptArg oMarkCh "*|<view name>|<view name>-<view name>")
           "mark changes between specified views (in combi with --lhs2tex)"
+     , Option "s"  ["selrule"]          (OptArg oRlSel "(*|<view name>|<view name>-<view name>).(*|<ruleset names>).(*|<rule names>)")
+          "select rules by specifying view(s), ruleset(s) and rule(s)"
      , Option ""   ["help"]             (NoArg oHelp)
           "output this help"
      , Option "w"  ["wrapfrag"]         (NoArg oFragWrap)
@@ -159,7 +163,8 @@ cmdLineOpts
          oDebug          o =  o {optDebug = True}
          oVersion        o =  o {optVersion = True}
          oBase       s   o =  o {optBaseNm = s}
-         oMarkCh     ms  o =  o {optMbMarkChange = fmap (viewSelsSelf' . fst . parseToResMsgs pViewSels . mkScan "") ms}
+         oMarkCh     ms  o =  o {optMbMarkChange = fmap (viewSelsSelfT . fst . parseToResMsgs pViewSels . mkScan "") ms}
+         oRlSel      ms  o =  o {optMbRlSel = fmap (rlSelSelfT . fst . parseToResMsgs pRlSel . mkScan "") ms}
          yesno updO  ms  o =  case ms of
                                 Just "yes"  -> updO True o
                                 Just "no"   -> updO False o
@@ -181,6 +186,7 @@ INCLUDE "RulerExprMatchSubst.ag"
 INCLUDE "RulerARule.ag"
 INCLUDE "RulerARuleOptim.ag"
 INCLUDE "RulerARuleOptim2.ag"
+INCLUDE "RulerRlSel.ag"
 
 -------------------------------------------------------------------------
 -- Misc functions dependent on AST
@@ -263,7 +269,7 @@ ATTR AllAttrIntro AllDecl [ | | atGam USE {`Map.union`} {Map.empty}: AtGam ]
 ATTR AllAttrIntro [ atDirs: {[AtDir]} | | ]
 
 SEM AttrIntro
-  | Intro           loc     .   atGam       =   Map.singleton @nm (AtInfo @nm @lhs.atDirs @props)
+  | Intro           loc     .   atGam       =   Map.singleton @nm (AtInfo @nm @lhs.atDirs @props @ty)
 
 SEM Decl
   | Attr            inhs    .   atDirs      =   [AtInh]
@@ -328,7 +334,9 @@ SEM Decl
                                                                                 where new = Map.mapWithKey
                                                                                               (\n a
                                                                                                  -> case atProps a `intersect` Map.elems propsMp of
-                                                                                                      (_:_) -> [(ns,AtInfo ns [AtSyn] (atProps a)),(ni,AtInfo ni [AtInh] (atProps a))]
+                                                                                                      (_:_) -> [(ns,AtInfo ns [AtSyn] (atProps a) (atTy a))
+                                                                                                               ,(ni,AtInfo ni [AtInh] (atProps a) (atTy a))
+                                                                                                               ]
                                                                                                             where ns = nmSetSuff n "syn"
                                                                                                                   ni = nmSetSuff n "inh"
                                                                                                       _     -> [(n,a)]
@@ -361,7 +369,7 @@ SEM RExprEqn
                                             =   gamTryLookups (Expr_Empty,[Err_NoJdSc @lhs.pos @lhs.cxStr [@lhs.schemeNm]])
                                                               (\i -> (jdExpr i,[]))
                                                               [FmSpec,FmTeX,FmAll] (vwscJdGam @lhs.vwScInfo)
-                            .   mt          =   exprMatch @expr.self @jdExpr
+                            .   mt          =   exprMatch emptyGam @expr.self @jdExpr
                             .   errMt       =   if mtMatches @mt then [] else [Err_Match @lhs.pos @lhs.cxStr (pp @expr.self) (pp @jdExpr)]
                     lhs     .   jaGam       =   fmGamToJaGam FmAll (mtFmGam @mt)
 
@@ -542,6 +550,8 @@ ATTR AllDecl AllExpr AGExprItf [ fmGam: {FmGam Expr} | | ]
 ATTR AllDecl [ | | gathRwGam USE {`rwGamUnion`} {Map.empty}: RwExprGam ]
 ATTR AllDecl AllExpr AGExprItf [ rwGam: RwExprGam | | ]
 
+ATTR AllExpr AGExprItf [ ecGam: ECnstrGam | | ]
+
 SEM AGItf
   | AGItf           loc     .   fmGam       =   @decls.gathFmGam
                             .   rwGam       =   @decls.gathRwGam
@@ -556,22 +566,27 @@ SEM Decl
 SEM RExprEqn
   | Expr            loc     .   fmGam       =   emptyGam
                             .   rwGam       =   emptyGam
+                            .   ecGam       =   emptyGam
 
 SEM AttrEqn
   | Eqn             loc     .   fmGam       =   emptyGam
                             .   rwGam       =   emptyGam
+                            .   ecGam       =   emptyGam
 
 SEM AExpr
   | Expr            loc     .   fmGam       =   emptyGam
                             .   rwGam       =   emptyGam
+                            .   ecGam       =   emptyGam
 
 SEM AEqn
   | Err             loc     .   fmGam       =   emptyGam
                             .   rwGam       =   emptyGam
+                            .   ecGam       =   emptyGam
 
 SEM Decl
-  | Fmt FmtJudge    expr    .   fmGam       =   emptyGam
+  | Fmt FmtJudge    loc     .   fmGam       =   emptyGam
                             .   rwGam       =   emptyGam
+                            .   ecGam       =   emptyGam
 
 -------------------------------------------------------------------------
 -- Preambles
