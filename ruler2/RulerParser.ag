@@ -24,6 +24,8 @@ keywordsTextEscapable
         ]
 keywordsText
   =  [ "text"
+     -- related to patterns
+     , "uniq"
      ] ++ keywordsTextEscapable
 keywordsOpsEsc
   =  [ ",", ":", "[", "]", "*" ]
@@ -86,7 +88,7 @@ pAllParsers
                                                        <*  pKey "="             <*> pDeclsScmView
         pDeclScmDflt        =   (\v -> sem_Decls_Cons (sem_Decl_ScmView nmNone v) sem_Decls_Nil)
                                                        <$> pDeclsScmView
-        pDeclScmView        =   sem_Decl_FmtJudge      <$> pKeySPos "judge"     <*> pFmKd3WithDflt <*> pExpr
+        pDeclScmView        =   sem_Decl_FmtJudge      <$> pKeySPos "judge"     <*> pFmKd3WithDflt <*> pExprLF
                             <|> sem_Decl_Attr          <$  pKey "attr"
                                                        <*  pKey "["             <*> pAttrIntros
                                                        <*  pKey "|"             <*> pAttrIntros
@@ -145,12 +147,12 @@ pAllParsers
                                                <$> pList1 ((,) <$> pOp <*> pExprApp)
                                               )
                             where pOp = (\s ss -> sem_Expr_Op s (ss (sem_Expr_Var s))) <$> pSym <*> pExprDot
-        pMbRNm              =   pMb (pNm <* pKey ":")
-        pMbString           =   pMb pString
+        pExprLF				=	pChainr (sem_Expr_LF <$ pKey "|") pExpr
         pExprApp            =   mkApp alg <$> pList1 pExprBase <|> pSucceed sem_Expr_Empty
         pExprBase           =   pParens (pExprInParen <|> pExprSpecial) <**> pExprDot
-                            <|> sem_Expr_Var <$> pNm
-                            <|> sem_Expr_Int <$> pInteger
+                            <|> sem_Expr_Uniq    <$  pKey "uniq"
+                            <|> sem_Expr_Var     <$> pNm
+                            <|> sem_Expr_Int     <$> pInteger
                             <|> sem_Expr_StrAsIs <$> pString
         pExprInParen        =   pExpr <**> (flip sem_Expr_Cnstr <$  pKey "|" <*> pECnstr `opt` sem_Expr_Paren)
         pExprSpecial        =   (sem_Expr_StrAsIs . concat)     <$> pList1 (pAnyKey (keywordsOpsParenEsc ++ keywordsTextEscapable))
@@ -166,8 +168,10 @@ pAllParsers
                             =   (\ss s -> \e -> top (sel (ss e) (jst s))) <$> pDots <*> pE
                             where pSel' = flip sel <$> pMbE
                                   pDots = pChainr_ng ((\s -> \_ r -> \e -> r (s e)) <$> pSel') (id <$ pKey ".")
-        pECnstr             =   sem_ECnstr_Ty  <$> pNmC
+        pECnstr             =   sem_ECnstr_Ty  <$> pList1Sep pComma pNmC
                             <|> sem_ECnstr_Var <$> pNmV
+        pMbRNm              =   pMb (pNm <* pKey ":")
+        pMbString           =   pMb pString
         pAnyKey             =   foldr1 (<|>) . map pKey
         pAttrIntros         =   pFoldrSep (sem_AttrIntros_Cons,sem_AttrIntros_Nil) pComma pAttrIntro
         pAttrIntro          =   sem_AttrIntro_Intro <$> pList pAttrProp <*> pNm <* pKey ":" <*> pNmC

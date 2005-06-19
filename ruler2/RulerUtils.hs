@@ -279,11 +279,17 @@ nmComma   = Nm ","
 nmOParen  = Nm "("
 nmCParen  = Nm ")"
 
+nmUniq :: Int -> Nm
+nmUniq u  = Nm ("uniq" ++ (if u > 0 then show u else ""))
+
 nmCmdBegChng, nmCmdEndChng, nmCmdBegSame, nmCmdEndSame :: Nm
 nmCmdBegChng = Nm "rulerChngBegMark"
 nmCmdEndChng = Nm "rulerChngEndMark"
 nmCmdBegSame = Nm "rulerSameBegMark"
 nmCmdEndSame = Nm "rulerSameEndMark"
+
+nmFunMkUniq :: Int -> Nm
+nmFunMkUniq u = Nm ("rulerMk" ++ show u ++ "Uniq")
 
 -------------------------------------------------------------------------
 -- LaTeX

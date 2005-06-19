@@ -120,6 +120,7 @@ GRI_LAG_FOR_HS				:= $(GRI_LAG_FOR_HS_GRIN_CODE)
 
 
 
+EHC_DPDS_RULER_RULES			:= EHRulerRules.ag
 EHC_DPDS_MAIN					:= EHMainAG.ag EHInfer.ag EHInferExpr.ag \
 									EHInferPatExpr.ag EHInferTyExpr.ag EHInferKiExpr.ag EHInferData.ag \
 									EHInferCaseExpr.ag EHPretty.ag EHPrettyAST.ag EHAbsSyn.ag \
@@ -214,7 +215,10 @@ RULER2_DIR			:= ruler2
 RULER2_MAIN			:= Ruler
 RULER2_AG			:= $(RULER2_MAIN).ag
 RULER2_AG_INCLS		:= RulerPretty.ag RulerAST.ag RulerGen.ag RulerParser.ag RulerExprMatchSubst.ag RulerWrap.ag \
-						RulerViewDpd.ag RulerMisc.ag RulerARule.ag RulerARuleOptim.ag RulerARuleOptim2.ag RulerRlSel.ag
+						RulerViewDpd.ag RulerMisc.ag RulerARule.ag \
+						RulerARuleOptim.ag RulerARuleOptim2.ag RulerARuleOptim3.ag \
+						RulerRlSel.ag \
+						RulerPatternUniq.ag
 RULER2_AG_HS		:= $(RULER2_AG:.ag=.hs)
 RULER2_HS			:= RulerUtils.hs RulerAdmin.hs RulerMkAdmin.hs
 RULER2_DERIV		:= $(RULER2_DIR)/$(RULER2_AG_HS)
@@ -322,7 +326,7 @@ GRI_CHS				:= $(GRI_LHS:.lhs=.chs)
 SHUFFLE_LHS		= \
 	dir=`dirname $2` ; \
 	mkdir -p $$dir ; \
-	$(SHUFFLE) --gen=$5 --base=$6 $3 $1 --order="$(SHUFFLE_ORDER)" | $4 > $2
+	$(SHUFFLE) --gen=$5 --base=$6 $3 --order="$(SHUFFLE_ORDER)" $1 | $4 > $2
 
 # SHUFFLE_LHS_AG(src file, dst file, version, base)
 SHUFFLE_LHS_AG		= \
@@ -343,16 +347,24 @@ RULER_LHS		= \
 RULER2_LHS		= \
 	$(RULER2) $(AFP_RULES2_RULER_OPTS) --lhs2tex --base $1 $2 | $4 > $3
 
+# RULER2_CAG(base, rulesel, src file, dst file)
+RULER2_CAG		= \
+	$(RULER2) $(AFP_RULES2_RULER_OPTS) --ag --wrapfrag --selrule="$1" --base $2 $3 > $4
+
 # RULER_LHS_TEX(base, src file, dst file)
 RULER_LHS_TEX		= \
 	$(call RULER_LHS,$1,$2,$3,$(LHS2TEX) --poly)
 RULER2_LHS_TEX		= \
 	$(call RULER2_LHS,$1,$2,$3,$(LHS2TEX) --poly)
 
+### Defaults for the version generation
+
+V_RULER_SEL_DFLT	:= ().().()
 
 ### Version 1
 V					:= 1
 VF					:= $(V)
+V_RULER_SEL$(V)		:= ($(V)).(expr.base).(*)
 include $(MK_EHFILES)
 EHC_V1				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 1
@@ -361,6 +373,7 @@ EHC_V1				:= $(addprefix $(VF)/,$(EHC))
 ### Version 2
 V					:= 2
 VF					:= $(V)
+V_RULER_SEL$(V)		:= $(V_RULER_SEL_DFLT)
 include $(MK_EHFILES)
 EHC_V2				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 2
@@ -369,6 +382,7 @@ EHC_V2				:= $(addprefix $(VF)/,$(EHC))
 ### Version 3
 V					:= 3
 VF					:= $(V)
+V_RULER_SEL$(V)		:= $(V_RULER_SEL_DFLT)
 include $(MK_EHFILES)
 EHC_V3				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 3
@@ -377,6 +391,7 @@ EHC_V3				:= $(addprefix $(VF)/,$(EHC))
 ### Version 4
 V					:= 4
 VF					:= $(V)
+V_RULER_SEL$(V)		:= $(V_RULER_SEL_DFLT)
 include $(MK_EHFILES)
 EHC_V4				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 4
@@ -385,6 +400,7 @@ EHC_V4				:= $(addprefix $(VF)/,$(EHC))
 ### Version 4:2
 V					:= 4_2
 VF					:= 4_2
+V_RULER_SEL$(V)		:= $(V_RULER_SEL_DFLT)
 include $(MK_EHFILES)
 EHC_V4_2			:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 4_2
@@ -393,6 +409,7 @@ EHC_V4_2			:= $(addprefix $(VF)/,$(EHC))
 ### Version 5
 V					:= 5
 VF					:= $(V)
+V_RULER_SEL$(V)		:= $(V_RULER_SEL_DFLT)
 include $(MK_EHFILES)
 EHC_V5				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 5
@@ -401,6 +418,7 @@ EHC_V5				:= $(addprefix $(VF)/,$(EHC))
 ### Version 6
 V					:= 6
 VF					:= $(V)
+V_RULER_SEL$(V)		:= $(V_RULER_SEL_DFLT)
 include $(MK_EHFILES)
 EHC_V6				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 6
@@ -409,6 +427,7 @@ EHC_V6				:= $(addprefix $(VF)/,$(EHC))
 ### Version 6:1
 V					:= 6_1
 VF					:= 6_1
+V_RULER_SEL$(V)		:= $(V_RULER_SEL_DFLT)
 include $(MK_EHFILES)
 EHC_V6_1			:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 6_1
@@ -417,6 +436,7 @@ EHC_V6_1			:= $(addprefix $(VF)/,$(EHC))
 ### Version 6:4
 V					:= 6_4
 VF					:= 6_4
+V_RULER_SEL$(V)		:= $(V_RULER_SEL_DFLT)
 include $(MK_EHFILES)
 EHC_V6_4			:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 6_4
@@ -425,6 +445,7 @@ EHC_V6_4			:= $(addprefix $(VF)/,$(EHC))
 ### Version 7
 V					:= 7
 VF					:= $(V)
+V_RULER_SEL$(V)		:= $(V_RULER_SEL_DFLT)
 include $(MK_EHFILES)
 EHC_V7				:= $(addprefix $(VF)/,$(EHC))
 ### End of Version 7
@@ -433,6 +454,7 @@ EHC_V7				:= $(addprefix $(VF)/,$(EHC))
 ### Version 8
 V					:= 8
 VF					:= $(V)
+V_RULER_SEL$(V)		:= $(V_RULER_SEL_DFLT)
 include $(MK_EHFILES)
 EHC_V8				:= $(addprefix $(VF)/,$(EHC))
 GRI_V8				:= $(addprefix $(VF)/,$(GRI))
@@ -442,6 +464,7 @@ GRI_V8				:= $(addprefix $(VF)/,$(GRI))
 ### Version 9
 V					:= 9
 VF					:= $(V)
+V_RULER_SEL$(V)		:= $(V_RULER_SEL_DFLT)
 include $(MK_EHFILES)
 EHC_V9				:= $(addprefix $(VF)/,$(EHC))
 GRI_V9				:= $(addprefix $(VF)/,$(GRI))
@@ -451,6 +474,7 @@ GRI_V9				:= $(addprefix $(VF)/,$(GRI))
 ### Version 10
 V					:= 10
 VF					:= $(V)
+V_RULER_SEL$(V)		:= $(V_RULER_SEL_DFLT)
 include $(MK_EHFILES)
 EHC_V10				:= $(addprefix $(VF)/,$(EHC))
 GRI_V10				:= $(addprefix $(VF)/,$(GRI))
@@ -460,6 +484,7 @@ GRI_V10				:= $(addprefix $(VF)/,$(GRI))
 ### Version 11
 V					:= 11
 VF					:= $(V)
+V_RULER_SEL$(V)		:= $(V_RULER_SEL_DFLT)
 include $(MK_EHFILES)
 EHC_V11				:= $(addprefix $(VF)/,$(EHC))
 GRI_V11				:= $(addprefix $(VF)/,$(GRI))

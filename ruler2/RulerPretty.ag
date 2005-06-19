@@ -43,7 +43,7 @@ SEM Expr
   | App             lhs     .   pp          =   @lExpr.pp >#< @rExpr.pp
   | Op              lhs     .   pp          =   @lExpr.pp >#< @nmExpr.pp >#< @rExpr.pp
   | Sel             lhs     .   pp          =   pp_brackets @expr.pp >|< "." >|< @selMbExpr.pp
-  | Var             lhs     .   pp          =   pp @nm
+  | Var Uniq        lhs     .   pp          =   pp @nm
   | Int             lhs     .   pp          =   pp @int
   | StrText StrAsIs lhs     .   pp          =   pp @str
   | Paren           lhs     .   pp          =   pp_parens @expr.pp
@@ -52,7 +52,8 @@ SEM Expr
   | Cnstr           lhs     .   pp          =   pp_braces (@expr.pp >|< "|" >|< @cnstr.pp)
 
 SEM ECnstr
-  | Ty Var          lhs     .   pp          =   pp @nm
+  | Ty              lhs     .   pp          =   ppCommas @nms
+  | Var             lhs     .   pp          =   pp @nm
 
 SEM AttrIntro
   | Intro           lhs     .   pp          =   pp @props >#< pp @nm >#< ":" >#< pp @ty
@@ -61,6 +62,8 @@ SEM AttrEqn
   | Eqn             lhs     .   pp          =   "|" >#< pp @nm >#< "=" >#< @expr.pp
 
 SEM ANm
+  | Wild            loc     .   nm          =   nmWild
+                    lhs     .   pp          =   ppDest "W" @lhs.isDest @lhs.mbDstWd @lhs.mbPrevNdStr ""     ""     @nm
   | Loc             lhs     .   pp          =   ppDest "L" @lhs.isDest @lhs.mbDstWd @lhs.mbPrevNdStr @ndStr ""     @nm
   | Lhs             lhs     .   pp          =   ppDest "P" @lhs.isDest @lhs.mbDstWd @lhs.mbPrevNdStr @ndStr @ndStr @nm
   | Fld             lhs     .   pp          =   ppDest "F" @lhs.isDest @lhs.mbDstWd @lhs.mbPrevNdStr "??"   @ndStr @nm
@@ -100,6 +103,7 @@ ATTR AllARuleButARule [ mbDstWd: {Maybe (Int,Int)} | | mxDstNdWd, mxDstAtWd USE 
 
 SEM ANm
   | Loc Lhs         lhs     .   mxDstNdWd   =   3
+  | Wild            lhs     .   mxDstNdWd   =   0
   | Node            lhs     .   mxDstNdWd   =   length @ndStr
   | *               lhs     .   mxDstAtWd   =   length . show $ @nm
 
@@ -121,7 +125,7 @@ ATTR AEqnDests [ | | dstWdL: {[Int]} ]
 
 SEM AEqnDest
   | Many            lhs     .   dstWd       =   sum @dests.dstWdL + length @dests.dstWdL + 1
-  | One             lhs     .   dstWd       =   @anm.mxDstNdWd + @anm.mxDstAtWd + 1
+  | One             lhs     .   dstWd       =   @anm.mxDstNdWd + @anm.mxDstAtWd + (if @anm.mxDstNdWd > 0 then 1 else 0)
 
 SEM AEqnDests
   | Cons            lhs     .   dstWdL      =   @hd.dstWd : @tl.dstWdL
@@ -148,7 +152,7 @@ SEM ANm
   | Loc             loc     .   ndStr       =   "loc"
   | Lhs             loc     .   ndStr       =   strLhs
   | Node            loc     .   ndStr       =   show @ndNm
-  | Fld             loc     .   ndStr       =   ""
+  | Fld Wild        loc     .   ndStr       =   ""
 
 SEM AEqnDest
   | Many            lhs     .   ndStr       =   "??"
@@ -215,6 +219,7 @@ SEM Expr
   | StrAsIs         loc     .   ppLaTeX     =   pp @str
   | App             loc     .   ppLaTeX     =   @lExpr.ppLaTeX >#< @rExpr.ppLaTeX
   | Op              loc     .   ppLaTeX     =   @lExpr.ppLaTeX >#< @nmExpr.ppLaTeX >#< @rExpr.ppLaTeX
+  | LF              loc     .   ppLaTeX     =   @lExpr.ppLaTeX >#< switchLaTeXLhs (mkTexCmdUse "quad" empty) >#< @rExpr.ppLaTeX
   | Paren           loc     .   ppLaTeX     =   (if @lhs.needToParen then ppParens else id) @expr.ppLaTeX
   | Cnstr           loc     .   ppLaTeX     =   @expr.ppLaTeX
   | SelTop          loc     .   ppLaTeXSel  =   ppSelLaTeX (== nmVec) @expr.ppLaTeX (reverse @expr.selL)

@@ -116,7 +116,7 @@ data Opts
       , optHelp         :: Bool
       , optDebug        :: Bool
       , optVersion      :: Bool
-      , optFragWrap		:: Bool
+      , optFragWrap     :: Bool
       , optMbMarkChange :: Maybe ViewSels
       , optMbRlSel      :: Maybe RlSel
       , optBaseNm       :: String
@@ -130,9 +130,9 @@ defaultOpts
       , optHelp         =  False
       , optDebug        =  False
       , optVersion      =  False
-      , optFragWrap		=  False
+      , optFragWrap     =  False
       , optMbMarkChange =  Nothing
-      , optMbRlSel		=  Nothing
+      , optMbRlSel      =  Nothing
       , optBaseNm       =  rulesCmdPre
       }
 
@@ -143,10 +143,10 @@ cmdLineOpts
           "print version info"
      , Option "a"  ["ag"]               (NoArg oGenAG)
           "generate code for AG, default=no"
-     , Option "c"  ["markchanges"]      (OptArg oMarkCh "*|<view name>|<view name>-<view name>")
-          "mark changes between specified views (in combi with --lhs2tex)"
-     , Option "s"  ["selrule"]          (OptArg oRlSel "(*|<view name>|<view name>-<view name>).(*|<ruleset names>).(*|<rule names>)")
-          "select rules by specifying view(s), ruleset(s) and rule(s)"
+     , Option "c"  ["markchanges"]      (OptArg oMarkCh "<spec>")
+          "mark changes between specified views (in combi with --lhs2tex, <spec>=*|<view name>|<view name>-<view name>)"
+     , Option "s"  ["selrule"]          (OptArg oRlSel "<spec>")
+          "select rules by specifying view(s), ruleset(s) and rule(s), <spec>=(*|<view name>|<view name>-<view name>).(*|<ruleset names>).(*|<rule names>)"
      , Option ""   ["help"]             (NoArg oHelp)
           "output this help"
      , Option "w"  ["wrapfrag"]         (NoArg oFragWrap)
@@ -186,7 +186,9 @@ INCLUDE "RulerExprMatchSubst.ag"
 INCLUDE "RulerARule.ag"
 INCLUDE "RulerARuleOptim.ag"
 INCLUDE "RulerARuleOptim2.ag"
+INCLUDE "RulerARuleOptim3.ag"
 INCLUDE "RulerRlSel.ag"
+INCLUDE "RulerPatternUniq.ag"
 
 -------------------------------------------------------------------------
 -- Misc functions dependent on AST
@@ -232,11 +234,14 @@ SEM Decl
 -- Name occurrences
 -------------------------------------------------------------------------
 
-ATTR AllExpr AGExprItf [ | | nmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
+ATTR AllExpr ANm AGExprItf [ | | nmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
 
 SEM Expr
   | Var             lhs     .   nmS         =   Set.singleton @nm
   | Op              lhs     .   nmS         =   (@nm `Set.delete` @nmExpr.nmS) `Set.union` @lExpr.nmS `Set.union` @rExpr.nmS
+
+SEM ANm
+  | Loc             lhs     .   nmS         =   Set.singleton @nm
 
 -------------------------------------------------------------------------
 -- Internal marked/named fragments
@@ -457,25 +462,29 @@ rlGamUpdVws opts vwDpdGr extNmS scGam rlGam rlInfo
         (g,_,eg)
             = foldr
                 (\nVw (vrg,prePostGamMp,errg)
-                  -> let (preg,postg,prevVwRlChs) = prevWRTDpd nVw vwDpdGr prePostGamMp (emptyGam,emptyGam,emptyGam)
-                         (pregIncr,pregDflt) = reGamExtDflt' dfltJaGam nVw scGam preg
-                         (postgIncr,postgDflt) = reGamExtDflt' dfltJaGam nVw scGam postg
-                         ext newG prevG = reGamExtWithNew exprNmGam (exprSubst (defaultOpts {optSubstFullNm=False})) exprNmS dfltJaGam nVw scGam prevG newG
-                         vrgOfVwRlInfo = Map.lookup nVw . rlVwGam
-                         doMarkChng = doMarkChngForVw nVw
+                  -> let (preg,postg,prevVwRlChs)   = prevWRTDpd nVw vwDpdGr prePostGamMp (emptyGam,emptyGam,emptyGam)
+                         vrgOfVwRlInfo      = Map.lookup nVw . rlVwGam
                          dfltJaGam
                            = case mbOnVwRlInfo of
                                Just i  -> \sn jn -> maybe (jaGamDflt Expr_Var sn nVw scGam) reJAGam . Map.lookup jn $ g
                                        where g = maybe emptyGam (\i -> vwrlFullPreGam i `Map.union` vwrlFullPostGam i) (vrgOfVwRlInfo i)
                                Nothing -> \sn _  -> jaGamDflt Expr_Var sn nVw scGam
+                         (pregIncr ,pregDflt )      = reGamExtDflt' dfltJaGam nVw scGam preg
+                         (postgIncr,postgDflt)      = reGamExtDflt' dfltJaGam nVw scGam postg
+                         ext newG prevG     = reGamExtWithNew exprNmGam (exprSubst (defaultOpts {optSubstFullNm=False})) exprNmS dfltJaGam nVw scGam prevG newG
+                         doMarkChng         = doMarkChngForVw nVw
                          (vw,preg',postg')
                            = case maybe Nothing vrgOfVwRlInfo mbOnVwRlInfo of
                                Just i
                                  -> case Map.lookup nVw vrg of
                                       Just vw -> (vw                        ,ext (vwrlPreGam vw) preD,ext (vwrlPostGam vw) postD)
                                       Nothing -> (emptyVwRlInfo {vwrlNm=nVw},ext emptyGam        preD,ext emptyGam         postD)
+                                 where preD  = ext (vwrlPreGam  i) pregDflt
+                                       postD = ext (vwrlPostGam i) postgDflt
+{-
                                  where preD  = ext (vwrlFullPreGam  i) pregDflt
                                        postD = ext (vwrlFullPostGam i) postgDflt
+-}
                                Nothing
                                  -> case Map.lookup nVw vrg of
                                       Just vw -> (vw                        ,ext (vwrlPreGam vw) pregDflt,ext (vwrlPostGam vw) postgDflt)
@@ -545,7 +554,7 @@ type RwExprGam = RwGam (Expr,Expr)
 }
 
 ATTR AllDecl [ | | gathFmGam USE {`fmGamUnion`} {Map.empty}: {FmGam Expr} ]
-ATTR AllDecl AllExpr AGExprItf [ fmGam: {FmGam Expr} | | ]
+ATTR AllDecl AllExpr AGExprItf AGARuleItf ARule AEqn AEqns AExpr [ fmGam: {FmGam Expr} | | ]
 
 ATTR AllDecl [ | | gathRwGam USE {`rwGamUnion`} {Map.empty}: RwExprGam ]
 ATTR AllDecl AllExpr AGExprItf [ rwGam: RwExprGam | | ]
@@ -574,8 +583,7 @@ SEM AttrEqn
                             .   ecGam       =   emptyGam
 
 SEM AExpr
-  | Expr            loc     .   fmGam       =   emptyGam
-                            .   rwGam       =   emptyGam
+  | Expr            loc     .   rwGam       =   emptyGam
                             .   ecGam       =   emptyGam
 
 SEM AEqn

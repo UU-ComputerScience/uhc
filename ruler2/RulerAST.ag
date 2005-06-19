@@ -159,6 +159,8 @@ DATA Expr
                         nmExpr      : Expr
                         lExpr       : Expr
                         rExpr       : Expr
+  | LF                  lExpr       : Expr
+                        rExpr       : Expr
   | Var                 nm          : {Nm}
   | AVar                anm         : ANm
   | Int                 int         : {String}
@@ -177,9 +179,11 @@ DATA Expr
                         selMbExpr   : MbExpr
   | ChildOrder          seqNr       : {Int}
                         expr        : Expr
+  | Uniq
   | Empty
 
 DATA ANm
+  | Wild
   | Loc                 nm          : {Nm}
   | Lhs                 nm          : {Nm}
   | Fld                 nm          : {Nm}
@@ -197,7 +201,7 @@ DERIVING AllExpr ANm: Eq,Ord
 -------------------------------------------------------------------------
 
 DATA ECnstr
-  | Ty                  nm          : {Nm}
+  | Ty                  nms         : {[Nm]}
   | Var                 nm          : {Nm}
   | Empty
 

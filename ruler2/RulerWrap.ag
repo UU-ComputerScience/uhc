@@ -84,23 +84,33 @@ viewSelsSelfT vs
 WRAPPER AGARuleItf
 
 {
-wrapARule' :: Opts -> CrOrdGam -> AtDefdGam -> ARule -> Syn_AGARuleItf
-wrapARule' o cg ag rl
+wrapARule' :: Opts -> [Nm] -> AtDefdGam -> FmGam Expr -> ARule -> Syn_AGARuleItf
+wrapARule' o co ag fg rl
   = let r1 = sem_AGARuleItf (AGARuleItf_AGItf rl)
     in  wrap_AGARuleItf r1
             (Inh_AGARuleItf {opts_Inh_AGARuleItf = o
-                            ,croGam_Inh_AGARuleItf = cg
+                            ,croNmL_Inh_AGARuleItf = co
                             ,adGam_Inh_AGARuleItf = ag
+                            ,fmGam_Inh_AGARuleItf = fg
                             })
 
-arlElimAlphaRename :: ARule -> ARule
-arlElimAlphaRename = replRn_Syn_AGARuleItf . wrapARule' defaultOpts emptyGam emptyGam
+arlUniq :: [Nm] -> ARule -> ARule
+arlUniq co = replUniq_Syn_AGARuleItf . wrapARule' defaultOpts co emptyGam emptyGam
 
-arlElimCopyRule :: CrOrdGam -> AtDefdGam -> ARule -> ARule
-arlElimCopyRule cg ag = replCr_Syn_AGARuleItf . wrapARule' defaultOpts cg ag
+arlElimAlphaRename :: ARule -> ARule
+arlElimAlphaRename = replRn_Syn_AGARuleItf . wrapARule' defaultOpts [] emptyGam emptyGam
+
+arlElimCopyRule :: [Nm] -> AtDefdGam -> ARule -> ARule
+arlElimCopyRule co ag = replCr_Syn_AGARuleItf . wrapARule' defaultOpts co ag emptyGam
+
+arlElimWild :: ARule -> ARule
+arlElimWild = replEw_Syn_AGARuleItf . wrapARule' defaultOpts [] emptyGam emptyGam
+
+arlSubst :: FmGam Expr -> ARule -> ARule
+arlSubst fg = repl_Syn_AGARuleItf . wrapARule' defaultOpts [] emptyGam fg
 
 ppARule :: ARule -> PP_Doc
-ppARule = pp_Syn_AGARuleItf . wrapARule' defaultOpts emptyGam emptyGam
+ppARule = pp_Syn_AGARuleItf . wrapARule' defaultOpts [] emptyGam emptyGam
 }
 
 -------------------------------------------------------------------------
@@ -141,14 +151,9 @@ exprRewrite o fmg rwg ecg e
   = r
   where (r,_,_) = exprRewrite' o fmg rwg ecg e
 
-exprRewrite2 :: Opts -> FmGam Expr -> RwExprGam -> ECnstrGam -> Expr -> (Expr,ECnstrGam)
-exprRewrite2 o fmg rwg ecg e
-  = (r,g)
-  where (r,_,g) = exprRewrite' o fmg rwg ecg e
-
-exprRewrite' :: Opts -> FmGam Expr -> RwExprGam -> ECnstrGam -> Expr -> (Expr,FmGam Expr,ECnstrGam)
+exprRewrite' :: Opts -> FmGam Expr -> RwExprGam -> ECnstrGam -> Expr -> (Expr,[AEqn],FmGam Expr)
 exprRewrite' o fmg rwg ecg e
-  = (repl_Syn_AGExprItf r,rwMtGam_Syn_AGExprItf r,rwEcGam_Syn_AGExprItf r)
+  = (repl_Syn_AGExprItf r,aEqnL_Syn_AGExprItf r,aEqnFmGam_Syn_AGExprItf r)
   where r = wrapExpr' o fmg rwg ecg e
 
 exprElimCnstr :: Expr -> (Expr,ECnstrGam)
@@ -191,6 +196,11 @@ instance PP Expr where
 -------------------------------------------------------------------------
 -- Construction
 -------------------------------------------------------------------------
+
+{
+mkExprApp :: Expr -> [Expr] -> Expr
+mkExprApp f = Expr_AppTop . foldl Expr_App f
+}
 
 {
 mkAFld :: Nm -> Expr
