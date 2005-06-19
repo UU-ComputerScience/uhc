@@ -1,58 +1,68 @@
 -- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
 
 -------------------------------------------------------------------------
--- Map through eqn structure over lhs/rhs
+-- (A)Eqn as Expr
 -------------------------------------------------------------------------
 
-{-
-exprAsEqnMap :: (Expr -> Expr) -> (Expr -> Expr) -> Expr -> Expr
-exprAsEqnMap l r e
-  = case e of
-      (Expr_AppTop e)
-        -> Expr_AppTop (exprAsEqnMap l r e)
-      (Expr_Op n ne d s) | n == nmEql
-        -> Expr_Op n ne (l d) (r s)
-      _ -> e
--}
+{
+mkExprEqn :: Expr -> Expr -> Expr
+mkExprEqn l r = Expr_AppTop (Expr_Op (nmEql) (Expr_Var (nmEql)) l r)
+}
 
 -------------------------------------------------------------------------
 -- Expr as AEqn
 -------------------------------------------------------------------------
 
 {
-exprMbAEqn :: Expr -> Maybe AEqn
-exprMbAEqn expr
+exprMbAEqnRest :: Expr -> Maybe (AEqn,[Expr],FmGam Expr)
+exprMbAEqnRest expr
   = eE expr
   where eE (Expr_Op n _ d s) | n == nmEql
-          = do d' <- dE d
-               s' <- sE s
-               return (AEqn_Eqn d' s')
-        eE (Expr_AppTop e)      = eE e
-        eE (Expr_Named _ e)     = eE e
-        eE _                    = Nothing
-        dE (Expr_AVar n)        = return (AEqnDest_One n)
-        dE (Expr_Var n)         = nE (show n)
-        dE (Expr_StrAsIs s)     = nE s
-        dE (Expr_Paren e)       = dE e
-        dE (Expr_AppTop e)      = dE e
-        dE (Expr_Named _ e)     = dE e
-        dE e@(Expr_Op n _ _ _) | n == nmComma
-          = do dL <- oE e
-               return (AEqnDest_Many dL)
-        dE _                    = Nothing
+          = do (d',ed,gd) <- dE d False
+               (s'      ) <- sE s
+               return (AEqn_Eqn d' s', ed, gd)
+        eE (Expr_AppTop e)                          = eE e
+        eE (Expr_Named _ e)                         = eE e
+        eE e                                        = Nothing
+        dE (Expr_AVar n)        _                   = return (AEqnDest_One n,[],emptyGam)
+        dE (Expr_Var n)         _                   = vE n
+        dE (Expr_StrAsIs s)     _                   = nE s
+        dE (Expr_Paren e)       p                   = dE e p
+        dE (Expr_AppTop e)      p                   = dE e p
+        dE (Expr_Named _ e)     p                   = dE e p
+        dE e@(Expr_Op n _ _ _)  p | n == nmComma    = tE e
+        dE _                    False               = Nothing
+        dE e                    True                = tE e
+        tE e@(Expr_Op n _ _ _) | n == nmComma
+          = do (dL,eo,go) <- oE e
+               return (AEqnDest_Many dL,eo,go)
+        tE e
+          = return (AEqnDest_One n,[mkExprEqn (Expr_AppTop e) (Expr_AVar n)],emptyGam)
+          where n = ANm_Loc . Nm . nmShowAG . foldr nmApd nmWild . take 2 . Set.toList $ exprNmS e
         oE (Expr_Op n _ e1 e2) | n == nmComma
-          = do e1' <- dE e1
-               e2' <- oE e2
-               return (e1' : e2')
+          = do (e1',ed,gd) <- dE e1 True
+               (e2',eo,go) <- oE e2
+               return (e1' : e2', ed ++ eo, gd `gu` go)
         oE e
-          = do e' <- dE e
-               return [e']
-        sE e                    = return (AExpr_Expr e)
+          = do (e',ee,ge) <- dE e True
+               return ([e'],ee,ge)
+        sE e                                        = return (AExpr_Expr e)
+        vE n
+          = if n == nmWild
+            then return (AEqnDest_One ANm_Wild,[],emptyGam)
+            else let a = ANm_Loc (Nm (nmShowAG n))
+                 in  return (AEqnDest_One a,[],n `gs` Expr_AVar a)
         nE n
-          = case n of
-              ('l':'o':'c':'.':nm) -> Just (AEqnDest_One (ANm_Loc (Nm nm)))
-              ('l':'h':'s':'.':nm) -> Just (AEqnDest_One (ANm_Lhs (Nm nm)))
-              _ -> Nothing
+          = fmap (\n -> (AEqnDest_One n,[],emptyGam)) m
+          where m = case n of
+                      ('@':'l':'o':'c':'.':nm)  -> Just (ANm_Loc  (Nm nm))
+                      (    'l':'o':'c':'.':nm)  -> Just (ANm_Loc  (Nm nm))
+                      ('@':'l':'h':'s':'.':nm)  -> Just (ANm_Lhs  (Nm nm))
+                      (    'l':'h':'s':'.':nm)  -> Just (ANm_Lhs  (Nm nm))
+                      "_"                       -> Just (ANm_Wild)
+                      _                         -> Nothing
+        gu = fmGamUnion
+        gs n e = fmGamFromList [(n,e)]
 }
 
 

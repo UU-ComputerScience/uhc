@@ -1,5 +1,7 @@
 preamble tex "%include lhs2TeX.fmt\n%include afp.fmt"
 
+extern ty2
+
 format ag ty.identv = gTy
 format ag identv = nm
 {-
@@ -77,6 +79,15 @@ rules expr.base scheme expr "Expr type rules" =
       judge R : expr
           | tyCnstr.syn = tyCnstr tyCnstr.inh
 
+  rule e.var2 : e.var "Var2" =
+    view K =
+      judge F : fit
+          | rty = ty2
+      -
+      judge R : expr
+          | ty.syn = ty2
+
+
   rule e.app "App" =
     view E =
       judge F : expr = valGam :- eFun : (tyFun= ty.a -> ty)
@@ -124,6 +135,6 @@ relation fresh =
   view 2 =
     attr [ | | tvarv: UID ]
     judge tex tvarv (text "fresh")
-    judge ag ("loc.gUniq",tvarv) `=` mkNewLevUID "@lhs.gUniq"
+    judge ag tvarv `=` mkTyVar uniq
 
 

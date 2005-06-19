@@ -6,6 +6,10 @@ $(addprefix $(VPREFIX),$(EHC_CAG:.cag=.ag)): $(VPREFIX)%.ag: %.cag $(SHUFFLE)
 	$(call SHUFFLE_LHS_AG,$<,$@,$(V),$(*F)) ; \
 	touch $@
 
+$(addprefix $(VPREFIX),$(EHC_DPDS_RULER_RULES)): $(VPREFIX)%.ag: $(VPREFIX)%.cag $(SHUFFLE)
+	$(call SHUFFLE_LHS_AG,$<,$@,$(V),$(*F)) ; \
+	touch $@
+
 $(addprefix $(VPREFIX),$(EHC_CHS:.chs=.hs)): $(VPREFIX)%.hs: %.chs $(SHUFFLE)
 	$(call SHUFFLE_LHS_HS,$<,$@,$(V),$(*F)) ; \
 	touch $@
@@ -34,8 +38,11 @@ $(addprefix $(VPREFIX),$(EHC_LAG_FOR_HS_GRIN_CODE:.lag=.hs)): %.hs: %.ag $(addpr
 $(VPREFIX)EHErrorPretty.hs: $(addprefix $(VPREFIX),$(EHC_DPDS_ERR_PRETTY))
 	$(call AGCC,-cfspr,$<)
 
-$(VPREFIX)EHMainAG.hs: $(addprefix $(VPREFIX),$(EHC_DPDS_MAIN))
+$(VPREFIX)EHMainAG.hs: $(addprefix $(VPREFIX),$(EHC_DPDS_MAIN) $(EHC_DPDS_RULER_RULES))
 	$(call AGCC,-dcfspr,$<)
+
+$(VPREFIX)$(EHC_DPDS_RULER_RULES:.ag=.cag): $(AFP_RULES2_RUL) $(RULER2)
+	$(call RULER2_CAG,$(V_RULER_SEL$(*D)),$(*F),$<,$@)
 
 $(VPREFIX)$(EHC): $(addprefix $(VPREFIX),$(EHC_MAIN).hs $(EHC_HS))
 	cd `dirname $@` ; $(GHC) $(GHC_OPTS) -o `basename $@` --make `basename $<`
