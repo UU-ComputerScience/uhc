@@ -90,9 +90,16 @@ instance Show AtInfo where
   show _ = "AtInfo"
 
 instance PP AtInfo where
-  pp i = "AT" >#< pp (atNm i) >#< pp (show (atDirs i)) >#< pp (show (atProps i))
+  pp i = "AT" >#< pp (atTy i) >#< pp (show (atDirs i)) >#< pp (show (atProps i))
 
 type AtGam = Gam Nm AtInfo
+
+atGamNode :: AtGam -> Maybe Nm
+atGamNode g
+  = do let aNdGm = Map.filter (\ai -> AtNode `elem` atProps ai) g
+       case Map.toList aNdGm of
+         ((na,ai):_) -> return na
+         _           -> Nothing
 
 -------------------------------------------------------------------------
 -- Judgement formats
@@ -151,6 +158,11 @@ type ScGam e = Gam Nm (ScInfo e)
 
 scVwGamLookup :: Nm -> Nm -> ScGam e -> Maybe (ScInfo e,VwScInfo e)
 scVwGamLookup = dblGamLookup scVwGam
+
+scVwGamNodeAt :: Nm -> Nm -> ScGam e -> Maybe Nm
+scVwGamNodeAt nSc nVw g
+  = do (si,vi) <- scVwGamLookup nSc nVw g
+       atGamNode (vwscAtGam vi)
 
 -------------------------------------------------------------------------
 -- RExpr's judgement attr equations

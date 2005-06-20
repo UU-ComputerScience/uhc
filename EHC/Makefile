@@ -1,6 +1,12 @@
 .SUFFIXES:
 .SUFFIXES: .pdf .tex .bib .html .lhs .sty .lag .cag .chs
 
+TOP_PREFIX			:=
+
+include mk/shared.mk
+
+include ruler2/files.mk
+
 # build dir's for AG primer related programs
 D_BUILD				:= build
 D_BUILD_BIN			:= $(D_BUILD)/bin
@@ -82,9 +88,6 @@ MK_EHFILES			:= mk/ehfiles.mk
 
 # AGC(opts, file)
 AGCC				= cd `dirname $2` ; $(AGC) $1 `basename $2`
-
-# GHC options
-GHC_OPTS			= -fglasgow-exts -package util -package lang -package data -package uust
 
 # lhs2tex format files used
 AFP_FMT_OTHER		:= lag2TeX.fmt pretty.fmt parsing.fmt
@@ -210,21 +213,21 @@ RULER_DOC_PDF		:= $(RULER_DIR)/RulerDoc.pdf
 
 RULER_SRC			:= $(RULER_DIR)/$(RULER_AG)
 
-RULER2				:= bin/ruler2
-RULER2_DIR			:= ruler2
-RULER2_MAIN			:= Ruler
-RULER2_AG			:= $(RULER2_MAIN).ag
-RULER2_AG_INCLS		:= RulerPretty.ag RulerAST.ag RulerGen.ag RulerParser.ag RulerExprMatchSubst.ag RulerWrap.ag \
-						RulerViewDpd.ag RulerMisc.ag RulerARule.ag \
-						RulerARuleOptim.ag RulerARuleOptim2.ag RulerARuleOptim3.ag \
-						RulerRlSel.ag \
-						RulerPatternUniq.ag
-RULER2_AG_HS		:= $(RULER2_AG:.ag=.hs)
-RULER2_HS			:= RulerUtils.hs RulerAdmin.hs RulerMkAdmin.hs
-RULER2_DERIV		:= $(RULER2_DIR)/$(RULER2_AG_HS)
+RULER2				:= $(RULER2_BLD_EXEC)
+#RULER2_DIR			:= ruler2
+#RULER2_MAIN			:= Ruler
+#RULER2_AG			:= $(RULER2_MAIN).ag
+#RULER2_AG_INCLS		:= RulerPretty.ag RulerAST.ag RulerGen.ag RulerParser.ag RulerExprMatchSubst.ag RulerWrap.ag \
+#						RulerViewDpd.ag RulerMisc.ag RulerARule.ag \
+#						RulerARuleOptim.ag RulerARuleOptim2.ag RulerARuleOptim3.ag \
+#						RulerRlSel.ag \
+#						RulerPatternUniq.ag
+#RULER2_AG_HS		:= $(RULER2_AG:.ag=.hs)
+#RULER2_HS			:= RulerUtils.hs RulerAdmin.hs RulerMkAdmin.hs
+#RULER2_DERIV		:= $(RULER2_DIR)/$(RULER2_AG_HS)
 RULER2_DOC_PDF		:= $(RULER2_DIR)/RulerDoc.pdf
 
-RULER2_SRC			:= $(addprefix $(RULER2_DIR)/,$(RULER2_AG) $(RULER2_HS) $(RULER2_AG_INCLS))
+#RULER2_SRC			:= $(addprefix $(RULER2_DIR)/,$(RULER2_AG) $(RULER2_HS) $(RULER2_AG_INCLS))
 
 BREW				:= bin/brew
 BREW_DIR			:= brew
@@ -593,11 +596,8 @@ hw05-impred-tst:
 hw05-impred-final:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyImpred --set=hw05 --set=omitTBD --set=omitLitDiscuss" afp-bib
 
-icfp05-explimpl-tst:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=icfp05 --set=omitTBD --set=omitLitDiscuss" afp
-
-icfp05-explimpl:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=icfp05 --set=asDraft --set=omitTBD --set=omitLitDiscuss" afp-bib
+popl05-ruler-tst:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyRuler --set=popl05 --set=omitTBD --set=omitLitDiscuss" afp
 
 hw05-explimpl-tst:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=hw05 --set=withChangeBar --set=omitTBD --set=omitLitDiscuss" afp
@@ -607,6 +607,12 @@ hw05-explimpl-final:
 
 hw05-explimpl:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=hw05 --set=withChangeBar --set=omitTBD --set=omitLitDiscuss" afp-bib
+
+icfp05-explimpl-tst:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=icfp05 --set=omitTBD --set=omitLitDiscuss" afp
+
+icfp05-explimpl:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=icfp05 --set=asDraft --set=omitTBD --set=omitLitDiscuss" afp-bib
 
 icfp05-explimpl-final:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=icfp05 --set=omitTBD --set=omitLitDiscuss" afp-bib
@@ -664,13 +670,13 @@ $(RULER): $(RULER_DIR)/$(RULER_AG) $(wildcard lib/*.hs)
 $(RULER_DOC_PDF): $(RULER_DIR)/RulerDoc.tex $(RULER)
 	cd `dirname $<` ; pdflatex `basename $<`
 
-ruler2: $(RULER2)
-
-$(RULER2): $(RULER2_DIR)/$(RULER2_AG) $(wildcard lib/*.hs) $(addprefix $(RULER2_DIR)/,$(RULER2_HS) $(RULER2_AG_HS) $(RULER2_AG_INCLS))
-	cd $(RULER2_DIR) ; \
-	$(AGC) -csdfr --module=Main `basename $<` ; \
-	$(GHC) --make $(GHC_OPTS) -i../lib $(RULER2_HS) $(RULER2_AG_HS) -o ../$@ ; \
-	strip ../$@
+#ruler2: $(RULER2)
+#
+#$(RULER2): $(RULER2_DIR)/$(RULER2_AG) $(wildcard lib/*.hs) $(addprefix $(RULER2_DIR)/,$(RULER2_HS) $(RULER2_AG_HS) $(RULER2_AG_INCLS))
+#	cd $(RULER2_DIR) ; \
+#	$(AGC) -csdfr --module=Main `basename $<` ; \
+#	$(GHC) --make $(GHC_OPTS) -i../lib $(RULER2_HS) $(RULER2_AG_HS) -o ../$@ ; \
+#	strip ../$@
 
 $(RULER2_DOC_PDF): $(RULER2_DIR)/RulerDoc.tex $(RULER2)
 	cd `dirname $<` ; pdflatex `basename $<`
@@ -691,6 +697,7 @@ ehcs: $(EHC_V1) $(EHC_V2) $(EHC_V3) $(EHC_V4) $(EHC_V5) $(EHC_V6) $(EHC_V7) $(EH
 gris: $(GRI_V8) $(GRI_V9) $(GRI_V10)
 
 clean:
+	$(MAKE) -C ruler2 $@ ; \
 	rm -rf $(AFP_DERIV) $(SHUFFLE_DERIV) a.out \
 	$(addprefix $(SHUFFLE_DIR)/,*.o *.hi *.pdf) $(SHUFFLE) \
 	$(addprefix $(RULER_DIR)/,*.o *.hi *.pdf) $(RULER) \
@@ -711,7 +718,7 @@ edit:
 	bbedit \
 	$(EHC_CAG) $(EHC_CHS) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CAG)) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CHS)) \
 	$(ALL_AFP_SRC) afp.lsty afp.fmt \
-	$(SHUFFLE_SRC) $(RULER_SRC) $(RULER2_SRC) \
+	$(SHUFFLE_SRC) $(RULER_SRC) $(RULER2_AG_MAIN_SRC) $(RULER2_HS_SRC) \
 	Makefile \
 	$(TMPL_TEST) $(MK_EHFILES)
 

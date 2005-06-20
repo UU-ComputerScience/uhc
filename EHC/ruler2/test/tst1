@@ -18,6 +18,9 @@ format ag out ((a) -> (r)) `=` (v) = (a,r) `=` tyArgRes v
 format ag eFun = func
 format ag eArg = arg
 
+format ag exprs.hd = hd
+format ag exprs.tl = tl
+
 format tex ty = sigma
 format tex ty.inh = sigma..k
 format tex ty.syn = sigma
@@ -49,6 +52,8 @@ scheme expr "Expr" =
   view 2 =
     attr [ | thread tyCnstr: Cnstr | ]
     judge tex valGam ; tyCnstr.inh ; ty.inh :-.."e" e : ty.syn ~> tyCnstr.syn
+
+scheme exprs : [expr] "Exprs"
 
 rulesgroup expr.subset scheme expr "Subset of Expr type rules" =
   rule expr.base e.var 

@@ -12,11 +12,12 @@ ATTR AGItf AGExprItf AllNT AGARuleItf [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM AGItf
   | AGItf           lhs     .   pp          =   @decls.pp
-                                                >-< "----------" >-< ppGam @decls.gathScGam
+                                                >-< "----------" >-< ppGam @scGam
                                                 >-< "----------" >-< ppGam @rsGam
 
 SEM Decl
   | Scheme          lhs     .   pp          =   "scheme"        >#< @scKind >#< @nm >-< "=" >#< @decls.pp
+  | SchemeDeriv     lhs     .   pp          =   "scheme"        >#< @scKind >#< @nm >#< ":" >#< @scDeriv >-< "=" >#< @decls.pp
   | Fmt             lhs     .   pp          =   "format"        >#< @fmKind >#< @matchExpr.pp >#< "=" >#< @expr.pp
   | ScmView         lhs     .   pp          =   "view"          >#< @nm >-< "=" >#< @decls.pp
   | RulView         lhs     .   pp          =   "view"          >#< @nm >-< "=" >#< (@pre.pp >-< "-" >-< @post.pp)
@@ -42,7 +43,7 @@ SEM RExpr
 SEM Expr
   | App             lhs     .   pp          =   @lExpr.pp >#< @rExpr.pp
   | Op              lhs     .   pp          =   @lExpr.pp >#< @nmExpr.pp >#< @rExpr.pp
-  | Sel             lhs     .   pp          =   pp_brackets @expr.pp >|< "." >|< @selMbExpr.pp
+  | Sel             lhs     .   pp          =   @expr.pp >|< "." >|< @selMbExpr.pp
   | Var Uniq        lhs     .   pp          =   pp @nm
   | Int             lhs     .   pp          =   pp @int
   | StrText StrAsIs lhs     .   pp          =   pp @str
