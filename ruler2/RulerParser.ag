@@ -95,9 +95,7 @@ pAllParsers
                                                        <*  pKey "|"             <*> pAttrIntros
                                                        <*  pKey "]"
         pDeclsScmView       =   pDecls1' pDeclScmView
-        pDeclGlob           =   sem_Decl_Scheme        <$> (ScJudge <$ pKey "scheme" <|> ScRelation <$ pKey "relation")
-                                                       <*> pNm <*> pMbString
-                                                       <*  pKey "="             <*> (pDeclScmDflt <|> pDecls1' pDeclScm)
+        pDeclGlob           =   pDeclGlobScheme
                             <|> sem_Decl_Fmt           <$  pKey "format"
                                                        <*> pFmKd2WithDflt
                                                        <*> pAtIO
@@ -112,6 +110,18 @@ pAllParsers
                                                        <*  pKey "="             <*> pList1Sep pComma (pList1 pNmVw)
                             <|> sem_Decl_Preamble      <$  pKey "preamble"      <*> pFmKd2WithDflt <*> pString
                             <|> sem_Decl_Extern        <$  pKey "extern"        <*> pList1 pNm
+        pDeclGlobScheme     =   (ScJudge <$ pKey "scheme" <|> ScRelation <$ pKey "relation")
+                                <**> (pNm
+                                     <**> (   (\d (ms,ds) n k -> sem_Decl_SchemeDeriv k n d ms ds)
+                                              <$ pKey ":" <*> pScDeriv <*> pTl2
+                                          <|> (\(ms,ds) n k -> sem_Decl_Scheme k n ms ds)
+                                              <$> pTl1
+                                          )
+                                     )
+                            where pTl1 = (,) <$> pMbString <*> pDs
+                                  pDs = pKey "=" *> (pDeclScmDflt <|> pDecls1' pDeclScm)
+                                  pTl2 = (,) <$> pMbString <*> (pMb' id sem_Decls_Nil pDs)
+        pScDeriv            =   ScList <$ pKey "[" <*> pNm <* pKey "]"
         pMbViewSel          =   pMb' id sem_ViewSel_All (pKey "viewsel" *> pViewSel)
         pViewSel            =   pV <??> ((flip sem_ViewSel_Range) <$ pKey "-" <*> pV)
                             where pV = sem_ViewSel_View <$> pNmVw <|> sem_ViewSel_All <$ pKey "*"
@@ -141,11 +151,12 @@ pAllParsers
                                      )
         pRExprEqn           =   sem_RExprEqn_Attrs <$> pAttrEqns
                             <|> sem_RExprEqn_Expr  <$  pKey "=" <*> pExpr
-        pExpr               =   pExprApp <??> ((\es e1 -> let (op,e2) = foldr (\(op,e1) (f2,e2) -> (op,f2 e1 e2)) (const,undefined) es
-                                                          in sem_Expr_AppTop (op e1 e2)
-                                               )
-                                               <$> pList1 ((,) <$> pOp <*> pExprApp)
-                                              )
+        pExpr               =   pExprApp
+                                <??> ((\es e1 -> let (op,e2) = foldr (\(op,e1) (f2,e2) -> (op,f2 e1 e2)) (const,undefined) es
+                                                 in sem_Expr_AppTop (op e1 e2)
+                                      )
+                                      <$> pList1 ((,) <$> pOp <*> pExprApp)
+                                     )
                             where pOp = (\s ss -> sem_Expr_Op s (ss (sem_Expr_Var s))) <$> pSym <*> pExprDot
         pExprLF				=	pChainr (sem_Expr_LF <$ pKey "|") pExpr
         pExprApp            =   mkApp alg <$> pList1 pExprBase <|> pSucceed sem_Expr_Empty

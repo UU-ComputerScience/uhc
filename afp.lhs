@@ -69,8 +69,13 @@
 %let incl11     = False
 %endif
 
-%if storyPHD 
+%if storyPHD
 %let incl12     = True
+%else
+%let incl12     = False
+%endif
+
+%if storyPHD 
 %let incl13     = True
 %let incl14     = True
 %let incl15     = True
@@ -78,7 +83,6 @@
 %let incl17     = True
 %let inclXX     = True
 %else
-%let incl12     = False
 %let incl13     = False
 %let incl14     = False
 %let incl15     = False
@@ -87,7 +91,7 @@
 %let inclXX     = False
 %endif
 
-%if storyPHD || storyImpred
+%if storyPHD || storyImpred || storyRuler
 %let inclApp    = True
 %else
 %let inclApp    = False
@@ -117,7 +121,7 @@
 %let incl01TopicParsing  	= False
 %endif
 
-%if storyExplImpl || storyImpred
+%if storyExplImpl || storyImpred || storyRuler
 %let chapAsArticle  = True
 %else
 %let chapAsArticle  = False
@@ -134,24 +138,24 @@
 %if yesBeamer
 %if asSlides
                ignorenonframetext,
-%else
+%else %% asSlides
 %if asArticle
 %if llncs
                class=llncs,
 %elif acm
-%if icfp05 || hw05
+%if icfp05 || hw05 || popl05
 %if asDraft
                class=sigplanconf,onecolumn,11pt,preprint,
-%else
+%else %% asDraft
                class=sigplanconf,preprint,blockstyle,
 %endif %% asDraft
-%else
+%else %% icfp05
                class=sigplan-proc,preprint,
-%endif
-%else
+%endif %% icfp05
+%else %% acm
                class=article,
 %endif %% llncs
-%else
+%else %% asArticle
                class=book,
 %endif %% asArticle
 %endif %% asSlides
@@ -527,6 +531,8 @@
 \title{Explicit implicit parameters}
 %elif storyImpred
 \title{Exploiting type signatures}
+%elif storyRuler
+\title{Typing rules: it's just programming (or:) Ruler: programming with type rules}
 %elif storyEHIntro
 %if storyVariantETAPSLinks
 \title{Essential Haskell Compiler Highlights}
@@ -541,9 +547,9 @@
 
 %if storyPHD
 \author{Atze Dijkstra}
-%elif acm && (storyExplImpl || storyImpred)
+%elif acm && (storyExplImpl || storyImpred || storyRuler)
 %if useSigplanconfSty
-\authorinfo{Atze Dijkstra \and Doaitse S. Swierstra}
+\authorinfo{Atze Dijkstra \and S. Doaitse Swierstra}
   {Institute of Information and Computing Sciences \\
    Utrecht University \\
    P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
@@ -553,6 +559,8 @@
 \toappear{Submitted to the International Conference onf Functional Programming 2005 (ICFP 2005), September 26-28, Tallin, Estonia}
 %elif hw05
 \toappear{In preparation for the Haskell Workshop 2005 (HW2005), September 30, Tallin, Estonia}
+%elif popl05
+\toappear{In preparation for Principles of Programming Languages 2006 (POPL2006), January 11-13, Charleston, South Carolina, USA}
 %else
 %endif
 %else %% useSigplanconfSty
@@ -564,7 +572,7 @@
 % e-mail address. Additionally, tag each line of
 % affiliation/address with \affaddr, and tag the
 %% e-mail address with \email.
-\alignauthor Atze Dijkstra and Doaitse S. Swierstra\\
+\alignauthor Atze Dijkstra and S. Doaitse Swierstra\\
        \affaddr{Institute of Information and Computing Sciences}\\
        \affaddr{Utrecht University}\\
        \affaddr{P.O.Box 80.089, 3508 TB Utrecht, The Netherlands}\\
@@ -741,7 +749,7 @@ Combinator & Meaning & Result
 %elif llncs
 \setlength{\parindent}{0mm}
 \addtolength{\parskip}{0.25\baselineskip}
-%elif acm && (icfp05 || hw05)
+%elif acm && (icfp05 || hw05 || popl05)
 %else
 \setlength{\parindent}{0mm}
 \addtolength{\parskip}{0.4\baselineskip}
@@ -809,6 +817,8 @@ in combination with existentials and higher ranked polymorphic types.
 %endif
 
 %elif storyImpred
+...
+%elif storyRuler
 ...
 %else %% afp04
 A great deal has been written about type systems.
@@ -11360,6 +11370,89 @@ This has been omitted.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EHC 12 (provisional)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% if incl12
+
+%if storyRuler
+\subsection{Introduction}
+
+message: 
+\begin{itemize}
+\item
+Type theory and type system implementations are two different worlds.
+\begin{itemize}
+ \item
+ A bad thing in itself because practice without foundation as well as theory without grounding in practice are useless.
+ For practical systems (like Haskell) definition of semantics lags behind,
+ for theoretical systems usually only publications and no usable implementation exists.
+ \item
+ Specifications by means of type rules suffers from ``specification forgotten after implementing it'' symptom,
+ that is, the two easily become inconsistent
+\end{itemize}
+\item
+Need to cross this gap/bridge
+\item
+Folklore: type rules resemble AG's; we exploit this.
+\end{itemize}
+
+example(s):
+\begin{itemize}
+\item
+System-F style type/rule equations (as starting point for running example).
+The million dollar question: how to implement it?
+\end{itemize}
+
+our contribution/approach/features (of |Ruler|):
+\begin{itemize}
+\item
+Use a domain specific language for type rules from which both type rule rendering as well as
+a partial implementation is generated.
+\item
+The use of an AG based approach by treating variables/parts of a rule as aspects/attributes.
+\item
+Support for incremental construction of type rules.
+Versions/views on the type rules.
+Visualisation of increments by means of colors.
+\end{itemize}
+
+Reader benefits by knowing:
+Haskell, type rules, AG (will be explained).
+
+The story: 
+
+\subsection{Preliminaries}
+
+Type rule notation, example term language (usual constructs).
+
+\subsection{Describing the basic typing rules using |Ruler| notation}
+
+\subsection{Extending example to HM}
+
+\subsection{Target language: AG}
+
+AG notation and semantics.
+
+\subsection{Extending example with AG for AG code generation}
+
+Relations (as judgements)
+
+Rewrite rules
+
+Hints to AG
+
+Unique id generation
+
+Error reporting
+
+%endif
+
+%% endif %% incl12
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 12
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -11525,6 +11618,8 @@ blabla
 
 \rulerCmdUse{rules3.E.expr.base}
 \rulerCmdUse{rules3.E.decl.base}
+
+\rulerCmdUse{rules3.E.decls.base}
 
 \rulerCmdUse{rules3.K.expr.base}
 \rulerCmdUse{rules3.K.decl.base}
@@ -11764,6 +11859,21 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 \FigRef{rules2.pat4.baseImpred} shows the inferencing rules for patterns.
 
 %endif %% storyImpred
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generated code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%if storyRuler
+\subsection{Source code using |Ruler| notation}
+
+\subsection{Generated AG}
+
+\subsection{Support functions}
+
+Type, unification
+
+%endif %% storyRuler
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% AG Patterns

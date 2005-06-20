@@ -119,6 +119,12 @@ format ag lamPat = arg
 format ag lamBody = body
 format ag declPat = patExpr
 
+format ag decls.hd = hd
+format ag decls.tl = tl
+
+format tex decls.hd = d
+format tex decls.tl = ds
+
 format tex translExpr = Transl
 format tex TranslExpr = Transl
 format tex translBind = Transl
@@ -517,6 +523,8 @@ scheme decl "Decl" =
   view CG =
     attr [ | | translBind: TransDecl ]
     judge tex valGam ; tyCnstr.inh :-.."d" d : sigValGam ; patValGam ~> patTyCnstr ; tyCnstr.syn ; translBind
+
+scheme decls : [decl] "Decls"
 
 rules decl.base scheme decl "Declaration type rules" =
   rule d.sig.val = 

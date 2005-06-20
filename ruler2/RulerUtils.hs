@@ -163,6 +163,17 @@ instance PP ScKind where
   pp = text . show
 
 -------------------------------------------------------------------------
+-- Derived scheme
+-------------------------------------------------------------------------
+
+data ScDeriv
+  = ScList Nm
+  deriving (Show,Eq,Ord)
+
+instance PP ScDeriv where
+  pp (ScList n) = pp_brackets (pp n)
+
+-------------------------------------------------------------------------
 -- Kind of Expr wrappers (for influencing latex pretty printing, colors)
 -------------------------------------------------------------------------
 
@@ -246,6 +257,12 @@ nmStrApd n1 n2
   = Nm (s1 ++ s2)
   where s1 = show n1
         s2 = show n2
+
+nmCapitalize :: Nm -> Nm
+nmCapitalize n
+  = case nmToMbL n of
+      (Just s:ns) -> nmFromL (Just (strCapitalize s) : ns)
+      _           -> n
 
 nmShow' :: String -> Nm -> String
 nmShow' sep = concat . intersperse sep . nmToL
@@ -389,6 +406,12 @@ strWhite sz = replicate sz ' '
 
 strPad :: String -> Int -> String
 strPad s sz = s ++ strWhite (sz - length s)
+
+strCapitalize :: String -> String
+strCapitalize s
+  = case s of
+      (c:cs) -> toUpper c : cs
+      _      -> s
 
 panic m = error ("panic: " ++ m)
 

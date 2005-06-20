@@ -35,6 +35,11 @@ DATA Decl
                         nm          : {Nm}
                         mbAGNm      : {Maybe String}
                         decls       : Decls
+  | SchemeDeriv         scKind      : {ScKind}
+                        nm          : {Nm}
+                        scDeriv     : {ScDeriv}
+                        mbAGNm      : {Maybe String}
+                        decls       : Decls
   | Fmt                 fmKind      : {FmKind}
                         atIO        : {AtDir}
                         matchExpr   : Expr

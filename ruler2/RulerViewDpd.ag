@@ -30,3 +30,6 @@ SEM AGItf
                                                     missing = @decls.allVwNmS `Set.difference` Set.fromList (concat vwOrderL)
                                                 in  mkVwDpdGr (vwOrderL ++ [ [v] | v <- Set.toList missing ])
 
+SEM Decl
+  | SchemeDeriv     loc     .   firstVwNm   =   last (vgTopSort @lhs.vwDpdGr)
+
