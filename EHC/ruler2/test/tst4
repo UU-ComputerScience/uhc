@@ -1,0 +1,9 @@
+scheme Y =
+  attr [ a: A, b: B  | | ]
+  judge tex a `=` b
+
+rules y scheme Y "" =
+  rule y =
+    judge Y = a `=` b
+    -
+    judge Y = b `=` a

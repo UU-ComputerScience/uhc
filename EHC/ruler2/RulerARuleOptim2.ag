@@ -39,6 +39,8 @@ SEM AEqn
                                                         -> []
                                                       (Just (ANm_Lhs dn),Just (ANm_Node nn sn)) | dn == sn {- && (isThr sn) -} && nn `isPrev` nmLhs
                                                         -> []
+                                                      (Just (ANm_Lhs dn),Just (ANm_Lhs sn)) | dn == sn && (isThr sn) && nmLhs `isPrev` nmLhs
+                                                        -> []
                                                       _ -> [@replCr]
   | * - Eqn         lhs     .   replCrEqns  =   [@replCr]
 

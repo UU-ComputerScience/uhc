@@ -4,12 +4,6 @@ extern ty2
 
 format ag ty.identv = gTy
 format ag identv = nm
-{-
-format ag ty.syn = ty
-format ag ty.inh = knTy
-format ag tyCnstr.inh = tyCnstr
-format ag tyCnstr.syn = tyCnstr
--}
 
 format ag in (a) -> (r) = a `mkTyArrow` r
 format ag in ((c | Cnstr) (v | a)) = (c |=> v | a)
@@ -30,6 +24,8 @@ format tex tyCnstr.syn = Cnstr
 format tex tyCnstr.fun = Cnstr.f
 format tex tyCnstr.arg = Cnstr.a
 format tex valGam = Gamma
+
+-- format ag ty = tyx
 
 format tex eFun = e.1
 format tex eArg = e.2

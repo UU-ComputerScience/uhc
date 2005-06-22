@@ -75,7 +75,7 @@ SEM ANm
 -------------------------------------------------------------------------
 
 SEM ARule
-  | Rule            lhs     .   pp          =   "SEM" >#< pp (head @ndNmL) >#< "--" >#< ppCommas @info
+  | Rule            lhs     .   pp          =   "SEM" >#< pp (head @ndNmL) -- >#< "--" >#< ppCommas @info
                                                 >-< indent atLhs2texDist ("|" >#< @rlNm >|< indent atLhs2texDist @eqns.pp)
 
 SEM AEqn

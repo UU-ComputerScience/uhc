@@ -62,7 +62,7 @@ exprMbAEqnRest expr
                       "_"                       -> Just (ANm_Wild)
                       _                         -> Nothing
         gu = fmGamUnion
-        gs n e = fmGamFromList [(n,e)]
+        gs n e = fmGamFromList' FmAG [(n,e)]
 }
 
 
