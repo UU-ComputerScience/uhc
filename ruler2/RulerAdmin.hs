@@ -59,9 +59,9 @@ type WrKindGam = Gam WrKind WrKindInfo
 wrKindGam :: WrKindGam
 wrKindGam
   = Map.fromList
-  	  [ (WrIsChanged,WrKindInfo nmCmdBegChng nmCmdEndChng)
-  	  , (WrIsSame   ,WrKindInfo nmCmdBegSame nmCmdEndSame)
-  	  ]
+      [ (WrIsChanged,WrKindInfo nmCmdBegChng nmCmdEndChng)
+      , (WrIsSame   ,WrKindInfo nmCmdBegSame nmCmdEndSame)
+      ]
 
 -------------------------------------------------------------------------
 -- Attr
@@ -100,6 +100,15 @@ atGamNode g
        case Map.toList aNdGm of
          ((na,ai):_) -> return na
          _           -> Nothing
+
+atMbSynInh :: AtInfo -> Maybe Nm
+atMbSynInh i
+  = if      AtThread `elem` atProps i then Just (nmInit n)
+    else if AtUpdown `elem` atProps i then Just (nmInit n)
+    else if AtInh    `elem` atDirs  i
+         && AtSyn    `elem` atDirs  i then Just n
+                                      else Nothing
+  where n = atNm i
 
 -------------------------------------------------------------------------
 -- Judgement formats
@@ -374,7 +383,7 @@ rsInfoMbRlGam _                = Nothing
 -------------------------------------------------------------------------
 
 data FmKind
-  = FmTeX | FmAG | FmSpec | FmAll
+  = FmTeX | FmAG | FmSpec | FmAll | FmCnstr
   deriving (Show,Eq,Ord)
 
 instance PP FmKind where
@@ -400,8 +409,11 @@ fmSingleton n k e = Map.singleton n (FmInfo n (Map.singleton k e))
 fmNull :: FmGam e -> Bool
 fmNull = all (Map.null . fmKdGam) . Map.elems
 
+fmGamFromList' :: FmKind -> [(Nm,e)] -> FmGam e
+fmGamFromList' fk = Map.unions . map (\(n,e) -> fmSingleton n fk e)
+
 fmGamFromList :: [(Nm,e)] -> FmGam e
-fmGamFromList = Map.unions . map (\(n,e) -> fmSingleton n FmAll e)
+fmGamFromList = fmGamFromList' FmAll
 
 fmGamUnion :: FmGam e -> FmGam e -> FmGam e
 fmGamUnion = Map.unionWith (\i1 i2 -> i1 {fmKdGam = fmKdGam i1 `Map.union` fmKdGam i2})
@@ -409,8 +421,10 @@ fmGamUnion = Map.unionWith (\i1 i2 -> i1 {fmKdGam = fmKdGam i1 `Map.union` fmKdG
 fmGamUnions :: [FmGam e] -> FmGam e
 fmGamUnions = foldr fmGamUnion emptyGam
 
+{-
 fmLGamUnion :: FmGam [e] -> FmGam [e] -> FmGam [e]
 fmLGamUnion = Map.unionWith (\i1 i2 -> i1 {fmKdGam = Map.unionWith (++) (fmKdGam i1) (fmKdGam i2)})
+-}
 
 fmGamLookup :: Nm -> FmKind -> FmGam e -> Maybe e
 fmGamLookup n k g

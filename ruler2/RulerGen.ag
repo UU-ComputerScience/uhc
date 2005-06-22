@@ -43,7 +43,7 @@ rlAtUsage opts scGam fmGam vwRlInfo
                        eNdSubs      = sbse eNd
                        eNdNm        = exprAsNm eNdSubs
                        eNdNmS       = exprNmS eNd
-                       eNdFmGam     = fmGamFromList [ (n,mkAFld . sbsn $ n) | n <- Set.toList eNdNmS ]
+                       eNdFmGam     = fmGamFromList' FmAG [ (n,mkAFld . sbsn $ n) | n <- Set.toList eNdNmS ]
                        eNdCoGam     = exprCoGam . exprSubst opts' eNdFmGam $ eNd
                        
                        -- in/out attr's
@@ -60,15 +60,15 @@ rlAtUsage opts scGam fmGam vwRlInfo
                        -- construction of lhs of eqn
                        mkInLhs, mkOuLhs :: (Nm -> Expr) -> (Nm -> Nm) -> Nm -> Nm -> (Expr,FmGam Expr,FmGam Expr,[Nm])
                        mkInLhs _ _ n n'
-                         = (nd,fmGamFromList [(n,nd)],fmGamFromList [(n,atUse n')],[n'])
+                         = (nd,fmGamFromList' FmAG [(n,nd)],fmGamFromList' FmAG [(n,atUse n')],[n'])
                          where nd = if flipDir then mkALhs n' else mkANd eNdNm n'
                                atUse = if flipDir then mkANd eNdNm else mkALhs
                        mkOuLhs atUse nmAdapt n _
                          = (r',fmr,fmr',[])
                          where r = atLkup n
                                b = [ (n,Nm . nmShowAG . nmAdapt $ sbsn n) | n <- Set.toList (exprNmS r), n /= nmWild ]
-                               fmr  = fmGamFromList [ (n,mkALoc' n') | (n,n') <- b ]
-                               fmr' = fmGamFromList [ (n,atUse n') | (n,n') <- b ]
+                               fmr  = fmGamFromList' FmAG [ (n,mkALoc' n') | (n,n') <- b ]
+                               fmr' = fmGamFromList' FmAG [ (n,atUse n') | (n,n') <- b ]
                                r' = exprSubst opts' fmr r
                        
                        -- construction of eqn
@@ -91,7 +91,7 @@ rlAtUsage opts scGam fmGam vwRlInfo
                        (fmOuBi   ,ouBiL   ,_     ,_          ,ecGOuBi   ) = mkDefs (mkDef AtOut nmInit mkOuLhs mkOuRhs) $ (nOuL `intersect` nBiDirL)
                        (fmOuNonBi,ouNonBiL,ouAscL,_          ,ecGOuNonBi) = mkDefs (mkDef AtOut id     mkOuLhs mkOuRhs) $ (nOuL \\          nBiDirL)
                        fmOf l = fmGamUnions [ g | (_,(_,g)) <- l ]
-                       fmNd = fmGamFromList [(eNdNm,mkALoc eNdNm)]
+                       fmNd = fmGamFromList' FmAG [(eNdNm,mkALoc eNdNm)]
                        mkAdGam d l = Map.fromList [ (n,d) | n <- concat l ]
                        (r,extraG)
                          = if isJd
@@ -108,7 +108,7 @@ rlAtUsage opts scGam fmGam vwRlInfo
                                       )
                                      ,eNdFmGam `fmGamUnion` fmOf ouBiL `fmGamUnion` fmOf ouNonBiL
                                      )
-                           else let fma = fmGamFromList ouAscL
+                           else let fma = fmGamFromList' FmAG ouAscL
                                     fmja = fma `Map.union` jaGamToFmGam id jaGam
                                     jd = fkGamLookup exprUnk jdExpr FmAG . vwscJdGam $ vwScInfo
                                     jd' = exprSubst opts fmja jd
@@ -138,6 +138,7 @@ data Gen
       { -- data
         genOpts         :: Opts
       , genScGam        :: ScGam Expr
+      , genRsGam        :: RsGam Expr
       , genFmGam        :: FmGam Expr
       , genInFmGam      :: FmGam Expr
       , genRwGam        :: RwExprGam
@@ -152,6 +153,7 @@ data Gen
       , genNmUse        :: Nm -> PP_Doc
       , genRl           :: Gen -> (Nm,Nm,Nm) -> PP_Doc
       , genRs           :: Gen -> (Nm,Nm) -> PP_Doc -> [Nm] -> [PP_Doc] -> PP_Doc
+      , genSc           :: Gen -> Set.Set Nm -> PP_Doc
       , genJdExpr       :: Gen -> (Nm -> Maybe Bool) -> FmGam Expr -> FmGam Expr -> Expr -> PP_Doc
       , genMkJdInfo     :: Gen -> (Nm,Nm) -> REGam Expr -> (ScInfo Expr,VwScInfo Expr,REInfo Expr,FmGam Expr,Expr)
       }
@@ -160,6 +162,7 @@ genDflt
   = Gen
       { genOpts         = defaultOpts
       , genScGam        = emptyGam
+      , genRsGam        = emptyGam
       , genFmGam        = emptyGam
       , genInFmGam      = emptyGam
       , genRwGam        = emptyGam
@@ -174,6 +177,7 @@ genDflt
       , genNmUse        = \n -> empty
       , genRl           = \gen (nFull,nVw,nRl) -> empty
       , genRs           = \gen (nScMeta,nVwFull) meta defNms defVals -> empty
+      , genSc           = \gen nVwS -> empty
       , genJdExpr       = \gen atIsChanged jaFmGam fmGam e -> empty
       , genMkJdInfo     = \gen (nVw,nJd) reGam ->
           let reInfo = maybe (panic "genMkJdInfo") id (Map.lookup nJd reGam)
@@ -227,7 +231,7 @@ genTeX
                   else if or chs then (fmGamMap mkChng jaFmGam,id)
                                  else (jaFmGam,Expr_Wrap WrIsSame)
                 where chs = catMaybes . map atIsChanged . Map.keys $ jaFmGam
-          in  exprFmtTeXSubst (genOpts gen) fmGam . wrFullJd . exprSubst (genOpts gen) jaFmGam' $ e
+          in  exprFmtTeXSubst (genOpts gen) fmGam . wrFullJd . exprSubst ((genOpts gen) {optSubstOnce=True}) jaFmGam' $ e
       }
 
 genAG
@@ -263,17 +267,36 @@ genAG
               croNmL
                 = [nmLhs] ++ l ++ [nmLhs]
                 where l = map fst . sortBy (\(_,o1) (_,o2) -> compare o1 o2) . Map.toList $ choGam
-              -- croGam = foldl (\(g,pn) (n,_) -> (Map.insert n pn g,n)) (Map.empty,last croNmL) (init croNmL)
               wrapFrag
                 = if optFragWrap (genOpts gen)
-                  then \x -> "%%[" >|< nVw `nmApd` scNm (genScInfo gen) `nmApd` rlNm (genRlInfo gen) >-< x >-< "%%]"
+                  then ppWrapShuffle (nVw `nmApd` scNm (genScInfo gen) `nmApd` rlNm (genRlInfo gen))
                   else id
               r = (>-< "") . wrapFrag . ppARule . arlElimWild . arlElimCopyRule croNmL adGam . arlElimAlphaRename . arlUniq croNmL . arlSubst eqnG $ rl
           in  {- trp "ZZ" (vlist [ pp (Expr_Cnstr n v) | (n,v) <- Map.toList ecGam']) -}
               r
       , genRs = \gen (_,nVwFull) _ _ defVals ->
-          "--" >#< pp (rsDescr (genRsInfo gen)) >#< nVwFull
+          "" -- "--" >#< pp (rsDescr (genRsInfo gen)) >#< nVwFull
           >-< vlist defVals
+      , genSc = \gen nVwS ->
+          let sv = Map.fromListWith Set.union
+                     [ (rsScNm i,vs) | i <- Map.elems (genRsGam gen)
+                                     , let vs = Set.filter (\v -> genRlSelIsSel gen v (rsNm i) nmAny) nVwS, not (Set.null vs)
+                     ]
+              wrapFrag s v
+                = if optFragWrap (genOpts gen)
+                  then ppWrapShuffle (v `nmApd` s `nmApd` Nm "ATTR")
+                  else id
+              mk s v
+                = case scVwGamLookup s v (genScGam gen) of
+                    Just (si,vi)
+                      -> "ATTR" >#< maybe (pp (scNm si)) (pp) (scMbAGStr si) >#< pp_brackets (mka agi >#< "|" >#< mka agsi >#< "|" >#< mka ags)
+                      where ag1 = Map.filter (\ai -> AtNode `notElem` atProps ai) (vwscFullAtGam vi)
+                            (agsi,ag2) = Map.partition (\ai -> isJust (atMbSynInh ai)) ag1
+                            (ags,agi) = Map.partition (\ai -> AtSyn `elem` atDirs ai) ag2
+                            mka g = ppListSep "" "" "  " [ atNm ai >|< ":" >#< atTy ai | ai <- Map.elems (mkg g) ]
+                            mkg g = Map.fromList [ (n,ai {atNm = n}) | ai <- Map.elems g, let n = nmSubst (genOpts gen) (genFmGam gen) $ maybe (atNm ai) id $ atMbSynInh ai ]
+                    _ -> empty
+          in  vlist [ wrapFrag s v (mk s v) | (s,vs) <- Map.toList sv, v <- Set.toList vs ] 
       }
 
 type GenGam = Gam FmKind Gen
@@ -378,6 +401,7 @@ ATTR AGItf [ | | mkPP: {FmKind -> PP_Doc} ]
 
 SEM AGItf
   | AGItf           lhs     .   mkPP        =   \fm -> fkGamLookup empty pp fm @decls.paGam
+                                                       >-< @mkScPP fm
                                                        >-< (vlist . Map.elems . Map.map (vlist . Map.elems) . Map.unions . map ($ fm) $ @decls.mkRsFmtGam)
 
 SEM Decl
@@ -391,4 +415,23 @@ SEM Decl
                     lhs     .   mkRsFmtGam  =   [\fm -> let gen = @mkGen (maybe genDflt id (Map.lookup fm genGam))
                                                         in  rsGen gen (vgTopSort @lhs.vwDpdGr) @lhs.rsGam
                                                 ]
+
+-------------------------------------------------------------------------
+-- Generation of lhs2tex/AG for schemes
+-------------------------------------------------------------------------
+
+SEM AGItf
+  | AGItf           loc     .   mkScPP      =   \fm ->
+                                                    let gen1 = maybe genDflt id (Map.lookup fm genGam)
+                                                        gen2 = gen1 { genOpts = @lhs.opts
+                                                                    , genScGam = @scGam
+                                                                    , genRsGam = @rsGam
+                                                                    , genFmGam = @fmGam
+                                                                    , genRlSelIsSel = @rlSelIsSel
+                                                                    }
+                                                    in  if optGenAGAttr @lhs.opts
+                                                        then genSc gen2 gen2 (vgVertices @vwDpdGr)
+                                                        else empty
+
+
 

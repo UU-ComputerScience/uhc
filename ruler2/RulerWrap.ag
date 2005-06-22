@@ -210,7 +210,7 @@ mkALoc :: Nm -> Expr
 mkALoc n = Expr_AVar (ANm_Loc n)
 
 mkALoc' :: Nm -> Expr
-mkALoc' = mkALoc . nmStrApd nmWild
+mkALoc' n = mkALoc (nmStrApd n nmWild)
 
 mkALhs :: Nm -> Expr
 mkALhs n = Expr_AVar (ANm_Lhs n)

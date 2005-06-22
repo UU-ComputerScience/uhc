@@ -5,8 +5,8 @@
 -------------------------------------------------------------------------
 
 {
-nmMatch :: Opts -> Nm -> FmGam Expr -> Maybe ([Maybe String],[Maybe String],Expr)
-nmMatch opts n fmGam
+nmMatch :: Opts -> FmKind -> Nm -> FmGam Expr -> Maybe ([Maybe String],[Maybe String],Expr)
+nmMatch opts fk n fmGam
   = match
   where nmL = nmToMbL n
         nmLen = length nmL
@@ -16,7 +16,7 @@ nmMatch opts n fmGam
             else reverse . tail . inits $ nmL 
         match
           = foldr (\nL m
-                    -> case fmGamLookup (nmFromL nL) (optGenFM opts) fmGam of
+                    -> case fmGamLookup (nmFromL nL) fk fmGam of
                          Just e | isOkLen
                            -> Just (nL,drop len nmL,e)
                            where isOkLen = maybe True (\n -> len == length (nmToMbL n) || len == nmLen) (mbNmOfSel e)
@@ -47,31 +47,16 @@ mbNmLOfSel = fmap nmToMbL . mbNmOfSel
 
 exprVarSubst :: Opts -> FmGam Expr -> RwExprGam -> ECnstrGam -> Expr -> Nm -> Expr
 exprVarSubst opts fmGam rwGam ecGam dfltRepl nm
-  = case nmMatch opts nm fmGam of
+  = case nmMatch opts (optGenFM opts) nm fmGam of
       Just (matchNmL,remNmL,matchExpr)
         -> case mbNmLOfSel se of
              Just sNmL
                -> Expr_Var (nmFromL (sNmL ++ remNmL))
              _ -> nmLAsSelExpr id se remNmL
-        where se = sbsWoNm matchExpr
+        where se = if optSubstOnce opts then matchExpr else sbsWoNm matchExpr
               sbsWoNm = exprSubst opts (nmFromL matchNmL `Map.delete` fmGam)
       _ -> dfltRepl
 }
-
-{-
-exprVarSubst :: Opts -> FmGam Expr -> RwExprGam -> ECnstrGam -> Expr -> Nm -> Expr
-exprVarSubst opts fmGam rwGam ecGam dfltRepl nm
-  = case nmMatch opts nm fmGam of
-      Just (matchNmL,remNmL,matchExpr)
-        -> case mbNmLOfSel se of
-             Just sNmL
-               -> Expr_Var (nmFromL (sNmL ++ remNmL))
-             _ -> nmLAsSelExpr id se remNmL
-        where se = sbsWoNm matchExpr
-              sbsWoNm = exprRewrite opts (nmFromL matchNmL `Map.delete` fmGam) rwGam ecGam
-      _ -> dfltRepl
-
--}
 
 ATTR AllExpr ANm AllARule [ | | repl: SELF ]
 ATTR AGExprItf [ | | repl: Expr ]
@@ -83,7 +68,7 @@ SEM Expr
                                             =   exprElimCnstr @replVar
 
 SEM ECnstr
-  | Var             lhs     .   repl        =   case nmMatch @lhs.opts @nm @lhs.fmGam of
+  | Var             lhs     .   repl        =   case nmMatch @lhs.opts FmCnstr @nm @lhs.fmGam of
                                                     Just (_,_,Expr_WrapCnstr c)
                                                       -> c
                                                     _ -> @repl
@@ -253,7 +238,7 @@ exprMatch ecGam e1 e2
                 m  = bnd' ml . res' (mk (mtExpr ml) (mtExpr mr)) $ mr
         bnd' mn m = m {mtFmGam = mtFmGam mn `fmGamUnion` mtFmGam m}
         bnd n e m = bnd' (emptyEMtOut {mtFmGam = fmSingleton n FmAll e}) m
-        bndc n e m = bnd' (emptyCMtOut {mtFmGam = fmSingleton n FmAll (Expr_WrapCnstr e)}) m
+        bndc n e m = bnd' (emptyCMtOut {mtFmGam = fmSingleton n FmCnstr (Expr_WrapCnstr e)}) m
         res' e m = m {mtExpr = e}
         res e = res' e emptyEMtOut
         resc e = res' e emptyEMtOut

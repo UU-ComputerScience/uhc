@@ -17,6 +17,12 @@
 %let inclTOC    = False
 %endif
 
+%if storyRuler
+%let inclRulerDemo    = True
+%else
+%let inclRulerDemo    = False
+%endif
+
 %if storyAFP04Notes || storyPHD || storyEHIntro || storyAfpTRUU1
 %let incl00     = True
 %else
@@ -143,7 +149,7 @@
 %if llncs
                class=llncs,
 %elif acm
-%if icfp05 || hw05 || popl05
+%if icfp05 || hw05 || popl06
 %if asDraft
                class=sigplanconf,onecolumn,11pt,preprint,
 %else %% asDraft
@@ -532,7 +538,7 @@
 %elif storyImpred
 \title{Exploiting type signatures}
 %elif storyRuler
-\title{Typing rules: it's just programming (or:) Ruler: programming with type rules}
+\title{Ruler: programming type rules}
 %elif storyEHIntro
 %if storyVariantETAPSLinks
 \title{Essential Haskell Compiler Highlights}
@@ -559,7 +565,7 @@
 \toappear{Submitted to the International Conference onf Functional Programming 2005 (ICFP 2005), September 26-28, Tallin, Estonia}
 %elif hw05
 \toappear{In preparation for the Haskell Workshop 2005 (HW2005), September 30, Tallin, Estonia}
-%elif popl05
+%elif popl06
 \toappear{In preparation for Principles of Programming Languages 2006 (POPL2006), January 11-13, Charleston, South Carolina, USA}
 %else
 %endif
@@ -665,6 +671,16 @@ WWW home page:
 %endif
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Demo material for Ruler
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%if inclRulerDemo
+\input ruler2/demo/demo.rtex
+\input ruler2/demo/demo.atex
+\input ruler2/demo/demo.ctex
+%endif
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pictures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -749,7 +765,7 @@ Combinator & Meaning & Result
 %elif llncs
 \setlength{\parindent}{0mm}
 \addtolength{\parskip}{0.25\baselineskip}
-%elif acm && (icfp05 || hw05 || popl05)
+%elif acm && (icfp05 || hw05 || popl06)
 %else
 \setlength{\parindent}{0mm}
 \addtolength{\parskip}{0.4\baselineskip}
@@ -11397,6 +11413,9 @@ Need to cross this gap/bridge
 Folklore: type rules resemble AG's; we exploit this.
 \end{itemize}
 
+Start example rules in \figRef{rulerDemo.E.expr.base}.
+\rulerCmdUse{rulerDemo.E.expr.base}
+
 example(s):
 \begin{itemize}
 \item
@@ -11428,13 +11447,38 @@ Type rule notation, example term language (usual constructs).
 
 \subsection{Describing the basic typing rules using |Ruler| notation}
 
+Definition of structure of type rules (for expr's), a |scheme| starts with:
+\savecolumns
+\chunkCmdUse{rulerDemoRL.1.expr.scm}
+
+and continues with a list of views on the scheme
+\restorecolumns
+\chunkCmdUse{rulerDemoRL.1.expr.scm.E}
+
+A set of rules starts with:
+\savecolumns
+\chunkCmdUse{rulerDemoRL.1.expr.base.rls}
+
+and continues with a list of rules, each of them consisting of a set of view, here only one:
+\restorecolumns
+\chunkCmdUse{rulerDemoRL.1.rl.e.int}
+\restorecolumns
+\chunkCmdUse{rulerDemoRL.1.rl.e.int.E}
+
+
 \subsection{Extending example to HM}
+
+HM algorithmic typing rules in \figRef{rulerDemo.HM.expr.base}.
+\rulerCmdUse{rulerDemo.HM.expr.base}
 
 \subsection{Target language: AG}
 
 AG notation and semantics.
 
 \subsection{Extending example with AG for AG code generation}
+
+AG modifications to typing rules in \figRef{rulerDemo.AG.expr.base}.
+\rulerCmdUse{rulerDemo.AG.expr.base}
 
 Relations (as judgements)
 
@@ -11445,6 +11489,17 @@ Hints to AG
 Unique id generation
 
 Error reporting
+
+Example code fragments (to be merged with story, full version in appendix (?)).
+
+ATTR defs:
+\chunkCmdUse{rulerDemoAG.3.expr.ATTR}
+
+For \ruleRef{e-int}:
+\chunkCmdUse{rulerDemoAG.3.expr.e.int}
+
+For \ruleRef{e-var}:
+\chunkCmdUse{rulerDemoAG.3.expr.e.var}
 
 %endif
 
@@ -11865,13 +11920,26 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %if storyRuler
-\subsection{Source code using |Ruler| notation}
-
 \subsection{Generated AG}
 
-\subsection{Support functions}
+\VerbatimInput[fontsize=\footnotesize]{ruler2/demo/demo.ag}
+
+\subsection{Support/additional AG}
+
+\VerbatimInput[fontsize=\footnotesize]{ruler2/demo/DemoMain.ag}
+
+\subsection{Support Haskell functions}
 
 Type, unification
+
+\VerbatimInput[fontsize=\footnotesize]{ruler2/demo/DemoUtils.hs}
+
+\subsection{Source code using |Ruler| notation}
+
+The preambles are specific to the generation for \thispaper\ because of the need for additional preprocessing
+to include pretty printed fragments of the |Ruler| source code in \thispaper.
+
+\VerbatimInput[fontsize=\small]{ruler2/demo/demo.rl2}
 
 %endif %% storyRuler
 

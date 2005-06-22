@@ -111,8 +111,10 @@ rulesCmdPre = "rules"
 data Opts 
   = Opts
       { optGenFM        :: FmKind
+      , optGenAGAttr    :: Bool
       , optAtDir        :: AtDir    -- used internally only
       , optSubstFullNm  :: Bool     -- used internally only
+      , optSubstOnce    :: Bool     -- used internally only
       , optHelp         :: Bool
       , optDebug        :: Bool
       , optVersion      :: Bool
@@ -125,8 +127,10 @@ data Opts
 defaultOpts
   = Opts
       { optGenFM        =  FmAll
+      , optGenAGAttr    =  False
       , optAtDir        =  AtInOut
       , optSubstFullNm  =  True
+      , optSubstOnce    =  False
       , optHelp         =  False
       , optDebug        =  False
       , optVersion      =  False
@@ -143,6 +147,8 @@ cmdLineOpts
           "print version info"
      , Option "a"  ["ag"]               (NoArg oGenAG)
           "generate code for AG, default=no"
+     , Option ""   ["ATTR"]             (NoArg oGenAGAttr)
+          "generate ATTR defs (for AG), default=no"
      , Option "c"  ["markchanges"]      (OptArg oMarkCh "<spec>")
           "mark changes between specified views (in combi with --lhs2tex, <spec>=*|<view name>|<view name>-<view name>)"
      , Option "s"  ["selrule"]          (OptArg oRlSel "<spec>")
@@ -158,6 +164,7 @@ cmdLineOpts
      ]
   where  oGenLhs2tex     o =  o {optGenFM = FmTeX}
          oGenAG          o =  o {optGenFM = FmAG}
+         oGenAGAttr      o =  o {optGenAGAttr = True}
          oHelp           o =  o {optHelp = True}
          oFragWrap       o =  o {optFragWrap = True}
          oDebug          o =  o {optDebug = True}
@@ -334,9 +341,9 @@ SEM Decl
                                                                   (\nVw vi
                                                                     -> let mbNdNm = atGamNode (vwscAtGam vi)
                                                                            (aGm,ndRenmG)
-                                                                           	 = case mbNdNm of
-                                                                           	     Just n -> (n `Map.delete` vwscAtGam vi,fmGamFromList [(n,Expr_Var @nm)])
-                                                                           	     _      -> (vwscAtGam vi,emptyGam)
+                                                                             = case mbNdNm of
+                                                                                 Just n -> (n `Map.delete` vwscAtGam vi,fmGamFromList [(n,Expr_Var @nm)])
+                                                                                 _      -> (vwscAtGam vi,emptyGam)
                                                                            aNdGamNw
                                                                              = if @firstVwNm == nVw
                                                                                then Map.singleton @nm (AtInfo @nm [AtInh] [AtNode] (nmCapitalize @nm))
@@ -655,13 +662,6 @@ SEM Decl
 
 SEM AGItf
   | AGItf           loc     .   rsGam       =   @decls.gathRsGam
-
-{-
-SEM Decl
-  | Scheme          lhs     .   gathScGam   =   let scInfo = ScInfo @nm @mbAGNm @scKind @decls.vwScGam
-                                                    drvScInfoL = maybe [] (\(mkl,_) -> map ($ scInfo) mkl) $ Map.lookup @nm @lhs.drvGam
-                                                in  Map.fromList [ (scNm i,bldScInfo @lhs.vwDpdGr i) | i <- (scInfo : drvScInfoL) ]
--}
 
 -------------------------------------------------------------------------
 -- Formats, rewrites

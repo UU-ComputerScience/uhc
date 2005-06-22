@@ -111,7 +111,11 @@
  \parbox{\textwidth}{\csname #1\endcsname}
 %else
  \csname #1\endcsname
+%if acm
+ \vspace{-2.1ex}
+%else
  \vspace{-1.1ex}
+%endif
 %endif
 }
 \newcommand{\chunkCmdFrameUse}[1]{%

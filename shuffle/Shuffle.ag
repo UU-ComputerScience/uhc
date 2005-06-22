@@ -60,7 +60,7 @@ doCompile fp opts
                         , xrefExcept_Inh_AGItf = Set.unions . map (Set.fromList . words) . lines $ xrefExceptFileContent
                         })
        ; putBld (optAG opts) (bldAG_Syn_AGItf res) 
-       ; putBld (optHS opts) (bldHS_Syn_AGItf res) 
+       ; putBld (optHS opts || optPlain opts) (bldHS_Syn_AGItf res) 
        ; putBld (optLaTeX opts) (bldLaTeX_Syn_AGItf res) 
        ; return ()
        }
@@ -464,6 +464,7 @@ data Opts
   = Opts
       { optAG           :: Bool
       , optHS           :: Bool
+      , optPlain        :: Bool
 {-
       , optNewParser    :: Bool
 -}
@@ -482,6 +483,7 @@ defaultOpts
       { optAG           =  False
       , optHS           =  False
       , optLaTeX        =  False
+      , optPlain        =  False
 {-
       , optNewParser    =  False
 -}
@@ -504,6 +506,8 @@ cmdLineOpts
           "generate code for haskell, default=no"
      ,  Option "l"  ["latex"]     (NoArg oLaTeX)
           "generate code for latex, default=no"
+     ,  Option "p"  ["plain"]     (NoArg oPlain)
+          "generate plain code, default=no"
 {-
      ,  Option "p"  ["newparser"] (NoArg oNewParser)
           "new parser (temp option)"
@@ -526,6 +530,7 @@ cmdLineOpts
   where  oAG             o =  o {optAG = True}
          oHS             o =  o {optHS = True}
          oLaTeX          o =  o {optLaTeX = True}
+         oPlain          o =  o {optPlain = True}
 {-
          oNewParser      o =  o {optNewParser = True}
 -}
@@ -1212,7 +1217,7 @@ buildHS' _ wrap fpath fileBase is
         else vlist (map (wrap False . vciPP) pre) >-< wrap True ppMod >-< ppNoPre
 
 buildHS :: Opts -> (Bool -> PP_Doc -> PP_Doc) -> FPath -> String -> VerChunkInfoM -> PP_Doc
-buildHS _ wrap fpath fileBase is
+buildHS opts wrap fpath fileBase is
   = let (pre,noPre) = vciTakePre is
         noPre' = vciMToL noPre
         ppMod = buildHSModImpExp fileBase (vciMToL is)
@@ -1228,6 +1233,8 @@ buildHS _ wrap fpath fileBase is
         isEmpty = all (isNothing.vciMbPP) noPre'
      in if isEmpty
         then empty
+        else if optPlain opts
+        then ppNoPre
         else vlist (map (wrap False . vciPP) pre) >-< wrap True ppMod >-< ppNoPre
 }
 
@@ -1235,5 +1242,7 @@ ATTR AGItf [ | | bldHS: BuildL ]
 
 SEM AGItf
   | AGItf       lhs         . bldHS     = @build buildHS @selChunks
+{-
                 loc         . bldHS'    = @build' buildHS' @selChunks'
+-}
 

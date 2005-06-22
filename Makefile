@@ -3,8 +3,11 @@
 
 TOP_PREFIX			:=
 
+default: explanation
+
 include mk/shared.mk
 
+include shuffle/files.mk
 include ruler2/files.mk
 
 # build dir's for AG primer related programs
@@ -40,9 +43,9 @@ AG_PRIMER_TEX		:= $(AG_PRIMER_CAG_TEX) $(AG_PRIMER_CHS_TEX)
 
 # lhs2tex
 LHS2TEX_PATH 		:=
-LHS2TEX_OPTS_BASE	:= --set=asArticle --set=wide --unset=optExpandPrevRef --set=yesBeamer --set=useHyperref
+LHS2TEX_OPTS_BASE	:= $(LHS2TEX_OPTS_DFLT) --set=asArticle --set=wide --unset=optExpandPrevRef --set=yesBeamer --set=useHyperref
 LHS2TEX_OPTS		:= $(LHS2TEX_OPTS_BASE) --set=forAfpHandout
-LHS2TEX				:= lhs2TeX $(LHS2TEX_OPTS) $(LHS2TEX_PATH)
+LHS2TEX_EXEC_WT_OPTS	:= lhs2TeX $(LHS2TEX_OPTS) $(LHS2TEX_PATH)
 
 # indentation of (test) output
 INDENT2				:= sed -e 's/^/  /'
@@ -190,15 +193,15 @@ GRI_HS				:= $(GRI_LAG_FOR_HS:.lag=.hs) $(GRI_LHS_FOR_HS:.lhs=.hs) $(GRI_DPDS_GR
 
 AFP_DERIV			:= $(addprefix $(AFP),.toc .bbl .blg .aux .tex .log .ind .idx) $(AFP_STY)
 
-SHUFFLE				:= bin/shuffle
+#SHUFFLE				:= $(SHUFFLE_BLD_EXEC)
 SHUFFLE_DIR			:= shuffle
-SHUFFLE_MAIN		:= Shuffle
-SHUFFLE_AG			:= $(SHUFFLE_MAIN).ag
-SHUFFLE_HS			:= $(SHUFFLE_AG:.ag=.hs)
-SHUFFLE_DERIV		:= $(SHUFFLE_DIR)/$(SHUFFLE_HS)
+#SHUFFLE_MAIN		:= Shuffle
+#SHUFFLE_AG			:= $(SHUFFLE_MAIN).ag
+#SHUFFLE_HS			:= $(SHUFFLE_AG:.ag=.hs)
+#SHUFFLE_DERIV		:= $(SHUFFLE_DIR)/$(SHUFFLE_HS)
 SHUFFLE_DOC_PDF		:= $(SHUFFLE_DIR)/ShuffleDoc.pdf
 
-SHUFFLE_SRC			:= $(SHUFFLE_DIR)/$(SHUFFLE_AG)
+#SHUFFLE_SRC			:= $(SHUFFLE_DIR)/$(SHUFFLE_AG)
 
 SHUFFLE_ORDER		:= 1 < 2 < 3 < 4 < 5 < 6 < 7 < 8 < 9 < 10 < 11, 4 < 4_2, 6 < 6_4
 
@@ -213,8 +216,8 @@ RULER_DOC_PDF		:= $(RULER_DIR)/RulerDoc.pdf
 
 RULER_SRC			:= $(RULER_DIR)/$(RULER_AG)
 
-RULER2				:= $(RULER2_BLD_EXEC)
-#RULER2_DIR			:= ruler2
+#RULER2				:= $(RULER2_BLD_EXEC)
+RULER2_DIR			:= ruler2
 #RULER2_MAIN			:= Ruler
 #RULER2_AG			:= $(RULER2_MAIN).ag
 #RULER2_AG_INCLS		:= RulerPretty.ag RulerAST.ag RulerGen.ag RulerParser.ag RulerExprMatchSubst.ag RulerWrap.ag \
@@ -249,21 +252,21 @@ PERL_SUBST_EHC			= \
 LHS2TEX_POLY_MODE	:= --poly
 # LHS2TEX_POLY(src file, dst file)
 LHS2TEX_POLY			= \
-	perl $(SUBSTEHC) < $(1) | $(SUBST_BAR_IN_TT) | $(LHS2TEX) $(LHS2TEX_POLY_MODE) > $(2)
+	perl $(SUBSTEHC) < $(1) | $(SUBST_BAR_IN_TT) | $(LHS2TEX_EXEC_WT_OPTS) $(LHS2TEX_POLY_MODE) > $(2)
 
 # LHS2TEX_POLY_2(src file, dst file)
 LHS2TEX_POLY_2			= \
-	perl $(SUBSTSH) < $(1) | $(LHS2TEX) --poly > $(2)
+	perl $(SUBSTSH) < $(1) | $(LHS2TEX_EXEC_WT_OPTS) --poly > $(2)
 
 # LHS2TEX_POLY_3(src file, dst file)
 LHS2TEX_POLY_3			= \
-	$(LHS2TEX) $(LHS2TEX_POLY_MODE) $(1) > $(2)
+	$(LHS2TEX_EXEC_WT_OPTS) $(LHS2TEX_POLY_MODE) $(1) > $(2)
 
 # LHS2TEX_CODE(src file, dst file)
 LHS2TEX_CODE			= \
-	$(LHS2TEX) --newcode $(1) > $(2)
+	$(LHS2TEX_EXEC_WT_OPTS) --newcode $(1) > $(2)
 
-default:
+explanation:
 	@echo "make <n>/ehc     : make compiler version <n> (where <n> in {$(VERSIONS)})" ; \
 	echo  "make <n>/gri     : make grin interpreter version <n> (where <n> in {$(GRI_VERSIONS)})" ; \
 	echo  "make ehcs        : make all compiler (ehc) versions" ; \
@@ -333,16 +336,16 @@ SHUFFLE_LHS		= \
 
 # SHUFFLE_LHS_AG(src file, dst file, version, base)
 SHUFFLE_LHS_AG		= \
-	$(call SHUFFLE_LHS,$1,$2,--ag,$(LHS2TEX) --newcode,`dirname $2`,$4)
+	$(call SHUFFLE_LHS,$1,$2,--ag,$(LHS2TEX_EXEC_WT_OPTS) --newcode,`dirname $2`,$4)
 
 # SHUFFLE_LHS_HS(src file, dst file, version, base)
 SHUFFLE_LHS_HS		= \
-	$(call SHUFFLE_LHS,$1,$2,--hs,$(LHS2TEX) --newcode | $(SUBST_LINE_CMT),`dirname $2`,$4)
+	$(call SHUFFLE_LHS,$1,$2,--hs,$(LHS2TEX_EXEC_WT_OPTS) --newcode | $(SUBST_LINE_CMT),`dirname $2`,$4)
 
 # SHUFFLE_LHS_TEX(src file, dst file, version,base)
 SHUFFLE_LHS_TEX		= \
-	$(call SHUFFLE_LHS,$1,$2,--latex --xref-except=shuffleXRefExcept,$(LHS2TEX) $(LHS2TEX_POLY_MODE),`dirname $2`,$4)
-#	$(call SHUFFLE_LHS,$1,$2,--latex --index --xref-except=shuffleXRefExcept,$(LHS2TEX) --poly,$3,$4)
+	$(call SHUFFLE_LHS,$1,$2,--latex --xref-except=shuffleXRefExcept,$(LHS2TEX_EXEC_WT_OPTS) $(LHS2TEX_POLY_MODE),`dirname $2`,$4)
+#	$(call SHUFFLE_LHS,$1,$2,--latex --index --xref-except=shuffleXRefExcept,$(LHS2TEX_EXEC_WT_OPTS) --poly,$3,$4)
 
 # RULER_LHS(base, src file, dst file, lhs2tex)
 RULER_LHS		= \
@@ -356,9 +359,9 @@ RULER2_CAG		= \
 
 # RULER_LHS_TEX(base, src file, dst file)
 RULER_LHS_TEX		= \
-	$(call RULER_LHS,$1,$2,$3,$(LHS2TEX) --poly)
+	$(call RULER_LHS,$1,$2,$3,$(LHS2TEX_EXEC_WT_OPTS) --poly)
 RULER2_LHS_TEX		= \
-	$(call RULER2_LHS,$1,$2,$3,$(LHS2TEX) --poly)
+	$(call RULER2_LHS,$1,$2,$3,$(LHS2TEX_EXEC_WT_OPTS) --poly)
 
 ### Defaults for the version generation
 
@@ -496,7 +499,7 @@ GRI_V11				:= $(addprefix $(VF)/,$(GRI))
 
 ### AG Primer's Repmin AG variant
 $(AG_PRIMER_CAG:.cag=.ag): %.ag: %.cag $(SHUFFLE)
-	$(call SHUFFLE_LHS,$<,$@,--ag,$(LHS2TEX) --newcode,1,Main) ; \
+	$(call SHUFFLE_LHS,$<,$@,--ag,$(LHS2TEX_EXEC_WT_OPTS) --newcode,1,Main) ; \
 	touch $@
 
 $(D_BUILD_BIN)/repminag: $(AG_PRIMER)RepminAG.hs
@@ -596,8 +599,8 @@ hw05-impred-tst:
 hw05-impred-final:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyImpred --set=hw05 --set=omitTBD --set=omitLitDiscuss" afp-bib
 
-popl05-ruler-tst:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyRuler --set=popl05 --set=omitTBD --set=omitLitDiscuss" afp
+popl06-ruler-tst:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS="$(RULER2_DEMO_DRV_RL2) $(RULER2_DEMO_DRV_AG) $(RULER2_DEMO_DRV_CTEX) $(RULER2_DEMO_DRV_RTEX) $(RULER2_DEMO_DRV_ATEX)" LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyRuler --set=popl06 --set=omitTBD --set=omitLitDiscuss" afp
 
 hw05-explimpl-tst:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=hw05 --set=withChangeBar --set=omitTBD --set=omitLitDiscuss" afp
@@ -646,13 +649,13 @@ eh-introETAPSLinks:
 
 .PHONY: shuffle ruler ruler2 brew ehcs dist www www-sync gri gris agprimer $(DIST_AFP04) $(DIST_ICFP05_SLIDES)
 
-shuffle: $(SHUFFLE)
-
-$(SHUFFLE): $(SHUFFLE_DIR)/$(SHUFFLE_AG) $(wildcard lib/*.hs)
-	cd $(SHUFFLE_DIR) ; \
-	$(AGC) -csdfr --module=Main `basename $<` ; \
-	$(GHC) --make $(GHC_OPTS) -i../lib $(SHUFFLE_HS) -o ../$@ ; \
-	strip ../$@
+#shuffle: $(SHUFFLE)
+#
+#$(SHUFFLE): $(SHUFFLE_DIR)/$(SHUFFLE_AG) $(wildcard lib/*.hs)
+#	cd $(SHUFFLE_DIR) ; \
+#	$(AGC) -csdfr --module=Main `basename $<` ; \
+#	$(GHC) --make $(GHC_OPTS) -i../lib $(SHUFFLE_HS) -o ../$@ ; \
+#	strip ../$@
 
 $(SHUFFLE_DIR)/ShuffleDoc.tex: $(SHUFFLE)
 
