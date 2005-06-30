@@ -12,8 +12,9 @@ ATTR AGItf AGExprItf AllNT AGARuleItf [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM AGItf
   | AGItf           lhs     .   pp          =   @decls.pp
-                                                >-< "----------" >-< ppGam @scGam
-                                                >-< "----------" >-< ppGam @rsGam
+                                                >-< "---------- scheme gam" >-< ppGam @scGam
+                                                >-< "---------- rule set gam" >-< ppGam @rsGam
+                                                >-< "---------- topsorted vw dpd graph" >-< ppCommas (vgTopSort @vwDpdGr)
 
 SEM Decl
   | Scheme          lhs     .   pp          =   "scheme"        >#< @scKind >#< @nm >-< "=" >#< @decls.pp
@@ -25,8 +26,9 @@ SEM Decl
   | RulesGroup      lhs     .   pp          =   "rulesgroup"    >#< @nm >#< "scheme" >#< @schemeNm >-< "=" >#< (vlist . map (\(rs,r) -> "rule" >#< rs >#< r) $ @rlNms)
   | Rule            lhs     .   pp          =   "rule"          >#< @nm >#< "viewsel" >#< pp (show @viewSel.vwSelNmS) >-< "=" >#< @decls.pp
   | ViewHierarchy   lhs     .   pp          =   "viewhierarchy" >#< text (show @nmOrder)
-  | FmtJudge        lhs     .   pp          =   "judge"         >#< @expr.pp
-  | Attr            lhs     .   pp          =   "attr"          >#< ("inh" >#< @inhs.pp >-< "i+s" >#< @inhsyns.pp >-< "syn" >#< @syns.pp)
+  | ShpJudge        lhs     .   pp          =   "judgeshape"    >#< @expr.pp
+  | ShpDel          lhs     .   pp          =   "judgeshape"    >#< "-" >#< ppCommas @fmKinds
+  | Attr            lhs     .   pp          =   "hole"          >#< ("inh" >#< @inhs.pp >-< "i+s" >#< @inhsyns.pp >-< "syn" >#< @syns.pp)
 
 SEM ViewSel
   | All             lhs     .   pp          =   pp "*"
@@ -293,7 +295,7 @@ SEM AGExprItf
   | AGItf           loc         .   needToParen =   True
   
 SEM Decl
-  | Fmt FmtJudge    loc         .   needToParen =   True
+  | Fmt ShpJudge    loc         .   needToParen =   True
   
 SEM RExprEqn
   | Expr            loc         .   needToParen =   True

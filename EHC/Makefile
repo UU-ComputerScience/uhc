@@ -600,7 +600,10 @@ hw05-impred-final:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyImpred --set=hw05 --set=omitTBD --set=omitLitDiscuss" afp-bib
 
 popl06-ruler-tst:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS="$(RULER2_DEMO_DRV_RL2) $(RULER2_DEMO_DRV_AG) $(RULER2_DEMO_DRV_CTEX) $(RULER2_DEMO_DRV_RTEX) $(RULER2_DEMO_DRV_ATEX)" LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyRuler --set=popl06 --set=omitTBD --set=omitLitDiscuss" afp
+	$(MAKE) AFP=$@ AFP_TEX_DPDS="$(RULER2_DEMO_DRV_RL2) $(RULER2_DEMO_DRV_AG) $(RULER2_DEMO_DRV_CTEX) $(RULER2_DEMO_DRV_RTEX) $(RULER2_DEMO_DRV_ATEX) $(RULER2_DEMO_AG_MAIN_DRV_TEX) $(RULER2_DEMO_AG_MAIN_DRV)" LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyRuler --set=popl06 --set=omitTBD --set=omitLitDiscuss" afp
+
+popl06-ruler:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS="$(RULER2_DEMO_DRV_RL2) $(RULER2_DEMO_DRV_AG) $(RULER2_DEMO_DRV_CTEX) $(RULER2_DEMO_DRV_RTEX) $(RULER2_DEMO_DRV_ATEX) $(RULER2_DEMO_AG_MAIN_DRV_TEX) $(RULER2_DEMO_AG_MAIN_DRV)" LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyRuler --set=popl06 --set=omitTBD --set=omitLitDiscuss" afp-bib
 
 hw05-explimpl-tst:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=hw05 --set=withChangeBar --set=omitTBD --set=omitLitDiscuss" afp
@@ -717,13 +720,17 @@ clean:
 clean-test:
 	rm -rf test/*.reg* test/*.exp*
 
-edit:
+redit:
 	bbedit \
-	$(EHC_CAG) $(EHC_CHS) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CAG)) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CHS)) \
 	$(ALL_AFP_SRC) afp.lsty afp.fmt \
-	$(SHUFFLE_SRC) $(RULER_SRC) $(RULER2_AG_MAIN_SRC) $(RULER2_HS_SRC) \
+	$(SHUFFLE_SRC) $(RULER2_AG_MAIN_SRC) $(RULER2_HS_SRC) \
 	Makefile \
 	$(TMPL_TEST) $(MK_EHFILES)
+
+edit: redit
+	bbedit \
+	$(EHC_CAG) $(EHC_CHS) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CAG)) $(addprefix $(GRI_SRC_PREFIX),$(GRI_CHS)) \
+	$(RULER_SRC)
 
 A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))

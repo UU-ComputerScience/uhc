@@ -110,7 +110,7 @@ rlAtUsage opts scGam fmGam vwRlInfo
                                      )
                            else let fma = fmGamFromList' FmAG ouAscL
                                     fmja = fma `Map.union` jaGamToFmGam id jaGam
-                                    jd = fkGamLookup exprUnk jdExpr FmAG . vwscJdGam $ vwScInfo
+                                    jd = fkGamLookup exprUnk jdExpr [FmAG] . vwscJdGam $ vwScInfo
                                     jd' = exprSubst opts fmja jd
                                     jdLines (Expr_LF l r) = l : jdLines r
                                     jdLines j             = [j]
@@ -400,7 +400,7 @@ ATTR AllDecl [ | | mkRsFmtGam USE {++} {[]} : {[FmKind -> Gam Nm (Gam Nm PP_Doc)
 ATTR AGItf [ | | mkPP: {FmKind -> PP_Doc} ]
 
 SEM AGItf
-  | AGItf           lhs     .   mkPP        =   \fm -> fkGamLookup empty pp fm @decls.paGam
+  | AGItf           lhs     .   mkPP        =   \fm -> fkGamLookup empty pp [fm] @decls.paGam
                                                        >-< @mkScPP fm
                                                        >-< (vlist . Map.elems . Map.map (vlist . Map.elems) . Map.unions . map ($ fm) $ @decls.mkRsFmtGam)
 

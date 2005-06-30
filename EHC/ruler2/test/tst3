@@ -3,9 +3,9 @@ preamble "%include lhs2TeX.fmt\n%include afp.fmt"
 extern Int
 
 scheme expr "Expr" =
-  attr [ node e: Expr, gam: Gamma, dir: Dir | | ty: Ty ]
-  judge tex gam :-.dir e : ty
-  judge spec gam :- dir ; e : ty
+  hole [ node e: Expr, gam: Gamma, dir: Dir | | ty: Ty ]
+  judgeshape tex gam :-.dir e : ty
+  judgeshape spec gam :- dir ; e : ty
 
 rules expr scheme expr "ALALALA" =
   rule int =
@@ -21,39 +21,3 @@ rules expr scheme expr "ALALALA" =
     judge expr = Gamma :- delta ; i : Int
 
 
-{-
-preamble "%include lhs2TeX.fmt\n%include afp.fmt"
-
--------------------------------------------------------------------------
--- Expr
--------------------------------------------------------------------------
--- 1.A
-scheme inst
-  = :- (t) <= (u)
-  = :-.delta.(inst.sigma) ^^ t <= u
-
-scheme expr
-  = (Gamma) :- (d) : (rho)
-  = Gamma ^^ :-.d ^^ d : rho
-
-rules expr "Type rules for expressions" =
-  rule int =
-    -
-    judge expr Gamma :- delta : Int
-  &
-  rule var =
-    judge inst :- sigma <= rho
-    -
-    judge expr (Gamma, (x : sigma)) :- delta x : rho
-  &
-  rule abs1 =
-    judge expr (Gamma, (x : tau)) :- up t : rho
-    -
-    judge expr Gamma :- up ((\x . t)) : (tau -> rho)
-  &
-  rule app =
-    judge expr Gamma :- e.2 : sigma..a
-    judge expr Gamma :- e.1 : ( (sigma..a -> sigma) )
-    -
-    judge expr Gamma :- (e.1 ^^ e.2) : sigma
--}

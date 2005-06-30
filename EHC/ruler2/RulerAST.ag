@@ -61,9 +61,11 @@ DATA Decl
   | RulView             nm          : {Nm}
                         pre         : RExprs
                         post        : RExprs
-  | FmtJudge            pos         : {SPos}
+  | ShpJudge            pos         : {SPos}
                         fmKind      : {FmKind}
                         expr        : Expr
+  | ShpDel              pos         : {SPos}
+                        fmKinds     : {[FmKind]}
   | ScmView             nm          : {Nm}
                         decls       : Decls
   | ViewHierarchy       nmOrder     : {[[Nm]]}

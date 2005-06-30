@@ -14,18 +14,18 @@ keywordsTextProps
   =  Map.keys propsMp
 keywordsTextEscapable
   =  keywordsTextProps
-     ++ [ "judge", "relation", "rule", "rules", "scheme", "view", "attr", "viewsel", "rulesgroup"
+     ++ [ "judge", "judgeshape", "relation", "rule", "rules", "scheme", "view", "hole", "viewsel", "rulesgroup"
         -- related to global info
         , "viewhierarchy", "format", "preamble", "extern"
         -- related to formatting (styles)
-        , "tex", "ag", "in", "out", "spec"
+        , "tex", "ag", "def", "use", "spec"
         -- related to attributes (flags)
         , "node"
+        -- misc
+        , "text"
         ]
 keywordsText
-  =  [ "text"
-     -- related to patterns
-     , "uniq"
+  =  [ "uniq"
      ] ++ keywordsTextEscapable
 keywordsOpsEsc
   =  [ ",", ":", "[", "]", "*" ]
@@ -88,8 +88,11 @@ pAllParsers
                                                        <*  pKey "="             <*> pDeclsScmView
         pDeclScmDflt        =   (\v -> sem_Decls_Cons (sem_Decl_ScmView nmNone v) sem_Decls_Nil)
                                                        <$> pDeclsScmView
-        pDeclScmView        =   sem_Decl_FmtJudge      <$> pKeySPos "judge"     <*> pFmKd3WithDflt <*> pExprLF
-                            <|> sem_Decl_Attr          <$  pKey "attr"
+        pDeclScmView        =   pKeySPos "judgeshape"
+                                <**> (   (\k e p -> sem_Decl_ShpJudge p k e) <$> pFmKd3WithDflt <*> pExprLF
+                                     <|> (flip sem_Decl_ShpDel) <$ pKey "-" <*> pList1 pFmKd3
+                                     )
+                            <|> sem_Decl_Attr          <$  pKey "hole"
                                                        <*  pKey "["             <*> pAttrIntros
                                                        <*  pKey "|"             <*> pAttrIntros
                                                        <*  pKey "|"             <*> pAttrIntros
@@ -132,9 +135,10 @@ pAllParsers
         pFmKd3WithDflt      =   pMb' id FmAll pFmKd3
         pFmKd2              =   FmTeX <$ pKey "tex" <|> FmAG <$ pKey "ag"
         pFmKd3              =   FmSpec <$ pKey "spec" <|> pFmKd2
-        pAtIO               =   pMb' id AtInOut (AtIn <$ pKey "in" <|> AtOut <$ pKey "out")
+        pAtIO               =   pMb' id AtInOut (AtIn <$ pKey "def" <|> AtOut <$ pKey "use")
         pNmStr              =   pVarid <|> pConid
         pNmStrI             =   pNmStr <|> pInteger
+        pNmBase             =   Nm <$> pNmStr
         pNm' pN             =   (Nm <$> pN) <**> pNmDot
         pNm                 =   pNm' pNmStr
         pNmC                =   Nm <$> pConid
@@ -160,18 +164,20 @@ pAllParsers
                             where pOp = (\s ss -> sem_Expr_Op s (ss (sem_Expr_Var s))) <$> pSym <*> pExprDot
         pExprLF				=	pChainr (sem_Expr_LF <$ pKey "|") pExpr
         pExprApp            =   mkApp alg <$> pList1 pExprBase <|> pSucceed sem_Expr_Empty
-        pExprBase           =   pParens (pExprInParen <|> pExprSpecial) <**> pExprDot
+        pExprBase' pN       =   pParens (pExprInParen <|> pExprSpecial) <**> pExprDot
                             <|> sem_Expr_Uniq    <$  pKey "uniq"
-                            <|> sem_Expr_Var     <$> pNm
+                            <|> sem_Expr_Var     <$> pN
                             <|> sem_Expr_Int     <$> pInteger
                             <|> sem_Expr_StrAsIs <$> pString
+        pExprBase           =   pExprBase' pNm
         pExprInParen        =   pExpr <**> (flip sem_Expr_Cnstr <$  pKey "|" <*> pECnstr `opt` sem_Expr_Paren)
         pExprSpecial        =   (sem_Expr_StrAsIs . concat)     <$> pList1 (pAnyKey (keywordsOpsParenEsc ++ keywordsTextEscapable))
                             <|> sem_Expr_Named                  <$> pNm <* pKey "=" <*> pExpr
                             <|> sem_Expr_StrText                <$  pKey "text" <*> pString
                             <|> sem_Expr_ChildOrder             <$  pKey "node" <*> pInt <* pKey "=" <*> pExpr
-        pExprMbBase         =   sem_MbExpr_Just <$> pExprBase <|> pSucceed sem_MbExpr_Nothing
-        pExprDot            =   pSel (sem_Expr_SelTop,sem_Expr_Sel,sem_MbExpr_Just) (pExprBase,pExprMbBase)
+        pExprDot            =   pSel (sem_Expr_SelTop,sem_Expr_Sel,sem_MbExpr_Just) (pE,pMbE)
+                            where pE   = pExprBase' pNmBase
+                                  pMbE = sem_MbExpr_Just <$> pE <|> pSucceed sem_MbExpr_Nothing
         pNmDot              =   pSel (id,NmSel,Just) (pN,pMb pN)
                             where pN = pNmStrI <|> pSymStr
         pSel alg ps         =   pSel1 alg ps <|> pSucceed id

@@ -82,7 +82,7 @@ SEM RExprEqn
   | Expr            loc     .   rnMp        =   Map.empty
 
 SEM Decl
-  | Fmt FmtJudge    loc     .   rnMp        =   Map.empty
+  | Fmt ShpJudge    loc     .   rnMp        =   Map.empty
 
 -------------------------------------------------------------------------
 -- Replica

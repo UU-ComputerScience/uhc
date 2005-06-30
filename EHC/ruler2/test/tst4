@@ -1,6 +1,6 @@
 scheme Y =
-  attr [ a: A, b: B  | | ]
-  judge tex a `=` b
+  hole [ a: A, b: B  | | ]
+  judgeshape tex a `=` b
 
 rules y scheme Y "" =
   rule y =
