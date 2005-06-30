@@ -6,7 +6,7 @@ SHUFFLE_MAIN		:= Shuffle
 
 SHUFFLE_AG_MAIN_SRC	:= $(addprefix $(SHUFFLE_SRC_PREFIX),$(SHUFFLE_MAIN).ag)
 
-SHUFFLE_HS_SRC		:= $(addprefix $(SHUFFLE_SRC_PREFIX),)
+#SHUFFLE_HS_SRC		:= $(addprefix $(SHUFFLE_SRC_PREFIX),)
 SHUFFLE_HS_DRV		:= $(addprefix $(SHUFFLE_SRC_PREFIX),$(SHUFFLE_MAIN).hs)
 
 # binary/executable

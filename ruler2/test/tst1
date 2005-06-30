@@ -5,9 +5,9 @@ extern ty2
 format ag ty.identv = gTy
 format ag identv = nm
 
-format ag in (a) -> (r) = a `mkTyArrow` r
-format ag in ((c | Cnstr) (v | a)) = (c |=> v | a)
-format ag out ((a) -> (r)) `=` (v) = (a,r) `=` tyArgRes v
+format ag def (a) -> (r) = a `mkTyArrow` r
+format ag def ((c | Cnstr) (v | a)) = (c |=> v | a)
+format ag use ((a) -> (r)) `=` (v) = (a,r) `=` tyArgRes v
 
 format ag eFun = func
 format ag eArg = arg
@@ -34,20 +34,20 @@ viewhierarchy = E K 1 2 --, K K1, 1 11
 
 relation bindIdTy =
   view E =
-    attr [ nm: Nm, valGam: ValGam | | ty: Ty ]
-    judge tex nm :-> ty `elem` valGam
-    judge ag ty `=` valGamLookup (nm) (valGam)
+    hole [ nm: Nm, valGam: ValGam | | ty: Ty ]
+    judgeshape tex nm :-> ty `elem` valGam
+    judgeshape ag ty `=` valGamLookup (nm) (valGam)
 
 scheme expr "Expr" =
   view E =
-    attr [ node e: Expr, valGam: ValGam | ty: Ty | ]
-    judge tex valGam :-.."e" e : ty
+    hole [ node e: Expr, valGam: ValGam | ty: Ty | ]
+    judgeshape tex valGam :-.."e" e : ty
   view K =
-    attr [ | updown ty: Ty |  ]
-    judge tex valGam; ty.inh :-.."e" e : ty.syn
+    hole [ | updown ty: Ty |  ]
+    judgeshape tex valGam; ty.inh :-.."e" e : ty.syn
   view 2 =
-    attr [ | thread tyCnstr: Cnstr | ]
-    judge tex valGam ; tyCnstr.inh ; ty.inh :-.."e" e : ty.syn ~> tyCnstr.syn
+    hole [ | thread tyCnstr: Cnstr | ]
+    judgeshape tex valGam ; tyCnstr.inh ; ty.inh :-.."e" e : ty.syn ~> tyCnstr.syn
 
 scheme exprs : [expr] "Exprs"
 
@@ -123,19 +123,19 @@ rules expr.base scheme expr "Expr type rules" =
 
 relation fit =
   view K =
-    attr [ lty: Ty, rty: Ty | | ty: Ty ]
-    judge tex :-.."f" lty <= rty : ty
-    judge ag ty `=` lty `fitsIn` rty
+    hole [ lty: Ty, rty: Ty | | ty: Ty ]
+    judgeshape tex :-.."f" lty <= rty : ty
+    judgeshape ag ty `=` lty `fitsIn` rty
   view 2 =
-    attr [ | | cnstr: Cnstr ]
-    judge tex :-.."f" lty <= rty : ty ~> cnstr
-    judge ag (ty,cnstr) `=` (lty) `fitsIn` (rty)
---    judge ag (ty,cnstr) `=` fitsIn (lty) (rty)
+    hole [ | | cnstr: Cnstr ]
+    judgeshape tex :-.."f" lty <= rty : ty ~> cnstr
+    judgeshape ag (ty,cnstr) `=` (lty) `fitsIn` (rty)
+--    judgeshape ag (ty,cnstr) `=` fitsIn (lty) (rty)
 
 relation fresh =
   view 2 =
-    attr [ | | tvarv: UID ]
-    judge tex tvarv (text "fresh")
-    judge ag tvarv `=` mkTyVar uniq
+    hole [ | | tvarv: UID ]
+    judgeshape tex tvarv (text "fresh")
+    judgeshape ag tvarv `=` mkTyVar uniq
 
 

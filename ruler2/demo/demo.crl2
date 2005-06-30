@@ -30,14 +30,16 @@ extern Ty_Int
 %%% Formatting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[1.fmt.Ty_Int
+format tex Ty_Int = Int
+%%]
+
 %%[1.fmt
 format tex Gam = Gamma
 format tex gam = Gamma
 
 format tex Ty = sigma
 format tex ty = sigma
-
-format tex Ty_Int = Int
 %%]
 
 %%[2.fmt
@@ -59,11 +61,11 @@ format ag gam       = g
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[3.rw
-format ag in  (a | t) -> (r | t) = ((a) `Ty_Arr` (r) | t)
-format ag in  (c | Cnstr) (v | a) = (c $-> (v) | a)
-format ag in  (c1 | Cnstr) (c2 | Cnstr) (v | a) = (c1 $-> c2 $-> (v) | a)
-format ag in  (i :-> (t|Ty)) = ([(i,t)] | Gam)
-format ag in  (g1 | Gam), (g2 | Gam) = ((g1) ++ (g2) | Gam)
+format ag def  (a | t) -> (r | t) = ((a) `Ty_Arr` (r) | t)
+format ag def  (c | Cnstr) (v | a) = (c $-> (v) | a)
+format ag def  (c1 | Cnstr) (c2 | Cnstr) (v | a) = (c1 $-> c2 $-> (v) | a)
+format ag def  (i :-> (t|Ty)) = ([(i,t)] | Gam)
+format ag def  (g1 | Gam), (g2 | Gam) = ((g1) ++ (g2) | Gam)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -90,21 +92,23 @@ scheme expr "Expr" =
 %%]
 %%[1.expr.scm.E
   view E =
-    attr [ | e: Expr, gam: Gam, ty: Ty | ]
-    judge tex gam :-.."e" e : ty
+    hole [ | e: Expr, gam: Gam, ty: Ty | ]
+    judgeshape spec gam :- e : ty
+    judgeshape tex gam :-.."e" e : ty
 %%]
 
 %%[2.expr.scm.HM
   view HM =
-    attr [ e: Expr, gam: Gam | thread cnstr: Cnstr | ty: Ty ]
-    judge tex cnstr.inh ; gam :-.."e" e : ty ~> cnstr.syn
+    hole [ e: Expr, gam: Gam | thread cnstr: Cnstr | ty: Ty ]
+    judgeshape spec cnstr.inh ; gam :-.."e" e : ty ~> cnstr.syn
+    judgeshape - tex
 %%]
 
 %%[3.expr.scm.AG
   view AG =
-    attr [ node e: Expr | | ]
-    judge tex cnstr.inh ; gam :-.."e" e : ty ~> cnstr.syn
+    hole [ node e: Expr | | ]
 %%]
+    judgeshape spec cnstr.inh ; gam :-.."e" e : ty ~> cnstr.syn
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Expr rules
@@ -124,11 +128,12 @@ rules expr.base scheme expr "Expression type rules" =
       -
       judge R : expr = gam :- int : Ty_Int
 %%]
-%%[2
+%%[2.rl.e.int.HM
     view HM =
       -
       judge R : expr
-          | cnstr.syn = cnstr.inh
+          | cnstr.syn  = cnstr.inh
+          | cnstr.inh  = cnstr.inh
 %%]
 
 %%[1.rl.e.var
@@ -137,19 +142,18 @@ rules expr.base scheme expr "Expression type rules" =
 %%[3.rl.e.var -1.rl.e.var
   rule e.var "Var" =
 %%]
-%%[1
+%%[1.rl.e.var.E
     view E =
       judge G : gamLookupIdTy = i :-> ty `elem` gam
-      -
-      judge R : expr = gam :- i : ty
-%%]
-%%[2
-    view HM =
       judge I : tyInst = ty.i `=` inst(ty)
+      -
+      judge R : expr = gam :- i : ty.i
+%%]
+%%[2.rl.e.var.HM
+    view HM =
       -
       judge R : expr
           | cnstr.syn = cnstr.inh
-          | ty = ty.i
 %%]
 
 %%[1.rl.e.app
@@ -158,29 +162,29 @@ rules expr.base scheme expr "Expression type rules" =
 %%[3.rl.e.app -1.rl.e.app
   rule e.app "App" =
 %%]
-%%[1
+%%[1.rl.e.app.E
     view E =
       judge F : expr = gam :- f : (ty.a -> ty)
       judge A : expr = gam :- a : ty.a
       -
       judge R : expr = gam :- (f a) : ty
 %%]
-%%[2
+%%[2.rl.e.app.HM
     view HM =
-      judge V : tvFresh = tv
-      judge M : match = :- (ty.a -> tv) <=> (cnstr.a ty.f) ~> cnstr
+      judge V : tvFresh  = tv
+      judge M : match    = (ty.a -> tv) <=> (cnstr.a ty.f) ~> cnstr
       judge F : expr
-          | ty = ty.f
-          | cnstr.syn = cnstr.f
+          | ty         = ty.f
+          | cnstr.syn  = cnstr.f
       judge A : expr
-          | cnstr.inh = cnstr.f
-          | cnstr.syn = cnstr.a
+          | cnstr.inh  = cnstr.f
+          | cnstr.syn  = cnstr.a
       -
       judge R : expr
-          | ty = cnstr cnstr.a tv
-          | cnstr.syn = cnstr cnstr.a
+          | ty         = cnstr cnstr.a tv
+          | cnstr.syn  = cnstr cnstr.a
 %%]
-%%[3
+%%[3.rl.e.app.AG
     view AG =
       -
       judge R : expr
@@ -228,7 +232,7 @@ rules expr.base scheme expr "Expression type rules" =
       judge D : expr = gam :- e : ty.e
       judge B : expr = ((i :-> ty.e), gam) :- b : ty.b
       -
-      judge R : expr = gam :- (let i `=` e (in) b) : ty.b
+      judge R : expr = gam :- (let i `=` e in b) : ty.b
 %%]
 %%[2
     view HM =
@@ -240,7 +244,7 @@ rules expr.base scheme expr "Expression type rules" =
           | cnstr.inh = cnstr.e
           | cnstr.syn = cnstr.b
           | gam = (i :-> ty.g) , gam
-      judge G : tyGen = ty.g `=` forall (ftv(ty.e) \\ ftv(gam)) `.` ty.e
+      judge G : tyGen = ty.g `=` forall (ftv(ty.e) \\ ftv(cnstr.e gam)) `.` ty.e
       -
       judge R : expr
           | cnstr.syn = cnstr.b
@@ -249,7 +253,17 @@ rules expr.base scheme expr "Expression type rules" =
     view AG =
       -
       judge R : expr
-          | e = let i `=` (node 1 = e) (in) (node 2 = b)
+          | e = let i `=` (node 1 = e) in (node 2 = b)
+%%]
+
+%%[1.rl.e.gen
+  rule e.gen viewsel E =
+%%]
+%%[1
+    view E =
+      judge G : expr = gam :- e : sigma
+      -
+      judge R : expr = gam :- e : (forall tv..._ `.` sigma)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -259,13 +273,13 @@ rules expr.base scheme expr "Expression type rules" =
 %%[2.match
 relation match =
   view HM =
-    attr [ ty.l: Ty, ty.r: Ty | | cnstr: Cnstr ]
-    judge tex :-..(<=>) ty.l <=> ty.r ~> cnstr
+    hole [ ty.l: Ty, ty.r: Ty | | cnstr: Cnstr ]
+    judgeshape spec ty.l <=> ty.r ~> cnstr
 %%]
 %%[3.match
   view AG =
-    judge tex :-..(<=>) ty.l <=> ty.r ~> cnstr
-    judge ag (cnstr,mtErrs) `=` (ty.l) <=> (ty.r)
+    judgeshape spec ty.l <=> ty.r ~> cnstr
+    judgeshape ag (cnstr,mtErrs) `=` (ty.l) <=> (ty.r)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -275,14 +289,14 @@ relation match =
 %%[1.gamLookupIdTy
 relation gamLookupIdTy =
   view E =
-    attr [ | nm: Nm, gam: Gam, ty: Ty | ]
-    judge tex nm :-> ty `elem` gam
+    hole [ | nm: Nm, gam: Gam, ty: Ty | ]
+    judgeshape spec nm :-> ty `elem` gam
 %%]
 %%[3.gamLookupIdTy
   view AG =
-    attr [ nm: Nm, gam: Gam | | ty: Ty ]
-    judge tex nm :-> ty `elem` gam
-    judge ag (ty,nmErrs) `=` gamLookup nm gam
+    hole [ nm: Nm, gam: Gam | | ty: Ty ]
+    judgeshape spec nm :-> ty `elem` gam
+    judgeshape ag (ty,nmErrs) `=` gamLookup nm gam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -292,31 +306,31 @@ relation gamLookupIdTy =
 %%[2.tvFresh
 relation tvFresh =
   view HM =
-    attr [ | | tv: Ty ]
-    judge spec tv
-    judge tex tv (text "fresh")
+    hole [ | | tv: Ty ]
+    judgeshape spec tv
+    judgeshape tex tv (text "fresh")
 %%]
 %%[3.tvFresh
   view AG =
-    judge spec tv
-    judge tex tv (text "fresh")
-    judge ag tv `=` Ty_Var uniq
+    judgeshape spec tv
+    judgeshape tex tv (text "fresh")
+    judgeshape ag tv `=` Ty_Var uniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type instantiation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2.tyInst
+%%[1.tyInst
 relation tyInst =
-  view HM =
-    attr [ ty: Ty | | ty.i: Ty ]
-    judge tex ty.i `=` inst(ty)
+  view E =
+    hole [ ty: Ty | | ty.i: Ty ]
+    judgeshape spec ty.i `=` inst(ty)
 %%]
 %%[3.tyInst
   view AG =
-    judge tex ty.i `=` inst(ty)
-    judge ag ty.i `=` tyInst uniq (ty)
+    judgeshape spec ty.i `=` inst(ty)
+    judgeshape ag ty.i `=` tyInst uniq (ty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -326,12 +340,12 @@ relation tyInst =
 %%[2.tyGen
 relation tyGen =
   view HM =
-    attr [ ty: Ty, gam: Gam | | ty.g: Ty ]
-    judge tex ty.g `=` forall (ftv(ty) \\ ftv(gam)) `.` ty
+    hole [ ty: Ty, gam: Gam | | ty.g: Ty ]
+    judgeshape spec ty.g `=` forall (ftv(ty) \\ ftv(gam)) `.` ty
 %%]
 %%[3.tyGen
   view AG =
-    judge ag  ty.g `=` mkTyAll (ftv(ty) \\ ftv(gam)) (ty)
-    judge tex ty.g `=` forall (ftv(ty) \\ ftv(gam)) `.` ty
+    judgeshape ag  ty.g `=` mkTyAll (ftv(ty) \\ ftv(gam)) (ty)
+    judgeshape spec ty.g `=` forall (ftv(ty) \\ ftv(gam)) `.` ty
 %%]
 

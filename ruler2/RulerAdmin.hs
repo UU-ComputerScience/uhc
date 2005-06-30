@@ -118,8 +118,26 @@ data JdInfo e
   = JdInfo
       { jdExpr  :: e
       }
+  | JdDel
+
+instance Show (JdInfo e) where
+  show _ = "JdInfo"
+
+instance PP e => PP (JdInfo e) where
+  pp (JdInfo e) = "Jd" >#< pp e
+  pp (JdDel   ) = pp "JdDel"
 
 type JdGam e = FmKdGam (JdInfo e)
+
+jdgUnion :: JdGam e -> JdGam e -> JdGam e
+jdgUnion gn g
+  = Map.foldWithKey
+      (\fk i g
+        -> case i of
+             JdDel -> Map.delete fk g
+             _     -> Map.insert fk i g
+      )
+      g gn
 
 -------------------------------------------------------------------------
 -- View (related to scheme)
@@ -138,8 +156,8 @@ emptyVwScInfo = VwScInfo nmNone emptyGam emptyGam emptyGam
 instance Show (VwScInfo e) where
   show _ = "VwScInfo"
 
-instance PP (VwScInfo e) where
-  pp i = "VWSc" >#< pp (vwscNm i) >#< (ppGam (vwscAtGam i) >-< ppGam (vwscFullAtGam i))
+instance PP e => PP (VwScInfo e) where
+  pp i = "VWSc" >#< pp (vwscNm i) >#< (ppGam (vwscAtGam i) >-< ppGam (vwscFullAtGam i) >-< ppGam (vwscJdGam i))
 
 type VwScGam e = Gam Nm (VwScInfo e)
 
@@ -160,7 +178,7 @@ emptyScInfo = ScInfo nmNone Nothing ScJudge emptyGam
 instance Show (ScInfo e) where
   show _ = "ScInfo"
 
-instance PP (ScInfo e) where
+instance PP e => PP (ScInfo e) where
   pp i = "SC" >#< pp (scNm i) >#< ppGam (scVwGam i)
 
 type ScGam e = Gam Nm (ScInfo e)
@@ -200,7 +218,7 @@ jaGamToFmGam :: (e -> e) -> JAGam e -> FmGam e
 jaGamToFmGam f = fmGamFromList . map (\(n,i) -> (n,f (jaExpr i))) . Map.toList
 
 fmGamToJaGam :: FmKind -> FmGam e -> JAGam e
-fmGamToJaGam fm = Map.fromList . map (\(n,e) -> (n,JAInfo n e Set.empty)) . Map.toList . Map.map (fkGamLookup (panic "fmGamToJaGam") id fm . fmKdGam)
+fmGamToJaGam fm = Map.fromList . map (\(n,e) -> (n,JAInfo n e Set.empty)) . Map.toList . Map.map (fkGamLookup (panic "fmGamToJaGam") id [fm] . fmKdGam)
 
 -------------------------------------------------------------------------
 -- RExpr
@@ -430,7 +448,7 @@ fmGamLookup :: Nm -> FmKind -> FmGam e -> Maybe e
 fmGamLookup n k g
   = case Map.lookup n g of
       Just i
-        -> fkGamLookup Nothing Just k (fmKdGam i)
+        -> fkGamLookup Nothing Just [k] (fmKdGam i)
       _ -> Nothing
 
 fmGamMap :: (Nm -> a -> b) -> FmGam a -> FmGam b
@@ -448,9 +466,9 @@ gamTryLookups dflt extr keys g
                   Nothing -> gamTryLookups dflt extr ks g
       _      -> dflt
 
-gamLookupWithDefault :: Ord k => k -> v -> (e -> v) -> k -> Gam k e -> v
-gamLookupWithDefault dfltKey dflt extr key g
-  = gamTryLookups dflt extr [key,dfltKey] g
+gamLookupWithDefault :: Ord k => k -> v -> (e -> v) -> [k] -> Gam k e -> v
+gamLookupWithDefault dfltKey dflt extr keys g
+  = gamTryLookups dflt extr (keys ++ [dfltKey]) g
 
 -------------------------------------------------------------------------
 -- FmGam for FmKind
@@ -458,7 +476,7 @@ gamLookupWithDefault dfltKey dflt extr key g
 
 type FmKdGam e = Gam FmKind e
 
-fkGamLookup :: v -> (e -> v) -> FmKind -> FmKdGam e -> v
+fkGamLookup :: v -> (e -> v) -> [FmKind] -> FmKdGam e -> v
 fkGamLookup = gamLookupWithDefault FmAll
 
 -------------------------------------------------------------------------
@@ -467,7 +485,7 @@ fkGamLookup = gamLookupWithDefault FmAll
 
 type FmDrGam e = Gam AtDir e
 
-fdGamLookup :: v -> (e -> v) -> AtDir -> FmDrGam e -> v
+fdGamLookup :: v -> (e -> v) -> [AtDir] -> FmDrGam e -> v
 fdGamLookup = gamLookupWithDefault AtInOut
 
 -------------------------------------------------------------------------
@@ -480,7 +498,7 @@ rwGamLookup :: Nm -> FmKind -> AtDir -> RwGam e -> Maybe [e]
 rwGamLookup n k d g
   = case fmGamLookup n k g of
       Just g'
-        -> fdGamLookup Nothing Just d g'
+        -> fdGamLookup Nothing Just [d] g'
       _ -> Nothing
 
 rwSingleton :: Nm -> FmKind -> AtDir -> e -> RwGam e

@@ -1,16 +1,28 @@
--- Imports
-imports
-{
-import IO
-import Data.List
-import UU.Pretty
-import UU.Parsing
-import UU.Scanner
-import UU.Scanner.Position( initPos, Pos )
-import DemoUtils
-}
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
 
-{
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell interface to AG generated code for compiler
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[3 hs import(IO,Data.List,UU.Pretty,UU.Parsing,UU.Scanner,UU.Scanner.Position( initPos, Pos ),DemoUtils)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Import of generated part (type rule implementation)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[3 import(demo)
+WRAPPER AGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Main
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[3 hs
 -- main
 main :: IO ()
 main
@@ -39,21 +51,26 @@ pAGItf
                       <* pKey "->"
         pExpr     =   pExprPre <*> pExpr
                   <|> pExprApp
-}
+%%]
 
--- Generated part (type rule implementation)
-INCLUDE "demo.ag"
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AST
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--- Wrapping
-WRAPPER AGItf
-
+%%[3
 -- AST
 DATA AGItf
   | AGItf  e  : Expr
+%%]
 
+%%[3.AST.Expr.App
 DATA Expr
   | App  f    : Expr
          a    : Expr
+%%]
+
+%%[3.AST.Expr.Rest
+DATA Expr
   | Int  int  : {Int}
   | Var  i    : {String}
   | Lam  i    : {String}
@@ -61,12 +78,24 @@ DATA Expr
   | Let  i    : {String}
          e    : Expr
          b    : Expr
+%%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Initialisation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[3
 -- Initialisation
 SEM AGItf
   | AGItf  e  .   g  =   []
               .   c  =   []
+%%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[3
 -- Pretty printing
 ATTR AGItf Expr [ | | pp: PP_Doc ]
 
@@ -80,9 +109,18 @@ SEM Expr
                            >#< "::"  >#< show @ty_g_
                            >#< "="   >#< @e.pp
                            >-< "in " >#< @b.pp
+%%]
   
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Uniq
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[3
 -- Uniq
 ATTR Expr [ | uniq: UID | ]
 
 SEM AGItf
   | AGItf  e  .   uniq  =   uidStart
+%%]
+
+

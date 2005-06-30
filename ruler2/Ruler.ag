@@ -203,7 +203,7 @@ INCLUDE "RulerPatternUniq.ag"
 
 {
 jdGamFmExpr :: FmKind -> JdGam Expr -> Expr
-jdGamFmExpr = fkGamLookup exprUnk jdExpr
+jdGamFmExpr k = fkGamLookup exprUnk jdExpr [k,FmSpec]
 }
 
 -------------------------------------------------------------------------
@@ -229,7 +229,7 @@ SEM RExprEqn
                                                 ++ @expr.errL
 
 SEM Decl
-  | FmtJudge        lhs     .   errL        =   @errVwSc
+  | ShpJudge        lhs     .   errL        =   @errVwSc
                                                 ++ (if null @errVwSc
                                                     then @errUndefs
                                                     else []
@@ -309,7 +309,7 @@ ATTR AllDecl [ | | vwJdGam USE {`Map.union`} {Map.empty}: {JdGam Expr} ]
 
 SEM Decl
   | ScmView         lhs     .   vwScGam     =   Map.singleton @nm (VwScInfo @nm @decls.vwJdGam @decls.atGam emptyGam)
-  | FmtJudge        lhs     .   vwJdGam     =   Map.singleton @fmKind (JdInfo @expr.self)
+  | ShpJudge        lhs     .   vwJdGam     =   Map.singleton @fmKind (JdInfo @expr.self)
                     loc     .   cxStr       =   "judgement for view '" ++ show @lhs.viewNm ++ "' for scheme '" ++ show @lhs.scmNm ++ "'"
                             .   (vwScInfo,errVwSc)
                                             =   case scVwGamLookup @lhs.scmNm @lhs.viewNm @lhs.scGam of
@@ -317,6 +317,7 @@ SEM Decl
                                                     Nothing    -> (emptyVwScInfo,[Err_UndefNm @pos @cxStr "view" [@lhs.viewNm]])
                             .   errUndefs   =   let nms = Map.keys (vwscFullAtGam @vwScInfo) \\ Set.toList @expr.nmS
                                                 in  if null nms then [] else [Err_UndefNm @pos @cxStr "attr" nms]
+  | ShpDel          lhs     .   vwJdGam     =   Map.fromList [ (k,JdDel) | k <- @fmKinds ]
 
 -------------------------------------------------------------------------
 -- Scheme, derived ones are expresses in terms of non-derived ones
@@ -381,40 +382,6 @@ SEM Decl
 SEM AGItf
   | AGItf           loc     .   drvGam      =   @decls.gathDrvGam
 
-{-
-  = JAInfo
-      { jaNm    :: Nm
-      , jaExpr  :: e
-      , jaNmS   :: Set.Set Nm
-      }
-data REInfo e
-  = REInfoJudge
-      { reNm                :: Nm
-      , reScNm              :: Nm
-      , reInNmS, reOutNmS   :: Set.Set Nm
-      , reJAGam             :: JAGam e
-      }
-data VwRlInfo e
-  = VwRlInfo
-      { vwrlNm                              :: Nm
-      , vwrlPreGam, vwrlPostGam             :: REGam e
-      , vwrlFullPreGam, vwrlFullPostGam     :: REGam e
-      , vwrlPreScc                          :: [[Nm]]
-      , vwrlMbChGam                         :: Maybe RlChGam
-      }
-
-data RlInfo e
-  = RlInfo
-      { rlNm        :: Nm
-      , rlPos       :: SPos
-      , rlMbOnNm    :: Maybe Nm
-      , rlMbAGStr   :: Maybe String
-      , rlSeqNr     :: Int
-      , rlInclVwS   :: Set.Set Nm
-      , rlVwGam     :: VwRlGam e
-      }
--}
-
 -------------------------------------------------------------------------
 -- Scheme
 -------------------------------------------------------------------------
@@ -434,7 +401,7 @@ bldScInfo vwDpdGr si@(ScInfo nm mbAGNm scKind vwScGam)
                          (vw,ag',jdg')
                             = case Map.lookup nVw vsg of
                                   Just vw
-                                    -> (vw,new `Map.union` ag,vwscJdGam vw `Map.union` jdg)
+                                    -> (vw,new `Map.union` ag,vwscJdGam vw `jdgUnion` jdg)
                                     where new = Map.mapWithKey
                                                   (\n a
                                                      -> case atProps a `intersect` Map.elems propsMp of
@@ -447,10 +414,10 @@ bldScInfo vwDpdGr si@(ScInfo nm mbAGNm scKind vwScGam)
                                                   )
                                                   (vwscAtGam vw)
                                   Nothing
-                                    -> (emptyVwScInfo { vwscNm = nVw, vwscJdGam = jdg },ag,jdg)
+                                    -> (emptyVwScInfo { vwscNm = nVw },ag,jdg)
                          vwag = Map.fromList . concat . Map.elems $ ag'
                          agMp' = Map.insert nVw (ag',jdg') agMp
-                     in  (Map.insert nVw (vw {vwscFullAtGam = vwag}) vsg,agMp')
+                     in  (Map.insert nVw (vw {vwscFullAtGam = vwag, vwscJdGam = jdg'}) vsg,agMp')
               )
               (vwScGam,Map.empty)
               (vgTopSort vwDpdGr)
@@ -710,7 +677,7 @@ SEM AEqn
                             .   ecGam       =   emptyGam
 
 SEM Decl
-  | Fmt FmtJudge    loc     .   fmGam       =   emptyGam
+  | Fmt ShpJudge    loc     .   fmGam       =   emptyGam
                             .   rwGam       =   emptyGam
                             .   ecGam       =   emptyGam
 
@@ -751,7 +718,7 @@ SEM AEqn
   | Err             loc     .   wrKindStk   =   [WrNone]
 
 SEM Decl
-  | Fmt FmtJudge    expr    .   wrKindStk   =   [WrNone]
+  | Fmt ShpJudge    expr    .   wrKindStk   =   [WrNone]
 
 -------------------------------------------------------------------------
 -- Is Expr a complex (non variable expr)? Then it will be used only for parameterized rewrites

@@ -336,118 +336,6 @@ pLineChars          =   (foldr sem_Words_Cons sem_Words_Nil . concat)
 -- Parser
 -------------------------------------------------------------------------
 
-{-
-pAGItf :: (IsParser p Char) => p T_AGItf
-pAGItf
-  = let pAGItf              =   sem_AGItf_AGItf <$> pLines <*> pChunks
-        pChunks             =   pFoldr_ng (sem_Chunks_Cons,sem_Chunks_Nil) pChunk
-        pChunk              =   pChunkBeg
-                                 *> ((   sem_Chunk_Ver
-                                         <$> pVersion
-                                         <*> ((:[]) <$ pKey "." <*> pId <|> pSucceed [])
-                                         <*> (pKey "-" *> ((:[]) <$ pSpaces <*> pChunkId <|> pParens' (pList1Sep pSpaces1 pChunkId)) <|> pSucceed [])
-                                         <*> (True <$ pKey "hs" <|> pSucceed False)
-                                         <*> (Just <$ pKey "module" <*> psId <|> pSucceed Nothing)
-                                         <*> (pKey "import" *> pParens pIdNests <|> pSucceed [])
-                                         <*> (pKey "export" *> pParens pIdNests <|> pSucceed [])
-                                     <|> sem_Chunk_Named
-                                         <$> psId
-                                     )
-                                     <*  pChunkBegTail
-                                     <*> pLines
-                                     <*  pChunkEnd
-                                     <*> pLines
-                                    )
-                            <?> "a chunk"
-        pChunkBeg           =   pToks "%%["
-        pChunkBegTail       =   pSpaces <* pNl
-        pChunkEnd           =   pToks "%%]" *> pLineChars <* pNl
-        pChunkId            =   (,) <$> pVersion <* pToks "." <*> pId
-        pLines              =   pFoldr_ng  (sem_Lines_Cons,sem_Lines_Nil) pLine
-        pLine               =   sem_Line_AsIs
-                                <$> (pLineBeg
-                                     <**> ((\l b -> l b) <$> pLineChars) <* pNl <|> sem_Words_Nil <$ pNl)
-                            <|> sem_Line_Named
-                                <$ pToks "%%@" <*> psId <* pChunkBegTail
-                            <?> "a line"
-        pLineBeg            =   (\c1 c2 c3 -> c1 : c2 : c3 : []) <$> pPerc <*> pPerc <*> pExceptSym "[]@\r\n"
-                            <|> (\c1 c2 -> c1 : c2 : []) <$> pPerc <*> pNonPerc
-                            <|> (:[]) <$> pNonPerc
-                            where pNonPerc = pExceptSym "\r\n%"
-        pLineChars          =   pSucceed (\s -> f [sem_Word_Black s])
-                            <|> (\w tl s -> f ([sem_Word_Black s,sem_Word_White w] ++ tl)) <$> pSpaces1 <*> pGrs
-                            <|> (\b tl s -> f ([sem_Word_Black (s++b)] ++ tl)) <$> pGr <*> pGrs
-                            where pGr = pNonSpaceGroups
-                                             [(['a'..'z']++['A'..'Z']++['0'..'9'])
-                                             ,"@" ,"|", "()[]{}"
-                                             ]
-                                  pGrs= pList (sem_Word_White <$> pSpaces1 <|> sem_Word_Black <$> pGr)
-                                  f   = foldr sem_Words_Cons sem_Words_Nil
-        pNl                 =   pAnySym "\r\n"
-        pPerc               =   pSym '%'
-        pOParen             =   pSym '('
-        pCParen             =   pSym ')'
-        pDQuote             =   pSym '\"'
-        pNonDQuote          =   pExceptSym "\r\n\""
-        pPacked  p1 p       =   p1 *> p <* p1
-        pPacked2 p1 p2 p    =   p1 *> p <* p2
-        pPacked2S c1 c2 p   =   pPacked2 (pKey c1) (pKey c2) p
-        pPacked2S' c1 c2 p  =   pPacked2 (pToks c1) (pKey c2) p
-        pParens             =   pPacked2S "(" ")"
-        pParens'            =   pPacked2S' "(" ")"
-        psParens            =   pPacked2 (pOParen <* pSpaces) (pSpaces <* pCParen)
-        pIdStart            =   'a' <..> 'z' <|> 'A' <..> 'Z'
-        pIdChar             =   pIdStart <|> pDigit <|> pAnySym "."
-        pId                 =   (:) <$> pIdStart <*> pList pIdChar
-        psId                =   pSpaces *> pId
-        pIds                =   pListSep (pKey ",") psId
-        pNonComma           =   pExceptSym "\r\n,() \t\""
-        pIdNonComma         =   pList1 pNonComma
-        pIdNonCommas        =   pListSep (pKey "," <* pSpaces) pIdNonComma
-        pIdNest             =   (concat . intersperse " ") <$> pList1Sep pSpaces pIdNestPart
-        pIdNestPart         =   pIdNonComma
-                            <|> (\l -> "(" ++ concat (intersperse "," l) ++ ")") <$> psParens pIdNests
-                            <|> pDQuote *> pList pNonDQuote <* pDQuote
-        pIdNests            =   pListSep_ng (pKey "," <* pSpaces) pIdNest
-     in pAGItf
-
-pVersion :: (IsParser p Char) => p Version
-pVersion = mkVerFromIntL <$> pList1Sep (pToks "_") pInt'
-
-pVerOrder :: (IsParser p Char) => p VersionOrder
-pVerOrder = pListSep (pToks ",") (pList1Sep (pToks "<") pVersion)
-
-pExceptSym :: (IsParser p Char) => String -> p Char
-pExceptSym e
-  = let exc st [] = st <..> chr 255
-        exc st (e:es) = st <..> chr (ord e - 1) <|> exc (chr (ord e + 1)) es
-     in exc (chr 1) (sort e)
-
-pSpaces, pSpaces1, pNonSpaces1 :: (IsParser p Char) => p String
-pSpaces = pList (pAnySym " \t")
-pSpaces1 = pList1 (pAnySym " \t")
-pNonSpaces1 = pList1 (pExceptSym " \t\r\n")
-
-pInt' :: (IsParser p Char) => p Int
-pInt' = read <$> pList1 pDigit
-
-pInt :: (IsParser p Char) => p Int
-pInt = pSpaces *> pInt'
-
-pDigit :: (IsParser p Char) => p Char
-pDigit = '0' <..> '9'
-
-pNonSpaceGroups :: (IsParser p Char) => [String] -> p String
-pNonSpaceGroups gs
-  = let wh = sort " \t\r\n"
-        gr seen [] = [pExceptSym (wh ++ seen)]
-        gr seen (g:gs) = pAnySym (g \\ (wh ++ seen)) : gr (g ++ seen) gs
-     in foldr1 (<|>) . map pList1 . gr [] . map sort $ gs
-
-pKey :: (IsParser p Char) => String -> p String
-pKey s = pSpaces *> pToks s
--}
-
 {
 parseAndGetRes :: ShPr a -> String -> a
 parseAndGetRes p s
@@ -465,10 +353,8 @@ data Opts
       { optAG           :: Bool
       , optHS           :: Bool
       , optPlain        :: Bool
-{-
-      , optNewParser    :: Bool
--}
       , optLaTeX        :: Bool
+      , optPrefix       :: Bool
       , optIndex        :: Bool
       , optHelp         :: Bool
       , optGenVersion   :: Version
@@ -483,10 +369,8 @@ defaultOpts
       { optAG           =  False
       , optHS           =  False
       , optLaTeX        =  False
+      , optPrefix       =  True
       , optPlain        =  False
-{-
-      , optNewParser    =  False
--}
       , optIndex        =  False
       , optHelp         =  False
       , optGenVersion   =  VNone
@@ -506,12 +390,10 @@ cmdLineOpts
           "generate code for haskell, default=no"
      ,  Option "l"  ["latex"]     (NoArg oLaTeX)
           "generate code for latex, default=no"
+     ,  Option ""   ["prefix"]    (OptArg oPrefix "yes|no")
+          "include prefix (marked by version=0), default=yes"
      ,  Option "p"  ["plain"]     (NoArg oPlain)
           "generate plain code, default=no"
-{-
-     ,  Option "p"  ["newparser"] (NoArg oNewParser)
-          "new parser (temp option)"
--}
      ,  Option ""   ["index"]     (NoArg oIndex)
           "combined with latex, generate index entries, default=no"
      ,  Option "g"  ["gen"]       (ReqArg oGen "all|<nr>")
@@ -529,11 +411,9 @@ cmdLineOpts
      ]
   where  oAG             o =  o {optAG = True}
          oHS             o =  o {optHS = True}
+         oPrefix     ms  o =  yesno (\f o -> o {optPrefix = f}) ms o
          oLaTeX          o =  o {optLaTeX = True}
          oPlain          o =  o {optPlain = True}
-{-
-         oNewParser      o =  o {optNewParser = True}
--}
          oIndex          o =  o {optIndex = True}
          oLhs2tex    ms  o =  yesno (\f o -> o {optWrapLhs2tex = f}) ms o
          oBase        s  o =  o {optBaseName = Just s}
@@ -1029,6 +909,7 @@ SEM AGItf
 buildAGImps :: VerChunkInfo -> PP_Doc
 buildAGImps = vlist . map (\imp -> "INCLUDE \"" >|< imp >|< ".ag\"") . vciImps
 
+{-
 buildAG' :: Opts -> (Bool -> PP_Doc -> PP_Doc) -> FPath -> String -> VerChunkInfoL -> PP_Doc
 buildAG' _ wrap fpath fileBase is
   = let (pre,noPre) = vciSplitPre is
@@ -1043,9 +924,10 @@ buildAG' _ wrap fpath fileBase is
      in vlist (map (wrap False . vciPP) pre)
         >-< pph
         >-< (vlist . map (\i -> wrap (not (vciIsPre i)) (mk i)) . vciSortBySeqNr $ noPre)
+-}
 
 buildAG :: Opts -> (Bool -> PP_Doc -> PP_Doc) -> FPath -> String -> VerChunkInfoM -> PP_Doc
-buildAG _ wrap fpath fileBase is
+buildAG opts wrap fpath fileBase is
   = let (pre,noPre) = vciTakePre is
         noPre' = vciMToL noPre
         h p  = "{" >-< p >-< "}"
@@ -1056,7 +938,7 @@ buildAG _ wrap fpath fileBase is
         pph  = if any vciHasImpExp ish
                then wrap True (h (buildHSModImpExp fileBase ish))
                else empty
-     in vlist (map (wrap False . vciPP) pre)
+     in (if optPrefix opts then vlist (map (wrap False . vciPP) pre) else empty)
         >-< pph
         >-< (vlist . map (\i -> wrap (not (vciIsPre i)) (mk i)) . vciSortBySeqNr $ noPre')
 }
@@ -1065,7 +947,9 @@ ATTR AGItf [ | | bldAG: BuildL ]
 
 SEM AGItf
   | AGItf       lhs         . bldAG     = @build buildAG @selChunks
+{-
                 loc         . bldAG'    = @build' buildAG' @selChunks'
+-}
 
 -------------------------------------------------------------------------
 -- Gen LaTeX
@@ -1087,6 +971,7 @@ mkLabel = mkTexCmdUse' "label"
 mkMetaInfo :: PP_Doc -> String -> PP_Doc
 mkMetaInfo lab fileBase = mkLabel lab -- >-< mkTexCmdDef "chunkMetaDef" lab (pp fileBase)
 
+{-
 buildLaTeX' :: Opts -> (Bool -> PP_Doc -> PP_Doc) -> FPath -> String -> VerChunkInfoL -> PP_Doc
 buildLaTeX' opts wrap fpath fileBase is
   = let (pre,noPre) = vciSplitPre is
@@ -1125,6 +1010,7 @@ buildLaTeX' opts wrap fpath fileBase is
             $ noPre
      in vlist (map (wrap False . vciPP) pre) >-< ppNoPre
         >-< vlist (map (\v -> mkCmdNmDef (ppDots [pp fileBase,pp v]) empty) missing)
+-}
 
 buildLaTeX :: Opts -> (Bool -> PP_Doc -> PP_Doc) -> FPath -> String -> VerChunkInfoM -> PP_Doc
 buildLaTeX opts wrap fpath fileBase is
@@ -1163,7 +1049,8 @@ buildLaTeX opts wrap fpath fileBase is
                   )
             . vciVerGroup
             $ noPre'
-     in vlist (map (wrap False . vciPP) pre) >-< ppNoPre
+     in (if optPrefix opts then vlist (map (wrap False . vciPP) pre) else empty)
+        >-< ppNoPre
         >-< vlist (map (\v -> mkCmdNmDef (ppDots [pp fileBase,pp v]) empty) missing)
 }
 
@@ -1171,7 +1058,9 @@ ATTR AGItf [ | | bldLaTeX: BuildL ]
 
 SEM AGItf
   | AGItf       lhs         . bldLaTeX  = @build buildLaTeX @selLaTeXChunks
+{-
                 loc         . bldLaTeX' = @build' buildLaTeX' @selLaTeXChunks'
+-}
 
 -------------------------------------------------------------------------
 -- Gen Haskell
@@ -1197,6 +1086,7 @@ buildHSModuleHead fileBase is
 buildHSModImpExp :: String -> VerChunkInfoL -> PP_Doc
 buildHSModImpExp fileBase is = buildHSModuleHead fileBase is >-< buildHSImps is
 
+{-
 buildHS' :: Opts -> (Bool -> PP_Doc -> PP_Doc) -> FPath -> String -> VerChunkInfoL -> PP_Doc
 buildHS' _ wrap fpath fileBase is
   = let (pre,noPre) = vciSplitPre is
@@ -1215,6 +1105,7 @@ buildHS' _ wrap fpath fileBase is
      in if isEmpty
         then empty
         else vlist (map (wrap False . vciPP) pre) >-< wrap True ppMod >-< ppNoPre
+-}
 
 buildHS :: Opts -> (Bool -> PP_Doc -> PP_Doc) -> FPath -> String -> VerChunkInfoM -> PP_Doc
 buildHS opts wrap fpath fileBase is
@@ -1235,7 +1126,9 @@ buildHS opts wrap fpath fileBase is
         then empty
         else if optPlain opts
         then ppNoPre
-        else vlist (map (wrap False . vciPP) pre) >-< wrap True ppMod >-< ppNoPre
+        else (if optPrefix opts then vlist (map (wrap False . vciPP) pre) else empty)
+             >-< wrap True ppMod
+             >-< ppNoPre
 }
 
 ATTR AGItf [ | | bldHS: BuildL ]
