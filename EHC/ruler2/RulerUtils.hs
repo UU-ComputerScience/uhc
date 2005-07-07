@@ -264,6 +264,12 @@ nmCapitalize n
       (Just s:ns) -> nmFromL (Just (strCapitalize s) : ns)
       _           -> n
 
+nmDashed :: Nm -> Nm
+nmDashed = Nm . map (\c -> if isAlphaNum c then c else '-') . show
+
+nmFlatten :: Nm -> Nm
+nmFlatten = Nm . show
+
 nmShow' :: String -> Nm -> String
 nmShow' sep = concat . intersperse sep . nmToL
 
@@ -312,11 +318,10 @@ nmFunMkUniq u = Nm ("rulerMk" ++ show u ++ "Uniq")
 -- LaTeX
 -------------------------------------------------------------------------
 
+{-
 mkLaTeXNm :: String -> String
 mkLaTeXNm = map (\c -> if isAlphaNum c then c else '-')
-
-nmLaTeX :: Nm -> Nm
-nmLaTeX = Nm . mkLaTeXNm . show
+-}
 
 strLhs2TeXSafe :: String -> String
 strLhs2TeXSafe = concat . map (\c -> if c == '|' then "||" else [c])
@@ -327,8 +332,10 @@ nmLhs2TeXSafe = fmap strLhs2TeXSafe
 mkMBox :: PP a => a -> PP_Doc
 mkMBox p = "\\;\\mbox" >|< ppCurly p
 
+{-
 mkRuleNm :: String -> String -> PP_Doc
 mkRuleNm r v = "\\textsc" >|< ppCurly (mkLaTeXNm r) >|< (if null v then empty else "_" >|< ppCurly v)
+-}
 
 mkVerb :: PP_Doc -> PP_Doc
 mkVerb p = ppPacked "@" "@" p

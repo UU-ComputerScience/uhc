@@ -68,11 +68,11 @@ DATA Expr
   | App  f    : Expr
          a    : Expr
 %%]
-
-%%[3.AST.Expr.Rest
-DATA Expr
+%%[3.AST.Expr.IntVar
   | Int  int  : {Int}
   | Var  i    : {String}
+%%]
+%%[3.AST.Expr.Rest
   | Lam  i    : {String}
          b    : Expr
   | Let  i    : {String}
@@ -117,6 +117,9 @@ SEM Expr
 
 %%[3
 -- Uniq
+%%]
+
+%%[3.uniq
 ATTR Expr [ | uniq: UID | ]
 
 SEM AGItf

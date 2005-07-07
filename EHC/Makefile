@@ -93,7 +93,7 @@ MK_EHFILES			:= mk/ehfiles.mk
 AGCC				= cd `dirname $2` ; $(AGC) $1 `basename $2`
 
 # lhs2tex format files used
-AFP_FMT_OTHER		:= lag2TeX.fmt pretty.fmt parsing.fmt
+AFP_FMT_OTHER		:= lag2TeX.fmt pretty.fmt parsing.fmt ruler.fmt
 
 # type rules, in ruler format
 AFP_RULES			:= rules.rul rules2.rul
@@ -101,10 +101,13 @@ AFP_RULES_TEX		:= $(AFP_RULES:.rul=.tex)
 AFP_RULES2			:= rules3
 AFP_RULES2_RUL		:= $(AFP_RULES2).rl2
 AFP_RULES2_TEX		:= $(patsubst %.rl2,$(AFP_TMPDIR)%.tex,$(AFP_RULES2_RUL))
-AFP_RULES2_RULER_OPTS	:=
+AFP_RULES2_RULER_OPTS	:= --dot2dash
 
 # pictures in pgf format
 AFP_PGF_TEX			:= afp-pgf.tex
+
+# pictures in xfig format
+AFP_XFIG_TEX		:= $(patsubst %,figs/%.latex,ruler-overview)
 
 # all text sources
 ALL_AFP_SRC			:= $(AFP_LHS) $(AFP_RULES) $(AFP_RULES2_RUL)
@@ -290,6 +293,9 @@ all: afp-full ehcs doc gris
 	$(MAKE) initial-test-expect
 
 doc: $(SHUFFLE_DOC_PDF)
+
+%.latex:%.fig
+	fig2dev -L latex $< > $@
 
 %.tex:%.lag
 	$(call LHS2TEX_POLY,$<,$@)
@@ -600,10 +606,14 @@ hw05-impred-final:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyImpred --set=hw05 --set=omitTBD --set=omitLitDiscuss" afp-bib
 
 popl06-ruler-tst:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS="$(RULER2_DEMO_DRV_RL2) $(RULER2_DEMO_DRV_AG) $(RULER2_DEMO_DRV_CTEX) $(RULER2_DEMO_DRV_RTEX) $(RULER2_DEMO_DRV_ATEX) $(RULER2_DEMO_AG_MAIN_DRV_TEX) $(RULER2_DEMO_AG_MAIN_DRV)" LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyRuler --set=popl06 --set=omitTBD --set=omitLitDiscuss" afp
+	$(MAKE) AFP=$@ \
+	AFP_TEX_DPDS="$(AFP_XFIG_TEX) $(RULER2_DEMO_DRV_RL2) $(RULER2_DEMO_DRV_AG) $(RULER2_DEMO_DRV_CTEX) $(RULER2_DEMO_DRV_RTEX) $(RULER2_DEMO_DRV_ATEX) $(RULER2_DEMO_DRV_AG_MAIN_TEX) $(RULER2_DEMO_DRV_AG_MAIN) $(RULER2_DEMO_DRV_HS_UTILS) $(RULER2_DEMO_DRV_HS_UTILS_TEX)" \
+	LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyRuler --set=popl06 --set=omitTBD --set=omitLitDiscuss" afp
 
 popl06-ruler:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS="$(RULER2_DEMO_DRV_RL2) $(RULER2_DEMO_DRV_AG) $(RULER2_DEMO_DRV_CTEX) $(RULER2_DEMO_DRV_RTEX) $(RULER2_DEMO_DRV_ATEX) $(RULER2_DEMO_AG_MAIN_DRV_TEX) $(RULER2_DEMO_AG_MAIN_DRV)" LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyRuler --set=popl06 --set=omitTBD --set=omitLitDiscuss" afp-bib
+	$(MAKE) AFP=$@ \
+	AFP_TEX_DPDS="$(AFP_XFIG_TEX) $(RULER2_DEMO_DRV_RL2) $(RULER2_DEMO_DRV_AG) $(RULER2_DEMO_DRV_CTEX) $(RULER2_DEMO_DRV_RTEX) $(RULER2_DEMO_DRV_ATEX) $(RULER2_DEMO_DRV_AG_MAIN_TEX) $(RULER2_DEMO_DRV_AG_MAIN) $(RULER2_DEMO_DRV_HS_UTILS) $(RULER2_DEMO_DRV_HS_UTILS_TEX)" \
+	LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyRuler --set=popl06 --set=omitTBD --set=omitLitDiscuss" afp-bib
 
 hw05-explimpl-tst:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=hw05 --set=withChangeBar --set=omitTBD --set=omitLitDiscuss" afp

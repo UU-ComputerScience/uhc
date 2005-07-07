@@ -361,9 +361,9 @@ rsGen gen vwOrder rsGam
                          gen'' = gen' {genScInfo=scInfo}
                          r = Map.mapWithKey
                                (\nRl rlInfo
-                                 -> let nRl' = nmLaTeX nRl
+                                 -> let nRl' = mkRlNm nRl
                                     in  rlGen (gen'' {genRlInfo=rlInfo})
-                                              (nRl',\nVw -> mkRlNm nBs nVw nRs nRl')
+                                              (nRl',\nVw -> mkFullRlNm nBs nVw nRs nRl')
                                )
                                rlGam
                  RsInfoGroup nRs nSc _ rlNms
@@ -372,9 +372,9 @@ rsGen gen vwOrder rsGam
                          gen'' = gen' {genScInfo=scInfo}
                          r = map
                                (\nVw
-                                 -> let rs = [ let nRl' = nmLaTeX nRl
-                                                   nd = mkRlNm nBs nVw nRs  nRl'
-                                                   nu = mkRlNm nBs nVw nRs' nRl'
+                                 -> let rs = [ let nRl' = mkRlNm nRl
+                                                   nd = mkFullRlNm nBs nVw nRs  nRl'
+                                                   nu = mkFullRlNm nBs nVw nRs' nRl'
                                                in  Map.singleton nRl (nd,genNmDef gen'' nd (genNmUse gen'' nu))
                                              | (nRs',nRl) <- rlNms, rlVwIsDef nRs' nRl nVw
                                              ]
@@ -386,7 +386,9 @@ rsGen gen vwOrder rsGam
       (\nRs _ -> genRlSelIsSel gen nmAny nRs nmAny)
     $ rsGam
   where nBs = Nm (optBaseNm (genOpts gen))
-        mkRlNm b v rs r
+        mkRlNm
+          = if optDot2Dash (genOpts gen) then nmDashed else nmFlatten
+        mkFullRlNm b v rs r
           = nmApd b $ (if v == nmNone then id else nmApd v) $ nmApd rs $ r
         rlVwIsDef rs r v
           = isJust (do rsInfo <- Map.lookup rs rsGam
