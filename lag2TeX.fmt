@@ -1,5 +1,5 @@
 %if style == newcode
-%format mytype = "type"
+% format mytype = "type"
 
 %elif style == poly
 %format mytype = "\mathit{type}"
@@ -22,6 +22,7 @@
 %format [          = "[\mskip1.5mu\allowforspacecorrection "
 %format (          = "(\allowforspacecorrection "
 %subst fromto b e t     = "\fromto{" b "}{" e "}{{}\allowforspacecorrection " t "{}}'n"
+% subst inline a  	= "\ensuremath{{}\allowforspacecorrection " a "}"
 
 %endif
 

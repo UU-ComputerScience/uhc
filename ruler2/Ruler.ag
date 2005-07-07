@@ -112,6 +112,7 @@ data Opts
   = Opts
       { optGenFM        :: FmKind
       , optGenAGAttr    :: Bool
+      , optDot2Dash     :: Bool
       , optAtDir        :: AtDir    -- used internally only
       , optSubstFullNm  :: Bool     -- used internally only
       , optSubstOnce    :: Bool     -- used internally only
@@ -128,6 +129,7 @@ defaultOpts
   = Opts
       { optGenFM        =  FmAll
       , optGenAGAttr    =  False
+      , optDot2Dash     =  False
       , optAtDir        =  AtInOut
       , optSubstFullNm  =  True
       , optSubstOnce    =  False
@@ -149,6 +151,8 @@ cmdLineOpts
           "generate code for AG, default=no"
      , Option ""   ["ATTR"]             (NoArg oGenAGAttr)
           "generate ATTR defs (for AG), default=no"
+     , Option ""   ["dot2dash"]         (NoArg oDot2Dash)
+          "change '.' in rule names to '-', default=no"
      , Option "c"  ["markchanges"]      (OptArg oMarkCh "<spec>")
           "mark changes between specified views (in combi with --lhs2tex, <spec>=*|<view name>|<view name>-<view name>)"
      , Option "s"  ["selrule"]          (OptArg oRlSel "<spec>")
@@ -165,6 +169,7 @@ cmdLineOpts
   where  oGenLhs2tex     o =  o {optGenFM = FmTeX}
          oGenAG          o =  o {optGenFM = FmAG}
          oGenAGAttr      o =  o {optGenAGAttr = True}
+         oDot2Dash       o =  o {optDot2Dash = True}
          oHelp           o =  o {optHelp = True}
          oFragWrap       o =  o {optFragWrap = True}
          oDebug          o =  o {optDebug = True}

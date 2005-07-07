@@ -12,7 +12,7 @@
 \def\spacecorrection{\;}
 \def\isspacecorrection{\spacecorrection}
 \def\allowforspacecorrection#1{%
-  \def\temp{#1}%
+  \gdef\temp{#1}%
   \ifx\isspacecorrection\temp
     \let\next=\empty
   \else
@@ -49,6 +49,14 @@
   \hline
 %endif
   \end{tabular}
+  \end{Figure}
+}
+
+% Env for xfig in a figure
+\newenvironment{XFigFigure}[3]{%
+  \begin{Figure}{#2}{#3}
+  \XFigLatex{#1}
+}{%
   \end{Figure}
 }
 
@@ -106,11 +114,14 @@
 
 % chunk related
 \newcommand{\chunkCmdDef}[1]{\expandafter\def\csname #1\endcsname}
+\newcommand{\chunkCmdUseRaw}[1]{%
+ \csname #1\endcsname
+}
 \newcommand{\chunkCmdUse}[1]{%
 %if asSlides
- \parbox{\textwidth}{\csname #1\endcsname}
+ \parbox{\textwidth}{\chunkCmdUseRaw{#1}}
 %else
- \csname #1\endcsname
+ \chunkCmdUseRaw{#1}
 %if acm
  \vspace{-2.1ex}
 %else
@@ -220,6 +231,12 @@ appendix~\myRef{#1}
 }{%
 \end{description}
 }
+
+%% handling of `
+
+\def\obacktick{\mathop{\ifnum0=`}\fi`\mathord{\ifnum0=`}\fi\let\backtick\cbacktick}
+\def\cbacktick{\ifnum0=`{\fi}`\ifnum0=`{\fi}}
+\let\backtick\obacktick
 
 % Indexing
 \newcommand{\Ix}[1]{\index{#1}}

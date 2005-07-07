@@ -73,7 +73,9 @@
 %% end of compatibility with AFP04
 %endif
 
+%% handling of `
 
+%format `   = "\backtick "
 
 %format forall      = "{\forall}"
 %format exists      = "{\exists}"
@@ -99,6 +101,7 @@
 %format sigmae      = sigma "_{e}"
 %format sigmal      = sigma "^{l}"
 %format sigmar      = sigma "^{r}"
+%format sigmai     	= sigma "_{i}"
 %format sigma'
 %format sigma1
 %format sigma2
