@@ -14,7 +14,8 @@ keywordsTextProps
   =  Map.keys propsMp
 keywordsTextEscapable
   =  keywordsTextProps
-     ++ [ "judge", "judgeshape", "relation", "rule", "rules", "scheme", "view", "hole", "holes", "viewsel", "rulesgroup"
+     ++ [ "judge", "judgeshape", "judgespec", "judgeuse", "relation"
+        , "rule", "rules", "scheme", "view", "hole", "holes", "viewsel", "rulesgroup"
         -- related to global info
         , "viewhierarchy", "format", "rewrite", "preamble", "extern"
         -- related to formatting (styles)
@@ -88,15 +89,20 @@ pAllParsers
                                                        <*  pKey "="             <*> pDeclsScmView
         pDeclScmDflt        =   (\v -> sem_Decls_Cons (sem_Decl_ScmView nmNone v) sem_Decls_Nil)
                                                        <$> pDeclsScmView
-        pDeclScmView        =   pKeySPos "judgeshape"
-                                <**> (   (\k e p -> sem_Decl_ShpJudge p k e) <$> pFmKd3WithDflt <*> pExprLF
-                                     <|> (flip sem_Decl_ShpDel) <$ pKey "-" <*> pList1 pFmKd3
+        pDeclScmView        =   pKeySPos "judgespec"
+                                <**> (   (\e p -> sem_Decl_ShpJudge p FmSpec e) <$> pExprLF
                                      )
+                            <|> pKeySPos "judgeshape" <**> pShp pFmKd3WithDflt pFmKd3
+                            <|> pKeySPos "judgeuse"   <**> pShp pFmKd2         pFmKd2
                             <|> sem_Decl_Attr          <$  (pKey "hole" <|> pKey "holes")
                                                        <*  pKey "["             <*> pAttrIntros
                                                        <*  pKey "|"             <*> pAttrIntros
                                                        <*  pKey "|"             <*> pAttrIntros
                                                        <*  pKey "]"
+                            where pShp pFmAdd pFmDel
+                                    = (   (\k e p -> sem_Decl_ShpJudge p k e) <$> pFmAdd <*> pExprLF
+                                      <|> (flip sem_Decl_ShpDel) <$ pKey "-" <*> pList1 pFmDel
+                                      )
         pDeclsScmView       =   pDecls1' pDeclScmView
         pDeclGlob           =   pDeclGlobScheme
                             <|> sem_Decl_Fmt           <$  (pKey "format" <|> pKey "rewrite")

@@ -30,7 +30,7 @@ format tex valGam = Gamma
 format tex eFun = e.1
 format tex eArg = e.2
 
-viewhierarchy = E K 1 2 --, K K1, 1 11
+viewhierarchy = E < K < 1 < 2 --, K K1, 1 11
 
 relation bindIdTy =
   view E =

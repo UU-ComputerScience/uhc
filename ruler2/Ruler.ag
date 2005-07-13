@@ -215,15 +215,22 @@ jdGamFmExpr k = fkGamLookup exprUnk jdExpr [k,FmSpec]
 -- Error
 -------------------------------------------------------------------------
 
-ATTR AllNT AGItf [ | | errL USE {++} {[]}: {[Err]} ]
+ATTR AllDecl AllAttrEqn AllRExpr AGItf [ | | errL USE {++} {[]}: {[Err]} ]
 
 SEM RExpr
   | Judge           lhs     .   errL        =   @errSc
                                                 ++ (if null @errSc
-                                                    then @errVwSc ++ (if null @errVwSc then @errRE else [])
+                                                    then @errVwSc
+                                                         ++ (if null @errVwSc
+                                                             then @errRE
+                                                                  ++ (if null @errRE
+                                                                      then @eqns.errL
+                                                                      else []
+                                                                     )
+                                                             else []
+                                                            )
                                                     else []
                                                    )
-                                                ++ @eqns.errL
 
 SEM RExprEqn
   | Expr            lhs     .   errL        =   @errJd
@@ -231,7 +238,6 @@ SEM RExprEqn
                                                     then @errMt
                                                     else []
                                                    )
-                                                ++ @expr.errL
 
 SEM Decl
   | ShpJudge        lhs     .   errL        =   @errVwSc
@@ -239,7 +245,6 @@ SEM Decl
                                                     then @errUndefs
                                                     else []
                                                    )
-                                                ++ @expr.errL
   | Rules           lhs     .   errL        =   @errUndefs ++ @decls.errL
 
 -------------------------------------------------------------------------
@@ -531,8 +536,8 @@ SEM Decl
 
 {
 -- build views of a rule by extending each view along view order dependency
-rlGamUpdVws :: Opts -> DpdGr Nm -> Set.Set Nm -> ScGam Expr -> RlGam Expr -> RlInfo Expr -> (RlInfo Expr,[Err])
-rlGamUpdVws opts vwDpdGr extNmS scGam rlGam rlInfo
+rlGamUpdVws :: Opts -> DpdGr Nm -> Set.Set Nm -> ScGam Expr -> RlGam Expr -> RsInfo Expr -> RlInfo Expr -> (RlInfo Expr,[Err])
+rlGamUpdVws opts vwDpdGr extNmS scGam rlGam rsInfo rlInfo
   = let vwIsIncl n = n `Set.member` rlInclVwS rlInfo
         doMarkChngForVw
           = case optMbMarkChange opts of
@@ -544,7 +549,8 @@ rlGamUpdVws opts vwDpdGr extNmS scGam rlGam rlInfo
         (g,_,eg)
             = foldr
                 (\nVw (vrg,prePostGamMp,errg)
-                  -> let (preg,postg,prevVwRlChs)   = prevWRTDpd nVw vwDpdGr prePostGamMp (emptyGam,emptyGam,emptyGam)
+                  -> let -- info from previous view (in view hierarchy)
+                         (preg,postg,prevVwRlChs)   = prevWRTDpd nVw vwDpdGr prePostGamMp (emptyGam,emptyGam,emptyGam)
                          vrgOfVwRlInfo      = Map.lookup nVw . rlVwGam
                          dfltJaGam
                            = case mbOnVwRlInfo of
@@ -576,29 +582,35 @@ rlGamUpdVws opts vwDpdGr extNmS scGam rlGam rlInfo
                              in  Map.mapWithKey (\jn ji -> Map.mapWithKey (\an _ -> RlChInfo jn an) (maybe emptyGam id $ reMbJAGam ji))
                                  $ pd `Map.union` (pn `Map.difference` pd)
                          vwRlChsWtPrev = vwRlChs `rcGamUnion` prevVwRlChs
+                         -- updating the view
                          vw2 = vw {vwrlFullPreGam = reGamUpdInOut nVw scGam preg'
                                   ,vwrlFullPostGam = reGamUpdInOut nVw scGam  postg'
                                   ,vwrlMbChGam = if doMarkChng then Just vwRlChsWtPrev else Nothing
                                   }
                          vw3 = vwrlDelEmptyJd vw2
                          vw4 = vw3 {vwrlPreScc = vwrlScc vw3}
+                         -- errors
+                         scInfo = maybe emptyScInfo fst $ scVwGamLookup (rsScNm rsInfo) nVw scGam
+                         cx = "ruleset '" ++ show (rsNm rsInfo) ++ "' view '" ++ show nVw ++ "' for rule '" ++ show (rlNm rlInfo) ++ "'"
                          vwUndefs = vwrlUndefs vw3 `Set.difference` extNmS
+                         errUndefs = if Set.null vwUndefs then [] else [Err_UndefNm (rlPos rlInfo) cx "identifier" (Set.toList vwUndefs)]
+                         postOfScG = Map.filter (\i -> reScNm i == rsScNm rsInfo) (vwrlFullPostGam vw4)
+                         errPost
+                           = if (not . Map.null $ vwrlFullPostGam vw4) && Map.null postOfScG && scKind scInfo == ScJudge
+                             then [Err_RlPost (rlPos rlInfo) cx (rsScNm rsInfo)]
+                             else []
+                         errs = errUndefs ++ errPost
                      in  (if vrwlIsEmpty vw4 then Map.delete nVw vrg else Map.insert nVw vw4 vrg
                          ,Map.insert nVw
                                      (preg',postg',if doMarkChng then emptyGam else vwRlChsWtPrev)
                                      prePostGamMp
-                         ,if Set.null vwUndefs
-                          then errg
-                          else Map.insert nVw (Set.toList vwUndefs) errg
+                         ,if null errs then errg else Map.insert nVw errs errg
                          )
                 )
                 (rlVwGam rlInfo,Map.empty,emptyGam)
                 (vgTopSort vwDpdGr)
-    in  (rlInfo { rlVwGam = Map.filterWithKey (\n _ -> vwIsIncl n) g }
-        ,[ Err_UndefNm (rlPos rlInfo) ("view '" ++ show n ++ "' for rule '" ++ show (rlNm rlInfo) ++ "'") "identifier" nms
-         | (n,nms) <- Map.toList eg, vwIsIncl n
-         ]
-        )
+        errs = concat . Map.elems . Map.filterWithKey (\n _ -> vwIsIncl n) $ eg
+    in  (rlInfo { rlVwGam = Map.filterWithKey (\n _ -> vwIsIncl n) g },errs)
 
 bldRsInfo :: DpdGr Nm -> Set.Set Nm -> Opts -> ScGam Expr -> RsInfo Expr -> (RsInfo Expr,[Err])
 bldRsInfo vwDpdGr extNmS opts scGam rsInfo@(RsInfo nm schemeNm info rlGam)
@@ -607,7 +619,7 @@ bldRsInfo vwDpdGr extNmS opts scGam rsInfo@(RsInfo nm schemeNm info rlGam)
           = foldr
               (\rNm (rlGam,errs)
                 -> let (rlInfo,errs')
-                         = rlGamUpdVws opts vwDpdGr extNmS scGam rlGam (maybe (panic "(rlGam,errUndefs)") id . Map.lookup rNm $ rlGam)
+                         = rlGamUpdVws opts vwDpdGr extNmS scGam rlGam rsInfo (maybe (panic "bldRsInfo") id . Map.lookup rNm $ rlGam)
                    in  (Map.insert rNm rlInfo rlGam,errs' ++ errs)
               )
               (rlGam,[])

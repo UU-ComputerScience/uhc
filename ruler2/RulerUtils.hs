@@ -36,6 +36,7 @@ data Err
   = Err_UndefNm SPos String String [Nm]
   | Err_NoJdSc  SPos String [Nm]
   | Err_Match   SPos String PP_Doc PP_Doc
+  | Err_RlPost  SPos String Nm
   deriving Show
 
 ppErr :: Position pos => (String,pos) -> PP_Doc -> PP_Doc
@@ -59,6 +60,8 @@ instance PP Err where
                         >-< "given view expr      :" >#< given
                        )
                 )
+  pp (Err_RlPost pos cx nm)
+    = ppErr pos ("In" >#< cx >#< "conclusion lacks judgement for ruleset's scheme:" >#< pp nm)
 
 -------------------------------------------------------------------------
 -- Parsing

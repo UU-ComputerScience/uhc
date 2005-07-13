@@ -70,8 +70,9 @@
 }
 
 % Env for rules in a figure
-\newenvironment{RulesFigureB}[3]{%
-  \begin{TabularFigure}{#2}{#3}{p{0.95\linewidth}}
+\newenvironment{RulesFigureB}[4]{%
+  \def\R@@Info{\ifx#4\empty #2\else #2 (#4)\fi}
+  \begin{TabularFigure}{\R@@Info}{#3}{p{0.95\linewidth}}
 %  \linespread{1.5}\selectfont
   \begin{center}
   \fbox{#1}

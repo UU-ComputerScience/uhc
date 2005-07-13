@@ -615,14 +615,14 @@ popl06-ruler:
 	AFP_TEX_DPDS="$(AFP_XFIG_TEX) $(RULER2_DEMO_DRV_RL2) $(RULER2_DEMO_DRV_AG) $(RULER2_DEMO_DRV_CTEX) $(RULER2_DEMO_DRV_RTEX) $(RULER2_DEMO_DRV_ATEX) $(RULER2_DEMO_DRV_AG_MAIN_TEX) $(RULER2_DEMO_DRV_AG_MAIN) $(RULER2_DEMO_DRV_HS_UTILS) $(RULER2_DEMO_DRV_HS_UTILS_TEX)" \
 	LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyRuler --set=popl06 --set=omitTBD --set=omitLitDiscuss" afp-bib
 
-hw05-explimpl-tst:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=hw05 --set=withChangeBar --set=omitTBD --set=omitLitDiscuss" afp
+popl06-explimpl-tst:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=newDocClassHeader --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=popl06 --set=withChangeBar --set=omitTBD --set=omitLitDiscuss" afp
 
-hw05-explimpl-final:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=hw05 --set=omitTBD --set=omitLitDiscuss" afp-bib
+popl06-explimpl-final:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=newDocClassHeader --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=popl06 --set=omitTBD --set=omitLitDiscuss" afp-bib
 
-hw05-explimpl:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=hw05 --set=withChangeBar --set=omitTBD --set=omitLitDiscuss" afp-bib
+popl06-explimpl:
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=newDocClassHeader --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=popl06 --set=withChangeBar --set=omitTBD --set=omitLitDiscuss" afp-bib
 
 icfp05-explimpl-tst:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --unset=yesBeamer --unset=useHyperref --set=acm --set=storyExplImpl --set=icfp05 --set=omitTBD --set=omitLitDiscuss" afp
