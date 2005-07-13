@@ -213,7 +213,7 @@ genTeX
           in  mkCmdNmDef nRlFull r
       , genRs = \gen (nScMeta,nVwFull) meta defNms defVals ->
           let eFigPP
-                = "\\begin{RulesFigureB}" >|< ppCurly (mkCmdNmUse nScMeta) >|< ppCurly (pp (rsDescr (genRsInfo gen))) >|< ppCurly nVwFull
+                = "\\begin{RulesFigureB}" >|< ppCurly (mkCmdNmUse nScMeta) >|< ppCurly (pp (rsDescr (genRsInfo gen))) >|< ppCurly nVwFull >|< (ppCurly . vwscNm . genVwScInfo $ gen)
                   >-< vlist (intersperse (pp "\\hspace{1ex}") . map mkCmdNmUse $ defNms)
                   >-< "\\end{RulesFigureB}"
           in  vlist defVals

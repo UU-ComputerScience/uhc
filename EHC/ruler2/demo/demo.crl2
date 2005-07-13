@@ -65,7 +65,8 @@ rewrite ag def  (a | Ty) -> (r | Ty) = ((a) `Ty_Arr` (r) | Ty)
 %%]
 
 %%[3.rw.Cnstr
-rewrite ag def  (c1 | Cnstr) (c2 | Cnstr) (v | a) = (c1 |=> c2 |=> (v) | a)
+rewrite ag def  (c1 | Cnstr) (c2 | Cnstr) (v | a)
+                  = (c1 |=> c2 |=> (v) | a)
 %%]
 
 %%[3.rw.Rest
@@ -99,22 +100,22 @@ scheme expr "Expr" =
 %%[1.expr.scm.E
   view E =
     holes [ | e: Expr, gam: Gam, ty: Ty | ]
-    judgeshape spec gam :- e : ty
-    judgeshape tex gam :-.."e" e : ty
+    judgespec gam :- e : ty
+    judgeuse tex gam :-.."e" e : ty
 %%]
 
 %%[2.expr.scm.HM
   view HM =
     holes [ e: Expr, gam: Gam | thread cnstr: Cnstr | ty: Ty ]
-    judgeshape spec cnstr.inh ; gam :-.."e" e : ty ~> cnstr.syn
-    judgeshape - tex
+    judgespec cnstr.inh ; gam :-.."e" e : ty ~> cnstr.syn
+    judgeuse - tex
 %%]
 
 %%[3.expr.scm.AG
   view AG =
     holes [ node e: Expr | | ]
 %%]
-    judgeshape spec cnstr.inh ; gam :-.."e" e : ty ~> cnstr.syn
+    judgespec cnstr.inh ; gam :-.."e" e : ty ~> cnstr.syn
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Expr rules
@@ -139,7 +140,6 @@ rules expr.base scheme expr "Expression type rules" =
       -
       judge R : expr
           | cnstr.syn  = cnstr.inh
-          | cnstr.inh  = cnstr.inh
 %%]
 
 %%[1.rl.e.var
@@ -283,8 +283,8 @@ rules expr.base scheme expr "Expression type rules" =
 relation match =
   view HM =
     holes [ ty.l: Ty, ty.r: Ty | | cnstr: Cnstr ]
-    judgeshape spec ty.l <=> ty.r ~> cnstr
-    judgeshape ag (cnstr,mtErrs) `=` (ty.l) <=> (ty.r)
+    judgespec ty.l <=> ty.r ~> cnstr
+    judgeuse ag (cnstr,mtErrs) `=` (ty.l) <=> (ty.r)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -295,13 +295,13 @@ relation match =
 relation gamLookupIdTy =
   view E =
     holes [ | nm: Nm, gam: Gam, ty: Ty | ]
-    judgeshape spec nm :-> ty `elem` gam
+    judgespec nm :-> ty `elem` gam
 %%]
 %%[3.gamLookupIdTy
   view AG =
     holes [ nm: Nm, gam: Gam | | ty: Ty ]
-    judgeshape spec nm :-> ty `elem` gam
-    judgeshape ag (ty,nmErrs) `=` gamLookup nm gam
+    judgespec nm :-> ty `elem` gam
+    judgeuse ag (ty,nmErrs) `=` gamLookup nm gam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -312,9 +312,9 @@ relation gamLookupIdTy =
 relation tvFresh =
   view HM =
     holes [ | | tv: Ty ]
-    judgeshape spec tv
-    judgeshape tex tv (text "fresh")
-    judgeshape ag tv `=` Ty_Var uniq
+    judgespec tv
+    judgeuse tex tv (text "fresh")
+    judgeuse ag tv `=` Ty_Var uniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -325,13 +325,13 @@ relation tvFresh =
 relation tyInst =
   view E =
     holes [ | ty: Ty, ty.i: Ty | ]
-    judgeshape spec ty.i `=` inst(ty)
+    judgespec ty.i `=` inst(ty)
 %%]
 %%[3.tyInst
   view AG =
     holes [ ty: Ty | | ty.i: Ty ]
-    judgeshape spec ty.i `=` inst(ty)
-    judgeshape ag ty.i `=` tyInst uniq (ty)
+    judgespec ty.i `=` inst(ty)
+    judgeuse ag ty.i `=` tyInst uniq (ty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -342,11 +342,11 @@ relation tyInst =
 relation tyGen =
   view HM =
     holes [ ty: Ty, gam: Gam | | ty.g: Ty ]
-    judgeshape spec ty.g `=` forall (ftv(ty) \\ ftv(gam)) `.` ty
+    judgespec ty.g `=` forall (ftv(ty) \\ ftv(gam)) `.` ty
 %%]
 %%[3.tyGen
   view AG =
-    judgeshape ag  ty.g `=` mkTyAll (ftv(ty) \\ ftv(gam)) (ty)
-    judgeshape spec ty.g `=` forall (ftv(ty) \\ ftv(gam)) `.` ty
+    judgeuse ag  ty.g `=` mkTyAll (ftv(ty) \\ ftv(gam)) (ty)
+    judgespec ty.g `=` forall (ftv(ty) \\ ftv(gam)) `.` ty
 %%]
 
