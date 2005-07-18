@@ -164,7 +164,7 @@ rulesgroup expr.baseExplImpl scheme expr "Expression type rules" =
   rule expr.base e.let
   rule expr.base e.pred
 
-rules expr.base scheme expr "Expression type rules" =
+ruleset expr.base scheme expr "Expression type rules" =
   rule e.int "IConst" =
     view E =
       -
@@ -526,7 +526,7 @@ scheme decl "Decl" =
 
 scheme decls : [decl] "Decls"
 
-rules decl.base scheme decl "Declaration type rules" =
+ruleset decl.base scheme decl "Declaration type rules" =
   rule d.sig.val = 
     view E =
       judge E : expr = valGam :- e.identv : ty.identv
@@ -672,7 +672,7 @@ scheme tboth
   = bv :-...both bsigma : sigma ~> sigmae ; Cnstr ; Cnstrr
   view Im = bv :-...both bsigma : sigma ~> sigmae ; Cnstr ; Cnstrr
 
-rules tboth "Type `both' elimination" =
+ruleset tboth "Type `both' elimination" =
   rule eb_any =
     cond tvarv `elem` bv
     -
@@ -700,7 +700,7 @@ scheme tyAltTyElim =
     hole [ fiopt: FIOpts, ity: Ty | | ty: Ty, ityCnstr: ICnstr ]
     judgespec fiopt :-..."talt elim" ity : ty ~> ityCnstr
 
-rules tyAltTyElim scheme tyAltTyElim "Type alternative elimination" =
+ruleset tyAltTyElim scheme tyAltTyElim "Type alternative elimination" =
   rule ae.alts =
     view I2 =
       judge C : bind1TyVarToTy = tyCnstr === [tvarv :-> ty]
@@ -780,7 +780,7 @@ rulesgroup match.tyBt scheme match "Type matching (|<=>| on |/=/|)" =
   rule match.all m.both.l2
   rule match.all m.both.l3
 
-rules match.all scheme match "Type matching rules" =
+ruleset match.all scheme match "Type matching rules" =
   rule m.con =
     view K =
       judge E : eqTy = identc.1 === identc.2
@@ -1026,18 +1026,18 @@ relation fit =
     hole [ | | cnstr: Cnstr ]
     judgespec :-.."<=" lty <= rty : fo : ty ~> cnstr
     judgeuse tex :-.."<=" lty <= rty : ty ~> cnstr
-    judgeuse ag fo `=` fitsIn uniq (lty) (rty)
+    judgeuse ag fo `=` fitsIn unique (lty) (rty)
            | ty `=` foTy fo
            | cnstr `=` foCnstr fo
   view I1 =
     hole [ fiopt: FIOpts | | ]
     judgespec fiopt :-.."<=" lty <= rty : fo : ty ~> cnstr
     judgeuse tex fiopt :-.."<=" lty <= rty : ty ~> cnstr
-    judgeuse ag fo `=` fitsIn fiopt uniq (lty) (rty)
+    judgeuse ag fo `=` fitsIn fiopt unique (lty) (rty)
            | ty `=` foTy fo
            | cnstr `=` foCnstr fo
 
-rules fit scheme fit "Fitting of types" =
+ruleset fit scheme fit "Fitting of types" =
   rule fit viewsel K - * =
     view K =
       judge M : match
@@ -1058,7 +1058,7 @@ relation join =
     hole [ fiopt: FIOpts, lty: Ty, rty: Ty | | ty: Ty, cnstr: Cnstr ]
     judgespec fiopt :-.."<->" lty <-> rty : ty ~> cnstr
 
-rules join scheme join "Join of types" =
+ruleset join scheme join "Join of types" =
   rule join viewsel I2 - * =
     view I2 =
       judge M : match
@@ -1075,7 +1075,7 @@ relation meet =
     hole [ fiopt: FIOpts, lty: Ty, rty: Ty | | ty: Ty, cnstr: Cnstr ]
     judgespec fiopt :-.."<+>" lty <+> rty : ty ~> cnstr
 
-rules meet scheme meet "Join of types" =
+ruleset meet scheme meet "Join of types" =
   rule meet viewsel I2 - * =
     view I2 =
       judge M : match
@@ -1093,7 +1093,7 @@ relation match =
     hole [ fiopt: FIOpts, lty: Ty, rty: Ty | | ty: Ty, cnstr: Cnstr ]
     judgespec fiopt :-.."<=>" lty <=> rty : ty ~> cnstr
 
-rules match scheme match "Matching of types" =
+ruleset match scheme match "Matching of types" =
   rule meet =
     view I2 =
       judge O : fioptHasOpt = fioMeetY `elem` fiopt
@@ -1194,25 +1194,25 @@ relation tvarvFresh =
   view C =
     hole [ | | tvarv: Ty ]
     judgespec tvarv (text "fresh")
-    judgeuse ag tvarv `=` mkTyVar uniq
+    judgeuse ag tvarv `=` mkTyVar unique
 
 relation tvarvFresh2 =
   view C =
     hole [ | | tvarv1: Ty, tvarv2: Ty ]
     judgespec tvarv1, tvarv2 (text "fresh")
-    judgeuse ag (tvarv1, tvarv2) `=` (mkTyVar uniq,mkTyVar uniq)
+    judgeuse ag (tvarv1, tvarv2) `=` (mkTyVar unique,mkTyVar unique)
 
 relation tvarvFresh3 =
   view P =
     hole [ | | tvarv1: Ty, tvarv2: Ty, tvarv3: Ty ]
     judgespec tvarv1, tvarv2, tvarv3 (text "fresh")
-    judgeuse ag (tvarv1, tvarv2, tvarv3) `=` (mkTyVar uniq,mkTyVar uniq,mkTyVar uniq)
+    judgeuse ag (tvarv1, tvarv2, tvarv3) `=` (mkTyVar unique,mkTyVar unique,mkTyVar unique)
 
 relation tvarvFresh4 =
   view P =
     hole [ | | tvarv1: Ty, tvarv2: Ty, tvarv3: Ty, tvarv4: Ty ]
     judgespec tvarv1, tvarv2, tvarv3, tvarv4 (text "fresh")
-    judgeuse ag (tvarv1, tvarv2, tvarv3, tvarv4) `=` (mkTyVar uniq,mkTyVar uniq,mkTyVar uniq,mkTyVar uniq)
+    judgeuse ag (tvarv1, tvarv2, tvarv3, tvarv4) `=` (mkTyVar unique,mkTyVar unique,mkTyVar unique,mkTyVar unique)
 
 -------------------------------------------------------------------------
 -- Binding from a Gamma

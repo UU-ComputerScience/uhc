@@ -154,6 +154,11 @@ vgDpdsOn :: DpdGr n -> n -> [n]
 vgDpdsOn g n
   = maybe [] (snd . vgV2N g) (vgK2V g n)
 
+vgIsFirst :: Ord n => DpdGr n -> n -> Set.Set n -> Bool
+vgIsFirst g n ns
+  = Set.null s
+  where s = Set.delete n ns `Set.difference` vgReachableTo g n
+
 -------------------------------------------------------------------------
 -- Kind of scheme
 -------------------------------------------------------------------------
