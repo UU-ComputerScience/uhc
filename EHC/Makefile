@@ -1,6 +1,3 @@
-.SUFFIXES:
-.SUFFIXES: .pdf .tex .bib .html .lhs .sty .lag .cag .chs
-
 TOP_PREFIX			:=
 
 default: explanation
@@ -72,10 +69,16 @@ DIST_AFP04			:= dist-afp04
 # distribution for icfp05 slides (for SDS)
 DIST_ICFP05_SLIDES	:= dist-icfp05-slides
 
+# distribution for ruler2 as independent tool
+DIST_RULER2				:= $(DATE)-ruler
+DIST_RULER2_PREFIX		:= 
+DIST_RULER2_TGZ			:= $(DIST_RULER2_PREFIX)$(DIST_RULER2).tgz
+
 # distributed/published stuff for WWW
-WWW_SRC_ZIP			:= www/current-ehc-src.zip
-WWW_SRC_TGZ			:= www/current-ehc-src.tgz
-WWW_DOC_PDF			:= www/current-ehc-doc.pdf
+WWW_SRC_ZIP					:= www/current-ehc-src.zip
+WWW_SRC_TGZ					:= www/current-ehc-src.tgz
+WWW_RULER_SRC_TGZ			:= www/current-ruler-src.tgz
+WWW_DOC_PDF					:= www/current-ehc-doc.pdf
 
 # compilers and tools used
 AGC					:= uuagc
@@ -209,6 +212,7 @@ SHUFFLE_DOC_PDF		:= $(SHUFFLE_DIR)/ShuffleDoc.pdf
 SHUFFLE_ORDER		:= 1 < 2 < 3 < 4 < 5 < 6 < 7 < 8 < 9 < 10 < 11, 4 < 4_2, 6 < 6_4
 
 
+# Ruler, will be obsolete soon
 RULER				:= bin/ruler
 RULER_DIR			:= ruler
 RULER_MAIN			:= Ruler
@@ -219,22 +223,11 @@ RULER_DOC_PDF		:= $(RULER_DIR)/RulerDoc.pdf
 
 RULER_SRC			:= $(RULER_DIR)/$(RULER_AG)
 
-#RULER2				:= $(RULER2_BLD_EXEC)
+# Ruler2
 RULER2_DIR			:= ruler2
-#RULER2_MAIN			:= Ruler
-#RULER2_AG			:= $(RULER2_MAIN).ag
-#RULER2_AG_INCLS		:= RulerPretty.ag RulerAST.ag RulerGen.ag RulerParser.ag RulerExprMatchSubst.ag RulerWrap.ag \
-#						RulerViewDpd.ag RulerMisc.ag RulerARule.ag \
-#						RulerARuleOptim.ag RulerARuleOptim2.ag RulerARuleOptim3.ag \
-#						RulerRlSel.ag \
-#						RulerPatternUniq.ag
-#RULER2_AG_HS		:= $(RULER2_AG:.ag=.hs)
-#RULER2_HS			:= RulerUtils.hs RulerAdmin.hs RulerMkAdmin.hs
-#RULER2_DERIV		:= $(RULER2_DIR)/$(RULER2_AG_HS)
 RULER2_DOC_PDF		:= $(RULER2_DIR)/RulerDoc.pdf
 
-#RULER2_SRC			:= $(addprefix $(RULER2_DIR)/,$(RULER2_AG) $(RULER2_HS) $(RULER2_AG_INCLS))
-
+# Brew, obsolote
 BREW				:= bin/brew
 BREW_DIR			:= brew
 BREW_MAIN			:= Brew
@@ -247,6 +240,8 @@ BREW_SRC			:= $(BREW_DIR)/$(BREW_AG)
 
 CORE_TARG			:= grin
 
+# files for distribution
+MK_DIST_FILES		:= $(addprefix mk/,ehfiles.mk shared.mk templ-test-dist.mk)
 
 # LHS2TEX_POLY(src file, dst file)
 PERL_SUBST_EHC			= \
@@ -835,7 +830,7 @@ MK_EHC_MKF			= \
 	  $(call MK_EHC_MKF_FOR,$(GRI_DPDS_GRIN_CODE_SETUP),-cfspr) ; \
 	) > Makefile
 
-dist: $(DIST_ZIP) 
+dist: $(DIST_ZIP) $(DIST_RULER2_TGZ)
 
 $(DIST_TGZ): $(DIST_ZIP)
 
@@ -879,6 +874,9 @@ $(DIST_ZIP): $(addprefix $(VERSION_LAST)/,$(EHC_DPDS_ALL_MIN_TARG)) Makefile tes
 	echo "== tar ==" ; \
 	zip -qur $(DIST_ZIP) $(DIST)
 
+$(DIST_RULER2_TGZ): $(MK_DIST_FILES) $(RULER2_DIST_FILES) $(SHUFFLE_DIST_FILES) $(LIB_DIST_FILES)
+	tar cfz $@ $^
+
 dist-icfp05-slides: icfp05-slides-dist-tex
 	@rm -rf $(DIST_ICFP05_SLIDES) ; \
 	mkdir -p $(DIST_ICFP05_SLIDES) ; \
@@ -911,7 +909,7 @@ WWW_EXAMPLES_HTML			:=	www/ehc-examples.html
 
 www-ex: $(WWW_EXAMPLES_HTML)
 
-www: $(WWW_SRC_ZIP) $(WWW_SRC_TGZ) www-ex # $(WWW_DOC_PDF)
+www: $(WWW_SRC_ZIP) $(WWW_SRC_TGZ) $(WWW_RULER_SRC_TGZ) www-ex # $(WWW_DOC_PDF)
 
 www/DoneSyncStamp: www-ex
 	(date; echo -n ", " ; svn up) > www/DoneSyncStamp ; \
@@ -926,7 +924,10 @@ $(WWW_SRC_ZIP): $(DIST_ZIP)
 	cp $< $@
 
 $(WWW_SRC_TGZ): $(DIST_TGZ)
-	cp $< $@
+	cp $^ $@
+
+$(WWW_RULER_SRC_TGZ): $(DIST_RULER2_TGZ)
+	cp $^ $@
 
 $(WWW_DOC_PDF): $(AFP_PDF)
 	cp $< $@

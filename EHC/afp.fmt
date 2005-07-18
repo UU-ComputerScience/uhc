@@ -93,6 +93,8 @@
 %format Gammab      = Gamma "^{b}"
 %format Gammasig    = Gamma "_{sig}"
 
+%format taua        = tau "_{a}"
+
 %format sigmak      = sigma "^{k}"
 %format sigman      = sigma "_{n}"
 %format sigmapk     = sigma "_{p}^{k}"
@@ -192,8 +194,8 @@
 % format <+-> 			= "\setbox0=\hbox{\ensuremath{\mathrel{\vartriangle}}}\copy0\kern-.4\wd0\mathrel{\triangledown}"
 %format <+> 			= "\mathrel{\vartriangle}"
 %format <-> 			= "\mathrel{\triangledown}"
-%format +	 			= ","
-%format ++	 			= ","
+% format +	 			= ","
+% format ++	 			= ","
 
 %format talt			= phi
 %format tctxt			= "\mathcal{X}"

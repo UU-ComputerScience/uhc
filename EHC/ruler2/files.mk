@@ -21,6 +21,7 @@ RULER2				:= $(RULER2_BLD_EXEC)
 
 # make rules
 $(RULER2_BLD_EXEC): $(RULER2_HS_DRV) $(RULER2_HS_SRC) $(LIB_SRC_HS)
+	mkdir -p `dirname $@`
 	$(GHC) --make $(GHC_OPTS) -i$(LIB_SRC_PREFIX) -i$(RULER2_SRC_PREFIX) $(RULER2_SRC_PREFIX)$(RULER2_MAIN).hs -o $@
 
 $(RULER2_SRC_PREFIX)$(RULER2_MAIN).hs: $(RULER2_AG_MAIN_SRC)
@@ -54,6 +55,12 @@ RULER2_DEMO_DRV_AG			:= $(RULER2_DEMO_SRC_CRL:.crl2=.ag)
 RULER2_DEMO_SHUFFLE_ORDER	:= 1 < 2 < 3
 RULER2_DEMO_SHUFFLE_FINAL	:= 3
 
+# distribution
+RULER2_DIST_FILES			:= $(RULER2_AG_MAIN_SRC) $(RULER2_HS_SRC) $(RULER2_DEMO_SRC_CRL) \
+								$(addprefix $(RULER2_SRC_PREFIX),Makefile files.mk README) \
+								$(RULER2_DEMO_SRC_CAG_MAIN) $(RULER2_DEMO_SRC_CHS_UTILS) \
+								$(wildcard $(RULER2_DEMO_PREFIX)tst*)
+
 # make rules
 $(RULER2_DEMO_DRV_LCTEX): $(RULER2_DEMO_SRC_CRL) $(SHUFFLE)
 	$(SHUFFLE) --gen=all --latex --order="$(RULER2_DEMO_SHUFFLE_ORDER)" --base=rulerDemoRL --lhs2tex=yes $< > $@
@@ -65,7 +72,7 @@ $(RULER2_DEMO_DRV_RL2): $(RULER2_DEMO_SRC_CRL) $(SHUFFLE)
 	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --plain --order="$(RULER2_DEMO_SHUFFLE_ORDER)"  --lhs2tex=no $< > $@
 
 $(RULER2_DEMO_DRV_LRTEX): $(RULER2_DEMO_DRV_RL2) $(RULER2)
-	$(RULER2) --lhs2tex --selrule="(E - AG).(*).(*)" --markchanges="E - AG" --base=rulerDemo $< > $@
+	$(RULER2) --lhs2tex --selrule="(E - A).(*).(*)" --markchanges="E - A" --base=rulerDemo $< > $@
 
 $(RULER2_DEMO_DRV_RTEX): $(RULER2_DEMO_DRV_LRTEX)
 	$(LHS2TEX) $(LHS2TEX_OPTS_POLY) $< > $@

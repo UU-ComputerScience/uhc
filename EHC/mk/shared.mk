@@ -1,3 +1,6 @@
+.SUFFIXES:
+.SUFFIXES: .pdf .tex .bib .html .lhs .sty .lag .cag .chs
+
 # compilers and tools used
 AGC					:= uuagc
 GHC					:= ghc
@@ -14,6 +17,9 @@ LIB_SRC_PREFIX		:= $(TOP_PREFIX)lib/
 
 # lib src
 LIB_SRC_HS			:= $(wildcard $(LIB_SRC_PREFIX)*.hs) 
+
+# distribution
+LIB_DIST_FILES		:= $(LIB_SRC_HS)
 
 # lhs2tex options
 LHS2TEX_OPTS_DFLT	:= 

@@ -106,7 +106,7 @@ SEM Expr
   | Var  lhs  .   pp   =   pp @i >-< mkErr @nmErrs
   | Lam  lhs  .   pp   =   "\\" >|< pp @i >#< "->" >#< @b.pp
   | Let  lhs  .   pp   =   "let"     >#< pp @i
-                           >#< "::"  >#< show @ty_g_
+                           >#< "::"  >#< show @pty_e_
                            >#< "="   >#< @e.pp
                            >-< "in " >#< @b.pp
 %%]

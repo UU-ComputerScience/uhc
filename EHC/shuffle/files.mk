@@ -13,8 +13,13 @@ SHUFFLE_HS_DRV		:= $(addprefix $(SHUFFLE_SRC_PREFIX),$(SHUFFLE_MAIN).hs)
 SHUFFLE_BLD_EXEC	:= $(BIN_PREFIX)shuffle
 SHUFFLE				:= $(SHUFFLE_BLD_EXEC)
 
+# distribution
+SHUFFLE_DIST_FILES			:= $(SHUFFLE_AG_MAIN_SRC) \
+								$(addprefix $(SHUFFLE_SRC_PREFIX), files.mk)
+
 # make rules
 $(SHUFFLE_BLD_EXEC): $(SHUFFLE_HS_DRV) $(SHUFFLE_HS_SRC) $(LIB_SRC_HS)
+	mkdir -p `dirname $@`
 	$(GHC) --make $(GHC_OPTS) -i$(LIB_SRC_PREFIX) -i$(SHUFFLE_SRC_PREFIX) $(SHUFFLE_SRC_PREFIX)$(SHUFFLE_MAIN).hs -o $@
 	strip $@
 

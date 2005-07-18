@@ -1,0 +1,14 @@
+Requirements
+------------
+
+UUST library. The the www site you got this from.
+
+
+Installation
+------------
+
+From withing the directory where this README lives:
+
+to make ../bin/ruler:  make ruler
+to make the demo    :  make demo
+to try the demo     :  demo/demo < demo/tst5

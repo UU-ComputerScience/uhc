@@ -15,9 +15,11 @@ keywordsTextProps
 keywordsTextEscapable
   =  keywordsTextProps
      ++ [ "judge", "judgeshape", "judgespec", "judgeuse", "relation"
-        , "rule", "rules", "scheme", "view", "hole", "holes", "viewsel", "rulesgroup"
+        , "rule", "rules", "ruleset"
+        , "scheme", "view", "hole", "holes", "viewsel", "rulesgroup"
         -- related to global info
-        , "viewhierarchy", "format", "rewrite", "preamble", "extern"
+        , "viewhierarchy", "format", "rewrite", "preamble"
+        , "extern", "external"
         -- related to formatting (styles)
         , "tex", "ag", "def", "use", "spec"
         -- related to attributes (flags)
@@ -26,7 +28,7 @@ keywordsTextEscapable
         , "text"
         ]
 keywordsText
-  =  [ "uniq"
+  =  [ "unique"
      ] ++ keywordsTextEscapable
 keywordsOpsEsc
   =  [ ",", ":", "[", "]", "*", "<" ]
@@ -110,7 +112,8 @@ pAllParsers
                                                        <*> pAtIO
                                                        <*> pExpr
                                                        <*  pKey "="             <*> pExpr
-                            <|> sem_Decl_Rules         <$  pKey "rules"         <*> pNm
+                            <|> sem_Decl_Rules         <$  (pKey "rules" <|> pKey "ruleset")
+                                                       <*> pNm
                                                        <*  pKey "scheme"        <*> pNm   <*> pString
                                                        <*  pKey "=" <*> pDecls' pDeclRule
                             <|> sem_Decl_RulesGroup    <$  pKey "rulesgroup"    <*> pNm            <* pKey "scheme"    <*> pNm   <*> pString
@@ -118,7 +121,8 @@ pAllParsers
                             <|> sem_Decl_ViewHierarchy <$  pKey "viewhierarchy"
                                                        <*  pKey "="             <*> pList1Sep pComma (pList1Sep (pKey "<") pNmVw)
                             <|> sem_Decl_Preamble      <$  pKey "preamble"      <*> pFmKd2WithDflt <*> pString
-                            <|> sem_Decl_Extern        <$  pKey "extern"        <*> pList1 pNm
+                            <|> sem_Decl_Extern        <$  (pKey "extern" <|> pKey "external")
+                                                       <*> pList1 pNm
         pDeclGlobScheme     =   (ScJudge <$ pKey "scheme" <|> ScRelation <$ pKey "relation")
                                 <**> (pNm
                                      <**> (   (\d (ms,ds) n k -> sem_Decl_SchemeDeriv k n d ms ds)
@@ -171,7 +175,7 @@ pAllParsers
         pExprLF				=	pChainr (sem_Expr_LF <$ pKey "|") pExpr
         pExprApp            =   mkApp alg <$> pList1 pExprBase <|> pSucceed sem_Expr_Empty
         pExprBase' pN       =   pParens (pExprInParen <|> pExprSpecial) <**> pExprDot
-                            <|> sem_Expr_Uniq    <$  pKey "uniq"
+                            <|> sem_Expr_Uniq    <$  pKey "unique"
                             <|> sem_Expr_Var     <$> pN
                             <|> sem_Expr_Int     <$> pInteger
                             <|> sem_Expr_StrAsIs <$> pString

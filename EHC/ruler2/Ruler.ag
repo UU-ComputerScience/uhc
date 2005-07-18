@@ -542,9 +542,9 @@ rlGamUpdVws opts vwDpdGr extNmS scGam rlGam rsInfo rlInfo
         doMarkChngForVw
           = case optMbMarkChange opts of
               Just vs
-                -> (`Set.member` vs')
+                -> \vw -> (vw `Set.member` vs',vgIsFirst vwDpdGr vw vs')
                 where vs' = viewSelsNmS vwDpdGr vs
-              _ -> const False
+              _ -> const (False,False)
         mbOnVwRlInfo = maybe Nothing (\n -> Map.lookup n rlGam) (rlMbOnNm rlInfo)
         (g,_,eg)
             = foldr
@@ -560,7 +560,8 @@ rlGamUpdVws opts vwDpdGr extNmS scGam rlGam rsInfo rlInfo
                          (pregIncr ,pregDflt )      = reGamExtDflt' dfltJaGam nVw scGam preg
                          (postgIncr,postgDflt)      = reGamExtDflt' dfltJaGam nVw scGam postg
                          ext newG prevG     = reGamExtWithNew exprNmGam (exprSubst (defaultOpts {optSubstFullNm=False})) exprNmS dfltJaGam nVw scGam prevG newG
-                         doMarkChng         = doMarkChngForVw nVw
+                         (doMarkChng,isFstMarkChng) = doMarkChngForVw nVw
+                         -- updating pre/post judgements
                          (vw,preg',postg')
                            = case maybe Nothing vrgOfVwRlInfo mbOnVwRlInfo of
                                Just i
@@ -582,10 +583,11 @@ rlGamUpdVws opts vwDpdGr extNmS scGam rlGam rsInfo rlInfo
                              in  Map.mapWithKey (\jn ji -> Map.mapWithKey (\an _ -> RlChInfo jn an) (maybe emptyGam id $ reMbJAGam ji))
                                  $ pd `Map.union` (pn `Map.difference` pd)
                          vwRlChsWtPrev = vwRlChs `rcGamUnion` prevVwRlChs
+                         prevVwRlChs' = if doMarkChng then emptyGam else vwRlChsWtPrev
                          -- updating the view
                          vw2 = vw {vwrlFullPreGam = reGamUpdInOut nVw scGam preg'
                                   ,vwrlFullPostGam = reGamUpdInOut nVw scGam  postg'
-                                  ,vwrlMbChGam = if doMarkChng then Just vwRlChsWtPrev else Nothing
+                                  ,vwrlMbChGam = if doMarkChng && not isFstMarkChng then Just vwRlChsWtPrev else Nothing
                                   }
                          vw3 = vwrlDelEmptyJd vw2
                          vw4 = vw3 {vwrlPreScc = vwrlScc vw3}
@@ -601,9 +603,7 @@ rlGamUpdVws opts vwDpdGr extNmS scGam rlGam rsInfo rlInfo
                              else []
                          errs = errUndefs ++ errPost
                      in  (if vrwlIsEmpty vw4 then Map.delete nVw vrg else Map.insert nVw vw4 vrg
-                         ,Map.insert nVw
-                                     (preg',postg',if doMarkChng then emptyGam else vwRlChsWtPrev)
-                                     prePostGamMp
+                         ,Map.insert nVw (preg',postg',prevVwRlChs') prePostGamMp
                          ,if null errs then errg else Map.insert nVw errs errg
                          )
                 )
