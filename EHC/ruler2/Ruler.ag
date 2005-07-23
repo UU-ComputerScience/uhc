@@ -13,6 +13,7 @@ import qualified Data.Map as Map
 import FPath
 import Utils
 import PPUtils
+import ParseUtils
 import UU.Pretty
 import UU.Parsing
 import UU.Scanner

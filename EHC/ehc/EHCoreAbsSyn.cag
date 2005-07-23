@@ -1,0 +1,123 @@
+% $Id$
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abstract syntax for Code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+DATA CodeAGItf
+  | AGItf       module          : CModule
+
+DATA CModule
+  | Mod         baseName        : {String}
+                expr            : CExpr
+                ctagsMp         : {CTagsMp}
+%%]
+
+%%[8
+DATA CExpr
+  | Let         categ           : {CBindCateg}
+                binds           : CBindL
+                body            : CExpr
+  | App         func            : CExpr
+                arg             : CExpr
+  | Lam         arg             : {HsName}
+                body            : CExpr
+  | Var         nm              : {HsName}
+  | Case        expr            : CExpr
+                alts            : CAltL
+                dflt            : CExpr
+  | Int         int             : {Int}
+  | Char        char            : {Char}
+  | Tup         tag             : {CTag}
+  | TupDel      expr            : CExpr
+                tag             : {CTag}
+                nm              : {HsName}
+                offset          : CExpr
+  | TupIns      expr            : CExpr
+                tag             : {CTag}
+                nm              : {HsName}
+                offset          : CExpr
+                fldExpr         : CExpr
+  | TupUpd      expr            : CExpr
+                tag             : {CTag}
+                nm              : {HsName}
+                offset          : CExpr
+                fldExpr         : CExpr
+%%]
+
+%%[9
+DATA CExpr
+  | Hole        uid             : {UID}
+  | HoleLet     bindsUid        : {UID}
+                body            : CExpr
+  | CoeArg
+  | ImplsApp    func            : CExpr
+                uid             : {ImplsVarId}
+  | ImplsLam    uid             : {ImplsVarId}
+                body            : CExpr
+%%]
+
+%%[8
+DATA CBind
+  | Bind        nm              : {HsName}
+                expr            : CExpr
+  | FFI         callconv        : {String}
+                safety          : {String}
+                impEnt          : {String}
+                nm              : {HsName}
+                ty              : {Ty}
+
+TYPE CBindL     =   [CBind]
+
+DATA CAlt
+  | Alt         pats            : CPatL
+                expr            : CExpr
+
+TYPE CAltL      =   [CAlt]
+
+DATA CPat
+  | Var         pnm             : {CPatNm}
+  | Con         pnm             : {CPatNm}
+                tag             : {CTag}
+                rest            : CPatRest
+                binds           : CPatBindL
+  | Undef
+
+TYPE CPatL      =   [CPat]
+
+DATA CPatRest
+  | Var         nm              : {HsName}
+  | Empty
+
+DATA CPatBind
+  | Bind        lbl             : {HsName}
+                offset          : CExpr
+                nm              : {HsName}
+                pat             : CPat
+
+TYPE CPatBindL  =   [CPatBind]
+%%]
+
+  | TupSplit    pnm             : {CPatNm}
+                pat             : CPat
+                tag             : {CTag}
+                nm              : {HsName}
+                offset          : CExpr
+                fldPat          : CPat
+
+%%[8
+SET AllBind     =   CBind CBindL
+SET AllPat      =   CPatRest CPat CPatL CPatBind CPatBindL
+SET AllAlt      =   CAlt CAltL
+SET AllCodeNT   =   CModule CExpr AllBind AllAlt AllPat
+%%]

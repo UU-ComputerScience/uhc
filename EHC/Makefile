@@ -6,6 +6,11 @@ include mk/shared.mk
 
 include shuffle/files.mk
 include ruler2/files.mk
+include grin/files.mk
+include grini/files.mk
+include ehc/files.mk
+include agprimer/files.mk
+include text/files.mk
 
 # build dir's for AG primer related programs
 D_BUILD				:= build
@@ -83,11 +88,7 @@ WWW_DOC_PDF					:= www/current-ehc-doc.pdf
 # compilers and tools used
 AGC					:= uuagc
 GHC					:= ghc
-SUBSTEHC			:= bin/substehc.pl
 SUBSTSH				:= bin/substsh.pl
-
-SUBST_BAR_IN_TT		:= sed -e '/begin{TT}/,/end{TT}/s/|/||/g'
-SUBST_LINE_CMT		:= sed -e 's/{-\# LINE[^\#]*\#-}//' -e '/{-\#  \#-}/d'
 
 # Makefile template for making a ehc version
 MK_EHFILES			:= mk/ehfiles.mk
@@ -116,7 +117,6 @@ AFP_XFIG_TEX		:= $(patsubst %,figs/%.latex,ruler-overview)
 ALL_AFP_SRC			:= $(AFP_LHS) $(AFP_RULES) $(AFP_RULES2_RUL)
 
 
-EHC_SRC_PREFIX				:=
 EHC_LAG_FOR_HS_TY			:= $(addsuffix .lag,EHTyQuantify EHTySubst EHTyElimAlts EHTyFreshVar EHTyElimBoth EHTyElimEqual EHTyFtv EHTyPretty EHTyInstantiate )
 EHC_LAG_FOR_HS_CORE			:= $(addsuffix .lag,EHCoreJava EHCoreGrin EHCoreTrfRenUniq EHCoreTrfFullLazy EHCoreTrfLamLift \
 												EHCoreTrfInlineLetAlias EHCoreTrfLetUnrec EHCorePretty EHCoreSubst EHCoreTrfConstProp)
@@ -209,7 +209,7 @@ SHUFFLE_DOC_PDF		:= $(SHUFFLE_DIR)/ShuffleDoc.pdf
 
 #SHUFFLE_SRC			:= $(SHUFFLE_DIR)/$(SHUFFLE_AG)
 
-SHUFFLE_ORDER		:= 1 < 2 < 3 < 4 < 5 < 6 < 7 < 8 < 9 < 10 < 11, 4 < 4_2, 6 < 6_4
+EHC_SHUFFLE_ORDER		:= 1 < 2 < 3 < 4 < 5 < 6 < 7 < 8 < 9 < 10 < 11, 4 < 4_2, 6 < 6_4
 
 
 # Ruler, will be obsolete soon
@@ -245,12 +245,12 @@ MK_DIST_FILES		:= $(addprefix mk/,ehfiles.mk shared.mk templ-test-dist.mk)
 
 # LHS2TEX_POLY(src file, dst file)
 PERL_SUBST_EHC			= \
-	perl $(SUBSTEHC) < $(1) > $(2)
+	$(SUBST_EHC) < $(1) > $(2)
 
 LHS2TEX_POLY_MODE	:= --poly
 # LHS2TEX_POLY(src file, dst file)
 LHS2TEX_POLY			= \
-	perl $(SUBSTEHC) < $(1) | $(SUBST_BAR_IN_TT) | $(LHS2TEX_EXEC_WT_OPTS) $(LHS2TEX_POLY_MODE) > $(2)
+	$(SUBST_EHC) < $(1) | $(SUBST_BAR_IN_TT) | $(LHS2TEX_EXEC_WT_OPTS) $(LHS2TEX_POLY_MODE) > $(2)
 
 # LHS2TEX_POLY_2(src file, dst file)
 LHS2TEX_POLY_2			= \
@@ -333,7 +333,7 @@ GRI_CHS				:= $(GRI_LHS:.lhs=.chs)
 SHUFFLE_LHS		= \
 	dir=`dirname $2` ; \
 	mkdir -p $$dir ; \
-	$(SHUFFLE) --gen=$5 --base=$6 $3 --order="$(SHUFFLE_ORDER)" $1 | $4 > $2
+	$(SHUFFLE) --gen=$5 --base=$6 $3 --order="$(EHC_SHUFFLE_ORDER)" $1 | $4 > $2
 
 # SHUFFLE_LHS_AG(src file, dst file, version, base)
 SHUFFLE_LHS_AG		= \
@@ -499,28 +499,28 @@ GRI_V11				:= $(addprefix $(VF)/,$(GRI))
 
 
 ### AG Primer's Repmin AG variant
-$(AG_PRIMER_CAG:.cag=.ag): %.ag: %.cag $(SHUFFLE)
-	$(call SHUFFLE_LHS,$<,$@,--ag,$(LHS2TEX_EXEC_WT_OPTS) --newcode,1,Main) ; \
-	touch $@
+#$(AG_PRIMER_CAG:.cag=.ag): %.ag: %.cag $(SHUFFLE)
+#	$(call SHUFFLE_LHS,$<,$@,--ag,$(LHS2TEX_EXEC_WT_OPTS) --newcode,1,Main) ; \
+#	touch $@
 
-$(D_BUILD_BIN)/repminag: $(AG_PRIMER)RepminAG.hs
-	d=`dirname $@` ; mkdir -p $$d ; $(GHC) $(GHC_OPTS) -o $@ --make $<
+#$(D_BUILD_BIN)/repminag: $(AG_PRIMER)RepminAG.hs
+#	d=`dirname $@` ; mkdir -p $$d ; $(GHC) $(GHC_OPTS) -o $@ --make $<
 ### End of Repmin AG variant
 
 
 ### AG Primer's Expr
-$(D_BUILD_BIN)/expr: $(AG_PRIMER)Expr.hs
-	d=`dirname $@` ; mkdir -p $$d ; $(GHC) $(GHC_OPTS) -o $@ --make $<
+#$(D_BUILD_BIN)/expr: $(AG_PRIMER)Expr.hs
+#	d=`dirname $@` ; mkdir -p $$d ; $(GHC) $(GHC_OPTS) -o $@ --make $<
 ### End of Expr
 
 
 ### AG Primer's Repmin Haskell variant
-$(AG_PRIMER_CHS:.chs=.hs): %.hs: %.chs $(SHUFFLE)
-	$(call SHUFFLE_LHS_HS,$<,$@,1,Main) ; \
-	touch $@
+#$(AG_PRIMER_CHS:.chs=.hs): %.hs: %.chs $(SHUFFLE)
+#	$(call SHUFFLE_LHS_HS,$<,$@,1,Main) ; \
+#	touch $@
 
-$(D_BUILD_BIN)/repminhs: $(AG_PRIMER)RepminHS.hs
-	d=`dirname $@` ; mkdir -p $$d ; $(GHC) $(GHC_OPTS) -o $@ --make $<
+#$(D_BUILD_BIN)/repminhs: $(AG_PRIMER)RepminHS.hs
+#	d=`dirname $@` ; mkdir -p $$d ; $(GHC) $(GHC_OPTS) -o $@ --make $<
 ### End of Repmin Haskell variant
 
 
@@ -644,7 +644,7 @@ eh-work:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= AFP_RULES2_RULER_OPTS="--markchanges='*'" LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=onlyCurrentWork --unset=asArticle --set=refToPDF --set=inclOmitted" afp
 
 phd:
-	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=storyPHD --unset=asArticle --set=refToPDF --set=inclOmitted" afp
+	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_OPTS="$(LHS2TEX_OPTS_BASE) --set=newDocClassHeader --set=storyPHD --unset=asArticle --set=refToPDF --set=inclOmitted" afp
 
 afp-slides:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_POLY_MODE=--poly LHS2TEX_OPTS="$(LHS2TEX_OPTS) --set=storyPHD --set=asSlides --set=omitTBD --set=omitLitDiscuss" afp
@@ -728,6 +728,7 @@ clean-test:
 redit:
 	bbedit \
 	$(ALL_AFP_SRC) afp.lsty afp.fmt \
+	$(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SRC_CLTEX) \
 	$(SHUFFLE_SRC) $(RULER2_AG_MAIN_SRC) $(RULER2_HS_SRC) \
 	Makefile \
 	$(TMPL_TEST) $(MK_EHFILES)

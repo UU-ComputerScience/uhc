@@ -1,0 +1,57 @@
+# location of agprimer src
+AGPRIMER_SRC_PREFIX	:= $(TOP_PREFIX)agprimer/
+
+# main + sources
+AGPRIMER_HS_REPM_SRC_CHS	:= $(AGPRIMER_SRC_PREFIX)RepminHS.chs
+AGPRIMER_AG_REPM_SRC_CAG	:= $(AGPRIMER_SRC_PREFIX)RepminAG.cag
+AGPRIMER_AG_EXPR_SRC_CAG	:= $(AGPRIMER_SRC_PREFIX)Expr.cag
+
+AGPRIMER_CAG_SRC_CAG		:= $(AGPRIMER_AG_REPM_SRC_CAG) $(AGPRIMER_AG_EXPR_SRC_CAG)
+AGPRIMER_CHS_SRC_CHS		:= $(AGPRIMER_HS_REPM_SRC_CHS)
+
+# derived sources
+AGPRIMER_HS_REPM_DRV_HS		:= $(AGPRIMER_HS_REPM_SRC_CHS:.chs=.hs)
+
+AGPRIMER_AG_REPM_DRV_AG		:= $(AGPRIMER_AG_REPM_SRC_CAG:.cag=.ag)
+AGPRIMER_AG_REPM_DRV_HS		:= $(AGPRIMER_AG_REPM_SRC_CAG:.cag=.hs)
+
+AGPRIMER_AG_EXPR_DRV_AG		:= $(AGPRIMER_AG_EXPR_SRC_CAG:.cag=.ag)
+AGPRIMER_AG_EXPR_DRV_HS		:= $(AGPRIMER_AG_EXPR_SRC_CAG:.cag=.hs)
+
+# binary/executable
+AGPRIMER_HS_REPM_BLD_EXEC		:= $(BLD_BIN_PREFIX)repminhs
+AGPRIMER_AG_REPM_BLD_EXEC		:= $(BLD_BIN_PREFIX)repminag
+AGPRIMER_AG_EXPR_BLD_EXEC		:= $(BLD_BIN_PREFIX)expr
+
+# shuffle order
+AGPRIMER_SHUFFLE_ORDER	:= 1
+
+# make rules
+$(AGPRIMER_HS_REPM_BLD_EXEC): $(AGPRIMER_HS_REPM_DRV_HS)
+	mkdir -p `dirname $@`
+	$(GHC) --make $(GHC_OPTS) -i$(AGPRIMER_SRC_PREFIX) $< -o $@
+
+$(AGPRIMER_AG_REPM_BLD_EXEC): $(AGPRIMER_AG_REPM_DRV_HS)
+	mkdir -p `dirname $@`
+	$(GHC) --make $(GHC_OPTS) -i$(AGPRIMER_SRC_PREFIX) $< -o $@
+
+$(AGPRIMER_AG_EXPR_BLD_EXEC): $(AGPRIMER_AG_EXPR_DRV_HS)
+	mkdir -p `dirname $@`
+	$(GHC) --make $(GHC_OPTS) -i$(AGPRIMER_SRC_PREFIX) $< -o $@
+
+$(AGPRIMER_AG_EXPR_DRV_HS) $(AGPRIMER_AG_REPM_DRV_HS) : %.hs : %.ag
+	$(AGC) -csdfr -P$(AGPRIMER_SRC_PREFIX) $<
+
+$(AGPRIMER_HS_REPM_DRV_HS): %.hs : %.chs $(SHUFFLE)
+	$(SHUFFLE) --gen=1 --base=Main --hs --order="$(AGPRIMER_SHUFFLE_ORDER)" $< | $(LHS2TEX) $(LHS2TEX_OPTS_NEWC) > $@
+
+$(AGPRIMER_AG_REPM_DRV_AG) $(AGPRIMER_AG_EXPR_DRV_AG): %.ag: %.cag $(SHUFFLE)
+	$(SHUFFLE) --gen=1 --base=Main --ag --order="$(AGPRIMER_SHUFFLE_ORDER)" $< | $(LHS2TEX) $(LHS2TEX_OPTS_NEWC) > $@
+
+
+
+
+
+
+
+

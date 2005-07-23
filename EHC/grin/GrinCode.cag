@@ -1,0 +1,153 @@
+% $Id$
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to GRIN code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs import(EHCommon,UU.Pretty) export(GrAGItf(..), GrModule(..), GrExpr(..), GrBind(..), GrBindL) 
+%%]
+
+%%[8 hs export(GrAlt(..), GrAltL, GrPat(..), GrPatL, GrVal(..), GrValL, GrTag(..),GrAdapt(..),GrAdaptL,GrSplit(..),GrSplitL) 
+%%]
+
+%%[8 hs export(GrTagCateg(..),mkGrBox,mkGrTagNode,mkGrRecNode,mkGrConNode) 
+%%]
+
+%%[8 hs export(mkGrPatRecNode,mkGrPatConNode,mkGrPatTagNode,mkGrPatRecSplit,mkGrPatConSplit,mkGrUnbox,mkGrUnboxFFI) 
+%%]
+
+%%[8 hs export(GrNodeAdapt(..),grRecTag,hsnGrApply,hsnGrEval,hsnGrMain,grSpecialNmL,grBuiltinTyNmL) 
+%%]
+
+%%[8 hs export(EvApTagKey,EvApTagElt(..),EvApTagMp) 
+%%]
+
+%%[8 import(GrinCodeAbsSyn)
+DERIVING *     : Show, Eq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Special names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+hsnGrApply  = HNm "apply"
+hsnGrEval   = HNm "eval"
+hsnGrMain   = hsnMain
+
+grSpecialNmL = [ hsnGrMain, hsnGrApply, hsnGrEval ]
+grBuiltinTyNmL = [ hsnInt, hsnChar ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tag categories
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+data GrTagCateg
+  =  GrTagCon
+  |  GrTagHole
+  |  GrTagRec
+  |  GrTagApp
+  |  GrTagFun
+  |  GrTagPApp {grtgNeeds :: Int}
+  deriving (Show,Eq)
+
+instance PP GrTagCateg where
+  pp GrTagCon       = pp "C"
+  pp GrTagHole      = pp "H"
+  pp GrTagRec       = pp "R"
+  pp GrTagApp       = pp "A"
+  pp GrTagFun       = pp "F"
+  pp (GrTagPApp need) = pp "P/" >|< pp need
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc info passed to backend
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type EvApTagKey   = (GrTag,Int)
+data EvApTagElt   = EvApTagTag GrTag | EvApTagVar HsName | EvApTagUnit deriving (Eq,Show)
+type EvApTagMp    = AssocL EvApTagKey EvApTagElt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Row/record
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+data GrNodeAdapt = GrNodeUpd | GrNodeExt deriving (Show,Eq)
+
+grRecTag :: GrTag
+grRecTag = GrTag_Lit GrTagRec 0 hsnRec
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Node construction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+mkGrNode :: GrTag -> GrValL -> GrVal
+mkGrNode t vL = GrVal_Node t vL
+
+mkGrTagNode :: GrTagCateg -> Int -> HsName -> GrValL -> GrVal
+mkGrTagNode c t n vL = mkGrNode (GrTag_Lit c t n) (GrVal_LitInt (length vL) : vL)
+
+mkGrConNode ::  Int -> HsName -> GrValL -> GrVal
+mkGrConNode t n vL = mkGrTagNode GrTagCon t n vL
+
+mkGrRecNode ::  GrValL -> GrVal
+mkGrRecNode vL = mkGrTagNode GrTagRec 0 hsnRec vL
+
+mkGrBox :: HsName -> GrVal -> GrVal
+mkGrBox tyNm v = mkGrConNode 0 tyNm [v]
+
+mkGrPatTagNode :: GrTagCateg -> Int -> HsName -> [HsName] -> GrPat
+mkGrPatTagNode c t n pL = GrPat_Node (GrTag_Lit c t n) (hsnWild : pL)
+
+mkGrPatConNode :: Int -> HsName -> [HsName] -> GrPat
+mkGrPatConNode t n pL = mkGrPatTagNode GrTagCon t n pL
+
+mkGrPatRecNode :: [HsName] -> GrPat
+mkGrPatRecNode pL = mkGrPatTagNode GrTagRec 0 hsnRec pL
+
+mkGrPatTagSplit :: GrTagCateg -> Int -> HsName -> HsName -> GrSplitL -> GrPat
+mkGrPatTagSplit c t n r sL = GrPat_NodeSplit (GrTag_Lit c t n) r sL
+
+mkGrPatConSplit :: Int -> HsName -> HsName -> GrSplitL -> GrPat
+mkGrPatConSplit t n r sL = mkGrPatTagSplit GrTagCon t n r (sL)
+
+mkGrPatRecSplit :: HsName -> GrSplitL -> GrPat
+mkGrPatRecSplit r sL = mkGrPatTagSplit GrTagRec 0 hsnRec r (sL)
+
+mkGrUnbox :: HsName -> HsName -> GrPat
+mkGrUnbox tyNm n = mkGrPatConNode 0 tyNm [n]
+
+mkGrUnboxFFI :: HsName -> GrPat
+mkGrUnboxFFI n = GrPat_Node GrTag_Unboxed [n]
+%%]
+mkGrTagNode :: GrTagCateg -> Int -> HsName -> GrValL -> GrVal
+mkGrTagNode c t n vL = mkGrNode (GrTag_Lit c t n) vL
+
+mkGrConNode ::  Int -> HsName -> GrValL -> GrVal
+mkGrConNode t n vL = mkGrTagNode GrTagCon t n (GrVal_LitInt (length vL) : vL)
+
+mkGrRecNode ::  GrValL -> GrVal
+mkGrRecNode vL = mkGrTagNode GrTagRec 0 hsnRec (GrVal_LitInt (length vL) : vL)
+
+mkGrPatTagNode :: GrTagCateg -> Int -> HsName -> [HsName] -> GrPat
+mkGrPatTagNode c t n pL = GrPat_Node (GrTag_Lit c t n) pL
+
+mkGrPatConNode :: Int -> HsName -> [HsName] -> GrPat
+mkGrPatConNode t n pL = mkGrPatTagNode GrTagCon t n (hsnWild : pL)
+
+mkGrPatRecNode :: [HsName] -> GrPat
+mkGrPatRecNode pL = mkGrPatTagNode GrTagRec 0 hsnRec (hsnWild : pL)
+
+

@@ -1,0 +1,187 @@
+% $Id$
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Code's Java gen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs import(UU.Pretty,EHCommon,GrinCode) export(ppGrModule,ppGrExpr,ppGrPat)
+%%]
+
+%%[8.WRAPPER import(GrinCodeAbsSyn)
+WRAPPER GrAGItf GrExpr GrPat GrTag
+%%]
+
+%%[8 hs
+ppGrModule :: Maybe [HsName] -> GrModule -> PP_Doc
+ppGrModule mbNmAdapt cmod
+  =  let  ppNm ad n = if n `elem` grSpecialNmL then pp n else ppGrNm (ad n)
+          t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf cmod))
+                            (Inh_GrAGItf {ppGrNm_Inh_GrAGItf = maybe (ppNm id) (const (ppNm (hsnPrefix "_"))) (mbNmAdapt)})
+     in   (pp_Syn_GrAGItf t)
+
+ppGrExpr :: GrExpr -> PP_Doc
+ppGrExpr e
+  =  let  t = wrap_GrExpr  (sem_GrExpr e)
+                           (Inh_GrExpr {ppGrNm_Inh_GrExpr = ppGrNm})
+     in   (pp_Syn_GrExpr t)
+
+ppGrPat :: GrPat -> PP_Doc
+ppGrPat p
+  =  let  t = wrap_GrPat  (sem_GrPat p)
+                          (Inh_GrPat {ppGrNm_Inh_GrPat = ppGrNm})
+     in   (pp_Syn_GrPat t)
+
+ppGrTag :: (HsName -> PP_Doc) -> GrTag -> PP_Doc
+ppGrTag ppGrNm tg
+  =  let  t = wrap_GrTag  (sem_GrTag tg)
+                          (Inh_GrTag {ppGrNm_Inh_GrTag = ppGrNm})
+     in   (pp_Syn_GrTag t)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% How to print identifiers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrAGItf AllGrNT [ ppGrNm: {HsName -> PP_Doc} | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printed code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+ppCurly :: PP_Doc -> PP_Doc
+ppCurly p = pp_block "{ " "} " "; " [p]
+
+ppCurlyV :: [PP_Doc] -> PP_Doc
+ppCurlyV pL = pp_block "{ " "} " "; " pL
+
+ppGrNm :: HsName -> PP_Doc
+ppGrNm n
+  =  let  s = concat . map (\c -> if c `elem` "$()[]+=:;/{}#->|," then ['$',c] else [c]) . show $ n
+     in   "$" >|< pp s
+
+ppEvApTagElt :: (HsName -> PP_Doc) -> EvApTagElt -> PP_Doc
+ppEvApTagElt ppGrNm e
+  =  case e of
+    	EvApTagTag t -> ppGrTag ppGrNm t
+    	EvApTagVar n -> ppGrNm n
+    	EvApTagUnit  -> pp "unit"
+
+ppEvApTagMp :: (HsName -> PP_Doc) -> EvApTagMp -> PP_Doc
+ppEvApTagMp ppGrNm m
+  =  ppCurlyV
+        (map  (\((tag,arity),evap)
+                  ->  ppGrTag ppGrNm tag >#< pp arity >#< "->" >#< ppEvApTagElt ppGrNm evap
+              )
+              m
+        )      
+%%]
+
+%%[8
+ATTR GrAGItf AllGrNT [ | | pp USE {>-<} {empty}: PP_Doc ]
+
+SEM GrModule
+  | Mod         lhs         .   pp          =   "module" >#< show (show @baseName)
+                                                >-< ppCurlyV @bindL.ppL
+                                                >-< "ctags"
+                                                >-< ppCurlyV
+                                                         (map  (\(tn,ts)
+                                                                    ->  @lhs.ppGrNm tn >#< "="
+                                                                        >#< ( ppListSep "" "" " | "
+                                                                            . map  (\(n,CTag _ _ t a) -> @lhs.ppGrNm n >#< t >#< a)
+                                                                            $ ts
+                                                                            )
+                                                               )
+                                                               @ctagsMp)
+                                                >-< "evalmap"
+                                                >-< ppEvApTagMp @lhs.ppGrNm @evalTagMp
+                                                >-< "applymap"
+                                                >-< ppEvApTagMp @lhs.ppGrNm @applyTagMp
+
+SEM GrBind
+  | Bind        lhs         .   pp          =   @lhs.ppGrNm @nm >#< ppSpaced (map @lhs.ppGrNm @argNmL) >-<
+                                                    indent 2 ("=" >#< ppCurly @expr.pp)
+  | Rec         lhs         .   pp          =   "rec" >-< indent 2 (ppCurlyV @bindL.ppL)
+
+SEM GrExpr
+  | Seq         lhs         .   pp          =   @expr.pp >#< ";" >#< "\\" >|< @pat.pp >#< "->"
+                                                >-< @body.pp
+  | Case        lhs         .   pp          =   "case" >#< @val.pp >#< "of" >-<
+                                                    indent 2 (ppCurlyV @altL.ppL)
+  | App         lhs         .   pp          =   hsnGrApply >#< ppSpaced (@lhs.ppGrNm @nm : @argL.ppL)
+  | Call        lhs         .   pp          =   ppSpaced (@lhs.ppGrNm @nm : @argL.ppL)
+  | FFI         lhs         .   pp          =   "ffi" >#< ppSpaced (pp @nm : map @lhs.ppGrNm @argL)
+  | Eval        lhs         .   pp          =   hsnGrEval >#< @lhs.ppGrNm @nm
+  | Unit        lhs         .   pp          =   "unit" >#< @val.pp
+  | Store       lhs         .   pp          =   "store" >#< @val.pp
+  | Fetch       lhs         .   pp          =   "fetch" >#< @lhs.ppGrNm @nm >#< maybe empty pp @mbOffset
+  | Update      lhs         .   pp          =   "update" >#< @lhs.ppGrNm @nm >#< @val.pp
+
+SEM GrAlt
+  | Alt         lhs         .   pp          =   @pat.pp >-< indent 4 ("->" >#< ppCurly @expr.pp)
+
+SEM GrVal
+  | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : @fldL.ppL)
+  | NodeAdapt   lhs         .   pp          =   pp_parens (@lhs.ppGrNm @nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
+  | Empty       lhs         .   pp          =   pp "()"
+  | LitInt      lhs         .   pp          =   pp @int
+  | Var         lhs         .   pp          =   @lhs.ppGrNm @nm
+
+SEM GrAdapt
+  | Upd         lhs         .   pp          =   @off.pp >|< ":=" >|< @val.pp
+  | Ins         lhs         .   pp          =   @off.pp >|< "+=" >|< @val.pp
+  | Del         lhs         .   pp          =   @off.pp >|< "-="
+
+SEM GrPat
+  | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : map @lhs.ppGrNm @fldL)
+  | NodeSplit   lhs         .   pp          =   pp_parens (@tag.pp >#< @lhs.ppGrNm @nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
+  | Empty       lhs         .   pp          =   pp "()"
+  | LitInt      lhs         .   pp          =   pp @int
+  | Var         lhs         .   pp          =   @lhs.ppGrNm @nm
+
+SEM GrSplit
+  | Sel         lhs         .   pp          =   @lhs.ppGrNm @nm >|< "=" >|< @off.pp
+
+SEM GrTag
+  | Lit         lhs         .   pp          =   "#" >|< @int >|< "/" >|< pp @categ >|< "/" >|< @lhs.ppGrNm @nm
+  | Var         lhs         .   pp          =   @lhs.ppGrNm @nm
+  | Unboxed     lhs         .   pp          =   pp "#U"
+%%]
+
+%%[8
+ATTR GrBindL GrAltL GrPatL GrValL GrAdaptL GrSplitL [ | | ppL: PP_DocL ]
+
+SEM GrBindL
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+  | Nil         lhs         .   ppL         =   []
+
+SEM GrAltL
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+  | Nil         lhs         .   ppL         =   []
+
+SEM GrPatL
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+  | Nil         lhs         .   ppL         =   []
+
+SEM GrValL
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+  | Nil         lhs         .   ppL         =   []
+
+SEM GrAdaptL
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+  | Nil         lhs         .   ppL         =   []
+
+SEM GrSplitL
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+  | Nil         lhs         .   ppL         =   []
+%%]
+
+
+
