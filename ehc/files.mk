@@ -1,0 +1,238 @@
+# variant, to be configured on top level
+EHC_VARIANT								:= X
+EHC_VARIANT_PREFIX						:= $(EHC_VARIANT)/
+EHC_BLD_VARIANT_PREFIX					:= $(BLD_PREFIX)$(EHC_VARIANT_PREFIX)
+EHC_BIN_PREFIX							:= $(BIN_PREFIX)
+EHC_BLD_BIN_VARIANT_PREFIX				:= $(EHC_BIN_PREFIX)$(EHC_VARIANT_PREFIX)
+
+# all variants
+EHC_VARIANTS							:= 1 2 3 4 5 6 7 8 9 10 11 4_2 6_4
+
+# location of ehc src
+EHC_SRC_PREFIX							:= $(TOP_PREFIX)ehc/
+
+# end products, binary, executable, etc
+EHC_BLD_EXEC							:= $(EHC_BLD_BIN_VARIANT_PREFIX)ehc
+
+# sources + dpds, for .rul, .rl2
+EHC_RULES_1_SRC_RUL						:= $(EHC_SRC_PREFIX)rules.rul
+EHC_RULES_2_SRC_RUL						:= $(EHC_SRC_PREFIX)rules2.rul
+EHC_RULES_3_SRC_RL2						:= $(EHC_SRC_PREFIX)rules3.rl2
+
+EHC_RULES_ALL_SRC						:= $(EHC_RULES_1_SRC_RUL) $(EHC_RULES_2_SRC_RUL) $(EHC_RULES_3_SRC_RL2)
+
+# main + sources + dpds, for .chs
+EHC_MAIN								:= EHC
+EHC_HS_MAIN_SRC_CHS						:= $(patsubst %,$(EHC_SRC_PREFIX)%.chs,$(EHC_MAIN))
+EHC_HS_MAIN_DRV_HS						:= $(patsubst $(EHC_SRC_PREFIX)%.chs,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_HS_MAIN_SRC_CHS))
+
+EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(EHC_SRC_PREFIX)%.chs,\
+													EHCommon EHOpts EHCnstr EHSubstitutable EHTyFitsIn EHTyFitsInCommon \
+													EHGam EHGamUtils EHPred EHParser EHScanner EHScannerMachine EHCoreUtils EHDebug \
+											)
+EHC_HS_UTIL_DRV_HS						:= $(patsubst $(EHC_SRC_PREFIX)%.chs,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_HS_UTIL_SRC_CHS))
+
+EHC_HS_ALL_SRC_CHS						:= $(EHC_HS_MAIN_SRC_CHS) $(EHC_HS_UTIL_SRC_CHS)
+EHC_HS_ALL_DRV_HS						:= $(EHC_HS_MAIN_DRV_HS) $(EHC_HS_UTIL_DRV_HS)
+
+# main + sources + dpds, for .cag
+EHC_AGMAIN_MAIN_SRC_CAG					:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHMainAG)
+EHC_AGMAIN_DPDS_SRC_CAG					:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHInfer EHInferExpr \
+													EHInferPatExpr EHInferTyExpr EHInferKiExpr EHInferData \
+													EHInferCaseExpr EHPretty EHPrettyAST EHAbsSyn \
+													EHUniq EHExtraChecks EHGatherError \
+													EHGenCore EHResolvePred EHInferClass \
+											)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGMAIN_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGMAIN_DPDS_SRC_CAG))
+
+EHC_AGTY_MAIN_SRC_CAG					:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTy)
+EHC_AGTY_DPDS_SRC_CAG					:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGTY_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGTY_DPDS_SRC_CAG))
+
+EHC_AGTY_FTV_MAIN_SRC_CAG				:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyFtv)
+EHC_AGTY_FTV_DPDS_SRC_CAG				:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGTY_FTV_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGTY_FTV_DPDS_SRC_CAG))
+
+EHC_AGTY_INST_MAIN_SRC_CAG				:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyInstantiate)
+EHC_AGTY_INST_DPDS_SRC_CAG				:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyCommonAG EHTyAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGTY_INST_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGTY_INST_DPDS_SRC_CAG))
+
+EHC_AGTY_PRETTY_MAIN_SRC_CAG			:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyPretty)
+EHC_AGTY_PRETTY_DPDS_SRC_CAG			:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyCommonAG EHTyAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGTY_PRETTY_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGTY_PRETTY_DPDS_SRC_CAG))
+
+EHC_AGTY_QU_MAIN_SRC_CAG				:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyQuantify)
+EHC_AGTY_QU_DPDS_SRC_CAG				:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyCommonAG EHTyAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGTY_QU_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGTY_QU_DPDS_SRC_CAG))
+
+EHC_AGTY_SUBST_MAIN_SRC_CAG				:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTySubst)
+EHC_AGTY_SUBST_DPDS_SRC_CAG				:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGTY_SUBST_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGTY_SUBST_DPDS_SRC_CAG))
+
+EHC_AGTY_ELIMALT_MAIN_SRC_CAG			:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyElimAlts)
+EHC_AGTY_ELIMALT_DPDS_SRC_CAG			:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGTY_ELIMALT_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGTY_ELIMALT_DPDS_SRC_CAG))
+
+EHC_AGTY_ELIMBT_MAIN_SRC_CAG			:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyElimBoth)
+EHC_AGTY_ELIMBT_DPDS_SRC_CAG			:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGTY_ELIMBT_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGTY_ELIMBT_DPDS_SRC_CAG))
+
+EHC_AGTY_ELIMEQ_MAIN_SRC_CAG			:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyElimEqual)
+EHC_AGTY_ELIMEQ_DPDS_SRC_CAG			:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGTY_ELIMEQ_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGTY_ELIMEQ_DPDS_SRC_CAG))
+
+EHC_AGTY_FRESH_MAIN_SRC_CAG				:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyFreshVar)
+EHC_AGTY_FRESH_DPDS_SRC_CAG				:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGTY_FRESH_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGTY_FRESH_DPDS_SRC_CAG))
+
+EHC_AGERR_MAIN_SRC_CAG					:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHError)
+EHC_AGERR_DPDS_SRC_CAG					:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHErrorAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGERR_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGERR_DPDS_SRC_CAG))
+
+EHC_AGERR_PRETTY_MAIN_SRC_CAG			:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHErrorPretty)
+EHC_AGERR_PRETTY_DPDS_SRC_CAG			:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHErrorAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGERR_PRETTY_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGERR_PRETTY_DPDS_SRC_CAG))
+
+EHC_AGCORE_MAIN_SRC_CAG					:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCore)
+EHC_AGCORE_DPDS_SRC_CAG					:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGCORE_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGCORE_DPDS_SRC_CAG))
+
+EHC_AGCORE_GRIN_MAIN_SRC_CAG			:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreGrin)
+EHC_AGCORE_GRIN_DPDS_SRC_CAG			:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreCommonLev EHCoreAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGCORE_GRIN_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGCORE_GRIN_DPDS_SRC_CAG))
+
+EHC_AGCORE_JAVA_MAIN_SRC_CAG			:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreJava)
+EHC_AGCORE_JAVA_DPDS_SRC_CAG			:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreCommonLev EHCoreAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGCORE_JAVA_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGCORE_JAVA_DPDS_SRC_CAG))
+
+EHC_AGCORE_PRETTY_MAIN_SRC_CAG			:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCorePretty)
+EHC_AGCORE_PRETTY_DPDS_SRC_CAG			:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGCORE_PRETTY_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGCORE_PRETTY_DPDS_SRC_CAG))
+
+EHC_AGCORE_SUBST_MAIN_SRC_CAG			:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreSubst)
+EHC_AGCORE_SUBST_DPDS_SRC_CAG			:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGCORE_SUBST_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGCORE_SUBST_DPDS_SRC_CAG))
+
+EHC_AGCORE_TRF_CONSTPROP_MAIN_SRC_CAG	:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreTrfConstProp)
+EHC_AGCORE_TRF_CONSTPROP_DPDS_SRC_CAG	:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreCommonLev EHCoreAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGCORE_TRF_CONSTPROP_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGCORE_TRF_CONSTPROP_DPDS_SRC_CAG))
+
+EHC_AGCORE_TRF_FULLAZY_MAIN_SRC_CAG		:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreTrfFullLazy)
+EHC_AGCORE_TRF_FULLAZY_DPDS_SRC_CAG		:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreTrfCommonFv EHCoreTrfCommonLev EHCoreCommonLev EHCoreAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGCORE_TRF_FULLAZY_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGCORE_TRF_FULLAZY_DPDS_SRC_CAG))
+
+EHC_AGCORE_TRF_INLLETALI_MAIN_SRC_CAG	:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreTrfInlineLetAlias)
+EHC_AGCORE_TRF_INLLETALI_DPDS_SRC_CAG	:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGCORE_TRF_INLLETALI_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGCORE_TRF_INLLETALI_DPDS_SRC_CAG))
+
+EHC_AGCORE_TRF_LAMLIFT_MAIN_SRC_CAG		:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreTrfLamLift)
+EHC_AGCORE_TRF_LAMLIFT_DPDS_SRC_CAG		:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreTrfCommonFv EHCoreTrfCommonLev EHCoreCommonLev EHCoreAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGCORE_TRF_LAMLIFT_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGCORE_TRF_LAMLIFT_DPDS_SRC_CAG))
+
+EHC_AGCORE_TRF_LETUNREC_MAIN_SRC_CAG	:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreTrfLetUnrec)
+EHC_AGCORE_TRF_LETUNREC_DPDS_SRC_CAG	:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGCORE_TRF_LETUNREC_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGCORE_TRF_LETUNREC_DPDS_SRC_CAG))
+
+EHC_AGCORE_TRF_RENUNQ_MAIN_SRC_CAG		:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreTrfRenUniq)
+EHC_AGCORE_TRF_RENUNQ_DPDS_SRC_CAG		:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHCoreAbsSyn)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGCORE_TRF_RENUNQ_MAIN_SRC_CAG)): $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGCORE_TRF_RENUNQ_DPDS_SRC_CAG))
+
+EHC_AG_D_MAIN_SRC_CAG					:= $(EHC_AGTY_MAIN_SRC_CAG) \
+											$(EHC_AGERR_MAIN_SRC_CAG) \
+											$(EHC_AGCORE_MAIN_SRC_CAG)
+EHC_AG_S_MAIN_SRC_CAG					:= $(EHC_AGTY_FTV_MAIN_SRC_CAG) \
+											$(EHC_AGTY_INST_MAIN_SRC_CAG) \
+											$(EHC_AGTY_PRETTY_MAIN_SRC_CAG) \
+											$(EHC_AGTY_QU_MAIN_SRC_CAG) \
+											$(EHC_AGTY_SUBST_MAIN_SRC_CAG) \
+											$(EHC_AGTY_ELIMALT_MAIN_SRC_CAG) \
+											$(EHC_AGTY_ELIMBT_MAIN_SRC_CAG) \
+											$(EHC_AGTY_ELIMEQ_MAIN_SRC_CAG) \
+											$(EHC_AGTY_FRESH_MAIN_SRC_CAG) \
+											$(EHC_AGERR_PRETTY_MAIN_SRC_CAG) \
+											$(EHC_AGCORE_GRIN_MAIN_SRC_CAG) \
+											$(EHC_AGCORE_JAVA_MAIN_SRC_CAG) \
+											$(EHC_AGCORE_PRETTY_MAIN_SRC_CAG) \
+											$(EHC_AGCORE_SUBST_MAIN_SRC_CAG) \
+											$(EHC_AGCORE_TRF_CONSTPROP_MAIN_SRC_CAG) \
+											$(EHC_AGCORE_TRF_FULLAZY_MAIN_SRC_CAG) \
+											$(EHC_AGCORE_TRF_INLLETALI_MAIN_SRC_CAG) \
+											$(EHC_AGCORE_TRF_LAMLIFT_MAIN_SRC_CAG) \
+											$(EHC_AGCORE_TRF_LETUNREC_MAIN_SRC_CAG) \
+											$(EHC_AGCORE_TRF_RENUNQ_MAIN_SRC_CAG)
+EHC_AG_DS_MAIN_SRC_CAG					:= $(EHC_AGMAIN_MAIN_SRC_CAG)
+EHC_AG_ALL_MAIN_SRC_CAG					:= $(EHC_AG_D_MAIN_SRC_CAG) $(EHC_AG_S_MAIN_SRC_CAG) $(EHC_AG_DS_MAIN_SRC_CAG)
+
+EHC_AG_ALL_DPDS_SRC_CAG					:= $(sort $(EHC_AGMAIN_DPDS_SRC_CAG) \
+											$(EHC_AGTY_DPDS_SRC_CAG) \
+											$(EHC_AGTY_FTV_DPDS_SRC_CAG) \
+											$(EHC_AGTY_INST_DPDS_SRC_CAG) \
+											$(EHC_AGTY_PRETTY_DPDS_SRC_CAG) \
+											$(EHC_AGTY_QU_DPDS_SRC_CAG) \
+											$(EHC_AGTY_SUBST_DPDS_SRC_CAG) \
+											$(EHC_AGTY_ELIMALT_DPDS_SRC_CAG) \
+											$(EHC_AGTY_ELIMBT_DPDS_SRC_CAG) \
+											$(EHC_AGTY_ELIMEQ_DPDS_SRC_CAG) \
+											$(EHC_AGTY_FRESH_DPDS_SRC_CAG) \
+											$(EHC_AGERR_DPDS_SRC_CAG) \
+											$(EHC_AGERR_PRETTY_DPDS_SRC_CAG) \
+											$(EHC_AGCORE_DPDS_SRC_CAG) \
+											$(EHC_AGCORE_GRIN_DPDS_SRC_CAG) \
+											$(EHC_AGCORE_JAVA_DPDS_SRC_CAG) \
+											$(EHC_AGCORE_PRETTY_DPDS_SRC_CAG) \
+											$(EHC_AGCORE_SUBST_DPDS_SRC_CAG) \
+											$(EHC_AGCORE_TRF_CONSTPROP_DPDS_SRC_CAG) \
+											$(EHC_AGCORE_TRF_FULLAZY_DPDS_SRC_CAG) \
+											$(EHC_AGCORE_TRF_INLLETALI_DPDS_SRC_CAG) \
+											$(EHC_AGCORE_TRF_LAMLIFT_DPDS_SRC_CAG) \
+											$(EHC_AGCORE_TRF_LETUNREC_DPDS_SRC_CAG) \
+											$(EHC_AGCORE_TRF_RENUNQ_DPDS_SRC_CAG))
+
+# all src
+EHC_ALL_SRC								:= $(EHC_AG_ALL_MAIN_SRC_CAG) $(EHC_AG_ALL_DPDS_SRC_CAG) $(EHC_HS_ALL_SRC_CHS) $(EHC_RULES_ALL_SRC)
+
+# derived
+EHC_AG_D_MAIN_DRV_AG					:= $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AG_D_MAIN_SRC_CAG))
+EHC_AG_S_MAIN_DRV_AG					:= $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AG_S_MAIN_SRC_CAG))
+EHC_AG_DS_MAIN_DRV_AG					:= $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AG_DS_MAIN_SRC_CAG))
+EHC_AG_ALL_MAIN_DRV_AG					:= $(EHC_AG_D_MAIN_DRV_AG) $(EHC_AG_S_MAIN_DRV_AG) $(EHC_AG_DS_MAIN_DRV_AG)
+
+EHC_AG_D_MAIN_DRV_HS					:= $(EHC_AG_D_MAIN_DRV_AG:.ag=.hs)
+EHC_AG_S_MAIN_DRV_HS					:= $(EHC_AG_S_MAIN_DRV_AG:.ag=.hs)
+EHC_AG_DS_MAIN_DRV_HS					:= $(EHC_AG_DS_MAIN_DRV_AG:.ag=.hs)
+EHC_AG_ALL_MAIN_DRV_HS					:= $(EHC_AG_D_MAIN_DRV_HS) $(EHC_AG_S_MAIN_DRV_HS) $(EHC_AG_DS_MAIN_DRV_HS)
+
+EHC_AG_ALL_DPDS_DRV_AG					:= $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AG_ALL_DPDS_SRC_CAG))
+
+# variant dispatch rules
+$(patsubst %,$(EHC_BIN_PREFIX)%/ehc,$(EHC_VARIANTS)): %: $(EHC_ALL_SRC) $(GRIN_ALL_SRC)
+	$(MAKE) EHC_VARIANT=$(notdir $(*D)) GRIN_VARIANT=$(notdir $(*D)) ehc-variant-$(notdir $(*D))
+
+# rules
+$(patsubst %,ehc-variant-%,$(EHC_VARIANTS)): ehc-variant-dflt
+
+ehc-variant-dflt: $(EHC_HS_ALL_DRV_HS) $(EHC_AG_ALL_MAIN_DRV_HS) $(GRIN_AG_ALL_MAIN_DRV_HS)
+	mkdir -p $(dir $(EHC_BLD_EXEC))
+	$(GHC) --make $(GHC_OPTS) -i$(EHC_BLD_VARIANT_PREFIX) -i$(LIB_SRC_PREFIX) $(EHC_BLD_VARIANT_PREFIX)$(EHC_MAIN).hs -o $(EHC_BLD_EXEC)
+
+$(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG): $(EHC_BLD_VARIANT_PREFIX)%.ag: $(EHC_SRC_PREFIX)%.cag
+	mkdir -p $(@D)
+	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=$(*F) --ag --order="$(EHC_SHUFFLE_ORDER)" $< | $(LHS2TEX) $(LHS2TEX_OPTS_NEWC) | $(SUBST_LINE_CMT) > $@
+
+$(EHC_AG_D_MAIN_DRV_HS): %.hs: %.ag
+	$(AGC) -dr -P$(EHC_BLD_VARIANT_PREFIX) $<
+
+$(EHC_AG_S_MAIN_DRV_HS): %.hs: %.ag
+	$(AGC) -cfspr -P$(EHC_BLD_VARIANT_PREFIX) $<
+
+$(EHC_AG_DS_MAIN_DRV_HS): %.hs: %.ag
+	$(AGC) -dcfspr -P$(EHC_BLD_VARIANT_PREFIX) $<
+
+$(EHC_HS_MAIN_DRV_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(EHC_SRC_PREFIX)%.chs
+	mkdir -p $(@D)
+	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=Main --hs --order="$(EHC_SHUFFLE_ORDER)" $< | $(LHS2TEX) $(LHS2TEX_OPTS_NEWC) | $(SUBST_LINE_CMT) > $@
+
+$(EHC_HS_UTIL_DRV_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(EHC_SRC_PREFIX)%.chs
+	mkdir -p $(@D)
+	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=$(*F) --hs --order="$(EHC_SHUFFLE_ORDER)" $< | $(LHS2TEX) $(LHS2TEX_OPTS_NEWC) | $(SUBST_LINE_CMT) > $@
+

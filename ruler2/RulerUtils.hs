@@ -67,11 +67,13 @@ instance PP Err where
 -- Parsing
 -------------------------------------------------------------------------
 
+{-
 parseToResMsgs :: (Symbol s,InputState inp s pos) => AnaParser inp Pair s pos a -> inp -> (a,[Message s pos])
 parseToResMsgs p inp
   = (r,getMsgs steps)
   where steps = parse p inp
         (Pair r _) = evalSteps steps
+-}
 
 instance (Eq s, Show s, Show p, Position p) => PP (Message s p) where
   pp (Msg expecting position action)  

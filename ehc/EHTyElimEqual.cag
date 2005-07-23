@@ -1,0 +1,54 @@
+% $Id: EHTyElimEqual.cag 142 2005-01-18 17:45:01Z atze $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to eliminate 'Equal' types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[11 hs import(EHCommon,EHTy,EHCnstr,EHSubstitutable) export(tyElimEqual)
+%%]
+
+%%[11.WRAPPER import(EHTyAbsSyn)
+WRAPPER TyAGItf
+%%]
+
+%%[11 hs
+tyElimEqual :: Ty -> (Ty,Cnstr)
+tyElimEqual ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf)
+     in   (repl_Syn_TyAGItf t,tyCnstr_Syn_TyAGItf t)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replacement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[11
+ATTR AllAllTy [ | | repl: SELF ]
+ATTR TyAGItf  [ | | repl: Ty ]
+
+SEM Ty
+  | Equal           loc     .   repl        =   mkTyVar @tv
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replacement for tvars in form of Cnstr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[11
+ATTR AllAllTy [ | tyCnstr: Cnstr | ]
+ATTR TyAGItf  [ | | tyCnstr: Cnstr ]
+
+SEM TyAGItf
+  | AGItf           ty      .   tyCnstr     =   emptyCnstr
+
+SEM Ty
+  | Equal           ty      .   tyCnstr     =   (@tv `cnstrTyUnit` mkTyVar @tv) |=> @lhs.tyCnstr
+%%]
+
