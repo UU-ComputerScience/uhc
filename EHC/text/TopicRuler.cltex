@@ -301,7 +301,7 @@ ruleset x scheme X =
     view A =
       judge ...        -- premises
       ...
-      ------
+      -
       judge ...        -- conclusion
     view B = ...
   rule s =
@@ -1524,21 +1524,24 @@ Generation of HOL strategies/facts (?)
 The preambles are specific to the generation for \thispaper\ because of the need for additional preprocessing
 to include pretty printed fragments of the |Ruler| source code in \thispaper.
 
-\VerbatimInput[fontsize=\small]{ruler2/demo/demo.rl2}
+\VerbatimInput[fontsize=\small]{demo.rl2}
 
 \subsection{Supporting AG}
+\label{app-ruler-supp-ag}
 
-\VerbatimInput[fontsize=\footnotesize]{ruler2/demo/DemoMain.ag}
+\VerbatimInput[fontsize=\footnotesize]{DemoMain.ag}
 
 \subsection{Supporting Haskell}
+\label{app-ruler-supp-hs}
 
 Type, unification
 
-\VerbatimInput[fontsize=\footnotesize]{ruler2/demo/DemoUtils.hs}
+\VerbatimInput[fontsize=\footnotesize]{DemoUtils.hs}
 
 \onecolumn
 \subsection{Generated AG}
+\label{app-ruler-demo-ag}
 
-\VerbatimInput[fontsize=\footnotesize]{ruler2/demo/demo.ag}
+\VerbatimInput[fontsize=\footnotesize]{demo.ag}
 %%]
 

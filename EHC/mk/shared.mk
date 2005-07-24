@@ -9,6 +9,11 @@ GHC					:= ghc
 LHS2TEX_ENV			:= $(LHS2TEX)
 LHS2TEX				:= LHS2TEX=".:$(FMT_SRC_PREFIX):$(LHS2TEX_ENV)" lhs2TeX
 
+# latex
+LATEX_ENV			:= $(TEXINPUTS)
+PDFLATEX			:= TEXINPUTS=".:../../$(LATEX_SRC_PREFIX):$(LATEX_ENV)" pdflatex
+BIBTEX				:= TEXINPUTS=".:../../$(LATEX_SRC_PREFIX):$(LATEX_ENV)" bibtex
+
 # GHC options
 GHC_OPTS			:= -fglasgow-exts -package util -package lang -package data -package uust
 GHC_OPTS_OPTIM		:= -O2
