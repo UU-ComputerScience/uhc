@@ -30,15 +30,26 @@ LIB_SRC_HS			:= $(wildcard $(LIB_SRC_PREFIX)*.hs)
 LIB_DIST_FILES		:= $(LIB_SRC_HS)
 
 # lhs2tex options
-LHS2TEX_OPTS_DFLT	:= 
+LHS2TEX_OPTS_DFLT	:= -P.:$(FMT_SRC_PREFIX)
 LHS2TEX_OPTS_POLY	:= $(LHS2TEX_OPTS_DFLT) --poly
 LHS2TEX_OPTS_NEWC	:= $(LHS2TEX_OPTS_DFLT) --newcode
 
 # order to shuffle
-EHC_SHUFFLE_ORDER		:= 1 < 2 < 3 < 4 < 5 < 6 < 7 < 8 < 9 < 10 < 11, 4 < 4_2, 6 < 6_4
+EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 5 < 6 < 7 < 8 < 9 < 10 < 11, 4 < 4_2, 6 < 6_4
+
+# target suffix for core
+CORE_TARG_SUFFIX	:= grin
 
 # subst's
 SUBST_BAR_IN_TT		:= sed -e '/begin{TT}/,/end{TT}/s/|/||/g'
 SUBST_EHC			:= perl $(BIN_PREFIX)substehc.pl
 SUBST_LINE_CMT		:= sed -e 's/{-\# LINE[^\#]*\#-}//' -e '/{-\#  \#-}/d'
+SUBST_SH			:= perl $(BIN_PREFIX)substsh.pl
 
+# indentation of (test) output
+INDENT2				:= sed -e 's/^/  /'
+INDENT4				:= sed -e 's/^/    /'
+
+# make programming utils
+head				= $(word 1,$(1))
+tail				= $(wordlist 2,$(words $(1)),$(1))

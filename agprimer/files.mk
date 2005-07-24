@@ -1,6 +1,9 @@
 # location of agprimer src
 AGPRIMER_SRC_PREFIX	:= $(TOP_PREFIX)agprimer/
 
+# this file
+AGPRIMER_MKF				:= $(AGPRIMER_SRC_PREFIX)files.mk
+
 # main + sources
 AGPRIMER_HS_REPM_SRC_CHS	:= $(AGPRIMER_SRC_PREFIX)RepminHS.chs
 AGPRIMER_AG_REPM_SRC_CAG	:= $(AGPRIMER_SRC_PREFIX)RepminAG.cag
@@ -26,17 +29,20 @@ AGPRIMER_AG_EXPR_BLD_EXEC		:= $(BLD_BIN_PREFIX)expr
 # shuffle order
 AGPRIMER_SHUFFLE_ORDER	:= 1
 
+# distribution
+AGPRIMER_DIST_FILES			:= $(AGPRIMER_CAG_SRC_CAG) $(AGPRIMER_CHS_SRC_CHS) $(AGPRIMER_MKF)
+
 # make rules
 $(AGPRIMER_HS_REPM_BLD_EXEC): $(AGPRIMER_HS_REPM_DRV_HS)
-	mkdir -p `dirname $@`
+	mkdir -p $(@D)
 	$(GHC) --make $(GHC_OPTS) -i$(AGPRIMER_SRC_PREFIX) $< -o $@
 
 $(AGPRIMER_AG_REPM_BLD_EXEC): $(AGPRIMER_AG_REPM_DRV_HS)
-	mkdir -p `dirname $@`
+	mkdir -p $(@D)
 	$(GHC) --make $(GHC_OPTS) -i$(AGPRIMER_SRC_PREFIX) $< -o $@
 
 $(AGPRIMER_AG_EXPR_BLD_EXEC): $(AGPRIMER_AG_EXPR_DRV_HS)
-	mkdir -p `dirname $@`
+	mkdir -p $(@D)
 	$(GHC) --make $(GHC_OPTS) -i$(AGPRIMER_SRC_PREFIX) $< -o $@
 
 $(AGPRIMER_AG_EXPR_DRV_HS) $(AGPRIMER_AG_REPM_DRV_HS) : %.hs : %.ag
