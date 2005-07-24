@@ -1,0 +1,35 @@
+%if style == poly
+
+%format . 		= "."
+
+%format :-..    = :- ".."
+
+%format viewhierarchy 	= "\mathbf{viewhierarchy}"
+%format judgeshape 	= "\mathbf{judgeshape}"
+%format judgespec 	= "\mathbf{judgespec}"
+%format judgeuse 	= "\mathbf{judgeuse}"
+%format relation 	= "\mathbf{relation}"
+%format rewrite 	= "\mathbf{rewrite}"
+%format ruleset 	= "\mathbf{ruleset}"
+%format external 	= "\mathbf{external}"
+%format judge 	= "\mathbf{judge}"
+%format format 	= "\mathbf{format}"
+%format scheme 	= "\mathbf{scheme}"
+%format thread 	= "\mathbf{thread}"
+%format unique 	= "\mathbf{unique}"
+%format holes	= "\mathbf{holes}"
+%format hole 	= "\mathbf{hole}"
+%format view 	= "\mathbf{view}"
+%format rule 	= "\mathbf{rule}"
+%format rules 	= "\mathbf{rules}"
+%format node 	= "\mathbf{node}"
+%format spec 	= "\mathbf{spec}"
+%format text 	= "\mathbf{text}"
+%format def 	= "\mathbf{def}"
+%format use 	= "\mathbf{use}"
+%format tex 	= "\mathbf{tex}"
+%format ag 		= "\mathbf{ag}"
+
+% format "`=`"	= "\mathrel{`=`}"
+
+%endif

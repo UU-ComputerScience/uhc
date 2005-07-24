@@ -1,5 +1,6 @@
 module FPath 
-  (FPath(..), fpathToStr, fpathIsEmpty, fpathSetBase, fpathSetSuff, mkFPath, emptyFPath, fpathSetDir, fpathPrependDir, mkTopLevelFPath, mkInitSearchPath)
+  (FPath(..), fpathToStr, fpathIsEmpty, fpathSetBase, fpathSetSuff, fpathRemoveSuff, mkFPath, emptyFPath
+  , fpathSetDir, fpathPrependDir, mkTopLevelFPath, mkInitSearchPath)
 where
 
 -------------------------------------------------------------------------------------------

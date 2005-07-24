@@ -696,11 +696,11 @@ Combinator & Meaning & Result
 
 %%]
 
-%%[1
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Actual content
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
 
 \begin{document}
 
@@ -738,9 +738,13 @@ Combinator & Meaning & Result
 \addtolength{\parskip}{0.4\baselineskip}
 %endif
 
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Abstract
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
 
 %if storyAfpTRUU1
 \section*{Preface}
@@ -751,20 +755,21 @@ Combinator & Meaning & Result
 \begin{abstract}
 %endif
 
-%if storyExplImpl
+%%]
 
+%%[4
 %%@TopicExplImpl.abstract
+%%]
 
-%elif storyImpred
-
+%%[5
 ...
+%%]
 
-%elif storyRuler
-
+%%[3
 %%@TopicRuler.abstract
+%%]
 
-%else %% afp04
-
+%%[6
 A great deal has been written about type systems.
 Much less has been written about implementing them.
 Even less has been written about implementations of complete compilers in which
@@ -784,11 +789,15 @@ thereby giving a series of increasingly complex (working) compilers.
 Also, the source text of both this paper and the executable compilers come
 from the same source files by an underlying minimal weaving system.
 Therefore, source and explanation is kept consistent.
+%%]
 
-%endif
+%%[1
 %if asArticle
 \end{abstract}
 %endif
+%%]
+
+%%[1
 
 %if storyAfpTRUU1
 \subsection*{Context of \thispaper\}
@@ -807,9 +816,13 @@ later.
 This concerns mainly future design decisions which have an influence on design decisions made in \thispaper.
 %endif
 
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Preamble
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
 
 %if inclTOC
 
@@ -824,11 +837,11 @@ This concerns mainly future design decisions which have an influence on design d
 
 %%]
 
-%%[1
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Part I
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
 
 %if inclParts
 \part{Type checking, inference and polymorphism}
@@ -841,9 +854,13 @@ This concerns mainly future design decisions which have an influence on design d
 }
 %endif
 
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Intro
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
 
 %if incl00
 
@@ -1901,6 +1918,9 @@ The complete compiler text can be found on the website accompanying
 \end{itemize}
 %endif %% False
 
+%%]
+
+%%[2
 
 %if incl00TopicAGPrimer
 %if storyPHD
@@ -1919,6 +1939,10 @@ The tutorial can safely be skipped if the reader is already familiar with the AG
 %%@AGMiniPrimer.primer
 %\inputEHCTex{\EHCTexVersion}{AGMiniPrimer.tex}
 %endif
+
+%%]
+
+%%[1
 
 %if not omitLitDiscuss
 %if storyPHD
@@ -1944,7 +1968,7 @@ Haskell
 
 %%]
 
-%%[1
+%%[2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 1
@@ -4574,7 +4598,7 @@ Local type inference \cite{pierce00local-type-inference} also has top-down, bott
 
 %%]
 
-%%[1
+%%[2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 2
@@ -5611,7 +5635,7 @@ The set of all constraints is retrieved at the root of the AST and passed back i
 
 %%]
 
-%%[1
+%%[2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 3
@@ -6150,7 +6174,7 @@ Polymorphic recursion
 
 %%]
 
-%%[1
+%%[2
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -7994,7 +8018,7 @@ Existentials, via universal \cite{laufer96class-existential}
 
 %%]
 
-%%[1
+%%[2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 5
@@ -8165,7 +8189,7 @@ Error gathering, pretty printing, uniq
 
 %%]
 
-%%[1
+%%[2
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -8222,7 +8246,7 @@ Error gathering, pretty printing, uniq
 
 %%]
 
-%%[1
+%%[2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 7
@@ -8419,7 +8443,7 @@ Consequence: scanner requires adaptation, @{(@ and @)}@ are used inconsistently 
 
 %%]
 
-%%[1
+%%[2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 8
@@ -8929,7 +8953,7 @@ Named instances \cite{kahl01named-instance}.
 
 %%]
 
-%%[1
+%%[2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 10
@@ -9028,7 +9052,7 @@ This allows the mentioned algorithm.
 
 %%]
 
-%%[1
+%%[2
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -9077,7 +9101,7 @@ This has been omitted.
 
 %%]
 
-%%[1
+%%[3
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -9095,6 +9119,9 @@ This has been omitted.
 %% endif %% incl12
 
 
+%%]
+
+%%[2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 12
@@ -9121,7 +9148,7 @@ data L a = N | C a (L a)
 
 %%]
 
-%%[1
+%%[2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 13
@@ -9143,7 +9170,7 @@ built on records
 
 %%]
 
-%%[1
+%%[2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 14
@@ -9166,7 +9193,7 @@ coercions
 
 %%]
 
-%%[1
+%%[2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 15
@@ -9197,7 +9224,7 @@ binding group analysis, dependency analysis
 
 %%]
 
-%%[1
+%%[2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC ??
@@ -9214,7 +9241,7 @@ binding group analysis, dependency analysis
 
 %%]
 
-%%[1
+%%[2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC XX-1
@@ -9234,7 +9261,7 @@ Converting O(n) structures to faster (i.e., [] -> Set, assoc list -> Map)
 
 %%]
 
-%%[1
+%%[2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC XX
@@ -9257,7 +9284,7 @@ error messaging, line/col position, comment ????
 
 %%]
 
-%%[1
+%%[2
 
 
 
@@ -9474,7 +9501,7 @@ but should be viewed in combination with a clear visual cue indicating what is d
 
 %%]
 
-%%[1
+%%[2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Acknowledgement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -2,6 +2,9 @@
 RULER2_SRC_PREFIX	:= $(TOP_PREFIX)ruler2/
 RULER2_DEMO_PREFIX	:= $(RULER2_SRC_PREFIX)demo/
 
+# this file
+RULER2_MKF			:= $(RULER2_SRC_PREFIX)files.mk
+
 # main + sources
 RULER2_MAIN			:= Ruler
 
@@ -15,13 +18,16 @@ RULER2_AG_MAIN_SRC	:= $(addprefix $(RULER2_SRC_PREFIX),RulerPretty.ag RulerAST.a
 RULER2_HS_SRC		:= $(addprefix $(RULER2_SRC_PREFIX),RulerUtils.hs RulerAdmin.hs RulerMkAdmin.hs)
 RULER2_HS_DRV		:= $(addprefix $(RULER2_SRC_PREFIX),$(RULER2_MAIN).hs)
 
+# all src
+RULER2_ALL_SRC		:= $(RULER2_AG_MAIN_SRC) $(RULER2_HS_SRC)
+
 # binary/executable
 RULER2_BLD_EXEC		:= $(BIN_PREFIX)ruler2
 RULER2				:= $(RULER2_BLD_EXEC)
 
 # make rules
 $(RULER2_BLD_EXEC): $(RULER2_HS_DRV) $(RULER2_HS_SRC) $(LIB_SRC_HS)
-	mkdir -p `dirname $@`
+	mkdir -p $(@D)
 	$(GHC) --make $(GHC_OPTS) -i$(LIB_SRC_PREFIX) -i$(RULER2_SRC_PREFIX) $(RULER2_SRC_PREFIX)$(RULER2_MAIN).hs -o $@
 
 $(RULER2_SRC_PREFIX)$(RULER2_MAIN).hs: $(RULER2_AG_MAIN_SRC)
@@ -58,8 +64,9 @@ RULER2_DEMO_SHUFFLE_ORDER	:= 1 < 2 < 3
 RULER2_DEMO_SHUFFLE_FINAL	:= 3
 
 # distribution
-RULER2_DIST_FILES			:= $(RULER2_AG_MAIN_SRC) $(RULER2_HS_SRC) $(RULER2_DEMO_SRC_CRL) \
-								$(addprefix $(RULER2_SRC_PREFIX),Makefile files.mk README) \
+RULER2_DIST_FILES			:= $(RULER2_ALL_SRC) $(RULER2_DEMO_SRC_CRL) \
+								$(addprefix $(RULER2_SRC_PREFIX),Makefile README) \
+								$(RULER2_MKF) \
 								$(RULER2_DEMO_SRC_CAG_MAIN) $(RULER2_DEMO_SRC_CHS_UTILS) \
 								$(wildcard $(RULER2_DEMO_PREFIX)tst*)
 

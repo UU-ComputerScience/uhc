@@ -1,11 +1,35 @@
+# location of test src
+TEST_SRC_PREFIX	:= $(TOP_PREFIX)test/
+
+# this file
+TEST_MKF							:= $(TEST_SRC_PREFIX)files.mk
+
+# main + sources + dpds, for .chs
+TEST_ALL_SRC						:= $(wildcard $(TEST_SRC_PREFIX)*.eh)
+TEST_EXP_DRV						:= $(wildcard $(TEST_SRC_PREFIX)*.eh.exp*)
+
+# distribution
+TEST_DIST_FILES						:= $(TEST_ALL_SRC) $(TEST_EXP_DRV) $(TEST_MKF)
+
+# rules
+test-lists:
+	@cd $(TEST_SRC_PREFIX) ; \
+	for v in $(EHC_PUB_VARIANTS) ; \
+	do \
+	  ehs= ; \
+	  vv=`echo $$v | sed -e 's/_[0-9]//'` ; \
+	  for ((i = 1 ; i <= $${vv} ; i++)) ; do ehs="$$ehs `ls $${i}-*.eh`" ; done ; \
+	  echo "$$ehs" > $$v.lst ; \
+	done
+
 test-expect test-regress: test-lists
 	@how=`echo $@ | sed -e 's/.*expect.*/exp/' -e 's/.*regress.*/reg/'` ; \
-	cd test ; \
+	cd $(TEST_SRC_PREFIX) ; \
 	for v in $(VERSIONS) ; \
 	do \
 	  echo "== version $$v ==" ; \
-	  ehc=../bin/$$v/$(EHC) ; \
-	  gri=../bin/$$v/grini ; \
+	  ehc=../bin/$$v/$(EHC_EXEC_NAME) ; \
+	  gri=../bin/$$v/$(GRINI_EXEC_NAME) ; \
 	  if test -x $$ehc ; \
 	  then \
 	    for t in `cat $$v.lst` ; \
