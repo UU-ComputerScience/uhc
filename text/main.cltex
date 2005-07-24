@@ -9513,10 +9513,6 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 
 
 
-
-
-
-
 %%]
 
 %%[1
@@ -9527,7 +9523,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %if not asSlides
 \AddContentsLine{References}
 %if dist
-%%1srcfile(afp04.bbl%%)
+%%--1srcfile(afp04.bbl%%)
 %else
 %if refToPDF
 \bibliographystyle{uhcbook}
@@ -9537,7 +9533,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 \bibliographystyle{plain}
 %endif
 {\sloppy\raggedright
-\bibliography{LitAdm}
+\bibliography{\jobname}
 }
 %endif %% dist
 %endif %% not asSlides

@@ -2,7 +2,11 @@ TOP_PREFIX			:=
 
 default: explanation
 
+# files, dependencies, rules
+# do not change the order of these includes
+-include latex/files.mk
 -include lhs2TeX/files.mk
+
 include mk/shared.mk
 
 include shuffle/files.mk
@@ -11,6 +15,7 @@ include grin/files.mk
 include ehc/files.mk
 include grini/files.mk
 include agprimer/files.mk
+-include figs/files.mk
 -include text/files.mk
 include test/files.mk
 

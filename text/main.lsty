@@ -4,7 +4,7 @@
 % xfig figure
 \newcommand{\XFigLatex}[1]{%
  \begin{center}
- \input figs/#1.latex
+ \input #1.tex
  \end{center}
 }
 

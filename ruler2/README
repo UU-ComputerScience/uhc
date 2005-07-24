@@ -1,7 +1,8 @@
 Requirements
 ------------
 
-UUST library. The the www site you got this from.
+GHC 6.4     : http://www.haskell.org/ghc
+UUST library: see http://www.cs.uu.nl/wiki/Ehc/WebHome
 
 
 Installation
