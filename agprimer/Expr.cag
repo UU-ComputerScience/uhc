@@ -14,7 +14,8 @@ DATA AGItf
 
 DATA Expr
    | IConst         int     :  {Int}
-   | Add            e1      :  Expr   ^^^  e2      :  Expr
+   | Add            e1      :  Expr
+                    e2      :  Expr
 
 SET AllNT = AGItf Expr
 %%]
@@ -29,7 +30,9 @@ SEM Expr
 
 %%[1.letdata
 DATA Expr
-   | Let            nm      :  {String}  ^^^  val     :  Expr  ^^^  body    :  Expr
+   | Let            nm      :  {String}
+                    val     :  Expr
+                    body    :  Expr
    | Var            nm      :  {String}
 %%]
 

@@ -298,7 +298,7 @@ SEM DataConstrEqs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.TyExpr.ConNm
-ATTR TyExpr [ | | appFunNm: {HsName} ^^ appFunPP: PP_Doc ^^ appArgPPL: PP_DocL ]
+ATTR TyExpr [ | | appFunNm: {HsName}  appFunPP: PP_Doc  appArgPPL: PP_DocL ]
 
 SEM TyExpr
   | Con         lhs     .   appFunNm    =   @nm
@@ -334,7 +334,7 @@ SEM TyExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[6
-ATTR KiExpr [ | | appFunNm: {HsName} ^^ appFunPP: PP_Doc ^^ appArgPPL: PP_DocL ]
+ATTR KiExpr [ | | appFunNm: {HsName}  appFunPP: PP_Doc  appArgPPL: PP_DocL ]
 
 SEM KiExpr
   | Con         lhs     .   appFunNm    =   @nm
@@ -383,7 +383,7 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.Expr.ConNm
-ATTR Expr [ | | appFunNm: {HsName} ^^ appFunPP: PP_Doc ^^ appArgPPL: PP_DocL ]
+ATTR Expr [ | | appFunNm: {HsName}  appFunPP: PP_Doc  appArgPPL: PP_DocL ]
 
 SEM Expr
   | Con         lhs     .   appFunNm    =   @nm
@@ -418,7 +418,7 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.PatExpr
-ATTR PatExpr [ | | appFunNm: {HsName} ^^ appFunPP: PP_Doc ^^ appArgPPL: PP_DocL ]
+ATTR PatExpr [ | | appFunNm: {HsName}  appFunPP: PP_Doc  appArgPPL: PP_DocL ]
 
 SEM PatExpr
   | Con         loc     .   appFunNm    =   @nm

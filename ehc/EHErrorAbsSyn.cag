@@ -15,15 +15,19 @@
 
 %%[1.UnifyClash
 DATA Err
-  | UnifyClash          ty1        : {Ty}                ^^  ty2        : {Ty}
-                        ty1detail  : {Ty}                ^^  ty2detail  : {Ty}
+  | UnifyClash          ty1        : {Ty}
+                        ty2        : {Ty}
+                        ty1detail  : {Ty}
+                        ty2detail  : {Ty}
 %%]
 
 %%[4.UnifyClash -1.UnifyClash
 DATA Err
-  | UnifyClash          ty1        : {Ty}                ^^  ty2        : {Ty}
+  | UnifyClash          ty1        : {Ty}
+                        ty2        : {Ty}
                         fiMode     : {FIMode}
-                        ty1detail  : {Ty}                ^^  ty2detail  : {Ty}
+                        ty1detail  : {Ty}
+                        ty2detail  : {Ty}
                         fiModeD    : {FIMode}
 %%]
 
@@ -35,8 +39,10 @@ DATA Err
 %%[1.Rest
 DATA Err
   | NamesDupIntrod      nmL        : {[HsName]}
-  | PatArity            ty         : {Ty}                ^^  arity      : {Int}
-  | NestedIn            wher       : {PP_Doc}            ^^  errL       : ErrL
+  | PatArity            ty         : {Ty}
+                        arity      : {Int}
+  | NestedIn            wher       : {PP_Doc}
+                        errL       : ErrL
 
 TYPE ErrL       = [Err]
 %%]
@@ -48,39 +54,50 @@ DATA Err
 
 %%[2.UnifyOccurs -1.MissingSig
 DATA Err
-  | UnifyOccurs         ty1        : {Ty}                ^^  ty2        : {Ty}
-                        tvar       : {TyVarId}           ^^  ty2detail  : {Ty}
+  | UnifyOccurs         ty1        : {Ty}
+                        ty2        : {Ty}
+                        tvar       : {TyVarId}
+                        ty2detail  : {Ty}
 %%]
 
 %%[4 -2.UnifyOccurs
 DATA Err
-  | UnifyOccurs         ty1        : {Ty}                ^^  ty2        : {Ty}
+  | UnifyOccurs         ty1        : {Ty}
+                        ty2        : {Ty}
                         fiMode     : {FIMode}
-                        tvar       : {TyVarId}           ^^  ty2detail  : {Ty}
+                        tvar       : {TyVarId}
+                        ty2detail  : {Ty}
                         fiModeD    : {FIMode}
 %%]
 
 %%[4_2
 DATA Err
-  | InconsistentAlts    ty         : {Ty}                ^^  tvar       : {TyVarId}
-                        tyL        : {TyL}               ^^  fiMode     : FIMode
+  | InconsistentAlts    ty         : {Ty}
+                        tvar       : {TyVarId}
+                        tyL        : {TyL}
+                        fiMode     : FIMode
 %%]
 
 %%[7
 DATA Err
-  | MissingRowLabels    nmL        : {[HsName]}          ^^  ty         : {Ty}
-  | TooManyRowLabels    nmL        : {[HsName]}          ^^  ty         : {Ty}
+  | MissingRowLabels    nmL        : {[HsName]}
+                        ty         : {Ty}
+  | TooManyRowLabels    nmL        : {[HsName]}
+                        ty         : {Ty}
 %%]
 
 %%[8
 DATA Err
-  | FileNotFound        fileName   : {String}            ^^  locations  : {[String]}
-  | Parse               expecting  : {String}            ^^  repaired   : {String}
+  | FileNotFound        fileName   : {String}
+                        locations  : {[String]}
+  | Parse               expecting  : {String}
+                        repaired   : {String}
 %%]
 
 %%[9
 DATA Err
-  | PrfCutOffReached    pred       : {PredOcc}           ^^  depth      : {Int}
+  | PrfCutOffReached    pred       : {PredOcc}
+                        depth      : {Int}
   | NotProvenPreds      preds      : {[PredOcc]}
   | OverlapPreds        overl      : {AssocL Pred [CExpr]}
   | TyHasFreeTVars      ty         : {Ty}

@@ -110,7 +110,7 @@ instance CSubstitutable CSubst where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-ATTR AllCodeNT CodeAGItf [ cSubst: CSubst ^^^ coeArg: CExpr | | cRepl: SELF ]
+ATTR AllCodeNT CodeAGItf [ cSubst: CSubst  coeArg: CExpr | | cRepl: SELF ]
 
 SEM CExpr
   | Hole        lhs         .   cRepl       =   case Map.lookup @uid @lhs.cSubst of

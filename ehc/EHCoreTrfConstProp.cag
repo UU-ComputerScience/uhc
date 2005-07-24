@@ -32,7 +32,7 @@ cmodTrfConstProp cmod
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR CExpr [ | | appLam: CExpr ^^ appArgL: {[CExpr]} ]
+ATTR CExpr [ | | appLam: CExpr  appArgL: {[CExpr]} ]
 
 SEM CExpr
   | App         loc         .   appLam      =   @func.appLam

@@ -70,7 +70,7 @@ aRenRepl m n = maybe n id . Map.lookup n $ m
 %%]
 
 %%[8
-ATTR AllCodeNT [ aRenMp: ARenMp ^^ lev: Int | | ]
+ATTR AllCodeNT [ aRenMp: ARenMp  lev: Int | | ]
 ATTR AllBind AllPat [ | | nmL USE {++} {[]}: {[HsName]} ]
 
 SEM CodeAGItf

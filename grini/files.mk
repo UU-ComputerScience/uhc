@@ -7,6 +7,7 @@ GRINI_MKF								:= $(GRINI_SRC_PREFIX)files.mk
 # end products, binary, executable, etc
 GRINI_EXEC_NAME							:= grini
 GRINI_BLD_EXEC							:= $(GRIN_BLD_BIN_VARIANT_PREFIX)$(GRINI_EXEC_NAME)
+GRINI_ALL_PUB_EXECS						:= $(patsubst %,$(GRIN_BIN_PREFIX)%/grini,$(GRIN_PUB_VARIANTS))
 GRINI_ALL_EXECS							:= $(patsubst %,$(GRIN_BIN_PREFIX)%/grini,$(GRIN_VARIANTS))
 
 # main + sources + dpds, for .chs
@@ -55,16 +56,16 @@ grini-variant-dflt: $(GRINI_HS_ALL_DRV_HS) $(GRINI_AG_ALL_MAIN_DRV_HS) $(GRIN_AG
 
 $(GRINI_AG_ALL_MAIN_DRV_AG) $(GRINI_AG_ALL_DPDS_DRV_AG): $(GRIN_BLD_VARIANT_PREFIX)%.ag: $(GRINI_SRC_PREFIX)%.cag $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(GRIN_VARIANT) --base=$(*F) --ag --order="$(EHC_SHUFFLE_ORDER)" $< | $(LHS2TEX) $(LHS2TEX_OPTS_NEWC) | $(SUBST_LINE_CMT) > $@
+	$(SHUFFLE) --gen=$(GRIN_VARIANT) --base=$(*F) --ag --prefix=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(GRINI_AG_S_MAIN_DRV_HS): %.hs: %.ag
 	$(AGC) -cfspr -P$(GRIN_BLD_VARIANT_PREFIX) $<
 
 $(GRINI_HS_MAIN_DRV_HS): $(GRIN_BLD_VARIANT_PREFIX)%.hs: $(GRINI_SRC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(GRIN_VARIANT) --base=Main --hs --order="$(EHC_SHUFFLE_ORDER)" $< | $(LHS2TEX) $(LHS2TEX_OPTS_NEWC) | $(SUBST_LINE_CMT) > $@
+	$(SHUFFLE) --gen=$(GRIN_VARIANT) --base=Main --hs --prefix=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(GRINI_HS_UTIL_DRV_HS): $(GRIN_BLD_VARIANT_PREFIX)%.hs: $(GRINI_SRC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(GRIN_VARIANT) --base=$(*F) --hs --order="$(EHC_SHUFFLE_ORDER)" $< | $(LHS2TEX) $(LHS2TEX_OPTS_NEWC) | $(SUBST_LINE_CMT) > $@
+	$(SHUFFLE) --gen=$(GRIN_VARIANT) --base=$(*F) --hs --prefix=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
