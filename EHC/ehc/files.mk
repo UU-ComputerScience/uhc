@@ -264,10 +264,10 @@ ehc-variant-selrule:
 
 $(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG): $(EHC_BLD_VARIANT_PREFIX)%.ag: $(EHC_SRC_PREFIX)%.cag $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=$(*F) --ag --order="$(EHC_SHUFFLE_ORDER)" $< | $(LHS2TEX) $(LHS2TEX_OPTS_NEWC) | $(SUBST_LINE_CMT) > $@
+	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=$(*F) --ag --prefix=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(EHC_RULES_3_DRV_AG): $(EHC_BLD_VARIANT_PREFIX)%.ag: $(EHC_BLD_VARIANT_PREFIX)%.cag $(SHUFFLE)
-	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=$(*F) --ag --order="$(EHC_SHUFFLE_ORDER)" $< | $(LHS2TEX) $(LHS2TEX_OPTS_NEWC) | $(SUBST_LINE_CMT) > $@
+	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=$(*F) --ag --prefix=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(EHC_AG_D_MAIN_DRV_HS): %.hs: %.ag
 	$(AGC) -dr -P$(EHC_BLD_VARIANT_PREFIX) $<
@@ -280,11 +280,11 @@ $(EHC_AG_DS_MAIN_DRV_HS): %.hs: %.ag
 
 $(EHC_HS_MAIN_DRV_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(EHC_SRC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=Main --hs --order="$(EHC_SHUFFLE_ORDER)" $< | $(LHS2TEX) $(LHS2TEX_OPTS_NEWC) | $(SUBST_LINE_CMT) > $@
+	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=Main --hs --prefix=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(EHC_HS_UTIL_DRV_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(EHC_SRC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=$(*F) --hs --order="$(EHC_SHUFFLE_ORDER)" $< | $(LHS2TEX) $(LHS2TEX_OPTS_NEWC) | $(SUBST_LINE_CMT) > $@
+	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=$(*F) --hs --prefix=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(EHC_RULES_3_DRV_CAG): $(EHC_RULES_3_SRC_RL2) $(RULER2)
 	mkdir -p $(@D)

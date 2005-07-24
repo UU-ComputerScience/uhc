@@ -123,7 +123,7 @@ tyInst uniq onlyExists howToInst ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4
-ATTR TyAGItf AllTy [ howToInst: HowToInst ^^ onlyExists: Bool | | ]
+ATTR TyAGItf AllTy [ howToInst: HowToInst  onlyExists: Bool | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -131,7 +131,7 @@ ATTR TyAGItf AllTy [ howToInst: HowToInst ^^ onlyExists: Bool | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4
-ATTR AllTy [ allow: Bool ^^ mbQ: {Maybe TyQu} | | ]
+ATTR AllTy [ allow: Bool  mbQ: {Maybe TyQu} | | ]
 
 SEM TyAGItf
   | AGItf           ty          .   allow       =   True

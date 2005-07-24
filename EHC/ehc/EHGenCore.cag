@@ -93,7 +93,7 @@ SEM Expr
 %%]
 
 %%[8
-ATTR RecExpr [ | | recCExpr: CExpr ^^ fuCExprL: {FieldUpdateL CExpr} ]
+ATTR RecExpr [ | | recCExpr: CExpr  fuCExprL: {FieldUpdateL CExpr} ]
 
 SEM RecExpr
   | Empty       loc         .   recCExpr        =   CExpr_Tup CTagRec
@@ -264,7 +264,7 @@ SEM RecPatExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-ATTR Expr [ | | appArgCoeL: {[Coe]} ^^ appFunCExpr: CExpr ]
+ATTR Expr [ | | appArgCoeL: {[Coe]}  appFunCExpr: CExpr ]
 
 SEM Expr
   | App AppImpl
@@ -297,7 +297,7 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR Expr [ | | letCBindL: {[(CBindCateg,CBindL)]} ^^ letCBody: CExpr ]
+ATTR Expr [ | | letCBindL: {[(CBindCateg,CBindL)]}  letCBody: CExpr ]
 
 SEM Expr
   | Let         lhs         .   letCBody        =   @body.letCBody

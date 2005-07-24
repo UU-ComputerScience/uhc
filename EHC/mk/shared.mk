@@ -4,7 +4,10 @@
 # compilers and tools used
 AGC					:= uuagc
 GHC					:= ghc
-LHS2TEX				:= lhs2TeX
+
+# lhs2TeX
+LHS2TEX_ENV			:= $(LHS2TEX)
+LHS2TEX				:= LHS2TEX=".:$(FMT_SRC_PREFIX):$(LHS2TEX_ENV)" lhs2TeX
 
 # GHC options
 GHC_OPTS			:= -fglasgow-exts -package util -package lang -package data -package uust
@@ -30,7 +33,7 @@ LIB_SRC_HS			:= $(wildcard $(LIB_SRC_PREFIX)*.hs)
 LIB_DIST_FILES		:= $(LIB_SRC_HS)
 
 # lhs2tex options
-LHS2TEX_OPTS_DFLT	:= -P.:$(FMT_SRC_PREFIX)
+LHS2TEX_OPTS_DFLT	:= 
 LHS2TEX_OPTS_POLY	:= $(LHS2TEX_OPTS_DFLT) --poly
 LHS2TEX_OPTS_NEWC	:= $(LHS2TEX_OPTS_DFLT) --newcode
 

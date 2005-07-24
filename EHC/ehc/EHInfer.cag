@@ -203,7 +203,7 @@ SEM Decl
 %%]
 
 %%[2.Rest
-ATTR AllDecl [ | tyCnstr: Cnstr ^^^ patTyCnstr: Cnstr | ]
+ATTR AllDecl [ | tyCnstr: Cnstr  patTyCnstr: Cnstr | ]
 
 SEM Decl
   | Val         patExpr     .   tyCnstr             =   @lhs.patTyCnstr

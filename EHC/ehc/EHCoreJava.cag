@@ -135,7 +135,7 @@ jvIns1Nm  = HNm "_ins1"
 
 %%[8
 ATTR CodeAGItf AllCodeNT [ | | jvSrc USE {>-<} {empty} : PP_Doc ]
-ATTR CBind CBindL [ | | jvSrcInd USE {>-<} {empty} : PP_Doc ^^^ jvSrcSetInd USE {>-<} {empty} : PP_Doc ^^^ jvSrcStrict USE {>-<} {empty} : PP_Doc ]
+ATTR CBind CBindL [ | | jvSrcInd USE {>-<} {empty} : PP_Doc  jvSrcSetInd USE {>-<} {empty} : PP_Doc  jvSrcStrict USE {>-<} {empty} : PP_Doc ]
 ATTR CodeAGItf CModule [ | | jvBasename: String ]
 
 SEM CModule
@@ -229,7 +229,7 @@ SEM CBind
                             .   jvSrcStrict =   jvBind "Object" @nm (jvForceEval @expr.jvSrc)
   | FFI         lhs         .   jvSrc       =   jvBind "Object" @nm . maybe (jvNmPP hsnUnknown) (jvNmPP) . lookup @impEnt $ primToJavaMp
 
-ATTR CAlt CAltL CPat CPatL CPatBind CPatBindL [ jvCaseScrutinee: HsName ^^^ jvCaseResult: HsName | | ]
+ATTR CAlt CAltL CPat CPatL CPatBind CPatBindL [ jvCaseScrutinee: HsName  jvCaseResult: HsName | | ]
 ATTR CPat [ | | fldNm: HsName ]
 
 SEM CPat
@@ -321,7 +321,7 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR CExpr [ | | jvArgL: {[HsName]} ^^ jvBody: PP_Doc ]
+ATTR CExpr [ | | jvArgL: {[HsName]}  jvBody: PP_Doc ]
 
 SEM CExpr
   | Lam         loc         .   jvArgL      =   @arg : @body.jvArgL

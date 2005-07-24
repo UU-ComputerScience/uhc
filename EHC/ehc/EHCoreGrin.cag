@@ -536,7 +536,7 @@ ATTR CPatRest [ | | self: SELF ]
 %%]
 
 %%[8
-ATTR CExpr [ | | grTupRec: GrVal ^^ grTupFldL: TupAdaptFldL ]
+ATTR CExpr [ | | grTupRec: GrVal  grTupFldL: TupAdaptFldL ]
 
 SEM CExpr
   | TupIns TupUpd TupDel
@@ -566,7 +566,7 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR CExpr [ | | grLamArgL: {[HsName]} ^^ grLamBody: GrExpr ]
+ATTR CExpr [ | | grLamArgL: {[HsName]}  grLamBody: GrExpr ]
 
 SEM CExpr
   | Lam         lhs         .   grLamArgL   =   @arg : @body.grLamArgL
@@ -579,7 +579,7 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR CExpr [ | | grAppFun: HsName ^^ grAppArgL: GrValL ]
+ATTR CExpr [ | | grAppFun: HsName  grAppArgL: GrValL ]
 
 SEM CExpr
   | App         loc         .   grAppFun    =   @func.grAppFun

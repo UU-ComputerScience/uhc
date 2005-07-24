@@ -2,7 +2,7 @@ TOP_PREFIX			:=
 
 default: explanation
 
-include fmt/files.mk
+-include lhs2TeX/files.mk
 include mk/shared.mk
 
 include shuffle/files.mk
@@ -17,9 +17,7 @@ include test/files.mk
 -include mk/dist.mk
 
 # distributed/published stuff for WWW
-WWW_SRC_ZIP					:= www/current-ehc-src.zip
 WWW_SRC_TGZ					:= www/current-ehc-src.tgz
-WWW_RULER_SRC_TGZ			:= www/current-ruler-src.tgz
 WWW_DOC_PDF					:= www/current-ehc-doc.pdf
 
 # pictures in pgf format
@@ -74,26 +72,16 @@ LHS2TEX_POLY_3			= \
 	$(LHS2TEX_EXEC_WT_OPTS) $(LHS2TEX_POLY_MODE) $(1) > $(2)
 
 explanation:
-	@echo "make <n>/ehc     : make compiler version <n> (where <n> in {$(VERSIONS)})" ; \
-	echo  "make <n>/gri     : make grin interpreter version <n> (where <n> in {$(GRI_VERSIONS)})" ; \
-	echo  "make ehcs        : make all compiler (ehc) versions" ; \
-	echo  "make gris        : make all grin interpreter (gri) versions" ; \
-	echo  "make afp         : make afp.pdf, by running latex once" ; \
-	echo  "make afp-full    : make afp.pdf, with bib/index" ; \
-	echo  "make doc         : make doc of tools" ; \
-	echo  "make all         : make all of the above" ; \
-	echo ; \
-	echo  "make afp-slides  : make slides afp-slides.pdf" ; \
-	echo  "make afp04       : make LLNCS variant of afp.pdf, for proceedings" ; \
-	echo  "make esop05      : make ESOP2005 article Explicit implicit parameters" ; \
-	echo  "make afp-tr      : make UU techreport variant of afp.pdf" ; \
-	echo  "make test-regress: run regression test" ; \
-	echo  "make test-expect : make expected output (for later comparison with test-regress)" ; \
-	echo  "make dist        : make distribution (of ehc src versions) in $(DIST_PREFIX)<today>-ehc.zip" ; \
-	echo  "make www         : make 'current' www dist (based on dist)" ; \
-	echo  "make www-sync    : sync www dist (proper ssh access required)"
+	@echo "make bin/<n>/ehc     : make compiler version <n> (where <n> in {$(EHC_PUB_VARIANTS)})" ; \
+	echo  "make bin/<n>/grini   : make grin interpreter version <n> (where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
+	echo  "make bin/ruler2      : make ruler tool" ; \
+	echo  "make bin/shuffle     : make shuffle tool" ; \
+	echo  "make ehcs            : make all compiler ($(EHC_EXEC_NAME)) versions" ; \
+	echo  "make grinis          : make all grin interpreter ($(GRINI_EXEC_NAME)) versions" ; \
+	echo  "make test-regress    : run regression test" ; \
+	echo  "make test-expect     : make expected output (for later comparison with test-regress)" ; \
 
-all: afp-full ehcs doc gris
+all: afp-full ehcs doc grinis
 	$(MAKE) initial-test-expect
 
 doc: $(SHUFFLE_DOC_PDF)
@@ -209,7 +197,7 @@ eh-intro:
 eh-introETAPSLinks:
 	$(MAKE) AFP=$@ AFP_TEX_DPDS= LHS2TEX_POLY_MODE=--poly LHS2TEX_OPTS="$(LHS2TEX_OPTS) --set=storyEHIntro --set=storyVariantETAPSLinks --set=asSlides --set=omitTBD --set=omitLitDiscuss" afp
 
-.PHONY: shuffle ruler ruler2 brew ehcs dist www www-sync gri gris agprimer $(DIST_AFP04) $(DIST_ICFP05_SLIDES)
+.PHONY: shuffle ruler ruler2 brew ehcs dist www www-sync gri grinis agprimer $(DIST_AFP04) $(DIST_ICFP05_SLIDES)
 
 $(SHUFFLE_DIR)/ShuffleDoc.tex: $(SHUFFLE)
 
@@ -243,7 +231,7 @@ $(BREW_DOC_PDF): $(BREW_DIR)/RulerDoc.tex $(BREW)
 
 ehcs: $(EHC_ALL_PUB_EXECS)
 
-gris: $(GRI_ALL_EXECS)
+grinis: $(GRINI_ALL_PUB_EXECS)
 
 redit:
 	bbedit \
@@ -266,15 +254,12 @@ initial-test-expect: $(A_EH_TEST_EXP)
 $(A_EH_TEST_EXP): $(A_EH_TEST)
 	$(MAKE) test-expect
 
-$(DIST_RULER2_TGZ): $(MK_DIST_FILES) $(RULER2_DIST_FILES) $(SHUFFLE_DIST_FILES) $(LIB_DIST_FILES)
-	tar cfz $@ $^
-
 WWW_EXAMPLES_TMPL			:=	www/ehc-examples-templ.html
 WWW_EXAMPLES_HTML			:=	www/ehc-examples.html
 
 www-ex: $(WWW_EXAMPLES_HTML)
 
-www: $(WWW_SRC_ZIP) $(WWW_SRC_TGZ) $(WWW_RULER_SRC_TGZ) www-ex # $(WWW_DOC_PDF)
+www: $(WWW_SRC_TGZ) www-ex # $(WWW_DOC_PDF)
 
 www/DoneSyncStamp: www-ex
 	(date; echo -n ", " ; svn up) > www/DoneSyncStamp ; \
@@ -285,15 +270,9 @@ www-sync: www/DoneSyncStamp
 $(WWW_EXAMPLES_HTML): $(WWW_EXAMPLES_TMPL)
 	$(call PERL_SUBST_EHC,$(WWW_EXAMPLES_TMPL),$(WWW_EXAMPLES_HTML))
 
-$(WWW_SRC_ZIP): $(DIST_ZIP)
-	cp $< $@
-
 $(WWW_SRC_TGZ): $(DIST_TGZ)
 	cp $^ $@
 
-$(WWW_RULER_SRC_TGZ): $(DIST_RULER2_TGZ)
-	cp $^ $@
-
-$(WWW_DOC_PDF): $(AFP_PDF)
+$(WWW_DOC_PDF): doc/phd.pdf
 	cp $< $@
 

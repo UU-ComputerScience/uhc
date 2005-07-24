@@ -112,7 +112,7 @@ tvCategPrefix TyVarCateg_Exist = "C"
 %%]
 
 %%[3
-ATTR AllTy [ | tnUniq: {Int} ^^ tnMap: TVarNameMap | ]
+ATTR AllTy [ | tnUniq: {Int}  tnMap: TVarNameMap | ]
 
 SEM TyAGItf
   | AGItf           ty      .   tnUniq      =   0
@@ -266,7 +266,7 @@ SEM Pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.appFunPP
-ATTR Ty [ | | appFunPP: PP_Doc ^^ appArgPPL: PP_DocL ]
+ATTR Ty [ | | appFunPP: PP_Doc  appArgPPL: PP_DocL ]
 %%]
 
 %%[1.appFunPP.Ty
@@ -293,7 +293,7 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.ParNeed
-ATTR Ty [ parNeed: ParNeed ^^^ parNeedL: ParNeedL | | ]
+ATTR Ty [ parNeed: ParNeed  parNeedL: ParNeedL | | ]
 
 SEM TyAGItf
   | AGItf       ty      .   parNeed             =   ParNotNeeded
