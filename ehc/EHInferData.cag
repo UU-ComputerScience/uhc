@@ -23,11 +23,11 @@ SEM Decl
   | Data        loc         .   dataTgi             =   mkTGI (Ty_Con @tyNm) (tyEnsureNonAny @lUniq @knKi)
                 lhs         .   patTyGam            :=  if @hasKiSig  then @lhs.patTyGam
                                                                       else gamAdd @lhs.patTyGam @tyNm @dataTgi
-                loc         .   fo                  =   fitsIn  strongFIOpts emptyFE @lUniq2
+                loc         .   fo_                 =   fitsIn  strongFIOpts emptyFE @lUniq2
                                                                 (@lhs.patKiCnstr |=> (@tyVars.kiL `mkArrow` kiStar))
                                                                 (@lhs.patKiCnstr |=> (tgiKi @dataTgi))
-                            .   dataKi              =   foTy @fo
-                lhs         .   patKiCnstr          =   foCnstr @fo |=> @lhs.patKiCnstr
+                            .   dataKi              =   foTy @fo_
+                lhs         .   patKiCnstr          =   foCnstr @fo_ |=> @lhs.patKiCnstr
                 constrs     .   tyGam               :=  @lhs.tyGam `gamPushGam`
                                                           tyGamInst1Exists @lUniq3 (@lhs.kiCnstr |=> @lTyGam)
 %%]
@@ -39,10 +39,10 @@ SEM Decl
 %%[6
 SEM DataConstr
   | Constr      loc         .   fldsKiCnstr         =   @fields.kiCnstr
-                            .   (_,fo)              =   fitsInL  weakFIOpts emptyFE @lUniq
+                            .   (_,fo_)             =   fitsInL  weakFIOpts emptyFE @lUniq
                                                                  (@fldsKiCnstr |=> @fields.kiL)
                                                                  (repeat kiStar)
-                lhs         .   kiCnstr             =   foCnstr @fo |=> @fldsKiCnstr
+                lhs         .   kiCnstr             =   foCnstr @fo_ |=> @fldsKiCnstr
 %%]
 
 %%[11
@@ -50,8 +50,8 @@ SEM DataConstr
   | Constr      loc         .   fldsKiCnstr         :=  @eqs.kiCnstr
 
 SEM DataConstrEq
-  | Eq          loc         .   fo                  =   fitsIn weakFIOpts emptyFE @lUniq (@tyExpr.kiCnstr |=> @tyVar.ki) (@tyExpr.ki)
-                lhs         .   kiCnstr             =   foCnstr @fo |=> @tyExpr.kiCnstr
+  | Eq          loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq (@tyExpr.kiCnstr |=> @tyVar.ki) (@tyExpr.ki)
+                lhs         .   kiCnstr             =   foCnstr @fo_ |=> @tyExpr.kiCnstr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

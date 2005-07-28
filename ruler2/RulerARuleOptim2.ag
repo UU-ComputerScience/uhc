@@ -31,15 +31,15 @@ SEM AEqn
   | Eqn             lhs     .   replCrEqns  =   let isThr n = Map.findWithDefault False n @lhs.adGam
                                                     isPrev n1 n2 = maybe False (==n1) $ Map.lookup n2 @lhs.croGam
                                                 in  case (@dest.mbSingleANm,@val.mbSingleANm) of
-                                                      (Just (ANm_Node nn dn),Just (ANm_Lhs sn)) | dn == sn && not (isThr sn)
+                                                      (Just (ANm_Node nn dn),Just (ANm_Lhs sn _)) | dn == sn && not (isThr sn)
                                                         -> []
-                                                      (Just (ANm_Node nn dn),Just (ANm_Lhs sn)) | dn == sn && (isThr sn) && nmLhs `isPrev` nn
+                                                      (Just (ANm_Node nn dn),Just (ANm_Lhs sn _)) | dn == sn && (isThr sn) && nmLhs `isPrev` nn
                                                         -> []
                                                       (Just (ANm_Node nn1 dn),Just (ANm_Node nn2 sn)) | dn == sn && (isThr sn) && nn2 `isPrev` nn1
                                                         -> []
-                                                      (Just (ANm_Lhs dn),Just (ANm_Node nn sn)) | dn == sn {- && (isThr sn) -} && nn `isPrev` nmLhs
+                                                      (Just (ANm_Lhs dn _),Just (ANm_Node nn sn)) | dn == sn {- && (isThr sn) -} && nn `isPrev` nmLhs
                                                         -> []
-                                                      (Just (ANm_Lhs dn),Just (ANm_Lhs sn)) | dn == sn && (isThr sn) && nmLhs `isPrev` nmLhs
+                                                      (Just (ANm_Lhs dn _),Just (ANm_Lhs sn _)) | dn == sn && (isThr sn) && nmLhs `isPrev` nmLhs
                                                         -> []
                                                       _ -> [@replCr]
   | * - Eqn         lhs     .   replCrEqns  =   [@replCr]

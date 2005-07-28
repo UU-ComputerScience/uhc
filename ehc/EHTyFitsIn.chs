@@ -179,9 +179,9 @@ fitsIn ty1 ty2
 %%]
 
 %%[fitsInBotCon.1
-            f  Ty_Any               t2              = res t2
-            f  t1                   Ty_Any          = res t1
-            f  t1@(Ty_Con s1)
+            f  Ty_Any               t2              = res t2                                -- m.any.l
+            f  t1                   Ty_Any          = res t1                                -- m.any.r
+            f  t1@(Ty_Con s1)                                                               -- m.con
                t2@(Ty_Con s2)
                  | s1 == s2                         = res t2
 %%]
@@ -214,11 +214,11 @@ fitsIn ty1 ty2
 %%]
 
 %%[fitsInApp.1
-            f  t1@(Ty_App (Ty_App (Ty_Con c1) ta1) tr1)
+            f  t1@(Ty_App (Ty_App (Ty_Con c1) ta1) tr1)                                     -- m.arrow
                t2@(Ty_App (Ty_App (Ty_Con c2) ta2) tr2)
                  | hsnIsArrow c1 && c1 == c2
                  = comp ta2 tr1 ta1 tr2 (\a r -> [a] `mkArrow` r)
-            f  t1@(Ty_App tf1 ta1)
+            f  t1@(Ty_App tf1 ta1)                                                          -- m.prod
                t2@(Ty_App tf2 ta2)
                  = comp tf1 ta1 tf2 ta2 Ty_App
 %%]
@@ -256,7 +256,7 @@ fitsIn ty1 ty2
 %%]
 
 %%[2.fitsIn.Var
-            f  t1@(Ty_Var v1)       (Ty_Var v2)     ^^
+            f  t1@(Ty_Var v1)       (Ty_Var v2)
                  | v1 == v2                         = res t1
             f  t1@(Ty_Var v1)       t2              = occurBind v1 t2
             f  t1                   t2@(Ty_Var v2)  = occurBind v2 t1
@@ -272,7 +272,7 @@ fitsIn ty1 ty2
 %%@fitsInBind.2
 %%@fitsInapp.2
 %%@fitsInBotCon.1
-            f  t1@(Ty_Var v1 f1)    (Ty_Var v2 f2)  ^^
+            f  t1@(Ty_Var v1 f1)    (Ty_Var v2 f2)
                  | v1 == v2 && f1 == f2             = res t1
             f  t1@(Ty_Var v1 f)     t2              
                  | f == TyVarCateg_Plain            = occurBind v1 t2
@@ -1162,7 +1162,7 @@ prfOneStepClass  fe prOcc@(PredOcc pr@(Pred_Class t) prPoi) depth
                  st@(ProofState g@(ProvenGraph i2n p2i p2oi p2fi) u _ _ _ _)
   =  let  nm = tyAppFunConNm t
           ndFail = ProvenArg pr costVeryMuch
-     in   case tgamLookupAll (poiCxId prPoi) (fePrElimTGam fe) nm of
+     in   case tgamLookupAll (poiCxId prPoi) nm (fePrElimTGam fe) of
              pegis@(_:_)
                  ->  let  (u',u1,u2)    = mkNewLevUID2 u
                           rules         = pegiLScopedCostRuleL pegis
@@ -1211,7 +1211,7 @@ prfOneStepLacks  fe prOcc@(PredOcc pr@(Pred_Lacks r l) prPoi) depth
                   in   case row of
                          Ty_Var _ _ 
                            | null exts
-                               ->  case tgamLookupAll (poiCxId prPoi) (fePrElimTGam fe) (predMatchNm pr) of  
+                               ->  case tgamLookupAll (poiCxId prPoi) (predMatchNm pr) (fePrElimTGam fe) of  
                                      pegis@(_:_) | isJust mbMatch
                                          -> fromJust mbMatch
                                          where    (u',u1,u2)    = mkNewLevUID2 u
@@ -1391,7 +1391,7 @@ fitPredToEvid u prTy g
   where  fPr u prTy
             =  case prTy of
                  Ty_Pred p@(Pred_Class _)
-                    ->  case gamLookup g (predMatchNm p) of
+                    ->  case gamLookup (predMatchNm p) g of
                            Just pigi
                              -> let (u',u1,u2) = mkNewLevUID2 u
                                     fo = fitsIn fOpts emptyFE u1 (pigiPrToEvidTy pigi) ([prTy] `mkArrow` mkTyVar u2)

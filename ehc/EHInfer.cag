@@ -151,7 +151,7 @@ SEM Expr
 
 SEM Decl
   | TySig       loc         .   finalTy             =   vgiTy . fromJust
-                                                        . valGamLookup @lhs.finValGam $ @nm
+                                                        . valGamLookup @nm $ @lhs.finValGam
 
 SEM AGItf
   | AGItf       expr        .   finTyCnstr          =   @expr.tyCnstr
@@ -170,7 +170,7 @@ SEM Expr
 %%[10
 SEM Decl
   | DynTySig    loc         .   finalTy             =   vgiTy . fromJust
-                                                        . valGamLookup @lhs.finValGam $ @nm
+                                                        . valGamLookup @nm $ @lhs.finValGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -314,8 +314,8 @@ SEM Expr
 
 SEM Decl
   | TySig       tyExpr      .   tyGam               =   gamPushNew @lhs.tyGam
-                loc         .   fo                  =   fitsIn weakFIOpts @fe @lUniq2 @tyExpr.ki kiStar
-                lhs         .   kiCnstr             =   foCnstr @fo |=> @tyExpr.kiCnstr
+                loc         .   fo_                 =   fitsIn weakFIOpts @fe @lUniq2 @tyExpr.ki kiStar
+                lhs         .   kiCnstr             =   foCnstr @fo_ |=> @tyExpr.kiCnstr
 %%]
 
 %%[7
@@ -458,7 +458,7 @@ SEM Decl
                                                           Nothing
                                                             ->  (Ty_Any,False)
                                                           Just nm
-                                                            ->  case gamLookup @lhs.tySigGam nm of
+                                                            ->  case gamLookup nm @lhs.tySigGam of
                                                                   Nothing   -> (Ty_Any,False)
                                                                   Just vgi  -> (vgiTy vgi,True)
 %%]
@@ -516,7 +516,7 @@ SEM Expr
                             .   kiSigGam            =   @decls.gathKiSigGam
 
 SEM Decl
-  | Data        loc         .   (sigKi,hasKiSig)    =   case gamLookup @lhs.kiSigGam @tyNm of
+  | Data        loc         .   (sigKi,hasKiSig)    =   case gamLookup @tyNm @lhs.kiSigGam of
                                                           Nothing   -> (Ty_Any,False)
                                                           Just tgi  -> (tgiKi tgi,True)
 %%]

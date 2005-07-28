@@ -170,7 +170,7 @@
 % referencing
 % \newcommand{\figRef}[1]{figure~\ref{#1}}
 % \newcommand{\FigRef}[1]{Figure~\ref{#1}}
-\let\myRef=\ref
+\def\myRef#1{\ref{#1}}
 %if acm
 \newcommand{\figRef}[1]{Figure~\myRef{#1}}
 \newcommand{\FigRef}[1]{Figure~\myRef{#1}}
@@ -232,6 +232,9 @@ appendix~\myRef{#1}
 }{%
 \end{description}
 }
+
+%% overlay (to be sorted out, these are just placeholders)
+\newcommand{\overlayChunks}[1]{}
 
 %% handling of `
 

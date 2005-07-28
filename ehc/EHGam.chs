@@ -87,7 +87,7 @@ type Gam k v        =   TreeGam Int k v
 %%[1.Base.sigs
 emptyGam            ::            Gam k v
 gamUnit             ::            k -> v        -> Gam k v
-gamLookup           ::  Ord k =>  Gam k v  -> k -> Maybe v
+gamLookup           ::  Ord k =>  k -> Gam k v  -> Maybe v
 gamToAssocL         ::            Gam k v       -> AssocL k v
 gamPushNew          ::            Gam k v       -> Gam k v
 gamPushGam          ::  Ord k =>  Gam k v       -> Gam k v -> Gam k v
@@ -98,7 +98,7 @@ gamAdd              ::  Ord k =>  Gam k v  -> k -> v       -> Gam k v
 %%[1.Base.funs
 emptyGam                            = Gam [[]]
 gamUnit         k v                 = Gam [[(k,v)]]
-gamLookup       (Gam ll) k          = foldr  (\l mv -> maybe mv Just (lookup k l))
+gamLookup       k (Gam ll)          = foldr  (\l mv -> maybe mv Just (lookup k l))
                                              Nothing ll
 gamToAssocL     (Gam ll)            = concat ll
 gamPushNew      (Gam ll)            = Gam ([]:ll)
@@ -110,7 +110,7 @@ gamAdd          g k v               = gamAddGam g (k `gamUnit` v)
 %%[9.Base.funs -1.Base.funs
 emptyGam                            = emptyTGam 1 
 gamUnit                             = tgamUnit 1
-gamLookup       g                   = tgamLookup (tgamSize1 g) g
+gamLookup       k g                 = tgamLookup (tgamSize1 g) k g
 gamToAssocL     g                   = tgamToAssocL (tgamSize1 g) g
 gamPushNew      g                   = let sz = tgamSize1 g in tgamPushNew sz (sz+1) g
 gamPushGam      g1 g2               = let sz = tgamSize1 g1 in tgamPushGam sz (tgamSize1 g2) (sz+1) g1 g2
@@ -215,8 +215,8 @@ gamElts = assocLElts . gamToAssocL
 %%]
 
 %%[9
-gamLookupAll :: Ord k => Gam k v -> k -> [v]
-gamLookupAll g = tgamLookupAll (tgamSize1 g) g
+gamLookupAll :: Ord k => k -> Gam k v -> [v]
+gamLookupAll k g = tgamLookupAll (tgamSize1 g) k g
 %%]
 
 %%[9
@@ -290,17 +290,17 @@ tgamUnzip i
                    )
                    (emptyTGam1,emptyTGam1)
 
-tgamLookupAll1 :: (Ord i,Ord k) => i -> TreeGam i k v -> k -> [[v]]
-tgamLookupAll1 i g k = tgamFoldr1 i (\_ _ e r -> maybe r (:r) (Map.lookup k e)) [] g
+tgamLookupAll1 :: (Ord i,Ord k) => i -> k -> TreeGam i k v -> [[v]]
+tgamLookupAll1 i k g = tgamFoldr1 i (\_ _ e r -> maybe r (:r) (Map.lookup k e)) [] g
 
-tgamLookupAll :: (Ord i,Ord k) => i -> TreeGam i k v -> k -> [v]
-tgamLookupAll i g = map head . tgamLookupAll1 i g
+tgamLookupAll :: (Ord i,Ord k) => i -> k -> TreeGam i k v -> [v]
+tgamLookupAll i k = map head . tgamLookupAll1 i k
 
-tgamLookup1 :: (Ord i,Ord k) => i -> TreeGam i k v -> k -> Maybe [v]
-tgamLookup1 i g k = tgamFoldr1 i (\_ _ e r -> maybe r Just (Map.lookup k e)) Nothing g
+tgamLookup1 :: (Ord i,Ord k) => i -> k -> TreeGam i k v -> Maybe [v]
+tgamLookup1 i k g = tgamFoldr1 i (\_ _ e r -> maybe r Just (Map.lookup k e)) Nothing g
 
-tgamLookup :: (Ord i,Ord k) => i -> TreeGam i k v -> k -> Maybe v
-tgamLookup i g = fmap head . tgamLookup1 i g
+tgamLookup :: (Ord i,Ord k) => i -> k -> TreeGam i k v -> Maybe v
+tgamLookup i k = fmap head . tgamLookup1 i k
 
 tgamToFM1 :: (Ord i,Ord k) => i -> TreeGam i k v -> Map.Map k [v]
 tgamToFM1 i = tgamFoldr1 i (\_ _ e e' -> e `Map.union` e') Map.empty
@@ -387,22 +387,22 @@ type ValGam = Gam HsName ValGamInfo
 %%]
 
 %%[1.valGamLookup
-valGamLookup :: ValGam -> HsName -> Maybe ValGamInfo
+valGamLookup :: HsName -> ValGam -> Maybe ValGamInfo
 valGamLookup = gamLookup
 %%]
 
 %%[1.valGamLookupTy
-valGamLookupTy :: ValGam -> HsName -> (Ty,ErrL)
-valGamLookupTy g n
-  =  case valGamLookup g n of
+valGamLookupTy :: HsName -> ValGam -> (Ty,ErrL)
+valGamLookupTy n g
+  =  case valGamLookup n g of
        Nothing    ->  (Ty_Any,[Err_NamesNotIntrod [n]])
        Just vgi   ->  (vgiTy vgi,[])
 %%]
 
 %%[4.valGamLookup -1.valGamLookup
-valGamLookup :: ValGam -> HsName -> Maybe ValGamInfo
-valGamLookup g nm
-  =  case gamLookup g nm of
+valGamLookup :: HsName -> ValGam -> Maybe ValGamInfo
+valGamLookup nm g
+  =  case gamLookup nm g of
        Nothing
          |  hsnIsProd nm
                  -> let pr = mkPr nm in mkRes (tyProdArgs pr `mkArrow` pr)
@@ -499,9 +499,9 @@ data TyGamInfo = TyGamInfo { tgiTy :: Ty } deriving Show
 %%]
 
 %%[1.tyGamLookup
-tyGamLookup :: TyGam -> HsName -> Maybe TyGamInfo
-tyGamLookup g nm
-  =  case gamLookup g nm of
+tyGamLookup :: HsName -> TyGam -> Maybe TyGamInfo
+tyGamLookup nm g
+  =  case gamLookup nm g of
        Nothing | hsnIsProd nm   -> Just (TyGamInfo (Ty_Con nm))
        Just tgi                 -> Just tgi
        _                        -> Nothing
@@ -547,9 +547,9 @@ mkTGI :: Ty -> Ty -> TyGamInfo
 mkTGI t k = mkTGIData t k Ty_Any Map.empty
 
 %%[6.tyGamLookup -1.tyGamLookup
-tyGamLookup :: TyGam -> HsName -> Maybe TyGamInfo
-tyGamLookup g nm
-  =  case gamLookup g nm of
+tyGamLookup :: HsName -> TyGam -> Maybe TyGamInfo
+tyGamLookup nm g
+  =  case gamLookup nm g of
        Nothing
          |  hsnIsProd nm
                  -> Just (TyGamInfo  (Ty_Con nm)
@@ -559,7 +559,7 @@ tyGamLookup g nm
 %%]
 
 %%[7.tyGamLookup -6.tyGamLookup
-tyGamLookup :: TyGam -> HsName -> Maybe TyGamInfo
+tyGamLookup :: HsName -> TyGam -> Maybe TyGamInfo
 tyGamLookup = gamLookup
 %%]
 
@@ -601,7 +601,7 @@ type AppSpineGam = Gam HsName AppSpineGamInfo
 
 asGamLookup :: AppSpineGam -> HsName -> [AppSpineInfo]
 asGamLookup g nm
-  =  case gamLookup g nm of
+  =  case gamLookup nm g of
         Just ccgi                ->  asgiInfoL ccgi
         Nothing | hsnIsProd nm   ->  take (hsnProdArity nm) prodAppSpineInfoL
         _                        ->  unknownAppSpineInfoL

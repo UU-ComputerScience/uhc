@@ -1,0 +1,130 @@
+%%[coercion
+\subsection{Coercion}
+
+\begin{center}
+\begin{tabular}{l||||p{.12\textwidth}p{.14\textwidth}||p{.12\textwidth}p{.12\textwidth}||p{.12\textwidth}p{.12\textwidth}}
+|<=|            & |(x)| & |(x,y)|   & |(c2||x)| & |(c2||x,y)|   & |(r2||x)| & |(r2||x,y)|   \\
+\hline
+\hline
+|(x)|           &
+& |fail|        &
+|fail| & |fail|         &
+|r2 :-> ()| & |fail|                                \\
+|(x,y)|         &
+|\r -> (r.x)| &     &
+|fail| & |fail|         &
+|r2 :-> (y)| & |r2 :-> ()|                              \\
+\hline
+|(c1||x)|       &
+|\r -> (r.x)| & |fail|      &
+|c1 == c2| & |fail|         &
+|r2 :-> c1| & |fail|                        \\
+|(c1||x,y)|     &
+|\r -> (r.x)| & |\r -> (r.x,r.y)|       &
+|c1 == c2|, |\r -> r - y| & |c1 == c2|      &
+|r2 :-> (c1||y)| & |r2 :-> c1|                              \\
+\hline
+|(r1||x)|       &
+|\r -> (r.x)| & |r1 :-> (r'||y)|, |\r -> (r.x,r.y)|     &
+|r1 :-> c2| & |r1 :-> (c2||y)|          &
+|r1 :-> r2| & |r1 :-> (r2||y)|                              \\
+|(r1||x,y)|     &
+|\r -> (r.x)| & |\r -> (r.x,r.y)|       &
+|r1 :-> c2|, |\r -> r - y| & |r1 :-> c2|            &
+|r2 :-> (r1||y)| & |r1 :-> r2|                              \\
+\end{tabular}
+\end{center}
+
+Notes:
+\begin{itemize}
+\item
+By rebuilding a record if the |rhs| of |<=| is fully known,
+we can be more liberal in constraining the |lhs|.
+For example, in |(r1||x) <= (x)| it is not necessary to restrict |r1 :-> ()|.
+\end{itemize}
+
+\subsection{Low level code for update/extend}
+
+\begin{TT}
+Node* old[] ;
+Node* new[] ;
+struct{enum {UPD;EXT} what; int offset; Node* val} upd[] ;
+for ( o = 0, n = 0, u = 0 ; u < upd.length ; ) {
+  for ( ; o < upd[u].offset ; ) {
+    new[n++] = old[o++]
+  }
+  switch( upd[u].what ) {
+    case EXT : new[n++] = upd[u].val ; break ;
+    case UPD : new[n++] = upd[u].val ; o++ ; break ;
+  }
+  u++ ;
+}
+for ( ; o < old.length ; ) {
+  new[n++] = old[o++] ;
+}
+\end{TT}
+
+Notes:
+\begin{itemize}
+\item
+All offsets are expressed in terms of the original/old record.
+\item
+All offsets relate to labels for which it can be assumed that they only occur once.
+In particular for equal offsets for insertions we may assume that those offsets occur in the order
+of their corresponding labels.
+\item
+The @upd[..].offset@'s should be sorted.
+If this can statically be determined, loop unrolling can be done.
+This cannot be determined statically for label polymorphism.
+Sorting is done on offset, and where equal extensions before updates.
+This allows the mentioned algorithm.
+\end{itemize}
+
+\subsection<article>{Literature}
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

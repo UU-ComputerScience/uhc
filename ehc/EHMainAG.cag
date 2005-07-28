@@ -37,7 +37,7 @@
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 import(EHAbsSyn,EHPretty,EHPrettyAST,EHInfer,EHInferExpr,EHInferPatExpr,EHInferTyExpr,EHExtraChecks,EHGatherError)
+%%[1 import(EHAbsSyn,EHPretty,EHPrettyAST,EHRulerRules,EHInfer,EHInferExpr,EHInferPatExpr,EHInferTyExpr,EHExtraChecks,EHGatherError)
 WRAPPER AGItf
 %%]
 

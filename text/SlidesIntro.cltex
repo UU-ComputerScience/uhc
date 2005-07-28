@@ -1,0 +1,584 @@
+%%[whyShort
+\frame<presentation>
+{
+\frametitle{Why and what?}
+\begin{itemize}
+\item EHC (Essential Haskell compiler) is a compiler
+\begin{itemize}
+\item For Haskell restricted to its essentials
+\item Each language feature as general as possible
+\item For experimentation and education
+\end{itemize}
+\item The implementation of the compiler
+\begin{itemize}
+\item Is partitioned into steps, building on top of each other
+\item Each step adds a language feature
+\item Each step implements a working compiler which can be used as starting point for changes
+\end{itemize}
+\item Design starting point
+\begin{itemize}
+\item Use explicit (type) information provided by programmer
+\item And make best effort to propagate this information to where it is needed
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[whyLong
+\frame<presentation>
+{
+\frametitle{What do we hope to have achieved?}
+\begin{itemize}
+\item Show how a compiler for an extended subset of Haskell can be implemented
+\item While at the same time minimizing complexity and maximizing generality
+\item By describing the implementation as a combination of separate aspects
+\item Which are introduced gradually in a sequence of working compilers
+\item For which the source text is derived from the same source as for these slides
+\item So you can be sure we are not cheating :-)
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{What can you learn from this talk?}
+\begin{itemize}
+\item How to use AG, its idiom and patterns
+\item Do functional programming via AG
+\item Type systems, especially how to implement one
+\item Haskell from an implementors point of view
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{What would be nice to know already?}
+\begin{itemize}
+\item Haskell
+\item Tools from the preschool
+\begin{itemize}
+\item Attribute Grammar (AG) system/notation
+\item Parser Combinators
+\item Pretty Printing Combinators
+\end{itemize}
+\item Type systems
+\item But: a bit of it will be explained on the fly
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Other similar work}
+\begin{itemize}
+\item Combination of theory and implementation
+\begin{itemize}
+\item Typing Haskell in Haskell (Mark Jones)
+\item Practical type inferencing for arbitrary-rank types (Simon P Jones e.a.)
+\item Types and Programming Languages (Benjamin C Pierce)
+\end{itemize}
+\item Usually partial descriptions/implementations
+\begin{itemize}
+\item Limited interaction with other features
+\item Must fit in limited space available for (research) paper
+\item Meant for making a particular point clear
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[whatsNext
+\frame<presentation>
+{
+\frametitle{And then?}
+\begin{itemize}
+\item Extend the set of compilers up to a full Haskell++ compiler
+\item Keep it understandable
+\item So it can still be used for experimentation and education
+\item Will grow over time
+\begin{itemize}
+\item see @http://www.cs.uu.nl/groups/ST/Ehc/WebHome@
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[howImplShort
+\frame<presentation>
+{
+\frametitle{How is it implemented?}
+\begin{itemize}
+\item Tools
+\begin{itemize}
+\item Attribute grammar system
+\item Parser combinators
+\item Code weaving tools
+\end{itemize}
+\item Design starting points
+\begin{itemize}
+\item Stick to standard (Hindley/Milner) type inference
+\item Use explicit (type) information provided by programmer
+\item And make best effort to propagate this information to where it is needed
+\item So we are not limited by type inference
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[howImplLong
+\frame<presentation>
+{
+\frametitle{About the slides and the paper}
+\begin{itemize}
+\item The content
+\begin{itemize}
+\item Is new
+\item Builds on multiple formalisms (parsing, types, AG)
+\item Which makes it confusing and complex at times
+\item Also because code fragments balance between realistic (occasionally too large) and concise (occasionally ignoring details)
+\end{itemize}
+\item Practicalities
+\begin{itemize}
+\item Based on source code for working compilers
+\item Which is too much to present here
+\item Or is ``not interesting'' or straightforward
+\item So presented code in slides has loose ends
+\item Which partially can be found in the paper
+\end{itemize}
+\item We will primarily look at the AG for EH 1 and 2
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Some observations}
+\begin{itemize}
+\item Generated code does not know anything about AG
+\begin{itemize}
+\item Error messages from Haskell compilers are in terms of Haskell, not AG
+\item Which makes debugging unpleasant at times
+\end{itemize}
+\item AG programming
+\begin{itemize}
+\item Structure extension (additional |DATA| variants)
+\item Aspect extension (additional |ATTR| definitions)
+\item Gives rise to quadratic complexity
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[demoEH1
+\frame<presentation>
+{
+\frametitle{EH version 1: |lambda|-calculus}
+\begin{itemize}
+\item EH program is single expression
+\SafeCode{%
+\begin{code}
+%%1srcfile(test/1-demo2.eh%%)
+\end{code}
+}
+\item Types |Int|, |Char|, tuples and functions
+\SafeCode{%
+\begin{code}
+%%1srcfile(test/1-demo3.eh%%)
+\end{code}
+}
+\end{itemize}
+}
+
+\frame<presentation>[containsverbatim]
+{
+\frametitle{EH version 1: type checking}
+\begin{itemize}
+\item Type signatures are required
+\item Types are checked
+\SafeCode{%
+\begin{code}
+%%1srcfile(test/1-all-fail2.eh%%)
+\end{code}
+}
+gives rise to error annotated representation of program:
+\begin{TT}
+%%1ppfile(test/1-all-fail2.eh%%)
+\end{TT}
+\end{itemize}
+}
+%%]
+
+%%[demoEH2
+\frame<presentation>
+{
+\frametitle{EH version 2: Explicit/implicit typing}
+\begin{itemize}
+\item Type signature may be omitted
+\SafeCode{%
+\begin{code}
+%%2srcfile(test/1-sig-fail.eh%%)
+\end{code}
+}
+\item
+Missing type is inferred: |i :: %%2file(test/1-sig-fail.eh%%)|
+\item Inferred types are monomorphic
+\SafeCode{%
+\begin{code}
+%%2srcfile(test/2-demo1.eh%%)
+\end{code}
+}
+gives rise to type
+|id :: %%2file(test/2-demo1.eh%%)|
+\end{itemize}
+}
+%%]
+
+%%[demoEH3
+\frame<presentation>
+{
+\frametitle{EH version 3: Polymorphism}
+\begin{itemize}
+\item
+Polymorphism a la Haskell (i.e. Hindley/Milner)
+\item For example
+\SafeCode{%
+\begin{code}
+let  id = \x -> x
+in   id 3
+\end{code}
+}
+gives type |id :: %%3(let id = \x -> x in id%%)|
+\item Type signature may be given
+\SafeCode{%
+\begin{code}
+let  id :: a -> a
+     id = \x -> x
+in   id 3
+\end{code}
+}
+\item Type signature can further constrain a type
+\SafeCode{%
+\begin{code}
+let  id :: Int -> Int
+     id = \x -> x
+in   id 3
+\end{code}
+}
+\end{itemize}
+}
+%%]
+
+%%[demoEH4Short
+\frame<presentation>
+{
+\frametitle{EH version 4: Higher ranked types}
+\begin{itemize}
+\item
+Type signatures for quantifiers on argument (higher ranked) positions
+\SafeCode{%
+\begin{code}
+%%4srcfile(test/4-demo2.eh%%)
+\end{code}
+}
+\begin{itemize}
+\item Notational sugaring allows omission of quantifier
+\item Partial specification of type signature (rest is inferred)
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{EH version 4: Higher ranked types}
+\begin{itemize}
+\item
+Impredicativity
+\SafeCode{%
+\begin{code}
+%%4srcfile(test/4-impred-demo1.eh%%)
+\end{code}
+}
+\begin{itemize}
+\item Propagation of explicit type information
+\item Which cannot (easily) be reconstructed
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[demoEH4Long
+\frame<presentation>
+{
+\frametitle{EH version 4: Higher ranked types}
+\begin{itemize}
+\item
+Type signatures for quantifiers on argument (higher ranked) positions
+\SafeCode{%
+\begin{code}
+let  f :: (forall a . a -> a) -> (Int,Char)
+     f = \i -> (i 3, i 'x')
+in   f
+\end{code}
+}
+\item Notational sugaring allows omission of quantifier
+\SafeCode{%
+\begin{code}
+let  f :: (a -> a) -> (Int,Char)
+     f = \i -> (i 3, i 'x')
+in   f
+\end{code}
+}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{EH version 4: Existential types}
+\begin{itemize}
+\item
+Existential quantification: hiding/forgetting type information
+\SafeCode{%
+\begin{code}
+%%4srcfile(test/4-demo1.eh%%)
+\end{code}
+}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{EH version 4: Existential types}
+\begin{itemize}
+\item Notational sugaring allows omission of quantifier
+\begin{itemize}
+\item
+|xy :: (a, a->Int)| is interpreted as
+\item
+|xy :: exists a . (a, a->Int)|
+\end{itemize}
+\item Interprets type structure to find suitable location for quantifier
+\begin{itemize}
+\item |a| occurs in |sigma1| and |sigma2| in |sigma1 -> sigma2| and not outside: |forall|
+\item |a| occurs in |sigma1| and |sigma2| in |(sigma1,sigma2)| and not outside: |exists|
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[demoEH5
+\frame<presentation>
+{
+\frametitle{EH version 5: Data types}
+\begin{itemize}
+\item
+User defined data types
+\SafeCode{%
+\begin{code}
+%%5srcfile(test/5-list.eh%%)
+\end{code}
+}
+\item Unpacking via case expression
+\end{itemize}
+}
+%%]
+
+%%[demoEH6A
+\frame<presentation>
+{
+\frametitle{EH version 6: Kinds}
+\begin{itemize}
+\item
+Type expressions can be incorrectly used
+\SafeCode{%
+\begin{code}
+%%6srcfile(test/5-list-wrong.eh%%)
+\end{code}
+}
+\item
+Requires type system for types (similar to type system for values)
+\item
+Type of a type: kind
+\item Examples
+\begin{itemize}
+\item Kind of |Int :: *|
+\item Kind of |List a :: *|
+\item Kind of |List ::* -> *|
+\end{itemize}
+\item
+Kind inferencing/checking for types
+(similar to type inferencing/checking for values)
+\begin{itemize}
+\item Values must have type with kind |:: *|
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[demoEH6B
+\frame<presentation>
+{
+\frametitle{EH version 6: Kind polymorphism}
+\begin{itemize}
+\item
+Kind signatures for types (similar to type signatures for values)
+\SafeCode{%
+\begin{code}
+%%6srcfile(test/6-expl-ki.eh%%)
+\end{code}
+}
+\item
+Polymorphic kinds can also be inferred
+\SafeCode{%
+\begin{code}
+%%6srcfile(test/5-all-ok2.eh%%)
+\end{code}
+}
+infers kind @Eq :: Forall a . a -> a -> *@
+\end{itemize}
+}
+%%]
+
+%%[demoEH7
+\frame<presentation>
+{
+\frametitle{EH version 7: Non extensible records}
+\begin{itemize}
+\item Replacement for tuples
+\SafeCode{%
+\begin{code}
+%%7srcfile(test/7-demo1.eh%%)
+\end{code}
+}
+\end{itemize}
+}
+%%]
+
+%%[demoEH8
+\frame<presentation>
+{
+\frametitle{EH version 8: Code generation}
+\begin{itemize}
+\item In phases
+ \begin{itemize}
+ \item to core representation (removing syntactic sugar, ...)
+ \item via transformations (lambda lifting, ...)
+ \item to code for abstract sequential machine
+ \end{itemize}
+\item Interpreter for abstract sequential machine
+\end{itemize}
+}
+%%]
+
+%%[demoEH9A
+\frame<presentation>
+{
+\frametitle{EH version 9: Class system, explicit implicit parameters}
+\begin{itemize}
+\item Class system
+\item + named instances
+\item + explicit dictionary passing
+\item + scoping for instances
+\item + coercions
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{EH version 9: explicit parameter}
+\SafeCode{%
+\begin{code}
+%%9srcfile(eh-frags/9-eq-nub.eh%%)
+\end{code}
+}
+}
+%%]
+
+%%[demoEH9B
+\frame<presentation>[plain]
+{
+\frametitle{EH version 9: higher order predicate}
+\SafeCode{%
+\begin{code}
+%%9srcfile(test/9-snd-order1.eh%%)
+\end{code}
+}
+}
+%%]
+
+%%[demoEH10
+\frame<presentation>
+{
+\frametitle{EH version 10: Extensible records}
+\begin{itemize}
+\item Flexibility w.r.t. presence of labels
+\SafeCode{%
+\begin{code}
+%%10srcfile(test/10-demo1.eh%%)
+\end{code}
+}
+\item More general tuple access
+\SafeCode{%
+\begin{code}
+%%10srcfile(test/10-snd.eh%%)
+\end{code}
+}
+\end{itemize}
+}
+%%]
+
+%%[demoEH11
+\frame<presentation>
+{
+\frametitle{EH version [11..]: ...}
+\begin{itemize}
+\item (Student) projects
+\begin{itemize}
+\item Support for Attribute Grammars
+\item Efficient code generation
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

@@ -45,6 +45,9 @@ SEM Decl
   | Val             (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
 %%]
 
+-- generated from ruler rules in EHRulerRules
+  | IConst CConst   (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+
 %%[4
 SEM PatExpr
   | Var             (lhs.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
@@ -54,7 +57,6 @@ SEM PatExpr
   | Con             (lhs.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
   
 SEM Expr
-  | IConst CConst   (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
   | Lam             (arg.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
   | Let             (decls.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
                                                                     =   mkNewLevUID4    @lhs.gUniq

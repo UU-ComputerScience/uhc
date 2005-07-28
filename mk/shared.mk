@@ -12,7 +12,8 @@ LHS2TEX				:= LHS2TEX=".:$(FMT_SRC_PREFIX):$(LHS2TEX_ENV)" lhs2TeX
 # latex
 LATEX_ENV			:= $(TEXINPUTS)
 PDFLATEX			:= TEXINPUTS=".:../../$(LATEX_SRC_PREFIX):$(LATEX_ENV)" pdflatex
-BIBTEX				:= TEXINPUTS=".:../../$(LATEX_SRC_PREFIX):$(LATEX_ENV)" bibtex
+BIBTEX				:= BSTINPUTS=".:../../$(LATEX_SRC_PREFIX):$(LATEX_ENV)" BIBINPUTS=".:../../$(LATEX_SRC_PREFIX):$(LATEX_ENV)" bibtex
+MAKEINDEX			:= makeindex
 
 # GHC options
 GHC_OPTS			:= -fglasgow-exts -package util -package lang -package data -package uust

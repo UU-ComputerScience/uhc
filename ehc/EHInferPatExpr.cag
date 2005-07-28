@@ -45,7 +45,7 @@ SEM PatExpr
 
 %%[4.patFunTy
 SEM PatExpr
-  | Con         loc         .  (knUnTy,nmErrs)      :=  valGamLookupTy @lhs.valGam (hsnUn @nm)
+  | Con         loc         .  (knUnTy,nmErrs)      :=  valGamLookupTy (hsnUn @nm) @lhs.valGam
                             .  patFunFo             :=  let  [a,r]  = mkNewTyVarL 2 @lUniq
                                                         in   fitsIn  instFIOpts @fe @lUniq2 @knUnTy ([a] `mkArrow` r)
                             .  patFunTy             :=  foTy @patFunFo
@@ -154,8 +154,8 @@ SEM PatExpr
 ATTR AllPatExpr [ | gathPatTyCnstr: Cnstr | ]
 SEM PatExpr
   | AppTop TypeAs
-                patExpr     .   gathPatTyCnstr      =   foCnstr @fo |=> @lhs.gathPatTyCnstr
-  | Con         lhs         .   gathPatTyCnstr      =   foCnstr @fo |=> @lhs.gathPatTyCnstr
+                patExpr     .   gathPatTyCnstr      =   foCnstr @fo_ |=> @lhs.gathPatTyCnstr
+  | Con         lhs         .   gathPatTyCnstr      =   foCnstr @fo_ |=> @lhs.gathPatTyCnstr
   | Var         lhs         .   gathPatTyCnstr      =   @varTyCnstr |=> @lhs.gathPatTyCnstr
   | VarAs       patExpr     .   gathPatTyCnstr      =   @varTyCnstr |=> @lhs.gathPatTyCnstr
 
@@ -167,18 +167,18 @@ SEM PatExpr
 %%[4.TypeAs
 SEM PatExpr
   | TypeAs      loc         .   asTy                =   @lhs.tyCnstr |=> @tyExpr.ty
-                            .   fo                  =   fitsIn @lhs.fiOpts @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) @asTy
-                patExpr     .   knTy                =   foTy @fo
-                            .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
+                            .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) @asTy
+                patExpr     .   knTy                =   foTy @fo_
+                            .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
 %%]
 
 %%[2.Rest
 SEM PatExpr
   | IConst      loc         .   ty                  =   tyInt
   | CConst      loc         .   ty                  =   tyChar
-  | AppTop      loc         .   fo                  =   @lhs.knTy `fitsIn` @knResTy
-                            .   ty                  =   foTy @fo
-                patExpr     .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
+  | AppTop      loc         .   fo_                 =   @lhs.knTy `fitsIn` @knResTy
+                            .   ty                  =   foTy @fo_
+                patExpr     .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
                 lhs         .   ty                  =   @patExpr.tyCnstr |=> @ty
   | App         arg         .   knTy                :=  @func.tyCnstr |=> @knArgTy
   | Con         loc         .   ty                  =   Ty_Any
@@ -186,15 +186,15 @@ SEM PatExpr
 
 %%[4.Rest
 SEM PatExpr
-  | AppTop Con  loc         .   fo                  :=  fitsIn @lhs.fiOpts @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) @knResTy
+  | AppTop Con  loc         .   fo_                 :=  fitsIn @lhs.fiOpts @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) @knResTy
   | Con         loc         .   (knResTy,_)         =   tyArrowArgRes @patFunTy
-                            .   ty                  :=  foTy @fo
-                lhs         .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
+                            .   ty                  :=  foTy @fo_
+                lhs         .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
 %%]
 
 %%[11.ApptopCon
 SEM PatExpr
-  | AppTop Con  loc         .   fo                  :=  fitsIn  (@lhs.fiOpts {fioAllowEqOpen = True})
+  | AppTop Con  loc         .   fo_                 :=  fitsIn  (@lhs.fiOpts {fioAllowEqOpen = True})
                                                                 @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) @knResTy
 %%]
 
@@ -218,16 +218,16 @@ SEM RecPatExpr
 
 %%[7
 SEM RecPatExpr
-  | Empty       loc         .   fo                  =   fitsIn (@lhs.fiOpts) @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) tyRecEmpty
-                            .   ty                  =   foTy @fo
-                lhs         .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
+  | Empty       loc         .   fo_                 =   fitsIn (@lhs.fiOpts) @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) tyRecEmpty
+                            .   ty                  =   foTy @fo_
+                lhs         .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
   | Ext         loc         .   recTy               =   let  [r,e] = mkNewTyVarL 2 @lUniq
                                                         in   (hsnRec `mkConApp` [r]) `mkTyRecExt` [(@nm,e)]
-                            .   fo                  =   fitsIn (@lhs.fiOpts) @fe @lUniq2 (@lhs.tyCnstr |=> @lhs.knTy) @recTy
-                            .   ty                  =   foTy @fo
+                            .   fo_                 =   fitsIn (@lhs.fiOpts) @fe @lUniq2 (@lhs.tyCnstr |=> @lhs.knTy) @recTy
+                            .   ty                  =   foTy @fo_
                 (loc.knRecTy,patExpr.knTy)          =   maybe (Ty_Any,Ty_Any) id . tyRecExtr @nm $ @ty
                 recPatExpr  .   knTy                =   @knRecTy
-                            .   tyCnstr             =   foCnstr @fo |=> @lhs.tyCnstr
+                            .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
                 lhs         .   ty                  =   @patExpr.tyCnstr |=> @ty
 %%]
 

@@ -11,6 +11,7 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import FPath
 import Utils
+import Nm
 import PPUtils
 import UU.Pretty
 import qualified UU.DData.Scc as Scc
@@ -207,97 +208,9 @@ data ExprIsRw
 -- Names
 -------------------------------------------------------------------------
 
-data Nm' s
-  = Nm     { nmStr      :: s }
-  | NmSel  { nmNm       :: Nm' s
-           , nmMbSel    :: Maybe s
-           }
-  deriving (Eq,Ord)
-
-type Nm = Nm' String
-
-nmBase' :: Nm -> String
-nmBase' (NmSel n _) = nmBase' n
-nmBase' (Nm s)      = s
-
-nmBase :: Nm -> Nm
-nmBase = Nm . nmBase'
-
-nmSetSuff :: Nm -> String -> Nm
-nmSetSuff n s = NmSel (nmBase n) (Just s)
-
-nmSetBase :: Nm -> String -> Nm
-nmSetBase n s
-  = nmFromL (Just s:nL)
-  where (_:nL) = nmToMbL n
-
-nmSetSel :: Nm' s -> s -> Nm' s
-nmSetSel n s = NmSel n (Just s)
-
-nmSel :: Nm -> String
-nmSel = maybe "" id . nmMbSel
-
-nmInit :: Nm -> Nm
-nmInit (NmSel n _) = n
-nmInit n           = n
-
-nmToMbL :: Nm' s -> [Maybe s]
-nmToMbL 
-  = reverse . ns
-  where ns (NmSel n s) = s : ns n
-        ns (Nm s) = [Just s]
-
-nmToL :: Nm -> [String]
-nmToL = map (maybe "" id) . nmToMbL
-
-nmFromL :: [Maybe s] -> Nm' s
-nmFromL
-  = n . reverse
-  where n [Just s] = Nm s
-        n (s:ss) = NmSel (n ss) s
-
-nmApd :: Nm' s -> Nm' s -> Nm' s
-nmApd n1 n2
-  = nmFromL (l1 ++ l2)
-  where l1 = nmToMbL n1
-        l2 = nmToMbL n2
-
-nmStrApd :: Nm -> Nm -> Nm
-nmStrApd n1 n2
-  = Nm (s1 ++ s2)
-  where s1 = show n1
-        s2 = show n2
-
-nmCapitalize :: Nm -> Nm
-nmCapitalize n
-  = case nmToMbL n of
-      (Just s:ns) -> nmFromL (Just (strCapitalize s) : ns)
-      _           -> n
-
-nmDashed :: Nm -> Nm
-nmDashed = Nm . map (\c -> if isAlphaNum c then c else '-') . show
-
-nmFlatten :: Nm -> Nm
-nmFlatten = Nm . show
-
-nmShow' :: String -> Nm -> String
-nmShow' sep = concat . intersperse sep . nmToL
-
-nmShowAG :: Nm -> String
-nmShowAG = nmShow' "_"
-
-instance Show Nm where
-  show = nmShow' "."
-
-instance PP Nm where
-  pp = ppListSep "" "" "." . nmToL
-
-instance Functor Nm' where
-  fmap f (Nm s) = Nm (f s)
-  fmap f (NmSel n ms) = NmSel (fmap f n) (fmap f ms)
-
 strVec = "_"
 strLhs = "lhs"
+strLoc = "loc"
 
 nmVec, nmUnk, nmApp, nmWild, nmNone, nmEql, nmComma, nmOParen, nmCParen, nmLhs, nmAny :: Nm
 nmVec     = Nm strVec
@@ -411,29 +324,5 @@ ppWrapShuffle n x
 
 tr m s v = trace (m ++ show s) v
 trp m s v = trace (m ++ "\n" ++ disp (m >|< ":" >#< s) 1000 "") v
-
--------------------------------------------------------------------------
--- Misc
--------------------------------------------------------------------------
-
-hdAndTl :: [a] -> (a,[a])
-hdAndTl (x:xs) = (x,xs)
-
-maybeHd :: r -> (a -> r) -> [a] -> r
-maybeHd n f l = if null l then n else f (head l)
-
-strWhite :: Int -> String
-strWhite sz = replicate sz ' '
-
-strPad :: String -> Int -> String
-strPad s sz = s ++ strWhite (sz - length s)
-
-strCapitalize :: String -> String
-strCapitalize s
-  = case s of
-      (c:cs) -> toUpper c : cs
-      _      -> s
-
-panic m = error ("panic: " ++ m)
 
 

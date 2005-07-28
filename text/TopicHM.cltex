@@ -1,0 +1,458 @@
+%%[inferHM
+The third version of EH adds polymorphism, in particular so-called parametric polymorphism
+which allows functions to be used on arguments of differing types.
+For example
+\begin{code}
+%%srcfile(afp-eh/04.eh%%)
+\end{code}
+gives |v :: %%3file(afp-eh/04.eh%%)|
+and |id :: %%3(let id = \x -> x in id%%)|.
+The polymorphic identity function |id| accepts a value of any type |a|,
+giving back a value of the same type |a|.
+Type variables in the type signature are used to specify polymorphic types.
+Polymorphism of a type variable in a type is made explicit in the type
+by the use of a universal quantifier @forall@, or |forall|.
+The meaning of this quantifier is that a value with a universally quantified
+type can be used with different types for the quantified type variables.
+
+\TBD{more on this..., mention: specialization, instantiation, impredicativeness}
+
+The type signature may be omitted, and in that case the same type will still be inferred.
+However, the reconstruction of the type of a value for which
+the type signature is omitted has its limitations,
+the same as for Haskell98 \cite{peytonjones03has98-rev-rep}.
+Haskell98 also restricts what can be described by type signatures.
+
+Polymorphism is allowed for identifiers bound by a |let|-expression,
+not for identifiers bound by another mechanism such as parameters of a
+lambda expression.
+The following variant of the previous example is therefore not to be considered
+correct:
+
+\begin{code}
+%%3srcfile(test/3-mono-arg.eh%%)
+\end{code}
+
+It will give the following output:
+
+\begin{TT}
+%%3ppfile(test/3-mono-arg.eh%%)
+\end{TT}
+
+The problem here is that the polymorphism of |f| in |a| means that the caller
+of |f| can freely choose what this |a| is for a particular call.
+However, from the viewpoint
+of the body of |f| this limits the choice of |a| to no choice at all.
+If the caller has all the freedom to make the choice, the callee has none.
+In our implementation this is encoded as a type constant @c_@ chosen for |a| during type checking
+the body of |f|.
+This type constant by definition is a type a programmer can never define or denote.
+The consequence is that an attempt to use |i| in the body of |f|, which has type @c_..@| -> |@c_..@ cannot
+be used with an |Int|.
+The use of type constants will be explained later.
+
+Another example of the limitations of polymorphism in this version of EH is the following
+variation:
+\begin{code}
+%%3srcfile(test/3-mono-arg2.eh%%)
+\end{code}
+for which the compiler will infer the following types:
+\begin{TT}
+%%3ppfile(test/3-mono-arg2.eh%%)
+\end{TT}
+
+EH version 3 allows parametric polymorphism but not yet polymorphic parameters.
+The parameter |i| has a monomorphic type, which is made even more clear when
+we make an attempt to use this |i| polymorphically in:
+\begin{code}
+%%3srcfile(test/3-mono-arg3.eh%%)
+\end{code}
+about which the compiler will complain:
+\begin{TT}
+%%3ppfile(test/3-mono-arg3.eh%%)
+\end{TT}
+
+Because |i| is not allowed to be polymorphic it can either be used on |Int| or |Char|, but
+not both.
+
+These problems can be overcome by allowing higher ranked polymorphism in type signatures.
+Later versions of EH deal with this problem%
+%if incl04
+(\chapterRef{ehc4}).
+%else
+, but this is not included in \thispaper.
+%endif
+This version of EH resembles Haskell98 in these restrictions.
+
+%if False
+The ``monomorphic parameter'' problem could have been solved by allowing a programmer to explicitly specify a
+|forall| for the type of the parameter |i| of |f|.
+The type of |f| would then be |(forall a . a -> a) -> (Int,Char)| instead of
+|forall a . (a -> a) -> (Int,Char)|.
+In this version of EH (resembling Haskell98) it
+is not permitted to specify polymorphism explicitly,
+but the next version of EH does permit this.
+%endif
+
+The reason not to allow explicit types to be of assistance to the type inferencer
+is that Haskell98 and this version of EH have as a design principle
+that all explicitly specified types in a program are redundant.
+That is, after removal of explicit type signatures,
+the type inferencer can still reconstruct all types.
+It is guaranteed that all reconstructed
+types are the same as the removed signatures or more general, that is,
+the type signatures are a special case of the inferred types.
+This guarantee is called the principal type property
+\cite{damas82principal-type,milner78type-poly,hindley69princ-type}.
+However, type inferencing also has its limits\TBD{[cite...]}.
+In fact, the richer a type system becomes, the more difficult it is for a type inferencing algorithm
+to make the right choice for a type without the programmer specifying additional helpful type information.
+
+\subsection{Type language}
+
+The type language for this version of EH adds quantification by means of the universal quantifier |forall|:
+\begin{code}
+sigma  =  Int | Char
+       |  (sigma,...,sigma)
+       |  sigma -> sigma
+       |  tvarv | tvarf
+       |  forall ^ alpha . sigma
+\end{code}
+
+A |tvarf| stands for
+a fixed type variable,
+a type variable which may not be constrained but still stands for
+an unknown type.
+A |tvarv| stands for a plain type variable as used in the previous EH version.
+A series of consecutive quantifiers in |forall ^ alpha1 . forall ^ alpha2 . ... sigma|
+is abbreviated to |forall ^ Vec(alpha) . sigma|.
+
+The type language suggests that a quantifier may occur anywhere in a type.
+This is not the case, quantifiers may only be on the top of a type;
+this version of EH takes care to ensure this.
+A second restriction is that quantified types
+are present only in a |Gamma| whereas no |forall|'s are
+present in types used throughout type inferencing expressions and patterns.
+This is to guarantee the principal type property. \TBD{more refs [..]}
+
+The corresponding abstract syntax for a type needs
+additional alternative to represent a quantified type.
+For a type variable we also have to remember to which category it belongs,
+either \IxAsDef{plain} or \IxAsDef{fixed}:
+
+\chunkCmdUseMark{EHTyAbsSyn.3}
+
+together with convenience functions for constructing these types:
+
+\chunkCmdUseMark{EHTy.3.mkTyVar}
+\chunkCmdUseMark{EHTy.3.mkTyQu}
+
+We will postpone the discussion of type variable categories
+until \secRef{ehc3instantiation}.
+
+The syntax of this version of EH only allows type variables to be specified as part
+of a type signature.
+The quantifier |forall| cannot be explicitly denoted.
+We only need to extend the abstract syntax for types with an alternative for type variables:
+
+\chunkCmdUseMark{EHAbsSyn.3}
+
+%if incl01TopicParsing
+As a consequence the parser for type expressions has to include an alternative
+in |pTyExprBase| to parse type variables.
+
+\chunkCmdUseMark{EHParser.3}
+%else
+%endif
+
+\subsection{Type inferencing}
+
+Compared to the previous version the type inferencing process does not change much.
+Because types used throughout the type inferencing of expressions and patterns
+do not contain |forall| quantifiers, nothing has to be changed there.
+
+Changes have to be made to the handling of declarations and identifiers though.
+This is because polymorphism is tied up with the way identifiers for
+values are introduced and used.
+
+\rulerCmdUse{rules.expr2.3}
+
+A quantified type, also often named \IxAsDef{type scheme},
+is introduced in \ruleRef{e-let3} and \ruleRef{e-let-tysig3} and instantiated
+in \ruleRef{e-ident3}, see \figRef{rules.expr2.3}.
+We will first look at the \IxAsIs{instantiation}.
+
+\subsubsection{Instantiation}
+\label{ehc3instantiation}
+
+A quantified type is introduced in the type inferencing process whenever a value identifier having that type is occurs
+in an expression:
+
+\chunkCmdUseOnPrev{EHInferExpr.1.Var,EHInferExpr.2.Var}{EHInferExpr.3.Var}
+
+We may freely decide what type the quantified type variables may have as long
+as each type variable stands for a monomorphic type.
+However, at this point it is not known which type a type variable
+stands for, so fresh type variables are
+used instead.
+This is called \IxAsDef{instantiation}, or \IxAsIs{specialization}.
+The resulting instantiated type partakes in the inference process as usual.
+
+The removal of the quantifier and replacement of all quantified type variables
+with fresh type variables
+is done by |tyInst|:
+
+\chunkCmdUseMark{EHTyInstantiate.3.tyInst}
+
+Function |tyInst| strips all quantifiers and substitutes the quantified type variables with fresh ones.
+It is assumed that quantifiers occur only at the top of a type.
+
+\subsubsection{Quantification}
+
+The other way around, quantifying a type, happens when a type is
+bound to a value identifier and added to a |Gamma|.
+The way this is done varies with the presence of a type signature.
+\RuleRef{e-let3} and \ruleRef{e-let-tysig3} (\figRef{rules.expr2.3})
+specify the respective variations.
+
+A type signature itself is specified without explicit use of quantifiers.
+These need to be added for all introduced type variables, except the ones specified
+by means of `@...@' in a partial type signature:
+
+\chunkCmdUseOnPrev{EHInfer.1.gathTySigGam}{EHInfer.3.TySig}
+
+A type signature simply is quantified over all free type variables in the type using
+
+\chunkCmdUseMark{EHTyQuantify.3.tyQuantify}
+% \chunkCmdUseMark{EHTyQuantify.3.tyQuantifyClosed}
+
+Type variables introduced by a wildcard may not be quantified over because the type inferencer will fill in the
+type for those type variables.
+
+We now run into a problem which will be solved no sooner than the next version of EH.
+In a declaration of a value (variant |Val| of |Decl|)
+the type signature acts as a known type |knTy| against which checking of the value expression takes place.
+Which type do we use for that purpose, the quantified |sigTy| or the unquantified |tyExpr.ty|?
+\begin{itemize}
+\item
+Suppose the |tyExpr.ty| is used.
+Then, for the erroneous
+\begin{code}
+let  id :: a -> a
+     id = \x -> 3
+in   ...
+\end{code}
+we end up with fitting |tvarv1 -> Int <= a -> a|.
+This can be accomplished via constraints |[tvarv1 :-> Int, a :-> Int]|.
+However, |a| was supposed to be chosen by the caller of |id|.
+Now it is constrained by the body of |id| to be an |Int|.
+Somehow constraining |a| whilst being used as part of a known type for the body of
+|id| must be inhibited.
+\item
+Alternatively, |sigTy| may be used.
+However, the inferencing process and the fitting done by |fitsIn| cannot (yet) handle
+types with quantifiers.
+\end{itemize}
+
+For now, this can be solved by replacing all quantified type variables of a known type
+with type constants:
+
+\chunkCmdUseOnPrev{EHInfer.1.tyInstKnown}{EHInfer.3.tyInstKnown}
+
+by using a variant of |tyInst|:
+
+\chunkCmdUseMark{EHTyInstantiate.3.tyInstKnown}
+
+This changes the category of the fresh type variable replacing the quantified type variable to `fixed'.
+A \IxAsDef{fixed type variable} is like a plain type variable but may not be constrained,
+that is, bound to another type.
+This means that |fitsIn| has to be adapted to prevent this from happening.
+The difference with the previous version only lies in the handling of type variables.
+Type variables now may be bound if not fixed, and to be equal only if their categories match too.
+For brevity the new version of |fitsIn| is omitted.
+
+
+\subsubsection{Generalization/quantification of inferred types}
+
+How do we determine if a type for some expression bound to an identifier in
+a value declaration is polymorphic?
+If a (non partial) type signature is given, the signature itself describes the
+polymorphism via type variables explicitly.
+However, if for a value definition a corresponding type signature is missing,
+the value definition itself gives us all the information we need.
+We make use of the observation that a binding for a value identifier
+acts as a kind of boundary for that expression.
+\begin{code}
+let  id = \x -> x
+in   ...
+\end{code}
+The only way the value associated with |id| ever will be used outside the
+expression bound to |id|, is via the identifier |id|.
+So, if the inferred type |tvarv1 -> tvarv1| for the expression |\x -> x| has free type variables
+(here: |[tvarv1]|)
+and these type variables are not used in the types of other bindings, in particular those
+in the global |Gamma|,
+we know that the expression |\x -> x| nor any other type will constrain those free type variables.
+The type for such a type variable apparently can be freely chosen by
+the expression using |id|, which is exactly the meaning
+of the universal quantifier.
+These free type variables are the candidate type variables over which quantification can take place,
+as described by the typing rules for |let|-expressions in \figRef{rules.expr2.3} and its implementation:
+
+\chunkCmdUseOnPrev{EHInfer.1.Let,EHInfer.2.Let}{EHInfer.3.Let}
+
+All available constraints in the form of |decls.tyCnstr| are applied to both global (|gValGam|)
+and local (|lValGam|) |Gamma|.
+All types in the resulting local |lSubsValGam| are then quantified over their free type variables,
+with the exception of those referred to more globally, the |gTyTvL|.
+We use |valGamQuantify| to accomplish this:
+
+\chunkCmdUseMark{EHGam.3.valGamQuantify}
+\chunkCmdUseMark{EHGam.3.valGamMapTy}
+\chunkCmdUseMark{EHGam.3.gamMap}
+\chunkCmdUseMark{EHGam.3.gamMapElts}
+
+The condition that quantification only may be done for type variables not occurring in
+the global |Gamma| is a necessary one.
+For example:
+\begin{code}
+%%3srcfile(test/3-mono-glob.eh%%)
+\end{code}
+
+If the type |g :: a -> (a,a)| would be concluded, |g| can be used with |y| an |Int| parameter, as
+in the example. Function |f| can then be used with |x| a |Char| parameter.
+This would go wrong because |h| assumes the types of its parameters |x| and |y| are equal.
+So, this justifies the error given by the compiler for this version of EH:
+
+\begin{TT}
+%%3ppfile(test/3-mono-glob.eh%%)
+\end{TT}
+
+All declarations in a |let|-expression together form what in Haskell is called a binding group.
+Inference for these declarations is done together and all the types of all identifiers
+are quantified together. The consequence is that a declaration that on its own would be polymorphic,
+may not be so in conjunction with an additional declaration which uses the previous declaration:
+
+\begin{code}
+%%3srcfile(test/3-mono-bind.eh%%)
+\end{code}
+
+The types of the function |id1| and value |v1| are inferred in the same binding group.
+However, in this binding group the type for |id1| is |tvarv1 -> tvarv1| for some type variable |tvarv1|,
+without any quantifier around the type.
+The application |id1 3| therefore infers an additional constraint |tvarv1 :-> Int|, resulting
+in type |Int -> Int| for |id1|
+
+\begin{TT}
+%%3ppfile(test/3-mono-bind.eh%%)
+\end{TT}
+
+On the other hand, |id2| is used after quantification, outside the binding group, with
+type |forall a . a -> a|.
+The application |id2 3| will not constrain |id2|.
+
+In Haskell binding group analysis will find groups of mutually dependent definitions,
+each of these called a binding group. These groups are then ordered
+according to ``define before use'' order.
+Here, for EH, all declarations in a |let|-expression
+automatically form a binding group, the ordering of two binding groups |d1| and |d2| has
+to be done explicitly using sequences of |let| expressions: |let d1 in let d2 in ...|.
+
+Being together in a binding group can create a problem for inferencing mutually recursive definitions,
+for example:
+
+\begin{code}
+%%3srcfile(test/3-mut-rec.eh%%)
+\end{code}
+
+This results in
+
+\begin{TT}
+%%3ppfile(test/3-mut-rec.eh%%)
+\end{TT}
+
+For |f1| it is only known that its type is |tvarv1 -> tvarv2|.
+Similarly |g1| has a type |tvarv3 -> tvarv4|.
+More type information cannot be constructed unless more information
+is given as is done for |f2|.
+Then also for |g2| may the type |forall a.a->a| be reconstructed.
+
+\TBD{example polymorphic recursion}
+
+\subsubsection{Type expressions}
+
+Finally, type expressions need to return a type where all
+occurrences of type variable names (of type |HsName|) coincide with type variables (of type |TyVarId|).
+Type variable names are identifiers just as well so 
+a |TyGam| similar to |ValGam|
+is used to map type variable names to freshly created type variables.
+
+\chunkCmdUseMark{EHInferTyExpr.3}
+
+Either a type variable is defined in |tyGam|, in that case the type bound to the identifier is used,
+otherwise a new type variable is created.
+
+%if inclOmitted
+\subsection{Omitted}
+Details concerning pretty printing
+have been omitted.
+
+Generation of unique identifiers for type variables
+in a type for pretty printing
+has been omitted here, but
+can be found in \appRef{app-ag-pattern-uid}.
+%endif
+
+%if not omitLitDiscuss
+\subsection<article>{Literature}
+
+\TBD{}
+
+Polymorphic recursion
+\cite{kfoury93recursivetype,hallet04polyrec-ex,vasconcellos03polyrec-impl,henglein91polyrec-infer,figueiredo01polyrec-princ}
+%endif
+
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

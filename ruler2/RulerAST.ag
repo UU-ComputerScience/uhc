@@ -46,10 +46,12 @@ DATA Decl
                         expr        : Expr
   | Rules               nm          : {Nm}
                         schemeNm    : {Nm}
+                        viewSel     : ViewSel
                         info        : {String}
                         decls       : Decls
   | RulesGroup          nm          : {Nm}
                         schemeNm    : {Nm}
+                        viewSel     : ViewSel
                         info        : {String}
                         rlNms       : {[(Nm,Nm)]}
   | Rule                pos         : {SPos}
@@ -105,6 +107,8 @@ SET AllNmSel = NmSel
 DATA ViewSel
   | All
   | View                nm          : {Nm}
+  | Renamed             nmNew       : {Nm}
+                        nm          : {Nm}
   | Range               vwFr        : ViewSel
                         vwTo        : ViewSel
 
@@ -181,6 +185,7 @@ DATA Expr
                         cnstr       : ECnstr
   | WrapCnstr           cnstr       : ECnstr
   | Paren               expr        : Expr
+  | Retain              expr        : Expr
   | SelTop              expr        : Expr
   | Sel                 expr        : Expr
                         selMbExpr   : MbExpr
@@ -192,7 +197,9 @@ DATA Expr
 DATA ANm
   | Wild
   | Loc                 nm          : {Nm}
+                        props       : {[AtProp]}
   | Lhs                 nm          : {Nm}
+                        props       : {[AtProp]}
   | Fld                 nm          : {Nm}
   | Node                ndNm        : {Nm}
                         nm          : {Nm}

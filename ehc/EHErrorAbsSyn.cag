@@ -43,7 +43,9 @@ DATA Err
                         arity      : {Int}
   | NestedIn            wher       : {PP_Doc}
                         errL       : ErrL
+%%]
 
+%%[1.ErrL
 TYPE ErrL       = [Err]
 %%]
 

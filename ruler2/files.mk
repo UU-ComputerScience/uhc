@@ -99,13 +99,13 @@ $(RULER2_DEMO_DRV_ATEX): $(RULER2_DEMO_DRV_LATEX)
 	$(LHS2TEX) $(LHS2TEX_OPTS_POLY) $< > $@
 
 $(RULER2_DEMO_DRV_HS_UTILS): $(RULER2_DEMO_SRC_CHS_UTILS) $(SHUFFLE)
-	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --hs --order="$(RULER2_DEMO_SHUFFLE_ORDER)" --prefix=no --lhs2tex=no $< > $@
+	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --hs --order="$(RULER2_DEMO_SHUFFLE_ORDER)" --preamble=no --lhs2tex=no $< > $@
 
 $(RULER2_DEMO_DRV_HS_UTILS_TEX): $(RULER2_DEMO_SRC_CHS_UTILS) $(SHUFFLE)
 	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --latex --order="$(RULER2_DEMO_SHUFFLE_ORDER)" --base=rulerDemoUtils --lhs2tex=yes $< | $(LHS2TEX) $(LHS2TEX_OPTS_POLY) > $@
 
 $(RULER2_DEMO_DRV_AG_MAIN): $(RULER2_DEMO_SRC_CAG_MAIN) $(SHUFFLE)
-	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --ag --order="$(RULER2_DEMO_SHUFFLE_ORDER)" --base=Main --prefix=no --lhs2tex=no $< > $@
+	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --ag --order="$(RULER2_DEMO_SHUFFLE_ORDER)" --base=Main --preamble=no --lhs2tex=no $< > $@
 
 $(RULER2_DEMO_DRV_AG_MAIN_TEX): $(RULER2_DEMO_SRC_CAG_MAIN) $(SHUFFLE)
 	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --latex --order="$(RULER2_DEMO_SHUFFLE_ORDER)" --base=rulerDemoMain --lhs2tex=yes $< | $(LHS2TEX) $(LHS2TEX_OPTS_POLY) > $@

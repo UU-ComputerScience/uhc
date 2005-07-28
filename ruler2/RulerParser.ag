@@ -8,8 +8,12 @@
 specialChars  =  "().`"
 opChars       =  "!#$%&*+/<=>?@\\^|-:;,[]{}~"
 
-propsMp
+propsSynInhMp
   =  Map.fromList [ ("thread",AtThread), ("updown",AtUpdown) ]
+propsOtherMp
+  =  Map.fromList [ ("retain",AtRetain), ("node",AtNode) ]
+propsMp
+  =  Map.unions [ propsSynInhMp, propsOtherMp ]
 keywordsTextProps
   =  Map.keys propsMp
 keywordsTextEscapable
@@ -22,8 +26,6 @@ keywordsTextEscapable
         , "extern", "external"
         -- related to formatting (styles)
         , "tex", "ag", "def", "use", "spec"
-        -- related to attributes (flags)
-        , "node"
         -- misc
         , "text"
         ]
@@ -114,9 +116,11 @@ pAllParsers
                                                        <*  pKey "="             <*> pExpr
                             <|> sem_Decl_Rules         <$  (pKey "rules" <|> pKey "ruleset")
                                                        <*> pNm
-                                                       <*  pKey "scheme"        <*> pNm   <*> pString
+                                                       <*  pKey "scheme" <*> pNm <*> pMbViewSel <*> pString
                                                        <*  pKey "=" <*> pDecls' pDeclRule
-                            <|> sem_Decl_RulesGroup    <$  pKey "rulesgroup"    <*> pNm            <* pKey "scheme"    <*> pNm   <*> pString
+                            <|> sem_Decl_RulesGroup    <$  pKey "rulesgroup"
+                                                       <*> pNm
+                                                       <*  pKey "scheme" <*> pNm <*> pMbViewSel <*> pString
                                                        <*  pKey "="             <*> pList1 ((,) <$ pKey "rule" <*> pNm <*> pNm)
                             <|> sem_Decl_ViewHierarchy <$  pKey "viewhierarchy"
                                                        <*  pKey "="             <*> pList1Sep pComma (pList1Sep (pKey "<") pNmVw)
@@ -133,19 +137,20 @@ pAllParsers
                                      )
                             where pTl1 = (,) <$> pMbString <*> pDs
                                   pDs = pKey "=" *> (pDeclScmDflt <|> pDecls1' pDeclScm)
-                                  pTl2 = (,) <$> pMbString <*> (pMb' id sem_Decls_Nil pDs)
+                                  pTl2 = (,) <$> pMbString <*> (pMaybe id sem_Decls_Nil pDs)
         pScDeriv            =   ScList <$ pKey "[" <*> pNm <* pKey "]"
-        pMbViewSel          =   pMb' id sem_ViewSel_All (pKey "viewsel" *> pViewSel)
+        pMbViewSel          =   pMaybe id sem_ViewSel_All (pKey "viewsel" *> pViewSel)
         pViewSel            =   pV <??> ((flip sem_ViewSel_Range) <$ pKey "-" <*> pV)
-                            where pV = sem_ViewSel_View <$> pNmVw <|> sem_ViewSel_All <$ pKey "*"
+                            where pV =   sem_ViewSel_View <$> pNmVw <|> sem_ViewSel_All <$ pKey "*"
+                                     <|> pParens (sem_ViewSel_Renamed <$> (foldr1 nmStrApd <$> pList1 pNmVw) <* pKey "=" <*> pNmVw)
         pViewSels           =   pFoldrSep (sem_ViewSels_Cons,sem_ViewSels_Nil) pComma pViewSel
         pNmSel              =   sem_NmSel_All <$ pKey "*" <|> sem_NmSel_Nms <$> pList pNm
         pRlSel              =   sem_RlSel_Sel <$> pParens pViewSels <* pKey "." <*> pParens pNmSel <* pKey "." <*> pParens pNmSel
-        pFmKd2WithDflt      =   pMb' id FmAll pFmKd2
-        pFmKd3WithDflt      =   pMb' id FmAll pFmKd3
+        pFmKd2WithDflt      =   pMaybe id FmAll pFmKd2
+        pFmKd3WithDflt      =   pMaybe id FmAll pFmKd3
         pFmKd2              =   FmTeX <$ pKey "tex" <|> FmAG <$ pKey "ag"
         pFmKd3              =   FmSpec <$ pKey "spec" <|> pFmKd2
-        pAtIO               =   pMb' id AtInOut (AtIn <$ pKey "def" <|> AtOut <$ pKey "use")
+        pAtIO               =   pMaybe id AtInOut (AtIn <$ pKey "def" <|> AtOut <$ pKey "use")
         pNmStr              =   pVarid <|> pConid
         pNmStrI             =   pNmStr <|> pInteger
         pNmBase             =   Nm <$> pNmStr
@@ -184,6 +189,7 @@ pAllParsers
         pExprSpecial        =   (sem_Expr_StrAsIs . concat)     <$> pList1 (pAnyKey (keywordsOpsParenEsc ++ keywordsTextEscapable))
                             <|> sem_Expr_Named                  <$> pNm <* pKey "=" <*> pExpr
                             <|> sem_Expr_StrText                <$  pKey "text" <*> pString
+                            <|> sem_Expr_Retain                 <$  pKey "retain" <*> pExpr
                             <|> sem_Expr_ChildOrder             <$  pKey "node" <*> pInt <* pKey "=" <*> pExpr
         pExprDot            =   pSel (sem_Expr_SelTop,sem_Expr_Sel,sem_MbExpr_Just) (pE,pMbE)
                             where pE   = pExprBase' pNmBase
@@ -205,9 +211,8 @@ pAllParsers
         pAttrEqns           =   pFoldr (sem_AttrEqns_Cons,sem_AttrEqns_Nil) (pKey "|" *> pAttrEqn)
         pAttrEqn            =   sem_AttrEqn_Eqn <$>              pNm <* pKey "=" <*> pExpr
                             <|> sem_AttrEqn_Del <$  pKey "-" <*> pNm
-        pAttrProp           =   AtNode <$ pKey "node" <|> AtThread <$ pKey "thread" <|> AtUpdown <$ pKey "updown"
-        pMb' j n p          =   j <$> p <|> pSucceed n
-        pMb                 =   pMb' Just Nothing
+        pAttrProp           =   foldr1 (<|>) [ v <$ pKey n | (n,v) <- Map.toList propsMp ]
+        pMb                 =   pMaybe Just Nothing
         pKeySPos k          =   (\p -> (k,p)) <$> pKeyPos k
         pInt                =   read <$> pInteger
      in (pAGItf,pViewSels,pRlSel)

@@ -54,7 +54,7 @@ GRIN_AG_ALL_DPDS_DRV_AG					:= $(patsubst $(GRIN_SRC_PREFIX)%.cag,$(GRIN_BLD_VAR
 # rules
 $(GRIN_AG_ALL_MAIN_DRV_AG) $(GRIN_AG_ALL_DPDS_DRV_AG): $(GRIN_BLD_VARIANT_PREFIX)%.ag: $(GRIN_SRC_PREFIX)%.cag $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(GRIN_VARIANT) --base=$(*F) --ag --prefix=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE) --gen=$(GRIN_VARIANT) --base=$(*F) --ag --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(GRIN_AG_D_MAIN_DRV_HS): %.hs: %.ag
 	$(AGC) -dr -P$(GRIN_BLD_VARIANT_PREFIX) $<

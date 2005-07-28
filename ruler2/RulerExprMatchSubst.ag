@@ -16,7 +16,7 @@ nmMatch opts fk n fmGam
             else reverse . tail . inits $ nmL 
         match
           = foldr (\nL m
-                    -> case fmGamLookup (nmFromL nL) fk fmGam of
+                    -> case fmGamLookup (nmFromMbL nL) fk fmGam of
                          Just e | isOkLen
                            -> Just (nL,drop len nmL,e)
                            where isOkLen = maybe True (\n -> len == length (nmToMbL n) || len == nmLen) (mbNmOfSel e)
@@ -51,10 +51,10 @@ exprVarSubst opts fmGam rwGam ecGam dfltRepl nm
       Just (matchNmL,remNmL,matchExpr)
         -> case mbNmLOfSel se of
              Just sNmL
-               -> Expr_Var (nmFromL (sNmL ++ remNmL))
+               -> Expr_Var (nmFromMbL (sNmL ++ remNmL))
              _ -> nmLAsSelExpr id se remNmL
         where se = if optSubstOnce opts then matchExpr else sbsWoNm matchExpr
-              sbsWoNm = exprSubst opts (nmFromL matchNmL `Map.delete` fmGam)
+              sbsWoNm = exprSubst opts (nmFromMbL matchNmL `Map.delete` fmGam)
       _ -> dfltRepl
 }
 
@@ -210,6 +210,7 @@ exprMatch ecGam e1 e2
         mt (Expr_Paren e1)          e2@(Expr_Var n2)                        = bnd n2 e1 $ res e2
         mt (Expr_Paren e1)          (Expr_Paren e2)                         = let m = mt e1 e2 in res' (Expr_Paren (mtExpr m)) m
         mt e1                       (Expr_Paren e2)                         = mt e1 e2
+        mt (Expr_Op n1 ne1 l1 r1)   e2@(Expr_Var n2)                        = err
         mt e1                       e2@(Expr_Var n2)                        = bnd n2 e1 $ res e2
         mt (Expr_Op n1 ne1 l1 r1)   (Expr_Op n2 ne2 l2 r2)  | n1 == n2
           = bnd' (m2 {mtFmGam = n1 `Map.delete` mtFmGam m2}) m1

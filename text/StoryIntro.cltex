@@ -1,0 +1,538 @@
+%%[intro
+Haskell98 \cite{peytonjones03has98-rev-rep} is a complex language,
+not to mention its more experimental incarnations.
+Though also intended as a research platform, realistic compilers for Haskell \cite{www04ghc}
+have grown over the years
+and understanding and experimenting with
+those compilers is not an easy task.
+Experimentation on a smaller scale usually is based upon relatively simple and restricted implementations
+\cite{jones99thih}, often focusing only on a particular aspect of
+the language and/or its implementation.
+This paper aims at walking somewhere between this complexity and simplicity by
+\begin{itemize}
+\item
+Describing the implementation of essential aspects of Haskell
+(or any other (functional) programming language), hence the name Essential Haskell (EH) used
+for simplified variants of
+Haskell\footnote{The 'E' in EH might also be expanded to other aspects of the compiler, like being an \textbf{E}xample.}
+in \thispaper.
+\item
+Describing these aspects separately in order to provide a better understanding.
+\item
+Adding these aspects on top of each other
+in an incremental way, thus leading to a sequence of compilers, each for a larger subset of complete Haskell (and extensions).
+\item
+Using tools like the Utrecht University Attribute Grammar (UUAG) system
+\cite{baars04ag-www},
+hereafter referred to as the AG system,
+to allow for separate descriptions for the various aspects.
+\end{itemize}
+
+The remaining sections of this introduction will expand on this by looking at
+the intentions, purpose and limitations of \thispaper\ in more detail.
+This is followed by a short description
+of the individual languages for which we develop compilers throughout \thispaper.
+The last part of the introduction contains a small tutorial on the AG system used 
+in \thispaper.
+After the introduction we continue with discussing the implementation
+of the first three compilers
+(sections \ref{ehc1}, \ref{ehc2} and \ref{ehc3})
+out of a (currently) sequence of ten compilers.
+On the web site \cite{dijkstra04ehc-web} for this project the  full distribution of the code for these compilers can be found.
+We conclude \thispaper\ by reflecting upon our experiences with the AG system and the creation of \thispaper\ (\secRef{ehcConcl}).
+
+%if storyPHD
+\subsection*%
+%else
+\subsection%
+%endif
+{Purpose}
+
+For whom is this material intended?
+\begin{itemize}
+\item
+For students who wish to learn more about the implementation of functional languages.
+This paper also informally explains the required theory, in particular about type systems.
+\item
+For researchers who want to build (e.g.) a prototype and to experiment
+with extensions to the type system and need a non-trivial and realistic starting point.
+This paper provides documentation, design rationales and an implementation for such a starting point.
+\item
+For those who wish to study a larger example of the tools used to build the compilers in \thispaper.
+We demonstrate the use of the AG system,
+which allows us to separately describe the various aspects of a language implementation.
+%if incl01TopicParsing
+Parser combinators \cite{swierstra00parser-toytool,swierstra99parser-tutor}
+are used to compactly describe executable syntax.
+%endif
+Other tools for maintaining consistency between different versions of the resulting compilers
+and the source code text included in \thispaper\ are also used, but will not be discussed.
+\end{itemize}
+
+For this intended audience \thispaper
+%if llncs
+provide:
+%else
+provides:
+%endif
+
+\begin{itemize}
+\item
+A description of the implementation of a type checker/inferencer for
+a subset of Haskell.
+We describe the first three languages of a (currently) sequence of ten,
+that end in a full implementation of an extended Haskell.
+\item
+A description of the semantics of Haskell, lying between the
+more formal
+\cite{hall96type-class-haskell,faxen02semantics-haskell}
+and more implementation oriented
+\cite{jones00thih,ipt:impl-func-prog-lang} and similar to other combinations of
+theory and practice \cite{typing:types-prog-lang:pierce}.
+\item
+A gradual instead of a big bang explanation.
+\item
+Empirical support for the belief that the complexity of a compiler
+can be managed by splitting the implementation of the compiler into separate aspects.
+\item
+A working combination of otherwise usually separately proven or implemented features.
+\end{itemize}
+
+We will come back to this in our conclusion (see \secRef{ehcConcl}).
+
+We restrict ourselves in the following ways, partly because of space limitations, partly by design:
+
+\begin{itemize}
+%if storyAFP04Notes
+\item
+We do not discuss extensions to Haskell implemented in versions beyond the last version presented in \thispaper.
+See \secRef{eh-not-described} for a preciser description of what can and cannot be found in \thispaper\
+with respect to Haskell features.
+%endif
+\item
+We concern ourselves with typing only.
+Other aspects, like pretty printing and parsing, are not discussed.
+However, the introduction to the AG system (see \secRef{ag-primer}) gives some examples
+of the pretty printing and the interaction between parsing, AG code and Haskell code.
+\item
+We do not deal with type theory or parsing theory as a subject on its own.
+This paper is intended to describe ``how to implement'' and
+will use theory from that point of view.
+Theoretical aspects are touched upon from a more intuitive point of view.
+\end{itemize}
+
+Although informally and concisely introduced where necessary,
+familiarity with the following will make reading and understanding \thispaper\ easier:
+\begin{itemize}
+\item
+Functional programming, in particular using Haskell
+\item
+Compiler construction in general
+\item
+Type systems, |lambda|-calculus
+\item
+Parser combinator library and AG system \cite{baars04ag-www,uust04www}
+\end{itemize}
+
+%if incl00TopicAGPrimer
+For those not familiar with the AG system a short tutorial has been included at the end of
+this introduction (see \secRef{ag-primer}).
+It also demonstrates the use of the parser combinators used throughout the implementation of
+all EH versions.
+%endif
+
+We expect that by finding a balance between theory and implementation,
+we serve both those who want to learn and those who want to do research.
+It is also our belief that by splitting the big problem into smaller aspects the combination can
+be explained in an easier way.
+
+In the following sections we give examples of the Haskell features
+present in the
+series of compilers described in
+%if not incl06
+the following chapters.
+%else
+\chapterRef{ehc1} throughout
+\chapterRef{ehc6}.
+%endif
+Only short examples are given, so the reader gets an impression of what is explained in more detail
+and implemented in the relevant versions of the compiler.
+
+%if storyPHD
+\subsection*%
+%else
+\subsection%
+%endif
+{A short tour}
+
+Though all compilers described in \thispaper\ deal with a different issue,
+they all have in common that they are based on the \IxAsIs{|lambda|-calculus},
+most of the time using the syntax and semantics of Haskell.
+The first version of our series of compilers therefore accepts a language that most closely resembles the
+|lambda|-calculus, in particular typed |lambda|-calculus extended with |let| expressions
+and some basic types and type constructors such as |Int|, |Char| and tuples.
+
+\paragraph{EH version 1: |lambda|-calculus.}
+An EH program is a single expression, contrary to a Haskell program which consists of a set of declarations forming a module.
+
+\begin{code}
+%%1srcfile(test/1-demo2.eh%%)
+\end{code}
+
+All variables need to be typed explicitly; absence of an explicit type is considered to be an error.
+The corresponding compiler (EH version 1, \chapterRef{ehc1}) checks the explicit types against
+actual types.
+%if not storyAFP04Notes
+For example:
+
+\begin{code}
+%%1srcfile(test/1-all-fail2.eh%%)
+\end{code}
+
+is not accepted.
+%endif
+
+Besides the basic types |Int| and |Char|, composite types can be formed by building tuples and defining functions:
+
+\begin{code}
+%%1srcfile(test/1-demo3.eh%%)
+\end{code}
+
+Functions accept one parameter only, which can be a pattern.
+All types are monomorphic.
+
+%if incl02
+\paragraph{EH version 2: Explicit/implicit typing.}
+The next version
+(EH version 2, \chapterRef{ehc2})
+no longer requires the explicit type specifications, which thus may have to be inferred by the compiler.
+%if not storyAFP04Notes
+For example for:
+
+\begin{code}
+%%2srcfile(test/1-sig-fail.eh%%)
+\end{code}
+
+the compiler will infer the type specification |i :: %%2file(test/1-sig-fail.eh%%)|.
+%endif
+
+The reconstructed type information is monomorphic, for example the identity function in:
+
+\begin{code}
+%%2srcfile(test/2-demo1.eh%%)
+\end{code}
+
+is inferred to have the type |id :: %%2file(test/2-demo1.eh%%)|.
+
+%endif %% incl02
+
+%if incl03
+
+\paragraph{EH version 3: Polymorphism.}
+The third version
+(EH version 3, \chapterRef{ehc3})
+performs standard
+Hindley-Milner type inferencing \cite{ipt:type-infer-milner,damas82principal-type}
+which also supports parametric polymorphism.
+For example,
+\begin{code}
+let  id = \x -> x
+in   id 3
+\end{code}
+is inferred to have type |id :: %%3(let id = \x -> x in id%%)|.
+
+%if not storyAFP04Notes
+A type for a value can also be specified explicitly
+\begin{code}
+let  id :: a -> a
+     id = \x -> x
+in   id 3
+\end{code}
+The type signature is checked against the inferred type.
+%endif
+
+%endif %% incl03
+
+%if incl04 || storyEHIntro
+\paragraph{EH version 4: Higher ranked types.}
+Standard Hindley-Milner type inferencing cannot infer polymorphic parameters:
+so-called rank-2 polymorphism.
+In general, this is a hard thing to do and even impossible for rank-3 (and higher) types
+\cite{jim95rank,kfoury94direct,kfoury99rank2-decid,kfoury03rank2-princ},
+so the fourth version
+(EH version 4,
+%if storyAFP04Notes
+describe elsewhere \cite{dijkstra04thag-part1}
+%else
+\chapterRef{ehc4}%
+%endif
+)
+does not infer this type information but
+allows explicitly specified polymorphism for (e.g.) parameters.
+
+For example, the following is allowed.
+\begin{code}
+let  f :: (forall a . a -> a) -> (Int,Char)
+     f = \i -> (i 3, i 'x')
+in   f
+\end{code}
+Note that the type signature thus is required here.
+
+This version also provides some notational sugaring by allowing one to omit
+the explicit quantifiers from
+the type signature.
+For example, if the |forall| in the previous example is omitted
+the correct location for the quantifier is inferred,
+based on the occurrences of type variables in a type expression:
+\begin{code}
+let  f :: (a -> a) -> (Int,Char)
+     f = \i -> (i 3, i 'x')
+in   f
+\end{code}
+infers |f :: %%4(let  f :: (a -> a) -> (Int,Char) in f%%)|
+
+Specifying a complete type signature can be difficult for complicated types,
+so it is also permitted to leave argument and results of a function unspecified
+using a \IxAsDef{partial type signature}.
+\begin{code}
+%%4srcfile(test/4-ty-wild1.eh%%)
+\end{code}
+For |f| only the part that cannot be inferred is given in the signature.
+
+Finally, type information can be hidden, or encapsulated,
+by using existential quantification:
+\begin{code}
+%%4srcfile(test/4-demo1.eh%%)
+\end{code}
+The tuple |xy| contains an |Int| and a function making an |Int| from the
+value of which the type has been hidden.
+Access to the elemnts of such a tuple is done by pattern matching, as in the argument position of the function |ixy|.
+The attempt to construct |pq| fails.
+
+When a value of an existentially quantified type is opened, that is,
+identifiers are bound to its components,
+the hidden type becomes visible in the form of a fresh type constant.
+The explicit |exists| may also be omitted, for example
+|xy :: (a, a->Int)| is interpreted as |xy :: exists a . (a, a->Int)|.
+
+
+%endif %% incl04
+
+%if incl05 || (storyEHIntro && not storyVariantETAPSLinks)
+
+\paragraph{EH version 5: Data types.}
+The fifth version (EH version 5, \chapterRef{ehc5})
+adds |data| types and opening/unpacking/scrutinizing
+a data type value by means of a |case| expression.
+\begin{code}
+%%5srcfile(test/5-list.eh%%)
+\end{code}
+
+%endif %% incl05
+
+%if incl06 || storyEHIntro
+
+\paragraph{EH version 6: Kinding.}
+The previous version allows incorrect programs because
+data types can be used incorrectly:
+\begin{code}
+%%6srcfile(test/5-list-wrong.eh%%)
+\end{code}
+The type of |v| is not a type of a value, and thus the type of |v|
+itself is not well-typed.
+The sixth version (EH version 6, \chapterRef{ehc6})
+adds kind (that is, the type of a type) inferencing.
+%if noAFP04
+For example, the previous example gives
+\begin{TT}
+%%6ppfile(test/5-list-wrong.eh%%)
+\end{TT}
+%endif
+
+With the notion of the kind of a type also comes
+the notion of polymorphism for kinds,
+which this version allows:
+\begin{code}
+let  data Eq a b = Eq (forall f . f a -> f b)
+     id = \x -> x
+in   Eq id
+\end{code}
+infers for type constructor |Eq|
+\begin{TT}
+%%6ppinline(let data Eq a b = Eq (forall f . f a -> f b) in 3%%)
+\end{TT}
+
+%endif %% incl06
+
+%if storyPHD
+\subsection*%
+%else
+\subsection%
+%endif
+{Haskell language elements not described}
+\label{eh-not-described}
+
+As mentioned before, only a subset of the full sequence of compilers is described in \thispaper.
+Currently, as part of an ongoing work \cite{dijkstra04ehc-web},
+in the compilers following the compilers described in \thispaper, the following Haskell features are dealt with:
+
+\begin{description}
+%if incl04
+\item[EH 4.] Quantifiers everywhere: higher ranked types
+\cite{shan04sexy-types,peytonjones04pract-inf-rank,botlan03ml-power-f,odersky97putting-ann}
+and existentials \cite{perry91phd,laufer94poly-absdata,mitchell88absty-exist}.
+See also the longer version of \thispaper\ handed out during the AFP04 summerschool
+\cite{dijkstra04thag-part1}.
+%endif
+%if incl05
+\item[EH 5.] Data types.
+%endif
+%if incl06
+\item[EH 6.] Kinds, kind inference, kind checking, kind polymorphism.
+%endif
+%if incl07
+\item[EH 7.] Non extensible records, subsuming tuples.
+%endif
+%if incl08
+\item[EH 8.] Code generation for a GRIN (Graph Reduction Intermediate Notation) like backend
+\cite{boquist96grin-optim,boquist99phd-optim-lazy}.
+%endif
+%if incl09
+\item[EH 9.] Class system, explicit implicit parameters \cite{dijkstra04expl-impl-param-tr}.
+%endif
+%if incl10
+\item[EH 10.] Extensible records \cite{gaster96poly-ext-rec-var,jones99lightweight-ext-rec}.
+%endif
+\end{description}
+
+Also missing are features which fall in the category syntactic sugar, programming in the large and the like.
+Haskell incorporates many features which make programming easier and/or manageable.
+Just to mention a few:
+\begin{itemize}
+\item
+Binding group analysis
+\item
+Syntax directives like infix declarations
+\item
+Modules
+\cite{diatchki02hask-module,shields01first-class-mod}.
+\item
+Type synonyms
+\item
+Syntactic sugar for |if|, |do|, list notation and comprehension.
+\end{itemize}
+
+We have deliberately not dealt with these issues.
+Though necessary and convenient we feel that these features should be added after all else has been dealt with,
+so as not to make understanding and implementating essential features more difficult.
+
+%if False
+%if storyPHD
+\subsection*%
+%else
+\subsection%
+%endif
+{Untackled newly arisen issues}
+The extra features on occasions also add new issues...
+
+\paragraph{Kind checking required during type inferencing}
+
+\TBD{}
+
+Kinds may be different than tacitly assumed.
+
+\begin{code}
+let  data Eq a b = Eq (forall f . f a -> f b)
+     data L a = N | C a (L a)
+     undefined :: forall a . a
+in   let  maf :: (a -> Eq a a) -> Eq L L
+          maf = \g -> g undefined
+     in   3
+\end{code}
+
+\paragraph{Co/contra variance analysis/inference/checking}
+
+\TBD{}
+%endif
+
+%%]
+
+%%[scratch
+%if False
+%if storyPHD
+\subsection*%
+%else
+\subsection%
+%endif
+{About the presented code}
+
+The fact that multiple versions of a compiler are described and
+form the basis around which the explanation has been woven brings
+some consequences
+\begin{itemize}
+\item
+Versions are built on top of each other.
+However, in practice this meant that
+after a next version was constructed, refactoring of earlier versions was in general necessary.
+As such what  we describe is ``an optimal line of development''.
+It is not the case that the versions represent a timeline,
+a tale of how the different versions came into being.
+It also means that all versions are dependent on each other and
+are designed as a whole.
+Any desired change in the last version may imply a change in the first version.
+Metaphorically speaking, in order to change the grown-up compiler you may have to tweak
+its childhood.
+
+In an ideal situation this would not have been necessary;
+but it would be unfair if we did not mention the work that went into getting
+all the laysers to work as neatly as they do now.
+\item
+Since we do not only want to sketch the approach but want to present
+a complete compiler we also have to deal with many non-interesting details.
+However, for \thispaper\ we have chosen to only incorporate aspects directly related to typing
+and omit other aspects like pretty printing, parsing and error reporting.
+The complete compiler text can be found on the website accompanying
+\thispaper \cite{dijkstra04ehc-web}.
+\end{itemize}
+%endif %% False
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

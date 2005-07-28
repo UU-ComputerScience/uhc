@@ -11,6 +11,7 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import FPath
 import Utils
+import Nm
 import PPUtils
 import UU.Pretty
 import qualified UU.DData.Scc as Scc
@@ -72,7 +73,7 @@ data AtDir
   deriving (Eq,Ord,Show)
 
 data AtProp
-  = AtNode | AtThread | AtUpdown
+  = AtNode | AtThread | AtUpdown | AtRetain
   deriving (Eq,Ord,Show)
 
 data AtInfo
@@ -363,38 +364,40 @@ rlVwGamLookup = dblGamLookup rlVwGam
 
 data RsInfo e
   = RsInfo
-      { rsNm    :: Nm
-      , rsScNm  :: Nm
-      , rsDescr :: String
-      , rsRlGam :: RlGam e
+      { rsNm        :: Nm
+      , rsScNm      :: Nm
+      , rsInclVwS   :: Set.Set Nm
+      , rsDescr     :: String
+      , rsRlGam     :: RlGam e
       }
   | RsInfoGroup
-      { rsNm    :: Nm
-      , rsScNm  :: Nm
-      , rsDescr :: String
-      , rsRlNms :: [(Nm,Nm)]
+      { rsNm        :: Nm
+      , rsScNm      :: Nm
+      , rsInclVwS   :: Set.Set Nm
+      , rsDescr     :: String
+      , rsRlNms     :: [(Nm,Nm)]
       }
 
-emptyRsInfo = RsInfo nmUnk nmUnk "" emptyGam
+emptyRsInfo = RsInfo nmUnk nmUnk Set.empty "" emptyGam
 
 instance Show (RsInfo e) where
   show _ = "RsInfo"
 
 instance PP e => PP (RsInfo e) where
-  pp (RsInfo      n _ _ g) = "RS" >#< pp n >#< ppGam g
-  pp (RsInfoGroup n _ _ _) = "RSGrp" >#< pp n
+  pp (RsInfo      n _ _ _ g) = "RS" >#< pp n >#< ppGam g
+  pp (RsInfoGroup n _ _ _ _) = "RSGrp" >#< pp n
 
 type RsGam e = Gam Nm (RsInfo e)
 
 rsRlOrder :: RsInfo e -> [Nm]
 rsRlOrder i
   = case i of
-      RsInfo      _ _ _ g  -> map snd . sort $ [ (rlSeqNr i,rlNm i) | i <- Map.elems g ]
-      RsInfoGroup _ _ _ ns -> map snd ns
+      RsInfo      _ _ _ _ g  -> map snd . sort $ [ (rlSeqNr i,rlNm i) | i <- Map.elems g ]
+      RsInfoGroup _ _ _ _ ns -> map snd ns
 
 rsInfoMbRlGam :: RsInfo e -> Maybe (RlGam e)
-rsInfoMbRlGam (RsInfo _ _ _ g) = Just g
-rsInfoMbRlGam _                = Nothing
+rsInfoMbRlGam (RsInfo _ _ _ _ g) = Just g
+rsInfoMbRlGam _                  = Nothing
 
 -------------------------------------------------------------------------
 -- Formats

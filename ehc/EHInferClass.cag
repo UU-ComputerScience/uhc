@@ -93,7 +93,7 @@ SEM Decl
                                 .   ctxtClsNmL      =   map tyPredMatchNm @ctxtPrTyFixL
                                 .   (dictNm,inclForElim)
                                                     =   maybe (poiHNm @instId,True) id @mbNmElim
-                                .   pigi            =   maybe emptyPIGI id (gamLookup @lhs.prIntroGam @instClsNm)
+                                .   pigi            =   maybe emptyPIGI id (gamLookup @instClsNm @lhs.prIntroGam)
                                 .   supPrTyL        =   let  t      =  rulRuleTy . pigiRule $ @pigi
                                                              st     =  mkNewTyVarL (tyArrowArity . tyQuant $ t) @lUniq4 `mkArrow` @hdPrTyFix
                                                              fo     =  fitsIn predFIOpts emptyFE @lUniq3 t st
@@ -126,7 +126,7 @@ ATTR AllTyExpr [ | | clNmS USE {`Set.union`} {Set.empty}: {Set.Set HsName}  clMi
 
 SEM PrExpr
   | Class       loc             .   (pigi,clNmS,clMissNmS)
-                                                    =   case gamLookup @lhs.prIntroGam @nm of
+                                                    =   case gamLookup @nm @lhs.prIntroGam of
                                                             Just p   -> (p          ,Set.singleton @nm  ,Set.empty     )
                                                             Nothing  -> (emptyPIGI  ,Set.empty     ,Set.singleton @nm  )
                                 .   nmIsDef         =   Set.null @clMissNmS

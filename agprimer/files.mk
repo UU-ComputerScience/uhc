@@ -49,10 +49,10 @@ $(AGPRIMER_AG_EXPR_DRV_HS) $(AGPRIMER_AG_REPM_DRV_HS) : %.hs : %.ag
 	$(AGC) -csdfr -P$(AGPRIMER_SRC_PREFIX) $<
 
 $(AGPRIMER_HS_REPM_DRV_HS): %.hs : %.chs $(SHUFFLE)
-	$(SHUFFLE) --gen=1 --base=Main --hs --prefix=no --lhs2tex=no --order="$(AGPRIMER_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE) --gen=1 --base=Main --hs --preamble=no --lhs2tex=no --order="$(AGPRIMER_SHUFFLE_ORDER)" $< > $@
 
 $(AGPRIMER_AG_REPM_DRV_AG) $(AGPRIMER_AG_EXPR_DRV_AG): %.ag: %.cag $(SHUFFLE)
-	$(SHUFFLE) --gen=1 --base=Main --ag --prefix=no --lhs2tex=no --order="$(AGPRIMER_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE) --gen=1 --base=Main --ag --preamble=no --lhs2tex=no --order="$(AGPRIMER_SHUFFLE_ORDER)" $< > $@
 
 
 

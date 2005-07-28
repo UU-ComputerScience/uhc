@@ -4,6 +4,34 @@
 -- Pretty printing of ruler AST
 -------------------------------------------------------------------------
 
+{
+ppExprMbEmpty :: Expr -> (PP_Doc -> PP_Doc) -> PP_Doc -> PP_Doc
+ppExprMbEmpty (Expr_Empty) _ p = p
+ppExprMbEmpty _            f p = f p
+}
+
+-------------------------------------------------------------------------
+-- Need for parenthesis
+-------------------------------------------------------------------------
+
+{
+data NeedParCtxt
+  = ParCtxtAppL | ParCtxtAppR | ParCtxtOpL | ParCtxtOpR
+  deriving Eq
+
+exprNeedPar :: NeedParCtxt -> Expr -> (PP_Doc -> PP_Doc)
+exprNeedPar ctxt e
+  = case (t e,ctxt) of
+      (Expr_Op _ _ _ _,ParCtxtAppL) -> pp_parens
+      (Expr_Op _ _ _ _,ParCtxtAppR) -> pp_parens
+      (Expr_Op _ _ _ _,ParCtxtOpL) -> pp_parens
+      (Expr_App _ _,ParCtxtAppR) -> pp_parens
+      _ -> id
+  where t (Expr_AppTop  e) = t e
+        t (Expr_Named _ e) = t e
+        t e                = e
+}
+
 -------------------------------------------------------------------------
 -- Plain, for all
 -------------------------------------------------------------------------
@@ -43,8 +71,13 @@ SEM RExpr
   | Del             lhs     .   pp          =   "judge" >#< "-" >#< ppCommas @nms
 
 SEM Expr
-  | App             lhs     .   pp          =   @lExpr.pp >#< @rExpr.pp
-  | Op              lhs     .   pp          =   @lExpr.pp >#< @nmExpr.pp >#< @rExpr.pp
+  | App             lhs     .   pp          =   exprNeedPar ParCtxtAppL @lExpr.self @lExpr.pp
+                                                >#< exprNeedPar ParCtxtAppR @rExpr.self @rExpr.pp
+  | Op              lhs     .   pp          =   ppExprMbEmpty @lExpr.self (>|< " ")
+                                                    (exprNeedPar ParCtxtOpL @lExpr.self @lExpr.pp)
+                                                >|< @nmExpr.pp
+                                                >|< ppExprMbEmpty @rExpr.self (" " >|<)
+                                                        (exprNeedPar ParCtxtOpR @rExpr.self @rExpr.pp)
   | Sel             lhs     .   pp          =   @expr.pp >|< "." >|< @selMbExpr.pp
   | Var Uniq        lhs     .   pp          =   pp @nm
   | Int             lhs     .   pp          =   pp @int
@@ -152,8 +185,8 @@ ATTR ANm AEqnDest AEqn [ | | ndStr: String ]
 ATTR ANm AEqnDest AEqn AEqns [ mbPrevNdStr: {Maybe String} | | ]
 
 SEM ANm
-  | Loc             loc     .   ndStr       =   "loc"
-  | Lhs             loc     .   ndStr       =   strLhs
+  | Loc             loc     .   ndStr       =   strLoc
+  | Lhs             loc     .   ndStr       =   if AtRetain `elem` @props then strLoc else strLhs
   | Node            loc     .   ndStr       =   show @ndNm
   | Fld Wild        loc     .   ndStr       =   ""
 

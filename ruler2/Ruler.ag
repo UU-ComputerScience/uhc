@@ -12,6 +12,7 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import FPath
 import Utils
+import Nm
 import PPUtils
 import ParseUtils
 import UU.Pretty
@@ -114,6 +115,7 @@ data Opts
       { optGenFM        :: FmKind
       , optGenAGAttr    :: Bool
       , optDot2Dash     :: Bool
+      , optPreamble     :: Bool
       , optAtDir        :: AtDir    -- used internally only
       , optSubstFullNm  :: Bool     -- used internally only
       , optSubstOnce    :: Bool     -- used internally only
@@ -131,6 +133,7 @@ defaultOpts
       { optGenFM        =  FmAll
       , optGenAGAttr    =  False
       , optDot2Dash     =  False
+      , optPreamble     =  True
       , optAtDir        =  AtInOut
       , optSubstFullNm  =  True
       , optSubstOnce    =  False
@@ -152,6 +155,8 @@ cmdLineOpts
           "generate code for AG, default=no"
      , Option ""   ["ATTR"]             (NoArg oGenAGAttr)
           "generate ATTR defs (for AG), default=no"
+     , Option ""   ["preamble"]         (OptArg oPreamble "yes|no")
+          "include preamble, default=yes"
      , Option ""   ["dot2dash"]         (NoArg oDot2Dash)
           "change '.' in rule names to '-', default=no"
      , Option "c"  ["markchanges"]      (OptArg oMarkCh "<spec>")
@@ -171,6 +176,7 @@ cmdLineOpts
          oGenAG          o =  o {optGenFM = FmAG}
          oGenAGAttr      o =  o {optGenAGAttr = True}
          oDot2Dash       o =  o {optDot2Dash = True}
+         oPreamble   ms  o =  yesno (\f o -> o {optPreamble = f}) ms o
          oHelp           o =  o {optHelp = True}
          oFragWrap       o =  o {optFragWrap = True}
          oDebug          o =  o {optDebug = True}
@@ -278,11 +284,20 @@ SEM Expr
 ATTR AGViewSelsItf AllViewSel [ | | vwSelNmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
 
 SEM ViewSel
-  | View            lhs     .   vwSelNmS    =   Set.singleton @nm
+  | View Renamed    lhs     .   vwSelNmS    =   Set.singleton @nm
   | All             lhs     .   vwSelNmS    =   vgVertices @lhs.vwDpdGr
   | Range           lhs     .   vwSelNmS    =   let toS = Set.fold (\n r -> vgReachableFrom @lhs.vwDpdGr n `Set.union` r) Set.empty @vwTo.vwSelNmS
                                                     frSL = [ vgReachableTo @lhs.vwDpdGr n | n <- Set.toList @vwFr.vwSelNmS ]
                                                 in  Set.filter (\n -> any (\s -> n `Set.member` s) frSL) toS
+
+-------------------------------------------------------------------------
+-- View renaming
+-------------------------------------------------------------------------
+
+ATTR AGRlSelItf AllViewSel AllRlSel [ | | vwRnmM USE {`Map.union`} {Map.empty}: {Map.Map Nm Nm} ]
+
+SEM ViewSel
+  | Renamed         lhs     .   vwRnmM      =   Map.singleton @nm @nmNew
 
 -------------------------------------------------------------------------
 -- Attr
@@ -327,7 +342,7 @@ SEM Decl
                                                     Just (_,i) -> (i,[])
                                                     Nothing    -> (emptyVwScInfo,[Err_UndefNm @pos @cxStr "view" [@lhs.viewNm]])
                             .   errUndefs   =   let nms = Map.keys (vwscFullAtGam @vwScInfo) \\ Set.toList @expr.nmS
-                                                in  if null nms then [] else [Err_UndefNm @pos @cxStr "attr" nms]
+                                                in  [] -- if null nms then [] else [Err_UndefNm @pos @cxStr "hole" nms]
   | ShpDel          lhs     .   vwJdGam     =   Map.fromList [ (k,JdDel) | k <- @fmKinds ]
 
 -------------------------------------------------------------------------
@@ -368,7 +383,7 @@ SEM Decl
                                                     vwSels = vgVertices @lhs.vwDpdGr
                                                     mkg mkn l = Map.fromList [ (mkn i,i) | i <- l ]
                                                     mkRsInfo nl scGam
-                                                      = RsInfo (@nm `nmApd` Nm "base") @nm ("Rules for " ++ show @nm) (mkg rlNm [rl1])
+                                                      = RsInfo (@nm `nmApd` Nm "base") @nm vwSels ("Rules for " ++ show @nm) (mkg rlNm [rl1])
                                                       where rl1
                                                               = RlInfo (@nm `nmApd` Nm "cons") emptySPos Nothing (Just "Cons") 0 vwSels (mkg vwrlNm [vw])
                                                               where nHd = Nm "hd"
@@ -415,7 +430,7 @@ bldScInfo vwDpdGr si@(ScInfo nm mbAGNm scKind vwScGam)
                                     -> (vw,new `Map.union` ag,vwscJdGam vw `jdgUnion` jdg)
                                     where new = Map.mapWithKey
                                                   (\n a
-                                                     -> case atProps a `intersect` Map.elems propsMp of
+                                                     -> case atProps a `intersect` Map.elems propsSynInhMp of
                                                           (_:_) -> [(ns,AtInfo ns [AtSyn] (atProps a) (atTy a))
                                                                    ,(ni,AtInfo ni [AtInh] (atProps a) (atTy a))
                                                                    ]
@@ -486,7 +501,7 @@ SEM RExpr
                                             =   let aDirMp = Map.mapWithKey (\n _ -> maybe [] atDirs . Map.lookup n . vwscFullAtGam $ @vwScInfo) @eqns.jaGam
                                                     aDirMissMp = Map.filter null aDirMp
                                                 in  (REInfoJudge @nm @schemeNm Set.empty Set.empty @eqns.jaGam
-                                                    ,[] -- if Map.null aDirMissMp then [] else [Err_UndefNm @pos @cxStr2 "attr" (Map.keys aDirMissMp)]
+                                                    ,[] -- if Map.null aDirMissMp then [] else [Err_UndefNm @pos @cxStr2 "hole" (Map.keys aDirMissMp)]
                                                     )
                     lhs     .   reGam       =   Map.singleton @nm @reInfo
   | Del             lhs     .   reGam       =   Map.singleton (head @nms) (REInfoDel @nms)
@@ -539,12 +554,13 @@ SEM Decl
 -- build views of a rule by extending each view along view order dependency
 rlGamUpdVws :: Opts -> DpdGr Nm -> Set.Set Nm -> ScGam Expr -> RlGam Expr -> RsInfo Expr -> RlInfo Expr -> (RlInfo Expr,[Err])
 rlGamUpdVws opts vwDpdGr extNmS scGam rlGam rsInfo rlInfo
-  = let vwIsIncl n = n `Set.member` rlInclVwS rlInfo
+  = let vwSel = rlInclVwS rlInfo `Set.intersection` rsInclVwS rsInfo
+        vwIsIncl n = n `Set.member` vwSel
         doMarkChngForVw
           = case optMbMarkChange opts of
               Just vs
                 -> \vw -> (vw `Set.member` vs',vgIsFirst vwDpdGr vw vs')
-                where vs' = viewSelsNmS vwDpdGr vs
+                where vs' = viewSelsNmS vwDpdGr vs `Set.intersection` vwSel
               _ -> const (False,False)
         mbOnVwRlInfo = maybe Nothing (\n -> Map.lookup n rlGam) (rlMbOnNm rlInfo)
         (g,_,eg)
@@ -611,10 +627,10 @@ rlGamUpdVws opts vwDpdGr extNmS scGam rlGam rsInfo rlInfo
                 (rlVwGam rlInfo,Map.empty,emptyGam)
                 (vgTopSort vwDpdGr)
         errs = concat . Map.elems . Map.filterWithKey (\n _ -> vwIsIncl n) $ eg
-    in  (rlInfo { rlVwGam = Map.filterWithKey (\n _ -> vwIsIncl n) g },errs)
+    in  (rlInfo { rlVwGam = Map.filterWithKey (\n _ -> vwIsIncl n) g, rlInclVwS = vwSel },errs)
 
 bldRsInfo :: DpdGr Nm -> Set.Set Nm -> Opts -> ScGam Expr -> RsInfo Expr -> (RsInfo Expr,[Err])
-bldRsInfo vwDpdGr extNmS opts scGam rsInfo@(RsInfo nm schemeNm info rlGam)
+bldRsInfo vwDpdGr extNmS opts scGam rsInfo@(RsInfo nm schemeNm _ info rlGam)
   = (rsInfo {rsRlGam = g},errs)
   where (g,errs)
           = foldr
@@ -636,14 +652,14 @@ ATTR AllDecl [ rsGam: {RsGam Expr} | | gathRsGam USE {`Map.union`} {Map.empty}: 
 
 SEM Decl
   | Rules           (lhs.gathRsGam,loc.errUndefs)
-                                            =   let rsInfo = RsInfo @nm @schemeNm @info @decls.rlGam
+                                            =   let rsInfo = RsInfo @nm @schemeNm @viewSel.vwSelNmS @info @decls.rlGam
                                                     drvRsInfoL = maybe [] (\l -> map (($ @lhs.scGam) . snd) l) $ Map.lookup @schemeNm @lhs.drvGam
                                                     (blds,errs)
                                                       = unzip [ ((rsNm i',i'),e) | i <- (rsInfo : drvRsInfoL)
                                                               , let (i',e) = bldRsInfo @lhs.vwDpdGr @lhs.extNmS @lhs.opts @lhs.scGam i
                                                               ]
                                                 in  (Map.fromList blds,concat errs)
-  | RulesGroup      lhs     .   gathRsGam   =   Map.singleton @nm (RsInfoGroup @nm @schemeNm @info @rlNms)
+  | RulesGroup      lhs     .   gathRsGam   =   Map.singleton @nm (RsInfoGroup @nm @schemeNm @viewSel.vwSelNmS @info @rlNms)
 
 SEM AGItf
   | AGItf           loc     .   rsGam       =   @decls.gathRsGam

@@ -25,8 +25,12 @@ exprMbAEqnRest expr
         eE (Expr_Named _ e)                         = eE e
         eE e                                        = Nothing
         dE (Expr_AVar n)        _                   = return (AEqnDest_One n,[],emptyGam)
-        dE (Expr_Var n)         _                   = vE n
-        dE (Expr_StrAsIs s)     _                   = nE s
+        dE (Expr_Retain (Expr_AVar (ANm_Loc n p))) _= return (AEqnDest_One (ANm_Loc n (AtRetain:p)),[],emptyGam)
+        dE (Expr_Var n)         _                   = vE [] n
+        dE (Expr_Retain (Expr_Var n)) _             = vE [AtRetain] n
+        dE (Expr_StrAsIs s)     _                   = nE [] s
+        dE (Expr_Retain (Expr_StrAsIs s)) _         = nE [AtRetain] s
+        dE (Expr_Retain e)      p                   = dE e p
         dE (Expr_Paren e)       p                   = dE e p
         dE (Expr_AppTop e)      p                   = dE e p
         dE (Expr_Named _ e)     p                   = dE e p
@@ -38,7 +42,7 @@ exprMbAEqnRest expr
                return (AEqnDest_Many dL,eo,go)
         tE e
           = return (AEqnDest_One n,[mkExprEqn (Expr_AppTop e) (Expr_AVar n)],emptyGam)
-          where n = ANm_Loc . Nm . nmShowAG . foldr nmApd nmWild . take 2 . Set.toList $ exprNmS e
+          where n = flip ANm_Loc [] . Nm . nmShowAG . foldr nmApd nmWild . take 2 . Set.toList $ exprNmS e
         oE (Expr_Op n _ e1 e2) | n == nmComma
           = do (e1',ed,gd) <- dE e1 True
                (e2',eo,go) <- oE e2
@@ -47,18 +51,18 @@ exprMbAEqnRest expr
           = do (e',ee,ge) <- dE e True
                return ([e'],ee,ge)
         sE e                                        = return (AExpr_Expr e)
-        vE n
+        vE props n
           = if n == nmWild
             then return (AEqnDest_One ANm_Wild,[],emptyGam)
-            else let a = ANm_Loc (Nm (nmShowAG n))
+            else let a = ANm_Loc (Nm (nmShowAG n)) props
                  in  return (AEqnDest_One a,[],n `gs` Expr_AVar a)
-        nE n
+        nE props n
           = fmap (\n -> (AEqnDest_One n,[],emptyGam)) m
           where m = case n of
-                      ('@':'l':'o':'c':'.':nm)  -> Just (ANm_Loc  (Nm nm))
-                      (    'l':'o':'c':'.':nm)  -> Just (ANm_Loc  (Nm nm))
-                      ('@':'l':'h':'s':'.':nm)  -> Just (ANm_Lhs  (Nm nm))
-                      (    'l':'h':'s':'.':nm)  -> Just (ANm_Lhs  (Nm nm))
+                      ('@':'l':'o':'c':'.':nm)  -> Just (ANm_Loc  (Nm nm) props)
+                      (    'l':'o':'c':'.':nm)  -> Just (ANm_Loc  (Nm nm) props)
+                      ('@':'l':'h':'s':'.':nm)  -> Just (ANm_Lhs  (Nm nm) [])
+                      (    'l':'h':'s':'.':nm)  -> Just (ANm_Lhs  (Nm nm) [])
                       "_"                       -> Just (ANm_Wild)
                       _                         -> Nothing
         gu = fmGamUnion
