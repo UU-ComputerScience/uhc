@@ -1,0 +1,114 @@
+%%[eh2PartSigIntro
+\frame<presentation>
+{
+\frametitle{Partial type signature}
+\begin{itemize}
+\item Type need not be specified completely
+\SafeCode{%
+\begin{code}
+%%2srcfile(test/2-ty-wild.eh%%)
+\end{code}
+}
+\item
+Only the part which needs to be specified or constrained further
+\item
+As an afterthought to see how well an additional feature can be added
+\end{itemize}
+}
+%%]
+
+%%[eh2PartSigIntroB
+\frame<presentation>[containsverbatim,plain]
+{
+\frametitle{Partial type signature}
+\begin{itemize}
+\item Pretty printing shows inferred types
+\begin{TT}
+%%2ppfile(test/2-ty-wild.eh%%)
+\end{TT}
+\item Shows inferred type only if partially specified
+\end{itemize}
+}
+
+%%]
+
+%%[eh2PartSig
+\frame<presentation>[plain]
+{
+\frametitle{Partial type signatures}
+\begin{itemize}
+\item ``Impact analysis'' of change
+\item Abstract syntax
+\chunkCmdFrameUse{EHAbsSyn.2.TyExpr}
+\item Parser for type expressions (|pTyExprBase|)
+\chunkCmdFrameUse{EHParser.2.pTyExprBase}
+\item (scanner configuration omitted)
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Partial type signatures}
+\begin{itemize}
+\item Type of
+\chunkCmdFrameUse{EHInferTyExpr.2.tyVarGather}
+\chunkCmdFrameUse{EHInferTyExpr.2.ty}
+\item Pretty printing, |pp| part
+\chunkCmdFrameUse{EHPretty.2.Wild.pp}
+\item Uniq
+\chunkCmdFrameUse{EHUniq.2.Wild}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Partial type signatures}
+\begin{itemize}
+\item Gather wild type vars
+\chunkCmdFrameUse{EHInferTyExpr.2.tyVarWildL}
+\item Distributing final type info
+\chunkCmdFrameUse{EHInfer.2.finValGam}
+\end{itemize}
+}
+
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

@@ -14,7 +14,7 @@ ATTR NTPrf [ | | gathPredL USE {++} {[]}: {[PredOcc]} ]
 
 SEM Expr
   | IConst CConst Var Con
-                lhs         .   gathPredL           =   foPredOccL @fo
+                lhs         .   gathPredL           =   foPredOccL @fo_
   | App         lhs         .   gathPredL           =   @prOccL ++ @func.gathPredL ++ @arg.gathPredL
 %%]
 
@@ -22,7 +22,7 @@ SEM Expr
 SEM Expr
   | Sel         loc         .   prUid               =   mkPrId @lhs.prfCtxtId @lUniq2
                 lhs         .   gathPredL           =   [PredOcc (Pred_Lacks (tyRecRow @recTy) @lbl) @prUid] ++ @expr.gathPredL
-  | Rec         lhs         .   gathPredL           =   foPredOccL @fo ++ @recExpr.gathPredL
+  | Rec         lhs         .   gathPredL           =   foPredOccL @fo_ ++ @recExpr.gathPredL
 
 SEM RecExpr
   | Ext         loc         .   prUid               =   mkPrId @lhs.prfCtxtId @lUniq3

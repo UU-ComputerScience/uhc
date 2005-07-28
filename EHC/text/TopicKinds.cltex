@@ -1,0 +1,79 @@
+%%[scratch
+Topics: by introducing user definable type constructors and expressions using them,
+user errors can be made, hence checking types of types.
+
+No additional syntax required
+
+Kind of a type
+\chunkCmdUseMark{EHCommon.6}
+\chunkCmdUseMark{EHTy.6}
+
+\subsection{Kind inference}
+
+\subsubsection{Environment/Gamma/Assumptions}
+\chunkCmdUseMark{EHGam.6}
+
+\subsubsection{Implementing kind constraints}
+
+\chunkCmdUseMark{EHTyFitsIn.6}
+
+TyExpr, extracting the type
+\chunkCmdUseMark{EHInferTyExpr.6}
+
+Data, checking, together with type rules
+\chunkCmdUseMark{EHInferData.6}
+
+Tying it
+\chunkCmdUseMark{EHInfer.6}
+
+
+\subsection<article>{Omitted, more of the same}
+Error gathering, pretty printing, uniq
+
+\subsection<article>{Literature}
+
+\TBD{}
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

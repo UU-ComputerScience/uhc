@@ -29,7 +29,8 @@ EHC_RULES_3_SRC_RL2						:= $(EHC_SRC_PREFIX)rules3.rl2
 
 EHC_RULES_ALL_SRC						:= $(EHC_RULES_1_SRC_RUL) $(EHC_RULES_2_SRC_RUL) $(EHC_RULES_3_SRC_RL2)
 
-EHC_RULES_3_DRV_CAG						:= $(EHC_BLD_VARIANT_PREFIX)EHRulerRules.cag
+EHC_RULER_RULES							:= EHRulerRules
+EHC_RULES_3_DRV_CAG						:= $(EHC_BLD_VARIANT_PREFIX)$(EHC_RULER_RULES).cag
 EHC_RULES_3_DRV_AG						:= $(EHC_RULES_3_DRV_CAG:.cag=.ag)
 
 # main + sources + dpds, for .chs
@@ -247,27 +248,44 @@ EHC_AG_ALL_DPDS_DRV_AG					:= $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIAN
 EHC_ALL_DPDS							:= $(EHC_HS_ALL_DRV_HS) $(EHC_AG_ALL_MAIN_DRV_HS) $(GRIN_AG_ALL_MAIN_DRV_HS)
 
 # variant dispatch rules
-$(EHC_ALL_EXECS): %: $(EHC_ALL_SRC) $(GRIN_ALL_SRC)
+$(EHC_ALL_EXECS): %: $(EHC_ALL_SRC) $(GRIN_ALL_SRC) $(EHC_MKF)
 	$(MAKE) EHC_VARIANT=$(notdir $(*D)) GRIN_VARIANT=$(notdir $(*D)) ehc-variant-$(notdir $(*D))
 
 # rules
-$(patsubst %,ehc-variant-%,2 3 4 5 6 7 8 9 10 11 4_2 6_4): ehc-variant-dflt
+ehc-variant-1: 
+	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=K)).(expr.base).(e.int e.char)" ehc-variant-dflt
 
-$(patsubst %,ehc-variant-%,1): ehc-variant-selrule
+ehc-variant-2: 
+	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=C)).(expr.base).(e.int e.char)" ehc-variant-dflt
+
+ehc-variant-3: 
+	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=HM)).(expr.base).(e.int e.char)" ehc-variant-dflt
+
+$(patsubst %,ehc-variant-%,4 5 6 6_4 7): 
+	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=I1)).(expr.base).(e.int e.char)" ehc-variant-dflt
+
+ehc-variant-4_2: 
+	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=I2)).(expr.base).(e.int e.char)" ehc-variant-dflt
+
+ehc-variant-8: 
+	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=CG)).(expr.base).(e.int e.char)" ehc-variant-dflt
+
+$(patsubst %,ehc-variant-%,9 10): 
+	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=P)).(expr.base).(e.int e.char)" ehc-variant-dflt
 
 ehc-variant-dflt: $(EHC_ALL_DPDS) $(EHC_RULES_3_DRV_CAG)
 	mkdir -p $(dir $(EHC_BLD_EXEC))
 	$(GHC) --make $(GHC_OPTS) -i$(EHC_BLD_VARIANT_PREFIX) -i$(LIB_SRC_PREFIX) $(EHC_BLD_VARIANT_PREFIX)$(EHC_MAIN).hs -o $(EHC_BLD_EXEC)
 
-ehc-variant-selrule: 
-	$(MAKE) EHC_VARIANT_RULER_SEL="($(EHC_VARIANT)).(expr.base).(*)" ehc-variant-dflt
+#ehc-variant-selrule: 
+#	$(MAKE) EHC_VARIANT_RULER_SEL="($(EHC_VARIANT)).(expr.base).(e.int e.char)" ehc-variant-dflt
 
 $(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG): $(EHC_BLD_VARIANT_PREFIX)%.ag: $(EHC_SRC_PREFIX)%.cag $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=$(*F) --ag --prefix=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=$(*F) --ag --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(EHC_RULES_3_DRV_AG): $(EHC_BLD_VARIANT_PREFIX)%.ag: $(EHC_BLD_VARIANT_PREFIX)%.cag $(SHUFFLE)
-	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=$(*F) --ag --prefix=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=$(*F) --ag --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(EHC_AG_D_MAIN_DRV_HS): %.hs: %.ag
 	$(AGC) -dr -P$(EHC_BLD_VARIANT_PREFIX) $<
@@ -280,13 +298,13 @@ $(EHC_AG_DS_MAIN_DRV_HS): %.hs: %.ag
 
 $(EHC_HS_MAIN_DRV_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(EHC_SRC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=Main --hs --prefix=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=Main --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(EHC_HS_UTIL_DRV_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(EHC_SRC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=$(*F) --hs --prefix=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=$(*F) --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
-$(EHC_RULES_3_DRV_CAG): $(EHC_RULES_3_SRC_RL2) $(RULER2)
+$(EHC_RULES_3_DRV_CAG): $(EHC_RULES_3_SRC_RL2) $(RULER2) $(EHC_MKF)
 	mkdir -p $(@D)
-	$(RULER2) --ag --wrapfrag --selrule="$(EHC_VARIANT_RULER_SEL)" --base=$(*F) $< > $@
+	$(RULER2) --ag --wrapfrag --preamble=no --selrule="$(EHC_VARIANT_RULER_SEL)" --base=$(*F) $< > $@
 

@@ -45,8 +45,13 @@ SEM AttrEqn
 -- Uniq name
 -------------------------------------------------------------------------
 
+{
+fmNmUniq :: Opts -> FmGam Expr -> Int -> Nm
+fmNmUniq o g u = nmSubst (o {optGenFM = FmAG}) g (nmUniq u)
+}
+
 SEM Expr
-  | Uniq            loc     .   nm          =   nmUniq @uniqSeqNr
+  | Uniq            loc     .   nm          =   fmNmUniq @lhs.opts @lhs.fmGam @uniqSeqNr
 
 -------------------------------------------------------------------------
 -- Node to which uniq thread must be passed
@@ -56,8 +61,8 @@ ATTR ARule [ uniqThrDst: ANm | | ]
 
 SEM AGARuleItf
   | AGItf           rule    .   uniqThrDst  =   case @lhs.croNmL of
-                                                  (_:[d]) -> ANm_Lhs (nmUniq 0)
-                                                  (_:d:_) -> ANm_Node d (nmUniq 0)
+                                                  (_:[d]) -> ANm_Lhs (fmNmUniq @lhs.opts @lhs.fmGam 0) []
+                                                  (_:d:_) -> ANm_Node d (fmNmUniq @lhs.opts @lhs.fmGam 0)
 
 -------------------------------------------------------------------------
 -- Construction of AEqn for uniq's
@@ -68,12 +73,12 @@ SEM ARule
                                                 then [AEqn_Eqn
                                                         (AEqnDest_Many
                                                           (map AEqnDest_One
-                                                               (@lhs.uniqThrDst : [ ANm_Loc (nmUniq u) | u <- [1 .. @eqns.uniqSeqNr] ])
+                                                               (@lhs.uniqThrDst : [ ANm_Loc (fmNmUniq @lhs.opts @lhs.fmGam u) [] | u <- [1 .. @eqns.uniqSeqNr] ])
                                                           )
                                                         )
                                                         (AExpr_Expr
-                                                          (mkExprApp (Expr_Var (nmFunMkUniq @eqns.uniqSeqNr))
-                                                                     [mkALhs (nmUniq 0)]
+                                                          (mkExprApp (exprSubst (@lhs.opts {optGenFM = FmAG}) @lhs.fmGam . Expr_Var . nmFunMkUniq $ @eqns.uniqSeqNr)
+                                                                     [mkALhs (fmNmUniq @lhs.opts @lhs.fmGam 0)]
                                                           )
                                                         )
                                                      ]

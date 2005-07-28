@@ -386,8 +386,11 @@ mkTyPr p
 %%% Constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.tyConsts hs
+%%[1.tyInt hs
 tyInt   = Ty_Con hsnInt
+%%]
+
+%%[1.tyChar hs
 tyChar  = Ty_Con hsnChar
 %%]
 

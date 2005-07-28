@@ -71,8 +71,8 @@ SEM CaseAlts
 ATTR AllPatExpr [ | | tyEqCnstr USE {|=>} {emptyCnstr}: Cnstr ]
 
 SEM PatExpr
-  | AppTop      lhs         .   tyEqCnstr           =   foEqCnstr @fo |=> @patExpr.tyEqCnstr
-  | Con         lhs         .   tyEqCnstr           =   foEqCnstr @fo
+  | AppTop      lhs         .   tyEqCnstr           =   foEqCnstr @fo_ |=> @patExpr.tyEqCnstr
+  | Con         lhs         .   tyEqCnstr           =   foEqCnstr @fo_
 
 SEM CaseAlt
   | Pat         expr        .   tyCnstr             :=  @patExpr.tyEqCnstr |=> @lhs.tyCnstr

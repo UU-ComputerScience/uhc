@@ -104,6 +104,9 @@
 %format sigmal      = sigma "^{l}"
 %format sigmar      = sigma "^{r}"
 %format sigmai     	= sigma "_{i}"
+%format sigmaa      = sigma "_{a}"
+%format sigmaaa     = sigma "^{a}"
+%format sigmaaa1
 %format sigma'
 %format sigma1
 %format sigma2

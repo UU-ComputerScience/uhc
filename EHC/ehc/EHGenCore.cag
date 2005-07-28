@@ -31,12 +31,13 @@ SEM AGItf
 %%% Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+-- generated from ruler rules in EHRulerRules
+  | IConst      loc         .   cexpr       =   CExpr_Int @int
+  | CConst      loc         .   cexpr       =   CExpr_Char @char
 %%[8
 ATTR Expr [ | | cexpr: CExpr ]
 
 SEM Expr
-  | IConst      loc         .   cexpr       =   CExpr_Int @int
-  | CConst      loc         .   cexpr       =   CExpr_Char @char
   | Var         loc         .   cexpr       =   CExpr_Var @nm
   | Con         loc         .   cexpr       =   CExpr_Var @nm
   | Let         loc         .   letCBindL   =   [(CBindFFI,@decls.ffiCBindL),(CBindRec,@decls.cbindL)]
@@ -58,7 +59,7 @@ SEM Expr
   | IConst      loc         .   cexprBase   :=  CExpr_Int @int
   | CConst      loc         .   cexprBase   :=  CExpr_Char @char
   | Var Con IConst CConst
-                loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst @cexprBase
+                loc         .   cexpr       :=  foAppCoe @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBase
   | Let         loc         .   letCBindL   :=  [(CBindFFI,@decls.ffiCBindL)
                                                 ,(CBindRec,@decls.cbindL ++ (@cSubst `cSubstApp` (@prfIntroCBindL ++ @bodyPrfIntroCBindL)))
                                                 ]
@@ -69,7 +70,7 @@ SEM Expr
                                                     @arg.cexpr
   | Lam LamImpl loc         .   cexpr       :=  coeWipeWeave @lhs.finTyCnstr @lhs.cSubst @lamBodyCoeL @lamArgCoeL `coeEvalOn` @body.appFunCExpr
   | AppTop      loc         .   cexpr       :=  coeWipeWeave @lhs.finTyCnstr @lhs.cSubst [] @lamArgCoeL `coeEvalOn` @expr.cexpr
-  | TypeAs      loc         .   cexpr       :=  foAppCoe @fo @lhs.finTyCnstr @lhs.cSubst @expr.cexpr
+  | TypeAs      loc         .   cexpr       :=  foAppCoe @fo_ @lhs.finTyCnstr @lhs.cSubst @expr.cexpr
 %%]
 
 %%[10
@@ -169,7 +170,7 @@ SEM PatExpr
                                                     _                  -> @patExpr.cpat
   | AppTop Con  loc         .   finResTy    =   @lhs.finTyCnstr |=> @knResTy
                             .   tag         =   let  (c,_)  = tyAppFunArgs @finResTy
-                                                     dgi    = fromJust . gamLookup @lhs.dataGam . tyConNm $ c
+                                                     dgi    = fromJust . gamLookup (tyConNm c) $ @lhs.dataGam
                                                 in   fromJust . Map.lookup @appFunNm . dgiDataTagMp $ dgi
                             .   rest        =   CPatRest_Empty
   | Rec         loc         .   tag         =   CTagRec
@@ -188,7 +189,7 @@ SEM PatExpr
 %%]
                             .   finResTGI   =   let  (c,_)  = tyAppFunArgs @finResTy
                                                      n      = tyConNm c
-                                                in   fromJust . tyGamLookup @lhs.tyGam $ n
+                                                in   fromJust . tyGamLookup n $ @lhs.tyGam
                             .   tag         =   fromJust . Map.lookup @appFunNm . tgiDataTagMp $ @finResTGI
 
 %%[8 hs

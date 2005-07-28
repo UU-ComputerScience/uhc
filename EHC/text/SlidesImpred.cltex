@@ -1,0 +1,227 @@
+%%[impred
+%{
+%format forall1
+%format forall2
+%format forall3
+%format forall4
+%format forall5
+\frame<presentation>
+{
+\frametitle{Higher ranked explicit polymorphism}
+\begin{itemize}
+\item Only if explicitly specified
+\SafeCode{%
+\begin{code}
+%%4srcfile(test/3-poly-rank.eh%%)
+\end{code}
+}
+\item Quantifier may be at any position in type
+\SafeCode{%
+\begin{code}
+forall1 a . a -> (forall2 b . b -> b)
+  -> ((forall3 c . c -> c) -> (forall4 d . d -> d))
+  -> forall5 e . e -> e -> a
+\end{code}
+}
+\begin{itemize}
+\item |rank = 1|: |forall1|, |forall5|
+\item |rank = 2|: |forall2|, |forall4|
+\item |rank = 3|: |forall3|
+\end{itemize}
+\item Rank: ...
+\item No type inferencing to infer higher ranked types, only ``not forgetting'' quantifier information
+\end{itemize}
+}
+%}
+
+\frame<presentation>
+{
+\frametitle{Existential types}
+\begin{itemize}
+\item ``It exists, but I've forgotten what it was''
+\SafeCode{%
+\begin{code}
+%%4srcfile(test/4-demo1.eh%%)
+\end{code}
+}
+\item |xy| created with |a = Int|, quantifier hides this information
+\item |ixy| can still use |xy| because type of |v| matches |f|'s argument type
+\end{itemize}
+}
+
+\frame<presentation>[containsverbatim,plain]
+{
+\frametitle{Existential types}
+\begin{TT}
+%%4ppfile(test/4-demo1.eh%%)
+\end{TT}
+}
+
+\frame<presentation>[containsverbatim,plain]
+{
+\frametitle{Opening an existential}
+\begin{itemize}
+\item Existential is opened/instantiated when bound to an identifier
+\begin{itemize}
+\item Often done explicitly via language construct
+\item Instantiated type variables are fresh type constants
+\end{itemize}
+\item Once opened, always open
+\SafeCode{%
+\begin{code}
+%%4srcfile(test/4-ex-extr3.eh%%)
+\end{code}
+}
+\item
+\begin{TT}
+%%4ppfile(test/4-ex-extr3.eh%%)
+\end{TT}
+\end{itemize}
+}
+
+\frame<presentation>[containsverbatim]
+{
+\frametitle{Opening an existential}
+\begin{itemize}
+\item Nested existentials are retained
+\SafeCode{%
+\begin{code}
+%%4srcfile(test/4-ex-extr4.eh%%)
+\end{code}
+}
+\item
+\begin{TT}
+%%4ppfile(test/4-ex-extr4.eh%%)
+\end{TT}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Quantifier location}
+\begin{itemize}
+\item Notational sugar/convention
+\SafeCode{%
+\begin{code}
+%%4srcfile(test/4-ex-extr2.eh%%)
+\end{code}
+}
+\item Interprets type structure to find suitable location for quantifier
+\begin{itemize}
+\item |a| occurs in |sigma1| and |sigma2| in |sigma1 -> sigma2| and not outside: |forall|
+\item |a| occurs in |sigma1| and |sigma2| in |(sigma1,sigma2)| and not outside: |exists|
+\end{itemize}
+\item For type signatures and inferred types
+\end{itemize}
+}
+
+\frame<presentation>[containsverbatim,plain]
+{
+\frametitle{Quantifier location}
+\begin{TT}
+%%4ppfile(test/4-ex-extr2.eh%%)
+\end{TT}
+}
+
+\frame<presentation>
+{
+\frametitle{Changes to the inferencing}
+\begin{itemize}
+\item Quantified types are instantiated as late as possible
+\begin{itemize}
+\item In order to preserve type information
+\end{itemize}
+\item Quantified types are encountered during type inferencing/checking
+\begin{itemize}
+\item |fitsIn =@= <=| compares types with quantifiers
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Issue: asymmetry |fitsIn =@= <=|}
+\begin{itemize}
+\item Forgetting type information is ok, but irreversible
+\SafeCode{%
+\begin{code}
+%%srcfile(test/4-exists-sub.eh%%)
+\end{code}
+}
+\item Check done
+\begin{itemize}
+\item |Int <= exists a . a| (for |v1|): ok
+\item |exists a . a <= Int| (for |v2|): fail
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Issue: asymmetry |fitsIn =@= <=|}
+\begin{itemize}
+\item Instantiation of polymorphism is ok,
+but the reverse only if it can be guaranteed no additional
+constraints will be found for the quantified type variable
+\SafeCode{%
+\begin{code}
+%%srcfile(test/4-forall-sub.eh%%)
+\end{code}
+}
+\item Check done
+\begin{itemize}
+\item |forall a . a -> a <= Int -> Int| (for |ii|): ok
+\item |Int -> Int <= forall a . a -> a| (for |id|): fail
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Issue: asymmetry |fitsIn =@= <=|}
+\begin{itemize}
+\item Partial ordering of types where
+\[
+|forall a . a <= sigma <= exists a . a|
+\]
+\item |Bot :: forall a . a|
+\begin{itemize}
+\item @undefined@|= Bot|
+\item Whatever the expected type, a |forall a . a| can be used
+\item But its use leads to program crash
+\end{itemize}
+\item |Top :: exists a . a|
+\begin{itemize}
+\item Represents the most specific type
+\item If the expected type expects nothing, a |exists a . a| can be used
+\item But nothing can be done with it
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Impredicativeness}
+\begin{itemize}
+\item Quantified types throughout type inferencing can/cannot
+be bound to type variables?
+\SafeCode{%
+\begin{code}
+%%srcfile(test/4-choose.eh%%)
+\end{code}
+}
+\item Haskell: |v :: forall b . (b -> b) -> b -> b|
+\begin{itemize}
+\item |v| can be applied to a |Int -> Int|
+\item During type inferencing type variable |b| in |v|'s type
+is instantiated and can be freely bound to |Int|
+\end{itemize}
+\item Impredicative: |v :: (forall c . c -> c) -> (forall d . d -> d)|
+\begin{itemize}
+\item |v| cannot be applied to a |Int -> Int|
+\item Is not polymorphic enough: |Int -> Int </= forall a . a -> a|
+\end{itemize}
+\end{itemize}
+}
+
+%%]

@@ -50,30 +50,53 @@ SEM Expr
 -------------------------------------------------------------------------
 
 {
-type RnMp = Map.Map Nm ANm
+data RnSrc = RnNm ANm | RnExpr Expr | RnNone
 
-rnRepl :: RnMp -> ANm -> ANm
-rnRepl m an@(ANm_Loc n) = maybe an id (Map.lookup n m)
-rnRepl _ an             = an
+rnSrc2Expr :: RnSrc -> Expr
+rnSrc2Expr (RnNm   a) = Expr_AVar a
+rnSrc2Expr (RnExpr e) = e
+
+type RnMp = Map.Map Nm (Int,RnSrc)
+
+rnRepl :: RnMp -> RnSrc -> RnSrc
+rnRepl m e
+  = case e of
+      RnExpr (Expr_AVar (ANm_Loc n _)) -> r n
+      RnNm   (ANm_Loc n _)             -> r n
+      _                                -> e
+  where r n = maybe e (RnExpr . exprASubst (Map.delete n m) . rnSrc2Expr . snd) (Map.lookup n m)
 
 rnMpUnion :: RnMp -> RnMp -> RnMp
-rnMpUnion m1 m2 = m1 `Map.union` Map.map (rnRepl m1) m2
+rnMpUnion m1 m2
+  = Map.unionWith (\(c1,v1) (c2,v2) -> (c1+c2,u v1 v2)) m1 m2
+  where u RnNone r = r
+        u r      _ = r
 }
 
-ATTR AEqns AEqn [ | | gathRnMp USE {`rnMpUnion`} {Map.empty}: RnMp ]
-ATTR AllARuleButARule AllExpr [ rnMp: RnMp | | ]
+ATTR AEqns AEqn ANm AllExpr AExpr [ | | gathRnMp USE {`rnMpUnion`} {Map.empty}: RnMp ]
+ATTR AllARuleButARule AllExpr AGExprItf [ rnMp: RnMp | | ]
 
 SEM AEqn
-  | Eqn             loc     .   gathRnMp    =   case (@dest.mbSingleANm,@val.mbSingleANm) of
-                                                    (Just (ANm_Loc dn),Just sn)
-                                                      -> Map.singleton dn sn
-                                                    _ -> Map.empty
+  | Eqn             loc     .   gathRnMp    =   let m = case @dest.mbSingleANm of
+                                                            Just (ANm_Loc dn p) | AtRetain `notElem` p
+                                                              -> Map.singleton dn (0,v)
+                                                              where v = case (@val.mbSingleANm,@val.self) of
+                                                                          (Just sn,_           ) -> RnNm sn
+                                                                          (_      ,AExpr_Expr e) -> RnExpr e
+                                                            _ -> Map.empty
+                                                in  m `rnMpUnion` @val.gathRnMp
+
+SEM ANm
+  | Loc             lhs     .   gathRnMp    =   Map.singleton @nm (1,RnNone)
 
 SEM ARule
-  | Rule            eqns    .   rnMp        =   @eqns.gathRnMp
-
-SEM AGExprItf
-  | AGItf           loc     .   rnMp        =   Map.empty
+  | Rule            eqns    .   rnMp        =   Map.filter (\(c,v)
+                                                             -> case v of 
+                                                                  RnNone           -> False
+                                                                  RnExpr _ | c > 1 -> False
+                                                                  _                -> True
+                                                           )
+                                                           @eqns.gathRnMp
 
 SEM AttrEqn
   | Eqn             loc     .   rnMp        =   Map.empty
@@ -90,13 +113,19 @@ SEM Decl
 
 ATTR AllARule AllExpr [ | | replRn: SELF ]
 ATTR AGARuleItf [ | | replRn: ARule ]
+ATTR AGExprItf [ | | replRn: Expr ]
 ATTR AEqns AEqn [ | | replRnEqns USE {++} {[]}: {[AEqn]} ]
 
 SEM Expr
-  | AVar            lhs     .   replRn      =   Expr_AVar (rnRepl @lhs.rnMp @anm.replRn)
+  | AVar            lhs     .   replRn      =   rnSrc2Expr (rnRepl @lhs.rnMp (RnExpr @replRn))
 
 SEM AEqn
-  | Eqn             lhs     .   replRnEqns  =   if Map.null @gathRnMp then [@replRn] else []
+  | Eqn             lhs     .   replRnEqns  =   case @dest.mbSingleANm of
+                                                    Just (ANm_Loc n _)
+                                                      -> case Map.lookup n @lhs.rnMp of
+                                                           Just _ -> []
+                                                           _      -> [@replRn]
+                                                    _ -> [@replRn]
   | * - Eqn         lhs     .   replRnEqns  =   [@replRn]
 
 SEM ARule

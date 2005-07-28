@@ -10,6 +10,7 @@ import Array
 import Data.List
 import qualified Data.Map as Map
 import FPath
+import Nm
 import ParseUtils
 {-
 import PPUtils
@@ -32,10 +33,6 @@ main
   = do { args <- getArgs
        ; let oo@(o,n,errs)  = getOpt Permute cmdLineOpts args
              opts           = foldr ($) defaultOpts o
-{-
-       ; putStrLn (show (voAllLE' (optVerOrder opts) (optGenVersion opts)))
-       ; putStrLn (show (voAllLE'' (optVerOrder opts) (optGenVersion opts)))
--}
        ; if optHelp opts
          then putStrLn (usageInfo "Usage shuffle [options] [file|-]\n\noptions:" cmdLineOpts)
          else if null errs
@@ -71,26 +68,28 @@ doCompile fp fpRest opts
                              return (Set.unions . map (Set.fromList . words) . lines $ c)
                 Nothing -> return Set.empty
        ; ((fb,pres):restPRes) <- mapM (\f -> readShFile f opts) (fp:fpRest)
-       ; let res = wrapSem fb xrefExceptFileContent (allNmChMpOf restPRes) pres
-       ; putBld (optAG opts) (bldAG_Syn_AGItf res) 
-       ; putBld (optHS opts || optPlain opts) (bldHS_Syn_AGItf res) 
-       ; putBld (optLaTeX opts) (bldLaTeX_Syn_AGItf res) 
-       ; return ()
+       ; let nmChMp = allNmChMpOf restPRes
+             res = wrapSem fb xrefExceptFileContent Map.empty pres
+       ; putBld (optAG opts) nmChMp (bldAG_Syn_AGItf res) 
+       ; putBld (optHS opts || optPlain opts) nmChMp (bldHS_Syn_AGItf res) 
+       ; putBld (optLaTeX opts) nmChMp (bldLaTeX_Syn_AGItf res) 
        }
-  where putBld f b
+  where selBld opts res
+          = if optAG opts then bldAG_Syn_AGItf res
+            else if optHS opts || optPlain opts then bldHS_Syn_AGItf res
+            else bldLaTeX_Syn_AGItf res
+        putBld f nmChMp b
           = if f && not (null b)
-            then mapM_ (cdPut stdout . bldCD) b
+            then mapM_ (cdPut stdout . cdocSubst nmChMp . bldCD) b
             else return ()
-        wrapSem fb xr nmChMp pres
-          = wrap_AGItf pres
-              (Inh_AGItf
-                 { opts_Inh_AGItf = opts {optBaseName = maybe (Just fb) Just (optBaseName opts)}
-                 , fpath_Inh_AGItf = fp
-                 , xrefExcept_Inh_AGItf = xr
-                 , allNmChInfoMp_Inh_AGItf = nmChMp
-                 })
+        wrapSem fb xr nmChMp pres = wrapAG_T opts fb fp xr nmChMp pres
         allNmChMpOf restPRes
-          = Map.unions [ Map.mapKeys (\n -> b ++ "." ++ n) . nmChInfoMp_Syn_AGItf $ r | (b,pr) <- restPRes, let r = wrapSem b Set.empty Map.empty pr ]
+          = Map.unions [ Map.mapKeys (\n -> mkNm b `nmApd` n) (nMp `Map.union` bMp)
+                       | (b,pr) <- restPRes
+                       , let r = wrapSem b Set.empty Map.empty pr
+                             nMp = gathNmChMp_Syn_AGItf r
+                             bMp = Map.unions [ bldNmChMp  b | b <- selBld opts r ]
+                       ]
 }
 
 -------------------------------------------------------------------------------------------
@@ -103,17 +102,17 @@ data ScanOpts
         {   scoKeywordsTxt      ::  Set.Set String
         ,   scoSpecChars        ::  Set.Set Char
         ,   scoOpChars          ::  Set.Set Char
-{-
-        ,   scoKeywordsOps      ::  [String]
-        ,   scoOpChars          ::  String
-        ,   scoSpecPairs        ::  [String]
-        ,   scoDollarIdent      ::  Bool
--}
         }
 
 type ScanOptsMp = Map.Map ScState ScanOpts
 
-kwTxtAsVarToo = [ "module", "import", "export", "hs", "ag" ]
+chKindMp = Map.fromList [ ("hs",ChHS), ("ag",ChAG), ("plain",ChPlain) ]
+chDestMp = Map.fromList [ ("here",ChHere), ("hide",ChHide) ]
+
+kwTxtAsVarToo
+  = [ "module", "import", "export" ]
+    ++ Map.keys chKindMp
+    ++ Map.keys chDestMp
 
 shuffleScanOpts :: ScanOptsMp
 shuffleScanOpts
@@ -163,7 +162,6 @@ instance Ord Tok where
 
 instance Show Tok where
   show t = show (tokPos t) ++ show (tokBlack t)
---  show t = show (tokPos t) ++ "/" ++ show (tokKind t) ++ "/" ++ show (tokState t) ++ " " ++ show (tokBlack t)
 
 instance Symbol Tok
 
@@ -265,20 +263,11 @@ pBlack = (\(Tok _ w b _ _) -> (if null w then Nothing else Just w,b)) <$> pSym (
 -- Parsing
 -------------------------------------------------------------------------
 
-{-
-parseHandle :: (Message Char Pos -> String) -> CharParser a -> FilePath -> Handle -> IO a
-parseHandle showM p fn fh
-  = do { txt <- hGetContents fh
-       ; parseIOMessage showM p (Input txt (initPos fn))
-       }
--}
-
 {
 parseHandle :: ShPr a -> FilePath -> Handle -> IO a
 parseHandle p fn fh
   = do { txt <- hGetContents fh
        ; let toks = scan shuffleScanOpts ScSkip txt
-       -- ; putStrLn (unlines . map show $ toks)
        ; parseIOMessage show p toks
        }
 }
@@ -290,16 +279,19 @@ parseHandle p fn fh
 {
 type ShPr  c = (IsParser p Tok) => p c
 type ShPr2 c = (IsParser p Tok) => p c -> p c
+type ShPr3 c = (IsParser p Tok) => p c -> p c -> p c
 
 pAGItf :: ShPr T_AGItf
 pAGItf = sem_AGItf_AGItf <$> (sem_Lines_Nil <$ pList pNl) <*> pChunks
--- pAGItf = sem_AGItf_AGItf <$> pLines <*> pChunks
 
-pVersion           :: ShPr Version
-pVersion           = mkVerFromIntL <$> pList1Sep (pKey "_") pInt'
+pVersion            ::  ShPr Version
+pVersion            =   mkVerFromIntL <$> pList1Sep (pKey "_") pInt'
 
-pVerOrder          :: ShPr VersionOrder
-pVerOrder          =   pListSep (pKey ",") (pList1Sep (pKey "<") pVersion)
+pVerOrder           ::  ShPr VersionOrder
+pVerOrder           =   pListSep (pKey ",") (pList1Sep (pKey "<") pVersion)
+
+pNm                 ::  ShPr Nm
+pNm                 =   (\h t -> nmFromL (h : t)) <$> pVar <*> pList (pKey "." *> (pVar <|> pInt))
 
 pId, pIdNest, pIdNest2, pIdNestPart :: ShPr String
 pId                 =   (\h t -> concat . intersperse "." $ h : t) <$> pVar <*> pList (pKey "." *> (pVar <|> pInt))
@@ -309,31 +301,32 @@ pIdNestPart         =   pId
                     <|> (\l -> "(" ++ concat (intersperse "," l) ++ ")") <$> pParens pIdNests2
                     <|> pStr
 
-pIdNests, pIdNests2 :: ShPr [String]
+pIdNests, pIdNests2 ::  ShPr [String]
 pIdNests            =   pListSep (pKey ",") pIdNest
 pIdNests2           =   pListSep (pKey ",") pIdNest2
 
-pChunkId            :: ShPr (Version,String)
-pChunkId            =   (,) <$> pVersion <* pKey "." <*> pId
+pChunkId            ::  ShPr ChunkId
+pChunkId            =   (,) <$> pVersion <* pKey "." <*> pNm
 
-pParens             :: ShPr2 p
+pParens             ::  ShPr2 p
 pParens p           =   pKey "(" *> p <* pKey ")"
 
-pChunks             :: ShPr T_Chunks
+pChunks             ::  ShPr T_Chunks
 pChunks             =   pFoldr (sem_Chunks_Cons,sem_Chunks_Nil) pChunk
 
-pChunk              :: ShPr T_Chunk 
+pChunk              ::  ShPr T_Chunk 
 pChunk              =   pBegChunk
                          *> ((   sem_Chunk_Ver
                                  <$> pVersion
-                                 <*> ((:[]) <$ pKey "." <*> pId <|> pSucceed [])
+                                 <*> pMaybe id NmEmp (pKey "." *> pNm)
                                  <*> (pKey "-" *> ((:[]) <$> pChunkId <|> pParens (pList1 pChunkId)) <|> pSucceed [])
-                                 <*> (True <$ pKey "hs" <|> pSucceed False)
+                                 <*> pMaybe id ChAG pChKind
+                                 <*> pMaybe id ChHere pChDest
                                  <*> (Just <$ pKey "module" <*> pId <|> pSucceed Nothing)
                                  <*> (pKey "import" *> pParens pIdNests2 <|> pSucceed [])
                                  <*> (pKey "export" *> pParens pIdNests2 <|> pSucceed [])
                              <|> sem_Chunk_Named
-                                 <$> pId
+                                 <$> pNm
                              )
                              <*  pNl
                              <*> pLines
@@ -342,15 +335,21 @@ pChunk              =   pBegChunk
                             )
                     <?> "a chunk"
 
-pLines              :: ShPr T_Lines
+pChKind             ::  ShPr ChKind
+pChKind             =   pAnyFromMap pKey chKindMp
+
+pChDest             ::  ShPr ChDest
+pChDest             =   pAnyFromMap pKey chDestMp
+
+pLines              ::  ShPr T_Lines
 pLines              =   pFoldr (sem_Lines_Cons,sem_Lines_Nil) pLine
 
-pLine               :: ShPr T_Line
+pLine               ::  ShPr T_Line
 pLine               =   sem_Line_AsIs  <$> pLineChars  <*  pNl
-                    <|> sem_Line_Named <$  pBegNameRef <*> pId <* pNl
+                    <|> sem_Line_Named <$  pBegNameRef <*> pNm <* pNl
                     <?> "a line"
 
-pLineChars          :: ShPr T_Words
+pLineChars          ::  ShPr T_Words
 pLineChars          =   (foldr sem_Words_Cons sem_Words_Nil . concat)
                         <$> pList ((\(mw,b) -> maybe [] (\w -> [sem_Word_White w]) mw ++ [sem_Word_Black b]) <$> pBlack)
 }
@@ -377,7 +376,7 @@ data Opts
       , optHS           :: Bool
       , optPlain        :: Bool
       , optLaTeX        :: Bool
-      , optPrefix       :: Bool
+      , optPreamble     :: Bool
       , optIndex        :: Bool
       , optHelp         :: Bool
       , optGenVersion   :: Version
@@ -392,7 +391,7 @@ defaultOpts
       { optAG           =  False
       , optHS           =  False
       , optLaTeX        =  False
-      , optPrefix       =  True
+      , optPreamble     =  True
       , optPlain        =  False
       , optIndex        =  False
       , optHelp         =  False
@@ -413,8 +412,8 @@ cmdLineOpts
           "generate code for haskell, default=no"
      ,  Option "l"  ["latex"]     (NoArg oLaTeX)
           "generate code for latex, default=no"
-     ,  Option ""   ["prefix"]    (OptArg oPrefix "yes|no")
-          "include prefix (marked by version=0), default=yes"
+     ,  Option ""   ["preamble"]    (OptArg oPreamble "yes|no")
+          "include preamble (marked by version=0), default=yes"
      ,  Option "p"  ["plain"]     (NoArg oPlain)
           "generate plain code, default=no"
      ,  Option ""   ["index"]     (NoArg oIndex)
@@ -434,7 +433,7 @@ cmdLineOpts
      ]
   where  oAG             o =  o {optAG = True}
          oHS             o =  o {optHS = True}
-         oPrefix     ms  o =  yesno (\f o -> o {optPrefix = f}) ms o
+         oPreamble   ms  o =  yesno (\f o -> o {optPreamble = f}) ms o
          oLaTeX          o =  o {optLaTeX = True}
          oPlain          o =  o {optPlain = True}
          oIndex          o =  o {optIndex = True}
@@ -456,12 +455,125 @@ cmdLineOpts
 }
 
 -------------------------------------------------------------------------
+-- Inferfacing
+-------------------------------------------------------------------------
+
+WRAPPER AGItf
+
+{
+wrapAG_T :: Opts -> String -> FPath -> XRefExcept -> NmChMp -> T_AGItf -> Syn_AGItf
+wrapAG_T opts fb fp xr nmChMp pres
+  = wrap_AGItf pres
+      (Inh_AGItf
+         { opts_Inh_AGItf = opts {optBaseName = maybe (Just fb) Just (optBaseName opts)}
+         , fpath_Inh_AGItf = fp
+         , xrefExcept_Inh_AGItf = xr
+         , nmChMp_Inh_AGItf = nmChMp
+         })
+}
+
+WRAPPER AGCDocItf
+
+{
+wrapAGCDoc_T :: NmChMp -> T_AGCDocItf -> Syn_AGCDocItf
+wrapAGCDoc_T nmChMp d
+  = wrap_AGCDocItf d
+      (Inh_AGCDocItf
+         { nmChMp_Inh_AGCDocItf = nmChMp
+         })
+
+wrapCDoc :: NmChMp -> CDoc -> Syn_AGCDocItf
+wrapCDoc m d = wrapAGCDoc_T m (sem_AGCDocItf (AGCDocItf_AGItf d))
+
+cdocSubst :: NmChMp -> CDoc -> CDoc
+cdocSubst m d
+  = sbRepl_Syn_AGCDocItf r
+  where r = wrapCDoc m d
+}
+
+-------------------------------------------------------------------------
+-- AST
+-------------------------------------------------------------------------
+
+-- Outside itf
+DATA AGItf
+  | AGItf               dumLines    : Lines
+                        chunks      : Chunks
+
+DATA AGCDocItf
+  | AGItf               cdoc        : CDoc
+
+-- Chunk
+DATA Chunk
+  | Ver                 version     : {Version}
+                        subNm       : {Nm}
+                        minusL      : {[ChunkId]}
+                        chKind      : {ChKind}
+                        chDest      : {ChDest}
+                        mbModNm     : {Maybe String}
+                        imports     : {[String]}
+                        exports     : {[String]}
+                        lines       : Lines
+                        dumLines    : Lines
+  | Named               cref        : {CRef}
+                        lines       : Lines
+                        dumLines    : Lines
+
+TYPE Chunks     = [Chunk]
+
+SET AllChunk    = Chunk Chunks
+
+-- Single line
+DATA Line
+  | AsIs                words       : Words
+  | Named               cref        : {CRef}
+
+TYPE Lines      = [Line]
+
+SET AllLine     = Line Lines
+
+-- Single word
+DATA Word
+  | White               chars       : {String}
+  | Black               chars       : {String}
+
+TYPE Words      = [Word]
+
+SET AllWord     = Word Words
+
+-- Chunk doc
+DATA CDoc
+  | Emp
+  | Ref                 cref        : {CRef}
+                        chDest      : {ChDest}
+  | Str                 str         : {String}
+  | Hor                 ldoc        : CDoc
+                        rdoc        : CDoc
+  | Ver                 ldoc        : CDoc
+                        rdoc        : CDoc
+
+-- Sets
+SET AllNT       = AllWord AllLine AllChunk
+
+-------------------------------------------------------------------------
+-- Global info
+-------------------------------------------------------------------------
+
+ATTR AGItf [ opts: Opts  fpath: FPath | | ]
+
+-------------------------------------------------------------------------
+-- Chunk ref
+-------------------------------------------------------------------------
+
+{
+type CRef = Nm
+}
+
+-------------------------------------------------------------------------
 -- Common. Version
 -------------------------------------------------------------------------
 
 {
-type StringL    = [String]
-
 data Version    = VAll
                 | VPre
                 | VNone
@@ -478,12 +590,15 @@ mkVerFromIntL :: [Int] -> Version
 mkVerFromIntL (0:_)  = mkVerFromInt 0
 mkVerFromIntL (i:is) = foldl VNest (VRef i) is
 
+instance NM Version where
+  mkNm VPre           = mkNm "pre"
+  mkNm VAll           = mkNm "*"
+  mkNm VNone          = mkNm "-"
+  mkNm (VRef r)       = mkNm r
+  mkNm (VNest n r)    = mkNm n `nmApd` mkNm r
+
 instance CD Version where
-  cd VPre           = cd "pre"
-  cd VAll           = cd "*"
-  cd VNone          = cd "-"
-  cd (VRef r)       = cd r
-  cd (VNest n r)    = cd n .|. "." .|. cd r
+  cd = cd . mkNm
 
 verMatch :: Version -> Version -> Bool
 verMatch VAll           _               = True
@@ -563,36 +678,52 @@ voDefault = [take 30 (map VRef [1..])]
 }
 
 -------------------------------------------------------------------------
--- Chunk doc
+-- Chunk id
 -------------------------------------------------------------------------
 
 {
-data CDoc
-  = CDEmp
-  | CDStr String
-  | CDHor CDoc CDoc
-  | CDVer CDoc CDoc
+type ChunkId = (Version,Nm)
+}
 
+-------------------------------------------------------------------------
+-- Chunk kind, purpose/destination
+-------------------------------------------------------------------------
+
+{
+data ChKind
+  = ChAG | ChHS | ChPlain
+  deriving (Show,Eq,Ord)
+
+data ChDest
+  = ChHere | ChHide
+  deriving (Show,Eq,Ord)
+}
+
+-------------------------------------------------------------------------
+-- Chunk doc utils
+-------------------------------------------------------------------------
+
+{
 cdHor :: CD a => [a] -> CDoc
-cdHor = foldr CDHor CDEmp . map cd
+cdHor = foldr CDoc_Hor CDoc_Emp . map cd
 
 cdVer :: CD a => [a] -> CDoc
-cdVer = foldr CDVer CDEmp . map cd
+cdVer = foldr CDoc_Ver CDoc_Emp . map cd
 
 cdLines :: CDoc -> [String]
 cdLines d
   = lns d
-  where ln l CDEmp = (l,CDEmp)
-        ln l (CDStr s) = (s:l,CDEmp)
-        ln l (CDHor d1 d2)
+  where ln l CDoc_Emp = (l,CDoc_Emp)
+        ln l (CDoc_Str s) = (s:l,CDoc_Emp)
+        ln l (CDoc_Hor d1 d2)
           = case ln l d1 of
-              (l1,CDEmp) -> ln l1 d2
-              r          -> r
-        ln l (CDVer d1 d2)
+              (l1,CDoc_Emp) -> ln l1 d2
+              r             -> r
+        ln l (CDoc_Ver d1 d2)
           = case ln l d1 of
-              (l1,CDEmp) -> (l1,d2)
-              (l1,dr)    -> (l1,CDVer dr d2)
-        lns CDEmp = []
+              (l1,CDoc_Emp) -> (l1,d2)
+              (l1,dr)       -> (l1,CDoc_Ver dr d2)
+        lns CDoc_Emp = []
         lns d = let (l,d') = ln [] d in concat (reverse l) : lns d'
 
 cdPut' :: Handle -> CDoc -> IO ()
@@ -601,34 +732,37 @@ cdPut' h = mapM_ (hPutStrLn h) . cdLines
 cdPut :: Handle -> CDoc -> IO ()
 cdPut h d
   = case d of
-      CDEmp       -> return ()
-      CDStr s     -> hPutStr h s
-      CDHor d1 d2 -> do cdPut h d1
-                        cdPut h d2
-      CDVer d1 d2 -> do cdPut h d1
-                        hPutStrLn h ""
-                        cdPut h d2
+      CDoc_Emp       -> return ()
+      CDoc_Str s     -> hPutStr h s
+      CDoc_Hor d1 d2 -> do cdPut h d1
+                           cdPut h d2
+      CDoc_Ver d1 d2 -> do cdPut h d1
+                           hPutStrLn h ""
+                           cdPut h d2
 
 class CD a where
   cd :: a -> CDoc
 
 instance CD String where
-  cd = CDStr
+  cd = CDoc_Str
 
 instance CD Int where
-  cd = CDStr . show
+  cd = CDoc_Str . show
 
 instance CD CDoc where
   cd = id
+
+instance CD Nm where
+  cd = cdDots . nmToL
 
 infixr 2 .-.
 infixr 3 .|. , .#.
 
 (.|.) :: (CD a, CD b) => a -> b -> CDoc
-(.|.) a b = cd a `CDHor` cd b
+(.|.) a b = cd a `CDoc_Hor` cd b
 
 (.-.) :: (CD a, CD b) => a -> b -> CDoc
-(.-.) a b = cd a `CDVer` cd b
+(.-.) a b = cd a `CDoc_Ver` cd b
 
 (.#.) :: (CD a, CD b) => a -> b -> CDoc
 (.#.) a b = cd a .|. " " .|. cd b
@@ -665,64 +799,6 @@ mkTexCmdUse cmd nm = "\\" .|. cmd .|. "{" .|. cd nm .|. "}"
 mkTexCmdUse' :: CD a => String -> a -> CDoc
 mkTexCmdUse' cmd nm = mkTexCmdUse cmd nm .|. "%"
 }
-
--------------------------------------------------------------------------
--- Inferfacing
--------------------------------------------------------------------------
-
-WRAPPER AGItf
-
-ATTR AGItf [ opts: {Opts}  fpath: FPath | | ]
-
--------------------------------------------------------------------------
--- AST
--------------------------------------------------------------------------
-
-{
-type ChunkId = (Version,String)
-type MbChunkId = Maybe ChunkId
-type ChunkIdL = [ChunkId]
-}
-
-DATA AGItf
-  | AGItf               dumLines    : Lines
-                        chunks      : Chunks
-
-DATA Chunk
-  | Ver                 version     : {Version}
-                        aliasNmL    : {StringL}
-                        minusL      : ChunkIdL
-                        isHS        : {Bool}
-                        mbModNm     : {Maybe String}
-                        imports     : {StringL}
-                        exports     : {StringL}
-                        lines       : Lines
-                        dumLines    : Lines
-  | Named               nm          : {String}
-                        lines       : Lines
-                        dumLines    : Lines
-
-TYPE Chunks     = [Chunk]
-
-SET AllChunk    = Chunk Chunks
-
-DATA Line
-  | AsIs                words       : Words
-  | Named               nm          : {String}
-
-TYPE Lines      = [Line]
-
-SET AllLine     = Line Lines
-
-DATA Word
-  | White               chars       : {String}
-  | Black               chars       : {String}
-
-TYPE Words      = [Word]
-
-SET AllWord     = Word Words
-
-SET AllNT       = AllWord AllLine AllChunk
 
 -------------------------------------------------------------------------
 -- Sequence nr (for ordering when printing)
@@ -766,8 +842,8 @@ SEM Word
 -- Left + right context
 -------------------------------------------------------------------------
 
-ATTR Words [ lCtxt: StringL  lAllCtxt: StringL | | rCtxt: StringL ]
-ATTR Word [ | lCtxt: StringL  lAllCtxt: StringL  rCtxt: StringL | ]
+ATTR Words [ lCtxt: {[String]}  lAllCtxt: {[String]} | | rCtxt: {[String]} ]
+ATTR Word [ | lCtxt: {[String]}  lAllCtxt: {[String]}  rCtxt: {[String]} | ]
 
 SEM Line
   | AsIs        words       . lCtxt     = []
@@ -790,7 +866,7 @@ SEM Word
 
 {
 data XRefKind = XRHsDef | XRAgAttrDef | XRAgAltDef | XRAgSemDef | XRHsUse | XRAgAttrUse deriving Show
-data XRef = XRef { xrKind :: XRefKind, xrKeyL :: StringL } deriving Show
+data XRef = XRef { xrKind :: XRefKind, xrKeyL :: [String] } deriving Show
 
 xrMainKey :: XRef -> String
 xrMainKey = head . xrKeyL
@@ -856,28 +932,26 @@ SEM Line
 -------------------------------------------------------------------------
 
 {
-data NamedChunkInfo
-  = NamedChunkInfo
-      { nciNm       :: String
-      -- , nciMbPP     :: Maybe PP_Doc
+data NmChInfo
+  = NmChInfo
+      { nciNm       :: CRef
+      , nciChDest   :: ChDest
       , nciMbCD     :: Maybe CDoc
       }
 
-type NamedChunkInfoMp = Map.Map String NamedChunkInfo
+type NmChMp = Map.Map CRef NmChInfo
 }
 
-ATTR AllChunk AGItf [ | | nmChInfoMp USE {`Map.union`} {Map.empty}: NamedChunkInfoMp ]
-ATTR AllChunk AllLine AGItf [ allNmChInfoMp: NamedChunkInfoMp | | ]
+ATTR AllChunk AGItf [ | | gathNmChMp USE {`Map.union`} {Map.empty}: NmChMp ]
+ATTR AllChunk AllLine AGCDocItf AGItf CDoc [ nmChMp: NmChMp | | ]
 
 SEM Chunk
-  | Named       loc         . chInfo    = NamedChunkInfo @nm @lines.mbCD
-                lhs         . nmChInfoMp= Map.singleton @nm @chInfo
+  | Named       loc         . chInfo    = NmChInfo @cref ChHere @lines.mbCD
+                lhs         . gathNmChMp= Map.singleton @cref @chInfo
 
 SEM AGItf
-  | AGItf       chunks      . allNmChInfoMp
-                                        = @chunks.nmChInfoMp `Map.union` @lhs.allNmChInfoMp
-                dumLines    . allNmChInfoMp
-                                        = Map.empty
+  | AGItf       chunks      . nmChMp    = @chunks.gathNmChMp `Map.union` @lhs.nmChMp
+                dumLines    . nmChMp    = Map.empty
 
 -------------------------------------------------------------------------
 -- Content replica, CDoc
@@ -886,12 +960,25 @@ SEM AGItf
 ATTR AllLine [ | | mbCD : {Maybe CDoc} ]
 
 SEM Line
-  | AsIs        lhs         . mbCD      = Just (if null @words.charsL then CDStr "" else cdHor @words.charsL)
-  | Named       lhs         . mbCD      = maybe (Just ("<<" .|. @nm .|. ">>")) nciMbCD (Map.lookup @nm @lhs.allNmChInfoMp)
+  | AsIs        lhs         . mbCD      = Just (if null @words.charsL then CDoc_Str "" else cdHor @words.charsL)
+  | Named       lhs         . mbCD      = Just (CDoc_Ref @cref ChHere)
 
 SEM Lines
   | Nil         lhs         . mbCD      = Nothing
-  | Cons        lhs         . mbCD      = maybe (@hd.mbCD) (Just . (maybe CDEmp id @hd.mbCD `CDVer`)) @tl.mbCD
+  | Cons        lhs         . mbCD      = maybe (@hd.mbCD) (Just . (maybe CDoc_Emp id @hd.mbCD `CDoc_Ver`)) @tl.mbCD
+
+-------------------------------------------------------------------------
+-- CRef subst in CDoc
+-------------------------------------------------------------------------
+
+ATTR CDoc [ | | sbRepl: SELF ]
+ATTR AGCDocItf [ | | sbRepl: CDoc ]
+
+SEM CDoc
+  | Ref			lhs			.	sbRepl		=	case Map.lookup @cref @lhs.nmChMp of
+  												  Just d
+  												    -> maybe CDoc_Emp (cdocSubst (Map.delete @cref @lhs.nmChMp)) (nciMbCD d)
+  												  _ -> "<<" .|. @cref .|. ">>"
 
 -------------------------------------------------------------------------
 -- Content replica, String part
@@ -909,22 +996,6 @@ SEM Words
   | Cons        lhs         . charsL    = @hd.chars : @tl.charsL
 
 -------------------------------------------------------------------------
--- Content replica, PP_Doc
--------------------------------------------------------------------------
-
-{-
-ATTR AllLine [ | | mbPP : {Maybe PP_Doc} ]
-
-SEM Line
-  | AsIs        lhs         . mbPP      = Just (if null @words.charsL then text "" else hlist @words.charsL)
-  | Named       lhs         . mbPP      = maybe (Just ("<<" >|< @nm >|< ">>")) nciMbPP (Map.lookup @nm @lhs.allNmChInfoMp)
-
-SEM Lines
-  | Nil         lhs         . mbPP      = Nothing
-  | Cons        lhs         . mbPP      = maybe (@hd.mbPP) (Just . (maybe empty id @hd.mbPP >-<)) @tl.mbPP
--}
-
--------------------------------------------------------------------------
 -- Chunks
 -------------------------------------------------------------------------
 
@@ -934,20 +1005,19 @@ data VerChunkInfo
       { vciLineNr   :: Int
       , vciSeqNr    :: Int
       , vciVer      :: Version
-      , vciAliasL   :: StringL
-      , vciMinusL   :: ChunkIdL
-      , vciIsHS     :: Bool
+      , vciSubNm    :: Nm
+      , vciMinusL   :: [ChunkId]
+      , vciChKind   :: ChKind
+      , vciChDest   :: ChDest
       , vciMbModNm  :: Maybe String
-      , vciImps     :: StringL
-      , vciExps     :: StringL
-      -- , vciMbPP     :: Maybe PP_Doc
+      , vciImps     :: [String]
+      , vciExps     :: [String]
       , vciMbCD     :: Maybe CDoc
       , vciXRefL    :: [XRef]
       }
-type VerChunkInfoL = [VerChunkInfo]
-type VerChunkInfoM = [(Version,VerChunkInfoL)]
+type VerChunkInfoM = [(Version,[VerChunkInfo])]
 
-vciMToL :: VerChunkInfoM -> VerChunkInfoL
+vciMToL :: VerChunkInfoM -> [VerChunkInfo]
 vciMToL = concat . map snd
 
 instance Eq VerChunkInfo where
@@ -956,13 +1026,13 @@ instance Eq VerChunkInfo where
 instance Ord VerChunkInfo where
   compare i1 i2 = vciVer i1 `compare` vciVer i2
 
-vciSortBySeqNr :: VerChunkInfoL -> VerChunkInfoL
+vciSortBySeqNr :: [VerChunkInfo] -> [VerChunkInfo]
 vciSortBySeqNr = sortBy (\v1 v2 -> vciSeqNr v1 `compare` vciSeqNr v2)
 
-vciVerFilter :: (Version -> Bool) -> VerChunkInfoL -> VerChunkInfoL
+vciVerFilter :: (Version -> Bool) -> [VerChunkInfo] -> [VerChunkInfo]
 vciVerFilter f = filter (f . vciVer)
 
-vciVerGroup :: VerChunkInfoL -> [VerChunkInfoL]
+vciVerGroup :: [VerChunkInfo] -> [[VerChunkInfo]]
 vciVerGroup = groupBy (\i1 i2 -> vciVer i1 == vciVer i2)
 
 vciHasImpExp :: VerChunkInfo -> Bool
@@ -971,45 +1041,25 @@ vciHasImpExp i = not (null (vciImps i) && null (vciExps i))
 vciIsPre :: VerChunkInfo -> Bool
 vciIsPre = (==VPre) . vciVer
 
-{-
-vciPP :: VerChunkInfo -> PP_Doc
-vciPP = maybe empty id . vciMbPP
--}
+vciIsHS :: VerChunkInfo -> Bool
+vciIsHS = (==ChHS) . vciChKind
 
 vciCD :: VerChunkInfo -> CDoc
-vciCD = maybe CDEmp id . vciMbCD
-
-{-
-vciHasPP :: VerChunkInfo -> Bool
-vciHasPP = isJust . vciMbPP
--}
+vciCD = maybe CDoc_Emp id . vciMbCD
 
 vciHasCD :: VerChunkInfo -> Bool
 vciHasCD = isJust . vciMbCD
 
-vciSplitPre :: VerChunkInfoL -> (VerChunkInfoL,VerChunkInfoL)
+vciSplitPre :: [VerChunkInfo] -> ([VerChunkInfo],[VerChunkInfo])
 vciSplitPre = partition vciIsPre
 
-vciTakePre :: VerChunkInfoM -> (VerChunkInfoL,VerChunkInfoM)
+vciTakePre :: VerChunkInfoM -> ([VerChunkInfo],VerChunkInfoM)
 vciTakePre is
   = case is of
         ((VPre,p):r) -> (p,r)
         _            -> ([],is)
 
-
-selectChunks' :: Bool -> Version -> VerChunkInfoL -> VerChunkInfoM
-selectChunks' appMinus v agl
-  = let s v agl
-          = case v of
-              VRef r -> let agl' = sort . vciVerFilter (<= v) $ agl
-                            m = if appMinus then [ m | ml <- map vciMinusL agl', m <- ml ] else []
-                         in [(v,sort . filter (\i -> (vciVer i,if null (vciAliasL i) then "" else head (vciAliasL i)) `notElem` m) $ agl')]
-              VAll   -> let vs = nubBy verMatch . filter (/= VPre) . sort . map vciVer $ agl
-                         in concat . map (\v -> s v agl) $ vs
-              _      -> []
-     in s v agl
-
-selectChunks :: Bool -> Opts -> VerChunkInfoL -> [(Version,VerChunkInfoL)]
+selectChunks :: Bool -> Opts -> [VerChunkInfo] -> [(Version,[VerChunkInfo])]
 selectChunks appMinus opts agl
   = let (pre,nonPre)    = vciSplitPre agl
         availVersions   = nub . sort . map vciVer $ nonPre
@@ -1019,24 +1069,29 @@ selectChunks appMinus opts agl
         vAndVciL        = map (\v -> (v,vciSortBySeqNr . vciVerFilter (==v) $ nonPre)) allowedVersions
         isNotMinused
           = let minuses = if appMinus then [ m | (_,vciL) <- vAndVciL, ml <- map vciMinusL vciL, m <- ml ] else []
-             in \i -> (vciVer i,if null (vciAliasL i) then "" else head (vciAliasL i)) `notElem` minuses
+             in \i -> (vciVer i,vciSubNm i) `notElem` minuses
      in filter
           ( not.null.snd )
           ( (VPre,pre)
           : map (\(v,vciL) -> (v,filter isNotMinused vciL)) vAndVciL
           )
 
-data Build = Build { bldBase :: String, bldVer :: Version, bldCD :: CDoc }
-type BuildL = [Build]
+data Build
+  = Build
+      { bldBase     :: String
+      , bldVer      :: Version
+      , bldCD       :: CDoc
+      , bldNmChMp   :: NmChMp
+      }
 }
 
-ATTR AllChunk [ | | verChInfoL USE {++} {[]} : VerChunkInfoL ]
+ATTR AllChunk [ | | verChInfoL USE {++} {[]} : {[VerChunkInfo]} ]
 
 SEM Chunk
   | Ver         loc         . chInfo    = VerChunkInfo
                                             @chunkLineNr @lhs.seqNr
-                                            @version @aliasNmL @minusL
-                                            @isHS @mbModNm @imports @exports
+                                            @version @subNm @minusL
+                                            @chKind @chDest @mbModNm @imports @exports
                                             @lines.mbCD (Seq.toList @lines.xrefL)
                 lhs         . verChInfoL= [@chInfo]
 
@@ -1051,8 +1106,8 @@ SEM AGItf
                             . build     = \bld chunks
                                                -> let fileBase = fromJust (optBaseName @lhs.opts)
                                                       v = optGenVersion @lhs.opts
-                                                      builds = [Build fileBase v (bld @lhs.opts @wrapLhs2tex @lhs.fpath fileBase chunks)]
-                                                   in builds
+                                                      (d,m) = bld @lhs.opts @wrapLhs2tex @lhs.fpath fileBase chunks
+                                                   in [Build fileBase v d m]
 
 -------------------------------------------------------------------------
 -- Gen AG
@@ -1062,7 +1117,7 @@ SEM AGItf
 buildAGImps :: VerChunkInfo -> CDoc
 buildAGImps = cdVer . map (\imp -> "INCLUDE \"" .|. imp .|. ".ag\"") . vciImps
 
-buildAG :: Opts -> (Bool -> CDoc -> CDoc) -> FPath -> String -> VerChunkInfoM -> CDoc
+buildAG :: Opts -> (Bool -> CDoc -> CDoc) -> FPath -> String -> VerChunkInfoM -> (CDoc,NmChMp)
 buildAG opts wrap fpath fileBase is
   = let (pre,noPre) = vciTakePre is
         noPre' = vciMToL noPre
@@ -1073,13 +1128,14 @@ buildAG opts wrap fpath fileBase is
         ish  = filter vciIsHS noPre'
         pph  = if any vciHasImpExp ish
                then wrap True (h (buildHSModImpExp fileBase ish))
-               else CDEmp
-     in (if optPrefix opts then cdVer (map (wrap False . vciCD) pre) else CDEmp)
-        .-. pph
-        .-. (cdVer . map (\i -> wrap (not (vciIsPre i)) (mk i)) . vciSortBySeqNr $ noPre')
+               else CDoc_Emp
+        d = (if optPreamble opts then cdVer (map (wrap False . vciCD) pre) else CDoc_Emp)
+            .-. pph
+            .-. (cdVer . map (\i -> wrap (not (vciIsPre i)) (mk i)) . vciSortBySeqNr $ noPre')
+     in (d,Map.empty)
 }
 
-ATTR AGItf [ | | bldAG: BuildL ]
+ATTR AGItf [ | | bldAG: {[Build]} ]
 
 SEM AGItf
   | AGItf       lhs         . bldAG     = @build buildAG @selChunks
@@ -1104,7 +1160,7 @@ mkLabel = mkTexCmdUse' "label"
 mkMetaInfo :: CDoc -> String -> CDoc
 mkMetaInfo lab fileBase = mkLabel lab -- .-. mkTexCmdDef "chunkMetaDef" lab (cd fileBase)
 
-buildLaTeX :: Opts -> (Bool -> CDoc -> CDoc) -> FPath -> String -> VerChunkInfoM -> CDoc
+buildLaTeX :: Opts -> (Bool -> CDoc -> CDoc) -> FPath -> String -> VerChunkInfoM -> (CDoc,NmChMp)
 buildLaTeX opts wrap fpath fileBase is
   = let (pre,noPre) = vciTakePre is
         noPre' = vciMToL noPre
@@ -1115,7 +1171,7 @@ buildLaTeX opts wrap fpath fileBase is
           = let styleFmt = if optWrapLhs2tex opts then "||" else "|"
              in \ix
                  -> let n = foldr1 (\x y -> y ++ "!" ++ x) . xrKeyL $ ix
-                        dfmt = CDEmp -- if xrIsDefining ix then text (styleFmt ++ "emph") else CDEmp
+                        dfmt = CDoc_Emp -- if xrIsDefining ix then text (styleFmt ++ "emph") else CDoc_Emp
                      in mkCmdInx (n .|. dfmt)
         mkContent = let mk = wrap True . vciCD
                      in if optIndex opts
@@ -1123,30 +1179,32 @@ buildLaTeX opts wrap fpath fileBase is
                         else mk
         ppNoPre 
           = cdVer
-            . map (\is -> let nml = [cd fileBase,cd (vciVer (head is))]
-                              nm = cdDots nml
+            . map (\is -> let nm = mkNm fileBase `nmApd` mkNm (vciVer (head is))
+                              cnm = cd nm
                               (nms,pps)
                                   = unzip
-                                    . map (\(nr,i) -> let nm = cdDots (nml ++ [cd nr])
-                                                       in ( nm
-                                                          , mkCmdNmDef nm (mkMetaInfo nm fileBase .-. mkContent i)
-                                                            .-. cdVer (map (\n -> let na = cdDots (nml ++ [cd n])
-                                                                                   in mkCmdNmDef na (mkMetaInfo na fileBase .-. mkCmdNmUse nm))
-                                                                           (vciAliasL i))
+                                    . map (\(nr,i) -> let n = nm `nmApd` mkNm nr
+                                                          cn = cd n
+                                                       in ( cn
+                                                          , mkCmdNmDef cn (mkMetaInfo cn fileBase .-. mkContent i)
+                                                            .-. (let cna = cd (nm `nmApd` vciSubNm i)
+                                                                 in  mkCmdNmDef cna (mkMetaInfo cna fileBase .-. mkCmdNmUse cn)
+                                                                )
                                                           )
                                           )
                                     . zip [(0::Int)..]
                                     $ is
-                           in cdVer pps .-. mkCmdNmDef nm (mkMetaInfo nm fileBase .-. cdVer (map mkCmdNmUse nms))
+                           in cdVer pps .-. mkCmdNmDef cnm (mkMetaInfo cnm fileBase .-. cdVer (map mkCmdNmUse nms))
                   )
             . vciVerGroup
             $ noPre'
-     in (if optPrefix opts then cdVer (map (wrap False . vciCD) pre) else CDEmp)
-        .-. ppNoPre
-        .-. cdVer (map (\v -> mkCmdNmDef (cdDots [cd fileBase,cd v]) CDEmp) missing)
+        d = (if optPreamble opts then cdVer (map (wrap False . vciCD) pre) else CDoc_Emp)
+            .-. ppNoPre
+            .-. cdVer (map (\v -> mkCmdNmDef (cdDots [cd fileBase,cd v]) CDoc_Emp) missing)
+     in (d,Map.empty)
 }
 
-ATTR AGItf [ | | bldLaTeX: BuildL ]
+ATTR AGItf [ | | bldLaTeX: {[Build]} ]
 
 SEM AGItf
   | AGItf       lhs         . bldLaTeX  = @build buildLaTeX @selLaTeXChunks
@@ -1159,23 +1217,23 @@ SEM AGItf
 mkModNm :: [CDoc] -> CDoc
 mkModNm = cdHor
 
-buildHSImps :: VerChunkInfoL -> CDoc
+buildHSImps :: [VerChunkInfo] -> CDoc
 buildHSImps = cdVer . map (cdVer . map ("import" .#.) . vciImps)
 
-buildHSModuleHead :: String -> VerChunkInfoL -> CDoc
+buildHSModuleHead :: String -> [VerChunkInfo] -> CDoc
 buildHSModuleHead fileBase is
   = let ise = [ i | i <- is, not (null (vciExps i) && null (vciImps i))]
         e = filter (not.null) . map vciExps $ ise
         m = catMaybes . map vciMbModNm $ ise
-        exps = if null e then CDEmp
+        exps = if null e then CDoc_Emp
                          else cdListSepV "( " " )" ", " . map (cdListSep "" "" ", ") $ e
         modNm = if null m then fileBase else head m
      in "module" .#. modNm .-. {- indent 2 -} (exps .-. "where")
 
-buildHSModImpExp :: String -> VerChunkInfoL -> CDoc
+buildHSModImpExp :: String -> [VerChunkInfo] -> CDoc
 buildHSModImpExp fileBase is = buildHSModuleHead fileBase is .-. buildHSImps is
 
-buildHS :: Opts -> (Bool -> CDoc -> CDoc) -> FPath -> String -> VerChunkInfoM -> CDoc
+buildHS :: Opts -> (Bool -> CDoc -> CDoc) -> FPath -> String -> VerChunkInfoM -> (CDoc,NmChMp)
 buildHS opts wrap fpath fileBase is
   = let (pre,noPre) = vciTakePre is
         noPre' = vciMToL noPre
@@ -1190,16 +1248,17 @@ buildHS opts wrap fpath fileBase is
             . vciVerGroup . vciSortBySeqNr
             $ noPre'
         isEmpty = all (isNothing.vciMbCD) noPre'
-     in if isEmpty
-        then CDEmp
-        else if optPlain opts
-        then ppNoPre
-        else (if optPrefix opts then cdVer (map (wrap False . vciCD) pre) else CDEmp)
-             .-. wrap True ppMod
-             .-. ppNoPre
+        d = if isEmpty
+            then CDoc_Emp
+            else if optPlain opts
+            then ppNoPre
+            else (if optPreamble opts then cdVer (map (wrap False . vciCD) pre) else CDoc_Emp)
+                 .-. wrap True ppMod
+                 .-. ppNoPre
+     in (d,Map.empty)
 }
 
-ATTR AGItf [ | | bldHS: BuildL ]
+ATTR AGItf [ | | bldHS: {[Build]} ]
 
 SEM AGItf
   | AGItf       lhs         . bldHS     = @build buildHS @selChunks

@@ -32,10 +32,10 @@ rceEnvDataAlts :: RCEEnv -> CTag -> [CTag]
 rceEnvDataAlts env t
   =  case t of
        CTag _ conNm _ _
-          ->  case valGamLookup (rceValGam env) conNm of
+          ->  case valGamLookup conNm (rceValGam env) of
                 Just vgi
                    ->  let  tyNm = tyAppFunConNm . snd . tyArrowArgsRes . vgiTy $ vgi
-                       in   maybe [] (Map.elems . dgiDataTagMp) . gamLookup (rceDataGam env) $ tyNm
+                       in   maybe [] (Map.elems . dgiDataTagMp) . gamLookup tyNm $ rceDataGam env
                 _  ->  []
        _  ->  []
 %%]

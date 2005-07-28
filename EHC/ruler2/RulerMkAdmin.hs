@@ -9,6 +9,8 @@ module RulerMkAdmin where
 import Maybe
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Nm
+import Utils
 
 import RulerUtils
 import RulerAdmin
