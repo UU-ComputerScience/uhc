@@ -1391,6 +1391,10 @@ error messaging, line/col position, comment ????
 \chunkCmdUseMark{EHRulerRules.4.expr.e.int}
 \chunkCmdUseMark{EHRulerRules.9.expr.e.int}
 
+%%@Scratch.1.klad
+%%[@hide
+\chunkCmdUseMark{EHRulerRules.1.expr.e.char}
+%%]
 
 %%]
 
@@ -1642,6 +1646,17 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 \appendix
 
 %%]
+
+%%[7
+\section{Additional fragments}
+\input \jobname.hide
+%%]
+
+%%[2
+\section{Additional fragments}
+\input \jobname.hide
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Typing rules

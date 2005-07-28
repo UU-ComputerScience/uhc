@@ -114,6 +114,8 @@
 \def\@@stripAfterDot#1.#2;{#1}
 
 % chunk related
+\newcommand{\chunkHideDef}[1]{\subsection{#1}\label{#1}}
+\newcommand{\chunkHideRef}[1]{\marginpar{... \secPageRefB{#1}}}
 \newcommand{\chunkCmdDef}[1]{\expandafter\def\csname #1\endcsname}
 \newcommand{\chunkCmdUseRaw}[1]{%
  \csname #1\endcsname
@@ -185,8 +187,10 @@
 \newcommand{\secPageRef}[1]{\secRef{#1}}
 %else
 \newcommand{\pageRef}[1]{page~\pageref{#1}}
+\newcommand{\pageRefB}[1]{pg.~\pageref{#1}}
 \newcommand{\figPageRef}[1]{\figRef{#1}, \pageRef{#1}}
 \newcommand{\secPageRef}[1]{\secRef{#1}, \pageRef{#1}}
+\newcommand{\secPageRefB}[1]{\pageRefB{#1}, \myRef{#1}}
 %endif
 \newcommand{\chapterRef}[1]{%
 %if asArticle

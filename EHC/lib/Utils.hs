@@ -2,6 +2,7 @@ module Utils where
 
 import UU.Pretty
 import Data.Char
+import Debug.Trace
 
 -------------------------------------------------------------------------
 -- Utils for tools
@@ -38,5 +39,20 @@ strCapitalize s
       (c:cs) -> toUpper c : cs
       _      -> s
 
+wordsBy :: (a -> Bool) -> [a] -> [[a]]
+wordsBy p l
+  = w l
+  where w [] = []
+        w l  = let (l',ls') = break p l
+               in  l' : case ls' of []       -> []
+                                    (_:ls'') -> w ls''
+
 panic m = error ("panic: " ++ m)
+
+-------------------------------------------------------------------------
+-- Tracing
+-------------------------------------------------------------------------
+
+tr m s v = trace (m ++ show s) v
+trp m s v = trace (m ++ "\n" ++ disp (m >|< ":" >#< s) 1000 "") v
 

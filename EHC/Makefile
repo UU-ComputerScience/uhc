@@ -240,15 +240,22 @@ grinis: $(GRINI_ALL_PUB_EXECS)
 
 redit:
 	bbedit \
-	$(TEXT_EDIT_SRC) $(SHUFFLE_ALL_SRC) $(RULER2_ALL_SRC) \
+	$(SHUFFLE_ALL_SRC) $(RULER2_ALL_SRC) \
+	$(EHC_RULES_3_SRC_RL2) \
+	Makefile
+
+tedit:
+	bbedit \
+	$(TEXT_EDIT_SRC) \
 	$(EHC_RULES_3_SRC_RL2) \
 	Makefile
 
 eedit:
 	bbedit \
-	$(EHC_ALL_SRC) $(GRIN_ALL_SRC) $(GRINI_ALL_SRC)
+	$(EHC_ALL_SRC) $(GRIN_ALL_SRC) $(GRINI_ALL_SRC) \
+	Makefile
 
-edit: redit eedit
+edit: redit eedit tedit
 
 A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
