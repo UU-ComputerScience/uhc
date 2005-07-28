@@ -8,7 +8,7 @@ TEXT_MKF					:= $(TEXT_SRC_PREFIX)files.mk
 TEXT_MAIN					:= main
 
 # subtext
-TEXT_SUBS					:= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP \
+TEXT_SUBS					:= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								TopicRuler TopicExplImpl TopicGRIN TopicRec TopicKinds TopicDataTy TopicImpred TopicHM TopicExtRec TopicGADT \
 								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred
 TEXT_SUBS_ASIS				:= afp-pgf
@@ -85,6 +85,8 @@ TEXT_INCL_LIST_TEX			:= $(TEXT_TMP_VARIANT_PREFIX)InclList.tex
 
 TEXT_BIB_SRC				:= $(TEXT_SRC_PREFIX)LitAdm.bib
 TEXT_BIB_DRV				:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN).bib
+
+TEXT_HIDE_DRV_TEX			:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN).hide
 
 FIGS_XFIG_DRV_TEX			:= $(patsubst $(FIGS_SRC_PREFIX)%.fig,$(TEXT_TMP_VARIANT_PREFIX)%.tex,$(FIGS_XFIG_SRC_FIG))
 FIGS_ASIS_DRV_PDF			:= $(patsubst $(FIGS_SRC_PREFIX)%.pdf,$(TEXT_TMP_VARIANT_PREFIX)%.pdf,$(FIGS_ASIS_SRC_PDF))
@@ -171,7 +173,7 @@ text-variant-dflt-bib-inx: $(TEXT_ALL_DPD) $(TEXT_BIB_DRV)
 
 $(TEXT_MAIN_DRV_LTEX) : $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SRC_CLTEX) $(SHUFFLE) $(TEXT_MKF)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(TEXT_SHUFFLE_VARIANT) --plain --lhs2tex=no --order="$(TEXT_SHUFFLE_ORDER)" $< $(TEXT_SUBS_SRC_CLTEX) > $@
+	$(SHUFFLE) --gen=$(TEXT_SHUFFLE_VARIANT) --plain --lhs2tex=no --hidedest=file=$(TEXT_HIDE_DRV_TEX) --order="$(TEXT_SHUFFLE_ORDER)" $< $(TEXT_SUBS_SRC_CLTEX) > $@
 
 $(TEXT_MAIN_DRV_TEX) : %.tex : %.ltex
 	$(SUBST_EHC) $< \

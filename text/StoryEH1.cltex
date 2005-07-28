@@ -987,6 +987,9 @@ The implementation of \ruleRef{e.int} performs this check and returns the type |
 
 \chunkCmdUseMark{EHInferExpr.1.ty}
 \chunkCmdUseMark{EHRulerRules.1.expr.e.int}
+%%[@hide "AG for e.char"
+\chunkCmdUseMark{EHRulerRules.1.expr.e.char}
+%%]
 
 The implementation for \ruleRef{e.char} is defined similarly\overlayChunks{EHRulerRules.1.expr.e.char}.
 
