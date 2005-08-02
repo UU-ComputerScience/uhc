@@ -20,7 +20,7 @@ import UU.Pretty
 import UU.Parsing
 import UU.Parsing.CharParser
 import UU.Scanner.Position( initPos, Pos )
-import qualified UU.DData.Set as Set
+import qualified Data.Set as Set
 import qualified UU.DData.Seq as Seq
 }
 
@@ -71,22 +71,30 @@ doCompile fp fpRest opts
        ; allPRes@((fb,pres):restPRes) <- mapM (\f -> readShFile f opts) (fp:fpRest)
        ; let (nmChMp,hdL) = allNmChMpOf allPRes
              res = wrapSem fb xrefExceptFileContent Map.empty pres
-       ; putBld nmChMp (selBld opts res)
-       ; putHideBld opts fb nmChMp hdL
+             bld = selBld opts res
+             topChNmS = Set.unions [ Set.map (mkFullNm fb) . Map.keysSet . bldNmChMp $ b | b <- bld ]
+       ; subsChNmS <- putBld nmChMp bld
+       ; let allChNmS = subsChNmS `Set.union` topChNmS
+             hdL' = [ h | (n,h) <- hdL, n `Set.member` allChNmS ]
+       ; putHideBld opts fb nmChMp hdL'
        }
-  where selBld opts res
+  where mkFullNm b n = mkNm b `nmApd` n
+        selBld opts res
           = if optAG opts then bldAG_Syn_AGItf res
             else if optHS opts || optPlain opts then bldHS_Syn_AGItf res
             else bldLaTeX_Syn_AGItf res
         putBld nmChMp b
           = if not (null b)
-            then mapM_ (cdPut stdout . cdocSubst nmChMp . bldCD) b
-            else return ()
+            then do { let (bs,nms) = unzip . map (cdocSubst nmChMp . bldCD) $ b
+                    ; mapM_ (cdPut stdout) bs
+                    ; return (Set.unions nms)
+                    }
+            else return Set.empty
         putHideBld opts fb nmChMp hdL
           = case optChDest opts of
               (ChHere,_) -> return ()
               (ChHide,f) -> do { h <- openFile f' WriteMode
-                               ; cdPut h . cdocSubst nmChMp . cdVer $ hdL
+                               ; cdPut h . fst . cdocSubst nmChMp . cdVer $ hdL
                                ; hClose h
                                }
                          where f' = if null f then (fb ++ ".hide") else f
@@ -95,11 +103,12 @@ doCompile fp fpRest opts
           = (Map.unions m1,concat m2)
           where (m1,m2)
                   = unzip
-                       [ (Map.mapKeys (\n -> mkNm b `nmApd` n) (Map.unions (nMp:bMpL)) `Map.union` nMp,hdL)
+                       [ (Map.mapKeys mkN (Map.unions (nMp:bMpL)) `Map.union` nMp,concat hdLL)
                        | (b,pr) <- pres
-                       , let r = wrapSem b Set.empty Map.empty pr
+                       , let mkN = let bn = mkNm b in mkFullNm bn
+                             r = wrapSem b Set.empty Map.empty pr
                              nMp = gathNmChMp_Syn_AGItf r
-                             (bMpL,hdL) = unzip [ (bldNmChMp b,bldHideCD b) | b <- selBld opts r ]
+                             (bMpL,hdLL) = unzip [ (bldNmChMp b,[ (mkN n,h) | (n,h) <- bldHideCD b]) | b <- selBld opts r ]
                        ]
 }
 
@@ -120,9 +129,12 @@ type ScanOptsMp = Map.Map ScState ScanOpts
 chKindMp = Map.fromList [ ("hs",ChHS), ("ag",ChAG), ("plain",ChPlain) ]
 chDestMp = Map.fromList [ ("here",ChHere), ("hide",ChHide) ]
 
-kwTxtAsVarToo
+kwTxtAsVarTooA
   = [ "module", "import", "export" ]
     ++ Map.keys chKindMp
+
+kwTxtAsVarTooB
+  = kwTxtAsVarTooA
     ++ Map.keys chDestMp
 
 shuffleScanOpts :: ScanOptsMp
@@ -130,7 +142,7 @@ shuffleScanOpts
   = Map.fromList
         [ ( ScLexMeta 0
           , ScanOpts
-              { scoKeywordsTxt      =   Set.fromList (kwTxtAsVarToo ++ [ "_", "-", ".", "<" ])
+              { scoKeywordsTxt      =   Set.fromList (kwTxtAsVarTooB ++ [ "_", "-", ".", "<", "=" ])
               , scoSpecChars        =   Set.fromList "(),"
               , scoOpChars          =   Set.fromList "+-=*&^%$#@!\\|><~`;:?/_."
               }
@@ -240,6 +252,8 @@ scan scoMp st s
                                                                  _                    -> s2
         sc p st@(ScLexMeta _) s@(c:_)
           | isOpch st c                             = scKw (isOpch st) p st s
+        sc p@(TokPos _ 1) st@(ScChunk l)    s@('%':'%':'[':'[':s')
+                                                    = Tok TKBegGroup "" "%%[[" p st : sc (ai 4 p) (ScLexMeta (l+1)) s'
         sc p@(TokPos _ 1) ScSkip            s@('%':'%':'[':s')
                                                     = Tok TKBegChunk "" "%%["  p ScSkip  : sc (ai 3 p) (ScLexMeta 0) s'
         sc p@(TokPos _ 1) st@(ScChunk l)    s@('%':'%':']':s')
@@ -247,8 +261,6 @@ scan scoMp st s
           | l >  0                                  = Tok TKEndChunk "" "%%]"  p st : sc (ai 3 p) (ScChunk (l-1)) s'
         sc p@(TokPos _ 1) st@(ScChunk l)    s@('%':'%':'@':s')
                                                     = Tok TKNameRef  "" "%%@"  p st : sc (ai 3 p) (ScLexMeta l) s'
-        sc p@(TokPos _ 1) st@(ScChunk l)    s@('%':'%':'[':'@':s')
-                                                    = Tok TKBegGroup "" "%%[@" p st : sc (ai 4 p) (ScLexMeta (l+1)) s'
         sc p st@(ScChunk _) s@(c:_)
           | isBlack c                               = Tok TkText     ""   b   p st : sc (a b p) st s'
                                                     where (b,s') = span isBlack s
@@ -266,7 +278,7 @@ scan scoMp st s
 
 pBegChunk, pBegGroup, pEndChunk, pBegNameRef, pNl :: (IsParser p Tok) => p Tok
 pBegChunk   = pSym (Tok TKBegChunk "" "%%["  tkpNone ScSkip)
-pBegGroup   = pSym (Tok TKBegGroup "" "%%[@" tkpNone ScSkip)
+pBegGroup   = pSym (Tok TKBegGroup "" "%%[[" tkpNone ScSkip)
 pEndChunk   = pSym (Tok TKEndChunk "" "%%]"  tkpNone ScSkip)
 pBegNameRef = pSym (Tok TKNameRef  "" "%%@"  tkpNone ScSkip)
 pNl         = pSym (Tok TKNl       "" "LF"   tkpNone ScSkip)
@@ -313,6 +325,9 @@ type ShPr  c = (IsParser p Tok) => p c
 type ShPr2 c = (IsParser p Tok) => p c -> p c
 type ShPr3 c = (IsParser p Tok) => p c -> p c -> p c
 
+mkNmForP :: String -> [String] -> Nm
+mkNmForP h t = nmFromL . concat . map (wordsBy (=='.')) $ (h : t)
+
 pAGItf :: ShPr T_AGItf
 pAGItf = sem_AGItf_AGItf <$> (sem_Lines_Nil <$ pList pNl) <*> pChunks
 
@@ -322,13 +337,17 @@ pVersion            =   mkVerFromIntL <$> pList1Sep (pKey "_") pInt'
 pVerOrder           ::  ShPr VersionOrder
 pVerOrder           =   pListSep (pKey ",") (pList1Sep (pKey "<") pVersion)
 
+pNm2                ::  ShPr Nm
+pNm2                =   mkNmForP <$> p <*> pList (pKey "." *> (p <|> pInt))
+                    where p = foldl1 (<|>) (map pKey kwTxtAsVarTooA) <|> pVar
+
 pNm                 ::  ShPr Nm
-pNm                 =   (\h t -> nmFromL . concat . map (wordsBy (=='.')) $ (h : t)) <$> pVar <*> pList (pKey "." *> (pVar <|> pInt))
+pNm                 =   mkNmForP <$> pVar <*> pList (pKey "." *> (pVar <|> pInt))
 
 pId, pIdNest, pIdNest2, pIdNestPart :: ShPr String
 pId                 =   (\h t -> concat . intersperse "." $ h : t) <$> pVar <*> pList (pKey "." *> (pVar <|> pInt))
 pIdNest             =   (concat . intersperse " ") <$> pList1 pIdNestPart
-pIdNest2            =   (concat . intersperse " ") <$> pList1 (pIdNestPart <|> foldl1 (<|>) (map pKey kwTxtAsVarToo))
+pIdNest2            =   (concat . intersperse " ") <$> pList1 (pIdNestPart <|> foldl1 (<|>) (map pKey kwTxtAsVarTooB))
 pIdNestPart         =   pId
                     <|> (\l -> "(" ++ concat (intersperse "," l) ++ ")") <$> pParens pIdNests2
                     <|> pStr
@@ -350,9 +369,9 @@ pChunk              ::  ShPr T_Chunk
 pChunk              =   pBegChunk
                          *> ((   sem_Chunk_Ver
                                  <$> pVersion
-                                 <*> pMaybe id NmEmp (pKey "." *> pNm)
+                                 <*> pMaybe NmEmp id (pKey "." *> pNm)
                                  <*> (pKey "-" *> ((:[]) <$> pChunkId <|> pParens (pList1 pChunkId)) <|> pSucceed [])
-                                 <*> pMaybe id ChAG pChKind
+                                 <*> pMaybe ChAG id pChKind
                                  <*> pMbChDest
                                  <*> (Just <$ pKey "module" <*> pId <|> pSucceed Nothing)
                                  <*> (pKey "import" *> pParens pIdNests2 <|> pSucceed [])
@@ -374,7 +393,7 @@ pChDest             ::  ShPr ChDest
 pChDest             =   pAnyFromMap pKey chDestMp
 
 pMbChDest           ::  ShPr ChDest
-pMbChDest           =   pMaybe id ChHere pChDest
+pMbChDest           =   pMaybe ChHere id pChDest
 
 pLines              ::  ShPr T_Lines
 pLines              =   pFoldr (sem_Lines_Cons,sem_Lines_Nil) pLine
@@ -387,8 +406,8 @@ pLine               =   sem_Line_AsIs  <$> pLineChars  <*  pNl
                                        <$  pBegGroup   <*> pD <* pNl <*> pLines <* pEndChunk <* pNl
                     <?> "a line"
                     where pN =   pNm
-                             <|> (\v n -> mkNm v `nmApd` n) <$> pVersion <*> pMaybe id NmEmp (pKey "." *> pNm)
-                          pD =   pMbChDest <+> pMaybe Just Nothing (pVar <|> pStr)
+                             <|> (\v n -> mkNm v `nmApd` n) <$> pVersion <*> pMaybe NmEmp id (pKey "." *> pNm)
+                          pD =   pMbChDest <+> pMaybe Nothing Just ((pNm2 <|> mkNm <$> pStr) <+> pMaybe Nothing Just (pKey "=" *> pMaybe "" id pStr))
 
 pLineChars          ::  ShPr T_Words
 pLineChars          =   (foldr sem_Words_Cons sem_Words_Nil . concat)
@@ -463,7 +482,7 @@ cmdLineOpts
           "combined with latex, generate index entries, default=no"
      ,  Option "g"  ["gen"]             (ReqArg oGen "all|<nr>")
           "generate for version, default=none"
-     ,  Option ""   ["hidedest"]        (ReqArg oHideDest "here|file=<file>")
+     ,  Option ""   ["hidedest"]        (ReqArg oHideDest "here|appx=<file>")
           "destination of text marked as 'hide', default=here"
      ,  Option ""   ["order"]           (ReqArg oVerOrder "<order-spec>")
           "version order"
@@ -492,7 +511,7 @@ cmdLineOpts
                                 _                   -> o {optGenVersion = VAll}
          oHideDest    s  o =  case s of
                                 "here"                  -> o
-                                ('f':'i':'l':'e':'=':f) -> o {optChDest = (ChHide,f)}
+                                ('a':'p':'p':'x':'=':f) -> o {optChDest = (ChHide,f)}
                                 _                       -> o
          oHelp           o =  o {optHelp = True}
          yesno updO  ms  o =  case ms of
@@ -534,9 +553,9 @@ wrapAGCDoc_T nmChMp d
 wrapCDoc :: NmChMp -> CDoc -> Syn_AGCDocItf
 wrapCDoc m d = wrapAGCDoc_T m (sem_AGCDocItf (AGCDocItf_AGItf d))
 
-cdocSubst :: NmChMp -> CDoc -> CDoc
+cdocSubst :: NmChMp -> CDoc -> (CDoc,Set.Set Nm)
 cdocSubst m d
-  = sbRepl_Syn_AGCDocItf r
+  = (sbRepl_Syn_AGCDocItf r,sbCRefS_Syn_AGCDocItf r)
   where r = wrapCDoc m d
 }
 
@@ -577,7 +596,7 @@ DATA Line
   | AsIs                words       : Words
   | Named               cref        : {CRef}
   | Group               chDest      : {ChDest}
-                        userRef     : {Maybe String}
+                        userRef     : {Maybe (Nm,Maybe String)}
                         lines       : Lines
 
 TYPE Lines      = [Line]
@@ -786,20 +805,23 @@ cdPut' h = mapM_ (hPutStrLn h) . cdLines
 cdPut :: Handle -> CDoc -> IO ()
 cdPut h d
   = case d of
-      CDoc_Emp       -> return ()
-      CDoc_Str s     -> hPutStr h s
-      CDoc_Ref r d   -> hPutStr h ("<<<<" ++ show r ++ ">>>>")
-      CDoc_Hor d1 d2 -> do cdPut h d1
-                           cdPut h d2
-      CDoc_Ver d1 d2 -> do cdPut h d1
-                           hPutStrLn h ""
-                           cdPut h d2
+      CDoc_Emp              -> return ()
+      CDoc_Str s            -> hPutStr h s
+      CDoc_Ref r d          -> hPutStr h ("<<<<" ++ show r ++ ">>>>")
+      CDoc_Hor d1 d2        -> do cdPut h d1
+                                  cdPut h d2
+      CDoc_Ver CDoc_Emp d2  -> cdPut h d2
+      CDoc_Ver d1 CDoc_Emp  -> cdPut h d1
+      CDoc_Ver d1 d2        -> do cdPut h d1
+                                  hPutStrLn h ""
+                                  cdPut h d2
 
 class CD a where
   cd :: a -> CDoc
 
 instance CD String where
-  cd = CDoc_Str
+  cd "" = CDoc_Emp
+  cd s  = CDoc_Str s
 
 instance CD Int where
   cd = CDoc_Str . show
@@ -848,11 +870,20 @@ cdDots = cdListSep "" "" "."
 -------------------------------------------------------------------------
 
 {
+mkTexCmd1 :: CD a => String -> a -> CDoc
+mkTexCmd1 cmd a1 = "\\" .|. cmd .|. "{" .|. cd a1 .|. "}"
+
+mkTexCmd2 :: (CD a, CD b) => String -> a -> b -> CDoc
+mkTexCmd2 cmd a1 a2 = "\\" .|. cmd .|. "{" .|. cd a1 .|. "}{%" .-. cd a2 .-. "}"
+
+mkTexCmd3 :: (CD a, CD b, CD c) => String -> a -> b -> c -> CDoc
+mkTexCmd3 cmd a1 a2 a3 = "\\" .|. cmd .|. "{" .|. cd a1 .|. "}{%" .-. cd a2 .-. "}{%" .-. cd a3 .-. "}"
+
 mkTexCmdDef :: (CD a, CD b) => String -> a -> b -> CDoc
-mkTexCmdDef cmd nm def = "\\" .|. cmd .|. "{" .|. cd nm .|. "}{%" .-. cd def .-. "}"
+mkTexCmdDef = mkTexCmd2
 
 mkTexCmdUse :: CD a => String -> a -> CDoc
-mkTexCmdUse cmd nm = "\\" .|. cmd .|. "{" .|. cd nm .|. "}"
+mkTexCmdUse = mkTexCmd1
 
 mkTexCmdUse' :: CD a => String -> a -> CDoc
 mkTexCmdUse' cmd nm = mkTexCmdUse cmd nm .|. "%"
@@ -1015,6 +1046,24 @@ SEM AGItf
                 dumLines    .   nmChMp      =   Map.empty
 
 -------------------------------------------------------------------------
+-- Adm for hideable groups of lines
+-------------------------------------------------------------------------
+
+{
+data HideInfo
+  = HideInfo
+      { hiNm        :: Nm
+      , hiDescr     :: CDoc
+      , hiSeqNr     :: Int
+      , hiChDest    :: ChDest
+      , hiMbCD      :: Maybe CDoc
+      , hiChFullNm  :: Nm
+      }
+
+type HideMp = Map.Map Nm HideInfo
+}
+
+-------------------------------------------------------------------------
 -- Content replica, CDoc
 -------------------------------------------------------------------------
 
@@ -1025,8 +1074,11 @@ SEM Line
   | Named       lhs         .   mbCD        =   Just (CDoc_Ref @cref ChHere)
   | Group       (lhs.mbCD,loc.gathHideMp)   =   case @chDest of
                                                   ChHere -> (@lines.mbCD,Map.empty)
-                                                  h      -> (Just (mkHideNmRef (cd n)),Map.singleton n (HideInfo n @chDest @lines.mbCD))
-                                                         where n = maybe (mkNm (show h) `nmApd` mkNm @lhs.seqNr) mkNm @userRef
+                                                  h      -> (Just (mkHideNmRef (cd n)),Map.singleton n (HideInfo n i @lhs.seqNr @chDest @lines.mbCD @lhs.chFullNm))
+                                                         where (n,i) = case @userRef of
+                                                                         Just (r,Just i ) -> (r,cd i)
+                                                                         Just (r,Nothing) -> (r,cd r)
+                                                                         _                -> (mkNm (show h) `nmApd` mkNm @lhs.seqNr,CDoc_Emp)
 
 SEM Lines
   | Nil         lhs         .   mbCD        =   Nothing
@@ -1036,21 +1088,10 @@ SEM Lines
 -- Gathering of hidden text
 -------------------------------------------------------------------------
 
-{
-data HideInfo
-  = HideInfo
-      { hiNm        :: Nm
-      , hiChDest    :: ChDest
-      , hiMbCD      :: Maybe CDoc
-      }
-
-type HideMp = Map.Map Nm HideInfo
-}
-
 ATTR AllChunk AllLine [ | | gathHideMp USE {`Map.union`} {Map.empty}: HideMp ]
 
 SEM Line
-  | Group		lhs			.	gathHideMp	=	@gathHideMp `Map.union` @lines.gathHideMp
+  | Group       lhs         .   gathHideMp  =   @gathHideMp `Map.union` @lines.gathHideMp
 
 -------------------------------------------------------------------------
 -- CRef subst in CDoc
@@ -1058,12 +1099,17 @@ SEM Line
 
 ATTR CDoc [ | | sbRepl: SELF ]
 ATTR AGCDocItf [ | | sbRepl: CDoc ]
+ATTR CDoc AGCDocItf [ | | sbCRefS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
 
 SEM CDoc
-  | Ref         lhs         .   sbRepl      =   case Map.lookup (@cref) @lhs.nmChMp of
-                                                  Just d
-                                                    -> maybe CDoc_Emp (cdocSubst (Map.delete @cref @lhs.nmChMp)) (nciMbCD d)
-                                                  _ -> @sbRepl
+  | Ref         lhs         .   (sbRepl,sbCRefS)
+                                            =   case Map.lookup (@cref) @lhs.nmChMp of
+                                                  Just i
+                                                    -> case nciMbCD i of
+                                                         Just d -> (r,Set.insert @cref s)
+                                                                where (r,s) = cdocSubst (Map.delete @cref @lhs.nmChMp) d
+                                                         _      -> (CDoc_Emp,Set.empty)
+                                                  _ -> (@sbRepl,Set.empty)
 
 -------------------------------------------------------------------------
 -- Content replica, String part
@@ -1169,20 +1215,41 @@ data Build
       { bldBase     :: String
       , bldVer      :: Version
       , bldCD       :: CDoc
-      , bldHideCD   :: CDoc
+      , bldHideCD   :: [(Nm,CDoc)]
       , bldNmChMp   :: NmChMp
       }
 }
 
+-------------------------------------------------------------------------
+-- Gathering chunk info
+-------------------------------------------------------------------------
+
 ATTR AllChunk [ | | verChInfoL USE {++} {[]} : {[VerChunkInfo]} ]
 
 SEM Chunk
-  | Ver         loc         . chInfo    = VerChunkInfo
-                                            @chunkLineNr @lhs.seqNr
-                                            @version @subNm @minusL
-                                            @chKind @chDest @mbModNm @imports @exports
-                                            @lines.mbCD (Seq.toList @lines.xrefL)
-                lhs         . verChInfoL= [@chInfo]
+  | Ver         loc         .   chInfo      =   VerChunkInfo
+                                                    @chunkLineNr @lhs.seqNr
+                                                    @version @subNm @minusL
+                                                    @chKind @chDest @mbModNm @imports @exports
+                                                    @lines.mbCD (Seq.toList @lines.xrefL)
+                lhs         .   verChInfoL  =   [@chInfo]
+
+-------------------------------------------------------------------------
+-- Line context, in chunks
+-------------------------------------------------------------------------
+
+ATTR AllLine AllChunk [ chFullNm: Nm | | ]
+
+SEM Chunk
+  | Ver         loc         .   chFullNm    =   vciFullNm @chInfo
+  | Named       loc         .   chFullNm    =   nciNm @chInfo
+
+SEM AGItf
+  | AGItf       loc         .   chFullNm    =   NmEmp
+
+-------------------------------------------------------------------------
+-- Selecting and building
+-------------------------------------------------------------------------
 
 SEM AGItf
   | AGItf       loc         . selChunks = selectChunks True @lhs.opts @chunks.verChInfoL
@@ -1196,7 +1263,9 @@ SEM AGItf
                                                -> let fileBase = fromJust (optBaseName @lhs.opts)
                                                       v = optGenVersion @lhs.opts
                                                       (d,m) = bld @lhs.opts @wrapLhs2tex @lhs.fpath fileBase chunks
-                                                      h = cdVer [ mkHideNmDef (cd n) (cd (hiMbCD h)) | (n,h) <- Map.toList @chunks.gathHideMp ]
+                                                      h = [ (hiChFullNm h,mkHideNmDef (cd n) (hiDescr h) (cd (hiMbCD h)))
+                                                          | (n,h) <- sortBy (\(_,h1) (_,h2) -> hiSeqNr h1 `compare` hiSeqNr h2) . Map.toList $ @chunks.gathHideMp
+                                                          ]
                                                    in [Build fileBase v d h m]
 
 -------------------------------------------------------------------------
@@ -1247,8 +1316,8 @@ SEM AGItf
 mkCmdNmDef :: CDoc -> CDoc -> CDoc
 mkCmdNmDef = mkTexCmdDef "chunkCmdDef"
 
-mkHideNmDef :: CDoc -> CDoc -> CDoc
-mkHideNmDef = mkTexCmdDef "chunkHideDef"
+mkHideNmDef :: CDoc -> CDoc -> CDoc -> CDoc
+mkHideNmDef = mkTexCmd3 "chunkHideDef"
 
 mkHideNmRef :: CDoc -> CDoc
 mkHideNmRef = mkTexCmdUse "chunkHideRef"

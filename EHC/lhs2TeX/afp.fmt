@@ -103,6 +103,7 @@
 %format sigmae      = sigma "_{e}"
 %format sigmal      = sigma "^{l}"
 %format sigmar      = sigma "^{r}"
+%format sigma_r 	= sigma "_{r}"
 %format sigmai     	= sigma "_{i}"
 %format sigmaa      = sigma "_{a}"
 %format sigmaaa     = sigma "^{a}"
@@ -285,7 +286,8 @@
 %format Transl2pi		= Transl2 "^{" pi "}"
 %format lacks			= "\backslash "
 
-%format coe         	= "{\delta}"
+%format Coe         	= "{\delta}"
+%format coe         	= Coe
 
 %format NYI				= "\mbox{\color{red}[Not yet implemented]}"
 

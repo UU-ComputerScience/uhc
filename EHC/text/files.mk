@@ -173,7 +173,7 @@ text-variant-dflt-bib-inx: $(TEXT_ALL_DPD) $(TEXT_BIB_DRV)
 
 $(TEXT_MAIN_DRV_LTEX) : $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SRC_CLTEX) $(SHUFFLE) $(TEXT_MKF)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(TEXT_SHUFFLE_VARIANT) --plain --lhs2tex=no --hidedest=file=$(TEXT_HIDE_DRV_TEX) --order="$(TEXT_SHUFFLE_ORDER)" $< $(TEXT_SUBS_SRC_CLTEX) > $@
+	$(SHUFFLE) --gen=$(TEXT_SHUFFLE_VARIANT) --plain --lhs2tex=no --hidedest=appx=$(TEXT_HIDE_DRV_TEX) --order="$(TEXT_SHUFFLE_ORDER)" $< $(TEXT_SUBS_SRC_CLTEX) > $@
 
 $(TEXT_MAIN_DRV_TEX) : %.tex : %.ltex
 	$(SUBST_EHC) $< \
@@ -216,7 +216,7 @@ $(RULER_3_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(EHC_SRC_PREFIX)%.rl2 
 
 $(TEXT_RULES_3_DRV_CAG): $(EHC_RULES_3_SRC_RL2) $(RULER2)
 	mkdir -p $(@D)
-	$(RULER2) --ag --wrapfrag --selrule="((1=K),(2=C),(3=HM),(4=I1),(4_2=I2),(9=P)).(expr.base).(*)" --base=$(*F) $< > $@
+	$(RULER2) --ag --wrapfrag --selrule="((1=K),(2=C),(3=HM),(4=I1),(4_2=I2),(9=P)).(expr.base tyexpr.base patexpr.base).(*)" --base=$(*F) $< > $@
 
 $(TEXT_RULER2_DEMO_TEX) $(TEXT_RULER2_DEMO_STUFF): $(TEXT_TMP_VARIANT_PREFIX)% : $(RULER2_DEMO_PREFIX)%
 	mkdir -p $(@D)

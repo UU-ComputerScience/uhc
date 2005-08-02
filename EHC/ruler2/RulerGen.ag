@@ -81,10 +81,21 @@ rlAtUsage opts scGam fmGam vwRlInfo
                          where n' = Nm . nmShowAG . sbsn . nmAdapt $ n
                                (l,fmDef,fmUse,atNmL) = mkL preUse' nmAdapt' n n'
                                r = mkR n n'
+                               (nmAdapt',preUse') = (id,mkALoc')
+                               c = ECnstr_Ty [ty]
+                               (eqn,eqnEcG) = exprElimCnstr (mkExprEqn l r)
+                               ecG = ecGamFromList [ (l,c), (r,c) ]
+{-
+                       mkDef dir nmAdapt mkL mkR (n,ty)
+                         = if fmNull fmDef then [] else [(fmDef, (dir,(eqn,fmUse)), (n,l), atNmL, eqnEcG `Map.union` ecG)]
+                         where n' = Nm . nmShowAG . sbsn . nmAdapt $ n
+                               (l,fmDef,fmUse,atNmL) = mkL preUse' nmAdapt' n n'
+                               r = mkR n n'
                                (nmAdapt',preUse') = if flipDir then (nmInit,mkALhs) else (id,mkALoc')
                                c = ECnstr_Ty [ty]
                                (eqn,eqnEcG) = exprElimCnstr (mkExprEqn l r)
-                               ecG = Map.fromList [ (l,c), (r,c) ]
+                               ecG = ecGamFromList [ (l,c), (r,c) ]
+-}
                        mkDefs mk nL
                          = (Map.unions fg,dirL,atL,atNmL,Map.unions ecG)
                          where (fg,dirL,atL,atNmL,ecG) = unzip5 . concat . map mk $ nL
@@ -107,11 +118,19 @@ rlAtUsage opts scGam fmGam vwRlInfo
                                      ,emptyGam
                                      )
                                 else ((eNdNm
+                                      ,fmInBi `fmGamUnion` fmInNonBi `fmGamUnion` fmOuBi `fmGamUnion` fmOuNonBi
+                                      ,inBiL ++ inNonBiL ++ ouBiL ++ ouNonBiL
+                                      )
+                                     ,eNdFmGam
+                                     )
+{-
+                                else ((eNdNm
                                       ,fmInBi `fmGamUnion` fmInNonBi
                                       ,inBiL ++ inNonBiL
                                       )
                                      ,eNdFmGam `fmGamUnion` fmOf ouBiL `fmGamUnion` fmOf ouNonBiL
                                      )
+-}
                            else let fma = fmGamFromList' FmAG ouAscL
                                     fmja = fma `Map.union` jaGamToFmGam id jaGam
                                     jd = fkGamLookup exprUnk jdExpr [FmAG] . vwscJdGam $ vwScInfo
@@ -245,7 +264,7 @@ genAG
                 = rlAtUsage (genOpts gen) (genScGam gen) (genFmGam gen) (genVwRlInfo gen)
               atUseFmGam  = Map.unions [ g | (_,_,as) <- Map.elems atUsGam, (_,(_,g)) <- as ] `fmGamUnion` fmNd
               atUseFmGam2 = atUseFmGam `fmGamUnion` genFmGam gen
-              ecGam' = Map.mapKeys (exprSubst (genOpts gen) atUseFmGam) ecGam
+              ecGam' = Map.mapKeys (exprSubst (genOpts gen) atUseFmGam2) ecGam
               mkJds reGam order
                 = (concat eqnL,fmGamUnions eqnGamL)
                 where (eqnL,eqnGamL)
@@ -255,7 +274,8 @@ genAG
                                        atUsInfo@(_,_,atL) = maybe (panic "genRl") id (Map.lookup nJd atUsGam)
                                        gen' = gen {genScInfo=scInfo, genVwScInfo=vwScInfo}
                                        mk e
-                                         = (aEqnL,g)
+                                         = -- tr "YY" (pp e >-< ppARule (ARule_Rule [nmUnk] (nmUnk) [] aEqnL))
+                                           (aEqnL,g)
                                          where (_,aEqnL,g) = exprRewrite' (genOpts gen') atUseFmGam2 (genRwGam gen') ecGam' e
                                        (eqnL,gL) = unzip . map (\(_,(eqn,_)) -> mk eqn) $ atL
                                    in  (concat eqnL,fmGamUnions gL)
@@ -277,7 +297,8 @@ genAG
                   else id
               r = (>-< "") . wrapFrag . ppARule . arlElimWild . arlElimCopyRule croNmL adGam . arlElimAlphaRename . arlUniq (genFmGam gen) croNmL . arlSubst eqnG $ rl
               -- r = (>-< "") . wrapFrag . ppARule . arlElimWild . arlElimCopyRule croNmL adGam . arlUniq (genFmGam gen) croNmL . arlSubst eqnG $ rl
-          in  {- trp "ZZ" (vlist [ pp (Expr_Cnstr n v) | (n,v) <- Map.toList ecGam']) -}
+              -- r = (>-< "") . wrapFrag . ppARule . arlUniq (genFmGam gen) croNmL . arlSubst eqnG $ rl
+          in  -- trp "ZZ" (r >-< ppECGam ecGam')
               r
       , genRs = \gen (_,nVwFull) _ _ defVals ->
           "" -- "--" >#< pp (rsDescr (genRsInfo gen)) >#< nVwFull

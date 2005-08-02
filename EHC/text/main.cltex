@@ -1083,58 +1083,22 @@ Coercion (of records), related to subsumption
 %%% EHC 9
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1
-%if incl09
-
-%if storyPHD
+%%[2
 \section{EH 9: explicit implicitness, classes}
 \label{ehc9}
-%endif
 
-%{
-%format pred        = "\mathbf{pred}"
-%format rule        = "\mathbf{rule}"
-%format pia         = pi "^a"
-%format piasigma    = pia "_{" sigma "}"
-
-%if storyExplImpl
-
+%%@TopicExplImpl.open
+%%@TopicExplImpl.abstract
+%%@TopicExplImpl.body
+%%@TopicExplImpl.conclusion
+%%@TopicExplImpl.close
 %%]
 
 %%[4
-
+%%@TopicExplImpl.open
 %%@TopicExplImpl.body
-
 %%@TopicExplImpl.conclusion
-
-%%]
-
-%%[1
-
-%elif storyPHD
-
-%%]
-
-%%[2
-
-%%@TopicExplImpl.abstract
-
-%%@TopicExplImpl.body
-
-%%]
-
-%%[1
-
-%else %% storyExplImpl
-
-%%@TopicExplImpl.scratch
-
-%endif %% storyExplImpl
-
-%}
-
-%endif %% incl09
-
+%%@TopicExplImpl.close
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1382,19 +1346,24 @@ error messaging, line/col position, comment ????
 
 \section{Scratch}
 
-\rulerCmdUse{rules3.K.match.onlyK}
-\rulerCmdUse{rules3.K.fit}
+\rulerCmdUse{rules3.K.patexpr.base}
+\rulerCmdUse{rules3.C.patexpr.base}
+%\rulerCmdUse{rules3.HM.expr.scratch}
+%\rulerCmdUse{rules3.I1.expr.scratch}
+%\rulerCmdUse{rules3.I2.expr.scratch}
+%\rulerCmdUse{rules3.P.expr.scratch}
 
-\chunkCmdUseMark{EHRulerRules.1.expr.e.int}
-\chunkCmdUseMark{EHRulerRules.2.expr.e.int}
-\chunkCmdUseMark{EHRulerRules.3.expr.e.int}
-\chunkCmdUseMark{EHRulerRules.4.expr.e.int}
-\chunkCmdUseMark{EHRulerRules.9.expr.e.int}
+%\rulerCmdUse{rules3.K.match.onlyK}
+%\rulerCmdUse{rules3.K.fit}
 
-%%@Scratch.1.klad
-%%[@hide
-\chunkCmdUseMark{EHRulerRules.1.expr.e.char}
-%%]
+%\chunkCmdUseMark{EHRulerRules.1.expr.e.lam}
+%\chunkCmdUseMark{EHRulerRules.2.expr.e.lam}
+%\chunkCmdUseMark{EHRulerRules.3.expr.e.lam}
+%\chunkCmdUseMark{EHRulerRules.4.expr.e.lam}
+%\chunkCmdUseMark{EHRulerRules.9.expr.e.lam}
+
+%\rulerCmdUse{rules3.P.expr.baseForEH1}
+%\rulerCmdUse{rules3.P.expr.baseForEH9}
 
 %%]
 

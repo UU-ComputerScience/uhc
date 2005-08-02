@@ -18,5 +18,5 @@ pAnyFromMap :: (IsParser p s) => (k -> p a1) -> Map.Map k v -> p v
 pAnyFromMap pKey m = foldr1 (<|>) [ v <$ pKey k | (k,v) <- Map.toList m ]
 
 -- parse possibly present p
-pMaybe :: (IsParser p s) => (a -> a1) -> a1 -> p a -> p a1
-pMaybe j n p = j <$> p <|> pSucceed n
+pMaybe :: (IsParser p s) => a1 -> (a -> a1) -> p a -> p a1
+pMaybe n j p = j <$> p <|> pSucceed n

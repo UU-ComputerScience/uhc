@@ -9,13 +9,16 @@
 %%% Unique id per AST node
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2.Expr
-ATTR AllNT [ | gUniq: UID | ]
-  
+-- generated from ruler rules into EHRulerRules
 SEM Expr
   | Con             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
   | App             (func.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
   | Lam             (arg.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+
+%%[2.Expr
+ATTR AllNT [ | gUniq: UID | ]
+  
+SEM Expr
   | AppTop          (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
 %%]
 
@@ -34,10 +37,11 @@ SEM TyExpr
   | Wild            (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
 %%]
 
-%%[3
+-- generated from ruler rules into EHRulerRules
 SEM Expr
   | Var             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
 
+%%[3
 SEM TyExpr
   | Var VarWild     (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
   
@@ -45,8 +49,16 @@ SEM Decl
   | Val             (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
 %%]
 
--- generated from ruler rules in EHRulerRules
+-- generated from ruler rules into EHRulerRules
+SEM Expr
   | IConst CConst   (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+
+-- generated from ruler rules into EHRulerRules, but only until here
+%%[4
+SEM Expr
+  | App             (func.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
+  | Lam             (arg.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+%%]
 
 %%[4
 SEM PatExpr

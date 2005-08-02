@@ -647,7 +647,7 @@ peTGamAdd :: PrfCtxtId -> HsName -> Rule -> PrElimTGam -> PrElimTGam
 peTGamAdd ci n r g
   =  let  (h,mnci,t) = tgamPop ci ci g
           h' = tgamUpdAdd ci n (PrElimGamInfo [r]) (\_ p -> p {pegiRuleL = r : pegiRuleL p}) h
-     in   maybe h' (\nci -> tgamPushGam nci ci ci t h') mnci
+     in   maybe h' (\nci -> tgamPushGam ci nci ci h' t) mnci
 
 peTGamDel :: PrfCtxtId -> HsName -> Rule -> PrElimTGam -> PrElimTGam
 peTGamDel ci n r g

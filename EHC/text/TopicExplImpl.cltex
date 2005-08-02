@@ -21,6 +21,18 @@ can easily be extended to deal with higher-order predicates, thus
 enabling the elegant formulation of some forms of generic programming.
 %%]
 
+%%[open
+%{
+%format pred        = "\mathbf{pred}"
+%format rule        = "\mathbf{rule}"
+%format pia         = pi "^a"
+%format piasigma    = pia "_{" sigma "}"
+%%]
+
+%%[close
+%}
+%%]
+
 %%[body
 \subsection{Introduction}
 

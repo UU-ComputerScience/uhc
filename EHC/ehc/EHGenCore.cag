@@ -31,18 +31,19 @@ SEM AGItf
 %%% Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--- generated from ruler rules in EHRulerRules
+-- generated from ruler rules into EHRulerRules
   | IConst      loc         .   cexpr       =   CExpr_Int @int
   | CConst      loc         .   cexpr       =   CExpr_Char @char
+  | Var         loc         .   cexpr       =   CExpr_Var @nm
+  | Con         loc         .   cexpr       =   CExpr_Var @nm
 %%[8
 ATTR Expr [ | | cexpr: CExpr ]
 
 SEM Expr
-  | Var         loc         .   cexpr       =   CExpr_Var @nm
-  | Con         loc         .   cexpr       =   CExpr_Var @nm
   | Let         loc         .   letCBindL   =   [(CBindFFI,@decls.ffiCBindL),(CBindRec,@decls.cbindL)]
                             .   cexpr       =   foldr (\(c,b) e -> mkCExprLet c b e) @body.cexpr @letCBindL
-  | App         loc         .   cexpr       =   CExpr_App @func.cexpr @arg.cexpr
+  | App AppImpred
+                loc         .   cexpr       =   CExpr_App @func.cexpr @arg.cexpr
   | Lam         loc         .   cexpr       =   CExpr_Lam @arg.topNm
                                                     (rceMatch @rceEnv [@arg.topNm] [CAlt_Alt [@arg.cpat] @body.cexpr] cvarUndefined)
   | Case        loc         .   cexpr       =   let  n = uidHNm @lUniq2
@@ -53,17 +54,20 @@ SEM Expr
   | Undefined   loc         .   cexpr       =   cvarUndefined
 %%]
 
-%%[9
-SEM Expr
-  | Var Con     loc         .   cexprBase   :=  CExpr_Var @nm
+-- generated from ruler rules into EHRulerRules
   | IConst      loc         .   cexprBase   :=  CExpr_Int @int
   | CConst      loc         .   cexprBase   :=  CExpr_Char @char
-  | Var Con IConst CConst
+  | Var         loc         .   cexprBase   :=  CExpr_Var @nm
+  | Var IConst CConst
                 loc         .   cexpr       :=  foAppCoe @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBase
+  | Con         loc         .   cexprBase   :=  CExpr_Var @nm
+                            .   cexpr       :=  foAppCoe @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBase
+%%[9
+SEM Expr
   | Let         loc         .   letCBindL   :=  [(CBindFFI,@decls.ffiCBindL)
                                                 ,(CBindRec,@decls.cbindL ++ (@cSubst `cSubstApp` (@prfIntroCBindL ++ @bodyPrfIntroCBindL)))
                                                 ]
-  | App AppImpl
+  | App AppImpred AppImpl
                 loc         .   cexpr       :=  CExpr_App
                                                     (coeWipeWeave @lhs.finTyCnstr @lhs.cSubst @appImplsCoeL []
                                                       `coeEvalOn` @func.cexpr)

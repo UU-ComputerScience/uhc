@@ -12,7 +12,7 @@
 %%[1 hs import(EHCommon) export(TyAGItf(..), Ty(..), TyL, tyInt, tyChar, mkTyCon)
 %%]
 
-%%[1 hs export(tyArrowArgRes, tyArrowArgsRes, tyArrowArgs, tyArrowRes, tyAppFunArgs, tyProdArgs, tyAppArgs) 
+%%[1 hs export(tyLHdAndTl, tyArrowArgRes, tyArrowArgsRes, tyArrowArgs, tyArrowRes, tyAppFunArgs, tyProdArgs, tyAppArgs) 
 %%]
 
 %%[2 hs export(TyVarId, TyVarIdL, mkTyVar, mkNewTyVar, mkNewUIDTyVarL, mkNewTyVarL, mkTyFreshProd, mkTyFreshProdFrom, tyEnsureNonAny) 
@@ -420,6 +420,7 @@ tyAppArgs       :: Ty -> TyL
 tyArrowArgs     :: Ty -> TyL
 tyArrowRes      :: Ty -> Ty
 tyProdArgs      :: Ty -> TyL
+tyLHdAndTl      :: [Ty] -> (Ty,TyL)
 %%]
 
 %%[1.unMkTy.tyArrowArgRes hs
@@ -472,17 +473,21 @@ tyArrowRes   = snd . tyArrowArgsRes
 tyAppArgs    = snd . tyAppFunArgs
 %%]
 
-%%[1.tyProdArgs hs
+%%[1.unMkTy.tyProdArgs hs
 tyProdArgs   = tyAppArgs
 %%]
 
-%%[4 hs
+%%[1.unMkTy.tyLHdAndTl hs
+tyLHdAndTl   = hdAndTl' Ty_Any
+%%]
+
+%%[4.unMkTy.tyConNm hs
 tyConNm :: Ty -> HsName
 tyConNm  (Ty_Con nm)  = nm
 tyConNm  _            = hsnUnknown
 %%]
 
-%%[4.tyVar hs
+%%[4.unMkTy.tyVar hs
 tyVar :: Ty -> TyVarId
 tyVar (Ty_Var v _)  = v
 tyVar _             = uidStart
@@ -498,7 +503,7 @@ tyPlusTy :: TyPlus -> Ty
 tyPlusTy (TyPlus_Ty t _) = t
 %%]
 
-%%[7.tyProdArgs -1.tyProdArgs hs
+%%[7.unMkTy.tyProdArgs -1.unMkTy.tyProdArgs hs
 tyProdArgs ty = let (t,al) = tyRecExts ty in map snd al
 %%]
 

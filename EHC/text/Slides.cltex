@@ -46,6 +46,22 @@
 %%]
 
 %%[EHExprs
+\newcommand{\PGFAppAA}[3]{%
+ \begin{center}
+  \begin{pgfpicture}{0cm}{0cm}{4cm}{2.5cm}
+   \pgfnodebox{App1}[virtual]{\pgfxy(2.5,2)}{App}{2pt}{2pt}
+   \pgfnodebox{App2}[virtual]{\pgfxy(1.75,1.25)}{App}{2pt}{2pt}
+   \pgfnodebox{Fun}[virtual]{\pgfxy(1,0.5)}{#1}{2pt}{2pt}
+   \pgfnodebox{Arg1}[virtual]{\pgfxy(2.5,0.5)}{#2}{2pt}{2pt}
+   \pgfnodebox{Arg2}[virtual]{\pgfxy(3.25,1.25)}{#3}{2pt}{2pt}
+   \pgfnodeconnline{Fun}{App2}
+   \pgfnodeconnline{Arg1}{App2}
+   \pgfnodeconnline{App2}{App1}
+   \pgfnodeconnline{Arg2}{App1}
+  \end{pgfpicture}
+ \end{center}
+}
+
 \frame<presentation>
 {
 \frametitle{Expressions}

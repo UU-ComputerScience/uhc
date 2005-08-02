@@ -83,6 +83,8 @@ SEM TyExpr
 %%[4
 SEM Expr
   | Impred      loc     .   pp      =   "~" >#< @expr.pp
+  | AppImpred   loc     .   argPP   =   "~" >#< @arg.pp
+                        .   pp      =   @func.pp >#< @argPP
 
 SEM PatExpr
   | TypeAs      loc     .   pp      =   @patExpr.pp >#< "::" >#< @tyExpr.pp
@@ -396,6 +398,13 @@ SEM Expr
                         .   appFunPP    =   @pp
 %%]
 
+%%[4
+SEM Expr
+  | AppImpred   lhs     .   appFunNm    :=  @func.appFunNm
+                        .   appArgPPL   :=  @func.appArgPPL ++ [@argPP]
+                        .   appFunPP    :=  @func.appFunPP
+%%]
+
 %%[7
 ATTR RecExpr [ | | extNm: {HsName} ]
 
@@ -411,6 +420,13 @@ SEM Expr
   | Rec         loc     .   appFunNm    :=  @recExpr.extNm
                 lhs     .   appArgPPL   :=  reverse @recExpr.ppL
                         .   appFunPP    :=  @recExpr.pp
+%%]
+
+%%[9
+SEM Expr
+  | AppImpl     lhs     .   appFunNm    :=  @func.appFunNm
+                        .   appArgPPL   :=  @func.appArgPPL ++ [@argPP]
+                        .   appFunPP    :=  @func.appFunPP
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -447,13 +463,6 @@ SEM PatExpr
   | Rec         loc     .   appFunNm    :=  @recPatExpr.extNm
                 lhs     .   appArgPPL   :=  reverse @recPatExpr.ppL
                         .   appFunPP    :=  @recPatExpr.pp
-%%]
-
-%%[9
-SEM Expr
-  | AppImpl     lhs     .   appFunNm    :=  @func.appFunNm
-                        .   appArgPPL   :=  @func.appArgPPL ++ [@argPP]
-                        .   appFunPP    :=  @func.appFunPP
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

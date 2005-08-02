@@ -22,6 +22,7 @@ exprMbAEqnRest expr
                (s'      ) <- sE s
                return (AEqn_Eqn d' s', ed, gd)
         eE (Expr_AppTop e)                          = eE e
+        eE (Expr_Paren e)                           = eE e
         eE (Expr_Named _ e)                         = eE e
         eE e                                        = Nothing
         dE (Expr_AVar n)        _                   = return (AEqnDest_One n,[],emptyGam)
@@ -33,10 +34,20 @@ exprMbAEqnRest expr
         dE (Expr_Retain e)      p                   = dE e p
         dE (Expr_Paren e)       p                   = dE e p
         dE (Expr_AppTop e)      p                   = dE e p
+        dE (Expr_SelTop e)      p                   = dE e p
         dE (Expr_Named _ e)     p                   = dE e p
         dE e@(Expr_Op n _ _ _)  p | n == nmComma    = tE e
+        dE (Expr_Sel e (Just s)) _
+          = do ne <- dsE e
+               ns <- dsE s
+               return (AEqnDest_One (ANm_Node ne ns),[],emptyGam)
         dE _                    False               = Nothing
         dE e                    True                = tE e
+        dsE (Expr_AppTop e)                         = dsE e
+        dsE (Expr_Paren e)                          = dsE e
+        dsE (Expr_AVar (ANm_Fld n))                 = return n
+        dsE (Expr_Var n)                            = return n
+        dsE _                                       = Nothing
         tE e@(Expr_Op n _ _ _) | n == nmComma
           = do (dL,eo,go) <- oE e
                return (AEqnDest_Many dL,eo,go)

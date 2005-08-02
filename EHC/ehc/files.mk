@@ -253,25 +253,32 @@ $(EHC_ALL_EXECS): %: $(EHC_ALL_SRC) $(GRIN_ALL_SRC) $(EHC_MKF)
 
 # rules
 ehc-variant-1: 
-	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=K)).(expr.base).(e.int e.char)" ehc-variant-dflt
+	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=K)).(expr.base patexpr.base).(e.int e.char e.var e.con e.app e.lam e.ann p.int p.char p.con p.apptop p.app)" \
+	  ehc-variant-dflt
 
 ehc-variant-2: 
-	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=C)).(expr.base).(e.int e.char)" ehc-variant-dflt
+	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=C)).(expr.base).(e.int e.char e.var e.con e.app e.lam e.ann)" \
+	  ehc-variant-dflt
 
 ehc-variant-3: 
-	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=HM)).(expr.base).(e.int e.char)" ehc-variant-dflt
+	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=HM)).(expr.base).(e.int e.char e.var e.con e.app e.lam e.ann)" \
+	  ehc-variant-dflt
 
 $(patsubst %,ehc-variant-%,4 5 6 6_4 7): 
-	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=I1)).(expr.base).(e.int e.char)" ehc-variant-dflt
+	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=I1)).(expr.base).(e.int e.char e.var e.con)" \
+	  ehc-variant-dflt
 
 ehc-variant-4_2: 
-	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=I2)).(expr.base).(e.int e.char)" ehc-variant-dflt
+	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=I2)).(expr.base).(e.int e.char e.var e.con)" \
+	  ehc-variant-dflt
 
 ehc-variant-8: 
-	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=CG)).(expr.base).(e.int e.char)" ehc-variant-dflt
+	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=CG)).(expr.base).(e.int e.char e.var e.con)" \
+	  ehc-variant-dflt
 
 $(patsubst %,ehc-variant-%,9 10): 
-	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=P)).(expr.base).(e.int e.char)" ehc-variant-dflt
+	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=P)).(expr.base).(e.int e.char e.var e.con)" \
+	  ehc-variant-dflt
 
 ehc-variant-dflt: $(EHC_ALL_DPDS) $(EHC_RULES_3_DRV_CAG)
 	mkdir -p $(dir $(EHC_BLD_EXEC))

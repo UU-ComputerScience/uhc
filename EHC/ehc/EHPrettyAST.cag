@@ -59,7 +59,7 @@ SEM Expr
                         .  info_2   =   []
   | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Var"] [ppNm @nm] [] (@info ++ @info_2 ++ @info3 ++ @info_4_2 ++ @info_9)
                 loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
-                                        , mkInfo1 "gTy" (ppTy @gTy)
+                                        , mkInfo1 "ty_g_" (ppTy @ty_g_)
                                         , mkInfo1 "ty" (ppTy @ty)
                                         ]
                         .  info_2   =   []
@@ -162,9 +162,8 @@ SEM Expr
                                         , mkInfo1 "expr.tyCnstr" (ppCnstrV @expr.tyCnstr)
                                         ]
   | Lam         loc     .  info2    :=  [ mkInfo1 "knTy" (ppTy (@lhs.tyCnstr |=> @lhs.knTy))
-                                        , mkInfo1 "funTy" (ppTy @funTy)
-                                        , mkInfo1 "foTy @foKnFun" (ppTy (foTy @foKnFun))
-                                        , mkInfo1 "foCnstr @foKnFun" (pp (foCnstr @foKnFun))
+                                        , mkInfo1 "foTy @fo_fitF_" (ppTy (foTy @fo_fitF_))
+                                        , mkInfo1 "foCnstr @fo_fitF_" (pp (foCnstr @fo_fitF_))
                                         , mkInfo1 "ty" (ppTy @ty)
                                         , mkInfo1 "body.tyCnstr" (pp @body.tyCnstr)
                                         , mkInfo1 "lhs.finTyCnstr" (pp @lhs.finTyCnstr)
@@ -206,6 +205,9 @@ SEM Expr
   | Con         loc     .  info2    :=  [ mkInfo1 "foCnstr" (pp (foCnstr @fo_))
                                         ]
   | Impred      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Impred"] [] [@expr.ppAST] @info_4
+                loc     .  info_4   =   [ 
+                                        ]
+  | AppImpred   lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","AppImpred"] [] [@func.ppAST,@arg.ppAST] @info_4
                 loc     .  info_4   =   [ 
                                         ]
 
@@ -475,7 +477,7 @@ SEM Expr
                 loc     .  info_9   =   [ mkInfo1 "prfCtxtId's" (pp @lhs.prfCtxtId >#< "-" >#< pp @prfCtxtId)
                                         , mkInfo1 "lhs.knTy" (pp @lhs.knTy)
                                         , mkInfo1 "funTy" (pp @funTy)
-                                        , mkInfo1 "foTy @foKnFun" (ppTy (foTy @foKnFun))
+                                        , mkInfo1 "foTy @fo_fitF_" (ppTy (foTy @fo_fitF_))
                                         , mkInfo1 "foTy @foPr" (pp (foTy @foPr))
                                         , mkInfo1 "ty" (pp @ty)
                                         , mkInfo1 "knPrL" (ppCommaList @knPrL)
