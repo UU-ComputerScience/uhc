@@ -25,7 +25,7 @@ SEM Expr
   | App         lhs         .   errL        =   mkNestErr @pp
                                                     (@func.errL ++ @arg.errL)
   | Lam         lhs         .   errL        =   mkNestErr @pp
-                                                    (foErrL @foKnFun ++ @arg.errL
+                                                    (foErrL @fo_fitF_ ++ @arg.errL
                                                       ++ @body.errL)
   | Var         lhs         .   errL        =   mkNestErr @pp
                                                     (@nmErrs ++ foErrL @fo_)
@@ -41,17 +41,10 @@ SEM TyExpr
   | Con         lhs         .   errL        =   mkNestErr @pp (@nmErrs)
 
 SEM PatExpr
-  | AppTop      lhs         .   errL        =   mkNestErr @pp (@patExpr.errL ++ @aErrs)
+  | AppTop      lhs         .   errL        =   mkNestErr @pp (@patExpr.errL ++ @arityErrs)
 
 SEM Decl
   | Val         lhs         .   errL        =   @patExpr.errL ++ @expr.errL ++ @sigMissErrs
-%%]
-
--- for now, EHRulerExpr, was 1.GatherExpr
-%%[4.GatherExpr
-SEM Expr
-  | IConst CConst
-                lhs         .   errL        :=  mkNestErr @pp (foErrL @fo_)
 %%]
 
 %%[2
@@ -59,7 +52,7 @@ SEM Expr
   | Con         lhs         .   errL        =   mkNestErr @pp (foErrL @fo_)
 
 SEM PatExpr
-  | AppTop      lhs         .   errL        :=  mkNestErr @pp (@patExpr.errL ++ @aErrs ++ foErrL @fo_)
+  | AppTop      lhs         .   errL        :=  mkNestErr @pp (@patExpr.errL ++ @arityErrs ++ foErrL @fo_)
 
 SEM Decl
   | Val         lhs         .   errL        :=  @patExpr.errL ++ @expr.errL
@@ -72,15 +65,15 @@ SEM Expr
 SEM PatExpr
   | Con         lhs         .   errL        =   mkNestErr @pp (@nmErrs ++ foErrL @fo_)
   | TypeAs      lhs         .   errL        =   mkNestErr @pp (@patExpr.errL ++ @tyExpr.errL ++ foErrL @fo_)
-  | AppTop      lhs         .   errL        :=  mkNestErr @pp (@patExpr.errL ++ @aErrs ++ foErrL @fo_)
+  | AppTop      lhs         .   errL        :=  mkNestErr @pp (@patExpr.errL ++ @arityErrs ++ foErrL @fo_)
 %%]
-  | AppTop      lhs         .   errL        :=  mkNestErr @pp (@patExpr.errL ++ @aErrs ++ foErrL @fo_ ++ foErrL @patFunFo)
+  | AppTop      lhs         .   errL        :=  mkNestErr @pp (@patExpr.errL ++ @arityErrs ++ foErrL @fo_ ++ foErrL @patFunFo)
 
 %%[4_2
 SEM Expr
   | Lam         loc         .   gamErrL     =   gamErrToL @errGam
                 lhs         .   errL        :=  mkNestErr @pp
-                                                    (foErrL @foKnFun ++ @arg.errL ++ @body.errL ++ @gamErrL)
+                                                    (foErrL @fo_fitF_ ++ @arg.errL ++ @body.errL ++ @gamErrL)
 %%]
 
 %%[5
@@ -132,13 +125,13 @@ SEM PrExpr
 
 SEM Expr
   | Lam         lhs         .   errL        :=  mkNestErr @pp
-                                                    (foErrL @foKnFun
+                                                    (foErrL @fo_fitF_
                                                       ++ @arg.errL ++ @body.errL)
   | AppTop      lhs         .   errL        :=  mkNestErr @pp (@expr.errL)
   | AppImpl     lhs         .   errL        =   mkNestErr @pp
                                                     (@nmErrs ++ foErrL @foPr ++ @func.errL ++ @arg.errL ++ @argPr.errL)
   | LamImpl     lhs         .   errL        =   mkNestErr @pp
-                                                    (@nmErrs ++ foErrL @foKnFun ++ foErrL @foPr ++ @arg.errL ++ @argPr.errL ++ @body.errL)
+                                                    (@nmErrs ++ foErrL @fo_fitF_ ++ foErrL @foPr ++ @arg.errL ++ @argPr.errL ++ @body.errL)
 %%]
 
 %%[11

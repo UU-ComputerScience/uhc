@@ -137,20 +137,20 @@ pAllParsers
                                      )
                             where pTl1 = (,) <$> pMbString <*> pDs
                                   pDs = pKey "=" *> (pDeclScmDflt <|> pDecls1' pDeclScm)
-                                  pTl2 = (,) <$> pMbString <*> (pMaybe id sem_Decls_Nil pDs)
+                                  pTl2 = (,) <$> pMbString <*> (pMaybe sem_Decls_Nil id pDs)
         pScDeriv            =   ScList <$ pKey "[" <*> pNm <* pKey "]"
-        pMbViewSel          =   pMaybe id sem_ViewSel_All (pKey "viewsel" *> pViewSel)
+        pMbViewSel          =   pMaybe sem_ViewSel_All id (pKey "viewsel" *> pViewSel)
         pViewSel            =   pV <??> ((flip sem_ViewSel_Range) <$ pKey "-" <*> pV)
                             where pV =   sem_ViewSel_View <$> pNmVw <|> sem_ViewSel_All <$ pKey "*"
                                      <|> pParens (sem_ViewSel_Renamed <$> (foldr1 nmStrApd <$> pList1 pNmVw) <* pKey "=" <*> pNmVw)
         pViewSels           =   pFoldrSep (sem_ViewSels_Cons,sem_ViewSels_Nil) pComma pViewSel
         pNmSel              =   sem_NmSel_All <$ pKey "*" <|> sem_NmSel_Nms <$> pList pNm
         pRlSel              =   sem_RlSel_Sel <$> pParens pViewSels <* pKey "." <*> pParens pNmSel <* pKey "." <*> pParens pNmSel
-        pFmKd2WithDflt      =   pMaybe id FmAll pFmKd2
-        pFmKd3WithDflt      =   pMaybe id FmAll pFmKd3
+        pFmKd2WithDflt      =   pMaybe FmAll id pFmKd2
+        pFmKd3WithDflt      =   pMaybe FmAll id pFmKd3
         pFmKd2              =   FmTeX <$ pKey "tex" <|> FmAG <$ pKey "ag"
         pFmKd3              =   FmSpec <$ pKey "spec" <|> pFmKd2
-        pAtIO               =   pMaybe id AtInOut (AtIn <$ pKey "def" <|> AtOut <$ pKey "use")
+        pAtIO               =   pMaybe AtInOut id (AtIn <$ pKey "def" <|> AtOut <$ pKey "use")
         pNmStr              =   pVarid <|> pConid
         pNmStrI             =   pNmStr <|> pInteger
         pNmBase             =   Nm <$> pNmStr
@@ -212,7 +212,7 @@ pAllParsers
         pAttrEqn            =   sem_AttrEqn_Eqn <$>              pNm <* pKey "=" <*> pExpr
                             <|> sem_AttrEqn_Del <$  pKey "-" <*> pNm
         pAttrProp           =   foldr1 (<|>) [ v <$ pKey n | (n,v) <- Map.toList propsMp ]
-        pMb                 =   pMaybe Just Nothing
+        pMb                 =   pMaybe Nothing Just
         pKeySPos k          =   (\p -> (k,p)) <$> pKeyPos k
         pInt                =   read <$> pInteger
      in (pAGItf,pViewSels,pRlSel)

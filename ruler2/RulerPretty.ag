@@ -16,9 +16,27 @@ ppExprMbEmpty _            f p = f p
 
 {
 data NeedParCtxt
-  = ParCtxtAppL | ParCtxtAppR | ParCtxtOpL | ParCtxtOpR
+  = ParCtxtAppL | ParCtxtAppR | ParCtxtOpL | ParCtxtOpR | ParCtxtOther
   deriving Eq
 
+exprNeedPar :: NeedParCtxt -> Expr -> (PP_Doc -> PP_Doc)
+exprNeedPar ctxt e
+  = case e of
+      Expr_Paren e
+        -> case (t e,ctxt) of
+             (Expr_Op    _ _ _ _,ParCtxtAppL) -> pp_parens
+             (Expr_Op    _ _ _ _,ParCtxtAppR) -> pp_parens
+             (Expr_Op    _ _ _ _,ParCtxtOpL ) -> pp_parens
+             (Expr_App   _ _    ,ParCtxtAppR) -> pp_parens
+             (Expr_Paren _      ,_          ) -> pp_parens
+             _ -> id
+      _ -> id
+  where t (Expr_AppTop  e) = t e
+        t (Expr_Named _ e) = t e
+        t e                = e
+}
+
+{-
 exprNeedPar :: NeedParCtxt -> Expr -> (PP_Doc -> PP_Doc)
 exprNeedPar ctxt e
   = case (t e,ctxt) of
@@ -30,7 +48,7 @@ exprNeedPar ctxt e
   where t (Expr_AppTop  e) = t e
         t (Expr_Named _ e) = t e
         t e                = e
-}
+-}
 
 -------------------------------------------------------------------------
 -- Plain, for all
@@ -78,14 +96,22 @@ SEM Expr
                                                 >|< @nmExpr.pp
                                                 >|< ppExprMbEmpty @rExpr.self (" " >|<)
                                                         (exprNeedPar ParCtxtOpR @rExpr.self @rExpr.pp)
-  | Sel             lhs     .   pp          =   @expr.pp >|< "." >|< @selMbExpr.pp
+  | Sel             lhs     .   pp          =   exprNeedPar ParCtxtOther @expr.self @expr.pp >|< "." >|< @selMbExpr.pp
   | Var Uniq        lhs     .   pp          =   pp @nm
   | Int             lhs     .   pp          =   pp @int
   | StrText StrAsIs lhs     .   pp          =   pp @str
-  | Paren           lhs     .   pp          =   pp_parens @expr.pp
+  | Paren           lhs     .   pp          =   {-pp_parens-} @expr.pp
   | AppTop          lhs     .   pp          =   @expr.pp
   | Named           lhs     .   pp          =   @expr.pp
   | Cnstr           lhs     .   pp          =   pp_braces (@expr.pp >|< "|" >|< @cnstr.pp)
+{-
+SEM Expr
+  | Sel             lhs     .   pp          =   pp_brackets ("SEL" >#< exprNeedPar ParCtxtOther @expr.self @expr.pp) >|< "." >|< @selMbExpr.pp
+  | Var Uniq        lhs     .   pp          =   pp_brackets ("VAR" >#< pp @nm)
+  | AVar            lhs     .   pp          =   pp_brackets ("AVR" >#< @anm.pp)
+  | Paren           lhs     .   pp          =   pp_brackets ("PAR" >#< @expr.pp)
+  | AppTop          lhs     .   pp          =   pp_brackets ("TOP" >#< @expr.pp)
+-}
 
 SEM ECnstr
   | Ty              lhs     .   pp          =   ppCommas @nms
@@ -259,7 +285,8 @@ SEM Expr
   | Paren           loc     .   ppLaTeX     =   (if @lhs.needToParen then ppParens else id) @expr.ppLaTeX
   | Cnstr           loc     .   ppLaTeX     =   @expr.ppLaTeX
   | SelTop          loc     .   ppLaTeXSel  =   ppSelLaTeX (== nmVec) @expr.ppLaTeX (reverse @expr.selL)
-                    loc     .   ppLaTeX     =   if @expr.isEmpty then empty else @ppLaTeXSel
+                    loc     .   ppLaTeX     =   if @expr.exprKind == EKEmp then empty else @ppLaTeXSel
+  | Sel             lhs     .   ppLaTeX     =   @expr.ppLaTeX
   | Var             loc     .   ppLaTeX     =   ppNmLaTeX . nmLhs2TeXSafe $ @nm
   | Wrap            loc     .   ppLaTeX     =   let wr o c e = switchLaTeXLhs (mkTexCmdUse (show o) empty) >#< e >#< switchLaTeXLhs (mkTexCmdUse (show c) empty)
                                                 in  case Map.lookup @wrKind wrKindGam of
@@ -303,11 +330,18 @@ SEM Expr
 -- Empty expr?
 -------------------------------------------------------------------------
 
-ATTR Expr [ | | isEmpty USE {&&} {False}: Bool ]
+{
+data ExprKind = EKEmp | EKNm | EKOther deriving Eq
+}
+
+ATTR Expr [ | | exprKind: ExprKind ]
 
 SEM Expr
-  | Empty           lhs     .   isEmpty     =   True
-  | Sel             lhs     .   isEmpty     =   @expr.isEmpty
+  | Empty           lhs     .   exprKind    =   EKEmp
+  | Var             lhs     .   exprKind    =   EKNm
+  | Sel             lhs     .   exprKind    =   @expr.exprKind
+  | * - Var Empty Sel AppTop Paren
+                    lhs     .   exprKind    =   EKOther
 
 -------------------------------------------------------------------------
 -- Need parenthesis
@@ -320,8 +354,10 @@ SEM Expr
                     expr        .   needToParen =   case @selMbExpr.mbPPLaTeX of
                                                         Just (n,_) | n == nmVec
                                                           -> False
-                                                        _ -> @lhs.needToParen
-  | Paren App Op SelTop Sel
+                                                        _ | @expr.exprKind == EKNm
+                                                                      -> False
+                                                          | otherwise -> @lhs.needToParen
+  | Paren App Op SelTop
                     loc         .   needToParen =   True
 
 SEM AGExprItf

@@ -200,7 +200,7 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2
-ATTR TyPlusL [ | | hardTyL: TyL ^^^ softTyL: TyL ]
+ATTR TyPlusL [ | | hardTyL: TyL  softTyL: TyL ]
 
 SEM TyPlusL
   | Cons            lhs     .   (hardTyL,softTyL)

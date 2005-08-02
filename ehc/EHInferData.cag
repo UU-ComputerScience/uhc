@@ -13,8 +13,8 @@
 SEM Decl
   | Data        tyVars      .   tyGam               =   gamPushNew @lhs.patTyGam
                 loc         .   (lTyGam,gTyGam)     =   gamPop @tyVars.tyGam
-                lhs         .   patTyGam            =   gamAdd @lhs.patTyGam @tyNm (TyGamInfo (Ty_Con @tyNm))
-                constrs     .   tyGam               =   @lhs.tyGam `gamPushGam` @lTyGam
+                lhs         .   patTyGam            =   gamAdd @tyNm (TyGamInfo (Ty_Con @tyNm)) @lhs.patTyGam
+                constrs     .   tyGam               =   gamPushGam @lTyGam @lhs.tyGam
                 lhs         .   tyGam               =   @lhs.tyGam
 %%]
 
@@ -22,14 +22,14 @@ SEM Decl
 SEM Decl
   | Data        loc         .   dataTgi             =   mkTGI (Ty_Con @tyNm) (tyEnsureNonAny @lUniq @knKi)
                 lhs         .   patTyGam            :=  if @hasKiSig  then @lhs.patTyGam
-                                                                      else gamAdd @lhs.patTyGam @tyNm @dataTgi
+                                                                      else gamAdd @tyNm @dataTgi @lhs.patTyGam
                 loc         .   fo_                 =   fitsIn  strongFIOpts emptyFE @lUniq2
                                                                 (@lhs.patKiCnstr |=> (@tyVars.kiL `mkArrow` kiStar))
                                                                 (@lhs.patKiCnstr |=> (tgiKi @dataTgi))
                             .   dataKi              =   foTy @fo_
                 lhs         .   patKiCnstr          =   foCnstr @fo_ |=> @lhs.patKiCnstr
-                constrs     .   tyGam               :=  @lhs.tyGam `gamPushGam`
-                                                          tyGamInst1Exists @lUniq3 (@lhs.kiCnstr |=> @lTyGam)
+                constrs     .   tyGam               :=  gamPushGam  (tyGamInst1Exists @lUniq3 (@lhs.kiCnstr |=> @lTyGam))
+                                                                    @lhs.tyGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -60,7 +60,7 @@ SEM DataConstrEq
 
 %%[8
 SEM Decl
-  | Data        lhs         .   gathDataGam         =   gamAdd @lhs.gathDataGam @tyNm . mkDGI $ @constrs.dataTagMp
+  | Data        lhs         .   gathDataGam         =   gamAdd @tyNm (mkDGI @constrs.dataTagMp) @lhs.gathDataGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -77,8 +77,8 @@ SEM DataConstr
                                                              fvU = ftv @dataConProdTy
                                                         in   mkTyQu TyQu_Forall fvD ([@lhs.dataTy] `mkArrow` mkTyQu TyQu_Exists (fvU \\ fvD) @dataConProdTy)
                 lhs         .   patValGam           =   gamAdd
-                                                          (gamAdd @lhs.patValGam (hsnUn @conNm) (ValGamInfo @dataQuUnConTy))
                                                           @conNm (ValGamInfo @dataConTy)
+                                                          (gamAdd (hsnUn @conNm) (ValGamInfo @dataQuUnConTy) @lhs.patValGam)
 
 SEM Decl
   | Data        loc         .   dataTy              =   @tyNm `mkConApp` @tyVars.tyL

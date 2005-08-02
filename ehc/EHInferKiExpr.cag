@@ -16,7 +16,7 @@ SEM KiExpr
   | Var         (loc.kgi,lhs.kiGam)                 =   case gamLookup @nm @lhs.kiGam of
                                                           Nothing    ->  let  t    =  mkNewTyVar @lUniq
                                                                               kgi  =  KiGamInfo t
-                                                                         in   (kgi,gamAdd @lhs.kiGam @nm kgi)
+                                                                         in   (kgi,gamAdd @nm kgi @lhs.kiGam)
                                                           Just kgi   ->  (kgi,@lhs.kiGam)
   | Con         loc         .  (kgi,nmErrs)         =   case gamLookup @nm @lhs.kiGam of
                                                           Nothing    ->  (KiGamInfo Ty_Any,[Err_NamesNotIntrod [@nm]])

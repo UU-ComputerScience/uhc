@@ -52,7 +52,7 @@
 %%[6 export(fitsInL)
 %%]
 
-%%[9 import(qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty,EHCorePretty,EHPred,EHCore,EHCoreSubst) export(foAppCoe,fitPredToEvid)
+%%[9 import(qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty,EHCorePretty,EHPred,EHCore,EHCoreSubst) export(foAppCoe,foAppCoe',fitPredToEvid)
 %%]
 
 %%[9 export(prfPreds,prfPredsDbg)
@@ -94,9 +94,15 @@ fioIsMeetJoin fio =  case fioMode fio of {FitMeet -> True ; FitJoin -> True ; _ 
 
 %%[9
 foAppCoe :: FIOut -> Cnstr -> CSubst -> CExpr -> CExpr
-foAppCoe fo c cs ce
-  =  let  s = cs `cSubstApp` foCSubst fo
-     in   cSubstApp s (coeWipeWeave c s (foLCoeL fo) (foRCoeL fo) `coeEvalOn` ce)
+foAppCoe fo c cs ce = foAppCoe' (foCSubst fo,foLCoeL fo,foRCoeL fo) c cs ce
+%%]
+
+-- for use by Ruler
+%%[9
+foAppCoe' :: (CSubst,[Coe],[Coe]) -> Cnstr -> CSubst -> CExpr -> CExpr
+foAppCoe' (fCS,fLC,fRC) c cs ce
+  =  let  s = cs `cSubstApp` fCS
+     in   cSubstApp s (coeWipeWeave c s fLC fRC `coeEvalOn` ce)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

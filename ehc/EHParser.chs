@@ -216,11 +216,11 @@ instance SemApp T_KiExpr where
 %%% Parser signatures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.parserSigs
-type EHParser         ep    =    (IsParser (OffsideParser i o Token p) Token,InputState i Token p, OutputState o, Position p)
+type ExprParser       ep    =    (IsParser (OffsideParser i o Token p) Token,InputState i Token p, OutputState o, Position p)
                                     => OffsideParser i o Token p ep
 
-type ExprParser       ep    =    (IsParser (OffsideParser i o Token p) Token,InputState i Token p, OutputState o, Position p)
+%%[1.parserSigs
+type EHParser         ep    =    (IsParser (OffsideParser i o Token p) Token,InputState i Token p, OutputState o, Position p)
                                     => OffsideParser i o Token p ep
 
 pAGItf                      ::   EHParser T_AGItf
@@ -533,14 +533,28 @@ pExpr           =    pE <??> (sem_Expr_TypeAs <$ pKey "::" <*> pTyExpr)
 %%[1.pExprApp
 pExprApp        =    pApp pExprBase
 %%]
-%%[7.pExprApp -1.pExprApp
-pExprApp        =    pApp (pExprBase <**> pExprSelSuffix)
+%%[4.pExprApp -1.pExprApp
+pExprApp        =    pE <??> ((\l e -> semAppTop (foldl (flip ($)) e l)) <$> pList1 pA)
 %%]
-%%[9.pExprApp -7.pExprApp
-pExprApp        =    let  pE = pExprBase <**> pExprSelSuffix
-                          pA = flip semApp <$> pE
-                          pI = pPackImpl ((\a p e -> sem_Expr_AppImpl e p a) <$> pExpr <* pKey "<:" <*> pPrExpr)
-                     in   pE <??> ((\l e -> semAppTop (foldl (flip ($)) e l)) <$> pList1 (pA <|> pI))
+                where  pA = flip semApp <$> pE <|> pImpred
+%%[4.pExprAppA
+                where  pA = flip semApp <$> pE
+%%]
+                where  pA = flip semApp <$> pE <|> pImpred <|> pImpl
+%%[9.pExprAppA -4.pExprAppA
+                where  pA = flip semApp <$> pE <|> pImpl
+%%]
+%%[4.pExprAppE
+                       pE = pExprBase
+%%]
+%%[4.pExprAppImpred
+                       pImpred = (flip sem_Expr_AppImpred) <$ pKey "~" <*> pE
+%%]
+%%[7.pExprAppE -4.pExprAppE
+                       pE = pExprBase <**> pExprSelSuffix
+%%]
+%%[9.pExprAppImpl
+                       pImpl = pPackImpl ((\a p e -> sem_Expr_AppImpl e p a) <$> pExpr <* pKey "<:" <*> pPrExpr)
 %%]
 
 %%[1.pExprPrefix

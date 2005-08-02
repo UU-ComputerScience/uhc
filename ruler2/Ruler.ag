@@ -119,6 +119,7 @@ data Opts
       , optAtDir        :: AtDir    -- used internally only
       , optSubstFullNm  :: Bool     -- used internally only
       , optSubstOnce    :: Bool     -- used internally only
+      , optMatchROpOpnd :: Bool     -- used internally only
       , optHelp         :: Bool
       , optDebug        :: Bool
       , optVersion      :: Bool
@@ -137,6 +138,7 @@ defaultOpts
       , optAtDir        =  AtInOut
       , optSubstFullNm  =  True
       , optSubstOnce    =  False
+      , optMatchROpOpnd =  True
       , optHelp         =  False
       , optDebug        =  False
       , optVersion      =  False
@@ -477,7 +479,7 @@ SEM RExprEqn
                                             =   gamTryLookups (Expr_Empty,[Err_NoJdSc @lhs.pos @lhs.cxStr [@lhs.schemeNm]])
                                                               (\i -> (jdExpr i,[]))
                                                               [FmSpec,FmTeX,FmAll] (vwscJdGam @lhs.vwScInfo)
-                            .   mt          =   exprMatch emptyGam @expr.self @jdExpr
+                            .   mt          =   exprMatch (@lhs.opts {optMatchROpOpnd = False}) emptyGam @expr.self @jdExpr
                             .   errMt       =   if mtMatches @mt then [] else [Err_Match @lhs.pos @lhs.cxStr (pp @expr.self) (pp @jdExpr)]
                     lhs     .   jaGam       =   fmGamToJaGam FmAll (mtFmGam @mt)
 
@@ -761,7 +763,7 @@ SEM Decl
 ATTR Expr AGExprItf [ | | exprIsRw: ExprIsRw ]
 
 SEM Expr
-  | Op              lhs     .   exprIsRw    =   let nm e = case e of {ExprIsRw n -> (`nmApd` n) ; _ -> id}
+  | Op              lhs     .   exprIsRw    =   let nm e = case e of {ExprIsRw n | n /= nmApp -> (`nmApd` n) ; _ -> id}
                                                 in  ExprIsRw . {- nm @lExpr.exprIsRw . -} nm @rExpr.exprIsRw $ @nm
   | App             lhs     .   exprIsRw    =   ExprIsRw nmApp
   | Var             lhs     .   exprIsRw    =   ExprIsVar @nm

@@ -92,7 +92,7 @@ gamToAssocL         ::            Gam k v       -> AssocL k v
 gamPushNew          ::            Gam k v       -> Gam k v
 gamPushGam          ::  Ord k =>  Gam k v       -> Gam k v -> Gam k v
 gamAddGam           ::  Ord k =>  Gam k v       -> Gam k v -> Gam k v
-gamAdd              ::  Ord k =>  Gam k v  -> k -> v       -> Gam k v
+gamAdd              ::  Ord k =>  k -> v        -> Gam k v -> Gam k v
 %%]
 
 %%[1.Base.funs
@@ -102,9 +102,9 @@ gamLookup       k (Gam ll)          = foldr  (\l mv -> maybe mv Just (lookup k l
                                              Nothing ll
 gamToAssocL     (Gam ll)            = concat ll
 gamPushNew      (Gam ll)            = Gam ([]:ll)
-gamPushGam      (Gam ll2)  g1       = Gam (gamToAssocL g1 : ll2)
-gamAddGam       (Gam (l2:ll2)) g1   = Gam ((gamToAssocL g1 ++ l2):ll2)
-gamAdd          g k v               = gamAddGam g (k `gamUnit` v)
+gamPushGam      g1 (Gam ll2)        = Gam (gamToAssocL g1 : ll2)
+gamAddGam       g1 (Gam (l2:ll2))   = Gam ((gamToAssocL g1 ++ l2):ll2)
+gamAdd          k v g               = gamAddGam (k `gamUnit` v) g
 %%]
 
 %%[9.Base.funs -1.Base.funs
@@ -113,9 +113,9 @@ gamUnit                             = tgamUnit 1
 gamLookup       k g                 = tgamLookup (tgamSize1 g) k g
 gamToAssocL     g                   = tgamToAssocL (tgamSize1 g) g
 gamPushNew      g                   = let sz = tgamSize1 g in tgamPushNew sz (sz+1) g
-gamPushGam      g1 g2               = let sz = tgamSize1 g1 in tgamPushGam sz (tgamSize1 g2) (sz+1) g1 g2
+gamPushGam      g1 g2               = let sz = tgamSize1 g2 in tgamPushGam (tgamSize1 g1) sz (sz+1) g1 g2
 gamAddGam       g1 g2               = tgamAddGam (tgamSize1 g1) (tgamSize1 g2) g1 g2
-gamAdd          g                   = tgamAdd (tgamSize1 g) g
+gamAdd          k v g               = tgamAdd (tgamSize1 g) k v g
 %%]
 
 %%[1.Rest.sigs
@@ -318,16 +318,16 @@ tgamPushNew :: Ord i => i -> i -> TreeGam i k v -> TreeGam i k v
 tgamPushNew i iNew g = g {tgamEntriesOf = Map.insert iNew (Just i,Map.empty) (tgamEntriesOf g)}
 
 tgamAddGam :: (Ord i,Ord k) => i -> i -> TreeGam i k v -> TreeGam i k v -> TreeGam i k v
-tgamAddGam i1 i2 g1 g2
+tgamAddGam i2 i1 g2 g1
   =  case Map.lookup i1 (tgamEntriesOf g1) of
         Just (n,e)  -> g1 {tgamEntriesOf = Map.insert i1 (n,Map.unionWith (++) (tgamToFM1 i2 g2) e) (tgamEntriesOf g1)}
         Nothing     -> g1
 
 tgamPushGam :: (Ord i,Ord k) => i -> i -> i -> TreeGam i k v -> TreeGam i k v -> TreeGam i k v
-tgamPushGam i1 i2 iNew g1 g2 = tgamAddGam iNew i2 (tgamPushNew i1 iNew g1) g2
+tgamPushGam i1 i2 iNew g1 g2 = tgamAddGam i1 iNew g1 (tgamPushNew i2 iNew g2)
 
-tgamAdd :: (Ord i,Ord k) => i -> TreeGam i k v -> k -> v -> TreeGam i k v
-tgamAdd i g k v = tgamAddGam i i g (tgamUnit i k v)
+tgamAdd :: (Ord i,Ord k) => i -> k -> v -> TreeGam i k v -> TreeGam i k v
+tgamAdd i k v g = tgamAddGam i i (tgamUnit i k v) g
 
 tgamPop :: Ord i => i -> i -> TreeGam i k v -> (TreeGam i k v,Maybe i,TreeGam i k v)
 tgamPop i iPop g
@@ -356,7 +356,7 @@ tgamUpd :: (Ord i,Ord k) => i -> k -> (k -> v -> v) -> TreeGam i k v -> TreeGam 
 tgamUpd i k f = fromJust . tgamMbUpd i k f
 
 tgamUpdAdd :: (Ord i,Ord k) => i -> k -> v -> (k -> v -> v) -> TreeGam i k v -> TreeGam i k v
-tgamUpdAdd i k v upd g = maybe (tgamAdd i g k v) id (tgamMbUpd i k upd g)
+tgamUpdAdd i k v upd g = maybe (tgamAdd i k v g) id (tgamMbUpd i k upd g)
 
 tgamIsInScope :: Ord i => i -> i -> TreeGam i k v -> Bool
 tgamIsInScope i iQuery g = iQuery `elem` tgamInScopes i g
@@ -662,7 +662,7 @@ instance Substitutable TyGamInfo where
 gamSubstTop :: (Ord k,Substitutable v) => Cnstr -> Gam k v -> Gam k v
 gamSubstTop s g
   =  let  (h,t) = gamPop g
-     in   t `gamPushGam` (s |=> h)
+     in   gamPushGam (s |=> h) t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

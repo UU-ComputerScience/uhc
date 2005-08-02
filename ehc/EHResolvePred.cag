@@ -57,7 +57,7 @@ SEM Decl
 %%[9
 SEM Expr
   | AppTop      loc         .   imSubsTy            =   @imTy
-  | Lam         loc         .   imSubsTy            =   foCnstr @foKnFun |=> @imTy
+  | Lam         loc         .   imSubsTy            =   foCnstr @fo_fitF_ |=> @imTy
 %%]
 
 %%[9
@@ -78,7 +78,7 @@ SEM Expr
   | AppTop Lam  loc         .   lPrElimTGam         =   foldr  (\p g -> peTGamAddKnPr @prfCtxtId (poiHNm (poPoi p)) (poPoi p) (poPr p) g)
                                                                (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam) @knPrL
   | Let         decls       .   patPrElimTGam       =   emptyTGam @prfCtxtId
-                loc         .   lPrElimTGam         =   tgamPushGam @lhs.prfCtxtId @prfCtxtId @prfCtxtId @lhs.prElimTGam @decls.patPrElimTGam
+                loc         .   lPrElimTGam         =   tgamPushGam @prfCtxtId @lhs.prfCtxtId @prfCtxtId @decls.patPrElimTGam @lhs.prElimTGam
 %%]
 
 %%[9
@@ -209,7 +209,8 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | App         loc         .   appImplsCoeL        =   mkImplsAppCoe . tyImpls . (@lhs.finTyCnstr |=>) $ @imTy
+  | App AppImpred
+                loc         .   appImplsCoeL        =   mkImplsAppCoe . tyImpls . (@lhs.finTyCnstr |=>) $ @imTy
   | AppImpl     loc         .   appImplsCoeL        =   []
 %%]
 

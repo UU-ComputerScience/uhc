@@ -57,8 +57,8 @@ SEM Decl
                                                         in   zipWith3 (\p n u -> (tyPredMatchNm p,mkR u @hdPrTy p n)) @ctxtPrTyL @supClsNmL (mkNewUIDL (length @ctxtPrTyL) @lUniq2)
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   tyGam           =   @lhs.tyGam
-                                .   gathTySigGam    =   gamAddGam @lhs.gathTySigGam (valGamMapTy tyQuantifyClosed @clsTySigGam)
-                                .   patPrIntroGam   =   gamAdd @lhs.patPrIntroGam (tyPredMatchNm @hdPrTy) @pigi
+                                .   gathTySigGam    =   gamAddGam (valGamMapTy tyQuantifyClosed @clsTySigGam) @lhs.gathTySigGam
+                                .   patPrIntroGam   =   gamAdd (tyPredMatchNm @hdPrTy) @pigi @lhs.patPrIntroGam
                                 .   patPrElimTGam   =   foldr (\(n,r) g -> peTGamAdd @lhs.prfCtxtId n r g) @lhs.patPrElimTGam @elimRules
 %%]
 
@@ -105,7 +105,7 @@ SEM Decl
                 loc             .   elimRule        =   mkInstElimRule @dictNm @instId (length @ctxtPrTyFixL + length @supPrTyL) (tyQuantifyClosed @prTyFix)
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   tyGam           =   @lhs.tyGam
-                                .   gathTySigGam    =   (maybe id (\(n,_) g -> gamAdd g n (ValGamInfo (tyQuantifyClosed @tyPrExpr.evTy))) @mbNmElim) @lhs.gathTySigGam
+                                .   gathTySigGam    =   (maybe id (\(n,_) g -> gamAdd n (ValGamInfo (tyQuantifyClosed @tyPrExpr.evTy)) g) @mbNmElim) @lhs.gathTySigGam
                                 .   patValGam       =   @lhs.patValGam
                                 .   patPrElimTGam   =   (if @inclForElim then peTGamAdd @lhs.prfCtxtId @instClsNm @elimRule else id) @lhs.patPrElimTGam
   | InstanceIntro

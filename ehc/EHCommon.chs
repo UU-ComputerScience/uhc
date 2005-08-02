@@ -12,16 +12,13 @@
 %%[1 export(HsName(..), hsnWild, hsnArrow, hsnProd, hsnProdArity, hsnUnknown, hsnIsArrow, hsnIsProd, hsnInt, hsnChar)
 %%]
 
-%%[1 export(AssocL, hdAndTl, ppAssocL)
+%%[1 export(AssocL, hdAndTl, hdAndTl', ppAssocL)
 %%]
 
 %%[1 import(UU.Pretty, Data.List) export(PP_DocL, ppListSep, ppCommaList, ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
 %%]
 
 %%[1 export(SemApp(..))
-%%]
-
-%%[1 export(mkApp, mkConApp, mk1Arrow, mkArrow)
 %%]
 
 %%[1 export(assocLKeys)
@@ -367,13 +364,24 @@ seqToList (Seq s) = s []
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.SemApp
-class SemApp res where
-  semApp       ::  res -> res -> res
-  semAppTop    ::  res -> res
-  semCon       ::  HsName -> res
-  semParens    ::  res -> res
-  mkProdApp    ::  [res] -> res
-  mkProdApp rs =   mkConApp (hsnProd (length rs)) rs
+class SemApp a where
+  semApp            ::  a -> a -> a
+  semAppTop         ::  a -> a
+  semCon            ::  HsName -> a
+  semParens         ::  a -> a
+  mkApp             ::  [a] -> a
+  mkConApp          ::  HsName -> [a] -> a
+  mkProdApp         ::  [a] -> a
+  mk1Arrow          ::  a -> a -> a
+  mkArrow           ::  [a] -> a -> a
+%%]
+%%[1.SemApp.default
+  mkApp as          =   case as of  [a]  ->  a
+                                    _    ->  semAppTop (foldl1 semApp as)
+  mkConApp   c as   =   mkApp (semCon c : as)
+  mkProdApp  as     =   mkConApp (hsnProd (length as)) as
+  mk1Arrow   a r    =   mkApp [semCon hsnArrow,a,r]
+  mkArrow           =   flip (foldr mk1Arrow)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -385,17 +393,17 @@ class SemApp res where
 type MkConApp t = (HsName -> t,t -> t -> t,t -> t,t -> t)
 
 %%[1.mkApp.Base
+%%]
 mkApp :: SemApp t => [t] -> t
 mkApp ts
   =  case ts of
        [t]  ->  t
        _    ->  semAppTop (foldl1 semApp ts)
-%%]
 
 %%[1.mkApp.mkConApp
+%%]
 mkConApp :: SemApp t => HsName -> [t] -> t
 mkConApp c ts = mkApp (semCon c : ts)
-%%]
 
 %%[1.mkApp.mkProdApp
 %%]
@@ -406,12 +414,12 @@ mkProdApp ts = mkConApp (hsnProd (length ts)) ts
 %%]
 
 %%[1.mkApp.mkArrow
+%%]
 mk1Arrow :: SemApp t => t -> t -> t
 mk1Arrow a r = mkApp [semCon hsnArrow,a,r]
 
 mkArrow :: SemApp t => [t] -> t -> t
 mkArrow = flip (foldr mk1Arrow)
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pretty printing
@@ -707,8 +715,12 @@ instance PP FIMode where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.Misc
+hdAndTl' :: a -> [a] -> (a,[a])
+hdAndTl' _ (a:as) = (a,as)
+hdAndTl' n []     = (n,[])
+
 hdAndTl :: [a] -> (a,[a])
-hdAndTl (a:as) = (a,as)
+hdAndTl = hdAndTl' undefined
 %%]
 
 %%[2.unionL

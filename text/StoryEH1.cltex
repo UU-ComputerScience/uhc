@@ -126,22 +126,6 @@ The example also demonstrates the use of patterns, which is
 almost the same as in Haskell:
 EH does not allow a type signature for the elements of a tuple.
 
-\newcommand{\PGFAppAA}[3]{%
- \begin{center}
-  \begin{pgfpicture}{0cm}{0cm}{4cm}{2.5cm}
-   \pgfnodebox{App1}[virtual]{\pgfxy(2.5,2)}{App}{2pt}{2pt}
-   \pgfnodebox{App2}[virtual]{\pgfxy(1.75,1.25)}{App}{2pt}{2pt}
-   \pgfnodebox{Fun}[virtual]{\pgfxy(1,0.5)}{#1}{2pt}{2pt}
-   \pgfnodebox{Arg1}[virtual]{\pgfxy(2.5,0.5)}{#2}{2pt}{2pt}
-   \pgfnodebox{Arg2}[virtual]{\pgfxy(3.25,1.25)}{#3}{2pt}{2pt}
-   \pgfnodeconnline{Fun}{App2}
-   \pgfnodeconnline{Arg1}{App2}
-   \pgfnodeconnline{App2}{App1}
-   \pgfnodeconnline{Arg2}{App1}
-  \end{pgfpicture}
- \end{center}
-}
-
 \begin{CodeFigure}{Abstract syntax for EH (without Expr)}{abs-syn-eh1}
 \savecolumns
 \chunkCmdUse{EHAbsSyn.1.AGItf}
@@ -399,10 +383,12 @@ and the function |mkApp| is never used on an empty list.
 
 \chunkCmdUseMark{EHCommon.1.MkConApp}
 \chunkCmdUseMark{EHCommon.1.SemApp}
-\chunkCmdUseMark{EHCommon.1.mkApp.Base}
-\chunkCmdUseMark{EHCommon.1.mkApp.mkArrow}
-\chunkCmdUseMark{EHCommon.1.mkApp.mkConApp}
-\chunkCmdUseMark{EHCommon.1.mkApp.mkProdApp}
+%%[[hide impl.SemAppFull="Class SemApp and defaults"
+\savecolumns
+\chunkCmdUseMark{EHCommon.1.SemApp}
+\restorecolumns
+\chunkCmdUseMark{EHCommon.1.SemApp.default}
+%%]
 
 It is precisely the group of functions specifying what should be done
 for |Con|, |App| and |AppTop| which is called an algebra.
@@ -780,6 +766,9 @@ the function has a type |sigmaaa -> sigma|.
 
 \rulerCmdUse{rules3.E.expr.baseForEH1}
 \rulerCmdUse{rules3.E.decl.base}
+%%[[hide rules.tyExprEH1="Type rules for type expressions"
+\rulerCmdUse{rules3.E.tyexpr.base}
+%%]
 
 All rules we will use are of the form
 \[
@@ -879,11 +868,16 @@ Thus in our implementation we use a stack of lists instead:
 \chunkCmdUseMark{EHCommon.1.AssocL}
 \chunkCmdUseMark{EHGam.1.Base.type}
 \chunkCmdUseMark{EHGam.1.Base.sigs}
+%%[[hide impl.gamAsList="Implementation of Gam"
 \chunkCmdUseMark{EHGam.1.Base.funs}
+%%]
 
 Entering and leaving a scope is implemented by means of pushing and popping a |Gamma|.
 Extending an environment |Gamma| will take place on the top of the stack only.
 A |gamUnit| used as an infix operator will print as |`gamUnit`|.
+Left operands are added to right operands.
+For example |gamAddGam g1 g2| adds |g1|'s entries to |g2|, possibly hiding (overwriting) entries of |g2|
+unless they appear in an outer level.
 
 A specialization |ValGam| of |Gam| is used to store and lookup the type of value identifiers.
 
@@ -895,7 +889,7 @@ Later versions of EH can add additional fields to this data type.
 \chunkCmdUseMark{EHGam.1.valGamLookup}
 \chunkCmdUseMark{EHGam.1.valGamLookupTy}
 
-Later the variant |valGamLookup| will do additional work, but for now it
+Later (\chapterRef{ehc4}) the variant |valGamLookup| will do additional work, but for now it
 does not differ from |gamLookup|.
 The additional variant |valGamLookupTy| is specialized further to produce
 an error message in case the identifier is missing from the environment.
@@ -987,11 +981,15 @@ The implementation of \ruleRef{e.int} performs this check and returns the type |
 
 \chunkCmdUseMark{EHInferExpr.1.ty}
 \chunkCmdUseMark{EHRulerRules.1.expr.e.int}
-%%[@hide "AG for e.char"
-\chunkCmdUseMark{EHRulerRules.1.expr.e.char}
-%%]
 
 The implementation for \ruleRef{e.char} is defined similarly\overlayChunks{EHRulerRules.1.expr.e.char}.
+The constant |tyInt| represents the |Int| type constant.
+%%[[hide impl.echarRl="EH1, AG for \ruleRef{e.char}, type constants"
+\chunkCmdUseMark{EHRulerRules.1.expr.e.char}
+\chunkCmdUseMark{EHTy.1.tyInt}
+\chunkCmdUseMark{EHTy.1.tyChar}
+%%]
+
 
 %if False
 \begin{AGFeature}{ag-set-notation}{Set notation for variants}
@@ -1019,11 +1017,6 @@ This is a common AG idiom when a value is required for later use as well or
 needs to be redefined in later versions of EH.
 %endif
 \end{AGFeature}
-
-An additional constant representing the built-in |Int| type is also required:
-
-\chunkCmdUseMark{EHTy.1.tyInt}
-\overlayChunks{EHTy.1.tyChar}
 
 %if False
 The local attribute |ty_| (by convention) holds the type
@@ -1130,9 +1123,11 @@ Errors themselves are also described via AG:
 \chunkCmdUseMark{EHErrorAbsSyn.1.ErrL}
 
 The |Err| datatype is available as a datatype in the same way |Ty| is.
-The error datatype is also used for signalling undeclared identifiers: 
+The error datatype is also used for signalling undeclared identifiers when a type for an identifier is retrieved
+from a |Gamma|: 
 
-\chunkCmdUseMark{EHInferExpr.1.Var}
+%\chunkCmdUseMark{EHInferExpr.1.Var}
+\chunkCmdUseMark{EHRulerRules.1.expr.e.var}
 
 %{
 
@@ -1166,12 +1161,12 @@ Typing \ruleRef{e.var} uses the environment |Gamma| to retrieve the type
 of an identifier.
 This environment |valGam| for types of
 identifiers simply is declared as an inherited attribute,
-initialized at the top of the abstrcat syntax tree.
+initialized at the top of the abstract syntax tree.
 It is only extended with new bindings for identifiers at a declaration of an identifier.
 
 \chunkCmdUseMark{EHInfer.1.valGam}
 
-One may wonder why the judgement |jfit sigma1 <= sigma2 : sigma|
+One may wonder why the judgement \(\rulerCmdUse{rules3.K.fit.scheme}\)
 and its implementation |fitsIn| returns a type at all;
 the idea of checking was to only pass explicit type information |sigmak| (or |knTy|)
 from the top of the abstract syntax tree to the leaf nodes.
@@ -1193,7 +1188,8 @@ will be the argument part of the (bottom-to-top travelling) resulting function t
 |e1 =@= func.ty|:
 %}
 
-\chunkCmdUseMark{EHInferExpr.1.App}
+%\chunkCmdUseMark{EHInferExpr.1.App}
+\chunkCmdUseMark{EHRulerRules.1.expr.e.app}
 
 The idea here is to encode the partially
 known function type as |ANY -> sigmak| (passed to |fun.knTy|)  and let
@@ -1231,17 +1227,51 @@ requires some additional type construction functions, of which we only include |
 The function uses a class |SemApp| defining semantic functions related to building application |App| like structures.
 
 \chunkCmdUseMark{EHCommon.1.SemApp}
-\chunkCmdUseMark{EHCommon.1.mkApp.mkArrow}
-\chunkCmdUseMark{EHCommon.1.mkApp.Base}
+%\chunkCmdUseMark{EHCommon.1.mkApp.mkArrow}
+%\chunkCmdUseMark{EHCommon.1.mkApp.Base}
+%%[[hide impl.hsnNames="Predefined identifiers"
+\chunkCmdUseMark{EHCommon.1.HsName.type}
+\chunkCmdUseMark{EHCommon.1.HsName.Base}
+%%]
 
 in combination with an instance for |SemApp Ty|:
 
 \chunkCmdUseMark{EHTy.1.SemApp}
 
-Class |SemApp| defines four functions, for constructing a value similar to |App|, |AppTop|, |Con| and |Parens| respectively.
+Class |SemApp| defines four functions (|semApp|, ...), for constructing a value similar to |App|, |AppTop|, |Con| and |Parens| respectively.
 These functions are used by |mkApp| to build an |App| like structure and by |mkArrow| to build function like structures.
-The code for (e.g.) parsers (omitted from \thispaper),
+The code for (e.g.) parsers also
 uses these functions parameterized with the proper four semantics functions as generated by the AG system.
+%%[[hide parse.SemAppRelated="EH1 parser"
+\savecolumns
+\chunkCmdUseMark{EHParser.1.parserSigs}
+\restorecolumns
+\chunkCmdUseMark{EHParser.1.pAGItf}
+\restorecolumns
+\chunkCmdUseMark{EHParser.1.pApp}
+\restorecolumns
+\chunkCmdUseMark{EHParser.1.pParenProd}
+\restorecolumns
+\chunkCmdUseMark{EHParser.1.pExprBase}
+\restorecolumns
+\chunkCmdUseMark{EHParser.1.pExprBaseParenProd}
+\restorecolumns
+\chunkCmdUseMark{EHParser.1.pExpr}
+\restorecolumns
+\chunkCmdUseMark{EHParser.1.pExprApp}
+\restorecolumns
+\chunkCmdUseMark{EHParser.1.pExprPrefix}
+\restorecolumns
+\chunkCmdUseMark{EHParser.1.pExprPrefixLam}
+\restorecolumns
+\chunkCmdUseMark{EHParser.1.pDecl}
+\restorecolumns
+\chunkCmdUseMark{EHParser.1.pPatExprBase}
+\restorecolumns
+\chunkCmdUseMark{EHParser.1.pPatExprBase.prod}
+\restorecolumns
+\chunkCmdUseMark{EHParser.1.pPatExpr}
+%%]
 So this additional layer of abstraction improves code reuse.
 Similarly, function |mkProdApp| constructs a tuple type out of types for the elements.
 
@@ -1263,6 +1293,17 @@ If the scrutinized type is not a function, ``will do'' values are returned:
 
 Similarly |tyProdArgs| is defined to return the types of the elements of a tuple type.
 The code for this and other similar functions have been omitted for brevity.
+%%[[hide impl.tyDissect="Type dissection"
+\chunkCmdUseMark{EHTy.1.unMkTy.sigs.Rest}
+\chunkCmdUseMark{EHTy.1.unMkTy.tyArrowArgsRes}
+\chunkCmdUseMark{EHTy.1.unMkTy.tyAppFunArgs}
+\chunkCmdUseMark{EHTy.1.unMkTy.funs}
+\chunkCmdUseMark{EHTy.1.unMkTy.tyProdArgs}
+\chunkCmdUseMark{EHTy.1.unMkTy.tyLHdAndTl}
+\chunkCmdUseMark{EHCommon.1.Misc.hdAndTl}
+\chunkCmdUseMark{EHTy.4.unMkTy.tyConNm}
+\chunkCmdUseMark{EHTy.4.unMkTy.tyVar}
+%%]
 
 \paragraph{Constructor |Con|, tuples.}
 
@@ -1271,19 +1312,24 @@ to build composite types.
 The \ruleRef{e.prod} for tupling
 has no immediate counterpart in the implementation
 because a tuple |(a,b)| is encoded as the application |(,) a b|.
-The alternative |Con| takes care of producing a type |a -> b -> (a,b)| for |(,)|.
+We need a \ruleRef{e.con} which produces a type for |(,)|:
+\[
+\rulerCmdUse{rules3.K.expr.base.e.con}
+\]
 
-\chunkCmdUseMark{EHInferExpr.1.Con}
-
-This type can be constructed from |knTy| which by definition
+The expected type |sigma_r| of the complete tuple can be constructed from |knTy =@= sigmak| which by definition
 has the form |ANY -> ANY -> (a,b)| (for this example).
 The result type of this function type is taken apart and used to produce
-the desired type.
-Also by definition (via construction by the parser) we know the arity is correct.
+the desired type |a -> b -> (a,b)|.
+The |Con| alternative implements this:
+
+%\chunkCmdUseMark{EHInferExpr.1.Con}
+\chunkCmdUseMark{EHRulerRules.1.expr.e.con}
+\chunkHideRef{impl.tyDissect}
 
 Note that, despite the fact that the cartesian product constructors are
 essentially polymorphic, we do not have to do any kind of unification
-here, since they either appear in the right hand side of declaration
+here, since they either appear in the right hand side of a declaration
 where the type is given by an explcit type declaration, or they occur at
 an argument position where the type has been implicitly specified by the
 function type.
@@ -1299,15 +1345,17 @@ The result (forced to be a function type) is split up by
 The function |gamPushNew| opens a new scope on top of |valGam| so as to be able
 to check duplicate names introduced by the pattern |arg|:
 
-\chunkCmdUseMark{EHInferExpr.1.Lam}
+%\chunkCmdUseMark{EHInferExpr.1.Lam}
+\chunkCmdUseMark{EHRulerRules.1.expr.e.lam}
 
 \paragraph{Type annotations (for |lambda|-expression).}
 
 In order to make |lambda|-expressions typecheck correctly it is the responsibility of
 the EH programmer to supply the correct type signature.
-The |TypeAs| variant of |Expr| takes care of this by simply passing the type signature as the expected type:
+The |TypeAs| variant of |Expr| (for \ruleRef{e.ann}) takes care of this by simply passing the type signature as the expected type:
 
-\chunkCmdUseMark{EHInferExpr.1.TypeAs}
+%\chunkCmdUseMark{EHInferExpr.1.TypeAs}
+\chunkCmdUseMark{EHRulerRules.1.expr.e.ann}
 
 The obligation for the EH programmer to specify a type is dropped in later versions of EH.
 
