@@ -271,32 +271,6 @@ instance SemApp Ty where
   mkProdApp tyL  = mkTyRec (zip positionalFldNames tyL)
 %%]
 
-%%[1.mkTyArrow hs
-%%]
-mkTyArrow    ::  TyL -> Ty -> Ty
-mkTyArrow    =   flip (foldr mkArrow)
-
-algTy        ::  MkConApp Ty
-algTy        =   (Ty_Con,Ty_App,id,id)
-
-%%[1.mkTy hs
-%%]
-mkTyApp      ::  TyL -> Ty
-mkTyApp      =   mkApp
-
-mkTyConApp   ::  HsName -> TyL -> Ty
-mkTyConApp   =   mkConApp
-
-%%[1.mkTyProdApp hs
-%%]
-mkTyProdApp  ::  TyL -> Ty
-mkTyProdApp  =   mkProdApp
-
-%%[7.mkTyProdApp -1.mkTyProdApp hs
-%%]
-mkTyProdApp :: TyL -> Ty
-mkTyProdApp tyL = mkTyRec (zip positionalFldNames tyL)
-
 %%[1.mkTyCon hs
 mkTyCon :: String -> Ty
 mkTyCon n = semCon (HNm n)

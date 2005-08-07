@@ -16,7 +16,7 @@
 %%% Substitution for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 import(Data.List, EHCommon, EHTy) export(Cnstr(..), emptyCnstr, cnstrTyUnit, cnstrTyLookup, unionL)
+%%[2 import(Data.List, EHCommon, EHTy) export(Cnstr(..), emptyCnstr, cnstrTyUnit, cnstrTyLookup)
 %%]
 
 %%[2 import(UU.Pretty, EHTyPretty) export(ppCnstrV)
@@ -57,12 +57,14 @@ infixr `cnstrPlus`
 
 %%[2.Cnstr.Base
 newtype Cnstr  = Cnstr (AssocL TyVarId Ty) deriving Show
+%%]
 
+%%[2.cnstrTyLookup
 cnstrTyLookup :: TyVarId -> Cnstr -> Maybe Ty
 cnstrTyLookup tv (Cnstr s) = lookup tv s
 %%]
 
-%%[9 -2.Cnstr.Base
+%%[9 -(2.Cnstr.Base 2.cnstrTyLookup)
 data CnstrInfo  = CITy Ty
                 | CIImpls Impls
                 deriving (Eq,Show)

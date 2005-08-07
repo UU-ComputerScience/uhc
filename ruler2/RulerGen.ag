@@ -143,7 +143,7 @@ rlAtUsage opts scGam fmGam vwRlInfo
                    in  (Map.singleton jdNm r `Map.union` atDefG
                        ,extraG `fmGamUnion` atExtraG
                        ,eNdCoGam
-                       ,mkAdGam False atInNonBiLL `Map.union` mkAdGam True atInBiLL `Map.union` adG
+                       ,mkAdGam True atInBiLL `Map.union` adG `Map.union` mkAdGam False atInNonBiLL
                        ,ecGInBi `Map.union` ecGInNonBi `Map.union` ecGOuBi `Map.union` ecGOuNonBi `Map.union` ecG
                        )
               )

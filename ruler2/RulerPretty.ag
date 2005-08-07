@@ -96,6 +96,8 @@ SEM Expr
                                                 >|< @nmExpr.pp
                                                 >|< ppExprMbEmpty @rExpr.self (" " >|<)
                                                         (exprNeedPar ParCtxtOpR @rExpr.self @rExpr.pp)
+  | LF              lhs     .   pp          =   @lExpr.pp
+                                                >-< @rExpr.pp
   | Sel             lhs     .   pp          =   exprNeedPar ParCtxtOther @expr.self @expr.pp >|< "." >|< @selMbExpr.pp
   | Var Uniq        lhs     .   pp          =   pp @nm
   | Int             lhs     .   pp          =   pp @int

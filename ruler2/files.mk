@@ -87,7 +87,7 @@ $(RULER2_DEMO_DRV_RTEX): $(RULER2_DEMO_DRV_LRTEX)
 	$(LHS2TEX) $(LHS2TEX_OPTS_POLY) $< > $@
 
 $(RULER2_DEMO_DRV_CAG): $(RULER2_DEMO_DRV_RL2) $(RULER2)
-	$(RULER2) --ag --ATTR --selrule="(3).(*).(*)" --wrapfrag  --base=rulerDemoAG $< > $@
+	$(RULER2) --ag --ATTR --selrule="(3).(*).(*)" --wrapshuffle  --base=rulerDemoAG $< > $@
 
 $(RULER2_DEMO_DRV_AG): $(RULER2_DEMO_DRV_CAG) $(SHUFFLE)
 	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --plain --order="$(RULER2_DEMO_SHUFFLE_ORDER)"  --lhs2tex=no $< > $@

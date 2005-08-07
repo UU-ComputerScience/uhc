@@ -177,7 +177,8 @@ pAllParsers
                                       <$> pList1 ((,) <$> pOp <*> pExprApp)
                                      )
                             where pOp = (\s ss -> sem_Expr_Op s (ss (sem_Expr_Var s))) <$> pSym <*> pExprDot
-        pExprLF				=	pChainr (sem_Expr_LF <$ pKey "|") pExpr
+        pExprLF             =   pChainr (sem_Expr_LF <$ pKey "|") pExpr
+        pExprLFSuffix nl    =   (\es e -> sem_Expr_LF e (foldr1 sem_Expr_LF es)) <$> pList1 (pKey nl *> pExpr)
         pExprApp            =   mkApp alg <$> pList1 pExprBase <|> pSucceed sem_Expr_Empty
         pExprBase' pN       =   pParens (pExprInParen <|> pExprSpecial) <**> pExprDot
                             <|> sem_Expr_Uniq    <$  pKey "unique"
@@ -185,7 +186,10 @@ pAllParsers
                             <|> sem_Expr_Int     <$> pInteger
                             <|> sem_Expr_StrAsIs <$> pString
         pExprBase           =   pExprBase' pNm
-        pExprInParen        =   pExpr <**> (flip sem_Expr_Cnstr <$  pKey "|" <*> pECnstr `opt` sem_Expr_Paren)
+        pExprInParen        =   pExpr <**> (   flip sem_Expr_Cnstr <$  pKey "|" <*> pECnstr
+                                           <|> pExprLFSuffix "-"
+                                           <|> pSucceed sem_Expr_Paren
+                                           )
         pExprSpecial        =   (sem_Expr_StrAsIs . concat)     <$> pList1 (pAnyKey (keywordsOpsParenEsc ++ keywordsTextEscapable))
                             <|> sem_Expr_Named                  <$> pNm <* pKey "=" <*> pExpr
                             <|> sem_Expr_StrText                <$  pKey "text" <*> pString

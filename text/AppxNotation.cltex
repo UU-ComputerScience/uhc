@@ -1,0 +1,423 @@
+%%[termTableBegin
+\label{appx-eh-lang-terms}
+\begin{tabular}%
+%%]
+
+%%[termTableFigBegin
+\begin{TabularFigure}{EH terms}{appx-eh-lang-terms}%
+%%]
+
+%%[termTableFigBeginExplImpl
+\begin{TabularFigure}{EH terms (emphasized ones explained throughout the text)}{exim-eh-lang-terms}%
+%%]
+
+%%[typeTableBegin
+\label{appx-eh-lang-types}
+\begin{tabular}%
+%%]
+
+%%[typeTableFigBegin
+\begin{TabularFigure}{EH types}{appx-eh-lang-types}%
+%%]
+
+%%[typeTableFigBeginExplImpl
+\begin{TabularFigure}{EH types}{exim-eh-lang-types}
+%%]
+
+%%[typeTableFigBeginImpred
+\begin{TabularFigure}{EH types}{eh-impred-lang-types}
+%%]
+
+%%[termTableFigBeginImpred
+\begin{TabularFigure}{EH terms}{eh-impred-lang-terms}
+%%]
+
+%%[termTableEnd
+\end{tabular}
+%%]
+
+%%[termTableFigEnd
+\end{TabularFigure}
+%%]
+
+%%[termTableFormat
+{r@@{\;}c@@{\;}ll}
+%%]
+
+%%[exprHeader
+\multicolumn{4}{l}{Values (expressions, terms):} \\
+%%]
+
+%%[declHeader
+\multicolumn{4}{l}{Declarations of bindings:} \\
+%%]
+
+%%[typeHeader
+\multicolumn{4}{l}{Types:} \\
+%%]
+
+%%[tyaltHeader
+\multicolumn{4}{l}{Type alternative:} \\
+%%]
+
+%%[predHeader
+\multicolumn{4}{l}{Predicates:} \\
+%%]
+
+%%[impredHeader
+\multicolumn{4}{l}{Types for impredicativity inferencing:} \\
+%%]
+
+%%[termSeparator
+\multicolumn{4}{l}{} \\
+%%]
+
+%%[exprBasic
+|e| & |::=| &
+|int || char |
+ & literals
+ \\
+& | || | &
+|identv|
+ & program variable
+ \\
+& | || | &
+|e e|
+ & application
+ \\
+& | || | &
+|\i -> e|
+ & abstraction
+ \\
+& | || | &
+|let Vec(d) in e|
+ & local definitions
+ \\
+%%]
+
+%%[exprTup
+& | || | &
+|(e,e)|
+ & tuple
+ \\
+%%]
+
+%%[exprAppImpred
+& | || | &
+|e ^^ ~ e|
+ & impredicative application
+ \\
+%%]
+
+%%[exprExplImpl
+& | || | &
+|e (! e <: pi !)|
+ & \emph{explicit implicit application}
+ \\
+& | || | &
+|\(! i <: pi !) -> e|
+ & \emph{explicit implicit abstraction}
+ \\
+%%]
+
+%%[exprRecBasic
+& | || | &
+|(lbl = e,...)|
+ & record
+ \\
+& | || | &
+|(e || lbl := e,...)|
+ & record update
+ \\
+& | || | &
+|e.lbl|
+ & record selection
+ \\
+%%]
+
+%%[exprRecExt
+& | || | &
+|(e || lbl = e,...)|
+ & record extension
+ \\
+%%]
+
+%%[declBasic
+|d| & |::=| &
+|identv = e|
+ & value binding
+ \\
+& | || | &
+|identv :: sigma|
+ & value type signature
+ \\
+%%]
+
+%%[declDataType
+& | || | &
+|data sigma = Vec(identc ^^ Vec(sigma))|
+ & data type
+ \\
+%%]
+
+%%[declExplImpl
+& | || | &
+|class Vec(pi) => pi where Vec(d)|
+ & class
+ \\
+& | || | &
+|instance Vec(pi) => pi where Vec(d)|
+ & introduced instance
+ \\
+& | || | &
+|instance identv <: Vec(pi) => pi where Vec(d)|
+ & \emph{named introduced instance}
+ \\
+& | || | &
+|instance identv :: Vec(pi) => pi where Vec(d)|
+ & \emph{named instance}
+ \\
+& | || | &
+|instance e <: pi|
+ & \emph{value introduced instance}
+ \\
+%%]
+
+%%[identHeader
+\multicolumn{4}{l}{Identifiers:} \\
+%%]
+
+%%[meetJoinHeader
+\multicolumn{4}{l}{Types for computing meet/join:} \\
+%%]
+
+%%[identBasic
+|ident| & |::=| &
+|identv|
+ & lowercase: (type) variables
+ \\
+& | || | &
+|identc|
+ & uppercase: (type) constructors
+ \\
+%%]
+
+%%[identRecLbl
+& | || | &
+|lbl|
+ & field labels
+ \\
+%%]
+
+%%[typeBasic
+|sigma| & |::=| &
+|Int || Char|
+ & literals
+ \\
+& | || | &
+|tvarv|
+ & variable
+ \\
+& | || | &
+|sigma -> sigma|
+ & abstraction
+ \\
+& | || | &
+|pi => sigma|
+ & implicit abstraction
+ \\
+& | || | &
+|sigma ^^ sigma|
+ & type application
+ \\
+& | || | &
+|forall ^ tvarv . sigma|
+ & universally quantified type
+ \\
+%%]
+
+%%[typeTyVarFixed
+& | || | &
+|tvarf|
+ & (fresh) type constant (a.k.a. fixed type variable)
+ \\
+%%]
+
+%%[typeExists
+& | || | &
+|exists ^ alpha . sigma|
+ & existentially quantified type
+ \\
+%%]
+
+%%[typeRecBasic
+& | || | &
+|(lbl :: sigma,...)|
+ & record
+ \\
+%%]
+
+%%[predBasic
+|pi| & |::=| &
+|identc ^^ Vec(sigma)|
+ & predicate
+ \\
+& | || | &
+|pi => pi|
+ & predicate transformer/abstraction
+ \\
+%%]
+
+%%[impredBasic
+|sigma| & |::=| &
+|...|
+ & 
+ \\
+& | || | &
+|tvarv [Vec(talt)]|
+ & type alternatives
+ \\
+|isigma| & |::=| &
+|sigma|
+ & distinguishing notation for |sigma| with |tvarv [Vec(talt)]|
+ \\
+%%]
+
+%%[meetJoinBasic
+|sigma| & |::=| &
+|...|
+ & 
+ \\
+& | || | &
+|tvar /=/ sigma|
+ & both
+ \\
+& | || | &
+|ANY|
+ & absence of type information
+ \\
+%%]
+
+%%[tyaltBasic
+|talt| & |::=| &
+|isigma :: tctxt|
+ & type alternative
+ \\
+|tctxt| & |::=| &
+|tctxtH|
+ & `hard' context
+ \\
+& | || | &
+|tctxtS|
+ & `soft' context
+ \\
+%%]
+
+%%[notationBasic
+|sigma|
+ & type
+ \\
+|sigmak|
+ & expected/known type
+ \\
+|tvarv|
+ & type variable
+ \\
+|ident|
+ & identifier
+ \\
+|identv|
+ & value identifier
+ \\
+|identc|
+ & (type) constructor identifier, type constant
+ \\
+|Gamma|
+ & assumptions, environment, context
+ \\
+|Cnstr|
+ & constraints, substitution
+ \\
+|Cnstr|$_{k..l}$
+ & constraint composition of |Cnstr|$_k ...$ |Cnstr|$_l$
+ \\
+|<=|
+ & subsumption, ``fits in'' relation
+ \\
+%%]
+
+%%[notationExplImpl
+|pi|
+ & predicate
+ \\
+|pvar|
+ & predicate wildcard (collection of predicates)
+ \\
+%%]
+
+%%[notationImpredA
+|sigmaQu|
+ & |sigma| with a quantifier
+ \\
+|tvarf|
+ & fixed type variable (a.k.a. skolem type)
+ \\
+|fiopt|
+ & options to |<=>|
+ \\
+%%]
+
+%%[notationImpredB
+|isigma|
+ & |sigma| for impredicativity inferencing
+ \\
+|ICnstr|
+ & |Cnstr| for impredicativity inferencing
+ \\
+|Cnstr|$_{k..l}$
+ & constraint composition of |Cnstr|$_k ...$ |Cnstr|$_l$
+ \\
+|<+>|
+ & meet of two types
+ \\
+|<->|
+ & join of two types
+ \\
+|<=>|
+ & |<=|, |<+>| or |<->|
+ \\
+|talt|
+ & type alternative
+ \\
+|Vec(taltcx(tctxt))|
+ & |[ talt || talt@(_::tctxt) <- Vec(talt)]|
+ \\
+|Vec(taltcx(Qu))|
+ & |[ talt || talt@(sigmaQu::_) <- Vec(talt)]|
+ \\
+%%]
+
+%%[notationTransl
+|Transl|
+ & translated code
+ \\
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

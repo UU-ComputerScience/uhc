@@ -119,10 +119,10 @@ Using AG notation we first define the AST corresponding to our problem
 
 
 The |DATA| keyword is used to introduce the equivalent of Haskell's |data| type.
-A |DATA <node>| defines a \IxAsDef{node} |<node>| (or \IxAsDef{nonterminal})
+A |DATA ^^ <node>| defines a \IxAsDef{node} |<node>| (or \IxAsDef{nonterminal})
 of an AST.
 Its alternatives, enumerated one by one after the vertical bar | || |, are called
-\IxAsDef{variants}, \IxAsDef{productions}.
+\IxAsDef{variants} or \IxAsDef{productions}.
 The term \IxAsDef{constructor} is occasionally used to stress the similarity with
 its Haskell counterpart.
 Each variant has members,
@@ -187,7 +187,7 @@ The basic form of an attribute reference
 is |@ <node> . <attr>| referring to a synthesized attribute |<attr>| of child node |<node>|.
 For example, |@lt.min| refers to the synthesized attribute |min| of child |lt| of the |Bin| variant of node |Tree|.
 
-The |<node> .| part of |@ <node> . <attr>| may be omitted.
+The ``|<node> .|'' part of |@ <node> . <attr>| may be omitted.
 For example, |min| for the |Leaf| alternative is defined in terms of |@int|.
 In that case |@ <attr>| refers to a locally (to a variant for a node) declared attribute, or to
 the field with the same name as defined in the |DATA| definition for that variant.
@@ -356,7 +356,7 @@ directly invokes the semantic functions:
 \chunkCmdUse{RepminAG.2.parser}
 
 The parser recognises the letter '@B@' as a |Bin| alternative and a single digit as a |Leaf|.
-\FigRef{parser-combinators} gives an overview of the parser combinators which are used \cite{uust04www}.
+\appRef{appx-parsercombinators} gives an overview of the parser combinators which are used \cite{uust04www}.
 The parser is invoked from an alternative implementation of |main|:
 
 \chunkCmdUse{RepminAG.2.main}
@@ -364,14 +364,6 @@ The parser is invoked from an alternative implementation of |main|:
 We will not discuss this alternative further nor will we discuss this particular variant of
 parser combinators.
 However, this approach is taken in the rest of \thispaper\ wherever parsing is required.
-
-\begin{Figure}{Parser combinators}{parser-combinators}
-\begin{tabular}{lll}
-\ParserCombTableHead
-\ParserCombTableA
-\ParserCombTableB
-\end{tabular}
-\end{Figure}
 
 \paragraph{More features and typical usage: a pocket calculator.}
 We will continue with looking at a more complex example, a pocket calculator which accepts expressions.
@@ -415,22 +407,7 @@ The pretty printing uses a pretty printing library with
 combinators for values of type |PP_Doc| representing
 pretty printed documents.
 The library is not further discussed here; an overview of some of
-the available combinators can be found in \figRef{pretty-printing-combinators}.
-
-\begin{Figure}{Pretty printing combinators}{pretty-printing-combinators}
-\begin{center}
-\begin{tabular}{ll}
-Combinator & Result
-\\ \hline
-|p1 >||< p2| & |p1| besides |p2|, |p2| at the right \\
-|p1 `ppBesideSp` p2| & same as |>||<| but with an additional space in between \\
-|p1 >-< p2| & |p1| above |p2| \\
-|pp_parens p| & |p| inside parentheses \\
-|text s| & string |s| as |PP_Doc| \\
-|pp x| & pretty print |x| (assuming instance |PP x|) resulting in a |PP_Doc| \\
-\end{tabular}
-\end{center}
-\end{Figure}
+the available combinators can be found in \appRef{appx-prettyprintingcombinators}.
 
 As a next step we add |let| expressions and use of identifiers in expressions.
 This demonstrates an important feature of the AG system:
@@ -584,9 +561,9 @@ Cycle detection and other (experimental) features, commandline invocation, etc.
 
 We will come back to the AG system itself in our conclusion.
 
-\begin{Figure}{Parser for calculator example}{ag-primer-parser-expr}
+\begin{CodeFigure}{Parser for calculator example}{ag-primer-parser-expr}
 \chunkCmdUse{Expr.1.parser}
-\end{Figure}
+\end{CodeFigure}
 
 %}
 %%]

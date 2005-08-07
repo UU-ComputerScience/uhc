@@ -14,20 +14,22 @@ SEM Expr
   | Con             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
   | App             (func.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
   | Lam             (arg.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
-
-%%[2.Expr
-ATTR AllNT [ | gUniq: UID | ]
-  
-SEM Expr
   | AppTop          (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
+
+%%[2.gUniq
+ATTR AllNT [ | gUniq: UID | ]
 %%]
 
-%%[2
+%%[2.Expr.AppTop
+%%]
+
+-- generated from ruler rules into EHRulerRules
 SEM PatExpr
   | Var             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
   | VarAs           (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
   | Con             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
   
+%%[2
 SEM AGItf
   | AGItf           expr        .   gUniq                           =   uidStart
 %%]
@@ -40,13 +42,13 @@ SEM TyExpr
 -- generated from ruler rules into EHRulerRules
 SEM Expr
   | Var             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+SEM Decl
+  | Val             (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
 
 %%[3
 SEM TyExpr
   | Var VarWild     (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
   
-SEM Decl
-  | Val             (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
 %%]
 
 -- generated from ruler rules into EHRulerRules
@@ -58,6 +60,15 @@ SEM Expr
 SEM Expr
   | App             (func.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
   | Lam             (arg.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+  | AppTop          (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
+  
+SEM PatExpr
+  | Var             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+  | VarAs           (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
+  | Con             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+
+SEM Decl
+  | Val             (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
 %%]
 
 %%[4

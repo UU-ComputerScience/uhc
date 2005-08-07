@@ -47,7 +47,7 @@ instance Substitutable Ty where
 %%[2.SubstitutableList
 instance Substitutable a => Substitutable [a] where
   s      |=>  l   =   map (s |=>) l
-  ftv         l   =   unionL . map ftv $ l
+  ftv         l   =   unions . map ftv $ l
 %%]
 
 %%[2.SubstitutableCnstr

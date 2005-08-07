@@ -1,3 +1,54 @@
+%%[introPHD
+This thesis is about the programming language Haskell.
+It is about how to describe its implementation in such a way that we can be sure that the description
+is consistent with the implementation.
+The thesis is also about a stepwise approach to both description and implementation,
+which starts with a simple version of Haskell and then, step by step, extends this simple version towards
+an extended Haskell.
+
+The reason to set out on this journey lies in the observation that Haskell
+\cite{peytonjones03has98-rev-rep}
+has become a complex language.
+Haskell includes many productivity increasing features as well as more experimental features.
+Though also intended as a research platform, realistic compilers for Haskell \cite{www04ghc}
+have grown over the years
+and understanding and experimenting with
+those compilers is not an easy task.
+Experimentation on a smaller scale usually is based upon relatively simple and restricted implementations
+\cite{jones99thih}, often focusing only on a particular aspect of
+the language and/or its implementation.
+This thesis aims at walking somewhere between this complexity and simplicity by describing
+features individually as separate aspects of a more complex whole.
+%%]
+
+%%[goal
+%%]
+
+%%[overview
+\subsubsection{Thesis overview}
+
+\FigureXFigTex{roadmap}{Roadmap to \thispaper}{fig-roadmap}
+
+appendices: not incorporated fragments (or as pdf overlay, or html?), shuffle doc
+
+how we refer to not incorporated fragments, like this \chunkHideRef{impl.gamAsList}.
+
+\subsubsection{System overview}
+
+picture/discussion of relationship between: tools (ruler, shuffle, ag, hs, lhs2tex/tex), artefacts (fragments (of anything), type rules (via ruler), ag, hs, tex
+
+\FigurePDF{system-overview}{System overview}{system-fig-overview}
+
+where sources can be found
+
+%%]
+
+%%[roadMap
+%%]
+
+%%[readingPerspectives
+%%]
+
 %%[intro
 Haskell98 \cite{peytonjones03has98-rev-rep} is a complex language,
 not to mention its more experimental incarnations.
@@ -40,14 +91,9 @@ of the first three compilers
 out of a (currently) sequence of ten compilers.
 On the web site \cite{dijkstra04ehc-web} for this project the  full distribution of the code for these compilers can be found.
 We conclude \thispaper\ by reflecting upon our experiences with the AG system and the creation of \thispaper\ (\secRef{ehcConcl}).
+%%]
 
-%if storyPHD
-\subsection*%
-%else
-\subsection%
-%endif
-{Purpose}
-
+%%[purpose
 For whom is this material intended?
 \begin{itemize}
 \item
@@ -157,20 +203,16 @@ the following chapters.
 %endif
 Only short examples are given, so the reader gets an impression of what is explained in more detail
 and implemented in the relevant versions of the compiler.
+%%]
 
-%if storyPHD
-\subsection*%
-%else
-\subsection%
-%endif
-{A short tour}
-
+%%[shortTour
 Though all compilers described in \thispaper\ deal with a different issue,
 they all have in common that they are based on the \IxAsIs{|lambda|-calculus},
 most of the time using the syntax and semantics of Haskell.
 The first version of our series of compilers therefore accepts a language that most closely resembles the
 |lambda|-calculus, in particular typed |lambda|-calculus extended with |let| expressions
-and some basic types and type constructors such as |Int|, |Char| and tuples.
+and some basic types and type constructors such as |Int|, |Char| and tuples
+(see \appRef{appx-legenda-termlang} for all terms used throughout \thispaper).
 
 \paragraph{EH version 1: |lambda|-calculus.}
 An EH program is a single expression, contrary to a Haskell program which consists of a set of declarations forming a module.
@@ -364,14 +406,10 @@ infers for type constructor |Eq|
 
 %endif %% incl06
 
-%if storyPHD
-\subsection*%
-%else
-\subsection%
-%endif
-{Haskell language elements not described}
-\label{eh-not-described}
+%%]
 
+%%[haskellOmitted
+\label{eh-not-described}
 As mentioned before, only a subset of the full sequence of compilers is described in \thispaper.
 Currently, as part of an ongoing work \cite{dijkstra04ehc-web},
 in the compilers following the compilers described in \thispaper, the following Haskell features are dealt with:
@@ -426,13 +464,10 @@ We have deliberately not dealt with these issues.
 Though necessary and convenient we feel that these features should be added after all else has been dealt with,
 so as not to make understanding and implementating essential features more difficult.
 
-%if False
-%if storyPHD
-\subsection*%
-%else
-\subsection%
-%endif
-{Untackled newly arisen issues}
+%%]
+
+%%[newlyArisenIssues
+\subsection{Untackled newly arisen issues}
 The extra features on occasions also add new issues...
 
 \paragraph{Kind checking required during type inferencing}
@@ -453,8 +488,34 @@ in   let  maf :: (a -> Eq a a) -> Eq L L
 \paragraph{Co/contra variance analysis/inference/checking}
 
 \TBD{}
-%endif
+%%]
 
+%%[projectStatus
+The implementation and description of the EH is an ongoing project.
+This thesis therefore reflects work in progress in which we have partially achieved our goals:
+\begin{itemize}
+\item
+All presented code fragments come from the same sources as used by the implementation of all compilers.
+\item
+Part of the type related AG code is generated by the |Ruler| system.
+This is the case for type rules and corresponding AG code for EH1 (\chapterRef{ehc1}),
+EH2 (\chapterRef{ehc2}),
+and EH3 (\chapterRef{ehc3}).
+\item
+
+\end{itemize}
+
+------
+
+work in progress
+
+consistency: partly achieved for type rules and their (ag) implementation, fully achieved for source code and explanation
+
+coverage of compiler: partly achieved, focus on experiments (the presence of which supports claim of easy extendability)
+
+see conclusion for evaluation
+
+-------
 %%]
 
 %%[scratch

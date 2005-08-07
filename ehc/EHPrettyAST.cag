@@ -45,7 +45,6 @@ SEM Decl
                                         ]
   | TySig       lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","TySig"] [ppNm @nm] [@tyExpr.ppAST] @info
                 loc     .  info     =   [ mkInfo1 "tyExpr.ty" (ppTy @tyExpr.ty)
-                                        , mkInfo1 "gamSigTy" (ppTy @gamSigTy)
                                         ]
 
 SEM Expr
@@ -103,10 +102,10 @@ SEM Expr
 SEM PatExpr
   | IConst      lhs     .  ppAST    =   ppNest ["PatExpr","IConst"] [@pp] []
   | CConst      lhs     .  ppAST    =   ppNest ["PatExpr","CConst"] [@pp] []
-  | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","Var"] [ppNm @nm] [] @info
-                loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
-                                        , mkInfo1 "ty" (ppTy @ty)
+  | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","Var"] [ppNm @nm] [] (@info_1 ++ @info_2)
+                loc     .  info_1   =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         ]
+                        .  info_2   =   []
   | VarAs       lhs     .  ppAST    =   ppNest ["PatExpr","VarAs"] [ppNm @nm] [@patExpr.ppAST]
   | Con         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","Con"] [ppNm @nm] [] (@info ++ @info_2 ++ @info_4)
                 loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
@@ -138,7 +137,7 @@ SEM Decls
 %%[2
 SEM Decl
   | Val         loc     .  info     :=  [ mkInfo1 "lhs.tySigGam" (ppGam @lhs.tySigGam)
-                                        , mkInfo1 "sigTy" (ppTy @sigTy)
+                                        , mkInfo1 "ty_sig_" (ppTy @ty_sig_)
                                         , mkInfo1 "patExpr.ty" (ppTy @patExpr.ty)
                                         , mkInfo1 "expr.ty" (ppTy @expr.ty)
                                         , mkInfo1 "lhs.tyCnstr" (ppCnstrV @lhs.tyCnstr)
@@ -169,18 +168,19 @@ SEM Expr
                                         , mkInfo1 "lhs.finTyCnstr" (pp @lhs.finTyCnstr)
                                         ]
   | Let         loc     .  info_2   :=  [ mkInfo1 "decls.gathTySigGam" (pp @decls.gathTySigGam)
-                                        , mkInfo1 "lValGam" (pp @lValGam)
-                                        , mkInfo1 "lValGam+decls.tyCnstr" (pp (@decls.tyCnstr |=> @lValGam))
+                                        , mkInfo1 "valGam_l_" (pp (gamTop @decls.patValGam))
+                                        , mkInfo1 "valGam_l_+decls.tyCnstr" (pp (@decls.tyCnstr |=> gamTop @decls.patValGam))
                                         ]
   | TypeAs      loc     .  info_2   :=  [ mkInfo1 "asTy" (ppTy @asTy)
                                         ]
 
 SEM PatExpr
-  | AppTop      loc     .  info2    :=  [ mkInfo1 "patFunTy" (ppTy @patFunTy)
+  | Var         loc     .  info_2   :=  [ mkInfo1 "ty" (ppTy @ty)
+                                        ]
+  | AppTop      loc     .  info2    :=  [ mkInfo1 "patExpr.patFunTy" (ppTy @patExpr.patFunTy)
                                         , mkInfo1 "patExpr.ty" (ppTy @patExpr.ty)
                                         ]
-  | Con         loc     .  info_2   :=  [ mkInfo1 "patFunTy" (ppTy @patFunTy)
-                                        , mkInfo1 "ty" (ppTy @ty)
+  | Con         loc     .  info_2   :=  [ mkInfo1 "ty" (ppTy @ty)
                                         ]
 %%]
                                         -- , mkInfo1 "decls.tyCnstr" (ppCnstrV @decls.tyCnstr)
@@ -192,7 +192,7 @@ SEM TyExpr
 
 SEM Expr
   | Let         loc     .  info_3   :=  [ mkInfo1 "lSubsValGam" (ppGam @lSubsValGam)
-                                        , mkInfo1 "lQuValGam" (ppGam @lQuValGam)
+                                        , mkInfo1 "quValGam_" (ppGam @quValGam_)
                                         ]
 %%]
 
@@ -240,7 +240,7 @@ SEM Expr
                                         , mkInfo1 "elimImprTyCnstr" (ppCnstrV @elimImprTyCnstr)
                                         , mkInfo1 "lExplTyCnstr" (ppCnstrV @lExplTyCnstr)
                                         , mkInfo1 "lQuTyCnstr" (ppCnstrV @lQuTyCnstr)
-                                        , mkInfo1 "lQuTyCnstr |=> lQuValGam" (ppGam (@lQuTyCnstr |=> @lQuValGam))
+                                        , mkInfo1 "lQuTyCnstr |=> quValGam_" (ppGam (@lQuTyCnstr |=> @quValGam_))
                                         , mkInfo1 "@lQuTyCnstr |=> @decls.tyCnstr" (ppCnstrV (@lQuTyCnstr |=> @decls.tyCnstr))
                                         ]
   | App         loc     .  info_4_2 :=  [ mkInfo1 "foTy imprFO1 (arg)" (ppTy (foTy @imprFO1))

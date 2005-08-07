@@ -33,7 +33,7 @@
 %%[2 export(assocLMapElt,assocLMapKey)
 %%]
 
-%%[2 export(unionL)
+%%[2 export(unions)
 %%]
 
 %%[3 export(hsnUn, hsnIsUn, hsnUnUn)
@@ -141,23 +141,27 @@ instance Show HsName where
   show (HNPos p  )  = show p
 %%]
 
-%%[1.HsName.Base
-hsnArrow, hsnUnknown, hsnInt, hsnChar, hsnWild :: HsName
+%%[1.HsName.Base.itf
+hsnArrow, hsnUnknown, hsnInt, hsnChar, hsnWild
+                                    ::  HsName
+hsnProd                             ::  Int -> HsName
+hsnProdArity                        ::  HsName -> Int
+%%]
+
+%%[1.HsName.Base.impl
 hsnArrow                            =   HNm "->"
 hsnUnknown                          =   HNm "??"
 hsnInt                              =   HNm "Int"
 hsnChar                             =   HNm "Char"
 hsnWild                             =   HNm "_"
-
-hsnProd                             ::  Int -> HsName
 hsnProd         i                   =   HNm  (',' : show i)
 
 hsnIsArrow, hsnIsProd               ::  HsName -> Bool
 hsnIsArrow      hsn                 =   hsn == hsnArrow
+
 hsnIsProd       (HNm (',':_))       =   True
 hsnIsProd       _                   =   False
 
-hsnProdArity                        ::  HsName -> Int
 hsnProdArity    (HNm (_:ar))        =   read ar
 %%]
 
@@ -723,9 +727,9 @@ hdAndTl :: [a] -> (a,[a])
 hdAndTl = hdAndTl' undefined
 %%]
 
-%%[2.unionL
-unionL :: Eq a => [[a]] -> [a]
-unionL = foldr union []
+%%[2.unions
+unions :: Eq a => [[a]] -> [a]
+unions = foldr union []
 %%]
 
 %%[4.listCombineUniq

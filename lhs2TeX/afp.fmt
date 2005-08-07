@@ -89,6 +89,7 @@
 %format restr		= "\backslash "
 
 %format Gammap      = Gamma "_{p}"
+%format Gammat      = Gamma "_{t}"
 %format Gammaq      = Gamma "^{q}"
 %format Gammab      = Gamma "^{b}"
 %format Gammasig    = Gamma "_{sig}"
@@ -98,6 +99,7 @@
 %format sigmak      = sigma "^{k}"
 %format sigman      = sigma "_{n}"
 %format sigmapk     = sigma "_{p}^{k}"
+%format sigmapf     = sigma "_{pf}"
 %format sigmaq      = sigma "^{q}"
 %format sigmab      = sigma "^{b}"
 %format sigmae      = sigma "_{e}"
@@ -119,6 +121,7 @@
 %format bsigma      = sigma "_{" /=/ "}"
 
 %format Cnstr       = "\mathcal{C}"
+%format Cnstra		= Cnstr "_{a}"
 %format Cnstrr		= Cnstr "_{r}"
 %format Cnstrp		= Cnstr "_{p}"
 %format Cnstrk		= Cnstr "^{k}"
@@ -136,8 +139,10 @@
 
 %format tvar        = "{\nu}"
 %format tvarv       = v
+%format tvarv'
 %format tvare       = tvarv
 %format tvarf       = f
+%format tvarf'
 %format tvari       = tvarv "_i"
 %format tvar1
 %format tvar2

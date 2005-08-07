@@ -355,27 +355,27 @@ SEM KiExpr
 
 %%[1.ExprExtra
 SEM Expr
-  | Let         loc     .   ppExtra     =   ppCmt (ppGam @lValGam)
+  | Let         loc     .   ppExtra     =   ppCmt (ppGam (gamTop @decls.patValGam))
 %%]
 
 %%[2
 SEM Expr
-  | Let         loc     .   ppExtra     :=  ppCmt (ppGam (@lhs.finTyCnstr |=> @lValGam))
+  | Let         loc     .   ppExtra     :=  ppCmt (ppGam (@lhs.finTyCnstr |=> (gamTop @decls.patValGam)))
 %%]
 
 %%[3
 SEM Expr
-  | Let         loc     .   ppExtra     :=  ppCmt (ppGam (@lhs.finTyCnstr |=> @lQuValGam))
+  | Let         loc     .   ppExtra     :=  ppCmt (ppGam (@lhs.finTyCnstr |=> @quValGam_))
 %%]
 
 %%[6
 SEM Expr
-  | Let         loc     .   ppExtra     :=  ppCmt (ppGam @lQuTyGam) >-< ppCmt (ppGam (@lhs.finTyCnstr |=> @lQuValGam))
+  | Let         loc     .   ppExtra     :=  ppCmt (ppGam @lQuTyGam) >-< ppCmt (ppGam (@lhs.finTyCnstr |=> @quValGam_))
 %%]
 
 %%[9
 SEM Expr
-  | Let         loc     .   ppExtra     :=  ppCmt  (    ppGam @lQuTyGam   >-< ppGam (@lhs.finTyCnstr |=> @lQuValGam)
+  | Let         loc     .   ppExtra     :=  ppCmt  (    ppGam @lQuTyGam   >-< ppGam (@lhs.finTyCnstr |=> @quValGam_)
                                                    >-<  ppGam @lQuPrIGam  >-< ppTGam @prfCtxtId @decls.patPrElimTGam
                                                    )
 %%]
