@@ -11,7 +11,7 @@ The polymorphic identity function |id| accepts a value of any type |a|,
 giving back a value of the same type |a|.
 Type variables in the type signature are used to specify polymorphic types.
 Polymorphism of a type variable in a type is made explicit in the type
-by the use of a universal quantifier @forall@, or |forall|.
+by the use of a universal quantifier @forall@, pretty-printed as |forall|.
 The meaning of this quantifier is that a value with a universally quantified
 type can be used with different types for the quantified type variables.
 
@@ -21,7 +21,11 @@ The type signature may be omitted, and in that case the same type will still be 
 However, the reconstruction of the type of a value for which
 the type signature is omitted has its limitations,
 the same as for Haskell98 \cite{peytonjones03has98-rev-rep}.
-Haskell98 also restricts what can be described by type signatures.
+Haskell98 also restricts what can be described by type signatures by allowing
+a quantifier only at the beginning of a type signature.
+In this version of EH we also  do not allow the explicit use of a quantifier in a type expression
+(for a type signature);
+the quantifier is inserted by the implementation.
 
 Polymorphism is allowed for identifiers bound by a |let|-expression,
 not for identifiers bound by another mechanism such as parameters of a
@@ -76,12 +80,7 @@ Because |i| is not allowed to be polymorphic it can either be used on |Int| or |
 not both.
 
 These problems can be overcome by allowing higher ranked polymorphism in type signatures.
-Later versions of EH deal with this problem%
-%if incl04
-(\chapterRef{ehc4}).
-%else
-, but this is not included in \thispaper.
-%endif
+Later versions of EH deal with this problem (\chapterRef{ehc4}).
 This version of EH resembles Haskell98 in these restrictions.
 
 %if False
@@ -140,12 +139,13 @@ additional alternative to represent a quantified type.
 For a type variable we also have to remember to which category it belongs,
 either \IxAsDef{plain} or \IxAsDef{fixed}:
 
-\chunkCmdUseMark{EHTyAbsSyn.3}
+\chunkCmdUseMark{EHTyAbsSyn.3.TyVar}
+\chunkCmdUseMark{EHTyAbsSyn.3.Quant}
 
-together with convenience functions for constructing these types:
-
+%%[[hide impl.tyWrappersEH3="Type construction"
 \chunkCmdUseMark{EHTy.3.mkTyVar}
 \chunkCmdUseMark{EHTy.3.mkTyQu}
+%%]
 
 We will postpone the discussion of type variable categories
 until \secRef{ehc3instantiation}.
@@ -175,21 +175,21 @@ Changes have to be made to the handling of declarations and identifiers though.
 This is because polymorphism is tied up with the way identifiers for
 values are introduced and used.
 
-\rulerCmdUse{rules.expr2.3}
+%\rulerCmdUse{rules.expr2.3}
+\rulerCmdUse{rules3.HM.expr.baseForEH3}
+\rulerCmdUse{rules3.HM.decl.base}
 
 A quantified type, also often named \IxAsDef{type scheme},
-is introduced in \ruleRef{e-let3} and \ruleRef{e-let-tysig3} and instantiated
-in \ruleRef{e-ident3}, see \figRef{rules.expr2.3}.
+is introduced in \ruleRef{e.let} and instantiated
+in \ruleRef{e-ident3} (see \figRef{rules3.HM.expr.baseForEH3}).
 We will first look at the \IxAsIs{instantiation}.
 
 \subsubsection{Instantiation}
 \label{ehc3instantiation}
 
-A quantified type is introduced in the type inferencing process whenever a value identifier having that type is occurs
-in an expression:
-
-\chunkCmdUseOnPrev{EHInferExpr.1.Var,EHInferExpr.2.Var}{EHInferExpr.3.Var}
-
+A quantified type is introduced in the type inferencing process
+whenever a value identifier having that type occurs
+in an expression (\ruleRef{e.var}, \figRef{rules3.HM.expr.baseForEH3})
 We may freely decide what type the quantified type variables may have as long
 as each type variable stands for a monomorphic type.
 However, at this point it is not known which type a type variable
@@ -197,14 +197,15 @@ stands for, so fresh type variables are
 used instead.
 This is called \IxAsDef{instantiation}, or \IxAsIs{specialization}.
 The resulting instantiated type partakes in the inference process as usual.
-
-The removal of the quantifier and replacement of all quantified type variables
-with fresh type variables
-is done by |tyInst|:
-
+%%[[hide impl.tyInst="Type instantiation"
+\[
+\rulerCmdUse{rules3.C.expr.base.e.var}
+\]
 \chunkCmdUseMark{EHTyInstantiate.3.tyInst}
-
-Function |tyInst| strips all quantifiers and substitutes the quantified type variables with fresh ones.
+\chunkCmdUseMark{EHRulerRules.3.expr.e.var}
+%%]
+\RuleRef{e.var} shows how the type bound to an identifier is instantiated by
+replacing its quantified type variables with fresh ones.
 It is assumed that quantifiers occur only at the top of a type.
 
 \subsubsection{Quantification}
@@ -212,58 +213,74 @@ It is assumed that quantifiers occur only at the top of a type.
 The other way around, quantifying a type, happens when a type is
 bound to a value identifier and added to a |Gamma|.
 The way this is done varies with the presence of a type signature.
-\RuleRef{e-let3} and \ruleRef{e-let-tysig3} (\figRef{rules.expr2.3})
-specify the respective variations.
+\RuleRef{e.let} (\figRef{rules3.HM.expr.baseForEH3}), \ruleRef{d.tysig}, and \ruleRef{d.val}
+(\figRef{rules3.HM.decl.base})
+specify the respective variations:
 
-A type signature itself is specified without explicit use of quantifiers.
-These need to be added for all introduced type variables, except the ones specified
-by means of `@...@' in a partial type signature:
-
-\chunkCmdUseOnPrev{EHInfer.1.gathTySigGam}{EHInfer.3.TySig}
-
-A type signature simply is quantified over all free type variables in the type using
-
-\chunkCmdUseMark{EHTyQuantify.3.tyQuantify}
-% \chunkCmdUseMark{EHTyQuantify.3.tyQuantifyClosed}
-
-Type variables introduced by a wildcard may not be quantified over because the type inferencer will fill in the
-type for those type variables.
-
-We now run into a problem which will be solved no sooner than the next version of EH.
-In a declaration of a value (variant |Val| of |Decl|)
-the type signature acts as a known type |knTy| against which checking of the value expression takes place.
-Which type do we use for that purpose, the quantified |sigTy| or the unquantified |tyExpr.ty|?
 \begin{itemize}
 \item
-Suppose the |tyExpr.ty| is used.
+A type signature (for an identifier) is specified explicitly, in \ruleRef{d.tysig}.
+Partial type signatures are supported, but discussed in \secRef{ehc-partial-sig}.
+\item
+A type (for an identifier) is inferred.
+At the boundary of its scope, in \ruleRef{e.let}, we generalise over those type variables in the type
+which do not occur outside the scope.
+\end{itemize}
+
+A type signature itself is specified without explicit use of quantifiers.
+These need to be added for all introduced type variables in the type expression for the signature.
+\RuleRef{d.tysig} shows how a quantified type is computed by wrapping the type in
+the quantifier |forall =@= Ty_Quant|.
+In the implementation we wrap the type in |Ty_Quant|, one for each free type variable.
+%%[[hide impl.tyQuant="Type quantification"
+\[
+\rulerCmdUse{rules3.C.expr.decl.d.tysig}
+\]
+\chunkCmdUseMark{EHTyQuantify.3.tyQuantify}
+\chunkCmdUseMark{EHRulerRules.3.decl.d.tysig}
+%%]
+
+We now run into a problem which will be solved more elegantly in the next version of EH.
+In a declaration of a value (\ruleRef{d.val})
+the type signature acts as a known type against which checking of the value expression takes place.
+Which type do we use for that purpose, the quantified or the unquantified type signature?
+\begin{itemize}
+\item
+Suppose the unquantified signature |a -> a| is used in the following fragment.
 Then, for the erroneous
 \begin{code}
-let  id :: a -> a
-     id = \x -> 3
+let  id  ::  a   -> a
+     id  =   \x  -> 3
 in   ...
 \end{code}
 we end up with fitting |tvarv1 -> Int <= a -> a|.
 This can be accomplished via constraints |[tvarv1 :-> Int, a :-> Int]|.
-However, |a| was supposed to be chosen by the caller of |id|.
-Now it is constrained by the body of |id| to be an |Int|.
+However, |a| can be chosen by the caller of |id|.
+Instead it now is constrained by the body of |id| to be an |Int|.
 Somehow constraining |a| whilst being used as part of a known type for the body of
 |id| must be inhibited.
 \item
-Alternatively, |sigTy| may be used.
+Alternatively, quantified signature |forall ^ a . a -> a| may be used.
 However, the inferencing process and the fitting done by |fitsIn| cannot (yet) handle
 types with quantifiers.
 \end{itemize}
 
 For now, this can be solved by replacing all quantified type variables of a known type
-with type constants:
-
-\chunkCmdUseOnPrev{EHInfer.1.tyInstKnown}{EHInfer.3.tyInstKnown}
-
-by using a variant of |tyInst|:
-
+with type constants, encoded by a type variable with category |TyVarCateg_Fixed|.
+\RuleRef{d.val} instantiates the type signature, which will be used as the expected type for both the
+pattern and value expression,
+with fixed type variables |tvarf|.
+If no type signature is defined for the value declaration, a fresh type variable is used for the pattern
+and the pattern type is used for the expression;
+the implementation specifies this precisely.
+%%[[hide impl.declValEH3="Value declaration and instantiation of type signature"
+\[
+\rulerCmdUse{rules3.C.expr.decl.d.val}
+\]
+\chunkCmdUseMark{EHRulerRules.3.decl.d.val}
 \chunkCmdUseMark{EHTyInstantiate.3.tyInstKnown}
+%%]
 
-This changes the category of the fresh type variable replacing the quantified type variable to `fixed'.
 A \IxAsDef{fixed type variable} is like a plain type variable but may not be constrained,
 that is, bound to another type.
 This means that |fitsIn| has to be adapted to prevent this from happening.
@@ -276,8 +293,8 @@ For brevity the new version of |fitsIn| is omitted.
 
 How do we determine if a type for some expression bound to an identifier in
 a value declaration is polymorphic?
-If a (non partial) type signature is given, the signature itself describes the
-polymorphism via type variables explicitly.
+If a type signature is given, the signature itself describes the
+polymorphism explicitly by means of type variables.
 However, if for a value definition a corresponding type signature is missing,
 the value definition itself gives us all the information we need.
 We make use of the observation that a binding for a value identifier
@@ -289,7 +306,7 @@ in   ...
 The only way the value associated with |id| ever will be used outside the
 expression bound to |id|, is via the identifier |id|.
 So, if the inferred type |tvarv1 -> tvarv1| for the expression |\x -> x| has free type variables
-(here: |[tvarv1]|)
+(here: |tvarv1|)
 and these type variables are not used in the types of other bindings, in particular those
 in the global |Gamma|,
 we know that the expression |\x -> x| nor any other type will constrain those free type variables.
@@ -297,12 +314,16 @@ The type for such a type variable apparently can be freely chosen by
 the expression using |id|, which is exactly the meaning
 of the universal quantifier.
 These free type variables are the candidate type variables over which quantification can take place,
-as described by the typing rules for |let|-expressions in \figRef{rules.expr2.3} and its implementation:
+as described by the typing rules for |let|-expressions in \figRef{rules3.HM.expr.baseForEH3}
+and its implementation.
+%%[[hide impl.letQuantEH3="Generalisation in let expressions"
+\[
+\rulerCmdUse{rules3.C.expr.base.e.let}
+\]
+\chunkCmdUseMark{EHRulerRules.3.expr.e.let}
 
-\chunkCmdUseOnPrev{EHInfer.1.Let,EHInfer.2.Let}{EHInfer.3.Let}
-
-All available constraints in the form of |decls.tyCnstr| are applied to both global (|gValGam|)
-and local (|lValGam|) |Gamma|.
+All available constraints in the form of |decls.tyCnstr| are applied to both global (|valGam_g_|)
+and local (|valGam_l_|) |Gamma|.
 All types in the resulting local |lSubsValGam| are then quantified over their free type variables,
 with the exception of those referred to more globally, the |gTyTvL|.
 We use |valGamQuantify| to accomplish this:
@@ -311,6 +332,7 @@ We use |valGamQuantify| to accomplish this:
 \chunkCmdUseMark{EHGam.3.valGamMapTy}
 \chunkCmdUseMark{EHGam.3.gamMap}
 \chunkCmdUseMark{EHGam.3.gamMapElts}
+%%]
 
 The condition that quantification only may be done for type variables not occurring in
 the global |Gamma| is a necessary one.
@@ -378,40 +400,6 @@ is given as is done for |f2|.
 Then also for |g2| may the type |forall a.a->a| be reconstructed.
 
 \TBD{example polymorphic recursion}
-
-\subsubsection{Type expressions}
-
-Finally, type expressions need to return a type where all
-occurrences of type variable names (of type |HsName|) coincide with type variables (of type |TyVarId|).
-Type variable names are identifiers just as well so 
-a |TyGam| similar to |ValGam|
-is used to map type variable names to freshly created type variables.
-
-\chunkCmdUseMark{EHInferTyExpr.3}
-
-Either a type variable is defined in |tyGam|, in that case the type bound to the identifier is used,
-otherwise a new type variable is created.
-
-%if inclOmitted
-\subsection{Omitted}
-Details concerning pretty printing
-have been omitted.
-
-Generation of unique identifiers for type variables
-in a type for pretty printing
-has been omitted here, but
-can be found in \appRef{app-ag-pattern-uid}.
-%endif
-
-%if not omitLitDiscuss
-\subsection<article>{Literature}
-
-\TBD{}
-
-Polymorphic recursion
-\cite{kfoury93recursivetype,hallet04polyrec-ex,vasconcellos03polyrec-impl,henglein91polyrec-infer,figueiredo01polyrec-princ}
-%endif
-
 %%]
 
 %%[XX

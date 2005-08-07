@@ -325,7 +325,8 @@ SEM Expr
                 loc         .   ty                  =   [@body.tyCnstr |=> @knArgImpl] `mkArrow` @body.ty
 %%]
 
-%%[2.AppTop
+-- generated from ruler rules into EHRulerRules, was 2.AppTop
+%%[4.AppTop
 SEM Expr
   | AppTop      loc         .   knTy                =   tyEnsureNonAny @lUniq @lhs.knTy
 %%]

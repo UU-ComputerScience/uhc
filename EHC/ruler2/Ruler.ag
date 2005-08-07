@@ -167,7 +167,7 @@ cmdLineOpts
           "select rules by specifying view(s), ruleset(s) and rule(s), <spec>=(*|<view name>|<view name>-<view name>).(*|<ruleset names>).(*|<rule names>)"
      , Option ""   ["help"]             (NoArg oHelp)
           "output this help"
-     , Option "w"  ["wrapfrag"]         (NoArg oFragWrap)
+     , Option "w"  ["wrapshuffle"]      (NoArg oFragWrap)
           "wrap AG code in fragments for further processing by shuffle"
      , Option "d"  ["debug"]            (NoArg oDebug)
           "output debugging info"

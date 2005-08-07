@@ -9,7 +9,7 @@
 %%% Gamma (aka Assumptions, Environment)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 import(Data.List,EHCommon) export(Gam,emptyGam,gamLookup, gamPushNew, gamPop, gamAddGam, gamUnit, gamAdd, gamPushGam, gamToAssocL, assocLToGam, gamToDups)
+%%[1 import(Data.List,EHCommon) export(Gam,emptyGam,gamLookup, gamPushNew, gamPop, gamTop, gamAddGam, gamUnit, gamAdd, gamPushGam, gamToAssocL, assocLToGam, gamToDups)
 %%]
 
 %%[1 import(EHTy,EHError) export(ValGam, ValGamInfo(..), valGamLookup,valGamLookupTy)
@@ -34,9 +34,6 @@
 %%]
 
 %%[4 export(gamMapThr)
-%%]
-
-%%[4 export(gamTop)
 %%]
 
 %%[4_2 export(ErrGam)
@@ -120,16 +117,19 @@ gamAdd          k v g               = tgamAdd (tgamSize1 g) k v g
 
 %%[1.Rest.sigs
 gamPop              ::            Gam k v     -> (Gam k v,Gam k v)
+gamTop              ::            Gam k v     -> Gam k v
 assocLToGam         ::  Ord k =>  AssocL k v  -> Gam k v
 %%]
 
 %%[1.Rest.funs
 gamPop          (Gam (l:ll))        = (Gam [l],Gam ll)
+gamTop                              = fst . gamPop
 assocLToGam     l                   = Gam [l]
 %%]
 
 %%[9.Rest.funs -1.Rest.funs
 gamPop          g                   = let (g1,_,g2) = tgamPop (tgamSize1 g) 1 g in (g1,g2)
+gamTop                              = fst . gamPop
 assocLToGam                         = assocLToTGam 1 
 %%]
 
@@ -176,11 +176,6 @@ gamMapThr f thr (Gam ll)
 %%[9.gamMapThr -4.gamMapThr
 gamMapThr :: (Ord k,Ord k') => ((k,v) -> t -> ((k',v'),t)) -> t -> Gam k v -> (Gam k' v',t)
 gamMapThr f thr g = tgamMapThr (tgamSize1 g) (\k v t -> let ((k',v'),t') = f (k,v) t in (k',v',t')) thr g
-%%]
-
-%%[4.gamTop
-gamTop ::  Gam k v -> Gam k v
-gamTop = fst . gamPop
 %%]
 
 %%[8.gamMbUpd
@@ -637,13 +632,13 @@ type KiGam = Gam HsName KiGamInfo
 %%[2.Substitutable.Gam
 instance Substitutable v => Substitutable (Gam k v) where
   s |=> (Gam ll)    =   Gam (map (assocLMapElt (s |=>)) ll)
-  ftv   (Gam ll)    =   unionL . map ftv . map snd . concat $ ll
+  ftv   (Gam ll)    =   unions . map ftv . map snd . concat $ ll
 %%]
 
 %%[9.Substitutable.TreeGam -2.Substitutable.Gam
 instance Substitutable v => Substitutable (TreeGam i k v) where
   s |=> g    =   g {tgamEntriesOf = Map.map (\(n,e) -> (n,Map.map (s |=>) e)) (tgamEntriesOf g)}
-  ftv   g    =   unionL . map (ftv . map head . Map.elems . snd) . Map.elems . tgamEntriesOf $ g
+  ftv   g    =   unions . map (ftv . map head . Map.elems . snd) . Map.elems . tgamEntriesOf $ g
 %%]
 
 %%[2

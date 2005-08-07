@@ -235,6 +235,14 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Epic
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+%\usepackage{epic, eepic}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Change bar (does not work)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -382,7 +390,7 @@
 %elif acm
 %elif storyPHD
 \usepackage[sc]{mathpazo}% change main font
-\linespread{1.05}% larger line spacing due to palatino
+%\linespread{1.05}% larger line spacing due to palatino
 \renewcommand{\bfdefault}{b}% bx palatino isn't available anyway
 %if fontsite
 \usepackage{grotesk}
@@ -626,13 +634,13 @@ Combinator & Meaning & Result
 |p <*> q|                       & |p| followed by |q|               & result of |p| applied to result of |q| \\
 |p <||> q|                      & |p| or |q|                        & result of |p| or result of |q| \\
 |pSucceed r|                    & empty input |epsilon|             & |r| \\
-|f <$> p|                       & |== pSucceed f <*> p|             & \\
+|f <$> p|                       & |=== pSucceed f <*> p|            & \\
 |pKey "x"|                      & symbol/keyword x                  & |"x"| \\
 }
 \def\ParserCombTableB{%
 |p <**> q|                      & |p| followed by |q|               & result of |q| applied to result of |p| \\
-|p `opt` r|                     & |== p <||> pSucceed r|            & \\
-|p <??> q|                      & |== p <**> q `opt` id|            & \\
+|p `opt` r|                     & |=== p <||> pSucceed r|           & \\
+|p <??> q|                      & |=== p <**> q `opt` id|           & \\
 |p <* q|, |p *> q|, |f <$ p|    & \parbox[t]{.3\textwidth}{variants throwing away result of angle missing side}
                                                                     & \\
 |pFoldr listAlg p|              & sequence of |p|'s                 & |foldr c n (|result of all |p|'s|)| \\
@@ -681,10 +689,21 @@ Combinator & Meaning & Result
 \addtolength{\parskip}{0.25\baselineskip}
 %elif acm && (icfp05 || hw05 || popl06)
 %elif storyPHD
+\setlength{\parindent}{0mm}
+\addtolength{\parskip}{0.22\baselineskip}
 %else
 \setlength{\parindent}{0mm}
 \addtolength{\parskip}{0.25\baselineskip}
 %endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Inside cover pages
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+\vfill
+\FigPDF{ipalogo}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -768,66 +787,35 @@ Combinator & Meaning & Result
 
 %%[2
 
-%if incl00
+\section{Introduction}
+\label{secIntro}
+%%@StoryIntro.introPHD
 
-%if not storyEHIntro
-%if storyPHD
-\section*%
-%else
-\section%
-%endif
-{Introduction and overview}
-%endif
+\subsection{Goal of \thispaper}
+%%@StoryIntro.goal
 
-%%@StoryIntro.intro
+\subsection{Reading perspectives}
+%%@StoryIntro.readingPerspectives
 
-%%]
+\subsection{Overview}
+%%@StoryIntro.overview
 
-%%[2
+\subsection{Project status}
+%%@StoryIntro.projectStatus
 
-%if incl00TopicAGPrimer
-%if storyPHD
-\subsection*%
-%else
-\subsection%
-%endif
-{An AG mini tutorial}
+\subsection{A short EH tour}
+\label{secEHTour}
+%%@StoryIntro.shortTour
+
+\subsection{An AG mini tutorial}
+\label{secAGTut}
 The remaining part of the introduction contains a small tutorial on the AG system.
 The tutorial explains the basic features of the AG system.
 The explanation of remaining features is postponed to its first use throughout the main text.
 These places are marked with |AGFeature|.
 The tutorial can safely be skipped if the reader is already familiar with the AG system.
 
-
 %%@AGMiniPrimer.primer
-%\inputEHCTex{\EHCTexVersion}{AGMiniPrimer.tex}
-%endif
-
-%%]
-
-%%[2
-
-%if not omitLitDiscuss
-%if storyPHD
-\subsection*%
-%else
-\subsection%
-%endif
-<article>{Literature}
-
-\TBD{}
-
-here????
-Or merged with previous.
-
-Similar, implementation describing
-
-Rules only
-
-Haskell
-%endif
-
-%endif %% incl00
 
 %%]
 
@@ -1108,7 +1096,9 @@ Coercion (of records), related to subsumption
 %%[2
 
 \section{EH ??: partial type signatures}
-\label{ehc8}
+\label{ehc-partial-sig}
+
+%%@TopicPartialTySig.fromAFP
 
 %%]
 
@@ -1346,15 +1336,33 @@ error messaging, line/col position, comment ????
 
 \section{Scratch}
 
-\rulerCmdUse{rules3.K.patexpr.base}
-\rulerCmdUse{rules3.C.patexpr.base}
+\FigureXFigTex{roadmap}{Roadmap to \thispaper}{fig-roadmap}
+
+\FigureXFigTex{system-overview}{BLA}{BLA}
+
+
+
+%\rulerCmdUse{rules3.E.expr.scratch}
+%\rulerCmdUse{rules3.E.decl.base}
+%\rulerCmdUse{rules3.K.expr.scratch}
+%\rulerCmdUse{rules3.K.decl.base}
+%\rulerCmdUse{rules3.C.expr.scratch}
+\rulerCmdUse{rules3.C.expr.baseForEH2}
+\rulerCmdUse{rules3.C.decl.base}
+\rulerCmdUse{rules3.HM.expr.baseForEH2}
+\rulerCmdUse{rules3.HM.decl.base}
+%\rulerCmdUse{rules3.HM.expr.scratch}
+%\rulerCmdUse{rules3.HM.decl.base}
 %\rulerCmdUse{rules3.HM.expr.scratch}
 %\rulerCmdUse{rules3.I1.expr.scratch}
 %\rulerCmdUse{rules3.I2.expr.scratch}
 %\rulerCmdUse{rules3.P.expr.scratch}
 
-%\rulerCmdUse{rules3.K.match.onlyK}
-%\rulerCmdUse{rules3.K.fit}
+%\rulerCmdUse{rules3.K.patexpr.base}
+%\rulerCmdUse{rules3.C.patexpr.base}
+
+%\rulerCmdUse{rules3.C.match.all}
+%\rulerCmdUse{rules3.C.fit}
 
 %\chunkCmdUseMark{EHRulerRules.1.expr.e.lam}
 %\chunkCmdUseMark{EHRulerRules.2.expr.e.lam}
@@ -1367,31 +1375,31 @@ error messaging, line/col position, comment ????
 
 %%]
 
-%%@TopicImpred.scratch4
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Conclusion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[1
-%if inclConcl
-\section{Remarks, experiences and conclusion}
+%%[2
+\section{Evaluation and future work}
 \label{ehcConcl}
+
+\subsection{Evaluation}
+%%@TopicReflection.phdEvaluation
+
+\subsection{Evaluation from AFP story}
+%%@TopicReflection.afpConclusion
+
+\subsection{Future work}
+%%@TopicReflection.phdFutureWork
+
 %%]
 
 %%[6
-%%@StoryAFP.conclusion
-%%]
-
-%%[1
-%endif %% inclConcl
-
-%if False %% phd
-Meta: AG separate chunks are understandable when grouped together, not if read with a lot of pages in between. So, incrementally building means pasting layers of changes on to each other,
-but should be viewed in combination with a clear visual cue indicating what is different and new.
-%endif
+\section{Remarks, experiences and conclusion}
+\label{ehcConcl}
+%%@TopicReflection.afpConclusion
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1618,12 +1626,136 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 
 %%[7
 \section{Additional fragments}
-\input \jobname.hide
+\input \jobname-hide.tex
 %%]
 
 %%[2
+\section{Notation}
+\subsection{Legenda of symbols}
+\label{appx-legenda-notation}
+
+\begin{tabular}{ll}
+Notation & Meaning \\
+\hline
+%%@AppxNotation.notationBasic
+%%@AppxNotation.notationImpredA
+%%@AppxNotation.notationImpredB
+%%@AppxNotation.notationTransl
+%%@AppxNotation.notationExplImpl
+\end{tabular}
+
+\subsection{Term language}
+\label{appx-legenda-termlang}
+
+{
+\def\emph#1{#1}
+%%@AppxNotation.termTableBegin
+%%@AppxNotation.termTableFormat
+%%@AppxNotation.exprHeader
+%%@AppxNotation.exprBasic
+%%@AppxNotation.exprRecBasic
+%%@AppxNotation.exprRecExt
+%%@AppxNotation.exprTup
+%%@AppxNotation.exprAppImpred
+%%@AppxNotation.exprExplImpl
+%%@AppxNotation.termSeparator
+%%@AppxNotation.declHeader
+%%@AppxNotation.declBasic
+%%@AppxNotation.declDataType
+%%@AppxNotation.declExplImpl
+%%@AppxNotation.termSeparator
+%%@AppxNotation.identHeader
+%%@AppxNotation.identBasic
+%%@AppxNotation.identRecLbl
+%%@AppxNotation.termTableEnd
+}
+
+\subsection{Type language}
+
+%%@AppxNotation.typeTableBegin
+%%@AppxNotation.termTableFormat
+%%@AppxNotation.typeHeader
+%%@AppxNotation.typeBasic
+%%@AppxNotation.typeTyVarFixed
+%%@AppxNotation.typeExists
+%%@AppxNotation.typeRecBasic
+%%@AppxNotation.termSeparator
+%%@AppxNotation.predHeader
+%%@AppxNotation.predBasic
+%%@AppxNotation.termSeparator
+%%@AppxNotation.impredHeader
+%%@AppxNotation.impredBasic
+%%@AppxNotation.termSeparator
+%%@AppxNotation.meetJoinHeader
+%%@AppxNotation.meetJoinBasic
+%%@AppxNotation.termSeparator
+%%@AppxNotation.tyaltHeader
+%%@AppxNotation.tyaltBasic
+%%@AppxNotation.termTableEnd
+
+\subsection{AG and Haskell notational conventions}
+\label{appx-ag-hs-namingconventions}
+
+For names we follow the following naming conventions:
+
+\begin{center}
+\begin{tabular}{lp{0.7\linewidth}}
+|AGItf| & Part of an AG node name if it Interfaces to the Haskell world. \\
+|<X>L|  & List, or ordered set, of |<X>|.
+\end{tabular}
+\end{center}
+
+Less precise, but still a convention, are the following:
+
+\begin{itemize}
+\item
+For a data structure |AbcXyz| the fields are usually prefixed with the uppercase letters of the type name.
+For example:
+\begin{code}
+data AbcXyz = AbcXyz { axFld1 :: ..., axFld2 :: ... }
+axSomething :: AbcXyz -> ...
+axSomething ax ... = ...
+\end{code}
+This is because Haskell does not allow duplicate names for fields (and functions).
+We could have chosen to use Haskell's module mechanism instead,
+but currently not all code for functions related to a single type can be placed in one module,
+due to mutual recursion.
+\end{itemize}
+
+\section{Used libraries}
+
+\subsection{Parser combinators}
+\label{appx-parsercombinators}
+
+\begin{center}
+\begin{tabular}{lll}
+\ParserCombTableHead
+\ParserCombTableA
+\ParserCombTableB
+\end{tabular}
+\end{center}
+
+
+\subsection{Pretty printing combinators}
+\label{appx-prettyprintingcombinators}
+
+\begin{center}
+\begin{tabular}{ll}
+Combinator & Result
+\\ \hline
+|p1 >||< p2| & |p1| besides |p2|, |p2| at the right \\
+|p1 `ppBesideSp` p2| & same as |>||<| but with an additional space in between \\
+|p1 >-< p2| & |p1| above |p2| \\
+|pp_parens p| & |p| inside parentheses \\
+|text s| & string |s| as |PP_Doc| \\
+|pp x| & pretty print |x| (assuming instance |PP x|) resulting in a |PP_Doc| \\
+\end{tabular}
+\end{center}
+
+\section{Fragment manipulation: Shuffle}
+
 \section{Additional fragments}
-\input \jobname.hide
+\input \jobname-hide.tex
 %%]
 
 

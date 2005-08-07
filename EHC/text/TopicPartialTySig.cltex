@@ -1,0 +1,82 @@
+%%[fromAFP
+\subsection{Partial type signatures: a test case for extendability}
+\label{ehc2partial-sig}
+
+Partial type signatures allow the programmer to specify only a part of a type 
+in a type signature. The description of the implementation of this feature is
+separated from the discussion of other features to show the effects of an additional
+feature on the compiler.
+In other words, the following is an impact analysis.
+
+First, both abstract syntax and the parser
+%if not incl01TopicParsing
+(not included in \thispaper)
+%endif
+contain an additional alternative for parsing the "@...@" notation
+chosen for unspecified type information designated by |Wild| for wildcard:
+
+\chunkCmdUseMark{EHAbsSyn.2.TyExpr}
+%if incl01TopicParsing
+The parser for |pTyExprBase| needs an additional alternative:
+\chunkCmdUseMark{EHParser.2.pTyExpr}
+%endif
+
+A wildcard type is treated in the same way as a type variable as it also represents unknown 
+type information:
+
+\chunkCmdUseMark{EHInferTyExpr.2.tyVarGather}
+\chunkCmdUseMark{EHInferTyExpr.2.ty}
+
+Changes also have to be made to the omitted parts of the implementation, in particular the pretty printing
+of the AST
+and generation of unique identifiers.
+We mention the necessity of this but omit the relevant code.
+
+The pretty printing of a type signature is enhanced a bit further by either printing the type signature
+(if no wildcard types are present in it)
+or by printing the type of the type signature combined with all found constraints.
+The decision is based on the presence of wildcard type variables in the type signature:
+
+\chunkCmdUseMark{EHInferTyExpr.2.tyVarWildL}
+
+The set of all constraints is retrieved at the root of the AST and passed back into the tree:
+
+\chunkCmdUseMark{EHInfer.2.finValGam}
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

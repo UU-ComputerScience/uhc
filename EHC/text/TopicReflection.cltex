@@ -1,0 +1,173 @@
+%%[phdFutureWork
+Plain level:
+
+Completion into full Haskell + extensions, well documented, open source project, useful for teaching, useful/usable for third-party experimentation and contribution
+
+Meta level:
+
+Ruler:
+\begin{itemize}
+\item
+Strategy: combining known (programmer supplied, inferred/proven for sure) information with to be inferred information.
+Abstraction then is: representation of mixture of known/unknown, API for incorporating info (like substitution).
+Multipass algorithm(s) for (1) extracting known, (2) inferring unknown.
+\item
+Low-level: mapping to AG may use additional attr's, hidden from the type rule view
+\end{itemize}
+
+Build system: nix, ...
+
+Editing system: proxima, ...
+
+%%]
+
+%%[phdEvaluation
+Meta: AG separate chunks are understandable when grouped together, not if read with a lot of pages in between. So, incrementally building means pasting layers of changes on to each other,
+but should be viewed in combination with a clear visual cue indicating what is different and new.
+
+High fragmentation required for avoiding proliferation of duplicate copies of material necessitates tools (shuffle, ...) and proper visualisation (editors)
+%%]
+
+%%[afpConclusion
+\paragraph{AG system.}
+At the start of \thispaper\ we did make a claim that our ``describe separately'' approach contributes
+to a better understood implementation of a compiler, in particular a Haskell compiler.
+Is this true?
+We feel that this is the case, and thus the benefits outweigh the drawbacks, based on some observations made during this project:
+
+The AG system provides mechanisms to split a description into smaller fragments, combine those fragments and redefine part
+of those fragments.
+An additional fragment management system did allow us to do the same with Haskell fragments.
+Both are essential in the sense that the simultaneous `existence' of a sequence of compiler versions,
+all in working order when compiled, with all aspects described with the least amount of duplication,
+presentable in a consistent form in \thispaper\ could not have been achieved without these mechanisms and supporting tools.
+
+The AG system allows focusing on the places where something unusual needs to be done, similar to other approaches
+\cite{laemmel03boilerplate}.
+In particular, copy rules allow us to forget about a large amount of plumbing.
+
+The complexity of the language Haskell, its semantics, and the interaction between features is not reduced.
+However, it becomes manageable and explainable when divided into small fragments.
+Features which are indeed independent can also be described independently of each other by different attributes.
+Features which evolve through different versions, like the type system, can also be described separately,
+but can still be looked upon as a group of fragments.
+This makes the variation in the solutions explicit and hence increases the understanding of what really makes the difference
+between two subsequent versions.
+
+On the downside, fragments for one aspect but for different compiler versions end up in different sections of \thispaper.
+This makes their understanding more difficult because one now has to jump between pages.
+This is a consequence of the multiple dimensions we describe: variation in language elements (new AST), additional semantics (new attributes) and
+variation in the implementation.
+Paper, on the other hand, provides by definition a linear, one dimensional rendering of this multidimensional view.
+We can only expect this to be remedied by the use of proper tool support (like a fragment editor or browser).
+On paper, proper cross referencing, colors, indexing or accumulative merging of text are most likely to be helpful.
+
+The AG system, though in its simplicity surprisingly usable and helpful, could be improved in many areas.
+For example, no type checking related to Haskell code for attribute definitions is performed,
+nor will the generated Haskell code when compiled by a Haskell compiler produce sensible error messages in terms of the
+original AG code.
+The AG system also lacks features necessary for programming in the large.
+For example, all attributes for a node live in a global namespace for that node instead of being packaged in some form of module.
+
+Performance is expected to give problems for large systems.
+This seems to be primarily caused by the simple translation scheme in which all attributes together live in a tuple just until the program
+completes.
+This inhibits garbage collection of intermediate attributes that are no longer required.
+It also stops GHC from performing optimizations;
+informal experimentation with a large AG program resulted in GHC taking approximately 10 times more time with optimization flags on.
+The resulting program only ran approximately 15\% faster.
+The next version of the AG system will be improved in this area \cite{saraiva99phd-funcimpl-ag}.
+
+\paragraph{AG vs Haskell.}
+Is the AG system a better way to do Haskell programming? In general, no, but for Haskell programs
+which can be described by a catamorphism the answer is yes (see also \secRef{ag-primer}).
+In general, if the choices made by a function are mainly driven by some datastructure,
+it is likely that this datastructure can be described by an AST and the function can be described by the AG's attribution.
+This is the case for an abstract syntax tree or analysis of a single type.
+It is not the case for a function like |fitsIn| (\secPageRef{EHTyFitsIn.1.fitsIn.Base}) in which
+decisions are made based on the combination of two (instead of just one) type.
+
+\paragraph{About \thispaper\, EH and its code.}
+The linear presentation of code and explanation might suggest that this is also
+the order in which the code and \thispaper\ came into existence.
+This is not the case.
+A starting point was created by programming a final version (at that time EH version 6, not included in \thispaper).
+From this version the earlier versions were constructed.
+After that, later versions were added.
+However, these later versions usually needed some tweaking of earlier versions.
+The consequence of this approach is that the rationale for design decisions in earlier versions become clear only
+in later versions.
+For example, an attribute is introduced only so later versions only need to redefine the rule for this single attribute.
+However, the initial rule for such an attribute often just is the value of another attribute.
+At such a place the reader is left wondering.
+This problem could be remedied by completely redefining larger program fragments.
+This in turn decreases code reuse.
+Reuse, that is, sharing of common code turned out to be beneficial for the development process as the
+use of different contexts provides more opportunities to test for correctness.
+No conclusion is attached to this observation, other than being another example of the tension between clarity
+of explanation and the logistics of compiler code management.
+
+\paragraph{Combining theory and practice.}
+Others have described type systems in a practical setting as well.
+For example, Jones \cite{jones00thih} describes the core of Haskell98 by a monadic style type inferencer.
+Pierce \cite{typing:types-prog-lang:pierce} explains type theory and provides many small implementations performing
+(mainly) type checking for the described type systems in his book.
+On the other hand, only recently the static semantics of Haskell has been described formally \cite{faxen02semantics-haskell}.
+Extensions to Haskell usually are formally described but once they find their way into a production compiler the interaction
+with other parts of Haskell is left in the open or is at best described in the manual.
+
+The conclusion of these observations might be that a combined description of a language, its semantics,
+its formal analysis (like the type system),
+and its implementation is not feasible.
+Whatever the cause of this is, certainly one contributing factor is the sheer size of all these
+aspects in combination.
+We feel that our approach contributes towards a completer description of Haskell,
+or any other language if described by the AG system.
+Our angle of approach is to keep the implementation and its explanation consistent and understandable
+at the same time.
+However, this document clearly is not complete either.
+Formal aspects are present, let alone a proof that the implementation is sound and complete
+with respect to the formal semantics.
+Of course one may wonder if this is at all possible; in that case our approach may well
+be a feasible second best way of describing a compiler implementation.
+
+\paragraph{EH vs Haskell.}
+The claim of our title also is that we provide an implementation of Haskell,
+thereby implying recent versions of Haskell, or at least Haskell98.
+However, \thispaper\ does not include the description of (e.g.) a class system;
+the full version of EH however does.
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

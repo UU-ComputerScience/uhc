@@ -94,7 +94,8 @@ doCompile fp fpRest opts
           = case optChDest opts of
               (ChHere,_) -> return ()
               (ChHide,f) -> do { h <- openFile f' WriteMode
-                               ; cdPut h . fst . cdocSubst nmChMp . cdVer $ hdL
+                               ; let d = fst . cdocSubst nmChMp . cdVer $ hdL
+                               ; cdPut h d
                                ; hClose h
                                }
                          where f' = if null f then (fb ++ ".hide") else f
@@ -782,6 +783,7 @@ cdVer :: CD a => [a] -> CDoc
 cdVer = foldr CDoc_Ver CDoc_Emp . map cd
 
 {-
+-}
 cdLines :: CDoc -> [String]
 cdLines d
   = lns d
@@ -800,7 +802,6 @@ cdLines d
 
 cdPut' :: Handle -> CDoc -> IO ()
 cdPut' h = mapM_ (hPutStrLn h) . cdLines
--}
 
 cdPut :: Handle -> CDoc -> IO ()
 cdPut h d

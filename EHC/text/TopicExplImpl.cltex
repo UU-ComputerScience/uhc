@@ -381,104 +381,22 @@ the previous one.
 The features presented in \thischapt\ are part of the ninth version.
 %endif
 
-%\begin{TabularFigure}{EH terms (\textit{emphasized} ones explained throughout the text)}{exim-eh-lang-terms}{r@@{\;}c@@{\;}ll}
-\begin{TabularFigure}{EH terms (emphasized ones explained throughout the text)}{exim-eh-lang-terms}{r@@{\;}c@@{\;}ll}
-\multicolumn{4}{l}{Values (expressions, terms):} \\
-|e| & |::=| &
-|int || char |
- & literals
- \\
-& | || | &
-|identv|
- & value variable
- \\
-& | || | &
-|e e|
- & application
- \\
-& | || | &
-|e (! e <: pi !)|
- & \emph{explicit implicit application}
- \\
-& | || | &
-|\i -> e|
- & abstraction
- \\
-& | || | &
-|\(! i <: pi !) -> e|
- & \emph{explicit implicit abstraction}
- \\
-& | || | &
-|let Vec(d) in e|
- & binding
- \\
-& | || | &
-|(lbl = e,...)|
- & record
- \\
-%if False
-& | || | &
-|(e || lbl = e,...)|
- & record extension
- \\
-%endif
-& | || | &
-|(e || lbl := e,...)|
- & record update
- \\
-& | || | &
-|e.lbl|
- & record selection
- \\
-\multicolumn{4}{l}{} \\
-\multicolumn{4}{l}{Declarations of bindings:} \\
-|d| & |::=| &
-|identv = e|
- & value binding
- \\
-& | || | &
-|identv :: sigma|
- & value type signature
- \\
-& | || | &
-|data sigma = Vec(identc ^^ Vec(sigma))|
- & data type
- \\
-& | || | &
-|class Vec(pi) => pi where Vec(d)|
- & class
- \\
-& | || | &
-|instance Vec(pi) => pi where Vec(d)|
- & introduced instance
- \\
-& | || | &
-|instance identv <: Vec(pi) => pi where Vec(d)|
- & \emph{named introduced instance}
- \\
-& | || | &
-|instance identv :: Vec(pi) => pi where Vec(d)|
- & \emph{named instance}
- \\
-& | || | &
-|instance e <: pi|
- & \emph{value introduced instance}
- \\
-\multicolumn{4}{l}{} \\
-\multicolumn{4}{l}{Identifiers:} \\
-|ident| & |::=| &
-|identv|
- & lowercase: (type) variables
- \\
-& | || | &
-|identc|
- & uppercase: (type) constructors
- \\
-& | || | &
-|lbl|
- & field labels
- \\
-\end{TabularFigure}
+%%@AppxNotation.termTableFigBeginExplImpl
+%%@AppxNotation.termTableFormat
+%%@AppxNotation.exprHeader
+%%@AppxNotation.exprBasic
+%%@AppxNotation.exprRecBasic
+%%@AppxNotation.exprExplImpl
+%%@AppxNotation.termSeparator
+%%@AppxNotation.declHeader
+%%@AppxNotation.declBasic
+%%@AppxNotation.declDataType
+%%@AppxNotation.declExplImpl
+%%@AppxNotation.termSeparator
+%%@AppxNotation.identHeader
+%%@AppxNotation.identBasic
+%%@AppxNotation.identRecLbl
+%%@AppxNotation.termTableFigEnd
 
 \figRef{exim-eh-lang-terms} and \figRef{exim-eh-lang-types} show the terms and types featured in EH.
 Throughout \thischapt\ all language constructs will be gradually introduced and explained.
@@ -555,55 +473,15 @@ We make no attempt to infer higher ranked types
 instead we propagate explicitly specified types as good as possible to wherever this information is needed.
 Our strategies here are elaborated in a forthcoming publication \cite{dijkstra05phd}.
 
-\begin{TabularFigure}{EH types}{exim-eh-lang-types}{r@@{\;}c@@{\;}ll}
-\multicolumn{4}{l}{Types:} \\
-|sigma| & |::=| &
-|Int || Char|
- & literals
- \\
-& | || | &
-|tvarv|
- & variable
- \\
-& | || | &
-|sigma -> sigma|
- & abstraction
- \\
-& | || | &
-|pi => sigma|
- & implicit abstraction
- \\
-& | || | &
-|sigma ^^ sigma|
- & type application
- \\
-& | || | &
-|forall ^ tvarv . sigma|
- & universally quantified type
- \\
-%if False
-& | || | &
-|exists ^ alpha . sigma|
- & existentially quantified type
- \\
-%endif
-& | || | &
-|(lbl :: sigma,...)|
- & record
- \\
-\multicolumn{4}{l}{} \\
-\multicolumn{4}{l}{Predicates:} \\
-|pi| & |::=| &
-|identc ^^ Vec(sigma)|
- & predicate
- \\
-& | || | &
-|pi => pi|
- & predicate transformer/abstraction
- \\
-\end{TabularFigure}
-
-
+%%@AppxNotation.typeTableFigBeginExplImpl
+%%@AppxNotation.termTableFormat
+%%@AppxNotation.typeHeader
+%%@AppxNotation.typeBasic
+%%@AppxNotation.typeRecBasic
+%%@AppxNotation.termSeparator
+%%@AppxNotation.impredHeader
+%%@AppxNotation.impredBasic
+%%@AppxNotation.termTableFigEnd
 
 \subsection{Implicit parameters}
 \label{ehc09-implparam}
@@ -1306,50 +1184,9 @@ deals with expected (or known) types |sigmak|, as well as extra inferred type in
 \begin{TabularFigure}{Legenda of type related notation}{exim-eh-legenda-symbols}{ll}
 Notation & Meaning \\
 \hline
-|sigma|
- & type
- \\
-|sigmak|
- & expected/known type
- \\
-|pi|
- & predicate
- \\
-|pvar|
- & predicate wildcard (collection of predicates)
- \\
-|tvarv|
- & type variable
- \\
-|Transl|
- & translated code
- \\
-|ident|
- & identifier
- \\
-|identv|
- & value identifier
- \\
-|identc|
- & constructor/predicate identifier
- \\
-|Gamma|
- & assumptions, environment, context
- \\
-|Cnstr|
- & constraints, substitution
- \\
-|Cnstr|$_{k..l}$
- & constraint composition of |Cnstr|$_k ...$ |Cnstr|$_l$
- \\
-|<=|
- & subsumption, ``fits in'' relation
- \\
-%if False
-|fiopt|
- & options to |<=|
- \\
-%endif
+%%@AppxNotation.notationBasic
+%%@AppxNotation.notationTransl
+%%@AppxNotation.notationExplImpl
 \end{TabularFigure}
 
 \begin{TabularFigure}{Legenda of judgement forms for each version}{exim-eh-legenda-schemes}{llp{.45\linewidth}}

@@ -35,7 +35,7 @@ will give
 %%2ppfile(test/2-demo1.eh%%)
 \end{TT}
 
-If the use of |id| to define |v| is omitted,
+If the use of |id| to define |v| would be omitted,
 less information (namely the argument of |id| is an int) to infer a type for |id| is available.
 Because no more specific type information for the argument (and result) of |id| could be retrieved 
 the representation for ``not knowing which type'', that is, a type variable, is shown:
@@ -44,11 +44,12 @@ the representation for ``not knowing which type'', that is, a type variable, is 
 %%2ppinline(let id = \x -> x in id%%)
 \end{TT}
 
-On the other hand, if contradictory information is found we will have
+On the other hand, if contradictory information in case of a monomorphic |id| applied to values of different type, we will obtain the following error:
 \begin{TT}
 %%2ppfile(test/2-id-intchar.eh%%)
 \end{TT}
-However, the next version of EH dealing with Haskell style polymorphism
+
+The next version of EH dealing with Haskell style polymorphism
 (\chapterRef{ehc3}) accepts this program.
 
 Partial type signatures are also allowed.
@@ -67,9 +68,8 @@ The type inferencer pretty prints the inferred type instead of the explicity typ
 %%2ppfile(test/2-ty-wild.eh%%)
 \end{TT}
 
-The discussion of the implementation of this feature is postponed until
-\secRef{ehc2partial-sig} in order to demonstrate the effects of an additional feature
-on the compiler implementation in isolation.
+The discussion of this feature is postponed until
+\chapterRef{ehc-partial-sig}.
 
 \subsection{Type variables}
 
@@ -83,7 +83,9 @@ sigma  =  Int | Char
        |  tvarv
 \end{code}
 
-The corresponding type structure |Ty| needs to be extended with an alternative for a variable:
+The corresponding type structure |Ty| needs to be extended with an alternative for a variable.
+Note that the AG system allow us to define this additional type variant independent of the previous definition,
+thus allowing an isolated explanation:
 
 \chunkCmdUseMark{EHTyAbsSyn.2}
 
@@ -100,10 +102,12 @@ for example the pretty printing of the type
 A type variable is identified by a unique identifier, a |UID|:
 
 \chunkCmdUseMark{EHCommon.2.UID.Base}
+\chunkCmdUseMark{EHTy.2.TyVarId.Base}
+%%[[hide impl.UID="UID basics"
 \chunkCmdUseMark{EHCommon.2.UID.UIDL}
 \chunkCmdUseMark{EHCommon.2.UID.Show}
-\chunkCmdUseMark{EHTy.2.TyVarId.Base}
 \chunkCmdUseMark{EHTy.2.TyVarId.Rest}
+%%]
 
 The idea is to thread a counter as global variable through the AST,
 incrementing it whenever a new unique value is required.
@@ -111,13 +115,16 @@ The implementation used throughout all EH compiler versions is more complex beca
 an |UID| actually is a hierarchy of counters, each level counting in the context of an outer level.
 This is not discussed any further;
 we will ignore this aspect and just assume a unique |UID| can be obtained.
+Its use is visible whenever we need a so called fresh type variable in a type rule.
+%if False
 However, a bit of its implementation is visible in the pretty printed representation as a underscore separated
 list of integer values,
 occasionaly visible in sample output of the compiler.
+%endif
 
 \subsection{Constraints}
 
-Although the typing rules at \figPageRef{rules.expr1B.C} still hold
+Although the typing rules at \figPageRef{rules3.K.expr.baseForEH1} still hold
 we need to look at the meaning of |<=| (or |fitsIn|) in the presence of
 type variables.
 The idea here is that what is unknown may be replaced by that which is known.
@@ -129,8 +136,9 @@ constraint that |tvarv| equals |sigma|.
 
 \subsubsection{Remembering and applying constraints}
 
-Next we can observe that once a certain type |tvarv| is declared to be
-equal to a type |sigma| this fact has to be remembered.
+As soon as we have determined that a type variable |tvarv| equals a type |sigma|,
+we must remember this and propagate it to wherever |tvarv| is used.
+We use constraints |Cnstr| to remember such a binding of a type variable to a type:
 
 \begin{code}
 Cnstr                       =  [tvarv :-> sigma]
@@ -164,11 +172,12 @@ the constraints, hence the class
 for those structures which have references to type
 variables hidden inside and can replace, or substitute those type variables:
 
+\chunkHideRef{impl.UID}
 \chunkCmdUseMark{EHSubstitutable.2.Substitutable}
 
 The operator | ||=>| applies constraints |Cnstr| to a
 |Substitutable|.
-Function |ftv| extracts the free type variable references as a set of
+Function |ftv| extracts the free type variable references as a set (implemented as a list) of
 |TVarId|'s.
 
 A |Cnstr| can be applied to a type:
@@ -180,9 +189,14 @@ as attributes throughout the type representation to make the description of the 
 a |Cnstr| to a |Ty| easier.
 The function |tyAppCnstr| is defined in terms of the following AG.
 The plumbing required to provide the value of attribute |repl| (|tvs|) available as
-the result of Haskell function |tyAppCnstr| (|tyFtv|)
+the result of Haskell function |tyAppCnstr| (and |tyFtv|)
 has been omitted:
 
+%%[[hide impl.tyFtvSubst="Haskell wrapping for tyFtv, tyAppCnstr; cnstrTyLookup"
+\chunkCmdUseMark{EHTySubst.2.tyAppCnstr}
+\chunkCmdUseMark{EHTyFtv.2.tyFtv}
+\chunkCmdUseMark{EHCnstr.2.cnstrTyLookup}
+%%]
 \chunkCmdUseMark{EHTySubst.2.TySubst}
 \chunkCmdUseMark{EHTyFtv.2.TyFtv}
 
@@ -203,6 +217,7 @@ For example, via attribute |repl| a copy of the type is built which only differs
 in the value for the type variable.
 \end{AGFeature}
 
+%if False
 \begin{AGFeature}{ag-use-attr}{Attribute together with USE}
 A synthesized attribute |<attr>| may be declared together with |USE {<op>} {<zero>}|.
 The |<op>| and |<zero>| allow the insertion of copy rules which behave similar to Haskell's |foldr|.
@@ -212,13 +227,16 @@ If no child has an |<attr>|, the second piece of text |<zero>| is used as a defa
 For example, @tvs USE {`union`} {[]}@ (appearing in pretty printed form as |tvs USE {`union`} {[]}|)
 gathers bottom-up the free type variables of a type.
 \end{AGFeature}
+%endif
 
 %}
 
 The application of a |Cnstr| is straightforwardly lifted to lists:
 
 \chunkCmdUseMark{EHSubstitutable.2.SubstitutableList}
-\chunkCmdUseMark{EHCommon.2.unionL}
+%%[[hide impl.unions="unions"
+\chunkCmdUseMark{EHCommon.2.unions}
+%%]
 
 A |Cnstr| can also be applied to another |Cnstr|:
 
@@ -246,10 +264,15 @@ The implementation |fitsIn| of |<=| additionaly has to return constraints:
 \chunkCmdUseMark{EHTyFitsInCommon.2.FIOut.empty}
 
 Computation and proper combination of constraints necessitates
-|fitsIn| to be rewritten:
+|fitsIn| to be rewritten in order to deal with type variables and constraints.
+The rules describing the desired behavior are shown in
+\figRef{rules3.C.match.all} and \figRef{rules3.C.fit}.
+We show the changed part of the full implementation for this version.
+The function |comp| deals with the proper combination of constraints for composite types:
 
+%%[[hide impl.fitsinEH2="fitsIn for EH2"
 \savecolumns
-\chunkCmdUseOnPrev{EHTyFitsIn.1.fitsIn.Base}{EHTyFitsIn.2.fitsIn.Base}
+\chunkCmdUseMark{EHTyFitsIn.2.fitsIn.Base}
 \restorecolumns
 \chunkCmdUseMark{EHTyFitsIn.2.fitsIn.Bind}
 \restorecolumns
@@ -260,6 +283,18 @@ Computation and proper combination of constraints necessitates
 \chunkCmdUseMark{EHTyFitsIn.2.fitsIn.Var}
 \restorecolumns
 \chunkCmdUseMark{EHTyFitsIn.2.fitsIn.AppRest}
+%%]
+\savecolumns
+\chunkCmdUseMark{EHTyFitsIn.2.fitsIn.Base}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.2.fitsIn.Bind}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.2.fitsIn.app}
+\restorecolumns
+\chunkCmdUseMark{EHTyFitsIn.2.fitsIn.Var}
+
+\rulerCmdUse{rules3.C.match.all}
+\rulerCmdUse{rules3.C.fit}
 
 Although this version of the implementation of |fitsIn| resembles the previous one
 it differs in the following aspects:
@@ -269,6 +304,7 @@ it differs in the following aspects:
 The datatype |FIOut| returned by |fitsIn| has an additional field |foCnstr| holding found constraints.
 This requires constraints to be combined for composite types
 like the |App| variant of |Ty|.
+The constraints returned by |fitsIn| further participate in type inferencing.
 \item
 The function |bind| creates a binding for a type variable to a type.
 The use of |bind| is shielded by |occurBind| which checks if the type variable for
@@ -287,35 +323,55 @@ constraints
 |[a :-> Int,a :-> Char]| instead of properly reporting an error.
 \end{itemize}
 
-\subsection{Reconstructing types for Expr}
+\subsection{Type inference for expressions (Expr)}
 
 Constraints are used to make knowledge found about previously unknown
 types explicit.
-The typing rules in \figRef{rules3.E.expr.baseForEH1} (and \figRef{rules.expr1B}, \figRef{rules.expr1B.C})
+The typing rules in \figRef{rules3.K.expr.baseForEH1}
+and \figRef{rules3.K.decl.base}
 in principle do not need to be changed.
 The only reason to adapt some of the rules to the variant in
-\figRef{rules.expr2}
+\figRef{rules3.C.expr.baseForEH2}
 is to clarify the way constraints are used.
 
-\rulerCmdUse{rules.expr2}
+%\rulerCmdUse{rules.expr2}
+\rulerCmdUse{rules3.C.expr.baseForEH2}
+\rulerCmdUse{rules3.C.decl.base}
 
-The type rules in \figRef{rules.expr2} enforce an order in which
+The type rules in \figRef{rules3.C.expr.baseForEH2} enforce an order in which
 checking and inferring types has to be done.
+Constraints are threaded through the type rules.
+The flow of these constraints defines the computation order.
+In AG the threading of constraints is expressed by the following declaration of
+|tyCnstr|:
 
-\TBD{...}
-
-Actually, the rules in \figRef{rules.expr2} should be even more
-specific in how constraints flow around if we want to be closer to
-the corresponding AG description.
-The AG specifies a |Cnstr| to be threaded instead of just returned bottom-up:
-
-% \chunkCmdUsePrevLit{EHInferExpr.1.App}
 \chunkCmdUseMark{EHInferExpr.2.tyCnstr}
 
-Its use in an expression application is as follows:
+For a type rule the (already) known constraints |Cnstrk| correspond to the use of |lhs.tyCnstr| and the result constraints
+(like |Cnstra| for \ruleRef{e.app}) are assigned to |lhs.tyCnstr|.
+For \ruleRef{e.app} this translates to the following implementation:
 
-\chunkCmdUseOnPrev{EHInferExpr.1.App}{EHInferExpr.2.App}
+\chunkCmdUseMark{EHRulerRules.2.expr.e.app}
 
+The freshness of a type variable is guaranteed by threading a seed |gUniq|
+for unique values (|UID|'s)
+through the AST:
+
+\chunkCmdUseMark{EHUniq.2.gUniq}
+
+%%[[hide impl.UID="UID"
+\chunkCmdUseMark{EHCommon.2.UID.Base}
+\chunkCmdUseMark{EHCommon.2.UID.UIDL}
+\chunkCmdUseMark{EHCommon.2.UID.Show}
+\chunkCmdUseMark{EHCommon.2.UID.mkNewLevUID}
+%%]
+When a unique value is needed we use |gUniq|'s current value as the `fresh' UID,
+and pass the adapted seed
+onwards to the first child which requires unique values as well.
+
+
+
+%if False
 \begin{AGFeature}{ag-redef-rule}{Redefining an attribute value}
 Normally a value for an attribute may be associated with an attribute only once,
 using |=| in a rule.
@@ -334,13 +390,9 @@ If this happens a reference to the location (in \thispaper) of the code on top o
 the new code is added can be found\footnote{This is not an ideal solution to display combined fragments.
 A special purpose editor would probably do a better
 job of browsing textually separated but logically related pieces of code.}.
+%endif
 
-To correspond better with the related AG code the \ruleRef{e-app2} should be:
-
-\[
-\rulerCmdUse{rules.expr2B.e-app2B}
-\]
-
+%if False
 The flow of constraints is made explicit as they are passed through the rules,
 from the context (left of |:-|) to a result (right of |~>|).
 We feel this does not benefit clarity, even though it is correct.
@@ -349,54 +401,56 @@ typing rules serve their purpose best by providing a basis for proof as well
 as understanding and discussion.
 An AG description serves its purpose best by showing how it really is implemented.
 Used in tandem they strengthen each other.
+%endif
 
-An implementation by necessity imposes additional choices, in order to make a typing
-rule into an algorithmic solution.
-For example, our AG description preserves the following invariant:
+Our type rules and their corresponding
+AG description preserve the following invariant:
 \begin{itemize}
 \item
 A resulting type has all known constraints applied to it, here |ty|.
 \end{itemize}
-but as this invariant is not kept for |knTy| and |valGam| it requires to
+
+This invariant is not preserved for |knTy| and |valGam|, which also can contain type variables.
+The application of constraints to these attributes is postponed until the following places (in the AST or other code):
+
 \begin{itemize}
 \item
-Explicitly apply known constraints to the inherited known type |knTy|.
+The value
+is used in a setting which may yield new constraints, that is, it is used by |<= =@= fitsIn|.
 \item
-Explicitly apply known constraints to types from a |Gamma|, here |valGam|.
+The value is used to return a type of an expression, for example in \ruleRef{e.var}.
+We apply known constraints to the type extracted from |Gamma =@= valGam|.
 \end{itemize}
 
-The type rules in \figRef{rules.expr2} do not mention the last two constraint applications
-(\ruleRef{e-app2B} does),
-and this will also be omitted for later typing rules.
-However, the constraint applications are shown by the AG code for
-the |App| alternative and the following |Var| alternative:
+\paragraph{Variable occurrences |Var|.}
+This is illustrated by the AG code for \ruleRef{e.var} in which |lhs.tyCnstr| is applied to both the expected type |knTy|
+and the type |ty_g_| extracted from |valGam|:
 
-\chunkCmdUseOnPrev{EHInferExpr.1.Var}{EHInferExpr.2.Var}
+\chunkCmdUseMark{EHRulerRules.2.expr.e.var}
 
-The rules for constants all resemble the one for |Int|, \ruleRef{e-int2}.
-Their implementation additionaly takes care of constraint handling:
+Newly found constraints (from |<= =@= fitsIn|) are combined with the already known constraints (|lhs.tyCnstr|).
 
-\chunkCmdUseOnPrev{EHInferExpr.1.Const}{EHInferExpr.2.Const}
+\paragraph{Tuples.}
+The construction of tuples is handled by the combination of \ruleRef{e.con} and \ruleRef{e.app}.
+It is now the responsibility of \ruleRef{e.con} to return the proper function type for constructing a tuple.
+In the previous version we could use the expected type, which was guaranteed to be available in |knTy|.
+This information is no longer available, so we use the arity |n| encoded in the name `|,n|' of the constructor
+to compute the constructor function type.
+This function is polymorphic,
+this is the only place where we need to deal with polymorphism for this version of EH.
+We compute the function type using fresh type variables:
 
-The handling of products does not differ much from the previous
-implementation.
-A \ruleRef{e-con2} has been included in the typing rules,
-as a replacement for \ruleRef{e.prod} (\figRef{rules.expr1B}) better
-resembling its implementation.
-Again the idea is to exploit that in this version of EH tupling is the
-only way to construct an aggregrate value.
-A proper structure for its type is (again) enforced by |fitsIn|.
+\chunkHideRef{impl.SemAppFull}
+\chunkCmdUseMark{EHRulerRules.2.expr.e.con}
 
-\chunkCmdUseOnPrev{EHInferExpr.1.Con}{EHInferExpr.2.Con}
-
-Finally, 
-
-\chunkCmdUseOnPrev{EHInferExpr.1.Lam}{EHInferExpr.2.Lam}
-
-which uses some additional functions for creating type variables
-
-\chunkCmdUseMark{EHTy.2.NewTyVar}
-\chunkCmdUseMark{EHTy.2.NewTyVarL}
+%%[[hide impl.eh2RemRules="EH2, AG for \ruleRef{e.int}, \ruleRef{e.lam} and \ruleRef{e.ann}"
+\chunkCmdUseMark{EHRulerRules.2.expr.e.int}
+\chunkCmdUseMark{EHRulerRules.2.expr.e.lam}
+\chunkCmdUseMark{EHRulerRules.2.expr.e.ann}
+%%]
+The remaining rules follow the same strategy of applying constraints to types,
+matching types and propagating the resulting constraints.
+We omit their implementation, except for \ruleRef{e.let} which we discuss later in \thischapt.
 
 Some observations are in place:
 \begin{itemize}
@@ -423,68 +477,75 @@ Type variables are introduced under the condition that they are
 For a typing rule this means that these type
 variables are not in use elsewhere,
 often more concretely specified with a condition |tvarv `notElem` ftv(Gamma)|.
-Freshness in the implementation is implemented via unique identifiers UID.
+%Freshness in the implementation is implemented via unique identifiers UID.
 \end{itemize}
 
-\subsection{Reconstructing types for PatExpr}
+\subsection{Type inference for pattern expressions (PatExpr)}
 
 In the previous version of EH we were only interested in bindings for
 identifiers in a pattern.
 The type of a pattern was already known via a corresponding type signature.
-For this version this is no longer the case so the structure of a pattern
+For this version this is no longer the case.
+We now have to use the occurrence of an identifier in a pattern or expression
+to infer type information about the identifier.
+The structure of a pattern
 reveals already some type structure.
 Hence we compute types for patterns too and use this type as the known type
-if no type signature is available.
+if no type signature is available (\figRef{rules3.C.patexpr.base}).
+Again, constraints are threaded through the pattern to accumulate information about type variables.
 
-\rulerCmdUse{rules.pat2}
+%\rulerCmdUse{rules.pat2}
+\rulerCmdUse{rules3.C.patexpr.base}
 
 Computation of the type of a pattern is similar to and yet more straightforward than
 for expressions.
-The \ruleRef{e-pat2} from \figRef{rules.pat2} binds the identifier
+The \ruleRef{p.var} from \figRef{rules3.C.patexpr.base} binds the identifier
 to the known type and if no such known type is available it invents a fresh one,
 by means of |tyEnsureNonAny|:
 
-\chunkCmdUseMark{EHInferPatExpr.2.Var}
+%%[[hide impl.pIntCharVaras2="\ruleRef{p.varas}, \ruleRef{p.int}, \ruleRef{p.char}, tyEnsureNonAny"
 \chunkCmdUseMark{EHTy.2.tyEnsureNonAny}
+\chunkCmdUseMark{EHRulerRules.2.patexpr.p.varas}
+\chunkCmdUseMark{EHRulerRules.2.patexpr.p.int}
+\chunkCmdUseMark{EHRulerRules.2.patexpr.p.char}
+%%]
+\chunkCmdUseMark{EHRulerRules.2.patexpr.p.var}
 
 For tuples we again make use of the fact that the |Con| alternative will always
 represent a tuple.
 %if not incl05
 When datatypes are introduced (not part of \thispaper) this will no longer be the case.
 %else
-From \chapterRef{ehc5} when datatypes are introduced
+Starting at \chapterRef{ehc5}, in which datatypes are introduced,
 and onwards this will no longer be the case.
 %endif
-Here, we already make the required \ruleRef{p-con2} more general
-than is required here because we already prepare for datatypes.
+We already make the required \ruleRef{p.con} more general
+than is required here,
+in preparation for datatypes.
 
-A pattern can be represented by a function |sigma -> (sigma1,...)| taking a value of some type |sigma| and
-dissecting it into a tuple |(sigma1,...)| containing all its constituents.
+A pattern can be represented by a \IxAsDef{pattern function} |sigma -> (sigma1,...)|.
+Conceptually this function takes the value (of type |sigma|) to be dissected by the pattern into its constituents,
+which can always be represented by a tuple |(sigma1,...)|.
 For now, because we have only tuples to dissect, the
 function returned by the |Con| alternative is just the identity
-on tuples of the correct size.
-The application \ruleRef{p-app2} consumes an element of this tuple representing
-the dissected value and uses it for checking and inferring the constituent.
+on tuples of the correct size:
 
-The implementation of this representation convention returns the dissecting function type
-in |patFunTy|:
+\chunkCmdUseMark{EHRulerRules.2.patexpr.p.con}
 
-\chunkCmdUseMark{EHInferPatExpr.2.patFunTy}
+At the top of a pattern, in \ruleRef{p.apptop}, this function |sigmapf =@= patFunTy| is dissected into
+the argument |sigmaa =@= ty_a_| and
+result |sigma_r =@= ty_r_|:
 
-The dissecting function type |patFunTy| is constructed from fresh type variables.
-Each occurrence of a tuple pattern deals with different unknown types and hence fresh type variables are needed.
+\chunkCmdUseMark{EHRulerRules.2.patexpr.p.apptop}
+
+The argument |sigmaa|, representing the value ``going in the pattern'', is matched with the expected type of the pattern;
+the result |sigma_r| is dissected in \ruleRef{p.app} as in the previous EH version:
+
+\chunkCmdUseMark{EHRulerRules.2.patexpr.p.app}
+
+The pattern function type |sigmapf =@= patFunTy| is constructed from fresh type variables.
+Each occurrence of a tuple pattern deals with different unknown types; hence fresh type variables are needed.
 The availability of polymorphism in later versions of EH allows us to describe this in a more general way.
-
-At |AppTop| of |PatExpr| the function type |sigma -> (sigma1,...)| describing the dissection is split into
-the type |sigma| (attribute |knResTy|) of the pattern and the tuple type |(sigma1,...)| (attribute |knProdTy|)
-holding its constituents.
-The distribution of the types of the fields of |knProdTy| was described in the previous version of EH.
-
-\chunkCmdUseOnPrev{EHInferPatExpr.1.knTy.App}{EHInferPatExpr.2.knTy}
-
-Finally, the type itself and additional constraints are returned:
-
-\chunkCmdUseMark{EHInferPatExpr.2.Rest}
 
 The careful reader may have observed that the direction of |<=|
 for fitting actual (synthesized, bottom-up) and known type (inherited, top-down)
@@ -495,73 +556,36 @@ tree.
 A pattern dissects a value from top to bottom.
 The flow of data is opposite, hence the direction of |<=| too.
 
-\subsection{Declarations}
+\subsection{Declarations (Let, Decl)}
 
-Again, at the level of declarations all is tied together.
-Because we first gather information about patterns and then about expressions
-two separate threads for gathering constraints are used, |patTyCnstr|
-and |tyCnstr| respectively.
+Again, at the level of declarations all is tied together
+(\figRef{rules3.C.expr.baseForEH2}
+and \figRef{rules3.C.decl.base}).
+We can no longer assume that type signatures are specified for all value expressions.
+The basic strategy for declarations (see \secPageRef{eh1-let-strategy}) must be changed as follows:
 
-\chunkCmdUseOnPrev{EHInfer.1.Let}{EHInfer.2.Let}
-\chunkCmdUseOnPrev{EHInfer.1.valGam,EHInfer.1.patValGam}{EHInfer.2.Rest}
+\begin{itemize}
+\item
+Parallel to |patValGam| and |valGam| we need to gather information about introduced type variables.
+|Cnstrp =@= patTyCnstr| gathers information about the types of type variables for identifiers introduced as part of pattern expressions;
+|Cnstr =@= tyCnstr| gathers information from the use of those identifiers in expressions.
+\item
+If a type signature is defined for the toplevel identifier of a pattern in a value declaration
+(\ruleRef{d.val}) we use that type as the known type for both pattern and expression.
+Otherwise, a fresh type variable is used for the pattern and the pattern type for the value expression.
+\item
+The pattern constraints |patTyCnstr| is threaded independently through all declarations, only
+to be used as the starting point for |tyCnstr| in \ruleRef{e.let}.
+\end{itemize}
 
-If a type signature has been given it is used as the known type for both
-expression and pattern. If not, the type of a pattern is used as the known type for an expression.
+Here we omit the corresponding AG code: it follows the type rules faithfully.
+%%[[hide impl.declEH2
+\chunkCmdUseMark{EHInfer.2.tyCnstr}
+\chunkCmdUseMark{EHRulerRules.2.decl.d.val}
+\chunkCmdUseMark{EHRulerRules.2.expr.e.let}
+%%]
 
-\chunkCmdUseOnPrev{EHInfer.1.tyInstKnown}{EHInfer.2.tyInstKnown}
 
-%if inclOmitted
-\subsection{Omitted}
-Details concerning new errors (occur check), gathering of errors, and pretty printing
-have been omitted.
-
-Generation of unique identifiers has been omitted here, but
-can be found in \appRef{app-ag-pattern-uid}.
-%endif
-
-\subsection{Partial type signatures: a test case for extendibility}
-\label{ehc2partial-sig}
-
-Partial type signatures allow the programmer to specify only a part of a type 
-in a type signature. The description of the implementation of this feature is
-separated from the discussion of other features to show the effects of an additional
-feature on the compiler.
-In other words, the following is an impact analysis.
-
-First, both abstract syntax and the parser
-%if not incl01TopicParsing
-(not included in \thispaper)
-%endif
-contain an additional alternative for parsing the "@...@" notation
-chosen for unspecified type information designated by |Wild| for wildcard:
-
-\chunkCmdUseMark{EHAbsSyn.2.TyExpr}
-%if incl01TopicParsing
-The parser for |pTyExprBase| needs an additional alternative:
-\chunkCmdUseMark{EHParser.2.pTyExpr}
-%endif
-
-A wildcard type is treated in the same way as a type variable as it also represents unknown 
-type information:
-
-\chunkCmdUseMark{EHInferTyExpr.2.tyVarGather}
-\chunkCmdUseMark{EHInferTyExpr.2.ty}
-
-Changes also have to be made to the omitted parts of the implementation, in particular the pretty printing
-of the AST
-and generation of unique identifiers.
-We mention the necessity of this but omit the relevant code.
-
-The pretty printing of a type signature is enhanced a bit further by either printing the type signature
-(if no wildcard types are present in it)
-or by printing the type of the type signature combined with all found constraints.
-The decision is based on the presence of wildcard type variables in the type signature:
-
-\chunkCmdUseMark{EHInferTyExpr.2.tyVarWildL}
-
-The set of all constraints is retrieved at the root of the AST and passed back into the tree:
-
-\chunkCmdUseMark{EHInfer.2.finValGam}
 %%]
 
 %%[XX

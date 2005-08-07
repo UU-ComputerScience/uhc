@@ -273,17 +273,21 @@ fitsIn ty1 ty2
 %%@fitsInRest.1
 %%]
 
-%%[3.fitsIn -(2.fitsIn.Base 2.fitsIn.Bind 2.fitsIn.app 2.fitsIn.BotCon 2.fitsIn.Var 2.fitsIn.AppRest)
-%%@fitsInHead.1
-%%@fitsInBind.2
-%%@fitsInapp.2
-%%@fitsInBotCon.1
+%%[fitsInVar.3
             f  t1@(Ty_Var v1 f1)    (Ty_Var v2 f2)
                  | v1 == v2 && f1 == f2             = res t1
             f  t1@(Ty_Var v1 f)     t2              
                  | f == TyVarCateg_Plain            = occurBind v1 t2
             f  t1                   t2@(Ty_Var v2 f)
                  | f == TyVarCateg_Plain            = occurBind v2 t1
+%%]
+
+%%[3.fitsIn -(2.fitsIn.Base 2.fitsIn.Bind 2.fitsIn.app 2.fitsIn.BotCon 2.fitsIn.Var 2.fitsIn.AppRest)
+%%@fitsInHead.1
+%%@fitsInBind.2
+%%@fitsInapp.2
+%%@fitsInBotCon.1
+%%@fitsInVar.3
 %%@fitsInApp.1
 %%@fitsInRest.1
 %%]

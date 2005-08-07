@@ -82,9 +82,13 @@ DATA TyExpr
   | Wild
 %%]
 
-%%[3
+%%[3.TyExpr
 DATA TyExpr
   | Var             nm              : {HsName}
+%%]
+
+%%[3.TyExpr.VarWild
+DATA TyExpr
   | VarWild         nm              : {HsName}
 %%]
 

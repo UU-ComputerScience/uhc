@@ -9,8 +9,9 @@ TEXT_MAIN					:= main
 
 # subtext
 TEXT_SUBS					:= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
-								TopicRuler TopicExplImpl TopicGRIN TopicRec TopicKinds TopicDataTy TopicImpred TopicHM TopicExtRec TopicGADT \
-								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred
+								TopicRuler TopicExplImpl TopicGRIN TopicRec TopicKinds TopicDataTy TopicImpred TopicHM TopicExtRec TopicGADT TopicReflection TopicPartialTySig \
+								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred \
+								AppxNotation
 TEXT_SUBS_ASIS				:= afp-pgf
 
 # variant, to be configured on top level
@@ -75,6 +76,10 @@ TEXT_RULES_3_DRV_CAG		:= $(TEXT_TMP_VARIANT_PREFIX)$(EHC_RULER_RULES).cag
 TEXT_RULES_3_DRV_LTEX		:= $(TEXT_RULES_3_DRV_CAG:.cag=.ltex)
 TEXT_RULES_3_DRV_TEX		:= $(TEXT_RULES_3_DRV_LTEX:.ltex=.tex)
 
+TEXT_HIDE_DRV_TXT			:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN)-hide.hltex
+TEXT_HIDE_DRV_LTEX			:= $(TEXT_HIDE_DRV_TXT:.hltex=.ltex)
+TEXT_HIDE_DRV_TEX			:= $(TEXT_HIDE_DRV_TXT:.hltex=.tex)
+
 TEXT_SUBS_DRV_TEX			:= $(EHC_CAG_DRV_TEX) $(EHC_CHS_DRV_TEX) $(AGPRIMER_CAG_DRV_TEX) $(AGPRIMER_CHS_DRV_TEX) $(RULER_12_DRV_TEX) $(RULER_3_DRV_TEX) $(TEXT_RULES_3_DRV_TEX)
 TEXT_SUBS_ASIS_DRV			:= $(patsubst $(TEXT_SRC_PREFIX)%.tex,$(TEXT_TMP_VARIANT_PREFIX)%.tex,$(TEXT_SUBS_ASIS_SRC))
 
@@ -86,9 +91,8 @@ TEXT_INCL_LIST_TEX			:= $(TEXT_TMP_VARIANT_PREFIX)InclList.tex
 TEXT_BIB_SRC				:= $(TEXT_SRC_PREFIX)LitAdm.bib
 TEXT_BIB_DRV				:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN).bib
 
-TEXT_HIDE_DRV_TEX			:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN).hide
-
 FIGS_XFIG_DRV_TEX			:= $(patsubst $(FIGS_SRC_PREFIX)%.fig,$(TEXT_TMP_VARIANT_PREFIX)%.tex,$(FIGS_XFIG_SRC_FIG))
+FIGS_XFIG_DRV_PDF			:= $(patsubst $(FIGS_SRC_PREFIX)%.fig,$(TEXT_TMP_VARIANT_PREFIX)%.pdf,$(FIGS_XFIG_SRC_FIG_NOPDF))
 FIGS_ASIS_DRV_PDF			:= $(patsubst $(FIGS_SRC_PREFIX)%.pdf,$(TEXT_TMP_VARIANT_PREFIX)%.pdf,$(FIGS_ASIS_SRC_PDF))
 
 TEXT_ALL_MK_FILES			:= $(AGPRIMER_MKF) $(EHC_MKF) $(RULER2_MKF) $(TEXT_MKF)
@@ -99,7 +103,7 @@ TEXT_ALL_SRC				:= $(TEXT_EDIT_SRC) $(TEXT_SUBS_ASIS_SRC) $(TEXT_BIB_SRC)
 
 # all deriveds (as counting for make dependencies)
 TEXT_ALL_DPD				:= $(TEXT_MAIN_DRV_TEX) $(TEXT_SUBS_DRV_TEX) $(TEXT_MAIN_DRV_STY) $(TEXT_INCL_LIST_TEX) $(TEXT_RULER2_DEMO_TEX) \
-								$(TEXT_SUBS_ASIS_DRV) $(FIGS_XFIG_DRV_TEX) $(TEXT_RULER2_DEMO_STUFF) $(FIGS_ASIS_DRV_PDF)
+								$(TEXT_SUBS_ASIS_DRV) $(FIGS_XFIG_DRV_TEX) $(FIGS_XFIG_DRV_PDF) $(TEXT_RULER2_DEMO_STUFF) $(FIGS_ASIS_DRV_PDF) $(TEXT_HIDE_DRV_TEX) 
 
 # distribution
 TEXT_DIST_DOC_FILES			:= $(TEXT_ALL_PUB_PDFS)
@@ -118,7 +122,7 @@ text-variant-phd:
 
 text-variant-phd-tst:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=phd --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=phd --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss --set=asDraft" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-tst
 
@@ -173,7 +177,10 @@ text-variant-dflt-bib-inx: $(TEXT_ALL_DPD) $(TEXT_BIB_DRV)
 
 $(TEXT_MAIN_DRV_LTEX) : $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SRC_CLTEX) $(SHUFFLE) $(TEXT_MKF)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(TEXT_SHUFFLE_VARIANT) --plain --lhs2tex=no --hidedest=appx=$(TEXT_HIDE_DRV_TEX) --order="$(TEXT_SHUFFLE_ORDER)" $< $(TEXT_SUBS_SRC_CLTEX) > $@
+	$(SHUFFLE) --gen=$(TEXT_SHUFFLE_VARIANT) --plain --lhs2tex=no --hidedest=appx=$(TEXT_HIDE_DRV_TXT) --order="$(TEXT_SHUFFLE_ORDER)" $< $(TEXT_SUBS_SRC_CLTEX) > $@
+
+$(TEXT_HIDE_DRV_TXT): $(TEXT_MAIN_DRV_LTEX)
+	touch $@
 
 $(TEXT_MAIN_DRV_TEX) : %.tex : %.ltex
 	$(SUBST_EHC) $< \
@@ -181,7 +188,7 @@ $(TEXT_MAIN_DRV_TEX) : %.tex : %.ltex
 	  | $(LHS2TEX) $(LHS2TEX_OPTS_TEXT_CONFIG) $(LHS2TEX_OPTS_VARIANT_CONFIG) $(LHS2TEX_OPTS_POLY) \
 	  > $@
 
-$(TEXT_SUBS_DRV_TEX) : %.tex : %.ltex
+$(TEXT_SUBS_DRV_TEX) $(TEXT_HIDE_DRV_TEX) : %.tex : %.ltex
 	$(LHS2TEX) $(LHS2TEX_OPTS_TEXT_CONFIG) $(LHS2TEX_OPTS_VARIANT_CONFIG) $(LHS2TEX_OPTS_POLY) $< > $@
 
 $(TEXT_MAIN_DRV_STY) : $(TEXT_MAIN_SRC_LSTY) $(TEXT_MKF)
@@ -216,7 +223,7 @@ $(RULER_3_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(EHC_SRC_PREFIX)%.rl2 
 
 $(TEXT_RULES_3_DRV_CAG): $(EHC_RULES_3_SRC_RL2) $(RULER2)
 	mkdir -p $(@D)
-	$(RULER2) --ag --wrapfrag --selrule="((1=K),(2=C),(3=HM),(4=I1),(4_2=I2),(9=P)).(expr.base tyexpr.base patexpr.base).(*)" --base=$(*F) $< > $@
+	$(RULER2) --ag --wrapshuffle --selrule="((1=K),(2=C),(3=HM),(4=I1),(4_2=I2),(9=P)).(expr.base tyexpr.base patexpr.base decl.base).(*)" --base=$(*F) $< > $@
 
 $(TEXT_RULER2_DEMO_TEX) $(TEXT_RULER2_DEMO_STUFF): $(TEXT_TMP_VARIANT_PREFIX)% : $(RULER2_DEMO_PREFIX)%
 	mkdir -p $(@D)
@@ -236,7 +243,11 @@ $(FIGS_ASIS_DRV_PDF): $(TEXT_TMP_VARIANT_PREFIX)% : $(FIGS_SRC_PREFIX)%
 
 $(FIGS_XFIG_DRV_TEX): $(TEXT_TMP_VARIANT_PREFIX)%.tex : $(FIGS_SRC_PREFIX)%.fig
 	mkdir -p $(@D)
-	fig2dev -L latex $< > $@
+	fig2dev -L latex -E 0 $< > $@
+
+$(FIGS_XFIG_DRV_PDF): $(TEXT_TMP_VARIANT_PREFIX)%.pdf : $(FIGS_SRC_PREFIX)%.fig
+	mkdir -p $(@D)
+	fig2dev -L pdf -p dummy $< > $@
 
 $(TEXT_INCL_LIST_TEX): $(TEXT_ALL_MK_FILES)
 	@(for f in $(sort $(notdir $(TEXT_SUBS_DRV_TEX) $(TEXT_RULER2_DEMO_TEX))) ; \
@@ -245,5 +256,6 @@ $(TEXT_INCL_LIST_TEX): $(TEXT_ALL_MK_FILES)
 	  done \
 	) > $@
 
-
+$(TEXT_HIDE_DRV_LTEX): $(TEXT_HIDE_DRV_TXT)
+	(echo '%include lhs2TeX.fmt' ; echo '%include afp.fmt' ; cat $< ) > $@
 

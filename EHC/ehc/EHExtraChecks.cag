@@ -13,9 +13,9 @@
 %%% Duplicate value identifier introductions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1
+%%[1.dupErrs
 SEM Expr
-  | Let         loc         .   dupErrs             =   let  nms = gamToDups @lValGam
+  | Let         loc         .   dupErrs             =   let  nms = gamToDups (gamTop @decls.patValGam)
                                                         in   if null nms then [] else [Err_NamesDupIntrod nms]
 %%]
 
@@ -25,8 +25,10 @@ SEM Expr
 
 %%[1.sigMissErrs
 SEM Decl
-  | Val         loc         .   sigMissErrs         =   if @hasTySig then [] else [Err_MissingSig @patExpr.pp]
+  | Val         loc         .   sigMissErrs         =   @nmErrs
 %%]
+SEM Decl
+  | Val         loc         .   sigMissErrs         =   if @hasTySig then [] else [Err_MissingSig @patExpr.pp]
 
 %%[2 -1.sigMissErrs
 %%]

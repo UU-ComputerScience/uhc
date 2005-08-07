@@ -2,9 +2,19 @@
 %include afp.fmt
 
 % xfig figure
-\newcommand{\XFigLatex}[1]{%
+\newcommand{\FigCenterXFigTex}[1]{%
  \begin{center}
  \input #1.tex
+ \end{center}
+}
+
+\newcommand{\FigPDF}[1]{%
+ \includegraphics{#1.pdf}
+}
+
+\newcommand{\FigCenterPDF}[1]{%
+ \begin{center}
+ \FigPDF{#1}
  \end{center}
 }
 
@@ -52,12 +62,33 @@
   \end{Figure}
 }
 
+% Plain figure
+\newenvironment{PlainFigure}[2]{%
+  \begin{TabularFigure}{#1}{#2}{p{\linewidth}}
+}{%
+  \end{TabularFigure}
+}
+
 % Env for xfig in a figure
 \newenvironment{XFigFigure}[3]{%
-  \begin{Figure}{#2}{#3}
-  \XFigLatex{#1}
+  \begin{PlainFigure}{#2}{#3}
+  \FigCenterXFigTex{#1}
 }{%
-  \end{Figure}
+  \end{PlainFigure}
+}
+
+% Cmd for pdf (from xfig) in a figure
+\newcommand{\FigurePDF}[3]{%
+  \begin{PlainFigure}{#2}{#3}
+  \FigCenterPDF{#1}
+  \end{PlainFigure}
+}
+
+% Cmd for pdf (from xfig) in a figure
+\newcommand{\FigureXFigTex}[3]{%
+  \begin{PlainFigure}{#2}{#3}
+  \FigCenterXFigTex{#1}
+  \end{PlainFigure}
 }
 
 % Env for rules in a figure
@@ -114,7 +145,12 @@
 \def\@@stripAfterDot#1.#2;{#1}
 
 % chunk related
-\newcommand{\chunkHideDef}[2]{\subsection{#2}\label{#1}}
+\newcommand{\chunkHideDef}[2]{%
+ \subsection{#2}\label{#1}
+%if asDraft
+ \marginpar{#1}
+%endif
+}
 \newcommand{\chunkHideRef}[1]{\marginpar{... \secPageRefB{#1}}}
 \newcommand{\chunkCmdDef}[1]{\expandafter\def\csname #1\endcsname}
 \newcommand{\chunkCmdUseRaw}[1]{%
@@ -196,9 +232,10 @@
 %if asArticle
 \secRef{#1}
 %else
-chapter~\myRef{#1}
+Chapter~\myRef{#1}
 %endif
 }
+\let\chaptRef=\chapterRef
 \newcommand{\appRef}[1]{%
 %if omitAppendix
 \chapterRef{#1}

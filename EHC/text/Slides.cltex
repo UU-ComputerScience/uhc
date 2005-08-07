@@ -865,6 +865,8 @@ let  f = ... g ...
 \begin{itemize}
 \item
 \chunkCmdFrameUse{EHInfer.1.gathTySigGam}
+\chunkCmdFrameUse{EHInfer.1.gamSigTyGath}
+\chunkCmdFrameUse{EHInfer.1.tySigGam}
 \chunkCmdFrameUse{EHInfer.1.tySigGam.TysigLet}
 \item Gather in |gathTySigGam|, distribute in |tySigGam|
 \end{itemize}
@@ -934,7 +936,7 @@ both inherited and synthesized
 \begin{itemize}
 \item Pattern in |let|-expression
 \[
-\rulerCmdUse{rules.expr1B.C.e-let1C}
+\rulerCmdUse{rules3.K.expr.baseForEH1.e.let}
 \]
 \item also requires |AGPat(State Gather)| to gather identifiers introduced in a pattern, e.g. for |a,b|:
 
@@ -1023,6 +1025,7 @@ bindings for identifiers (|AGPat(State Gather)| via |patValGam|) first, passing 
 (|AGPat(Multipass)| into |valGam|)
 \item AG:
 \chunkCmdFrameUse{EHInfer.1.patValGam}
+\chunkCmdFrameUse{EHInfer.1.patValGam.Val}
 \chunkCmdFrameUse{EHInfer.1.Let}
 \end{itemize}
 }
@@ -1338,7 +1341,7 @@ application
 \]
 \item but implementation has to manipulate constraints explicitly
 \[
-\rulerCmdUse{rules.expr2.e-app2}
+\rulerCmdUse{rules3.C.expr.baseForEH1.e.app}
 \]
 \end{itemize}
 }
@@ -1387,7 +1390,7 @@ application
 \begin{itemize}
 \item |App|'s rule:
 \[
-\rulerCmdUse{rules.expr2.e-app2}
+\rulerCmdUse{rules3.C.expr.baseForEH1.e.app}
 \]
 \item |v| fresh
 \begin{itemize}
@@ -1498,7 +1501,8 @@ SEM Expr
 \item Each node takes as many seeds as required
 \end{itemize}
 \item E.g. for expressions
-\chunkCmdFrameUse{EHUniq.2.Expr}
+\chunkCmdFrameUse{EHUniq.2.gUniq}
+\chunkCmdFrameUse{EHUniq.2.Expr.AppTop}
 \item UID
 \chunkCmdFrameUse{EHCommon.2.UID.Base}
 \chunkCmdFrameUse{EHCommon.2.UID.mkNewLevUID}
@@ -1612,7 +1616,7 @@ sigma  =  Int | Char
 \item Stored as quantified type (aka \emph{type scheme}) in |Gamma|
 \item When retrieved from |Gamma| immediately unquantified/instantiated:
 \[
-\rulerCmdUse{rules.expr2.3.e-ident3}
+\rulerCmdUse{rules3.C.expr.baseForEH1.e.var}
 \]
 \end{itemize}
 \item Standard Hindley/Milner type inferencing
