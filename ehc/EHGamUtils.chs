@@ -9,7 +9,7 @@
 %%% Gamma utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 import(Data.List,EHCommon,EHOpts,EHTy,EHTyFitsIn,EHError,EHGam,EHCnstr,EHSubstitutable)
+%%[4 import(Data.List,EHCommon,EHOpts,EHTy,EHTyFitsInCommon,EHTyFitsIn,EHError,EHGam,EHCnstr,EHSubstitutable)
 %%]
 
 %%[4_2 import(EHTyElimAlts) export(valGamElimAlts)
@@ -29,14 +29,26 @@ valGamElimAlts opts env globTvL uniq gCnstr g
             =  gamMapThr
                   (\(n,vgi) (c,eg,u)
                   	->  let  (u',u1) = mkNewLevUID u
-                  	         (t,ce,e) = tyElimAlts (mkElimAltsWrap env) opts globTvL u1 (c |=> vgiTy vgi)
+                  	         fo = tyElimAlts (mkFitsInWrap' env) opts globTvL u1 (c |=> vgiTy vgi)
+                  	         cg = cnstrFilterTyAltsMappedBy gCnstr (foCnstr fo)
+                  	    in   ((n,vgi {vgiTy = foTy fo}),(foCnstr fo |=> c |=> cg,gamAdd n (foErrL fo) eg,u'))
+                  )
+                  (emptyCnstr,emptyGam,uniq) (gCnstr |=> g)
+     in   (g',tyElimAltsCleanup gCnstr c,eg)
+%%]
+valGamElimAlts :: FIOpts -> FIEnv -> TyVarIdL -> UID -> Cnstr -> ValGam -> (ValGam,Cnstr,ErrGam)
+valGamElimAlts opts env globTvL uniq gCnstr g
+  =  let  (g',(c,eg,_))
+            =  gamMapThr
+                  (\(n,vgi) (c,eg,u)
+                  	->  let  (u',u1) = mkNewLevUID u
+                  	         (t,ce,e) = tyElimAlts (mkFitsInWrap env) opts globTvL u1 (c |=> vgiTy vgi)
                   	    in   ((n,vgi {vgiTy = t}),(ce |=> c,gamAdd n e eg,u'))
                   )
                   (emptyCnstr,emptyGam,uniq) (gCnstr |=> g)
           c2 = cnstrDelAlphaRename c
           c3 = cnstrKeys c2 `cnstrDel` cnstrFilterAlphaRename gCnstr
      in   (g',c2 |=> c3,eg)
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Equal elim

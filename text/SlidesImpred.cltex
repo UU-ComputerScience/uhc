@@ -12,7 +12,7 @@
 \item Only if explicitly specified
 \SafeCode{%
 \begin{code}
-%%4srcfile(test/3-poly-rank.eh%%)
+%%4srcfile(test/3-demo-rank.eh%%)
 \end{code}
 }
 \item Quantifier may be at any position in type
@@ -207,7 +207,7 @@ constraints will be found for the quantified type variable
 be bound to type variables?
 \SafeCode{%
 \begin{code}
-%%srcfile(test/4-choose.eh%%)
+%%srcfile(test/4-impred-choose.eh%%)
 \end{code}
 }
 \item Haskell: |v :: forall b . (b -> b) -> b -> b|

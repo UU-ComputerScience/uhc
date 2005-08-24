@@ -44,13 +44,16 @@ Single
 2 1 0 1 0 7 49 -1 -1 0.000 0 0 -1 1 0 2
 	0 0 1.00 60.00 120.00
 	 450 3600 900 3750
+2 1 0 1 0 7 49 -1 -1 0.000 0 0 -1 1 0 4
+	0 0 1.00 60.00 120.00
+	 1125 2625 675 2775 675 3075 1125 3300
 4 0 0 50 -1 4 9 0.0000 2 120 1965 825 750 Introduction (\\chapterRef{secIntro})\001
 4 0 0 50 -1 4 9 0.0000 2 120 1710 825 1200 AG tutorial (\\secRef{secAGTut})\001
-4 0 0 50 -1 4 9 0.0000 2 120 1875 825 1650 Type checking (\\chapterRef{ehc1})\001
-4 0 0 50 -1 4 9 0.0000 2 135 2895 825 2100 Type inference (\\chapterRef{ehc2},\\chapterRef{ehc3})\001
-4 0 0 50 -1 4 9 0.0000 2 120 2955 825 2550 Local impredicativity propagation (\\chapterRef{ehc4})\001
-4 0 0 50 -1 4 9 0.0000 2 120 3105 825 3000 Global impredicativity propagation (\\chapterRef{ehc4B})\001
-4 0 0 50 -1 4 9 0.0000 2 120 2115 825 3450 Existential types (\\chapterRef{ehc4C})\001
-4 0 0 50 -1 4 9 0.0000 2 120 2580 825 3900 Explicit implicit parameters (\\chapterRef{ehc9})\001
-4 0 0 50 -1 4 9 0.0000 2 120 2850 825 4350 Partial type signatures (\\chapterRef{ehc-partial-sig})\001
+4 0 0 50 -1 4 9 0.0000 2 120 2145 825 1650 Type checking (\\chapterRef{ehc1}: eh1)\001
+4 0 0 50 -1 4 9 0.0000 2 135 3405 825 2100 Type inference (\\chapterRef{ehc2},\\chapterRef{ehc3}: eh2,eh3)\001
+4 0 0 50 -1 4 9 0.0000 2 120 3225 825 2550 Local impredicativity propagation (\\chapterRef{ehc4}: eh4)\001
+4 0 0 50 -1 4 9 0.0000 2 120 3375 825 3000 Global impredicativity propagation (\\chapterRef{ehc4B}: eh4)\001
+4 0 0 50 -1 4 9 0.0000 2 120 2385 825 3450 Existential types (\\chapterRef{ehc4C}: eh4)\001
+4 0 0 50 -1 4 9 0.0000 2 120 2850 825 3900 Explicit implicit parameters (\\chapterRef{ehc9}: eh9)\001
+4 0 0 50 -1 4 9 0.0000 2 120 3375 825 4350 Partial type signatures (\\chapterRef{ehc-partial-sig}: eh2-eh9)\001
 4 0 0 50 -1 4 9 0.0000 2 120 1755 825 4800 Ruler system (\\chapterRef{ruler})\001

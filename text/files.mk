@@ -9,9 +9,11 @@ TEXT_MAIN					:= main
 
 # subtext
 TEXT_SUBS					:= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
+								SharedTypeLang SharedFIOpts \
 								TopicRuler TopicExplImpl TopicGRIN TopicRec TopicKinds TopicDataTy TopicImpred TopicHM TopicExtRec TopicGADT TopicReflection TopicPartialTySig \
 								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred \
-								AppxNotation
+								ToolDocShuffle \
+								AppxNotation FrontMatter OldText
 TEXT_SUBS_ASIS				:= afp-pgf
 
 # variant, to be configured on top level
@@ -21,20 +23,22 @@ TEXT_TMP_PREFIX				:= $(BLD_PREFIX)
 TEXT_TMP_VARIANT_PREFIX		:= $(TEXT_TMP_PREFIX)$(TEXT_VARIANT)/
 
 # all variants
-TEXT_PUB_VARIANTS			:= popl06-ruler popl06-explimpl
-TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) popl06-ruler-tst phd phd-tst scratch
+TEXT_PUB_VARIANTS			:= popl06-ruler popl06-explimpl shuffle
+TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) popl06-ruler-tst phd phd-tst scratch truu-explimpl truu-ruler
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
 # 2	: phd
-# 3	: popl06-ruler
-# 4	: popl06-explimpl
+# 3	: popl06-ruler, truu-ruler
+# 4	: popl06-explimpl, truu-explimpl
 # 5	: impred
 # 6	: afp (will be obsolete)
 # 7	: scratch
 # 8	: slides
 # 9	: slides explimpl
 # 10: future
-TEXT_SHUFFLE_ORDER			:= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 8, 1 < 9, 1 < 10
+# 11: shuffle doc
+# 12: garbage
+TEXT_SHUFFLE_ORDER			:= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 8, 1 < 9, 1 < 10, 1 < 11
 
 # configuration of lhs2tex, to be done on top level
 LHS2TEX_OPTS_TEXT_CONFIG	:= --unset=optExpandPrevRef
@@ -87,6 +91,7 @@ TEXT_RULER2_DEMO_TEX		:= $(patsubst $(RULER2_DEMO_PREFIX)%,$(TEXT_TMP_VARIANT_PR
 TEXT_RULER2_DEMO_STUFF		:= $(patsubst $(RULER2_DEMO_PREFIX)%,$(TEXT_TMP_VARIANT_PREFIX)%,$(RULER2_DEMO_DRV_RL2) $(RULER2_DEMO_DRV_AG) $(RULER2_DEMO_DRV_AG_MAIN) $(RULER2_DEMO_DRV_HS_UTILS))
 
 TEXT_INCL_LIST_TEX			:= $(TEXT_TMP_VARIANT_PREFIX)InclList.tex
+TEXT_GEN_BY_RULER_TABLE_TEX	:= $(TEXT_TMP_VARIANT_PREFIX)GenByRuler.tex
 
 TEXT_BIB_SRC				:= $(TEXT_SRC_PREFIX)LitAdm.bib
 TEXT_BIB_DRV				:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN).bib
@@ -102,8 +107,9 @@ TEXT_EDIT_SRC				:= $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SRC_CLTEX) $(TEXT_MAIN_SR
 TEXT_ALL_SRC				:= $(TEXT_EDIT_SRC) $(TEXT_SUBS_ASIS_SRC) $(TEXT_BIB_SRC)
 
 # all deriveds (as counting for make dependencies)
-TEXT_ALL_DPD				:= $(TEXT_MAIN_DRV_TEX) $(TEXT_SUBS_DRV_TEX) $(TEXT_MAIN_DRV_STY) $(TEXT_INCL_LIST_TEX) $(TEXT_RULER2_DEMO_TEX) \
-								$(TEXT_SUBS_ASIS_DRV) $(FIGS_XFIG_DRV_TEX) $(FIGS_XFIG_DRV_PDF) $(TEXT_RULER2_DEMO_STUFF) $(FIGS_ASIS_DRV_PDF) $(TEXT_HIDE_DRV_TEX) 
+TEXT_ALL_DPD				:= $(TEXT_MAIN_DRV_TEX) $(TEXT_SUBS_DRV_TEX) $(TEXT_MAIN_DRV_STY) $(TEXT_RULER2_DEMO_TEX) \
+								$(TEXT_SUBS_ASIS_DRV) $(FIGS_XFIG_DRV_TEX) $(FIGS_XFIG_DRV_PDF) $(TEXT_RULER2_DEMO_STUFF) $(FIGS_ASIS_DRV_PDF) $(TEXT_HIDE_DRV_TEX)  \
+								$(TEXT_GEN_BY_RULER_TABLE_TEX) $(TEXT_INCL_LIST_TEX)
 
 # distribution
 TEXT_DIST_DOC_FILES			:= $(TEXT_ALL_PUB_PDFS)
@@ -138,16 +144,34 @@ text-variant-popl06-ruler:
 	  TEXT_SHUFFLE_VARIANT=3 \
 	  text-variant-dflt-bib
 
+text-variant-truu-ruler:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=truu --set=storyRuler --set=asArticle --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss" \
+	  TEXT_SHUFFLE_VARIANT=3 \
+	  text-variant-dflt-bib
+
 text-variant-popl06-explimpl:
 	$(MAKE) \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=popl06 --set=acm --set=storyExplImpl --set=asArticle --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss" \
 	  TEXT_SHUFFLE_VARIANT=4 \
 	  text-variant-dflt-bib
 
+text-variant-truu-explimpl:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=truu --set=storyExplImpl --set=asArticle --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss" \
+	  TEXT_SHUFFLE_VARIANT=4 \
+	  text-variant-dflt-bib
+
 text-variant-scratch:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=phd --set=storyPHD --unset=asArticle --set=useHyperref --set=refToPDF --set=newDocClassHeader" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyPHD --unset=asArticle --set=useHyperref --set=refToPDF --set=newDocClassHeader" \
 	  TEXT_SHUFFLE_VARIANT=7 \
+	  text-variant-dflt-tst
+
+text-variant-shuffle:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyShuffle --set=asArticle --set=useHyperref --set=refToPDF --set=newDocClassHeader" \
+	  TEXT_SHUFFLE_VARIANT=11 \
 	  text-variant-dflt-tst
 
 text-variant-dflt-tst: $(TEXT_ALL_DPD)
@@ -223,7 +247,7 @@ $(RULER_3_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(EHC_SRC_PREFIX)%.rl2 
 
 $(TEXT_RULES_3_DRV_CAG): $(EHC_RULES_3_SRC_RL2) $(RULER2)
 	mkdir -p $(@D)
-	$(RULER2) --ag --wrapshuffle --selrule="((1=K),(2=C),(3=HM),(4=I1),(4_2=I2),(9=P)).(expr.base tyexpr.base patexpr.base decl.base).(*)" --base=$(*F) $< > $@
+	$(RULER2) --ag --wrapshuffle --selrule="((1=K),(2=C),(3=HM),(4=EX),(42=I2),(9=P)).(expr.base tyexpr.base patexpr.base decl.base).(*)" --base=$(*F) $< > $@
 
 $(TEXT_RULER2_DEMO_TEX) $(TEXT_RULER2_DEMO_STUFF): $(TEXT_TMP_VARIANT_PREFIX)% : $(RULER2_DEMO_PREFIX)%
 	mkdir -p $(@D)
@@ -241,9 +265,10 @@ $(FIGS_ASIS_DRV_PDF): $(TEXT_TMP_VARIANT_PREFIX)% : $(FIGS_SRC_PREFIX)%
 	mkdir -p $(@D)
 	cp $< $@
 
-$(FIGS_XFIG_DRV_TEX): $(TEXT_TMP_VARIANT_PREFIX)%.tex : $(FIGS_SRC_PREFIX)%.fig
+$(FIGS_XFIG_DRV_TEX): $(TEXT_TMP_VARIANT_PREFIX)%.tex : $(FIGS_SRC_PREFIX)%.fig $(TEXT_MKF)
 	mkdir -p $(@D)
-	fig2dev -L latex -E 0 $< > $@
+	(echo '%include lhs2TeX.fmt' ; echo '%include afp.fmt' ; echo '%include oneletter.fmt' ; fig2dev -L epic -E 0 $< | sed -e 's/@/@@/g') > $@.ltex
+	$(LHS2TEX) $(LHS2TEX_OPTS_TEXT_CONFIG) $(LHS2TEX_OPTS_VARIANT_CONFIG) $(LHS2TEX_OPTS_POLY) $@.ltex > $@
 
 $(FIGS_XFIG_DRV_PDF): $(TEXT_TMP_VARIANT_PREFIX)%.pdf : $(FIGS_SRC_PREFIX)%.fig
 	mkdir -p $(@D)
@@ -254,6 +279,16 @@ $(TEXT_INCL_LIST_TEX): $(TEXT_ALL_MK_FILES)
 	  do \
 	    echo "\\input" $$f ; \
 	  done \
+	) > $@
+
+$(TEXT_GEN_BY_RULER_TABLE_TEX): $(EHC_MKF) $(TEXT_MKF)
+	@(echo "\begin{tabular}{ll@{\;:\;}p{.7\linewidth}}" ; \
+	  echo "EH version & Ruler view & Ruler rules \\\\ \\hline" ; \
+	  for f in $(EHC_VARIANTS) ; \
+	  do \
+	    $(MAKE) echo-gen-by-ruler-$$f ; \
+	  done ; \
+	  echo "\end{tabular}" \
 	) > $@
 
 $(TEXT_HIDE_DRV_LTEX): $(TEXT_HIDE_DRV_TXT)

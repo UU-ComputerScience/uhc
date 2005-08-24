@@ -381,22 +381,24 @@ the previous one.
 The features presented in \thischapt\ are part of the ninth version.
 %endif
 
-%%@AppxNotation.termTableFigBeginExplImpl
+\begin{TabularFigure}{EH terms (emphasized ones explained throughout the text)}{exim-eh-lang-terms}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
 %%@AppxNotation.exprBasic
+%%@AppxNotation.exprLamIdent
 %%@AppxNotation.exprRecBasic
 %%@AppxNotation.exprExplImpl
 %%@AppxNotation.termSeparator
 %%@AppxNotation.declHeader
-%%@AppxNotation.declBasic
+%%@AppxNotation.declBasicTySigma
+%%@AppxNotation.declValIdent
 %%@AppxNotation.declDataType
 %%@AppxNotation.declExplImpl
 %%@AppxNotation.termSeparator
 %%@AppxNotation.identHeader
 %%@AppxNotation.identBasic
 %%@AppxNotation.identRecLbl
-%%@AppxNotation.termTableFigEnd
+\end{TabularFigure}
 
 \figRef{exim-eh-lang-terms} and \figRef{exim-eh-lang-types} show the terms and types featured in EH.
 Throughout \thischapt\ all language constructs will be gradually introduced and explained.
@@ -473,15 +475,16 @@ We make no attempt to infer higher ranked types
 instead we propagate explicitly specified types as good as possible to wherever this information is needed.
 Our strategies here are elaborated in a forthcoming publication \cite{dijkstra05phd}.
 
-%%@AppxNotation.typeTableFigBeginExplImpl
+\begin{TabularFigure}{EH types}{exim-eh-lang-types}
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.typeHeader
 %%@AppxNotation.typeBasic
+%%@AppxNotation.typePred
 %%@AppxNotation.typeRecBasic
 %%@AppxNotation.termSeparator
 %%@AppxNotation.impredHeader
 %%@AppxNotation.impredBasic
-%%@AppxNotation.termTableFigEnd
+\end{TabularFigure}
 
 \subsection{Implicit parameters}
 \label{ehc09-implparam}
@@ -762,7 +765,7 @@ f :: forall a b . (Eq a, Eq b) => a -> a -> b -> b -> (Bool,Bool)
 \end{code}
 
 When explicitly
-passing an implicit parameter we make use of the fact that predicate instances also stand for actual values in the implementation.
+passing an implicit parameter we use that predicate instances also stand for actual values in the implementation.
 A class declaration introduces a record type for the dictionary
 corresponding to the predicate introduced by the class declaration.
 For example, the class declaration for |Eq| introduces the record type |(eq :: a -> a -> Bool)|
@@ -2057,7 +2060,7 @@ The type rule for identifiers reflects this:
 \rulerCmdUse{rules.expr9.part2.e-ident9}
 \]
 
-In principle, we could do the same for the other cases were it not for the fact that the coercions computed by
+In principle, we could do the same for the other cases were it not for the coercions being computed by
 |fitsIn| cannot use of not yet inferred information about predicates.
 This would lead to many lambda abstractions and applications which could be removed by |eta|-reduction in a later stage,
 but clutter resulting translations in the meantime.

@@ -21,13 +21,13 @@
 %%[3 hs export(mkTyQu, TyVarCateg(..))
 %%]
 
+%%[3 hs import(Data.Maybe) export(tyVar) 
+%%]
+
 %%[4 hs export(TyQu(..), tyquExists, tyquIsExists, tyquIsForall, showTyQu) 
 %%]
 
 %%[4 hs export(tyConNm) 
-%%]
-
-%%[4 hs import(Data.Maybe) export(tyVar) 
 %%]
 
 %%[4 hs export(tvCatIsFixed) 
@@ -43,6 +43,9 @@
 %%]
 
 %%[4_2 hs export(TyHardness(..)) 
+%%]
+
+%%[4_2 hs export(TyNeed(..)) 
 %%]
 
 %%[6 hs export(kiStar) 
@@ -138,18 +141,33 @@ tvIsEx fvM tv = maybe False (== TyVarCateg_Exist) (Map.lookup tv fvM)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Offered or required
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2 hs
+data TyNeed
+  = TyRequired | TyOffered | TyNoNeed
+  deriving (Eq,Ord)
+
+instance Show TyNeed where
+  show TyRequired    = "R"
+  show TyOffered     = "O"
+  show TyNoNeed      = "-"
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Hardness of type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2 hs
 data TyHardness
-  = TyHard | TySoft TyVarId | TyUpBound TyVarId
+  = TyHard | TySoft TyVarId
   deriving (Eq,Ord)
 
 instance Show TyHardness where
-  show TyHard         = "H"
-  show (TySoft    i)  = "S:" ++ show i
-  show (TyUpBound i)  = "U:" ++ show i
+  show TyHard          = "H"
+  show (TySoft     i)  = "S" -- "S:" ++ show i
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -240,9 +258,6 @@ showTyQu  TyQu_KiExists   =  "Exists"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2 hs
-tyMbVar :: Ty -> Maybe TyVarId
-tyMbVar t = case t of {Ty_Var v _ -> Just v ; _ -> Nothing}
-
 tyIsVar :: Ty -> Bool
 tyIsVar = isJust . tyMbVar
 
@@ -352,8 +367,8 @@ mkTyImpls prL t = map Ty_Pred prL `mkArrow` t
 mkTyPr :: Pred -> Ty
 mkTyPr p
   =  case p of
-	   Pred_Pred t  -> t
-	   _            -> Ty_Pred p
+       Pred_Pred t  -> t
+       _            -> Ty_Pred p
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -375,8 +390,8 @@ kiStar  = Ty_Con hsnStar
 %%[7 hs
 kiRow       = Ty_Con hsnRow
 tyRowEmpty  = Ty_Con hsnRowEmpty
-tyRecEmpty	= mkTyRec []
-tySumEmpty	= mkTySum []
+tyRecEmpty  = mkTyRec []
+tySumEmpty  = mkTySum []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -461,15 +476,19 @@ tyConNm  (Ty_Con nm)  = nm
 tyConNm  _            = hsnUnknown
 %%]
 
-%%[4.unMkTy.tyVar hs
+%%[3.unMkTy.tyMbVar hs
+tyMbVar :: Ty -> Maybe TyVarId
+tyMbVar t = case t of {Ty_Var v _ -> Just v ; _ -> Nothing}
+%%]
+
+%%[3.unMkTy.tyVar hs
 tyVar :: Ty -> TyVarId
-tyVar (Ty_Var v _)  = v
-tyVar _             = uidStart
+tyVar = maybe uidStart id . tyMbVar
 %%]
 
 %%[4_2.tyPlusTy hs
 tyPlusTy :: TyPlus -> Ty
-tyPlusTy (TyPlus_Ty t _) = t
+tyPlusTy (TyPlus_Ty t _ _) = t
 %%]
 
 %%[9_1.tyPlusTy -4_1.tyPlusTy hs

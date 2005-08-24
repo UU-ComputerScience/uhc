@@ -69,7 +69,7 @@ The type inferencer pretty prints the inferred type instead of the explicity typ
 \end{TT}
 
 The discussion of this feature is postponed until
-\chapterRef{ehc-partial-sig}.
+\chapterRef{ehc-partial-sig-quant-guess}.
 
 \subsection{Type variables}
 
@@ -77,10 +77,7 @@ In order to be able to represent yet unknown types the type language needs
 \IxAsDef{type variable}s to represent this:
 
 \begin{code}
-sigma  =  Int | Char
-       |  (sigma,...,sigma)
-       |  sigma -> sigma
-       |  tvarv
+%%@SharedTypeLang.ehc2
 \end{code}
 
 The corresponding type structure |Ty| needs to be extended with an alternative for a variable.
@@ -511,7 +508,7 @@ by means of |tyEnsureNonAny|:
 %%]
 \chunkCmdUseMark{EHRulerRules.2.patexpr.p.var}
 
-For tuples we again make use of the fact that the |Con| alternative will always
+For tuples we again use that the |Con| alternative will always
 represent a tuple.
 %if not incl05
 When datatypes are introduced (not part of \thispaper) this will no longer be the case.

@@ -32,21 +32,19 @@ SEM PatExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2.patFunTy
-ATTR PatExpr [ | | patFunTy: Ty ]
+ATTR PatExpr [ | | patFunTy USE {`const`} {Ty_Any}: Ty ]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.patFunTy
-%%[4.patFunTy
+%%[5.patFunTy
 SEM PatExpr
   | Con         loc         .  patFunTy             =   let  prTy = mkTyFreshProdFrom @lUniq (hsnProdArity @nm)
                                                         in   ([prTy] `mkArrow` prTy)
   | App         lhs         .  patFunTy             =   @func.patFunTy
-  | * - App Con
-                lhs         .  patFunTy             =   Ty_Any
   | AppTop      loc         .  patFunTy             =   @patExpr.patFunTy
 %%]
 
-%%[4.patFunTy
+%%[5.patFunTy
 SEM PatExpr
   | Con         loc         .  (knUnTy,nmErrs)      :=  valGamLookupTy (hsnUn @nm) @lhs.valGam
                             .  patFunFo             :=  let  [a,r]  = mkNewTyVarL 2 @lUniq
@@ -73,7 +71,7 @@ ATTR PatExpr [ knTyL: TyL | | ]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.knTy.App
-%%[4.knTy.App
+%%[5.knTy.App
 SEM PatExpr
   | AppTop      loc         .  knProdTy
                                                     =   @lhs.knTy
@@ -98,9 +96,9 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.knTy
-%%[4.knTy
+%%[5.knTy
 SEM PatExpr
-  | AppTop      loc         .  (knResTy,knProdTy)   :=  tyArrowArgRes @patFunTy
+  | AppTop      loc         .  (ty_r_,knProdTy)     :=  tyArrowArgRes @patFunTy
 %%]
 
 %%[5
@@ -126,7 +124,7 @@ SEM Expr
 ATTR AllPatExpr [ | valGam: ValGam | ]
 %%]
 -- generated from ruler rules into EHRulerRules, was 1.xxx
-%%[4.xxx
+%%[5.xxx
 SEM PatExpr
   | Var VarAs   loc         .   ty                  =   @lhs.knTy
                             .   varTy               =   @ty
@@ -142,19 +140,21 @@ SEM PatExpr
 ATTR AllPatExpr [ | tyCnstr: Cnstr | ty: Ty ]
 %%]
 
--- generated from ruler rules into EHRulerRules, was 4.Var
-%%[4.Var
+-- generated from ruler rules into EHRulerRules, was 2.Var
+%%[5.Var
 SEM PatExpr
   | Var VarAs   loc         .   ty                  :=  tyEnsureNonAny @lUniq @lhs.knTy
   | VarAs       patExpr     .   knTy                =   @ty
 %%]
 
-%%[4.Var
+-- generated from ruler rules into EHRulerRules, was 4.Var
+%%[5.Var
 SEM PatExpr
   | Var VarAs   loc         .   ty                  :=  tyInst1Exists @lUniq2 (tyEnsureNonAny @lUniq @lhs.knTy)
 %%]
 
-%%[4_2.Var
+-- generated from ruler rules into EHRulerRules, was 4_2.Var
+%%[99.Var
 SEM PatExpr
   | Var VarAs   loc         .   (varTy,varTyCnstr)  :=  tyAsCnstr @lUniq @ty
   | Var         lhs         .   tyCnstr             =   @varTyCnstr |=> @lhs.tyCnstr
@@ -174,20 +174,19 @@ SEM PatExpr
   | Var         loc         .   ty                  :=  tyInst1Exists @lUniq2 (tyEnsureNonAnyImpl @lUniq @lhs.knTy)
 %%]
 
-%%[4.TypeAs
+-- generated from ruler rules into EHRulerRules, was 4.TypeAs
+%%[5.TypeAs
 SEM PatExpr
-  | TypeAs      loc         .   asTy                =   @lhs.tyCnstr |=> @tyExpr.ty
-                            .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) @asTy
+  | TypeAs      loc         .   ty_q_               =   @lhs.tyCnstr |=> @tyExpr.ty
+                            .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) @ty_q_
                 patExpr     .   knTy                =   foTy @fo_
                             .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.Rest
-%%[4.Rest
+%%[5.Rest
 SEM PatExpr
-  | IConst      loc         .   ty                  =   tyInt
-  | CConst      loc         .   ty                  =   tyChar
-  | AppTop      loc         .   fo_                 =   @lhs.knTy `fitsIn` @knResTy
+  | AppTop      loc         .   fo_                 =   @lhs.knTy `fitsIn` @ty_r_
                             .   ty                  =   foTy @fo_
                 patExpr     .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
                 lhs         .   ty                  =   @patExpr.tyCnstr |=> @ty
@@ -195,10 +194,18 @@ SEM PatExpr
   | Con         loc         .   ty                  =   Ty_Any
 %%]
 
-%%[4.Rest
+-- generated from ruler rules into EHRulerRules, was 2.Rest
+%%[5.Rest
 SEM PatExpr
-  | AppTop Con  loc         .   fo_                 :=  fitsIn @lhs.fiOpts @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) @knResTy
-  | Con         loc         .   (knResTy,_)         =   tyArrowArgRes @patFunTy
+  | IConst      loc         .   ty                  =   tyInt
+  | CConst      loc         .   ty                  =   tyChar
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 4.Rest
+%%[5.Rest
+SEM PatExpr
+  | AppTop Con  loc         .   fo_fitR_            :=  fitsIn @lhs.fiOpts @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) @ty_r_
+  | Con         loc         .   (ty_r_,_)           =   tyArrowArgRes @patFunTy
                             .   ty                  :=  foTy @fo_
                 lhs         .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
 %%]
@@ -206,7 +213,7 @@ SEM PatExpr
 %%[11.ApptopCon
 SEM PatExpr
   | AppTop Con  loc         .   fo_                 :=  fitsIn  (@lhs.fiOpts {fioAllowEqOpen = True})
-                                                                @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) @knResTy
+                                                                @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) @ty_r_
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

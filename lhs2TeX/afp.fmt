@@ -48,43 +48,21 @@
 %include parsing.fmt
 %include pretty.fmt
 
-%if False
-%% compatibility with AFP04
-
-%format ValGam				= "TyGam"
-%format ValGamInfo			= "TyGamInfo"
-%format vgiTy				= "tgiTy"
-%format valGam				= "tyGam"
-%format finValGam			= "finTyGam"
-%format vgi					= "tgi"
-%format lValGam				= "lTyGam"
-%format gValGam				= "gTyGam"
-%format lSubsValGam			= "lSubsTyGam"
-%format gSubsValGam			= "gSubsTyGam"
-%format lQuValGam			= "lAbsTyGam"
-%format patValGam			= "patTyGam"
-%format valGamInst1Exists	= "tyGamInst1Exists"
-%format valGamQuantify		= "tyGamQuantify"
-%format valGamLookup		= "tyGamLookup"
-%format TyGam				= "KiGam"
-%format tyGam				= "kiGam"
-%format tyGamLookup			= "kiGamLookup"
-
-%% end of compatibility with AFP04
-%endif
-
 %% handling of `
 
 %format `   = "\backtick "
 
 %format forall      = "{\forall}"
 %format exists      = "{\exists}"
+%format nexists     = "{\not\exists}"
 
 %format ^ 			= " "
 %format ^^ 			= "\;"
 
 %format (Vec(x))    = "\overline{" x "}"
 %format (VecI(x)(i))    = x "^{\{" i "\}}"
+
+%format (Dot(x)(y)(z))	= "{" x "}_{" y "}^{" z "}"
 
 %format restr		= "\backslash "
 
@@ -94,10 +72,14 @@
 %format Gammab      = Gamma "^{b}"
 %format Gammasig    = Gamma "_{sig}"
 
+%format TGamma      = Delta
+%format KGamma      = Theta
+
 %format taua        = tau "_{a}"
 
 %format sigmak      = sigma "^{k}"
 %format sigman      = sigma "_{n}"
+%format sigmam      = sigma "_{m}"
 %format sigmapk     = sigma "_{p}^{k}"
 %format sigmapf     = sigma "_{pf}"
 %format sigmaq      = sigma "^{q}"
@@ -115,12 +97,21 @@
 %format sigma2
 %format sigma3
 %format sigma4
+%format sigma1a		= sigma "^{a}_{1}"
+%format sigma2a		= sigma "^{a}_{2}"
+%format sigma1r		= sigma "^{r}_{1}"
+%format sigma2r		= sigma "^{r}_{2}"
 %format sigmaQu     = sigma "_{" Qu "}"
+%format sigmaNQu    = sigma "_{" nQu "}"
+%format sigmaHard   = sigma "_{" thardH "}"
 
 %format isigma      = "\mathbb{\bbsigma}"
+%format isigmaf     = isigma "_{f}"
+
 %format bsigma      = sigma "_{" /=/ "}"
 
 %format Cnstr       = "\mathcal{C}"
+%format Cnstre		= Cnstr "_{e}"
 %format Cnstra		= Cnstr "_{a}"
 %format Cnstrr		= Cnstr "_{r}"
 %format Cnstrp		= Cnstr "_{p}"
@@ -132,6 +123,7 @@
 %format ICnstrk		= ICnstr "^{k}"
 
 %format Qu          = "\mathcal{Q}"
+%format nQu         = "\not" Qu
 
 %format ident       = iota
 %format identv      = "i"
@@ -154,6 +146,17 @@
 %format tvarv4
 
 %format tcon        = c
+
+%format talt			= phi
+%format taltcx(cx)		= talt "_{" cx "}"
+
+%format thard			= "\mathbb{H}"
+%format thardH			= thard "_{h}"
+%format thardS			= thard "_{s}"
+
+%format tneed			= "\mathbb{N}"
+%format tneedO			= tneed "_{o}"
+%format tneedR			= tneed "_{r}"
 
 %format pvar        = "{\varpi}"
 %format pivar       = p
@@ -182,12 +185,15 @@
 %format // 	    		= "/"
 %format /^/ 	    	= "/"
 %format /=/ 	    	= "{\eqcirc}"
-%format |=>     		= "\Yright "
+%format |=>     		= "\oplus "
+%format |>>     		= "\ogreaterthan "
+%format |\>     		= "\backslash "
 %format :->         	= "\mapsto "
 %format ~>	         	= "\leadsto "
 %format :-  			= "\vdash "
 %format **  			= ".."
 %format ::- 			= "\Vdash "
+%format ::= 			= "\mathrel{\Coloneqq}"
 %format :~>   			= "\rightsquigarrow "
 %format <~:   			= "\leftsquigarrow "
 %format :>   			= "\rightsquigarrow "
@@ -206,20 +212,13 @@
 % format +	 			= ","
 % format ++	 			= ","
 
-%format talt			= phi
-%format tctxt			= "\mathcal{X}"
-%format tctxtH			= tctxt "_{H}"
-%format tctxtS			= tctxt "_{S}"
-%format tctxtU			= tctxt "_{U}"
-%format tctxtL			= tctxt "_{L}"
-%format taltcx(cx)		= talt "_{" cx "}"
-
 % format fiopt			= "{\xi}"
 %format fiopt			= "o"
 %format strongFIOpts	= fiopt "_{str}"
 %format weakFIOpts		= fiopt "_{wk}"
 %format instFIOpts		= fiopt "_{inst}"
 %format instLFIOpts		= fiopt "_{inst-l}"
+%format instLRFIOpts	= fiopt "_{inst-lr}"
 %format predFIOpts		= fiopt "_{pred}"
 %format implFIOpts		= fiopt "_{impl}"
 %format unifyFIOpts		= fiopt "_{unify}"
@@ -255,6 +254,10 @@
 %format fioBindToTyAlts	= fioptBase "_{alt}"
 %format fioBindToTyAltsY	= fioBindToTyAlts "^{+}"
 %format fioBindToTyAltsN	= fioBindToTyAlts "^{-}"
+%format fioBindLBeforeR	= fioptBase "_{l,r}"
+%format fioBindLBeforeRY	= fioBindLBeforeR "^{+}"
+%format fioBindLBeforeRN	= fioBindLBeforeR "^{-}"
+%format fioDontBind		= fioptBase "_{bv}"
 
 %format coco        	= "\mathcal{V}"
 %format cocovar     	= coco

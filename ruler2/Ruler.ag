@@ -767,6 +767,6 @@ SEM Expr
                                                 in  ExprIsRw . {- nm @lExpr.exprIsRw . -} nm @rExpr.exprIsRw $ @nm
   | App             lhs     .   exprIsRw    =   ExprIsRw nmApp
   | Var             lhs     .   exprIsRw    =   ExprIsVar @nm
-  | * - Op Var AppTop App Paren
+  | * - Op Var AppTop App
                     lhs     .   exprIsRw    =   ExprIsOther
 

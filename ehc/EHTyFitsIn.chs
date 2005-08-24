@@ -43,10 +43,10 @@
 %%[4 import(EHDebug)
 %%]
 
-%%[4_2 import(EHTyElimBoth) export(foHasErrs)
+%%[4_2 import(EHTyElimAlts) export(mkFitsInWrap,mkFitsInWrap')
 %%]
 
-%%[4_2 import(EHTyElimAlts) export(mkElimAltsWrap)
+%%[4_2 import(EHTyElimBoth) export(foHasErrs)
 %%]
 
 %%[6 export(fitsInL)
@@ -62,20 +62,6 @@
 %%]
 
 %%[10 import(EHCoreUtils)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% FitsIn opts related
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[4
-fioIsSubsume :: FIOpts -> Bool
-fioIsSubsume fio =  case fioMode fio of {FitSubLR -> True ; _ -> False}
-%%]
-
-%%[4_2
-fioIsMeetJoin :: FIOpts -> Bool
-fioIsMeetJoin fio =  case fioMode fio of {FitMeet -> True ; FitJoin -> True ; _ -> False}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -334,12 +320,16 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[4_2.fitsIn.mkTyPlus
-            mkTyPlusHard fi isR v t =  (fi,TyPlus_Ty t h)
-                                       where h =  if fioIsMeetJoin (fiFIOpts fi) then TyHard
-                                                  else if isR && fioIsSubsume (fiFIOpts fi) then TyUpBound v
+            mkTyPlusHard fi isR v t =  (fi,TyPlus_Ty t h o)
+                                       where h =  if fioIsMeetJoin (fiFIOpts fi)
+                                                  then TyHard
                                                   else TySoft v
+                                             o =  if fioIsSubsume (fiFIOpts fi)
+                                                  then (if isR then TyRequired else TyOffered)
+                                                  else if fioIsMeetJoin (fiFIOpts fi)
+                                                  then (if fioMode (fiFIOpts fi) == FitMeet then TyRequired else TyOffered)
+                                                  else TyNoNeed
 %%]
-            mkTyPlus     fi t       =  (fi,TyPlus_Ty t TySoft)
 
 %%[9_1.fitsIn.mkTyPlus -4_1.fitsIn.mkTyPlus
             mkTyPlus fi t           =  (fi {fiUniq = u'},TyPlus_Ty t u)
@@ -361,7 +351,7 @@ fitsIn opts env uniq ty1 ty2
 %%[4_2
             bindMany fi tvL t       =  (res fi t) {foCnstr = mkCnstr tvL t}
             mkCnstr tvL t           =  assocLToCnstr .  map (flip (,) t) $ tvL
-            cmbTyAltsL t1L t2L      =  q1 ++ q2 ++ r1 ++ r2
+            cmbTyAltsL t1L t2L      =  nub (q1 ++ q2) ++ nub (r1 ++ r2)
                                        where  p = partition (tyIsQu . tyPlusTy)
                                               (q1,r1) = p t1L
                                               (q2,r2) = p t2L
@@ -654,8 +644,11 @@ fitsIn opts env uniq ty1 ty2
             f fi t1                     Ty_Any      = res fi t1
             f fi t1@(Ty_Con s1)         t2@(Ty_Con s2)
                 | s1 == s2                          = res fi t2
-            f fi t1@(Ty_Var v1 f1)      (Ty_Var v2 f2)
+            f fi t1@(Ty_Var v1 f1)      t2@(Ty_Var v2 f2)
                 | v1 == v2 && f1 == f2              = res fi t1
+                | lBefR && allowBind fi t1          = bind fi v1 t2
+                | not lBefR && allowBind fi t2      = bind fi v2 t1
+                where lBefR = fioBindLBeforeR (fiFIOpts fi)
 %%]
 
 %%[4_2.fitsIn.Both
@@ -1021,14 +1014,9 @@ fitsIn' msg opts env uniq ty1 ty2
 %%[6
 fitsInL :: FIOpts -> FIEnv -> UID -> TyL -> TyL -> (TyL,FIOut)
 fitsInL opts env uniq tyl1 tyl2
-  =  snd
-     .  foldr  (\(t1,t2) (u,(ts,fos))
-                  -> let  (u',ue) = mkNewLevUID u
-                          fo = fitsIn opts env u (foCnstr fos |=> t1) (foCnstr fos |=> t2)
-                     in   (u',(foTy fo:ts, fos {foCnstr = foCnstr fo |=> foCnstr fos, foErrL = foErrL fo ++ foErrL fos}))
-               )
-               (uniq,([],emptyFO))
-     .  zip tyl1 $ tyl2
+  = (map foTy foL,if null foL then emptyFO else head foL)
+  where foL = fitsInLWith (\fo1 fo2 -> fo2 {foCnstr = foCnstr fo1 |=> foCnstr fo2, foErrL = foErrL fo1 ++ foErrL fo2})
+                          (mkFitsInWrap' env) opts uniq tyl1 tyl2
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1415,12 +1403,17 @@ fitPredToEvid u prTy g
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Wrapper for elimbinds
+%%% Wrapper for fitsIn (as a solution for module dependency cycle)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_2
-mkElimAltsWrap :: FIEnv -> (FIOpts -> UID -> Ty -> Ty -> (Ty,Cnstr,ErrL))
-mkElimAltsWrap env
+%%[4
+mkFitsInWrap' :: FIEnv -> FitsIn'
+mkFitsInWrap' env
+  =  \opt u t1 t2 ->  let  fo = fitsIn opt env u t1 t2
+                      in   fo
+
+mkFitsInWrap :: FIEnv -> FitsIn
+mkFitsInWrap env
   =  \opt u t1 t2 ->  let  fo = fitsIn opt env u t1 t2
                       in   (foTy fo, foCnstr fo, foErrL fo)
 %%]

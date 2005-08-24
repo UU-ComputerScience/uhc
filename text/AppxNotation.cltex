@@ -1,44 +1,3 @@
-%%[termTableBegin
-\label{appx-eh-lang-terms}
-\begin{tabular}%
-%%]
-
-%%[termTableFigBegin
-\begin{TabularFigure}{EH terms}{appx-eh-lang-terms}%
-%%]
-
-%%[termTableFigBeginExplImpl
-\begin{TabularFigure}{EH terms (emphasized ones explained throughout the text)}{exim-eh-lang-terms}%
-%%]
-
-%%[typeTableBegin
-\label{appx-eh-lang-types}
-\begin{tabular}%
-%%]
-
-%%[typeTableFigBegin
-\begin{TabularFigure}{EH types}{appx-eh-lang-types}%
-%%]
-
-%%[typeTableFigBeginExplImpl
-\begin{TabularFigure}{EH types}{exim-eh-lang-types}
-%%]
-
-%%[typeTableFigBeginImpred
-\begin{TabularFigure}{EH types}{eh-impred-lang-types}
-%%]
-
-%%[termTableFigBeginImpred
-\begin{TabularFigure}{EH terms}{eh-impred-lang-terms}
-%%]
-
-%%[termTableEnd
-\end{tabular}
-%%]
-
-%%[termTableFigEnd
-\end{TabularFigure}
-%%]
 
 %%[termTableFormat
 {r@@{\;}c@@{\;}ll}
@@ -46,6 +5,14 @@
 
 %%[exprHeader
 \multicolumn{4}{l}{Values (expressions, terms):} \\
+%%]
+
+%%[patexprHeader
+\multicolumn{4}{l}{Pattern expressions:} \\
+%%]
+
+%%[tyexprHeader
+\multicolumn{4}{l}{Type expressions:} \\
 %%]
 
 %%[declHeader
@@ -86,12 +53,22 @@
  & application
  \\
 & | || | &
+|let Vec(d) in e|
+ & local definitions
+ \\
+%%]
+
+%%[exprLamIdent
+& | || | &
 |\i -> e|
  & abstraction
  \\
+%%]
+
+%%[exprLamPat
 & | || | &
-|let Vec(d) in e|
- & local definitions
+|\p -> e|
+ & abstraction
  \\
 %%]
 
@@ -144,12 +121,29 @@
 
 %%[declBasic
 |d| & |::=| &
+|identv :: t|
+ & value type signature
+ \\
+%%]
+
+%%[declBasicTySigma
+|d| & |::=| &
+|identv :: sigma|
+ & value type signature
+ \\
+%%]
+
+%%[declValIdent
+& | || | &
 |identv = e|
  & value binding
  \\
+%%]
+
+%%[declValPat
 & | || | &
-|identv :: sigma|
- & value type signature
+|p = e|
+ & value binding
  \\
 %%]
 
@@ -180,6 +174,54 @@
 & | || | &
 |instance e <: pi|
  & \emph{value introduced instance}
+ \\
+%%]
+
+%%[patexprBasic
+|p| & |::=| &
+|int || char |
+ & literals
+ \\
+& | || | &
+|identv|
+ & pattern variable
+ \\
+& | || | &
+|identv@p|
+ & pattern variable, with subpattern
+ \\
+& | || | &
+|(p,...,p)|
+ & tuple pattern
+ \\
+%%]
+
+%%[tyexprBasic
+|t| & |::=| &
+|Int || Char |
+ & type constants
+ \\
+& | || | &
+|t -> t|
+ & function type
+ \\
+& | || | &
+|(t,...,t)|
+ & tuple type
+ \\
+%%]
+
+%%[tyexprTyVar
+& | || | &
+|identv|
+ & type variable
+ \\
+%%]
+
+%%[tyexprForall
+& | || | &
+|forall ^ identv . t|
+ & universal quantification
  \\
 %%]
 
@@ -223,16 +265,19 @@
  & abstraction
  \\
 & | || | &
-|pi => sigma|
- & implicit abstraction
- \\
-& | || | &
 |sigma ^^ sigma|
  & type application
  \\
 & | || | &
 |forall ^ tvarv . sigma|
  & universally quantified type
+ \\
+%%]
+
+%%[typePred
+& | || | &
+|pi => sigma|
+ & implicit abstraction
  \\
 %%]
 
@@ -289,7 +334,7 @@
  & 
  \\
 & | || | &
-|tvar /=/ sigma|
+|tvarv /=/ sigma|
  & both
  \\
 & | || | &
@@ -300,16 +345,24 @@
 
 %%[tyaltBasic
 |talt| & |::=| &
-|isigma :: tctxt|
+|isigma :: thard / tneed|
  & type alternative
  \\
-|tctxt| & |::=| &
-|tctxtH|
- & `hard' context
+|tneed| & |::=| &
+|tneedO|
+ & `offered' context
  \\
 & | || | &
-|tctxtS|
- & `soft' context
+|tneedR|
+ & `required' context
+ \\
+|thard| & |::=| &
+|thardH|
+ & `hard' constraint
+ \\
+& | || | &
+|thardS|
+ & `soft' constraint
  \\
 %%]
 
@@ -359,6 +412,9 @@
 |sigmaQu|
  & |sigma| with a quantifier
  \\
+|sigmaNQu|
+ & |sigma| without a quantifier
+ \\
 |tvarf|
  & fixed type variable (a.k.a. skolem type)
  \\
@@ -374,9 +430,6 @@
 |ICnstr|
  & |Cnstr| for impredicativity inferencing
  \\
-|Cnstr|$_{k..l}$
- & constraint composition of |Cnstr|$_k ...$ |Cnstr|$_l$
- \\
 |<+>|
  & meet of two types
  \\
@@ -386,11 +439,29 @@
 |<=>|
  & |<=|, |<+>| or |<->|
  \\
+|thard|
+ & type alternative hardness (hard or soft)
+ \\
+|thardH|
+ & hard type alternative
+ \\
+|thardS|
+ & soft type alternative
+ \\
+|tneed|
+ & type alternative need/context (offered or required)
+ \\
+|tneedO|
+ & offered type alternative
+ \\
+|tneedR|
+ & required type alternative
+ \\
 |talt|
  & type alternative
  \\
-|Vec(taltcx(tctxt))|
- & |[ talt || talt@(_::tctxt) <- Vec(talt)]|
+|Vec(taltcx(thard))|
+ & |[ talt || talt@(_::thard) <- Vec(talt)]|
  \\
 |Vec(taltcx(Qu))|
  & |[ talt || talt@(sigmaQu::_) <- Vec(talt)]|

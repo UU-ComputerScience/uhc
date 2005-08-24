@@ -1,4 +1,3 @@
--- h :: (Int,Int->Int), must be usable for both g1 & g2 parameter
 let  g1  ::  (exists a . (a,a->Int)) -> Int
      g2  ::  (Int,Int->Int) -> Int
      f   =   \h  ->  let  x1  =  g1 h

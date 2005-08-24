@@ -140,54 +140,41 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.App
-%%[4.App
+%%[5.App
 SEM Expr
-  | App         loc         .   knFunTy             =   [Ty_Any] `mkArrow` @lhs.knTy
+  | App AppImpred
+                loc         .   knFunTy             =   [Ty_Any] `mkArrow` @lhs.knTy
                 func        .   knTy                =   @knFunTy
                 (arg.knTy,loc.ty_)                  =   tyArrowArgRes @func.ty
                 loc         .   ty                  =   @ty_
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.App
-%%[4.App
+%%[5.App
 SEM Expr
-  | App         loc         .   knFunTy             :=  [mkNewTyVar @lUniq] `mkArrow` @lhs.knTy
+  | App AppImpred
+                loc         .   knFunTy             :=  [mkNewTyVar @lUniq] `mkArrow` @lhs.knTy
                             .   ty                  :=  @arg.tyCnstr |=> @ty_
 %%]
 
-%%[4_2
+-- generated from ruler rules into EHRulerRules, was 4_2.App
+%%[99
 SEM Expr
-  | App         loc         .   (imprArgTy,imprResTy)
+  | App AppImpred
+                loc         .   (imprArgTy,imprResTy)
                                                     =   let [a,r] = mkNewTyVarL 2 @lUniq in (a,@lhs.knTy)
                             .   knFunTy             :=  [@imprArgTy] `mkArrow` @imprResTy
                 arg         .   knTy                :=  @imprArgTy
-                loc         .   imprFO1             =   fitsIn  (@argFIOpts {fioBindToTyAlts = True}) @fe @lUniq2
+                loc         .   fo_fitA_            =   fitsIn  (@argFIOpts {fioBindToTyAlts = True}) @fe @lUniq2
                                                                 @arg.imprTy (@arg.imprTyCnstr |=> @imprArgTy)
-                            .   imprTyCnstr1        =   foCnstr @imprFO1 |=> @arg.imprTyCnstr
-                            .   imprFO2             =   fitsIn  impredFIOpts @fe @lUniq3
+                            .   imprTyCnstr1        =   foCnstr @fo_fitA_ |=> @arg.imprTyCnstr
+                            .   fo_fitF_            =   fitsIn  impredFIOpts @fe @lUniq3
                                                                 (@imprTyCnstr1 |=> @func.imprTy)
                                                                 (@imprTyCnstr1 |=> @knFunTy)
-                            .   imprTyCnstr2        =   foCnstr @imprFO2 |=> @imprTyCnstr1
+                            .   imprTyCnstr2        =   foCnstr @fo_fitF_ |=> @imprTyCnstr1
                             .   imprTy              =   @imprTyCnstr2 |=> @imprResTy
                 lhs         .   imprTyCnstr         =   @imprTyCnstr2
-  | App         loc         .   fo_                 =   fitsIn strongFIOpts @fe @lUniq4 (@lhs.tyCnstr |=> @imprResTy) (@lhs.tyCnstr |=> @lhs.knTy)
-                func        .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
 %%]
-SEM Expr
-  | App         loc         .   (imprArgTy,imprResTy)
-                                                    =   let [a,r] = mkNewTyVarL 2 @lUniq in (a,r)
-                            .   knFunTy             :=  [@imprArgTy] `mkArrow` @imprResTy
-                arg         .   knTy                :=  @imprArgTy
-                loc         .   imprFO1             =   fitsIn  (@argFIOpts {fioBindToTyAlts = True}) @fe @lUniq2
-                                                                @arg.imprTy @imprArgTy
-                            .   imprTyCnstr1        =   foCnstr @imprFO1 |=> @arg.imprTyCnstr
-                            .   imprFO2             =   fitsIn  impredFIOpts @fe @lUniq3
-                                                                (@imprTyCnstr1 |=> @func.imprTy)
-                                                                (@imprTyCnstr1 |=> @knFunTy)
-                            .   imprTy              =   foCnstr @imprFO2 |=> @imprResTy
-                lhs         .   imprTyCnstr         =   foCnstr @imprFO2 |=> @imprTyCnstr1
-  | App         loc         .   fo_                 =   fitsIn strongFIOpts @fe @lUniq4 (@lhs.tyCnstr |=> @imprResTy) (@lhs.tyCnstr |=> @lhs.knTy)
-                func        .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
 
 %%[9.App
 SEM Expr
@@ -224,7 +211,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.Lam
-%%[4.Lam
+%%[5.Lam
 SEM Expr
   | Lam         loc         .   funTy               =   [Ty_Any] `mkArrow` Ty_Any
                             .   fo_fitF_            =   @funTy `fitsIn` @lhs.knTy
@@ -234,7 +221,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.Lam
-%%[4.Lam
+%%[5.Lam
 SEM Expr
   | Lam         loc         .   (argTy,resTy,funTy)
                                                     :=  let  [a,r] = mkNewTyVarL 2 @lUniq
@@ -247,47 +234,33 @@ SEM Expr
                             .   ty                  :=  [@bodyTyCnstr |=> @arg.ty] `mkArrow` @body.ty
 %%]
 
-%%[4.Lam
+-- generated from ruler rules into EHRulerRules, was 4.Lam
+%%[5.Lam
 SEM Expr
   | Lam         loc         .   lamKnTyCnstr        =   @lhs.tyCnstr
                             .   fo_fitF_            :=  let  fo = fitsIn @knFunFIOpts @fe @lUniq2 @funTy (@lamKnTyCnstr |=> @lhs.knTy)
                                                         in   fo {foTy = foCnstr fo |=> @funTy}
 %%]
 
-%%[4_2
+-- generated from ruler rules into EHRulerRules, was 4_2.Lam
+%%[99
 SEM Expr
-  | Lam         loc         .   imprFoKnFun         =   let  fo = fitsIn @knFunFIOpts @fe @lUniq2 @funTy (@lhs.imprTyCnstr |=> @lhs.knTy)
+  | Lam         loc         .   fo_ifitF_           =   let  fo = fitsIn @knFunFIOpts @fe @lUniq2 @funTy (@lhs.imprTyCnstr |=> @lhs.knTy)
                                                         in   fo {foTy = foCnstr fo |=> @funTy}
-                arg         .   knTy                :=  foCnstr @imprFoKnFun |=> @argTy
+                arg         .   knTy                :=  foCnstr @fo_ifitF_ |=> @argTy
                             .   tyCnstr             :=  emptyCnstr
-                loc         .   imprArgTyCnstr      =   @arg.tyCnstr |=> foCnstr @imprFoKnFun
+                loc         .   imprArgTyCnstr      =   @arg.tyCnstr |=> foCnstr @fo_ifitF_
                 body        .   imprTyCnstr         =   @imprArgTyCnstr |=> @lhs.imprTyCnstr
-                loc         .   (lArgElimValGam,elimImprTyCnstr,errGam)
+                loc         .   (lArgElimValGam,imprTyCnstr_elim_,errGam)
                                                     =   valElimExprAlts meetFIOpts @fe (ftv @lhs.valGam) @lUniq3 @body.imprTyCnstr (gamTop @arg.valGam)
-                loc         .   imprBodyTyCnstr     =   @elimImprTyCnstr |=> @body.imprTyCnstr
-                            .   imprTy              =   [@imprBodyTyCnstr |=> @arg.ty] `mkArrow` (@elimImprTyCnstr |=> @body.imprTy)
+                loc         .   imprBodyTyCnstr     =   @imprTyCnstr_elim_ |=> @body.imprTyCnstr
+                            .   imprTy              =   [@imprBodyTyCnstr |=> @arg.ty] `mkArrow` (@imprTyCnstr_elim_ |=> @body.imprTy)
                 lhs         .   imprTyCnstr         =   @imprBodyTyCnstr
-  | Lam         loc         .   lamKnTyCnstr        :=  @elimImprTyCnstr |=> @arg.tyCnstr |=> @lhs.tyCnstr
+  | Lam         loc         .   lamKnTyCnstr        :=  @imprTyCnstr_elim_ |=> @arg.tyCnstr |=> @lhs.tyCnstr
                             .   fo_fitF_            :=  let  fo = fitsIn @knFunFIOpts @fe @lUniq2 (@lamKnTyCnstr |=> @funTy) (@lamKnTyCnstr |=> @lhs.knTy)
                                                         in   fo {foTy = foCnstr fo |=> @funTy}
                 body        .   tyCnstr             =   foCnstr @fo_fitF_ |=> @lamKnTyCnstr
 %%]
-SEM Expr
-  | Lam         loc         .   imprFoKnFun         =   let  fo = fitsIn @knFunFIOpts @fe @lUniq2 @funTy (@lhs.imprTyCnstr |=> @lhs.knTy)
-                                                        in   fo {foTy = foCnstr fo |=> @funTy}
-                arg         .   tyCnstr             :=  foCnstr @imprFoKnFun |=> @lhs.imprTyCnstr
-                body        .   imprTyCnstr         =   @arg.tyCnstr
-                loc         .   (lArgElimValGam,elimImprTyCnstr,errGam)
-                                                    =   valGamElimAlts meetFIOpts @fe (ftv @lhs.valGam) @lUniq3 @body.imprTyCnstr (gamTop @arg.valGam)
-                loc         .   imprBodyTyCnstr     =   @elimImprTyCnstr |=> @body.imprTyCnstr
-                            .   imprTy              =   [@imprBodyTyCnstr |=> @arg.ty] `mkArrow` @body.imprTy
-                lhs         .   imprTyCnstr         =   @imprBodyTyCnstr
-  | Lam         loc         .   lamKnTyCnstr        :=  @lhs.tyCnstr
-                            .   fo_fitF_            :=  let  fo = fitsIn @knFunFIOpts @fe @lUniq2 (@lamKnTyCnstr |=> @funTy) (@lamKnTyCnstr |=> @lhs.knTy)
-                                                        in   fo {foTy = foCnstr fo |=> @funTy}
-                body        .   tyCnstr             =   foCnstr @fo_fitF_ |=> @lamKnTyCnstr
-
-  | Lam         loc         .   lamKnTyCnstr        :=  @lhs.tyCnstr |=> @elimImprTyCnstr |=> @imprArgTyCnstr
 
 %%[9.Lam
 SEM Expr
@@ -326,7 +299,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.AppTop
-%%[4.AppTop
+%%[5.AppTop
 SEM Expr
   | AppTop      loc         .   knTy                =   tyEnsureNonAny @lUniq @lhs.knTy
 %%]
@@ -350,35 +323,36 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.TypeAs
-%%[4.TypeAs
+%%[4_99.TypeAs
 SEM Expr
   | TypeAs      loc         .   fo_                 =   @tyExpr.ty `fitsIn` @lhs.knTy
                 expr        .   knTy                =   @tyExpr.ty
 %%]
 
 -- not generated from ruler rules into EHRulerRules:
-%%[2.TypeAs
+%%[4_99.TypeAs
 SEM Expr
   | TypeAs      loc         .   tyTy                =   @tyExpr.ty
-                            .   asTy                =   @tyTy
+                            .   ty_q_               =   @tyTy
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.TypeAs
-%%[4.TypeAs
+%%[4_99.TypeAs
 SEM Expr
-  | TypeAs      loc         .   fo_                 :=  @asTy `fitsIn` (@lhs.tyCnstr |=> @lhs.knTy)
-                expr        .   knTy                :=  foCnstr @fo_ |=> @asTy
+  | TypeAs      loc         .   fo_                 :=  @ty_q_ `fitsIn` (@lhs.tyCnstr |=> @lhs.knTy)
+                expr        .   knTy                :=  foCnstr @fo_ |=> @ty_q_
                             .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
 %%]
 
-%%[4.TypeAs
+-- generated from ruler rules into EHRulerRules, was 4.TypeAs
+%%[4_99.TypeAs
 SEM Expr
   | TypeAs      loc         .   gTyTvL              =   let  ftvVal  = ftv (@lhs.tyCnstr |=> @lhs.valGam)
                                                              ftvTy   = ftv . (@lhs.tyCnstr |=>) . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
                                                         in   ftvVal ++ ftvTy
                             .   tyTy                :=  @lhs.tyCnstr |=> @tyExpr.ty
-                            .   asTy                :=  tyQuantify (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyTy
-                            .   fo_                 :=  fitsIn @lhs.fiOpts @fe @lUniq (@lhs.tyCnstr |=> @asTy) (@lhs.tyCnstr |=> @lhs.knTy)
+                            .   ty_q_               :=  tyQuantify (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyTy
+                            .   fo_                 :=  fitsIn @lhs.fiOpts @fe @lUniq (@lhs.tyCnstr |=> @ty_q_) (@lhs.tyCnstr |=> @lhs.knTy)
 %%]
 
 %%[4_2
@@ -387,7 +361,7 @@ SEM Expr
                                                              ftvTy   = ftv . (@lhs.imprTyCnstr |=>) . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
                                                         in   ftvVal ++ ftvTy
                             .   tyTy                :=  @lhs.imprTyCnstr |=> @tyExpr.ty
-                            .   imprFO              =   fitsIn (@lhs.fiOpts {fioBindToTyAlts = True}) @fe @lUniq2 @expr.imprTy @asTy
+                            .   imprFO              =   fitsIn (@lhs.fiOpts {fioBindToTyAlts = True}) @fe @lUniq2 @expr.imprTy @ty_q_
                 lhs         .   imprTy              =   foTy @imprFO
                             .   imprTyCnstr         =   foCnstr @imprFO |=> @expr.imprTyCnstr
 %%]
@@ -396,7 +370,7 @@ SEM Expr
                             .   tyCnstr             =   @lhs.tyCnstr
                 expr        .   knTy                :=  Ty_Any
 SEM Expr
-  | TypeAs      lhs         .   imprTy              =   @asTy
+  | TypeAs      lhs         .   imprTy              =   @ty_q_
 
 %%[10
 SEM Expr
@@ -407,8 +381,10 @@ SEM Expr
 %%% Type is enforced?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+-- moved to AppImpred
+%%[99
 ATTR Expr [ | | isForcedTy: Bool ]
+
 SEM Expr
   | TypeAs Impred
                 lhs         .   isForcedTy          =   True

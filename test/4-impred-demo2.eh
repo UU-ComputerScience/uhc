@@ -1,5 +1,5 @@
-let  g1  ::  ((Int,a) -> (Int,a)) -> Int
-     g2  ::  ((a,Int) -> (a,Int)) -> Int
+let  g1  ::  (forall a . (Int,a) -> (Int,a)) -> Int
+     g2  ::  (forall b . (b,Int) -> (b,Int)) -> Int
      id  =   \x ->  x
      f   =   \h ->  let  y1  = g1 h
                          y2  = g2 h

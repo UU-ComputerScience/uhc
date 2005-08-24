@@ -172,7 +172,7 @@ SEM PatExpr
   | VarAs       lhs         .   cpat        =   case @patExpr.cpat of
                                                     CPat_Con _ t r ps  -> CPat_Con @cpNm t r ps
                                                     _                  -> @patExpr.cpat
-  | AppTop Con  loc         .   finResTy    =   @lhs.finTyCnstr |=> @knResTy
+  | AppTop Con  loc         .   finResTy    =   @lhs.finTyCnstr |=> @ty_r_
                             .   tag         =   let  (c,_)  = tyAppFunArgs @finResTy
                                                      dgi    = fromJust . gamLookup (tyConNm c) $ @lhs.dataGam
                                                 in   fromJust . Map.lookup @appFunNm . dgiDataTagMp $ dgi

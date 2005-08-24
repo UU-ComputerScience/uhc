@@ -203,6 +203,10 @@ data ExprIsRw
   = ExprIsRw    Nm
   | ExprIsVar   Nm
   | ExprIsOther
+  deriving Show
+
+instance PP ExprIsRw where
+  pp = pp . show
 
 -------------------------------------------------------------------------
 -- Names

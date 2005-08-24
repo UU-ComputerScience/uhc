@@ -25,6 +25,8 @@ sub ehc {
      $repl = `$pre$ehcVersion/ehc '$src' --pretty=grin` ;
    } elsif ( $opt eq "file" ) {
      $repl = `$pre$ehcVersion/ehc '$src' --pretty=no --show-top-ty=yes` ;
+   } elsif ( $opt eq "exec" ) {
+     $repl = `$src` ;
    } else {
      $repl = `echo '$src' | $pre$ehcVersion/ehc --pretty=no --show-top-ty=yes` ;
    }

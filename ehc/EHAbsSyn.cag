@@ -180,7 +180,6 @@ DATA Expr
 DATA Expr
   | AppImpred       func            : Expr
                     arg             : Expr
-  | Impred          expr            : Expr
 %%]
 
 %%[5
