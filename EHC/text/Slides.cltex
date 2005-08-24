@@ -1186,10 +1186,7 @@ generated functions
 \item Type language
 \SafeCode{%
 \begin{code}
-sigma  =  Int | Char
-       |  (sigma,...,sigma)
-       |  sigma -> sigma
-       |  tvarv
+%%@SharedTypeLang.ehc2
 \end{code}
 }
 \item Type variable |tvarv| represents yet unknown type
@@ -1592,11 +1589,7 @@ constraints |tyCnstr| and |patTyCnstr|
 \item Additional variant for |forall|
 \SafeCode{%
 \begin{code}
-sigma  =  Int | Char
-       |  (sigma,...,sigma)
-       |  sigma -> sigma
-       |  tvarv | tvarf
-       |  forall ^ alpha . sigma
+%%@SharedTypeLang.ehc4
 \end{code}
 }
 \onslide

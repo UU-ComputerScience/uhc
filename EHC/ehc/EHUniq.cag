@@ -34,9 +34,11 @@ SEM AGItf
   | AGItf           expr        .   gUniq                           =   uidStart
 %%]
 
-%%[2.Wild
+-- generated from ruler rules into EHRulerRules
 SEM TyExpr
   | Wild            (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+
+%%[2.Wild
 %%]
 
 -- generated from ruler rules into EHRulerRules
@@ -45,10 +47,10 @@ SEM Expr
 SEM Decl
   | Val             (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
 
-%%[3
 SEM TyExpr
   | Var VarWild     (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
   
+%%[3
 %%]
 
 -- generated from ruler rules into EHRulerRules
@@ -56,52 +58,81 @@ SEM Expr
   | IConst CConst   (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
 
 -- generated from ruler rules into EHRulerRules, but only until here
-%%[4
+-- generated from ruler rules into EHRulerRules
 SEM Expr
-  | App             (func.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
   | Lam             (arg.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
-  | AppTop          (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
-  
+
 SEM PatExpr
   | Var             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
   | VarAs           (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
   | Con             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+%%[4  
+%%]
+
+-- generated from ruler rules into EHRulerRules, but only until here
+%%[4_99
+SEM Expr
+  | Let             (decls.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
+                                                                    =   mkNewLevUID4    @lhs.gUniq
 
 SEM Decl
   | Val             (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
+
+SEM Expr
+  | TypeAs          (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
+
+SEM TyExpr
+  | Wild            (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+  | Var VarWild     (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+  | Quant           (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
 %%]
 
-%%[4
+-- generated from ruler rules into EHRulerRules
+SEM Expr
+  | Con             (lhs.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
+
 SEM PatExpr
   | Var             (lhs.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
   | VarAs           (patExpr.gUniq,loc.lUniq,loc.lUniq2)            :=  mkNewLevUID2    @lhs.gUniq
   | AppTop          (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
-  | TypeAs          (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
   | Con             (lhs.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
-  
-SEM Expr
-  | Lam             (arg.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
-  | Let             (decls.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
-                                                                    =   mkNewLevUID4    @lhs.gUniq
   | TypeAs          (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
-  | Con             (lhs.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
 
-SEM TyExpr
-  | Quant           (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
+%%[4
 %%]
+
+-- generated from ruler rules into EHRulerRules, was 4_2
+SEM Expr
+  | Lam             (arg.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)     :=  mkNewLevUID3    @lhs.gUniq
+  | App AppImpred
+                    (func.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
+                                                                    :=  mkNewLevUID4    @lhs.gUniq
 
 %%[4_2
 SEM AGItf
   | AGItf           (expr.gUniq,loc.lUniq)                          :=  mkNewLevUID     uidStart
 
 SEM Expr
-  | App             (func.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
-                                                                    :=  mkNewLevUID4    @lhs.gUniq
-  | Lam             (arg.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)     :=  mkNewLevUID3    @lhs.gUniq
   | TypeAs          (tyExpr.gUniq,loc.lUniq,loc.lUniq2)             :=  mkNewLevUID2    @lhs.gUniq
 
 SEM Decl
   | TySig           (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
+%%]
+
+-- generated from ruler rules into EHRulerRules, but only until here
+%%[5
+SEM Expr
+  | Lam             (arg.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
+  | App AppImpred   (func.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
+  | AppTop          (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
+
+SEM PatExpr
+  | Var             (lhs.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
+  | VarAs           (patExpr.gUniq,loc.lUniq,loc.lUniq2)            :=  mkNewLevUID2    @lhs.gUniq
+  | AppTop          (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
+  | Con             (lhs.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
+  | TypeAs          (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
+  
 %%]
 
 %%[5

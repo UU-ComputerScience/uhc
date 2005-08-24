@@ -54,7 +54,10 @@ instance PP Ty where
 
 %%[4_2 hs
 instance PP TyHardness where
-  pp h = pp (show h)
+  pp = pp . show
+
+instance PP TyNeed where
+  pp = pp . show
 %%]
 
 %%[9 hs
@@ -176,7 +179,7 @@ SEM Ty
   | Both            loc     .   o       =   "<"
                     loc     .   c       =   ">"
   | Alts Both       loc     .   pp      =   ppParNeed  @parNeed @lhs.parNeed
-                                                       (maybe (pp @tv) id (lookup @tv @lhs.tnMap) >|< ppListSep @o @c "/" @tyL.ppL)
+                                                       (maybe (pp @tv) id (lookup @tv @lhs.tnMap) >|< ppListSep @o @c ", " @tyL.ppL)
 
 SEM TyL [ | | ppL: PP_DocL ]
   | Nil             lhs     .   ppL     =   []
@@ -187,7 +190,7 @@ SEM TyPlusL [ | | ppL: PP_DocL ]
   | Cons            lhs     .   ppL     =   @hd.pp : @tl.ppL
 
 SEM TyPlus
-  | Ty              lhs     .   pp      =   pp @hardness >|< ":" >|< @ty.pp
+  | Ty              lhs     .   pp      =   @ty.pp >#< "::" >#<  pp @hardness >|< "/" >|< pp @offering
 %%]
 
 %%[6

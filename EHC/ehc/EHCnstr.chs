@@ -22,13 +22,13 @@
 %%[2 import(UU.Pretty, EHTyPretty) export(ppCnstrV)
 %%]
 
-%%[4 export(cnstrFilterTy,cnstrDel,cnstrPlus)
+%%[4 export(cnstrFilterTy,cnstrDel,(|\>) ,cnstrPlus)
 %%]
 
 %%[4 export(assocLToCnstr,cnstrToAssocTyL,cnstrKeys)
 %%]
 
-%%[4_2 export(cnstrMapThrTy,cnstrMapTy,cnstrDelAlphaRename,cnstrFilterAlphaRename)
+%%[4_2 import(Maybe) export(cnstrMapThrTy,cnstrMapTy,cnstrDelAlphaRename,cnstrFilterAlphaRename,cnstrFilterTyAltsMappedBy)
 %%]
 
 %%[4_2 export(tyAsCnstr,cnstrTyRevUnit)
@@ -122,6 +122,9 @@ cnstrFilterTy f = cnstrFilter (\v i -> case i of {CITy t -> f v t ; _ -> True})
 %%[4.cnstrDel
 cnstrDel :: TyVarIdL -> Cnstr -> Cnstr
 cnstrDel tvL c = cnstrFilterTy (const.not.(`elem` tvL)) c
+
+(|\>) :: Cnstr -> TyVarIdL -> Cnstr
+(|\>) = flip cnstrDel
 %%]
 
 %%[2.cnstrPlus
@@ -248,6 +251,16 @@ tyAsCnstr u ty
   =  case ty of
         Ty_Var _ TyVarCateg_Plain -> (ty,emptyCnstr)
         _ -> let t = mkNewTyVar u in (t,u `cnstrTyUnit` ty)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Filter cnstr bound to Ty_Alts which has a cnstr in other
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+cnstrFilterTyAltsMappedBy :: Cnstr -> Cnstr -> Cnstr
+cnstrFilterTyAltsMappedBy c cMp
+  =  cnstrFilterTy (\_ t -> case t of {Ty_Alts v _ -> isJust (cnstrTyLookup v cMp) ; _ -> False}) c
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

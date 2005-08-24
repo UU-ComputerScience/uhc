@@ -69,7 +69,7 @@ SEM TyExpr
   | Wild        loc     .   pp      =   pp "..."
 
 SEM Decl
-  | TySig       loc     .   tyPP    :=  if null @tyExpr.tyVarWildL
+  | TySig       loc     .   tyPP    :=  if null @tyExpr.tyWildL
                                         then  @tyExpr.pp
                                         else  ppTy @finalTy
 %%]
@@ -82,8 +82,7 @@ SEM TyExpr
 
 %%[4
 SEM Expr
-  | Impred      loc     .   pp      =   "~" >#< @expr.pp
-  | AppImpred   loc     .   argPP   =   "~" >#< @arg.pp
+  | AppImpred   loc     .   argPP   =   "~" >|< @arg.pp
                         .   pp      =   @func.pp >#< @argPP
 
 SEM PatExpr
@@ -91,6 +90,13 @@ SEM PatExpr
 
 SEM TyExpr
   | Quant       loc     .   pp      =   showTyQu @qu >#< @tyVar >#< "." >#< @tyExpr.pp
+%%]
+
+%%[4_99.Wild.pp
+SEM Decl
+  | TySig       loc     .   tyPP    :=  if null @tyExpr.tyVarWildL
+                                        then  @tyExpr.pp
+                                        else  ppTy @finalTy
 %%]
 
 %%[5
@@ -368,14 +374,19 @@ SEM Expr
   | Let         loc     .   ppExtra     :=  ppCmt (ppGam (@lhs.finTyCnstr |=> @quValGam_))
 %%]
 
+%%[4
+SEM Expr
+  | Let         loc     .   ppExtra     :=  ppCmt (ppGam (@lhs.finTyCnstr |=> @quValGam_ex_))
+%%]
+
 %%[6
 SEM Expr
-  | Let         loc     .   ppExtra     :=  ppCmt (ppGam @lQuTyGam) >-< ppCmt (ppGam (@lhs.finTyCnstr |=> @quValGam_))
+  | Let         loc     .   ppExtra     :=  ppCmt (ppGam @lQuTyGam) >-< ppCmt (ppGam (@lhs.finTyCnstr |=> @quValGam_ex_))
 %%]
 
 %%[9
 SEM Expr
-  | Let         loc     .   ppExtra     :=  ppCmt  (    ppGam @lQuTyGam   >-< ppGam (@lhs.finTyCnstr |=> @quValGam_)
+  | Let         loc     .   ppExtra     :=  ppCmt  (    ppGam @lQuTyGam   >-< ppGam (@lhs.finTyCnstr |=> @quValGam_ex_)
                                                    >-<  ppGam @lQuPrIGam  >-< ppTGam @prfCtxtId @decls.patPrElimTGam
                                                    )
 %%]

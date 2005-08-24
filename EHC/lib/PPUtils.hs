@@ -55,7 +55,7 @@ ppPacked o c pp
 ppParens, ppCurly, ppVBar :: PP p => p -> PP_Doc
 ppParens = ppPacked "(" ")"
 ppCurly = ppPacked "{" "}"
-ppVBar = ppPacked "|" "|"
+ppVBar = ppPacked "|" "| "
 
 ppDots :: PP a => [a] -> PP_Doc
 ppDots = ppListSep "" "" "."

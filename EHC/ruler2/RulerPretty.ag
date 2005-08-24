@@ -27,6 +27,7 @@ exprNeedPar ctxt e
              (Expr_Op    _ _ _ _,ParCtxtAppL) -> pp_parens
              (Expr_Op    _ _ _ _,ParCtxtAppR) -> pp_parens
              (Expr_Op    _ _ _ _,ParCtxtOpL ) -> pp_parens
+             (Expr_Op    _ _ _ _,ParCtxtOpR ) -> pp_parens
              (Expr_App   _ _    ,ParCtxtAppR) -> pp_parens
              (Expr_Paren _      ,_          ) -> pp_parens
              _ -> id

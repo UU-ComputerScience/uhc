@@ -13,9 +13,10 @@
 ATTR AllTyExpr [ | tyGam: TyGam | ]
 %%]
 
-%%[1.check
+-- generated from ruler rules into EHRulerRules, was 1.check
+%%[4_99.check
 SEM TyExpr
-  | Con         loc         .  (tgi,nmErrs)         =   case tyGamLookup @nm @lhs.tyGam of
+  | Con         loc         .  (tgi_,nmErrs)        =   case tyGamLookup @nm @lhs.tyGam of
                                                           Nothing    ->  (TyGamInfo Ty_Any
                                                                          ,[Err_NamesNotIntrod [@nm]])
                                                           Just tgi   ->  (tgi,[])
@@ -25,7 +26,8 @@ SEM TyExpr
 %%% Ty var gathering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 hs
+-- generated from ruler rules into EHRulerRules, was 4.tvGathFlow
+%%[4_99.tvGathFlow hs
 tvGathFlow :: TyGam -> TyGam -> TyGam -> (TyGam,TyGam)
 tvGathFlow newG lhsG insideG
   = (insideG',lhsG')
@@ -34,29 +36,32 @@ tvGathFlow newG lhsG insideG
          lhsG'     = gamAddGam l lhsG
 %%]
 
-%%[2.tyVarGather
+-- generated from ruler rules into EHRulerRules, was 2.tyVarGather
+%%[4_99.tyVarGather
 SEM TyExpr
   | Wild        loc         .   tyVarId             =   @lUniq
-                            .   tgi                 =   TyGamInfo (mkNewTyVar @tyVarId)
+                            .   tgi_                =   TyGamInfo (mkNewTyVar @tyVarId)
 %%]
 
-%%[3.tyVarGather
+-- generated from ruler rules into EHRulerRules, was 3.tyVarGather
+%%[4_99.tyVarGather
 SEM TyExpr
   | Var VarWild loc         .   tyVarId             =   @lUniq
-                (loc.tgi,lhs.tyGam)                 =   case tyGamLookup @nm @lhs.tyGam of
+                (loc.tgi_,lhs.tyGam)                =   case tyGamLookup @nm @lhs.tyGam of
                                                           Nothing    ->  let  t    =  mkNewTyVar @tyVarId
                                                                               tgi  =  TyGamInfo t
                                                                          in   (tgi,gamAdd @nm tgi @lhs.tyGam)
                                                           Just tgi   ->  (tgi,@lhs.tyGam)
 %%]
 
-%%[4.tyVarGather
+-- generated from ruler rules into EHRulerRules, was 4.tyVarGather
+%%[4_99.tyVarGather
 SEM TyExpr
-  | Quant       loc         .   (tv,tgi)            =   let  t = mkTyVar @lUniq
+  | Quant       loc         .   (tv,tgi_)           =   let  t = mkTyVar @lUniq
                                                         in   (@lUniq,TyGamInfo t)
-                (tyExpr.tyGam,lhs.tyGam)            =   tvGathFlow (@tyVar `gamUnit` @tgi) @lhs.tyGam @tyExpr.tyGam
+                (tyExpr.tyGam,lhs.tyGam)            =   tvGathFlow (@tyVar `gamUnit` @tgi_) @lhs.tyGam @tyExpr.tyGam
 %%]
-                tyExpr      .   tyGam               =   gamPushNew (gamPushGam (@tyVar `gamUnit` @tgi) @lhs.tyGam)
+                tyExpr      .   tyGam               =   gamPushNew (gamPushGam (@tyVar `gamUnit` @tgi_) @lhs.tyGam)
                 lhs         .   tyGam               =   let  (l,g) = gamPop @tyExpr.tyGam
                                                         in   gamAddGam l @lhs.tyGam 
 
@@ -64,38 +69,47 @@ SEM TyExpr
 ATTR AllTyVar [ | tyGam: TyGam | ]
 
 SEM TyVar
-  | Var         (loc.tgi,lhs.tyGam)                 =   case tyGamLookup @nm (gamTop @lhs.tyGam) of
+  | Var         (loc.tgi_,lhs.tyGam)                =   case tyGamLookup @nm (gamTop @lhs.tyGam) of
                                                           Nothing    ->  let  t    =  mkNewTyVar @lUniq
                                                                               tgi  =  TyGamInfo t
                                                                          in   (tgi,gamAdd @nm tgi @lhs.tyGam)
                                                           Just tgi   ->  (tgi,@lhs.tyGam)
-                loc         .   tv                  =   tyVar . tgiTy $ @tgi
+                loc         .   tv                  =   tyVar . tgiTy $ @tgi_
 %%]
 
 %%[9.tyVarGather
 SEM PrExpr
-  | Forall      loc         .   (tv,tgi)            =   let  t = mkTyVar @lUniq
+  | Forall      loc         .   (tv,tgi_)           =   let  t = mkTyVar @lUniq
                                                         in   (@lUniq,mkTGI t t)
-                (prExpr.tyGam,lhs.tyGam)            =   tvGathFlow (@tyVar `gamUnit` @tgi) @lhs.tyGam @prExpr.tyGam
+                (prExpr.tyGam,lhs.tyGam)            =   tvGathFlow (@tyVar `gamUnit` @tgi_) @lhs.tyGam @prExpr.tyGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Wildcard tvar gathering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2.tyVarWildL
+-- generated from ruler rules into EHRulerRules, was 2.tyVarWildL
+%%[4_99.tyVarWildL
 ATTR TyExpr [ | | tyVarWildL USE {++} {[]}: TyVarIdL ]
+%%]
 
+%%[2.tyWildL
+ATTR TyExpr [ | | tyWildL USE {++} {[]}: TyL ]
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 2.Wild
+%%[4_99.Wild
 SEM TyExpr
   | Wild        lhs         .   tyVarWildL          =   [@tyVarId]
 %%]
 
-%%[3.tyVarWildL
+-- generated from ruler rules into EHRulerRules, was 3.Wild
+%%[4_99.Wild
 SEM TyExpr
   | VarWild     lhs         .   tyVarWildL          =   [@tyVarId]
 %%]
 
-%%[9
+%%[9.Wild
 SEM TyExpr
   | Impls       lhs         .   tyVarWildL          =   [@implsVarId]
 %%]
@@ -121,15 +135,15 @@ ATTR TyExprs TyVars [ | | kiL: TyL ]
 
 SEM TyExpr
   | Var VarWild
-                (loc.tgi,lhs.tyGam)                 :=  tyGamLookupOrAdd @lUniq @lhs.kiCnstr @nm @lhs.tyGam
-                loc         .   ki                  =   tgiKi @tgi
-  | Wild        loc         .   tgi                 :=  let t = mkNewTyVar @tyVarId in mkTGI t t
-                            .   ki                  =   tgiKi @tgi
-  | Con         loc         .   (tgi,nmErrs)        :=  case tyGamLookup @nm @lhs.tyGam of
+                (loc.tgi_,lhs.tyGam)                :=  tyGamLookupOrAdd @lUniq @lhs.kiCnstr @nm @lhs.tyGam
+                loc         .   ki                  =   tgiKi @tgi_
+  | Wild        loc         .   tgi_                :=  let t = mkNewTyVar @tyVarId in mkTGI t t
+                            .   ki                  =   tgiKi @tgi_
+  | Con         loc         .   (tgi_,nmErrs)       :=  case tyGamLookup @nm @lhs.tyGam of
                                                           Nothing    ->  (mkTGI Ty_Any kiStar,[Err_NamesNotIntrod [@nm]])
                                                           Just tgi   ->  (@lhs.kiCnstr |=> tgi,[])
-                loc         .   ki                  =   tgiKi @tgi
-  | Quant       loc         .   (tv,tgi)            :=  let  t = mkTyVar @lUniq
+                loc         .   ki                  =   tgiKi @tgi_
+  | Quant       loc         .   (tv,tgi_)           :=  let  t = mkTyVar @lUniq
                                                         in   (@lUniq,mkTGI t t)
   | App         loc         .   knFunKi             =   [@arg.ki] `mkArrow` mkNewTyVar @lUniq
                             .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 (@arg.kiCnstr |=> @func.ki) @knFunKi
@@ -142,12 +156,12 @@ SEM TyExprs
   | Cons        lhs         .   kiL                 =   @hd.ki : @tl.kiL
 
 SEM TyVar
-  | Var         (loc.tgi,lhs.tyGam)                 :=  case tyGamLookup @nm (gamTop @lhs.tyGam) of
+  | Var         (loc.tgi_,lhs.tyGam)                :=  case tyGamLookup @nm (gamTop @lhs.tyGam) of
                                                           Nothing    ->  let  t    =  Ty_Var @lUniq TyVarCateg_Plain
                                                                               tgi  =  mkTGI t t
                                                                          in   (tgi,gamAdd @nm tgi @lhs.tyGam)
                                                           Just tgi   ->  (tgi,@lhs.tyGam)
-                loc         .   ki                  =   tgiKi @tgi
+                loc         .   ki                  =   tgiKi @tgi_
 
 SEM TyVars
   | Nil         lhs         .   kiL                 =   []
@@ -162,14 +176,14 @@ SEM TyExpr
 %%[9
 SEM TyExpr
   | Impls       loc         .   implsVarId          =   @lUniq
-                            .   tgi                 =   mkTGI (Ty_Impls (Impls_Tail @implsVarId)) kiStar
-                            .   ki                  =   tgiKi @tgi
-  | NoImpls     loc         .   tgi                 =   mkTGI (Ty_Impls Impls_Nil) kiStar
-                            .   ki                  =   tgiKi @tgi
+                            .   tgi_                =   mkTGI (Ty_Impls (Impls_Tail @implsVarId)) kiStar
+                            .   ki                  =   tgiKi @tgi_
+  | NoImpls     loc         .   tgi_                =   mkTGI (Ty_Impls Impls_Nil) kiStar
+                            .   ki                  =   tgiKi @tgi_
 
 SEM RowTyExpr
-  | Var         (loc.tgi,lhs.tyGam)                 =   tyGamLookupOrAdd @lUniq @lhs.kiCnstr @nm @lhs.tyGam
-                loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 (tgiKi @tgi) kiRow
+  | Var         (loc.tgi_,lhs.tyGam)                =   tyGamLookupOrAdd @lUniq @lhs.kiCnstr @nm @lhs.tyGam
+                loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 (tgiKi @tgi_) kiRow
                             .   ki                  =   foTy @fo_
 %%]
 
@@ -201,24 +215,30 @@ SEM TyExpr
 
 %%[1.ty
 ATTR TyExpr [ | | ty: Ty ]
+%%]
 
+-- generated from ruler rules into EHRulerRules, was 1.ConApp
+%%[4_99.ConApp
 SEM TyExpr
   | Con         loc         .   ty                  =   Ty_Con @nm
   | App         loc         .   ty                  =   Ty_App @func.ty @arg.ty
 %%]
 
-%%[2.ty
+-- generated from ruler rules into EHRulerRules, was 2.ty
+%%[4_99.ty
 SEM TyExpr
-  | Wild        loc         .   ty                  =   tgiTy @tgi
+  | Wild        loc         .   ty                  =   tgiTy @tgi_
 %%]
 
-%%[3
+-- generated from ruler rules into EHRulerRules, was 3.ty
+%%[4_99.ty
 SEM TyExpr
   | Var VarWild
-                loc         .   ty                  =   tgiTy @tgi
+                loc         .   ty                  =   tgiTy @tgi_
 %%]
 
-%%[4
+-- generated from ruler rules into EHRulerRules, was 4.ty
+%%[4_99.ty
 SEM TyExpr
   | Quant       loc         .   ty                  =   Ty_Quant @qu @tv @tyExpr.ty
 %%]
@@ -236,7 +256,7 @@ ATTR TyVar [ | | ty: Ty ]
 ATTR TyVars [ | | tyL: TyL ]
 
 SEM TyVar
-  | Var         lhs         .   ty                  =   tgiTy @tgi
+  | Var         lhs         .   ty                  =   tgiTy @tgi_
 
 SEM TyVars
   | Nil         lhs         .   tyL                 =   []
@@ -246,7 +266,7 @@ SEM TyVars
 %%[9
 SEM TyExpr
   | Impls NoImpls
-                loc         .   ty                  =   tgiTy @tgi
+                loc         .   ty                  =   tgiTy @tgi_
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -266,7 +286,7 @@ SEM RowTyExpr
 
 %%[9
 SEM RowTyExpr
-  | Var         lhs         .   tyRow               =   tgiTy @tgi
+  | Var         lhs         .   tyRow               =   tgiTy @tgi_
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

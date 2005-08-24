@@ -52,7 +52,7 @@ SEM Expr
   | Con         lhs         .   errL        =   mkNestErr @pp (foErrL @fo_)
 
 SEM PatExpr
-  | AppTop      lhs         .   errL        :=  mkNestErr @pp (@patExpr.errL ++ @arityErrs ++ foErrL @fo_)
+  | AppTop      lhs         .   errL        :=  mkNestErr @pp (@patExpr.errL ++ @arityErrs ++ foErrL @fo_fitR_)
 
 SEM Decl
   | Val         lhs         .   errL        :=  @patExpr.errL ++ @expr.errL
@@ -63,9 +63,9 @@ SEM Expr
   | Con         lhs         .   errL        :=  mkNestErr @pp (@nmErrs ++ foErrL @fo_)
 
 SEM PatExpr
-  | Con         lhs         .   errL        =   mkNestErr @pp (@nmErrs ++ foErrL @fo_)
+  | Con         lhs         .   errL        =   mkNestErr @pp (@nmErrs ++ foErrL @fo_fitR_)
   | TypeAs      lhs         .   errL        =   mkNestErr @pp (@patExpr.errL ++ @tyExpr.errL ++ foErrL @fo_)
-  | AppTop      lhs         .   errL        :=  mkNestErr @pp (@patExpr.errL ++ @arityErrs ++ foErrL @fo_)
+  | AppTop      lhs         .   errL        :=  mkNestErr @pp (@patExpr.errL ++ @arityErrs ++ foErrL @fo_fitR_)
 %%]
   | AppTop      lhs         .   errL        :=  mkNestErr @pp (@patExpr.errL ++ @arityErrs ++ foErrL @fo_ ++ foErrL @patFunFo)
 

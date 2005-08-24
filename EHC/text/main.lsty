@@ -36,6 +36,8 @@
   \def\F@@Lab{#2}
 %if acm
   \begin{figure}[t]
+%elif storyPHD
+  \begin{figure}[tp]
 %else
   \begin{figure}[htbp]
 %endif
@@ -151,7 +153,7 @@
  \marginpar{#1}
 %endif
 }
-\newcommand{\chunkHideRef}[1]{\marginpar{... \secPageRefB{#1}}}
+\newcommand{\chunkHideRef}[1]{\marginpar{\secPageRefB{#1}}}
 \newcommand{\chunkCmdDef}[1]{\expandafter\def\csname #1\endcsname}
 \newcommand{\chunkCmdUseRaw}[1]{%
  \csname #1\endcsname
@@ -194,10 +196,13 @@
 \newcommand{\chunkRefs}[1]{\@@for\@@chunkRef:=#1\do{,~\pageref{\@@chunkRef}}}
 \newcommand{\chunkRefsExpanded}[1]{\@@for\@@chunkRef:=#1\do{{\color{blue}\chunkCmdUse{\@@chunkRef}}\setlength{\parskip}{0cm}}}
 
+% font usage
+\newcommand{\textRL}[1]{\textsc{#1}}
+
 % ruler related
 \newcommand{\rulerCmdDef}[1]{\expandafter\def\csname #1\endcsname}
 \newcommand{\rulerCmdUse}[1]{\csname #1\endcsname}
-\newcommand{\ruleRef}[1]{rule~\textsc{#1}}
+\newcommand{\ruleRef}[1]{rule~\textRL{#1}}
 \newcommand{\RuleRef}[1]{Rule~\textsc{#1}}
 \newcommand{\rulerChngBegMark}{\color{blue}}
 \newcommand{\rulerChngEndMark}{\color{black}}
@@ -217,13 +222,14 @@
 \newcommand{\FigRef}[1]{Fig.~\myRef{#1}}
 %endif
 \newcommand{\secRef}[1]{Section~\myRef{#1}}
+\newcommand{\exRef}[1]{Example~\myRef{#1}}
 %if llncs || acm
 \newcommand{\pageRef}[1]{}
 \newcommand{\figPageRef}[1]{\figRef{#1}}
 \newcommand{\secPageRef}[1]{\secRef{#1}}
 %else
 \newcommand{\pageRef}[1]{page~\pageref{#1}}
-\newcommand{\pageRefB}[1]{pg.~\pageref{#1}}
+\newcommand{\pageRefB}[1]{p~\pageref{#1}}
 \newcommand{\figPageRef}[1]{\figRef{#1}, \pageRef{#1}}
 \newcommand{\secPageRef}[1]{\secRef{#1}, \pageRef{#1}}
 \newcommand{\secPageRefB}[1]{\pageRefB{#1}, \myRef{#1}}
@@ -273,6 +279,13 @@ appendix~\myRef{#1}
 }{%
 \end{description}
 }
+
+% theorem env: example
+%if asArticle
+\newtheorem{Example}{Example}
+%else
+\newtheorem{Example}{Example}[chapter]
+%endif
 
 %% overlay (to be sorted out, these are just placeholders)
 \newcommand{\overlayChunks}[1]{}

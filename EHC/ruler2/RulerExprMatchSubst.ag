@@ -80,9 +80,9 @@ SEM ECnstr
 {
 mkRwExpr :: InEqnLoc -> Opts -> FmGam Expr -> RwExprGam -> ECnstrGam -> Expr -> (Expr,FmGam Expr,ECnstrGam)
 mkRwExpr inEqnLoc opts fmGam rwGam ecGam repl
-  = case exprIsRw repl of
+  = case exprIsRw ({- d_r -} repl) of
       ExprIsRw n | isJust mbRw
-        -> ({- trp "YS2" (n >|< ":" >#< pp r) -} r,mtFmGam mt,ecg)
+        -> (r,mtFmGam mt,ecg)
         where mbRw = rwGamLookup n (optGenFM opts) (if inEqnLoc == EqnInRhs then AtIn else AtOut) rwGam
               (r,mt,ecg)
                 = foldr (\(me,e) r
@@ -90,12 +90,16 @@ mkRwExpr inEqnLoc opts fmGam rwGam ecGam repl
                              in  if mtMatches mt
                                  then let e2 = exprSubst opts (mtFmGam mt `Map.union` fmGam) e
                                           (e3,ecg) = exprElimCnstr e2
-                                      in  (e3,mt,{- trp "EL" (ppECGam ecg) -} ecg)
+                                      in  (e3,mt,ecg)
                                  else r
                         )
-                        ({- trp "YS1" (pp repl) -} repl,emptyEMtOut,emptyGam)
-                        (maybe (panic "mkRwExpr") (\x -> {- trp "YS3" (vlist . map (\(a,b) -> pp a >#< "//" >#< pp b) $ x) -} x) mbRw)
-      _ -> ({- trp "NO" (pp repl) -} repl,emptyGam,emptyGam)
+                        (repl,emptyEMtOut,emptyGam)
+                        (maybe (panic "mkRwExpr") (\x -> {- trp "YS3" (d_g x) -} x) mbRw)
+      _ -> (repl,emptyGam,emptyGam)
+{-
+  where d_r r = trp "mkRwExpr" (pp r >-< pp (exprIsRw r)) r
+        d_g g = vlist . map (\(a,b) -> pp a >#< "//" >#< pp b) $ g
+-}
 }
 
 ATTR AllExpr AGExprItf [ | | rwMtGam USE {`fmGamUnion`} {emptyGam}: {FmGam Expr} ]
@@ -104,11 +108,11 @@ ATTR AllExpr AGExprItf [ | | rwEcGam USE {`Map.union`} {emptyGam}: {ECnstrGam} ]
 SEM Expr
   | Var             loc     .   forRwEcGam  =   @varEcGam `Map.union` @lhs.ecGam
                     (lhs.repl,lhs.rwMtGam,loc.rwEcGam)
-                                            =   mkRwExpr @lhs.inEqnLoc @lhs.opts @lhs.fmGam @lhs.rwGam ({- trp "RW1" (pp @replEcVar >-< ppECGam @forRwEcGam) -} @forRwEcGam) @replEcVar
+                                            =   mkRwExpr @lhs.inEqnLoc @lhs.opts @lhs.fmGam @lhs.rwGam (@forRwEcGam) @replEcVar
                     lhs     .   rwEcGam     =   @rwEcGam `Map.union` @varEcGam
   | AppTop          loc     .   forRwEcGam  =   @expr.rwEcGam `Map.union` @lhs.ecGam
                     (loc.rwRepl,loc.rwMtGam,loc.rwEcGam)
-                                            =   mkRwExpr @lhs.inEqnLoc @lhs.opts @lhs.fmGam @lhs.rwGam ({- trp "RW2" (pp @repl >-< ppECGam @forRwEcGam) -} @forRwEcGam) @repl
+                                            =   mkRwExpr @lhs.inEqnLoc @lhs.opts @lhs.fmGam @lhs.rwGam (@forRwEcGam) @repl
                     lhs     .   rwMtGam     =   @rwMtGam `fmGamUnion` @expr.rwMtGam
                             .   rwEcGam     =   @rwEcGam `Map.union` @expr.rwEcGam
                             .   repl        =   @rwRepl

@@ -1,7 +1,11 @@
-\documentclass{article}
+%%[abstract
+|Shuffle| takes as input files containing versions of chunks of (sourcecode) text, producing
+a merged piece of text for a particular version.
+%%]
 
-%include lhs2TeX.fmt
-%include lhs2TeX.sty
+%%[doc
+
+%{
 
 %format versionId	= "\texttt{<versionId>}"
 %format nameId		= "\texttt{<nameId>}"
@@ -9,36 +13,15 @@
 %format chunkId		= "\texttt{<chunkId>}"
 %format id			= "\texttt{<id>}"
 
-\usepackage{hyperref}
-\usepackage[left=3cm,right=3cm,top=3.5cm,bottom=3.5cm,nohead]{geometry}
 
-\newcommand{\chunkCmdDef}[1]{\expandafter\def\csname #1\endcsname}
-\newcommand{\chunkCmdUse}[1]{\csname #1\endcsname}
 
-\title{Shuffle}
-\author{Atze Dijkstra}
-\date{\today}
-
-\begin{document}
-
-\maketitle
-
-\begin{abstract}
-|Shuffle| takes as input files containing versions of chunks of (sourcecode) text, producing
-a merged piece of text for a particular version.
-\end{abstract}
-
-{\setlength{\parskip}{0cm}
-\tableofcontents
-}
-
-\section{Overview and command line invocation}
+\subsection{Overview and command line invocation}
 
 When invoked by \verb'shuffle --help', |Shuffle| will answer with
 
-\begin{verbatim}
-%%<bin/shuffle --help%%>
-\end{verbatim}
+\begin{TT}
+%%1exec(bin/shuffle --help%%)
+\end{TT}
 
 \subsection{Version generation}
 
@@ -51,9 +34,9 @@ The produced output is assumed to be processed by |lhs2tex| [cite] first, unless
 
 For example the input
 
-\begin{verbatim}
-%%<cat shuffle/test/tst2%%>
-\end{verbatim}
+\begin{TT}
+%%1srcfile(shuffle/test/tst2%%)
+\end{TT}
 
 gives the following variants when invoked with different parameters.
 
@@ -62,33 +45,33 @@ gives the following variants when invoked with different parameters.
 \item
 \verb'shuffle --gen=2 --ag shuffle/test/tst2'.
 Generate for version 2, AG system, to be processed first by |lhs2tex|.
-\begin{verbatim}
-%%<bin/shuffle --gen=2 --ag shuffle/test/tst2%%>
-\end{verbatim}
+\begin{TT}
+%%1exec(bin/shuffle --gen=2 --ag shuffle/test/tst2%%)
+\end{TT}
 
 
 \item
 \verb'shuffle --gen=1 --hs --lhs2tex=no --base=Main shuffle/test/tst2'.
 Generate for version 1, Haskell, with name of module specified (instead of derived from the filename),
 not to be processed by |lhs2tex|.
-\begin{verbatim}
-%%<bin/shuffle --gen=1 --hs --lhs2tex=no --base=Main shuffle/test/tst2%%>
-\end{verbatim}
+\begin{TT}
+%%1exec(bin/shuffle --gen=1 --hs --lhs2tex=no --base=Main shuffle/test/tst2%%)
+\end{TT}
 
 \item
 \verb'shuffle --gen=2 --latex shuffle/test/tst2'.
 Generate for version 2, LaTeX, to be processed first by |lhs2tex|.
 Text is wrapped inside macros for definition (\verb'\chunkCmdDef') and use (\verb'\chunkCmdUse')
 of a chunk, to be defined by the user.
-\begin{verbatim}
-%%<bin/shuffle --gen=2 --latex shuffle/test/tst2%%>
-\end{verbatim}
+\begin{TT}
+%%1exec(bin/shuffle --gen=2 --latex shuffle/test/tst2%%)
+\end{TT}
 
 \end{itemize}
 
 For now combinations of output nor multiple files are allowed.
 
-\subsection{Remaining options}
+\subsubsection{Remaining options}
 
 \begin{itemize}
 \item
@@ -100,13 +83,13 @@ In the future all of this may be changed to allow for more fine-grained control 
 many useless entries are created.
 \end{itemize}
 
-\section{Input format}
+\subsection{Input format}
 Chunks are defined by text of the following structure
-\begin{verbatim}
-%%[<chunkName> <parameters>
-<text>
-%%]
-\end{verbatim}
+\begin{TT}
+ %%[<chunkName> <parameters>
+ <text>
+ %%]
+\end{TT}
 The delimiters \verb'%%[' and \verb'%%]' must start at the beginning of a new line.
 Chunk definitions may
 not be nested.
@@ -116,36 +99,38 @@ The \verb'<text>' of a chunk may be empty.
 A |chunkName| can either be an integer for versioned chunks or an alphanumerical identifier for
 named chunks.
 
-\subsection{Named chunks}
+\subsubsection{Named chunks}
 A named chunk is defined by
-\begin{verbatim}
-%%[<alphaNumId>
-<text>
-%%]
-\end{verbatim}
+\begin{TT}
+ %%[<alphaNumId>
+ <text>
+ %%]
+\end{TT}
 and can be referred to from inside a chunk by
-\begin{verbatim}
-%%@<alphaNumId>
-\end{verbatim}
+\begin{TT}
+ %%@<alphaNumId>
+\end{TT}
 A reference is replaced in the output by its corresponding definition.
 For example, the following input
-\begin{verbatim}
-%%<cat shuffle/test/tst3%%>
-\end{verbatim}
+\begin{TT}
+%%1exec(cat shuffle/test/tst3%%)
+\end{TT}
 will give (for \verb'shuffle --gen=1 --ag --lhs2tex=no shuffle/test/tst3')
-\begin{verbatim}
-%%<bin/shuffle --gen=1 --ag --lhs2tex=no shuffle/test/tst3%%>
-\end{verbatim}
+\begin{TT}
+%%1exec(bin/shuffle --gen=1 --ag --lhs2tex=no shuffle/test/tst3%%)
+\end{TT}
 Named chunks on their own do not produce output, only when referred to from a versioned chunk.
 
 
-\subsection{Versioned chunks}
-A versioned chunk is defined by
-\begin{verbatim}
-%%[<versionId> [.<nameId>] [-(<chunkId>*)] [hs] [module <id>] [import(<id>*)] [export(<id>*)]
-<text>
-%%]
-\end{verbatim}
+\subsubsection{Versioned chunks}
+A versioned chunk is defined by the following. The lines after @%%[@ and @<text>@ should be on one line
+but are not because of the limited amount of space on each line.
+\begin{TT}
+ %%[<versionId> [.<nameId>] [-(<chunkId>*)] [hs]
+                [module <id>] [import(<id>*)] [export(<id>*)]
+ <text>
+ %%]
+\end{TT}
 
 An |versionId| can be $0$ or a nonempty sequence of positive integers separated
 by an underscore character '@_@'.
@@ -169,9 +154,9 @@ If a full |chunkId| is specified
 \begin{itemize}
 \item
 its content can be referred to from within \LaTeX\ by
-\begin{verbatim}
+\begin{TT}
 \chunkCmdUse{<filename>.<chunkId>}
-\end{verbatim}
+\end{TT}
 \item
 it can be removed by a later version referring to it by |- chunkId|.
 \end{itemize}
@@ -183,13 +168,13 @@ The order in which chunks appear in the input file is preserved, except for \LaT
 A versioned chunk can be inhibited to produce output by a later version
 from within that later version by |- chunkId|.
 For example
-\begin{verbatim}
-%%<cat shuffle/test/tst4%%>
-\end{verbatim}
+\begin{TT}
+%%1srcfile(shuffle/test/tst4%%)
+\end{TT}
 will give (for \verb'shuffle --gen=3 --ag --lhs2tex=no shuffle/test/tst4')
-\begin{verbatim}
-%%<bin/shuffle --gen=3 --ag --lhs2tex=no shuffle/test/tst4%%>
-\end{verbatim}
+\begin{TT}
+%%1exec(bin/shuffle --gen=3 --ag --lhs2tex=no shuffle/test/tst4%%)
+\end{TT}
 Note that only the chunk referred to is not included.
 Multiple chunks can be removed this way by specifying a (parenthesized, white separated) list of |chunkId|'s.
 
@@ -208,17 +193,17 @@ The ordering specifies a graph which is used to determine which versions have a 
 (defined by the @'<'@)
 to the version for which output generation takes place.
 For example,
-\begin{verbatim}
+\begin{TT}
 1 < 2 < 3, 2 < 2_1
-\end{verbatim}
+\end{TT}
 specifies the usual order for non-nested versions and an additional branch @2_1@ which
 is based upon version @2@. When generation is asked for @3@, text for |1, 2, 3| is included
 but not for @2_1@ and vice-versa
 if generation is requested for @2_1@.
 If instead
-\begin{verbatim}
+\begin{TT}
 1 < 2 < 3, 2 < 2_1 < 3
-\end{verbatim}
+\end{TT}
 would have been specified all available chunks, including @2_1@ and @3@ would be included for
 both @--gen=3@ and @--gen=2_1@.
 Chunks with versions not included in the ordering are non-existent as far as generation of output
@@ -228,50 +213,51 @@ is concerned.
 The remaining optional parameters of a chunk definition only have meaning dependent on
 the output format chosen.
 For example
-\begin{verbatim}
-%%<cat shuffle/test/tst5%%>
-\end{verbatim}
+\begin{TT}
+%%1srcfile(shuffle/test/tst5%%)
+\end{TT}
 will give 
 \begin{itemize}
 \item for \verb'shuffle --gen=1 --ag --lhs2tex=no shuffle/test/tst5'
-\begin{verbatim}
-%%<bin/shuffle --gen=1 --ag --lhs2tex=no shuffle/test/tst5%%>
-\end{verbatim}
+\begin{TT}
+%%1exec(bin/shuffle --gen=1 --ag --lhs2tex=no shuffle/test/tst5%%)
+\end{TT}
 
 \item for \verb'shuffle --gen=1 --hs --lhs2tex=no shuffle/test/tst5'
-\begin{verbatim}
-%%<bin/shuffle --gen=1 --hs --lhs2tex=no shuffle/test/tst5%%>
-\end{verbatim}
+\begin{TT}
+%%1exec(bin/shuffle --gen=1 --hs --lhs2tex=no shuffle/test/tst5%%)
+\end{TT}
 \end{itemize}
 
 To allow for incorporating Haskell inside AG the parameter \verb'hs' is specified, for example in
-\begin{verbatim}
-%%<cat shuffle/test/tst6%%>
-\end{verbatim}
+\begin{TT}
+%%1srcfile(shuffle/test/tst6%%)
+\end{TT}
 will give (for \verb'shuffle --gen=1 --ag --lhs2tex=no shuffle/test/tst6')
-\begin{verbatim}
-%%<bin/shuffle --gen=1 --ag --lhs2tex=no shuffle/test/tst6%%>
-\end{verbatim}
+\begin{TT}
+%%1exec(bin/shuffle --gen=1 --ag --lhs2tex=no shuffle/test/tst6%%)
+\end{TT}
 
 Currently, none of this specific behavior is implemented for \LaTeX\ output.
 Generation for \LaTeX\ also ignores the @--gen@ flag by
 behaving as if @--gen=all@ were specified.
 
-\subsection{Interaction with \LaTeX}
+\subsubsection{Interaction with \LaTeX}
 
 \begin{itemize}
 \item
 Required macro's:
-\begin{verbatim}
+\begin{TT}
 \newcommand{\chunkCmdDef}[1]{\expandafter\def\csname #1\endcsname}
 \newcommand{\chunkMetaDef}[1]{\expandafter\def\csname #1\endcsname}
 \newcommand{\chunkCmdUse}[1]{\csname #1\endcsname}
 \newcommand{\chunkIndex}[1]{\index{#1}}
-\end{verbatim}
+\end{TT}
 
 \item
 Each chunk has also a label defined, with the same name as the chunk name.
 \end{itemize}
 
-\end{document}
+%}
 
+%%]

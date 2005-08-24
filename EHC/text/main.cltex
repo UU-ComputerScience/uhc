@@ -152,10 +152,46 @@
 %%% LaTeX document header
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1
+%%[2
+\documentclass[%
+               headinclude,% new for typearea
+               footexclude,% new for typearea
+               openright,
+               twoside,
+               nopictures,
+               10pt]{scrbook}
+%%]
+
+%%[3
+%if acm && popl06
+\documentclass{sigplanconf}
+%else
+\documentclass{article}
+%endif
+%%]
+
+%%[4
+%if acm && popl06
+\documentclass{sigplanconf}
+%else
+\documentclass{article}
+%endif
+%%]
+
+%%[7
+\documentclass[%
+               headinclude,% new for typearea
+               footexclude,% new for typearea
+               openright,
+               twoside,
+               nopictures,
+               10pt]{scrbook}
+%%]
+
+%%[12
 %if newDocClassHeader
 
-%if acm && popl06 && storyExplImpl
+%if acm && popl06 && (storyExplImpl || storyRuler)
 %\documentclass[blockstyle]{sigplanconf}
 \documentclass{sigplanconf}
 %elif storyPHD
@@ -164,8 +200,10 @@
                footexclude,% new for typearea
                openright,
                twoside,
-               nopictures]{scrbook}
+               nopictures,
+               10pt]{scrbook}
 %else
+\documentclass{article}
 %endif
 
 %else %% newDocClassHeader
@@ -239,7 +277,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
-%\usepackage{epic, eepic}
+\usepackage{epic}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -389,7 +427,7 @@
 %if asSlides
 %elif acm
 %elif storyPHD
-\usepackage[sc]{mathpazo}% change main font
+%\usepackage[sc]{mathpazo}% change main font
 %\linespread{1.05}% larger line spacing due to palatino
 \renewcommand{\bfdefault}{b}% bx palatino isn't available anyway
 %if fontsite
@@ -414,16 +452,15 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Ref
+%%% Chapter layout
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1
-% Hyperref should be the last package loaded. The final online
-% version should use something different than the ugly boxes.
+%%[2
+\usepackage{kslayout}
+%%]
 
-%if useHyperref
-\usepackage{hyperref}
-%endif
+%%[7
+\usepackage{kslayout}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -484,6 +521,36 @@
 %endif
 %%]
 
+%%[2
+\setlength{\paperwidth}{170mm}
+\setlength{\paperheight}{240mm}
+\typearea[1.2cm]{15}% was BCOR: [0.5]{12}
+%%]
+
+%%[7
+\setlength{\paperwidth}{170mm}
+\setlength{\paperheight}{240mm}
+\typearea[1.2cm]{15}% was BCOR: [0.5]{12}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Ref
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+% Hyperref should be the last package loaded. The final online
+% version should use something different than the ugly boxes.
+
+%if useHyperref
+%if storyPHD
+\usepackage[pdfauthor={Atze Dijkstra},
+            pdftitle={Haskell, Step by Step}]{hyperref}
+%else
+\usepackage{hyperref}
+%endif
+%endif
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Obsolete config
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -503,13 +570,56 @@
 %if truu
 \usepackage{TRtitlepage}
 %endif
+%%]
 
-%if storyExplImpl
+%%[2
+\title{Haskell, Step by Step}
+\author{Atze Dijkstra}
+%%]
+
+%%[3
+\title{Ruler: programming type rules}
+%if acm && useSigplanconfSty
+\authorinfo{Atze Dijkstra \and S. Doaitse Swierstra}
+  {Department of Information and Computing Sciences \\
+   Utrecht University \\
+   P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
+  }
+  {\{atze,doaitse\}@@cs.uu.nl}
+%else
+\author{Atze Dijkstra and S. Doaitse Swierstra}
+%endif
+%%]
+
+%%[4
 \title{Making Implicit Parameters Explicit}
+%if acm && useSigplanconfSty
+\authorinfo{Atze Dijkstra \and S. Doaitse Swierstra}
+  {Department of Information and Computing Sciences \\
+   Utrecht University \\
+   P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
+  }
+  {\{atze,doaitse\}@@cs.uu.nl}
+%else
+\author{Atze Dijkstra and S. Doaitse Swierstra}
+%endif
+%%]
+
+%%[7
+\title{Scratch}
+\author{Atze Dijkstra}
+%%]
+
+%%[11
+\title{Shuffle: manipulating source fragments}
+\author{Atze Dijkstra}
+%%]
+
+%%[12
+%if storyExplImpl
 %elif storyImpred
 \title{Exploiting type signatures}
 %elif storyRuler
-\title{Ruler: programming type rules}
 %elif storyEHIntro
 %if storyVariantETAPSLinks
 \title{Essential Haskell Compiler Highlights}
@@ -517,21 +627,14 @@
 \title{Essential Haskell Compiler Overview}
 %endif
 %elif storyPHD
-\title{Haskell, Step by Step}
 %else
-\title{Typing Haskell with an Attribute Grammar}
 %endif
+%%]
 
+%%[1
 %if storyPHD
-\author{Atze Dijkstra}
 %elif acm && (storyExplImpl || storyImpred || storyRuler)
 %if useSigplanconfSty
-\authorinfo{Atze Dijkstra \and S. Doaitse Swierstra}
-  {Department of Information and Computing Sciences \\
-   Utrecht University \\
-   P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
-  }
-  {\{atze,doaitse\}@@cs.uu.nl}
 %if icfp05
 \toappear{Submitted to the International Conference onf Functional Programming 2005 (ICFP 2005), September 26-28, Tallin, Estonia}
 %elif hw05
@@ -557,7 +660,6 @@
 }
 %endif %% useSigplanconfSty
 %else
-\author{Atze Dijkstra and S. Doaitse Swierstra}
 %endif
 \date{\today}
 %if llncs
@@ -661,6 +763,44 @@ Combinator & Meaning & Result
 \frontmatter
 %endif
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Title
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+%%]
+
+%%[2
+%%@FrontMatter.titlePHD
+%%]
+
+%%[3
+%if truu
+\TRtitlepage
+{Ruler: Programming Type Rules}
+{Atze Dijkstra \\ S. Doaitse Swierstra}
+{UU-CS-2005-033}
+%endif
+\maketitle
+%%]
+
+%%[4
+%if truu
+\TRtitlepage
+{Making Implicit Parameters Explicit}
+{Atze Dijkstra \\ S. Doaitse Swierstra}
+{UU-CS-2005-032}
+%endif
+\maketitle
+%%]
+
+%%[7
+%%@FrontMatter.titlePHD
+%%]
+
+%%[12
 %if storyAfpTRUU1
 \TRtitlepage
 {Typing Haskell with an Attribute Grammar (Part I)}
@@ -668,9 +808,15 @@ Combinator & Meaning & Result
 {UU-CS-2004-037}
 %elif storyExplImpl && truu
 \TRtitlepage
-{Explicit implicit parameters}
+{Making Implicit Parameters Explicit}
 {Atze Dijkstra \\ S. Doaitse Swierstra}
-{UU-CS-2004-059}
+{UU-CS-2005-032}
+\maketitle
+%elif storyRuler && truu
+\TRtitlepage
+{Ruler: Programming Type Rules}
+{Atze Dijkstra \\ S. Doaitse Swierstra}
+{UU-CS-2005-033}
 \maketitle
 %else
 \maketitle
@@ -701,7 +847,7 @@ Combinator & Meaning & Result
 %%% Inside cover pages
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7
+%%[12
 \vfill
 \FigPDF{ipalogo}
 %%]
@@ -744,6 +890,10 @@ Combinator & Meaning & Result
 \subsection*{Type systems for functional languages (abstract)}
 %endif
 
+%%]
+
+%%[1
+
 %if asArticle
 \begin{abstract}
 %endif
@@ -764,6 +914,10 @@ Combinator & Meaning & Result
 
 %%[6
 %%@StoryAFP.abstract
+%%]
+
+%%[11
+%%@ToolDocShuffle.abstract
 %%]
 
 %%[1
@@ -889,14 +1043,10 @@ The tutorial can safely be skipped if the reader is already familiar with the AG
 
 %%[2
 
-%if incl04
-
-\section{EH 4: |forall|: local impredicativity (was: |forall| and |exists| everywhere)}
+\section{EH 4: Local impredicativity}
 \label{ehc4}
 
-%%@TopicImpred.storyAFP
-
-%endif %% incl04
+%%@TopicImpred.bodyForallUpDown
 
 %%]
 
@@ -905,25 +1055,11 @@ The tutorial can safely be skipped if the reader is already familiar with the AG
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2
-%if incl04
-\section{EH 4: non-local impredicativity}
+\section{EH 4: Global impredicativity, or, exploiting type annotations, or, impredicativity inference}
 \label{ehc4B}
 
-%%@TopicImpred.scratch
+%%@TopicImpred.bodyForallNonLocal
 
-------------------------------------
-
-------------------------------------
-
-%%@TopicImpred.scratch3
-
-------------------------------------
-
-------------------------------------
-
-%%@TopicImpred.scratch4
-
-%endif %% incl04
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -931,11 +1067,11 @@ The tutorial can safely be skipped if the reader is already familiar with the AG
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2
-%if incl04
 \section{EH 4: |exists|: existential types}
 \label{ehc4C}
 
-%endif %% incl04
+%%@TopicImpred.bodyExists
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1095,10 +1231,12 @@ Coercion (of records), related to subsumption
 
 %%[2
 
-\section{EH ??: partial type signatures}
-\label{ehc-partial-sig}
+\section{Type specifications: partial type signatures and quantifier location inference}
+\label{ehc-partial-sig-quant-guess}
 
-%%@TopicPartialTySig.fromAFP
+%%@TopicPartialTySig.body
+
+ %%@OldText.partialTySigAFP
 
 %%]
 
@@ -1334,12 +1472,23 @@ error messaging, line/col position, comment ????
 
 %%[7
 
-\section{Scratch}
+\section{Scratch1}
 
-\FigureXFigTex{roadmap}{Roadmap to \thispaper}{fig-roadmap}
+%%@TopicImpred.bodyForallUpDown
 
-\FigureXFigTex{system-overview}{BLA}{BLA}
+\section{Scratch2}
 
+%%@TopicImpred.bodyForallNonLocal
+
+\section{Scratch3}
+
+%%@TopicImpred.bodyExists
+
+\section{Scratch4}
+
+\rulerCmdUse{rules3.I1.tyexpr.base}
+\rulerCmdUse{rules3.I1.patexpr.base}
+\rulerCmdUse{rules3.I2.patexpr.base}
 
 
 %\rulerCmdUse{rules3.E.expr.scratch}
@@ -1347,14 +1496,15 @@ error messaging, line/col position, comment ????
 %\rulerCmdUse{rules3.K.expr.scratch}
 %\rulerCmdUse{rules3.K.decl.base}
 %\rulerCmdUse{rules3.C.expr.scratch}
-\rulerCmdUse{rules3.C.expr.baseForEH2}
-\rulerCmdUse{rules3.C.decl.base}
-\rulerCmdUse{rules3.HM.expr.baseForEH2}
-\rulerCmdUse{rules3.HM.decl.base}
+%\rulerCmdUse{rules3.C.expr.baseForEH2}
+%\rulerCmdUse{rules3.C.decl.base}
+%\rulerCmdUse{rules3.HM.expr.baseForEH2}
+%\rulerCmdUse{rules3.HM.decl.base}
 %\rulerCmdUse{rules3.HM.expr.scratch}
 %\rulerCmdUse{rules3.HM.decl.base}
 %\rulerCmdUse{rules3.HM.expr.scratch}
 %\rulerCmdUse{rules3.I1.expr.scratch}
+%\rulerCmdUse{rules3.EX.expr.scratch}
 %\rulerCmdUse{rules3.I2.expr.scratch}
 %\rulerCmdUse{rules3.P.expr.scratch}
 
@@ -1373,6 +1523,21 @@ error messaging, line/col position, comment ????
 %\rulerCmdUse{rules3.P.expr.baseForEH1}
 %\rulerCmdUse{rules3.P.expr.baseForEH9}
 
+%\section{Scratch3}
+%\rulerCmdUse{rules3.I3.expr.eh4B1}
+%\rulerCmdUse{rules3.I3.expr.eh4B2}
+
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Shuffle doc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%[11
+%%@ToolDocShuffle.doc
 %%]
 
 
@@ -1649,10 +1814,12 @@ Notation & Meaning \\
 
 {
 \def\emph#1{#1}
-%%@AppxNotation.termTableBegin
+\label{appx-eh-lang-terms}
+\begin{tabular}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
 %%@AppxNotation.exprBasic
+%%@AppxNotation.exprLamPat
 %%@AppxNotation.exprRecBasic
 %%@AppxNotation.exprRecExt
 %%@AppxNotation.exprTup
@@ -1661,24 +1828,35 @@ Notation & Meaning \\
 %%@AppxNotation.termSeparator
 %%@AppxNotation.declHeader
 %%@AppxNotation.declBasic
+%%@AppxNotation.declValPat
 %%@AppxNotation.declDataType
 %%@AppxNotation.declExplImpl
+%%@AppxNotation.termSeparator
+%%@AppxNotation.patexprHeader
+%%@AppxNotation.patexprBasic
+%%@AppxNotation.termSeparator
+%%@AppxNotation.tyexprHeader
+%%@AppxNotation.tyexprBasic
+%%@AppxNotation.tyexprTyVar
+%%@AppxNotation.tyexprForall
 %%@AppxNotation.termSeparator
 %%@AppxNotation.identHeader
 %%@AppxNotation.identBasic
 %%@AppxNotation.identRecLbl
-%%@AppxNotation.termTableEnd
+\end{tabular}
 }
 
 \subsection{Type language}
 
-%%@AppxNotation.typeTableBegin
+\label{appx-eh-lang-types}
+\begin{tabular}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.typeHeader
 %%@AppxNotation.typeBasic
 %%@AppxNotation.typeTyVarFixed
 %%@AppxNotation.typeExists
 %%@AppxNotation.typeRecBasic
+%%@AppxNotation.typePred
 %%@AppxNotation.termSeparator
 %%@AppxNotation.predHeader
 %%@AppxNotation.predBasic
@@ -1691,7 +1869,7 @@ Notation & Meaning \\
 %%@AppxNotation.termSeparator
 %%@AppxNotation.tyaltHeader
 %%@AppxNotation.tyaltBasic
-%%@AppxNotation.termTableEnd
+\end{tabular}
 
 \subsection{AG and Haskell notational conventions}
 \label{appx-ag-hs-namingconventions}
@@ -1721,6 +1899,9 @@ We could have chosen to use Haskell's module mechanism instead,
 but currently not all code for functions related to a single type can be placed in one module,
 due to mutual recursion.
 \end{itemize}
+
+\section{Rules generated by |Ruler|}
+\input GenByRuler.tex
 
 \section{Used libraries}
 
@@ -1753,6 +1934,11 @@ Combinator & Result
 \end{center}
 
 \section{Fragment manipulation: Shuffle}
+\label{appx-shuffle}
+
+%%@ToolDocShuffle.abstract
+
+%%@ToolDocShuffle.doc
 
 \section{Additional fragments}
 \input \jobname-hide.tex

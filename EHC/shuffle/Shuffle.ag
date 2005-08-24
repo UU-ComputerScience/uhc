@@ -210,6 +210,11 @@ isVarRest c = isVarStart c || isDigit c || c `elem` "'_"
 isWhite :: Char -> Bool
 isWhite = (`elem` " \t")
 
+{-
+isDig :: Char -> Bool
+isDig c = c >= '0' && c <= '9'
+-}
+
 isLF :: Char -> Bool
 isLF = (`elem` "\n\r")
 
@@ -221,6 +226,9 @@ isStrQuote c = c == '"'
 
 isStr :: Char -> Bool
 isStr c = not (isStrQuote c || isLF c)
+
+str2int :: String -> Int
+str2int = foldl (\i c -> i * 10 + ord c - ord '0') 0
 
 scan :: ScanOptsMp -> ScState -> String -> [Tok]
 scan scoMp st s
@@ -294,7 +302,7 @@ pInt :: (IsParser p Tok) => p String
 pInt = tokBlack <$> pSym (Tok TkInt "" "0" tkpNone ScSkip)
 
 pInt' :: (IsParser p Tok) => p Int
-pInt' = read <$> pInt
+pInt' = str2int <$> pInt
 
 pStr :: (IsParser p Tok) => p String
 pStr = tokBlack <$> pSym (Tok TkStr "" "<string>" tkpNone ScSkip)
@@ -745,7 +753,7 @@ voAllLE'' vo v
      in sortBy (cmpByVersionOrder vo) . nub . sort $ allN'
 
 voDefault :: VersionOrder
-voDefault = [take 30 (map VRef [1..])]
+voDefault = [take 100 (map VRef [1..])]
 
 }
 

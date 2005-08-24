@@ -406,15 +406,12 @@ because of unintended use of bitpatterns.
 
 \def\EHCOneTyLangA{%
 \begin{code}
-sigma  =  Int | Char
-       |  (sigma,...,sigma)
-       |  sigma -> sigma
+%%@SharedTypeLang.ehc1
 \end{code}
 }
 \def\EHCOneTyLangB{%
 \begin{code}
-sigma  =  Int | Char | ^^ -> ^^ | ^^ , ^^ | ^^ ,, ^^ | ^^ ...
-       |  sigma ^^ sigma
+%%@SharedTypeLang.ehc1B
 \end{code}
 }
 
@@ -1166,7 +1163,8 @@ The code for this and other similar functions have been omitted for brevity.
 \chunkCmdUseMark{EHTy.1.unMkTy.tyLHdAndTl}
 \chunkCmdUseMark{EHCommon.1.Misc.hdAndTl}
 \chunkCmdUseMark{EHTy.4.unMkTy.tyConNm}
-\chunkCmdUseMark{EHTy.4.unMkTy.tyVar}
+\chunkCmdUseMark{EHTy.3.unMkTy.tyMbVar}
+\chunkCmdUseMark{EHTy.3.unMkTy.tyVar}
 %%]
 
 \paragraph{Constructor |Con|, tuples.}
@@ -1192,7 +1190,7 @@ The |Con| alternative implements this:
 \chunkCmdUseMark{EHRulerRules.1.expr.e.con}
 \chunkHideRef{impl.tyDissect}
 
-Note that, despite the fact that the cartesian product constructors are
+Note that, despite the cartesian product constructors being
 essentially polymorphic, we do not have to do any kind of unification
 here, since they either appear in the right hand side of a declaration
 where the type is given by an explcit type declaration, or they occur at
@@ -1429,6 +1427,9 @@ This is straightforward as type expressions (abstract syntax for what the progra
 and types (as internally used by the compiler) have almost the same structure (\secPageRef{abs-syn-eh1}:
 
 \chunkCmdUseMark{EHInferTyExpr.1.ty}
+%\chunkCmdUseMark{EHInferTyExpr.1.ConApp}
+\chunkCmdUseMark{EHRulerRules.1.tyexpr.t.con}
+\chunkCmdUseMark{EHRulerRules.1.tyexpr.t.app}
 
 \rulerCmdUse{rules3.K.tyexpr.base}
 
@@ -1439,7 +1440,7 @@ A variant of |Gam| is used to hold type constants:
 \chunkCmdUseMark{EHGam.1.TyGam}
 \chunkCmdUseMark{EHGam.1.tyGamLookup}
 
-This |Gamma| is threaded through |TyExpr|:
+This |Gamma|, denoted by |TGamma|, is threaded through |TyExpr|:
 
 \chunkCmdUseMark{EHInferTyExpr.1.tyGam}
 

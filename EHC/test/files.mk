@@ -14,7 +14,7 @@ TEST_DIST_FILES						:= $(TEST_ALL_SRC) $(TEST_EXP_DRV) $(TEST_MKF)
 # rules
 test-lists:
 	@cd $(TEST_SRC_PREFIX) ; \
-	for v in $(EHC_PUB_VARIANTS) ; \
+	for v in $(EHC_VARIANTS) ; \
 	do \
 	  ehs= ; \
 	  vv=`echo $$v | sed -e 's/_[0-9]//'` ; \

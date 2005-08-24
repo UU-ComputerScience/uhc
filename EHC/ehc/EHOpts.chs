@@ -12,10 +12,16 @@
 %%[1 import(System.Console.GetOpt,EHCommon) export(EHCOpts(..), defaultEHCOpts, ehcCmdLineOpts)
 %%]
 
-%%[4 import(EHTy,UU.Pretty) export(FIOpts(..), fioSwapCoCo, fioSwapOpts, strongFIOpts, instFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)
+%%[4 import(EHTy,UU.Pretty) export(FIOpts(..), fioSwapCoCo, fioSwapOpts, strongFIOpts, instFIOpts, instLRFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)
+%%]
+
+%%[4 export(fioIsSubsume)
 %%]
 
 %%[4_2 export(unifyFIOpts,meetFIOpts,joinFIOpts,impredFIOpts)
+%%]
+
+%%[4_2 export(fioIsMeetJoin)
 %%]
 
 %%[5 export(weakFIOpts)
@@ -169,8 +175,8 @@ ehcCmdLineOpts
 
 %%[4.FIOpts.hd
 data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindRFirst           ::  Bool
-                        ,  fioBindLFirst     ::  Bool                ,  fioUniq                 ::  UID
-                        ,  fioMode           ::  FIMode
+                        ,  fioBindLFirst     ::  Bool                ,  fioBindLBeforeR         ::  Bool
+                        ,  fioMode           ::  FIMode              ,  fioUniq                 ::  UID
 %%]
 %%[4_2
                         ,  fioBindToTyAlts   ::  Bool
@@ -193,8 +199,8 @@ data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindR
 %%[4.strongFIOpts.hd
 strongFIOpts :: FIOpts
 strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindRFirst           =   True
-                        ,  fioBindLFirst     =   True                ,  fioUniq                 =   uidStart
-                        ,  fioMode           =   FitSubLR
+                        ,  fioBindLFirst     =   True                ,  fioBindLBeforeR         =   True
+                        ,  fioMode           =   FitSubLR            ,  fioUniq                 =   uidStart
 %%]
 %%[4_2
                         ,  fioBindToTyAlts   =   False
@@ -233,10 +239,17 @@ instance PP FIOpts where
             >#< "}"
 %%]
 
-%%[4.FIOpts.defaults
+%%[4.FIOpts.instLFIOpts
 instLFIOpts :: FIOpts
 instLFIOpts = strongFIOpts {fioBindRFirst = False}
+%%]
 
+%%[4.FIOpts.instLRFIOpts
+instLRFIOpts :: FIOpts
+instLRFIOpts = strongFIOpts {fioBindRFirst = False, fioBindLFirst = False}
+%%]
+
+%%[4.FIOpts.instFIOpts
 instFIOpts :: FIOpts
 instFIOpts = instLFIOpts {fioLeaveRInst = True, fioBindLFirst = False}
 %%]
@@ -270,7 +283,7 @@ implFIOpts = strongFIOpts {fioAllowRPredElim = False}
 
 %%[4
 fioSwapOpts :: FIOpts -> FIOpts
-fioSwapOpts fio = fio { fioBindRFirst = fioBindLFirst fio, fioBindLFirst = fioBindRFirst fio }
+fioSwapOpts fio = fio { fioBindRFirst = fioBindLFirst fio, fioBindLFirst = fioBindRFirst fio, fioBindLBeforeR = not (fioBindLBeforeR fio) }
 
 fioSwapCoCo :: CoContraVariance -> FIOpts -> FIOpts
 fioSwapCoCo coco fio = fio {fioMode = fimSwapCoCo coco (fioMode fio)}
@@ -285,4 +298,19 @@ fioMkStrong fi = fi {fioLeaveRInst = False, fioBindRFirst = True, fioBindLFirst 
 fioMkUnify :: FIOpts -> FIOpts
 fioMkUnify fi = fi {fioMode = FitUnify}
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% FitsIn opts related
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4
+fioIsSubsume :: FIOpts -> Bool
+fioIsSubsume fio =  case fioMode fio of {FitSubLR -> True ; _ -> False}
+%%]
+
+%%[4_2
+fioIsMeetJoin :: FIOpts -> Bool
+fioIsMeetJoin fio =  case fioMode fio of {FitMeet -> True ; FitJoin -> True ; _ -> False}
+%%]
+
 

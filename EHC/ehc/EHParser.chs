@@ -500,9 +500,6 @@ pExprBase       =    sem_Expr_IConst     <$>  pInt
 %%[1.pExprBaseParenProd
                 <|>  pParenProd pExpr
 %%]
-%%[4.pExprBase
-                <|>  sem_Expr_Impred     <$   pKey "~"    <*> pExprBase
-%%]
 %%[5.pExprBase
                 <|>  sem_Expr_Case       <$   pKey "case" <*> pExpr <* pKey "of" <*> pCaseAlts
 %%]
@@ -536,13 +533,11 @@ pExprApp        =    pApp pExprBase
 %%[4.pExprApp -1.pExprApp
 pExprApp        =    pE <??> ((\l e -> semAppTop (foldl (flip ($)) e l)) <$> pList1 pA)
 %%]
-                where  pA = flip semApp <$> pE <|> pImpred
 %%[4.pExprAppA
-                where  pA = flip semApp <$> pE
+                where  pA = flip semApp <$> pE <|> pImpred
 %%]
-                where  pA = flip semApp <$> pE <|> pImpred <|> pImpl
 %%[9.pExprAppA -4.pExprAppA
-                where  pA = flip semApp <$> pE <|> pImpl
+                where  pA = flip semApp <$> pE <|> pImpred <|> pImpl
 %%]
 %%[4.pExprAppE
                        pE = pExprBase

@@ -10,7 +10,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 1.Let
-%%[4.Let
+%%[4_99.Let
 SEM Expr
   | Let         decls       .   patValGam           =   gamPushGam @decls.gathTySigGam @lhs.valGam
                 loc         .   (valGam_l_,valGam_g_)
@@ -20,27 +20,30 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.Let
-%%[4.Let
+%%[4_99.Let
 SEM Expr
   | Let         decls       .   patTyCnstr          =   @lhs.tyCnstr
                             .   tyCnstr             =   @decls.patTyCnstr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.Let
-%%[4.Let
+%%[4_99.Let
 SEM Expr
-  | Let         loc         .   lSubsValGam         =   @decls.tyCnstr |=> @valGam_l_
-                            .   gSubsValGam         =   @decls.tyCnstr |=> @valGam_g_
-                            .   gTyTvL              =   ftv @gSubsValGam
+  | Let         loc         .   lSubsValGam_        =   @decls.tyCnstr |=> @valGam_l_
+                            .   gSubsValGam_        =   @decls.tyCnstr |=> @valGam_g_
+                            .   gTyTvL              =   ftv @gSubsValGam_
                             .   quValGam_           =   valGamQuantify @gTyTvL @lSubsValGam
-                body        .   valGam              :=  gamPushGam @quValGam_ @gSubsValGam
+                body        .   valGam              :=  gamPushGam @quValGam_ @gSubsValGam_
 %%]
 
-%%[4
+-- generated from ruler rules into EHRulerRules, was 4.Let
+%%[4_99.Let
 SEM Expr
   | Let         decls       .   patValGam           :=  gamPushGam  (valGamInst1Exists @lUniq @decls.gathTySigGam)
                                                                     @lhs.valGam
-                loc         .   quValGam_           :=  valGamInst1Exists @lUniq2 . valGamQuantify @gTyTvL $ @lSubsValGam
+                loc         .   quValGam_ex_        :=  valGamInst1Exists @lUniq2 . valGamQuantify @gTyTvL $ @lSubsValGam_
+                            .   quValGam_           :=  emptyGam
+                body        .   valGam              :=  gamPushGam @quValGam_ex_ @gSubsValGam_
 %%]
 
 %%[4_2 hs
@@ -59,41 +62,22 @@ SEM Expr
                 decls       .   patValGam           :=  gamPushGam @decls.gathTySigGam @lhs.valGam
                             .   patTyCnstr          :=  @lExplTyCnstr
                             .   imprTyCnstr         =   @decls.patTyCnstr |=> @lhs.imprTyCnstr
-                loc         .   (_,elimImprTyCnstr,_)
+                loc         .   (_,imprTyCnstr_elim_,_)
                                                     =   valElimExprAlts joinFIOpts @fe (ftv @valGam_g_) @lUniq4 @decls.imprTyCnstr @valGam_l_
-                decls       .   tyCnstr             :=  @elimImprTyCnstr |=> @decls.patTyCnstr |=> @lhs.tyCnstr
-                loc         .   (quValGam_,lQuTyCnstr)
+                decls       .   tyCnstr             :=  @imprTyCnstr_elim_ |=> @decls.patTyCnstr |=> @lhs.tyCnstr
+                loc         .   (quValGam_ex_,lQuTyCnstr)
                                                     :=  let  (g1,c1) = valGamQuantifyWithCnstr @decls.tyCnstr @gTyTvL @valGam_l_
                                                              (g2,c2) = valGamInst1ExistsWithCnstr (c1 |=> @decls.tyCnstr) @lUniq2 g1
                                                         in   (g2,c2 |=> c1)
-                body        .   imprTyCnstr         =   @elimImprTyCnstr |=> @decls.imprTyCnstr
+                body        .   imprTyCnstr         =   @imprTyCnstr_elim_ |=> @decls.imprTyCnstr
                             .   tyCnstr             :=  @lQuTyCnstr |=> @decls.tyCnstr
                             .   valGam              :=  @decls.patValGam
 %%]
-                body        .   imprTyCnstr         =   @lQuTyCnstr |=> @elimImprTyCnstr |=> @decls.imprTyCnstr
-SEM Expr
-  | Let         decls       .   tySigTyCnstr        =   emptyCnstr
-                loc         .   (_,lExSigTyCnstr)   =   valGamInst1ExistsWithCnstr (@decls.tySigTyCnstr |=> @lhs.imprTyCnstr) @lUniq @decls.gathTySigGam
-                            .   lExplTyCnstr        =   @lExSigTyCnstr |=> @decls.tySigTyCnstr
-                decls       .   patValGam           :=  gamPushGam @decls.gathTySigGam @lhs.valGam
-                            .   patTyCnstr          :=  @lExplTyCnstr |=> @lhs.imprTyCnstr
-                            .   imprTyCnstr         =   @decls.patTyCnstr
-                loc         .   elimImprTyCnstr     =   let  (_,c,_) = valGamElimAlts joinFIOpts @fe (ftv @valGam_g_) @lUniq4 @decls.imprTyCnstr @valGam_l_
-                                                        in   c
-                body        .   imprTyCnstr         =   @elimImprTyCnstr |=> @decls.imprTyCnstr
-                decls       .   tyCnstr             :=  @lhs.tyCnstr |=> @decls.patTyCnstr
-                loc         .   (quValGam_,lQuTyCnstr)
-                                                    :=  let  (g1,c1) = valGamQuantifyWithCnstr @decls.tyCnstr @gTyTvL @valGam_l_
-                                                             (g2,c2) = valGamInst1ExistsWithCnstr (c1 |=> @decls.tyCnstr) @lUniq2 g1
-                                                        in   (g2,c2 |=> c1)
-                body        .   tyCnstr             :=  @lQuTyCnstr |=> @decls.tyCnstr
-                            .   valGam              :=  @decls.patValGam
-
-                decls       .   tyCnstr             :=  @lhs.tyCnstr |=> @elimImprTyCnstr |=> @decls.patTyCnstr
 
 %%[9
 SEM Expr
-  | Let         loc         .   (quValGam_,tqoGam)  :=  let  (vg,tqog) = valGamQuantify @gTyTvL @prfArgPrOccL @lSubsValGam
+  | Let         loc         .   (quValGam_ex_,tqoGam)
+                                                    :=  let  (vg,tqog) = valGamQuantify @gTyTvL @prfArgPrOccL @lSubsValGam_
                                                         in   (valGamInst1Exists @lUniq2 vg,tqog)
                             .   tqoTyCnstr          =   foldr (\tqo c -> tqoImplsCnstr tqo |=> c) emptyCnstr (gamElts @tqoGam)
 %%]
@@ -102,31 +86,32 @@ SEM Expr
 %%]
 SEM Expr
   | Let         loc         .   lElimEqualValGam    =   valGamElimEqual (@decls.tyCnstr |=> @valGam_l_)
-                            .   lSubsValGam         :=  @lElimEqualValGam
+                            .   lSubsValGam_        :=  @lElimEqualValGam
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known type and instantiation required
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 1.tyInstKnown
-%%[4.tyInstKnown
+%%[4_99.tyInstKnown
 SEM Decl
   | Val         loc         .   knTy                =   @ty_sig_
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.tyInstKnown
-%%[4.tyInstKnown
+%%[4_99.tyInstKnown
 SEM Decl
   | Val         expr        .   knTy                =   if @hasTySig then @knTy else @patExpr.ty
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.tyInstKnown
-%%[4.tyInstKnown
+%%[4_99.tyInstKnown
 SEM Decl
   | Val         loc         .   knTy                :=  tyInstKnown @lUniq @ty_sig_
 %%]
 
-%%[4.tyInstKnown
+-- generated from ruler rules into EHRulerRules, was 4.tyInstKnown
+%%[4_99.tyInstKnown
 SEM Decl
   | Val         loc         .   knTy                :=  @ty_sig_
 %%]
@@ -167,6 +152,11 @@ SEM Expr
   | Let         decls       .   finValGam           :=  @lhs.finTyCnstr |=> @quValGam_
 %%]
 
+%%[4.finValGam
+SEM Expr
+  | Let         decls       .   finValGam           :=  @lhs.finTyCnstr |=> @quValGam_ex_
+%%]
+
 %%[9
 SEM Expr
   | Let         loc         .   finTyCnstr          =   @tqoTyCnstr |=> @lhs.finTyCnstr
@@ -203,7 +193,7 @@ ATTR AllDecl [ | patValGam: ValGam | ]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.patValGam.Val
-%%[4.patValGam.Val
+%%[4_99.patValGam.Val
 SEM Decl
   | Val         patExpr     .   valGam              =   @lhs.patValGam
                 lhs         .   patValGam           =   @patExpr.valGam
@@ -218,7 +208,7 @@ SEM AGItf
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.tyCnstr.Val
-%%[4.tyCnstr.Val
+%%[4_99.tyCnstr.Val
 SEM Decl
   | Val         patExpr     .   tyCnstr             =   @lhs.patTyCnstr
                 lhs         .   patTyCnstr          =   @patExpr.tyCnstr
@@ -237,7 +227,7 @@ SEM AGItf
   | AGItf       expr        .   tyCnstr             :=  emptyCnstr
 
 SEM Decl
-  | Val         loc         .   imprFO              =   fitsIn impredFIOpts emptyFE uidStart (@expr.imprTyCnstr |=> @patExpr.ty) @expr.imprTy
+  | Val         loc         .   imprFO              =   fitsIn impredFIOpts @fe uidStart (@expr.imprTyCnstr |=> @patExpr.ty) @expr.imprTy
                 lhs         .   imprTyCnstr         =   foCnstr @imprFO |=> @expr.imprTyCnstr
 %%]
 SEM AGItf
@@ -361,7 +351,7 @@ SEM AGItf
 
 %%[4
 SEM Decl
-  | TySig       loc         .   fe                  =   emptyFE
+  | *           loc         .   fe                  =   emptyFE
 %%]
 
 %%[9
@@ -466,13 +456,13 @@ ATTR AllDecl [ tySigGam: ValGam | | ]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.tySigGam.TysigLet
-%%[4.tySigGam.TysigLet
+%%[4_99.tySigGam.TysigLet
 SEM Expr
   | Let         decls       .   tySigGam            =   @decls.gathTySigGam
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.tySigGam.Val
-%%[4.tySigGam.Val
+%%[4_99.tySigGam.Val
 SEM Decl
   | Val         loc         .   (ty_sig_,hasTySig)  =   case @patExpr.mbTopNm of
                                                           Nothing
@@ -484,7 +474,7 @@ SEM Decl
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.TySig
-%%[4.TySig
+%%[4_99.TySig
 SEM Decl
   | TySig       loc         .   ty_sig_             =   tyQuantify (`elem` @tyExpr.tyVarWildL) @tyExpr.ty
                             .   gamSigTy            :=  @ty_sig_
@@ -655,23 +645,36 @@ SEM PrExpr
 %%% How to do subsumption
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+%%[4.fiOpts.init
 ATTR AllExpr AllPatExpr [ fiOpts: FIOpts | | ]
-
-SEM Expr
-  | App         func        .  fiOpts               =   strongFIOpts
-                loc         .  argFIOpts            =   if @arg.isForcedTy then strongFIOpts else instLFIOpts
-                arg         .  fiOpts               =   @argFIOpts
-  | AppImpred   func        .  fiOpts               =   strongFIOpts
-                arg         .  fiOpts               =   strongFIOpts
-  | Lam         loc         .  knFunFIOpts          =   @lhs.fiOpts {fioBindRFirst=True}
-
-SEM Decl
-  | Val         expr        .  fiOpts               =   strongFIOpts
-                patExpr     .  fiOpts               =   strongFIOpts
 
 SEM AGItf
   | AGItf       expr        .  fiOpts               =   strongFIOpts
+%%]
+
+-- generated from ruler rules into EHRulerRules, was/from 4.fiOpts.init
+%%[5.fiOpts.init
+SEM Expr
+  | AppImpred   func        .  fiOpts               =   strongFIOpts
+                loc         .  argFIOpts            =   strongFIOpts
+                arg         .  fiOpts               =   @argFIOpts
+
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 2.App
+%%[4_99.fiOpts.init
+SEM Decl
+  | Val         expr        .  fiOpts               =   strongFIOpts
+                patExpr     .  fiOpts               =   strongFIOpts
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 2.App
+%%[5.fiOpts.init
+SEM Expr
+  | Lam         loc         .  knFunFIOpts          =   @lhs.fiOpts {fioBindRFirst=True}
+  | App         func        .  fiOpts               =   strongFIOpts
+                loc         .  argFIOpts            =   if @arg.isForcedTy then strongFIOpts else instLFIOpts
+                arg         .  fiOpts               =   @argFIOpts
 %%]
 
 %%[5

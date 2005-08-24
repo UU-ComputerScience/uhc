@@ -66,6 +66,7 @@ As an afterthought to see how well an additional feature can be added
 \begin{itemize}
 \item Gather wild type vars
 \chunkCmdFrameUse{EHInferTyExpr.2.tyVarWildL}
+\chunkCmdFrameUse{EHInferTyExpr.2.Wild}
 \item Distributing final type info
 \chunkCmdFrameUse{EHInfer.2.finValGam}
 \end{itemize}

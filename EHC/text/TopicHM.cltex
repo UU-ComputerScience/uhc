@@ -111,11 +111,7 @@ to make the right choice for a type without the programmer specifying additional
 
 The type language for this version of EH adds quantification by means of the universal quantifier |forall|:
 \begin{code}
-sigma  =  Int | Char
-       |  (sigma,...,sigma)
-       |  sigma -> sigma
-       |  tvarv | tvarf
-       |  forall ^ alpha . sigma
+%%@SharedTypeLang.ehc3
 \end{code}
 
 A |tvarf| stands for
@@ -181,7 +177,7 @@ values are introduced and used.
 
 A quantified type, also often named \IxAsDef{type scheme},
 is introduced in \ruleRef{e.let} and instantiated
-in \ruleRef{e-ident3} (see \figRef{rules3.HM.expr.baseForEH3}).
+in \ruleRef{e.var} (see \figRef{rules3.HM.expr.baseForEH3}).
 We will first look at the \IxAsIs{instantiation}.
 
 \subsubsection{Instantiation}
@@ -196,13 +192,17 @@ However, at this point it is not known which type a type variable
 stands for, so fresh type variables are
 used instead.
 This is called \IxAsDef{instantiation}, or \IxAsIs{specialization}.
-The resulting instantiated type partakes in the inference process as usual.
+The resulting instantiated type partakes in the inference process as usual,
+possibly finding more information about the type variables.
 %%[[hide impl.tyInst="Type instantiation"
+Rule:
 \[
-\rulerCmdUse{rules3.C.expr.base.e.var}
+\rulerCmdUse{rules3.HM.expr.base.e.var}
 \]
-\chunkCmdUseMark{EHTyInstantiate.3.tyInst}
+
+Implementation:
 \chunkCmdUseMark{EHRulerRules.3.expr.e.var}
+\chunkCmdUseMark{EHTyInstantiate.3.tyInst}
 %%]
 \RuleRef{e.var} shows how the type bound to an identifier is instantiated by
 replacing its quantified type variables with fresh ones.
@@ -219,10 +219,14 @@ specify the respective variations:
 
 \begin{itemize}
 \item
-A type signature (for an identifier) is specified explicitly, in \ruleRef{d.tysig}.
-Partial type signatures are supported, but discussed in \secRef{ehc-partial-sig}.
+A type signature (for an identifier) is specified explicitly, in \ruleRef{d.tysig}
+(partial type signatures are supported, but discussed in \chapterRef{ehc-partial-sig-quant-guess}).
+The (quantified) type signature is made available via \ruleRef{e.let} to \ruleRef{d.val}
+where it must be instantiated as the expected type of both pattern and expression.
 \item
 A type (for an identifier) is inferred.
+\RuleRef{d.val} has no type signature to use as the expected type;
+a type variable is used instead.
 At the boundary of its scope, in \ruleRef{e.let}, we generalise over those type variables in the type
 which do not occur outside the scope.
 \end{itemize}
@@ -233,11 +237,17 @@ These need to be added for all introduced type variables in the type expression 
 the quantifier |forall =@= Ty_Quant|.
 In the implementation we wrap the type in |Ty_Quant|, one for each free type variable.
 %%[[hide impl.tyQuant="Type quantification"
+Rule:
 \[
-\rulerCmdUse{rules3.C.expr.decl.d.tysig}
+\rulerCmdUse{rules3.HM.decl.d.tysig}
 \]
-\chunkCmdUseMark{EHTyQuantify.3.tyQuantify}
+
+Implementation:
 \chunkCmdUseMark{EHRulerRules.3.decl.d.tysig}
+\chunkCmdUseMark{EHTyQuantify.3.tyQuantify}
+
+The implementation is slightly more involved as we also deal with partial type signatures.
+Its discussion is postponed until \chapterRef{ehc-partial-sig-quant-guess}.
 %%]
 
 We now run into a problem which will be solved more elegantly in the next version of EH.
@@ -255,10 +265,9 @@ in   ...
 \end{code}
 we end up with fitting |tvarv1 -> Int <= a -> a|.
 This can be accomplished via constraints |[tvarv1 :-> Int, a :-> Int]|.
-However, |a| can be chosen by the caller of |id|.
+However, |a| may only be chosen by the caller of |id|.
 Instead it now is constrained by the body of |id| to be an |Int|.
-Somehow constraining |a| whilst being used as part of a known type for the body of
-|id| must be inhibited.
+We must inhibit the binding of |a| as part of the known type of the body of |id|.
 \item
 Alternatively, quantified signature |forall ^ a . a -> a| may be used.
 However, the inferencing process and the fitting done by |fitsIn| cannot (yet) handle
@@ -274,9 +283,12 @@ If no type signature is defined for the value declaration, a fresh type variable
 and the pattern type is used for the expression;
 the implementation specifies this precisely.
 %%[[hide impl.declValEH3="Value declaration and instantiation of type signature"
+Rule:
 \[
-\rulerCmdUse{rules3.C.expr.decl.d.val}
+\rulerCmdUse{rules3.HM.decl.d.val}
 \]
+
+Implementation:
 \chunkCmdUseMark{EHRulerRules.3.decl.d.val}
 \chunkCmdUseMark{EHTyInstantiate.3.tyInstKnown}
 %%]
@@ -317,9 +329,12 @@ These free type variables are the candidate type variables over which quantifica
 as described by the typing rules for |let|-expressions in \figRef{rules3.HM.expr.baseForEH3}
 and its implementation.
 %%[[hide impl.letQuantEH3="Generalisation in let expressions"
+Rule:
 \[
-\rulerCmdUse{rules3.C.expr.base.e.let}
+\rulerCmdUse{rules3.HM.expr.base.e.let}
 \]
+
+Implementation:
 \chunkCmdUseMark{EHRulerRules.3.expr.e.let}
 
 All available constraints in the form of |decls.tyCnstr| are applied to both global (|valGam_g_|)
@@ -370,7 +385,7 @@ in type |Int -> Int| for |id1|
 \end{TT}
 
 On the other hand, |id2| is used after quantification, outside the binding group, with
-type |forall a . a -> a|.
+type |forall ^ a . a -> a|.
 The application |id2 3| will not constrain |id2|.
 
 In Haskell binding group analysis will find groups of mutually dependent definitions,
@@ -397,7 +412,7 @@ For |f1| it is only known that its type is |tvarv1 -> tvarv2|.
 Similarly |g1| has a type |tvarv3 -> tvarv4|.
 More type information cannot be constructed unless more information
 is given as is done for |f2|.
-Then also for |g2| may the type |forall a.a->a| be reconstructed.
+Then also for |g2| may the type |forall ^ a . a -> a| be reconstructed.
 
 \TBD{example polymorphic recursion}
 %%]

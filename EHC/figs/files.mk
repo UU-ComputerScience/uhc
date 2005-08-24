@@ -9,7 +9,7 @@ FIGS_XFIG_SRC_FIG			:= $(wildcard $(FIGS_SRC_PREFIX)*.fig)
 FIGS_ASIS_SRC_PDF			:= $(wildcard $(FIGS_SRC_PREFIX)*.pdf)
 
 # exclude from pdf generation (because containing special chars)
-FIGS_XFIG_SRC_FIG_NOPDF		:= $(filter-out $(patsubst %,$(FIGS_SRC_PREFIX)%.fig,roadmap),$(FIGS_XFIG_SRC_FIG))
+FIGS_XFIG_SRC_FIG_NOPDF		:= $(filter-out $(patsubst %,$(FIGS_SRC_PREFIX)%.fig,type-lattice let-I2-flow roadmap),$(FIGS_XFIG_SRC_FIG))
 
 # all src
 FIGS_ALL_SRC				:= $(FIGS_XFIG_SRC_FIG) $(FIGS_ASIS_SRC_PDF)

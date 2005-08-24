@@ -1,0 +1,74 @@
+%%[titlePHD
+\begin{titlepage}
+\setcounter{page}{1}%
+\noindent
+\rule{\linewidth}{0pt}
+\vfill
+\Huge
+\begin{flushright}
+Haskell, Step by Step
+
+\vspace*{2ex}
+
+\Large 
+Haskell, stap voor stap \\
+(met een samenvatting in het Nederlands)
+\end{flushright}
+\vfill\vfill
+
+\noindent
+\normalsize Proefschrift ter verkrijging van de graad van doctor aan de
+Universiteit Utrecht op gezag van de Rector Magnificus, 
+Prof.~dr.~W.~H.~Gispen, ingevolge het besluit van het College voor
+Promoties in het openbaar te verdedigen op donderdag 14~november 2005
+des middags te 14.30 uur
+
+\noindent
+door
+
+\vspace*{1ex}
+
+\begin{flushright}
+\LARGE Atze Dijkstra
+\par
+\bigskip
+\par\noindent\normalsize
+geboren op 19 januari 1960 te Kerensheide (Beek), Nederland
+\end{flushright}
+
+\vfill
+\newpage
+\thispagestyle{empty}%
+\noindent
+\begin{tabular}{@@{}ll}
+promotor: & Prof.~dr.~S.~Doaitse Swierstra, Universiteit Utrecht
+\end{tabular}%
+
+\vfill
+
+\noindent
+\includegraphics{ipalogo}\par\noindent
+The work in this thesis has been carried out under the auspices of the
+research school \textsc{IPA} (Institute for Programming research and Algorithmics),
+and has been financed by the \textsc{NWO} (Nederlandse Organisatie voor 
+Wetenschappelijk Onderzoek).
+
+%if False
+\medskip
+
+\noindent
+Printed by Febodruk, Enschede.
+
+\medskip
+
+\noindent
+All drawings by Clara Strohm.
+%endif
+
+\medskip
+
+\noindent
+ISBN ???????
+\end{titlepage}
+%%]
+

@@ -1,5 +1,4 @@
-let  choose  ::  a -> a -> a
-     id      ::  a -> a
+let  choose  ::  forall a . a -> a -> a
+     id      ::  forall a . a -> a
      v1      =   choose  id
-     v2      =   choose  ~id
 in   v1
