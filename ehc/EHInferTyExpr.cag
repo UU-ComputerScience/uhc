@@ -10,11 +10,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.tyGam
-ATTR AllTyExpr [ | tyGam: TyGam | ]
+ATTR AllTyExpr [ tyGam: TyGam | | ]
+%%]
+
+%%[3.tyGam
+ATTR AllTyExpr [ | | tyGam: TyGam ]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.check
-%%[4_99.check
+%%[5.check
 SEM TyExpr
   | Con         loc         .  (tgi_,nmErrs)        =   case tyGamLookup @nm @lhs.tyGam of
                                                           Nothing    ->  (TyGamInfo Ty_Any
@@ -27,7 +31,7 @@ SEM TyExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 4.tvGathFlow
-%%[4_99.tvGathFlow hs
+%%[5.tvGathFlow hs
 tvGathFlow :: TyGam -> TyGam -> TyGam -> (TyGam,TyGam)
 tvGathFlow newG lhsG insideG
   = (insideG',lhsG')
@@ -37,14 +41,14 @@ tvGathFlow newG lhsG insideG
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.tyVarGather
-%%[4_99.tyVarGather
+%%[5.tyVarGather
 SEM TyExpr
   | Wild        loc         .   tyVarId             =   @lUniq
                             .   tgi_                =   TyGamInfo (mkNewTyVar @tyVarId)
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.tyVarGather
-%%[4_99.tyVarGather
+%%[5.tyVarGather
 SEM TyExpr
   | Var VarWild loc         .   tyVarId             =   @lUniq
                 (loc.tgi_,lhs.tyGam)                =   case tyGamLookup @nm @lhs.tyGam of
@@ -55,7 +59,7 @@ SEM TyExpr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.tyVarGather
-%%[4_99.tyVarGather
+%%[5.tyVarGather
 SEM TyExpr
   | Quant       loc         .   (tv,tgi_)           =   let  t = mkTyVar @lUniq
                                                         in   (@lUniq,TyGamInfo t)
@@ -89,22 +93,22 @@ SEM PrExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 2.tyVarWildL
-%%[4_99.tyVarWildL
+%%[5.tyVarWildL
 ATTR TyExpr [ | | tyVarWildL USE {++} {[]}: TyVarIdL ]
 %%]
 
-%%[2.tyWildL
+%%[3.tyWildL
 ATTR TyExpr [ | | tyWildL USE {++} {[]}: TyL ]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.Wild
-%%[4_99.Wild
+%%[5.Wild
 SEM TyExpr
   | Wild        lhs         .   tyVarWildL          =   [@tyVarId]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.Wild
-%%[4_99.Wild
+%%[5.Wild
 SEM TyExpr
   | VarWild     lhs         .   tyVarWildL          =   [@tyVarId]
 %%]
@@ -218,27 +222,27 @@ ATTR TyExpr [ | | ty: Ty ]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.ConApp
-%%[4_99.ConApp
+%%[5.ConApp
 SEM TyExpr
   | Con         loc         .   ty                  =   Ty_Con @nm
   | App         loc         .   ty                  =   Ty_App @func.ty @arg.ty
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.ty
-%%[4_99.ty
+%%[5.ty
 SEM TyExpr
   | Wild        loc         .   ty                  =   tgiTy @tgi_
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.ty
-%%[4_99.ty
+%%[5.ty
 SEM TyExpr
   | Var VarWild
                 loc         .   ty                  =   tgiTy @tgi_
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.ty
-%%[4_99.ty
+%%[5.ty
 SEM TyExpr
   | Quant       loc         .   ty                  =   Ty_Quant @qu @tv @tyExpr.ty
 %%]

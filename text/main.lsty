@@ -37,7 +37,7 @@
 %if acm
   \begin{figure}[t]
 %elif storyPHD
-  \begin{figure}[tp]
+  \begin{figure}[t]
 %else
   \begin{figure}[htbp]
 %endif
@@ -146,6 +146,9 @@
 % stripAfterDot
 \def\@@stripAfterDot#1.#2;{#1}
 
+% section structure related
+\newcommand{\Paragraph}[1]{\paragraph{#1}}
+
 % chunk related
 \newcommand{\chunkHideDef}[2]{%
  \subsection{#2}\label{#1}
@@ -236,9 +239,9 @@
 %endif
 \newcommand{\chapterRef}[1]{%
 %if asArticle
-\secRef{#1}
+\secRef{#1}%
 %else
-Chapter~\myRef{#1}
+Chapter~\myRef{#1}%
 %endif
 }
 \let\chaptRef=\chapterRef

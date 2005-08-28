@@ -254,8 +254,12 @@ EHC_BY_RULER_RULES_8					:= $(EHC_BY_RULER_RULES_9)
 EHC_BY_RULER_RULES_7					:= $(EHC_BY_RULER_RULES_8)
 EHC_BY_RULER_RULES_6					:= $(EHC_BY_RULER_RULES_7)
 EHC_BY_RULER_RULES_5					:= $(EHC_BY_RULER_RULES_6)
-EHC_BY_RULER_RULES_4_2					:= $(EHC_BY_RULER_RULES_5) p.int p.char p.con p.apptop p.app p.var p.varas p.ann e.apptop e.app e.app.f e.lam
-EHC_BY_RULER_RULES_4					:= $(EHC_BY_RULER_RULES_4_2) e.let e.ann d.tysig d.val t.con t.app t.wild t.quant t.var t.var.w
+EHC_BY_RULER_RULES_4_2					:= $(EHC_BY_RULER_RULES_5) \
+											p.int p.char p.con p.apptop p.app p.var p.varas p.ann \
+											e.apptop e.app e.app.f e.lam e.let e.ann \
+											t.con t.app t.wild t.quant t.var t.var.w \
+											d.tysig d.val
+EHC_BY_RULER_RULES_4					:= $(EHC_BY_RULER_RULES_4_2)
 EHC_BY_RULER_RULES_3					:= $(EHC_BY_RULER_RULES_4) 
 EHC_BY_RULER_RULES_2					:= $(EHC_BY_RULER_RULES_3)
 EHC_BY_RULER_RULES_1					:= $(EHC_BY_RULER_RULES_2)

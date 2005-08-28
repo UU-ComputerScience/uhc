@@ -67,17 +67,17 @@ SEM AGItf
 %%[2.Wild.pp
 SEM TyExpr
   | Wild        loc     .   pp      =   pp "..."
-
-SEM Decl
-  | TySig       loc     .   tyPP    :=  if null @tyExpr.tyWildL
-                                        then  @tyExpr.pp
-                                        else  ppTy @finalTy
 %%]
 
 %%[3
 SEM TyExpr
   | Var         loc     .   pp      =   pp @nm
   | VarWild     loc     .   pp      =   "%" >|< pp @nm
+
+SEM Decl
+  | TySig       loc     .   tyPP    :=  if null @tyExpr.tyWildL
+                                        then  @tyExpr.pp
+                                        else  ppTy @finalTy
 %%]
 
 %%[4
@@ -92,7 +92,7 @@ SEM TyExpr
   | Quant       loc     .   pp      =   showTyQu @qu >#< @tyVar >#< "." >#< @tyExpr.pp
 %%]
 
-%%[4_99.Wild.pp
+%%[5.Wild.pp
 SEM Decl
   | TySig       loc     .   tyPP    :=  if null @tyExpr.tyVarWildL
                                         then  @tyExpr.pp

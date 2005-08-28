@@ -3,6 +3,15 @@
 {r@@{\;}c@@{\;}ll}
 %%]
 
+%%[notationTableFormat
+{ll}
+%%]
+
+%%[notationTableHeader
+Notation & Meaning \\
+\hline
+%%]
+
 %%[exprHeader
 \multicolumn{4}{l}{Values (expressions, terms):} \\
 %%]
@@ -465,6 +474,18 @@
  \\
 |Vec(taltcx(Qu))|
  & |[ talt || talt@(sigmaQu::_) <- Vec(talt)]|
+ \\
+%%]
+
+%%[notationCoCo
+|coco|
+ & co-, contravariant context
+ \\
+|cocoY|
+ & covariant context
+ \\
+|cocoN|
+ & contravariant context
  \\
 %%]
 

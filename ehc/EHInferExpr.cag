@@ -323,21 +323,21 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.TypeAs
-%%[4_99.TypeAs
+%%[5.TypeAs
 SEM Expr
   | TypeAs      loc         .   fo_                 =   @tyExpr.ty `fitsIn` @lhs.knTy
                 expr        .   knTy                =   @tyExpr.ty
 %%]
 
 -- not generated from ruler rules into EHRulerRules:
-%%[4_99.TypeAs
+%%[5.TypeAs
 SEM Expr
   | TypeAs      loc         .   tyTy                =   @tyExpr.ty
                             .   ty_q_               =   @tyTy
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.TypeAs
-%%[4_99.TypeAs
+%%[5.TypeAs
 SEM Expr
   | TypeAs      loc         .   fo_                 :=  @ty_q_ `fitsIn` (@lhs.tyCnstr |=> @lhs.knTy)
                 expr        .   knTy                :=  foCnstr @fo_ |=> @ty_q_
@@ -345,7 +345,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.TypeAs
-%%[4_99.TypeAs
+%%[5.TypeAs
 SEM Expr
   | TypeAs      loc         .   gTyTvL              =   let  ftvVal  = ftv (@lhs.tyCnstr |=> @lhs.valGam)
                                                              ftvTy   = ftv . (@lhs.tyCnstr |=>) . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
@@ -355,7 +355,8 @@ SEM Expr
                             .   fo_                 :=  fitsIn @lhs.fiOpts @fe @lUniq (@lhs.tyCnstr |=> @ty_q_) (@lhs.tyCnstr |=> @lhs.knTy)
 %%]
 
-%%[4_2
+-- generated from ruler rules into EHRulerRules, was 4_2.TypeAs
+%%[99.TypeAs
 SEM Expr
   | TypeAs      loc         .   gTyTvL              :=  let  ftvVal  = ftv (@lhs.imprTyCnstr |=> @lhs.valGam)
                                                              ftvTy   = ftv . (@lhs.imprTyCnstr |=>) . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam

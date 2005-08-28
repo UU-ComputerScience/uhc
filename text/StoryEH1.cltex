@@ -510,7 +510,7 @@ It uses its position |appSpinePos| in the spine to determine if this is the case
 \chunkCmdUseMark{EHTyCommonAG.1.ConNm.Ty}
 \chunkCmdUseMark{EHTyCommonAG.1.appSpinePos}
 
-\paragraph{Parenthesis.}
+\Paragraph{Parenthesis}
 Because no explicit |Parens| alternative is present in the type structure,
 appropriate places to insert parentheses have to be computed.
 This is solved by passing the need for parentheses
@@ -543,7 +543,7 @@ is a recurring pattern.
 The other way around, for example |parNeedL| distributing the need for parentheses over the
 arguments of an application, is also a recurring pattern.
 
-\paragraph{Tying in with the Haskell world.}
+\Paragraph{Tying in with the Haskell world}
 What remains, is the way the functionality is made available to the Haskell world:
 
 \chunkCmdUseMark{EHTyPretty.1.ppTy}
@@ -588,6 +588,8 @@ We start with a simplified set of equational type rules (\figRef{rules3.E.expr.b
 The full algorithmic version (\figRef{rules3.K.expr.baseForEH1}) of \thischapt\ differs in
 the explicit handling of known type information, the use of patterns and uncoupling of type signatures
 and corresponding value declarations.
+We discuss type expressions, used in \ruleRef{e.ann},
+later in \thischapt\ (\secPageRef{eh1-tyexpr}).
 
 For example, the following is the typing rule
 (taken from \figRef{rules3.E.expr.baseForEH1})
@@ -983,7 +985,7 @@ Errors themselves are also described via AG:
 
 The |Err| datatype is available as a datatype in the same way |Ty| is.
 
-\paragraph{Variable occurrences |Var|.}
+\Paragraph{Variable occurrences |Var|}
 The error datatype is also used for signalling undeclared identifiers when a type for an identifier is retrieved
 from a |Gamma|: 
 
@@ -1027,7 +1029,7 @@ It is only extended with new bindings for identifiers at a declaration of an ide
 
 \chunkCmdUseMark{EHInfer.1.valGam}
 
-\paragraph{Function application |App|.}
+\Paragraph{Function application |App|}
 Type checking for \ruleRef{e.app} constructs |ANY -> sigmak| as the expected type for the function to be applied.
 The resulting type |func.ty| is decomposed into argument and result type, of which the argument type is used
 as the known type for the argument child of the |App| node:
@@ -1167,7 +1169,7 @@ The code for this and other similar functions have been omitted for brevity.
 \chunkCmdUseMark{EHTy.3.unMkTy.tyVar}
 %%]
 
-\paragraph{Constructor |Con|, tuples.}
+\Paragraph{Constructor |Con|, tuples}
 
 Apart from constructing function types only tupling allows us
 to build composite types.
@@ -1199,7 +1201,7 @@ function type.
 Therefore we indeed can use the |a| and |b| from type |ANY -> ANY -> (a,b)|
 to construct the type |a -> b -> (a,b)| for the constructor |(,)|.
 
-\paragraph{|lambda|-expression |Lam|.}
+\Paragraph{|lambda|-expression |Lam|}
 
 For \ruleRef{e.lam} the check whether |knTy| has the form |sigma1 -> sigma2|
 is done by letting |fitsIn| match the |knTy| with |ANY -> ANY|.
@@ -1209,7 +1211,7 @@ The result (forced to be a function type) is split up by
 %\chunkCmdUseMark{EHInferExpr.1.Lam}
 \chunkCmdUseMark{EHRulerRules.1.expr.e.lam}
 
-\paragraph{Type annotations (for |lambda|-expression).}
+\Paragraph{Type annotations (for |lambda|-expression)}
 
 In order to make |lambda|-expressions typecheck correctly it is the responsibility of
 the EH programmer to supply the correct type signature.
@@ -1420,6 +1422,7 @@ if any duplicate bindings are present.
 %%]
 
 \subsubsection{Checking type expressions (TyExpr)}
+\label{eh1-tyexpr}
 
 All that is left to do now is to use the type expressions to extract type signatures
 (type rules for type expressions in\figRef{rules3.K.tyexpr.base}).
@@ -1440,12 +1443,15 @@ A variant of |Gam| is used to hold type constants:
 \chunkCmdUseMark{EHGam.1.TyGam}
 \chunkCmdUseMark{EHGam.1.tyGamLookup}
 
-This |Gamma|, denoted by |TGamma|, is threaded through |TyExpr|:
+This |Gamma|, denoted by |TGamma|, is passed to a |TyExpr|:
 
 \chunkCmdUseMark{EHInferTyExpr.1.tyGam}
 
 At the root of the AST |tyGam| is initialized with the fixed set of types available
-in this version of the compiler:
+in this version of the compiler.
+Because |TGamma| is fixed, and can be seen as a global constant,
+we have omitted |TGamma| from all type rules,
+except those describing type expressions.
 
 \chunkCmdUseMark{EHInfer.1.initTyGam}
 

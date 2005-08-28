@@ -5,7 +5,7 @@
 %format > 		= "{\rangle}"
 \label{ag-primer}
 
-\paragraph{Haskell and Attribute Grammars (AG).}
+\subsection{Haskell and Attribute Grammars (AG)}
 Attribute grammars can be mapped onto functional programs
 \cite{kuiper86ag-fp,johnsson87attr-as-fun,bird84circ-traverse}.
 Vice versa, the class of functional programs
@@ -25,7 +25,7 @@ The `repmin' problem \cite{bird84circ-traverse} is used for this purpose.
 A second example describing a `pocket calculator' (that is, expressions) focusses on
 more advanced features and typical AG usage patterns.
 
-\paragraph{Repmin a la Haskell.}
+\subsection{Repmin a la Haskell}
 Repmin stands for ``replacing the integer valued leaves of a tree by the minimal integer value found in the leaves''.
 The solution to this problem requires two passes over a tree structure,
 computing the miminum and computing
@@ -68,7 +68,7 @@ Note that we have two more or less independent computations that both follow
 the tree structure,
 and a weak interaction, when passing the |tmin| value back in the tree.
 
-\paragraph{Repmin a la AG.}
+\subsection{Repmin a la AG}
 The structure of |repmin| is similar to the structure required by a compiler.
 A compiler performs several computations
 over an \IxAsDef{abstract syntax tree} (\IxAsDef{AST}), for example for computing its type
@@ -347,7 +347,7 @@ For now, this is not a problem as |sem_Root| will only return one value, a |Tree
 Later we will see the use of wrapper functions to pass inherited attributes and extract synthesized attributes
 via additional wrapper data types holding attributes in labeled fields.
 
-\paragraph{Parsing directly to semantic functions.}
+\subsection{Parsing directly to semantic functions}
 The given |main| function uses the first approach: construct a |Tree|, wrap it inside a |Root|, and
 apply |sem_Root| to it.
 The following example takes the second approach; it parses some input text describing the structure of a tree and
@@ -365,7 +365,7 @@ We will not discuss this alternative further nor will we discuss this particular
 parser combinators.
 However, this approach is taken in the rest of \thispaper\ wherever parsing is required.
 
-\paragraph{More features and typical usage: a pocket calculator.}
+\subsection{More features and typical usage: a pocket calculator}
 We will continue with looking at a more complex example, a pocket calculator which accepts expressions.
 The calculator prints a pretty printed version of the entered expression, its computed value and some statistics
 (the number of additions performed).
