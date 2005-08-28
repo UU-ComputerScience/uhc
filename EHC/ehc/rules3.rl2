@@ -56,6 +56,7 @@ format ag def Ty_Quant q v `.` t = (Ty_Quant (q) (tyVar (v)) (t) | Ty)
 
 -- TyVarIdS
 format ag def  (l1 | TyVarIdS) + (l2 | TyVarIdS) = (l1 ++ l2 | TyVarIdS)
+format ag def  (l1 | TyVarIdS) + (l2 | TyVarIdS) + (l3 | TyVarIdS) = (l1 ++ l2 ++ l3 | TyVarIdS)
 
 -------------------------------------------------------------------------
 -- Formatting
@@ -135,6 +136,7 @@ format tex tyChar = Char
 format tex instTyFixed = inst.f
 format tex patFunTy = sigma.pf
 format tex ty.sig = ty.s
+format tex ty.q = sigma.q
 format tex ty.elim = sigma.e
 format tex ty.tboth = sigma./=/
 format tex ty' = sigma'
@@ -144,6 +146,15 @@ format ag ty..._ = tys
 format ag ANY = (Ty_Any|Ty)
 format ag ity = imprTy
 format ag ty.ident = gTy
+
+-- tvars
+external tyLVar
+
+format tex tyLVar =
+format tvars.f = tvarv.f.._
+format tvars.g = tvarv.g.._
+
+format ag tyLVar = map tyVar
 
 -- Impred Cnstr
 format tex ityCnstr = ICnstr
@@ -284,6 +295,9 @@ external coeId
 
 format tex coe = Coe
 
+-- Co-, Contravariance
+external cocoY cocoN cocoNo
+
 -- Errors
 external Err_PatArity
 
@@ -349,6 +363,7 @@ rulesgroup expr.baseForEH4 scheme expr "Expression type rules" =
   rule expr.base e.var
   rule expr.base e.app
   rule expr.base e.lam
+  -- rule expr.base e.ann
 
 rulesgroup expr.eh4B1 scheme expr "Expression type rules, part I" =
   rule expr.base e.int
@@ -356,6 +371,7 @@ rulesgroup expr.eh4B1 scheme expr "Expression type rules, part I" =
   rule expr.base e.var
   rule expr.base e.app
   -- rule expr.base e.app.f
+  -- rule expr.base e.ann
 
 rulesgroup expr.eh4B2 scheme expr "Expression type rules, part II" =
   rule expr.base e.lam
@@ -895,7 +911,7 @@ ruleset expr.base scheme expr "Expression type rules" =
       judge elimG : valElimExprAlts = joinFIOpts; ityCnstr.d; tvarv.g.._ :- valGam.l : ityCnstr.elim
       judge Q : valGamQuantify
           | cnstr.q = tyCnstr.q
-      judge EB : valGamInst1Exists = _, tyCnstr.l.ex === valGam.l, (tyCnstr.q tyCnstr.d)
+      judge EB : valGamInst1Exists = quValGam.ex, tyCnstr.l.ex === valGam.l, (tyCnstr.q tyCnstr.d)
       judge B : expr
           | ityCnstr.inh = ityCnstr.elim ityCnstr.d
           | ityCnstr.syn = ityCnstr.e
@@ -937,15 +953,15 @@ ruleset expr.base scheme expr "Expression type rules" =
       judge F : fit
           | rty = tyCnstr.inh knTy
           | cnstr = tyCnstr.F
-      judge T : tyexpr
-          | tyWildL = tvarv.t.._
       -
       judge R : expr
           | tyCnstr.syn = tyCnstr.e
     view HM =
-      judge Q : tyQuantify = tAnn: ty.q === ty.a, tvarv.t.._
+      -- judge Q : tyQuantify = tAnn: ty.q === ty.a, tvarv.t.._
+      judge Q : tyQuantify = (tyLVar tvarv.t.._) :- ty.a : ty.q
       judge instKnown : inst.known = ty.i === inst.K(ty.q)
       judge T : tyexpr
+          | tyWildL = tvarv.t.._
           | tyGam.inh = tyGam
           | tyGam.syn = tyGam.t
       judge F : fit
@@ -956,9 +972,10 @@ ruleset expr.base scheme expr "Expression type rules" =
       judge R : expr
           | ty = ty.a
     view I1 =
+      judge TGFtv : tyGamTyFtv = tvarv.TGamma.._ === tyGam, tyCnstr.inh
+      judge GFtv : valGamFtv = tvarv.Gamma.._ === tyCnstr.inh valGam
       judge Q : tyQuantify
-          | gtvars = tvarv.Gamma.._ + tvarv.TGamma.._
-          | wtvars = tvarv.t.._
+          | gtvars = (tyLVar tvarv.t.._ | TyVarIdS) + tvarv.Gamma.._ + tvarv.TGamma.._
           | ty = tyCnstr.inh ty.a
       judge - instKnown
       judge F : fit
@@ -966,29 +983,26 @@ ruleset expr.base scheme expr "Expression type rules" =
       judge E : expr
           | knTy = ty.q
           | tyGam.inh = tyGam.t
-      judge TGFtv : tyGamTyFtv = tvarv.TGamma.._ === tyGam, tyCnstr.inh
-      judge GFtv : valGamFtv = tvarv.Gamma.._ === tyCnstr.inh valGam
       -
       judge R : expr
           | ty = tyCnstr.e ty.q
     view I2 =
-      judge Q : tyQuantify
-          | gtvars = tvarv.Gamma.._ + tvarv.TGamma.._
-          | wtvars = tvarv.t.._
-          | ty = tyCnstr.inh ty.a
-      judge - instKnown
-      judge F : fit
-          | lty = ty.q
-      judge E : expr
-          | knTy = ty.q
-          | tyGam.inh = tyGam.t
       judge TGFtv : tyGamTyFtv
           | tyCnstr = ityCnstr.inh
       judge GFtv : valGamFtv
           | g = ityCnstr.inh valGam
+      judge Q : tyQuantify
+          | ty = ityCnstr.inh ty.a
+      judge - instKnown
+      judge F : fit
+          | lty = tyCnstr.inh ty.q
+      judge E : expr
+          | ityCnstr.syn = ityCnstr.e
+          | ity = ity.e
+      judge FI : fit = (fioBindToTyAltsY, fiopt) :- ity.e <= ty.q : fo_fitI : ity ~> ityCnstr
       -
       judge R : expr
-          | ty = tyCnstr.e ty.q
+          | ityCnstr.syn = ityCnstr ityCnstr.e
 
 ruleset expr.onlyE scheme expr "Expression type rules" =
   rule e.prod viewsel E - K =
@@ -1049,25 +1063,24 @@ ruleset decl.base scheme decl "Declaration type rules" =
       -
       judge R : decl = _ ; patValGam ; kiGam ; tyGam ; _ :- ((identv :: (node 1 = declTyExpr))) : valGam.i ; patValGam
     view C =
-      judge T : tyexpr
-          | tyWildL = tvarv.t.._
       -
       judge R : decl
           | patTyCnstr.syn = patTyCnstr.inh
           | tyCnstr.syn = tyCnstr.inh
     view HM =
       judge T : tyexpr
+          | tyWildL = tvarv.t.._
           | tyGam.inh = tyGam
           | tyGam.syn = _
-      judge Q : tyQuantify = declTyExpr: ty.q === ty.i, tvarv.t.._
+      -- judge Q : tyQuantify = declTyExpr: ty.q === ty.i, tvarv.t.._
+      judge Q : tyQuantify = (tyLVar tvarv.t.._) :- ty.i : ty.q
       judge B : bind1ValIdToTy
           | ty = ty.q
       -
     view I1 =
       judge TGFtv : tyGamTyFtv = tvarv.TGamma.._ === tyGam, emptyCnstr
       judge Q : tyQuantify
-          | gtvars = tvarv.TGamma.._
-          | wtvars = tvarv.t.._
+          | gtvars = (tyLVar tvarv.t.._ | TyVarIdS) + tvarv.TGamma.._
       -
     view I2 =
       judge V : tyEnsureTVar = ty.v, tyCnstr.v, tvarv.v === ty.q
@@ -1414,12 +1427,21 @@ scheme tyexpr "TyExpr" =
   view K =
     holes [ tyGam: TyGam | | ]
     judgespec tyGam :-.."t" t : ty
-  view C =
-    holes [ | | tyWildL: TyL ]
-    judgespec tyGam :-.."t" t : ty ~> tyWildL
   view HM =
-    holes [ | thread tyGam: TyGam | ]
+    holes [ | thread tyGam: TyGam | tyWildL: TyL ]
     judgespec tyGam.inh :-.."t" t : ty ~> tyGam.syn ; tyWildL
+
+rulesgroup tyexpr.eh2 scheme tyexpr "Type expression type rules" =
+  rule tyexpr.base t.wild
+
+rulesgroup tyexpr.eh3 scheme tyexpr "Type expression type rules" =
+  rule tyexpr.base t.con
+  rule tyexpr.base t.app
+  rule tyexpr.base t.var
+  rule tyexpr.base t.var.w
+
+rulesgroup tyexpr.eh4 scheme tyexpr "Type expression type rules" =
+  rule tyexpr.base t.quant
 
 ruleset tyexpr.base scheme tyexpr viewsel K - * "Type expression type rules" =
   rule t.con "Con" =
@@ -1429,15 +1451,12 @@ ruleset tyexpr.base scheme tyexpr viewsel K - * "Type expression type rules" =
     view K =
       judge G : tyGamLookupId = identc :-> tgi, _ `elem` tyGam
       -
-    view C =
-      -
-      judge R : tyexpr
-          | tyWildL = []
     view HM =
       judge G : tyGamLookupId
           | tyGam = tyGam.inh
       -
       judge R : tyexpr
+          | tyWildL = []
           | tyGam.syn  = tyGam.inh
     
   rule t.app "App" =
@@ -1446,32 +1465,28 @@ ruleset tyexpr.base scheme tyexpr viewsel K - * "Type expression type rules" =
       judge A : tyexpr = :- tArg : ty.a
       -
       judge R : tyexpr = :- ((node 1 = tFun) ^^ (node 2 = tArg)) : (ty.f ty.a)
-    view C =
-      judge A : tyexpr
-          | tyWildL = tvarv.a.._
-      judge F : tyexpr
-          | tyWildL = tvarv.f.._
-      -
-      judge R : tyexpr
-          | tyWildL = tvarv.a.._ ++ tvarv.f.._
     view HM =
       judge F : tyexpr
           | tyGam.syn  = tyGam.f
+          | tyWildL = tvarv.f.._
       judge A : tyexpr
+          | tyWildL = tvarv.a.._
           | tyGam.inh  = tyGam.f
           | tyGam.syn  = tyGam.a
       -
       judge R : tyexpr
+          | tyWildL = tvarv.a.._ ++ tvarv.f.._
           | tyGam.syn  = tyGam.a
 
   rule t.wild viewsel C - * "Wild" =
     view C =
       judge V : kvarvFresh = tgi, tvarv
       -
-      judge R : tyexpr = tyGam :- (...) : tvarv ~> ([tvarv])
+      judge R : tyexpr = tyGam :- (...) : tvarv
     view HM =
       -
       judge R : tyexpr
+          | tyWildL = [tvarv]
           | tyGam.syn  = tyGam.inh
 
   rule t.var viewsel HM - * "Var" =
@@ -1521,7 +1536,7 @@ relation tyAltTyElim =
               | (retain ty        ) `=` foTy "@fo_altElim"
 
 ruleset tyAltTyElim scheme tyAltTyElim viewsel I2 - * "Type alternative elimination" =
-  rule ae.alts =
+  rule ty.ae.alts =
     view I2 =
       judge C : bind1TyVarToTy = tyCnstr === [tvarv :-> ty]
       judge NE : notIsEmpty = `|` (ty.thardH.._, ty.Qu.._) `|` > 0
@@ -1537,19 +1552,19 @@ ruleset tyAltTyElim scheme tyAltTyElim viewsel I2 - * "Type alternative eliminat
       -
       judge R : tyAltTyElim = fiopt ; ityCnstr.inh; tvarv.g.._ :- ity : ty ~> (tyCnstr tyCnstr.e)
 
-  rule ae.var =
+  rule ty.ae.var =
     view I2 =
       judge P : tyAltPartition = (tvarv [ _ ]) === ity
       judge glob : notElemTyVarIdS = tvarv `notElem` tvarv.g.._
       -
       judge R : tyAltTyElim = fiopt ; ityCnstr.inh; tvarv.g.._ :- ity : tvarv ~> emptyCnstr
 
-  rule ae.ty =
+  rule ty.ae.ty =
     view I2 =
       -
       judge R : tyAltTyElim = fiopt ; ityCnstr.inh; tvarv.g.._ :- ty : ty ~> emptyCnstr
 
-  rule ae.arrow =
+  rule ty.ae.arrow =
     view I2 =
       judge Res : tyAltTyElim = fiopt ; ityCnstr.inh; tvarv.g.._ :- ity.r : ty.r ~> tyCnstr.r
       judge Arg : tyAltTyElim = fiopt.a ; ityCnstr.inh; tvarv.g.._ :- ity.a : ty.a ~> tyCnstr.a
@@ -1569,7 +1584,7 @@ relation valElimExprAlts =
                     `=` valElimExprAlts (fiopt) "@fe" (tvarv.g.._) unique (ityCnstr.inh) (valGam)
 
 ruleset valElimExprAlts scheme valElimExprAlts viewsel I2 - * "Type alternative elimination (for a |Gamma|)" =
-  rule aeg.cons =
+  rule g.ae.cons =
     view I2 =
       judge G : valElimExprAlts = fiopt ; ityCnstr.inh; tvarv.g.._ :- (ityCnstr.a valGam) : ityCnstr.g
       judge A : tyAltTyElim = fiopt ; ityCnstr.inh; tvarv.g.._ :- ityCnstr.inh ity : _ ~> ityCnstr.a
@@ -1586,20 +1601,20 @@ scheme tyBtTyElim =
     judgespec bv :-...("/=/ elim") ty.tboth : ty ~> ty.elim ; tyCnstr
 
 ruleset tyBtTyElim scheme tyBtTyElim viewsel I2 - * "Type `both' elimination" =
-  rule eb.any =
+  rule ty.eb.any =
     view I2 =
       judge E : tvarsHasTvar = tvarv `elem` bv
       -
       judge R : tyBtTyElim = bv :- (tvarv /=/ ANY) : tvarv ~> tvarv; ([])
 
-  rule eb.var =
+  rule ty.eb.var =
     view I2 =
       judge T : tyBtTyElim = bv :- ty.b : ty ~> tvarv.e ; tyCnstr
       judge E : tvarsHasTvar = tvarv `elem` bv
       -
       judge R : tyBtTyElim = bv :- (tvarv /=/ ty.b) : tvarv ~> tvarv; ([tvarv.e :-> tvarv] tyCnstr)
 
-  rule eb.ty =
+  rule ty.eb.ty =
     view I2 =
       judge T : tyBtTyElim = bv :- ty.b : ty ~> ty.e ; tyCnstr
       judge E : tvarsHasTvar = tvarv `elem` bv
@@ -2232,6 +2247,16 @@ relation predGamLookupPrTyEv =
     judgeuse ag (ty,evid) `=` fitPredToEvid (pred) (predGam)
 
 -------------------------------------------------------------------------
+-- Choose quantifier based on coco variance
+-------------------------------------------------------------------------
+
+relation quForCoCo =
+  view I1 =
+    holes [ coco: CoCo | | qu: TyQu ]
+    judgespec qu === coco
+    judgeuse tex qu === if coco === cocoY then forall else exists
+
+-------------------------------------------------------------------------
 -- Choose between known and other type
 -------------------------------------------------------------------------
 
@@ -2340,11 +2365,25 @@ relation ftv =
     judgeuse ag  tvars `=` ftv (ty)
 
 -------------------------------------------------------------------------
+-- Preds on coco
+-------------------------------------------------------------------------
+
+relation elemCoCoS =
+  view I1 =
+    holes [ coco: CoCo, cocos: CoCoS | | ]
+    judgespec coco `elem` cocos
+
+-------------------------------------------------------------------------
 -- Preds on type variables
 -------------------------------------------------------------------------
 
+relation elemTyVarIdS =
+  view I1 =
+    holes [ tvarv: TyVarId, tvars: TyVarIdS | | ]
+    judgespec tvarv `elem` tvars
+
 relation notElemTyVarIdS =
-  view I2 =
+  view I1 =
     holes [ tvarv: TyVarId, tvars: TyVarIdS | | ]
     judgespec tvarv `notElem` tvars
 
@@ -2425,15 +2464,62 @@ relation properLetPat =
 
 relation tyQuantify =
   view HM =
-    holes [ tyexpr: TyExpr, ty: Ty, wtvars: TyVarIdS | | ty.q: Ty ]
-    judgespec tyexpr : ty.q === ty, wtvars
-    judgeuse tex ty.q === forall ^ (ftv(ty)) (.) ty
-    judgeuse ag (retain ty.q) `=` tyQuantify (`elem` (map tyVar (wtvars))) ty
+    holes [ ty: Ty, gtvars: TyVarIdS | | ty.q: Ty ]
+    judgespec gtvars :- ty : ty.q
+    -- judgeuse tex ty.q === forall ^ (ftv(ty)) (.) ty
+    judgeuse tex ty.q === forall ^ (ftv(ty) \\ (gtvars)) `.` ty
+    judgeuse ag (retain ty.q) `=` tyQuantify (`elem` (gtvars)) ty
+{-
   view I1 =
-    holes [ gtvars: TyVarIdS | | ]
-    judgespec tyexpr : ty.q === ty, wtvars, gtvars
-    judgeuse tex ty.q === forall ^ (ftv(ty) \\ (wtvars,gtvars)) (.) ty
-    judgeuse ag (retain ty.q) `=` tyQuantify (`elem` (map tyVar (wtvars) ++ (gtvars))) (ty)
+    judgeuse tex ty.q === forall ^ (ftv(ty) \\ (gtvars)) `.` ty
+-}
+
+scheme tyqu =
+  view I1 =
+    holes [ node ty: Ty, tvars.g: TyVarIdS, coco: CoCo | | ty.q: Ty, tvars.f: TyVarIdS ]
+    judgespec tvars.g; coco :-.."Qu" ty : ty.q ~> tvars.f
+
+ruleset tyqu.base scheme tyqu viewsel I1 - * "Type quantification rules" =
+  rule ty.qu.var =
+    view I1 =
+      judge B : notElemTyVarIdS = tvarv `notElem` tvars.g
+      judge Q : quForCoCo = tQu === coco
+      -
+      judge R : tyqu = tvars.g; coco :- tvarv : (tQu tvarv `.` tvarv) ~> ([tvarv])
+
+  rule ty.qu.arrow =
+    view I1 =
+      judge V : elemTyVarIdS = tvarv `elem` ((tvarv.a.f._ `intersect` tvarv.r.f._) \\ tvars.g)
+      judge Arg : tyqu = (tvarv + tvars.g); cocoY :- ty.a : ty.a.q ~> tvarv.a.f._
+      judge Res : tyqu = (tvarv + tvars.g); cocoN :- ty.r : ty.r.q ~> tvarv.r.f._
+      -
+      judge R : tyqu = tvars.g; _ :- (ty.a -> ty.r) : (forall ^ tvarv `.` ty.a.q -> ty.r.q) ~> (tvarv.a.f._ `union` tvarv.r.f._)
+      
+  rule ty.qu.prod =
+    view I1 =
+      judge V : elemTyVarIdS = tvarv `elem` ((tvarv.l.f._ `intersect` tvarv.r.f._) \\ tvars.g)
+      judge T1 : tyqu = (tvarv + tvars.g); cocoY :- ty.l : ty.l.q ~> tvarv.l.f._
+      judge T2 : tyqu = (tvarv + tvars.g); cocoY :- ty.r : ty.r.q ~> tvarv.r.f._
+      -
+      judge R : tyqu = tvars.g; _ :- ((ty.l, ty.r)) : (exists ^ tvarv `.` (ty.l.q, ty.r.q)) ~> (tvarv.l.f._ `union` tvarv.r.f._)
+      
+  rule ty.qu.app viewsel DT - * =
+    view DT =
+      judge V : elemTyVarIdS = tvarv `elem` ((tvarv.f.f._ `intersect` tvarv.a.f._) \\ tvars.g)
+      judge F : tyqu = (tvarv + tvars.g); cocoNo :- ty.f : ty.f.q ~> tvarv.f.f._
+      judge A : tyqu = (tvarv + tvars.g); cocoNo :- ty.a: ty.a.q ~> tvarv.a.f._
+      judge Q : quForCoCo = tQu === coco
+      judge C : elemCoCoS = coco `elem` ([cocoY,cocoN])
+      -
+      judge R : tyqu = tvars.g; coco :- (ty.f ^^ ty.a) : (tQu tvarv `.` (ty.f.q ^^ ty.a.q)) ~> (tvarv.f.f._ `union` tvarv.a.f._)
+      
+  rule ty.qu.quant =
+    view I1 =
+      judge V : notElemTyVarIdS = tvarv `notElem` tvars.g
+      judge T : tyqu = (tvarv + tvars.g); coco :- ty : ty..q ~> tvarv..f._
+      -
+      judge R : tyqu = tvars.g; coco :- (Qu tvarv `.` ty) : (Qu tvarv `.` ty..q) ~> (tvarv..f._ \\ [tvarv])
+      
 
 -------------------------------------------------------------------------
 -- Quantification of gamma

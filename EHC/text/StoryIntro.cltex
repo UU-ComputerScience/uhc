@@ -1,9 +1,11 @@
 %%[introPHD
-This thesis is about the programming language Haskell.
-It is about how to describe its implementation in such a way that we can be sure that the description
-is consistent with the implementation.
-The thesis is also about a stepwise approach to both description and implementation,
-which starts with a simple version of Haskell and then, step by step, extends this simple version towards
+This thesis is about describing an implementation of the programming language Haskell.
+It is about how to describe and implement in such a way that we can be sure that description
+and implementation are mutually consistent.
+The thesis is also about making description and implementation understandable,
+so that it can be used as a means for education and (Haskell) programming language research.
+In this thesis we take a stepwise approach to both description and implementation,
+which starts with a simple version of Haskell and then, step by step, we extend this simple version towards
 an extended version of Haskell.
 
 The reason to set out on this journey lies in the observation that Haskell
@@ -24,15 +26,159 @@ usually expresses itself in a theoretical setting,
 with a focus on the proof of formal properties.
 Experimentation takes place in a practical setting as well, but often it is not at all obvious how
 theory and practice of an experiment relate.
-We feel that a description of Haskell which focusses on formal aspects, the implementation,
+We feel that a description of a Haskell implementation
+which focusses on a joint presentation of the implementation
+and its formal representation (by means of type rules),
 and their mutual consistency, helps to bridge the gap between theory and practice.
 
-The complexities of Haskell and its interaction with experimental features is something that can not be avoided;
-even more, it is a design goal of Haskell.
-What can be done is making the complexity manageable by looking at features individually while not loosing
+The complexities of Haskell and its interaction with experimental features cannot be avoided;
+even more, it is a design goal of Haskell to be a platform for experimentation.
+Some of those experiments turn into useful language features,
+contributing to complexity in the form of feature richness and interaction with other features.
+The complexity can be made more manageable by looking at features individually,
+while not loosing
 sight of the context with which such a feature has to coexist.
 This thesis aims at walking somewhere between this complexity and simplicity by describing
-features individually as separate aspects of a more complex whole.
+features individually as separate aspects of a more complex whole,
+constructed as a sequence of languages.
+
+In the remainder of this chapter we first give an overview of our goals,
+the overall organisation of the road to their realisation,
+and the organisation of this thesis.
+The remainder of the introduction takes the reader on a short tour through
+the languages for which this thesis describes the compilers.
+
+\subsection{Overview}
+
+\Paragraph{Holy and less holy grails}
+\label{sec-intro-holygrail}
+The holy grail of the EHC project \cite{dijkstra04ehc-web}, described by this thesis,
+is to create the following:
+
+\begin{itemize}
+\item
+A compiler for Haskell plus extensions.
+The goal is a compiler that can be used, and is not `just' a toy.
+\item
+A description of the compiler.
+The goal is to offer understanding of the implementation,
+so it can be used for learning, be a basis for experimentation,
+and be a bridge between (type) theory and practice.
+\end{itemize}
+
+Being a true holy grail,
+we do not expect to achieve this overnight.
+However, our inspiration comes from \TeX,
+for which documented source code constitutes a stable point of reference \cite{knuth86tex-program}.
+
+On a less ambitious scale,
+this thesis can be read with the following, somewhat overlapping,
+viewpoints on this thesis in mind;
+each viewpoint comes with its own goal and design starting point:
+
+\begin{itemize}
+\item
+The thesis offers an explanation of the implementation of a Hindley-Milner type system
+(\chapterRef{ehc1} through \chapterRef{ehc3}).
+The explanation is expressed and explained in terms of type rules,
+Attribute Grammar implementation for those type rules,
+and additional infrastructure (encoded in Haskell) to complete it to a full compiler.
+\item
+The thesis offers experiments in the combination of explicitly specified type information (by the programmer),
+and implicitly inferred type information (by the system) (\chapterRef{ehc4} through \chapterRef{ehc-partial-sig-quant-guess}).
+The design starting point here is to let programmer and system jointly specify a program,
+instead of the programmer fighting the system's limitations.
+This starting point is inspired by the observation that pure type inference systems hinder a programmer,
+because such a system does not allow the programmer to specify what the system cannot infer.
+\item
+The thesis offers an experiment in the description of a compiler,
+the required mechanisms to do such a job, and the tools to implement those mechanisms
+(\secRef{secAGTut}, \chapterRef{ruler}, and other tools).
+The design starting point is to partition the whole system into a sequence of steps,
+each representing a standalone language and implementation.
+Each step extends a previous step by adding one or more features.
+All our tools therefore need to some degree be aware of the notion of separate steps 
+(or views, versions).
+\item
+The thesis offers an experiment in creating a maintainable and explainable compiler.
+The design starting point is that these aspects are best served by consistency,
+and consistency between artefacts is best implemented by avoiding the inconsistency created
+by duplication of shared material in the first place.
+The code presented in the thesis and used for the construction of individual compiler are
+generated from common source code
+(\appRef{appx-shuffle}).
+The same holds for (the major part of) the type rules and their Attribute Grammar implementation
+(\chapterRef{ruler}).
+\end{itemize}
+
+\Paragraph{Thesis overview}
+We assume the reader is familiar with Haskell.
+We do not assume familiarity with the Attribute Grammar system (AG) used throughout
+this thesis.
+An AG tutorial is included (\chapterRef{agtut}),
+but can safely be skipped if the reader is already familiar with the AG system
+(see \figRef{fig-roadmap}).
+For the remainder of this thesis we assume familiarity with type systems;
+we informally introduce the necessary concepts,
+but, as we focus on their implementation the formalities of type systems are not discussed
+in this thesis.
+
+\FigureXFigTex{roadmap}{Thesis roadmap}{fig-roadmap}
+
+\chapterRef{ehc1} through \chapterRef{ehc4C} are to be read in the proper order,
+as they describe development steps of the first four of our series of compilers.
+\chapterRef{ehc4B} has a more experimental character as it is not (yet) integrated into the
+last compiler version,
+so this part can be skipped.
+\chapterRef{ehc-partial-sig-quant-guess} describes we can make the specification of type signature easier;
+this subject is relatively independent of the previous chapters.
+\chapterRef{ehc9} and \chapterRef{ruler} can be read in isolation,
+as these chapters are based on (submitted) articles.
+
+Throughout the description of the series of compilers we gradually shift from AG based
+explanation to type rule based explanation combined with examples.
+The code which implements those type rules is still referred to from the main text.
+For the paper version of this thesis we refer to the electronic version;
+for the electronic version we refer to the proper appendix with a margin reference
+(like here \chunkHideRef{impl.gamAsList}).
+We will come back to this in our conclusion (\chapterRef{ehcConcl}).
+
+\Paragraph{System overview}
+The core of this thesis consists of a sequence of compilers, together named the Essential Haskell project,
+abbreviated by EH.
+The construction of these compilers and this thesis is accomplished by the use of several tools
+(\figRef{system-fig-overview}):
+
+\FigurePDF{system-overview}{System overview}{system-fig-overview}
+
+\begin{itemize}
+\item
+Fragment administration and combination (of source text)
+is managed by a tool called |Shuffle| (\appRef{appx-shuffle}).
+|Shuffle| has the same responsibility as weaving and tangling in literate programming \cite{www05litprog},
+but allows a more flexible recombination of source fragments.
+\item
+The |Ruler| system (\chapterRef{ruler}) generates a visual rendering for inclusion in this thesis,
+and an AG implementation.
+\item
+The specification of the (remaining parts of the) implementation is expressed by an Attribute Grammar (AG) and
+Haskell.
+\end{itemize}
+
+The partitioning into multiple steps, called \IxAsDef{views} in the remainder of this thesis,
+influences the used tools.
+A view extends another view by adding new material or replacing old material.
+Either a tool manages views itself, or is unaware of views.
+For example, the |Ruler| system manages named views on type rules.
+However, Haskell compilers are not aware of our idea of views,
+so |Shuffle| takes care of properly generating source code for views.
+
+\Paragraph{EH project status}
+...
+
+Missing parts: data types, kind inference, records
+
+GRIN \cite{boquist99phd-optim-lazy,boquist96grin-optim}
 %%]
 
 %%[goal
@@ -102,8 +248,6 @@ this part is not incorporated in the main story line.
 \chapterRef{ehc9} and \chapterRef{ruler} are derived from submitted papers and can be read
 independently.
 \end{itemize}
-
-\FigureXFigTex{roadmap}{Roadmap to \thispaper}{fig-roadmap}
 
 appendices: not incorporated fragments (or as pdf overlay, or html?), shuffle doc
 
@@ -290,7 +434,7 @@ The first version of our series of compilers therefore accepts a language that m
 and some basic types and type constructors such as |Int|, |Char| and tuples
 (see \appRef{appx-legenda-termlang} for all terms used throughout \thispaper).
 
-\paragraph{EH version 1: |lambda|-calculus.}
+\Paragraph{EH version 1: |lambda|-calculus}
 An EH program is a single expression, contrary to a Haskell program which consists of a set of declarations forming a module.
 
 \begin{code}
@@ -320,7 +464,7 @@ Functions accept one parameter only, which can be a pattern.
 All types are monomorphic.
 
 %if incl02
-\paragraph{EH version 2: Explicit/implicit typing.}
+\Paragraph{EH version 2: Explicit/implicit typing}
 The next version
 (EH version 2, \chapterRef{ehc2})
 no longer requires the explicit type specifications, which thus may have to be inferred by the compiler.
@@ -346,7 +490,7 @@ is inferred to have the type |id :: %%2file(test/2-demo1.eh%%)|.
 
 %if incl03
 
-\paragraph{EH version 3: Polymorphism.}
+\Paragraph{EH version 3: Polymorphism}
 The third version
 (EH version 3, \chapterRef{ehc3})
 performs standard
@@ -372,7 +516,7 @@ The type signature is checked against the inferred type.
 %endif %% incl03
 
 %if incl04 || storyEHIntro
-\paragraph{EH version 4: Higher ranked types.}
+\Paragraph{EH version 4: Higher ranked types}
 Standard Hindley-Milner type inferencing cannot infer polymorphic parameters:
 so-called rank-2 polymorphism.
 In general, this is a hard thing to do and even impossible for rank-3 (and higher) types
@@ -438,7 +582,7 @@ The explicit |exists| may also be omitted, for example
 
 %if incl05 || (storyEHIntro && not storyVariantETAPSLinks)
 
-\paragraph{EH version 5: Data types.}
+\Paragraph{EH version 5: Data types}
 The fifth version (EH version 5, \chapterRef{ehc5})
 adds |data| types and opening/unpacking/scrutinizing
 a data type value by means of a |case| expression.
@@ -450,7 +594,7 @@ a data type value by means of a |case| expression.
 
 %if incl06 || storyEHIntro
 
-\paragraph{EH version 6: Kinding.}
+\Paragraph{EH version 6: Kinding}
 The previous version allows incorrect programs because
 data types can be used incorrectly:
 \begin{code}

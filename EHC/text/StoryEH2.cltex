@@ -419,7 +419,7 @@ The value is used to return a type of an expression, for example in \ruleRef{e.v
 We apply known constraints to the type extracted from |Gamma =@= valGam|.
 \end{itemize}
 
-\paragraph{Variable occurrences |Var|.}
+\Paragraph{Variable occurrences |Var|}
 This is illustrated by the AG code for \ruleRef{e.var} in which |lhs.tyCnstr| is applied to both the expected type |knTy|
 and the type |ty_g_| extracted from |valGam|:
 
@@ -427,7 +427,7 @@ and the type |ty_g_| extracted from |valGam|:
 
 Newly found constraints (from |<= =@= fitsIn|) are combined with the already known constraints (|lhs.tyCnstr|).
 
-\paragraph{Tuples.}
+\Paragraph{Tuples}
 The construction of tuples is handled by the combination of \ruleRef{e.con} and \ruleRef{e.app}.
 It is now the responsibility of \ruleRef{e.con} to return the proper function type for constructing a tuple.
 In the previous version we could use the expected type, which was guaranteed to be available in |knTy|.

@@ -10,7 +10,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 1.Let
-%%[4_99.Let
+%%[5.Let
 SEM Expr
   | Let         decls       .   patValGam           =   gamPushGam @decls.gathTySigGam @lhs.valGam
                 loc         .   (valGam_l_,valGam_g_)
@@ -20,14 +20,14 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.Let
-%%[4_99.Let
+%%[5.Let
 SEM Expr
   | Let         decls       .   patTyCnstr          =   @lhs.tyCnstr
                             .   tyCnstr             =   @decls.patTyCnstr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.Let
-%%[4_99.Let
+%%[5.Let
 SEM Expr
   | Let         loc         .   lSubsValGam_        =   @decls.tyCnstr |=> @valGam_l_
                             .   gSubsValGam_        =   @decls.tyCnstr |=> @valGam_g_
@@ -37,7 +37,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.Let
-%%[4_99.Let
+%%[5.Let
 SEM Expr
   | Let         decls       .   patValGam           :=  gamPushGam  (valGamInst1Exists @lUniq @decls.gathTySigGam)
                                                                     @lhs.valGam
@@ -54,7 +54,8 @@ valElimExprAlts fio fe globTvL u c g
          c'' = cnstrDelAlphaRename c'
 %%]
 
-%%[4_2
+-- generated from ruler rules into EHRulerRules, was 4_2.Let
+%%[99.Let
 SEM Expr
   | Let         decls       .   tySigTyCnstr        =   emptyCnstr
                 loc         .   (_,lExSigTyCnstr)   =   valGamInst1ExistsWithCnstr @decls.tySigTyCnstr @lUniq @decls.gathTySigGam
@@ -93,25 +94,25 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 1.tyInstKnown
-%%[4_99.tyInstKnown
+%%[5.tyInstKnown
 SEM Decl
   | Val         loc         .   knTy                =   @ty_sig_
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.tyInstKnown
-%%[4_99.tyInstKnown
+%%[5.tyInstKnown
 SEM Decl
   | Val         expr        .   knTy                =   if @hasTySig then @knTy else @patExpr.ty
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.tyInstKnown
-%%[4_99.tyInstKnown
+%%[5.tyInstKnown
 SEM Decl
   | Val         loc         .   knTy                :=  tyInstKnown @lUniq @ty_sig_
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.tyInstKnown
-%%[4_99.tyInstKnown
+%%[5.tyInstKnown
 SEM Decl
   | Val         loc         .   knTy                :=  @ty_sig_
 %%]
@@ -193,7 +194,7 @@ ATTR AllDecl [ | patValGam: ValGam | ]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.patValGam.Val
-%%[4_99.patValGam.Val
+%%[5.patValGam.Val
 SEM Decl
   | Val         patExpr     .   valGam              =   @lhs.patValGam
                 lhs         .   patValGam           =   @patExpr.valGam
@@ -208,7 +209,7 @@ SEM AGItf
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.tyCnstr.Val
-%%[4_99.tyCnstr.Val
+%%[5.tyCnstr.Val
 SEM Decl
   | Val         patExpr     .   tyCnstr             =   @lhs.patTyCnstr
                 lhs         .   patTyCnstr          =   @patExpr.tyCnstr
@@ -222,14 +223,15 @@ SEM AGItf
   | AGItf       expr        .   imprTyCnstr         =   emptyCnstr
 %%]
 
-%%[4_2
-SEM AGItf
-  | AGItf       expr        .   tyCnstr             :=  emptyCnstr
-
+-- generated from ruler rules into EHRulerRules, was 4_2.Val
+%%[99.Val
 SEM Decl
   | Val         loc         .   imprFO              =   fitsIn impredFIOpts @fe uidStart (@expr.imprTyCnstr |=> @patExpr.ty) @expr.imprTy
                 lhs         .   imprTyCnstr         =   foCnstr @imprFO |=> @expr.imprTyCnstr
 %%]
+SEM AGItf
+  | AGItf       expr        .   tyCnstr             :=  emptyCnstr
+
 SEM AGItf
   | AGItf       loc         .   (exprTyCnstr1,ambTvS)
                                                     =   cnstrElimForgetAlts @expr.imprTyCnstr
@@ -284,7 +286,7 @@ ATTR AllDecl [ | tyGam: TyGam | ]
 ATTR AllExpr [ tyGam: TyGam | | ]
 %%]
 
-%%[1
+%%[3
 SEM Decl
   | TySig       lhs         .   tyGam               =   @lhs.tyGam
 %%]
@@ -443,7 +445,7 @@ ATTR AllDecl [ | | gathTySigGam USE {`gamAddGam`} {emptyGam}: ValGam ]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.gamSigTyGath
-%%[4.gamSigTyGath
+%%[5.gamSigTyGath
 SEM Decl
   | TySig       loc         .   gamSigTy            =   @tyExpr.ty
                             .   gathTySigGam        =   @nm `gamUnit` ValGamInfo @gamSigTy
@@ -456,13 +458,13 @@ ATTR AllDecl [ tySigGam: ValGam | | ]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.tySigGam.TysigLet
-%%[4_99.tySigGam.TysigLet
+%%[5.tySigGam.TysigLet
 SEM Expr
   | Let         decls       .   tySigGam            =   @decls.gathTySigGam
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.tySigGam.Val
-%%[4_99.tySigGam.Val
+%%[5.tySigGam.Val
 SEM Decl
   | Val         loc         .   (ty_sig_,hasTySig)  =   case @patExpr.mbTopNm of
                                                           Nothing
@@ -474,7 +476,7 @@ SEM Decl
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.TySig
-%%[4_99.TySig
+%%[5.TySig
 SEM Decl
   | TySig       loc         .   ty_sig_             =   tyQuantify (`elem` @tyExpr.tyVarWildL) @tyExpr.ty
                             .   gamSigTy            :=  @ty_sig_
@@ -482,12 +484,18 @@ SEM Decl
 
 %%[4_2
 ATTR AllDecl [ | tySigTyCnstr: Cnstr | ]
+%%]
 
+-- generated from ruler rules into EHRulerRules, was 4_2.TySig
+%%[99
 SEM Decl
   | TySig       loc         .   (gamSigTy,gamSigCnstr)
                                                     :=  tyAsCnstr @lUniq @ty_sig_
                 lhs         .   tySigTyCnstr        =   @gamSigCnstr |=> @lhs.tySigTyCnstr
+%%]
 
+-- generated from ruler rules into EHRulerRules, was 4_2.Let.tySigGam
+%%[99.Let.tySigGam
 SEM Expr
   | Let         decls       .   tySigGam            :=  @decls.tySigTyCnstr |=> @decls.gathTySigGam
 %%]
@@ -662,7 +670,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.App
-%%[4_99.fiOpts.init
+%%[5.fiOpts.init
 SEM Decl
   | Val         expr        .  fiOpts               =   strongFIOpts
                 patExpr     .  fiOpts               =   strongFIOpts

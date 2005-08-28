@@ -259,7 +259,12 @@
 %format fioBindLBeforeRN	= fioBindLBeforeR "^{-}"
 %format fioDontBind		= fioptBase "_{bv}"
 
-%format coco        	= "\mathcal{V}"
+%format CoCo        	= "\mathcal{V}"
+%format coco        	= CoCo
+%format cocov	     	= coco
+%format cocoY			= coco "^{+}"
+%format cocoN			= coco "^{-}"
+%format cocoNo			= coco "^{.}"
 %format cocovar     	= coco
 
 %format CoVrCoOpp       = "\neg "

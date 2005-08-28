@@ -71,20 +71,6 @@ SEM PatExpr
 
 -- generated from ruler rules into EHRulerRules, but only until here
 %%[4_99
-SEM Expr
-  | Let             (decls.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
-                                                                    =   mkNewLevUID4    @lhs.gUniq
-
-SEM Decl
-  | Val             (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
-
-SEM Expr
-  | TypeAs          (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
-
-SEM TyExpr
-  | Wild            (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
-  | Var VarWild     (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
-  | Quant           (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
 %%]
 
 -- generated from ruler rules into EHRulerRules
@@ -103,25 +89,24 @@ SEM PatExpr
 
 -- generated from ruler rules into EHRulerRules, was 4_2
 SEM Expr
+  | Let             (decls.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
+                                                                    =   mkNewLevUID4    @lhs.gUniq
   | Lam             (arg.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)     :=  mkNewLevUID3    @lhs.gUniq
-  | App AppImpred
-                    (func.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
+  | App AppImpred   (func.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
                                                                     :=  mkNewLevUID4    @lhs.gUniq
+  | TypeAs          (tyExpr.gUniq,loc.lUniq,loc.lUniq2)             :=  mkNewLevUID2    @lhs.gUniq
 
 %%[4_2
 SEM AGItf
   | AGItf           (expr.gUniq,loc.lUniq)                          :=  mkNewLevUID     uidStart
-
-SEM Expr
-  | TypeAs          (tyExpr.gUniq,loc.lUniq,loc.lUniq2)             :=  mkNewLevUID2    @lhs.gUniq
-
-SEM Decl
-  | TySig           (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
 %%]
 
 -- generated from ruler rules into EHRulerRules, but only until here
 %%[5
 SEM Expr
+  | Let             (decls.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
+                                                                    =   mkNewLevUID4    @lhs.gUniq
+  | TypeAs          (tyExpr.gUniq,loc.lUniq,loc.lUniq2)             :=  mkNewLevUID2    @lhs.gUniq
   | Lam             (arg.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
   | App AppImpred   (func.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
   | AppTop          (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
@@ -132,7 +117,16 @@ SEM PatExpr
   | AppTop          (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
   | Con             (lhs.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
   | TypeAs          (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
-  
+
+SEM TyExpr
+  | Wild            (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+  | Var VarWild     (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
+  | Quant           (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
+
+SEM Decl
+  | Val             (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
+  | TySig           (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
+
 %%]
 
 %%[5

@@ -3,7 +3,7 @@ This version of EH adds explicit types with quantifiers at all positions in a ty
 existential quantification and an interpretation of unquantified types to
 quantified types.
 
-\paragraph{Higher ranked explicit polymorphism.}
+\Paragraph{Higher ranked explicit polymorphism}
 For example in
 \begin{code}
 %%4srcfile(test/3-demo-rank.eh%%)
@@ -36,7 +36,7 @@ not throw away any type information about higher-ranked quantifiers defined via 
 No attempt is made to be smart in reconstructing higher-ranked types, only smartness is
 implemented by not forgetting higher-ranked type information.
 
-\paragraph{Existentially quantified types.}
+\Paragraph{Existentially quantified types}
 Quantifiers on higher-ranked positions are also necessary to make existential types useful
 
 \begin{code}
@@ -58,7 +58,7 @@ This constraint is not upheld for |pq|, so an error is produced:
 %%4ppfile(test/4-demo1.eh%%)
 \end{TT}
 
-\paragraph{Opening an existentially quantified type.}
+\Paragraph{Opening an existentially quantified type}
 The inverse of existential quantification of a type variable is often called `opening'.
 It means that we get to know the original type.
 This of course cannot \TBD{(???? type carrying code, analysis, etc)} be done
@@ -108,7 +108,7 @@ language construct for opening is necessary.
 More about this in \TBD{[literature ...]}.
 %endif
 
-\paragraph{Guessing locations for quantifiers.}
+\Paragraph{Guessing locations for quantifiers}
 Quantifiers need not always be specified.
 For example in
 
@@ -144,7 +144,7 @@ For the given example the following will be concluded
 Note that an explicit type is needed to hide type information (as for |xy|),
 but is not required to pass it to a function expecting an existential.
 
-\paragraph{Outline of the rest.}
+\Paragraph{Outline of the rest}
 First we will look at the type structure (\secRef{ehc4-type-lang}).
 The |fitsIn| function will have to be redesigned almost completely (\secRef{ehc4-fitsin}),
 partly because of the presence of quantifiers everywhere,
@@ -191,7 +191,7 @@ Next we will look at the implementation.
 
 \subsubsection{Issues}
 
-\paragraph{|<=| is a partial ordering.}
+\Paragraph{|<=| is a partial ordering}
 With the presence of quantifiers during type inferencing,
 the function |fitsIn|, implementating the so called \IxAsDef{subsumption}
 relation |<=| between types, now
@@ -232,7 +232,7 @@ Or, in other words, first we choose some type for |a|, then we forget this choic
 Let us look at some other examples to get a better idea of what |fitsIn =@= <=|
 has to deal with.
 
-\paragraph{Impredicativeness.}
+\Paragraph{Impredicativeness}
 The following example (from Botlan \cite{botlan03ml-power-f})
 
 \label{ehc4-choose}
@@ -277,7 +277,7 @@ The latter is what we do except in situations where it would break Haskell's cho
 thereby still inferring types in a standard Hindley-Milner way but
 using |fitsIn =@= <=| to allow richer types still to match properly.
 
-\paragraph{Subsumption |<=| needs to instantiate types.}
+\Paragraph{Subsumption |<=| needs to instantiate types}
 These examples also demonstrate that |fitsIn| needs to instantiate types.
 In the previous version of EH all types partaking in the inference process
 were expected to be fully instantiated.
@@ -288,7 +288,7 @@ at the latest moment possible.
 This latest moment is the place where a type
 really is compared with another one, in |fitsIn|.
 
-\paragraph{Subsumption |<=| depends on context.}
+\Paragraph{Subsumption |<=| depends on context}
 |fitsIn| is used as a tool to enforce the |<=| relation between types.
 It is used to check the type of an actual parameter with its expected one,
 as in the previous example for |choose| (\pageRef{ehc4-choose}).
@@ -388,7 +388,7 @@ Finally, all of this is encoded as follows
 \chunkCmdUseMark{EHCommon.4.FIOpts.instLFIOpts}
 \chunkCmdUseMark{EHCommon.4.FIOpts.instFIOpts}
 
-\paragraph{Co- and contravariance.}
+\Paragraph{Co- and contravariance}
 For tuples the check |(sigma1,sigma2) <= (sigma3,sigma4)|
 will break down into |sigma1 <= sigma3| and |sigma2 <= sigma4|
 because conceptually a tuple value can be put into
@@ -440,7 +440,7 @@ in which the same notation is used for the alternatives of |CoContraVariance|.
 
 \subsubsection{Implementation}
 
-\paragraph{Typing rules.}
+\Paragraph{Typing rules}
 Let us look more precisely at |<=| which we now also will
 describe with rules,
 in \figRef{rules.fit4.quant} and \figRef{rules.fit4.app}.
@@ -497,7 +497,7 @@ In that case we also are not interested in any found constraints
 concerning the fresh type variables, so these are removed.
 \end{itemize}
 
-\paragraph{Co- and contravariance.}
+\Paragraph{Co- and contravariance}
 The encoding of co- and contravariance behavior is solved a bit more general then really
 is required at this point. The idea is that for a type application |tcon a b ...|
 the |tcon| determines how the fitting of its arguments should be done.
@@ -519,7 +519,7 @@ later on (not included in \thispaper).
 in \chapterRef{ehc5}.
 %endif
 
-\paragraph{|fitsIn| parameters and result.}
+\Paragraph{|fitsIn| parameters and result}
 So, let us know finally look at the implementation of |<=|,
 and redo the implementation of |fitsIn|.
 First, |fitsIn| needs to pass information both up and downwards.
@@ -552,7 +552,7 @@ In this version |FIEnv| acts as a placeholder for use in later versions.
 The intention of a |FIEnv| is to pass environmental information needed by |fitsIn|,
 usually stored in |Gamma|'s throughout the type rules and attribute grammar implementation.
 
-\paragraph{The fitting.}
+\Paragraph{The fitting}
 The preliminaries of |fitsIn| have not changed much compared to
 the previous version (\pageRef{EHTyFitsIn.2.fitsIn.Base}).
 All internally defined functions now take an additional top-down |fi :: FIIn|

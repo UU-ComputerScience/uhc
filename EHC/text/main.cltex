@@ -552,17 +552,6 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Obsolete config
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%if style == newcode
-%format ^^.
-%else
-\newcommand*{\many}[2][norm]{\csname #1l\endcsname\{#2\csname #1r\endcsname\}}
-\MakeResizable\many
-%endif
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Title
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -844,15 +833,6 @@ Combinator & Meaning & Result
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Inside cover pages
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[12
-\vfill
-\FigPDF{ipalogo}
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% TOC
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -872,25 +852,75 @@ Combinator & Meaning & Result
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Acknowledgement
+%%% Preface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2
-\section*{Acknowledgement}
+\cleardoublepage
+\markboth{Preface}{Preface}%
+\AddContentsLine{Preface}
+\subsection*{Preface}
+
+This thesis represents a snapshot of the description of an ongoing project, the EHC project
+\cite{dijkstra04ehc-web}.
+Although this thesis is self-contained,
+some material is not included:
+\begin{itemize}
+\item
+Some, but not all, code has been included.
+Some of the omitted code has been included in electronic versions of this thesis,
+the full source code can be downloaded \cite{dijkstra04ehc-web}.
+\item
+As a result of our experience with Attribute Grammar based descriptions we are in the process
+of moving the description of the type rule related part of our
+implementation to a higher level, type rule based specification
+(\chapterRef{ruler}).
+This has been completed upto EH version 4 (\chapterRef{ehc1} through \chapterRef{ehc4C}).
+\item
+...
+\end{itemize}
+
+Parts of this thesis have been published in an earlier version
+or submitted to a conference\footnote{Acceptance will be known when this thesis goes to print.}
+in a different form: \chapterRef{secIntro} through \chapterRef{ehc3} are updated from
+an AFP (Advanced Functional Programming) tutorial 
+\cite{dijkstra04thag}, and \chapterRef{ehc9} and \chapterRef{ruler}
+have been submitted to POPL2006 in a slighty extended form.
+
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Abstract, preface
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1
-
+%%[6
 %if storyAfpTRUU1
 \section*{Preface}
 \subsection*{Type systems for functional languages (abstract)}
 %endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Acknowledgement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2
+\cleardoublepage
+\markboth{Acknowledgements}{Acknowledgements}%
+\AddContentsLine{Acknowledgements}
+\subsection*{Acknowledgements}
+
+% SDS, for ideas, opportunity (institute), stimulation, not despairing
+% PvO, Andres, for TeX and lhs2TeX support
+% OBC teachers, for being content enough to start an endless journey
+% Ineke, for taking care of my mother, otherwise would not have been able to finish ...
+% The ST group, for being a great place to ..., for doing the jobs I should have done were I not making this thesis
+% Anonymous reviewers
+% Gerard
+% Eveline?
 
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abstract
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 %%[1
 
@@ -945,25 +975,34 @@ Combinator & Meaning & Result
 \label{secIntro}
 %%@StoryIntro.introPHD
 
-\subsection{Goal of \thispaper}
-%%@StoryIntro.goal
+%\subsection{Goal of \thispaper}
+ %%@StoryIntro.goal
 
-\subsection{Reading perspectives}
-%%@StoryIntro.readingPerspectives
+%\subsection{Reading perspectives}
+ %%@StoryIntro.readingPerspectives
 
-\subsection{Overview}
-%%@StoryIntro.overview
+%\subsection{Overview}
+ %%@StoryIntro.overview
 
-\subsection{Project status}
-%%@StoryIntro.projectStatus
+%\subsection{Project status}
+ %%@StoryIntro.projectStatus
 
 \subsection{A short EH tour}
 \label{secEHTour}
 %%@StoryIntro.shortTour
 
-\subsection{An AG mini tutorial}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AG tutorial
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2
+\section{Attribute Grammar (AG) system tutorial}
+\label{agtut}
 \label{secAGTut}
-The remaining part of the introduction contains a small tutorial on the AG system.
+This chapter contains a small tutorial on the Attribute Grammar (AG) system
+used to describe the greater part of the implementation of the compilers in this thesis.
 The tutorial explains the basic features of the AG system.
 The explanation of remaining features is postponed to its first use throughout the main text.
 These places are marked with |AGFeature|.
@@ -993,7 +1032,7 @@ The tutorial can safely be skipped if the reader is already familiar with the AG
 
 %if incl01
 
-\section{EH 1: typed |lambda|-calculus}
+\section{EH 1: Typed |lambda|-calculus}
 \label{ehc1}
 
 %%@StoryEH1.eh1
@@ -1010,7 +1049,7 @@ The tutorial can safely be skipped if the reader is already familiar with the AG
 
 %if incl02
 
-\section{EH 2: monomorphic type inferencing}
+\section{EH 2: Monomorphic type inferencing}
 \label{ehc2}
 
 %%@StoryEH2.eh2
@@ -1027,7 +1066,7 @@ The tutorial can safely be skipped if the reader is already familiar with the AG
 
 %if incl03
 
-\section{EH 3: polymorphic type inferencing}
+\section{EH 3: Polymorphic type inferencing}
 \label{ehc3}
 
 %%@TopicHM.inferHM
@@ -1055,7 +1094,7 @@ The tutorial can safely be skipped if the reader is already familiar with the AG
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2
-\section{EH 4: Global impredicativity, or, exploiting type annotations, or, impredicativity inference}
+\section{EH 4: Global impredicativity, or exploiting type annotations}
 \label{ehc4B}
 
 %%@TopicImpred.bodyForallNonLocal
@@ -1067,7 +1106,7 @@ The tutorial can safely be skipped if the reader is already familiar with the AG
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2
-\section{EH 4: |exists|: existential types}
+\section{EH 4: Existential types}
 \label{ehc4C}
 
 %%@TopicImpred.bodyExists
@@ -1078,7 +1117,7 @@ The tutorial can safely be skipped if the reader is already familiar with the AG
 %%% Part II
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2
+%%[10
 %if inclParts
 \part{Structure types}
 %endif
@@ -1088,10 +1127,10 @@ The tutorial can safely be skipped if the reader is already familiar with the AG
 %%% EHC 5
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2
+%%[10
 %if incl05
 
-\section{EH 5: data types}
+\section{EH 5: Data types}
 \label{ehc5}
 
 %if forAfpHandout
@@ -1113,11 +1152,11 @@ This part is not included in this version of \thispaper.
 %%% EHC 6
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2
+%%[10
 
 %if incl06
 
-\section{EH 6: kind inference}
+\section{EH 6: Kind inference}
 \label{ehc6}
 
 %if forAfpHandout
@@ -1135,15 +1174,15 @@ This part is not included in this version of \thispaper.
 
 %%]
 
-%%[2
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 7
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[10
+
 %if incl07
 
-\section{EH 7: non extensible records}
+\section{EH 7: Non extensible records}
 \label{ehc7}
 
 %if storyPHD
@@ -1163,11 +1202,11 @@ This part is not included in this version of \thispaper.
 %%% EHC 8
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2
+%%[10
 
 %if incl08
 
-\section{EH 8: code generation}
+\section{EH 8: Code generation}
 \label{ehc8}
 
 Coercion (of records), related to subsumption
@@ -1204,11 +1243,26 @@ Coercion (of records), related to subsumption
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EHC ??
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2
+
+\section{Partial type signatures}
+\label{ehc-partial-sig-quant-guess}
+
+%%@TopicPartialTySig.body
+
+ %%@OldText.partialTySigAFP
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 9
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2
-\section{EH 9: explicit implicitness, classes}
+\section{Making implicit parameters explicit}
 \label{ehc9}
 
 %%@TopicExplImpl.open
@@ -1226,25 +1280,10 @@ Coercion (of records), related to subsumption
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% EHC ??
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[2
-
-\section{Type specifications: partial type signatures and quantifier location inference}
-\label{ehc-partial-sig-quant-guess}
-
-%%@TopicPartialTySig.body
-
- %%@OldText.partialTySigAFP
-
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 10
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2
+%%[10
 
 %if incl10
 
@@ -1474,21 +1513,27 @@ error messaging, line/col position, comment ????
 
 \section{Scratch1}
 
-%%@TopicImpred.bodyForallUpDown
+%%@TopicReflection.phdEvaluation
 
-\section{Scratch2}
+ %%@TopicImpred.bodyForallUpDown
 
-%%@TopicImpred.bodyForallNonLocal
+%\section{Scratch2}
 
-\section{Scratch3}
+ %%@TopicImpred.bodyForallNonLocal
 
-%%@TopicImpred.bodyExists
+%\section{Scratch3}
 
-\section{Scratch4}
+ %%@TopicImpred.bodyExists
 
-\rulerCmdUse{rules3.I1.tyexpr.base}
-\rulerCmdUse{rules3.I1.patexpr.base}
-\rulerCmdUse{rules3.I2.patexpr.base}
+%\section{Scratch4}
+
+ %%@TopicPartialTySig.body
+
+%\section{Scratch5}
+
+%\rulerCmdUse{rules3.I1.tyexpr.base}
+%\rulerCmdUse{rules3.I1.patexpr.base}
+%\rulerCmdUse{rules3.I2.patexpr.base}
 
 
 %\rulerCmdUse{rules3.E.expr.scratch}
@@ -1550,14 +1595,14 @@ error messaging, line/col position, comment ????
 \section{Evaluation and future work}
 \label{ehcConcl}
 
-\subsection{Evaluation}
+%\subsection{Evaluation}
 %%@TopicReflection.phdEvaluation
 
-\subsection{Evaluation from AFP story}
-%%@TopicReflection.afpConclusion
+%\subsection{Evaluation from AFP story}
+ %%@TopicReflection.afpConclusion
 
-\subsection{Future work}
-%%@TopicReflection.phdFutureWork
+%\subsection{Future work}
+ %%@TopicReflection.phdFutureWork
 
 %%]
 
@@ -1573,7 +1618,7 @@ error messaging, line/col position, comment ????
 
 %%[6
 %if inclAck
-\paragraph{Acknowledgements.}
+\Paragraph{Acknowledgements}
 We thank both (anonymous) reviewers for their extremely valuable and helpful comments.
 %endif %% inclAck
 %%]
@@ -1799,13 +1844,14 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 \subsection{Legenda of symbols}
 \label{appx-legenda-notation}
 
-\begin{tabular}{ll}
-Notation & Meaning \\
-\hline
+\begin{tabular}
+%%@AppxNotation.notationTableFormat
+%%@AppxNotation.notationTableHeader
 %%@AppxNotation.notationBasic
 %%@AppxNotation.notationImpredA
 %%@AppxNotation.notationImpredB
 %%@AppxNotation.notationTransl
+%%@AppxNotation.notationCoCo
 %%@AppxNotation.notationExplImpl
 \end{tabular}
 

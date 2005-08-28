@@ -4,7 +4,7 @@ sigma  ::=  Int | Char
        |    sigma -> sigma
 %%]
 
-%%[ehcB
+%%[ehc1B
 sigma  ::=  Int | Char | ^^ -> ^^ | ^^ , ^^ | ^^ ,, ^^ | ^^ ...
        |    sigma ^^ sigma
 %%]
@@ -76,5 +76,13 @@ tvar   ::=  tvarv | tvarf
 %%]
 
 %%[ehc8
+%%]
+
+%%[ehcCoCo
+\hspace{\mathindent}
+\begin{tabular}
+%%@AppxNotation.termTableFormat
+%%@AppxNotation.meetJoinBasic
+\end{tabular}
 %%]
 

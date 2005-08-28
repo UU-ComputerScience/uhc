@@ -13,7 +13,7 @@ with output
 
 \subsection{Choices already made}
 
-\paragraph{Syntax: delimiters.}
+\Paragraph{Syntax: delimiters}
 The notation for tuples with parentheses |(...)| is reused, no curly braces are used |{...}|.
 \begin{itemize}
 \item
@@ -31,7 +31,7 @@ Rows themselves are delimited by |(||...||)|, variants by |(<...>)|.
 A row/record is always based on (or an extension of) an empty row/record.
 For a following version allowing extensible records this restriction (obviously) is removed.
 
-\paragraph{Case expression, punning.}
+\Paragraph{Case expression, punning}
 Pattern matching a record is done via case:
 
 \begin{code}
@@ -63,7 +63,7 @@ This design decision causes |v4| and |v5| to produce error messages:
 %%7ppfile(test/7-pun.eh%%)
 \end{TT}
 
-\paragraph{Relation with other proposals.}
+\Paragraph{Relation with other proposals}
 For the rest the proposal by Jones \cite{jones99lightweight-ext-rec} is followed.
 
 This proposal also deviates from TRex (by extending from left to right) and is incompatible

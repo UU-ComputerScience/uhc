@@ -944,6 +944,8 @@ This dictionary is explicitly constructed and passed to |eq|; both the construct
 We must either pass a dictionary for |Eq a => Eq (List a)| to |f| ourselves explicitly or let it happen automatically;
 here in both cases |dEqList| is the only choice possible.
 
+%if not storyPHD
+
 \subsection{Partial type signatures}
 \label{ehc09-partialtysig}
 
@@ -953,102 +955,9 @@ types become large and only a specific part of the type needs to be specified
 explicitly. EH therefore allows partial type signatures.
 We will show its use based on the function:
 
-\begin{code}
-f = \p q r s -> (eq p q, eq r s)
-\end{code}
+%%@TopicPartialTySig.explImplExample
 
-for which we infer the following type if no specification of its type is given:
-
-\begin{code}
-f :: forall a   .    Eq a            => a -> a -> forall b . Eq b => b -> b -> (Bool,Bool)
-\end{code}
-
-\textbf{Variation 1:}
-Now, if we want to make clear that the dictionary for |b| should be passed before any of the |a|'s we write:
-
-\begin{code}
-f :: forall    b . (Eq b,  ...   ) => ...  -> ...  -> b -> b -> ...
--- INFERRED:
-f :: forall a  b . (Eq b,  Eq a  ) => a    -> a    -> b -> b -> (Bool,Bool)
-\end{code}
-
-The parts indicated by `|...|' are inferred.
-
-\textbf{Variation 2:}
-The dots `|...|' in the type signature specify parts of the signature to
-be filled by the type inferencer.
-The inferred type may be polymorphic if no restrictions on its type are found by the type inferencer,
-or it may be monomorphic as for |r :: Int| in:
-
-\begin{code}
-f  ::  forall a   . (  Eq a,  ...   )  =>     a ->  a ->  ...
-f  =                                       \  p     q     r       s               ->  (eq p q  ,  eq r 3  )
--- INFERRED:
-f  ::  forall a   .    Eq a            =>     a ->  a ->  Int ->  forall b . b    ->  (Bool    ,  Bool    )
-\end{code}
-
-\textbf{Variation 3:}
-%if False
-f  ::  forall a   .    Eq a            =>     a ->  a ->  Int ->  (exists b . b)  ->  (Bool    ,  Bool    )
-For |s| any value can be passed; this is encoded by the existential quantification.
-The introduction of the existential quantifier is the result of the a quantifier insertion rule which states
-that for a single type variable on a contravariant position an |exists| is inserted.
 %endif
-If instead we still want |s| to have the same type as |r| we can use a more general variant of `|...|' in which
-we can refer to the inferred type using a type variable prefixed with a percent symbol '|%|',
-called a \IxAsDef{named wildcard}:
-
-\begin{code}
-f  ::  forall a   . (  Eq a,  ...   )  =>     a ->  a ->  %b   ->  %b              ->  ...
-f  =                                       \  p     q     r        s               ->  (eq p q  ,  eq r 3  )
--- INFERRED:
-f  ::  forall a   .    Eq a            =>     a ->  a ->  Int  ->  Int             ->  (Bool    ,  Bool    )
-\end{code}
-
-For the remainder of \thischapt\ we mainly use `|...|', called a \IxAsDef{type wildcard},
-or \IxAsDef{predicate wildcard}
-in predicate positions.
-Although the given example suggests that a wildcard may be used anywhere in a type,
-there are some restrictions:
-\begin{itemize}
-\item
-A named wildcard |%a| cannot be used as a predicate wildcard,
-because |%a| then would refer to a set of predicates;
-it does not make much sense to pass this set twice.
-\item
-A type wildcard can occur at an argument or result position of a function type.
-A type wildcard itself may bind to a polymorphic type with predicates.
-In other words, impredicativeness is allowed.
-This is particularly convenient for type wildcards on a function's result position.
-For example, the type wildcard |%b| in
-\begin{code}
-f :: forall a . Eq a => a -> a -> %b
-\end{code}
-is bound to
-\begin{code}
-forall b . Eq b => b -> b -> (Bool,Bool)
-\end{code}
-after further type inferencing.
-\item
-For the non wildcard part of a type signature
-all occurrences of
-a type variable in the final type must be given.
-This is necessary because the type signature will be quantified over explicitly introduced
-type variables.
-\item
-A sequence of explicit predicates may end with a predicate wildcard, standing for
-an optional collection of additional predicates.
-Multiple occurrences of a predicate wildcard or between explicit predicates would defeat the purpose
-of being partially explicit. For example, for the type signature |(Eq b, ..., Eq c) => ...|
-the argument position of |Eq c|'s dictionary cannot be predicted by the programmer.
-\item
-The absence of a predicate wildcard in front of a type
-means \emph{no} predicates are allowed.
-The only exception to this rule is a single type variable
-or a type wildcard,
-since these may be bound to a type which itself
-contains predicates.
-\end{itemize}
 
 \subsection{Implementation}
 \label{ehc09-implem}
@@ -1184,9 +1093,9 @@ more accurately their corresponding predicates.
 These predicate wildcard variables are used in a type inferencing/checking algorithm which explicitly
 deals with expected (or known) types |sigmak|, as well as extra inferred type information.
 
-\begin{TabularFigure}{Legenda of type related notation}{exim-eh-legenda-symbols}{ll}
-Notation & Meaning \\
-\hline
+\begin{TabularFigure}{Legenda of type related notation}{exim-eh-legenda-symbols}
+%%@AppxNotation.notationTableFormat
+%%@AppxNotation.notationTableHeader
 %%@AppxNotation.notationBasic
 %%@AppxNotation.notationTransl
 %%@AppxNotation.notationExplImpl
@@ -1771,7 +1680,7 @@ The underlying idea/rationale is that classes, extensible records can be modelle
 with this mechanism.
 This section contains some fantasy examples as well as choices which can be made.
 
-\paragraph{Syntax.}
+\Paragraph{Syntax}
 On the type level an implicit parameter can be specified with
 
 \begin{code}
@@ -1932,13 +1841,13 @@ Implementation issues:
 \item Proof machinery, cycles, ...
 \end{itemize}
 
-\paragraph{Giving names to rules.}
+\Paragraph{Giving names to rules}
 Rules can be given names
 \begin{code}
 rule eqInt1 :: Eq Int = ( eq = primEqInt )
 \end{code}
 
-\paragraph{Implicit parameter expressions.}
+\Paragraph{Implicit parameter expressions}
 Sofar an explicit parameter passed to a function just consisted of an identifier.
 Implicit parameter application could/should also be allowed
 \begin{code}
@@ -1949,16 +1858,16 @@ rule eqList1 :: Eq a :~> e => Eq [a] :~> l =  ( eq = \a -> \b ->  eq (! e !) (he
 ... eq (! eqList1 eqInt1 !) ...
 \end{code}
 
-\paragraph{Eq as predicate.}
+\Paragraph{Eq as predicate}
 
 Generalized abstract data types, Arthur's stuff.
 
-\paragraph{Multiparameter type classes.}
+\Paragraph{Multiparameter type classes}
 
 Combination with existentials.
 Functional dependencies lead to additional existentials?
 
-\paragraph{Overlapping resolutions/instances.}
+\Paragraph{Overlapping resolutions/instances}
 
 Partially solve by cost model?
 Cost increases compositionally over constructs  which  involve additional runtime computation.
@@ -2002,7 +1911,7 @@ by the Haskell programmer itself.
 
 \subsection{Expr rules}
 
-\paragraph{Starting point.}
+\Paragraph{Starting point}
 If type specifies an implicit parameter is expected, give it the corresponding translation/evidence |Transl| for it
 as a parameter:
 
@@ -2049,7 +1958,7 @@ deals with instances of class |Eq|.
 \end{enumerate}
 \end{enumerate}
 
-\paragraph{Case analysis on context.}
+\Paragraph{Case analysis on context}
 
 We have to look at the three base cases, lambda expression, application and the atomic expressions (identifier, ...).
 We now assume that the context of a rule specifies if implicit variables are allowed, encoded as discussed earlier by means

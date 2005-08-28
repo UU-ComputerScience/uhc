@@ -241,10 +241,7 @@ SEM Expr
                                         , mkInfo1 "decls.tyCnstr" (ppCnstrV @decls.tyCnstr)
                                         , mkInfo1 "body.imprTyCnstr" (ppCnstrV @body.imprTyCnstr)
                                         , mkInfo1 "imprTyCnstr_elim_" (ppCnstrV @imprTyCnstr_elim_)
-                                        , mkInfo1 "lExplTyCnstr" (ppCnstrV @lExplTyCnstr)
-                                        , mkInfo1 "lQuTyCnstr" (ppCnstrV @lQuTyCnstr)
-                                        , mkInfo1 "lQuTyCnstr |=> quValGam_ex_" (ppGam (@lQuTyCnstr |=> @quValGam_ex_))
-                                        , mkInfo1 "@lQuTyCnstr |=> @decls.tyCnstr" (ppCnstrV (@lQuTyCnstr |=> @decls.tyCnstr))
+                                        , mkInfo1 "quValGam_ex_" (ppGam (@quValGam_ex_))
                                         ]
   | App         loc     .  info_4_2 :=  [ mkInfo1 "arg.imprTy" (ppTy @arg.imprTy)
                                         , mkInfo1 "func.imprTy" (ppTy @func.imprTy)

@@ -65,7 +65,7 @@ The examples either implement generic behavior or encapsulation.
 We repeat examples of both,
 but do not discuss the examples any further; they are included to illustrate that higher-ranked types indeed are useful.
 
-\paragraph{Generic use of higher-ranked polymorphism.}
+\Paragraph{Generic use of higher-ranked polymorphism}
 Generic traversals can be implemented by a function with the following interface \cite{laemmel03boilerplate}:
 \begin{code}
 gmapT :: (forall ^ a . Term a => a -> a) -> (forall ^ b . Term b => b -> b)
@@ -75,7 +75,7 @@ another transformation can be constructed.
 The parameter of this function is a universally quantified function;
 hence |gmapT| is a higher-ranked (rank-2) function.
 
-\paragraph{Higher ranked polymorphism used for encapsulation.}
+\Paragraph{Higher ranked polymorphism used for encapsulation}
 Generic use of higher-ranked deals with polymorphic functions; encapsulation deals with polymorphic values.
 For example, |runST| \cite{launchbury96state-haskell} runs a state thread, where |s| represents the state thread being run:
 
@@ -104,7 +104,7 @@ In this version of EH we do not change this strategy.
 We extend the type language with universally quantified types and allow these types to participate in
 the type inference process.
 
-\paragraph{Type language.}
+\Paragraph{Type language}
 
 The type language used in \thischapt\ is a straightforward extension of the previous type language with
 an alternative for quantification, used in the context of the term language for this version (\figRef{eh4-lang-terms}):
@@ -135,7 +135,7 @@ an alternative for quantification, used in the context of the term language for 
 \end{TabularFigure}
 
 
-\paragraph{Participation of |forall| types in the type inference process.}
+\Paragraph{Participation of |forall| types in the type inference process}
 Standard HM type inference assumes a separation between type schemes and (monomorphic) types.
 A \IxAsDef{type scheme} is a (possibly) quantified type, with the quantifier on top of the type;
 a monomorphic type may not have quantifiers in the type.
@@ -195,7 +195,7 @@ We repeat our initial example:
 %%4srcfile(test/3-demo-rank.eh%%)
 \end{code}
 
-\paragraph{Checking against specified type signature.}
+\Paragraph{Checking against specified type signature}
 For |id| we have specified type signature |forall ^ a . a -> a|,
 which will be the expected type of |\x -> x| in the value declaration for |id|.
 For |\x -> x| we need to match a fresh type |tvarv1 -> tvarv2| with the expected type,
@@ -212,7 +212,7 @@ the lambda expression |\x -> x| we need to instantiate ``|forall ^ a . a -> a|''
 tvarv1 -> tvarv2 <= tvarf -> tvarf
 \end{code}
 
-\paragraph{Use of polymorphic function as a function.}
+\Paragraph{Use of polymorphic function as a function}
 In |f|'s body, function |i| will be retrieved from a |Gamma| for use in application ``|i 3|''.
 At the occurrence of |i| in ``|i 3|'', |i|'s type must match the expected type ``|tvarv1 -> tvarv2|'':
 
@@ -230,7 +230,7 @@ tvarv -> tvarv <= tvarv1 -> tvarv2
 HM type inference instantiates a type immediately after retrieval from a |Gamma|,
 our approach postpones instantiation until necessary.
 
-\paragraph{Use of polymorphic value as an argument when the expected argument type is known.}
+\Paragraph{Use of polymorphic value as an argument when the expected argument type is known}
 Function |f| gets passed |id| as its argument; |id|'s type must fit in |f|'s argument type:
 
 \begin{code}
@@ -239,7 +239,7 @@ forall ^ a . a -> a <= forall ^ a . a -> a
 
 This is a combination of the previous two matches.
 
-\paragraph{Use of polymorphic value as an argument when expected argument type is being inferred.}
+\Paragraph{Use of polymorphic value as an argument when expected argument type is being inferred}
 The real tricky point arises when the type of |f|'s argument is not known, for example if no type signature
 is specified for |f|.
 The argument type of |f| then still is a type variable |tvarv|:
@@ -372,11 +372,11 @@ No further changes are required for type inference for expressions.
 There is no need to adapt inference for pattern expressions: identifiers simply are bound to the types
 extracted from expected types passed to pattern expressions.
 
-\paragraph{Option tweaking.}
+\Paragraph{Option tweaking}
 It is possible to deviate from Haskell at a function application by
 passing different flags to the argument:
 
-\paragraph{Pass |fioBindRFirstY| (instead of |fioBindRFirstN|).}
+\Paragraph{Pass |fioBindRFirstY| (instead of |fioBindRFirstN|)}
 The effect of this modification can best be observed from the following example:
 
 \begin{code}
@@ -414,7 +414,7 @@ We conclude that the order in which we infer matters.
 In \chapterRef{ehc4B} we will investigate an approach in which we infer twice: first to extract impredicativeness,
 second to do normal type inference.
 
-\paragraph{Pass |fioBindLFirstY| (instead of |fioBindLFirstN|).}
+\Paragraph{Pass |fioBindLFirstY| (instead of |fioBindLFirstN|)}
 The effect of this modification can best be observed from the following example:
 
 \begin{code}
@@ -534,7 +534,7 @@ If the application `|g h|' would be removed, no touching would take place and bo
 result in an error:
 the idea is to propagate type information, not invent it.
 
-\paragraph{Choosing the most general type.}
+\Paragraph{Choosing the most general type}
 For the following example the same type for |h| is inferred.
 It differs from the previous example in that |h| is expected to be used in two different ways (instead of one),
 because it is passed to both |g1| and |g2|.
@@ -569,7 +569,7 @@ f :: (forall ^ a . forall ^ b . (a,b) -> (a,b)) -> Int
 \end{code}
 
 
-\paragraph{Contravariance.}
+\Paragraph{Contravariance}
 Contravariance, that is, the reversal of |<=| for the arguments of a function type,
 implies that the ``more general'' means ``less general'' for arguments.
 The following example demonstrates this:
@@ -797,7 +797,7 @@ These mechanisms are mutually recursive,
 because type alternative elimination uses meet/join computation to find (and combine) quantifier information,
 and meet/join computation may combine (deeper nested) type alternatives.
 
-\paragraph{Meet and join of types.}
+\Paragraph{Meet and join of types}
 The \IxAsDef{type meet}, denoted by |<+>|, and \IxAsDef{type join}, denoted by |<->|,
 of two types |sigma1| and |sigma2| are defined by \cite{davey02lattices-order}:
 
@@ -861,17 +861,17 @@ in \figRef{rules3.I2.match.eh4Bmeetjoin}.
 \rulerCmdUse{rules3.I2.meet}
 \rulerCmdUse{rules3.I2.join}
 
-\paragraph{Type alternative elimination.}
+\Paragraph{Type alternative elimination}
 The computation of the most/least general type from type alternatives,
 presented in \figRef{rules3.I2.tyAltTyElim},
 may look overwhelming at first,
 but basically selects specific subsets from a set of type alternatives and combines
 their types by meeting or joining,
 where the choice between meet and join depends on the contravariance.
-The computation is described by \ruleRef{ae.alts};
+The computation is described by \ruleRef{ty.ae.alts};
 the remaining rules deal with default cases and how type alternatives should be combined.
 
-\RuleRef{ae.alts} starts with extracting type alternatives:
+\RuleRef{ty.ae.alts} starts with extracting type alternatives:
 type alternatives with a quantifier (|Vec(sigmaQu)|),
 without a quantifier (|Vec(sigmaNQu)|),
 and those marked as hard (|Vec(sigmaHard)|).
@@ -914,7 +914,7 @@ v_23_0 :-> v_23_0  [ forall ^ a .  a                      -> a       :: S/R
 Function |h| is used in three different contexts, of which one required |h| to be a polymorphic type,
 and the remaining two required |h| to be a function which was offered an |Int| and |Char| respectively.
 Because |h| must be the most general type we eliminate type alternatives in a |fioMeetY| context.
-\RuleRef{ae.alts} then extracts type alternative subsets:
+\RuleRef{ty.ae.alts} then extracts type alternative subsets:
 
 \begin{code}
 Vec(sigmaQu)     ===  [ forall ^ a .  a                      -> a      ]
@@ -933,7 +933,7 @@ v_23_0 :-> forall ^ a . a -> a
 In the remainder of the type inference process we can now use |h| polymorphically.
 %}
 
-\paragraph{Meet/join computation.}
+\Paragraph{Meet/join computation}
 The computation of the meet |<+>| and join |<->| of two types is similar to the introduction
 and elimination of type alternatives:
 
@@ -987,7 +987,7 @@ For a join |<->| (\ruleRef{m.forall.l3}) the constraints are not forgotten but a
 Finally, \ruleRef{m.alt.l2} and \ruleRef{m.alt.l3} (\figRef{rules3.I2.match.eh4Bmeetjoin})
 add a type computed by a meet or join as a hard |thardH| type to type alternatives.
 For types with quantifiers this does not make a difference, but for types without (like |Int -> Int|) it does.
-Being marked as hard |thardH|, we ensure the triggering of type alternative elimination (\ruleRef{ae.alts})
+Being marked as hard |thardH|, we ensure the triggering of type alternative elimination (\ruleRef{ty.ae.alts})
 and subsequent propagation of
 the resulting type.
 If a type variable is bound by this process to a (non-polymorphic) type we effectively inhibit its further binding to
@@ -1262,7 +1262,7 @@ reflects that the value and function argument have the same type,
 so we can apply this function to the value (via |ixy|).
 Value |pq| is similarly typed, but the assignment of a value is erroneous.
 
-\paragraph{Opening an existential type.}
+\Paragraph{Opening an existential type}
 When we create a value with an existential type,
 we forget (part of) its type and represent this with an existentially quantified type variable.
 We call this the \IxAsDef{closing} of a type,
@@ -1590,9 +1590,9 @@ Point out what we can do extra relative to Vytiniotis \cite{vytiniotis05boxy-imp
 %%@AppxNotation.tyaltBasic
 \end{TabularFigure}
 
-\begin{TabularFigure}{Notation and abbreviation legenda}{eh-impred-legenda-notation}{ll}
-Notation & Meaning \\
-\hline
+\begin{TabularFigure}{Notation and abbreviation legenda}{eh-impred-legenda-notation}
+%%@AppxNotation.notationTableFormat
+%%@AppxNotation.notationTableHeader
 %%@AppxNotation.notationBasic
 %%@AppxNotation.notationImpredA
 %%@AppxNotation.notationImpredB
