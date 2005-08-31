@@ -4,16 +4,16 @@
 %let useSigplanconfSty = True
 %endif
 
-%if storyPHD || storyAfpTRUU1 || onlyCurrentWork
+%if False %% storyPHD || storyAfpTRUU1 || onlyCurrentWork
 %let inclChunkMarks	= True
 %else
 %let inclChunkMarks	= False
 %endif
 
-%if storyExplImpl
-%let chapAsArticle	= True
+%if storyExplImpl || storyImpred || storyRuler
+%let chapAsArticle  = True
 %else
-%let chapAsArticle	= False
+%let chapAsArticle  = False
 %endif
 
 %% end of configuration
@@ -77,6 +77,8 @@
 
 %format taua        = tau "_{a}"
 
+%format Forall		= "{\nabla}"
+
 %format sigmak      = sigma "^{k}"
 %format sigman      = sigma "_{n}"
 %format sigmam      = sigma "_{m}"
@@ -123,7 +125,7 @@
 %format ICnstrk		= ICnstr "^{k}"
 
 %format Qu          = "\mathcal{Q}"
-%format nQu         = "\not" Qu
+%format nQu         = "\neg" Qu
 
 %format ident       = iota
 %format identv      = "i"
@@ -135,6 +137,9 @@
 %format tvare       = tvarv
 %format tvarf       = f
 %format tvarf'
+%format tvarf1
+%format tvarf2
+%format tvarf3
 %format tvari       = tvarv "_i"
 %format tvar1
 %format tvar2
@@ -144,6 +149,8 @@
 %format tvarv2
 %format tvarv3
 %format tvarv4
+%format tvarv5
+%format tvarv6
 
 %format tcon        = c
 

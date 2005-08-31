@@ -69,6 +69,24 @@
 %    \titleline{\bchapterspacing\leaders\hrule\@height0pt\hfill\kern\z@}}%
    \resetchapterspacing]%\titlerule]% originally 8ex
 
+\def\setAppxTitleFormat{%
+\titleformat{\chapter}[block]
+  {\vspace{.1ex}\large}
+  {\fontsize{30}{30pt}\selectfont\kscolor\thechapter}
+  {0cm}
+  {\hfill%\vphantom{\rule{0pt}{55pt}}% for rigid
+   \Huge\placechapter}
+  [\ChapterIncludeHook\ResetChapterIncludeHook
+   \vspace{.1ex}% originally 1ex
+   \parskip\z@
+   {\ksdebugcolor
+    \titleline{\tchapterspacing\leaders\hrule\@height0pt\hfill\kern\z@}}%
+%   \vspace{12ex}%
+%   {\ksdebugcolor
+%    \titleline{\bchapterspacing\leaders\hrule\@height0pt\hfill\kern\z@}}%
+   \resetchapterspacing]%\titlerule]% originally 8ex
+}
+
 % To disable indentation after the chapter, we have to
 % add a titlespacing* command such as:
 %\titlespacing*{\chapter}{0pt}{10ex}{50ex}% for rigid

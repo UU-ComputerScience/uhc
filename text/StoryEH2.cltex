@@ -296,7 +296,7 @@ The function |comp| deals with the proper combination of constraints for composi
 Although this version of the implementation of |fitsIn| resembles the previous one
 it differs in the following aspects:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 The datatype |FIOut| returned by |fitsIn| has an additional field |foCnstr| holding found constraints.
 This requires constraints to be combined for composite types
@@ -318,7 +318,7 @@ before fitting that one.
 This is to prevent |a -> a <= Int -> Char| from finding two conflicting
 constraints
 |[a :-> Int,a :-> Char]| instead of properly reporting an error.
-\end{itemize}
+\end{Itemize}
 
 \subsection{Type inference for expressions (Expr)}
 
@@ -402,22 +402,22 @@ Used in tandem they strengthen each other.
 
 Our type rules and their corresponding
 AG description preserve the following invariant:
-\begin{itemize}
+\begin{Itemize}
 \item
 A resulting type has all known constraints applied to it, here |ty|.
-\end{itemize}
+\end{Itemize}
 
 This invariant is not preserved for |knTy| and |valGam|, which also can contain type variables.
 The application of constraints to these attributes is postponed until the following places (in the AST or other code):
 
-\begin{itemize}
+\begin{Itemize}
 \item
 The value
 is used in a setting which may yield new constraints, that is, it is used by |<= =@= fitsIn|.
 \item
 The value is used to return a type of an expression, for example in \ruleRef{e.var}.
 We apply known constraints to the type extracted from |Gamma =@= valGam|.
-\end{itemize}
+\end{Itemize}
 
 \Paragraph{Variable occurrences |Var|}
 This is illustrated by the AG code for \ruleRef{e.var} in which |lhs.tyCnstr| is applied to both the expected type |knTy|
@@ -450,7 +450,7 @@ matching types and propagating the resulting constraints.
 We omit their implementation, except for \ruleRef{e.let} which we discuss later in \thischapt.
 
 Some observations are in place:
-\begin{itemize}
+\begin{Itemize}
 \item
 The main difference with the previous implementation is the use
 of type variables to represent unknown knowledge.
@@ -475,7 +475,7 @@ For a typing rule this means that these type
 variables are not in use elsewhere,
 often more concretely specified with a condition |tvarv `notElem` ftv(Gamma)|.
 %Freshness in the implementation is implemented via unique identifiers UID.
-\end{itemize}
+\end{Itemize}
 
 \subsection{Type inference for pattern expressions (PatExpr)}
 
@@ -508,14 +508,9 @@ by means of |tyEnsureNonAny|:
 %%]
 \chunkCmdUseMark{EHRulerRules.2.patexpr.p.var}
 
-For tuples we again use that the |Con| alternative will always
+For tuples we again exploit that the |Con| alternative will always
 represent a tuple.
-%if not incl05
-When datatypes are introduced (not part of \thispaper) this will no longer be the case.
-%else
-Starting at \chapterRef{ehc5}, in which datatypes are introduced,
-and onwards this will no longer be the case.
-%endif
+When datatypes are introduced (\chapterEHVRef) this will no longer be the case.
 We already make the required \ruleRef{p.con} more general
 than is required here,
 in preparation for datatypes.
@@ -561,7 +556,7 @@ and \figRef{rules3.C.decl.base}).
 We can no longer assume that type signatures are specified for all value expressions.
 The basic strategy for declarations (see \secPageRef{eh1-let-strategy}) must be changed as follows:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 Parallel to |patValGam| and |valGam| we need to gather information about introduced type variables.
 |Cnstrp =@= patTyCnstr| gathers information about the types of type variables for identifiers introduced as part of pattern expressions;
@@ -573,7 +568,7 @@ Otherwise, a fresh type variable is used for the pattern and the pattern type fo
 \item
 The pattern constraints |patTyCnstr| is threaded independently through all declarations, only
 to be used as the starting point for |tyCnstr| in \ruleRef{e.let}.
-\end{itemize}
+\end{Itemize}
 
 Here we omit the corresponding AG code: it follows the type rules faithfully.
 %%[[hide impl.declEH2

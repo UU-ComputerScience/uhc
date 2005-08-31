@@ -36,12 +36,12 @@
 \end{center}
 
 Notes:
-\begin{itemize}
+\begin{Itemize}
 \item
 By rebuilding a record if the |rhs| of |<=| is fully known,
 we can be more liberal in constraining the |lhs|.
 For example, in |(r1||x) <= (x)| it is not necessary to restrict |r1 :-> ()|.
-\end{itemize}
+\end{Itemize}
 
 \subsection{Low level code for update/extend}
 
@@ -65,7 +65,7 @@ for ( ; o < old.length ; ) {
 \end{TT}
 
 Notes:
-\begin{itemize}
+\begin{Itemize}
 \item
 All offsets are expressed in terms of the original/old record.
 \item
@@ -78,7 +78,7 @@ If this can statically be determined, loop unrolling can be done.
 This cannot be determined statically for label polymorphism.
 Sorting is done on offset, and where equal extensions before updates.
 This allows the mentioned algorithm.
-\end{itemize}
+\end{Itemize}
 
 \subsection<article>{Literature}
 %%]

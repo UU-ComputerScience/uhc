@@ -24,6 +24,10 @@ Notation & Meaning \\
 \multicolumn{4}{l}{Type expressions:} \\
 %%]
 
+%%[typredHeader
+\multicolumn{4}{l}{Predicate expressions:} \\
+%%]
+
 %%[declHeader
 \multicolumn{4}{l}{Declarations of bindings:} \\
 %%]
@@ -83,8 +87,15 @@ Notation & Meaning \\
 
 %%[exprTup
 & | || | &
-|(e,e)|
+|(e,...,e)|
  & tuple
+ \\
+%%]
+
+%%[exprAnn
+& | || | &
+|e :: t|
+ & type annotated expression
  \\
 %%]
 
@@ -158,30 +169,30 @@ Notation & Meaning \\
 
 %%[declDataType
 & | || | &
-|data sigma = Vec(identc ^^ Vec(sigma))|
+|data ^^ Vec(t) = Vec(identc ^^ Vec(t))|
  & data type
  \\
 %%]
 
 %%[declExplImpl
 & | || | &
-|class Vec(pi) => pi where Vec(d)|
+|class Vec(pr) => pr where Vec(d)|
  & class
  \\
 & | || | &
-|instance Vec(pi) => pi where Vec(d)|
+|instance Vec(pr) => pr where Vec(d)|
  & introduced instance
  \\
 & | || | &
-|instance identv <: Vec(pi) => pi where Vec(d)|
+|instance identv <: Vec(pr) => pr where Vec(d)|
  & \emph{named introduced instance}
  \\
 & | || | &
-|instance identv :: Vec(pi) => pi where Vec(d)|
+|instance identv :: Vec(pr) => pr where Vec(d)|
  & \emph{named instance}
  \\
 & | || | &
-|instance e <: pi|
+|instance e <: pr|
  & \emph{value introduced instance}
  \\
 %%]
@@ -202,6 +213,20 @@ Notation & Meaning \\
 & | || | &
 |(p,...,p)|
  & tuple pattern
+ \\
+%%]
+
+%%[patexprAnn
+& | || | &
+|p :: t|
+ & type annotated pattern
+ \\
+%%]
+
+%%[patexprRec
+& | || | &
+|(r||l=p)|
+ & record pattern
  \\
 %%]
 
@@ -231,6 +256,38 @@ Notation & Meaning \\
 & | || | &
 |forall ^ identv . t|
  & universal quantification
+ \\
+%%]
+
+%%[tyexprExists
+& | || | &
+|exists ^ identv . t|
+ & existential quantification
+ \\
+%%]
+
+%%[tyexprRec
+& | || | &
+|(lbl :: sigma,...)|
+ & record
+ \\
+%%]
+
+%%[typredBasic
+|pr| & |::=| &
+|identc ^^ Vec(t)|
+ & class predicate
+ \\
+& | || | &
+|pr => pr|
+ & predicate transformer/abstraction
+ \\
+%%]
+
+%%[typredRecLacks
+& | || | &
+|t \\ l|
+ & record lacks label predicate
  \\
 %%]
 
@@ -314,11 +371,18 @@ Notation & Meaning \\
 %%[predBasic
 |pi| & |::=| &
 |identc ^^ Vec(sigma)|
- & predicate
+ & class predicate
  \\
 & | || | &
 |pi => pi|
  & predicate transformer/abstraction
+ \\
+%%]
+
+%%[predRecLacks
+& | || | &
+|sigma \\ l|
+ & record lacks label predicate
  \\
 %%]
 
@@ -328,12 +392,12 @@ Notation & Meaning \\
  & 
  \\
 & | || | &
-|tvarv [Vec(talt)]|
+|isigma|
  & type alternatives
  \\
 |isigma| & |::=| &
-|sigma|
- & distinguishing notation for |sigma| with |tvarv [Vec(talt)]|
+|tvarv [Vec(talt)]|
+ & type alternatives
  \\
 %%]
 
@@ -381,6 +445,9 @@ Notation & Meaning \\
  \\
 |sigmak|
  & expected/known type
+ \\
+|ANY|
+ & any type
  \\
 |tvarv|
  & type variable
@@ -436,6 +503,12 @@ Notation & Meaning \\
 |isigma|
  & |sigma| for impredicativity inferencing
  \\
+|sigmaQu|
+ & |sigma| with a quantifier
+ \\
+|sigmaNQu|
+ & |sigma| without a quantifier
+ \\
 |ICnstr|
  & |Cnstr| for impredicativity inferencing
  \\
@@ -468,12 +541,6 @@ Notation & Meaning \\
  \\
 |talt|
  & type alternative
- \\
-|Vec(taltcx(thard))|
- & |[ talt || talt@(_::thard) <- Vec(talt)]|
- \\
-|Vec(taltcx(Qu))|
- & |[ talt || talt@(sigmaQu::_) <- Vec(talt)]|
  \\
 %%]
 

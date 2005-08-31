@@ -309,7 +309,7 @@ Such is the case here too, this part of the AG implementation may well change in
 of prose to look at, but we will have to use the generated
 functions in order to access the AG computations of attributes from the Haskell world.
 The following observations should be kept in mind when doing so:
-\begin{itemize}
+\begin{Itemize}
 \item
 For node |<node>| also a type |T_<node>| is generated, describing the function type
 that maps inherited to synthesized attributes.
@@ -325,10 +325,10 @@ For example, data constructor |Tree_Bin :: Tree -> Tree -> Tree| corresponds to 
 \item
 A mapping from the Haskell |data| type to the corresponding semantic function is available with
 the name |sem_<node>|.
-\end{itemize}
+\end{Itemize}
 
 In the Haskell world one now can follow different routes to compute the attributes:
-\begin{itemize}
+\begin{Itemize}
 \item
 First construct a Haskell value of type |<node>|, then apply |sem_<node>| to this value and the
 additionally required inherited attributes values.
@@ -337,7 +337,7 @@ The given function |main| from AG variant of repmin takes this approach.
 Circumvent the construction of Haskell values of type |<node>| by using the semantic functions |sem_<node>_<variant>|
 directly when building the AST instead of the data constructor |<node>_<variant>|
 (This technique is called deforestation \cite{wadler90deforest}.).
-\end{itemize}
+\end{Itemize}
 
 In both cases a tuple holding all synthesized attributes is returned.
 Elements in the tuple are sorted lexicographically on attribute name,
@@ -468,7 +468,7 @@ in a production of |<node>| is missing.
 AG tries to insert a rule that copies the value of another attribute with the same name,
 searching in the following order:
 
-\begin{enumerate}
+\begin{Enumerate}
 \item
 Local attributes.
 \item
@@ -477,18 +477,18 @@ with priority given to the nearest child fulfilling the condition.
 A synthesized |<attr>| of a parent is considered to be at the right of any child's |<attr'>|.
 \item
 Inherited attributes (of the parent).
-\end{enumerate}
+\end{Enumerate}
 
 In our example the effect is that for the |Let| variant of |Expr|
 
-\begin{itemize}
+\begin{Itemize}
 \item
 (inherited) |@lhs.count| is copied to (inherited) |@val.count|,
 \item
 (synthesized) |@val.count| is copied to (inherited) |@body.count|,
 \item
 (synthesized) |@body.count| is copied to (synthesized) |@lhs.count|.
-\end{itemize}
+\end{Itemize}
 
 Similar copy rules are inserted for the other variants.
 Only for variant |Add| of |Expr| a different rule for |@lhs.count| is explicitly specified,
@@ -532,7 +532,7 @@ We provide a list of those topics together with a reference to the first use of 
 are actually used later in \thispaper.
 Each of these items is marked with |AGFeature| to indicate that it is about the AG system.
 
-\begin{itemize}
+\begin{Itemize}
 \item
 Type synonym, only for lists (see \secPageRef{ag-type-syn}).
 \item
@@ -546,7 +546,7 @@ Additional copy rule via |USE| (see \secPageRef{ag-use-attr}).
 \item
 Additional copy rule via |SELF| (see \secPageRef{ag-self-attr}).
 \item
-Rule redefinition via |:=| (see \secPageRef{ag-redef-rule}).
+Rule redefinition via |:=|. % (see \secPageRef{ag-redef-rule}).
 %if False
 \item
 Typical use/pattern: decomposition.
@@ -557,9 +557,9 @@ Typical use/pattern: unique number generation.
 %endif
 \item
 Cycle detection and other (experimental) features, commandline invocation, etc.
-\end{itemize}
+\end{Itemize}
 
-We will come back to the AG system itself in our conclusion.
+%We will come back to the AG system itself in our conclusion.
 
 \begin{CodeFigure}{Parser for calculator example}{ag-primer-parser-expr}
 \chunkCmdUse{Expr.1.parser}

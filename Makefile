@@ -81,6 +81,7 @@ explanation:
 	echo  "make bin/<n>/grini   : make grin interpreter version <n> (where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
 	echo  "make bin/ruler2      : make ruler tool" ; \
 	echo  "make bin/shuffle     : make shuffle tool" ; \
+	echo  "make doc/<d>.pdf     : make documentation <d> (where <d> in {$(TEXT_PUB_VARIANTS)})" ; \
 	echo  "make ehcs            : make all compiler ($(EHC_EXEC_NAME)) versions" ; \
 	echo  "make grinis          : make all grin interpreter ($(GRINI_EXEC_NAME)) versions" ; \
 	echo  "make test-regress    : run regression test" ; \

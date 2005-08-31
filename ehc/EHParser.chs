@@ -353,7 +353,9 @@ patExprAlg      =    (sem_PatExpr_Con,sem_PatExpr_App
 pPatExprBase    =    pVar <**>  (    flip sem_PatExpr_VarAs <$ pKey "@" <*> pPatExprBase
                                 <|>  pSucceed sem_PatExpr_Var
                                 )
-                <|>  sem_PatExpr_Con <$> pCon
+                <|>  sem_PatExpr_Con     <$>  pCon
+                <|>  sem_PatExpr_IConst  <$>  pInt
+                <|>  sem_PatExpr_CConst  <$>  pChr
 %%]
 %%[1.pPatExprBase.prod
                 <|>  pParenProd pPatExpr

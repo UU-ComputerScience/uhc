@@ -1,43 +1,47 @@
 %%[body
 Specifying a type signature becomes cumbersome as soon as the specified type becomes complex.
-This is a reason to rely on a type inferencer to find those type signatures.
-However, if the intended type signature is too complicated, a type inferencer will fail to infer
-the intended signature.
-We are then required to specify the full signature instead of only the part which cannot be inferred 
+This is a reason why a type inferencer is so useful.
+However, if a type inferencer fails to infer the (intended) signature,
+we have to specify the signature ourselves.
+Thus far we have been required to specify the full signature,
+instead of only that part that cannot be inferred 
 by the type inferencer.
 
 In \thischapt\ we investigate two techniques for relieving a programmer
-from the burden of ``all or nothing'' type specification.
+from the limitations of this ``all or nothing'' approach.
 Both techniques support a joint specification of a type by programmer and system:
 
-\begin{itemize}
+\begin{Itemize}
 \item
-Partial type signatures.
-Often, a complex type has only (relatively) small parts which are too complex to be inferred.
+\IxAsDef{Partial type signatures}.
+Often a complex type has only (relatively) small parts which are too complex to be inferred.
 With partial type signatures we allow the specification of those parts,
 leaving the remainder to be inferred by a type inferencer.
 \item
-Quantifier location inference.
-Type variables in a type signature have to be explicitly quantified.
-However, the use of type variable often corresponds to the intended quantifier:
-|forall| for type variables relating function argument and result,
-|exists| for type variables of a tuple (or other product) type.
-With quantifier location inference we can omit quantifiers.
-\end{itemize}
+\IxAsDef{Quantifier location inference}.
+Thus far type variables in a type signature are to be explicitly quantified.
+Often  
+|forall| is used for type variables relating function argument and result,
+and |exists| is used for type variables of a tuple (or other product) type.
+For these kind of uses, we may omit the quantifier,
+which subsequently is inferred by \IxAsDef{quantifier location inference}.
+\end{Itemize}
 
 We first examine some examples,
 followed by a discussion of the typing rules
 affected by these features.
 Both features are relatively independent of other language features,
 which is the reason they are discussed separately.
-Examples and type rules are based on the EH version from \chapterRef{ehc4} (EH4).
+Examples are based on the EH4 (\chapterRef{ehc4})
+and EH9 (\chapterRef{ehc9}).
+We only discuss the type rules within the context of EH4.
 
 \Paragraph{Partial type signatures}
 
 Partial type signatures are specified by type expressions where three dots ``|...|'',
 called a \IxAsDef{type wildcard},
 denote unspecified parts.
-For example, the following declares the identity function |id|:
+For example, in the following expression the identity function |id| is declared:
 
 \begin{code}
 %%3srcfile(test/2-demo-wild1.eh%%)
@@ -48,9 +52,11 @@ but does not state anything about its argument and result.
 The argument and result type remain unknown until the type inferencer has inferred their type.
 
 A type wildcard is similar to a type variable, because both represent unknown type information.
-However, type variables in a type signature represent quantified type variables.
-We denote non-quantified type variables by the prefix `|%|',
-called a \IxAsDef{named type wildcard}.
+However, type variables in a type signature represent quantified type variables,
+whereas type wildcards represent yet to be inferred types.
+If we want to refer to a type wildcard,
+we prefix a normal type variable with `|%|'.
+This is called a \IxAsDef{named type wildcard}.
 The previous declaration of |id| can now be rewritten to:
 
 \begin{code}
@@ -61,9 +67,10 @@ Omission of `|%|' yields a type expression ``|a -> b|'',
 which is interpreted (by ``Quantifier location inference'')
 as ``|(exists ^ a . a) -> forall ^ b . b|''.
 
-A named type wildcard allows the specification of additional constraints to be used by type inference.
-In the following, argument and result type should match, and the result should be of type |Int|.
-This results in an inferred signature ``|ii :: Int -> Int|'':
+Named type wildcards allow the specification of additional constraints for use by the type inferencer.
+In the following, argument and result type are specified to be equal,
+and inferred to be of type |Int|.
+This results in an inferred signature ``|ii :: Int -> Int|'' for:
 
 \begin{code}
 %%3srcfile(test/3-demo-wild2.eh%%)
@@ -77,15 +84,15 @@ Lexically scoped type variables allow scoped references to the types of paramete
 %%3srcfile(test/4-demo-scope-tv1.eh%%)
 \end{code}
 
-Partial type signatures are most useful in specifying those parts type inference can not infer,
-in particular higher-rank type information:
+Partial type signatures are most useful in specifying only those parts which the type inferencer cannot infer,
+in particular higher-ranked type information:
 
 \begin{code}
 %%4srcfile(test/4-ty-wild1.eh%%)
 \end{code}
 
 For |f| we only need to specify its rank-2 typed argument;
-the rest can be left to be inferred.
+the rest is inferred.
 
 
 \Paragraph{Partial type signatures for implicit parameters}
@@ -98,17 +105,17 @@ Within the context of the examples from \chapterRef{ehc9} we start with the foll
 \Paragraph{Quantifier location inference}
 
 Quantifiers for a type signature are specified explicitly in its type expression,
-but may be omitted if their location in the type expression is where we expect it to be.
+but may be omitted if their location in the type expression is where we expect them to be.
 Here, the notion of what we expect is based on the following observations:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 The universal quantifier |forall| is used to express the propagation of type information
 between argument and result type of a function type.
 \item
 The existential quantifier |exists| is used to express encapsulation of a type which represents
 data about which we want to hide type information.
-\end{itemize}
+\end{Itemize}
 
 For example, the type signature of the identity function |id| can be specified by the
 following type expression:
@@ -128,7 +135,7 @@ f :: (a -> a) -> Int
 Because type variable |a| is not referred to outside the rank-2 position,
 the expected location of |forall| is in front of ``|a->a|'' at rank-2,
 not in front of the full type signature on a rank-1 position,
-Haskell's default.
+which is Haskell's default.
 
 For tuple types we put an existential quantifier in front.
 For example for:
@@ -138,8 +145,9 @@ v :: (a,a -> Int)
 f :: (a,a -> Int) -> Int
 \end{code}
 
-A tuple type represents data composition. A type variable indicates lack of knowledge,
-hence is interpreted as `forgotten' type information, or an existential type:
+A tuple type represents data composition. A type variable indicates lack of knowledge about
+the type of (part of) the data,
+hence is interpreted as `to be forgotten' type information, or an existential type:
 
 \begin{code}
 v :: exists ^ a . (a,a -> Int)
@@ -147,8 +155,8 @@ f :: (exists ^ a . (a,a -> Int)) -> Int
 \end{code}
 
 Informally, a quantifier for a type variable is placed in front of a type fragment if
-the the type variable does not occur outsided the type fragment.
-If that position is a function type, |forall| is used, if a product type, a |exists| is used.
+type variable does not occur outside the type fragment.
+If that position is a function type, |forall| is used, if it is a product type, an |exists| is used.
 This algorithm is applied irrespective of the position of the type fragment,
 so the following type expressions:
 
@@ -164,8 +172,9 @@ f :: Int -> forall ^ a . a -> a
 g :: Int -> exists ^ a . (a,a -> Int)
 \end{code}
 
-For |f|, this is isomporphic to the placement of |forall| in front of the type.
-However, for |g|, the type is different from:
+For |f|, this resulting type is isomorphic to the placement of |forall| in front of the type:
+``|f :: forall ^ a . Int -> a -> a|''.
+However, for |g|, the type has a different meaning if the quantifier |exists| is placed in front:
 
 \begin{code}
 g :: exists ^ a . Int -> (a,a -> Int)
@@ -180,14 +189,16 @@ with a fresh type constant for type variable |a|:
 g :: Int -> (C_1,C_1 -> Int)
 \end{code}
 
-Two different invocations then are required to return the same, but hidden, type.
+Two different invocations now are required to return the same, but hidden, type.
 
-These rules all correspond, via the Curry-Howard isomorphism
+All these rules all correspond, via the Curry-Howard isomorphism
 \cite{srensen98curry-howard,wadler89theorems-for-free,wadler00proofs-are-programs,wadler02girard-reynolds-iso},
 to their corresponding logical meaning.
 
-A single type variables takes a somewhat special place.
-What is the interpretation of the following types:
+A single type variable takes a somewhat special place,
+since there is no corresponding `|->|' or `|(,)|' type constructur to determine
+which quantifier should be chosen.
+What is the interpretation of the following types?
 
 \begin{code}
 v :: a
@@ -214,36 +225,38 @@ by means of an explicit specification of the quantifier.
 
 \subsection{Partial type signatures}
 
-Partial type signatures are already in early versions of EH meaningful.
+Partial type signatures are already meaningful in early versions of EH.
 EH version 2 (\chapterRef{ehc2}) allows type variables;
 type wildcards are just type variables as far as the
 implementation is concerned.
 \RuleRef{t.wild} (\figRef{rules3.C.tyexpr.eh2}) shows how a type variable is created.
 The type variable remains unbound, that is, we cannot refer to this type variable.
-The next version of EH, version 3 (\chapterRef{ehc3}), allows references (by means of program identifiers)
-to type variables.
-Similar to the gathering of value identifier
-we thread |TGamma| through all type rules to gather bindings to type variables.
+
+The next version of EH, version 3 (\chapterRef{ehc3}), allows references
+to type variables, via program identifiers.
+The process of collecting bindings for identifiers to type variables is similar
+to the collecting of bindings for value identifiers.
+We thread an extra environment |TGamma| through the type expression.
 At \ruleRef{t.var} and its wildcard variation 
 \ruleRef{t.var.w} (\figRef{rules3.HM.tyexpr.eh3})
-such a binding is added.
+a binding is added to |TGamma|.
 
 \rulerCmdUse{rules3.C.tyexpr.eh2}
 \rulerCmdUse{rules3.HM.tyexpr.eh3}
 %\rulerCmdUse{rules3.I1.tyexpr.eh4}
 
-The type expression is used in a declaration for a type signature.
+The type expression is used in a declaration of a type signature for a value identifier.
 In \ruleRef{d.tysig} (\figPageRef{rules3.HM.decl.base}) the type signature of this type expression
-is quantified over its free type variables, minus those which are introduced as a type wildcard.
-These are still free to be bound by type inference;
-quantification is done a second time after type inference.
+is quantified over its free type variables, except those which are introduced as a type wildcard:
+these are still free to be bound by type inference.
+Generalisation is done a second time after type inference.
 
 \subsection{Quantifier location inference}
 
-Our algorithm to place quantifiers is based on the rules,
-more formally specified in \figRef{rules3.I1.tyqu.base}:
+Our algorithm to place quantifiers is based on the rules
+which are specified in \figRef{rules3.I1.tyqu.base}:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 If a type variable occurs in two components of a composite type,
 and the type variable does not occur outside the composite type,
@@ -251,30 +264,34 @@ the composite type is the quantifier location for the type variable
 (\ruleRef{ty.qu.arrow}, \ruleRef{ty.qu.prod}).
 \item
 If a quantifier location is in front of a product type,
-a |exists| is used (\ruleRef{ty.qu.prod}),
+an |exists| is used (\ruleRef{ty.qu.prod}),
 if in front of a function type, a |forall| is used (\ruleRef{ty.qu.arrow}).
 \item
 For a standalone type variable (does not occur elsewhere in the type),
 a |forall| is used in a co-variant context, |exists| otherwise.
-\end{itemize}
+\end{Itemize}
 
 For the co- or contravariance context we use some additional notation (\figRef{eh-coco-legenda-notation}).
-Co- and contravariant context is only propagated one argument level.
-% The use of co- and contravariance becomes a bigger issue with the introduction of data types.
 
 \rulerCmdUse{rules3.I1.tyqu.base}
 
-\begin{TabularFigure}{Notation for co- and contravariant context}{eh-coco-legenda-notation}
+\begin{TabularCenterFigure}{Notation for co- and contravariant context}{eh-coco-legenda-notation}
 %%@AppxNotation.notationTableFormat
 %%@AppxNotation.notationTableHeader
 %%@AppxNotation.notationCoCo
-\end{TabularFigure}
+\end{TabularCenterFigure}
 
-\subsection{Related work, discussion}
+%if False
+\subsection{Discussion}
+Quantifier location inference uses the fixed meaning of the type constructors
+for function and product types to determine whether |forall| or |exists| is to be inserted.
+The presence of data types (\chapterEHVRef) complicates this choice because programmer defined data types
+have no fixed meaning.
+%endif
 
-Similarity with lexically scoped type variables.
+%Similarity with lexically scoped type variables.
 
-Curry-Howard isomorphism.
+%Curry-Howard isomorphism.
 
 %%]
 
@@ -314,13 +331,12 @@ f  =                                       \  p     q     r       s             
 f  ::  forall a   .    Eq a            =>     a ->  a ->  Int ->  forall b . b    ->  (Bool    ,  Bool    )
 \end{code}
 
+%if not storyPHD
 \textbf{Variation 3:}
-%if False
 f  ::  forall a   .    Eq a            =>     a ->  a ->  Int ->  (exists b . b)  ->  (Bool    ,  Bool    )
 For |s| any value can be passed; this is encoded by the existential quantification.
 The introduction of the existential quantifier is the result of the a quantifier insertion rule which states
 that for a single type variable on a contravariant position an |exists| is inserted.
-%endif
 If instead we still want |s| to have the same type as |r| we can use a more general variant of `|...|' in which
 we can refer to the inferred type using a type variable prefixed with a percent symbol '|%|',
 called a \IxAsDef{named wildcard}:
@@ -331,13 +347,14 @@ f  =                                       \  p     q     r        s            
 -- INFERRED:
 f  ::  forall a   .    Eq a            =>     a ->  a ->  Int  ->  Int             ->  (Bool    ,  Bool    )
 \end{code}
+%endif
 
 If `|...|' occurs in a type position, we call it a \IxAsDef{type wildcard}.
 If `|...|' occurs in a in predicate position, we call it a \IxAsDef{predicate wildcard}.
 
-Although the given example suggests that a wildcard may be used anywhere in a type,
+Although the given examples suggest that a wildcard may be used anywhere in a type,
 there are some restrictions:
-\begin{itemize}
+\begin{Itemize}
 \item
 A named wildcard |%a| cannot be used as a predicate wildcard,
 because |%a| then would refer to a set of predicates;
@@ -375,7 +392,7 @@ The only exception to this rule is a single type variable
 or a type wildcard,
 since these may be bound to a type which itself
 contains predicates.
-\end{itemize}
+\end{Itemize}
 
 %%]
 

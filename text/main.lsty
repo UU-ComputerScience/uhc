@@ -1,6 +1,36 @@
 %include lhs2TeX.fmt
 %include afp.fmt
 
+% list environments
+\def\@@ListSetupA{%
+%if storyPHD
+  \setlength{\partopsep}{0pt}
+  \setlength{\topsep}{.5\topsep}
+%endif
+}
+\def\@@ListSetupB{%
+%if storyPHD
+  \setlength{\parskip}{.5\parskip}
+  \setlength{\itemsep}{.5\itemsep}
+%endif
+}
+
+\newenvironment{Itemize}{%
+  \@@ListSetupA
+  \begin{itemize}
+  \@@ListSetupB
+}{%
+  \end{itemize}
+}
+
+\newenvironment{Enumerate}{%
+  \@@ListSetupA
+  \begin{enumerate}
+  \@@ListSetupB
+}{%
+  \end{enumerate}
+}
+
 % xfig figure
 \newcommand{\FigCenterXFigTex}[1]{%
  \begin{center}
@@ -37,11 +67,29 @@
 %if acm
   \begin{figure}[t]
 %elif storyPHD
-  \begin{figure}[t]
+  \begin{figure}[tp]
 %else
   \begin{figure}[htbp]
 %endif
 }{%
+  \caption{\F@@Cap}
+  \label{\F@@Lab}
+  \end{figure}
+}
+
+\newenvironment{CenterFigure}[2]{%
+  \def\F@@Cap{#1}
+  \def\F@@Lab{#2}
+%if acm
+  \begin{figure}[t]
+%elif storyPHD
+  \begin{figure}[tp]
+%else
+  \begin{figure}[htbp]
+%endif
+  \begin{center}
+}{%
+  \end{center}
   \caption{\F@@Cap}
   \label{\F@@Lab}
   \end{figure}
@@ -64,9 +112,26 @@
   \end{Figure}
 }
 
+% Env for centered tabular figure
+\newenvironment{TabularCenterFigure}[3]{%
+  \begin{CenterFigure}{#1}{#2}
+  \begin{tabular}{#3}
+%if not useSigplanconfSty
+  \hline
+%  \\
+%endif
+}{%
+%if not useSigplanconfSty
+  \\
+  \hline
+%endif
+  \end{tabular}
+  \end{CenterFigure}
+}
+
 % Plain figure
 \newenvironment{PlainFigure}[2]{%
-  \begin{TabularFigure}{#1}{#2}{p{\linewidth}}
+  \begin{TabularFigure}{#1}{#2}{p{.94\linewidth}}
 }{%
   \end{TabularFigure}
 }
@@ -105,15 +170,13 @@
 % Env for rules in a figure
 \newenvironment{RulesFigureB}[4]{%
   \def\R@@Info{\ifx#4\empty #2\else #2 (#4)\fi}
-  \begin{TabularFigure}{\R@@Info}{#3}{p{0.95\linewidth}}
+  \begin{TabularCenterFigure}{\R@@Info}{#3}{p{0.95\linewidth}}
 %  \linespread{1.5}\selectfont
-  \begin{center}
   \fbox{#1}
   \\
 }{%
   \par
-  \end{center}
-  \end{TabularFigure}
+  \end{TabularCenterFigure}
 }
 
 % Env for code in a figure
@@ -156,7 +219,7 @@
  \marginpar{#1}
 %endif
 }
-\newcommand{\chunkHideRef}[1]{\marginpar{\secPageRefB{#1}}}
+\newcommand{\chunkHideRef}[1]{\marginpar{{\footnotesize\secPageRefB{#1}}}}
 \newcommand{\chunkCmdDef}[1]{\expandafter\def\csname #1\endcsname}
 \newcommand{\chunkCmdUseRaw}[1]{%
  \csname #1\endcsname
@@ -230,11 +293,13 @@
 \newcommand{\pageRef}[1]{}
 \newcommand{\figPageRef}[1]{\figRef{#1}}
 \newcommand{\secPageRef}[1]{\secRef{#1}}
+\newcommand{\exPageRef}[1]{\exRef{#1}}
 %else
 \newcommand{\pageRef}[1]{page~\pageref{#1}}
 \newcommand{\pageRefB}[1]{p~\pageref{#1}}
 \newcommand{\figPageRef}[1]{\figRef{#1}, \pageRef{#1}}
 \newcommand{\secPageRef}[1]{\secRef{#1}, \pageRef{#1}}
+\newcommand{\exPageRef}[1]{\exRef{#1}, \pageRef{#1}}
 \newcommand{\secPageRefB}[1]{\pageRefB{#1}, \myRef{#1}}
 %endif
 \newcommand{\chapterRef}[1]{%
@@ -273,6 +338,9 @@ appendix~\myRef{#1}
 \DefineVerbatimEnvironment%
  {TTtiny}{Verbatim}
  {fontsize=\tiny}
+\DefineVerbatimEnvironment%
+ {TTfootnotesize}{Verbatim}
+ {fontsize=\footnotesize}
 
 % AG feature appearing later in the text, after the primer
 \newenvironment{AGFeature}[2]{%

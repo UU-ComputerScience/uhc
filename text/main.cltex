@@ -1,17 +1,18 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Lhs2TeX variant config
+%%% Lhs2TeX + variant config, this is now partially obsolete as config is also mgt via Shuffle
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
-
 % $Id$
 
 %include lhs2TeX.fmt
 %include forText.fmt
+%%]
 
+%%[1
 %% configuration of what to include
 
-%if storyPHD || storyAfpTRUU1
+%if False %% storyPHD || storyAfpTRUU1
 %let inclParts  = True
 %else
 %let inclParts  = False
@@ -51,19 +52,15 @@
 %let incl04     = False
 %endif
 
-%if storyPHD
+%if False %% storyPHD
 %let incl05     = True
 %let incl06     = True
 %let incl07     = True
+%let incl08     = True
 %else
 %let incl05     = False
 %let incl06     = False
 %let incl07     = False
-%endif
-
-%if storyPHD 
-%let incl08     = True
-%else
 %let incl08     = False
 %endif
 
@@ -73,21 +70,17 @@
 %let incl09     = False
 %endif
 
-%if storyPHD 
+%if False %% storyPHD
 %let incl10     = True
 %let incl11     = True
+%let incl12     = True
 %else
 %let incl10     = False
 %let incl11     = False
-%endif
-
-%if storyPHD
-%let incl12     = True
-%else
 %let incl12     = False
 %endif
 
-%if storyPHD 
+%if False %% storyPHD
 %let incl13     = True
 %let incl14     = True
 %let incl15     = True
@@ -133,12 +126,6 @@
 %let incl01TopicParsing  	= True
 %endif
 
-%if storyExplImpl || storyImpred || storyRuler
-%let chapAsArticle  = True
-%else
-%let chapAsArticle  = False
-%endif
-
 %let incl00TopicAGPrimer  = True
 
 
@@ -176,6 +163,10 @@
 %else
 \documentclass{article}
 %endif
+%%]
+
+%%[11
+\documentclass{article}
 %%]
 
 %%[7
@@ -295,6 +286,45 @@
 %else
 \def\BChng{}
 \def\EChng{}
+%endif
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Indirection of chapter ref's, due to different configs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+\newcommand{\chapterNotIncludedRef}{not included in \thispaper}
+
+%if incl05
+\newcommand{\chapterEHVRef}{\chapterRef{ehc5}}
+%else
+\newcommand{\chapterEHVRef}{\chapterNotIncludedRef}
+%endif
+
+%if incl06
+\newcommand{\chapterEHVIRef}{\chapterRef{ehc6}}
+%else
+\newcommand{\chapterEHVIRef}{\chapterNotIncludedRef}
+%endif
+
+%if incl07
+\newcommand{\chapterEHVIIRef}{\chapterRef{ehc7}}
+%else
+\newcommand{\chapterEHVIIRef}{\chapterNotIncludedRef}
+%endif
+
+%if incl08
+\newcommand{\chapterEHVIIIRef}{\chapterRef{ehc8}}
+%else
+\newcommand{\chapterEHVIIIRef}{\chapterNotIncludedRef}
+%endif
+
+%if incl10
+\newcommand{\chapterEHXRef}{\chapterRef{ehc10}}
+%else
+\newcommand{\chapterEHXRef}{\chapterNotIncludedRef}
 %endif
 
 %%]
@@ -544,7 +574,7 @@
 %if useHyperref
 %if storyPHD
 \usepackage[pdfauthor={Atze Dijkstra},
-            pdftitle={Haskell, Step by Step}]{hyperref}
+            pdftitle={Stepping through Haskell}]{hyperref}
 %else
 \usepackage{hyperref}
 %endif
@@ -562,7 +592,7 @@
 %%]
 
 %%[2
-\title{Haskell, Step by Step}
+\title{Stepping through Haskell}
 \author{Atze Dijkstra}
 %%]
 
@@ -742,6 +772,14 @@ Combinator & Meaning & Result
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2
+\tolerance=400
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% The BEGIN
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -825,7 +863,7 @@ Combinator & Meaning & Result
 %elif acm && (icfp05 || hw05 || popl06)
 %elif storyPHD
 \setlength{\parindent}{0mm}
-\addtolength{\parskip}{0.22\baselineskip}
+\addtolength{\parskip}{0.25\baselineskip}
 %else
 \setlength{\parindent}{0mm}
 \addtolength{\parskip}{0.25\baselineskip}
@@ -855,7 +893,7 @@ Combinator & Meaning & Result
 %%% Preface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2
+%%[10
 \cleardoublepage
 \markboth{Preface}{Preface}%
 \AddContentsLine{Preface}
@@ -865,7 +903,7 @@ This thesis represents a snapshot of the description of an ongoing project, the 
 \cite{dijkstra04ehc-web}.
 Although this thesis is self-contained,
 some material is not included:
-\begin{itemize}
+\begin{Itemize}
 \item
 Some, but not all, code has been included.
 Some of the omitted code has been included in electronic versions of this thesis,
@@ -878,7 +916,7 @@ implementation to a higher level, type rule based specification
 This has been completed upto EH version 4 (\chapterRef{ehc1} through \chapterRef{ehc4C}).
 \item
 ...
-\end{itemize}
+\end{Itemize}
 
 Parts of this thesis have been published in an earlier version
 or submitted to a conference\footnote{Acceptance will be known when this thesis goes to print.}
@@ -913,7 +951,8 @@ have been submitted to POPL2006 in a slighty extended form.
 % The ST group, for being a great place to ..., for doing the jobs I should have done were I not making this thesis
 % Anonymous reviewers
 % Gerard
-% Eveline?
+
+To be done ...
 
 %%]
 
@@ -1265,6 +1304,15 @@ Coercion (of records), related to subsumption
 \section{Making implicit parameters explicit}
 \label{ehc9}
 
+\begin{quote}
+\it
+Note to the reader: this chapter is a slightly adapted version of a paper submitted to POPL2006.
+It can be read independently of previous chapters,
+but also is not yet updated to use |Ruler|.
+The original version did include partial type signatures;
+this has been moved to \chapterRef{ehc-partial-sig-quant-guess}.
+\end{quote}
+
 %%@TopicExplImpl.open
 %%@TopicExplImpl.abstract
 %%@TopicExplImpl.body
@@ -1496,6 +1544,14 @@ error messaging, line/col position, comment ????
 \section{Ruler: Programming Type Rules}
 \label{ruler}
 
+\begin{quote}
+\it
+Note to the reader: this chapter is a slightly adapted version of a paper submitted to POPL2006.
+It can be read independently of previous chapters.
+The original paper includes a short introduction of the AG system;
+this has been omitted as \chapterRef{agtut} can be read instead.
+\end{quote}
+
 %%@TopicRuler.abstract
 
 %%@TopicRuler.body
@@ -1513,7 +1569,9 @@ error messaging, line/col position, comment ????
 
 \section{Scratch1}
 
-%%@TopicReflection.phdEvaluation
+%%@StoryIntro.introPHD
+
+ %%@TopicReflection.phdEvaluation
 
  %%@TopicImpred.bodyForallUpDown
 
@@ -1592,7 +1650,7 @@ error messaging, line/col position, comment ????
 
 
 %%[2
-\section{Evaluation and future work}
+\section{Conclusion and future work}
 \label{ehcConcl}
 
 %\subsection{Evaluation}
@@ -1639,6 +1697,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 \bibliographystyle{plain}
 %endif
 {\sloppy\raggedright
+\setlength{\parskip}{0mm}
 \bibliography{\jobname}
 }
 %endif %% not asSlides
@@ -1831,7 +1890,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%[1
 %if inclApp
 \appendix
-
+\setAppxTitleFormat
 %%]
 
 %%[7
@@ -1841,7 +1900,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 
 %%[2
 \section{Notation}
-\subsection{Legenda of symbols}
+\subsection{Legenda of notation}
 \label{appx-legenda-notation}
 
 \begin{tabular}
@@ -1849,6 +1908,11 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%@AppxNotation.notationTableHeader
 %%@AppxNotation.notationBasic
 %%@AppxNotation.notationImpredA
+\end{tabular}
+
+\begin{tabular}
+%%@AppxNotation.notationTableFormat
+%%@AppxNotation.notationTableHeader
 %%@AppxNotation.notationImpredB
 %%@AppxNotation.notationTransl
 %%@AppxNotation.notationCoCo
@@ -1866,6 +1930,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%@AppxNotation.exprHeader
 %%@AppxNotation.exprBasic
 %%@AppxNotation.exprLamPat
+%%@AppxNotation.exprAnn
 %%@AppxNotation.exprRecBasic
 %%@AppxNotation.exprRecExt
 %%@AppxNotation.exprTup
@@ -1880,11 +1945,22 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%@AppxNotation.termSeparator
 %%@AppxNotation.patexprHeader
 %%@AppxNotation.patexprBasic
-%%@AppxNotation.termSeparator
+%%@AppxNotation.patexprAnn
+%%@AppxNotation.patexprRec
+\end{tabular}
+
+\begin{tabular}%
+%%@AppxNotation.termTableFormat
 %%@AppxNotation.tyexprHeader
 %%@AppxNotation.tyexprBasic
 %%@AppxNotation.tyexprTyVar
 %%@AppxNotation.tyexprForall
+%%@AppxNotation.tyexprExists
+%%@AppxNotation.tyexprRec
+%%@AppxNotation.termSeparator
+%%@AppxNotation.typredHeader
+%%@AppxNotation.typredBasic
+%%@AppxNotation.typredRecLacks
 %%@AppxNotation.termSeparator
 %%@AppxNotation.identHeader
 %%@AppxNotation.identBasic
@@ -1906,6 +1982,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%@AppxNotation.termSeparator
 %%@AppxNotation.predHeader
 %%@AppxNotation.predBasic
+%%@AppxNotation.predRecLacks
 %%@AppxNotation.termSeparator
 %%@AppxNotation.impredHeader
 %%@AppxNotation.impredBasic
@@ -1931,7 +2008,7 @@ For names we follow the following naming conventions:
 
 Less precise, but still a convention, are the following:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 For a data structure |AbcXyz| the fields are usually prefixed with the uppercase letters of the type name.
 For example:
@@ -1944,29 +2021,32 @@ This is because Haskell does not allow duplicate names for fields (and functions
 We could have chosen to use Haskell's module mechanism instead,
 but currently not all code for functions related to a single type can be placed in one module,
 due to mutual recursion.
-\end{itemize}
+\end{Itemize}
 
 \section{Rules generated by |Ruler|}
+\label{appx-genbyruler}
+{\small
 \input GenByRuler.tex
+}
 
 \section{Used libraries}
 
 \subsection{Parser combinators}
 \label{appx-parsercombinators}
 
-\begin{center}
+%\begin{center}
 \begin{tabular}{lll}
 \ParserCombTableHead
 \ParserCombTableA
 \ParserCombTableB
 \end{tabular}
-\end{center}
+%\end{center}
 
 
 \subsection{Pretty printing combinators}
 \label{appx-prettyprintingcombinators}
 
-\begin{center}
+%\begin{center}
 \begin{tabular}{ll}
 Combinator & Result
 \\ \hline
@@ -1977,10 +2057,18 @@ Combinator & Result
 |text s| & string |s| as |PP_Doc| \\
 |pp x| & pretty print |x| (assuming instance |PP x|) resulting in a |PP_Doc| \\
 \end{tabular}
-\end{center}
+%\end{center}
 
 \section{Fragment manipulation: Shuffle}
 \label{appx-shuffle}
+
+\begin{quote}
+\it
+Note to the reader: |Shuffle| has been extended since the last review of the documentation.
+Therefore, some of the options are not described,
+and the included documentation describes |Shuffle|'s basic features.
+\end{quote}
+
 
 %%@ToolDocShuffle.abstract
 

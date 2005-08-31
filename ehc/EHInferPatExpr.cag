@@ -186,9 +186,9 @@ SEM PatExpr
 -- generated from ruler rules into EHRulerRules, was 2.Rest
 %%[5.Rest
 SEM PatExpr
-  | AppTop      loc         .   fo_                 =   @lhs.knTy `fitsIn` @ty_r_
-                            .   ty                  =   foTy @fo_
-                patExpr     .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
+  | AppTop      loc         .   fo_fitR_            =   @lhs.knTy `fitsIn` @ty_r_
+                            .   ty                  =   foTy @fo_fitR_
+                patExpr     .   tyCnstr             =   foCnstr @fo_fitR_ |=> @lhs.tyCnstr
                 lhs         .   ty                  =   @patExpr.tyCnstr |=> @ty
   | App         arg         .   knTy                :=  @func.tyCnstr |=> @knArgTy
   | Con         loc         .   ty                  =   Ty_Any
@@ -206,13 +206,13 @@ SEM PatExpr
 SEM PatExpr
   | AppTop Con  loc         .   fo_fitR_            :=  fitsIn @lhs.fiOpts @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) @ty_r_
   | Con         loc         .   (ty_r_,_)           =   tyArrowArgRes @patFunTy
-                            .   ty                  :=  foTy @fo_
-                lhs         .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
+                            .   ty                  :=  foTy @fo_fitR_
+                lhs         .   tyCnstr             =   foCnstr @fo_fitR_ |=> @lhs.tyCnstr
 %%]
 
 %%[11.ApptopCon
 SEM PatExpr
-  | AppTop Con  loc         .   fo_                 :=  fitsIn  (@lhs.fiOpts {fioAllowEqOpen = True})
+  | AppTop Con  loc         .   fo_fitR_            :=  fitsIn  (@lhs.fiOpts {fioAllowEqOpen = True})
                                                                 @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) @ty_r_
 %%]
 

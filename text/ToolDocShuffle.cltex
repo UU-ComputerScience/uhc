@@ -19,9 +19,9 @@ a merged piece of text for a particular version.
 
 When invoked by \verb'shuffle --help', |Shuffle| will answer with
 
-\begin{TT}
+\begin{TTfootnotesize}
 %%1exec(bin/shuffle --help%%)
-\end{TT}
+\end{TTfootnotesize}
 
 \subsection{Version generation}
 
@@ -40,7 +40,7 @@ For example the input
 
 gives the following variants when invoked with different parameters.
 
-\begin{itemize}
+\begin{Itemize}
 
 \item
 \verb'shuffle --gen=2 --ag shuffle/test/tst2'.
@@ -67,13 +67,13 @@ of a chunk, to be defined by the user.
 %%1exec(bin/shuffle --gen=2 --latex shuffle/test/tst2%%)
 \end{TT}
 
-\end{itemize}
+\end{Itemize}
 
 For now combinations of output nor multiple files are allowed.
 
 \subsubsection{Remaining options}
 
-\begin{itemize}
+\begin{Itemize}
 \item
 Generation of index entries is turned on by the option @--index@.
 An index entry complying to @makeindex@ syntax is passed to the \LaTeX\ command @\chunkIndex@.
@@ -81,7 +81,7 @@ Words to be indexed are guessed based on AG and Haskell semantics but is crude i
 A file with a blank separated list of strings not to be indexed can be passed via the option @--xref-except@.
 In the future all of this may be changed to allow for more fine-grained control or be removed because too
 many useless entries are created.
-\end{itemize}
+\end{Itemize}
 
 \subsection{Input format}
 Chunks are defined by text of the following structure
@@ -151,7 +151,7 @@ the two components by a dot \verb|'.'| in between.
 For a chunk it is not necessary to specify a full |chunkId|, a |versionId| suffices to make it be
 included in the output for the version.
 If a full |chunkId| is specified
-\begin{itemize}
+\begin{Itemize}
 \item
 its content can be referred to from within \LaTeX\ by
 \begin{TT}
@@ -159,7 +159,7 @@ its content can be referred to from within \LaTeX\ by
 \end{TT}
 \item
 it can be removed by a later version referring to it by |- chunkId|.
-\end{itemize}
+\end{Itemize}
 
 The order in which chunks appear in the input file is preserved, except for \LaTeX\ generation
 (with option @--latex@) for which this is not guaranteed.
@@ -217,7 +217,7 @@ For example
 %%1srcfile(shuffle/test/tst5%%)
 \end{TT}
 will give 
-\begin{itemize}
+\begin{Itemize}
 \item for \verb'shuffle --gen=1 --ag --lhs2tex=no shuffle/test/tst5'
 \begin{TT}
 %%1exec(bin/shuffle --gen=1 --ag --lhs2tex=no shuffle/test/tst5%%)
@@ -227,7 +227,7 @@ will give
 \begin{TT}
 %%1exec(bin/shuffle --gen=1 --hs --lhs2tex=no shuffle/test/tst5%%)
 \end{TT}
-\end{itemize}
+\end{Itemize}
 
 To allow for incorporating Haskell inside AG the parameter \verb'hs' is specified, for example in
 \begin{TT}
@@ -244,7 +244,7 @@ behaving as if @--gen=all@ were specified.
 
 \subsubsection{Interaction with \LaTeX}
 
-\begin{itemize}
+\begin{Itemize}
 \item
 Required macro's:
 \begin{TT}
@@ -256,7 +256,7 @@ Required macro's:
 
 \item
 Each chunk has also a label defined, with the same name as the chunk name.
-\end{itemize}
+\end{Itemize}
 
 %}
 
