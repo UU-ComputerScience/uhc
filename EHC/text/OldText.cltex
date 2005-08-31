@@ -120,14 +120,14 @@ no quantifiers are specified in the type signatures, for |ixy| a type signature 
 The following interpretation of the meaning of a type is used to determine
 where a quantifier should be inserted when a type is quantified.
 
-\begin{itemize}
+\begin{Itemize}
 \item
 If a type variable |a| occurs somewhere in |sigma1| and |sigma2| in |sigma1 -> sigma2| but not outside the function type,
 |a| will be universally quantified, i.e. with |forall|.
 \item
 If a type variable |a| occurs somewhere in |sigma1| and |sigma2| in |(sigma1,sigma2)| but not outside the tuple type,
 |a| will be existentially quantified, i.e. with |exists|.
-\end{itemize}
+\end{Itemize}
 
 The idea is that the first rule covers the notion that if an |a| is passed in and comes out a function,
 this function will work for all |a|, hence the universal quantification.
@@ -242,7 +242,7 @@ The following example (from Botlan \cite{botlan03ml-power-f})
 
 demonstrates a choice we can make.
 This choice coincides with the question what the type of |v| is.
-\begin{itemize}
+\begin{Itemize}
 \item
 |v :: forall b . (b -> b) -> b -> b|.
 This is Haskell's answer.
@@ -263,7 +263,7 @@ Now |v| cannot be applied to a function of type |Int -> Int| because this functi
 not general enough to be used as if it were of type |forall a . a -> a|.
 Paradoxically enough a more general function will be returned;
 this relates to a phenomenon called \IxAsDef{contravariance} which we will discuss later.
-\end{itemize}
+\end{Itemize}
 
 Allowing type variables to be bound to, or instantiated with,
 quantified types is called \IxAsDef{impredicativeness} \TBD{[cite...]}.
@@ -297,7 +297,7 @@ the earlier example with |ii| and |id| (\pageRef{ehc4-forall-sub}).
 However, the precise use of |fitsIn| in these contexts differs slightly
 in the way instantiation is done.
 
-\begin{itemize}
+\begin{Itemize}
 \item
 For an application |f a| of |f :: sigma2 -> ...| to |a :: sigma1|
 we have
@@ -328,12 +328,8 @@ a so called \IxAsDef{weak context} |weakFIOpts|.
 It is used whenever an expression can have |>1| alternative expressions as a result,
 which is the case for |case|-expressions,
 to be dealt with no sooner than the introduction of datatypes in the next version of EH
-%if not incl05
-(not included in \thispaper).
-%else
-(\chapterRef{ehc5}).
-%endif
-\end{itemize}
+(\chapterEHVRef).
+\end{Itemize}
 
 \label{ehc4-fitsIn-strength}
 |fitsIn =@= <=| therefore needs an option |fiopt| to describe these variations
@@ -461,7 +457,7 @@ for the inference process.
 
 The rules for quantified types also deserve a bit more attention.
 
-\begin{itemize}
+\begin{Itemize}
 \item
 \RuleRef{f-forall-r2} applies in
 \begin{code}
@@ -495,7 +491,7 @@ This is simulated by instantiating with fresh constrainable type variables |tvar
 via |instv|.
 In that case we also are not interested in any found constraints
 concerning the fresh type variables, so these are removed.
-\end{itemize}
+\end{Itemize}
 
 \Paragraph{Co- and contravariance}
 The encoding of co- and contravariance behavior is solved a bit more general then really
@@ -513,11 +509,7 @@ encoding this information
 
 It also shows that only for function and tuple types we know what to do in such a situation.
 Complications in this area will arise with the introduction of datatypes
-%if not incl05
-later on (not included in \thispaper).
-%else
-in \chapterRef{ehc5}.
-%endif
+(\chapterEHVRef).
 
 \Paragraph{|fitsIn| parameters and result}
 So, let us know finally look at the implementation of |<=|,
@@ -683,7 +675,7 @@ Function |fitsIn| is
 now one of the two places
 where instantiation of a type occurs.
 
-\begin{itemize}
+\begin{Itemize}
 \item
 In |fitsIn| the
 instantiation of a quantified type now is entangled with
@@ -694,7 +686,7 @@ the matching of types.
 When a type is bound to an identifier,
 we have to instantiate top level |exists|'s to
 open the type.
-\end{itemize}
+\end{Itemize}
 
 These variants are implemented by |tyInst1Quants|
 and |tyInst1Exists| respectively:
@@ -723,7 +715,7 @@ during the quantification of a type.
 \rulerCmdUse{rules.quGam4}
 
 Informally, the following rules are obeyed
-\begin{itemize}
+\begin{Itemize}
 \item
 The first step is to find for a type variable |a| the smallest part of a type
 where |a| occurs.
@@ -755,7 +747,7 @@ later on (not included in \thispaper).
 %else
 (\chapterRef{ehc5}).
 %endif
-\end{itemize}
+\end{Itemize}
 
 Because these rules represent a form of syntactic sugar they always
 can be overruled by explicit quantifiers, as indicated by \ruleRef{q-quant}.
@@ -838,7 +830,7 @@ The main differences are as follows:
 \rulerCmdUse{rules.expr4}
 \rulerCmdUse{rules.pat4}
 
-\begin{itemize}
+\begin{Itemize}
 \item
 All rules are passed an additional context parameter indicating
 the way |<=| has to be done with respect to strength |fiopt|.
@@ -864,7 +856,7 @@ bindings via the rules in \figRef{rules.quGam4} and \figRef{rules.qu4}.
 Additionaly, to take care of always opening existentially quantified types
 bound by a value identifier, a function |instE| is used.
 Function |instE| corresponds to |tyInst1Exists|.
-\end{itemize}
+\end{Itemize}
 
 Changes in the implementation are also small, mostly to take care
 of the additional parameters to |fitsIn| (|fiopt|, a |UID| for instantiations)

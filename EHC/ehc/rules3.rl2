@@ -1280,7 +1280,7 @@ ruleset patexpr.base scheme patexpr viewsel K - * "Pattern expression type rules
       judge - P
       judge G : valGamLookupIdTy = (hsnUn identc) :-> ty.g `elem` valGam
       judge V : tvarvFresh2
-      judge fitP : fit = instFIOpts :- ty.g <= (tvarv1 -> tvarv2) : fo.fitP : ty.pf ~> tyCnstr.p
+      judge fitP : fit = instLRFIOpts :- ty.g <= (tvarv1 -> tvarv2) : fo.fitP : ty.pf ~> tyCnstr.p
       judge fitR : fit = fiopt :- (tyCnstr.inh knTy) <= (tyCnstr.p tvarv1) : fo.fitR : (retain ty.r) ~> tyCnstr.r
       -
       judge R : patexpr
@@ -1288,6 +1288,10 @@ ruleset patexpr.base scheme patexpr viewsel K - * "Pattern expression type rules
           | ty = ty.r
           | tyCnstr.syn = tyCnstr.r tyCnstr.inh
           | patFunTy = ty.pf
+    view DT =
+      judge fitP : fit
+          | fiopt = instFIOpts
+      -
 
   rule p.var "Var" =
     view K =
@@ -1544,7 +1548,7 @@ ruleset tyAltTyElim scheme tyAltTyElim viewsel I2 - * "Type alternative eliminat
       judge tysH : tyAltSelect = ty.thardH.._ === talt..._ , ty, thardH, tneed
       judge tysS : tyAltSelect = ty.thardS.._ === talt..._ , ty.nQu, thardS, tneed
       judge tysQ : tyAltSelect = ty.Qu.._ === talt..._ , ty.Qu, thardS, tneed
-      judge H : match = fiopt :- (ty.thardH.._, ty.Qu.._) <=>.(<=>) ANY : ity.thardH ~> ityCnstr.h
+      judge H : match = fiopt :- ((ty.thardH.._, ty.Qu.._)) <=>.(<=>) ANY : ity.thardH ~> ityCnstr.h
       judge S : match = fiopt :- (ityCnstr.h ty.thardS.._) <=>.(<=>) ity.thardH : ity.thardS ~> _
       judge AE : tyAltTyElim = fiopt ; ityCnstr.inh; tvarv.g.._ :- ity.thardS : ty ~> tyCnstr.e
       judge need : fioptMkNeed = tneed === fiopt

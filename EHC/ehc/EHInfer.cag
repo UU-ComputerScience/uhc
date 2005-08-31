@@ -681,7 +681,7 @@ SEM Decl
 SEM Expr
   | Lam         loc         .  knFunFIOpts          =   @lhs.fiOpts {fioBindRFirst=True}
   | App         func        .  fiOpts               =   strongFIOpts
-                loc         .  argFIOpts            =   if @arg.isForcedTy then strongFIOpts else instLFIOpts
+                loc         .  argFIOpts            =   instLFIOpts
                 arg         .  fiOpts               =   @argFIOpts
 %%]
 

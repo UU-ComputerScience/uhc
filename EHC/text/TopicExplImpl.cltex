@@ -188,7 +188,7 @@ The compiler is fully in control of which dictionary to pass for a predicate,
 determined as part of the resolution of overloading.
 This behavior is the result of the combination of the following list of design choices:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 A class definition introduces a record type (for the dictionary) associated with a predicate over type variables.
 \item
@@ -198,13 +198,13 @@ Instance definitions describe how to construct a value for the record type for t
 The type of a function specifies the predicates for which dictionaries have to be passed at the call site of the function.
 \item
 Which dictionary is to be passed at the call site of a function is determined by:
- \begin{itemize}
+ \begin{Itemize}
  \item
  required dictionaries at the call site of a function;
  this is determined by the predicates in the instantiated type of the called function.
  \item
  the available dictionaries introduced by instance definitions.
- \end{itemize}
+ \end{Itemize}
 Internally the compiler uses a predicate proving machinery and heuristics
 \cite{jones00thih,peytonjones97typecl-explore,faxen02semantics-haskell} to compute the proper dictionaries.
 \item
@@ -212,7 +212,7 @@ Which dictionaries are to be passed is fully fixed by the language definition.
 \item
 The language definition uses a statically determined set of dictionaries introduced by instance definitions and a fixed algorithm for determining
 which dictionaries are to be passed.
-\end{itemize}
+\end{Itemize}
 
 The result of this is both a blessing and a curse.
 A blessing because it silently solves a problem (i.e. overloading), a curse
@@ -243,7 +243,7 @@ To make the distinction between our and Haskell's approach clear in the remainde
 we call our explicit language and its implementation Explicit Haskell (EH)
 whereas we refer to Haskell language and its implementations by just Haskell.
 
-\begin{itemize}
+\begin{Itemize}
 \item
 In principle, all aspects of an EH program can be explicitly specified, in particular
 the types of functions, types of other values,
@@ -251,7 +251,7 @@ and the manipulation of dictionaries, without making use of or referring to the 
 \item
 The programmer is allowed to omit explicit specification of some program aspects;
 EH then does its utmost to infer the missing information.
-\end{itemize}
+\end{Itemize}
 
 Our approach
 allows the programmer and the EH system to jointly construct the completely
@@ -267,7 +267,7 @@ and Haskell's ease of programming.
 
 In \thischapt\ explicitness takes the following form:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 Dictionaries introduced by instance definitions can be named;
 the dictionary can be accessed by name as a record value.
@@ -287,7 +287,7 @@ it blends nicely with it.
 Types can be composed of the usual base types, predicates and quantifiers
 (both universal and existential) 
 in arbitrary combinations.
-\end{itemize}
+\end{Itemize}
 
 We will focus on all but the last items of the preceding list:
 the explicit passing of values for implicit parameters.
@@ -338,7 +338,7 @@ combining explicitly specified and inferred program aspects
 as it offers
 a starting point for practical experience.
 For reasons of space we have made the following choices:
-\begin{itemize}
+\begin{Itemize}
 \item
 We present examples and part of our implementation,
 so the reader gets an impression of what can be done and how it ties in with other parts of the implementation
@@ -365,7 +365,7 @@ are more concise in their presentation; we therefore have chosen to incorporate 
 in \thischapt.
 We describe the similarities between typing rules and their attribute grammar counterpart
 in a companion paper \cite{dijkstra06ruler}.
-\end{itemize}
+\end{Itemize}
 
 \subsection{Preliminaries}
 \label{ehc09-prelim}
@@ -381,7 +381,10 @@ the previous one.
 The features presented in \thischapt\ are part of the ninth version.
 %endif
 
-\begin{TabularFigure}{EH terms (emphasized ones explained throughout the text)}{exim-eh-lang-terms}%
+%{
+%format t = sigma
+%format pr = pi
+\begin{TabularCenterFigure}{EH terms (emphasized ones explained throughout the text)}{exim-eh-lang-terms}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
 %%@AppxNotation.exprBasic
@@ -398,14 +401,15 @@ The features presented in \thischapt\ are part of the ninth version.
 %%@AppxNotation.identHeader
 %%@AppxNotation.identBasic
 %%@AppxNotation.identRecLbl
-\end{TabularFigure}
+\end{TabularCenterFigure}
+%}
 
 \figRef{exim-eh-lang-terms} and \figRef{exim-eh-lang-types} show the terms and types featured in EH.
 Throughout \thischapt\ all language constructs will be gradually introduced and explained.
 In general, we designed EH to be as upwards compatible as possible with Haskell.
 We point out some aspects required for understanding the discussion in the next section:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 An EH program is single stand alone term.
 All types required in subsequent examples are either silently assumed to be similar to Haskell or
@@ -419,7 +423,7 @@ Records are denoted as parenthesized comma separated sequences of field definiti
 Extensions and updates to a record |e| are denoted as |(e || ...)|, with |e| in front of the vertical bar `| || |'.
 The notation and semantics is based on existing work on extensible records \cite{gaster96poly-ext-rec-var,jones99lightweight-ext-rec}.
 Record extension and updates are useful for re-using values from a record.
-\end{itemize}
+\end{Itemize}
 
 The universe of types as used in \thischapt\ is shown in \figRef{exim-eh-lang-types}.
 A programmer can specify types using the same syntax.
@@ -475,7 +479,7 @@ We make no attempt to infer higher ranked types
 instead we propagate explicitly specified types as good as possible to wherever this information is needed.
 Our strategies here are elaborated in a forthcoming publication \cite{dijkstra05phd}.
 
-\begin{TabularFigure}{EH types}{exim-eh-lang-types}
+\begin{TabularCenterFigure}{EH types}{exim-eh-lang-types}
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.typeHeader
 %%@AppxNotation.typeBasic
@@ -484,7 +488,7 @@ Our strategies here are elaborated in a forthcoming publication \cite{dijkstra05
 %%@AppxNotation.termSeparator
 %%@AppxNotation.impredHeader
 %%@AppxNotation.impredBasic
-\end{TabularFigure}
+\end{TabularCenterFigure}
 
 \subsection{Implicit parameters}
 \label{ehc09-implparam}
@@ -511,7 +515,7 @@ is no longer needed:
 This example demonstrates the use of the two basic ingredients required for being explicit in the use
 of implicit parameters (the list items correspond to the commented number in the example):
 
-\begin{enumerate}
+\begin{Enumerate}
 \item
 The notation |<:| binds an identifier, here |dEqInt|, to the dictionary representing the instance.
 The record |dEqInt| from now on is available as a normal value.
@@ -524,10 +528,10 @@ The dictionary expression for |n1| is formed by using |dEqInt|,
 for |n2| a new record is created:
 a dictionary can also be created by updating an already existing one like |dEqInt|;
 in our discussion (\secRef{ehc09-discussion}) we will come back to this.
-\end{enumerate}
+\end{Enumerate}
 
 This example demonstrates our view on implicit parameters:
-\begin{itemize}
+\begin{Itemize}
 \item
 Program values live in two, possibly overlapping, worlds, \IxAsDef{explicit} and \IxAsDef{implicit}.
 \item
@@ -538,7 +542,7 @@ In the implicit case the language definition determines which value to take from
 Switching between the explicit and implicit world is accomplished by means of additional notation.
 We go from
 implicit to explicit by instance definitions with the naming extension, and in the reverse direction by means of the |(! ^^ !)| construct.
-\end{itemize}
+\end{Itemize}
 
 The |Modular| motivating example now can be simplified to (merging our notation into Haskell):
 
@@ -842,13 +846,13 @@ instance dEqInt2 <: Eq Int
 We allow instances to be declared locally, within the scope of other program variables.
 A local instance declaration shadows an instance declaration introduced at an outer level:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 If their names are equal, the innermost shadows the outermost.
 \item
 In case of having overlapping instances available during the proof of predicates arising inside the
 |let| expression, the innermost instance takes precedence over the outermost.
-\end{itemize}
+\end{Itemize}
 
 This mechanism allows the programmer to fully specify which instances are
 active at any point in the program text:
@@ -1037,17 +1041,17 @@ This is especially true for the last \ruleRef{e-pred}, since its use is not asso
 a syntactic construct of the source language.
 Algorithmic variants of the rules have two pleasant properties:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 The syntax tree determines how to combine the rules.
 \item
 By distributing data over a larger set of variables an order in which to compute them becomes apparent.
-\end{itemize}
+\end{Itemize}
 The first property is taken care of by the parser, and based on the second property we can implement rules
 straightforwardly using an attribute grammar, mapping variables in rules to attributes.
 Our situation is complicated due to a combination of several factors:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 The structure of the source language cannot be used to determine where \ruleRef{e-pred} should be applied:
 the term |e| in the premise and the conclusion are the same.
@@ -1066,7 +1070,7 @@ inferencing becomes possible.
 However, we allow predicated as well as quantified types to participate in type inferencing.
 As a consequence, predicates as well as quantifiers can be present in any type encountered during
 type inferencing.
-\end{itemize}
+\end{Itemize}
 
 \paragraph{Implicitness made explicit}
 
@@ -1082,10 +1086,10 @@ then replaced by more accurate knowledge, if any.
 Throughout the remainder of this section we work towards algorithmic
 versions of the type rules in which the solution to equations between types
 are computed by means of
-\begin{itemize}
+\begin{Itemize}
 \item the use of variables representing unkown information
 \item the use of constraints on type variables representing found information
-\end{itemize}
+\end{Itemize}
 
 In our approach we also employ the notion of variables for sets of predicates, called \IxAsDef{predicate wildcard variable}s,
 representing a yet unknown collection of implicit parameters, or,
@@ -1093,15 +1097,15 @@ more accurately their corresponding predicates.
 These predicate wildcard variables are used in a type inferencing/checking algorithm which explicitly
 deals with expected (or known) types |sigmak|, as well as extra inferred type information.
 
-\begin{TabularFigure}{Legenda of type related notation}{exim-eh-legenda-symbols}
+\begin{TabularCenterFigure}{Legenda of type related notation}{exim-eh-legenda-symbols}
 %%@AppxNotation.notationTableFormat
 %%@AppxNotation.notationTableHeader
 %%@AppxNotation.notationBasic
 %%@AppxNotation.notationTransl
 %%@AppxNotation.notationExplImpl
-\end{TabularFigure}
+\end{TabularCenterFigure}
 
-\begin{TabularFigure}{Legenda of judgement forms for each version}{exim-eh-legenda-schemes}{llp{.45\linewidth}}
+\begin{TabularCenterFigure}{Legenda of judgement forms for each version}{exim-eh-legenda-schemes}{llp{.45\linewidth}}
 Version & Judgement & Read as \\
 \hline
 |I|
@@ -1136,7 +1140,7 @@ Version & Judgement & Read as \\
  & \(\rulerCmdUse{rules2.patI.base.scheme}\)
  & Pattern has type |sigma| and variable bindings |Gammap|.
  \\
-\end{TabularFigure}
+\end{TabularCenterFigure}
 
 \FigRef{exim-eh-legenda-schemes} provides a summary of the judgement forms we use.
 The presence of properties in judgements varies with the version of typing rules.
@@ -1148,7 +1152,7 @@ These key aspects are expressed in the adapted rule for predicates shown
 in \figRef{rules2.exprEvK.pred}.
 This rule makes two things explicit:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 The context provides the expected (or known) type |sigmak| of |e|.
 Jointly operating, all our rules maintain the invariant that |e| will get assigned a type |sigma|
@@ -1170,7 +1174,7 @@ the known type of |e| may start with a sequence of implicit parameters.
 This is expressed by letting the expected type in the premise be |pvar -> sigmak|.
 In this way we require the type of |e| to have the form |pvar -> sigmak| and also assign an identifier |pvar| to
 the implicit part.
-\end{itemize}
+\end{Itemize}
 
 A predicate wildcard variable makes explicit that we can expect a (possibly empty)
 sequence of implicit parameters
@@ -1341,25 +1345,25 @@ Thus we obtain the same expressiveness as system-F,
 making the issue of soundness and completeness of our type system irrelevant.
 What remains relevant are the following questions:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 For a completely explicitly typed program, is our algorithm and implementation sound and complete?
 \item
 For a partially explicitly typed program, what is the characterisation of the types that can be inferred for
 the terms for which no type has been given?
-\end{itemize}
+\end{Itemize}
 
 We have not investigated these questions in the sense of proving their truth or falsehood.
 However, we have taken the following as our starting point:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 Stick to HM type inferencing, except for the following:
 \item
 Combine type checking and inferencing.
 In order to  be able to do this, impredicative types are allowed to participate in HM type inferencing.
 This is a separate issue we deal with elsewhere \cite{dijkstra05phd}.
-\end{itemize}
+\end{Itemize}
 
 By design we avoid `breaking' HM type inferencing.
 However, Faxen \cite{faxen03hask-princ-types} demonstrates the lack of principal types
@@ -1445,7 +1449,7 @@ Being explicit by means of the |(! ... !)| language construct very soon becomes 
 our current implementation requires full specification of all predicates involved inside |(! ... !)|.
 Can we do with less?
 
-\begin{itemize}
+\begin{Itemize}
 \item
 \RuleRef{e-iapp} from \figRef{rules2.exprI.explimpl} uses the predicate |pi2| in |(! e2 <: pi2 !)|
 directly, that is, without
@@ -1469,7 +1473,7 @@ specify type related information.
 The syntax \ruleRef{e-ilam} requires a predicate |pi| in its implicit argument |(! p <: pi !)|.
 It is sufficient to either specify a predicate for this form of a lambda expression or to specify a predicate
 in a corresponding type annotation.
-\end{itemize}
+\end{Itemize}
 
 Whichever of these routes leads to the most useful solution for the programmer,
 if the need arises our solution always gives the programmer the full power of being explicit in what is required.
@@ -1498,7 +1502,7 @@ means of the explicit parameterization, thus allowing open recursion.
 This corresponds to a late binding, much in the style employed by object oriented languages.
 This is a choice out of (at least) three equally expressive alternatives:
 
-\begin{itemize}
+\begin{Itemize}
 \item Our current solution, late binding as described. The consequence is that
 all class functions now take an additional (implicit) parameter, namely the dictionary where
 this dictionary function has been retrieved from.
@@ -1506,7 +1510,7 @@ this dictionary function has been retrieved from.
 In our |nub| example this means that |ne| still uses |dEqInt|'s |eq| instead of the |eq|
 provided in the updated |(dEqInt || eq := ...)|.
 \item A combination of these solutions, such as using late binding for default definitions, and Haskell's binding for instances.
-\end{itemize}
+\end{Itemize}
 
 Again, whichever of the solutions is preferred as the default case, especially in the light
 of the absence of open recursion in Haskell,
@@ -1561,7 +1565,7 @@ in   f ...
 
 We only mention briefly some issues with this approach:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 The type for which an instance without context is defined usually is specified explicitly.
 This is  no longer the case for |?| predicates if an explicit type signature for
@@ -1572,7 +1576,7 @@ which scoped variable instance is to be taken.
 Scoping for instances as available in EHC may well obviate this restriction.
 \item
 Use of records for dictionaries can be optimized away because each class contains a single field only.
-\end{itemize}
+\end{Itemize}
 
 Our approach has the additional benefit that we are not obliged to rely on the proving machinery by providing a dictionary directly:
 
@@ -1593,7 +1597,7 @@ We have not chosen that route as we wanted to stay as close as possible to Haske
 Scheffczyk has explored named instances as well
 \cite{kahl01named-instance,scheffczyk01mth-namedinst}.
 Our work differs in several aspects:
-\begin{itemize}
+\begin{Itemize}
 \item
 Scheffczyk partitions predicates in a type signature into ordered and unordered ones.
 For ordered predicates one needs to pass an explicit dictionary, unordered ones are those
@@ -1615,7 +1619,7 @@ Our approach is solely based on normal values already available.
 Our syntax is less concise than the syntax used by Scheffczyk.
 This is probably difficult to repair because of the additional notation
 required to lift normal values to the evidence domain. 
-\end{itemize}
+\end{Itemize}
 
 \paragraph{Implementation}
 The type inferencing/checking algorithm employed in \thischapt\ is described
@@ -1698,12 +1702,12 @@ let  f  ::  (! r lacks l !) ->  (r | l :: a)  -> a
 \end{code}
 
 The latter approach has a couple of advantages.
-\begin{itemize}
+\begin{Itemize}
 \item
 LL parsing is made easier.
 \item
 The same notation can be used for expressions (value terms) and patterns.
-\end{itemize}
+\end{Itemize}
 
 The obvious syntactic sugar can be added, e.g. |(! p, q !) ->| for |(! p !) -> (! q !) ->|
 
@@ -1721,7 +1725,7 @@ The following typing rule attempts to express this:
 \]
 
 This involves some additional notation:
-\begin{itemize}
+\begin{Itemize}
 \item
 In this rule we assume that each value term is translated to a form
 where implicit parameters are explicit. This translation is denoted by |Transl|.
@@ -1766,7 +1770,7 @@ Gamma  =  ..
 A |Transl| may contain holes referring to not yet resolved predicates, allowing
 delay of proving predicates.
 A substitution mechanism substitutes these holes with the actual proof evidence.
-\end{itemize}
+\end{Itemize}
 
 The idea here is that if an implicit parameter |pia| is expected, whereas an expression translating to |Transl2| is given,
 this |Transl2| is related (in the world of implicit values) to a predicate |piasigma| which can be used to
@@ -1774,7 +1778,7 @@ prove |pia|.
 The translation |Transl2pi| of |pia| is then passed to the function.
 
 The implementation of this typing rule probably will have to deal with:
-\begin{itemize}
+\begin{Itemize}
 \item
 Explicitly given parameters on an implicit position take preference in the computation of the proof.
 This implies a priority mechanism to disambiguate overlapping predicates, i.e. multiple proofs.
@@ -1789,7 +1793,7 @@ inferencing will take place.
 Either it is known that an implicit parameter is given, in which case we have to find the associated predicate.
 Or only after the complete context has been inferred it becomes clear that an additional implicit parameter should have been
 passed.
-\end{itemize}
+\end{Itemize}
 
 \subsection{Specifying rules}
 
@@ -1799,7 +1803,7 @@ pred  Eq a :~> ( eq :: a -> a -> Bool )
 pred  Eq a :~> x => Ord a :~> ( lt :: a -> a -> Bool, Eq :: (! Eq a !) ) = ( r | Eq = x )
 \end{code}
 This should be read as:
-\begin{itemize}
+\begin{Itemize}
 \item
 A predicate |Eq a| has as its proof/evidence/witness object a record with a function |eq|.
 \item
@@ -1811,7 +1815,7 @@ In this way also default fields should be specifiable.
 \\
 Issues: translation to function taking |x| as well as |r| as offset params as parameter? Can this work, is it a good idea at all?
 Or just only use the notation but under the hood use record structure as being known anyway.
-\end{itemize}
+\end{Itemize}
 
 Rules, corresponding to instance declaratations, populate the world of predicates:
 \begin{code}
@@ -1821,13 +1825,13 @@ rule Eq a :~> e => Eq [a] :~> l =  ( eq = \a -> \b ->  eq (! e !) (head a) (head
                                    )
 \end{code}
 This should be read as:
-\begin{itemize}
+\begin{Itemize}
 \item
 A predicate |Eq Int| is a given 'fact', combined with how to build it, i.e. its translation |Transl|.
 \item
 A predicate for |Eq [a]| on lists can be constructed if a |Eq a| is given.
 In the example the implicit parameters are explicitly given, in principle this can be deduced.
-\end{itemize}
+\end{Itemize}
 
 The introduction of |Ord a| also requires an additional rule for retrieving the superclass:
 \begin{code}
@@ -1835,11 +1839,11 @@ rule Ord a :~> o => Eq a :~> e = o.Eq
 \end{code}
 
 Implementation issues:
-\begin{itemize}
+\begin{Itemize}
 \item All |=>|'s translate to function |->|'s.
 \item The |=>| of |pred| and |rule| are accumulative.
 \item Proof machinery, cycles, ...
-\end{itemize}
+\end{Itemize}
 
 \Paragraph{Giving names to rules}
 Rules can be given names
@@ -1920,17 +1924,17 @@ as a parameter:
 \]
 
 Issues/problems:
-\begin{enumerate}
+\begin{Enumerate}
 \item
 Type inference means we do not yet know if a predicate must be passed.
 \item
 Yet the explicit passing via |(! expr !)| requires the presence of an implicit parameter (i.e. predicate in the corresponding type).
 \item
 If given a |(! expr !)| how do we find the corresponding predicate |pi| for which |expr| is the evidence/proof?
-\end{enumerate}
+\end{Enumerate}
 
 Corresponding solutions:
-\begin{enumerate}
+\begin{Enumerate}
 \item
 Make the possible locations for implicit parameters explicit.
 \item
@@ -1944,7 +1948,7 @@ In principle, always an implicit parameter may be taken except when specified ot
 This means that in |let| expressions (yes/no type sig for val decl) and applications (yes/no type for arg) a choice between
 no/yes |pvar -> sigmak| as known type to be passed downwards has to be made.
 \item
-\begin{enumerate}
+\begin{Enumerate}
 \item
 Matching with the type of evidence, but this is most likely not 1-1.
 It might work for classes because the corresponding record is unique (names in it may not be re-used in other classes).
@@ -1955,8 +1959,8 @@ For example, the evidence of each instance would have type |data Dict c r = Dict
 and |c| a phantom type equal to the class name.
 The type |Dict| is only used for class instances so if a |Dict Eq (...)| value is found we know it
 deals with instances of class |Eq|.
-\end{enumerate}
-\end{enumerate}
+\end{Enumerate}
+\end{Enumerate}
 
 \Paragraph{Case analysis on context}
 

@@ -217,7 +217,7 @@ The way this is done varies with the presence of a type signature.
 (\figRef{rules3.HM.decl.base})
 specify the respective variations:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 A type signature (for an identifier) is specified explicitly, in \ruleRef{d.tysig}
 (partial type signatures are supported, but discussed in \chapterRef{ehc-partial-sig-quant-guess}).
@@ -229,7 +229,7 @@ A type (for an identifier) is inferred.
 a type variable is used instead.
 At the boundary of its scope, in \ruleRef{e.let}, we generalise over those type variables in the type
 which do not occur outside the scope.
-\end{itemize}
+\end{Itemize}
 
 A type signature itself is specified without explicit use of quantifiers.
 These need to be added for all introduced type variables in the type expression for the signature.
@@ -254,7 +254,7 @@ We now run into a problem which will be solved more elegantly in the next versio
 In a declaration of a value (\ruleRef{d.val})
 the type signature acts as a known type against which checking of the value expression takes place.
 Which type do we use for that purpose, the quantified or the unquantified type signature?
-\begin{itemize}
+\begin{Itemize}
 \item
 Suppose the unquantified signature |a -> a| is used in the following fragment.
 Then, for the erroneous
@@ -272,7 +272,7 @@ We must inhibit the binding of |a| as part of the known type of the body of |id|
 Alternatively, quantified signature |forall ^ a . a -> a| may be used.
 However, the inferencing process and the fitting done by |fitsIn| cannot (yet) handle
 types with quantifiers.
-\end{itemize}
+\end{Itemize}
 
 For now, this can be solved by replacing all quantified type variables of a known type
 with type constants, encoded by a type variable with category |TyVarCateg_Fixed|.

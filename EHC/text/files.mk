@@ -23,8 +23,8 @@ TEXT_TMP_PREFIX				:= $(BLD_PREFIX)
 TEXT_TMP_VARIANT_PREFIX		:= $(TEXT_TMP_PREFIX)$(TEXT_VARIANT)/
 
 # all variants
-TEXT_PUB_VARIANTS			:= popl06-ruler popl06-explimpl shuffle
-TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) popl06-ruler-tst phd phd-tst scratch truu-explimpl truu-ruler
+TEXT_PUB_VARIANTS			:= phd popl06-ruler popl06-explimpl shuffle
+TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) popl06-ruler-tst phd-tst scratch truu-explimpl truu-ruler
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
 # 2	: phd
@@ -282,8 +282,8 @@ $(TEXT_INCL_LIST_TEX): $(TEXT_ALL_MK_FILES)
 	) > $@
 
 $(TEXT_GEN_BY_RULER_TABLE_TEX): $(EHC_MKF) $(TEXT_MKF)
-	@(echo "\begin{tabular}{ll@{\;:\;}p{.7\linewidth}}" ; \
-	  echo "EH version & Ruler view & Ruler rules \\\\ \\hline" ; \
+	@(echo "\begin{tabular}{ll@{\;:\;}p{.6\linewidth}}" ; \
+	  echo "EH version & Ruler view & rules \\\\ \\hline" ; \
 	  for f in $(EHC_VARIANTS) ; \
 	  do \
 	    $(MAKE) echo-gen-by-ruler-$$f ; \

@@ -67,11 +67,29 @@ of the type system.
 \subsection{Concrete and abstract syntax}
 The \IxAsDef{concrete syntax} of a (programming) language describes the structure of acceptable
 sentences for that language, or more down to earth, it describes what a compiler for that language
-accepts with respect to the textual structure.
+accepts with respect to the textual structure (see \figRef{eh1-lang-terms} for the term language).
 On the other hand, \IxAsDef{abstract syntax} describes the structure used by the compiler itself for
 analysis and code generation.
 Translation from the more user friendly concrete syntax to the machine friendly abstract syntax is done by a
 parser; from the abstract to the concrete representation is done by a pretty printer.
+
+\begin{TabularCenterFigure}{EH1 terms}{eh1-lang-terms}%
+%%@AppxNotation.termTableFormat
+%%@AppxNotation.exprHeader
+%%@AppxNotation.exprBasic
+%%@AppxNotation.exprLamPat
+%%@AppxNotation.exprAnn
+%%@AppxNotation.termSeparator
+%%@AppxNotation.declHeader
+%%@AppxNotation.declBasic
+%%@AppxNotation.declValPat
+%%@AppxNotation.termSeparator
+%%@AppxNotation.patexprHeader
+%%@AppxNotation.patexprBasic
+%%@AppxNotation.termSeparator
+%%@AppxNotation.identHeader
+%%@AppxNotation.identBasic
+\end{TabularCenterFigure}
 
 Let us focus our attention first on the abstract syntax for EH1, in particular the part
 defining the structure for expressions (the remaining syntax can be found in \figRef{abs-syn-eh1}).
@@ -151,9 +169,18 @@ does not allow a type signature for the elements of a tuple.
 \chunkCmdUse{EHAbsSyn.1.AllNT}
 \end{CodeFigure}
 
+\begin{AGFeature}{ag-set-notation}{Set notation for variants}
+The rule for (e.g.) attribute |fo| is specified for |IConst| and |CConst| together.
+Instead of specifying only one variant a whitespace separated list of variant names
+may be specified after the vertical bar '| || |'.
+It is also allowed to specify this list relative to all declared variants by specifying for which
+variants the rule should \emph{not} be declared.
+For example: |* - IConst CConst| if the rule was to be defined for all variants except |IConst| and |CConst|.
+\end{AGFeature}
+
 Looking at this example and the rest of the abstract syntax in \figRef{abs-syn-eh1} we can make several
 observations of what one is allowed to write in EH and what can be expected from the implementation:
-\begin{itemize}
+\begin{Itemize}
 \item
 There is a striking similarity between the structure of expressions |Expr|
 and patterns |PatExpr| (and as we will see later type expressions |TyExpr|):
@@ -248,17 +275,17 @@ We need this for the reconstruction of the parentheses in the input.
 \item
 |AGItf| is the top of a complete abstract syntax tree.
 %if incl00TopicAGPrimer
-As noted in the AG primer this is the place where interfacing with the `outside' Haskell world takes place.
+As noted in the AG tutorial this is the place where interfacing with the `outside' Haskell world takes place.
 %else
 The top of an abstract syntax tree is the place where interfacing
 (hence the convention |Itf|)
 with the outside, that is, the Haskell world takes place.
 At |AGItf| 
-  \begin{itemize}
+  \begin{Itemize}
   \item Initialization of inherited attributes takes place.
   \item Synthesized attributes are routed back into the tree as inherited attributes.
   \item Synthesized attributes are passed to the outside, to the Haskell world.
-  \end{itemize}
+  \end{Itemize}
 %endif
 It is a convention in \thispaper\ to give all nonterminals in the abstract syntax a
 name with |AGItf| in it,
@@ -276,7 +303,7 @@ Later compiler versions can change the definition for |AllNT| without the need t
 also modify the list of nonterminals for which an attribute definition |ATTR| is
 declared.
 %endif
-\end{itemize}
+\end{Itemize}
 
 %if incl01TopicParsing
 %%@parsing
@@ -533,10 +560,10 @@ For example, at |AppTop| the printing of a tuple always adds parentheses via fun
 so no additional parentheses are needed.
 This is reflected in the result of |parNeedApp| which gives us the following information back in the order of the elements of
 the returned tuple:
-\begin{itemize}
+\begin{Itemize}
 \item The local need for parentheses, that is `here' in the alternative.
 \item The need for parentheses for the arguments of a type.
-\end{itemize}
+\end{Itemize}
 
 The structure of the solution, that is, gather information bottom to top (e.g. |appArgPPL|) and use it higher up in the tree,
 is a recurring pattern.
@@ -576,12 +603,12 @@ synthesized |pp| attribute at an attributed non-terminal
 \label{sec-check-type}
 The type system of a programming language is described by typing rules.
 A \IxAsDef{typing rule}
-\begin{itemize}
+\begin{Itemize}
 \item
 Relates language constructs to types.
 \item
 Constrains the types of these language constructs.
-\end{itemize}
+\end{Itemize}
 
 \subsubsection{Type rules}
 We start with a simplified set of equational type rules (\figRef{rules3.E.expr.baseForEH1}).
@@ -764,7 +791,7 @@ In EH1 we exclusively deal with type checking.
 We now can tailor the type rules in \figRef{rules3.E.expr.baseForEH1} towards an implementation
 which performs type checking, in \figRef{rules3.K.expr.baseForEH1}.
 \figRef{rules3.K.expr.baseForEH1} differs from \figRef{rules3.E.expr.baseForEH1} in the following aspects:
-\begin{itemize}
+\begin{Itemize}
 \item
 The use of an expected, or known type |sigmak|.
 Known type information is forwarded from the place it becomes known to where it is needed.
@@ -778,7 +805,7 @@ Additional |Gamma|'s are required to make the type signature available at the va
 This complicates the type rules but it facilitates extension with different kinds of declarations in later EH versions.
 \item
 Patterns may be used in |let| and |lambda| expressions instead of single identifiers.
-\end{itemize}
+\end{Itemize}
 We emphasize this difference by the use of colors:
 blue for changes relative to the previous set of rules,
 grey for the unchanged part.
@@ -796,7 +823,7 @@ as specified by the programmer, defined in terms of AG as follows:
 %format lhs = "lhs"
 The basic idea underlying this implementation for type checking, as well as in later versions of EH also
 for type inferencing, is that
-\begin{itemize}
+\begin{Itemize}
 \item
 A \IxAsDef{known} (or \IxAsDef{expected})
 type |sigmak =@= knTy| is passed top-down through the syntax tree of an expression,
@@ -811,7 +838,7 @@ The result of |lhs <= rhs| is |rhs| which is subsequently used by the type check
 for example to simply return or use in constructing another, usually composite, type.
 \item
 In general, for |lhs <= rhs| the |rhs| is an expected type whereas |lhs| is the bottom-up computed result type.
-\end{itemize}
+\end{Itemize}
 %}
 
 \rulerCmdUse{rules3.K.fit}
@@ -853,17 +880,6 @@ The constant |tyInt| represents the |Int| type constant.
 %%]
 
 
-%if False
-\begin{AGFeature}{ag-set-notation}{Set notation for variants}
-The rule for (e.g.) attribute |fo| is specified for |IConst| and |CConst| together.
-Instead of specifying only one variant a whitespace separated list of variant names
-may be specified after the vertical bar '| || |'.
-It is also allowed to specify this list relative to all declared variants by specifying for which
-variants the rule should \emph{not} be declared.
-For example: |* - IConst CConst| if the rule was to be defined for all variants except |IConst| and |CConst|.
-\end{AGFeature}
-%endif
-
 \begin{AGFeature}{ag-loc-attr}{Local attributes}
 Attribute |fo| and |ty| are declared locally.
 In this context `local' means that the scope is limited to the variant of a node.
@@ -902,7 +918,7 @@ done in order to prepare for a redefinition of |ty_| in later versions\footnote{
 This type appears at two places in the implementation of the type system
 as a solution to the following problems:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 Invariant to our implementation is the top-down passing of an expected type.
 However, this type is not always fully known in a top-down order.
@@ -916,7 +932,7 @@ An error occurs at a place where the implementation of the type system needs a t
 In that case |ANY| is used to prevent further errors from occurring.
 In this use of |ANY| it represents a ``dont't care'' of the type system implementation.
 As such |ANY| will be replaced by more a more specific type as soon as it matches (via |<=|) such a type.
-\end{itemize}
+\end{Itemize}
 
 In both cases |ANY| is a type exclusively used by the implementation to smoothen type checking.
 The rules for |<=| for |ANY| in \figRef{rules3.K.match.onlyK} state that |ANY| is equal to any type.
@@ -1063,7 +1079,7 @@ This is however only done locally to |App| as the |ANY| in
 If this is not the case, the EH program contains an error.
 This is a mechanism we repeatedly use, so we summarize it here:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 Generally, the semantics of the language requires a type |sigma| to be of a specific form.
 Here |sigma| equals the type of the function (not known at the |App| location in the AST)
@@ -1081,7 +1097,7 @@ In the latter case error messages are generated and the result of
 enforcing is |ANY|.
 \chunkHideRef{impl.tyDissect}
 Dissection functions like |tyArrowArgRes| must be able to cope with |ANY|.
-\end{itemize}
+\end{Itemize}
 
 The type construction and inspection done in the |App| variant of |Expr|
 requires some additional type construction functions, for example |mkArrow| used in |App|.
@@ -1141,12 +1157,12 @@ Similarly, function |mkProdApp| constructs a tuple type out of types for the ele
 The functions used for scrutinizing a type are given names in which (by convention)
 the following is encoded:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 What is scrutinized.
 \item
 What is the result of scrutinizing.
-\end{itemize}
+\end{Itemize}
 
 For example, |tyArrowArgRes| dissects a function type into its argument and result type.
 If the scrutinized type is not a function, ``will do'' values are returned:
@@ -1317,7 +1333,7 @@ The algorithmic version of \ruleRef{e.let} in \figRef{rules3.K.expr.baseForEH1} 
 the equational version in \figRef{rules3.E.expr.baseForEH1} because of the presence of mutual recursive definitions and the 
 uncoupling of type signatures and their corresponding value definition:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 Mutually recursive value definitions.
 \begin{code}
@@ -1340,7 +1356,7 @@ in   ...
 \end{code}
 Syntactically the signature and value definition for an identifier need not be defined
 adjacently or in any specific order.
-\end{itemize}
+\end{Itemize}
 
 In Haskell dependency analysis determines that |f| and |g| form a so-called
 \IxAsDef{binding group},
@@ -1356,7 +1372,7 @@ Our AG implementation follows the strategy of \ruleRef{e.let} (\figRef{rules3.K.
 \ruleRef{d.tysig} and \ruleRef{d.val} (\figRef{rules3.K.decl.base}):
 \label{eh1-let-strategy}
 
-\begin{itemize}
+\begin{Itemize}
 \item
 First extract all type signatures in:
 \chunkCmdUseMark{EHInfer.1.gathTySigGam}
@@ -1376,7 +1392,7 @@ Finally distribute all previously gathered information (for use by identifier oc
 \chunkCmdUseMark{EHInfer.1.valGam}
 
 This attribute corresponds to |Gamma| in the type rules.
-\end{itemize}
+\end{Itemize}
 
 \begin{AGFeature}{ag-use-attr}{Attribute together with USE}
 A synthesized attribute |<attr>| may be declared together with |USE {<op>} {<zero>}|.

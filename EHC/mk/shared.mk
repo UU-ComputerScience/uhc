@@ -51,7 +51,7 @@ EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11, 4_99 < 
 CORE_TARG_SUFFIX	:= grin
 
 # subst's
-SUBST_BAR_IN_TT		:= sed -e '/begin{TT}/,/end{TT}/s/|/||/g'
+SUBST_BAR_IN_TT		:= sed -e '/begin{TT[^}]*}/,/end{TT[^}]*}/s/|/||/g'
 SUBST_EHC			:= perl $(BIN_PREFIX)substehc.pl
 SUBST_LINE_CMT		:= sed -e 's/{-\# LINE[^\#]*\#-}//' -e '/{-\#  \#-}/d'
 SUBST_SH			:= perl $(BIN_PREFIX)substsh.pl

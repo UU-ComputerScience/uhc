@@ -6,14 +6,14 @@ Completion into full Haskell + extensions, well documented, open source project,
 Meta level:
 
 Ruler:
-\begin{itemize}
+\begin{Itemize}
 \item
 Strategy: combining known (programmer supplied, inferred/proven for sure) information with to be inferred information.
 Abstraction then is: representation of mixture of known/unknown, API for incorporating info (like substitution).
 Multipass algorithm(s) for (1) extracting known, (2) inferring unknown.
 \item
 Low-level: mapping to AG may use additional attr's, hidden from the type rule view
-\end{itemize}
+\end{Itemize}
 
 Build system: nix, ...
 
@@ -25,18 +25,18 @@ Editing system: proxima, ...
 In the introduction (\secPageRef{sec-intro-holygrail})
 we set ourselves some goals to chase after by this thesis:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 A compiler for Haskell, plus extensions, fully described for use in education and research.
 \item
-A better cooperation between (type) information specified by a programmer and (type) information
+A better cooperation between (type) information specified by a (EH) programmer and (type) information
 inferred by the system.
 \item
-A stepwise approach to explaining a large program.
+A stepwise approach to explaining a compiler (or similar large programs).
 \item
 An organisation of material which guarantees consistency by construction (a priori),
 instead of by comparison (a posteriori).
-\end{itemize}
+\end{Itemize}
 
 Before we look further how the hunt for these goals did work out,
 we ask ourselves a `what if' question:
@@ -45,43 +45,42 @@ and |Shuffle|?
 In our opinion: No!
 Not using these tools would have had the following consequences:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 AST definition would have been defined in terms of (Haskell) data types;
 the logistics of tree traversals would have to be handcoded.
 \item
 Separation into steps, with duplication of shared material,
 would have led to a nightmare of inconsistencies.
-A description without separation would have been very difficult to explain;
+\item
+A description without separation into steps would have been very difficult to explain;
 separation also helps the developer.
 \item
 Type rules would have been typeset in \LaTeX,
 already unpleasant by itself,
-without any guarantee about their relationship
-to the implementation.
-\end{itemize}
+without any guarantee about consistency
+with the implementation.
+\end{Itemize}
+
+Traditionally, many compilers are built without the use of attribute grammar based tools,
+or any of the other tools used by this thesis.
+So, indeed, why do we need such tools?
+In our opinion Haskell is one of the most complex languages available today.
+The GHC (Glasgow Haskell Compiler),
+the maturest Haskell implementation,
+is complex.
+The extension with even more features will
+push the edge of the envelope even further,
+necessitating the use of additional tools for managing complexity,
+like those used in this theses.
+It may well be that until now programming languages were too simple to warrant
+the use such tools.
 
 The key to an understandable and maintainable description of
-a working compiler lies in the use of domain specific languages for the subproblems at hand.
-
-In the remainder of this chapter we will first discuss the goals we set out for,
+a working compiler lies in the use of domain specific languages for these problems.
+In the remainder of this chapter we will discuss the goals we set out for,
+how the used domain specific languages AG and |Ruler| did help,
 and propose directions for future work.
-Finally, we will discuss remaining observations.
-
-\paragraph{EH vs Haskell}
-EH includes essential features of Haskell;
-As such, EH is closer to the core language internally used by GHC \cite{tolmach01ghc-core,www04ghc},
-in that it allows System F expressiveness \cite{girard72system-f,reynolds74type-struct-sysF}.
-EH also resembles the core
-used for the description of the static semantics of Haskell \cite{faxen02semantics-haskell}
-or used by the language definition \cite{peytonjones03has98-rev-rep},
-in the assumption that syntactic desugaring and dependency analysis (of identifiers) has been done.
-
-The strong point, however, of EH, is the lifting of restrictions with respect to explicitly specified
-information and implicitly inferred information.
-We expect that with a proper frontend,
-dealing with syntactic sugar, a module mechanism, these strong points can be made available as
-Haskell with extensions.
 
 \paragraph{EH explanation and its presentation}
 Our approach to the explanation of EH shares the focus on implementation
@@ -90,14 +89,16 @@ and shares the focus on the combination of formalities and implementation with P
 \cite{typing:types-prog-lang:pierce}.
 
 However, there are also differences:
-\begin{itemize}
+\begin{Itemize}
 \item
 Our focus is on the implementation, which is described by means of
 various formalisms like type rules and Attribute Grammar notation.
 \item
 Our compilers are complete, in the sense that all aspects of a compiler are implemented.
 For example, parsing and error reporting are included.
-\end{itemize}
+\item
+We use type rules as a specification language for the implementation of a compiler.
+\end{Itemize}
 
 The first victim of these choices is conciseness:
 a short, to the point, presentation of an issue can be constructed thanks to a simplification
@@ -107,7 +108,7 @@ However, the victim of this choice often is the integration with all that has be
 obtain simplicity.
 
 The problem is that the understanding of a language feature requires simplicity and isolation,
-whereas the practical application of that feature requires its co-existence with other features;
+whereas the practical application of that feature requires its co-existence with other features:
 these are contradictory constraints.
 This is a problem that will never be resolved, because language features are to be used
 as a solution to a real programmer's need (that is, a wider context);
@@ -117,17 +118,17 @@ Although the problem of understanding language features, both in isolation and c
 cannot be resolved,
 we can make it more manageable:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 Specify and explain in terms of differences.
 This is the approach taken by this thesis.
 The AG system allows separation into attributes,
 the |Ruler| system and fragment manipulation tool |Shuffle| specify in terms of views.
-All tools provide a simple mechanism to combine the separated parts;
+All tools provide a simple mechanism to combine the separated parts:
 redefinition of values associated with an attribute (or a similar identification mechanism).
 \item
-If a separated parts influence eachother in combination,
-specify its combination.
+If a separated parts influence each other in combination,
+then we specify its combination.
 This is the place where an ordering of separate parts becomes important.
 Our tools can be parameterized with an ordering (of views).
 If separate parts do not influence eachother, they can co-exist as (conceptually)
@@ -148,7 +149,7 @@ on the reader's frame of reference, understanding and knowledge.
 Render non-linearly.
 A paper version of an explanation is one-dimensional,
 understanding often is non-linear and associative.
-\end{itemize}
+\end{Itemize}
 
 Most of the abovementioned measures facilitate understanding.
 However,
@@ -163,34 +164,6 @@ in our opinion,
 the handling of feature isolation and feature combination.
 
 
-
-\paragraph{Explicit and/or implicit}
-
-EH supports a flexible use of explicitly specified type information:
-\begin{itemize}
-\item
-Type signatures are exploited as much as possible by employing several strategies
-for the propagation to the place (in the AST) where they needed.
-\item
-Type signatures may be partially specified.
-This gives the ``all or nothing'' type specification requirement of Haskell
-a more (user-)friendly face,
-by a allowing a gradual shift between explicit and implicit.
-\end{itemize}
-
-Furthermore, EH supports a flexible use of implicit parameters
-by allowing explicit parameter passing for implicit parameters and
-by allowing explicitly introduced program values to be used
-implicitly for an implicit parameter.
-
-We only mention explicit kind signatures,
-which has been implemented, but not discussed
-in this thesis.
-
-We can apply the `gradual shift' design starting point to other parts of the language as well.
-For example, the instantiation of type variables with types now is done implicitly or indirectly.
-We may well allow explicit notation a la System F, instead of the more indirect means by specifying
-(separate) type signatures and/or type annotations.
 
 \paragraph{Partitioning and complexity}
 
@@ -217,14 +190,12 @@ Not only do we have to describe new features, but we also have to
 adapt the semantics of previous features as well,
 hopefully minimizing their interdependencies.
 Most likely the partitioning has the least interdependencies;
-this is similar to proper module design which often involves a combination
-of engineering and experience.
-However, in EH extensions may (or may not) influence many parts of the implementation:
-AST, attributes, semantics for attributes, supporting Haskell functions, additional type rules.
-It is still unclear how to properly define a module-like mechanism so we can isolate
-the description of features,
-this area needs further research.
+this is similar to proper module design.
 
+Extending EH is not simply a matter of adding a new module.
+An EH extension requires changes to the AST, attributes, semantics for attributes,
+supporting Haskell functions and type rules.
+It is unclear how to capture such a group of changes by a module-like mechanism.
 
 
 \paragraph{Consistency}
@@ -238,23 +209,23 @@ A change in such an artefact, or the artefact derived from, not accompanied by a
 change in the remaining related artefacts, results in an inconsistency.
 
 The dangers of inconsistency are therefore twofold:
-\begin{itemize}
+\begin{Itemize}
 \item
 Changes are not propagated.
 \item
 Changes are made in related artefacts, but the changes are incorrect,
 that is, inconsistent.
-\end{itemize}
+\end{Itemize}
 
 This is a general problem.
 In our particular case we consider it a problem for:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 Implementation (program code) and its incorporation into explanation.
 \item
-Type rule implementation (AG code) and formal representation.
-\end{itemize}
+Formal representation of type rules, and their implementation (AG code).
+\end{Itemize}
 
 The first combination often is handled by ``copy and paste'' of code.
 For a one-shot product this usually is not a big problem,
@@ -292,7 +263,7 @@ We foresee that a tool like |Ruler| can deal with aspects of the translation
 from type rule specification to implementation,
 some of which are done manually in this thesis:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 In this thesis,
 equational type rules are implemented by algorithmic ones,
@@ -344,14 +315,71 @@ the described rules.
 A plugin architecture would allow the translation to different targets,
 in particular, a description suitable for further use by theorem provers,
 or other tools.
-\end{itemize}
+\end{Itemize}
 
-------------------
+\paragraph{EH: explicit and/or implicit}
 
-Meta: AG separate chunks are understandable when grouped together, not if read with a lot of pages in between. So, incrementally building means pasting layers of changes on to each other,
-but should be viewed in combination with a clear visual cue indicating what is different and new.
+EH supports a flexible use of explicitly specified type information:
+\begin{Itemize}
+\item
+Type signatures are exploited as much as possible by employing several strategies
+for the propagation to the place (in the AST) where they needed.
+\item
+Type signatures may be partially specified.
+This gives the ``all or nothing'' type specification requirement of Haskell
+a more (user-)friendly face,
+by a allowing a gradual shift between explicit and implicit.
+\end{Itemize}
 
-High fragmentation required for avoiding proliferation of duplicate copies of material necessitates tools (shuffle, ...) and proper visualisation (editors)
+Furthermore, EH supports a flexible use of implicit parameters
+by allowing explicit parameter passing for implicit parameters and
+by allowing explicitly introduced program values to be used
+implicitly for an implicit parameter.
+
+We only mention explicit kind signatures,
+which has been implemented, but not discussed
+in this thesis.
+
+The central idea is to allow a programmer to gradually shift between full explicit type signature
+specification to implicitly inferred types.
+We can apply the `gradual shift' design starting point to other parts of the language as well.
+For example, the instantiation of type variables with types now is done implicitly or indirectly.
+We may well allow explicit notation a la System F, instead of the more indirect means by specifying
+(separate) type signatures and/or type annotations.
+
+\paragraph{EH vs Haskell}
+EH includes essential features of Haskell;
+As such, EH is closer to the core language internally used by GHC \cite{tolmach01ghc-core,www04ghc},
+in that it allows System F expressiveness \cite{girard72system-f,reynolds74type-struct-sysF}.
+EH also resembles the core
+used for the description of the static semantics of Haskell \cite{faxen02semantics-haskell}
+or used by the language definition \cite{peytonjones03has98-rev-rep},
+in the assumption that syntactic desugaring and dependency analysis (of identifiers) has been done.
+
+The strong point, however, of EH, is the lifting of restrictions with respect to explicitly specified
+information and implicitly inferred information.
+With a Haskell frontend for
+syntactic sugar, and a module mechanism, these strong points are
+easily made available as
+Haskell with extensions.
+
+\paragraph{EH: future work}
+In the near future we intend to construct and/or investigate the following:
+
+\begin{Itemize}
+\item
+Making EH available via a Haskell frontend.
+This requires additional preprocessing with respect to dependency analysis and desugaring,
+a module system and completion of code generation.
+\item
+Co- and contravariance analysis, along the lines of Steffen \cite{steffen97polar-abs,steffen97polar-phd}.
+This is required for |<=| to determine the direction of |<=| for components of a data type.
+\item
+The integration of global impredicativity inference into all compilers.
+In particular the presence of implicit parameters adds complexity.
+\end{Itemize}
+
+
 %%]
 
 %%[afpConclusion

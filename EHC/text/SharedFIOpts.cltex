@@ -71,17 +71,9 @@ Combination & options (relative to the default) & context \\
  &  |fioBindLFirstN, fioBindRFirstN|
  & left and right instantiating
  \\
-|weakFIOpts|
- &  |fioBindRFirstN|, |fioLeaveRInstY|
- & weak
- \\
 %%]
 
 %%[fiOptsCombisEH4B
-|instFIOpts|
- &  |fioBindRFirstN|, |fioBindLFirstN|, |fioLeaveRInstY|
- & ...
- \\
 |impredFIOpts|
  &  |fioBindToTyAltsY|
  & impredicative inference
@@ -93,6 +85,17 @@ Combination & options (relative to the default) & context \\
 |joinFIOpts|
  &  |fioJoinY|
  & join
+ \\
+%%]
+
+%%[fiOptsCombisEH5
+|instFIOpts|
+ &  |fioBindRFirstN|, |fioBindLFirstN|, |fioLeaveRInstY|
+ & ...
+ \\
+|weakFIOpts|
+ &  |fioBindRFirstN|, |fioLeaveRInstY|
+ & weak
  \\
 %%]
 

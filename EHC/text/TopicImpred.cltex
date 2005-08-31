@@ -1,24 +1,24 @@
 %%[bodyForallUpDown
-In the fourth EH version we deal with the presence of quantifiers in types in the most general form
-possible:
+In the fourth EH version we deal, in the most general form possible,
+with the presence of quantifiers in types:
 we allow quantifiers, both universal (|forall|) and existential (|exists|),
 everywhere in a type signature.
-This offers great flexibility and richness when specifying types signatures,
+This offers great flexibility and richness when specifying type signatures,
 but we can no longer rely on type inferencing to find these type signatures for us.
 In general, it is impossible to infer types with universal quantifiers at arbitrary positions
-in a type
+in a type, type inference for rank-2 is possible, but complex
 \cite{jim95rank,kfoury94direct,kfoury99rank2-decid,kfoury03rank2-princ}.
 
 In \thispaper\ we therefore tackle this problem not by a clever inferencing algorithm,
-but by focussing on the propagation of explicitly programmer supplied type information to
-the places in a program where this information is used.
+but by focussing on the propagation of explicit, programmer supplied type information to
+the places in a program where this information is relevant.
 We thus rely on the programmer to specify `difficult' type signatures;
 something a programmer is likely to do anyway for the purpose of documentation.
 Our implementation exploits these type signatures to type check and infer types
-for those parts for which no type signature has been given.
+for those parts for which no type signature have been given.
 
 We describe our solution in three parts:
-\begin{itemize}
+\begin{Itemize}
 \item
 In \thischapt\ we propagate type information, in particular the information related
 to the |forall| quantifier,
@@ -30,9 +30,12 @@ In \chapterRef{ehc4B} we propagate type information `globally' through the AST,
 where `globally' means that we relax on the previous `neighbouring' condition.
 This relaxation (currently) is not yet integrated into the complete sequence of compilers.
 \item
-In \chapterRef{ehc4C} we add existential quantification to the result of \thischapt.
-We also discuss a notational convention which allows the omission of quantifiers in type expressions.
-\end{itemize}
+In \chapterRef{ehc4C} we add existential quantification.
+\end{Itemize}
+
+We also use a notational convention which allows the omission of explicit introduction of
+quantifiers in type expressions.
+We will discuss this in \chapterRef{ehc-partial-sig-quant-guess}.
 
 \subsection{Motivating examples}
 \label{eh4motiv-ex}
@@ -45,44 +48,48 @@ a higher-ranked position.
 
 The rank of an argument is defined to be one higher than the function type in which the argument occurs,
 with rank 1 as the base case:
-The |forall| quantifier in this example is in a rank-2 position.
+The |forall| quantifier in this example thus is in a rank-2 position.
 The advantage of such a type is that inside |f|'s body the argument-bound function |i| can
-be used polymorphically, in the same way as the |let|-bound function |id| can be used polymorphically.
+be used polymorphically;
+in the same way as the |let|-bound function |id| can be used polymorphically.
 
 Rank-2 polymorphism allows argument-bound and |let|-bound functions to be treated in the same way:
 both may be polymorphic.
-This is not the case for pure Hindley-Milner type inference which inhibits higher-ranked polymorphism,
-thereby making the allowed type for an identifier dependent on the place of its introduction.
+This is not the case for pure Hindley-Milner type inference,
+which excludes higher-ranked polymorphism.
 The advantage of this restriction is that removal of explicitly specified type signatures from a program still
 yields the same (or more general) typing of values (called \IxAsDef{principality}).
 However, this advantage turns into an hindrance when a programmer needs higher-ranked types,
-is also willing to specify these types,
-but then cannot do this because a pure Hindley-Milner type inferencing system inhibits this.
+and is also willing to specify these types.
 
-Shan \cite{shan04sexy-types} presents an overview of examples gathered from literature
+Shan \cite{shan04sexy-types} presents an overview of Haskell
+examples gathered from literature
 which exploit higher-ranked polymorphism.
 The examples either implement generic behavior or encapsulation.
 We repeat examples of both,
-but do not discuss the examples any further; they are included to illustrate that higher-ranked types indeed are useful.
+but do not discuss the examples any further in detail;
+they are included to illustrate that higher-ranked types indeed are useful.
 
 \Paragraph{Generic use of higher-ranked polymorphism}
 Generic traversals can be implemented by a function with the following interface \cite{laemmel03boilerplate}:
 \begin{code}
 gmapT :: (forall ^ a . Term a => a -> a) -> (forall ^ b . Term b => b -> b)
 \end{code}
-The idea is that, given a transformation function for any type belonging to class |Term|,
+The idea is that, given a transformation function for any type belonging to the class |Term|,
 another transformation can be constructed.
 The parameter of this function is a universally quantified function;
 hence |gmapT| is a higher-ranked (rank-2) function.
 
 \Paragraph{Higher ranked polymorphism used for encapsulation}
-Generic use of higher-ranked deals with polymorphic functions; encapsulation deals with polymorphic values.
-For example, |runST| \cite{launchbury96state-haskell} runs a state thread, where |s| represents the state thread being run:
+The previous use of higher-ranked deals with polymorphic functions; encapsulation deals with polymorphic values.
+For example, |runST| \cite{launchbury96state-haskell} runs a state thread,
+where |s| represents the state thread being run:
 
 %%@TopicImpred.runST
 
-The implementation of |runST| cannot do anything with type |s|, it cannot assume anything.
+The implementation of |runST| cannot do anything with type |s|, since it cannot assume anything about it.
 As far as |runST|'s implementation is concerned |s| is hidden, or encapsulated.
+Haskell (confusingly) uses the |forall| quantifier for existential quantification.
 
 This use of a higher-ranked value corresponds to existential quantification |exists|.
 We allow the use of |exists| as a language construct in its own right (\chapterRef{ehc4B}).
@@ -91,14 +98,15 @@ We allow the use of |exists| as a language construct in its own right (\chapterR
 
 The previous version of EH uses two mechanisms for the propagation of type information:
 
-\begin{itemize}
+\begin{Itemize}
 \item
-Expected types are passed top-to-bottom through the AST, result (or inferred) types travel bottom-to-top.
+Expected types are passed top-to-bottom through the AST, whereas result (or inferred) types travel bottom-to-top.
 \item
 Unknown types are encoded by type variables.
-Additional type information about these type variables is encoded by constraints which travel through the complete
+Additional type information about these type variables is encoded in sets of
+constraints which travel through the complete
 AST.
-\end{itemize}
+\end{Itemize}
 
 In this version of EH we do not change this strategy.
 We extend the type language with universally quantified types and allow these types to participate in
@@ -112,7 +120,7 @@ an alternative for quantification, used in the context of the term language for 
 %%@SharedTypeLang.ehc4
 \end{code}
 
-\begin{TabularFigure}{EH terms}{eh4-lang-terms}%
+\begin{TabularCenterFigure}{EH terms}{eh4-lang-terms}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
 %%@AppxNotation.exprBasic
@@ -132,35 +140,36 @@ an alternative for quantification, used in the context of the term language for 
 %%@AppxNotation.termSeparator
 %%@AppxNotation.identHeader
 %%@AppxNotation.identBasic
-\end{TabularFigure}
+\end{TabularCenterFigure}
 
 
 \Paragraph{Participation of |forall| types in the type inference process}
 Standard HM type inference assumes a separation between type schemes and (monomorphic) types.
-A \IxAsDef{type scheme} is a (possibly) quantified type, with the quantifier on top of the type;
-a monomorphic type may not have quantifiers in the type.
+A \IxAsDef{type scheme} is a (possibly) quantified type, with the quantifier at the outer level of the type;
+a monomorphic type is completely quantifier free.
 Type schemes are stored in environments |Gamma|, whereas monomorphic types participate in the type inference process.
 
 In this version of EH, we drop this restriction:
-\begin{itemize}
+\begin{Itemize}
 \item
-Types with or without quantifiers may live in environments |Gamma| as well as participate in the
+Types with or without quantifiers may live in environments |Gamma|, and they may participate in the
 type inference process.
 \item
 Types retrieved from an environment |Gamma| are no longer instantiated immediately after retrieval,
 because we want to retain quantifier information as long as possible.
-\end{itemize}
+\end{Itemize}
 
 Types are quantified either because a programmer has specified a type signature with a quantifier,
-or because the type inferencer has decided that a monomorphic type may be quantified over its (non-global) type variables.
+or because the type inferencer has decided that a monomorphic type may be universally
+quantified over its (non-global) type variables.
 These quantified types may now enter the type inferencing process when extracted from an environment |Gamma| or
 when passed top-to-bottom through the AST as the expected type of an expression.
 
 This has the following consequences:
 
-\begin{itemize}
+\begin{Itemize}
 \item
-Fitting two types must take into account the presence of quantifiers.
+Equating two types (by means of fitting) must take into account the presence of quantifiers.
 \item
 Instantiation of types is postponed until the latest moment possible, that is,
 until an uninstiated type is to be matched with another type.
@@ -171,7 +180,6 @@ This is called \IxAsDef{impredicativity}.
 Here non-determinism arises because we can interchange binding and instantiation.
 We may first instantiate a type and then bind it to a type variable,
 or bind it directly to a type variable and delay its instantiation.
-This issue comes back in \chapterRef{ehc4B}.
 \item
 Because our strategy is to propagate polymorphism instead of reconstructing it,
 our encoding of polymorphism places quantifiers at a position which guarantees an as late as
@@ -182,11 +190,7 @@ If a type signature is passed top-down into an expression as the expected type, 
 match this type: this is type checking.
 If no such type is available, we resort to type inferencing.
 In both cases type matching fills in the gaps represented by type variables.
-
-...
-
-?? Context, or only for datatypes ??
-\end{itemize}
+\end{Itemize}
 
 Let us look at some examples to see how this works out in different contexts.
 We repeat our initial example:
@@ -198,37 +202,44 @@ We repeat our initial example:
 \Paragraph{Checking against specified type signature}
 For |id| we have specified type signature |forall ^ a . a -> a|,
 which will be the expected type of |\x -> x| in the value declaration for |id|.
-For |\x -> x| we need to match a fresh type |tvarv1 -> tvarv2| with the expected type,
-in order to decompose the expected type into argument and result:
+Before proceeding with type inference for |\x -> x|
+we need to match a fresh type |tvarv1 -> tvarv2| (representing the required type structure of the |lambda|-expression)
+with the expected type,
+in order to decompose the expected type into argument and result (for further use lower in the AST):
 
 \begin{code}
 tvarv1 -> tvarv2 <= forall ^ a . a -> a
 \end{code}
 
 Because the signature for |id| states that we cannot choose the quantified type variable |a| freely in
-the lambda expression |\x -> x| we need to instantiate ``|forall ^ a . a -> a|'' with fixed type variables |f|:
+the lambda expression |\x -> x| we need to instantiate ``|forall ^ a . a -> a|''
+with a fixed type variable |tvarf3| for |a|:
 
 \begin{code}
-tvarv1 -> tvarv2 <= tvarf -> tvarf
+tvarv1 -> tvarv2 <= tvarf3 -> tvarf3
 \end{code}
 
 \Paragraph{Use of polymorphic function as a function}
-In |f|'s body, function |i| will be retrieved from a |Gamma| for use in application ``|i 3|''.
-At the occurrence of |i| in ``|i 3|'', |i|'s type must match the expected type ``|tvarv1 -> tvarv2|'':
+In |f|'s body, function |i| will be retrieved from the environment |Gamma| for use in application ``|i 3|''.
+At the occurrence of |i| in ``|i 3|'',
+we know that |i|'s expected type is a function type,
+but we do not (yet) know
+what its argument and result type are: ``|tvarv4 -> tvarv5|''.
+|i|'s type (from the environment) must match the expected type ``|tvarv4 -> tvarv5|'':
 
 \begin{code}
-forall ^ a . a -> a <= tvarv1 -> tvarv2
+forall ^ a . a -> a <= tvarv4 -> tvarv5
 \end{code}
 
-Type ``|forall ^ a . a -> a|'' fits in ``|tvarv1 -> tvarv2|'' if we instantiate ``|forall ^ a . a -> a|''
-with the fresh type variable |tvarv|:
+Type ``|forall ^ a . a -> a|'' fits in ``|tvarv4 -> tvarv5|'' if we instantiate ``|forall ^ a . a -> a|''
+with the fresh type variable |tvarv6|:
 
 \begin{code}
-tvarv -> tvarv <= tvarv1 -> tvarv2
+tvarv6 -> tvarv6 <= tvarv4 -> tvarv5
 \end{code}
 
-HM type inference instantiates a type immediately after retrieval from a |Gamma|,
-our approach postpones instantiation until necessary.
+HM type inference instantiates a type immediately after retrieval from the environment |Gamma|,
+our approach postpones instantiation until it can not longer be avoided.
 
 \Paragraph{Use of polymorphic value as an argument when the expected argument type is known}
 Function |f| gets passed |id| as its argument; |id|'s type must fit in |f|'s argument type:
@@ -239,7 +250,7 @@ forall ^ a . a -> a <= forall ^ a . a -> a
 
 This is a combination of the previous two matches.
 
-\Paragraph{Use of polymorphic value as an argument when expected argument type is being inferred}
+\Paragraph{Use of polymorphic value as an argument when the expected argument type is being inferred}
 The real tricky point arises when the type of |f|'s argument is not known, for example if no type signature
 is specified for |f|.
 The argument type of |f| then still is a type variable |tvarv|:
@@ -259,23 +270,26 @@ position in a function application.
 As a consequence we cannot infer a type for |f| (from our example),
 because |i| (|f|'s argument) is used monomorphically in the body of |f|.
 Function |i| can not be polymorphically applied.
-This, of course, can be accomplished by putting the type signature for |f| back.
+This, of course, can be accomplished by putting the type signature for |f| back in.
 In \chapterRef{ehc4B} we will investigate how we can exploit the presence of quantified types even more.
 
 \subsection{It all boils down to fitting}
 
-Fitting |<=| is the place where all these issues come together.
+Fitting (|<=|) is the place where all these issues come together.
 Type matching has to deal with |forall| quantifiers,
-and allow for some steering of its behavior by the context in which |<=| is used.
-We first look at options (for steering) we will pass to |<=|, next we look at their use in previous and new typing rules.
+and allows for some control of its behavior by the context in which |<=| is used.
+We first look at options (for control) we will provide as context to |<=|,
+next we look at their use in previous and new typing rules.
+In the implementation of |<=| (|fitsIn|) this corresponds to an additional parameter.
 
 \figRef{rules3.I1.fit} shows, relative to the previous EH version,
 an additional |fiopt| as context for |fitsIn =@= <=|.
-In the implementation this will turn up as a value of type |FIOpts| (\textbf{f}its\textbf{I}n \textbf{opt}ion\textbf{s}),
+In the implementation this will be represented by
+a value of type |FIOpts| (\textbf{f}its\textbf{I}n \textbf{opt}ion\textbf{s}),
 a set of boolean flags.
 A |FIOpts =@= fiopt| uses the flags from
 \figRef{eh-impredA-fit-options}
-for influencing the previously discussed desired behavior.
+for obtaining the previously discussed desired behavior.
 %%[[hide impl.FIOpts="FIOpts"
 \savecolumns
 \chunkCmdUseMark{EHOpts.4.FIOpts.hd}
@@ -287,23 +301,23 @@ for influencing the previously discussed desired behavior.
 \chunkCmdUseMark{EHOpts.4.strongFIOpts.tl}
 \chunkCmdUseMark{EHOpts.4.FIOpts.instLFIOpts}
 %%]
-These options are used in specific combinations throughout the type rules,
+These options are used in specific combinations throughout the type rules
 (see \figRef{eh-impredA-fit-option-combis} for an overview).
-|True| and |False| values are denoted by a an additional |+| or |-| respectively,
+|True| and |False| values are denoted by an additional |+| or |-| respectively,
 for example for |fioBindRFirst| with |fioBindRFirstY| and |fioBindRFirstN| respectively.
 
 \rulerCmdUse{rules3.I1.match.eh4}
 \rulerCmdUse{rules3.I1.fit}
 
-\begin{TabularFigure}{Options to |fitsIn =@= <=|}{eh-impredA-fit-options}
+\begin{TabularCenterFigure}{Options to |fitsIn =@= <=|}{eh-impredA-fit-options}
 %%@SharedFIOpts.fiOptsTableHeader
 %%@SharedFIOpts.fiOptsEH4
-\end{TabularFigure}
+\end{TabularCenterFigure}
 
-\begin{TabularFigure}{Option combinations}{eh-impredA-fit-option-combis}
+\begin{TabularCenterFigure}{Option combinations}{eh-impredA-fit-option-combis}
 %%@SharedFIOpts.fiOptsCombisTableHeader
 %%@SharedFIOpts.fiOptsCombisEH4forEH4
-\end{TabularFigure}
+\end{TabularCenterFigure}
 
 We use the named combinations of these flags during type inferencing
 (\figRef{rules3.I1.expr.baseForEH4}).
@@ -312,9 +326,10 @@ For example |strongFIOpts| stands for a strong context where the expected type i
 The actual flags associated with |strongFIOpts| are used in the rules for matching
 (\figRef{rules3.I1.match.eh4}).
 
-The rules for type matching differ from their previous version in the following:
+The rules for type matching differ from their previous version in the following additions and
+modifications:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 \RuleRef{m.forall.l} instantiates with fresh type variables,
 for further binding during type matching and type inference.
@@ -322,12 +337,14 @@ for further binding during type matching and type inference.
 for further use in type checking.
 The fixed type variables, once again, simulate unknown types chosen by the user of the value with the quantified type.
 \item
-The rules for binding type variables are split into two groups: \ruleRef{m.var.l1} and \ruleRef{m.var.r1},
-textually preceding the rules for quantified types; \RuleRef{m.var.l2} and \ruleRef{m.var.r2} are positioned after
+The rules for binding type variables are split into two groups to emphasize
+the order in which the rules are to be used: \ruleRef{m.var.l1} and \ruleRef{m.var.r1},
+textually precede the rules for quantified types; \RuleRef{m.var.l2} and \ruleRef{m.var.r2} are positioned after
 the rules for quantified types.
 These rules only differ in the value of |fioBindRFirst|.
 The order in which the rules are textually ordered now is important because they overlap.
-The idea is that |fioBindRFirstY| (in \ruleRef{m.var.r1}) allows binding before instantiation (in the quantifier related rules),
+The idea is that |fioBindRFirstY| (in \ruleRef{m.var.r1}) triggers
+binding before instantiation (in the quantifier related rules),
 and |fioBindRFirstN| the other way around.
 \item
 \RuleRef{m.arrow} for function types matches the argument types with the binding flags set to |True|.
@@ -353,7 +370,7 @@ can be used where |sigma2a -> sigma2r| is expected, provided
 that the a use of |sigma2a -> sigma2r| passes an argument |sigma2a| that can be used where a |sigma1a|
 is expected.
 Here, this means that a polymorphic type |sigma2a| can be instantiated to the expected type |sigma1a|.
-\end{itemize}
+\end{Itemize}
 
 \subsection{Type inference}
 \label{eh4-type-inference}
@@ -363,14 +380,14 @@ Flags are passed to |<=| at a limited number of locations in the type rules for 
 for example in \ruleRef{e.var}.
 The exception is located in \ruleRef{e.app}.
 For the argument of a function instantiating takes precedence over binding.
-Hence |instLRFIOpts| passed to the argument in \ruleRef{e.app}.
+Hence |instLRFIOpts| is passed to the argument in \ruleRef{e.app}.
 
 \rulerCmdUse{rules3.I1.expr.baseForEH4}
 \rulerCmdUse{rules3.I1.decl.base}
 
 No further changes are required for type inference for expressions.
 There is no need to adapt inference for pattern expressions: identifiers simply are bound to the types
-extracted from expected types passed to pattern expressions.
+extracted from the expected types that are passed to pattern expressions.
 
 \Paragraph{Option tweaking}
 It is possible to deviate from Haskell at a function application by
@@ -384,7 +401,7 @@ The effect of this modification can best be observed from the following example:
 \end{code}
 
 First assume that we are still using |fioBindRFirstN|.
-Then we infer from the call `|g h|':
+Then we can infer from the call `|g h|':
 
 \begin{code}
 h :: tvarf -> tvarf
@@ -398,7 +415,7 @@ h :: forall ^ a . a -> a
 \end{code}
 
 This is accomplished by using |fioBindRFirstY| instead of |fioBindRFirstN|.
-This is desirable behavior because |h| needs to have this type anyway to be accepted by |g|.
+This is the desirable behavior because |h| needs to have this type anyway to be accepted by |g|.
 However, we run into problems when we swap the declaration of '|y = g h|' with the remaining declarations,
 because we infer types in a specific (left to right) order.
 We then conclude at the application `|h 3|':
@@ -410,9 +427,9 @@ h :: Int -> tvarv
 This leads to an error at the application `|h 'x'|';
 an error that could have been avoided if we would have known the inferencing results from `|g h|'.
 
-We conclude that the order in which we infer matters.
+We conclude that the order in which we infer (unfortunately) matters.
 In \chapterRef{ehc4B} we will investigate an approach in which we infer twice: first to extract impredicativeness,
-second to do normal type inference.
+and subsequently to do normal type inference.
 
 \Paragraph{Pass |fioBindLFirstY| (instead of |fioBindLFirstN|)}
 The effect of this modification can best be observed from the following example:
@@ -422,20 +439,20 @@ The effect of this modification can best be observed from the following example:
 \end{code}
 
 Again, first assume that we are still using |fioBindLFirstN|.
-At the application `|choose id|', |id| will be instantiated to |tvarv1 -> tvarv1| first,
-subsequently bound to the instantiated type variable |a| from |choose|'s type:
+At the application `|choose id|', first |id| will be instantiated to |tvarv1 -> tvarv1|,
+and subsequently this type is bound to the instantiated type variable |a| from |choose|'s type:
 
 \begin{code}
 choose id :: (tvarv1 -> tvarv1) -> (tvarv1 -> tvarv1)
 \end{code}
 
-After generalization we obtain:
+for which, after generalization, we obtain:
 
 \begin{code}
 v1 :: forall ^ a . (a -> a) -> (a -> a)
 \end{code}
 
-Alternatively, we might have concluded much in System F style:
+Alternatively, we might have concluded:
 
 \begin{code}
 v1 :: (forall ^ a . a -> a) -> (forall ^ b . b -> b)
@@ -480,19 +497,18 @@ v2  ::                (forall ^ a .  a -> a)  ->  (forall ^ b .  b -> b)
 
 %%[bodyForallNonLocal
 In \chapterRef{ehc4} we did add higher-ranked types to EH.
-If a programmer specifies a type signature, then the system uses this signature for type checking and
-use in higher-ranked types.
-The idea was to use signatures introduced as part of a declaration and distribute
-this type information over the AST for which the signature was declared.
-We call this \IxAsDef{local impredicativity inference} because locally available information
-is used: the expected type from a parent node in the AST.
+If a programmer specifies a type signature, then the system uses this signature for type checking.
+The idea was to check against a known type signature by distributing
+such a signature over the AST.
+We call this \IxAsDef{local impredicativity checking} because locally available information
+is used: the expected type is provided by the parent node in the AST.
 
 However, we can exploit the presence of type signatures even further
 by considering function applications as well.
-The idea is that the from the use of a value as an argument for a particular function
+The idea is that from the use of a value as an argument for a particular function
 we can derive type information for that argument based on the (argument) type of the function.
-Thus we can find type information which can be used elsewhere, non-locally, in the AST.
-The local impredicativity inference from the previous chapter then becomes a special case of what we call
+Thus we can infer type information, which can be used elsewhere, non-locally, in the AST.
+The local impredicativity checking from the previous chapter then becomes a special case of what we call
 \IxAsDef{global impredicativity inference}.
 The following example illustrates this idea:
 
@@ -503,15 +519,16 @@ The following example illustrates this idea:
 \end{code}
 \end{Example}
 
-From the application `|g h|' we can conclude that |h| certainly must have the following type.
-A less general type would not be accepted by |g|.
+From the application `|g h|' we can conclude that |h| certainly must have the following type:
 
 \begin{code}
 h :: forall ^ a . a -> a
 \end{code}
 
-At |h|'s call sites we now can use this type for |h| to correctly type the
-applications `|h 3|' and `|h 'x'|'.
+A less general type would not be accepted by |g|.
+At |h|'s call sites we now can use this inferred type for |h| to correctly type the
+applications `|h 3|' and `|h 'x'|',
+and to infer the higher-ranked type for |f|.
 The basic idea behind this approach in \thischapt\ is:
 \begin{quote}
 If a type for an identifier |ident| has been ``touched by'', either directly or indirectly,
@@ -521,18 +538,18 @@ then this type information can be used at use sites of |ident|.
 
 More precisely, ``touched by'' translates to:
 
-\begin{itemize}
+\begin{Itemize}
 \item
-An identifier occurs a position where it is expected to have a polymorphic type (direct touching).
+An identifier occurs a position where a polymorphic type is expected (direct touching).
 In particular, argument positions in function applications are used to detect this.
 \item
 An identifier has a type which comes from another touched identifier (indirect touching).
-\end{itemize}
+\end{Itemize}
 
 So, in our example, |h| is touched by type ``|forall ^ a . a -> a|''.
 If the application `|g h|' would be removed, no touching would take place and both applications `|h 3|' and `|h 'x'|' would
 result in an error:
-the idea is to propagate type information, not invent it.
+the idea is to propagate polymorphic type information, not invent it.
 
 \Paragraph{Choosing the most general type}
 For the following example the same type for |h| is inferred.
@@ -548,10 +565,10 @@ because it is passed to both |g1| and |g2|.
 
 Function |h| is expected to be used as ``|forall ^ a . a -> a|'' and ``|Int -> Int|''.
 The most general of these types, that is ``|forall ^ a . a -> a|'', is bound to |h|.
-The relation ``more general'' is defined in terms of |<=|: |sigma1| is more general than |sigma2|
+The relation ``more general'' is defined in terms of |<=|: ``|sigma1| is more general than |sigma2|''
 is equivalent to |sigma1 <= sigma2|.
 
-Generality is even further exploited in the following example.
+Generality is even further exploited in the following (somewhat contrived) example.
 It differs from the previous example in that |h| is not chosen from the set of available expected types,
 but is the most general combination (the meaning of which is made more precise in the remainder of \thischapt).
 
@@ -564,8 +581,8 @@ and ``|forall ^ b . (b,Int) -> (b,Int)|''.
 We choose the type of |h| (and consequently |f|) to be:
 
 \begin{code}
-h :: forall ^ a . forall ^ b . (a,b) -> (a,b)
-f :: (forall ^ a . forall ^ b . (a,b) -> (a,b)) -> Int
+h ::    forall ^ a . forall ^ b . (a,b)  -> (a,b)
+f :: (  forall ^ a . forall ^ b . (a,b)  -> (a,b)) -> Int
 \end{code}
 
 
@@ -591,8 +608,8 @@ Hence we have to choose the least general for the type of the function passed by
 that is, the argument of |h|:
 
 \begin{code}
-h :: (Int -> Int) -> Int
-f :: ((Int -> Int) -> Int) -> Int
+h ::    (Int -> Int)  -> Int
+f :: (  (Int -> Int)  -> Int) -> Int
 \end{code}
 
 \subsection{Design overview}
@@ -600,7 +617,7 @@ f :: ((Int -> Int) -> Int) -> Int
 The design of our solution for the propagation of quantifier related type information is a combination of
 the following:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 Impredicativity inference, described in \thischapt, is the first stage of a two stage process.
 The second stage consists of the previously described type inference,
@@ -616,7 +633,7 @@ we gather all bindings to the types they are expected to have.
 This is encoded by means of a type holding type alternatives and constraint variants.
 These types and constraints are computed by a variation of normal HM type inference.
 Type alternatives resemble intersection types \cite{bakel93phd-intersection}.
-However, our type alternatives are used internally only and are not available to
+However, our type alternatives are used only internally and are not available to
 a programmer as a (type) language construct.
 \item
 For each introduced identifier we compute the most (or least, depending on contravariance) general type
@@ -632,9 +649,9 @@ The computation of most/least general types is based on the lattice induced by |
 We propagate the result of this computation if the type alternatives used to compute the most/least general type
 contains a type with a quantifier.
 Otherwise there is no quantifier related information to propagate.
-Although we do not discuss existential types in \thischapt, existential types are included for reasons of symmetry
+Although we do not discuss existential types in \thischapt\ yet, existential types are included for reasons of symmetry
 in \figRef{fig-type-lattice}.
-\end{itemize}
+\end{Itemize}
 
 We call the resulting strategy \IxAsDef{global impredicativity inference}.
 
@@ -649,7 +666,7 @@ We need to delay that decision by gathering all possible bindings, and extract a
 Actually, we also need to find out if polymorphism needs to be inhibited.
 This is a consequence of the contravariance of function arguments.
 
-For example, in \exRef{eh4B-ex-most-gen} we conclude:
+For example, in \exPageRef{eh4B-ex-most-gen} we conclude:
 
 \begin{code}
 h :: forall ^ a . a -> a
@@ -676,7 +693,7 @@ Each type alternative |talt| has to remember an alternative type |sigma|.
 We also have to remember additional information about the context in which this type is used;
 we need this when type alternatives are reduced to a most/least general type.
 First, we need to know at which side of |<=| a type did occur.
-For example, in \exRef{eh4B-ex-contravariance} we conclude:
+For example, in \exPageRef{eh4B-ex-contravariance} we conclude:
 
 \begin{code}
 h :: (Int -> Int) -> Int
@@ -705,20 +722,19 @@ A type alternative also has to remember the \IxAsDef{type alternative hardness},
 denoted by |thard|.
 Hardness may be hard, denoted by |thardH|, or soft, denoted by |thardS|.
 By default every type alternative is soft.
-However, our impredicativity inference algorithm is based on inspecting
-a set of type alternatives and to only further use and propagate types |sigmaQu| which contain
-a quantifier.
-This is too restrictive, because sometimes we have to inhibit the propagation of a quantified type.
+|thardH| is used internally by our impredicativity inference algorithm
+to mark types without a quantifier to be propagated;
+this is necessary to inhibit propagation of quantified types.
 For example, for \exRef{eh4B-ex-contravariance} we have to conclude the constraint ``|tvarv2 :-> Int -> Int|'' on |tvarv2|,
 the least general type, and inhibit the propagtion of ``|forall ^ a . a -> a|'' as a possible binding for |tvarv2|.
 
-\begin{TabularFigure}{Notation for impredicativity inference}{eh4B-notation}{ll}
+\begin{TabularCenterFigure}{Notation for impredicativity inference}{eh4B-notation}{ll}
 Notation & Meaning \\
 \hline
 %%@AppxNotation.notationImpredB
-\end{TabularFigure}
+\end{TabularCenterFigure}
 
-\begin{TabularFigure}{Type language}{eh4-lang-types}%
+\begin{TabularCenterFigure}{Type language}{eh4-lang-types}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.typeHeader
 %%@AppxNotation.typeBasic
@@ -732,7 +748,7 @@ Notation & Meaning \\
 %%@AppxNotation.termSeparator
 %%@AppxNotation.tyaltHeader
 %%@AppxNotation.tyaltBasic
-\end{TabularFigure}
+\end{TabularCenterFigure}
 
 For our respective examples we find the following constraints
 (on |tvarv1| from \exRef{eh4B-ex-most-gen}, |tvarv2| from \exRef{eh4B-ex-contravariance}):
@@ -742,7 +758,7 @@ tvarv1  :->  tvarv1 [ forall ^ a . a -> a :: thardS / tneedR, Int -> Int :: thar
 tvarv2  :->  tvarv2 [ forall ^ a . a -> a :: thardS / tneedO, Int -> Int :: thardS / tneedO ]
 \end{code}
 
-The gathering of these constraints is relatively straightforward: if a type variable is to be bound to
+Collecting these constraints is relatively straightforward: if a type variable is to be bound to
 a type during type matching, we bind it to a type alternative.
 This behavior is enabled by an additional flag |fioBindToTyAlts| to type matching
 (see \figRef{eh4B-impred-fit-options} and \figRef{eh4B-impred-fit-option-combis}).
@@ -751,17 +767,17 @@ For example, binding to a type alternative is disabled in \ruleRef{m.var.l1}
 and enabled in \ruleRef{m.var.l3} (a new rule).
 New bindings for type alternatives simply are combined, for example in \ruleRef{m.alt} and \ruleRef{m.alt.l1}.
 
-\begin{TabularFigure}{Options to fit}{eh4B-impred-fit-options}
+\begin{TabularCenterFigure}{Options to fit}{eh4B-impred-fit-options}
 %%@SharedFIOpts.fiOptsTableHeader
 %%@SharedFIOpts.fiOptsEH4
 %%@SharedFIOpts.fiOptsEH4B
-\end{TabularFigure}
+\end{TabularCenterFigure}
 
-\begin{TabularFigure}{Option combinations}{eh4B-impred-fit-option-combis}
+\begin{TabularCenterFigure}{Option combinations}{eh4B-impred-fit-option-combis}
 %%@SharedFIOpts.fiOptsCombisTableHeader
 %%@SharedFIOpts.fiOptsCombisEH4forEH4B
 %%@SharedFIOpts.fiOptsCombisEH4B
-\end{TabularFigure}
+\end{TabularCenterFigure}
 
 
 \rulerCmdUse{rules3.I2.match.eh4B}
@@ -774,16 +790,16 @@ until later.
 
 \subsection{Computing actual impredicativity}
 
-Afther the gathering of type alternatives,
+After the gathering of type alternatives,
 we compute most/least general types based on these type alternatives.
 The result of this computation are constraints on type variables.
 We compute either a most general (polymorphic) type or a least general (usually non-polymorphic) type.
 These constraints are used by type checking and inferencing,
-representing additional assumptions which can be made for some types.
+representing additional assumptions for some types.
 
 We need the combination of the following mechanisms:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 The computation of \IxAsDef{type meet}'s and \IxAsDef{type join}'s for types,
 using the ordering on types defined by |<=| and its induced lattice (\figRef{fig-type-lattice})
@@ -791,7 +807,7 @@ using the ordering on types defined by |<=| and its induced lattice (\figRef{fig
 \item
 The elimination of type alternatives in a type,
 and the simultaneous extraction of bindings for type variables to quantified types.
-\end{itemize}
+\end{Itemize}
 
 These mechanisms are mutually recursive,
 because type alternative elimination uses meet/join computation to find (and combine) quantifier information,
@@ -821,27 +837,27 @@ tvarv1  :->  tvarv1 [ forall ^ a . a -> a :: thardS / tneedR, Int -> Int :: thar
 
 The type variable |tvarv1| represents a type which must fit (because tagged by |tneedR|) into both
 ``|forall ^ a . a -> a|'' and ``|Int -> Int|''.
-The type for |tvarv1| (from \exRef{eh4B-ex-most-gen})
+The type for |tvarv1| (from \exPageRef{eh4B-ex-most-gen})
 must be the most general of these two types so it can be instantiated to both the
 required types.
-We compute this type for |tvarv1|
-as follows:
+This type for |tvarv1|
+is defined as follows:
 
 \begin{code}
 forall ^ a . a -> a === forall ^ a . a -> a  <+> Int -> Int
 \end{code}
 
 On the other hand, for |tvarv2|
-(from \exRef{eh4B-ex-contravariance})
+(from \exPageRef{eh4B-ex-contravariance})
 we know it represents a type of a value in which both
-a value with type ``|forall ^ a . a -> a|'' and ``|Int -> Int|'' will be put.
+a value with type ``|forall ^ a . a -> a|'' and ``|Int -> Int|'' will flow.
 
 \begin{code}
 tvarv2  :->  tvarv2 [ forall ^ a . a -> a :: thardS / tneedO, Int -> Int :: thardS / tneedO ]
 \end{code}
 
-The type for |tvarv2| must be the least general of these two types so both contexts can put
-their values in the value with type |tvarv2|:
+The type for |tvarv2| must be the least general of these two types so both contexts can coerce
+their value to a value of type |tvarv2|:
 
 \begin{code}
 Int -> Int === forall ^ a . a -> a  <-> Int -> Int
@@ -850,10 +866,10 @@ Int -> Int === forall ^ a . a -> a  <-> Int -> Int
 The implementation of fit |<=|, meet |<+>|, and join |<->| are much alike,
 so we define their implementation as variations on type matching |<=>|.
 The rules in \figRef{rules3.I2.fit}, \figRef{rules3.I2.meet}, and \figRef{rules3.I2.join} simply dispatch to |<=>|,
-and pass the variant by means of an additional flag (|fioFit|, |fioMeet|, and |fioJoin|).
+and pass the variant by means of additional (mutually exclusive) flags: |fioFitY|, |fioMeetY|, and |fioJoinY|.
 When the rules for |<=>| are meant to be used only by a particular variant we either require the presence of
 the corresponding flag or we use the corresponding denotation (|<=|, |<+>|, or |<->|) in the rules,
-for example in the rules dealing with the meet and join of |forall| quantified types
+as is done in the rules dealing with the meet and join of |forall| quantified types
 in \figRef{rules3.I2.match.eh4Bmeetjoin}.
 
 
@@ -867,9 +883,12 @@ presented in \figRef{rules3.I2.tyAltTyElim},
 may look overwhelming at first,
 but basically selects specific subsets from a set of type alternatives and combines
 their types by meeting or joining,
-where the choice between meet and join depends on the contravariance.
+where the choice between meet and join depends on the (contra)variance.
 The computation is described by \ruleRef{ty.ae.alts};
-the remaining rules deal with default cases and how type alternatives should be combined.
+the remaining rules deal with default cases.
+In \ruleRef{ty.ae.alts} we slightly stretch the notation for matching (|<=>|)
+by allowing a vector of types to be matched: |Vec(sigma) <=> sigmar|.
+This means ``|foldr (<=>) sigmar Vec(sigma)|''.
 
 \RuleRef{ty.ae.alts} starts with extracting type alternatives:
 type alternatives with a quantifier (|Vec(sigmaQu)|),
@@ -911,8 +930,8 @@ v_23_0 :-> v_23_0  [ forall ^ a .  a                      -> a       :: S/R
                    ]
 \end{code}
 
-Function |h| is used in three different contexts, of which one required |h| to be a polymorphic type,
-and the remaining two required |h| to be a function which was offered an |Int| and |Char| respectively.
+Function |h| is used in three different contexts, of which one requires |h| to be a polymorphic type,
+and the remaining two require |h| to be a function which can accept an |Int| and a |Char| argument respectively.
 Because |h| must be the most general type we eliminate type alternatives in a |fioMeetY| context.
 \RuleRef{ty.ae.alts} then extracts type alternative subsets:
 
@@ -937,7 +956,7 @@ In the remainder of the type inference process we can now use |h| polymorphicall
 The computation of the meet |<+>| and join |<->| of two types is similar to the introduction
 and elimination of type alternatives:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 Quantified type variables are instantiated with type variables |tvarv| which remember both the type variable
 and the type |sigma| (if any) bound (by matching)
@@ -950,9 +969,9 @@ done as part of \RuleRef{m.forall.l2} (\figRef{rules3.I2.match.eh4Bmeetjoin}).
 
 \item
 After instantation and further matching (\figRef{rules3.I2.match.tyBt})
-we end with a type which encodes both type variable and its binding.
+we end with a type which encodes both a type variable and its binding.
 We then either forget or use these bindings, depending on the context (meet or join).
-\end{itemize}
+\end{Itemize}
 
 \rulerCmdUse{rules3.I2.match.eh4Bmeetjoin}
 \rulerCmdUse{rules3.I2.match.tyBt}
@@ -1002,14 +1021,15 @@ polymorphism,
 to be used by subsequent normal type inference.
 The algorithm (\figRef{rules3.I2.expr.eh4B1}, \figRef{rules3.I2.expr.eh4B2}, and \figRef{rules3.I2.decl.base})
 uses two constraint threads.
-The first constraint thread, denoted by |ICnstr|, gathers type alternatives, the second, denoted by |Cnstr|,
+The first constraint thread, denoted by |ICnstr|, gathers type alternatives, and the second, denoted by |Cnstr|,
 participates in normal type inference.
 Both inference stages return a type.
-The type returned by impredicativity inference may contain type alternatives and therefore denoted by |isigma|;
+The type returned by impredicativity inference may contain type alternatives and is therefore denoted by |isigma|;
 the type returned by normal inference is denoted by |sigma|.
-We focus on impredicativity inference and its integration with normal type inference:
+We focus on impredicativity inference and its integration with normal type inference
+(and postpone the discussion of the judgements for constraints marked with |ex| required for existential types):
 
-\begin{itemize}
+\begin{Itemize}
 \item
 The complete inference process is split in two stages: impredicativity inference and (normal) type inference.
 \item
@@ -1023,21 +1043,21 @@ Constraints for the first stage are denoted by |ICnstr|,
 for the second stage by |Cnstr|.
 \item
 Only the result of type alternative elimination is propagated to the second stage.
-\end{itemize}
+\end{Itemize}
 
 Impredicativity inference in isolation follows a similar strategy as type inference for previous versions of EH,
 in that we gather and match type information, partially bottom-up, partially top-down:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 Expected types are still used, but their matching now is done at those places in the AST where
 we expect the need for type alternatives: \ruleRef{e.app} and \ruleRef{e.lam}.
 \item
-At some places in the AST we 'fixate' type alternatives by extracting polymorphism;
+At some places in the AST we 'fix' type alternatives by extracting polymorphism;
 we use the elimination of type alternatives.
-\end{itemize}
+\end{Itemize}
 
-For example, in \ruleRef{e.app} we match the impredicative function type |isigmaf| with |tvarv -> sigmak|
+For example, in \ruleRef{e.app} we match the impredicative function type |isigmaf| with |tvarv -> sigmak|,
 with the flag |fioBindToTyAltsY| passed to |<=|.
 Any known information about the function's argument is thus bound as a type alternative to |tvarv|.
 The argument type is matched similarly, so we end up with all information about the argument bound to |tvarv|
@@ -1045,13 +1065,14 @@ as a set of type alternatives.
 
 \rulerCmdUse{rules3.I2.expr.eh4B1}
 
-Fixating type information is done at three places: |let|-bindings, |lambda|-bindings and patterns.
+Fixing type information is done at three places: |let|-bindings, |lambda|-bindings and patterns.
 Of these three, |let|-expressions and |lambda|-expressions are natural as identifiers are introduced.
 Similar to the generalisation of HM type inference,
-these places act as a boundary for an identifier.
+these places limit the scope of an identifier.
 If a type variable is not accessed outside this boundary, we can close the reasoning about such
 a type by eliminating type alternatives (or quantify, in the case of HM type inference).
-The restriction to eliminate type alternatives for a pattern, for its known type,
+The restriction on eliminating type alternatives for a pattern, to be used as the known type
+for the pattern,
 arises from our combination of type inference and type checking.
 We hope to remove this restriction in a future version of our algorithm as it complicates \ruleRef{e.lam};
 we will come back to this later with some examples.
@@ -1059,28 +1080,29 @@ we will come back to this later with some examples.
 \rulerCmdUse{rules3.I2.expr.eh4B2}
 
 The intricacy of \ruleRef{e.lam} is caused by the combination of the following:
-\begin{itemize}
+\begin{Itemize}
 \item
 Type variables act as placeholders for (future) type information.
-Hence we must take care to avoid inconsistencies between constraints,
-most likely caused by instantiation (to fresh type variables).
+Hence we must take care to avoid inconsistencies between constraints.
+Inconsistencies arise as the result of double instantiation (during each inference stage),
+and instantiated type variables are not constrained to be equal when the semantics require this.
 \item
 We assume that all known type information is available during the first inference stage,
-so we can combine this information in type alternatives.
+so we can include this information into type alternatives.
 \item
 For patterns, only a single `pass' is used to extract type information.
-As a consequence we require its type and constraints,
+As a consequence we require its types and constraints,
 used in the first stage,
 to remain consistent with results from the second stage.
-\end{itemize}
+\end{Itemize}
 
-\RuleRef{e.lam} first extracts possible polymorphic information from the known type |sigmak|,
+\RuleRef{e.lam} first extracts possibly polymorphic information from the known type |sigmak|,
 which may contain type alternatives (introduced as part of \ruleRef{e.app}).
 The resulting type |Dot(sigma)(e)(k)| is used to extract the possible polymorphic (higher ranked)
 type of the argument.
 We need this type to ensure the invariant that all available known type information is used
-as part of the first stage
-to be bound in a type alternative.
+as part of the first stage,
+and becomes bound in a type alternative.
 After being combined with pattern constraints and being threaded through the body,
 emerging as |Dot(ICnstr)(e)()|, the set of constraints is used to eliminate type alternatives for each introduced
 identifier.
@@ -1101,11 +1123,11 @@ old bindings for |tvarv1| (and |tvarv2|) are updated with new constraints.
 
 In a |let|-expression type alternatives are eliminated for locally introduced bindings.
 \RuleRef{e.let} shows how this is done.
-However, although the propagtion of |Gamma|'s and constraints specified by \ruleRef{e.let} is
+Although the propagation of |Gamma|'s and constraints specified by \ruleRef{e.let} is
 complete it also has become complex.
-This is mainly the consequence of the use of multiple |Gamma|'s and constraints threaded through
+This is mainly the consequence of the use of multiple |Gamma|'s and constraints being threaded through
 all declarations,
-and tied together at \ruleRef{e.let}.
+and being tied together at \ruleRef{e.let}.
 \FigRef{fig-let-I2-flow} therefore provides a graphical summary.
 
 \FigureXFigTex{let-I2-flow}{Constraint flow for let expression}{fig-let-I2-flow}
@@ -1118,7 +1140,7 @@ Existential types are part of this version of EH.
 in parallel with constraints for type variables bound to identifiers.
 Type signatures are gathered in |Dot(Gamma)(t)()|,
 bindings from patterns are gathered in |Dot(Gamma)(p)()|.
-The corresponding constraints (|Dot(Cnstr)(t)()|, and |Dot(Cnstr)(p)()|) are propagate
+The corresponding constraints (|Dot(Cnstr)(t)()|, and |Dot(Cnstr)(p)()|) are propagated
 to the impredicativity inference constraint thread |Dot(ICnstr)()()|.
 Similar to \ruleRef{e.lam} these constraints are used to eliminate type alternatives.
 The result of elimination is propagated to normal type inference.
@@ -1151,11 +1173,11 @@ where constraints are used as part of a type,
 and are applied as greedily as possible.
 
 Constraint-based approaches provide an alternative point of view where the `difficult' part of a type
-is encoded as a constraint, treated separate from type inference
+is encoded as a constraint, treated separately from type inference
 \cite{sulzmann97constrained-type}.
 Botlan's extension to ML \cite{botlan03ml-power-f} uses (explicitly specified)
 constraints to allow polymorphic type information
-to be impredicatively propagated.
+to be propagated impredicatively.
 Both approaches also allow the integration of qualified types \cite{stuckey02theory-overloading,leijen05qual-mlf}.
 
 Whatever the approach taken, the availability of higher-ranked types in a programming language
@@ -1180,40 +1202,44 @@ In \chapterRef{ehc4} universal quantification of types was introduced.
 A universally quantified type expresses that a value of such a type can be used with any type subsituted
 for the universally quantified part.
 In \thischapt\ we extend EH with its counterpart: the \IxAsDef{existentially quantified type},
-(or \IxAsDef{existential type}).
+(or \IxAsDef{existential type})
+\cite{mitchell88absty-exist,laufer94poly-absdata}.
 First, we look at examples, then we look at the implementation issues.
 
 The difference between a universally and existentially quantified type can be characterized by the following
 observation:
-\begin{itemize}
+\begin{Itemize}
 \item
-The use of a value with a |forall| quantified type determines the type of the quantified type variable.
+The \emph{use} of a value with a |forall| quantified type determines the type
+to choose for the instantiation of the quantified type variable.
 For example, the caller of the identity function ``|id :: forall ^ a . a -> a|''
-determines the type of the type variable |a| for this particular application of |id|.
+determines the type to choose for the type variable |a| for this particular application of |id|.
 For the function application ``|id 3|'' this type equals |Int|.
 \item
-The creation of a value with a |exists| quantified type determines,
+The \emph{creation} of a value with a |exists| quantified type determines,
 and hides,
 the type of the quantified type variable.
-For example, a creator of a ``|exists ^ a . (a,a->Int)|'' has constructed a value of that type from ``|(3,\x->x)|'';
+For example, a creator of a ``|exists ^ a . (a,a->Int)|'' may have constructed a value of that type from ``|(3,\x->x)|'';
 another creator has constructed a value with the same type from ``|('x',\x -> ord x)|''.
-From a users point of view both values can be interchanged. The value has a specific type chosen for type variable |a|,
+From a users point of view both values have the same type and are thus
+interchangeable.
+The value has a specific type chosen for type variable |a|,
 but we do not know which type, so this information can no longer be exploited.
 This value specific type information has been `forgotten'; we only know it exists.
-\end{itemize}
+\end{Itemize}
 
 Existential types are available in Haskell \cite{www04ghc},
 be it in a slightly disguised form.
-If type variables occurs in a constructor of a data type, but not in the type itself,
-it is assumed to be a an existentially quantified type variable.
+If type variables occur in a constructor of a data type, but not in the type itself,
+they are assumed to be existentially quantified.
 The keyword @forall@ (confusingly) is used to specify this explicitly:
 
 \begin{code}
 data Hide = forall^  a . Hide a
 \end{code}
 
-In EH this would be denoted as |exists ^ a . a|.
-There is no need to couple an existential type to a data type.
+In EH we prefer to denote this as |exists ^ a . a|.
+We do not restrict the occurrences of |exists| quantifiers to data declarations.
 
 As pointed out in \secRef{eh4motiv-ex} the univeral quantifier is also used in Haskell for encapsulation,
 we repeat the example:
@@ -1221,10 +1247,10 @@ we repeat the example:
 %%@TopicImpred.runST
 
 This is also slightly confusing because a universal quantifier has a useful meaning when used for functions.
-A function then can be passed and return values without knowing their type.
+A function can be passed and return values without knowing their type.
 For ``|forall ^ s . ST s a|'', the body of |runST| can choose |s|,
-but this is a rather useless choice because no value can be created by the caller of |runST| that allows
-the body of |runST| to choose its type of.
+but this is a rather useless choice because no value can be created by the caller of |runST| that still allows
+the body of |runST| to choose the type |s|.
 The effect therefore is that the type of |s| is hidden.
 In EH we would encode this directly:
 
@@ -1232,13 +1258,13 @@ In EH we would encode this directly:
 
 We summarize the use of quantifiers in EH:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 A universal quantifier |forall| is used for functions which (polymorphically) accept an unknown type and return a
 value of this same unknown type.
 \item
 An existential quantifier |exists| is used for values for which type information has been forgotten. 
-\end{itemize}
+\end{Itemize}
 
 In \chapterRef{ehc-partial-sig-quant-guess} we will exploit this use further.
 
@@ -1248,6 +1274,7 @@ Existential types are a necessary ingredient for encapsulation, abstract data ty
 and modules, because existential types allow us to hide type information.
 The following example uses a minimal abstract data type ``|exists ^ a . (a,a->Int)|'':
 a value tupled with an observer function for that value.
+Note that for all practical purposes this type is isomorphic to |Int|.
 
 \begin{Example}
 \ \label{eh4C-ex-basic}
@@ -1256,14 +1283,14 @@ a value tupled with an observer function for that value.
 \end{code}
 \end{Example}
 
-Value |xy| holds a ``|exists ^ a . (a,a->Int)|''.
-A ``|(Int,Int->Int)|'' has been put in |xy|, but the signature for |xy| only 
+Value |xy| holds an ``|exists ^ a . (a,a->Int)|''.
+An ``|(Int,Int->Int)|'' has been bound to in |xy|, but the signature for |xy| only 
 reflects that the value and function argument have the same type,
 so we can apply this function to the value (via |ixy|).
 Value |pq| is similarly typed, but the assignment of a value is erroneous.
 
 \Paragraph{Opening an existential type}
-When we create a value with an existential type,
+When we create a value by an existential type,
 we forget (part of) its type and represent this with an existentially quantified type variable.
 We call this the \IxAsDef{closing} of a type,
 as opposed to the \IxAsDef{opening} of an existential type.
@@ -1281,21 +1308,19 @@ xy :: (C_0_2_0,C_0_2_0 -> Int)
 
 The opening of an existential type is often tied up to special syntax,
 usually a variation of a |let|-expression.
-In EH, the opening is tied up to the binding of a type to a value identifier.
+In EH, the opening is associated with the binding of a type to a value identifier.
 This (design decision) follows the intuition that a value is a concrete object with a concrete type.
 
-The coupling between opening an existential type to its binding with a value
+Opening an existential type by binding
 also means that the following example is safe:
 
 \begin{code}
-%%4srcfile(test/4-demo5.eh%%)
+%%5srcfile(test/5-demo1.eh%%)
 \end{code}
 
-Assume |f| returns |(3,\x->x)| when passed |2| and |('x',chr)| otherwise.
-Also assume we do \emph{not} open existential types immediately when bound to a value identifier.
-We then could conclude that the result of both calls to |f| have the same type.
-The computation of |x| then would type check, but also likely lead to a crash.
-Instead, EH computes the following bindings; |fx| cannot be applied to |yy|:
+Function |f| returns |(2,id)| when passed |2| and |('a',ord)|
+otherwise\footnote{Case expressions are introduced together with data types, \chapterEHVRef.}.
+EH creates the following bindings; |fx| cannot be applied to |yy|:
 
 \begin{code}
 fy  ::  C_35_1_0 -> Int
@@ -1354,11 +1379,12 @@ In terms of the type lattice (\figPageRef{fig-type-lattice}) induced by |<=|,
 
 \subsection{Type matching}
 
-Universal and existential types are eachothers dual when used in type matching.
+Universal and existential types are dual when used in type matching.
 For
 
 \begin{code}
 forall ^ a . a <= sigma
+sigma <= exists ^ a . a
 \end{code}
 
 we can freely choose |a|,
@@ -1366,22 +1392,15 @@ whereas for
 
 \begin{code}
 sigma <= forall ^ a . a
-\end{code}
-
-|a| is chosen by the context of the expected type,
-hence instantiated to a fixed type variable during type matching (\figPageRef{rules3.I1.match.eh4}),
-which only can match with |sigma| if |sigma === tvarv| for some |tvarv|.
-
-For existential types this is the opposite:
-
-\begin{code}
 exists ^ a . a <= sigma
-sigma <= exists ^ b . b
 \end{code}
 
-For |a| only a fresh type constant can be chosen,
-which (by definition) is unequal to any other type.
-We can choose |b| freely because any type can be forgotten.
+In case of universal type,
+|a| is chosen by the context,
+whereas |a| is chosen by the creator of the existential type.
+|a| is chosen by the context of the expected universal type.
+In both case we emulate this ``choice from outside'' by instantiating |a| to
+a fixed type variable during type matching (\figPageRef{rules3.I1.match.eh4}).
 
 \rulerCmdUse{rules3.I1.match.eh4C}
 
@@ -1438,25 +1457,77 @@ inferred for |f|:
 f :: ((exists ^ a . (a,a -> Int)) -> Int) -> Int
 \end{code}
 
-\subsection{Type inference}
+\subsection{Impredicativity inference and type inference}
 
 Type matching takes care of most of the implementation of existential types.
-The remainder deals with the automatic opening of existential types
-at the locations in the AST where value identifiers are introduced: |let|- and |lambda|-expressions.
+We only need to ensure the opening of an existential type when bound to an identifier:
+
+\begin{Itemize}
+\item
+Inside patterns, when an expected type is bound to an identifier
+(\figRef{rules3.I1.patexpr.eh4}).
+\item
+In a let expression, for explicitly introduced type signatures,
+and for inferred type signatures
+(\figPageRef{rules3.I2.expr.eh4B2}).
+\end{Itemize}
 
 \rulerCmdUse{rules3.I1.patexpr.eh4}
-
-------------------
-
-
-\subsection{Impredicativity inference}
 
 \subsection{Related work, discussion}
 \label{eh4Cdiscuss}
 
-Making up type constants, allowing them to escape, breaks modules
+By opening an existential type when bound to a value,
+we deviate from most treatments of existential types
+\cite{macqueen86dep-ty-module,mitchell88absty-exist,laufer94poly-absdata},
+which leave existential types closed,
+to be opened by special language constructs when the need arises.
+We can see the following benefits and drawbacks of both approaches,
+in which the scope of the identity of the hidden type plays a crucial role:
 
-Use for module mechanisms, translucent sums, ...
+\begin{Itemize}
+\item
+Opening an existential type by need creates a problem with
+the following example, using some fantasy syntax for opening:
+%{
+%format open = "\mathbf{open}"
+\begin{code}
+let  v    ::  exists ^ a . (a,a->Int)
+     fst  ::  forall ^ a . forall ^ b . (a,b)->a
+     v1   =   open v' = v in fst v'
+     v2   =   open v' = v in fst v'
+in   ...
+\end{code}
+%}
+The field access to |v| opens |v| twice.
+The consequence is that |v1| and |v2| have different types,
+because each opening introduces a new type.
+
+A solution to this problem is to treat field access (usually denoted by a dot notation) in a special way
+by using the same type for the opening of the same value.
+Laufer (et.al.) \cite{laufer94poly-absdata} observe that existential types,
+in practical settings, have to be opened for a large scope,
+losing some of the benefits of abstraction.
+Our solution takes this a step further by opening the type of the value once and for all,
+thereby still retaining the benefit of encapsulation (because type information is replaced by fresh type constants).
+As a consequence we not have to bother about opening existential types.
+
+%\item
+%Opening a nested existential type is done when bou
+
+\item
+In our solution we open a type by creating fresh type constants for the existentially quantified type variables.
+We allow these constants to escape to a larger scope.
+This is not a problem because only functions accepting such a constant can do something with it
+that is particular to the type constant.
+However, as freshness of a type constant is guaranteed by means of uniqueness,
+we must also ensure uniqueness in the context of separatedly compiled modules;
+as we do not discuss modules in this thesis we merely point this out.
+
+\item
+If the need arises to (again) forget a type constant,
+this can be done by an explicit type annotation.
+\end{Itemize}
 
 %%]
 
@@ -1491,7 +1562,7 @@ Repeat some motivating examples \cite{shan04sexy-types,peytonjones04pract-inf-ra
 \subsection{What we want}
 \label{eh-impred-reqm}
 
-\begin{TabularFigure}{EH terms}{eh-impred-lang-terms}
+\begin{TabularCenterFigure}{EH terms}{eh-impred-lang-terms}
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
 %%@AppxNotation.exprBasic
@@ -1505,7 +1576,7 @@ Repeat some motivating examples \cite{shan04sexy-types,peytonjones04pract-inf-ra
 %%@AppxNotation.termSeparator
 %%@AppxNotation.identHeader
 %%@AppxNotation.identBasic
-\end{TabularFigure}
+\end{TabularCenterFigure}
 
 \FigRef{eh-impred-lang-terms} shows the term language we use.
 
@@ -1550,20 +1621,20 @@ Type of |v1 :: forall a . (a -> a) -> a -> a|, |v2 :: (forall a . a -> a) -> for
 \paragraph{Outline of our contribution}
 
 Design starting point:
-\begin{itemize}
+\begin{Itemize}
 \item
 Stick to Hindley-Milner
 \item
 Allow the programmer to explicitly specify (higher-rank) polymorphism
 \item
 Employ a two-stage inferencing strategy:
- \begin{itemize}
+ \begin{Itemize}
  \item
  Impredicativity inferencing: propagate explicitly provided polymorphism
  \item
  Standard type inferencing: 
- \end{itemize}
-\end{itemize}
+ \end{Itemize}
+\end{Itemize}
 
 \paragraph{Outline of this paper}
 
@@ -1572,7 +1643,7 @@ Point out what we can do extra relative to Vytiniotis \cite{vytiniotis05boxy-imp
 \subsection{Implementation}
 \label{eh-impred-impl}
 
-\begin{TabularFigure}{EH types}{eh-impred-lang-types}
+\begin{TabularCenterFigure}{EH types}{eh-impred-lang-types}
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.typeHeader
 %%@AppxNotation.typeBasic
@@ -1588,15 +1659,15 @@ Point out what we can do extra relative to Vytiniotis \cite{vytiniotis05boxy-imp
 %%@AppxNotation.termSeparator
 %%@AppxNotation.tyaltHeader
 %%@AppxNotation.tyaltBasic
-\end{TabularFigure}
+\end{TabularCenterFigure}
 
-\begin{TabularFigure}{Notation and abbreviation legenda}{eh-impred-legenda-notation}
+\begin{TabularCenterFigure}{Notation and abbreviation legenda}{eh-impred-legenda-notation}
 %%@AppxNotation.notationTableFormat
 %%@AppxNotation.notationTableHeader
 %%@AppxNotation.notationBasic
 %%@AppxNotation.notationImpredA
 %%@AppxNotation.notationImpredB
-\end{TabularFigure}
+\end{TabularCenterFigure}
 
 An environment |Gamma|
 binds value identifiers to types and predicates to translations (dictionary evidence) paired with their type:
@@ -1656,7 +1727,7 @@ A second reason is the mixture of yes/no quantified, i.e. holes in a type may ha
 The order in which the rules appear is important. Of two matching rules the textually preceding one takes precedence.
 In case of commutativity only a `left' variant has been included (perhaps an explicit summary where this applies).
 
-\begin{TabularFigure}{Quantified type instantiation variants}{eh-impred-legenda-inst}{l@@{=}ll}
+\begin{TabularCenterFigure}{Quantified type instantiation variants}{eh-impred-legenda-inst}{l@@{=}ll}
 \multicolumn{2}{l}{Variant} & instantiate |Vec(alpha)| with fresh \\
 \hline
 |(Vec(tvarv),sigma') | & | instWith(tvarv)(Qu ^ Vec(alpha) . sigma)|
@@ -1673,27 +1744,27 @@ In case of commutativity only a `left' variant has been included (perhaps an exp
  &  non reproducible type constants |Vec(identc)|
  \\
 %endif
-\end{TabularFigure}
+\end{TabularCenterFigure}
 \FigRef{eh-impred-legenda-inst} shows how quantified types can be instantiated.
 All instantiation variants only instantiate top level quantified type variables.
 instWith(exists)(Gamma) is defined in the obvious way.
 
-\begin{TabularFigure}{Options to fit}{eh-impred-fit-options}
+\begin{TabularCenterFigure}{Options to fit}{eh-impred-fit-options}
 %%@SharedFIOpts.fiOptsTableHeader
 %%@SharedFIOpts.fiOptsEH4
 %%@SharedFIOpts.fiOptsEH4B
 %%@SharedFIOpts.fiOptsEH5
-\end{TabularFigure}
+\end{TabularCenterFigure}
 \FigRef{eh-impred-fit-options} shows the options which can be passed to |<=| (and |<+>|, |<->|, |<=>|).
 Often used combinations of these options are found in \FigRef{eh-impred-fit-option-combis}.
 |True| and |False| values are denoted by a an additional |+| or |-| respectively,
 for example for |fioLeaveRInst| with |fioLeaveRInstY| and |fioLeaveRInstN| respectively.
 
-\begin{TabularFigure}{Option combinations}{eh-impred-fit-option-combis}
+\begin{TabularCenterFigure}{Option combinations}{eh-impred-fit-option-combis}
 %%@SharedFIOpts.fiOptsCombisTableHeader
 %%@SharedFIOpts.fiOptsCombisEH4forEH4B
 %%@SharedFIOpts.fiOptsCombisEH4B
-\end{TabularFigure}
+\end{TabularCenterFigure}
 \FigRef{eh-impred-fit-option-combis} shows combinations |fiopt| of options to |fit|.
 
 \rulerCmdUse{rules2.meetIm}
@@ -1759,10 +1830,10 @@ Not (yet) sorted out.
 \subsection{Propagation of impredicativity}
 
 Our solution for the use of higher-ranked types is based on:
-\begin{itemize}
+\begin{Itemize}
 \item The obligation for a programmer to specify the type information the type inferencer is not capable of inferring.
 \item The obligation of the type inferencer to not forget this information.
-\end{itemize}
+\end{Itemize}
 
 The type inferencer uses standard Hindley-Milner type inferencing extended with the possibility to bind type variables to
 quantified types, usually named \IxAsDef{impredicativity}.
@@ -1790,7 +1861,7 @@ However, the following example breaks because we first bind the type of |h| to a
 \end{code}
 
 This example breaks at three different places:
-\begin{itemize}
+\begin{Itemize}
 \item
 The first use of |h| for the computation of |x1| concludes |h :: Int -> v_7|. This conflicts with the second use in the computation of |x2| where
 |h| is expected to accept a |Char|.
@@ -1799,16 +1870,16 @@ The first use of |h| for the computation of |x1| concludes |h :: Int -> v_7|. Th
 \item
 The type inferencer will conclude |f :: (Int -> forall a . a) -> Int| (or something similar) which is not polymorphic enough in its argument
 to be able to accept |id| as its parameter.
-\end{itemize}
+\end{Itemize}
 
 These problems are caused by the interaction of the following design choices:
-\begin{itemize}
+\begin{Itemize}
 \item
 If the type inferencer finds more information about a type variable it immediately applies this knowledge to all types.
 This is done in a left-to-right order through the abstract syntax tree.
 \item
 No polymorphism for parameters is inferred. See ... for the a discussion of the reasons to avoid the complexity of ... .
-\end{itemize}
+\end{Itemize}
 
 In other words, once a type is monomorphic we don't allow it to become polymorphic, not even if we encounter the `right' to do so elsewhere in
 a program.

@@ -1,7 +1,9 @@
 %%[introPHD
-This thesis is about describing an implementation of the programming language Haskell.
-It is about how to describe and implement in such a way that we can be sure that description
-and implementation are mutually consistent.
+This thesis contains a description of an implementation of the programming language Haskell,
+together with many extensions.
+At the same time it is an experiment in merging the description with the actual code
+of the implementation,
+thus guaranteeing some form of consistency.
 The thesis is also about making description and implementation understandable,
 so that it can be used as a means for education and (Haskell) programming language research.
 In this thesis we take a stepwise approach to both description and implementation,
@@ -20,11 +22,11 @@ Experimentation on a smaller scale usually is based upon relatively simple and r
 \cite{jones99thih}, often focusing only on a particular aspect of
 the language and/or its implementation.
 
-A second reason is that experimentation with Haskell,
+A second reason is that experimentating with Haskell,
 or language design in general,
 usually expresses itself in a theoretical setting,
 with a focus on the proof of formal properties.
-Experimentation takes place in a practical setting as well, but often it is not at all obvious how
+Experimentation also takes place in a practical setting, but often it is not at all obvious how
 theory and practice of an experiment relate.
 We feel that a description of a Haskell implementation
 which focusses on a joint presentation of the implementation
@@ -39,14 +41,14 @@ The complexity can be made more manageable by looking at features individually,
 while not loosing
 sight of the context with which such a feature has to coexist.
 This thesis aims at walking somewhere between this complexity and simplicity by describing
-features individually as separate aspects of a more complex whole,
-constructed as a sequence of languages.
+features individually,
+as separate aspects of a more complex whole.
 
-In the remainder of this chapter we first give an overview of our goals,
+In the following section we first give an overview of our goals,
 the overall organisation of the road to their realisation,
 and the organisation of this thesis.
 The remainder of the introduction takes the reader on a short tour through
-the languages for which this thesis describes the compilers.
+the languages for which this thesis describes implementations.
 
 \subsection{Overview}
 
@@ -55,49 +57,53 @@ the languages for which this thesis describes the compilers.
 The holy grail of the EHC project \cite{dijkstra04ehc-web}, described by this thesis,
 is to create the following:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 A compiler for Haskell plus extensions.
 The goal is a compiler that can be used, and is not `just' a toy.
 \item
 A description of the compiler.
 The goal is to offer understanding of the implementation,
-so it can be used for learning, be a basis for experimentation,
-and be a bridge between (type) theory and practice.
-\end{itemize}
+so it can be used for teaching, to be a basis for experimentation,
+and to be a bridge between (type) theory and practice.
+\end{Itemize}
 
 Being a true holy grail,
 we do not expect to achieve this overnight.
 However, our inspiration comes from \TeX,
-for which documented source code constitutes a stable point of reference \cite{knuth86tex-program}.
+for which documented source code constitutes a stable point of reference
+\cite{knuth86tex-program}.
+We also draw inspiration from the combination of type theory and implementation
+in Pierce's book \cite{typing:types-prog-lang:pierce}.
 
 On a less ambitious scale,
 this thesis can be read with the following, somewhat overlapping,
 viewpoints on this thesis in mind;
 each viewpoint comes with its own goal and design starting point:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 The thesis offers an explanation of the implementation of a Hindley-Milner type system
 (\chapterRef{ehc1} through \chapterRef{ehc3}).
 The explanation is expressed and explained in terms of type rules,
-Attribute Grammar implementation for those type rules,
+attribute grammar implementation for those type rules,
 and additional infrastructure (encoded in Haskell) to complete it to a full compiler.
 \item
-The thesis offers experiments in the combination of explicitly specified type information (by the programmer),
+The thesis offers experiments in combining of explicitly specified type information (by the programmer),
 and implicitly inferred type information (by the system) (\chapterRef{ehc4} through \chapterRef{ehc-partial-sig-quant-guess}).
 The design starting point here is to let programmer and system jointly specify a program,
 instead of the programmer fighting the system's limitations.
-This starting point is inspired by the observation that pure type inference systems hinder a programmer,
+This starting point is inspired by the observation that systeme purely base on
+type inference hinder a programmer,
 because such a system does not allow the programmer to specify what the system cannot infer.
 \item
 The thesis offers an experiment in the description of a compiler,
 the required mechanisms to do such a job, and the tools to implement those mechanisms
-(\secRef{secAGTut}, \chapterRef{ruler}, and other tools).
+(\chapterRef{secAGTut}, \chapterRef{ruler}, and other tools).
 The design starting point is to partition the whole system into a sequence of steps,
 each representing a standalone language and implementation.
-Each step extends a previous step by adding one or more features.
-All our tools therefore need to some degree be aware of the notion of separate steps 
+Each step extends a previous step by adding some features.
+All our tools therefore somehow need to be aware of the notion of separate steps 
 (or views, versions).
 \item
 The thesis offers an experiment in creating a maintainable and explainable compiler.
@@ -107,9 +113,16 @@ by duplication of shared material in the first place.
 The code presented in the thesis and used for the construction of individual compiler are
 generated from common source code
 (\appRef{appx-shuffle}).
-The same holds for (the major part of) the type rules and their Attribute Grammar implementation
+The same holds for (the major part of) the type rules and their attribute grammar implementation
 (\chapterRef{ruler}).
-\end{itemize}
+\end{Itemize}
+
+Our work complements Pierce's book \cite{typing:types-prog-lang:pierce}
+in the sense that we bring together type rules and their implementation,
+instead of treating these separately.
+The other way around, Pierce deals with the proofs for various properties,
+whereas we do not.
+
 
 \Paragraph{Thesis overview}
 We assume the reader is familiar with Haskell.
@@ -117,7 +130,7 @@ We do not assume familiarity with the Attribute Grammar system (AG) used through
 this thesis.
 An AG tutorial is included (\chapterRef{agtut}),
 but can safely be skipped if the reader is already familiar with the AG system
-(see \figRef{fig-roadmap}).
+(see the roadmap in \figRef{fig-roadmap}).
 For the remainder of this thesis we assume familiarity with type systems;
 we informally introduce the necessary concepts,
 but, as we focus on their implementation the formalities of type systems are not discussed
@@ -130,7 +143,7 @@ as they describe development steps of the first four of our series of compilers.
 \chapterRef{ehc4B} has a more experimental character as it is not (yet) integrated into the
 last compiler version,
 so this part can be skipped.
-\chapterRef{ehc-partial-sig-quant-guess} describes we can make the specification of type signature easier;
+\chapterRef{ehc-partial-sig-quant-guess} describes how we can make the specification of type signature easier;
 this subject is relatively independent of the previous chapters.
 \chapterRef{ehc9} and \chapterRef{ruler} can be read in isolation,
 as these chapters are based on (submitted) articles.
@@ -138,7 +151,7 @@ as these chapters are based on (submitted) articles.
 Throughout the description of the series of compilers we gradually shift from AG based
 explanation to type rule based explanation combined with examples.
 The code which implements those type rules is still referred to from the main text.
-For the paper version of this thesis we refer to the electronic version;
+In the paper version of this thesis we refer to the electronic version;
 for the electronic version we refer to the proper appendix with a margin reference
 (like here \chunkHideRef{impl.gamAsList}).
 We will come back to this in our conclusion (\chapterRef{ehcConcl}).
@@ -149,21 +162,20 @@ abbreviated by EH.
 The construction of these compilers and this thesis is accomplished by the use of several tools
 (\figRef{system-fig-overview}):
 
-\FigurePDF{system-overview}{System overview}{system-fig-overview}
-
-\begin{itemize}
+\begin{Itemize}
 \item
 Fragment administration and combination (of source text)
 is managed by a tool called |Shuffle| (\appRef{appx-shuffle}).
 |Shuffle| has the same responsibility as weaving and tangling in literate programming \cite{www05litprog},
 but allows a more flexible recombination of source fragments.
+Because of its great resemblance with such tools we will not discuss |Shuffle|.
 \item
 The |Ruler| system (\chapterRef{ruler}) generates a visual rendering for inclusion in this thesis,
 and an AG implementation.
 \item
 The specification of the (remaining parts of the) implementation is expressed by an Attribute Grammar (AG) and
-Haskell.
-\end{itemize}
+Haskell code.
+\end{Itemize}
 
 The partitioning into multiple steps, called \IxAsDef{views} in the remainder of this thesis,
 influences the used tools.
@@ -173,12 +185,105 @@ For example, the |Ruler| system manages named views on type rules.
 However, Haskell compilers are not aware of our idea of views,
 so |Shuffle| takes care of properly generating source code for views.
 
-\Paragraph{EH project status}
-...
+\FigurePDF{system-overview}{System overview}{system-fig-overview}
 
-Missing parts: data types, kind inference, records
+\Paragraph{Context of this thesis, project status}
+This thesis represents a snapshot of the description of an ongoing project, the Essential Haskell (EH) project
+\cite{dijkstra04ehc-web}.
+\figRef{eh-intro-implstatus} presents an overview of the features which are described in this thesis,
+and which features are present in GHC (version 6.4 \cite{www04ghc}).
+We have selected those parts which are
+the most to tell:
+the first chapters provide the basic structure of EH,
+presenting type rules, and AG implementation side by side.
+Remaining chapters describe experiments with explicit and implicit (type) information,
+and the |Ruler| tool.
 
-GRIN \cite{boquist99phd-optim-lazy,boquist96grin-optim}
+\begin{TabularCenterFigure}{Implementation status}{eh-intro-implstatus}{lp{.25\linewidth}llp{.25\linewidth}}
+EH  & Feature(s) & Implemented & Chapter & In GHC \\
+\hline
+1	&	type checking	&	+	&	\myRef{ehc1}	&	+
+\\
+2	&	type inference	&	+	&	\myRef{ehc2}	&	+
+\\
+3	&	Hindley-Milner
+		type inference	&	+	&	\myRef{ehc3}	&	+
+\\
+4	&	higher-ranked
+		types, existential types
+						&	+	&	\myRef{ehc4}, \myRef{ehc4B}, \myRef{ehc4C}
+													&	+, existential types tied to data types
+\\
+5	&	data types		&	+	&	-				&	+
+\\
+6	&	kind inference,
+		kind polymorphism
+						&	+	&	-				&	+/-, no kind polymorphism
+\\
+7	&	records (non-extensible)
+						&	+	&	-				&	+/-, tied to data types
+\\
+8	&	code-generation
+						&	+/-	&	-				&	+
+\\
+9	&	class system,
+		explicit implicit params
+						&	+	&	\myRef{ehc9}	&	+/-, class system only
+\\
+10	&	records (extensible)
+						&	+	&	-				&	-
+\\
+2 -	&	partial type signatures
+						&	+	&	\myRef{ehc-partial-sig-quant-guess}
+													&	-
+\\
+\end{TabularCenterFigure}
+
+The source code presented in this thesis is exactly the same code as used for
+the implementation.
+Although the source code forms the core around which the thesis has been constructed,
+only the first chapters of this thesis have incorporated source code.
+Later chapters involve more complex issues,
+which, we feel,
+are better presented using examples and type rules.
+
+Much of the type rule related AG code is generated directly from the type rules
+by |Ruler| (\chapterRef{ruler}).
+This is not (yet) done for all type rules (in particular, not for \chapterRef{ehc9});
+\appRef{appx-genbyruler} provides a list of the type rules for which AG code is generated.
+The use of |Ruler| allows us to focus on type rules,
+but work still needs to be done (see also the conclusion, \chapterRef{ehcConcl}) to allow even more AG code to
+be replaced by |Ruler| generated AG code.
+
+Omitted source code is available via the EH project website \cite{dijkstra04ehc-web}.
+Part of the code has been included as appendix-like material,
+that is, it has been included, but outside the main story line
+\footnote{Reference to code have not yet been completely included;
+the final version of this thesis is intended to be complete in this respect.}.
+
+Between \chapterRef{ehc4C} and \chapterRef{ehc9} data types, kind inference/checking,
+code generation, and extensible records are introduced (\figRef{eh-intro-implstatus}).
+Most of these features are required for the implementation of \chapterRef{ehc9};
+their description will be included in later versions of the full description of EH,
+to appear after the publication of this thesis.
+
+Parts of this thesis have been published in an earlier version
+or submitted to a conference\footnote{Acceptance will be known when this thesis goes to print.}
+in a different form: \chapterRef{secIntro} through \chapterRef{ehc3} are updated from
+an AFP (Advanced Functional Programming) tutorial 
+\cite{dijkstra04thag}, and \chapterRef{ehc9} and \chapterRef{ruler}
+have been submitted to POPL2006 in a slighty extended form.
+
+Finally, additional work is currently in progress in the following areas:
+\begin{Itemize}
+\item
+A compiler for GRIN \cite{boquist96grin-optim,boquist99phd-optim-lazy} to C--
+\cite{www04cminusminus}.
+We are also looking at extending GRIN with exceptions.
+\item
+Extending EH with GADT's (Generalised Algebraic Data Types).
+\end{Itemize}
+
 %%]
 
 %%[goal
@@ -190,7 +295,7 @@ A compiler for (an extended version of) Haskell which is extendable, understanda
 
 In this thesis this translates to the following, more concrete, goals and artefacts:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 All source material that appears in this thesis, the compiler, or other artefacts,
 is shared in the form of source fragments,
@@ -205,11 +310,11 @@ Each step focusses on a particular feature which is dealt with in relative isola
 the preceding steps.
 Each step corresponds to a working compiler in its own right.
 \item ...
-\end{itemize}
+\end{Itemize}
 
 The realisation of each of these goals is supported by the use of tools:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 Fragment administration and combination is managed by a tool called |Shuffle| (\appRef{appx-shuffle}).
 \item
@@ -218,7 +323,7 @@ The description and implementation of the type system is generated by the |Ruler
 The specification of the (remaining parts of the) implementation is expressed by an Attribute Grammar (AG) and
 Haskell.
 The AG system supports the independent description of aspects of an implementation (\secRef{secAGTut}).
-\end{itemize}
+\end{Itemize}
 
 ...
 
@@ -234,7 +339,7 @@ the explanation in this thesis follows this order, see \FigRef{fig-roadmap}.
 The best route through this thesis therefore is straight from its beginning to the end.
 However, some parts may be skipped or read independently:
 
-\begin{itemize}
+\begin{Itemize}
 \item
 \chapterRef{ehc1} through \chapterRef{ehc3} explain the first three compilers.
 We extensively use the AG system to describe the implementation.
@@ -247,7 +352,7 @@ this part is not incorporated in the main story line.
 \item
 \chapterRef{ehc9} and \chapterRef{ruler} are derived from submitted papers and can be read
 independently.
-\end{itemize}
+\end{Itemize}
 
 appendices: not incorporated fragments (or as pdf overlay, or html?), shuffle doc
 
@@ -280,7 +385,7 @@ Experimentation on a smaller scale usually is based upon relatively simple and r
 \cite{jones99thih}, often focusing only on a particular aspect of
 the language and/or its implementation.
 This paper aims at walking somewhere between this complexity and simplicity by
-\begin{itemize}
+\begin{Itemize}
 \item
 Describing the implementation of essential aspects of Haskell
 (or any other (functional) programming language), hence the name Essential Haskell (EH) used
@@ -297,7 +402,7 @@ Using tools like the Utrecht University Attribute Grammar (UUAG) system
 \cite{baars04ag-www},
 hereafter referred to as the AG system,
 to allow for separate descriptions for the various aspects.
-\end{itemize}
+\end{Itemize}
 
 The remaining sections of this introduction will expand on this by looking at
 the intentions, purpose and limitations of \thispaper\ in more detail.
@@ -315,7 +420,7 @@ We conclude \thispaper\ by reflecting upon our experiences with the AG system an
 
 %%[purpose
 For whom is this material intended?
-\begin{itemize}
+\begin{Itemize}
 \item
 For students who wish to learn more about the implementation of functional languages.
 This paper also informally explains the required theory, in particular about type systems.
@@ -333,7 +438,7 @@ are used to compactly describe executable syntax.
 %endif
 Other tools for maintaining consistency between different versions of the resulting compilers
 and the source code text included in \thispaper\ are also used, but will not be discussed.
-\end{itemize}
+\end{Itemize}
 
 For this intended audience \thispaper
 %if llncs
@@ -342,7 +447,7 @@ provide:
 provides:
 %endif
 
-\begin{itemize}
+\begin{Itemize}
 \item
 A description of the implementation of a type checker/inferencer for
 a subset of Haskell.
@@ -362,13 +467,13 @@ Empirical support for the belief that the complexity of a compiler
 can be managed by splitting the implementation of the compiler into separate aspects.
 \item
 A working combination of otherwise usually separately proven or implemented features.
-\end{itemize}
+\end{Itemize}
 
-We will come back to this in our conclusion (see \secRef{ehcConcl}).
+We will come back to this in the conclusion (see \secRef{ehcConcl}).
 
 We restrict ourselves in the following ways, partly because of space limitations, partly by design:
 
-\begin{itemize}
+\begin{Itemize}
 %if storyAFP04Notes
 \item
 We do not discuss extensions to Haskell implemented in versions beyond the last version presented in \thispaper.
@@ -385,11 +490,11 @@ We do not deal with type theory or parsing theory as a subject on its own.
 This paper is intended to describe ``how to implement'' and
 will use theory from that point of view.
 Theoretical aspects are touched upon from a more intuitive point of view.
-\end{itemize}
+\end{Itemize}
 
 Although informally and concisely introduced where necessary,
 familiarity with the following will make reading and understanding \thispaper\ easier:
-\begin{itemize}
+\begin{Itemize}
 \item
 Functional programming, in particular using Haskell
 \item
@@ -398,7 +503,7 @@ Compiler construction in general
 Type systems, |lambda|-calculus
 \item
 Parser combinator library and AG system \cite{baars04ag-www,uust04www}
-\end{itemize}
+\end{Itemize}
 
 %if incl00TopicAGPrimer
 For those not familiar with the AG system a short tutorial has been included at the end of
@@ -426,7 +531,7 @@ and implemented in the relevant versions of the compiler.
 %%]
 
 %%[shortTour
-Though all compilers described in \thispaper\ deal with a different issue,
+Although all compilers described in \thispaper\ deal with a different issue,
 they all have in common that they are based on the \IxAsIs{|lambda|-calculus},
 most of the time using the syntax and semantics of Haskell.
 The first version of our series of compilers therefore accepts a language that most closely resembles the
@@ -454,7 +559,7 @@ For example:
 is not accepted.
 %endif
 
-Besides the basic types |Int| and |Char|, composite types can be formed by building tuples and defining functions:
+Besides the basic types |Int| and |Char|, more complex types can be formed by building tuples and defining functions:
 
 \begin{code}
 %%1srcfile(test/1-demo3.eh%%)
@@ -467,7 +572,7 @@ All types are monomorphic.
 \Paragraph{EH version 2: Explicit/implicit typing}
 The next version
 (EH version 2, \chapterRef{ehc2})
-no longer requires the explicit type specifications, which thus may have to be inferred by the compiler.
+no longer requires the explicit type specifications, which in that case will have to be inferred by the compiler.
 %if not storyAFP04Notes
 For example for:
 
@@ -517,20 +622,14 @@ The type signature is checked against the inferred type.
 
 %if incl04 || storyEHIntro
 \Paragraph{EH version 4: Higher ranked types}
-Standard Hindley-Milner type inferencing cannot infer polymorphic parameters:
-so-called rank-2 polymorphism.
+Standard Hindley-Milner type inferencing cannot infer polymorphic parameters,
+so-called higher-ranked types.
 In general, this is a hard thing to do and even impossible for rank-3 (and higher) types
 \cite{jim95rank,kfoury94direct,kfoury99rank2-decid,kfoury03rank2-princ},
 so the fourth version
-(EH version 4,
-%if storyAFP04Notes
-describe elsewhere \cite{dijkstra04thag-part1}
-%else
-\chapterRef{ehc4}%
-%endif
-)
-does not infer this type information but
-allows explicitly specified polymorphism for (e.g.) parameters.
+(EH version 4, \chapterRef{ehc4})
+does not infer this type information, but
+allows for explicitly specified polymorphism for (e.g.) parameters.
 
 For example, the following is allowed.
 \begin{code}
@@ -538,7 +637,7 @@ let  f :: (forall a . a -> a) -> (Int,Char)
      f = \i -> (i 3, i 'x')
 in   f
 \end{code}
-Note that the type signature thus is required here.
+Note that the type signature is thus required here.
 
 This version also provides some notational sugaring by allowing one to omit
 the explicit quantifiers from
@@ -559,14 +658,14 @@ using a \IxAsDef{partial type signature}.
 \begin{code}
 %%4srcfile(test/4-ty-wild1.eh%%)
 \end{code}
-For |f| only the part that cannot be inferred is given in the signature.
+Here, for |f| only the part that cannot be inferred is given in the signature.
 
 Finally, type information can be hidden, or encapsulated,
 by using existential quantification:
 \begin{code}
 %%4srcfile(test/4-demo1.eh%%)
 \end{code}
-The tuple |xy| contains an |Int| and a function making an |Int| from the
+The tuple |xy| contains an |Int| and a function constructing an |Int| from the
 value of which the type has been hidden.
 Access to the elemnts of such a tuple is done by pattern matching, as in the argument position of the function |ixy|.
 The attempt to construct |pq| fails.
@@ -580,19 +679,13 @@ The explicit |exists| may also be omitted, for example
 
 %endif %% incl04
 
-%if incl05 || (storyEHIntro && not storyVariantETAPSLinks)
-
 \Paragraph{EH version 5: Data types}
-The fifth version (EH version 5, \chapterRef{ehc5})
+The fifth version (EH version 5, \chapterEHVRef)
 adds |data| types and opening/unpacking/scrutinizing
 a data type value by means of a |case| expression.
 \begin{code}
 %%5srcfile(test/5-list.eh%%)
 \end{code}
-
-%endif %% incl05
-
-%if incl06 || storyEHIntro
 
 \Paragraph{EH version 6: Kinding}
 The previous version allows incorrect programs because
@@ -602,14 +695,12 @@ data types can be used incorrectly:
 \end{code}
 The type of |v| is not a type of a value, and thus the type of |v|
 itself is not well-typed.
-The sixth version (EH version 6, \chapterRef{ehc6})
+The sixth version (EH version 6, \chapterEHVIRef)
 adds kind (that is, the type of a type) inferencing.
-%if noAFP04
 For example, the previous example gives
 \begin{TT}
 %%6ppfile(test/5-list-wrong.eh%%)
 \end{TT}
-%endif
 
 With the notion of the kind of a type also comes
 the notion of polymorphism for kinds,
@@ -619,12 +710,57 @@ let  data Eq a b = Eq (forall f . f a -> f b)
      id = \x -> x
 in   Eq id
 \end{code}
-infers for type constructor |Eq|
-\begin{TT}
-%%6ppinline(let data Eq a b = Eq (forall f . f a -> f b) in 3%%)
-\end{TT}
+infers for type constructor |Eq|:
 
-%endif %% incl06
+\begin{code}
+Eq :: Forall ^ k . k -> k -> *
+\end{code}
+
+\Paragraph{EH version 7: Non-extensible records}
+The seventh version (EH version 7, \chapterEHVIIRef)
+extends tuples to (non-extensible) records.
+Fields can be named.
+for tuples the default field names are their position (starting at |1|):
+
+\begin{code}
+%%7srcfile(test/7-demo1.eh%%)
+\end{code}
+
+The proposal by Jones \cite{jones99lightweight-ext-rec} is followed.
+
+\Paragraph{EH version 8: Code generation}
+The eighth version (EH version 8, \chapterEHVIIIRef)
+adds code generation for a GRIN (Graph Reduction Intermediate Notation) like backend
+\cite{boquist96grin-optim,boquist99phd-optim-lazy}.
+The generated code can be run (for testing purposes only) by a small GRIN interpreter (|grini|).
+
+\Paragraph{EH version 9: Implicit parameters, class system}
+The ninth version (EH version 9, \chapterRef{ehc9})
+adds a class system, and explicit parameter passing to implicit parameters:
+
+\begin{code}
+%%9srcfile(eh-frags/9-eq-nub.eh%%)
+\end{code}
+
+On top of a class system, we allow instances to be named (1), and passed explicitly (2) when
+expected to be passed implicitly.
+
+
+\Paragraph{EH version 10: Extensible records}
+The tenth version (EH version 10, \chapterEHXRef)
+adds extensible records (again following Jones \cite{jones99lightweight-ext-rec}),
+using the class system to allow:
+
+\begin{code}
+%%10srcfile(test/10-demo1.eh%%)
+\end{code}
+
+Tuple access functions can also be used in a more general way:
+
+\begin{code}
+%%10srcfile(test/10-snd.eh%%)
+\end{code}
+
 
 %%]
 
@@ -666,7 +802,7 @@ See also the longer version of \thispaper\ handed out during the AFP04 summersch
 Also missing are features which fall in the category syntactic sugar, programming in the large and the like.
 Haskell incorporates many features which make programming easier and/or manageable.
 Just to mention a few:
-\begin{itemize}
+\begin{Itemize}
 \item
 Binding group analysis
 \item
@@ -678,7 +814,7 @@ Modules
 Type synonyms
 \item
 Syntactic sugar for |if|, |do|, list notation and comprehension.
-\end{itemize}
+\end{Itemize}
 
 We have deliberately not dealt with these issues.
 Though necessary and convenient we feel that these features should be added after all else has been dealt with,
@@ -713,7 +849,7 @@ in   let  maf :: (a -> Eq a a) -> Eq L L
 %%[projectStatus
 The implementation and description of the EH is an ongoing project.
 This thesis therefore reflects work in progress in which we have partially achieved our goals:
-\begin{itemize}
+\begin{Itemize}
 \item
 All presented code fragments come from the same sources as used by the implementation of all compilers.
 \item
@@ -723,7 +859,7 @@ EH2 (\chapterRef{ehc2}),
 and EH3 (\chapterRef{ehc3}).
 \item
 
-\end{itemize}
+\end{Itemize}
 
 ------
 
@@ -751,7 +887,7 @@ Multiple versions of a compiler are described and
 form the basis around which the explanation has been woven.
 This brings
 some consequences:
-\begin{itemize}
+\begin{Itemize}
 \item
 Versions are built on top of each other.
 However, in practice this meant that
@@ -775,7 +911,7 @@ However, for \thispaper\ we have chosen to only incorporate aspects directly rel
 and omit other aspects like pretty printing, parsing and error reporting.
 The complete compiler text can be found on the website accompanying
 \thispaper \cite{dijkstra04ehc-web}.
-\end{itemize}
+\end{Itemize}
 %endif %% False
 %%]
 
