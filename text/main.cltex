@@ -338,6 +338,7 @@
 \usepackage{\jobname} %%% needs: fancyvrb
 %\usepackage{scrtime}% needed for prelim/DRAFT warnings
 
+
 \usepackage{graphicx} %%% needs: fancyvrb
 
 %%]
@@ -935,28 +936,6 @@ have been submitted to POPL2006 in a slighty extended form.
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Acknowledgement
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[2
-\cleardoublepage
-\markboth{Acknowledgements}{Acknowledgements}%
-\AddContentsLine{Acknowledgements}
-\subsection*{Acknowledgements}
-
-% SDS, for ideas, opportunity (institute), stimulation, not despairing
-% PvO, Andres, for TeX and lhs2TeX support
-% OBC teachers, for being content enough to start an endless journey
-% Ineke, for taking care of my mother, otherwise would not have been able to finish ...
-% The ST group, for being a great place to ..., for doing the jobs I should have done were I not making this thesis
-% Anonymous reviewers
-% Gerard
-
-To be done ...
-
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Abstract
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1282,21 +1261,6 @@ Coercion (of records), related to subsumption
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% EHC ??
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[2
-
-\section{Partial type signatures}
-\label{ehc-partial-sig-quant-guess}
-
-%%@TopicPartialTySig.body
-
- %%@OldText.partialTySigAFP
-
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 9
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1306,7 +1270,7 @@ Coercion (of records), related to subsumption
 
 \begin{quote}
 \it
-Note to the reader: this chapter is a slightly adapted version of a paper submitted to POPL2006.
+Note to the reader: this chapter is a slightly adapted version of a submitted paper.
 It can be read independently of previous chapters,
 but also is not yet updated to use |Ruler|.
 The original version did include partial type signatures;
@@ -1325,6 +1289,21 @@ this has been moved to \chapterRef{ehc-partial-sig-quant-guess}.
 %%@TopicExplImpl.body
 %%@TopicExplImpl.conclusion
 %%@TopicExplImpl.close
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EHC ??
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2
+
+\section{Partial type signatures}
+\label{ehc-partial-sig-quant-guess}
+
+%%@TopicPartialTySig.body
+
+ %%@OldText.partialTySigAFP
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1546,7 +1525,7 @@ error messaging, line/col position, comment ????
 
 \begin{quote}
 \it
-Note to the reader: this chapter is a slightly adapted version of a paper submitted to POPL2006.
+Note to the reader: this chapter is a slightly adapted version of a submitted paper.
 It can be read independently of previous chapters.
 The original paper includes a short introduction of the AG system;
 this has been omitted as \chapterRef{agtut} can be read instead.
@@ -1703,6 +1682,43 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %endif %% not asSlides
 %%]
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Summary, samenvatting in het NL
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2
+%if not asSlides
+%\cleardoublepage
+\markboth{Samenvatting}{Samenvatting}%
+\AddContentsLine{Samenvatting}
+\section*{Samenvatting}
+
+%%StoryIntro.summaryNL
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Acknowledgement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2
+%\cleardoublepage
+\markboth{Acknowledgements}{Acknowledgements}%
+\AddContentsLine{Acknowledgements}
+\section*{Acknowledgements}
+
+% SDS, for ideas, opportunity (institute), stimulation, not despairing
+% PvO, Andres, for TeX and lhs2TeX support
+% OBC teachers, for being content enough to start an endless journey
+% Ineke, for taking care of my mother, otherwise would not have been able to finish ...
+% The ST group, for being a great place to ..., for doing the jobs I should have done were I not making this thesis
+% Anonymous reviewers
+% Gerard
+
+To be done ...
+
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Slide content
@@ -1890,6 +1906,9 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%[1
 %if inclApp
 \appendix
+%%]
+
+%%[2
 \setAppxTitleFormat
 %%]
 
@@ -1929,11 +1948,12 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
 %%@AppxNotation.exprBasic
+%%@AppxNotation.exprTup
 %%@AppxNotation.exprLamPat
 %%@AppxNotation.exprAnn
+%%@AppxNotation.exprCase
 %%@AppxNotation.exprRecBasic
 %%@AppxNotation.exprRecExt
-%%@AppxNotation.exprTup
 %%@AppxNotation.exprAppImpred
 %%@AppxNotation.exprExplImpl
 %%@AppxNotation.termSeparator
@@ -2066,7 +2086,7 @@ Combinator & Result
 \it
 Note to the reader: |Shuffle| has been extended since the last review of the documentation.
 Therefore, some of the options are not described,
-and the included documentation describes |Shuffle|'s basic features.
+and the included documentation only describes |Shuffle|'s basic features.
 \end{quote}
 
 

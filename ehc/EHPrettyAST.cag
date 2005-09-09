@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHPrettyAST.cag 275 2005-08-28 13:39:57Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -70,11 +70,12 @@ SEM Expr
                                         , mkInfo1 "ty" (ppTy @ty)
                                         ]
                         .  info_4   =   []
-  | Let         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Let"] [] [@decls.ppAST] (@info_2 ++ @info_3 ++ @info_4_2 ++ @info_9)
+  | Let         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Let"] [] [@decls.ppAST] (@info_2 ++ @info_3 ++ @info_4_2 ++ @info_6 ++ @info_9)
                                         >-< @body.ppAST
                 loc     .  info_2   =   []
                         .  info_3   =   []
                         .  info_4_2 =   []
+                        .  info_6   =   []
                         .  info_9   =   []
   | App         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","App"] [] [@func.ppAST,@arg.ppAST] (@info_1 ++ @info_2 ++ @info_4_2 ++ @info_9)
                 loc     .  info_1   =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
@@ -265,8 +266,8 @@ SEM Expr
 
 %%[5
 SEM Decl
-  | Data        lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Data"] [ppNm @tyNm] [@tyVars.ppAST,@constrs.ppAST] @info
-                loc     .  info     =   []
+  | Data        lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Data"] [ppNm @tyNm] [@tyVars.ppAST,@constrs.ppAST] @info_6
+                loc     .  info_6   =   []
 
 SEM Expr
   | Case        lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Case"] [] [@expr.ppAST,@alts.ppAST] @info
@@ -289,15 +290,16 @@ SEM TyExprs
   | Cons        lhs     .  ppAST    =   ppNest ["TyExprs","Cons"] [] [@hd.ppAST,@tl.ppAST]
 
 SEM TyVar
-  | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["TyVar","Var"] [ppNm @nm] [] @info
-                loc     .  info     =   []
+  | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["TyVar","Var"] [ppNm @nm] [] @info_6
+                loc     .  info_6   =   []
 
 SEM TyVars
   | Nil         lhs     .  ppAST    =   ppNest ["TyVars","Nil"] [] []
   | Cons        lhs     .  ppAST    =   ppNest ["TyVars","Cons"] [] [@hd.ppAST,@tl.ppAST]
 
 SEM DataConstr
-  | Constr      loc     .  ppAST    =   ppNest ["DataConstr","Constr"] [ppNm @conNm] [@fields.ppAST]
+  | Constr      loc     .  ppAST    =   ppNestInfo @lhs.opts ["DataConstr","Constr"] [ppNm @conNm] [@fields.ppAST] @info_6
+                loc     .  info_6   =   []
 
 SEM DataConstrs
   | Nil         lhs     .  ppAST    =   ppNest ["DataConstrs","Nil"] [] []
@@ -306,14 +308,24 @@ SEM DataConstrs
 
 %%[6
 SEM TyVar
-  | Var         loc     .  info     :=  [ mkInfo1 "tgi_" (pp @tgi_)
+  | Var         loc     .  info_6   :=  [ mkInfo1 "tgi_" (pp @tgi_)
                                         ]
 SEM TyExpr
   | Var         loc     .  info     :=  [ mkInfo1 "tgi_" (pp @tgi_)
                                         ]
 SEM Decl
-  | Data        loc     .  info     :=  [ mkInfo1 "dataKi" (ppTy @dataKi)
+  | Data        loc     .  info_6   :=  [ mkInfo1 "dataKi" (ppTy @dataKi)
                                         , mkInfo1 "lhs.tyGam" (ppGam @lhs.tyGam)
+                                        ]
+
+SEM DataConstr
+  | Constr      loc     .  info_6   :=  [ mkInfo1 "fields.kiCnstr" (pp @fields.kiCnstr)
+                                        , mkInfo1 "foCnstr @fo_" (pp (foCnstr @fo_))
+                                        ]
+
+SEM Expr
+  | Let         loc     .  info_6   :=  [ mkInfo1 "tyGam_l_" (ppGam @tyGam_l_)
+                                        , mkInfo1 "decls.kiCnstr" (pp @decls.kiCnstr)
                                         ]
 %%]
 

@@ -139,6 +139,13 @@ Notation & Meaning \\
  \\
 %%]
 
+%%[exprCase
+& | || | &
+|case e of Vec(p -> e)|
+ & case expression
+ \\
+%%]
+
 %%[declBasic
 |d| & |::=| &
 |identv :: t|

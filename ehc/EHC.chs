@@ -25,6 +25,20 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Version of program
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+versionSvn      = "$Id$"
+versionMajor    = "0"
+versionMinor    = "1"
+versionQuality  = "alpha"
+versionDist     = versionMajor ++ "." ++ versionMinor ++ versionQuality
+versionProg     = "ehc"
+versionInfo     = versionProg ++ versionDist ++ ", " ++ versionSvn
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Main, compiling
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -37,14 +51,16 @@ main
          ;  if ehcoptHelp opts
 %%]
 %%[1.main.ehcoptHelp
-            then  putStrLn (usageInfo "Usage: ehc [options] [file]\n\noptions:" ehcCmdLineOpts)
+            then  putStrLn (usageInfo ("version: " ++ versionInfo ++ "\n\nUsage: ehc [options] [file]\n\noptions:") ehcCmdLineOpts)
 %%]
 %%[8.main.ehcoptHelp -1.main.ehcoptHelp
-            then  do  {  putStrLn (usageInfo "Usage ehc [options] [file]\n\noptions:" ehcCmdLineOpts)
+            then  do  {  putStrLn (usageInfo ("version: " ++ versionInfo ++ "\n\nUsage: ehc [options] [file]\n\noptions:") ehcCmdLineOpts)
                       ;  putStrLn ("Transformations:\n" ++ (unlines . map (\(n,t) -> "  " ++ n ++ ": " ++ t) $ cmdLineTrfs))
                       }
 %%]
 %%[1.main.tl
+            else  if ehcoptVersion opts
+            then  putStrLn versionDist
             else  if null errs
                   then  doCompileRun (if null n then "" else head n) opts
                   else  putStr (head errs)

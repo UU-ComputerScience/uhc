@@ -23,8 +23,8 @@ TEXT_TMP_PREFIX				:= $(BLD_PREFIX)
 TEXT_TMP_VARIANT_PREFIX		:= $(TEXT_TMP_PREFIX)$(TEXT_VARIANT)/
 
 # all variants
-TEXT_PUB_VARIANTS			:= phd popl06-ruler popl06-explimpl shuffle
-TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) popl06-ruler-tst phd-tst scratch truu-explimpl truu-ruler
+TEXT_PUB_VARIANTS			:= phd-draft popl06-ruler popl06-explimpl shuffle
+TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) popl06-ruler-tst phd-tst phd scratch truu-explimpl truu-ruler
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
 # 2	: phd
@@ -131,6 +131,12 @@ text-variant-phd-tst:
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=phd --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss --set=asDraft" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-tst
+
+text-variant-phd-draft:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=phd --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss --set=asDraft" \
+	  TEXT_SHUFFLE_VARIANT=2 \
+	  text-variant-dflt-bib-inx
 
 text-variant-popl06-ruler-tst:
 	$(MAKE) \

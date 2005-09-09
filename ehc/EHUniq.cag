@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHUniq.cag 275 2005-08-28 13:39:57Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -148,7 +148,7 @@ SEM TyExpr
   | App             (func.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)    =   mkNewLevUID3    @lhs.gUniq
   
 SEM Decl
-  | TySig           (tyExpr.gUniq,loc.lUniq,loc.lUniq2)             =   mkNewLevUID2    @lhs.gUniq
+  | TySig           (tyExpr.gUniq,loc.lUniq,loc.lUniq2)             :=  mkNewLevUID2    @lhs.gUniq
   | Data            (tyVars.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)  =   mkNewLevUID3    @lhs.gUniq
   
 SEM DataConstr

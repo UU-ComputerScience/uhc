@@ -17,9 +17,13 @@ include grini/files.mk
 include agprimer/files.mk
 -include figs/files.mk
 -include text/files.mk
+-include www/files.mk
 include test/files.mk
 
 -include mk/dist.mk
+
+# all versions (as used by testing)
+VERSIONS			:= $(EHC_PUB_VARIANTS)
 
 # distributed/published stuff for WWW
 WWW_SRC_TGZ					:= www/current-ehc-src.tgz
@@ -81,11 +85,14 @@ explanation:
 	echo  "make bin/<n>/grini   : make grin interpreter version <n> (where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
 	echo  "make bin/ruler2      : make ruler tool" ; \
 	echo  "make bin/shuffle     : make shuffle tool" ; \
-	echo  "make doc/<d>.pdf     : make documentation <d> (where <d> in {$(TEXT_PUB_VARIANTS)})" ; \
+	echo  "make doc/<d>.pdf     : make documentation <d> (where <d> in {$(TEXT_PUB_VARIANTS)})," ; \
+	echo  "                       only if text src available, otherwise already generated" ; \
 	echo  "make ehcs            : make all compiler ($(EHC_EXEC_NAME)) versions" ; \
 	echo  "make grinis          : make all grin interpreter ($(GRINI_EXEC_NAME)) versions" ; \
-	echo  "make test-regress    : run regression test" ; \
-	echo  "make test-expect     : make expected output (for later comparison with test-regress)" ; \
+	echo  "make test-regress    : run regression test," ; \
+	echo  "                       restrict to versions <v> by specifying 'VERSIONS=<v>'," ; \
+	echo  "                       requires corresponding $(EHC_EXEC_NAME)/$(GRINI_EXEC_NAME) already built" ; \
+	echo  "make test-expect     : make expected output (for later comparison with test-regress), see test-regress for remarks" ; \
 
 all: afp-full ehcs doc grinis
 	$(MAKE) initial-test-expect
@@ -239,6 +246,8 @@ ehcs: $(EHC_ALL_PUB_EXECS)
 
 grinis: $(GRINI_ALL_PUB_EXECS)
 
+docs: $(TEXT_DIST_DOC_FILES)
+
 redit:
 	bbedit \
 	$(SHUFFLE_ALL_SRC) $(RULER2_ALL_SRC) \
@@ -275,7 +284,7 @@ WWW_EXAMPLES_HTML			:=	www/ehc-examples.html
 
 www-ex: $(WWW_EXAMPLES_HTML)
 
-www: $(WWW_SRC_TGZ) www-ex # $(WWW_DOC_PDF)
+www: $(WWW_SRC_TGZ) www-ex $(WWW_DOC_FILES)
 
 www/DoneSyncStamp: www-ex
 	(date; echo -n ", " ; svn up) > www/DoneSyncStamp ; \
@@ -288,7 +297,4 @@ $(WWW_EXAMPLES_HTML): $(WWW_EXAMPLES_TMPL)
 
 $(WWW_SRC_TGZ): $(DIST_TGZ)
 	cp $^ $@
-
-$(WWW_DOC_PDF): doc/phd.pdf
-	cp $< $@
 

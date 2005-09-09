@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHTyElimAlts.cag 273 2005-08-24 08:58:20Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -161,8 +161,9 @@ SEM Ty
                                                                                   eat = if null (foErrL fos) then foTy fos else foTy foh
                                                                                   fo = tyElimAlts @lhs.fitsIn @lhs.fio @lhs.globTvL @lUniq3 eat
                                                                                   eaCnstr = @tv `cnstrTyUnit` foTy fo
-                                                                                  foOtherL = fitsInLWith (\_ _ -> emptyFO) @lhs.fitsIn fio @lUniq4 @tyL.otherTyL (repeat eat)
-                                                                                           where fio = @lhs.fio {fioMode = if fioMode @lhs.fio == FitMeet then FitSubLR else FitSubRL} 
+                                                                                  (_,foOtherL)
+                                                                                     = fitsInLWith (\_ _ -> emptyFO) @lhs.fitsIn fio @lUniq4 @tyL.otherTyL (repeat eat)
+                                                                                     where fio = @lhs.fio {fioMode = if fioMode @lhs.fio == FitMeet then FitSubLR else FitSubRL} 
                                                                              in   (foTy fo,eaCnstr |=> foCnstr fo,if null (foErrL fo) then concat (map foErrL foOtherL) else foErrL fo)
                                                                        else  (mkTyVar @tv
                                                                              ,@tv `cnstrTyUnit` Ty_Any

@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHTyFitsInCommon.chs 273 2005-08-24 08:58:20Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -151,15 +151,17 @@ type FitsIn = FIOpts -> UID -> Ty -> Ty -> (Ty,Cnstr,ErrL)
 %%]
 
 %%[4.fitsInLWith
-fitsInLWith :: (FIOut -> FIOut -> FIOut) -> FitsIn' -> FIOpts -> UID -> TyL -> TyL -> [FIOut]
+fitsInLWith :: (FIOut -> FIOut -> FIOut) -> FitsIn' -> FIOpts -> UID -> TyL -> TyL -> (FIOut,[FIOut])
 fitsInLWith foCmb elemFits opts uniq tyl1 tyl2
-  =  snd
-     .  foldr  (\(t1,t2) ((u,foThr),foL)
-                  -> let  (u',ue) = mkNewLevUID u
-                          fo = elemFits opts u (foCnstr foThr |=> t1) (foCnstr foThr |=> t2)
-                     in   ((u',foCmb fo foThr),fo:foL)
-               )
-               ((uniq,emptyFO),[])
-     .  zip tyl1 $ tyl2
+  = (fo,foL)
+  where ((_,fo),foL)
+          = foldr  (\(t1,t2) ((u,foThr),foL)
+                      -> let  (u',ue) = mkNewLevUID u
+                              fo = elemFits opts u (foCnstr foThr |=> t1) (foCnstr foThr |=> t2)
+                         in   ((u',foCmb fo foThr),fo:foL)
+                   )
+                   ((uniq,emptyFO),[])
+            . zip tyl1
+            $ tyl2
 %%]
 

@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHInferExpr.cag 275 2005-08-28 13:39:57Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -178,7 +178,8 @@ SEM Expr
 
 %%[9.App
 SEM Expr
-  | App         loc         .   (knFunTy,imTy)      :=  let  [i,a] = mkNewUIDL 2 @lUniq
+  | App AppImpred
+                loc         .   (knFunTy,imTy)      :=  let  [i,a] = mkNewUIDL 2 @lUniq
                                                              im = mkImplsVar i
                                                         in   ([im,mkTyVar a] `mkArrow` @lhs.knTy,im)
                 (_,arg.knTy,loc.ty_)                :=  tyArrowImplsArgRes @func.ty
@@ -188,11 +189,6 @@ SEM Expr
 %%[9_1.App
 SEM Expr
   | App         (_,arg.knTy,loc.ty_)                :=  tyArrowImplsArgRes . tyAltsTy $ @func.ty
-%%]
-
-%%[9
-SEM Expr
-  | AppImpred   loc         .   imTy                =   Ty_Any
 %%]
 
 %%[9.AppImpl

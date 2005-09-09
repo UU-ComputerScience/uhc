@@ -23,7 +23,7 @@ Editing system: proxima, ...
 
 %%[phdEvaluation
 In the introduction (\secPageRef{sec-intro-holygrail})
-we set ourselves some goals to chase after by this thesis:
+we have set ourselves some goals to chase after in this thesis:
 
 \begin{Itemize}
 \item
@@ -58,7 +58,7 @@ separation also helps the developer.
 \item
 Type rules would have been typeset in \LaTeX,
 already unpleasant by itself,
-without any guarantee about consistency
+without any guarantee about being consistent
 with the implementation.
 \end{Itemize}
 
@@ -72,14 +72,14 @@ is complex.
 The extension with even more features will
 push the edge of the envelope even further,
 necessitating the use of additional tools for managing complexity,
-like those used in this theses.
+like those used in this thesis.
 It may well be that until now programming languages were too simple to warrant
-the use such tools.
+the use of such tools.
 
 The key to an understandable and maintainable description of
 a working compiler lies in the use of domain specific languages for these problems.
 In the remainder of this chapter we will discuss the goals we set out for,
-how the used domain specific languages AG and |Ruler| did help,
+discuss how the used domain specific languages AG and |Ruler| did help,
 and propose directions for future work.
 
 \paragraph{EH explanation and its presentation}
@@ -104,8 +104,8 @@ The first victim of these choices is conciseness:
 a short, to the point, presentation of an issue can be constructed thanks to a simplification
 of that issue,
 and the reduction to its bare essentials.
-However, the victim of this choice often is the integration with all that has been omitted to
-obtain simplicity.
+However, the victim of this choice often is the integration with all other things which have
+been omitted to obtain simplicity.
 
 The problem is that the understanding of a language feature requires simplicity and isolation,
 whereas the practical application of that feature requires its co-existence with other features:
@@ -127,19 +127,20 @@ the |Ruler| system and fragment manipulation tool |Shuffle| specify in terms of 
 All tools provide a simple mechanism to combine the separated parts:
 redefinition of values associated with an attribute (or a similar identification mechanism).
 \item
-If a separated parts influence each other in combination,
-then we specify its combination.
+If separated parts influence each other in combination,
+then we specify their combination.
 This is the place where an ordering of separate parts becomes important.
 Our tools can be parameterized with an ordering (of views).
-If separate parts do not influence eachother, they can co-exist as (conceptually)
+If separate parts do not influence each other, they can co-exist as (conceptually)
 separate computations.
 \item
 Emphasize differences in their context.
-Visual clues as to what has changed and what remained the same help to focus on the issue at hand,
+Visual clues as to what has changed and what remained the same,
+help to focus on the issue at hand,
 while not forgetting its context.
 The |Ruler| tool uses colors to accomplish this.
 However, this has its limits, for example \figPageRef{rules3.I2.expr.eh4B2}
-and \figPageRef{rules3.I2.decl.base} most likely require a bit of study.
+and \figPageRef{rules3.I2.decl.base} are likely to require a bit of study.
 \item
 Hide `irrelevant' material.
 This thesis hides a fair amount of code, making it only indirectly available.
@@ -228,7 +229,7 @@ Formal representation of type rules, and their implementation (AG code).
 \end{Itemize}
 
 The first combination often is handled by ``copy and paste'' of code.
-For a one-shot product this usually is not a big problem,
+For a one-shot product this usually is not a large problem,
 but for long-lived products it is.
 A solution to this problem consists of mechanisms for sharing text fragments.
 Both our tool |Shuffle| and similar literate programming tools
@@ -246,12 +247,15 @@ but translation at least can be automated,
 provided a well-defined semantics of the artefacts and their relation.
 
 Type rules and AG implementation correspond to such a degree that
-translation from a common type rule description to an
+it is possible to translate from a common type rule description to an
 implementation and a visual rendering,
-which can be included in text dealing with the formal aspects of type rules,
-is possible.
+which can be included in text dealing with the formal aspects of type rules.
 This is the responsibility of the |Ruler| tool,
-which already in its first version turned out to be indispensable for this thesis.
+which already in its first version turned out to be indispensable for the construction of this thesis.
+Actually, the |Ruler| tool started out to reduce the amount of work involved
+in typesetting type rules,
+soon to be extended to generate AG code when we were confronted with the amount of work
+required to keep those type rules consistent with their AG implementation.
 
 The strong point of a tool like |Ruler| is that is acts,
 like any compiler,
