@@ -1,6 +1,5 @@
 %%[introPHD
-This thesis contains a description of an implementation of the programming language Haskell,
-together with many extensions.
+This thesis contains a description of an implementation of an extended subset of the programming language Haskell.
 At the same time it is an experiment in merging the description with the actual code
 of the implementation,
 thus guaranteeing some form of consistency.
@@ -22,7 +21,7 @@ Experimentation on a smaller scale usually is based upon relatively simple and r
 \cite{jones99thih}, often focusing only on a particular aspect of
 the language and/or its implementation.
 
-A second reason is that experimentating with Haskell,
+A second reason is that experimenting with Haskell,
 or language design in general,
 usually expresses itself in a theoretical setting,
 with a focus on the proof of formal properties.
@@ -34,7 +33,7 @@ and its formal representation (by means of type rules),
 and their mutual consistency, helps to bridge the gap between theory and practice.
 
 The complexities of Haskell and its interaction with experimental features cannot be avoided;
-even more, it is a design goal of Haskell to be a platform for experimentation.
+even more, Haskell plays an important role in programming language research.
 Some of those experiments turn into useful language features,
 contributing to complexity in the form of feature richness and interaction with other features.
 The complexity can be made more manageable by looking at features individually,
@@ -63,9 +62,9 @@ A compiler for Haskell plus extensions.
 The goal is a compiler that can be used, and is not `just' a toy.
 \item
 A description of the compiler.
-The goal is to offer understanding of the implementation,
-so it can be used for teaching, to be a basis for experimentation,
-and to be a bridge between (type) theory and practice.
+The goal is to offer understanding of the implementation
+so it can be used for teaching, be a basis for experimentation,
+and be a bridge between (type) theory and practice.
 \end{Itemize}
 
 Being a true holy grail,
@@ -87,13 +86,14 @@ The thesis offers an explanation of the implementation of a Hindley-Milner type 
 (\chapterRef{ehc1} through \chapterRef{ehc3}).
 The explanation is expressed and explained in terms of type rules,
 attribute grammar implementation for those type rules,
-and additional infrastructure (encoded in Haskell) to complete it to a full compiler.
+and additional infrastructure (encoded in Haskell) to extend it to a full compiler.
 \item
 The thesis offers experiments in combining of explicitly specified type information (by the programmer),
 and implicitly inferred type information (by the system) (\chapterRef{ehc4} through \chapterRef{ehc-partial-sig-quant-guess}).
-The design starting point here is to let programmer and system jointly specify a program,
+The design starting point here is to let programmer and system jointly specify (the types in)
+a program,
 instead of the programmer fighting the system's limitations.
-This starting point is inspired by the observation that systeme purely base on
+This starting point is inspired by the observation that systems purely base on
 type inference hinder a programmer,
 because such a system does not allow the programmer to specify what the system cannot infer.
 \item
@@ -110,7 +110,7 @@ The thesis offers an experiment in creating a maintainable and explainable compi
 The design starting point is that these aspects are best served by consistency,
 and consistency between artefacts is best implemented by avoiding the inconsistency created
 by duplication of shared material in the first place.
-The code presented in the thesis and used for the construction of individual compiler are
+The code presented in the thesis and used for the construction of individual compilers are
 generated from common source code
 (\appRef{appx-shuffle}).
 The same holds for (the major part of) the type rules and their attribute grammar implementation
@@ -120,7 +120,7 @@ The same holds for (the major part of) the type rules and their attribute gramma
 Our work complements Pierce's book \cite{typing:types-prog-lang:pierce}
 in the sense that we bring together type rules and their implementation,
 instead of treating these separately.
-The other way around, Pierce deals with the proofs for various properties,
+On the other hand, Pierce can be credited for providing the proofs for various properties,
 whereas we do not.
 
 
@@ -168,7 +168,7 @@ Fragment administration and combination (of source text)
 is managed by a tool called |Shuffle| (\appRef{appx-shuffle}).
 |Shuffle| has the same responsibility as weaving and tangling in literate programming \cite{www05litprog},
 but allows a more flexible recombination of source fragments.
-Because of its great resemblance with such tools we will not discuss |Shuffle|.
+Because of its great resemblance to similar tools we will not discuss |Shuffle|.
 \item
 The |Ruler| system (\chapterRef{ruler}) generates a visual rendering for inclusion in this thesis,
 and an AG implementation.
@@ -188,12 +188,15 @@ so |Shuffle| takes care of properly generating source code for views.
 \FigurePDF{system-overview}{System overview}{system-fig-overview}
 
 \Paragraph{Context of this thesis, project status}
-This thesis represents a snapshot of the description of an ongoing project, the Essential Haskell (EH) project
-\cite{dijkstra04ehc-web}.
+This thesis represents a snapshot of the description of an ongoing project, the Essential Haskell (EH) project.
+From the www site \cite{dijkstra04ehc-web} of the EH project both the source code and the electronic version of the
+thesis can be downloaded;
+the electronic version of the thesis includes more material than the paper version,
+and will be updated regularly.
 \figRef{eh-intro-implstatus} presents an overview of the features which are described in this thesis,
-and which features are present in GHC (version 6.4 \cite{www04ghc}).
-We have selected those parts which are
-the most to tell:
+and which features are present in GHC (version 6.4 \cite{www04ghc});
+the many features present in GHC but not in EH have not been included.
+We have described the most informative parts:
 the first chapters provide the basic structure of EH,
 presenting type rules, and AG implementation side by side.
 Remaining chapters describe experiments with explicit and implicit (type) information,
@@ -262,7 +265,8 @@ that is, it has been included, but outside the main story line
 the final version of this thesis is intended to be complete in this respect.}.
 
 Between \chapterRef{ehc4C} and \chapterRef{ehc9} data types, kind inference/checking,
-code generation, and extensible records are introduced (\figRef{eh-intro-implstatus}).
+code generation for GRIN \cite{boquist96grin-optim,boquist99phd-optim-lazy},
+and extensible records are introduced (\figRef{eh-intro-implstatus}).
 Most of these features are required for the implementation of \chapterRef{ehc9};
 their description will be included in later versions of the full description of EH,
 to appear after the publication of this thesis.
@@ -272,9 +276,9 @@ or submitted to a conference\footnote{Acceptance will be known when this thesis 
 in a different form: \chapterRef{secIntro} through \chapterRef{ehc3} are updated from
 an AFP (Advanced Functional Programming) tutorial 
 \cite{dijkstra04thag}, and \chapterRef{ehc9} and \chapterRef{ruler}
-have been submitted to POPL2006 in a slighty extended form.
+have been submitted in a slighty extended form.
 
-Finally, additional work is currently in progress in the following areas:
+Finally, additional work in the following areas is currently nearing completion:
 \begin{Itemize}
 \item
 A compiler for GRIN \cite{boquist96grin-optim,boquist99phd-optim-lazy} to C--
@@ -915,16 +919,61 @@ The complete compiler text can be found on the website accompanying
 %endif %% False
 %%]
 
-%%[XX
+%%[summaryNL
+Dit proefschrift bevat een beschrijving van een implementatie van een uitgebreide subset van de programmeertaal Haskell en
+de gereedschappen die daarvoor nodig zijn.
+Tegelijkertijd is het een experiment in de integratie de beschrijving en de broncode van de implementatie,
+waarmee een zekere mate van consistentie wordt gegarandeerd.
+
+to be done...
 %%]
 
-%%[XX
+%%[summaryUU
+Computer programmaas worden geschreven met behulp van computer programmaas,
+in het bijzonder programmaas die een specificatie van een programma vertalen naar een werkend programma.
+Zo'n specificatie wordt beschreven in een programmeertaal.
+De huidige trend is dat
+een programmeertaal, en de daarbij horende
+implementatie van de vertaler voor zo'n programeertaal,
+steeds meer van het werk van een programmeur uit handen neemt.
+Programmeertaal en implementatie zelf worden daardoor ingewikkelder en steeds moeilijker te implementeren.
+Het proefschrift "Stapsgewijs door Haskell" is een experiment in het stapsgewijs beschrijven van een
+implementatie van de (functionele) programmeertaal Haskell met als doel een begrijpelijke en consistente uitleg
+van die implementatie.
+Als onderdeel van deze beschrijving worden eveneens enkele uitbreidingen op Haskell beschreven.
+Het proefschrift representeert een tussenstadium in de ontwikkeling van een complete implementatie met bijbehorende beschrijving,
+en zal als project hierna voortgezet worden.
+Essentieel voor het welslagen van dit experiment en de voortzetting ervan is het gebruik van geautomatiseerde
+oplossingen voor de problemen die handmatig niet te garanderen zijn:
+consistentie en opsplitsing in stappen.
 %%]
 
-%%[XX
+%%[overigUU
+Onderwerp:
+Een stapsgewijze beschrijving van een implementatie van de programmeertaal Haskell
+
+Conclusie(s):
+De beschrijving zelf die het proefschrift representeert is doel en conclusie.
+Een conclusie op meta nivo is dat het daarbij essentieel is zoveel mogelijk van de beschrijving en gerelateerde
+problematiek (consistentie en opsplitsing in stappen) te automatiseren.
+
+Aanbeveling(en)
 %%]
 
-%%[XX
+%%[summarySIREN
+Part of the Essential Haskell (EH) project [1] is a description of an
+implementation of an extended subset of the programming language
+Haskell. The description [2] merges explanation with the actual code of the
+implementation, thus guaranteeing some form of consistency. The goal is
+to make description and implementation understandable, so that it can be
+used as a means for education and (Haskell) programming language
+research. In this thesis we take a stepwise approach to both description
+and implementation, which starts with a simple version of Haskell and
+then, step by step, we extend this simple version towards an extended
+version of Haskell.
+
+[1]. Atze Dijkstra. EHC Web. http://www.cs.uu.nl/groups/ST/Ehc/WebHome, 2004.
+[2]. Atze Dijkstra. Stepping through Haskell (to be published), PhD thesis, 2005. 
 %%]
 
 %%[XX

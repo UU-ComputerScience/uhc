@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHTyFitsIn.chs 273 2005-08-24 08:58:20Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -1014,9 +1014,10 @@ fitsIn' msg opts env uniq ty1 ty2
 %%[6
 fitsInL :: FIOpts -> FIEnv -> UID -> TyL -> TyL -> (TyL,FIOut)
 fitsInL opts env uniq tyl1 tyl2
-  = (map foTy foL,if null foL then emptyFO else head foL)
-  where foL = fitsInLWith (\fo1 fo2 -> fo2 {foCnstr = foCnstr fo1 |=> foCnstr fo2, foErrL = foErrL fo1 ++ foErrL fo2})
-                          (mkFitsInWrap' env) opts uniq tyl1 tyl2
+  = (map foTy foL,fo)
+  where (fo,foL)
+          = fitsInLWith (\fo1 fo2 -> fo2 {foCnstr = foCnstr fo1 |=> foCnstr fo2, foErrL = foErrL fo1 ++ foErrL fo2})
+                        (mkFitsInWrap' env) opts uniq tyl1 tyl2
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

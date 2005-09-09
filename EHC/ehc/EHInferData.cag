@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHInferData.cag 266 2005-08-02 20:47:40Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -12,9 +12,9 @@
 %%[5.tyGam
 SEM Decl
   | Data        tyVars      .   tyGam               =   gamPushNew @lhs.patTyGam
-                loc         .   (lTyGam,gTyGam)     =   gamPop @tyVars.tyGam
+                loc         .   (tyGam_l_,tyGam_g_) =   gamPop @tyVars.tyGam
                 lhs         .   patTyGam            =   gamAdd @tyNm (TyGamInfo (Ty_Con @tyNm)) @lhs.patTyGam
-                constrs     .   tyGam               =   gamPushGam @lTyGam @lhs.tyGam
+                constrs     .   tyGam               =   gamPushGam @tyGam_l_ @lhs.tyGam
                 lhs         .   tyGam               =   @lhs.tyGam
 %%]
 
@@ -28,7 +28,7 @@ SEM Decl
                                                                 (@lhs.patKiCnstr |=> (tgiKi @dataTgi))
                             .   dataKi              =   foTy @fo_
                 lhs         .   patKiCnstr          =   foCnstr @fo_ |=> @lhs.patKiCnstr
-                constrs     .   tyGam               :=  gamPushGam  (tyGamInst1Exists @lUniq3 (@lhs.kiCnstr |=> @lTyGam))
+                constrs     .   tyGam               :=  gamPushGam  (tyGamInst1Exists @lUniq3 (@lhs.kiCnstr |=> @tyGam_l_))
                                                                     @lhs.tyGam
 %%]
 

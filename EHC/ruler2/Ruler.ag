@@ -151,7 +151,7 @@ defaultOpts
 cmdLineOpts  
   =  [ Option "l"  ["lhs2tex"]          (NoArg oGenLhs2tex)
           "generate code for lhs2tex, default=no"
-     , Option "v"  ["version"]          (NoArg oVersion)
+     , Option ""   ["version"]          (NoArg oVersion)
           "print version info"
      , Option "a"  ["ag"]               (NoArg oGenAG)
           "generate code for AG, default=no"

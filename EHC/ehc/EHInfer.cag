@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHInfer.cag 276 2005-08-31 11:54:35Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -311,11 +311,11 @@ ATTR AllDecl [ | patKiCnstr: Cnstr | ]
 SEM Expr
   | Let         decls       .   patTyGam            :=  gamPushGam @decls.gathKiSigGam @lhs.tyGam
                             .   patKiCnstr          =   @lhs.kiCnstr
-                loc         .   (lTyGam,gTyGam)     =   gamPop @decls.patTyGam
-                decls       .   tyGam               :=  gamPushGam @lTyGam @lhs.tyGam
+                loc         .   (tyGam_l_,tyGam_g_) =   gamPop @decls.patTyGam
+                decls       .   tyGam               :=  gamPushGam @tyGam_l_ @lhs.tyGam
                             .   kiCnstr             =   @decls.patKiCnstr
-                loc         .   lSubsTyGam          =   @decls.kiCnstr |=> @lTyGam
-                            .   gSubsTyGam          =   @decls.kiCnstr |=> @gTyGam
+                loc         .   lSubsTyGam          =   @decls.kiCnstr |=> @tyGam_l_
+                            .   gSubsTyGam          =   @decls.kiCnstr |=> @tyGam_g_
                             .   gKiTvL              =   ftv @gSubsTyGam
                             .   lQuTyGam            =   tyGamInst1Exists @lUniq3 . tyGamQuantify @gKiTvL $ @lSubsTyGam
                 body        .   tyGam               =   gamPushGam @lQuTyGam @gSubsTyGam
@@ -358,7 +358,7 @@ SEM Decl
 
 %%[9
 SEM Decl
-  | Instance    loc         .   fe                  =   emptyFE {fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts}
+  | Instance    loc         .   fe                  :=  emptyFE {fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

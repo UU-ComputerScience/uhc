@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHOpts.chs 273 2005-08-24 08:58:20Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -72,6 +72,7 @@ trfOptOverrides opts trf
 data EHCOpts    = EHCOptions    {  ehcoptDumpPP         ::  Maybe String
                                 ,  ehcoptShowTopTyPP    ::  Bool
                                 ,  ehcoptHelp           ::  Bool
+                                ,  ehcoptVersion        ::  Bool
                                 ,  ehcoptDebug          ::  Bool
 %%]
 %%[8.EHCOpts
@@ -93,6 +94,7 @@ data EHCOpts    = EHCOptions    {  ehcoptDumpPP         ::  Maybe String
 defaultEHCOpts  = EHCOptions    {  ehcoptDumpPP         =   Just "pp"
                                 ,  ehcoptShowTopTyPP    =   False
                                 ,  ehcoptHelp           =   False
+                                ,  ehcoptVersion        =   False
                                 ,  ehcoptDebug          =   False
 %%]
 %%[8.defaultEHCOpts
@@ -120,6 +122,8 @@ ehcCmdLineOpts
           "show top ty, default=no"
      ,  Option "h"  ["help"]          (NoArg oHelp)
           "output this help"
+     ,  Option ""   ["version"]       (NoArg oVersion)
+          "print version info"
 %%]
 %%[8.ehcCmdLineOptsA
      ,  Option "c"  ["code"]          (OptArg oCode "java|grin")
@@ -142,6 +146,7 @@ ehcCmdLineOpts
                                 Just "yes"  -> o { ehcoptShowTopTyPP   = True      }
                                 _           -> o
          oHelp           o =  o { ehcoptHelp          = True    }
+         oVersion        o =  o { ehcoptVersion       = True    }
          oDebug          o =  (oPretty (Just "ast") o) { ehcoptDebug         = True    }
 %%]
 %%[8.ehcCmdLineOptsB

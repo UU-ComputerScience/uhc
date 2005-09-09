@@ -6,13 +6,20 @@
 \vfill
 \Huge
 \begin{flushright}
-Haskell, Step by Step
+Stepping through Haskell
 
 \vspace*{2ex}
 
 \Large 
-Haskell, stap voor stap \\
+Stapsgewijs door Haskell\\
 (met een samenvatting in het Nederlands)
+
+%if asDraft
+\vspace*{2ex}
+Draft: \today \\
+@$Id$@
+%endif
+
 \end{flushright}
 \vfill\vfill
 
@@ -22,6 +29,8 @@ Universiteit Utrecht op gezag van de Rector Magnificus,
 Prof.~dr.~W.~H.~Gispen, ingevolge het besluit van het College voor
 Promoties in het openbaar te verdedigen op donderdag 14~november 2005
 des middags te 14.30 uur
+
+\vspace*{1ex}
 
 \noindent
 door
@@ -53,12 +62,12 @@ research school \textsc{IPA} (Institute for Programming research and Algorithmic
 and has been financed by the \textsc{NWO} (Nederlandse Organisatie voor 
 Wetenschappelijk Onderzoek).
 
-%if False
 \medskip
 
 \noindent
-Printed by Febodruk, Enschede.
+Printed by xx, xx.
 
+%if False
 \medskip
 
 \noindent
@@ -68,7 +77,7 @@ All drawings by Clara Strohm.
 \medskip
 
 \noindent
-ISBN ???????
+ISBN 90-xxx-xxxx-x
 \end{titlepage}
 %%]
 

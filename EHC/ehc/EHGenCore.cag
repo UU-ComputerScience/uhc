@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHGenCore.cag 273 2005-08-24 08:58:20Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -49,7 +49,7 @@ SEM Expr
   | Case        loc         .   cexpr       =   let  n = uidHNm @lUniq2
                                                 in   mkCExprLet CBindPlain [CBind_Bind n @expr.cexpr]
                                                         (rceMatch @rceEnv [n] @alts.caltL cvarUndefined)
-  | AppTop Parens TypeAs Impred
+  | AppTop Parens TypeAs
                 loc         .   cexpr       =   @expr.cexpr
   | Undefined   loc         .   cexpr       =   cvarUndefined
 %%]

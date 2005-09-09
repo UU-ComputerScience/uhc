@@ -172,10 +172,12 @@
   \def\R@@Info{\ifx#4\empty #2\else #2 (#4)\fi}
   \begin{TabularCenterFigure}{\R@@Info}{#3}{p{0.95\linewidth}}
 %  \linespread{1.5}\selectfont
+  \begin{center}
   \fbox{#1}
   \\
 }{%
   \par
+  \end{center}
   \end{TabularCenterFigure}
 }
 

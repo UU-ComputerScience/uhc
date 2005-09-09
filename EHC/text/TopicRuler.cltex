@@ -662,7 +662,14 @@ We will refer to these three shapes as the |spec|, |tex| and |ag| judgement shap
 
 A |Ruler| expression (\IxAsDef{rexpr}), is used to specify the shape.
 The text for a |Ruler| expression already appears in pretty printed form throughout \thischapt, but in the original source code
-(included in the appendix) the |spec| judgement shape appears as:
+%if storyPHD
+%%[[hide "ruler-app-demo-src"="Ruler demo: Source code using |Ruler| notation"
+\VerbatimInput[fontsize=\small]{demo.rl2}
+%%]
+%else
+(included in the appendix)
+%endif
+the |spec| judgement shape appears as:
 
 \begin{TT}
 judgespec gam :- e : ty
@@ -1203,6 +1210,11 @@ The AG system gathers all fragments.
 In this section we discuss the modifications to our type rule specification required for the generation of a partial implementation,
 and the additional infrastructure required for a working compiler.
 The end result of this section is a translation of type rules to AG code.
+%if storyPHD
+%%[[hide "app-ruler-demo-ag"="Ruler demo: Generated AG"
+\VerbatimInput[fontsize=\footnotesize]{demo.ag}
+%%]
+%endif
 For example, the following is generated for \ruleRef{e.app};
 the required additional |Ruler| specification and supporting code is discussed throughout this section:
 
@@ -1276,6 +1288,11 @@ For example, |ty.a -> tv| must be rewritten to a Haskell expression representing
 |Ruler| expression.
 We define additional Haskell datatypes and functions to support the intended meaning;
 unique identifiers |UID| are explained later:
+%if storyPHD
+%%[[hide "app-ruler-supp-hs"="Ruler demo: Supporting Haskell"
+\VerbatimInput[fontsize=\footnotesize]{DemoUtils.hs}
+%%]
+%endif
 
 \chunkCmdUse{rulerDemoUtils.3.Ty}
 
@@ -1409,6 +1426,11 @@ For example, the AG code for relation |match| as it is inlined in the translatio
 
 The operator |<=>| implementing the matching returns constraints as well as errors.
 The errors are bound to a local attribute which is used by additional AG code for error reporting.
+%if storyPHD
+%%[[hide "app-ruler-supp-ag"="Ruler demo: Supporting AG"
+\VerbatimInput[fontsize=\footnotesize]{DemoMain.ag}
+%%]
+%endif
 
 
 %}
