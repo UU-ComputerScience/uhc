@@ -242,7 +242,12 @@ At \ruleRef{t.var} and its wildcard variation
 a binding is added to |TGamma|.
 
 \rulerCmdUse{rules3.C.tyexpr.eh2}
-\rulerCmdUse{rules3.HM.tyexpr.eh3}
+\rulerCmdUseExplain{rules3.HM.tyexpr.eh3}
+{
+%%@rules3Explain.tyexpr.HM.explain.scheme
+}{
+%%@rules3Explain.tyexpr.HM.explain.holes
+}
 %\rulerCmdUse{rules3.I1.tyexpr.eh4}
 
 The type expression is used in a declaration of a type signature for a value identifier.
@@ -273,7 +278,12 @@ a |forall| is used in a co-variant context, |exists| otherwise.
 
 For the co- or contravariance context we use some additional notation (\figRef{eh-coco-legenda-notation}).
 
-\rulerCmdUse{rules3.I1.tyqu.base}
+\rulerCmdUseExplain{rules3.I1.tyqu.base}
+{
+%%@rules3Explain.tyqu.I1.explain.scheme
+}{
+%%@rules3Explain.tyqu.I1.explain.holes
+}
 
 \begin{TabularCenterFigure}{Notation for co- and contravariant context}{eh-coco-legenda-notation}
 %%@AppxNotation.notationTableFormat

@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHCommon.chs 273 2005-08-24 08:58:20Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -719,7 +719,7 @@ instance PP FIMode where
 %%% Misc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.Misc
+%%[1.Misc.hdAndTl
 hdAndTl' :: a -> [a] -> (a,[a])
 hdAndTl' _ (a:as) = (a,as)
 hdAndTl' n []     = (n,[])

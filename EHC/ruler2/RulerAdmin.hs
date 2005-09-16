@@ -141,6 +141,23 @@ jdgUnion gn g
       g gn
 
 -------------------------------------------------------------------------
+-- Explanations
+-------------------------------------------------------------------------
+
+data ExplInfo e
+  = ExplInfo
+      { explExpr  :: e
+      }
+
+instance Show (ExplInfo e) where
+  show _ = "ExplInfo"
+
+instance PP e => PP (ExplInfo e) where
+  pp (ExplInfo e) = "Expl" >#< pp e
+
+type ExplGam e = Gam Nm (ExplInfo e)
+
+-------------------------------------------------------------------------
 -- View (related to scheme)
 -------------------------------------------------------------------------
 
@@ -150,15 +167,16 @@ data VwScInfo e
       , vwscJdGam       :: JdGam e
       , vwscAtGam       :: AtGam
       , vwscFullAtGam   :: AtGam
+      , vwscExplGam     :: ExplGam e
       }
 
-emptyVwScInfo = VwScInfo nmNone emptyGam emptyGam emptyGam
+emptyVwScInfo = VwScInfo nmNone emptyGam emptyGam emptyGam emptyGam
 
 instance Show (VwScInfo e) where
   show _ = "VwScInfo"
 
 instance PP e => PP (VwScInfo e) where
-  pp i = "VWSc" >#< pp (vwscNm i) >#< (ppGam (vwscAtGam i) >-< ppGam (vwscFullAtGam i) >-< ppGam (vwscJdGam i))
+  pp i = "VWSc" >#< pp (vwscNm i) >#< (ppGam (vwscAtGam i) >-< ppGam (vwscFullAtGam i) >-< ppGam (vwscJdGam i) >-< ppGam (vwscExplGam i))
 
 type VwScGam e = Gam Nm (VwScInfo e)
 

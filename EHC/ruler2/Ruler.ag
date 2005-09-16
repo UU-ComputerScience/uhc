@@ -80,6 +80,7 @@ doCompile fp opts
                  ; if null errL
                    then do { putDbg
                            ; putBld (optGenFM opts /= FmAll) (mkPP_Syn_AGItf res (optGenFM opts))
+                           ; putBld (optGenExpl opts) (scExplPP_Syn_AGItf res)
                            }
                    else do { hPutBld True stderr (ppErrPPL errL)
                            ; putDbg
@@ -113,6 +114,7 @@ rulesCmdPre = "rules"
 data Opts 
   = Opts
       { optGenFM        :: FmKind
+      , optGenExpl      :: Bool
       , optGenAGAttr    :: Bool
       , optDot2Dash     :: Bool
       , optPreamble     :: Bool
@@ -132,6 +134,7 @@ data Opts
 defaultOpts
   = Opts
       { optGenFM        =  FmAll
+      , optGenExpl      =  False
       , optGenAGAttr    =  False
       , optDot2Dash     =  False
       , optPreamble     =  True
@@ -149,12 +152,14 @@ defaultOpts
       }
 
 cmdLineOpts  
-  =  [ Option "l"  ["lhs2tex"]          (NoArg oGenLhs2tex)
-          "generate code for lhs2tex, default=no"
-     , Option ""   ["version"]          (NoArg oVersion)
+  =  [ Option ""   ["version"]          (NoArg oVersion)
           "print version info"
+     , Option "l"  ["lhs2tex"]          (NoArg oGenLhs2tex)
+          "generate code for lhs2tex, default=no"
      , Option "a"  ["ag"]               (NoArg oGenAG)
           "generate code for AG, default=no"
+     , Option ""   ["explain"]          (NoArg oGenExpl)
+          "generate explanation (for scheme's), default=no"
      , Option ""   ["ATTR"]             (NoArg oGenAGAttr)
           "generate ATTR defs (for AG), default=no"
      , Option ""   ["preamble"]         (OptArg oPreamble "yes|no")
@@ -168,7 +173,7 @@ cmdLineOpts
      , Option ""   ["help"]             (NoArg oHelp)
           "output this help"
      , Option "w"  ["wrapshuffle"]      (NoArg oFragWrap)
-          "wrap AG code in fragments for further processing by shuffle"
+          "wrap (AG|explanation) in fragments for further processing by shuffle"
      , Option "d"  ["debug"]            (NoArg oDebug)
           "output debugging info"
      , Option "b"  ["base"]             (ReqArg oBase "<name>")
@@ -176,6 +181,7 @@ cmdLineOpts
      ]
   where  oGenLhs2tex     o =  o {optGenFM = FmTeX}
          oGenAG          o =  o {optGenFM = FmAG}
+         oGenExpl        o =  o {optGenExpl = True}
          oGenAGAttr      o =  o {optGenAGAttr = True}
          oDot2Dash       o =  o {optDot2Dash = True}
          oPreamble   ms  o =  yesno (\f o -> o {optPreamble = f}) ms o
@@ -336,7 +342,7 @@ ATTR AllDecl [ | | vwScGam USE {`Map.union`} {Map.empty}: {VwScGam Expr} ]
 ATTR AllDecl [ | | vwJdGam USE {`Map.union`} {Map.empty}: {JdGam Expr} ]
 
 SEM Decl
-  | ScmView         lhs     .   vwScGam     =   Map.singleton @nm (VwScInfo @nm @decls.vwJdGam @decls.atGam emptyGam)
+  | ScmView         lhs     .   vwScGam     =   Map.singleton @nm (VwScInfo @nm @decls.vwJdGam @decls.atGam emptyGam @decls.explGam)
   | ShpJudge        lhs     .   vwJdGam     =   Map.singleton @fmKind (JdInfo @expr.self)
                     loc     .   cxStr       =   "judgement for view '" ++ show @lhs.viewNm ++ "' for scheme '" ++ show @lhs.scmNm ++ "'"
                             .   (vwScInfo,errVwSc)
@@ -425,11 +431,15 @@ bldScInfo vwDpdGr si@(ScInfo nm mbAGNm scKind vwScGam)
   where (g,_)
           = foldr
               (\nVw (vsg,agMp)
-                  -> let (ag,jdg) = prevWRTDpd nVw vwDpdGr agMp (emptyGam,emptyGam)
-                         (vw,ag',jdg')
+                  -> let (ag,jdg,explg) = prevWRTDpd nVw vwDpdGr agMp (emptyGam,emptyGam,emptyGam)
+                         (vw,ag',jdg',explg')
                             = case Map.lookup nVw vsg of
                                   Just vw
-                                    -> (vw,new `Map.union` ag,vwscJdGam vw `jdgUnion` jdg)
+                                    -> (vw
+                                       ,new `Map.union` ag
+                                       ,vwscJdGam vw `jdgUnion` jdg
+                                       ,vwscExplGam vw `Map.union` explg
+                                       )
                                     where new = Map.mapWithKey
                                                   (\n a
                                                      -> case atProps a `intersect` Map.elems propsSynInhMp of
@@ -442,10 +452,10 @@ bldScInfo vwDpdGr si@(ScInfo nm mbAGNm scKind vwScGam)
                                                   )
                                                   (vwscAtGam vw)
                                   Nothing
-                                    -> (emptyVwScInfo { vwscNm = nVw },ag,jdg)
+                                    -> (emptyVwScInfo { vwscNm = nVw },ag,jdg,explg)
                          vwag = Map.fromList . concat . Map.elems $ ag'
-                         agMp' = Map.insert nVw (ag',jdg') agMp
-                     in  (Map.insert nVw (vw {vwscFullAtGam = vwag, vwscJdGam = jdg'}) vsg,agMp')
+                         agMp' = Map.insert nVw (ag',jdg',explg') agMp
+                     in  (Map.insert nVw (vw {vwscFullAtGam = vwag, vwscJdGam = jdg', vwscExplGam = explg'}) vsg,agMp')
               )
               (vwScGam,Map.empty)
               (vgTopSort vwDpdGr)
@@ -713,9 +723,19 @@ SEM AEqn
                             .   ecGam       =   emptyGam
 
 SEM Decl
-  | Fmt ShpJudge    loc     .   fmGam       =   emptyGam
+  | Fmt ShpJudge Explain
+                    loc     .   fmGam       =   emptyGam
                             .   rwGam       =   emptyGam
                             .   ecGam       =   emptyGam
+
+-------------------------------------------------------------------------
+-- Explanations
+-------------------------------------------------------------------------
+
+ATTR AllDecl [ | | explGam USE {`Map.union`} {Map.empty}: {ExplGam Expr} ]
+
+SEM Decl
+  | Explain         lhs     .   explGam     =   Map.singleton (maybe nmNone id @mbNm) (ExplInfo @expr.self)
 
 -------------------------------------------------------------------------
 -- Preambles
@@ -754,7 +774,8 @@ SEM AEqn
   | Err             loc     .   wrKindStk   =   [WrNone]
 
 SEM Decl
-  | Fmt ShpJudge    expr    .   wrKindStk   =   [WrNone]
+  | Fmt ShpJudge Explain
+                    expr    .   wrKindStk   =   [WrNone]
 
 -------------------------------------------------------------------------
 -- Is Expr a complex (non variable expr)? Then it will be used only for parameterized rewrites

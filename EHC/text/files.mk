@@ -24,7 +24,7 @@ TEXT_TMP_VARIANT_PREFIX		:= $(TEXT_TMP_PREFIX)$(TEXT_VARIANT)/
 
 # all variants
 TEXT_PUB_VARIANTS			:= phd-draft popl06-ruler popl06-explimpl shuffle
-TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) popl06-ruler-tst phd-tst phd scratch truu-explimpl truu-ruler
+TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) popl06-ruler-tst phd-tst phd-paper phd scratch truu-explimpl truu-ruler poster
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
 # 2	: phd
@@ -38,7 +38,8 @@ TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) popl06-ruler-tst phd-tst phd scratch tr
 # 10: future
 # 11: shuffle doc
 # 12: garbage
-TEXT_SHUFFLE_ORDER			:= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 8, 1 < 9, 1 < 10, 1 < 11
+# 13: poster
+TEXT_SHUFFLE_ORDER			:= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 8, 1 < 9, 1 < 10, 1 < 11, 1 < 13
 
 # configuration of lhs2tex, to be done on top level
 LHS2TEX_OPTS_TEXT_CONFIG	:= --unset=optExpandPrevRef
@@ -47,6 +48,7 @@ LHS2TEX_OPTS_VARIANT_CONFIG	:=
 # end products, binary, executable, etc
 TEXT_BLD_PDF				:= $(DOC_PREFIX)$(TEXT_VARIANT).pdf
 TEXT_ALL_PUB_PDFS			:= $(patsubst %,$(DOC_PREFIX)%.pdf,$(TEXT_PUB_VARIANTS))
+TEXT_ALL_PDFS				:= $(patsubst %,$(DOC_PREFIX)%.pdf,$(TEXT_VARIANTS))
 
 # files, source + derived
 TEXT_MAIN_SRC_CLTEX			:= $(TEXT_SRC_PREFIX)$(TEXT_MAIN).cltex
@@ -80,6 +82,8 @@ TEXT_RULES_3_DRV_CAG		:= $(TEXT_TMP_VARIANT_PREFIX)$(EHC_RULER_RULES).cag
 TEXT_RULES_3_DRV_LTEX		:= $(TEXT_RULES_3_DRV_CAG:.cag=.ltex)
 TEXT_RULES_3_DRV_TEX		:= $(TEXT_RULES_3_DRV_LTEX:.ltex=.tex)
 
+TEXT_RULES_EXPLAIN_3_DRV_CAG		:= $(TEXT_TMP_VARIANT_PREFIX)rules3Explain.cag
+
 TEXT_HIDE_DRV_TXT			:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN)-hide.hltex
 TEXT_HIDE_DRV_LTEX			:= $(TEXT_HIDE_DRV_TXT:.hltex=.ltex)
 TEXT_HIDE_DRV_TEX			:= $(TEXT_HIDE_DRV_TXT:.hltex=.tex)
@@ -98,7 +102,7 @@ TEXT_BIB_DRV				:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN).bib
 
 FIGS_XFIG_DRV_TEX			:= $(patsubst $(FIGS_SRC_PREFIX)%.fig,$(TEXT_TMP_VARIANT_PREFIX)%.tex,$(FIGS_XFIG_SRC_FIG))
 FIGS_XFIG_DRV_PDF			:= $(patsubst $(FIGS_SRC_PREFIX)%.fig,$(TEXT_TMP_VARIANT_PREFIX)%.pdf,$(FIGS_XFIG_SRC_FIG_NOPDF))
-FIGS_ASIS_DRV_PDF			:= $(patsubst $(FIGS_SRC_PREFIX)%.pdf,$(TEXT_TMP_VARIANT_PREFIX)%.pdf,$(FIGS_ASIS_SRC_PDF))
+FIGS_ASIS_DRV				:= $(patsubst $(FIGS_SRC_PREFIX)%,$(TEXT_TMP_VARIANT_PREFIX)%,$(FIGS_ASIS_SRC))
 
 TEXT_ALL_MK_FILES			:= $(AGPRIMER_MKF) $(EHC_MKF) $(RULER2_MKF) $(TEXT_MKF)
 
@@ -108,33 +112,45 @@ TEXT_ALL_SRC				:= $(TEXT_EDIT_SRC) $(TEXT_SUBS_ASIS_SRC) $(TEXT_BIB_SRC)
 
 # all deriveds (as counting for make dependencies)
 TEXT_ALL_DPD				:= $(TEXT_MAIN_DRV_TEX) $(TEXT_SUBS_DRV_TEX) $(TEXT_MAIN_DRV_STY) $(TEXT_RULER2_DEMO_TEX) \
-								$(TEXT_SUBS_ASIS_DRV) $(FIGS_XFIG_DRV_TEX) $(FIGS_XFIG_DRV_PDF) $(TEXT_RULER2_DEMO_STUFF) $(FIGS_ASIS_DRV_PDF) $(TEXT_HIDE_DRV_TEX)  \
+								$(TEXT_SUBS_ASIS_DRV) $(FIGS_XFIG_DRV_TEX) $(FIGS_XFIG_DRV_PDF) $(TEXT_RULER2_DEMO_STUFF) $(FIGS_ASIS_DRV) $(TEXT_HIDE_DRV_TEX)  \
 								$(TEXT_GEN_BY_RULER_TABLE_TEX) $(TEXT_INCL_LIST_TEX)
+
+# all shuffle included material
+TEXT_SUBS_SHUFFLE			:= $(TEXT_SUBS_SRC_CLTEX) $(TEXT_RULES_3_DRV_CAG) $(EHC_ALL_CHUNK_SRC) $(RULER2_ALL_CHUNK_SRC) $(AGPRIMER_ALL_CHUNK_SRC) $(TEXT_RULES_EXPLAIN_3_DRV_CAG)
 
 # distribution
 TEXT_DIST_DOC_FILES			:= $(TEXT_ALL_PUB_PDFS)
 TEXT_DIST_FILES				:= $(TEXT_ALL_SRC) $(TEXT_MKF)
 
 # variant dispatch rules
-$(patsubst %,$(DOC_PREFIX)%.pdf,$(TEXT_VARIANTS)): $(DOC_PREFIX)%.pdf: $(TEXT_ALL_SRC) $(EHC_ALL_SRC) $(RULER2_DEMO_ALL_DRV_TEX) $(TEXT_ALL_MK_FILES) $(FIGS_ALL_SRC)
+$(TEXT_ALL_PDFS): $(DOC_PREFIX)%.pdf: $(TEXT_ALL_SRC) $(EHC_ALL_SRC) $(RULER2_DEMO_ALL_DRV_TEX) $(TEXT_ALL_MK_FILES) $(FIGS_ALL_SRC)
 	$(MAKE) TEXT_VARIANT=$(*F) text-variant-$(*F)
+
+$(TEXT_VARIANTS) : % : $(DOC_PREFIX)%.pdf
+	open $<
 
 # rules
 text-variant-phd:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=phd --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss" \
+	  TEXT_SHUFFLE_VARIANT=2 \
+	  text-variant-dflt-bib-inx
+
+text-variant-phd-paper:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=newDocClassHeader --set=targetForPaper --set=omitTBD --set=omitLitDiscuss" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
 
 text-variant-phd-tst:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=phd --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss --set=asDraft" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss --set=asDraft" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-tst
 
 text-variant-phd-draft:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=phd --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss --set=asDraft" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss --set=asDraft" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
 
@@ -180,6 +196,12 @@ text-variant-shuffle:
 	  TEXT_SHUFFLE_VARIANT=11 \
 	  text-variant-dflt-tst
 
+text-variant-poster:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyPoster --set=asArticle --unset=useHyperref --unset=refToPDF --set=newDocClassHeader" \
+	  TEXT_SHUFFLE_VARIANT=13 \
+	  text-variant-dflt-tst
+
 text-variant-dflt-tst: $(TEXT_ALL_DPD)
 	mkdir -p $(dir $(TEXT_BLD_PDF))
 	cd $(TEXT_TMP_VARIANT_PREFIX) ; $(PDFLATEX) $(TEXT_MAIN)
@@ -188,7 +210,8 @@ text-variant-dflt-tst: $(TEXT_ALL_DPD)
 text-variant-dflt-bib: $(TEXT_ALL_DPD) $(TEXT_BIB_DRV)
 	mkdir -p $(dir $(TEXT_BLD_PDF))
 	cd $(TEXT_TMP_VARIANT_PREFIX) ; \
-	$(PDFLATEX) $(TEXT_MAIN) ; \
+	$(PDFLATEX) $(TEXT_MAIN)
+	cd $(TEXT_TMP_VARIANT_PREFIX) ; \
 	$(BIBTEX) $(TEXT_MAIN) ; \
 	$(PDFLATEX) $(TEXT_MAIN) ; \
 	$(PDFLATEX) $(TEXT_MAIN)
@@ -197,7 +220,8 @@ text-variant-dflt-bib: $(TEXT_ALL_DPD) $(TEXT_BIB_DRV)
 text-variant-dflt-bib-inx: $(TEXT_ALL_DPD) $(TEXT_BIB_DRV)
 	mkdir -p $(dir $(TEXT_BLD_PDF))
 	cd $(TEXT_TMP_VARIANT_PREFIX) ; \
-	$(PDFLATEX) $(TEXT_MAIN) ; \
+	$(PDFLATEX) $(TEXT_MAIN)
+	cd $(TEXT_TMP_VARIANT_PREFIX) ; \
 	$(BIBTEX) $(TEXT_MAIN) ; \
 	$(PDFLATEX) $(TEXT_MAIN) ; \
 	rm -f $(TEXT_MAIN).ind ; \
@@ -205,9 +229,9 @@ text-variant-dflt-bib-inx: $(TEXT_ALL_DPD) $(TEXT_BIB_DRV)
 	$(PDFLATEX) $(TEXT_MAIN)
 	cp $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN).pdf $(TEXT_BLD_PDF)
 
-$(TEXT_MAIN_DRV_LTEX) : $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SRC_CLTEX) $(SHUFFLE) $(TEXT_MKF)
+$(TEXT_MAIN_DRV_LTEX) : $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SHUFFLE) $(SHUFFLE) $(TEXT_MKF)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(TEXT_SHUFFLE_VARIANT) --plain --lhs2tex=no --hidedest=appx=$(TEXT_HIDE_DRV_TXT) --order="$(TEXT_SHUFFLE_ORDER)" $< $(TEXT_SUBS_SRC_CLTEX) > $@
+	$(SHUFFLE) --gen=$(TEXT_SHUFFLE_VARIANT) --plain --lhs2tex=no --hidedest=appx=$(TEXT_HIDE_DRV_TXT) --order="$(TEXT_SHUFFLE_ORDER)" $< $(TEXT_SUBS_SHUFFLE) > $@
 
 $(TEXT_HIDE_DRV_TXT): $(TEXT_MAIN_DRV_LTEX)
 	touch $@
@@ -255,6 +279,10 @@ $(TEXT_RULES_3_DRV_CAG): $(EHC_RULES_3_SRC_RL2) $(RULER2)
 	mkdir -p $(@D)
 	$(RULER2) --ag --wrapshuffle --selrule="((1=K),(2=C),(3=HM),(4=EX),(42=I2),(9=P)).(expr.base tyexpr.base patexpr.base decl.base).(*)" --base=$(*F) $< > $@
 
+$(TEXT_RULES_EXPLAIN_3_DRV_CAG): $(EHC_RULES_3_SRC_RL2) $(RULER2)
+	mkdir -p $(@D)
+	$(RULER2) --explain --wrapshuffle $< > $@
+
 $(TEXT_RULER2_DEMO_TEX) $(TEXT_RULER2_DEMO_STUFF): $(TEXT_TMP_VARIANT_PREFIX)% : $(RULER2_DEMO_PREFIX)%
 	mkdir -p $(@D)
 	cp $< $@
@@ -267,7 +295,7 @@ $(TEXT_SUBS_ASIS_DRV): $(TEXT_TMP_VARIANT_PREFIX)% : $(TEXT_SRC_PREFIX)%
 	mkdir -p $(@D)
 	cp $< $@
 
-$(FIGS_ASIS_DRV_PDF): $(TEXT_TMP_VARIANT_PREFIX)% : $(FIGS_SRC_PREFIX)%
+$(FIGS_ASIS_DRV): $(TEXT_TMP_VARIANT_PREFIX)% : $(FIGS_SRC_PREFIX)%
 	mkdir -p $(@D)
 	cp $< $@
 

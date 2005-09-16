@@ -177,6 +177,7 @@
   \\
 }{%
   \par
+  \csname RulesFigureBEndHook\endcsname
   \end{center}
   \end{TabularCenterFigure}
 }
@@ -221,7 +222,13 @@
  \marginpar{#1}
 %endif
 }
-\newcommand{\chunkHideRef}[1]{\marginpar{{\footnotesize\secPageRefB{#1}}}}
+\newcommand{\chunkHideRefWWW}[1]{\marginpar{\WWWlogo}}
+\newcommand{\chunkHideRefAppx}[1]{\marginpar{{\footnotesize\secPageRefB{#1}}}}
+%if targetForPaper
+\newcommand{\chunkHideRef}[1]{\chunkHideRefWWW{#1}}
+%else
+\newcommand{\chunkHideRef}[1]{\chunkHideRefAppx{#1}}
+%endif
 \newcommand{\chunkCmdDef}[1]{\expandafter\def\csname #1\endcsname}
 \newcommand{\chunkCmdUseRaw}[1]{%
  \csname #1\endcsname
@@ -230,11 +237,15 @@
 %if asSlides
  \parbox{\textwidth}{\chunkCmdUseRaw{#1}}
 %else
- \chunkCmdUseRaw{#1}
-%if acm
- \vspace{-2.1ex}
+%if blockstyle
 %else
+ \vspace{.2ex}
+%endif
+ \chunkCmdUseRaw{#1}
+%if blockstyle
  \vspace{-1.1ex}
+%else
+ \vspace{-.6ex}
 %endif
 %endif
 }
@@ -270,6 +281,20 @@
 % ruler related
 \newcommand{\rulerCmdDef}[1]{\expandafter\def\csname #1\endcsname}
 \newcommand{\rulerCmdUse}[1]{\csname #1\endcsname}
+\newcommand{\rulerCmdUseExplain}[3]{%
+ \begingroup
+ \def\RulesFigureBEndHook{%
+  \vspace{1.5ex}
+  \small
+  \renewcommand{\arraystretch}{1.2}
+  \begin{tabular}{l@@{\ :\ }p{.75\linewidth}}
+   \hline\hline \multicolumn{2}{p{.85\linewidth}}{#2} \\\hline #3
+  \end{tabular}
+ }
+ \def\RulesFigureBCaptionHook{, with explanation}
+ \rulerCmdUse{#1}
+ \endgroup
+}
 \newcommand{\ruleRef}[1]{rule~\textRL{#1}}
 \newcommand{\RuleRef}[1]{Rule~\textsc{#1}}
 \newcommand{\rulerChngBegMark}{\color{blue}}
@@ -312,13 +337,11 @@ Chapter~\myRef{#1}%
 %endif
 }
 \let\chaptRef=\chapterRef
-\newcommand{\appRef}[1]{%
 %if omitAppendix
-\chapterRef{#1}
+\newcommand{\appRef}[1]{\chapterRef{#1}}
 %else
-appendix~\myRef{#1}
+\newcommand{\appRef}[1]{appendix~\myRef{#1}}
 %endif
-}
 
 % citations
 \newcommand{\refPDF}[1]{%

@@ -74,6 +74,8 @@ DATA Decl
   | Attr                inhs        : AttrIntros
                         inhsyns     : AttrIntros
                         syns        : AttrIntros
+  | Explain				mbNm		: {Maybe Nm}
+                        expr 		: Expr
 
 TYPE Decls = [Decl]
 
@@ -172,6 +174,8 @@ DATA Expr
                         rExpr       : Expr
   | LF                  lExpr       : Expr
                         rExpr       : Expr
+  | SP                  lExpr       : Expr
+                        rExpr       : Expr
   | Var                 nm          : {Nm}
   | AVar                anm         : ANm
   | Int                 int         : {String}
@@ -186,6 +190,7 @@ DATA Expr
   | WrapCnstr           cnstr       : ECnstr
   | Paren               expr        : Expr
   | Retain              expr        : Expr
+  | Expr                expr        : Expr
   | SelTop              expr        : Expr
   | Sel                 expr        : Expr
                         selMbExpr   : MbExpr

@@ -290,24 +290,30 @@ a set of boolean flags.
 A |FIOpts =@= fiopt| uses the flags from
 \figRef{eh-impredA-fit-options}
 for obtaining the previously discussed desired behavior.
-%%[[hide impl.FIOpts="FIOpts"
-\savecolumns
-\chunkCmdUseMark{EHOpts.4.FIOpts.hd}
-\restorecolumns
-\chunkCmdUseMark{EHOpts.4.FIOpts.tl}
-\restorecolumns
-\chunkCmdUseMark{EHOpts.4.strongFIOpts.hd}
-\restorecolumns
-\chunkCmdUseMark{EHOpts.4.strongFIOpts.tl}
-\chunkCmdUseMark{EHOpts.4.FIOpts.instLFIOpts}
+%%[[hide wrap=code impl.FIOpts="FIOpts"
+%%@EHOpts.4.FIOpts.hd
+%%@EHOpts.4.FIOpts.tl
+%%@EHOpts.4.strongFIOpts.hd
+%%@EHOpts.4.strongFIOpts.tl
+%%@EHOpts.4.FIOpts.instLFIOpts
 %%]
 These options are used in specific combinations throughout the type rules
 (see \figRef{eh-impredA-fit-option-combis} for an overview).
 |True| and |False| values are denoted by an additional |+| or |-| respectively,
 for example for |fioBindRFirst| with |fioBindRFirstY| and |fioBindRFirstN| respectively.
 
-\rulerCmdUse{rules3.I1.match.eh4}
-\rulerCmdUse{rules3.I1.fit}
+\rulerCmdUseExplain{rules3.I1.match.eh4}
+{
+%%@rules3Explain.match.I1.explain.scheme
+}{
+%%@rules3Explain.match.I1.explain.holes
+}
+\rulerCmdUseExplain{rules3.I1.fit}
+{
+%%@rules3Explain.fit.I1.explain.scheme
+}{
+%%@rules3Explain.fit.I1.explain.holes
+}
 
 \begin{TabularCenterFigure}{Options to |fitsIn =@= <=|}{eh-impredA-fit-options}
 %%@SharedFIOpts.fiOptsTableHeader
@@ -367,7 +373,7 @@ On the other hand, the argument types are matched in the opposite direction:
 This is called \IxAsDef{contra-variance}.
 For the argument part of a function type this translates to the intuition that |sigma1a -> sigma1r|
 can be used where |sigma2a -> sigma2r| is expected, provided
-that the a use of |sigma2a -> sigma2r| passes an argument |sigma2a| that can be used where a |sigma1a|
+that a use of |sigma2a -> sigma2r| passes an argument |sigma2a| that can be used where a |sigma1a|
 is expected.
 Here, this means that a polymorphic type |sigma2a| can be instantiated to the expected type |sigma1a|.
 \end{Itemize}
@@ -382,7 +388,12 @@ The exception is located in \ruleRef{e.app}.
 For the argument of a function instantiating takes precedence over binding.
 Hence |instLRFIOpts| is passed to the argument in \ruleRef{e.app}.
 
-\rulerCmdUse{rules3.I1.expr.baseForEH4}
+\rulerCmdUseExplain{rules3.I1.expr.baseForEH4}
+{
+%%@rules3Explain.expr.I1.explain.scheme
+}{
+%%@rules3Explain.expr.I1.explain.holes
+}
 \rulerCmdUse{rules3.I1.decl.base}
 
 No further changes are required for type inference for expressions.
@@ -874,8 +885,18 @@ in \figRef{rules3.I2.match.eh4Bmeetjoin}.
 
 
 \rulerCmdUse{rules3.I2.fit}
-\rulerCmdUse{rules3.I2.meet}
-\rulerCmdUse{rules3.I2.join}
+\rulerCmdUseExplain{rules3.I2.meet}
+{
+%%@rules3Explain.meet.I2.explain.scheme
+}{
+%%@rules3Explain.meet.I2.explain.holes
+}
+\rulerCmdUseExplain{rules3.I2.join}
+{
+%%@rules3Explain.join.I2.explain.scheme
+}{
+%%@rules3Explain.join.I2.explain.holes
+}
 
 \Paragraph{Type alternative elimination}
 The computation of the most/least general type from type alternatives,
@@ -904,8 +925,18 @@ because we only eliminate the top level type alternatives.
 We recursively eliminate these nested type alternatives and finally bind the result
 to the type variable for this set of type alternatives.
 
-\rulerCmdUse{rules3.I2.tyAltTyElim}
-\rulerCmdUse{rules3.I2.valElimExprAlts}
+\rulerCmdUseExplain{rules3.I2.tyAltTyElim}
+{
+%%@rules3Explain.tyAltTyElim.I2.explain.scheme
+}{
+%%@rules3Explain.tyAltTyElim.I2.explain.holes
+}
+\rulerCmdUseExplain{rules3.I2.valElimExprAlts}
+{
+%%@rules3Explain.valElimExprAlts.I2.explain.scheme
+}{
+%%@rules3Explain.valElimExprAlts.I2.explain.holes
+}
 
 We walk through our initial example (\exRef{eh4B-ex-basic}), which we repeat here:
 
@@ -1012,7 +1043,12 @@ the resulting type.
 If a type variable is bound by this process to a (non-polymorphic) type we effectively inhibit its further binding to
 a polymorphic type.
 
-\rulerCmdUse{rules3.I2.tyBtTyElim}
+\rulerCmdUseExplain{rules3.I2.tyBtTyElim}
+{
+%%@rules3Explain.tyBtTyElim.I2.explain.scheme
+}{
+%%@rules3Explain.tyBtTyElim.I2.explain.holes
+}
 
 \subsection{Impredicativity inference}
 
@@ -1063,7 +1099,12 @@ Any known information about the function's argument is thus bound as a type alte
 The argument type is matched similarly, so we end up with all information about the argument bound to |tvarv|
 as a set of type alternatives.
 
-\rulerCmdUse{rules3.I2.expr.eh4B1}
+\rulerCmdUseExplain{rules3.I2.expr.eh4B1}
+{
+%%@rules3Explain.expr.I2.explain.scheme
+}{
+%%@rules3Explain.expr.I2.explain.holes
+}
 
 Fixing type information is done at three places: |let|-bindings, |lambda|-bindings and patterns.
 Of these three, |let|-expressions and |lambda|-expressions are natural as identifiers are introduced.
@@ -1109,17 +1150,22 @@ identifier.
 
 The tricky part is the combination with the next stage. We need to match with the known type a second time
 as we may have found new polymorphic types for arguments.
-%%[[hide impl.impredBLam="Impredicativity + type inference for \ruleRef{e.lam}"
-\chunkCmdUseMark{EHRulerRules.42.expr.e.lam}
-\chunkCmdUseMark{EHCnstr.4.cnstrDel}
-\chunkCmdUseMark{EHSubstitutable.4.partialSubstApp}
+%%[[hide wrap=code impl.impredBLam="Impredicativity + type inference for \ruleRef{e.lam}"
+%%@EHRulerRules.42.expr.e.lam
+%%@EHCnstr.4.cnstrDel
+%%@EHSubstitutable.4.2.partialSubstApp
 %%]
 However, this match may result in fresh instantiated type variables or fixed type variables.
 Constraint |Dot(Cnstr)(3)()| requires some careful constraint manipulation.
 New constraints for |tvarv1| (and |tvarv2|) are avoided;
 old bindings for |tvarv1| (and |tvarv2|) are updated with new constraints.
 
-\rulerCmdUse{rules3.I2.decl.base}
+\rulerCmdUseExplain{rules3.I2.decl.base}
+{
+%%@rules3Explain.decl.I2.explain.scheme
+}{
+%%@rules3Explain.decl.I2.explain.holes
+}
 
 In a |let|-expression type alternatives are eliminated for locally introduced bindings.
 \RuleRef{e.let} shows how this is done.
@@ -1926,7 +1972,7 @@ A predicate referring to this |i| has an implicit |exists ^ i| in front of it.
 
 Some additional options need to be passed as well:
 
-\chunkCmdUseMark{EHTyFitsIn.6.2.FIOpts.defaults}
+%%@EHTyFitsIn.6.2.FIOpts.defaults wrap=code
 
 \rulerCmdUse{rules.fit4.bind}
 \rulerCmdUse{rules.expr4.bind}

@@ -84,7 +84,7 @@ The corresponding type structure |Ty| needs to be extended with an alternative f
 Note that the AG system allow us to define this additional type variant independent of the previous definition,
 thus allowing an isolated explanation:
 
-\chunkCmdUseMark{EHTyAbsSyn.2}
+%%@EHTyAbsSyn.2.TyVar wrap=code
 
 %if incl01TopicPP
 
@@ -92,18 +92,23 @@ The AG system allows us to separately describe the extension with a new variant 
 as describe separately the additionaly required attribution,
 for example the pretty printing of the type
 
-\chunkCmdUseMark{EHTyPretty.2}
+ %%@EHTyPretty.2 wrap=code
 
 %endif %% incl01TopicPP
 
 A type variable is identified by a unique identifier, a |UID|:
 
-\chunkCmdUseMark{EHCommon.2.UID.Base}
-\chunkCmdUseMark{EHTy.2.TyVarId.Base}
-%%[[hide impl.UID="UID basics"
-\chunkCmdUseMark{EHCommon.2.UID.UIDL}
-\chunkCmdUseMark{EHCommon.2.UID.Show}
-\chunkCmdUseMark{EHTy.2.TyVarId.Rest}
+%%[[hide wrap=code impl.UID="UID basics"
+%%@EHCommon.2.UID.UIDL
+
+%%@EHCommon.2.UID.Show
+
+%%@EHTy.2.TyVarId.Rest
+%%]
+%%[[wrap=code
+%%@EHCommon.2.UID.Base
+
+%%@EHTy.2.TyVarId.Base
 %%]
 
 The idea is to thread a counter as global variable through the AST,
@@ -145,9 +150,13 @@ A set of \IxAsDef{constraint}s |Cnstr| (appearing in its non pretty printed form
 is a set of bindings for type variables,
 represented as an association list:
 
-\chunkCmdUseMark{EHCnstr.2.Cnstr.Base}
-\chunkCmdUseMark{EHCnstr.2.Cnstr.emptyCnstr}
-\chunkCmdUseMark{EHCnstr.2.Cnstr.cnstrTyUnit}
+%%[[wrap=code
+%%@EHCnstr.2.Cnstr.Base
+
+%%@EHCnstr.2.Cnstr.emptyCnstr
+
+%%@EHCnstr.2.Cnstr.cnstrTyUnit
+%%]
 
 If |cnstrTyUnit| is used as an infix operator it is printed as |`cnstrTyUnit`| in
 the same way as used in type rules.
@@ -170,7 +179,7 @@ for those structures which have references to type
 variables hidden inside and can replace, or substitute those type variables:
 
 \chunkHideRef{impl.UID}
-\chunkCmdUseMark{EHSubstitutable.2.Substitutable}
+%%@EHSubstitutable.2.Substitutable wrap=code
 
 The operator | ||=>| applies constraints |Cnstr| to a
 |Substitutable|.
@@ -179,7 +188,7 @@ Function |ftv| extracts the free type variable references as a set (implemented 
 
 A |Cnstr| can be applied to a type:
 
-\chunkCmdUseMark{EHSubstitutable.2.SubstitutableTy}
+%%@EHSubstitutable.2.SubstitutableTy wrap=code
 
 This is another place where we use the AG notation and the automatic propagation of values
 as attributes throughout the type representation to make the description of the application of
@@ -189,13 +198,18 @@ The plumbing required to provide the value of attribute |repl| (|tvs|) available
 the result of Haskell function |tyAppCnstr| (and |tyFtv|)
 has been omitted:
 
-%%[[hide impl.tyFtvSubst="Haskell wrapping for tyFtv, tyAppCnstr; cnstrTyLookup"
-\chunkCmdUseMark{EHTySubst.2.tyAppCnstr}
-\chunkCmdUseMark{EHTyFtv.2.tyFtv}
-\chunkCmdUseMark{EHCnstr.2.cnstrTyLookup}
+%%[[hide wrap=code impl.tyFtvSubst="Haskell wrapping for tyFtv, tyAppCnstr; cnstrTyLookup"
+%%@EHTySubst.2.tyAppCnstr
+
+%%@EHTyFtv.2.tyFtv
+
+%%@EHCnstr.2.cnstrTyLookup
 %%]
-\chunkCmdUseMark{EHTySubst.2.TySubst}
-\chunkCmdUseMark{EHTyFtv.2.TyFtv}
+%%[[wrap=code
+%%@EHTySubst.2.TySubst
+
+%%@EHTyFtv.2.TyFtv
+%%]
 
 %{
 
@@ -230,14 +244,14 @@ gathers bottom-up the free type variables of a type.
 
 The application of a |Cnstr| is straightforwardly lifted to lists:
 
-\chunkCmdUseMark{EHSubstitutable.2.SubstitutableList}
-%%[[hide impl.unions="unions"
-\chunkCmdUseMark{EHCommon.2.unions}
+%%[[hide wrap=code impl.unions="unions"
+%%@EHCommon.2.unions
 %%]
+%%@EHSubstitutable.2.SubstitutableList wrap=code
 
 A |Cnstr| can also be applied to another |Cnstr|:
 
-\chunkCmdUseMark{EHSubstitutable.2.SubstitutableCnstr}
+%%@EHSubstitutable.2.SubstitutableCnstr wrap=code
 
 Substituting a substitution is non-commutative as constraints |s1| in |s1 ||=> s2| take precedence
 over |s2|.
@@ -255,10 +269,11 @@ if one of the types is unknown, which means that it is a type variable, we have 
 returning a constraint on that type variable.
 The implementation |fitsIn| of |<=| additionaly has to return constraints:
 
-\savecolumns
-\chunkCmdUseOnPrev{EHTyFitsInCommon.1.FIOut}{EHTyFitsInCommon.2.FIOut}
-\restorecolumns
-\chunkCmdUseMark{EHTyFitsInCommon.2.FIOut.empty}
+%%[[wrap=code
+%%@EHTyFitsInCommon.2.FIOut
+
+%%@EHTyFitsInCommon.2.FIOut.empty
+%%]
 
 Computation and proper combination of constraints necessitates
 |fitsIn| to be rewritten in order to deal with type variables and constraints.
@@ -267,31 +282,41 @@ The rules describing the desired behavior are shown in
 We show the changed part of the full implementation for this version.
 The function |comp| deals with the proper combination of constraints for composite types:
 
-%%[[hide impl.fitsinEH2="fitsIn for EH2"
-\savecolumns
-\chunkCmdUseMark{EHTyFitsIn.2.fitsIn.Base}
-\restorecolumns
-\chunkCmdUseMark{EHTyFitsIn.2.fitsIn.Bind}
-\restorecolumns
-\chunkCmdUseMark{EHTyFitsIn.2.fitsIn.app}
-\restorecolumns
-\chunkCmdUseMark{EHTyFitsIn.2.fitsIn.BotCon}
-\restorecolumns
-\chunkCmdUseMark{EHTyFitsIn.2.fitsIn.Var}
-\restorecolumns
-\chunkCmdUseMark{EHTyFitsIn.2.fitsIn.AppRest}
-%%]
-\savecolumns
-\chunkCmdUseMark{EHTyFitsIn.2.fitsIn.Base}
-\restorecolumns
-\chunkCmdUseMark{EHTyFitsIn.2.fitsIn.Bind}
-\restorecolumns
-\chunkCmdUseMark{EHTyFitsIn.2.fitsIn.app}
-\restorecolumns
-\chunkCmdUseMark{EHTyFitsIn.2.fitsIn.Var}
+%%[[hide wrap=code impl.fitsinEH2="fitsIn for EH2"
+%%@EHTyFitsIn.2.fitsIn.Base
 
-\rulerCmdUse{rules3.C.match.all}
-\rulerCmdUse{rules3.C.fit}
+%%@EHTyFitsIn.2.fitsIn.Bind
+
+%%@EHTyFitsIn.2.fitsIn.app
+
+%%@EHTyFitsIn.2.fitsIn.BotCon
+
+%%@EHTyFitsIn.2.fitsIn.Var
+
+%%@EHTyFitsIn.2.fitsIn.AppRest
+%%]
+%%[[wrap=code
+%%@EHTyFitsIn.2.fitsIn.Base
+
+%%@EHTyFitsIn.2.fitsIn.Bind
+
+%%@EHTyFitsIn.2.fitsIn.app
+
+%%@EHTyFitsIn.2.fitsIn.Var
+%%]
+
+\rulerCmdUseExplain{rules3.C.match.all}
+{
+%%@rules3Explain.match.C.explain.scheme
+}{
+%%@rules3Explain.match.C.explain.holes
+}
+\rulerCmdUseExplain{rules3.C.fit}
+{
+%%@rules3Explain.fit.C.explain.scheme
+}{
+%%@rules3Explain.fit.C.explain.holes
+}
 
 Although this version of the implementation of |fitsIn| resembles the previous one
 it differs in the following aspects:
@@ -332,8 +357,18 @@ The only reason to adapt some of the rules to the variant in
 is to clarify the way constraints are used.
 
 %\rulerCmdUse{rules.expr2}
-\rulerCmdUse{rules3.C.expr.baseForEH2}
-\rulerCmdUse{rules3.C.decl.base}
+\rulerCmdUseExplain{rules3.C.expr.baseForEH2}
+{
+%%@rules3Explain.expr.C.explain.scheme
+}{
+%%@rules3Explain.expr.C.explain.holes
+}
+\rulerCmdUseExplain{rules3.C.decl.base}
+{
+%%@rules3Explain.decl.C.explain.scheme
+}{
+%%@rules3Explain.decl.C.explain.holes
+}
 
 The type rules in \figRef{rules3.C.expr.baseForEH2} enforce an order in which
 checking and inferring types has to be done.
@@ -342,26 +377,29 @@ The flow of these constraints defines the computation order.
 In AG the threading of constraints is expressed by the following declaration of
 |tyCnstr|:
 
-\chunkCmdUseMark{EHInferExpr.2.tyCnstr}
+%%@EHInferExpr.2.tyCnstr wrap=code
 
 For a type rule the (already) known constraints |Cnstrk| correspond to the use of |lhs.tyCnstr| and the result constraints
 (like |Cnstra| for \ruleRef{e.app}) are assigned to |lhs.tyCnstr|.
 For \ruleRef{e.app} this translates to the following implementation:
 
-\chunkCmdUseMark{EHRulerRules.2.expr.e.app}
+%%@EHRulerRules.2.expr.e.app wrap=code
 
 The freshness of a type variable is guaranteed by threading a seed |gUniq|
 for unique values (|UID|'s)
 through the AST:
 
-\chunkCmdUseMark{EHUniq.2.gUniq}
+%%[[hide wrap=code impl.UID="UID"
+%%@EHCommon.2.UID.Base
 
-%%[[hide impl.UID="UID"
-\chunkCmdUseMark{EHCommon.2.UID.Base}
-\chunkCmdUseMark{EHCommon.2.UID.UIDL}
-\chunkCmdUseMark{EHCommon.2.UID.Show}
-\chunkCmdUseMark{EHCommon.2.UID.mkNewLevUID}
+%%@EHCommon.2.UID.UIDL
+
+%%@EHCommon.2.UID.Show
+
+%%@EHCommon.2.UID.mkNewLevUID
 %%]
+%%@EHUniq.2.gUniq wrap=code
+
 When a unique value is needed we use |gUniq|'s current value as the `fresh' UID,
 and pass the adapted seed
 onwards to the first child which requires unique values as well.
@@ -423,7 +461,7 @@ We apply known constraints to the type extracted from |Gamma =@= valGam|.
 This is illustrated by the AG code for \ruleRef{e.var} in which |lhs.tyCnstr| is applied to both the expected type |knTy|
 and the type |ty_g_| extracted from |valGam|:
 
-\chunkCmdUseMark{EHRulerRules.2.expr.e.var}
+%%@EHRulerRules.2.expr.e.var wrap=code
 
 Newly found constraints (from |<= =@= fitsIn|) are combined with the already known constraints (|lhs.tyCnstr|).
 
@@ -438,12 +476,14 @@ this is the only place where we need to deal with polymorphism for this version 
 We compute the function type using fresh type variables:
 
 \chunkHideRef{impl.SemAppFull}
-\chunkCmdUseMark{EHRulerRules.2.expr.e.con}
+%%@EHRulerRules.2.expr.e.con wrap=code
 
-%%[[hide impl.eh2RemRules="EH2, AG for \ruleRef{e.int}, \ruleRef{e.lam} and \ruleRef{e.ann}"
-\chunkCmdUseMark{EHRulerRules.2.expr.e.int}
-\chunkCmdUseMark{EHRulerRules.2.expr.e.lam}
-\chunkCmdUseMark{EHRulerRules.2.expr.e.ann}
+%%[[hide wrap=code impl.eh2RemRules="EH2, AG for \ruleRef{e.int}, \ruleRef{e.lam} and \ruleRef{e.ann}"
+%%@EHRulerRules.2.expr.e.int
+
+%%@EHRulerRules.2.expr.e.lam
+
+%%@EHRulerRules.2.expr.e.ann
 %%]
 The remaining rules follow the same strategy of applying constraints to types,
 matching types and propagating the resulting constraints.
@@ -492,7 +532,12 @@ if no type signature is available (\figRef{rules3.C.patexpr.base}).
 Again, constraints are threaded through the pattern to accumulate information about type variables.
 
 %\rulerCmdUse{rules.pat2}
-\rulerCmdUse{rules3.C.patexpr.base}
+\rulerCmdUseExplain{rules3.C.patexpr.base}
+{
+%%@rules3Explain.patexpr.C.explain.scheme
+}{
+%%@rules3Explain.patexpr.C.explain.holes
+}
 
 Computation of the type of a pattern is similar to and yet more straightforward than
 for expressions.
@@ -500,13 +545,16 @@ The \ruleRef{p.var} from \figRef{rules3.C.patexpr.base} binds the identifier
 to the known type and if no such known type is available it invents a fresh one,
 by means of |tyEnsureNonAny|:
 
-%%[[hide impl.pIntCharVaras2="\ruleRef{p.varas}, \ruleRef{p.int}, \ruleRef{p.char}, tyEnsureNonAny"
-\chunkCmdUseMark{EHTy.2.tyEnsureNonAny}
-\chunkCmdUseMark{EHRulerRules.2.patexpr.p.varas}
-\chunkCmdUseMark{EHRulerRules.2.patexpr.p.int}
-\chunkCmdUseMark{EHRulerRules.2.patexpr.p.char}
+%%[[hide wrap=code impl.pIntCharVaras2="\ruleRef{p.varas}, \ruleRef{p.int}, \ruleRef{p.char}, tyEnsureNonAny"
+%%@EHTy.2.tyEnsureNonAny
+
+%%@EHRulerRules.2.patexpr.p.varas
+
+%%@EHRulerRules.2.patexpr.p.int
+
+%%@EHRulerRules.2.patexpr.p.char
 %%]
-\chunkCmdUseMark{EHRulerRules.2.patexpr.p.var}
+%%@EHRulerRules.2.patexpr.p.var wrap=code
 
 For tuples we again exploit that the |Con| alternative will always
 represent a tuple.
@@ -522,18 +570,18 @@ For now, because we have only tuples to dissect, the
 function returned by the |Con| alternative is just the identity
 on tuples of the correct size:
 
-\chunkCmdUseMark{EHRulerRules.2.patexpr.p.con}
+%%@EHRulerRules.2.patexpr.p.con wrap=code
 
 At the top of a pattern, in \ruleRef{p.apptop}, this function |sigmapf =@= patFunTy| is dissected into
 the argument |sigmaa =@= ty_a_| and
 result |sigma_r =@= ty_r_|:
 
-\chunkCmdUseMark{EHRulerRules.2.patexpr.p.apptop}
+%%@EHRulerRules.2.patexpr.p.apptop wrap=code
 
 The argument |sigmaa|, representing the value ``going in the pattern'', is matched with the expected type of the pattern;
 the result |sigma_r| is dissected in \ruleRef{p.app} as in the previous EH version:
 
-\chunkCmdUseMark{EHRulerRules.2.patexpr.p.app}
+%%@EHRulerRules.2.patexpr.p.app wrap=code
 
 The pattern function type |sigmapf =@= patFunTy| is constructed from fresh type variables.
 Each occurrence of a tuple pattern deals with different unknown types; hence fresh type variables are needed.
@@ -571,10 +619,12 @@ to be used as the starting point for |tyCnstr| in \ruleRef{e.let}.
 \end{Itemize}
 
 Here we omit the corresponding AG code: it follows the type rules faithfully.
-%%[[hide impl.declEH2
-\chunkCmdUseMark{EHInfer.2.tyCnstr}
-\chunkCmdUseMark{EHRulerRules.2.decl.d.val}
-\chunkCmdUseMark{EHRulerRules.2.expr.e.let}
+%%[[hide wrap=code impl.declEH2
+%%@EHInfer.2.tyCnstr
+
+%%@EHRulerRules.2.decl.d.val
+
+%%@EHRulerRules.2.expr.e.let
 %%]
 
 

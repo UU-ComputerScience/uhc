@@ -179,7 +179,8 @@ SEM AEqn
   | Err             loc     .   inEqnLoc    =   EqnInTop
 
 SEM Decl
-  | Fmt ShpJudge    expr    .   inEqnLoc    =   EqnInTop
+  | Fmt ShpJudge Explain
+  					expr    .   inEqnLoc    =   EqnInTop
 
 -------------------------------------------------------------------------
 -- Matching

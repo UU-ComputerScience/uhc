@@ -68,6 +68,9 @@ instance PP a => PP [a] where
   pp = ppCommaList
 -}
 
+instance PP a => PP (Maybe a) where
+  pp = maybe (pp "?") pp
+
 instance PP Bool where
   pp = pp . show
 

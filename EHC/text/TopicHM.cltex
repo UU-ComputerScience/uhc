@@ -135,12 +135,13 @@ additional alternative to represent a quantified type.
 For a type variable we also have to remember to which category it belongs,
 either \IxAsDef{plain} or \IxAsDef{fixed}:
 
-\chunkCmdUseMark{EHTyAbsSyn.3.TyVar}
-\chunkCmdUseMark{EHTyAbsSyn.3.Quant}
-
-%%[[hide impl.tyWrappersEH3="Type construction"
-\chunkCmdUseMark{EHTy.3.mkTyVar}
-\chunkCmdUseMark{EHTy.3.mkTyQu}
+%%[[hide wrap=code impl.tyWrappersEH3="Type construction"
+%%@EHTy.3.mkTyVar
+%%@EHTy.3.mkTyQu
+%%]
+%%[[wrap=code
+%%@EHTyAbsSyn.3.TyVar
+%%@EHTyAbsSyn.3.Quant
 %%]
 
 We will postpone the discussion of type variable categories
@@ -151,13 +152,16 @@ of a type signature.
 The quantifier |forall| cannot be explicitly denoted.
 We only need to extend the abstract syntax for types with an alternative for type variables:
 
-\chunkCmdUseMark{EHAbsSyn.3}
+%%[[wrap=code
+%%@EHAbsSyn.3.TyExpr
+%%@EHAbsSyn.3.TyExpr.VarWild
+%%]
 
 %if incl01TopicParsing
 As a consequence the parser for type expressions has to include an alternative
 in |pTyExprBase| to parse type variables.
 
-\chunkCmdUseMark{EHParser.3}
+%%@EHParser.3 wrap=code
 %else
 %endif
 
@@ -201,8 +205,10 @@ Rule:
 \]
 
 Implementation:
-\chunkCmdUseMark{EHRulerRules.3.expr.e.var}
-\chunkCmdUseMark{EHTyInstantiate.3.tyInst}
+%%[[wrap=code
+%%@EHRulerRules.3.expr.e.var
+%%@EHTyInstantiate.3.tyInst
+%%]
 %%]
 \RuleRef{e.var} shows how the type bound to an identifier is instantiated by
 replacing its quantified type variables with fresh ones.
@@ -239,12 +245,14 @@ In the implementation we wrap the type in |Ty_Quant|, one for each free type var
 %%[[hide impl.tyQuant="Type quantification"
 Rule:
 \[
-\rulerCmdUse{rules3.HM.decl.d.tysig}
+\rulerCmdUse{rules3.HM.decl.base.d.tysig}
 \]
 
 Implementation:
-\chunkCmdUseMark{EHRulerRules.3.decl.d.tysig}
-\chunkCmdUseMark{EHTyQuantify.3.tyQuantify}
+%%[[wrap=code
+%%@EHRulerRules.3.decl.d.tysig
+%%@EHTyQuantify.3.tyQuantify
+%%]
 
 The implementation is slightly more involved as we also deal with partial type signatures.
 Its discussion is postponed until \chapterRef{ehc-partial-sig-quant-guess}.
@@ -285,12 +293,14 @@ the implementation specifies this precisely.
 %%[[hide impl.declValEH3="Value declaration and instantiation of type signature"
 Rule:
 \[
-\rulerCmdUse{rules3.HM.decl.d.val}
+\rulerCmdUse{rules3.HM.decl.base.d.val}
 \]
 
 Implementation:
-\chunkCmdUseMark{EHRulerRules.3.decl.d.val}
-\chunkCmdUseMark{EHTyInstantiate.3.tyInstKnown}
+%%[[wrap=code
+%%@EHRulerRules.3.decl.d.val
+%%@EHTyInstantiate.3.tyInstKnown
+%%]
 %%]
 
 A \IxAsDef{fixed type variable} is like a plain type variable but may not be constrained,
@@ -335,7 +345,7 @@ Rule:
 \]
 
 Implementation:
-\chunkCmdUseMark{EHRulerRules.3.expr.e.let}
+%%@EHRulerRules.3.expr.e.let wrap=code
 
 All available constraints in the form of |decls.tyCnstr| are applied to both global (|valGam_g_|)
 and local (|valGam_l_|) |Gamma|.
@@ -343,10 +353,12 @@ All types in the resulting local |lSubsValGam| are then quantified over their fr
 with the exception of those referred to more globally, the |gTyTvL|.
 We use |valGamQuantify| to accomplish this:
 
-\chunkCmdUseMark{EHGam.3.valGamQuantify}
-\chunkCmdUseMark{EHGam.3.valGamMapTy}
-\chunkCmdUseMark{EHGam.3.gamMap}
-\chunkCmdUseMark{EHGam.3.gamMapElts}
+%%[[wrap=code
+%%@EHGam.3.valGamQuantify
+%%@EHGam.3.valGamMapTy
+%%@EHGam.3.gamMap
+%%@EHGam.3.gamMapElts
+%%]
 %%]
 
 The condition that quantification only may be done for type variables not occurring in
