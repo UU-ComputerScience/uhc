@@ -17,7 +17,9 @@ Stapsgewijs door Haskell\\
 %if asDraft
 \vspace*{2ex}
 Draft: \today \\
+{\footnotesize
 @$Id$@
+}
 %endif
 
 \end{flushright}
@@ -58,9 +60,12 @@ promotor: & Prof.~dr.~S.~Doaitse Swierstra, Universiteit Utrecht
 \noindent
 \includegraphics{ipalogo}\par\noindent
 The work in this thesis has been carried out under the auspices of the
-research school \textsc{IPA} (Institute for Programming research and Algorithmics),
+research school \textsc{IPA} (Institute for Programming research and Algorithmics).
+%if False
+,
 and has been financed by the \textsc{NWO} (Nederlandse Organisatie voor 
 Wetenschappelijk Onderzoek).
+%endif
 
 \medskip
 
@@ -77,7 +82,7 @@ All drawings by Clara Strohm.
 \medskip
 
 \noindent
-ISBN 90-xxx-xxxx-x
+ISBN 90-393-4070-6
 \end{titlepage}
 %%]
 

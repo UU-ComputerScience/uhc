@@ -33,7 +33,8 @@ SEM AGExprItf
   | AGItf           loc     .   uniqSeqNr   =   0
   
 SEM Decl
-  | Fmt ShpJudge    loc     .   uniqSeqNr   =   0
+  | Fmt ShpJudge Explain
+  					loc     .   uniqSeqNr   =   0
   
 SEM RExprEqn
   | Expr            loc     .   uniqSeqNr   =   0

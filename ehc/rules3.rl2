@@ -139,6 +139,7 @@ format tex ty.sig = ty.s
 format tex ty.q = sigma.q
 format tex ty.elim = sigma.e
 format tex ty.tboth = sigma./=/
+format tex tboth =  /=/
 format tex ty' = sigma'
 
 format ag tvarv..._ = tvars
@@ -168,10 +169,12 @@ format tex ityCnstr.elim = tyCnstr.Gamma
 format ag ityCnstr = imprTyCnstr
 
 -- Plain Cnstr
+external emptyCnstr'
 external emptyCnstr
 
 format tex cnstr = Cnstr
 format tex emptyCnstr = []
+format tex emptyCnstr' =
 format tex patTyCnstr.syn = Cnstr.p
 format tex patTyCnstr.inh = Cnstr.p.k
 format tex tyCnstr = Cnstr
@@ -185,6 +188,8 @@ format tex tyCnstr.fitP = Cnstr.P
 format tex tyCnstr.fitF = Cnstr.F
 format tex tyCnstr.fitE = Cnstr.E
 format tex tyCnstr.arg = Cnstr.a
+
+format ag emptyCnstr' = emptyCnstr
 
 -- Decl
 format tex declExpr = e
@@ -310,26 +315,41 @@ scheme expr "Expr" =
     holes [ node e: Expr, valGam: ValGam, tyGam: TyGam, kiGam: KiGam | ty: Ty | ]
     judgespec kiGam ; tyGam ; valGam :- e : ty
     judgeuse tex valGam :-.."e" e : ty
+    explain (Within environment |valGam| , expression |e| has type |ty| .)
+    explain ty = (Type of expression)
+    explain e = (Expression)
+    explain valGam = (Environment | (ident :-> ty)..._ | for value identifiers)
   view K =
     holes [ knTy: Ty | | retain ty: Ty ]
     judgespec kiGam ; tyGam; valGam; knTy :- e : ty
     judgeuse tex valGam; knTy :-.."e" e : ty
+    explain (Within environment |valGam| , expecting the type of expression |e| to be |knTy| , |e| has type |ty| .)
+    explain knTy = ("Expected/known" type of expression)
+    explain tyGam = (Environment | (ident :-> ty)..._ | for type identifiers, cannot be modified hence treated as a global constant in "e.ann")
   view C =
     holes [ | thread tyCnstr: Cnstr | ]
     judgespec kiGam ; tyGam ; valGam ; tyCnstr.inh ; knTy :- e : ty ~> tyCnstr.syn
     judgeuse tex valGam ; tyCnstr.inh ; knTy :-.."e" e : ty ~> tyCnstr.syn
+    explain tyCnstr.inh = (Already known constraints)
+    explain tyCnstr.syn = (|tyCnstr.inh| + new constraints)
   view I1 =
     holes [ fiopt: FIOpts | | ]
     judgespec fiopt ; kiGam ; tyGam ; valGam ; tyCnstr.inh ; knTy :- e : ty ~> tyCnstr.syn
     judgeuse tex fiopt ; valGam ; tyCnstr.inh ; knTy :-.."e" e : ty ~> tyCnstr.syn
+    explain (Within environment |valGam| and context |fiopt| , expecting the type of expression |e| to be |knTy| , has type |ty| .)
+    explain fiopt = (|fitsIn| options, additional contextual information for | <= |)
   view I2 =
     holes [ | thread ityCnstr: ICnstr | retain ity: Ty ]
     judgespec fiopt ; kiGam ; tyGam ; valGam ; ityCnstr.inh ; tyCnstr.inh ; knTy :- e : ity ; ty ~> ityCnstr.syn ; tyCnstr.syn
     judgeuse tex fiopt ; valGam ; ityCnstr.inh ; tyCnstr.inh ; knTy :-.."e" e : ity ; ty ~> ityCnstr.syn ; tyCnstr.syn
+    explain ityCnstr.inh = (Already known constraints (for impredicativity inference))
+    explain ityCnstr.syn = (|ityCnstr.inh| + new constraints (for impredicativity inference))
+    explain ity = (Type (with type alternatives |talt|) of expression (for impredicativity inference))
   view CG =
     holes [ | | retain translExpr: TranslExpr ]
     judgespec fiopt ; kiGam ; tyGam ; valGam ; tyCnstr.inh ; knTy :- e : ty ~> tyCnstr.syn ; translExpr
     judgeuse tex fiopt ; valGam ; tyCnstr.inh ; knTy :-.."e" e : ty ~> tyCnstr.syn ; translExpr
+    explain translExpr = (Translated expression)
 
 rulesgroup expr.scratch scheme expr "Expression type rules (scratch)" =
   rule expr.base e.let
@@ -1036,18 +1056,36 @@ scheme decl "Decl" =
     holes [ kiGam: KiGam, tyGam: TyGam, valGam: ValGam, node d: Decl | | gathTySigGam: ValGam ]
     judgespec kiGam ; tyGam ; valGam :-.."d" d : gathTySigGam
     judgeuse tex valGam :-.."d" d : gathTySigGam
+    explain (Within environment |valGam| , declaration |d| has type signature bindings |gathTySigGam| .)
+    explain valGam = (Environment with known bindings)
+    explain gathTySigGam = (Environment with type signature bindings)
+    explain d = (Declaration)
   view K =
     holes [ tySigGam: ValGam | thread patValGam: ValGam | ]
     judgespec tySigGam ; patValGam.inh ; kiGam ; tyGam ; valGam :- d : gathTySigGam ; patValGam.syn
     judgeuse tex tySigGam ; patValGam.inh ; valGam :-.."d" d : gathTySigGam ; patValGam.syn
+    explain (Declaration |d| has explicit type bindings |gathTySigGam| , within |tySigGam| implicit type bindings |patValGam.syn| , and type checks within |valGam|)
+    explain gathTySigGam = (Environment with new type signature bindings)
+    explain tySigGam = (Collected |gathTySigGam| , used by patterns to extract bindings for pattern variables)
+    explain patValGam.inh = ("Known/gathered" pattern variable bindings)
+    explain patValGam.syn = (|patValGam.inh| + new bindings)
+    explain tyGam = (Environment | (ident :-> ty)..._ | for type identifiers, cannot be modified hence treated as a global constant in "\ruleRef{e.ann}")
   view C =
     holes [ | thread tyCnstr: Cnstr, thread patTyCnstr: Cnstr | ]
     judgespec tySigGam ; patValGam.inh ; kiGam ; tyGam ; valGam ; patTyCnstr.inh ; tyCnstr.inh :- d : gathTySigGam ; patValGam.syn ~> patTyCnstr.syn ; tyCnstr.syn
     judgeuse tex tySigGam ; patValGam.inh ; valGam ; patTyCnstr.inh ; tyCnstr.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> patTyCnstr.syn ; tyCnstr.syn
+    explain patTyCnstr.inh = ("Known/gathered" constraints during type inference of patterns (i.e. use of type signatures and pattern structure))
+    explain patTyCnstr.syn = (|patTyCnstr.inh| + new constraints)
+    explain tyCnstr.inh = ("Known/gathered" constraints during type inference of expressions bound to patterns)
+    explain tyCnstr.syn = (|tyCnstr.inh| + new constraints)
   view I2 =
     holes [ | thread ityCnstr: ICnstr, thread tySigTyCnstr: Cnstr | ]
     judgespec tySigGam ; patValGam.inh ; kiGam ; tyGam ; valGam ; tySigTyCnstr.inh ; patTyCnstr.inh ; ityCnstr.inh ; tyCnstr.inh :- d : gathTySigGam ; patValGam.syn ~> tySigTyCnstr.syn ; patTyCnstr.syn ; ityCnstr.syn ; tyCnstr.syn
     judgeuse tex tySigGam ; patValGam.inh ; valGam ; tySigTyCnstr.inh ; patTyCnstr.inh ; ityCnstr.inh ; tyCnstr.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> tySigTyCnstr.syn ; patTyCnstr.syn ; ityCnstr.syn ; tyCnstr.syn
+    explain tySigTyCnstr.inh = (Type signature information represented as constraint for binding to type variable in |gathTySigGam|)
+    explain tySigTyCnstr.syn = (|tySigTyCnstr.inh| + new constraints)
+    explain ityCnstr.inh = ("Known/gathered" constraints during impredicativity inference)
+    explain ityCnstr.syn = (|ityCnstr.inh| + new constraints)
   view CG =
     holes [ | | translBind: TransDecl ]
     judgespec tySigGam ; patValGam.inh ; kiGam ; tyGam ; valGam ; patTyCnstr.inh ; tyCnstr.inh :- d : gathTySigGam ; patValGam.syn ~> patTyCnstr.syn ; tyCnstr.syn ; translBind
@@ -1078,7 +1116,7 @@ ruleset decl.base scheme decl "Declaration type rules" =
           | ty = ty.q
       -
     view I1 =
-      judge TGFtv : tyGamTyFtv = tvarv.TGamma.._ === tyGam, emptyCnstr
+      judge TGFtv : tyGamTyFtv = tvarv.TGamma.._ === tyGam, emptyCnstr'
       judge Q : tyQuantify
           | gtvars = (tyLVar tvarv.t.._ | TyVarIdS) + tvarv.TGamma.._
       -
@@ -1216,13 +1254,25 @@ scheme patexpr "PatExpr" =
   view K =
     holes [ knTy: Ty, node p: PatExpr | thread valGam: ValGam |  ]
     judgespec valGam.inh ; knTy :-.."p" p : valGam.syn
+    explain (Knowing the type of pattern |p| to be |knTy| , |valGam.syn| hold bindings for identifiers of |p| .)
+    explain knTy = (Known type of pattern)
+    explain valGam.inh = (Already gathered bindings (for this version initially | [] |))
+    explain valGam.syn = (|valGam.inh| + new bindings)
   view C =
     holes [ | thread tyCnstr: Cnstr | retain ty: Ty, patFunTy: Ty ]
     judgespec tyCnstr.inh ; valGam.inh ; knTy :-.."p" p : ty ; valGam.syn ~> tyCnstr.syn ; patFunTy
+    explain tyCnstr.inh = (Already known constraints)
+    explain tyCnstr.syn = (|tyCnstr.inh| + new constraints)
+    explain ty = (Type of pattern |p|)
+    explain patFunTy = (The type which encodes the value dissection as a function type, from value to tuple (holding the constituents of the value))
   view I1 =
     holes [ fiopt: FIOpts | thread tyGam: TyGam | ]
     judgespec fiopt ; tyGam.inh ; valGam.inh ; tyCnstr.inh ; knTy :- p : ty ; tyGam.syn ; valGam.syn ~> tyCnstr.syn ; patFunTy
     judgeuse tex fiopt ; valGam.inh ; tyCnstr.inh ; knTy :-.."p" p : ty ; valGam.syn ~> tyCnstr.syn ; patFunTy
+    explain (Knowing the type of pattern |p| to be |knTy| , |valGam.syn| hold bindings for identifiers of |p| , |tyGam.syn| holds bindings for lexically scoped type variables .)
+    explain fiopt = (|fitsIn| options, additional contextual information for | <= |)
+    explain tyGam.inh = (Already gathered type variable bindings)
+    explain tyGam.syn = (|tyGam.inh| + new bindings)
 
 rulesgroup patexpr.baseForEH1 scheme patexpr "Pattern expression type rules" =
   rule patexpr.base p.int
@@ -1428,12 +1478,20 @@ scheme tyexpr "TyExpr" =
   view E =
     holes [ node t: TyExpr | | retain ty: Ty ]
     judgespec :-.."t" t : ty
+    explain (Type expression |t| has a corresponding type signature |ty| .)
+    explain ty = (Type signature)
+    explain t = (Type expression)
   view K =
     holes [ tyGam: TyGam | | ]
     judgespec tyGam :-.."t" t : ty
+    explain (Within environment |tyGam| , type expression |t| has a (replica) type signature |ty| .)
+    explain tyGam = (Environment | (ident :-> ty)..._ | for type identifiers)
   view HM =
     holes [ | thread tyGam: TyGam | tyWildL: TyL ]
     judgespec tyGam.inh :-.."t" t : ty ~> tyGam.syn ; tyWildL
+    explain tyGam.inh = (Environment | (ident :-> ty)..._ | with known bindings for type identifiers)
+    explain tyGam.syn = (Environment with |tyGam.inh| + new bindings)
+    explain tyWildL = (Type variables which occur as wildcard)
 
 rulesgroup tyexpr.eh2 scheme tyexpr "Type expression type rules" =
   rule tyexpr.base t.wild
@@ -1453,8 +1511,10 @@ ruleset tyexpr.base scheme tyexpr viewsel K - * "Type expression type rules" =
       -
       judge R : tyexpr = :- identc : (tyexprCon identc)
     view K =
-      judge G : tyGamLookupId = identc :-> tgi, _ `elem` tyGam
+      judge G : tyGamLookupId = identc :-> tgi, ty `elem` tyGam
       -
+      judge R : tyexpr
+          | ty = ty
     view HM =
       judge G : tyGamLookupId
           | tyGam = tyGam.inh
@@ -1538,6 +1598,16 @@ relation tyAltTyElim =
     judgeuse ag (retain fo_altElim) `=` tyElimAlts (mkFitsInWrap' "@fe") fiopt tvarv.g.._ unique (ityCnstr.inh ity)
               | (retain ityCnstr  ) `=` tyElimAltsCleanup ityCnstr.inh (foCnstr "@fo_altElim")
               | (retain ty        ) `=` foTy "@fo_altElim"
+    explain (Within a meet/join context (indicated by |fiopt|), known constraints |ityCnstr.inh| for |ity| , 
+             |ty| equals |ity| in which all type alternatives (except for global type variables |tvarv.g.._|) are eliminated,
+             under |ityCnstr| constraining the type alternative variables to their type alternive eliminated type.
+            )
+    explain ity = (Type with type alternatives |talt|)
+    explain ty = (Result type, without type alternatives |talt| (for non global type variables))
+    explain ityCnstr.inh =  (Known constraints for type variables in |ity|)
+    explain ityCnstr =  (New constraints, constraining the type alternative variables to their type alternive eliminated type)
+    explain tvarv.g.._ = (Global variables (which are not eliminated))
+    explain fiopt = (Options to matching, in particular indicating meet/join)
 
 ruleset tyAltTyElim scheme tyAltTyElim viewsel I2 - * "Type alternative elimination" =
   rule ty.ae.alts =
@@ -1586,6 +1656,10 @@ relation valElimExprAlts =
     judgespec fiopt; ityCnstr.inh; tvarv.g.._ :-..."Gamma talt elim" valGam : ityCnstr
     judgeuse ag (lArgElimValGam,ityCnstr,errGam)
                     `=` valElimExprAlts (fiopt) "@fe" (tvarv.g.._) unique (ityCnstr.inh) (valGam)
+    explain (Within a meet/join context (indicated by |fiopt|), known constraints |ityCnstr.inh| for types in |valGam| , 
+             all type alternatives (except for global type variables |tvarv.g.._|) are eliminated,
+             under constraints |ityCnstr| .
+            )
 
 ruleset valElimExprAlts scheme valElimExprAlts viewsel I2 - * "Type alternative elimination (for a |Gamma|)" =
   rule g.ae.cons =
@@ -1603,6 +1677,12 @@ scheme tyBtTyElim =
   view I2 =
     holes [ bv: TyVarIdS, ty.tboth: Ty | | ty: Ty, ty.elim: Ty, tyCnstr: Cnstr ]
     judgespec bv :-...("/=/ elim") ty.tboth : ty ~> ty.elim ; tyCnstr
+    explain (Split |ty.tboth| holding |tboth| types into |ty| holding type variables (of |tboth| types) and |tyCnstr| holding constraints on those type variables.)
+    explain ty.tboth = (Type to be |tboth| type eliminated)
+    explain ty = (Result type, |tboth| types replaced by their original type variable)
+    explain ty.elim = (Type where |tboth| types are replaced by their |tboth| type (if not |ANY|), only used internally)
+    explain tyCnstr = (Constraints for |tboth| type variables, mapping to their |tboth| type)
+    explain bv = (Already bound variables for which no elimination takes place)
 
 ruleset tyBtTyElim scheme tyBtTyElim viewsel I2 - * "Type `both' elimination" =
   rule ty.eb.any =
@@ -1634,18 +1714,28 @@ relation match =
     holes [ lty: Ty, rty: Ty | | ty: Ty ]
     judgespec :-..howToMatch lty <=>.howToMatch rty : ty
     judgeuse tex :-..howToMatch lty howToMatch rty : ty
+    explain (|lty| matches |rty| , |ty === rty| in which all |ANY| are eliminated)
+    explain lty = (Type to match)
+    explain rty = (Type to match)
+    explain ty = (Result type)
   view C =
     holes [ | | cnstr: Cnstr ]
     judgespec :-..howToMatch lty <=>.howToMatch rty : ty ~> cnstr
     judgeuse tex :-..howToMatch lty howToMatch rty : ty ~> cnstr
+    explain cnstr = (Additional constraints under which matching succeeds)
+    explain (|lty| matches |rty| under constraints |cnstr| , |ty === cnstr rty|)
   view I1 =
     holes [ fiopt: FIOpts | | ]
     judgespec fiopt :-..howToMatch lty <=>.howToMatch rty : ty ~> cnstr
     judgeuse tex fiopt :-..howToMatch lty howToMatch rty : ty ~> cnstr
+    explain fiopt = (Options to steer | <=> | , encodes matching variants as well)
+  view EX =
+    explain (|lty| matches |rty| under constraints |cnstr| , |ty| equals |cnstr rty| , where |ty| may have its quantifiers instantiated, depending on |fiopt|)
   view P =
     holes [ | | coe: Coe ]
     judgespec fiopt :-..howToMatch lty <=>.howToMatch rty : ty ~> cnstr ; coe
     judgeuse tex fiopt :-..howToMatch lty howToMatch rty : ty ~> cnstr ; coe
+    explain coe = (Coercion (from |lty| to |rty| values) required for | <=> | to hold (currently only meaningful for | <= |))
 
 rulesgroup match.base scheme match "Type matching (basic |<=>|, part I)" =
   rule match.all m.con
@@ -2083,6 +2173,10 @@ relation fit =
     judgeuse tex :-.."<=" lty <= rty : ty
     judgeuse ag (retain fo) `=` (lty) `fitsIn` (rty)
            | ty `=` foTy (fo)
+    explain (| <= | delegates to | <=> | .)
+    explain lty = (Type to fit in |rty|)
+    explain rty = (Type in which |lty| must fit)
+    explain ty = (Result type, (in general) equals |rty| , but differs slightly in later versions)
   view C =
     holes [ | | cnstr: Cnstr ]
     judgespec :-.."<=" lty <= rty : fo : ty ~> cnstr
@@ -2090,6 +2184,7 @@ relation fit =
     judgeuse ag (retain fo) `=` fitsIn (lty) (rty)
            | ty `=` foTy (fo)
            | cnstr `=` foCnstr (fo)
+    explain ty = (|ty === cnstr rty|)
   view I1 =
     holes [ fiopt: FIOpts | | ]
     judgespec fiopt :-.."<=" lty <= rty : fo : ty ~> cnstr
@@ -2097,6 +2192,9 @@ relation fit =
     judgeuse ag (retain fo) `=` fitsIn (fiopt) "@fe" unique (lty) (rty)
            | ty `=` foTy (fo)
            | cnstr `=` foCnstr (fo)
+    explain fiopt = (Options to | <=> |)
+  view EX =
+    explain ty = (|ty === cnstr rty| , where quantifiers in |rty| may be left instantiated in |ty| (depending on |fiopt|))
   view P =
     holes [ | | coe: Coe ]
     judgespec fiopt :-.."<=" lty <= rty : fo : ty ~> cnstr ; coe
@@ -2105,6 +2203,7 @@ relation fit =
            | ty `=` foTy fo
            | cnstr `=` foCnstr (fo)
            | coe `=` (foCSubst (fo),foLCoeL (fo),foRCoeL (fo))
+    explain coe = (Coercion (from |lty| to |rty| values) required for | <= | to hold)
 
 ruleset fit scheme fit viewsel K - * "Fitting of types" =
   rule fit =
@@ -2127,6 +2226,10 @@ relation join =
   view I2 =
     holes [ fiopt: FIOpts, lty: Ty, rty: Ty | | ty: Ty, cnstr: Cnstr ]
     judgespec fiopt :-.."<->" lty <-> rty : ty ~> cnstr
+    explain (| <-> | delegates to | <=> | .)
+    explain lty = (Type to join)
+    explain rty = (Type to join)
+    explain ty = (Result type: |lty <= ty && rty <= ty|)
 
 ruleset join scheme join "Join of types" =
   rule join viewsel I2 - * =
@@ -2144,6 +2247,10 @@ relation meet =
   view I2 =
     holes [ fiopt: FIOpts, lty: Ty, rty: Ty | | ty: Ty, cnstr: Cnstr ]
     judgespec fiopt :-.."<+>" lty <+> rty : ty ~> cnstr
+    explain (| <+> | delegates to | <=> | .)
+    explain lty = (Type to meet)
+    explain rty = (Type to meet)
+    explain ty = (Result type: |ty <= lty && ty <= rty|)
 
 ruleset meet scheme meet "Join of types" =
   rule meet viewsel I2 - * =
@@ -2457,10 +2564,12 @@ relation valGamFtv =
 -- Binding from a Gamma
 -------------------------------------------------------------------------
 
+{-
 relation properLetPat =
   view C =
     holes [ p: PatExpr, identv: Nm | | ]
     judgespec p === identv || p === identv@
+-}
 
 -------------------------------------------------------------------------
 -- Quantification of type
@@ -2482,6 +2591,13 @@ scheme tyqu =
   view I1 =
     holes [ node ty: Ty, tvars.g: TyVarIdS, coco: CoCo | | ty.q: Ty, tvars.f: TyVarIdS ]
     judgespec tvars.g; coco :-.."Qu" ty : ty.q ~> tvars.f
+    explain (Type |ty.q| equals |ty| , with quantifiers for type variables in |ty.q| not in |tvars.g|)
+    explain (Type |ty.q| has quantified type |ty| , with quantifiers for type variables | `elem` (ftv(ty.q) \\ tvars.g)|)
+    explain coco = ("Co/contravariance" context, used internally)
+    explain ty =  (Type to be quantified)
+    explain ty.q = (Quantified type)
+    explain tvars.g = (Global type  variables, are not quantified)
+    explain tvars.f = (Free type variables of |ty| , used internally)
 
 ruleset tyqu.base scheme tyqu viewsel I1 - * "Type quantification rules" =
   rule ty.qu.var =

@@ -179,6 +179,11 @@
                10pt]{scrbook}
 %%]
 
+%%[13
+%\documentclass[a4paper,headexclude,footexclude,mpexclude,10pt,DIV15,BCOR0mm]{scrartcl}
+\documentclass[10pt]{article}
+%%]
+
 %%[12
 %if newDocClassHeader
 
@@ -329,6 +334,7 @@
 
 %%]
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Misc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -340,6 +346,16 @@
 
 
 \usepackage{graphicx} %%% needs: fancyvrb
+
+%%]
+
+%%[13
+\usepackage[showboxes,absolute]{textpos}
+
+\setlength\parindent{0pt}
+\pagestyle{empty}
+
+\textblockorigin{0mm}{0cm}
 
 %%]
 
@@ -378,6 +394,19 @@
 \usepackage{pgf}
 \usepackage{pgfarrows}
 \usepackage{pgfnodes}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% PGF images, used by style
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+\pgfdeclareimage[width=4.3mm]{wwwlogo}{www-logo}%
+\newcommand{\WWWlogo}{%
+\begin{pgfpicture}{0cm}{0cm}{.5cm}{.43cm}
+\pgfputat{\pgfxy(0,0)}{\pgfbox[left,base]{\pgfuseimage{wwwlogo}}}%
+\end{pgfpicture}
+}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -498,7 +527,7 @@
 %%% Hierarchy, sections, chapter renaming
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1
+%%[12
 %if not asSlides
 %if asArticle
 \newcommand{\AddContentsLine}[1]{\addcontentsline{toc}{section}{#1}}
@@ -524,6 +553,46 @@
 %endif
 %%]
 
+%%[1
+\let\origSection=\section
+\let\origSubsection=\subsection
+\let\origSubsubsection=\subsubsection
+
+\def\SetSectionsForBook{%
+\def\section{\chapter}
+\def\subsection{\origSection}
+\def\subsubsection{\origSubsection}
+\def\AddContentsLine##1{\addcontentsline{toc}{chapter}{##1}}
+}
+
+\def\SetSectionsForArticle{%
+\def\section{\origSection}
+\def\subsection{\origSection}
+\def\subsubsection{\origSubsection}
+\def\AddContentsLine##1{\addcontentsline{toc}{section}{##1}}
+}
+%%]
+
+%%[2
+\SetSectionsForBook
+%%]
+
+%%[3
+\SetSectionsForArticle
+%%]
+
+%%[4
+\SetSectionsForArticle
+%%]
+
+%%[7
+\SetSectionsForBook
+%%]
+
+%%[11
+\SetSectionsForArticle
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Sizes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -543,7 +612,7 @@
 
 %if llncs || acm
 \setlength{\mathindent}{.03\textwidth}
-%else
+%elif not storyPoster
 \setlength{\mathindent}{.05\textwidth}
 %endif
 
@@ -562,6 +631,12 @@
 \setlength{\paperwidth}{170mm}
 \setlength{\paperheight}{240mm}
 \typearea[1.2cm]{15}% was BCOR: [0.5]{12}
+%%]
+
+%%[13
+\usepackage[a4paper,headexclude,footexclude]{typearea}
+
+\typearea[0mm]{1}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -825,7 +900,7 @@ Combinator & Meaning & Result
 %%]
 
 %%[7
-%%@FrontMatter.titlePHD
+ %%@FrontMatter.titlePHD
 %%]
 
 %%[12
@@ -857,18 +932,10 @@ Combinator & Meaning & Result
 
 %%[1
 % Avoid indentation
-%if acm
-%elif llncs
+%if blockstyle
 \setlength{\parindent}{0mm}
 \addtolength{\parskip}{0.25\baselineskip}
-%elif acm && (icfp05 || hw05 || popl06)
-%elif storyPHD
-\setlength{\parindent}{0mm}
-\addtolength{\parskip}{0.25\baselineskip}
-%else
-\setlength{\parindent}{0mm}
-\addtolength{\parskip}{0.25\baselineskip}
-%endif
+%endif %% blockstyle
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -939,39 +1006,34 @@ have been submitted to POPL2006 in a slighty extended form.
 %%% Abstract
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-%%[1
-
-%if asArticle
-\begin{abstract}
-%endif
-
-%%]
-
 %%[4
+\begin{abstract}
 %%@TopicExplImpl.abstract
+\end{abstract}
 %%]
 
 %%[5
+\begin{abstract}
 ...
+\end{abstract}
 %%]
 
 %%[3
+\begin{abstract}
 %%@TopicRuler.abstract
+\end{abstract}
 %%]
 
 %%[6
+\begin{abstract}
 %%@StoryAFP.abstract
+\end{abstract}
 %%]
 
 %%[11
+\begin{abstract}
 %%@ToolDocShuffle.abstract
-%%]
-
-%%[1
-%if asArticle
 \end{abstract}
-%endif
 %%]
 
 %%[1
@@ -1541,6 +1603,36 @@ this has been omitted as \chapterRef{agtut} can be read instead.
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Poster
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[13
+\TPGrid[10mm,10mm]{100}{100}
+\TPMargin{.5ex}
+%\textblockcolour{yellow}
+
+\begin{textblock}{1}(0,0)
+1
+\end{textblock}
+
+\begin{textblock}{1}(100,0)
+2
+\end{textblock}
+
+\begin{textblock}{1}(0,100)
+3
+\end{textblock}
+
+\begin{textblock}{1}(100,100)
+4
+\end{textblock}
+
+\begin{textblock}{55}[0.5,0.5](50,50)
+\FigPDF{system-overview}
+\end{textblock}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Scratch
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1548,7 +1640,14 @@ this has been omitted as \chapterRef{agtut} can be read instead.
 
 \section{Scratch1}
 
-%%@StoryIntro.introPHD
+\rulerCmdUseExplain{rules3.K.tyexpr.base}
+{
+%%@rules3Explain.tyexpr.K.explain.scheme
+}{
+%%@rules3Explain.tyexpr.K.explain.holes
+}
+
+ %%@StoryIntro.introPHD
 
  %%@TopicReflection.phdEvaluation
 
@@ -1665,7 +1764,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
-%if not asSlides
+%if not asSlides && not storyPoster
 \AddContentsLine{References}
 %if refToPDF
 %\bibliographystyle{uhcbook}
@@ -2079,6 +2178,8 @@ Combinator & Result
 \end{tabular}
 %\end{center}
 
+%if targetForPaper
+%else
 \section{Fragment manipulation: Shuffle}
 \label{appx-shuffle}
 
@@ -2096,6 +2197,8 @@ and the included documentation only describes |Shuffle|'s basic features.
 
 \section{Additional fragments}
 \input \jobname-hide.tex
+%endif
+
 %%]
 
 

@@ -21,6 +21,7 @@ keywordsTextEscapable
      ++ [ "judge", "judgeshape", "judgespec", "judgeuse", "relation"
         , "rule", "rules", "ruleset"
         , "scheme", "view", "hole", "holes", "viewsel", "rulesgroup"
+        , "explain"
         -- related to global info
         , "viewhierarchy", "format", "rewrite", "preamble"
         , "extern", "external"
@@ -34,8 +35,10 @@ keywordsText
      ] ++ keywordsTextEscapable
 keywordsOpsEsc
   =  [ ",", ":", "[", "]", "*", "<" ]
+keywordsOpsExplainEsc
+  =  [ "=", "-", "." ]
 keywordsOpsParenEsc
-  =  [ "=", "-", "|", "." ]
+  =  [ "|" ] ++ keywordsOpsExplainEsc
 keywordsOps
   =  keywordsOpsParenEsc ++ keywordsOpsEsc
 
@@ -103,6 +106,7 @@ pAllParsers
                                                        <*  pKey "|"             <*> pAttrIntros
                                                        <*  pKey "|"             <*> pAttrIntros
                                                        <*  pKey "]"
+                            <|> sem_Decl_Explain       <$  pKey "explain" <*> pMb (pNm <* pKey "=") <*> pParens pExprExplain
                             where pShp pFmAdd pFmDel
                                     = (   (\k e p -> sem_Decl_ShpJudge p k e) <$> pFmAdd <*> pExprLF
                                       <|> (flip sem_Decl_ShpDel) <$ pKey "-" <*> pList1 pFmDel
@@ -161,7 +165,10 @@ pAllParsers
         pNmVw               =   pNm' pNmStrI
         pSymStr             =   pVarsym <|> pConsym
                             <|> pAnyKey keywordsOpsEsc
-                            <|> pKey "`" *> ((\n -> "`" ++ n ++ "`") <$> pNmStr <|> pAnyKey keywordsOpsParenEsc) <* pKey "`"
+                            <|> pKey "`"  *> (   (\n -> "`" ++ n ++ "`") <$> pNmStr
+                                             <|> concat <$> pList1 (pAnyKey keywordsOpsParenEsc)
+                                             )
+                                         <*  pKey "`"
         pSym                =   Nm <$> pSymStr
         pRExprs             =   pFoldr (sem_RExprs_Cons,sem_RExprs_Nil) pRExpr
         pRExpr              =   pKeySPos "judge"
@@ -177,14 +184,19 @@ pAllParsers
                                       <$> pList1 ((,) <$> pOp <*> pExprApp)
                                      )
                             where pOp = (\s ss -> sem_Expr_Op s (ss (sem_Expr_Var s))) <$> pSym <*> pExprDot
+        pExprExplain        =   foldl1 sem_Expr_SP <$> pList1 pW
+                            where pW =   pExprAtom (Nm <$> (pNmStr <|> pSymStr <|> pAnyKey (keywordsOpsExplainEsc ++ keywordsText)))
+                                     <|> sem_Expr_Expr <$ pKey "|" <*> pExpr <* pKey "|"
+                                     <|> sem_Expr_Paren <$> pParens pExprExplain
         pExprLF             =   pChainr (sem_Expr_LF <$ pKey "|") pExpr
         pExprLFSuffix nl    =   (\es e -> sem_Expr_LF e (foldr1 sem_Expr_LF es)) <$> pList1 (pKey nl *> pExpr)
         pExprApp            =   mkApp alg <$> pList1 pExprBase <|> pSucceed sem_Expr_Empty
-        pExprBase' pN       =   pParens (pExprInParen <|> pExprSpecial) <**> pExprDot
-                            <|> sem_Expr_Uniq    <$  pKey "unique"
-                            <|> sem_Expr_Var     <$> pN
+        pExprAtom pN        =   sem_Expr_Var     <$> pN
                             <|> sem_Expr_Int     <$> pInteger
                             <|> sem_Expr_StrAsIs <$> pString
+        pExprBase' pN       =   pParens (pExprInParen <|> pExprSpecial) <**> pExprDot
+                            <|> sem_Expr_Uniq    <$  pKey "unique"
+                            <|> pExprAtom pN
         pExprBase           =   pExprBase' pNm
         pExprInParen        =   pExpr <**> (   flip sem_Expr_Cnstr <$  pKey "|" <*> pECnstr
                                            <|> pExprLFSuffix "-"

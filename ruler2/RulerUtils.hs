@@ -270,6 +270,9 @@ mkVerb p = ppPacked "@" "@" p
 switchLaTeXLhs :: PP a => a -> PP_Doc
 switchLaTeXLhs p = ppVBar (" " >|< p >|< " ")
 
+switchLaTeXLhs' :: PP a => a -> PP_Doc
+switchLaTeXLhs' = ppPacked "| " " |"
+
 mkInLhs2Tex :: PP_Doc -> PP_Doc
 mkInLhs2Tex p = ppVBar (p >|< " ")
 

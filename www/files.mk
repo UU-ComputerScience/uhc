@@ -14,7 +14,7 @@ WWW_ALL_SRC				:= $(WWW_HTML_SRC)
 WWW_DOC_FILES			:= $(patsubst $(DOC_PREFIX)%,$(WWW_SRC_PREFIX)%,$(TEXT_DIST_DOC_FILES))
 
 # distribution
-WWW_DIST_FILES			:= $(WWW_ALL_SRC) $(WWW_MKF)
+WWW_DIST_FILES			:= $(WWW_ALL_SRC)
 
 # make rules
 $(WWW_DOC_FILES): $(WWW_SRC_PREFIX)%: $(DOC_PREFIX)%

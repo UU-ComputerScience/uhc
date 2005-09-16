@@ -85,17 +85,6 @@ rlAtUsage opts scGam fmGam vwRlInfo
                                c = ECnstr_Ty [ty]
                                (eqn,eqnEcG) = exprElimCnstr (mkExprEqn l r)
                                ecG = ecGamFromList [ (l,c), (r,c) ]
-{-
-                       mkDef dir nmAdapt mkL mkR (n,ty)
-                         = if fmNull fmDef then [] else [(fmDef, (dir,(eqn,fmUse)), (n,l), atNmL, eqnEcG `Map.union` ecG)]
-                         where n' = Nm . nmShowAG . sbsn . nmAdapt $ n
-                               (l,fmDef,fmUse,atNmL) = mkL preUse' nmAdapt' n n'
-                               r = mkR n n'
-                               (nmAdapt',preUse') = if flipDir then (nmInit,mkALhs) else (id,mkALoc')
-                               c = ECnstr_Ty [ty]
-                               (eqn,eqnEcG) = exprElimCnstr (mkExprEqn l r)
-                               ecG = ecGamFromList [ (l,c), (r,c) ]
--}
                        mkDefs mk nL
                          = (Map.unions fg,dirL,atL,atNmL,Map.unions ecG)
                          where (fg,dirL,atL,atNmL,ecG) = unzip5 . concat . map mk $ nL
@@ -123,14 +112,6 @@ rlAtUsage opts scGam fmGam vwRlInfo
                                       )
                                      ,eNdFmGam
                                      )
-{-
-                                else ((eNdNm
-                                      ,fmInBi `fmGamUnion` fmInNonBi
-                                      ,inBiL ++ inNonBiL
-                                      )
-                                     ,eNdFmGam `fmGamUnion` fmOf ouBiL `fmGamUnion` fmOf ouNonBiL
-                                     )
--}
                            else let fma = fmGamFromList' FmAG ouAscL
                                     fmja = fma `Map.union` jaGamToFmGam id jaGam
                                     jd = fkGamLookup exprUnk jdExpr [FmAG] . vwscJdGam $ vwScInfo
@@ -149,6 +130,18 @@ rlAtUsage opts scGam fmGam vwRlInfo
               )
               (emptyGam,emptyGam,emptyGam,emptyGam,emptyGam)
               g
+}
+
+-------------------------------------------------------------------------
+-- Utils for generation
+-------------------------------------------------------------------------
+
+{
+genWrapShuffle :: Opts -> Nm -> PP_Doc -> PP_Doc
+genWrapShuffle opts n
+  = if optFragWrap opts
+    then ppWrapShuffle n
+    else id
 }
 
 -------------------------------------------------------------------------
@@ -292,9 +285,7 @@ genAG
                 = [nmLhs] ++ l ++ [nmLhs]
                 where l = map fst . sortBy (\(_,o1) (_,o2) -> compare o1 o2) . Map.toList $ choGam
               wrapFrag
-                = if optFragWrap (genOpts gen)
-                  then ppWrapShuffle (nVwRnm `nmApd` scNm (genScInfo gen) `nmApd` rlNm (genRlInfo gen))
-                  else id
+                = genWrapShuffle (genOpts gen) (nVwRnm `nmApd` scNm (genScInfo gen) `nmApd` rlNm (genRlInfo gen))
               r = (>-< "") . wrapFrag . ppARule . arlElimWild . arlElimCopyRule croNmL adGam . arlElimAlphaRename . arlUniq (genFmGam gen) croNmL . arlSubst eqnG $ rl
               -- r = (>-< "") . wrapFrag . ppARule . arlElimWild . arlElimCopyRule croNmL adGam . arlUniq (genFmGam gen) croNmL . arlSubst eqnG $ rl
               -- r = (>-< "") . wrapFrag . ppARule . arlUniq (genFmGam gen) croNmL . arlSubst eqnG $ rl
@@ -462,5 +453,31 @@ SEM AGItf
                                                         then genSc gen2 gen2 (vgVertices @vwDpdGr)
                                                         else empty
 
+-------------------------------------------------------------------------
+-- Generation of lhs2tex for schemes scheme explanation
+-------------------------------------------------------------------------
 
+ATTR AGItf [ | | scExplPP: PP_Doc ]
 
+SEM AGItf
+  | AGItf           lhs     .   scExplPP    =   let sl = Map.mapWithKey
+                                                            (\scNm si
+                                                              -> let vl = Map.mapWithKey
+                                                                            (\vwNm vi
+                                                                              -> let d = maybe empty fmtex . Map.lookup nmNone . vwscExplGam $ vi
+                                                                                     opts = @lhs.opts {optSubstFullNm=False, optGenFM = FmTeX}
+                                                                                     fmte = exprFmtTeX @lhs.opts . exprSubst opts @fmGam
+                                                                                     fmtex = fmte . explExpr
+                                                                                     nm n = scNm `nmApd` vwNm `nmApd` Nm n
+                                                                                     dhl = Map.mapWithKey
+                                                                                             (\atNm ei -> (fmte . Expr_Expr . Expr_Var $ atNm) >#< "&" >#< fmtex ei >#< "\\\\")
+                                                                                             (vwscExplGam vi `Map.intersection` vwscFullAtGam vi)
+                                                                                     dh = vlist (Map.elems dhl)
+                                                                                 in  genWrapShuffle @lhs.opts (nm "explain.scheme") d
+                                                                                     >-< genWrapShuffle @lhs.opts (nm "explain.holes") dh
+                                                                            )
+                                                                            (scVwGam si)
+                                                                 in  vlist . Map.elems $ vl
+                                                            )
+                                                            @scGam
+                                                in  vlist . Map.elems $ sl

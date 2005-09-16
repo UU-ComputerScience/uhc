@@ -27,8 +27,7 @@ Type signatures have to be specified for identifiers bound in a |let| expression
 For |lambda|-expressions the type of the parameter can be extracted from
 these type signatures unless a |lambda|-expression occurs at the position of an applied function.
 In that case a type signature for the |lambda|-expression is required in the expression itself.
-This program will not typecheck because this EH version does not allow polymorphic types in general and
-on higher ranked (that is, parameter) positions in particular.
+This program will not typecheck because we a |Char->Char| function is applied to an |Int|.
 
 \begin{code}
 %%1srcfile(test/1-polylam1.eh%%)
@@ -56,7 +55,7 @@ associated with parts of the abstract syntax tree.
 The implementation of a type system will be the main focus of this and following sections.
 As a consequence the full environment/framework needed to build a compiler will not be discussed.
 This means that error reporting, generation of a pretty printed annotated output,
-parsing and the compiler driver are not described.
+parsing and the commandline invocation of the compiler are not described.
 
 We start with the definition of the AST and how it relates to concrete syntax,
 followed by the introduction of several attributes required for the implementation
@@ -67,7 +66,7 @@ of the type system.
 \subsection{Concrete and abstract syntax}
 The \IxAsDef{concrete syntax} of a (programming) language describes the structure of acceptable
 sentences for that language, or more down to earth, it describes what a compiler for that language
-accepts with respect to the textual structure (see \figRef{eh1-lang-terms} for the term language).
+accepts with respect to the textual structure (see \figRef{eh1-lang-terms} for the term and type expression language).
 On the other hand, \IxAsDef{abstract syntax} describes the structure used by the compiler itself for
 analysis and code generation.
 Translation from the more user friendly concrete syntax to the machine friendly abstract syntax is done by a
@@ -89,16 +88,19 @@ parser; from the abstract to the concrete representation is done by a pretty pri
 %%@AppxNotation.termSeparator
 %%@AppxNotation.identHeader
 %%@AppxNotation.identBasic
+%%@AppxNotation.termSeparator
+%%@AppxNotation.tyexprHeader
+%%@AppxNotation.tyexprBasic
 \end{TabularCenterFigure}
 
 Let us focus our attention first on the abstract syntax for EH1, in particular the part
-defining the structure for expressions (the remaining syntax can be found in \figRef{abs-syn-eh1}).
+defining the structure for expressions (the remaining abstract syntax can be found in \figRef{abs-syn-eh1}).
 %if not incl00TopicAGPrimer
 A |DATA| definition in the AG (Attribute Grammar) language corresponds closely to a Haskell |data| definition,
 and defines a part of the abstract syntax.
 %endif
 
-\chunkCmdUseMark{EHAbsSyn.1.Expr}
+%%@EHAbsSyn.1.Expr wrap=code
 
 
 %if incl00TopicAGPrimer
@@ -152,21 +154,23 @@ does not allow a type signature for the elements of a tuple.
 
 \begin{CodeFigure}{Abstract syntax for EH (without Expr)}{abs-syn-eh1}
 \savecolumns
-\chunkCmdUse{EHAbsSyn.1.AGItf}
-\restorecolumns
-\chunkCmdUse{EHAbsSyn.1.Decl}
-\restorecolumns
-\chunkCmdUse{EHAbsSyn.1.PatExpr}
-\restorecolumns
-\chunkCmdUse{EHAbsSyn.1.AllPatExpr}
-\restorecolumns
-\chunkCmdUse{EHAbsSyn.1.TyExpr}
-\restorecolumns
-\chunkCmdUse{EHAbsSyn.1.AllTyExpr}
-\restorecolumns
-\chunkCmdUse{EHAbsSyn.1.AllExpr}
-\restorecolumns
-\chunkCmdUse{EHAbsSyn.1.AllNT}
+%%[[wrap=code
+%%@EHAbsSyn.1.AGItf
+
+%%@EHAbsSyn.1.Decl 
+
+%%@EHAbsSyn.1.PatExpr
+
+%%@EHAbsSyn.1.AllPatExpr 
+
+%%@EHAbsSyn.1.TyExpr 
+
+%%@EHAbsSyn.1.AllTyExpr 
+
+%%@EHAbsSyn.1.AllExpr 
+
+%%@EHAbsSyn.1.AllNT 
+%%]
 \end{CodeFigure}
 
 \begin{AGFeature}{ag-set-notation}{Set notation for variants}
@@ -253,10 +257,13 @@ by the name |",0"|.
 The naming convention for tuples and other naming conventions are available through the following abstraction
 of Haskell names |HsName|.
 
-\chunkCmdUseMark{EHCommon.1.HsName.type}
-\chunkCmdUseMark{EHCommon.1.HsName.Base.itf}
-%%[[hide impl.hsnImpl="Implementation for HsName functions"
-\chunkCmdUseMark{EHCommon.1.HsName.Base.impl}
+%%[[hide wrap=code impl.hsnImpl="Implementation for HsName functions"
+%%@EHCommon.1.HsName.Base.impl
+%%]
+%%[[wrap=code
+%%@EHCommon.1.HsName.type
+
+%%@EHCommon.1.HsName.Base.itf
 %%]
 
 \item
@@ -316,12 +323,13 @@ declared.
 The first aspect we define is |pp| that constructs the pretty printed representation
 for the abstract syntax tree, starting with the definition for |Expr|:
 
-\savecolumns
-\chunkCmdUseMark{EHPretty.1.Base.ExprSimple}
-\restorecolumns
-\chunkCmdUseMark{EHPretty.1.ExprExtra}
-\restorecolumns
-\chunkCmdUseMark{EHPretty.1.Base.ExprComplex}
+%%[[wrap=code
+%%@EHPretty.1.Base.ExprSimple 
+
+%%@EHPretty.1.ExprExtra 
+
+%%@EHPretty.1.Base.ExprComplex
+%%]
 
 The |pp| attribute is defined (via |ATTR|)
 as a synthesized (because it is preceded by two | || | symbols) attribute for all nonterminals of the abstract syntax.
@@ -368,7 +376,7 @@ This is solved at the
 |AppTop| alternative by gathering all arguments (here: |[2,3]|)
 for a function (here: tuple constructor |,2|, or |(,)|) into |appArgPPL|:
 
-\chunkCmdUseMark{EHPretty.1.Expr.ConNm}
+%%@EHPretty.1.Expr.ConNm wrap=code
 
 The attributes |appArgPPL| and |appFunNm| only are relevant for the |Con| and |App| alternatives.
 For the remaining alternatives a default definition is provided.
@@ -384,8 +392,11 @@ The |appArgPPL| and the two other required attributes |appFunNm| for the name an
 are all used to gather information from deeper within the syntax tree
 for further processing higher up in the tree by |ppAppTop|:
 
-\chunkCmdUseMark{EHCommon.1.PP.ppAppTop}
-\chunkCmdUseMark{EHCommon.1.PP.NeededByExpr}
+%%[[wrap=code
+%%@EHCommon.1.PP.ppAppTop 
+
+%%@EHCommon.1.PP.NeededByExpr 
+%%]
 
 The value for |pp| defined in |App| is not directly used for the pretty printed output
 as result of the definition of |pp| at |AppTop|.
@@ -476,10 +487,11 @@ In \secRef{sec-check-type} we will say more about this.
 It is used to smoothen the type checking by (e.g.) limiting the propagation of
 erroneous types:
 
-\savecolumns
-\chunkCmdUseMark{EHTyAbsSyn.1.TyAGItf}
-\restorecolumns
-\chunkCmdUseMark{EHTyAbsSyn.1.Ty}
+%%[[wrap=code
+%%@EHTyAbsSyn.1.TyAGItf
+
+%%@EHTyAbsSyn.1.Ty
+%%]
 
 The formal system and implementation of this system use different symbols to refer to the same concept.
 For example, |Any| in the implementation is the same as |ANY| in the typing rules.
@@ -493,7 +505,7 @@ The definition of |Ty| will be used in both the Haskell world and the AG world.
 In Haskell we use the corresponding |data| type generated by the AG compiler,
 for example in the derived type |TyL|:
 
-\chunkCmdUseMark{EHTy.1.TyL}
+%%@EHTy.1.TyL wrap=code
 
 The data type is used to construct type representations.
 In the AG world we define computations over the type structure in terms of attributes.
@@ -521,7 +533,7 @@ As a demonstration of how this is done, pretty printing is used once again.
 Using the same design and tools as used for pretty printing |Expr| (and pattern/type expressions)
 abstract syntax we can define pretty printing for a type:
 
-\chunkCmdUseMark{EHTyPretty.1.pp}
+%%@EHTyPretty.1.pp wrap=code
 
 Previously, |AppTop| was used to remember where in the abstract syntax tree (of EH) the
 top of an application could be found.
@@ -529,13 +541,15 @@ Here we need an additional local attribute |isSpineRoot| holding the boolean val
 at the top of the spine of |App|'s.
 It uses its position |appSpinePos| in the spine to determine if this is the case:
 
-\savecolumns
-\chunkCmdUseMark{EHTyCommonAG.1.ConNm}
-\restorecolumns
-\chunkCmdUseMark{EHTyCommonAG.1.ConNm.ConApp}
-\restorecolumns
-\chunkCmdUseMark{EHTyCommonAG.1.ConNm.Ty}
-\chunkCmdUseMark{EHTyCommonAG.1.appSpinePos}
+%%[[wrap=code
+%%@EHTyCommonAG.1.ConNm 
+
+%%@EHTyCommonAG.1.ConNm.ConApp
+
+%%@EHTyCommonAG.1.ConNm.Ty 
+
+%%@EHTyCommonAG.1.appSpinePos
+%%]
 
 \Paragraph{Parenthesis}
 Because no explicit |Parens| alternative is present in the type structure,
@@ -546,11 +560,11 @@ However, as this part is not necessary for understanding
 the implementation of a type system its reading can safely be
 skipped.
 
-\chunkCmdUseMark{EHTyPretty.1.ParNeed}
+%%@EHTyPretty.1.ParNeed wrap=code
 
 And supporting Haskell definitions:
 
-\chunkCmdUseMark{EHCommon.1.ParNeed}
+%%@EHCommon.1.ParNeed wrap=code
 
 The idea here is that a |Ty| and its context together determine whether parentheses are needed.
 This is encoded in |ParNeed|, the contextual need is passed to |ppParNeed| as the parameter |globNeed|
@@ -573,14 +587,14 @@ arguments of an application, is also a recurring pattern.
 \Paragraph{Tying in with the Haskell world}
 What remains, is the way the functionality is made available to the Haskell world:
 
-\chunkCmdUseMark{EHTyPretty.1.ppTy}
+%%@EHTyPretty.1.ppTy wrap=code
 
 To make this work, we need to tell the AG system to generate a wrapper function
 and datatypes |Inh_TyAGItf| and |Syn_TyAGItf| with selector functions for
 defined attributes to pass inherited and synthesized attributes respectively:
 \TBD{Update AG manual, pg 21 w.r.t. wrap}
 
-\chunkCmdUseMark{EHTyPretty.1.WRAPPER}
+%%@EHTyPretty.1.WRAPPER wrap=code
 
 In the code that is generated by the AG system
 inherited attributes become function arguments and
@@ -629,10 +643,25 @@ It states that an application of |e1| to |e2| has type |sigma|
 provided that the argument has type |sigmaa| and
 the function has a type |sigmaa -> sigma|.
 
-\rulerCmdUse{rules3.E.expr.baseForEH1}
-\rulerCmdUse{rules3.E.decl.base}
+\rulerCmdUseExplain{rules3.E.expr.baseForEH1}
+{
+%%@rules3Explain.expr.E.explain.scheme
+}{
+%%@rules3Explain.expr.E.explain.holes
+}
+\rulerCmdUseExplain{rules3.E.decl.base}
+{
+%%@rules3Explain.decl.E.explain.scheme
+}{
+%%@rules3Explain.decl.E.explain.holes
+}
 %%[[hide rules.tyExprEH1="Type rules for type expressions"
-\rulerCmdUse{rules3.E.tyexpr.base}
+\rulerCmdUseExplain{rules3.K.tyexpr.base}
+{
+%%@rules3Explain.tyexpr.K.explain.scheme
+}{
+%%@rules3Explain.tyexpr.K.explain.holes
+}
 %%]
 
 All rules we will use are of the form
@@ -736,13 +765,19 @@ Thus in our implementation we use a stack of lists instead.
 We will use the stack-like behavior by adding newly declared identifiers in the top list of the stack,
 which then can be separately treated from the rest of the stack:
 
-\chunkCmdUseMark{EHCommon.1.AssocL}
-\chunkCmdUseMark{EHGam.1.Base.type}
-\chunkCmdUseMark{EHGam.1.Base.sigs}
-%%[[hide impl.gamAsList="Implementation of Gam"
-\chunkCmdUseMark{EHGam.1.Base.funs}
-\chunkCmdUseMark{EHGam.1.Rest.sigs}
-\chunkCmdUseMark{EHGam.1.Rest.funs}
+%%[[hide wrap=code impl.gamAsList="Implementation of Gam"
+%%@EHGam.1.Base.funs
+
+%%@EHGam.1.Rest.sigs
+
+%%@EHGam.1.Rest.funs
+%%]
+%%[[wrap=code
+%%@EHCommon.1.AssocL
+
+%%@EHGam.1.Base.type
+
+%%@EHGam.1.Base.sigs
 %%]
 
 Entering and leaving a scope is implemented by means of pushing and popping a |Gamma|.
@@ -754,13 +789,16 @@ unless they appear in an outer level.
 
 A specialization |ValGam| of |Gam| is used to store and lookup the type of value identifiers.
 
-\chunkCmdUseMark{EHGam.1.ValGam.Base}
+%%@EHGam.1.ValGam.Base wrap=code
 
 The type is wrapped in a |ValGamInfo|.
 Later versions of EH can add additional fields to this data type.
 
-\chunkCmdUseMark{EHGam.1.valGamLookup}
-\chunkCmdUseMark{EHGam.1.valGamLookupTy}
+%%[[wrap=code
+%%@EHGam.1.valGamLookup
+
+%%@EHGam.1.valGamLookupTy 
+%%]
 
 Later (in \chapterRef{ehc4}) the variant |valGamLookup| will do additional work, but for now it
 does not differ from |gamLookup| except for the return of an error in case no entry is found in the |ValGam|.
@@ -785,8 +823,18 @@ tree and the semantics of the language as defined by the typing rules.
 This is called \IxAsDef{type inferencing}.
 In EH1 we exclusively deal with type checking.
 
-\rulerCmdUse{rules3.K.expr.baseForEH1}
-\rulerCmdUse{rules3.K.decl.base}
+\rulerCmdUseExplain{rules3.K.expr.baseForEH1}
+{
+%%@rules3Explain.expr.K.explain.scheme
+}{
+%%@rules3Explain.expr.K.explain.holes
+}
+\rulerCmdUseExplain{rules3.K.decl.base}
+{
+%%@rules3Explain.decl.K.explain.scheme
+}{
+%%@rules3Explain.decl.K.explain.holes
+}
 
 We now can tailor the type rules in \figRef{rules3.E.expr.baseForEH1} towards an implementation
 which performs type checking, in \figRef{rules3.K.expr.baseForEH1}.
@@ -817,7 +865,7 @@ The rules now take an additional context, the expected (or known) type |sigmak|
 (attribute |knTy|, simultaneously referred to by |sigmak =@= knTy|)
 as specified by the programmer, defined in terms of AG as follows:
 
-\chunkCmdUseMark{EHInferExpr.1.knTy}
+%%@EHInferExpr.1.knTy wrap=code
 
 %{
 %format lhs = "lhs"
@@ -841,8 +889,18 @@ In general, for |lhs <= rhs| the |rhs| is an expected type whereas |lhs| is the 
 \end{Itemize}
 %}
 
-\rulerCmdUse{rules3.K.fit}
-\rulerCmdUse{rules3.K.match.onlyK}
+\rulerCmdUseExplain{rules3.K.fit}
+{
+%%@rules3Explain.fit.K.explain.scheme
+}{
+%%@rules3Explain.fit.K.explain.holes
+}
+\rulerCmdUseExplain{rules3.K.match.onlyK}
+{
+%%@rules3Explain.match.K.explain.scheme
+}{
+%%@rules3Explain.match.K.explain.holes
+}
 
 An additional judgement type named |fit| (\figRef{rules3.K.fit}) is needed to check an actual type against an expected (known) type.
 The judgement specifies the matching |sigma1 <= sigma2| of two types |sigma1| and |sigma2|.
@@ -868,15 +926,19 @@ For example, |<=| is used in \ruleRef{e.int} which checks that its actual |Int| 
 known type |sigmak|.
 The implementation of \ruleRef{e.int} performs this check and returns the type |sigma| in attribute |ty|:
 
-\chunkCmdUseMark{EHInferExpr.1.ty}
-\chunkCmdUseMark{EHRulerRules.1.expr.e.int}
+%%[[wrap=code
+%%@EHInferExpr.1.ty
+
+%%@EHRulerRules.1.expr.e.int
+%%]
 
 The implementation for \ruleRef{e.char} is defined similarly\overlayChunks{EHRulerRules.1.expr.e.char}.
 The constant |tyInt| represents the |Int| type constant.
-%%[[hide impl.echarRl="EH1, AG for \ruleRef{e.char}, type constants"
-\chunkCmdUseMark{EHRulerRules.1.expr.e.char}
-\chunkCmdUseMark{EHTy.1.tyInt}
-\chunkCmdUseMark{EHTy.1.tyChar}
+%%[[hide wrap=code impl.echarRl="EH1, AG for \ruleRef{e.char}, type constants"
+%%@EHRulerRules.1.expr.e.char
+
+%%@EHTy.1.tyInt 
+%%@EHTy.1.tyChar
 %%]
 
 
@@ -906,8 +968,11 @@ The function |fitsIn| (printing as |<=| in infix notation) returns a |FIOut|
 (\textbf{f}its\textbf{I}n \textbf{out}put) data structure in attribute |fo|.
 |FIOut| consists of a record containing amongst other things field |foTy|:
 
-\chunkCmdUseMark{EHTyFitsInCommon.1.FIOut}
-\chunkCmdUseMark{EHTyFitsInCommon.1.foHasErrs}
+%%[[wrap=code
+%%@EHTyFitsInCommon.1.FIOut
+
+%%@EHTyFitsInCommon.1.foHasErrs 
+%%]
 
 %if False
 Using a separate attribute |ty_| instead of using its value directly has been
@@ -951,7 +1016,7 @@ It is not offered as a feature to the user (i.e. the EH programmer) of the type 
 specified nor matters
 because it is not used:
 
-\chunkCmdUseMark{EHInferExpr.1.knTy.AGItf}
+%%@EHInferExpr.1.knTy.AGItf wrap=code
 
 The \ruleRef{m.arrow} in \figRef{rules3.K.match.onlyK} for comparing function types compares the
 types for arguments in the opposite direction.
@@ -969,10 +1034,11 @@ the correct use of the direction for now only anticipates issues yet to come.
 The Haskell counterpart of \(\rulerCmdUse{rules3.K.fit.scheme}\)
 is implemented by |fitsIn|:
 
-\savecolumns
-\chunkCmdUseMark{EHTyFitsIn.1.fitsIn.Base}
-\restorecolumns
-\chunkCmdUseMark{EHTyFitsIn.1.fitsIn.AppRest}
+%%[[wrap=code
+%%@EHTyFitsIn.1.fitsIn.Base 
+
+%%@EHTyFitsIn.1.fitsIn.AppRest 
+%%]
 
 
 The function |fitsIn| checks whether the |Ty_App| structure
@@ -995,9 +1061,13 @@ For a compiler this is not good enough, being the reason |fitsIn| gives a ``will
 .
 Errors themselves are also described via AG:
 
-\chunkCmdUseMark{EHErrorAbsSyn.1.UnifyClash}
-\chunkCmdUseMark{EHErrorAbsSyn.1.NamesNotIntrod}
-\chunkCmdUseMark{EHErrorAbsSyn.1.ErrL}
+%%[[wrap=code
+%%@EHErrorAbsSyn.1.UnifyClash 
+
+%%@EHErrorAbsSyn.1.NamesNotIntrod
+
+%%@EHErrorAbsSyn.1.ErrL
+%%]
 
 The |Err| datatype is available as a datatype in the same way |Ty| is.
 
@@ -1005,8 +1075,8 @@ The |Err| datatype is available as a datatype in the same way |Ty| is.
 The error datatype is also used for signalling undeclared identifiers when a type for an identifier is retrieved
 from a |Gamma|: 
 
-%\chunkCmdUseMark{EHInferExpr.1.Var}
-\chunkCmdUseMark{EHRulerRules.1.expr.e.var}
+%%%@EHInferExpr.1.Var wrap=code
+%%@EHRulerRules.1.expr.e.var wrap=code
 
 %{
 
@@ -1043,16 +1113,16 @@ identifiers simply is declared as an inherited attribute,
 initialized at the top of the abstract syntax tree.
 It is only extended with new bindings for identifiers at a declaration of an identifier.
 
-\chunkCmdUseMark{EHInfer.1.valGam}
+%%@EHInfer.1.valGam wrap=code
 
 \Paragraph{Function application |App|}
 Type checking for \ruleRef{e.app} constructs |ANY -> sigmak| as the expected type for the function to be applied.
 The resulting type |func.ty| is decomposed into argument and result type, of which the argument type is used
 as the known type for the argument child of the |App| node:
 
-%\chunkCmdUseMark{EHInferExpr.1.App}
+%%%@EHInferExpr.1.App wrap=code
 \chunkHideRef{impl.tyDissect}
-\chunkCmdUseMark{EHRulerRules.1.expr.e.app}
+%%@EHRulerRules.1.expr.e.app wrap=code
 
 This further clarifies the need for |ANY|.
 To see why, assume we do not use |ANY|.
@@ -1103,53 +1173,52 @@ The type construction and inspection done in the |App| variant of |Expr|
 requires some additional type construction functions, for example |mkArrow| used in |App|.
 The function is part of the class |SemApp| defining (semantic) functions related to building application |App| like structures:
 
-\chunkCmdUseMark{EHCommon.1.SemApp}
-%%[[hide impl.SemAppFull="Class SemApp and defaults"
-\savecolumns
-\chunkCmdUseMark{EHCommon.1.SemApp}
-\restorecolumns
-\chunkCmdUseMark{EHCommon.1.SemApp.default}
-\chunkCmdUseMark{EHTy.1.mkTyCon}
-\chunkCmdUseMark{EHTy.1.mkTyVar}
+%%[[hide wrap=code impl.SemAppFull="Class SemApp and defaults"
+%%@EHCommon.1.SemApp
+
+%%@EHCommon.1.SemApp.default
+
+%%@EHTy.1.mkTyCon
+%%@EHTy.2.mkTyVar
 %%]
+%%@EHCommon.1.SemApp wrap=code
 
 The instance for |SemApp Ty| is defined by:
 
-\chunkCmdUseMark{EHTy.1.SemApp}
+%%@EHTy.1.SemApp wrap=code
 
 Class |SemApp| defines four functions (|semApp|, ...), for constructing a value similar to |App|, |AppTop|, |Con| and |Parens| respectively.
 These functions are used by |mkApp| to build an |App| like structure and by |mkArrow| to build function like structures.
 The code for (e.g.) parsers also
 uses these functions parameterized with the proper four semantics functions as generated by the AG system.
-%%[[hide parse.SemAppRelated="EH1 parser"
-\savecolumns
-\chunkCmdUseMark{EHParser.1.parserSigs}
-\restorecolumns
-\chunkCmdUseMark{EHParser.1.pAGItf}
-\restorecolumns
-\chunkCmdUseMark{EHParser.1.pApp}
-\restorecolumns
-\chunkCmdUseMark{EHParser.1.pParenProd}
-\restorecolumns
-\chunkCmdUseMark{EHParser.1.pExprBase}
-\restorecolumns
-\chunkCmdUseMark{EHParser.1.pExprBaseParenProd}
-\restorecolumns
-\chunkCmdUseMark{EHParser.1.pExpr}
-\restorecolumns
-\chunkCmdUseMark{EHParser.1.pExprApp}
-\restorecolumns
-\chunkCmdUseMark{EHParser.1.pExprPrefix}
-\restorecolumns
-\chunkCmdUseMark{EHParser.1.pExprPrefixLam}
-\restorecolumns
-\chunkCmdUseMark{EHParser.1.pDecl}
-\restorecolumns
-\chunkCmdUseMark{EHParser.1.pPatExprBase}
-\restorecolumns
-\chunkCmdUseMark{EHParser.1.pPatExprBase.prod}
-\restorecolumns
-\chunkCmdUseMark{EHParser.1.pPatExpr}
+%%[[hide wrap=code parse.SemAppRelated="EH1 parser"
+%%@EHParser.1.parserSigs
+
+%%@EHParser.1.pAGItf
+
+%%@EHParser.1.pApp
+
+%%@EHParser.1.pParenProd
+
+%%@EHParser.1.pExprBase
+
+%%@EHParser.1.pExprBaseParenProd
+
+%%@EHParser.1.pExpr
+
+%%@EHParser.1.pExprApp
+
+%%@EHParser.1.pExprPrefix
+
+%%@EHParser.1.pExprPrefixLam
+
+%%@EHParser.1.pDecl
+
+%%@EHParser.1.pPatExprBase
+
+%%@EHParser.1.pPatExprBase.prod
+
+%%@EHParser.1.pPatExpr
 %%]
 So this additional layer of abstraction improves code reuse.
 Similarly, function |mkProdApp| constructs a tuple type out of types for the elements.
@@ -1167,22 +1236,32 @@ What is the result of scrutinizing.
 For example, |tyArrowArgRes| dissects a function type into its argument and result type.
 If the scrutinized type is not a function, ``will do'' values are returned:
 
-\chunkCmdUseMark{EHTy.1.unMkTy.sigs.tyArrow}
-\chunkCmdUseMark{EHTy.1.unMkTy.tyArrowArgRes}
+%%[[wrap=code
+%%@EHTy.1.unMkTy.sigs.tyArrow
+%%@EHTy.1.unMkTy.tyArrowArgRes
+%%]
 
 Similarly |tyProdArgs| is defined to return the types of the elements of a tuple type.
 The code for this and other similar functions have been omitted for brevity.
-%%[[hide impl.tyDissect="Type dissection"
-\chunkCmdUseMark{EHTy.1.unMkTy.sigs.Rest}
-\chunkCmdUseMark{EHTy.1.unMkTy.tyArrowArgsRes}
-\chunkCmdUseMark{EHTy.1.unMkTy.tyAppFunArgs}
-\chunkCmdUseMark{EHTy.1.unMkTy.funs}
-\chunkCmdUseMark{EHTy.1.unMkTy.tyProdArgs}
-\chunkCmdUseMark{EHTy.1.unMkTy.tyLHdAndTl}
-\chunkCmdUseMark{EHCommon.1.Misc.hdAndTl}
-\chunkCmdUseMark{EHTy.4.unMkTy.tyConNm}
-\chunkCmdUseMark{EHTy.3.unMkTy.tyMbVar}
-\chunkCmdUseMark{EHTy.3.unMkTy.tyVar}
+%%[[hide wrap=code impl.tyDissect="Type dissection"
+%%@EHTy.1.unMkTy.sigs.Rest
+
+%%@EHTy.1.unMkTy.tyArrowArgsRes
+
+%%@EHTy.1.unMkTy.tyAppFunArgs
+
+%%@EHTy.1.unMkTy.funs
+
+%%@EHTy.1.unMkTy.tyProdArgs
+
+%%@EHTy.1.unMkTy.tyLHdAndTl
+
+%%@EHCommon.1.Misc.hdAndTl
+
+%%@EHTy.4.unMkTy.tyConNm
+
+%%@EHTy.3.unMkTy.tyMbVar
+%%@EHTy.3.unMkTy.tyVar
 %%]
 
 \Paragraph{Constructor |Con|, tuples}
@@ -1204,9 +1283,8 @@ The result type of this function type is taken apart and used to produce
 the desired type |a -> b -> (a,b)|.
 The |Con| alternative implements this:
 
-%\chunkCmdUseMark{EHInferExpr.1.Con}
-\chunkCmdUseMark{EHRulerRules.1.expr.e.con}
 \chunkHideRef{impl.tyDissect}
+%%@EHRulerRules.1.expr.e.con wrap=code
 
 Note that, despite the cartesian product constructors being
 essentially polymorphic, we do not have to do any kind of unification
@@ -1224,8 +1302,7 @@ is done by letting |fitsIn| match the |knTy| with |ANY -> ANY|.
 The result (forced to be a function type) is split up by
 |tyArrowArgRes| into argument and result type.
 
-%\chunkCmdUseMark{EHInferExpr.1.Lam}
-\chunkCmdUseMark{EHRulerRules.1.expr.e.lam}
+%%@EHRulerRules.1.expr.e.lam wrap=code
 
 \Paragraph{Type annotations (for |lambda|-expression)}
 
@@ -1234,8 +1311,7 @@ the EH programmer to supply the correct type signature.
 The |TypeAs| variant of |Expr| (for \ruleRef{e.ann}) takes care of this by simply passing the type signature as the expected type
 and checking whether the type signature matches the expected type of the annotation:
 
-%\chunkCmdUseMark{EHInferExpr.1.TypeAs}
-\chunkCmdUseMark{EHRulerRules.1.expr.e.ann}
+%%@EHRulerRules.1.expr.e.ann wrap=code
 
 The obligation for the EH programmer to specify a type is dropped in later versions of EH.
 
@@ -1255,7 +1331,12 @@ in   a
 \end{code}
 
 %\rulerCmdUse{rules.expr1B.C}
-\rulerCmdUse{rules3.K.patexpr.baseForEH1}
+\rulerCmdUseExplain{rules3.K.patexpr.baseForEH1}
+{
+%%@rules3Explain.patexpr.K.explain.scheme
+}{
+%%@rules3Explain.patexpr.K.explain.holes
+}
 
 
 The expected type of a pattern is distributed over the pattern
@@ -1280,11 +1361,12 @@ Instead of manipulating the expected tuple type over the |App| spine of the patt
 we directly decompose the tuple type into a list |knTyL| of constituent types.
 We also require the arity of the pattern in order to check (at |AppTop|) if the pattern is fully saturated:
 
-\chunkCmdUseMark{EHInferPatExpr.1.knTy}
-%\chunkCmdUseMark{EHInferPatExpr.1.knTy.App}
-\chunkCmdUseMark{EHRulerRules.1.patexpr.p.apptop}
-\chunkCmdUseMark{EHRulerRules.1.patexpr.p.app}
 \chunkHideRef{impl.tyDissect}
+%%[[wrap=code
+%%@EHInferPatExpr.1.knTy
+%%@EHRulerRules.1.patexpr.p.apptop
+%%@EHRulerRules.1.patexpr.p.app
+%%]
 
 The list of these elements is passed through attribute |knTyL| to all |App|'s of the pattern.
 At each |App| one element of this list is taken as the |knTy| of the element AST.
@@ -1296,29 +1378,32 @@ need to properly initialize |knTyL|.
 Because a pattern occurs in other contexts, that is as a child of other AST nodes, other than an |AppTop|,
 we need to specify a default value.
 
-\chunkCmdUseMark{EHInferPatExpr.1.knTy.Init}
+%%@EHInferPatExpr.1.knTy.Init wrap=code
 
 The arity of the patterns is needed as well:
 
-\chunkCmdUseMark{EHInferPatExpr.1.arity}
+%%@EHInferPatExpr.1.arity wrap=code
 
 As a result of this unpacking, at a
 |Var| alternative attribute |knTy| holds the type of the variable name introduced.
 The type is added to attribute |valGam| that is threaded through the pattern for gathering
 all introduced bindings:
 
-\chunkCmdUseMark{EHInferPatExpr.1.valGam}
-\chunkCmdUseMark{EHRulerRules.1.patexpr.p.var}
-%%[[hide impl.pvaras="AG for \ruleRef{p.varas}"
-\chunkCmdUseMark{EHRulerRules.1.patexpr.p.varas}
+%%[[hide wrap=code impl.pvaras="AG for \ruleRef{p.varas}"
+%%@EHRulerRules.1.patexpr.p.varas
+%%]
+%%[[wrap=code
+%%@EHInferPatExpr.1.valGam
+
+%%@EHRulerRules.1.patexpr.p.var
 %%]
 
 A new entry is added if the variable name is not equal to an underscore '|_|'
 and
 has not been added previously via a type signature for the variable name, signalled
 by attribute |inclVarBind|.
-%%[[hide impl.inclVarBind="AG for inclVarBind"
-\chunkCmdUseMark{EHInfer.1.inclVarBind}
+%%[[hide wrap=code impl.inclVarBind="AG for inclVarBind"
+%%@EHInfer.1.inclVarBind
 %%]
 Because our check on duplicate introductions is based on duplicate entries in |valGam|,
 we inhibit addition if an entry has already been added via a type signature.
@@ -1375,21 +1460,21 @@ Our AG implementation follows the strategy of \ruleRef{e.let} (\figRef{rules3.K.
 \begin{Itemize}
 \item
 First extract all type signatures in:
-\chunkCmdUseMark{EHInfer.1.gathTySigGam}
+%%@EHInfer.1.gathTySigGam wrap=code
 
 \item
 Then distribute these gathered signatures in:
-\chunkCmdUseMark{EHInfer.1.tySigGam}
+%%@EHInfer.1.tySigGam wrap=code
 
 This attribute and |gathTySigGam| correspond to |Gammat| in the type rules.
 \item
 Use the signature as the known type of a pattern in order to extract bindings inside a pattern in:
-\chunkCmdUseMark{EHInfer.1.patValGam}
+%%@EHInfer.1.patValGam wrap=code
 
 This attribute corresponds to |Gammap| in the type rules.
 \item
 Finally distribute all previously gathered information (for use by identifier occurrences in expressions) in:
-\chunkCmdUseMark{EHInfer.1.valGam}
+%%@EHInfer.1.valGam wrap=code
 
 This attribute corresponds to |Gamma| in the type rules.
 \end{Itemize}
@@ -1406,20 +1491,20 @@ gathers bottom-up the type signature bindings.
 
 This flow of information is described by the following AG fragment:
 
-\chunkCmdUseMark{EHRulerRules.1.expr.e.let}
+%%@EHRulerRules.1.expr.e.let wrap=code
 
 Attribute |gathTySigGam| is populated with bindings in a type signature |TySig|:
 
-\chunkCmdUseMark{EHRulerRules.1.decl.d.tysig}
+%%@EHRulerRules.1.decl.d.tysig wrap=code
 
 Bindings from patterns are gathered in a value declaration |Val|.
 The type signature for the topmost variable of the pattern is used as the expected type (|knTy|) of the pattern.
 |tySigGam| has to be queried for the type signature:
 
-\chunkCmdUseMark{EHRulerRules.1.decl.d.val}
-%%[[hide impl.mbTopNm="AG for mbTopNm"
-\chunkCmdUseMark{EHInfer.1.mbTopNm}
+%%[[hide wrap=code impl.mbTopNm="AG for mbTopNm"
+%%@EHInfer.1.mbTopNm
 %%]
+%%@EHRulerRules.1.decl.d.val wrap=code
 
 The actual bindings are added inside a patterns at variable occurrences.
 
@@ -1432,9 +1517,10 @@ Extracting the top of the stack |patValGam| gives all the locally introduced
 bindings in |lValGam|.
 An additional error message is produced
 if any duplicate bindings are present.
-%%[[hide impl.dupErrs="Check on duplicate introductions"
-\chunkCmdUseMark{EHExtraChecks.1.dupErrs}
-\chunkCmdUseMark{EHGam.1.gamToDups}
+%%[[hide wrap=code impl.dupErrs="Check on duplicate introductions"
+%%@EHExtraChecks.1.dupErrs
+
+%%@EHGam.1.gamToDups
 %%]
 
 \subsubsection{Checking type expressions (TyExpr)}
@@ -1445,23 +1531,31 @@ All that is left to do now is to use the type expressions to extract type signat
 This is straightforward as type expressions (abstract syntax for what the programmer specified)
 and types (as internally used by the compiler) have almost the same structure (\secPageRef{abs-syn-eh1}:
 
-\chunkCmdUseMark{EHInferTyExpr.1.ty}
-%\chunkCmdUseMark{EHInferTyExpr.1.ConApp}
-\chunkCmdUseMark{EHRulerRules.1.tyexpr.t.con}
-\chunkCmdUseMark{EHRulerRules.1.tyexpr.t.app}
+%%[[wrap=code
+%%@EHInferTyExpr.1.ty
+%%@EHRulerRules.1.tyexpr.t.con
+%%@EHRulerRules.1.tyexpr.t.app
+%%]
 
-\rulerCmdUse{rules3.K.tyexpr.base}
+\rulerCmdUseExplain{rules3.K.tyexpr.base}
+{
+%%@rules3Explain.tyexpr.K.explain.scheme
+}{
+%%@rules3Explain.tyexpr.K.explain.holes
+}
 
 Actually, we need to do more because we also have to check whether a type is defined.
 A variant of |Gam| is used to hold type constants:
 
-\chunkCmdUseMark{EHGam.1.TyGamInfo}
-\chunkCmdUseMark{EHGam.1.TyGam}
-\chunkCmdUseMark{EHGam.1.tyGamLookup}
+%%[[wrap=code
+%%@EHGam.1.TyGamInfo
+%%@EHGam.1.TyGam
+%%@EHGam.1.tyGamLookup
+%%]
 
 This |Gamma|, denoted by |TGamma|, is passed to a |TyExpr|:
 
-\chunkCmdUseMark{EHInferTyExpr.1.tyGam}
+%%@EHInferTyExpr.1.tyGam wrap=code
 
 At the root of the AST |tyGam| is initialized with the fixed set of types available
 in this version of the compiler.
@@ -1469,11 +1563,11 @@ Because |TGamma| is fixed, and can be seen as a global constant,
 we have omitted |TGamma| from all type rules,
 except those describing type expressions.
 
-\chunkCmdUseMark{EHInfer.1.initTyGam}
+%%@EHInfer.1.initTyGam wrap=code
 
 Finally, at the |Con| alternative of |TyExpr| we need to check if a type is defined:
 
-\chunkCmdUseMark{EHInferTyExpr.1.check}
+%%@EHRulerRules.1.tyexpr.t.con wrap=code
 
 %if incl01TopicErr
 
@@ -1487,14 +1581,17 @@ Errors too are defined using AG%
 (see also \pageRef{EHErrorAbsSyn.1.UnifyClash}).
 %endif
 
-\chunkCmdUseMark{EHErrorAbsSyn.1.Rest}
+%%@EHErrorAbsSyn.1.Rest wrap=code
 
 Errors are gathered, grouped at convenient places and made part of the
 pretty printing attribute |pp|.
 This is only shown for expressions:
 
-\chunkCmdUseMark{EHGatherError.1.GatherExpr}
-\chunkCmdUseMark{EHError.1.mkNestErr}
+%%[[wrap=code
+%%@EHGatherError.1.GatherExpr
+
+%%@EHError.1.mkNestErr
+%%]
 
 Pretty printed collected errors are made available for
 inclusion in the pretty printing of the abstract syntax tree%
@@ -1508,7 +1605,7 @@ the end of a group of declarations or at a specific
 declaration. Many different choices are possible here,
 depending on the output medium.
 
-\chunkCmdUseMark{EHGatherError.1.PP}
+%%@EHGatherError.1.PP wrap=code
 
 Errors themselves also need to be pretty printed, but we have omitted this part.
 The issue here is to keep the generated output reasonably compact because the nesting
@@ -1547,10 +1644,11 @@ us to simultaneously define the syntactic structure and the connection to
 the abstract syntax.
 For example, the parser for the simplest of expressions
 
-\savecolumns
-\chunkCmdUse{EHParser.1.pExprBase}
-\restorecolumns
-\chunkCmdUse{EHParser.1.pExprBaseParenProd}
+%%[[wrap=code
+%%@EHParser.1.pExprBase 
+
+%%@EHParser.1.pExprBaseParenProd
+%%]
 
 recognises variables via |pVar| and integer constants via |pInt|.
 These parsers are based on parsers defined in a general purpose scanner library \cite{uust04www}
@@ -1558,7 +1656,7 @@ about which
 we will say no more than that it provides basic parsers tailored towards the recognition
 of Haskell lexical elements:
 
-\chunkCmdUse{EHParser.1.scanWrappers}
+%%@EHParser.1.scanWrappers wrap=code
 
 All parsers from this library return their result as a string,
 which,
@@ -1607,16 +1705,17 @@ these functions
 
 From |pExprBase| the parser |pExpr| for the more complex expressions is built.
 
-\savecolumns
-\chunkCmdUseMark{EHParser.1.exprAlg}
-\restorecolumns
-\chunkCmdUseMark{EHParser.1.pExpr}
-\restorecolumns
-\chunkCmdUseMark{EHParser.1.pExprApp}
-\restorecolumns
-\chunkCmdUseMark{EHParser.1.pExprPrefix}
-\restorecolumns
-\chunkCmdUseMark{EHParser.1.pExprPrefixLam}
+%%[[wrap=code
+%%@EHParser.1.exprAlg
+
+%%@EHParser.1.pExpr
+
+%%@EHParser.1.pExprApp
+
+%%@EHParser.1.pExprPrefix
+
+%%@EHParser.1.pExprPrefixLam
+%%]
 
 An application |pExprApp| is a juxtapositioning of a non empty series
 of |pExprBase|'s.
@@ -1632,7 +1731,7 @@ sequencing combinator |<*>|.
 Parser |pExprApp| is defined in terms of an algebra |exprAlg| and an
 abstract parser recognising applications
 
-\chunkCmdUse{EHParser.1.pApp}
+%%@EHParser.1.pApp wrap=code
 
 First, let us look at the \IxAsIs{algebra} |exprAlg|, again referring to
 Swierstra \cite{swierstra99comb-lang} for a more thorough
@@ -1642,7 +1741,7 @@ has |Con|, |App| and |AppTop| alternatives for |Expr|, |TyExpr| and |PatExpr|.
 For all three kinds of expressions an application |f x y| maps
 to the same structure |AppTop (App (App f x) y)|,
 where for a 2-tuple pattern |f == Con ",2"|,
-and for a function type |f == Con  "->"| (representing |x -> y|).
+and for a function type |f == Con "->"| (representing |x -> y|).
 The |Con|, |App| and |AppTop| depend on the particular kind
 of expression.
 The following function |mkApp| does this job of
@@ -1651,13 +1750,15 @@ the application from, and the specific variants for |Con|, |App| and |AppTop|.
 Note that no |AppTop| is placed around a singleton list since this is not an application
 and the function |mkApp| is never used on an empty list.
 
-\chunkCmdUseMark{EHCommon.1.MkConApp}
-\chunkCmdUseMark{EHCommon.1.SemApp}
-%%[[hide impl.SemAppFull="Class SemApp and defaults"
-\savecolumns
-\chunkCmdUseMark{EHCommon.1.SemApp}
-\restorecolumns
-\chunkCmdUseMark{EHCommon.1.SemApp.default}
+%%[[wrap=code
+%%@EHCommon.1.MkConApp
+
+%%@EHCommon.1.SemApp
+%%]
+%%[[hide wrap=code impl.SemAppFull="Class SemApp and defaults"
+%%@EHCommon.1.SemApp
+
+%%@EHCommon.1.SemApp.default
 %%]
 
 It is precisely the group of functions specifying what should be done
@@ -1671,7 +1772,7 @@ cartesian product. Since this parttern also pops up in the case of types
 the parser |pParenProd| which recognises these three alternatives is also 
 parameterized with the algebra:
 
-\chunkCmdUse{EHParser.1.pParenProd}
+%%@EHParser.1.pParenProd wrap=code
 
 The definition for |pParenProd| quite literally follows this enumeration of alternatives.
 Note that the parser is in a left factorized form
@@ -1680,12 +1781,13 @@ in order to make parsing take linear time.
 The parsers for patterns and type expressions also use these abstractions,
 for example, the parser for type expressions:
 
-\savecolumns
-\chunkCmdUse{EHParser.1.tyExprAlg}
-\restorecolumns
-\chunkCmdUse{EHParser.1.pTyExprBase}
-\restorecolumns
-\chunkCmdUse{EHParser.1.pTyExpr}
+%%[[wrap=code
+%%@EHParser.1.tyExprAlg 
+
+%%@EHParser.1.pTyExprBase 
+
+%%@EHParser.1.pTyExpr 
+%%]
 
 defines a |tyExprAlg| to be used to recognise parenthesized and tupled type expressions.
 The parser for |pTyExpr| uses |pChainr| to recognise a list
@@ -1694,14 +1796,15 @@ of more elementary types separated by |->|.
 The parser for patterns is, because of its similarity with the previous expression
 parsers, given without further explanation:
 
-\savecolumns
-\chunkCmdUse{EHParser.1.patExprAlg}
-\restorecolumns
-\chunkCmdUse{EHParser.1.pPatExpr}
-\restorecolumns
-\chunkCmdUse{EHParser.1.pPatExprBase}
-\restorecolumns
-\chunkCmdUse{EHParser.1.pPatExprBase.prod}
+%%[[wrap=code
+%%@EHParser.1.patExprAlg 
+
+%%@EHParser.1.pPatExpr 
+
+%%@EHParser.1.pPatExprBase 
+
+%%@EHParser.1.pPatExprBase.prod 
+%%]
 
 Finally, the parsers for the program itself and declarations should have few surprises by now,
 except for the use of |pBlock| recognising a list of more elementary parsers
@@ -1709,8 +1812,11 @@ where the offside rule of
 Haskell applies.
 We will not look at this any further.
 
-\chunkCmdUse{EHParser.1.pDecl}
-\chunkCmdUse{EHParser.1.pAGItf}
+%%[[wrap=code
+%%@EHParser.1.pDecl
+
+%%@EHParser.1.pAGItf 
+%%]
 
 Once all parsing results are passed to semantic functions we enter the world of attributes
 as offered by the AG system.

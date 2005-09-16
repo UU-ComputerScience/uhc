@@ -123,14 +123,13 @@ to proof such a property.
 \rulerCmdUse{rulerDemo.A.expr.base}
 
 \begin{CodeFigure}{Part of the generated implementation}{ruler-demo-impl}
-%\savecolumns
-\chunkCmdUseRaw{rulerDemoMain.3.AST.Expr.App}
-%\restorecolumns
-%\chunkCmdUseRaw{rulerDemoMain.3.AST.Expr.IntVar}
-\chunkCmdUseRaw{rulerDemoAG.3.expr.ATTR}
-%\chunkCmdUseRaw{rulerDemoAG.3.expr.e.int}
-%\chunkCmdUseRaw{rulerDemoAG.3.expr.e.var}
-\chunkCmdUseRaw{rulerDemoAG.3.expr.e.app}
+%%[[wrap=code
+%%@RulerDemoMain.3.AST.Expr.App
+
+%%@rulerDemoAG.3.expr.ATTR
+
+%%@rulerDemoAG.3.expr.e.app
+%%]
 \end{CodeFigure}
 
 \paragraph{How our approach contributes to solving the problems}
@@ -627,7 +626,7 @@ A scheme plays the same role in rules as types do for expressions in our example
 In our example, we want to specify a judgement for terms (expressions),
 so we start a new |scheme| declaration by:
 
-\chunkCmdUse{rulerDemoRL.1.expr.scm}
+%%@rulerDemoRL.1.expr.scm wrap=code
 
 which is immediately followed by the views on this scheme.
 Each view defines empty slots (|holes|),
@@ -635,7 +634,7 @@ the judgement shape (\IxAsDef{judgeshape}) by which concrete judgements will be 
 and judgement shapes that will be used for output generation (|judgeuse|).
 The view |E| on scheme |expr| is defined by:
 
-\chunkCmdUse{rulerDemoRL.1.expr.scm.E}
+%%@rulerDemoRL.1.expr.scm.E wrap=code
 
 Here we specified for view |E|, that is the equational view,
 three empty slots (|e, gam, ty|),
@@ -787,7 +786,7 @@ although it only will play a role in the defaulted use.
 Rules are grouped in rulesets to be displayed together in a figure.
 So the description of \figRef{rulerDemo.E.expr.base} starts with:
 
-\chunkCmdUse{rulerDemoRL.1.expr.base.rls}
+%%@rulerDemoRL.1.expr.base.rls wrap=code
 
 specifying the name |expr.base| of the ruleset,
 the scheme |expr| for which it defines rules,
@@ -805,10 +804,10 @@ The ruleset heading is immediately followed by a list of rules, of
 which only one is shown here (|e.int| is pretty printed in small caps as \textsc{e.int});
 for a complete description see \appRef{ruler-app-demo-src}:
 
-\savecolumns
-\chunkCmdUse{rulerDemoRL.1.rl.e.int}
-\restorecolumns
-\chunkCmdUse{rulerDemoRL.1.rl.e.int.E}
+%%[[wrap=code
+%%@rulerDemoRL.1.rl.e.int
+%%@rulerDemoRL.1.rl.e.int.E
+%%]
 
 Before discussing its components,
 we repeat its \LaTeX\ rendering from \figRef{rulerDemo.E.expr.base} to emphasize the similarities
@@ -836,7 +835,7 @@ This is an identifier which is not introduced as part of the rule.
 and its occurrence generates an
 error message unless we specify it to be external:
 
-\chunkCmdUse{rulerDemoRL.1.ext}
+%%@rulerDemoRL.1.ext wrap=code
 
 Additionally we also have to specify the way |Ty_Int| will be typeset as |Ruler| does not make
 any assumptions here.
@@ -845,7 +844,7 @@ A simple renaming facility however is available as some renaming may be necessar
 output generated.
 Formatting declarations introduce such renamings:
 
-\chunkCmdUse{rulerDemoRL.1.fmt.Ty_Int}
+%%@rulerDemoRL.1.fmt.Ty_Int wrap=code
 
 Here the keyword |tex| specifies that this renaming is only used when \LaTeX\ (i.e. the |tex| target)
 is generated.
@@ -854,10 +853,10 @@ The formatting for the names |gam| and |ty| are treated similarly.
 The \ruleRef{e.app} for the application of a function to an argument is defined similarly to \ruleRef{e.int}.
 Premises now relate the type of the function and its argument:
 
-\savecolumns
-\chunkCmdUse{rulerDemoRL.1.rl.e.app}
-\restorecolumns
-\chunkCmdUse{rulerDemoRL.1.rl.e.app.E}
+%%[[wrap=code
+%%@rulerDemoRL.1.rl.e.app
+%%@rulerDemoRL.1.rl.e.app.E
+%%]
 
 which results in (from \figRef{rulerDemo.E.expr.base}):
 \[
@@ -880,16 +879,16 @@ This rule requires a binding of the variable |i| with type |sigma| to be present
 the instantiation |tau| of |sigma| then is the type of the occurrence of |i|.
 These premises are specified by judgements |G| and |I| respectively:
 
-\savecolumns
-\chunkCmdUse{rulerDemoRL.1.rl.e.var}
-\restorecolumns
-\chunkCmdUse{rulerDemoRL.1.rl.e.var.E}
+%%[[wrap=code
+%%@rulerDemoRL.1.rl.e.var 
+%%@rulerDemoRL.1.rl.e.var.E
+%%]
 
 Judgements |G| and |I| use a variation of a scheme, called a \IxAsDef{relation}.
 For example, the judgement |G| must match the template for relation |gamLookupIdTy|
 representing the truth of the existence of an identifier |i| with type |ty| in a |gam|:
 
-\chunkCmdUse{rulerDemoRL.1.gamLookupIdTy}
+%%@rulerDemoRL.1.gamLookupIdTy wrap=code
 
 A relation differs only from a scheme in that we will not define rules for it.
 It acts as the boundary of our type rule specification.
@@ -898,7 +897,7 @@ As a consequence we have
 to specify an implementation for it elsewhere.
 The relation |tyInst| is defined similarly:
 
-\chunkCmdUse{rulerDemoRL.1.tyInst}
+%%@rulerDemoRL.1.tyInst wrap=code
 
 
 \subsection{Extending to an algorithm}
@@ -924,7 +923,7 @@ to the understandability of the type rules when the complexity of the rules incr
 
 For this to work, we specify which view is built on top of which other view:
 
-\chunkCmdUse{rulerDemoRL.1.viewhierarchy}
+%%@rulerDemoRL.1.viewhierarchy wrap=code
 
 The view hierarchy declaration defines the |A| view to be built on top of view |E|, and |AG| again on top of |A|.
 A view inherits the hole structure and the judgement shapes from its predecessor.
@@ -978,7 +977,7 @@ used to replace the content of the placeholder.
 \paragraph{Adding direction to holes}
 In |Ruler| notation, we specify the direction of computation order as follows for view |A| on scheme |expr|:
 
-\chunkCmdUse{rulerDemoRL.2.expr.scm.A}
+%%@rulerDemoRL.2.expr.scm.A wrap=code
 
 The holes for |expr| are split into three groups, separated by vertical bars `| || |'.
 Holes in the first group are called \IxAsDef{inherited},
@@ -1004,7 +1003,7 @@ Because |cnstr| is declared threaded, |cnstr.inh| refers to the already gathered
 whereas this and newly gathered information is returned in |cnstr.syn|.
 For example, view |A| on \ruleRef{e.int} fills |cnstr.syn| with |cnstr.inh|.
 
-\chunkCmdUse{rulerDemoRL.2.rl.e.int.A}
+%%@rulerDemoRL.2.rl.e.int.A wrap=code
 
 Although a definition for |cnstr.inh| is included,
 we may omit the hole binding for |cnstr.inh|, that is |cnstr.inh = cnstr.inh|
@@ -1028,7 +1027,7 @@ Constraints are threaded through the rules.
 For example constraints |cnstr.f| constructed by the judgement for the function |f|
 are given to the judgement |a| in the following fragment (which follows view |E| of \ruleRef{e.app} in the |Ruler| source text):
 
-\chunkCmdUse{rulerDemoRL.2.rl.e.app.A}
+%%@rulerDemoRL.2.rl.e.app.A wrap=code
 
 The \ruleRef{e.app} also requires two additional judgements: a |tvFresh| relation stating that |tv| should be a fresh type variable
 and a |match| relation performing unification of two types, resulting in additional constraints under which the two types are equal.
@@ -1097,10 +1096,11 @@ An attribute grammar describes computations over an AST by means of attributes.
 An AST is a data structure similar to data types in Haskell.
 For example, part of the AST required for our type rule implemention is defined as follows:
 
-\savecolumns
-\chunkCmdUse{rulerDemoMain.3.AST.Expr.App}
-\restorecolumns
-\chunkCmdUse{rulerDemoMain.3.AST.Expr.IntVar}
+%%[[wrap=code
+%%@RulerDemoMain.3.AST.Expr.App
+
+%%@RulerDemoMain.3.AST.Expr.IntVar
+%%]
 
 This AST for an |Expr| node defines \IxAsDef{alternatives} (or \IxAsDef{variants}, \IxAsDef{productions})
 for application, integer constants and use of variables respectively.
@@ -1112,7 +1112,7 @@ An \IxAsDef{attribute} holds the value of a computation; it has a name, a type a
 synthesized (after the second vertical `| || |') or both (in between both `| || |').
 In AG code we define attributes for a node, for example for |Expr|:
 
-\chunkCmdUse{rulerDemoAG.3.expr.ATTR}
+%%@rulerDemoAG.3.expr.ATTR wrap=code
 
 Our AG system and |Ruler| use similar notation for attribute and hole definitions.
 For example, attribute |ty| is synthesized and has type |Ty|.
@@ -1123,7 +1123,7 @@ and the inherited attributes of all children.
 For example, for the |Int| alternative of |Expr| we define the value of the |ty| attribute of the parent (referred to by |lhs|)
 to be |Ty_Int|:
 
-\chunkCmdUse{rulerDemoAG.3.expr.e.int}
+%%@rulerDemoAG.3.expr.e.int wrap=code
 
 Each attribute equation is of the form
 
@@ -1218,8 +1218,11 @@ The end result of this section is a translation of type rules to AG code.
 For example, the following is generated for \ruleRef{e.app};
 the required additional |Ruler| specification and supporting code is discussed throughout this section:
 
-\chunkCmdUse{rulerDemoAG.3.expr.ATTR}
-\chunkCmdUse{rulerDemoAG.3.expr.e.app}
+%%[[wrap=code
+%%@rulerDemoAG.3.expr.ATTR
+
+%%@rulerDemoAG.3.expr.e.app
+%%]
 
 We need to deal with the following issues:
 
@@ -1254,27 +1257,27 @@ To which AG |DATA| a scheme maps, and for each rule to which alternative.
 The AST is defined externally relative to |Ruler| (this may change in future versions of |Ruler|).
 For example, the part of the AST for expression application is defined as:
 
-\chunkCmdUse{rulerDemoMain.3.AST.Expr.App}
+%%@RulerDemoMain.3.AST.Expr.App wrap=code
 
 The keyword |node| is used to mark the primary hole that corresponds to the AST node for scheme |expr| in the AST:
 
-\chunkCmdUse{rulerDemoRL.3.expr.scm.AG}
+%%@rulerDemoRL.3.expr.scm.AG wrap=code
 
 For each rule with children we mark the children and simultaneously specify the order of the children as they
 appear in the AST.
 For example, for \ruleRef{e.app} we mark |f| to be the first and |a| to be the second child
 (the ordering is required for AG code generation taking into account AG's copy rules):
 
-\chunkCmdUse{rulerDemoRL.3.rl.e.app.AG}
+%%@rulerDemoRL.3.rl.e.app.AG wrap=code
 
 The scheme |expr| is mapped to the AST node type |Expr| by adapting the scheme definition to:
 
-\chunkCmdUse{rulerDemoRL.3.expr.scm}
+%%@rulerDemoRL.3.expr.scm wrap=code
 
 Similarly we adapt the header for \ruleRef{e.app} to include the name |App| as the name
 of the alternative in the AST:
 
-\chunkCmdUse{rulerDemoRL.3.rl.e.app}
+%%@rulerDemoRL.3.rl.e.app wrap=code
 
 \paragraph{|Ruler| expressions and AG expressions}
 Expressions in judgements are defined using a notation to which |Ruler| attaches no meaning.
@@ -1294,7 +1297,7 @@ unique identifiers |UID| are explained later:
 %%]
 %endif
 
-\chunkCmdUse{rulerDemoUtils.3.Ty}
+%%@RulerDemoUtils.3.Ty wrap=code
 
 A |Ty_All| represents universal quantification |forall|,
 |Ty_Arr| represents the function type |->|,
@@ -1323,7 +1326,7 @@ The flag |use| is used to mark those rewrite rules.
 The rewrite rule used for rewriting |ty.a -> tv| actually is limited further by specifying the required type of the
 value for both pattern and the type of the replacement pattern:
 
-\chunkCmdUse{rulerDemoRL.3.rw.TyArr}
+%%@rulerDemoRL.3.rw.TyArr wrap=code
 
 The notion of a type for values in |Ruler| is simple: a type is just a name.
 The type of an expression is deduced from the types specified for a hole or the result expression of
@@ -1345,14 +1348,14 @@ similar to Haskell's overloading.
 To allow for this flexibility a pattern of a rewrite rule may use (|Ruler|) type variables to propagate an actual type.
 For example, the rewrite rule required to rewrite |cnstr cnstr.a tv| is defined as:
 
-\chunkCmdUse{rulerDemoRL.3.rw.Cnstr}
+%%@rulerDemoRL.3.rw.Cnstr wrap=code
 
 Rewrite rules are only applied to saturated juxtapositionings or applications of operators.
 Rewrite rules are non-recursively applied in a bottom-up strategy.
 
 The rule assumes the definition of additional Haskell types and class instances defined elsewhere:
 
-\chunkCmdUse{rulerDemoUtils.3.Cnstr}
+%%@RulerDemoUtils.3.Cnstr wrap=code
 
 \paragraph{Unique values}
 Our implementation of ``freshness'' that is required for fresh type variables
@@ -1362,13 +1365,13 @@ From within |Ruler| we use the keyword |unique| to obtain a unique value.
 For example, the relation |tvFresh| has a |ag| judgement shape for the generation of AG
 which contains a reference to |unique|:
 
-\chunkCmdUse{rulerDemoRL.2.tvFresh}
+%%@rulerDemoAG.3.expr.e.app wrap=code
 
 The presence of |unique| in a judgement for a rule triggers the insertion of additional AG code to create
 an unique value and to update the unique seed value.
 We repeat the translation of \ruleRef{e.app} as an example:
 
-\chunkCmdUse{rulerDemoAG.3.expr.e.app}
+%%@rulerDemoAG.3.expr.e.app wrap=code
 
 |Ruler| automatically translates the reference to |unique| to |uniq1| and
 inserts a call to |rulerMk1Uniq|.
@@ -1388,7 +1391,7 @@ to also act as a seed for an unlimited series of unique values.
 This is required for the instantiation of a quantified type where the number of fresh type variables depends on the type
 (we do not discuss this further):
 
-\chunkCmdUse{rulerDemoUtils.3.UID}
+%%@RulerDemoUtils.3.UID wrap=code
 
 When a rule contains multiple occurrences of |unique|, |Ruler| assumes the presence of |rulerMk<n>Uniq| which returns |<n>| unique values;
 |<n>| is the number |unique| occurrences.
@@ -1397,7 +1400,7 @@ We have omitted the declaration and initialisation of attribute @uniq@.
 %if False
 Finally, we need to add some AG for the attribute declaration and initialisation of attribute @uniq@:
 
-\chunkCmdUse{rulerDemoMain.3.uniq}
+%%@RulerDemoMain.3.uniq wrap=code
 %endif
 
 The |Ruler| code for relation |tvFresh| also demonstrates how the |ag| judgement shape for |tvFresh| is inlined as an attribute definition.
@@ -1422,7 +1425,7 @@ If no error occurs, this list is empty.
 
 For example, the AG code for relation |match| as it is inlined in the translation for \ruleRef{e.app} is defined as:
 
-\chunkCmdUse{rulerDemoRL.2.match}
+%%@rulerDemoRL.2.match wrap=code
 
 The operator |<=>| implementing the matching returns constraints as well as errors.
 The errors are bound to a local attribute which is used by additional AG code for error reporting.

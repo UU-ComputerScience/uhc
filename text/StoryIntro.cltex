@@ -12,12 +12,12 @@ an extended version of Haskell.
 The reason to set out on this journey lies in the observation that Haskell
 \cite{peytonjones03has98-rev-rep}
 has become a complex language.
-Haskell includes many productivity increasing features as well as more experimental features.
+Haskell includes many productivity increasing features, some of which are of a more experimental nature.
 Although also intended as a research platform, realistic compilers for Haskell \cite{www04ghc}
 have grown over the years
 and understanding and experimenting with
-those compilers is not an easy task.
-Experimentation on a smaller scale usually is based upon relatively simple and restricted implementations
+those compilers is not easy.
+Experimentation on a smaller scale is usually based upon relatively simple and restricted implementations
 \cite{jones99thih}, often focusing only on a particular aspect of
 the language and/or its implementation.
 
@@ -33,9 +33,9 @@ and its formal representation (by means of type rules),
 and their mutual consistency, helps to bridge the gap between theory and practice.
 
 The complexities of Haskell and its interaction with experimental features cannot be avoided;
-even more, Haskell plays an important role in programming language research.
-Some of those experiments turn into useful language features,
-contributing to complexity in the form of feature richness and interaction with other features.
+even more, it is desirable, as Haskell plays an important role in programming language research.
+Some of those experimental features turn into useful language constructs,
+increasing the language complexity as a consequence.
 The complexity can be made more manageable by looking at features individually,
 while not loosing
 sight of the context with which such a feature has to coexist.
@@ -67,8 +67,8 @@ so it can be used for teaching, be a basis for experimentation,
 and be a bridge between (type) theory and practice.
 \end{Itemize}
 
-Being a true holy grail,
-we do not expect to achieve this overnight.
+Unlike a holy grail, we intend to reach our goal,
+but we do not expect this to happen overnight.
 However, our inspiration comes from \TeX,
 for which documented source code constitutes a stable point of reference
 \cite{knuth86tex-program}.
@@ -77,7 +77,7 @@ in Pierce's book \cite{typing:types-prog-lang:pierce}.
 
 On a less ambitious scale,
 this thesis can be read with the following, somewhat overlapping,
-viewpoints on this thesis in mind;
+viewpoints in mind;
 each viewpoint comes with its own goal and design starting point:
 
 \begin{Itemize}
@@ -88,12 +88,12 @@ The explanation is expressed and explained in terms of type rules,
 attribute grammar implementation for those type rules,
 and additional infrastructure (encoded in Haskell) to extend it to a full compiler.
 \item
-The thesis offers experiments in combining of explicitly specified type information (by the programmer),
+The thesis offers experiments in combining explicitly specified type information (by the programmer),
 and implicitly inferred type information (by the system) (\chapterRef{ehc4} through \chapterRef{ehc-partial-sig-quant-guess}).
 The design starting point here is to let programmer and system jointly specify (the types in)
 a program,
 instead of the programmer fighting the system's limitations.
-This starting point is inspired by the observation that systems purely base on
+This starting point is inspired by the observation that systems purely based on
 type inference hinder a programmer,
 because such a system does not allow the programmer to specify what the system cannot infer.
 \item
@@ -110,7 +110,7 @@ The thesis offers an experiment in creating a maintainable and explainable compi
 The design starting point is that these aspects are best served by consistency,
 and consistency between artefacts is best implemented by avoiding the inconsistency created
 by duplication of shared material in the first place.
-The code presented in the thesis and used for the construction of individual compilers are
+The code presented in the thesis and used for the construction of different versions of the compiler are
 generated from common source code
 (\appRef{appx-shuffle}).
 The same holds for (the major part of) the type rules and their attribute grammar implementation
@@ -120,8 +120,8 @@ The same holds for (the major part of) the type rules and their attribute gramma
 Our work complements Pierce's book \cite{typing:types-prog-lang:pierce}
 in the sense that we bring together type rules and their implementation,
 instead of treating these separately.
-On the other hand, Pierce can be credited for providing the proofs for various properties,
-whereas we do not.
+On the other hand, Pierce provides proofs for various properties,
+we don't.
 
 
 \Paragraph{Thesis overview}
@@ -133,7 +133,7 @@ but can safely be skipped if the reader is already familiar with the AG system
 (see the roadmap in \figRef{fig-roadmap}).
 For the remainder of this thesis we assume familiarity with type systems;
 we informally introduce the necessary concepts,
-but, as we focus on their implementation the formalities of type systems are not discussed
+but, as we focus on their implementation, the formalities of type systems are not discussed
 in this thesis.
 
 \FigureXFigTex{roadmap}{Thesis roadmap}{fig-roadmap}
@@ -143,7 +143,7 @@ as they describe development steps of the first four of our series of compilers.
 \chapterRef{ehc4B} has a more experimental character as it is not (yet) integrated into the
 last compiler version,
 so this part can be skipped.
-\chapterRef{ehc-partial-sig-quant-guess} describes how we can make the specification of type signature easier;
+\chapterRef{ehc-partial-sig-quant-guess} describes how we can make the specification of a type signature easier;
 this subject is relatively independent of the previous chapters.
 \chapterRef{ehc9} and \chapterRef{ruler} can be read in isolation,
 as these chapters are based on (submitted) articles.
@@ -151,9 +151,11 @@ as these chapters are based on (submitted) articles.
 Throughout the description of the series of compilers we gradually shift from AG based
 explanation to type rule based explanation combined with examples.
 The code which implements those type rules is still referred to from the main text.
-In the paper version of this thesis we refer to the electronic version;
-for the electronic version we refer to the proper appendix with a margin reference
-(like here \chunkHideRef{impl.gamAsList}).
+In the paper version of this thesis we refer to the electronic version
+\cite{dijkstra04ehc-web} by means of \raisebox{-.3ex}{\WWWlogo} in the margin (\chunkHideRefWWW{intro-thesis-overview-www-pg}like here);
+in the electronic version we refer to the proper appendix with a margin reference
+\label{intro-thesis-overview-www-pg}
+(\chunkHideRefAppx{intro-thesis-overview-www-pg}like this current page reference).
 We will come back to this in our conclusion (\chapterRef{ehcConcl}).
 
 \Paragraph{System overview}
@@ -165,7 +167,12 @@ The construction of these compilers and this thesis is accomplished by the use o
 \begin{Itemize}
 \item
 Fragment administration and combination (of source text)
-is managed by a tool called |Shuffle| (\appRef{appx-shuffle}).
+is managed by a tool called
+%if targetForPaper
+|Shuffle|\chunkHideRefWWW{appx-shuffle}.
+%else
+|Shuffle| (\appRef{appx-shuffle}).
+%endif
 |Shuffle| has the same responsibility as weaving and tangling in literate programming \cite{www05litprog},
 but allows a more flexible recombination of source fragments.
 Because of its great resemblance to similar tools we will not discuss |Shuffle|.
@@ -178,7 +185,7 @@ Haskell code.
 \end{Itemize}
 
 The partitioning into multiple steps, called \IxAsDef{views} in the remainder of this thesis,
-influences the used tools.
+influences the tools used.
 A view extends another view by adding new material or replacing old material.
 Either a tool manages views itself, or is unaware of views.
 For example, the |Ruler| system manages named views on type rules.
@@ -261,12 +268,12 @@ be replaced by |Ruler| generated AG code.
 Omitted source code is available via the EH project website \cite{dijkstra04ehc-web}.
 Part of the code has been included as appendix-like material,
 that is, it has been included, but outside the main story line
-\footnote{Reference to code have not yet been completely included;
+\footnote{References to non-inlined code have not yet been completely included;
 the final version of this thesis is intended to be complete in this respect.}.
 
 Between \chapterRef{ehc4C} and \chapterRef{ehc9} data types, kind inference/checking,
 code generation for GRIN \cite{boquist96grin-optim,boquist99phd-optim-lazy},
-and extensible records are introduced (\figRef{eh-intro-implstatus}).
+and extensible records appear (\figRef{eh-intro-implstatus}).
 Most of these features are required for the implementation of \chapterRef{ehc9};
 their description will be included in later versions of the full description of EH,
 to appear after the publication of this thesis.
@@ -278,7 +285,7 @@ an AFP (Advanced Functional Programming) tutorial
 \cite{dijkstra04thag}, and \chapterRef{ehc9} and \chapterRef{ruler}
 have been submitted in a slighty extended form.
 
-Finally, additional work in the following areas is currently nearing completion:
+Additional work in the following areas is currently in progress:
 \begin{Itemize}
 \item
 A compiler for GRIN \cite{boquist96grin-optim,boquist99phd-optim-lazy} to C--
@@ -287,6 +294,8 @@ We are also looking at extending GRIN with exceptions.
 \item
 Extending EH with GADT's (Generalised Algebraic Data Types).
 \end{Itemize}
+
+
 
 %%]
 
@@ -543,6 +552,10 @@ The first version of our series of compilers therefore accepts a language that m
 and some basic types and type constructors such as |Int|, |Char| and tuples
 (see \appRef{appx-legenda-termlang} for all terms used throughout \thispaper).
 
+We note that code generation is included in EH8.
+Although we call all compilers `compiler', the versions before EH8 actually are type checkers as no translation
+to an equivalent executable program is computed.
+
 \Paragraph{EH version 1: |lambda|-calculus}
 An EH program is a single expression, contrary to a Haskell program which consists of a set of declarations forming a module.
 
@@ -569,14 +582,13 @@ Besides the basic types |Int| and |Char|, more complex types can be formed by bu
 %%1srcfile(test/1-demo3.eh%%)
 \end{code}
 
-Functions accept one parameter only, which can be a pattern.
 All types are monomorphic.
 
 %if incl02
 \Paragraph{EH version 2: Explicit/implicit typing}
 The next version
 (EH version 2, \chapterRef{ehc2})
-no longer requires the explicit type specifications, which in that case will have to be inferred by the compiler.
+no longer requires the explicit type specifications, which in that case will be inferred by the compiler.
 %if not storyAFP04Notes
 For example for:
 
@@ -610,10 +622,11 @@ For example,
 let  id = \x -> x
 in   id 3
 \end{code}
-is inferred to have type |id :: %%3(let id = \x -> x in id%%)|.
+is inferred to have type |id :: %%3(let id = \x -> x in id 3%%)|;
+|id| has type |id :: %%3(let id = \x -> x in id%%)|.
 
 %if not storyAFP04Notes
-A type for a value can also be specified explicitly
+A (polymorphic) type for a value can also be specified explicitly
 \begin{code}
 let  id :: a -> a
      id = \x -> x
@@ -628,6 +641,8 @@ The type signature is checked against the inferred type.
 \Paragraph{EH version 4: Higher ranked types}
 Standard Hindley-Milner type inferencing cannot infer polymorphic parameters,
 so-called higher-ranked types.
+A higher-ranked type may have a quantified type at an argument position,
+allowing for polymorphic function arguments.
 In general, this is a hard thing to do and even impossible for rank-3 (and higher) types
 \cite{jim95rank,kfoury94direct,kfoury99rank2-decid,kfoury03rank2-princ},
 so the fourth version
@@ -645,7 +660,7 @@ Note that the type signature is thus required here.
 
 This version also provides some notational sugaring by allowing one to omit
 the explicit quantifiers from
-the type signature.
+the type signature (separately discussed in \chapterRef{ehc-partial-sig-quant-guess}).
 For example, if the |forall| in the previous example is omitted
 the correct location for the quantifier is inferred,
 based on the occurrences of type variables in a type expression:
@@ -658,7 +673,8 @@ infers |f :: %%4(let  f :: (a -> a) -> (Int,Char) in f%%)|
 
 Specifying a complete type signature can be difficult for complicated types,
 so it is also permitted to leave argument and results of a function unspecified
-using a \IxAsDef{partial type signature}.
+using a \IxAsDef{partial type signature}
+(separately discussed in \chapterRef{ehc-partial-sig-quant-guess}).
 \begin{code}
 %%4srcfile(test/4-ty-wild1.eh%%)
 \end{code}
@@ -669,16 +685,15 @@ by using existential quantification:
 \begin{code}
 %%4srcfile(test/4-demo1.eh%%)
 \end{code}
-The tuple |xy| contains an |Int| and a function constructing an |Int| from the
+The tuple |xy| contains an |Int| (this type information os 'forgotten' via existential quantification)
+and a function constructing an |Int| from the
 value of which the type has been hidden.
-Access to the elemnts of such a tuple is done by pattern matching, as in the argument position of the function |ixy|.
+Access to the elements of such a tuple is done by pattern matching, as in the argument position of the function |ixy|.
 The attempt to construct |pq| fails.
 
 When a value of an existentially quantified type is opened, that is,
-identifiers are bound to its components,
+it is bound to a value identifier,
 the hidden type becomes visible in the form of a fresh type constant.
-The explicit |exists| may also be omitted, for example
-|xy :: (a, a->Int)| is interpreted as |xy :: exists a . (a, a->Int)|.
 
 
 %endif %% incl04
@@ -693,7 +708,8 @@ a data type value by means of a |case| expression.
 
 \Paragraph{EH version 6: Kinding}
 The previous version allows incorrect programs because
-data types can be used incorrectly:
+data types can be used incorrectly (type signature declarations without a corresponding value declaration are allowed until
+the code generation version of EH):
 \begin{code}
 %%6srcfile(test/5-list-wrong.eh%%)
 \end{code}
@@ -701,24 +717,27 @@ The type of |v| is not a type of a value, and thus the type of |v|
 itself is not well-typed.
 The sixth version (EH version 6, \chapterEHVIRef)
 adds kind (that is, the type of a type) inferencing.
+%if False
 For example, the previous example gives
 \begin{TT}
 %%6ppfile(test/5-list-wrong.eh%%)
 \end{TT}
+%endif
 
-With the notion of the kind of a type also comes
-the notion of polymorphism for kinds,
-which this version allows:
+With the notion of the kind of a type we also allow
+the notion of polymorphism for kinds:
 \begin{code}
 let  data Eq a b = Eq (forall f . f a -> f b)
      id = \x -> x
 in   Eq id
 \end{code}
-infers for type constructor |Eq|:
+infers for type constructor |Eq|\footnote{There is no need to specify the kind of |f|, but the current version of EH6 does not propagate kinds of quantified type variables. This is an error that will be fixed in the near future.}:
 
 \begin{code}
-Eq :: Forall ^ k . k -> k -> *
+Eq :: forall ^ k . k -> k -> *
 \end{code}
+
+Explicit kind signatures for types are also allowed, similar to type signatures for values.
 
 \Paragraph{EH version 7: Non-extensible records}
 The seventh version (EH version 7, \chapterEHVIIRef)
@@ -756,7 +775,13 @@ adds extensible records (again following Jones \cite{jones99lightweight-ext-rec}
 using the class system to allow:
 
 \begin{code}
-%%10srcfile(test/10-demo1.eh%%)
+let  add  ::  Int -> Int -> Int
+     f    ::  (r\\x, r\\y) => (r|x :: Int,y :: Int) -> Int
+     f    =   \r -> add r.x r.y
+in
+let  v1 = f (x = 3, y = 4)
+     v2 = f (y = 5, a = 'z', x = 6)
+in   v2
 \end{code}
 
 Tuple access functions can also be used in a more general way:

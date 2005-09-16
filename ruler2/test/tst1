@@ -42,6 +42,8 @@ scheme expr "Expr" =
   view E =
     hole [ node e: Expr, valGam: ValGam | ty: Ty | ]
     judgeshape tex valGam :-.."e" e : ty
+    explain (Within the environment |valGam| , |e| has (bla) type |ty| .)
+    explain ty = (Type of the expression |e| (bla bla).)
   view K =
     hole [ | updown ty: Ty |  ]
     judgeshape tex valGam; ty.inh :-.."e" e : ty.syn
