@@ -56,7 +56,7 @@ cnstrElimForgetAlts c
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2
-ATTR TyAGItf AllAllTy [ fitsIn: FitsIn' | | ]
+ATTR TyAGItf AllTyAndFlds [ fitsIn: FitsIn' | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -64,7 +64,7 @@ ATTR TyAGItf AllAllTy [ fitsIn: FitsIn' | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2
-ATTR TyAGItf AllAllTy [ globTvL: TyVarIdL | | ]
+ATTR TyAGItf AllTyAndFlds [ globTvL: TyVarIdL | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -72,7 +72,7 @@ ATTR TyAGItf AllAllTy [ globTvL: TyVarIdL | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2
-ATTR TyAGItf AllAllTy [ fio: FIOpts | | ]
+ATTR TyAGItf AllTyAndFlds [ fio: FIOpts | | ]
 
 SEM Ty
   | Quant           ty      .   fio         =   @lhs.fio {fioDontBind = @tv : fioDontBind @lhs.fio}
@@ -84,7 +84,7 @@ SEM Ty
 
 %%[4_2
 ATTR TyAGItf [ gUniq: UID | | ]
-ATTR AllAllTy [ | gUniq: UID | ]
+ATTR AllTyAndFlds [ | gUniq: UID | ]
 
 SEM TyPlusL
   | Cons            (hd.gUniq,loc.lUniq)    =   mkNewLevUID @lhs.gUniq
@@ -125,7 +125,7 @@ SEM TyPlus
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2.repl
-ATTR AllAllTy [ | | repl: SELF  ]
+ATTR AllTyAndFlds [ | | repl: SELF  ]
 ATTR TyAGItf  [ | | repl: Ty    ]
 %%]
 
@@ -180,7 +180,7 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2
-ATTR TyAGItf AllAllTy [ | | errL USE {++} {[]}: ErrL ]
+ATTR TyAGItf AllTyAndFlds [ | | errL USE {++} {[]}: ErrL ]
 
 SEM Ty
   | Alts            lhs     .   errL        =   @errL
@@ -223,7 +223,7 @@ SEM TyPlusL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2
-ATTR AllAllTy [ | tyCnstr: Cnstr | ]
+ATTR AllTyAndFlds [ | tyCnstr: Cnstr | ]
 ATTR TyAGItf  [ | | tyCnstr: Cnstr ]
 
 SEM TyAGItf
@@ -243,7 +243,7 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2
-ATTR AllAllTy [ | | self: SELF ]
+ATTR AllTyAndFlds [ | | self: SELF ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -302,12 +302,12 @@ SEM Ty
                                                     _   ->  (@self,emptyCnstr,[])
   | Quant           lhs     .   repl        =   mkTyQu @qu.self ([@tv] `intersect` ftv @ty.repl) @ty.repl
 
-ATTR AllAllTy [ | | selfTvRen: SELF ]
+ATTR AllTyAndFlds [ | | selfTvRen: SELF ]
 
 SEM Ty
   | Var             lhs     .   selfTvRen   =   if @tv `Set.member` @lhs.boundTvS then @selfTvRen else Ty_Var @tvNew @categ.selfTvRen
 
-ATTR TyAGItf AllAllTy [ | | errL, internErrL USE {++} {[]}: ErrL ]
+ATTR TyAGItf AllTyAndFlds [ | | errL, internErrL USE {++} {[]}: ErrL ]
 
 SEM Ty
   | Alts            lhs     .   errL        =   @errL
@@ -319,7 +319,7 @@ SEM Ty
 %%[4_2
 %%]
 ATTR TyAGItf [ | | replNoAlt: Ty ]
-ATTR AllAllTy [ | | replNoAlt: SELF ]
+ATTR AllTyAndFlds [ | | replNoAlt: SELF ]
 
 SEM Ty
   | Alts            lhs     .   replNoAlt   =   mkTyVar @tv

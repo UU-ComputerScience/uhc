@@ -325,26 +325,30 @@ scheme expr "Expr" =
     judgeuse tex valGam; knTy :-.."e" e : ty
     explain (Within environment |valGam| , expecting the type of expression |e| to be |knTy| , |e| has type |ty| .)
     explain knTy = ("Expected/known" type of expression)
-    explain tyGam = (Environment | (ident :-> ty)..._ | for type identifiers, cannot be modified hence treated as a global constant in "e.ann")
+    explain tyGam = (Environment | (ident :-> ty)..._ | for type identifiers, cannot be modified (hence treated as a global constant in "\\ruleRef{e.ann}"))
   view C =
     holes [ | thread tyCnstr: Cnstr | ]
     judgespec kiGam ; tyGam ; valGam ; tyCnstr.inh ; knTy :- e : ty ~> tyCnstr.syn
     judgeuse tex valGam ; tyCnstr.inh ; knTy :-.."e" e : ty ~> tyCnstr.syn
+    explain (Within environment |valGam| , expecting the type of expression |e| to be |tyCnstr.inh knTy| , |e| has type |ty| , under constraints |tyCnstr.syn| .)
     explain tyCnstr.inh = (Already known constraints)
     explain tyCnstr.syn = (|tyCnstr.inh| + new constraints)
   view I1 =
     holes [ fiopt: FIOpts | | ]
     judgespec fiopt ; kiGam ; tyGam ; valGam ; tyCnstr.inh ; knTy :- e : ty ~> tyCnstr.syn
     judgeuse tex fiopt ; valGam ; tyCnstr.inh ; knTy :-.."e" e : ty ~> tyCnstr.syn
-    explain (Within environment |valGam| and context |fiopt| , expecting the type of expression |e| to be |knTy| , has type |ty| .)
+    explain (Within environment |valGam| and context |fiopt| , expecting the type of expression |e| to be |tyCnstr.inh knTy| , |e| has type |ty| , under constraints |tyCnstr.syn| .)
     explain fiopt = (|fitsIn| options, additional contextual information for | <= |)
   view I2 =
     holes [ | thread ityCnstr: ICnstr | retain ity: Ty ]
     judgespec fiopt ; kiGam ; tyGam ; valGam ; ityCnstr.inh ; tyCnstr.inh ; knTy :- e : ity ; ty ~> ityCnstr.syn ; tyCnstr.syn
     judgeuse tex fiopt ; valGam ; ityCnstr.inh ; tyCnstr.inh ; knTy :-.."e" e : ity ; ty ~> ityCnstr.syn ; tyCnstr.syn
-    explain ityCnstr.inh = (Already known constraints (for impredicativity inference))
-    explain ityCnstr.syn = (|ityCnstr.inh| + new constraints (for impredicativity inference))
-    explain ity = (Type (with type alternatives |talt|) of expression (for impredicativity inference))
+    explain (Within environment |valGam| and context |fiopt| , expecting the types of expression |e| to be |ityCnstr.inh knTy| (and |tyCnstr.inh knTy|)
+            , |e| has type |ity| (and |ty|) , under constraints |ityCnstr.syn| (and |tyCnstr.syn|) .
+            )
+    explain ityCnstr.inh = (Already known constraints (for quantifier propagation))
+    explain ityCnstr.syn = (|ityCnstr.inh| + new constraints (for quantifier propagation))
+    explain ity = (Type (with type alternatives |talt|) of expression (for quantifier propagation))
   view CG =
     holes [ | | retain translExpr: TranslExpr ]
     judgespec fiopt ; kiGam ; tyGam ; valGam ; tyCnstr.inh ; knTy :- e : ty ~> tyCnstr.syn ; translExpr
@@ -1064,16 +1068,27 @@ scheme decl "Decl" =
     holes [ tySigGam: ValGam | thread patValGam: ValGam | ]
     judgespec tySigGam ; patValGam.inh ; kiGam ; tyGam ; valGam :- d : gathTySigGam ; patValGam.syn
     judgeuse tex tySigGam ; patValGam.inh ; valGam :-.."d" d : gathTySigGam ; patValGam.syn
-    explain (Declaration |d| has explicit type bindings |gathTySigGam| , within |tySigGam| implicit type bindings |patValGam.syn| , and type checks within |valGam|)
+    explain (Declaration |d| has explicit type bindings |gathTySigGam| ,
+             within explicit bindings |tySigGam| and implicit type bindings |patValGam.inh| ,
+             and type checks within |valGam| ,
+             yielding additional bindings |patValGam.syn| .
+            )
     explain gathTySigGam = (Environment with new type signature bindings)
     explain tySigGam = (Collected |gathTySigGam| , used by patterns to extract bindings for pattern variables)
     explain patValGam.inh = ("Known/gathered" pattern variable bindings)
     explain patValGam.syn = (|patValGam.inh| + new bindings)
-    explain tyGam = (Environment | (ident :-> ty)..._ | for type identifiers, cannot be modified hence treated as a global constant in "\ruleRef{e.ann}")
+    explain tyGam = (Environment | (ident :-> ty)..._ | for type identifiers, cannot be modified (hence treated as a global constant in "\\ruleRef{e.ann}"))
   view C =
     holes [ | thread tyCnstr: Cnstr, thread patTyCnstr: Cnstr | ]
     judgespec tySigGam ; patValGam.inh ; kiGam ; tyGam ; valGam ; patTyCnstr.inh ; tyCnstr.inh :- d : gathTySigGam ; patValGam.syn ~> patTyCnstr.syn ; tyCnstr.syn
     judgeuse tex tySigGam ; patValGam.inh ; valGam ; patTyCnstr.inh ; tyCnstr.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> patTyCnstr.syn ; tyCnstr.syn
+    explain (Declaration |d| has explicit type bindings |gathTySigGam| ,
+             within explicit bindings |tySigGam| and implicit type bindings |patTyCnstr.inh patValGam.inh| ,
+             and type checks within |tyCnstr.inh valGam| ,
+             yielding additional bindings |patValGam.syn| ,
+             under constraints |patTyCnstr.syn| (for |patValGam.syn|) and
+             |tyCnstr.syn| (for |valGam|).
+            )
     explain patTyCnstr.inh = ("Known/gathered" constraints during type inference of patterns (i.e. use of type signatures and pattern structure))
     explain patTyCnstr.syn = (|patTyCnstr.inh| + new constraints)
     explain tyCnstr.inh = ("Known/gathered" constraints during type inference of expressions bound to patterns)
@@ -1084,7 +1099,7 @@ scheme decl "Decl" =
     judgeuse tex tySigGam ; patValGam.inh ; valGam ; tySigTyCnstr.inh ; patTyCnstr.inh ; ityCnstr.inh ; tyCnstr.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> tySigTyCnstr.syn ; patTyCnstr.syn ; ityCnstr.syn ; tyCnstr.syn
     explain tySigTyCnstr.inh = (Type signature information represented as constraint for binding to type variable in |gathTySigGam|)
     explain tySigTyCnstr.syn = (|tySigTyCnstr.inh| + new constraints)
-    explain ityCnstr.inh = ("Known/gathered" constraints during impredicativity inference)
+    explain ityCnstr.inh = ("Known/gathered" constraints during quantifier propagation)
     explain ityCnstr.syn = (|ityCnstr.inh| + new constraints)
   view CG =
     holes [ | | translBind: TransDecl ]
@@ -1254,22 +1269,29 @@ scheme patexpr "PatExpr" =
   view K =
     holes [ knTy: Ty, node p: PatExpr | thread valGam: ValGam |  ]
     judgespec valGam.inh ; knTy :-.."p" p : valGam.syn
-    explain (Knowing the type of pattern |p| to be |knTy| , |valGam.syn| hold bindings for identifiers of |p| .)
+    explain (Knowing the type of pattern |p| to be |knTy| , yielding additional bindings |valGam.syn| (for identifiers introduced by |p|))
     explain knTy = (Known type of pattern)
-    explain valGam.inh = (Already gathered bindings (for this version initially | [] |))
+    explain valGam.inh = (Already gathered bindings (for this EH version initially | [] |))
     explain valGam.syn = (|valGam.inh| + new bindings)
   view C =
     holes [ | thread tyCnstr: Cnstr | retain ty: Ty, patFunTy: Ty ]
     judgespec tyCnstr.inh ; valGam.inh ; knTy :-.."p" p : ty ; valGam.syn ~> tyCnstr.syn ; patFunTy
+    explain (Knowing the type of pattern |p| to be |tyCnstr.inh knTy| ,
+             |p| has type |ty| and bindings |valGam.syn| (for identifiers introduced by |p|) ,
+             under constraints |tyCnstr.syn|
+            )
     explain tyCnstr.inh = (Already known constraints)
     explain tyCnstr.syn = (|tyCnstr.inh| + new constraints)
     explain ty = (Type of pattern |p|)
     explain patFunTy = (The type which encodes the value dissection as a function type, from value to tuple (holding the constituents of the value))
+    explain patFunTy = ((Internal use only) Encoding of the value dissection as a type of the form |ty.v -> ty.e| ,
+                        where a value of type |ty.v| is dissected, yielding a tuple type |ty.e| with the elements (of the dissection)
+                       )
   view I1 =
     holes [ fiopt: FIOpts | thread tyGam: TyGam | ]
     judgespec fiopt ; tyGam.inh ; valGam.inh ; tyCnstr.inh ; knTy :- p : ty ; tyGam.syn ; valGam.syn ~> tyCnstr.syn ; patFunTy
     judgeuse tex fiopt ; valGam.inh ; tyCnstr.inh ; knTy :-.."p" p : ty ; valGam.syn ~> tyCnstr.syn ; patFunTy
-    explain (Knowing the type of pattern |p| to be |knTy| , |valGam.syn| hold bindings for identifiers of |p| , |tyGam.syn| holds bindings for lexically scoped type variables .)
+    explain (Knowing the type of pattern |p| to be |knTy| , |valGam.syn| hold bindings for identifiers introduced by |p| , |tyGam.syn| holds bindings for lexically scoped type variables .)
     explain fiopt = (|fitsIn| options, additional contextual information for | <= |)
     explain tyGam.inh = (Already gathered type variable bindings)
     explain tyGam.syn = (|tyGam.inh| + new bindings)
@@ -1289,12 +1311,16 @@ rulesgroup patexpr.eh4 scheme patexpr "Pattern expression type rules" =
 ruleset patexpr.base scheme patexpr viewsel K - * "Pattern expression type rules" =
   rule p.int "IConst" =
     view K =
+      judge F : fit = :- knTy <= tyInt : fo : _
       -
       judge R : patexpr = valGam ; knTy :- int : valGam
     view C =
+      judge F : fit
+          | cnstr = tyCnstr.f
+          | lty = tyCnstr.inh knTy
       -
       judge R : patexpr
-          | tyCnstr.syn = tyCnstr.inh
+          | tyCnstr.syn = tyCnstr.f tyCnstr.inh
           | ty = tyInt
           | patFunTy = ANY
     view I1 =
@@ -1304,6 +1330,8 @@ ruleset patexpr.base scheme patexpr viewsel K - * "Pattern expression type rules
 
   rule p.char : p.int "CConst" =
     view K =
+      judge F : fit
+          | rty = tyChar
       -
       judge R : patexpr 
           | p = char
@@ -1319,7 +1347,7 @@ ruleset patexpr.base scheme patexpr viewsel K - * "Pattern expression type rules
       judge R : patexpr = valGam ; knTy :- _ : valGam
     view C =
       judge P : mkProdTy = ty.p === tvarv..._
-      judge V : tvarvFreshN = (`|` (identc | Nm) `|`) : tvarv..._
+      judge V : tvarvFreshN = (`|` (identc | Nm) `|`) : (retain tvarv..._)
       -
       judge R : patexpr
           | tyCnstr.syn = tyCnstr.inh
@@ -1714,7 +1742,7 @@ relation match =
     holes [ lty: Ty, rty: Ty | | ty: Ty ]
     judgespec :-..howToMatch lty <=>.howToMatch rty : ty
     judgeuse tex :-..howToMatch lty howToMatch rty : ty
-    explain (|lty| matches |rty| , |ty === rty| in which all |ANY| are eliminated)
+    explain (|lty| matches |rty| , |ty === rty| with |ANY| eliminated from |ty|)
     explain lty = (Type to match)
     explain rty = (Type to match)
     explain ty = (Result type)
@@ -1759,14 +1787,14 @@ rulesgroup match.eh4 scheme match "Type matching (related to |forall|)" =
   rule match.all m.var.l1
   rule match.all m.var.r1
   rule match.all m.forall.l
-  rule match.all m.forall.r1
+  rule match.all m.forall.r
   rule match.all m.forall.r2
   rule match.all m.var.l2
   rule match.all m.var.r2
   rule match.all m.arrow
   rule match.all m.prod
 
-rulesgroup match.eh4B scheme match "Type alternative related matching (finding possible impredicativity)" =
+rulesgroup match.eh4B scheme match "Type alternative related matching (finding possible quantified types)" =
   rule match.all m.var.l1
   -- rule match.all m.var.l2
   rule match.all m.var.l3
@@ -1781,7 +1809,7 @@ rulesgroup match.eh4B scheme match "Type alternative related matching (finding p
 
 rulesgroup match.eh4C scheme match "Type matching (related to |exists|)" =
   rule match.all m.exists.l
-  rule match.all m.exists.r1
+  rule match.all m.exists.r
   rule match.all m.exists.r2
 
 rulesgroup match.eh4Bmeetjoin scheme match "Type meet/join" =
@@ -1796,12 +1824,12 @@ rulesgroup match.eh4Cmeetjoin scheme match "Type meet/join (|exists| specific)" 
 
 rulesgroup match.forall scheme match "Type matching (|<=| on |forall|)" =
   rule match.all m.forall.l
-  rule match.all m.forall.r1
+  rule match.all m.forall.r
   rule match.all m.forall.r2
 
 rulesgroup match.exists scheme match "Type matching (|<=| on |exists|)" =
   rule match.all m.exists.l
-  rule match.all m.exists.r1
+  rule match.all m.exists.r
 
 rulesgroup match.meet scheme match "Type matching (|<+>| specific)" =
   rule match.all m.forall.l2
@@ -1970,7 +1998,7 @@ ruleset match.all scheme match viewsel K - * "Type matching rules" =
       -
       judge R : match = fiopt :- (forall ^ alpha..._ `.` ty.1) <=>.(<=) ty.2 : ty ~> tyCnstr
     
-  rule m.forall.r1 viewsel I1 - * =
+  rule m.forall.r viewsel I1 - * =
     view I1 = 
       judge F : match = fiopt :- ty.1 <=>.(<=) ty.i : ty ~> tyCnstr
       judge I : inst.tvarv' = ty.i, tvarf, tvarf..._ === ty.2, alpha
@@ -1995,7 +2023,7 @@ ruleset match.all scheme match viewsel K - * "Type matching rules" =
       -
       judge R : match = fiopt :- (exists ^ alpha..._ `.` ty.1) <=>.(<=) ty.2 : ty ~> tyCnstr
     
-  rule m.exists.r1 viewsel I1 - * =
+  rule m.exists.r viewsel I1 - * =
     view I1 = 
       judge F : match = fiopt :- ty.1 <=>.(<=) ty.i : ty ~> tyCnstr.f
       judge I : inst.tvarv' = ty.i, tvarv, tvarv..._ === ty.2, alpha
@@ -2261,39 +2289,6 @@ ruleset meet scheme meet "Join of types" =
       judge R : meet
 
 -------------------------------------------------------------------------
--- Match, interface to fit/meet/join
--------------------------------------------------------------------------
-
-{-
-relation match =
-  view I2 =
-    holes [ fiopt: FIOpts, lty: Ty, rty: Ty | | ty: Ty, cnstr: Cnstr ]
-    judgespec fiopt :-.."<=>" lty <=> rty : ty ~> cnstr
-
-ruleset match scheme match "Matching of types" =
-  rule meet =
-    view I2 =
-      judge O : fioptHasOpt = fioMeetY `elem` fiopt
-      judge M : meet = fiopt :- lty <+> rty : ty ~> cnstr
-      -
-      judge R : match = fiopt :- lty <=> rty : ty ~> cnstr
-
-  rule join =
-    view I2 =
-      judge O : fioptHasOpt = fioJoinY `elem` fiopt
-      judge J : join = fiopt :- lty <-> rty : ty ~> cnstr
-      -
-      judge R : match = fiopt :- lty <=> rty : ty ~> cnstr
-
-  rule fit =
-    view I2 =
-      judge O : fioptHasOpt = fioFitY `elem` fiopt
-      judge F : fit = fiopt :- lty <= rty : ty ~> cnstr
-      -
-      judge R : match = fiopt :- lty <=> rty : ty ~> cnstr
--}
-
--------------------------------------------------------------------------
 -- Binding from a Gamma
 -------------------------------------------------------------------------
 
@@ -2538,7 +2533,7 @@ relation tvarvFreshN =
   view C =
     holes [ sz: Int | | tvarvs: TyL ]
     judgespec sz : tvarvs
-    judgeuse tex tvarvs (text "fresh"), sz (text "times")
+    judgeuse tex tvarvs (text "fresh"), ^^ sz === `|` tvarvs `|`
     judgeuse ag tvarvs `=` map mkTyVar (mkNewUIDL (sz) unique)
 
 relation kvarvFresh =

@@ -45,6 +45,9 @@ TEXT_SHUFFLE_ORDER			:= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 8, 1 < 9, 
 LHS2TEX_OPTS_TEXT_CONFIG	:= --unset=optExpandPrevRef
 LHS2TEX_OPTS_VARIANT_CONFIG	:= 
 
+# configuration of ruler, to be done on top level
+TEXT_RULER_MARK_CHANGES_CFG	:= --markchanges="E - *"
+
 # end products, binary, executable, etc
 TEXT_BLD_PDF				:= $(DOC_PREFIX)$(TEXT_VARIANT).pdf
 TEXT_ALL_PUB_PDFS			:= $(patsubst %,$(DOC_PREFIX)%.pdf,$(TEXT_PUB_VARIANTS))
@@ -82,13 +85,18 @@ TEXT_RULES_3_DRV_CAG		:= $(TEXT_TMP_VARIANT_PREFIX)$(EHC_RULER_RULES).cag
 TEXT_RULES_3_DRV_LTEX		:= $(TEXT_RULES_3_DRV_CAG:.cag=.ltex)
 TEXT_RULES_3_DRV_TEX		:= $(TEXT_RULES_3_DRV_LTEX:.ltex=.tex)
 
-TEXT_RULES_EXPLAIN_3_DRV_CAG		:= $(TEXT_TMP_VARIANT_PREFIX)rules3Explain.cag
+TEXT_RULES_EXPLAIN_3_DRV_CAG:= $(TEXT_TMP_VARIANT_PREFIX)rules3Explain.cag
+
+TEXT_RULES_TH_SRC_RUL		:= $(addprefix $(TEXT_SRC_PREFIX),TheoremRules.rul)
+TEXT_RULES_TH_DRV_LTEX		:= $(patsubst $(TEXT_SRC_PREFIX)%.rul,$(TEXT_TMP_VARIANT_PREFIX)%.ltex,$(TEXT_RULES_TH_SRC_RUL))
+TEXT_RULES_TH_DRV_TEX		:= $(TEXT_RULES_TH_DRV_LTEX:.ltex=.tex)
 
 TEXT_HIDE_DRV_TXT			:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN)-hide.hltex
 TEXT_HIDE_DRV_LTEX			:= $(TEXT_HIDE_DRV_TXT:.hltex=.ltex)
 TEXT_HIDE_DRV_TEX			:= $(TEXT_HIDE_DRV_TXT:.hltex=.tex)
 
-TEXT_SUBS_DRV_TEX			:= $(EHC_CAG_DRV_TEX) $(EHC_CHS_DRV_TEX) $(AGPRIMER_CAG_DRV_TEX) $(AGPRIMER_CHS_DRV_TEX) $(RULER_12_DRV_TEX) $(RULER_3_DRV_TEX) $(TEXT_RULES_3_DRV_TEX)
+TEXT_SUBS_DRV_TEX			:= $(EHC_CAG_DRV_TEX) $(EHC_CHS_DRV_TEX) $(AGPRIMER_CAG_DRV_TEX) $(AGPRIMER_CHS_DRV_TEX) $(RULER_12_DRV_TEX) \
+								$(RULER_3_DRV_TEX) $(TEXT_RULES_3_DRV_TEX) $(TEXT_RULES_TH_DRV_TEX)
 TEXT_SUBS_ASIS_DRV			:= $(patsubst $(TEXT_SRC_PREFIX)%.tex,$(TEXT_TMP_VARIANT_PREFIX)%.tex,$(TEXT_SUBS_ASIS_SRC))
 
 TEXT_RULER2_DEMO_TEX		:= $(patsubst $(RULER2_DEMO_PREFIX)%,$(TEXT_TMP_VARIANT_PREFIX)%,$(RULER2_DEMO_ALL_DRV_TEX))
@@ -107,7 +115,7 @@ FIGS_ASIS_DRV				:= $(patsubst $(FIGS_SRC_PREFIX)%,$(TEXT_TMP_VARIANT_PREFIX)%,$
 TEXT_ALL_MK_FILES			:= $(AGPRIMER_MKF) $(EHC_MKF) $(RULER2_MKF) $(TEXT_MKF)
 
 # all src
-TEXT_EDIT_SRC				:= $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SRC_CLTEX) $(TEXT_MAIN_SRC_LSTY)
+TEXT_EDIT_SRC				:= $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SRC_CLTEX) $(TEXT_MAIN_SRC_LSTY) $(TEXT_RULES_TH_SRC_RUL)
 TEXT_ALL_SRC				:= $(TEXT_EDIT_SRC) $(TEXT_SUBS_ASIS_SRC) $(TEXT_BIB_SRC)
 
 # all deriveds (as counting for make dependencies)
@@ -137,7 +145,7 @@ text-variant-phd:
 	  text-variant-dflt-bib-inx
 
 text-variant-phd-paper:
-	$(MAKE) \
+	$(MAKE) TEXT_RULER_MARK_CHANGES_CFG= \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=newDocClassHeader --set=targetForPaper --set=omitTBD --set=omitLitDiscuss" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
@@ -273,7 +281,11 @@ $(RULER_12_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(EHC_SRC_PREFIX)%.rul
 
 $(RULER_3_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(EHC_SRC_PREFIX)%.rl2 $(RULER2)
 	mkdir -p $(@D)
-	$(RULER2) --lhs2tex --markchanges="E - *" --base=$(*F) $< > $@
+	$(RULER2) --lhs2tex $(TEXT_RULER_MARK_CHANGES_CFG) --base=$(*F) $< > $@
+
+$(TEXT_RULES_TH_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(TEXT_SRC_PREFIX)%.rul $(RULER2)
+	mkdir -p $(@D)
+	$(RULER2) --lhs2tex --base=$(*F) $< > $@
 
 $(TEXT_RULES_3_DRV_CAG): $(EHC_RULES_3_SRC_RL2) $(RULER2)
 	mkdir -p $(@D)

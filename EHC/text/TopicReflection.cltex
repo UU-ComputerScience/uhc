@@ -82,7 +82,7 @@ In the remainder of this chapter we will discuss the goals we set out for,
 discuss how the used domain specific languages AG and |Ruler| did help,
 and propose directions for future work.
 
-\paragraph{EH explanation and its presentation}
+\Paragraph{EH explanation and its presentation}
 Our approach to the explanation of EH shares the focus on implementation
 with the approach taken by Jones \cite{jones00thih},
 and shares the focus on the combination of formalities and implementation with Pierce
@@ -166,7 +166,7 @@ the handling of feature isolation and feature combination.
 
 
 
-\paragraph{Partitioning and complexity}
+\Paragraph{Partitioning and complexity}
 
 In this thesis we have chosen a particular partitioning of the full EH system into smaller and
 ordered steps.
@@ -199,7 +199,7 @@ supporting Haskell functions and type rules.
 It is unclear how to capture such a group of changes by a module-like mechanism.
 
 
-\paragraph{Consistency}
+\Paragraph{Consistency}
 
 Our approach to maintaining consistency between material used
 for explanation and implementation,
@@ -321,7 +321,7 @@ in particular, a description suitable for further use by theorem provers,
 or other tools.
 \end{Itemize}
 
-\paragraph{EH: explicit and/or implicit}
+\Paragraph{EH: explicit and/or implicit}
 
 EH supports a flexible use of explicitly specified type information:
 \begin{Itemize}
@@ -351,7 +351,7 @@ For example, the instantiation of type variables with types now is done implicit
 We may well allow explicit notation a la System F, instead of the more indirect means by specifying
 (separate) type signatures and/or type annotations.
 
-\paragraph{EH vs Haskell}
+\Paragraph{EH vs Haskell}
 EH includes essential features of Haskell;
 As such, EH is closer to the core language internally used by GHC \cite{tolmach01ghc-core,www04ghc},
 in that it allows System F expressiveness \cite{girard72system-f,reynolds74type-struct-sysF}.
@@ -367,7 +367,42 @@ syntactic sugar, and a module mechanism, these strong points are
 easily made available as
 Haskell with extensions.
 
-\paragraph{EH: future work}
+\Paragraph{EH: formal properties}
+In this thesis we do not make claims about the usual formal properties of a type system:
+soundness, completeness, and principality (of type inference).
+However, we still can make the following observations:
+\begin{Itemize}
+\item
+EH3 implements Hindley-Milner type inference,
+which is standard \cite{hindley69princ-type,damas82principal-type},
+combined with the use of explicit type signatures,
+which also has been explored \cite{pierce00local-type-inference,odersky01col-loc-infer}.
+\item
+From EH4 onwards we allow the same expressiveness as System F by means of type annotations which
+allow quantifiers at arbitrary positions (in the type annotation).
+The key question is what kind of types can be inferred when type annotations are omitted.
+We informally argue the following:
+\begin{Itemize}
+\item
+We rely on (classical) Hindley-Milner type inference,
+hence we inherit its properties in case no type signatures are specified.
+\item
+We propagate known type signatures (specified or generalised by means of HM inference) to
+wherever these signatures are needed,
+so these signatures can be used as if specified by type annotations.
+\item
+We allow polymorphic types to propagate impredicatively,
+but we do not invent polymorphism other than via HM generalisation.
+Propagation is based on the relatively simple notion of
+``touched by another polymorphic type'' (\chapterRef{ehc4B})).
+This notion can be seen as a characterisation of what we can infer.
+\end{Itemize}
+\end{Itemize}
+
+We intend to further investigate the formal properties of our type inference,
+in particular the quantifier propagation.
+
+\Paragraph{EH: future work}
 In the near future we intend to construct and/or investigate the following:
 
 \begin{Itemize}
@@ -379,7 +414,7 @@ a module system and completion of code generation.
 Co- and contravariance analysis, along the lines of Steffen \cite{steffen97polar-abs,steffen97polar-phd}.
 This is required for |<=| to determine the direction of |<=| for components of a data type.
 \item
-The integration of global impredicativity inference into all compilers.
+The integration of global quantifier propagation into all compilers.
 In particular the presence of implicit parameters adds complexity.
 \end{Itemize}
 

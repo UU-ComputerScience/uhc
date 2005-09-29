@@ -2,13 +2,13 @@
 The third version of EH adds polymorphism, in particular so-called parametric polymorphism
 which allows functions to be used on arguments of differing types.
 For example
-\begin{code}
+%%[[wrap=code
 %%srcfile(afp-eh/04.eh%%)
-\end{code}
+%%]
 gives |v :: %%3file(afp-eh/04.eh%%)|
 and |id :: %%3(let id = \x -> x in id%%)|.
 The polymorphic identity function |id| accepts a value of any type |a|,
-giving back a value of the same type |a|.
+and returns a value of the same type |a|.
 Type variables in the type signature are used to specify polymorphic types.
 Polymorphism of a type variable in a type is made explicit in the type
 by the use of a universal quantifier @forall@, pretty-printed as |forall|.
@@ -21,21 +21,21 @@ The type signature may be omitted, and in that case the same type will still be 
 However, the reconstruction of the type of a value for which
 the type signature is omitted has its limitations,
 the same as for Haskell98 \cite{peytonjones03has98-rev-rep}.
-Haskell98 also restricts what can be described by type signatures by allowing
+Haskell98 restricts what can be described by type signatures by allowing
 a quantifier only at the beginning of a type signature.
-In this version of EH we also  do not allow the explicit use of a quantifier in a type expression
+In this version of EH we also disallow the explicit use of a quantifier in a type expression
 (for a type signature);
 the quantifier is inserted by the implementation.
 
 Polymorphism is allowed for identifiers bound by a |let|-expression,
 not for identifiers bound by another mechanism such as parameters of a
 lambda expression.
-The following variant of the previous example is therefore not to be considered
+The following variant of the previous example is therefore not
 correct:
 
-\begin{code}
+%%[[wrap=code
 %%3srcfile(test/3-mono-arg.eh%%)
-\end{code}
+%%]
 
 It will give the following output:
 
@@ -50,16 +50,16 @@ of the body of |f| this limits the choice of |a| to no choice at all.
 If the caller has all the freedom to make the choice, the callee has none.
 In our implementation this is encoded as a type constant @c_@ chosen for |a| during type checking
 the body of |f|.
-This type constant by definition is a type a programmer can never define or denote.
+By definition this type constant is a type a programmer can never define or denote.
 The consequence is that an attempt to use |i| in the body of |f|, which has type @c_..@| -> |@c_..@ cannot
 be used with an |Int|.
 The use of type constants will be explained later.
 
 Another example of the limitations of polymorphism in this version of EH is the following
 variation:
-\begin{code}
+%%[[wrap=code
 %%3srcfile(test/3-mono-arg2.eh%%)
-\end{code}
+%%]
 for which the compiler will infer the following types:
 \begin{TT}
 %%3ppfile(test/3-mono-arg2.eh%%)
@@ -68,9 +68,9 @@ for which the compiler will infer the following types:
 EH version 3 allows parametric polymorphism but not yet polymorphic parameters.
 The parameter |i| has a monomorphic type, which is made even more clear when
 we make an attempt to use this |i| polymorphically in:
-\begin{code}
+%%[[wrap=code
 %%3srcfile(test/3-mono-arg3.eh%%)
-\end{code}
+%%]
 about which the compiler will complain:
 \begin{TT}
 %%3ppfile(test/3-mono-arg3.eh%%)
@@ -110,11 +110,11 @@ to make the right choice for a type without the programmer specifying additional
 \subsection{Type language}
 
 The type language for this version of EH adds quantification by means of the universal quantifier |forall|:
-\begin{code}
+%%[[wrap=code
 %%@SharedTypeLang.ehc3
-\end{code}
+%%]
 
-A |tvarf| stands for
+An |tvarf| stands for
 a fixed type variable,
 a type variable which may not be constrained but still stands for
 an unknown type.
@@ -126,12 +126,12 @@ The type language suggests that a quantifier may occur anywhere in a type.
 This is not the case, quantifiers may only be on the top of a type;
 this version of EH takes care to ensure this.
 A second restriction is that quantified types
-are present only in a |Gamma| whereas no |forall|'s are
-present in types used throughout type inferencing expressions and patterns.
+are present only in an environment |Gamma| whereas no |forall|'s are
+present in types used when type inferencing expressions and patterns.
 This is to guarantee the principal type property. \TBD{more refs [..]}
 
 The corresponding abstract syntax for a type needs
-additional alternative to represent a quantified type.
+additional alternatives to represent a quantified type.
 For a type variable we also have to remember to which category it belongs,
 either \IxAsDef{plain} or \IxAsDef{fixed}:
 
@@ -154,7 +154,6 @@ We only need to extend the abstract syntax for types with an alternative for typ
 
 %%[[wrap=code
 %%@EHAbsSyn.3.TyExpr
-%%@EHAbsSyn.3.TyExpr.VarWild
 %%]
 
 %if incl01TopicParsing
@@ -217,7 +216,7 @@ It is assumed that quantifiers occur only at the top of a type.
 \subsubsection{Quantification}
 
 The other way around, quantifying a type, happens when a type is
-bound to a value identifier and added to a |Gamma|.
+bound to a value identifier and added to an environment |Gamma|.
 The way this is done varies with the presence of a type signature.
 \RuleRef{e.let} (\figRef{rules3.HM.expr.baseForEH3}), \ruleRef{d.tysig}, and \ruleRef{d.val}
 (\figRef{rules3.HM.decl.base})
@@ -233,7 +232,8 @@ where it must be instantiated as the expected type of both pattern and expressio
 A type (for an identifier) is inferred.
 \RuleRef{d.val} has no type signature to use as the expected type;
 a type variable is used instead.
-At the boundary of its scope, in \ruleRef{e.let}, we generalise over those type variables in the type
+At the boundary of its scope, in \ruleRef{e.let},
+we generalise over those type variables in the type
 which do not occur outside the scope.
 \end{Itemize}
 
@@ -266,11 +266,11 @@ Which type do we use for that purpose, the quantified or the unquantified type s
 \item
 Suppose the unquantified signature |a -> a| is used in the following fragment.
 Then, for the erroneous
-\begin{code}
+%%[[wrap=code
 let  id  ::  a   -> a
      id  =   \x  -> 3
 in   ...
-\end{code}
+%%]
 we end up with fitting |tvarv1 -> Int <= a -> a|.
 This can be accomplished via constraints |[tvarv1 :-> Int, a :-> Int]|.
 However, |a| may only be chosen by the caller of |id|.
@@ -307,11 +307,14 @@ A \IxAsDef{fixed type variable} is like a plain type variable but may not be con
 that is, bound to another type.
 This means that |fitsIn| has to be adapted to prevent this from happening.
 The difference with the previous version only lies in the handling of type variables.
-Type variables now may be bound if not fixed, and to be equal only if their categories match too.
+Type variables now may be bound if not fixed, and are equal only if their categories also match.
 For brevity the new version of |fitsIn| is omitted.
+%%[[hide wrap=code impl.fitsIn3="fitsIn, version 3"
+%%@EHTyFitsIn.3.fitsIn
+%%]
 
 
-\subsubsection{Generalization/quantification of inferred types}
+\subsubsection{Generalisation/quantification of inferred types}
 
 How do we determine if a type for some expression bound to an identifier in
 a value declaration is polymorphic?
@@ -321,18 +324,17 @@ However, if for a value definition a corresponding type signature is missing,
 the value definition itself gives us all the information we need.
 We make use of the observation that a binding for a value identifier
 acts as a kind of boundary for that expression.
-\begin{code}
+%%[[wrap=code
 let  id = \x -> x
-in   ...
-\end{code}
-The only way the value associated with |id| ever will be used outside the
-expression bound to |id|, is via the identifier |id|.
+in   e
+%%]
+In expression |e| the value bound to |id| will only be used via |id|.
 So, if the inferred type |tvarv1 -> tvarv1| for the expression |\x -> x| has free type variables
 (here: |tvarv1|)
 and these type variables are not used in the types of other bindings, in particular those
 in the global |Gamma|,
 we know that the expression |\x -> x| nor any other type will constrain those free type variables.
-The type for such a type variable apparently can be freely chosen by
+The type for such a type variable can apparently be freely chosen by
 the expression using |id|, which is exactly the meaning
 of the universal quantifier.
 These free type variables are the candidate type variables over which quantification can take place,
@@ -364,9 +366,9 @@ We use |valGamQuantify| to accomplish this:
 The condition that quantification only may be done for type variables not occurring in
 the global |Gamma| is a necessary one.
 For example:
-\begin{code}
+%%[[wrap=code
 %%3srcfile(test/3-mono-glob.eh%%)
-\end{code}
+%%]
 
 If the type |g :: a -> (a,a)| would be concluded, |g| can be used with |y| an |Int| parameter, as
 in the example. Function |f| can then be used with |x| a |Char| parameter.
@@ -382,9 +384,9 @@ Inference for these declarations is done together and all the types of all ident
 are quantified together. The consequence is that a declaration that on its own would be polymorphic,
 may not be so in conjunction with an additional declaration which uses the previous declaration:
 
-\begin{code}
+%%[[wrap=code
 %%3srcfile(test/3-mono-bind.eh%%)
-\end{code}
+%%]
 
 The types of the function |id1| and value |v1| are inferred in the same binding group.
 However, in this binding group the type for |id1| is |tvarv1 -> tvarv1| for some type variable |tvarv1|,
@@ -410,9 +412,9 @@ to be done explicitly using sequences of |let| expressions: |let d1 in let d2 in
 Being together in a binding group can create a problem for inferencing mutually recursive definitions,
 for example:
 
-\begin{code}
+%%[[wrap=code
 %%3srcfile(test/3-mut-rec.eh%%)
-\end{code}
+%%]
 
 This results in
 
@@ -426,7 +428,18 @@ More type information cannot be constructed unless more information
 is given as is done for |f2|.
 Then also for |g2| may the type |forall ^ a . a -> a| be reconstructed.
 
-\TBD{example polymorphic recursion}
+\subsection{Conclusion}
+
+In \thischapt\ we have described the third version of EH,
+that is, classic Hindley-Milner polymorphic type inference.
+The main difference with the previous version is the generalisation for types bound
+to value identifiers in |let|-expressions,
+and their instantiation for each use of those value identifiers.
+
+Type expression can specify polymorphic types,
+but the specification of universal quantifiers at arbitrary positions in a type
+is dealt with in the next EH version.
+
 %%]
 
 %%[XX

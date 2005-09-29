@@ -48,9 +48,9 @@ We can use this function in some setting, for example:
 
 This program produces the following output:
 
-\begin{code}
+%%[[wrap=code
 Tree_Bin (Tree_Leaf 3) (Tree_Bin (Tree_Leaf 3) (Tree_Leaf 3))
-\end{code}
+%%]
 
 The computation of the new tree requires the minimum.
 This minimum is passed as a parameter |m| to |r| at the root of the tree by extracting it from the result of |r|.
@@ -167,9 +167,9 @@ has to be defined for each variant individually as
 it usually will differ between variants.
 Each rule is of the form
 
-\begin{code}
+%%[[wrap=code
 | <variant> ^^^ <node> . <attr> = <Haskell expr>
-\end{code}
+%%]
 
 If multiple rules are declared for a |<variant>| of a node, they may all be listed under the same |<variant>|.
 The same holds for multiple rules for a child (or |lhs|) of a |<variant>|, the child (or |lhs|) may then be shared.
@@ -202,9 +202,9 @@ An inherited attribute is referred to by |@lhs. <attr>|; similar to |@ <node> . 
 but with |<node> == lhs|.
 The rule for an inherited attribute is also the other way around compared to a synthesized attribute.
 In
-\begin{code}
+%%[[wrap=code
 | <variant> ^^^ <node> . <attr> = <Haskell expr>
-\end{code}
+%%]
 |<node>| must now explicitly refer to a child of which an attribute has to be given a value
 to be passed further down the AST.
 For the |rmin| attribute this is the |lt| as well as the |rt| child of the |Bin| variant of node |Tree|.

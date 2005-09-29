@@ -222,10 +222,9 @@
  \marginpar{#1}
 %endif
 }
-\newcommand{\chunkHideRefWWW}[1]{\marginpar{\WWWlogo}}
 \newcommand{\chunkHideRefAppx}[1]{\marginpar{{\footnotesize\secPageRefB{#1}}}}
 %if targetForPaper
-\newcommand{\chunkHideRef}[1]{\chunkHideRefWWW{#1}}
+\newcommand{\chunkHideRef}[1]{\refHideWWW{#1}}
 %else
 \newcommand{\chunkHideRef}[1]{\chunkHideRefAppx{#1}}
 %endif
@@ -304,8 +303,7 @@
 
 
 % referencing
-% \newcommand{\figRef}[1]{figure~\ref{#1}}
-% \newcommand{\FigRef}[1]{Figure~\ref{#1}}
+\newcommand{\refHideWWW}[1]{\marginpar{\WWWlogo}}
 \def\myRef#1{\ref{#1}}
 %if acm
 \newcommand{\figRef}[1]{Figure~\myRef{#1}}
@@ -382,6 +380,9 @@ Chapter~\myRef{#1}%
 %else
 \newtheorem{Example}{Example}[chapter]
 %endif
+\newtheorem{Theorem}[Example]{Theorem}
+\newtheorem{Definition}[Example]{Definition}
+
 
 %% overlay (to be sorted out, these are just placeholders)
 \newcommand{\overlayChunks}[1]{}

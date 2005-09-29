@@ -7,18 +7,18 @@
 \item We all are familiar with it
 \item Haskell:
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 square  ::  Int  ->  Int
 square      x    =   x * x
-\end{code}
+%%]
 }
 \item C:
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 int square(int x) {
   return x * x ;
 }
-\end{code}
+%%]
 }
 \item ...
 \end{itemize}
@@ -36,7 +36,7 @@ int square(int x) {
 \end{itemize}
 \item Haskell's class system:
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 class Num a where
   (*) :: a -> a -> a
 
@@ -47,7 +47,7 @@ square  ::  Num a => a  ->  a
 square               x  =   x * x
 
 ... square 2 ...
-\end{code}
+%%]
 }
 \item
 Implicit parameter: how multiplication should be done
@@ -65,7 +65,7 @@ Implicit parameter: how multiplication should be done
 \begin{itemize}
 \item Explicit equivalent
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 data DictNum a = DictNum (a -> a -> a)
 dictNum = DictNum primMulInt
 
@@ -73,7 +73,7 @@ square  ::  DictNum a ->  a  ->  a
 square      (DictNum m)   x  =   m x x
 
 ... square dictNum y ...
-\end{code}
+%%]
 }
 \end{itemize}
 }
@@ -85,13 +85,13 @@ square      (DictNum m)   x  =   m x x
 \begin{itemize}
 \item C too, e.g. global values:
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 int factor = ... ;
 
 int square(int x) {
   return factor * x * x ;
 }
-\end{code}
+%%]
 }
 \item
 But the type does not include a description of this behavior
@@ -225,17 +225,17 @@ But the type does not include a description of this behavior
 \end{itemize}
 \item Example: equality on values of type |a|:
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 class Eq a where
   (==) :: a -> a -> Bool
-\end{code}
+%%]
 }
 \SafeCode{%
 \item Predicate is part of type of value
-\begin{code}
+%%[[wrap=code
 f  ::    Eq a =>  a ->  a ->  Int
 f  =   \          x     y ->  if x == y then 3 else 4
-\end{code}
+%%]
 }
 \end{itemize}
 }
@@ -256,13 +256,13 @@ f  =   \          x     y ->  if x == y then 3 else 4
 \end{itemize}
 \item Basic proofs (instances) given by programmer
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 instance Eq Int where
   x == y = primEqInt x y
 
 instance Eq Char where
   x == y = primEqChar x y
-\end{code}
+%%]
 }
 \item Used under the hood to construct dictionaries to be passed
 \end{itemize}
@@ -274,14 +274,14 @@ instance Eq Char where
 \begin{itemize}
 \item Do it ourselves Haskell implementation
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 data EqD a  = EqD ^^ {eqEqD :: a -> a -> Bool}  -- class Eq
 eqDInt      = EqD primEqInt                     -- Eq Int
 eqDChar     = EqD primEqChar                    -- Eq Char
 
 f  ::         EqD a ->  a ->  a ->  Int
 f  =   \  ^^  dEq       x     y ->  if (eqEqD dEq) x y then 3 else 4
-\end{code}
+%%]
 }
 \item Usual translation to internal machinery
 \end{itemize}
@@ -293,13 +293,13 @@ f  =   \  ^^  dEq       x     y ->  if (eqEqD dEq) x y then 3 else 4
 \begin{itemize}
 \item Class and instance
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 let  class Eq a where
        eq :: a -> a -> Bool                                                         
      instance Eq Int where
        eq = primEqInt
      ...
-\end{code}
+%%]
 }
 \item Dictionary is record, each field corresponds to member of class
 \begin{itemize}
@@ -315,14 +315,14 @@ let  class Eq a where
 \begin{itemize}
 \item Parameter passing
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
      ...
      f :: forall ^ a . Eq a => a -> a -> forall ^ b . Eq b => b -> b -> (Bool,Bool)
      f = \p q r s -> (eq p q, eq r s)
      eqMod2 = \x y -> eq (mod x 2) (mod y 2)
 in   f  ^                              3 4
         (! (eq = eqMod2) <: Eq Int !)  5 6
-\end{code}
+%%]
 }
 \item Predicate position in type determines parameter passing position
 \end{itemize}
@@ -355,14 +355,14 @@ in   f  ^                              3 4
 \begin{itemize}
 \item Multiple instances for same predicate
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 let  instance Eq Int where
        eq = primEqInt
      instance Eq Int where
        eq = eqMod2
      f = \p q r s -> ...
 in   f 3 4 5 6
-\end{code}
+%%]
 }
 \item Overlapping instances
 \begin{itemize}
@@ -384,7 +384,7 @@ in   f 3 4 5 6
 \begin{itemize}
 \item Bind dictionary for an instance to value identifier
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 let  instance dEqInt1 <: Eq Int where
        eq = primEqInt
      instance dEqInt2 <: Eq Int where
@@ -392,7 +392,7 @@ let  instance dEqInt1 <: Eq Int where
      f = \p q r s -> ...
 in   f  (! dEqInt1 <: Eq Int !) 3 4
         (! dEqInt2 <: Eq Int !) 5 6
-\end{code}
+%%]
 }
 \item |<:| binds to identifier + allows participation in underlying machinery
 \item At parameter passing location: override automatic decisions made by underlying machinery
@@ -405,7 +405,7 @@ in   f  (! dEqInt1 <: Eq Int !) 3 4
 \begin{itemize}
 \item Don't let instance participate in automatic choice for implicit parameter
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 let  instance Eq Int where
        eq = primEqInt
      instance dEqInt2 :: Eq Int where
@@ -413,7 +413,7 @@ let  instance Eq Int where
      f = \p q r s -> ...
 in   f  ^                        3 4
         (! dEqInt2 <: Eq Int !)  5 6
-\end{code}
+%%]
 }
 \item |::| (only) binds to identifier
 \end{itemize}
@@ -425,7 +425,7 @@ in   f  ^                        3 4
 \begin{itemize}
 \item Shadow previous instances
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 let  instance dEqInt1  <:  Eq Int where ...
      instance dEqInt2  ::  Eq Int where ...
      g  = \x y -> eq x y
@@ -433,7 +433,7 @@ in   let  v1 =  g 3 4                              -- (1)
           v2 =  let  instance dEqInt2 <: Eq Int    ^
                 in   g 3 4                         -- (2)
 in   ...
-\end{code}
+%%]
 }
 \item |instance dEqInt2 <: Eq Int| without |where| introduces |dEqInt2| for use by internal machinery
 \begin{itemize}
@@ -453,7 +453,7 @@ in   ...
 \begin{itemize}
 \item Equality on lists needs equality on elements
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 let  data List a = Nil | Cons a (List a)
      instance dEqInt <: Eq Int where
        eq = primEqInt
@@ -462,7 +462,7 @@ let  data List a = Nil | Cons a (List a)
      f :: forall a . Eq a => a -> List a -> Bool
      f = \p q -> eq (Cons p Nil) q
 in   f 3 (Cons 4 Nil)
-\end{code}
+%%]
 }
 \end{itemize}
 }
@@ -474,14 +474,14 @@ in   f 3 (Cons 4 Nil)
 \item Dictionary for |List| instance needs dictionary for elements
 \item Translation:
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 let  dEqInt   ::  (eq :: Int -> Int -> Bool)
      dEqList  ::  forall ^ a .  (eq :: a -> a -> Bool)
                                   -> (eq :: List a -> List a -> Bool)
      eq       =   \dEq    x y -> dEq.eq x y
      f        =   \dEq_a  p q -> eq (dEqList dEq_a) (Cons p Nil) q
 in   f dEqInt 3 (Cons 4 Nil)
-\end{code}
+%%]
 }
 \item |dEqList|: dictionary transformer
 \end{itemize}
@@ -493,25 +493,25 @@ in   f dEqInt 3 (Cons 4 Nil)
 \begin{itemize}
 \item Implicit variant
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 f ::  forall a . Eq a  =>  a ->  List a  -> Bool
 f =   \                    p     q       -> eq (Cons p Nil) q
-\end{code}
+%%]
 }
 \item Explicit variant
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 f :: forall a . Eq a  =>  a ->  List a  -> Bool
 f = \(! dEq_a <: Eq a !)
                       ->  \p    q       -> eq  (! dEqList dEq_a <: Eq (List a) !)
                                                (Cons p Nil) q
-\end{code}
+%%]
 }
 \item Translated variant
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 f = \dEq_a p q -> eq (dEqList dEq_a) (Cons p Nil) q
-\end{code}
+%%]
 }
 \item We can do it ourselves, explicitly, if necessary!
 \end{itemize}
@@ -523,12 +523,12 @@ f = \dEq_a p q -> eq (dEqList dEq_a) (Cons p Nil) q
 \begin{itemize}
 \item Are first class
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 f  ::  (forall ^ a . Eq a => Eq (List a))  =>  Int ->  List Int  -> Bool
 f  =   \(! dEq_La <: Eq a => Eq (List a) !)
           ->  \p  q  -> eq  (! dEq_La dEqInt <: Eq (List Int) !)
                             (Cons p Nil) q
-\end{code}
+%%]
 }
 \item Here explicit passing may be ommitted to achieve same effect
 \begin{itemize}
@@ -543,9 +543,9 @@ f  =   \(! dEq_La <: Eq a => Eq (List a) !)
 \begin{itemize}
 \item Useful in class based implementation of generics
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%9srcfile(eh-frags/9-snd-order1.eh%%)
-\end{code}
+%%]
 }
 \end{itemize}
 }
@@ -562,18 +562,18 @@ f  =   \(! dEq_La <: Eq a => Eq (List a) !)
 \end{itemize}
 \item Fully explicit
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 f ::  forall ^ a . Eq a =>     a ->  a -> forall ^ b . Eq b =>  b ->  b  ->  (Bool    , Bool    )
 f =                         \  p     q                          r     s  ->  (eq p q  , eq r s  )
-\end{code}
+%%]
 }
 \item If dictionary for |Eq b| needs to be passed before others
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 f :: forall    b . (Eq b,  ...   ) => ...  -> ...  -> b -> b -> ...
 -- INFERRED:
 f :: forall a  b . (Eq b,  Eq a  ) => a    -> a    -> b -> b -> (Bool,Bool)
-\end{code}
+%%]
 }
 \item `|...|': explicit notation for missing type information to be inferred
 \end{itemize}
@@ -585,20 +585,20 @@ f :: forall a  b . (Eq b,  Eq a  ) => a    -> a    -> b -> b -> (Bool,Bool)
 \begin{itemize}
 \item Monomorphic as well as polymorphic
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 f  ::  forall ^ a . (  Eq a,  ...   )  =>     a ->  a ->  ...
 f  =                                       \  p     q     r       s                 ->  (eq p q  ,  eq r 3  )
 -- INFERRED:
 f  ::  forall ^ a .    Eq a            =>     a ->  a ->  Int ->  forall ^ b . b    ->  (Bool    ,  Bool    )
-\end{code}
+%%]
 }
 \item Type variables for monomorphic types
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 f  ::  forall ^ a . (  Eq a,  ...   )  =>     a ->  a ->  %b   ->  %b              ->  ...
 -- INFERRED:
 f  ::  forall ^ a .    Eq a            =>     a ->  a ->  Int  ->  Int             ->  (Bool    ,  Bool    )
-\end{code}
+%%]
 }
 \end{itemize}
 }

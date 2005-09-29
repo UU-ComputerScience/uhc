@@ -1,0 +1,59 @@
+preamble tex "%include lhs2TeX.fmt\n%include afp.fmt\n%include ehrules.fmt"
+
+external ANY
+
+scheme hm =
+  holes [ e: Expr, Gamma: Gamma | | sigma: Ty ]
+  judgespec Gamma :-.."HM" e : sigma
+
+ruleset hm scheme hm "" =
+  rule dummy =
+    -
+    judge R : hm = Gamma :- e : ANY
+
+scheme hmv =
+  holes [ Transl: Expr, Gamma: Gamma | | sigma: Ty ]
+  judgespec Gamma :-.."HM" Transl : sigma
+
+ruleset hmv scheme hmv "" =
+  rule dummy =
+    -
+    judge R : hmv = Gamma :- Transl : ANY
+
+scheme sysf =
+  holes [ e: Expr, Gamma: Gamma | | sigma: Ty ]
+  judgespec Gamma :-.."F" e : sigma
+
+ruleset sysf scheme sysf "" =
+  rule dummy =
+    -
+    judge R : sysf = Gamma :- e : ANY
+    
+scheme sysfv =
+  holes [ Transl.a: Expr, Gamma: Gamma | | sigma: Ty ]
+  judgespec Gamma :-.."F" Transl.a : sigma
+
+ruleset sysfv scheme sysfv "" =
+  rule dummy =
+    -
+    judge R : sysfv = Gamma :- e : ANY
+    
+scheme eh4 =
+  holes [ e: Expr, Gamma: Gamma | | sigma: Ty ]
+  judgespec Gamma :-.."EH" e : sigma
+
+ruleset eh4 scheme eh4 "" =
+  rule dummy =
+    -
+    judge R : eh4 = Gamma :- e : ANY
+
+scheme ehv =
+  holes [ e: Expr, Gamma: Gamma | | sigma: Ty, Transl: Expr, Transl.a: Expr ]
+  judgespec Gamma :-.."EH" e : sigma ~> Transl ; Transl.a
+
+ruleset ehv scheme ehv "" =
+  rule dummy =
+    -
+    judge R : ehv = Gamma :- e : ANY ~> e ; e
+    
+

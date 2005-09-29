@@ -30,7 +30,7 @@ tyElimEqual ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[11
-ATTR AllAllTy [ | | repl: SELF ]
+ATTR AllTyAndFlds [ | | repl: SELF ]
 ATTR TyAGItf  [ | | repl: Ty ]
 
 SEM Ty
@@ -42,7 +42,7 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[11
-ATTR AllAllTy [ | tyCnstr: Cnstr | ]
+ATTR AllTyAndFlds [ | tyCnstr: Cnstr | ]
 ATTR TyAGItf  [ | | tyCnstr: Cnstr ]
 
 SEM TyAGItf

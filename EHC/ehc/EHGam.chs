@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHGam.chs 267 2005-08-07 20:16:41Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -88,6 +88,7 @@ gamLookup           ::  Ord k =>  k -> Gam k v  -> Maybe v
 gamToAssocL         ::            Gam k v       -> AssocL k v
 gamPushNew          ::            Gam k v       -> Gam k v
 gamPushGam          ::  Ord k =>  Gam k v       -> Gam k v -> Gam k v
+gamPop              ::            Gam k v       -> (Gam k v,Gam k v)
 gamAddGam           ::  Ord k =>  Gam k v       -> Gam k v -> Gam k v
 gamAdd              ::  Ord k =>  k -> v        -> Gam k v -> Gam k v
 %%]
@@ -100,6 +101,7 @@ gamLookup       k (Gam ll)          = foldr  (\l mv -> maybe mv Just (lookup k l
 gamToAssocL     (Gam ll)            = concat ll
 gamPushNew      (Gam ll)            = Gam ([]:ll)
 gamPushGam      g1 (Gam ll2)        = Gam (gamToAssocL g1 : ll2)
+gamPop          (Gam (l:ll))        = (Gam [l],Gam ll)
 gamAddGam       g1 (Gam (l2:ll2))   = Gam ((gamToAssocL g1 ++ l2):ll2)
 gamAdd          k v g               = gamAddGam (k `gamUnit` v) g
 %%]
@@ -111,24 +113,22 @@ gamLookup       k g                 = tgamLookup (tgamSize1 g) k g
 gamToAssocL     g                   = tgamToAssocL (tgamSize1 g) g
 gamPushNew      g                   = let sz = tgamSize1 g in tgamPushNew sz (sz+1) g
 gamPushGam      g1 g2               = let sz = tgamSize1 g2 in tgamPushGam (tgamSize1 g1) sz (sz+1) g1 g2
+gamPop          g                   = let (g1,_,g2) = tgamPop (tgamSize1 g) 1 g in (g1,g2)
 gamAddGam       g1 g2               = tgamAddGam (tgamSize1 g1) (tgamSize1 g2) g1 g2
 gamAdd          k v g               = tgamAdd (tgamSize1 g) k v g
 %%]
 
 %%[1.Rest.sigs
-gamPop              ::            Gam k v     -> (Gam k v,Gam k v)
 gamTop              ::            Gam k v     -> Gam k v
 assocLToGam         ::  Ord k =>  AssocL k v  -> Gam k v
 %%]
 
 %%[1.Rest.funs
-gamPop          (Gam (l:ll))        = (Gam [l],Gam ll)
 gamTop                              = fst . gamPop
 assocLToGam     l                   = Gam [l]
 %%]
 
 %%[9.Rest.funs -1.Rest.funs
-gamPop          g                   = let (g1,_,g2) = tgamPop (tgamSize1 g) 1 g in (g1,g2)
 gamTop                              = fst . gamPop
 assocLToGam                         = assocLToTGam 1 
 %%]

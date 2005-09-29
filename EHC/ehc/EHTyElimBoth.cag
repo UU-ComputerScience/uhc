@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHTyElimBoth.cag 260 2005-07-23 12:18:44Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -30,7 +30,7 @@ tyElimBoth elimTvL ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2
-ATTR AllAllTy TyAGItf [ elimTvL: TyVarIdL | | ]
+ATTR AllTyAndFlds TyAGItf [ elimTvL: TyVarIdL | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,7 +38,7 @@ ATTR AllAllTy TyAGItf [ elimTvL: TyVarIdL | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2
-ATTR AllAllTy [ | | repl: SELF  ]
+ATTR AllTyAndFlds [ | | repl: SELF  ]
 ATTR TyAGItf  [ | | repl: Ty    ]
 
 SEM Ty
@@ -50,7 +50,7 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2
-ATTR AllAllTy [ | | replExpose: SELF  ]
+ATTR AllTyAndFlds [ | | replExpose: SELF  ]
 ATTR AllTy [ | cnstr: Cnstr | ]
 ATTR TyAGItf  [ | | cnstr: Cnstr ]
 
