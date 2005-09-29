@@ -45,7 +45,7 @@ Notation & Meaning \\
 %%]
 
 %%[impredHeader
-\multicolumn{4}{l}{Types for impredicativity inferencing:} \\
+\multicolumn{4}{l}{Types for quantifier propagation:} \\
 %%]
 
 %%[termSeparator
@@ -425,7 +425,7 @@ Notation & Meaning \\
 
 %%[tyaltBasic
 |talt| & |::=| &
-|isigma :: thard / tneed|
+|sigma :: thard / tneed|
  & type alternative
  \\
 |tneed| & |::=| &
@@ -508,7 +508,7 @@ Notation & Meaning \\
 
 %%[notationImpredB
 |isigma|
- & |sigma| for impredicativity inferencing
+ & |sigma| for quantifier propagation
  \\
 |sigmaQu|
  & |sigma| with a quantifier
@@ -517,7 +517,7 @@ Notation & Meaning \\
  & |sigma| without a quantifier
  \\
 |ICnstr|
- & |Cnstr| for impredicativity inferencing
+ & |Cnstr| for quantifier propagation
  \\
 |<+>|
  & meet of two types

@@ -173,15 +173,15 @@
 \begin{itemize}
 \item EH program is single expression
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%1srcfile(test/1-demo2.eh%%)
-\end{code}
+%%]
 }
 \item Types |Int|, |Char|, tuples and functions
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%1srcfile(test/1-demo3.eh%%)
-\end{code}
+%%]
 }
 \end{itemize}
 }
@@ -193,9 +193,9 @@
 \item Type signatures are required
 \item Types are checked
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%1srcfile(test/1-all-fail2.eh%%)
-\end{code}
+%%]
 }
 gives rise to error annotated representation of program:
 \begin{TT}
@@ -212,17 +212,17 @@ gives rise to error annotated representation of program:
 \begin{itemize}
 \item Type signature may be omitted
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%2srcfile(test/1-sig-fail.eh%%)
-\end{code}
+%%]
 }
 \item
 Missing type is inferred: |i :: %%2file(test/1-sig-fail.eh%%)|
 \item Inferred types are monomorphic
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%2srcfile(test/2-demo1.eh%%)
-\end{code}
+%%]
 }
 gives rise to type
 |id :: %%2file(test/2-demo1.eh%%)|
@@ -239,27 +239,27 @@ gives rise to type
 Polymorphism a la Haskell (i.e. Hindley/Milner)
 \item For example
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 let  id = \x -> x
 in   id 3
-\end{code}
+%%]
 }
 gives type |id :: %%3(let id = \x -> x in id%%)|
 \item Type signature may be given
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 let  id :: a -> a
      id = \x -> x
 in   id 3
-\end{code}
+%%]
 }
 \item Type signature can further constrain a type
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 let  id :: Int -> Int
      id = \x -> x
 in   id 3
-\end{code}
+%%]
 }
 \end{itemize}
 }
@@ -273,9 +273,9 @@ in   id 3
 \item
 Type signatures for quantifiers on argument (higher ranked) positions
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%4srcfile(test/4-demo2.eh%%)
-\end{code}
+%%]
 }
 \begin{itemize}
 \item Notational sugaring allows omission of quantifier
@@ -291,9 +291,9 @@ Type signatures for quantifiers on argument (higher ranked) positions
 \item
 Impredicativity
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%4srcfile(test/4-impred-demo1.eh%%)
-\end{code}
+%%]
 }
 \begin{itemize}
 \item Propagation of explicit type information
@@ -311,19 +311,19 @@ Impredicativity
 \item
 Type signatures for quantifiers on argument (higher ranked) positions
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 let  f :: (forall a . a -> a) -> (Int,Char)
      f = \i -> (i 3, i 'x')
 in   f
-\end{code}
+%%]
 }
 \item Notational sugaring allows omission of quantifier
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 let  f :: (a -> a) -> (Int,Char)
      f = \i -> (i 3, i 'x')
 in   f
-\end{code}
+%%]
 }
 \end{itemize}
 }
@@ -335,9 +335,9 @@ in   f
 \item
 Existential quantification: hiding/forgetting type information
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%4srcfile(test/4-demo1.eh%%)
-\end{code}
+%%]
 }
 \end{itemize}
 }
@@ -370,9 +370,9 @@ Existential quantification: hiding/forgetting type information
 \item
 User defined data types
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%5srcfile(test/5-list.eh%%)
-\end{code}
+%%]
 }
 \item Unpacking via case expression
 \end{itemize}
@@ -387,9 +387,9 @@ User defined data types
 \item
 Type expressions can be incorrectly used
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%6srcfile(test/5-list-wrong.eh%%)
-\end{code}
+%%]
 }
 \item
 Requires type system for types (similar to type system for values)
@@ -419,16 +419,16 @@ Kind inferencing/checking for types
 \item
 Kind signatures for types (similar to type signatures for values)
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%6srcfile(test/6-expl-ki.eh%%)
-\end{code}
+%%]
 }
 \item
 Polymorphic kinds can also be inferred
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%6srcfile(test/5-all-ok2.eh%%)
-\end{code}
+%%]
 }
 infers kind @Eq :: Forall a . a -> a -> *@
 \end{itemize}
@@ -442,9 +442,9 @@ infers kind @Eq :: Forall a . a -> a -> *@
 \begin{itemize}
 \item Replacement for tuples
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%7srcfile(test/7-demo1.eh%%)
-\end{code}
+%%]
 }
 \end{itemize}
 }
@@ -483,9 +483,9 @@ infers kind @Eq :: Forall a . a -> a -> *@
 {
 \frametitle{EH version 9: explicit parameter}
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%9srcfile(eh-frags/9-eq-nub.eh%%)
-\end{code}
+%%]
 }
 }
 %%]
@@ -495,9 +495,9 @@ infers kind @Eq :: Forall a . a -> a -> *@
 {
 \frametitle{EH version 9: higher order predicate}
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%9srcfile(test/9-snd-order1.eh%%)
-\end{code}
+%%]
 }
 }
 %%]
@@ -509,15 +509,15 @@ infers kind @Eq :: Forall a . a -> a -> *@
 \begin{itemize}
 \item Flexibility w.r.t. presence of labels
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%10srcfile(test/10-demo1.eh%%)
-\end{code}
+%%]
 }
 \item More general tuple access
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%10srcfile(test/10-snd.eh%%)
-\end{code}
+%%]
 }
 \end{itemize}
 }

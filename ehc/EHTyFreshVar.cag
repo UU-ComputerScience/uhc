@@ -30,7 +30,7 @@ tyFreshVar allowFresh uniq tvCnstr ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2
-ATTR TyAGItf AllAllTy [ allowFresh: {TyVarId -> Bool} | | ]
+ATTR TyAGItf AllTyAndFlds [ allowFresh: {TyVarId -> Bool} | | ]
 
 SEM Ty
   | Quant           ty      .   allowFresh  =   \v -> v /= @tv && @lhs.allowFresh v
@@ -53,8 +53,8 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2
-ATTR AllAllTy [ | | repl: SELF  ]
-ATTR TyAGItf  [ | | repl: Ty    ]
+ATTR AllTyAndFlds [ | | repl: SELF  ]
+ATTR TyAGItf      [ | | repl: Ty    ]
 %%]
 
 %%[4_2

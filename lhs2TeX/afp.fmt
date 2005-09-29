@@ -304,6 +304,7 @@
 %format Transl			= "{\vartheta}"
 %format Transl2
 %format Transl2pi		= Transl2 "^{" pi "}"
+%format Transla			= Transl "_{a}"
 %format lacks			= "\backslash "
 
 %format Coe         	= "{\delta}"

@@ -11,17 +11,17 @@
 \begin{itemize}
 \item Only if explicitly specified
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%4srcfile(test/3-demo-rank.eh%%)
-\end{code}
+%%]
 }
 \item Quantifier may be at any position in type
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 forall1 a . a -> (forall2 b . b -> b)
   -> ((forall3 c . c -> c) -> (forall4 d . d -> d))
   -> forall5 e . e -> e -> a
-\end{code}
+%%]
 }
 \begin{itemize}
 \item |rank = 1|: |forall1|, |forall5|
@@ -40,9 +40,9 @@ forall1 a . a -> (forall2 b . b -> b)
 \begin{itemize}
 \item ``It exists, but I've forgotten what it was''
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%4srcfile(test/4-demo1.eh%%)
-\end{code}
+%%]
 }
 \item |xy| created with |a = Int|, quantifier hides this information
 \item |ixy| can still use |xy| because type of |v| matches |f|'s argument type
@@ -68,9 +68,9 @@ forall1 a . a -> (forall2 b . b -> b)
 \end{itemize}
 \item Once opened, always open
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%4srcfile(test/4-ex-extr3.eh%%)
-\end{code}
+%%]
 }
 \item
 \begin{TT}
@@ -85,9 +85,9 @@ forall1 a . a -> (forall2 b . b -> b)
 \begin{itemize}
 \item Nested existentials are retained
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%4srcfile(test/4-ex-extr4.eh%%)
-\end{code}
+%%]
 }
 \item
 \begin{TT}
@@ -102,9 +102,9 @@ forall1 a . a -> (forall2 b . b -> b)
 \begin{itemize}
 \item Notational sugar/convention
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%4srcfile(test/4-ex-extr2.eh%%)
-\end{code}
+%%]
 }
 \item Interprets type structure to find suitable location for quantifier
 \begin{itemize}
@@ -144,9 +144,9 @@ forall1 a . a -> (forall2 b . b -> b)
 \begin{itemize}
 \item Forgetting type information is ok, but irreversible
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%srcfile(test/4-exists-sub.eh%%)
-\end{code}
+%%]
 }
 \item Check done
 \begin{itemize}
@@ -164,9 +164,9 @@ forall1 a . a -> (forall2 b . b -> b)
 but the reverse only if it can be guaranteed no additional
 constraints will be found for the quantified type variable
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%srcfile(test/4-forall-sub.eh%%)
-\end{code}
+%%]
 }
 \item Check done
 \begin{itemize}
@@ -206,9 +206,9 @@ constraints will be found for the quantified type variable
 \item Quantified types throughout type inferencing can/cannot
 be bound to type variables?
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%srcfile(test/4-impred-choose.eh%%)
-\end{code}
+%%]
 }
 \item Haskell: |v :: forall b . (b -> b) -> b -> b|
 \begin{itemize}

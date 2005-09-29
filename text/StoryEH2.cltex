@@ -3,16 +3,16 @@ The next version of EH drops the requirement that all value definitions
 need to be accompanied by an explicit type signature.
 For example, the example from the introduction:
 
-\begin{code}
+%%[[wrap=code
 %%2srcfile(test/1-sig-fail.eh%%)
-\end{code}
+%%]
 is accepted by this version of EH:
 \begin{TT}
 %%2ppfile(test/1-sig-fail.eh%%)
 \end{TT}
 
 The idea is that the type system implementation has an internal representation
-for ``knowing it is a type, but not yet which one'' which can be replaced
+for ``knowing a type is some type, but not yet which one'' which can be replaced
 by a more specific type if that becomes known.
 The internal representation for a yet unknown type
 is called a \IxAsDef{type variable}, similar to mutable variables
@@ -27,9 +27,9 @@ All types are assumed to be monomorphic, that is, polymorphism is not yet allowe
 The next version of EH deals with polymorphism.
 
 So
-\begin{code}
+%%[[wrap=code
 %%2srcfile(test/2-demo1.eh%%)
-\end{code}
+%%]
 will give
 \begin{TT}
 %%2ppfile(test/2-demo1.eh%%)
@@ -54,15 +54,15 @@ The next version of EH dealing with Haskell style polymorphism
 
 Partial type signatures are also allowed.
 A partial type signature specifies a type only for a part, allowing
-a co\"operation between the programmer who specifies what is (e.g.) already
+a cooperation between the programmer who specifies what is (e.g.) already
 known about a type signature and the type inferencer filling in the unspecified details.
 For example:
 
-\begin{code}
+%%[[wrap=code
 %%2srcfile(test/2-ty-wild.eh%%)
-\end{code}
+%%]
 
-The type inferencer pretty prints the inferred type instead of the explicity type signature:
+The type inferencer pretty prints the inferred type instead of the explicit type signature:
 
 \begin{TT}
 %%2ppfile(test/2-ty-wild.eh%%)
@@ -76,12 +76,12 @@ The discussion of this feature is postponed until
 In order to be able to represent yet unknown types the type language needs
 \IxAsDef{type variable}s to represent this:
 
-\begin{code}
+%%[[wrap=code
 %%@SharedTypeLang.ehc2
-\end{code}
+%%]
 
 The corresponding type structure |Ty| needs to be extended with an alternative for a variable.
-Note that the AG system allow us to define this additional type variant independent of the previous definition,
+Note that the AG system allows us to define this additional type variant independent of the previous definition,
 thus allowing an isolated explanation:
 
 %%@EHTyAbsSyn.2.TyVar wrap=code
@@ -114,7 +114,7 @@ A type variable is identified by a unique identifier, a |UID|:
 The idea is to thread a counter as global variable through the AST,
 incrementing it whenever a new unique value is required.
 The implementation used throughout all EH compiler versions is more complex because
-an |UID| actually is a hierarchy of counters, each level counting in the context of an outer level.
+a |UID| actually is a hierarchy of counters, each level counting in the context of an outer level.
 This is not discussed any further;
 we will ignore this aspect and just assume a unique |UID| can be obtained.
 Its use is visible whenever we need a so called fresh type variable in a type rule.
@@ -126,7 +126,7 @@ occasionaly visible in sample output of the compiler.
 
 \subsection{Constraints}
 
-Although the typing rules at \figPageRef{rules3.K.expr.baseForEH1} still hold
+Although the typing rules in \figPageRef{rules3.K.expr.baseForEH1} still hold
 we need to look at the meaning of |<=| (or |fitsIn|) in the presence of
 type variables.
 The idea here is that what is unknown may be replaced by that which is known.
@@ -135,16 +135,17 @@ the easiest way to make |tvarv <= sigma| true
 is to state that the (previously) unknown type |tvarv| equals |sigma|.
 An alternative way to look at this is that |tvarv <= sigma| is true under the
 constraint that |tvarv| equals |sigma|.
+Alternatively, we say that |tvarv| binds to |sigma|.
 
 \subsubsection{Remembering and applying constraints}
 
 As soon as we have determined that a type variable |tvarv| equals a type |sigma|,
 we must remember this and propagate it to wherever |tvarv| is used.
-We use constraints |Cnstr| to remember such a binding of a type variable to a type:
+We use constraints, denoted by |Cnstr|, to remember such a binding of a type variable to a type:
 
-\begin{code}
+%%[[wrap=code
 Cnstr                       =  [tvarv :-> sigma]
-\end{code}
+%%]
 
 A set of \IxAsDef{constraint}s |Cnstr| (appearing in its non pretty printed form as @Cnstr@ in the source text)
 is a set of bindings for type variables,
@@ -168,7 +169,7 @@ constraints |Cnstr| are used to replace all other
 references to |tvarv| by |sigma|,
 for this reason often named a \IxAsDef{substitution}.
 In this version of EH the replacement of type variables
-with newly types is done immediately after constraints are obtained as
+with types is done immediately after constraints are obtained
 to avoid finding a new and probably conflicting constraint for
 a type variable.
 Applying constraints means substituting type
@@ -176,7 +177,7 @@ variables with the bindings in
 the constraints, hence the class
 |Substitutable|
 for those structures which have references to type
-variables hidden inside and can replace, or substitute those type variables:
+variables inside and can replace, or substitute those type variables:
 
 \chunkHideRef{impl.UID}
 %%@EHSubstitutable.2.Substitutable wrap=code
@@ -193,10 +194,7 @@ A |Cnstr| can be applied to a type:
 This is another place where we use the AG notation and the automatic propagation of values
 as attributes throughout the type representation to make the description of the application of
 a |Cnstr| to a |Ty| easier.
-The function |tyAppCnstr| is defined in terms of the following AG.
-The plumbing required to provide the value of attribute |repl| (|tvs|) available as
-the result of Haskell function |tyAppCnstr| (and |tyFtv|)
-has been omitted:
+The functions |tyAppCnstr| and |tyFtv| are defined in terms of the following AG:
 
 %%[[hide wrap=code impl.tyFtvSubst="Haskell wrapping for tyFtv, tyAppCnstr; cnstrTyLookup"
 %%@EHTySubst.2.tyAppCnstr
@@ -216,14 +214,25 @@ has been omitted:
 %format < 		= "{\langle}"
 %format > 		= "{\rangle}"
 
-\begin{AGFeature}{ag-self-attr}{Attribute of type SELF}
-The type of an attribute of type |SELF| depends on the node in which a rule is defined for
-the attribute.
-The generated type of an attribute |<attr>| for |<node>| is equal to the generated Haskell datatype
-of the same name |<node>|.
-The AG compiler inserts code for building |<node>|'s from the |<attr>| of the children and other fields.
-Insertion of this code can be overridden by providing a definition ourselves.
-In this way a complete copy of the AST can be built as a Haskell value.
+\begin{AGFeature}{ag-self-attr}{Attribute of type |SELF|}
+The use of the keyword |SELF|\Ix{SELF} in:
+%%[[wrap=code
+ATTR <node> [ | | a: SELF ]
+%%]
+is equivalent to
+%%[[wrap=code
+ATTR <node> [ | | a: <node' > ]
+%%]
+where:
+\begin{Itemize}
+\item
+The type |<node' >| of synthesized attribute |a| stands for the generated Haskell |data| type generated for |<node>|.
+\item
+For each |<node>| variant a local attribute |a| is inserted, defined to be a replica of the |<node>| variant in terms of |<node' >|.
+\item
+Copy rules automatically propagate the local |a| to the parent,
+unless an explicit definition for the parent's |a| is given.
+\end{Itemize}
 For example, via attribute |repl| a copy of the type is built which only differs (or, may differ) in the original
 in the value for the type variable.
 \end{AGFeature}
@@ -261,8 +270,8 @@ even though for a list implementation this would not be required.
 \subsubsection{Computing constraints}
 
 The only source of constraints is the check |fitsIn| which determines
-whether one type can flow into another one.
-The previous version of EH could only do one thing in case a type could not fit
+whether one type flows into another one.
+The previous version of EH could only do one thing in case a type did not fit
 in another: report an error.
 Now,
 if one of the types is unknown, which means that it is a type variable, we have the additional possibility of
@@ -442,7 +451,7 @@ Our type rules and their corresponding
 AG description preserve the following invariant:
 \begin{Itemize}
 \item
-A resulting type has all known constraints applied to it, here |ty|.
+The resulting type |ty| has all known constraints applied to it.
 \end{Itemize}
 
 This invariant is not preserved for |knTy| and |valGam|, which also can contain type variables.
@@ -450,15 +459,18 @@ The application of constraints to these attributes is postponed until the follow
 
 \begin{Itemize}
 \item
-The value
+Such an attribute
 is used in a setting which may yield new constraints, that is, it is used by |<= =@= fitsIn|.
 \item
-The value is used to return a type of an expression, for example in \ruleRef{e.var}.
+Such an attribute
+is used to return a type of an expression, for example in \ruleRef{e.var}.
 We apply known constraints to the type extracted from |Gamma =@= valGam|.
 \end{Itemize}
 
 \Paragraph{Variable occurrences |Var|}
-This is illustrated by the AG code for \ruleRef{e.var} in which |lhs.tyCnstr| is applied to both the expected type |knTy|
+The abovementioned invariant and non-invariant are
+illustrated by the AG code for \ruleRef{e.var},
+in which |lhs.tyCnstr| is applied to both the expected type |knTy|
 and the type |ty_g_| extracted from |valGam|:
 
 %%@EHRulerRules.2.expr.e.var wrap=code
@@ -499,12 +511,12 @@ the \ruleRef{e-lam2} and its implementation show that fresh
 type variables |tvari| in |tvar1 -> tvar2| are used instead
 of |ANY -> ANY| to enforce a |.. -> ..| structure.
 If |ANY| still would be used, for example in:
-\begin{code}
+%%[[wrap=code
 let  id = \x -> x
 in   id 3
-\end{code}
-the conclusion would be drawn that |id :: ANY -> ANY|,
-whereas |id :: tvarv -> tvarv| would later on have bound |tvarv :-> Int| (at the application |id 3|).
+%%]
+the conclusion would be drawn that |id :: ANY -> ANY|: the absence of the (type variable) identity of |x|'s type
+has as a consequence that we do not infer |id :: Int -> Int| from the application |id 3|.
 So, |ANY| represents ``unknown knowledge'',
 a type variable |tvarv| represents ``not yet known knowledge''
 to which the inferencing process later has to refer to make it ``known knowledge''.
@@ -626,6 +638,14 @@ Here we omit the corresponding AG code: it follows the type rules faithfully.
 
 %%@EHRulerRules.2.expr.e.let
 %%]
+
+\subsection{Conclusion}
+
+In \thischapt\ we have described the second version of EH,
+that is, monomorphic type inference.
+Types are still simple (no polymorphism), but may be omitted.
+Type inference uses the full program to reconstruct types.
+The next version adds polymorphic, that is Hindley-Milner, type inference.
 
 
 %%]

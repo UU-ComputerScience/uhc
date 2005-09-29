@@ -1,6 +1,6 @@
 %%[extendeGRINSyntax
 \begin{CodeFigure}{Extended GRIN syntax}{grin-ext}
-\begin{code}
+%%[[wrap=code
 prog        ::=     { binding } +                   --  program
 
 binding     ::=     var {var}* = exp                --  function/CAF definition
@@ -62,7 +62,7 @@ cpat        ::=     (tag {var}*)                    --  constant node pattern
             |       literal                         --  constant
 
 split       ::=     var = offset                    --  extraction at offset
-\end{code}
+%%]
 \end{CodeFigure}
 %%]
 

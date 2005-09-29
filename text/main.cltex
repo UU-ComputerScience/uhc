@@ -1162,7 +1162,7 @@ The tutorial can safely be skipped if the reader is already familiar with the AG
 
 %%[2
 
-\section{EH 4: Local impredicativity}
+\section{EH 4: Local quantifier propagation}
 \label{ehc4}
 
 %%@TopicImpred.bodyForallUpDown
@@ -1174,7 +1174,7 @@ The tutorial can safely be skipped if the reader is already familiar with the AG
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2
-\section{EH 4: Global impredicativity, or exploiting type annotations}
+\section{EH 4: Global quantifier propagation}
 \label{ehc4B}
 
 %%@TopicImpred.bodyForallNonLocal
@@ -1332,7 +1332,7 @@ Coercion (of records), related to subsumption
 
 \begin{quote}
 \it
-Note to the reader: this chapter is a slightly adapted version of a submitted paper.
+Note to the reader: this chapter is a slightly adapted version of a paper.
 It can be read independently of previous chapters,
 but also is not yet updated to use |Ruler|.
 The original version did include partial type signatures;
@@ -1417,10 +1417,10 @@ with explicit kinding, plus checking thereof
 
 as lambda's on type level, effect on fitsIn (where expansion takes place).
 
-\begin{code}
+%%[[wrap=code
 L :: * -> *
 data L a = N | C a (L a)
-\end{code}
+%%]
 
 \subsection<article>{Literature}
 
@@ -1640,12 +1640,75 @@ this has been omitted as \chapterRef{agtut} can be read instead.
 
 \section{Scratch1}
 
-\rulerCmdUseExplain{rules3.K.tyexpr.base}
-{
-%%@rules3Explain.tyexpr.K.explain.scheme
-}{
-%%@rules3Explain.tyexpr.K.explain.holes
-}
+\begin{Definition}
+\IxAsDef{HM typing} types an expression |e| according to
+Hindley-Milner type inference.
+If an expression types according to HM rules,
+we denote this by the following typing judgement,
+which types |e| in context |Gamma| with type |sigma|:
+\[
+\rulerCmdUse{TheoremRules.hm.scheme}
+\]
+Similarly,
+\IxAsDef{System F typing} and \IxAsDef{EH typing} respectively type an expression |e| according to
+System F with
+type annotations for all expressions
+and the EH4 type inference algorithm described in this (and following chapters).
+\[
+\begin{array}{l}
+\rulerCmdUse{TheoremRules.sysf.scheme}
+\\
+\rulerCmdUse{TheoremRules.ehv.scheme}
+\end{array}
+\]
+|Transla| represents the translation of |e| with System F type annotations
+(this requires additional abstract syntax,
+but otherwise only consists of moving types to argument positions of functions).
+|Transl| represents the translation of |e| without additional System F type annotations.
+For this EH version |e| and |Transl| are syntactically equal.
+\end{Definition}
+
+\begin{Theorem}
+\emph{(Completeness with respect to HM, or, conservative extension)}
+All expressions |e| which type according to HM typing also type according to
+EH typing:
+\begin{eqnarray*}
+\rulerCmdUse{TheoremRules.hm.scheme}
+&|=>|&
+\rulerCmdUse{TheoremRules.ehv.scheme}
+\end{eqnarray*}
+\end{Theorem}
+
+\begin{Theorem}
+\emph{(Soundness with respect to System F)}
+If the expression |e| types according to EH typing then its translation |Transl| (type annotated |e|)
+types according to System F typing:
+\begin{eqnarray*}
+\rulerCmdUse{TheoremRules.ehv.scheme}
+&|=>|&
+\rulerCmdUse{TheoremRules.sysfv.scheme}
+\end{eqnarray*}
+\end{Theorem}
+
+\begin{Theorem}
+\emph{(Soundness with respect to HM)}
+If the expression |e| types according to EH typing, and |sigma| is a rank-1 type,
+then its translation |Transl| (type annotated |e|)
+types according to HM typing:
+\begin{eqnarray*}
+\rulerCmdUse{TheoremRules.ehv.scheme}
+&|=>|&
+\rulerCmdUse{TheoremRules.hmv.scheme}
+\end{eqnarray*}
+\end{Theorem}
+
+XX |XX| XX
+
+XX |@XX| XX
+
+%%[[wrap=code
+t1@XX
+%%]
 
  %%@StoryIntro.introPHD
 
@@ -1787,13 +1850,12 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2
-%if not asSlides
 %\cleardoublepage
 \markboth{Samenvatting}{Samenvatting}%
 \AddContentsLine{Samenvatting}
 \section*{Samenvatting}
 
-%%StoryIntro.summaryNL
+%%@StoryIntro.summaryNL
 
 %%]
 
@@ -1807,15 +1869,8 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 \AddContentsLine{Acknowledgements}
 \section*{Acknowledgements}
 
-% SDS, for ideas, opportunity (institute), stimulation, not despairing
-% PvO, Andres, for TeX and lhs2TeX support
-% OBC teachers, for being content enough to start an endless journey
-% Ineke, for taking care of my mother, otherwise would not have been able to finish ...
-% The ST group, for being a great place to ..., for doing the jobs I should have done were I not making this thesis
-% Anonymous reviewers
-% Gerard
 
-To be done ...
+%%@StoryIntro.acknowledgements
 
 %%]
 
@@ -1974,7 +2029,7 @@ To be done ...
 %%@Slides.eh3
 
 
-\section{EH 4: |forall|: local impredicativity (was: |forall| and |exists| everywhere)}
+\section{EH 4: |forall|: local quantifier propagation (was: |forall| and |exists| everywhere)}
 \label{ehc4}
 
 %%@Slides.topicsSub
@@ -2131,11 +2186,11 @@ Less precise, but still a convention, are the following:
 \item
 For a data structure |AbcXyz| the fields are usually prefixed with the uppercase letters of the type name.
 For example:
-\begin{code}
+%%[[wrap=code
 data AbcXyz = AbcXyz { axFld1 :: ..., axFld2 :: ... }
 axSomething :: AbcXyz -> ...
 axSomething ax ... = ...
-\end{code}
+%%]
 This is because Haskell does not allow duplicate names for fields (and functions).
 We could have chosen to use Haskell's module mechanism instead,
 but currently not all code for functions related to a single type can be placed in one module,

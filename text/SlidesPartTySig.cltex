@@ -5,9 +5,9 @@
 \begin{itemize}
 \item Type need not be specified completely
 \SafeCode{%
-\begin{code}
+%%[[wrap=code
 %%2srcfile(test/2-ty-wild.eh%%)
-\end{code}
+%%]
 }
 \item
 Only the part which needs to be specified or constrained further

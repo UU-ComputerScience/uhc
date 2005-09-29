@@ -23,6 +23,7 @@
 %format (          = "(\allowforspacecorrection "
 %subst fromto b e t     = "\fromto{" b "}{" e "}{{}\allowforspacecorrection " t "{}}'n"
 % subst inline a  	= "\ensuremath{{}\allowforspacecorrection " a "}"
+% subst varid a  	= a "{}\allowforspacecorrection "
 
 %endif
 

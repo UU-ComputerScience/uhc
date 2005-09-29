@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHGatherError.cag 273 2005-08-24 08:58:20Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -34,6 +34,10 @@ SEM Expr
                 lhs         .   errL        =   mkNestErr @pp (foErrL @fo_)
   | TypeAs      lhs         .   errL        =   mkNestErr @pp
                                                     (@expr.errL ++ @tyExpr.errL ++ foErrL @fo_)
+
+SEM PatExpr
+  | IConst CConst
+                lhs         .   errL        =   mkNestErr @pp (foErrL @fo_)
 %%]
 
 %%[1.GatherRest
