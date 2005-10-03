@@ -261,7 +261,7 @@ rules expr.baseObs "Type rules for expressions (obsolete)" viewas Ev =
         ; sigma..(viewas to2 = i viewas from3 = q)
         :- e.i
         : isigma
-        ; (viewas to1 = sigma.i viewas from2 = _) ~> ICnstr; Cnstr.2; Transl.i
+        ; (viewas to1 Ev = sigma.i viewas from2 = _) ~> ICnstr; Cnstr.2; Transl.i
     cond Gamma..i === i :-> inst.exists(sigma..q) viewas from4
     judge qu ([]); CoVariant :- sigma.i : sigma..q ~> _ viewas fromQ4
     cond sigma..q === forall ^ Vec(alpha) (.) sigma.i viewas 3

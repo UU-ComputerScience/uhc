@@ -184,6 +184,11 @@
 \documentclass[10pt]{article}
 %%]
 
+%%[14
+%\documentclass[a4paper,headexclude,footexclude,mpexclude,10pt,DIV15,BCOR0mm]{scrartcl}
+\documentclass[ignorenonframetext]{beamer}
+%%]
+
 %%[12
 %if newDocClassHeader
 
@@ -363,7 +368,7 @@
 %%% Beamer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1
+%%[12
 %if yesBeamer
 %if asSlides
 \usepackage{beamerthemeafp}
@@ -384,6 +389,20 @@
 
 
 
+%%]
+
+%%[8
+%if yesBeamer
+\usepackage{beamerthemeafp}
+\beamertemplatetransparentcovereddynamic
+%else
+\usepackage{color}
+\usepackage[fleqn]{amsmath}
+%endif
+%%]
+
+%%[14
+\usepackage{beamerthemesplit}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -428,6 +447,14 @@
 
 \usepackage{array}
 
+%include lhs2TeX.sty
+
+% this column type is for tabulars of (type) inference rules
+\newcolumntype{P}{@@{}>{\let\pcr=\\\begin{center}\let\\=\pcr\(}p{\linewidth}<{\)\end{center}}@@{}}
+
+%%]
+
+%%[12
 % experimental \DeclareMathOperator redefinition to use sf font
 %if llncs || (acm && yesBeamer)
 \newcommand{\DeclareMathOperator}[2]{%
@@ -436,11 +463,6 @@
 \renewcommand*{\DeclareMathOperator}[2]{%
   \newcommand*{#1}{\textsf{#2}}}
 %endif
-
-% this column type is for tabulars of (type) inference rules
-\newcolumntype{P}{@@{}>{\let\pcr=\\\begin{center}\let\\=\pcr\(}p{\linewidth}<{\)\end{center}}@@{}}
-
-%include lhs2TeX.sty
 
 % Done with lhs2TeX stuff ...
 
@@ -466,23 +488,13 @@
 
 \newcommand{\defined}[1]{\textbf{#1}}
 
-% Specific for UHC
-
-%format ~=          = "\sim"
-%format `intersect`     = "\cap "
-%format ::<         = :: "_" coco
-
-%format pred        = pi
-
-% AG Patterns
-%format AGPat(p)    = "{\color{red}" p "}"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Fonts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1
+%%[12
 
 %if asSlides
 %elif acm
@@ -504,10 +516,14 @@
 \usepackage{calc}
 %endif %% asSlides
 
-\usepackage{txfonts}
+%%]
+
+%%[1
+
 %if not asSlides
-\usepackage[bbgreekl]{mathbbol}
+\usepackage{txfonts}
 %endif
+\usepackage[bbgreekl]{mathbbol}
 
 %%]
 
@@ -625,6 +641,12 @@
 \setlength{\paperwidth}{170mm}
 \setlength{\paperheight}{240mm}
 \typearea[1.2cm]{15}% was BCOR: [0.5]{12}
+\setlength{\marginparsep}{.025\textwidth}
+%if targetForPaper
+\setlength{\marginparwidth}{.07\textwidth}
+%else
+\setlength{\marginparwidth}{.105\textwidth}
+%endif
 %%]
 
 %%[7
@@ -684,6 +706,11 @@
 %else
 \author{Atze Dijkstra and S. Doaitse Swierstra}
 %endif
+%%]
+
+%%[14
+\title{Ruler: programming type rules}
+\author{Atze Dijkstra}
 %%]
 
 %%[4
@@ -1043,6 +1070,15 @@ have been submitted to POPL2006 in a slighty extended form.
 %%@StoryAFP.context
 %endif
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Page numbering
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2
+\cleardoublepage
+\pagenumbering{arabic}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1589,7 +1625,7 @@ error messaging, line/col position, comment ????
 \it
 Note to the reader: this chapter is a slightly adapted version of a submitted paper.
 It can be read independently of previous chapters.
-The original paper includes a short introduction of the AG system;
+The original paper includes a short introduction to the AG system;
 this has been omitted as \chapterRef{agtut} can be read instead.
 \end{quote}
 
@@ -1640,137 +1676,7 @@ this has been omitted as \chapterRef{agtut} can be read instead.
 
 \section{Scratch1}
 
-\begin{Definition}
-\IxAsDef{HM typing} types an expression |e| according to
-Hindley-Milner type inference.
-If an expression types according to HM rules,
-we denote this by the following typing judgement,
-which types |e| in context |Gamma| with type |sigma|:
-\[
-\rulerCmdUse{TheoremRules.hm.scheme}
-\]
-Similarly,
-\IxAsDef{System F typing} and \IxAsDef{EH typing} respectively type an expression |e| according to
-System F with
-type annotations for all expressions
-and the EH4 type inference algorithm described in this (and following chapters).
-\[
-\begin{array}{l}
-\rulerCmdUse{TheoremRules.sysf.scheme}
-\\
-\rulerCmdUse{TheoremRules.ehv.scheme}
-\end{array}
-\]
-|Transla| represents the translation of |e| with System F type annotations
-(this requires additional abstract syntax,
-but otherwise only consists of moving types to argument positions of functions).
-|Transl| represents the translation of |e| without additional System F type annotations.
-For this EH version |e| and |Transl| are syntactically equal.
-\end{Definition}
-
-\begin{Theorem}
-\emph{(Completeness with respect to HM, or, conservative extension)}
-All expressions |e| which type according to HM typing also type according to
-EH typing:
-\begin{eqnarray*}
-\rulerCmdUse{TheoremRules.hm.scheme}
-&|=>|&
-\rulerCmdUse{TheoremRules.ehv.scheme}
-\end{eqnarray*}
-\end{Theorem}
-
-\begin{Theorem}
-\emph{(Soundness with respect to System F)}
-If the expression |e| types according to EH typing then its translation |Transl| (type annotated |e|)
-types according to System F typing:
-\begin{eqnarray*}
-\rulerCmdUse{TheoremRules.ehv.scheme}
-&|=>|&
-\rulerCmdUse{TheoremRules.sysfv.scheme}
-\end{eqnarray*}
-\end{Theorem}
-
-\begin{Theorem}
-\emph{(Soundness with respect to HM)}
-If the expression |e| types according to EH typing, and |sigma| is a rank-1 type,
-then its translation |Transl| (type annotated |e|)
-types according to HM typing:
-\begin{eqnarray*}
-\rulerCmdUse{TheoremRules.ehv.scheme}
-&|=>|&
-\rulerCmdUse{TheoremRules.hmv.scheme}
-\end{eqnarray*}
-\end{Theorem}
-
-XX |XX| XX
-
-XX |@XX| XX
-
-%%[[wrap=code
-t1@XX
-%%]
-
- %%@StoryIntro.introPHD
-
- %%@TopicReflection.phdEvaluation
-
- %%@TopicImpred.bodyForallUpDown
-
-%\section{Scratch2}
-
- %%@TopicImpred.bodyForallNonLocal
-
-%\section{Scratch3}
-
- %%@TopicImpred.bodyExists
-
-%\section{Scratch4}
-
- %%@TopicPartialTySig.body
-
-%\section{Scratch5}
-
-%\rulerCmdUse{rules3.I1.tyexpr.base}
-%\rulerCmdUse{rules3.I1.patexpr.base}
-%\rulerCmdUse{rules3.I2.patexpr.base}
-
-
-%\rulerCmdUse{rules3.E.expr.scratch}
-%\rulerCmdUse{rules3.E.decl.base}
-%\rulerCmdUse{rules3.K.expr.scratch}
-%\rulerCmdUse{rules3.K.decl.base}
-%\rulerCmdUse{rules3.C.expr.scratch}
-%\rulerCmdUse{rules3.C.expr.baseForEH2}
-%\rulerCmdUse{rules3.C.decl.base}
-%\rulerCmdUse{rules3.HM.expr.baseForEH2}
-%\rulerCmdUse{rules3.HM.decl.base}
-%\rulerCmdUse{rules3.HM.expr.scratch}
-%\rulerCmdUse{rules3.HM.decl.base}
-%\rulerCmdUse{rules3.HM.expr.scratch}
-%\rulerCmdUse{rules3.I1.expr.scratch}
-%\rulerCmdUse{rules3.EX.expr.scratch}
-%\rulerCmdUse{rules3.I2.expr.scratch}
-%\rulerCmdUse{rules3.P.expr.scratch}
-
-%\rulerCmdUse{rules3.K.patexpr.base}
-%\rulerCmdUse{rules3.C.patexpr.base}
-
-%\rulerCmdUse{rules3.C.match.all}
-%\rulerCmdUse{rules3.C.fit}
-
-%\chunkCmdUseMark{EHRulerRules.1.expr.e.lam}
-%\chunkCmdUseMark{EHRulerRules.2.expr.e.lam}
-%\chunkCmdUseMark{EHRulerRules.3.expr.e.lam}
-%\chunkCmdUseMark{EHRulerRules.4.expr.e.lam}
-%\chunkCmdUseMark{EHRulerRules.9.expr.e.lam}
-
-%\rulerCmdUse{rules3.P.expr.baseForEH1}
-%\rulerCmdUse{rules3.P.expr.baseForEH9}
-
-%\section{Scratch3}
-%\rulerCmdUse{rules3.I3.expr.eh4B1}
-%\rulerCmdUse{rules3.I3.expr.eh4B2}
-
+%%@TopicReflection.phdEvaluation
 
 %%]
 
@@ -1875,7 +1781,36 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Slide content
+%%% Slides for explimpl
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+%%@SlidesExplImpl.explimpl
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Slides for ruler
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[14
+%%@SlidesRuler.title
+
+%%@SlidesRuler.problem
+
+%%@SlidesRuler.issues
+
+%%@SlidesRuler.content
+
+%{
+%include ruler.fmt
+%%@SlidesRuler.body
+%}
+
+%%@SlidesRuler.conclusion
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Slides for afp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -2047,10 +1982,6 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %endif
 %%]
 
-%%[9
-%%@SlidesExplImpl.explimpl
-%%]
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Appendices
@@ -2199,6 +2130,8 @@ due to mutual recursion.
 
 \section{Rules generated by |Ruler|}
 \label{appx-genbyruler}
+The following overview is automatically generated.
+
 {\small
 \input GenByRuler.tex
 }

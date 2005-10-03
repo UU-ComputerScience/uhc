@@ -1517,6 +1517,9 @@ scheme tyexpr "TyExpr" =
   view HM =
     holes [ | thread tyGam: TyGam | tyWildL: TyL ]
     judgespec tyGam.inh :-.."t" t : ty ~> tyGam.syn ; tyWildL
+    explain (Within environment |tyGam.inh| , type expression |t| has a (replica) type signature |ty|
+            , yielding additional bindings |tyGam.syn| and wild type variables |tyWildL|
+            .)
     explain tyGam.inh = (Environment | (ident :-> ty)..._ | with known bindings for type identifiers)
     explain tyGam.syn = (Environment with |tyGam.inh| + new bindings)
     explain tyWildL = (Type variables which occur as wildcard)
@@ -2209,7 +2212,7 @@ relation fit =
     holes [ | | cnstr: Cnstr ]
     judgespec :-.."<=" lty <= rty : fo : ty ~> cnstr
     judgeuse tex :-.."<=" lty <= rty : ty ~> cnstr
-    judgeuse ag (retain fo) `=` fitsIn (lty) (rty)
+    judgeuse ag (retain fo) `=` fitsIn ^ ((lty) - (rty))
            | ty `=` foTy (fo)
            | cnstr `=` foCnstr (fo)
     explain ty = (|ty === cnstr rty|)
@@ -2329,13 +2332,18 @@ relation valGamLookupPatTy =
     judgespec pat :-> pty `elem` valGam
     judgeuse tex pat :-> pty `elem` valGam
     judgeuse ag  (pty,nmErrs)
-                    `=` case ( ((pat).mbTopNm) of
-                             - Nothing ->  ((ANY, [Err_MissingSig (pat).pp]))
-                             - Just nm ->  case ( gamLookup nm (valGam) of
-                                                - Nothing   -> ((ANY, [Err_MissingSig (pat).pp]))
-                                                - Just vgi  -> ((vgiTy vgi, []))
-                                                )
-                             )
+                    `=` ( let ^ ( e `=` [Err_MissingSig (pat).pp]
+                                - l n `=` gamLookup n (valGam)
+                                )
+                        - in case ^ ( ((pat).mbTopNm) of
+                                    - Nothing ->  ((ANY, e))
+                                    - Just nm ->  case ^ ( l nm of
+                                                         - Nothing   -> ((ANY, e))
+                                                         - Just vgi  -> ((vgiTy vgi, []))
+                                                         )
+                                    )
+                        )
+                        
   view C =
     judgeuse ag  (pty,hasTySig)
                     `=` case ( ((pat).mbTopNm) of

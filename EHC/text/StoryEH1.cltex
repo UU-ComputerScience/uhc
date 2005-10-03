@@ -192,7 +192,7 @@ Expr_App (Expr_App (Expr_Con ",2") (Expr_IConst 2)) (Expr_IConst 3)
 \item
 For now there is only one value constructor: for tuples.
 The EH constructor for tuples also is the one which needs special treatment because it
-actually stands for a infinite family of constructors.
+actually stands for an infinite family of constructors.
 This can be seen in the encoding of the name of the constructor which is composed of
 a |","| together with the arity of the constructor.
 For example, the expression |(3,4)| is encoded as an application |App| of |Con ",2"|
@@ -202,7 +202,7 @@ By using this encoding we also get the unit type |()| as it is encoded
 by the name |",0"|.
 \item
 The naming convention for tuples and other naming conventions are available through the following abstraction
-of Haskell names |HsName|.
+of Haskell names |HsName| (we remind the reader that a reference in the margin refers to additional, but not inlined, code).
 
 %%[[hide wrap=code impl.hsnImpl="Implementation for HsName functions"
 %%@EHCommon.1.HsName.Base.impl
@@ -749,7 +749,7 @@ As such |ANY| has the role of a type variable (as introduced for type inferencin
 An error occurs at a place where the implementation of the type system needs a type to continue (type checking) with.
 In that case |ANY| is used to prevent further errors from occurring.
 In this use of |ANY| it represents a ``don't care'' of the type system implementation.
-As such |ANY| will be replaced by more a more specific type as soon as it matches (via |<=|) such a type.
+As such |ANY| will be replaced by a more specific type as soon as it matches (via |<=|) such a type.
 \end{Itemize}
 
 In both cases |ANY| is a type exclusively used by the implementation to smoothen type checking.
@@ -799,6 +799,11 @@ For the current EH version the second case only concerns tuple types.
 Both matches for composite types use |comp| wich performs multiple |<=|'s and combines the results.
 The difference lies in the treatment of contravariant behavior as discussed earlier.
 
+In case an error is detected in both the type components in |comp|,
+only the leftmost are returned: |comp| is left-biased with respect to error reporting.
+This choice prevents too many errors, assuming leftmost errors are more informative;
+this is somewhat arbitrary.
+
 The type rules leave open how to handle a situation when a required
 constraint is invalid.
 For a compiler this is not good enough, which is the reason why |fitsIn| gives a ``will-do'' type
@@ -842,7 +847,7 @@ AG allows a pattern notation of the form(s) to make the notation for this situat
 Again, the error condition is signalled by a non empty list of errors
 if a lookup in |Gamma| fails.
 These errors are gathered so they can be incorporated into an annotated pretty printed
-version of the program.
+version of the program (this has been omitted).
 
 
 Typing \ruleRef{e.var} uses the environment |Gamma| to retrieve the type

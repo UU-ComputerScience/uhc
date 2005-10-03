@@ -1,0 +1,345 @@
+%%[title
+\frame<presentation>{\titlepage}
+%%]
+
+%%[problem
+\section{The problem}
+
+\frame<presentation>
+{
+\frametitle{The problem}
+\begin{itemize}
+\item Suppose you have a language
+\begin{tabular}%
+%%@AppxNotation.termTableFormat
+%%@AppxNotation.rulerExpr
+\end{tabular}
+\item With a type system specification (partially given)
+\[
+\rulerCmdUse{rulerDemo.E.expr.base.e.var}
+\rulerCmdUse{rulerDemo.E.expr.base.e.app}
+\]
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{The problem}
+\begin{itemize}
+\item With an implementation (partially given)
+\SafeCode{%
+%%[[wrap=code
+DATA Expr
+  | Var  i : {String}
+
+%%@rulerDemoAG.3.expr.ATTR
+
+%%@rulerDemoAG.3.expr.e.var
+%%]
+}
+\item That's simple, isn't it?
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{The real problem}
+... is complexity, arising with feature combination
+\begin{itemize}
+\item EHC: impredicativity propagation algorithm (for application)
+\begin{eqnarray*}
+&& \fbox{\rulerCmdUse{rules3.I2.expr.base.scheme}}
+\\
+&& \rulerCmdUse{rules3.I2.expr.base.e.app}
+\end{eqnarray*}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+(Just for the idea)
+{\footnotesize
+\SafeCode{%
+%%@EHRulerRules.42.expr.e.app wrap=code
+}}
+}
+
+%%]
+
+%%[issues
+\section{Issues}
+
+\frame<presentation>
+{
+\frametitle{The question}
+How can you be sure the implementation really implements the type system?
+\begin{itemize}
+\item Prove it (after the construction of both)
+\begin{itemize}
+\item Proving correctness of programs is difficult
+\end{itemize}
+\item Prove correctness of type system against a simple model,
+then generate the implementation
+\begin{itemize}
+\item Real languages are still too complex to be mechanically proven correct
+\item Lack of full specification of real languages
+\end{itemize}
+\item Describe type rules such that pretty printed version and implementation can be generated
+(Ruler)
+\begin{itemize}
+\item Not proven correct, but at least consistent
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Ruler approach}
+\begin{itemize}
+\item Ruler system
+\begin{itemize}
+\item Domain specific language for specifying type rules
+\end{itemize}
+\item We want to check
+\begin{itemize}
+\item Have judgements in a rule the right structure (similar to type checking for expressions)
+\item Are identifiers defined before used (when specifying the algorithmic part)
+\item ... more in the future
+\end{itemize}
+\item We want to generate
+\begin{itemize}
+\item \LaTeX\ pretty printed version (to include in a description)
+\item AG fragments (to include in an implementation)
+\end{itemize}
+\end{itemize}
+}
+
+%%]
+
+%%[content
+\frame<presentation>
+{
+\frametitle{Content of remainder of talk}
+\begin{itemize}
+\item Overall design of Ruler
+\item Hindley-Milner (HM) type system as a case study
+\item Description partitioned in three views/steps (declarative, algorithmic, AG)
+\item How to specify this using Ruler
+\item Conclusion
+\end{itemize}
+}
+
+%%]
+
+%%[body
+\section{Ruler}
+
+\frame<presentation>
+{
+\frametitle{Ruler concepts}
+\begin{itemize}
+\item Scheme
+ \begin{itemize}
+ \item the structure: holes + template
+ \end{itemize}
+\item Views
+ \begin{itemize}
+ \item hierarchy of views
+ \item view build on top of previous view
+ \end{itemize}
+\item View on scheme
+ \begin{itemize}
+ \item each scheme has view on it, differs in holes + template
+ \end{itemize}
+\item Judgement shape
+ \begin{itemize}
+ \item the shape used to specify/pretty-print an instance of a scheme (a judgement)
+ \end{itemize}
+\item Rule
+ \begin{itemize}
+ \item premises + conclusion (judgements)
+ \end{itemize}
+\item View on rule
+\item Rule judgement
+ \begin{itemize}
+ \item each (rule) judgement has a view on it, parallel to view on its scheme
+ \end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Syntactic structure}
+{\footnotesize
+\SafeCode{%
+%%@TopicRuler.rulerSrcTemplate wrap=code
+}
+}
+}
+
+\frame<presentation>
+{
+\frametitle{Views}
+\begin{itemize}
+\item Views are ordered
+\item Start with specifying the first view on a rule (say, \ruleRef{e.var})
+\[
+\rulerCmdUse{rulerDemo.E.expr.base.e.var}
+\]
+ \begin{itemize}
+ \item equational/declarative view |E| (in Hindley-Milner type system)
+ \end{itemize}
+\item Then specify the differences relative to previous view
+\[
+\rulerCmdUse{rulerDemo.A.expr.base.e.var}
+\]
+ \begin{itemize}
+ \item algorithmic view |A| (in Hindley-Milner type system)
+ \item colors for indicating (un)changed parts
+ \end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Step 1: equational view |E|, |expr| scheme}
+\begin{itemize}
+\item Structure/scheme for judgements
+\SafeCode{%
+%%[[wrap=code
+%%@rulerDemoRL.1.expr.scm 
+%%@rulerDemoRL.1.expr.scm.E
+%%]
+}
+\item Type (|ty: Ty|):
+\begin{tabular}%
+%%@AppxNotation.termTableFormat
+%%@AppxNotation.rulerTy
+\end{tabular}
+\item Environment (|gam: Gam|):
+\SafeCode{%
+%%[[wrap=code
+Gamma   ::=  Vec(i :-> sigma)
+%%]
+}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Ruleset}
+\begin{itemize}
+\item Set of rules of a scheme
+\SafeCode{%
+%%[[wrap=code
+%%@rulerDemoRL.1.expr.base.rls
+%%@rulerDemoRL.1.rl.e.app
+%%@rulerDemoRL.1.rl.e.app.E
+%%]
+}
+ \begin{itemize}
+ \item ruleset displays as a figure (not done here)
+ \end{itemize}
+\item \LaTeX\ rendering (via |lhs2TeX|)
+\[
+\rulerCmdUse{rulerDemo.E.expr.base.e.app}
+\]
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Relation}
+\begin{itemize}
+\item Arbitrary conditions
+\SafeCode{%
+%%[[wrap=code
+%%@rulerDemoRL.1.rl.e.var
+%%@rulerDemoRL.1.rl.e.var.E
+%%]
+}
+\item Expressed as a relation
+\SafeCode{%
+%%[[wrap=code
+%%@rulerDemoRL.1.gamLookupIdTy
+%%]
+}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Step 2: algorithmic view |A|}
+\begin{itemize}
+\item Building on top of view |E|
+\item View hierarchy
+\SafeCode{%
+%%[[wrap=code
+%%@rulerDemoRL.1.viewhierarchy
+%%]
+}
+ \begin{itemize}
+ \item may be tree like hierarchy
+ \end{itemize}
+\item Algorithmic view
+ \begin{itemize}
+ \item use of constraints/substitution
+\SafeCode{%
+%%[[wrap=code
+Cnstr   ::=  Vec(tvarv :-> tau)
+%%]
+}
+ \end{itemize}
+\end{itemize}
+}
+
+%%]
+
+%%[conclusion
+\section{Conclusion}
+
+\frame<presentation>
+{
+\frametitle{Conclusion}
+\begin{itemize}
+\item Lightweight solution to two problems
+\begin{itemize}
+\item Consistency between type rules and (AG) implementation
+\item Understandability by stepwise construction
+\end{itemize}
+\item Related work
+\begin{itemize}
+\item TinkerType, TWELF, AG alike systems
+\end{itemize}
+\end{itemize}
+}
+
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

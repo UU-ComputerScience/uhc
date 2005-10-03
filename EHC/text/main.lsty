@@ -314,6 +314,7 @@
 %endif
 \newcommand{\secRef}[1]{Section~\myRef{#1}}
 \newcommand{\exRef}[1]{Example~\myRef{#1}}
+\newcommand{\thRef}[1]{Theorem~\myRef{#1}}
 %if llncs || acm
 \newcommand{\pageRef}[1]{}
 \newcommand{\figPageRef}[1]{\figRef{#1}}
@@ -325,6 +326,8 @@
 \newcommand{\figPageRef}[1]{\figRef{#1}, \pageRef{#1}}
 \newcommand{\secPageRef}[1]{\secRef{#1}, \pageRef{#1}}
 \newcommand{\exPageRef}[1]{\exRef{#1}, \pageRef{#1}}
+\newcommand{\thPageRef}[1]{\thRef{#1}, \pageRef{#1}}
+\newcommand{\thPageRefB}[1]{\thRef{#1} (\pageRef{#1})}
 \newcommand{\secPageRefB}[1]{\pageRefB{#1}, \myRef{#1}}
 %endif
 \newcommand{\chapterRef}[1]{%
@@ -375,6 +378,7 @@ Chapter~\myRef{#1}%
 }
 
 % theorem env: example
+%if not asSlides
 %if asArticle
 \newtheorem{Example}{Example}
 %else
@@ -382,7 +386,7 @@ Chapter~\myRef{#1}%
 %endif
 \newtheorem{Theorem}[Example]{Theorem}
 \newtheorem{Definition}[Example]{Definition}
-
+%endif
 
 %% overlay (to be sorted out, these are just placeholders)
 \newcommand{\overlayChunks}[1]{}

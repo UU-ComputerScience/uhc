@@ -155,6 +155,9 @@ $(BREW): $(BREW_DIR)/$(BREW_AG) $(wildcard lib/*.hs)
 $(BREW_DOC_PDF): $(BREW_DIR)/RulerDoc.tex $(BREW)
 	cd `dirname $<` ; pdflatex `basename $<`
 
+rules2.tex: rules2.rul
+	$(RULER) -l --base=rules $< | $(LHS2TEX) $(LHS2TEX_OPTS_POLY) > $@
+
 ehcs: $(EHC_ALL_PUB_EXECS)
 
 grinis: $(GRINI_ALL_PUB_EXECS)
