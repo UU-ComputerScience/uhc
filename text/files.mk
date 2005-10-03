@@ -11,7 +11,7 @@ TEXT_MAIN					:= main
 TEXT_SUBS					:= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								SharedTypeLang SharedFIOpts \
 								TopicRuler TopicExplImpl TopicGRIN TopicRec TopicKinds TopicDataTy TopicImpred TopicHM TopicExtRec TopicGADT TopicReflection TopicPartialTySig \
-								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred \
+								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred SlidesRuler \
 								ToolDocShuffle \
 								AppxNotation FrontMatter OldText
 TEXT_SUBS_ASIS				:= afp-pgf
@@ -24,7 +24,7 @@ TEXT_TMP_VARIANT_PREFIX		:= $(TEXT_TMP_PREFIX)$(TEXT_VARIANT)/
 
 # all variants
 TEXT_PUB_VARIANTS			:= phd-draft popl06-ruler popl06-explimpl shuffle
-TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) popl06-ruler-tst phd-tst phd-paper phd scratch truu-explimpl truu-ruler poster
+TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) popl06-ruler-tst phd-tst phd-paper phd scratch truu-explimpl truu-ruler poster slides-ruler
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
 # 2	: phd
@@ -33,13 +33,14 @@ TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) popl06-ruler-tst phd-tst phd-paper phd 
 # 5	: impred
 # 6	: afp (will be obsolete)
 # 7	: scratch
-# 8	: slides
+# 8	: slides afp
 # 9	: slides explimpl
 # 10: future
 # 11: shuffle doc
 # 12: garbage
 # 13: poster
-TEXT_SHUFFLE_ORDER			:= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 8, 1 < 9, 1 < 10, 1 < 11, 1 < 13
+# 14: slides ruler
+TEXT_SHUFFLE_ORDER			:= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 8, 1 < 9, 1 < 10, 1 < 11, 1 < 13, 1 < 14
 
 # configuration of lhs2tex, to be done on top level
 LHS2TEX_OPTS_TEXT_CONFIG	:= --unset=optExpandPrevRef
@@ -210,6 +211,12 @@ text-variant-poster:
 	  TEXT_SHUFFLE_VARIANT=13 \
 	  text-variant-dflt-tst
 
+text-variant-slides-ruler:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyRuler --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
+	  TEXT_SHUFFLE_VARIANT=14 \
+	  text-variant-dflt-tst
+
 text-variant-dflt-tst: $(TEXT_ALL_DPD)
 	mkdir -p $(dir $(TEXT_BLD_PDF))
 	cd $(TEXT_TMP_VARIANT_PREFIX) ; $(PDFLATEX) $(TEXT_MAIN)
@@ -328,7 +335,7 @@ $(TEXT_INCL_LIST_TEX): $(TEXT_ALL_MK_FILES)
 	) > $@
 
 $(TEXT_GEN_BY_RULER_TABLE_TEX): $(EHC_MKF) $(TEXT_MKF)
-	@(echo "\begin{tabular}{ll@{\;:\;}p{.6\linewidth}}" ; \
+	@(echo "\begin{tabular}{llp{.6\linewidth}}" ; \
 	  echo "EH version & Ruler view & rules \\\\ \\hline" ; \
 	  for f in $(EHC_VARIANTS) ; \
 	  do \

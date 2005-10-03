@@ -1070,7 +1070,7 @@ Algorithmic variants of the rules have two pleasant properties:
 \item
 The syntax tree determines how to combine the rules.
 \item
-By distributing data over a larger set of variables an order in which to compute them becomes apparent.
+By distributing data over a larger set of variables a computation order becomes apparent.
 \end{Itemize}
 The first property is taken care of by the parser, and based on the second property we can implement rules
 straightforwardly using an attribute grammar, mapping variables in rules to attributes.
@@ -1135,7 +1135,7 @@ Version & Judgement & Read as \\
 \hline
 |I|
  & \(\rulerCmdUse{rules2.exprI.base.scheme}\)
- & With assumptions |Gamma|, expected type |sigmak|, expression |e| has type |sigma|
+ & With environment |Gamma|, expected type |sigmak|, expression |e| has type |sigma|
    and translation |Transl| (with dictionary passing made explicit),
    requiring additional constraints |Cnstr|.
  \\
@@ -1221,7 +1221,7 @@ If a partially specified type is passed downwards the unspecified parts may be f
 type inferencer.
 
 The adapted typing \ruleRef{e-pred} in \figRef{rules2.exprEvK.pred}
-still is not much of a help as to deciding when it should be applied.
+still is not of much a help in deciding when it should be applied.
 However, as we only have to deal with a limited number of language constructs,
 we can use case analysis on the source language constructs.
 In \thischapt\ we only deal with function application, for which the relevant rules are shown in their full glory
@@ -1311,7 +1311,7 @@ The dictionary type |sigmad| is then used for further type checking.
 From bottom to top, \ruleRef{e-app} in \figRef{rules2.exprI.baseExplImpl} reads as follows
 (to keep matters simple we do not mention the handling of constraints |Cnstr|).
 The result of the application is expected to be of type |sigmak|,
-which in general will have the structure |pvark -> tvark|.
+which in general will have the structure |pvark => tvark|.
 This structure is enforced and checked by the subsumption check described
 by the rule |fit|;
 the rule binds |pvark| and |tvark| to the matching parts of |sigmak| similar to pattern matching.
@@ -1322,14 +1322,14 @@ In other words, we start with assuming that implicit parameters may occur everyw
 to prove the contrary.
 The subsumption check |<=| gives a possible empty sequence of predicates |Vec(piak)| and the
 result type |sigmark|.
-The result type is used to construct the expected type |pvar -> tvarv -> sigmark| for |e1|.
+The result type is used to construct the expected type |pvar => tvarv -> sigmark| for |e1|.
 The application |e1 ^^ e2| is expected to return a function which can be passed evidence for |Vec(piak)|.
 We create fresh identifiers |Vec(Translik)| and bind them to these predicates.
 Function |instpi| provides these names bound to the instantiated variants |Vec(piik)| of |Vec(piak)|.
 The names |Vec(Translik)| are used in the translation, which is a lambda expression accepting |Vec(piak)|.
 The binding |Vec(piik :> Translik)| is used to extend the type checking environment |Gamma| for
 |e1| and |e2| which both are allowed to use these predicates in any predicate proving taking place in these expressions.
-The judgement for |e1| will give us a type |Vec(pia) -> sigmaa -> sigma|, of which |sigmaa|
+The judgement for |e1| will give us a type |Vec(pia) => sigmaa -> sigma|, of which |sigmaa|
 is used as the expected type for |e2|.
 The predicates |Vec(pia)| need to be proven and evidence to be computed; the top judgement |pred| takes care of this.
 Finally, all the translations together with the computed evidence forming the actual implicit parameters |Vec(pia)|
@@ -1366,20 +1366,31 @@ This is enforced by the judgement |fit| which gives us back predicates |Vec(pia)
 EH allows type expressions where quantifiers and predicates may be positioned anywhere in a
 type,
 and all terms can be explicitly typed with a type annotation.
-Thus we obtain the same expressiveness as system-F,
-making the issue of soundness and completeness of our type system irrelevant.
-What remains relevant are the following questions:
+Thus we obtain the same expressiveness as System F (\thPageRef{eh4-th-sysf-sound}).
+What remains are the following questions:
 
 \begin{Itemize}
 \item
 For a completely explicitly typed program, is our algorithm and implementation sound and complete?
+%if storyPHD
+Evidence translation replaces predicates by dictionaries, of which the type is fully known.
+Thus we are confident that \thPageRefB{eh4-th-sysf-sound} still holds.
+%endif
 \item
 For a partially explicitly typed program, what is the characterisation of the types that can be inferred for
 the terms for which no type has been given?
+%if storyPHD
+If we impose the additional restriction that predicates are absent from all types,
+we are confident that \thPageRefB{eh4-th-hm-sound} holds.
+%endif
 \end{Itemize}
 
 We have not investigated these questions in the sense of proving their truth or falsehood.
+%if storyPHD
+However, we repeat our design starting point from \chapterRef{ehc4}:
+%else
 However, we have taken the following as our starting point:
+%endif
 
 \begin{Itemize}
 \item
@@ -1599,10 +1610,10 @@ We only mention briefly some issues with this approach:
 \begin{Itemize}
 \item
 The type for which an instance without context is defined usually is specified explicitly.
-This is  no longer the case for |?| predicates if an explicit type signature for
+This is  no longer the case for `|?|' predicates if an explicit type signature for
 e.g. |let ?x = 3| is omitted.
 \item
-GHC \cite{www04ghc} inhibits dynamically scoped variable predicates in the context of instance declarations because it is unclear
+GHC \cite{www04ghc} forbids dynamically scoped variable predicates in the context of instance declarations because it is unclear
 which scoped variable instance is to be taken.
 Scoping for instances as available in EHC may well obviate this restriction.
 \item
@@ -1686,6 +1697,7 @@ form as possible.
 To our knowledge our implementation is the first combining language features like
 higher ranked types, existentials, class system, explicit implicit parameters and extensible records
 into one package together with a description of the implementation.
+%if False
 We feel that this has only been possible thanks to the use of an attribute grammar system which
 allows us to independently describe all the separate aspects.
 
@@ -1695,6 +1707,8 @@ A typing rule serves well as a specification of the semantics of a language cons
 but as soon as a typing rule evolves towards an algorithmic variant
 it may well turn out that other ways of describing, in particular attribute grammars,
 are a better vehicle for expressing implementation aspects.
+%endif
+
 %%]
 
 %%[scratch

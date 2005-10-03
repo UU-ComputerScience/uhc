@@ -1,6 +1,10 @@
 
 %%[termTableFormat
-{r@@{\;}c@@{\;}ll}
+{r@@{\ensuremath{\;}}c@@{\ensuremath{\;}}ll}
+%%]
+
+%%[termTableFormatPrev
+{rcll}
 %%]
 
 %%[notationTableFormat
@@ -569,7 +573,46 @@ Notation & Meaning \\
  \\
 %%]
 
-%%[XX
+%%[rulerTy
+|tau| & |::=| &
+|Int |
+ & literals
+ \\
+& | || | &
+|tvarv|
+ & variable
+ \\
+& | || | &
+|tau -> tau|
+ & abstraction
+ \\
+|sigma| & |::=| &
+|forall ^ Vec(tvarv) . tau|
+ & universally quantified type, |Vec(tvarv)| possibly empty
+ \\
+%%]
+
+%%[rulerExpr
+|e| & |::=| &
+|int  |
+ & literals
+ \\
+& | || | &
+|i|
+ & program variable
+ \\
+& | || | &
+|e e|
+ & application
+ \\
+& | || | &
+|\i -> e|
+ & abstraction
+ \\
+& | || | &
+|let i = e in e|
+ & local definitions
+ \\
 %%]
 
 %%[XX

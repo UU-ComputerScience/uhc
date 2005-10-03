@@ -103,6 +103,7 @@ This use of a higher-ranked value corresponds to existential quantification |exi
 We allow the use of |exists| as a language construct in its own right (\chapterRef{ehc4C}).
 
 \subsection{Design overview}
+\label{ehc4B-design}
 
 The previous version of EH uses two mechanisms for the propagation of type information:
 
@@ -350,6 +351,7 @@ EH typing:
 The other way around, when restricting EH expressions to those types HM can deal with, we claim: 
 
 \begin{Theorem}
+\label{eh4-th-hm-sound}
 \emph{(Soundness with respect to HM)}
 If the expression |e| types according to EH typing, |sigma| and all types participating in type inference are rank-1 types,
 then its translation |Transl|
@@ -364,6 +366,7 @@ types according to HM typing:
 For EH without restrictions we claim:
 
 \begin{Theorem}
+\label{eh4-th-sysf-sound}
 \emph{(Soundness with respect to System F)}
 If the expression |e| types according to EH typing then its translation |Transla| (type annotated |e|)
 types according to System F typing:
@@ -636,6 +639,10 @@ The idea was to check against a known type signature by distributing
 such a signature over the AST.
 We call this \IxAsDef{local quantifier propagation} because locally available quantifier related information
 is used: the expected type is provided by the parent node in the AST.
+Occasionally we call quantifier propagation \IxAsDef{impredicativity inference},
+because we allow type variables
+to be bound to quantified types (called \IxAsDef{impredicativity}),
+and we allow quantified types to participate in the type inference process.
 
 However, we can exploit the presence of type signatures even further
 by considering function applications as well.
@@ -1352,7 +1359,7 @@ with types which can incorporate constraints,
 and are applied as greedily as possible.
 
 The quantifier propagation described in this chapter is algorithmic of nature.
-Recent work by Remy [????] takes a similar approach, calling it stratified type inference.
+Recent work by R\'emy \cite{remy05sysf-tycont} takes a similar approach, calling the propagations process elaboration.
 His and our approach share the two-pass nature in which the first pass infers missing type annotations.
 Although we make no claims about the correctness of our algorithm,
 quantifier propagation only propagates that which is already available in the first place,

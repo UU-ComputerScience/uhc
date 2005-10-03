@@ -31,7 +31,7 @@ We first examine some examples,
 followed by a discussion of the typing rules
 affected by these features.
 Both features are relatively independent of other language features,
-which is the reason they are discussed separately.
+which is the reason why they are discussed separately.
 Examples are based on the EH4 (\chapterRef{ehc4})
 and EH9 (\chapterRef{ehc9}).
 We only discuss the type rules within the context of EH4.
@@ -49,7 +49,7 @@ For example, in the following expression the identity function |id| is declared:
 
 The type signature for |id| specifies that |id| should be a function,
 but does not state anything about its argument and result.
-The argument and result type remain unknown until the type inferencer has inferred their type.
+The argument and result type remain unknown until the type inferencer can infer the argument and result type.
 
 A type wildcard is similar to a type variable, because both represent unknown type information.
 However, type variables in a type signature represent quantified type variables,
@@ -97,7 +97,7 @@ the rest is inferred.
 
 \Paragraph{Partial type signatures for implicit parameters}
 
-Implicit parameters can be omitted as well.
+Class predicates can be omitted as well.
 Within the context of the examples from \chapterRef{ehc9} we start with the following function:
 
 %%@TopicPartialTySig.explImplExample
@@ -154,7 +154,7 @@ v :: exists ^ a . (a,a -> Int)
 f :: (exists ^ a . (a,a -> Int)) -> Int
 %%]
 
-Informally, a quantifier for a type variable is placed in front of a type fragment if
+Informally, a quantifier for a type variable is placed in front of a type fragment if the
 type variable does not occur outside the type fragment.
 If that position is a function type, |forall| is used, if it is a product type, an |exists| is used.
 This algorithm is applied irrespective of the position of the type fragment,
@@ -191,9 +191,11 @@ g :: Int -> (C_1,C_1 -> Int)
 
 Two different invocations now are required to return the same, but hidden, type.
 
+%if False
 All these rules all correspond, via the Curry-Howard isomorphism
 \cite{srensen98curry-howard,wadler89theorems-for-free,wadler00proofs-are-programs,wadler02girard-reynolds-iso},
 to their corresponding logical meaning.
+%endif
 
 A single type variable takes a somewhat special place,
 since there is no corresponding `|->|' or `|(,)|' type constructur to determine
@@ -213,7 +215,9 @@ f :: (exists ^ a . a) -> forall ^ b . b
 %%]
 
 |v| corresponds to Haskell's @undefined@,
-whereas |f|'s type corresponds (by means of logical equivalence via the Curry-Howard isomorphism)
+whereas |f|'s type corresponds
+(by means of logical equivalence via the Curry-Howard isomorphism
+\cite{srensen98curry-howard,wadler89theorems-for-free,wadler00proofs-are-programs,wadler02girard-reynolds-iso})
 with Haskell's interpretation:
 
 %%[[wrap=code
@@ -276,6 +280,12 @@ For a standalone type variable (does not occur elsewhere in the type),
 a |forall| is used in a co-variant context, |exists| otherwise.
 \end{Itemize}
 
+\begin{TabularCenterFigure}{Notation for co- and contravariant context}{eh-coco-legenda-notation}
+%%@AppxNotation.notationTableFormat
+%%@AppxNotation.notationTableHeader
+%%@AppxNotation.notationCoCo
+\end{TabularCenterFigure}
+
 For the co- or contravariance context we use some additional notation (\figRef{eh-coco-legenda-notation}).
 
 \rulerCmdUseExplain{rules3.I1.tyqu.base}
@@ -284,12 +294,6 @@ For the co- or contravariance context we use some additional notation (\figRef{e
 }{
 %%@rules3Explain.tyqu.I1.explain.holes
 }
-
-\begin{TabularCenterFigure}{Notation for co- and contravariant context}{eh-coco-legenda-notation}
-%%@AppxNotation.notationTableFormat
-%%@AppxNotation.notationTableHeader
-%%@AppxNotation.notationCoCo
-\end{TabularCenterFigure}
 
 %if False
 \subsection{Discussion}
@@ -403,6 +407,11 @@ or a type wildcard,
 since these may be bound to a type which itself
 contains predicates.
 \end{Itemize}
+
+We need to impose these restrictions because the partially specified type represents the shape of a type:
+a combination of fixed and yet to be inferred parts.
+The fixed part corresponds to the universally quantified part of the partial type.
+The shape is then passed to an expression as its known type.
 
 %%]
 

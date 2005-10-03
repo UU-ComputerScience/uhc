@@ -19,8 +19,8 @@ data NeedParCtxt
   = ParCtxtAppL | ParCtxtAppR | ParCtxtOpL | ParCtxtOpR | ParCtxtOther
   deriving Eq
 
-exprNeedPar :: NeedParCtxt -> Expr -> (PP_Doc -> PP_Doc)
-exprNeedPar ctxt e
+exprNeedPar :: NeedParCtxt -> Nm -> Expr -> (PP_Doc -> PP_Doc)
+exprNeedPar ctxt opNm e
   = case e of
       Expr_Paren e
         -> case (t e,ctxt) of
@@ -30,7 +30,8 @@ exprNeedPar ctxt e
              (Expr_Op    _ _ _ _,ParCtxtOpR ) -> pp_parens
              (Expr_App   _ _    ,ParCtxtAppR) -> pp_parens
              (Expr_Paren _      ,_          ) -> pp_parens
-             _ -> id
+             _ | opNm == nmSp1 -> pp_parens
+               | otherwise     -> id
       _ -> id
   where t (Expr_AppTop  e) = t e
         t (Expr_Named _ e) = t e
@@ -91,16 +92,18 @@ SEM RExpr
   | Del             lhs     .   pp          =   "judge" >#< "-" >#< ppCommas @nms
 
 SEM Expr
-  | App             lhs     .   pp          =   exprNeedPar ParCtxtAppL @lExpr.self @lExpr.pp
-                                                >#< exprNeedPar ParCtxtAppR @rExpr.self @rExpr.pp
-  | Op              lhs     .   pp          =   ppExprMbEmpty @lExpr.self (>|< " ")
-                                                    (exprNeedPar ParCtxtOpL @lExpr.self @lExpr.pp)
-                                                >|< @nmExpr.pp
-                                                >|< ppExprMbEmpty @rExpr.self (" " >|<)
-                                                        (exprNeedPar ParCtxtOpR @rExpr.self @rExpr.pp)
-  | LF              lhs     .   pp          =   @lExpr.pp >-< @rExpr.pp
+  | App             lhs     .   pp          =   exprNeedPar ParCtxtAppL nmUnk @lExpr.self @lExpr.pp
+                                                >#< exprNeedPar ParCtxtAppR nmUnk @rExpr.self @rExpr.pp
+  | Op              lhs     .   pp          =   let op = if @nm == nmSp1 then empty else @nmExpr.pp
+                                                in  ppExprMbEmpty @lExpr.self (>|< " ")
+                                                        (exprNeedPar ParCtxtOpL @nm @lExpr.self @lExpr.pp)
+                                                    >|< op
+                                                    >|< ppExprMbEmpty @rExpr.self (" " >|<)
+                                                            (exprNeedPar ParCtxtOpR @nm @rExpr.self @rExpr.pp)
+  | LF              lhs     .   pp          =   exprNeedPar ParCtxtAppR nmUnk @lExpr.self @lExpr.pp
+                                                >-< exprNeedPar ParCtxtAppR nmUnk @rExpr.self @rExpr.pp
   | SP              lhs     .   pp          =   @lExpr.pp >|< @rExpr.pp
-  | Sel             lhs     .   pp          =   exprNeedPar ParCtxtOther @expr.self @expr.pp >|< "." >|< @selMbExpr.pp
+  | Sel             lhs     .   pp          =   exprNeedPar ParCtxtOther nmUnk @expr.self @expr.pp >|< "." >|< @selMbExpr.pp
   | Var Uniq        lhs     .   pp          =   pp @nm
   | Int             lhs     .   pp          =   pp @int
   | StrText StrAsIs lhs     .   pp          =   pp @str
@@ -110,7 +113,7 @@ SEM Expr
   | Cnstr           lhs     .   pp          =   pp_braces (@expr.pp >|< "|" >|< @cnstr.pp)
 {-
 SEM Expr
-  | Sel             lhs     .   pp          =   pp_brackets ("SEL" >#< exprNeedPar ParCtxtOther @expr.self @expr.pp) >|< "." >|< @selMbExpr.pp
+  | Sel             lhs     .   pp          =   pp_brackets ("SEL" >#< exprNeedPar ParCtxtOther nmUnk @expr.self @expr.pp) >|< "." >|< @selMbExpr.pp
   | Var Uniq        lhs     .   pp          =   pp_brackets ("VAR" >#< pp @nm)
   | AVar            lhs     .   pp          =   pp_brackets ("AVR" >#< @anm.pp)
   | Paren           lhs     .   pp          =   pp_brackets ("PAR" >#< @expr.pp)
@@ -304,7 +307,7 @@ SEM Expr
                                                       Just i -> wr (wkBegCmd i) (wkEndCmd i) @expr.ppLaTeX
                                                       _      -> @expr.ppLaTeX
   | ChildOrder      loc     .   ppLaTeX     =   @expr.ppLaTeX
-  |	Expr			lhs		.	ppLaTeX		=	ensureTeXMath . switchLaTeXLhs' $ @expr.ppLaTeX
+  | Expr            lhs     .   ppLaTeX     =   ensureTeXMath . switchLaTeXLhs' $ @expr.ppLaTeX
   | Empty           loc     .   ppLaTeX     =   empty
 
 -------------------------------------------------------------------------
@@ -377,7 +380,7 @@ SEM AGExprItf
   
 SEM Decl
   | Fmt ShpJudge Explain
-  					loc         .   needToParen =   True
+                    loc         .   needToParen =   True
   
 SEM RExprEqn
   | Expr            loc         .   needToParen =   True

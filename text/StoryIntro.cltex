@@ -3,9 +3,10 @@ This thesis contains a description of an implementation of an extended subset of
 At the same time it is an experiment in merging the description with the actual code
 of the implementation,
 thus guaranteeing some form of consistency.
+Similarly, we guarantee consistency between type rules and their implementation by using our |Ruler| system.
 The thesis is also about making description and implementation understandable,
 so that it can be used as a means for education and (Haskell) programming language research.
-In this thesis we take a stepwise approach to both description and implementation,
+In this thesis we take a new and stepwise approach to both description and implementation,
 which starts with a simple version of Haskell and then, step by step, we extend this simple version towards
 an extended version of Haskell.
 
@@ -58,10 +59,10 @@ is to create the following:
 
 \begin{Itemize}
 \item
-A compiler for Haskell plus extensions.
-The goal is a compiler that can be used, and is not `just' a toy.
+A compiler for Haskell plus extensions, in particular an explicit form of Haskell.
+The goal is a compiler that can be used, is not `just' a toy.
 \item
-A description of the compiler.
+A description of the compiler, embedded in a generic infrastructure for further experimentation.
 The goal is to offer understanding of the implementation
 so it can be used for teaching, be a basis for experimentation,
 and be a bridge between (type) theory and practice.
@@ -96,6 +97,9 @@ instead of the programmer fighting the system's limitations.
 This starting point is inspired by the observation that systems purely based on
 type inference hinder a programmer,
 because such a system does not allow the programmer to specify what the system cannot infer.
+In particular,
+we exploit (higher-ranked) type annotations
+and allow explicit parameter passing for implicit parameters (as specified by means of class predicates).
 \item
 The thesis offers an experiment in the description of a compiler,
 the required mechanisms to do such a job, and the tools to implement those mechanisms
@@ -111,8 +115,12 @@ The design starting point is that these aspects are best served by consistency,
 and consistency between artefacts is best implemented by avoiding the inconsistency created
 by duplication of shared material in the first place.
 The code presented in the thesis and used for the construction of different versions of the compiler are
-generated from common source code
-(\appRef{appx-shuffle}).
+generated from common source
+%if targetForPaper
+code.
+%else
+code (\appRef{appx-shuffle}).
+%endif
 The same holds for (the major part of) the type rules and their attribute grammar implementation
 (\chapterRef{ruler}).
 \end{Itemize}
@@ -122,7 +130,31 @@ in the sense that we bring together type rules and their implementation,
 instead of treating these separately.
 On the other hand, Pierce provides proofs for various properties,
 we don't.
-In the conclusion (\chapterRef{ehcConcl}) we come back to this.
+Later, when dealing with impredicativity (\chapterRef{ehc4B}) and in the 
+conclusion (\chapterRef{ehcConcl}), we come back to this.
+On a more concrete level, our contribution is summarized by the following:
+
+\begin{Itemize}
+\item
+We describe a stepwise implementation of a Haskell subset,
+with the guarantee that the presented source code
+and type rules\footnote{See \appRef{appx-genbyruler} for which rules this is the case.}
+are consistent with the implementation.
+\item
+We describe an algorithm for the propagation of impredicative type information,
+similar to R\'emy \cite{remy05sysf-tycont} (and Pottier \cite{pottier05stratif-gadt}),
+but taking the propagation a step further by combining quantifier information from multiple constraints on types (\chapterRef{ehc4B}).
+\item
+We describe a proposal for explicitly passing parameters for functions expecting values for (implicit) class constraints (\chapterRef{ehc9}).
+\item
+We describe a proposal for partial type signatures (\chapterRef{ehc-partial-sig-quant-guess}).
+\item
+We describe |Ruler|, a system for specifying type rules, which generates both \LaTeX\ pretty printed and partial Attribute Grammar implementation
+for the type rules.
+The system is used throughout this thesis.
+\end{Itemize}
+
+In the conclusion (\chapterRef{ehcConcl}) we will further detail this.
 
 
 \Paragraph{Thesis overview}
@@ -156,7 +188,7 @@ In the paper version of this thesis we refer to the electronic version
 \cite{dijkstra04ehc-web} by means of \raisebox{-.3ex}{\WWWlogo} in the margin (\refHideWWW{intro-thesis-overview-www-pg}like here);
 in the electronic version we refer to the proper appendix with a margin reference
 \label{intro-thesis-overview-www-pg}
-(\chunkHideRefAppx{intro-thesis-overview-www-pg}like this current page reference).
+(\chunkHideRefAppx{intro-thesis-overview-www-pg}like this reference to the current page).
 We will come back to this in our conclusion (\chapterRef{ehcConcl}).
 
 \Paragraph{System overview}
@@ -201,6 +233,7 @@ From the www site \cite{dijkstra04ehc-web} of the EH project both the source cod
 thesis can be downloaded;
 the electronic version of the thesis includes more material than the paper version,
 and will be updated regularly.
+
 \figRef{eh-intro-implstatus} presents an overview of the features which are described in this thesis,
 and which features are present in GHC (version 6.4 \cite{www04ghc});
 the many features present in GHC but not in EH have not been included.
@@ -645,7 +678,7 @@ Explicit kind signatures for types are also allowed, similar to type signatures 
 The seventh version (EH version 7, \chapterEHVIIRef)
 extends tuples to (non-extensible) records.
 Fields can be named.
-for tuples the default field names are their position (starting at |1|):
+For tuples the default field names are their position (starting at |1|):
 
 %%[[wrap=code
 %%7srcfile(test/7-demo1.eh%%)
@@ -851,6 +884,7 @@ Dit proefschrift beschrijft een implementatie van een uitgebreide subset van de 
 de gereedschappen die daarvoor nodig zijn.
 Tegelijkertijd is het een experiment in de integratie van de beschrijving en de broncode van de implementatie,
 waarmee een zekere mate van consistentie wordt gegarandeerd.
+Ook voor de type regels wordt consistentie met de implementatie gegarandeerd door het gebruik van het |Ruler| systeem.
 Dit proefschrift heeft tevens als doel de beschrijving en de implementatie begrijpelijk te maken,
 opdat het gebruikt kan worden ten behoeve van onderwijs en (Haskell) programmeertaal onderzoek.
 In dit proefschrift worden zowel de implementatie als de beschrijving daarvan stapsgewijs opgebouwd.
@@ -897,20 +931,20 @@ during lively discussions he also sparked the ideas implemented in the EHC proje
 Over the years I have come to see him as a close friend.
 
 The Software Technology group is a great place to be.
-Although occasionally educational obligations blocked my work on the thesis,
+Although occasionally educational obligations blocked my work on this thesis,
 my colleagues have relieved me of many other educational and orginisational tasks.
 
-Piet van Oostrum and Andres L\"oh have been very helpful with their \TeX\ expertise.
+Piet van Oostrum and Andres L\"oh have been very helpful with their \TeX\ and |lhs2TeX| expertise.
 In particular, ...
 
-My sister Ineke has taken upon her much of the care and worry my mother nowadays requires.
-...
+Ineke has taken upon her much of the care and worry our mother nowadays requires.
+Without her, this thesis
 
-Gerard Legeland, as a longtime friend, has just
+Gerard Legeland, a longtime friend, who is there for advice on how to avoid too much workstress.
 
-Finally, but not the least, I thank those who did help me on the Buddhist path.
+Finally, but not the least, I thank those who walk with me on the Buddhist path.
 The (meditation) training, which is part of Buddhism,
-forms the foundation upon which any life, my life, can be lived in peace.
+forms the foundation upon which any life, and thus my life, can be lived in peace.
 A certain amount of peace of mind turned out to be an essential ingredient for the making of this thesis.
 %%]
 

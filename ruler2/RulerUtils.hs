@@ -216,12 +216,13 @@ strVec = "_"
 strLhs = "lhs"
 strLoc = "loc"
 
-nmVec, nmUnk, nmApp, nmWild, nmNone, nmEql, nmComma, nmOParen, nmCParen, nmLhs, nmAny :: Nm
+nmVec, nmUnk, nmApp, nmWild, nmNone, nmEql, nmComma, nmOParen, nmCParen, nmLhs, nmAny, nmSp1 :: Nm
 nmVec     = Nm strVec
 nmLhs     = Nm strLhs
 nmWild    = nmVec
 nmUnk     = Nm "??"
 nmAny     = Nm "*"
+nmSp1     = Nm "^"
 nmEql     = Nm "="
 nmApp     = Nm "$"
 nmNone    = Nm ""

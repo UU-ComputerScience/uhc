@@ -200,7 +200,6 @@
 %format :-  			= "\vdash "
 %format **  			= ".."
 %format ::- 			= "\Vdash "
-%format ::= 			= "\mathrel{\Coloneqq}"
 %format :~>   			= "\rightsquigarrow "
 %format <~:   			= "\leftsquigarrow "
 %format :>   			= "\rightsquigarrow "
@@ -218,6 +217,11 @@
 %format <-> 			= "\mathrel{\triangledown}"
 % format +	 			= ","
 % format ++	 			= ","
+%if asSlides
+%format ::= 			= "::="
+%else
+%format ::= 			= "\mathrel{\Coloneqq}"
+%endif
 
 % format fiopt			= "{\xi}"
 %format fiopt			= "o"

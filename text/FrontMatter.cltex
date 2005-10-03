@@ -1,6 +1,7 @@
 %%[titlePHD
 \begin{titlepage}
-\setcounter{page}{1}%
+\pagenumbering{roman}
+%\setcounter{page}{1}%
 \noindent
 \rule{\linewidth}{0pt}
 \vfill
@@ -70,14 +71,9 @@ Wetenschappelijk Onderzoek).
 \medskip
 
 \noindent
-Printed by xx, xx.
-
-%if False
-\medskip
-
-\noindent
-All drawings by Clara Strohm.
-%endif
+Printed by Ridderprint offsetdrukkerij BV, Ridderkerk.
+\\
+Cover illustration \emph{``|lambda| strolling on the beach''} by Atze Dijkstra.
 
 \medskip
 

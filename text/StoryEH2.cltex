@@ -115,6 +115,8 @@ The idea is to thread a counter as global variable through the AST,
 incrementing it whenever a new unique value is required.
 The implementation used throughout all EH compiler versions is more complex because
 a |UID| actually is a hierarchy of counters, each level counting in the context of an outer level.
+This structure allows the outer level to be threaded, while avoiding this for an inner level
+when passed to a function, thus avoiding the introduction of possible cycles.
 This is not discussed any further;
 we will ignore this aspect and just assume a unique |UID| can be obtained.
 Its use is visible whenever we need a so called fresh type variable in a type rule.
