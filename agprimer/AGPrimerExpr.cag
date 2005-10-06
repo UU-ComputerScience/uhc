@@ -38,7 +38,8 @@ DATA Expr
 
 %%[1.letpp
 SEM Expr
-  | Let             lhs     .   pp      =   "[" >|< @nm >|< "=" >|< @val.pp >|< ":" >|< @body.pp >|< "]"
+  | Let             lhs     .   pp      =   "[" >|< @nm >|< "=" >|< @val.pp >|<
+                                            ":" >|< @body.pp >|< "]"
   | Var             lhs     .   pp      =   pp @nm
 %%]
 

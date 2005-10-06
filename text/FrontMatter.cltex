@@ -30,7 +30,7 @@ Draft: \today \\
 \normalsize Proefschrift ter verkrijging van de graad van doctor aan de
 Universiteit Utrecht op gezag van de Rector Magnificus, 
 Prof.~dr.~W.~H.~Gispen, ingevolge het besluit van het College voor
-Promoties in het openbaar te verdedigen op donderdag 14~november 2005
+Promoties in het openbaar te verdedigen op maandag 14~november 2005
 des middags te 14.30 uur
 
 \vspace*{1ex}
@@ -54,7 +54,12 @@ geboren op 19 januari 1960 te Kerensheide (Beek), Nederland
 \noindent
 \begin{tabular}{@@{}ll}
 promotor: & Prof.~dr.~S.~Doaitse Swierstra, Universiteit Utrecht
-\end{tabular}%
+\end{tabular}
+
+\medskip
+
+\noindent
+Department of Information and Computing Sciences, Universiteit Utrecht
 
 \vfill
 
@@ -79,6 +84,11 @@ Cover illustration \emph{``|lambda| strolling on the beach''} by Atze Dijkstra.
 
 \noindent
 ISBN 90-393-4070-6
+
+\medskip
+
+\noindent
+Copyright \copyright\ Atze Dijkstra, 2005
 \end{titlepage}
 %%]
 

@@ -11,26 +11,15 @@ sigma  ::=  Int | Char | ^^ -> ^^ | ^^ , ^^ | ^^ ,, ^^ | ^^ ...
 
 %%[ehc2
 sigma  ::=  Int | Char
-       |    (sigma,...,sigma)
-       |    sigma -> sigma
+       |    (sigma,...,sigma)  |    sigma -> sigma
        |    tvarv
 %%]
 
 %%[ehc3
 sigma  ::=  Int | Char
-       |    (sigma,...,sigma)
-       |    sigma -> sigma
+       |    (sigma,...,sigma)  |    sigma -> sigma
        |    tvarv | tvarf
        |    forall ^ tvarv . sigma
-%%]
-
-%%[ehc4
-sigma  ::=  Int | Char
-       |    (sigma,...,sigma)
-       |    sigma -> sigma
-       |    tvar
-       |    forall ^ tvarv . sigma
-tvar   ::=  tvarv | tvarf
 %%]
 
 %%[ehc4B1
@@ -59,11 +48,9 @@ tvar   ::=  tvarv | tvarf
 
 %%[ehc4C
 sigma  ::=  Int | Char | tcon
-       |    (sigma,...,sigma)
-       |    sigma -> sigma
-       |    tvar
+       |    (sigma,...,sigma)  |    sigma -> sigma
+       |    tvarv | tvarf
        |    Qu tvarv . sigma, Qu `elem` {forall, exists}
-tvar   ::=  tvarv | tvarf
 %%]
 
 %%[ehc5

@@ -11,6 +11,10 @@
 {ll}
 %%]
 
+%%[notationTableFormatHalf
+{lp{.31\linewidth}}
+%%]
+
 %%[notationTableHeader
 Notation & Meaning \\
 \hline

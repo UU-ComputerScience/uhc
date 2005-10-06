@@ -25,10 +25,12 @@ repmin     t
                                            (rt',rmin)  =  r rt m
 %%]
 
-%%[1.main
+%%[1.tr
 tr   = Tree_Bin (Tree_Leaf 3) (Tree_Bin (Tree_Leaf 4) (Tree_Leaf 5))
 tr'  = repmin tr
+%%]
 
+%%[1.main
 main  ::  IO ()
 main  =   print tr'
 %%]

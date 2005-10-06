@@ -54,7 +54,7 @@ instance Show UID where
 %%]
 
 %%[3.Ty
-type TvId  = UID
+type TvId  =  UID
 data Ty    =  Ty_Any | Ty_Int | Ty_Var TvId
            |  Ty_Arr  Ty Ty
            |  Ty_All  [TvId] Ty
@@ -125,8 +125,8 @@ instance Substitutable Gam where
 %%% Type matching (unification)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[3
 -- Type matching (unification)
+%%[3.match.A
 (<=>) :: Ty -> Ty -> (Cnstr,[PP_Doc])
 Ty_Any          <=> t2          = ([],[])
 t1              <=> Ty_Any      = ([],[])
@@ -135,6 +135,9 @@ Ty_Var v1       <=> Ty_Var v2
     | v1 == v2                  = ([],[])
 Ty_Var v1       <=> t2
     | v1 `notElem` ftv t2       = ([(v1,t2)],[])
+%%]
+
+%%[3.match.B
 t1              <=> Ty_Var v2
     | v2 `notElem` ftv t1       = ([(v2,t1)],[])
 Ty_Arr a1 r1    <=> Ty_Arr a2 r2

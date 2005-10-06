@@ -1,6 +1,6 @@
 %%[eh1
-In this section we build the first version of our series of compilers:
-the typed |lambda|-calculus packaged in Haskell syntax in which
+In this chapter we build the first version of our series of compilers:
+the typed |lambda|-calculus, packaged in Haskell syntax, in which
 all values need to explicitly be given a type.
 The compiler checks if the specified types are in agreement with actual
 value definitions.
@@ -18,16 +18,18 @@ is accepted, whereas
 produces a pretty printed version of the erroneous program,
 annotated with errors.
 Type errors are reported in terms of a failed 'fit' (@<=@) which is our mechanism
-for matching, or fitting, two types:
+for matching, or fitting (because of the asymmetry in later EH versions), two types:
 \begin{TT}
 %%1ppfile(test/1-all-fail2.eh%%)
 \end{TT}
 
 Type signatures have to be specified for identifiers bound in a |let| expression.
+A |let| expression allows mutually recursive definitions.
 For |lambda|-expressions the type of the parameter can be extracted from
-these type signatures unless a |lambda|-expression occurs at the position of an applied function.
+these type signatures,
+unless a |lambda|-expression occurs at the position of an applied function.
 In that case a type signature for the |lambda|-expression is required in the expression itself.
-This program will not typecheck because we a |Char->Char| function is applied to an |Int|.
+This program will not typecheck because a |Char->Char| function is applied to an |Int|.
 
 %%[[wrap=code
 %%1srcfile(test/1-polylam1.eh%%)
@@ -37,7 +39,8 @@ This program will not typecheck because we a |Char->Char| function is applied to
 The implementation of a type system will be the main focus of this and following sections.
 As a consequence the full environment/framework needed to build a compiler will not be discussed.
 This means that error reporting, generation of a pretty printed annotated output,
-parsing and the commandline invocation of the compiler are not described.
+parsing,
+and the commandline invocation of the compiler are not described.
 
 We start with the definition of the AST and how it relates to concrete syntax,
 followed by the introduction of several attributes required for the implementation
@@ -50,9 +53,10 @@ accepts with respect to the textual structure (see \figRef{eh1-lang-terms} for t
 On the other hand, \IxAsDef{abstract syntax} describes the structure used by the compiler itself for
 analysis and code generation.
 Translation from the more user friendly concrete syntax to the machine friendly abstract syntax is done by a
-parser; from the abstract to the concrete representation is done by a pretty printer.
+parser;
+translation from the abstract to the concrete representation is done by a pretty printer.
 
-\begin{TabularCenterFigure}{EH1 terms}{eh1-lang-terms}%
+\begin{TabularCenterFigure}{t}{EH1 terms}{eh1-lang-terms}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
 %%@AppxNotation.exprBasic
@@ -74,40 +78,23 @@ parser; from the abstract to the concrete representation is done by a pretty pri
 \end{TabularCenterFigure}
 
 Let us focus our attention first on the abstract syntax for EH1, in particular the part
-defining the structure for expressions (the remaining abstract syntax can be found in \figRef{abs-syn-eh1}).
+defining the structure for expressions (the remaining abstract syntax can be found in \figRef{abs-syn-eh1}):
 
 %%@EHAbsSyn.1.Expr wrap=code
 
 Integer constants are represented by |IConst|, lowercase (uppercase) identifier occurrences by |Var| (|Con|),
 an |App| represents the application of a function to its argument, |Lam| and |Let| represent lambda expressions and
 let expressions.
-The |Con|, |Paren|, and |AppTop| alternatives do not have a direct counterpart in EH1's term language;
+The |Con|, |Paren|, and |AppTop| alternatives do not have a direct counterpart in EH1's term language:
+|Con| is used for constructors (for now only tuples), |Paren| is used to encode parenthesis (for pretty printing),
+and |AppTop| encodes the top of an application (|App|) spine;
 we will later come back to the use of these additional alternatives.
 The abstract syntax for value expressions, pattern expressions, and type expressions also are similar in their structure
 for constants, constructors (|Con|), variables (|Var|), and application (|App|).
 The term language not always directly reflects this structure;
 we will also come back to this.
 
-%{
-%format < 		= "{\langle}"
-%format > 		= "{\rangle}"
-\begin{AGFeature}{ag-type-syn}{Type synonyms (for lists)}
-The AG notation allows type synomyms for one special case, AG's equivalent
-of a list (e.g |Decls| in \figRef{abs-syn-eh1}).
-It is an often occurring idiom to encode a list of nodes, say |DATA L| with elements |<node>| as:
-%%[[wrap=code
-DATA L
-  | Cons  hd  :  <node>
-          tl  :  L
-  | Nil
-%%]
-AG allows the following notation as a shorthand:
-%%[[wrap=code
-TYPE L = [<node>]
-%%]
-\end{AGFeature}
-%}
-
+\label{ag-type-syn}
 The following EH fragment (which is incorrect for this version of because type signatures are missing):
 
 %%[[wrap=code
@@ -158,6 +145,7 @@ This is the case for the construction of application-like structures
 (by the parser and the type checker) and pretty printing (not included in \thispaper).
 \item
 Type signatures (|Decl_TySig|) and value definitions (|Decl_Val|) may be freely mixed.
+Declarations may be mutually recursive.
 However, type signatures and value definitions for the same identifier are still related.
 %if False
 For this version of EH, each identifier introduced by means of a value definition must
@@ -165,22 +153,23 @@ have a corresponding type signature specification.
 %endif
 \item
 Because of the textual decoupling of value definitions and type signatures,
-a type signature may specify the type for an identifier occurring inside a pattern:
+a type signature may specify the type for an identifier occurring inside a pattern;
+for simplicity, we forbid this, for example:
 %%[[wrap=code
 let  a      ::  Int
      (a,b)  =   (3,4)
 in   ...
 %%]
-Additional analysis would be required to allow this;
-the following however is allowed:
+Additional analysis would be required to allow this.
+However, the following is allowed, because we allow type signatures for top-level identifiers:
 %%[[wrap=code
 let  ab        ::  (Int,Int)
      ab@(a,b)  =   (3,4)
 in   ...
 %%]
-because the specified type for |ab| corresponds to the top of a pattern of a value definition.
+The specified type for |ab| corresponds to the top of a pattern of a value definition.
 \item
-In EH composite values are created by tupling, denoted by |(..,..)|.
+In EH, composite values are created by tupling, denoted by |(..,..)|.
 The same notation is also used for patterns (for unpacking a composite value) and
 types (describing the structure of the composite).
 In all these cases the corresponding AST consists of a |Con| applied to the elements
@@ -198,7 +187,7 @@ a |","| together with the arity of the constructor.
 For example, the expression |(3,4)| is encoded as an application |App| of |Con ",2"|
 to the two |Int| arguments: (,2 3 4).
 In our examples we will follow the Haskell convention, in which we write (,) instead of `,2'.
-By using this encoding we also get the unit type |()| as it is encoded
+By using this encoding we also get the unit type |()|, as it is encoded
 by the name |",0"|.
 \item
 The naming convention for tuples and other naming conventions are available through the following abstraction
@@ -226,7 +215,10 @@ We need this for the reconstruction of the parentheses in the input.
 As noted in the AG tutorial this is the place where interfacing with the `outside' Haskell world takes place.
 It is a convention in \thispaper\ to give all nonterminals in the abstract syntax a
 name with |AGItf| in it,
-if it plays a similar role (for this and more naming conventions see \appRef{appx-ag-hs-namingconventions}).
+if it plays a similar role.
+%if False
+(for this and more naming conventions see \appRef{appx-ag-hs-namingconventions}).
+%endif
 \end{Itemize}
 
 
@@ -241,7 +233,7 @@ We focus on the pragmatics of the implementation and less on the corresponding t
 
 Compiler builders consider a \IxAsDef{type} to be a description of the interpretation of a value
 whereas a value is to be understood as a bitpattern.
-This means that machine operations such as integer addition,
+This means that machine operations, such as integer addition,
 are only applied to patterns that are to be interpreted as integers.
 More generally, we want to prevent unintended interpretations of bitpatterns,
 which might
@@ -251,8 +243,7 @@ The flow of values must be such that ``well-typed programs cannot go wrong''.
 A compiler uses a type system to analyse this flow,
 and to make sure that built-in functions are only
 applied to patterns that they are intended to work on.
-The idea is
-that if a compiler cannot find an erroneous flow of values, with the notion of
+If a compiler cannot find an erroneous flow of values, with the notion of
 erroneous defined by the type system, the program is guaranteed not to crash
 because of unintended use of bitpatterns.
 
@@ -270,7 +261,7 @@ because of unintended use of bitpatterns.
 In this section we start by introducing a type language in a more formal setting 
 as well as a more practical setting.
 The formal setting uses
-typing rules to specify the static semantics of EH whereas in the practical setting the AG system is used, providing an implementation.
+typing rules to specify the static semantics of EH, whereas in the practical setting the AG system is used, providing an implementation.
 In the following section we discuss the typing rules, the mechanism for enforcing the equality of types (called \IxAsDef{fitting})
 and the checking itself.
 Types will be introduced informally,
@@ -297,7 +288,8 @@ but postpone their discussion until they are needed.
 
 We explicitly distinguish between \IxAsDef{type expressions} and \IxAsDef{type signatures}.
 A type expression is a term |t| (\figRef{eh1-lang-terms}) specified by the EH programmer,
-whereas a type signature (or type for short) is used internally by the type rules (and their implementation).
+whereas a type signature |sigma|
+(or type for short) is used internally by the type rules (and their implementation).
 Only when the difference is significant we distinguish between type expressions and signatures, otherwise
 we just use the word `type'.
 
@@ -346,7 +338,8 @@ Constrains the types of these language constructs.
 \subsubsection{Type rules}
 We start with a simplified set of equational type rules (\figRef{rules3.E.expr.baseForEH1}).
 The full algorithmic version (\figRef{rules3.K.expr.baseForEH1}) of \thischapt\ differs in
-the explicit handling of known type information, the use of patterns and uncoupling of type signatures
+the explicit handling of known type information, the use of patterns,
+and uncoupling of type signatures
 and corresponding value declarations.
 We discuss type expressions, used in \ruleRef{e.ann},
 later in \thischapt\ (\secPageRef{eh1-tyexpr}).
@@ -392,7 +385,7 @@ By convention rule names are typeset in \textsc{small caps} font,
 and have the form \textsc{ast.rulename} where \textsc{ast} refers to the language element
 about which the rule states something (here expressions: \textsc{e}).
 The suffix |view|, typeset in |italic|, indicates the view on the rule (here the equational view: |E|).
-We usually omit the view when referring to a rule.
+We omit the view when referring to a rule.
 
 A |prerequisite| can take the form of any logical predicate or has 
 a more structured form, usually called a \IxAsDef{judgement}:
@@ -414,7 +407,7 @@ In the interpretation |judgetype| the |construct| has property |property| assumi
 If the |context| or |more ^^ results| itself consists of multiple parts, these parts are separated by
 a semicolon '|;|'.
 An underscore '|_|' has a similar role as in Haskell to indicate that a property is not relevant for a type rule
-(see \ruleRef{e.app}, \figRef{rules3.K.expr.baseForEH1})
+(for example see \ruleRef{e.app}, \figRef{rules3.K.expr.baseForEH1})
 
 Although a rule formally is to be interpreted purely equational, it may help to realise
 that from an implementors point of view this (more or less)
@@ -446,7 +439,7 @@ when discussing the |Ruler| system used for describing the type rules in \thispa
 Finally, we include a (compact) description and a legenda in each set of type rules (like \figRef{rules3.E.expr.baseForEH1})
 of which its type scheme is introduced or is changed.
 The description explains how the type scheme for the type rules should be interpreted.
-The legenda describes meaning and use of the meta-variables in the type scheme.
+The legenda describes the meaning and use of the meta-variables in the type scheme.
 
 \subsubsection{Environment}
 The rules in \figRef{rules3.E.expr.baseForEH1} refer to |Gamma|,
@@ -475,7 +468,7 @@ from smaller parts or deconstruct (pattern match) into smaller parts.
 If shadowing is involved, that is duplicate entries are added, left/first (w.r.t. to the comma '|,|') entries shadow right/later entries.
 When we locate some variable in an environment |Gamma| the first occurrence will be taken.
 
-If convenient we will also use a list notation:
+If convenient, we will also use a list notation:
 %%[[wrap=code
 Gamma = [ident :-> sigma]
 %%]
@@ -609,7 +602,7 @@ Here we discuss view 'K', for type checking with known types.
 \end{Itemize}
 
 We emphasize this difference by the use of colors:
-in the electronic version of \thispaper we use
+in the electronic version of \thispaper\ we use
 blue for changes relative to the previous set of rules,
 grey for the unchanged part.
 This (of course) is better seen through media which support color,
@@ -674,7 +667,8 @@ The rules in \figRef{rules3.K.match.onlyK} test the equality of two types by mat
 Matching is denoted by |<=>|.
 
 The rules for |<=| also specify a result type.
-Strictly this result is not required for the |fit| judgement to hold but in the implementation it is convenient
+Strictly this result is not required for the |fit| judgement to hold,
+but in the implementation it is convenient
 to have of |<=| (and its implementation |fitsIn|)
 return the smallest type |sigma| for which of |sigma1 <= sigma| and |sigma2 <= sigma| hold.
 This is useful in relation to the use of |ANY|
@@ -699,22 +693,7 @@ The constant |tyInt| represents the |Int| type constant.
 %%@EHTy.1.tyChar
 %%]
 
-
-\begin{AGFeature}{ag-loc-attr}{Local attributes}
-Attribute |fo_| and |ty| are declared locally.
-In this context `local' means that the scope is limited to the variant of a node.
-For example, |fo_| (explained further below) also holds a (possibly empty) list of errors used
-by other attribute equations.
-|fo_| is only available for attribute equations for variant |IConst| of |Expr|.
-
-%if False
-Note that no explicit rule for synthesized attribute |ty| is required;
-a copy rule is inserted to use the value of the locally declared attribute |ty|.
-This is a common AG idiom when a value is required for later use as well or
-needs to be redefined in later versions of EH.
-%endif
-\end{AGFeature}
-
+\label{ag-loc-attr}
 %if False
 The local attribute |ty_| (by convention) holds the type
 as computed on the basis of the abstract syntax tree.
@@ -756,7 +735,7 @@ In both cases |ANY| is a type exclusively used by the implementation to smoothen
 The rules for |<=| for |ANY| in \figRef{rules3.K.match.onlyK} state that |ANY| is equal to any type.
 The effect is that the result of |<=| is a more specific type.
 This suits our ``don't know'' and ``don't care'' use.
-Later, when discussing the AG implementation for these rules this issue reappears.
+Later, when discussing the AG implementation for these rules, this issue reappears.
 In later EH versions we will split the use of |ANY| into the proper use of a type lattice,
 and it will thus disappear.
 
@@ -822,37 +801,21 @@ The |Err| datatype is available as a datatype in the same way |Ty| is.
 
 \Paragraph{Variable occurrences |Var|}
 The error datatype is also used for signalling undeclared identifiers when a type for an identifier is retrieved
-from an environment |Gamma|: 
+from the environment |Gamma =@= valGam|: 
 
 %%%@EHInferExpr.1.Var wrap=code
 %%@EHRulerRules.1.expr.e.var wrap=code
 
-%{
-
-%format < 		= "{\langle}"
-%format > 		= "{\rangle}"
-\begin{AGFeature}{ag-lhs-pat}{Left hand side patterns}
-The simplest way to define a value for an attribute is to define one value for one attribute
-at a time.
-However, if this value is a tuple, its fields are to be extracted and assigned to individual attributes
-(as in |valGamLookupTy|).
-AG allows a pattern notation of the form(s) to make the notation for this situation more concise:
-%%[[wrap=code
-| <variant>  ^^^^  <node> . ( <attr1>   , <attr2>            , ...  )  = 
-| <variant>  ^^^^  ( <node1> . <attr1>  , <node1> . <attr2>  , ...  )  = 
-%%]
-\end{AGFeature}
-%}
-
+\label{ag-lhs-pat}
 Again, the error condition is signalled by a non empty list of errors
-if a lookup in |Gamma| fails.
+if a lookup in |Gamma =@= valGam| fails.
 These errors are gathered so they can be incorporated into an annotated pretty printed
 version of the program (this has been omitted).
 
 
-Typing \ruleRef{e.var} uses the environment |Gamma| to retrieve the type
+Typing \ruleRef{e.var} uses the environment |Gamma =@= valGam| to retrieve the type
 of an identifier.
-This environment |valGam| for types of
+This environment for types of
 identifiers is declared as an inherited attribute,
 initialized at the top of the abstract syntax tree.
 It is only extended with new bindings for identifiers at a declaration of an identifier.
@@ -891,7 +854,7 @@ Note that we are already performing a little bit of type inferencing.
 This is however only done locally to |App| as the |ANY| in
 |ANY -> sigmak| is guaranteed to have disappeared in the result type of |fitsIn|.
 If this is not the case, the EH program contains an error.
-This is a mechanism we repeatedly use, so we summarize it here:
+Enforcing a type to have a certain structure via |fitsIn| is a mechanism we repeatedly use, so we summarize it here:
 
 \begin{Itemize}
 \item
@@ -1085,10 +1048,10 @@ in   a
 
 The expected type of a pattern is distributed over the pattern
 by dissecting it into its constituents.
-Patterns do not return a type but
-type bindings for the identifiers inside a pattern.
+Patterns do not return a type,
+but instead return type bindings for the identifiers inside a pattern.
 The new bindings are subsequently used in
-|let|- and |lambda|-expressions bodies.
+|let|- and |lambda|-expression bodies.
 
 The typing for a tuple pattern is expressed as a combination of \ruleRef{p.app}
 and \ruleRef{p.apptop} (\figRef{rules3.K.patexpr.baseForEH1}).
@@ -1128,7 +1091,7 @@ We also require the arity of the pattern in order to check (at |AppTop|) if the 
 %%]
 
 The list of tuple elements is passed through attribute |knTyL| to all |App|'s of the pattern.
-At each |App| one element of this list is taken as the known type |knTy /=/ sigmak| of the element AST.
+At each |App| one element of this list is taken as the known type |knTy =@= sigmak| of the element AST.
 In case the arities of pattern and its expected type do not match, an error is produced and
 the tuple components are given |ANY| as their expected type (by |tyLHdAndTl|).
 
@@ -1143,15 +1106,7 @@ The arity of the patterns is needed as well:
 
 %%@EHInferPatExpr.1.arity wrap=code
 
-\begin{AGFeature}{ag-set-notation}{Set notation for variants}
-The rule for (e.g.) attribute |fo| is specified for |IConst| and |CConst| together.
-Instead of specifying only one variant a whitespace separated list of variant names
-may be specified after the vertical bar '| || |'.
-It is also allowed to specify this list relative to all declared variants by specifying for which
-variants the rule should \emph{not} be declared.
-For example: |* - IConst CConst| if the rule was to be defined for all variants except |IConst| and |CConst|.
-\end{AGFeature}
-
+\label{ag-set-notation}
 As a result of this unpacking, at a
 |Var| alternative attribute |knTy| holds the type of the variable name introduced.
 The type is added to attribute |valGam| that is threaded through the pattern for gathering
@@ -1247,16 +1202,7 @@ Finally distribute all previously gathered information (for use by identifier oc
 This attribute corresponds to |Gamma| in the type rules.
 \end{Itemize}
 
-\begin{AGFeature}{ag-use-attr}{Attribute together with |USE|}
-A synthesized attribute |<attr>| may be declared together with |USE {<op>} {<zero>}|.
-The |<op>| and |<zero>| allow the insertion of copy rules which behave similar to Haskell's |foldr|.
-The first piece of text |<op>| is used to combine the attribute values of two children by textually placing this text as an
-operator between references to the attributes of the children.
-If no child has an |<attr>|, the second piece of text |<zero>| is used as a default value for |<attr>|.
-For example, |USE {`gamAddGam`} {emptyGam}|
-gathers bottom-up the type signature bindings.
-\end{AGFeature}
-
+\label{ag-use-attr}
 This flow of information is described by the following AG fragment:
 
 %%@EHRulerRules.1.expr.e.let wrap=code
@@ -1295,7 +1241,7 @@ if any duplicate bindings are present.
 \label{eh1-tyexpr}
 
 All that is left to do now is to use the type expressions to extract type signatures
-(type rules for type expressions in \figRef{rules3.K.tyexpr.base}).
+(type rules for type expressions are in \figRef{rules3.K.tyexpr.base}).
 This is straightforward as type expressions (abstract syntax for what the programmer specified)
 and types (as internally used by the compiler) have almost the same structure (\secPageRef{abs-syn-eh1}:
 
@@ -1340,8 +1286,8 @@ Finally, at the |Con| alternative of |TyExpr| we need to check if a type is defi
 \subsection{Conclusion and remarks}
 
 In \thischapt\ we have described the first version of EH,
-that is, |lambda|-calculus packaged in Haskell notation plus tuples.
-Types are simple (no polymorphism), explicit and checked.
+that is, |lambda|-calculus (plus tuples) packaged in Haskell notation.
+Types are simple (no polymorphism), explicit, and checked.
 The next version adds non-polymorphic type inference.
 
 This EH version provides the basis for later EH versions,
@@ -1364,10 +1310,12 @@ Additional environments are required to pass the relevant information around;
 this is the price we pay for this flexibility.
 \end{Itemize}
 
-We (again) mention that we refrain from proving formal properties.
-Instead we briefly discuss this aspect in the conclusion (\chapterRef{ehcConcl}).
-
-
+We emphasize that the AG system allows us to independently specify these aspects.
+We consider this a strong point of the AG system (see also \chapterRef{ehcConcl}).
+By using a slightly more general approach we are able to anticipate later modifications.
+However, this raises the question of what ``the right'' approach is;
+we will discuss our choice (and related choices concerning our partitioning into steps)
+in the conclusion (\chapterRef{ehcConcl}).
 %%]
 
 %%[scratch

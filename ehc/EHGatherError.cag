@@ -80,7 +80,11 @@ SEM Expr
                                                     (foErrL @fo_fitF_ ++ @arg.errL ++ @body.errL ++ @gamErrL)
 %%]
 
+-- should be removed later 
 %%[5
+SEM PatExpr
+  | IConst CConst
+                lhs         .   errL        :=  []
 %%]
 
 %%[5_1

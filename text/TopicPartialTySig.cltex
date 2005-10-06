@@ -192,7 +192,7 @@ g :: Int -> (C_1,C_1 -> Int)
 Two different invocations now are required to return the same, but hidden, type.
 
 %if False
-All these rules all correspond, via the Curry-Howard isomorphism
+All these rules correspond, via the Curry-Howard isomorphism
 \cite{srensen98curry-howard,wadler89theorems-for-free,wadler00proofs-are-programs,wadler02girard-reynolds-iso},
 to their corresponding logical meaning.
 %endif
@@ -280,7 +280,7 @@ For a standalone type variable (does not occur elsewhere in the type),
 a |forall| is used in a co-variant context, |exists| otherwise.
 \end{Itemize}
 
-\begin{TabularCenterFigure}{Notation for co- and contravariant context}{eh-coco-legenda-notation}
+\begin{TabularCenterFigure}{}{Notation for co- and contravariant context}{eh-coco-legenda-notation}
 %%@AppxNotation.notationTableFormat
 %%@AppxNotation.notationTableHeader
 %%@AppxNotation.notationCoCo

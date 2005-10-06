@@ -232,7 +232,7 @@ ordered steps.
 Although we feel that the chosen partitioning serves the explanation well,
 others are possible and perhaps better within different contexts. 
 
-\FigurePDF{ag-ast-asp}{AST and aspects}{fig-ag-ast-asp}
+\FigurePDF{t}{ag-ast-asp}{AST and aspects}{fig-ag-ast-asp}
 
 \figRef{fig-ag-ast-asp} intuitively illustrates where we have to make choices when we
 partition.
@@ -244,6 +244,16 @@ The horizontal dimension corresponds to AST extensions, the vertical dimension c
 attributes and their (re)definition.
 Each step describes one or more polygon shaped areas from the two-dimensional space.
 Partitioning means selecting which squares are picked for extension and description.
+
+%if False
+We have chosen our partitioning based on the the following considerations:
+\begin{Itemize}
+\item
+Start with requiring the programmer to be explicit and then relax this to allow type inference.
+\item
+
+\end{Itemize}
+%endif
 
 \figRef{fig-ag-ast-asp} also shows that complexity increases with the addition of features.
 Not only do we have to describe new features, but we also have to
