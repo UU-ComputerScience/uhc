@@ -194,11 +194,12 @@ Views are ordered in the sense that later views are built on top of earlier view
 Each view is defined in terms of its differences with its ancestor view;
 the resulting view on the artefact is the accumulation of all these incremental definitions.
 
-This, of course, is not a new idea: version managment systems use similar mechanisms.
-The difference is that a version management system
-stores delta's between versions in order to save space, whereas for us the changes themselves are object of discussion.
-A version management system allows access to one version at a time,
-usually the latest, whereas we need simultaneous
+This, of course, is not a new idea: version managment systems use similar mechanisms,
+and object-oriented systems use the notion of inheritance.
+However, the difference lies in our focus on a whole sequence of versions as well as the changes between versions:
+in the context of version management only the latest version is of interest, whereas for a class hierarchy we aim
+for encapsulation of changes.
+We need simultaneous
 access to all versions,
 which we call views,
 in order to build both the explanation and the sequence
@@ -295,7 +296,7 @@ Finally we discuss and conclude in \secRef{ruler-conclude}.
 \subsection{|Ruler| overview}
 \label{ruler-overview}
 
-\begin{XFigFigure}{ruler-overview}{Ruler overview}{ruler-fig-overview}
+\begin{XFigFigure}{}{ruler-overview}{Ruler overview}{ruler-fig-overview}
 \end{XFigFigure}
 
 %{
@@ -333,7 +334,7 @@ The use of tools for the EH compilers is slightly more complicated because we ne
 A separate fragment management tool, called |shuffle| (part of the EH project \cite{dijkstra04ehc-web}),
 is used to generate AG and Haskell code from code fragments describing the view inheritance chains for
 AG and Haskell code.
-Because we do not discuss this any further, this part has been displayed in grey (in \figRef{ruler-fig-overview}).
+Because we do not discuss this any further, this part has been omitted (from \figRef{ruler-fig-overview}).
 
 \Paragraph{The design of |Ruler|}
 In the remainder of this section we discuss the concepts used in |Ruler| by inspecting elements of
@@ -477,7 +478,7 @@ in   let  v1 = id 3
           in   v2 v1
 %%]
 
-\begin{TabularCenterFigure}{Terms}{ruler-demo-lang-terms}%
+\begin{TabularCenterFigure}{}{Terms}{ruler-demo-lang-terms}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
 %%@AppxNotation.rulerExpr
@@ -492,7 +493,7 @@ or an unknown type represented as a type variable |tvarv|.
 We discuss the use of these types when we introduce the typing rules for our term language
 in the following sections.
 
-\begin{TabularCenterFigure}{Types}{ruler-demo-hm-lang-types}%
+\begin{TabularCenterFigure}{}{Types}{ruler-demo-hm-lang-types}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.typeHeader
 %%@AppxNotation.rulerTy
@@ -530,7 +531,7 @@ Cnstr (forall ^ v.sigma) =  forall ^ v . (Cnstr\\v) sigma
 %%]
 %endif
 
-\begin{TabularCenterFigure}{Legenda of type related notation}{ruler-legenda-ty-symbols}{ll}
+\begin{TabularCenterFigure}{}{Legenda of type related notation}{ruler-legenda-ty-symbols}{ll}
 Notation & Meaning \\
 \hline
 |sigma|
@@ -557,7 +558,7 @@ Notation & Meaning \\
 \end{TabularCenterFigure}
 
 %if False
-\begin{TabularCenterFigure}{Types}{ruler-demo-lang-types}{r@@{\;}c@@{\;}ll}
+\begin{TabularCenterFigure}{}{Types}{ruler-demo-lang-types}{r@@{\;}c@@{\;}ll}
 \multicolumn{4}{l}{Types:} \\
 |sigma| & |::=| &
 |Int |
@@ -612,6 +613,7 @@ which is immediately followed by the views on this scheme.
 Each view defines empty slots (|holes|),
 the judgement shape (\IxAsDef{judgeshape}) by which concrete judgements will be specified (|judgespec|)
 and judgement shapes that will be used for output generation (|judgeuse|).
+Holes act like parameters to a judgement shape.
 The view |E| on scheme |expr| is defined by:
 
 %%@rulerDemoRL.1.expr.scm.E wrap=code
@@ -781,8 +783,13 @@ we only note that part of the \LaTeX\ formatting (e.g. for a single rule)
 is delegated to external \LaTeX\ commands.
 
 The ruleset heading is immediately followed by a list of rules, of
-which only one is shown here (|e.int| is pretty printed in small caps as \textsc{e.int});
+which only one is shown here (|e.int| is pretty printed in small caps as \textsc{e.int})%
+%if storyPHD && targetForPaper
+:
+%else
+;
 for a complete description see \appRef{ruler-app-demo-src}:
+%endif
 
 %%[[wrap=code
 %%@rulerDemoRL.1.rl.e.int
@@ -1499,28 +1506,45 @@ can be applied to similar problems as an automated strategy.
 We expect the |Ruler| to be useful in many different situations,
 requiring different kinds of output,
 such as material for use in theorem provers.
+%if False
 We already have started to develop a plugin architecture for this kind of extensibility.
+%endif
 \end{Itemize}
 
 \Paragraph{Related work}
-We are not aware of other work which aims at consistency and understandability of compiler artefacts.
-However, we feel that the
-POPLmark challenge \cite{www05poplmark-chall} and the Programmatica project \cite{www05programmatica} 
-are relevant to |Ruler|:
+TinkerType \cite{levin99tinkertype},
+used for Pierce's book \cite{typing:types-prog-lang:pierce},
+comes closest to |Ruler|.
+Type system features can be combined into type systems.
+The system provides checks for valid combinations, and allows the specification of (implementing) code fragments.
+However, no automatic code generation is supported, nor checks on the structure of judgements.
 
-\begin{Itemize}
-\item
-The POPLmark challenge aims at accompanying papers on programming languages by machine-checked proofs.
-This overlaps with our |Ruler| system which can be easily extended to generate input for external verification systems.
-\item
-The Programmatica project provides mechanisms and tools for proving properties of Haskell programs.
-\end{Itemize}
+The theorem proving environment Twelf \cite{www05twelf}
+is used to describe and proof properties for
+programming languages \cite{harper05lect-mechlangdef},
+thus answering the POPLmark challenge \cite{www05poplmark-chall}.
+Although we intend to generate descriptions for use in such theorem proving tools,
+we emphasize that |Ruler| is meant as a lightweight tool for the construction of compilers.
 
+Various AST based compiler construction tools exist
+\cite{www99croap,www05asf-sdf,visser05stratego-www,www05synth-gen},
+among which our AG system.
+Such tools have in common that they only allow programming on the level of AST's,
+whereas |Ruler| allows a higher level programming.
+Furthermore, in our experience, stepwise AG descriptions became too complex (hence the use of |Ruler|),
+and we expect this the case for similar formalisms as well.
+
+Finally, we also mention 
+the Programmatica project, which
+provides mechanisms and tools for proving properties of Haskell programs.
+
+%if False
 As mentioned in our future research,
 in both cases we envision many useful extensions to |Ruler| for the generation of material for theorem provers.
 We want to stress however that, already in its current state,
 we have found it an indispensable tool in keeping the formal description of a whole series of compilers and the associated implementations consistent.
 Ruler can be downloaded as part of EHC \cite{dijkstra05ruler-www}.
+%endif
 
 %if False
 \Paragraph{(Random) observations}

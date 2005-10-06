@@ -13,10 +13,10 @@ type inference for rank-2 is possible, but complex
 In \thispaper\ we therefore tackle this problem not by a clever inferencing algorithm,
 but by focussing on the propagation of explicit, programmer supplied type information to
 the places in a program where this information is relevant.
-We thus rely on the programmer to specify `difficult' type signatures;
-specifying type signatures is useful anyway for the purpose of documentation.
+We thus rely on the programmer to specify `difficult' type signatures.
 Our implementation exploits these type signatures to type check and infer types
-for those parts for which no type signature has been given.
+for those parts for which no type signature has been given,
+similar to other approaches \cite{vytiniotis05boxy-impred,pierce00local-type-inference}.
 
 We describe our solution in three parts:
 \begin{Itemize}
@@ -62,7 +62,7 @@ both may be polymorphic.
 This is not the case for pure Hindley-Milner type inference,
 which excludes higher-ranked polymorphism.
 The advantage of this restriction is that removal of explicitly specified type signatures from a program still
-yields the same (or more general) typing of values (called \IxAsDef{principality}).
+yields the same (or more general) typing of values (principal type property).
 However, this advantage turns into a hindrance when a programmer needs higher-ranked types,
 and is also willing to specify these types.
 
@@ -122,17 +122,18 @@ We extend the type language with universally quantified types and allow these ty
 the type inference process.
 As a consequence, type variables can bind to quantified types;
 allowing this is called \IxAsDef{impredicativity}.
-Throughout this and subsequent chapters describing EH4, we will further discuss impredicativity.
+Throughout this and subsequent chapters describing EH4, we will further discuss impredicativity and its propagation,
+called \IxAsDef{quantifier propagation}.
 
 \Paragraph{Type language}
 
-The type language used in \thischapt\ is a straightforward extension of the previous type language with
-an alternative for quantification, used in the context of the term language for this version (\figRef{eh4-lang-terms}):
+The type language used in \thischapt\ is the same as the type language used by the previous EH version.
+We repeat its definition:
 %%[[wrap=code
-%%@SharedTypeLang.ehc4
+%%@SharedTypeLang.ehc3
 %%]
 
-\begin{TabularCenterFigure}{EH terms}{eh4-lang-terms}%
+\begin{TabularCenterFigure}{}{EH terms}{eh4-lang-terms}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
 %%@AppxNotation.exprBasic
@@ -186,7 +187,7 @@ This has the following consequences:
 Equating two types (by means of fitting) must take into account the presence of quantifiers.
 \item
 Instantiation of types is postponed until the latest moment possible, that is,
-until an uninstiated type is to be matched with another type.
+until an uninstantiated type is to be matched with another type.
 Hence fitting must deal with instantiation as well.
 \item
 Type variables can also be bound to quantified types
@@ -197,7 +198,7 @@ or bind it directly to a type variable and delay its instantiation.
 Both are allowed to happen.
 \item
 Because our strategy is to propagate polymorphism instead of reconstructing it,
-our encoding of polymorphism places quantifiers at a position which guarantees that their instantiation happen as late
+our encoding of polymorphism places quantifiers at a position which guarantees that their instantiation happens as late
 as possible.
 We will come back to this in \chapterRef{ehc-partial-sig-quant-guess}.
 \item
@@ -257,7 +258,7 @@ tvarv6 -> tvarv6 <= tvarv4 -> tvarv5
 %%]
 
 HM type inference instantiates a type immediately after retrieval from the environment |Gamma|,
-our approach postpones instantiation until it can not longer be avoided.
+our approach postpones instantiation until it can no longer be avoided.
 
 \Paragraph{Use of polymorphic value as an argument when the expected argument type is known}
 Function |f| gets passed |id| as its argument; |id|'s type must fit in |f|'s argument type:
@@ -300,7 +301,7 @@ In \chapterRef{ehc4B} we will investigate how we can exploit the presence of qua
 
 \Paragraph{Soundness and completeness}
 Although we make no (formally proven) claims about the type system(s) described in this thesis,
-we intend our type systems to be sound and and complete in the sense described in the remainder of this section.
+we intend our type systems to be sound and complete in the sense described by the remainder of this section.
 We present our intent by means of the following definition and theorems.
 
 \begin{Definition}
@@ -431,12 +432,12 @@ for example for |fioBindRFirst| with |fioBindRFirstY| and |fioBindRFirstN| respe
 %%@rules3Explain.fit.I1.explain.holes
 }
 
-\begin{TabularCenterFigure}{Options to |fitsIn =@= <=|}{eh-impredA-fit-options}
+\begin{TabularCenterFigure}{}{Options to |fitsIn =@= <=|}{eh-impredA-fit-options}
 %%@SharedFIOpts.fiOptsTableHeader
 %%@SharedFIOpts.fiOptsEH4
 \end{TabularCenterFigure}
 
-\begin{TabularCenterFigure}{Option combinations}{eh-impredA-fit-option-combis}
+\begin{TabularCenterFigure}{}{Option combinations}{eh-impredA-fit-option-combis}
 %%@SharedFIOpts.fiOptsCombisTableHeader
 %%@SharedFIOpts.fiOptsCombisEH4forEH4
 \end{TabularCenterFigure}
@@ -444,7 +445,7 @@ for example for |fioBindRFirst| with |fioBindRFirstY| and |fioBindRFirstN| respe
 We use the named combinations of these flags during type inferencing
 (\figRef{rules3.I1.expr.baseForEH4}).
 The name of a combination also suggests a (intuitive) meaning.
-For example |strongFIOpts| stands for a strong context where the expected type is fully known.
+For example, |strongFIOpts| stands for a strong context where the expected type is fully known.
 The actual flags associated with |strongFIOpts| are used in the rules for matching
 (\figRef{rules3.I1.match.eh4}).
 
@@ -612,6 +613,18 @@ v1  ::  forall ^ a .  (              a -> a)  ->  (              a -> a)
 v2  ::                (forall ^ a .  a -> a)  ->  (forall ^ b .  b -> b)
 %%]
 
+Alternatively, we could have provided an explicit type instead, but this is more verbose:
+
+% from: test/4-impred-choose2.eh
+%%[[wrap=code
+let  v3      =   (choose :: (forall a . a -> a) -> (forall b . b -> b) -> (forall c . c -> c)) id
+     v4      ::  (forall a . a -> a) -> (forall b . b -> b)
+     v4      =   choose id
+...
+%%]
+
+Both |v3| and |v4| have the same type as |v2|.
+
 \subsection{Conclusion}
 
 In \thischapt\ we have described part of the fourth version of EH,
@@ -711,7 +724,8 @@ is equivalent to |sigma1 <= sigma2|.
 
 Generality is even further exploited in the following (somewhat contrived) example.
 It differs from the previous example in that |h| is not chosen from the set of available expected types,
-but is the most general combination (the meaning of which is made more precise in the remainder of \thischapt).
+but is the greatest common instance \cite{pfenning91anti-unif}
+(or least general anti-unification, defined later in \thischapt\ as the meet of two types).
 
 %%[[wrap=code
 %%4srcfile(test/4-impred-demo2.eh%%)
@@ -800,7 +814,7 @@ in \figRef{fig-type-lattice}.
 
 We call the resulting strategy \IxAsDef{global quantifier propagation}.
 
-\FigureXFigTex{type-lattice}{Type lattice (|exists| is discussed in \chapterRef{ehc4C})}{fig-type-lattice}
+\FigureXFigTex{}{type-lattice}{Type lattice (|exists| is discussed in \chapterRef{ehc4C})}{fig-type-lattice}
 
 \subsection{Finding possible quantifiers}
 
@@ -812,7 +826,7 @@ We need to delay that decision by gathering all possible bindings, and extract a
 Actually, we also need to find out if polymorphism needs to be inhibited.
 This is a consequence of the contravariance of function arguments.
 
-For example, in \exPageRef{eh4B-ex-most-gen} we conclude:
+For instance, in \exPageRef{eh4B-ex-most-gen} we conclude:
 
 %%[[wrap=code
 h :: forall ^ a . a -> a
@@ -878,13 +892,13 @@ this is necessary to inhibit propagation of quantified types.
 For example, for \exRef{eh4B-ex-contravariance} we have to conclude the constraint ``|tvarv2 :-> Int -> Int|'' on |tvarv2|,
 the least general type, and inhibit the propagtion of ``|forall ^ a . a -> a|'' as a possible binding for |tvarv2|.
 
-\begin{TabularCenterFigure}{Notation for quantifier propagation}{eh4B-notation}{ll}
+\begin{TabularCenterFigure}{}{Notation for quantifier propagation}{eh4B-notation}{ll}
 Notation & Meaning \\
 \hline
 %%@AppxNotation.notationImpredB
 \end{TabularCenterFigure}
 
-\begin{TabularCenterFigure}{Type language}{eh4-lang-types}%
+\begin{TabularCenterFigure}{}{Type language}{eh4-lang-types}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.typeHeader
 %%@AppxNotation.typeBasic
@@ -917,13 +931,13 @@ For example, binding to a type alternative is disabled in \ruleRef{m.var.l1}
 and enabled in \ruleRef{m.var.l3} (a new rule).
 New bindings for type alternatives are combined, for example in \ruleRef{m.alt} and \ruleRef{m.alt.l1}.
 
-\begin{TabularCenterFigure}{Options to fit}{eh4B-impred-fit-options}
+\begin{TabularCenterFigure}{}{Options to fit}{eh4B-impred-fit-options}
 %%@SharedFIOpts.fiOptsTableHeader
 %%@SharedFIOpts.fiOptsEH4
 %%@SharedFIOpts.fiOptsEH4B
 \end{TabularCenterFigure}
 
-\begin{TabularCenterFigure}{Option combinations}{eh4B-impred-fit-option-combis}
+\begin{TabularCenterFigure}{}{Option combinations}{eh4B-impred-fit-option-combis}
 %%@SharedFIOpts.fiOptsCombisTableHeader
 %%@SharedFIOpts.fiOptsCombisEH4forEH4B
 %%@SharedFIOpts.fiOptsCombisEH4B
@@ -1202,7 +1216,7 @@ Both inference stages return a type.
 The type returned by quantifier propagation may contain type alternatives and is therefore denoted by |isigma|;
 the type returned by normal inference is denoted by |sigma|.
 We focus on quantifier propagation and its integration with normal type inference
-(and postpone the discussion of the judgements for constraints marked with |ex| required for existential types):
+(and postpone the discussion of the judgements for constraints superscripted with |ex| required for existential types):
 
 \begin{Itemize}
 \item
@@ -1245,7 +1259,7 @@ as a set of type alternatives.
 %%@rules3Explain.expr.I2.explain.holes
 }
 
-Fixing type information is done at two places: at the introduction of identifiers in |let|-bindings and |lambda|-bindings.
+Fixating type information is done at two places: at the introduction of identifiers in |let|-bindings and |lambda|-bindings.
 Similar to the generalisation of HM type inference,
 these places limit the scope of an identifier.
 If a type variable is not accessed outside this boundary, we can close the reasoning about such
@@ -1314,7 +1328,7 @@ all declarations,
 and being tied together at \ruleRef{e.let}.
 \FigRef{fig-let-I2-flow} therefore provides a graphical summary.
 
-\FigureXFigTex{let-I2-flow}{Constraint flow for let expression}{fig-let-I2-flow}
+\FigureXFigTex{}{let-I2-flow}{Constraint flow for let expression}{fig-let-I2-flow}
 
 Additional complexity arises from the presence of existential types,
 which we will discuss in \chapterRef{ehc4C}.
@@ -1359,8 +1373,10 @@ with types which can incorporate constraints,
 and are applied as greedily as possible.
 
 The quantifier propagation described in this chapter is algorithmic of nature.
-Recent work by R\'emy \cite{remy05sysf-tycont} takes a similar approach, calling the propagations process elaboration.
-His and our approach share the two-pass nature in which the first pass infers missing type annotations.
+Recent work by Pottier and R\'emy \cite{pottier05stratif-gadt,remy05sysf-tycont} takes a similar approach
+(although in a constraint based setting),
+calling the propagations process elaboration.
+Theirs and our approach share the two-pass nature in which the first pass infers missing type annotations.
 Although we make no claims about the correctness of our algorithm,
 quantifier propagation only propagates that which is already available in the first place,
 thus being true to our conservative ``don't invent polymorphism'' design starting point.
@@ -1380,6 +1396,11 @@ this is the price to pay for a bit of System F functionality.
 Our approach provides such an implementation and, additionally,
 stretches the exploitation of type annotations even further by propagating impredicativity globally throughout
 and expression.
+
+For this thesis we have chosen the `classical' approach as a starting point to keep matters (relatively) simple.
+Only recently new extensions are expressed using a constraint approach.
+We expect to use a constraint based approach,
+because of this and the prospect of better error message \cite{heeren05phd-errormsg}.
 
 Finally, \thischapt\ reflects an experiment which has not (yet) been integrated into
 the final of our series of compilers.
@@ -1507,14 +1528,14 @@ In EH, the opening is associated with the binding of a type to a value identifie
 This (design decision) follows the intuition that a value is a concrete object with a concrete type.
 
 Opening an existential type by binding
-also means that the following example is safe:
+also means that the following example does not type check\footnote{Case expressions are introduced together with data types, \chapterEHVRef.}:
 
 %%[[wrap=code
 %%5srcfile(test/5-demo1.eh%%)
 %%]
 
 Function |f| returns |(2,id)| when passed |2| and |('a',ord)|
-otherwise\footnote{Case expressions are introduced together with data types, \chapterEHVRef.}.
+otherwise.
 EH creates the following bindings; the creation of type constants guarantees that |fx| cannot be applied to |yy|:
 
 %%[[wrap=code
@@ -1703,9 +1724,11 @@ by using the same type for the opening of the same value.
 Laufer (et.al.) \cite{laufer94poly-absdata} observe that existential types,
 in practical settings, have to be opened for a large scope,
 losing some of the benefits of abstraction.
-Our solution takes this a step further by opening the type of the value once and for all,
-thereby still retaining the benefit of encapsulation (because type information is replaced by fresh type constants).
-As a consequence we not have to bother about opening existential types.
+
+By opening an existential type once when bound to a value identifier, we partially solve this problem.
+We achieve encapsulation, avoid the clutter of opening, but only do so for toplevel existential quantification.
+Existentials which are nested in a composite type only will be opened when bound to an identifier, so in order to
+preserve type identity across multiple nested selections, we would have to open all fields of a composite value in this way.
 
 %\item
 %Opening a nested existential type is done when bou
@@ -1762,7 +1785,7 @@ Repeat some motivating examples \cite{shan04sexy-types,peytonjones04pract-inf-ra
 \subsection{What we want}
 \label{eh-impred-reqm}
 
-\begin{TabularCenterFigure}{EH terms}{eh-impred-lang-terms}
+\begin{TabularCenterFigure}{}{EH terms}{eh-impred-lang-terms}
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
 %%@AppxNotation.exprBasic
@@ -1843,7 +1866,7 @@ Point out what we can do extra relative to Vytiniotis \cite{vytiniotis05boxy-imp
 \subsection{Implementation}
 \label{eh-impred-impl}
 
-\begin{TabularCenterFigure}{EH types}{eh-impred-lang-types}
+\begin{TabularCenterFigure}{}{EH types}{eh-impred-lang-types}
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.typeHeader
 %%@AppxNotation.typeBasic
@@ -1861,7 +1884,7 @@ Point out what we can do extra relative to Vytiniotis \cite{vytiniotis05boxy-imp
 %%@AppxNotation.tyaltBasic
 \end{TabularCenterFigure}
 
-\begin{TabularCenterFigure}{Notation and abbreviation legenda}{eh-impred-legenda-notation}
+\begin{TabularCenterFigure}{}{Notation and abbreviation legenda}{eh-impred-legenda-notation}
 %%@AppxNotation.notationTableFormat
 %%@AppxNotation.notationTableHeader
 %%@AppxNotation.notationBasic
@@ -1927,7 +1950,7 @@ A second reason is the mixture of yes/no quantified, i.e. holes in a type may ha
 The order in which the rules appear is important. Of two matching rules the textually preceding one takes precedence.
 In case of commutativity only a `left' variant has been included (perhaps an explicit summary where this applies).
 
-\begin{TabularCenterFigure}{Quantified type instantiation variants}{eh-impred-legenda-inst}{l@@{=}ll}
+\begin{TabularCenterFigure}{}{Quantified type instantiation variants}{eh-impred-legenda-inst}{l@@{=}ll}
 \multicolumn{2}{l}{Variant} & instantiate |Vec(alpha)| with fresh \\
 \hline
 |(Vec(tvarv),sigma') | & | instWith(tvarv)(Qu ^ Vec(alpha) . sigma)|
@@ -1949,7 +1972,7 @@ In case of commutativity only a `left' variant has been included (perhaps an exp
 All instantiation variants only instantiate top level quantified type variables.
 instWith(exists)(Gamma) is defined in the obvious way.
 
-\begin{TabularCenterFigure}{Options to fit}{eh-impred-fit-options}
+\begin{TabularCenterFigure}{}{Options to fit}{eh-impred-fit-options}
 %%@SharedFIOpts.fiOptsTableHeader
 %%@SharedFIOpts.fiOptsEH4
 %%@SharedFIOpts.fiOptsEH4B
@@ -1960,7 +1983,7 @@ Often used combinations of these options are found in \FigRef{eh-impred-fit-opti
 |True| and |False| values are denoted by a an additional |+| or |-| respectively,
 for example for |fioLeaveRInst| with |fioLeaveRInstY| and |fioLeaveRInstN| respectively.
 
-\begin{TabularCenterFigure}{Option combinations}{eh-impred-fit-option-combis}
+\begin{TabularCenterFigure}{}{Option combinations}{eh-impred-fit-option-combis}
 %%@SharedFIOpts.fiOptsCombisTableHeader
 %%@SharedFIOpts.fiOptsCombisEH4forEH4B
 %%@SharedFIOpts.fiOptsCombisEH4B

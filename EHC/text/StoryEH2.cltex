@@ -6,7 +6,10 @@ For example, the example from the introduction:
 %%[[wrap=code
 %%2srcfile(test/1-sig-fail.eh%%)
 %%]
-is accepted by this version of EH:
+is accepted by this version of EH.
+From now on, and when relevant,
+we will also give the output as produced by the corresponding EH compiler,
+because additional type information is inferred:
 \begin{TT}
 %%2ppfile(test/1-sig-fail.eh%%)
 \end{TT}
@@ -15,14 +18,13 @@ The idea is that the type system implementation has an internal representation
 for ``knowing a type is some type, but not yet which one'' which can be replaced
 by a more specific type if that becomes known.
 The internal representation for a yet unknown type
-is called a \IxAsDef{type variable}, similar to mutable variables
-for (runtime) values.
+is called a \IxAsDef{type variable}.
 
 The implementation attempts to gather as much information as possible
 from a program
 to reconstruct (or infer) types for type variables.
 However, the types it can reconstruct are limited to those allowed by
-the used type language, that is, basic types, tuples and functions.
+the used type language, that is, basic types, tuples, and functions.
 All types are assumed to be monomorphic, that is, polymorphism is not yet allowed.
 The next version of EH deals with polymorphism.
 
@@ -51,7 +53,10 @@ On the other hand, if contradictory information in case of a monomorphic |id| ap
 
 The next version of EH dealing with Haskell style polymorphism
 (\chapterRef{ehc3}) accepts this program.
+This version of EH also allows partial type signatures;
+we will discuss this feature in \chapterRef{ehc-partial-sig-quant-guess}.
 
+%if False
 Partial type signatures are also allowed.
 A partial type signature specifies a type only for a part, allowing
 a cooperation between the programmer who specifies what is (e.g.) already
@@ -70,11 +75,12 @@ The type inferencer pretty prints the inferred type instead of the explicit type
 
 The discussion of this feature is postponed until
 \chapterRef{ehc-partial-sig-quant-guess}.
+%endif
 
 \subsection{Type variables}
 
 In order to be able to represent yet unknown types the type language needs
-\IxAsDef{type variable}s to represent this:
+\IxAsDef{type variable}s to represent this, and therefore we extend our set of types as follows:
 
 %%[[wrap=code
 %%@SharedTypeLang.ehc2
@@ -111,10 +117,10 @@ A type variable is identified by a unique identifier, a |UID|:
 %%@EHTy.2.TyVarId.Base
 %%]
 
-The idea is to thread a counter as global variable through the AST,
+We thread a counter as global variable through the AST,
 incrementing it whenever a new unique value is required.
 The implementation used throughout all EH compiler versions is more complex because
-a |UID| actually is a hierarchy of counters, each level counting in the context of an outer level.
+a |UID| actually is a hierarchy of counters, each level counting within the context of an outer level.
 This structure allows the outer level to be threaded, while avoiding this for an inner level
 when passed to a function, thus avoiding the introduction of possible cycles.
 This is not discussed any further;
@@ -165,13 +171,13 @@ If |cnstrTyUnit| is used as an infix operator it is printed as |`cnstrTyUnit`| i
 the same way as used in type rules.
 
 Different strategies can be used to cope with constraints
-\cite{heeren02hm-constr,sulzmann97constrained-type}.
+\cite{pottier05ml-essence,heeren05phd-errormsg,sulzmann97constrained-type}.
 Here
 constraints |Cnstr| are used to replace all other
 references to |tvarv| by |sigma|,
 for this reason often named a \IxAsDef{substitution}.
 In this version of EH the replacement of type variables
-with types is done immediately after constraints are obtained
+with types is done immediately after constraints are obtained,
 to avoid finding a new and probably conflicting constraint for
 a type variable.
 Applying constraints means substituting type
@@ -211,47 +217,7 @@ The functions |tyAppCnstr| and |tyFtv| are defined in terms of the following AG:
 %%@EHTyFtv.2.TyFtv
 %%]
 
-%{
-
-%format < 		= "{\langle}"
-%format > 		= "{\rangle}"
-
-\begin{AGFeature}{ag-self-attr}{Attribute of type |SELF|}
-The use of the keyword |SELF|\Ix{SELF} in:
-%%[[wrap=code
-ATTR <node> [ | | a: SELF ]
-%%]
-is equivalent to
-%%[[wrap=code
-ATTR <node> [ | | a: <node' > ]
-%%]
-where:
-\begin{Itemize}
-\item
-The type |<node' >| of synthesized attribute |a| stands for the generated Haskell |data| type generated for |<node>|.
-\item
-For each |<node>| variant a local attribute |a| is inserted, defined to be a replica of the |<node>| variant in terms of |<node' >|.
-\item
-Copy rules automatically propagate the local |a| to the parent,
-unless an explicit definition for the parent's |a| is given.
-\end{Itemize}
-For example, via attribute |repl| a copy of the type is built which only differs (or, may differ) in the original
-in the value for the type variable.
-\end{AGFeature}
-
-%if False
-\begin{AGFeature}{ag-use-attr}{Attribute together with USE}
-A synthesized attribute |<attr>| may be declared together with |USE {<op>} {<zero>}|.
-The |<op>| and |<zero>| allow the insertion of copy rules which behave similar to Haskell's |foldr|.
-The first piece of text |<op>| is used to combine the attribute values of two children by textually placing this text as an
-operator between references to the attributes of the children.
-If no child has an |<attr>|, the second piece of text |<zero>| is used as a default value for |<attr>|.
-For example, @tvs USE {`union`} {[]}@ (appearing in pretty printed form as |tvs USE {`union`} {[]}|)
-gathers bottom-up the free type variables of a type.
-\end{AGFeature}
-%endif
-
-%}
+\label{ag-self-attr}
 
 The application of a |Cnstr| is straightforwardly lifted to lists:
 
@@ -276,7 +242,7 @@ whether one type flows into another one.
 The previous version of EH could only do one thing in case a type did not fit
 in another: report an error.
 Now,
-if one of the types is unknown, which means that it is a type variable, we have the additional possibility of
+if one of the types is unknown, this means that it is a type variable, and we have the additional possibility of
 returning a constraint on that type variable.
 The implementation |fitsIn| of |<=| additionaly has to return constraints:
 
@@ -418,27 +384,6 @@ onwards to the first child which requires unique values as well.
 
 
 %if False
-\begin{AGFeature}{ag-redef-rule}{Redefining an attribute value}
-Normally a value for an attribute may be associated with an attribute only once,
-using |=| in a rule.
-It is an error if multiple rules for an attribute are present.
-If |:=| is used instead, any previous definition is overridden and no error message is generated.
-In this context previous means ``textually occurring earlier''.
-Because the AG system's flexibility finds its origin in the independence of textual locations of
-declarations and definitions, |:=| should be used with care.
-For \thispaper\ the order in which redefinitions appear is the same as their textual appearance
-in \thispaper, which again is the same as the sequence of versions of EH.
-\end{AGFeature}
-
-This definition builds on top of the previous version by
-redefining some attributes (indicated by |:=| instead of |=|).
-If this happens a reference to the location (in \thispaper) of the code on top of which
-the new code is added can be found\footnote{This is not an ideal solution to display combined fragments.
-A special purpose editor would probably do a better
-job of browsing textually separated but logically related pieces of code.}.
-%endif
-
-%if False
 The flow of constraints is made explicit as they are passed through the rules,
 from the context (left of |:-|) to a result (right of |~>|).
 We feel this does not benefit clarity, even though it is correct.
@@ -541,21 +486,42 @@ We now have to use the occurrence of an identifier in a pattern or expression
 to infer type information about the identifier.
 The structure of a pattern
 reveals already some type structure.
-Hence we compute types for patterns too and use this type as the known type
-if no type signature is available (\figRef{rules3.C.patexpr.base}).
+Hence we compute types for patterns too, and use this type as the known type
+if no type signature is available (\figRef{rules3.C.patexpr.baseForEH2}).
 Again, constraints are threaded through the pattern to accumulate information about type variables.
+For example, \ruleRef{p.int} enforces the known type to be an |Int|:
+\[
+\rulerCmdUse{rules3.C.patexpr.base.p.int}
+\]
+
+The use of |<=| in patterns is opposite compared to the use in expressions.
+Patterns are used to dissect values as opposed to expressions, which construct values.
+Hence values flow into the pattern, simulated by fitting the known type into the pattern type.
+
+The final new ingredient is the use of \IxAsDef{pattern function} type |sigmapf|,
+the type which encodes the structure of the dissection
+occurring in a composite pattern.
+A composite pattern takes a value and extracts its components.
+We encode this by a function type |sigmapf|, which takes this value and returns a tuple holding the components.
+The rules are organized in such a way that this type is computed in \ruleRef{p.con};
+by doing so, we already prepare for data types where the data constructor determines how a value should be dissected.
+However, for this version we only have tuple constructors,
+hence |sigmapf| is the identity function on tuples of size equal to the arity of the pattern.
+In \ruleRef{p.con} (\figRef{rules3.C.patexpr.baseForEH2})
+we use the structure of the identifier to determine the arity and compute |sigmapf|.
+
 
 %\rulerCmdUse{rules.pat2}
-\rulerCmdUseExplain{rules3.C.patexpr.base}
+\rulerCmdUseExplain{rules3.C.patexpr.baseForEH2}
 {
 %%@rules3Explain.patexpr.C.explain.scheme
 }{
 %%@rules3Explain.patexpr.C.explain.holes
 }
 
-Computation of the type of a pattern is similar to and yet more straightforward than
+The remainder of the computation of the type of a pattern is similar to and yet more straightforward than
 for expressions.
-The \ruleRef{p.var} from \figRef{rules3.C.patexpr.base} binds the identifier
+The \ruleRef{p.var} (\figRef{rules3.C.patexpr.baseForEH2}) binds the identifier
 to the known type and if no such known type is available it invents a fresh one,
 by means of |tyEnsureNonAny|:
 
@@ -570,16 +536,17 @@ by means of |tyEnsureNonAny|:
 %%]
 %%@EHRulerRules.2.patexpr.p.var wrap=code
 
+%if False
 For tuples we again exploit that the |Con| alternative will always
 represent a tuple.
 When datatypes are introduced (\chapterEHVRef) this will no longer be the case.
 We already make the required \ruleRef{p.con} more general
 than is required here,
 in preparation for datatypes.
+%endif
 
-A pattern can be represented by a \IxAsDef{pattern function} |sigma -> (sigma1,...)|.
-Conceptually this function takes the value (of type |sigma|) to be dissected by the pattern into its constituents,
-which can always be represented by a tuple |(sigma1,...)|.
+The dissection occurring in a pattern is represented by the pattern function |sigmapf| of the form |sigma -> (sigma1,...)|.
+Conceptually this function takes the value (of type |sigma|) to be dissected by the pattern into its constituents.
 For now, because we have only tuples to dissect, the
 function returned by the |Con| alternative is just the identity
 on tuples of the correct size:
@@ -601,6 +568,7 @@ The pattern function type |sigmapf =@= patFunTy| is constructed from fresh type 
 Each occurrence of a tuple pattern deals with different unknown types; hence fresh type variables are needed.
 The availability of polymorphism in later versions of EH allows us to describe this in a more general way.
 
+%if False
 The careful reader may have observed that the direction of |<=|
 for fitting actual (synthesized, bottom-up) and known type (inherited, top-down)
 is the opposite of the direction used for expressions.
@@ -609,6 +577,7 @@ An expression builds a value from bottom to top as seen in the context of an abs
 tree.
 A pattern dissects a value from top to bottom.
 The flow of data is opposite, hence the direction of |<=| too.
+%endif
 
 \subsection{Declarations (Let, Decl)}
 

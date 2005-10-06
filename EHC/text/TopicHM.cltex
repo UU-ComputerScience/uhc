@@ -5,8 +5,15 @@ For example
 %%[[wrap=code
 %%srcfile(afp-eh/04.eh%%)
 %%]
+%if False
 gives |v :: %%3file(afp-eh/04.eh%%)|
 and |id :: %%3(let id = \x -> x in id%%)|.
+%endif
+gives:
+\begin{TT}
+%%3ppfile(afp-eh/04.eh%%)
+\end{TT}
+
 The polymorphic identity function |id| accepts a value of any type |a|,
 and returns a value of the same type |a|.
 Type variables in the type signature are used to specify polymorphic types.
@@ -50,7 +57,7 @@ of the body of |f| this limits the choice of |a| to no choice at all.
 If the caller has all the freedom to make the choice, the callee has none.
 In our implementation this is encoded as a type constant @c_@ chosen for |a| during type checking
 the body of |f|.
-By definition this type constant is a type a programmer can never define or denote.
+By definition this type constant is a type a programmer can never define nor denote.
 The consequence is that an attempt to use |i| in the body of |f|, which has type @c_..@| -> |@c_..@ cannot
 be used with an |Int|.
 The use of type constants will be explained later.
@@ -71,7 +78,7 @@ we make an attempt to use this |i| polymorphically in:
 %%[[wrap=code
 %%3srcfile(test/3-mono-arg3.eh%%)
 %%]
-about which the compiler will complain:
+The following error is produced:
 \begin{TT}
 %%3ppfile(test/3-mono-arg3.eh%%)
 \end{TT}
@@ -99,13 +106,13 @@ that all explicitly specified types in a program are redundant.
 That is, after removal of explicit type signatures,
 the type inferencer can still reconstruct all types.
 It is guaranteed that all reconstructed
-types are the same as the removed signatures or more general, that is,
-the type signatures are a special case of the inferred types.
+types are the same as the removed signatures or more general,
+that is, a special case of the inferred types.
 This guarantee is called the principal type property
 \cite{damas82principal-type,milner78type-poly,hindley69princ-type}.
 However, type inferencing also has its limits\TBD{[cite...]}.
 In fact, the richer a type system becomes, the more difficult it is for a type inferencing algorithm
-to make the right choice for a type without the programmer specifying additional helpful type information.
+to make the right choice for a type without the programmer specifying additional type information.
 
 \subsection{Type language}
 
@@ -118,6 +125,12 @@ An |tvarf| stands for
 a fixed type variable,
 a type variable which may not be constrained but still stands for
 an unknown type.
+A |tvarf| is used for fresh type constants,
+and corresponds to a so called \IxAsDef{skolemized type variable},
+a type variable which we want to restrict its scope for and inhibit its binding.
+We do not restrict its scope as we guarantee freshness:
+two fresh |tvarf|'s by definition do not match.
+
 A |tvarv| stands for a plain type variable as used in the previous EH version.
 A series of consecutive quantifiers in |forall ^ alpha1 . forall ^ alpha2 . ... sigma|
 is abbreviated to |forall ^ Vec(alpha) . sigma|.
@@ -128,7 +141,8 @@ this version of EH takes care to ensure this.
 A second restriction is that quantified types
 are present only in an environment |Gamma| whereas no |forall|'s are
 present in types used when type inferencing expressions and patterns.
-This is to guarantee the principal type property. \TBD{more refs [..]}
+This is to guarantee the principal type property.
+We do not reflect this in the type language, as we drop this restriction in subsequent EH versions.
 
 The corresponding abstract syntax for a type needs
 additional alternatives to represent a quantified type.
@@ -183,12 +197,31 @@ is introduced in \ruleRef{e.let} and instantiated
 in \ruleRef{e.var} (see \figRef{rules3.HM.expr.baseForEH3}).
 We will first look at the \IxAsIs{instantiation}.
 
+We note that \ruleRef{e.let} (\figRef{rules3.HM.expr.baseForEH3})
+has become more complex than the versions appearing in standard treatments of HM type inference.
+This is a consequence of the combination of the following factors:
+\begin{Itemize}
+\item
+Explicit type annotations are allowed, and have to be propagated to identifiers in patterns.
+\item
+The |let| expression allows mutual recursive definitions,
+necessitating the introduction of bindings for value identifiers to placeholders (type variables)
+before normal type inference can proceed.
+\item
+Although data types are not included in this EH version,
+the required infrastructure is already available by exposing patterns
+to the global value environment (which will contain type bindings for data constructors)\footnote{%
+In future EH versions,
+this part will be moved to the EH version dealing with data types.
+}.
+\end{Itemize}
+
 \subsubsection{Instantiation}
 \label{ehc3instantiation}
 
 A quantified type is introduced in the type inferencing process
 whenever a value identifier having that type occurs
-in an expression (\ruleRef{e.var}, \figRef{rules3.HM.expr.baseForEH3})
+in an expression (\ruleRef{e.var}, \figRef{rules3.HM.expr.baseForEH3}).
 We may freely decide what type the quantified type variables may have as long
 as each type variable stands for a monomorphic type.
 However, at this point it is not known which type a type variable
@@ -402,7 +435,7 @@ On the other hand, |id2| is used after quantification, outside the binding group
 type |forall ^ a . a -> a|.
 The application |id2 3| will not constrain |id2|.
 
-In Haskell binding group analysis will find groups of mutually dependent definitions,
+In Haskell binding group analysis will find the smallest groups of mutually dependent definitions,
 each of these called a binding group. These groups are then ordered
 according to ``define before use'' order.
 Here, for EH, all declarations in a |let|-expression
@@ -440,6 +473,44 @@ Type expression can specify polymorphic types,
 but the specification of universal quantifiers at arbitrary positions in a type
 is dealt with in the next EH version.
 
+\Paragraph{Hindley-Milner type inference}
+HM type inference has been introduced
+\cite{damas82principal-type,milner78type-poly},
+used \cite{peytonjones03has98-rev-rep,milner97sml-def-revise},
+and described before \cite{ipt:impl-func-prog-lang,jones00thih}.
+Our implementation uses the same traditional technique of substitutions and their eager application to
+types and environments.
+This has the following advantages:
+\begin{Itemize}
+\item
+We can focus more on the description.
+\item
+We can experiment with language extensions without the complication of alternate inference techniques.
+\end{Itemize}
+
+However, both of these advantages also are disadvantages:
+\begin{Itemize}
+\item
+For later EH versions the application of substitutions becomes more intricate, and thus less understandable.
+\item
+Recent language extensions require constraint solving not to be eager but to be delayed
+(e.g. GADT's \cite{peytonjones04wobbly-gadt,pottier05stratif-gadt}).
+\end{Itemize}
+
+In recent years, constraint based approaches
+\cite{pottier05ml-essence,sulzmann97constrained-type}
+are becoming more popular, and seem to more elegantly
+implement HM type inference and the type checking of more advanced language extensions.
+The approach is to first gather constraints and later solve these gathered constraints.
+This allows greater expressiveness, but moves the complexity into the constraint solver:
+constraint resolution is no longer syntax-directed.
+
+It is (yet) unclear how a shift towards a constraint based approach influences the
+understandability of EH implementations,
+although we expect that for a first encounter with type inference the classical approach will
+benefit understanding the most.
+However, we also expect that constraint based approaches allow greater flexibility, extensibility,
+and improved error handling \cite{heeren05phd-errormsg}.
 %%]
 
 %%[XX

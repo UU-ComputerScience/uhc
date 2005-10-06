@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHCoreTrfLamLift.cag 260 2005-07-23 12:18:44Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -90,11 +90,11 @@ SEM CAlt
 startFvSLamMp :: FvS -> FvS -> FvS -> FvSMp -> FvSMp -> (FvSMp,FvSMp)
 startFvSLamMp bLamS lamS varS fvm bFvm
   =  let  bFvm2    =  Map.filterWithKey (\n _ -> n `Set.member` bLamS) bFvm
-          fvlam  s =  lamS `Set.intersect` s
-          fvvar  s =  varS `Set.intersect` s
+          fvlam  s =  lamS `Set.intersection` s
+          fvvar  s =  varS `Set.intersection` s
           fv     s =  fvvar s `Set.union`
                         (Set.unions . map (\n -> Map.findWithDefault Set.empty n fvm) . Set.toList . fvlam $ s)
-     in   (Map.map fv bFvm2,Map.map (`Set.intersect` bLamS) bFvm2)
+     in   (Map.map fv bFvm2,Map.map (`Set.intersection` bLamS) bFvm2)
 
 iterFvSLamMp :: FvSMp -> FvSMp -> FvSMp
 iterFvSLamMp frLamMp frVarMp

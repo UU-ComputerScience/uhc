@@ -136,6 +136,12 @@ then generate the implementation
 
 \frame<presentation>
 {
+\frametitle{Ruler: the big picture}
+\FigCenterXFigTex{ruler-overview}
+}
+
+\frame<presentation>
+{
 \frametitle{Ruler concepts}
 \begin{itemize}
 \item Scheme
@@ -238,7 +244,7 @@ Gamma   ::=  Vec(i :-> sigma)
 %%]
 }
  \begin{itemize}
- \item ruleset displays as a figure (not done here)
+ \item ruleset displays as a figure (not shown here)
  \end{itemize}
 \item \LaTeX\ rendering (via |lhs2TeX|)
 \[
@@ -258,7 +264,11 @@ Gamma   ::=  Vec(i :-> sigma)
 %%@rulerDemoRL.1.rl.e.var.E
 %%]
 }
-\item Expressed as a relation
+\item \LaTeX\ rendering
+\[
+\rulerCmdUse{rulerDemo.E.expr.base.e.var}
+\]
+\item Relation
 \SafeCode{%
 %%[[wrap=code
 %%@rulerDemoRL.1.gamLookupIdTy
@@ -271,7 +281,7 @@ Gamma   ::=  Vec(i :-> sigma)
 {
 \frametitle{Step 2: algorithmic view |A|}
 \begin{itemize}
-\item Building on top of view |E|
+\item On top of view |E|
 \item View hierarchy
 \SafeCode{%
 %%[[wrap=code
@@ -289,7 +299,184 @@ Gamma   ::=  Vec(i :-> sigma)
 Cnstr   ::=  Vec(tvarv :-> tau)
 %%]
 }
+ \item computation has direction
  \end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Direction of computation}
+\begin{itemize}
+\item Holes
+ \begin{itemize}
+ \item specify direction (similar to AG's attributes)
+ \end{itemize}
+\SafeCode{%
+%%[[wrap=code
+%%@rulerDemoRL.1.expr.scm
+%%@rulerDemoRL.2.expr.scm.A
+%%]
+}
+ \begin{itemize}
+ \item may be tree like hierarchy
+ \end{itemize}
+\item Algorithmic view
+ \begin{itemize}
+ \item use of constraints/substitution
+\SafeCode{%
+%%[[wrap=code
+Cnstr   ::=  Vec(tvarv :-> tau)
+%%]
+}
+ \item computation has direction
+ \end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{View |A| on |App|}
+\begin{itemize}
+\item Specify the differences (for rule e.app)
+\item Previous
+\[
+\rulerCmdUse{rulerDemo.E.expr.base.e.app}
+\]
+\item New
+\[
+\rulerCmdUse{rulerDemo.A.expr.base.e.app}
+\]
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{View |A| on |App|}
+\begin{itemize}
+\item New:
+\SafeCode{%
+%%[[wrap=code
+%%@rulerDemoRL.2.rl.e.app.A
+%%]
+}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Step 3: AG translation view |AG|}
+\begin{itemize}
+\item Building on top of view |A|
+\item Mapping holes to attributes
+ \begin{itemize}
+ \item either value construction or deconstruction
+ \end{itemize}
+\item Fresh type variables
+ \begin{itemize}
+ \item threading unique value
+ \end{itemize}
+\item Error handling
+ \begin{itemize}
+ \item `side effect': error messages in hidden attribute
+ \end{itemize}
+\item The rest
+ \begin{itemize}
+ \item parsing, pretty printing, ...
+ \end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{View |AG| on |App|}
+\[
+\rulerCmdUse{rulerDemo.AG.expr.base.e.app}
+\]
+
+\SafeCode{%
+%%[[wrap=code
+%%@rulerDemoAG.3.expr.e.app
+%%]
+}
+}
+
+\frame<presentation>
+{
+\frametitle{Fresh type variable}
+\begin{itemize}
+\item Relation is inlined
+\SafeCode{%
+%%[[wrap=code
+%%@rulerDemoRL.2.tvFresh
+%%]
+}
+\item Keyword |unique|
+ \begin{itemize}
+ \item insertion of |rulerMk1Uniq|
+ \item translated to |uniq1|
+ \end{itemize}
+\item Type structure (supporting code)
+\SafeCode{%
+%%[[wrap=code
+%%@RulerDemoUtils.3.Ty
+%%]
+}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Rewriting |Ruler| expressions}
+\begin{itemize}
+\item |Ruler| expression
+ \begin{itemize}
+ \item |ty.a -> ty| pretty prints as |taua -> tau|
+ \item but requires rewriting for AG
+ \end{itemize}
+\item Rewrite rule
+\SafeCode{%
+%%[[wrap=code
+rewrite ag def  a -> r = (a) `Ty_Arr` (r)
+%%]
+}
+ \begin{itemize}
+ \item target: |ag|
+ \item when value is |def|ined (constructed) for further use
+ \end{itemize}
+\item Constraining rewrite rule using |Ruler| (sort of) types
+\SafeCode{%
+%%[[wrap=code
+%%@rulerDemoRL.3.rw.TyArr
+%%]
+}
+\item Formatting identifiers (for target |ag|)
+\SafeCode{%
+%%[[wrap=code
+%%@rulerDemoRL.3.fmt
+%%]
+}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Error handling}
+\begin{itemize}
+\item Relation |match| is inlined
+\SafeCode{%
+%%[[wrap=code
+%%@rulerDemoRL.2.match
+%%]
+}
+\item Returns extra value: error messages (if any)
+\item Type matching (supporting code)
+\SafeCode{%
+%%[[wrap=code
+%%@RulerDemoUtils.3.match.A
+...
+%%]
+}
 \end{itemize}
 }
 
@@ -313,6 +500,7 @@ Cnstr   ::=  Vec(tvarv :-> tau)
 \end{itemize}
 \end{itemize}
 }
+
 
 %%]
 

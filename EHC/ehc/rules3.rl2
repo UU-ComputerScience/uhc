@@ -1217,50 +1217,6 @@ ruleset decl.base scheme decl "Declaration type rules" =
       judge R : decl
           | translBind = [declPat :-> translExpr.e]
 
-{-
-  rule d.val viewsel C - * = 
-    view E =
-      judge B : bind1ValIdToTy = valGam.identv === [identv :-> ty.identv]
-      -
-      judge R : decl = valGam :- ((identv `=` e.identv)) : emptyGam ; valGam.identv
-
-    view K =
-      judge E : expr
-          | knTy = ty.identv
-      -
-
-    view C =
-      judge V : tvarvFresh
-      judge P : patexpr = emptyGam ; emptyCnstr ; tvarv :- declPat : ty.p ; patValGam ~> tyCnstr.p
-      judge E : expr = valGam ; tyCnstr.inh ; tvarv :- e.identv : _ ~> tyCnstr.e
-      judge - B
-      judge E : expr
-          | tyCnstr.syn = tyCnstr.e
-          | ty = _
-          | knTy = tvarv
-      -
-      judge R : decl
-          | d = (declPat `=` e.identv)
-          | patTyCnstr = tyCnstr.p
-          | tyCnstr.syn = tyCnstr.e
-          | gathTySigGam = emptyGam
-          | patValGam = patValGam
-
-    view I1 =
-      judge E : expr
-          | fiopt = weakFIOpts
-      judge P : patexpr
-          | fiopt = strongFIOpts
-      -
-
-    view CG =
-      judge E : expr
-          | translExpr = translExpr.e
-      -
-      judge R : decl
-          | translBind = [declPat :-> translExpr.e]
--}
-
 -------------------------------------------------------------------------
 -- Pattern Expr
 -------------------------------------------------------------------------
@@ -1299,6 +1255,14 @@ scheme patexpr "PatExpr" =
 rulesgroup patexpr.baseForEH1 scheme patexpr "Pattern expression type rules" =
   rule patexpr.base p.int
   rule patexpr.base p.char
+  rule patexpr.base p.var
+  rule patexpr.base p.varas
+  rule patexpr.base p.apptop
+  rule patexpr.base p.app
+
+rulesgroup patexpr.baseForEH2 scheme patexpr "Pattern expression type rules" =
+  rule patexpr.base p.int
+  rule patexpr.base p.con
   rule patexpr.base p.var
   rule patexpr.base p.varas
   rule patexpr.base p.apptop

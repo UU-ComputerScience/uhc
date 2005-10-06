@@ -106,6 +106,7 @@
 %format sigmaQu     = sigma "_{" Qu "}"
 %format sigmaNQu    = sigma "_{" nQu "}"
 %format sigmaHard   = sigma "_{" thardH "}"
+%format sigmaSoft   = sigma "_{" thardS "}"
 
 %format isigma      = "\mathbb{\bbsigma}"
 %format isigmaf     = isigma "_{f}"

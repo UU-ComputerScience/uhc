@@ -335,9 +335,11 @@ Haskell variant
 in which all features described in \thischapt\ have been implemented.
 In \secRef{ehc09-prelim} we start with preliminaries required for understanding the remainder of \thischapt.
 In \secRef{ehc09-implparam} we present examples of what we can express in EH.
-%if not storyPHD
 The use of partial type signatures and their interaction with
 predicates is demonstrated in
+%if storyPHD
+\chapterRef{ehc-partial-sig-quant-guess}.
+%else
 \secRef{ehc09-partialtysig}.
 %endif
 In \secRef{ehc09-implem} we give some insight in our implementation,
@@ -384,7 +386,11 @@ An attribute grammar provides better separation of implementation aspects wherea
 are more concise in their presentation; we therefore have chosen to incorporate typing rules
 in \thischapt.
 We describe the similarities between typing rules and their attribute grammar counterpart
+%if storyPHD
+in \chapterRef{ruler}.
+%else
 in a companion paper \cite{dijkstra05ruler}.
+%endif
 \end{Itemize}
 
 \subsection{Preliminaries}
@@ -404,7 +410,7 @@ The features presented in \thischapt\ are part of the ninth version.
 %{
 %format t = sigma
 %format pr = pi
-\begin{TabularCenterFigure}{EH terms (emphasized ones explained throughout the text)}{exim-eh-lang-terms}%
+\begin{TabularCenterFigure}{}{EH terms (emphasized ones explained throughout the text)}{exim-eh-lang-terms}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
 %%@AppxNotation.exprBasic
@@ -504,7 +510,7 @@ earlier chapters of this thesis.
 a forthcoming publication \cite{dijkstra05phd}.
 %endif
 
-\begin{TabularCenterFigure}{EH types}{exim-eh-lang-types}
+\begin{TabularCenterFigure}{}{EH types}{exim-eh-lang-types}
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.typeHeader
 %%@AppxNotation.typeBasic
@@ -668,7 +674,7 @@ dBG  = \dBa dBf -> d
 
 Hinze's solution essentially relies on the use of the higher order predicate |Binary b => Binary (f b)| in the context of
 |Binary (GRose f a)|.
-The rationale for this particular code fragment falls outside the scope of this paper,
+The rationale for this particular code fragment falls outside the scope of \thischapt,
 but the essence of its necessity lies in the definition of the |GRose| data type which uses a type constructor |f| to construct
 the type |(f (GRose f a))| of the second member of |GBranch|.
 When constructing an instance for |Binary (GRose f a)| an instance for this type is required.
@@ -991,7 +997,12 @@ We will show its use based on the function:
 \subsection{Implementation}
 \label{ehc09-implem}
 
-Because of space limitations we focus on the distinguishing characteristics
+%if storyPHD
+We focus
+%else
+Because of space limitations we focus
+%endif
+on the distinguishing characteristics
 of our implementation in the EH compiler \cite{dijkstra04ehc-web,dijkstra04thag,dijkstra04thag-part1}.
 
 %{
@@ -1122,7 +1133,7 @@ more accurately their corresponding predicates.
 These predicate wildcard variables are used in a type inferencing/checking algorithm which explicitly
 deals with expected (or known) types |sigmak|, as well as extra inferred type information.
 
-\begin{TabularCenterFigure}{Legenda of type related notation}{exim-eh-legenda-symbols}
+\begin{TabularCenterFigure}{}{Legenda of type related notation}{exim-eh-legenda-symbols}
 %%@AppxNotation.notationTableFormat
 %%@AppxNotation.notationTableHeader
 %%@AppxNotation.notationBasic
@@ -1130,7 +1141,7 @@ deals with expected (or known) types |sigmak|, as well as extra inferred type in
 %%@AppxNotation.notationExplImpl
 \end{TabularCenterFigure}
 
-\begin{TabularCenterFigure}{Legenda of judgement forms for each version}{exim-eh-legenda-schemes}{llp{.45\linewidth}}
+\begin{TabularCenterFigure}{}{Legenda of judgement forms for each version}{exim-eh-legenda-schemes}{llp{.45\linewidth}}
 Version & Judgement & Read as \\
 \hline
 |I|

@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHPred.chs 266 2005-08-02 20:47:40Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -214,7 +214,7 @@ prvgCxBindLMap g@(ProvenGraph i2n _ _ p2fi)
   where   factPoiL = concat (Map.elems p2fi)
           leaveL = prvgAllLeaves g
           leaveS = Set.fromList leaveL
-          binds  = [ (i,(CBind_Bind (poiHNm i) ev,i,(r `Set.minusSet` Set.fromList les) `Set.intersect` leaveS))
+          binds  = [ (i,(CBind_Bind (poiHNm i) ev,i,(r `Set.difference` Set.fromList les) `Set.intersection` leaveS))
                    | (i,ProvenAnd _ _ les _ ev) <- Map.toList i2n
                    , not (i `elem` factPoiL)
                    , let (r,_) = prvg2ReachableFrom g [i]
@@ -275,18 +275,18 @@ prvg2ReachableFrom' hideLamArg (ProvenGraph i2n _ _ _) poiL
   =  let  allPoiS = Set.fromList (Map.keys i2n)
           nextOf poi
             =  case Map.lookup poi i2n of
-                  Just (ProvenAnd _ es les _ _ ) -> Set.fromList es `Set.minusSet` les'
+                  Just (ProvenAnd _ es les _ _ ) -> Set.fromList es `Set.difference` les'
                                                  where les' = if hideLamArg then Set.empty else Set.fromList les
                   Just (ProvenOr  _ es _     )   -> Set.fromList es
                   _                              -> Set.empty
           rr r@(reachSet,revTopSort) poiL
             =  let  newPoiL = Set.toList newPoiS
-                    newPoiS = (Set.unions . map nextOf $ poiL) `Set.minusSet` reachSet
+                    newPoiS = (Set.unions . map nextOf $ poiL) `Set.difference` reachSet
                in   if Set.null newPoiS
                     then r
                     else rr (reachSet `Set.union` newPoiS,newPoiL ++ revTopSort) newPoiL
           (s,l) = rr (Set.fromList poiL,poiL) poiL
-     in   (s `Set.intersect` allPoiS,filter (`Set.member` allPoiS) l)
+     in   (s `Set.intersection` allPoiS,filter (`Set.member` allPoiS) l)
 %%]
 
 %%[9

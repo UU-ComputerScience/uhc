@@ -61,9 +61,11 @@
   \next}
 
 % Env for figure
-\newenvironment{Figure}[2]{%
-  \def\F@@Cap{#1}
-  \def\F@@Lab{#2}
+\newenvironment{Figure}[3]{%
+  \def\F@@PosArg{#1}
+  \def\F@@Pos{\ifx\F@@PosArg\empty tp\else\F@@PosArg\fi}
+  \def\F@@Cap{#2}
+  \def\F@@Lab{#3}
 %if acm
   \begin{figure}[t]
 %elif storyPHD
@@ -77,9 +79,10 @@
   \end{figure}
 }
 
-\newenvironment{CenterFigure}[2]{%
-  \def\F@@Cap{#1}
-  \def\F@@Lab{#2}
+\newenvironment{CenterFigure}[3]{%
+  \def\F@@Pos{\ifx#1\empty tp\else#1\fi}
+  \def\F@@Cap{#2}
+  \def\F@@Lab{#3}
 %if acm
   \begin{figure}[t]
 %elif storyPHD
@@ -96,9 +99,9 @@
 }
 
 % Env for tabular figure
-\newenvironment{TabularFigure}[3]{%
-  \begin{Figure}{#1}{#2}
-  \begin{tabular}{#3}
+\newenvironment{TabularFigure}[4]{%
+  \begin{Figure}{#1}{#2}{#3}
+  \begin{tabular}{#4}
 %if not useSigplanconfSty
   \hline
 %  \\
@@ -113,9 +116,9 @@
 }
 
 % Env for centered tabular figure
-\newenvironment{TabularCenterFigure}[3]{%
-  \begin{CenterFigure}{#1}{#2}
-  \begin{tabular}{#3}
+\newenvironment{TabularCenterFigure}[4]{%
+  \begin{CenterFigure}{#1}{#2}{#3}
+  \begin{tabular}{#4}
 %if not useSigplanconfSty
   \hline
 %  \\
@@ -130,37 +133,37 @@
 }
 
 % Plain figure
-\newenvironment{PlainFigure}[2]{%
-  \begin{TabularFigure}{#1}{#2}{p{.94\linewidth}}
+\newenvironment{PlainFigure}[3]{%
+  \begin{TabularFigure}{#1}{#2}{#3}{p{.94\linewidth}}
 }{%
   \end{TabularFigure}
 }
 
 % Env for xfig in a figure
-\newenvironment{XFigFigure}[3]{%
-  \begin{PlainFigure}{#2}{#3}
-  \FigCenterXFigTex{#1}
+\newenvironment{XFigFigure}[4]{%
+  \begin{PlainFigure}{#1}{#3}{#4}
+  \FigCenterXFigTex{#2}
 }{%
   \end{PlainFigure}
 }
 
 % Cmd for pdf (from xfig) in a figure
-\newcommand{\FigurePDF}[3]{%
-  \begin{PlainFigure}{#2}{#3}
-  \FigCenterPDF{#1}
+\newcommand{\FigurePDF}[4]{%
+  \begin{PlainFigure}{#1}{#3}{#4}
+  \FigCenterPDF{#2}
   \end{PlainFigure}
 }
 
 % Cmd for pdf (from xfig) in a figure
-\newcommand{\FigureXFigTex}[3]{%
-  \begin{PlainFigure}{#2}{#3}
-  \FigCenterXFigTex{#1}
+\newcommand{\FigureXFigTex}[4]{%
+  \begin{PlainFigure}{#1}{#3}{#4}
+  \FigCenterXFigTex{#2}
   \end{PlainFigure}
 }
 
 % Env for rules in a figure
 \newenvironment{RulesFigure}[3]{%
-  \begin{TabularFigure}{#2}{#3}{P}
+  \begin{TabularFigure}{}{#2}{#3}{P}
   \fbox{#1}
   \\
 }{%
@@ -170,7 +173,7 @@
 % Env for rules in a figure
 \newenvironment{RulesFigureB}[4]{%
   \def\R@@Info{\ifx#4\empty #2\else #2 (#4)\fi}
-  \begin{TabularCenterFigure}{\R@@Info}{#3}{p{0.95\linewidth}}
+  \begin{TabularCenterFigure}{}{\R@@Info}{#3}{p{0.95\linewidth}}
 %  \linespread{1.5}\selectfont
   \begin{center}
   \fbox{#1}
@@ -184,7 +187,7 @@
 
 % Env for code in a figure
 \newenvironment{CodeFigure}[2]{%
-  \begin{TabularFigure}{#1}{#2}{c}
+  \begin{TabularFigure}{}{#1}{#2}{c}
   \begin{minipage}{0.9\textwidth}
   %\vspace{.5ex}
 }{%
@@ -222,7 +225,7 @@
  \marginpar{#1}
 %endif
 }
-\newcommand{\chunkHideRefAppx}[1]{\marginpar{{\footnotesize\secPageRefB{#1}}}}
+\newcommand{\chunkHideRefAppx}[1]{\marginpar[{\hfill\footnotesize\secPageRefB{#1}}]{{\footnotesize\secPageRefB{#1}}}}
 %if targetForPaper
 \newcommand{\chunkHideRef}[1]{\refHideWWW{#1}}
 %else
@@ -303,7 +306,7 @@
 
 
 % referencing
-\newcommand{\refHideWWW}[1]{\marginpar{\WWWlogo}}
+\newcommand{\refHideWWW}[1]{\marginpar[\hfill\WWWlogo]{\WWWlogo}}
 \def\myRef#1{\ref{#1}}
 %if acm
 \newcommand{\figRef}[1]{Figure~\myRef{#1}}
@@ -359,7 +362,7 @@ Chapter~\myRef{#1}%
 %if asSlides
  {xleftmargin=.05\textwidth,fontsize=\small}
 %else
- {xleftmargin=.05\textwidth}
+ {xleftmargin=.05\textwidth,fontsize=\small}
 %endif
 \DefineVerbatimEnvironment%
  {TTtiny}{Verbatim}
@@ -375,6 +378,12 @@ Chapter~\myRef{#1}%
 \item[|AGFeature|: #2.]
 }{%
 \end{description}
+}
+
+\newenvironment{AGFeatureLater}[2]{%
+\item
+\textbf{#2} \emph{(Context and example at \pageRef{#1})}:
+}{%
 }
 
 % theorem env: example

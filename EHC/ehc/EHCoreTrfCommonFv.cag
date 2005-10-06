@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHCoreTrfCommonFv.cag 260 2005-07-23 12:18:44Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -19,7 +19,7 @@ ATTR AllBind [ | | fvSMp USE {`Map.union`} {Map.empty}: FvSMp ]
 
 SEM CExpr
   | Lam         loc         .   fvS         =   @arg `Set.delete` @body.fvS
-  | Let         loc         .   fvS         =   (@body.fvS `Set.union` @binds.fvS) `Set.minusSet` Set.fromList @binds.nmL
+  | Let         loc         .   fvS         =   (@body.fvS `Set.union` @binds.fvS) `Set.difference` Set.fromList @binds.nmL
   | Var         lhs         .   fvS         =   Set.singleton @nm
   | App         loc         .   fvS         =   @func.fvS `Set.union` @arg.fvS
 
@@ -27,7 +27,7 @@ SEM CBind
   | Bind        lhs         .   fvSMp       =   Map.singleton @nm @expr.fvS
 
 SEM CAlt
-  | Alt         loc         .   fvS         =   @expr.fvS `Set.minusSet` Set.fromList @pats.nmL
+  | Alt         loc         .   fvS         =   @expr.fvS `Set.difference` Set.fromList @pats.nmL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
