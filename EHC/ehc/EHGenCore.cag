@@ -166,12 +166,14 @@ SEM Expr
 ATTR PatExpr [ | | cpat: CPat ]
 
 SEM PatExpr
-  | Var VarAs AppTop Rec Con
+  | Var VarAs AppTop Rec Con IConst CConst
                 loc         .   cpNm        =   maybe (CPatNmUniq @topNm) CPatNmOrig @mbTopNm
   | Var         lhs         .   cpat        =   CPat_Var @cpNm
   | VarAs       lhs         .   cpat        =   case @patExpr.cpat of
-                                                    CPat_Con _ t r ps  -> CPat_Con @cpNm t r ps
-                                                    _                  -> @patExpr.cpat
+                                                    CPat_Con  _ t r ps  -> CPat_Con  @cpNm t r ps
+                                                    CPat_Int  _ i       -> CPat_Int  @cpNm i
+                                                    CPat_Char _ c       -> CPat_Char @cpNm c
+                                                    _                   -> @patExpr.cpat
   | AppTop Con  loc         .   finResTy    =   @lhs.finTyCnstr |=> @ty_r_
                             .   tag         =   let  (c,_)  = tyAppFunArgs @finResTy
                                                      dgi    = fromJust . gamLookup (tyConNm c) $ @lhs.dataGam
@@ -188,8 +190,8 @@ SEM PatExpr
                                                     CPatRest_Var r
                                                       ->  CPat_Con @cpNm @tag @rest pbL
                                                           where  pbL = rpbReorder . map (\(n,(o,p)) -> CPatBind_Bind n o n p) . reverse $ @fsCPatL
-  | CConst IConst
-                lhs         .   cpat        =   CPat_Undef
+  | IConst      lhs         .   cpat        =   CPat_Int @cpNm @int
+  | CConst      lhs         .   cpat        =   CPat_Char @cpNm @char
 %%]
                             .   finResTGI   =   let  (c,_)  = tyAppFunArgs @finResTy
                                                      n      = tyConNm c
@@ -434,7 +436,9 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-rceSplit :: (CAlt -> Bool) -> CAltL -> [CAltL]
+data RCESplitCateg = RCESplitVar | RCESplitCon | RCESplitConst deriving Eq
+
+rceSplit :: (CAlt -> RCESplitCateg) -> CAltL -> [CAltL]
 rceSplit f []   = []
 rceSplit f [x]  = [[x]]
 rceSplit f (x:xs@(x':_))
@@ -474,10 +478,16 @@ rceMatchCon env (arg:args) alts ce
                  .  filter (not . null . caltPatL) $ alts
      in   mkCExprStrictSatCase env arg' (CExpr_Var arg) alts' ce
 
-rceMatchVarCon :: RCEEnv -> [HsName] -> CAltL -> CExpr -> CExpr
-rceMatchVarCon env args alts@(alt:_) ce
-  |  caltIsVar alt  = rceMatchVar env args alts ce
-  |  otherwise      = rceMatchCon env args alts ce
+rceMatchConst :: RCEEnv -> [HsName] -> CAltL -> CExpr -> CExpr
+rceMatchConst env (arg:args) alts ce
+  =  let  arg'   =  hsnSuffix arg "!"
+     in   mkCExprStrictIn arg' (CExpr_Var arg) (\n -> mkCExprLet CBindPlain (rceRebinds arg alts) (CExpr_Case n alts ce))
+
+rceMatchSplits :: RCEEnv -> [HsName] -> CAltL -> CExpr -> CExpr
+rceMatchSplits env args alts@(alt:_) ce
+  |  caltIsVar   alt  = rceMatchVar   env args alts ce
+  |  caltIsConst alt  = rceMatchConst env args alts ce
+  |  otherwise        = rceMatchCon   env args alts ce
 
 rceMatch :: RCEEnv -> [HsName] -> CAltL -> CExpr -> CExpr
 rceMatch _ [] []    ce =  ce
@@ -490,13 +500,13 @@ rceMatch env args alts ce
         (\alts e
            ->  case e of
                   CExpr_Var _
-                     ->  rceMatchVarCon env args alts e
+                     ->  rceMatchSplits env args alts e
                   _  ->  let  bnm = hsnPrefix "_casecont_" (cpatNmNm . cpatVarNm . caltPat . head $ alts)
-                              vc = rceMatchVarCon env args alts (CExpr_Var bnm)
+                              vc = rceMatchSplits env args alts (CExpr_Var bnm)
                          in   mkCExprLet CBindPlain [CBind_Bind bnm e] vc
         )
         ce
-     $ (rceSplit caltIsVar alts)
+     $ (rceSplit (\a -> if caltIsVar a then RCESplitVar else if caltIsConst a then RCESplitConst else RCESplitCon) alts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

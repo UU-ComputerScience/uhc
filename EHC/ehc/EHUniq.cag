@@ -170,6 +170,7 @@ SEM RecExpr
 
 SEM PatExpr
   | Rec             (recPatExpr.gUniq,loc.lUniq,loc.lUniq2)         =   mkNewLevUID2    @lhs.gUniq
+  | IConst CConst   (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
 
 SEM RecPatExpr
   | Empty           (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq

@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHCoreUtils.chs 264 2005-07-28 12:57:52Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -48,11 +48,13 @@ rceEnvDataAlts env t
 caltLSaturate :: RCEEnv -> CAltL -> CExpr -> CAltL
 caltLSaturate env alts ce
   =  let  altTags = [ t | (CAlt_Alt (CPat_Con _ t _ _ : _) _) <- alts ]
-          absentTagArities = filter (\t -> t `notElem` altTags) . rceEnvDataAlts env . head $ altTags
           absentAlts
-                 =  [ CAlt_Alt [mkP ct a] ce | ct@(CTag _ _ _ a) <- absentTagArities ]
-                 where  mkB o = CPatBind_Bind hsnUnknown (CExpr_Int o) (cpatNmNm cpatNmNone) (CPat_Var cpatNmNone)
-                        mkP ct a = CPat_Con cpatNmNone ct CPatRest_Empty [mkB o | o <- [0..a-1]]
+            = case altTags of
+                (altTag:_) -> [ CAlt_Alt [mkP ct a] ce | ct@(CTag _ _ _ a) <- absentTagArities ]
+                      where absentTagArities = filter (\t -> t `notElem` altTags) . rceEnvDataAlts env $ altTag
+                            mkB o = CPatBind_Bind hsnUnknown (CExpr_Int o) (cpatNmNm cpatNmNone) (CPat_Var cpatNmNone)
+                            mkP ct a = CPat_Con cpatNmNone ct CPatRest_Empty [mkB o | o <- [0..a-1]]
+                _     -> []
      in   sortOn caltTag (alts ++ absentAlts)
 %%]
 
