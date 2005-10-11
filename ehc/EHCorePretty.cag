@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHCorePretty.cag 260 2005-07-23 12:18:44Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -103,6 +103,8 @@ SEM CAlt
   | Alt         lhs         .   pp          =   ppDef (head @pats.ppL) ("->" >#< @expr.pp)
 
 SEM CPat
+  | Int         lhs         .   pp          =   pp @int
+  | Char        lhs         .   pp          =   pp (show @char)
   | Var         lhs         .   pp          =   pp (cpatNmNm @pnm)
   | Con         lhs         .   pp          =   (cpatNmEither ((>|< "@") . pp) (const empty) @pnm)
                                                 >|< pp_parens   (   @tag >|< ":"

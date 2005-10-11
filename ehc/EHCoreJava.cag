@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHCoreJava.cag 262 2005-07-24 11:36:39Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -233,7 +233,8 @@ ATTR CAlt CAltL CPat CPatL CPatBind CPatBindL [ jvCaseScrutinee: HsName  jvCaseR
 ATTR CPat [ | | fldNm: HsName ]
 
 SEM CPat
-  | Var Con     lhs         .   fldNm       =   cpatNmNm @pnm
+  | Var Con Int Char
+                lhs         .   fldNm       =   cpatNmNm @pnm
   | Undef       lhs         .   fldNm       =   hsnUnknown
 
 SEM CPatBind

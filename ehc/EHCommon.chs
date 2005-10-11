@@ -87,7 +87,7 @@
 %%[8 export(hsnUniqSupplyL,hsnLclSupplyL)
 %%]
 
-%%[8 export(CTag(..))
+%%[8 export(CTag(..),ctagChar,ctagInt)
 %%]
 
 %%[8 export(CTagsMp)
@@ -607,6 +607,9 @@ data CTag
   = CTagRec
   | CTag {ctagTyNm :: HsName, ctagNm :: HsName, ctagTag :: Int, ctagArity :: Int}
   deriving (Show,Eq,Ord)
+
+ctagInt  =  CTag hsnInt  hsnInt  0 1
+ctagChar =  CTag hsnChar hsnChar 0 1
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

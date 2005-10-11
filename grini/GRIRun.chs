@@ -330,14 +330,30 @@ grEvalExpr rs e
                                            where  re = extRE rs
                                                   rs'= rs {rsEnv = re, rsNext = Just e}
                                      Nothing
-                                       ->  do  { rs' <- halt rs ("No case alt for:" >#< pp nd >-< indent 2 ("in:" >#< ppGrExpr e))
-                                               ; return (rs',Nothing)
-                                               }
+                                       ->  errNoAlt nd
                         (RVCat NdRec:_)
                           ->  return (rs',Nothing)
                               where  (GrAlt_Alt p e:_) = altL
                                      re = grPatBind rs (rsEnv rs) nd p
                                      rs'= rs {rsEnv = re, rsNext = Just e}
+                nd@(RVInt v)
+                  ->  case lookup v altL of
+                        Just (extRE,e)
+                          -> return (rs',Nothing)
+                             where re = extRE rs
+                                   rs' = rs {rsEnv = re, rsNext = Just e}
+                        Nothing
+                          -> errNoAlt nd
+                  where  lookup v []    = Nothing
+                         lookup v (GrAlt_Alt p@(GrPat_LitInt v') e : _)
+                           | v == v'    = Just (rsEnv,e)
+                         lookup v (GrAlt_Alt p@(GrPat_Var n) e : _)
+                                        = Just (\rs -> grPatBind rs (rsEnv rs) nd p,e)
+                         lookup v (_:aL)= lookup v aL
+          where  errNoAlt v
+                   = do  { rs' <- halt rs ("No case alt for:" >#< pp v >-< indent 2 ("in:" >#< ppGrExpr e))
+                         ; return (rs',Nothing)
+                         }
 %%]
 
 %%[8
@@ -347,6 +363,8 @@ grPatBind rs re v p
         GrPat_Var n
           ->  Map.insert n v re
         GrPat_Empty
+          ->  re
+        GrPat_LitInt _
           ->  re
         GrPat_Node GrTag_Unboxed (pf:_)
           ->  Map.insert pf v re

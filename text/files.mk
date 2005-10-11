@@ -23,8 +23,8 @@ TEXT_TMP_PREFIX				:= $(BLD_PREFIX)
 TEXT_TMP_VARIANT_PREFIX		:= $(TEXT_TMP_PREFIX)$(TEXT_VARIANT)/
 
 # all variants
-TEXT_PUB_VARIANTS			:= phd-paper phd popl06-ruler popl06-explimpl shuffle
-TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) popl06-ruler-tst phd-draft phd-tst scratch truu-explimpl truu-ruler poster slides-ruler
+TEXT_PUB_VARIANTS			:= phd shuffle
+TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) popl06-ruler-tst popl06-ruler popl06-explimpl phd-paper phd-draft phd-tst scratch truu-explimpl truu-ruler poster slides-ruler
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
 # 2	: phd

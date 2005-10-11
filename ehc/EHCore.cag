@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHCore.cag 260 2005-07-23 12:18:44Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -18,7 +18,7 @@
 %%[8 hs export(CPatNm(..), cpatNmEither,cpatNmNone)
 %%]
 
-%%[8 hs export(cpatVarNm,caltTag,caltIsVar,caltPatL,caltPat,caltLPatNms,cvarUndefined) 
+%%[8 hs export(cpatVarNm,caltTag,caltIsVar,caltIsConst,caltPatL,caltPat,caltLPatNms,cvarUndefined) 
 %%]
 
 %%[8 hs export(mkCExprLet,mkCExprLetRec,mkCExprLam,mkCExprApp)
@@ -188,11 +188,15 @@ mkCExprAddInt e i = if i == 0 then e else CExpr_Var hsnPrimAddInt `mkCExprApp` [
 
 %%[8 hs
 cpatVarNm :: CPat -> CPatNm
-cpatVarNm (CPat_Var n)        = n
-cpatVarNm (CPat_Con n _ _ _)  = n
+cpatVarNm (CPat_Var  n)        = n
+cpatVarNm (CPat_Con  n _ _ _)  = n
+cpatVarNm (CPat_Int  n _    )  = n
+cpatVarNm (CPat_Char n _    )  = n
 
 cpatConTag :: CPat -> CTag
-cpatConTag (CPat_Con _ t _ _)  = t
+cpatConTag (CPat_Con  _ t _ _)  = t
+cpatConTag (CPat_Int  _ _    )  = ctagInt
+cpatConTag (CPat_Char _ _    )  = ctagChar
 
 caltTag :: CAlt -> CTag
 caltTag (CAlt_Alt (p : _) _) = cpatConTag p
@@ -200,6 +204,11 @@ caltTag (CAlt_Alt (p : _) _) = cpatConTag p
 caltIsVar :: CAlt -> Bool
 caltIsVar (CAlt_Alt (CPat_Var _ : _) _)  = True
 caltIsVar _                              = False
+
+caltIsConst :: CAlt -> Bool
+caltIsConst (CAlt_Alt (CPat_Int  _ _ : _) _)  = True
+caltIsConst (CAlt_Alt (CPat_Char _ _ : _) _)  = True
+caltIsConst _                                 = False
 
 caltPatL :: CAlt -> CPatL
 caltPatL (CAlt_Alt p _) = p

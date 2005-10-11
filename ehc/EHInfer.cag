@@ -599,9 +599,8 @@ ATTR PatExpr [ | | topNm: HsName ]
 
 SEM PatExpr
   | Var VarAs   loc         .   topNm               =   if @nm == hsnWild then uidHNm @lUniq else @nm
-  | CConst IConst App
-                lhs         .   topNm               =   hsnUnknown
-  | AppTop Con Rec
+  | App         lhs         .   topNm               =   hsnUnknown
+  | AppTop Con Rec CConst IConst
                 loc         .   topNm               =   uidHNm @lUniq
 %%]
 

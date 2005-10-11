@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHCoreAbsSyn.cag 260 2005-07-23 12:18:44Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -91,6 +91,10 @@ DATA CPat
                 tag             : {CTag}
                 rest            : CPatRest
                 binds           : CPatBindL
+  | Int         pnm             : {CPatNm}
+                int             : {Int}
+  | Char        pnm             : {CPatNm}
+                char            : {Char}
   | Undef
 
 TYPE CPatL      =   [CPat]

@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHCoreGrin.cag 262 2005-07-24 11:36:39Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -48,6 +48,7 @@ SEM CExpr
   | Var         (lhs.gUniq,loc.lUniq)       =   mkNewLevUID   @lhs.gUniq
   | TupIns TupUpd TupDel
                 (expr.gUniq,loc.lUniq)      =   mkNewUID      @lhs.gUniq
+  | Case        (expr.gUniq,loc.lUniq)      =   mkNewUID      @lhs.gUniq
   | App         (func.gUniq,loc.lUniq,loc.lUniq2)
                                             =   mkNewLevUID2  @lhs.gUniq
 
@@ -56,6 +57,7 @@ SEM CBind
 
 SEM CPat
   | Con         (rest.gUniq,loc.lUniq)      =   mkNewLevUID   @lhs.gUniq
+  | Int Char    (lhs.gUniq,loc.lUniq)       =   mkNewLevUID   @lhs.gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -296,17 +298,31 @@ simplArgL uniq lamMp vL
                  ([],id)
           $ zip nL vL
 
+unboxArg :: UID -> HsName -> GrVal -> (GrVal,GrExpr->GrExpr)
+unboxArg uniq tyNm v
+  =  case v of
+       GrVal_LitInt _
+           -> (v,id)
+       _   -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v) (mkGrUnbox tyNm n))
+  where n = uidHNm uniq
+
 unboxArgL :: UID -> HsName -> GrValL -> (GrValL,GrExpr->GrExpr)
 unboxArgL uniq tyNm vL
-  =  let  nL = map uidHNm . mkNewUIDL (length vL) $ uniq
-     in   foldr  (\(n,a) (aL,wG)
-                    ->  case a of
-                            GrVal_LitInt _
-                                -> (a:aL,wG)
-                            _   -> (GrVal_Var n : aL,GrExpr_Seq (GrExpr_Unit a) (mkGrUnbox tyNm n) . wG)
+  =  let  uL = mkNewUIDL (length vL) $ uniq
+     in   foldr  (\(u,a) (aL,wG)
+                    ->  let (a',w) = unboxArg u tyNm a
+                        in  (a' : aL, w . wG)
                  )
                  ([],id)
-          $ zip nL vL
+          $ zip uL vL
+
+saturateAltL :: UID -> GrExpr -> GrAltL -> GrAltL
+saturateAltL uniq dflt altL
+  =  case altL of
+       (GrAlt_Alt (GrPat_LitInt _) _ : _)
+         | null [ a | a@(GrAlt_Alt (GrPat_Var _) _) <- altL ]
+           -> altL ++ [GrAlt_Alt (GrPat_Var (uidHNm uniq)) dflt]
+       _   -> altL
 %%]
 
 %%[8
@@ -339,7 +355,9 @@ SEM CExpr
                                                       ,[]
                                                       ,@categ == CBindStrict
                                                       )
-  | Case        loc         .   grExpr      =   @alts.grWrapCase . GrExpr_Case @expr.grVal $ @alts.grAltL
+  | Case        loc         .   grExpr      =   let  w1 = @alts.grWrapCase
+                                                     (sel,w2) = @alts.grWrapCaseSel @expr.grVal
+                                                in   w1 . w2 . GrExpr_Case sel . saturateAltL @lUniq @dflt.grExpr $ @alts.grAltL
   | App         loc         .   grExpr      =   let  argL = reverse @grAppArgL
                                                      funNm = @grAppFun
                                                      mkE  = retStrict @lhs.isStrict
@@ -401,8 +419,8 @@ ATTR CExpr   [ | | grVal: GrVal ]
 SEM CExpr
   | Tup         loc         .   grVal       =   ctag (mkGrRecNode []) (\_ l t _ -> mkGrConNode t l []) @tag
   | Var         loc         .   grVal       =   maybe (GrVal_Var @nm) (\a -> mkNdPApp @nm a []) @mbLam
-  | Int         loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnInt  else id)  (GrVal_LitInt @int)
-  | Char        loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnChar else id)  (GrVal_LitInt (ord @char))
+  | Int         loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnGrInt  else id)  (GrVal_LitInt @int)
+  | Char        loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnGrChar else id)  (GrVal_LitInt (ord @char))
   | * - Int Char Var Tup
                 loc         .   grVal       =   GrVal_Empty
 %%]
@@ -469,6 +487,11 @@ SEM CBind
 %%% Case, pattern
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[8 hs
+idGrWrapCaseSel :: GrVal -> (GrVal,GrExpr->GrExpr)
+idGrWrapCaseSel s = (s,id)
+%%]
+
 %%[8
 ATTR CAlt    [ | | grAlt: GrAlt ]
 ATTR CAltL   [ | | grAltL: GrAltL ]
@@ -485,7 +508,8 @@ SEM CAltL
 ATTR CPat    [ | | patNm: HsName ]
 
 SEM CPat
-  | Var Con     loc         .   patNm       =   cpatNmEither id id @pnm
+  | Var Con Int Char
+                loc         .   patNm       =   cpatNmEither id id @pnm
   | Undef       loc         .   patNm       =   hsnUnknown
 %%]
 
@@ -495,15 +519,16 @@ ATTR CPatL   [ | | grPatL: GrPatL ]
 
 SEM CPat
   | Var         lhs         .   grPat       =   GrPat_Var @patNm
+  | Int         lhs         .   grPat       =   GrPat_LitInt @int
+  | Char        lhs         .   grPat       =   GrPat_LitInt (ord @char)
   | Con         lhs         .   (grPat,grWrapCase)
-                                            =   let
-                                                in   case @rest.self of
-                                                        CPatRest_Empty
-                                                          ->  (ctag mkGrPatRecNode (\_ l t _ -> mkGrPatConNode t l) @tag @binds.patNmL,id)
-                                                        CPatRest_Var r
-                                                          ->  let  (oL,mkSL) = unzip @binds.grTupFldL
-                                                                   (oL',wrO) = unboxArgL @lUniq hsnInt oL
-                                                              in   (ctag mkGrPatRecSplit (\_ l t _ -> mkGrPatConSplit t l) @tag r . zipWith ($) mkSL $ oL',wrO)
+                                            =   case @rest.self of
+                                                   CPatRest_Empty
+                                                     ->  (ctag mkGrPatRecNode (\_ l t _ -> mkGrPatConNode t l) @tag @binds.patNmL,id)
+                                                   CPatRest_Var r
+                                                     ->  let  (oL,mkSL) = unzip @binds.grTupFldL
+                                                              (oL',wrO) = unboxArgL @lUniq hsnInt oL
+                                                         in   (ctag mkGrPatRecSplit (\_ l t _ -> mkGrPatConSplit t l) @tag r . zipWith ($) mkSL $ oL',wrO)
   | Undef       lhs         .   grPat       =   GrPat_Empty
 
 SEM CPatL
@@ -522,6 +547,12 @@ SEM CPatBind
 
 %%[8
 ATTR AllPat AllAlt [ | | grWrapCase USE {`const`} {id}: {GrExpr -> GrExpr} ]
+ATTR AllPat AllAlt [ | | grWrapCaseSel USE {`const`} {idGrWrapCaseSel}: {GrVal -> (GrVal,GrExpr->GrExpr)} ]
+
+SEM CPat
+  | Int Char    lhs         .   grWrapCaseSel
+                                            =   let n = uidHNm @lUniq
+                                                in  \v -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v) (mkGrUnbox hsnGrInt n))
 %%]
 
 %%[8

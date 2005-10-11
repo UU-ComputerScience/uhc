@@ -27,6 +27,9 @@
 %%[8 hs export(EvApTagKey,EvApTagElt(..),EvApTagMp) 
 %%]
 
+%%[8 hs export(hsnGrInt,hsnGrChar) 
+%%]
+
 %%[8 import(GrinCodeAbsSyn)
 DERIVING *     : Show, Eq
 %%]
@@ -40,8 +43,11 @@ hsnGrApply  = HNm "apply"
 hsnGrEval   = HNm "eval"
 hsnGrMain   = hsnMain
 
+hsnGrInt    = hsnInt
+hsnGrChar   = hsnChar
+
 grSpecialNmL = [ hsnGrMain, hsnGrApply, hsnGrEval ]
-grBuiltinTyNmL = [ hsnInt, hsnChar ]
+grBuiltinTyNmL = [ hsnGrInt, hsnGrChar ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
