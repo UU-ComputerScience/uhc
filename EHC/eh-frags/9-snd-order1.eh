@@ -5,7 +5,7 @@ in   let  class Binary a where
           instance dBI <:  Binary Int where
             showBin  = ...
           instance dBL <:  Binary a => Binary (List a) where
-            showBin  = ...
+            showBin  = concat . map showBin
           instance dBG <:  (Binary a, (forall b . Binary b => Binary (f b)))
                               => Binary (GRose f a) where
             showBin  =  \(GBranch x ts)

@@ -9,7 +9,7 @@
 
 % Better formatting of code blocks ...
 
-%if False %% not asSlides
+%if kscode
 %include kscode.fmt
 %endif
 

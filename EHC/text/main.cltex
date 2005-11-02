@@ -139,6 +139,16 @@
 %%% LaTeX document header
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[articleDocumentClass
+%if acm
+\documentclass{sigplanconf}
+%elif llncs
+\documentclass{llncs}
+%else
+\documentclass{article}
+%endif
+%%]
+
 %%[2
 \documentclass[%
                headinclude,% new for typearea
@@ -150,19 +160,11 @@
 %%]
 
 %%[3
-%if acm && popl06
-\documentclass{sigplanconf}
-%else
-\documentclass{article}
-%endif
+%%@main.articleDocumentClass
 %%]
 
 %%[4
-%if acm && popl06
-\documentclass{sigplanconf}
-%else
-\documentclass{article}
-%endif
+%%@main.articleDocumentClass
 %%]
 
 %%[11
@@ -184,8 +186,11 @@
 \documentclass[10pt]{article}
 %%]
 
+%%[9
+\documentclass[ignorenonframetext]{beamer}
+%%]
+
 %%[14
-%\documentclass[a4paper,headexclude,footexclude,mpexclude,10pt,DIV15,BCOR0mm]{scrartcl}
 \documentclass[ignorenonframetext]{beamer}
 %%]
 
@@ -405,16 +410,13 @@
 %endif
 %%]
 
+%%[9
+\usetheme{Darmstadt}
+%%]
+
 %%[14
-%\usepackage{beamerthemesplit}
 \usepackage[headheight=12pt,footheight=12pt]{beamerthemeboxes}
 %%]
-\addheadboxtemplate{\color{black}}{%
-\quad
-\usetemplatetocsection
-{\color{structure}\inserttocsection}
-{\color{structure!50}\inserttocsection}
-}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% PGF
@@ -452,7 +454,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
-%if not asSlides
+%if kscode
 \usepackage{kscode}
 %endif
 
@@ -723,6 +725,11 @@
 %endif
 %%]
 
+%%[9
+\title{Making Implicit Parameters Explicit}
+\author{Atze Dijkstra}
+%%]
+
 %%[14
 \title{Ruler: programming type rules}
 \author{Atze Dijkstra}
@@ -778,6 +785,8 @@
 \toappear{In preparation for the Haskell Workshop 2005 (HW2005), September 30, Tallin, Estonia}
 %elif popl06
 \toappear{Submitted to for Principles of Programming Languages 2006 (POPL2006), January 11-13, Charleston, South Carolina, USA}
+%elif pldi06
+\toappear{Submitted to Programming Language Design and Implementation 2006 (PLDI2006), Ottawa, Canada, June 11-16}
 %else
 %endif
 %else %% useSigplanconfSty
@@ -1822,7 +1831,25 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-%%@SlidesExplImpl.explimpl
+%%@SlidesExplImpl.title
+
+%%@SlidesExplImpl.problem
+
+%%@SlidesExplImpl.content
+
+%%@SlidesExplImpl.haskellSummary
+
+%%@SlidesExplImpl.tyInxExamples
+
+%%@SlidesExplImpl.eh
+
+%%@SlidesExplImpl.sndOrderGRose
+
+%%@SlidesExplImpl.localInstances
+
+%%@SlidesPartTySig.forExplImpl
+
+%%@SlidesExplImpl.conclusion
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2252,11 +2279,10 @@ and the included documentation only describes |Shuffle|'s basic features.
 
 
 %%[3
-%if storyRuler
+%if not flops06
 %%@TopicRuler.appendix
-%endif %% storyRuler
+%endif
 %%]
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% AG Patterns

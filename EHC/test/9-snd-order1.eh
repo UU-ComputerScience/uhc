@@ -8,8 +8,8 @@ in   let  class Binary a where
             showBin  = ...
           instance dBL <: Binary a => Binary (List a) where
             showBin  = ...
-          instance (Binary a, (Binary b => Binary (f b)))
-                          => Binary (GRose f a) where
+          instance dBG <:  (Binary a, (Binary b => Binary (f b)))
+                             => Binary (GRose f a) where
             showBin  =  \(GBranch x ts)
                           -> concat (showBin x) (showBin ts)
 in   let  v1 = showBin (GBranch 3 Nil)

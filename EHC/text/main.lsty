@@ -323,6 +323,7 @@
 \newcommand{\figPageRef}[1]{\figRef{#1}}
 \newcommand{\secPageRef}[1]{\secRef{#1}}
 \newcommand{\exPageRef}[1]{\exRef{#1}}
+\newcommand{\thPageRef}[1]{\thRef{#1}}
 %else
 \newcommand{\pageRef}[1]{page~\pageref{#1}}
 \newcommand{\pageRefB}[1]{p~\pageref{#1}}

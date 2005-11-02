@@ -60,15 +60,6 @@ has been omitted here, but
 can be found in \appRef{app-ag-pattern-uid}.
 %endif
 
-%if not omitLitDiscuss
-\subsection<article>{Literature}
-
-\TBD{}
-
-Polymorphic recursion
-\cite{kfoury93recursivetype,hallet04polyrec-ex,vasconcellos03polyrec-impl,henglein91polyrec-infer,figueiredo01polyrec-princ}
-%endif
-
 %%]
 
 %%[XX

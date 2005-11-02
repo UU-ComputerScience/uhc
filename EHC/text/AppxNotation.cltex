@@ -79,6 +79,13 @@ Notation & Meaning \\
  \\
 %%]
 
+%%[exprTheUsual
+|e| & |::=| &
+|...|
+ & 
+ \\
+%%]
+
 %%[exprLamIdent
 & | || | &
 |\i -> e|
@@ -131,12 +138,12 @@ Notation & Meaning \\
  & record
  \\
 & | || | &
-|(e || lbl := e,...)|
- & record update
- \\
-& | || | &
 |e.lbl|
  & record selection
+ \\
+& | || | &
+|(e || lbl := e,...)|
+ & record update
  \\
 %%]
 
