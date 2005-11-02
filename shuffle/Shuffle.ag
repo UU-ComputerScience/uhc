@@ -1114,14 +1114,20 @@ data NmChInfo
 type NmChMp = Map.Map CRef NmChInfo
 }
 
-ATTR AllChunk AGItf [ | | gathNmChMp USE {`Map.union`} {Map.empty}: NmChMp ]
+ATTR AllChunk AllLine AGItf [ | | gathNmChMp USE {`Map.union`} {Map.empty}: NmChMp ]
 ATTR AllChunk AllLine AGCDocItf AGItf CDoc [ nmChMp: NmChMp | | ]
 
 SEM Chunk
   | Ver         loc         .   nmChInfo    =   NmChInfo @chFullNm ChHere @lines.mbCD
-                lhs         .   gathNmChMp  =   Map.singleton @chFullNm @nmChInfo
+                lhs         .   gathNmChMp  =   Map.insert @chFullNm @nmChInfo @lines.gathNmChMp
   | Named       loc         .   nmChInfo    =   NmChInfo @cref ChHere @lines.mbCD
-                lhs         .   gathNmChMp  =   Map.singleton @cref @nmChInfo
+                lhs         .   gathNmChMp  =   Map.insert @cref @nmChInfo @lines.gathNmChMp
+
+SEM Line
+  | Group       loc         .   gathNmChMp  =   case @userRef of
+                                                  Just (r,_) -> Map.singleton r (NmChInfo r ChHere @mbCD)
+                                                  _          -> Map.empty
+                lhs         .   gathNmChMp  =   Map.union @lines.gathNmChMp @gathNmChMp
 
 SEM AGItf
   | AGItf       chunks      .   nmChMp      =   @chunks.gathNmChMp `Map.union` @lhs.nmChMp

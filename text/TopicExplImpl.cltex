@@ -46,7 +46,7 @@ for dealing with overloading (ad-hoc polymorphism).
 The basic idea is to restrict the polymorphism of a parameter by specifying
 that some predicates have to be satisfied when the function is called:
 
-%%[[wrap=code
+%%[[wrap=code defF
 f  ::    Eq a =>  a ->  a ->  Int
 f  =   \          x     y ->  if x == y then 3 else 4
 %%]
@@ -57,7 +57,7 @@ as long as the predicate |Eq a| is satisfied.
 Such predicates are introduced by \IxAsDef{class declaration}s,
 as in the following version of Haskell's |Eq| class declaration:
 
-%%[[wrap=code
+%%[[wrap=code classEq
 class Eq a where
   (==) :: a -> a -> Bool
 %%]
@@ -70,7 +70,7 @@ A class declaration alone is not sufficient: \IxAsDef{instance declarations}
 specify for which types the predicate actually can be satisfied,
 simultaneously providing an implementation for the functions and values as a witness for this:
 
-%%[[wrap=code
+%%[[wrap=code EqIntChar
 instance Eq Int where
   x == y = primEqInt x y
 
@@ -83,7 +83,7 @@ by the primitives |primEqInt| and |primEqChar|.
 The compiler turns such instance declarations into records (dictionaries) containing the functions as fields,
 and thus an explicit version of this internal machinery reads:
 
-%%[[wrap=code
+%%[[wrap=code translEqD
 data EqD a  = EqD ^^ {eqEqD :: a -> a -> Bool}  -- class Eq
 eqDInt      = EqD primEqInt                     -- Eq Int
 eqDChar     = EqD primEqChar                    -- Eq Char
@@ -95,7 +95,7 @@ This is accomplished by implicitly passing a dictionary
 for each predicate occurring in the type of the function.
 So the actual implementation of |f| (apart from all kind of optimisations) is:
 
-%%[[wrap=code
+%%[[wrap=code translDefF
 f  ::         EqD a ->  a ->  a ->  Int
 f  =   \  ^^  dEq       x     y ->  if (eqEqD dEq) x y then 3 else 4
 %%]
@@ -110,7 +110,7 @@ The translation from |f 3 4| to |f eqDInt 3 4| is done implicitly;
 a programmer has little or no control over the passing of dictionaries.
 This becomes problematic as soon as a programmer desires to express something
 which the language definition cannot infer automatically.
-For example, we may we want to call |f| with an alternate instance for |Eq Int|,
+For example, we may want to call |f| with an alternate instance for |Eq Int|,
 which implements a different equality on integers:
 
 %%[[wrap=code
@@ -121,8 +121,62 @@ instance Eq Int where
 Unfortunately this extra instance declaration would introduce an ambiguity,
 and is thus forbidden by the language definition;
 the instances are said to overlap.
-However, a programmer could resolve the issue if he was only able to explicitly specify which of these two possible instances should be passed to |f|.
+However, a programmer could resolve the issue if it would be possible
+to explicitly specify which of these two possible instances should be passed to |f|.
 
+In \thispaper\ we propose a mechanism which allows explicit passing of for implicit parameters;
+here we demonstrate how this can be accomplished in Haskell and point out the drawbacks and limitations of this approach.
+Haskell does not treat instances as first class values to be passed to functions at the programmers will,
+but Haskell\footnote{That is, GHC 6.4.1} allows the programmer to refer to instances indirectly by means of a type.
+Because instances are defined for a particular type, we can use a value of such a type as an index into available instances:
+
+%%[[wrap=code
+class Eq' l a where eq' :: l -> a -> a -> Bool
+
+data Dflt
+instance Eq a => Eq' Dflt a where
+  eq' _ = (==)                    -- use equality of class Eq
+
+data Mod2
+instance Eq' Mod2 Int where
+  eq' _ x y = (x `mod` 2) == (y `mod` 2)
+
+newtype W l a = W a
+
+f :: Eq' l a => W l a -> W l a -> Int
+f = \(W x :: W l a) (W y) -> if eq' (undefined::l) x y then 3 else 4
+
+v1 = f (W 2 :: W Dflt Int) (W 4)
+v2 = f (W 2 :: W Mod2 Int) (W 4)
+%%]
+
+By explicitly assigning the type |W Mod2 Int| to the first parameter of |f|,
+we also choose the instance |Eq' Mod2| of class |Eq'|.
+This approach has the following drawbacks and limitations:
+
+\begin{Itemize}
+\item
+It is verbose, indirect, and clutters the namespace of values, types, and classes.
+\item
+We only can pass a value explicitly if it is bound to a type via an instance declaration.
+Consequently, this is closed world (of values) because all explicitly passed values must be known at compile time.
+\end{Itemize}
+
+Instead, we propose to solve this problem by passing the dictionary of an instance directly, using fantasy syntax which combines Haskell
+with the notation introduced later in \thispaper:
+
+%%[[wrap=code
+f  ::    Eq a =>  a ->  a ->  Int
+f  =   \          x     y ->  if x == y then 3 else 4
+
+v1 = f  2 4
+v2 = f  (! ((==) = \x y -> (x `mod` 2) == (y `mod` 2)) <: Eq Int !)
+        2 4
+%%]
+
+A dictionary (encoded as a record) of an instance is constructed and passed directly.
+
+%if not limitSize
 As a second example we briefly discuss the use
 Kiselyov and Chan \cite{kiselyov04impl-config} make of the type class system to configure programs.
 In their modular arithmetic example integer arithmetic is configured by a modulus: all integer arithmetic is done modulo this modulus.
@@ -171,6 +225,7 @@ The use of explicit parameter passing for an implicit argument proposed by us in
 even further simplified the example, as we can avoid the phantom type |Label| and related type hackery
 altogether and instead create and pass the instance directly.
 %}
+%endif %% not limitSize
 
 As we may infer from the above the Haskell class system,
 which was originally only introduced to describe simple overloading,
@@ -832,12 +887,12 @@ This is useful in situations where no unique choice is possible, for
 example in the presence of overlapping instances:
 
 %% test/9-eq3.eh
-%%[[wrap=code
+%%[[wrap=code test9eq3TwoExpl
 let  instance dEqInt1 <: Eq Int where
        eq = primEqInt
      instance dEqInt2 <: Eq Int where
        eq = eqMod2
-     f = ...
+     f = \p q r s -> ...
 in   f  (! dEqInt1 <: Eq Int !) 3 4
         (! dEqInt2 <: Eq Int !) 5 6
 %%]
@@ -914,11 +969,11 @@ the declaration of an instance with a context actually introduces a function tak
 as arguments:
 
 %% test/9-eq4.eh
-%%[[wrap=code
+%%[[wrap=code test9eq4EqList
 let  instance dEqInt <: Eq Int where
        eq = primEqInt
      instance dEqList <: Eq a => Eq (List a) where
-       eq = ...
+       eq = \l1 l2 -> ...
      f :: forall a . Eq a => a -> List a -> Bool
      f = \p q -> eq (Cons p Nil) q
 in   f 3 (Cons 4 Nil)
@@ -940,7 +995,7 @@ eq       =   \dEq x y -> dEq.eq x y
 
 With these values, the body of |f| is mapped to:
 
-%%[[wrap=code
+%%[[wrap=code translFEqImplPassed
 f = \dEq_a p q -> eq (dEqList dEq_a) (Cons p Nil) q
 %%]
 
@@ -948,7 +1003,7 @@ This translation can now be expressed explicitly as well;
 a dictionary for |Eq (List a)| is explicitly constructed and passed to |eq|:
 
 %% 9-eq5.eh
-%%[[wrap=code
+%%[[wrap=code test9eq5EqExplPassed
 f :: forall a . Eq a  =>  a ->  List a  -> Bool
 f = \(! dEq_a <: Eq a !)
                       ->  \p q -> eq  (! dEqList dEq_a <: Eq (List a) !)
@@ -966,7 +1021,7 @@ as a corresponding dictionary transformer function.
 Such transformers can also be made explicit in the following variant:
 
 %% 9-eq6.eh
-%%[[wrap=code
+%%[[wrap=code test9eq6DictTransf
 f  ::  (forall ^ a . Eq a => Eq (List a))  =>  Int ->  List Int  -> Bool
 f  =   \(! dEq_La <: forall ^ a . Eq a => Eq (List a) !)
           ->  \p  q  -> eq  (! dEq_La dEqInt <: Eq (List Int) !)
@@ -979,7 +1034,7 @@ This dictionary is explicitly constructed and passed to |eq|; both the construct
 We must either pass a dictionary for |Eq a => Eq (List a)| to |f| ourselves explicitly or let it happen automatically;
 here in both cases |dEqList| is the only choice possible.
 
-%if not storyPHD
+%if not (storyPHD || limitSize)
 
 \subsection{Partial type signatures}
 \label{ehc09-partialtysig}

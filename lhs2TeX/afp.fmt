@@ -204,9 +204,7 @@
 %format :~>   			= "\rightsquigarrow "
 %format <~:   			= "\leftsquigarrow "
 %format :>   			= "\rightsquigarrow "
-%format <:   			= "\leftsquigarrow "
 %format .    			= "."
-%format :=	 			= "\coloneqq "
 %format === 			= "\equiv "
 %format =/= 			= "\not\equiv "
 %format =@= 			= "{\varparallel}"
@@ -220,8 +218,12 @@
 % format ++	 			= ","
 %if asSlides
 %format ::= 			= "::="
+%format :=	 			= ":="
+%format <:   			= "<:"
 %else
 %format ::= 			= "\mathrel{\Coloneqq}"
+%format :=	 			= "\coloneqq "
+%format <:   			= "\leftsquigarrow "
 %endif
 
 % format fiopt			= "{\xi}"

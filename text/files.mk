@@ -24,12 +24,17 @@ TEXT_TMP_VARIANT_PREFIX		:= $(TEXT_TMP_PREFIX)$(TEXT_VARIANT)/
 
 # all variants
 TEXT_PUB_VARIANTS			:= phd shuffle
-TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) popl06-ruler-tst popl06-ruler popl06-explimpl phd-paper phd-draft phd-tst scratch truu-explimpl truu-ruler poster slides-ruler
+TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) \
+								flops06-ruler-tst flops06-ruler pldi06-explimpl \
+								truu-explimpl truu-ruler \
+								phd-paper phd-draft phd-tst \
+								scratch poster \
+								slides-ruler slides-explimpl
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
 # 2	: phd
-# 3	: popl06-ruler, truu-ruler
-# 4	: popl06-explimpl, truu-explimpl
+# 3	: flops06-ruler, truu-ruler
+# 4	: pldi06-explimpl, truu-explimpl
 # 5	: impred
 # 6	: afp (will be obsolete)
 # 7	: scratch
@@ -43,7 +48,7 @@ TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) popl06-ruler-tst popl06-ruler popl06-ex
 TEXT_SHUFFLE_ORDER			:= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 8, 1 < 9, 1 < 10, 1 < 11, 1 < 13, 1 < 14
 
 # configuration of lhs2tex, to be done on top level
-LHS2TEX_OPTS_TEXT_CONFIG	:= --unset=optExpandPrevRef
+LHS2TEX_OPTS_TEXT_CONFIG	:= 
 LHS2TEX_OPTS_VARIANT_CONFIG	:= 
 
 # configuration of ruler, to be done on top level
@@ -153,73 +158,79 @@ $(TEXT_VARIANTS) : % : $(DOC_PREFIX)%.pdf
 # rules
 text-variant-phd:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
 
 text-variant-phd-paper:
 	$(MAKE) TEXT_RULER_MARK_CHANGES_CFG= RULER2_DEMO_MARK_CHANGES_CFG= \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=newDocClassHeader --set=targetForPaper --set=omitTBD --set=omitLitDiscuss" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=targetForPaper" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
 
 text-variant-phd-tst:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss --set=asDraft" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=asDraft" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-tst
 
 text-variant-phd-draft:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss --set=asDraft" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=asDraft" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
 
-text-variant-popl06-ruler-tst:
+text-variant-flops06-ruler-tst:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=popl06 --set=acm --set=storyRuler --set=asArticle --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=flops06 --set=llncs --set=kscode --set=limitSize --set=storyRuler --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=3 \
 	  text-variant-dflt-tst
 
-text-variant-popl06-ruler:
+text-variant-flops06-ruler:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=popl06 --set=acm --set=storyRuler --set=asArticle --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=flops06 --set=llncs --set=kscode --set=limitSize --set=storyRuler --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=3 \
 	  text-variant-dflt-bib
 
 text-variant-truu-ruler:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=truu --set=storyRuler --set=asArticle --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=truu --set=storyRuler --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=3 \
 	  text-variant-dflt-bib
 
-text-variant-popl06-explimpl:
+text-variant-pldi06-explimpl-tst:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=popl06 --set=acm --set=storyExplImpl --set=asArticle --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=pldi06 --set=acm --set=kscode --set=limitSize --set=storyExplImpl --set=asArticle" \
+	  TEXT_SHUFFLE_VARIANT=4 \
+	  text-variant-dflt-tst
+
+text-variant-pldi06-explimpl:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=pldi06 --set=acm --set=kscode --set=limitSize --set=storyExplImpl --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=4 \
 	  text-variant-dflt-bib
 
 text-variant-truu-explimpl:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=truu --set=storyExplImpl --set=asArticle --set=newDocClassHeader --set=omitTBD --set=omitLitDiscuss" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=truu --set=storyExplImpl --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=4 \
 	  text-variant-dflt-bib
 
 text-variant-scratch:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyPHD --unset=asArticle --set=useHyperref --set=refToPDF --set=newDocClassHeader" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyPHD --unset=asArticle --set=useHyperref --set=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=7 \
 	  text-variant-dflt-tst
 
 text-variant-shuffle:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyShuffle --set=asArticle --set=useHyperref --set=refToPDF --set=newDocClassHeader" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyShuffle --set=asArticle --set=useHyperref --set=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=11 \
 	  text-variant-dflt-tst
 
 text-variant-poster:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyPoster --set=asArticle --unset=useHyperref --unset=refToPDF --set=newDocClassHeader" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyPoster --set=asArticle --unset=useHyperref --unset=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=13 \
 	  text-variant-dflt-tst
 
@@ -227,6 +238,12 @@ text-variant-slides-ruler:
 	$(MAKE) \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyRuler --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=14 \
+	  text-variant-dflt-tst
+
+text-variant-slides-explimpl:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyExplImpl --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
+	  TEXT_SHUFFLE_VARIANT=9 \
 	  text-variant-dflt-tst
 
 text-variant-dflt-tst: $(TEXT_ALL_DPD)

@@ -1,4 +1,10 @@
-%%[explimpl
+%%[title
+\frame<presentation>{\titlepage}
+%%]
+
+%%[problem
+\section{The problem}
+
 \frame<presentation>
 {
 \frametitle{Explicit parameters}
@@ -124,95 +130,119 @@ But the type does not include a description of this behavior
 \end{itemize}
 \end{itemize}
 }
+%%]
+
+%%[tyInxExamples
+\section{(Ab)use of class system}
+
+\frame<presentation>
+{
+\frametitle{Reuse by explicit parameter passing}
+\begin{itemize}
+\item Being explicit in Haskell
+\SafeCode{%
+%%[[wrap=code
+nub                      ::  (Eq a) => [a] -> [a]
+nub                      =   nubBy (==)
+
+nubBy                    ::  (a -> a -> Bool) -> [a] -> [a]
+nubBy eq []              =   []
+nubBy eq (h:t)           =   h : nubBy eq (filter (not . eq h) t)
+
+t1 = nub [3,3,4,5]
+t2 = nubBy (\x y -> (x `mod` 2) == (y `mod` 2)) [3,3,4,5]
+%%]
+}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Reuse by explicit parameter passing}
+\begin{itemize}
+\item Being explicit using implicit mechanism (EH)
+\SafeCode{%
+%%[[wrap=code
+nub                      ::  (Eq a) => [a] -> [a]
+nub []                   =   []
+nub (h:t)                =   h : nub (filter (not . (h ==)) t)
+
+nubBy                    ::  (a -> a -> Bool) -> [a] -> [a]
+nubBy eq                 =   nub (! ((==) = eq) <: Eq Int !)
+
+t1 = nub [3,3,4,5]
+t2 = nub (! ((==) = ...) <: Eq Int !) [3,3,4,5]
+%%]
+}
+\item This can almost be done in Haskell, but how?
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Being explicit using implicit mechanism (Haskell)}
+\SafeCode{%
+%%[[wrap=code
+class Eq' l a where leq :: l -> a -> a -> Bool
+
+data Usual
+instance Eq a => Eq' Usual a where
+  leq _ = (==)
+
+data EqMod2
+instance Eq' EqMod2 Int where
+  leq _ x y = (x `mod` 2) == (y `mod` 2)
+
+newtype WL l a = WL{unWL:: [a]}
+
+nub' :: Eq' l a => WL l a -> WL l a
+nub' x@(WL []) = x
+nub' (WL (h:t) :: WL l a) 
+    =  WL $ (h:) $ unWL $ nub' $ 
+          (WL $ filter (not . leq (undefined::l) h) t :: WL l a)
+
+t1 = unWL $ nub' (WL [3,3,4,5] :: WL Usual Int)
+t2 = unWL $ nub' (WL [3,3,4,5] :: WL EqMod2 Int)
+%%]
+}
+}
+
+\frame<presentation>
+{
+\frametitle{Haskell's `solution'}
+\begin{itemize}
+\item Verbose and clumsy
+\item Requires type wizardry
+\item All explicit parameters must be known at compile time
+\begin{itemize}
+\item Type of explicit parameter is index in set of instances
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[content
+\section{Content}
 
 \frame<presentation>
 {
 \frametitle{Content of this talk}
 \begin{itemize}
-\item Context
+\item Haskell's class system
+\item How to `solve' the problem in Haskell
 \begin{itemize}
-\item Haskell, EH
+\item (Ab)use of Haskell class system
+\item Side by side with what EH offers
 \end{itemize}
-\item Haskell's solution
 \item EH mechanism's for explicitly passing values for implicit parameters
-\item Partial type signatures
+\item `Problematic' examples
+\item (Partial type signatures)
 \end{itemize}
 }
+%%]
 
-\frame<presentation>
-{
-\frametitle{Context}
-\begin{itemize}
-\item Starting point: Haskell
-\begin{itemize}
-\item already provides combination of strong type checking and class system
-\end{itemize}
-\item Explicit implicit parameter passing situated in context of Explicit Haskell (EH)
-\begin{itemize}
-\item `as simple as possible' Haskell
-\item while also providing extensions: higher ranked types, existentials, records
-\item used for research and education
-\end{itemize}
-\end{itemize}
-}
-
-\frame<presentation>
-{
-\frametitle{EH language}
-\begin{itemize}
-\item Language constructs
-\begin{itemize}
-\item core (|lambda|-calculus) of Haskell
-\begin{tabular}{r@@{\;}c@@{\;}ll}
-|e| & |::=| &
-|int || char |
- & literals
- \\
-& | || | &
-|identv|
- & value variable
- \\
-& | || | &
-|e e|
- & application
- \\
-& | || | &
-|\i -> e|
- & abstraction
- \\
-& | || | &
-|let Vec(d) in e|
- & binding
- \\
-\end{tabular}
-\item + extensions (records, higher rank polymorphism, existentials, ...)
-\begin{tabular}{r@@{\;}c@@{\;}ll}
-|e| & |::=| &
-|...|
- & 
- \\
-& | || | &
-|(lbl = e,...)|
- & record
- \\
-%if False
-& | || | &
-|(e || lbl = e,...)|
- & record extension
- \\
-%endif
-& | || | &
-|(e || lbl := e,...)|
- & record update
- \\
-& | || | &
-|e.lbl|
- & record selection
- \\
-\end{tabular}
-\end{itemize}
-\end{itemize}
-}
+%%[haskellSummary
+\section{Haskell classes}
 
 \frame<presentation>
 {
@@ -225,17 +255,11 @@ But the type does not include a description of this behavior
 \end{itemize}
 \item Example: equality on values of type |a|:
 \SafeCode{%
-%%[[wrap=code
-class Eq a where
-  (==) :: a -> a -> Bool
-%%]
+%%@TopicExplImpl.classEq
 }
 \SafeCode{%
 \item Predicate is part of type of value
-%%[[wrap=code
-f  ::    Eq a =>  a ->  a ->  Int
-f  =   \          x     y ->  if x == y then 3 else 4
-%%]
+%%@TopicExplImpl.defF
 }
 \end{itemize}
 }
@@ -256,32 +280,21 @@ f  =   \          x     y ->  if x == y then 3 else 4
 \end{itemize}
 \item Basic proofs (instances) given by programmer
 \SafeCode{%
-%%[[wrap=code
-instance Eq Int where
-  x == y = primEqInt x y
-
-instance Eq Char where
-  x == y = primEqChar x y
-%%]
+%%@TopicExplImpl.EqIntChar
 }
 \item Used under the hood to construct dictionaries to be passed
 \end{itemize}
 }
 
-\frame<presentation>[plain]
+\frame<presentation>
 {
-\frametitle{Haskell's class system}
+\frametitle{Haskell translation}
 \begin{itemize}
 \item Do it ourselves Haskell implementation
 \SafeCode{%
-%%[[wrap=code
-data EqD a  = EqD ^^ {eqEqD :: a -> a -> Bool}  -- class Eq
-eqDInt      = EqD primEqInt                     -- Eq Int
-eqDChar     = EqD primEqChar                    -- Eq Char
+%%@TopicExplImpl.translEqD
 
-f  ::         EqD a ->  a ->  a ->  Int
-f  =   \  ^^  dEq       x     y ->  if (eqEqD dEq) x y then 3 else 4
-%%]
+%%@TopicExplImpl.translDefF
 }
 \item Usual translation to internal machinery
 \end{itemize}
@@ -289,7 +302,7 @@ f  =   \  ^^  dEq       x     y ->  if (eqEqD dEq) x y then 3 else 4
 
 \frame<presentation>
 {
-\frametitle{EH: explicit passing for implicit parameter}
+\frametitle{EH translation}
 \begin{itemize}
 \item Class and instance
 \SafeCode{%
@@ -301,15 +314,70 @@ let  class Eq a where
      ...
 %%]
 }
-\item Dictionary is record, each field corresponds to member of class
+\item Dictionary is record, each field corresponds to class member
+\SafeCode{%
+%%[[wrap=code
+            (eq :: a -> a -> Bool)            -- class Eq
+eqDInt   =  (eq = primEqInt)                  -- Eq Int
+eqDChar  =  (eq = primEqChar)                 -- Eq Char
+
+f  ::         (eq :: a -> a -> Bool)  ->  a ->  a ->  Int
+f  =   \  ^^  dEq x y -> if dEq.eq x y then 3 else 4
+%%]
+}
 \begin{itemize}
 \item class translates to record type
 \item instance translates to record value
 \end{itemize}
 \end{itemize}
 }
+%%]
 
-\frame<presentation>[plain]
+%%[eh
+\section{EH}
+
+\frame<presentation>
+{
+\frametitle{EH}
+\begin{itemize}
+\item Starting point: Haskell
+\begin{itemize}
+\item already provides combination of strong type checking and class system
+\end{itemize}
+\item Explicit implicit parameter passing situated in context of Explicit Haskell (EH)
+\begin{itemize}
+\item `as simple as possible' Haskell
+\item while also providing extensions: higher ranked types, existentials, records
+\item used for research and education
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{EH language}
+\begin{itemize}
+\item Language constructs
+\begin{itemize}
+\item core (|lambda|-calculus) of Haskell\\
+\begin{tabular}%
+%%@AppxNotation.termTableFormat
+%%@AppxNotation.exprBasic
+%%@AppxNotation.exprLamIdent
+\end{tabular}
+\item + extensions (records, higher rank polymorphism, existentials, ...)\\
+\begin{tabular}%
+%%@AppxNotation.termTableFormat
+%%@AppxNotation.exprTheUsual
+%%@AppxNotation.exprRecBasic
+%%@AppxNotation.exprRecExt
+\end{tabular}
+\end{itemize}
+\end{itemize}
+}
+
+
+\frame<presentation>
 {
 \frametitle{Explicit passing for implicit parameter}
 \begin{itemize}
@@ -328,7 +396,7 @@ in   f  ^                              3 4
 \end{itemize}
 }
 
-\frame<presentation>[plain]
+\frame<presentation>
 {
 \frametitle{Explicit passing for implicit parameter}
 \begin{itemize}
@@ -384,15 +452,7 @@ in   f 3 4 5 6
 \begin{itemize}
 \item Bind dictionary for an instance to value identifier
 \SafeCode{%
-%%[[wrap=code
-let  instance dEqInt1 <: Eq Int where
-       eq = primEqInt
-     instance dEqInt2 <: Eq Int where
-       eq = eqMod2
-     f = \p q r s -> ...
-in   f  (! dEqInt1 <: Eq Int !) 3 4
-        (! dEqInt2 <: Eq Int !) 5 6
-%%]
+%%@TopicExplImpl.test9eq3TwoExpl
 }
 \item |<:| binds to identifier + allows participation in underlying machinery
 \item At parameter passing location: override automatic decisions made by underlying machinery
@@ -453,21 +513,12 @@ in   ...
 \begin{itemize}
 \item Equality on lists needs equality on elements
 \SafeCode{%
-%%[[wrap=code
-let  data List a = Nil | Cons a (List a)
-     instance dEqInt <: Eq Int where
-       eq = primEqInt
-     instance dEqList <: Eq a => Eq (List a) where
-       eq = \l1 l2 -> ...
-     f :: forall a . Eq a => a -> List a -> Bool
-     f = \p q -> eq (Cons p Nil) q
-in   f 3 (Cons 4 Nil)
-%%]
+%%@TopicExplImpl.test9eq4EqList
 }
 \end{itemize}
 }
 
-\frame<presentation>[plain]
+\frame<presentation>
 {
 \frametitle{Instances which require other instances}
 \begin{itemize}
@@ -487,7 +538,7 @@ in   f dEqInt 3 (Cons 4 Nil)
 \end{itemize}
 }
 
-\frame<presentation>[plain]
+\frame<presentation>
 {
 \frametitle{Dictionary transformers}
 \begin{itemize}
@@ -500,35 +551,25 @@ f =   \                    p     q       -> eq (Cons p Nil) q
 }
 \item Explicit variant
 \SafeCode{%
-%%[[wrap=code
-f :: forall a . Eq a  =>  a ->  List a  -> Bool
-f = \(! dEq_a <: Eq a !)
-                      ->  \p    q       -> eq  (! dEqList dEq_a <: Eq (List a) !)
-                                               (Cons p Nil) q
-%%]
+%%@TopicExplImpl.test9eq5EqExplPassed
 }
 \item Translated variant
 \SafeCode{%
-%%[[wrap=code
-f = \dEq_a p q -> eq (dEqList dEq_a) (Cons p Nil) q
-%%]
+%%@TopicExplImpl.translFEqImplPassed
 }
 \item We can do it ourselves, explicitly, if necessary!
 \end{itemize}
 }
+%%]
 
-\frame<presentation>[plain]
+%%[sndOrderGRose
+\frame<presentation>
 {
 \frametitle{Dictionary transformers}
 \begin{itemize}
 \item Are first class
 \SafeCode{%
-%%[[wrap=code
-f  ::  (forall ^ a . Eq a => Eq (List a))  =>  Int ->  List Int  -> Bool
-f  =   \(! dEq_La <: Eq a => Eq (List a) !)
-          ->  \p  q  -> eq  (! dEq_La dEqInt <: Eq (List Int) !)
-                            (Cons p Nil) q
-%%]
+%%@TopicExplImpl.test9eq6DictTransf
 }
 \item Here explicit passing may be ommitted to achieve same effect
 \begin{itemize}
@@ -537,71 +578,92 @@ f  =   \(! dEq_La <: Eq a => Eq (List a) !)
 \end{itemize}
 }
 
-\frame<presentation>[plain]
+\frame<presentation>
 {
 \frametitle{Dictionary transformers}
 \begin{itemize}
 \item Useful in class based implementation of generics
+{\small
 \SafeCode{%
 %%[[wrap=code
 %%9srcfile(eh-frags/9-snd-order1.eh%%)
 %%]
-}
+}}
 \end{itemize}
 }
 
 \frame<presentation>[plain]
 {
-\frametitle{Partial type signatures}
-\begin{itemize}
-\item Specifying full type signatures becomes cumbersome
-\item Idea:
-\begin{itemize}
-\item programmer specifies explicitly what cannot be inferred
-\item system infers the rest
-\end{itemize}
-\item Fully explicit
+\frametitle{Dictionary transformers, translation}
+{\small
 \SafeCode{%
 %%[[wrap=code
-f ::  forall ^ a . Eq a =>     a ->  a -> forall ^ b . Eq b =>  b ->  b  ->  (Bool    , Bool    )
-f =                         \  p     q                          r     s  ->  (eq p q  , eq r s  )
+let  dfltB    =  \_ -> (showBin = undefined)
+     showBin  =  \x  -> x.showBin
+     dBI      =  let  dBI'  =  let  dBI'! = dfltB dBI'
+                               in   (dBI'! | showBin := ...)
+                 in   dBI'
+     dBL =  \_ ->  let  dBL' =  let  dBL'! = dfltB dBL'
+                                in   (dBL'! | showBin := ...)
+                   in   dBL'
+     dBG =  \dx df ->
+              let  dBG'  =  let  dBG'! = dfltB dBG'
+                            in   (dBG'! | showBin :=
+                                   \gr ->  case gr of
+                                             (GBranch x ts)
+                                               ->  showBin dx x
+                                                   ++ showBin (df dBG') ts
+                                 )
+              in   dBG'
+in
+let  v1   =  showBin (dBG dBI dBL) (GBranch 3 Nil)
+in   v1
 %%]
+}}
 }
-\item If dictionary for |Eq b| needs to be passed before others
+
+\frame<presentation>
+{
+\frametitle{Dictionary transformers, puzzle/exercise}
+\begin{itemize}
+\item Paper reviewer alternative, what is the difference?
+{\small
 \SafeCode{%
 %%[[wrap=code
-f :: forall    b . (Eq b,  ...   ) => ...  -> ...  -> b -> b -> ...
--- INFERRED:
-f :: forall a  b . (Eq b,  Eq a  ) => a    -> a    -> b -> b -> (Bool,Bool)
+%%9srcfile(eh-frags/9-snd-order2.eh%%)
 %%]
-}
-\item `|...|': explicit notation for missing type information to be inferred
+}}
+\item GHC: option @-fallow-undecidable-instances@
 \end{itemize}
 }
 
+
+%%]
+
+%%[localInstances
 \frame<presentation>[plain]
 {
-\frametitle{Partial type signatures}
+\frametitle{Local instances}
 \begin{itemize}
-\item Monomorphic as well as polymorphic
+\item Haskell forbids local instances
+{\small
 \SafeCode{%
 %%[[wrap=code
-f  ::  forall ^ a . (  Eq a,  ...   )  =>     a ->  a ->  ...
-f  =                                       \  p     q     r       s                 ->  (eq p q  ,  eq r 3  )
--- INFERRED:
-f  ::  forall ^ a .    Eq a            =>     a ->  a ->  Int ->  forall ^ b . b    ->  (Bool    ,  Bool    )
+%%9srcfile(test/9-local-inst1.eh%%)
 %%]
-}
-\item Type variables for monomorphic types
-\SafeCode{%
-%%[[wrap=code
-f  ::  forall ^ a . (  Eq a,  ...   )  =>     a ->  a ->  %b   ->  %b              ->  ...
--- INFERRED:
-f  ::  forall ^ a .    Eq a            =>     a ->  a ->  Int  ->  Int             ->  (Bool    ,  Bool    )
-%%]
-}
+}}
+\item Why? (EHC: type checking fails)
+\begin{itemize}
+\item What is the (principal) type of |f| and |eq| in |f|'s body?
+\item What is the type of |v|?
+\item Which change(s) would make the fragment type correct (in particular/general)?
+\end{itemize}
 \end{itemize}
 }
+%%]
+
+%%[conclusion
+\section{Summary}
 
 \frame<presentation>
 {
