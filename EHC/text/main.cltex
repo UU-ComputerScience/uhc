@@ -640,7 +640,11 @@
 %endif %% not (...)
 
 %if llncs || acm
+%if blockstyle
 \setlength{\mathindent}{.03\textwidth}
+%else
+\setlength{\mathindent}{\parindent}
+%endif
 %elif not storyPoster
 \setlength{\mathindent}{.05\textwidth}
 %endif
@@ -736,7 +740,7 @@
 %%]
 
 %%[4
-\title{Making Implicit Parameters Explicit}
+\title{Making Type-Class Dictionaries Explicit}
 %if acm && useSigplanconfSty
 \authorinfo{Atze Dijkstra \and S. Doaitse Swierstra}
   {Department of Information and Computing Sciences \\
@@ -857,7 +861,7 @@ WWW home page:
 
 %%[1
 % the sort of paper
-%if llncs
+%if False
 \newcommand{\thispaper}{these notes}
 \newcommand{\thischapt}{these notes}
 %elif storyPHD

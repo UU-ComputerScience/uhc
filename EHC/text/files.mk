@@ -25,7 +25,8 @@ TEXT_TMP_VARIANT_PREFIX		:= $(TEXT_TMP_PREFIX)$(TEXT_VARIANT)/
 # all variants
 TEXT_PUB_VARIANTS			:= phd shuffle
 TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) \
-								flops06-ruler-tst flops06-ruler pldi06-explimpl \
+								flops06-ruler-paper flops06-ruler \
+								pldi06-explimpl \
 								truu-explimpl truu-ruler \
 								phd-paper phd-draft phd-tst \
 								scratch poster \
@@ -180,11 +181,11 @@ text-variant-phd-draft:
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
 
-text-variant-flops06-ruler-tst:
-	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=flops06 --set=llncs --set=kscode --set=limitSize --set=storyRuler --set=asArticle" \
+text-variant-flops06-ruler-paper:
+	$(MAKE) RULER2_DEMO_MARK_CHANGES_CFG= \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=flops06 --set=llncs --set=kscode --set=limitSize --set=storyRuler --set=asArticle --set=targetForPaper" \
 	  TEXT_SHUFFLE_VARIANT=3 \
-	  text-variant-dflt-tst
+	  text-variant-dflt-bib
 
 text-variant-flops06-ruler:
 	$(MAKE) \
@@ -377,13 +378,13 @@ $(TEXT_HIDE_DRV_LTEX): $(TEXT_HIDE_DRV_TXT)
 	(echo '%include lhs2TeX.fmt' ; echo '%include afp.fmt' ; cat $< ) > $@
 
 # ruler demo make rules
-$(TEXT_RULER2_DEMO_DRV_LCTEX): $(RULER2_DEMO_SRC_CRL) $(SHUFFLE)
+$(TEXT_RULER2_DEMO_DRV_LCTEX): $(RULER2_DEMO_SRC_CRL) $(SHUFFLE) $(TEXT_MKF)
 	$(SHUFFLE) --gen=all --latex --order="$(RULER2_DEMO_SHUFFLE_ORDER)" --base=$(RULER2_DEMO_RUL_BASE) --lhs2tex=yes $< > $@
 
 $(TEXT_RULER2_DEMO_DRV_CTEX): $(TEXT_RULER2_DEMO_DRV_LCTEX)
 	$(LHS2TEX) $(LHS2TEX_OPTS_POLY) $< > $@
 
-$(TEXT_RULER2_DEMO_DRV_RL2): $(RULER2_DEMO_SRC_CRL) $(SHUFFLE)
+$(TEXT_RULER2_DEMO_DRV_RL2): $(RULER2_DEMO_SRC_CRL) $(SHUFFLE) $(TEXT_MKF)
 	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --plain --order="$(RULER2_DEMO_SHUFFLE_ORDER)"  --lhs2tex=no $< > $@
 
 $(TEXT_RULER2_DEMO_DRV_LRTEX): $(TEXT_RULER2_DEMO_DRV_RL2) $(RULER2)
