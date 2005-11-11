@@ -163,12 +163,7 @@ t2 = nubBy (\x y -> (x `mod` 2) == (y `mod` 2)) [3,3,4,5]
 \item Being explicit using implicit mechanism (EH)
 \SafeCode{%
 %%[[wrap=code
-nub                      ::  (Eq a) => [a] -> [a]
-nub []                   =   []
-nub (h:t)                =   h : nub (filter (not . (h ==)) t)
-
-nubBy                    ::  (a -> a -> Bool) -> [a] -> [a]
-nubBy eq                 =   nub (! ((==) = eq) <: Eq Int !)
+%%@TopicExplImpl.HaskellsNubBy
 
 t1 = nub [3,3,4,5]
 t2 = nub (! ((==) = ...) <: Eq Int !) [3,3,4,5]
@@ -292,9 +287,11 @@ t2 = unWL $ nub' (WL [3,3,4,5] :: WL EqMod2 Int)
 \begin{itemize}
 \item Do it ourselves Haskell implementation
 \SafeCode{%
+%%[[wrap=code
 %%@TopicExplImpl.translEqD
 
 %%@TopicExplImpl.translDefF
+%%]
 }
 \item Usual translation to internal machinery
 \end{itemize}

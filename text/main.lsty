@@ -216,7 +216,11 @@
 \def\@@stripAfterDot#1.#2;{#1}
 
 % section structure related
+%if llncs
+\newcommand{\Paragraph}[1]{\paragraph{#1.}}
+%else
 \newcommand{\Paragraph}[1]{\paragraph{#1}}
+%endif
 
 % chunk related
 \newcommand{\chunkHideDef}[2]{%

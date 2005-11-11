@@ -66,7 +66,7 @@ Notation & Meaning \\
  & literals
  \\
 & | || | &
-|identv|
+|ident|
  & program variable
  \\
 & | || | &
@@ -506,6 +506,33 @@ Notation & Meaning \\
  \\
 %%]
 
+%%[notationRulerDemoBasic
+|sigma|
+ & type (possibly polymorphic)
+ \\
+|tau|
+ & type (monomorphic)
+ \\
+|Vec(x)|
+ & sequence of |x| (possibly empty)
+ \\
+|tvarv|
+ & type variable
+ \\
+|Gamma|
+ & |Vec(i :-> sigma)|, assumptions, environment, context
+ \\
+%%]
+
+%%[notationRulerDemoCnstr
+|Cnstr|
+ & |Vec(tvarv :-> tau)|, constraints, substitution
+ \\
+|<=>|
+ & type matching relation, unification
+ \\
+%%]
+
 %%[notationImpredA
 |sigmaQu|
  & |sigma| with a quantifier
@@ -626,7 +653,75 @@ Notation & Meaning \\
  \\
 %%]
 
-%%[XX
+%%[rulerSyntaxSetup
+%format <	= ^^ "\langle "
+%format >	= "\rangle " ^^
+%%]
+
+%%[rulerSyntaxBasic
+<ruler_prog>            ::=     (  <scheme_def> | <format_def> | <rewrite_def>
+                                |  <rules_def> | <viewhierarchy_def>
+                                |  <external_def>
+                                )*
+<scheme_def>            ::=     (scheme | relation) <nm> [<ag_nm>]
+                                    '='  <scm_view_def> *
+<scm_view_def>          ::=     view <vw_nm> '=' <hole_def> <shape_def> *
+<hole_def>              ::=     hole  '[' <hole_defs>
+                                      '|' <hole_defs>
+                                      '|' <hole_defs>
+                                      ']'
+<shape_def>             ::=     judgeuse [<target>] <rexpr>
+                          |     judgespec <rexpr>
+<target>                ::=     tex | ag | ...
+<hole_defs>             ::=     [thread] <hole_nm> ':' <hole_type>
+<hole_type>             ::=     <nm>
+<rules_def>             ::=     rules <nm> scheme <scm_nm> "info"
+                                    '='  <rule_def> *
+<rule_def>              ::=     rule <nm> [<ag_nm>] = <rl_view_def> *
+<rl_view_def>           ::=     view <vw_nm>
+                                    '='  <judge_rexpr> *
+                                         '-'
+                                         <judge_rexpr>
+<judge_rexpr>           ::=     judge [<nm> ':'] <scm_nm>
+                                    (  '=' <rexpr>
+                                    |  ('|' <hole_nm> '=' <rexpr>)*
+                                    )
+<rexpr>                 ::=     <rexpr_app> <op> <rexpr> | <rexpr_app>
+<rexpr_app>             ::=     <rexpr_app> <rexpr_base> | <rexpr_base> | epsilon
+<rexpr_base>            ::=     <nm> | <rexpr_parens> | unique
+                          |     `=` | `|` | `.` | `-`
+                          |     int | "string"
+<rexpr_parens>          ::=     '('  (  <rexpr>
+                                     |  <rexpr> '|' <hole_type>
+                                     |  node int = <rexpr>
+                                     |  text "string"
+                                     |  ( '|' | '.' | '=' | '-' | <keyword> )*
+                                     )
+                                ')' ('.' <rexpr_base>)*
+%%]
+
+%%[rulerSyntaxLexical
+<op>                    ::=     <op_base> ('.' <rexpr_base>)*
+<op_base>               ::=     ('!#$%&*+/<=>?@\^|-:;,[]{}~')*
+                                    - ('|'|'.'|'='|'-')
+<ag_nm>, <scm_nm>, <vw_nm>, <hole_nm>
+                        ::=     <nm>
+<nm>                    ::=     <nm_base> ('.' (<nm_base> | int))*
+<nm_base>               ::=     'a-zA-Z_' 'a-zA-Z_0-9'*
+<keyword>               ::=     (scheme | ...) - (unique)
+%%]
+
+%%[rulerSyntaxRest
+<format_def>            ::=     format [<target>]
+                                    <nm> '=' <rexpr>
+<rewrite_def>           ::=     rewrite [<target>] [def|use]
+                                    <rexpr> '=' <rexpr>
+<external_def>          ::=     external <nm>*
+<viewhierarchy_def>
+                        ::=     viewhierarchy <vw_nm> ('<' <vw_nm>)*
+%%]
+
+%%[rulerSyntaxFmtRelated
 %%]
 
 %%[XX

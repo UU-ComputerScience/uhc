@@ -910,7 +910,7 @@ fitsIn opts env uniq ty1 ty2
                        fP (Ty_Impls (Impls_Cons _ pr1 pv1 im1))
                             =  Just (foUpdPrL remPrfPrL . foUpdLCoe lCoe . foUpdCSubst csubst $ fo)
                             where (fo,lCoe,csubst,remPrfPrL) = fSub pv1 pr1 ([Ty_Impls im1] `mkArrow` tr1)
-                       fP (Ty_Pred pr1)  | fioAllowRPredElim (fiFIOpts fi)
+                       fP (Ty_Pred pr1)
                             =  Just (foUpdPrL remPrfPrL . foUpdLCoe lCoe . foUpdCSubst csubst $ fo)
                             where (fo,lCoe,csubst,remPrfPrL) = fSub (mkPrId prfCxId u1) pr1 tr1
                        fP _ =  Nothing
