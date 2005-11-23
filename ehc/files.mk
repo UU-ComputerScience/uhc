@@ -1,10 +1,5 @@
 # variant, to be configured on top level
-EHC_VARIANT								:= X
-EHC_VARIANT_PREFIX						:= $(EHC_VARIANT)/
-EHC_BLD_VARIANT_PREFIX					:= $(BLD_PREFIX)$(EHC_VARIANT_PREFIX)
-EHC_BIN_PREFIX							:= $(BIN_PREFIX)
-EHC_BLD_BIN_VARIANT_PREFIX				:= $(EHC_BIN_PREFIX)$(EHC_VARIANT_PREFIX)
-EHC_VARIANT_RULER_SEL					:= ().().()
+# see variant.mk
 
 # all variants
 EHC_PUB_VARIANTS						:= 1 2 3 4 5 6 7 8 9 10
@@ -40,7 +35,7 @@ EHC_HS_MAIN_DRV_HS						:= $(patsubst $(EHC_SRC_PREFIX)%.chs,$(EHC_BLD_VARIANT_P
 
 EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(EHC_SRC_PREFIX)%.chs,\
 													EHCommon EHOpts EHCnstr EHSubstitutable EHTyFitsIn EHTyFitsInCommon \
-													EHGam EHGamUtils EHPred EHParser EHScanner EHScannerMachine EHCoreUtils EHDebug \
+													EHGam EHGamUtils EHPred EHParser EHScannerCommon EHScanner EHScannerMachine EHCoreUtils EHDebug \
 											)
 EHC_HS_UTIL_DRV_HS						:= $(patsubst $(EHC_SRC_PREFIX)%.chs,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_HS_UTIL_SRC_CHS))
 
@@ -51,13 +46,18 @@ EHC_HS_ALL_DRV_HS						:= $(EHC_HS_MAIN_DRV_HS) $(EHC_HS_UTIL_DRV_HS)
 EHC_AGMAIN_MAIN_SRC_CAG					:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHMainAG)
 EHC_AGMAIN_DPDS_SRC_CAG					:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHInfer EHInferExpr \
 													EHInferPatExpr EHInferTyExpr EHInferKiExpr EHInferData \
-													EHInferCaseExpr EHPretty EHPrettyAST EHAbsSyn \
+													EHInferCaseExpr EHPretty EHPrettyAST EHAbsSynAG \
 													EHUniq EHExtraChecks EHGatherError \
 													EHGenCore EHResolvePred EHInferClass \
 											)
 $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGMAIN_MAIN_SRC_CAG)) \
 										: $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGMAIN_DPDS_SRC_CAG)) \
 											$(EHC_RULES_3_DRV_AG)
+
+EHC_AGHSAST_MAIN_SRC_CAG				:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHAbsSyn)
+EHC_AGHSAST_DPDS_SRC_CAG				:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHAbsSynAG)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGHSAST_MAIN_SRC_CAG)) \
+										: $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGHSAST_DPDS_SRC_CAG))
 
 EHC_AGTY_MAIN_SRC_CAG					:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTy)
 EHC_AGTY_DPDS_SRC_CAG					:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyAbsSyn)
@@ -176,7 +176,8 @@ $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGCORE_TRF
 
 EHC_AG_D_MAIN_SRC_CAG					:= $(EHC_AGTY_MAIN_SRC_CAG) \
 											$(EHC_AGERR_MAIN_SRC_CAG) \
-											$(EHC_AGCORE_MAIN_SRC_CAG)
+											$(EHC_AGCORE_MAIN_SRC_CAG) \
+											$(EHC_AGHSAST_MAIN_SRC_CAG)
 EHC_AG_S_MAIN_SRC_CAG					:= $(EHC_AGTY_FTV_MAIN_SRC_CAG) \
 											$(EHC_AGTY_INST_MAIN_SRC_CAG) \
 											$(EHC_AGTY_PRETTY_MAIN_SRC_CAG) \
@@ -196,11 +197,13 @@ EHC_AG_S_MAIN_SRC_CAG					:= $(EHC_AGTY_FTV_MAIN_SRC_CAG) \
 											$(EHC_AGCORE_TRF_INLLETALI_MAIN_SRC_CAG) \
 											$(EHC_AGCORE_TRF_LAMLIFT_MAIN_SRC_CAG) \
 											$(EHC_AGCORE_TRF_LETUNREC_MAIN_SRC_CAG) \
-											$(EHC_AGCORE_TRF_RENUNQ_MAIN_SRC_CAG)
-EHC_AG_DS_MAIN_SRC_CAG					:= $(EHC_AGMAIN_MAIN_SRC_CAG)
+											$(EHC_AGCORE_TRF_RENUNQ_MAIN_SRC_CAG) \
+											$(EHC_AGMAIN_MAIN_SRC_CAG)
+EHC_AG_DS_MAIN_SRC_CAG					:= 
 EHC_AG_ALL_MAIN_SRC_CAG					:= $(EHC_AG_D_MAIN_SRC_CAG) $(EHC_AG_S_MAIN_SRC_CAG) $(EHC_AG_DS_MAIN_SRC_CAG)
 
-EHC_AG_ALL_DPDS_SRC_CAG					:= $(sort $(EHC_AGMAIN_DPDS_SRC_CAG) \
+EHC_AG_ALL_DPDS_SRC_CAG					:= $(sort \
+											$(EHC_AGMAIN_DPDS_SRC_CAG) \
 											$(EHC_AGTY_DPDS_SRC_CAG) \
 											$(EHC_AGTY_FTV_DPDS_SRC_CAG) \
 											$(EHC_AGTY_INST_DPDS_SRC_CAG) \
@@ -223,7 +226,8 @@ EHC_AG_ALL_DPDS_SRC_CAG					:= $(sort $(EHC_AGMAIN_DPDS_SRC_CAG) \
 											$(EHC_AGCORE_TRF_INLLETALI_DPDS_SRC_CAG) \
 											$(EHC_AGCORE_TRF_LAMLIFT_DPDS_SRC_CAG) \
 											$(EHC_AGCORE_TRF_LETUNREC_DPDS_SRC_CAG) \
-											$(EHC_AGCORE_TRF_RENUNQ_DPDS_SRC_CAG))
+											$(EHC_AGCORE_TRF_RENUNQ_DPDS_SRC_CAG) \
+											)
 
 # all src
 EHC_ALL_CHUNK_SRC						:= $(EHC_AG_ALL_MAIN_SRC_CAG) $(EHC_AG_ALL_DPDS_SRC_CAG) $(EHC_HS_ALL_SRC_CHS)
@@ -279,7 +283,7 @@ EHC_AG_ALL_MAIN_DRV_HS					:= $(EHC_AG_D_MAIN_DRV_HS) $(EHC_AG_S_MAIN_DRV_HS) $(
 EHC_AG_ALL_DPDS_DRV_AG					:= $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AG_ALL_DPDS_SRC_CAG))
 
 # all dependents for a variant to kick of building
-EHC_ALL_DPDS							:= $(EHC_HS_ALL_DRV_HS) $(EHC_AG_ALL_MAIN_DRV_HS) $(GRIN_AG_ALL_MAIN_DRV_HS)
+EHC_ALL_DPDS							:= $(EHC_HS_ALL_DRV_HS) $(EHC_AG_ALL_MAIN_DRV_HS) $(UHC_HS_ALL_DRV_HS) $(UHC_AG_ALL_MAIN_DRV_HS) $(GRIN_AG_ALL_MAIN_DRV_HS)
 
 # variant dispatch rules
 $(EHC_ALL_EXECS): %: $(EHC_ALL_SRC) $(GRIN_ALL_SRC) $(EHC_MKF)

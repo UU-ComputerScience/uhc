@@ -9,10 +9,13 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module Main import(System, System.Console.GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, EHCommon, EHOpts,EHParser, EHMainAG)
+%%[1 module Main import(System, System.Console.GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, EHCommon, EHScannerCommon, EHOpts)
 %%]
 
-%%[8 import (EHScanner,EHError,EHErrorPretty,FPath,qualified Data.Map as Map,Data.Maybe,Data.List,Directory)
+%%[1 import(qualified EHParser as EHPrs, qualified EHMainAG as EHSem, qualified HSParser as HSPrs, qualified HSMainAG as HSSem)
+%%]
+
+%%[8 import (EHError,EHErrorPretty,FPath,qualified Data.Map as Map,Data.Maybe,Data.List,Directory)
 %%]
 
 %%[8 import (EHCoreJava,EHCoreGrin,EHCorePretty)
@@ -89,7 +92,7 @@ data CompileUnit
   = CompileUnit
       { cuFilePath          :: FPath
       , cuModNm             :: HsName
-      , cuMbOut             :: Maybe Syn_AGItf
+      , cuMbOut             :: Maybe EHSem.Syn_AGItf
       , cuState             :: CompileUnitState
       }
 
@@ -120,7 +123,7 @@ data CompileRun
       , crCompileOrder  :: [[HsName]]
       , crOpts          :: EHCOpts
       , crState         :: CompileRunState
-      , crP1In          :: Inh_AGItf
+      , crP1In          :: EHSem.Inh_AGItf
       , crNextUID       :: UID
       , crHereUID       :: UID
       }
@@ -257,16 +260,16 @@ crCompileCUParseHS modNm cr
               opts   = crOpts cr
               fp     = cuFilePath cu
               fNm    = fpathToStr fp
-              p1ib   = (crP1In cr) {gUniq_Inh_AGItf = crHereUID cr, opts_Inh_AGItf = opts, baseName_Inh_AGItf = fpathBase fp}
+              p1ib   = (crP1In cr) {EHSem.gUniq_Inh_AGItf = crHereUID cr, EHSem.opts_Inh_AGItf = opts, EHSem.baseName_Inh_AGItf = fpathBase fp}
        ;  (fn,fh) <-  if fpathIsEmpty fp
                       then  return ("<stdin>",stdin)
                       else  do  {  h <- openFile fNm ReadMode
                                 ;  return (fNm,h)
                                 }
        ;  tokens <- offsideScanHandle fn fh
-       ;  let steps = parseOffside (pAGItf) tokens
+       ;  let steps = parseOffside (EHPrs.pAGItf) tokens
               (res,_) = evalSteps steps
-              p1ob = wrap_AGItf res p1ib
+              p1ob = EHSem.wrap_AGItf res p1ib
               errL = mkParseErrInfoL (getMsgs steps)
        ;  cr' <- crUpdCU modNm (\cu -> return (cu {cuMbOut = Just p1ob})) cr
        ;  return (crSetInfos "Parse of module" True errL cr')
@@ -278,10 +281,10 @@ crCompileCUPass1HS :: HsName -> CompileRun -> IO CompileRun
 crCompileCUPass1HS modNm cr
   = do { let p1ob   = fromJust (cuMbOut (crCU modNm cr))
        ; case ehcoptDumpPP (crOpts cr) of
-              Just "pp"   ->  putWidthPPLn 120 (pp_Syn_AGItf p1ob)
-              Just "ast"  ->  putPPLn (ppAST_Syn_AGItf p1ob)
+              Just "pp"   ->  putWidthPPLn 120 (EHSem.pp_Syn_AGItf p1ob)
+              Just "ast"  ->  putPPLn (EHSem.ppAST_Syn_AGItf p1ob)
               _           ->  return ()
-       ; return (cr {crState = CRSErrInfoL "Type checking" False (allErrL_Syn_AGItf p1ob)})
+       ; return (cr {crState = CRSErrInfoL "Type checking" False (EHSem.allErrL_Syn_AGItf p1ob)})
        }
 %%]
 
@@ -291,7 +294,7 @@ crCore1Trf modNm trfNm cr
   =  do  {  let  cu     = crCU modNm cr
                  synAG  = fromJust (cuMbOut cu)
                  [u1]   = mkNewLevUIDL 1 . snd . mkNewLevUID . crHereUID $ cr
-                 synAG' = synAG {cmodule_Syn_AGItf
+                 synAG' = synAG {EHSem.cmodule_Syn_AGItf
                                     = ( case trfNm of
                                           "CCP"     -> cmodTrfConstProp
                                           "CRU"     -> cmodTrfRenUniq
@@ -301,7 +304,7 @@ crCore1Trf modNm trfNm cr
                                           "CLL"     -> cmodTrfLamLift
                                           _         -> id
                                       )
-                                    . cmodule_Syn_AGItf
+                                    . EHSem.cmodule_Syn_AGItf
                                     $ synAG}
          ;  putCompileMsg VerboseALot (ehcoptVerbosity . crOpts $ cr) "Transforming" (lookup trfNm cmdLineTrfs) modNm (cuFilePath cu)
          ;  crUpdCU modNm (\cu -> return (cu {cuMbOut = Just synAG'})) cr
@@ -324,7 +327,7 @@ crOutputCore modNm cr
                  p1ob   = fromJust (cuMbOut cu)
                  fp     = cuFilePath cu
                  opts   = crOpts cr
-                 cMod   = cmodule_Syn_AGItf p1ob
+                 cMod   = EHSem.cmodule_Syn_AGItf p1ob
                  [u1]   = mkNewLevUIDL 1 . snd . mkNewLevUID . crHereUID $ cr
                  codePP = ppCModule cMod 
          ;  if ehcoptCore opts
@@ -394,15 +397,15 @@ doCompileRun filename opts
                                   ;  return (filename,h)
                                   }
          ;  tokens <- offsideScanHandle fn fh
-         ;  let steps = parseOffside (pAGItf) tokens
+         ;  let steps = parseOffside (EHPrs.pAGItf) tokens
          ;  (res,_) <- evalStepsIO show steps
-         ;  let wrRes = wrap_AGItf res (Inh_AGItf {opts_Inh_AGItf = opts})
+         ;  let wrRes = EHSem.wrap_AGItf res (EHSem.Inh_AGItf {EHSem.opts_Inh_AGItf = opts})
          ;  case ehcoptDumpPP opts of
-              Just "pp"   ->  putStrLn (disp (pp_Syn_AGItf wrRes) 70 "")
-              Just "ast"  ->  putStrLn (disp (ppAST_Syn_AGItf wrRes) 1000 "")
+              Just "pp"   ->  putStrLn (disp (EHSem.pp_Syn_AGItf wrRes) 70 "")
+              Just "ast"  ->  putStrLn (disp (EHSem.ppAST_Syn_AGItf wrRes) 1000 "")
               _           ->  return ()
          ;  if ehcoptShowTopTyPP opts
-            then  putStr (disp (topTyPP_Syn_AGItf wrRes) 1000 "")
+            then  putStr (disp (EHSem.topTyPP_Syn_AGItf wrRes) 1000 "")
             else  return ()
          }
 %%]
@@ -414,7 +417,7 @@ doCompileRun fn opts
              topModNm       = HNm (fpathBase fp)
              searchPath     = mkInitSearchPath fp
              opts'          = opts { ehcoptSearchPath = searchPath ++ ehcoptSearchPath opts }
-             p1ib           = Inh_AGItf {baseName_Inh_AGItf = fpathBase fp, gUniq_Inh_AGItf = uidStart, opts_Inh_AGItf = opts'}
+             p1ib           = EHSem.Inh_AGItf {EHSem.baseName_Inh_AGItf = fpathBase fp, EHSem.gUniq_Inh_AGItf = uidStart, EHSem.opts_Inh_AGItf = opts'}
              aSetup cr      = crHandle1
                                    (\(cr,_) -> return (cr {crCompileOrder = [[topModNm]]}))
                                    (crSetFail . fst) (crState . fst)

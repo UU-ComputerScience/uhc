@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHMainAG.cag 264 2005-07-28 12:57:52Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -9,7 +9,7 @@
 %%% Haskell interface to AG generated code for compiler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs import(Data.Char,Data.List as List,UU.Pretty,EHCommon,EHOpts, EHTy,EHGam,EHError,EHErrorPretty,EHTyFitsIn,EHTyFitsInCommon,EHTyPretty)
+%%[1 hs import(Data.Char,Data.List as List,UU.Pretty,EHCommon,EHOpts, EHTy,EHGam,EHError,EHErrorPretty,EHTyFitsIn,EHTyFitsInCommon,EHTyPretty,EHAbsSyn)
 %%]
 
 %%[2 hs import(EHCnstr,EHSubstitutable,Data.Maybe)
@@ -37,7 +37,7 @@
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 import(EHAbsSyn,EHPretty,EHPrettyAST,EHRulerRules,EHInfer,EHInferExpr,EHInferPatExpr,EHInferTyExpr,EHExtraChecks,EHGatherError)
+%%[1 import(EHAbsSynAG,EHPretty,EHPrettyAST,EHRulerRules,EHInfer,EHInferExpr,EHInferPatExpr,EHInferTyExpr,EHExtraChecks,EHGatherError)
 WRAPPER AGItf
 %%]
 
