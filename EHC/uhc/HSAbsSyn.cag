@@ -1,0 +1,19 @@
+% $Id: EHTy.cag 273 2005-08-24 08:58:20Z atze $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to UHA_Syntax
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%[1 hs export(AGItf(..), Module(..), Body(..), Declaration(..), Declarations, MaybeDeclarations(..), Type(..), Types, SimpleType(..), Expression(..), Expressions, MaybeExpression(..), GuardedExpression(..), GuardedExpressions, FunctionBinding(..), FunctionBindings, LeftHandSide(..), RightHandSide(..), Pattern(..), Patterns, Literal(..), Name(..), Names, MaybeName(..), MaybeNames(..), Strings, MaybeInt(..), Range(..), Position(..))
+%%]
+
+%%[1 import(UHA_Syntax)
+%%]
+
+
