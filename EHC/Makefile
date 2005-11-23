@@ -12,6 +12,8 @@ include mk/shared.mk
 include shuffle/files.mk
 include ruler2/files.mk
 include grin/files.mk
+include ehc/variant.mk
+include uhc/files.mk
 include ehc/files.mk
 include grini/files.mk
 include agprimer/files.mk
@@ -178,7 +180,7 @@ tedit:
 
 eedit:
 	bbedit \
-	$(EHC_ALL_SRC) $(GRIN_ALL_SRC) $(GRINI_ALL_SRC) \
+	$(EHC_ALL_SRC) $(UHC_ALL_SRC) $(GRIN_ALL_SRC) $(GRINI_ALL_SRC) \
 	Makefile
 
 edit: redit eedit tedit
