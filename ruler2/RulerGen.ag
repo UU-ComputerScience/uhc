@@ -286,7 +286,13 @@ genAG
                 where l = map fst . sortBy (\(_,o1) (_,o2) -> compare o1 o2) . Map.toList $ choGam
               wrapFrag
                 = genWrapShuffle (genOpts gen) (nVwRnm `nmApd` scNm (genScInfo gen) `nmApd` rlNm (genRlInfo gen))
-              r = (>-< "") . wrapFrag . ppARule . arlElimWild . arlElimCopyRule croNmL adGam . arlElimAlphaRename . arlUniq (genFmGam gen) croNmL . arlSubst eqnG $ rl
+              r = (>-< "") . wrapFrag . ppARule
+                  . arlElimWild
+                  . (if optAGCopyElim (genOpts gen) then arlElimCopyRule croNmL adGam else id)
+                  . arlElimAlphaRename
+                  . arlUniq (genFmGam gen) croNmL
+                  . arlSubst eqnG
+                  $ rl
               -- r = (>-< "") . wrapFrag . ppARule . arlElimWild . arlElimCopyRule croNmL adGam . arlUniq (genFmGam gen) croNmL . arlSubst eqnG $ rl
               -- r = (>-< "") . wrapFrag . ppARule . arlUniq (genFmGam gen) croNmL . arlSubst eqnG $ rl
           in  -- trp "ZZ" (r >-< ppECGam ecGam')

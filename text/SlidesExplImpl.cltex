@@ -2,9 +2,90 @@
 \frame<presentation>{\titlepage}
 %%]
 
-%%[problem
-\section{The problem}
+%%[motivationalExample1
+\frame<presentation>
+{
+\frametitle{Motivational example}
+\begin{itemize}
+\item Within context of Haskell
+\item Remove duplicates from a list:
+\SafeCode{%
+%%[[wrap=code
+%%@CodeFragsExplImpl.nubAsHSSimplified
 
+%%@CodeFragsExplImpl.nubUseWithInt1
+%%]
+}
+\item
+Class system implicitly parameterises |nub| with implementation (class instance) for |/=| (and |==|) on |Int|
+\item
+Can we pass another implementation?
+\SafeCode{%
+%%@CodeFragsExplImpl.nubUseWithInt2 wrap=code
+}
+\begin{itemize}
+\item
+\emph{No}: Haskell only allows one, globally defined, class instance for |Eq Int|
+\item
+but implementation of |nub| can be organised differently
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Motivational example}
+\begin{itemize}
+\item Build class based (implicit) variant on top of explicit variant
+\SafeCode{%
+%%[[wrap=code
+%%@CodeFragsExplImpl.nubAsHS
+
+%%@CodeFragsExplImpl.nubByUseWithInt2
+%%]
+}
+\item
+Requirement to be able to both pass implicitly and explicitly:
+\begin{itemize}
+\item
+explicit variant always needs to be defined first
+\item
+explicit variant often is limited in its use (here in terms of |eq|/|==| only)
+\item
+requires additional effort and forethought by (library) programmer
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[problemInGeneral
+\frame<presentation>
+{
+\frametitle{Parameter passing}
+\begin{itemize}
+\item Mechanisms for passing a value
+\begin{itemize}
+\item
+\emph{explicit} function argument (parameter to specific code)
+\item
+\emph{implicit} function argument (parameter to specific code, but mostly implicitly controlled by language)
+\item
+\emph{global} variables (parameter to all code)
+\end{itemize}
+\item Level of awareness of what is passed
+\begin{tabular}{l||p{.2\linewidth}p{.2\linewidth}p{.2\linewidth}}
+& set & get & specify \\
+\hline
+\emph{explicit} & pass argument & refer to parameter & in type signature \\
+\emph{implicit} & define instance & import instance & in type signature \\
+\emph{global} & assign & refer & - \\
+\end{tabular}
+\item Goal: allow full control of implicit parameters by programmer
+\end{itemize}
+}
+%%]
+
+%%[problem
 \frame<presentation>
 {
 \frametitle{Explicit parameters}
@@ -142,14 +223,9 @@ But the type does not include a description of this behavior
 \item Being explicit in Haskell
 \SafeCode{%
 %%[[wrap=code
-nub                      ::  (Eq a) => [a] -> [a]
-nub                      =   nubBy (==)
+%%@CodeFragsExplImpl.nubAsHS
 
-nubBy                    ::  (a -> a -> Bool) -> [a] -> [a]
-nubBy eq []              =   []
-nubBy eq (h:t)           =   h : nubBy eq (filter (not . eq h) t)
-
-t1 = nub [3,3,4,5]
+%%@CodeFragsExplImpl.nubUseWithInt1
 t2 = nubBy (\x y -> (x `mod` 2) == (y `mod` 2)) [3,3,4,5]
 %%]
 }
@@ -165,7 +241,7 @@ t2 = nubBy (\x y -> (x `mod` 2) == (y `mod` 2)) [3,3,4,5]
 %%[[wrap=code
 %%@TopicExplImpl.HaskellsNubBy
 
-t1 = nub [3,3,4,5]
+%%@CodeFragsExplImpl.nubUseWithInt1
 t2 = nub (! ((==) = ...) <: Eq Int !) [3,3,4,5]
 %%]
 }
@@ -216,7 +292,7 @@ t2 = unWL $ nub' (WL [3,3,4,5] :: WL EqMod2 Int)
 }
 %%]
 
-%%[content
+%%[content15
 \section{Content}
 
 \frame<presentation>
@@ -231,6 +307,26 @@ t2 = unWL $ nub' (WL [3,3,4,5] :: WL EqMod2 Int)
 \end{itemize}
 \item EH mechanism's for explicitly passing values for implicit parameters
 \item `Problematic' examples
+\item Partial type signatures
+\end{itemize}
+}
+%%]
+
+%%[content16
+\section{Content}
+
+\frame<presentation>
+{
+\frametitle{Content of this talk}
+\begin{itemize}
+\item Haskell's class system
+\item How to `solve' the problem in Haskell
+\begin{itemize}
+\item (Ab)use of Haskell class system
+\item Side by side with what EH offers
+\end{itemize}
+\item EH mechanism's for explicitly passing values for implicit parameters
+\item (`Problematic' examples)
 \item (Partial type signatures)
 \end{itemize}
 }
@@ -406,11 +502,13 @@ in   f  ^                              3 4
 \begin{itemize}
 \item |(eq = eqMod2)| must be evidence for predicate |Eq Int|
 \end{itemize}
+%if False
 \item |<:| appears as @<:@ in program text
 \begin{itemize}
 \item resembles @::@ (explicit typing, type annotation)
 \item resembles an arrow @<-@ (leads to, proves)
 \end{itemize}
+%endif
 \end{itemize}
 }
 
@@ -559,7 +657,7 @@ f =   \                    p     q       -> eq (Cons p Nil) q
 }
 %%]
 
-%%[sndOrderGRose
+%%[sndOrderGRose1
 \frame<presentation>
 {
 \frametitle{Dictionary transformers}
@@ -568,13 +666,15 @@ f =   \                    p     q       -> eq (Cons p Nil) q
 \SafeCode{%
 %%@TopicExplImpl.test9eq6DictTransf
 }
-\item Here explicit passing may be ommitted to achieve same effect
+\item Here explicit passing may be omitted to achieve same effect
 \begin{itemize}
 \item but done by underlying machinery
 \end{itemize}
 \end{itemize}
 }
+%%]
 
+%%[sndOrderGRose2
 \frame<presentation>
 {
 \frametitle{Dictionary transformers}
@@ -634,7 +734,6 @@ in   v1
 \end{itemize}
 }
 
-
 %%]
 
 %%[localInstances
@@ -655,6 +754,19 @@ in   v1
 \item What is the type of |v|?
 \item Which change(s) would make the fragment type correct (in particular/general)?
 \end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[remIssues
+\frame<presentation>[plain]
+{
+\frametitle{Remaining issues/examples}
+\begin{itemize}
+\item
+Dictionary transformers for generics
+\item
+Local instances
 \end{itemize}
 }
 %%]

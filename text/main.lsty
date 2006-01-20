@@ -60,19 +60,29 @@
   \fi
   \next}
 
+\newcommand{\chooseFigPos}[1]{%
+ %\def\CFP@@Pos{#1}
+ \def\CFP@@Pos{}
+ \def\CFP@@Tail{{figure}[\CFP@@Pos]}
+ \ifx\CFP@@Pos\empty
+%if acm
+  \begin{figure}[t]%
+%elif llncs
+  \begin{figure}[tp]%
+%elif storyPHD
+  \begin{figure}[tp]%
+%else
+  \begin{figure}[htbp]%
+%endif
+ \else\expandafter\begin\CFP@@Tail\fi
+}
+
 % Env for figure
 \newenvironment{Figure}[3]{%
-  \def\F@@PosArg{#1}
-  \def\F@@Pos{\ifx\F@@PosArg\empty tp\else\F@@PosArg\fi}
+  \def\F@@Pos{\chooseFigPos{#1}}
   \def\F@@Cap{#2}
   \def\F@@Lab{#3}
-%if acm
-  \begin{figure}[t]
-%elif storyPHD
-  \begin{figure}[tp]
-%else
-  \begin{figure}[htbp]
-%endif
+  \F@@Pos
 }{%
   \caption{\F@@Cap}
   \label{\F@@Lab}
@@ -80,16 +90,10 @@
 }
 
 \newenvironment{CenterFigure}[3]{%
-  \def\F@@Pos{\ifx#1\empty tp\else#1\fi}
+  \def\F@@Pos{\chooseFigPos{#1}}
   \def\F@@Cap{#2}
   \def\F@@Lab{#3}
-%if acm
-  \begin{figure}[t]
-%elif storyPHD
-  \begin{figure}[tp]
-%else
-  \begin{figure}[htbp]
-%endif
+  \F@@Pos
   \begin{center}
 }{%
   \end{center}
@@ -186,8 +190,8 @@
 }
 
 % Env for code in a figure
-\newenvironment{CodeFigure}[2]{%
-  \begin{TabularFigure}{}{#1}{#2}{c}
+\newenvironment{CodeFigure}[3]{%
+  \begin{TabularFigure}{#1}{#2}{#3}{c}
   \begin{minipage}{0.9\textwidth}
   %\vspace{.5ex}
 }{%

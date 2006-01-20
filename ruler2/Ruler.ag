@@ -126,6 +126,7 @@ data Opts
       , optDebug        :: Bool
       , optVersion      :: Bool
       , optFragWrap     :: Bool
+      , optAGCopyElim   :: Bool
       , optMbMarkChange :: Maybe ViewSels
       , optMbRlSel      :: Maybe RlSel
       , optBaseNm       :: String
@@ -146,6 +147,7 @@ defaultOpts
       , optDebug        =  False
       , optVersion      =  False
       , optFragWrap     =  False
+      , optAGCopyElim   =  True
       , optMbMarkChange =  Nothing
       , optMbRlSel      =  Nothing
       , optBaseNm       =  rulesCmdPre
@@ -164,6 +166,8 @@ cmdLineOpts
           "generate ATTR defs (for AG), default=no"
      , Option ""   ["preamble"]         (OptArg oPreamble "yes|no")
           "include preamble, default=yes"
+     , Option ""   ["copyelim"]         (OptArg oCopyElim "yes|no")
+          "perform AG copy elimination, default=yes"
      , Option ""   ["dot2dash"]         (NoArg oDot2Dash)
           "change '.' in rule names to '-', default=no"
      , Option "c"  ["markchanges"]      (OptArg oMarkCh "<spec>")
@@ -185,6 +189,7 @@ cmdLineOpts
          oGenAGAttr      o =  o {optGenAGAttr = True}
          oDot2Dash       o =  o {optDot2Dash = True}
          oPreamble   ms  o =  yesno (\f o -> o {optPreamble = f}) ms o
+         oCopyElim   ms  o =  yesno (\f o -> o {optAGCopyElim = f}) ms o
          oHelp           o =  o {optHelp = True}
          oFragWrap       o =  o {optFragWrap = True}
          oDebug          o =  o {optDebug = True}

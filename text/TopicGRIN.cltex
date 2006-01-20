@@ -1,5 +1,5 @@
 %%[extendeGRINSyntax
-\begin{CodeFigure}{Extended GRIN syntax}{grin-ext}
+\begin{CodeFigure}{}{Extended GRIN syntax}{grin-ext}
 %%[[wrap=code
 prog        ::=     { binding } +                   --  program
 

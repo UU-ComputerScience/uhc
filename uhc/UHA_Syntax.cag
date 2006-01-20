@@ -39,10 +39,7 @@ DATA Module
 %%[55
 TYPE Exports                     = [ Export ]
 
-DATA MaybeExports
-    | Nothing
-    | Just
-        exports                  : Exports
+TYPE MaybeExports                = MAYBE Exports
 
 DATA Export
     | Variable
@@ -88,10 +85,7 @@ DATA ImportDeclaration
     | Empty
         range                    : Range
 
-DATA MaybeImportSpecification
-    | Nothing
-    | Just
-        importspecification      : ImportSpecification
+TYPE MaybeImportSpecification    = MAYBE ImportSpecification
 
 DATA ImportSpecification
     | Import
@@ -121,10 +115,7 @@ DATA Import
 -- -- Declarations                                                       --
 -- ------------------------------------------------------------------------
 
-DATA MaybeDeclarations
-    | Nothing
-    | Just
-        declarations             : Declarations
+TYPE MaybeDeclarations           = MAYBE Declarations
 
 TYPE Declarations                = [ Declaration ]
 
@@ -345,10 +336,7 @@ DATA AnnotatedType
 
 TYPE Expressions                 = [ Expression ]
 
-DATA MaybeExpression
-    | Nothing
-    | Just
-        expression               : Expression
+TYPE MaybeExpression             = MAYBE Expression
 
 DATA Expression                                   {- *** -}
     | Literal                          {- *** -}
@@ -750,15 +738,9 @@ DATA Literal                                      {- *** -}
 %%[1
 TYPE Names                       = [ Name ]
 
-DATA MaybeNames
-    | Nothing
-    | Just
-        names                    : Names
+TYPE MaybeNames                  = MAYBE Names
 
-DATA MaybeName
-    | Nothing
-    | Just
-        name                     : Name
+TYPE MaybeName                   = MAYBE Name
 
 DATA Name                                         {- *** -}
     | Identifier                             {- *** -}
@@ -789,11 +771,15 @@ DATA Name                                         {- *** -}
 
 TYPE Strings                     = [ String ]
 
-DATA MaybeInt
-    | Nothing
-    | Just
-        int                      : Int
+TYPE MaybeInt                    = MAYBE Int
 
+DATA Range
+    | Range
+        start                    : Pos
+        stop                     : Pos
+%%]
+
+%%[55
 DATA Range
     | Range
         start                    : Position
@@ -805,7 +791,9 @@ DATA Position
         line                     : Int
         column                   : Int
     | Unknown
+%%]
 
+%%[1
 {-
 
 Documented Design Decisions:

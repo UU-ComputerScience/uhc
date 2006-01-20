@@ -286,7 +286,7 @@ EHC_AG_ALL_DPDS_DRV_AG					:= $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIAN
 EHC_ALL_DPDS							:= $(EHC_HS_ALL_DRV_HS) $(EHC_AG_ALL_MAIN_DRV_HS) $(UHC_HS_ALL_DRV_HS) $(UHC_AG_ALL_MAIN_DRV_HS) $(GRIN_AG_ALL_MAIN_DRV_HS)
 
 # variant dispatch rules
-$(EHC_ALL_EXECS): %: $(EHC_ALL_SRC) $(GRIN_ALL_SRC) $(EHC_MKF)
+$(EHC_ALL_EXECS): %: $(EHC_ALL_SRC) $(GRIN_ALL_SRC) $(UHC_ALL_SRC) $(EHC_MKF)
 	$(MAKE) EHC_VARIANT=$(notdir $(*D)) GRIN_VARIANT=$(notdir $(*D)) ehc-variant
 
 $(patsubst %,echo-gen-by-ruler-%,$(EHC_VARIANTS)):

@@ -111,7 +111,7 @@ The example also demonstrates the use of patterns, which is the same as in Haske
 except for a simplifying restriction which
 does not allow a type signature for the elements of a tuple.
 
-\begin{CodeFigure}{Abstract syntax for EH (without Expr)}{abs-syn-eh1}
+\begin{CodeFigure}{}{Abstract syntax for EH (without Expr)}{abs-syn-eh1}
 \savecolumns
 %%[[wrap=code
 %%@EHAbsSyn.1.AGItf
@@ -1387,11 +1387,11 @@ For all practical purposes, for now, this is all we need in order to be able to 
 these functions
 (see also \cite{swierstra99comb-lang}).
 
-\begin{CodeFigure}{Parser combinators}{parser-combinators}
+\begin{CodeFigure}{}{Parser combinators}{parser-combinators}
 \begin{tabular}{lll}
-\ParserCombTableHead
-\ParserCombTableA
-\ParserCombTableB
+%%@AppxNotation.parserCombTableHead
+%%@AppxNotation.parserCombTableA
+%%@AppxNotation.parserCombTableB
 \end{tabular}
 \end{CodeFigure}
 

@@ -94,10 +94,10 @@ mkRwExpr inEqnLoc opts fmGam rwGam ecGam repl
                                  else r
                         )
                         (repl,emptyEMtOut,emptyGam)
-                        (maybe (panic "mkRwExpr") (\x -> {- trp "YS3" (d_g x) -} x) mbRw)
+                        (maybe (panic "mkRwExpr") (\x -> {- trp "mkRwExpr matches" (d_g x) -} x) mbRw)
       _ -> (repl,emptyGam,emptyGam)
 {-
-  where d_r r = trp "mkRwExpr" (pp r >-< pp (exprIsRw r)) r
+  where d_r r = trp "mkRwExpr expr" (pp r >-< pp (exprIsRw r)) r
         d_g g = vlist . map (\(a,b) -> pp a >#< "//" >#< pp b) $ g
 -}
 }

@@ -9,8 +9,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-%%[1 module HSParser import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.GenToken, EHCommon, EHScannerCommon, qualified HSAbsSyn as H)
+%%[1 module HSParser import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.GenToken, EHCommon, EHScannerCommon, HSAbsSyn)
 %%]
 
 %%[1 export(pHSAGItf)
@@ -24,6 +23,6 @@
 type HSParser         ep    =    (IsParser (OffsideParser i o Token p) Token,InputState i Token p, OutputState o, Position p)
                                     => OffsideParser i o Token p ep
 
-pHSAGItf :: HSParser H.AGItf
+pHSAGItf :: HSParser AGItf
 pHSAGItf = pSucceed undefined
 %%]
