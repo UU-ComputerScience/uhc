@@ -18,13 +18,13 @@
 %%[4 hs import(EHTy)
 %%]
 
-%%[5 hs export(TyExprs, TyVar(..), TyVars, CaseAlt(..), CaseAlts, DataConstr(..), DataConstrs, DataField(..), DataFields)
+%%[5 hs export(TyExprs, TyVar(..), TyVars, CaseAlt(..), CaseAlts, DataConstr(..), DataConstrs)
 %%]
 
 %%[6 hs export(KiExpr(..))
 %%]
 
-%%[7 hs export(RecExpr(..), RecPatExpr(..), RowTyExpr(..))
+%%[7 hs export(RecExpr(..), RecPatExpr(..), RowTyExpr(..), DataField(..), DataFields)
 %%]
 
 %%[9 hs export(PrExpr(..), PrExprs,FuncDep(..), FuncDeps)

@@ -3,6 +3,7 @@
 %format . 		= "."
 
 %format :-..    = :- ".."
+%format ..      = ".."
 
 %format viewhierarchy 	= "\mathbf{viewhierarchy}"
 %format judgeshape 	= "\mathbf{judgeshape}"

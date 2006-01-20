@@ -60,6 +60,8 @@ ATTR AllNT AGItf AGExprItf AGARuleItf [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM AGItf
   | AGItf           lhs     .   pp          =   @decls.pp
+                                                >-< "---------- rw gam" >-< ppRwGam @rwGam
+                                                >-< "---------- fm gam" >-< ppGam @fmGam
                                                 >-< "---------- scheme gam" >-< ppGam @scGam
                                                 >-< "---------- rule set gam" >-< ppGam @rsGam
                                                 >-< "---------- topsorted vw dpd graph" >-< ppCommas (vgTopSort @vwDpdGr)

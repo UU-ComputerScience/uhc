@@ -87,7 +87,8 @@ explanation:
 	echo  "make bin/<n>/grini   : make grin interpreter version <n> (where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
 	echo  "make bin/ruler2      : make ruler tool" ; \
 	echo  "make bin/shuffle     : make shuffle tool" ; \
-	echo  "make doc/<d>.pdf     : make documentation <d> (where <d> in {$(TEXT_PUB_VARIANTS)})," ; \
+	echo  "make doc/<d>.pdf     : make (public) documentation <d> (where <d> in {$(TEXT_PUB_VARIANTS)})," ; \
+	echo  "                       or (non-public): <d> in {$(TEXT_PRIV_VARIANTS)}" ; \
 	echo  "                       only if text src available, otherwise already generated" ; \
 	echo  "make ehcs            : make all compiler ($(EHC_EXEC_NAME)) versions" ; \
 	echo  "make grinis          : make all grin interpreter ($(GRINI_EXEC_NAME)) versions" ; \
@@ -166,24 +167,24 @@ grinis: $(GRINI_ALL_PUB_EXECS)
 
 docs: $(TEXT_DIST_DOC_FILES)
 
-redit:
+edit-r:
 	bbedit \
 	$(SHUFFLE_ALL_SRC) $(RULER2_ALL_SRC) \
 	$(EHC_RULES_3_SRC_RL2) \
 	Makefile
 
-tedit:
+edit-t:
 	bbedit \
 	$(TEXT_EDIT_SRC) \
 	$(EHC_RULES_3_SRC_RL2) \
 	Makefile
 
-eedit:
+edit-e:
 	bbedit \
 	$(EHC_ALL_SRC) $(UHC_ALL_SRC) $(GRIN_ALL_SRC) $(GRINI_ALL_SRC) \
 	Makefile
 
-edit: redit eedit tedit
+edit: edit-r edit-e edit-t
 
 A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
@@ -191,6 +192,7 @@ A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
 tst:
 	echo $(VERSION_LAST)
 	echo $(A_EH_TEST_EXP)
+	echo $(EHC_ALL_DPDS)
 
 initial-test-expect: $(A_EH_TEST_EXP)
 

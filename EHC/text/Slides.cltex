@@ -243,8 +243,8 @@ sem_Expr_IConst (int_) =
 \item Basic parser combinators
 \begin{center}
 \begin{tabular}{llp{.3\textwidth}}
-\ParserCombTableHead
-\ParserCombTableA
+%%@AppxNotation.parserCombTableHead
+%%@AppxNotation.parserCombTableA
 \end{tabular}
 \end{center}
 \end{itemize}
@@ -333,8 +333,8 @@ c1 = eCata  (  id                      ,  \v1 v2 -> v1 ++ " " ++ v2
 \item Derived parser combinators
 \begin{center}
 \begin{tabular}{llp{.3\textwidth}}
-\ParserCombTableHead
-\ParserCombTableB
+%%@AppxNotation.parserCombTableHead
+%%@AppxNotation.parserCombTableB
 \end{tabular}
 \end{center}
 \end{itemize}

@@ -186,11 +186,7 @@
 \documentclass[10pt]{article}
 %%]
 
-%%[9
-\documentclass[ignorenonframetext]{beamer}
-%%]
-
-%%[14
+%%[18
 \documentclass[ignorenonframetext]{beamer}
 %%]
 
@@ -410,13 +406,13 @@
 %endif
 %%]
 
-%%[9
+%%[18
 \usetheme{Darmstadt}
 %%]
 
-%%[14
-\usepackage[headheight=12pt,footheight=12pt]{beamerthemeboxes}
+%%[18
 %%]
+\usepackage[headheight=12pt,footheight=12pt]{beamerthemeboxes}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% PGF
@@ -708,6 +704,49 @@
 %if truu
 \usepackage{TRtitlepage}
 %endif
+
+%if storyPHD
+%elif acm && (storyExplImpl || storyImpred || storyRuler)
+%if useSigplanconfSty
+%if icfp05
+\toappear{Submitted to the International Conference onf Functional Programming 2005 (ICFP 2005), September 26-28, Tallin, Estonia}
+%elif hw05
+\toappear{In preparation for the Haskell Workshop 2005 (HW2005), September 30, Tallin, Estonia}
+%elif popl06
+\toappear{Submitted to for Principles of Programming Languages 2006 (POPL2006), January 11-13, Charleston, South Carolina, USA}
+%elif pldi06
+\toappear{Submitted to Programming Language Design and Implementation 2006 (PLDI2006), Ottawa, Canada, June 11-16}
+%else
+%endif
+%else %% useSigplanconfSty
+\numberofauthors{1}
+\author{
+%
+% The command \alignauthor (no curly braces needed) should
+% precede each author name, affiliation/snail-mail address and
+% e-mail address. Additionally, tag each line of
+% affiliation/address with \affaddr, and tag the
+%% e-mail address with \email.
+\alignauthor Atze Dijkstra and S. Doaitse Swierstra\\
+       \affaddr{Department of Information and Computing Sciences}\\
+       \affaddr{Universiteit Utrecht}\\
+       \affaddr{P.O.Box 80.089, 3508 TB Utrecht, The Netherlands}\\
+       \email{\{atze,doaitse\}@@cs.uu.nl}
+}
+%endif %% useSigplanconfSty
+%else
+%endif
+\date{\today}
+%if llncs
+\institute{Department of Information and Computing Sciences,\\
+Universiteit Utrecht,\\
+P.O.Box 80.089, \\
+Padualaan 14, Utrecht, Netherlands,\\
+\email{@{atze,doaitse}@@cs.uu.nl@},\\
+WWW home page:
+\texttt{http://www.cs.uu.nl}
+}
+%endif
 %%]
 
 %%[2
@@ -720,7 +759,7 @@
 %if acm && useSigplanconfSty
 \authorinfo{Atze Dijkstra \and S. Doaitse Swierstra}
   {Department of Information and Computing Sciences \\
-   Utrecht University \\
+   Universiteit Utrecht \\
    P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
   }
   {\{atze,doaitse\}@@cs.uu.nl}
@@ -729,22 +768,12 @@
 %endif
 %%]
 
-%%[9
-\title{Making Implicit Parameters Explicit}
-\author{Atze Dijkstra}
-%%]
-
-%%[14
-\title{Ruler: programming type rules}
-\author{Atze Dijkstra}
-%%]
-
 %%[4
 \title{Making Type-Class Dictionaries Explicit}
 %if acm && useSigplanconfSty
 \authorinfo{Atze Dijkstra \and S. Doaitse Swierstra}
   {Department of Information and Computing Sciences \\
-   Utrecht University \\
+   Universiteit Utrecht \\
    P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
   }
   {\{atze,doaitse\}@@cs.uu.nl}
@@ -779,49 +808,24 @@
 %endif
 %%]
 
-%%[1
-%if storyPHD
-%elif acm && (storyExplImpl || storyImpred || storyRuler)
-%if useSigplanconfSty
-%if icfp05
-\toappear{Submitted to the International Conference onf Functional Programming 2005 (ICFP 2005), September 26-28, Tallin, Estonia}
-%elif hw05
-\toappear{In preparation for the Haskell Workshop 2005 (HW2005), September 30, Tallin, Estonia}
-%elif popl06
-\toappear{Submitted to for Principles of Programming Languages 2006 (POPL2006), January 11-13, Charleston, South Carolina, USA}
-%elif pldi06
-\toappear{Submitted to Programming Language Design and Implementation 2006 (PLDI2006), Ottawa, Canada, June 11-16}
-%else
-%endif
-%else %% useSigplanconfSty
-\numberofauthors{1}
-\author{
-%
-% The command \alignauthor (no curly braces needed) should
-% precede each author name, affiliation/snail-mail address and
-% e-mail address. Additionally, tag each line of
-% affiliation/address with \affaddr, and tag the
-%% e-mail address with \email.
-\alignauthor Atze Dijkstra and S. Doaitse Swierstra\\
-       \affaddr{Department of Information and Computing Sciences}\\
-       \affaddr{Utrecht University}\\
-       \affaddr{P.O.Box 80.089, 3508 TB Utrecht, The Netherlands}\\
-       \email{\{atze,doaitse\}@@cs.uu.nl}
-}
-%endif %% useSigplanconfSty
-%else
-%endif
-\date{\today}
-%if llncs
-\institute{Department of Information and Computing Sciences,\\
-Utrecht University,\\
-P.O.Box 80.089, \\
-Padualaan 14, Utrecht, Netherlands,\\
-\email{@{atze,doaitse}@@cs.uu.nl@},\\
-WWW home page:
-\texttt{http://www.cs.uu.nl}
-}
-%endif
+%%[14
+\title{Ruler: programming type rules}
+\author{Atze Dijkstra}
+%%]
+
+%%[15
+\title{Making Implicit Parameters Explicit}
+\author{Atze Dijkstra}
+%%]
+
+%%[16
+\title{Making Type-Class Dictionaries Explicit}
+\author{Atze Dijkstra and S. Doaitse Swierstra}
+%%]
+
+%%[17
+\title{Essential Haskell (EH) project overview}
+\author{Atze Dijkstra}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -874,35 +878,6 @@ WWW home page:
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Shared global defs w.r.t. actual content
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1
-\def\ParserCombTableHead{%
-Combinator & Meaning & Result
-\\ \hline
-}
-\def\ParserCombTableA{%
-|p <*> q|                       & |p| followed by |q|               & result of |p| applied to result of |q| \\
-|p <||> q|                      & |p| or |q|                        & result of |p| or result of |q| \\
-|pSucceed r|                    & empty input |epsilon|             & |r| \\
-|f <$> p|                       & |=== pSucceed f <*> p|            & \\
-|pKey "x"|                      & symbol/keyword x                  & |"x"| \\
-}
-\def\ParserCombTableB{%
-|p <**> q|                      & |p| followed by |q|               & result of |q| applied to result of |p| \\
-|p `opt` r|                     & |=== p <||> pSucceed r|           & \\
-|p <??> q|                      & |=== p <**> q `opt` id|           & \\
-|p <* q|, |p *> q|, |f <$ p|    & \parbox[t]{.3\textwidth}{variants throwing away result of angle missing side}
-                                                                    & \\
-|pFoldr listAlg p|              & sequence of |p|'s                 & |foldr c n (|result of all |p|'s|)| \\
-|pList p|                       & |pFoldr ((:),[]) p|               & \\
-|pChainr s p|                   & |p|'s (|>1|) separated by |s|'s   & result of |s|'s applied to results of |p|'s aside \\
-}
-
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Misc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -926,9 +901,6 @@ Combinator & Meaning & Result
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Title
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1
-%%]
 
 %%[2
 %%@FrontMatter.titlePHD
@@ -984,9 +956,6 @@ Combinator & Meaning & Result
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Indentation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[2
-%%]
 
 %%[1
 % Avoid indentation
@@ -1668,11 +1637,86 @@ this has been omitted as \chapterRef{agtut} can be read instead.
 
 %%@TopicRuler.abstract
 
-%%@TopicRuler.body
+%%@TopicRuler.motivationLarge
+
+%%@TopicRuler.introProblem
+
+%%@TopicRuler.introExampleOverview
+
+%%@TopicRuler.introExampleExplain
+
+%{
+%include ruler.fmt
+
+%format <	= "\langle "
+%format >	= "\rangle "
+
+%%@TopicRuler.rulerOverview
+
+%%@TopicRuler.designOfRuler
+
+%%@TopicRuler.preliminariesForTypeSystem
+
+%%@TopicRuler.rulesByRulerBasics
+
+%%@TopicRuler.relationsExternalSchemes
+
+%%@TopicRuler.extendToAlgorithmicLarge
+
+%%@TopicRuler.extendToAGLarge
+
+%}
+
+%%@TopicRuler.relatedWork
+
+%%@TopicRuler.discussion
+
 %%]
 
 %%[3
-%%@TopicRuler.body
+%%@TopicRuler.motivationSmall
+
+%%@TopicRuler.introProblem
+
+%%@TopicRuler.introExampleOverview
+
+%%@TopicRuler.introExampleExplain
+
+%{
+%include ruler.fmt
+
+%format <	= "\langle "
+%format >	= "\rangle "
+
+%%@TopicRuler.rulerOverview
+
+%%@TopicRuler.designOfRuler
+
+%%@TopicRuler.preliminariesForTypeSystem
+
+%%@TopicRuler.rulesByRulerBasics
+
+%if limitSize
+%{
+%include lag2TeX.fmt
+%%@TopicRuler.extendToAlgorithmicSmall
+%}
+%else
+%%@TopicRuler.relationsExternalSchemes
+
+%%@TopicRuler.extendToAlgorithmicLarge
+
+%%@TopicRuler.explainAG
+
+%%@TopicRuler.extendToAGLarge
+%endif %% limitSize
+
+%}
+
+%%@TopicRuler.relatedWork
+
+%%@TopicRuler.discussion
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1836,23 +1880,61 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 
 %%[9
 %%@SlidesExplImpl.title
+%%]
 
+%%[16
+\section{Motivation}
+%%]
+
+%%[16
+%%@SlidesExplImpl.motivationalExample1
+%%]
+
+%%[9
+\section{The problem}
+%%]
+
+%%[16
+%%@SlidesExplImpl.problemInGeneral
+%%]
+
+%%[15
 %%@SlidesExplImpl.problem
+%%]
 
-%%@SlidesExplImpl.content
+%%[15
+%%@SlidesExplImpl.content15
+%%]
 
+%%[16
+%%@SlidesExplImpl.content16
+%%]
+
+%%[9
 %%@SlidesExplImpl.haskellSummary
 
 %%@SlidesExplImpl.tyInxExamples
 
 %%@SlidesExplImpl.eh
 
-%%@SlidesExplImpl.sndOrderGRose
+%%@SlidesExplImpl.sndOrderGRose1
+%%]
+
+%%[15
+%%@SlidesExplImpl.sndOrderGRose2
 
 %%@SlidesExplImpl.localInstances
+%%]
 
+%%[16
+%%@SlidesExplImpl.remIssues
+%%]
+
+%%[15
 %%@SlidesPartTySig.forExplImpl
+%%]
 
+%%[9
 %%@SlidesExplImpl.conclusion
 %%]
 
@@ -1875,6 +1957,29 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %}
 
 %%@SlidesRuler.conclusion
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Slides for project overview
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[17
+%%@SlidesIntro.titleOverview
+%%@SlidesIntro.whyShort
+%%@SlidesIntro.howImplShort
+%%@SlidesIntro.demoEH1
+%%@SlidesIntro.demoEH2
+%%@SlidesIntro.demoEH3
+%%@SlidesIntro.demoEH4Long
+%%@SlidesIntro.demoEH5
+%%@SlidesIntro.demoEH6A
+%%@SlidesIntro.demoEH6B
+%%@SlidesIntro.demoEH7
+%%@SlidesIntro.demoEH8
+%%@SlidesIntro.demoEH9A
+%%@SlidesIntro.demoEH9B
+%%@SlidesIntro.demoEH10
+%%@SlidesIntro.demoEH11
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2213,9 +2318,9 @@ The following overview is automatically generated.
 
 %\begin{center}
 \begin{tabular}{lll}
-\ParserCombTableHead
-\ParserCombTableA
-\ParserCombTableB
+%%@AppxNotation.parserCombTableHead
+%%@AppxNotation.parserCombTableA
+%%@AppxNotation.parserCombTableB
 \end{tabular}
 %\end{center}
 

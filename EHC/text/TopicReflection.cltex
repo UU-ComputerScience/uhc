@@ -350,14 +350,16 @@ some of which are done manually in this thesis:
 
 \begin{Itemize}
 \item
-In this thesis,
+%%[[futWorkRulerDifferentStrategies
+In \thispaper,
 equational type rules are implemented by algorithmic ones,
 which easily map to AG rules.
 The transition from equation to algorithm involves a certain strategy.
-In this thesis we use HM inference, a greedy resolution of constraints.
+In \thispaper\ we use HM inference, a greedy resolution of constraints.
 Alternate strategies exist
 \cite{heeren02hm-constr,heeren05class-direct};
 |Ruler| (or similar tools) can provide abstractions of such strategies.
+%%]
 \item
 Strategies can be user defined.
 This thesis uses a representation of yet unknown information (type variable),
@@ -371,13 +373,15 @@ polymorphic type information.
 A more general purpose variant of this strategy would allow categorisation of
 found information, where each pass would find information from a particular category.
 \item
+%%[[futWorkRulerSyntaxOrOtherDirected
 |Ruler| exploits the syntax-directed nature of type rules.
-This means that the structure of an AST determines which rule has to be used.
+This implies that the structure of an AST determines which rule has to be used.
 The choice of the right rule may also depend on other conditions (than the structure of the AST),
 or a choice may be non-deterministic.
 The consequence of this observation is that |Ruler| has to deal with multiple levels of rules,
 transformed into eachother,
 with the lowest level corresponding to an AST based target language.
+%%]
 \item
 |Ruler| uses AG as its target language.
 In thesis, the rules for type matching (e.g. \figPageRef{rules3.K.match.onlyK}),
@@ -395,11 +399,12 @@ mechanisms for separation of feature description (say, a feature module or trait
 and feature combination would better serve
 understanding.
 \item
-|Ruler| compiles to target languages (AG, \TeX), but does not proof anything about
+%%[[futWorkRulerTargets
+|Ruler| compiles to target languages (AG, \TeX), but does not prove anything about
 the described rules.
 A plugin architecture would allow the translation to different targets,
-in particular, a description suitable for further use by theorem provers,
-or other tools.
+and in particular, into a description suitable for further use by theorem provers etc..
+%%]
 \end{Itemize}
 
 \Paragraph{This thesis and future work}

@@ -19,6 +19,13 @@ import UU.Scanner.Position( Pos )
 import RulerUtils
 
 -------------------------------------------------------------------------
+-- PP instances
+-------------------------------------------------------------------------
+
+instance (PP a,PP b) => PP (a,b) where
+  pp (a,b) = pp a >#< ":" >#< pp b
+
+-------------------------------------------------------------------------
 -- Gam
 -------------------------------------------------------------------------
 
@@ -38,6 +45,9 @@ dblGamLookup gOf sn vn g
       Just si
         -> fmap ((,) si) . Map.lookup vn . gOf $ si
       _ -> Nothing
+
+instance (PP k,PP v) => PP (Gam k v) where
+  pp g = ppGam' g
 
 -------------------------------------------------------------------------
 -- WrKind
@@ -83,6 +93,9 @@ data AtInfo
       , atProps :: [AtProp]
       , atTy    :: Nm
       }
+
+instance PP AtDir where
+  pp = text . show
 
 instance PP AtProp where
   pp = text . show
@@ -500,6 +513,11 @@ type FmKdGam e = Gam FmKind e
 fkGamLookup :: v -> (e -> v) -> [FmKind] -> FmKdGam e -> v
 fkGamLookup = gamLookupWithDefault FmAll
 
+{-
+ppFmKdGam :: PP e => FmKdGam e -> PP_Doc
+ppFmKdGam
+-}
+
 -------------------------------------------------------------------------
 -- FmGam for AtDir
 -------------------------------------------------------------------------
@@ -527,6 +545,9 @@ rwSingleton n k d e = Map.singleton n (FmInfo n (Map.singleton k (Map.singleton 
 
 rwGamUnion :: RwGam e -> RwGam e -> RwGam e
 rwGamUnion = Map.unionWith (\i1 i2 -> i1 {fmKdGam = Map.unionWith (Map.unionWith (++)) (fmKdGam i1) (fmKdGam i2)})
+
+ppRwGam :: PP e => RwGam e -> PP_Doc
+ppRwGam = ppGam' . Map.map (\i -> fmNm i >#< ppGam (fmKdGam i))
 
 -------------------------------------------------------------------------
 -- Child order

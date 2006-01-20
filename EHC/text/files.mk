@@ -12,6 +12,7 @@ TEXT_SUBS					:= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								SharedTypeLang SharedFIOpts \
 								TopicRuler TopicExplImpl TopicGRIN TopicRec TopicKinds TopicDataTy TopicImpred TopicHM TopicExtRec TopicGADT TopicReflection TopicPartialTySig \
 								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred SlidesRuler \
+								CodeFragsExplImpl \
 								ToolDocShuffle \
 								AppxNotation FrontMatter OldText
 TEXT_SUBS_ASIS				:= afp-pgf
@@ -24,15 +25,16 @@ TEXT_TMP_VARIANT_PREFIX		:= $(TEXT_TMP_PREFIX)$(TEXT_VARIANT)/
 
 # all variants
 TEXT_PUB_VARIANTS			:= phd shuffle
-TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) \
-								flops06-ruler-paper flops06-ruler \
+TEXT_PRIV_VARIANTS			:= flops06-ruler-paper flops06-ruler \
 								pldi06-explimpl \
 								truu-explimpl truu-ruler \
 								phd-paper phd-draft phd-tst \
 								scratch poster \
-								slides-ruler slides-explimpl
+								slides-ruler slides-explimpl slides-explimpl-fpnl slides-overview
+TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) $(TEXT_PRIV_VARIANTS)
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
+# 1	: base (share)
 # 2	: phd
 # 3	: flops06-ruler, truu-ruler
 # 4	: pldi06-explimpl, truu-explimpl
@@ -40,13 +42,18 @@ TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) \
 # 6	: afp (will be obsolete)
 # 7	: scratch
 # 8	: slides afp
-# 9	: slides explimpl
+# 9	: slides explimpl: base (share)
 # 10: future
 # 11: shuffle doc
 # 12: garbage
 # 13: poster
 # 14: slides ruler
-TEXT_SHUFFLE_ORDER			:= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 8, 1 < 9, 1 < 10, 1 < 11, 1 < 13, 1 < 14
+# 15: slides explimpl, general
+# 16: slides explimpl, for fpnl dag
+# 17: slides overview
+# 18: slides: base (share)
+
+TEXT_SHUFFLE_ORDER			:= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 8, 18 < 9, 1 < 10, 1 < 11, 1 < 13, 1 < 14, 9 < 15, 9 < 16, 18 < 17, 1 < 18
 
 # configuration of lhs2tex, to be done on top level
 LHS2TEX_OPTS_TEXT_CONFIG	:= 
@@ -173,7 +180,7 @@ text-variant-phd-tst:
 	$(MAKE) \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=asDraft" \
 	  TEXT_SHUFFLE_VARIANT=2 \
-	  text-variant-dflt-tst
+	  text-variant-dflt-once
 
 text-variant-phd-draft:
 	$(MAKE) \
@@ -203,7 +210,7 @@ text-variant-pldi06-explimpl-tst:
 	$(MAKE) \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=pldi06 --set=acm --set=kscode --set=limitSize --set=storyExplImpl --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=4 \
-	  text-variant-dflt-tst
+	  text-variant-dflt-once
 
 text-variant-pldi06-explimpl:
 	$(MAKE) \
@@ -221,33 +228,45 @@ text-variant-scratch:
 	$(MAKE) \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyPHD --unset=asArticle --set=useHyperref --set=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=7 \
-	  text-variant-dflt-tst
+	  text-variant-dflt-once
 
 text-variant-shuffle:
 	$(MAKE) \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyShuffle --set=asArticle --set=useHyperref --set=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=11 \
-	  text-variant-dflt-tst
+	  text-variant-dflt-once
 
 text-variant-poster:
 	$(MAKE) \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyPoster --set=asArticle --unset=useHyperref --unset=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=13 \
-	  text-variant-dflt-tst
+	  text-variant-dflt-once
 
 text-variant-slides-ruler:
 	$(MAKE) \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyRuler --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=14 \
-	  text-variant-dflt-tst
+	  text-variant-dflt-once
 
 text-variant-slides-explimpl:
 	$(MAKE) \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyExplImpl --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
-	  TEXT_SHUFFLE_VARIANT=9 \
-	  text-variant-dflt-tst
+	  TEXT_SHUFFLE_VARIANT=15 \
+	  text-variant-dflt-once
 
-text-variant-dflt-tst: $(TEXT_ALL_DPD)
+text-variant-slides-explimpl-fpnl:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyExplImpl --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
+	  TEXT_SHUFFLE_VARIANT=16 \
+	  text-variant-dflt-once
+
+text-variant-slides-overview:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyOverview --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
+	  TEXT_SHUFFLE_VARIANT=17 \
+	  text-variant-dflt-once
+
+text-variant-dflt-once: $(TEXT_ALL_DPD)
 	mkdir -p $(dir $(TEXT_BLD_PDF))
 	cd $(TEXT_TMP_VARIANT_PREFIX) ; $(PDFLATEX) $(TEXT_MAIN)
 	cp $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN).pdf $(TEXT_BLD_PDF)

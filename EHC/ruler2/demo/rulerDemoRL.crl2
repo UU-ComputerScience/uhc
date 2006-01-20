@@ -72,7 +72,7 @@ rewrite ag def  (c1 | Cnstr) (c2 | Cnstr) (v | a)
 
 %%[3.rw.Rest
 rewrite ag def  (c | Cnstr) (v | a) = (c |=> (v) | a)
-rewrite ag def  (i :-> (t|Ty)) = ([(i,t)] | Gam)
+rewrite ag def  i :-> t = ([(i,t)] | Gam)
 rewrite ag def  (g1 | Gam), (g2 | Gam) = ((g1) ++ (g2) | Gam)
 %%]
 
@@ -109,6 +109,8 @@ scheme expr "Expr" =
   view A =
     holes [ e: Expr, gam: Gam | thread cnstr: Cnstr | ty: Ty ]
     judgespec cnstr.inh ; gam :-.."e" e : ty ~> cnstr.syn
+%%]
+%%[2.expr.scm.A.delTex
     judgeuse - tex
 %%]
 
@@ -123,7 +125,7 @@ scheme expr "Expr" =
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.expr.base.rls
-ruleset expr.base scheme expr "Expression type rules" =
+ruleset expr.base scheme expr  "Expression type rules" =
 %%]
 %%[1.rl.e.int
   rule e.int =
@@ -132,7 +134,7 @@ ruleset expr.base scheme expr "Expression type rules" =
   rule e.int "Int" =
 %%]
 %%[1.rl.e.int.E
-    view E =
+    view E =                                   -- no premises 
       -
       judge R : expr = gam :- int : Ty_Int
 %%]
@@ -140,8 +142,8 @@ ruleset expr.base scheme expr "Expression type rules" =
     view A =
       -
       judge R : expr
-          | cnstr.syn  = cnstr.inh
-          | cnstr.inh  = cnstr.inh
+          | cnstr.syn  = cnstr..k
+          | cnstr.inh  = cnstr..k
 %%]
 
 %%[1.rl.e.var
@@ -340,6 +342,6 @@ relation tyGen =
 %%]
 %%[3.tyGen
   view AG =
-    judgeuse ag  pty `=` mkTyAll (ftv(ty) \\ ftv(gam)) (ty)
+    judgeuse ag  (retain pty) `=` mkTyAll (ftv(ty) \\ ftv(gam)) (ty)
 %%]
 

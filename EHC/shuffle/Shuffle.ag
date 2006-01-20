@@ -4,6 +4,7 @@ import System
 import System.Console.GetOpt
 import Data.Maybe
 import Data.Char
+import Network.URI
 import IO
 import Monad
 import Array
@@ -161,19 +162,22 @@ shuffleScanOpts
         ]
 
 data ScState
-  = ScChunk Int | ScLexMeta Int | ScSkip
+  = ScChunk Int | ScLexMeta Int | ScInline Int | ScSkip
   deriving Show
 
 instance Eq ScState where
   ScChunk   _ == ScChunk   _ = True
   ScLexMeta _ == ScLexMeta _ = True
+  ScInline  _ == ScInline  _ = True
   ScSkip      == ScSkip      = True
   _           == _           = False
 
 instance Ord ScState where
   ScChunk   _ < ScLexMeta _ = True
-  ScLexMeta _ < ScSkip      = True
-  ScChunk   _ < ScSkip      = True
+  ScChunk   i < s           = ScLexMeta i < s
+  ScLexMeta _ < ScInline  _ = True
+  ScLexMeta i < s           = ScInline  i < s
+  ScInline  _ < ScSkip      = True
   _           < _           = False
 
 data TokPos
@@ -190,7 +194,13 @@ tkpNone :: TokPos
 tkpNone = TokPos (-1) (-1)
 
 data TokKind
-  = TKBegChunk | TKBegGroup | TKEndChunk | TKNameRef | TKNl | TkText | TkInt | TkStr | TkEOF | TkReserved
+  = TKBegChunk  | TKEndChunk
+  | TKBegInline | TKEndInline
+  | TKBegGroup
+  | TKNameRef
+  | TkReserved
+  | TKNl   | TkEOF
+  | TkText | TkInt | TkStr
   deriving (Show,Eq,Ord)
 
 data Tok
@@ -272,19 +282,23 @@ scan scoMp st s
         sc p st@(ScLexMeta _) s@(c:_)
           | isOpch st c                             = scKw (isOpch st) p st s
         sc p@(TokPos _ 1) st@(ScChunk l)    s@('%':'%':'[':'[':s')
-                                                    = Tok TKBegGroup "" "%%[[" p st : sc (ai 4 p) (ScLexMeta (l+1)) s'
+                                                    = Tok TKBegGroup   "" "%%[[" p st : sc (ai 4 p) (ScLexMeta (l+1)) s'
         sc p@(TokPos _ 1) ScSkip            s@('%':'%':'[':s')
-                                                    = Tok TKBegChunk "" "%%["  p ScSkip  : sc (ai 3 p) (ScLexMeta 0) s'
+                                                    = Tok TKBegChunk   "" "%%["  p ScSkip  : sc (ai 3 p) (ScLexMeta 0) s'
         sc p@(TokPos _ 1) st@(ScChunk l)    s@('%':'%':']':s')
-          | l == 0                                  = Tok TKEndChunk "" "%%]"  p st : sc (ai 3 p) ScSkip s'
-          | l >  0                                  = Tok TKEndChunk "" "%%]"  p st : sc (ai 3 p) (ScChunk (l-1)) s'
+          | l == 0                                  = Tok TKEndChunk   "" "%%]"  p st : sc (ai 3 p) ScSkip s'
+          | l >  0                                  = Tok TKEndChunk   "" "%%]"  p st : sc (ai 3 p) (ScChunk (l-1)) s'
         sc p@(TokPos _ 1) st@(ScChunk l)    s@('%':'%':'@':s')
-                                                    = Tok TKNameRef  "" "%%@"  p st : sc (ai 3 p) (ScLexMeta l) s'
+                                                    = Tok TKNameRef    "" "%%@"  p st : sc (ai 3 p) (ScLexMeta l) s'
+        sc p@(TokPos _ _) st@(ScChunk l)    s@('%':'%':'{':s')
+                                                    = Tok TKBegInline  "" "%%{"  p st : sc (ai 3 p) (ScInline l) s'
+        sc p@(TokPos _ _) st@(ScInline l)   s@('%':'%':'}':s')
+                                                    = Tok TKEndInline  "" "%%}"  p st : sc (ai 3 p) (ScChunk l) s'
         sc p st@(ScChunk _) s@(c:_)
-          | isBlack c                               = Tok TkText     ""   b   p st : sc (a b p) st s'
+          | isBlack c                               = Tok TkText       "" b      p st : sc (a b p) st s'
                                                     where (b,s') = span isBlack s
         sc p st             s@(c:s')                = sc (ai 1 p) st s'
-        scKw f p st s                               = Tok tk         ""   w   p st  : sc (a w p) st s'
+        scKw f p st s                               = Tok tk           "" w      p st  : sc (a w p) st s'
                                                     where (w,s') = span f s
                                                           tk = if isKeyw st w then TkReserved else TkText
         a s                                         = ai (length s)
@@ -295,12 +309,14 @@ scan scoMp st s
         isOpch st c                                 = opt st (\o -> c `Set.member` scoOpChars o)
         isKeyw st w                                 = opt st (\o -> w `Set.member` scoKeywordsTxt o)
 
-pBegChunk, pBegGroup, pEndChunk, pBegNameRef, pNl :: (IsParser p Tok) => p Tok
-pBegChunk   = pSym (Tok TKBegChunk "" "%%["  tkpNone ScSkip)
-pBegGroup   = pSym (Tok TKBegGroup "" "%%[[" tkpNone ScSkip)
-pEndChunk   = pSym (Tok TKEndChunk "" "%%]"  tkpNone ScSkip)
-pBegNameRef = pSym (Tok TKNameRef  "" "%%@"  tkpNone ScSkip)
-pNl         = pSym (Tok TKNl       "" "LF"   tkpNone ScSkip)
+pBegChunk, pEndChunk, pBegInline, pEndInline, pBegGroup, pBegNameRef, pNl :: (IsParser p Tok) => p Tok
+pBegChunk   = pSym (Tok TKBegChunk  "" "%%["  tkpNone ScSkip)
+pEndChunk   = pSym (Tok TKEndChunk  "" "%%]"  tkpNone ScSkip)
+pBegInline  = pSym (Tok TKBegInline "" "%%{"  tkpNone ScSkip)
+pEndInline  = pSym (Tok TKEndInline "" "%%}"  tkpNone ScSkip)
+pBegGroup   = pSym (Tok TKBegGroup  "" "%%[[" tkpNone ScSkip)
+pBegNameRef = pSym (Tok TKNameRef   "" "%%@"  tkpNone ScSkip)
+pNl         = pSym (Tok TKNl        "" "LF"   tkpNone ScSkip)
 
 pKey :: (IsParser p Tok) => String -> p String
 pKey k = tokBlack <$> pSym (Tok TkReserved "" k tkpNone ScSkip)
@@ -665,14 +681,19 @@ SET AllLine     = Line Lines
 DATA Word
   | White               chars       : {String}
   | Black               chars       : {String}
+  | Inline              inl         : Inline
+
+DATA Inline
+  | FileAsIs            nm          : {Nm}
 
 TYPE Words      = [Word]
 
-SET AllWord     = Word Words
+SET AllWord     = Word Words Inline
 
 -- Chunk doc
 DATA CDoc
   | Emp
+  | Inl                 uref        : {URef}
   | Ref                 cref        : {CRef}
                         chDest      : {ChDest}
   | Str                 str         : {String}
@@ -691,6 +712,14 @@ SET AllNT       = AllWord AllLine AllChunk
 -------------------------------------------------------------------------
 
 ATTR AGItf AllChunk AllLine [ opts: Opts | | ]
+
+-------------------------------------------------------------------------
+-- URI ref
+-------------------------------------------------------------------------
+
+{
+type URef = URI
+}
 
 -------------------------------------------------------------------------
 -- Chunk ref, position (in file)
@@ -858,7 +887,6 @@ cdVer :: CD a => [a] -> CDoc
 cdVer = foldr CDoc_Ver CDoc_Emp . map cd
 
 {-
--}
 cdLines :: CDoc -> [String]
 cdLines d
   = lns d
@@ -877,6 +905,7 @@ cdLines d
 
 cdPut' :: Handle -> CDoc -> IO ()
 cdPut' h = mapM_ (hPutStrLn h) . cdLines
+-}
 
 cdPut :: Handle -> CDoc -> IO ()
 cdPut h d
@@ -1190,10 +1219,38 @@ SEM Line
 ATTR CDoc [ cpos: CPos | | ]
 
 SEM AGCDocItf
-  | AGItf		cdoc		.	cpos		=	CPos emptyFPath 0
+  | AGItf       cdoc        .   cpos        =   CPos emptyFPath 0
 
 SEM CDoc
-  | Pos			cdoc		.	cpos		=	@cpos
+  | Pos         cdoc        .   cpos        =   @cpos
+
+-------------------------------------------------------------------------
+-- URef (inline) subst in CDoc
+-------------------------------------------------------------------------
+
+{
+type InlineCDocSt = (NmChMp,ErrM)
+type InlineCDocIO = InlineCDocSt -> IO InlineCDocSt
+
+inlineCDocEmp :: InlineCDocIO
+inlineCDocEmp _ = return (Map.empty,Map.empty)
+
+inlineCDocAdd :: InlineCDocIO -> InlineCDocIO -> InlineCDocIO
+inlineCDocAdd i1 i2 s
+  = do { s1@(m1,e1) <- i1 s
+       ; if Map.null e1
+         then do { i2 (m1,Map.empty)
+                 }
+         else i2 (Map.empty,e1)
+       }
+}
+
+ATTR AGCDocItf CDoc [ | | ilRepl USE {`inlineCDocAdd`} {inlineCDocEmp}: InlineCDocIO ]
+
+SEM CDoc
+  | Inl         lhs         .   ilRepl      =   \(m,e)
+                                                    -> do { return (Map.empty,Map.empty)
+                                                          }
 
 -------------------------------------------------------------------------
 -- CRef subst in CDoc
@@ -1224,6 +1281,7 @@ ATTR Words [ | | charsL: {[String]} ]
 SEM Word
   | White       lhs         . chars     = @chars
   | Black       lhs         . chars     = {- show @xrefL ++ -} @chars
+  | Inline      lhs         . chars     = ""
 
 SEM Words
   | Nil         lhs         . charsL    = []

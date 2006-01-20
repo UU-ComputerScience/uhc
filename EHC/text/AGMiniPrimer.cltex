@@ -86,7 +86,7 @@ Using AG notation we first define the AST corresponding to our problem
 
 %%@RepminAG.1.data1 wrap=code
 
-\begin{CodeFigure}{Full AG specification of repmin}{ag-primer-full-repmin}
+\begin{CodeFigure}{}{Full AG specification of repmin}{ag-primer-full-repmin}
 %%[[wrap=code
 
 %%@RepminAG.1.data1
@@ -680,7 +680,7 @@ Cycle detection and other (experimental) features, commandline invocation, etc.
 
 %We will come back to the AG system itself in our conclusion.
 
-\begin{CodeFigure}{Parser for calculator example}{ag-primer-parser-expr}
+\begin{CodeFigure}{}{Parser for calculator example}{ag-primer-parser-expr}
 %%@AGPrimerExpr.1.parser wrap=code
 \end{CodeFigure}
 
