@@ -11,7 +11,7 @@ TEXT_MAIN					:= main
 TEXT_SUBS					:= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								SharedTypeLang SharedFIOpts \
 								TopicRuler TopicExplImpl TopicGRIN TopicRec TopicKinds TopicDataTy TopicImpred TopicHM TopicExtRec TopicGADT TopicReflection TopicPartialTySig \
-								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred SlidesRuler \
+								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred SlidesRuler SlidesShuffle SlidesGRIN \
 								CodeFragsExplImpl \
 								ToolDocShuffle \
 								AppxNotation FrontMatter OldText

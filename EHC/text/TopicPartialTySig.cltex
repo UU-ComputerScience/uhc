@@ -44,7 +44,7 @@ denote unspecified parts.
 For example, in the following expression the identity function |id| is declared:
 
 %%[[wrap=code
-%%3srcfile(test/2-demo-wild1.eh%%)
+%%@[file:test/2-demo-wild1.eh%%]
 %%]
 
 The type signature for |id| specifies that |id| should be a function,
@@ -60,7 +60,7 @@ This is called a \IxAsDef{named type wildcard}.
 The previous declaration of |id| can now be rewritten to:
 
 %%[[wrap=code
-%%3srcfile(test/3-demo-wild1.eh%%)
+%%@[file:test/3-demo-wild1.eh%%]
 %%]
 
 Omission of `|%|' yields a type expression ``|a -> b|'',
@@ -73,7 +73,7 @@ and inferred to be of type |Int|.
 This results in an inferred signature ``|ii :: Int -> Int|'' for:
 
 %%[[wrap=code
-%%3srcfile(test/3-demo-wild2.eh%%)
+%%@[file:test/3-demo-wild2.eh%%]
 %%]
 
 Used in this way, partial type signatures are similar to lexically scoped type variables
@@ -81,14 +81,14 @@ Used in this way, partial type signatures are similar to lexically scoped type v
 Lexically scoped type variables allow scoped references to the types of parameters:
 
 %%[[wrap=code
-%%3srcfile(test/4-demo-scope-tv1.eh%%)
+%%@[file:test/4-demo-scope-tv1.eh%%]
 %%]
 
 Partial type signatures are most useful in specifying only those parts which the type inferencer cannot infer,
 in particular higher-ranked type information:
 
 %%[[wrap=code
-%%4srcfile(test/4-ty-wild1.eh%%)
+%%@[file:test/4-ty-wild1.eh%%]
 %%]
 
 For |f| we only need to specify its rank-2 typed argument;

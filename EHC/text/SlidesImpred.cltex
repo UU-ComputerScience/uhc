@@ -12,7 +12,7 @@
 \item Only if explicitly specified
 \SafeCode{%
 %%[[wrap=code
-%%4srcfile(test/3-demo-rank.eh%%)
+%%@[file:test/3-demo-rank.eh%%]
 %%]
 }
 \item Quantifier may be at any position in type
@@ -41,7 +41,7 @@ forall1 a . a -> (forall2 b . b -> b)
 \item ``It exists, but I've forgotten what it was''
 \SafeCode{%
 %%[[wrap=code
-%%4srcfile(test/4-demo1.eh%%)
+%%@[file:test/4-demo1.eh%%]
 %%]
 }
 \item |xy| created with |a = Int|, quantifier hides this information
@@ -69,7 +69,7 @@ forall1 a . a -> (forall2 b . b -> b)
 \item Once opened, always open
 \SafeCode{%
 %%[[wrap=code
-%%4srcfile(test/4-ex-extr3.eh%%)
+%%@[file:test/4-ex-extr3.eh%%]
 %%]
 }
 \item
@@ -86,7 +86,7 @@ forall1 a . a -> (forall2 b . b -> b)
 \item Nested existentials are retained
 \SafeCode{%
 %%[[wrap=code
-%%4srcfile(test/4-ex-extr4.eh%%)
+%%@[file:test/4-ex-extr4.eh%%]
 %%]
 }
 \item
@@ -103,7 +103,7 @@ forall1 a . a -> (forall2 b . b -> b)
 \item Notational sugar/convention
 \SafeCode{%
 %%[[wrap=code
-%%4srcfile(test/4-ex-extr2.eh%%)
+%%@[file:test/4-ex-extr2.eh%%]
 %%]
 }
 \item Interprets type structure to find suitable location for quantifier
@@ -145,7 +145,7 @@ forall1 a . a -> (forall2 b . b -> b)
 \item Forgetting type information is ok, but irreversible
 \SafeCode{%
 %%[[wrap=code
-%%srcfile(test/4-exists-sub.eh%%)
+%%@[file:test/4-exists-sub.eh%%]
 %%]
 }
 \item Check done
@@ -165,7 +165,7 @@ but the reverse only if it can be guaranteed no additional
 constraints will be found for the quantified type variable
 \SafeCode{%
 %%[[wrap=code
-%%srcfile(test/4-forall-sub.eh%%)
+%%@[file:test/4-forall-sub.eh%%]
 %%]
 }
 \item Check done
@@ -207,7 +207,7 @@ constraints will be found for the quantified type variable
 be bound to type variables?
 \SafeCode{%
 %%[[wrap=code
-%%srcfile(test/4-impred-choose.eh%%)
+%%@[file:test/4-impred-choose.eh%%]
 %%]
 }
 \item Haskell: |v :: forall b . (b -> b) -> b -> b|

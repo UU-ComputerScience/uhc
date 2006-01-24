@@ -213,6 +213,19 @@ But the type does not include a description of this behavior
 }
 %%]
 
+%%[tyInxExamplesSmall
+\frame<presentation>
+{
+\frametitle{EH version 9}
+\begin{itemize}
+\item Being explicit using implicit mechanism
+\SafeCode{%
+%%@SlidesExplImpl.nubFullAlaEH
+}
+\end{itemize}
+}
+%%]
+
 %%[tyInxExamples
 \section{(Ab)use of class system}
 
@@ -238,7 +251,7 @@ t2 = nubBy (\x y -> (x `mod` 2) == (y `mod` 2)) [3,3,4,5]
 \begin{itemize}
 \item Being explicit using implicit mechanism (EH)
 \SafeCode{%
-%%[[wrap=code
+%%[[wrap=code nubFullAlaEH
 %%@TopicExplImpl.HaskellsNubBy
 
 %%@CodeFragsExplImpl.nubUseWithInt1
@@ -683,7 +696,7 @@ f =   \                    p     q       -> eq (Cons p Nil) q
 {\small
 \SafeCode{%
 %%[[wrap=code
-%%9srcfile(eh-frags/9-snd-order1.eh%%)
+%%@[file:eh-frags/9-snd-order1.eh%%]
 %%]
 }}
 \end{itemize}
@@ -727,7 +740,7 @@ in   v1
 {\small
 \SafeCode{%
 %%[[wrap=code
-%%9srcfile(eh-frags/9-snd-order2.eh%%)
+%%@[file:eh-frags/9-snd-order2.eh%%]
 %%]
 }}
 \item GHC: option @-fallow-undecidable-instances@
@@ -745,7 +758,7 @@ in   v1
 {\small
 \SafeCode{%
 %%[[wrap=code
-%%9srcfile(test/9-local-inst1.eh%%)
+%%@[file:test/9-local-inst1.eh%%]
 %%]
 }}
 \item Why? (EHC: type checking fails)

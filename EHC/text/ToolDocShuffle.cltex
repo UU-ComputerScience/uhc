@@ -35,7 +35,7 @@ The produced output is assumed to be processed by |lhs2tex| [cite] first, unless
 For example the input
 
 \begin{TT}
-%%1srcfile(shuffle/test/tst2%%)
+%%@[file:shuffle/test/tst2%%]
 \end{TT}
 
 gives the following variants when invoked with different parameters.
@@ -169,7 +169,7 @@ A versioned chunk can be inhibited to produce output by a later version
 from within that later version by |- chunkId|.
 For example
 \begin{TT}
-%%1srcfile(shuffle/test/tst4%%)
+%%@[file:shuffle/test/tst4%%]
 \end{TT}
 will give (for \verb'shuffle --gen=3 --ag --lhs2tex=no shuffle/test/tst4')
 \begin{TT}
@@ -214,7 +214,7 @@ The remaining optional parameters of a chunk definition only have meaning depend
 the output format chosen.
 For example
 \begin{TT}
-%%1srcfile(shuffle/test/tst5%%)
+%%@[file:shuffle/test/tst5%%]
 \end{TT}
 will give 
 \begin{Itemize}
@@ -231,7 +231,7 @@ will give
 
 To allow for incorporating Haskell inside AG the parameter \verb'hs' is specified, for example in
 \begin{TT}
-%%1srcfile(shuffle/test/tst6%%)
+%%@[file:shuffle/test/tst6%%]
 \end{TT}
 will give (for \verb'shuffle --gen=1 --ag --lhs2tex=no shuffle/test/tst6')
 \begin{TT}

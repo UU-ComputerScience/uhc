@@ -3,7 +3,7 @@ The third version of EH adds polymorphism, in particular so-called parametric po
 which allows functions to be used on arguments of differing types.
 For example
 %%[[wrap=code
-%%srcfile(afp-eh/04.eh%%)
+%%@[file:afp-eh/04.eh%%]
 %%]
 %if False
 gives |v :: %%3file(afp-eh/04.eh%%)|
@@ -41,7 +41,7 @@ The following variant of the previous example is therefore not
 correct:
 
 %%[[wrap=code
-%%3srcfile(test/3-mono-arg.eh%%)
+%%@[file:test/3-mono-arg.eh%%]
 %%]
 
 It will give the following output:
@@ -65,7 +65,7 @@ The use of type constants will be explained later.
 Another example of the limitations of polymorphism in this version of EH is the following
 variation:
 %%[[wrap=code
-%%3srcfile(test/3-mono-arg2.eh%%)
+%%@[file:test/3-mono-arg2.eh%%]
 %%]
 for which the compiler will infer the following types:
 \begin{TT}
@@ -76,7 +76,7 @@ EH version 3 allows parametric polymorphism but not yet polymorphic parameters.
 The parameter |i| has a monomorphic type, which is made even more clear when
 we make an attempt to use this |i| polymorphically in:
 %%[[wrap=code
-%%3srcfile(test/3-mono-arg3.eh%%)
+%%@[file:test/3-mono-arg3.eh%%]
 %%]
 The following error is produced:
 \begin{TT}
@@ -400,7 +400,7 @@ The condition that quantification only may be done for type variables not occurr
 the global |Gamma| is a necessary one.
 For example:
 %%[[wrap=code
-%%3srcfile(test/3-mono-glob.eh%%)
+%%@[file:test/3-mono-glob.eh%%]
 %%]
 
 If the type |g :: a -> (a,a)| would be concluded, |g| can be used with |y| an |Int| parameter, as
@@ -418,7 +418,7 @@ are quantified together. The consequence is that a declaration that on its own w
 may not be so in conjunction with an additional declaration which uses the previous declaration:
 
 %%[[wrap=code
-%%3srcfile(test/3-mono-bind.eh%%)
+%%@[file:test/3-mono-bind.eh%%]
 %%]
 
 The types of the function |id1| and value |v1| are inferred in the same binding group.
@@ -446,7 +446,7 @@ Being together in a binding group can create a problem for inferencing mutually 
 for example:
 
 %%[[wrap=code
-%%3srcfile(test/3-mut-rec.eh%%)
+%%@[file:test/3-mut-rec.eh%%]
 %%]
 
 This results in

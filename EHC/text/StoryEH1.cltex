@@ -7,13 +7,13 @@ value definitions.
 For example
 
 %%[[wrap=code
-%%1srcfile(test/1-demo2.eh%%)
+%%@[file:test/1-demo2.eh%%]
 %%]
 
 is accepted, whereas
 
 %%[[wrap=code
-%%1srcfile(test/1-all-fail2.eh%%)
+%%@[file:test/1-all-fail2.eh%%]
 %%]
 produces a pretty printed version of the erroneous program,
 annotated with errors.
@@ -32,7 +32,7 @@ In that case a type signature for the |lambda|-expression is required in the exp
 This program will not typecheck because a |Char->Char| function is applied to an |Int|.
 
 %%[[wrap=code
-%%1srcfile(test/1-polylam1.eh%%)
+%%@[file:test/1-polylam1.eh%%]
 %%]
 
 
@@ -98,7 +98,7 @@ we will also come back to this.
 The following EH fragment (which is incorrect for this version of because type signatures are missing):
 
 %%[[wrap=code
-%%1srcfile(afp-eh/02.eh%%)
+%%@[file:afp-eh/02.eh%%]
 %%]
 
 is represented by the following piece of abstract syntax tree:

@@ -1945,15 +1945,19 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%[14
 %%@SlidesRuler.title
 
+\section{The problem}
 %%@SlidesRuler.problem
 
 %%@SlidesRuler.issues
 
 %%@SlidesRuler.content
 
+\section{Ruler}
+
 %{
 %include ruler.fmt
-%%@SlidesRuler.body
+%%@SlidesRuler.overview
+%%@SlidesRuler.longBody
 %}
 
 %%@SlidesRuler.conclusion
@@ -1965,8 +1969,17 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 
 %%[17
 %%@SlidesIntro.titleOverview
+
+%\section{Contents}
 %%@SlidesIntro.whyShort
 %%@SlidesIntro.howImplShort
+ %%@SlidesIntro.contentLong
+%%@Slides.topics
+
+\section{Project/system overview}
+%%@SlidesIntro.sysOverview
+
+\section{EH versions}
 %%@SlidesIntro.demoEH1
 %%@SlidesIntro.demoEH2
 %%@SlidesIntro.demoEH3
@@ -1977,9 +1990,28 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%@SlidesIntro.demoEH7
 %%@SlidesIntro.demoEH8
 %%@SlidesIntro.demoEH9A
-%%@SlidesIntro.demoEH9B
+%%@SlidesExplImpl.tyInxExamplesSmall
 %%@SlidesIntro.demoEH10
-%%@SlidesIntro.demoEH11
+ %%@SlidesIntro.demoEH11
+
+\section{Code generation}
+%%@Slides.topicsSub
+%%@SlidesGRIN.example
+
+\section{Shuffle: fragment logistics}
+%%@Slides.topicsSub
+%%@SlidesIntro.sysOverview
+%%@SlidesShuffle.problem
+
+\section{Ruler: type rule specification}
+%%@Slides.topicsSub
+%{
+%include ruler.fmt
+%%@SlidesRuler.problem
+%%@SlidesRuler.shortBody
+%}
+
+%%@SlidesIntro.future
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
