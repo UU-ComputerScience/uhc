@@ -4,7 +4,7 @@ need to be accompanied by an explicit type signature.
 For example, the example from the introduction:
 
 %%[[wrap=code
-%%2srcfile(test/1-sig-fail.eh%%)
+%%@[file:test/1-sig-fail.eh%%]
 %%]
 is accepted by this version of EH.
 From now on, and when relevant,
@@ -30,7 +30,7 @@ The next version of EH deals with polymorphism.
 
 So
 %%[[wrap=code
-%%2srcfile(test/2-demo1.eh%%)
+%%@[file:test/2-demo1.eh%%]
 %%]
 will give
 \begin{TT}
@@ -64,7 +64,7 @@ known about a type signature and the type inferencer filling in the unspecified 
 For example:
 
 %%[[wrap=code
-%%2srcfile(test/2-ty-wild.eh%%)
+%%@[file:test/2-ty-wild.eh%%]
 %%]
 
 The type inferencer pretty prints the inferred type instead of the explicit type signature:

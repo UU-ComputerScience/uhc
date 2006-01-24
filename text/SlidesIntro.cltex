@@ -170,6 +170,28 @@
 }
 %%]
 
+%%[contentLong
+\frame<presentation>
+{
+\frametitle{Content}
+\begin{itemize}
+\item System overview
+\item EH language versions
+\item Code generation
+\item Manipulating fragments (Shuffle)
+\item Type rule specification (Ruler)
+\end{itemize}
+}
+%%]
+
+%%[sysOverview
+\frame<presentation>
+{
+\frametitle{System overview}
+\FigPDF{system-overview}
+}
+%%]
+
 %%[demoEH1
 \frame<presentation>
 {
@@ -178,13 +200,13 @@
 \item EH program is single expression
 \SafeCode{%
 %%[[wrap=code
-%%1srcfile(test/1-demo2.eh%%)
+%%@[file:test/1-demo2.eh%%]
 %%]
 }
 \item Types |Int|, |Char|, tuples and functions
 \SafeCode{%
 %%[[wrap=code
-%%1srcfile(test/1-demo3.eh%%)
+%%@[file:test/1-demo3.eh%%]
 %%]
 }
 \end{itemize}
@@ -198,7 +220,7 @@
 \item Types are checked
 \SafeCode{%
 %%[[wrap=code
-%%1srcfile(test/1-all-fail2.eh%%)
+%%@[file:test/1-all-fail2.eh%%]
 %%]
 }
 gives rise to error annotated representation of program:
@@ -217,7 +239,7 @@ gives rise to error annotated representation of program:
 \item Type signature may be omitted
 \SafeCode{%
 %%[[wrap=code
-%%2srcfile(test/1-sig-fail.eh%%)
+%%@[file:test/1-sig-fail.eh%%]
 %%]
 }
 \item
@@ -225,7 +247,7 @@ Missing type is inferred: |i :: %%2file(test/1-sig-fail.eh%%)|
 \item Inferred types are monomorphic
 \SafeCode{%
 %%[[wrap=code
-%%2srcfile(test/2-demo1.eh%%)
+%%@[file:test/2-demo1.eh%%]
 %%]
 }
 gives rise to type
@@ -278,7 +300,7 @@ in   id 3
 Type signatures for quantifiers on argument (higher ranked) positions
 \SafeCode{%
 %%[[wrap=code
-%%4srcfile(test/4-demo2.eh%%)
+%%@[file:test/4-demo2.eh%%]
 %%]
 }
 \begin{itemize}
@@ -296,7 +318,7 @@ Type signatures for quantifiers on argument (higher ranked) positions
 Impredicativity
 \SafeCode{%
 %%[[wrap=code
-%%4srcfile(test/4-impred-demo1.eh%%)
+%%@[file:test/4-impred-demo1.eh%%]
 %%]
 }
 \begin{itemize}
@@ -340,7 +362,7 @@ in   f
 Existential quantification: hiding/forgetting type information
 \SafeCode{%
 %%[[wrap=code
-%%4srcfile(test/4-demo1.eh%%)
+%%@[file:test/4-demo1.eh%%]
 %%]
 }
 \end{itemize}
@@ -375,7 +397,7 @@ Existential quantification: hiding/forgetting type information
 User defined data types
 \SafeCode{%
 %%[[wrap=code
-%%5srcfile(test/5-list.eh%%)
+%%@[file:test/5-list.eh%%]
 %%]
 }
 \item Unpacking via case expression
@@ -392,7 +414,7 @@ User defined data types
 Type expressions can be incorrectly used
 \SafeCode{%
 %%[[wrap=code
-%%6srcfile(test/5-list-wrong.eh%%)
+%%@[file:test/5-list-wrong.eh%%]
 %%]
 }
 \item
@@ -424,14 +446,14 @@ Kind inferencing/checking for types
 Kind signatures for types (similar to type signatures for values)
 \SafeCode{%
 %%[[wrap=code
-%%6srcfile(test/6-expl-ki.eh%%)
+%%@[file:test/6-expl-ki.eh%%]
 %%]
 }
 \item
 Polymorphic kinds can also be inferred
 \SafeCode{%
 %%[[wrap=code
-%%6srcfile(test/5-all-ok2.eh%%)
+%%@[file:test/5-all-ok2.eh%%]
 %%]
 }
 infers kind @Eq :: Forall a . a -> a -> *@
@@ -447,7 +469,7 @@ infers kind @Eq :: Forall a . a -> a -> *@
 \item Replacement for tuples
 \SafeCode{%
 %%[[wrap=code
-%%7srcfile(test/7-demo1.eh%%)
+%%@[file:test/7-demo1.eh%%]
 %%]
 }
 \end{itemize}
@@ -483,24 +505,25 @@ infers kind @Eq :: Forall a . a -> a -> *@
 \end{itemize}
 }
 
-\frame<presentation>[plain]
-{
-\frametitle{EH version 9: explicit parameter}
-\SafeCode{%
-%%[[wrap=code
-%%9srcfile(eh-frags/9-eq-nub.eh%%)
-%%]
-}
-}
 %%]
 
 %%[demoEH9B
 \frame<presentation>[plain]
 {
+\frametitle{EH version 9: explicit parameter}
+\SafeCode{%
+%%[[wrap=code
+%%@[file:eh-frags/9-eq-nub.eh%%]
+%%]
+}
+}
+
+\frame<presentation>[plain]
+{
 \frametitle{EH version 9: higher order predicate}
 \SafeCode{%
 %%[[wrap=code
-%%9srcfile(test/9-snd-order1.eh%%)
+%%@[file:test/9-snd-order1.eh%%]
 %%]
 }
 }
@@ -541,7 +564,24 @@ infers kind @Eq :: Forall a . a -> a -> *@
 }
 %%]
 
-%%[XX
+%%[future
+\frame<presentation>
+{
+\frametitle{And then ...}
+\begin{itemize}
+\item Develop into full Haskell compiler
+\item Platform for experimentation/education
+\begin{itemize}
+\item Haskell itself: language design, implementation, optimisation, ...
+\item Meta: tools (like |Ruler|, AG, ...) for specifying the implementation
+\item Integration with other techniques (e.g. Helium's error reporting)
+\end{itemize}
+\item More info
+\begin{itemize}
+\item \url{http://www.cs.uu.nl/groups/ST/Ehc/WebHome}
+\end{itemize}
+\end{itemize}
+}
 %%]
 
 %%[XX

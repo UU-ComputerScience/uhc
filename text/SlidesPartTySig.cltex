@@ -6,7 +6,7 @@
 \item Type need not be specified completely
 \SafeCode{%
 %%[[wrap=code
-%%2srcfile(test/2-ty-wild.eh%%)
+%%@[file:test/2-ty-wild.eh%%]
 %%]
 }
 \item

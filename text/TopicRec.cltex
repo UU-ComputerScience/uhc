@@ -2,7 +2,7 @@
 \subsection{Current implementation examples}
 
 \begin{code}
-%%7srcfile(test/7-all-ok.eh%%)
+%%@[file:test/7-all-ok.eh%%]
 \end{code}
 
 with output
@@ -22,7 +22,7 @@ Especially the case alternative would lead to parsing problems with the matching
 \item
 Tuples now automatically are records with a numerical selection as field selection
 \begin{code}
-%%7srcfile(test/7-tup-sel.eh%%)
+%%@[file:test/7-tup-sel.eh%%]
 \end{code}
 \end{Itemize}
 
@@ -35,7 +35,7 @@ For a following version allowing extensible records this restriction (obviously)
 Pattern matching a record is done via case:
 
 \begin{code}
-%%7srcfile(test/7-pun.eh%%)
+%%@[file:test/7-pun.eh%%]
 \end{code}
 
 In these examples, the matching for |v1| is done on the basis of field names at the left of |=|.

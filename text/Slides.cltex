@@ -107,7 +107,7 @@
  \begin{column}{.5\textwidth}
   \SafeCode{%
 %%[[wrap=code
-%%1srcfile(afp-eh/02.eh%%)
+%%@[file:afp-eh/02.eh%%]
 %%]
   }
  \end{column}
@@ -365,7 +365,7 @@ c1 = eCata  (  id                      ,  \v1 v2 -> v1 ++ " " ++ v2
 \item Input
 \SafeCode{%
 %%[[wrap=code
-%%1srcfile(test/1-all-fail2.eh%%)
+%%@[file:test/1-all-fail2.eh%%]
 %%]
 }
 \end{itemize}
@@ -1130,7 +1130,7 @@ generated functions
 \item For example
 \SafeCode{%
 %%[[wrap=code
-%%2srcfile(test/1-sig-fail.eh%%)
+%%@[file:test/1-sig-fail.eh%%]
 %%]
 } 
 \item gives
@@ -1149,7 +1149,7 @@ generated functions
 \item For example
 \SafeCode{%
 %%[[wrap=code
-%%2srcfile(test/2-demo1.eh%%)
+%%@[file:test/2-demo1.eh%%]
 %%]
 }
 \item infers
@@ -1167,7 +1167,7 @@ generated functions
 \item For example
 \SafeCode{%
 %%[[wrap=code
-%%2srcfile(test/2-id-intchar.eh%%)
+%%@[file:test/2-id-intchar.eh%%]
 %%]
 }
 \item gives
@@ -1530,7 +1530,7 @@ constraints |tyCnstr| and |patTyCnstr|
 \item E.g.
 \SafeCode{%
 %%[[wrap=code
-%%srcfile(afp-eh/04.eh%%)
+%%@[file:afp-eh/04.eh%%]
 %%]
 }
 \item |a -> a| means |forall a . a -> a|
@@ -1545,13 +1545,13 @@ constraints |tyCnstr| and |patTyCnstr|
 \item Incorrect:
 \SafeCode{%
 %%[[wrap=code
-%%3srcfile(test/3-mono-arg.eh%%)
+%%@[file:test/3-mono-arg.eh%%]
 %%]
 }
 \item Incorrect:
 \SafeCode{%
 %%[[wrap=code
-%%3srcfile(test/3-mono-arg3.eh%%)
+%%@[file:test/3-mono-arg3.eh%%]
 %%]
 }
 \item Only identifiers bound by |let|
@@ -1566,7 +1566,7 @@ constraints |tyCnstr| and |patTyCnstr|
 \item Bindings can only be polymorphically used in body of |let|:
 \SafeCode{%
 %%[[wrap=code
-%%3srcfile(test/3-mono-arg2.eh%%)
+%%@[file:test/3-mono-arg2.eh%%]
 %%]
 }
 \item Type of \alert<+>{|f :: %%3file(test/3-mono-arg2.eh%%)|}
@@ -1574,7 +1574,7 @@ constraints |tyCnstr| and |patTyCnstr|
 \item If used in same group of bindings:
 \SafeCode{%
 %%[[wrap=code
-%%3srcfile(test/3-mono-arg4.eh%%)
+%%@[file:test/3-mono-arg4.eh%%]
 %%]
 }
 \item Type of \alert<+>{|f :: %%3file(test/3-mono-arg4.eh%%)|}
@@ -1635,7 +1635,7 @@ constraints |tyCnstr| and |patTyCnstr|
 \item
 \SafeCode{%
 %%[[wrap=code
-%%7srcfile(test/7-all-ok.eh%%)
+%%@[file:test/7-all-ok.eh%%]
 %%]
 }
 \end{itemize}

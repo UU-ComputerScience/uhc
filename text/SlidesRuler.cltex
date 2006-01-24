@@ -3,11 +3,9 @@
 %%]
 
 %%[problem
-\section{The problem}
-
 \frame<presentation>
 {
-\frametitle{The problem}
+\frametitle{Ruler: the problem}
 \begin{itemize}
 \item Suppose you have a language
 \begin{tabular}%
@@ -131,9 +129,7 @@ then generate the implementation
 
 %%]
 
-%%[body
-\section{Ruler}
-
+%%[overview
 \frame<presentation>
 {
 \frametitle{Ruler: the big picture}
@@ -182,7 +178,71 @@ then generate the implementation
 }
 }
 }
+%%]
 
+%%[shortBody
+\frame<presentation>
+{
+\frametitle{Views}
+\begin{itemize}
+\item Specify subsequent views, building on top of eachother, starting with the first:
+\[
+\rulerCmdUse{rulerDemo.E.expr.base.e.var}
+\]
+\item And then the differences relative to the previous
+\[
+\rulerCmdUse{rulerDemo.A.expr.base.e.var}
+\]
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Specification}
+\begin{itemize}
+\item Structure/scheme for judgements
+\SafeCode{%
+%%[[wrap=code
+%%@rulerDemoRL.1.expr.scm 
+%%@rulerDemoRL.1.expr.scm.E
+%%@rulerDemoRL.2.expr.scm.A
+%%]
+}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Judgements in rules}
+\begin{itemize}
+\item Instantiation of scheme
+\SafeCode{%
+%%[[wrap=code
+%%@rulerDemoRL.1.expr.base.rls
+%%@rulerDemoRL.1.rl.e.var
+%%@rulerDemoRL.1.rl.e.var.E
+%%@rulerDemoRL.2.rl.e.var.A
+%%]
+}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{AG code generation}
+\begin{itemize}
+\item Translation to AG
+\SafeCode{%
+%%[[wrap=code
+%%@rulerDemoAG.3.expr.e.var
+%%]
+}
+\item (With additional specification for freshness and lookup)
+\end{itemize}
+}
+%%]
+
+%%[longBody
 \frame<presentation>
 {
 \frametitle{Views}

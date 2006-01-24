@@ -1,0 +1,95 @@
+%%[problem
+\frame<presentation>[containsverbatim]
+{
+\frametitle{Shuffle: the problem}
+\begin{itemize}
+\item Given some program fragments
+\begin{itemize}
+\item AG:
+\begin{TTtiny}
+%%@rulerDemoAG.3.expr.e.int
+\end{TTtiny}
+\end{itemize}
+\item How to ensure consistent inclusion in its explanation:
+\begin{itemize}
+\item ``the following code ...:
+\SafeCode{%
+%%@rulerDemoAG.3.expr.e.int wrap=code
+}
+... this code ...''
+\end{itemize}
+\item The problem: no copy-and-paste allowed
+\item The solution: given names to fragments
+\begin{itemize}
+\item similar to literate programming
+\item but mixing of code and explanation does not help programming
+\end{itemize}
+\item For all languages: Haskell, ...
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{The problem}
+\begin{itemize}
+\item Given subsequent versions
+\begin{itemize}
+\item construction of type variable, version 2 (Haskell):
+\SafeCode{%
+%%@EHTy.2.mkTyVar wrap=code
+}
+\item version 3:
+\SafeCode{%
+%%@EHTy.3.mkTyVar wrap=code
+}
+\end{itemize}
+\item How to avoid duplicate definitions?
+\item The problem: different versions require different definitions
+\item The solution: overriding mechanism, notion of views + inheritance
+\begin{itemize}
+\item similar to OO programming
+\item but for code fragments
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
