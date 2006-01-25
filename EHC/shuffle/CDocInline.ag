@@ -1,0 +1,76 @@
+-------------------------------------------------------------------------
+-- Inlining files on CDoc
+-------------------------------------------------------------------------
+
+{
+module CDocInline
+  ( cdocInlineCDocIO
+  , InlineCDocSt, InlineCDocIO
+  )
+  where
+
+import qualified Data.Map as Map
+import Network.URI
+import IO
+import Common
+import CDoc
+import CDocCommon
+}
+
+INCLUDE "CDocAbsSyn.ag"
+INCLUDE "CDocCommonAG.ag"
+
+WRAPPER AGCDocItf
+
+{
+wrapAGCDoc_T :: NmChMp -> T_AGCDocItf -> Syn_AGCDocItf
+wrapAGCDoc_T nmChMp d
+  = wrap_AGCDocItf d
+      (Inh_AGCDocItf
+         { nmChMp_Inh_AGCDocItf = nmChMp
+         })
+
+wrapCDoc :: NmChMp -> CDoc -> Syn_AGCDocItf
+wrapCDoc m d = wrapAGCDoc_T m (sem_AGCDocItf (AGCDocItf_AGItf d))
+
+cdocInlineCDocIO :: CDoc -> (CDoc,InlineCDocIO)
+cdocInlineCDocIO d
+  = (ilRepl_Syn_AGCDocItf r,ilIO_Syn_AGCDocItf r)
+  where r = wrapCDoc Map.empty d
+
+type InlineCDocSt = (NmChMp,ErrM)
+type InlineCDocIO = InlineCDocSt -> IO InlineCDocSt
+
+inlineCDocEmp :: InlineCDocIO
+inlineCDocEmp = return
+
+inlineCDocAdd :: InlineCDocIO -> InlineCDocIO -> InlineCDocIO
+inlineCDocAdd i1 i2 s
+  = do { s1@(m1,e1) <- i1 s
+       ; if Map.null e1
+         then i2 (m1,Map.empty)
+         else i2 (Map.empty,e1)
+       }
+}
+
+-------------------------------------------------------------------------
+-- URef (inline) subst in CDoc
+-------------------------------------------------------------------------
+
+ATTR CDoc [ | | ilRepl: SELF ]
+ATTR AGCDocItf [ | | ilRepl: CDoc ]
+ATTR AGCDocItf CDoc [ | | ilIO USE {`inlineCDocAdd`} {inlineCDocEmp}: InlineCDocIO ]
+
+SEM CDoc
+  | Inl         lhs         .   ilRepl      =   CDoc_Ref (Nm @uref) ChHere
+                            .   ilIO        =   \(m,e)
+                                                    -> do { let mu = parseURIReference @uref
+                                                          ; mh <- maybe (return Nothing) openURI mu
+                                                          ; case mh of
+                                                              Just h -> do { c <- hGetContents h
+                                                                           ; return (Map.insert n (NmChInfo n ChHere (Just (cd c))) m,e)
+                                                                           }
+                                                                        where n = Nm @uref
+                                                              _      -> return (m,Map.insert @lhs.cpos (Err_UndefURI @lhs.cpos @uref) e)
+                                                          }
+                                                       

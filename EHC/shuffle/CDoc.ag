@@ -1,0 +1,161 @@
+-------------------------------------------------------------------------
+-- CDoc AST interface to Haskell
+-------------------------------------------------------------------------
+
+imports
+{
+import Common
+import IO
+}
+
+--   , mkTexCmd1, mkTexCmd2, mkTexCmd3, mkTexCmdDef, mkTexCmdUse, mkTexCmdUse'
+
+
+INCLUDE "CDocAbsSyn.ag"
+
+-------------------------------------------------------------------------
+-- Chunk doc utils
+-------------------------------------------------------------------------
+
+{
+cdHor :: CD a => [a] -> CDoc
+cdHor = foldr CDoc_Hor CDoc_Emp . map cd
+
+cdVer :: CD a => [a] -> CDoc
+cdVer = foldr CDoc_Ver CDoc_Emp . map cd
+
+{-
+cdLines :: CDoc -> [String]
+cdLines d
+  = lns d
+  where ln l CDoc_Emp = (l,CDoc_Emp)
+        ln l (CDoc_Str s) = (s:l,CDoc_Emp)
+        ln l (CDoc_Hor d1 d2)
+          = case ln l d1 of
+              (l1,CDoc_Emp) -> ln l1 d2
+              r             -> r
+        ln l (CDoc_Ver d1 d2)
+          = case ln l d1 of
+              (l1,CDoc_Emp) -> (l1,d2)
+              (l1,dr)       -> (l1,CDoc_Ver dr d2)
+        lns CDoc_Emp = []
+        lns d = let (l,d') = ln [] d in concat (reverse l) : lns d'
+
+cdPut' :: Handle -> CDoc -> IO ()
+cdPut' h = mapM_ (hPutStrLn h) . cdLines
+-}
+
+cdPut :: Handle -> CDoc -> IO ()
+cdPut h d
+  = case d of
+      CDoc_Emp              -> return ()
+      CDoc_Str s            -> hPutStr h s
+      CDoc_Ref r d          -> hPutStr h (showUndef r)
+      CDoc_Hor d1 d2        -> do cdPut h d1
+                                  cdPut h d2
+      CDoc_Ver CDoc_Emp d2  -> cdPut h d2
+      CDoc_Ver d1 CDoc_Emp  -> cdPut h d1
+      CDoc_Ver d1 d2        -> do cdPut h d1
+                                  hPutStrLn h ""
+                                  cdPut h d2
+      CDoc_Pos _ d          -> cdPut h d
+
+class CD a where
+  cd :: a -> CDoc
+
+instance CD String where
+  cd "" = CDoc_Emp
+  cd s  = CDoc_Str s
+
+instance CD Int where
+  cd = CDoc_Str . show
+
+instance CD CDoc where
+  cd = id
+
+instance CD Nm where
+  cd = cdDots . nmToL
+
+instance CD a => CD (Maybe a) where
+  cd = maybe CDoc_Emp cd
+
+cdIsEmpty :: CDoc -> Bool
+cdIsEmpty d
+  = case d of
+      CDoc_Emp -> True
+      _        -> False
+
+cdToMaybe :: CDoc -> Maybe CDoc
+cdToMaybe d
+  = case d of
+      CDoc_Emp -> Nothing
+      _        -> Just d
+
+infixr 2 .-.
+infixr 3 .|. , .#.
+
+(.|.) :: (CD a, CD b) => a -> b -> CDoc
+(.|.) a b = cd a `CDoc_Hor` cd b
+
+(.-.) :: (CD a, CD b) => a -> b -> CDoc
+(.-.) a b = cd a `CDoc_Ver` cd b
+
+(.#.) :: (CD a, CD b) => a -> b -> CDoc
+(.#.) a b = cd a .|. " " .|. cd b
+
+cdListSep' :: (CD s, CD c, CD o, CD a) => (forall x . CD x => [x] -> CDoc) -> (forall x y . (CD x, CD y) => x -> y -> CDoc) -> o -> c -> s -> [a] -> CDoc
+cdListSep' list aside o c s pps
+  = l pps
+  where l []      = o `aside` c
+        l [p]     = o `aside` p `aside` c
+        l (p:ps)  = list ([o `aside` p] ++ map (s `aside`) (init ps) ++ [s `aside` last ps `aside` c])
+
+cdListSep :: (CD s, CD c, CD o, CD a) => o -> c -> s -> [a] -> CDoc
+cdListSep = cdListSep' cdHor (.|.)
+
+cdListSepV :: (CD s, CD c, CD o, CD a) => o -> c -> s -> [a] -> CDoc
+cdListSepV = cdListSep' cdVer (.|.)
+
+cdDots :: CD a => [a] -> CDoc
+cdDots = cdListSep "" "" "."
+}
+
+-------------------------------------------------------------------------
+-- Chunk doc wrapping
+-------------------------------------------------------------------------
+
+{
+chWrap :: ChWrap -> CDoc -> CDoc
+chWrap w d
+  = case w of
+      ChWrapCode  		-> "\\begin{code}" .-. d .-. "\\end{code}"
+      ChWrapBoxCode  	-> "\\parbox{\\textwidth}{%" .-. chWrap ChWrapCode d .-. "}"
+      ChWrapTT    		-> "\\begin{TT}" .-. d .-. "\\end{TT}"
+      ChWrapTTtiny  	-> "\\begin{TTtiny}" .-. d .-. "\\end{TTtiny}"
+      _           		-> d
+
+}
+
+-------------------------------------------------------------------------
+-- Utils
+-------------------------------------------------------------------------
+
+{
+mkTexCmd1 :: CD a => String -> a -> CDoc
+mkTexCmd1 cmd a1 = "\\" .|. cmd .|. "{" .|. cd a1 .|. "}"
+
+mkTexCmd2 :: (CD a, CD b) => String -> a -> b -> CDoc
+mkTexCmd2 cmd a1 a2 = "\\" .|. cmd .|. "{" .|. cd a1 .|. "}{%" .-. cd a2 .-. "}"
+
+mkTexCmd3 :: (CD a, CD b, CD c) => String -> a -> b -> c -> CDoc
+mkTexCmd3 cmd a1 a2 a3 = "\\" .|. cmd .|. "{" .|. cd a1 .|. "}{%" .-. cd a2 .-. "}{%" .-. cd a3 .-. "}"
+
+mkTexCmdDef :: (CD a, CD b) => String -> a -> b -> CDoc
+mkTexCmdDef = mkTexCmd2
+
+mkTexCmdUse :: CD a => String -> a -> CDoc
+mkTexCmdUse = mkTexCmd1
+
+mkTexCmdUse' :: CD a => String -> a -> CDoc
+mkTexCmdUse' cmd nm = mkTexCmdUse cmd nm .|. "%"
+}
