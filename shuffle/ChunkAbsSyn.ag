@@ -1,0 +1,59 @@
+-------------------------------------------------------------------------
+-- Chunk files AST
+-------------------------------------------------------------------------
+
+-- Outside itf
+DATA AGItf
+  | AGItf               dumLines    : Lines
+                        chunks      : Chunks
+
+-- Chunk
+DATA Chunk
+  | Ver                 version     : {Version}
+                        subNm       : {Nm}
+                        minusL      : {[ChunkId]}
+                        chKind      : {ChKind}
+                        chDest      : {ChDest}
+                        mbModNm     : {Maybe String}
+                        imports     : {[String]}
+                        exports     : {[String]}
+                        lines       : Lines
+                        dumLines    : Lines
+  | Named               cref        : {CRef}
+                        lines       : Lines
+                        dumLines    : Lines
+
+TYPE Chunks     = [Chunk]
+
+SET AllChunk    = Chunk Chunks
+
+-- Single line
+DATA Line
+  | AsIs                words       : Words
+  | Named               cref        : {CRef}
+  | Group               extraLine   : Int
+                        chDest      : {ChDest}
+                        chWrap      : {ChWrap}
+                        userRef     : {Maybe (Nm,Maybe String)}
+                        lines       : Lines
+
+TYPE Lines      = [Line]
+
+SET AllLine     = Line Lines
+
+-- Single word
+DATA Word
+  | White               chars       : {String}
+  | Black               chars       : {String}
+  | Inline              inl         : Inline
+
+DATA Inline
+  | URI                 str         : {String}
+
+TYPE Words      = [Word]
+
+SET AllWord     = Word Words Inline
+
+-- Sets
+SET AllNT       = AllWord AllLine AllChunk
+

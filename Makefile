@@ -167,9 +167,14 @@ grinis: $(GRINI_ALL_PUB_EXECS)
 
 docs: $(TEXT_DIST_DOC_FILES)
 
+edit-s:
+	bbedit \
+	$(SHUFFLE_ALL_SRC)
+	Makefile
+
 edit-r:
 	bbedit \
-	$(SHUFFLE_ALL_SRC) $(RULER2_ALL_SRC) \
+	$(RULER2_ALL_SRC) \
 	$(EHC_RULES_3_SRC_RL2) \
 	Makefile
 
@@ -184,7 +189,7 @@ edit-e:
 	$(EHC_ALL_SRC) $(UHC_ALL_SRC) $(GRIN_ALL_SRC) $(GRINI_ALL_SRC) \
 	Makefile
 
-edit: edit-r edit-e edit-t
+edit: edit-r edit-e edit-t edit-s
 
 A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
