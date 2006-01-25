@@ -9,20 +9,16 @@
 \begin{itemize}
 \item Within context of Haskell
 \item Remove duplicates from a list:
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@CodeFragsExplImpl.nubAsHSSimplified
 
 %%@CodeFragsExplImpl.nubUseWithInt1
 %%]
-}
 \item
 Class system implicitly parameterises |nub| with implementation (class instance) for |/=| (and |==|) on |Int|
 \item
 Can we pass another implementation?
-\SafeCode{%
-%%@CodeFragsExplImpl.nubUseWithInt2 wrap=code
-}
+%%@CodeFragsExplImpl.nubUseWithInt2 wrap=safecode
 \begin{itemize}
 \item
 \emph{No}: Haskell only allows one, globally defined, class instance for |Eq Int|
@@ -37,13 +33,11 @@ but implementation of |nub| can be organised differently
 \frametitle{Motivational example}
 \begin{itemize}
 \item Build class based (implicit) variant on top of explicit variant
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@CodeFragsExplImpl.nubAsHS
 
 %%@CodeFragsExplImpl.nubByUseWithInt2
 %%]
-}
 \item
 Requirement to be able to both pass implicitly and explicitly:
 \begin{itemize}
@@ -93,20 +87,16 @@ requires additional effort and forethought by (library) programmer
 \item `Explicit': corresponds to program text specified by programmer
 \item We all are familiar with it
 \item Haskell:
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 square  ::  Int  ->  Int
 square      x    =   x * x
 %%]
-}
 \item C:
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 int square(int x) {
   return x * x ;
 }
 %%]
-}
 \item ...
 \end{itemize}
 }
@@ -122,8 +112,7 @@ int square(int x) {
 \item functions often are parameterized by data without the data being explicitly passed
 \end{itemize}
 \item Haskell's class system:
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 class Num a where
   (*) :: a -> a -> a
 
@@ -135,7 +124,6 @@ square               x  =   x * x
 
 ... square 2 ...
 %%]
-}
 \item
 Implicit parameter: how multiplication should be done
 \begin{itemize}
@@ -151,8 +139,7 @@ Implicit parameter: how multiplication should be done
 \frametitle{Implicit parameters}
 \begin{itemize}
 \item Explicit equivalent
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 data DictNum a = DictNum (a -> a -> a)
 dictNum = DictNum primMulInt
 
@@ -161,7 +148,6 @@ square      (DictNum m)   x  =   m x x
 
 ... square dictNum y ...
 %%]
-}
 \end{itemize}
 }
 %endif
@@ -171,15 +157,13 @@ square      (DictNum m)   x  =   m x x
 \frametitle{Implicit parameters}
 \begin{itemize}
 \item C too, e.g. global values:
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 int factor = ... ;
 
 int square(int x) {
   return factor * x * x ;
 }
 %%]
-}
 \item
 But the type does not include a description of this behavior
 \begin{itemize}
@@ -219,7 +203,7 @@ But the type does not include a description of this behavior
 \frametitle{EH version 9}
 \begin{itemize}
 \item Being explicit using implicit mechanism
-\SafeCode{%
+\BoxCode{%
 %%@SlidesExplImpl.nubFullAlaEH
 }
 \end{itemize}
@@ -234,14 +218,12 @@ But the type does not include a description of this behavior
 \frametitle{Reuse by explicit parameter passing}
 \begin{itemize}
 \item Being explicit in Haskell
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@CodeFragsExplImpl.nubAsHS
 
 %%@CodeFragsExplImpl.nubUseWithInt1
 t2 = nubBy (\x y -> (x `mod` 2) == (y `mod` 2)) [3,3,4,5]
 %%]
-}
 \end{itemize}
 }
 
@@ -250,14 +232,12 @@ t2 = nubBy (\x y -> (x `mod` 2) == (y `mod` 2)) [3,3,4,5]
 \frametitle{Reuse by explicit parameter passing}
 \begin{itemize}
 \item Being explicit using implicit mechanism (EH)
-\SafeCode{%
-%%[[wrap=code nubFullAlaEH
+%%[[wrap=safecode nubFullAlaEH
 %%@TopicExplImpl.HaskellsNubBy
 
 %%@CodeFragsExplImpl.nubUseWithInt1
 t2 = nub (! ((==) = ...) <: Eq Int !) [3,3,4,5]
 %%]
-}
 \item This can almost be done in Haskell, but how?
 \end{itemize}
 }
@@ -265,8 +245,7 @@ t2 = nub (! ((==) = ...) <: Eq Int !) [3,3,4,5]
 \frame<presentation>
 {
 \frametitle{Being explicit using implicit mechanism (Haskell)}
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 class Eq' l a where leq :: l -> a -> a -> Bool
 
 data Usual
@@ -288,7 +267,6 @@ nub' (WL (h:t) :: WL l a)
 t1 = unWL $ nub' (WL [3,3,4,5] :: WL Usual Int)
 t2 = unWL $ nub' (WL [3,3,4,5] :: WL EqMod2 Int)
 %%]
-}
 }
 
 \frame<presentation>
@@ -358,11 +336,11 @@ t2 = unWL $ nub' (WL [3,3,4,5] :: WL EqMod2 Int)
 \item which are available when predicate is satisfied
 \end{itemize}
 \item Example: equality on values of type |a|:
-\SafeCode{%
+\BoxCode{%
 %%@TopicExplImpl.classEq
 }
-\SafeCode{%
 \item Predicate is part of type of value
+\BoxCode{%
 %%@TopicExplImpl.defF
 }
 \end{itemize}
@@ -383,7 +361,7 @@ t2 = unWL $ nub' (WL [3,3,4,5] :: WL EqMod2 Int)
 \item for caller of |f|: constructs and passes this dictionary
 \end{itemize}
 \item Basic proofs (instances) given by programmer
-\SafeCode{%
+\BoxCode{%
 %%@TopicExplImpl.EqIntChar
 }
 \item Used under the hood to construct dictionaries to be passed
@@ -395,13 +373,11 @@ t2 = unWL $ nub' (WL [3,3,4,5] :: WL EqMod2 Int)
 \frametitle{Haskell translation}
 \begin{itemize}
 \item Do it ourselves Haskell implementation
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@TopicExplImpl.translEqD
 
 %%@TopicExplImpl.translDefF
 %%]
-}
 \item Usual translation to internal machinery
 \end{itemize}
 }
@@ -411,18 +387,15 @@ t2 = unWL $ nub' (WL [3,3,4,5] :: WL EqMod2 Int)
 \frametitle{EH translation}
 \begin{itemize}
 \item Class and instance
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 let  class Eq a where
        eq :: a -> a -> Bool                                                         
      instance Eq Int where
        eq = primEqInt
      ...
 %%]
-}
 \item Dictionary is record, each field corresponds to class member
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
             (eq :: a -> a -> Bool)            -- class Eq
 eqDInt   =  (eq = primEqInt)                  -- Eq Int
 eqDChar  =  (eq = primEqChar)                 -- Eq Char
@@ -430,7 +403,6 @@ eqDChar  =  (eq = primEqChar)                 -- Eq Char
 f  ::         (eq :: a -> a -> Bool)  ->  a ->  a ->  Int
 f  =   \  ^^  dEq x y -> if dEq.eq x y then 3 else 4
 %%]
-}
 \begin{itemize}
 \item class translates to record type
 \item instance translates to record value
@@ -488,8 +460,7 @@ f  =   \  ^^  dEq x y -> if dEq.eq x y then 3 else 4
 \frametitle{Explicit passing for implicit parameter}
 \begin{itemize}
 \item Parameter passing
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
      ...
      f :: forall ^ a . Eq a => a -> a -> forall ^ b . Eq b => b -> b -> (Bool,Bool)
      f = \p q r s -> (eq p q, eq r s)
@@ -497,7 +468,6 @@ f  =   \  ^^  dEq x y -> if dEq.eq x y then 3 else 4
 in   f  ^                              3 4
         (! (eq = eqMod2) <: Eq Int !)  5 6
 %%]
-}
 \item Predicate position in type determines parameter passing position
 \end{itemize}
 }
@@ -530,8 +500,7 @@ in   f  ^                              3 4
 \frametitle{Overlapping instances}
 \begin{itemize}
 \item Multiple instances for same predicate
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 let  instance Eq Int where
        eq = primEqInt
      instance Eq Int where
@@ -539,7 +508,6 @@ let  instance Eq Int where
      f = \p q r s -> ...
 in   f 3 4 5 6
 %%]
-}
 \item Overlapping instances
 \begin{itemize}
 \item Which dictionary must be passed?
@@ -559,7 +527,7 @@ in   f 3 4 5 6
 \frametitle{Named instance}
 \begin{itemize}
 \item Bind dictionary for an instance to value identifier
-\SafeCode{%
+\BoxCode{%
 %%@TopicExplImpl.test9eq3TwoExpl
 }
 \item |<:| binds to identifier + allows participation in underlying machinery
@@ -572,8 +540,7 @@ in   f 3 4 5 6
 \frametitle{Selectively naming an instance}
 \begin{itemize}
 \item Don't let instance participate in automatic choice for implicit parameter
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 let  instance Eq Int where
        eq = primEqInt
      instance dEqInt2 :: Eq Int where
@@ -582,7 +549,6 @@ let  instance Eq Int where
 in   f  ^                        3 4
         (! dEqInt2 <: Eq Int !)  5 6
 %%]
-}
 \item |::| (only) binds to identifier
 \end{itemize}
 }
@@ -592,8 +558,7 @@ in   f  ^                        3 4
 \frametitle{Scoped instances}
 \begin{itemize}
 \item Shadow previous instances
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 let  instance dEqInt1  <:  Eq Int where ...
      instance dEqInt2  ::  Eq Int where ...
      g  = \x y -> eq x y
@@ -602,7 +567,6 @@ in   let  v1 =  g 3 4                              -- (1)
                 in   g 3 4                         -- (2)
 in   ...
 %%]
-}
 \item |instance dEqInt2 <: Eq Int| without |where| introduces |dEqInt2| for use by internal machinery
 \begin{itemize}
 \item shadows outer |Eq Int| instances
@@ -620,7 +584,7 @@ in   ...
 \frametitle{Instances which require other instances}
 \begin{itemize}
 \item Equality on lists needs equality on elements
-\SafeCode{%
+\BoxCode{%
 %%@TopicExplImpl.test9eq4EqList
 }
 \end{itemize}
@@ -632,8 +596,7 @@ in   ...
 \begin{itemize}
 \item Dictionary for |List| instance needs dictionary for elements
 \item Translation:
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 let  dEqInt   ::  (eq :: Int -> Int -> Bool)
      dEqList  ::  forall ^ a .  (eq :: a -> a -> Bool)
                                   -> (eq :: List a -> List a -> Bool)
@@ -641,7 +604,6 @@ let  dEqInt   ::  (eq :: Int -> Int -> Bool)
      f        =   \dEq_a  p q -> eq (dEqList dEq_a) (Cons p Nil) q
 in   f dEqInt 3 (Cons 4 Nil)
 %%]
-}
 \item |dEqList|: dictionary transformer
 \end{itemize}
 }
@@ -651,18 +613,16 @@ in   f dEqInt 3 (Cons 4 Nil)
 \frametitle{Dictionary transformers}
 \begin{itemize}
 \item Implicit variant
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 f ::  forall a . Eq a  =>  a ->  List a  -> Bool
 f =   \                    p     q       -> eq (Cons p Nil) q
 %%]
-}
 \item Explicit variant
-\SafeCode{%
+\BoxCode{%
 %%@TopicExplImpl.test9eq5EqExplPassed
 }
 \item Translated variant
-\SafeCode{%
+\BoxCode{%
 %%@TopicExplImpl.translFEqImplPassed
 }
 \item We can do it ourselves, explicitly, if necessary!
@@ -676,7 +636,7 @@ f =   \                    p     q       -> eq (Cons p Nil) q
 \frametitle{Dictionary transformers}
 \begin{itemize}
 \item Are first class
-\SafeCode{%
+\BoxCode{%
 %%@TopicExplImpl.test9eq6DictTransf
 }
 \item Here explicit passing may be omitted to achieve same effect
@@ -694,11 +654,10 @@ f =   \                    p     q       -> eq (Cons p Nil) q
 \begin{itemize}
 \item Useful in class based implementation of generics
 {\small
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@[file:eh-frags/9-snd-order1.eh%%]
 %%]
-}}
+}
 \end{itemize}
 }
 
@@ -706,8 +665,7 @@ f =   \                    p     q       -> eq (Cons p Nil) q
 {
 \frametitle{Dictionary transformers, translation}
 {\small
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 let  dfltB    =  \_ -> (showBin = undefined)
      showBin  =  \x  -> x.showBin
      dBI      =  let  dBI'  =  let  dBI'! = dfltB dBI'
@@ -729,7 +687,7 @@ in
 let  v1   =  showBin (dBG dBI dBL) (GBranch 3 Nil)
 in   v1
 %%]
-}}
+}
 }
 
 \frame<presentation>
@@ -738,11 +696,10 @@ in   v1
 \begin{itemize}
 \item Paper reviewer alternative, what is the difference?
 {\small
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@[file:eh-frags/9-snd-order2.eh%%]
 %%]
-}}
+}
 \item GHC: option @-fallow-undecidable-instances@
 \end{itemize}
 }
@@ -756,11 +713,10 @@ in   v1
 \begin{itemize}
 \item Haskell forbids local instances
 {\small
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@[file:test/9-local-inst1.eh%%]
 %%]
-}}
+}
 \item Why? (EHC: type checking fails)
 \begin{itemize}
 \item What is the (principal) type of |f| and |eq| in |f|'s body?

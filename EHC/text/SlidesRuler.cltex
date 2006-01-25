@@ -25,8 +25,7 @@
 \frametitle{The problem}
 \begin{itemize}
 \item With an implementation (partially given)
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 DATA Expr
   | Var  i : {String}
 
@@ -34,7 +33,6 @@ DATA Expr
 
 %%@rulerDemoAG.3.expr.e.var
 %%]
-}
 \item That's simple, isn't it?
 \end{itemize}
 }
@@ -57,9 +55,8 @@ DATA Expr
 {
 (Just for the idea)
 {\footnotesize
-\SafeCode{%
-%%@EHRulerRules.42.expr.e.app wrap=code
-}}
+%%@EHRulerRules.42.expr.e.app wrap=safecode
+}
 }
 
 %%]
@@ -173,9 +170,7 @@ then generate the implementation
 {
 \frametitle{Syntactic structure}
 {\footnotesize
-\SafeCode{%
-%%@TopicRuler.rulerSrcTemplate wrap=code
-}
+%%@TopicRuler.rulerSrcTemplate wrap=safecode
 }
 }
 %%]
@@ -201,13 +196,11 @@ then generate the implementation
 \frametitle{Specification}
 \begin{itemize}
 \item Structure/scheme for judgements
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@rulerDemoRL.1.expr.scm 
 %%@rulerDemoRL.1.expr.scm.E
 %%@rulerDemoRL.2.expr.scm.A
 %%]
-}
 \end{itemize}
 }
 
@@ -216,14 +209,12 @@ then generate the implementation
 \frametitle{Judgements in rules}
 \begin{itemize}
 \item Instantiation of scheme
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@rulerDemoRL.1.expr.base.rls
 %%@rulerDemoRL.1.rl.e.var
 %%@rulerDemoRL.1.rl.e.var.E
 %%@rulerDemoRL.2.rl.e.var.A
 %%]
-}
 \end{itemize}
 }
 
@@ -232,11 +223,9 @@ then generate the implementation
 \frametitle{AG code generation}
 \begin{itemize}
 \item Translation to AG
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@rulerDemoAG.3.expr.e.var
 %%]
-}
 \item (With additional specification for freshness and lookup)
 \end{itemize}
 }
@@ -271,23 +260,19 @@ then generate the implementation
 \frametitle{Step 1: equational view |E|, |expr| scheme}
 \begin{itemize}
 \item Structure/scheme for judgements
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@rulerDemoRL.1.expr.scm 
 %%@rulerDemoRL.1.expr.scm.E
 %%]
-}
 \item Type (|ty: Ty|):
 \begin{tabular}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.rulerTy
 \end{tabular}
 \item Environment (|gam: Gam|):
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 Gamma   ::=  Vec(i :-> sigma)
 %%]
-}
 \end{itemize}
 }
 
@@ -296,13 +281,11 @@ Gamma   ::=  Vec(i :-> sigma)
 \frametitle{Ruleset}
 \begin{itemize}
 \item Set of rules of a scheme
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@rulerDemoRL.1.expr.base.rls
 %%@rulerDemoRL.1.rl.e.app
 %%@rulerDemoRL.1.rl.e.app.E
 %%]
-}
  \begin{itemize}
  \item ruleset displays as a figure (not shown here)
  \end{itemize}
@@ -318,22 +301,18 @@ Gamma   ::=  Vec(i :-> sigma)
 \frametitle{Relation}
 \begin{itemize}
 \item Arbitrary conditions
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@rulerDemoRL.1.rl.e.var
 %%@rulerDemoRL.1.rl.e.var.E
 %%]
-}
 \item \LaTeX\ rendering
 \[
 \rulerCmdUse{rulerDemo.E.expr.base.e.var}
 \]
 \item Relation
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@rulerDemoRL.1.gamLookupIdTy
 %%]
-}
 \end{itemize}
 }
 
@@ -343,22 +322,18 @@ Gamma   ::=  Vec(i :-> sigma)
 \begin{itemize}
 \item On top of view |E|
 \item View hierarchy
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@rulerDemoRL.1.viewhierarchy
 %%]
-}
  \begin{itemize}
  \item may be tree like hierarchy
  \end{itemize}
 \item Algorithmic view
  \begin{itemize}
  \item use of constraints/substitution
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 Cnstr   ::=  Vec(tvarv :-> tau)
 %%]
-}
  \item computation has direction
  \end{itemize}
 \end{itemize}
@@ -372,23 +347,19 @@ Cnstr   ::=  Vec(tvarv :-> tau)
  \begin{itemize}
  \item specify direction (similar to AG's attributes)
  \end{itemize}
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@rulerDemoRL.1.expr.scm
 %%@rulerDemoRL.2.expr.scm.A
 %%]
-}
  \begin{itemize}
  \item may be tree like hierarchy
  \end{itemize}
 \item Algorithmic view
  \begin{itemize}
  \item use of constraints/substitution
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 Cnstr   ::=  Vec(tvarv :-> tau)
 %%]
-}
  \item computation has direction
  \end{itemize}
 \end{itemize}
@@ -415,11 +386,9 @@ Cnstr   ::=  Vec(tvarv :-> tau)
 \frametitle{View |A| on |App|}
 \begin{itemize}
 \item New:
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@rulerDemoRL.2.rl.e.app.A
 %%]
-}
 \end{itemize}
 }
 
@@ -454,11 +423,9 @@ Cnstr   ::=  Vec(tvarv :-> tau)
 \rulerCmdUse{rulerDemo.AG.expr.base.e.app}
 \]
 
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@rulerDemoAG.3.expr.e.app
 %%]
-}
 }
 
 \frame<presentation>
@@ -466,22 +433,18 @@ Cnstr   ::=  Vec(tvarv :-> tau)
 \frametitle{Fresh type variable}
 \begin{itemize}
 \item Relation is inlined
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@rulerDemoRL.2.tvFresh
 %%]
-}
 \item Keyword |unique|
  \begin{itemize}
  \item insertion of |rulerMk1Uniq|
  \item translated to |uniq1|
  \end{itemize}
 \item Type structure (supporting code)
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@RulerDemoUtils.3.Ty
 %%]
-}
 \end{itemize}
 }
 
@@ -495,27 +458,21 @@ Cnstr   ::=  Vec(tvarv :-> tau)
  \item but requires rewriting for AG
  \end{itemize}
 \item Rewrite rule
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 rewrite ag def  a -> r = (a) `Ty_Arr` (r)
 %%]
-}
  \begin{itemize}
  \item target: |ag|
  \item when value is |def|ined (constructed) for further use
  \end{itemize}
 \item Constraining rewrite rule using |Ruler| (sort of) types
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@rulerDemoRL.3.rw.TyArr
 %%]
-}
 \item Formatting identifiers (for target |ag|)
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@rulerDemoRL.3.fmt
 %%]
-}
 \end{itemize}
 }
 
@@ -524,19 +481,15 @@ rewrite ag def  a -> r = (a) `Ty_Arr` (r)
 \frametitle{Error handling}
 \begin{itemize}
 \item Relation |match| is inlined
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@rulerDemoRL.2.match
 %%]
-}
 \item Returns extra value: error messages (if any)
 \item Type matching (supporting code)
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@RulerDemoUtils.3.match.A
 ...
 %%]
-}
 \end{itemize}
 }
 

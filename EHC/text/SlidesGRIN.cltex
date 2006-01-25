@@ -9,13 +9,13 @@
 to Graph Reduction Intermediate Notation (GRIN)
 \item
 all lazy constructs are coded imperatively
+\item
+intermediate imperative notation translated to @C@ (@C--@)
 \end{itemize}
 \item Example
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@[file:test/8-demo-grin2.eh%%]
 %%]
-}
 \end{itemize}
 }
 
@@ -24,7 +24,7 @@ all lazy constructs are coded imperatively
 \frametitle{Intermediate core language}
 \begin{itemize}
 \item Explicit strictness, ...
-\begin{TT}
+%%[[wrap=tt
 let  Tup = \x1 -> \x2 -> #(0/Tup/2) (x1) (x2)
 in
  let  app = \f -> \x -> f (x)
@@ -42,16 +42,16 @@ in
      let  main = snd (5_0_20)
      in
       main
-\end{TT}
+%%]
 \end{itemize}
 }
 
-\frame<presentation>[containsverbatim]
+\frame<presentation>[plain,containsverbatim]
 {
 \frametitle{GRIN}
 \begin{itemize}
 \item Explicit evaluation and application
-\begin{TTtiny}
+%%[[wrap=tttiny
   _Tup x1 x2
     = { unit (#0/C/_Tup x1 x2)} 
 ; _app f x
@@ -78,7 +78,46 @@ in
       } 
 ; main 
     = { _snd $_5_0_20} 
-\end{TTtiny}
+%%]
+\end{itemize}
+}
+
+\frame<presentation>[plain,containsverbatim]
+{
+\frametitle{GRIN}
+\begin{itemize}
+\item Explicit evaluation and application
+%%[[wrap=tttiny
+; apply f a
+    = { case f of
+          { (#0/P/1/_Tup x)
+                -> { _Tup x a} 
+          ; (#0/P/2/_Tup)
+                -> { unit (#0/P/1/_Tup a)} 
+          } 
+      } 
+; eval v
+    = { fetch v   ; \v' ->
+        case v' of
+          { (#0/C/_Tup _ _)
+                -> { unit v'} 
+          ; (#0/P/1/_Tup _)
+                -> { unit v'} 
+          ; (#0/P/2/_Tup _)
+                -> { unit v'} 
+          ; (#0/F/_Tup x y)
+                -> { _Tup x y ; \t ->
+                     update v t  ; \() ->
+                     unit t
+                   } 
+          ; (#0/F/_app x y)
+                -> { _app x y ; \a ->
+                     update v a  ; \() ->
+                     unit a
+                   } 
+          } 
+      } 
+%%]
 \end{itemize}
 }
 %%]

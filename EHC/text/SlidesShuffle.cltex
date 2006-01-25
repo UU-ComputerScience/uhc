@@ -13,9 +13,7 @@
 \item How to ensure consistent inclusion in its explanation:
 \begin{itemize}
 \item ``the following code ...:
-\SafeCode{%
-%%@rulerDemoAG.3.expr.e.int wrap=code
-}
+%%@rulerDemoAG.3.expr.e.int wrap=safecode
 ... this code ...''
 \end{itemize}
 \item The problem: no copy-and-paste allowed
@@ -35,13 +33,9 @@
 \item Given subsequent versions
 \begin{itemize}
 \item construction of type variable, version 2 (Haskell):
-\SafeCode{%
-%%@EHTy.2.mkTyVar wrap=code
-}
+%%@EHTy.2.mkTyVar wrap=safecode
 \item version 3:
-\SafeCode{%
-%%@EHTy.3.mkTyVar wrap=code
-}
+%%@EHTy.3.mkTyVar wrap=safecode
 \end{itemize}
 \item How to avoid duplicate definitions?
 \item The problem: different versions require different definitions
@@ -49,6 +43,30 @@
 \begin{itemize}
 \item similar to OO programming
 \item but for code fragments
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>[containsverbatim]
+{
+\frametitle{Example}
+\begin{itemize}
+\item Two versions, in file @EHTy.chs@
+\begin{TT}
+%%[[
+%%%[2.mkTyVar
+%%@EHTy.2.mkTyVar
+%%%]
+
+%%%[3.mkTyVar -2.mkTyVar
+%%@EHTy.3.mkTyVar
+%%%]
+%%]
+\end{TT}
+\item Referred to 
+\begin{itemize}
+\item via |Shuffle| by @%%@@EHTy.2.mkTyVar@
+\item via \LaTeX\ by @\chunkCmdRef{EHTy.2.mkTyVar}@
 \end{itemize}
 \end{itemize}
 }
