@@ -201,8 +201,8 @@
 }
 
 % safe way of using code env in slides
-%\newcommand{\SafeCode}[1]{\parbox{\textwidth}{#1}}
-\newcommand{\SafeCode}[1]{\parbox{\textwidth}{#1}}
+%\newcommand{\BoxCode}[1]{\parbox{\textwidth}{#1}}
+\newcommand{\BoxCode}[1]{\parbox{\textwidth}{#1}}
 
 % input
 % 'If' depending on file existence

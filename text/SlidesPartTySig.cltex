@@ -4,11 +4,9 @@
 \frametitle{Partial type signature}
 \begin{itemize}
 \item Type need not be specified completely
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@[file:test/2-ty-wild.eh%%]
 %%]
-}
 \item
 Only the part which needs to be specified or constrained further
 \item
@@ -86,20 +84,16 @@ As an afterthought to see how well an additional feature can be added
 \item system infers the rest
 \end{itemize}
 \item Fully explicit
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 f ::  forall ^ a . Eq a =>     a ->  a -> forall ^ b . Eq b =>  b ->  b  ->  (Bool    , Bool    )
 f =                         \  p     q                          r     s  ->  (eq p q  , eq r s  )
 %%]
-}
 \item If dictionary for |Eq b| needs to be passed before others
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 f :: forall    b . (Eq b,  ...   ) => ...  -> ...  -> b -> b -> ...
 -- INFERRED:
 f :: forall a  b . (Eq b,  Eq a  ) => a    -> a    -> b -> b -> (Bool,Bool)
 %%]
-}
 \item `|...|': explicit notation for missing type information to be inferred
 \end{itemize}
 }
@@ -109,22 +103,18 @@ f :: forall a  b . (Eq b,  Eq a  ) => a    -> a    -> b -> b -> (Bool,Bool)
 \frametitle{Partial type signatures}
 \begin{itemize}
 \item Monomorphic as well as polymorphic
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 f  ::  forall ^ a . (  Eq a,  ...   )  =>     a ->  a ->  ...
 f  =                                       \  p     q     r       s                 ->  (eq p q  ,  eq r 3  )
 -- INFERRED:
 f  ::  forall ^ a .    Eq a            =>     a ->  a ->  Int ->  forall ^ b . b    ->  (Bool    ,  Bool    )
 %%]
-}
 \item Type variables for monomorphic types
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 f  ::  forall ^ a . (  Eq a,  ...   )  =>     a ->  a ->  %b   ->  %b              ->  ...
 -- INFERRED:
 f  ::  forall ^ a .    Eq a            =>     a ->  a ->  Int  ->  Int             ->  (Bool    ,  Bool    )
 %%]
-}
 \end{itemize}
 }
 %%]

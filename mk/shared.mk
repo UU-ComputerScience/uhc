@@ -16,7 +16,7 @@ BIBTEX				:= BSTINPUTS=".:../../$(LATEX_SRC_PREFIX):$(LATEX_ENV)" BIBINPUTS=".:.
 MAKEINDEX			:= makeindex
 
 # GHC options
-GHC_OPTS			:= -fglasgow-exts -package util -package lang -package data -package uust
+GHC_OPTS			:= -fglasgow-exts -package util -package lang -package data -package uulib
 GHC_OPTS_OPTIM		:= -O2
 
 # location for binaries

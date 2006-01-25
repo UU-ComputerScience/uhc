@@ -10,19 +10,15 @@
 \frametitle{Higher ranked explicit polymorphism}
 \begin{itemize}
 \item Only if explicitly specified
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@[file:test/3-demo-rank.eh%%]
 %%]
-}
 \item Quantifier may be at any position in type
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 forall1 a . a -> (forall2 b . b -> b)
   -> ((forall3 c . c -> c) -> (forall4 d . d -> d))
   -> forall5 e . e -> e -> a
 %%]
-}
 \begin{itemize}
 \item |rank = 1|: |forall1|, |forall5|
 \item |rank = 2|: |forall2|, |forall4|
@@ -39,11 +35,9 @@ forall1 a . a -> (forall2 b . b -> b)
 \frametitle{Existential types}
 \begin{itemize}
 \item ``It exists, but I've forgotten what it was''
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@[file:test/4-demo1.eh%%]
 %%]
-}
 \item |xy| created with |a = Int|, quantifier hides this information
 \item |ixy| can still use |xy| because type of |v| matches |f|'s argument type
 \end{itemize}
@@ -67,11 +61,9 @@ forall1 a . a -> (forall2 b . b -> b)
 \item Instantiated type variables are fresh type constants
 \end{itemize}
 \item Once opened, always open
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@[file:test/4-ex-extr3.eh%%]
 %%]
-}
 \item
 \begin{TT}
 %%4ppfile(test/4-ex-extr3.eh%%)
@@ -84,11 +76,9 @@ forall1 a . a -> (forall2 b . b -> b)
 \frametitle{Opening an existential}
 \begin{itemize}
 \item Nested existentials are retained
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@[file:test/4-ex-extr4.eh%%]
 %%]
-}
 \item
 \begin{TT}
 %%4ppfile(test/4-ex-extr4.eh%%)
@@ -101,11 +91,9 @@ forall1 a . a -> (forall2 b . b -> b)
 \frametitle{Quantifier location}
 \begin{itemize}
 \item Notational sugar/convention
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@[file:test/4-ex-extr2.eh%%]
 %%]
-}
 \item Interprets type structure to find suitable location for quantifier
 \begin{itemize}
 \item |a| occurs in |sigma1| and |sigma2| in |sigma1 -> sigma2| and not outside: |forall|
@@ -143,11 +131,9 @@ forall1 a . a -> (forall2 b . b -> b)
 \frametitle{Issue: asymmetry |fitsIn =@= <=|}
 \begin{itemize}
 \item Forgetting type information is ok, but irreversible
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@[file:test/4-exists-sub.eh%%]
 %%]
-}
 \item Check done
 \begin{itemize}
 \item |Int <= exists a . a| (for |v1|): ok
@@ -163,11 +149,9 @@ forall1 a . a -> (forall2 b . b -> b)
 \item Instantiation of polymorphism is ok,
 but the reverse only if it can be guaranteed no additional
 constraints will be found for the quantified type variable
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@[file:test/4-forall-sub.eh%%]
 %%]
-}
 \item Check done
 \begin{itemize}
 \item |forall a . a -> a <= Int -> Int| (for |ii|): ok
@@ -205,11 +189,9 @@ constraints will be found for the quantified type variable
 \begin{itemize}
 \item Quantified types throughout type inferencing can/cannot
 be bound to type variables?
-\SafeCode{%
-%%[[wrap=code
+%%[[wrap=safecode
 %%@[file:test/4-impred-choose.eh%%]
 %%]
-}
 \item Haskell: |v :: forall b . (b -> b) -> b -> b|
 \begin{itemize}
 \item |v| can be applied to a |Int -> Int|

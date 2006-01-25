@@ -140,7 +140,7 @@ type ScanOptsMp = Map.Map ScState ScanOpts
 
 chKindMp = Map.fromList [ ("hs",ChHS), ("ag",ChAG), ("plain",ChPlain) ]
 chDestMp = Map.fromList [ ("here",ChHere), ("hide",ChHide) ]
-chWrapMp = Map.fromList [ ("code",ChWrapCode) ]
+chWrapMp = Map.fromList [ ("code",ChWrapCode), ("safecode",ChWrapBoxCode), ("boxcode",ChWrapBoxCode), ("tt",ChWrapTT), ("tttiny",ChWrapTTtiny) ]
 
 kwTxtAsVarTooA
   = [ "module", "import", "export", "wrap" ]
@@ -286,18 +286,22 @@ scan scoMp st s
                                                                  _                    -> s2
         sc p st@(ScLexMeta _) s@(c:_)
           | isOpch st c                             = scKw (isOpch st) p st s
-        sc p@(TokPos _ 1) st@(ScChunk l)    s@('%':'%':'[':'[':s')
+        sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':'[':'[':s')
                                                     = Tok TkBegGroup   "" "%%[[" p st : sc (ai 4 p) (ScLexMeta (l+1)) s'
-        sc p@(TokPos _ 1) ScSkip            s@('%':'%':'[':s')
+        sc p@(TokPos _ 1) ScSkip            ('%':'%':'[':s')
                                                     = Tok TkBegChunk   "" "%%["  p ScSkip  : sc (ai 3 p) (ScLexMeta 0) s'
-        sc p@(TokPos _ 1) st@(ScChunk l)    s@('%':'%':']':s')
+        sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':']':s')
           | l == 0                                  = Tok TkEndChunk   "" "%%]"  p st : sc (ai 3 p) ScSkip s'
           | l >  0                                  = Tok TkEndChunk   "" "%%]"  p st : sc (ai 3 p) (ScChunk (l-1)) s'
-        sc p@(TokPos _ _) st@(ScChunk l)    s@('%':'%':'@':'[':s')
+        sc p@(TokPos _ _) st@(ScChunk l)    ('%':'%':'@':'[':s')
                                                     = Tok TkBegInline  "" "%%@[" p st : sc (ai 4 p) (ScInline l) s'
-        sc p@(TokPos _ 1) st@(ScChunk l)    s@('%':'%':'@':s')
+        sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':'%':s)
+                                                    = Tok TkText       "" b'     p st : sc (ai (1 + length b') p) (ScChunk l) s'
+                                                    where (b,s') = span isBlack s
+                                                          b'     = "%%" ++ b
+        sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':'@':s')
                                                     = Tok TkNameRef    "" "%%@"  p st : sc (ai 3 p) (ScLexMeta l) s'
-        sc p@(TokPos _ _) st@(ScInline l)   s@('%':'%':']':s')
+        sc p@(TokPos _ _) st@(ScInline l)   ('%':'%':']':s')
                                                     = Tok TkEndInline  "" "%%]"  p st : sc (ai 3 p) (ScChunk l) s'
         sc p@(TokPos _ _) st@(ScInline l)   s       = Tok TkText       "" il     p st : sc (a il p) (ScInline l) s'
                                                     where (il,s') = spanInline s
@@ -924,14 +928,17 @@ data ChDest
   deriving (Show,Eq,Ord)
 
 data ChWrap
-  = ChWrapCode | ChWrapPlain
+  = ChWrapCode | ChWrapBoxCode | ChWrapTT | ChWrapTTtiny | ChWrapPlain
   deriving (Show,Eq,Ord)
 
 chWrap :: ChWrap -> CDoc -> CDoc
 chWrap w d
   = case w of
-      ChWrapCode  -> "\\begin{code}" .-. d .-. "\\end{code}"
-      _           -> d
+      ChWrapCode  		-> "\\begin{code}" .-. d .-. "\\end{code}"
+      ChWrapBoxCode  	-> "\\parbox{\\textwidth}{%" .-. chWrap ChWrapCode d .-. "}"
+      ChWrapTT    		-> "\\begin{TT}" .-. d .-. "\\end{TT}"
+      ChWrapTTtiny  	-> "\\begin{TTtiny}" .-. d .-. "\\end{TTtiny}"
+      _           		-> d
 
 }
 
