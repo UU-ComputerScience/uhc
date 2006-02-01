@@ -16,6 +16,7 @@ import PPUtils
 import UU.Pretty
 import qualified UU.DData.Scc as Scc
 import UU.Scanner.Position( Pos )
+import Common
 import RulerUtils
 
 -------------------------------------------------------------------------
@@ -78,14 +79,6 @@ wrKindGam
 -- Attr
 -------------------------------------------------------------------------
 
-data AtDir
-  = AtInh | AtSyn | AtIn | AtOut | AtInOut
-  deriving (Eq,Ord,Show)
-
-data AtProp
-  = AtNode | AtThread | AtUpdown | AtRetain
-  deriving (Eq,Ord,Show)
-
 data AtInfo
   = AtInfo
       { atNm    :: Nm
@@ -93,12 +86,6 @@ data AtInfo
       , atProps :: [AtProp]
       , atTy    :: Nm
       }
-
-instance PP AtDir where
-  pp = text . show
-
-instance PP AtProp where
-  pp = text . show
 
 instance Show AtInfo where
   show _ = "AtInfo"
@@ -433,13 +420,6 @@ rsInfoMbRlGam _                  = Nothing
 -------------------------------------------------------------------------
 -- Formats
 -------------------------------------------------------------------------
-
-data FmKind
-  = FmTeX | FmAG | FmSpec | FmAll | FmCnstr
-  deriving (Show,Eq,Ord)
-
-instance PP FmKind where
-  pp = pp . show
 
 data FmInfo e
   = FmInfo

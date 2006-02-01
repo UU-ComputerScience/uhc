@@ -4,6 +4,7 @@
 # compilers and tools used
 AGC					:= uuagc
 GHC					:= ghc
+OPEN_FOR_EDIT		:= bbedit
 
 # lhs2TeX
 LHS2TEX_ENV			:= $(LHS2TEX)

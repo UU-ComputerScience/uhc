@@ -168,24 +168,24 @@ grinis: $(GRINI_ALL_PUB_EXECS)
 docs: $(TEXT_DIST_DOC_FILES)
 
 edit-s:
-	bbedit \
+	$(OPEN_FOR_EDIT) \
 	$(SHUFFLE_ALL_SRC)
 	Makefile
 
 edit-r:
-	bbedit \
+	$(OPEN_FOR_EDIT) \
 	$(RULER2_ALL_SRC) \
 	$(EHC_RULES_3_SRC_RL2) \
 	Makefile
 
 edit-t:
-	bbedit \
+	$(OPEN_FOR_EDIT) \
 	$(TEXT_EDIT_SRC) \
 	$(EHC_RULES_3_SRC_RL2) \
 	Makefile
 
 edit-e:
-	bbedit \
+	$(OPEN_FOR_EDIT) \
 	$(EHC_ALL_SRC) $(UHC_ALL_SRC) $(GRIN_ALL_SRC) $(GRINI_ALL_SRC) \
 	Makefile
 

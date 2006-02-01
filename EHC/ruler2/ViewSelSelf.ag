@@ -1,0 +1,53 @@
+-------------------------------------------------------------------------
+-- Interfacing to ViewSel: self/copy/clone
+-------------------------------------------------------------------------
+
+{
+module ViewSelSelf
+  ( viewSelsSelfT
+  , rlSelSelfT
+  )
+  where
+
+import Nm
+import DpdGr
+import ViewSel
+}
+
+INCLUDE "ViewSelAbsSynAG.ag"
+
+WRAPPER AGViewSelsItf
+WRAPPER AGRlSelItf
+
+{
+wrapViewSelsT :: T_ViewSels -> Syn_AGViewSelsItf
+wrapViewSelsT vs
+  = let r1 = sem_AGViewSelsItf_AGItf vs
+    in  wrap_AGViewSelsItf r1
+            (Inh_AGViewSelsItf)
+
+viewSelsSelfT :: T_ViewSels -> ViewSels
+viewSelsSelfT vs
+  = self_Syn_AGViewSelsItf r
+  where r = wrapViewSelsT vs
+
+wrapRlSelT :: T_RlSel -> Syn_AGRlSelItf
+wrapRlSelT  vs
+  = let r1 = sem_AGRlSelItf_AGItf vs
+    in  wrap_AGRlSelItf r1
+            (Inh_AGRlSelItf)
+
+rlSelSelfT :: T_RlSel -> RlSel
+rlSelSelfT vs
+  = self_Syn_AGRlSelItf r
+  where r = wrapRlSelT vs
+
+}
+
+-------------------------------------------------------------------------
+-- Self
+-------------------------------------------------------------------------
+
+ATTR AllViewSel AllRlSel AllNmSel [ | | self: SELF ]
+ATTR AGViewSelsItf [ | | self: ViewSels ]
+ATTR AGRlSelItf [ | | self: RlSel ]

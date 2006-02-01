@@ -1,0 +1,13 @@
+-------------------------------------------------------------------------
+-- View selection
+-------------------------------------------------------------------------
+
+ATTR AGViewSelsItf AGViewSelItf AllViewSel [ | | vwSelNmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
+
+SEM ViewSel
+  | View Renamed    lhs     .   vwSelNmS    =   Set.singleton @nm
+  | All             lhs     .   vwSelNmS    =   vgVertices @lhs.vwDpdGr
+  | Range           lhs     .   vwSelNmS    =   let toS = Set.fold (\n r -> vgReachableFrom @lhs.vwDpdGr n `Set.union` r) Set.empty @vwTo.vwSelNmS
+                                                    frSL = [ vgReachableTo @lhs.vwDpdGr n | n <- Set.toList @vwFr.vwSelNmS ]
+                                                in  Set.filter (\n -> any (\s -> n `Set.member` s) frSL) toS
+

@@ -2,6 +2,7 @@ module ParseUtils where
 
 import UU.Parsing
 import qualified Data.Map as Map
+import Data.Maybe
 
 -------------------------------------------------------------------------
 -- Parsing utils
@@ -20,3 +21,9 @@ pAnyFromMap pKey m = foldr1 (<|>) [ v <$ pKey k | (k,v) <- Map.toList m ]
 -- parse possibly present p
 pMaybe :: (IsParser p s) => a1 -> (a -> a1) -> p a -> p a1
 pMaybe n j p = j <$> p <|> pSucceed n
+
+pAnyKey :: (IsParser p s) => (a1 -> p a) -> [a1] -> p a
+pAnyKey pKey = foldr1 (<|>) . map pKey
+
+pMb :: (IsParser p s) => p a -> p (Maybe a)
+pMb = pMaybe Nothing Just

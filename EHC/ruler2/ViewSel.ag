@@ -1,0 +1,14 @@
+-------------------------------------------------------------------------
+-- Haskell interface to ViewSel AST
+-------------------------------------------------------------------------
+
+{
+module ViewSel
+  where
+
+import Nm
+}
+
+INCLUDE "ViewSelAbsSynAG.ag"
+
+
