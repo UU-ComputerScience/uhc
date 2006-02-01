@@ -2,36 +2,152 @@
 RULER2_SRC_PREFIX	:= $(TOP_PREFIX)ruler2/
 RULER2_DEMO_PREFIX	:= $(RULER2_SRC_PREFIX)demo/
 
+# location of shuffle build
+RULER2_BLD_PREFIX	:= $(BLD_PREFIX)ruler/
+
 # this file
 RULER2_MKF			:= $(RULER2_SRC_PREFIX)files.mk
 
-# main + sources
+# main + sources + dpds
 RULER2_MAIN			:= Ruler
 
-RULER2_AG_MAIN_SRC	:= $(addprefix $(RULER2_SRC_PREFIX),RulerPretty.ag RulerAST.ag RulerGen.ag RulerParser.ag RulerExprMatchSubst.ag RulerWrap.ag \
-						RulerViewDpd.ag RulerMisc.ag RulerARule.ag \
-						RulerARuleOptim.ag RulerARuleOptim2.ag RulerARuleOptim3.ag \
-						RulerRlSel.ag RulerPatternUniq.ag \
-						$(RULER2_MAIN).ag \
-						)
+#RULER2_AG_MAIN_SRC	:= $(addprefix $(RULER2_SRC_PREFIX),RulerPretty.ag RulerAST.ag RulerGen.ag RulerParser.ag RulerExprMatchSubst.ag RulerWrap.ag \
+#						RulerViewDpd.ag RulerMisc.ag RulerARule.ag \
+#						RulerARuleOptim.ag RulerARuleOptim2.ag RulerARuleOptim3.ag \
+#						RulerRlSel.ag RulerPatternUniq.ag \
+#						$(RULER2_MAIN).ag \
+#						)
 
-RULER2_HS_SRC		:= $(addprefix $(RULER2_SRC_PREFIX),RulerUtils.hs RulerAdmin.hs RulerMkAdmin.hs)
-RULER2_HS_DRV		:= $(addprefix $(RULER2_SRC_PREFIX),$(RULER2_MAIN).hs)
+#RULER2_HS_SRC		:= $(addprefix $(RULER2_SRC_PREFIX),RulerUtils.hs RulerAdmin.hs RulerMkAdmin.hs)
+#RULER2_HS_DRV		:= $(addprefix $(RULER2_SRC_PREFIX),$(RULER2_MAIN).hs)
+
+############ begin new
+RULER2_HS_MAIN_SRC_HS					:= $(addprefix $(RULER2_SRC_PREFIX),$(RULER2_MAIN).hs)
+RULER2_HS_MAIN_DRV_HS					:= $(patsubst $(RULER2_SRC_PREFIX)%.hs,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_HS_MAIN_SRC_HS))
+RULER2_HS_DPDS_SRC_HS					:= $(patsubst %,$(RULER2_SRC_PREFIX)%.hs,Common DpdGr NmParser ViewSelParser SelParser KeywParser RulerParser AttrProps RulerUtils RulerAdmin RulerMkAdmin)
+RULER2_HS_DPDS_DRV_HS					:= $(patsubst $(RULER2_SRC_PREFIX)%.hs,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_HS_DPDS_SRC_HS))
+
+RULER2_AGMAIN_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,MainAG)
+RULER2_AGMAIN_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag, \
+											RulerPretty RulerAST RulerGen RulerExprMatchSubst RulerWrap \
+											RulerViewDpd RulerMisc RulerARule \
+											RulerARuleOptim RulerARuleOptim2 RulerARuleOptim3 \
+											RulerRlSel RulerPatternUniq \
+											ExprAbsSynAG ExprIsRwAG \
+											ViewSelAbsSynAG ViewSelDpdGrAG ViewSelNmSAG \
+											)
+$(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AGMAIN_MAIN_SRC_AG)) \
+										: $(RULER2_AGMAIN_DPDS_SRC_AG)
+
+RULER2_AGEXPR_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,Expr)
+RULER2_AGEXPR_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ExprAbsSynAG)
+$(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AGEXPR_MAIN_SRC_AG)) \
+										: $(RULER2_AGEXPR_DPDS_SRC_AG)
+
+RULER2_EXISRW_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ExprIsRw)
+RULER2_EXISRW_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ExprAbsSynAG ExprIsRwAG)
+$(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_EXISRW_MAIN_SRC_AG)) \
+										: $(RULER2_EXISRW_DPDS_SRC_AG)
+
+RULER2_AGVWSL_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ViewSel)
+RULER2_AGVWSL_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ViewSelAbsSynAG)
+$(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AGVWSL_MAIN_SRC_AG)) \
+										: $(RULER2_AGVWSL_DPDS_SRC_AG)
+
+RULER2_VWSLSELF_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ViewSelSelf)
+RULER2_VWSLSELF_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ViewSelAbsSynAG)
+$(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_VWSLSELF_MAIN_SRC_AG)) \
+										: $(RULER2_VWSLSELF_DPDS_SRC_AG)
+
+RULER2_VWSLNMS_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ViewSelNmS)
+RULER2_VWSLNMS_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ViewSelAbsSynAG ViewSelDpdGrAG ViewSelNmSAG)
+$(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_VWSLNMS_MAIN_SRC_AG)) \
+										: $(RULER2_VWSLNMS_DPDS_SRC_AG)
+
+RULER2_RLSLRNM_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ViewSelRlRnm)
+RULER2_RLSLRNM_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ViewSelAbsSynAG)
+$(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_RLSLRNM_MAIN_SRC_AG)) \
+										: $(RULER2_RLSLRNM_DPDS_SRC_AG)
+
+RULER2_RLSLISSL_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ViewSelRlIsSel)
+RULER2_RLSLISSL_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ViewSelAbsSynAG ViewSelNmSAG ViewSelDpdGrAG)
+$(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_RLSLISSL_MAIN_SRC_AG)) \
+										: $(RULER2_RLSLISSL_DPDS_SRC_AG)
+
+RULER2_VWSLPP_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ViewSelPrettyPrint)
+RULER2_VWSLPP_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ViewSelAbsSynAG)
+$(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_VWSLPP_MAIN_SRC_AG)) \
+										: $(RULER2_VWSLPP_DPDS_SRC_AG)
+
+RULER2_AG_D_MAIN_SRC_AG					:= $(RULER2_AGEXPR_MAIN_SRC_AG) $(RULER2_AGVWSL_MAIN_SRC_AG)
+RULER2_AG_S_MAIN_SRC_AG					:= $(RULER2_EXISRW_MAIN_SRC_AG) $(RULER2_VWSLSELF_MAIN_SRC_AG) $(RULER2_VWSLNMS_MAIN_SRC_AG) $(RULER2_RLSLRNM_MAIN_SRC_AG) \
+											$(RULER2_RLSLISSL_MAIN_SRC_AG) $(RULER2_VWSLPP_MAIN_SRC_AG)
+RULER2_AG_DS_MAIN_SRC_AG				:= $(RULER2_AGMAIN_MAIN_SRC_AG)
+
+RULER2_AG_ALL_DPDS_SRC_AG				:= $(sort \
+											$(RULER2_AGMAIN_DPDS_SRC_AG) \
+											$(RULER2_AGEXPR_DPDS_SRC_AG) \
+											$(RULER2_AGVWSL_DPDS_SRC_AG) \
+											$(RULER2_EXISRW_DPDS_SRC_AG) \
+											$(RULER2_VWSLSELF_DPDS_SRC_AG) \
+											$(RULER2_VWSLNMS_DPDS_SRC_AG) \
+											$(RULER2_RLSLRNM_DPDS_SRC_AG) \
+											$(RULER2_RLSLISSL_DPDS_SRC_AG) \
+											$(RULER2_VWSLPP_DPDS_SRC_AG) \
+											)
+
+RULER2_AG_ALL_MAIN_SRC_AG				:= $(RULER2_AG_D_MAIN_SRC_AG) $(RULER2_AG_S_MAIN_SRC_AG) $(RULER2_AG_DS_MAIN_SRC_AG)
 
 # all src
-RULER2_ALL_SRC		:= $(RULER2_AG_MAIN_SRC) $(RULER2_HS_SRC)
+RULER2_ALL_SRC							:= $(RULER2_AG_ALL_MAIN_SRC_AG) $(RULER2_AG_ALL_DPDS_SRC_AG) $(RULER2_HS_MAIN_SRC_HS) $(RULER2_HS_DPDS_SRC_HS)
+
+# derived
+RULER2_AG_D_MAIN_DRV_HS					:= $(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AG_D_MAIN_SRC_AG))
+RULER2_AG_S_MAIN_DRV_HS					:= $(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AG_S_MAIN_SRC_AG))
+RULER2_AG_DS_MAIN_DRV_HS				:= $(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AG_DS_MAIN_SRC_AG))
+RULER2_AG_ALL_MAIN_DRV_HS				:= $(RULER2_AG_D_MAIN_DRV_HS) $(RULER2_AG_S_MAIN_DRV_HS) $(RULER2_AG_DS_MAIN_DRV_HS)
+
+RULER2_HS_ALL_DRV_HS					:= $(RULER2_HS_MAIN_DRV_HS) $(RULER2_HS_DPDS_DRV_HS)
+############ end new
+
+# all src
+#RULER2_ALL_SRC		:= $(RULER2_AG_MAIN_SRC) $(RULER2_HS_SRC)
 
 # binary/executable
 RULER2_BLD_EXEC		:= $(BIN_PREFIX)ruler2
 RULER2				:= $(RULER2_BLD_EXEC)
 
 # make rules
-$(RULER2_BLD_EXEC): $(RULER2_HS_DRV) $(RULER2_HS_SRC) $(LIB_SRC_HS)
-	mkdir -p $(@D)
-	$(GHC) --make $(GHC_OPTS) -i$(LIB_SRC_PREFIX) -i$(RULER2_SRC_PREFIX) $(RULER2_SRC_PREFIX)$(RULER2_MAIN).hs -o $@
+#$(RULER2_BLD_EXEC): $(RULER2_HS_DRV) $(RULER2_HS_SRC) $(LIB_SRC_HS)
+#	mkdir -p $(@D)
+#	$(GHC) --make $(GHC_OPTS) -i$(LIB_SRC_PREFIX) -i$(RULER2_SRC_PREFIX) $(RULER2_SRC_PREFIX)$(RULER2_MAIN).hs -o $@
+#
+#$(RULER2_SRC_PREFIX)$(RULER2_MAIN).hs: $(RULER2_AG_MAIN_SRC)
+#	$(AGC) -csdfr --module=Main -P$(RULER2_SRC_PREFIX) $(RULER2_SRC_PREFIX)$(RULER2_MAIN).ag
 
-$(RULER2_SRC_PREFIX)$(RULER2_MAIN).hs: $(RULER2_AG_MAIN_SRC)
-	$(AGC) -csdfr --module=Main -P$(RULER2_SRC_PREFIX) $(RULER2_SRC_PREFIX)$(RULER2_MAIN).ag
+############ begin new
+# make rules
+$(RULER2_BLD_EXEC): $(RULER2_AG_ALL_MAIN_DRV_HS) $(RULER2_HS_ALL_DRV_HS) $(LIB_SRC_HS)
+	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_OPTIM) -i$(LIB_SRC_PREFIX) -i$(RULER2_BLD_PREFIX) $(RULER2_BLD_PREFIX)$(RULER2_MAIN).hs -o $@
+	strip $@
+
+$(RULER2_AG_D_MAIN_DRV_HS): $(RULER2_BLD_PREFIX)%.hs: $(RULER2_SRC_PREFIX)%.ag
+	mkdir -p $(@D) ; \
+	$(AGC) -dr -P$(RULER2_SRC_PREFIX) -o $@ $<
+
+$(RULER2_AG_S_MAIN_DRV_HS): $(RULER2_BLD_PREFIX)%.hs: $(RULER2_SRC_PREFIX)%.ag
+	mkdir -p $(@D) ; \
+	$(AGC) -cfspr -P$(RULER2_SRC_PREFIX) -o $@ $<
+
+$(RULER2_AG_DS_MAIN_DRV_HS): $(RULER2_BLD_PREFIX)%.hs: $(RULER2_SRC_PREFIX)%.ag
+	mkdir -p $(@D) ; \
+	$(AGC) --module=$(*F) -dcfspr -P$(RULER2_SRC_PREFIX) -o $@ $<
+
+$(RULER2_HS_ALL_DRV_HS): $(RULER2_BLD_PREFIX)%.hs: $(RULER2_SRC_PREFIX)%.hs
+	mkdir -p $(@D) ; \
+	cp $< $@
+############ end new
+
 
 ### demo stuff
 RULER2_DEMO_AG_MAIN				:= RulerDemoMain
@@ -69,8 +185,8 @@ RULER2_DEMO_ALL_SRC			:= $(RULER2_DEMO_SRC_CRL) $(RULER2_DEMO_SRC_CAG_MAIN) $(RU
 RULER2_ALL_CHUNK_SRC		:= $(RULER2_DEMO_SRC_CRL) $(RULER2_DEMO_DRV_CAG) $(RULER2_DEMO_DRV_WCOPY_CAG) $(RULER2_DEMO_SRC_CAG_MAIN) $(RULER2_DEMO_SRC_CHS_UTILS)
 
 # chunk view order for demo src
-RULER2_DEMO_SHUFFLE_ORDER	:= 1 < 2 < 3
-RULER2_DEMO_SHUFFLE_FINAL	:= 3
+RULER2_DEMO_RULER2_ORDER	:= 1 < 2 < 3
+RULER2_DEMO_RULER2_FINAL	:= 3
 
 # configuration of ruler, to be done on top level
 RULER2_DEMO_MARK_CHANGES_CFG	:= --markchanges="E - AG"
@@ -83,13 +199,13 @@ RULER2_DIST_FILES			:= $(RULER2_ALL_SRC) $(RULER2_DEMO_ALL_SRC) \
 
 # make rules
 $(RULER2_DEMO_DRV_LCTEX): $(RULER2_DEMO_SRC_CRL) $(SHUFFLE)
-	$(SHUFFLE) --gen=all --latex --order="$(RULER2_DEMO_SHUFFLE_ORDER)" --base=$(RULER2_DEMO_RUL_BASE) --lhs2tex=yes $< > $@
+	$(SHUFFLE) --gen=all --latex --order="$(RULER2_DEMO_RULER2_ORDER)" --base=$(RULER2_DEMO_RUL_BASE) --lhs2tex=yes $< > $@
 
 $(RULER2_DEMO_DRV_CTEX): $(RULER2_DEMO_DRV_LCTEX)
 	$(LHS2TEX) $(LHS2TEX_OPTS_POLY) $< > $@
 
 $(RULER2_DEMO_DRV_RL2): $(RULER2_DEMO_SRC_CRL) $(SHUFFLE)
-	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --plain --order="$(RULER2_DEMO_SHUFFLE_ORDER)"  --lhs2tex=no $< > $@
+	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --plain --order="$(RULER2_DEMO_RULER2_ORDER)"  --lhs2tex=no $< > $@
 
 $(RULER2_DEMO_DRV_LRTEX): $(RULER2_DEMO_DRV_RL2) $(RULER2)
 	$(RULER2) --lhs2tex --selrule="(E - *).(*).(*)" $(RULER2_DEMO_MARK_CHANGES_CFG) --base=rulerDemo $< > $@
@@ -104,25 +220,25 @@ $(RULER2_DEMO_DRV_WCOPY_CAG): $(RULER2_DEMO_DRV_RL2) $(RULER2)
 	$(RULER2) --ag --ATTR --selrule="(3).(*).(*)" --wrapshuffle --copyelim=no --base=$(RULER2_DEMO_AGWCOPY_BASE) $< > $@
 
 $(RULER2_DEMO_DRV_AG): $(RULER2_DEMO_DRV_CAG) $(SHUFFLE)
-	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --plain --order="$(RULER2_DEMO_SHUFFLE_ORDER)"  --lhs2tex=no $< > $@
+	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --plain --order="$(RULER2_DEMO_RULER2_ORDER)"  --lhs2tex=no $< > $@
 
 $(RULER2_DEMO_DRV_LATEX): $(RULER2_DEMO_DRV_CAG) $(SHUFFLE)
-	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --latex --order="$(RULER2_DEMO_SHUFFLE_ORDER)" --base=$(RULER2_DEMO_AG_BASE) --lhs2tex=yes $< > $@
+	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --latex --order="$(RULER2_DEMO_RULER2_ORDER)" --base=$(RULER2_DEMO_AG_BASE) --lhs2tex=yes $< > $@
 
 $(RULER2_DEMO_DRV_ATEX): $(RULER2_DEMO_DRV_LATEX)
 	$(LHS2TEX) $(LHS2TEX_OPTS_POLY) $< > $@
 
 $(RULER2_DEMO_DRV_HS_UTILS): $(RULER2_DEMO_SRC_CHS_UTILS) $(SHUFFLE)
-	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --hs --order="$(RULER2_DEMO_SHUFFLE_ORDER)" --preamble=no --lhs2tex=no $< > $@
+	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --hs --order="$(RULER2_DEMO_RULER2_ORDER)" --preamble=no --lhs2tex=no $< > $@
 
 $(RULER2_DEMO_DRV_HS_UTILS_TEX): $(RULER2_DEMO_SRC_CHS_UTILS) $(SHUFFLE)
-	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --latex --order="$(RULER2_DEMO_SHUFFLE_ORDER)" --base=rulerDemoUtils --lhs2tex=yes $< | $(LHS2TEX) $(LHS2TEX_OPTS_POLY) > $@
+	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --latex --order="$(RULER2_DEMO_RULER2_ORDER)" --base=rulerDemoUtils --lhs2tex=yes $< | $(LHS2TEX) $(LHS2TEX_OPTS_POLY) > $@
 
 $(RULER2_DEMO_DRV_AG_MAIN): $(RULER2_DEMO_SRC_CAG_MAIN) $(SHUFFLE)
-	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --ag --order="$(RULER2_DEMO_SHUFFLE_ORDER)" --base=Main --preamble=no --lhs2tex=no $< > $@
+	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --ag --order="$(RULER2_DEMO_RULER2_ORDER)" --base=Main --preamble=no --lhs2tex=no $< > $@
 
 $(RULER2_DEMO_DRV_AG_MAIN_TEX): $(RULER2_DEMO_SRC_CAG_MAIN) $(SHUFFLE)
-	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --latex --order="$(RULER2_DEMO_SHUFFLE_ORDER)" --base=rulerDemoMain --lhs2tex=yes $< | $(LHS2TEX) $(LHS2TEX_OPTS_POLY) > $@
+	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --latex --order="$(RULER2_DEMO_RULER2_ORDER)" --base=rulerDemoMain --lhs2tex=yes $< | $(LHS2TEX) $(LHS2TEX_OPTS_POLY) > $@
 
 $(RULER2_DEMO_DRV_HS_MAIN): $(RULER2_DEMO_DRV_AG_MAIN) $(RULER2_DEMO_DRV_AG)
 	$(AGC) -csdfr -P$(RULER2_DEMO_PREFIX) $<

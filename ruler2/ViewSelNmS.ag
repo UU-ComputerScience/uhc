@@ -1,0 +1,40 @@
+-------------------------------------------------------------------------
+-- Interfacing to ViewSel: names
+-------------------------------------------------------------------------
+
+{
+module ViewSelNmS
+  ( viewSelsNmS, viewSelNmS
+  )
+  where
+
+import qualified Data.Set as Set
+import Nm
+import DpdGr
+import ViewSel
+}
+
+INCLUDE "ViewSelAbsSynAG.ag"
+INCLUDE "ViewSelDpdGrAG.ag"
+INCLUDE "ViewSelNmSAG.ag"
+
+WRAPPER AGViewSelItf AGViewSelsItf
+
+{
+viewSelNmS :: DpdGr Nm -> ViewSel -> Set.Set Nm
+viewSelNmS vwDpdGr vs
+  = vwSelNmS_Syn_AGViewSelItf r2
+  where r1 = sem_AGViewSelItf (AGViewSelItf_AGItf vs)
+        r2 = wrap_AGViewSelItf r1
+                (Inh_AGViewSelItf {vwDpdGr_Inh_AGViewSelItf = vwDpdGr
+                                   })
+
+viewSelsNmS :: DpdGr Nm -> ViewSels -> Set.Set Nm
+viewSelsNmS vwDpdGr vs
+  = vwSelNmS_Syn_AGViewSelsItf r2
+  where r1 = sem_AGViewSelsItf (AGViewSelsItf_AGItf vs)
+        r2 = wrap_AGViewSelsItf r1
+                (Inh_AGViewSelsItf {vwDpdGr_Inh_AGViewSelsItf = vwDpdGr
+                                   })
+}
+

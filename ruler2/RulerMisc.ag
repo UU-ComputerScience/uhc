@@ -28,9 +28,9 @@ SEM RExpr
 -- Self
 -------------------------------------------------------------------------
 
-ATTR AllExpr AllViewSel AllRlSel AllNmSel AllARule [ | | self: SELF ]
-ATTR AGViewSelsItf [ | | self: ViewSels ]
-ATTR AGRlSelItf [ | | self: RlSel ]
+ATTR AllExpr AllARule [ | | self: SELF ]
+-- ATTR AGViewSelsItf [ | | self: ViewSels ]
+-- ATTR AGRlSelItf [ | | self: RlSel ]
 
 -------------------------------------------------------------------------
 -- Rule seq nr

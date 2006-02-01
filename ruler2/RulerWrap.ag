@@ -10,27 +10,18 @@ WRAPPER AGItf
 -- Interfacing to RlSel
 -------------------------------------------------------------------------
 
+{-
 WRAPPER AGRlSelItf
+-}
 
 {
+{-
 wrapRlSel :: DpdGr Nm -> RlSel -> Syn_AGRlSelItf
 wrapRlSel vwDpdGr vs
   = let r1 = sem_AGRlSelItf (AGRlSelItf_AGItf vs)
     in  wrap_AGRlSelItf r1
             (Inh_AGRlSelItf {vwDpdGr_Inh_AGRlSelItf = vwDpdGr
                             })
-
-wrapRlSelT :: DpdGr Nm -> T_RlSel -> Syn_AGRlSelItf
-wrapRlSelT vwDpdGr vs
-  = let r1 = sem_AGRlSelItf_AGItf vs
-    in  wrap_AGRlSelItf r1
-            (Inh_AGRlSelItf {vwDpdGr_Inh_AGRlSelItf = vwDpdGr
-                            })
-
-rlSelSelfT :: T_RlSel -> RlSel
-rlSelSelfT vs
-  = self_Syn_AGRlSelItf r
-  where r = wrapRlSelT emptyVwDpdGr vs
 
 rlSelIsSel :: DpdGr Nm -> RlSel -> RlSelIsSel
 rlSelIsSel vwDpdGr rs
@@ -41,16 +32,17 @@ rlSelRnmM :: RlSel -> Map.Map Nm Nm
 rlSelRnmM rs
   = vwRnmM_Syn_AGRlSelItf r
   where r = wrapRlSel emptyVwDpdGr rs
-
+-}
 }
 
 -------------------------------------------------------------------------
 -- Interfacing to ViewSel
 -------------------------------------------------------------------------
 
-WRAPPER AGViewSelsItf
+-- WRAPPER AGViewSelsItf
 
 {
+{-
 wrapViewSels :: DpdGr Nm -> ViewSels -> Syn_AGViewSelsItf
 wrapViewSels vwDpdGr vs
   = let r1 = sem_AGViewSelsItf (AGViewSelsItf_AGItf vs)
@@ -69,18 +61,19 @@ viewSelsNmS :: DpdGr Nm -> ViewSels -> Set.Set Nm
 viewSelsNmS vwDpdGr vs
   = vwSelNmS_Syn_AGViewSelsItf r
   where r = wrapViewSels vwDpdGr vs
+-}
 
 {-
 viewSelsNmS' :: DpdGr Nm -> T_ViewSels -> Set.Set Nm
 viewSelsNmS' vwDpdGr vs
   = vwSelNmS_Syn_AGViewSelsItf r
   where r = wrapViewSelsT vwDpdGr vs
--}
 
 viewSelsSelfT :: T_ViewSels -> ViewSels
 viewSelsSelfT vs
   = self_Syn_AGViewSelsItf r
   where r = wrapViewSelsT emptyVwDpdGr vs
+-}
 }
 
 -------------------------------------------------------------------------

@@ -1,0 +1,76 @@
+-------------------------------------------------------------------------
+-- Expr AST
+-------------------------------------------------------------------------
+
+-------------------------------------------------------------------------
+-- Interfacing
+-------------------------------------------------------------------------
+
+DATA AGExprItf
+  | AGItf               expr        : Expr
+
+-------------------------------------------------------------------------
+-- Expr
+-------------------------------------------------------------------------
+
+DATA Expr
+  | AppTop              expr        : Expr
+  | App                 lExpr       : Expr
+                        rExpr       : Expr
+  | Op                  nm          : {Nm}
+                        nmExpr      : Expr
+                        lExpr       : Expr
+                        rExpr       : Expr
+  | LF                  lExpr       : Expr
+                        rExpr       : Expr
+  | SP                  lExpr       : Expr
+                        rExpr       : Expr
+  | Var                 nm          : {Nm}
+  | AVar                anm         : ANm
+  | Int                 int         : {String}
+  | StrText             str         : {String}
+  | StrAsIs             str         : {String}
+  | Named               nm          : {Nm}
+                        expr        : Expr
+  | Wrap                wrKind      : {WrKind}
+                        expr        : Expr
+  | Cnstr               expr        : Expr
+                        cnstr       : ECnstr
+  | WrapCnstr           cnstr       : ECnstr
+  | Paren               expr        : Expr
+  | Retain              expr        : Expr
+  | Expr                expr        : Expr
+  | SelTop              expr        : Expr
+  | Sel                 expr        : Expr
+                        selMbExpr   : MbExpr
+  | ChildOrder          seqNr       : {Int}
+                        expr        : Expr
+  | Uniq
+  | Empty
+
+DATA ANm
+  | Wild
+  | Loc                 nm          : {Nm}
+                        props       : {[AtProp]}
+  | Lhs                 nm          : {Nm}
+                        props       : {[AtProp]}
+  | Fld                 nm          : {Nm}
+  | Node                ndNm        : {Nm}
+                        nm          : {Nm}
+
+TYPE MbExpr = MAYBE Expr
+
+SET AllExpr = Expr MbExpr ECnstr
+
+DERIVING AllExpr ANm: Eq,Ord
+
+-------------------------------------------------------------------------
+-- Expr constraint
+-------------------------------------------------------------------------
+
+DATA ECnstr
+  | Ty                  nms         : {[Nm]}
+  | Var                 nm          : {Nm}
+  | Empty
+
+

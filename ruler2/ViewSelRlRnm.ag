@@ -1,0 +1,42 @@
+-------------------------------------------------------------------------
+-- Interfacing to ViewSel: RlSel renaming
+-------------------------------------------------------------------------
+
+{
+module ViewSelRlRnm
+  ( rlSelRnmM
+  )
+  where
+
+import qualified Data.Map as Map
+import Nm
+-- import DpdGr
+import ViewSel
+}
+
+INCLUDE "ViewSelAbsSynAG.ag"
+
+WRAPPER AGRlSelItf
+
+{
+wrapRlSel :: RlSel -> Syn_AGRlSelItf
+wrapRlSel  vs
+  = let r1 = sem_AGRlSelItf (AGRlSelItf_AGItf vs)
+    in  wrap_AGRlSelItf r1
+            (Inh_AGRlSelItf)
+
+rlSelRnmM :: RlSel -> Map.Map Nm Nm
+rlSelRnmM rs
+  = vwRnmM_Syn_AGRlSelItf r
+  where r = wrapRlSel rs
+}
+
+-------------------------------------------------------------------------
+-- View renaming
+-------------------------------------------------------------------------
+
+ATTR AGRlSelItf AllViewSel AllRlSel [ | | vwRnmM USE {`Map.union`} {Map.empty}: {Map.Map Nm Nm} ]
+
+SEM ViewSel
+  | Renamed         lhs     .   vwRnmM      =   Map.singleton @nm @nmNew
+

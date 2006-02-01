@@ -1,80 +1,29 @@
--- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
-
 -------------------------------------------------------------------------
--- Scanning
+-- Sel parser
 -------------------------------------------------------------------------
 
-{
-specialChars  =  "().`"
-opChars       =  "!#$%&*+/<=>?@\\^|-:;,[]{}~"
+module SelParser
+  where
 
-propsSynInhMp
-  =  Map.fromList [ ("thread",AtThread), ("updown",AtUpdown) ]
-propsOtherMp
-  =  Map.fromList [ ("retain",AtRetain), ("node",AtNode) ]
-propsMp
-  =  Map.unions [ propsSynInhMp, propsOtherMp ]
-keywordsTextProps
-  =  Map.keys propsMp
-keywordsTextEscapable
-  =  keywordsTextProps
-     ++ [ "judge", "judgeshape", "judgespec", "judgeuse", "relation"
-        , "rule", "rules", "ruleset"
-        , "scheme", "view", "hole", "holes", "viewsel", "rulesgroup"
-        , "explain"
-        -- related to global info
-        , "viewhierarchy", "format", "rewrite", "preamble"
-        , "extern", "external"
-        -- related to formatting (styles)
-        , "tex", "ag", "def", "use", "spec"
-        -- misc
-        , "text"
-        ]
-keywordsText
-  =  [ "unique"
-     ] ++ keywordsTextEscapable
-keywordsOpsEsc
-  =  [ ",", ":", "[", "]", "*", "<" ]
-keywordsOpsExplainEsc
-  =  [ "=", "-", "." ]
-keywordsOpsParenEsc
-  =  [ "|" ] ++ keywordsOpsExplainEsc
-keywordsOps
-  =  keywordsOpsParenEsc ++ keywordsOpsEsc
-
-{-
-scanHandle :: [String] -> [String] -> String -> String -> FilePath -> Handle -> IO [Token]
-scanHandle keywordstxt keywordsops specchars opchars fn fh
-  = do  {  txt <- hGetContents fh
-        ;  return (scan keywordstxt keywordsops specchars opchars (initPos fn) txt) 
-        }
--}
-
-mkScan :: FilePath -> String -> [Token]
-mkScan fn txt = scan keywordsText keywordsOps specialChars opChars (initPos fn) txt
-
-mkHScan :: FilePath -> Handle -> IO [Token]
-mkHScan fn fh
-  = do  {  txt <- hGetContents fh
-        ;  return (mkScan fn txt) 
-        }
-
-}
+-- import qualified Data.Set as Set
+-- import qualified Data.Map as Map
+-- import Data.List
+-- import IO
+import UU.Parsing
+-- import UU.Parsing.CharParser
+-- import UU.Scanner.Position( initPos, Pos, Position(..) )
+-- import UU.Scanner.GenToken
+import UU.Scanner
+import ParseUtils
+-- import Common
+-- import Utils (wordsBy)
+-- import MainAG
 
 -------------------------------------------------------------------------
 -- Parser
 -------------------------------------------------------------------------
 
-{
-type MkConAppAlg t = (String -> t,t -> t -> t,t -> t)
-
-mkApp :: MkConAppAlg t -> [t] -> t
-mkApp (_,app,top) ts
-  = case ts of
-      [t]  -> t
-      _    -> top t
-  where t = foldl1 app ts
-
+{-
 pAllParsers :: (IsParser p Token) => (p T_AGItf,p T_ViewSels, p T_RlSel)
 pAllParsers
   = let alg                 =   (undefined,sem_Expr_App,sem_Expr_AppTop)
@@ -235,5 +184,13 @@ pAllParsers
 
 (pAGItf,pViewSels,pRlSel)
   = pAllParsers
-}
+-}
+
+pSel1 :: (IsParser p Token) => (a1 -> t, a1 -> a -> a1, a2 -> a) -> (p a2, p a) -> p (a1 -> t)
+pSel1 (top,sel,jst) (pE,pMbE)
+  =   (\ss s -> \e -> top (sel (ss e) (jst s))) <$> pDots <*> pE
+  where pSel' = flip sel <$> pMbE
+        pDots = pChainr_ng ((\s -> \_ r -> \e -> r (s e)) <$> pSel') (id <$ pKey ".")
+
+pSel alg ps = pSel1 alg ps <|> pSucceed id
 

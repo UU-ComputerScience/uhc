@@ -2,212 +2,41 @@
 
 imports
 {
-import System
-import System.Console.GetOpt
+-- import System
+-- import System.Console.GetOpt
+-- import IO
 import Data.Maybe
 import Data.Char
-import IO
 import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import UU.Pretty
+-- import UU.Parsing
+-- import UU.Scanner
+-- import UU.Scanner.Position( initPos, Pos )
 import FPath
 import Utils
 import Nm
 import PPUtils
-import ParseUtils
-import UU.Pretty
-import UU.Parsing
-import UU.Scanner
-import UU.Scanner.Position( initPos, Pos )
-import System.Exit
+-- import ParseUtils
+import qualified Expr as E
+import ViewSel
+import ViewSelNmS
+import ViewSelRlRnm
+import ViewSelRlIsSel
+import ViewSelPrettyPrint
+import Common
+import KeywParser
 import RulerUtils
 import RulerAdmin
 import RulerMkAdmin
 }
 
 -------------------------------------------------------------------------
--- Version of program
--------------------------------------------------------------------------
-
-{
-versionSvn      = "$Id$"
-versionMajor    = "0"
-versionMinor    = "1"
-versionQuality  = "alpha"
-versionDist     = versionMajor ++ "." ++ versionMinor ++ versionQuality
-versionProg     = "ruler"
-versionInfo     = versionProg ++ versionDist ++ ", " ++ versionSvn
-}
-
--------------------------------------------------------------------------
--- Main
--------------------------------------------------------------------------
-
-{
-main :: IO ()
-main
-  = do { args <- getArgs
-       ; let oo@(o,n,errs)  = getOpt Permute cmdLineOpts args
-             opts           = foldr ($) defaultOpts o
-       ; if optHelp opts
-         then putStrLn (usageInfo ("version: " ++ versionInfo ++ "\n\nUsage ruler [options] [file]\n\noptions:") cmdLineOpts)
-         else if optVersion opts
-         then putStrLn versionDist
-         else if null errs
-              then  doCompile (if null n then emptyFPath else mkFPath (head n)) opts
-              else  do hPutStr stderr (head errs)
-                       exitFailure
-       }
-
-doCompile :: FPath -> Opts -> IO ()
-doCompile fp opts
-  = do { (fn,fb,fh)
-             <- if fpathIsEmpty fp
-                then return ("<stdin>","<stdin>",stdin)
-                else do { let fn = fpathToStr fp
-                        ; h <- openFile fn ReadMode
-                        ; return (fn,fpathToStr (fpathRemoveSuff fp),h)
-                        }
-       ; tokens <- mkHScan fn fh
-       ; let (pres,perrs) = parseToResMsgs pAGItf tokens
-       ; if null perrs
-         then do { let res = wrap_AGItf pres
-                               (Inh_AGItf
-                                  { opts_Inh_AGItf = opts
-                                  })
-                 ; let putDbg = putBld (optDebug opts) (pp_Syn_AGItf res)
-                       errL = errL_Syn_AGItf res
-                 ; if null errL
-                   then do { putDbg
-                           ; putBld (optGenFM opts /= FmAll) (mkPP_Syn_AGItf res (optGenFM opts))
-                           ; putBld (optGenExpl opts) (scExplPP_Syn_AGItf res)
-                           }
-                   else do { hPutBld True stderr (ppErrPPL errL)
-                           ; putDbg
-                           ; exitFailure
-                           }
-                 }
-         else do { let (showErrs,omitErrs) = splitAt 5 perrs
-                 ; hPutBld True stderr (ppErrPPL showErrs)
-                 ; if null omitErrs
-                   then return ()
-                   else hPutStrLn stderr "... and more parsing errors"
-                 }
-       }
-  where hPutBld f h b = if f then hPutPPFile h b 2000 else return ()
-        putBld  f   b = hPutBld f stdout b
-}
-
--------------------------------------------------------------------------
--- Defaults
--------------------------------------------------------------------------
-
-{
-rulesCmdPre = "rules"
-}
-
--------------------------------------------------------------------------
--- Options
--------------------------------------------------------------------------
-
-{
-data Opts 
-  = Opts
-      { optGenFM        :: FmKind
-      , optGenExpl      :: Bool
-      , optGenAGAttr    :: Bool
-      , optDot2Dash     :: Bool
-      , optPreamble     :: Bool
-      , optAtDir        :: AtDir    -- used internally only
-      , optSubstFullNm  :: Bool     -- used internally only
-      , optSubstOnce    :: Bool     -- used internally only
-      , optMatchROpOpnd :: Bool     -- used internally only
-      , optHelp         :: Bool
-      , optDebug        :: Bool
-      , optVersion      :: Bool
-      , optFragWrap     :: Bool
-      , optAGCopyElim   :: Bool
-      , optMbMarkChange :: Maybe ViewSels
-      , optMbRlSel      :: Maybe RlSel
-      , optBaseNm       :: String
-      }
-
-defaultOpts
-  = Opts
-      { optGenFM        =  FmAll
-      , optGenExpl      =  False
-      , optGenAGAttr    =  False
-      , optDot2Dash     =  False
-      , optPreamble     =  True
-      , optAtDir        =  AtInOut
-      , optSubstFullNm  =  True
-      , optSubstOnce    =  False
-      , optMatchROpOpnd =  True
-      , optHelp         =  False
-      , optDebug        =  False
-      , optVersion      =  False
-      , optFragWrap     =  False
-      , optAGCopyElim   =  True
-      , optMbMarkChange =  Nothing
-      , optMbRlSel      =  Nothing
-      , optBaseNm       =  rulesCmdPre
-      }
-
-cmdLineOpts  
-  =  [ Option ""   ["version"]          (NoArg oVersion)
-          "print version info"
-     , Option "l"  ["lhs2tex"]          (NoArg oGenLhs2tex)
-          "generate code for lhs2tex, default=no"
-     , Option "a"  ["ag"]               (NoArg oGenAG)
-          "generate code for AG, default=no"
-     , Option ""   ["explain"]          (NoArg oGenExpl)
-          "generate explanation (for scheme's), default=no"
-     , Option ""   ["ATTR"]             (NoArg oGenAGAttr)
-          "generate ATTR defs (for AG), default=no"
-     , Option ""   ["preamble"]         (OptArg oPreamble "yes|no")
-          "include preamble, default=yes"
-     , Option ""   ["copyelim"]         (OptArg oCopyElim "yes|no")
-          "perform AG copy elimination, default=yes"
-     , Option ""   ["dot2dash"]         (NoArg oDot2Dash)
-          "change '.' in rule names to '-', default=no"
-     , Option "c"  ["markchanges"]      (OptArg oMarkCh "<spec>")
-          "mark changes between specified views (in combi with --lhs2tex, <spec>=*|<view name>|<view name>-<view name>)"
-     , Option "s"  ["selrule"]          (OptArg oRlSel "<spec>")
-          "select rules by specifying view(s), ruleset(s) and rule(s), <spec>=(*|<view name>|<view name>-<view name>).(*|<ruleset names>).(*|<rule names>)"
-     , Option ""   ["help"]             (NoArg oHelp)
-          "output this help"
-     , Option "w"  ["wrapshuffle"]      (NoArg oFragWrap)
-          "wrap (AG|explanation) in fragments for further processing by shuffle"
-     , Option "d"  ["debug"]            (NoArg oDebug)
-          "output debugging info"
-     , Option "b"  ["base"]             (ReqArg oBase "<name>")
-          "base name, default = 'rules'"
-     ]
-  where  oGenLhs2tex     o =  o {optGenFM = FmTeX}
-         oGenAG          o =  o {optGenFM = FmAG}
-         oGenExpl        o =  o {optGenExpl = True}
-         oGenAGAttr      o =  o {optGenAGAttr = True}
-         oDot2Dash       o =  o {optDot2Dash = True}
-         oPreamble   ms  o =  yesno (\f o -> o {optPreamble = f}) ms o
-         oCopyElim   ms  o =  yesno (\f o -> o {optAGCopyElim = f}) ms o
-         oHelp           o =  o {optHelp = True}
-         oFragWrap       o =  o {optFragWrap = True}
-         oDebug          o =  o {optDebug = True}
-         oVersion        o =  o {optVersion = True}
-         oBase       s   o =  o {optBaseNm = s}
-         oMarkCh     ms  o =  o {optMbMarkChange = fmap (viewSelsSelfT . fst . parseToResMsgs pViewSels . mkScan "") ms}
-         oRlSel      ms  o =  o {optMbRlSel = fmap (rlSelSelfT . fst . parseToResMsgs pRlSel . mkScan "") ms}
-         yesno updO  ms  o =  case ms of
-                                Just "yes"  -> updO True o
-                                Just "no"   -> updO False o
-                                _           -> o
-}
-
--------------------------------------------------------------------------
 -- Inclusion of split off parts
 -------------------------------------------------------------------------
 
-INCLUDE "RulerParser.ag"
+-- INCLUDE "RulerParser.ag"
 INCLUDE "RulerWrap.ag"
 INCLUDE "RulerMisc.ag"
 INCLUDE "RulerViewDpd.ag"
@@ -221,6 +50,13 @@ INCLUDE "RulerARuleOptim2.ag"
 INCLUDE "RulerARuleOptim3.ag"
 INCLUDE "RulerRlSel.ag"
 INCLUDE "RulerPatternUniq.ag"
+
+INCLUDE "ExprAbsSynAG.ag"
+INCLUDE "ExprIsRwAG.ag"
+
+-- INCLUDE "ViewSelAbsSynAG.ag"
+-- INCLUDE "ViewSelDpdGrAG.ag"
+-- INCLUDE "ViewSelNmSAG.ag"
 
 -------------------------------------------------------------------------
 -- Misc functions dependent on AST
@@ -294,6 +130,7 @@ SEM Expr
 -- View selection
 -------------------------------------------------------------------------
 
+{-
 ATTR AGViewSelsItf AllViewSel [ | | vwSelNmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
 
 SEM ViewSel
@@ -302,15 +139,18 @@ SEM ViewSel
   | Range           lhs     .   vwSelNmS    =   let toS = Set.fold (\n r -> vgReachableFrom @lhs.vwDpdGr n `Set.union` r) Set.empty @vwTo.vwSelNmS
                                                     frSL = [ vgReachableTo @lhs.vwDpdGr n | n <- Set.toList @vwFr.vwSelNmS ]
                                                 in  Set.filter (\n -> any (\s -> n `Set.member` s) frSL) toS
+-}
 
 -------------------------------------------------------------------------
 -- View renaming
 -------------------------------------------------------------------------
 
+{-
 ATTR AGRlSelItf AllViewSel AllRlSel [ | | vwRnmM USE {`Map.union`} {Map.empty}: {Map.Map Nm Nm} ]
 
 SEM ViewSel
   | Renamed         lhs     .   vwRnmM      =   Map.singleton @nm @nmNew
+-}
 
 -------------------------------------------------------------------------
 -- Attr
@@ -561,7 +401,7 @@ SEM Decl
 ATTR AllDecl [ | | rlGam USE {`Map.union`} {Map.empty}: {RlGam Expr} ]
 
 SEM Decl
-  | Rule            lhs     .   rlGam       =   Map.singleton @nm (RlInfo @nm @pos @mbBasedOnNm @mbAGNm @lhs.rlSeqNr @viewSel.vwSelNmS @decls.vwRlGam)
+  | Rule            lhs     .   rlGam       =   Map.singleton @nm (RlInfo @nm @pos @mbBasedOnNm @mbAGNm @lhs.rlSeqNr (viewSelNmS @lhs.vwDpdGr @viewSel) @decls.vwRlGam)
 
 -------------------------------------------------------------------------
 -- Rules, all rule sets
@@ -669,14 +509,14 @@ ATTR AllDecl [ rsGam: {RsGam Expr} | | gathRsGam USE {`Map.union`} {Map.empty}: 
 
 SEM Decl
   | Rules           (lhs.gathRsGam,loc.errUndefs)
-                                            =   let rsInfo = RsInfo @nm @schemeNm @viewSel.vwSelNmS @info @decls.rlGam
+                                            =   let rsInfo = RsInfo @nm @schemeNm (viewSelNmS @lhs.vwDpdGr @viewSel) @info @decls.rlGam
                                                     drvRsInfoL = maybe [] (\l -> map (($ @lhs.scGam) . snd) l) $ Map.lookup @schemeNm @lhs.drvGam
                                                     (blds,errs)
                                                       = unzip [ ((rsNm i',i'),e) | i <- (rsInfo : drvRsInfoL)
                                                               , let (i',e) = bldRsInfo @lhs.vwDpdGr @lhs.extNmS @lhs.opts @lhs.scGam i
                                                               ]
                                                 in  (Map.fromList blds,concat errs)
-  | RulesGroup      lhs     .   gathRsGam   =   Map.singleton @nm (RsInfoGroup @nm @schemeNm @viewSel.vwSelNmS @info @rlNms)
+  | RulesGroup      lhs     .   gathRsGam   =   Map.singleton @nm (RsInfoGroup @nm @schemeNm (viewSelNmS @lhs.vwDpdGr @viewSel) @info @rlNms)
 
 SEM AGItf
   | AGItf           loc     .   rsGam       =   @decls.gathRsGam
@@ -781,18 +621,4 @@ SEM AEqn
 SEM Decl
   | Fmt ShpJudge Explain
                     expr    .   wrKindStk   =   [WrNone]
-
--------------------------------------------------------------------------
--- Is Expr a complex (non variable expr)? Then it will be used only for parameterized rewrites
--------------------------------------------------------------------------
-
-ATTR Expr AGExprItf [ | | exprIsRw: ExprIsRw ]
-
-SEM Expr
-  | Op              lhs     .   exprIsRw    =   let nm e = case e of {ExprIsRw n | n /= nmApp -> (`nmApd` n) ; _ -> id}
-                                                in  ExprIsRw . {- nm @lExpr.exprIsRw . -} nm @rExpr.exprIsRw $ @nm
-  | App             lhs     .   exprIsRw    =   ExprIsRw nmApp
-  | Var             lhs     .   exprIsRw    =   ExprIsVar @nm
-  | * - Op Var AppTop App
-                    lhs     .   exprIsRw    =   ExprIsOther
 

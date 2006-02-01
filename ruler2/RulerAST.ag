@@ -1,7 +1,5 @@
--- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
-
 -------------------------------------------------------------------------
--- AST
+-- Ruler AST
 -------------------------------------------------------------------------
 
 -------------------------------------------------------------------------
@@ -10,15 +8,6 @@
 
 DATA AGItf
   | AGItf               decls       : Decls
-
-DATA AGExprItf
-  | AGItf               expr        : Expr
-
-DATA AGViewSelsItf
-  | AGItf               viewSels    : ViewSels
-
-DATA AGRlSelItf
-  | AGItf               rlSel       : RlSel
 
 DATA AGARuleItf
   | AGItf               rule        : ARule
@@ -82,43 +71,6 @@ TYPE Decls = [Decl]
 SET AllDecl = Decl Decls
 
 -------------------------------------------------------------------------
--- Rule selection
--------------------------------------------------------------------------
-
-DATA RlSel
-  | Sel                 vwSel       : ViewSels
-                        rsSel       : NmSel
-                        rlSel       : NmSel
-
-SET AllRlSel = RlSel
-
--------------------------------------------------------------------------
--- Nm selection
--------------------------------------------------------------------------
-
-DATA NmSel
-  | All
-  | Nms                 nms         : {[Nm]}
-
-SET AllNmSel = NmSel
-
--------------------------------------------------------------------------
--- View selection
--------------------------------------------------------------------------
-
-DATA ViewSel
-  | All
-  | View                nm          : {Nm}
-  | Renamed             nmNew       : {Nm}
-                        nm          : {Nm}
-  | Range               vwFr        : ViewSel
-                        vwTo        : ViewSel
-
-TYPE ViewSels = [ViewSel]
-
-SET AllViewSel = ViewSel ViewSels
-
--------------------------------------------------------------------------
 -- Attr defs
 -------------------------------------------------------------------------
 
@@ -161,70 +113,6 @@ TYPE AttrEqns = [AttrEqn]
 SET AllAttrEqn = RExprEqn AttrEqn AttrEqns
 
 -------------------------------------------------------------------------
--- Expr
--------------------------------------------------------------------------
-
-DATA Expr
-  | AppTop              expr        : Expr
-  | App                 lExpr       : Expr
-                        rExpr       : Expr
-  | Op                  nm          : {Nm}
-                        nmExpr      : Expr
-                        lExpr       : Expr
-                        rExpr       : Expr
-  | LF                  lExpr       : Expr
-                        rExpr       : Expr
-  | SP                  lExpr       : Expr
-                        rExpr       : Expr
-  | Var                 nm          : {Nm}
-  | AVar                anm         : ANm
-  | Int                 int         : {String}
-  | StrText             str         : {String}
-  | StrAsIs             str         : {String}
-  | Named               nm          : {Nm}
-                        expr        : Expr
-  | Wrap                wrKind      : {WrKind}
-                        expr        : Expr
-  | Cnstr               expr        : Expr
-                        cnstr       : ECnstr
-  | WrapCnstr           cnstr       : ECnstr
-  | Paren               expr        : Expr
-  | Retain              expr        : Expr
-  | Expr                expr        : Expr
-  | SelTop              expr        : Expr
-  | Sel                 expr        : Expr
-                        selMbExpr   : MbExpr
-  | ChildOrder          seqNr       : {Int}
-                        expr        : Expr
-  | Uniq
-  | Empty
-
-DATA ANm
-  | Wild
-  | Loc                 nm          : {Nm}
-                        props       : {[AtProp]}
-  | Lhs                 nm          : {Nm}
-                        props       : {[AtProp]}
-  | Fld                 nm          : {Nm}
-  | Node                ndNm        : {Nm}
-                        nm          : {Nm}
-
-TYPE MbExpr = MAYBE Expr
-
-SET AllExpr = Expr MbExpr ECnstr
-
-DERIVING AllExpr ANm: Eq,Ord
-
--------------------------------------------------------------------------
--- Expr constraint
--------------------------------------------------------------------------
-
-DATA ECnstr
-  | Ty                  nms         : {[Nm]}
-  | Var                 nm          : {Nm}
-  | Empty
-
--------------------------------------------------------------------------
 -- Rule in AG form
 -------------------------------------------------------------------------
 
@@ -260,5 +148,5 @@ SET AllARule = ARule AllARuleButARule
 
 SET AllNTButViewSel = AllRExpr AllExpr AllAttrEqn AllAttrIntro AllDecl AllARule
 
-SET AllNT = AllNTButViewSel AllViewSel
+SET AllNT = AllNTButViewSel
 
