@@ -1,15 +1,16 @@
 -------------------------------------------------------------------------
--- Interface to all ARule transformations
+-- Interface to all ARule transformations and other utilities
 -------------------------------------------------------------------------
 
-module ARuleTrfs
+module ARuleUtils
   ( module ARule
   , module ARulePatternUniq
   , module ARuleRwSubst
   , module ARuleAVarRename
   , module ARuleCopyRuleElim
   , module ARuleElimWildcAssign
-  
+  , module ARulePrettyPrint
+
   , exprFmtTeXSubst
   )
   where
@@ -25,6 +26,7 @@ import ARuleRwSubst
 import ARuleAVarRename
 import ARuleCopyRuleElim
 import ARuleElimWildcAssign
+import ARulePrettyPrint
 
 exprFmtTeXSubst :: Opts -> FmGam Expr -> Expr -> PP_Doc
 exprFmtTeXSubst o fmg = exprFmtTeX o . exprSubst o fmg

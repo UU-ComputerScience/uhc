@@ -113,10 +113,4 @@ SET AllAttrEqn = RExprEqn AttrEqn AttrEqns
 -- Sets of AST data's
 -------------------------------------------------------------------------
 
-{-
-SET AllNTButViewSel = AllRExpr AllExpr AllAttrEqn AllAttrIntro AllDecl -- AllARule
-
-SET AllNT = AllNTButViewSel
--}
-
 SET AllNT = AllRExpr AllAttrEqn AllAttrIntro AllDecl

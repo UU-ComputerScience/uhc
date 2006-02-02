@@ -10,22 +10,11 @@ module Gam
   )
   where
 
--- import IO
 import Data.Maybe
--- import Data.Char
--- import Data.List
--- import Data.Graph
--- import qualified Data.Set as Set
 import qualified Data.Map as Map
--- import FPath
--- import Utils
--- import Nm
 import PPUtils
 import UU.Pretty
--- import qualified UU.DData.Scc as Scc
--- import UU.Scanner.Position( Pos )
 import Common
--- import RulerUtils
 
 -------------------------------------------------------------------------
 -- Gam

@@ -14,23 +14,19 @@ RULER2_MAIN			:= Ruler
 RULER2_HS_MAIN_SRC_HS					:= $(addprefix $(RULER2_SRC_PREFIX),$(RULER2_MAIN).hs)
 RULER2_HS_MAIN_DRV_HS					:= $(patsubst $(RULER2_SRC_PREFIX)%.hs,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_HS_MAIN_SRC_HS))
 RULER2_HS_DPDS_SRC_HS					:= $(patsubst %,$(RULER2_SRC_PREFIX)%.hs,\
-											Common DpdGr NmParser ViewSelParser SelParser KeywParser RulerParser AttrProps RulerUtils \
-											ARuleTrfs \
-											Gam FmGam ECnstrGam RwExprGam WrKindGam \
+											Common DpdGr AttrProps \
+											NmParser ViewSelParser SelParser KeywParser RulerParser \
+											ARuleUtils ExprUtils LaTeXFmtUtils RulerUtils ViewSelUtils \
+											Gam FmGam ECnstrGam RwExprGam WrKindGam JdGam \
 											RulerAdmin RulerMkAdmin \
 											ExprToAEqn \
-											LaTeXFmtUtils \
 											)
 RULER2_HS_DPDS_DRV_HS					:= $(patsubst $(RULER2_SRC_PREFIX)%.hs,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_HS_DPDS_SRC_HS))
 
 RULER2_AGMAIN_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,MainAG)
 RULER2_AGMAIN_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag, \
-											RulerPretty RulerAbsSynAG RulerGen RulerExprMatchSubst RulerWrap \
-											RulerViewDpd RulerMisc \
-											RulerRlSel ARulePatternUniq \
-											ExprAbsSynAG ExprIsRwAG ExprPrettyPrintAG ExprSelfAG \
-											ViewSelAbsSynAG ViewSelDpdGrAG ViewSelNmSAG \
-											ARuleAbsSynAG \
+											RulerAbsSynAG RulerMisc RulerViewDpd RulerPretty RulerGen RulerRlSel \
+											ExprAbsSynAG ExprIsRwAG ExprNmSAG ExprFmGamAG ExprPrettyPrintAG ExprSelfAG \
 											)
 $(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AGMAIN_MAIN_SRC_AG)) \
 										: $(RULER2_AGMAIN_DPDS_SRC_AG)
