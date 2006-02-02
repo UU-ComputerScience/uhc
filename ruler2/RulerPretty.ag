@@ -4,17 +4,17 @@
 -- Pretty printing of ruler AST
 -------------------------------------------------------------------------
 
-{
+{-
 ppExprMbEmpty :: Expr -> (PP_Doc -> PP_Doc) -> PP_Doc -> PP_Doc
 ppExprMbEmpty (Expr_Empty) _ p = p
 ppExprMbEmpty _            f p = f p
-}
+-}
 
 -------------------------------------------------------------------------
 -- Need for parenthesis
 -------------------------------------------------------------------------
 
-{
+{-
 data NeedParCtxt
   = ParCtxtAppL | ParCtxtAppR | ParCtxtOpL | ParCtxtOpR | ParCtxtOther
   deriving Eq
@@ -36,7 +36,7 @@ exprNeedPar ctxt opNm e
   where t (Expr_AppTop  e) = t e
         t (Expr_Named _ e) = t e
         t e                = e
-}
+-}
 
 {-
 exprNeedPar :: NeedParCtxt -> Expr -> (PP_Doc -> PP_Doc)
@@ -56,7 +56,7 @@ exprNeedPar ctxt e
 -- Plain, for all
 -------------------------------------------------------------------------
 
-ATTR AllNT AGItf AGExprItf AGARuleItf [ | | pp USE {>-<} {empty} : PP_Doc ]
+ATTR AllNT AGItf {- AGExprItf AGARuleItf -} [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM AGItf
   | AGItf           lhs     .   pp          =   @decls.pp
@@ -95,79 +95,13 @@ SEM RExpr
   | Judge           lhs     .   pp          =   "judge" >#< maybe empty (\n -> pp n >#< "=") @mbRNm >#< pp @schemeNm >#< @eqns.pp
   | Del             lhs     .   pp          =   "judge" >#< "-" >#< ppCommas @nms
 
-SEM Expr
-  | App             lhs     .   pp          =   exprNeedPar ParCtxtAppL nmUnk @lExpr.self @lExpr.pp
-                                                >#< exprNeedPar ParCtxtAppR nmUnk @rExpr.self @rExpr.pp
-  | Op              lhs     .   pp          =   let op = if @nm == nmSp1 then empty else @nmExpr.pp
-                                                in  ppExprMbEmpty @lExpr.self (>|< " ")
-                                                        (exprNeedPar ParCtxtOpL @nm @lExpr.self @lExpr.pp)
-                                                    >|< op
-                                                    >|< ppExprMbEmpty @rExpr.self (" " >|<)
-                                                            (exprNeedPar ParCtxtOpR @nm @rExpr.self @rExpr.pp)
-  | LF              lhs     .   pp          =   exprNeedPar ParCtxtAppR nmUnk @lExpr.self @lExpr.pp
-                                                >-< exprNeedPar ParCtxtAppR nmUnk @rExpr.self @rExpr.pp
-  | SP              lhs     .   pp          =   @lExpr.pp >|< @rExpr.pp
-  | Sel             lhs     .   pp          =   exprNeedPar ParCtxtOther nmUnk @expr.self @expr.pp >|< "." >|< @selMbExpr.pp
-  | Var Uniq        lhs     .   pp          =   pp @nm
-  | Int             lhs     .   pp          =   pp @int
-  | StrText StrAsIs lhs     .   pp          =   pp @str
-  | Paren           lhs     .   pp          =   {-pp_parens-} @expr.pp
-  | AppTop          lhs     .   pp          =   @expr.pp
-  | Named           lhs     .   pp          =   @expr.pp
-  | Cnstr           lhs     .   pp          =   pp_braces (@expr.pp >|< "|" >|< @cnstr.pp)
-{-
-SEM Expr
-  | Sel             lhs     .   pp          =   pp_brackets ("SEL" >#< exprNeedPar ParCtxtOther nmUnk @expr.self @expr.pp) >|< "." >|< @selMbExpr.pp
-  | Var Uniq        lhs     .   pp          =   pp_brackets ("VAR" >#< pp @nm)
-  | AVar            lhs     .   pp          =   pp_brackets ("AVR" >#< @anm.pp)
-  | Paren           lhs     .   pp          =   pp_brackets ("PAR" >#< @expr.pp)
-  | AppTop          lhs     .   pp          =   pp_brackets ("TOP" >#< @expr.pp)
--}
-
-SEM ECnstr
-  | Ty              lhs     .   pp          =   ppCommas @nms
-  | Var             lhs     .   pp          =   pp @nm
-
 SEM AttrIntro
   | Intro           lhs     .   pp          =   pp @props >#< pp @nm >#< ":" >#< pp @ty
 
 SEM AttrEqn
   | Eqn             lhs     .   pp          =   "|" >#< pp @nm >#< "=" >#< @expr.pp
 
-SEM ANm
-  | Wild            loc     .   nm          =   nmWild
-                    lhs     .   pp          =   ppDest "W" @lhs.isDest @lhs.mbDstWd @lhs.mbPrevNdStr ""     ""     @nm
-  | Loc             lhs     .   pp          =   ppDest "L" @lhs.isDest @lhs.mbDstWd @lhs.mbPrevNdStr @ndStr ""     @nm
-  | Lhs             lhs     .   pp          =   ppDest "P" @lhs.isDest @lhs.mbDstWd @lhs.mbPrevNdStr @ndStr @ndStr @nm
-  | Fld             lhs     .   pp          =   ppDest "F" @lhs.isDest @lhs.mbDstWd @lhs.mbPrevNdStr "??"   @ndStr @nm
-  | Node            lhs     .   pp          =   ppDest "N" @lhs.isDest @lhs.mbDstWd @lhs.mbPrevNdStr @ndStr @ndStr @nm
-
--------------------------------------------------------------------------
--- ARule's PP
--------------------------------------------------------------------------
-
-SEM ARule
-  | Rule            lhs     .   pp          =   "SEM" >#< pp (head @ndNmL) -- >#< "--" >#< ppCommas @info
-                                                >-< indent atLhs2texDist ("|" >#< @rlNm >|< indent atLhs2texDist @eqns.pp)
-
-SEM AEqn
-  | Eqn             lhs     .   pp          =   let (w1,w2) = fromJust @lhs.mbDstWd
-                                                    w = w1 + w2 + atDstFillLen
-                                                    cmb l r = if @dest.isComposite
-                                                              then if @dest.dstWd > w - atLhs2texDist
-                                                                   then l >-< strWhite w >|< r
-                                                                   else l >|< strWhite (w - @dest.dstWd) >|< r
-                                                              else l >|< r
-                                                in  cmb @dest.pp ("=" >|< strWhite atLhs2texDist >|< @val.pp)
-  | Err             lhs     .   pp          =   "ERR" >#< @expr.pp
-
-SEM AEqnDest
-  | Many            lhs     .   pp          =   ppListSep "(" ")" "," @dests.ppL
-
-SEM AEqnDests [ | | ppL: {[PP_Doc]} ]
-  | Cons            lhs     .   ppL         =   @hd.pp : @tl.ppL
-  | Nil             lhs     .   ppL         =   []
-
+{-
 -------------------------------------------------------------------------
 -- ARule max column width info, for tabular like PP
 -------------------------------------------------------------------------
@@ -248,38 +182,9 @@ SEM AEqnDest
 SEM Expr
   | AVar            loc     .   mbPrevNdStr =   Nothing
 
--------------------------------------------------------------------------
--- Context of ANm
--------------------------------------------------------------------------
+-}
 
-{
-atLhs2texDist   = 2
-atLhs2texFill   = strWhite atLhs2texDist
-atDstFill1      = atLhs2texFill ++ "." ++ atLhs2texFill
-atDstFill2      = atLhs2texFill
-atDstFillLen    = length atDstFill1 + length atDstFill2
-
-ppDest :: String -> Bool -> Maybe (Int,Int) -> Maybe String -> String -> String -> Nm -> PP_Doc
-ppDest k isDest mbDstWd mbPrevNdStr dstPre srcPre n
-  = tr $ if isDest
-         then case mbDstWd of
-                Just (ndW,atW)
-                  -> strPad (if maybe False (==dstPre) mbPrevNdStr then "" else dstPre) ndW
-                     >|< atDstFill1 >|< strPad (show n) atW >|< atDstFill2
-                _ -> mkPre dstPre n
-         else "@" >|< mkPre srcPre n
-  where mkPre s n = if null s then pp n else s >|< "." >|< pp n
-        tr x = x -- (pp k >|< pp_braces x)
-}
-
-ATTR ANm [ isDest: Bool | | ]
-
-SEM Expr
-  | AVar            anm     .   isDest      =   False
-
-SEM AEqnDest
-  | One             anm     .   isDest      =   True
-
+{-
 -------------------------------------------------------------------------
 -- Pretty printing, LaTeX, Expr
 -------------------------------------------------------------------------
@@ -323,32 +228,38 @@ ATTR MbExpr [ | | mbPPLaTeX: {Maybe (Nm,PP_Doc)} ]
 SEM MbExpr
   | Nothing         lhs     .   mbPPLaTeX   =   Nothing
   | Just            lhs     .   mbPPLaTeX   =   Just (@just.txt,@just.ppLaTeX)
+-}
 
 -------------------------------------------------------------------------
 -- Just the text of a name
 -------------------------------------------------------------------------
 
+{-
 ATTR Expr [ | | txt USE {`const`} {nmNone}: Nm ]
 
 SEM Expr
   | Var             lhs     .   txt         =   @nm
   | StrText StrAsIs lhs     .   txt         =   Nm @str
   | App SelTop Op   lhs     .   txt         =   nmNone
+-}
 
 -------------------------------------------------------------------------
 -- Selections info
 -------------------------------------------------------------------------
 
+{-
 ATTR Expr [ | | selL: {[Maybe (Nm,PP_Doc)]}]
 
 SEM Expr
   | Sel             lhs     .   selL        =   @selMbExpr.mbPPLaTeX : @expr.selL
   | * - Sel         lhs     .   selL        =   []
+-}
 
 -------------------------------------------------------------------------
 -- Empty expr?
 -------------------------------------------------------------------------
 
+{-
 {
 data ExprKind = EKEmp | EKNm Nm | EKOther deriving Eq
 }
@@ -361,11 +272,13 @@ SEM Expr
   | Sel             lhs     .   exprKind    =   @expr.exprKind
   | * - Var Empty Sel AppTop Paren
                     lhs     .   exprKind    =   EKOther
+-}
 
 -------------------------------------------------------------------------
 -- Need parenthesis
 -------------------------------------------------------------------------
 
+{-
 ATTR MbExpr Expr [ needToParen: Bool | | ]
 
 SEM Expr
@@ -397,4 +310,4 @@ SEM AExpr
     
 SEM AEqn
   | Err             loc         .   needToParen =   True
-  
+-}  

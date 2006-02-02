@@ -1,0 +1,135 @@
+-------------------------------------------------------------------------
+-- Format Gamma
+-------------------------------------------------------------------------
+
+module FmGam
+  ( module Gam
+  
+  , FmInfo(..), FmGam
+  , fmSingleton, fmNull, fmGamFromList, fmGamFromList'
+  , fmGamUnion, fmGamUnions
+  , fmGamLookup, fmGamMap
+  
+  , FmKdGam, fkGamLookup
+  
+  , FmDrGam, fdGamLookup
+  
+  , RwGam, rwGamLookup, rwSingleton, rwGamUnion
+  , ppRwGam
+  )
+  where
+
+-- import IO
+import Data.Maybe
+-- import Data.Char
+-- import Data.List
+-- import Data.Graph
+import qualified Data.Set as Set
+import qualified Data.Map as Map
+-- import FPath
+-- import Utils
+-- import Nm
+import PPUtils
+import UU.Pretty
+-- import qualified UU.DData.Scc as Scc
+-- import UU.Scanner.Position( Pos )
+import Common
+import Gam
+-- import RulerUtils
+
+-------------------------------------------------------------------------
+-- Formats
+-------------------------------------------------------------------------
+
+data FmInfo e
+  = FmInfo
+      { fmNm    :: Nm
+      , fmKdGam :: FmKdGam e
+      }
+
+instance Show (FmInfo e) where
+  show _ = "FmInfo"
+
+instance PP e => PP (FmInfo e) where
+  pp i = "FM" >#< pp (fmNm i) >#< (ppGam . fmKdGam $ i)
+
+type FmGam e = Gam Nm (FmInfo e)
+
+fmSingleton :: Nm -> FmKind -> e -> FmGam e
+fmSingleton n k e = Map.singleton n (FmInfo n (Map.singleton k e))
+
+fmNull :: FmGam e -> Bool
+fmNull = all (Map.null . fmKdGam) . Map.elems
+
+fmGamFromList' :: FmKind -> [(Nm,e)] -> FmGam e
+fmGamFromList' fk = Map.unions . map (\(n,e) -> fmSingleton n fk e)
+
+fmGamFromList :: [(Nm,e)] -> FmGam e
+fmGamFromList = fmGamFromList' FmAll
+
+fmGamUnion :: FmGam e -> FmGam e -> FmGam e
+fmGamUnion = Map.unionWith (\i1 i2 -> i1 {fmKdGam = fmKdGam i1 `Map.union` fmKdGam i2})
+
+fmGamUnions :: [FmGam e] -> FmGam e
+fmGamUnions = foldr fmGamUnion emptyGam
+
+{-
+fmLGamUnion :: FmGam [e] -> FmGam [e] -> FmGam [e]
+fmLGamUnion = Map.unionWith (\i1 i2 -> i1 {fmKdGam = Map.unionWith (++) (fmKdGam i1) (fmKdGam i2)})
+-}
+
+fmGamLookup :: Nm -> FmKind -> FmGam e -> Maybe e
+fmGamLookup n k g
+  = case Map.lookup n g of
+      Just i
+        -> fkGamLookup Nothing Just [k] (fmKdGam i)
+      _ -> Nothing
+
+fmGamMap :: (Nm -> a -> b) -> FmGam a -> FmGam b
+fmGamMap f = Map.mapWithKey (\n i -> i {fmKdGam = Map.map (\e -> f n e) (fmKdGam i)})
+
+-------------------------------------------------------------------------
+-- FmGam for FmKind
+-------------------------------------------------------------------------
+
+type FmKdGam e = Gam FmKind e
+
+fkGamLookup :: v -> (e -> v) -> [FmKind] -> FmKdGam e -> v
+fkGamLookup = gamLookupWithDefault FmAll
+
+{-
+ppFmKdGam :: PP e => FmKdGam e -> PP_Doc
+ppFmKdGam
+-}
+
+-------------------------------------------------------------------------
+-- FmGam for AtDir
+-------------------------------------------------------------------------
+
+type FmDrGam e = Gam AtDir e
+
+fdGamLookup :: v -> (e -> v) -> [AtDir] -> FmDrGam e -> v
+fdGamLookup = gamLookupWithDefault AtInOut
+
+-------------------------------------------------------------------------
+-- Rewrite rules
+-------------------------------------------------------------------------
+
+type RwGam e = FmGam (FmDrGam [e])
+
+rwGamLookup :: Nm -> FmKind -> AtDir -> RwGam e -> Maybe [e]
+rwGamLookup n k d g
+  = case fmGamLookup n k g of
+      Just g'
+        -> fdGamLookup Nothing Just [d] g'
+      _ -> Nothing
+
+rwSingleton :: Nm -> FmKind -> AtDir -> e -> RwGam e
+rwSingleton n k d e = Map.singleton n (FmInfo n (Map.singleton k (Map.singleton d [e])))
+
+rwGamUnion :: RwGam e -> RwGam e -> RwGam e
+rwGamUnion = Map.unionWith (\i1 i2 -> i1 {fmKdGam = Map.unionWith (Map.unionWith (++)) (fmKdGam i1) (fmKdGam i2)})
+
+ppRwGam :: PP e => RwGam e -> PP_Doc
+ppRwGam = ppGam' . Map.map (\i -> fmNm i >#< ppGam (fmKdGam i))
+

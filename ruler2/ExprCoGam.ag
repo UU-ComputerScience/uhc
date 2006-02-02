@@ -1,0 +1,59 @@
+-------------------------------------------------------------------------
+-- Expr child order
+-------------------------------------------------------------------------
+
+{
+module ExprCoGam
+  ( module Gam
+  , ChOrdGam
+  , exprCoGam
+  )
+  where
+
+import qualified Data.Map as Map
+import Common
+import Expr
+import Gam
+}
+
+INCLUDE "ExprAbsSynAG.ag"
+-- INCLUDE "ExprCoGamAG.ag"
+
+WRAPPER AGExprItf
+
+{
+exprCoGam :: Expr -> ChOrdGam
+exprCoGam e
+  = coGam_Syn_AGExprItf r2
+  where r1 = sem_AGExprItf (AGExprItf_AGItf e)
+        r2 = wrap_AGExprItf r1
+                (Inh_AGExprItf)
+}
+
+-------------------------------------------------------------------------
+-- Child order
+-------------------------------------------------------------------------
+
+{
+type ChOrdGam = Gam Nm Int
+}
+
+-------------------------------------------------------------------------
+-- Expr child order
+-------------------------------------------------------------------------
+
+ATTR AllExpr ANm AGExprItf [ | | coGam USE {`Map.union`} {Map.empty}: ChOrdGam ]
+ATTR Expr ANm [ | | mbChNm: {Maybe Nm} ]
+
+SEM ANm
+  | Fld             lhs     .   mbChNm      =   Just @nm
+  | * - Fld         lhs     .   mbChNm      =   Nothing
+
+SEM Expr
+  | * - AVar        lhs     .   mbChNm      =   Nothing
+
+SEM Expr
+  | ChildOrder      lhs     .   coGam       =   case @expr.mbChNm of
+                                                    Just n -> Map.singleton n @seqNr
+                                                    Nothing -> Map.empty
+

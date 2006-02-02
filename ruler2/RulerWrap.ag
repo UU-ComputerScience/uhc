@@ -80,9 +80,10 @@ viewSelsSelfT vs
 -- Interfacing to ARule
 -------------------------------------------------------------------------
 
-WRAPPER AGARuleItf
+-- WRAPPER AGARuleItf
 
 {
+{-
 wrapARule' :: Opts -> [Nm] -> AtDefdGam -> FmGam Expr -> ARule -> Syn_AGARuleItf
 wrapARule' o co ag fg rl
   = let r1 = sem_AGARuleItf (AGARuleItf_AGItf rl)
@@ -93,8 +94,14 @@ wrapARule' o co ag fg rl
                             ,fmGam_Inh_AGARuleItf = fg
                             })
 
+ppARule :: ARule -> PP_Doc
+ppARule = pp_Syn_AGARuleItf . wrapARule' defaultOpts [] emptyGam emptyGam
+
 arlUniq :: FmGam Expr -> [Nm] -> ARule -> ARule
 arlUniq fg co = replUniq_Syn_AGARuleItf . wrapARule' defaultOpts co emptyGam fg
+
+arlSubst :: FmGam Expr -> ARule -> ARule
+arlSubst fg = repl_Syn_AGARuleItf . wrapARule' defaultOpts [] emptyGam fg
 
 arlElimAlphaRename :: ARule -> ARule
 arlElimAlphaRename = replRn_Syn_AGARuleItf . wrapARule' defaultOpts [] emptyGam emptyGam
@@ -104,21 +111,17 @@ arlElimCopyRule co ag = replCr_Syn_AGARuleItf . wrapARule' defaultOpts co ag emp
 
 arlElimWild :: ARule -> ARule
 arlElimWild = replEw_Syn_AGARuleItf . wrapARule' defaultOpts [] emptyGam emptyGam
-
-arlSubst :: FmGam Expr -> ARule -> ARule
-arlSubst fg = repl_Syn_AGARuleItf . wrapARule' defaultOpts [] emptyGam fg
-
-ppARule :: ARule -> PP_Doc
-ppARule = pp_Syn_AGARuleItf . wrapARule' defaultOpts [] emptyGam emptyGam
+-}
 }
 
 -------------------------------------------------------------------------
 -- Interfacing to Expr
 -------------------------------------------------------------------------
 
-WRAPPER AGExprItf
+-- WRAPPER AGExprItf
 
 {
+{-
 wrapExpr' :: Opts -> FmGam Expr -> RwExprGam -> ECnstrGam -> RnMp -> Expr -> Syn_AGExprItf
 wrapExpr' o fmg rwg ecg rnm e
   = let r1 = sem_AGExprItf (AGExprItf_AGItf e)
@@ -161,11 +164,11 @@ exprElimCnstr e
 exprIsRw :: Expr -> ExprIsRw
 exprIsRw = exprIsRw_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam emptyGam Map.empty
 
-exprNmGam :: Expr -> FmGam Expr
-exprNmGam = reGamExprFmGam_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam emptyGam Map.empty
-
 exprCoGam :: Expr -> ChOrdGam
 exprCoGam = coGam_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam emptyGam Map.empty
+
+exprNmGam :: Expr -> FmGam Expr
+exprNmGam = reGamExprFmGam_Syn_AGExprItf . wrapExpr' defaultOpts emptyGam emptyGam emptyGam Map.empty
 
 exprFmtTeXSubst :: Opts -> FmGam Expr -> Expr -> PP_Doc
 exprFmtTeXSubst o fmg = exprFmtTeX o . exprSubst o fmg
@@ -180,10 +183,8 @@ exprAsNm = maybe nmUnk id . exprMbNm
 exprUnk :: Expr
 exprUnk = Expr_Var nmUnk
 
-{-
 nmFmLookup :: FmKind -> Nm -> FmGam Expr -> Nm
 nmFmLookup k n g = maybe n exprAsNm $ fmGamLookup n k g
--}
 
 nmSubst :: Opts -> FmGam Expr -> Nm -> Nm
 nmSubst o g = exprAsNm . exprSubst o g . Expr_Var
@@ -193,12 +194,14 @@ instance Show Expr where
 
 instance PP Expr where
   pp = ppExpr
+-}
 }
 
 -------------------------------------------------------------------------
 -- Construction
 -------------------------------------------------------------------------
 
+{-
 {
 mkExprApp :: Expr -> [Expr] -> Expr
 mkExprApp f = Expr_AppTop . foldl Expr_App f
@@ -223,4 +226,4 @@ mkALhs = mkALhs' []
 mkANd :: Nm -> Nm -> Expr
 mkANd n a = Expr_AVar (ANm_Node n a)
 }
-
+-}

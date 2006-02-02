@@ -1,12 +1,52 @@
 -- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
 
 -------------------------------------------------------------------------
--- Optimisation
+-- Optimisation: Elimination of assignments to wildcard
 -------------------------------------------------------------------------
 
--------------------------------------------------------------------------
--- Part III: Elimination of assignments to wildcard
--------------------------------------------------------------------------
+{
+module ARuleElimWildcAssign
+  ( arlElimWild
+  )
+  where
+
+-- import Data.List
+-- import qualified Data.Set as Set
+import qualified Data.Map as Map
+-- import Utils
+import Common
+import Expr
+-- import ExprIsRw
+-- import ExprToAEqn
+import ARule
+-- import ARulePrettyPrint
+-- import Gam
+-- import FmGam
+-- import ECnstrGam
+-- import RwExprGam
+}
+
+INCLUDE "ExprAbsSynAG.ag"
+INCLUDE "ARuleAbsSynAG.ag"
+
+-- INCLUDE "ExprSelfAG.ag"
+
+-- INCLUDE "ARuleCopyRuleNmAG.ag"
+
+-- INCLUDE "ARuleEqnDest1NmAG.ag"
+-- INCLUDE "ARuleInCompDestAG.ag"
+
+WRAPPER  AGARuleItf
+
+{
+arlElimWild :: ARule -> ARule
+arlElimWild rl
+  = replEw_Syn_AGARuleItf r2
+  where r1 = sem_AGARuleItf (AGARuleItf_AGItf rl)
+        r2 = wrap_AGARuleItf r1
+                (Inh_AGARuleItf)
+
+}
 
 -------------------------------------------------------------------------
 -- Replica

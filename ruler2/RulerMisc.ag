@@ -4,22 +4,24 @@
 -- Global info
 -------------------------------------------------------------------------
 
-ATTR AllNTButViewSel AGItf AGExprItf AGARuleItf [ opts: {Opts} | | ]
+ATTR AllNT AGItf [ opts: {Opts} | | ]
 
 -------------------------------------------------------------------------
 -- Unique
 -------------------------------------------------------------------------
 
-ATTR AllNTButViewSel [ | uniq: Int | ]
+ATTR AllNT [ | uniq: Int | ]
 
 SEM AGItf
   | AGItf           decls   .   uniq        =   0
 
+{-
 SEM AGExprItf
   | AGItf           expr    .   uniq        =   0
 
 SEM AGARuleItf
   | AGItf           rule    .   uniq        =   0
+-}
 
 SEM RExpr
   | Judge           (eqns.uniq,loc.lUniq)   =   (@lhs.uniq+1,@lhs.uniq)
@@ -28,7 +30,7 @@ SEM RExpr
 -- Self
 -------------------------------------------------------------------------
 
-ATTR AllExpr AllARule [ | | self: SELF ]
+-- ATTR AllExpr AllARule [ | | self: SELF ]
 -- ATTR AGViewSelsItf [ | | self: ViewSels ]
 -- ATTR AGRlSelItf [ | | self: RlSel ]
 
@@ -49,6 +51,7 @@ SEM AGItf
 -- Expr child order
 -------------------------------------------------------------------------
 
+{-
 ATTR AllExpr ANm AGExprItf [ | | coGam USE {`Map.union`} {Map.empty}: ChOrdGam ]
 ATTR Expr ANm [ | | mbChNm: {Maybe Nm} ]
 
@@ -63,4 +66,4 @@ SEM Expr
   | ChildOrder      lhs     .   coGam       =   case @expr.mbChNm of
                                                     Just n -> Map.singleton n @seqNr
                                                     Nothing -> Map.empty
-
+-}
