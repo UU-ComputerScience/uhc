@@ -1,12 +1,72 @@
--- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
-
 -------------------------------------------------------------------------
--- Optimisation
+-- Optimisation: ARule copy rule elimination
 -------------------------------------------------------------------------
 
+{
+module ARuleCopyRuleElim
+  ( module Gam
+
+  , AtDefdGam
+  , CrOrdGam
+  
+  , arlElimCopyRule
+  )
+  where
+
+-- import Data.List
+-- import qualified Data.Set as Set
+import qualified Data.Map as Map
+-- import Utils
+import Common
+import Expr
+-- import ExprIsRw
+-- import ExprToAEqn
+import ARule
+-- import ARulePrettyPrint
+import Gam
+-- import FmGam
+-- import ECnstrGam
+-- import RwExprGam
+}
+
+INCLUDE "ExprAbsSynAG.ag"
+INCLUDE "ARuleAbsSynAG.ag"
+
+INCLUDE "ExprSelfAG.ag"
+
+INCLUDE "ARuleCopyRuleNmAG.ag"
+
+INCLUDE "ARuleEqnDest1NmAG.ag"
+INCLUDE "ARuleInCompDestAG.ag"
+
+WRAPPER  AGARuleItf
+
+{
+arlElimCopyRule :: [Nm] -> AtDefdGam -> ARule -> ARule
+arlElimCopyRule co ag rl
+  = replCr_Syn_AGARuleItf r2
+  where r1 = sem_AGARuleItf (AGARuleItf_AGItf rl)
+        r2 = wrap_AGARuleItf r1
+                (Inh_AGARuleItf {croNmL_Inh_AGARuleItf = co
+                                ,adGam_Inh_AGARuleItf = ag
+                                })
+}
+
 -------------------------------------------------------------------------
--- Part II: Copy rule elimination
+-- Copy rule order, ref to previous node
 -------------------------------------------------------------------------
+
+{
+type CrOrdGam = Gam Nm Nm
+}
+
+-------------------------------------------------------------------------
+-- Non local attr's defined, threaded?
+-------------------------------------------------------------------------
+
+{
+type AtDefdGam = Gam Nm Bool
+}
 
 -------------------------------------------------------------------------
 -- Context
@@ -14,7 +74,6 @@
 
 ATTR ARule AEqn AEqns AGARuleItf [ adGam: AtDefdGam | | ]
 ATTR ARule AEqn AEqns [ croGam: CrOrdGam | | ]
-ATTR AGARuleItf [ croNmL: {[Nm]} | | ]
 
 SEM AGARuleItf
   | AGItf           rule    .   croGam      =   fst . foldl (\(g,pn) n -> (Map.insert n pn g,n)) (emptyGam,head @lhs.croNmL) $ tail @lhs.croNmL

@@ -1,45 +1,56 @@
--- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
-
 -------------------------------------------------------------------------
--- Optimisation
+-- Optimisation: ARule/Expr rename of AVar
 -------------------------------------------------------------------------
 
--------------------------------------------------------------------------
--- Common to other optimisations
--------------------------------------------------------------------------
+{
+module ARuleAVarRename
+  ( arlElimAlphaRename
+  )
+  where
 
--- Context: is in composite dest?
+-- import Data.List
+-- import qualified Data.Set as Set
+import qualified Data.Map as Map
+-- import Utils
+import Common
+import Expr
+-- import ExprIsRw
+-- import ExprToAEqn
+import ARule
+-- import ARulePrettyPrint
+import FmGam
+-- import ECnstrGam
+-- import RwExprGam
+}
 
-ATTR AEqnDest AEqnDests [ isInComposite: Bool | | ]
+INCLUDE "ExprAbsSynAG.ag"
+INCLUDE "ARuleAbsSynAG.ag"
 
-SEM AEqn
-  | Eqn             dest    .   isInComposite
-                                            =   False
+INCLUDE "ExprSelfAG.ag"
+INCLUDE "ARuleSelfAG.ag"
 
-SEM AEqnDest
-  | Many            dests   .   isInComposite
-                                            =   True
+INCLUDE "ARuleEqnDest1NmAG.ag"
+INCLUDE "ARuleInCompDestAG.ag"
 
--------------------------------------------------------------------------
--- Is lhs a single name?
--------------------------------------------------------------------------
+WRAPPER AGExprItf AGARuleItf
 
-ATTR AEqnDest [ | | mbSingleANm: {Maybe ANm} ]
+{
+exprASubst :: RnMp -> Expr -> Expr
+exprASubst rnm e
+  = replRn_Syn_AGExprItf r2
+  where r1 = sem_AGExprItf (AGExprItf_AGItf e)
+        r2 = wrap_AGExprItf r1
+                (Inh_AGExprItf { rnMp_Inh_AGExprItf = rnm
+                               })
 
-SEM AEqnDest
-  | One             lhs     .   mbSingleANm =   if @lhs.isInComposite then Nothing else Just @anm.replRn
-  | Many            lhs     .   mbSingleANm =   Nothing
+arlElimAlphaRename :: ARule -> ARule
+arlElimAlphaRename r
+  = replRn_Syn_AGARuleItf r2
+  where r1 = sem_AGARuleItf (AGARuleItf_AGItf r)
+        r2 = wrap_AGARuleItf r1
+                (Inh_AGARuleItf)
+}
 
--------------------------------------------------------------------------
--- Is rhs a single name?
--------------------------------------------------------------------------
-
-ATTR Expr AExpr [ | | mbSingleANm: {Maybe ANm} ]
-
-SEM Expr
-  | AVar            lhs     .   mbSingleANm =   Just @anm.replRn
-  | * - AppTop Paren AVar
-                    lhs     .   mbSingleANm =   Nothing
 
 -------------------------------------------------------------------------
 -- Part I: Elimination of alpha renaming
@@ -50,14 +61,6 @@ SEM Expr
 -------------------------------------------------------------------------
 
 {
-data RnSrc = RnNm ANm | RnExpr Expr | RnNone
-
-rnSrc2Expr :: RnSrc -> Expr
-rnSrc2Expr (RnNm   a) = Expr_AVar a
-rnSrc2Expr (RnExpr e) = e
-
-type RnMp = Map.Map Nm (Int,RnSrc)
-
 rnRepl :: RnMp -> RnSrc -> RnSrc
 rnRepl m e
   = case e of
@@ -65,12 +68,6 @@ rnRepl m e
       RnNm   (ANm_Loc n _)             -> r n
       _                                -> e
   where r n = maybe e (RnExpr . exprASubst (Map.delete n m) . rnSrc2Expr . snd) (Map.lookup n m)
-
-rnMpUnion :: RnMp -> RnMp -> RnMp
-rnMpUnion m1 m2
-  = Map.unionWith (\(c1,v1) (c2,v2) -> (c1+c2,u v1 v2)) m1 m2
-  where u RnNone r = r
-        u r      _ = r
 }
 
 ATTR AEqns AEqn ANm AllExpr AExpr [ | | gathRnMp USE {`rnMpUnion`} {Map.empty}: RnMp ]
@@ -98,6 +95,7 @@ SEM ARule
                                                            )
                                                            @eqns.gathRnMp
 
+{-
 SEM AttrEqn
   | Eqn             loc     .   rnMp        =   Map.empty
 
@@ -107,6 +105,7 @@ SEM RExprEqn
 SEM Decl
   | Fmt ShpJudge Explain
   					loc     .   rnMp        =   Map.empty
+-}
 
 -------------------------------------------------------------------------
 -- Replica

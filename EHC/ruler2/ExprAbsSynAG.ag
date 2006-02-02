@@ -48,6 +48,12 @@ DATA Expr
   | Uniq
   | Empty
 
+TYPE MbExpr = MAYBE Expr
+
+-------------------------------------------------------------------------
+-- ANm
+-------------------------------------------------------------------------
+
 DATA ANm
   | Wild
   | Loc                 nm          : {Nm}
@@ -58,12 +64,6 @@ DATA ANm
   | Node                ndNm        : {Nm}
                         nm          : {Nm}
 
-TYPE MbExpr = MAYBE Expr
-
-SET AllExpr = Expr MbExpr ECnstr
-
-DERIVING AllExpr ANm: Eq,Ord
-
 -------------------------------------------------------------------------
 -- Expr constraint
 -------------------------------------------------------------------------
@@ -72,5 +72,14 @@ DATA ECnstr
   | Ty                  nms         : {[Nm]}
   | Var                 nm          : {Nm}
   | Empty
+
+-------------------------------------------------------------------------
+-- Sets
+-------------------------------------------------------------------------
+
+SET AllExprButANm = Expr MbExpr ECnstr
+
+SET AllExpr = AllExprButANm ANm
+
 
 

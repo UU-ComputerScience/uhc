@@ -1,0 +1,39 @@
+-------------------------------------------------------------------------
+-- Expr marked/named fragments
+-------------------------------------------------------------------------
+
+{
+module ExprReGamExprFmGam
+  ( exprNmGam
+  )
+  where
+
+import qualified Data.Map as Map
+import Common
+import Expr
+import FmGam
+}
+
+INCLUDE "ExprAbsSynAG.ag"
+INCLUDE "ExprSelfAG.ag"
+
+WRAPPER AGExprItf
+
+{
+exprNmGam :: Expr -> FmGam Expr
+exprNmGam e
+  = reGamExprFmGam_Syn_AGExprItf r2
+  where r1 = sem_AGExprItf (AGExprItf_AGItf e)
+        r2 = wrap_AGExprItf r1
+                (Inh_AGExprItf)
+}
+
+-------------------------------------------------------------------------
+-- Internal marked/named fragments
+-------------------------------------------------------------------------
+
+ATTR AllExpr AGExprItf [ | | reGamExprFmGam USE {`fmGamUnion`} {Map.empty}: {FmGam Expr} ]
+
+SEM Expr
+  | Named           lhs     .   reGamExprFmGam
+                                            =   fmSingleton @nm FmAll @expr.self `fmGamUnion` @expr.reGamExprFmGam

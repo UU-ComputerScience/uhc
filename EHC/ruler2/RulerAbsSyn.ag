@@ -1,0 +1,14 @@
+-------------------------------------------------------------------------
+-- Haskell interface to Ruler AST
+-------------------------------------------------------------------------
+
+{
+module RulerAbsSyn
+  where
+
+import Common
+import Expr
+import ViewSel
+}
+
+INCLUDE "RulerAbsSynAG.ag"

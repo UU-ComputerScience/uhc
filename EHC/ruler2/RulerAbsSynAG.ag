@@ -9,9 +9,6 @@
 DATA AGItf
   | AGItf               decls       : Decls
 
-DATA AGARuleItf
-  | AGItf               rule        : ARule
-
 -------------------------------------------------------------------------
 -- Declarations
 -------------------------------------------------------------------------
@@ -113,40 +110,13 @@ TYPE AttrEqns = [AttrEqn]
 SET AllAttrEqn = RExprEqn AttrEqn AttrEqns
 
 -------------------------------------------------------------------------
--- Rule in AG form
--------------------------------------------------------------------------
-
-DATA ARule
-  | Rule                ndNmL       : {[Nm]}
-                        rlNm        : {Nm}
-                        info        : {[String]}
-                        eqns        : AEqns
-
-DATA AEqn
-  | Eqn                 dest        : AEqnDest
-                        val         : AExpr
-  | Err                 expr        : Expr
-
-DATA AExpr
-  | Expr                expr        : Expr
-
-DATA AEqnDest
-  | One                 anm         : ANm
-  | Many                dests       : AEqnDests
-
-TYPE AEqns = [AEqn]
-
-TYPE AEqnDests = [AEqnDest]
-
-SET AllARuleButARule = AEqn AEqns AExpr AEqnDest AEqnDests ANm
-
-SET AllARule = ARule AllARuleButARule
-
--------------------------------------------------------------------------
 -- Sets of AST data's
 -------------------------------------------------------------------------
 
-SET AllNTButViewSel = AllRExpr AllExpr AllAttrEqn AllAttrIntro AllDecl AllARule
+{-
+SET AllNTButViewSel = AllRExpr AllExpr AllAttrEqn AllAttrIntro AllDecl -- AllARule
 
 SET AllNT = AllNTButViewSel
+-}
 
+SET AllNT = AllRExpr AllAttrEqn AllAttrIntro AllDecl

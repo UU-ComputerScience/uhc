@@ -6,9 +6,71 @@
 module Expr
   where
 
+import qualified Data.Map as Map
 import Common
 }
 
 INCLUDE "ExprAbsSynAG.ag"
 
+DERIVING AllExpr: Eq,Ord
+
+-------------------------------------------------------------------------
+-- Construction
+-------------------------------------------------------------------------
+
+{
+mkExprApp :: Expr -> [Expr] -> Expr
+mkExprApp f = Expr_AppTop . foldl Expr_App f
+
+exprUnk :: Expr
+exprUnk = Expr_Var nmUnk
+
+exprMbNm :: Expr -> Maybe Nm
+exprMbNm (Expr_Var n) = Just n
+exprMbNm _            = Nothing
+
+exprAsNm :: Expr -> Nm
+exprAsNm = maybe nmUnk id . exprMbNm
+
+}
+
+{
+mkAFld :: Nm -> Expr
+mkAFld n = Expr_AVar (ANm_Fld n)
+
+mkALoc :: Nm -> Expr
+mkALoc n = Expr_AVar (ANm_Loc n [])
+
+mkALoc' :: Nm -> Expr
+mkALoc' n = mkALoc (nmStrApd n nmWild)
+
+mkALhs' :: [AtProp] -> Nm -> Expr
+mkALhs' p n = Expr_AVar (ANm_Lhs n p)
+
+mkALhs :: Nm -> Expr
+mkALhs = mkALhs' []
+
+mkANd :: Nm -> Nm -> Expr
+mkANd n a = Expr_AVar (ANm_Node n a)
+}
+
+-------------------------------------------------------------------------
+-- Rename map
+-------------------------------------------------------------------------
+
+{
+data RnSrc = RnNm ANm | RnExpr Expr | RnNone
+
+rnSrc2Expr :: RnSrc -> Expr
+rnSrc2Expr (RnNm   a) = Expr_AVar a
+rnSrc2Expr (RnExpr e) = e
+
+type RnMp = Map.Map Nm (Int,RnSrc)
+
+rnMpUnion :: RnMp -> RnMp -> RnMp
+rnMpUnion m1 m2
+  = Map.unionWith (\(c1,v1) (c2,v2) -> (c1+c2,u v1 v2)) m1 m2
+  where u RnNone r = r
+        u r      _ = r
+}
 

@@ -1,7 +1,11 @@
--- $Id$
+-------------------------------------------------------------------------
+-- Main for AG
+-------------------------------------------------------------------------
 
-imports
 {
+module MainAG
+  where
+
 -- import System
 -- import System.Console.GetOpt
 -- import IO
@@ -18,8 +22,17 @@ import FPath
 import Utils
 import Nm
 import PPUtils
+import LaTeXFmtUtils
 -- import ParseUtils
-import qualified Expr as E
+import Expr
+import ExprToAEqn
+import ExprIsRw
+import ExprNmS
+import ExprCoGam
+import ExprLaTeX
+import ExprReGamExprFmGam
+import ARuleTrfs
+import ARulePrettyPrint
 import ViewSel
 import ViewSelNmS
 import ViewSelRlRnm
@@ -27,9 +40,13 @@ import ViewSelRlIsSel
 import ViewSelPrettyPrint
 import Common
 import KeywParser
+import FmGam
+import RwExprGam
+import ECnstrGam
 import RulerUtils
 import RulerAdmin
 import RulerMkAdmin
+import RulerAbsSyn
 }
 
 -------------------------------------------------------------------------
@@ -41,18 +58,25 @@ INCLUDE "RulerWrap.ag"
 INCLUDE "RulerMisc.ag"
 INCLUDE "RulerViewDpd.ag"
 INCLUDE "RulerPretty.ag"
-INCLUDE "RulerAST.ag"
+INCLUDE "RulerAbsSynAG.ag"
 INCLUDE "RulerGen.ag"
-INCLUDE "RulerExprMatchSubst.ag"
-INCLUDE "RulerARule.ag"
-INCLUDE "RulerARuleOptim.ag"
-INCLUDE "RulerARuleOptim2.ag"
-INCLUDE "RulerARuleOptim3.ag"
+-- INCLUDE "RulerExprMatchSubst.ag"
+-- INCLUDE "RulerARule.ag"
+-- INCLUDE "RulerARuleOptim.ag"
+-- INCLUDE "RulerARuleOptim2.ag"
+-- INCLUDE "RulerARuleOptim3.ag"
 INCLUDE "RulerRlSel.ag"
-INCLUDE "RulerPatternUniq.ag"
+-- INCLUDE "ARulePatternUniq.ag"
 
 INCLUDE "ExprAbsSynAG.ag"
 INCLUDE "ExprIsRwAG.ag"
+INCLUDE "ExprNmSAG.ag"
+INCLUDE "ExprFmGamAG.ag"
+INCLUDE "ExprPrettyPrintAG.ag"
+INCLUDE "ExprSelfAG.ag"
+-- INCLUDE "ExprOptsAG.ag"
+
+-- INCLUDE "ARuleAbsSynAG.ag"
 
 -- INCLUDE "ViewSelAbsSynAG.ag"
 -- INCLUDE "ViewSelDpdGrAG.ag"
@@ -107,6 +131,7 @@ SEM Decl
 -- Name occurrences
 -------------------------------------------------------------------------
 
+{-
 ATTR AllExpr ANm AGExprItf [ | | nmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
 
 SEM Expr
@@ -115,16 +140,19 @@ SEM Expr
 
 SEM ANm
   | Loc             lhs     .   nmS         =   Set.singleton @nm
+-}
 
 -------------------------------------------------------------------------
 -- Internal marked/named fragments
 -------------------------------------------------------------------------
 
+{-
 ATTR AllExpr AGExprItf [ | | reGamExprFmGam USE {`fmGamUnion`} {Map.empty}: {FmGam Expr} ]
 
 SEM Expr
   | Named           lhs     .   reGamExprFmGam
                                             =   fmSingleton @nm FmAll @expr.self `fmGamUnion` @expr.reGamExprFmGam
+-}
 
 -------------------------------------------------------------------------
 -- View selection
@@ -525,17 +553,19 @@ SEM AGItf
 -- Formats, rewrites
 -------------------------------------------------------------------------
 
-{
+{-
 type RwExprGam = RwGam (Expr,Expr)
-}
+-}
 
 ATTR AllDecl [ | | gathFmGam USE {`fmGamUnion`} {Map.empty}: {FmGam Expr} ]
-ATTR AllDecl AllExpr AGExprItf AGARuleItf ARule AEqn AEqns AExpr [ fmGam: {FmGam Expr} | | ]
+ATTR AllDecl [ fmGam: {FmGam Expr} | | ]
 
 ATTR AllDecl [ | | gathRwGam USE {`rwGamUnion`} {Map.empty}: RwExprGam ]
-ATTR AllDecl AllExpr AGExprItf [ rwGam: RwExprGam | | ]
+ATTR AllDecl {- AllExpr AGExprItf -} [ rwGam: RwExprGam | | ]
 
+{-
 ATTR AllExpr AGExprItf [ ecGam: ECnstrGam | | ]
+-}
 
 SEM AGItf
   | AGItf           loc     .   fmGam       =   @decls.gathFmGam
@@ -558,6 +588,7 @@ SEM AttrEqn
                             .   rwGam       =   emptyGam
                             .   ecGam       =   emptyGam
 
+{-
 SEM AExpr
   | Expr            loc     .   rwGam       =   emptyGam
                             .   ecGam       =   emptyGam
@@ -566,6 +597,7 @@ SEM AEqn
   | Err             loc     .   fmGam       =   emptyGam
                             .   rwGam       =   emptyGam
                             .   ecGam       =   emptyGam
+-}
 
 SEM Decl
   | Fmt ShpJudge Explain
@@ -595,6 +627,7 @@ SEM Decl
 -- Wrapping context (stack)
 -------------------------------------------------------------------------
 
+{-
 ATTR AllExpr [ wrKindStk: {[WrKind]} | | ]
 
 SEM Expr
@@ -621,4 +654,4 @@ SEM AEqn
 SEM Decl
   | Fmt ShpJudge Explain
                     expr    .   wrKindStk   =   [WrNone]
-
+-}

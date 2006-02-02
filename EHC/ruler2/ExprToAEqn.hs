@@ -1,19 +1,26 @@
--- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
-
 -------------------------------------------------------------------------
 -- (A)Eqn as Expr
 -------------------------------------------------------------------------
+module ExprToAEqn
+  ( exprMbAEqnRest, mkExprEqn
+  )
+  where
 
-{
+import qualified Data.Set as Set
+import Common
+import Expr
+import ExprNmS
+import ARule
+import Gam
+import FmGam
+
 mkExprEqn :: Expr -> Expr -> Expr
 mkExprEqn l r = Expr_AppTop (Expr_Op (nmEql) (Expr_Var (nmEql)) l r)
-}
 
 -------------------------------------------------------------------------
 -- Expr as AEqn
 -------------------------------------------------------------------------
 
-{
 exprMbAEqnRest :: Expr -> Maybe (AEqn,[Expr],FmGam Expr)
 exprMbAEqnRest expr
   = eE expr
@@ -78,6 +85,5 @@ exprMbAEqnRest expr
                       _                         -> Nothing
         gu = fmGamUnion
         gs n e = fmGamFromList' FmAG [(n,e)]
-}
 
 

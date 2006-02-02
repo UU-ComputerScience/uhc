@@ -1,26 +1,80 @@
--- $Id: EHTyFitsIn.chs 214 2005-05-28 17:52:29Z atze $
+module LaTeXFmtUtils
+  ( ppDest
+  , atDstFillLen, atLhs2texDist
+  , NeedParCtxt(..), exprNeedPar
+  , ppExprMbEmpty
+  
+  , strLhs2TeXSafe, nmLhs2TeXSafe
+  , mkMBox
+  , mkInLhs2Tex, ensureTeXMath
+  , switchLaTeXLhs, switchLaTeXLhs'
+  , mkCmdNmDef, mkCmdNmUse
+  , ppNmLaTeX, ppSelLaTeX
+  , ppWrapShuffle
+  )
+  where
 
-module RulerUtils where
-
-import IO
-import Data.Maybe
-import Data.Char
-import Data.List
--- import Data.Graph
-import qualified Data.Set as Set
-import qualified Data.Map as Map
-import FPath
 import Utils
-import Nm
+import UU.Pretty
 import PPUtils
 import Common
-import UU.Pretty
-import qualified UU.DData.Scc as Scc
--- import UU.Scanner.Position( noPos, Pos, Position(..) )
--- import UU.Scanner.GenToken
--- import UU.Parsing
+import Expr
 
-import Debug.Trace
+-------------------------------------------------------------------------
+-- Formatting for destination names in AG rules
+-------------------------------------------------------------------------
+
+atLhs2texDist   = 2
+atLhs2texFill   = strWhite atLhs2texDist
+atDstFill1      = atLhs2texFill ++ "." ++ atLhs2texFill
+atDstFill2      = atLhs2texFill
+atDstFillLen    = length atDstFill1 + length atDstFill2
+
+ppDest :: String -> Bool -> Maybe (Int,Int) -> Maybe String -> String -> String -> Nm -> PP_Doc
+ppDest k isDest mbDstWd mbPrevNdStr dstPre srcPre n
+  = tr $ if isDest
+         then case mbDstWd of
+                Just (ndW,atW)
+                  -> strPad (if maybe False (==dstPre) mbPrevNdStr then "" else dstPre) ndW
+                     >|< atDstFill1 >|< strPad (show n) atW >|< atDstFill2
+                _ -> mkPre dstPre n
+         else "@" >|< mkPre srcPre n
+  where mkPre s n = if null s then pp n else s >|< "." >|< pp n
+        tr x = x -- (pp k >|< pp_braces x)
+
+-------------------------------------------------------------------------
+-- Need for parenthesis
+-------------------------------------------------------------------------
+
+data NeedParCtxt
+  = ParCtxtAppL | ParCtxtAppR | ParCtxtOpL | ParCtxtOpR | ParCtxtOther
+  deriving Eq
+
+exprNeedPar :: NeedParCtxt -> Nm -> Expr -> (PP_Doc -> PP_Doc)
+exprNeedPar ctxt opNm e
+  = case e of
+      Expr_Paren e
+        -> case (t e,ctxt) of
+             (Expr_Op    _ _ _ _,ParCtxtAppL) -> pp_parens
+             (Expr_Op    _ _ _ _,ParCtxtAppR) -> pp_parens
+             (Expr_Op    _ _ _ _,ParCtxtOpL ) -> pp_parens
+             (Expr_Op    _ _ _ _,ParCtxtOpR ) -> pp_parens
+             (Expr_App   _ _    ,ParCtxtAppR) -> pp_parens
+             (Expr_Paren _      ,_          ) -> pp_parens
+             _ | opNm == nmSp1 -> pp_parens
+               | otherwise     -> id
+      _ -> id
+  where t (Expr_AppTop  e) = t e
+        t (Expr_Named _ e) = t e
+        t e                = e
+
+-------------------------------------------------------------------------
+-- Misc
+-------------------------------------------------------------------------
+
+ppExprMbEmpty :: Expr -> (PP_Doc -> PP_Doc) -> PP_Doc -> PP_Doc
+ppExprMbEmpty (Expr_Empty) _ p = p
+ppExprMbEmpty _            f p = f p
 
 -------------------------------------------------------------------------
 -- LaTeX
@@ -31,7 +85,6 @@ mkLaTeXNm :: String -> String
 mkLaTeXNm = map (\c -> if isAlphaNum c then c else '-')
 -}
 
-{-
 strLhs2TeXSafe :: String -> String
 strLhs2TeXSafe = concat . map (\c -> if c == '|' then "||" else [c])
 
@@ -40,14 +93,12 @@ nmLhs2TeXSafe = fmap strLhs2TeXSafe
 
 mkMBox :: PP a => a -> PP_Doc
 mkMBox p = "\\;\\mbox" >|< ppCurly p
--}
 
 {-
 mkRuleNm :: String -> String -> PP_Doc
 mkRuleNm r v = "\\textsc" >|< ppCurly (mkLaTeXNm r) >|< (if null v then empty else "_" >|< ppCurly v)
 -}
 
-{-
 mkVerb :: PP_Doc -> PP_Doc
 mkVerb p = ppPacked "@" "@" p
 
@@ -108,5 +159,5 @@ ppSelLaTeX isVec base sels
 ppWrapShuffle :: Nm -> PP_Doc -> PP_Doc
 ppWrapShuffle n x
   = "%%[" >|< n >-< x >-< "%%]"
--}
+
 

@@ -1,4 +1,45 @@
--- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
+-------------------------------------------------------------------------
+-- Interfacing to ARule: 
+-------------------------------------------------------------------------
+
+{
+module ARulePatternUniq
+  ( arlUniq
+  )
+  where
+
+import qualified Data.Set as Set
+import Common
+import ARule
+import Expr
+import FmGam
+import ARuleRwSubst
+}
+
+INCLUDE "ExprAbsSynAG.ag"
+INCLUDE "ARuleAbsSynAG.ag"
+
+INCLUDE "ExprOptsAG.ag"
+INCLUDE "ARuleOptsAG.ag"
+
+INCLUDE "ExprFmGamAG.ag"
+INCLUDE "ARuleFmGamAG.ag"
+
+INCLUDE "ARuleCopyRuleNmAG.ag"
+
+WRAPPER AGARuleItf
+
+{
+arlUniq :: FmGam Expr -> [Nm] -> ARule -> ARule
+arlUniq fg co rl
+  = replUniq_Syn_AGARuleItf r2
+  where r1 = sem_AGARuleItf (AGARuleItf_AGItf rl)
+        r2 = wrap_AGARuleItf r1
+                (Inh_AGARuleItf {opts_Inh_AGARuleItf = defaultOpts
+                                ,croNmL_Inh_AGARuleItf = co
+                                ,fmGam_Inh_AGARuleItf = fg
+                                })
+}
 
 -------------------------------------------------------------------------
 -- Uniq
@@ -31,7 +72,8 @@ SEM Expr
 
 SEM AGExprItf
   | AGItf           loc     .   uniqSeqNr   =   0
-  
+
+{-
 SEM Decl
   | Fmt ShpJudge Explain
   					loc     .   uniqSeqNr   =   0
@@ -41,7 +83,8 @@ SEM RExprEqn
 
 SEM AttrEqn
   | Eqn             loc     .   uniqSeqNr   =   0
-  
+-}
+
 -------------------------------------------------------------------------
 -- Uniq name
 -------------------------------------------------------------------------
