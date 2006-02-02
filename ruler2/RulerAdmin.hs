@@ -1,25 +1,63 @@
 -- $Id: EHTyFitsIn.chs 214 2005-05-28 17:52:29Z atze $
 
-module RulerAdmin where
+module RulerAdmin
+  ( module FmGam
+  , module JdGam
+  
+  , AtInfo(..), AtGam
+  , atGamNode, atMbSynInh
+  
+  , ExplInfo(..), ExplGam
+  
+  , VwScInfo(..), VwScGam
+  , emptyVwScInfo
+  
+  , ScInfo(..), ScGam
+  , emptyScInfo
+  , scVwGamLookup, scVwGamNodeAt
+  
+  , JAInfo(..), JAGam
+  , jaGamToFmGam, fmGamToJaGam
+  
+  , REInfo(..), REGam
+  , reMbJAGam
+  
+  , RlChInfo(..), RlChGam
+  , rcGamUnion
+  
+  , VwRlInfo(..), VwRlGam
+  , emptyVwRlInfo
+  , vwrlDelEmptyJd, vrwlIsEmpty, vwrlScc, vwrlUndefs
+  
+  , RlInfo(..), RlGam
+  , emptyRlInfo
+  , rlVwGamLookup
+  
+  , RsInfo(..), RsGam
+  , emptyRsInfo
+  , rsRlOrder, rsInfoMbRlGam
+  )
+  where
 
-import IO
+-- import IO
 import Data.Maybe
 import Data.Char
 import Data.List
-import Data.Graph
+-- import Data.Graph
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import FPath
+-- import FPath
 import Utils
-import Nm
+-- import Nm
 import PPUtils
 import UU.Pretty
 import qualified UU.DData.Scc as Scc
-import UU.Scanner.Position( Pos )
+-- import UU.Scanner.Position( Pos )
 import Common
-import RulerUtils
+-- import RulerUtils
 import Gam
 import FmGam
+import JdGam
 
 -------------------------------------------------------------------------
 -- PP instances
@@ -63,35 +101,6 @@ atMbSynInh i
          && AtSyn    `elem` atDirs  i then Just n
                                       else Nothing
   where n = atNm i
-
--------------------------------------------------------------------------
--- Judgement formats
--------------------------------------------------------------------------
-
-data JdInfo e
-  = JdInfo
-      { jdExpr  :: e
-      }
-  | JdDel
-
-instance Show (JdInfo e) where
-  show _ = "JdInfo"
-
-instance PP e => PP (JdInfo e) where
-  pp (JdInfo e) = "Jd" >#< pp e
-  pp (JdDel   ) = pp "JdDel"
-
-type JdGam e = FmKdGam (JdInfo e)
-
-jdgUnion :: JdGam e -> JdGam e -> JdGam e
-jdgUnion gn g
-  = Map.foldWithKey
-      (\fk i g
-        -> case i of
-             JdDel -> Map.delete fk g
-             _     -> Map.insert fk i g
-      )
-      g gn
 
 -------------------------------------------------------------------------
 -- Explanations
@@ -369,28 +378,4 @@ rsRlOrder i
 rsInfoMbRlGam :: RsInfo e -> Maybe (RlGam e)
 rsInfoMbRlGam (RsInfo _ _ _ _ g) = Just g
 rsInfoMbRlGam _                  = Nothing
-
--------------------------------------------------------------------------
--- Child order
--------------------------------------------------------------------------
-
-{-
-type ChOrdGam = Gam Nm Int
--}
-
--------------------------------------------------------------------------
--- Copy rule order, ref to previous node
--------------------------------------------------------------------------
-
-{-
-type CrOrdGam = Gam Nm Nm
--}
-
--------------------------------------------------------------------------
--- Non local attr's defined, threaded?
--------------------------------------------------------------------------
-
-{-
-type AtDefdGam = Gam Nm Bool
--}
 

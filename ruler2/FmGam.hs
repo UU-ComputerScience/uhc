@@ -19,23 +19,13 @@ module FmGam
   )
   where
 
--- import IO
 import Data.Maybe
--- import Data.Char
--- import Data.List
--- import Data.Graph
 import qualified Data.Set as Set
 import qualified Data.Map as Map
--- import FPath
--- import Utils
--- import Nm
 import PPUtils
 import UU.Pretty
--- import qualified UU.DData.Scc as Scc
--- import UU.Scanner.Position( Pos )
 import Common
 import Gam
--- import RulerUtils
 
 -------------------------------------------------------------------------
 -- Formats
@@ -96,11 +86,6 @@ type FmKdGam e = Gam FmKind e
 
 fkGamLookup :: v -> (e -> v) -> [FmKind] -> FmKdGam e -> v
 fkGamLookup = gamLookupWithDefault FmAll
-
-{-
-ppFmKdGam :: PP e => FmKdGam e -> PP_Doc
-ppFmKdGam
--}
 
 -------------------------------------------------------------------------
 -- FmGam for AtDir

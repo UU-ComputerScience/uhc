@@ -6,67 +6,40 @@
 module MainAG
   where
 
--- import System
--- import System.Console.GetOpt
--- import IO
 import Data.Maybe
 import Data.Char
 import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import UU.Pretty
--- import UU.Parsing
--- import UU.Scanner
--- import UU.Scanner.Position( initPos, Pos )
 import FPath
 import Utils
-import Nm
+import Common
 import PPUtils
 import LaTeXFmtUtils
--- import ParseUtils
-import Expr
-import ExprToAEqn
-import ExprIsRw
-import ExprNmS
-import ExprCoGam
-import ExprLaTeX
-import ExprReGamExprFmGam
-import ARuleTrfs
-import ARulePrettyPrint
-import ViewSel
-import ViewSelNmS
-import ViewSelRlRnm
-import ViewSelRlIsSel
-import ViewSelPrettyPrint
-import Common
+import ExprUtils
+import ARuleUtils
+import ViewSelUtils
 import KeywParser
 import FmGam
 import RwExprGam
 import ECnstrGam
+import RulerAbsSyn
 import RulerUtils
 import RulerAdmin
 import RulerMkAdmin
-import RulerAbsSyn
 }
 
 -------------------------------------------------------------------------
 -- Inclusion of split off parts
 -------------------------------------------------------------------------
 
--- INCLUDE "RulerParser.ag"
-INCLUDE "RulerWrap.ag"
+INCLUDE "RulerAbsSynAG.ag"
 INCLUDE "RulerMisc.ag"
 INCLUDE "RulerViewDpd.ag"
 INCLUDE "RulerPretty.ag"
-INCLUDE "RulerAbsSynAG.ag"
 INCLUDE "RulerGen.ag"
--- INCLUDE "RulerExprMatchSubst.ag"
--- INCLUDE "RulerARule.ag"
--- INCLUDE "RulerARuleOptim.ag"
--- INCLUDE "RulerARuleOptim2.ag"
--- INCLUDE "RulerARuleOptim3.ag"
 INCLUDE "RulerRlSel.ag"
--- INCLUDE "ARulePatternUniq.ag"
 
 INCLUDE "ExprAbsSynAG.ag"
 INCLUDE "ExprIsRwAG.ag"
@@ -74,22 +47,12 @@ INCLUDE "ExprNmSAG.ag"
 INCLUDE "ExprFmGamAG.ag"
 INCLUDE "ExprPrettyPrintAG.ag"
 INCLUDE "ExprSelfAG.ag"
--- INCLUDE "ExprOptsAG.ag"
-
--- INCLUDE "ARuleAbsSynAG.ag"
-
--- INCLUDE "ViewSelAbsSynAG.ag"
--- INCLUDE "ViewSelDpdGrAG.ag"
--- INCLUDE "ViewSelNmSAG.ag"
 
 -------------------------------------------------------------------------
--- Misc functions dependent on AST
+-- Interfacing to AST
 -------------------------------------------------------------------------
 
-{
-jdGamFmExpr :: FmKind -> JdGam Expr -> Expr
-jdGamFmExpr k = fkGamLookup exprUnk jdExpr [k,FmSpec]
-}
+WRAPPER AGItf 
 
 -------------------------------------------------------------------------
 -- Error
@@ -126,59 +89,6 @@ SEM Decl
                                                     else []
                                                    )
   | Rules           lhs     .   errL        =   @errUndefs ++ @decls.errL
-
--------------------------------------------------------------------------
--- Name occurrences
--------------------------------------------------------------------------
-
-{-
-ATTR AllExpr ANm AGExprItf [ | | nmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
-
-SEM Expr
-  | Var             lhs     .   nmS         =   Set.singleton @nm
-  | Op              lhs     .   nmS         =   (@nm `Set.delete` @nmExpr.nmS) `Set.union` @lExpr.nmS `Set.union` @rExpr.nmS
-
-SEM ANm
-  | Loc             lhs     .   nmS         =   Set.singleton @nm
--}
-
--------------------------------------------------------------------------
--- Internal marked/named fragments
--------------------------------------------------------------------------
-
-{-
-ATTR AllExpr AGExprItf [ | | reGamExprFmGam USE {`fmGamUnion`} {Map.empty}: {FmGam Expr} ]
-
-SEM Expr
-  | Named           lhs     .   reGamExprFmGam
-                                            =   fmSingleton @nm FmAll @expr.self `fmGamUnion` @expr.reGamExprFmGam
--}
-
--------------------------------------------------------------------------
--- View selection
--------------------------------------------------------------------------
-
-{-
-ATTR AGViewSelsItf AllViewSel [ | | vwSelNmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
-
-SEM ViewSel
-  | View Renamed    lhs     .   vwSelNmS    =   Set.singleton @nm
-  | All             lhs     .   vwSelNmS    =   vgVertices @lhs.vwDpdGr
-  | Range           lhs     .   vwSelNmS    =   let toS = Set.fold (\n r -> vgReachableFrom @lhs.vwDpdGr n `Set.union` r) Set.empty @vwTo.vwSelNmS
-                                                    frSL = [ vgReachableTo @lhs.vwDpdGr n | n <- Set.toList @vwFr.vwSelNmS ]
-                                                in  Set.filter (\n -> any (\s -> n `Set.member` s) frSL) toS
--}
-
--------------------------------------------------------------------------
--- View renaming
--------------------------------------------------------------------------
-
-{-
-ATTR AGRlSelItf AllViewSel AllRlSel [ | | vwRnmM USE {`Map.union`} {Map.empty}: {Map.Map Nm Nm} ]
-
-SEM ViewSel
-  | Renamed         lhs     .   vwRnmM      =   Map.singleton @nm @nmNew
--}
 
 -------------------------------------------------------------------------
 -- Attr
@@ -553,19 +463,11 @@ SEM AGItf
 -- Formats, rewrites
 -------------------------------------------------------------------------
 
-{-
-type RwExprGam = RwGam (Expr,Expr)
--}
-
 ATTR AllDecl [ | | gathFmGam USE {`fmGamUnion`} {Map.empty}: {FmGam Expr} ]
 ATTR AllDecl [ fmGam: {FmGam Expr} | | ]
 
 ATTR AllDecl [ | | gathRwGam USE {`rwGamUnion`} {Map.empty}: RwExprGam ]
-ATTR AllDecl {- AllExpr AGExprItf -} [ rwGam: RwExprGam | | ]
-
-{-
-ATTR AllExpr AGExprItf [ ecGam: ECnstrGam | | ]
--}
+ATTR AllDecl [ rwGam: RwExprGam | | ]
 
 SEM AGItf
   | AGItf           loc     .   fmGam       =   @decls.gathFmGam
@@ -587,17 +489,6 @@ SEM AttrEqn
   | Eqn             loc     .   fmGam       =   emptyGam
                             .   rwGam       =   emptyGam
                             .   ecGam       =   emptyGam
-
-{-
-SEM AExpr
-  | Expr            loc     .   rwGam       =   emptyGam
-                            .   ecGam       =   emptyGam
-
-SEM AEqn
-  | Err             loc     .   fmGam       =   emptyGam
-                            .   rwGam       =   emptyGam
-                            .   ecGam       =   emptyGam
--}
 
 SEM Decl
   | Fmt ShpJudge Explain
