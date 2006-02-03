@@ -28,7 +28,7 @@ import AttrProps
 -- import SelParser
 -- import Common
 -- import Utils (wordsBy)
--- import MainAG
+-- import Main1AG
 
 -------------------------------------------------------------------------
 -- Scanning

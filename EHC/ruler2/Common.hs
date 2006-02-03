@@ -11,7 +11,6 @@ module Common
   , module FPath
   , module PPUtils
   , module AttrProps
-  , versionInfo, versionDist
   , rulesCmdPre
   , Opts(..), defaultOpts, cmdLineOpts
   , ExprIsRw(..)
@@ -53,6 +52,7 @@ import ViewSelParser
 -- Version of program
 -------------------------------------------------------------------------
 
+{-
 versionSvn      = "$Id: Ruler.ag 301 2006-01-20 14:59:39Z atze $"
 versionMajor    = "0"
 versionMinor    = "1"
@@ -60,6 +60,7 @@ versionQuality  = "alpha"
 versionDist     = versionMajor ++ "." ++ versionMinor ++ versionQuality
 versionProg     = "ruler"
 versionInfo     = versionProg ++ versionDist ++ ", " ++ versionSvn
+-}
 
 -------------------------------------------------------------------------
 -- Defaults
@@ -120,6 +121,8 @@ cmdLineOpts
           "generate code for lhs2tex, default=no"
      , Option "a"  ["ag"]               (NoArg oGenAG)
           "generate code for AG, default=no"
+     , Option ""   ["as2"]              (NoArg oGenAS2)
+          "generate code for AS2 (under development, internal restructure), default=no"
      , Option ""   ["explain"]          (NoArg oGenExpl)
           "generate explanation (for scheme's), default=no"
      , Option ""   ["ATTR"]             (NoArg oGenAGAttr)
@@ -145,6 +148,7 @@ cmdLineOpts
      ]
   where  oGenLhs2tex     o =  o {optGenFM = FmTeX}
          oGenAG          o =  o {optGenFM = FmAG}
+         oGenAS2         o =  o {optGenFM = FmAS2}
          oGenExpl        o =  o {optGenExpl = True}
          oGenAGAttr      o =  o {optGenAGAttr = True}
          oDot2Dash       o =  o {optDot2Dash = True}
@@ -262,7 +266,7 @@ nmFunMkUniq u = Nm ("rulerMk" ++ show u ++ "Uniq")
 -------------------------------------------------------------------------
 
 data FmKind
-  = FmTeX | FmAG | FmSpec | FmAll | FmCnstr
+  = FmTeX | FmAG | FmSpec | FmAll | FmCnstr | FmAS2
   deriving (Show,Eq,Ord)
 
 instance PP FmKind where

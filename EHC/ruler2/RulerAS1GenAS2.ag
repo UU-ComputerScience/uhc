@@ -1,0 +1,12 @@
+-------------------------------------------------------------------------
+-- Generate AS2
+-------------------------------------------------------------------------
+
+ATTR AGItf [ | | as2: {AS2.Decls} ]
+
+SEM AGItf
+  | AGItf           lhs     .   as2         =   let vwOrder = vgTopSort @vwDpdGr
+                                                    rsGam   = Map.filterWithKey
+                                                                  (\nRs _ -> @rlSelIsSel nmAny nRs nmAny)
+                                                                $ @rsGam
+                                                in  []

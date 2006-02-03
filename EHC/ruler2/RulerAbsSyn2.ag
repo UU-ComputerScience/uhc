@@ -1,0 +1,17 @@
+-------------------------------------------------------------------------
+-- Haskell interface to Ruler AST pass 2
+-------------------------------------------------------------------------
+
+{
+module RulerAbsSyn2
+  where
+
+import qualified Data.Set as Set
+import Common
+import Expr
+import ARule
+import ViewSel
+}
+
+INCLUDE "RulerAbsSyn2AG.ag"
+INCLUDE "RulerAbsSynCommonAG.ag"

@@ -15,10 +15,14 @@ DATA ARule
                         info        : {[String]}
                         eqns        : AEqns
 
+TYPE ARules = [ARule]
+
 DATA AEqn
   | Eqn                 dest        : AEqnDest
                         val         : AExpr
   | Err                 expr        : Expr
+
+TYPE AEqns = [AEqn]
 
 DATA AExpr
   | Expr                expr        : Expr
@@ -27,11 +31,13 @@ DATA AEqnDest
   | One                 anm         : ANm
   | Many                dests       : AEqnDests
 
-TYPE AEqns = [AEqn]
-
 TYPE AEqnDests = [AEqnDest]
 
-SET AllARuleButARule = AEqn AEqns AExpr AEqnDest AEqnDests
+SET AllARuleEqn = AEqn AEqns
 
-SET AllARule = ARule AllARuleButARule
+SET AllARuleRule = ARule ARules
+
+SET AllARuleButARule = AllARuleEqn AExpr AEqnDest AEqnDests
+
+SET AllARule = AllARuleRule AllARuleButARule
 

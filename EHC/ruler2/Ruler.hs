@@ -12,8 +12,10 @@ import IO
 import System.Console.GetOpt
 import ParseUtils
 import ParseErrPrettyPrint
+import Version
 import Common
-import MainAG
+import qualified Main1AG as M1
+import qualified Main2AG as M2
 import KeywParser
 import RulerParser
 -- import CDoc
@@ -51,16 +53,17 @@ doCompile fp opts
        ; tokens <- mkHScan fn fh
        ; let (pres,perrs) = parseToResMsgs pAGItf tokens
        ; if null perrs
-         then do { let res = wrap_AGItf pres
-                               (Inh_AGItf
-                                  { opts_Inh_AGItf = opts
+         then do { let res = M1.wrap_AGItf pres
+                               (M1.Inh_AGItf
+                                  { M1.opts_Inh_AGItf = opts
                                   })
-                 ; let putDbg = putBld (optDebug opts) (pp_Syn_AGItf res)
-                       errL = errL_Syn_AGItf res
+                 ; let putDbg = putBld (optDebug opts) (M1.pp_Syn_AGItf res)
+                       errL = M1.errL_Syn_AGItf res
                  ; if null errL
                    then do { putDbg
-                           ; putBld (optGenFM opts /= FmAll) (mkPP_Syn_AGItf res (optGenFM opts))
-                           ; putBld (optGenExpl opts) (scExplPP_Syn_AGItf res)
+                           ; putBld (optGenFM opts /= FmAll) (M1.mkPP_Syn_AGItf res (optGenFM opts))
+                           ; putBld (optGenFM opts == FmAS2) (M2.ppAS2 $ M1.as2_Syn_AGItf $ res)
+                           ; putBld (optGenExpl opts) (M1.scExplPP_Syn_AGItf res)
                            }
                    else do { hPutBld True stderr (ppErrPPL errL)
                            ; putDbg

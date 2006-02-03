@@ -1,5 +1,3 @@
--- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
-
 -------------------------------------------------------------------------
 -- Use of attrs
 -------------------------------------------------------------------------
@@ -322,10 +320,13 @@ genAG
           in  vlist [ wrapFrag s v (mk s v) | (s,vs) <- Map.toList sv, v <- Set.toList vs ] 
       }
 
+genAS2
+  = genDflt
+
 type GenGam = Gam FmKind Gen
 
 genGam :: GenGam
-genGam = Map.fromList [ (FmTeX,genTeX), (FmAG,genAG) ]
+genGam = Map.fromList [ (FmTeX,genTeX), (FmAG,genAG), (FmAS2,genAS2) ]
 }
 
 -------------------------------------------------------------------------
