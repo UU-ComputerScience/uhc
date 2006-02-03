@@ -7,7 +7,7 @@ module ARuleUtils
   , module ARulePatternUniq
   , module ARuleRwSubst
   , module ARuleAVarRename
-  , module ARuleCopyRuleElim
+  , module ARuleElimCopyRule
   , module ARuleElimWildcAssign
   , module ARulePrettyPrint
 
@@ -24,7 +24,7 @@ import ARule
 import ARulePatternUniq
 import ARuleRwSubst
 import ARuleAVarRename
-import ARuleCopyRuleElim
+import ARuleElimCopyRule
 import ARuleElimWildcAssign
 import ARulePrettyPrint
 

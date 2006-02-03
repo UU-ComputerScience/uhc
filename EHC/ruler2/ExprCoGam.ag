@@ -17,7 +17,6 @@ import Gam
 }
 
 INCLUDE "ExprAbsSynAG.ag"
--- INCLUDE "ExprCoGamAG.ag"
 
 WRAPPER AGExprItf
 

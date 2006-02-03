@@ -3,7 +3,7 @@
 -------------------------------------------------------------------------
 
 {
-module ARuleCopyRuleElim
+module ARuleElimCopyRule
   ( module Gam
 
   , AtDefdGam
@@ -13,26 +13,18 @@ module ARuleCopyRuleElim
   )
   where
 
--- import Data.List
--- import qualified Data.Set as Set
 import qualified Data.Map as Map
--- import Utils
 import Common
 import Expr
--- import ExprIsRw
--- import ExprToAEqn
 import ARule
--- import ARulePrettyPrint
 import Gam
--- import FmGam
--- import ECnstrGam
--- import RwExprGam
 }
 
 INCLUDE "ExprAbsSynAG.ag"
 INCLUDE "ARuleAbsSynAG.ag"
 
 INCLUDE "ExprSelfAG.ag"
+INCLUDE "ARuleSelfAG.ag"
 
 INCLUDE "ARuleCopyRuleNmAG.ag"
 
@@ -44,7 +36,7 @@ WRAPPER  AGARuleItf
 {
 arlElimCopyRule :: [Nm] -> AtDefdGam -> ARule -> ARule
 arlElimCopyRule co ag rl
-  = replCr_Syn_AGARuleItf r2
+  = self_Syn_AGARuleItf r2
   where r1 = sem_AGARuleItf (AGARuleItf_AGItf rl)
         r2 = wrap_AGARuleItf r1
                 (Inh_AGARuleItf {croNmL_Inh_AGARuleItf = co
@@ -82,8 +74,6 @@ SEM AGARuleItf
 -- Replica
 -------------------------------------------------------------------------
 
-ATTR AllARule AllExpr [ | | replCr: SELF ]
-ATTR AGARuleItf [ | | replCr: ARule ]
 ATTR AEqns AEqn [ | | replCrEqns USE {++} {[]}: {[AEqn]} ]
 
 SEM AEqn
@@ -100,10 +90,10 @@ SEM AEqn
                                                         -> []
                                                       (Just (ANm_Lhs dn _),Just (ANm_Lhs sn _)) | dn == sn && (isThr sn) && nmLhs `isPrev` nmLhs
                                                         -> []
-                                                      _ -> [@replCr]
-  | * - Eqn         lhs     .   replCrEqns  =   [@replCr]
+                                                      _ -> [@self]
+  | * - Eqn         lhs     .   replCrEqns  =   [@self]
 
 SEM ARule
-  | Rule            lhs     .   replCr      =   ARule_Rule @ndNmL @rlNm @info @eqns.replCrEqns
+  | Rule            lhs     .   self        =   ARule_Rule @ndNmL @rlNm @info @eqns.replCrEqns
 
 
