@@ -17,7 +17,7 @@ import UU.Scanner
 import ParseUtils
 -- import Common
 -- import Utils (wordsBy)
--- import MainAG
+-- import Main1AG
 
 -------------------------------------------------------------------------
 -- Parser

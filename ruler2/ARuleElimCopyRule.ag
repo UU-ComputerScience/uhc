@@ -64,8 +64,8 @@ type AtDefdGam = Gam Nm Bool
 -- Context
 -------------------------------------------------------------------------
 
-ATTR ARule AEqn AEqns AGARuleItf [ adGam: AtDefdGam | | ]
-ATTR ARule AEqn AEqns [ croGam: CrOrdGam | | ]
+ATTR AllARuleRule AllARuleEqn AGARuleItf [ adGam: AtDefdGam | | ]
+ATTR AllARuleRule AllARuleEqn [ croGam: CrOrdGam | | ]
 
 SEM AGARuleItf
   | AGItf           rule    .   croGam      =   fst . foldl (\(g,pn) n -> (Map.insert n pn g,n)) (emptyGam,head @lhs.croNmL) $ tail @lhs.croNmL

@@ -26,7 +26,7 @@ import KeywParser
 import NmParser
 import ViewSel
 -- import Utils (wordsBy)
--- import MainAG
+-- import Main1AG
 
 -------------------------------------------------------------------------
 -- Parser

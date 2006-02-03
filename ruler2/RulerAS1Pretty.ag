@@ -1,10 +1,8 @@
--- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
-
 -------------------------------------------------------------------------
--- Pretty printing of ruler AST
+-- Pretty printing of ruler AST1
 -------------------------------------------------------------------------
 
-ATTR AllNT AGItf {- AGExprItf AGARuleItf -} [ | | pp USE {>-<} {empty} : PP_Doc ]
+ATTR AllAS1 AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM AGItf
   | AGItf           lhs     .   pp          =   @decls.pp

@@ -1,9 +1,9 @@
 -------------------------------------------------------------------------
--- Haskell interface to Ruler AST
+-- Haskell interface to Ruler AST pass 1
 -------------------------------------------------------------------------
 
 {
-module RulerAbsSyn
+module RulerAbsSyn1
   where
 
 import Common
@@ -11,4 +11,5 @@ import Expr
 import ViewSel
 }
 
-INCLUDE "RulerAbsSynAG.ag"
+INCLUDE "RulerAbsSyn1AG.ag"
+INCLUDE "RulerAbsSynCommonAG.ag"

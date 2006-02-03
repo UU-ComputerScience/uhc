@@ -46,7 +46,7 @@ arlUniq fg co rl
 -------------------------------------------------------------------------
 
 {-
-ATTR AllNTButViewSel [ | uniq: Int | ]
+ATTR AllAS1ButViewSel [ | uniq: Int | ]
 
 SEM AGItf
   | AGItf           decls   .   uniq        =   0
@@ -101,7 +101,7 @@ SEM Expr
 -- Node to which uniq thread must be passed
 -------------------------------------------------------------------------
 
-ATTR ARule [ uniqThrDst: ANm | | ]
+ATTR AllARuleRule [ uniqThrDst: ANm | | ]
 
 SEM AGARuleItf
   | AGItf           rule    .   uniqThrDst  =   case @lhs.croNmL of

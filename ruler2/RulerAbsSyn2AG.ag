@@ -1,0 +1,76 @@
+-------------------------------------------------------------------------
+-- Ruler AST, pass 2
+-------------------------------------------------------------------------
+
+-------------------------------------------------------------------------
+-- Declarations
+-------------------------------------------------------------------------
+
+DATA Decl
+  | Rs                  decl        : RsDecl
+
+TYPE Decls = [Decl]
+
+DATA RsVwDecl
+  | Vw                  nm          : {Nm}
+                        rsDecls     : RsDecls
+
+TYPE RsVwDecls = [RsVwDecl]
+
+DATA RsDecl
+  | Rs                  nm          : {Nm}
+                        scNm        : {Nm}
+                        inclVwS     : {Set.Set Nm}
+                        descr       : {String}
+                        rlDecls     : RlDecls
+  | Grp                 nm          : {Nm}
+                        scNm        : {Nm}
+                        inclVwS     : {Set.Set Nm}
+                        descr       : {String}
+                        rlNms       : {[(Nm,Nm)]}
+
+TYPE RsDecls = [RsDecl]
+
+DATA RlDecl
+  | Rl                  nm          : {Nm}
+                        pos         : {SPos}
+                        mbAGStr     : {Maybe String}
+                        seqNr       : {Int}
+                        inclVwS     : {Set.Set Nm}
+                        preJds      : Jds
+                        postJds     : Jds
+
+TYPE RlDecls = [RlDecl]
+
+DATA Jd
+  | Ats                 nm          : {Nm}
+                        scNm        : {Nm}
+                        ats         : JdAts
+  | AG                  nm          : {Nm}
+                        scNm        : {Nm}
+                        aeqns       : ARule
+  | Expr                nm          : {Nm}
+                        scNm        : {Nm}
+                        expr        : Expr
+
+TYPE Jds = [Jd]
+
+DATA JdAt
+  | At                  nm          : {Nm}
+                        expr        : Expr
+
+TYPE JdAts = [JdAt]
+
+SET AllDecl
+  = Decl Decls
+    RsDecl RsDecls
+    RsVwDecl RsVwDecls
+    RlDecl RlDecls
+    Jd Jds
+    JdAt JdAts
+
+-------------------------------------------------------------------------
+-- Sets of AST data's
+-------------------------------------------------------------------------
+
+SET AllAS2 = AllDecl

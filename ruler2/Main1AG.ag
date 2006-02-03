@@ -1,9 +1,9 @@
 -------------------------------------------------------------------------
--- Main for AG
+-- Main for AG, pass 1
 -------------------------------------------------------------------------
 
 {
-module MainAG
+module Main1AG
   where
 
 import Data.Maybe
@@ -24,7 +24,9 @@ import KeywParser
 import FmGam
 import RwExprGam
 import ECnstrGam
-import RulerAbsSyn
+import RulerAbsSyn1
+import qualified RulerAbsSyn2 as AS2
+import qualified Main2AG as M2 -- for now
 import RulerUtils
 import RulerAdmin
 import RulerMkAdmin
@@ -34,12 +36,15 @@ import RulerMkAdmin
 -- Inclusion of split off parts
 -------------------------------------------------------------------------
 
-INCLUDE "RulerAbsSynAG.ag"
-INCLUDE "RulerMisc.ag"
-INCLUDE "RulerViewDpd.ag"
-INCLUDE "RulerPretty.ag"
-INCLUDE "RulerGen.ag"
-INCLUDE "RulerRlSel.ag"
+INCLUDE "RulerAbsSyn1AG.ag"
+INCLUDE "RulerAbsSynCommonAG.ag"
+INCLUDE "RulerAS1Misc.ag"
+INCLUDE "RulerAS1ViewDpd.ag"
+INCLUDE "RulerAS1Pretty.ag"
+INCLUDE "RulerAS1Gen.ag"
+INCLUDE "RulerAS1RlSel.ag"
+
+INCLUDE "RulerAS1GenAS2.ag"
 
 INCLUDE "ExprAbsSynAG.ag"
 INCLUDE "ExprIsRwAG.ag"
