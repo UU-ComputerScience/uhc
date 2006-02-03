@@ -270,22 +270,6 @@ SEM Expr
 SEM AGExprItf
   | AGItf           expr    .   inEqnLoc    =   EqnInTop
 
-{-
-SEM Decl
-  | Fmt             loc     .   inEqnLoc    =   EqnInTop
-
-SEM Decl
-  | Fmt ShpJudge Explain
-  					expr    .   inEqnLoc    =   EqnInTop
-
-SEM RExprEqn
-  | Expr            loc     .   inEqnLoc    =   EqnInTop
-
-SEM AttrEqn
-  | Eqn             loc     .   inEqnLoc    =   EqnInTop
-
--}
-
 SEM AExpr
   | Expr            loc     .   inEqnLoc    =   EqnInTop
 
@@ -353,15 +337,15 @@ exprMatch opts ecGam e1 e2
           where ml = mt l1 l2
                 mr = mt r1 r2
                 m  = bnd' ml . res' (mk (mtExpr ml) (mtExpr mr)) $ mr
-        bnd' mn m = m {mtFmGam = mtFmGam mn `fmGamUnion` mtFmGam m}
-        bnd n e m = bnd' (emptyEMtOut {mtFmGam = fmSingleton n FmAll e}) m
+        bnd' mn  m = m {mtFmGam = mtFmGam mn `fmGamUnion` mtFmGam m}
+        bnd  n e m = bnd' (emptyEMtOut {mtFmGam = fmSingleton n FmAll e}) m
         bndc n e m = bnd' (emptyCMtOut {mtFmGam = fmSingleton n FmCnstr (Expr_WrapCnstr e)}) m
-        res' e m = m {mtExpr = e}
-        res e = res' e emptyEMtOut
-        resc e = res' e emptyEMtOut
-        err' m = m {mtMatches = False}
-        err = err' emptyEMtOut
-        errc = err' emptyCMtOut
+        res'   e m = m {mtExpr = e}
+        res    e   = res' e emptyEMtOut
+        resc   e   = res' e emptyEMtOut
+        err'     m = m {mtMatches = False}
+        err        = err' emptyEMtOut
+        errc       = err' emptyCMtOut
 }
 
 -------------------------------------------------------------------------

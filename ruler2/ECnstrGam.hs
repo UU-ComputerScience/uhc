@@ -5,13 +5,13 @@
 module ECnstrGam
   ( module Gam
   
-  , ECnstrGam, ECnstrAsc
+  , ECnstrGam
   , ecGamLookup, ecGamInsert, ecGamFromList
   )
   where
 
-import Data.Maybe
-import qualified Data.Set as Set
+-- import Data.Maybe
+-- import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Common
 import Gam
@@ -22,7 +22,6 @@ import Expr
 -------------------------------------------------------------------------
 
 type ECnstrGam = Gam Expr ECnstr
-type ECnstrAsc = [(Expr,ECnstr)]
 
 ecGamLookup :: Expr -> ECnstrGam -> Maybe ECnstr
 ecGamLookup e g = Map.lookup (ecStrip e) g
