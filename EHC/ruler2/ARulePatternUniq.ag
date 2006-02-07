@@ -10,6 +10,7 @@ module ARulePatternUniq
 
 import qualified Data.Set as Set
 import Common
+import Opts
 import ARule
 import Expr
 import FmGam

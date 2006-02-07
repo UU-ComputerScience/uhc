@@ -326,7 +326,7 @@ genAS2
 type GenGam = Gam FmKind Gen
 
 genGam :: GenGam
-genGam = Map.fromList [ (FmTeX,genTeX), (FmAG,genAG), (FmAS2,genAS2) ]
+genGam = Map.fromList [ (FmTeX,genTeX), (FmAG,genAG) ]
 }
 
 -------------------------------------------------------------------------
@@ -347,10 +347,6 @@ rlGen gen (nRl',mkFullNm)
     . Map.filterWithKey
       (\nVw vwRlInfo -> genRlSelIsSel gen nVw (rsNm $ genRsInfo gen) (rlNm $ genRlInfo gen))
     $ (rlVwGam (genRlInfo gen))
-
-rlLtxGamTranspose :: Ord k => Gam k (Gam k (n,v)) -> Gam k (Gam k (n,v))
-rlLtxGamTranspose g
-  = Map.fromListWith Map.union [ (v,Map.singleton r (n,d)) | (r,vm) <- Map.toList g, (v,(n,d)) <- Map.toList vm ]
 
 vwRlLtxGen :: Gen -> Gam Nm (Gam Nm (Nm,PP_Doc)) -> Gam Nm PP_Doc
 vwRlLtxGen gen vwRlLtxGam

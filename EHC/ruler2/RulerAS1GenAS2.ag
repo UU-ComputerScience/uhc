@@ -2,11 +2,116 @@
 -- Generate AS2
 -------------------------------------------------------------------------
 
+{
+rsSelect :: RlSelIsSel -> RsGam Expr -> [(Nm,RsInfo Expr)]
+rsSelect rlSelIsSel rsGam
+  = rs
+  where rs = [ (rsNm,rsInfo {rsRlGam = Map.fromList rls})
+             | (rsNm,rsInfo) <- Map.toList rsGam
+             , rlSelIsSel nmAny rsNm nmAny
+             , let rls
+                     = [ (rlNm,rlInfo {rlVwGam = Map.fromList vws})
+                       | (rlNm,rlInfo) <- Map.toList (rsRlGam rsInfo)
+                       , rlSelIsSel nmAny nmAny rlNm
+                       , let vws
+                               = [ v
+                                 | v@(vwNm,_) <- Map.toList (rlVwGam rlInfo)
+                                 , rlSelIsSel vwNm nmAny nmAny
+                                 ]
+                       ]
+             ]
+
+jdChangeInfo :: Opts -> (Nm -> Maybe Bool) -> FmGam Expr -> (FmGam Expr,Expr->Expr)
+jdChangeInfo opts isChgd jaFmGam
+  = if null chs    then (jaFmGam,id)
+    else if or chs then (fmGamMap mkChng jaFmGam,id)
+                   else (jaFmGam,Expr_Wrap WrIsSame)
+  where chs = catMaybes . map isChgd . Map.keys $ jaFmGam
+        mkChng
+          = case optMbMarkChange opts of
+              Just _  -> \nAt -> case isChgd nAt of
+                                   Just isCh -> Expr_Wrap (if isCh then WrIsChanged else WrIsSame)
+                                   Nothing   -> id
+              Nothing -> \_   -> id
+
+atIsChanged :: VwRlInfo Expr -> Nm -> Nm -> Maybe Bool
+atIsChanged vwRlInfo
+  = case vwrlMbChGam vwRlInfo of
+      Just g  -> \j a -> maybe (Just False) (const (Just True)) $ dblGamLookup id j a g
+      Nothing -> \_ _ -> Nothing
+}
+
 ATTR AGItf [ | | as2: {AS2.Decls} ]
 
 SEM AGItf
-  | AGItf           lhs     .   as2         =   let vwOrder = vgTopSort @vwDpdGr
-                                                    rsGam   = Map.filterWithKey
-                                                                  (\nRs _ -> @rlSelIsSel nmAny nRs nmAny)
-                                                                $ @rsGam
-                                                in  []
+  | AGItf           loc     .   fmAS2       =   case optGenFM @lhs.opts of {FmAS2 f -> f; _ -> FmAll}
+                    lhs     .   as2         =   let vwOrder = vgTopSort @vwDpdGr
+                                                    rsGen
+                                                      = [ AS2.Decl_RsVw (mkRs rsInfo) | (nRs,rsInfo) <- rsSelect @rlSelIsSel @rsGam ]
+                                                      where mkRs rsInfo
+                                                              = case rsInfo of
+                                                                  RsInfo nRs nSc vwSel d rlGam
+                                                                    -> AS2.RsVwDecl_Rs nRs nSc vwSel d
+                                                                         [ AS2.VwDecl_Vw v rls'
+                                                                         | (v,rls) <- Map.toList rlGamT
+                                                                         , let rls' = catMaybes [ Map.lookup n rls | n <- rlOrder ]
+                                                                         ]
+                                                                    where rlGamT    = gamTranspose (rlVwGam,mkRl) rlGam
+                                                                          rlOrder   = rsRlOrder rsInfo
+                                                                          jdsOf o g = [ maybe (panic "as2") id (Map.lookup jNm g) | jNm <- o ]
+                                                                          mkRl rNm vNm rlInfo vwRlInfo
+                                                                            = AS2.RlDecl_Rl rNm (rlPos rlInfo) (rlMbAGStr rlInfo) (rlInclVwS rlInfo) pre post
+                                                                            where preg  = vwrlFullPreGam vwRlInfo
+                                                                                  postg = vwrlFullPostGam vwRlInfo
+                                                                                  preOrder  = concat (vwrlPreScc vwRlInfo)
+                                                                                  postOrder = Map.keys postg
+                                                                                  (pre,post)
+                                                                                    = case @fmAS2 of
+                                                                                        FmTeX -> (mkExprJds vwRlInfo preOrder preg,mkExprJds vwRlInfo postOrder postg)
+                                                                                        _ -> (mkAtsJds preOrder preg,mkAtsJds postOrder postg)
+                                                                          mkAtsJds order reGam
+                                                                            = [ AS2.Jd_Ats (reNm jInfo) (reScNm jInfo) (mkAts jInfo) | jInfo <- jdsOf order reGam ]
+                                                                            where mkAts jInfo = [ AS2.JdAt_At aNm (jaExpr a) | (aNm,a) <- Map.toList (reJAGam jInfo) ]
+                                                                          mkExprJds vwRlInfo order reGam
+                                                                            = [ AS2.Jd_Expr (reNm jInfo) (reScNm jInfo) (mkExpr vwRlInfo jInfo) | jInfo <- jdsOf order reGam ]
+                                                                            where mkExpr vwRlInfo jInfo
+                                                                                    = e'
+                                                                                    where (scInfo,vwScInfo) = fromJust (scVwGamLookup (reScNm jInfo) vNm @scGam)
+                                                                                          jg = jaGamToFmGam id . reJAGam $ jInfo
+                                                                                          (jg',w) = jdChangeInfo @lhs.opts (atIsChanged vwRlInfo vNm) jg
+                                                                                          e  = jdGamFmExpr @fmAS2 . vwscJdGam $ vwScInfo
+                                                                                          e' = exprSubst @lhs.opts @fmGam . w . exprSubst (@lhs.opts {optSubstOnce=True}) jg' $ e
+                                                                                          vNm = vwrlNm vwRlInfo
+                                                in  rsGen
+
+{-
+              fg = jaGamToFmGam (exprSubst (genOpts gen) (genFmGam gen)) . reJAGam $ reInfo
+              scVwExpr = jdGamFmExpr (optGenFM . genOpts $ gen) . vwscJdGam $ vwScInfo
+-}
+{-
+                                                                   -> vwRlLtxGen gen'' (rlLtxGamTranspose r)
+                                                                   where scInfo = fromJust (Map.lookup nSc (genScGam gen'))
+                                                                         gen'' = gen' {genScInfo=scInfo}
+                                                                         r = Map.mapWithKey
+                                                                               (\nRl rlInfo
+                                                                                 -> let nRl' = mkRlNm nRl
+                                                                                    in  rlGen (gen'' {genRlInfo=rlInfo})
+                                                                                              (nRl',\nVw -> mkFullRlNm nBs nVw nRs nRl')
+                                                                               )
+                                                                               rlGam
+                                                                 RsInfoGroup nRs nSc vwSel _ rlNms
+                                                                   -> vwRlLtxGen gen'' (Map.unions r)
+                                                                   where scInfo = fromJust (Map.lookup nSc (genScGam gen'))
+                                                                         gen'' = gen' {genScInfo=scInfo}
+                                                                         r = map
+                                                                               (\nVw
+                                                                                 -> let rs = [ let nRl' = mkRlNm nRl
+                                                                                                   nd = mkFullRlNm nBs nVw nRs  nRl'
+                                                                                                   nu = mkFullRlNm nBs nVw nRs' nRl'
+                                                                                               in  Map.singleton nRl (nd,genNmDef gen'' nd (genNmUse gen'' nu))
+                                                                                             | (nRs',nRl) <- rlNms, rlVwIsDef nRs' nRl nVw
+                                                                                             ]
+                                                                                    in  if null rs then emptyGam else Map.singleton nVw (Map.unions rs)
+                                                                               )
+                                                                               vwOrder
+-}

@@ -13,6 +13,7 @@ import Utils
 import UU.Pretty
 import PPUtils
 import Common
+import Opts
 import LaTeXFmtUtils
 import Expr
 import WrKindGam

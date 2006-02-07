@@ -7,35 +7,34 @@
 -------------------------------------------------------------------------
 
 DATA Decl
-  | Rs                  decl        : RsDecl
+  | RsVw                decl        : RsVwDecl
 
 TYPE Decls = [Decl]
 
 DATA RsVwDecl
-  | Vw                  nm          : {Nm}
-                        rsDecls     : RsDecls
-
-TYPE RsVwDecls = [RsVwDecl]
-
-DATA RsDecl
   | Rs                  nm          : {Nm}
                         scNm        : {Nm}
                         inclVwS     : {Set.Set Nm}
                         descr       : {String}
-                        rlDecls     : RlDecls
+                        vwDecls     : VwDecls
   | Grp                 nm          : {Nm}
                         scNm        : {Nm}
                         inclVwS     : {Set.Set Nm}
                         descr       : {String}
                         rlNms       : {[(Nm,Nm)]}
 
-TYPE RsDecls = [RsDecl]
+TYPE RsVwDecls = [RsVwDecl]
+
+DATA VwDecl
+  | Vw                  nm          : {Nm}
+                        rlDecls     : RlDecls
+
+TYPE VwDecls = [VwDecl]
 
 DATA RlDecl
   | Rl                  nm          : {Nm}
                         pos         : {SPos}
                         mbAGStr     : {Maybe String}
-                        seqNr       : {Int}
                         inclVwS     : {Set.Set Nm}
                         preJds      : Jds
                         postJds     : Jds
@@ -48,7 +47,7 @@ DATA Jd
                         ats         : JdAts
   | AG                  nm          : {Nm}
                         scNm        : {Nm}
-                        aeqns       : ARule
+                        arule       : ARule
   | Expr                nm          : {Nm}
                         scNm        : {Nm}
                         expr        : Expr
@@ -63,8 +62,9 @@ TYPE JdAts = [JdAt]
 
 SET AllDecl
   = Decl Decls
-    RsDecl RsDecls
+    -- RsDecl RsDecls
     RsVwDecl RsVwDecls
+    VwDecl VwDecls
     RlDecl RlDecls
     Jd Jds
     JdAt JdAts

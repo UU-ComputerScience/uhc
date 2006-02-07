@@ -2,6 +2,17 @@ TOP_PREFIX			:=
 
 default: explanation
 
+# Ruler, will be obsolete soon
+RULER				:= bin/ruler
+RULER_DIR			:= ruler
+RULER_MAIN			:= Ruler
+RULER_AG			:= $(RULER_MAIN).ag
+RULER_HS			:= $(RULER_AG:.ag=.hs)
+RULER_DERIV			:= $(RULER_DIR)/$(RULER_HS)
+RULER_DOC_PDF		:= $(RULER_DIR)/RulerDoc.pdf
+
+RULER_SRC			:= $(RULER_DIR)/$(RULER_AG)
+
 # files, dependencies, rules
 # do not change the order of these includes
 -include latex/files.mk
@@ -47,17 +58,6 @@ SHUFFLE_DIR			:= shuffle
 SHUFFLE_DOC_PDF		:= $(SHUFFLE_DIR)/ShuffleDoc.pdf
 
 #SHUFFLE_SRC			:= $(SHUFFLE_DIR)/$(SHUFFLE_AG)
-
-# Ruler, will be obsolete soon
-RULER				:= bin/ruler
-RULER_DIR			:= ruler
-RULER_MAIN			:= Ruler
-RULER_AG			:= $(RULER_MAIN).ag
-RULER_HS			:= $(RULER_AG:.ag=.hs)
-RULER_DERIV			:= $(RULER_DIR)/$(RULER_HS)
-RULER_DOC_PDF		:= $(RULER_DIR)/RulerDoc.pdf
-
-RULER_SRC			:= $(RULER_DIR)/$(RULER_AG)
 
 # Ruler2
 RULER2_DIR			:= ruler2

@@ -6,7 +6,7 @@ module ScanUtils
 import Data.List
 import UU.Pretty
 import UU.Parsing
-import UU.Scanner.Position( noPos, Pos, Position(..) )
+import UU.Scanner.Position( noPos, Pos(..), Position(..) )
 import UU.Scanner.GenToken
 import PPUtils
 
@@ -35,3 +35,5 @@ instance Position (GenToken k t v) where
   column = column . position
   file   = file   . position
 
+instance PP Pos where
+  pp (Pos l c f) = (if null f then empty else pp f >|< ":" ) >|< l >|< ":" >|< c
