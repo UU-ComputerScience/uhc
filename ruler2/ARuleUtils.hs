@@ -17,6 +17,7 @@ module ARuleUtils
 
 import UU.Pretty
 import Common
+import Opts
 import FmGam
 import Expr
 import ExprLaTeX

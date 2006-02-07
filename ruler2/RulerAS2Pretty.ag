@@ -1,6 +1,19 @@
 -------------------------------------------------------------------------
--- Pretty printing of ruler AST1
+-- Pretty printing of ruler AST2
 -------------------------------------------------------------------------
 
 ATTR AllAS2 AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
 
+SEM VwDecl
+  | Vw              lhs     .   pp          =   "VIEW" >#< @nm
+                                                >-< indent 2 @rlDecls.pp
+
+SEM RlDecl
+  | Rl              lhs     .   pp          =   @nm >#< ppCommaList [pp @pos,pp @mbAGStr]
+                                                >-< indent 2 (@preJds.pp >-< "---" >-< @postJds.pp)
+
+SEM Jd
+  | Ats             lhs     .   pp          =   @nm >#< pp_parens (pp @scNm) >|< ":" >#< @ats.pp
+
+SEM JdAt
+  | At              lhs     .   pp          =   @nm >#< "=" >#< @expr.pp

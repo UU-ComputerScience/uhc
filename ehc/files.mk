@@ -231,10 +231,10 @@ EHC_AG_ALL_DPDS_SRC_CAG					:= $(sort \
 
 # all src
 EHC_ALL_CHUNK_SRC						:= $(EHC_AG_ALL_MAIN_SRC_CAG) $(EHC_AG_ALL_DPDS_SRC_CAG) $(EHC_HS_ALL_SRC_CHS)
-EHC_ALL_SRC								:= $(EHC_ALL_CHUNK_SRC) $(EHC_RULES_ALL_SRC)
+EHC_ALL_SRC								:= $(EHC_ALL_CHUNK_SRC) $(EHC_RULES_ALL_SRC) $(EHC_MKF)
 
 # distribution
-EHC_DIST_FILES							:= $(EHC_ALL_SRC) $(EHC_MKF)
+EHC_DIST_FILES							:= $(EHC_ALL_SRC)
 
 # what is based on which Ruler view
 EHC_ON_RULES_VIEW_1						:= K

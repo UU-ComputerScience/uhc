@@ -14,6 +14,7 @@ import ParseUtils
 import ParseErrPrettyPrint
 import Version
 import Common
+import Opts
 import qualified Main1AG as M1
 import qualified Main2AG as M2
 import KeywParser
@@ -61,8 +62,10 @@ doCompile fp opts
                        errL = M1.errL_Syn_AGItf res
                  ; if null errL
                    then do { putDbg
-                           ; putBld (optGenFM opts /= FmAll) (M1.mkPP_Syn_AGItf res (optGenFM opts))
-                           ; putBld (optGenFM opts == FmAS2) (M2.ppAS2 $ M1.as2_Syn_AGItf $ res)
+                           ; case optGenFM opts of
+                               FmAS2 _        -> putBld True (M2.ppAS2 $ M1.as2_Syn_AGItf $ res)
+                               o | o /= FmAll -> putBld True (M1.mkPP_Syn_AGItf res (optGenFM opts))
+                               _              -> return ()
                            ; putBld (optGenExpl opts) (M1.scExplPP_Syn_AGItf res)
                            }
                    else do { hPutBld True stderr (ppErrPPL errL)

@@ -17,6 +17,7 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Utils
 import Common
+import Opts
 import Expr
 import ExprIsRw
 import ExprToAEqn

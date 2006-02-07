@@ -14,7 +14,7 @@ RULER2_MAIN			:= Ruler
 RULER2_HS_MAIN_SRC_HS					:= $(addprefix $(RULER2_SRC_PREFIX),$(RULER2_MAIN).hs)
 RULER2_HS_MAIN_DRV_HS					:= $(patsubst $(RULER2_SRC_PREFIX)%.hs,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_HS_MAIN_SRC_HS))
 RULER2_HS_DPDS_SRC_HS					:= $(patsubst %,$(RULER2_SRC_PREFIX)%.hs,\
-											Version Common DpdGr AttrProps \
+											Version Common Opts DpdGr AttrProps \
 											NmParser ViewSelParser SelParser KeywParser RulerParser \
 											ARuleUtils ExprUtils LaTeXFmtUtils RulerUtils ViewSelUtils \
 											Gam FmGam ECnstrGam RwExprGam WrKindGam JdGam \
@@ -183,7 +183,8 @@ RULER2_AG_ALL_DPDS_SRC_AG				:= $(sort \
 RULER2_AG_ALL_MAIN_SRC_AG				:= $(RULER2_AG_D_MAIN_SRC_AG) $(RULER2_AG_S_MAIN_SRC_AG) $(RULER2_AG_DS_MAIN_SRC_AG)
 
 # all src
-RULER2_ALL_SRC							:= $(RULER2_AG_ALL_MAIN_SRC_AG) $(RULER2_AG_ALL_DPDS_SRC_AG) $(RULER2_HS_MAIN_SRC_HS) $(RULER2_HS_DPDS_SRC_HS)
+RULER2_ALL_SRC							:= $(RULER2_AG_ALL_MAIN_SRC_AG) $(RULER2_AG_ALL_DPDS_SRC_AG) $(RULER2_HS_MAIN_SRC_HS) $(RULER2_HS_DPDS_SRC_HS) $(RULER2_MKF)
+
 
 # derived
 RULER2_AG_D_MAIN_DRV_HS					:= $(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AG_D_MAIN_SRC_AG))
@@ -264,7 +265,6 @@ RULER2_DEMO_MARK_CHANGES_CFG	:= --markchanges="E - AG"
 # distribution
 RULER2_DIST_FILES			:= $(RULER2_ALL_SRC) $(RULER2_DEMO_ALL_SRC) \
 								$(addprefix $(RULER2_SRC_PREFIX),Makefile README) \
-								$(RULER2_MKF) \
 								$(wildcard $(RULER2_DEMO_PREFIX)tst*)
 
 # make rules

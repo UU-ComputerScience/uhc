@@ -15,6 +15,7 @@ import UU.Pretty
 import FPath
 import Utils
 import Common
+import Opts
 import PPUtils
 import LaTeXFmtUtils
 import ExprUtils
