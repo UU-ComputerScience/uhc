@@ -17,6 +17,7 @@ import Common
 import Opts
 import qualified Main1AG as M1
 import qualified Main2AG as M2
+import TrfAS2GenARule
 import KeywParser
 import RulerParser
 -- import CDoc
@@ -56,14 +57,19 @@ doCompile fp opts
        ; if null perrs
          then do { let res = M1.wrap_AGItf pres
                                (M1.Inh_AGItf
-                                  { M1.opts_Inh_AGItf = opts
+                                  { M1.opts_Inh_AGItf = opts {optGenFM = fmAS2Fm (optGenFM opts)}
                                   })
                  ; let putDbg = putBld (optDebug opts) (M1.pp_Syn_AGItf res)
                        errL = M1.errL_Syn_AGItf res
                  ; if null errL
                    then do { putDbg
                            ; case optGenFM opts of
-                               FmAS2 _        -> putBld True (M2.ppAS2 $ M1.as2_Syn_AGItf $ res)
+                               FmAS2 f        -> do { putBld True (M2.ppAS2 t1)
+                                                    ; putBld True (M2.ppAS2 t2)
+                                                    ; putBld True (M1.mkPP_Syn_AGItf res f)
+                                                    }
+                                              where t1 = M1.as2_Syn_AGItf res
+                                                    t2 = as2ARule opts (M1.scGam_Syn_AGItf res) (M1.fmGam_Syn_AGItf res) t1
                                o | o /= FmAll -> putBld True (M1.mkPP_Syn_AGItf res (optGenFM opts))
                                _              -> return ()
                            ; putBld (optGenExpl opts) (M1.scExplPP_Syn_AGItf res)

@@ -42,45 +42,13 @@ VERSIONS			:= $(EHC_PUB_VARIANTS)
 WWW_SRC_TGZ					:= www/current-ehc-src.tgz
 WWW_DOC_PDF					:= www/current-ehc-doc.pdf
 
-# pictures in pgf format
-AFP_PGF_TEX			:= afp-pgf.tex
-
-# pictures in xfig format
-AFP_XFIG_TEX		:= $(patsubst %,figs/%.latex,ruler-overview)
-
-
-#SHUFFLE				:= $(SHUFFLE_BLD_EXEC)
-SHUFFLE_DIR			:= shuffle
-#SHUFFLE_MAIN		:= Shuffle
-#SHUFFLE_AG			:= $(SHUFFLE_MAIN).ag
-#SHUFFLE_HS			:= $(SHUFFLE_AG:.ag=.hs)
-#SHUFFLE_DERIV		:= $(SHUFFLE_DIR)/$(SHUFFLE_HS)
-SHUFFLE_DOC_PDF		:= $(SHUFFLE_DIR)/ShuffleDoc.pdf
-
-#SHUFFLE_SRC			:= $(SHUFFLE_DIR)/$(SHUFFLE_AG)
-
-# Ruler2
-RULER2_DIR			:= ruler2
-RULER2_DOC_PDF		:= $(RULER2_DIR)/RulerDoc.pdf
-
-# Brew, obsolete
-BREW				:= bin/brew
-BREW_DIR			:= brew
-BREW_MAIN			:= Brew
-BREW_AG				:= $(BREW_MAIN).ag
-BREW_HS				:= $(BREW_AG:.ag=.hs)
-BREW_DERIV			:= $(BREW_DIR)/$(BREW_HS)
-BREW_DOC_PDF		:= $(BREW_DIR)/BrewDoc.pdf
-
-BREW_SRC			:= $(BREW_DIR)/$(BREW_AG)
-
-# LHS2TEX_POLY_2(src file, dst file)
-LHS2TEX_POLY_2			= \
-	$(SUBST_SH) < $(1) | $(LHS2TEX_EXEC_WT_OPTS) --poly > $(2)
-
-# LHS2TEX_POLY_3(src file, dst file)
-LHS2TEX_POLY_3			= \
-	$(LHS2TEX_EXEC_WT_OPTS) $(LHS2TEX_POLY_MODE) $(1) > $(2)
+## LHS2TEX_POLY_2(src file, dst file)
+#LHS2TEX_POLY_2			= \
+#	$(SUBST_SH) < $(1) | $(LHS2TEX_EXEC_WT_OPTS) --poly > $(2)
+#
+## LHS2TEX_POLY_3(src file, dst file)
+#LHS2TEX_POLY_3			= \
+#	$(LHS2TEX_EXEC_WT_OPTS) $(LHS2TEX_POLY_MODE) $(1) > $(2)
 
 explanation:
 	@echo "make bin/<n>/ehc     : make compiler version <n> (where <n> in {$(EHC_PUB_VARIANTS)})" ; \
@@ -100,38 +68,33 @@ explanation:
 all: afp-full ehcs doc grinis
 	$(MAKE) initial-test-expect
 
-doc: $(SHUFFLE_DOC_PDF)
+#doc: $(SHUFFLE_DOC_PDF)
+#
+#%.latex:%.fig
+#	fig2dev -L latex $< > $@
+#
+#%.tex:%.lag
+#	$(call LHS2TEX_POLY,$<,$@)
+#
+#%.tex:%.lhs
+#	$(call LHS2TEX_POLY,$<,$@)
+#
+#%.tex:%.ltex
+#	$(call LHS2TEX_POLY_2,$<,$@)
+#
+#%.sty:%.lsty
+#	$(call LHS2TEX_POLY_3,$<,$@)
+#
+#%.ag:%.lag
+#	$(call LHS2TEX_CODE,$<,$@)
+#
+#%.hs:%.lhs
+#	$(call LHS2TEX_CODE,$<,$@)
+#
+#%.hs:%.ag
+#	cd `dirname $<` ; $(AGC) -dcfspr `basename $< .ag`
 
-%.latex:%.fig
-	fig2dev -L latex $< > $@
-
-%.tex:%.lag
-	$(call LHS2TEX_POLY,$<,$@)
-
-%.tex:%.lhs
-	$(call LHS2TEX_POLY,$<,$@)
-
-%.tex:%.ltex
-	$(call LHS2TEX_POLY_2,$<,$@)
-
-%.sty:%.lsty
-	$(call LHS2TEX_POLY_3,$<,$@)
-
-%.ag:%.lag
-	$(call LHS2TEX_CODE,$<,$@)
-
-%.hs:%.lhs
-	$(call LHS2TEX_CODE,$<,$@)
-
-%.hs:%.ag
-	cd `dirname $<` ; $(AGC) -dcfspr `basename $< .ag`
-
-.PHONY: shuffle ruler ruler2 brew ehcs dist www www-sync gri grinis agprimer $(DIST_AFP04) $(DIST_ICFP05_SLIDES)
-
-$(SHUFFLE_DIR)/ShuffleDoc.tex: $(SHUFFLE)
-
-$(SHUFFLE_DOC_PDF): $(SHUFFLE_DIR)/ShuffleDoc.tex
-	cd `dirname $<` ; pdflatex `basename $<`
+.PHONY: shuffle ruler ruler2 ehcs dist www www-sync gri grinis agprimer
 
 ruler: $(RULER)
 
@@ -144,19 +107,7 @@ $(RULER): $(RULER_DIR)/$(RULER_AG) $(wildcard lib/*.hs)
 $(RULER_DOC_PDF): $(RULER_DIR)/RulerDoc.tex $(RULER)
 	cd `dirname $<` ; pdflatex `basename $<`
 
-$(RULER2_DOC_PDF): $(RULER2_DIR)/RulerDoc.tex $(RULER2)
-	cd `dirname $<` ; pdflatex `basename $<`
-
 brew: $(BREW)
-
-$(BREW): $(BREW_DIR)/$(BREW_AG) $(wildcard lib/*.hs)
-	cd $(BREW_DIR) ; \
-	$(AGC) -csdfr --module=Main `basename $<` ; \
-	$(GHC) --make $(GHC_OPTS) -i../lib $(BREW_HS) -o ../$@ ; \
-	strip ../$@
-
-$(BREW_DOC_PDF): $(BREW_DIR)/RulerDoc.tex $(BREW)
-	cd `dirname $<` ; pdflatex `basename $<`
 
 rules2.tex: rules2.rul
 	$(RULER) -l --base=rules $< | $(LHS2TEX) $(LHS2TEX_OPTS_POLY) > $@

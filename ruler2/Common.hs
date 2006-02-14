@@ -21,7 +21,7 @@ module Common
   , nmUniq
   , nmCmdBegChng, nmCmdEndChng, nmCmdBegSame, nmCmdEndSame
   , nmFunMkUniq
-  , FmKind(..)
+  , FmKind(..), fmAS2Fm
   , ScKind(..), ScDeriv(..)
   )
   where
@@ -156,6 +156,10 @@ nmFunMkUniq u = Nm ("rulerMk" ++ show u ++ "Uniq")
 data FmKind
   = FmTeX | FmAG | FmSpec | FmAll | FmCnstr | FmAS2 FmKind
   deriving (Show,Eq,Ord)
+
+fmAS2Fm :: FmKind -> FmKind
+fmAS2Fm (FmAS2 f) = f
+fmAS2Fm f         = f
 
 instance PP FmKind where
   pp = pp . show

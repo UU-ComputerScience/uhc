@@ -5,6 +5,7 @@ module RulerAdmin
   , module JdGam
   
   , AtInfo(..), AtGam
+  , emptyAtInfo
   , atGamNode, atMbSynInh
   
   , ExplInfo(..), ExplGam
@@ -70,6 +71,9 @@ data AtInfo
       , atProps :: [AtProp]
       , atTy    :: Nm
       }
+
+emptyAtInfo :: AtInfo
+emptyAtInfo = AtInfo nmUnk [] []  nmUnk
 
 instance Show AtInfo where
   show _ = "AtInfo"

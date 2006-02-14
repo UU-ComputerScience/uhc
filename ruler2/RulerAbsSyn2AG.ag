@@ -11,6 +11,8 @@ DATA Decl
 
 TYPE Decls = [Decl]
 
+SET AllDc = Decl Decls
+
 DATA RsVwDecl
   | Rs                  nm          : {Nm}
                         scNm        : {Nm}
@@ -25,11 +27,15 @@ DATA RsVwDecl
 
 TYPE RsVwDecls = [RsVwDecl]
 
+SET AllRs = RsVwDecl RsVwDecls
+
 DATA VwDecl
   | Vw                  nm          : {Nm}
                         rlDecls     : RlDecls
 
 TYPE VwDecls = [VwDecl]
+
+SET AllVw = VwDecl VwDecls
 
 DATA RlDecl
   | Rl                  nm          : {Nm}
@@ -38,8 +44,13 @@ DATA RlDecl
                         inclVwS     : {Set.Set Nm}
                         preJds      : Jds
                         postJds     : Jds
+  | AG                  nm          : {Nm}
+                        pos         : {SPos}
+                        arule       : ARule
 
 TYPE RlDecls = [RlDecl]
+
+SET AllRl = RlDecl RlDecls
 
 DATA Jd
   | Ats                 nm          : {Nm}
@@ -54,20 +65,19 @@ DATA Jd
 
 TYPE Jds = [Jd]
 
+SET AllJd = Jd Jds
+
 DATA JdAt
   | At                  nm          : {Nm}
                         expr        : Expr
 
 TYPE JdAts = [JdAt]
 
+SET AllAt = JdAt JdAts
+
 SET AllDecl
-  = Decl Decls
-    -- RsDecl RsDecls
-    RsVwDecl RsVwDecls
-    VwDecl VwDecls
-    RlDecl RlDecls
-    Jd Jds
-    JdAt JdAts
+  = AllDc AllRs AllVw
+    AllRl AllJd AllAt
 
 -------------------------------------------------------------------------
 -- Sets of AST data's
