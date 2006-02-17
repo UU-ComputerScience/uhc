@@ -7,9 +7,11 @@ module ExprCoGam
   ( module Gam
   , ChOrdGam
   , exprCoGam
+  , coGamNmL
   )
   where
 
+import Data.List
 import qualified Data.Map as Map
 import Common
 import Expr
@@ -35,6 +37,17 @@ exprCoGam e
 
 {
 type ChOrdGam = Gam Nm Int
+}
+
+-------------------------------------------------------------------------
+-- Child order as list of names
+-------------------------------------------------------------------------
+
+{
+coGamNmL :: ChOrdGam -> [Nm]
+coGamNmL coGam
+  = [nmLhs] ++ l ++ [nmLhs]
+  where l = map fst . sortBy (\(_,o1) (_,o2) -> compare o1 o2) . Map.toList $ coGam
 }
 
 -------------------------------------------------------------------------

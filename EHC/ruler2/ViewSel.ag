@@ -11,4 +11,5 @@ import Nm
 
 INCLUDE "ViewSelAbsSynAG.ag"
 
+DERIVING AllViewSel AllRlSel AllNmSel: Show
 

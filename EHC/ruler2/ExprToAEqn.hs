@@ -2,11 +2,14 @@
 -- (A)Eqn as Expr
 -------------------------------------------------------------------------
 module ExprToAEqn
-  ( exprMbAEqnRest, mkExprEqn
+  ( exprMbAEqnRest
+  , mkExprEqn
+  , exprCheckAEqnForm
   )
   where
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 import Common
 import Expr
 import ExprNmS
@@ -14,8 +17,29 @@ import ARule
 import Gam
 import FmGam
 
+-------------------------------------------------------------------------
+-- Construct Expr of the form later to be dissected into AEqn
+-------------------------------------------------------------------------
+
 mkExprEqn :: Expr -> Expr -> Expr
 mkExprEqn l r = Expr_AppTop (Expr_Op (nmEql) (Expr_Var (nmEql)) l r)
+
+-------------------------------------------------------------------------
+-- Expr dissected as AEqn (as constructed by mkExprEqn)
+-------------------------------------------------------------------------
+
+exprCheckAEqnForm :: Expr -> Maybe (Map.Map Expr Expr)
+exprCheckAEqnForm e
+  = eqn (exprStrip StripBasic e)
+  where eqn (Expr_Op n _ l r) | n == nmEql       = Just (lr l r `Map.union` tup l r)
+        eqn e                                    = Nothing
+        tup (Expr_Op ln _ l1 l2)
+            (Expr_Op rn _ r1 r2)  | ln == nmComma && rn == nmComma
+                                                 = lr l1 r1 `Map.union` tup l1 r1 `Map.union` tup l2 r2
+        tup l r                                  = Map.empty
+        lr  l r                                  = Map.fromList $ concat $ [ [(l,r),(r,l)] | l <- ls, r <- rs ]
+                                                 where (_,_,ls) = exprStrip' StripBasic l
+                                                       (_,_,rs) = exprStrip' StripBasic r
 
 -------------------------------------------------------------------------
 -- Expr as AEqn
@@ -23,14 +47,11 @@ mkExprEqn l r = Expr_AppTop (Expr_Op (nmEql) (Expr_Var (nmEql)) l r)
 
 exprMbAEqnRest :: Expr -> Maybe (AEqn,[Expr],FmGam Expr)
 exprMbAEqnRest expr
-  = eE expr
+  = eE (exprStrip StripBasic expr)
   where eE (Expr_Op n _ d s) | n == nmEql
-          = do (d',ed,gd) <- dE d False
+          = do (d',ed,gd) <- dE (exprStrip StripBasic d) False
                (s'      ) <- sE s
                return (AEqn_Eqn d' s', ed, gd)
-        eE (Expr_AppTop e)                          = eE e
-        eE (Expr_Paren e)                           = eE e
-        eE (Expr_Named _ e)                         = eE e
         eE e                                        = Nothing
         dE (Expr_AVar n)        _                   = return (AEqnDest_One n,[],emptyGam)
         dE (Expr_Retain (Expr_AVar (ANm_Loc n p))) _= return (AEqnDest_One (ANm_Loc n (AtRetain:p)),[],emptyGam)
@@ -39,10 +60,7 @@ exprMbAEqnRest expr
         dE (Expr_StrAsIs s)     _                   = nE [] s
         dE (Expr_Retain (Expr_StrAsIs s)) _         = nE [AtRetain] s
         dE (Expr_Retain e)      p                   = dE e p
-        dE (Expr_Paren e)       p                   = dE e p
-        dE (Expr_AppTop e)      p                   = dE e p
         dE (Expr_SelTop e)      p                   = dE e p
-        dE (Expr_Named _ e)     p                   = dE e p
         dE e@(Expr_Op n _ _ _)  p | n == nmComma    = tE e
         dE (Expr_Sel e (Just s)) _
           = do ne <- dsE e
@@ -62,11 +80,11 @@ exprMbAEqnRest expr
           = return (AEqnDest_One n,[mkExprEqn (Expr_AppTop e) (Expr_AVar n)],emptyGam)
           where n = flip ANm_Loc [] . Nm . nmShowAG . foldr nmApd nmWild . take 2 . Set.toList $ exprNmS e
         oE (Expr_Op n _ e1 e2) | n == nmComma
-          = do (e1',ed,gd) <- dE e1 True
+          = do (e1',ed,gd) <- dE (exprStrip StripBasic e1) True
                (e2',eo,go) <- oE e2
                return (e1' : e2', ed ++ eo, gd `gu` go)
         oE e
-          = do (e',ee,ge) <- dE e True
+          = do (e',ee,ge) <- dE (exprStrip StripBasic e) True
                return ([e'],ee,ge)
         sE e                                        = return (AExpr_Expr e)
         vE props n

@@ -476,6 +476,7 @@ ATTR AGItf [ | | fmGam: {FmGam Expr} ]
 
 ATTR AllDecl [ | | gathRwGam USE {`rwGamUnion`} {Map.empty}: RwExprGam ]
 ATTR AllDecl [ rwGam: RwExprGam | | ]
+ATTR AGItf [ | | rwGam: RwExprGam ]
 
 SEM AGItf
   | AGItf           loc     .   fmGam       =   @decls.gathFmGam
