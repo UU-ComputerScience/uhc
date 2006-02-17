@@ -6,7 +6,9 @@ module FmGam
   ( module Gam
   
   , FmInfo(..), FmGam
-  , fmSingleton, fmNull, fmGamFromList, fmGamFromList'
+  , fmSingleton, fmNull
+  , fmGamFromList, fmGamFromList'
+  , fmGamToList'
   , fmGamUnion, fmGamUnions
   , fmGamLookup, fmGamMap
   
@@ -53,6 +55,9 @@ fmNull = all (Map.null . fmKdGam) . Map.elems
 
 fmGamFromList' :: FmKind -> [(Nm,e)] -> FmGam e
 fmGamFromList' fk = Map.unions . map (\(n,e) -> fmSingleton n fk e)
+
+fmGamToList' :: FmKind -> FmGam e -> [(Nm,e)]
+fmGamToList' fk g = [ (n,e) | (n,i) <- Map.toList g, e <- fkGamLookup [] (:[]) [fk] (fmKdGam i) ]
 
 fmGamFromList :: [(Nm,e)] -> FmGam e
 fmGamFromList = fmGamFromList' FmAll

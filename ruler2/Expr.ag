@@ -15,6 +15,18 @@ INCLUDE "ExprAbsSynAG.ag"
 DERIVING AllExpr: Eq,Ord
 
 -------------------------------------------------------------------------
+-- Observation
+-------------------------------------------------------------------------
+
+{
+exprIsCnstr :: Expr -> Bool
+exprIsCnstr e
+  = ic (exprStrip StripFull e)
+  where ic (Expr_Cnstr _ _) = True
+        ic _                = False
+}
+
+-------------------------------------------------------------------------
 -- Construction
 -------------------------------------------------------------------------
 
@@ -74,3 +86,49 @@ rnMpUnion m1 m2
         u r      _ = r
 }
 
+-------------------------------------------------------------------------
+-- Ensure AppTop on top
+-------------------------------------------------------------------------
+
+{
+exprEnsureAppTop :: Expr -> Expr
+exprEnsureAppTop e@(Expr_App _ _    ) = Expr_AppTop e
+exprEnsureAppTop e@(Expr_Op  _ _ _ _) = Expr_AppTop e
+exprEnsureAppTop e                    = e
+}
+
+-------------------------------------------------------------------------
+-- Split into lines
+-------------------------------------------------------------------------
+
+{
+exprLines :: Expr -> [Expr]
+exprLines (Expr_LF l r) = l : exprLines r
+exprLines j             = [j]
+}
+
+-------------------------------------------------------------------------
+-- Strip syntactic sugar like structure
+-------------------------------------------------------------------------
+
+{
+data ExprStrip = StripBasic | StripFullNoTop | StripFull deriving (Eq,Ord)
+
+exprStrip' :: ExprStrip -> Expr -> (Expr,Expr->Expr,[Expr])
+exprStrip' s e
+  = str e
+  where str te@(Expr_AppTop  e)  | s >= StripBasic && s /= StripFullNoTop
+                                                    = sub Expr_AppTop    te e
+        str te@(Expr_Paren   e)  | s >= StripBasic  = sub Expr_Paren     te e
+        str te@(Expr_Named n e)  | s >= StripBasic  = sub (Expr_Named n) te e
+        str te@(Expr_Retain  e)  | s >= StripFull   = sub Expr_Retain    te e
+        str te@(Expr_SelTop  e)  | s >= StripFull   = sub Expr_SelTop    te e
+        str te                                      = (te,id,[te])
+        sub mkt te e = (e',mkt . mke,te:l)
+                     where (e',mke,l) = str e 
+
+exprStrip :: ExprStrip -> Expr -> Expr
+exprStrip s e
+  = e'
+  where (e',_,_) = exprStrip' s e
+}

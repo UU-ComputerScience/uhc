@@ -80,10 +80,11 @@ instance (PP a,PP b) => PP (a,b) where
 -------------------------------------------------------------------------
 
 data Err
-  = Err_UndefNm SPos String String [Nm]
-  | Err_NoJdSc  SPos String [Nm]
-  | Err_Match   SPos String PP_Doc PP_Doc
-  | Err_RlPost  SPos String Nm
+  = Err_UndefNm      SPos String String [Nm]
+  | Err_NoJdSc       SPos String [Nm]
+  | Err_Match        SPos String PP_Doc PP_Doc
+  | Err_RlPost       SPos String Nm
+  | Err_NotAEqnForm  SPos PP_Doc
   deriving Show
 
 ppErrPPL :: PP a => [a] -> PP_Doc
@@ -103,6 +104,8 @@ instance PP Err where
                 )
   pp (Err_RlPost pos cx nm)
     = ppErr pos ("In" >#< cx >#< "conclusion lacks judgement for ruleset's scheme:" >#< pp nm)
+  pp (Err_NotAEqnForm pos e)
+    = ppErr pos ("expr not of (AG rule) form ... = ...:" >#< e)
 
 -------------------------------------------------------------------------
 -- Kind of Expr wrappers (for influencing latex pretty printing, colors)

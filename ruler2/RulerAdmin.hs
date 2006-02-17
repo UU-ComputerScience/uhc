@@ -36,6 +36,7 @@ module RulerAdmin
   
   , RsInfo(..), RsGam
   , emptyRsInfo
+  , rsInfoIsPlain
   , rsRlOrder, rsInfoMbRlGam
   )
   where
@@ -356,6 +357,10 @@ data RsInfo e
       }
 
 emptyRsInfo = RsInfo nmUnk nmUnk Set.empty "" emptyGam
+
+rsInfoIsPlain :: RsInfo e -> Bool
+rsInfoIsPlain (RsInfo _ _ _ _ _) = True
+rsInfoIsPlain _                  = False
 
 instance Show (RsInfo e) where
   show _ = "RsInfo"

@@ -35,8 +35,8 @@ $(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AGMAIN1_MA
 RULER2_AGMAIN2_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,Main2AG)
 RULER2_AGMAIN2_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag, \
 											RulerAbsSynCommonAG RulerAbsSyn2AG RulerAS2Pretty \
-											ExprAbsSynAG ExprSelfAG \
-											ARuleAbsSynAG ARuleSelfAG \
+											ExprAbsSynAG ExprSelfAG ExprPrettyPrintAG \
+											ARuleAbsSynAG ARuleSelfAG ARulePrettyPrintAG \
 											)
 $(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AGMAIN2_MAIN_SRC_AG)) \
 										: $(RULER2_AGMAIN2_DPDS_SRC_AG)

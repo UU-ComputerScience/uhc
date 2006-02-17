@@ -43,22 +43,6 @@ arlUniq fg co rl
 }
 
 -------------------------------------------------------------------------
--- Uniq
--------------------------------------------------------------------------
-
-{-
-ATTR AllAS1ButViewSel [ | uniq: Int | ]
-
-SEM AGItf
-  | AGItf           decls   .   uniq        =   0
-
-SEM AGExprItf
-  | AGItf           expr    .   uniq        =   0
-
-SEM AGARuleItf
--}
-
--------------------------------------------------------------------------
 -- Uniq sequence nr
 -------------------------------------------------------------------------
 
@@ -73,18 +57,6 @@ SEM Expr
 
 SEM AGExprItf
   | AGItf           loc     .   uniqSeqNr   =   0
-
-{-
-SEM Decl
-  | Fmt ShpJudge Explain
-  					loc     .   uniqSeqNr   =   0
-  
-SEM RExprEqn
-  | Expr            loc     .   uniqSeqNr   =   0
-
-SEM AttrEqn
-  | Eqn             loc     .   uniqSeqNr   =   0
--}
 
 -------------------------------------------------------------------------
 -- Uniq name

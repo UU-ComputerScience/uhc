@@ -16,19 +16,22 @@ SEM Expr
   | LF              lhs     .   pp          =   exprNeedPar ParCtxtAppR nmUnk @lExpr.self @lExpr.pp
                                                 >-< exprNeedPar ParCtxtAppR nmUnk @rExpr.self @rExpr.pp
   | SP              lhs     .   pp          =   @lExpr.pp >|< @rExpr.pp
-  | Sel             lhs     .   pp          =   exprNeedPar ParCtxtOther nmUnk @expr.self @expr.pp >|< "." >|< @selMbExpr.pp
-  | Var             lhs     .   pp          =   pp @nm
-  | Uniq            lhs     .   pp          =   pp "?uniq?"
   | Int             lhs     .   pp          =   pp @int
   | StrText StrAsIs lhs     .   pp          =   pp @str
-  | Paren           lhs     .   pp          =   {-pp_parens-} @expr.pp
-  | AppTop          lhs     .   pp          =   @expr.pp
   | Named           lhs     .   pp          =   @expr.pp
   | Cnstr           lhs     .   pp          =   pp_braces (@expr.pp >|< "|" >|< @cnstr.pp)
+  | Uniq            lhs     .   pp          =   pp "?uniq?"
+SEM Expr
+  | Sel             lhs     .   pp          =   exprNeedPar ParCtxtOther nmUnk @expr.self @expr.pp >|< "." >|< @selMbExpr.pp
+  | Var             lhs     .   pp          =   pp @nm
+  | Paren           lhs     .   pp          =   {-pp_parens-} @expr.pp
+  | AppTop          lhs     .   pp          =   @expr.pp
+{-
+-}
 {-
 SEM Expr
   | Sel             lhs     .   pp          =   pp_brackets ("SEL" >#< exprNeedPar ParCtxtOther nmUnk @expr.self @expr.pp) >|< "." >|< @selMbExpr.pp
-  | Var Uniq        lhs     .   pp          =   pp_brackets ("VAR" >#< pp @nm)
+  | Var             lhs     .   pp          =   pp_brackets ("VAR" >#< pp @nm)
   | AVar            lhs     .   pp          =   pp_brackets ("AVR" >#< @anm.pp)
   | Paren           lhs     .   pp          =   pp_brackets ("PAR" >#< @expr.pp)
   | AppTop          lhs     .   pp          =   pp_brackets ("TOP" >#< @expr.pp)

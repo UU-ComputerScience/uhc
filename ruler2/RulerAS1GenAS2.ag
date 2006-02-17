@@ -8,6 +8,7 @@ rsSelect rlSelIsSel rsGam
   = rs
   where rs = [ (rsNm,rsInfo {rsRlGam = Map.fromList rls})
              | (rsNm,rsInfo) <- Map.toList rsGam
+             , rsInfoIsPlain rsInfo
              , rlSelIsSel nmAny rsNm nmAny
              , let rls
                      = [ (rlNm,rlInfo {rlVwGam = Map.fromList vws})
@@ -84,34 +85,3 @@ SEM AGItf
                                                                                           vNm = vwrlNm vwRlInfo
                                                 in  rsGen
 
-{-
-              fg = jaGamToFmGam (exprSubst (genOpts gen) (genFmGam gen)) . reJAGam $ reInfo
-              scVwExpr = jdGamFmExpr (optGenFM . genOpts $ gen) . vwscJdGam $ vwScInfo
--}
-{-
-                                                                   -> vwRlLtxGen gen'' (rlLtxGamTranspose r)
-                                                                   where scInfo = fromJust (Map.lookup nSc (genScGam gen'))
-                                                                         gen'' = gen' {genScInfo=scInfo}
-                                                                         r = Map.mapWithKey
-                                                                               (\nRl rlInfo
-                                                                                 -> let nRl' = mkRlNm nRl
-                                                                                    in  rlGen (gen'' {genRlInfo=rlInfo})
-                                                                                              (nRl',\nVw -> mkFullRlNm nBs nVw nRs nRl')
-                                                                               )
-                                                                               rlGam
-                                                                 RsInfoGroup nRs nSc vwSel _ rlNms
-                                                                   -> vwRlLtxGen gen'' (Map.unions r)
-                                                                   where scInfo = fromJust (Map.lookup nSc (genScGam gen'))
-                                                                         gen'' = gen' {genScInfo=scInfo}
-                                                                         r = map
-                                                                               (\nVw
-                                                                                 -> let rs = [ let nRl' = mkRlNm nRl
-                                                                                                   nd = mkFullRlNm nBs nVw nRs  nRl'
-                                                                                                   nu = mkFullRlNm nBs nVw nRs' nRl'
-                                                                                               in  Map.singleton nRl (nd,genNmDef gen'' nd (genNmUse gen'' nu))
-                                                                                             | (nRs',nRl) <- rlNms, rlVwIsDef nRs' nRl nVw
-                                                                                             ]
-                                                                                    in  if null rs then emptyGam else Map.singleton nVw (Map.unions rs)
-                                                                               )
-                                                                               vwOrder
--}

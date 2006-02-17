@@ -49,6 +49,12 @@ ppExpr e
 ppECGam :: ECnstrGam -> PP_Doc
 ppECGam g = vlist [ pp (Expr_Cnstr n v) | (n,v) <- Map.toList g]
 
+instance Show ARule where
+  show _ = "ARule"
+
+instance PP ARule where
+  pp = ppARule
+
 instance Show Expr where
   show _ = "Expr"
 

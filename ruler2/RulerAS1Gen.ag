@@ -114,9 +114,7 @@ rlAtUsage opts scGam fmGam vwRlInfo
                                     fmja = fma `Map.union` jaGamToFmGam id jaGam
                                     jd = fkGamLookup exprUnk jdExpr [FmAG] . vwscJdGam $ vwScInfo
                                     jd' = exprSubst opts fmja jd
-                                    jdLines (Expr_LF l r) = l : jdLines r
-                                    jdLines j             = [j]
-                                in  ((eNdNm,fmOuNonBi,[(AtInOut,(j,fmOf ouNonBiL)) | j <- jdLines jd'])
+                                in  ((eNdNm,fmOuNonBi,[(AtInOut,(j,fmOf ouNonBiL)) | j <- exprLines jd'])
                                     ,emptyGam
                                     )
                    in  (Map.singleton jdNm r `Map.union` atDefG
@@ -279,9 +277,7 @@ genAG
                               (maybe nRl Nm (rlMbAGStr (genRlInfo gen)))
                               ["rule " ++ show nRl,"view " ++ show nVw]
                               (preL ++ postL)
-              croNmL
-                = [nmLhs] ++ l ++ [nmLhs]
-                where l = map fst . sortBy (\(_,o1) (_,o2) -> compare o1 o2) . Map.toList $ choGam
+              croNmL = coGamNmL choGam
               wrapFrag
                 = genWrapShuffle (genOpts gen) (nVwRnm `nmApd` scNm (genScInfo gen) `nmApd` rlNm (genRlInfo gen))
               r = (>-< "") . wrapFrag . ppARule

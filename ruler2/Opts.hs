@@ -38,6 +38,7 @@ data Opts
       , optMbRlSel      :: Maybe RlSel
       , optBaseNm       :: String
       }
+      deriving Show
 
 defaultOpts
   = Opts

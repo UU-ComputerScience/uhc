@@ -32,9 +32,6 @@ ppViewSels vs
   where r1 = sem_AGViewSelsItf (AGViewSelsItf_AGItf vs)
         r2 = wrap_AGViewSelsItf r1 (Inh_AGViewSelsItf)
 
-instance Show ViewSel where
-  show _ = "ViewSel"
-
 instance PP ViewSel where
   pp = ppViewSel
 }

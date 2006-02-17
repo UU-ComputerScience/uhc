@@ -188,7 +188,7 @@ SEM ECnstr
 {
 mkRwExpr :: InEqnLoc -> Opts -> FmGam Expr -> RwExprGam -> ECnstrGam -> Expr -> (Expr,FmGam Expr,ECnstrGam)
 mkRwExpr inEqnLoc opts fmGam rwGam ecGam repl
-  = case exprIsRw ({- d_r -} repl) of
+  = case exprIsRw repl of
       ExprIsRw n | isJust mbRw
         -> (r,mtFmGam mt,ecg)
         where mbRw = rwGamLookup n (optGenFM opts) (if inEqnLoc == EqnInRhs then AtIn else AtOut) rwGam
@@ -202,9 +202,30 @@ mkRwExpr inEqnLoc opts fmGam rwGam ecGam repl
                                  else r
                         )
                         (repl,emptyEMtOut,emptyGam)
-                        (maybe (panic "mkRwExpr") (\x -> {- trp "mkRwExpr matches" (d_g x) -} x) mbRw)
+                        (maybe (panic "mkRwExpr") (\x -> x) mbRw)
       _ -> (repl,emptyGam,emptyGam)
 {-
+-}
+
+{- -- with tracing
+mkRwExpr :: InEqnLoc -> Opts -> FmGam Expr -> RwExprGam -> ECnstrGam -> Expr -> (Expr,FmGam Expr,ECnstrGam)
+mkRwExpr inEqnLoc opts fmGam rwGam ecGam repl
+  = case exprIsRw (d_r repl) of
+      ExprIsRw n | isJust mbRw
+        -> (r,mtFmGam mt,ecg)
+        where mbRw = rwGamLookup n (optGenFM opts) (if inEqnLoc == EqnInRhs then AtIn else AtOut) rwGam
+              (r,mt,ecg)
+                = foldr (\(me,e) r
+                          -> let mt = exprMatch opts ecGam repl me
+                             in  if mtMatches mt
+                                 then let e2 = exprSubst opts (mtFmGam mt `Map.union` fmGam) e
+                                          (e3,ecg) = exprElimCnstr e2
+                                      in  (e3,mt,ecg)
+                                 else r
+                        )
+                        (repl,emptyEMtOut,emptyGam)
+                        (maybe (panic "mkRwExpr") (\x -> trp "mkRwExpr matches" (d_g x) x) mbRw)
+      _ -> (repl,emptyGam,emptyGam)
   where d_r r = trp "mkRwExpr expr" (pp r >-< pp (exprIsRw r)) r
         d_g g = vlist . map (\(a,b) -> pp a >#< "//" >#< pp b) $ g
 -}
