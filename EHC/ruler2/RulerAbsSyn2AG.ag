@@ -8,6 +8,9 @@
 
 DATA Decl
   | RsVw                decl        : RsVwDecl
+  | AttrAG              decl        : AttrAGDecl
+  | Chunk               nm          : {Nm}
+                        decl        : Decl
 
 TYPE Decls = [Decl]
 
@@ -29,6 +32,14 @@ TYPE RsVwDecls = [RsVwDecl]
 
 SET AllRs = RsVwDecl RsVwDecls
 
+DATA AttrAGDecl
+  | Attr                ndNm        : {Nm}
+                        inhAts      : {[(Nm,Nm)]}
+                        inhsynAts   : {[(Nm,Nm)]}
+                        synAts      : {[(Nm,Nm)]}
+
+SET AllAtAG = AttrAGDecl
+
 DATA VwDecl
   | Vw                  nm          : {Nm}
                         rlDecls     : RlDecls
@@ -39,14 +50,23 @@ SET AllVw = VwDecl VwDecls
 
 DATA RlDecl
   | Rl                  nm          : {Nm}
+                        fullNm      : {Nm}
                         pos         : {SPos}
                         mbAGStr     : {Maybe String}
                         inclVwS     : {Set.Set Nm}
                         preJds      : Jds
                         postJds     : Jds
+  | LTX                 nm          : {Nm}
+                        rlNm        : {Nm}
+                        vwNm        : {Nm}
+                        pos         : {SPos}
+                        preJds      : Jds
+                        postJds     : Jds
   | AG                  nm          : {Nm}
                         pos         : {SPos}
                         arule       : ARule
+  | Chunk               nm          : {Nm}
+                        rl          : RlDecl
 
 TYPE RlDecls = [RlDecl]
 
@@ -56,10 +76,10 @@ DATA Jd
   | Ats                 nm          : {Nm}
                         scNm        : {Nm}
                         ats         : JdAts
-  | AG                  nm          : {Nm}
-                        scNm        : {Nm}
-                        arule       : ARule
   | Expr                nm          : {Nm}
+                        scNm        : {Nm}
+                        expr        : Expr
+  | LTX                 nm          : {Nm}
                         scNm        : {Nm}
                         expr        : Expr
 
@@ -78,6 +98,7 @@ SET AllAt = JdAt JdAts
 SET AllDecl
   = AllDc AllRs AllVw
     AllRl AllJd AllAt
+    AllAtAG
 
 -------------------------------------------------------------------------
 -- Sets of AST data's

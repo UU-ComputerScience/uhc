@@ -7,6 +7,7 @@ module RulerAbsSyn2
   where
 
 import qualified Data.Set as Set
+import Opts
 import Common
 import Expr
 import ARule
@@ -15,3 +16,15 @@ import ViewSel
 
 INCLUDE "RulerAbsSyn2AG.ag"
 INCLUDE "RulerAbsSynCommonAG.ag"
+
+-------------------------------------------------------------------------
+-- Optional wrap in chunk
+-------------------------------------------------------------------------
+
+{
+wrapInChunk :: (Nm -> a->a) -> Opts -> Nm -> a -> a
+wrapInChunk mk opts n
+  = if optFragWrap opts
+    then mk n
+    else id
+}

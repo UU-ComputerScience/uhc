@@ -112,18 +112,18 @@ exprLines j             = [j]
 -------------------------------------------------------------------------
 
 {
-data ExprStrip = StripBasic | StripFullNoTop | StripFull deriving (Eq,Ord)
+data ExprStrip = StripBasicNoPar | StripBasic | StripFullNoTop | StripFull deriving (Eq,Ord)
 
 exprStrip' :: ExprStrip -> Expr -> (Expr,Expr->Expr,[Expr])
 exprStrip' s e
   = str e
-  where str te@(Expr_AppTop  e)  | s >= StripBasic && s /= StripFullNoTop
-                                                    = sub Expr_AppTop    te e
-        str te@(Expr_Paren   e)  | s >= StripBasic  = sub Expr_Paren     te e
-        str te@(Expr_Named n e)  | s >= StripBasic  = sub (Expr_Named n) te e
-        str te@(Expr_Retain  e)  | s >= StripFull   = sub Expr_Retain    te e
-        str te@(Expr_SelTop  e)  | s >= StripFull   = sub Expr_SelTop    te e
-        str te                                      = (te,id,[te])
+  where str te@(Expr_AppTop  e)  | s >= StripBasicNoPar && s /= StripFullNoTop
+                                                         = sub Expr_AppTop    te e
+        str te@(Expr_Paren   e)  | s >= StripBasic       = sub Expr_Paren     te e
+        str te@(Expr_Named n e)  | s >= StripBasicNoPar  = sub (Expr_Named n) te e
+        str te@(Expr_Retain  e)  | s >= StripFull        = sub Expr_Retain    te e
+        str te@(Expr_SelTop  e)  | s >= StripFull        = sub Expr_SelTop    te e
+        str te                                           = (te,id,[te])
         sub mkt te e = (e',mkt . mke,te:l)
                      where (e',mke,l) = str e 
 

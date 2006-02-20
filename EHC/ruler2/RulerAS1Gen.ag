@@ -335,7 +335,7 @@ rlGen gen (nRl',mkFullNm)
   = Map.mapWithKey
       (\nVw vwRlInfo
         ->  let nRlFull = mkFullNm nVw
-                nVwRnm = maybe nVw (maybe nVw id . Map.lookup nVw . rlSelRnmM) . optMbRlSel $ genOpts gen
+                nVwRnm = rsSelMapVwNm (optMbRlSel $ genOpts gen) nVw
                 gen' = gen {genVwRlInfo=vwRlInfo}
                 r = genRl gen' gen' (nRlFull,nVw,nVwRnm,nRl')
             in  (nRlFull,r)

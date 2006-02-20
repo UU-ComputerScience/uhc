@@ -22,6 +22,9 @@ SEM AEqn
 SEM AEqnDest
   | Many            lhs     .   pp          =   ppListSep "(" ")" "," @dests.ppL
 
+SEM AExpr
+  | Expr            lhs     .   pp          =   exprNeedPar ParCtxtOther nmUnk @expr.self @expr.pp
+
 SEM AEqnDests [ | | ppL: {[PP_Doc]} ]
   | Cons            lhs     .   ppL         =   @hd.pp : @tl.ppL
   | Nil             lhs     .   ppL         =   []

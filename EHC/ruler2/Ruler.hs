@@ -18,6 +18,7 @@ import Opts
 import qualified Main1AG as M1
 import qualified Main2AG as M2
 import TrfAS2GenARule
+import TrfAS2GenLaTeX
 import KeywParser
 import RulerParser
 -- import CDoc
@@ -64,15 +65,24 @@ doCompile fp opts
                  ; if null errL
                    then do { putDbg
                            ; case optGenFM opts of
-                               FmAS2 f        -> do { putBld True (M2.ppAS2 t1)
-                                                    ; putBld True (M2.ppAS2 t2)
-                                                    ; putBld True t2ppDbg
-                                                    ; putBld True (M1.mkPP_Syn_AGItf res f)
-                                                    }
-                                              where t1 = M1.as2_Syn_AGItf res
-                                                    (t2,t2ppDbg) = as2ARule opts (M1.scGam_Syn_AGItf res) (M1.fmGam_Syn_AGItf res) (M1.rwGam_Syn_AGItf res) t1
-                               o | o /= FmAll -> putBld True (M1.mkPP_Syn_AGItf res (optGenFM opts))
-                               _              -> return ()
+                               FmAS2 f | null t2errL
+                                   -> do { putBld True (M2.ppAS2 opts t1)
+                                         ; putBld True (M2.ppAS2 opts t2)
+                                         ; putBld True t2ppDbg
+                                         ; putBld True (M1.mkPP_Syn_AGItf res f)
+                                         }
+                                 | otherwise
+                                   -> do { hPutBld True stderr (ppErrPPL t2errL)
+                                         ; exitFailure
+                                         }
+                                   where t1 = M1.as2_Syn_AGItf res
+                                         (t2,t2ppDbg,t2errL)
+                                           = case f of
+                                               FmTeX -> as2LaTeX opts (M1.scGam_Syn_AGItf res) (M1.fmGam_Syn_AGItf res) (M1.rwGam_Syn_AGItf res) t1
+                                               FmAG  -> as2ARule opts (M1.scGam_Syn_AGItf res) (M1.fmGam_Syn_AGItf res) (M1.rwGam_Syn_AGItf res) t1
+                               o | o /= FmAll
+                                   -> putBld True (M1.mkPP_Syn_AGItf res (optGenFM opts))
+                               _   -> return ()
                            ; putBld (optGenExpl opts) (M1.scExplPP_Syn_AGItf res)
                            }
                    else do { hPutBld True stderr (ppErrPPL errL)

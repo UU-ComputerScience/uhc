@@ -4,6 +4,8 @@
 
 {
 module TrfAS2GenARule
+  ( as2ARule
+  )
   where
 
 import Data.Maybe
@@ -36,6 +38,8 @@ INCLUDE "RulerAbsSyn2AG.ag"
 INCLUDE "RulerAbsSynCommonAG.ag"
 INCLUDE "RulerAS2Opts.ag"
 
+INCLUDE "TrfAS2CommonAG.ag"
+
 INCLUDE "ExprAbsSynAG.ag"
 INCLUDE "ExprSelfAG.ag"
 
@@ -49,9 +53,9 @@ INCLUDE "ARuleSelfAG.ag"
 WRAPPER AGItf 
 
 {
-as2ARule :: Opts -> ScGam Expr -> FmGam Expr -> RwExprGam -> Decls -> (Decls,PP_Doc)
+as2ARule :: Opts -> ScGam Expr -> FmGam Expr -> RwExprGam -> Decls -> (Decls,PP_Doc,[Err])
 as2ARule o scg fmg rwg r
-  = (self_Syn_AGItf r2,ppDbg_Syn_AGItf r2)
+  = (self_Syn_AGItf r2,ppDbg_Syn_AGItf r2,errL_Syn_AGItf r2)
   where r1 = sem_AGItf (AGItf_AGItf r)
         r2 = wrap_AGItf r1
                 (Inh_AGItf {opts_Inh_AGItf = o, fmGam_Inh_AGItf = fmg, rwGam_Inh_AGItf = rwg, scGam_Inh_AGItf = scg})
@@ -64,7 +68,7 @@ as2ARule o scg fmg rwg r
 ATTR AllJd AllAt [ isPre: Bool | | ]
 
 SEM RlDecl
-  | Rl              preJds  .   isPre       =   True
+  | Rl LTX          preJds  .   isPre       =   True
                     postJds .   isPre       =   False
 
 -------------------------------------------------------------------------
@@ -74,19 +78,7 @@ SEM RlDecl
 ATTR AllJd AllAt [ pos: SPos | | ]
 
 SEM RlDecl
-  | Rl              loc     .   pos         =   @pos
-
-ATTR AllAS2 [ fm: FmKind | | ]
-
-SEM AGItf
-  | AGItf           loc     .   fm          =   fmAS2Fm (optGenFM @lhs.opts)
-                            .   opts        =   @lhs.opts {optGenFM = @fm}
-
--------------------------------------------------------------------------
--- Context: scGam, fmGam, rwGam
--------------------------------------------------------------------------
-
-ATTR AllAS2 AGItf [ scGam: {ScGam Expr}  fmGam: {FmGam Expr}  rwGam: RwExprGam | | ]
+  | Rl LTX          loc     .   pos         =   @pos
 
 -------------------------------------------------------------------------
 -- Context: substitution
@@ -101,30 +93,6 @@ SEM Jd
                             .   sbsn        =   nmSubst (@lhs.opts {optSubstFullNm=False}) @lhs.fmGam
 
 -------------------------------------------------------------------------
--- Context: ruleset/view/rule name, agStr
--------------------------------------------------------------------------
-
-ATTR AllVw AllRl [ rsScNm: Nm | | ]
-
-SEM RsVwDecl
-  | Rs              loc     .   rsScNm      =   @scNm
-
-ATTR AllRl AllJd [ vwNm: Nm | | ]
-
-SEM VwDecl
-  | Vw              loc     .   vwNm        =   @nm
-
-ATTR AllJd [ rlNm: Nm | | ]
-
-SEM RlDecl
-  | Rl              loc     .   rlNm        =   @nm
-
-ATTR AllJd [ agStr: Nm | | ]
-
-SEM RlDecl
-  | Rl              loc     .   agStr       =   maybe @rlNm Nm @mbAGStr
-
--------------------------------------------------------------------------
 -- Context: scInfo
 -------------------------------------------------------------------------
 
@@ -135,6 +103,16 @@ SEM Jd
   | Ats             loc     .   (scInfo,vwScInfo)
                                             =   maybe (panic "Jd_Ats: scInfo") id
                                                 $ scVwGamLookup @scNm @lhs.vwNm @lhs.scGam
+
+-------------------------------------------------------------------------
+-- Context: name info from higher up
+-------------------------------------------------------------------------
+
+ATTR AllJd [ agStr: Nm | | ]
+
+SEM RlDecl
+  | Rl              loc     .   agStr       =   maybe @rlNm Nm @mbAGStr
+  | * - Rl          loc     .   agStr       =   nmNone
 
 -------------------------------------------------------------------------
 -- Context: scAtGam
@@ -193,7 +171,7 @@ SEM JdAts
 ATTR AllAt [ nmNd: Nm | | ]
 
 SEM Jd
-  | Ats             ats     .   nmNd        =   exprAsNm @ats.gathExNd
+  | Ats             ats     .   nmNd        =   exprAsNm $ @sbse $ @ats.gathExNd
 
 -------------------------------------------------------------------------
 -- Node order gam
@@ -216,7 +194,9 @@ SEM RlDecl
 ATTR AllAt [ | | atFmGam USE {`fmGamUnion`} {emptyGam}: {FmGam (Expr,ECnstr)} ]
 
 SEM JdAt
-  | At              lhs     .   atFmGam     =   fmSingleton @nm @lhs.fm (@expr.self,@atCnstr)
+  | At              lhs     .   atFmGam     =   if False -- exprAsNm @expr.self == nmWild
+                                                then emptyGam
+                                                else fmSingleton @nm @lhs.fm (@expr.self,@atCnstr)
 
 -------------------------------------------------------------------------
 -- Building blocks for transforming
@@ -237,7 +217,7 @@ SEM JdAt
 ATTR AllJd AllAt [ | | introFmGam USE {`fmGamUnion`} {emptyGam}: {FmGam Expr} ]
 
 SEM JdAt
-  | At              lhs     .   introFmGam  =   case @dir of
+  | At              loc     .   introFmGam  =   case @dir of
                                                   Use -> fmGamFromList' @lhs.fm [ (n,mkALoc' n') | (n,n') <- nmRefAscL ]
                                                       where nmRefAscL = [ (n,Nm . nmShowAG . @sbsn {- . nmAdapt -} $ n) | n <- Set.toList (exprNmS @useLhs), n /= nmWild ]
                                                   _   -> emptyGam
@@ -297,8 +277,6 @@ SEM RlDecl
 -- Replica
 -------------------------------------------------------------------------
 
-ATTR AGItf [ | | self: {Decls} ]
-ATTR AllAS2 [ | | self: SELF ]
 ATTR AllAt AllJd [ | | exprEqnL USE {++} {[]}: {[Expr]} ]
 
 SEM JdAt
@@ -307,7 +285,8 @@ SEM JdAt
                                                            where eqn1         = mkExprEqn l r
                                                                  (eqn2,ecGam) = exprElimCnstr eqn1
                                                 in  case @dir of
-                                                      Use -> mk @useLhs @useRhs
+                                                      Use | not (fmNull @introFmGam)
+                                                          -> mk @useLhs @useRhs
                                                       Def -> mk @defLhs @defRhs
                                                       _   -> ([],Map.empty)
 
@@ -322,12 +301,15 @@ SEM Jd
                                                                                 [ maybe (Map.empty,[Err_NotAEqnForm @lhs.pos (pp l)]) (\e -> (e,[])) (exprCheckAEqnForm l)
                                                                                 | l <- exprLines jd1
                                                                                 ]
-                                                                   jd2      = exprSubst (@lhs.opts {optSubstFullNm=False}) (fmGamMap (const fst) @ats.atFmGam) jd1
+                                                                   jd2      = exprSubst (@lhs.opts) (fmGamMap (const fst) @ats.atFmGam) jd1
                                                                    mkG eqm gn
                                                                             = if null n1 then [] else n1 ++ mkG (foldr (\(e,_) m -> Map.delete e m) eqm n1) n1
                                                                             where n1 = [ (exprEnsureAppTop e',c) | (e,c) <- gn, e' <- maybeToList (Map.lookup e eqm) ]
-                                                                   introECL1   = [ (e,c) | (n,(e,c)) <- fmGamToList' @lhs.fm @ats.atFmGam ]
-                                                                   introECGam2 = ecGamFromList $ introECL1 ++ mkG (Map.unions jd1EqlL) introECL1
+                                                                   (introECL,introECGL)
+                                                                            = unzip [ ((e,c),eg) | (_,(e,c)) <- fmGamToList' @lhs.fm @ats.atFmGam, let (e',eg) = exprElimCnstr e ]
+                                                                   introECGam2
+                                                                            = (ecGamFromList $ introECL ++ mkG (Map.unions jd1EqlL) introECL)
+                                                                              `Map.union` Map.unions introECGL
 
 SEM RlDecl
   | Rl              (lhs.self,loc.selfNonOptim)
@@ -358,8 +340,7 @@ SEM RlDecl
 -- Debug pretty printing of ruler AST2
 -------------------------------------------------------------------------
 
-ATTR AllAS2 AGItf [ | | ppDbg USE {>-<} {empty} : PP_Doc ]
-
+{-
 SEM RlDecl
   | Rl              lhs     .   ppDbg       =   "-- debug info"
                                                 >-< @nm >#< ppCommaList [pp @pos,pp @mbAGStr]
@@ -370,6 +351,12 @@ SEM RlDecl
                                                 >-< "lhs.opts" >#< text (show @lhs.opts)
                                                 >-< "coNmL" >#< ppListSep "[" "]" "," @coNmL
                                                 >-< "non optim" >#< pp @selfNonOptim
-{-
 -}
+
+-------------------------------------------------------------------------
+-- Error
+-------------------------------------------------------------------------
+
+SEM Jd
+  | Ats             lhs     .   errL        =   @eqnErrs
 

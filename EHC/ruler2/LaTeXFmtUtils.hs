@@ -59,14 +59,14 @@ exprNeedPar ctxt opNm e
              (Expr_Op    _ _ _ _,ParCtxtAppR) -> pp_parens
              (Expr_Op    _ _ _ _,ParCtxtOpL ) -> pp_parens
              (Expr_Op    _ _ _ _,ParCtxtOpR ) -> pp_parens
+             (Expr_Op    n _ _ _,_          )
+               | n == nmComma -> pp_parens
              (Expr_App   _ _    ,ParCtxtAppR) -> pp_parens
              (Expr_Paren _      ,_          ) -> pp_parens
              _ | opNm == nmSp1 -> pp_parens
                | otherwise     -> id
       _ -> id
-  where t (Expr_AppTop  e) = t e
-        t (Expr_Named _ e) = t e
-        t e                = e
+  where t = exprStrip StripBasicNoPar
 
 -------------------------------------------------------------------------
 -- Misc

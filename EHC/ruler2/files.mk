@@ -34,7 +34,7 @@ $(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AGMAIN1_MA
 
 RULER2_AGMAIN2_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,Main2AG)
 RULER2_AGMAIN2_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag, \
-											RulerAbsSynCommonAG RulerAbsSyn2AG RulerAS2Pretty \
+											RulerAbsSynCommonAG RulerAbsSyn2AG RulerAS2Opts RulerAS2Pretty \
 											ExprAbsSynAG ExprSelfAG ExprPrettyPrintAG \
 											ARuleAbsSynAG ARuleSelfAG ARulePrettyPrintAG \
 											)
@@ -44,11 +44,22 @@ $(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AGMAIN2_MA
 RULER2_TRF2ARULE_MAIN_SRC_AG			:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,TrfAS2GenARule)
 RULER2_TRF2ARULE_DPDS_SRC_AG			:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag, \
 											RulerAbsSynCommonAG RulerAbsSyn2AG RulerAS2Opts \
+											TrfAS2CommonAG \
 											ExprAbsSynAG ExprSelfAG \
 											ARuleAbsSynAG ARuleSelfAG \
 											)
 $(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_TRF2ARULE_MAIN_SRC_AG)) \
 										: $(RULER2_TRF2ARULE_DPDS_SRC_AG)
+
+RULER2_TRF2LATEX_MAIN_SRC_AG			:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,TrfAS2GenLaTeX)
+RULER2_TRF2LATEX_DPDS_SRC_AG			:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag, \
+											RulerAbsSynCommonAG RulerAbsSyn2AG RulerAS2Opts \
+											TrfAS2CommonAG \
+											ExprAbsSynAG ExprSelfAG \
+											ARuleAbsSynAG ARuleSelfAG \
+											)
+$(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_TRF2LATEX_MAIN_SRC_AG)) \
+										: $(RULER2_TRF2LATEX_DPDS_SRC_AG)
 
 RULER2_AGRLAST1_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,RulerAbsSyn1)
 RULER2_AGRLAST1_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,RulerAbsSyn1AG RulerAbsSynCommonAG)
@@ -163,13 +174,14 @@ RULER2_AG_S_MAIN_SRC_AG					:= $(RULER2_EXISRW_MAIN_SRC_AG) $(RULER2_EXNMS_MAIN_
 											$(RULER2_ARLRWSUBS_MAIN_SRC_AG) $(RULER2_ARLAVARSUBS_MAIN_SRC_AG) $(RULER2_ARLELIMCR_MAIN_SRC_AG) $(RULER2_ARLELIMWLDC_MAIN_SRC_AG) \
 											$(RULER2_ARLPRETTY_MAIN_SRC_AG) \
 											$(RULER2_AGMAIN1_MAIN_SRC_AG) $(RULER2_AGMAIN2_MAIN_SRC_AG) \
-											$(RULER2_TRF2ARULE_MAIN_SRC_AG)
+											$(RULER2_TRF2ARULE_MAIN_SRC_AG) $(RULER2_TRF2LATEX_MAIN_SRC_AG)
 RULER2_AG_DS_MAIN_SRC_AG				:=
 
 RULER2_AG_ALL_DPDS_SRC_AG				:= $(sort \
 											$(RULER2_AGMAIN1_DPDS_SRC_AG) \
 											$(RULER2_AGMAIN2_DPDS_SRC_AG) \
 											$(RULER2_TRF2ARULE_DPDS_SRC_AG) \
+											$(RULER2_TRF2LATEX_DPDS_SRC_AG) \
 											$(RULER2_AGEXPR_DPDS_SRC_AG) \
 											$(RULER2_AGRLAST1_DPDS_SRC_AG) \
 											$(RULER2_AGRLAST2_DPDS_SRC_AG) \
