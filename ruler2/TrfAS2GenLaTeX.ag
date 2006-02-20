@@ -1,9 +1,11 @@
 -------------------------------------------------------------------------
--- Main for AG, pass 2
+-- Generate LaTeX's from attr bindings
 -------------------------------------------------------------------------
 
 {
-module Main2AG
+module TrfAS2GenLaTeX
+  ( as2LaTeX
+  )
   where
 
 import Data.Maybe
@@ -11,25 +13,21 @@ import Data.Char
 import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import UU.Pretty
--- import FPath
 import Utils
 import Opts
 import Common
-import PPUtils
-import LaTeXFmtUtils
+import KeywParser( propsSynInhMp )
 import ExprUtils
 import ARuleUtils
-import ViewSelUtils
--- import KeywParser
 import FmGam
 import RwExprGam
 import ECnstrGam
 import RulerAbsSyn2
--- import qualified RulerAbsSyn2 as AS2
--- import RulerUtils
--- import RulerAdmin
--- import RulerMkAdmin
+import RulerAdmin
+
+-- for ppDbg
+import UU.Pretty
+import PPUtils
 }
 
 -------------------------------------------------------------------------
@@ -39,16 +37,13 @@ import RulerAbsSyn2
 INCLUDE "RulerAbsSyn2AG.ag"
 INCLUDE "RulerAbsSynCommonAG.ag"
 INCLUDE "RulerAS2Opts.ag"
-INCLUDE "RulerAS2Pretty.ag"
+
+INCLUDE "TrfAS2CommonAG.ag"
 
 INCLUDE "ExprAbsSynAG.ag"
-INCLUDE "ExprPrettyPrintAG.ag"
 INCLUDE "ExprSelfAG.ag"
 
--- INCLUDE "ExprLaTeXAG.ag"
-
 INCLUDE "ARuleAbsSynAG.ag"
-INCLUDE "ARulePrettyPrintAG.ag"
 INCLUDE "ARuleSelfAG.ag"
 
 -------------------------------------------------------------------------
@@ -58,11 +53,23 @@ INCLUDE "ARuleSelfAG.ag"
 WRAPPER AGItf 
 
 {
-ppAS2 :: Opts -> Decls -> PP_Doc
-ppAS2 o r
-  = pp_Syn_AGItf r2
+as2LaTeX :: Opts -> ScGam Expr -> FmGam Expr -> RwExprGam -> Decls -> (Decls,PP_Doc,[Err])
+as2LaTeX o scg fmg rwg r
+  = (self_Syn_AGItf r2,ppDbg_Syn_AGItf r2,errL_Syn_AGItf r2)
   where r1 = sem_AGItf (AGItf_AGItf r)
         r2 = wrap_AGItf r1
-                (Inh_AGItf {opts_Inh_AGItf = o})
+                (Inh_AGItf {opts_Inh_AGItf = o, fmGam_Inh_AGItf = fmg, rwGam_Inh_AGItf = rwg, scGam_Inh_AGItf = scg})
 }
+
+-------------------------------------------------------------------------
+-- Replica
+-------------------------------------------------------------------------
+
+SEM RlDecl
+  | Rl              lhs.self                =   let 
+                                                in  RlDecl_LTX @fullNm @rlNm @lhs.vwNm @pos @preJds.self @postJds.self
+
+SEM Jd
+  | Expr			lhs.self				=	Jd_LTX @nm @scNm @expr.self
+
 

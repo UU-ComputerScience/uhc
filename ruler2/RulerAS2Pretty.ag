@@ -4,6 +4,26 @@
 
 ATTR AllAS2 AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
 
+SEM Decls
+  | Cons            lhs     .   pp          =   @hd.pp >-< "" >-< @tl.pp
+
+SEM RlDecls
+  | Cons            lhs     .   pp          =   @hd.pp >-< "" >-< @tl.pp
+
+-------------------------------------------------------------------------
+-- Chunks
+-------------------------------------------------------------------------
+
+SEM RlDecl
+  | Chunk           lhs     .   pp          =   ppWrapShuffle @nm @rl.pp
+
+SEM Decl
+  | Chunk           lhs     .   pp          =   ppWrapShuffle @nm @decl.pp
+
+-------------------------------------------------------------------------
+-- AG specific: ruleset
+-------------------------------------------------------------------------
+
 SEM VwDecl
   | Vw              lhs     .   pp          =   "VIEW" >#< @nm
                                                 >-< indent 2 @rlDecls.pp
@@ -17,3 +37,54 @@ SEM Jd
 
 SEM JdAt
   | At              lhs     .   pp          =   @nm >#< "=" >#< @expr.pp
+
+-------------------------------------------------------------------------
+-- AG specific: ATTR decls
+-------------------------------------------------------------------------
+
+SEM AttrAGDecl
+  | Attr            lhs     .   pp          =   let mka g = ppListSep "" "" "  " [ n >|< ":" >#< t | (n,t) <- g ]
+                                                in  "ATTR" >#< @ndNm
+                                                    >#< pp_brackets (mka @inhAts >#< "|" >#< mka @inhsynAts >#< "|" >#< mka @synAts)
+
+-------------------------------------------------------------------------
+-- LaTeX specific: ruleset
+-------------------------------------------------------------------------
+
+SEM RlDecl
+  | LTX             lhs     .   pp          =   let
+                                                    r = "\\ehinfruleB" >|< ppCurly @rlNm >|< ppCurly @vwNm
+                                                        >-< ppListSepVV "{%" "}" "\\\\" @preJds.ppL
+                                                        >-<  ppListSepVV "{%" "}" "\\\\" @postJds.ppL
+                                                in  mkCmdNmDef @nm r
+
+SEM Jd
+  | LTX             lhs     .   pp          =   switchLaTeXLhs (exprFmtTeX @lhs.opts @expr.self)
+
+ATTR Jds [ | | ppL: {[PP_Doc]} ]
+
+SEM Jds
+  | Nil             lhs     .   ppL         =   []
+  | Cons            lhs     .   ppL         =   @hd.pp : @tl.ppL
+
+{-
+          let atIsChanged
+                = case vwrlMbChGam (genVwRlInfo gen) of
+                    Just g  -> \j a -> maybe (Just False) (const (Just True)) $ dblGamLookup id j a g
+                    Nothing -> \_ _ -> Nothing
+              mkJd nJd atIsChanged reGam
+                = switchLaTeXLhs ePP
+                where (scInfo,vwScInfo,reInfo,fg,scVwExpr) = genMkJdInfo gen (gen {genOpts = (genOpts gen) {optSubstFullNm=False}}) (nVw,nJd) reGam
+                      gen' = gen {genScInfo=scInfo, genVwScInfo=vwScInfo}
+                      ePP = genJdExpr gen' gen' atIsChanged fg (genFmGam gen') scVwExpr
+              mkJds reGam order
+                = map (\nJd -> mkJd nJd (atIsChanged nJd) reGam) order
+              prePPL   = mkJds (vwrlFullPreGam (genVwRlInfo gen)) (concat . vwrlPreScc $ genVwRlInfo gen)
+              postPPL  = mkJds (vwrlFullPostGam (genVwRlInfo gen)) (Map.keys . vwrlFullPostGam $ genVwRlInfo gen)
+              r = "\\ehinfruleB" >|< ppCurly nRl >|< ppCurly nVw
+                  >-< ppListSepVV "{%" "}" "\\\\" prePPL
+                  >-< ppListSepVV "{%" "}" "\\\\" postPPL
+          in  mkCmdNmDef nRlFull r
+
+-}
+
