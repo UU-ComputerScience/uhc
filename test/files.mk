@@ -28,8 +28,8 @@ test-expect test-regress: test-lists
 	for v in $(VERSIONS) ; \
 	do \
 	  echo "== version $$v ==" ; \
-	  ehc=../bin/$$v/$(EHC_EXEC_NAME) ; \
-	  gri=../bin/$$v/$(GRINI_EXEC_NAME) ; \
+	  ehc=../bin/$$v/$(EHC_EXEC_NAME)$(EXEC_SUFFIX) ; \
+	  gri=../bin/$$v/$(GRINI_EXEC_NAME)$(EXEC_SUFFIX) ; \
 	  if test -x $$ehc ; \
 	  then \
 	    for t in `cat $$v.lst` ; \

@@ -22,6 +22,7 @@ data Opts
   = Opts
       { optGenFM        :: FmKind
       , optGenExpl      :: Bool
+      , optGenV2		:: Bool
       , optGenAGAttr    :: Bool
       , optDot2Dash     :: Bool
       , optPreamble     :: Bool
@@ -44,6 +45,7 @@ defaultOpts
   = Opts
       { optGenFM        =  FmAll
       , optGenExpl      =  False
+      , optGenV2        =  True
       , optGenAGAttr    =  False
       , optDot2Dash     =  False
       , optPreamble     =  True
@@ -70,6 +72,10 @@ cmdLineOpts
           "generate code for AG, default=no"
      , Option ""   ["as2"]              (NoArg oGenAS2)
           "generate code for AS2 (under development, internal restructure), default=no"
+     , Option ""   ["v2"]               (NoArg oGenV2)
+          "20060221 version (i.e. next version under devel), default=yes"
+     , Option ""   ["v1"]               (NoArg oGenV1)
+          "20060221 old version (i.e. version soon obsolete), default=no"
      , Option ""   ["explain"]          (NoArg oGenExpl)
           "generate explanation (for scheme's), default=no"
      , Option ""   ["ATTR"]             (NoArg oGenAGAttr)
@@ -96,6 +102,8 @@ cmdLineOpts
   where  oGenLhs2tex     o =  o {optGenFM = FmTeX}
          oGenAG          o =  o {optGenFM = FmAG}
          oGenAS2         o =  o {optGenFM = FmAS2 (optGenFM o)}
+         oGenV2          o =  o {optGenV2 = True}
+         oGenV1          o =  o {optGenV2 = False}
          oGenExpl        o =  o {optGenExpl = True}
          oGenAGAttr      o =  o {optGenAGAttr = True}
          oDot2Dash       o =  o {optDot2Dash = True}

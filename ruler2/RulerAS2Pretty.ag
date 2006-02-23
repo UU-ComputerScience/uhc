@@ -21,12 +21,8 @@ SEM Decl
   | Chunk           lhs     .   pp          =   ppWrapShuffle @nm @decl.pp
 
 -------------------------------------------------------------------------
--- AG specific: ruleset
+-- General: ruleset
 -------------------------------------------------------------------------
-
-SEM VwDecl
-  | Vw              lhs     .   pp          =   "VIEW" >#< @nm
-                                                >-< indent 2 @rlDecls.pp
 
 SEM RlDecl
   | Rl              lhs     .   pp          =   @nm >#< ppCommaList [pp @pos,pp @mbAGStr]
@@ -55,8 +51,17 @@ SEM RlDecl
   | LTX             lhs     .   pp          =   let
                                                     r = "\\ehinfruleB" >|< ppCurly @rlNm >|< ppCurly @vwNm
                                                         >-< ppListSepVV "{%" "}" "\\\\" @preJds.ppL
-                                                        >-<  ppListSepVV "{%" "}" "\\\\" @postJds.ppL
+                                                        >-< ppListSepVV "{%" "}" "\\\\" @postJds.ppL
                                                 in  mkCmdNmDef @nm r
+  | LTXAlias        lhs     .   pp          =   mkCmdNmDef @fullAliasNm (mkCmdNmUse @fullNm)
+
+SEM VwDecl
+  | LTX             lhs     .   pp          =   let meta = ensureTeXMath $ switchLaTeXLhs $ exprFmtTeX @lhs.opts @scmExpr.self
+                                                in  mkCmdNmDef @scMetaNm meta >-< @rlDecls.pp
+  | LTXFig          lhs     .   pp          =   let fig = "\\begin{RulesFigureB}" >|< ppCurly (mkCmdNmUse @scMetaNm) >|< ppCurly (pp @descr) >|< ppCurly @fullNm >|< (ppCurly @nm)
+                                                          >-< vlist (intersperse (pp "\\hspace{1ex}") . map mkCmdNmUse $ @rlFullNmL)
+                                                          >-< "\\end{RulesFigureB}"
+                                                in  mkCmdNmDef @fullNm fig
 
 SEM Jd
   | LTX             lhs     .   pp          =   switchLaTeXLhs (exprFmtTeX @lhs.opts @expr.self)
@@ -67,24 +72,18 @@ SEM Jds
   | Nil             lhs     .   ppL         =   []
   | Cons            lhs     .   ppL         =   @hd.pp : @tl.ppL
 
-{-
-          let atIsChanged
-                = case vwrlMbChGam (genVwRlInfo gen) of
-                    Just g  -> \j a -> maybe (Just False) (const (Just True)) $ dblGamLookup id j a g
-                    Nothing -> \_ _ -> Nothing
-              mkJd nJd atIsChanged reGam
-                = switchLaTeXLhs ePP
-                where (scInfo,vwScInfo,reInfo,fg,scVwExpr) = genMkJdInfo gen (gen {genOpts = (genOpts gen) {optSubstFullNm=False}}) (nVw,nJd) reGam
-                      gen' = gen {genScInfo=scInfo, genVwScInfo=vwScInfo}
-                      ePP = genJdExpr gen' gen' atIsChanged fg (genFmGam gen') scVwExpr
-              mkJds reGam order
-                = map (\nJd -> mkJd nJd (atIsChanged nJd) reGam) order
-              prePPL   = mkJds (vwrlFullPreGam (genVwRlInfo gen)) (concat . vwrlPreScc $ genVwRlInfo gen)
-              postPPL  = mkJds (vwrlFullPostGam (genVwRlInfo gen)) (Map.keys . vwrlFullPostGam $ genVwRlInfo gen)
-              r = "\\ehinfruleB" >|< ppCurly nRl >|< ppCurly nVw
-                  >-< ppListSepVV "{%" "}" "\\\\" prePPL
-                  >-< ppListSepVV "{%" "}" "\\\\" postPPL
-          in  mkCmdNmDef nRlFull r
+-------------------------------------------------------------------------
+-- Preamble
+-------------------------------------------------------------------------
 
--}
+SEM Decl
+  | Preamble        lhs     .   pp          =   pp @preamble
+
+-------------------------------------------------------------------------
+-- Explain
+-------------------------------------------------------------------------
+
+SEM Decl
+  | ScVwExplain     lhs     .   pp          =   exprFmtTeX @lhs.opts @exExpr
+  | ScVwAtExplain   lhs     .   pp          =   vlist $ map (\(n,e) -> exprFmtTeX @lhs.opts n >#< "&" >#< exprFmtTeX @lhs.opts e >#< "\\\\") $ @atExprs
 

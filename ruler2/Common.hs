@@ -14,7 +14,7 @@ module Common
   , rulesCmdPre
   , ExprIsRw(..)
   , SPos, emptySPos
-  , Err(..), ppErrPPL
+  , Err(..), mkPPErr, ppErrPPL, errLIsFatal
   , WrKind(..)
   , strVec, strLhs, strLoc
   , nmVec, nmUnk, nmApp, nmWild, nmNone, nmEql, nmComma, nmOParen, nmCParen, nmLhs, nmAny, nmSp1
@@ -85,10 +85,14 @@ data Err
   | Err_Match        SPos String PP_Doc PP_Doc
   | Err_RlPost       SPos String Nm
   | Err_NotAEqnForm  SPos PP_Doc
+  | Err_PP                PP_Doc
   deriving Show
 
 ppErrPPL :: PP a => [a] -> PP_Doc
 ppErrPPL = vlist . map pp
+
+mkPPErr :: PP a => a -> Err
+mkPPErr = Err_PP . pp
 
 instance PP Err where
   pp (Err_UndefNm pos cx knd nmL)
@@ -105,7 +109,16 @@ instance PP Err where
   pp (Err_RlPost pos cx nm)
     = ppErr pos ("In" >#< cx >#< "conclusion lacks judgement for ruleset's scheme:" >#< pp nm)
   pp (Err_NotAEqnForm pos e)
-    = ppErr pos ("expr not of (AG rule) form ... = ...:" >#< e)
+    = ppWarn pos ("expr not of (AG rule) form ... = ...:" >#< e)
+  pp (Err_PP e)
+    = ppErr emptySPos e
+
+errIsFatal :: Err -> Bool
+errIsFatal (Err_NotAEqnForm _ _) = False
+errIsFatal _                     = True
+
+errLIsFatal :: [Err] -> Bool
+errLIsFatal es = not (null es) && any errIsFatal es
 
 -------------------------------------------------------------------------
 -- Kind of Expr wrappers (for influencing latex pretty printing, colors)

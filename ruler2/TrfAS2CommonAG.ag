@@ -37,7 +37,7 @@ SEM RsVwDecl
 ATTR AllRl AllJd [ vwNm: Nm | | ]
 
 SEM VwDecl
-  | Vw              loc     .   vwNm        =   @nm
+  | Vw LTX          loc     .   vwNm        =   @nm
 
 ATTR AllJd [ rlNm: Nm | | ]
 

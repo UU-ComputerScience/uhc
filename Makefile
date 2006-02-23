@@ -18,6 +18,7 @@ RULER_SRC			:= $(RULER_DIR)/$(RULER_AG)
 -include latex/files.mk
 -include lhs2TeX/files.mk
 
+include mk/config.mk
 include mk/shared.mk
 
 include shuffle/files.mk

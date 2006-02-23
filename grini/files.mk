@@ -6,9 +6,9 @@ GRINI_MKF								:= $(GRINI_SRC_PREFIX)files.mk
 
 # end products, binary, executable, etc
 GRINI_EXEC_NAME							:= grini
-GRINI_BLD_EXEC							:= $(GRIN_BLD_BIN_VARIANT_PREFIX)$(GRINI_EXEC_NAME)
-GRINI_ALL_PUB_EXECS						:= $(patsubst %,$(GRIN_BIN_PREFIX)%/grini,$(GRIN_PUB_VARIANTS))
-GRINI_ALL_EXECS							:= $(patsubst %,$(GRIN_BIN_PREFIX)%/grini,$(GRIN_VARIANTS))
+GRINI_BLD_EXEC							:= $(GRIN_BLD_BIN_VARIANT_PREFIX)$(GRINI_EXEC_NAME)$(EXEC_SUFFIX)
+GRINI_ALL_PUB_EXECS						:= $(patsubst %,$(GRIN_BIN_PREFIX)%/$(GRINI_EXEC_NAME)$(EXEC_SUFFIX),$(GRIN_PUB_VARIANTS))
+GRINI_ALL_EXECS							:= $(patsubst %,$(GRIN_BIN_PREFIX)%/$(GRINI_EXEC_NAME)$(EXEC_SUFFIX),$(GRIN_VARIANTS))
 
 # main + sources + dpds, for .chs
 GRINI_MAIN								:= GRI

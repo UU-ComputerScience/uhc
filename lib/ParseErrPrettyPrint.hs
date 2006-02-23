@@ -1,5 +1,5 @@
 module ParseErrPrettyPrint
-  ( ppPos, ppErr
+  ( ppPos, ppErr, ppWarn
   )
   where
 
@@ -21,11 +21,15 @@ ppPos p
         c = column p
         f = file p
 
-ppErr :: Position pos => (String,pos) -> PP_Doc -> PP_Doc
-ppErr (sym,pos) p
-  = "*** ERROR ***"
+ppMsg :: Position pos => String -> (String,pos) -> PP_Doc -> PP_Doc
+ppMsg what (sym,pos) p
+  = "***" >#< what >#< "***"
     >-< ppPos pos >|< (if null sym then empty else ", at symbol '" >|< pp sym >|< "'") >|< ":"
     >-< indent 4 p
+
+ppErr, ppWarn :: Position pos => (String,pos) -> PP_Doc -> PP_Doc
+ppErr  = ppMsg "ERROR"
+ppWarn = ppMsg "WARNING"
 
 instance (Eq s, Show s, Show p, Position p) => PP (Message s p) where
   pp (Msg expecting position action)  

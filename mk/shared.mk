@@ -44,6 +44,11 @@ LHS2TEX_OPTS_DFLT	:=
 LHS2TEX_OPTS_POLY	:= $(LHS2TEX_OPTS_DFLT) --poly
 LHS2TEX_OPTS_NEWC	:= $(LHS2TEX_OPTS_DFLT) --newcode
 
+# ruler2 options
+#RULER2_OPTS_DFLT	:= --v1
+RULER2_OPTS_DFLT	:=
+RULER2_OPTS			:= $(RULER2_OPTS_DFLT)
+
 # order to shuffle
 # 4_99: interim for stuff from 4, needed for 4_2, because of ruler generated material uptil 4_2
 EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11, 4_99 < 4_2, 6 < 6_4

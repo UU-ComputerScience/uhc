@@ -7,6 +7,7 @@ module ARuleElimCopyRule
   ( module Gam
 
   , AtDefdGam
+  , AtDefdGam', adGamUnion, ppADGam
   , CrOrdGam
   
   , arlElimCopyRule
@@ -14,6 +15,7 @@ module ARuleElimCopyRule
   where
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Common
 import Expr
 import ARule
@@ -34,13 +36,14 @@ INCLUDE "ARuleInCompDestAG.ag"
 WRAPPER  AGARuleItf
 
 {
-arlElimCopyRule :: [Nm] -> AtDefdGam -> ARule -> ARule
-arlElimCopyRule co ag rl
+arlElimCopyRule :: [Nm] -> AtDefdGam -> AtDefdGam' -> ARule -> ARule
+arlElimCopyRule co ag ag2 rl
   = self_Syn_AGARuleItf r2
   where r1 = sem_AGARuleItf (AGARuleItf_AGItf rl)
         r2 = wrap_AGARuleItf r1
                 (Inh_AGARuleItf {croNmL_Inh_AGARuleItf = co
                                 ,adGam_Inh_AGARuleItf = ag
+                                ,ad2Gam_Inh_AGARuleItf = ag2
                                 })
 }
 
@@ -58,6 +61,29 @@ type CrOrdGam = Gam Nm Nm
 
 {
 type AtDefdGam = Gam Nm Bool
+type AtDefdGam' = Gam Nm (Set.Set Nm)
+
+adGamUnion :: AtDefdGam' -> AtDefdGam' -> AtDefdGam'
+adGamUnion = Map.unionWith Set.union
+
+ppADGam :: AtDefdGam' -> PP_Doc
+ppADGam = ppGam . Map.map (pp.show)
+
+adGamIsThr :: AtDefdGam -> AtDefdGam' -> CrOrdGam -> Nm -> Nm -> Nm -> Bool
+adGamIsThr ag1 ag2 cg
+  = if Map.null ag2 then isThr1 else isThr2
+  where isThr1 _    _    nAt = Map.findWithDefault False nAt ag1
+        isThr2 nNd1 nNd2 nAt
+          = case Map.lookup nNd2 cg of
+              Nothing -> False
+              Just nNd1'
+                | nNd1 == nNd1'
+                  -> isComingOut
+                | not isComingOut
+                  -> isThr2 nNd1 nNd1' nAt
+                | otherwise
+                  -> False
+                where isComingOut = maybe False (nNd1' `Set.member`) $ Map.lookup nAt ag2
 }
 
 -------------------------------------------------------------------------
@@ -65,6 +91,7 @@ type AtDefdGam = Gam Nm Bool
 -------------------------------------------------------------------------
 
 ATTR AllARuleRule AllARuleEqn AGARuleItf [ adGam: AtDefdGam | | ]
+ATTR AllARuleRule AllARuleEqn AGARuleItf [ ad2Gam: {AtDefdGam'} | | ]
 ATTR AllARuleRule AllARuleEqn [ croGam: CrOrdGam | | ]
 
 SEM AGARuleItf
@@ -77,18 +104,20 @@ SEM AGARuleItf
 ATTR AEqns AEqn [ | | replCrEqns USE {++} {[]}: {[AEqn]} ]
 
 SEM AEqn
-  | Eqn             lhs     .   replCrEqns  =   let isThr n = Map.findWithDefault False n @lhs.adGam
-                                                    isPrev n1 n2 = maybe False (==n1) $ Map.lookup n2 @lhs.croGam
+  | Eqn             lhs     .   replCrEqns  =   let -- isThr n = Map.findWithDefault False n @lhs.adGam
+                                                    isThr = adGamIsThr @lhs.adGam @lhs.ad2Gam @lhs.croGam
+                                                    isPrev1 n1 n2 = maybe False (==n1) $ Map.lookup n2 @lhs.croGam
+                                                    isPrev = if Map.null @lhs.ad2Gam then isPrev1 else \_ _ -> True
                                                 in  case (@dest.mbSingleANm,@val.mbSingleANm) of
-                                                      (Just (ANm_Node nn dn),Just (ANm_Lhs sn _)) | dn == sn && not (isThr sn)
+                                                      (Just (ANm_Node nn dn),Just (ANm_Lhs sn _)) | Map.null @lhs.ad2Gam && dn == sn && not (isThr nmLhs nn dn)
                                                         -> []
-                                                      (Just (ANm_Node nn dn),Just (ANm_Lhs sn _)) | dn == sn && (isThr sn) && nmLhs `isPrev` nn
+                                                      (Just (ANm_Node nn dn),Just (ANm_Lhs sn _)) | dn == sn && (isThr nmLhs nn dn) && nmLhs `isPrev` nn
                                                         -> []
-                                                      (Just (ANm_Node nn1 dn),Just (ANm_Node nn2 sn)) | dn == sn && (isThr sn) && nn2 `isPrev` nn1
+                                                      (Just (ANm_Node nn1 dn),Just (ANm_Node nn2 sn)) | dn == sn && (isThr nn2 nn1 dn) && nn2 `isPrev` nn1
                                                         -> []
                                                       (Just (ANm_Lhs dn _),Just (ANm_Node nn sn)) | dn == sn {- && (isThr sn) -} && nn `isPrev` nmLhs
                                                         -> []
-                                                      (Just (ANm_Lhs dn _),Just (ANm_Lhs sn _)) | dn == sn && (isThr sn) && nmLhs `isPrev` nmLhs
+                                                      (Just (ANm_Lhs dn _),Just (ANm_Lhs sn _)) | dn == sn && (isThr nmLhs nmLhs dn) && nmLhs `isPrev` nmLhs
                                                         -> []
                                                       _ -> [@self]
   | * - Eqn         lhs     .   replCrEqns  =   [@self]
