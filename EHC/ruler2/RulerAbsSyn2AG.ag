@@ -7,6 +7,9 @@
 -------------------------------------------------------------------------
 
 DATA Decl
+  | Preamble            preamble    : {String}
+  | ScVwExplain         exExpr      : {Expr}
+  | ScVwAtExplain       atExprs     : {[(Expr,Expr)]}
   | RsVw                decl        : RsVwDecl
   | AttrAG              decl        : AttrAGDecl
   | Chunk               nm          : {Nm}
@@ -19,14 +22,8 @@ SET AllDc = Decl Decls
 DATA RsVwDecl
   | Rs                  nm          : {Nm}
                         scNm        : {Nm}
-                        inclVwS     : {Set.Set Nm}
                         descr       : {String}
                         vwDecls     : VwDecls
-  | Grp                 nm          : {Nm}
-                        scNm        : {Nm}
-                        inclVwS     : {Set.Set Nm}
-                        descr       : {String}
-                        rlNms       : {[(Nm,Nm)]}
 
 TYPE RsVwDecls = [RsVwDecl]
 
@@ -42,7 +39,20 @@ SET AllAtAG = AttrAGDecl
 
 DATA VwDecl
   | Vw                  nm          : {Nm}
+                        fullNm      : {Nm}
                         rlDecls     : RlDecls
+  | Grp                 nm          : {Nm}
+                        fullNm      : {Nm}
+                        rlFullNmL   : {[(Nm,Nm)]}
+  | LTX                 nm          : {Nm}
+                        scMetaNm    : {Nm}
+                        scmExpr     : Expr
+                        rlDecls     : RlDecls
+  | LTXFig              nm          : {Nm}
+                        fullNm      : {Nm}
+                        scMetaNm    : {Nm}
+                        descr       : {String}
+                        rlFullNmL   : {[Nm]}
 
 TYPE VwDecls = [VwDecl]
 
@@ -53,7 +63,6 @@ DATA RlDecl
                         fullNm      : {Nm}
                         pos         : {SPos}
                         mbAGStr     : {Maybe String}
-                        inclVwS     : {Set.Set Nm}
                         preJds      : Jds
                         postJds     : Jds
   | LTX                 nm          : {Nm}
@@ -62,6 +71,8 @@ DATA RlDecl
                         pos         : {SPos}
                         preJds      : Jds
                         postJds     : Jds
+  | LTXAlias            fullAliasNm : {Nm}
+                        fullNm      : {Nm}
   | AG                  nm          : {Nm}
                         pos         : {SPos}
                         arule       : ARule

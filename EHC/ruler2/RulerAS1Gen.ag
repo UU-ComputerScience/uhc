@@ -282,7 +282,7 @@ genAG
                 = genWrapShuffle (genOpts gen) (nVwRnm `nmApd` scNm (genScInfo gen) `nmApd` rlNm (genRlInfo gen))
               r = (>-< "") . wrapFrag . ppARule
                   . arlElimWild
-                  . (if optAGCopyElim (genOpts gen) then arlElimCopyRule croNmL adGam else id)
+                  . (if optAGCopyElim (genOpts gen) then arlElimCopyRule croNmL adGam emptyGam else id)
                   . arlElimAlphaRename
                   . arlUniq (genFmGam gen) croNmL
                   . arlSubst eqnG

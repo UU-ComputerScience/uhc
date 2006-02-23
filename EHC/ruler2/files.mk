@@ -220,7 +220,7 @@ RULER2_AG_ALL_MAIN_DRV_HS				:= $(RULER2_AG_D_MAIN_DRV_HS) $(RULER2_AG_S_MAIN_DR
 RULER2_HS_ALL_DRV_HS					:= $(RULER2_HS_MAIN_DRV_HS) $(RULER2_HS_DPDS_DRV_HS)
 
 # binary/executable
-RULER2_BLD_EXEC							:= $(BIN_PREFIX)ruler2
+RULER2_BLD_EXEC							:= $(BIN_PREFIX)ruler2$(EXEC_SUFFIX)
 RULER2									:= $(RULER2_BLD_EXEC)
 
 # make rules
@@ -256,7 +256,7 @@ RULER2_DEMO_SRC_CHS_UTILS		:= $(RULER2_DEMO_PREFIX)RulerDemoUtils.chs
 RULER2_DEMO_DRV_HS_UTILS		:= $(RULER2_DEMO_SRC_CHS_UTILS:.chs=.hs)
 RULER2_DEMO_DRV_HS_UTILS_TEX	:= $(RULER2_DEMO_SRC_CHS_UTILS:.chs=.tex)
 
-RULER2_DEMO_EXEC				:= $(BLD_BIN_PREFIX)rulerdemo
+RULER2_DEMO_EXEC				:= $(BLD_BIN_PREFIX)rulerdemo$(EXEC_SUFFIX)
 
 RULER2_DEMO_RUL_BASE		:= rulerDemoRL
 RULER2_DEMO_AG_BASE			:= rulerDemoAG
@@ -303,16 +303,16 @@ $(RULER2_DEMO_DRV_RL2): $(RULER2_DEMO_SRC_CRL) $(SHUFFLE)
 	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --plain --order="$(RULER2_DEMO_RULER2_ORDER)"  --lhs2tex=no $< > $@
 
 $(RULER2_DEMO_DRV_LRTEX): $(RULER2_DEMO_DRV_RL2) $(RULER2)
-	$(RULER2) --lhs2tex --selrule="(E - *).(*).(*)" $(RULER2_DEMO_MARK_CHANGES_CFG) --base=rulerDemo $< > $@
+	$(RULER2) $(RULER2_OPTS) --lhs2tex --selrule="(E - *).(*).(*)" $(RULER2_DEMO_MARK_CHANGES_CFG) --base=rulerDemo $< > $@
 
 $(RULER2_DEMO_DRV_RTEX): $(RULER2_DEMO_DRV_LRTEX)
 	$(LHS2TEX) $(LHS2TEX_OPTS_POLY) $< > $@
 
 $(RULER2_DEMO_DRV_CAG): $(RULER2_DEMO_DRV_RL2) $(RULER2)
-	$(RULER2) --ag --ATTR --selrule="(3).(*).(*)" --wrapshuffle  --base=$(RULER2_DEMO_AG_BASE) $< > $@
+	$(RULER2) $(RULER2_OPTS) --ag --ATTR --selrule="(3).(*).(*)" --wrapshuffle  --base=$(RULER2_DEMO_AG_BASE) $< > $@
 
 $(RULER2_DEMO_DRV_WCOPY_CAG): $(RULER2_DEMO_DRV_RL2) $(RULER2)
-	$(RULER2) --ag --ATTR --selrule="(3).(*).(*)" --wrapshuffle --copyelim=no --base=$(RULER2_DEMO_AGWCOPY_BASE) $< > $@
+	$(RULER2) $(RULER2_OPTS) --ag --ATTR --selrule="(3).(*).(*)" --wrapshuffle --copyelim=no --base=$(RULER2_DEMO_AGWCOPY_BASE) $< > $@
 
 $(RULER2_DEMO_DRV_AG): $(RULER2_DEMO_DRV_CAG) $(SHUFFLE)
 	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --plain --order="$(RULER2_DEMO_RULER2_ORDER)"  --lhs2tex=no $< > $@

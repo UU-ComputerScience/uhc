@@ -4,8 +4,6 @@
 
 module Main where
 
--- import qualified Data.Set as Set
--- import qualified Data.Map as Map
 import System
 import System.Exit
 import IO
@@ -21,9 +19,6 @@ import TrfAS2GenARule
 import TrfAS2GenLaTeX
 import KeywParser
 import RulerParser
--- import CDoc
--- import CDocSubst
--- import Data.List
 
 -------------------------------------------------------------------------
 -- main
@@ -55,40 +50,47 @@ doCompile fp opts
                         }
        ; tokens <- mkHScan fn fh
        ; let (pres,perrs) = parseToResMsgs pAGItf tokens
+             (showErrs,omitErrs) = splitAt 5 perrs
+       ; putErr' (if null omitErrs then return () else hPutStrLn stderr "... and more parsing errors") (map mkPPErr showErrs)
+{-
        ; if null perrs
-         then do { let res = M1.wrap_AGItf pres
-                               (M1.Inh_AGItf
-                                  { M1.opts_Inh_AGItf = opts {optGenFM = fmAS2Fm (optGenFM opts)}
-                                  })
-                 ; let putDbg = putBld (optDebug opts) (M1.pp_Syn_AGItf res)
-                       errL = M1.errL_Syn_AGItf res
-                 ; if null errL
-                   then do { putDbg
-                           ; case optGenFM opts of
-                               FmAS2 f | null t2errL
-                                   -> do { putBld True (M2.ppAS2 opts t1)
-                                         ; putBld True (M2.ppAS2 opts t2)
-                                         ; putBld True t2ppDbg
-                                         ; putBld True (M1.mkPP_Syn_AGItf res f)
-                                         }
-                                 | otherwise
-                                   -> do { hPutBld True stderr (ppErrPPL t2errL)
-                                         ; exitFailure
-                                         }
-                                   where t1 = M1.as2_Syn_AGItf res
-                                         (t2,t2ppDbg,t2errL)
-                                           = case f of
-                                               FmTeX -> as2LaTeX opts (M1.scGam_Syn_AGItf res) (M1.fmGam_Syn_AGItf res) (M1.rwGam_Syn_AGItf res) t1
-                                               FmAG  -> as2ARule opts (M1.scGam_Syn_AGItf res) (M1.fmGam_Syn_AGItf res) (M1.rwGam_Syn_AGItf res) t1
-                               o | o /= FmAll
-                                   -> putBld True (M1.mkPP_Syn_AGItf res (optGenFM opts))
-                               _   -> return ()
-                           ; putBld (optGenExpl opts) (M1.scExplPP_Syn_AGItf res)
-                           }
-                   else do { hPutBld True stderr (ppErrPPL errL)
-                           ; putDbg
-                           ; exitFailure
-                           }
+-}
+       ; let res = M1.wrap_AGItf pres
+                     (M1.Inh_AGItf
+                        { M1.opts_Inh_AGItf = opts {optGenFM = fmAS2Fm (optGenFM opts)}
+                        })
+             putDbg = putBld (optDebug opts) (M1.pp_Syn_AGItf res)
+             errL = M1.errL_Syn_AGItf res
+       ; putDbg
+       ; putErr errL
+       ; if optGenV2 opts
+         then do { let t1 = M1.as2_Syn_AGItf res
+                       (t2,_,t2errL)
+                         = case optGenFM opts of
+                             FmTeX -> as2LaTeX opts (M1.scGam_Syn_AGItf res) (M1.fmGam_Syn_AGItf res) (M1.rwGam_Syn_AGItf res) t1
+                             FmAG  -> as2ARule opts (M1.scGam_Syn_AGItf res) (M1.fmGam_Syn_AGItf res) (M1.rwGam_Syn_AGItf res) t1
+                             _     -> (t1,empty,[])
+                 ; putErr t2errL
+                 ; putBld True (M2.ppAS2 opts t2)
+                 }
+         else if fmAS2Fm (optGenFM opts) == optGenFM opts
+         then do { putBld True (M1.mkPP_Syn_AGItf res (optGenFM opts))
+                 ; putBld (optGenExpl opts) (M1.scExplPP_Syn_AGItf res)
+                 }
+         else case optGenFM opts of
+                FmAS2 f
+                    -> do { putErr t2errL
+                          ; putBld True t2ppDbg
+                          ; putBld True (M2.ppAS2 opts t2)
+                          ; putBld True (M1.mkPP_Syn_AGItf res f)
+                          }
+                    where t1 = M1.as2_Syn_AGItf res
+                          (t2,t2ppDbg,t2errL)
+                            = case f of
+                                FmTeX -> as2LaTeX opts (M1.scGam_Syn_AGItf res) (M1.fmGam_Syn_AGItf res) (M1.rwGam_Syn_AGItf res) t1
+                                FmAG  -> as2ARule opts (M1.scGam_Syn_AGItf res) (M1.fmGam_Syn_AGItf res) (M1.rwGam_Syn_AGItf res) t1
+                _   -> return ()
+{-
                  }
          else do { let (showErrs,omitErrs) = splitAt 5 perrs
                  ; hPutBld True stderr (ppErrPPL showErrs)
@@ -96,7 +98,17 @@ doCompile fp opts
                    then return ()
                    else hPutStrLn stderr "... and more parsing errors"
                  }
+-}
        }
   where hPutBld f h b = if f then hPutPPFile h b 2000 else return ()
         putBld  f   b = hPutBld f stdout b
+        -- putErr' :: IO () -> [Err] -> IO ()
+        putErr' m e   = if null e
+                        then return ()
+                        else do { hPutBld True stderr (ppErrPPL e)
+                                ; m
+                                ; if errLIsFatal e then exitFailure else return ()
+                                }
+        -- putErr :: [Err] -> IO ()
+        putErr        = putErr' (return ())
 

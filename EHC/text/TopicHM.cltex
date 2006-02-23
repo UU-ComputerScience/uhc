@@ -167,14 +167,14 @@ The quantifier |forall| cannot be explicitly denoted.
 We only need to extend the abstract syntax for types with an alternative for type variables:
 
 %%[[wrap=code
-%%@EHAbsSyn.3.TyExpr
+%%@EHAbsSynAG.3.TyExpr
 %%]
 
 %if incl01TopicParsing
 As a consequence the parser for type expressions has to include an alternative
 in |pTyExprBase| to parse type variables.
 
-%%@EHParser.3 wrap=code
+ %%@EHParser.3 wrap=code
 %else
 %endif
 

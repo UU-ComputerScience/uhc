@@ -80,7 +80,7 @@ translation from the abstract to the concrete representation is done by a pretty
 Let us focus our attention first on the abstract syntax for EH1, in particular the part
 defining the structure for expressions (the remaining abstract syntax can be found in \figRef{abs-syn-eh1}):
 
-%%@EHAbsSyn.1.Expr wrap=code
+%%@EHAbsSynAG.1.Expr wrap=code
 
 Integer constants are represented by |IConst|, lowercase (uppercase) identifier occurrences by |Var| (|Con|),
 an |App| represents the application of a function to its argument, |Lam| and |Let| represent lambda expressions and
@@ -114,21 +114,21 @@ does not allow a type signature for the elements of a tuple.
 \begin{CodeFigure}{}{Abstract syntax for EH (without Expr)}{abs-syn-eh1}
 \savecolumns
 %%[[wrap=code
-%%@EHAbsSyn.1.AGItf
+%%@EHAbsSynAG.1.AGItf
 
-%%@EHAbsSyn.1.Decl 
+%%@EHAbsSynAG.1.Decl 
 
-%%@EHAbsSyn.1.PatExpr
+%%@EHAbsSynAG.1.PatExpr
 
-%%@EHAbsSyn.1.AllPatExpr 
+%%@EHAbsSynAG.1.AllPatExpr 
 
-%%@EHAbsSyn.1.TyExpr 
+%%@EHAbsSynAG.1.TyExpr 
 
-%%@EHAbsSyn.1.AllTyExpr 
+%%@EHAbsSynAG.1.AllTyExpr 
 
-%%@EHAbsSyn.1.AllExpr 
+%%@EHAbsSynAG.1.AllExpr 
 
-%%@EHAbsSyn.1.AllNT 
+%%@EHAbsSynAG.1.AllNT 
 %%]
 \end{CodeFigure}
 

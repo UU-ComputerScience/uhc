@@ -13,9 +13,9 @@ EHC_MKF									:= $(EHC_SRC_PREFIX)files.mk
 
 # end products, binary, executable, etc
 EHC_EXEC_NAME							:= ehc
-EHC_BLD_EXEC							:= $(EHC_BLD_BIN_VARIANT_PREFIX)$(EHC_EXEC_NAME)
-EHC_ALL_PUB_EXECS						:= $(patsubst %,$(EHC_BIN_PREFIX)%/ehc,$(EHC_PUB_VARIANTS))
-EHC_ALL_EXECS							:= $(patsubst %,$(EHC_BIN_PREFIX)%/ehc,$(EHC_VARIANTS))
+EHC_BLD_EXEC							:= $(EHC_BLD_BIN_VARIANT_PREFIX)$(EHC_EXEC_NAME)$(EXEC_SUFFIX)
+EHC_ALL_PUB_EXECS						:= $(patsubst %,$(EHC_BIN_PREFIX)%/$(EHC_EXEC_NAME)$(EXEC_SUFFIX),$(EHC_PUB_VARIANTS))
+EHC_ALL_EXECS							:= $(patsubst %,$(EHC_BIN_PREFIX)%/$(EHC_EXEC_NAME)$(EXEC_SUFFIX),$(EHC_VARIANTS))
 
 # sources + dpds, for .rul, .rl2
 EHC_RULES_1_SRC_RUL						:= $(EHC_SRC_PREFIX)rules.rul
@@ -54,10 +54,10 @@ $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGMAIN_MAI
 										: $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGMAIN_DPDS_SRC_CAG)) \
 											$(EHC_RULES_3_DRV_AG)
 
-EHC_AGHSAST_MAIN_SRC_CAG				:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHAbsSyn)
-EHC_AGHSAST_DPDS_SRC_CAG				:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHAbsSynAG)
-$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGHSAST_MAIN_SRC_CAG)) \
-										: $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGHSAST_DPDS_SRC_CAG))
+EHC_AGEHAST_MAIN_SRC_CAG				:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHAbsSyn)
+EHC_AGEHAST_DPDS_SRC_CAG				:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHAbsSynAG)
+$(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGEHAST_MAIN_SRC_CAG)) \
+										: $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(EHC_AGEHAST_DPDS_SRC_CAG))
 
 EHC_AGTY_MAIN_SRC_CAG					:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTy)
 EHC_AGTY_DPDS_SRC_CAG					:= $(patsubst %,$(EHC_SRC_PREFIX)%.cag,EHTyAbsSyn)
@@ -177,7 +177,7 @@ $(patsubst $(EHC_SRC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_AGCORE_TRF
 EHC_AG_D_MAIN_SRC_CAG					:= $(EHC_AGTY_MAIN_SRC_CAG) \
 											$(EHC_AGERR_MAIN_SRC_CAG) \
 											$(EHC_AGCORE_MAIN_SRC_CAG) \
-											$(EHC_AGHSAST_MAIN_SRC_CAG)
+											$(EHC_AGEHAST_MAIN_SRC_CAG)
 EHC_AG_S_MAIN_SRC_CAG					:= $(EHC_AGTY_FTV_MAIN_SRC_CAG) \
 											$(EHC_AGTY_INST_MAIN_SRC_CAG) \
 											$(EHC_AGTY_PRETTY_MAIN_SRC_CAG) \
@@ -204,6 +204,7 @@ EHC_AG_ALL_MAIN_SRC_CAG					:= $(EHC_AG_D_MAIN_SRC_CAG) $(EHC_AG_S_MAIN_SRC_CAG)
 
 EHC_AG_ALL_DPDS_SRC_CAG					:= $(sort \
 											$(EHC_AGMAIN_DPDS_SRC_CAG) \
+											$(EHC_AGEHAST_DPDS_SRC_CAG) \
 											$(EHC_AGTY_DPDS_SRC_CAG) \
 											$(EHC_AGTY_FTV_DPDS_SRC_CAG) \
 											$(EHC_AGTY_INST_DPDS_SRC_CAG) \
@@ -340,5 +341,5 @@ $(EHC_HS_UTIL_DRV_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(EHC_SRC_PREFIX)%.chs $(S
 
 $(EHC_RULES_3_DRV_CAG): $(EHC_RULES_3_SRC_RL2) $(RULER2) $(EHC_MKF)
 	mkdir -p $(@D)
-	$(RULER2) --ag --wrapshuffle --preamble=no --selrule="$(EHC_VARIANT_RULER_SEL)" --base=$(*F) $< > $@
+	$(RULER2) $(RULER2_OPTS) --ag --wrapshuffle --preamble=no --selrule="$(EHC_VARIANT_RULER_SEL)" --base=$(*F) $< > $@
 

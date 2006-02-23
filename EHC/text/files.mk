@@ -337,19 +337,19 @@ $(RULER_12_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(EHC_SRC_PREFIX)%.rul
 
 $(RULER_3_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(EHC_SRC_PREFIX)%.rl2 $(RULER2)
 	mkdir -p $(@D)
-	$(RULER2) --lhs2tex $(TEXT_RULER_MARK_CHANGES_CFG) --base=$(*F) $< > $@
+	$(RULER2) $(RULER2_OPTS) --lhs2tex $(TEXT_RULER_MARK_CHANGES_CFG) --base=$(*F) $< > $@
 
 $(TEXT_RULES_TH_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(TEXT_SRC_PREFIX)%.rul $(RULER2)
 	mkdir -p $(@D)
-	$(RULER2) --lhs2tex --base=$(*F) $< > $@
+	$(RULER2) $(RULER2_OPTS) --lhs2tex --base=$(*F) $< > $@
 
 $(TEXT_RULES_3_DRV_CAG): $(EHC_RULES_3_SRC_RL2) $(RULER2)
 	mkdir -p $(@D)
-	$(RULER2) --ag --wrapshuffle --selrule="((1=K),(2=C),(3=HM),(4=EX),(42=I2),(9=P)).(expr.base tyexpr.base patexpr.base decl.base).(*)" --base=$(*F) $< > $@
+	$(RULER2) $(RULER2_OPTS) --ag --wrapshuffle --selrule="((1=K),(2=C),(3=HM),(4=EX),(42=I2),(9=P)).(expr.base tyexpr.base patexpr.base decl.base).(*)" --base=$(*F) $< > $@
 
 $(TEXT_RULES_EXPLAIN_3_DRV_CAG): $(EHC_RULES_3_SRC_RL2) $(RULER2)
 	mkdir -p $(@D)
-	$(RULER2) --explain --wrapshuffle $< > $@
+	$(RULER2) $(RULER2_OPTS) --explain --wrapshuffle $< > $@
 
 $(TEXT_RULER2_DEMO_TEX) $(TEXT_RULER2_DEMO_STUFF): $(TEXT_TMP_VARIANT_PREFIX)% : $(RULER2_DEMO_PREFIX)%
 	mkdir -p $(@D)
@@ -407,13 +407,13 @@ $(TEXT_RULER2_DEMO_DRV_RL2): $(RULER2_DEMO_SRC_CRL) $(SHUFFLE) $(TEXT_MKF)
 	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --plain --order="$(RULER2_DEMO_RULER2_ORDER)"  --lhs2tex=no $< > $@
 
 $(TEXT_RULER2_DEMO_DRV_LRTEX): $(TEXT_RULER2_DEMO_DRV_RL2) $(RULER2)
-	$(RULER2) --lhs2tex --selrule="(E - *).(*).(*)" $(RULER2_DEMO_MARK_CHANGES_CFG) --base=rulerDemo $< > $@
+	$(RULER2) $(RULER2_OPTS) --lhs2tex --selrule="(E - *).(*).(*)" $(RULER2_DEMO_MARK_CHANGES_CFG) --base=rulerDemo $< > $@
 
 $(TEXT_RULER2_DEMO_DRV_RTEX): $(TEXT_RULER2_DEMO_DRV_LRTEX)
 	$(LHS2TEX) $(LHS2TEX_OPTS_POLY) $< > $@
 
 $(TEXT_RULER2_DEMO_DRV_CAG): $(TEXT_RULER2_DEMO_DRV_RL2) $(RULER2)
-	$(RULER2) --ag --ATTR --selrule="(3).(*).(*)" --wrapshuffle  --base=$(RULER2_DEMO_AG_BASE) $< > $@
+	$(RULER2) $(RULER2_OPTS) --ag --ATTR --selrule="(3).(*).(*)" --wrapshuffle  --base=$(RULER2_DEMO_AG_BASE) $< > $@
 
 $(TEXT_RULER2_DEMO_DRV_AG): $(TEXT_RULER2_DEMO_DRV_CAG) $(SHUFFLE)
 	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --plain --order="$(RULER2_DEMO_RULER2_ORDER)"  --lhs2tex=no $< > $@

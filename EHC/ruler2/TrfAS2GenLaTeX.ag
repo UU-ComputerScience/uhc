@@ -24,6 +24,7 @@ import RwExprGam
 import ECnstrGam
 import RulerAbsSyn2
 import RulerAdmin
+import RulerUtils
 
 -- for ppDbg
 import UU.Pretty
@@ -62,14 +63,52 @@ as2LaTeX o scg fmg rwg r
 }
 
 -------------------------------------------------------------------------
+-- Context: ruleset info
+-------------------------------------------------------------------------
+
+ATTR AllVw [ rsDescr: String | | ]
+
+SEM RsVwDecl
+  | Rs              loc     .   rsDescr     =   @descr
+
+-------------------------------------------------------------------------
+-- Names of rules
+-------------------------------------------------------------------------
+
+ATTR AllRl [ | | rlFullNmL USE {++} {[]}: {[Nm]} ]
+
+SEM RlDecl
+  | Rl              lhs     .   rlFullNmL   =   [@fullNm]
+  | LTXAlias        lhs     .   rlFullNmL   =   [@fullAliasNm]
+
+-------------------------------------------------------------------------
 -- Replica
 -------------------------------------------------------------------------
 
+ATTR AllVw [ | | rlVwDecls, figVwDecls USE {++} {[]}: {[VwDecl]} ]
+
+SEM RsVwDecl
+  | Rs              lhs     .   self        =   RsVwDecl_Rs @nm @scNm @descr (@vwDecls.rlVwDecls ++ @vwDecls.figVwDecls)
+
+SEM VwDecl
+  | Vw              lhs     .   (rlVwDecls,figVwDecls)
+                                            =   let scMetaNm = @fullNm `nmApd` Nm "scheme"
+                                                    (scInfo,vwScInfo)
+                                                      = maybe (panic "VwDecl_Vw: scInfo") id
+                                                        $ scVwGamLookup @lhs.rsScNm @vwNm @lhs.scGam
+                                                    eScm
+                                                      = exprSubst (@lhs.opts {optSubstOnce=True}) @lhs.fmGam
+                                                        . jdGamFmExpr @lhs.fm . vwscJdGam
+                                                        $ vwScInfo
+                                                in  ( [ VwDecl_LTX @nm scMetaNm eScm @rlDecls.self ]
+                                                    , [ VwDecl_LTXFig @nm @fullNm scMetaNm @lhs.rsDescr @rlDecls.rlFullNmL ]
+                                                    )
+
 SEM RlDecl
-  | Rl              lhs.self                =   let 
+  | Rl              lhs     .   self        =   let 
                                                 in  RlDecl_LTX @fullNm @rlNm @lhs.vwNm @pos @preJds.self @postJds.self
 
 SEM Jd
-  | Expr			lhs.self				=	Jd_LTX @nm @scNm @expr.self
+  | Expr            lhs     .   self        =   Jd_LTX @nm @scNm (exprSubst (@lhs.opts {optSubstFullNm=False}) @lhs.fmGam @expr.self)
 
 
