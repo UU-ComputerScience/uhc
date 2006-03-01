@@ -11,9 +11,10 @@ module Common
   , module FPath
   , module PPUtils
   , module AttrProps
+  , module RulerScanner
+  
   , rulesCmdPre
   , ExprIsRw(..)
-  , SPos, emptySPos
   , Err(..), mkPPErr, ppErrPPL, errLIsFatal
   , WrKind(..)
   , strVec, strLhs, strLoc
@@ -28,11 +29,10 @@ module Common
 
 import Data.Maybe
 import Data.Char
--- import qualified Data.Map as Map
 import IO
--- import System.Directory
 import UU.Pretty
-import UU.Scanner.Position( noPos, Pos, Position(..) )
+-- import UU.Scanner.Position( noPos, Pos, Position(..) )
+import RulerScanner( SPos, emptySPos )
 import FPath
 import PPUtils
 import ParseErrPrettyPrint
@@ -59,14 +59,6 @@ data ExprIsRw
 
 instance PP ExprIsRw where
   pp = pp . show
-
--------------------------------------------------------------------------
--- Symbol position
--------------------------------------------------------------------------
-
-type SPos = (String,Pos)
-
-emptySPos = ("",noPos)
 
 -------------------------------------------------------------------------
 -- PP instances
@@ -111,7 +103,7 @@ instance PP Err where
   pp (Err_NotAEqnForm pos e)
     = ppWarn pos ("expr not of (AG rule) form ... = ...:" >#< e)
   pp (Err_PP e)
-    = ppErr emptySPos e
+    = e
 
 errIsFatal :: Err -> Bool
 errIsFatal (Err_NotAEqnForm _ _) = False

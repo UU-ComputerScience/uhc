@@ -1,0 +1,76 @@
+preamble tex "%include lhs2TeX.fmt\n%include afp.fmt\n%include ruler.fmt"
+
+-- -----------------------------------------------------------------------
+-- Formatting
+-- -----------------------------------------------------------------------
+
+format tex  scGam = Gamma..s
+format tex  vwScGam = Gamma..sv
+format tex  atScGam = Gamma..h
+format tex  specScGam = Gamma..j
+
+-- -----------------------------------------------------------------------
+-- Scheme
+-- -----------------------------------------------------------------------
+
+scheme scm =
+  holes [ s: Scm | | scGam: ScGam ]
+  judgespec :-.."scm" s : scGam
+
+scheme scms =
+  holes [ ss: Scms | | scGam: ScGam ]
+  judgespec :-.."scms" ss : scGam
+
+ruleset scm scheme scm "Scheme" =
+  rule scm =
+    judge V : svws = :- vws : vwScGam
+    ---
+    judge R : scm = :- ((scheme) nm `=` vws ) : ([nm :-> vwScGam])
+
+-- -----------------------------------------------------------------------
+-- Scheme view
+-- -----------------------------------------------------------------------
+
+scheme svw =
+  holes [ v: SVw | | vwScGam: VwScGam ]
+  judgespec :-.."svw" v : vwScGam
+
+scheme svws =
+  holes [ vs: SVws | | vwScGam: VwScGam ]
+  judgespec :-.."svws" vs : vwScGam
+
+ruleset svw scheme svw "Scheme view" =
+  rule svw =
+    judge H : shls = :- hs : atScGam
+    judge S : jspecs = :- specs : specScGam
+    ---
+    judge R : svw = :- ((view) nm `=` hs specs) : ([nm :-> (atScGam,specScGam)])
+
+-- -----------------------------------------------------------------------
+-- Scheme view holes
+-- -----------------------------------------------------------------------
+
+scheme shl =
+  holes [ h: SHl | | atScGam: AtScGam ]
+  judgespec :-.."shl" h : AtScGam
+
+scheme shls =
+  holes [ hs: SHls | | atScGam: AtScGam ]
+  judgespec :-.."shls" hs : atScGam
+
+-- -----------------------------------------------------------------------
+-- Scheme judge spec
+-- -----------------------------------------------------------------------
+
+scheme jspec =
+  holes [ j: JSpec | | specScGam: SpecScGam ]
+  judgespec :-.."jspec" j : specScGam
+
+scheme jspecs =
+  holes [ js: JSpecs | | specScGam: SpecScGam ]
+  judgespec :-.."jspecs" js : specScGam
+
+
+
+
+

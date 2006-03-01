@@ -48,14 +48,11 @@ doCompile fp opts
                         ; h <- openFile fn ReadMode
                         ; return (fn,fpathToStr (fpathRemoveSuff fp),h)
                         }
-       ; tokens <- mkHScan fn fh
-       ; let (pres,perrs) = parseToResMsgs pAGItf tokens
+       ; tokens <- mkOffScan fn fh
+       ; let (pres,perrs) = parseOffsideToResMsgs pAGItf tokens
              (showErrs,omitErrs) = splitAt 5 perrs
        ; putErr' (if null omitErrs then return () else hPutStrLn stderr "... and more parsing errors") (map mkPPErr showErrs)
-{-
-       ; if null perrs
--}
-       ; let res = M1.wrap_AGItf pres
+       ; let res = M1.wrap_AGItf (M1.sem_AGItf pres)
                      (M1.Inh_AGItf
                         { M1.opts_Inh_AGItf = opts {optGenFM = fmAS2Fm (optGenFM opts)}
                         })
@@ -63,7 +60,8 @@ doCompile fp opts
              errL = M1.errL_Syn_AGItf res
        ; putDbg
        ; putErr errL
-       ; if optGenV2 opts
+       ; let isAS2 = fmAS2Fm (optGenFM opts) /= optGenFM opts
+       ; if optGenV2 opts && not isAS2
          then do { let t1 = M1.as2_Syn_AGItf res
                        (t2,_,t2errL)
                          = case optGenFM opts of
@@ -73,7 +71,7 @@ doCompile fp opts
                  ; putErr t2errL
                  ; putBld True (M2.ppAS2 opts t2)
                  }
-         else if fmAS2Fm (optGenFM opts) == optGenFM opts
+         else if not isAS2
          then do { putBld True (M1.mkPP_Syn_AGItf res (optGenFM opts))
                  ; putBld (optGenExpl opts) (M1.scExplPP_Syn_AGItf res)
                  }
@@ -90,15 +88,6 @@ doCompile fp opts
                                 FmTeX -> as2LaTeX opts (M1.scGam_Syn_AGItf res) (M1.fmGam_Syn_AGItf res) (M1.rwGam_Syn_AGItf res) t1
                                 FmAG  -> as2ARule opts (M1.scGam_Syn_AGItf res) (M1.fmGam_Syn_AGItf res) (M1.rwGam_Syn_AGItf res) t1
                 _   -> return ()
-{-
-                 }
-         else do { let (showErrs,omitErrs) = splitAt 5 perrs
-                 ; hPutBld True stderr (ppErrPPL showErrs)
-                 ; if null omitErrs
-                   then return ()
-                   else hPutStrLn stderr "... and more parsing errors"
-                 }
--}
        }
   where hPutBld f h b = if f then hPutPPFile h b 2000 else return ()
         putBld  f   b = hPutBld f stdout b

@@ -13,7 +13,7 @@ TEXT_SUBS					:= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								TopicRuler TopicExplImpl TopicGRIN TopicRec TopicKinds TopicDataTy TopicImpred TopicHM TopicExtRec TopicGADT TopicReflection TopicPartialTySig \
 								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred SlidesRuler SlidesShuffle SlidesGRIN \
 								CodeFragsExplImpl \
-								ToolDocShuffle \
+								ToolDocShuffle ToolDocRuler \
 								AppxNotation FrontMatter OldText
 TEXT_SUBS_ASIS				:= afp-pgf
 
@@ -24,7 +24,7 @@ TEXT_TMP_PREFIX				:= $(BLD_PREFIX)
 TEXT_TMP_VARIANT_PREFIX		:= $(TEXT_TMP_PREFIX)$(TEXT_VARIANT)/
 
 # all variants
-TEXT_PUB_VARIANTS			:= phd shuffle
+TEXT_PUB_VARIANTS			:= phd shuffle-doc ruler-doc
 TEXT_PRIV_VARIANTS			:= flops06-ruler-paper flops06-ruler \
 								pldi06-explimpl \
 								truu-explimpl truu-ruler \
@@ -52,8 +52,9 @@ TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) $(TEXT_PRIV_VARIANTS)
 # 16: slides explimpl, for fpnl dag
 # 17: slides overview
 # 18: slides: base (share)
+# 19: ruler doc
 
-TEXT_SHUFFLE_ORDER			:= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 8, 18 < 9, 1 < 10, 1 < 11, 1 < 13, 1 < 14, 9 < 15, 9 < 16, 18 < 17, 1 < 18
+TEXT_SHUFFLE_ORDER			:= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 8, 18 < 9, 1 < 10, 1 < 11, 1 < 13, 1 < 14, 9 < 15, 9 < 16, 18 < 17, 1 < 18, 1 < 19
 
 # configuration of lhs2tex, to be done on top level
 LHS2TEX_OPTS_TEXT_CONFIG	:= 
@@ -92,8 +93,11 @@ AGPRIMER_CHS_DRV_TEX		:= $(AGPRIMER_CHS_DRV_LTEX:.ltex=.tex)
 RULER_12_DRV_LTEX			:= $(patsubst $(EHC_SRC_PREFIX)%.rul,$(TEXT_TMP_VARIANT_PREFIX)%.ltex,$(EHC_RULES_1_SRC_RUL) $(EHC_RULES_2_SRC_RUL))
 RULER_12_DRV_TEX			:= $(RULER_12_DRV_LTEX:.ltex=.tex)
 
-RULER_3_DRV_LTEX			:= $(patsubst $(EHC_SRC_PREFIX)%.rl2,$(TEXT_TMP_VARIANT_PREFIX)%.ltex,$(EHC_RULES_3_SRC_RL2))
+RULER_3_DRV_LTEX			:= $(patsubst $(EHC_SRC_PREFIX)%.rul,$(TEXT_TMP_VARIANT_PREFIX)%.ltex,$(EHC_RULES_3_SRC_RL2))
 RULER_3_DRV_TEX				:= $(RULER_3_DRV_LTEX:.ltex=.tex)
+
+RULER2_RULES_DRV_LTEX		:= $(patsubst $(RULER2_SRC_PREFIX)%.rul,$(TEXT_TMP_VARIANT_PREFIX)%.ltex,$(RULER2_RULES_SRC_RL2))
+RULER2_RULES_DRV_TEX		:= $(RULER2_RULES_DRV_LTEX:.ltex=.tex)
 
 TEXT_RULES_3_DRV_CAG		:= $(TEXT_TMP_VARIANT_PREFIX)$(EHC_RULER_RULES).cag
 TEXT_RULES_3_DRV_LTEX		:= $(TEXT_RULES_3_DRV_CAG:.cag=.ltex)
@@ -109,8 +113,10 @@ TEXT_HIDE_DRV_TXT			:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN)-hide.hltex
 TEXT_HIDE_DRV_LTEX			:= $(TEXT_HIDE_DRV_TXT:.hltex=.ltex)
 TEXT_HIDE_DRV_TEX			:= $(TEXT_HIDE_DRV_TXT:.hltex=.tex)
 
-TEXT_SUBS_DRV_TEX			:= $(EHC_CAG_DRV_TEX) $(EHC_CHS_DRV_TEX) $(AGPRIMER_CAG_DRV_TEX) $(AGPRIMER_CHS_DRV_TEX) $(RULER_12_DRV_TEX) \
-								$(RULER_3_DRV_TEX) $(TEXT_RULES_3_DRV_TEX) $(TEXT_RULES_TH_DRV_TEX)
+#TEXT_SUBS_DRV_TEX			:= $(EHC_CAG_DRV_TEX) $(EHC_CHS_DRV_TEX) $(AGPRIMER_CAG_DRV_TEX) $(AGPRIMER_CHS_DRV_TEX) $(RULER_12_DRV_TEX) \
+#								$(RULER_3_DRV_TEX) $(RULER2_RULES_DRV_TEX) $(TEXT_RULES_3_DRV_TEX) $(TEXT_RULES_TH_DRV_TEX)
+TEXT_SUBS_DRV_TEX			:= $(RULER_12_DRV_TEX) \
+								$(RULER_3_DRV_TEX) $(RULER2_RULES_DRV_TEX) $(TEXT_RULES_3_DRV_TEX) $(TEXT_RULES_TH_DRV_TEX)
 TEXT_SUBS_ASIS_DRV			:= $(patsubst $(TEXT_SRC_PREFIX)%.tex,$(TEXT_TMP_VARIANT_PREFIX)%.tex,$(TEXT_SUBS_ASIS_SRC))
 
 TEXT_INCL_LIST_TEX			:= $(TEXT_TMP_VARIANT_PREFIX)InclList.tex
@@ -157,7 +163,7 @@ TEXT_DIST_DOC_FILES			:= $(TEXT_ALL_PUB_PDFS)
 TEXT_DIST_FILES				:= $(TEXT_ALL_SRC)
 
 # variant dispatch rules
-$(TEXT_ALL_PDFS): $(DOC_PREFIX)%.pdf: $(TEXT_ALL_SRC) $(RULER2_DEMO_ALL_SRC) $(EHC_ALL_SRC) $(RULER2_DEMO_ALL_DRV_TEX) $(TEXT_ALL_MK_FILES) $(FIGS_ALL_SRC)
+$(TEXT_ALL_PDFS): $(DOC_PREFIX)%.pdf: $(TEXT_ALL_SRC) $(RULER2_DEMO_ALL_SRC) $(EHC_ALL_SRC) $(RULER2_DEMO_ALL_DRV_TEX) $(RULER2_RULES_SRC_RL2) $(TEXT_ALL_MK_FILES) $(FIGS_ALL_SRC)
 	$(MAKE) TEXT_VARIANT=$(*F) text-variant-$(*F)
 
 $(TEXT_VARIANTS) : % : $(DOC_PREFIX)%.pdf
@@ -230,10 +236,16 @@ text-variant-scratch:
 	  TEXT_SHUFFLE_VARIANT=7 \
 	  text-variant-dflt-once
 
-text-variant-shuffle:
+text-variant-shuffle-doc:
 	$(MAKE) \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyShuffle --set=asArticle --set=useHyperref --set=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=11 \
+	  text-variant-dflt-once
+
+text-variant-ruler-doc:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyRuler --set=asArticle --set=useHyperref --set=refToPDF" \
+	  TEXT_SHUFFLE_VARIANT=19 \
 	  text-variant-dflt-once
 
 text-variant-poster:
@@ -331,13 +343,17 @@ $(AGPRIMER_CAG_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(AGPRIMER_SRC_PRE
 $(TEXT_RULES_3_DRV_LTEX) : $(TEXT_RULES_3_DRV_CAG) $(SHUFFLE)
 	$(SHUFFLE) --gen=all --latex --lhs2tex=yes  --base=$(basename $(@F)) $< > $@
 
-$(RULER_12_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(EHC_SRC_PREFIX)%.rul $(RULER)
+$(RULER_12_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(EHC_SRC_PREFIX)%.rul $(RULER1)
 	mkdir -p $(@D)
-	$(RULER) --latex --base=$(*F) $< > $@
+	$(RULER1) --latex --base=$(*F) $< > $@
 
-$(RULER_3_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(EHC_SRC_PREFIX)%.rl2 $(RULER2)
+$(RULER_3_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(EHC_SRC_PREFIX)%.rul $(RULER2)
 	mkdir -p $(@D)
 	$(RULER2) $(RULER2_OPTS) --lhs2tex $(TEXT_RULER_MARK_CHANGES_CFG) --base=$(*F) $< > $@
+
+$(RULER2_RULES_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(RULER2_SRC_PREFIX)%.rul $(RULER2)
+	mkdir -p $(@D)
+	$(RULER2) $(RULER2_OPTS) --lhs2tex --base=$(*F) $< > $@
 
 $(TEXT_RULES_TH_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(TEXT_SRC_PREFIX)%.rul $(RULER2)
 	mkdir -p $(@D)

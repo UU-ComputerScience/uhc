@@ -8,27 +8,24 @@ module KeywParser
   , keywordsTextProps, keywordsTextEscapable, keywordsText
   , keywordsOpsEsc, keywordsOpsExplainEsc, keywordsOpsParenEsc
   , keywordsOps
-  , mkScan, mkHScan
-  , pNmStr, pNmStrI, pSymEscStr, pSymStr
+  , mkScan, mkHScan, mkOffScan
+  , pKeySPos
+  , pNmStr, pNmStrSPos
+  , pNmStrI, pNmStrISPos
+  , pSymEscStr, pSymEscStrSPos
+  , pSymStr, pSymStrSPos
   )
   where
 
--- import qualified Data.Set as Set
 import qualified Data.Map as Map
--- import Data.List
 import IO
 import UU.Parsing
--- import UU.Parsing.CharParser
--- import UU.Scanner.Position( initPos, Pos, Position(..) )
--- import UU.Scanner.GenToken
-import UU.Scanner
+-- import UUTest.Parsing.Offside
+import UU.Parsing.Offside
+import RulerScanner
 import ParseUtils
 import AttrProps
--- import Nm
--- import SelParser
--- import Common
--- import Utils (wordsBy)
--- import Main1AG
+import ScanUtils
 
 -------------------------------------------------------------------------
 -- Scanning
@@ -59,20 +56,37 @@ keywordsTextEscapable
         -- misc
         , "text"
         ]
+keywordsOffsideTrigs
+  =  [ "judges"
+     ]
 keywordsText
   =  [ "unique"
-     ] ++ keywordsTextEscapable
+     ] ++ keywordsOffsideTrigs
+       ++ keywordsTextEscapable
 keywordsOpsEsc
   =  [ ",", ":", "[", "]", "*", "<" ]
 keywordsOpsExplainEsc
-  =  [ "=", "-", "." ]
+  =  [ "=", "-", "---", "." ]
 keywordsOpsParenEsc
   =  [ "|" ] ++ keywordsOpsExplainEsc
 keywordsOps
   =  keywordsOpsParenEsc ++ keywordsOpsEsc
 
+rulerScanOpts :: ScanOpts
+rulerScanOpts
+  = defaultScanOpts
+      { scoKeywordsTxt   = keywordsText
+      , scoKeywordsOps   = keywordsOps
+      , scoSpecChars     = specialChars
+      , scoOpChars       = opChars
+      , scoOffsideTrigs  = keywordsOffsideTrigs
+      , scoOffsideModule = ""
+      , scoOffsideOpen   = ""
+      , scoOffsideClose  = ""
+      }
+
 mkScan :: FilePath -> String -> [Token]
-mkScan fn txt = scan keywordsText keywordsOps specialChars opChars (initPos fn) txt
+mkScan fn txt = scan rulerScanOpts (initPos fn) txt
 
 mkHScan :: FilePath -> Handle -> IO [Token]
 mkHScan fn fh
@@ -80,24 +94,38 @@ mkHScan fn fh
         ;  return (mkScan fn txt) 
         }
 
+mkOffScan :: FilePath -> Handle -> IO (OffsideInput [Token] Token (Maybe Token))
+mkOffScan = offsideScanHandle rulerScanOpts
+
 -------------------------------------------------------------------------
 -- Parser
 -------------------------------------------------------------------------
 
+pKeySPos :: (IsParser p Token) => String -> p SPos
+pKeySPos k  = (\p -> (k,p)) <$> pKeyPos k
+
+pNmStrSPos, pNmStrISPos :: (IsParser p Token) => p SPos
+pNmStrSPos = pVaridPos <|> pConidPos
+pNmStrISPos = pNmStrSPos <|> pIntegerPos
+
 pNmStr, pNmStrI :: (IsParser p Token) => p String
+pNmStr = fst <$> pNmStrSPos
+pNmStrI = fst <$> pNmStrISPos
 
-pNmStr = pVarid <|> pConid
-
-pNmStrI = pNmStr <|> pInteger
-
-pSymEscStr :: (IsParser p Token) => ([String],[String]) -> p String
-pSymEscStr (kEsc,kpEsc)
-  =   pVarsym <|> pConsym
-  <|> pAnyKey pKey kEsc
-  <|> pKey "`"  *> (   (\n -> "`" ++ n ++ "`") <$> pNmStr
-                   <|> concat <$> pList1 (pAnyKey pKey kpEsc)
+pSymEscStrSPos :: (IsParser p Token) => ([String],[String]) -> p SPos
+pSymEscStrSPos (kEsc,kpEsc)
+  =   pVarsymPos <|> pConsymPos
+  <|> pAnyKey pKeySPos kEsc
+  <|> pKey "`"  *> (   (\(n,p) -> ("`" ++ n ++ "`",p)) <$> pNmStrSPos
+                   <|> (\nl@((_,p):_) -> (concat (map fst nl),p)) <$> pList1 (pAnyKey pKeySPos kpEsc)
                    )
                <*  pKey "`"
+
+pSymEscStr :: (IsParser p Token) => ([String],[String]) -> p String
+pSymEscStr k = fst <$> pSymEscStrSPos k
+
+pSymStrSPos :: (IsParser p Token) => p SPos
+pSymStrSPos = pSymEscStrSPos (keywordsOpsEsc,keywordsOpsParenEsc)
 
 pSymStr :: (IsParser p Token) => p String
 pSymStr = pSymEscStr (keywordsOpsEsc,keywordsOpsParenEsc)

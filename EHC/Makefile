@@ -3,15 +3,14 @@ TOP_PREFIX			:=
 default: explanation
 
 # Ruler, will be obsolete soon
-RULER				:= bin/ruler
-RULER_DIR			:= ruler
-RULER_MAIN			:= Ruler
-RULER_AG			:= $(RULER_MAIN).ag
-RULER_HS			:= $(RULER_AG:.ag=.hs)
-RULER_DERIV			:= $(RULER_DIR)/$(RULER_HS)
-RULER_DOC_PDF		:= $(RULER_DIR)/RulerDoc.pdf
+RULER1				:= bin/ruler1
+RULER1_DIR			:= ruler1
+RULER1_MAIN			:= Ruler
+RULER1_AG			:= $(RULER1_MAIN).ag
+RULER1_HS			:= $(RULER1_AG:.ag=.hs)
+RULER1_DERIV			:= $(RULER1_DIR)/$(RULER1_HS)
 
-RULER_SRC			:= $(RULER_DIR)/$(RULER_AG)
+RULER1_SRC			:= $(RULER1_DIR)/$(RULER1_AG)
 
 # files, dependencies, rules
 # do not change the order of these includes
@@ -97,21 +96,16 @@ all: afp-full ehcs doc grinis
 
 .PHONY: shuffle ruler ruler2 ehcs dist www www-sync gri grinis agprimer
 
-ruler: $(RULER)
+ruler1: $(RULER1)
 
-$(RULER): $(RULER_DIR)/$(RULER_AG) $(wildcard lib/*.hs)
-	cd $(RULER_DIR) ; \
+$(RULER1): $(RULER1_DIR)/$(RULER1_AG) $(wildcard lib/*.hs)
+	cd $(RULER1_DIR) ; \
 	$(AGC) -csdfr --module=Main `basename $<` ; \
-	$(GHC) --make $(GHC_OPTS) -i../lib $(RULER_HS) -o ../$@ ; \
+	$(GHC) --make $(GHC_OPTS) -i../lib $(RULER1_HS) -o ../$@ ; \
 	strip ../$@
 
-$(RULER_DOC_PDF): $(RULER_DIR)/RulerDoc.tex $(RULER)
-	cd `dirname $<` ; pdflatex `basename $<`
-
-brew: $(BREW)
-
 rules2.tex: rules2.rul
-	$(RULER) -l --base=rules $< | $(LHS2TEX) $(LHS2TEX_OPTS_POLY) > $@
+	$(RULER1) -l --base=rules $< | $(LHS2TEX) $(LHS2TEX_OPTS_POLY) > $@
 
 ehcs: $(EHC_ALL_PUB_EXECS)
 
@@ -133,7 +127,7 @@ edit-r:
 edit-t:
 	$(OPEN_FOR_EDIT) \
 	$(TEXT_EDIT_SRC) \
-	$(EHC_RULES_3_SRC_RL2) \
+	$(EHC_RULES_3_SRC_RL2) $(RULER2_RULES_SRC_RL2) \
 	Makefile
 
 edit-e:

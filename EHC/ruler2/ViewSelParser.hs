@@ -12,21 +12,13 @@ module ViewSelParser
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
--- import Data.List
--- import IO
 import UU.Parsing
-import UU.Scanner
--- import UU.Parsing.CharParser
--- import UU.Scanner.Position( initPos, Pos, Position(..) )
--- import UU.Scanner.GenToken
--- import UU.Scanner
+import RulerScanner
 import ParseUtils
 import Nm
 import KeywParser
 import NmParser
 import ViewSel
--- import Utils (wordsBy)
--- import Main1AG
 
 -------------------------------------------------------------------------
 -- Parser

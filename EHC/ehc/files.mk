@@ -17,10 +17,10 @@ EHC_BLD_EXEC							:= $(EHC_BLD_BIN_VARIANT_PREFIX)$(EHC_EXEC_NAME)$(EXEC_SUFFIX
 EHC_ALL_PUB_EXECS						:= $(patsubst %,$(EHC_BIN_PREFIX)%/$(EHC_EXEC_NAME)$(EXEC_SUFFIX),$(EHC_PUB_VARIANTS))
 EHC_ALL_EXECS							:= $(patsubst %,$(EHC_BIN_PREFIX)%/$(EHC_EXEC_NAME)$(EXEC_SUFFIX),$(EHC_VARIANTS))
 
-# sources + dpds, for .rul, .rl2
+# sources + dpds, for .rul
 EHC_RULES_1_SRC_RUL						:= $(EHC_SRC_PREFIX)rules.rul
 EHC_RULES_2_SRC_RUL						:= $(EHC_SRC_PREFIX)rules2.rul
-EHC_RULES_3_SRC_RL2						:= $(EHC_SRC_PREFIX)rules3.rl2
+EHC_RULES_3_SRC_RL2						:= $(EHC_SRC_PREFIX)rules3.rul
 
 EHC_RULES_ALL_SRC						:= $(EHC_RULES_1_SRC_RUL) $(EHC_RULES_2_SRC_RUL) $(EHC_RULES_3_SRC_RL2)
 
