@@ -84,6 +84,7 @@ DATA RExpr
                         eqns        : RExprEqn
   | Del                 pos         : {SPos}
                         nms         : {[Nm]}
+  | Sep
 
 DATA RExprEqn
   | Attrs               eqns        : AttrEqns

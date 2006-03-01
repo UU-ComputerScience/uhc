@@ -415,30 +415,13 @@ In the remainder of this section we give a high-level overview of the concepts m
 
 %if llncs
 
-{\footnotesize
-\begin{CodeFigure}{}{Syntax of ruler notation}{ruler-legenda-syntax}
-%%[[wrap=code
-%%@AppxNotation.rulerSyntaxBasic
-%%@AppxNotation.rulerSyntaxLexical
-%%@AppxNotation.rulerSyntaxRest
-%%]
-\end{CodeFigure}
-}
+%%@TopicRuler.rulerSyntaxFullFig
 
 %else
 
-\begin{CodeFigure}{}{Syntax of ruler notation (part I, basics)}{ruler-legenda-syntax}
-%%[[wrap=code
-%%@AppxNotation.rulerSyntaxBasic
-%%]
-\end{CodeFigure}
+%%@TopicRuler.rulerSyntaxPart1Fig
 
-\begin{CodeFigure}{}{Syntax of ruler notation (part II, lexical and other)}{ruler-legenda-syntax2}
-%%[[wrap=code
-%%@AppxNotation.rulerSyntaxLexical
-%%@AppxNotation.rulerSyntaxRest
-%%]
-\end{CodeFigure}
+%%@TopicRuler.rulerSyntaxPart2Fig
 
 %endif
 
@@ -1771,14 +1754,14 @@ to include pretty printed fragments of the |Ruler| source code in \thischapt.
 \subsection{Supporting AG}
 \label{app-ruler-supp-ag}
 
-\VerbatimInput[fontsize=\footnotesize]{DemoMain.ag}
+\VerbatimInput[fontsize=\footnotesize]{RulerDemoMain.ag}
 
 \subsection{Supporting Haskell}
 \label{app-ruler-supp-hs}
 
 Type, unification
 
-\VerbatimInput[fontsize=\footnotesize]{DemoUtils.hs}
+\VerbatimInput[fontsize=\footnotesize]{RulerDemoUtils.hs}
 
 \onecolumn
 \subsection{Generated AG}
@@ -1813,10 +1796,39 @@ ruleset x scheme X =
     view B = ...
 %%]
 
-%%[XX
+%%[rulerSyntaxFullFig
+{\footnotesize
+\begin{CodeFigure}{}{Syntax of ruler notation}{ruler-legenda-syntax}
+%%[[wrap=code
+%%@AppxNotation.rulerSyntaxBasic
+%%@AppxNotation.rulerSyntaxLexical
+%%@AppxNotation.rulerSyntaxRest
+%%]
+\end{CodeFigure}
+}
 %%]
 
-%%[XX
+%%[rulerSyntaxPart1Fig
+\begin{CodeFigure}{}{Syntax of ruler notation (part I, basics)}{ruler-legenda-syntax}
+%%[[wrap=code
+%%@AppxNotation.rulerSyntaxBasic
+%%]
+\end{CodeFigure}
+%%]
+
+%%[rulerSyntaxPart2Fig
+\begin{CodeFigure}{}{Syntax of ruler notation (part II, lexical and other)}{ruler-legenda-syntax2}
+%%[[wrap=code
+%%@AppxNotation.rulerSyntaxLexical
+%%@AppxNotation.rulerSyntaxRest
+%%]
+\end{CodeFigure}
+%%]
+
+%%[rulerRules
+\rulerCmdUse{RulerRules.scm}
+
+\rulerCmdUse{RulerRules.svw}
 %%]
 
 %%[XX

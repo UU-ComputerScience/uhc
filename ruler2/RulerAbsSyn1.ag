@@ -4,6 +4,16 @@
 
 {
 module RulerAbsSyn1
+  ( module Expr
+  , module ViewSel
+  
+  , AGItf(..)
+  , Decl(..), Decls
+  , AttrIntro(..), AttrIntros
+  , RExpr(..), RExprs
+  , RExprEqn(..)
+  , AttrEqn(..), AttrEqns
+  )
   where
 
 import Common

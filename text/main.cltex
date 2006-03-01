@@ -171,6 +171,10 @@
 \documentclass{article}
 %%]
 
+%%[19
+\documentclass[a4]{article}
+%%]
+
 %%[7
 \documentclass[%
                headinclude,% new for typearea
@@ -592,8 +596,8 @@
 
 \def\SetSectionsForArticle{%
 \def\section{\origSection}
-\def\subsection{\origSection}
-\def\subsubsection{\origSubsection}
+\def\subsection{\origSubsection}
+\def\subsubsection{\origSubsubsection}
 \def\AddContentsLine##1{\addcontentsline{toc}{section}{##1}}
 }
 %%]
@@ -615,6 +619,10 @@
 %%]
 
 %%[11
+\SetSectionsForArticle
+%%]
+
+%%[19
 \SetSectionsForArticle
 %%]
 
@@ -676,6 +684,10 @@
 \usepackage[a4paper,headexclude,footexclude]{typearea}
 
 \typearea[0mm]{1}
+%%]
+
+%%[19
+\usepackage[left=3.1cm,right=3.1cm,top=3.3cm,bottom=3.3cm,nohead]{geometry}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -828,6 +840,13 @@ WWW home page:
 \author{Atze Dijkstra}
 %%]
 
+%%[19
+\title{Ruler manual \\
+%%@ToolDocRuler.svnId
+}
+\author{Atze Dijkstra}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Index
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -953,6 +972,10 @@ WWW home page:
 %endif
 %%]
 
+%%[19
+\maketitle
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Indentation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1062,6 +1085,12 @@ have been submitted to POPL2006 in a slighty extended form.
 %%[11
 \begin{abstract}
 %%@ToolDocShuffle.abstract
+\end{abstract}
+%%]
+
+%%[19
+\begin{abstract}
+%%@ToolDocRuler.abstract
 \end{abstract}
 %%]
 
@@ -1720,6 +1749,78 @@ this has been omitted as \chapterRef{agtut} can be read instead.
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Ruler doc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[19
+\section{Introduction}
+
+	%%@TopicRuler.motivationSmall
+	
+	%%@TopicRuler.introProblem
+	
+	%%@TopicRuler.introExampleOverview
+	
+	%%@TopicRuler.introExampleExplain
+
+\subsection{The big picture}
+
+\subsection{Ruler overview}
+
+%%@TopicRuler.rulerOverview
+%%@TopicRuler.designOfRuler
+	
+\section{Tutorial}
+
+%{
+%include ruler.fmt
+
+%format <	= "\langle "
+%format >	= "\rangle "
+
+	
+	%%@TopicRuler.preliminariesForTypeSystem
+	
+	%%@TopicRuler.rulesByRulerBasics
+	
+	%%@TopicRuler.relationsExternalSchemes
+	
+	%%@TopicRuler.extendToAlgorithmicLarge
+	
+	%%@TopicRuler.extendToAGLarge
+
+\subsection{Pretty printing type rules}
+
+\subsection{Implementing type rules}
+
+\subsection{Specifying incrementally}
+
+
+\section{Reference}
+
+\subsection{Installation}
+
+\subsection{Command line invocation}
+
+\subsection{Syntax}
+
+%{
+%%@AppxNotation.rulerSyntaxSetup
+%%@TopicRuler.rulerSyntaxPart1Fig
+%%@TopicRuler.rulerSyntaxPart2Fig
+%}
+
+\subsection{Translation to Attribute Grammar}
+
+%%@TopicRuler.rulerRules
+
+%}
+
+%%]
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Poster
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1771,6 +1872,8 @@ this has been omitted as \chapterRef{agtut} can be read instead.
 %%[11
 %%@ToolDocShuffle.doc
 %%]
+
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2192,22 +2295,10 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%% Appendices
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-%%[1
-%if inclApp
+%%[2
 \appendix
-%%]
-
-%%[2
 \setAppxTitleFormat
-%%]
 
-%%[7
-\section{Additional fragments}
-\input \jobname-hide.tex
-%%]
-
-%%[2
 \section{Notation}
 \subsection{Legenda of notation}
 \label{appx-legenda-notation}
@@ -2392,8 +2483,10 @@ and the included documentation only describes |Shuffle|'s basic features.
 
 \section{Additional fragments}
 \input \jobname-hide.tex
-%endif
+%%]
 
+%%[19
+\appendix
 %%]
 
 
@@ -2425,6 +2518,11 @@ and the included documentation only describes |Shuffle|'s basic features.
 %endif
 %%]
 
+%%[19
+\section{Source code of tutorial examples}
+%%@TopicRuler.appendix
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% AG Patterns
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2440,12 +2538,6 @@ and the included documentation only describes |Shuffle|'s basic features.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Omitted
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-%%[1
-%endif %% inclApp
-%%]
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Index

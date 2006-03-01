@@ -5,19 +5,9 @@
 module SelParser
   where
 
--- import qualified Data.Set as Set
--- import qualified Data.Map as Map
--- import Data.List
--- import IO
 import UU.Parsing
--- import UU.Parsing.CharParser
--- import UU.Scanner.Position( initPos, Pos, Position(..) )
--- import UU.Scanner.GenToken
-import UU.Scanner
+import RulerScanner
 import ParseUtils
--- import Common
--- import Utils (wordsBy)
--- import Main1AG
 
 -------------------------------------------------------------------------
 -- Parser

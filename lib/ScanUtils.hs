@@ -1,8 +1,9 @@
 module ScanUtils
-  ( 
+  ( ScanOpts(..), defaultScanOpts
   )
   where
 
+import IO
 import Data.List
 import UU.Pretty
 import UU.Parsing
@@ -37,3 +38,37 @@ instance Position (GenToken k t v) where
 
 instance PP Pos where
   pp (Pos l c f) = (if null f then empty else pp f >|< ":" ) >|< l >|< ":" >|< c
+
+-------------------------------------------------------------------------
+-- ScanOpts
+-------------------------------------------------------------------------
+
+data ScanOpts
+  =  ScanOpts
+        {   scoKeywordsTxt      ::  [String]
+        ,   scoKeywordsOps      ::  [String]
+        ,   scoSpecChars        ::  String
+        ,   scoOpChars          ::  String
+        ,   scoSpecPairs        ::  [String]
+        ,   scoDollarIdent      ::  Bool
+        ,   scoOffsideTrigs     ::  [String]
+        ,   scoOffsideModule    ::  String
+        ,   scoOffsideOpen      ::  String
+        ,   scoOffsideClose     ::  String
+        }
+
+defaultScanOpts :: ScanOpts
+defaultScanOpts
+  =  ScanOpts
+        {   scoKeywordsTxt      =   []
+        ,   scoKeywordsOps      =   []
+        ,   scoSpecChars        =   ""
+        ,   scoOpChars          =   ""
+        ,   scoSpecPairs        =   []
+        ,   scoDollarIdent      =   False
+        ,   scoOffsideTrigs     =   []
+        ,   scoOffsideModule    =   ""
+        ,   scoOffsideOpen      =   ""
+        ,   scoOffsideClose     =   ""
+        }
+

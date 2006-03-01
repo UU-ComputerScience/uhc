@@ -8,6 +8,9 @@ RULER2_BLD_PREFIX	:= $(BLD_PREFIX)ruler/
 # this file
 RULER2_MKF			:= $(RULER2_SRC_PREFIX)files.mk
 
+# sources + dpds, for .rul
+RULER2_RULES_SRC_RL2					:= $(RULER2_SRC_PREFIX)RulerRules.rul
+
 # main + sources + dpds
 RULER2_MAIN			:= Ruler
 
@@ -20,6 +23,7 @@ RULER2_HS_DPDS_SRC_HS					:= $(patsubst %,$(RULER2_SRC_PREFIX)%.hs,\
 											Gam FmGam ECnstrGam RwExprGam WrKindGam JdGam \
 											RulerAdmin RulerMkAdmin \
 											ExprToAEqn \
+											RulerScanner RulerScannerMachine \
 											)
 RULER2_HS_DPDS_DRV_HS					:= $(patsubst $(RULER2_SRC_PREFIX)%.hs,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_HS_DPDS_SRC_HS))
 
@@ -208,7 +212,7 @@ RULER2_AG_ALL_DPDS_SRC_AG				:= $(sort \
 RULER2_AG_ALL_MAIN_SRC_AG				:= $(RULER2_AG_D_MAIN_SRC_AG) $(RULER2_AG_S_MAIN_SRC_AG) $(RULER2_AG_DS_MAIN_SRC_AG)
 
 # all src
-RULER2_ALL_SRC							:= $(RULER2_AG_ALL_MAIN_SRC_AG) $(RULER2_AG_ALL_DPDS_SRC_AG) $(RULER2_HS_MAIN_SRC_HS) $(RULER2_HS_DPDS_SRC_HS) $(RULER2_MKF)
+RULER2_ALL_SRC							:= $(RULER2_AG_ALL_MAIN_SRC_AG) $(RULER2_AG_ALL_DPDS_SRC_AG) $(RULER2_HS_MAIN_SRC_HS) $(RULER2_HS_DPDS_SRC_HS) $(RULER2_MKF) $(RULER2_RULES_SRC_RL2)
 
 
 # derived
@@ -220,7 +224,7 @@ RULER2_AG_ALL_MAIN_DRV_HS				:= $(RULER2_AG_D_MAIN_DRV_HS) $(RULER2_AG_S_MAIN_DR
 RULER2_HS_ALL_DRV_HS					:= $(RULER2_HS_MAIN_DRV_HS) $(RULER2_HS_DPDS_DRV_HS)
 
 # binary/executable
-RULER2_BLD_EXEC							:= $(BIN_PREFIX)ruler2$(EXEC_SUFFIX)
+RULER2_BLD_EXEC							:= $(BIN_PREFIX)ruler$(EXEC_SUFFIX)
 RULER2									:= $(RULER2_BLD_EXEC)
 
 # make rules
