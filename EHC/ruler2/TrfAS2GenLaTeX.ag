@@ -109,6 +109,11 @@ SEM RlDecl
                                                 in  RlDecl_LTX @fullNm @rlNm @lhs.vwNm @pos @preJds.self @postJds.self
 
 SEM Jd
-  | Expr            lhs     .   self        =   Jd_LTX @nm @scNm (exprSubst (@lhs.opts {optSubstFullNm=False}) @lhs.fmGam @expr.self)
+  | Expr            loc     .   exprRW      =   exprRewrite (@lhs.opts {optSubstFullNm=False}) @lhs.fmGam @lhs.rwGam emptyGam @expr.self
+                    lhs     .   self        =   Jd_LTX @nm @scNm @exprRW
+
+{-
+                    lhs     .   self        =   Jd_LTX @nm @scNm (exprSubst (@lhs.opts {optSubstFullNm=False}) @lhs.fmGam @expr.self)
+-}
 
 

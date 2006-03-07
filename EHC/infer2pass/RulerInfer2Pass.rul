@@ -1,0 +1,347 @@
+% $Id: demo.crl2 231 2005-06-07 14:39:41Z atze $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%include ruler.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Preambles
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+preamble tex "%include lhs2TeX.fmt\n%include afp.fmt\n"
+%%]
+
+%%[3
+preamble ag "%%[0\n%include lhs2TeX.fmt\n%include afp.fmt\n%%]\n"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Externally defined
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.ext
+external Ty_Int
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Formatting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.fmt.Ty_Int
+format tex Ty_Int = Int
+%%]
+
+%%[1.fmt
+format tex Gam = Gamma
+format tex gam = Gamma
+
+format tex ty = tau
+format tex pty = sigma
+format tex mty = tau
+%%]
+
+%%[2.fmt
+format tex tv = v
+
+format tex cnstr.inh = Cnstr..k
+format tex cnstr.syn = Cnstr
+format tex cnstr     = Cnstr
+%%]
+
+%%[3.fmt
+format ag cnstr     = c
+format ag gam       = g
+%%]
+format ag ty        = t
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Rewriting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[3.rw.TyArr
+rewrite ag def  (a | Ty) -> (r | Ty) = ((a) `Ty_Arr` (r) | Ty)
+%%]
+
+%%[3.rw.Cnstr
+rewrite ag def  (c1 | Cnstr) (c2 | Cnstr) (v | a)
+                  = (c1 |=> c2 |=> (v) | a)
+%%]
+
+%%[3.rw.Rest
+rewrite ag def  (c | Cnstr) (v | a) = (c |=> (v) | a)
+rewrite ag def  i :-> t = ([(i,t)] | Gam)
+rewrite ag def  (g1 | Gam), (g2 | Gam) = ((g1) ++ (g2) | Gam)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% View hierarchy
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.viewhierarchy
+viewhierarchy = E < A < AG
+%%]
+
+%%[3.viewhierarchy -1.viewhierarchy
+viewhierarchy = E < A < AG < 3
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expr scheme
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.expr.scm
+scheme expr =
+%%]
+%%[3.expr.scm -1.expr.scm
+scheme expr "Expr" =
+%%]
+%%[1.expr.scm.E
+  view E =
+    holes [ | e: Expr, gam: Gam, ty: Ty | ]
+    judgespec gam :- e : ty
+    judgeuse tex gam :-.."e" e : ty
+%%]
+
+%%[2.expr.scm.A
+  view A =
+    holes [ e: Expr, gam: Gam | thread cnstr: Cnstr | ty: Ty ]
+    judgespec cnstr.inh ; gam :-.."e" e : ty ~> cnstr.syn
+%%]
+%%[2.expr.scm.A.delTex
+    judgeuse - tex
+%%]
+
+%%[3.expr.scm.AG
+  view AG =
+    holes [ node e: Expr | | ]
+%%]
+    judgespec cnstr.inh ; gam :-.."e" e : ty ~> cnstr.syn
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expr rules
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.expr.base.rls
+ruleset expr.base scheme expr  "Expression type rules" =
+%%]
+%%[1.rl.e.int
+  rule e.int =
+%%]
+%%[3.rl.e.int -1.rl.e.int
+  rule e.int "Int" =
+%%]
+%%[1.rl.e.int.E
+    view E =                                   -- no premises 
+      -
+      judge R : expr = gam :- int : Ty_Int
+%%]
+%%[2.rl.e.int.A
+    view A =
+      -
+      judge R : expr
+          | cnstr.syn  = cnstr..k
+          | cnstr.inh  = cnstr..k
+%%]
+
+%%[1.rl.e.var
+  rule e.var =
+%%]
+%%[3.rl.e.var -1.rl.e.var
+  rule e.var "Var" =
+%%]
+%%[1.rl.e.var.E
+    view E =
+      judge G : gamLookupIdTy = i :-> pty `elem` gam
+      judge I : tyInst = ty `=` inst(pty)
+      -
+      judge R : expr = gam :- i : ty
+%%]
+%%[2.rl.e.var.A
+    view A =
+      -
+      judge R : expr
+          | cnstr.syn = cnstr.inh
+%%]
+
+%%[1.rl.e.app
+  rule e.app =
+%%]
+%%[3.rl.e.app -1.rl.e.app
+  rule e.app "App" =
+%%]
+%%[1.rl.e.app.E
+    view E =
+      judge A : expr = gam :- a : ty.a
+      judge F : expr = gam :- f : (ty.a -> ty)
+      -
+      judge R : expr = gam :- (f a) : ty
+%%]
+%%[2.rl.e.app.A
+    view A =
+      judge V : tvFresh  =  tv
+      judge M : match    =  (ty.a -> tv) <=> (cnstr.a ty.f)
+                              ~> cnstr
+      judge F : expr
+          | ty         = ty.f
+          | cnstr.syn  = cnstr.f
+      judge A : expr
+          | cnstr.inh  = cnstr.f
+          | cnstr.syn  = cnstr.a
+      -
+      judge R : expr
+          | ty         = cnstr cnstr.a tv
+          | cnstr.syn  = cnstr cnstr.a
+%%]
+%%[3.rl.e.app.AG
+    view AG =
+      -
+      judge R : expr
+          | e = ((node 1 = f) (node 2 = a))
+%%]
+
+%%[1.rl.e.lam
+  rule e.lam =
+%%]
+%%[3.rl.e.lam -1.rl.e.lam
+  rule e.lam "Lam" =
+%%]
+%%[1
+    view E =
+      judge B : expr = ((i :-> ty.i) , gam) :- b : ty.b
+      -
+      judge R : expr = gam :- (\i -> b) : (ty.i -> ty.b)
+%%]
+%%[2
+    view A =
+      judge V : tvFresh = tv
+      judge B : expr
+          | cnstr.syn = cnstr.b
+          | gam = (i :-> tv) , gam
+      -
+      judge R : expr
+          | ty = cnstr.b tv -> ty.b
+          | cnstr.syn = cnstr.b
+%%]
+%%[3
+    view AG =
+      -
+      judge R : expr
+          | e = \i -> (node 1 = b)
+%%]
+
+%%[1.rl.e.let
+  rule e.let =
+%%]
+%%[3.rl.e.let -1.rl.e.let
+  rule e.let "Let" =
+%%]
+%%[1
+    view E =
+      judge D : expr = gam :- e : ty.e
+      judge B : expr = ((i :-> pty.e), gam) :- b : ty.b
+      judge G : tyGen = pty.e `=` ty.e \\ gam
+      -
+      judge R : expr = gam :- (let i `=` e in b) : ty.b
+%%]
+%%[2
+    view A =
+      judge V : tvFresh = tv
+      judge D : expr
+          | cnstr.syn = cnstr.e
+          | gam = (i :-> tv) , gam
+      judge B : expr
+          | cnstr.inh = cnstr.e
+          | cnstr.syn = cnstr.b
+      judge G : tyGen
+          | gam = cnstr.e gam
+      -
+      judge R : expr
+          | cnstr.syn = cnstr.b
+%%]
+%%[3
+    view AG =
+      -
+      judge R : expr
+          | e = let i `=` (node 1 = e) in (node 2 = b)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Match two types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2.match
+relation match =
+  view A =
+    holes [ ty.l: Ty, ty.r: Ty | | cnstr: Cnstr ]
+    judgespec ty.l <=> ty.r ~> cnstr
+    judgeuse ag (cnstr,mtErrs) `=` (ty.l) <=> (ty.r)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lookup ty in gam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.gamLookupIdTy
+relation gamLookupIdTy =
+  view E =
+    holes [ | nm: Nm, gam: Gam, ty: Ty | ]
+    judgespec nm :-> ty `elem` gam
+%%]
+%%[3.gamLookupIdTy
+  view AG =
+    holes [ nm: Nm, gam: Gam | | ty: Ty ]
+    judgeuse ag (ty,nmErrs) `=` gamLookup nm gam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fresh type variables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2.tvFresh
+relation tvFresh =
+  view A =
+    holes [ | | tv: Ty ]
+    judgespec tv
+    judgeuse tex tv (text "fresh")
+    judgeuse ag tv `=` Ty_Var unique
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type instantiation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.tyInst
+relation tyInst =
+  view E =
+    holes [ | ty: Ty, ty.i: Ty | ]
+    judgespec ty.i `=` inst(ty)
+%%]
+%%[3.tyInst
+  view AG =
+    holes [ ty: Ty | | ty.i: Ty ]
+    judgeuse ag ty.i `=` tyInst unique (ty)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type generalisation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.tyGen
+relation tyGen =
+  view E =
+    holes [ ty: Ty, gam: Gam | | pty: Ty ]
+    judgespec pty `=` ty \\ gam
+    judgeuse tex pty `=` forall v..._ `.` ty, ^^^ v..._ `notElem` ftv(gam)
+%%]
+%%[2.tyGen
+  view A =
+    judgeuse tex pty `=` forall (ftv(ty) \\ ftv(gam)) `.` ty
+%%]
+%%[3.tyGen
+  view AG =
+    judgeuse ag  (retain pty) `=` mkTyAll (ftv(ty) \\ ftv(gam)) (ty)
+%%]
+

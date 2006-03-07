@@ -536,8 +536,16 @@
 %if not asSlides
 \usepackage{txfonts}
 %endif
+%if not storyRuler
 \usepackage[bbgreekl]{mathbbol}
+%endif
 
+%%]
+
+%%[19
+\let\leq=\undefined
+\let\geq=\undefined
+\usepackage{mathabx}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

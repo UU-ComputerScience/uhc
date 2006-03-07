@@ -8,7 +8,7 @@ RULER1_DIR			:= ruler1
 RULER1_MAIN			:= Ruler
 RULER1_AG			:= $(RULER1_MAIN).ag
 RULER1_HS			:= $(RULER1_AG:.ag=.hs)
-RULER1_DERIV			:= $(RULER1_DIR)/$(RULER1_HS)
+RULER1_DERIV		:= $(RULER1_DIR)/$(RULER1_HS)
 
 RULER1_SRC			:= $(RULER1_DIR)/$(RULER1_AG)
 
@@ -53,8 +53,8 @@ WWW_DOC_PDF					:= www/current-ehc-doc.pdf
 explanation:
 	@echo "make bin/<n>/ehc     : make compiler version <n> (where <n> in {$(EHC_PUB_VARIANTS)})" ; \
 	echo  "make bin/<n>/grini   : make grin interpreter version <n> (where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
-	echo  "make bin/ruler2      : make ruler tool" ; \
-	echo  "make bin/shuffle     : make shuffle tool" ; \
+	echo  "make $(RULER2)       : make ruler tool" ; \
+	echo  "make $(SHUFFLE)      : make shuffle tool" ; \
 	echo  "make doc/<d>.pdf     : make (public) documentation <d> (where <d> in {$(TEXT_PUB_VARIANTS)})," ; \
 	echo  "                       or (non-public): <d> in {$(TEXT_PRIV_VARIANTS)}" ; \
 	echo  "                       only if text src available, otherwise already generated" ; \

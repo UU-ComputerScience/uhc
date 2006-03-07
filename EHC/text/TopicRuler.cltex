@@ -1826,9 +1826,30 @@ ruleset x scheme X =
 %%]
 
 %%[rulerRules
-\rulerCmdUse{RulerRules.scm}
+\rulerCmdUse{RulerRules.E.prog}
 
-\rulerCmdUse{RulerRules.svw}
+\rulerCmdUse{RulerRules.E.scm}
+
+\rulerCmdUse{RulerRules.E.svw}
+
+\rulerCmdUse{RulerRules.E.shls}
+
+\rulerCmdUse{RulerRules.E.hl}
+
+\rulerCmdUse{RulerRules.E.jspec}
+
+\rulerCmdUse{RulerRules.E.rset}
+
+\rulerCmdUse{RulerRules.E.rul}
+
+\rulerCmdUse{RulerRules.E.rvw}
+
+\rulerCmdUse{RulerRules.E.jd}
+
+\rulerCmdUse{RulerRules.E.jdat}
+
+\rulerCmdUse{RulerRules.E.expr}
+
 %%]
 
 %%[XX
