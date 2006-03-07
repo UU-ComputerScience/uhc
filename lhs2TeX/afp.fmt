@@ -226,6 +226,13 @@
 %format <:   			= "\leftsquigarrow "
 %endif
 
+%format downarrow		= "{\downarrow}"
+%format uparrow			= "{\uparrow}"
+%format updownarrow		= "{\updownarrow}"
+%format isPre			= "{\div}"
+%format Pre				= "{\dotdiv}"
+%format Post			= "{\divdot}"
+
 % format fiopt			= "{\xi}"
 %format fiopt			= "o"
 %format strongFIOpts	= fiopt "_{str}"
@@ -299,6 +306,7 @@
 %format emptyset		= "\emptyset "
 %format not		        = "not"
 %format ==		        = "=="
+%format frac(n)(d)		= "\frac{" n "}{" d "}"
 
 %format InstUnExists    = "inst^{" exists "}"
 

@@ -5,7 +5,7 @@
 {
 module ARuleRwSubst
   ( exprSubst, exprElimCnstr
-  , exprRewrite'
+  , exprRewrite', exprRewrite
   , arlSubst
   , nmSubst
   , MtOut(..), exprMatch
