@@ -48,40 +48,40 @@ instance PP e => PP (FmInfo e) where
 type FmGam e = Gam Nm (FmInfo e)
 
 fmSingleton :: Nm -> FmKind -> e -> FmGam e
-fmSingleton n k e = Map.singleton n (FmInfo n (Map.singleton k e))
+fmSingleton n k e = gamSingleton n (FmInfo n (gamSingleton k e))
 
 fmNull :: FmGam e -> Bool
-fmNull = all (Map.null . fmKdGam) . Map.elems
+fmNull = all (gamIsEmpty . fmKdGam) . gamElemsShadow
 
 fmGamFromList' :: FmKind -> [(Nm,e)] -> FmGam e
-fmGamFromList' fk = Map.unions . map (\(n,e) -> fmSingleton n fk e)
+fmGamFromList' fk = gamUnionsShadow . map (\(n,e) -> fmSingleton n fk e)
 
 fmGamToList' :: FmKind -> FmGam e -> [(Nm,e)]
-fmGamToList' fk g = [ (n,e) | (n,i) <- Map.toList g, e <- fkGamLookup [] (:[]) [fk] (fmKdGam i) ]
+fmGamToList' fk g = [ (n,e) | (n,i) <- gamAssocsShadow g, e <- fkGamLookup [] (:[]) [fk] (fmKdGam i) ]
 
 fmGamFromList :: [(Nm,e)] -> FmGam e
 fmGamFromList = fmGamFromList' FmAll
 
 fmGamUnion :: FmGam e -> FmGam e -> FmGam e
-fmGamUnion = Map.unionWith (\i1 i2 -> i1 {fmKdGam = fmKdGam i1 `Map.union` fmKdGam i2})
+fmGamUnion = gamUnionWith (\i1 i2 -> i1 {fmKdGam = fmKdGam i1 `gamUnionShadow` fmKdGam i2})
 
 fmGamUnions :: [FmGam e] -> FmGam e
 fmGamUnions = foldr fmGamUnion emptyGam
 
 {-
 fmLGamUnion :: FmGam [e] -> FmGam [e] -> FmGam [e]
-fmLGamUnion = Map.unionWith (\i1 i2 -> i1 {fmKdGam = Map.unionWith (++) (fmKdGam i1) (fmKdGam i2)})
+fmLGamUnion = gamUnionWith (\i1 i2 -> i1 {fmKdGam = gamUnionWith (++) (fmKdGam i1) (fmKdGam i2)})
 -}
 
 fmGamLookup :: Nm -> FmKind -> FmGam e -> Maybe e
 fmGamLookup n k g
-  = case Map.lookup n g of
+  = case gamLookup n g of
       Just i
         -> fkGamLookup Nothing Just [k] (fmKdGam i)
       _ -> Nothing
 
 fmGamMap :: (Nm -> a -> b) -> FmGam a -> FmGam b
-fmGamMap f = Map.mapWithKey (\n i -> i {fmKdGam = Map.map (\e -> f n e) (fmKdGam i)})
+fmGamMap f = gamMapWithKey (\n i -> i {fmKdGam = gamMap (\e -> f n e) (fmKdGam i)})
 
 -------------------------------------------------------------------------
 -- FmGam for FmKind
@@ -90,7 +90,7 @@ fmGamMap f = Map.mapWithKey (\n i -> i {fmKdGam = Map.map (\e -> f n e) (fmKdGam
 type FmKdGam e = Gam FmKind e
 
 fkGamLookup :: v -> (e -> v) -> [FmKind] -> FmKdGam e -> v
-fkGamLookup = gamLookupWithDefault FmAll
+fkGamLookup = gamTryLookupsWithDefault FmAll
 
 -------------------------------------------------------------------------
 -- FmGam for AtDir
@@ -99,7 +99,7 @@ fkGamLookup = gamLookupWithDefault FmAll
 type FmDrGam e = Gam AtDir e
 
 fdGamLookup :: v -> (e -> v) -> [AtDir] -> FmDrGam e -> v
-fdGamLookup = gamLookupWithDefault AtInOut
+fdGamLookup = gamTryLookupsWithDefault AtInOut
 
 -------------------------------------------------------------------------
 -- Rewrite rules
@@ -115,11 +115,11 @@ rwGamLookup n k d g
       _ -> Nothing
 
 rwSingleton :: Nm -> FmKind -> AtDir -> e -> RwGam e
-rwSingleton n k d e = Map.singleton n (FmInfo n (Map.singleton k (Map.singleton d [e])))
+rwSingleton n k d e = gamSingleton n (FmInfo n (gamSingleton k (gamSingleton d [e])))
 
 rwGamUnion :: RwGam e -> RwGam e -> RwGam e
-rwGamUnion = Map.unionWith (\i1 i2 -> i1 {fmKdGam = Map.unionWith (Map.unionWith (++)) (fmKdGam i1) (fmKdGam i2)})
+rwGamUnion = gamUnionWith (\i1 i2 -> i1 {fmKdGam = gamUnionWith (gamUnionWith (++)) (fmKdGam i1) (fmKdGam i2)})
 
 ppRwGam :: PP e => RwGam e -> PP_Doc
-ppRwGam = ppGam' . Map.map (\i -> fmNm i >#< ppGam (fmKdGam i))
+ppRwGam = ppGam' . gamMap (\i -> fmNm i >#< ppGam (fmKdGam i))
 

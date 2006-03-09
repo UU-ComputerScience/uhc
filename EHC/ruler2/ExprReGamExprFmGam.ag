@@ -32,7 +32,7 @@ exprNmGam e
 -- Internal marked/named fragments
 -------------------------------------------------------------------------
 
-ATTR AllExpr AGExprItf [ | | reGamExprFmGam USE {`fmGamUnion`} {Map.empty}: {FmGam Expr} ]
+ATTR AllExpr AGExprItf [ | | reGamExprFmGam USE {`fmGamUnion`} {emptyGam}: {FmGam Expr} ]
 
 SEM Expr
   | Named           lhs     .   reGamExprFmGam

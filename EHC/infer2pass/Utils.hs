@@ -1,13 +1,21 @@
-module DemoUtils
-where
+module Utils
+  where
+
 import Data.List
 import UU.Pretty
 
+-------------------------------------------------------------------------
 -- Error
+-------------------------------------------------------------------------
+
 mkErr :: [PP_Doc] -> PP_Doc
 mkErr [] = empty
 mkErr p  = "<ERR:" >#< vlist p >|< ">"
+
+-------------------------------------------------------------------------
 -- Unique identifier
+-------------------------------------------------------------------------
+
 newtype UID = UID [Int] deriving (Eq,Ord)
 uidStart = UID [0]
 
@@ -22,7 +30,11 @@ mkUIDs = iterate uidNext
 instance Show UID where
   show (UID l)
     = concat .  intersperse "_" . map show . reverse $ l
+
+-------------------------------------------------------------------------
 -- Type
+-------------------------------------------------------------------------
+
 type TvId  = UID
 data Ty    =  Ty_Any | Ty_Int | Ty_Var TvId
            |  Ty_Arr  Ty Ty
@@ -37,14 +49,22 @@ instance Show Ty where
   show (Ty_All vs t)  = "forall" ++ concat (map ((' ':) . show) vs)
                          ++ " . " ++ show t
   show (Ty_Arr t1 t2) = "(" ++ show t1 ++ ") -> " ++ show t2
+
+-------------------------------------------------------------------------
 -- Gam
+-------------------------------------------------------------------------
+
 type Gam = [(String,Ty)]
 
 gamLookup :: String -> Gam -> (Ty,[PP_Doc])
 gamLookup n g
   = maybe (Ty_Any,[n >#< "undefined"]) (\t -> (t,[]))
   $ lookup n g
+
+-------------------------------------------------------------------------
 -- Constraints
+-------------------------------------------------------------------------
+
 type Cnstr = [(TvId,Ty)]
 
 class Substitutable a where
@@ -65,7 +85,11 @@ instance Substitutable Cnstr where
 instance Substitutable Gam where
   s |=> g  = map (\(i,t) -> (i,s |=> t)) g
   ftv      = foldr union [] . map (ftv . snd)
+
+-------------------------------------------------------------------------
 -- Type matching (unification)
+-------------------------------------------------------------------------
+
 (<=>) :: Ty -> Ty -> (Cnstr,[PP_Doc])
 Ty_Any          <=> t2          = ([],[])
 t1              <=> Ty_Any      = ([],[])
@@ -84,7 +108,11 @@ t1              <=> t2          = ([],["could not match"
                                        >#< show t1 >#< "with"
                                        >#< show t2]
                                   )
+
+-------------------------------------------------------------------------
 -- Type instantiation
+-------------------------------------------------------------------------
+
 tyInst :: UID -> Ty -> Ty
 tyInst u (Ty_All vs t) = c |=> t
                        where c = zipWith (\v u -> (v,Ty_Var u))

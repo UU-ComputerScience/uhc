@@ -15,6 +15,7 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Utils
 import Opts
+import Err
 import Common
 import KeywParser( propsSynInhMp )
 import ExprUtils
@@ -87,7 +88,7 @@ SEM Jd
 -------------------------------------------------------------------------
 
 SEM RlDecl
-  | Rl              loc     .   rsScInfo    =   maybe (panic "RlDecl_Rl: rsScInfo") id $ Map.lookup @lhs.rsScNm @lhs.scGam
+  | Rl              loc     .   rsScInfo    =   maybe (panic "RlDecl_Rl: rsScInfo") id $ gamLookup @lhs.rsScNm @lhs.scGam
 
 SEM Jd
   | Ats             loc     .   (scInfo,vwScInfo)
@@ -133,7 +134,7 @@ SEM Jd
   | Ats             ats     .   scAtGam     =   vwscFullAtGam @vwScInfo
 
 SEM JdAt
-  | At              loc     .   atInfo      =   maybe emptyAtInfo id $ Map.lookup @nm @lhs.scAtGam
+  | At              loc     .   atInfo      =   maybe emptyAtInfo id $ gamLookup @nm @lhs.scAtGam
                             .   propRetain  =   atProps @atInfo `intersect` [AtRetain]
 
 -------------------------------------------------------------------------
@@ -189,17 +190,17 @@ SEM Jd
 -------------------------------------------------------------------------
 
 {-
-ATTR AllJd [ | | ndToScGam USE {`Map.union`} {Map.empty}: {Gam Nm Nm} ]
+ATTR AllJd [ | | ndToScGam USE {`gamUnion`} {Map.empty}: {Gam Nm Nm} ]
 
 SEM Jd
-  | Ats             lhs     .   ndToScGam   =   Map.singleton @nmNd @scNm
+  | Ats             lhs     .   ndToScGam   =   gamSingleton @nmNd @scNm
 -}
 
 -------------------------------------------------------------------------
 -- Node order gam
 -------------------------------------------------------------------------
 
-ATTR AllJd [ | | coGam USE {`Map.union`} {Map.empty}: ChOrdGam ]
+ATTR AllJd [ | | coGam USE {`gamUnion`} {emptyGam}: ChOrdGam ]
 
 SEM Jd
   | Ats             loc     .   exNdNmS     =   exprNmS @ats.gathExNd
@@ -263,37 +264,32 @@ SEM RlDecl
 -- Constraint gam
 -------------------------------------------------------------------------
 
-ATTR AllJd AllAt [ | | introECGam USE {`Map.union`} {Map.empty}: ECnstrGam ]
+ATTR AllJd AllAt [ | | introECGam USE {`gamUnion`} {emptyGam}: ECnstrGam ]
 
 SEM JdAt
   | At              lhs     .   introECGam  =   @introECGam
 
 SEM Jd
   | Ats             lhs     .   introECGam  =   @introECGam
-{-
-  | Ats             lhs     .   introECGam  =   case scKind @scInfo of
-                                                  ScRelation -> Map.fromList [ ec | (_,ec) <- fmGamToList' @lhs.fm @ats.atFmGam ]
-                                                  _          -> @ats.introECGam
--}
 
 SEM RlDecl
-  | Rl              loc     .   introECGam  =   Map.mapKeys
+  | Rl              loc     .   introECGam  =   gamMapKeys
                                                     (exprSubst (@lhs.opts {optSubstFullNm=False}) @fullFmGam)
-                                                    (@preJds.introECGam `Map.union` @postJds.introECGam)
+                                                    (@preJds.introECGam `gamUnion` @postJds.introECGam)
 
 -------------------------------------------------------------------------
 -- 'Attr defined' gam
 -------------------------------------------------------------------------
 
-ATTR AllJd AllAt [ | | introADGam USE {`Map.union`} {Map.empty}: AtDefdGam ]
+ATTR AllJd AllAt [ | | introADGam USE {`gamUnion`} {emptyGam}: AtDefdGam ]
 
 SEM JdAt
   | At              lhs     .   introADGam  =   case @dir of
-                                                  Def -> Map.fromList [(@nmSbs,@isBi)]
+                                                  Def -> gamFromAssocs [(@nmSbs,@isBi)]
                                                   _   -> emptyGam
 
 SEM RlDecl
-  | Rl              loc     .   adGam       =   @preJds.introADGam `Map.union` @postJds.introADGam
+  | Rl              loc     .   adGam       =   @preJds.introADGam `gamUnion` @postJds.introADGam
 
 -------------------------------------------------------------------------
 -- 'Attr defined' gam, new version
@@ -304,7 +300,7 @@ ATTR AllJd AllAt [ | | introAD2Gam USE {`adGamUnion`} {emptyGam}: {AtDefdGam'} ]
 SEM JdAt
   | At              lhs     .   introAD2Gam =   case @dir of
                                                   Use | @lhs.isJd
-                                                    -> Map.fromList [(@nmSbs,Set.singleton @lhs.nmNd)]
+                                                    -> gamFromAssocs [(@nmSbs,Set.singleton @lhs.nmNd)]
                                                   _ -> emptyGam
 
 SEM RlDecl
@@ -318,14 +314,14 @@ ATTR AllAt AllJd [ | | exprEqnL USE {++} {[]}: {[Expr]} ]
 
 SEM JdAt
   | At              loc     .   (exprEqnL,introECGam)
-                                            =   let mk l r = ([eqn2],ecGam `Map.union` ecGamFromList [ (l,@atCnstr), (r,@atCnstr) ])
+                                            =   let mk l r = ([eqn2],ecGam `gamUnion` ecGamFromList [ (l,@atCnstr), (r,@atCnstr) ])
                                                            where eqn1         = mkExprEqn l r
                                                                  (eqn2,ecGam) = exprElimCnstr eqn1
                                                 in  case @dir of
                                                       Use | not (fmNull @introFmGam)
                                                           -> mk @useLhs @useRhs
                                                       Def -> mk @defLhs @defRhs
-                                                      _   -> ([],Map.empty)
+                                                      _   -> ([],emptyGam)
 
 SEM Jd
   | Ats             loc     .   (exprEqnL,introECGam,eqnErrs)
@@ -338,7 +334,7 @@ SEM Jd
                                                                                 [ maybe (Map.empty,[Err_NotAEqnForm @lhs.pos (pp l)]) (\e -> (e,[])) (exprCheckAEqnForm l)
                                                                                 | l <- exprLines jd1
                                                                                 ]
-                                                                   jd2      = exprSubst (@lhs.opts) (fmGamMap (const fst) @ats.atFmGam) jd1
+                                                                   jd2      = exprSubst (@lhs.opts {optSubstOnce=True}) (fmGamMap (const fst) @ats.atFmGam) jd1
                                                                    mkG eqm gn
                                                                             = if null n1 then [] else n1 ++ mkG (foldr (\(e,_) m -> Map.delete e m) eqm n1) n1
                                                                             where n1 = [ (exprEnsureAppTop e',c) | (e,c) <- gn, e' <- maybeToList (Map.lookup e eqm) ]
@@ -346,7 +342,7 @@ SEM Jd
                                                                             = unzip [ ((e,c),eg) | (_,(e,c)) <- fmGamToList' @lhs.fm @ats.atFmGam, let (e',eg) = exprElimCnstr e ]
                                                                    introECGam2
                                                                             = (ecGamFromList $ introECL ++ mkG (Map.unions jd1EqlL) introECL)
-                                                                              `Map.union` Map.unions introECGL
+                                                                              `gamUnion` gamUnions introECGL
 
 SEM RlDecl
   | Rl              (lhs.self,loc.selfNonOptim1,loc.selfNonOptim2)

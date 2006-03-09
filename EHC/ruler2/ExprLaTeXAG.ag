@@ -25,7 +25,7 @@ SEM Expr
   | Sel             lhs     .   ppLaTeX     =   @expr.ppLaTeX
   | Var             loc     .   ppLaTeX     =   ppNmLaTeX . nmLhs2TeXSafe $ @nm
   | Wrap            loc     .   ppLaTeX     =   let wr o c e = switchLaTeXLhs (mkTexCmdUse (show o) empty) >#< e >#< switchLaTeXLhs (mkTexCmdUse (show c) empty)
-                                                in  case Map.lookup @wrKind wrKindGam of
+                                                in  case gamLookup @wrKind wrKindGam of
                                                       Just i -> wr (wkBegCmd i) (wkEndCmd i) @expr.ppLaTeX
                                                       _      -> @expr.ppLaTeX
   | ChildOrder      loc     .   ppLaTeX     =   @expr.ppLaTeX

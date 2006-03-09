@@ -11,6 +11,7 @@ import System.Console.GetOpt
 import ParseUtils
 import ParseErrPrettyPrint
 import Version
+import Err
 import Common
 import Opts
 import qualified Main1AG as M1
@@ -63,13 +64,14 @@ doCompile fp opts
        ; let isAS2 = fmAS2Fm (optGenFM opts) /= optGenFM opts
        ; if optGenV2 opts && not isAS2
          then do { let t1 = M1.as2_Syn_AGItf res
-                       (t2,_,t2errL)
+                       ((t2,_,t2errL),doPrint)
                          = case optGenFM opts of
-                             FmTeX -> as2LaTeX opts (M1.scGam_Syn_AGItf res) (M1.fmGam_Syn_AGItf res) (M1.rwGam_Syn_AGItf res) t1
-                             FmAG  -> as2ARule opts (M1.scGam_Syn_AGItf res) (M1.fmGam_Syn_AGItf res) (M1.rwGam_Syn_AGItf res) t1
-                             _     -> (t1,empty,[])
+                             FmTeX -> bld as2LaTeX
+                             FmAG  -> bld as2ARule
+                             _     -> ((t1,empty,[]),False)
+                         where bld f = (f opts (M1.scGam_Syn_AGItf res) (M1.fmGam_Syn_AGItf res) (M1.rwGam_Syn_AGItf res) t1,True)
                  ; putErr t2errL
-                 ; putBld True (M2.ppAS2 opts t2)
+                 ; putBld doPrint (M2.ppAS2 opts t2)
                  }
          else if not isAS2
          then do { putBld True (M1.mkPP_Syn_AGItf res (optGenFM opts))

@@ -4,7 +4,7 @@
 
 module JdGam
   ( JdInfo(..), JdGam
-  , jdgUnion
+  , jdgUnionShadow
   )
   where
 
@@ -35,13 +35,13 @@ instance PP e => PP (JdInfo e) where
 
 type JdGam e = FmKdGam (JdInfo e)
 
-jdgUnion :: JdGam e -> JdGam e -> JdGam e
-jdgUnion gn g
-  = Map.foldWithKey
+jdgUnionShadow :: JdGam e -> JdGam e -> JdGam e
+jdgUnionShadow gn g
+  = gamFoldWithKey
       (\fk i g
         -> case i of
-             JdDel -> Map.delete fk g
-             _     -> Map.insert fk i g
+             JdDel -> gamDelete fk g
+             _     -> gamInsertShadow fk i g
       )
       g gn
 

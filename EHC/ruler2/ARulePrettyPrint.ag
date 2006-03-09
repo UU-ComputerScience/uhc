@@ -47,7 +47,7 @@ ppExpr e
                 (Inh_AGExprItf)
 
 ppECGam :: ECnstrGam -> PP_Doc
-ppECGam g = vlist [ pp (Expr_Cnstr n v) | (n,v) <- Map.toList g]
+ppECGam g = vlist [ pp (Expr_Cnstr n v) | (n,v) <- gamAssocs g]
 
 instance Show ARule where
   show _ = "ARule"

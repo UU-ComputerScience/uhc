@@ -28,6 +28,7 @@ include uhc/files.mk
 include ehc/files.mk
 include grini/files.mk
 include agprimer/files.mk
+-include infer2pass/files.mk
 -include figs/files.mk
 -include text/files.mk
 -include www/files.mk

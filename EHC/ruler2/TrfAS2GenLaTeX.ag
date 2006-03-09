@@ -15,6 +15,7 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Utils
 import Opts
+import Err
 import Common
 import KeywParser( propsSynInhMp )
 import ExprUtils

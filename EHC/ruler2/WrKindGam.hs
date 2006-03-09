@@ -34,7 +34,7 @@ type WrKindGam = Gam WrKind WrKindInfo
 
 wrKindGam :: WrKindGam
 wrKindGam
-  = Map.fromList
+  = gamFromAssocs
       [ (WrIsChanged,WrKindInfo nmCmdBegChng nmCmdEndChng)
       , (WrIsSame   ,WrKindInfo nmCmdBegSame nmCmdEndSame)
       ]

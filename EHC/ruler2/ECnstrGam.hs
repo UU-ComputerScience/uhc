@@ -24,13 +24,13 @@ import Expr
 type ECnstrGam = Gam Expr ECnstr
 
 ecGamLookup :: Expr -> ECnstrGam -> Maybe ECnstr
-ecGamLookup e g = Map.lookup (ecStrip e) g
+ecGamLookup e g = gamLookup (ecStrip e) g
 
 ecGamInsert :: Expr -> ECnstr -> ECnstrGam -> ECnstrGam
-ecGamInsert e c g = Map.insert (ecStrip e) c g
+ecGamInsert e c g = gamInsert (ecStrip e) c g
 
 ecGamFromList :: [(Expr,ECnstr)] -> ECnstrGam
-ecGamFromList l = Map.fromList [ (ecStrip e,c) | (e,c) <- l ]
+ecGamFromList l = gamFromAssocs [ (ecStrip e,c) | (e,c) <- l ]
 
 -------------------------------------------------------------------------
 -- Stripping for ECnstr

@@ -29,11 +29,11 @@ gamTranspose
      (i -> Gam k v,k -> k -> i -> v -> i')
        -> Gam k i -> Gam k (Gam k i')
 gamTranspose (getG,mkI) g
-  = Map.fromListWith Map.union [ (k2,Map.singleton k1 (mkI k1 k2 v1 v2)) | (k1,v1) <- Map.toList g, (k2,v2) <- Map.toList (getG v1) ]
+  = gamFromAssocsWith gamUnion [ (k2,gamSingleton k1 (mkI k1 k2 v1 v2)) | (k1,v1) <- gamAssocsShadow g, (k2,v2) <- gamAssocsShadow (getG v1) ]
 
 rlLtxGamTranspose :: Ord k => Gam k (Gam k (n,v)) -> Gam k (Gam k (n,v))
 rlLtxGamTranspose g
-  = Map.fromListWith Map.union [ (v,Map.singleton r (n,d)) | (r,vm) <- Map.toList g, (v,(n,d)) <- Map.toList vm ]
+  = gamFromAssocsWith gamUnion [ (v,gamSingleton r (n,d)) | (r,vm) <- gamAssocsShadow g, (v,(n,d)) <- gamAssocsShadow vm ]
 
 
 

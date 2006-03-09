@@ -10,11 +10,13 @@ DATA Decl
   | Preamble            fmKind      : {FmKind}
                         preamble    : {String}
   | Extern              nms         : {[Nm]}
-  | Scheme              scKind      : {ScKind}
+  | Scheme              pos         : {SPos}
+                        scKind      : {ScKind}
                         nm          : {Nm}
                         mbAGNm      : {Maybe String}
                         decls       : Decls
-  | SchemeDeriv         scKind      : {ScKind}
+  | SchemeDeriv         pos         : {SPos}
+                        scKind      : {ScKind}
                         nm          : {Nm}
                         scDeriv     : {ScDeriv}
                         mbAGNm      : {Maybe String}
