@@ -24,7 +24,7 @@ module RulerAdmin
   , reMbJAGam
   
   , RlChInfo(..), RlChGam
-  , rcGamUnion
+  , rcGamUnionShadow
   
   , VwRlInfo(..), VwRlGam
   , emptyVwRlInfo
@@ -80,8 +80,8 @@ type AtGam = Gam Nm AtInfo
 
 atGamNode :: AtGam -> Maybe Nm
 atGamNode g
-  = do let aNdGm = Map.filter (\ai -> AtNode `elem` atProps ai) g
-       case Map.toList aNdGm of
+  = do let aNdGm = gamFilter (\ai -> AtNode `elem` atProps ai) g
+       case gamAssocsShadow aNdGm of
          ((na,ai):_) -> return na
          _           -> Nothing
 
@@ -140,13 +140,14 @@ type VwScGam e = Gam Nm (VwScInfo e)
 
 data ScInfo e
   = ScInfo
-      { scNm        :: Nm
+      { scPos       :: SPos
+      , scNm        :: Nm
       , scMbAGStr   :: Maybe String
       , scKind      :: ScKind
       , scVwGam     :: VwScGam e
       }
 
-emptyScInfo = ScInfo nmNone Nothing ScJudge emptyGam
+emptyScInfo = ScInfo emptySPos nmNone Nothing ScJudge emptyGam
 
 instance Show (ScInfo e) where
   show _ = "ScInfo"
@@ -182,16 +183,16 @@ instance Show (JAInfo e) where
   show _ = "JAInfo"
 
 instance PP e => PP (JAInfo e) where
-  pp i@(JAInfo _ _ _) = "JA" >#< (pp (jaExpr i) >-< pp (show (jaNmS i)))
+  pp i@(JAInfo _ _ _) = "JA" >#< (pp (jaNm i) >|< ":" >#< pp (jaExpr i) >-< pp (show (jaNmS i)))
   pp i@(JAInfoDel _)  = "JADel" >#< jaNm i
 
 type JAGam e = Gam Nm (JAInfo e)
 
 jaGamToFmGam :: (e -> e) -> JAGam e -> FmGam e
-jaGamToFmGam f = fmGamFromList . map (\(n,i) -> (n,f (jaExpr i))) . Map.toList
+jaGamToFmGam f = fmGamFromList . map (\(n,i) -> (n,f (jaExpr i))) . gamAssocsShadow
 
 fmGamToJaGam :: FmKind -> FmGam e -> JAGam e
-fmGamToJaGam fm = Map.fromList . map (\(n,e) -> (n,JAInfo n e Set.empty)) . Map.toList . Map.map (fkGamLookup (panic "fmGamToJaGam") id [fm] . fmKdGam)
+fmGamToJaGam fm = gamFromAssocs . map (\(n,e) -> (n,JAInfo n e Set.empty)) . gamAssocsShadow . gamMap (fkGamLookup (panic "fmGamToJaGam") id [fm] . fmKdGam)
 
 -------------------------------------------------------------------------
 -- RExpr
@@ -239,8 +240,8 @@ instance PP RlChInfo where
 
 type RlChGam = Gam Nm (Gam Nm RlChInfo)
 
-rcGamUnion :: RlChGam -> RlChGam -> RlChGam
-rcGamUnion = Map.unionWith Map.union
+rcGamUnionShadow :: RlChGam -> RlChGam -> RlChGam
+rcGamUnionShadow = gamUnionWith gamUnionShadow
 
 -------------------------------------------------------------------------
 -- View (related to rule)
@@ -266,7 +267,7 @@ instance PP e => PP (VwRlInfo e) where
                                        >-< ppGam (vwrlFullPreGam i)
                                        >-< ppGam (vwrlFullPostGam i)
                                        >-< pp (show (vwrlPreScc i))
-                                       >-< maybe empty (ppGam . Map.map ppGam) (vwrlMbChGam i)
+                                       >-< maybe empty (ppGam . gamMap ppGam) (vwrlMbChGam i)
                                       )
 
 type VwRlGam e = Gam Nm (VwRlInfo e)
@@ -274,12 +275,12 @@ type VwRlGam e = Gam Nm (VwRlInfo e)
 vwrlDelEmptyJd :: VwRlInfo e -> VwRlInfo e
 vwrlDelEmptyJd i
   = i { vwrlFullPreGam = rgDel (vwrlFullPreGam i), vwrlFullPostGam = rgDel (vwrlFullPostGam i) }
-  where jgIsEmp = Map.null
-        rgDel = Map.filter (not . jgIsEmp . reJAGam)
+  where jgIsEmp = gamIsEmpty
+        rgDel = gamFilter (not . jgIsEmp . reJAGam)
         
 vrwlIsEmpty :: VwRlInfo e -> Bool
 vrwlIsEmpty i
-  = Map.null (vwrlFullPreGam i) && Map.null (vwrlFullPostGam i)
+  = gamIsEmpty (vwrlFullPreGam i) && gamIsEmpty (vwrlFullPostGam i)
 
 vwrlScc :: VwRlInfo e -> [[Nm]]
 vwrlScc 
@@ -287,7 +288,7 @@ vwrlScc
   where dpd g
           = d
           where d = [ (jd n,map nm . Set.toList $ is) : zip (map nm . Set.toList $ os) (repeat [jd n])
-                    | (REInfoJudge n _ is os _) <- Map.elems g
+                    | (REInfoJudge n _ is os _) <- gamElemsShadow g
                     ]
         nm n = nmSetSel n "n"
         jd n = nmSetSel n "j"
@@ -298,7 +299,7 @@ vwrlUndefs i
   = (prei `Set.union` posto) `Set.difference` (preo `Set.union` posti)
   where nms g
           = (Set.unions iss,Set.unions oss)
-          where (iss,oss) = unzip [ (reInNmS i,reOutNmS i) | i <- Map.elems g ]
+          where (iss,oss) = unzip [ (reInNmS i,reOutNmS i) | i <- gamElemsShadow g ]
         (prei,preo) = nms (vwrlFullPreGam i)
         (posti,posto) = nms (vwrlFullPostGam i)
 
@@ -372,7 +373,7 @@ type RsGam e = Gam Nm (RsInfo e)
 rsRlOrder :: RsInfo e -> [Nm]
 rsRlOrder i
   = case i of
-      RsInfo      _ _ _ _ g  -> map snd . sort $ [ (rlSeqNr i,rlNm i) | i <- Map.elems g ]
+      RsInfo      _ _ _ _ g  -> map snd . sort $ [ (rlSeqNr i,rlNm i) | i <- gamElemsShadow g ]
       RsInfoGroup _ _ _ _ ns -> map snd ns
 
 rsInfoMbRlGam :: RsInfo e -> Maybe (RlGam e)

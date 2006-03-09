@@ -47,14 +47,14 @@ type ChOrdGam = Gam Nm Int
 coGamNmL :: ChOrdGam -> [Nm]
 coGamNmL coGam
   = [nmLhs] ++ l ++ [nmLhs]
-  where l = map fst . sortBy (\(_,o1) (_,o2) -> compare o1 o2) . Map.toList $ coGam
+  where l = map fst . sortBy (\(_,o1) (_,o2) -> compare o1 o2) . gamAssocsShadow $ coGam
 }
 
 -------------------------------------------------------------------------
 -- Expr child order
 -------------------------------------------------------------------------
 
-ATTR AllExpr ANm AGExprItf [ | | coGam USE {`Map.union`} {Map.empty}: ChOrdGam ]
+ATTR AllExpr ANm AGExprItf [ | | coGam USE {`gamUnion`} {emptyGam}: ChOrdGam ]
 ATTR Expr ANm [ | | mbChNm: {Maybe Nm} ]
 
 SEM ANm
@@ -66,6 +66,6 @@ SEM Expr
 
 SEM Expr
   | ChildOrder      lhs     .   coGam       =   case @expr.mbChNm of
-                                                    Just n -> Map.singleton n @seqNr
-                                                    Nothing -> Map.empty
+                                                    Just n -> gamSingleton n @seqNr
+                                                    Nothing -> emptyGam
 

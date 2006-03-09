@@ -73,7 +73,8 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
         pTopDecls'  pD      =   pLay pD
         pDecls'     pD      =   pList pD
         pDecls1'    pD      =   pList1 pD
-        pDeclRule           =   Decl_Rule              <$> pKeySPos "rule"      <*> (pNm <|> Nm <$> pString)
+        pDeclRule           =   (\(n,p) mn s mag d -> Decl_Rule p n mn s mag d)
+                                                       <$  pKeySPos "rule"      <*> pNmSPos
                                                        <*> pMb (pKey ":" *> pNm)
                                                        <*> pMbViewSel
                                                        <*> pMbString
@@ -128,10 +129,10 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
                             <|> Decl_Extern            <$  (pKey "extern" <|> pKey "external")
                                                        <*> pList1 pNm
         pDeclGlobScheme     =   (ScJudge <$ pKey "scheme" <|> ScRelation <$ pKey "relation")
-                                <**> (pNm
-                                     <**> (   (\d (ms,ds) n k -> Decl_SchemeDeriv k n d ms ds)
+                                <**> (pNmSPos
+                                     <**> (   (\d (ms,ds) (n,p) k -> Decl_SchemeDeriv p k n d ms ds)
                                               <$ pKey ":" <*> pScDeriv <*> pTl2
-                                          <|> (\(ms,ds) n k -> Decl_Scheme k n ms ds)
+                                          <|> (\(ms,ds) (n,p) k -> Decl_Scheme p k n ms ds)
                                               <$> pTl1
                                           )
                                      )
@@ -150,8 +151,13 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
         pNmV                =   Nm <$> pVarid
         pSym                =   Nm <$> pSymStr
         pRExpr              =   pKey "judge" *> pRExprBase
-        pRExprBase          =   (\rn (n,p) e -> RExpr_Judge p rn n e) <$> pMbRNm <*> pNmSPos <*> pRExprEqn
-                            <|> (\(n,p) nl -> RExpr_Del p (n:nl)) <$ pKey "-" <*> pNmSPos <*> pList pNm
+        pRExprBase          =   (\mrnp (n,p) e
+                                    -> let (mrn,p') = maybe (Nothing,p) (\(n,p) -> (Just n,p)) mrnp
+                                       in  RExpr_Judge p' mrn n e
+                                )
+                                <$> pMb (pNmSPos <* pKey ":") <*> pNmSPos <*> pRExprEqn
+                            <|> (\(n,p) nl -> RExpr_Del p (n:nl))
+                                <$ pKey "-" <*> pNmSPos <*> pList pNm
         pRExprEqn           =   RExprEqn_Attrs <$> pAttrEqns
                             <|> RExprEqn_Expr  <$  pKey "=" <*> pExpr
         pExpr               =   pExprApp
@@ -189,7 +195,6 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
                                   pMbE = Just <$> pE <|> pSucceed Nothing
         pECnstr             =   ECnstr_Ty  <$> pList1Sep pComma pNmC
                             <|> ECnstr_Var <$> pNmV
-        pMbRNm              =   pMb (pNm <* pKey ":")
         pMbString           =   pMb pString
         pAttrIntros         =   pListSep pComma pAttrIntro
         pAttrIntro          =   AttrIntro_Intro <$> pList pAttrProp <*> pNm <* pKey ":" <*> pNmC

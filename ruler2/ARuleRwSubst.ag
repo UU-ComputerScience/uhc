@@ -67,7 +67,7 @@ wrapExpr' o fmg rwg ecg {- rnm -} e
                            })
 
 exprSubst :: Opts -> FmGam Expr -> Expr -> Expr
-exprSubst o fmg = repl_Syn_AGExprItf . wrapExpr' o fmg emptyGam {- emptyGam -} Map.empty
+exprSubst o fmg = repl_Syn_AGExprItf . wrapExpr' o fmg emptyGam emptyGam {- Map.empty -}
 
 exprElimCnstr :: Expr -> (Expr,ECnstrGam)
 exprElimCnstr e
@@ -162,7 +162,7 @@ exprVarSubst opts fmGam rwGam ecGam dfltRepl nm
                -> Expr_Var (nmFromMbL (sNmL ++ remNmL))
              _ -> nmLAsSelExpr id se remNmL
         where se = if optSubstOnce opts then matchExpr else sbsWoNm matchExpr
-              sbsWoNm = exprSubst opts (nmFromMbL matchNmL `Map.delete` fmGam)
+              sbsWoNm = exprSubst opts (nmFromMbL matchNmL `gamDelete` fmGam)
       _ -> dfltRepl
 }
 
@@ -196,7 +196,7 @@ mkRwExpr inEqnLoc opts fmGam rwGam ecGam repl
                 = foldr (\(me,e) r
                           -> let mt = exprMatch opts ecGam repl me
                              in  if mtMatches mt
-                                 then let e2 = exprSubst opts (mtFmGam mt `Map.union` fmGam) e
+                                 then let e2 = exprSubst opts (mtFmGam mt `gamUnion` fmGam) e
                                           (e3,ecg) = exprElimCnstr e2
                                       in  (e3,mt,ecg)
                                  else r
@@ -218,7 +218,7 @@ mkRwExpr inEqnLoc opts fmGam rwGam ecGam repl
                 = foldr (\(me,e) r
                           -> let mt = exprMatch opts ecGam repl me
                              in  if mtMatches mt
-                                 then let e2 = exprSubst opts (mtFmGam mt `Map.union` fmGam) e
+                                 then let e2 = exprSubst opts (mtFmGam mt `gamUnion` fmGam) e
                                           (e3,ecg) = exprElimCnstr e2
                                       in  (e3,mt,ecg)
                                  else r
@@ -232,18 +232,18 @@ mkRwExpr inEqnLoc opts fmGam rwGam ecGam repl
 }
 
 ATTR AllExpr AGExprItf [ | | rwMtGam USE {`fmGamUnion`} {emptyGam}: {FmGam Expr} ]
-ATTR AllExpr AGExprItf [ | | rwEcGam USE {`Map.union`} {emptyGam}: {ECnstrGam} ]
+ATTR AllExpr AGExprItf [ | | rwEcGam USE {`gamUnion`} {emptyGam}: {ECnstrGam} ]
 
 SEM Expr
-  | Var             loc     .   forRwEcGam  =   @varEcGam `Map.union` @lhs.ecGam
+  | Var             loc     .   forRwEcGam  =   @varEcGam `gamUnion` @lhs.ecGam
                     (lhs.repl,lhs.rwMtGam,loc.rwEcGam)
                                             =   mkRwExpr @lhs.inEqnLoc @lhs.opts @lhs.fmGam @lhs.rwGam (@forRwEcGam) @replEcVar
-                    lhs     .   rwEcGam     =   @rwEcGam `Map.union` @varEcGam
-  | AppTop          loc     .   forRwEcGam  =   @expr.rwEcGam `Map.union` @lhs.ecGam
+                    lhs     .   rwEcGam     =   @rwEcGam `gamUnion` @varEcGam
+  | AppTop          loc     .   forRwEcGam  =   @expr.rwEcGam `gamUnion` @lhs.ecGam
                     (loc.rwRepl,loc.rwMtGam,loc.rwEcGam)
                                             =   mkRwExpr @lhs.inEqnLoc @lhs.opts @lhs.fmGam @lhs.rwGam (@forRwEcGam) @repl
                     lhs     .   rwMtGam     =   @rwMtGam `fmGamUnion` @expr.rwMtGam
-                            .   rwEcGam     =   @rwEcGam `Map.union` @expr.rwEcGam
+                            .   rwEcGam     =   @rwEcGam `gamUnion` @expr.rwEcGam
                             .   repl        =   @rwRepl
 
 -------------------------------------------------------------------------
@@ -335,7 +335,7 @@ exprMatch opts ecGam e1 e2
                                                                             = err
         mt e1                       e2@(Expr_Var n2)                        = bnd n2 e1 $ res e2
         mt (Expr_Op n1 ne1 l1 r1)   (Expr_Op n2 ne2 l2 r2)  | n1 == n2
-          = bnd' (m2 {mtFmGam = n1 `Map.delete` mtFmGam m2}) m1
+          = bnd' (m2 {mtFmGam = n1 `gamDelete` mtFmGam m2}) m1
           where m1 = app l1 l2 r1 r2 (\l r -> Expr_Op n2 ne2 l r)
                 m2 = mt ne1 ne2
         mt (Expr_App l1 r1)         (Expr_App l2 r2)                        = app l1 l2 r1 r2 Expr_App
@@ -376,7 +376,7 @@ exprMatch opts ecGam e1 e2
 
 ATTR AllExpr ANm [ | | replEc: SELF ]
 ATTR AGExprItf [ | | replEc: Expr ]
-ATTR AGExprItf AllExpr [ | | ecElimGam USE {`Map.union`} {Map.empty}: ECnstrGam ]
+ATTR AGExprItf AllExpr [ | | ecElimGam USE {`gamUnion`} {emptyGam}: ECnstrGam ]
 
 SEM Expr
   | Cnstr           lhs     .   replEc      =   @expr.replEc

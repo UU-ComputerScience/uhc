@@ -75,6 +75,7 @@ scan opts pos input
    doScan p (c:s)        | isSpace c = let (sp,next) = span isSpace s
                                        in  doScan (foldl adv p (c:sp)) next
 
+   doScan p ('-':'-':'-':'-':s)  = doScan p (dropWhile (/= '\n') s)
    doScan p ('-':'-':'-':s)
      = let (_,p',s') = scanDash (advc 3 p) s
            dash = "---"

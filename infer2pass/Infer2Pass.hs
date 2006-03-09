@@ -1,21 +1,19 @@
-{
 module Main
-where
+  where
+
 import IO
 import Data.List
 import UU.Pretty
 import UU.Parsing
 import UU.Scanner
 import UU.Scanner.Position (initPos,Pos)
-import DemoUtils
+import Utils
+import MainAG
 
-}
-{
-}
-INCLUDE "demo.ag"
-WRAPPER AGItf
-{
--- main
+-------------------------------------------------------------------------
+-- Main
+-------------------------------------------------------------------------
+
 main :: IO ()
 main
   = do { txt <- hGetContents stdin
@@ -26,7 +24,10 @@ main
        ; putStrLn (disp (pp_Syn_AGItf res) 200 "")
        }
 
+-------------------------------------------------------------------------
 -- Parser
+-------------------------------------------------------------------------
+
 pAGItf :: (IsParser p Token) => p T_AGItf
 pAGItf
   = pAGItf
@@ -43,39 +44,3 @@ pAGItf
                       <* pKey "->"
         pExpr     =   pExprPre <*> pExpr
                   <|> pExprApp
-}
--- AST
-DATA AGItf
-  | AGItf  e  : Expr
-DATA Expr
-  | App  f    : Expr
-         a    : Expr
-  | Int  int  : {Int}
-  | Var  i    : {String}
-  | Lam  i    : {String}
-         b    : Expr
-  | Let  i    : {String}
-         e    : Expr
-         b    : Expr
--- Initialisation
-SEM AGItf
-  | AGItf  e  .   g  =   []
-              .   c  =   []
--- Pretty printing
-ATTR AGItf Expr [ | | pp: PP_Doc ]
-
-SEM Expr
-  | App  lhs  .   pp   =   @f.pp >#< pp_parens @a.pp
-                           >-< mkErr @mtErrs
-  | Int  lhs  .   pp   =   pp @int
-  | Var  lhs  .   pp   =   pp @i >-< mkErr @nmErrs
-  | Lam  lhs  .   pp   =   "\\" >|< pp @i >#< "->" >#< @b.pp
-  | Let  lhs  .   pp   =   "let"     >#< pp @i
-                           >#< "::"  >#< show @pty_e_
-                           >#< "="   >#< @e.pp
-                           >-< "in " >#< @b.pp
--- Uniq
-ATTR Expr [ | uniq: UID | ]
-
-SEM AGItf
-  | AGItf  e  .   uniq  =   uidStart

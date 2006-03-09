@@ -17,7 +17,7 @@ RULER2_MAIN			:= Ruler
 RULER2_HS_MAIN_SRC_HS					:= $(addprefix $(RULER2_SRC_PREFIX),$(RULER2_MAIN).hs)
 RULER2_HS_MAIN_DRV_HS					:= $(patsubst $(RULER2_SRC_PREFIX)%.hs,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_HS_MAIN_SRC_HS))
 RULER2_HS_DPDS_SRC_HS					:= $(patsubst %,$(RULER2_SRC_PREFIX)%.hs,\
-											Version Common Opts DpdGr AttrProps \
+											Version Common Err Opts DpdGr AttrProps \
 											NmParser ViewSelParser SelParser KeywParser RulerParser \
 											ARuleUtils ExprUtils LaTeXFmtUtils RulerUtils ViewSelUtils \
 											Gam FmGam ECnstrGam RwExprGam WrKindGam JdGam \
@@ -91,7 +91,7 @@ $(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_EXNMS_MAIN
 										: $(RULER2_EXNMS_DPDS_SRC_AG)
 
 RULER2_EXLTX_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ExprLaTeX)
-RULER2_EXLTX_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ExprAbsSynAG ExprOptsAG)
+RULER2_EXLTX_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ExprAbsSynAG ExprOptsAG ExprLaTeXAG)
 $(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_EXLTX_MAIN_SRC_AG)) \
 										: $(RULER2_EXLTX_DPDS_SRC_AG)
 

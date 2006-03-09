@@ -64,17 +64,17 @@ type AtDefdGam = Gam Nm Bool
 type AtDefdGam' = Gam Nm (Set.Set Nm)
 
 adGamUnion :: AtDefdGam' -> AtDefdGam' -> AtDefdGam'
-adGamUnion = Map.unionWith Set.union
+adGamUnion = gamUnionWith Set.union
 
 ppADGam :: AtDefdGam' -> PP_Doc
-ppADGam = ppGam . Map.map (pp.show)
+ppADGam = ppGam . gamMap (pp.show)
 
 adGamIsThr :: AtDefdGam -> AtDefdGam' -> CrOrdGam -> Nm -> Nm -> Nm -> Bool
 adGamIsThr ag1 ag2 cg
-  = if Map.null ag2 then isThr1 else isThr2
-  where isThr1 _    _    nAt = Map.findWithDefault False nAt ag1
+  = if gamIsEmpty ag2 then isThr1 else isThr2
+  where isThr1 _    _    nAt = gamFindWithDefault False nAt ag1
         isThr2 nNd1 nNd2 nAt
-          = case Map.lookup nNd2 cg of
+          = case gamLookup nNd2 cg of
               Nothing -> False
               Just nNd1'
                 | nNd1 == nNd1'
@@ -83,7 +83,7 @@ adGamIsThr ag1 ag2 cg
                   -> isThr2 nNd1 nNd1' nAt
                 | otherwise
                   -> False
-                where isComingOut = maybe False (nNd1' `Set.member`) $ Map.lookup nAt ag2
+                where isComingOut = maybe False (nNd1' `Set.member`) $ gamLookup nAt ag2
 }
 
 -------------------------------------------------------------------------
@@ -95,7 +95,7 @@ ATTR AllARuleRule AllARuleEqn AGARuleItf [ ad2Gam: {AtDefdGam'} | | ]
 ATTR AllARuleRule AllARuleEqn [ croGam: CrOrdGam | | ]
 
 SEM AGARuleItf
-  | AGItf           rule    .   croGam      =   fst . foldl (\(g,pn) n -> (Map.insert n pn g,n)) (emptyGam,head @lhs.croNmL) $ tail @lhs.croNmL
+  | AGItf           rule    .   croGam      =   fst . foldl (\(g,pn) n -> (gamInsert n pn g,n)) (emptyGam,head @lhs.croNmL) $ tail @lhs.croNmL
 
 -------------------------------------------------------------------------
 -- Replica
@@ -104,12 +104,12 @@ SEM AGARuleItf
 ATTR AEqns AEqn [ | | replCrEqns USE {++} {[]}: {[AEqn]} ]
 
 SEM AEqn
-  | Eqn             lhs     .   replCrEqns  =   let -- isThr n = Map.findWithDefault False n @lhs.adGam
+  | Eqn             lhs     .   replCrEqns  =   let -- isThr n = gamFindWithDefault False n @lhs.adGam
                                                     isThr = adGamIsThr @lhs.adGam @lhs.ad2Gam @lhs.croGam
-                                                    isPrev1 n1 n2 = maybe False (==n1) $ Map.lookup n2 @lhs.croGam
-                                                    isPrev = if Map.null @lhs.ad2Gam then isPrev1 else \_ _ -> True
+                                                    isPrev1 n1 n2 = maybe False (==n1) $ gamLookup n2 @lhs.croGam
+                                                    isPrev = if gamIsEmpty @lhs.ad2Gam then isPrev1 else \_ _ -> True
                                                 in  case (@dest.mbSingleANm,@val.mbSingleANm) of
-                                                      (Just (ANm_Node nn dn),Just (ANm_Lhs sn _)) | Map.null @lhs.ad2Gam && dn == sn && not (isThr nmLhs nn dn)
+                                                      (Just (ANm_Node nn dn),Just (ANm_Lhs sn _)) | gamIsEmpty @lhs.ad2Gam && dn == sn && not (isThr nmLhs nn dn)
                                                         -> []
                                                       (Just (ANm_Node nn dn),Just (ANm_Lhs sn _)) | dn == sn && (isThr nmLhs nn dn) && nmLhs `isPrev` nn
                                                         -> []

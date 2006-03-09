@@ -6,17 +6,17 @@
 rsSelect :: RlSelIsSel -> RsGam Expr -> [(Nm,RsInfo Expr)]
 rsSelect rlSelIsSel rsGam
   = rs
-  where rs = [ (rsNm,rsInfo {rsRlGam = Map.fromList rls})
-             | (rsNm,rsInfo) <- Map.toList rsGam
+  where rs = [ (rsNm,rsInfo {rsRlGam = gamFromAssocs rls})
+             | (rsNm,rsInfo) <- gamAssocsShadow rsGam
              , rsInfoIsPlain rsInfo
              , rlSelIsSel nmAny rsNm nmAny
              , let rls
-                     = [ (rlNm,rlInfo {rlVwGam = Map.fromList vws})
-                       | (rlNm,rlInfo) <- Map.toList (rsRlGam rsInfo)
+                     = [ (rlNm,rlInfo {rlVwGam = gamFromAssocs vws})
+                       | (rlNm,rlInfo) <- gamAssocsShadow (rsRlGam rsInfo)
                        , rlSelIsSel nmAny nmAny rlNm
                        , let vws
                                = [ v
-                                 | v@(vwNm,_) <- Map.toList (rlVwGam rlInfo)
+                                 | v@(vwNm,_) <- gamAssocsShadow (rlVwGam rlInfo)
                                  , rlSelIsSel vwNm nmAny nmAny
                                  ]
                        , not (null vws)
@@ -28,7 +28,7 @@ rsSelectGroup :: RlSelIsSel -> RsGam Expr -> [(Nm,RsInfo Expr)]
 rsSelectGroup rlSelIsSel rsGam
   = rs
   where rs = [ (rsNm,rsInfo {rsRlNms = rlNms})
-             | (rsNm,rsInfo) <- Map.toList rsGam
+             | (rsNm,rsInfo) <- gamAssocsShadow rsGam
              , rsInfoIsGroup rsInfo
              , rlSelIsSel nmAny rsNm nmAny
              , let rlNms
@@ -39,12 +39,12 @@ rsSelectGroup rlSelIsSel rsGam
 scSelect :: RlSelIsSel -> ScGam Expr -> [(Nm,ScInfo Expr)]
 scSelect rlSelIsSel scGam
   = sc
-  where sc = [ (scNm,scInfo {scVwGam = Map.fromList vws})
-             | (scNm,scInfo) <- Map.toList scGam
+  where sc = [ (scNm,scInfo {scVwGam = gamFromAssocs vws})
+             | (scNm,scInfo) <- gamAssocsShadow scGam
              -- , rlSelIsSel nmAny rsNm nmAny
              , let vws
                      = [ v
-                       | v@(vwNm,_) <- Map.toList (scVwGam scInfo)
+                       | v@(vwNm,_) <- gamAssocsShadow (scVwGam scInfo)
                        , rlSelIsSel vwNm nmAny nmAny
                        ]
              ]
@@ -54,7 +54,7 @@ jdChangeInfo opts isChgd jaFmGam
   = if null chs    then (jaFmGam,id)
     else if or chs then (fmGamMap mkChng jaFmGam,id)
                    else (jaFmGam,Expr_Wrap WrIsSame)
-  where chs = catMaybes . map isChgd . Map.keys $ jaFmGam
+  where chs = catMaybes . map isChgd . gamKeys $ jaFmGam
         mkChng
           = case optMbMarkChange opts of
               Just _  -> \nAt -> case isChgd nAt of
@@ -96,8 +96,8 @@ SEM AGItf
 SEM AGItf
   | AGItf           loc     .   as2ScmMeta  =   if @fmAS2 == FmAG && optGenAGAttr @lhs.opts
                                                 then let nVwS = vgVertices @vwDpdGr
-                                                         sv = Map.fromListWith Set.union
-                                                                [ (rsScNm i,vs) | i <- Map.elems @rsGam
+                                                         sv = gamFromAssocsWith Set.union
+                                                                [ (rsScNm i,vs) | i <- gamElemsShadow @rsGam
                                                                                 , let vs = Set.filter (\v -> @rlSelIsSel v (rsNm i) nmAny) nVwS, not (Set.null vs)
                                                                 ]
                                                          mkChunk s v
@@ -106,13 +106,13 @@ SEM AGItf
                                                            = case scVwGamLookup s v @scGam of
                                                                Just (si,vi)
                                                                  -> [AS2.Decl_AttrAG (AS2.AttrAGDecl_Attr (maybe (scNm si) Nm (scMbAGStr si)) (mkg agi) (mkg agsi) (mkg ags))]
-                                                                 where ag1 = Map.filter (\ai -> AtNode `notElem` atProps ai) (vwscFullAtGam vi)
-                                                                       (agsi,ag2) = Map.partition (\ai -> isJust (atMbSynInh ai)) ag1
-                                                                       (ags,agi) = Map.partition (\ai -> AtSyn `elem` atDirs ai) ag2
-                                                                       mkg g = Map.toList $ Map.fromList
-                                                                               $ [ (n,atTy ai) | ai <- Map.elems g, let n = nmSubst @lhs.opts @fmGam $ maybe (atNm ai) id $ atMbSynInh ai ]
+                                                                 where ag1 = gamFilter (\ai -> AtNode `notElem` atProps ai) (vwscFullAtGam vi)
+                                                                       (agsi,ag2) = gamPartition (\ai -> isJust (atMbSynInh ai)) ag1
+                                                                       (ags,agi) = gamPartition (\ai -> AtSyn `elem` atDirs ai) ag2
+                                                                       mkg g = gamAssocsShadow $ gamFromAssocs
+                                                                               $ [ (n,atTy ai) | ai <- gamElemsShadow g, let n = nmSubst @lhs.opts @fmGam $ maybe (atNm ai) id $ atMbSynInh ai ]
                                                                _ -> []
-                                                     in  [ mkChunk s v d | (s,vs) <- Map.toList sv, v <- Set.toList vs, d <- mk s v ] 
+                                                     in  [ mkChunk s v d | (s,vs) <- gamAssocsShadow sv, v <- Set.toList vs, d <- mk s v ] 
                                                 else []
 
 -------------------------------------------------------------------------
@@ -127,19 +127,19 @@ SEM AGItf
                                                             -> topWrap
                                                                $ AS2.RsVwDecl_Rs nRs nSc d
                                                                    [ AS2.VwDecl_Vw v (mkFullVwNm nRs v) rls'
-                                                                   | (v,rls) <- Map.toList rlGamT
-                                                                   , let rls' = catMaybes [ Map.lookup n rls | n <- rlOrder ]
+                                                                   | (v,rls) <- gamAssocsShadow rlGamT
+                                                                   , let rls' = catMaybes [ gamLookup n rls | n <- rlOrder ]
                                                                    ]
                                                             where rlGamT    = gamTranspose (rlVwGam,mkRl) rlGam
                                                                   rlOrder   = rsRlOrder rsInfo
-                                                                  jdsOf o g = [ maybe (panic "as2RuleSets") id (Map.lookup jNm g) | jNm <- o ]
+                                                                  jdsOf o g = [ maybe (panic "as2RuleSets") id (gamLookup jNm g) | jNm <- o ]
                                                                   mkRl nRl nVw rlInfo vwRlInfo
                                                                     = mkChunk nVw rlInfo
                                                                       $ AS2.RlDecl_Rl nRl fullNm (rlPos rlInfo) (rlMbAGStr rlInfo) pre post
                                                                     where preg  = vwrlFullPreGam vwRlInfo
                                                                           postg = vwrlFullPostGam vwRlInfo
                                                                           preOrder  = concat (vwrlPreScc vwRlInfo)
-                                                                          postOrder = Map.keys postg
+                                                                          postOrder = gamKeys postg
                                                                           (pre,post)
                                                                             = case @fmAS2 of
                                                                                 FmTeX -> (mkExprJds vwRlInfo preOrder preg,mkExprJds vwRlInfo postOrder postg)
@@ -151,7 +151,7 @@ SEM AGItf
                                                                     where nVwRnm = rsSelMapVwNm (optMbRlSel @lhs.opts) nVw
                                                                   mkAtsJds order reGam
                                                                     = [ AS2.Jd_Ats (reNm jInfo) (reScNm jInfo) (mkAts jInfo) | jInfo <- jdsOf order reGam ]
-                                                                    where mkAts jInfo = [ AS2.JdAt_At aNm (jaExpr a) | (aNm,a) <- Map.toList (reJAGam jInfo) ]
+                                                                    where mkAts jInfo = [ AS2.JdAt_At aNm (jaExpr a) | (aNm,a) <- gamAssocsShadow (reJAGam jInfo) ]
                                                                   mkExprJds vwRlInfo order reGam
                                                                     = [ AS2.Jd_Expr (reNm jInfo) (reScNm jInfo) (mkExpr vwRlInfo jInfo) | jInfo <- jdsOf order reGam ]
                                                                     where mkExpr vwRlInfo jInfo
@@ -161,21 +161,6 @@ SEM AGItf
                                                                                   (jg',wrapFullJd) = jdChangeInfo @lhs.opts (atIsChanged vwRlInfo (reNm jInfo)) jg
                                                                                   e  = jdGamFmExpr @fmAS2 . vwscJdGam $ vwScInfo
                                                                                   nVw = vwrlNm vwRlInfo
-																	{-
-																		  , genJdExpr   = \gen atIsChanged jaFmGam fmGam e ->
-																			  let mkChng
-																					= case optMbMarkChange (genOpts gen) of
-																						Just _  -> \nAt -> case atIsChanged nAt of
-																											 Just isCh -> Expr_Wrap (if isCh then WrIsChanged else WrIsSame)
-																											 Nothing   -> id
-																						Nothing -> \_   -> id
-																				  (jaFmGam',wrFullJd)
-																					= if null chs    then (jaFmGam,id)
-																					  else if or chs then (fmGamMap mkChng jaFmGam,id)
-																									 else (jaFmGam,Expr_Wrap WrIsSame)
-																					where chs = catMaybes . map atIsChanged . Map.keys $ jaFmGam
-																			  in  exprFmtTeXSubst (genOpts gen) fmGam . wrFullJd . exprSubst ((genOpts gen) {optSubstOnce=True}) jaFmGam' $ e
-																	-}
                                                           RsInfoGroup nRs nSc vwSel d rlNms | @fmAS2 == FmTeX
                                                             -> topWrap
                                                                $ AS2.RsVwDecl_Rs nRs nSc d
@@ -186,7 +171,7 @@ SEM AGItf
                                                                       | (nRs',nRl) <- rlNms, rlVwIsDef nRs' nVw nRl
                                                                       ]
                                                                   rlVwIsDef nRs nVw nRl
-                                                                    = isJust (do rsInfo <- Map.lookup nRs @rsGam
+                                                                    = isJust (do rsInfo <- gamLookup nRs @rsGam
                                                                                  rlGam <- rsInfoMbRlGam rsInfo
                                                                                  rlVwGamLookup nRl nVw rlGam
                                                                              )
@@ -205,11 +190,11 @@ SEM AGItf
                                                 then let explGen
                                                            = [ ex | (nSc,scInfo) <- @scSelected, exSc <- mkSc scInfo, ex <- exSc ]
                                                            where mkSc scInfo
-                                                                   = [ (maybe [] (\e -> [mkChunk nVw "explain.scheme" $ AS2.Decl_ScVwExplain (fmtex e)]) . Map.lookup nmNone . vwscExplGam $ vwInfo)
+                                                                   = [ (maybe [] (\e -> [mkChunk nVw "explain.scheme" $ AS2.Decl_ScVwExplain (fmtex e)]) . gamLookup nmNone . vwscExplGam $ vwInfo)
                                                                        ++ [ mkChunk nVw "explain.holes" $ AS2.Decl_ScVwAtExplain
-                                                                            $ [ (fmte $ Expr_Expr $ Expr_Var $ n, fmtex ei) | (n,ei) <- Map.toList (vwscExplGam vwInfo `Map.intersection` vwscFullAtGam vwInfo) ]
+                                                                            $ [ (fmte $ Expr_Expr $ Expr_Var $ n, fmtex ei) | (n,ei) <- gamAssocsShadow (vwscExplGam vwInfo `Map.intersection` vwscFullAtGam vwInfo) ]
                                                                           ]
-                                                                     | (nVw,vwInfo) <- Map.toList (scVwGam scInfo)
+                                                                     | (nVw,vwInfo) <- gamAssocsShadow (scVwGam scInfo)
                                                                      ]
                                                                    where mkChunk nVw n = AS2.wrapInChunk AS2.Decl_Chunk @lhs.opts (scNm scInfo `nmApd` nVw `nmApd` Nm n)
                                                                          fmte = exprSubst (@lhs.opts {optSubstFullNm=False, optGenFM = FmTeX}) @fmGam
