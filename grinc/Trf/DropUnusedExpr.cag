@@ -1,0 +1,126 @@
+% $Id$
+
+Droping various expression when these constructs are not used.
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[8 import("../GrinCodeAbsSyn")
+%%]
+
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[8 hs module Trf.DropUnusedExpr import("qualified Data.Set as Set")
+%%]
+
+%%[8 hs import(EHCommon, GRINCCommon, GrinCode, Data.Maybe) export(dropUnusedExpr)
+dropUnusedExpr :: GrModule -> GrModule
+dropUnusedExpr grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                            (Inh_GrAGItf)
+                                in grTrf_Syn_GrAGItf t
+%%]
+
+%%[8
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllGrNT [ | | grTrf: SELF ]
+
+%%]
+
+TODO: A unit statement can insert used variables for each variable not bounded
+to a wildcard or constant pattern. Example:
+
+unit (T a1 ... an); \_ ->     ==>    'a1' t/m 'an' are unused in this expression.
+
+This can be generalized to all other constructs. (e.g when an expr is dead,
+don't count its variables as live) (shown in testgrinc/throw.grin)
+
+alternative solution: use current tranformation in fixpoint
+
+%%[8.retrieveUsedVariables
+ATTR AllExpr [ | usedVars: {Set.Set HsName} | ]
+
+SEM GrBind
+  | Bind  expr  .  usedVars  =  Set.empty
+
+SEM GrVal
+  | Var   lhs   .  usedVars  =  Set.insert @nm @lhs.usedVars
+
+SEM GrTag
+  | Var   lhs   .  usedVars  =  Set.insert @nm @lhs.usedVars
+
+SEM GrExpr
+  | FFI     lhs   .  usedVars  =  foldr Set.insert @lhs.usedVars @argL
+  | App     argL  .  usedVars  =  Set.insert @nm @lhs.usedVars
+  | Eval    lhs   .  usedVars  =  Set.insert @nm @lhs.usedVars
+  | Fetch   lhs   .  usedVars  =  Set.insert @nm @lhs.usedVars
+  | Update  val   .  usedVars  =  Set.insert @nm @lhs.usedVars
+  | Throw   lhs   .  usedVars  =  Set.insert @nm @lhs.usedVars
+  | Seq     body  .  usedVars  =  @lhs.usedVars
+            pat   .  usedVars  =  @body.usedVars
+            expr  .  usedVars  =  @body.usedVars
+            lhs   .  usedVars  =  @expr.usedVars
+
+SEM GrAlt
+  | Alt     expr  .  usedVars  =  @lhs.usedVars
+            pat   .  usedVars  =  @expr.usedVars
+            lhs   .  usedVars  =  @pat.usedVars
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Remove unused variable bindings %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+Remove expressions when its result is not bound to some variable and the
+possible side effect is useless without that result. (The ones 
+retained are update, throw and FFI)
+
+%%[8.removeUnusedSeqExpr
+ATTR GrTag GrPat GrPatL [ | | isDead : Bool ]
+
+SEM GrPat
+  | Node  lhs  .  isDead  =  not (any (`Set.member` @lhs.usedVars) @fldL) && @tag.isDead
+  | Var   lhs  .  isDead  =  not (@nm `Set.member` @lhs.usedVars)
+  | Tag   lhs  .  isDead  =  @tag.isDead
+  | * - Node Var Tag  lhs  .  isDead  =  True
+
+SEM GrTag
+  | Var      lhs  .  isDead  =  not (@nm `Set.member` @lhs.usedVars)
+  | * - Var  lhs  .  isDead  =  True
+ 
+SEM GrExpr [ | | sideEffect : Bool ]
+  | Update FFI Throw      lhs  .  sideEffect  =  True
+  | * - Update FFI Throw  lhs  .  sideEffect  =  False
+
+SEM GrExpr
+  | Seq  lhs  .  grTrf      =  if @isDead then @body.grTrf else @grTrf
+         loc  .  isDead     =  @pat.isDead && not @expr.sideEffect
+%%]
+
+
+Fields and tag variables in node patterns which are never used are replaced
+with wildcards.
+
+%%[8.removeUnusedNamedBinding
+SEM GrPat
+  | Node  lhs  .  grTrf  =  GrPat_Node @tag.tag (map (mkWildcard @lhs.usedVars) @fldL)
+  | Var   lhs  .  grTrf  =  GrPat_Var (mkWildcard @lhs.usedVars @nm)
+  | Tag   lhs  .  grTrf  =  GrPat_Tag @tag.tag
+
+SEM GrTag [ | | tag: GrTag ]
+  | Var      lhs  .  tag  =  GrTag_Var (mkWildcard @lhs.usedVars @nm)
+  | * - Var  lhs  .  tag  =  @grTrf
+%%]
+
+%%[8.renameToWildcard hs
+mkWildcard m x = if x `Set.member` m then x else wildcardNr
+%%]
+
+%%[8.removeUnusedFormals
+%%]
+
+% vim:ts=4:et:ai:

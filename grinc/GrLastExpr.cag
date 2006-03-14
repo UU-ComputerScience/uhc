@@ -1,0 +1,59 @@
+% $Id$
+%%[0
+%include lhs2TeX.fmt 
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Find Last Grin Expression of a binding %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+To keep track of whether the expression should return a value or should copy it
+to target names.
+
+TargetVariables
+
+%%[8 hs
+type TargetNames = Maybe [HsName]
+type TargetName  = Maybe HsName
+%%]
+
+-- %%[8.targetVars
+ATTR AllGrExpr [ targetNames : TargetNames | | ]
+ATTR GrPat GrPatL GrTag [ | |  patternNames: {[HsName]} ]
+
+SEM GrBind
+  | Bind     expr . targetNames = Nothing
+
+SEM GrExpr
+  | Seq      expr . targetNames = Just @pat.patternNames
+             body . targetNames = @lhs.targetNames
+
+SEM GrPat 
+  | Var   lhs  .  patternNames = [@nm]
+  | Node  lhs  .  patternNames = @tag.patternNames ++ @fldL
+  | * - Var Node Tag  lhs  .  patternNames  =  []
+
+SEM GrTag
+  | Var      lhs  .  patternNames  = [@nm]
+  | Unboxed  lhs  .  patternNames  = []
+  | * - Var Unboxed lhs  .  patternNames  = [wildcardNr]
+-- %%]
+
+Last expression
+
+%%[8
+ATTR AllGrExpr [ hasNext: {Bool} | | ]
+
+SEM GrBind
+  | Bind     expr . hasNext = False
+
+SEM GrExpr
+  | Seq      expr . hasNext = True
+             body . hasNext = @lhs.hasNext
+
+SEM GrExpr
+  | * - Seq Case Catch  loc . isLastExpr = not @lhs.hasNext
+  |     Seq Case Catch  loc . isLastExpr = False
+%%]
+

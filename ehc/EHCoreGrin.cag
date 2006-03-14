@@ -1,4 +1,4 @@
-% $Id: EHCoreGrin.cag 262 2005-07-24 11:36:39Z atze $
+% $Id: EHCoreGrin.cag 277 2005-09-01 14:00:21Z cddouma $
 
 %%[0
 %include lhs2TeX.fmt
@@ -218,7 +218,7 @@ SEM CModule
                                                         = GrAlt_Alt
                                                             (mkGrPatTagNode GrTagFun 0 n argL)
                                                             (GrExpr_Seq (GrExpr_Call n (map GrVal_Var argL)) (GrPat_Var n4)
-                                                                (GrExpr_Seq (GrExpr_Update n1 (GrVal_Var n4)) GrPat_Empty
+                                                                (GrExpr_Seq (GrExpr_Update n1 (GrVal_Var n4) Nothing) GrPat_Empty
                                                                     (GrExpr_Unit (GrVal_Var n4))))
                                                         where (n4:argL) = take (arity+1) (hsnUniqSupplyL u)
                                                      mkPAlt n nL arity
@@ -231,7 +231,7 @@ SEM CModule
                                                       ++  (zipWith mkFAlt (mkInfNewLevUIDL @lUniq4) . Map.toList $ Map.insert hsnGrApply 2 @expr.lamNmMp)
                                                       ++  (zipWith mkFAlt (mkInfNewLevUIDL @lUniq5) . Map.toList $ @expr.cafNmMp)
                                                      ,\alts ->  GrBind_Bind hsnGrEval [n1]
-                                                                    (GrExpr_Seq (GrExpr_Fetch n1 Nothing) (GrPat_Var n2)
+                                                                    (GrExpr_Seq (GrExpr_Fetch n1 Nothing Nothing) (GrPat_Var n2)
                                                                       (GrExpr_Case (GrVal_Var n2) alts))
                                                      )
                             .   evalBind    =   @mkEvalBind @evalAltL
@@ -242,6 +242,7 @@ SEM CModule
                                                      )
                                                      @evalAltL
                 lhs         .   grMod       =   GrModule_Mod (HNm @baseName)
+                                                    [] -- TODO: this should contain all the caf variables
                                                     (@expr.grBindL ++ [@applyBind,@evalBind])
                                                     @allCTags @evalTagMp @applyTagMp
 %%]
@@ -347,8 +348,8 @@ SEM CExpr
                                                                                   mkSt nmL e    = foldr (\n e -> GrExpr_Seq (GrExpr_Store h) (GrPat_Var n) e) e nmL
                                                                                   mkV b n n' n'' e
                                                                                                 = GrExpr_Seq b (GrPat_Var n')
-                                                                                                    (GrExpr_Seq (GrExpr_Fetch n' Nothing) (GrPat_Var n'')
-                                                                                                        (GrExpr_Seq (GrExpr_Update n (GrVal_Var n'')) GrPat_Empty e))
+                                                                                                    (GrExpr_Seq (GrExpr_Fetch n' Nothing Nothing) (GrPat_Var n'')
+                                                                                                        (GrExpr_Seq (GrExpr_Update n (GrVal_Var n'') Nothing) GrPat_Empty e))
                                                                                   mkVs bs e     = foldr (\(GrBind_Bind n _ v) e -> mkV v n (hsnPrefix "_" n) (hsnPrefix "__" n) e) e bs
                                                           _            ->  foldr  (\(GrBind_Bind n _ v) e -> GrExpr_Seq v (GrPat_Var n) e)
                                                                                   @body.grExpr @binds.grBindL

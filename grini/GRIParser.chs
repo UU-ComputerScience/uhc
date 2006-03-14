@@ -22,12 +22,12 @@ scanOpts
   =  defaultScanOpts
         {   scoKeywordsTxt      =   [ show hsnGrEval, show hsnGrApply
                                     , "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi"
-                                    , "ctags", "applymap", "evalmap"
-                                    , "C", "F", "P", "A", "R", "H", "U"
+                                    , "throw", "try", "catch", "ctags", "applymap", "evalmap"
+                                    , "C", "F", "P", "A", "R", "H", "U", "W"
                                     ]
-        ,   scoKeywordsOps      =   [ "->", "=", "+=", "-=", ":=", "-" ]
+        ,   scoKeywordsOps      =   [ "<-", "->", "=", "+=", "-=", ":=", "-" ]
         ,   scoSpecChars        =   "();{}#/\\|,"
-        ,   scoOpChars          =   "->:=+"
+        ,   scoOpChars          =   "<->:=+"
         ,   scoDollarIdent      =   True
         }
 %%]
@@ -41,10 +41,17 @@ type GRIParser       gp     =    IsParser p Token => p gp
 
 pModule         ::   GRIParser GrModule
 pModule         =    GrModule_Mod <$ pKey "module" <*> (HNm <$> pString)
+                     <*> pGlobalL
                      <*> pBindL
                      <*  pKey "ctags"     <*> pCTags
                      <*  pKey "evalmap"   <*> pEvApTagMp
                      <*  pKey "applymap"  <*> pEvApTagMp
+
+pGlobalL        ::   GRIParser GrGlobalL
+pGlobalL        =    pCurly_pSemics pGlobal
+
+pGlobal         ::   GRIParser GrGlobal
+pGlobal         =    GrGlobal_Global <$> pGrNm <* pKey "<-" <* pKey "store" <*> pVal
 
 pBindL          ::   GRIParser GrBindL
 pBindL          =    pCurly_pSemics pBind
@@ -63,7 +70,7 @@ pEvApTagMp      ::   GRIParser EvApTagMp
 pEvApTagMp      =    pCurly_pSemics
                         ((\t a ea -> ((t,a),ea))
                         <$> pTag <*> pInt <* pKey "->"
-                            <*> (EvApTagTag <$> pTag <|> EvApTagUnit <$ pKey "unit" <|> EvApTagVar <$> pGrOrSpecialNm)
+                            <*> (EvApTagTag <$> pTag <|> EvApTagUnit <$ pKey "unit" <|> EvApTagVar <$> pGrOrSpecialNm <|> EvApTagThrow <$ pKey "throw")
                         )
 
 pExprSeq        ::   GRIParser GrExpr
@@ -74,10 +81,15 @@ pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
                 <|>  GrExpr_Store   <$  pKey "store"        <*> pVal
                 <|>  GrExpr_Eval    <$  pGrKey hsnGrEval    <*> pGrNm
                 <|>  GrExpr_Fetch   <$  pKey "fetch"        <*> pGrNm   <*>  (Just <$> pInt `opt` Nothing)
+                                                                        <*>  (Just <$> pTag `opt` Nothing)
                 <|>  GrExpr_Update  <$  pKey "update"       <*> pGrNm   <*>  pVal
+                                                                        <*>  (Just <$> pTag `opt` Nothing)
                 <|>  GrExpr_Case    <$  pKey "case"         <*> pVal    <*   pKey "of" <*> pCurly_pSemics pAlt
                 <|>  GrExpr_App     <$  pGrKey hsnGrApply   <*> pGrNm   <*>  pSValL
                 <|>  GrExpr_FFI     <$  pKey "ffi"          <*> pId     <*>  pGrNmL
+                <|>  GrExpr_Throw   <$  pKey "throw"        <*> pGrNm
+                <|>  GrExpr_Catch   <$  pKey "try"          <*> pCurly pExprSeq
+                                    <*  pKey "catch"        <*> pParens pGrNm <*> pCurly pExprSeq
                 <|>  GrExpr_Call                            <$> pGrNm   <*>  pSValL
 
 pSVal           ::   GRIParser GrVal
@@ -142,6 +154,7 @@ pTagCateg       =    GrTagCon       <$ pKey "C"
                 <|>  GrTagApp       <$ pKey "A"
                 <|>  GrTagFun       <$ pKey "F"
                 <|>  GrTagPApp      <$ pKey "P" <* pKey "/" <*> pInt
+                <|>  GrTagWorld     <$ pKey "W"
 
 pGrNmL          ::   GRIParser [HsName]
 pGrNmL          =    pList pGrNm

@@ -1,0 +1,41 @@
+% $Id$
+
+Drop unsed catch statements when no exception can occur. (based on the HPT
+analysis.)
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[8 import("../GrinCodeAbsSyn")
+%%]
+
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[8 hs module Trf.DropUnusedCatch import(EHCommon, GRINCCommon, GrinCode) export(dropUnusedCatch)
+dropUnusedCatch :: HptMap -> GrModule -> GrModule
+dropUnusedCatch hptMap grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                                    (Inh_GrAGItf { hptMap_Inh_GrAGItf = hptMap })
+                               in grTrf_Syn_GrAGItf t
+%%]
+
+%%[8
+ATTR GrAGItf [ hptMap: HptMap | | grTrf: GrModule ]
+ATTR AllGrNT [ hptMap: HptMap | | grTrf: SELF ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Drop Unused catch statements %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8.dropUnusedCatchStatements
+SEM GrExpr
+  | Catch  loc  .  abstractValue  =  getEnvVar @lhs.hptMap (getNr @arg)
+                .  isUnused       =  isBottom @abstractValue
+           lhs  .  grTrf          =  if @isUnused then @body.grTrf else @grTrf
+%%]
+
+% vim:ts=4:et:ai:

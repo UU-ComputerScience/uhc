@@ -1,0 +1,38 @@
+% $Id$
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%
+%% Collecting CAF %%
+%%%%%%%%%%%%%%%%%%%%
+
+Globals are pointers to pre-build nodes. These nodes are pre-buildin the data
+segment. Globals can be F-nodes to CAF's and pre-build constant nodes.
+
+%%[8.global
+ATTR AllGlobal [ | | globalDatum USE {.} {id}: {CmmSection -> CmmSection} ]
+
+SEM GrGlobal
+  | Global  loc  .  globalDatum  =  let (first4, others)  = splitAt 4 @val.cmmExpressions
+                                        (sValues, overflow)  = (first4, []) -- if null others then (first4, []) else splitAt 3 first4
+                                        bValues = overflow ++ others
+                                        isBig = not (null bValues)
+                                        sName  = cmmName' @nm
+                                        bName = sName ++ "@big"
+                                        sLabel = CmmDatum_Label sName
+                                        bLabel = CmmDatum_Label bName
+                                        pBig   = if isBig then cmmVar bName else int 0
+                                        sValuesPadded = take 4 $ sValues ++ repeat (int 0)
+                                        smallNode = [ sLabel, reserve 5 valType $ listInit (sValuesPadded ++ [pBig]) ]
+                                        bigNode   = [ bLabel, reserve 0 valType $ listInit bValues ]
+                                    in (CmmSectionElement_Data (if isBig then smallNode ++ bigNode else smallNode) :)
+SEM GrModule
+  | Mod    loc  .  globalsStartLabel  =  CmmSectionElement_Data [ CmmDatum_Label "@Global_Nodes"     ]
+                .  globalsEndLabel    =  CmmSectionElement_Data [ CmmDatum_Label "@Global_Nodes_End" ]
+                .  sectionGlobals     =  lift (CmmToplevel_Section "data") (@globalsStartLabel : @globalL.globalDatum [ @globalsEndLabel ])
+%%]
+
+% vim:et:ts=4:ai:

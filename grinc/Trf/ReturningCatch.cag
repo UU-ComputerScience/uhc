@@ -1,0 +1,47 @@
+% $Id$
+
+Returning catch operation introduces a unit operation after a catch at the
+return spine.
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[8 import("../GrinCodeAbsSyn")
+%%]
+
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[8 hs module Trf.SplitFetch import(EHCommon, GRINCCommon, GrinCode) export(splitFetch)
+returnCatch :: HptMap -> Int -> GrModule -> (Int, GrModule)
+returnCatch hptMap uniq grmod  =  let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                                       (Inh_GrAGItf { hptMap_Inh_GrAGItf  =  hptMap
+                                                                    , uniq_Inh_GrAGItf    =  uniq
+                                                                    }
+                                                       )
+                                  in (uniq_Syn_GrAGItf t, grTrf_Syn_GrAGItf t)
+%%]
+
+%%[8
+ATTR GrAGItf [ hptMap: HptMap | uniq: Int | grTrf: GrModule ]
+ATTR AllGrNT [ hptMap: HptMap | uniq: Int | grTrf: SELF ]
+%%]
+
+%%[8.catch import("../GrLastExpr")
+
+ATTR GrAllExpr [ bindName: {Int} | | ]
+
+SEM GrBind
+  | Bind    expr  .  bindName  = getNr @nm
+
+SEM GrExpr
+  | Catch   loc  .  var         =  HNPos @handler.uniq
+                 .  appendUnit  =  GrExpr_Seq @grTrf (GrPat_Var @var) (GrExpr_Unit $ GrVal_Var @var)
+            lhs  .  grTrf       =  if @lhs.hasNext then @grTrf else @appendUnit
+                 .  uniq        =  if @lhs.hasNext then @handler.uniq else @handler.uniq + 1
+%%]
+
+% vim:ts=4:et:ai:

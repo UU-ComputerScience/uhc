@@ -1,4 +1,4 @@
-% $Id: EHOpts.chs 273 2005-08-24 08:58:20Z atze $
+% $Id: EHOpts.chs 269 2005-08-14 12:49:00Z cddouma $
 
 %%[0
 %include lhs2TeX.fmt

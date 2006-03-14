@@ -1,0 +1,123 @@
+% $Id$
+
+The input gives us A/apply tags with a variable number of fields. We should
+make the tag unique for each such field. eg a node with 4 fields should be named A/apply2.
+
+each A/applyN should be mapped to a appN function which evals the first field
+of the node and applys all (N) other arguments.
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[8 import("../GrinCodeAbsSyn")
+%%]
+
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[8 hs module Trf.BuildAppBindings import("qualified Data.Set as Set")
+%%]
+
+%%[8 hs import(EHCommon, GRINCCommon, GrinCode) export(buildAppBindings)
+buildAppBindings :: Int -> GrModule -> (Int, GrModule)
+buildAppBindings uniq grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                                   (Inh_GrAGItf { unique_Inh_GrAGItf = uniq })
+                         in (unique_Syn_GrAGItf t, grTrf_Syn_GrAGItf t)
+%%]
+
+%%[8
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllGrNT [ | | grTrf: SELF ]
+
+ATTR GrAGItf GrModule [ | unique: Int | ]
+%%]
+
+%%[8.retrieveApplyNodeSizes
+ATTR AllBind AllGrExpr [ | applyNodeSizes: {[Int]} | ]
+
+SEM GrModule
+  | Mod           bindL  .  applyNodeSizes  =  []
+
+SEM GrExpr
+  | Store  lhs . applyNodeSizes = maybe @lhs.applyNodeSizes (: @lhs.applyNodeSizes) @val.applyNodeSize
+
+SEM GrVal [ | | applyNodeSize: {Maybe Int} ]
+  | Node          loc  . fieldCount             =  @fldL.fieldCount
+  | Tag           loc  . fieldCount             =  0
+  | Node Tag      lhs  .  applyNodeSize         =  if @tag.isGenApplyTag 
+                                                   then Just @fieldCount
+                                                   else Nothing
+  | * - Node Tag  lhs  .  applyNodeSize         =  Nothing
+ 
+SEM GrValL [ | | fieldCount: Int ]
+  | Cons  lhs  .  fieldCount  =  1 + @tl.fieldCount
+  | Nil   lhs  .  fieldCount  =  0
+
+SEM GrTag [ | | isGenApplyTag : Bool ]
+  | Lit      lhs  .  isGenApplyTag  =  @categ == GrTagApp && @nm == HNm "apply"
+  | * - Lit  lhs  .  isGenApplyTag  =  False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replace A/apply wit A/appN %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+A node contains always the size field. the generic form of an apply node is:
+(A/appN size partApp arg1 .. argN)
+
+thus the fieldCount is numberOfArgsToApply + 2.
+
+A 'tag only value' A/apply should never occur. If it does, it will now become A/app-2.
+
+%%[8.replaceApplyTags
+SEM GrVal
+  | Node Tag  loc  . appTag      = size2tag (@fieldCount - 2)
+                   . newTag      = if @tag.isGenApplyTag then @appTag else @tag.grTrf
+  | Node      lhs  . grTrf       = GrVal_Node @newTag @fldL.grTrf
+  | Tag       lhs  . grTrf       = GrVal_Tag @newTag
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Building the appN bindings %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8.buildAppBinding hs
+buildAppBinding unique size = let funcNr  = unique
+                                  minArg  = funcNr + 2
+                                  maxArg  = minArg + size
+                                  unique' = maxArg + 2
+                                  funcName                  = HNPos funcNr
+                                  origFuncName              = HNm $ "app" ++ show size
+                                  args@(partialApp:appArgs) = map HNPos [minArg .. maxArg]
+                                  evalPartialApp            = HNPos (maxArg + 1)
+                                  code = GrBind_Bind funcName args body
+                                  body = GrExpr_Seq (GrExpr_Eval partialApp)
+                                                    (GrPat_Var evalPartialApp)
+                                                    (GrExpr_App evalPartialApp $ map GrVal_Var appArgs)
+                              in (unique', origFuncName, funcName, code)
+
+size2tag size = GrTag_Lit GrTagApp 0 (HNm $ "app" ++ show size)
+
+node2app size (unique, origNamesMap, evalMap, bindings) =
+    let applyArgs = size - 2
+        key = (size2tag applyArgs, size-1)
+        (unique', origFuncName, funcName, code) = buildAppBinding unique applyArgs
+        origNameMap = (funcName, origFuncName)
+        evalMapElem = (key, EvApTagVar funcName)
+        
+    in (unique', origNameMap:origNamesMap, evalMapElem:evalMap, code:bindings)
+%%]
+
+%%[8.addAppBindings
+SEM GrModule
+  | Mod  loc  . (unique', origNamesMap, evalTagMp', binds)  = foldr node2app 
+                                                                    (@lhs.unique, [], @evalTagMp, @bindL.grTrf)
+                                                                    @bindL.applyNodeSizes
+         lhs  . unique = @unique'
+         lhs  . grTrf  = GrModule_Mod @baseName @globalL.grTrf @binds @ctagsMp @evalTagMp' @applyTagMp
+%%]
+
+% vim:ts=4:et:ai:

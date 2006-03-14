@@ -19,10 +19,17 @@ DATA GrAGItf
 
 DATA GrModule
   | Mod         baseName        : {HsName}
+                globalL         : GrGlobalL
                 bindL           : GrBindL
                 ctagsMp         : {CTagsMp}
                 evalTagMp       : {EvApTagMp}
                 applyTagMp      : {EvApTagMp}
+
+DATA GrGlobal
+  | Global      nm              : {HsName}
+                val             : GrVal
+
+TYPE GrGlobalL    =   [GrGlobal]
 
 DATA GrBind
   | Bind        nm              : {HsName}
@@ -49,8 +56,14 @@ DATA GrExpr
   | Store       val             : GrVal
   | Fetch       nm              : {HsName}
                 mbOffset        : {Maybe Int}
+                mbTag           : {Maybe GrTag}
   | Update      nm              : {HsName}
                 val             : GrVal
+                mbTag           : {Maybe GrTag}
+  | Throw       nm              : {HsName}
+  | Catch       body            : GrExpr
+                arg             : {HsName}
+                handler         : GrExpr
 
 DATA GrAlt
   | Alt         pat             : GrPat
@@ -106,10 +119,14 @@ DATA GrTag
   | Unboxed
 %%]
 
+
 %%[8
+SET AllGlobal   =   GrGlobal GrGlobalL
 SET AllBind     =   GrBind GrBindL
 SET AllAdapt    =   GrAdapt GrAdaptL
 SET AllSplit    =   GrSplit GrSplitL
-SET AllExpr     =   GrExpr GrAlt GrAltL GrPat GrPatL GrTag GrVal GrValL
-SET AllGrNT     =   GrModule AllExpr AllBind AllAdapt AllSplit
+SET AllAlt      =   GrAlt GrAltL
+SET AllGrExpr   =   GrExpr AllAlt
+SET AllExpr     =   AllGrExpr GrPat GrPatL GrTag GrVal GrValL
+SET AllGrNT     =   GrModule AllExpr AllGlobal AllBind AllAdapt AllSplit
 %%]

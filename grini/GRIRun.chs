@@ -162,6 +162,7 @@ grEvalVal rs v
   =  case v of
         GrVal_Node t    (s:fL)  ->  mkRN (tgL ++ mkSz (grEvalVal rs s) ++ map (grEvalVal rs) fL)
                                     where (tgL,mkSz) = grEvalTag rs t (length fL)
+        GrVal_Tag  t            ->  error "tag only variables not implemented"
         GrVal_NodeAdapt r adL   ->  case rsVar rs r of
                                         RVNode a
                                           ->  case elems a of
@@ -257,9 +258,14 @@ grEvalExpr rs e
   =  case e of
         GrExpr_Unit v
           ->  return (rs,Just (grEvalVal rs v))
-        GrExpr_Fetch n _
+        GrExpr_Fetch n Nothing _
           ->  do  {  n' <- rsVarDeref rs n
                   ;  return (rs,Just n')
+                  }
+        GrExpr_Fetch n (Just offset) _
+          ->  do  {  (RVNode n') <- rsVarDeref rs n
+                  ;  error "fetch with offset not supported yet"
+                  ;  return (rs,Just $ n' ! offset)
                   }
         GrExpr_Store v
           ->  do  {  rs2 <- rsCheckMem rs
@@ -270,7 +276,7 @@ grEvalExpr rs e
                   ;  rv `seq` writeArray (rhMem h) p rv
                   ;  return (rs2 {rsHeap = h {rhFree = p+1}},Just (RVPtr p))
                   }
-        GrExpr_Update n v
+        GrExpr_Update n v _
           ->  do  {  let  (RVPtr p) = rsVar rs n
                           rv = grEvalVal rs v
                   ;  rv `seq` writeArray (rhMem . rsHeap $ rs) p rv
@@ -287,7 +293,7 @@ grEvalExpr rs e
         GrExpr_Eval n
           ->  let  upd rs n
                      =  let  n2 = hsnWild
-                             e = GrExpr_Seq (GrExpr_Update n (GrVal_Var n2)) (GrPat_Empty) (GrExpr_Unit (GrVal_Var n2))
+                             e = GrExpr_Seq (GrExpr_Update n (GrVal_Var n2) Nothing) (GrPat_Empty) (GrExpr_Unit (GrVal_Var n2))
                              stk = (GrPat_Var n2,e,rsEnv rs) : rsStack rs
                         in   rs {rsStack = stk, rsNext = Just e}
               in   do  {  n' <- rsVarDeref rs n
@@ -374,6 +380,8 @@ grPatBind rs re v p
                   ->  case elems a of
                         (RVCat _:_:vfL)
                           ->  Map.fromList (zip pfL vfL) `Map.union` re
+        GrPat_Tag _
+          ->  re
         GrPat_NodeSplit _ rNm splL
           ->  case v of
                 RVNode a

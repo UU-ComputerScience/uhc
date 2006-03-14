@@ -1,0 +1,124 @@
+target byteorder little;
+
+import grin_main;
+import printf;
+import getenv;
+import atoi;
+
+//GC
+//import malloc;
+import GC_init;
+
+export main;
+export printInt;
+
+const HEAP_SIZE = 1024;
+
+//bits32 @hp;
+bits32 @eh;
+
+section "data" {
+	heapsize_var      : bits8[] "GRIN_HEAPSIZE\0";
+	heapsize_msg      : bits8[] "heapsize %d KB\naddress space ranges from %p upto %p\n\0";
+	int_msg           : bits8[] "int: %d\n\0";
+    error_msg         : bits8[] "error: exception at %p with tag %d\n\0";
+}
+
+section "data" {
+	align 4;
+	argument_count: bits32;
+	argument_array: bits32;
+}
+
+printInt (bits32 n) {
+	foreign "C" printf("address" int_msg, n);
+	return;
+}
+
+foreign "C" main(bits32 argc, "address" bits32 argv) {
+	bits32 result;
+	bits32 heapsize;
+	bits32 env_var;
+	
+/*
+	//init heap (load from environment var GRIN_HEAPSIZE)
+	env_var = foreign "C" getenv("address" heapsize_var);
+	if (env_var == 0) {
+		heapsize = HEAP_SIZE;
+	} else {
+		heapsize = foreign "C" atoi("address" env_var);
+	}  
+
+
+	//no GC yet - just allocate the memory and hope we will not allocate to much
+	//@hp = foreign "C" malloc(heapsize * 1024);
+	foreign "C" printf("address" heapsize_msg, heapsize, @hp, @hp + (heapsize * 1024));
+	//@hp = foreign "C" gc_init(heapsize * 1024);
+*/
+	foreign "C" GC_init();
+	//save argument positions
+	bits32[argument_count] = argc;
+	bits32[argument_array] = argv;
+
+    //install default exception handler
+    @eh = defaultHandler;
+
+	//call main function
+	result = grin_main() also cuts to defaultHandler;
+	printInt(result);
+
+	foreign "C" return (0);
+
+    bits32 e;
+    continuation defaultHandler("address" e):
+    foreign "C" printf("address" error_msg, e, bits32[e]);
+    foreign "C" return (1);
+}
+
+//GRIN generic update function which is here as an example, the code generate
+//might produce an inlined variant of this function for the unspecialized
+//update operation. An optimization is to factor out the bigPartPointer.
+
+import GRIN_TAG_InfoTable;
+
+export update_field as "GRIN_generic_update_field";
+
+update_field (bits32 p, bits32 tag, bits32 fieldNr, bits32 field) {
+	//nodes are at least a tag and 4 fields in memory. The last known field
+	//(4th) might be a pointer to the rest of the fields.
+	const bigPartPointerOffset = 4; 
+
+	if fieldNr == 0 {
+		bits32[p] = tag;
+		return;
+	}
+
+	bits32 arity;
+	arity  = bits32[GRIN_TAG_InfoTable + tag];
+
+	if fieldNr <= arity {
+		switch fieldNr {
+			case 1 .. (bigPartPointerOffset-1): { 
+				bits32[p+fieldNr] = field;
+			}
+			case bigPartPointerOffset: {
+				if arity == (bigPartPointerOffset+1) {
+					bits32[p+fieldNr] = field;
+				} else {
+					bits32[bits32[p+bigPartPointerOffset]] = field;
+				}
+			}
+			case (bigPartPointerOffset+1) .. 0xffff: {
+					bits32[bits32[p+bigPartPointerOffset]] = field;
+			}
+		}
+	}
+	return;
+}
+
+
+
+
+/*
+vim:ts=4
+*/

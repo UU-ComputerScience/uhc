@@ -9,7 +9,7 @@
 %%% Haskell importable interface to Code's Java gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(UU.Pretty,EHCommon,GrinCode) export(ppGrModule,ppGrExpr,ppGrPat)
+%%[8 hs import(UU.Pretty,EHCommon,GrinCode) export(ppGrModule,ppGrExpr,ppGrPat,ppGrTag')
 %%]
 
 %%[8.WRAPPER import(GrinCodeAbsSyn)
@@ -35,6 +35,9 @@ ppGrPat p
   =  let  t = wrap_GrPat  (sem_GrPat p)
                           (Inh_GrPat {ppGrNm_Inh_GrPat = ppGrNm})
      in   (pp_Syn_GrPat t)
+
+ppGrTag' :: GrTag -> PP_Doc
+ppGrTag' = ppGrTag ppGrNm
 
 ppGrTag :: (HsName -> PP_Doc) -> GrTag -> PP_Doc
 ppGrTag ppGrNm tg
@@ -70,9 +73,10 @@ ppGrNm n
 ppEvApTagElt :: (HsName -> PP_Doc) -> EvApTagElt -> PP_Doc
 ppEvApTagElt ppGrNm e
   =  case e of
-    	EvApTagTag t -> ppGrTag ppGrNm t
-    	EvApTagVar n -> ppGrNm n
-    	EvApTagUnit  -> pp "unit"
+    	EvApTagTag t  -> ppGrTag ppGrNm t
+    	EvApTagVar n  -> ppGrNm n
+    	EvApTagUnit   -> pp "unit"
+    	EvApTagThrow  -> pp "throw"
 
 ppEvApTagMp :: (HsName -> PP_Doc) -> EvApTagMp -> PP_Doc
 ppEvApTagMp ppGrNm m
@@ -89,6 +93,7 @@ ATTR GrAGItf AllGrNT [ | | pp USE {>-<} {empty}: PP_Doc ]
 
 SEM GrModule
   | Mod         lhs         .   pp          =   "module" >#< show (show @baseName)
+                                                >-< ppCurlyV @globalL.ppL
                                                 >-< ppCurlyV @bindL.ppL
                                                 >-< "ctags"
                                                 >-< ppCurlyV
@@ -104,6 +109,9 @@ SEM GrModule
                                                 >-< ppEvApTagMp @lhs.ppGrNm @evalTagMp
                                                 >-< "applymap"
                                                 >-< ppEvApTagMp @lhs.ppGrNm @applyTagMp
+
+SEM GrGlobal
+  | Global      lhs         .   pp          =   @lhs.ppGrNm @nm >#< "<-" >#< "store" >#< @val.pp
 
 SEM GrBind
   | Bind        lhs         .   pp          =   @lhs.ppGrNm @nm >#< ppSpaced (map @lhs.ppGrNm @argNmL) >-<
@@ -122,7 +130,14 @@ SEM GrExpr
   | Unit        lhs         .   pp          =   "unit" >#< @val.pp
   | Store       lhs         .   pp          =   "store" >#< @val.pp
   | Fetch       lhs         .   pp          =   "fetch" >#< @lhs.ppGrNm @nm >#< maybe empty pp @mbOffset
+                                                                            >#< maybe empty (ppGrTag @lhs.ppGrNm) @mbTag
   | Update      lhs         .   pp          =   "update" >#< @lhs.ppGrNm @nm >#< @val.pp
+                                                                             >#< maybe empty (ppGrTag @lhs.ppGrNm) @mbTag
+  | Throw       lhs         .   pp          =   "throw" >#< @lhs.ppGrNm @nm
+  | Catch       lhs         .   pp          =   "try" >-<
+                                                indent 2 (ppCurly @body.pp) >-<
+                                                "catch" >|< pp_parens (@lhs.ppGrNm @arg) >-<
+                                                indent 2 (ppCurly @handler.pp)
 
 SEM GrAlt
   | Alt         lhs         .   pp          =   @pat.pp >-< indent 4 ("->" >#< ppCurly @expr.pp)
@@ -156,7 +171,11 @@ SEM GrTag
 %%]
 
 %%[8
-ATTR GrBindL GrAltL GrPatL GrValL GrAdaptL GrSplitL [ | | ppL: PP_DocL ]
+ATTR GrGlobalL GrBindL GrAltL GrPatL GrValL GrAdaptL GrSplitL [ | | ppL: PP_DocL ]
+
+SEM GrGlobalL
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+  | Nil         lhs         .   ppL         =   []
 
 SEM GrBindL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL

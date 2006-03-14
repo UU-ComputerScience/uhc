@@ -1,0 +1,84 @@
+module "sample"
+{ main  <- store (#0/F/main  0)
+; $list <- store (#0/F/$list 0)
+}
+{ $add $x $y
+    = { eval $x ; \(#0/C/$Int $__ $x' ) ->
+        eval $y ; \(#0/C/$Int $__ $y' ) ->
+        ffi primAddInt $x' $y' ; \(#U $z') ->
+        unit (#0/C/$Int 1 $z')
+      }
+; rec
+    { $foldl $f1 $b $l
+        = { eval $l ; \$el ->
+            case $el of
+              { (#0/C/$Cons $__ $hl $tl)
+                    -> { store (#0/F/$foldl 3 $f1 $b  $tl) ; \$s1 ->
+                         eval $f1 ; \$ef1 ->
+			 apply $ef1 $s1 $hl
+                       }
+              ; (#1/C/$Nil $__)
+                    -> { eval $b
+                       }
+              }
+          }
+    }
+; $twice $f2 $x1
+    = { store (#0/A/apply1 2 $f2 $x1) ; \$s3 ->
+        eval $f2 ; \$ef2 ->
+        apply $ef2 $s3
+      } 
+; $bar $x2 $x3
+    = { store (#0/P/1/$add 1 $x2) ; \$s4 ->
+        $twice $s4 $x3
+      }
+; $list
+    = { store (#1/C/$Nil 0)           ; \$nil ->
+        store (#0/C/$Int 1 5)         ; \$s5  ->
+        store (#0/C/$Cons 2 $s5 $nil) ; \$c5  ->
+        store (#0/C/$Int 1 4)         ; \$s6  ->
+        store (#0/C/$Cons 2 $s6 $c5)  ; \$c4  ->
+        store (#0/C/$Int 1 3)         ; \$s7  ->
+        store (#0/C/$Cons 2 $s7 $c4)  ; \$c3  ->
+        store (#0/C/$Int 1 2)         ; \$s8  ->
+        store (#0/C/$Cons 2 $s8 $c3)  ; \$c2  ->
+        store (#0/C/$Int 1 1)         ; \$s9  ->
+        unit  (#0/C/$Cons 2 $s9 $c2)
+      }
+; main
+    = { store (#0/P/2/$bar 0) ; \$s10 ->
+        store (#0/C/$Int 1 0) ; \$s11 ->
+    	$foldl $s10 $s11 $list
+      }
+
+; app1 $pf $a1
+    = { eval $pf ; \$epf ->
+        apply $epf $a1
+      }
+}
+ctags
+{ $Int  = $Int  0 1
+; $List = $Cons 0 2 
+        | $Nil  1 0
+} 
+
+evalmap
+{ #0/C/$Int      1 -> unit
+; #0/C/$Cons     2 -> unit
+; #1/C/$Nil      0 -> unit
+; #0/P/1/$add    1 -> unit
+; #0/P/2/$bar    0 -> unit
+; #0/P/1/$bar    1 -> unit
+; #0/A/apply1    2 -> app1
+; #0/F/$add      2 -> $add
+; #0/F/$foldl    3 -> $foldl
+; #0/F/$twice    2 -> $twice
+; #0/F/$bar      2 -> $bar
+; #0/F/$list     0 -> $list
+; #0/F/main      0 -> main
+} 
+applymap
+{ #0/P/1/$add  1 -> $add
+; #0/P/2/$bar  0 -> #0/P/1/$bar
+; #0/P/1/$bar  1 -> $bar
+}

@@ -1,0 +1,33 @@
+module "lazy-apply"
+{ main <- store (#0/F/main 0)
+}
+{ $id $a1
+    = { eval $a1
+      }
+; $twice $a2 $a3
+    = { store (#0/A/apply 2 $a2 $a3) ; \$s1 ->
+        eval $a2 ; \$e1 ->
+        apply $e1 $s1
+      }
+; main 
+    = { store (#0/P/1/$id 0  ) ; \$s2 ->
+        store (#0/C/$Int  1 1) ; \$s3 ->
+        $twice $s2 $s3
+      } 
+}
+
+ctags
+{ $Int = $Int 0 1
+} 
+
+evalmap
+{ #0/C/$Int   1 -> unit
+; #0/P/1/$id  0 -> unit
+; #0/F/$id    1 -> $id
+; #0/F/$twice 2 -> $twice
+; #0/F/main   0 -> main
+}
+
+applymap
+{ #0/P/1/$id 1 -> $id
+}

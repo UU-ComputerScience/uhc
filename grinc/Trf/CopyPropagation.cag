@@ -1,0 +1,195 @@
+% $Id$
+
+TODO: Complete Left unit implementation
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[8 import("../GrinCodeAbsSyn")
+%%]
+
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[8 hs module Trf.CopyPropagation import(EHCommon, GRINCCommon, GrinCode, Data.Maybe) export(propagate)
+propagate :: GrModule -> (Bool, GrModule)
+propagate grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                       (Inh_GrAGItf)
+                  in (isTrf_Syn_GrAGItf t, grTrf_Syn_GrAGItf t)
+%%]
+
+
+%%[8
+ATTR GrAGItf [ | | grTrf: GrModule  isTrf: Bool                   ]
+ATTR AllGrNT [ | | grTrf: SELF      isTrf USE {||} {False}: Bool  ]
+%%]
+
+
+%%[8.order
+SEM GrExpr
+  | Seq lhs   .  grTrf       =  if @isLeftTrf then @body.grTrf else maybe @grTrf id @rightTrf
+              .  isTrf       =  @expr.isTrf || @body.isTrf || @isLeftTrf || @isRightTrf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Value Information %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+-- fix empty patterns and values are not handled cleanly.
+genInfo v p nnf nvf vnf vvf e = case (v,p) of
+    (GrVal_Node vt vls, GrPat_Node pt nms) -> nnf vt vls pt nms
+    (GrVal_Tag  vt    , GrPat_Node pt nms) -> nnf vt  [] pt nms
+    (GrVal_Node vt vls, GrPat_Tag  pt    ) -> nnf vt vls pt  []
+    (GrVal_Tag  vt    , GrPat_Tag  pt    ) -> nnf vt  [] pt  []
+    (GrVal_Node vt vls, GrPat_Var  pn    ) -> nvf vt vls pn
+    (GrVal_Tag  vt    , GrPat_Var  pn    ) -> nvf vt  [] pn
+    (GrVal_Var  vn    , GrPat_Node pt nms) -> vnf vn     pt nms
+    (GrVal_Var  vn    , GrPat_Tag  pt    ) -> vnf vn     pt  []
+    (GrVal_Var  vn    , GrPat_Var  pn    ) -> vvf vn     pn
+    (GrVal_Empty      , _                ) -> e
+    (_                , GrPat_Empty      ) -> e
+%%]
+
+%%[8.valueInfo
+ATTR GrExpr [ | | unitInfo : {Maybe GrVal} ]
+
+SEM GrExpr
+  | Unit       loc  .  unitInfo = Just @val.grTrf
+  | * - Unit   loc  .  unitInfo = Nothing
+%%]
+
+
+%%[8.catchInfo
+ATTR GrExpr [ | | isCatch: Bool ]
+SEM GrExpr
+  | Catch          lhs  .  isCatch  =  True
+  | Seq            lhs  .  isCatch  =  @body.isCatch
+  | * - Seq Catch  lhs  .  isCatch  =  False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Right Unit law %%%
+%%%%%%%%%%%%%%%%%%%%%%
+
+change terms like '<m>; \x -> unit x' => '<m>' where '<m>' does not end with a Catch!
+
+one form possible:
+    seq v x (unit x)           => v
+
+example:    
+    seq f 8 (seq (unit 8) 13 (seq (unit 13) p e))
+
+   inner: lhs.grTrf = seq f  8 (seq (unit  8) p e)
+   outer: lhs.grTrf = seq f 13 (seq (unit 13) p e)
+
+We give the v and x to the next element. 
+
+%%[8.rightUnit hs
+makeRightUnitExpr seqPat unitVal seqExpr = 
+    do { v <- unitVal
+       ; let vvf vn pn          = if vn == pn
+                                  then Just seqExpr
+                                  else Nothing
+             nnf vt vls pt pls  = let sameArgs     = zipWith sameArg vls pls
+                                      sameArg v p  = case v of
+                                                         GrVal_Var n -> n == p
+                                                         otherwise   -> False
+                                  in if vt == pt && and sameArgs
+                                     then Just seqExpr
+                                     else Nothing
+             vnf vn     pt pls  = Nothing
+             nvf vt vls pn      = Nothing
+       ; genInfo v seqPat nnf nvf vnf vvf Nothing
+       }
+%%]
+
+seqExpr ; \seqPat -> body  --- seqExpr and seqPat are given to the body.
+
+%%[8.rightUnit
+SEM GrExpr
+  |  Seq   loc   .  isRightTrf  =  isJust @rightTrf
+           loc   .  rightTrf    =  if @expr.isCatch 
+                                   then Nothing
+                                   else makeRightUnitExpr @pat.grTrf @body.unitInfo @expr.grTrf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%
+%%% Left Unit law %%%
+%%%%%%%%%%%%%%%%%%%%%
+
+
+unit (t a1 an); \(t' a1' an') -> e => [t/t' a1/a1' an/an'] -- we might lose tag info... (t' is known tag, but is t?)
+unit v        ; \(t' a1' an') -> e => Do not propogate, only if a1 .. an do not occur in e. (do we lose tag info in that case?) this case should not occur after vectorisation
+unit (t a1 an); \v'           -> e => [(t a1 an)/v']
+unit v        ; \v'           -> e => [v/v']
+
+Note: variables are never wildcards - so it does not matter that we store them in the substitution map
+
+%%[8 hs import("qualified Data.Map as Map")
+type ValueMap = (Map.Map HsName GrVal, Map.Map HsName GrTag)
+%%]
+
+%%[8.leftUnit
+ATTR AllExpr [ valueMap: ValueMap | | ]
+
+SEM GrBind
+  | Bind  expr  .  valueMap  =  (Map.empty, Map.empty)
+%%]
+
+remember to update tagMap when mapping a node without fields on a value. Because: a GrVal_Tag t == GrVal_Node t []
+
+%%[8.leftUnit hs
+addLeftUnitSubst seqPat unitVal (valMap, tagMap) =
+    do { let p = seqPat
+       ; v <- unitVal
+       ; let vvf vn pn          = Just (Map.insert pn (GrVal_Var vn) valMap, tagMap)
+             nnf vt vls pt pls  = let valMap'  = foldl (\m (p,v) -> Map.insert p v m) valMap (zip pls vls)
+                                      tagMap'  = case pt of
+                                                     GrTag_Var ptn  -> Map.insert ptn vt tagMap
+                                                     _              -> tagMap
+                                  in Just (valMap', tagMap')
+             vnf vn     pt pls  = Nothing
+             nvf vt vls pn      = let valMap'  = Map.insert pn (GrVal_Node vt vls) valMap
+                                      tagMap'  = if null vls then Map.insert pn vt tagMap else tagMap
+                                  in Just (valMap', tagMap')
+             e                  = Nothing
+       ; genInfo v p nnf nvf vnf vvf e
+       }
+%%]
+
+%%[8.leftUnit
+SEM GrExpr
+  | Seq  loc   .  leftSubst     = addLeftUnitSubst @pat.grTrf @expr.unitInfo @lhs.valueMap
+               .  isLeftTrf     = isJust @leftSubst
+         body  .  valueMap      = maybe @lhs.valueMap id @leftSubst
+%%]
+
+%%[8.getHsName hs
+getHsName nm valueMap = let  mbVal     =  Map.lookup nm (fst valueMap)
+                             mbName  =  do { n <- mbVal
+                                           ; case n of
+                                                 GrVal_Var v -> Just v
+                                                 _           -> Nothing
+                                           }
+                        in maybe nm id mbName
+%%]
+ 
+%%[8.applySubstitutions
+SEM GrVal
+  | Var   lhs  .  grTrf  =  Map.findWithDefault @grTrf @nm (fst @lhs.valueMap)
+  | Tag   lhs  .  grTrf  =  GrVal_Tag @tag.tag
+  | Node  lhs  .  grTrf  =  GrVal_Node @tag.tag @fldL.grTrf
+SEM GrTag [ | | tag: GrTag ]
+  | Var      lhs  .  tag  =  Map.findWithDefault @grTrf @nm (snd @lhs.valueMap)
+  | * - Var  lhs . tag = @grTrf
+SEM GrExpr
+  | Fetch   lhs  .  grTrf  = GrExpr_Fetch  (getHsName @nm @lhs.valueMap) @mbOffset @mbTag
+  | Update  lhs  .  grTrf  = GrExpr_Update (getHsName @nm @lhs.valueMap) @val.grTrf @mbTag
+  | FFI     lhs  .  grTrf  = GrExpr_FFI @nm (map (flip getHsName @lhs.valueMap) @argL)
+%%]
+
+% vim:ts=4:et:ai:

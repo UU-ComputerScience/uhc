@@ -1,0 +1,30 @@
+% $Id$
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%
+%% TempVars %%
+%%%%%%%%%%%%%%
+
+unique variable to make extra variables needed in C--.
+
+%%[8.tmpVars hs
+tmpVar (h:l) = (h,l)
+tmpVars      = splitAt
+%%]
+
+%%[8.tmpVars
+ATTR AllGrNT [ | tmpVars : CmmNames | ]
+SEM GrAGItf
+  | AGItf  module  . tmpVars = map (\i -> "@tmp" ++ show i) [0..]
+%%]
+
+%%%%%%%%%%%%%%%%%
+%% DefinedVars %%
+%%%%%%%%%%%%%%%%%
+
+%%[8.definedVars
+%%]
