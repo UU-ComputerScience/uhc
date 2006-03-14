@@ -78,6 +78,12 @@ instance PP Bool where
 -- PP printing to file
 -------------------------------------------------------------------------
 
+hPutWidthPPLn :: Handle -> Int -> PP_Doc -> IO ()
+hPutWidthPPLn h w pp = hPutStrLn h (disp pp w "")
+
+hPutPPLn :: Handle -> PP_Doc -> IO ()
+hPutPPLn h = hPutWidthPPLn h 4000
+
 hPutPPFile :: Handle -> PP_Doc -> Int -> IO ()
 hPutPPFile h pp wid
   =  do  {  hPutStrLn h (disp pp wid "")

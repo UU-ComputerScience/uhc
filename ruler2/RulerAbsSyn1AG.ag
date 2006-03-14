@@ -10,6 +10,8 @@ DATA Decl
   | Preamble            fmKind      : {FmKind}
                         preamble    : {String}
   | Extern              nms         : {[Nm]}
+  | Include             pos         : {SPos}
+                        nm          : {Nm}
   | Scheme              pos         : {SPos}
                         scKind      : {ScKind}
                         nm          : {Nm}

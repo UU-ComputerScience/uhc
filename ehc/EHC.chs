@@ -15,7 +15,7 @@
 %%[1 import(qualified EHParser as EHPrs, qualified EHMainAG as EHSem, qualified HSParser as HSPrs, qualified HSMainAG as HSSem)
 %%]
 
-%%[8 import (EHError,EHErrorPretty,FPath,qualified Data.Map as Map,Data.Maybe,Data.List,Directory)
+%%[8 import (CompileRun,EHError,EHErrorPretty,FPath,qualified Data.Map as Map,Data.Maybe,Data.List)
 %%]
 
 %%[8 import (EHCoreJava,EHCoreGrin,EHCorePretty)
@@ -84,26 +84,49 @@ mkParseErrInfoL = map (\(Msg exp pos act) -> Err_Parse (show exp) (show act))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-data CompileUnitState
-  = CUSUnknown | CUSHaskell | CUEH | CUSFail
+data EHCompileUnitState
+  = ECUSUnknown | ECUSHaskell | ECUSEh | ECUSFail
   deriving (Show,Eq)
 
-data CompileUnit
-  = CompileUnit
-      { cuFilePath          :: FPath
-      , cuModNm             :: HsName
-      , cuMbOut             :: Maybe EHSem.Syn_AGItf
-      , cuState             :: CompileUnitState
+data EHCompileUnit
+  = EHCompileUnit
+      { ecuFilePath          :: FPath
+      , ecuModNm             :: HsName
+      , ecuMbOut             :: Maybe EHSem.Syn_AGItf
+      , ecuState             :: EHCompileUnitState
       }
 
-emptyCU :: CompileUnit
-emptyCU
-  = CompileUnit
-      { cuFilePath          = emptyFPath
-      , cuModNm             = hsnUnknown
-      , cuMbOut             = Nothing
-      , cuState             = CUSUnknown
+emptyECU :: EHCompileUnit
+emptyECU
+  = EHCompileUnit
+      { ecuFilePath          = emptyFPath
+      , ecuModNm             = hsnUnknown
+      , ecuMbOut             = Nothing
+      , ecuState             = ECUSUnknown
       }
+
+instance CompileUnitState EHCompileUnitState where
+  cusUnk   		= ECUSUnknown
+  cusIsUnk 		= (==ECUSUnknown)
+  cusIsImpKnown	= const True
+
+instance CompileUnit EHCompileUnit HsName EHCompileUnitState where
+  cuDefault         = emptyECU
+  cuFPath           = ecuFilePath
+  cuKey             = ecuModNm
+  cuState           = ecuState
+  cuUpdFPath fp u   = u {ecuFilePath = fp}
+  cuUpdState st u   = u {ecuState = st}
+  cuUpdKey   nm u   = u {ecuModNm = nm}
+  cuImports _       = []
+
+instance CompileRunError Err () where
+  crePPErrL                 = ppErrL
+  creMkNotFoundErrL _ fp sp = [Err_FileNotFound fp sp]
+  creAreFatal               = const True
+
+instance CompileModName HsName where
+  mkCMNm = HNm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -111,12 +134,28 @@ emptyCU
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+{-
 data CompileRunState
   = CRSOk
   | CRSFail
   | CRSFailErrL ErrL
   | CRSErrInfoL String Bool ErrL -- [(ErrorCateg,Error)]
+-}
 
+data EHCompileRunStateInfo
+  = EHCompileRunStateInfo
+      { crsiOpts        :: EHCOpts
+      , crsiP1In        :: EHSem.Inh_AGItf
+      , crsiNextUID     :: UID
+      , crsiHereUID     :: UID
+      }
+
+instance CompileRunStateInfo EHCompileRunStateInfo HsName () where
+  crsiImportPosOfCUKey n i = ()
+
+type EHCompileRun = CompileRun HsName EHCompileUnit EHCompileRunStateInfo Err
+
+{-
 data CompileRun
   = CompileRun
       { crCUCache       :: Map.Map HsName CompileUnit
@@ -171,21 +210,22 @@ crMbCU modNm cr = Map.lookup modNm (crCUCache cr)
 crCU :: HsName -> CompileRun -> CompileUnit
 crCU modNm = fromJust . crMbCU modNm
 
-crCUState :: HsName -> CompileRun -> CompileUnitState
-crCUState modNm cr = maybe CUSUnknown cuState (crMbCU modNm cr)
+crCUState :: HsName -> EHCompileRun -> EHCompileUnitState
+crCUState modNm cr = maybe ECUSUnknown ecuState (crMbCU modNm cr)
 
-crCUFPath :: HsName -> CompileRun -> FPath
-crCUFPath modNm cr = maybe emptyFPath cuFilePath (crMbCU modNm cr)
+crCUFPath :: HsName -> EHCompileRun -> FPath
+crCUFPath modNm cr = maybe emptyFPath ecuFilePath (crMbCU modNm cr)
 
 crUpdCU :: HsName -> (CompileUnit -> IO CompileUnit) -> CompileRun -> IO CompileRun
 crUpdCU modNm upd cr
-  = do { cu <- maybe (upd emptyCU) upd (crMbCU modNm cr)
+  = do { cu <- maybe (upd emptyECU) upd (crMbCU modNm cr)
        ; return (cr {crCUCache = Map.insert modNm cu (crCUCache cr)})
        }
 
 crSeq :: [CompileRun -> IO CompileRun] -> CompileRun -> IO CompileRun
 crSeq []      cr = return cr
 crSeq (a:as)  cr = crHandle1 (\cr -> crSeq as (crSetOk cr)) crSetFail crState (a cr)
+-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -193,19 +233,23 @@ crSeq (a:as)  cr = crHandle1 (\cr -> crSeq as (crSetOk cr)) crSetFail crState (a
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-type FileSuffMp = AssocL String CompileUnitState
+type FileSuffMp = Map.Map String EHCompileUnitState
 
 fileSuffMpHs :: FileSuffMp
-fileSuffMpHs = [ ( "hs", CUSHaskell ), ( "eh", CUEH ) ]
+fileSuffMpHs = Map.fromList [ ( "hs", ECUSHaskell ), ( "eh", ECUSEh ) ]
 
-pathsSearchForReadableFile :: [String] -> FileSuffMp -> FPath -> IO (Maybe (FPath,CompileUnitState))
+{-
+fileSuffLookup :: String -> FileSuffMp -> EHCompileUnitState
+fileSuffLookup s m = maybe ECUSUnknown id $ lookup s m
+
+pathsSearchForReadableFile :: [String] -> FileSuffMp -> FPath -> IO (Maybe (FPath,EHCompileUnitState))
 pathsSearchForReadableFile paths suffs fp
   = let select f l
           = do { finds <- mapM f l
                ; return (listToMaybe . catMaybes $ finds)
                }
         tryToOpen mbSuff fp
-          = do { let (cus,fp') = maybe (CUEH,fp) (\(suff,cus) -> (cus,fpathSetSuff suff fp)) mbSuff
+          = do { let (cus,fp') = maybe (ECUSEh,fp) (\(suff,cus) -> (cus,fpathSetSuff suff fp)) mbSuff
                ; fExists <- doesFileExist (fpathToStr fp')
                ; if fExists
                   then return (Just (fp',cus))
@@ -218,6 +262,7 @@ pathsSearchForReadableFile paths suffs fp
         tryToOpenInDir dir
           = select (tryToOpenWithSuffs suffs) [fpathSetDir dir fp,fpathPrependDir dir fp]
      in select tryToOpenInDir paths
+-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -225,42 +270,48 @@ pathsSearchForReadableFile paths suffs fp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-crFindFPath :: Maybe HsName -> FileSuffMp -> FPath -> CompileRun -> IO (CompileRun,Maybe FPath)
+{-
+crFindFPath :: Maybe HsName -> FileSuffMp -> FPath -> EHCompileRun -> IO (EHCompileRun,Maybe FPath)
 crFindFPath mbModNm suffs fp cr
-  = case maybe CUSUnknown (flip crCUState cr) mbModNm of
-      CUSUnknown
-        -> do { let opts = crOpts cr
-              ; fpMaybe <- pathsSearchForReadableFile (ehcoptSearchPath opts) suffs fp
+  = case maybe ECUSUnknown (flip crCUState cr) mbModNm of
+      ECUSUnknown
+        -> do { let opts = crsiOpts (crStateInfo cr)
+              ; fpMaybe <- searchPathForReadableFile (ehcoptSearchPath opts) (map fst suffs) fp
               ; case fpMaybe of
                   Nothing
                     -> return (crSetErrs [Err_FileNotFound (fpathToStr fp) (ehcoptSearchPath opts)] cr,Nothing)
-                  Just (ff,cus)
+                  Just ff
                     -> do { cr' <- case mbModNm of
-                                     Just modNm -> crUpdCU modNm (\cu -> return (cu {cuFilePath = ff, cuState = cus})) cr
+                                     Just modNm -> crUpdCU modNm (\ecu -> return (ecu {ecuFilePath = ff, ecuState = ecus})) cr
                                      Nothing    -> return cr
                           ; return (cr',Just ff)
                           }
+                    where ecus = fileSuffLookup (fpathSuff ff) suffs
               }
       _ -> return (cr,maybe Nothing (\nm -> Just (crCUFPath nm cr)) mbModNm)
 
-crFindTopLevelModule :: FPath -> CompileRun -> IO (CompileRun,Maybe FPath)
+crFindTopLevelModule :: FPath -> EHCompileRun -> IO (EHCompileRun,Maybe FPath)
 crFindTopLevelModule
   = crFindFPath Nothing []
+-}
 %%]
 
 %%[8
-crFindModule :: HsName -> FileSuffMp -> CompileRun -> IO (CompileRun,Maybe FPath)
+{-
+crFindModule :: HsName -> FileSuffMp -> EHCompileRun -> IO (EHCompileRun,Maybe FPath)
 crFindModule modNm suffs = crFindFPath (Just modNm) suffs (mkFPath (show modNm))
+-}
 %%]
 
 %%[8
-crCompileCUParseHS :: HsName -> CompileRun -> IO CompileRun
+crCompileCUParseHS :: HsName -> EHCompileRun -> IO EHCompileRun
 crCompileCUParseHS modNm cr
-  = do {  let cu     = crCU modNm cr
-              opts   = crOpts cr
-              fp     = cuFilePath cu
+  = do {  let ecu    = crCU modNm cr
+              crsi   = crStateInfo cr
+              opts   = crsiOpts crsi
+              fp     = ecuFilePath ecu
               fNm    = fpathToStr fp
-              p1ib   = (crP1In cr) {EHSem.gUniq_Inh_AGItf = crHereUID cr, EHSem.opts_Inh_AGItf = opts, EHSem.baseName_Inh_AGItf = fpathBase fp}
+              p1ib   = (crsiP1In crsi) {EHSem.gUniq_Inh_AGItf = crsiHereUID crsi, EHSem.opts_Inh_AGItf = opts, EHSem.baseName_Inh_AGItf = fpathBase fp}
        ;  (fn,fh) <-  if fpathIsEmpty fp
                       then  return ("<stdin>",stdin)
                       else  do  {  h <- openFile fNm ReadMode
@@ -271,16 +322,16 @@ crCompileCUParseHS modNm cr
               (res,_) = evalSteps steps
               p1ob = EHSem.wrap_AGItf res p1ib
               errL = mkParseErrInfoL (getMsgs steps)
-       ;  cr' <- crUpdCU modNm (\cu -> return (cu {cuMbOut = Just p1ob})) cr
-       ;  return (crSetInfos "Parse of module" True errL cr')
+       ;  cr' <- crUpdCU modNm (\ecu -> return (ecu {ecuMbOut = Just p1ob})) cr
+       ;  crSetInfos "Parse of module" True errL cr'
        }
 %%]
 
 %%[8
-crCompileCUPass1HS :: HsName -> CompileRun -> IO CompileRun
+crCompileCUPass1HS :: HsName -> EHCompileRun -> IO EHCompileRun
 crCompileCUPass1HS modNm cr
-  = do { let p1ob   = fromJust (cuMbOut (crCU modNm cr))
-       ; case ehcoptDumpPP (crOpts cr) of
+  = do { let p1ob   = fromJust (ecuMbOut (crCU modNm cr))
+       ; case ehcoptDumpPP (crsiOpts (crStateInfo cr)) of
               Just "pp"   ->  putWidthPPLn 120 (EHSem.pp_Syn_AGItf p1ob)
               Just "ast"  ->  putPPLn (EHSem.ppAST_Syn_AGItf p1ob)
               _           ->  return ()
@@ -289,11 +340,12 @@ crCompileCUPass1HS modNm cr
 %%]
 
 %%[8
-crCore1Trf :: HsName -> String -> CompileRun -> IO CompileRun
+crCore1Trf :: HsName -> String -> EHCompileRun -> IO EHCompileRun
 crCore1Trf modNm trfNm cr
-  =  do  {  let  cu     = crCU modNm cr
-                 synAG  = fromJust (cuMbOut cu)
-                 [u1]   = mkNewLevUIDL 1 . snd . mkNewLevUID . crHereUID $ cr
+  =  do  {  let  ecu    = crCU modNm cr
+                 crsi   = crStateInfo cr
+                 synAG  = fromJust (ecuMbOut ecu)
+                 [u1]   = mkNewLevUIDL 1 . snd . mkNewLevUID . crsiHereUID $ crsi
                  synAG' = synAG {EHSem.cmodule_Syn_AGItf
                                     = ( case trfNm of
                                           "CCP"     -> cmodTrfConstProp
@@ -306,29 +358,30 @@ crCore1Trf modNm trfNm cr
                                       )
                                     . EHSem.cmodule_Syn_AGItf
                                     $ synAG}
-         ;  putCompileMsg VerboseALot (ehcoptVerbosity . crOpts $ cr) "Transforming" (lookup trfNm cmdLineTrfs) modNm (cuFilePath cu)
-         ;  crUpdCU modNm (\cu -> return (cu {cuMbOut = Just synAG'})) cr
+         ;  putCompileMsg VerboseALot (ehcoptVerbosity . crsiOpts $ crsi) "Transforming" (lookup trfNm cmdLineTrfs) modNm (ecuFilePath ecu)
+         ;  crUpdCU modNm (\ecu -> return (ecu {ecuMbOut = Just synAG'})) cr
          }
 %%]
 
 %%[8
-crCoreTrf :: HsName -> [String] -> CompileRun -> IO CompileRun
+crCoreTrf :: HsName -> [String] -> EHCompileRun -> IO EHCompileRun
 crCoreTrf modNm trfNmL cr
   = trf cr
   where trf  =  crSeq . intersperse crStepUID . map (crCore1Trf modNm)
-             .  filter (maybe True id . trfOptOverrides (ehcoptTrf . crOpts $ cr))
+             .  filter (maybe True id . trfOptOverrides (ehcoptTrf $ crsiOpts $ crStateInfo $ cr))
              $  trfNmL
 %%]
 
 %%[8
-crOutputCore :: HsName -> CompileRun -> IO CompileRun
+crOutputCore :: HsName -> EHCompileRun -> IO EHCompileRun
 crOutputCore modNm cr
-  =  do  {  let  cu     = crCU modNm cr
-                 p1ob   = fromJust (cuMbOut cu)
-                 fp     = cuFilePath cu
-                 opts   = crOpts cr
+  =  do  {  let  ecu    = crCU modNm cr
+                 crsi   = crStateInfo cr
+                 p1ob   = fromJust (ecuMbOut ecu)
+                 fp     = ecuFilePath ecu
+                 opts   = crsiOpts crsi
                  cMod   = EHSem.cmodule_Syn_AGItf p1ob
-                 [u1]   = mkNewLevUIDL 1 . snd . mkNewLevUID . crHereUID $ cr
+                 [u1]   = mkNewLevUIDL 1 . snd . mkNewLevUID . crsiHereUID $ crsi
                  codePP = ppCModule cMod 
          ;  if ehcoptCore opts
             then  putPPFile (fpathToStr (fpathSetSuff "core" fp)) codePP 120
@@ -345,7 +398,7 @@ crOutputCore modNm cr
             then  do  {  putPPFile (fpathToStr (fpathSetSuff "grin" fp)) grinPP 1000
                       }
             else  return ()
-         ;  case ehcoptDumpPP (crOpts cr) of
+         ;  case ehcoptDumpPP (crsiOpts crsi) of
               Just "grin"  ->  putPPLn grinPP
               _            ->  return ()
          ;  return cr
@@ -353,20 +406,22 @@ crOutputCore modNm cr
 %%]
 
 %%[8
-crStepUID :: CompileRun -> IO CompileRun
+crStepUID :: EHCompileRun -> IO EHCompileRun
 crStepUID cr
-  = let (n,h) = mkNewLevUID (crNextUID cr)
-     in return (cr {crNextUID = n, crHereUID = h})
+  = let (n,h) = mkNewLevUID (crsiNextUID crsi)
+        crsi = crStateInfo cr
+     in return (cr {crStateInfo = crsi {crsiNextUID = n, crsiHereUID = h}})
 %%]
 
 %%[8
-crCompileCU :: HsName -> CompileRun -> IO CompileRun
+crCompileCU :: HsName -> EHCompileRun -> IO EHCompileRun
 crCompileCU modNm cr
-  = do { let cu    = crCU modNm cr
-             opts  = crOpts cr
-             msg m = putCompileMsg VerboseNormal (ehcoptVerbosity opts) m Nothing modNm (cuFilePath cu)
-       ; case cuState cu of
-           CUEH
+  = do { let ecu   = crCU modNm cr
+             opts  = crsiOpts (crStateInfo cr)
+             msg m = putCompileMsg VerboseNormal (ehcoptVerbosity opts) m Nothing modNm (ecuFilePath ecu)
+             -- msg m = putCompileMsg VerboseNormal (ehcoptVerbosity opts) (m ++ " (" ++ show (ecuState ecu) ++ "/" ++ fpathSuff (ecuFilePath ecu) ++ ")") Nothing modNm (ecuFilePath ecu)
+       ; case ecuState ecu of
+           ECUSEh
              -> do { msg "Compiling"
                    ; crSeq
                        [ crStepUID, crCompileCUParseHS modNm
@@ -380,7 +435,7 @@ crCompileCU modNm cr
                    }
        }
 
-crCompileOrderedCUs :: [[HsName]] -> CompileRun -> IO CompileRun
+crCompileOrderedCUs :: [[HsName]] -> EHCompileRun -> IO EHCompileRun
 crCompileOrderedCUs modNmLL = crSeq (map (crCompileCU . head) modNmLL)
 %%]
 
@@ -416,19 +471,15 @@ doCompileRun fn opts
   = do { let fp             = mkTopLevelFPath "eh" fn
              topModNm       = HNm (fpathBase fp)
              searchPath     = mkInitSearchPath fp
-             opts'          = opts { ehcoptSearchPath = searchPath ++ ehcoptSearchPath opts }
+             opts'          = opts { ehcoptSearchPath = ehcoptSearchPath opts ++ searchPath }
              p1ib           = EHSem.Inh_AGItf {EHSem.baseName_Inh_AGItf = fpathBase fp, EHSem.gUniq_Inh_AGItf = uidStart, EHSem.opts_Inh_AGItf = opts'}
              aSetup cr      = crHandle1
                                    (\(cr,_) -> return (cr {crCompileOrder = [[topModNm]]}))
                                    (crSetFail . fst) (crState . fst)
-                                   (crFindFPath (Just topModNm) [] fp cr)
+                                   (crFindFileForFPath fileSuffMpHs (ehcoptSearchPath opts') (Just topModNm) (Just fp) cr)
              aCompile cr    = crCompileOrderedCUs (crCompileOrder cr) cr
        ; cr <- crSeq [ aSetup, aCompile ]
-                 (CompileRun
-                    { crCUCache = Map.empty, crCompileOrder = []
-                    , crOpts = opts', crP1In = p1ib
-                    , crState = CRSOk, crNextUID = uidStart, crHereUID = uidStart
-                    })
+                 (mkEmptyCompileRun topModNm (EHCompileRunStateInfo opts' p1ib uidStart uidStart))
        ; return ()
        }
 %%]

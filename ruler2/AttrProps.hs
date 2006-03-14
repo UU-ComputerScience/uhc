@@ -18,7 +18,7 @@ data AtDir
   deriving (Eq,Ord,Show)
 
 data AtProp
-  = AtNode | AtThread | AtUpdown | AtRetain
+  = AtNode | AtThread | AtUpdown | AtRetain | AtExtern
   deriving (Eq,Ord,Show)
 
 instance PP AtDir where
