@@ -38,6 +38,7 @@ data Opts
       , optMbMarkChange :: Maybe ViewSels
       , optMbRlSel      :: Maybe RlSel
       , optBaseNm       :: String
+      , optSearchPath   :: [String]
       }
       deriving Show
 
@@ -61,6 +62,7 @@ defaultOpts
       , optMbMarkChange =  Nothing
       , optMbRlSel      =  Nothing
       , optBaseNm       =  rulesCmdPre
+      , optSearchPath   =  []
       }
 
 cmdLineOpts  
@@ -98,6 +100,8 @@ cmdLineOpts
           "output debugging info"
      , Option "b"  ["base"]             (ReqArg oBase "<name>")
           "base name, default = 'rules'"
+     , Option "P"  ["path"]             (ReqArg oPath "<searchpath>")
+          "search path, default empty"
      ]
   where  oGenLhs2tex     o =  o {optGenFM = FmTeX}
          oGenAG          o =  o {optGenFM = FmAG}
@@ -114,6 +118,7 @@ cmdLineOpts
          oDebug          o =  o {optDebug = True}
          oVersion        o =  o {optVersion = True}
          oBase       s   o =  o {optBaseNm = s}
+         oPath       s   o =  o {optSearchPath = searchPathFromString s}
          oMarkCh     ms  o =  o {optMbMarkChange = fmap (viewSelsSelfT . fst . parseToResMsgs pViewSels . mkScan "") ms}
          oRlSel      ms  o =  o {optMbRlSel = fmap (rlSelSelfT . fst . parseToResMsgs pRlSel . mkScan "") ms}
          yesno updO  ms  o =  case ms of

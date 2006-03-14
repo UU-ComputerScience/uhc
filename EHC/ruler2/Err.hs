@@ -25,6 +25,7 @@ data Err
   | Err_Match        SPos String PP_Doc PP_Doc
   | Err_RlPost       SPos String Nm
   | Err_NotAEqnForm  SPos PP_Doc
+  | Err_FileNotFound SPos String [String]
   | Err_PP                PP_Doc
   deriving Show
 
@@ -52,6 +53,13 @@ instance PP Err where
                 )
   pp (Err_RlPost pos cx nm)
     = ppErr pos ("In" >#< cx >#< "conclusion lacks judgement for ruleset's scheme:" >#< pp nm)
+  pp (Err_FileNotFound pos fp sp)
+    = ppErr pos ("File not found"
+                 >-< indent 2
+                       (    "file name         :" >#< fp
+                        >-< "searched locations:" >#< vlist (map (text.show) sp)
+                       )
+                )
   pp (Err_NotAEqnForm pos e)
     = ppWarn pos ("expr not of (AG rule) form ... = ...:" >#< e)
   pp (Err_PP e)

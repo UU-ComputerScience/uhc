@@ -1,7 +1,22 @@
 module FPath 
-  (FPath(..), fpathToStr, fpathIsEmpty, fpathSetBase, fpathSetSuff, fpathRemoveSuff, mkFPath, emptyFPath
-  , fpathSetDir, fpathPrependDir, mkTopLevelFPath, mkInitSearchPath)
+  ( FPath(..), fpathSuff
+  , mkFPath, emptyFPath
+  , fpathToStr, fpathIsEmpty
+  , fpathSetBase, fpathSetSuff, fpathSetDir
+  , fpathRemoveSuff
+  , fpathPrependDir, mkTopLevelFPath
+  
+  , SearchPath, FileSuffixes
+  , mkInitSearchPath
+  , searchPathFromString
+  , searchPathForReadableFile
+  )
 where
+
+import IO
+import Maybe
+import Data.List
+import Directory
 
 -------------------------------------------------------------------------------------------
 -- File path utils
@@ -27,6 +42,9 @@ fpathToStr fpath
   = let adds f = maybe f (\s -> f ++ "." ++ s) (fpathMbSuff fpath)
         addd f = maybe f (\d -> d ++ "/" ++ f) (fpathMbDir fpath)
      in addd . adds . fpathBase $ fpath
+
+fpathSuff :: FPath -> String
+fpathSuff = maybe "" id . fpathMbSuff
 
 fpathSetBase :: String -> FPath -> FPath
 fpathSetBase s fp
@@ -85,47 +103,39 @@ mkTopLevelFPath suff fn
   = let fpNoSuff = mkFPath fn
      in maybe (fpathSetSuff suff fpNoSuff) (const fpNoSuff) . fpathMbSuff $ fpNoSuff
 
-mkInitSearchPath :: FPath -> [String]
+-------------------------------------------------------------------------------------------
+-- Search path utils
+-------------------------------------------------------------------------------------------
+
+type SearchPath = [String]
+type FileSuffixes = [String]
+
+mkInitSearchPath :: FPath -> SearchPath
 mkInitSearchPath fp = maybe [] (:[]) (fpathMbDir fp) ++ [""]
 
+searchPathFromString :: String -> [String]
+searchPathFromString
+  = unfoldr f
+  where f "" = Nothing
+        f sp = Just (break (== ';') sp)
 
-{-
-data FPath
-  = FPath
-      { fpathMbDir      :: Maybe String
-      , fpathBase       ::       String
-      , fpathMbSuff     :: Maybe String
-      }
-    deriving (Show,Eq,Ord)
-
-emptyFPath :: FPath
-emptyFPath = mkFPath ""
-
-fpathIsEmpty :: FPath -> Bool
-fpathIsEmpty fp = null (fpathBase fp)
-
-splitOnLast :: Char -> String -> Maybe (String,String)
-splitOnLast splitch fn
-  = case fn of
-      ""     -> Nothing
-      (f:fs) -> let rem = splitOnLast splitch fs
-                 in if f == splitch
-                    then maybe (Just ("",fs)) (\(p,s)->Just (f:p,s)) rem
-                    else maybe Nothing (\(p,s)->Just (f:p,s)) rem
-
-mkFPath :: String -> FPath
-mkFPath fn
-  = let (d,b)  = maybe (Nothing,fn) (\(d,b) -> (Just d,b)) (splitOnLast '/' fn)
-        (b',s) = maybe (b,Nothing) (\(b,s) -> (b,Just s)) (splitOnLast '.' b)
-     in FPath d b' s
-
-fpathRemoveSuff :: FPath -> FPath
-fpathRemoveSuff fp
-  = fp {fpathMbSuff = Nothing}
-
-fpathToStr :: FPath -> String
-fpathToStr fpath
-  = let adds f = maybe f (\s -> f ++ "." ++ s) (fpathMbSuff fpath)
-        addd f = maybe f (\d -> d ++ "/" ++ f) (fpathMbDir fpath)
-     in addd . adds . fpathBase $ fpath
--}
+searchPathForReadableFile :: SearchPath -> FileSuffixes -> FPath -> IO (Maybe FPath)
+searchPathForReadableFile paths suffs fp
+  = let select f l
+          = do { finds <- mapM f l
+               ; return (listToMaybe . catMaybes $ finds)
+               }
+        tryToOpen mbSuff fp
+          = do { let fp' = maybe fp (\suff -> fpathSetSuff suff fp) mbSuff
+               ; fExists <- doesFileExist (fpathToStr fp')
+               ; if fExists
+                 then return (Just fp')
+                 else return Nothing
+               }
+        tryToOpenWithSuffs suffs fp
+          = case suffs of
+              [] -> tryToOpen Nothing fp
+              _  -> select (\(s,f) -> tryToOpen (Just s) f) (zip suffs (repeat fp))
+        tryToOpenInDir dir
+          = select (tryToOpenWithSuffs suffs) [fpathSetDir dir fp,fpathPrependDir dir fp]
+     in select tryToOpenInDir paths

@@ -4,7 +4,7 @@
 
 module KeywParser
   ( specialChars, opChars
-  , propsSynInhMp, propsOtherMp, propsMp
+  , propsSynInhMp, propsMp
   , keywordsTextProps, keywordsTextEscapable, keywordsText
   , keywordsOpsEsc, keywordsOpsExplainEsc, keywordsOpsParenEsc
   , keywordsOps
@@ -37,7 +37,7 @@ opChars       =  "!#$%&*+/<=>?@\\^|-:;,[]{}~"
 propsSynInhMp
   =  Map.fromList [ ("thread",AtThread), ("updown",AtUpdown) ]
 propsOtherMp
-  =  Map.fromList [ ("retain",AtRetain), ("node",AtNode) ]
+  =  Map.fromList [ ("retain",AtRetain), ("node",AtNode), ("extern",AtExtern) ]
 propsMp
   =  Map.unions [ propsSynInhMp, propsOtherMp ]
 keywordsTextProps
@@ -51,6 +51,7 @@ keywordsTextEscapable
         -- related to global info
         , "viewhierarchy", "format", "rewrite", "preamble"
         , "extern", "external"
+        , "include"
         -- related to formatting (styles)
         , "tex", "ag", "def", "use", "spec"
         -- misc

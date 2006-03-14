@@ -119,7 +119,7 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
                                                        <*> pNm
                                                        <*  pKey "scheme" <*> pNm <*> pMbViewSel <*> pString
                                                        <*  pKey "=" <*> pDecls' pDeclRule
-                            <|> Decl_RulesGroup       <$  pKey "rulesgroup"
+                            <|> Decl_RulesGroup        <$  pKey "rulesgroup"
                                                        <*> pNm
                                                        <*  pKey "scheme" <*> pNm <*> pMbViewSel <*> pString
                                                        <*  pKey "="             <*> pList1 ((,) <$ pKey "rule" <*> pNm <*> pNm)
@@ -128,6 +128,8 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
                             <|> Decl_Preamble          <$  pKey "preamble"      <*> pFmKd2WithDflt <*> pString
                             <|> Decl_Extern            <$  (pKey "extern" <|> pKey "external")
                                                        <*> pList1 pNm
+                            <|> (\(n,p) -> Decl_Include p n)
+                                                       <$  pKey "include" <*> pNmSPos
         pDeclGlobScheme     =   (ScJudge <$ pKey "scheme" <|> ScRelation <$ pKey "relation")
                                 <**> (pNmSPos
                                      <**> (   (\d (ms,ds) (n,p) k -> Decl_SchemeDeriv p k n d ms ds)
