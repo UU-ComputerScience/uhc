@@ -1,0 +1,46 @@
+module "primLtInt"
+{ main    <- store (#0/F/main 0)
+; $_False <- store (#0/F/$_False 0)
+; $_True  <- store (#0/F/$_True  0)
+}
+{ $_False 
+    = { unit (#0/C/$_False 0)}
+; $_True 
+    = { unit (#1/C/$_True 0)}
+; $lt $x $y
+    = { eval $x ; \(#0/C/$_Int $__ $x') ->
+        eval $y ; \(#0/C/$_Int $__ $y') ->
+        ffi primLtInt $x' $y'
+      }
+; main 
+    = { store (#0/C/$_Int 1 1  ) ; \$a ->
+        store (#0/C/$_Int 1 2  ) ; \$b ->
+        store (#0/F/$lt 2 $a $b) ; \$l ->
+        eval $l ; \$bool ->
+        case $bool of
+          { (#0/C/$_False $__)
+                -> { unit (#0/C/$_Int 1 0)}
+          ; (#1/C/$_True $__)
+                -> { unit (#0/C/$_Int 1 1)}
+          }
+      }
+}
+
+ctags
+{ $_Int = $_Int 0 1
+; $_Bool = $_False 0 0 | $_True 1 0
+} 
+
+evalmap
+{ #0/C/$_Int   1 -> unit
+; #0/C/$_False 0 -> unit
+; #1/C/$_True  0 -> unit
+; #0/F/$_False 0 -> $_False
+; #0/F/$_True  0 -> $_True
+; #0/F/$lt     2 -> $lt
+; #0/F/main    0 -> main
+}
+
+applymap
+{ 
+}

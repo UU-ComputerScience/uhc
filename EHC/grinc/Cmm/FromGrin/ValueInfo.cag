@@ -1,0 +1,85 @@
+% $Id$
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%
+%% TagInfo %%
+%%%%%%%%%%%%%
+
+A tag can be known, unknown or non existent (unboxed) All this information is
+gathered in attributes for C-- code generation.
+
+%%[8.cmmName4Tag hs
+categStr c = case c of
+               GrTagCon        -> "C"
+               GrTagHole       -> "H"
+               GrTagRec        -> "R"
+               GrTagApp        -> "A"
+               GrTagFun        -> "F" 
+               GrTagPApp need  -> 'P' : show need
+%%]
+
+%%[8.TagName
+ATTR GrTag [ | | tagName: {Maybe CmmName} ]
+SEM GrTag
+  | Lit      loc . tagName = Just $ '@' : categStr @categ ++ cmmName' @nm
+  | Var      loc . tagName = Just $ cmmName' @nm
+  | Unboxed  loc . tagName = Nothing
+
+-- is a tag unknown?
+ATTR GrTag [ | | isPtr: {Bool} ]
+SEM GrTag
+  | Var      loc . isPtr   = True
+  | * - Var  loc . isPtr   = False
+
+-- tagName as expression
+ATTR GrTag [ | | cmmExpr: {Maybe CmmExpression} ]
+SEM GrTag
+  | *        loc . cmmExpr = do { n <- @tagName; return $ cmmVar n }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Cmm code, Value reference %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The Unit operation can contain a grin value of various forms. All these forms
+should return the correct reference names.
+
+allowed forms of a GrVal and their mappings
+- (var     field*) => var : fields
+- (const   field*) => var : fields
+- (Unboxed field*) => fields
+- (Unboxed)        => []
+
+Note that we silent ignore the fact that a value with a single integer also
+succeed, as well as a node within a node. These structures should not occur.
+
+%%[8.GrValReference
+ATTR GrVal GrValL [ | | cmmReturnArgs USE {++} {[]}: {CmmActuals} cmmExpressions USE {++} {[]}: {CmmExpressions} ]
+SEM GrVal
+  | Node       loc . cmmReturnArgs  = addTagArg @tag.isPtr @tag.cmmExpr @fldL.cmmReturnArgs
+                   . cmmExpressions = maybe @fldL.cmmExpressions (: @fldL.cmmExpressions) @tag.cmmExpr
+  | NodeAdapt  loc . cmmReturnArgs  = error "no cmmReturnArgs for GrVal_NodeAdapt"
+                   . cmmExpressions = error "no cmmExpressions for GrVal_NodeAdapt"
+  | Tag        loc . cmmReturnArgs  = addTagArg @tag.isPtr @tag.cmmExpr []
+                   . cmmExpressions = maybe [] (:[]) @tag.cmmExpr
+  | Empty      loc . cmmReturnArgs  = []
+                   . cmmExpressions = []
+  | LitInt     loc . cmmExpr        = int @int
+                   . cmmReturnArgs  = [ valArg @cmmExpr ]
+                   . cmmExpressions = [ @cmmExpr ]
+  | Var        loc . cmmExpr        = var' @nm
+                   . cmmReturnArgs  = [ ptrArg @cmmExpr ]
+                   . cmmExpressions = [ @cmmExpr ]
+%%]
+
+%%[8 hs
+addTagArg :: Bool -> Maybe CmmExpression -> CmmActuals -> CmmActuals
+addTagArg isPtr me as = maybe as addActual me
+	where
+	addActual = (: as). toArg
+	toArg     = if isPtr then ptrArg else valArg
+%%]

@@ -1,0 +1,129 @@
+% $Id$
+
+cleanup EHC generated GRIN:
+- eval and apply functions not needed (their semantics are builtin)
+- better F-tag than P0-tag (altough they are aliases)
+- primThrow and primCatch are not primitives, but ehc does not support the grin statements
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[8 import("../GrinCodeAbsSyn")
+%%]
+
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[8 hs module Trf.CleanupPass import("qualified Data.Set as Set")
+%%]
+
+%%[8 hs import(EHCommon, GRINCCommon, GrinCode) export(cleanupPass)
+cleanupPass :: GrModule -> GrModule
+cleanupPass grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                         (Inh_GrAGItf)
+                    in grTrf_Syn_GrAGItf t
+%%]
+
+%%[8
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllGrNT [ | | grTrf: SELF ]
+
+SEM GrModule
+  | Mod  lhs  .  grTrf         =  GrModule_Mod @baseName @newGlobals @bindL.grTrf @ctagsMp @newEvalTagMp @applyTagMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% Eval and Apply are builtin %%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8.dropEvalApply
+SEM GrBind [ | | dropBinding: Bool ]
+  | Bind  lhs  . dropBinding  =  @nm `elem` [evalNm, evalNr,  applyNm, applyNr]
+  | Rec   lhs  . dropBinding  =  False
+
+
+SEM GrBindL [ | | count: Int ]
+  | Cons  lhs  .  grTrf  =  if @hd.dropBinding
+                            then @tl.grTrf
+                            else @hd.grTrf : @tl.grTrf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% F-Tag  <==> P0-Tag %%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Ehc outputs P0-tags instead of F-Tags in some situations
+
+%%[8.P0tag_TO_Ftag
+SEM GrTag
+  | Lit  lhs  .  grTrf  = GrTag_Lit (if @categ == GrTagPApp 0 then GrTagFun else @categ) @int @nm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% Add Global variables %%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Introduce global variables: each binding without arguments must have a
+corresponding global variable. (CAF's)
+Note: EHC does not generate them
+
+%%[8.caf import("../GrCAFNames")
+SEM GrModule
+  | Mod  loc  .  newGlobals  =  let buildGlobalVar n  =  GrGlobal_Global n (GrVal_Node (GrTag_Lit GrTagFun 0 n) 
+                                                                                       [GrVal_LitInt 0]
+                                                                           )
+                                    globalL           =  map buildGlobalVar @cafNames
+                                in if null @globalL.grTrf then globalL else @globalL.grTrf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% Fix Primitives to Exception statements %%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8.prim2statements
+
+ -- we need an node which eval interprets as throw exception
+SEM GrModule
+  | Mod  loc  .  newEvalTagMp  =  ((throwTag,1), EvApTagThrow) : @evalTagMp
+
+SEM GrBind
+  | Bind  lhs  .  grTrf    =  GrBind_Bind @nm @argNmL @newExpr
+          loc  .  newExpr  =  if @nm == HNm "_catch" then buildCatchExpr @argNmL else @expr.grTrf
+
+SEM GrExpr
+  | FFI      lhs  .  grTrf    =  if @isThrow
+                                 then addThrow @argL
+                                 else GrExpr_FFI @nm @argL
+  | Seq      lhs  .  grTrf    =  if @expr.isThrow
+                                 then GrExpr_Seq @expr.grTrf GrPat_Empty @body.grTrf 
+                                 else @grTrf
+
+SEM GrExpr [ | | isThrow: Bool ]
+  | FFI      loc  .  isThrow  =  @nm == "primThrow"
+  | * - FFI  lhs  .  isThrow  =  False
+%%]
+
+%%[8.hackPrimToExceptionStatments hs
+
+-- this is a hack to transform the primThrow into the correct GRIN code
+-- as grinc expect every function to return a node (and not an empty value) we finish with an (unreachable) unit statement.
+addThrow [HNm e] = let  unitExpr   =  GrExpr_Unit  (GrVal_Var (HNm e))
+                        throwExpr  =  GrExpr_Throw (HNm $ tail e)
+                   in throwExpr -- GrExpr_Seq throwExpr GrPat_Empty unitExpr
+addThrow _       = error "primThrow should have one (named) argument"
+
+-- unique is good for two variables...
+buildCatchExpr [tryNm, handlerNm] = let  exceptNm = hsnPrefix "except_ptr@" handlerNm
+                                         evalNm   = hsnPrefix "except_node@" handlerNm
+                                    in GrExpr_Catch (GrExpr_Eval tryNm)
+                                                    exceptNm
+                                                    (GrExpr_Seq (GrExpr_Eval handlerNm)
+                                                                (GrPat_Var evalNm)
+                                                                (GrExpr_App evalNm [GrVal_Var exceptNm])
+                                                    )
+%%]
+
+% vim:ts=4:et:ai:

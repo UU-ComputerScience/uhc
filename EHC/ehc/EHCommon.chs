@@ -1,4 +1,4 @@
-% $Id: EHCommon.chs 273 2005-08-24 08:58:20Z atze $
+% $Id: EHCommon.chs 270 2005-08-14 18:38:07Z cddouma $
 
 %%[0
 %include lhs2TeX.fmt
@@ -763,7 +763,7 @@ groupSortByOn :: (b -> b -> Ordering) -> (a -> b) -> [a] -> [[a]]
 groupSortByOn cmp sel = groupByOn (\e1 e2 -> cmp e1 e2 == EQ) sel . sortByOn cmp sel
 %%]
 
-%%[8
+%%[8 export(strBlankPad)
 strBlankPad :: Int -> String -> String
 strBlankPad n s = s ++ replicate (n - length s) ' '
 %%]

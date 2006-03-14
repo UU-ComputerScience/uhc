@@ -1,4 +1,4 @@
-% $Id: EHParser.chs 276 2005-08-31 11:54:35Z atze $
+% $Id: EHParser.chs 269 2005-08-14 12:49:00Z cddouma $
 
 %%[0
 %include lhs2TeX.fmt

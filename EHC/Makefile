@@ -1,3 +1,4 @@
+#!/usr/bin/make -f
 TOP_PREFIX			:=
 
 default: explanation
@@ -27,6 +28,7 @@ include ehc/variant.mk
 include uhc/files.mk
 include ehc/files.mk
 include grini/files.mk
+include grinc/files.mk
 include agprimer/files.mk
 -include infer2pass/files.mk
 -include figs/files.mk
@@ -54,6 +56,7 @@ WWW_DOC_PDF					:= www/current-ehc-doc.pdf
 explanation:
 	@echo "make bin/<n>/ehc     : make compiler version <n> (where <n> in {$(EHC_PUB_VARIANTS)})" ; \
 	echo  "make bin/<n>/grini   : make grin interpreter version <n> (where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
+	echo  "make bin/<n>/grinc   : make grin compiler version <n> (where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
 	echo  "make $(RULER2)       : make ruler tool" ; \
 	echo  "make $(SHUFFLE)      : make shuffle tool" ; \
 	echo  "make doc/<d>.pdf     : make (public) documentation <d> (where <d> in {$(TEXT_PUB_VARIANTS)})," ; \
@@ -61,6 +64,7 @@ explanation:
 	echo  "                       only if text src available, otherwise already generated" ; \
 	echo  "make ehcs            : make all compiler ($(EHC_EXEC_NAME)) versions" ; \
 	echo  "make grinis          : make all grin interpreter ($(GRINI_EXEC_NAME)) versions" ; \
+	echo  "make grincs          : make all grin compiler ($(GRINC_EXEC_NAME)) versions" ; \
 	echo  "make test-regress    : run regression test," ; \
 	echo  "                       restrict to versions <v> by specifying 'VERSIONS=<v>'," ; \
 	echo  "                       requires corresponding $(EHC_EXEC_NAME)/$(GRINI_EXEC_NAME) already built" ; \
@@ -111,6 +115,8 @@ rules2.tex: rules2.rul
 ehcs: $(EHC_ALL_PUB_EXECS)
 
 grinis: $(GRINI_ALL_PUB_EXECS)
+
+grincs: $(GRINC_ALL_PUB_EXECS)
 
 docs: $(TEXT_DIST_DOC_FILES)
 

@@ -1,0 +1,61 @@
+% $Id$
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[8 import("../GrinCodeAbsSyn")
+%%]
+
+%%[8 hs module Cmm.FromGrin import(GRINCCommon, Data.List(nub), Data.Maybe, GrinCode, Primitives, Cmm.CmmBuilding) export(grin2cmm,CmmUnit(..))
+grin2cmm :: HsName -> GrModule -> Bool -> CmmUnit
+grin2cmm e gr emitTraceInfo = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr))
+                                                   (Inh_GrAGItf { entryNm_Inh_GrAGItf = e
+                                                                , doFunctionTrace_Inh_GrAGItf = emitTraceInfo
+                                                                }
+                                                   )
+                              in cmmUnit_Syn_GrAGItf t
+%%]
+
+%%[8 hs import("EHCommon hiding ((<+>))") 
+%%]
+%%[8 hs import("qualified Data.Map as Map", "Data.Bits")
+%%]
+
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[8 import("../GrLastExpr")
+%%]
+
+%%[8 import("FromGrin/TagInfo")
+%%]
+
+%%[8 import("FromGrin/ValueInfo")
+%%]
+
+%%[8 import("FromGrin/ReturnSize")
+%%]
+
+%%[8 import("FromGrin/Primitives")
+%%]
+
+%%[8 import("FromGrin/ImportExport")
+%%]
+
+%%[8 import("FromGrin/Globals")
+%%]
+
+%%[8 import("FromGrin/CmmVars")
+%%]
+
+%%[8 import("FromGrin/ExceptionHandlers")
+%%]
+
+%%[8 import("FromGrin/ToCmm")
+%%]
+
+%%[8 import("FromGrin/TraceInfo")
+%%]

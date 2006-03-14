@@ -1,0 +1,67 @@
+% $Id$
+
+Sparse case optimisation: remove alternatives with the use of the hpt info 
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[8 import("../GrinCodeAbsSyn")
+%%]
+
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[8 hs module Trf.SparseCase import(EHCommon, GRINCCommon, GrinCode) export(sparseCase)
+sparseCase :: HptMap -> GrModule -> GrModule
+sparseCase hptMap grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                               (Inh_GrAGItf { hptMap_Inh_GrAGItf = hptMap })
+                          in grTrf_Syn_GrAGItf t
+%%]
+
+%%[8
+ATTR GrAGItf [ hptMap: HptMap | | grTrf: GrModule ]
+ATTR AllGrNT [ hptMap: HptMap | | grTrf: SELF ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%
+%%% Spares Case %%%
+%%%%%%%%%%%%%%%%%%%
+
+%%[8.spareCase
+ATTR AllAlt [ possibleTags: {[GrTag]} | | ]
+ATTR GrAlt [ | | isPossible: Bool ]
+
+SEM GrAltL
+  | Cons  lhs  .  grTrf       =  if @hd.isPossible then @hd.grTrf : @tl.grTrf else @tl.grTrf
+
+SEM GrAlt
+  | Alt   lhs  .  isPossible  =  @pat.tag `elem` @lhs.possibleTags
+
+SEM GrExpr
+  | Case  altL  .  possibleTags  =  getTags . getEnvVar @lhs.hptMap $ @val.varId
+%%]
+
+%%[8.tag
+ATTR GrPat [ | | tag: GrTag ]
+SEM GrPat 
+  | Tag           lhs  .  tag  =  @tag.grTrf
+  | Node          lhs  .  tag  =  @tag.grTrf
+  | * - Node Tag  lhs  .  tag  =  error "no supported tag in pattern alternative"
+%%]
+
+%%[8.val
+ATTR GrVal GrTag [ | | varId: Int ]
+
+SEM GrVal
+  | Var          lhs  .  varId  =  getNr @nm
+  | * - Tag Var  lhs  .  varId  =  error "not a simple variable as scrutinizer"
+  
+SEM GrTag
+  | Var          lhs  .  varId  =  getNr @nm
+  | * - Var      lhs  .  varId  =  error "not a tag variable as scrutinizer"
+%%]
+
+% vim:ts=4:et:ai:

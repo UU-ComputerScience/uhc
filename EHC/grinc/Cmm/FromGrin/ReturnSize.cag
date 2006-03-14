@@ -1,0 +1,107 @@
+% $Id$
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Procedure return size %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Procedures in C-- need to have exactly the same return values as they have
+recievers in the call. The behaviour is unspecified if the sizes differ.
+
+This file creates two inherited attributes in AllGrExpr:
+ - maxReturnSize: Int               for padding return statements
+ - returnSizeEnv: [(CmmName, Int)]  for padding recievers of function calls
+
+%%[8.returnSizeEnv
+ATTR AllBind AllGrExpr [ returnSizeEnv: {[(CmmName,Int)]} | | ]
+ATTR AllBind [ | | returnSizes USE {++} {[]}: {[(CmmName,Int)]} ]
+
+SEM GrModule
+  | Mod        loc  . returnSizeEnv = @bindL.returnSizes
+
+SEM GrBind
+  | Bind       loc  .  cmmName        = cmmName' @nm
+                    .  maxReturnSize  = fromJust' "Bind" (lookup @cmmName @lhs.returnSizeEnv)
+               lhs  .  returnSizes    = [(@cmmName, @expr.returnSize)]
+  | Rec        loc  .  maxReturnSize  = foldl (\m (_, s) -> max m s) 0 @bindL.returnSizes
+               lhs  .  returnSizes    = map (\ (n, s) -> (n, @maxReturnSize)) @bindL.returnSizes
+%%]
+
+%%[8.recursiveGroups
+ATTR GrBindL [ | | bindNames: {[HsName]} ]
+ATTR GrBind  [ | | bindName: HsName ]
+
+SEM GrBindL
+  | Cons  lhs  .  bindNames  =  @hd.bindName : @tl.bindNames
+  | Nil   lhs  .  bindNames  = []
+
+SEM GrBind
+  | Bind  loc  .  bindName         = @nm
+  | Rec   loc  .  bindName         = error "nested recursive groups"
+
+ATTR AllBind [ bindGroup: {Maybe [HsName]} | | ]
+
+SEM GrModule
+  | Mod   loc  .  bindGroup        = Nothing
+
+SEM GrBind
+  | Bind  loc  .  currentBindings  = maybe [@bindName] id @lhs.bindGroup
+  | Rec   loc  .  bindGroup        = Just @bindL.bindNames
+%%]
+
+%%[8.returnSize
+ATTR AllGrExpr [ maxReturnSize: {Int} currentBindings: {[HsName]} | | returnSize USE {`max`} {0}: {Int} ]
+SEM GrExpr
+  | Unit       loc . returnSize = if @isLastExpr
+                                  then @val.size
+                                  else 0
+  | Call       loc . returnSize = if @isLastExpr && not (@nm `elem` @lhs.currentBindings)
+                                  then fromJust' "Call" (lookup (cmmName' @nm) @lhs.returnSizeEnv)
+                                  else 0
+  | App        loc . returnSize = if @isLastExpr
+                                  then fromJust' "App" (lookup apply @lhs.returnSizeEnv)
+                                  else 0
+  | Eval       loc . returnSize = if @isLastExpr
+                                  then fromJust' "Eval" (lookup eval @lhs.returnSizeEnv)
+                                  else 0
+  | FFI        loc . returnSize = if @isLastExpr
+                                  then if @isPrim
+                                       then @primSize
+                                       else error "ffi as last expression"
+                                  else 0
+  
+  | Store Fetch  loc  .  returnSize  =  if @isLastExpr then 1 else 0
+  | Update       loc  .  returnSize  =  0
+%%]
+
+%%[8.valueSize
+ATTR GrVal GrTag GrValL [ | | size USE {+} {1}: {Int} ]
+SEM GrTag
+  | Unboxed    loc . size = 0
+SEM GrValL
+  | Nil        loc . size = 0
+
+SEM GrVal
+  | Empty      loc . size = 0
+  | NodeAdapt  loc . size = error "unknown size of Val"
+
+
+%%]
+
+%%[8 hs
+padWith :: (Int -> a) -> [a] -> Int -> [a]
+padWith padFunction real size = take size real ++ map padFunction [length real + 1..size]
+
+mkTempVar :: Int -> CmmKindedName
+mkTempVar i = ("", ("@tmp" ++ show i))
+
+fromJust' :: String -> Maybe a -> a
+fromJust' _   (Just a) = a
+fromJust' msg Nothing  = error $ "fromJust: " ++ msg
+%%]
+
+% vim:ts=4:et:ai:

@@ -1,0 +1,99 @@
+% $Id$
+
+Elimintate redundent case statments:
+    - Trivial: A case with one alternative
+    - Evaluated: A case with all alternatives of the form 'unit v' with v the scrutinizer of the case
+
+note: Evaluated case elimination is disabled. This form is the result of eval
+inlining, but later the fetch splitting will re-introduce one just like it to
+specialize the fetch statements which preceeded an evaluated case.
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[8 import("../GrinCodeAbsSyn")
+%%]
+
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[8 hs module Trf.CaseElimination import(EHCommon, GRINCCommon, GrinCode) export(eliminateCases)
+eliminateCases :: GrModule -> GrModule
+eliminateCases grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                            (Inh_GrAGItf)
+                       in grTrf_Syn_GrAGItf t
+%%]
+
+
+%%[8
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllGrNT [ | | grTrf: SELF ]
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%
+%%% Trf Ordering %%%
+%%%%%%%%%%%%%%%%%%%%
+
+%%[8.ordering
+SEM GrExpr
+  | Case  lhs  .  grTrf               =  @trivialCase -- @evaluatedCase
+          loc  .  evaluatedCaseFails  =  @trivialCase
+               .  trivialCaseFails    =  @grTrf
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%
+%%% Trivial Case %%%
+%%%%%%%%%%%%%%%%%%%%
+
+a case with only one alternative can be rewritten into a seq with a node pattern.
+
+case v of (Tag a1 an) -> e1   => unit v; \(Tag a1 ... an) -> e1
+
+%%[8.trivial
+ATTR AllAlt [ scrutinizer: GrVal | | count: Int newBody: GrExpr ]
+
+SEM GrAltL
+  | Cons  lhs  .  newBody  =  @hd.newBody
+               .  count    =  @hd.count + @tl.count
+  | Nil   lhs  .  newBody  =  undefined
+               .  count    = 0
+
+SEM GrAlt
+  | Alt   lhs  .  newBody  =  GrExpr_Seq (GrExpr_Unit @lhs.scrutinizer) @pat.grTrf @expr.grTrf
+               .  count    = 1
+
+SEM GrExpr
+  | Case  altL  .  scrutinizer  =  @val.grTrf
+          loc   .  trivialCase  =  if @altL.count == 1 then @altL.newBody else @trivialCaseFails
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Evaluated Case %%%
+%%%%%%%%%%%%%%%%%%%%%%
+
+a case with alternatives which only return the scrutinizer can be replaced with a unit scrutinizer. 
+
+case v of
+    (Tag1 a11 a1n) -> unit v
+    ...
+    (TagM aM1 aMn) -> unit v   => unit v
+
+%%[8.evaluatedCase
+ATTR AllAlt [ | | isEvaluated USE {&&} {True}: Bool ]
+
+SEM GrAlt
+  | Alt  lhs  .  isEvaluated  =  case @expr.grTrf of
+                                     GrExpr_Unit v -> v == @lhs.scrutinizer
+                                     otherwise     -> False
+
+SEM GrExpr
+  | Case  loc  .  evaluatedCase = if @altL.isEvaluated then GrExpr_Unit @val.grTrf else @evaluatedCaseFails
+%%]
+
+% vim:ts=4:et:ai:

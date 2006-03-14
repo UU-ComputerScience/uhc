@@ -1,0 +1,34 @@
+module "except-shared"
+{ main <- store (#0/F/main 0)
+}
+{ $top 
+    = { store (#0/C/$Int 1 1); \$1 ->
+        throw $1; \() ->
+        unit (#0/C/$Int 1 0)
+      }
+; main
+    = { store (#0/F/$top 0); \$f ->
+        try
+          { 
+            try { eval $f }
+            catch($e1) { eval $f }
+          }
+        catch($e2)
+          { eval $e2; \$n ->
+            unit $n
+          }
+      }
+}
+
+ctags
+{ $Int  = $Int  0 1
+}
+
+evalmap 
+{ #0/C/$Int     1 -> unit
+; #0/F/$top     0 -> $top
+; #0/F/main     0 -> main
+}
+applymap 
+{
+} 

@@ -1,0 +1,65 @@
+% $Id$
+
+Removes all the unused tags in the constructor, eval and apply maps.
+Note: run after inlining eval and apply.
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[8 import("../GrinCodeAbsSyn")
+%%]
+
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[8 hs module Trf.DropUnusedTags import("qualified Data.Set as Set")
+%%]
+
+%%[8 hs import(EHCommon, GRINCCommon, GrinCode) export(dropUnusedTags)
+dropUnusedTags :: GrModule -> GrModule
+dropUnusedTags grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                            (Inh_GrAGItf)
+                                in grTrf_Syn_GrAGItf t
+%%]
+
+%%[8
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllGrNT [ | | grTrf: SELF ]
+
+%%]
+
+TODO: which basic Tags should be availible
+
+%%[8.retrieveUsedTags
+ATTR AllBind AllGlobal AllExpr [ | usedTags: {Set.Set GrTag} | ]
+
+SEM GrModule
+  | Mod  globalL  .  usedTags  =  Set.empty
+         bindL    .  usedTags  =  @globalL.usedTags
+         loc      .  usedTags  =  @bindL.usedTags
+
+SEM GrTag
+  | *    lhs      .  usedTags  =  Set.insert @grTrf @lhs.usedTags
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Remove unused tags %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8.remveUnusedTags
+SEM GrModule
+  | Mod  lhs  .  grTrf        =  GrModule_Mod @baseName
+                                              @globalL.grTrf
+                                              @bindL.grTrf
+                                              @ctagsMp'
+                                              @evalTagMp'
+                                              @applyTagMp'
+         loc  .  ctagsMp'     =  @ctagsMp   -- keep ordening info in tact
+              .  evalTagMp'   =  filter (\ ((t,_),_) -> Set.member t @usedTags) @evalTagMp 
+              .  applyTagMp'  =  filter (\ ((t,_),_) -> Set.member t @usedTags) @applyTagMp
+%%]
+
+% vim:ts=4:et:ai:

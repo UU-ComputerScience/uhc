@@ -1,0 +1,165 @@
+% $Id$
+
+Normalisation for the Heap-points-to analysis
+
+- A case alternative or the last statment of a catch block (body or handler) must end with a simple unit (e.g. "unit var")
+
+- The scrutinized expression must be a variable, not a complete node.
+
+- The following locations in the code must contain a simple pattern (e.g \var)
+    - After an eval or apply call 
+    - After a case statement
+    - After a catch statement
+
+- do we need it after an FFI?
+
+wildcard = 0
+eval     = 1
+apply    = 2    
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[8 import("../GrinCodeAbsSyn")
+%%]
+
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[8 hs module Trf.NormForHPT import(GRINCCommon, EHCommon, GrinCode, Debug.Trace) export(normForHPT)
+normForHPT :: Int -> GrModule -> (Int, GrModule)
+normForHPT unique grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) 
+                                               (Inh_GrAGItf { unique_Inh_GrAGItf = unique })
+                          in (unique_Syn_GrAGItf t, grTrf_Syn_GrAGItf t)
+
+newVar :: Int -> (HsName, Int)
+newVar u = (HNPos u, u+1)
+
+newVar' :: Bool -> Int -> (HsName, Int)
+newVar' b u = if b then newVar u else (undefined, u)
+
+newGrIdent :: HsName -> (GrVal, GrPat)
+newGrIdent n = (GrVal_Var n, GrPat_Var n)
+%%]
+
+%%[8
+ATTR GrAGItf [ | unique: Int | grTrf: GrModule ]
+ATTR AllGrNT [ | unique: Int | grTrf: SELF ]
+%%]
+
+Change last expression of binding to last of alternative (or of catch body or handler)
+
+%%[8.lastOfAlt import("../GrLastExpr")
+SEM GrExpr
+  | Case    altL . hasNext  = False
+  | Catch   loc  . hasNext  = False
+%%]
+
+Keep track if we are inside an alternative
+
+%%[8.inAlt
+ATTR AllGrExpr [ isInAlt: Bool | | ]
+
+SEM GrBind
+  |  Bind   expr  .  isInAlt  =  False
+
+SEM GrExpr
+  |  Case   altL  .  isInAlt  =  True
+%%]
+
+keep track if we are inside an catch
+
+%%[8.inAlt
+ATTR AllGrExpr [ isInCatch: Bool | | ]
+
+SEM GrBind
+  |  Bind   expr  .  isInCatch  =  False
+
+SEM GrExpr
+  |  Catch  loc   .  isInCatch  =  True
+%%]
+
+Is the statement a simple unit
+
+%%[8.simpleUnit
+SEM GrExpr
+  | Unit      loc  .  simpleUnit  =  case @val.grTrf of
+                                        GrVal_Var _ -> True
+                                        otherwise   -> False
+  | * - Unit  loc  .  simpleUnit  =  False
+%%]
+
+Transform the last statement of an alternative which is no simple unit
+
+%%[8.lastUnit
+SEM GrExpr
+  | * - Seq Case Catch  loc  .  doUnitTrans    = (@lhs.isInAlt || @lhs.isInCatch) && @isLastExpr && (not @simpleUnit)
+                             .  (var, unique)  = newVar' @doUnitTrans @lhs.unique
+                             .  (val', pat')   = newGrIdent @var
+                        lhs  .  grTrf          = if @doUnitTrans 
+                                                 then GrExpr_Seq @grTrf @pat' (GrExpr_Unit @val')
+                                                 else @grTrf
+                             .  unique         = @unique -- note: we break the normal unique sequence (but it is 'safe')
+%%]
+
+The scrutinizer must be a variable
+
+%%[8.scrutinizer
+SEM GrExpr
+  | Case  loc  .  doCaseTrans       = case @val.grTrf of
+                                          GrVal_Var _ -> False
+                                          otherwise   -> True
+          loc  .  (var, newUnique)  = newVar' @doCaseTrans @lhs.unique
+               .  (val', pat')      = newGrIdent @var
+          lhs  .  grTrf             = if @doCaseTrans
+                                      then GrExpr_Seq (GrExpr_Unit @val.grTrf) @pat'
+                                                      (GrExpr_Case @val' @altL.grTrf)
+                                      else @grTrf
+          altL . unique             = @newUnique
+%%]
+
+Which expressions need a simple pattern after the statement
+
+%%[8.needSimplePattern
+SEM GrExpr [ | |  needsSimplePattern : Bool ]
+  | Case Eval App Catch      lhs  .  needsSimplePattern  =  True
+  | * - Case Eval App Catch  lhs  .  needsSimplePattern  =  False
+%%]
+
+%%[8.isSimplePattern
+SEM GrPat [ | | isSimplePattern: Bool ]
+  | Var      loc . isSimplePattern  =  True
+  | * - Var  loc . isSimplePattern  =  False
+%%]
+
+All patterns which does not contain a simple pattern after these expressions
+are rewritten into a copy
+
+%%[8.simplePattern
+SEM GrExpr
+  | Seq  loc  .  doPatternTrans    = @expr.needsSimplePattern && not @pat.isSimplePattern
+              .  (var, newUnique)  = newVar' @doPatternTrans @expr.unique
+              .  (val', pat')      = newGrIdent @var
+         lhs  .  grTrf             = if @doPatternTrans
+                                     then GrExpr_Seq @expr.grTrf @pat'
+                                                     (GrExpr_Seq (GrExpr_Unit @val') @pat.grTrf @body.grTrf)
+                                     else @grTrf
+         body  .  unique           = @newUnique
+%%]
+
+
+A catch statement should not occur at the return spine...
+This is actually something for the code generator, but it is easier to prepare this early
+
+%%[8.catch
+SEM GrExpr
+  | Catch   loc  .  var         =  HNPos @handler.unique
+                 .  appendUnit  =  GrExpr_Seq @grTrf (GrPat_Var @var) (GrExpr_Unit $ GrVal_Var @var)
+            lhs  .  grTrf       =  if @lhs.hasNext then @grTrf else @appendUnit
+                 .  unique      =  if @lhs.hasNext then @handler.unique else @handler.unique + 1
+%%]
+
+% vim:ts=4:et:

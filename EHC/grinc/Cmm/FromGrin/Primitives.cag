@@ -1,0 +1,87 @@
+% $Id$
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%
+%% Primitives %%
+%%%%%%%%%%%%%%%%
+
+builtin primitives (like plus and compare on integers)
+
+Prepare the primitive information in a FFI
+
+%%[8.FFI
+SEM GrExpr
+  | FFI    loc  . isPrim                = isPrim @nm
+                . (primSize, primImports, primStmF)  = codeGenInfo @nm
+                . options     = if isConditionalPrim @nm 
+                                then Right [ @lhs.trueBody, @lhs.falseBody ]
+                                else Left @targets
+%%]
+
+Primitives which result conditionals raise a problem. Conditionals are in many
+architectures (RISC, ix68) not normal registers, but special flags, or
+conditional registers. We must use the condition code direct after the
+primitive, and only there. (This might be a transformation in GRIN, instead of
+in the code generator)
+
+primEqInt x' y'; \b ->
+case b of
+	CTrue   ->  b1
+	CFalse  ->  b2
+
+while 'b' has a single usage site. Generates the following c--:
+
+if %eq(x', y') {
+	c--(b1);
+} else {
+	c--(b2);
+}
+
+if not a single usage site or no case is followed by the primitive:
+
+if %eq(x', y') {
+	b = CTrue;
+} else {
+	b = CFalse;
+}
+
+So, in short the code generated for conditional primitives need two c-- bodies:
+one for true and one for false; always. We search here for a case after the
+FFI, if not return a default body.
+
+
+TODO: check if scrutinizer is same as target and the target is used nowhere else
+
+%%[8.conditionals_alternatives
+
+ATTR GrExpr [ | trueBody: CmmBodyBuilder falseBody: CmmBodyBuilder | ]
+ATTR AllAlt [ trueBody: CmmBodyBuilder falseBody: CmmBodyBuilder | | ]
+
+SEM GrBind
+  | Bind  expr  .  trueBody   =  cmmReturn "" (map valArg true_node)
+                .  falseBody  =  cmmReturn "" (map valArg false_node)
+
+SEM GrExpr
+  | * - Case  lhs   .  trueBody   =  updates (zipWith (\l r -> (varUpdate l,r)) @targets true_node)
+                    .  falseBody  =  updates (zipWith (\l r -> (varUpdate l,r)) @targets false_node)
+              loc   .  targets    =  nreg2names @lhs.targetNames
+  | Seq       expr  .  trueBody   =  @body.trueBody
+                    .  falseBody  =  @body.falseBody
+              body  .  trueBody   =  @lhs.trueBody
+                    .  falseBody  =  @lhs.falseBody
+  | Case      lhs   .  (trueBody,falseBody)  =  getBodies @altL.cmmAlts
+              
+%%]
+
+%%[8 hs
+getTrueFalseBuilder (CmmAlternative_Alt [ CmmRange_Single (CmmExpression_Var n) ] b) = (n, const b)
+getBodies (a:b:[]) = let (na, ba) = getTrueFalseBuilder a
+                         (nb, bb) = getTrueFalseBuilder a
+                     in if na == "@C$_True" then (ba, bb) else (bb, ba)
+%%]
+
+% vim:et:ts=4:
