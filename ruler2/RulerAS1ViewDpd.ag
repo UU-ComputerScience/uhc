@@ -1,5 +1,3 @@
--- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
-
 -------------------------------------------------------------------------
 -- All used views
 -------------------------------------------------------------------------
@@ -28,7 +26,7 @@ ATTR AllDecl [ vwDpdGr: {DpdGr Nm} | | ]
 SEM AGItf
   | AGItf           loc     .   vwDpdGr     =   let vwOrderL = concat @decls.gathVwOrder
                                                     missing = @decls.allVwNmS `Set.difference` Set.fromList (concat vwOrderL)
-                                                in  mkVwDpdGr (vwOrderL ++ [ [v] | v <- Set.toList missing ])
+                                                in  mkVwDpdGr (Set.toList missing) vwOrderL
 
 SEM Decl
   | SchemeDeriv     loc     .   firstVwNm   =   last (vgTopSort @lhs.vwDpdGr)

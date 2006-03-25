@@ -9,7 +9,7 @@ module ExprUtils
   , module ExprNmS
   , module ExprCoGam
   , module ExprLaTeX
-  , module ExprReGamExprFmGam
+  -- , module ExprReGamExprFmGam
   )
   where
 
@@ -19,5 +19,5 @@ import ExprIsRw
 import ExprNmS
 import ExprCoGam
 import ExprLaTeX
-import ExprReGamExprFmGam
+-- import ExprReGamExprFmGam
 

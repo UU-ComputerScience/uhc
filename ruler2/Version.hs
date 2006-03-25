@@ -1,5 +1,6 @@
 -------------------------------------------------------------------------
 -- Version of program
+-- $Id$
 -------------------------------------------------------------------------
 
 module Version
@@ -13,8 +14,8 @@ module Version
 
 versionSvn      = "$Id$"
 versionMajor    = "0"
-versionMinor    = "02"
-versionQuality  = "alpha"
+versionMinor    = "03"
+versionQuality  = "experimental"
 versionDist     = versionMajor ++ "." ++ versionMinor ++ versionQuality
 versionProg     = "ruler"
 versionInfo     = versionProg ++ "(" ++ versionDist ++ ")" ++ ", " ++ versionSvn

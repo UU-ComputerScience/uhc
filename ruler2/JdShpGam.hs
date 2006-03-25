@@ -2,9 +2,9 @@
 -- Judgment Gamma
 -------------------------------------------------------------------------
 
-module JdGam
-  ( JdInfo(..), JdGam
-  , jdgUnionShadow
+module JdShpGam
+  ( JdShpInfo(..), JdShpGam
+  , jdshpgUnionShadow
   )
   where
 
@@ -20,28 +20,28 @@ import FmGam
 -- Judgement formats
 -------------------------------------------------------------------------
 
-data JdInfo e
-  = JdInfo
-      { jdExpr  :: e
+data JdShpInfo e
+  = JdShpInfo
+      { jdshExpr  :: e
       }
-  | JdDel
+  | JdShpDel
 
-instance Show (JdInfo e) where
-  show _ = "JdInfo"
+instance Show (JdShpInfo e) where
+  show _ = "JdShpInfo"
 
-instance PP e => PP (JdInfo e) where
-  pp (JdInfo e) = "Jd" >#< pp e
-  pp (JdDel   ) = pp "JdDel"
+instance PP e => PP (JdShpInfo e) where
+  pp (JdShpInfo e) = "Jd" >#< pp e
+  pp (JdShpDel   ) = pp "JdShpDel"
 
-type JdGam e = FmKdGam (JdInfo e)
+type JdShpGam e = FmKdGam (JdShpInfo e)
 
-jdgUnionShadow :: JdGam e -> JdGam e -> JdGam e
-jdgUnionShadow gn g
+jdshpgUnionShadow :: JdShpGam e -> JdShpGam e -> JdShpGam e
+jdshpgUnionShadow gn g
   = gamFoldWithKey
       (\fk i g
         -> case i of
-             JdDel -> gamDelete fk g
-             _     -> gamInsertShadow fk i g
+             JdShpDel -> gamDelete fk g
+             _        -> gamInsertShadow fk i g
       )
       g gn
 

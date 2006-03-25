@@ -27,12 +27,14 @@ DATA Decl
                         atIO        : {AtDir}
                         matchExpr   : Expr
                         expr        : Expr
-  | Rules               nm          : {Nm}
+  | Rules               pos         : {SPos}
+                        nm          : {Nm}
                         schemeNm    : {Nm}
                         viewSel     : ViewSel
                         info        : {String}
                         decls       : Decls
-  | RulesGroup          nm          : {Nm}
+  | RulesGroup          pos         : {SPos}
+                        nm          : {Nm}
                         schemeNm    : {Nm}
                         viewSel     : ViewSel
                         info        : {String}
@@ -43,9 +45,9 @@ DATA Decl
                         viewSel     : ViewSel
                         mbAGNm      : {Maybe String}
                         decls       : Decls
-  | RulView             nm          : {Nm}
-                        pre         : RExprs
-                        post        : RExprs
+  | RulView             pos         : {SPos}
+                        nm          : {Nm}
+                        jdIntros    : RuleJudgeIntros
   | ShpJudge            pos         : {SPos}
                         fmKind      : {FmKind}
                         expr        : Expr
@@ -54,19 +56,38 @@ DATA Decl
   | ScmView             nm          : {Nm}
                         decls       : Decls
   | ViewHierarchy       nmOrder     : {[[Nm]]}
-  | Attr                inhs        : AttrIntros
-                        inhsyns     : AttrIntros
-                        syns        : AttrIntros
-  | Explain				mbNm		: {Maybe Nm}
-                        expr 		: Expr
+  | Attr                intros      : AttrIntroDecls
+  | Explain             mbNm        : {Maybe Nm}
+                        expr        : Expr
 
 TYPE Decls = [Decl]
 
 SET AllDecl = Decl Decls
 
 -------------------------------------------------------------------------
--- Attr defs
+-- Attr intro decl
 -------------------------------------------------------------------------
+
+DATA AttrIntroDecl
+  | Attrs               inhs        : AttrIntros
+                        inhsyns     : AttrIntros
+                        syns        : AttrIntros
+  | AttrsProp           intros      : AttrIntros
+  | Scheme              pos         : {SPos}
+                        nm          : {Nm}
+                        renames     : AttrRenames
+
+TYPE AttrIntroDecls = [AttrIntroDecl]
+
+DATA AttrRename
+  | Rename              pos         : {SPos}
+                        nmNew       : {Nm}
+                        nmOld       : {Nm}
+  | EqualTo             pos         : {SPos}
+                        nmLeft      : {Nm}
+                        nmRight     : {Nm}
+
+TYPE AttrRenames = [AttrRename]
 
 DATA AttrIntro
   | Intro               props       : {[AtProp]}
@@ -76,6 +97,24 @@ DATA AttrIntro
 TYPE AttrIntros = [AttrIntro]
 
 SET AllAttrIntro = AttrIntro AttrIntros
+SET AllAttrRename = AttrRename AttrRenames
+SET AllAttrIntroDecl = AllAttrIntro AllAttrRename AttrIntroDecl AttrIntroDecls 
+
+-------------------------------------------------------------------------
+-- Rule judgement intro
+-------------------------------------------------------------------------
+
+DATA RuleJudgeIntro
+  | PrePost             pre         : RExprs
+                        post        : RExprs
+  | RulesetRule         pos         : {SPos}
+                        rsNm        : {Nm}
+                        rlNm        : {Nm}
+
+TYPE RuleJudgeIntros = [RuleJudgeIntro]
+
+SET AllRuleJudgeIntro = RuleJudgeIntros RuleJudgeIntro
+SET AllRuleJudgeIntroDecl = AllRuleJudgeIntro
 
 -------------------------------------------------------------------------
 -- Rule expr's
@@ -88,7 +127,6 @@ DATA RExpr
                         eqns        : RExprEqn
   | Del                 pos         : {SPos}
                         nms         : {[Nm]}
-  | Sep
 
 DATA RExprEqn
   | Attrs               eqns        : AttrEqns
@@ -111,4 +149,4 @@ SET AllAttrEqn = RExprEqn AttrEqn AttrEqns
 -- Sets of AST data's
 -------------------------------------------------------------------------
 
-SET AllAS1 = AllRExpr AllAttrEqn AllAttrIntro AllDecl
+SET AllAS1 = AllRExpr AllAttrEqn AllAttrIntroDecl AllRuleJudgeIntroDecl AllDecl

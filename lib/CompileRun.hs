@@ -46,6 +46,7 @@ class CompileModName n where
   mkCMNm      	:: String -> n
 
 class CompileUnitState s where
+  cusDefault  	:: s
   cusUnk      	:: s
   cusIsUnk      :: s -> Bool
   cusIsImpKnown	:: s -> Bool
@@ -109,7 +110,7 @@ ppCR cr
       )
 
 crPP :: (PP n,PP u) => String -> CompileRun n u i e -> IO (CompileRun n u i e)
-crPP m cr = do { putStrLn (m ++ ":") ; hPutPPLn stdout (ppCR cr) ; return cr }
+crPP m cr = do { hPutStrLn stderr (m ++ ":") ; hPutPPLn stderr (ppCR cr) ; return cr }
 
 crPPMsg :: (PP m) => m -> CompileRun n u i e -> IO (CompileRun n u i e)
 crPPMsg m cr = do { hPutPPLn stdout (pp m) ; return cr }
@@ -230,7 +231,12 @@ crFindFileForFPath suffs sp mbModNm mbFp cr
                   -> do { cr' <- crUpdCU modNm (\cu -> return (cuUpdFPath ff $ cuUpdState cus $ cuUpdKey modNm $ cu)) cr
                         ; return (cr',Just ff)
                         }
-                  where cus = Map.findWithDefault cusUnk (fpathSuff ff) suffs
+                  where -- cus = Map.findWithDefault cusUnk (fpathSuff ff) suffs
+                        cus = case Map.lookup (fpathSuff ff) suffs of
+                                Just c  -> c
+                                Nothing -> case Map.lookup "*" suffs of
+                                             Just c  -> c
+                                             Nothing -> cusUnk
                         
             }
     else return (cr,maybe Nothing (\nm -> Just (crCUFPath nm cr)) mbModNm)

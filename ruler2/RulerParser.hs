@@ -32,6 +32,11 @@ import RulerAbsSyn1
 type RulerParser ep
   = (IsParser (OffsideParser i o Token p) Token,InputState i Token p, OutputState o, Position p)
       => OffsideParser i o Token p ep
+{-
+type RulerParser ep
+  = (IsParser (OffsideParser i o Token p) Token,InputState i Token p, OutputState o, Position p)
+      => OffsideParser i o Token p ep
+-}
 
 type MkConAppAlg t = (String -> t,t -> t -> t,t -> t)
 
@@ -42,7 +47,7 @@ mkApp (_,app,top) ts
       _    -> top t
   where t = foldl1 app ts
 
-pAGItf :: RulerParser AGItf
+pAGItf :: (IsParser p Token) => p AGItf -- RulerParser AGItf
 pAGItf
   = let alg                 =   (undefined,Expr_App,Expr_AppTop)
         pAGItf              =   AGItf_AGItf <$> pTopDecls' pDeclGlob
@@ -69,8 +74,9 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
        elems s = pList s *> pList1Sep (pList1 s) p <* pList s
        explicit = elems sep'
        implicit = elems (sep' <|> pSeparator)
--}
         pTopDecls'  pD      =   pLay pD
+-}
+        pTopDecls'  pD      =   pList pD
         pDecls'     pD      =   pList pD
         pDecls1'    pD      =   pList1 pD
         pDeclRule           =   (\(n,p) mn s mag d -> Decl_Rule p n mn s mag d)
@@ -79,16 +85,29 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
                                                        <*> pMbViewSel
                                                        <*> pMbString
                                                        <*  pKey "="             <*> (pDeclRuleDflt <|> pDecls1' pDeclRulView)
-        pDeclRuleDflt       =   (\(pre,post) -> [Decl_RulView nmNone pre post])
-                                                       <$> pRExprsPrePost
-        pDeclRulView        =   (\v (pre,post) -> Decl_RulView v pre post)
-                                                       <$  pKey "view"          <*> pNmVw
-                                                       <*  pKey "="             <*> pRExprsPrePost
-        pRExprsPrePost      =   (,) <$> pRExprs <* sep <*> pRExprs
-                            <|> pKey "judges" *> pLay2Sep pOParen (pKey "|") pCParen sep pRExprBase
+        pDeclRuleDflt       =   (\d -> [Decl_RulView emptySPos nmNone d])
+                                                       <$> pRuleJudgeIntros
+        pDeclRulView        =   (\(v,p) d -> Decl_RulView p v d)
+                                                       <$  pKey "view"          <*> pNmVwSPos
+                                                       <*  pKey "="             <*> pRuleJudgeIntros
+{-
+        mkDeclRulView p v pre post
+                            =   Decl_RulView p v [RuleJudgeIntro_PrePost pre post]
+        pRuleViewJudges     =   (,) <$> pRExprs <* sep <*> pRExprs
+                            <|> pKey "judges" *> pLay2Sep pOParen (pKey "|") pCParen sep pRExprBase -- experimental
                             where pRExprs    = pList pRExpr
                                   -- pRExprsLay = pLay  pRExprBase
                                   sep = pKey "-" <|> pKey "---"
+-}
+        pRuleJudgeIntroPrePost
+                            =   RuleJudgeIntro_PrePost <$> pRExprs <* sep <*> pRExprs
+                            where pRExprs    = pList pRExpr
+                                  -- pRExprsLay = pLay  pRExprBase
+                                  sep = pKey "-" <|> pKey "---"
+        pRuleJudgeIntros    =   (:[]) <$> pRuleJudgeIntroPrePost
+                            <|> pList1Sep (pKey "|") (pRuleJudgeIntro <|> pParens pRuleJudgeIntroPrePost)
+        pRuleJudgeIntro     =   (\(rsn,p) rln -> RuleJudgeIntro_RulesetRule p rsn rln)
+                                <$ pKey "ruleset" <*> pNmSPos <* pKey "rule" <*> pNm
         pDeclScm            =   Decl_ScmView           <$  pKey "view"          <*> pNmVw
                                                        <*  pKey "="             <*> pDeclsScmView
         pDeclScmDflt        =   (\v -> [Decl_ScmView nmNone v])
@@ -99,15 +118,27 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
                             <|> pKeySPos "judgeshape" <**> pShp pFmKd3WithDflt pFmKd3
                             <|> pKeySPos "judgeuse"   <**> pShp pFmKd2         pFmKd2
                             <|> Decl_Attr              <$  (pKey "hole" <|> pKey "holes")
-                                                       <*  pKey "["             <*> pAttrIntros
-                                                       <*  pKey "|"             <*> pAttrIntros
-                                                       <*  pKey "|"             <*> pAttrIntros
-                                                       <*  pKey "]"
-                            <|> Decl_Explain           <$  pKey "explain" <*> pMb (pNm <* pKey "=") <*> pParens pExprExplain
+                                                       <*> pAttrIntroDecls
+                            <|> Decl_Explain           <$  pKey "explain" <*> pMb (pNmDir <* pKey "=") <*> pParens pExprExplain
                             where pShp pFmAdd pFmDel
                                     = (   (\k e p -> Decl_ShpJudge p k e) <$> pFmAdd <*> pExprLF
                                       <|> (flip Decl_ShpDel) <$ pKey "-" <*> pList1 pFmDel
                                       )
+        pAttrIntroDecl      =   pKey "["
+                                *> pAttrIntros
+                                   <**> (     (\is s i -> AttrIntroDecl_Attrs i is s)
+                                                <$ pKey "|" <*> pAttrIntros <* pKey "|" <*> pAttrIntros
+                                        `opt` AttrIntroDecl_AttrsProp
+                                        )
+                                <* pKey "]"
+                            <|> (\(s,p) r -> AttrIntroDecl_Scheme p s r)
+                                                       <$  pKey "scheme" <*> pNmSPos <*> (pAttrRenames `opt` [])
+        pAttrIntroDecls     =   pList1Sep (pKey "|") pAttrIntroDecl
+        pAttrRename         =   pNmSPos
+                                <**> (   (\o (n,p) -> AttrRename_Rename  p n o) <$ pKey ":=" <*> pNm
+                                     <|> (\r (l,p) -> AttrRename_EqualTo p l r) <$ pKey  "=" <*> pNm
+                                     )
+        pAttrRenames        =   pParens_pCommas pAttrRename
         pDeclsScmView       =   pDecls1' pDeclScmView
         pDeclGlob           =   pDeclGlobScheme
                             <|> Decl_Fmt               <$  (pKey "format" <|> pKey "rewrite")
@@ -115,12 +146,14 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
                                                        <*> pAtIO
                                                        <*> pExpr
                                                        <*  pKey "="             <*> pExpr
-                            <|> Decl_Rules             <$  (pKey "rules" <|> pKey "ruleset")
-                                                       <*> pNm
+                            <|> (\(n,p) sn mvs s d -> Decl_Rules p n sn mvs s d)
+                                                       <$  (pKey "rules" <|> pKey "ruleset")
+                                                       <*> pNmSPos
                                                        <*  pKey "scheme" <*> pNm <*> pMbViewSel <*> pString
                                                        <*  pKey "=" <*> pDecls' pDeclRule
-                            <|> Decl_RulesGroup        <$  pKey "rulesgroup"
-                                                       <*> pNm
+                            <|> (\(n,p) sn mvs s r -> Decl_RulesGroup p n sn mvs s r)
+                                                       <$  pKey "rulesgroup"
+                                                       <*> pNmSPos
                                                        <*  pKey "scheme" <*> pNm <*> pMbViewSel <*> pString
                                                        <*  pKey "="             <*> pList1 ((,) <$ pKey "rule" <*> pNm <*> pNm)
                             <|> Decl_ViewHierarchy     <$  pKey "viewhierarchy"
@@ -149,6 +182,8 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
         pFmKd3              =   FmSpec <$ pKey "spec" <|> pFmKd2
         pAtIO               =   pMaybe AtInOut id (AtIn <$ pKey "def" <|> AtOut <$ pKey "use")
         pNmBase             =   Nm <$> pNmStr
+        pNmDir              =   pNmDotted (pSymStr <|> pAnyKey pKey keywordsTextDir)
+        -- pNmDirSPos          =   pNmDottedSPos (pSymStr <|> pAnyKey pKey keywordsTextDir)
         pNmC                =   Nm <$> pConid
         pNmV                =   Nm <$> pVarid
         pSym                =   Nm <$> pSymStr
@@ -182,13 +217,13 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
         pExprBase' pN       =   pParens (pExprInParen <|> pExprSpecial) <**> pExprDot
                             <|> Expr_Uniq    <$  pKey "unique"
                             <|> pExprAtom pN
-        pExprBase           =   pExprBase' pNm
+        pExprBase           =   pExprBase' pNmDir
         pExprInParen        =   pExpr <**> (   flip Expr_Cnstr <$  pKey "|" <*> pECnstr
                                            <|> pExprLFSuffix "-"
                                            <|> pSucceed Expr_Paren
                                            )
         pExprSpecial        =   (Expr_StrAsIs . concat)     <$> pList1 (pAnyKey pKey (keywordsOpsParenEsc ++ keywordsTextEscapable))
-                            <|> Expr_Named                  <$> pNm <* pKey "=" <*> pExpr
+                            -- <|> Expr_Named                  <$> pNm <* pKey "=" <*> pExpr
                             <|> Expr_StrText                <$  pKey "text" <*> pString
                             <|> Expr_Retain                 <$  pKey "retain" <*> pExpr
                             <|> Expr_ChildOrder             <$  pKey "node" <*> pInt <* pKey "=" <*> pExpr
@@ -201,7 +236,7 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
         pAttrIntros         =   pListSep pComma pAttrIntro
         pAttrIntro          =   AttrIntro_Intro <$> pList pAttrProp <*> pNm <* pKey ":" <*> pNmC
         pAttrEqns           =   pList (pKey "|" *> pAttrEqn)
-        pAttrEqn            =   AttrEqn_Eqn <$>              pNm <* pKey "=" <*> pExpr
+        pAttrEqn            =   AttrEqn_Eqn <$>              pNmDir <* pKey "=" <*> pExpr
                             <|> AttrEqn_Del <$  pKey "-" <*> pNm
         pAttrProp           =   foldr1 (<|>) [ v <$ pKey n | (n,v) <- Map.toList propsMp ]
         pInt                =   read <$> pInteger

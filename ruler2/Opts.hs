@@ -46,7 +46,7 @@ defaultOpts
   = Opts
       { optGenFM        =  FmAll
       , optGenExpl      =  False
-      , optGenV2        =  True
+      , optGenV2        =  False
       , optGenAGAttr    =  False
       , optDot2Dash     =  False
       , optPreamble     =  True
@@ -72,12 +72,14 @@ cmdLineOpts
           "generate code for lhs2tex, default=no"
      , Option "a"  ["ag"]               (NoArg oGenAG)
           "generate code for AG, default=no"
+{-
      , Option ""   ["as2"]              (NoArg oGenAS2)
           "generate code for AS2 (under development, internal restructure), default=no"
+-}
      , Option ""   ["v2"]               (NoArg oGenV2)
-          "20060221 version (i.e. next version under devel), default=yes"
+          "next version of whatever is under development, default=no"
      , Option ""   ["v1"]               (NoArg oGenV1)
-          "20060221 old version (i.e. version soon obsolete), default=no"
+          "current version of whatever is under development, default=yes"
      , Option ""   ["explain"]          (NoArg oGenExpl)
           "generate explanation (for scheme's), default=no"
      , Option ""   ["ATTR"]             (NoArg oGenAGAttr)
@@ -105,7 +107,9 @@ cmdLineOpts
      ]
   where  oGenLhs2tex     o =  o {optGenFM = FmTeX}
          oGenAG          o =  o {optGenFM = FmAG}
+{-
          oGenAS2         o =  o {optGenFM = FmAS2 (optGenFM o)}
+-}
          oGenV2          o =  o {optGenV2 = True}
          oGenV1          o =  o {optGenV2 = False}
          oGenExpl        o =  o {optGenExpl = True}

@@ -17,7 +17,7 @@ module Common
   , ExprIsRw(..)
   -- , Err(..), mkPPErr, ppErrPPL, errLIsFatal
   , WrKind(..)
-  , strVec, strLhs, strLoc
+  , strVec, strUnd, strLhs, strLoc
   , nmVec, nmUnk, nmApp, nmWild, nmNone, nmEql, nmComma, nmOParen, nmCParen, nmLhs, nmAny, nmSp1
   , nmUniq
   , nmCmdBegChng, nmCmdEndChng, nmCmdBegSame, nmCmdEndSame
@@ -74,7 +74,7 @@ instance (PP a,PP b) => PP (a,b) where
 {-
 data Err
   = Err_UndefNm      SPos String String [Nm]
-  | Err_NoJdSc       SPos String [Nm]
+  | Err_NoJdSpec       SPos String [Nm]
   | Err_Dups         SPos String String [PP_Doc]
   | Err_NoXXFor      SPos String String [Nm]
   | Err_Match        SPos String PP_Doc PP_Doc
@@ -96,7 +96,7 @@ instance PP Err where
     = ppErr pos (cx >#< "has duplicate" >#< knd >|< "s:" >#< ppCommas nmL)
   pp (Err_NoXXFor pos cx knd nmL)
     = ppErr pos ("In" >#< cx >#< "a" >#< knd >#< "lacks for:" >#< ppCommas nmL)
-  pp (Err_NoJdSc pos cx nmL)
+  pp (Err_NoJdSpec pos cx nmL)
     = ppErr pos ("In" >#< cx >#< "no (tex) judgement scheme for:" >#< ppCommas nmL)
   pp (Err_Match pos cx given reqd)
     = ppErr pos ("In" >#< cx >#< "could not match"
@@ -135,6 +135,7 @@ instance PP WrKind where
 -- Names
 -------------------------------------------------------------------------
 
+strUnd = "_"
 strVec = "_"
 strLhs = "lhs"
 strLoc = "loc"
