@@ -20,7 +20,7 @@ RULER2_HS_DPDS_SRC_HS					:= $(patsubst %,$(RULER2_SRC_PREFIX)%.hs,\
 											Version Common Err Opts DpdGr AttrProps \
 											NmParser ViewSelParser SelParser KeywParser RulerParser \
 											ARuleUtils ExprUtils LaTeXFmtUtils RulerUtils ViewSelUtils \
-											Gam FmGam ECnstrGam RwExprGam WrKindGam JdGam \
+											Gam FmGam ECnstrGam RwExprGam WrKindGam JdShpGam \
 											RulerAdmin RulerMkAdmin \
 											ExprToAEqn \
 											RulerScanner RulerScannerMachine \
@@ -29,7 +29,8 @@ RULER2_HS_DPDS_DRV_HS					:= $(patsubst $(RULER2_SRC_PREFIX)%.hs,$(RULER2_BLD_PR
 
 RULER2_AGMAIN1_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,Main1AG)
 RULER2_AGMAIN1_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag, \
-											RulerAbsSynCommonAG RulerAbsSyn1AG RulerAS1Misc RulerAS1ViewDpd RulerAS1Pretty RulerAS1Gen RulerAS1RlSel \
+											RulerAbsSynCommonAG RulerAbsSyn1AG RulerAS1Misc RulerAS1Pretty RulerAS1RlSel \
+											RulerAS1SchemeDpd RulerAS1ViewDpd \
 											RulerAS1GenAS2 \
 											ExprAbsSynAG ExprIsRwAG ExprNmSAG ExprFmGamAG ExprPrettyPrintAG ExprSelfAG \
 											)
@@ -108,10 +109,10 @@ RULER2_EXCOGAM_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ExprAbsSy
 $(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_EXCOGAM_MAIN_SRC_AG)) \
 										: $(RULER2_EXCOGAM_DPDS_SRC_AG)
 
-RULER2_EXREGAM_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ExprReGamExprFmGam)
-RULER2_EXREGAM_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ExprAbsSynAG ExprSelfAG)
-$(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_EXREGAM_MAIN_SRC_AG)) \
-										: $(RULER2_EXREGAM_DPDS_SRC_AG)
+#RULER2_EXREGAM_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ExprReGamExprFmGam)
+#RULER2_EXREGAM_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ExprAbsSynAG ExprSelfAG)
+#$(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_EXREGAM_MAIN_SRC_AG)) \
+#										: $(RULER2_EXREGAM_DPDS_SRC_AG)
 
 RULER2_AGVWSL_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ViewSel)
 RULER2_AGVWSL_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ViewSelAbsSynAG)

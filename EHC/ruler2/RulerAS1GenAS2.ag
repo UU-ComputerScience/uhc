@@ -123,7 +123,7 @@ SEM AGItf
   | AGItf           loc     .   as2RuleSets =   let topWrap d = [AS2.Decl_RsVw d]
                                                     mkRs rsInfo
                                                       = case rsInfo of
-                                                          RsInfo nRs nSc vwSel d rlGam
+                                                          RsInfo nRs _ nSc vwSel d rlGam
                                                             -> topWrap
                                                                $ AS2.RsVwDecl_Rs nRs nSc d
                                                                    [ AS2.VwDecl_Vw v (mkFullVwNm nRs v) rls'
@@ -159,9 +159,9 @@ SEM AGItf
                                                                             where (scInfo,vwScInfo) = fromJust (scVwGamLookup (reScNm jInfo) nVw @scGam)
                                                                                   jg = jaGamToFmGam id . reJAGam $ jInfo
                                                                                   (jg',wrapFullJd) = jdChangeInfo @lhs.opts (atIsChanged vwRlInfo (reNm jInfo)) jg
-                                                                                  e  = jdGamFmExpr @fmAS2 . vwscJdGam $ vwScInfo
+                                                                                  e  = jdGamFmExpr @fmAS2 . vwscJdShpGam $ vwScInfo
                                                                                   nVw = vwrlNm vwRlInfo
-                                                          RsInfoGroup nRs nSc vwSel d rlNms | @fmAS2 == FmTeX
+                                                          RsInfoGroup nRs _ nSc vwSel d rlNms | @fmAS2 == FmTeX
                                                             -> topWrap
                                                                $ AS2.RsVwDecl_Rs nRs nSc d
                                                                    [ AS2.VwDecl_Vw nVw (mkFullVwNm nRs nVw) (mkRls nVw rlNms) | nVw <- vwOrder ]

@@ -4,7 +4,8 @@
 
 module KeywParser
   ( specialChars, opChars
-  , propsSynInhMp, propsMp
+  , propsSynInhMp, propsDirMp, propsMp
+  , keywordsTextDir
   , keywordsTextProps, keywordsTextEscapable, keywordsText
   , keywordsOpsEsc, keywordsOpsExplainEsc, keywordsOpsParenEsc
   , keywordsOps
@@ -38,10 +39,14 @@ propsSynInhMp
   =  Map.fromList [ ("thread",AtThread), ("updown",AtUpdown) ]
 propsOtherMp
   =  Map.fromList [ ("retain",AtRetain), ("node",AtNode), ("extern",AtExtern) ]
+propsDirMp
+  =  Map.fromList [ ("inh",AtInh), ("syn",AtSyn) ]
 propsMp
-  =  Map.unions [ propsSynInhMp, propsOtherMp ]
+  =  Map.unions [ propsSynInhMp, propsOtherMp, propsDirMp ]
 keywordsTextProps
   =  Map.keys propsMp
+keywordsTextDir
+  =  Map.keys propsDirMp
 keywordsTextEscapable
   =  keywordsTextProps
      ++ [ "judge", "judgeshape", "judgespec", "judgeuse", "relation"
@@ -65,7 +70,7 @@ keywordsText
      ] ++ keywordsOffsideTrigs
        ++ keywordsTextEscapable
 keywordsOpsEsc
-  =  [ ",", ":", "[", "]", "*", "<" ]
+  =  [ ",", ":", "[", "]", "*", "<", ":=" ]
 keywordsOpsExplainEsc
   =  [ "=", "-", "---", "." ]
 keywordsOpsParenEsc

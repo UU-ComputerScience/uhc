@@ -5,7 +5,8 @@
 module NmParser
   ( NmSPos
   , pNmDotSym
-  , pNmSym, pNmSymSPos
+  , pNmSym
+  , pNmDotted, pNmDottedSPos
   , pNmVw, pNmVwSPos
   , pNm, pNmSPos
   )
@@ -34,20 +35,26 @@ pNmDotSym pSymStr
   = pSel (id,NmSel,Just) (pN,pMb pN)
   where pN = pNmStrI <|> pSymStr
 
-pNmSymSPos :: (IsParser p Token) => (p SPos,p String) -> p NmSPos
-pNmSymSPos (pN,pS) = ((\sp@(s,p) -> (Nm s,sp)) <$> pN) <**> pNmDotSymSPos pS
+pNmBaseSelSPos :: (IsParser p Token) => (p SPos,p String) -> p NmSPos
+pNmBaseSelSPos (pN,pS) = ((\sp@(s,p) -> (Nm s,sp)) <$> pN) <**> pNmDotSymSPos pS
 
 pNmSym :: (IsParser p Token) => (p String,p String) -> p Nm
 pNmSym (pN,pS) = (Nm <$> pN) <**> pNmDotSym pS
 
 pNmVwSPos :: (IsParser p Token) => p NmSPos
-pNmVwSPos = pNmSymSPos (pNmStrISPos,pSymStr)
+pNmVwSPos = pNmBaseSelSPos (pNmStrISPos,pSymStr)
 
 pNmVw :: (IsParser p Token) => p Nm
 pNmVw = fst <$> pNmVwSPos
 
+pNmDottedSPos :: (IsParser p Token) => p String -> p NmSPos
+pNmDottedSPos pSymStr = pNmBaseSelSPos (pNmStrSPos,pSymStr)
+
+pNmDotted :: (IsParser p Token) => p String -> p Nm
+pNmDotted pSymStr = fst <$> pNmDottedSPos pSymStr
+
 pNmSPos :: (IsParser p Token) => p NmSPos
-pNmSPos = pNmSymSPos (pNmStrSPos,pSymStr)
+pNmSPos = pNmBaseSelSPos (pNmStrSPos,pSymStr)
 
 pNm :: (IsParser p Token) => p Nm
 pNm = fst <$> pNmSPos

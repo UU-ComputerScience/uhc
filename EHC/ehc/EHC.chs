@@ -106,6 +106,7 @@ emptyECU
       }
 
 instance CompileUnitState EHCompileUnitState where
+  cusDefault	= ECUSEh
   cusUnk   		= ECUSUnknown
   cusIsUnk 		= (==ECUSUnknown)
   cusIsImpKnown	= const True

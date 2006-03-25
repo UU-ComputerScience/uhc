@@ -5,7 +5,7 @@
 module Gam
   ( Gam, emptyGam, gamIsEmpty, gamSingleton
   , gamTryLookups, gamTryLookupsWithDefault
-  , gamLookup, gamFindWithDefault
+  , gamLookup, gamLookupMaybe, gamLookupJust, gamFindWithDefault
   , gamUnions, gamUnionsShadow, gamUnion, gamUnionShadow, gamUnionWith
   , gamDelete
   , gamInsert, gamInsertShadow
@@ -21,14 +21,15 @@ module Gam
   , gamFold, gamFoldWithKey
   , gamCheckDups
   , ppGam, ppGam'
-  , dblGamLookup
+  , dblGamLookup, tripleGamLookup
   )
   where
 
 import Data.Maybe
 import qualified Data.Map as Map
-import PPUtils
 import UU.Pretty
+import PPUtils
+import Utils
 import Err
 import Common
 
@@ -170,6 +171,12 @@ gamSingleton k v = Map.singleton k [v]
 gamLookup :: Ord k => k -> Gam k v -> Maybe v
 gamLookup k = fmap head . Map.lookup k
 
+gamLookupMaybe :: Ord k => w -> (v -> w) -> k -> Gam k v -> w
+gamLookupMaybe n j k = maybe n j . gamLookup k
+
+gamLookupJust :: Ord k => k -> Gam k v -> v
+gamLookupJust = gamLookupMaybe (panic "gamLookupJust") id
+
 gamAssocsShadow :: Gam k v -> [(k,v)]
 gamAssocsShadow = Map.assocs . Map.map head
 
@@ -299,14 +306,24 @@ instance (PP k,PP v) => PP (Gam k v) where
   pp g = ppGam' g
 
 -------------------------------------------------------------------------
--- Double lookup
+-- Double/... lookup
 -------------------------------------------------------------------------
 
+contGamLookup :: Ord k => (i1 -> Gam k i2) -> (i2 -> r) -> k -> i1 -> Maybe r
+contGamLookup g2Of mk n2 = fmap mk . gamLookup n2 . g2Of
+
 dblGamLookup :: Ord k => (i1 -> Gam k i2) -> k -> k -> Gam k i1 -> Maybe (i1,i2)
-dblGamLookup gOf sn vn g
-  = case gamLookup sn g of
-      Just si
-        -> fmap ((,) si) . gamLookup vn . gOf $ si
+dblGamLookup g2Of n1 n2 g
+  = case gamLookup n1 g of
+      Just i1
+        -> contGamLookup g2Of ((,) i1) n2 i1
+      _ -> Nothing
+
+tripleGamLookup :: Ord k => (i1 -> Gam k i2) -> (i2 -> Gam k i3) -> k -> k -> k -> Gam k i1 -> Maybe (i1,i2,i3)
+tripleGamLookup g2Of g3Of n1 n2 n3 g
+  = case dblGamLookup g2Of n1 n2 g of
+      Just (i1,i2)
+        -> contGamLookup g3Of (\i3 -> (i1,i2,i3)) n3 i2
       _ -> Nothing
 
 -------------------------------------------------------------------------

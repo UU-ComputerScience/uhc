@@ -99,7 +99,7 @@ SEM VwDecl
                                                         $ scVwGamLookup @lhs.rsScNm @vwNm @lhs.scGam
                                                     eScm
                                                       = exprSubst (@lhs.opts {optSubstOnce=True}) @lhs.fmGam
-                                                        . jdGamFmExpr @lhs.fm . vwscJdGam
+                                                        . jdGamFmExpr @lhs.fm . vwscJdShpGam
                                                         $ vwScInfo
                                                 in  ( [ VwDecl_LTX @nm scMetaNm eScm @rlDecls.self ]
                                                     , [ VwDecl_LTXFig @nm @fullNm scMetaNm @lhs.rsDescr @rlDecls.rlFullNmL ]

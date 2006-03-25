@@ -326,23 +326,25 @@ SEM JdAt
 SEM Jd
   | Ats             loc     .   (exprEqnL,introECGam,eqnErrs)
                                             =   case scKind @scInfo of
-                                                  ScJudge    -> (@ats.exprEqnL,@ats.introECGam,[])
-                                                  ScRelation -> (exprLines jd2,introECGam2,concat jd1ErrLL)
-                                                             where jd1      = fkGamLookup exprUnk jdExpr [@lhs.fm] . vwscJdGam $ @vwScInfo
-                                                                   (jd1EqlL,jd1ErrLL)
-                                                                            = unzip
-                                                                                [ maybe (Map.empty,[Err_NotAEqnForm @lhs.pos (pp l)]) (\e -> (e,[])) (exprCheckAEqnForm l)
-                                                                                | l <- exprLines jd1
-                                                                                ]
-                                                                   jd2      = exprSubst (@lhs.opts {optSubstOnce=True}) (fmGamMap (const fst) @ats.atFmGam) jd1
-                                                                   mkG eqm gn
-                                                                            = if null n1 then [] else n1 ++ mkG (foldr (\(e,_) m -> Map.delete e m) eqm n1) n1
-                                                                            where n1 = [ (exprEnsureAppTop e',c) | (e,c) <- gn, e' <- maybeToList (Map.lookup e eqm) ]
-                                                                   (introECL,introECGL)
-                                                                            = unzip [ ((e,c),eg) | (_,(e,c)) <- fmGamToList' @lhs.fm @ats.atFmGam, let (e',eg) = exprElimCnstr e ]
-                                                                   introECGam2
-                                                                            = (ecGamFromList $ introECL ++ mkG (Map.unions jd1EqlL) introECL)
-                                                                              `gamUnion` gamUnions introECGL
+                                                  ScJudge
+                                                    -> (@ats.exprEqnL,@ats.introECGam,[])
+                                                  ScRelation
+                                                    -> (exprLines jd2,introECGam2,concat jd1ErrLL)
+                                                    where jd1      = fkGamLookup exprUnk jdshExpr [@lhs.fm] . vwscJdShpGam $ @vwScInfo
+                                                          (jd1EqlL,jd1ErrLL)
+                                                                   = unzip
+                                                                       [ maybe (Map.empty,[Err_NotAEqnForm @lhs.pos (pp l)]) (\e -> (e,[])) (exprCheckAEqnForm l)
+                                                                       | l <- exprLines jd1
+                                                                       ]
+                                                          jd2      = exprSubst (@lhs.opts {optSubstOnce=True}) (fmGamMap (const fst) @ats.atFmGam) jd1
+                                                          mkG eqm gn
+                                                                   = if null n1 then [] else n1 ++ mkG (foldr (\(e,_) m -> Map.delete e m) eqm n1) n1
+                                                                   where n1 = [ (exprEnsureAppTop e',c) | (e,c) <- gn, e' <- maybeToList (Map.lookup e eqm) ]
+                                                          (introECL,introECGL)
+                                                                   = unzip [ ((e,c),eg) | (_,(e,c)) <- fmGamToList' @lhs.fm @ats.atFmGam, let (e',eg) = exprElimCnstr e ]
+                                                          introECGam2
+                                                                   = (ecGamFromList $ introECL ++ mkG (Map.unions jd1EqlL) introECL)
+                                                                     `gamUnion` gamUnions introECGL
 
 SEM RlDecl
   | Rl              (lhs.self,loc.selfNonOptim1,loc.selfNonOptim2)

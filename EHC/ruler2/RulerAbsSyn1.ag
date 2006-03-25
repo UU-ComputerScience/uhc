@@ -10,6 +10,9 @@ module RulerAbsSyn1
   , AGItf(..)
   , Decl(..), Decls
   , AttrIntro(..), AttrIntros
+  , AttrIntroDecl(..), AttrIntroDecls
+  , AttrRename(..), AttrRenames
+  , RuleJudgeIntro(..), RuleJudgeIntros
   , RExpr(..), RExprs
   , RExprEqn(..)
   , AttrEqn(..), AttrEqns

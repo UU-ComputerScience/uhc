@@ -16,6 +16,7 @@ where
 import IO
 import Maybe
 import Data.List
+import Control.Monad
 import Directory
 
 -------------------------------------------------------------------------------------------
@@ -54,6 +55,12 @@ fpathSetSuff :: String -> FPath -> FPath
 fpathSetSuff "" fp
   = fpathRemoveSuff fp
 fpathSetSuff s fp
+  = fp {fpathMbSuff = Just s}
+
+fpathSetNonEmptySuff :: String -> FPath -> FPath
+fpathSetNonEmptySuff "" fp
+  = fp
+fpathSetNonEmptySuff s fp
   = fp {fpathMbSuff = Just s}
 
 fpathSetDir :: String -> FPath -> FPath
@@ -122,12 +129,19 @@ searchPathFromString
 searchPathForReadableFile :: SearchPath -> FileSuffixes -> FPath -> IO (Maybe FPath)
 searchPathForReadableFile paths suffs fp
   = let select f l
+          = foldM chk Nothing l
+          where chk r fp
+                  = case r of
+                      Nothing -> f fp
+                      Just _  -> return r
+{-
           = do { finds <- mapM f l
                ; return (listToMaybe . catMaybes $ finds)
                }
-        tryToOpen mbSuff fp
-          = do { let fp' = maybe fp (\suff -> fpathSetSuff suff fp) mbSuff
+-}      tryToOpen mbSuff fp
+          = do { let fp' = maybe fp (\suff -> fpathSetNonEmptySuff suff fp) mbSuff
                ; fExists <- doesFileExist (fpathToStr fp')
+               -- ; hPutStrLn stderr (show fp ++ " - " ++ show fp')
                ; if fExists
                  then return (Just fp')
                  else return Nothing

@@ -173,13 +173,13 @@ ruleset hl scheme hl "Hole" =
 
 scheme jspec =
   view E =
-  holes [ node j: JSpec, vwGr: VwGr | jdGam: JdGam | ]
+  holes [ node j: JSpec, vwGr: VwGr | jdGam: JdShpGam | ]
   judgespec vwGr ; jdGam :- j
   judgeuse tex jdGam :-.."jspec" j
 
 scheme jspecs =
   view E =
-  holes [ node js: JSpecs, vwGr: VwGr | jdGam: JdGam | ]
+  holes [ node js: JSpecs, vwGr: VwGr | jdGam: JdShpGam | ]
   judgespec vwGr ; jdGam :- js
   judgeuse tex jdGam :-.."jspecs" js
 
@@ -385,7 +385,7 @@ relation isInGam =
 
 relation isInVwScGam =
   view E =
-    holes [ nm: Nm, gam: VwScGam | | atScGam: AtScGam, jdGam: JdGam ]
+    holes [ nm: Nm, gam: VwScGam | | atScGam: AtScGam, jdGam: JdShpGam ]
     judgespec gam :- nm : atScGam ; jdGam
     judgeuse tex (nm :-> (atScGam,jdGam)) `elem` gam
 

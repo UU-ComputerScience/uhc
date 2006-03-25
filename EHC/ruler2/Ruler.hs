@@ -60,6 +60,7 @@ data RCompileRunStateInfo
       }
 
 instance CompileUnitState RCompileUnitState where
+  cusDefault		= RCUSRuler
   cusUnk            = RCUSUnknown
   cusIsUnk          = (==RCUSUnknown)
   cusIsImpKnown s   = s /= RCUSUnknown
@@ -107,12 +108,37 @@ instance PP RCompileUnit where
 type FileSuffMp = Map.Map String RCompileUnitState
 
 fileSuffMp :: FileSuffMp
-fileSuffMp = Map.fromList [ ( "rul", RCUSRuler ), ( "", RCUSRuler ) ]
+fileSuffMp = Map.fromList [ ( "rul", RCUSRuler ), ( "", RCUSRuler ), ( "*", RCUSRuler ) ]
 
 -------------------------------------------------------------------------
 -- Compile run actions
 -------------------------------------------------------------------------
 
+crParseCU :: Nm -> RCompileRun -> IO RCompileRun
+crParseCU modNm cr
+  = do { let cu     = crCU modNm cr
+             fp     = cuFPath cu
+             fNm    = fpathToStr fp
+       ; (fn,fb,fh)
+             <- if fpathIsEmpty fp
+                then return ("<stdin>","<stdin>",stdin)
+                else do { let fn = fpathToStr fp
+                        ; h <- openFile fn ReadMode
+                        ; return (fn,fpathToStr (fpathRemoveSuff fp),h)
+                        }
+       -- ; crPP "crParseCU" cr
+       ; tokens <- mkHScan fn fh
+       ; let (pres,perrs) = parseToResMsgs pAGItf tokens
+             (showErrs,omitErrs) = splitAt 5 perrs
+       ; if null perrs
+         then do { let impMp = as1Imports pres
+                       info = crStateInfo cr
+                 ; crUpdCU modNm (\cu -> return (cu {rcuMbOut = Just pres, rcuImpNmL = Map.keys impMp}))
+                           (cr {crStateInfo = info {crsiImpPosMp = impMp `Map.union` crsiImpPosMp info}})
+                 }
+         else crSetLimitErrs 5 (map mkPPErr perrs) cr
+       }
+{-
 crParseCU :: Nm -> RCompileRun -> IO RCompileRun
 crParseCU modNm cr
   = do { let cu     = crCU modNm cr
@@ -136,6 +162,7 @@ crParseCU modNm cr
                  }
          else crSetLimitErrs 5 (map mkPPErr perrs) cr
        }
+-}
 
 crFindAndParseCU :: Maybe FPath -> Nm -> RCompileRun -> IO RCompileRun
 crFindAndParseCU mbFp modNm cr
@@ -151,6 +178,8 @@ crFlattenAndCompileAllCU cr
   = crSeq
       [ crPutDbg
       , crSetErrs (M1.errL_Syn_AGItf sem1Res)
+      , crMk1
+{-
       , if optGenV2 opts && not isAS2
         then crMk1
         else if not isAS2
@@ -158,7 +187,7 @@ crFlattenAndCompileAllCU cr
         else case optGenFM opts of
                FmAS2 f -> crMk3 f
                _       -> liftCR id
-
+-}
       ]
       cr
   where opts = crsiOpts (crStateInfo cr)
@@ -183,6 +212,7 @@ crFlattenAndCompileAllCU cr
                        where bld f = (f opts (M1.scGam_Syn_AGItf sem1Res) (M1.fmGam_Syn_AGItf sem1Res) (M1.rwGam_Syn_AGItf sem1Res) t1,True)
                ; crSeq [crSetErrs t2errL, crPutBld doPrint (M2.ppAS2 opts t2)] cr
                }
+{-
         crMk2
           = crSeq [ crPutBld True (M1.mkPP_Syn_AGItf sem1Res (optGenFM opts))
                   , crPutBld (optGenExpl opts) (M1.scExplPP_Syn_AGItf sem1Res)
@@ -200,6 +230,7 @@ crFlattenAndCompileAllCU cr
                        ]
                        cr
                }
+-}
 
 crCompileTopLevel :: FPath -> Opts -> IO ()
 crCompileTopLevel fp opts

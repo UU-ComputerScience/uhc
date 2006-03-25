@@ -11,14 +11,14 @@ import qualified Data.Map as Map
 import Common
 import Expr
 import FmGam
-import JdGam
+import JdShpGam
 
 -------------------------------------------------------------------------
 -- Misc
 -------------------------------------------------------------------------
 
-jdGamFmExpr :: FmKind -> JdGam Expr -> Expr
-jdGamFmExpr k = fkGamLookup exprUnk jdExpr [k,FmSpec]
+jdGamFmExpr :: FmKind -> JdShpGam Expr -> Expr
+jdGamFmExpr k = fkGamLookup exprUnk jdshExpr [k,FmSpec]
 
 -------------------------------------------------------------------------
 -- Transpose gam of gam

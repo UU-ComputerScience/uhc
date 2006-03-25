@@ -18,9 +18,16 @@ data Nm' s
   | NmSel  { nmNm       :: Nm' s
            , nmMbSel    :: Maybe s
            }
+  | NmQual { nmNm       :: Nm' s
+           , nmQual     :: s
+           }
   deriving (Eq,Ord)
 
 type Nm = Nm' String
+
+nmSelSep, nmQualSep :: String
+nmSelSep  = "."
+nmQualSep = "_"
 
 nmBase' :: Nm -> String
 nmBase' (NmSel n _) = nmBase' n
@@ -99,15 +106,16 @@ nmShowAG :: Nm -> String
 nmShowAG = nmShow' "_"
 
 instance Show Nm where
-  show = nmShow' "."
+  show = nmShow' nmSelSep
 
 instance PP Nm where
-  pp = ppListSep "" "" "." . nmToL
+  pp = ppListSep "" "" nmSelSep . nmToL
 
 instance Functor Nm' where
   fmap f NmEmp  = NmEmp
   fmap f (Nm s) = Nm (f s)
-  fmap f (NmSel n ms) = NmSel (fmap f n) (fmap f ms)
+  fmap f (NmSel  n ms) = NmSel  (fmap f n) (fmap f ms)
+  fmap f (NmQual n  s) = NmQual (fmap f n) (     f  s)
 
 -------------------------------------------------------------------------
 -- Make name of something
