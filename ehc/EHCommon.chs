@@ -72,7 +72,7 @@
 %%[8 export(hsnUndefined,hsnPrimAddInt,hsnMain)
 %%]
 
-%%[8 export(sortByOn,sortOn,groupOn,groupSortOn)
+%%[88 export(sortByOn,sortOn,groupOn,groupSortOn)
 %%]
 
 %%[8 export(Seq,mkSeq,unitSeq,concatSeq,"(<+>)",seqToList,emptySeq)
@@ -93,7 +93,7 @@
 %%[8 export(CTagsMp)
 %%]
 
-%%[9 export(groupSortByOn)
+%%[99 export(groupSortByOn)
 %%]
 
 %%[9 export(hsnOImpl,hsnCImpl,hsnPrArrow,hsnIsPrArrow,hsnIsUnknown)
@@ -741,7 +741,7 @@ listCombineUniq :: Eq a => [[a]] -> [a]
 listCombineUniq = nub . concat
 %%]
 
-%%[8
+%%[88
 sortOn :: Ord b => (a -> b) -> [a] -> [a]
 sortOn = sortByOn compare
 
@@ -755,7 +755,7 @@ groupSortOn :: Ord b => (a -> b) -> [a] -> [[a]]
 groupSortOn sel = groupOn sel . sortOn sel
 %%]
 
-%%[9
+%%[99
 groupByOn :: (b -> b -> Bool) -> (a -> b) -> [a] -> [[a]]
 groupByOn eq sel = groupBy (\e1 e2 -> sel e1 `eq` sel e2)
 

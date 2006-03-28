@@ -25,6 +25,7 @@ import RwExprGam
 import ECnstrGam
 import RulerAbsSyn2
 import RulerAdmin
+import RulerUtils( sc2DATA )
 
 -- for ppDbg
 import UU.Pretty
@@ -54,13 +55,19 @@ INCLUDE "ARuleSelfAG.ag"
 WRAPPER AGItf 
 
 {
-as2ARule :: Opts -> ScGam Expr -> FmGam Expr -> RwExprGam -> Decls -> (Decls,PP_Doc,[Err])
-as2ARule o scg fmg rwg r
+as2ARule :: Opts -> DtInvGam -> ScGam Expr -> FmGam Expr -> RwExprGam -> Decls -> (Decls,PP_Doc,[Err])
+as2ARule o dig scg fmg rwg r
   = (self_Syn_AGItf r2,ppDbg_Syn_AGItf r2,errL_Syn_AGItf r2)
   where r1 = sem_AGItf (AGItf_AGItf r)
         r2 = wrap_AGItf r1
-                (Inh_AGItf {opts_Inh_AGItf = o, fmGam_Inh_AGItf = fmg, rwGam_Inh_AGItf = rwg, scGam_Inh_AGItf = scg})
+                (Inh_AGItf {opts_Inh_AGItf = o, fmGam_Inh_AGItf = fmg, rwGam_Inh_AGItf = rwg, scGam_Inh_AGItf = scg, dtInvGam_Inh_AGItf = dig})
 }
+
+-------------------------------------------------------------------------
+-- Context: dtInvGam
+-------------------------------------------------------------------------
+
+ATTR AllAS2 AGItf [ dtInvGam: DtInvGam | | ]
 
 -------------------------------------------------------------------------
 -- Context: options, position, etc
@@ -83,12 +90,19 @@ SEM Jd
   | Ats             loc     .   sbse        =   exprSubst (@lhs.opts {optSubstFullNm=False}) @lhs.fmGam
                             .   sbsn        =   nmSubst (@lhs.opts {optSubstFullNm=False}) @lhs.fmGam
 
+SEM RlDecl
+  | Rl              loc     .   sbse        =   exprSubst (@lhs.opts {optSubstFullNm=False}) @lhs.fmGam
+                            .   sbsn        =   nmSubst (@lhs.opts {optSubstFullNm=False}) @lhs.fmGam
+
 -------------------------------------------------------------------------
--- Context: scInfo
+-- Context: scInfo, ... + dtInfo, ...
 -------------------------------------------------------------------------
 
 SEM RlDecl
   | Rl              loc     .   rsScInfo    =   maybe (panic "RlDecl_Rl: rsScInfo") id $ gamLookup @lhs.rsScNm @lhs.scGam
+                            .   (_,_,daInvInfo)
+                                            =   maybe (undefined,undefined,emptyDtAltInvInfo) id
+                                                $ dtVwRlInvGamLookup @lhs.rsScNm @lhs.vwNm @rlNm @lhs.dtInvGam
 
 SEM Jd
   | Ats             loc     .   (scInfo,vwScInfo)
@@ -121,7 +135,7 @@ SEM RlDecl
 ATTR AllJd [ agStr: Nm | | ]
 
 SEM RlDecl
-  | Rl              loc     .   agStr       =   maybe @rlNm Nm @mbAGStr
+  | Rl              loc     .   agStr       =   @agStr
   | * - Rl          loc     .   agStr       =   nmNone
 
 -------------------------------------------------------------------------
@@ -135,27 +149,16 @@ SEM Jd
 
 SEM JdAt
   | At              loc     .   atInfo      =   maybe emptyAtInfo id $ gamLookup @nm @lhs.scAtGam
-                            .   propRetain  =   atProps @atInfo `intersect` [AtRetain]
+                            .   propRetain  =   [AtRetain] `atFilterProps` @atInfo
 
 -------------------------------------------------------------------------
 -- Local properties for attr
 -------------------------------------------------------------------------
 
-{
-data Dir = Def | Use | Node | NoDir deriving (Show,Eq,Ord)
-}
-
 SEM JdAt
-  | At              loc     .   dir         =   let isSyn = AtSyn `elem` atDirs @atInfo
-                                                    isInh = AtInh `elem` atDirs @atInfo
-                                                in  if AtNode `elem` atProps @atInfo
-                                                    then Node
-                                                    else if isSyn
-                                                    then if @lhs.isPre then Use else Def
-                                                    else if isInh
-                                                    then if @lhs.isPre then Def else Use
-                                                    else NoDir
-                            .   isBi        =   not $ null $ Map.elems propsSynInhMp `intersect` atProps @atInfo
+  | At              loc     .   dir         =   atDefUse @lhs.isPre @atInfo
+                            .   isBi        =   Map.elems propsSynInhMp `atHasProps` @atInfo
+                            .   isExtern    =   AtExtern `atHasProp` @atInfo
 
 SEM JdAt
   | At              loc     .   atTy        =   atTy @atInfo
@@ -171,7 +174,7 @@ ATTR JdAts [ | | gathNmNd: Nm ]
 ATTR AllAt [ | | gathExNd: Expr ]
 
 SEM JdAt
-  | At              lhs     .   mbNmNd      =   if @dir == Node then Just @nm else Nothing
+  | At              lhs     .   mbNmNd      =   if @dir == ADNode then Just @nm else Nothing
                             .   gathExNd    =   @expr.self
 
 SEM JdAts
@@ -205,10 +208,14 @@ ATTR AllJd [ | | coGam USE {`gamUnion`} {emptyGam}: ChOrdGam ]
 SEM Jd
   | Ats             loc     .   exNdNmS     =   exprNmS @ats.gathExNd
                             .   exNdFmGam   =   fmGamFromList' @lhs.fm [ (n,mkAFld . @sbsn $ n) | n <- Set.toList @exNdNmS ]
-                    lhs     .   coGam       =   exprCoGam . exprSubst (@lhs.opts {optSubstFullNm=False}) @exNdFmGam $ @ats.gathExNd 
+                    lhs     .   coGam       =   let sbse = exprSubst (@lhs.opts {optSubstFullNm=False}) @exNdFmGam
+                                                    cg1 = exprCoGam . sbse $ @ats.gathExNd
+                                                in  cg1
 
 SEM RlDecl
-  | Rl              loc     .   coNmL       =   coGamNmL @postJds.coGam
+  | Rl              loc     .   coNmL       =   let cg1 = @postJds.coGam
+                                                    cg2 = gamMapKeys @sbsn $ daiChOrdGam @daInvInfo 
+                                                in  coGamNmL (if gamIsEmpty cg1 then cg2 else cg1)
 
 -------------------------------------------------------------------------
 -- Attr bindings as FmGam
@@ -241,9 +248,9 @@ ATTR AllJd AllAt [ | | introFmGam USE {`fmGamUnion`} {emptyGam}: {FmGam Expr} ]
 
 SEM JdAt
   | At              loc     .   introFmGam  =   case @dir of
-                                                  Use -> fmGamFromList' @lhs.fm [ (n,mkALoc' n') | (n,n') <- nmRefAscL ]
-                                                      where nmRefAscL = [ (n,Nm . nmShowAG . @sbsn {- . nmAdapt -} $ n) | n <- Set.toList (exprNmS @useLhs), n /= nmWild ]
-                                                  _   -> emptyGam
+                                                  ADUse -> fmGamFromList' @lhs.fm [ (n,mkALoc' n') | (n,n') <- nmRefAscL ]
+                                                        where nmRefAscL = [ (n,Nm . nmShowAG . @sbsn {- . nmAdapt -} $ n) | n <- Set.toList (exprNmS @useLhs), n /= nmWild ]
+                                                  _     -> emptyGam
 
 SEM Jd
   | Ats             lhs     .   introFmGam  =   case scKind @scInfo of
@@ -285,8 +292,8 @@ ATTR AllJd AllAt [ | | introADGam USE {`gamUnion`} {emptyGam}: AtDefdGam ]
 
 SEM JdAt
   | At              lhs     .   introADGam  =   case @dir of
-                                                  Def -> gamFromAssocs [(@nmSbs,@isBi)]
-                                                  _   -> emptyGam
+                                                  ADDef -> gamFromAssocs [(@nmSbs,@isBi)]
+                                                  _     -> emptyGam
 
 SEM RlDecl
   | Rl              loc     .   adGam       =   @preJds.introADGam `gamUnion` @postJds.introADGam
@@ -299,7 +306,7 @@ ATTR AllJd AllAt [ | | introAD2Gam USE {`adGamUnion`} {emptyGam}: {AtDefdGam'} ]
 
 SEM JdAt
   | At              lhs     .   introAD2Gam =   case @dir of
-                                                  Use | @lhs.isJd
+                                                  ADUse | @lhs.isJd
                                                     -> gamFromAssocs [(@nmSbs,Set.singleton @lhs.nmNd)]
                                                   _ -> emptyGam
 
@@ -318,9 +325,10 @@ SEM JdAt
                                                            where eqn1         = mkExprEqn l r
                                                                  (eqn2,ecGam) = exprElimCnstr eqn1
                                                 in  case @dir of
-                                                      Use | not (fmNull @introFmGam)
+                                                      ADUse | not (fmNull @introFmGam)
                                                           -> mk @useLhs @useRhs
-                                                      Def -> mk @defLhs @defRhs
+                                                      ADDef | not @isExtern
+                                                          -> mk @defLhs @defRhs
                                                       _   -> ([],emptyGam)
 
 SEM Jd
@@ -356,7 +364,7 @@ SEM RlDecl
                                                           ]
                                                     aRule1
                                                       = ARule_Rule
-                                                          [maybe (scNm @rsScInfo) Nm (scMbAGStr @rsScInfo)]
+                                                          [sc2DATA @rsScInfo @lhs.dtInvGam]
                                                           @agStr
                                                           ["rule " ++ show @rlNm,"view " ++ show @lhs.vwNm]
                                                           (concat eqnLL)
@@ -381,7 +389,7 @@ SEM RlDecl
 -}
 SEM RlDecl
   | Rl              lhs     .   ppDbg       =   "-- debug info"
-                                                >-< @nm >#< ppCommaList [pp @pos,pp @mbAGStr]
+                                                >-< @nm >#< ppCommaList [pp @pos,pp @agStr]
                                                 >-< "introFmGam" >#< ppGam @introFmGam
                                                 >-< "introECGam" >#< ppECGam @introECGam
                                                 >-< "lhs.rwGam" >#< ppGam @lhs.rwGam

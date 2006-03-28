@@ -47,6 +47,7 @@ DATA Expr
                         expr        : Expr
   | Uniq
   | Empty
+  | Undefined
 
 TYPE MbExpr = MAYBE Expr
 

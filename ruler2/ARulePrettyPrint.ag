@@ -18,6 +18,7 @@ import LaTeXFmtUtils
 import Expr
 import ARule
 import ECnstrGam
+import KeywParser( strSel )
 }
 
 INCLUDE "ExprAbsSynAG.ag"

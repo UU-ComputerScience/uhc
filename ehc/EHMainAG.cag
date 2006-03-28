@@ -24,6 +24,9 @@
 %%[4_2 hs import(qualified Data.Set as Set,EHGamUtils,EHTyElimAlts,EHTyFreshVar)
 %%]
 
+%%[8 hs import(Utils(groupSortOn))
+%%]
+
 %%[8 hs import(qualified Data.Map as Map,EHCore,EHCoreUtils,EHCorePretty)
 %%]
 

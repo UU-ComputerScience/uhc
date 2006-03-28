@@ -3,7 +3,8 @@
 -------------------------------------------------------------------------
 
 module Gam
-  ( Gam, emptyGam, gamIsEmpty, gamSingleton
+  ( Gam, emptyGam, gamIsEmpty, gamSingleton, gamMember
+  
   , gamTryLookups, gamTryLookupsWithDefault
   , gamLookup, gamLookupMaybe, gamLookupJust, gamFindWithDefault
   , gamUnions, gamUnionsShadow, gamUnion, gamUnionShadow, gamUnionWith
@@ -19,9 +20,14 @@ module Gam
   , gamPartition
   , gamMapAccumWithKey
   , gamFold, gamFoldWithKey
+  
   , gamCheckDups
+  
   , ppGam, ppGam'
+  
   , dblGamLookup, tripleGamLookup
+  
+  , GamMerge(..)
   )
   where
 
@@ -34,101 +40,16 @@ import Err
 import Common
 
 -------------------------------------------------------------------------
--- Gam v1
+-- Gam
 -------------------------------------------------------------------------
 
-{-
-type Gam k v = Map.Map k v
-
-gamSingleton :: k -> v -> Gam k v
-gamSingleton = Map.singleton
-
-gamLookup :: Ord k => k -> Gam k v -> Maybe v
-gamLookup = Map.lookup
-
-gamAssocsShadow :: Gam k v -> [(k,v)]
-gamAssocsShadow = Map.assocs
-
-gamAssocs :: Gam k v -> [(k,v)]
-gamAssocs = gamAssocsShadow
-
-gamAssocs' :: Gam k v -> [[(k,v)]]
-gamAssocs' g = [ [kv] | kv <- Map.assocs g ]
-
-gamElemsShadow :: Gam k v -> [v]
-gamElemsShadow = Map.elems
-
-gamElems :: Gam k v -> [v]
-gamElems = gamElemsShadow
-
-gamFromAssocs :: Ord k => [(k,v)] -> Gam k v
-gamFromAssocs = Map.fromList
-
-gamFromAssocsWith :: Ord k => (v -> v -> v) -> [(k,v)] -> Gam k v
-gamFromAssocsWith = Map.fromListWith
-
-gamToMap :: Gam k v -> Map.Map k v
-gamToMap = id
-
-gamUnionWith :: Ord k => (v -> v -> v) -> Gam k v -> Gam k v -> Gam k v
-gamUnionWith = Map.unionWith
-
-gamUnion :: Ord k => Gam k v -> Gam k v -> Gam k v
-gamUnion = Map.union
-
-gamUnionShadow :: Ord k => Gam k v -> Gam k v -> Gam k v
-gamUnionShadow = Map.union
-
-gamUnions :: Ord k => [Gam k v] -> Gam k v
-gamUnions = gamUnionsShadow
-
-gamUnionsShadow :: Ord k => [Gam k v] -> Gam k v
-gamUnionsShadow = Map.unions
-
-gamInsert :: Ord k => k -> v -> Gam k v -> Gam k v
-gamInsert = gamInsertShadow
-
-gamInsertShadow :: Ord k => k -> v -> Gam k v -> Gam k v
-gamInsertShadow = Map.insert
-
-gamFilterWithKey :: Ord k => (k -> v -> Bool) -> Gam k v -> Gam k v
-gamFilterWithKey = Map.filterWithKey
-
-gamFilter :: Ord k => (v -> Bool) -> Gam k v -> Gam k v
-gamFilter = Map.filter
-
-gamPartition :: Ord k => (v -> Bool) -> Gam k v -> (Gam k v,Gam k v)
-gamPartition = Map.partition
-
-gamMap :: (v -> w) -> Gam k v -> Gam k w
-gamMap = Map.map
-
-gamMapWithKey :: (k -> v -> w) -> Gam k v -> Gam k w
-gamMapWithKey = Map.mapWithKey
-
-gamMapAccumWithKey :: (a -> k -> b -> (a, c)) -> a -> Gam k b -> (a, Gam k c)
-gamMapAccumWithKey = Map.mapAccumWithKey
-
-gamFoldWithKey :: (k -> v -> a -> a) -> a -> Gam k v -> a
-gamFoldWithKey = Map.foldWithKey
-
-gamFold :: (v -> a -> a) -> a -> Gam k v -> a
-gamFold = Map.fold
-
-gamKeysWithDup :: Gam k v -> [k]
-gamKeysWithDup g = []
--}
-
--------------------------------------------------------------------------
--- Gam v2
--------------------------------------------------------------------------
-
-{-
--}
 type Gam k v = Map.Map k [v]
 
-liftWith :: (v -> v -> v) -> ([v] -> [v] -> [v])
-liftWith f = \(v1:v1s) (v2:v2s) -> [f v1 v2] ++ v1s ++ v2s
+liftList :: (v -> v -> v) -> ([v] -> [v] -> [v])
+liftList f = \(v1:v1s) (v2:v2s) -> [f v1 v2] ++ v1s ++ v2s
+
+liftList2 :: (v -> v -> v) -> ([v] -> [v] -> [v])
+liftList2 f = \v1s v2s -> [foldr1 f (v1s ++ v2s)]
 
 liftAnyWithKey :: (k -> v -> w) -> (k -> [v] -> w)
 liftAnyWithKey f = \k (v:_) -> f k v
@@ -196,13 +117,13 @@ gamFromAssocs :: Ord k => [(k,v)] -> Gam k v
 gamFromAssocs = Map.fromListWith (++) . liftAssocs
 
 gamFromAssocsWith :: Ord k => (v -> v -> v) -> [(k,v)] -> Gam k v
-gamFromAssocsWith f = Map.fromListWith (liftWith f) . liftAssocs
+gamFromAssocsWith f = Map.fromListWith (liftList f) . liftAssocs
 
 gamToMap :: Gam k v -> Map.Map k v
 gamToMap = Map.map head
 
 gamUnionWith :: Ord k => (v -> v -> v) -> Gam k v -> Gam k v -> Gam k v
-gamUnionWith f = Map.unionWith (liftWith f)
+gamUnionWith f = Map.unionWith (liftList f)
 
 gamUnion :: Ord k => Gam k v -> Gam k v -> Gam k v
 gamUnion = Map.unionWith (++)
@@ -259,6 +180,9 @@ emptyGam = Map.empty
 gamIsEmpty :: Gam k v -> Bool
 gamIsEmpty = Map.null
 
+gamMember :: Ord k => k -> Gam k v -> Bool
+gamMember = Map.member
+
 gamFindWithDefault :: Ord k => v -> k -> Gam k v -> v
 gamFindWithDefault v k = maybe v id . gamLookup k
 
@@ -285,6 +209,16 @@ gamCheckDups :: PP k => SPos -> String -> String -> Gam k v -> [Err]
 gamCheckDups p cx knd g
   = if null d then [] else [Err_Dups p cx knd (map pp d)]
   where d = gamKeysWithDup g
+
+-------------------------------------------------------------------------
+-- Merging
+-------------------------------------------------------------------------
+
+class GamMerge g where
+  gamMerge :: g -> g -> g
+
+instance (Ord k,GamMerge v) => GamMerge (Gam k v) where
+  gamMerge = Map.unionWith (liftList2 gamMerge)
 
 -------------------------------------------------------------------------
 -- Pretty printing

@@ -31,6 +31,7 @@ SEM Expr
   | ChildOrder      loc     .   ppLaTeX     =   @expr.ppLaTeX
   | Expr            lhs     .   ppLaTeX     =   ensureTeXMath . switchLaTeXLhs' $ @expr.ppLaTeX
   | Empty           loc     .   ppLaTeX     =   empty
+  | Undefined       loc     .   ppLaTeX     =   pp "_"
 
 -------------------------------------------------------------------------
 -- Maybe Pretty printing, LaTeX

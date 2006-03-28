@@ -2,6 +2,7 @@ module Utils where
 
 import UU.Pretty
 import Data.Char
+import Data.List
 import Debug.Trace
 
 -------------------------------------------------------------------------
@@ -48,6 +49,28 @@ wordsBy p l
                                     (_:ls'') -> w ls''
 
 panic m = error ("panic: " ++ m)
+
+-------------------------------------------------------------------------
+-- group/sort combi's
+-------------------------------------------------------------------------
+
+sortOn :: Ord b => (a -> b) -> [a] -> [a]
+sortOn = sortByOn compare
+
+sortByOn :: (b -> b -> Ordering) -> (a -> b) -> [a] -> [a]
+sortByOn cmp sel = sortBy (\e1 e2 -> sel e1 `cmp` sel e2)
+
+groupOn :: Eq b => (a -> b) -> [a] -> [[a]]
+groupOn sel = groupBy (\e1 e2 -> sel e1 == sel e2)
+
+groupSortOn :: Ord b => (a -> b) -> [a] -> [[a]]
+groupSortOn sel = groupOn sel . sortOn sel
+
+groupByOn :: (b -> b -> Bool) -> (a -> b) -> [a] -> [[a]]
+groupByOn eq sel = groupBy (\e1 e2 -> sel e1 `eq` sel e2)
+
+groupSortByOn :: (b -> b -> Ordering) -> (a -> b) -> [a] -> [[a]]
+groupSortByOn cmp sel = groupByOn (\e1 e2 -> cmp e1 e2 == EQ) sel . sortByOn cmp sel
 
 -------------------------------------------------------------------------
 -- Maybe

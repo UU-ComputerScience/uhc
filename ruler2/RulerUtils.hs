@@ -4,6 +4,9 @@ module RulerUtils
   ( jdGamFmExpr
   , rlLtxGamTranspose
   , gamTranspose
+  
+  , sc2DATA
+  , rl2SEM
   )
   where
 
@@ -12,6 +15,7 @@ import Common
 import Expr
 import FmGam
 import JdShpGam
+import RulerAdmin
 
 -------------------------------------------------------------------------
 -- Misc
@@ -34,6 +38,26 @@ gamTranspose (getG,mkI) g
 rlLtxGamTranspose :: Ord k => Gam k (Gam k (n,v)) -> Gam k (Gam k (n,v))
 rlLtxGamTranspose g
   = gamFromAssocsWith gamUnion [ (v,gamSingleton r (n,d)) | (r,vm) <- gamAssocsShadow g, (v,(n,d)) <- gamAssocsShadow vm ]
+
+-------------------------------------------------------------------------
+-- RulerAdmin: AG name info
+-------------------------------------------------------------------------
+
+sc2DATA :: ScInfo e -> DtInvGam -> Nm
+sc2DATA si dg
+  = case scMbAGStr si of
+      Just s  -> Nm s
+      Nothing -> case gamLookup (scNm si) dg of
+                   Just i  -> dtiAGNm i
+                   Nothing -> scNm si
+
+rl2SEM :: RlInfo e -> DtInvGam -> Nm -> Nm -> Nm -> Nm
+rl2SEM rlInfo dg scNm rlNm vwNm
+  = case rlMbAGStr rlInfo of
+      Just s  -> Nm s
+      Nothing -> case dtVwRlInvGamLookup scNm vwNm rlNm dg of
+                   Just (_,_,i) -> daiAGNm i
+                   Nothing      -> rlNm
 
 
 

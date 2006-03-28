@@ -55,8 +55,8 @@ INCLUDE "ARuleSelfAG.ag"
 WRAPPER AGItf 
 
 {
-as2LaTeX :: Opts -> ScGam Expr -> FmGam Expr -> RwExprGam -> Decls -> (Decls,PP_Doc,[Err])
-as2LaTeX o scg fmg rwg r
+as2LaTeX :: Opts -> DtInvGam -> ScGam Expr -> FmGam Expr -> RwExprGam -> Decls -> (Decls,PP_Doc,[Err])
+as2LaTeX o _ scg fmg rwg r
   = (self_Syn_AGItf r2,ppDbg_Syn_AGItf r2,errL_Syn_AGItf r2)
   where r1 = sem_AGItf (AGItf_AGItf r)
         r2 = wrap_AGItf r1

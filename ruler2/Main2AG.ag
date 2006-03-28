@@ -12,7 +12,6 @@ import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import UU.Pretty
--- import FPath
 import Utils
 import Opts
 import Common
@@ -21,15 +20,11 @@ import LaTeXFmtUtils
 import ExprUtils
 import ARuleUtils
 import ViewSelUtils
--- import KeywParser
+import KeywParser( strSel )
 import FmGam
 import RwExprGam
 import ECnstrGam
 import RulerAbsSyn2
--- import qualified RulerAbsSyn2 as AS2
--- import RulerUtils
--- import RulerAdmin
--- import RulerMkAdmin
 }
 
 -------------------------------------------------------------------------
@@ -44,8 +39,6 @@ INCLUDE "RulerAS2Pretty.ag"
 INCLUDE "ExprAbsSynAG.ag"
 INCLUDE "ExprPrettyPrintAG.ag"
 INCLUDE "ExprSelfAG.ag"
-
--- INCLUDE "ExprLaTeXAG.ag"
 
 INCLUDE "ARuleAbsSynAG.ag"
 INCLUDE "ARulePrettyPrintAG.ag"

@@ -105,10 +105,10 @@ SEM AGItf
                                                          mk s v
                                                            = case scVwGamLookup s v @scGam of
                                                                Just (si,vi)
-                                                                 -> [AS2.Decl_AttrAG (AS2.AttrAGDecl_Attr (maybe (scNm si) Nm (scMbAGStr si)) (mkg agi) (mkg agsi) (mkg ags))]
+                                                                 -> [AS2.Decl_AttrAG (AS2.AttrAGDecl_Attr (sc2DATA si @dtInvGam) (mkg agi) (mkg agsi) (mkg ags))]
                                                                  where ag1 = gamFilter (\ai -> AtNode `notElem` atProps ai) (vwscFullAtGam vi)
                                                                        (agsi,ag2) = gamPartition (\ai -> isJust (atMbSynInh ai)) ag1
-                                                                       (ags,agi) = gamPartition (\ai -> AtSyn `elem` atDirs ai) ag2
+                                                                       (ags,agi) = gamPartition (\ai -> AtSyn `atHasDir` ai) ag2
                                                                        mkg g = gamAssocsShadow $ gamFromAssocs
                                                                                $ [ (n,atTy ai) | ai <- gamElemsShadow g, let n = nmSubst @lhs.opts @fmGam $ maybe (atNm ai) id $ atMbSynInh ai ]
                                                                _ -> []
@@ -135,7 +135,7 @@ SEM AGItf
                                                                   jdsOf o g = [ maybe (panic "as2RuleSets") id (gamLookup jNm g) | jNm <- o ]
                                                                   mkRl nRl nVw rlInfo vwRlInfo
                                                                     = mkChunk nVw rlInfo
-                                                                      $ AS2.RlDecl_Rl nRl fullNm (rlPos rlInfo) (rlMbAGStr rlInfo) pre post
+                                                                      $ AS2.RlDecl_Rl nRl fullNm (rlPos rlInfo) (rl2SEM rlInfo @dtInvGam nSc nRl nVw) pre post
                                                                     where preg  = vwrlFullPreGam vwRlInfo
                                                                           postg = vwrlFullPostGam vwRlInfo
                                                                           preOrder  = concat (vwrlPreScc vwRlInfo)
