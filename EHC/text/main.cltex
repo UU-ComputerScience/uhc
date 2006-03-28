@@ -1869,6 +1869,13 @@ this has been omitted as \chapterRef{agtut} can be read instead.
  %%@TopicReflection.phdEvaluation
 %\input ipadissertations.tex
 
+\rulerCmdUse{rules4.I1.expr2.base}
+
+\rulerCmdUse{rules4.I2.expr.impr}
+
+\rulerCmdUse{rules4.I2.expr2.base}
+
+
 %%]
 
 

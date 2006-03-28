@@ -1,0 +1,33 @@
+-------------------------------------------------------------------------
+-- AST
+-------------------------------------------------------------------------
+
+data Expr   		[ expr2 			]
+  view E
+    = IConst    	[ e.int 			]       int     	:: Int
+    | CConst    	[ e.char : e.int	]       char    	:: Char
+    | Var       	[ e.var 			]       ident   	:: HsName
+    | Con       	[ e.con : e.var 	]
+    | App       	[ e.app 			]       eFun    	:: Expr
+                                				eArg    	:: Expr
+    | Lam       	[ e.lam 			]       identv  	:: HsName
+                                				lamBody 	:: Expr
+	| Let			[ e.let				]		letDecls	:: Decls
+												letBody		:: Expr
+	| TypeAs		[ e.ann				]		tAnn		:: TyExpr
+												eAnn		:: Expr
+  view K
+    = Lam       	[ e.lam 			]       lamPat  	:: PatExpr
+                                				lamBody 	:: Expr
+  view C
+    = AppTop	  	[ e.apptop			]		eTop		:: Expr
+  view I1
+    = AppImpred  	[ e.app.f : e.app	]
+  view P
+    = AppImpl       [ e.iapp 			]       eFun    	:: Expr
+                                				eArg    	:: Expr
+                                				ePred   	:: Pred
+    | LamImpl      	[ e.ilam 			]       lamPat  	:: PatExpr
+                                				lamBody 	:: Expr
+                                				lamPred 	:: Pred
+

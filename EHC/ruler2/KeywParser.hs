@@ -5,16 +5,21 @@
 module KeywParser
   ( specialChars, opChars
   , propsSynInhMp, propsDirMp, propsMp
+  
   , keywordsTextDir
   , keywordsTextProps, keywordsTextEscapable, keywordsText
   , keywordsOpsEsc, keywordsOpsExplainEsc, keywordsOpsParenEsc
   , keywordsOps
+  
   , mkScan, mkHScan, mkOffScan
+  
   , pKeySPos
   , pNmStr, pNmStrSPos
   , pNmStrI, pNmStrISPos
   , pSymEscStr, pSymEscStrSPos
   , pSymStr, pSymStrSPos
+  
+  , strSel
   )
   where
 
@@ -27,6 +32,13 @@ import RulerScanner
 import ParseUtils
 import AttrProps
 import ScanUtils
+
+-------------------------------------------------------------------------
+-- Config
+-------------------------------------------------------------------------
+
+strSel :: String
+strSel = "."
 
 -------------------------------------------------------------------------
 -- Scanning
@@ -53,6 +65,7 @@ keywordsTextEscapable
         , "rule", "rules", "ruleset"
         , "scheme", "view", "hole", "holes", "viewsel", "rulesgroup"
         , "explain"
+        , "data"
         -- related to global info
         , "viewhierarchy", "format", "rewrite", "preamble"
         , "extern", "external"
@@ -70,9 +83,9 @@ keywordsText
      ] ++ keywordsOffsideTrigs
        ++ keywordsTextEscapable
 keywordsOpsEsc
-  =  [ ",", ":", "[", "]", "*", "<", ":=" ]
+  =  [ ",", ":", "[", "]", "*", "<", ":=", "::" ]
 keywordsOpsExplainEsc
-  =  [ "=", "-", "---", "." ]
+  =  [ "=", "-", "---", strSel ]
 keywordsOpsParenEsc
   =  [ "|" ] ++ keywordsOpsExplainEsc
 keywordsOps

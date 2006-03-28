@@ -5,7 +5,8 @@
 -------------------------------------------------------------------------
 
 module RulerMkAdmin
-  ( bldScInfo
+  ( bldDtInfo
+  , bldScInfo
   , bldRsInfo
   )
   where
@@ -35,6 +36,42 @@ import RulerAdmin
 prevWRTDpd :: Nm -> DpdGr Nm -> Map.Map Nm v -> v -> v
 prevWRTDpd n g m v
   = maybeHd v (\n -> maybe v id . Map.lookup n $ m) (vgDpdsOn g n)
+
+-------------------------------------------------------------------------
+-- Data/AST
+-------------------------------------------------------------------------
+
+data BldDtState
+  = BldDtState
+      { bdDtAltGam     	:: DtAltGam
+      }
+
+emptyBldDtState
+  = BldDtState
+      { bdDtAltGam     	= emptyGam
+      }
+
+bldDtInfo :: DpdGr Nm -> DtInfo -> (DtInfo,[Err])
+bldDtInfo vwDpdGr dtInfo
+  = (dtInfo {dtVwGam = g},e)
+  where (g,_,e)
+          = foldr
+              (\vwNm (vdGam,bdMp,errs)
+                -> let bd = prevWRTDpd vwNm vwDpdGr bdMp emptyBldDtState
+                       (vwDtInfo,bldErrs)
+                         = case gamLookup vwNm vdGam of
+                             Just i
+                               -> (i {vdFullAltGam = g},[])
+                               where g = vdAltGam i `gamUnionShadow` bdDtAltGam bd
+                             Nothing
+                               -> (emptyDtVwInfo {vdNm = vwNm, vdFullAltGam = bdDtAltGam bd},[])
+                       bd' = bd {bdDtAltGam = vdFullAltGam vwDtInfo}
+                       vdGam' = gamInsertShadow vwNm vwDtInfo vdGam
+                       bdMp' = Map.insert vwNm bd' bdMp
+                   in  (vdGam', bdMp', bldErrs ++ errs)
+              )
+              (dtVwGam dtInfo,Map.empty,[])
+              (vgTopSort vwDpdGr)
 
 -------------------------------------------------------------------------
 -- Scheme
@@ -70,23 +107,41 @@ bldNewScVw cx scGam prevAtBldL vw
               (\(ga,gb,e) b
                  -> case b of
                       ScAtBldDirect g
-                        -> (mkProp g `gamUnion` ga,g `gamUnion` gb,gamCheckDups emptySPos cx "hole" g ++ e)
+                        -> (mkPropForGam g2 `gamUnionShadow` ga,g2 `gamUnionShadow` gb,gamCheckDups emptySPos cx "hole" g ++ errChk ++ e)
+                        where (g2,errChk) = chkUpdNewAts g gb
                       ScAtBldScheme frScNm pos rnL
                         -> case scVwGamLookup frScNm (vwscNm vw) scGam of
                              Just (frScInfo,frVwScInfo)
-                               -> ( mkProp g' `gamUnion` ga, g' `gamUnion` gb, errUndefHls ++ e )
+                               -> ( mkPropForGam g3 `gamUnionShadow` ga, g3 `gamUnionShadow` gb, errUndefHls ++ errChk ++ e )
                                where errUndefHls
                                        = if null undefNmL then [] else [Err_UndefNm pos ("use of scheme `" ++ show frScNm ++ "` for hole definition for " ++ cx) "hole" undefNmL]
-                                     (g',undefNmL)
+                                     (g2,undefNmL)
                                        = sabrGamRename rnL (vwscFullAtBldGam frVwScInfo)
+                                     (g3,errChk) = chkUpdNewAts g2 gb
                              _ -> (ga,gb,[Err_UndefNm pos ("hole definition for " ++ cx) "scheme" [frScNm]] ++ e)
               )
               (ga,gb,[])
               atBldL
-        mkProp
+        chkUpdNewAts gNew g
+          = gamFold
+              (\i ge@(gNew,e)
+                -> case gamLookup (atNm i) g of
+                     Just j
+                       | isExternNew
+                         -> (gamDelete (atNm i) gNew,e)
+                       | otherwise
+                         -> ge
+                       where isExternNew = AtExtern `atHasProp` i
+                             isExternOld = AtExtern `atHasProp` j
+                     Nothing
+                       -> ge
+              )
+              (gNew,[])
+              gNew
+        mkPropForGam
           = gamMapWithKey
               (\n a
-                 -> case atProps a `intersect` [AtThread] of
+                 -> case [AtThread] `atFilterProps` a of
                       (_:_) -> [ (ns,AtInfo ns [AtSyn] (atProps a) (atTy a)), (ni,AtInfo ni [AtInh] (atProps a) (atTy a)) ]
                             where ns = nmSetSuff n "syn"
                                   ni = nmSetSuff n "inh"
@@ -109,7 +164,7 @@ bldScInfo vwDpdGr scGam si@(ScInfo pos nm mbAGNm scKind vwScGam)
                                         { bsAtGam       = newAtGam
                                         , bsAtBldGam    = newBldGam
                                         , bsAtBldL      = bsAtBldL bs ++ vwscAtBldL vw
-                                        , bsJdShpGam       = vwscJdShpGam vw `jdshpgUnionShadow` bsJdShpGam bs
+                                        , bsJdShpGam    = vwscJdShpGam vw `jdshpgUnionShadow` bsJdShpGam bs
                                         , bsExGam       = vwscExplGam vw `gamUnionShadow` bsExGam bs
                                         }
                                     , errDups ++ bldErr
@@ -160,8 +215,12 @@ jaGamUseInS g s = Set.unions [ jaNmS i | (n,i) <- gamAssocsShadow g, n `Set.memb
 jaGamDflt :: (Nm -> Expr) -> Nm -> Nm -> ScGam Expr -> JAGam Expr
 jaGamDflt mkE sn nVw scGam
   = case scVwGamLookup sn nVw scGam of
-      Just (_,vi) -> gamMapWithKey (\n _ -> mkJAInfo n (mkE n)) . vwscFullAtGam $ vi
+      Just (_,vi) -> gamMapWithKey (\n ai -> mkJAInfo n (mk n ai)) . vwscFullAtGam $ vi
       Nothing     -> emptyGam
+  where mk n ai
+          = {- if AtExtern `atHasProp` ai
+            then Expr_Undefined
+            else -} mkE n
 
 -- determine sets if inh/syn var's
 reGamUpdInOut :: Nm -> ScGam e -> REGam e -> REGam e
@@ -211,30 +270,61 @@ checkJdAndAtBldL pos cx scGam rsGam vwNm atBldL jdBldL
               ([],atBldL,[])
               jdBldL
         atBldL2NmL = [ n | (ScAtBldScheme n _ _) <- atBldL2 ]
-        e2 = if null atBldL2NmL then [] else [Err_UndefNm pos cx "corresponding ruleset+rule build item" atBldL2NmL]
+        e2 = [] -- if null atBldL2NmL then [] else [Err_UndefNm pos cx "corresponding ruleset+rule build item" atBldL2NmL]
 
-bldJdsFromRlBlds :: Nm -> [RlJdBldInfo] -> (REGam Expr,REGam Expr,[Err])
-bldJdsFromRlBlds scNm rlBldInfoL
+bldJdsFromRlBlds :: Nm -> Nm -> ScGam Expr -> [RlJdBldInfo] -> (REGam Expr,REGam Expr,[Err])
+bldJdsFromRlBlds scNm vwNm scGam rlBldInfoL
   = r
   where r@(preg,postg,e)
           = foldl
               (\g@(preg,postg,e) b
                 -> case b of
-                     (RlJdBldFromRuleset _ rsNm rlNm,Just (_,vwRlInfo,scAtBld))
+                     (RlJdBldFromRuleset _ rsNm rlNm,Just (vwScInfo,vwRlInfo,scAtBld))
                        -> (bpreg `reGamUnionShadow` preg,bpostg `reGamUnionShadow` postg,be++e)
                        where (bpreg,bpostg,be)
                                = case scAtBld of
                                    ScAtBldScheme frScNm _ rnL
-                                     -> (gamMap upd $ vwrlFullPreGam $ vwRlInfo,gamMap upd $ vwrlFullPostGam $ vwRlInfo,[])
-                                     where upd i
+                                     -> (gamMap (upd True) $ vwrlFullPreGam $ vwRlInfo,gamMap (upd False) $ vwrlFullPostGam $ vwRlInfo,[])
+                                     where upd isPre i
                                              = if reScNm i == frScNm
-                                               then i {reScNm = scNm, reJAGam = fst $ sabrGamRename rnL $ reJAGam i}
+                                               then i {reScNm = scNm, reJAGam = fst $ sabrGamRename rnL $ fst $ chkUpdNewAts isPre mkg vwScInfo $ reJAGam i}
                                                else i
-                     (RlJdBldDirect dpreg dpostg,_)
-                       -> (dpreg `reGamUnionShadow` preg,dpostg `reGamUnionShadow` postg,e)
+                                             where mkg i = gamDelete (jaNm i)
+                     (RlJdBldDirect _ dpreg dpostg,_)
+                       -> (mkjg True dpreg `reGamUnionShadow` preg,mkjg False dpostg `reGamUnionShadow` postg,e)
+                       where mkjg isPre
+                               = gamMap mk
+                               where mk i
+                                       = reUpdJAGam (fst $ chkUpdNewAts isPre mkg vwScInfo $ reJAGam i) i
+                                       where (_,vwScInfo) = maybe (panic "bldJdsFromRlBlds") id $ scVwGamLookup (reScNm i) vwNm scGam
+                                             mkg i = gamInsertShadow (jaNm i) (i {jaExpr = Expr_Undefined})
               )
               (emptyGam,emptyGam,[])
               rlBldInfoL
+        chkUpdNewAts isPre mkg vwScInfo gNew
+          = gamFold
+              (\i ge@(gNew,e)
+                -> case gamLookup (jaNm i) g of
+                     Just j
+                       | isExtern && defUse == ADDef
+                         -> (mkg i gNew,e)
+                       | otherwise
+                         -> ge
+                       where isExtern = AtExtern `atHasProp` j
+                             defUse = atDefUse isPre j
+                     Nothing
+                       -> ge
+              )
+              (gNew,[])
+              gNew
+          where g = vwscAtGam vwScInfo
+
+{-
+updExternJds :: Bool -> Nm -> ScGam Expr -> REGam Expr -> REGam Expr
+updExternJds isPre vwNm scGam jdGam
+  = 
+  where 
+-}
 
 bldDfltForJds :: Nm -> ScGam Expr -> (REGam Expr,REGam Expr) -> (REGam Expr,REGam Expr)
 bldDfltForJds vwNm scGam (preg,postg)
@@ -292,7 +382,7 @@ rlGamUpdVws cxRs opts vwDpdGr extNmS scGam rsGam rlGam rsInfo rlInfo
                                _      -> []
                          rlJdBldL = brJdBldL br ++ rlJdBldOnL rlInfo ++ vwrlJdBldL vwRlInfo
                          (rlJdBldInfoL,errChkBldL) = checkJdAndAtBldL (vwrlPos vwRlInfo) cx scGam rsGam nVw (vwscFullAtBldL vwScInfo) rlJdBldL
-                         (pregBld,postgBld,errBldL) = bldJdsFromRlBlds (rsScNm rsInfo) rlJdBldInfoL
+                         (pregBld,postgBld,errBldL) = bldJdsFromRlBlds (rsScNm rsInfo) nVw scGam rlJdBldInfoL
                          (pregBldDflt,postgBldDflt) = bldDfltForJds nVw scGam (pregBld,postgBld)
                          pregBldFull  = pregBld  `reGamUnionShadow` pregBldDflt
                          postgBldFull = postgBld `reGamUnionShadow` postgBldDflt
@@ -312,7 +402,7 @@ rlGamUpdVws cxRs opts vwDpdGr extNmS scGam rsGam rlGam rsInfo rlInfo
                          prevVwRlChs' = if doMarkChng then emptyGam else vwRlChsWtPrev
 
                          -- updating the view
-                         rlJdBldDfltL = [RlJdBldDirect (pregBldDflt `reGamJAGamDifference` pregBld) (postgBldDflt `reGamJAGamDifference` postgBld)]
+                         rlJdBldDfltL = [RlJdBldDirect Set.empty (pregBldDflt `reGamJAGamDifference` pregBld) (postgBldDflt `reGamJAGamDifference` postgBld)]
                          vwRlInfo2
                            = vwRlInfo
                                {vwrlFullPreGam = reGamUpdInOut nVw scGam preg'
@@ -324,7 +414,7 @@ rlGamUpdVws cxRs opts vwDpdGr extNmS scGam rsGam rlGam rsInfo rlInfo
 
                          -- errors
                          cx = cxRs ++ " view '" ++ show nVw ++ "' for rule '" ++ show (rlNm rlInfo) ++ "'"
-                         vwUndefs = vwrlUndefs vwRlInfo3 `Set.difference` extNmS
+                         vwUndefs = vwrlUndefs vwRlInfo3 `Set.difference` (vwrlExtNmS vwRlInfo `Set.union` extNmS)
                          errUndefs = if Set.null vwUndefs then [] else [Err_UndefNm (rlPos rlInfo) cx "identifier" (Set.toList vwUndefs)]
                          errDups = gamCheckDups (rlPos rlInfo) cx "judgement" (vwrlPreGam vwRlInfo `gamUnion` vwrlPostGam vwRlInfo)
                          postOfScG = gamFilter (\i -> reScNm i == rsScNm rsInfo) (vwrlFullPostGam vwRlInfo4)

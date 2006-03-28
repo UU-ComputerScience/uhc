@@ -59,10 +59,34 @@ DATA Decl
   | Attr                intros      : AttrIntroDecls
   | Explain             mbNm        : {Maybe Nm}
                         expr        : Expr
+  | DataAST             pos         : {SPos}
+                        nm          : Nm
+                        schemeNm    : Nm
+                        decls       : Decls
+  | DataASTView         pos         : {SPos}
+                        nm          : Nm
+                        decls       : Decls
+  | DataASTAlt          pos         : {SPos}
+                        nm          : Nm
+                        ruleNm      : Nm
+                        mbBasedOnNm : {Maybe Nm}
+                        fldIntros   : FldIntros
 
 TYPE Decls = [Decl]
 
 SET AllDecl = Decl Decls
+
+-------------------------------------------------------------------------
+-- Data/AST decl
+-------------------------------------------------------------------------
+
+DATA FldIntro
+  | Intro               nm          : {Nm}
+                        ty          : Ty
+
+TYPE FldIntros = [FldIntro]
+
+SET AllFldIntro = FldIntros FldIntro
 
 -------------------------------------------------------------------------
 -- Attr intro decl
@@ -105,7 +129,8 @@ SET AllAttrIntroDecl = AllAttrIntro AllAttrRename AttrIntroDecl AttrIntroDecls
 -------------------------------------------------------------------------
 
 DATA RuleJudgeIntro
-  | PrePost             pre         : RExprs
+  | PrePost             extNms      : {[Nm]}
+                        pre         : RExprs
                         post        : RExprs
   | RulesetRule         pos         : {SPos}
                         rsNm        : {Nm}
@@ -149,4 +174,4 @@ SET AllAttrEqn = RExprEqn AttrEqn AttrEqns
 -- Sets of AST data's
 -------------------------------------------------------------------------
 
-SET AllAS1 = AllRExpr AllAttrEqn AllAttrIntroDecl AllRuleJudgeIntroDecl AllDecl
+SET AllAS1 = AllRExpr AllAttrEqn AllAttrIntroDecl AllRuleJudgeIntroDecl AllFldIntro AllDecl

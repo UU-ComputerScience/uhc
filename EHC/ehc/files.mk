@@ -5,11 +5,11 @@
 EHC_PUB_VARIANTS						:= 1 2 3 4 5 6 7 8 9 10
 EHC_VARIANTS							:= $(EHC_PUB_VARIANTS) 11 4_2 6_4
 
-# location of ehc src
-EHC_SRC_PREFIX							:= $(TOP_PREFIX)ehc/
+# location of ehc src:
+# see shared.mk
 
-# this file
-EHC_MKF									:= $(EHC_SRC_PREFIX)files.mk
+# this file + other mk files
+EHC_MKF									:= $(patsubst %,$(EHC_SRC_PREFIX)%.mk,files shared)
 
 # end products, binary, executable, etc
 EHC_EXEC_NAME							:= ehc
@@ -20,13 +20,17 @@ EHC_ALL_EXECS							:= $(patsubst %,$(EHC_BIN_PREFIX)%/$(EHC_EXEC_NAME)$(EXEC_SU
 # sources + dpds, for .rul
 EHC_RULES_1_SRC_RUL						:= $(EHC_SRC_PREFIX)rules.rul
 EHC_RULES_2_SRC_RUL						:= $(EHC_SRC_PREFIX)rules2.rul
-EHC_RULES_3_SRC_RL2						:= $(EHC_SRC_PREFIX)rules3.rul
-
-EHC_RULES_ALL_SRC						:= $(EHC_RULES_1_SRC_RUL) $(EHC_RULES_2_SRC_RUL) $(EHC_RULES_3_SRC_RL2)
+EHC_RULES_3_SRC_RL2						:= $(EHC_RULES_SRC_PREFIX)EhcRulesOrig.rul
 
 EHC_RULER_RULES							:= EHRulerRules
 EHC_RULES_3_DRV_CAG						:= $(EHC_BLD_VARIANT_PREFIX)$(EHC_RULER_RULES).cag
 EHC_RULES_3_DRV_AG						:= $(EHC_RULES_3_DRV_CAG:.cag=.ag)
+
+EHC_RULES_4_MAIN_SRC_RUL				:= $(EHC_RULES_SRC_PREFIX)EhcRulesExpr2.rul
+EHC_RULES_4_DPDS_SRC_RUL				:= $(patsubst %,$(EHC_RULES_SRC_PREFIX)%.rul,EhcRulesShared EhcRulesRelations EhcRulesSchemes EhcRulesSchemes2 \
+											)
+EHC_RULES_ALL_SRC						:= $(EHC_RULES_1_SRC_RUL) $(EHC_RULES_2_SRC_RUL) $(EHC_RULES_3_SRC_RL2) $(EHC_RULES_4_MAIN_SRC_RUL) $(EHC_RULES_4_DPDS_SRC_RUL)
+
 
 # main + sources + dpds, for .chs
 EHC_MAIN								:= EHC

@@ -56,6 +56,9 @@ INCLUDE "ExprFmGamAG.ag"
 INCLUDE "ExprPrettyPrintAG.ag"
 INCLUDE "ExprSelfAG.ag"
 
+INCLUDE "TyAbsSynAG.ag"
+INCLUDE "TySelfAG.ag"
+
 -------------------------------------------------------------------------
 -- Interfacing to AST
 -------------------------------------------------------------------------
@@ -69,18 +72,60 @@ WRAPPER AGItf
 ATTR AllAS1 AGItf [ | | errL USE {++} {[]}: {[Err]} ]
 
 SEM AGItf
-  | AGItf           lhs     .   errL        =   @errDupSc ++ @errMutSc ++ @errBldSc ++ @errDupRs ++ @errBldRs ++ @decls.errL
+  | AGItf           lhs     .   errL        =   @errDupSc ++ @errMutSc ++ @errBldDt ++ @errBldSc ++ @errDupRs ++ @errBldRs ++ @decls.errL
 
 SEM RExpr
   | Judge           lhs     .   errL        =   errFirst [@errSc,@errVwSc,@errJd,@eqns.errL]
 
 SEM RExprEqn
-  | Expr            lhs     .   errL        =   errFirst [@errJd,@errMt]
+  | Expr            lhs     .   errL        =   errFirst [@errMt,@errJd]
 
 SEM Decl
   | ShpJudge        lhs     .   errL        =   errFirst [@errVwSc,@errUndefs]
   | Scheme          lhs     .   errL        =   @errDupVw ++ @decls.errL
   | Rule            lhs     .   errL        =   @errDupVw ++ @decls.errL
+
+-------------------------------------------------------------------------
+-- Data/AST
+-------------------------------------------------------------------------
+
+ATTR AllFldIntro [ seqNr: Int | | dtFldGam USE {`gamUnion`} {emptyGam}: DtFldGam ]
+
+SEM FldIntros
+  | Cons            tl      .   seqNr       =   @lhs.seqNr + 1
+
+SEM Decl
+  | DataASTAlt      loc     .   seqNr       =   1
+
+SEM FldIntro
+  | Intro           lhs     .   dtFldGam    =   gamSingleton @nm (DtFldInfo @nm @ty.self @lhs.seqNr)
+
+ATTR AllDecl [ | | dtAltGam USE {`gamUnion`} {emptyGam}: DtAltGam ]
+
+SEM Decl
+  | DataASTAlt      lhs     .   dtAltGam    =   gamSingleton @nm (DtAltInfo @nm @ruleNm @mbBasedOnNm @fldIntros.dtFldGam)
+
+ATTR AllDecl [ | | vwDtGam USE {`gamUnion`} {emptyGam}: DtVwGam ]
+
+SEM Decl
+  | DataASTView     lhs     .   vwDtGam     =   gamSingleton @nm (DtVwInfo @nm @decls.dtAltGam emptyGam)
+
+ATTR AllDecl [ | | gathDtGam USE {`gamUnion`} {emptyGam}: DtGam ]
+ATTR AGItf [ | | dtInvGam: DtInvGam ]
+
+SEM Decl
+  | DataAST         lhs     .   gathDtGam   =   gamSingleton @nm (DtInfo @nm @schemeNm @decls.vwDtGam)
+
+SEM AGItf
+  | AGItf           loc     .   (dtGam,errBldDt)
+                                            =   gamFoldWithKey
+                                                  (\n i (g,e)
+                                                    -> let (i',e') = bldDtInfo @vwDpdGr i
+                                                       in  (gamInsertShadow n i' g,e'++e)
+                                                  )
+                                                  (@decls.gathDtGam,[])
+                                                  @decls.gathDtGam
+                            .   dtInvGam    =   dtGamInv @dtGam
 
 -------------------------------------------------------------------------
 -- Attr
@@ -133,7 +178,7 @@ ATTR AllDecl [ | | vwJdShpGam USE {`gamUnion`} {emptyGam}: {JdShpGam Expr} ]
 
 SEM Decl
   | ScmView         lhs     .   vwScGam     =   gamSingleton @nm (VwScInfo @nm @decls.vwJdShpGam @decls.atBldL [] emptyGam emptyGam @decls.explGam)
-  | ShpJudge        lhs     .   vwJdShpGam     =   gamSingleton @fmKind (JdShpInfo @expr.self)
+  | ShpJudge        lhs     .   vwJdShpGam  =   gamSingleton @fmKind (JdShpInfo @expr.self)
                     loc     .   cxStr       =   "judgement for view '" ++ show @lhs.viewNm ++ "' for scheme '" ++ show @lhs.scmNm ++ "'"
                             .   (vwScInfo,errVwSc)
                                             =   case scVwGamLookup @lhs.scmNm @lhs.viewNm @lhs.scGam of
@@ -141,7 +186,7 @@ SEM Decl
                                                     Nothing    -> (emptyVwScInfo,[Err_UndefNm @pos @cxStr "view" [@lhs.viewNm]])
                             .   errUndefs   =   let nms = gamKeys (vwscFullAtGam @vwScInfo) \\ Set.toList @expr.nmS
                                                 in  [] -- if null nms then [] else [Err_UndefNm @pos @cxStr "hole" nms]
-  | ShpDel          lhs     .   vwJdShpGam     =   gamFromAssocs [ (k,JdShpDel) | k <- @fmKinds ]
+  | ShpDel          lhs     .   vwJdShpGam  =   gamFromAssocs [ (k,JdShpDel) | k <- @fmKinds ]
 
 -------------------------------------------------------------------------
 -- Scheme, derived ones are expresses in terms of non-derived ones
@@ -188,7 +233,7 @@ SEM Decl
                                                                     ndHd = @nm `nmApd` nHd
                                                                     nTl = Nm "tl"
                                                                     ndTl = @nm `nmApd` nTl
-                                                                    vw = VwRlInfo @firstVwNm emptySPos [RlJdBldDirect (mkg reNm [j1,j2]) (mkg reNm [j3])] [] emptyGam emptyGam [] Nothing
+                                                                    vw = VwRlInfo @firstVwNm emptySPos [RlJdBldDirect Set.empty (mkg reNm [j1,j2]) (mkg reNm [j3])] [] emptyGam emptyGam [] Nothing
                                                                     j3 = REInfoJudge @nm @nm Set.empty Set.empty (mkg jaNm [a3])
                                                                     a3 = mkJAInfo @nm e3
                                                                     e3 = mkExprApp (Expr_ChildOrder 0 (Expr_Var ndHd))
@@ -308,7 +353,7 @@ SEM Decl
 ATTR AllDecl AllRuleJudgeIntroDecl [ | | jdBldL USE {++} {[]}: {[RlJdBld Expr]} ]
 
 SEM RuleJudgeIntro
-  | PrePost         lhs     .   jdBldL      =   [RlJdBldDirect @pre.reGam @post.reGam]
+  | PrePost         lhs     .   jdBldL      =   [RlJdBldDirect (Set.fromList @extNms) @pre.reGam @post.reGam]
   | RulesetRule     lhs     .   jdBldL      =   [RlJdBldFromRuleset @pos @rsNm @rlNm]
 
 -------------------------------------------------------------------------

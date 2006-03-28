@@ -5,11 +5,13 @@
 {
 module RulerAbsSyn1
   ( module Expr
+  , module Ty
   , module ViewSel
   
   , AGItf(..)
   , Decl(..), Decls
   , AttrIntro(..), AttrIntros
+  , FldIntro(..), FldIntros
   , AttrIntroDecl(..), AttrIntroDecls
   , AttrRename(..), AttrRenames
   , RuleJudgeIntro(..), RuleJudgeIntros
@@ -21,6 +23,7 @@ module RulerAbsSyn1
 
 import Common
 import Expr
+import Ty
 import ViewSel
 }
 

@@ -5,7 +5,7 @@
 ATTR AllDecl [ | | allVwNmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
 
 SEM Decl
-  | RulView ScmView
+  | RulView ScmView DataASTView
                     lhs     .   allVwNmS    =   Set.singleton @nm
 
 -------------------------------------------------------------------------

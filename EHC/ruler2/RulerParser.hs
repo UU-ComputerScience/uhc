@@ -100,7 +100,7 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
                                   sep = pKey "-" <|> pKey "---"
 -}
         pRuleJudgeIntroPrePost
-                            =   RuleJudgeIntro_PrePost <$> pRExprs <* sep <*> pRExprs
+                            =   RuleJudgeIntro_PrePost <$> (pKey "extern" *> pList1 pNm `opt` []) <*> pRExprs <* sep <*> pRExprs
                             where pRExprs    = pList pRExpr
                                   -- pRExprsLay = pLay  pRExprBase
                                   sep = pKey "-" <|> pKey "---"
@@ -140,6 +140,13 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
                                      )
         pAttrRenames        =   pParens_pCommas pAttrRename
         pDeclsScmView       =   pDecls1' pDeclScmView
+        pDeclDataASTView    =   (\(n,p) d -> Decl_DataASTView p n d)
+                                                       <$  pKey "view" <*> pNmSPos <* pKey "=" <*> pDeclDataASTAlts
+        pDeclDataASTViewDflt=   (\d -> [Decl_DataASTView emptySPos nmNone d])
+                                                       <$> pDeclDataASTAlts
+        pDeclDataASTAlts    =   pList1Sep (pKey "|") pDeclDataASTAlt
+        pDeclDataASTAlt     =   (\(n,p) (rn,mbon) d -> Decl_DataASTAlt p n rn mbon d)
+                                                       <$> pNmSPos <*> pBracks (pNm <+> pMb (pKey ":" *> pNm)) <*> pFldIntros
         pDeclGlob           =   pDeclGlobScheme
                             <|> Decl_Fmt               <$  (pKey "format" <|> pKey "rewrite")
                                                        <*> pFmKd2WithDflt
@@ -161,6 +168,9 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
                             <|> Decl_Preamble          <$  pKey "preamble"      <*> pFmKd2WithDflt <*> pString
                             <|> Decl_Extern            <$  (pKey "extern" <|> pKey "external")
                                                        <*> pList1 pNm
+                            <|> (\(n,p) sn d -> Decl_DataAST p n sn d)
+                                                       <$  pKey "data" <*> pNmSPos <*> pBracks pNm
+                                                       <*> (pDeclDataASTViewDflt <|> pDecls' pDeclDataASTView)
                             <|> (\(n,p) -> Decl_Include p n)
                                                        <$  pKey "include" <*> pNmSPos
         pDeclGlobScheme     =   (ScJudge <$ pKey "scheme" <|> ScRelation <$ pKey "relation")
@@ -232,14 +242,21 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
                                   pMbE = Just <$> pE <|> pSucceed Nothing
         pECnstr             =   ECnstr_Ty  <$> pList1Sep pComma pNmC
                             <|> ECnstr_Var <$> pNmV
+        pTy                 =   Ty_Con <$> pNmC
+                            <|> Ty_App (Ty_Con nmList) <$> pBracks pTyApp
+                            <|> pParens pTyApp
+        pTyApp              =   foldl1 Ty_App <$> pList1 pTy
         pMbString           =   pMb pString
+        pFldIntros          =   pList pFldIntro
+        pFldIntro           =   FldIntro_Intro <$> pNm <* kDColon <*> pTy
         pAttrIntros         =   pListSep pComma pAttrIntro
-        pAttrIntro          =   AttrIntro_Intro <$> pList pAttrProp <*> pNm <* pKey ":" <*> pNmC
+        pAttrIntro          =   AttrIntro_Intro <$> pList pAttrProp <*> pNm <* kDColon <*> pNmC
         pAttrEqns           =   pList (pKey "|" *> pAttrEqn)
         pAttrEqn            =   AttrEqn_Eqn <$>              pNmDir <* pKey "=" <*> pExpr
                             <|> AttrEqn_Del <$  pKey "-" <*> pNm
         pAttrProp           =   foldr1 (<|>) [ v <$ pKey n | (n,v) <- Map.toList propsMp ]
         pInt                =   read <$> pInteger
+        kDColon             =   pKey ":" <|> pKey "::"
      in (pAGItf)
 
 

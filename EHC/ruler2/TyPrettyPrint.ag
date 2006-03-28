@@ -1,0 +1,34 @@
+-------------------------------------------------------------------------
+-- PP for Ty
+-------------------------------------------------------------------------
+
+{
+module TyPrettyPrint
+  ( ppTy
+  )
+  where
+
+import UU.Pretty
+import Common
+import Ty
+}
+
+INCLUDE "TyAbsSynAG.ag"
+
+INCLUDE "TyPrettyPrintAG.ag"
+
+WRAPPER AGTyItf
+
+{
+ppTy :: Ty -> PP_Doc
+ppTy e
+  = pp_Syn_AGTyItf r2
+  where r1 = sem_AGTyItf (AGTyItf_AGItf e)
+        r2 = wrap_AGTyItf r1
+                (Inh_AGTyItf )
+
+instance PP Ty where
+  pp = ppTy
+
+}
+

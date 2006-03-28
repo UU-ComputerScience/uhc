@@ -19,6 +19,7 @@ RULER1_SRC			:= $(RULER1_DIR)/$(RULER1_AG)
 -include lhs2TeX/files.mk
 
 include mk/config.mk
+include ehc/shared.mk
 include mk/shared.mk
 
 include shuffle/files.mk

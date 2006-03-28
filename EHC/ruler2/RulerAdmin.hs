@@ -2,9 +2,34 @@ module RulerAdmin
   ( module FmGam
   , module JdShpGam
   
+  , DtFldInfo(..), DtFldGam
+  , emptyDtFldInfo
+  
+  , DtAltInfo(..), DtAltGam
+  , emptyDtAltInfo
+  
+  , DtVwInfo(..), DtVwGam
+  , emptyDtVwInfo
+  
+  , DtInfo(..), DtGam
+  , emptyDtInfo
+  , dtGamInv
+  
+  , DtAltInvInfo(..), DtAltInvGam
+  , emptyDtAltInvInfo
+  
+  , DtVwInvInfo(..), DtVwInvGam
+  
+  , DtInvInfo(..), DtInvGam
+  , dtVwRlInvGamLookup
+
   , AtInfo(..), AtGam
   , emptyAtInfo
   , atGamNode, atMbSynInh
+  , atHasDir, atFilterProps, atHasProp, atHasProps
+
+  , AtDefUse(..)
+  , atDefUse
   
   , ScAtBld(..)
   , ScAtBldRename(..)
@@ -27,6 +52,7 @@ module RulerAdmin
   
   , REInfo(..), REGam
   , reMbJAGam
+  , reUpdJAGam
   , reGamUnionShadow
   , reGamFilterOutDel
   , reGamJAGamDifference, reGamJAGamDifferenceOnExpr
@@ -37,8 +63,9 @@ module RulerAdmin
   , RlJdBld(..)
   
   , VwRlInfo(..), VwRlGam
-  , vwrlPreGam, vwrlPostGam
   , emptyVwRlInfo
+  , vwrlPreGam, vwrlPostGam
+  , vwrlExtNmS
   , vwrlDelEmptyJd, vrwlIsEmpty, vwrlScc, vwrlUndefs
   
   , RlInfo(..), RlGam
@@ -67,6 +94,189 @@ import Gam
 import FmGam
 import JdShpGam
 import ExprUtils
+import TyUtils
+
+-------------------------------------------------------------------------
+-- Data/AST: field
+-------------------------------------------------------------------------
+
+data DtFldInfo
+  = DtFldInfo
+      { dfNm	:: Nm
+      , dfTy	:: Ty
+      , dfSeqNr	:: Int
+      }
+
+emptyDtFldInfo :: DtFldInfo
+emptyDtFldInfo = DtFldInfo nmUnk tyUnk 0
+
+instance Show DtFldInfo where
+  show _ = "DtFldInfo"
+
+instance PP DtFldInfo where
+  pp i = "DtFld" >#< pp (dfNm i) >|< "/" >|< pp (dfSeqNr i) >#< "::" >#< pp (dfTy i)
+
+type DtFldGam = Gam Nm DtFldInfo
+
+-------------------------------------------------------------------------
+-- Data/AST: alternative
+-------------------------------------------------------------------------
+
+data DtAltInfo
+  = DtAltInfo
+      { daNm		:: Nm
+      , daRlNm		:: Nm
+      , daMbOnNm    :: Maybe Nm
+      , daFldGam	:: DtFldGam
+      }
+
+emptyDtAltInfo :: DtAltInfo
+emptyDtAltInfo = DtAltInfo nmUnk nmUnk Nothing emptyGam
+
+instance Show DtAltInfo where
+  show _ = "DtAltInfo"
+
+instance PP DtAltInfo where
+  pp i = "DtAlt" >#< pp (daRlNm i) >#< ppGam (daFldGam i)
+
+type DtAltGam = Gam Nm DtAltInfo
+
+-------------------------------------------------------------------------
+-- Data/AST: view
+-------------------------------------------------------------------------
+
+data DtVwInfo
+  = DtVwInfo
+      { vdNm			:: Nm
+      , vdAltGam		:: DtAltGam
+      , vdFullAltGam	:: DtAltGam
+      }
+
+emptyDtVwInfo :: DtVwInfo
+emptyDtVwInfo = DtVwInfo nmUnk emptyGam emptyGam
+
+instance Show DtVwInfo where
+  show _ = "DtVwInfo"
+
+instance PP DtVwInfo where
+  pp i = "VwDt" >#< pp (vdNm i) >#< (ppGam (vdAltGam i) >-< ppGam (vdFullAltGam i))
+
+type DtVwGam = Gam Nm DtVwInfo
+
+-------------------------------------------------------------------------
+-- Data/AST: data
+-------------------------------------------------------------------------
+
+data DtInfo
+  = DtInfo
+      { dtNm		:: Nm
+      , dtScNm		:: Nm
+      , dtVwGam		:: DtVwGam
+      }
+
+emptyDtInfo :: DtInfo
+emptyDtInfo = DtInfo nmUnk nmUnk emptyGam
+
+instance Show DtInfo where
+  show _ = "DtInfo"
+
+instance PP DtInfo where
+  pp i = "Dt" >#< pp (dtScNm i) >#< ppGam (dtVwGam i)
+
+type DtGam = Gam Nm DtInfo
+
+dtGamInv :: DtGam -> DtInvGam
+dtGamInv dtGam
+  = gamFoldWithKey
+      (\dn di dg
+        -> let vg
+                 = gamFoldWithKey
+                     (\vn vi vg
+                       -> let ag
+                                = gamFoldWithKey
+                                    (\an ai ag
+                                      -> let cg = gamMap dfSeqNr $ gamFilter (\i -> tyTopNm (dfTy i) `gamMember` dtGam) $ daFldGam ai
+                                         in  gamInsertShadow (daRlNm ai) (DtAltInvInfo (daRlNm ai) an (daMbOnNm ai) cg) ag
+                                    )
+                                    emptyGam
+                                    (vdFullAltGam vi)
+                          in  gamInsertShadow vn (DtVwInvInfo vn ag) vg
+                     )
+                     emptyGam
+                     (dtVwGam di)
+           in  gamInsertShadow (dtScNm di) (DtInvInfo (dtScNm di) dn vg) dg
+      )
+      emptyGam
+      dtGam
+
+-------------------------------------------------------------------------
+-- Data/AST: alternative (inverse)
+-------------------------------------------------------------------------
+
+data DtAltInvInfo
+  = DtAltInvInfo
+      { daiNm		:: Nm
+      , daiAGNm		:: Nm
+      , daiMbOnNm   :: Maybe Nm
+      , daiChOrdGam :: ChOrdGam
+      }
+
+emptyDtAltInvInfo :: DtAltInvInfo
+emptyDtAltInvInfo = DtAltInvInfo nmUnk nmUnk Nothing emptyGam
+
+instance Show DtAltInvInfo where
+  show _ = "DtAltInvInfo"
+
+instance PP DtAltInvInfo where
+  pp i = "DtAltInv" >#< pp (daiAGNm i) >#< pp (daiMbOnNm i) >#< ppGam (daiChOrdGam i)
+
+type DtAltInvGam = Gam Nm DtAltInvInfo
+
+-------------------------------------------------------------------------
+-- Data/AST: view (inverse)
+-------------------------------------------------------------------------
+
+data DtVwInvInfo
+  = DtVwInvInfo
+      { vdiNm			:: Nm
+      , vdiFullAltGam	:: DtAltInvGam
+      }
+
+emptyDtVwInvInfo :: DtVwInvInfo
+emptyDtVwInvInfo = DtVwInvInfo nmUnk emptyGam
+
+instance Show DtVwInvInfo where
+  show _ = "DtVwInvInfo"
+
+instance PP DtVwInvInfo where
+  pp i = "VwDtInv" >#< ppGam (vdiFullAltGam i)
+
+type DtVwInvGam = Gam Nm DtVwInvInfo
+
+-------------------------------------------------------------------------
+-- Data/AST: data (inverse)
+-------------------------------------------------------------------------
+
+data DtInvInfo
+  = DtInvInfo
+      { dtiNm		:: Nm
+      , dtiAGNm		:: Nm
+      , dtiVwGam	:: DtVwInvGam
+      }
+
+emptyDtInvInfo :: DtInvInfo
+emptyDtInvInfo = DtInvInfo nmUnk nmUnk emptyGam
+
+instance Show DtInvInfo where
+  show _ = "DtInvInfo"
+
+instance PP DtInvInfo where
+  pp i = "DtInv" >#< pp (dtiAGNm i) >#< ppGam (dtiVwGam i)
+
+type DtInvGam = Gam Nm DtInvInfo
+
+dtVwRlInvGamLookup :: Nm -> Nm -> Nm -> DtInvGam -> Maybe (DtInvInfo,DtVwInvInfo,DtAltInvInfo)
+dtVwRlInvGamLookup = tripleGamLookup dtiVwGam vdiFullAltGam
 
 -------------------------------------------------------------------------
 -- Attr
@@ -93,19 +303,51 @@ type AtGam = Gam Nm AtInfo
 
 atGamNode :: AtGam -> Maybe Nm
 atGamNode g
-  = do let aNdGm = gamFilter (\ai -> AtNode `elem` atProps ai) g
+  = do let aNdGm = gamFilter (\ai -> AtNode `atHasProp` ai) g
        case gamAssocsShadow aNdGm of
          ((na,ai):_) -> return na
          _           -> Nothing
 
 atMbSynInh :: AtInfo -> Maybe Nm
 atMbSynInh i
-  = if      AtThread `elem` atProps i then Just (nmInit n)
-    else if AtUpdown `elem` atProps i then Just (nmInit n)
-    else if AtInh    `elem` atDirs  i
-         && AtSyn    `elem` atDirs  i then Just n
+  = if      AtThread `atHasProp` i then Just (nmInit n)
+    else if AtUpdown `atHasProp` i then Just (nmInit n)
+    else if AtInh    `atHasDir`  i
+         && AtSyn    `atHasDir`  i then Just n
                                       else Nothing
   where n = atNm i
+
+atHasProp :: AtProp -> AtInfo -> Bool
+atHasProp p i = p `elem` atProps i
+
+atFilterProps :: [AtProp] -> AtInfo -> [AtProp]
+atFilterProps ps i = ps `intersect` atProps i
+
+atHasProps :: [AtProp] -> AtInfo -> Bool
+atHasProps ps i = not $ null $ ps `atFilterProps` i
+
+atHasDir :: AtProp -> AtInfo -> Bool
+atHasDir p i = p `elem` atDirs i
+
+-------------------------------------------------------------------------
+-- Attr def/use
+-------------------------------------------------------------------------
+
+data AtDefUse
+  = ADDef | ADUse | ADNode | ADNoDir
+  deriving (Show,Eq,Ord)
+
+atDefUse :: Bool -> AtInfo -> AtDefUse
+atDefUse isPre atInfo
+  = if AtNode `atHasProp` atInfo
+    then ADNode
+    else if isSyn
+    then if isPre then ADUse else ADDef
+    else if isInh
+    then if isPre then ADDef else ADUse
+    else ADNoDir
+  where isSyn = AtSyn `atHasDir` atInfo
+        isInh = AtInh `atHasDir` atInfo
 
 -------------------------------------------------------------------------
 -- Attr build description based on scheme
@@ -297,6 +539,10 @@ reMbJAGam :: REInfo e -> Maybe (JAGam e)
 reMbJAGam (REInfoJudge _ _ _ _ g) = Just g
 reMbJAGam _                       = Nothing
 
+reUpdJAGam :: JAGam e -> REInfo e -> REInfo e
+reUpdJAGam g i@(REInfoJudge _ _ _ _ _) = i {reJAGam = g}
+reUpdJAGam _ i                         = i
+
 instance Show (REInfo e) where
   show _ = "REInfo"
 
@@ -381,7 +627,8 @@ rcGamUnionShadow = gamUnionWith gamUnionShadow
 
 data RlJdBld e
   = RlJdBldDirect
-      { rjbPreGam   :: REGam e
+      { rjbExtNmS   :: Set.Set Nm
+      , rjbPreGam   :: REGam e
       , rjbPostGam  :: REGam e
       }
   | RlJdBldFromRuleset
@@ -394,7 +641,7 @@ instance Show (RlJdBld e) where
   show _ = "RlJdBld"
 
 instance PP e => PP (RlJdBld e) where
-  pp   (RlJdBldDirect      g1 g2) = "RJB-D"  >#< (ppGam g1 >-< ppGam g2)
+  pp   (RlJdBldDirect    _ g1 g2) = "RJB-D"  >#< (ppGam g1 >-< ppGam g2)
   pp i@(RlJdBldFromRuleset _ _ _) = "RJB-RS" >#< rjbRsNm i >#< rjbRlNm i
 
 -------------------------------------------------------------------------
@@ -417,10 +664,13 @@ emptyVwRlInfo :: VwRlInfo e
 emptyVwRlInfo = VwRlInfo nmNone emptySPos [] [] emptyGam emptyGam [] Nothing
 
 vwrlPreGam :: VwRlInfo e -> REGam e
-vwrlPreGam v = gamUnions [ g | (RlJdBldDirect g _) <- vwrlJdBldL v ]
+vwrlPreGam v = gamUnions [ g | (RlJdBldDirect _ g _) <- vwrlJdBldL v ]
 
 vwrlPostGam :: VwRlInfo e -> REGam e
-vwrlPostGam v = gamUnions [ g | (RlJdBldDirect _ g) <- vwrlJdBldL v ]
+vwrlPostGam v = gamUnions [ g | (RlJdBldDirect _ _ g) <- vwrlJdBldL v ]
+
+vwrlExtNmS :: VwRlInfo e -> Set.Set Nm
+vwrlExtNmS v = Set.unions [ e | (RlJdBldDirect e _ _) <- vwrlJdBldL v ]
 
 instance Show (VwRlInfo e) where
   show _ = "VwRlInfo"

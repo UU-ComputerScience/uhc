@@ -62,7 +62,7 @@ DATA RlDecl
   | Rl                  nm          : {Nm}
                         fullNm      : {Nm}
                         pos         : {SPos}
-                        mbAGStr     : {Maybe String}
+                        agStr       : Nm
                         preJds      : Jds
                         postJds     : Jds
   | LTX                 nm          : {Nm}

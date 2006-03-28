@@ -1,0 +1,42 @@
+
+-------------------------------------------------------------------------
+-- Expr
+-------------------------------------------------------------------------
+
+scheme expr.impr =
+  view I2 =
+    holes [ node e: Expr, extern fiopt: FIOpts, extern knTy: Ty, extern valGam: ValGam | thread ityCnstr: ICnstr | retain ity: Ty ]
+    judgespec fiopt ; valGam ; ityCnstr.inh ; knTy :- e : ity ~> ityCnstr.syn
+    judgeuse tex fiopt ; valGam ; ityCnstr.inh ; knTy :-.."e" e : ity ~> ityCnstr.syn
+
+scheme expr.invisible =
+  view E =
+    holes [ tyGam: TyGam, kiGam: KiGam | | ]
+    judgespec kiGam ; tyGam :- 
+
+scheme expr2 =
+  view E =
+    holes [ node e: Expr, valGam: ValGam | ty: Ty | ]
+        | scheme expr.invisible
+    judgespec valGam :- e : ty
+    judgeuse tex valGam :-.."e" e : ty
+  view K =
+    holes [ knTy: Ty | | retain ty: Ty ]
+    judgespec valGam; knTy :- e : ty
+    judgeuse tex valGam; knTy :-.."e" e : ty
+  view C =
+    holes [ | thread tyCnstr: Cnstr | ]
+    judgespec valGam ; tyCnstr.inh ; knTy :- e : ty ~> tyCnstr.syn
+    judgeuse tex valGam ; tyCnstr.inh ; knTy :-.."e" e : ty ~> tyCnstr.syn
+  view I1 =
+    holes [ fiopt: FIOpts | | ]
+    judgespec fiopt ; valGam ; tyCnstr.inh ; knTy :- e : ty ~> tyCnstr.syn
+    judgeuse tex fiopt ; valGam ; tyCnstr.inh ; knTy :-.."e" e : ty ~> tyCnstr.syn
+  view I2 =
+    holes scheme expr.impr
+    judgeuse tex fiopt ; valGam ; ityCnstr.inh ; tyCnstr.inh ; knTy :-.."e" e : ity ; ty ~> ityCnstr.syn ; tyCnstr.syn
+  view CG =
+    holes [ | | retain translExpr: TranslExpr ]
+    judgespec fiopt ; valGam ; tyCnstr.inh ; knTy :- e : ty ~> tyCnstr.syn ; translExpr
+    judgeuse tex fiopt ; valGam ; tyCnstr.inh ; knTy :-.."e" e : ty ~> tyCnstr.syn ; translExpr
+

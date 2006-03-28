@@ -15,7 +15,7 @@
 %%[8 export(mkCExprStrictSatCase,mkCExprSelCase)
 %%]
 
-%%[8 import(Data.List) export(FieldUpdateL,fuMkCExpr)
+%%[8 import(Data.List,Utils(sortOn)) export(FieldUpdateL,fuMkCExpr)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
