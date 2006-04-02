@@ -44,6 +44,35 @@ SEM AttrAGDecl
                                                     >#< pp_brackets (mka @inhAts >#< "|" >#< mka @inhsynAts >#< "|" >#< mka @synAts)
 
 -------------------------------------------------------------------------
+-- AG specific: DATA decls
+-------------------------------------------------------------------------
+
+SEM DataAGDecl
+  | Data            lhs     .   pp          =   let 
+                                                in  "DATA" >#< @ndNm
+                                                    >-< indent 2 @alts.pp
+SEM DataAGAlt
+  | Alt             lhs     .   pp          =   "|" >#< strPad @nmStr @lhs.mxAltWd >|< @flds.pp
+
+SEM DataAGFld
+  | Fld             lhs     .   pp          =   strPad @nmStr @lhs.mxFldWd >|< ":" >#< (if @tyIsData then id else pp_braces) (pp @ty)
+
+ATTR AllDtAlt AllDtFld [ mxFldWd: Int | | gathMxFldWd USE {`max`} {0} : Int ] 
+ATTR AllDtAlt  [ mxAltWd: Int | | gathMxAltWd USE {`max`} {0} : Int ]
+
+SEM DataAGDecl
+  | Data            alts    .   mxAltWd     =   @alts.gathMxAltWd + atLhs2texDist
+                            .   mxFldWd     =   @alts.gathMxFldWd + atLhs2texDist
+
+SEM DataAGAlt
+  | Alt             loc     .   nmStr       =   show @nm
+                    lhs     .   gathMxAltWd =   length @nmStr
+
+SEM DataAGFld
+  | Fld             loc     .   nmStr       =   show @nm
+                    lhs     .   gathMxFldWd =   length @nmStr
+
+-------------------------------------------------------------------------
 -- LaTeX specific: ruleset
 -------------------------------------------------------------------------
 

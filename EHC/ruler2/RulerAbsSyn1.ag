@@ -7,6 +7,7 @@ module RulerAbsSyn1
   ( module Expr
   , module Ty
   , module ViewSel
+  , module RulerAdmin
   
   , AGItf(..)
   , Decl(..), Decls
@@ -25,6 +26,7 @@ import Common
 import Expr
 import Ty
 import ViewSel
+import RulerAdmin( BldRename(..) )
 }
 
 INCLUDE "RulerAbsSyn1AG.ag"

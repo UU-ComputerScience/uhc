@@ -42,7 +42,7 @@ DATA Decl
   | Rule                pos         : {SPos}
                         nm          : {Nm}
                         mbBasedOnNm : {Maybe Nm}
-                        viewSel     : ViewSel
+                        viewSel     : {Maybe ViewSel}
                         mbAGNm      : {Maybe String}
                         decls       : Decls
   | RulView             pos         : {SPos}
@@ -61,7 +61,7 @@ DATA Decl
                         expr        : Expr
   | DataAST             pos         : {SPos}
                         nm          : Nm
-                        schemeNm    : Nm
+                        schemeNms   : {[Nm]}
                         decls       : Decls
   | DataASTView         pos         : {SPos}
                         nm          : Nm
@@ -135,6 +135,7 @@ DATA RuleJudgeIntro
   | RulesetRule         pos         : {SPos}
                         rsNm        : {Nm}
                         rlNm        : {Nm}
+                        schemeRnmL	: {[BldRename]}
 
 TYPE RuleJudgeIntros = [RuleJudgeIntro]
 

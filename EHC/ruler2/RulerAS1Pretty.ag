@@ -6,11 +6,11 @@ ATTR AllAS1 AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM AGItf
   | AGItf           lhs     .   pp          =   {- @decls.pp
-                                                >-< -} "---------- dt gam" >-< ppGam @dtGam
-                                                >-< "---------- dt inv gam" >-< ppGam @dtInvGam
-                                                >-< "---------- rw gam" >-< ppRwGam @rwGam
+                                                >-< "---------- dt gam" >-< ppGam @dtGam
+                                                >-< -} "---------- dt inv gam" >-< ppGam @dtInvGam
+                                                >-< {- "---------- rw gam" >-< ppRwGam @rwGam
                                                 >-< "---------- fm gam" >-< ppGam @fmGam
-                                                >-< "---------- scheme gam" >-< ppGam @scGam
+                                                >-< -} "---------- scheme gam" >-< ppGam @scGam
                                                 >-< "---------- rule set gam" >-< ppGam @rsGam
                                                 >-< "---------- sc dpd graph" >-< pp @scDpdGr
                                                 >-< "---------- vw dpd graph" >-< pp @vwDpdGr

@@ -172,6 +172,8 @@
 
 %format rvar        = "{\varrho}"
 
+%format rulerUndefined	= "{\cdot}"
+
 %format inst		= "inst"
 %format instv		= inst "_{" tvar  "}"
 %format instf		= inst "_{" tvarf "}"

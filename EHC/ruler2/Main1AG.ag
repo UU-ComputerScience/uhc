@@ -114,7 +114,7 @@ ATTR AllDecl [ | | gathDtGam USE {`gamUnion`} {emptyGam}: DtGam ]
 ATTR AGItf [ | | dtInvGam: DtInvGam ]
 
 SEM Decl
-  | DataAST         lhs     .   gathDtGam   =   gamSingleton @nm (DtInfo @nm @schemeNm @decls.vwDtGam)
+  | DataAST         lhs     .   gathDtGam   =   gamSingleton @nm (DtInfo @nm @schemeNms @decls.vwDtGam)
 
 SEM AGItf
   | AGItf           loc     .   (dtGam,errBldDt)
@@ -228,12 +228,12 @@ SEM Decl
                                                     mkRsInfo nl scGam
                                                       = RsInfo (@nm `nmApd` Nm "base") @pos @nm vwSels ("Rules for " ++ show @nm) (mkg rlNm [rl1])
                                                       where rl1
-                                                              = RlInfo (@nm `nmApd` Nm "cons") emptySPos Nothing (Just "Cons") 0 vwSels (mkg vwrlNm [vw])
+                                                              = RlInfo (@nm `nmApd` Nm "cons") emptySPos Nothing (Just "Cons") 0 (Just vwSels) (mkg vwrlNm [vw])
                                                               where nHd = Nm "hd"
                                                                     ndHd = @nm `nmApd` nHd
                                                                     nTl = Nm "tl"
                                                                     ndTl = @nm `nmApd` nTl
-                                                                    vw = VwRlInfo @firstVwNm emptySPos [RlJdBldDirect Set.empty (mkg reNm [j1,j2]) (mkg reNm [j3])] [] emptyGam emptyGam [] Nothing
+                                                                    vw = mkVwRlInfo @firstVwNm emptySPos [RlJdBldDirect Set.empty (mkg reNm [j1,j2]) (mkg reNm [j3])]
                                                                     j3 = REInfoJudge @nm @nm Set.empty Set.empty (mkg jaNm [a3])
                                                                     a3 = mkJAInfo @nm e3
                                                                     e3 = mkExprApp (Expr_ChildOrder 0 (Expr_Var ndHd))
@@ -348,13 +348,13 @@ SEM AGItf
 ATTR AllDecl [ | | vwRlGam USE {`gamUnion`} {emptyGam}: {VwRlGam Expr} ]
 
 SEM Decl
-  | RulView         lhs     .   vwRlGam     =   gamSingleton @nm (VwRlInfo @nm @pos @jdIntros.jdBldL [] emptyGam emptyGam [] Nothing)
+  | RulView         lhs     .   vwRlGam     =   gamSingleton @nm (mkVwRlInfo @nm @pos @jdIntros.jdBldL)
 
 ATTR AllDecl AllRuleJudgeIntroDecl [ | | jdBldL USE {++} {[]}: {[RlJdBld Expr]} ]
 
 SEM RuleJudgeIntro
   | PrePost         lhs     .   jdBldL      =   [RlJdBldDirect (Set.fromList @extNms) @pre.reGam @post.reGam]
-  | RulesetRule     lhs     .   jdBldL      =   [RlJdBldFromRuleset @pos @rsNm @rlNm]
+  | RulesetRule     lhs     .   jdBldL      =   [RlJdBldFromRuleset @pos @rsNm @rlNm @schemeRnmL]
 
 -------------------------------------------------------------------------
 -- Rules, individual rules for rule set
@@ -363,7 +363,7 @@ SEM RuleJudgeIntro
 ATTR AllDecl [ | | rlGam USE {`gamUnion`} {emptyGam}: {RlGam Expr} ]
 
 SEM Decl
-  | Rule            lhs     .   rlGam       =   gamSingleton @nm (RlInfo @nm @pos @mbBasedOnNm @mbAGNm @lhs.rlSeqNr (viewSelNmS @lhs.vwDpdGr @viewSel) @decls.vwRlGam)
+  | Rule            lhs     .   rlGam       =   gamSingleton @nm (RlInfo @nm @pos @mbBasedOnNm @mbAGNm @lhs.rlSeqNr (fmap (viewSelNmS @lhs.vwDpdGr) @viewSel) @decls.vwRlGam)
 
 -------------------------------------------------------------------------
 -- Rules, all rule sets
@@ -382,7 +382,7 @@ SEM AGItf
                                                                              -> let drvRsInfoL = maybe [] (\l -> map (($ @scGam) . snd) l) $ gamLookup sNm @drvGam
                                                                                     (blds,errs)
                                                                                       = unzip [ ((rsNm i',i'),e) | i <- (rsInfo : drvRsInfoL)
-                                                                                              , let (i',e) = bldRsInfo @vwDpdGr @extNmS @lhs.opts @scGam rsGam i
+                                                                                              , let (i',e) = bldRsInfo @vwDpdGr @extNmS @lhs.opts @dtInvGam @scGam rsGam i
                                                                                               ]
                                                                                 in  (gamFromAssocs blds,concat errs)
                                                                            )

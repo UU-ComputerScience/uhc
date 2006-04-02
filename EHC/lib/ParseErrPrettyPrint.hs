@@ -1,5 +1,6 @@
 module ParseErrPrettyPrint
   ( ppPos, ppErr, ppWarn
+  , ppTr
   )
   where
 
@@ -39,6 +40,9 @@ ppMsg what (sym,pos) p
 ppErr, ppWarn :: Position pos => (String,pos) -> PP_Doc -> PP_Doc
 ppErr  = ppMsg "ERROR"
 ppWarn = ppMsg "WARNING"
+
+ppTr :: PP_Doc -> PP_Doc
+ppTr = ppMsg "TRACE" ("",noPos)
 
 instance (Eq s, Show s, Show p, Position p) => PP (Message s p) where
   pp (Msg expecting position action)  
