@@ -14,6 +14,7 @@ module RulerAdmin
   , DtInfo(..), DtGam
   , emptyDtInfo
   , dtGamInv
+  , dtVwGamLookup
   
   , DtAltInvInfo(..), DtAltInvGam
   , emptyDtAltInvInfo
@@ -22,6 +23,8 @@ module RulerAdmin
   
   , DtInvInfo(..), DtInvGam
   , dtVwRlInvGamLookup
+  , dtInvGamRlMbOn
+  , dtInvGamRlVwS
 
   , AtInfo(..), AtGam
   , emptyAtInfo
@@ -31,9 +34,13 @@ module RulerAdmin
   , AtDefUse(..)
   , atDefUse
   
+  , BldRename(..)
+  
   , ScAtBld(..)
-  , ScAtBldRename(..)
   , emptyScAtBld
+  , sabFilterScheme
+
+  , ScAtBldRename(..)
   , sabrGamRename
   
   , ExplInfo(..), ExplGam
@@ -64,6 +71,7 @@ module RulerAdmin
   
   , VwRlInfo(..), VwRlGam
   , emptyVwRlInfo
+  , mkVwRlInfo
   , vwrlPreGam, vwrlPostGam
   , vwrlExtNmS
   , vwrlDelEmptyJd, vrwlIsEmpty, vwrlScc, vwrlUndefs
@@ -170,18 +178,18 @@ type DtVwGam = Gam Nm DtVwInfo
 data DtInfo
   = DtInfo
       { dtNm		:: Nm
-      , dtScNm		:: Nm
+      , dtScNmL		:: [Nm]
       , dtVwGam		:: DtVwGam
       }
 
 emptyDtInfo :: DtInfo
-emptyDtInfo = DtInfo nmUnk nmUnk emptyGam
+emptyDtInfo = DtInfo nmUnk [] emptyGam
 
 instance Show DtInfo where
   show _ = "DtInfo"
 
 instance PP DtInfo where
-  pp i = "Dt" >#< pp (dtScNm i) >#< ppGam (dtVwGam i)
+  pp i = "Dt" >#< ppCommas (dtScNmL i) >#< ppGam (dtVwGam i)
 
 type DtGam = Gam Nm DtInfo
 
@@ -204,10 +212,13 @@ dtGamInv dtGam
                      )
                      emptyGam
                      (dtVwGam di)
-           in  gamInsertShadow (dtScNm di) (DtInvInfo (dtScNm di) dn vg) dg
+           in  foldr (\n -> gamInsertShadow n (DtInvInfo n dn vg)) dg (dtScNmL di)
       )
       emptyGam
       dtGam
+
+dtVwGamLookup :: Nm -> Nm -> DtGam -> Maybe (DtInfo,DtVwInfo)
+dtVwGamLookup = dblGamLookup dtVwGam
 
 -------------------------------------------------------------------------
 -- Data/AST: alternative (inverse)
@@ -277,6 +288,21 @@ type DtInvGam = Gam Nm DtInvInfo
 
 dtVwRlInvGamLookup :: Nm -> Nm -> Nm -> DtInvGam -> Maybe (DtInvInfo,DtVwInvInfo,DtAltInvInfo)
 dtVwRlInvGamLookup = tripleGamLookup dtiVwGam vdiFullAltGam
+
+dtInvGamRlMbOn :: DtInvGam -> RlInfo e -> Nm -> Nm -> Maybe Nm
+dtInvGamRlMbOn dg rlInfo scNm vwNm
+  = case rlMbOnNm rlInfo of
+      Just n  -> Just n
+      Nothing -> case dtVwRlInvGamLookup scNm vwNm (rlNm rlInfo) dg of
+                   Just (_,_,i) -> daiMbOnNm i
+                   Nothing      -> Nothing
+
+dtInvGamRlVwS :: Nm -> Nm -> DtInvGam -> Maybe (Set.Set Nm)
+dtInvGamRlVwS scNm rlNm g
+  = case gamLookup scNm g of
+      Just i
+        -> Just $ Set.fromList $ [ v | (v,vi) <- gamAssocs $ dtiVwGam i, isJust $ gamLookup rlNm $ vdiFullAltGam vi ]
+      _ -> Nothing
 
 -------------------------------------------------------------------------
 -- Attr
@@ -385,6 +411,23 @@ sabrGamRename rnL g
           (g,[]) rnL
 
 -------------------------------------------------------------------------
+-- Rename of .. during build
+-------------------------------------------------------------------------
+
+data BldRename
+  = BldRename
+      { brNmFrom 	:: Nm
+      , brNmTo 		:: Nm
+      }
+
+instance Show BldRename where
+  show _ = "BldRename"
+
+instance PP BldRename where
+  pp (BldRename f t) = "BR" >#< f >#< "->" >#< t
+
+
+-------------------------------------------------------------------------
 -- Attr build description for scheme
 -------------------------------------------------------------------------
 
@@ -400,6 +443,9 @@ data ScAtBld
 
 emptyScAtBld :: ScAtBld
 emptyScAtBld = ScAtBldScheme nmUnk emptySPos []
+
+sabFilterScheme :: [ScAtBld] -> [ScAtBld]
+sabFilterScheme l = [ b | b@(ScAtBldScheme _ _ _) <- l ]
 
 instance Show ScAtBld where
   show _ = "ScAtBld"
@@ -627,22 +673,23 @@ rcGamUnionShadow = gamUnionWith gamUnionShadow
 
 data RlJdBld e
   = RlJdBldDirect
-      { rjbExtNmS   :: Set.Set Nm
-      , rjbPreGam   :: REGam e
-      , rjbPostGam  :: REGam e
+      { rjbExtNmS   	:: Set.Set Nm
+      , rjbPreGam   	:: REGam e
+      , rjbPostGam  	:: REGam e
       }
   | RlJdBldFromRuleset
-      { rjbPos      :: SPos
-      , rjbRsNm     :: Nm
-      , rjbRlNm     :: Nm
+      { rjbPos      	:: SPos
+      , rjbRsNm     	:: Nm
+      , rjbRlNm     	:: Nm
+      , rjbScRenameL	:: [BldRename]
       }
 
 instance Show (RlJdBld e) where
   show _ = "RlJdBld"
 
 instance PP e => PP (RlJdBld e) where
-  pp   (RlJdBldDirect    _ g1 g2) = "RJB-D"  >#< (ppGam g1 >-< ppGam g2)
-  pp i@(RlJdBldFromRuleset _ _ _) = "RJB-RS" >#< rjbRsNm i >#< rjbRlNm i
+  pp   (RlJdBldDirect      _ g1 g2) = "RJB-D"  >#< (ppGam g1 >-< ppGam g2)
+  pp i@(RlJdBldFromRuleset _ _ _ _) = "RJB-RS" >#< rjbRsNm i >#< rjbRlNm i >#< ppCommaList (rjbScRenameL i)
 
 -------------------------------------------------------------------------
 -- View (related to rule)
@@ -650,18 +697,20 @@ instance PP e => PP (RlJdBld e) where
 
 data VwRlInfo e
   = VwRlInfo
-      { vwrlNm                              :: Nm
-      , vwrlPos                             :: SPos
-      -- , vwrlPreGam, vwrlPostGam             :: REGam e
-      , vwrlJdBldL                          :: [RlJdBld e]
-      , vwrlJdBldDfltL                      :: [RlJdBld e]
-      , vwrlFullPreGam, vwrlFullPostGam     :: REGam e
-      , vwrlPreScc                          :: [[Nm]]
-      , vwrlMbChGam                         :: Maybe RlChGam
+      { vwrlNm                              				:: Nm
+      , vwrlPos                             				:: SPos
+      , vwrlJdBldL                          				:: [RlJdBld e]
+      , vwrlFullNoDfltPreGam, vwrlFullNoDfltPostGam     	:: REGam e
+      , vwrlFullPreGam, vwrlFullPostGam     				:: REGam e
+      , vwrlPreScc                          				:: [[Nm]]
+      , vwrlMbChGam                         				:: Maybe RlChGam
       }
 
 emptyVwRlInfo :: VwRlInfo e
-emptyVwRlInfo = VwRlInfo nmNone emptySPos [] [] emptyGam emptyGam [] Nothing
+emptyVwRlInfo = VwRlInfo nmNone emptySPos [] emptyGam emptyGam emptyGam emptyGam [] Nothing
+
+mkVwRlInfo :: Nm -> SPos -> [RlJdBld e] -> VwRlInfo e
+mkVwRlInfo n p b = emptyVwRlInfo { vwrlNm = n, vwrlPos = p, vwrlJdBldL = b }
 
 vwrlPreGam :: VwRlInfo e -> REGam e
 vwrlPreGam v = gamUnions [ g | (RlJdBldDirect _ g _) <- vwrlJdBldL v ]
@@ -678,6 +727,8 @@ instance Show (VwRlInfo e) where
 instance PP e => PP (VwRlInfo e) where
   pp i = "VWRl" >#< pp (vwrlNm i) >#< (ppCommaList (vwrlJdBldL i)
                                        -- >-< ppCommaList (vwrlJdBldDfltL i)
+                                       >-< ppGam (vwrlFullNoDfltPreGam i)
+                                       >-< ppGam (vwrlFullNoDfltPostGam i)
                                        >-< ppGam (vwrlFullPreGam i)
                                        >-< ppGam (vwrlFullPostGam i)
                                        >-< pp (show (vwrlPreScc i))
@@ -726,11 +777,11 @@ data RlInfo e
       , rlMbOnNm    :: Maybe Nm
       , rlMbAGStr   :: Maybe String
       , rlSeqNr     :: Int
-      , rlInclVwS   :: Set.Set Nm
+      , rlMbInclVwS :: Maybe (Set.Set Nm)
       , rlVwGam     :: VwRlGam e
       }
 
-emptyRlInfo = RlInfo nmUnk emptySPos Nothing Nothing 0 Set.empty emptyGam
+emptyRlInfo = RlInfo nmUnk emptySPos Nothing Nothing 0 Nothing emptyGam
 
 instance Show (RlInfo e) where
   show _ = "RlInfo"

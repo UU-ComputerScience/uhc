@@ -24,6 +24,7 @@ data Opts
       , optGenExpl      :: Bool
       , optGenV2		:: Bool
       , optGenAGAttr    :: Bool
+      , optGenAGData    :: Bool
       , optDot2Dash     :: Bool
       , optPreamble     :: Bool
       , optAtDir        :: AtDir    -- used internally only
@@ -48,6 +49,7 @@ defaultOpts
       , optGenExpl      =  False
       , optGenV2        =  False
       , optGenAGAttr    =  False
+      , optGenAGData    =  False
       , optDot2Dash     =  False
       , optPreamble     =  True
       , optAtDir        =  AtInOut
@@ -84,6 +86,8 @@ cmdLineOpts
           "generate explanation (for scheme's), default=no"
      , Option ""   ["ATTR"]             (NoArg oGenAGAttr)
           "generate ATTR defs (for AG), default=no"
+     , Option ""   ["DATA"]             (NoArg oGenAGData)
+          "generate DATA defs (for AG), default=no"
      , Option ""   ["preamble"]         (OptArg oPreamble "yes|no")
           "include preamble, default=yes"
      , Option ""   ["copyelim"]         (OptArg oCopyElim "yes|no")
@@ -114,6 +118,7 @@ cmdLineOpts
          oGenV1          o =  o {optGenV2 = False}
          oGenExpl        o =  o {optGenExpl = True}
          oGenAGAttr      o =  o {optGenAGAttr = True}
+         oGenAGData      o =  o {optGenAGData = True}
          oDot2Dash       o =  o {optDot2Dash = True}
          oPreamble   ms  o =  yesno (\f o -> o {optPreamble = f}) ms o
          oCopyElim   ms  o =  yesno (\f o -> o {optAGCopyElim = f}) ms o

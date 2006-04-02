@@ -22,6 +22,9 @@ ppCommas = ppListSep "" "" ", "
 ppCommaList :: PP a => [a] -> PP_Doc
 ppCommaList = ppListSep "[" "]" ", "
 
+ppCommaListV :: PP a => [a] -> PP_Doc
+ppCommaListV = ppListSepVV "[" "]" ", "
+
 ppListSepV' :: (PP s, PP c, PP o, PP a) => (forall x y . (PP x, PP y) => x -> y -> PP_Doc) -> o -> c -> s -> [a] -> PP_Doc
 ppListSepV' aside o c s pps
   = l pps

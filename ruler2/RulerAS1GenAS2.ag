@@ -94,25 +94,46 @@ SEM AGItf
 -------------------------------------------------------------------------
 
 SEM AGItf
-  | AGItf           loc     .   as2ScmMeta  =   if @fmAS2 == FmAG && optGenAGAttr @lhs.opts
-                                                then let nVwS = vgVertices @vwDpdGr
-                                                         sv = gamFromAssocsWith Set.union
-                                                                [ (rsScNm i,vs) | i <- gamElemsShadow @rsGam
-                                                                                , let vs = Set.filter (\v -> @rlSelIsSel v (rsNm i) nmAny) nVwS, not (Set.null vs)
-                                                                ]
-                                                         mkChunk s v
-                                                           = AS2.wrapInChunk AS2.Decl_Chunk @lhs.opts (rsSelMapVwNm (optMbRlSel @lhs.opts) v `nmApd` s `nmApd` Nm "ATTR")
-                                                         mk s v
-                                                           = case scVwGamLookup s v @scGam of
-                                                               Just (si,vi)
-                                                                 -> [AS2.Decl_AttrAG (AS2.AttrAGDecl_Attr (sc2DATA si @dtInvGam) (mkg agi) (mkg agsi) (mkg ags))]
-                                                                 where ag1 = gamFilter (\ai -> AtNode `notElem` atProps ai) (vwscFullAtGam vi)
-                                                                       (agsi,ag2) = gamPartition (\ai -> isJust (atMbSynInh ai)) ag1
-                                                                       (ags,agi) = gamPartition (\ai -> AtSyn `atHasDir` ai) ag2
-                                                                       mkg g = gamAssocsShadow $ gamFromAssocs
-                                                                               $ [ (n,atTy ai) | ai <- gamElemsShadow g, let n = nmSubst @lhs.opts @fmGam $ maybe (atNm ai) id $ atMbSynInh ai ]
-                                                               _ -> []
-                                                     in  [ mkChunk s v d | (s,vs) <- gamAssocsShadow sv, v <- Set.toList vs, d <- mk s v ] 
+  | AGItf           loc     .   rsMetaSel   =   let nVwS = vgVertices @vwDpdGr
+                                                in  gamFromAssocsWith Set.union
+                                                      [ (rsScNm i,vs) | i <- gamElemsShadow @rsGam
+                                                                      , let vs = Set.filter (\v -> @rlSelIsSel v (rsNm i) nmAny) nVwS, not (Set.null vs)
+                                                      ]
+                            .   mkWrapChunk =   \ag s v -> AS2.wrapInChunk AS2.Decl_Chunk @lhs.opts (rsSelMapVwNm (optMbRlSel @lhs.opts) v `nmApd` s `nmApd` Nm ag)
+                            .   as2ScmATTR  =   let mkChunk = @mkWrapChunk "ATTR"
+                                                    mk s v
+                                                      = case scVwGamLookup s v @scGam of
+                                                          Just (si,vi) | not (gamIsEmpty agi && gamIsEmpty agsi && gamIsEmpty ags)
+                                                            -> [AS2.Decl_AttrAG (AS2.AttrAGDecl_Attr (sc2DATA si @dtInvGam) (mkg agi) (mkg agsi) (mkg ags))]
+                                                            where ag1 = gamFilter (\ai -> AtNode `notElem` atProps ai) (vwscFullAtGam vi)
+                                                                  (agsi,ag2) = gamPartition (\ai -> isJust (atMbSynInh ai)) ag1
+                                                                  (ags,agi) = gamPartition (\ai -> AtSyn `atHasDir` ai) ag2
+                                                                  mkg g = gamAssocsShadow $ gamFromAssocs
+                                                                          $ [ (n,atTy ai) | ai <- gamElemsShadow g, let n = nmSubst @lhs.opts @fmGam $ maybe (atNm ai) id $ atMbSynInh ai ]
+                                                          _ -> []
+                                                in  [ mkChunk s v d | (s,vs) <- gamAssocsShadow @rsMetaSel, v <- Set.toList vs, d <- mk s v ] 
+                            .   as2ScmDATA  =   let mkChunk = @mkWrapChunk "DATA"
+                                                    mk s v
+                                                      = case scVwGamLookup s v @scGam of
+                                                          Just (si,vi) | not (null alts)
+                                                            -> [AS2.Decl_DataAG (AS2.DataAGDecl_Data dtNm alts)]
+                                                            where dtNm = sc2DATA si @dtInvGam
+                                                                  alts
+                                                                    = case dtVwGamLookup dtNm v @dtGam of
+                                                                        Just (dtInfo,dtVwInfo)
+                                                                          -> [ AS2.DataAGAlt_Alt a
+                                                                                  [ AS2.DataAGFld_Fld (nmSubst @lhs.opts @fmGam f) (dfTy fi) (tyIsDef (tyTopNm $ dfTy fi))
+                                                                                  | (f,fi) <- sortOn (dfSeqNr . snd) $ gamAssocs $ daFldGam ai
+                                                                                  ]
+                                                                             | (a,ai) <- gamAssocs (vdFullAltGam dtVwInfo)
+                                                                             ]
+                                                                          where tyIsDef t = maybe False (const True) $ dtVwGamLookup t v @dtGam
+                                                                        _ -> []
+                                                          _ -> []
+                                                in  [ mkChunk s v d | (s,vs) <- gamAssocsShadow @rsMetaSel, v <- Set.toList vs, d <- mk s v ] 
+                            .   as2ScmMeta  =   if @fmAS2 == FmAG
+                                                then (if optGenAGData @lhs.opts then @as2ScmDATA else [])
+                                                     ++ (if optGenAGAttr @lhs.opts then @as2ScmATTR else [])
                                                 else []
 
 -------------------------------------------------------------------------

@@ -5,7 +5,45 @@
 %%[problem
 \frame<presentation>
 {
-\frametitle{Ruler: the problem}
+\frametitle{Motivation}
+\begin{itemize}
+\item Programming language design and implementation where many features are combined
+\begin{itemize}
+\item Essential Haskell (EHC project)
+\end{itemize}
+\item Example experiment: exploitation of type signatures
+%%[[wrap=safecode
+%%@[file:test/4-impred-demo1.eh%%]
+%%]
+\item Our desire: combine such features with others (like class system)
+\begin{itemize}
+\item \emph{and} keep the implementation maintainable, understandable
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{The problem}
+\begin{itemize}
+\item Features can be dealt with in isolation in a cleanroom situation
+\begin{itemize}
+\item but how do they interact in combination?
+\end{itemize}
+\item The combination of features easily leads to entanglement in description and implementation
+\begin{itemize}
+\item but how do we achieve separation across specification and implementation?
+\end{itemize}
+\item Specification, explanation and implementation can be described separately
+\begin{itemize}
+\item but how do we achieve mutual consistency?
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Motivational example}
 \begin{itemize}
 \item Suppose you have a language
 \begin{tabular}%
@@ -15,6 +53,7 @@
 \item With a type system specification (partially given)
 \[
 \rulerCmdUse{rulerDemo.E.expr.base.e.var}
+\quad
 \rulerCmdUse{rulerDemo.E.expr.base.e.app}
 \]
 \end{itemize}
@@ -22,9 +61,9 @@
 
 \frame<presentation>
 {
-\frametitle{The problem}
+\frametitle{Motivational example}
 \begin{itemize}
-\item With an implementation (partially given)
+\item With an Attribute Grammar implementation (partially given)
 %%[[wrap=safecode
 DATA Expr
   | Var  i : {String}
@@ -33,14 +72,14 @@ DATA Expr
 
 %%@rulerDemoAG.3.expr.e.var
 %%]
-\item That's simple, isn't it?
+\item Its mutual consistency is relatively easy to see
 \end{itemize}
 }
 
 \frame<presentation>
 {
-\frametitle{The real problem}
-... is complexity, arising with feature combination
+\frametitle{Motivational example}
+The problem is complexity, arising with feature combination
 \begin{itemize}
 \item EHC: impredicativity propagation algorithm (for application)
 \begin{eqnarray*}
@@ -71,40 +110,61 @@ How can you be sure the implementation really implements the type system?
 \begin{itemize}
 \item Prove it (after the construction of both)
 \begin{itemize}
-\item Proving correctness of programs is difficult
+\item proving correctness of programs is difficult
 \end{itemize}
 \item Prove correctness of type system against a simple model,
 then generate the implementation
 \begin{itemize}
-\item Real languages are still too complex to be mechanically proven correct
-\item Lack of full specification of real languages
+\item real languages are still too complex to be mechanically proven correct
+\item lack of full specification of real languages
 \end{itemize}
-\item Describe type rules such that pretty printed version and implementation can be generated
-(Ruler)
+\item Ruler: describe type rules such that pretty printed version and implementation can be generated
 \begin{itemize}
-\item Not proven correct, but at least consistent
+\item not proven correct, but at least consistent
 \end{itemize}
 \end{itemize}
 }
 
 \frame<presentation>
 {
-\frametitle{Ruler approach}
+\frametitle{Ruler}
 \begin{itemize}
 \item Ruler system
 \begin{itemize}
-\item Domain specific language for specifying type rules
+\item domain specific language for specifying type rules
+\item support for separate and incremental type rule specifications
 \end{itemize}
 \item We want to check
 \begin{itemize}
-\item Have judgements in a rule the right structure (similar to type checking for expressions)
-\item Are identifiers defined before used (when specifying the algorithmic part)
+\item have judgements in a rule the right structure (similar to type checking for expressions)
+\item are identifiers defined before used (when specifying the algorithmic part)
 \item ... more in the future
 \end{itemize}
 \item We want to generate
 \begin{itemize}
 \item \LaTeX\ pretty printed version (to include in a description)
-\item AG fragments (to include in an implementation)
+\item Attribute Grammar fragments (to include in an implementation)
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Ruler}
+\begin{itemize}
+\item Is
+\begin{itemize}
+\item a system supporting a mutually consistent description and implementation of a multiple feature programming language
+\item born from a real/practical need as a solution to this particular problem
+\end{itemize}
+\item Is not
+\begin{itemize}
+\item a system proving the usual type system properties
+\item nor any other holy grail
+\end{itemize}
+\item But
+\begin{itemize}
+\item Ruler can be extended to generate input for other tools
 \end{itemize}
 \end{itemize}
 }
@@ -120,6 +180,7 @@ then generate the implementation
 \item Hindley-Milner (HM) type system as a case study
 \item Description partitioned in three views/steps (declarative, algorithmic, AG)
 \item How to specify this using Ruler
+\item Aspects (work in progress)
 \item Conclusion
 \end{itemize}
 }
@@ -129,7 +190,7 @@ then generate the implementation
 %%[overview
 \frame<presentation>
 {
-\frametitle{Ruler: the big picture}
+\frametitle{Ruler within context}
 \FigCenterXFigTex{ruler-overview}
 }
 
@@ -139,30 +200,54 @@ then generate the implementation
 \begin{itemize}
 \item Scheme
  \begin{itemize}
- \item the structure: holes + template
+ \item judgement structure: holes + template (for specification and output generation)
  \end{itemize}
 \item Views
  \begin{itemize}
- \item hierarchy of views
- \item view build on top of previous view
+ \item hierarchy of views, a view is built on top of previous view
  \end{itemize}
-\item View on scheme
+\item Views of a scheme
  \begin{itemize}
- \item each scheme has view on it, differs in holes + template
+ \item each scheme has views, views differ in holes + template
  \end{itemize}
-\item Judgement shape
+\item Template, or Judgement shape
  \begin{itemize}
  \item the shape used to specify/pretty-print an instance of a scheme (a judgement)
  \end{itemize}
 \item Rule
  \begin{itemize}
- \item premises + conclusion (judgements)
+ \item premise judgements + conclusion judgement
+ \item judgement binds its scheme holes to expressions
  \end{itemize}
-\item View on rule
+\item Views of a rule
 \item Rule judgement
  \begin{itemize}
- \item each (rule) judgement has a view on it, parallel to view on its scheme
+ \item each rule judgement has views, parallel to views of its scheme
  \end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Ruler `dimensions'}
+\begin{itemize}
+\item Views allow incremental extension of a language
+\item Schemes allow ``by aspect'' organisation by treating holes and associated rules together
+\item Ruler
+ \begin{itemize}
+ \item combines views in a hierarchical, inheriting manner
+ \item combines schemes into new schemes
+ \item combine |===| overwrite (of hole bindings)
+ \end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Ruler `dimensions'}
+\begin{itemize}
+\item In EHC:
+\FigCenterPDF{ag-ast-asp}
 \end{itemize}
 }
 
@@ -231,7 +316,7 @@ then generate the implementation
 }
 %%]
 
-%%[longBody
+%%[basicsAndViews
 \frame<presentation>
 {
 \frametitle{Views}
@@ -250,7 +335,7 @@ then generate the implementation
 \]
  \begin{itemize}
  \item algorithmic view |A| (in Hindley-Milner type system)
- \item colors for indicating (un)changed parts
+ \item use of colors, grey |===| unchanged, blue |===| changed
  \end{itemize}
 \end{itemize}
 }
@@ -493,6 +578,93 @@ rewrite ag def  a -> r = (a) `Ty_Arr` (r)
 \end{itemize}
 }
 
+%%]
+
+%%[aspectCombination
+\frame<presentation>
+{
+\frametitle{Aspects}
+\begin{itemize}
+\item Example from EHC: expression application
+\begin{eqnarray*}
+&& \fbox{\rulerCmdUse{rules4.I1.expr.base.scheme}}
+\\
+&& \rulerCmdUse{rules4.I1.expr.base.e.app}
+\end{eqnarray*}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Aspects}
+\begin{itemize}
+\item Separate aspect: extraction of quantified types
+\begin{eqnarray*}
+&& \fbox{\rulerCmdUse{rules4.I2.expr.impr.scheme}}
+\\
+&& \rulerCmdUse{rules4.I2.expr.impr.e.app}
+\end{eqnarray*}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Aspects}
+\begin{itemize}
+\item Combination
+\begin{eqnarray*}
+&& \fbox{\rulerCmdUse{rules4.I2.expr.base.scheme}}
+\\
+&& \rulerCmdUse{rules4.I2.expr.base.e.app}
+\end{eqnarray*}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Aspect combination}
+\begin{itemize}
+\item Defined in terms of scheme combination and rule combination
+\item Scheme combination:
+%%[[wrap=safecode
+scheme expr =
+  view E =
+    holes [ node e: Expr, valGam: ValGam | ty: Ty | ]
+        | scheme expr.invisible
+  ...
+  view I1 = ...
+  view I2 = holes scheme expr.impr
+
+scheme expr.impr =
+  view I2 =
+    holes [ extern valGam: ValGam, ... | ... | ity: Ty ]
+%%]
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Rule combination}
+%%[[wrap=safecode
+ruleset expr.base scheme expr =
+  rule e.app =
+    view E =
+      judge F : expr = valGam :- eFun : (ty.a -> (ty|Ty))
+      judge A : expr = valGam :- eArg : ty.a
+      -
+      judge R : expr = valGam :- (eFun ^^ eArg) : ty
+    ...
+    view I2 = ruleset expr.impr rule e.app
+
+ruleset expr.impr scheme expr.impr =
+  rule e.app =
+    view I2 =
+      judge F : expr.impr = ...
+      ...
+      -
+      judge R : expr.impr = ...
+%%]
+}
 %%]
 
 %%[conclusion

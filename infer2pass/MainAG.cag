@@ -1,3 +1,4 @@
+%%[1
 -------------------------------------------------------------------------
 -- Main AG
 -------------------------------------------------------------------------
@@ -9,43 +10,49 @@ module MainAG
 import IO
 import Data.List
 import UU.Pretty
-import Utils
+import Infer2PassSupport
 }
+%%]
 
+%%[1
 INCLUDE "RulerInfer2Pass.ag"
 
 WRAPPER AGItf
+%%]
 
 -------------------------------------------------------------------------
 -- AST
 -------------------------------------------------------------------------
 
+%%[1
 DATA AGItf
   | AGItf  e  : Expr
-DATA Expr
-  | App  f    : Expr
-         a    : Expr
-  | Int  int  : {Int}
-  | Var  i    : {String}
-  | Lam  i    : {String}
-         b    : Expr
-  | Let  i    : {String}
-         e    : Expr
-         b    : Expr
+%%]
+
+%%[1.AllAS
+SET AllAS = Expr
+%%]
+
+%%[2.AllAS -1.AllAS
+SET AllAS = Expr TyExpr
+%%]
 
 -------------------------------------------------------------------------
 -- Initialisation
 -------------------------------------------------------------------------
 
+%%[1
 SEM AGItf
   | AGItf  e  .   g  =   []
               .   c  =   []
+%%]
 
 -------------------------------------------------------------------------
 -- Pretty printing
 -------------------------------------------------------------------------
 
-ATTR AGItf Expr [ | | pp: PP_Doc ]
+%%[1
+ATTR AGItf AllAS [ | | pp: PP_Doc ]
 
 SEM Expr
   | App  lhs  .   pp   =   @f.pp >#< pp_parens @a.pp
@@ -57,12 +64,31 @@ SEM Expr
                            >#< "::"  >#< show @pty_e_
                            >#< "="   >#< @e.pp
                            >-< "in " >#< @b.pp
+%%]
+
+%%[2
+SEM Expr
+  | TLet lhs  .   pp   =   "let"     >#< pp @i
+                           >#< "::"  >#< @te.pp
+                           >#< "="   >#< @e.pp
+                           >-< "in " >#< @b.pp
+  | Char lhs  .   pp   =   pp @char
+
+SEM TyExpr
+  | Int  lhs  .   pp   =   pp "Int"
+  | Char lhs  .   pp   =   pp "Char"
+  | Var  lhs  .   pp   =   pp @i
+  | All  lhs  .   pp   =   "forall" >#< @i >#< "." >#< @te.pp
+  | Arr  lhs  .   pp   =   @a.pp >#< "->" >#< @r.pp
+%%]
 
 -------------------------------------------------------------------------
 -- Uniq
 -------------------------------------------------------------------------
 
-ATTR Expr [ | uniq: UID | ]
+%%[1
+ATTR AllAS [ | uniq: UID | ]
 
 SEM AGItf
   | AGItf  e  .   uniq  =   uidStart
+%%]

@@ -1,22 +1,70 @@
+preamble tex "%include lhs2TeX.fmt\n%include afp.fmt\n"
 
--- -----------------------------------------------------------------------------------------
--- - Externally defined
--- -----------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------
+-- View hierarchy
+-------------------------------------------------------------------------------------------
 
-external Ty_Int
+viewhierarchy = HM < K < I
 
--- -----------------------------------------------------------------------------------------
--- - Formatting
--- -----------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------
+-- Data type
+-------------------------------------------------------------------------------------------
+
+data Expr [expr, expr.kn]
+  view HM =
+      App  [e.app]  f    :: Expr
+                    a    :: Expr
+    | Int  [e.int]  int  :: Int
+    | Var  [e.var]  i    :: String
+    | Lam  [e.lam]  i    :: String
+                    b    :: Expr
+    | Let  [e.let]  i    :: String
+                    e    :: Expr
+                    b    :: Expr
+  view K =
+      Char [e.char : e.int]
+                    char :: Char
+    | TLet [e.tlet : e.let]
+                    i    :: String
+                    te   :: TyExpr
+                    e    :: Expr
+                    b    :: Expr
+
+data TyExpr [tyexpr]
+  view K =
+      Arr  [te.arr] a    :: TyExpr
+                    r    :: TyExpr
+    | Var  [te.var] i    :: String
+    | Int  [te.int]
+    | Char [te.char]
+    | All  [te.all] i    :: String
+                    te   :: TyExpr
+
+-------------------------------------------------------------------------------------------
+-- Externally defined
+-------------------------------------------------------------------------------------------
+
+external Ty_Int Ty_Var Ty_All Ty_Char
+external emptyGam
+
+-------------------------------------------------------------------------------------------
+-- Formatting
+-------------------------------------------------------------------------------------------
 
 format tex Ty_Int = Int
+format tex Ty_Char = Char
+format tex Ty_Var = 
 
 format tex Gam = Gamma
 format tex gam = Gamma
+format tex tgam = TGamma
+format emptyGam = []
 
 format tex ty = tau
 format tex pty = sigma
 format tex mty = tau
+
+format tex knTy = sigma..k
 
 format tex tv = v
 
@@ -24,12 +72,22 @@ format tex cnstr.inh = Cnstr..k
 format tex cnstr.syn = Cnstr
 format tex cnstr     = Cnstr
 
+format tex knCnstr..k = Cnstr.kn.k
+format tex knCnstr.inh = Cnstr.kn.k
+format tex knCnstr.syn = Cnstr.kn
+format tex knCnstr     = Cnstr.kn
+
 format ag cnstr     = c
+format ag knCnstr   = kc
 format ag gam       = g
 
--- -----------------------------------------------------------------------------------------
--- - Rewriting
--- -----------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------
+-- Rewriting
+-------------------------------------------------------------------------------------------
+
+-- rewrite tex def Ty_All tv t = forall tv `.` t
+-- rewrite ag def Ty_All tv t = (Ty_All (tyTvId (tv)) t)
+rewrite ag def forall tv `.` (t|Ty) = (Ty_All [tyTvId (tv)] t)
 
 rewrite ag def  (a | Ty) -> (r | Ty) = ((a) `Ty_Arr` (r) | Ty)
 
@@ -40,66 +98,156 @@ rewrite ag def  (c | Cnstr) (v | a) = (c |=> (v) | a)
 rewrite ag def  i :-> t = ([(i,t)] | Gam)
 rewrite ag def  (g1 | Gam), (g2 | Gam) = ((g1) ++ (g2) | Gam)
 
--- -----------------------------------------------------------------------------------------
--- - View hierarchy
--- -----------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------
+-- Expr scheme
+-------------------------------------------------------------------------------------------
 
-viewhierarchy = HM < K
-
--- -----------------------------------------------------------------------------------------
--- - Expr scheme
--- -----------------------------------------------------------------------------------------
-
-scheme expr "Expr" =
+scheme expr =
   view HM =
     holes [ node e: Expr, gam: Gam | thread cnstr: Cnstr | ty: Ty ]
     judgespec cnstr.inh ; gam :-.."e" e : ty ~> cnstr.syn
 
--- -----------------------------------------------------------------------------------------
--- - Expr rules
--- -----------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------
+-- Expr rules
+-------------------------------------------------------------------------------------------
 
 ruleset expr.base scheme expr  "Expression type rules" =
-  rule e.int "Int" =
+  rule e.int =
     view HM =
-      -
+      ---
       judge R : expr = cnstr..k ; gam :- int : Ty_Int ~> cnstr..k
 
-  rule e.var "Var" =
+  rule e.char =
+    view K =
+      ---
+      judge R : expr 
+          | e = char
+          | ty = Ty_Char
+
+  rule e.var =
     view HM =
       judge G : gamLookupIdTy = i :-> pty `elem` gam
       judge I : tyInst = ty `=` inst(pty)
-      -
+      ---
       judge R : expr = cnstr..k ; gam :- i : ty ~> cnstr..k
 
-  rule e.app "App" =
+  rule e.app =
     view HM =
       judge V : tvFresh  =  tv
       judge M : match    =  (ty.a -> tv) <=> (cnstr.a ty.f) ~> cnstr
       judge A : expr = cnstr.f ; gam :- a : ty.a ~> cnstr.a
       judge F : expr = cnstr..k ; gam :- f : ty.f ~> cnstr.f
-      -
-      judge R : expr = cnstr..k ; gam :- ((node 1 = f) (node 2 = a)) : (cnstr cnstr.a tv) ~> cnstr cnstr.a
+      ---
+      judge R : expr = cnstr..k ; gam :- (f a) : (cnstr cnstr.a tv) ~> cnstr cnstr.a
 
-  rule e.lam "Lam" =
+  rule e.lam =
     view HM =
       judge V : tvFresh = tv
       judge B : expr = cnstr..k ; ((i :-> tv) , gam) :- b : ty.b ~> cnstr.b
-      -
-      judge R : expr = cnstr..k ; gam :- (\i -> (node 1 = b)) : (cnstr.b tv -> ty.b) ~> cnstr.b
+      ---
+      judge R : expr = cnstr..k ; gam :- (\i -> b) : (cnstr.b tv -> ty.b) ~> cnstr.b
 
-  rule e.let "Let" =
+  rule e.let =
     view HM =
       judge V : tvFresh = tv
       judge D : expr = cnstr..k ; ((i :-> tv) , gam) :- e : ty.e ~> cnstr.e
       judge B : expr = cnstr.e ; ((i :-> pty.e), gam) :- b : ty.b ~> cnstr.b
       judge G : tyGen = pty.e `=` ty.e \\ (cnstr.e gam)
-      -
-      judge R : expr = cnstr..k ; gam :- (let i `=` (node 1 = e) in (node 2 = b)) : ty.b ~> cnstr.b
+      ---
+      judge R : expr = cnstr..k ; gam :- (let i `=` e in b) : ty.b ~> cnstr.b
 
--- -----------------------------------------------------------------------------------------
--- - Match two types
--- -----------------------------------------------------------------------------------------
+  rule e.tlet =
+    view K =
+      judge T : tyexpr = emptyGam :- te : pty
+      ---
+      judge R : expr
+          | e = let i :: te `=` e in b
+
+-------------------------------------------------------------------------------------------
+-- Expr scheme: known
+-------------------------------------------------------------------------------------------
+
+scheme expr.kn =
+  view K =
+    holes [ node e: Expr, knTy: Ty | thread knCnstr: Cnstr | ]
+    judgespec knCnstr.inh ; knTy :-.."e" e ~> knCnstr.syn
+
+ruleset expr.kn scheme expr.kn viewsel K - * "Expression type rules for known type extraction" =
+  rule e.int =
+    view K =
+      judge F : fit = Ty_Int <= knTy ~> cnstr
+      ---
+      judge R : expr.kn = knCnstr..k ; knTy :- int ~> (cnstr knCnstr..k)
+
+  rule e.char =
+    view K =
+      judge F : fit
+          | ty.l = Ty_Char
+      ---
+      judge R : expr.kn
+          | e = char
+
+  rule e.var =
+    view K =
+      extern pty
+      judge F : fit = pty <= knTy ~> cnstr
+      ---
+      judge R : expr.kn = knCnstr..k ; knTy :- i ~> (cnstr knCnstr..k)
+    view I =
+      extern pty
+      ---
+
+-------------------------------------------------------------------------------------------
+-- Expr rules: known
+-------------------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------------------
+-- TyExpr scheme
+-------------------------------------------------------------------------------------------
+
+scheme tyexpr =
+  view K =
+    holes [ node te: TyExpr, tgam: Gam | | ty: Ty ]
+    judgespec tgam :-.."te" te : ty
+
+-------------------------------------------------------------------------------------------
+-- TyExpr rules
+-------------------------------------------------------------------------------------------
+
+ruleset tyexpr.base scheme tyexpr viewsel K - * "Typr expression type rules" =
+  rule te.int =
+    view K =
+      ---
+      judge R : tyexpr = tgam :- int : Ty_Int
+
+  rule te.char =
+    view K =
+      ---
+      judge R : tyexpr = tgam :- char : Ty_Char
+
+  rule te.var =
+    view K =
+      judge G : gamLookupIdTy = i :-> ty `elem` tgam
+      ---
+      judge R : tyexpr = tgam :- i : ty
+
+  rule te.all =
+    view K =
+      judge V : tvFresh = tv
+      judge T : tyexpr = ((i :-> tv) , tgam) :- te : pty
+      ---
+      judge R : tyexpr = tgam :- (forall i `.` te) : (forall tv `.` pty)
+
+  rule te.arr =
+    view K =
+      judge Arg : tyexpr = tgam :- a : pty.a
+      judge Res : tyexpr = tgam :- r : pty.r
+      ---
+      judge R : tyexpr = tgam :- (a -> r) : (pty.a -> pty.r)
+
+-------------------------------------------------------------------------------------------
+-- Match two types
+-------------------------------------------------------------------------------------------
 
 relation match =
   view HM =
@@ -107,9 +255,15 @@ relation match =
     judgespec ty.l <=> ty.r ~> cnstr
     judgeuse ag (cnstr,mtErrs) `=` (ty.l) <=> (ty.r)
 
--- -----------------------------------------------------------------------------------------
--- - Lookup ty in gam
--- -----------------------------------------------------------------------------------------
+relation fit =
+  view K =
+    holes [ ty.l: Ty, ty.r: Ty | | cnstr: Cnstr ]
+    judgespec ty.l <= ty.r ~> cnstr
+    judgeuse ag (cnstr,mtErrs) `=` (ty.l) <=> (ty.r)
+
+-------------------------------------------------------------------------------------------
+-- Lookup ty in gam
+-------------------------------------------------------------------------------------------
 
 relation gamLookupIdTy =
   view HM =
@@ -117,9 +271,9 @@ relation gamLookupIdTy =
     judgespec nm :-> ty `elem` gam
     judgeuse ag (ty,nmErrs) `=` gamLookup nm gam
 
--- -----------------------------------------------------------------------------------------
--- - Fresh type variables
--- -----------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------
+-- Fresh type variables
+-------------------------------------------------------------------------------------------
 
 relation tvFresh =
   view HM =
@@ -128,9 +282,9 @@ relation tvFresh =
     judgeuse tex tv (text "fresh")
     judgeuse ag tv `=` Ty_Var unique
 
--- -----------------------------------------------------------------------------------------
--- - Type instantiation
--- -----------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------
+-- Type instantiation
+-------------------------------------------------------------------------------------------
 
 relation tyInst =
   view HM =
@@ -138,9 +292,9 @@ relation tyInst =
     judgespec ty.i `=` inst(ty)
     judgeuse ag ty.i `=` tyInst unique (ty)
 
--- -----------------------------------------------------------------------------------------
--- - Type generalisation
--- -----------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------
+-- Type generalisation
+-------------------------------------------------------------------------------------------
 
 relation tyGen =
   view HM =

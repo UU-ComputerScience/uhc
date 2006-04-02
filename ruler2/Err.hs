@@ -6,6 +6,8 @@ module Err
   ( Err(..), mkPPErr, ppErrPPL
   , errLIsFatal
   , errFirst
+  
+  , mkTr
   )
   where
 
@@ -31,6 +33,7 @@ data Err
   | Err_NotAEqnForm  SPos PP_Doc
   | Err_FileNotFound SPos String [String]
   | Err_PP                PP_Doc
+  | Err_Tr                PP_Doc
   deriving Show
 
 -------------------------------------------------------------------------
@@ -42,6 +45,9 @@ ppErrPPL = vlist . map pp
 
 mkPPErr :: PP a => a -> Err
 mkPPErr = Err_PP . pp
+
+mkTr :: (PP a,PP m) => m -> a -> Err
+mkTr m p = Err_Tr (pp m >|< ":" >#< pp p)
 
 instance PP Err where
   pp (Err_UndefNm pos cx knd nmL)
@@ -74,6 +80,8 @@ instance PP Err where
     = ppWarn pos ("expr not of (AG rule) form ... = ...:" >#< e)
   pp (Err_PP e)
     = e
+  pp (Err_Tr e)
+    = ppTr e
 
 -------------------------------------------------------------------------
 -- Misc
@@ -81,6 +89,7 @@ instance PP Err where
 
 errIsFatal :: Err -> Bool
 errIsFatal (Err_NotAEqnForm _ _) = False
+errIsFatal (Err_Tr          _  ) = False
 errIsFatal _                     = True
 
 errLIsFatal :: [Err] -> Bool

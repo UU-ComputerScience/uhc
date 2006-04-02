@@ -6,5 +6,5 @@ include EhcRulesCommon
 include EhcRulesAST
 include EhcRulesRelations
 include EhcRulesCommonSchemes
-include EhcRulesSchemes
+include EhcRulesSchemes2
 

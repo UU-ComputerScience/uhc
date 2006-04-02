@@ -12,6 +12,7 @@ DATA Decl
   | ScVwAtExplain       atExprs     : {[(Expr,Expr)]}
   | RsVw                decl        : RsVwDecl
   | AttrAG              decl        : AttrAGDecl
+  | DataAG              decl        : DataAGDecl
   | Chunk               nm          : {Nm}
                         decl        : Decl
 
@@ -36,6 +37,27 @@ DATA AttrAGDecl
                         synAts      : {[(Nm,Nm)]}
 
 SET AllAtAG = AttrAGDecl
+
+DATA DataAGDecl
+  | Data                ndNm        : {Nm}
+                        alts        : DataAGAlts
+                        
+DATA DataAGAlt
+  | Alt                 nm          : {Nm}
+                        flds        : DataAGFlds
+
+TYPE DataAGAlts = [DataAGAlt]
+
+DATA DataAGFld
+  | Fld                 nm          : {Nm}
+                        ty          : {Ty}
+                        tyIsData    : {Bool}
+
+TYPE DataAGFlds = [DataAGFld]
+
+SET AllDtFld = DataAGFlds DataAGFld
+SET AllDtAlt = DataAGAlts DataAGAlt
+SET AllDtAG = DataAGDecl AllDtAlt AllDtFld
 
 DATA VwDecl
   | Vw                  nm          : {Nm}
@@ -110,6 +132,7 @@ SET AllDecl
   = AllDc AllRs AllVw
     AllRl AllJd AllAt
     AllAtAG
+    AllDtAG
 
 -------------------------------------------------------------------------
 -- Sets of AST data's

@@ -1,0 +1,6 @@
+let id :: forall a . a -> a = \a -> a
+in
+let v1 = id 3
+in
+let v2 = id 'c'
+in  v2

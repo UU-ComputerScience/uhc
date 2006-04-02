@@ -82,7 +82,7 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
         pDeclRule           =   (\(n,p) mn s mag d -> Decl_Rule p n mn s mag d)
                                                        <$  pKeySPos "rule"      <*> pNmSPos
                                                        <*> pMb (pKey ":" *> pNm)
-                                                       <*> pMbViewSel
+                                                       <*> pMbViewSel'
                                                        <*> pMbString
                                                        <*  pKey "="             <*> (pDeclRuleDflt <|> pDecls1' pDeclRulView)
         pDeclRuleDflt       =   (\d -> [Decl_RulView emptySPos nmNone d])
@@ -100,14 +100,15 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
                                   sep = pKey "-" <|> pKey "---"
 -}
         pRuleJudgeIntroPrePost
-                            =   RuleJudgeIntro_PrePost <$> (pKey "extern" *> pList1 pNm `opt` []) <*> pRExprs <* sep <*> pRExprs
+                            =   RuleJudgeIntro_PrePost <$> (pKey "extern" *> pList1 pNmDir `opt` []) <*> pRExprs <* sep <*> pRExprs
                             where pRExprs    = pList pRExpr
                                   -- pRExprsLay = pLay  pRExprBase
                                   sep = pKey "-" <|> pKey "---"
         pRuleJudgeIntros    =   (:[]) <$> pRuleJudgeIntroPrePost
                             <|> pList1Sep (pKey "|") (pRuleJudgeIntro <|> pParens pRuleJudgeIntroPrePost)
         pRuleJudgeIntro     =   (\(rsn,p) rln -> RuleJudgeIntro_RulesetRule p rsn rln)
-                                <$ pKey "ruleset" <*> pNmSPos <* pKey "rule" <*> pNm
+                                <$  pKey "ruleset" <*> pNmSPos <* pKey "rule" <*> pNm
+                                <*> (pParens_pCommas (BldRename <$ pKey "scheme" <*> pNm <* pKey "->" <*> pNm) `opt` [])
         pDeclScm            =   Decl_ScmView           <$  pKey "view"          <*> pNmVw
                                                        <*  pKey "="             <*> pDeclsScmView
         pDeclScmDflt        =   (\v -> [Decl_ScmView nmNone v])
@@ -169,7 +170,7 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
                             <|> Decl_Extern            <$  (pKey "extern" <|> pKey "external")
                                                        <*> pList1 pNm
                             <|> (\(n,p) sn d -> Decl_DataAST p n sn d)
-                                                       <$  pKey "data" <*> pNmSPos <*> pBracks pNm
+                                                       <$  pKey "data" <*> pNmSPos <*> pBracks_pCommas pNm
                                                        <*> (pDeclDataASTViewDflt <|> pDecls' pDeclDataASTView)
                             <|> (\(n,p) -> Decl_Include p n)
                                                        <$  pKey "include" <*> pNmSPos
@@ -185,6 +186,7 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
                                   pDs = pKey "=" *> (pDeclScmDflt <|> pDecls1' pDeclScm)
                                   pTl2 = (,) <$> pMbString <*> (pMaybe [] id pDs)
         pScDeriv            =   ScList <$ pKey "[" <*> pNm <* pKey "]"
+        pMbViewSel'         =   pMaybe Nothing Just (pKey "viewsel" *> pViewSel)
         pMbViewSel          =   pMaybe ViewSel_All id (pKey "viewsel" *> pViewSel)
         pFmKd2WithDflt      =   pMaybe FmAll id pFmKd2
         pFmKd3WithDflt      =   pMaybe FmAll id pFmKd3

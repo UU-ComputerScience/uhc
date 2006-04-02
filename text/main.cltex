@@ -536,7 +536,7 @@
 %if not asSlides
 \usepackage{txfonts}
 %endif
-%if not storyRuler
+%if not storyRuler || asSlides
 \usepackage[bbgreekl]{mathbbol}
 %endif
 
@@ -830,7 +830,7 @@ WWW home page:
 
 %%[14
 \title{Ruler: programming type rules}
-\author{Atze Dijkstra}
+\author{Atze Dijkstra and S. Doaitse Swierstra}
 %%]
 
 %%[15
@@ -1869,12 +1869,21 @@ this has been omitted as \chapterRef{agtut} can be read instead.
  %%@TopicReflection.phdEvaluation
 %\input ipadissertations.tex
 
-\rulerCmdUse{rules4.I1.expr2.base}
+%\rulerCmdUse{rules4.I1.expr.base}
+%\rulerCmdUse{rules4.I1.decl.base}
 
-\rulerCmdUse{rules4.I2.expr.impr}
+%\rulerCmdUse{rules4.I2.expr.impr}
+%\rulerCmdUse{rules4.I2.decl.impr}
 
-\rulerCmdUse{rules4.I2.expr2.base}
+%\rulerCmdUse{rules4.I2.expr.base}
+%\rulerCmdUse{rules4.I2.decl.base}
 
+\rulerCmdUse{infer2pass.HM.expr.base}
+\rulerCmdUse{infer2pass.K.expr.base}
+
+\rulerCmdUse{infer2pass.K.expr.kn}
+
+\rulerCmdUse{infer2pass.K.tyexpr.base}
 
 %%]
 
@@ -2063,19 +2072,22 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%[14
 %%@SlidesRuler.title
 
-\section{The problem}
+\section{Motivation}
 %%@SlidesRuler.problem
 
 %%@SlidesRuler.issues
 
 %%@SlidesRuler.content
 
-\section{Ruler}
-
 %{
 %include ruler.fmt
+
+\section{Basics and views}
 %%@SlidesRuler.overview
-%%@SlidesRuler.longBody
+%%@SlidesRuler.basicsAndViews
+
+\section{Aspect combination}
+%%@SlidesRuler.aspectCombination
 %}
 
 %%@SlidesRuler.conclusion

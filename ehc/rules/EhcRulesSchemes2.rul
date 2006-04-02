@@ -14,7 +14,7 @@ scheme expr.invisible =
     holes [ tyGam: TyGam, kiGam: KiGam | | ]
     judgespec kiGam ; tyGam :- 
 
-scheme expr2 =
+scheme expr =
   view E =
     holes [ node e: Expr, valGam: ValGam | ty: Ty | ]
         | scheme expr.invisible
@@ -39,4 +39,41 @@ scheme expr2 =
     holes [ | | retain translExpr: TranslExpr ]
     judgespec fiopt ; valGam ; tyCnstr.inh ; knTy :- e : ty ~> tyCnstr.syn ; translExpr
     judgeuse tex fiopt ; valGam ; tyCnstr.inh ; knTy :-.."e" e : ty ~> tyCnstr.syn ; translExpr
+
+-------------------------------------------------------------------------
+-- Declaration
+-------------------------------------------------------------------------
+
+scheme decl.impr =
+  view I2 =
+    holes [ node d: Decl | thread ityCnstr: ICnstr | ]
+    judgespec ityCnstr.inh :-.."d" d ~> ityCnstr.syn
+
+scheme decl.invisible =
+  view E =
+    holes [ tyGam: TyGam, kiGam: KiGam | | ]
+    judgespec kiGam ; tyGam :- 
+
+scheme decl =
+  view E =
+    holes [ valGam: ValGam, node d: Decl | | gathTySigGam: ValGam ]
+        | scheme decl.invisible
+    judgespec valGam :-.."d" d : gathTySigGam
+    judgeuse tex valGam :-.."d" d : gathTySigGam
+  view K =
+    holes [ tySigGam: ValGam | thread patValGam: ValGam | ]
+    judgespec tySigGam ; patValGam.inh ; valGam :- d : gathTySigGam ; patValGam.syn
+    judgeuse tex tySigGam ; patValGam.inh ; valGam :-.."d" d : gathTySigGam ; patValGam.syn
+  view C =
+    holes [ | thread tyCnstr: Cnstr, thread patTyCnstr: Cnstr | ]
+    judgespec tySigGam ; patValGam.inh ; valGam ; patTyCnstr.inh ; tyCnstr.inh :- d : gathTySigGam ; patValGam.syn ~> patTyCnstr.syn ; tyCnstr.syn
+    judgeuse tex tySigGam ; patValGam.inh ; valGam ; patTyCnstr.inh ; tyCnstr.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> patTyCnstr.syn ; tyCnstr.syn
+  view I2 =
+    holes scheme decl.impr | [ | thread tySigTyCnstr: Cnstr | ]
+    judgeuse tex tySigGam ; patValGam.inh ; valGam ; tySigTyCnstr.inh ; patTyCnstr.inh ; ityCnstr.inh ; tyCnstr.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> tySigTyCnstr.syn ; patTyCnstr.syn ; ityCnstr.syn ; tyCnstr.syn
+  view CG =
+    holes [ | | translBind: TransDecl ]
+    judgespec tySigGam ; patValGam.inh ; valGam ; patTyCnstr.inh ; tyCnstr.inh :- d : gathTySigGam ; patValGam.syn ~> patTyCnstr.syn ; tyCnstr.syn ; translBind
+    judgeuse tex tySigGam ; patValGam.inh ; valGam ; patTyCnstr.inh ; tyCnstr.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> patTyCnstr.syn ; tyCnstr.syn ; translBind
+
 

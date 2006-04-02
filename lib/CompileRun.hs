@@ -110,7 +110,7 @@ ppCR cr
       )
 
 crPP :: (PP n,PP u) => String -> CompileRun n u i e -> IO (CompileRun n u i e)
-crPP m cr = do { hPutStrLn stderr (m ++ ":") ; hPutPPLn stderr (ppCR cr) ; return cr }
+crPP m cr = do { hPutStrLn stderr (m ++ ":") ; hPutPPLn stderr (ppCR cr) ; hFlush stderr ; return cr }
 
 crPPMsg :: (PP m) => m -> CompileRun n u i e -> IO (CompileRun n u i e)
 crPPMsg m cr = do { hPutPPLn stdout (pp m) ; return cr }
@@ -152,7 +152,7 @@ crHandle1 action err errs it
                         else -}
                              do { hPutPPLn stderr (crePPErrL e)
                                 ; m
-                                -- ; if errLIsFatal e then exitFailure else return ()
+                                ; hFlush stderr
                                 }
         failOrNot es v = if creAreFatal es then return (err v) else action v
 

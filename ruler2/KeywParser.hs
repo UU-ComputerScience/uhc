@@ -83,7 +83,7 @@ keywordsText
      ] ++ keywordsOffsideTrigs
        ++ keywordsTextEscapable
 keywordsOpsEsc
-  =  [ ",", ":", "[", "]", "*", "<", ":=", "::" ]
+  =  [ ",", ":", "[", "]", "*", "<", ":=", "::", "->" ]
 keywordsOpsExplainEsc
   =  [ "=", "-", "---", strSel ]
 keywordsOpsParenEsc
