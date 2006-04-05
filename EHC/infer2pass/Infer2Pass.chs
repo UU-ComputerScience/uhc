@@ -1,4 +1,4 @@
-%%[1 import(IO, Data.List, UU.Pretty, UU.Parsing, UU.Scanner, UU.Scanner.Position (initPos,Pos), MainAG)
+%%[1 import(IO, Data.List, UU.Pretty, UU.Parsing, UU.Scanner, UU.Scanner.Position (initPos,Pos), Infer2PassSupport,MainAG)
 %%]
 
 -------------------------------------------------------------------------
@@ -23,9 +23,9 @@ main
 %%]
 %%[1
                            ]
-                           "()" ":\\->=." (initPos "") txt
+                           "();" ":\\->=." (initPos "") txt
        ; pres <- parseIOMessage show pAGItf tokens
-       ; let res = wrap_AGItf pres Inh_AGItf
+       ; let res = wrap_AGItf pres (Inh_AGItf {uniq_Inh_AGItf = uidStart})
        ; putStrLn (disp (pp_Syn_AGItf res) 200 "")
        }
 %%]
@@ -52,16 +52,17 @@ pAGItf
                       <$ pKey "\\"  <*> pVarid
                       <* pKey "->"
 %%]
-%%[1.let
-                  <|> sem_Expr_Let
-                      <$ pKey "let" <*> pVarid
-                      <* pKey "="   <*> pExpr <* pKey "in"
+%%[1
+                  <|> pKey "let" *> pFoldr1Sep ((.),id) pSemi pLetDef <* pKey "in"
+                  where pLetDef
+                          = pVarid
+                            <**> (   (\e i -> sem_Expr_Let i e) <$ pKey "=" <*> pExpr
 %%]
-%%[2.let -1.let
-                  <|> pKey "let" *> pVarid
-                      <**> (   (\te e i -> sem_Expr_TLet i te e) <$ pKey "::" <*> pTyExpr <* pKey "=" <*> pExpr <* pKey "in"
-                           <|> (\e i -> sem_Expr_Let i e) <$ pKey "=" <*> pExpr <* pKey "in"
-                           )
+%%[2
+                                 <|> (\te e i -> sem_Expr_TLet i te e) <$ pKey "::" <*> pTyExpr <* pKey "=" <*> pExpr
+%%]
+%%[1
+                                 )
 %%]
 %%[1
         pExpr     =   pExprPre <*> pExpr

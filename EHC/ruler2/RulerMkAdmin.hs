@@ -241,7 +241,7 @@ reGamUpdInOut nVw scGam pg
 -- Judgements building, based on scheme description
 -------------------------------------------------------------------------
 
-type JdBldInfo = (REInfo Expr,[ScAtBldRename],Nm,Nm,VwScInfo Expr,VwScInfo Expr)
+type JdBldInfo = (REInfo Expr,Maybe ([ScAtBldRename],Nm,Nm,VwScInfo Expr,VwScInfo Expr))
 type ScRnmMp = Map.Map Nm Nm
 type RlJdBldInfo = (RlJdBld Expr,Maybe (VwRlInfo Expr,ScAtBld,Gam Nm JdBldInfo,Gam Nm JdBldInfo))
 
@@ -270,16 +270,19 @@ checkJdAndAtBldL pos cx scGam rsGam postScNm vwNm atBldL jdBldL
                              isOkSc scNm _                     = False
                              e3          = if null abRsL then [Err_UndefNm pos cx "scheme build item" [scNm]] else []
                              scRnmMp     = Map.insert scNm postScNm $ Map.fromList [ (brNmFrom i,brNmTo i) | i <- scRnmL ]
-                             gx jdg      = gamFold
-                                             (\i (g,e)
-                                               -> let scNmFr = reScNm i
-                                                      scNmTo = Map.findWithDefault scNmFr scNmFr scRnmMp
-                                                      (e2,(_,vwScInfoTo))
-                                                        = maybe ([Err_UndefNm pos cx "scheme" [scNmTo]],(emptyScInfo,emptyVwScInfo)) ((,) [])
-                                                          $ scVwGamLookup scNmTo vwNm scGam
-                                                      vwScInfoFr = maybe emptyVwScInfo snd $ scVwGamLookup scNmFr vwNm scGam
-                                                      b = concat $ map sabRenameL $ sabFilterScheme $ vwscFullAtBldL vwScInfoTo
-                                                  in  (gamInsert (reNm i) (i,b,scNmFr,scNmTo,vwScInfoFr,vwScInfoTo) g,errFirst [e1,e2] ++ e)
+                             gx jdg      = gamFoldWithKey
+                                             (\jn i (g,e)
+                                               -> case reMbJd i of
+                                                    Just i
+                                                      -> (gamInsert jn (i,Just (b,scNmFr,scNmTo,vwScInfoFr,vwScInfoTo)) g,errFirst [e1,e2] ++ e)
+                                                      where scNmFr = reScNm i
+                                                            scNmTo = Map.findWithDefault scNmFr scNmFr scRnmMp
+                                                            (e2,(_,vwScInfoTo))
+                                                              = maybe ([Err_UndefNm pos cx "scheme" [scNmTo]],(emptyScInfo,emptyVwScInfo)) ((,) [])
+                                                                $ scVwGamLookup scNmTo vwNm scGam
+                                                            vwScInfoFr = maybe emptyVwScInfo snd $ scVwGamLookup scNmFr vwNm scGam
+                                                            b = concat $ map sabRenameL $ sabFilterScheme $ vwscFullAtBldL vwScInfoTo
+                                                    _ -> (gamInsert jn (i,Nothing) g,e)
                                              )
                                              (emptyGam,[])
                                              jdg
@@ -305,9 +308,11 @@ bldJdsFromRlBlds scNm vwNm scGam rlBldInfoL
                                = case scAtBld of
                                    ScAtBldScheme _ _ _
                                      -> (gamMap (upd2 True) jprebg,gamMap (upd2 False) jpostbg,[])
-                                     where upd2 isPre (i,rnL,scNmFr,scNmTo,vwScInfoFr,vwScInfoTo)
+                                     where upd2 isPre (i,Just (rnL,scNmFr,scNmTo,vwScInfoFr,vwScInfoTo))
                                              = i {reScNm = scNmTo, reJAGam = fst $ sabrGamRename rnL $ fst $ chkUpdNewAts isPre mkg vwScInfoFr $ reJAGam i}
                                              where mkg i = gamDelete (jaNm i)
+                                           upd2 isPre (i,_)
+                                             = i
                      (RlJdBldDirect _ dpreg dpostg,_)
                        -> (mkjg True dpreg `reGamUnionShadow` preg,mkjg False dpostg `reGamUnionShadow` postg,e)
                        where mkjg isPre

@@ -1,3 +1,47 @@
+%%[termLanguageFull
+\begin{TabularCenterFigure}{}{EH terms}{eh4-lang-terms}%
+%%@AppxNotation.termTableFormat
+%%@AppxNotation.exprHeader
+%%@AppxNotation.exprBasic
+%%@AppxNotation.exprLamPat
+%%@AppxNotation.termSeparator
+%%@AppxNotation.declHeader
+%%@AppxNotation.declBasic
+%%@AppxNotation.declValPat
+%%@AppxNotation.termSeparator
+%%@AppxNotation.patexprHeader
+%%@AppxNotation.patexprBasic
+%%@AppxNotation.termSeparator
+%%@AppxNotation.tyexprHeader
+%%@AppxNotation.tyexprBasic
+%%@AppxNotation.tyexprTuple
+%%@AppxNotation.tyexprTyVar
+%%@AppxNotation.tyexprForall
+%%@AppxNotation.termSeparator
+%%@AppxNotation.identHeader
+%%@AppxNotation.identBasic
+\end{TabularCenterFigure}
+%%]
+
+%%[termLanguageShort
+%{
+%format ident = identv
+\begin{TabularCenterFigure}{}{Expression language}{eh4-lang-terms}%
+%%@AppxNotation.termTableFormat
+%%@AppxNotation.exprHeader
+%%@AppxNotation.exprBasic
+%%@AppxNotation.exprLetValDecl
+%%@AppxNotation.exprLetValTyDecl
+%%@AppxNotation.exprLamIdent
+%%@AppxNotation.termSeparator
+%%@AppxNotation.tyexprHeader
+%%@AppxNotation.tyexprBasic
+%%@AppxNotation.tyexprTyVar
+%%@AppxNotation.tyexprForall
+\end{TabularCenterFigure}
+%}
+%%]
+
 %%[bodyForallUpDown
 In the fourth EH version we deal, in the most general form possible,
 with the presence of quantifiers in types:
@@ -133,28 +177,7 @@ We repeat its definition:
 %%@SharedTypeLang.ehc3
 %%]
 
-\begin{TabularCenterFigure}{}{EH terms}{eh4-lang-terms}%
-%%@AppxNotation.termTableFormat
-%%@AppxNotation.exprHeader
-%%@AppxNotation.exprBasic
-%%@AppxNotation.exprLamPat
-%%@AppxNotation.termSeparator
-%%@AppxNotation.declHeader
-%%@AppxNotation.declBasic
-%%@AppxNotation.declValPat
-%%@AppxNotation.termSeparator
-%%@AppxNotation.patexprHeader
-%%@AppxNotation.patexprBasic
-%%@AppxNotation.termSeparator
-%%@AppxNotation.tyexprHeader
-%%@AppxNotation.tyexprBasic
-%%@AppxNotation.tyexprTyVar
-%%@AppxNotation.tyexprForall
-%%@AppxNotation.termSeparator
-%%@AppxNotation.identHeader
-%%@AppxNotation.identBasic
-\end{TabularCenterFigure}
-
+%%@TopicImpred.termLanguageFull
 
 \Paragraph{Participation of |forall| types in the type inference process}
 Standard HM type inference assumes a separation between type schemes and (monomorphic) types.
@@ -1789,6 +1812,7 @@ Repeat some motivating examples \cite{shan04sexy-types,peytonjones04pract-inf-ra
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
 %%@AppxNotation.exprBasic
+%%@AppxNotation.exprLetVecDecl
 %%@AppxNotation.exprLamPat
 %%@AppxNotation.exprTup
 %%@AppxNotation.exprAppImpred

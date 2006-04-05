@@ -1,0 +1,108 @@
+%%[1 hs import(Common) export(TyAGItf(..), Ty(..), tyTvId, mkTyAll)
+%%]
+
+%%[3 hs export(TyL,TyPlus(..),TyPlusL,TyHardness(..),TyNeed(..))
+%%]
+
+%%[3 hs import(Data.Maybe) export(mkTyVar,tyMbVar,tyIsVar,tyPlusTy,tyIsQu)
+%%]
+
+%%[1 import(TyAbsSyn)
+DERIVING *     : Eq, Ord
+%%]
+
+-------------------------------------------------------------------------
+-- Show
+-------------------------------------------------------------------------
+
+%%[1 hs
+instance Show Ty where
+  show Ty_Any         = "?"
+  show Ty_Int         = "Int"
+%%]
+%%[2 hs
+  show Ty_Char        = "Char"
+  show (Ty_Fix v)     = "c" ++ show v
+%%]
+%%[1 hs
+  show (Ty_Var v)     = "v" ++ show v
+  show (Ty_All v t)   = "forall " ++ show v ++ " . " ++ show t
+  show (Ty_Arr t1 t2) = "(" ++ show t1 ++ ") -> " ++ show t2
+%%]
+%%[3 hs
+  show (Ty_Alts v tl) = show v ++ "@" ++ show tl
+  show (Ty_Both v tl) = show v ++ "/=/" ++ show tl
+%%]
+
+%%[3 hs
+instance Show TyPlus where
+  show (TyPlus_Ty t h o) = show t ++ "::" ++ show h ++ "/" ++ show o
+%%]
+
+
+-------------------------------------------------------------------------
+-- Type
+-------------------------------------------------------------------------
+
+%%[1 hs
+mkTyAll tvs t = foldr Ty_All t tvs
+%%]
+
+%%[1 hs
+tyTvId :: Ty -> TyVarId
+tyTvId (Ty_Var v) = v
+%%]
+
+%%[3 hs
+mkTyVar :: TyVarId -> Ty
+mkTyVar = Ty_Var
+%%]
+
+%%[3 hs
+tyMbVar :: Ty -> Maybe TyVarId
+tyMbVar t = case t of {Ty_Var v -> Just v ; _ -> Nothing}
+
+tyIsVar :: Ty -> Bool
+tyIsVar = isJust . tyMbVar
+%%]
+
+%%[3 hs
+tyPlusTy :: TyPlus -> Ty
+tyPlusTy (TyPlus_Ty t _ _) = t
+%%]
+
+%%[3 hs
+tyIsQu :: Ty -> Bool
+tyIsQu (Ty_All _ _) = True
+tyIsQu _            = False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Offered or required
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[3 hs
+data TyNeed
+  = TyRequired | TyOffered | TyNoNeed
+  deriving (Eq,Ord)
+
+instance Show TyNeed where
+  show TyRequired    = "R"
+  show TyOffered     = "O"
+  show TyNoNeed      = "-"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Hardness of type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[3 hs
+data TyHardness
+  = TyHard | TySoft TyVarId
+  deriving (Eq,Ord)
+
+instance Show TyHardness where
+  show TyHard          = "H"
+  show (TySoft     i)  = "S" -- "S:" ++ show i
+%%]
+

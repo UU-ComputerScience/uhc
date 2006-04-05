@@ -27,6 +27,7 @@ TEXT_TMP_VARIANT_PREFIX		:= $(TEXT_TMP_PREFIX)$(TEXT_VARIANT)/
 TEXT_PUB_VARIANTS			:= phd shuffle-doc ruler-doc
 TEXT_PRIV_VARIANTS			:= flops06-ruler-paper flops06-ruler \
 								pldi06-explimpl \
+								icfp06-impred \
 								truu-explimpl truu-ruler \
 								phd-paper phd-draft phd-tst \
 								scratch poster \
@@ -38,7 +39,7 @@ TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) $(TEXT_PRIV_VARIANTS)
 # 2	: phd
 # 3	: flops06-ruler, truu-ruler
 # 4	: pldi06-explimpl, truu-explimpl
-# 5	: impred
+# 5	: icfp06-impred
 # 6	: afp (will be obsolete)
 # 7	: scratch
 # 8	: slides afp
@@ -244,6 +245,12 @@ text-variant-truu-explimpl:
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=truu --set=storyExplImpl --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=4 \
 	  text-variant-dflt-bib
+
+text-variant-icfp06-impred:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=ifcp06 --set=acm --set=kscode --set=limitSize --set=storyImpred --set=asArticle" \
+	  TEXT_SHUFFLE_VARIANT=5 \
+	  text-variant-dflt-once
 
 text-variant-scratch:
 	$(MAKE) \

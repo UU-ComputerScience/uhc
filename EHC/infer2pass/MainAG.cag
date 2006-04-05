@@ -1,17 +1,11 @@
-%%[1
 -------------------------------------------------------------------------
 -- Main AG
 -------------------------------------------------------------------------
 
-{
-module MainAG
-  where
+%%[1 hs import (IO,Data.List,UU.Pretty,Infer2PassSupport)
+%%]
 
-import IO
-import Data.List
-import UU.Pretty
-import Infer2PassSupport
-}
+%%[3 hs import (TyElimAlts,TyElimBoth)
 %%]
 
 %%[1
@@ -25,8 +19,10 @@ WRAPPER AGItf
 -------------------------------------------------------------------------
 
 %%[1
+{-
 DATA AGItf
   | AGItf  e  : Expr
+-}
 %%]
 
 %%[1.AllAS
@@ -42,9 +38,19 @@ SET AllAS = Expr TyExpr
 -------------------------------------------------------------------------
 
 %%[1
+{-
 SEM AGItf
   | AGItf  e  .   g  =   []
               .   c  =   []
+-}
+%%]
+
+%%[2
+{-
+SEM AGItf
+  | AGItf  e  .   kty=   Ty_Var @lUniq
+              .   kc =   []
+-}
 %%]
 
 -------------------------------------------------------------------------
@@ -61,34 +67,81 @@ SEM Expr
   | Var  lhs  .   pp   =   pp @i >-< mkErr @nmErrs
   | Lam  lhs  .   pp   =   "\\" >|< pp @i >#< "->" >#< @b.pp
   | Let  lhs  .   pp   =   "let"     >#< pp @i
-                           >#< "::"  >#< show @pty_e_
-                           >#< "="   >#< @e.pp
+                           >#< (   "::"  >#< show @pty_e_
+                               >-< "="   >#< @e.pp
+                               )
                            >-< "in " >#< @b.pp
 %%]
 
 %%[2
 SEM Expr
   | TLet lhs  .   pp   =   "let"     >#< pp @i
-                           >#< "::"  >#< @te.pp
-                           >#< "="   >#< @e.pp
+                           >#< (   "::"  >#< @te.pp
+                               >-< "="   >#< @e.pp
+                               )
                            >-< "in " >#< @b.pp
-  | Char lhs  .   pp   =   pp @char
+  | Char lhs  .   pp   =   pp (show @char) >-< mkErr @mtErrs_
+  | Int  lhs  .   pp   :=  pp @int >-< mkErr @mtErrs_
+  | Var  lhs  .   pp   :=  pp @i >-< mkErr @nmErrs >-< mkErr @mtErrs_
+  | Lam  lhs  .   pp   :=  "\\" >|< pp @i >#< "->" >#< @b.pp >-< mkErr @mtErrs_knF_
+  | App  lhs  .   pp   :=  @f.pp >#< pp_parens @a.pp
 
 SEM TyExpr
   | Int  lhs  .   pp   =   pp "Int"
   | Char lhs  .   pp   =   pp "Char"
   | Var  lhs  .   pp   =   pp @i
   | All  lhs  .   pp   =   "forall" >#< @i >#< "." >#< @te.pp
-  | Arr  lhs  .   pp   =   @a.pp >#< "->" >#< @r.pp
+  | Arr  lhs  .   pp   =   pp_parens @a.pp >#< "->" >#< @r.pp
 %%]
+
+%%[3
+SEM Expr
+  | App  lhs  .   pp   :=  (@f.pp >-< mkErr @mtErrs_ifitF_)
+                           >#< pp_parens (@a.pp >-< mkErr @mtErrs_ifitA_)
+  | Lam  lhs  .   pp   :=  "\\" >|< pp @i >#< "->" >#< @b.pp
+                           >-< mkErr @mtErrs_knF_ >-< mkErr @mtErrs_F_
+%%]
+  | Lam  lhs  .   pp   :=  "\\" >|< pp @i >#< "->" >#< @b.pp
+                           >-< mkErr @mtErrs_knF_ >-< mkErr @mtErrs_F_
+                               >-< ":lhs.kty  :"  >#< show @lhs.kty
+                               >-< ":tvarv_   :"  >#< show @tvarv_
+                               >-< ":tvarv_r_ :"  >#< show @tvarv_r_
+                               >-< ":kc_F_    :"  >#< ppCnstr @kc_F_
+                               >-< ":kc_A_    :"  >#< ppCnstr @kc_A_
+                               >-< ":c_f_     :"  >#< ppCnstr @c_f_
+                               >-< ":b.ity    :"  >#< show @b.ity
+                               >-< ":b.kc     :"  >#< ppCnstr @b.kc
+                               >-< ":b.c      :"  >#< ppCnstr @b.c
+  | Let  lhs  .   pp   :=  "let"     >#< pp @i
+                           >#< (   "::"  >#< show @pty_e_
+                               >-< ":tvarv_ :"  >#< show @tvarv_
+                               >-< ":e.ity  :"  >#< show @e.ity
+                               >-< ":e.kc   :"  >#< ppCnstr @e.kc
+                               >-< ":kc_E_  :"  >#< ppCnstr @kc_E_
+                               >-< ":lhs.c  :"  >#< ppCnstr @lhs.c
+                               >-< ":e.c    :"  >#< ppCnstr @e.c
+                               >-< "="   >#< @e.pp
+                               )
+                           >-< "in " >#< @b.pp
 
 -------------------------------------------------------------------------
 -- Uniq
 -------------------------------------------------------------------------
 
 %%[1
-ATTR AllAS [ | uniq: UID | ]
+ATTR AGItf AllAS [ | uniq: UID | ]
 
+{-
 SEM AGItf
   | AGItf  e  .   uniq  =   uidStart
+-}
 %%]
+
+%%[2
+{-
+SEM AGItf
+  | AGItf  (e.uniq,loc.lUniq)
+                        :=  rulerMk1Uniq uidStart
+-}
+%%]
+

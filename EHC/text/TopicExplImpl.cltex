@@ -497,6 +497,7 @@ The features presented in \thischapt\ are part of the ninth version.
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
 %%@AppxNotation.exprBasic
+%%@AppxNotation.exprLetVecDecl
 %%@AppxNotation.exprLamIdent
 %%@AppxNotation.exprRecBasic
 %%@AppxNotation.exprExplImpl

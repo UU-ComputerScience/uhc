@@ -44,13 +44,15 @@ SEM AttrAGDecl
                                                     >#< pp_brackets (mka @inhAts >#< "|" >#< mka @inhsynAts >#< "|" >#< mka @synAts)
 
 -------------------------------------------------------------------------
--- AG specific: DATA decls
+-- AG/HS specific: DATA decls
 -------------------------------------------------------------------------
 
 SEM DataAGDecl
-  | Data            lhs     .   pp          =   let 
-                                                in  "DATA" >#< @ndNm
-                                                    >-< indent 2 @alts.pp
+  | Data            lhs     .   pp          =   case optGenFM @lhs.opts of
+                                                  FmAG -> "DATA" >#< @nmStr >-< indent 2 @alts.pp
+                                                  FmHS -> "data" >#< @nmStr >-< indent 2 @alts.ppHS
+                                                  _    -> empty
+
 SEM DataAGAlt
   | Alt             lhs     .   pp          =   "|" >#< strPad @nmStr @lhs.mxAltWd >|< @flds.pp
 
@@ -64,21 +66,62 @@ SEM DataAGDecl
   | Data            alts    .   mxAltWd     =   @alts.gathMxAltWd + atLhs2texDist
                             .   mxFldWd     =   @alts.gathMxFldWd + atLhs2texDist
 
+SEM DataAGDecl
+  | Data            loc     .   nmStr       =   show @ndNm
+
 SEM DataAGAlt
-  | Alt             loc     .   nmStr       =   show @nm
+  | Alt             loc     .   nmStr       =   @lhs.mkAltStr $ show $ @nm
                     lhs     .   gathMxAltWd =   length @nmStr
 
 SEM DataAGFld
-  | Fld             loc     .   nmStr       =   show @nm
+  | Fld             loc     .   nmStr       =   @lhs.mkFldStr $ show $ @nm
                     lhs     .   gathMxFldWd =   length @nmStr
+
+ATTR AllDtAlt [ mkAltStr: {String -> String} | | ] 
+ATTR AllDtFld [ mkFldStr: {String -> String} | | ] 
+
+SEM DataAGDecl
+  | Data            loc     .   mkAltStr    =   case optGenFM @lhs.opts of
+                                                  FmAG -> id
+                                                  FmHS -> \n -> @nmStr ++ "_" ++ n
+
+SEM DataAGAlt
+  | Alt             loc     .   mkFldStr    =   case optGenFM @lhs.opts of
+                                                  FmAG -> id
+                                                  FmHS -> \n -> n ++ "_" ++ @nmStr
+
+-------------------------------------------------------------------------
+-- HS specific: DATA decls, building on AG info
+-------------------------------------------------------------------------
+
+SEM DataAGAlt
+  | Alt             lhs     .   ppHS        =   (if @lhs.isFirstAlt then "=" else "|") >#< strPad @nmStr @lhs.mxAltWd >|< (@flds.ppHS >-< "}")
+
+SEM DataAGFld
+  | Fld             lhs     .   ppHS        =   (if @lhs.isFirstFld then "{" else ",") >#< strPad @nmStr @lhs.mxFldWd >|< "::" >#< pp @ty
+
+ATTR AllDtAlt AllDtFld [ | | ppHS USE {>-<} {empty}: PP_Doc ]
+ATTR AllDtAlt [ isFirstAlt: Bool | | ]
+ATTR AllDtFld [ isFirstFld: Bool | | ]
+
+SEM DataAGDecl
+  | Data            alts    .   isFirstAlt  =   True
+
+SEM DataAGAlts
+  | Cons            tl      .   isFirstAlt  =   False
+
+SEM DataAGAlt
+  | Alt             flds    .   isFirstFld  =   True
+
+SEM DataAGFlds
+  | Cons            tl      .   isFirstFld  =   False
 
 -------------------------------------------------------------------------
 -- LaTeX specific: ruleset
 -------------------------------------------------------------------------
 
 SEM RlDecl
-  | LTX             lhs     .   pp          =   let
-                                                    r = "\\ehinfruleB" >|< ppCurly @rlNm >|< ppCurly @vwNm
+  | LTX             lhs     .   pp          =   let r = "\\ehinfruleB" >|< ppCurly @rlNm >|< ppCurly @vwNm
                                                         >-< ppListSepVV "{%" "}" "\\\\" @preJds.ppL
                                                         >-< ppListSepVV "{%" "}" "\\\\" @postJds.ppL
                                                 in  mkCmdNmDef @nm r

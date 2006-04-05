@@ -74,6 +74,8 @@ cmdLineOpts
           "generate code for lhs2tex, default=no"
      , Option "a"  ["ag"]               (NoArg oGenAG)
           "generate code for AG, default=no"
+     , Option "h"  ["hs"]               (NoArg oGenHS)
+          "generate code for Haskell, default=no (in development)"
 {-
      , Option ""   ["as2"]              (NoArg oGenAS2)
           "generate code for AS2 (under development, internal restructure), default=no"
@@ -87,7 +89,7 @@ cmdLineOpts
      , Option ""   ["ATTR"]             (NoArg oGenAGAttr)
           "generate ATTR defs (for AG), default=no"
      , Option ""   ["DATA"]             (NoArg oGenAGData)
-          "generate DATA defs (for AG), default=no"
+          "generate DATA defs (for AG, HS), default=no"
      , Option ""   ["preamble"]         (OptArg oPreamble "yes|no")
           "include preamble, default=yes"
      , Option ""   ["copyelim"]         (OptArg oCopyElim "yes|no")
@@ -111,6 +113,7 @@ cmdLineOpts
      ]
   where  oGenLhs2tex     o =  o {optGenFM = FmTeX}
          oGenAG          o =  o {optGenFM = FmAG}
+         oGenHS          o =  o {optGenFM = FmHS}
 {-
          oGenAS2         o =  o {optGenFM = FmAS2 (optGenFM o)}
 -}

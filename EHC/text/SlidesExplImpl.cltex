@@ -441,6 +441,7 @@ f  =   \  ^^  dEq x y -> if dEq.eq x y then 3 else 4
 \begin{tabular}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprBasic
+%%@AppxNotation.exprLetVecDecl
 %%@AppxNotation.exprLamIdent
 \end{tabular}
 \item + extensions (records, higher rank polymorphism, existentials, ...)\\
