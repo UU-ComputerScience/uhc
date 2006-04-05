@@ -73,6 +73,23 @@ Notation & Meaning \\
 |e e|
  & application
  \\
+%%]
+
+%%[exprLetValDecl
+& | || | &
+|let identv = e in e|
+ & local value definition
+ \\
+%%]
+
+%%[exprLetValTyDecl
+& | || | &
+|let identv :: t = e in e|
+ & local type annotated value definition
+ \\
+%%]
+
+%%[exprLetVecDecl
 & | || | &
 |let Vec(d) in e|
  & local definitions
@@ -261,6 +278,9 @@ Notation & Meaning \\
 |t -> t|
  & function type
  \\
+%%]
+
+%%[tyexprTuple
 & | || | &
 |(t,...,t)|
  & tuple type

@@ -167,6 +167,10 @@
 %%@main.articleDocumentClass
 %%]
 
+%%[5
+%%@main.articleDocumentClass
+%%]
+
 %%[11
 \documentclass{article}
 %%]
@@ -622,6 +626,10 @@
 \SetSectionsForArticle
 %%]
 
+%%[5
+\SetSectionsForArticle
+%%]
+
 %%[7
 \SetSectionsForBook
 %%]
@@ -730,6 +738,8 @@
 %if useSigplanconfSty
 %if icfp05
 \toappear{Submitted to the International Conference onf Functional Programming 2005 (ICFP 2005), September 26-28, Tallin, Estonia}
+%elif icfp06
+\toappear{Submitted to the International Conference onf Functional Programming 2006 (ICFP 2006), September xx-xx, xx, USA}
 %elif hw05
 \toappear{In preparation for the Haskell Workshop 2005 (HW2005), September 30, Tallin, Estonia}
 %elif popl06
@@ -802,6 +812,20 @@ WWW home page:
 %endif
 %%]
 
+%%[5
+\title{Exploiting Type Annotations}
+%if acm && useSigplanconfSty
+\authorinfo{Atze Dijkstra \and S. Doaitse Swierstra}
+  {Department of Information and Computing Sciences \\
+   Universiteit Utrecht \\
+   P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
+  }
+  {\{atze,doaitse\}@@cs.uu.nl}
+%else
+\author{Atze Dijkstra and S. Doaitse Swierstra}
+%endif
+%%]
+
 %%[7
 \title{Scratch}
 \author{Atze Dijkstra}
@@ -810,22 +834,6 @@ WWW home page:
 %%[11
 \title{Shuffle: manipulating source fragments}
 \author{Atze Dijkstra}
-%%]
-
-%%[12
-%if storyExplImpl
-%elif storyImpred
-\title{Exploiting type signatures}
-%elif storyRuler
-%elif storyEHIntro
-%if storyVariantETAPSLinks
-\title{Essential Haskell Compiler Highlights}
-%else
-\title{Essential Haskell Compiler Overview}
-%endif
-%elif storyPHD
-%else
-%endif
 %%]
 
 %%[14
@@ -850,7 +858,9 @@ WWW home page:
 
 %%[19
 \title{Ruler manual \\
+{\footnotesize
 %%@ToolDocRuler.svnId
+}
 }
 \author{Atze Dijkstra}
 %%]
@@ -949,6 +959,12 @@ WWW home page:
 {Making Implicit Parameters Explicit}
 {Atze Dijkstra \\ S. Doaitse Swierstra}
 {UU-CS-2005-032}
+%endif
+\maketitle
+%%]
+
+%%[5
+%if truu
 %endif
 \maketitle
 %%]
@@ -1234,6 +1250,53 @@ The tutorial can safely be skipped if the reader is already familiar with the AG
 
 %%]
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EHC 4: impredicativity, paper version
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+\section{Introduction}
+
+\section{Motivational examples}
+
+\section{Term and type language}
+
+%%@TopicImpred.termLanguageShort
+
+\section{Hindley-Milner type inference}
+
+\rulerCmdUse{infer2pass.HM.expr.base}
+
+\section{Local quantifier propagation}
+
+\rulerCmdUse{infer2pass.I1.expr.base}
+
+\rulerCmdUse{infer2pass.I1.expr.kn}
+
+\rulerCmdUse{infer2pass.I1.tyexpr.base}
+
+\rulerCmdUse{infer2pass.I1.prog}
+
+\section{Global quantifier propagation}
+
+\rulerCmdUse{rules4.I2.tyAltTyElim}
+
+\rulerCmdUse{rules4.I2.valElimExprAlts}
+
+\rulerCmdUse{rules4.I2.tyBtTyElim}
+
+\rulerCmdUse{rules4.I2.match.baseForPaper}
+
+\rulerCmdUse{rules4.I2.match.forallForPaper}
+
+\rulerCmdUse{rules4.I2.match.tyAltForPaper}
+
+\rulerCmdUse{rules4.I2.match.eh4Bmeetjoin}
+
+\rulerCmdUse{rules4.I2.match.tyBt}
+
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC 4: impredicativity, updown combi
@@ -1879,11 +1942,15 @@ this has been omitted as \chapterRef{agtut} can be read instead.
 %\rulerCmdUse{rules4.I2.decl.base}
 
 \rulerCmdUse{infer2pass.HM.expr.base}
-\rulerCmdUse{infer2pass.K.expr.base}
+\rulerCmdUse{infer2pass.I1.expr.base}
+\rulerCmdUse{infer2pass.I2.expr.base}
 
-\rulerCmdUse{infer2pass.K.expr.kn}
+\rulerCmdUse{infer2pass.I1.expr.kn}
+\rulerCmdUse{infer2pass.I2.expr.kn}
 
-\rulerCmdUse{infer2pass.K.tyexpr.base}
+\rulerCmdUse{infer2pass.I1.tyexpr.base}
+
+\rulerCmdUse{infer2pass.I1.prog}
 
 %%]
 
@@ -2356,6 +2423,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
 %%@AppxNotation.exprBasic
+%%@AppxNotation.exprLetVecDecl
 %%@AppxNotation.exprTup
 %%@AppxNotation.exprLamPat
 %%@AppxNotation.exprAnn
@@ -2381,6 +2449,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.tyexprHeader
 %%@AppxNotation.tyexprBasic
+%%@AppxNotation.tyexprTuple
 %%@AppxNotation.tyexprTyVar
 %%@AppxNotation.tyexprForall
 %%@AppxNotation.tyexprExists
@@ -2521,17 +2590,6 @@ and the included documentation only describes |Shuffle|'s basic features.
 %%% Typing rules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-%%[5
-%if storyImpred
-\rulerCmdUse{rules2.patE.baseImpred}
-\FigRef{rules2.patE.baseImpred} shows the equational rules for patterns.
-
-\rulerCmdUse{rules2.pat4.baseImpred}
-\FigRef{rules2.pat4.baseImpred} shows the inferencing rules for patterns.
-%endif %% storyImpred
-
-%%]
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

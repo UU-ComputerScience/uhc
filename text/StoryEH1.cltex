@@ -60,6 +60,7 @@ translation from the abstract to the concrete representation is done by a pretty
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
 %%@AppxNotation.exprBasic
+%%@AppxNotation.exprLetVecDecl
 %%@AppxNotation.exprLamPat
 %%@AppxNotation.exprAnn
 %%@AppxNotation.termSeparator
@@ -75,6 +76,7 @@ translation from the abstract to the concrete representation is done by a pretty
 %%@AppxNotation.termSeparator
 %%@AppxNotation.tyexprHeader
 %%@AppxNotation.tyexprBasic
+%%@AppxNotation.tyexprTuple
 \end{TabularCenterFigure}
 
 Let us focus our attention first on the abstract syntax for EH1, in particular the part

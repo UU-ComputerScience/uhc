@@ -26,8 +26,11 @@ EHC_RULER_RULES							:= EHRulerRules
 EHC_RULES_3_DRV_CAG						:= $(EHC_BLD_VARIANT_PREFIX)$(EHC_RULER_RULES).cag
 EHC_RULES_3_DRV_AG						:= $(EHC_RULES_3_DRV_CAG:.cag=.ag)
 
-EHC_RULES_4_MAIN_SRC_RUL				:= $(EHC_RULES_SRC_PREFIX)EhcRulesExpr2.rul
-EHC_RULES_4_DPDS_SRC_RUL				:= $(patsubst %,$(EHC_RULES_SRC_PREFIX)%.rul,EhcRulesShared EhcRulesShared2 EhcRulesAST EhcRulesCommon EhcRulesRelations EhcRulesCommonSchemes EhcRulesSchemes EhcRulesSchemes2 \
+EHC_RULES_4_MAIN_SRC_RUL				:= $(patsubst %,$(EHC_RULES_SRC_PREFIX)%.rul,EhcRulesExpr2 EhcRulesTyMatch EhcRulesTyElimAlt)
+EHC_RULES_4_DPDS_SRC_RUL				:= $(patsubst %,$(EHC_RULES_SRC_PREFIX)%.rul, \
+													EhcRulesShared EhcRulesShared2 \
+													EhcRulesAST EhcRulesCommon \
+													EhcRulesRelations EhcRulesCommonSchemes EhcRulesSchemes EhcRulesSchemes2 \
 											)
 EHC_RULES_ALL_SRC						:= $(EHC_RULES_1_SRC_RUL) $(EHC_RULES_2_SRC_RUL) $(EHC_RULES_3_SRC_RL2) $(EHC_RULES_4_MAIN_SRC_RUL) $(EHC_RULES_4_DPDS_SRC_RUL)
 

@@ -59,6 +59,7 @@ module RulerAdmin
   
   , REInfo(..), REGam
   , reMbJAGam
+  , reMbJd
   , reUpdJAGam
   , reGamUnionShadow
   , reGamFilterOutDel
@@ -581,13 +582,18 @@ data REInfo e
       { reNms               :: [Nm]
       }
 
+reMbJd :: REInfo e -> Maybe (REInfo e)
+reMbJd (REInfoDel _) = Nothing
+reMbJd i             = Just i
+
+reNm' :: REInfo e -> Nm
+reNm' = maybe nmUnk reNm . reMbJd
+
 reMbJAGam :: REInfo e -> Maybe (JAGam e)
-reMbJAGam (REInfoJudge _ _ _ _ g) = Just g
-reMbJAGam _                       = Nothing
+reMbJAGam = fmap reJAGam . reMbJd
 
 reUpdJAGam :: JAGam e -> REInfo e -> REInfo e
-reUpdJAGam g i@(REInfoJudge _ _ _ _ _) = i {reJAGam = g}
-reUpdJAGam _ i                         = i
+reUpdJAGam g i = maybe i (\i -> i {reJAGam = g}) $ reMbJd i
 
 instance Show (REInfo e) where
   show _ = "REInfo"
@@ -631,7 +637,7 @@ reGamJAGamDifference' jgFilterOut g gamDiff
   = reGamFilterOutEmpty
   $ gamMap (\i -> gamLookupMaybe i
                                  (\j -> i {reJAGam = reJAGam i `jgFilterOut` reJAGam j})
-                                 (reNm i) gamDiff
+                                 (reNm' i) gamDiff
            )
            g
 

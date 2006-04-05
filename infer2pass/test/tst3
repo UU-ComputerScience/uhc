@@ -1,4 +1,4 @@
-let id :: forall a . a -> a = \a -> a
+let id :: forall a . a -> a = \x -> x
 in
 let v1 = id 3
 in

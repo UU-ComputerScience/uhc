@@ -5,7 +5,7 @@
 module FmGam
   ( module Gam
   
-  , FmInfo(..), FmGam
+  , FmInfo(fmKdGam), FmGam, FmGam'
   , fmSingleton, fmNull
   , fmGamFromList, fmGamFromList'
   , fmGamToList'
@@ -33,27 +33,28 @@ import Gam
 -- Formats
 -------------------------------------------------------------------------
 
-data FmInfo e
+data FmInfo n e
   = FmInfo
-      { fmNm    :: Nm
+      { fmNm    :: n
       , fmKdGam :: FmKdGam e
       }
 
-instance Show (FmInfo e) where
+instance Show (FmInfo n e) where
   show _ = "FmInfo"
 
-instance PP e => PP (FmInfo e) where
+instance (PP n,PP e) => PP (FmInfo n e) where
   pp i = "FM" >#< pp (fmNm i) >#< (ppGam . fmKdGam $ i)
 
-type FmGam e = Gam Nm (FmInfo e)
+type FmGam' n e = Gam    n  (FmInfo n e)
+type FmGam    e = FmGam' Nm           e
 
-fmSingleton :: Nm -> FmKind -> e -> FmGam e
+fmSingleton :: Ord n => n -> FmKind -> e -> FmGam' n e
 fmSingleton n k e = gamSingleton n (FmInfo n (gamSingleton k e))
 
 fmNull :: FmGam e -> Bool
 fmNull = all (gamIsEmpty . fmKdGam) . gamElemsShadow
 
-fmGamFromList' :: FmKind -> [(Nm,e)] -> FmGam e
+fmGamFromList' :: Ord n => FmKind -> [(n,e)] -> FmGam' n e
 fmGamFromList' fk = gamUnionsShadow . map (\(n,e) -> fmSingleton n fk e)
 
 fmGamToList' :: FmKind -> FmGam e -> [(Nm,e)]
@@ -62,7 +63,7 @@ fmGamToList' fk g = [ (n,e) | (n,i) <- gamAssocsShadow g, e <- fkGamLookup [] (:
 fmGamFromList :: [(Nm,e)] -> FmGam e
 fmGamFromList = fmGamFromList' FmAll
 
-fmGamUnion :: FmGam e -> FmGam e -> FmGam e
+fmGamUnion :: Ord n => FmGam' n e -> FmGam' n e -> FmGam' n e
 fmGamUnion = gamUnionWith (\i1 i2 -> i1 {fmKdGam = fmKdGam i1 `gamUnionShadow` fmKdGam i2})
 
 fmGamUnions :: [FmGam e] -> FmGam e
@@ -73,7 +74,7 @@ fmLGamUnion :: FmGam [e] -> FmGam [e] -> FmGam [e]
 fmLGamUnion = gamUnionWith (\i1 i2 -> i1 {fmKdGam = gamUnionWith (++) (fmKdGam i1) (fmKdGam i2)})
 -}
 
-fmGamLookup :: Nm -> FmKind -> FmGam e -> Maybe e
+fmGamLookup :: Ord n => n -> FmKind -> FmGam' n e -> Maybe e
 fmGamLookup n k g
   = case gamLookup n g of
       Just i

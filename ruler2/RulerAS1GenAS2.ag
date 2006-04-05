@@ -131,7 +131,7 @@ SEM AGItf
                                                                         _ -> []
                                                           _ -> []
                                                 in  [ mkChunk s v d | (s,vs) <- gamAssocsShadow @rsMetaSel, v <- Set.toList vs, d <- mk s v ] 
-                            .   as2ScmMeta  =   if @fmAS2 == FmAG
+                            .   as2ScmMeta  =   if @fmAS2 == FmAG || @fmAS2 == FmHS
                                                 then (if optGenAGData @lhs.opts then @as2ScmDATA else [])
                                                      ++ (if optGenAGAttr @lhs.opts then @as2ScmATTR else [])
                                                 else []
