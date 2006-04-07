@@ -597,6 +597,7 @@ in earlier chapters of this thesis.
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.typeHeader
 %%@AppxNotation.typeBasic
+%%@AppxNotation.typeApp
 %%@AppxNotation.typePred
 %%@AppxNotation.typeRecBasic
 \end{TabularCenterFigure}

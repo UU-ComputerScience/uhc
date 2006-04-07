@@ -209,7 +209,8 @@ crFlattenAndCompileAllCU cr
                            FmTeX -> bld as2LaTeX
                            FmAG  -> bld as2ARule
                            FmHS  -> ((t1,empty,[]),True)
-                           _     -> ((t1,empty,[]),False)
+                           _ | optGenExpl opts -> ((t1,empty,[]),True)
+                             | otherwise            -> ((t1,empty,[]),False)
                        where bld f = (f opts (M1.dtInvGam_Syn_AGItf sem1Res) (M1.scGam_Syn_AGItf sem1Res) (M1.fmGam_Syn_AGItf sem1Res) (M1.rwGam_Syn_AGItf sem1Res) t1,True)
                ; crSeq [crSetErrs t2errL, crPutBld doPrint (M2.ppAS2 opts t2)] cr
                }

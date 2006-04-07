@@ -14,8 +14,8 @@ DATA TyAGItf
 %%[1
 DATA Ty
   | Var         tv              : {TyVarId}
-  | Arr         func            : Ty
-                arg             : Ty
+  | Arr         arg             : Ty
+                res             : Ty
   | All         tv              : {TyVarId}
                 ty              : Ty
   | Int

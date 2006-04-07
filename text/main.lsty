@@ -435,3 +435,12 @@ Chapter~\myRef{#1}%
 % binary operators
 %\newcommand{\bvartriangle}{\mathrel{\vartriangle}}
 %\newcommand{\btriangledown}{\mathrel{\triangledown}}
+
+% cfg for versions
+\def\ifInfTwoPass#1#2{%
+%if infer2pass
+#1
+%else
+#2
+%endif
+}

@@ -43,15 +43,18 @@ Option & meaning & default \\
 
 %%[fiOptsCombisTableHeader
 {lll}
-Combination & options (relative to the default) & context \\
+Combination & options (relative to default) & context \\
 \hline
 %%]
 
-%%[fiOptsCombisEH4forEH4
+%%[fiOptsCombisDefault
 |strongFIOpts|
  &  
- & strong
+ & strong (default)
  \\
+%%]
+
+%%[fiOptsCombisEH4forEH4
 |instLRFIOpts|
  &  |fioBindLFirstN, fioBindRFirstN|
  & left and right instantiating
@@ -59,10 +62,6 @@ Combination & options (relative to the default) & context \\
 %%]
 
 %%[fiOptsCombisEH4forEH4B
-|strongFIOpts|
- &  
- & strong
- \\
 |instLFIOpts|
  &  |fioBindRFirstN|
  & left instantiating

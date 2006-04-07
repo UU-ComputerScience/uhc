@@ -16,8 +16,7 @@ rulesgroup match.base scheme match "Type matching (basic |<=>|, part I)" =
   rule match.all m.arrow
   rule match.all m.prod
 
-rulesgroup match.baseForPaper scheme match "Type matching (basic |<=>|, part I)" =
-  rule match.all m.con
+rulesgroup match.baseForImpredPaper scheme match "Type matching |<=>|" =
   rule match.all m.var
   rule match.all m.var.l1
   rule match.all m.var.l2
@@ -45,16 +44,8 @@ rulesgroup match.eh4 scheme match "Type matching (related to |forall|)" =
   rule match.all m.prod
 
 rulesgroup match.forallForPaper scheme match "Type matching (related to |forall|)" =
-  rule match.all m.con
-  rule match.all m.var
-  rule match.all m.var.l1
-  rule match.all m.var.r1
   rule match.all m.forall.l
-  rule match.all m.forall.r
-  rule match.all m.forall.r2
-  rule match.all m.var.l2
-  rule match.all m.var.r2
-  rule match.all m.arrow
+  rule match.all m.forall.R
 
 rulesgroup match.eh4B scheme match "Type alternative related matching (finding possible quantified types)" =
   rule match.all m.var.l1
@@ -70,14 +61,8 @@ rulesgroup match.eh4B scheme match "Type alternative related matching (finding p
   rule match.all m.alt.r1
 
 rulesgroup match.tyAltForPaper scheme match "Type alternative related matching (finding possible quantified types)" =
-  rule match.all m.var.l1
-  -- rule match.all m.var.l2
   rule match.all m.var.l3
-  -- rule match.all m.var.l4
-  rule match.all m.var.r1
-  -- rule match.all m.var.r2
   rule match.all m.var.r3
-  -- rule match.all m.var.r4
   rule match.all m.alt
   rule match.all m.alt.l1
   rule match.all m.alt.r1
@@ -100,7 +85,6 @@ rulesgroup match.eh4Cmeetjoin scheme match "Type meet/join (|exists| specific)" 
 rulesgroup match.forall scheme match "Type matching (|<=| on |forall|)" =
   rule match.all m.forall.l
   rule match.all m.forall.r
-  rule match.all m.forall.r2
 
 rulesgroup match.exists scheme match "Type matching (|<=| on |exists|)" =
   rule match.all m.exists.l
@@ -124,12 +108,10 @@ ruleset match.all scheme match viewsel K - * "Type matching rules" =
     view K =
       ---
       judge R : match = :- ANY <=>.(<=>) ty : ty
-
     view C =
       ---
       judge R : match
           | cnstr = []
-
     view P =
       ---
       judge R : match
@@ -139,12 +121,10 @@ ruleset match.all scheme match viewsel K - * "Type matching rules" =
     view K =
       ---
       judge R : match = :- ty <=>.(<=>) ANY : ty
-
     view C =
       ---
       judge R : match
           | cnstr = []
-
     view P =
       ---
       judge R : match
@@ -155,12 +135,10 @@ ruleset match.all scheme match viewsel K - * "Type matching rules" =
       judge E : eqTy = identc.1 === identc.2
       ---
       judge R : match = :- identc.1 <=>.(<=>) identc.2 : identc.2
-
     view C =
       ---
       judge R : match
           | cnstr = []
-
     view P =
       ---
       judge R : match
@@ -171,7 +149,6 @@ ruleset match.all scheme match viewsel K - * "Type matching rules" =
       judge E : eqTy = tvar.1 === tvar.2
       ---
       judge R : match = :- tvar.1 <=>.(<=>) tvar.2 : tvar.2 ~> ([])
-
     view P =
       ---
       judge R : match
@@ -282,6 +259,12 @@ ruleset match.all scheme match viewsel K - * "Type matching rules" =
     view DT = 
       judge O : fioptHasOpt = fioLeaveRInstN `elem` fiopt
       ---
+    
+  rule m.forall.R : m.forall.r viewsel I1 - * =
+    view I1 = 
+      ---
+      judge R : match
+          | ty = tyCnstr ty.2
     
   rule m.forall.r2 viewsel DT - * =
     view DT = 

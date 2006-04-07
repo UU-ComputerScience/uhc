@@ -24,14 +24,15 @@ TEXT_TMP_PREFIX				:= $(BLD_PREFIX)
 TEXT_TMP_VARIANT_PREFIX		:= $(TEXT_TMP_PREFIX)$(TEXT_VARIANT)/
 
 # all variants
-TEXT_PUB_VARIANTS			:= phd shuffle-doc ruler-doc
+TEXT_PUB_VARIANTS			:= phd shuffle-doc
 TEXT_PRIV_VARIANTS			:= flops06-ruler-paper flops06-ruler \
 								pldi06-explimpl \
 								icfp06-impred \
 								truu-explimpl truu-ruler \
 								phd-paper phd-draft phd-tst \
 								scratch poster \
-								slides-ruler slides-explimpl slides-explimpl-fpnl slides-overview
+								slides-ruler slides-explimpl slides-explimpl-fpnl slides-overview \
+								ruler-doc
 TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) $(TEXT_PRIV_VARIANTS)
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
@@ -137,7 +138,7 @@ FIGS_ASIS_DRV				:= $(patsubst $(FIGS_SRC_PREFIX)%,$(TEXT_TMP_VARIANT_PREFIX)%,$
 
 TEXT_ALL_MK_FILES			:= $(AGPRIMER_MKF) $(EHC_MKF) $(RULER2_MKF) $(TEXT_MKF)
 
-# infer2pass demo
+# infer2pass paper stuff
 TEXT_INF2PS_MARK_CHANGES_CFG	:= --markchanges="HM - *"
 
 TEXT_INF2PS_SRC_RUL			:= $(INF2PS_RL_RULES_SRC_RUL)
@@ -247,10 +248,10 @@ text-variant-truu-explimpl:
 	  text-variant-dflt-bib
 
 text-variant-icfp06-impred:
-	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=ifcp06 --set=acm --set=kscode --set=limitSize --set=storyImpred --set=asArticle" \
+	$(MAKE) TEXT_INF2PS_MARK_CHANGES_CFG= TEXT_RULER_MARK_CHANGES_CFG= \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=ifcp06 --set=acm --set=kscode --set=limitSize --set=infer2pass --set=storyImpred --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=5 \
-	  text-variant-dflt-once
+	  text-variant-dflt-bib
 
 text-variant-scratch:
 	$(MAKE) \

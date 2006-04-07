@@ -250,18 +250,42 @@
 %format impredFIOpts	= fiopt "_{im}"
 
 %format	fioptBase		= "\textit{fi}"
+%format fioptO			= "\langle "
+%format fioptC			= "\rangle "
+%format fioptOY			= fioptO "\hskip0mm+\relax "
+%format fioptCY			= "+\relax\hskip0mm " fioptC
 %format fioLeaveRInst	= fioptBase "_{r-inst}"
 %format fioLeaveRInstY	= fioLeaveRInst "^{+}"
 %format fioLeaveRInstN	= fioLeaveRInst "^{-}"
+%if infer2pass
+%format fioBindRFirst	= 
+%format fioBindRFirstY	= 
+%format fioBindRFirstN	= 
+%format fioBindLFirst	= 
+%format fioBindLFirstY	= 
+%format fioBindLFirstN	= 
+%else
 %format fioBindRFirst	= fioptBase "_{r-bind}"
 %format fioBindRFirstY	= fioBindRFirst "^{+}"
 %format fioBindRFirstN	= fioBindRFirst "^{-}"
 %format fioBindLFirst	= fioptBase "_{l-bind}"
 %format fioBindLFirstY	= fioBindLFirst "^{+}"
 %format fioBindLFirstN	= fioBindLFirst "^{-}"
+%endif
 %format fioBindToTyBind		= fioptBase "_{delay-bind}"
 %format fioBindToTyBindY	= fioBindToTyBind "^{+}"
 %format fioBindToTyBindN	= fioBindToTyBind "^{-}"
+%if infer2pass
+%format fioFit			= fioptO <= fioptC
+%format fioFitY			= fioptO <= "^{+}" fioptC
+%format fioFitN			= fioptO <= "^{-}" fioptC
+%format fioMeet			= fioptO <+> fioptC
+%format fioMeetY		= fioptO <+> "^{+}" fioptC
+%format fioMeetN		= fioptO <+> "^{-}" fioptC
+%format fioJoin			= fioptO <-> fioptC
+%format fioJoinY		= fioptO <-> "^{+}" fioptC
+%format fioJoinN		= fioptO <-> "^{-}" fioptC
+%else
 %format fioFit			= fioptBase "_{" <= "}"
 %format fioFitY			= fioFit "^{+}"
 %format fioFitN			= fioFit "^{-}"
@@ -271,12 +295,19 @@
 %format fioJoin			= fioptBase "_{" <-> "}"
 %format fioJoinY		= fioJoin "^{+}"
 %format fioJoinN		= fioJoin "^{-}"
+%endif
 %format fioAllowEqOpen	= fioptBase "_{eq-open}"
 %format fioAllowEqOpenY	= fioAllowEqOpen "^{+}"
 %format fioAllowEqOpenN	= fioAllowEqOpen "^{-}"
-%format fioBindToTyAlts	= fioptBase "_{alt}"
+%if infer2pass
+%format fioBindToTyAlts		= fioptO :-> fioptC
+%format fioBindToTyAltsY	= fioptO :-> "^{+}" fioptC
+%format fioBindToTyAltsN	= fioptO :-> "^{-}" fioptC
+%else
+%format fioBindToTyAlts		= fioptBase "_{alt}"
 %format fioBindToTyAltsY	= fioBindToTyAlts "^{+}"
 %format fioBindToTyAltsN	= fioBindToTyAlts "^{-}"
+%endif
 %format fioBindLBeforeR	= fioptBase "_{l,r}"
 %format fioBindLBeforeRY	= fioBindLBeforeR "^{+}"
 %format fioBindLBeforeRN	= fioBindLBeforeR "^{-}"
