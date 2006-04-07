@@ -381,29 +381,6 @@
 %%% Beamer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
-%if yesBeamer
-%if asSlides
-\usepackage{beamerthemeafp}
-\beamertemplatetransparentcovereddynamic
-%else
-\usepackage
-%if llncs || acm
-[noamsthm]
-%elif acm
-%endif %% llncs ...
-{beamerbasearticle}
-%endif %% asSlides
-%else
-%\usepackage[absolute]{textpos}%
-\usepackage{color}
-\usepackage[fleqn]{amsmath}
-%endif %% yesBeamer
-
-
-
-%%]
-
 %%[8
 %if yesBeamer
 \usepackage{beamerthemeafp}
@@ -471,69 +448,9 @@
 
 %%]
 
-%%[12
-% experimental \DeclareMathOperator redefinition to use sf font
-%if llncs || (acm && yesBeamer)
-\newcommand{\DeclareMathOperator}[2]{%
-  \newcommand*{#1}{\textsf{#2}}}
-%else
-\renewcommand*{\DeclareMathOperator}[2]{%
-  \newcommand*{#1}{\textsf{#2}}}
-%endif
-
-% Done with lhs2TeX stuff ...
-
-% operators
-\DeclareMathOperator{\ftv}{ftv}
-
-\let\norml=\empty
-\let\normr=\empty
-\def\resetnextsize{\def\nextsize{norm}}\resetnextsize
-\def\nextbig{\def\nextsize{big}}
-\def\nextBig{\def\nextsize{Big}}
-\newcommand*{\MakeResizable}[1]{%
-  \expandafter\let\csname fixed.\string #1\endcsname=#1%
-  \def #1{%
-    \let\realnextsize\nextsize
-    \resetnextsize
-    \def\next{\csname fixed.\string #1\endcsname}%
-    \expandafter\next\expandafter[\realnextsize]}}
-
-\newcommand*{\pars}[2][norm]{\csname #1l\endcsname(#2\csname #1r\endcsname)}
-\MakeResizable\pars
-
-
-\newcommand{\defined}[1]{\textbf{#1}}
-
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Fonts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[12
-
-%if asSlides
-%elif acm
-%elif storyPHD
-%\usepackage[sc]{mathpazo}% change main font
-%\linespread{1.05}% larger line spacing due to palatino
-\renewcommand{\bfdefault}{b}% bx palatino isn't available anyway
-%if fontsite
-\usepackage{grotesk}
-\let\originaltextsc=\textsc
-\renewcommand{\textsc}[1]{%
-  \begingroup
-  \fontfamily{5plj}\selectfont
-  \originaltextsc{#1}%
-  \endgroup}
-%else
-\usepackage[scaled=.95]{helvet}% change sf font
-%endif %% fontsite
-\usepackage{calc}
-%endif %% asSlides
-
-%%]
 
 %%[1
 
@@ -1090,7 +1007,7 @@ have been submitted to POPL2006 in a slighty extended form.
 
 %%[5
 \begin{abstract}
-...
+%%@TopicImpred.abstract
 \end{abstract}
 %%]
 
@@ -1258,43 +1175,47 @@ The tutorial can safely be skipped if the reader is already familiar with the AG
 %%[5
 \section{Introduction}
 
-\section{Motivational examples}
-
-\section{Term and type language}
-
-%%@TopicImpred.termLanguageShort
+%%@TopicImpred.introPaper
 
 \section{Hindley-Milner type inference}
+\label{sec-impred-hm}
 
-\rulerCmdUse{infer2pass.HM.expr.base}
+%%@TopicImpred.prelimHM
 
-\section{Local quantifier propagation}
+%\section{Local quantifier propagation}
 
-\rulerCmdUse{infer2pass.I1.expr.base}
+%Top down ...
 
-\rulerCmdUse{infer2pass.I1.expr.kn}
+%\rulerCmdUse{infer2pass.I1.expr.base}
 
-\rulerCmdUse{infer2pass.I1.tyexpr.base}
+%\rulerCmdUse{infer2pass.I1.expr.kn}
 
-\rulerCmdUse{infer2pass.I1.prog}
+%\rulerCmdUse{infer2pass.I1.tyexpr.base}
+
+%\rulerCmdUse{infer2pass.I1.prog}
+
 
 \section{Global quantifier propagation}
+\label{sec-impred-glob-quant-prop}
 
-\rulerCmdUse{rules4.I2.tyAltTyElim}
+%%@TopicImpred.globProp.introForPaper
 
-\rulerCmdUse{rules4.I2.valElimExprAlts}
+%%@TopicImpred.globProp.introFromPHDToXX
 
-\rulerCmdUse{rules4.I2.tyBtTyElim}
+%%@TopicImpred.globProp.designOverview
 
-\rulerCmdUse{rules4.I2.match.baseForPaper}
+%%@TopicImpred.globProp.findingPossQu
 
-\rulerCmdUse{rules4.I2.match.forallForPaper}
+%%@TopicImpred.globProp.computeActualQu
 
-\rulerCmdUse{rules4.I2.match.tyAltForPaper}
+%%@TopicImpred.globProp.impredInfer
 
-\rulerCmdUse{rules4.I2.match.eh4Bmeetjoin}
+\section{Discussion and related work}
+\label{sec-impred-related-work}
 
-\rulerCmdUse{rules4.I2.match.tyBt}
+%%@TopicImpred.relatedWorkInEHC
+
+%%@TopicImpred.relatedWork
 
 %%]
 
@@ -1319,7 +1240,22 @@ The tutorial can safely be skipped if the reader is already familiar with the AG
 \section{EH 4: Global quantifier propagation}
 \label{ehc4B}
 
-%%@TopicImpred.bodyForallNonLocal
+%%@TopicImpred.globProp.introForPHD
+
+%%@TopicImpred.globProp.introFromPHDToXX
+
+%%@TopicImpred.globProp.designOverview
+
+%%@TopicImpred.globProp.findingPossQu
+
+%%@TopicImpred.globProp.computeActualQu
+
+%%@TopicImpred.globProp.impredInfer
+
+\subsection{Related work, discussion}
+%%@TopicImpred.relatedWork
+
+
 
 %%]
 
@@ -1952,6 +1888,8 @@ this has been omitted as \chapterRef{agtut} can be read instead.
 
 \rulerCmdUse{infer2pass.I1.prog}
 
+\rulerCmdUse{rules4.I2.match.forallForPaper}
+
 %%]
 
 
@@ -2472,6 +2410,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.typeHeader
 %%@AppxNotation.typeBasic
+%%@AppxNotation.typeApp
 %%@AppxNotation.typeTyVarFixed
 %%@AppxNotation.typeExists
 %%@AppxNotation.typeRecBasic
@@ -2603,8 +2542,12 @@ and the included documentation only describes |Shuffle|'s basic features.
 %endif
 %%]
 
+%%[55
+\appendix
+%%@TopicImpred.appendix
+%%]
+
 %%[19
-\section{Source code of tutorial examples}
 %%@TopicRuler.appendix
 %%]
 

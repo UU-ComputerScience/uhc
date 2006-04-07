@@ -352,7 +352,7 @@ then generate the implementation
 \item Type (|ty: Ty|):
 \begin{tabular}%
 %%@AppxNotation.termTableFormat
-%%@AppxNotation.rulerTy
+%%@AppxNotation.monoBasicTy
 \end{tabular}
 \item Environment (|gam: Gam|):
 %%[[wrap=safecode

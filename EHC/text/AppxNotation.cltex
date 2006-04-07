@@ -373,12 +373,15 @@ Notation & Meaning \\
  & abstraction
  \\
 & | || | &
-|sigma ^^ sigma|
- & type application
- \\
-& | || | &
 |forall ^ tvarv . sigma|
  & universally quantified type
+ \\
+%%]
+
+%%[typeApp
+& | || | &
+|sigma ^^ sigma|
+ & type application
  \\
 %%]
 
@@ -439,7 +442,7 @@ Notation & Meaning \\
  \\
 |isigma| & |::=| &
 |tvarv [Vec(talt)]|
- & type alternatives
+ & type variable with alternatives
  \\
 %%]
 
@@ -631,9 +634,9 @@ Notation & Meaning \\
  \\
 %%]
 
-%%[rulerTy
+%%[monoBasicTy
 |tau| & |::=| &
-|Int |
+|Int || Char |
  & literals
  \\
 & | || | &
@@ -646,6 +649,25 @@ Notation & Meaning \\
  \\
 |sigma| & |::=| &
 |forall ^ Vec(tvarv) . tau|
+ & universally quantified type, |Vec(tvarv)| possibly empty
+ \\
+%%]
+
+%%[polyBasicTy
+|sigma| & |::=| &
+|Int |
+ & literals
+ \\
+& | || | &
+|tvarv|
+ & variable
+ \\
+& | || | &
+|sigma -> sigma|
+ & abstraction
+ \\
+|sigma| & |::=| &
+|forall ^ Vec(tvarv) . sigma|
  & universally quantified type, |Vec(tvarv)| possibly empty
  \\
 %%]

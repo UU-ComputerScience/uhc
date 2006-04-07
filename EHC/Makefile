@@ -56,21 +56,25 @@ WWW_DOC_PDF					:= www/current-ehc-doc.pdf
 #	$(LHS2TEX_EXEC_WT_OPTS) $(LHS2TEX_POLY_MODE) $(1) > $(2)
 
 explanation:
-	@echo "make bin/<n>/ehc     : make compiler version <n> (where <n> in {$(EHC_PUB_VARIANTS)})" ; \
-	echo  "make bin/<n>/grini   : make grin interpreter version <n> (where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
-	echo  "make bin/<n>/grinc   : make grin compiler version <n> (where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
-	echo  "make $(RULER2)       : make ruler tool" ; \
-	echo  "make $(SHUFFLE)      : make shuffle tool" ; \
-	echo  "make doc/<d>.pdf     : make (public) documentation <d> (where <d> in {$(TEXT_PUB_VARIANTS)})," ; \
-	echo  "                       or (non-public): <d> in {$(TEXT_PRIV_VARIANTS)}" ; \
-	echo  "                       only if text src available, otherwise already generated" ; \
-	echo  "make ehcs            : make all compiler ($(EHC_EXEC_NAME)) versions" ; \
-	echo  "make grinis          : make all grin interpreter ($(GRINI_EXEC_NAME)) versions" ; \
-	echo  "make grincs          : make all grin compiler ($(GRINC_EXEC_NAME)) versions" ; \
-	echo  "make test-regress    : run regression test," ; \
-	echo  "                       restrict to versions <v> by specifying 'VERSIONS=<v>'," ; \
-	echo  "                       requires corresponding $(EHC_EXEC_NAME)/$(GRINI_EXEC_NAME) already built" ; \
-	echo  "make test-expect     : make expected output (for later comparison with test-regress), see test-regress for remarks" ; \
+	@echo "make bin/<n>/ehc         : make compiler version <n> (where <n> in {$(EHC_PUB_VARIANTS)})" ; \
+	echo  "make bin/<n>/grini       : make grin interpreter version <n> (where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
+	echo  "make bin/<n>/grinc       : make grin compiler version <n> (where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
+	echo  "make $(RULER2)           : make ruler tool" ; \
+	echo  "make $(SHUFFLE)          : make shuffle tool" ; \
+	echo  "" ; \
+	echo  "make doc/<d>.pdf         : make (public) documentation <d> (where <d> in {$(TEXT_PUB_VARIANTS)})," ; \
+	echo  "                           or (non-public): <d> in {$(TEXT_PRIV_VARIANTS)}" ; \
+	echo  "                           only if text src available, otherwise already generated" ; \
+	echo  "" ; \
+	echo  "make ehcs                : make all compiler ($(EHC_EXEC_NAME)) versions" ; \
+	echo  "make grinis              : make all grin interpreter ($(GRINI_EXEC_NAME)) versions" ; \
+	echo  "make grincs              : make all grin compiler ($(GRINC_EXEC_NAME)) versions" ; \
+	echo  "make test-regress        : run regression test," ; \
+	echo  "                           restrict to versions <v> by specifying 'VERSIONS=<v>'," ; \
+	echo  "                           requires corresponding $(EHC_EXEC_NAME)/$(GRINI_EXEC_NAME) already built" ; \
+	echo  "make test-expect         : make expected output (for later comparison with test-regress), see test-regress for remarks" ; \
+	echo  "" ; \
+	echo  "make bin/<n>/infer2pass  : make infer2pass demo version <n> (where <n> in {$(INF2PS_VARIANTS)})" ; \
 
 all: afp-full ehcs doc grinis
 	$(MAKE) initial-test-expect

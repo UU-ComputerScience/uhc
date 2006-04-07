@@ -551,7 +551,7 @@ in the following sections.
 \begin{tabular}
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.typeHeader
-%%@AppxNotation.rulerTy
+%%@AppxNotation.monoBasicTy
 \end{tabular}
 \end{TabularCenterFigure}
 %else
@@ -564,7 +564,7 @@ in the following sections.
 \begin{TabularCenterFigure}{th}{Types}{ruler-demo-hm-lang-types}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.typeHeader
-%%@AppxNotation.rulerTy
+%%@AppxNotation.monoBasicTy
 \end{TabularCenterFigure}
 %endif
 
