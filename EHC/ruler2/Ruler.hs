@@ -261,8 +261,12 @@ main
              opts           = foldr ($) defaultOpts o
        ; if optHelp opts
          then putStrLn (usageInfo ("version: " ++ versionInfo ++ "\n\nUsage ruler [options] [file]\n\noptions:") cmdLineOpts)
-         else if optVersion opts
-         then putStrLn versionDist
+         else if optVersion opts || optSvnVersion opts
+         then do { let s =  (if optVersion    opts                       then versionDist else "")
+                         ++ (if optVersion    opts && optSvnVersion opts then ", "        else "")
+                         ++ (if optSvnVersion opts                       then versionSvn  else "")
+                 ; putStr s
+                 }
          else if null errs
               -- then  doCompile (if null n then emptyFPath else mkFPath (head n)) opts
               then  crCompileTopLevel (if null n then emptyFPath else mkFPath (head n)) opts

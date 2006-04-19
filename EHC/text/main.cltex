@@ -18,7 +18,7 @@
 %let inclParts  = False
 %endif
 
-%if storyPHD || storyAfpTRUU1
+%if storyPHD || storyEhcBook || storyAfpTRUU1
 %let inclTOC    = True
 %else
 %let inclTOC    = False
@@ -30,13 +30,13 @@
 %let inclRulerDemo    = False
 %endif
 
-%if storyAFP04Notes || storyPHD || storyEHIntro || storyAfpTRUU1
+%if storyAFP04Notes || storyPHD || storyEhcBook || storyEHIntro || storyAfpTRUU1
 %let incl00     = True
 %else
 %let incl00     = False
 %endif
 
-%if storyAFP04Notes || storyPHD || storyAfpTRUU1
+%if storyAFP04Notes || storyPHD || storyEhcBook || storyAfpTRUU1
 %let incl01     = True
 %let incl02     = True
 %let incl03     = True
@@ -46,7 +46,7 @@
 %let incl03     = False
 %endif
 
-%if storyPHD  || storyAfpTRUU1 || storyImpred
+%if storyPHD || storyEhcBook || storyAfpTRUU1 || storyImpred
 %let incl04     = True
 %else
 %let incl04     = False
@@ -64,7 +64,7 @@
 %let incl08     = False
 %endif
 
-%if storyPHD || storyExplImpl
+%if storyPHD || storyEhcBook || storyExplImpl
 %let incl09     = True
 %else
 %let incl09     = False
@@ -96,13 +96,13 @@
 %let inclXX     = False
 %endif
 
-%if storyPHD || storyImpred || storyRuler
+%if storyPHD || storyEhcBook || storyImpred || storyRuler
 %let inclApp    = True
 %else
 %let inclApp    = False
 %endif
 
-%if storyPHD
+%if storyPHD || storyEhcBook || storyRulerDoc
 %let inclInx    = True
 %else
 %let inclInx    = False
@@ -116,7 +116,7 @@
 %let inclAck    = False
 %endif
 
-%if storyAFP04Notes || storyPHD
+%if storyAFP04Notes || storyPHD || storyEhcBook
 %let incl01TopicPP  		= False
 %let incl01TopicErr  		= False
 %let incl01TopicParsing  	= False
@@ -176,7 +176,7 @@
 %%]
 
 %%[19
-\documentclass[a4]{article}
+\documentclass[a4]{report}
 %%]
 
 %%[7
@@ -457,7 +457,7 @@
 %if not asSlides
 \usepackage{txfonts}
 %endif
-%if not storyRuler || asSlides
+%if not (storyRuler || storyRulerDoc) || asSlides
 \usepackage[bbgreekl]{mathbbol}
 %endif
 
@@ -556,7 +556,8 @@
 %%]
 
 %%[19
-\SetSectionsForArticle
+%\SetSectionsForArticle
+\SetSectionsForBook
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -632,7 +633,7 @@
 % version should use something different than the ugly boxes.
 
 %if useHyperref
-%if storyPHD
+%if storyPHD || storyEhcBook
 \usepackage[pdfauthor={Atze Dijkstra},
             pdftitle={Stepping through Haskell}]{hyperref}
 %else
@@ -650,7 +651,7 @@
 \usepackage{TRtitlepage}
 %endif
 
-%if storyPHD
+%if storyPHD || storyEhcBook
 %elif acm && (storyExplImpl || storyImpred || storyRuler)
 %if useSigplanconfSty
 %if icfp05
@@ -697,7 +698,11 @@ WWW home page:
 %%]
 
 %%[2
+%if storyPHD
 \title{Stepping through Haskell}
+%else
+\title{Essential Haskell}
+%endif
 \author{Atze Dijkstra}
 %%]
 
@@ -773,10 +778,10 @@ WWW home page:
 \author{Atze Dijkstra}
 %%]
 
-%%[19
+%%[12
 \title{Ruler manual \\
-{\footnotesize
-%%@ToolDocRuler.svnId
+{\normalsize
+(Under construction)
 }
 }
 \author{Atze Dijkstra}
@@ -794,6 +799,10 @@ WWW home page:
 %if inclInx
 \makeindex
 %endif %% inclInx
+%%]
+
+%%[19
+\makeindex
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -824,6 +833,9 @@ WWW home page:
 \newcommand{\thischapt}{these notes}
 %elif storyPHD
 \newcommand{\thispaper}{this thesis}
+\newcommand{\thischapt}{this chapter}
+%elif storyEhcBook
+\newcommand{\thispaper}{this book}
 \newcommand{\thischapt}{this chapter}
 %else
 \newcommand{\thispaper}{this paper}
@@ -857,7 +869,11 @@ WWW home page:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2
+%if storyPHD
 %%@FrontMatter.titlePHD
+%else
+%%@FrontMatter.titleEhcBook
+%endif
 %%]
 
 %%[3
@@ -914,7 +930,7 @@ WWW home page:
 %%]
 
 %%[19
-\maketitle
+%%@FrontMatter.titleRulerDoc
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -948,6 +964,12 @@ WWW home page:
 
 \raggedbottom
 
+%%]
+
+%%[19
+{\setlength{\parskip}{0cm}
+\tableofcontents
+}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1050,6 +1072,10 @@ have been submitted to POPL2006 in a slighty extended form.
 
 %%[2
 \cleardoublepage
+\pagenumbering{arabic}
+%%]
+
+%%[19
 \pagenumbering{arabic}
 %%]
 
@@ -1691,6 +1717,8 @@ this has been omitted as \chapterRef{agtut} can be read instead.
 
 %%@TopicRuler.designOfRuler
 
+%%@TopicRuler.designOfRuler.Concepts
+
 %%@TopicRuler.preliminariesForTypeSystem
 
 %%@TopicRuler.rulesByRulerBasics
@@ -1728,6 +1756,8 @@ this has been omitted as \chapterRef{agtut} can be read instead.
 
 %%@TopicRuler.designOfRuler
 
+%%@TopicRuler.designOfRuler.Concepts
+
 %%@TopicRuler.preliminariesForTypeSystem
 
 %%@TopicRuler.rulesByRulerBasics
@@ -1762,22 +1792,7 @@ this has been omitted as \chapterRef{agtut} can be read instead.
 %%[19
 \section{Introduction}
 
-	%%@TopicRuler.motivationSmall
-	
-	%%@TopicRuler.introProblem
-	
-	%%@TopicRuler.introExampleOverview
-	
-	%%@TopicRuler.introExampleExplain
-
-\subsection{The big picture}
-
-\subsection{Ruler overview}
-
-%%@TopicRuler.rulerOverview
-%%@TopicRuler.designOfRuler
-	
-\section{Tutorial}
+%%@ToolDocRuler.intro
 
 %{
 %include ruler.fmt
@@ -1785,37 +1800,80 @@ this has been omitted as \chapterRef{agtut} can be read instead.
 %format <	= "\langle "
 %format >	= "\rangle "
 
-	
-	%%@TopicRuler.preliminariesForTypeSystem
-	
-	%%@TopicRuler.rulesByRulerBasics
-	
-	%%@TopicRuler.relationsExternalSchemes
-	
-	%%@TopicRuler.extendToAlgorithmicLarge
-	
-	%%@TopicRuler.extendToAGLarge
+\section{``How to'' mini tutorials}
+\label{ruler-doc-tut}
+
+\subsection{Concepts}
+
+%%@TopicRuler.designOfRuler.Concepts
+
+%%@TopicRuler.highLevelStructure
+
+\subsection{A minimal example}
+
+%%@ToolDocRuler.tutMinimalSetup
 
 \subsection{Pretty printing type rules}
 
+To be done ...
+
+%%@ToolDocRuler.tutPrettyPrinting
+
 \subsection{Implementing type rules}
 
-\subsection{Specifying incrementally}
+To be done ...
 
+%%@ToolDocRuler.tutToAG
 
-\section{Reference}
+\subsection{Views: specifying incrementally}
+
+To be done ...
+
+%%@ToolDocRuler.tutViews
+
+\subsection{Aspects: specifying separately}
+
+To be done ...
+
+%%@ToolDocRuler.tutAspects
+
+\section{Reference topics}
+\label{ruler-doc-ref}
 
 \subsection{Installation}
 
+To be done ...
+
+%%@ToolDocRuler.referenceInstallation
+
 \subsection{Command line invocation}
+
+To be done ...
+
+%%@ToolDocRuler.referenceCommandLineInvocation
 
 \subsection{Syntax}
 
+See \figRef{ruler-legenda-syntax}
+
 %{
+%include ruler.fmt
 %%@AppxNotation.rulerSyntaxSetup
 %%@TopicRuler.rulerSyntaxPart1Fig
 %%@TopicRuler.rulerSyntaxPart2Fig
 %}
+
+\subsection{`Runtime' environment}
+
+To be done ...
+
+%%@ToolDocRuler.referenceRuntimeEnvironment
+
+\subsection{Customisation}
+
+To be done ...
+
+%%@ToolDocRuler.referenceCustomisation
 
 \subsection{Translation to Attribute Grammar}
 
@@ -1976,6 +2034,8 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2
+
+%if storyPHD
 %\cleardoublepage
 \section*{Samenvatting van ``Stapsgewijs door Haskell''}
 \markboth{Samenvatting}{Samenvatting}%
@@ -1988,6 +2048,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 
 %%@StoryIntro.summaryNL
 }
+%endif
 
 %%]
 
@@ -1996,6 +2057,8 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2
+
+%if storyPHD
 %\cleardoublepage
 \section*{Acknowledgements}
 \markboth{Acknowledgements}{Acknowledgements}%
@@ -2003,6 +2066,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 
 
 %%@StoryIntro.acknowledgements
+%endif
 
 %%]
 
@@ -2518,18 +2582,13 @@ and the included documentation only describes |Shuffle|'s basic features.
 
 \section{Additional fragments}
 \input \jobname-hide.tex
+%endif
+
 %%]
 
 %%[19
 \appendix
 %%]
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Typing rules
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Generated code
@@ -2548,24 +2607,8 @@ and the included documentation only describes |Shuffle|'s basic features.
 %%]
 
 %%[19
-%%@TopicRuler.appendix
+ %%@TopicRuler.appendix
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% AG Patterns
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Additional checks
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% EHC Glue
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Omitted
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Index
@@ -2582,13 +2625,24 @@ and the included documentation only describes |Shuffle|'s basic features.
 %endif %% inclInx
 %%]
 
+%%[19
+\AddContentsLine{Index}
+{\small
+\Input{\jobname.ind}
+}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% IPA dissertations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2
+
+%if storyPHD
 \setlength{\parskip}{0mm}
 \input ipadissertations.tex
+%endif
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -201,8 +201,8 @@ scan scoMp st s
                                                           spanInline ""                = ("","")
                                                           spanInline (c:s)             = let (b,e) = spanInline s in (c:b,e)
         sc p st@(ScChunk _) s@(c:_)
-          | isBlack c                               = Tok TkText       "" b      p st : sc (a b p) st s'
-                                                    where (b,s') = span isBlack s
+          | isBlack c && not (isInline s)           = Tok TkText       "" b      p st : sc (a b p) st s'
+                                                    where (b,s') = span' (\s@(c:_) -> isBlack c && not (isInline s)) s
         sc p st             s@(c:s')                = sc (ai 1 p) st s'
         scKw f p st s                               = Tok tk           "" w      p st : sc (a w p) st s'
                                                     where (w,s') = span f s
@@ -214,6 +214,13 @@ scan scoMp st s
         isSpec st c                                 = opt st (\o -> c `Set.member` scoSpecChars o)
         isOpch st c                                 = opt st (\o -> c `Set.member` scoOpChars o)
         isKeyw st w                                 = opt st (\o -> w `Set.member` scoKeywordsTxt o)
+        isInline  ('%':'%':'@':'[':_)               = True
+        isInline  _                                 = False
+        span' p []       = ([],[])
+        span' p xs@(x:xs')
+             | p xs      = (x:ys, zs)
+             | otherwise = ([],xs)
+                               where (ys,zs) = span' p xs'
 
 pBegChunk, pEndChunk, pBegInline, pEndInline, pBegGroup, pBegNameRef, pNl :: (IsParser p Tok) => p Tok
 pBegChunk   = pSym (Tok TkBegChunk  "" "%%["  tkpNone ScSkip)

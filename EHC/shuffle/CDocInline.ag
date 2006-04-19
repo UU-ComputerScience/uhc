@@ -11,6 +11,9 @@ module CDocInline
 
 import qualified Data.Map as Map
 import Network.URI
+import System( system, ExitCode(..) )
+import System.Posix.Temp( mkstemp )
+import System.Directory( removeFile )
 import IO
 import Common
 import CDoc
@@ -62,15 +65,34 @@ ATTR AGCDocItf [ | | ilRepl: CDoc ]
 ATTR AGCDocItf CDoc [ | | ilIO USE {`inlineCDocAdd`} {inlineCDocEmp}: InlineCDocIO ]
 
 SEM CDoc
-  | Inl         lhs         .   ilRepl      =   CDoc_Ref (Nm @uref) ChHere
+  | Inl         loc         .   ilNm        =   Nm @uref
+                lhs         .   ilRepl      =   CDoc_Ref @ilNm ChHere
                             .   ilIO        =   \(m,e)
-                                                    -> do { let mu = parseURIReference @uref
-                                                          ; mh <- maybe (return Nothing) openURI mu
-                                                          ; case mh of
-                                                              Just h -> do { c <- hGetContents h
-                                                                           ; return (Map.insert n (NmChInfo n ChHere (Just (cd c))) m,e)
-                                                                           }
-                                                                        where n = Nm @uref
-                                                              _      -> return (m,Map.insert @lhs.cpos (Err_UndefURI @lhs.cpos @uref) e)
-                                                          }
+                                                    -> let dflt = (m,Map.insert @lhs.cpos (Err_UndefURI @lhs.cpos @uref) e)
+                                                           mkc n c m = Map.insert n (NmChInfo n ChHere (Just (cd c))) m
+                                                       in  case takeWhile (/= ':') @uref of
+                                                             "file"
+                                                               -> do { let mu = parseURIReference @uref
+                                                                     ; mh <- maybe (return Nothing) openURI mu
+                                                                     ; case mh of
+                                                                         Just h -> do { c <- hGetContents h
+                                                                                      ; return (mkc @ilNm c m,e)
+                                                                                      }
+                                                                         _      -> return dflt
+                                                                     }
+                                                             "exec"
+                                                               -> do { let cmd = drop 5 @uref
+                                                                     ; (tmpF,tmpH) <- mkstemp "shuffleXXXXXX.tmp"
+                                                                     ; hClose tmpH
+                                                                     ; exitCode <- system (cmd ++ " > " ++ tmpF)
+                                                                     ; case exitCode of
+                                                                         ExitSuccess -> do { h <- openFile tmpF ReadMode
+                                                                                           ; c <- hGetContents h
+                                                                                           -- ; hClose h
+                                                                                           ; removeFile tmpF
+                                                                                           ; return (mkc @ilNm c m,e)
+                                                                                           }
+                                                                         _           -> return (m,Map.insert @lhs.cpos (Err_Exec @lhs.cpos cmd (show exitCode)) e)
+                                                                     }
+                                                             _ -> return dflt
                                                        

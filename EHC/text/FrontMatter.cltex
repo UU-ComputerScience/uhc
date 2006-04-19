@@ -92,3 +92,88 @@ Copyright \copyright\ Atze Dijkstra, 2005
 \end{titlepage}
 %%]
 
+%%[titleEhcBook
+\begin{titlepage}
+\pagenumbering{roman}
+%\setcounter{page}{1}%
+\noindent
+\rule{\linewidth}{0pt}
+\vfill
+\Huge
+\begin{flushright}
+Essential Haskell
+
+\vspace*{2ex}
+
+\Large 
+\ \\
+
+%if asDraft
+\vspace*{2ex}
+Draft: \today \\
+{\footnotesize
+@$Id$@
+}
+%endif
+
+\end{flushright}
+\vfill\vfill
+
+\begin{flushright}
+\LARGE Atze Dijkstra
+\par
+\end{flushright}
+
+\vfill
+\end{titlepage}
+%%]
+
+%%[titleRulerDoc
+\begin{titlepage}
+\pagenumbering{roman}
+%\setcounter{page}{1}%
+\noindent
+\rule{\linewidth}{0pt}
+\vfill
+\Huge
+\begin{flushleft}
+Ruler Manual
+
+%if asDraft
+\vspace*{2ex}
+{\huge
+(Under construction) \\
+\today
+}
+%endif
+
+\vspace*{2ex}
+
+{\huge
+Atze Dijkstra
+}
+
+\end{flushleft}
+
+\begin{flushright}
+
+%if asDraft
+\vspace*{2ex}
+
+{\small
+Manual version: \\
+%%@ToolDocRuler.svnId
+
+\vspace*{1.5ex}
+
+Ruler version: \\
+%%@ToolDocRuler.rulerVersionFromRulerExec
+}
+%endif
+
+\end{flushright}
+\vfill\vfill
+
+\end{titlepage}
+%%]
+

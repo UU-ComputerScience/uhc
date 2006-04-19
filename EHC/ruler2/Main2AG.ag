@@ -21,7 +21,7 @@ import ExprUtils
 import TyUtils
 import ARuleUtils
 import ViewSelUtils
-import KeywParser( strSel )
+import RulerConfig( cfgStrSel )
 import FmGam
 import RwExprGam
 import ECnstrGam

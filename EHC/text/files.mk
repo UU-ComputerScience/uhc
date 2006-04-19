@@ -24,20 +24,19 @@ TEXT_TMP_PREFIX				:= $(BLD_PREFIX)
 TEXT_TMP_VARIANT_PREFIX		:= $(TEXT_TMP_PREFIX)$(TEXT_VARIANT)/
 
 # all variants
-TEXT_PUB_VARIANTS			:= phd shuffle-doc
+TEXT_PUB_VARIANTS			:= ruler-doc shuffle-doc ehc-book
 TEXT_PRIV_VARIANTS			:= flops06-ruler-paper flops06-ruler \
 								pldi06-explimpl \
 								icfp06-impred \
 								truu-explimpl truu-ruler \
-								phd-paper phd-draft phd-tst \
+								phd-paper phd-draft phd-tst phd \
 								scratch poster \
-								slides-ruler slides-explimpl slides-explimpl-fpnl slides-overview \
-								ruler-doc
+								slides-ruler slides-explimpl slides-explimpl-fpnl slides-overview
 TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) $(TEXT_PRIV_VARIANTS)
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
 # 1	: base (share)
-# 2	: phd
+# 2	: ehc book (previously phd)
 # 3	: flops06-ruler, truu-ruler
 # 4	: pldi06-explimpl, truu-explimpl
 # 5	: icfp06-impred
@@ -138,12 +137,22 @@ FIGS_ASIS_DRV				:= $(patsubst $(FIGS_SRC_PREFIX)%,$(TEXT_TMP_VARIANT_PREFIX)%,$
 
 TEXT_ALL_MK_FILES			:= $(AGPRIMER_MKF) $(EHC_MKF) $(RULER2_MKF) $(TEXT_MKF)
 
+# Ruler examples
+TEXT_RULEX					:= RulerExamples
+TEXT_RULEX_SRC_CRUL			:= $(TEXT_SRC_PREFIX)$(TEXT_RULEX).crul
+TEXT_RULEX_DRV_RUL			:= $(patsubst $(TEXT_SRC_PREFIX)%.crul,$(TEXT_TMP_VARIANT_PREFIX)%.rul,$(TEXT_RULEX_SRC_CRUL))
+TEXT_RULEX_DRV_LTEX			:= $(TEXT_RULEX_DRV_RUL:.rul=.ltex)
+TEXT_RULEX_DRV_TEX			:= $(TEXT_RULEX_DRV_RUL:.rul=.tex)
+
+TEXT_RULEX_ALL_DRV_TEX		:= $(TEXT_RULEX_DRV_TEX)
+
 # infer2pass paper stuff
 TEXT_INF2PS_MARK_CHANGES_CFG	:= --markchanges="HM - *"
 
-TEXT_INF2PS_SRC_RUL			:= $(INF2PS_RL_RULES_SRC_RUL)
-TEXT_INF2PS_DRV_LTEX		:= $(patsubst $(INF2PS_SRC_PREFIX)%.rul,$(TEXT_TMP_VARIANT_PREFIX)%.ltex,$(TEXT_INF2PS_SRC_RUL))
-TEXT_INF2PS_DRV_TEX			:= $(TEXT_INF2PS_DRV_LTEX:.ltex=.tex)
+TEXT_INF2PS_SRC_CRUL		:= $(INF2PS_RL_RULES_SRC_CRUL)
+TEXT_INF2PS_DRV_RUL			:= $(patsubst $(INF2PS_SRC_PREFIX)%.crul,$(TEXT_TMP_VARIANT_PREFIX)%.rul,$(TEXT_INF2PS_SRC_CRUL))
+TEXT_INF2PS_DRV_LTEX		:= $(TEXT_INF2PS_DRV_RUL:.rul=.ltex)
+TEXT_INF2PS_DRV_TEX			:= $(TEXT_INF2PS_DRV_RUL:.rul=.tex)
 
 TEXT_INF2PS_ALL_DRV_TEX		:= $(TEXT_INF2PS_DRV_TEX)
 
@@ -163,17 +172,17 @@ TEXT_RULER2_DEMO_TEX		:= $(patsubst $(RULER2_DEMO_PREFIX)%,$(TEXT_TMP_VARIANT_PR
 TEXT_RULER2_DEMO_STUFF		:= $(patsubst $(RULER2_DEMO_PREFIX)%,$(TEXT_TMP_VARIANT_PREFIX)%,$(RULER2_DEMO_DRV_AG) $(RULER2_DEMO_DRV_AG_MAIN) $(RULER2_DEMO_DRV_HS_UTILS))
 
 # all src
-TEXT_EDIT_SRC				:= $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SRC_CLTEX) $(TEXT_MAIN_SRC_LSTY) $(TEXT_RULES_TH_SRC_RUL) $(TEXT_INF2PS_SRC_RUL)
+TEXT_EDIT_SRC				:= $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SRC_CLTEX) $(TEXT_MAIN_SRC_LSTY) $(TEXT_RULES_TH_SRC_RUL) $(TEXT_INF2PS_SRC_CRUL) $(TEXT_RULEX_SRC_CRUL)
 TEXT_ALL_SRC				:= $(TEXT_EDIT_SRC) $(TEXT_SUBS_ASIS_SRC) $(TEXT_BIB_SRC) $(TEXT_MKF)
 
 # all deriveds (as counting for make dependencies)
-TEXT_ALL_DPD				:= $(TEXT_MAIN_DRV_TEX) $(TEXT_SUBS_DRV_TEX) $(TEXT_MAIN_DRV_STY) $(TEXT_RULER2_DEMO_TEX) $(TEXT_INF2PS_ALL_DRV_TEX) $(TEXT_RULER2_DEMO_ALL_DRV_TEX) \
+TEXT_ALL_DPD				:= $(TEXT_MAIN_DRV_TEX) $(TEXT_SUBS_DRV_TEX) $(TEXT_MAIN_DRV_STY) $(TEXT_RULER2_DEMO_TEX) $(TEXT_INF2PS_ALL_DRV_TEX) $(TEXT_RULEX_ALL_DRV_TEX) $(TEXT_RULER2_DEMO_ALL_DRV_TEX) \
 								$(TEXT_SUBS_ASIS_DRV) $(FIGS_XFIG_DRV_TEX) $(FIGS_XFIG_DRV_PDF) $(TEXT_RULER2_DEMO_STUFF) $(FIGS_ASIS_DRV) $(TEXT_HIDE_DRV_TEX)  \
-								$(TEXT_INF2PS_SRC_RUL) \
 								$(TEXT_GEN_BY_RULER_TABLE_TEX) $(TEXT_INCL_LIST_TEX)
 
 # all shuffle included material
-TEXT_SUBS_SHUFFLE			:= $(TEXT_SUBS_SRC_CLTEX) $(TEXT_RULES_3_DRV_CAG) $(EHC_ALL_CHUNK_SRC) $(RULER2_ALL_CHUNK_SRC) $(AGPRIMER_ALL_CHUNK_SRC) $(TEXT_RULES_EXPLAIN_3_DRV_CAG)
+TEXT_SUBS_SHUFFLE			:= $(TEXT_SUBS_SRC_CLTEX) $(TEXT_RULES_3_DRV_CAG) $(EHC_ALL_CHUNK_SRC) $(RULER2_ALL_CHUNK_SRC) $(AGPRIMER_ALL_CHUNK_SRC) $(TEXT_RULES_EXPLAIN_3_DRV_CAG) \
+								$(TEXT_INF2PS_SRC_CRUL) $(TEXT_RULEX_SRC_CRUL)
 
 # distribution
 TEXT_DIST_DOC_FILES			:= $(TEXT_ALL_PUB_PDFS)
@@ -187,6 +196,12 @@ $(TEXT_VARIANTS) : % : $(DOC_PREFIX)%.pdf
 	open $<
 
 # rules
+text-variant-ehc-book:
+	$(MAKE) TEXT_RULER_MARK_CHANGES_CFG= RULER2_DEMO_MARK_CHANGES_CFG=  \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyEhcBook --unset=asArticle --set=refToPDF --set=useHyperref --set=targetForPaper" \
+	  TEXT_SHUFFLE_VARIANT=2 \
+	  text-variant-dflt-bib-inx
+
 text-variant-phd:
 	$(MAKE) \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref" \
@@ -267,9 +282,9 @@ text-variant-shuffle-doc:
 
 text-variant-ruler-doc:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyRuler --set=asArticle --set=useHyperref --set=refToPDF" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyRulerDoc --set=asArticle --set=useHyperref --set=asDraft --set=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=19 \
-	  text-variant-dflt-once
+	  text-variant-dflt-bib-inx
 
 text-variant-poster:
 	$(MAKE) \
@@ -341,7 +356,7 @@ $(TEXT_MAIN_DRV_TEX) : %.tex : %.ltex
 	  | $(LHS2TEX) $(LHS2TEX_OPTS_TEXT_CONFIG) $(LHS2TEX_OPTS_VARIANT_CONFIG) $(LHS2TEX_OPTS_POLY) \
 	  > $@
 
-$(TEXT_SUBS_DRV_TEX) $(TEXT_HIDE_DRV_TEX) $(TEXT_INF2PS_ALL_DRV_TEX) : %.tex : %.ltex
+$(TEXT_SUBS_DRV_TEX) $(TEXT_HIDE_DRV_TEX) $(TEXT_INF2PS_ALL_DRV_TEX) $(TEXT_RULEX_ALL_DRV_TEX) : %.tex : %.ltex
 	$(LHS2TEX) $(LHS2TEX_OPTS_TEXT_CONFIG) $(LHS2TEX_OPTS_VARIANT_CONFIG) $(LHS2TEX_OPTS_POLY) $< > $@
 
 $(TEXT_MAIN_DRV_STY) : $(TEXT_MAIN_SRC_LSTY) $(TEXT_MKF)
@@ -421,7 +436,7 @@ $(FIGS_XFIG_DRV_PDF): $(TEXT_TMP_VARIANT_PREFIX)%.pdf : $(FIGS_SRC_PREFIX)%.fig
 	fig2dev -L pdf -p dummy $< > $@
 
 $(TEXT_INCL_LIST_TEX): $(TEXT_ALL_MK_FILES)
-	@(for f in $(sort $(notdir $(TEXT_SUBS_DRV_TEX) $(TEXT_RULER2_DEMO_ALL_DRV_TEX) $(TEXT_INF2PS_ALL_DRV_TEX) $(TEXT_RULER2_DEMO_TEX))) ; \
+	@(for f in $(sort $(notdir $(TEXT_SUBS_DRV_TEX) $(TEXT_RULER2_DEMO_ALL_DRV_TEX) $(TEXT_INF2PS_ALL_DRV_TEX) $(TEXT_RULEX_ALL_DRV_TEX) $(TEXT_RULER2_DEMO_TEX))) ; \
 	  do \
 	    echo "\\input" $$f ; \
 	  done \
@@ -450,6 +465,12 @@ $(TEXT_RULER2_DEMO_DRV_CTEX): $(TEXT_RULER2_DEMO_DRV_LCTEX)
 $(TEXT_RULER2_DEMO_DRV_RL2): $(RULER2_DEMO_SRC_CRL) $(SHUFFLE) $(TEXT_MKF)
 	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --plain --order="$(RULER2_DEMO_RULER2_ORDER)"  --lhs2tex=no $< > $@
 
+$(TEXT_INF2PS_DRV_RUL): $(TEXT_INF2PS_SRC_CRUL) $(SHUFFLE) $(TEXT_MKF)
+	$(SHUFFLE) --gen=1 --plain --order="1"  --lhs2tex=no $< > $@
+
+$(TEXT_RULEX_DRV_RUL): $(TEXT_RULEX_SRC_CRUL) $(SHUFFLE) $(TEXT_MKF)
+	$(SHUFFLE) --gen=1 --plain --order="1"  --lhs2tex=no $< > $@
+
 $(TEXT_RULER2_DEMO_DRV_LRTEX): $(TEXT_RULER2_DEMO_DRV_RL2) $(RULER2)
 	$(RULER2) $(RULER2_OPTS) --lhs2tex --selrule="(E - *).(*).(*)" $(RULER2_DEMO_MARK_CHANGES_CFG) --base=rulerDemo $< > $@
 
@@ -468,6 +489,9 @@ $(TEXT_RULER2_DEMO_DRV_LATEX): $(TEXT_RULER2_DEMO_DRV_CAG) $(SHUFFLE)
 $(TEXT_RULER2_DEMO_DRV_ATEX): $(TEXT_RULER2_DEMO_DRV_LATEX)
 	$(LHS2TEX) $(LHS2TEX_OPTS_POLY) $< > $@
 
-$(TEXT_INF2PS_DRV_LTEX): $(TEXT_INF2PS_SRC_RUL) $(RULER2)
+$(TEXT_INF2PS_DRV_LTEX): $(TEXT_INF2PS_DRV_RUL) $(RULER2)
 	$(RULER2) $(RULER2_OPTS) --lhs2tex --selrule="(HM - *).(*).(*)" $(TEXT_INF2PS_MARK_CHANGES_CFG) --base=infer2pass $< > $@
+
+$(TEXT_RULEX_DRV_LTEX): $(TEXT_RULEX_DRV_RUL) $(RULER2)
+	$(RULER2) $(RULER2_OPTS) --lhs2tex --base=$(TEXT_RULEX) $< > $@
 

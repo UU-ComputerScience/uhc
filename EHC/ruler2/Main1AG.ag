@@ -22,7 +22,7 @@ import LaTeXFmtUtils
 import ExprUtils
 import ARuleUtils
 import ViewSelUtils
-import KeywParser
+import RulerConfig( cfgStrSel )
 import FmGam
 import RwExprGam
 import ECnstrGam

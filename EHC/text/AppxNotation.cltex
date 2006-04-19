@@ -700,30 +700,40 @@ Notation & Meaning \\
 %format >	= "\rangle " ^^
 %%]
 
+%%[syntaxSEP
+x SEP y                 ::=     x (y (x SEP y)) ?
+%%]
+
 %%[rulerSyntaxBasic
-<ruler_prog>            ::=     (  <scheme_def> | <format_def> | <rewrite_def>
-                                |  <rules_def> | <viewhierarchy_def>
-                                |  <external_def>
-                                )*
+<ruler_prog>            ::=     (  <scheme_def>    | <format_def> | <rewrite_def>
+                                |  <rules_def>     | <viewhierarchy_def>
+                                |  <external_def>  | <data_def>
+                                |  <include_def>
+                                ) *
 <scheme_def>            ::=     (scheme | relation) <nm> [<ag_nm>]
                                     '='  <scm_view_def> *
-<scm_view_def>          ::=     view <vw_nm> '=' <hole_def> <shape_def> *
-<hole_def>              ::=     hole  '[' <hole_defs>
-                                      '|' <hole_defs>
-                                      '|' <hole_defs>
-                                      ']'
+<scm_view_def>          ::=     view <vw_nm> '=' <holes_def> <shape_def> *
+<holes_def>             ::=     holes ( ( <direct_holes> | <import_holes> ) SEP '|' )
+<direct_holes>          ::=     '[' <hole_defs> '|' <hole_defs> '|' <hole_defs> ']'
+                          |     '[' <hole_defs> ']'
+<import_holes>          ::=     scheme <scm_nm> ( '(' <import_rename> SEP ',' ')' ) ?
+<import_rename>         ::=     <hole_nm> := <hole_nm> | <hole_nm> = <hole_nm>
 <shape_def>             ::=     judgeuse [<target>] <rexpr>
                           |     judgespec <rexpr>
-<target>                ::=     tex | ag | ...
-<hole_defs>             ::=     [thread] <hole_nm> ':' <hole_type>
+<target>                ::=     tex | texcmd  | ag | ...
+<hole_defs>             ::=     <hole_def> SEP ','
+<hole_def>              ::=     [ inh | syn | thread | node | extern ] *
+                                <hole_nm> ':' <hole_type>
 <hole_type>             ::=     <nm>
 <rules_def>             ::=     rules <nm> scheme <scm_nm> "info"
                                     '='  <rule_def> *
 <rule_def>              ::=     rule <nm> [<ag_nm>] = <rl_view_def> *
-<rl_view_def>           ::=     view <vw_nm>
-                                    '='  <judge_rexpr> *
-                                         '-'
-                                         <judge_rexpr>
+<rl_view_def>           ::=     view <vw_nm> '=' <rule_judges>
+<rule_judges>           ::=     ( ( '(' <direct_judges> ')' | <import_judges> ) SEP '|')
+                          |     <direct_judges>
+<direct_judges>         ::=     (extern <nm> *) ?
+                                <judge_rexpr> * '---' <judge_rexpr>
+<import_judges>         ::=     ruleset <nm> rule <nm>
 <judge_rexpr>           ::=     judge [<nm> ':'] <scm_nm>
                                     (  '=' <rexpr>
                                     |  ('|' <hole_nm> '=' <rexpr>)*
@@ -808,6 +818,56 @@ Combinator & Meaning & Result
 |pFoldr listAlg p|              & sequence of |p|'s                 & |foldr c n (|result of all |p|'s|)| \\
 |pList p|                       & |pFoldr ((:),[]) p|               & \\
 |pChainr s p|                   & |p|'s (|>1|) separated by |s|'s   & result of |s|'s applied to results of |p|'s aside \\
+%%]
+
+%%[rulerLaTeXCmdTableNoView
+%{
+%format scheme = "scheme"
+%format ruleset = "ruleset"
+%format rule = "rule"
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Name} & \textbf{Refers to} \\
+\hline
+| <basename> . <ruleset> | & The complete figure \\
+| <basename> . <ruleset> . scheme | & The scheme used by the figure \\
+| <basename> . <ruleset> . <rule> | & | <rule> | defined in | <ruleset> | \\
+\end{tabular}
+\end{center}
+%}
+%%]
+
+%%[rulerLaTeXCmdTableYesView
+%{
+%format scheme = "scheme"
+%format ruleset = "ruleset"
+%format rule = "rule"
+%format view = "view"
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Name} & \textbf{Refers to} \\
+\hline
+| <basename> . <view> . <ruleset> | & The complete figure \\
+| <basename> . <view> . <ruleset> . scheme | & The scheme used by the figure \\
+| <basename> . <view> . <ruleset> . <rule> | & | <rule> | defined in | <ruleset> | \\
+\end{tabular}
+\end{center}
+%}
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
 %%]
 
 %%[XX

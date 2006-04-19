@@ -34,6 +34,7 @@ data Opts
       , optHelp         :: Bool
       , optDebug        :: Bool
       , optVersion      :: Bool
+      , optSvnVersion   :: Bool
       , optFragWrap     :: Bool
       , optAGCopyElim   :: Bool
       , optMbMarkChange :: Maybe ViewSels
@@ -59,6 +60,7 @@ defaultOpts
       , optHelp         =  False
       , optDebug        =  False
       , optVersion      =  False
+      , optSvnVersion   =  False
       , optFragWrap     =  False
       , optAGCopyElim   =  True
       , optMbMarkChange =  Nothing
@@ -68,48 +70,52 @@ defaultOpts
       }
 
 cmdLineOpts  
-  =  [ Option ""   ["version"]          (NoArg oVersion)
-          "print version info"
-     , Option "l"  ["lhs2tex"]          (NoArg oGenLhs2tex)
-          "generate code for lhs2tex, default=no"
-     , Option "a"  ["ag"]               (NoArg oGenAG)
+  =  [ Option "a"  ["ag"]               (NoArg oGenAG)
           "generate code for AG, default=no"
+     , Option ""   ["ATTR"]             (NoArg oGenAGAttr)
+          "generate ATTR defs (for AG), default=no"
+     , Option "b"  ["base"]             (ReqArg oBase "<name>")
+          "base name, default = 'rules'"
+     , Option "c"  ["markchanges"]      (OptArg oMarkCh "<spec>")
+          "mark changes between specified views (with --lhs2tex)"
+          -- "mark changes between specified views (in combi with --lhs2tex, <spec>=*|<view name>|<view name>-<view name>)"
+     , Option ""   ["copyelim"]         (OptArg oCopyElim "yes|no")
+          "perform AG copy elimination, default=yes"
+     , Option ""   ["DATA"]             (NoArg oGenAGData)
+          "generate DATA defs (for AG, HS), default=no"
+     , Option "d"  ["debug"]            (NoArg oDebug)
+          "output debugging info"
+     , Option ""   ["dot2dash"]         (NoArg oDot2Dash)
+          "change '.' in rule names to '-', default=no"
+     , Option ""   ["explain"]          (NoArg oGenExpl)
+          "generate explanation (for scheme's), default=no"
+     , Option ""   ["help"]             (NoArg oHelp)
+          "output this help"
      , Option "h"  ["hs"]               (NoArg oGenHS)
           "generate code for Haskell, default=no (in development)"
+     , Option "l"  ["lhs2tex"]          (NoArg oGenLhs2tex)
+          "generate code for lhs2tex, default=no"
+     , Option "P"  ["path"]             (ReqArg oPath "<path>")
+          "search path, default empty"
+     , Option ""   ["preamble"]         (OptArg oPreamble "yes|no")
+          "include preamble, default=yes"
+     , Option "s"  ["selrule"]          (OptArg oRlSel "<spec>")
+          "select rules by specifying view(s), ruleset(s) and rule(s)"
+          -- "select rules by specifying view(s), ruleset(s) and rule(s), <spec>=(*|<view name>|<view name>-<view name>).(*|<ruleset names>).(*|<rule names>)"
+     , Option ""   ["svn-version"]      (NoArg oSvnVersion)
+          "print svn version info"
 {-
      , Option ""   ["as2"]              (NoArg oGenAS2)
           "generate code for AS2 (under development, internal restructure), default=no"
 -}
-     , Option ""   ["v2"]               (NoArg oGenV2)
-          "next version of whatever is under development, default=no"
      , Option ""   ["v1"]               (NoArg oGenV1)
           "current version of whatever is under development, default=yes"
-     , Option ""   ["explain"]          (NoArg oGenExpl)
-          "generate explanation (for scheme's), default=no"
-     , Option ""   ["ATTR"]             (NoArg oGenAGAttr)
-          "generate ATTR defs (for AG), default=no"
-     , Option ""   ["DATA"]             (NoArg oGenAGData)
-          "generate DATA defs (for AG, HS), default=no"
-     , Option ""   ["preamble"]         (OptArg oPreamble "yes|no")
-          "include preamble, default=yes"
-     , Option ""   ["copyelim"]         (OptArg oCopyElim "yes|no")
-          "perform AG copy elimination, default=yes"
-     , Option ""   ["dot2dash"]         (NoArg oDot2Dash)
-          "change '.' in rule names to '-', default=no"
-     , Option "c"  ["markchanges"]      (OptArg oMarkCh "<spec>")
-          "mark changes between specified views (in combi with --lhs2tex, <spec>=*|<view name>|<view name>-<view name>)"
-     , Option "s"  ["selrule"]          (OptArg oRlSel "<spec>")
-          "select rules by specifying view(s), ruleset(s) and rule(s), <spec>=(*|<view name>|<view name>-<view name>).(*|<ruleset names>).(*|<rule names>)"
-     , Option ""   ["help"]             (NoArg oHelp)
-          "output this help"
+     , Option ""   ["v2"]               (NoArg oGenV2)
+          "next version of whatever is under development, default=no"
+     , Option ""   ["version"]          (NoArg oVersion)
+          "print version info"
      , Option "w"  ["wrapshuffle"]      (NoArg oFragWrap)
-          "wrap (AG|explanation) in fragments for further processing by shuffle"
-     , Option "d"  ["debug"]            (NoArg oDebug)
-          "output debugging info"
-     , Option "b"  ["base"]             (ReqArg oBase "<name>")
-          "base name, default = 'rules'"
-     , Option "P"  ["path"]             (ReqArg oPath "<searchpath>")
-          "search path, default empty"
+          "wrap (AG|explanation) in fragments for processing by shuffle"
      ]
   where  oGenLhs2tex     o =  o {optGenFM = FmTeX}
          oGenAG          o =  o {optGenFM = FmAG}
@@ -129,6 +135,7 @@ cmdLineOpts
          oFragWrap       o =  o {optFragWrap = True}
          oDebug          o =  o {optDebug = True}
          oVersion        o =  o {optVersion = True}
+         oSvnVersion     o =  o {optSvnVersion = True}
          oBase       s   o =  o {optBaseNm = s}
          oPath       s   o =  o {optSearchPath = searchPathFromString s}
          oMarkCh     ms  o =  o {optMbMarkChange = fmap (viewSelsSelfT . fst . parseToResMsgs pViewSels . mkScan "") ms}
