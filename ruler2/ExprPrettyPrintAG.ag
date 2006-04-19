@@ -23,7 +23,7 @@ SEM Expr
   | Uniq            lhs     .   pp          =   pp "?uniq?"
   | Undefined       lhs     .   pp          =   pp "_"
 SEM Expr
-  | Sel             lhs     .   pp          =   exprNeedPar ParCtxtOther nmUnk @expr.self @expr.pp >|< strSel >|< @selMbExpr.pp
+  | Sel             lhs     .   pp          =   exprNeedPar ParCtxtOther nmUnk @expr.self @expr.pp >|< cfgStrSel >|< @selMbExpr.pp
   | Var             lhs     .   pp          =   pp @nm
   | Paren           lhs     .   pp          =   {-pp_parens-} @expr.pp
   | AppTop          lhs     .   pp          =   @expr.pp
@@ -31,7 +31,7 @@ SEM Expr
 -}
 {-
 SEM Expr
-  | Sel             lhs     .   pp          =   pp_brackets ("SEL" >#< exprNeedPar ParCtxtOther nmUnk @expr.self @expr.pp) >|< strSel >|< @selMbExpr.pp
+  | Sel             lhs     .   pp          =   pp_brackets ("SEL" >#< exprNeedPar ParCtxtOther nmUnk @expr.self @expr.pp) >|< cfgStrSel >|< @selMbExpr.pp
   | Var             lhs     .   pp          =   pp_brackets ("VAR" >#< pp @nm)
   | AVar            lhs     .   pp          =   pp_brackets ("AVR" >#< @anm.pp)
   | Paren           lhs     .   pp          =   pp_brackets ("PAR" >#< @expr.pp)

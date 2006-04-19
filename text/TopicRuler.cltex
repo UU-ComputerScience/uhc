@@ -135,7 +135,7 @@ modular and stratified language descriptions.
 The need for the |Ruler| system arose in the context of the
 Essential Haskell (EH) project
 \cite{dijkstra04ehc-web%
-%if not storyPHD
+%if not (storyPHD || storyEhcBook)
 ,dijkstra05phd%
 %endif
 }.
@@ -324,7 +324,7 @@ In \secRef{ruler-basics} we specify the contents of
 in \secRef{ruler-hm-infer} we extend this specification for
 the contents of
 \figRef{rulerDemo.A.expr.base}.
-%if not storyPHD
+%if not (storyPHD || storyEhcBook)
 In \secRef{ruler-ag-basics} we explain the AG (attribute grammar) system.
 %endif
 In \secRef{ruler-ag-infer} we extend the example |Ruler| specification so that
@@ -380,55 +380,7 @@ Because we do not discuss this any further, this part has been omitted (from \fi
 %endif %% limitSize
 %%]
 
-%%[designOfRuler
-%if limitSize
-%else
-\Paragraph{The design of |Ruler|}
-In the remainder of this section we discuss the concepts used in |Ruler| by inspecting elements of
-figures~\ref{rulerDemo.E.expr.base}, \ref{rulerDemo.A.expr.base} and \ref{ruler-demo-impl}.
-%endif %% limitSize
-
-The design of |Ruler| is driven by the need to check the following \emph{properties} of type rules:
-\begin{Itemize}
-\item
-All judgements match an explicitly specified structure for the judgement.
-For example, in \figRef{rulerDemo.E.expr.base} all judgements for an expression should match the structure of the expression judgement in the box at the top of the same figure.
-\item
-If an identifier is used for the generation of an implementation, it must be defined before it can be used.
-%if limitSize
-%else
-The meaning of this will be explained later.
-%endif
-\end{Itemize}
-%if False
-Other properties can be added to this list,
-but we limit ourselves to this list and the requirement of output generation for different targets.
-%endif
-
-In the remainder of this section we give a high-level overview of the concepts manipulated by |Ruler|.
-\figRef{ruler-src-template} gives a schematic |Ruler| specification, showing how the concepts relate syntactically.
-%if not limitSize
-\figRef{ruler-legenda-syntax} provides an overview of the full concrete syntax of |Ruler|.
-
-%{
-%%@AppxNotation.rulerSyntaxSetup
-
-%if llncs
-
-%%@TopicRuler.rulerSyntaxFullFig
-
-%else
-
-%%@TopicRuler.rulerSyntaxPart1Fig
-
-%%@TopicRuler.rulerSyntaxPart2Fig
-
-%endif
-
-%}
-
-%endif %% not limitSize
-
+%%[designOfRuler.Concepts
 A |Ruler| specification consists of rules organized into rulesets.
 Each rule consists of judgements which must comply with a scheme which describes the structure of a judgement.
 We make this more precise in the remainder of this section.
@@ -498,6 +450,57 @@ These arbitrary (i.e. as far as |Ruler| is concerned unstructured)
 conditions are treated like regular judgements, but their
 implementation has to be specified explicitly.
 We call the scheme of such a judgement variant a \IxAsDef{relation}.
+%%]
+
+%%[designOfRuler
+%if limitSize
+%else
+\Paragraph{The design of |Ruler|}
+In the remainder of this section we discuss the concepts used in |Ruler| by inspecting elements of
+figures~\ref{rulerDemo.E.expr.base}, \ref{rulerDemo.A.expr.base} and \ref{ruler-demo-impl}.
+%endif %% limitSize
+
+The design of |Ruler| is driven by the need to check the following \emph{properties} of type rules:
+\begin{Itemize}
+\item
+All judgements match an explicitly specified structure for the judgement.
+For example, in \figRef{rulerDemo.E.expr.base} all judgements for an expression should match the structure of the expression judgement in the box at the top of the same figure.
+\item
+If an identifier is used for the generation of an implementation, it must be defined before it can be used.
+%if limitSize
+%else
+The meaning of this will be explained later.
+%endif
+\end{Itemize}
+%if False
+Other properties can be added to this list,
+but we limit ourselves to this list and the requirement of output generation for different targets.
+%endif
+
+In the remainder of this section we give a high-level overview of the concepts manipulated by |Ruler|.
+\figRef{ruler-src-template} gives a schematic |Ruler| specification, showing how the concepts relate syntactically.
+%if not limitSize
+\figRef{ruler-legenda-syntax} provides an overview of the full concrete syntax of |Ruler|.
+
+%{
+%%@AppxNotation.rulerSyntaxSetup
+
+%if llncs
+
+%%@TopicRuler.rulerSyntaxFullFig
+
+%else
+
+%%@TopicRuler.rulerSyntaxPart1Fig
+
+%%@TopicRuler.rulerSyntaxPart2Fig
+
+%endif
+
+%}
+
+%endif %% not limitSize
+
 %%]
 
 %%[preliminariesForTypeSystem
@@ -707,22 +710,23 @@ The identifiers in |Ruler| expressions should refer to the introduced hole names
 The |spec| shape of the scheme of a judgement is used to extract |Ruler| expressions from a judgement instance
 (defined by |judge|) and bind these to the corresponding hole identifiers.
 
+%%[[selNotation
 %if limitSize
 %else
 The dot character `.' has a special role in |Ruler| expressions and names for the |tex| target output generation.
 It is used to specify subscripts, superscripts and stacking.
-We refer to the extended version of \thischapt\ \cite{dijkstra05phd} for further explanation.
 So, |x.1.2.3| pretty prints as:
 \[\stackrel{3}{x_1^2}\]
 The part after the first dot is used as a subscript, the part after the second dot is used as a superscript, and the part
 after the third dot is stacked on top.
-In this context the underscore character `|_|' denotes a horizontal line for use in vector like notations,
+In this context the underscore identifier `|_|' denotes a horizontal line for use in vector like notations,
 so @v..._@ pretty prints as |Vec(v)|.
 Additional dots are ignored.
 
 Names, |Ruler| expressions and operators all may be immediately followed by this dot notation.
 For names however, the dots and their related information form part of the name.
 %endif
+%%]
 
 Since the judgespec and an associated |judgeuse tex| are usually quite similar,
 we have decided to make the latter default to the first.
@@ -747,7 +751,7 @@ is delegated to external \LaTeX\ commands.
 %if not limitSize
 The ruleset heading is immediately followed by a list of rules, of
 which only one is shown here (|e.int| is pretty printed in small caps as \textsc{e.int})%
-%if (storyPHD && targetForPaper) || limitSize
+%if ((storyPHD || storyEhcBook) && targetForPaper) || limitSize
 .
 %else
 ;
@@ -1331,7 +1335,7 @@ The AG system gathers all fragments.
 In this section we discuss the modifications to our type rule specification required for the generation of a partial implementation,
 and the additional infrastructure required for a working compiler.
 The end result of this section is a translation of type rules to AG code.
-%if storyPHD
+%if (storyPHD || storyEhcBook)
 %%[[hide "app-ruler-demo-ag"="Ruler demo: Generated AG"
 \VerbatimInput[fontsize=\footnotesize]{demo.ag}
 %%]
@@ -1413,7 +1417,7 @@ For example, |ty.a -> tv| must be rewritten to a Haskell expression representing
 |Ruler| expression.
 We define additional Haskell datatypes and functions to support the intended meaning;
 unique identifiers |UID| are explained later:
-%if storyPHD
+%if (storyPHD || storyEhcBook)
 %%[[hide "app-ruler-supp-hs"="Ruler demo: Supporting Haskell"
 \VerbatimInput[fontsize=\footnotesize]{DemoUtils.hs}
 %%]
@@ -1552,7 +1556,7 @@ For example, the AG code for relation |match| as it is inlined in the translatio
 
 The operator |<=>| implementing the matching returns constraints as well as errors.
 The errors are bound to a local attribute which is used by additional AG code for error reporting.
-%if storyPHD
+%if (storyPHD || storyEhcBook)
 %%[[hide "app-ruler-supp-ag"="Ruler demo: Supporting AG"
 \VerbatimInput[fontsize=\footnotesize]{DemoMain.ag}
 %%]
@@ -1625,7 +1629,7 @@ provides mechanisms and tools for proving properties of Haskell programs.
 Within the context of constructing a documented Haskell compiler
 (EH project,
 \cite{dijkstra04ehc-web%
-%if not storyPHD
+%if not (storyPHD || storyEhcBook)
 ,dijkstra05phd%
 %endif
 })
@@ -1676,7 +1680,7 @@ must be used to manage the complexity of descriptions.
 
 \Paragraph{Future research}
 We foresee the following directions of further research and development of |Ruler|%
-%if storyPHD
+%if (storyPHD || storyEhcBook)
 (see \chapterRef{ehcConcl} for a further elaboration)%
 %else
 %endif
@@ -1850,9 +1854,6 @@ ruleset x scheme X =
 
 \rulerCmdUse{RulerRules.E.expr}
 
-%%]
-
-%%[XX
 %%]
 
 %%[XX

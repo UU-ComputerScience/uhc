@@ -345,7 +345,7 @@ f  =                                       \  p     q     r       s             
 f  ::  forall a   .    Eq a            =>     a ->  a ->  Int ->  forall b . b    ->  (Bool    ,  Bool    )
 %%]
 
-%if not storyPHD
+%if not (storyPHD || storyEhcBook)
 \textbf{Variation 3:}
 f  ::  forall a   .    Eq a            =>     a ->  a ->  Int ->  (exists b . b)  ->  (Bool    ,  Bool    )
 For |s| any value can be passed; this is encoded by the existential quantification.

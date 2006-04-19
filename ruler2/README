@@ -10,12 +10,10 @@ Installation
 
 From withing the directory where this README lives:
 
-to make ../bin/ruler2  :  make ruler
+to make ../bin/ruler   :  make ruler
 to make the demo       :  make demo
 to try the demo        :  DEMOEXEC < demo/tst5
 
 to find out the exact names of the executables (like DEMOEXEC above)
                        :  make
 
-An older (not included) version of the Ruler system is named 'ruler',
-it will become obsolete in the near future so the name ruler2 will change into ruler.

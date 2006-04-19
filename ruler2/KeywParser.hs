@@ -19,7 +19,6 @@ module KeywParser
   , pSymEscStr, pSymEscStrSPos
   , pSymStr, pSymStrSPos
   
-  , strSel
   )
   where
 
@@ -29,17 +28,12 @@ import UU.Parsing
 -- import UUTest.Parsing.Offside
 import UU.Parsing.Offside
 import RulerScanner
+import RulerConfig
 import ParseUtils
 import AttrProps
 import ScanUtils
 
 -------------------------------------------------------------------------
--- Config
--------------------------------------------------------------------------
-
-strSel :: String
-strSel = "."
-
 -------------------------------------------------------------------------
 -- Scanning
 -------------------------------------------------------------------------
@@ -71,7 +65,7 @@ keywordsTextEscapable
         , "extern", "external"
         , "include"
         -- related to formatting (styles)
-        , "tex", "ag", "def", "use", "spec"
+        , "tex", "texcmd", "ag", "def", "use", "spec"
         -- misc
         , "text"
         ]
@@ -83,9 +77,9 @@ keywordsText
      ] ++ keywordsOffsideTrigs
        ++ keywordsTextEscapable
 keywordsOpsEsc
-  =  [ ",", ":", "[", "]", "*", "<", ":=", "::", "->" ]
+  =  cfgKeywordsOpsEsc
 keywordsOpsExplainEsc
-  =  [ "=", "-", "---", strSel ]
+  =  [ cfgStrSel ] ++ cfgKeywordsOpsExplainEsc
 keywordsOpsParenEsc
   =  [ "|" ] ++ keywordsOpsExplainEsc
 keywordsOps

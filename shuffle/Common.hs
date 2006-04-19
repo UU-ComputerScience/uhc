@@ -36,8 +36,9 @@ import Nm
 -------------------------------------------------------------------------
 
 data Err
-  = Err_UndefNm CPos String [Nm]
-  | Err_UndefURI CPos String
+  = Err_UndefNm     CPos String [Nm]
+  | Err_UndefURI    CPos String
+  | Err_Exec        CPos String String
   deriving Show
 
 type ErrM = Map.Map CPos Err
@@ -53,6 +54,10 @@ instance PP Err where
     = ppErr pos (knd >|< "(s) are undefined:" >#< ppCommas nmL)
   pp (Err_UndefURI pos u)
     = ppErr pos ("could not open:" >#< u)
+  pp (Err_Exec pos f e)
+    = ppErr pos (   "execution of:" >#< f
+                >-< "failed      :" >#< e
+                )
 
 showUndef :: Show r => r -> String
 showUndef r = "<<<<" ++ show r ++ ">>>>"

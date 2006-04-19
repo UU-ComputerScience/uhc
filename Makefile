@@ -128,7 +128,7 @@ docs: $(TEXT_DIST_DOC_FILES)
 
 edit-s:
 	$(OPEN_FOR_EDIT) \
-	$(SHUFFLE_ALL_SRC)
+	$(SHUFFLE_ALL_SRC) \
 	Makefile
 
 edit-r:

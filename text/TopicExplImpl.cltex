@@ -18,7 +18,7 @@ In \thischapt\ we describe, in the context of Haskell, a mechanism that allows
 a programmer to explicitly construct implicit arguments. This extension
 blends well with existing resolution mechanisms, since it only overrides
 the default behavior.
-%if not (storyPHD || limitSize)
+%if not (storyPHD || storyEhcBook || limitSize)
 We include a
 description of the use of partial type signatures, which liberates the
 programmer from having to choose  between specifying a complete type
@@ -50,7 +50,7 @@ enabling the elegant formulation of some forms of generic programming.
 %%[body
 \newcommand{\citeTHAG}{%
 \cite{dijkstra04thag%
-%if not storyPHD
+%if not (storyPHD || storyEhcBook)
 ,dijkstra05phd%
 %endif
 }}
@@ -381,7 +381,7 @@ the proof machinery can be used as normal values,
 and normal (record) values can be used as dictionaries for predicates as well.
 \item
 The automatic choice for a dictionary at the call site of a function can be disambiguated.
-%if not (storyPHD || limitSize)
+%if not (storyPHD || storyEhcBook || limitSize)
 \item
 Types can be partially specified, thus having the benefit of explictness as well as inference,
 but avoiding the obligation of the ``all or nothing''
@@ -425,7 +425,7 @@ In \thischapt\ we focus on the exploration of explicitly specified implicit dict
 to be presented in the context of EH, a
 Haskell variant
 \cite{dijkstra04ehc-web,dijkstra04thag%
-%if not storyPHD
+%if not (storyPHD || storyEhcBook)
 ,dijkstra05phd%
 %endif
 }
@@ -435,7 +435,7 @@ In \secRef{ehc09-implparam} we present examples of what we can express in EH.
 %if not limitSize
 The use of partial type signatures and their interaction with
 predicates is demonstrated in
-%if storyPHD
+%if (storyPHD || storyEhcBook)
 \chapterRef{ehc-partial-sig-quant-guess}.
 %else
 \secRef{ehc09-partialtysig}.
@@ -463,7 +463,7 @@ so the reader gets an impression of what can be done and how it ties in with oth
 \item
 We do \emph{not} present all the context required to make our examples work.
 This context can be found elsewhere \citeTHAG%
-%if storyPHD
+%if (storyPHD || storyEhcBook)
 , together with an elaborated version of \thischapt.
 %else
 .
@@ -587,7 +587,7 @@ are ignored in the remainder of
 We make no attempt to infer any higher ranked type;
 instead we propagate explicitly specified types to wherever this information may be needed.
 Our strategies here are elaborated elsewhere
-%if storyPHD
+%if (storyPHD || storyEhcBook)
 in earlier chapters of this thesis.
 %else
 \cite{dijkstra05phd}.
@@ -1040,7 +1040,7 @@ here in both cases |dEqList| is the only choice possible.
 
 %endif %% not limitSize
 
-%if not (storyPHD || limitSize)
+%if not (storyPHD || storyEhcBook || limitSize)
 
 \subsection{Partial type signatures}
 \label{ehc09-partialtysig}
@@ -1060,7 +1060,7 @@ We will show its use based on the function:
 
 We focus on the distinguishing characteristics
 of our implementation in the EH compiler \cite{dijkstra04ehc-web,dijkstra04thag%
-%if not storyPHD
+%if not (storyPHD || storyEhcBook)
 ,dijkstra05phd%
 %endif
 }.
@@ -1467,7 +1467,7 @@ EH allows type expressions where quantifiers and predicates may be positioned an
 type,
 and all terms can be explicitly typed with a type annotation.
 Thus we obtain the same expressiveness as
-%if storyPHD
+%if (storyPHD || storyEhcBook)
 System F (\thPageRef{eh4-th-sysf-sound}).
 %else
 System F.
@@ -1477,21 +1477,21 @@ What remains are the following questions:
 \begin{Itemize}
 \item
 For a completely explicitly typed program, is our algorithm and implementation sound and complete?
-%if storyPHD
+%if (storyPHD || storyEhcBook)
 Evidence translation replaces predicates by dictionaries, of which the type is fully known.
 Thus we are confident that \thPageRefB{eh4-th-sysf-sound} still holds.
 %endif
 \item
 For a partially explicitly typed program, what is the characterisation of the types that can be inferred for
 the terms for which no type has been given?
-%if storyPHD
+%if (storyPHD || storyEhcBook)
 If we impose the additional restriction that predicates are absent from all types,
 we are confident that \thPageRefB{eh4-th-hm-sound} holds.
 %endif
 \end{Itemize}
 
 We have not investigated these questions formally.
-%if storyPHD
+%if (storyPHD || storyEhcBook)
 However, we repeat our design starting point from \chapterRef{ehc4}:
 %else
 However, we have taken the following as our starting point:
@@ -1503,7 +1503,7 @@ Stick to HM type inferencing, except for the following:
 \item
 Combine type checking and inferencing.
 In order to  be able to do this, impredicative types are allowed to participate in HM type inferencing.
-%if not storyPHD
+%if not (storyPHD || storyEhcBook)
 This is a separate issue we deal with elsewhere \cite{dijkstra05phd};
 the characterisation of inferred types is that of HM + incorporation of (propagated) explicitly specified type information.
 %endif

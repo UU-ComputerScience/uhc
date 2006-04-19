@@ -3,13 +3,13 @@
 
 % list environments
 \def\@@ListSetupA{%
-%if storyPHD
+%if storyPHD || storyEhcBook
   \setlength{\partopsep}{0pt}
   \setlength{\topsep}{.5\topsep}
 %endif
 }
 \def\@@ListSetupB{%
-%if storyPHD
+%if storyPHD || storyEhcBook
   \setlength{\parskip}{.5\parskip}
   \setlength{\itemsep}{.5\itemsep}
 %endif
@@ -69,7 +69,7 @@
   \begin{figure}[t]%
 %elif llncs
   \begin{figure}[tp]%
-%elif storyPHD
+%elif storyPHD || storyEhcBook
   \begin{figure}[tp]%
 %else
   \begin{figure}[htbp]%

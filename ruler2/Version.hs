@@ -4,7 +4,7 @@
 -------------------------------------------------------------------------
 
 module Version
-  ( versionInfo, versionDist
+  ( versionInfo, versionDist, versionSvn
   )
   where
 
@@ -14,8 +14,8 @@ module Version
 
 versionSvn      = "$Id$"
 versionMajor    = "0"
-versionMinor    = "03"
-versionQuality  = "experimental"
+versionMinor    = "04"
+versionQuality  = "alpha"
 versionDist     = versionMajor ++ "." ++ versionMinor ++ versionQuality
 versionProg     = "ruler"
 versionInfo     = versionProg ++ "(" ++ versionDist ++ ")" ++ ", " ++ versionSvn

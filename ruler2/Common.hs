@@ -120,7 +120,7 @@ nmFunMkUniq u = Nm ("rulerMk" ++ show u ++ "Uniq")
 -------------------------------------------------------------------------
 
 data FmKind
-  = FmTeX | FmAG | FmHS | FmSpec | FmAll | FmCnstr | FmAS2 FmKind
+  = FmTeX | FmTeXCmd | FmAG | FmHS | FmSpec | FmAll | FmCnstr | FmAS2 FmKind
   deriving (Show,Eq,Ord)
 
 fmAS2Fm :: FmKind -> FmKind
