@@ -12,8 +12,7 @@ DATA Chunk
   | Ver                 version     : {Version}
                         subNm       : {Nm}
                         minusL      : {[ChunkId]}
-                        chKind      : {ChKind}
-                        chDest      : {ChDest}
+                        chOptions	: ChunkOptions
                         mbModNm     : {Maybe String}
                         imports     : {[String]}
                         exports     : {[String]}
@@ -27,13 +26,22 @@ TYPE Chunks     = [Chunk]
 
 SET AllChunk    = Chunk Chunks
 
+-- ChunkOption
+DATA ChunkOption
+  | Kind				chKind      : {ChKind}
+  | Dest				chDest      : {ChDest}
+  | Wrap				chWrap      : {ChWrap}
+
+TYPE ChunkOptions     	= [ChunkOption]
+
+SET AllChunkOption		= ChunkOption ChunkOptions
+
 -- Single line
 DATA Line
   | AsIs                words       : Words
   | Named               cref        : {CRef}
   | Group               extraLine   : Int
-                        chDest      : {ChDest}
-                        chWrap      : {ChWrap}
+                        chOptions	: ChunkOptions
                         userRef     : {Maybe (Nm,Maybe String)}
                         lines       : Lines
 

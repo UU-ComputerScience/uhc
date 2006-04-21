@@ -383,7 +383,10 @@ rlGamUpdVws cxRs opts vwDpdGr extNmS dtInvGam scGam rsGam rlGam rsInfo rlInfo
           = vs `Set.intersection` rsInclVwS rsInfo
           where vs = case rlMbInclVwS rlInfo of
                        Just s -> s
-                       _      -> maybe (vgVertices vwDpdGr) id (dtInvGamRlVwS (rsScNm rsInfo) (rlNm rlInfo) dtInvGam)
+                       _      -> case dtInvGamRlVwS (rsScNm rsInfo) (rlNm rlInfo) dtInvGam of
+                                   Just vs -- | optGenFM opts /= FmTeX
+                                           -> vs
+                                   _       -> vgVertices vwDpdGr
         vwIsIncl n = n `Set.member` vwSel
         doMarkChngForVw
           = case optMbMarkChange opts of

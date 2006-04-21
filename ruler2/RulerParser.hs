@@ -142,7 +142,7 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
         pAttrRenames        =   pParens_pCommas pAttrRename
         pDeclsScmView       =   pDecls1' pDeclScmView
         pDeclDataASTView    =   (\(n,p) d -> Decl_DataASTView p n d)
-                                                       <$  pKey "view" <*> pNmSPos <* pKey "=" <*> pDeclDataASTAlts
+                                                       <$  pKey "view" <*> pNmSPos <* kIsBar <*> pDeclDataASTAlts
         pDeclDataASTViewDflt=   (\d -> [Decl_DataASTView emptySPos nmNone d])
                                                        <$> pDeclDataASTAlts
         pDeclDataASTAlts    =   pList1Sep (pKey "|") pDeclDataASTAlt
@@ -259,6 +259,7 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
         pAttrProp           =   foldr1 (<|>) [ v <$ pKey n | (n,v) <- Map.toList propsMp ]
         pInt                =   read <$> pInteger
         kDColon             =   pKey ":" <|> pKey "::"
+        kIsBar              =   pKey "=" <|> pKey "|"
      in (pAGItf)
 
 

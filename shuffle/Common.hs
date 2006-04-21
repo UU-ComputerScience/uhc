@@ -152,7 +152,7 @@ data ChDest
   deriving (Show,Eq,Ord)
 
 data ChWrap
-  = ChWrapCode | ChWrapBoxCode | ChWrapTT | ChWrapTTtiny | ChWrapPlain
+  = ChWrapCode | ChWrapBoxCode | ChWrapBeamerBlockCode String | ChWrapTT | ChWrapTTtiny | ChWrapPlain
   deriving (Show,Eq,Ord)
 
 -------------------------------------------------------------------------

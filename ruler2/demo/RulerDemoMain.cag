@@ -63,16 +63,16 @@ DATA AGItf
   | AGItf  e  : Expr
 %%]
 
-%%[3.AST.Expr.App
+%%[33.AST.Expr.App
 DATA Expr
   | App  f    : Expr
          a    : Expr
 %%]
-%%[3.AST.Expr.IntVar
+%%[33.AST.Expr.IntVar
   | Int  int  : {Int}
   | Var  i    : {String}
 %%]
-%%[3.AST.Expr.Rest
+%%[33.AST.Expr.Rest
   | Lam  i    : {String}
          b    : Expr
   | Let  i    : {String}

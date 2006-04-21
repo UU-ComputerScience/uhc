@@ -170,7 +170,8 @@ in the conclusion (\secRef{ruler-conclude}) we will further discuss additional d
 
 \begin{CodeFigure}{}{Part of the generated implementation for \ruleRef{e.app}}{ruler-demo-impl}
 %%[[wrap=code
-%%@RulerDemoMain.3.AST.Expr.App
+ %%@RulerDemoMain.3.AST.Expr.App
+%%@rulerDemoAG.3.expr.DATA
 
 %%@rulerDemoAG.3.expr.ATTR
 
@@ -1221,9 +1222,9 @@ An AST is a data structure similar to data types in Haskell.
 For example, part of the AST required for our type rule implemention is defined as follows:
 
 %%[[wrap=code
-%%@RulerDemoMain.3.AST.Expr.App
-
-%%@RulerDemoMain.3.AST.Expr.IntVar
+ %%@RulerDemoMain.3.AST.Expr.App
+ %%@RulerDemoMain.3.AST.Expr.IntVar
+%%@rulerDemoAG.3.expr.DATA
 %%]
 
 This AST for an |Expr| node defines \IxAsDef{alternatives} (or \IxAsDef{variants}, \IxAsDef{productions})
@@ -1380,10 +1381,27 @@ Which values in this primary hole in the conclusion of a rule are children in th
 To which AG |DATA| a scheme maps, and for each rule to which alternative.
 \end{Itemize}
 
+%if True
+The AST is defined by a |data| definition which also binds the AST to type rules:
+
+%%@rulerDemoRL.3.data wrap=code
+
+The notation borrows from Haskell and AG.
+Within the square brackets associated type related information is mentioned:
+
+\begin{Itemize}
+\item The data type is bound to a scheme, for example |Expr| is bound to |expr|.
+\item An alternative, or constructor, is bound to a rule, for example |Var| is bound to |e.var|.
+The field names must match those used in the rule.
+\end{Itemize}
+
+Data definitions also vary depending on the view.
+
+%else
 The AST is defined externally relative to |Ruler| (this may change in future versions of |Ruler|).
 For example, the part of the AST for expression application is defined as:
 
-%%@RulerDemoMain.3.AST.Expr.App wrap=code
+ %%@RulerDemoMain.3.AST.Expr.App wrap=code
 
 The keyword |node| is used to mark the primary hole that corresponds to the AST node for scheme |expr| in the AST:
 
@@ -1394,7 +1412,7 @@ appear in the AST.
 For example, for \ruleRef{e.app} we mark |f| to be the first and |a| to be the second child
 (the ordering is required for AG code generation taking into account AG's copy rules):
 
-%%@rulerDemoRL.3.rl.e.app.AG wrap=code
+ %%@rulerDemoRL.3.rl.e.app.AG wrap=code
 
 The scheme |expr| is mapped to the AST node type |Expr| by adapting the scheme definition to:
 
@@ -1404,6 +1422,7 @@ Similarly we adapt the header for \ruleRef{e.app} to include the name |App| as t
 of the alternative in the AST:
 
 %%@rulerDemoRL.3.rl.e.app wrap=code
+%endif
 
 \Paragraph{|Ruler| expressions and AG expressions}
 Expressions in judgements are defined using a notation to which |Ruler| attaches no meaning.
@@ -1792,7 +1811,7 @@ ruleset x scheme X =
     view A =
       judge ...        -- premises
       ...
-      -
+      ---
       judge ...        -- conclusion
     view B = ...
   rule s =

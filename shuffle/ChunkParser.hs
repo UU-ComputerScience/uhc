@@ -42,6 +42,7 @@ kwTxtAsVarTooB
   = kwTxtAsVarTooA
     ++ Map.keys chDestMp
     ++ Map.keys chWrapMp
+    ++ [ "beamerblockcode" ]
 
 shuffleScanOpts :: ScanOptsMp
 shuffleScanOpts
@@ -306,8 +307,7 @@ pChunk              =   pBegChunk
                                  <$> pVersion
                                  <*> pMaybe NmEmp id (pKey "." *> pNm)
                                  <*> (pKey "-" *> ((:[]) <$> pChunkId <|> pParens (pList1 pChunkId)) <|> pSucceed [])
-                                 <*> pMbChKind
-                                 <*> pMbChDest
+                                 <*> pChunkOptions
                                  <*> (Just <$ pKey "module" <*> pId <|> pSucceed Nothing)
                                  <*> (pKey "import" *> pParens pIdNests2 <|> pSucceed [])
                                  <*> (pKey "export" *> pParens pIdNests2 <|> pSucceed [])
@@ -335,27 +335,40 @@ pMbChDest           ::  ShPr ChDest
 pMbChDest           =   pMaybe ChHere id pChDest
 
 pChWrap             ::  ShPr ChWrap
+{-
 pChWrap             =   pKey "wrap" *> pKey "=" *> pAnyFromMap pKey chWrapMp
+-}
+pChWrap             =   pKey "wrap" *> pKey "="
+                        *> (   pAnyFromMap pKey chWrapMp
+                           <|> ChWrapBeamerBlockCode <$ pKey "beamerblockcode" <*> pStr
+                           )
 
 pMbChWrap           ::  ShPr ChWrap
 pMbChWrap           =   pMaybe ChWrapPlain id pChWrap
+
+pChunkOption        ::  ShPr T_ChunkOption
+pChunkOption        =   sem_ChunkOption_Kind <$> pChKind
+                    <|> sem_ChunkOption_Dest <$> pChDest
+                    <|> sem_ChunkOption_Wrap <$> pChWrap
+
+pChunkOptions       ::  ShPr T_ChunkOptions
+pChunkOptions       =   pFoldr (sem_ChunkOptions_Cons,sem_ChunkOptions_Nil) pChunkOption
 
 pLines              ::  ShPr T_Lines
 pLines              =   pFoldr (sem_Lines_Cons,sem_Lines_Nil) pLine
 
 pLine               ::  ShPr T_Line
 pLine               =   sem_Line_AsIs  <$> pLineChars  <*  pNl
-                    <|> (\n ((d,w),r)
-                          -> sem_Line_Group 0 d w r (sem_Lines_Cons (sem_Line_Named n) sem_Lines_Nil))
+                    <|> (\n (o,r)
+                          -> sem_Line_Group 0 o r (sem_Lines_Cons (sem_Line_Named n) sem_Lines_Nil))
                              <$  pBegNameRef <*> pN <*> pD <* pNl
-                    <|> (\((d,w),r) l
-                          -> sem_Line_Group 1 d w r l)
+                    <|> (\(o,r) l
+                          -> sem_Line_Group 1 o r l)
                              <$  pBegGroup   <*> pD <* pNl <*> pLines <* pEndChunk <* pNl
                     <?> "a line"
                     where pN =   pNm
                              <|> (\v n -> mkNm v `nmApd` n) <$> pVersion <*> pMaybe NmEmp id (pKey "." *> pNm)
-                          pD =   pMbChDest
-                             <+> pMbChWrap
+                          pD =   pChunkOptions
                              <+> pMaybe Nothing Just ((pNm2 <|> mkNm <$> pStr) <+> pMaybe Nothing Just (pKey "=" *> pMaybe "" id pStr))
 
 pLineChars          ::  ShPr T_Words

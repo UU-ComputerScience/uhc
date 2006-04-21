@@ -778,7 +778,7 @@ x SEP y                 ::=     x (y (x SEP y)) ?
 
 %%[rulerRulerAsideRuleBegin
 \begin{center}
-\begin{tabular}{cc}
+\begin{tabular}{lr}
 \begin{minipage}{.55\linewidth}
 %%]
 

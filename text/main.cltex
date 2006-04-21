@@ -393,6 +393,7 @@
 
 %%[18
 \usetheme{Darmstadt}
+%\setbeamertemplate{blocks}[rounded]
 %%]
 
 %%[18
@@ -2142,24 +2143,39 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%@SlidesRuler.title
 
 \section{Motivation}
-%%@SlidesRuler.problem
+%%@SlidesRuler.FLOPS2006.motivation
+%%@SlidesRuler.FLOPS2006.motivationExample
+ %%@SlidesRuler.problem
 
-%%@SlidesRuler.issues
+\section{Issues}
+%%@SlidesRuler.FLOPS2006.motivationIssues
+ %%@SlidesRuler.issues
+%%@SlidesRuler.basicsAndViews.whatCanWeDo
 
+\section{Talk content}
 %%@SlidesRuler.content
 
 %{
 %include ruler.fmt
 
+\section{Background}
+%%@SlidesRuler.backgroundAndContext
+
 \section{Basics and views}
 %%@SlidesRuler.overview
-%%@SlidesRuler.basicsAndViews
+%%@SlidesRuler.FLOPS2006.basicsAndViews.toc
+%%@SlidesRuler.basicsAndViews.basecase
+ %%@SlidesRuler.basicsAndViews.relation
+%%@SlidesRuler.basicsAndViews.incrementAlgorithmic
+ %%@SlidesRuler.mappingToAG
 
-\section{Aspect combination}
-%%@SlidesRuler.aspectCombination
+%\section{Aspects}
+ %%@SlidesRuler.aspectCombination
 %}
 
+\section{Conclusion}
 %%@SlidesRuler.conclusion
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

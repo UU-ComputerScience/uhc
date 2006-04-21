@@ -348,10 +348,10 @@ $(RULER2_DEMO_DRV_RTEX): $(RULER2_DEMO_DRV_LRTEX)
 	$(LHS2TEX) $(LHS2TEX_OPTS_POLY) $< > $@
 
 $(RULER2_DEMO_DRV_CAG): $(RULER2_DEMO_DRV_RL2) $(RULER2)
-	$(RULER2) $(RULER2_OPTS) --ag --ATTR --selrule="(3).(*).(*)" --wrapshuffle  --base=$(RULER2_DEMO_AG_BASE) $< > $@
+	$(RULER2) $(RULER2_OPTS) --ag --ATTR --DATA --selrule="(3).(*).(*)" --wrapshuffle  --base=$(RULER2_DEMO_AG_BASE) $< > $@
 
 $(RULER2_DEMO_DRV_WCOPY_CAG): $(RULER2_DEMO_DRV_RL2) $(RULER2)
-	$(RULER2) $(RULER2_OPTS) --ag --ATTR --selrule="(3).(*).(*)" --wrapshuffle --copyelim=no --base=$(RULER2_DEMO_AGWCOPY_BASE) $< > $@
+	$(RULER2) $(RULER2_OPTS) --ag --ATTR --DATA --selrule="(3).(*).(*)" --wrapshuffle --copyelim=no --base=$(RULER2_DEMO_AGWCOPY_BASE) $< > $@
 
 $(RULER2_DEMO_DRV_AG): $(RULER2_DEMO_DRV_CAG) $(SHUFFLE)
 	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --plain --order="$(RULER2_DEMO_RULER2_ORDER)"  --lhs2tex=no $< > $@
