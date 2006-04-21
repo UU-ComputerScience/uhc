@@ -350,10 +350,10 @@ SEM Line
   | AsIs        loc         .   cdoc        =   if cdIsEmpty @words.cdoc then CDoc_Str "" else @words.cdoc
   | Named       loc         .   cdoc        =   CDoc_Ref @cref ChHere
   | AsIs Named  lhs         .   mbCD        =   Just (CDoc_Pos (CPos (optBaseFPath @lhs.opts) @lhs.lineNr) @cdoc)
-  | Group       loc         .   mbCD        =   fmap (chWrap @chWrap) @lines.mbCD
-                (lhs.mbCD,loc.gathHideMp)   =   case @chDest of
+  | Group       loc         .   mbCD        =   fmap (chWrap @chOptions.chWrap) @lines.mbCD
+                (lhs.mbCD,loc.gathHideMp)   =   case @chOptions.chDest of
                                                   ChHere -> (@mbCD,Map.empty)
-                                                  h      -> (Just (mkHideNmRef (cd n)),Map.singleton n (HideInfo n i @lhs.seqNr @chDest @mbCD @lhs.chFullNm))
+                                                  h      -> (Just (mkHideNmRef (cd n)),Map.singleton n (HideInfo n i @lhs.seqNr @chOptions.chDest @mbCD @lhs.chFullNm))
                                                          where (n,i) = case @userRef of
                                                                          Just (r,Just i ) -> (r,cd i)
                                                                          Just (r,Nothing) -> (r,cd r)
@@ -475,6 +475,19 @@ data Build
 }
 
 -------------------------------------------------------------------------
+-- Chunk options
+-------------------------------------------------------------------------
+
+ATTR AllChunkOption [ | | chKind USE {`const`} {ChPlain} : ChKind ]
+ATTR AllChunkOption [ | | chDest USE {`const`} {ChHere} : ChDest ]
+ATTR AllChunkOption [ | | chWrap USE {`const`} {ChWrapPlain} : ChWrap ]
+
+SEM ChunkOption
+  | Kind		lhs			.	chKind		=	@chKind
+  | Dest		lhs			.	chDest		=	@chDest
+  | Wrap		lhs			.	chWrap		=	@chWrap
+
+-------------------------------------------------------------------------
 -- Gathering chunk info
 -------------------------------------------------------------------------
 
@@ -484,7 +497,7 @@ SEM Chunk
   | Ver         loc         .   chInfo      =   VerChunkInfo
                                                     @chunkLineNr @lhs.seqNr
                                                     @version @subNm @minusL
-                                                    @chKind @chDest @mbModNm @imports @exports
+                                                    @chOptions.chKind @chOptions.chDest @mbModNm @imports @exports
                                                     @lines.mbCD (Seq.toList @lines.xrefL)
                 lhs         .   verChInfoL  =   [@chInfo]
 

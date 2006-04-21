@@ -192,6 +192,30 @@
 }
 %%]
 
+%%[ehSteps
+\frame<presentation>
+{
+\frametitle{Steps in EHC}
+\begin{itemize}
+%%[[ehStepItems
+\item EH1: |lambda|-calculus \& type checking
+\item EH2: Explicit/implicit typing
+\item EH3: Polymorphism
+\item EH4: Higher ranked types \& existential types
+\begin{itemize}
+\item \& experimental quantifier propagation
+\end{itemize}
+\item EH5: Data types
+\item EH6: Kinds
+\item EH7: Non extensible records
+\item EH8: Code generation (to GRIN)
+\item EH9: Class system \& explicit implicit parameters
+\item EH10: Extensible records
+%%]
+\end{itemize}
+}
+%%]
+
 %%[demoEH1
 \frame<presentation>
 {

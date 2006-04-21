@@ -27,6 +27,24 @@ external Ty_Int
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data def
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[3.data
+data Expr [expr]
+  view E
+    |  App  [e.app]  f    :: Expr
+                     a    :: Expr
+    |  Int  [e.int]  int  :: Int
+    |  Var  [e.var]  i    :: String
+    |  Lam  [e.lam]  i    :: String
+                     b    :: Expr
+    |  Let  [e.let]  i    :: String
+                     e    :: Expr
+                     b    :: Expr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Formatting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -100,14 +118,15 @@ scheme expr "Expr" =
 %%]
 %%[1.expr.scm.E
   view E =
-    holes [ | e: Expr, gam: Gam, ty: Ty | ]
+    holes [ e: Expr, gam: Gam, ty: Ty ]
     judgespec gam :- e : ty
     judgeuse tex gam :-.."e" e : ty
 %%]
 
 %%[2.expr.scm.A
   view A =
-    holes [ e: Expr, gam: Gam | thread cnstr: Cnstr | ty: Ty ]
+    holes  [  inh e: Expr, inh gam: Gam
+           ,  thread cnstr: Cnstr, syn ty: Ty ]
     judgespec cnstr.inh ; gam :-.."e" e : ty ~> cnstr.syn
 %%]
 %%[2.expr.scm.A.delTex
@@ -195,7 +214,7 @@ ruleset expr.base scheme expr  "Expression type rules" =
           | ty         = cnstr cnstr.a tv
           | cnstr.syn  = cnstr cnstr.a
 %%]
-%%[3.rl.e.app.AG
+%%[33.rl.e.app.AG
     view AG =
       -
       judge R : expr
@@ -225,7 +244,7 @@ ruleset expr.base scheme expr  "Expression type rules" =
           | ty = cnstr.b tv -> ty.b
           | cnstr.syn = cnstr.b
 %%]
-%%[3
+%%[33
     view AG =
       -
       judge R : expr
@@ -261,7 +280,7 @@ ruleset expr.base scheme expr  "Expression type rules" =
       judge R : expr
           | cnstr.syn = cnstr.b
 %%]
-%%[3
+%%[33
     view AG =
       -
       judge R : expr
@@ -287,7 +306,7 @@ relation match =
 %%[1.gamLookupIdTy
 relation gamLookupIdTy =
   view E =
-    holes [ | nm: Nm, gam: Gam, ty: Ty | ]
+    holes [ nm: Nm, gam: Gam, ty: Ty ]
     judgespec nm :-> ty `elem` gam
 %%]
 %%[3.gamLookupIdTy

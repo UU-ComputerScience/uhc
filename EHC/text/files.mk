@@ -30,6 +30,7 @@ TEXT_PRIV_VARIANTS			:= flops06-ruler-paper flops06-ruler \
 								icfp06-impred \
 								truu-explimpl truu-ruler \
 								phd-paper phd-draft phd-tst phd \
+								ehc-book-tst \
 								scratch poster \
 								slides-ruler slides-explimpl slides-explimpl-fpnl slides-overview
 TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) $(TEXT_PRIV_VARIANTS)
@@ -201,6 +202,12 @@ text-variant-ehc-book:
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyEhcBook --unset=asArticle --set=refToPDF --set=useHyperref --set=targetForPaper" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
+
+text-variant-ehc-book-tst:
+	$(MAKE) TEXT_RULER_MARK_CHANGES_CFG= RULER2_DEMO_MARK_CHANGES_CFG=  \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyEhcBook --unset=asArticle --set=refToPDF --set=useHyperref --set=targetForPaper" \
+	  TEXT_SHUFFLE_VARIANT=2 \
+	  text-variant-dflt-once
 
 text-variant-phd:
 	$(MAKE) \
@@ -463,7 +470,7 @@ $(TEXT_RULER2_DEMO_DRV_CTEX): $(TEXT_RULER2_DEMO_DRV_LCTEX)
 	$(LHS2TEX) $(LHS2TEX_OPTS_POLY) $< > $@
 
 $(TEXT_RULER2_DEMO_DRV_RL2): $(RULER2_DEMO_SRC_CRL) $(SHUFFLE) $(TEXT_MKF)
-	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --plain --order="$(RULER2_DEMO_RULER2_ORDER)"  --lhs2tex=no $< > $@
+	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --plain --order="$(RULER2_DEMO_RULER2_ORDER)"  --lhs2tex=no $< > $@
 
 $(TEXT_INF2PS_DRV_RUL): $(TEXT_INF2PS_SRC_CRUL) $(SHUFFLE) $(TEXT_MKF)
 	$(SHUFFLE) --gen=1 --plain --order="1"  --lhs2tex=no $< > $@
@@ -478,13 +485,13 @@ $(TEXT_RULER2_DEMO_DRV_RTEX): $(TEXT_RULER2_DEMO_DRV_LRTEX)
 	$(LHS2TEX) $(LHS2TEX_OPTS_POLY) $< > $@
 
 $(TEXT_RULER2_DEMO_DRV_CAG): $(TEXT_RULER2_DEMO_DRV_RL2) $(RULER2)
-	$(RULER2) $(RULER2_OPTS) --ag --ATTR --selrule="(3).(*).(*)" --wrapshuffle  --base=$(RULER2_DEMO_AG_BASE) $< > $@
+	$(RULER2) $(RULER2_OPTS) --ag --ATTR --DATA --selrule="(3).(*).(*)" --wrapshuffle  --base=$(RULER2_DEMO_AG_BASE) $< > $@
 
 $(TEXT_RULER2_DEMO_DRV_AG): $(TEXT_RULER2_DEMO_DRV_CAG) $(SHUFFLE)
-	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --plain --order="$(RULER2_DEMO_RULER2_ORDER)"  --lhs2tex=no $< > $@
+	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --plain --order="$(RULER2_DEMO_RULER2_ORDER)"  --lhs2tex=no $< > $@
 
 $(TEXT_RULER2_DEMO_DRV_LATEX): $(TEXT_RULER2_DEMO_DRV_CAG) $(SHUFFLE)
-	$(SHUFFLE) --gen=$(RULER2_DEMO_SHUFFLE_FINAL) --latex --order="$(RULER2_DEMO_RULER2_ORDER)" --base=$(RULER2_DEMO_AG_BASE) --lhs2tex=yes $< > $@
+	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --latex --order="$(RULER2_DEMO_RULER2_ORDER)" --base=$(RULER2_DEMO_AG_BASE) --lhs2tex=yes $< > $@
 
 $(TEXT_RULER2_DEMO_DRV_ATEX): $(TEXT_RULER2_DEMO_DRV_LATEX)
 	$(LHS2TEX) $(LHS2TEX_OPTS_POLY) $< > $@

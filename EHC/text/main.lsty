@@ -42,6 +42,10 @@
  \includegraphics{#1.pdf}
 }
 
+\newcommand{\FigScaledPDF}[2]{%
+ \includegraphics[scale=#1]{#2.pdf}
+}
+
 \newcommand{\FigCenterPDF}[1]{%
  \begin{center}
  \FigPDF{#1}
@@ -177,16 +181,22 @@
 % Env for rules in a figure
 \newenvironment{RulesFigureB}[4]{%
   \def\R@@Info{\ifx#4\empty #2\else #2 (#4)\fi}
+%if not asSlides
   \begin{TabularCenterFigure}{}{\R@@Info}{#3}{p{0.95\linewidth}}
 %  \linespread{1.5}\selectfont
+%endif
   \begin{center}
   \fbox{#1}
   \\
 }{%
+%if not asSlides
   \par
   \csname RulesFigureBEndHook\endcsname
+%endif
   \end{center}
+%if not asSlides
   \end{TabularCenterFigure}
+%endif
 }
 
 % Env for code in a figure

@@ -362,6 +362,10 @@
 
 %format AGFeature		= "\mathcal{AG}"
 
+%format redOn			= "\color{red}"
+%format blackOn			= "\color{black}"
+%format red(x)			= "{\color{red}" x "}"
+
 %format name1
 %format name2
 %format attr1
