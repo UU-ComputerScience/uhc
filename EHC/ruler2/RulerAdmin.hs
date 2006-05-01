@@ -30,6 +30,7 @@ module RulerAdmin
   , emptyAtInfo
   , atGamNode, atMbSynInh
   , atHasDir, atFilterProps, atHasProp, atHasProps
+  , atIsExternUndef
 
   , AtDefUse(..)
   , atDefUse
@@ -80,6 +81,7 @@ module RulerAdmin
   , RlInfo(..), RlGam
   , emptyRlInfo
   , rlVwGamLookup
+  , rlVwRlOnL
   
   , RsInfo(..), RsGam
   , emptyRsInfo
@@ -355,6 +357,12 @@ atHasProps ps i = not $ null $ ps `atFilterProps` i
 
 atHasDir :: AtProp -> AtInfo -> Bool
 atHasDir p i = p `elem` atDirs i
+
+atIsExternUndef :: Bool -> AtInfo -> Bool
+atIsExternUndef isPre i
+  = isExtern && defUse == ADDef
+  where isExtern = AtExtern `atHasProp` i
+        defUse   = atDefUse isPre i
 
 -------------------------------------------------------------------------
 -- Attr def/use
@@ -706,6 +714,7 @@ data VwRlInfo e
       { vwrlNm                              				:: Nm
       , vwrlPos                             				:: SPos
       , vwrlJdBldL                          				:: [RlJdBld e]
+      , vwrlJdBldOnAL, vwrlJdBldOnBL              			:: [RlJdBld e]	-- for debug
       , vwrlFullNoDfltPreGam, vwrlFullNoDfltPostGam     	:: REGam e
       , vwrlFullPreGam, vwrlFullPostGam     				:: REGam e
       , vwrlPreScc                          				:: [[Nm]]
@@ -713,7 +722,7 @@ data VwRlInfo e
       }
 
 emptyVwRlInfo :: VwRlInfo e
-emptyVwRlInfo = VwRlInfo nmNone emptySPos [] emptyGam emptyGam emptyGam emptyGam [] Nothing
+emptyVwRlInfo = VwRlInfo nmNone emptySPos [] [] [] emptyGam emptyGam emptyGam emptyGam [] Nothing
 
 mkVwRlInfo :: Nm -> SPos -> [RlJdBld e] -> VwRlInfo e
 mkVwRlInfo n p b = emptyVwRlInfo { vwrlNm = n, vwrlPos = p, vwrlJdBldL = b }
@@ -732,7 +741,8 @@ instance Show (VwRlInfo e) where
 
 instance PP e => PP (VwRlInfo e) where
   pp i = "VWRl" >#< pp (vwrlNm i) >#< (ppCommaList (vwrlJdBldL i)
-                                       -- >-< ppCommaList (vwrlJdBldDfltL i)
+                                       >-< ppCommaList (vwrlJdBldOnAL i)
+                                       >-< ppCommaList (vwrlJdBldOnBL i)
                                        >-< ppGam (vwrlFullNoDfltPreGam i)
                                        >-< ppGam (vwrlFullNoDfltPostGam i)
                                        >-< ppGam (vwrlFullPreGam i)
@@ -799,6 +809,17 @@ type RlGam e = Gam Nm (RlInfo e)
 
 rlVwGamLookup :: Nm -> Nm -> RlGam e -> Maybe (RlInfo e,VwRlInfo e)
 rlVwGamLookup = dblGamLookup rlVwGam
+
+rlVwRlOnL :: DtInvGam -> RlGam e -> Nm -> Nm -> RlInfo e -> [VwRlInfo e]
+rlVwRlOnL dtInvGam rlGam nSc nVw rlInfo
+  = on rlInfo
+  where on i
+          = case maybe Nothing (\n -> gamLookup n rlGam) (mbOnNm i) of
+              Just i -> case gamLookup nVw (rlVwGam i) of
+                          Just j -> j : on i
+                          _      -> on i
+              _      -> []
+        mbOnNm i = dtInvGamRlMbOn dtInvGam i nSc nVw
 
 -------------------------------------------------------------------------
 -- Rules

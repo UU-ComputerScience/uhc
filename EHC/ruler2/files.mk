@@ -32,7 +32,7 @@ RULER2_CHS_UTIL_DRV_HS					:= $(patsubst $(RULER2_SRC_PREFIX)%.chs,$(RULER2_BLD_
 
 RULER2_AGMAIN1_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,Main1AG)
 RULER2_AGMAIN1_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag, \
-											RulerAbsSynCommonAG RulerAbsSyn1AG RulerAS1Misc RulerAS1Pretty RulerAS1RlSel \
+											RulerAbsSynCommonAG RulerAbsSyn1AG RulerAS1Misc RulerAS1Pretty RulerAS1RlSel RulerFmGamAG \
 											RulerAS1SchemeDpd RulerAS1ViewDpd \
 											RulerAS1GenAS2 \
 											ExprAbsSynAG ExprIsRwAG ExprNmSAG ExprFmGamAG ExprPrettyPrintAG ExprSelfAG \
@@ -52,8 +52,8 @@ $(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AS1IMPS_MA
 
 RULER2_AGMAIN2_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,Main2AG)
 RULER2_AGMAIN2_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag, \
-											RulerAbsSynCommonAG RulerAbsSyn2AG RulerAS2Opts RulerAS2Pretty \
-											ExprAbsSynAG ExprSelfAG ExprPrettyPrintAG \
+											RulerAbsSynCommonAG RulerAbsSyn2AG RulerAS2Opts RulerAS2Pretty RulerFmGamAG \
+											ExprAbsSynAG ExprSelfAG ExprPrettyPrintAG ExprFmGamAG \
 											ARuleAbsSynAG ARuleSelfAG ARulePrettyPrintAG \
 											)
 $(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AGMAIN2_MAIN_SRC_AG)) \
@@ -115,7 +115,7 @@ $(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_EXNMS_MAIN
 										: $(RULER2_EXNMS_DPDS_SRC_AG)
 
 RULER2_EXLTX_MAIN_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ExprLaTeX)
-RULER2_EXLTX_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ExprAbsSynAG ExprOptsAG ExprLaTeXAG)
+RULER2_EXLTX_DPDS_SRC_AG				:= $(patsubst %,$(RULER2_SRC_PREFIX)%.ag,ExprAbsSynAG ExprOptsAG ExprLaTeXAG ExprFmGamAG)
 $(patsubst $(RULER2_SRC_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_EXLTX_MAIN_SRC_AG)) \
 										: $(RULER2_EXLTX_DPDS_SRC_AG)
 

@@ -34,16 +34,19 @@ import RulerAbsSyn2
 
 INCLUDE "RulerAbsSyn2AG.ag"
 INCLUDE "RulerAbsSynCommonAG.ag"
+INCLUDE "RulerFmGamAG.ag"
 INCLUDE "RulerAS2Opts.ag"
 INCLUDE "RulerAS2Pretty.ag"
 
 INCLUDE "ExprAbsSynAG.ag"
 INCLUDE "ExprPrettyPrintAG.ag"
 INCLUDE "ExprSelfAG.ag"
+INCLUDE "ExprFmGamAG.ag"
 
 INCLUDE "ARuleAbsSynAG.ag"
 INCLUDE "ARulePrettyPrintAG.ag"
 INCLUDE "ARuleSelfAG.ag"
+INCLUDE "ARuleFmGamAG.ag"
 
 -------------------------------------------------------------------------
 -- Interfacing to AST
@@ -52,11 +55,11 @@ INCLUDE "ARuleSelfAG.ag"
 WRAPPER AGItf 
 
 {
-ppAS2 :: Opts -> Decls -> PP_Doc
-ppAS2 o r
+ppAS2 :: Opts -> FmGam Expr -> Decls -> PP_Doc
+ppAS2 o g r
   = pp_Syn_AGItf r2
   where r1 = sem_AGItf (AGItf_AGItf r)
         r2 = wrap_AGItf r1
-                (Inh_AGItf {opts_Inh_AGItf = o})
+                (Inh_AGItf {opts_Inh_AGItf = o, fmGam_Inh_AGItf = g})
 }
 

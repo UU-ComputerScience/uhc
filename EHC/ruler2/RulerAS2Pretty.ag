@@ -121,22 +121,24 @@ SEM DataAGFlds
 -------------------------------------------------------------------------
 
 SEM RlDecl
-  | LTX             lhs     .   pp          =   let r = "\\ehinfruleB" >|< ppCurly @rlNm >|< ppCurly @vwNm
+  | LTX             lhs     .   pp          =   let r = "\\" >|< cmd >|< ppCurly @rlNm >|< ppCurly @vwNm
                                                         >-< ppListSepVV "{%" "}" "\\\\" @preJds.ppL
                                                         >-< ppListSepVV "{%" "}" "\\\\" @postJds.ppL
+                                                    cmd = fmNmFmtCmd @lhs.opts @lhs.fmGam $ Nm "rulerRuleCmd"
                                                 in  mkCmdNmDef @nm r
   | LTXAlias        lhs     .   pp          =   mkCmdNmDef @fullAliasNm (mkCmdNmUse @fullNm)
 
 SEM VwDecl
-  | LTX             lhs     .   pp          =   let meta = ensureTeXMath $ switchLaTeXLhs $ exprFmtTeX @lhs.opts @scmExpr.self
+  | LTX             lhs     .   pp          =   let meta = ensureTeXMath $ switchLaTeXLhs $ exprFmtTeX @lhs.opts @lhs.fmGam @scmExpr.self
                                                 in  mkCmdNmDef @scMetaNm meta >-< @rlDecls.pp
-  | LTXFig          lhs     .   pp          =   let fig = "\\begin{RulesFigureB}" >|< ppCurly (mkCmdNmUse @scMetaNm) >|< ppCurly (pp @descr) >|< ppCurly @fullNm >|< (ppCurly @nm)
+  | LTXFig          lhs     .   pp          =   let fig = "\\begin" >|< ppCurly env >|< ppCurly (mkCmdNmUse @scMetaNm) >|< ppCurly (pp @descr) >|< ppCurly @fullNm >|< (ppCurly @nm)
                                                           >-< vlist (intersperse (pp "\\hspace{1ex}") . map mkCmdNmUse $ @rlFullNmL)
-                                                          >-< "\\end{RulesFigureB}"
+                                                          >-< "\\end" >|< ppCurly env
+                                                    env = fmNmFmtCmd @lhs.opts @lhs.fmGam $ Nm "rulerRulesetFigureEnv"
                                                 in  mkCmdNmDef @fullNm fig
 
 SEM Jd
-  | LTX             lhs     .   pp          =   switchLaTeXLhs (exprFmtTeX @lhs.opts @expr.self)
+  | LTX             lhs     .   pp          =   switchLaTeXLhs (exprFmtTeX @lhs.opts @lhs.fmGam @expr.self)
 
 ATTR Jds [ | | ppL: {[PP_Doc]} ]
 
@@ -156,6 +158,6 @@ SEM Decl
 -------------------------------------------------------------------------
 
 SEM Decl
-  | ScVwExplain     lhs     .   pp          =   exprFmtTeX @lhs.opts @exExpr
-  | ScVwAtExplain   lhs     .   pp          =   vlist $ map (\(n,e) -> exprFmtTeX @lhs.opts n >#< "&" >#< exprFmtTeX @lhs.opts e >#< "\\\\") $ @atExprs
+  | ScVwExplain     lhs     .   pp          =   exprFmtTeX @lhs.opts @lhs.fmGam @exExpr
+  | ScVwAtExplain   lhs     .   pp          =   vlist $ map (\(n,e) -> exprFmtTeX @lhs.opts @lhs.fmGam n >#< "&" >#< exprFmtTeX @lhs.opts @lhs.fmGam e >#< "\\\\") $ @atExprs
 

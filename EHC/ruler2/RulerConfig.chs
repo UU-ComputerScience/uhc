@@ -10,6 +10,9 @@
 %%[1 export(cfgKeywordsOpsEsc,cfgKeywordsOpsExplainEsc,cfgStrSel)
 %%]
 
+%%[1 export(cfgFmFmtCmdAsc)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Configuration for Ruler and mentioning in documentation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,4 +39,23 @@ cfgStrSel =
 %%]
 %%[1.cfgStrSel.val
   "."
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Names of commands
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+cfgFmFmtCmdAsc :: [(String,String)]
+cfgFmFmtCmdAsc =
+%%]
+%%[1.cfgStrSel.val
+  [ ( "rulerChngBegMark",           "rulerChngBegMark"          )   -- lhs2tex for begin of change
+  , ( "rulerChngEndMark",           "rulerChngEndMark"          )   -- lhs2tex for end of change
+  , ( "rulerSameBegMark",           "rulerSameBegMark"          )   -- lhs2tex for begin of no change
+  , ( "rulerSameEndMark",           "rulerSameEndMark"          )   -- lhs2tex for end of no change
+  , ( "rulerUndefinedExtern",       "rulerUndefinedExtern"      )   -- lhs2tex for extern hole
+  , ( "rulerRulesetFigureEnv",      "rulerRulesetFigure"        )   -- latex env for ruleset figure
+  , ( "rulerRuleCmd",               "rulerRule"                 )   -- latex cmd for rule
+  ]
 %%]

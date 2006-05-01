@@ -1811,7 +1811,7 @@ ruleset x scheme X =
     view A =
       judge ...        -- premises
       ...
-      ---
+      -
       judge ...        -- conclusion
     view B = ...
   rule s =

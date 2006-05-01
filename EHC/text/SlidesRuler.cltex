@@ -48,8 +48,10 @@ Programming language research lifecycle
 \begin{itemize}
 \item<+-> Define syntax
 \item<+-> Define semantics
+\item<+-> Prove properties of semantics
 \item<+-> Implement
 \item<+-> Prove correctness of implementation
+\item<+-> Document
 \end{itemize}
 }
 
@@ -57,9 +59,10 @@ Programming language research lifecycle
 {
 \frametitle{Motivation: textbook example}
 \begin{tabular}{p{.22\linewidth}p{.25\linewidth}p{.4\linewidth}}
-\textbf{Syntax} &
-\textbf{Semantics} &
-\textbf{Implementation} \\
+\uncover<1->{\textbf{Syntax}} &
+\uncover<2->{\textbf{Semantics}} &
+\uncover<3->{\textbf{Implementation}} \\
+\begin{uncoverenv}<1->
 {\setlength{\mathindent}{0cm}
 %%[[wrap=safecode
 e  ::=  int
@@ -69,13 +72,17 @@ e  ::=  int
    |    let i = e in e
 %%]
 }
+\end{uncoverenv}
 &
+\begin{uncoverenv}<2->
 {\small
 \(
 \rulerCmdUse{rulerDemo.E.expr.base.e.var}
 \)
 }
+\end{uncoverenv}
 &
+\begin{uncoverenv}<3->
 {\footnotesize
 \setlength{\mathindent}{0cm}
 %%[[wrap=safecode
@@ -85,19 +92,22 @@ DATA Expr
 %%@rulerDemoAG.3.expr.e.var
 %%]
 }
+\end{uncoverenv}
 \end{tabular}
+\begin{uncoverenv}<4->
 \textbf{Correctness} \FigScaledPDF{0.5}{smiley-laugh}
+\end{uncoverenv}
 }
 
 \frame<presentation>
 {
 \frametitle{Motivation: real-life example}
-\textbf{Semantics}\\
+\begin{itemize}[<+->]
+\item \textbf{Semantics}\\
 \(
 {\footnotesize\rulerCmdUse{rules3.I2.expr.base.e.app}}
 \)
-\\
-\textbf{Implementation}\\
+\item \textbf{Implementation}\\
 {\footnotesize
 \setlength{\mathindent}{0cm}
 %%[[wrap=safecode
@@ -107,11 +117,12 @@ SEM Expr
          loc   .  tvarv_          =  mkTyVar @uniq1
          func  .  knTy            =  [ @tvarv_ ] `mkArrow` @lhs.knTy
          loc   .  fo_fitF_        =  fitsIn impredFIOpts @fe @uniq2 @func.imprTy (@func.imprTyCnstr |=> ([ @tvarv_ ] `mkArrow` @lhs.knTy))
-         ...                         -- lots more of non-obvious code
+         ...                         -- lots of non-obvious code
 %%]
 }
-\\
-\textbf{Correctness} \FigScaledPDF{0.5}{smiley-frown}
+\item \textbf{Correctness}
+\FigScaledPDF{0.5}{smiley-frown}
+\end{itemize}
 }
 
 %%]
@@ -120,12 +131,12 @@ SEM Expr
 \frame<presentation>
 {
 \frametitle{The problem}
-Hard to
+It is hard to
 \begin{itemize}
 \item<+-> Understand feature interaction
-\item<+-> Prove correctness of implementation
-\item<+-> Generate implementation
+\item<+-> Say something about formal properties
 \item<+-> Maintain consistency of semantics \& implementation
+\item<+-> Generate implementation
 \end{itemize}
 }
 
@@ -341,12 +352,13 @@ then generate the implementation
 {
 \frametitle{Content of remainder of talk}
 \begin{itemize}
-\item Context and background of Ruler
-\item Overall design of Ruler
-\item Hindley-Milner (HM) type system as a case study
-\item Description partitioned in three views/steps (declarative, algorithmic, AG)
-\item How to specify this using Ruler
-\item Aspects (work in progress)
+\item Other tools related to Ruler
+\item Concepts of Ruler
+\item Case study: Hindley-Milner typing
+\begin{itemize}
+\item Three views: E, A, AG
+\item Ruler source texts and results
+\end{itemize}
 \item Conclusion
 \end{itemize}
 }
@@ -375,31 +387,25 @@ then generate the implementation
 \begin{itemize}
 \item<+-> Scheme
  \begin{itemize}
- \item judgement structure: holes + template (for specification and output generation)
- \end{itemize}
-\item<+-> Views
- \begin{itemize}
- \item hierarchy of views, a view is built on top of previous view
+ \item judgement structure: holes + templates
+ \item template (or judgement shape) used to specify/output a scheme instance (a judgement)
  \end{itemize}
 \item<+-> Views of a scheme
  \begin{itemize}
- \item each scheme has views, views differ in holes + template
- \end{itemize}
-\item<+-> Template, or Judgement shape
- \begin{itemize}
- \item used to specify/pretty-print a scheme instance (a judgement)
+ \item hierarchy of views, a view is built on top of previous view
+ \item each scheme has views, views differ in holes + templates
  \end{itemize}
 \item<+-> Rule
  \begin{itemize}
  \item premise judgements + conclusion judgement
- \item judgement binds its scheme holes to expressions
+ \item judgement binds holes to expressions
  \end{itemize}
 \item<+-> Views of a rule
 \item<+-> Rule judgement
  \begin{itemize}
  \item each rule judgement has views, parallel to views of its scheme
  \end{itemize}
-\item<+-> Aspects
+\item<+-> (Aspects)
 \end{itemize}
 }
 
@@ -416,12 +422,12 @@ then generate the implementation
 \frametitle{Ruler `dimensions'}
 \begin{itemize}
 \item<+-> Views allow \alert<.>{incremental} extension of a language
-\item<+-> Schemes allow ``\alert<.>{by aspect}'' organisation by treating holes and associated rules together
+\item<+-> (Schemes allow ``\alert<.>{by aspect}'' organisation by treating holes and associated rules together)
 \item<+-> Ruler
  \begin{itemize}
  \item combines views in a hierarchical, inheriting manner
- \item combines schemes into new schemes
- \item combine means overwrite (of hole bindings)
+ \item (combines schemes into new schemes)
+ \item combine means overwrite of hole bindings
  \end{itemize}
 \end{itemize}
 }
@@ -496,7 +502,7 @@ then generate the implementation
 %%[basicsAndViews.whatCanWeDo
 \frame<presentation>
 {
-\frametitle{Ruler: view example}
+\frametitle{Ruler: example of multiple views}
 \begin{itemize}
 %%@SlidesRuler.basicsAndViews.whatCanWeDo.items
 \end{itemize}
@@ -506,28 +512,28 @@ then generate the implementation
 %%[FLOPS2006.basicsAndViews.toc
 \frame<presentation>
 {
-\frametitle{In depth}
+\frametitle{Case study: HM typing}
 \begin{itemize}
-\item Base case
+\item View 1: Equational
 \begin{itemize}
 \item scheme
 \item rulesets
 \item output
 \end{itemize}
-\item Increments
+\item View 2: Algorithmic
 \begin{itemize}
 \item hierarchy
 \item output
 \item scheme
 \item rulesets
 \end{itemize}
-\item More increments ...
+\item View 3: Attribute Grammar translation
 \end{itemize}
 }
 
 %%]
 
-%%[basicsAndViews.basecase
+%%[basicsAndViews.basecase.firstPage
 \frame<presentation>
 {
 \frametitle{Views}
@@ -552,10 +558,12 @@ then generate the implementation
 %%]
 \end{itemize}
 }
+%%]
 
+%%[basicsAndViews.basecase
 \frame<presentation>
 {
-\frametitle{Step 1: equational view |E|, |expr| scheme}
+\frametitle{View 1: equational view |E|, |expr| scheme}
 %%[[wrap=beamerblockcode "Structure/scheme for judgements"
 %%@rulerDemoRL.1.expr.scm 
 %%@rulerDemoRL.1.expr.scm.E
@@ -629,7 +637,7 @@ Gamma   ::=  Vec(i :-> sigma)
 %%[basicsAndViews.incrementAlgorithmic
 \frame<presentation>
 {
-\frametitle{Step 2: algorithmic view |A|}
+\frametitle{View 2: algorithmic view |A|}
 %%[[wrap=beamerblockcode "View hierarchy"
 %%@rulerDemoRL.1.viewhierarchy
 %%]
@@ -658,7 +666,7 @@ Gamma   ::=  Vec(i :-> sigma)
 \frame<presentation>
 {
 \frametitle{Direction of computation}
-%%[[wrap=beamerblockcode "Holes with direction"
+%%[[wrap=beamerblockcode "New for scheme expr: holes with direction"
 %%@rulerDemoRL.1.expr.scm
 %%@rulerDemoRL.2.expr.scm.A
 %%]
@@ -678,14 +686,14 @@ Cnstr   ::=  Vec(tvarv :-> tau)
 \frame<presentation>
 {
 \frametitle{Specify the differences}
-%%[[wrap=beamerblockcode "New"
+%%[[wrap=beamerblockcode "New for rule e.app in ruleset expr"
 %%@rulerDemoRL.2.rl.e.app.A
 %%]
 }
 
 \frame<presentation>
 {
-\frametitle{Step 3: AG translation view |AG|}
+\frametitle{View 3: AG translation view |AG|}
 \begin{itemize}
 \item<+-> Built on top of view |A|
 \item<+-> Mapping rules to data type alternatives
@@ -899,13 +907,13 @@ ruleset expr.impr scheme expr.impr =
 \item<+-> Lightweight solution to two problems
 \begin{itemize}
 \item consistency between type rules and (AG) implementation
-\item understandability \& manageability by stepwise \& aspectwise construction
+\item understandability \& manageability by stepwise (\& aspectwise) construction
 \end{itemize}
 \item<+-> Current state
 \begin{itemize}
 \item major part of EHC type rules described by |Ruler|
 \item documentation under construction
-\item support for aspects
+\item active development (support for aspects)
 \end{itemize}
 %\item<+-> Related work
 %\begin{itemize}

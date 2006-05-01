@@ -380,7 +380,7 @@ the function has a type |sigmaa -> sigma|.
 
 All rules we will use are of the form
 \[
-\ehinfruleB{ast.rulename}{view}{prerequisite_1 \\ prerequisite_2 \\ ...}{consequence}
+\rulerRule{ast.rulename}{view}{prerequisite_1 \\ prerequisite_2 \\ ...}{consequence}
 \]
 with the meaning that if all $prerequisite_i$ can be proven we may conclude the $consequence$.
 By convention rule names are typeset in \textsc{small caps} font,

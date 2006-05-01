@@ -9,6 +9,8 @@ module ARuleRwSubst
   , arlSubst
   , nmSubst
   , MtOut(..), exprMatch
+  
+  , fmNmUniq, fmNmFmtCmd
   )
   where
 
@@ -86,6 +88,19 @@ exprRewrite' o fmg rwg ecg e
 
 nmSubst :: Opts -> FmGam Expr -> Nm -> Nm
 nmSubst o g = exprAsNm . exprSubst o g . Expr_Var
+
+}
+
+-------------------------------------------------------------------------
+-- Derived
+-------------------------------------------------------------------------
+
+{
+fmNmUniq :: Opts -> FmGam Expr -> Int -> Nm
+fmNmUniq o g u = nmSubst (o {optGenFM = FmAG}) g (nmUniq u)
+
+fmNmFmtCmd :: Opts -> FmGam Expr -> Nm -> Nm
+fmNmFmtCmd o g n = nmSubst (o {optGenFM = FmFmtCmd}) g n
 
 }
 

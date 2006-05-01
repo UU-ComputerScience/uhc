@@ -83,7 +83,7 @@ SEM Expr
   | Char lhs  .   pp   =   pp (show @char) >-< mkErr @mtErrs_
   | Int  lhs  .   pp   :=  pp @int >-< mkErr @mtErrs_
   | Var  lhs  .   pp   :=  pp @i >-< mkErr @nmErrs >-< mkErr @mtErrs_
-  | Lam  lhs  .   pp   :=  "\\" >|< pp @i >#< "->" >#< @b.pp >-< mkErr @mtErrs_knF_
+  | Lam  lhs  .   pp   :=  "\\" >|< pp @i >#< "->" >#< @b.pp >-< mkErr @mtErrs_fitKn_
   | App  lhs  .   pp   :=  @f.pp >#< pp_parens @a.pp
 
 SEM TyExpr
@@ -99,7 +99,7 @@ SEM Expr
   | App  lhs  .   pp   :=  (@f.pp >-< mkErr @mtErrs_ifitF_)
                            >#< pp_parens (@a.pp >-< mkErr @mtErrs_ifitA_)
   | Lam  lhs  .   pp   :=  "\\" >|< pp @i >#< "->" >#< @b.pp
-                           >-< mkErr @mtErrs_knF_ >-< mkErr @mtErrs_F_
+                           >-< mkErr @mtErrs_fitKn_ >-< mkErr @mtErrs_F_
 %%]
   | Lam  lhs  .   pp   :=  "\\" >|< pp @i >#< "->" >#< @b.pp
                            >-< mkErr @mtErrs_knF_ >-< mkErr @mtErrs_F_
