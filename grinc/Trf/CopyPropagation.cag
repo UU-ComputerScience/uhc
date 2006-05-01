@@ -63,19 +63,11 @@ SEM GrExpr
 %%]
 
 
-%%[8.catchInfo
-ATTR GrExpr [ | | isCatch: Bool ]
-SEM GrExpr
-  | Catch          lhs  .  isCatch  =  True
-  | Seq            lhs  .  isCatch  =  @body.isCatch
-  | * - Seq Catch  lhs  .  isCatch  =  False
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Right Unit law %%%
 %%%%%%%%%%%%%%%%%%%%%%
 
-change terms like '<m>; \x -> unit x' => '<m>' where '<m>' does not end with a Catch!
+change terms like '<m>; \x -> unit x' => '<m>'
 
 one form possible:
     seq v x (unit x)           => v
@@ -112,9 +104,7 @@ seqExpr ; \seqPat -> body  --- seqExpr and seqPat are given to the body.
 %%[8.rightUnit
 SEM GrExpr
   |  Seq   loc   .  isRightTrf  =  isJust @rightTrf
-           loc   .  rightTrf    =  if @expr.isCatch 
-                                   then Nothing
-                                   else makeRightUnitExpr @pat.grTrf @body.unitInfo @expr.grTrf
+           loc   .  rightTrf    =  makeRightUnitExpr @pat.grTrf @body.unitInfo @expr.grTrf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%

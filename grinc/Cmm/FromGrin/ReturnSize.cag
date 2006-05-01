@@ -97,7 +97,7 @@ padWith :: (Int -> a) -> [a] -> Int -> [a]
 padWith padFunction real size = take size real ++ map padFunction [length real + 1..size]
 
 mkTempVar :: Int -> CmmKindedName
-mkTempVar i = ("", ("@tmp" ++ show i))
+mkTempVar i = ("", "@tmp")
 
 fromJust' :: String -> Maybe a -> a
 fromJust' _   (Just a) = a

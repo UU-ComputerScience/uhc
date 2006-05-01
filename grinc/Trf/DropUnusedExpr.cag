@@ -1,6 +1,7 @@
 % $Id$
 
-Droping various expression when these constructs are not used.
+Drop expression when the results are not used.
+TODO: drop global variables
 
 %%[0
 %include lhs2TeX.fmt
@@ -18,16 +19,15 @@ WRAPPER GrAGItf
 %%]
 
 %%[8 hs import(EHCommon, GRINCCommon, GrinCode, Data.Maybe) export(dropUnusedExpr)
-dropUnusedExpr :: GrModule -> GrModule
-dropUnusedExpr grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                                            (Inh_GrAGItf)
-                                in grTrf_Syn_GrAGItf t
+dropUnusedExpr :: HptMap -> GrModule -> GrModule
+dropUnusedExpr hptMap grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                                   (Inh_GrAGItf { hptMap_Inh_GrAGItf = hptMap })
+                              in grTrf_Syn_GrAGItf t
 %%]
 
 %%[8
-ATTR GrAGItf [ | | grTrf: GrModule ]
-ATTR AllGrNT [ | | grTrf: SELF ]
-
+ATTR GrAGItf [ hptMap: HptMap | | grTrf: GrModule ]
+ATTR AllGrNT [ hptMap: HptMap | | grTrf: SELF ]
 %%]
 
 TODO: A unit statement can insert used variables for each variable not bounded
@@ -70,6 +70,31 @@ SEM GrAlt
             lhs   .  usedVars  =  @pat.usedVars
 %%]
 
+if an exception is ALWAYS thrown in this code path, all code after the throw statement is not needed
+%%[8.exceptionThrown
+ATTR AllGrExpr [ | throws: {Bool} | ]
+
+SEM GrBind
+  | Bind   expr     .  throws  =  False
+
+-- case throws an exception if all alternative throw an exception
+-- if exception is thrown before the case statement, make each alternative aware
+SEM GrAltL
+  | Cons   lhs      .  throws = @hd.throws && @tl.throws
+           hd       .  throws = @lhs.throws
+           tl       .  throws = @lhs.throws
+  | Nil    lhs      .  throws = True -- TODO: only valid if a at least one alternative is availible!!
+                      
+SEM GrExpr
+  | Throw  lhs      .  throws = True
+  | Catch  lhs      .  throws = @lhs.throws || @handler.throws
+           handler  .  throws = @lhs.throws
+  | Call   lhs      .  throws = isBottom (getEnvVar @lhs.hptMap (getNr @nm)) && not (isBottom (getEnvVar @lhs.hptMap (getNr @nm + 1)))
+                                -- function call without normal return value, but with exception results will always throw exceptions
+                                -- TODO: hpt must make difference between `no value' (denoted with `()') and `unknown value'
+%%]
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Remove unused variable bindings %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -97,7 +122,9 @@ SEM GrExpr [ | | sideEffect : Bool ]
   | * - Update FFI Throw  lhs  .  sideEffect  =  False
 
 SEM GrExpr
-  | Seq  lhs  .  grTrf      =  if @isDead then @body.grTrf else @grTrf
+  | Seq  lhs  .  grTrf      =  if @expr.throws then @expr.grTrf
+                               else if @isDead then @body.grTrf
+                               else                 @grTrf
          loc  .  isDead     =  @pat.isDead && not @expr.sideEffect
 %%]
 
@@ -118,6 +145,12 @@ SEM GrTag [ | | tag: GrTag ]
 
 %%[8.renameToWildcard hs
 mkWildcard m x = if x `Set.member` m then x else wildcardNr
+%%]
+
+%%[8.dropUnusedCatchStatements
+SEM GrExpr
+  | Catch  loc  .  isUnused  =  isBottom (getEnvVar @lhs.hptMap (getNr @arg))
+           lhs  .  grTrf     =  if @isUnused then @body.grTrf else @grTrf
 %%]
 
 %%[8.removeUnusedFormals
