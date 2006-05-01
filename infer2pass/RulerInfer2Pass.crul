@@ -190,59 +190,27 @@ ruleset expr.base scheme expr  "Expression type rules" =
       ruleset expr.kn rule e.int
 
   rule e.char =
-    view HM =
-      ruleset expr.hm rule e.char
     view I1 =
-      ruleset expr.kn rule e.char
+      ruleset expr.hm rule e.char
+      | ruleset expr.kn rule e.char
 
   rule e.var =
     view HM =
-      judge G : gamLookupIdTy = i :-> pty `elem` valGam
-      judge I : tyInst = ty `=` inst(pty)
-      ---
-      judge R : expr = cnstr..k ; valGam :- i : ty ~> cnstr..k
+      ruleset expr.hm rule e.var
     view I1 =
-      ruleset expr.kn rule e.var |
-      ( judge - I
-        ---
-        judge R : expr
-            | ty = knTy
-      )
-    view I2 =
-      judge F : fit = strongFIOpts ; cnstr..k :- pty <= knTy : _ ~> cnstr ~> mtErrs
-      ---
-      judge R : expr
-          | cnstr.syn = cnstr cnstr..k
+      ruleset expr.kn rule e.var
 
   rule e.app =
     view HM =
-      judge V : tvFresh  =  tvarv
-      judge M : match    =  :- (ty.a -> tvarv) <=> (cnstr.a ty.f) ~> cnstr
-      judge A : expr = cnstr.f ; valGam :- eArg : ty.a ~> cnstr.a
-      judge F : expr = cnstr..k ; valGam :- eFun : ty.f ~> cnstr.f
-      ---
-      judge R : expr = cnstr..k ; valGam :- (eFun eArg) : (cnstr cnstr.a tvarv) ~> (cnstr cnstr.a)
+      ruleset expr.hm rule e.app
     view I1 =
-      ruleset expr.kn rule e.app |
-      ( judge - M
-        ---
-        judge R : expr
-            | ty = knTy
-            | cnstr.syn = cnstr.a
-      )
+      ruleset expr.kn rule e.app
 
   rule e.lam =
     view HM =
-      judge V : tvFresh = tvarv
-      judge B : expr = cnstr..k ; ((i :-> tvarv) , valGam) :- b : ty.b ~> cnstr.b
-      ---
-      judge R : expr = cnstr..k ; valGam :- (\i -> b) : (cnstr.b tvarv -> ty.b) ~> cnstr.b
+      ruleset expr.hm rule e.lam
     view I1 =
-      ruleset expr.kn rule e.lam |
-      ( ---
-        judge R : expr
-            | ty = knTy
-      )
+      ruleset expr.kn rule e.lam
     view I2 =
       judge F : fit = (fioBindLBeforeRN, strongFIOpts) ; (knCnstr.A cnstr..k knCnstr.F) :- (tvarv -> tvarv.r) <= pty.F : _ ~> cnstr.f ~> mtErrs.F
       judge B : expr
@@ -251,24 +219,12 @@ ruleset expr.base scheme expr  "Expression type rules" =
 
   rule e.let =
     view HM =
-      judge V : tvFresh = tvarv
-      judge D : expr = cnstr..k ; ((i :-> tvarv) , valGam) :- e : ty.e ~> cnstr.e
-      judge B : expr = cnstr.e ; ((i :-> pty.e), valGam) :- b : ty.b ~> cnstr.b
-      judge G : tyGen = pty.e `=` ty.e \\ (cnstr.e valGam)
-      ---
-      judge R : expr = cnstr..k ; valGam :- (let i `=` e in b) : ty.b ~> cnstr.b
+      ruleset expr.hm rule e.let
     view I1 =
       ruleset expr.kn rule e.let |
-      ( judge G : tyGen
-            | ty = cnstr.e tvarv
-        judge D : expr
+      ( judge D : expr
             | cnstr.inh = knCnstr.e cnstr..k
-        judge B : expr
-            | cnstr.inh = (tvarv ::-> pty.e) cnstr.e
-            | valGam = (i :-> tvarv), valGam
         ---
-        judge R : expr
-            | ty = knTy
       )
     view I2 =
       judge D : expr
@@ -277,16 +233,8 @@ ruleset expr.base scheme expr  "Expression type rules" =
 
   rule e.tlet =
     view I1 =
-      ( judge T : tyexpr = emptyGam :- te : pty
-        judge B : expr
-            | cnstr.inh = cnstr.e
-        ---
-        judge R : expr
-            | e = let i :: te `=` e in b
-      ) | ruleset expr.kn rule e.tlet |
-      ( judge - G
-        ---
-      )
+      ruleset expr.hm rule e.tlet
+      | ruleset expr.kn rule e.tlet
     view I2 =
       judge D : expr
           | cnstr.inh = (tvarv ::-> pty) knCnstr.E cnstr..k
@@ -304,6 +252,7 @@ scheme expr.hm =
     judgespec cnstr.inh ; valGam :-.."e" e : ty ~> cnstr.syn
   view I1 =
     holes [ extern inh knTy: Ty ]
+    judgeuse tex cnstr.inh ; valGam ; knTy :-.."e" e : ty ~> cnstr.syn
 
 ruleset expr.hm scheme expr.hm  "Expression type rules for Hindley-Milner" =
   rule e.int =
@@ -471,12 +420,12 @@ ruleset expr.kn scheme expr.kn viewsel I1 - * "Expression quantifier propagation
   rule e.var =
     view I1 =
       extern pty
-      judge F : fit = knCnstr..k :- pty <= knTy ~> cnstr ~> mtErrs
+      judge fitKn : fit = knCnstr..k :- pty <= knTy ~> cnstr ~> mtErrs
       ---
       judge R : expr.kn = knCnstr..k ; knTy :- i ~> (cnstr knCnstr..k)
     view I2 =
       extern pty
-      judge - F
+      judge - fitKn
       ---
       judge R : expr.kn
           | knCnstr.syn = knCnstr..k
@@ -505,13 +454,13 @@ ruleset expr.kn scheme expr.kn viewsel I1 - * "Expression quantifier propagation
   rule e.lam =
     view I1 =
       judge V : tvFresh2 = tvarv, tvarv.r
-      judge knF : fit = knCnstr..k :- (tvarv -> tvarv.r) <= knTy ~> cnstr ~> mtErrs.knF
+      judge fitKn : fit = knCnstr..k :- (tvarv -> tvarv.r) <= knTy ~> cnstr ~> mtErrs.fitKn
       judge B : expr.kn = (cnstr knCnstr..k) ; tvarv.r :- b ~> knCnstr.b
       ---
       judge R : expr.kn = knCnstr..k ; knTy :- (\i -> b) ~> knCnstr.b
     view I2 =
       extern valGam
-      judge knF : fit
+      judge fitKn : fit
           | fiopt = strongFIOpts
           | ty.r = pty.e.k
           | ty.f = pty.F

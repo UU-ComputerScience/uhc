@@ -15,6 +15,7 @@ import ParseErrPrettyPrint
 import CompileRun
 import Version
 import Err
+import Gam( emptyGam )
 import Common
 import Opts
 import qualified RulerAbsSyn1 as AS1
@@ -197,6 +198,7 @@ crFlattenAndCompileAllCU cr
           = M1.wrap_AGItf (M1.sem_AGItf parseRes)
                      (M1.Inh_AGItf
                         { M1.opts_Inh_AGItf = opts {optGenFM = fmAS2Fm (optGenFM opts)}
+                        , M1.fmGam_Inh_AGItf = emptyGam
                         })
         hPutBld f h b = if f then hPutPPFile h b 2000 else return ()
         putBld  f   b = hPutBld f stdout b
@@ -212,7 +214,7 @@ crFlattenAndCompileAllCU cr
                            _ | optGenExpl opts -> ((t1,empty,[]),True)
                              | otherwise            -> ((t1,empty,[]),False)
                        where bld f = (f opts (M1.dtInvGam_Syn_AGItf sem1Res) (M1.scGam_Syn_AGItf sem1Res) (M1.fmGam_Syn_AGItf sem1Res) (M1.rwGam_Syn_AGItf sem1Res) t1,True)
-               ; crSeq [crSetErrs t2errL, crPutBld doPrint (M2.ppAS2 opts t2)] cr
+               ; crSeq [crSetErrs t2errL, crPutBld doPrint (M2.ppAS2 opts (M1.fmGam_Syn_AGItf sem1Res) t2)] cr
                }
 {-
         crMk2

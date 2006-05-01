@@ -65,7 +65,7 @@ keywordsTextEscapable
         , "extern", "external"
         , "include"
         -- related to formatting (styles)
-        , "tex", "texcmd", "ag", "def", "use", "spec"
+        , "tex", "fmtcmd", "ag", "def", "use", "spec"
         -- misc
         , "text"
         ]

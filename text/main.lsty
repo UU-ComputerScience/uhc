@@ -179,7 +179,7 @@
 }
 
 % Env for rules in a figure
-\newenvironment{RulesFigureB}[4]{%
+\newenvironment{rulerRulesetFigure}[4]{%
   \def\R@@Info{\ifx#4\empty #2\else #2 (#4)\fi}
 %if not asSlides
   \begin{TabularCenterFigure}{}{\R@@Info}{#3}{p{0.95\linewidth}}

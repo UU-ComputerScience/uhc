@@ -62,11 +62,6 @@ SEM AGExprItf
 -- Uniq name
 -------------------------------------------------------------------------
 
-{
-fmNmUniq :: Opts -> FmGam Expr -> Int -> Nm
-fmNmUniq o g u = nmSubst (o {optGenFM = FmAG}) g (nmUniq u)
-}
-
 SEM Expr
   | Uniq            loc     .   nm          =   fmNmUniq @lhs.opts @lhs.fmGam @uniqSeqNr
 
@@ -94,7 +89,7 @@ SEM ARule
                                                           )
                                                         )
                                                         (AExpr_Expr
-                                                          (mkExprApp (exprSubst (@lhs.opts {optGenFM = FmAG}) @lhs.fmGam . Expr_Var . nmFunMkUniq $ @eqns.uniqSeqNr)
+                                                          (mkExprApp (exprSubst (@lhs.opts {optGenFM = FmFmtCmd}) @lhs.fmGam . Expr_Var . nmFunMkUniq $ @eqns.uniqSeqNr)
                                                                      [mkALhs (fmNmUniq @lhs.opts @lhs.fmGam 0)]
                                                           )
                                                         )

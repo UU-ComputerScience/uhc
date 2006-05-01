@@ -392,7 +392,10 @@
 %%]
 
 %%[18
-\usetheme{Darmstadt}
+%\usetheme{Darmstadt}
+\usetheme[sidebar=true, style=fancy]{uu}
+%\usefonttheme{serif}
+\setbeamertemplate{blocks}[rounded][shadow=true]
 %\setbeamertemplate{blocks}[rounded]
 %%]
 
@@ -761,7 +764,7 @@ WWW home page:
 
 %%[14
 \title{Ruler: programming type rules}
-\author{Atze Dijkstra and S. Doaitse Swierstra}
+\author{Atze Dijkstra and S. Doaitse Swierstra \\ Utrecht University, The Netherlands}
 %%]
 
 %%[15
@@ -1936,18 +1939,23 @@ To be done ...
 %\rulerCmdUse{rules4.I2.expr.base}
 %\rulerCmdUse{rules4.I2.decl.base}
 
-\rulerCmdUse{infer2pass.HM.expr.base}
+%\rulerCmdUse{infer2pass.HM.expr.base}
+%\rulerCmdUse{infer2pass.I1.expr.base}
+%\rulerCmdUse{infer2pass.I2.expr.base}
+
+\rulerCmdUse{infer2pass.I1.expr.hm}
+\rulerCmdUse{infer2pass.I1.expr.kn}
 \rulerCmdUse{infer2pass.I1.expr.base}
+
+\rulerCmdUse{infer2pass.I2.expr.hm}
+\rulerCmdUse{infer2pass.I2.expr.kn}
 \rulerCmdUse{infer2pass.I2.expr.base}
 
-\rulerCmdUse{infer2pass.I1.expr.kn}
-\rulerCmdUse{infer2pass.I2.expr.kn}
+%\rulerCmdUse{infer2pass.I1.tyexpr.base}
 
-\rulerCmdUse{infer2pass.I1.tyexpr.base}
+%\rulerCmdUse{infer2pass.I1.prog}
 
-\rulerCmdUse{infer2pass.I1.prog}
-
-\rulerCmdUse{rules4.I2.match.forallForPaper}
+%\rulerCmdUse{rules4.I2.match.forallForPaper}
 
 %%]
 
@@ -2164,6 +2172,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 \section{Basics and views}
 %%@SlidesRuler.overview
 %%@SlidesRuler.FLOPS2006.basicsAndViews.toc
+ %%@SlidesRuler.basicsAndViews.firstPage
 %%@SlidesRuler.basicsAndViews.basecase
  %%@SlidesRuler.basicsAndViews.relation
 %%@SlidesRuler.basicsAndViews.incrementAlgorithmic

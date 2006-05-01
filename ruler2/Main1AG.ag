@@ -22,7 +22,7 @@ import LaTeXFmtUtils
 import ExprUtils
 import ARuleUtils
 import ViewSelUtils
-import RulerConfig( cfgStrSel )
+import RulerConfig( cfgStrSel, cfgFmFmtCmdAsc )
 import FmGam
 import RwExprGam
 import ECnstrGam
@@ -40,6 +40,7 @@ import RulerMkAdmin
 
 INCLUDE "RulerAbsSyn1AG.ag"
 INCLUDE "RulerAbsSynCommonAG.ag"
+INCLUDE "RulerFmGamAG.ag"
 INCLUDE "RulerAS1Misc.ag"
 INCLUDE "RulerAS1ViewDpd.ag"
 INCLUDE "RulerAS1SchemeDpd.ag"
@@ -402,7 +403,6 @@ SEM Decl
 -------------------------------------------------------------------------
 
 ATTR AllDecl [ | | gathFmGam USE {`fmGamUnion`} {emptyGam}: {FmGam Expr} ]
-ATTR AllDecl [ fmGam: {FmGam Expr} | | ]
 ATTR AGItf [ | | fmGam: {FmGam Expr} ]
 
 ATTR AllDecl [ | | gathRwGam USE {`rwGamUnion`} {emptyGam}: RwExprGam ]
@@ -411,6 +411,8 @@ ATTR AGItf [ | | rwGam: RwExprGam ]
 
 SEM AGItf
   | AGItf           loc     .   fmGam       =   @decls.gathFmGam
+                                                `gamUnionShadow`
+                                                fmGamFromList' FmFmtCmd [ (Nm f,Expr_Var (Nm t)) | (f,t) <- cfgFmFmtCmdAsc ]
                             .   rwGam       =   @decls.gathRwGam
 
 SEM Decl

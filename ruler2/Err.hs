@@ -24,7 +24,8 @@ import Utils( maybeHd )
 
 data Err
   = Err_UndefNm      SPos String String [Nm]
-  | Err_NoJdSpec       SPos String [Nm]
+  | Err_NoJdSpec     SPos String [Nm]
+  | Err_NotInSel     SPos String [Nm]
   | Err_Dups         SPos String String [PP_Doc]
   | Err_MutDpds      SPos String String [PP_Doc]
   | Err_NoXXFor      SPos String String [Nm]
@@ -60,6 +61,8 @@ instance PP Err where
     = ppErr pos ("In" >#< cx >#< "a" >#< knd >#< "lacks for:" >#< ppCommas nmL)
   pp (Err_NoJdSpec pos cx nmL)
     = ppErr pos ("In" >#< cx >#< "no judgespec for:" >#< ppCommas nmL)
+  pp (Err_NotInSel pos cx nmL)
+    = ppErr pos ("In" >#< cx >#< "view is not in selection (implicitly defined by data):" >#< ppCommas nmL)
   pp (Err_Match pos cx given reqd)
     = ppErr pos ("In" >#< cx >#< "could not match"
                  >-< indent 2

@@ -125,12 +125,9 @@ scheme expr "Expr" =
 
 %%[2.expr.scm.A
   view A =
-    holes  [  inh e: Expr, inh gam: Gam
-           ,  thread cnstr: Cnstr, syn ty: Ty ]
-    judgespec cnstr.inh ; gam :-.."e" e : ty ~> cnstr.syn
-%%]
-%%[2.expr.scm.A.delTex
-    judgeuse - tex
+    holes  [ inh gam: Gam, thread cnstr: Cnstr, syn ty: Ty ]
+    judgespec cnstr.inh ; gam :- e : ty ~> cnstr.syn
+    judgeuse tex cnstr.inh ; gam :-.."e" e : ty ~> cnstr.syn
 %%]
 
 %%[3.expr.scm.AG

@@ -24,14 +24,17 @@ SEM Expr
                     loc     .   ppLaTeX     =   if @expr.exprKind == EKEmp then empty else @ppLaTeXSel
   | Sel             lhs     .   ppLaTeX     =   @expr.ppLaTeX
   | Var             loc     .   ppLaTeX     =   ppNmLaTeX . nmLhs2TeXSafe $ @nm
-  | Wrap            loc     .   ppLaTeX     =   let wr o c e = switchLaTeXLhs (mkTexCmdUse (show o) empty) >#< e >#< switchLaTeXLhs (mkTexCmdUse (show c) empty)
+  | Wrap            loc     .   ppLaTeX     =   let wr o c e
+                                                      = switchLaTeXLhs (mkTexCmdUse (show o) empty) >#< e >#< switchLaTeXLhs (mkTexCmdUse (show c) empty)
                                                 in  case gamLookup @wrKind wrKindGam of
-                                                      Just i -> wr (wkBegCmd i) (wkEndCmd i) @expr.ppLaTeX
+                                                      Just i -> wr beg end @expr.ppLaTeX
+                                                             where beg = fmNmFmtCmd @lhs.opts @lhs.fmGam $ wkBegCmd i
+                                                                   end = fmNmFmtCmd @lhs.opts @lhs.fmGam $ wkEndCmd i
                                                       _      -> @expr.ppLaTeX
   | ChildOrder      loc     .   ppLaTeX     =   @expr.ppLaTeX
   | Expr            lhs     .   ppLaTeX     =   ensureTeXMath . switchLaTeXLhs' $ @expr.ppLaTeX
   | Empty           loc     .   ppLaTeX     =   empty
-  | Undefined       loc     .   ppLaTeX     =   pp "rulerUndefined"
+  | Undefined       loc     .   ppLaTeX     =   pp (fmNmFmtCmd @lhs.opts @lhs.fmGam $ Nm "rulerUndefinedExtern")
 
 -------------------------------------------------------------------------
 -- Maybe Pretty printing, LaTeX

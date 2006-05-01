@@ -172,7 +172,7 @@
 
 %format rvar        = "{\varrho}"
 
-%format rulerUndefined	= "{\cdot}"
+%format rulerUndefinedExtern	= "{\cdot}"
 
 %format inst		= "inst"
 %format instv		= inst "_{" tvar  "}"
