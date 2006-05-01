@@ -55,7 +55,7 @@ SEM GrBindL [ | | count: Int ]
 %%%%% F-Tag  <==> P0-Tag %%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Ehc outputs P0-tags instead of F-Tags in some situations
+Ehc outputs P0-tags instead of F-Tags in some situations, we rewrite them to F-Tags
 
 %%[8.P0tag_TO_Ftag
 SEM GrTag
@@ -68,7 +68,7 @@ SEM GrTag
 
 Introduce global variables: each binding without arguments must have a
 corresponding global variable. (CAF's)
-Note: EHC does not generate them
+Note: EHC does not generate these yet
 
 %%[8.caf import("../GrCAFNames")
 SEM GrModule
@@ -83,39 +83,22 @@ SEM GrModule
 %%%%% Fix Primitives to Exception statements %%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.prim2statements
+%%[8.hackPrimToExceptionStatments
 
- -- we need an node which eval interprets as throw exception
+-- we need an node which eval interprets as 'throw exception'
 SEM GrModule
   | Mod  loc  .  newEvalTagMp  =  ((throwTag,1), EvApTagThrow) : @evalTagMp
 
 SEM GrBind
   | Bind  lhs  .  grTrf    =  GrBind_Bind @nm @argNmL @newExpr
-          loc  .  newExpr  =  if @nm == HNm "_catch" then buildCatchExpr @argNmL else @expr.grTrf
-
-SEM GrExpr
-  | FFI      lhs  .  grTrf    =  if @isThrow
-                                 then addThrow @argL
-                                 else GrExpr_FFI @nm @argL
-  | Seq      lhs  .  grTrf    =  if @expr.isThrow
-                                 then GrExpr_Seq @expr.grTrf GrPat_Empty @body.grTrf 
-                                 else @grTrf
-
-SEM GrExpr [ | | isThrow: Bool ]
-  | FFI      loc  .  isThrow  =  @nm == "primThrow"
-  | * - FFI  lhs  .  isThrow  =  False
+          loc  .  newExpr  =  if @nm == HNm "_catch" then buildCatchExpr @argNmL 
+                              else if @nm == HNm "_throw" then buildThrowExpr @argNmL
+                              else @expr.grTrf
 %%]
 
 %%[8.hackPrimToExceptionStatments hs
+buildThrowExpr [exceptNm] = GrExpr_Throw exceptNm
 
--- this is a hack to transform the primThrow into the correct GRIN code
--- as grinc expect every function to return a node (and not an empty value) we finish with an (unreachable) unit statement.
-addThrow [HNm e] = let  unitExpr   =  GrExpr_Unit  (GrVal_Var (HNm e))
-                        throwExpr  =  GrExpr_Throw (HNm $ tail e)
-                   in throwExpr -- GrExpr_Seq throwExpr GrPat_Empty unitExpr
-addThrow _       = error "primThrow should have one (named) argument"
-
--- unique is good for two variables...
 buildCatchExpr [tryNm, handlerNm] = let  exceptNm = hsnPrefix "except_ptr@" handlerNm
                                          evalNm   = hsnPrefix "except_node@" handlerNm
                                     in GrExpr_Catch (GrExpr_Eval tryNm)

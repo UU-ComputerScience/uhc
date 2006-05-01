@@ -109,7 +109,7 @@ mkDot e n nodeEdges = let header     = (  (("digraph \"" ++ n ++ "\" {") :)
                       in (header . entryNode . nodeEdges . footer) []
 
 mkNodeEdges nm lns sf (n,es) = 
-    let  style  =  if n `Set.elementOf` lns
+    let  style  =  if n `Set.member` lns
                    then ""
                    else "color = gray, fontcolor = gray"
          node   =  ( (show n ++ " [ label = \"" ++ getName nm n ++ "\"" ++ style ++ "];") :)

@@ -94,7 +94,7 @@ SEM GrModule
 
 retrieving names and their mapping
 
-%%[8.addMbFM hs import(Debug.Trace)
+%%[8.addMbFM hs
 addMbToMap fm mbk mbv = maybe fm id mbMap
     where
     mbMap = do

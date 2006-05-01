@@ -86,7 +86,7 @@ caParseGrin = do
     modify (csUpdateGrinCode code)
 %%]
 
-%%[8.dropEvalAndApply import(Trf.CleanupPass)
+%%[8.cleanup import(Trf.CleanupPass)
 caCleanupPass :: CompileAction ()
 caCleanupPass = do
     putMsg VerboseALot "Cleanup pass" Nothing
@@ -115,24 +115,15 @@ caDropUnusedBindings = do
     }
 %%]
 
-%%[8.dropUnusedCatch import(Trf.DropUnusedCatch)
-caDropUnusedCatch :: CompileAction ()
-caDropUnusedCatch = do
-    putMsg VerboseALot "Removing unused catch statements" Nothing
-    code <- gets csGrinCode
-    hptMap <- gets csHptMap
-    code <- return $ dropUnusedCatch hptMap code
-    modify (csUpdateGrinCode code)
-%%]
-
-
 %%[8.dropUnusedExpr import(Trf.DropUnusedExpr)
 caDropUnusedExpr :: CompileAction ()
 caDropUnusedExpr = do
-    putMsg VerboseALot "Remove unused expressions" Nothing
-    code <- gets csGrinCode
-    code <- return $ dropUnusedExpr code
-    modify (csUpdateGrinCode code)
+    { putMsg VerboseALot "Remove unused expressions" Nothing
+    ; code    <- gets csGrinCode
+    ; hptMap  <- gets csHptMap
+    ; code <- return $ dropUnusedExpr hptMap code
+    ; modify (csUpdateGrinCode code)
+    }
 %%]
 
 %%[8.dropUnusedTags import(Trf.DropUnusedTags)
@@ -155,6 +146,18 @@ caAddLazyApplySupport = do
     modify (csUpdateUnique unique)
 %%]
 
+%%[8.returningCatch import(Trf.ReturningCatch)
+caReturningCatch :: CompileAction ()
+caReturningCatch = do
+    { putMsg VerboseALot "Ensure code exists after catch statement" Nothing
+    ; code   <- gets csGrinCode
+    ; hptMap  <- gets csHptMap
+    ; unique <- gets csUnique
+    ; (unique, code) <- return $ returnCatch hptMap unique code
+    ; modify (csUpdateGrinCode code)
+    ; modify (csUpdateUnique unique)
+    }
+%%]
 
 %%[8.numberIdentifiers import(Trf.NumberIdents, Data.Array.IArray)
 caNumberIdents :: CompileAction ()
@@ -417,7 +420,7 @@ caKnownCalls = task_ VerboseNormal "Removing unknown calls"
 caOptimizePartly = task_ VerboseNormal "Optimizing (partly)"
     ( do { caSparseCase
          ; caEliminateCases
-         ; caDropUnusedCatch
+         ; caDropUnusedExpr
          ; caDropUnusedBindings
          ; caWriteGrin True "2-partlyOptimized"
          }
@@ -432,6 +435,7 @@ caNormalize = task_ VerboseNormal "Normalizing"
 -- optionsations part II
 caOptimize = task_ VerboseNormal "Optimizing (full)"
     ( do { caCopyPropagation
+         ; caWriteGrin True "4-after-cp"
          ; caDropUnusedExpr
          ; caWriteGrin True "4-optimized"
          }
@@ -440,8 +444,9 @@ caOptimize = task_ VerboseNormal "Optimizing (full)"
 -- simplification part III
 caFinalize = task_ VerboseNormal "Finalizing"
     ( do { caSplitFetch
-         ; caDropUnusedExpr
+         ; caDropUnusedExpr         
          ; caDropUnusedTags
+         ; caReturningCatch
          ; caNameIdents
          ; caWriteGrin True "5-final"
          }

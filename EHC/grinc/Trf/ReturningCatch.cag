@@ -15,11 +15,11 @@ return spine.
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.SplitFetch import(EHCommon, GRINCCommon, GrinCode) export(splitFetch)
+%%[8 hs module Trf.ReturningCatch import(EHCommon, GRINCCommon, GrinCode) export(returnCatch)
 returnCatch :: HptMap -> Int -> GrModule -> (Int, GrModule)
 returnCatch hptMap uniq grmod  =  let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                                                       (Inh_GrAGItf { hptMap_Inh_GrAGItf  =  hptMap
-                                                                    , uniq_Inh_GrAGItf    =  uniq
+                                                       (Inh_GrAGItf { uniq_Inh_GrAGItf    =  uniq
+                                                                    , hptMap_Inh_GrAGItf  =  hptMap
                                                                     }
                                                        )
                                   in (uniq_Syn_GrAGItf t, grTrf_Syn_GrAGItf t)
@@ -32,16 +32,18 @@ ATTR AllGrNT [ hptMap: HptMap | uniq: Int | grTrf: SELF ]
 
 %%[8.catch import("../GrLastExpr")
 
-ATTR GrAllExpr [ bindName: {Int} | | ]
-
+ATTR AllGrExpr [ size: {Int} | | ]
 SEM GrBind
-  | Bind    expr  .  bindName  = getNr @nm
+  | Bind    loc  .  size = foldl (\len (tag,fields) -> (length fields) `max` len) 0 $ getNodes (getEnvVar @lhs.hptMap (getNr @nm))
 
 SEM GrExpr
-  | Catch   loc  .  var         =  HNPos @handler.uniq
-                 .  appendUnit  =  GrExpr_Seq @grTrf (GrPat_Var @var) (GrExpr_Unit $ GrVal_Var @var)
+  | Catch   loc  .  tag         =  GrTag_Var (HNPos @handler.uniq)
+                 .  vars        =  take @lhs.size (map HNPos [@handler.uniq+1 ..])
+                 .  pattern     =  GrPat_Node @tag @vars
+                 .  value       =  GrVal_Node @tag (map GrVal_Var @vars)
+                 .  appendUnit  =  GrExpr_Seq @grTrf @pattern (GrExpr_Unit @value)
             lhs  .  grTrf       =  if @lhs.hasNext then @grTrf else @appendUnit
-                 .  uniq        =  if @lhs.hasNext then @handler.uniq else @handler.uniq + 1
+                 .  uniq        =  if @lhs.hasNext then @handler.uniq else @handler.uniq + 1 + @lhs.size
 %%]
 
 % vim:ts=4:et:ai:

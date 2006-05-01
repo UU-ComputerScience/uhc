@@ -60,8 +60,8 @@ newNames hptMap uniq (HNPos v) = case getEnvVar hptMap v of
 -- TODO: use arity information in the eval map!
 maxNodeSize nl = 1 + Map.fold (\args maxSize -> max (length args) maxSize) 0 nl
 
-isLocation :: HptMap -> HsName -> Bool
-isLocation hptMap name = case getEnvVar hptMap (getNr name) of
+isSingleVar :: HptMap -> HsName -> Bool
+isSingleVar hptMap name = case getEnvVar hptMap (getNr name) of
                              AV_Locations _  -> True
                              AV_Nodes     _  -> False
                              AV_Nothing      -> error $ "dead variable " ++ show name ++ " node or pointer?"
@@ -96,7 +96,7 @@ Rename all non location patterns \v to \(t f1 f2 fl)
 SEM GrPat
   | Var       loc . (tn, fldnL, uniq, newMap)  = let (uniq, tn:fldnL, newMap) = newNames @lhs.hptMap @lhs.uniq @nm
                                                  in (tn, fldnL, uniq, newMap)
-              lhs .  (grTrf, nameMapping)     =  if isLocation @lhs.hptMap @nm 
+              lhs .  (grTrf, nameMapping)     =  if isSingleVar @lhs.hptMap @nm 
                                                  then (@grTrf, @lhs.nameMapping)
                                                  else (GrPat_Node (GrTag_Var @tn) @fldnL, @newMap : @lhs.nameMapping)
 %%]
@@ -136,7 +136,7 @@ SEM GrBind
                   .  grTrf                      = @grTrf'
 
 SEM GrPat
-  | Var      lhs . grNodeSubst = if isLocation @lhs.hptMap @nm
+  | Var      lhs . grNodeSubst = if isSingleVar @lhs.hptMap @nm
                                  then @lhs.grNodeSubst
                                  else Map.insert @nm (GrVal_Node (GrTag_Var @tn) (map GrVal_Var @fldnL)) @lhs.grNodeSubst
 
