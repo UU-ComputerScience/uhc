@@ -23,7 +23,7 @@ SEM GrModule
                                                                       ]
                                       globalNodes           = @sectionGlobals :: CmmToplevelBuilder
                                       tagInfo               = @sectionTagInfo :: CmmToplevelBuilder
-                                      unitTypedefs          = typedefs bits32 ["@ptr", "@val"]
+                                      unitTypedefs          = typedefs bits32 ["@grWord"]
                                       unitTarget            = target 8 LittleEndian 32 32
                                       heapPointer           = globalVarDecl False "address" bits32 [("@eh", Nothing)]
                                       grin_main             = buildDriver @lhs.entryNm @returnSizeEnv
@@ -75,8 +75,8 @@ the Grin code.
 ATTR GrExpr    [ | | cmmBody USE {~>} {emptyBuilder}: {CmmBodyBuilder} ]
 
 SEM GrBind
-  | Bind        loc . cmmBody      = @traceStm ~> @tmpVars' ~> @expr.cmmBody ~> @expr.handlers
-                loc . tmpVars'     = varDecl False "" valType [("$__", Nothing),("@tmp", Nothing)]
+  | Bind        loc . cmmBody      = @traceStm ~> @tmpVar ~> @expr.cmmBody ~> @expr.handlers
+                loc . tmpVar       = varDecl False "" valType [("$__", Nothing)]
 %%]
 
 %%%%%%%%%%%%%%%%%%%
@@ -199,9 +199,16 @@ SEM GrExpr
   | Call   loc  . realRecievers = nreg2knames @lhs.targetNames
                 . argsReturned  = fromJust' ("Call: " ++ show @nm) $ lookup (cmmName' @nm) @lhs.returnSizeEnv
                 . recievers     = padWith mkTempVar @realRecievers @argsReturned
-                . mbFlow        = if @isLastExpr
-                                  then Nothing 
-                                  else Just (if null @lhs.handlerNames then [] else [CmmFlowElement_Cuts @lhs.handlerNames])
+                . mbFlow        = if null @lhs.handlerName then 
+                                    if @isLastExpr then
+                                      Nothing
+                                    else
+                                      Just []
+                                  else
+                                    if @isLastExpr then
+                                      error "Tailcall found while exception handler is active"
+                                    else
+                                      Just [ CmmFlowElement_Cuts [@lhs.handlerName] ]
                 . cmmBody       = call' @mbFlow @nm @argL.cmmFunctionArgs @recievers
 
   | App    loc  . realRecievers = nreg2knames @lhs.targetNames
@@ -210,13 +217,15 @@ SEM GrExpr
                 . evalReturnCount = fromJust $ lookup eval @lhs.returnSizeEnv
                 . appArgs       = map (valArg. cmmVar') (newNames @nm @evalReturnCount)
                 . mbFlow        = if @isLastExpr then Nothing else Just []
-                . cmmBody       = call @mbFlow apply (@appArgs ++ @argL.cmmFunctionArgs) @recievers
+                . cmmBody       = error "Apply call while generating code"
+                                  --call @mbFlow apply (@appArgs ++ @argL.cmmFunctionArgs) @recievers
 
   | Eval   loc  . realRecievers = nreg2knames @lhs.targetNames
                 . argsReturned  = fromJust' ("Eval: " ++ show @nm) $ lookup eval @lhs.returnSizeEnv
                 . recievers     = padWith mkTempVar @realRecievers @argsReturned
                 . mbFlow        = if @isLastExpr then Nothing else Just []
-                . cmmBody       = call @mbFlow eval [arg' @nm] @recievers
+                . cmmBody       = error "Eval call while generating code"
+                                  -- call @mbFlow eval [arg' @nm] @recievers
 
 -- Collect function arguments 
 ATTR GrValL [ | | cmmFunctionArgs : {CmmActuals} ]
@@ -301,23 +310,23 @@ buildStore nms [p] = let (first4, others)  = splitAt 4 nms
                          alloc         = [ (varUpdate p, cmmVar "@hp")
                                          , (varUpdate "@hp", cmmVar "@hp" <+> int grow)
                                          ] ++ (if bigsize > 0
-                                               then [ (varUpdate "@tmp", cmmVar "@hp" <+> int (5*4))]
+                                               then [ (varUpdate "$__", cmmVar "@hp" <+> int (5*4))]
                                                else []
                                               )
                          assign v e tf i = let hd = (memUpdate valType (cmmVar v) i, e)
                                                tl = tf (i+4)
                                            in hd:tl
                          bigStore      = if bigsize > 0 then
-                                         foldr (assign "@tmp") (const [(memUpdate ptrType (cmmVar p) (4*4), cmmVar "@tmp")]) bnms 0
+                                         foldr (assign "$__") (const [(memUpdate ptrType (cmmVar p) (4*4), cmmVar "$__")]) bnms 0
                                          else []
                          store         = foldr (assign p) (const bigStore) snms 0
                          gc_alloc      = cmmCall "C" (cmmVar "@alloc") [valArg $ int 20] [("address", p)] [] ~>
-                                         cmmCall "C" (cmmVar "@alloc") [valArg $ int (grow - 20)] [("address", "@tmp")] []
+                                         cmmCall "C" (cmmVar "@alloc") [valArg $ int (grow - 20)] [("address", "$__")] []
                      in gc_alloc ~> updates store
 
 buildFetch p offset mbTag tags targetNames = let loadSingle = fetch (cmmVar' p) (offset*4)
-                                                 loadPtr    = cmmAssign [varUpdate "@tmp"] [fetch (cmmVar' p) (4*4)]
-                                                 loadDouble = fetch (cmmVar "@tmp") ((offset-4)*4)
+                                                 loadPtr    = cmmAssign [varUpdate "$__"] [fetch (cmmVar' p) (4*4)]
+                                                 loadDouble = fetch (cmmVar "$__") ((offset-4)*4)
                                                  tagLayout = do { t <- mbTag
                                                                 ; let cmmTagName = tagLit2cmmName t
                                                                 ; (layout, _, _) <- Map.lookup cmmTagName tags
@@ -355,17 +364,17 @@ buildUpdate p es = let (first4, others)  = splitAt 4 es
                        (ses, overflow)   = (first4, []) -- if null others then (first4, []) else splitAt 3 first4
                        bes               = overflow ++ others
                        bigsize       = length bes
-                       alloc         =  [ (varUpdate "@tmp", cmmVar "@hp")
+                       alloc         =  [ (varUpdate "$__", cmmVar "@hp")
                                         , (varUpdate "@hp", cmmVar "@hp" <+> int (4*bigsize))
                                         ]
                        assign v e tf i = let hd = (memUpdate valType (cmmVar v) i, e)
                                              tl = tf (i+4)
                                          in hd:tl
                        bigStore      = if bigsize > 0 then
-                                       foldr (assign "@tmp") (const [(memUpdate ptrType (cmmVar' p) (4*4), cmmVar "@tmp")]) bes 0
+                                       foldr (assign "$__") (const [(memUpdate ptrType (cmmVar' p) (4*4), cmmVar "$__")]) bes 0
                                        else []
                        store         = foldr (assign (cmmName' p)) (const bigStore) ses 0
-                       gc_alloc      = cmmCall "C" (cmmVar "@alloc") [valArg $ int (4*bigsize)] [("address", "@tmp")] []
+                       gc_alloc      = cmmCall "C" (cmmVar "@alloc") [valArg $ int (4*bigsize)] [("address", "$__")] []
                     in if bigsize > 0 then gc_alloc ~> updates store else updates store
 %%]
 
@@ -379,7 +388,7 @@ itself are generated by ExceptionHanders.cag
 %%[8.exceptions
 SEM GrExpr                             
   | Throw  loc  .  cmmBody   =  lift body (CmmStatement_CutTo (cmmVar "@eh") [ptrArg $ cmmVar' @nm] @flow)
-                .  flow      =  if null @lhs.handlerNames then [] else [CmmFlowElement_Cuts @lhs.handlerNames]
+                .  flow      =  if null @lhs.handlerName then [] else [ CmmFlowElement_Cuts [@lhs.handlerName] ]
   | Catch  loc  .  cmmBody   =  @enterTry ~> @body.cmmBody ~> @leaveTry ~> cmmLabel @afterLabel
                 .  enterTry     =  (CmmBodyElement_StackData [CmmDatum_Label @prevName, reserve 1 bits32 noInit] :) ~>
                                    updates [(memUpdate bits32 @prevVar 0, @ehVar), (varUpdate @ehName, cmmVar @handlerName)]
