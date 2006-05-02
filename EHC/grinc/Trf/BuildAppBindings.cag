@@ -36,13 +36,13 @@ ATTR GrAGItf GrModule [ | unique: Int | ]
 %%]
 
 %%[8.retrieveApplyNodeSizes
-ATTR AllBind AllGrExpr [ | applyNodeSizes: {[Int]} | ]
+ATTR AllBind AllGrExpr [ | applyNodeSizes: {Set.Set Int} | ]
 
 SEM GrModule
-  | Mod           bindL  .  applyNodeSizes  =  []
+  | Mod           bindL  .  applyNodeSizes  = Set.empty 
 
 SEM GrExpr
-  | Store  lhs . applyNodeSizes = maybe @lhs.applyNodeSizes (: @lhs.applyNodeSizes) @val.applyNodeSize
+  | Store  lhs . applyNodeSizes = maybe @lhs.applyNodeSizes (\e -> Set.insert e @lhs.applyNodeSizes) @val.applyNodeSize
 
 SEM GrVal [ | | applyNodeSize: {Maybe Int} ]
   | Node          loc  . fieldCount             =  @fldL.fieldCount
@@ -115,7 +115,7 @@ node2app size (unique, origNamesMap, evalMap, bindings) =
 SEM GrModule
   | Mod  loc  . (unique', origNamesMap, evalTagMp', binds)  = foldr node2app 
                                                                     (@lhs.unique, [], @evalTagMp, @bindL.grTrf)
-                                                                    @bindL.applyNodeSizes
+                                                                    (Set.elems @bindL.applyNodeSizes)
          lhs  . unique = @unique'
          lhs  . grTrf  = GrModule_Mod @baseName @globalL.grTrf @binds @ctagsMp @evalTagMp' @applyTagMp
 %%]

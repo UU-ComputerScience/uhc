@@ -53,7 +53,7 @@ type CmmBodyBuilder = CmmBody -> CmmBody
 
 %%]
 
-%%[8.types export(bits, bits8, bits16, bits32, bits64, ptrType, valType)
+%%[8.types export(bits, bits8, bits16, bits32, bits64, ptrType, valType, grWord)
 bits :: Int -> CmmType
 bits n = CmmBits n
 
@@ -64,8 +64,9 @@ bits32 = bits 32
 bits64 = bits 64
 
 -- type names
-ptrType = CmmName "@ptr" -- type for locations
-valType = CmmName "@val" -- type for node elements
+grWord  = CmmName "@grWord" -- type for locations
+ptrType = CmmName "@grWord" -- type for locations
+valType = CmmName "@grWord" -- type for node elements
 
 %%]
 

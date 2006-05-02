@@ -35,9 +35,9 @@ SEM GrExpr
 flow annotations of the continuations the C-- code can cut to (used by cut to and funcion call)
 
 %%[8.handlersInScope
-ATTR AllGrExpr [ handlerNames: CmmNames | | ]
+ATTR AllGrExpr [ handlerName: CmmName | | ]
 SEM GrBind
-  | Bind   expr  .  handlerNames  =  []
+  | Bind   expr  .  handlerName  =  ""
 SEM GrExpr
-  | Catch  body  .  handlerNames  =  @handlerName : @lhs.handlerNames
+  | Catch  body  .  handlerName  =  @handlerName
 %%]
