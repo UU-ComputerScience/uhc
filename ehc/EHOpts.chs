@@ -45,7 +45,8 @@ data TrfOpt = TrfYes String | TrfNo String | TrfAllYes | TrfAllNo
 
 cmdLineTrfs :: AssocL String String
 cmdLineTrfs
-  = [ ("CCP"    , "Core Constant Propagation (simple ones introduced by frontend)")
+  = [ ("CER"    , "Core Eta Reduction")
+    , ("CCP"    , "Core Constant Propagation (simple ones introduced by frontend)")
     , ("CRU"    , "Core Rename Unique (all identifiers)")
     , ("CLU"    , "Core Let Unrec (remove unnecessary recursive defs)")
     , ("CILA"   , "Core Inline Let Alias (remove unnecessary alpha renamings)")

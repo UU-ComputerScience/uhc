@@ -1,4 +1,4 @@
-% $Id$
+% $Id: EHCoreSubst.cag 262 2005-07-24 11:36:39Z atze $
 
 %%[0
 %include lhs2TeX.fmt
@@ -9,7 +9,7 @@
 %%% Substituting holes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs import(Data.Maybe,qualified Data.Map as Map,UU.Pretty,EHCommon,EHTy,EHCore,EHCnstr,EHCorePretty) export(CSubstitutable(..),cAppCoeArg)
+%%[9 hs import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map,UU.Pretty,EHCommon,EHTy,EHCore,EHCnstr,EHCorePretty,EHCoreFvS) export(CSubstitutable(..),cAppCoeArg)
 %%]
 
 %%[9 hs export(CSubst,emptyCSubst,uidCBindLLToCSubst,uidCExprLToCSubst,poiCExprLToCSubst,cnstrImplsToCSubst)
@@ -177,15 +177,19 @@ coeWipe cs l r
                      (CoeImplApp li:ls,CoeImplLam ri:rs)
                                     | li == ri   -> w ls rs
                                     | otherwise  -> (l,r)
-                     (lc:ls,rc:rs)  | match      -> w ls rs
+                     (lc:ls,rc:rs)  -- | match      -> w ls rs
                                     | otherwise  -> (CoeC lce : ls, CoeC rce : rs)
                          where  lce    =  eval lc
                                 rce    =  eval rc
+                                notFreeIn n e
+                                       =  not (n `Set.member` cexprFvS e)
                                 match  =  case (lce,rce) of
-                                            (CExpr_App _ (CExpr_Var  ln),CExpr_Lam rn CExpr_CoeArg)
-                                              | ln == rn            -> True
-                                            (CExpr_App _ (CExpr_Hole li),CExpr_Lam rn CExpr_CoeArg)
-                                              | show li == show rn  -> True
+                                            (CExpr_App f (CExpr_Var  ln),CExpr_Lam rn CExpr_CoeArg)
+                                              -> ln == rn && notFreeIn ln f
+                                            (CExpr_App f (CExpr_Hole li),CExpr_Lam rn CExpr_CoeArg)
+                                              -> l  == r  && notFreeIn rn f
+                                              where l = show li
+                                                    r = show rn
                                             _                       -> False
                      _ -> (l,r)
           (l',r') = w (reverse l) (reverse r)

@@ -135,8 +135,8 @@ SEM CExpr
   | Hole        loc         .   pp          =   ppHole @uid
   | HoleLet     loc         .   pp          =   "let" >#< ppHole @bindsUid >-< ppDef "in" @body.pp
   | CoeArg      loc         .   pp          =   pp "<_>"
-  | ImplsApp    loc         .   pp          =   ppDef @func.pp (ppHole @uid)
-  | ImplsLam    loc         .   pp          =   ppDef ("\\" >|< ppHole @uid) ("->" >#< @body.pp)
+  | ImplsApp    loc         .   pp          =   ppDef (@func.pp >#< "-- Impl") (ppHole @uid)
+  | ImplsLam    loc         .   pp          =   ppDef ("\\" >|< ppHole @uid >#< "-- Impl") ("->" >#< @body.pp)
 %%]
 
 

@@ -244,12 +244,13 @@ SEM CBind
                                                            cafLamNm = mkFvNm @lhs.gUniq @nm
                                                            (argOL,argNL,argONMp) = fvLArgRepl (@lhs.gUniq + 1) argLevL
                                                       in   if null argLevL
-                                                           then  (@lhs.gUniq,Map.empty,[],[@cTrf],[],Map.empty)
-                                                           else  (@lhs.gUniq + 1 + length argOL,argONMp
-                                                                 ,[CBind_Bind cafLamNm (mkCExprLam argNL @expr.cTrf)]
-                                                                 ,[]
-                                                                 ,[CBind_Bind @nm (mkCExprApp (CExpr_Var cafLamNm) (map (varRepl @lhs.argSubst) argOL))]
-                                                                 ,Map.empty
+                                                           then  ( @lhs.gUniq, Map.empty, [], [@cTrf], [], Map.empty )
+                                                           else  ( @lhs.gUniq + 1 + length argOL
+                                                                 , argONMp
+                                                                 , [CBind_Bind cafLamNm (mkCExprLam argNL @expr.cTrf)]
+                                                                 , []
+                                                                 , [CBind_Bind @nm (mkCExprApp (CExpr_Var cafLamNm) (map (varRepl @lhs.argSubst) argOL))]
+                                                                 , Map.empty
                                                                  )
                                                 else  (@lhs.gUniq,Map.empty,[],[],[@cTrf],Map.empty)
   | FFI         loc         .   bindVarBindL=   [@cTrf]
@@ -269,18 +270,8 @@ SEM CExpr
                                                      b3      = @body.lamBindSq
                                                 in   if @lhs.lev == cLevOuter
                                                      then  (b12lcv <+> b3,emptySeq)
+                                                     else if @categ == CBindStrict
+                                                     then  (b2c <+> b2v,b1 <+> b2l <+> b3)
                                                      else  (b2v,b1 <+> b2l <+> b2c <+> b3)
                 lhs         .   cTrf        =   foldr (\(c,b) e -> mkCExprLet c b e) @body.cTrf . seqToList $ @hereBindSq
 %%]
-
-                                                then  let  argLevL = zip @lhs.mutRecNmL (repeat cLevOuter) ++ fvLAsArg @lhs.levMp @expr.fvS
-                                                           cafLamNm = mkFvNm @lhs.gUniq @nm
-                                                           (argOL,argNL,argONMp) = fvLArgRepl (@lhs.gUniq + 1) argLevL
-                                                      in   if null argLevL
-                                                           then  (@lhs.gUniq,Map.empty,[],[@cTrf],[],Map.empty)
-                                                           else  (@lhs.gUniq + 1 + length argOL,argONMp
-                                                                 ,[CBind_Bind cafLamNm (mkCExprLam argNL @expr.cTrf)]
-                                                                 ,[]
-                                                                 ,[CBind_Bind @nm (mkCExprApp (CExpr_Var cafLamNm) (map CExpr_Var argOL))]
-                                                                 ,Map.empty
-                                                                 )
