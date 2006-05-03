@@ -136,7 +136,11 @@ crHandle1 action err errs it
                    ; failOrNot es v
                    }
            CRSErrInfoL about doPrint is
-             -> do { if null is then return () else hPutPPLn stderr (about >#< "found errors" >-< e)
+             -> do { if null is
+                     then return ()
+                     else do { hFlush stdout
+                             ; hPutPPLn stderr (about >#< "found errors" >-< e)
+                             }
                    ; if not (null is) then return (err v) else action v
                    }
              where e = if doPrint then crePPErrL is else empty

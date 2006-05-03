@@ -33,6 +33,9 @@
 %%[8 hs export(mkCExprAddInt)
 %%]
 
+%%[8 hs export(mkCMod)
+%%]
+
 %%[8 hs export(cTupLbl)
 %%]
 
@@ -180,6 +183,11 @@ mkCExprStrictIn nm e mkC = CExpr_Let CBindStrict [CBind_Bind nm e] (mkC (CExpr_V
 %%[8 hs
 mkCExprAddInt :: CExpr -> Int -> CExpr
 mkCExprAddInt e i = if i == 0 then e else CExpr_Var hsnPrimAddInt `mkCExprApp` [e,CExpr_Int i]
+%%]
+
+%%[8 hs
+mkCMod :: CExpr -> CModule
+mkCMod e = CModule_Mod "" e []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
