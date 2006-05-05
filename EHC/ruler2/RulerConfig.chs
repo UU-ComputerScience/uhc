@@ -49,7 +49,7 @@ cfgStrSel =
 cfgFmFmtCmdAsc :: [(String,String)]
 cfgFmFmtCmdAsc =
 %%]
-%%[1.cfgStrSel.val
+%%[1.cfgFmFmtCmdAsc.val
   [ ( "rulerChngBegMark",           "rulerChngBegMark"          )   -- lhs2tex for begin of change
   , ( "rulerChngEndMark",           "rulerChngEndMark"          )   -- lhs2tex for end of change
   , ( "rulerSameBegMark",           "rulerSameBegMark"          )   -- lhs2tex for begin of no change
@@ -57,5 +57,7 @@ cfgFmFmtCmdAsc =
   , ( "rulerUndefinedExtern",       "rulerUndefinedExtern"      )   -- lhs2tex for extern hole
   , ( "rulerRulesetFigureEnv",      "rulerRulesetFigure"        )   -- latex env for ruleset figure
   , ( "rulerRuleCmd",               "rulerRule"                 )   -- latex cmd for rule
+  , ( "rulerCmdUse",                "rulerCmdUse"               )   -- latex cmd for using generated artefact
+  , ( "rulerCmdDef",                "rulerCmdDef"               )   -- latex cmd for defining generated artefact
   ]
 %%]

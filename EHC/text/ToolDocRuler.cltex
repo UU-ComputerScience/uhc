@@ -95,6 +95,9 @@ This appears inline in the text as follows:
 \rulerCmdUse{RulerExamples.expr.e.int}
 \]
 
+|Ruler| assumes that the generated text can use \LaTeX\ macro's like @\rulerCmdUse{...}@.
+The names of these \LaTeX\ commands can be configured, see
+\secRef{ruler-doc-ref-customisation}.
 
 \subsubsection{Lexical matters}
 
@@ -292,9 +295,36 @@ rulerCmdDef
 %%]
 
 %%[referenceCustomisation
+\label{ruler-doc-ref-customisation}
+\Ix{Customisation}
+%%[[wrap=code
+%%@RulerConfig.1.cfgFmFmtCmdAsc.val
+%%]
+
+The example commands in the remaining sections are the ones used for this documentation.
+
 \subsubsection{Interaction with Lhs2TeX}
 
 \subsubsection{Interaction with |LaTeX|}
+
+\Paragraph{Ruleset figure}
+The following is the \LaTeX\ code used to render a ruleset figure.
+\Ix{rulerRulesetFigure}
+%%@mainsty.1.rulerRulesetFigure wrap=tt
+
+\Paragraph{Rule}
+The following is the \LaTeX\ code used to render a single rule.
+\Ix{rulerRule}
+%%@mainsty.1.rulerRule wrap=tt
+
+\Paragraph{Ruler commands for rules \& figures}
+The following is the \LaTeX\ code used to define a ruler command.
+\Ix{rulerCmdDef}
+%%@mainsty.1.rulerCmdDef wrap=tt
+
+The following is the \LaTeX\ code used to use a ruler command.
+\Ix{rulerCmdUse}
+%%@mainsty.1.rulerCmdUse wrap=tt
 
 \subsubsection{Interaction with AG}
 

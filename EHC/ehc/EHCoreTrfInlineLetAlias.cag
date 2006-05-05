@@ -12,7 +12,7 @@
 %%[8 hs import(Data.Maybe,qualified Data.Map as Map,EHCommon,EHCore,EHTy) export(cmodTrfInlineLetAlias)
 %%]
 
-%%[8.WRAPPER import(EHCoreAbsSyn)
+%%[8.WRAPPER import(EHCoreAbsSyn,EHCoreCommonLev)
 WRAPPER CodeAGItf
 %%]
 
@@ -42,20 +42,24 @@ SEM CodeAGItf
   | AGItf       module      .   nmMp        =   Map.empty
 
 SEM CExpr
-  | Let         loc         .   allowTrf    =   not (@categ == CBindStrict || @categ == CBindFFI)
-                            .   nmMp        =   if @allowTrf
-                                                then  Map.map  (\r ->  case r of
-                                                                         CExpr_Var nm -> maybe r id . Map.lookup nm $ @lhs.nmMp
-                                                                         _            -> r
-                                                               )
-                                                               @binds.bindNmMp
-                                                      `Map.union` @lhs.nmMp
-                                                else  @lhs.nmMp
+  | Let         loc         .   allowTrf    =   @categ /= CBindStrict && @categ /= CBindFFI -- && @lhs.lev > cLevOuter
+                            .   nmMpNew     =   if @allowTrf
+                                                then  Map.foldWithKey
+                                                        (\n r m
+                                                          -> case r of
+                                                               CExpr_Var nm
+                                                                 | nm `Map.member` @binds.bindNmMp
+                                                                   -> Map.delete n m
+                                                                 | otherwise
+                                                                   -> Map.insert n r' m
+                                                                 where r' = maybe r id . Map.lookup nm $ @lhs.nmMp
+                                                               _   -> m
+                                                        )
+                                                        @binds.bindNmMp
+                                                        @binds.bindNmMp
+                                                else  Map.empty
+                            .   nmMp        =   @nmMpNew `Map.union` @lhs.nmMp
 %%]
-                            .   nmMp        =   if @allowTrf
-                                                then  Map.map (\n r -> maybe r id . Map.lookup r $ @lhs.nmMp) @binds.bindNmMp
-                                                      `Map.union` @lhs.nmMp
-                                                else  @lhs.nmMp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Is expr a substitutable value?
@@ -77,13 +81,14 @@ SEM CExpr
 
 %%[8
 ATTR AllBind [ | | bindNmMp USE {`Map.union`} {Map.empty}: NmMp ]
-ATTR AllBind [ | | bindL USE {++} {[]}: CBindL ]
+ATTR AllBind [ | | bindL USE {++} {[]}: {[(HsName,CBind)]} ]
 
 SEM CBind
   | Bind        lhs         .   (bindNmMp,bindL)
-                                            =   if isJust @expr.mbRepl && @nm /= hsnMain
-                                                then (@nm `Map.singleton` fromJust @expr.mbRepl,[])
-                                                else (Map.empty,[@cTrf])
+                                            =   case @expr.mbRepl of
+                                                  Just r | @nm /= hsnMain
+                                                    -> (@nm `Map.singleton` r,[(@nm,@cTrf)])
+                                                  _ -> (Map.empty,[(@nm,@cTrf)])
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -98,7 +103,7 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 %%[8
 SEM CExpr
   | Let         lhs         .   cTrf        =   if @allowTrf
-                                                then mkCExprLet @categ @binds.bindL @body.cTrf
+                                                then mkCExprLet @categ [ b | (n,b) <- @binds.bindL, not (n `Map.member` @nmMpNew)] @body.cTrf
                                                 else @cTrf
   | Var         lhs         .   cTrf        =   maybe @cTrf id . Map.lookup @nm $ @lhs.nmMp
 %%]

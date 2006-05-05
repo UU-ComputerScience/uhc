@@ -262,10 +262,12 @@ emptyGrExpr = GrExpr_Unit GrVal_Empty
 
 mbMkStrict :: UID -> Bool -> GrVal -> GrExpr
 mbMkStrict u isStrict v
-  =  if isStrict
-     then  let  n = uidHNm u
-           in   GrExpr_Seq (GrExpr_Unit v) (GrPat_Var n) (GrExpr_Eval n)
-     else  GrExpr_Unit v
+  = case v of
+      GrVal_Node _ _ -> dflt
+      _ | isStrict   -> GrExpr_Seq (GrExpr_Unit v) (GrPat_Var n) (GrExpr_Eval n)
+        | otherwise  -> dflt
+        where n = uidHNm u
+  where dflt = GrExpr_Unit v
 
 retStrict :: Bool -> GrVal -> GrExpr
 retStrict isStrict = if isStrict then GrExpr_Unit else GrExpr_Store

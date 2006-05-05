@@ -11,6 +11,35 @@ SEM RlDecls
   | Cons            lhs     .   pp          =   @hd.pp >-< "" >-< @tl.pp
 
 -------------------------------------------------------------------------
+-- Configuration
+-------------------------------------------------------------------------
+
+{
+data PPCfg
+  = PPCfg
+      { pcDef       ::  Nm
+      , pcUse       ::  Nm
+      , pcFigEnv    ::  Nm
+      , pcRule      ::  Nm
+      }
+
+mkPPCfg :: Opts -> FmGam Expr -> PPCfg
+mkPPCfg o g
+  = PPCfg
+      { pcDef       =   c "rulerCmdDef"
+      , pcUse       =   c "rulerCmdUse"
+      , pcFigEnv    =   c "rulerRulesetFigureEnv"
+      , pcRule      =   c "rulerRuleCmd"
+      }
+  where c = fmNmFmtCmd o g . Nm
+}
+
+ATTR AllAS2 [ ppCfg: PPCfg | | ]
+
+SEM AGItf
+  | AGItf           decls   .   ppCfg       =   mkPPCfg @lhs.opts @lhs.fmGam
+
+-------------------------------------------------------------------------
 -- Chunks
 -------------------------------------------------------------------------
 
@@ -121,21 +150,19 @@ SEM DataAGFlds
 -------------------------------------------------------------------------
 
 SEM RlDecl
-  | LTX             lhs     .   pp          =   let r = "\\" >|< cmd >|< ppCurly @rlNm >|< ppCurly @vwNm
+  | LTX             lhs     .   pp          =   let r = "\\" >|< (pcRule @lhs.ppCfg) >|< ppCurly @rlNm >|< ppCurly @vwNm
                                                         >-< ppListSepVV "{%" "}" "\\\\" @preJds.ppL
                                                         >-< ppListSepVV "{%" "}" "\\\\" @postJds.ppL
-                                                    cmd = fmNmFmtCmd @lhs.opts @lhs.fmGam $ Nm "rulerRuleCmd"
-                                                in  mkCmdNmDef @nm r
-  | LTXAlias        lhs     .   pp          =   mkCmdNmDef @fullAliasNm (mkCmdNmUse @fullNm)
+                                                in  mkTexCmdDef (pcDef @lhs.ppCfg) @nm r
+  | LTXAlias        lhs     .   pp          =   mkTexCmdDef (pcDef @lhs.ppCfg) @fullAliasNm (mkTexCmdUse (pcUse @lhs.ppCfg) @fullNm)
 
 SEM VwDecl
   | LTX             lhs     .   pp          =   let meta = ensureTeXMath $ switchLaTeXLhs $ exprFmtTeX @lhs.opts @lhs.fmGam @scmExpr.self
-                                                in  mkCmdNmDef @scMetaNm meta >-< @rlDecls.pp
-  | LTXFig          lhs     .   pp          =   let fig = "\\begin" >|< ppCurly env >|< ppCurly (mkCmdNmUse @scMetaNm) >|< ppCurly (pp @descr) >|< ppCurly @fullNm >|< (ppCurly @nm)
-                                                          >-< vlist (intersperse (pp "\\hspace{1ex}") . map mkCmdNmUse $ @rlFullNmL)
-                                                          >-< "\\end" >|< ppCurly env
-                                                    env = fmNmFmtCmd @lhs.opts @lhs.fmGam $ Nm "rulerRulesetFigureEnv"
-                                                in  mkCmdNmDef @fullNm fig
+                                                in  mkTexCmdDef (pcDef @lhs.ppCfg) @scMetaNm meta >-< @rlDecls.pp
+  | LTXFig          lhs     .   pp          =   let fig = "\\begin" >|< ppCurly (pcFigEnv @lhs.ppCfg) >|< ppCurly (mkTexCmdUse (pcUse @lhs.ppCfg) @scMetaNm) >|< ppCurly (pp @descr) >|< ppCurly @fullNm >|< (ppCurly @nm)
+                                                          >-< vlist (intersperse (pp "\\hspace{1ex}") . map (mkTexCmdUse (pcUse @lhs.ppCfg)) $ @rlFullNmL)
+                                                          >-< "\\end" >|< ppCurly (pcFigEnv @lhs.ppCfg)
+                                                in  mkTexCmdDef (pcDef @lhs.ppCfg) @fullNm fig
 
 SEM Jd
   | LTX             lhs     .   pp          =   switchLaTeXLhs (exprFmtTeX @lhs.opts @lhs.fmGam @expr.self)

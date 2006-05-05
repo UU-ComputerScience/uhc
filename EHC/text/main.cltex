@@ -355,7 +355,7 @@
 
 %%[1
 \usepackage{fancyvrb}
-\usepackage{\jobname} %%% needs: fancyvrb
+\usepackage{mainsty} %%% needs: fancyvrb
 %\usepackage{scrtime}% needed for prelim/DRAFT warnings
 
 
@@ -431,7 +431,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
-\usepackage{infrule}
+% moved to mainsty.sty
+%\usepackage{infrule}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
