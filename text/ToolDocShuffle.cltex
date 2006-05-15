@@ -35,7 +35,7 @@ The produced output is assumed to be processed by |lhs2tex| [cite] first, unless
 For example the input
 
 \begin{TT}
-%%@[file:shuffle/test/tst2%%]
+%%@[file:src/shuffle/test/tst2%%]
 \end{TT}
 
 gives the following variants when invoked with different parameters.
@@ -43,28 +43,28 @@ gives the following variants when invoked with different parameters.
 \begin{Itemize}
 
 \item
-\verb'shuffle --gen=2 --ag shuffle/test/tst2'.
+\verb'shuffle --gen=2 --ag src/shuffle/test/tst2'.
 Generate for version 2, AG system, to be processed first by |lhs2tex|.
 \begin{TT}
-%%1exec(bin/shuffle --gen=2 --ag shuffle/test/tst2%%)
+%%1exec(bin/shuffle --gen=2 --ag src/shuffle/test/tst2%%)
 \end{TT}
 
 
 \item
-\verb'shuffle --gen=1 --hs --lhs2tex=no --base=Main shuffle/test/tst2'.
+\verb'shuffle --gen=1 --hs --lhs2tex=no --base=Main src/shuffle/test/tst2'.
 Generate for version 1, Haskell, with name of module specified (instead of derived from the filename),
 not to be processed by |lhs2tex|.
 \begin{TT}
-%%1exec(bin/shuffle --gen=1 --hs --lhs2tex=no --base=Main shuffle/test/tst2%%)
+%%1exec(bin/shuffle --gen=1 --hs --lhs2tex=no --base=Main src/shuffle/test/tst2%%)
 \end{TT}
 
 \item
-\verb'shuffle --gen=2 --latex shuffle/test/tst2'.
+\verb'shuffle --gen=2 --latex src/shuffle/test/tst2'.
 Generate for version 2, LaTeX, to be processed first by |lhs2tex|.
 Text is wrapped inside macros for definition (\verb'\chunkCmdDef') and use (\verb'\chunkCmdUse')
 of a chunk, to be defined by the user.
 \begin{TT}
-%%1exec(bin/shuffle --gen=2 --latex shuffle/test/tst2%%)
+%%1exec(bin/shuffle --gen=2 --latex src/shuffle/test/tst2%%)
 \end{TT}
 
 \end{Itemize}
@@ -113,11 +113,11 @@ and can be referred to from inside a chunk by
 A reference is replaced in the output by its corresponding definition.
 For example, the following input
 \begin{TT}
-%%1exec(cat shuffle/test/tst3%%)
+%%1exec(cat src/shuffle/test/tst3%%)
 \end{TT}
-will give (for \verb'shuffle --gen=1 --ag --lhs2tex=no shuffle/test/tst3')
+will give (for \verb'shuffle --gen=1 --ag --lhs2tex=no src/shuffle/test/tst3')
 \begin{TT}
-%%1exec(bin/shuffle --gen=1 --ag --lhs2tex=no shuffle/test/tst3%%)
+%%1exec(bin/shuffle --gen=1 --ag --lhs2tex=no src/shuffle/test/tst3%%)
 \end{TT}
 Named chunks on their own do not produce output, only when referred to from a versioned chunk.
 
@@ -169,11 +169,11 @@ A versioned chunk can be inhibited to produce output by a later version
 from within that later version by |- chunkId|.
 For example
 \begin{TT}
-%%@[file:shuffle/test/tst4%%]
+%%@[file:src/shuffle/test/tst4%%]
 \end{TT}
-will give (for \verb'shuffle --gen=3 --ag --lhs2tex=no shuffle/test/tst4')
+will give (for \verb'shuffle --gen=3 --ag --lhs2tex=no src/shuffle/test/tst4')
 \begin{TT}
-%%1exec(bin/shuffle --gen=3 --ag --lhs2tex=no shuffle/test/tst4%%)
+%%1exec(bin/shuffle --gen=3 --ag --lhs2tex=no src/shuffle/test/tst4%%)
 \end{TT}
 Note that only the chunk referred to is not included.
 Multiple chunks can be removed this way by specifying a (parenthesized, white separated) list of |chunkId|'s.
@@ -214,28 +214,28 @@ The remaining optional parameters of a chunk definition only have meaning depend
 the output format chosen.
 For example
 \begin{TT}
-%%@[file:shuffle/test/tst5%%]
+%%@[file:src/shuffle/test/tst5%%]
 \end{TT}
 will give 
 \begin{Itemize}
-\item for \verb'shuffle --gen=1 --ag --lhs2tex=no shuffle/test/tst5'
+\item for \verb'shuffle --gen=1 --ag --lhs2tex=no src/shuffle/test/tst5'
 \begin{TT}
-%%1exec(bin/shuffle --gen=1 --ag --lhs2tex=no shuffle/test/tst5%%)
+%%1exec(bin/shuffle --gen=1 --ag --lhs2tex=no src/shuffle/test/tst5%%)
 \end{TT}
 
-\item for \verb'shuffle --gen=1 --hs --lhs2tex=no shuffle/test/tst5'
+\item for \verb'shuffle --gen=1 --hs --lhs2tex=no src/shuffle/test/tst5'
 \begin{TT}
-%%1exec(bin/shuffle --gen=1 --hs --lhs2tex=no shuffle/test/tst5%%)
+%%1exec(bin/shuffle --gen=1 --hs --lhs2tex=no src/shuffle/test/tst5%%)
 \end{TT}
 \end{Itemize}
 
 To allow for incorporating Haskell inside AG the parameter \verb'hs' is specified, for example in
 \begin{TT}
-%%@[file:shuffle/test/tst6%%]
+%%@[file:src/shuffle/test/tst6%%]
 \end{TT}
-will give (for \verb'shuffle --gen=1 --ag --lhs2tex=no shuffle/test/tst6')
+will give (for \verb'shuffle --gen=1 --ag --lhs2tex=no src/shuffle/test/tst6')
 \begin{TT}
-%%1exec(bin/shuffle --gen=1 --ag --lhs2tex=no shuffle/test/tst6%%)
+%%1exec(bin/shuffle --gen=1 --ag --lhs2tex=no src/shuffle/test/tst6%%)
 \end{TT}
 
 Currently, none of this specific behavior is implemented for \LaTeX\ output.
