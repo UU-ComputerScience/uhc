@@ -1,0 +1,72 @@
+% $Id: EHTyFtv.cag 260 2005-07-23 12:18:44Z atze $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Ty subst
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2 hs import(Data.List,EHCommon,EHTy) export(tyFtv)
+%%]
+
+%%[4 hs import(qualified Data.Map as Map) export(tyFtvMp)
+%%]
+
+%%[2.WRAPPER import(EHTyAbsSyn)
+WRAPPER TyAGItf
+%%]
+
+%%[2.tyFtv hs
+tyFtv :: Ty -> TyVarIdL
+tyFtv ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf)
+     in   tvs_Syn_TyAGItf t
+%%]
+
+%%[4.tyFtv -2.tyFtv hs
+tyFtvMp :: Ty -> TvCatMp
+tyFtvMp ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf)
+     in   tvMp_Syn_TyAGItf t
+
+tyFtv :: Ty -> TyVarIdL
+tyFtv = Map.keys . tyFtvMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Apply substitution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2.TyFtv
+ATTR TyAGItf AllTy  [ | | tvs USE {`union`} {[]}: TyVarIdL ]
+
+SEM Ty
+  | Var             lhs     .   tvs         =   [@tv]
+%%]
+
+%%[3.TyFtv
+SEM Ty
+  | Quant           lhs     .   tvs         =   @tv `delete` @ty.tvs
+%%]
+
+%%[4 -(2.TyFtv 3.TyFtv)
+ATTR TyAGItf AllTy  [ | | tvMp USE {`Map.union`} {Map.empty}: TvCatMp ]
+ATTR TyVarCateg [ | | self: SELF ]
+
+SEM Ty
+  | Var             lhs     .   tvMp        =   @tv `Map.singleton` @categ.self
+  | Quant           lhs     .   tvMp        =   @tv `Map.delete` @ty.tvMp 
+%%]
+
+%%[11
+SEM Ty
+  | Equal           lhs     .   tvs         =   [@tv] `union` @ty.tvs
+%%]
+

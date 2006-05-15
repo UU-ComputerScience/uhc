@@ -1,0 +1,60 @@
+% $Id: EHCoreTrfCommonLev.cag 260 2005-07-23 12:18:44Z atze $
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common AG for Core transformations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Level of id's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllCodeNT [ levMp: LevMp | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   levMp       =   Map.empty
+
+SEM CExpr
+  | Lam         body        .   levMp       =   Map.insert @arg @lev @lhs.levMp
+  | Let         loc         .   maxBindLev  =   fvsLev @lhs.levMp @binds.fvS
+                (loc.strLev,binds.levMp)    =   case @categ of
+                                                    CBindStrict -> (const @lhs.lev,@lhs.levMp)
+                                                    CBindRec    -> (const @maxBindLev,(Map.fromList . zipWith (\l n -> (n,l)) (repeat @maxBindLev) . Map.keys $ @binds.levOfMp) `Map.union` @lhs.levMp)
+                                                    _           -> (id,@lhs.levMp)
+                body        .   levMp       =   Map.map @strLev @binds.levOfMp `Map.union` @lhs.levMp
+
+SEM CAlt
+  | Alt         expr        .   levMp       =   Map.fromList (zip @pats.nmL (repeat @lev)) `Map.union` @lhs.levMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Level of expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllCodeNT [ | | levOf USE {`max`} {0}: Int ]
+
+SEM CExpr
+  | Var         lhs         .   levOf       =   Map.findWithDefault cLevOuter @nm @lhs.levMp
+  | App         loc         .   levOf       =   @func.levOf `max` @arg.levOf
+  | Case        loc         .   levOf       =   @expr.levOf `max` @alts.levOf `max` @dflt.levOf
+  | TupDel      loc         .   levOf       =   @expr.levOf `max` @offset.levOf
+  | TupIns TupUpd
+                loc         .   levOf       =   @expr.levOf `max` @offset.levOf `max` @fldExpr.levOf
+  | Lam         loc         .   levOf       =   fvsLev @lhs.levMp @body.fvS
+  | Let         loc         .   levOf       =   fvsLev @lhs.levMp @fvS
+
+SEM CAlt
+  | Alt         lhs         .   levOf       =   fvsLev @lhs.levMp @expr.fvS
+
+ATTR AllBind [ | | levOfMp USE {`Map.union`} {Map.empty}: LevMp ]
+
+SEM CBind
+  | Bind        lhs         .   levOfMp     =   Map.singleton @nm @expr.levOf
+%%]
+
