@@ -19,20 +19,23 @@ RULER1_SRC			:= $(RULER1_DIR)/$(RULER1_AG)
 -include lhs2TeX/files.mk
 
 include mk/config.mk
-include ehc/shared.mk
+include src/files.mk
+include $(SRC_PREFIX)ehc/shared.mk
 include mk/shared.mk
 
-include shuffle/files.mk
-include ruler2/files.mk
-include grin/files.mk
-include ehc/variant.mk
-include uhc/files.mk
-include ehc/files.mk
-include grini/files.mk
-include grinc/files.mk
-include agprimer/files.mk
--include infer2pass/variant.mk
--include infer2pass/files.mk
+include $(SRC_PREFIX)lib/files.mk
+
+include $(SRC_PREFIX)shuffle/files.mk
+include $(SRC_PREFIX)ruler2/files.mk
+include $(SRC_PREFIX)grin/files.mk
+include $(SRC_PREFIX)ehc/variant.mk
+include $(SRC_PREFIX)uhc/files.mk
+include $(SRC_PREFIX)ehc/files.mk
+include $(SRC_PREFIX)grini/files.mk
+include $(SRC_PREFIX)grinc/files.mk
+include $(SRC_PREFIX)agprimer/files.mk
+-include $(SRC_PREFIX)infer2pass/variant.mk
+-include $(SRC_PREFIX)infer2pass/files.mk
 -include figs/files.mk
 -include text/files.mk
 -include www/files.mk
@@ -46,14 +49,6 @@ VERSIONS			:= $(EHC_PUB_VARIANTS)
 # distributed/published stuff for WWW
 WWW_SRC_TGZ					:= www/current-ehc-src.tgz
 WWW_DOC_PDF					:= www/current-ehc-doc.pdf
-
-## LHS2TEX_POLY_2(src file, dst file)
-#LHS2TEX_POLY_2			= \
-#	$(SUBST_SH) < $(1) | $(LHS2TEX_EXEC_WT_OPTS) --poly > $(2)
-#
-## LHS2TEX_POLY_3(src file, dst file)
-#LHS2TEX_POLY_3			= \
-#	$(LHS2TEX_EXEC_WT_OPTS) $(LHS2TEX_POLY_MODE) $(1) > $(2)
 
 explanation:
 	@echo "make bin/<n>/ehc         : make compiler version <n> (where <n> in {$(EHC_PUB_VARIANTS)})" ; \
@@ -78,32 +73,6 @@ explanation:
 
 all: afp-full ehcs doc grinis
 	$(MAKE) initial-test-expect
-
-#doc: $(SHUFFLE_DOC_PDF)
-#
-#%.latex:%.fig
-#	fig2dev -L latex $< > $@
-#
-#%.tex:%.lag
-#	$(call LHS2TEX_POLY,$<,$@)
-#
-#%.tex:%.lhs
-#	$(call LHS2TEX_POLY,$<,$@)
-#
-#%.tex:%.ltex
-#	$(call LHS2TEX_POLY_2,$<,$@)
-#
-#%.sty:%.lsty
-#	$(call LHS2TEX_POLY_3,$<,$@)
-#
-#%.ag:%.lag
-#	$(call LHS2TEX_CODE,$<,$@)
-#
-#%.hs:%.lhs
-#	$(call LHS2TEX_CODE,$<,$@)
-#
-#%.hs:%.ag
-#	cd `dirname $<` ; $(AGC) -dcfspr `basename $< .ag`
 
 .PHONY: shuffle ruler ruler2 ehcs dist www www-sync gri grinis agprimer
 
