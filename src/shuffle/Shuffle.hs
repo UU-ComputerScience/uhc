@@ -10,6 +10,7 @@ import System
 import IO
 import System.Console.GetOpt
 import EH.Util.ParseUtils
+import UU.Pretty
 import Common
 import MainAG
 import ChunkParser
