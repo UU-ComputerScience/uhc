@@ -17,7 +17,7 @@ module ARuleRwSubst
 import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Utils
+import EH.Util.Utils
 import Common
 import Opts
 import Expr

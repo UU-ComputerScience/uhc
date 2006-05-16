@@ -1,4 +1,4 @@
-module ParseErrPrettyPrint
+module EH.Util.ParseErrPrettyPrint
   ( ppPos, ppErr, ppWarn
   , ppTr
   )
@@ -9,7 +9,7 @@ import UU.Pretty
 import UU.Parsing
 import UU.Scanner.Position( noPos, Pos, Position(..) )
 -- import UU.Scanner.GenToken
-import PPUtils
+import EH.Util.PPUtils
 
 -------------------------------------------------------------------------
 -- PP of parse errors

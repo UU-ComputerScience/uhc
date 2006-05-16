@@ -9,7 +9,7 @@ import Maybe(isJust)
 import UU.Util.BinaryTrees(tab2tree,btLocateIn)
 import UU.Scanner.Token(Token, EnumValToken(..), valueToken, reserved, errToken)
 import UU.Scanner.Position(Pos, initPos, advc, adv)
-import ScanUtils
+import EH.Util.ScanUtils
 
 {- A parametrisable scanner
  -

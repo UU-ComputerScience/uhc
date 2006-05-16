@@ -996,7 +996,7 @@ The following example illustrates this idea:
 \ \label{eh4B-ex-basic}
 %if infer2pass
 %%[[wrap=code
-%%@[file:infer2pass/test/4-impred-demo1.i2p%%]
+%%@[file:src/infer2pass/test/4-impred-demo1.i2p%%]
 %%]
 %else
 %%[[wrap=code
@@ -1046,7 +1046,7 @@ because it is passed to both |g1| and |g2|.
 \ \label{eh4B-ex-most-gen}
 %if infer2pass
 %%[[wrap=code
-%%@[file:infer2pass/test/4-impred-demo3.i2p%%]
+%%@[file:src/infer2pass/test/4-impred-demo3.i2p%%]
 %%]
 %else
 %%[[wrap=code
@@ -1090,7 +1090,7 @@ The following example demonstrates this:
 \ \label{eh4B-ex-contravariance}
 %if infer2pass
 %%[[wrap=code
-%%@[file:infer2pass/test/4-impred-demo4.i2p%%]
+%%@[file:src/infer2pass/test/4-impred-demo4.i2p%%]
 %%]
 %else
 %%[[wrap=code
@@ -1551,7 +1551,7 @@ We walk through our initial example (\exRef{eh4B-ex-basic}), which we repeat her
 
 %if infer2pass
 %%[[wrap=code
-%%@[file:infer2pass/test/4-impred-demo1.i2p%%]
+%%@[file:src/infer2pass/test/4-impred-demo1.i2p%%]
 %%]
 %else
 %%[[wrap=code

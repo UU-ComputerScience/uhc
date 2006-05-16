@@ -29,9 +29,9 @@ import UU.Parsing
 import UU.Parsing.Offside
 import RulerScanner
 import RulerConfig
-import ParseUtils
+import EH.Util.ParseUtils
 import AttrProps
-import ScanUtils
+import EH.Util.ScanUtils
 
 -------------------------------------------------------------------------
 -------------------------------------------------------------------------

@@ -8,7 +8,7 @@ module Opts
   where
 
 import System.Console.GetOpt
-import ParseUtils
+import EH.Util.ParseUtils
 import Common
 import ViewSel
 import ViewSelSelf

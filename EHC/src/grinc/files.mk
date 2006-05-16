@@ -140,10 +140,10 @@ $(GRINC_MAIN_HS): $(GRIN_BLD_VARIANT_PREFIX)%.hs: $(SRC_GRINC_PREFIX)%.chs $(SHU
 # top rules
 $(patsubst %,grinc-variant-%,$(GRIN_VARIANTS)): grinc-variant-dflt
 
-grinc-variant-dflt: $(GRINC_ALL_HS_SRC)
+grinc-variant-dflt: $(GRINC_ALL_HS_SRC) $(LIB_EH_UTIL_INS_FLAG)
 	mkdir -p $(dir $(GRINC_BLD_EXEC))
-	$(GHC) --make $(GHC_OPTS) -i$(GRIN_BLD_VARIANT_PREFIX) -i$(SRC_LIB_PREFIX) $(GRINC_MAIN_HS) -o $(GRINC_BLD_EXEC)
-	
+	$(GHC) --make $(GHC_OPTS) -package $(LIB_EH_UTIL_PKG_NAME) -i$(GRIN_BLD_VARIANT_PREFIX) $(GRINC_MAIN_HS) -o $(GRINC_BLD_EXEC)
+
 # variant dispatch rules
 $(GRINC_ALL_EXECS): %: $(GRINC_ALL_SRC) $(GRIN_ALL_SRC)
 	$(MAKE) EHC_VARIANT=$(notdir $(*D)) GRIN_VARIANT=$(notdir $(*D)) grinc-variant-$(notdir $(*D))

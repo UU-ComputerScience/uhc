@@ -13,7 +13,7 @@ import Data.Char
 import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Utils
+import EH.Util.Utils
 import Opts
 import Err
 import Common
@@ -29,7 +29,7 @@ import RulerUtils( sc2DATA )
 
 -- for ppDbg
 import UU.Pretty
-import PPUtils
+import EH.Util.PPUtils
 }
 
 -------------------------------------------------------------------------

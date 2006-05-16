@@ -9,7 +9,7 @@ import qualified Data.Map as Map
 import System
 import IO
 import System.Console.GetOpt
-import ParseUtils
+import EH.Util.ParseUtils
 import Common
 import MainAG
 import ChunkParser

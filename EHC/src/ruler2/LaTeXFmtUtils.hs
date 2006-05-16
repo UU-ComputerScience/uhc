@@ -14,9 +14,9 @@ module LaTeXFmtUtils
   )
   where
 
-import Utils
+import EH.Util.Utils
 import UU.Pretty
-import PPUtils
+import EH.Util.PPUtils
 import Common
 import Expr
 

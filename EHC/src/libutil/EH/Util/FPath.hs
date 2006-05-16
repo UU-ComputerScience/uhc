@@ -1,4 +1,4 @@
-module FPath 
+module EH.Util.FPath 
   ( FPath(..), fpathSuff
   , mkFPath, emptyFPath
   , fpathToStr, fpathIsEmpty

@@ -12,11 +12,11 @@ module Err
   where
 
 import UU.Pretty
-import PPUtils
+import EH.Util.PPUtils
 import RulerScanner( SPos, emptySPos )
-import ParseErrPrettyPrint
-import Nm
-import Utils( maybeHd )
+import EH.Util.ParseErrPrettyPrint
+import EH.Util.Nm
+import EH.Util.Utils( maybeHd )
 
 -------------------------------------------------------------------------
 -- Errors

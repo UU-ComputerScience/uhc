@@ -2,7 +2,7 @@
 -- Combinators for a compile run
 -------------------------------------------------------------------------
 
-module CompileRun
+module EH.Util.CompileRun
   ( CompileRunState(..)
   , CompileRun(..)
   , CompileUnit(..)
@@ -34,9 +34,9 @@ import IO
 import qualified Data.Map as Map
 import UU.Pretty
 import UU.DData.Scc as Scc
-import Utils( panicJust )
-import PPUtils
-import FPath
+import EH.Util.Utils( panicJust )
+import EH.Util.PPUtils
+import EH.Util.FPath
 
 -------------------------------------------------------------------------
 -- Interfacing with actual state info

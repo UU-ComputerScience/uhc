@@ -1,4 +1,4 @@
-module ScanUtils
+module EH.Util.ScanUtils
   ( ScanOpts(..), defaultScanOpts
   )
   where
@@ -9,7 +9,7 @@ import UU.Pretty
 import UU.Parsing
 import UU.Scanner.Position( noPos, Pos(..), Position(..) )
 import UU.Scanner.GenToken
-import PPUtils
+import EH.Util.PPUtils
 
 -------------------------------------------------------------------------
 -- PP of parse errors

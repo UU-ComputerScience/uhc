@@ -15,8 +15,8 @@ import Maybe
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.List
-import Nm
-import Utils
+import EH.Util.Nm
+import EH.Util.Utils
 
 import KeywParser( propsSynInhMp )
 import Opts

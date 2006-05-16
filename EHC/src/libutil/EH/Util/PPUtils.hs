@@ -1,4 +1,4 @@
-module PPUtils where
+module EH.Util.PPUtils where
 
 import UU.Pretty
 import IO

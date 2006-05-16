@@ -1,4 +1,4 @@
-module ParseUtils where
+module EH.Util.ParseUtils where
 
 import qualified Data.Map as Map
 import Data.Maybe

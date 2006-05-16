@@ -9,10 +9,10 @@ import System
 import IO
 import qualified Data.Map as Map
 import System.Console.GetOpt
-import Utils( panicJust )
-import ParseUtils
-import ParseErrPrettyPrint
-import CompileRun
+import EH.Util.Utils( panicJust )
+import EH.Util.ParseUtils
+import EH.Util.ParseErrPrettyPrint
+import EH.Util.CompileRun
 import Version
 import Err
 import Gam( emptyGam )

@@ -9,9 +9,9 @@ module ExprLaTeX
   where
 
 import qualified Data.Map as Map
-import Utils
+import EH.Util.Utils
 import UU.Pretty
-import PPUtils
+import EH.Util.PPUtils
 import Common
 import Opts
 import LaTeXFmtUtils

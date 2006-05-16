@@ -6,7 +6,7 @@ import Monad
 import Array
 import Data.List
 import qualified Data.Map as Map
--- import Utils (tr, trp, wordsBy)
+-- import EH.Util.Utils (tr, trp, wordsBy)
 import Common
 import CDoc
 import CDocCommon
@@ -478,9 +478,21 @@ data Build
 -- Chunk options
 -------------------------------------------------------------------------
 
-ATTR AllChunkOption [ | | chKind USE {`const`} {ChPlain} : ChKind ]
-ATTR AllChunkOption [ | | chDest USE {`const`} {ChHere} : ChDest ]
-ATTR AllChunkOption [ | | chWrap USE {`const`} {ChWrapPlain} : ChWrap ]
+{
+chKindCmb ChPlain o = o
+chKindCmb o       _ = o
+
+chDestCmb ChHere  o = o
+chDestCmb o       _ = o
+
+chWrapCmb ChWrapPlain  o = o
+chWrapCmb o            _ = o
+
+}
+
+ATTR AllChunkOption [ | | chKind USE {`chKindCmb`} {ChPlain} : ChKind ]
+ATTR AllChunkOption [ | | chDest USE {`chDestCmb`} {ChHere} : ChDest ]
+ATTR AllChunkOption [ | | chWrap USE {`chWrapCmb`} {ChWrapPlain} : ChWrap ]
 
 SEM ChunkOption
   | Kind		lhs			.	chKind		=	@chKind

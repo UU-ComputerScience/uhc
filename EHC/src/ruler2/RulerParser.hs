@@ -15,8 +15,8 @@ import UU.Parsing.Offside
 import UU.Scanner.Position( initPos, Pos, Position(..) )
 import UU.Scanner.GenToken
 import RulerScanner
-import ParseUtils
-import ScanUtils
+import EH.Util.ParseUtils
+import EH.Util.ScanUtils
 import NmParser
 import SelParser
 import KeywParser

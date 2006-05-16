@@ -16,7 +16,7 @@ import RulerScannerMachine
 import UU.Scanner.Token
 import UU.Scanner.TokenParser
 import UU.Scanner.Position
-import ScanUtils
+import EH.Util.ScanUtils
 -- import UUTest.Parsing.Offside
 import UU.Parsing.Offside
 

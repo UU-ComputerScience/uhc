@@ -34,8 +34,8 @@ module Gam
 import Data.Maybe
 import qualified Data.Map as Map
 import UU.Pretty
-import PPUtils
-import Utils
+import EH.Util.PPUtils
+import EH.Util.Utils
 import Err
 import Common
 

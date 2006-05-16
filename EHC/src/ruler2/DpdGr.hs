@@ -18,8 +18,8 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Graph
 import UU.Pretty
-import PPUtils
-import Nm
+import EH.Util.PPUtils
+import EH.Util.Nm
 import Err
 
 -------------------------------------------------------------------------

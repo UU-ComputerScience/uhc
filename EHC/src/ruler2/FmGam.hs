@@ -24,7 +24,7 @@ module FmGam
 import Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import PPUtils
+import EH.Util.PPUtils
 import UU.Pretty
 import Common
 import Gam
