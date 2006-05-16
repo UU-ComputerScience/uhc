@@ -9,7 +9,7 @@ module ViewSelSelf
   )
   where
 
-import Nm
+import EH.Util.Nm
 import DpdGr
 import ViewSel
 }

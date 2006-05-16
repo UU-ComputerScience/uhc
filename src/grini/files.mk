@@ -44,15 +44,17 @@ GRINI_AG_ALL_MAIN_DRV_HS				:= $(GRINI_AG_S_MAIN_DRV_HS)
 GRINI_DIST_FILES						:= $(GRINI_ALL_SRC) $(GRINI_MKF)
 
 # variant dispatch rules
+$(patsubst $(BIN_PREFIX)%$(EXEC_SUFFIX),%,$(GRINI_ALL_EXECS)): %: $(BIN_PREFIX)%$(EXEC_SUFFIX)
+
 $(GRINI_ALL_EXECS): %: $(GRINI_ALL_SRC) $(GRIN_ALL_SRC)
 	$(MAKE) EHC_VARIANT=$(notdir $(*D)) GRIN_VARIANT=$(notdir $(*D)) grini-variant-$(notdir $(*D))
 
 # rules
 $(patsubst %,grini-variant-%,$(GRIN_VARIANTS)): grini-variant-dflt
 
-grini-variant-dflt: $(GRINI_HS_ALL_DRV_HS) $(GRINI_AG_ALL_MAIN_DRV_HS) $(GRIN_AG_ALL_MAIN_DRV_HS) $(EHC_HS_ALL_DRV_HS)
+grini-variant-dflt: $(GRINI_HS_ALL_DRV_HS) $(GRINI_AG_ALL_MAIN_DRV_HS) $(GRIN_AG_ALL_MAIN_DRV_HS) $(EHC_HS_ALL_DRV_HS) $(LIB_EH_UTIL_INS_FLAG)
 	mkdir -p $(dir $(GRINI_BLD_EXEC))
-	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_OPTIM) -i$(GRIN_BLD_VARIANT_PREFIX) -i$(SRC_LIB_PREFIX) $(GRIN_BLD_VARIANT_PREFIX)$(GRINI_MAIN).hs -o $(GRINI_BLD_EXEC)
+	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_OPTIM) -package $(LIB_EH_UTIL_PKG_NAME) -i$(GRIN_BLD_VARIANT_PREFIX) $(GRIN_BLD_VARIANT_PREFIX)$(GRINI_MAIN).hs -o $(GRINI_BLD_EXEC)
 
 $(GRINI_AG_ALL_MAIN_DRV_AG) $(GRINI_AG_ALL_DPDS_DRV_AG): $(GRIN_BLD_VARIANT_PREFIX)%.ag: $(SRC_GRINI_PREFIX)%.cag $(SHUFFLE)
 	mkdir -p $(@D)

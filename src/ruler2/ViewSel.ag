@@ -6,7 +6,7 @@
 module ViewSel
   where
 
-import Nm
+import EH.Util.Nm
 }
 
 INCLUDE "ViewSelAbsSynAG.ag"

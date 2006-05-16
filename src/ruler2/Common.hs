@@ -6,10 +6,10 @@ module Common
   ( module Data.Maybe
   , module Data.Char
   , module UU.Pretty
-  , module Nm
+  , module EH.Util.Nm
   , module DpdGr
-  , module FPath
-  , module PPUtils
+  , module EH.Util.FPath
+  , module EH.Util.PPUtils
   , module AttrProps
   , module RulerScanner
   
@@ -34,11 +34,11 @@ import IO
 import UU.Pretty
 -- import UU.Scanner.Position( noPos, Pos, Position(..) )
 import RulerScanner( SPos, emptySPos )
-import FPath
-import PPUtils
-import ParseErrPrettyPrint
-import ScanUtils
-import Nm
+import EH.Util.FPath
+import EH.Util.PPUtils
+import EH.Util.ParseErrPrettyPrint
+import EH.Util.ScanUtils
+import EH.Util.Nm
 import DpdGr
 import AttrProps
 

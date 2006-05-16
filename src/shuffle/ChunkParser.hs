@@ -12,9 +12,9 @@ import IO
 import UU.Parsing
 import UU.Parsing.CharParser
 import UU.Scanner.Position( initPos, Pos )
-import ParseUtils
+import EH.Util.ParseUtils
 import Common
-import Utils (wordsBy)
+import EH.Util.Utils (wordsBy)
 import MainAG
 
 -------------------------------------------------------------------------------------------

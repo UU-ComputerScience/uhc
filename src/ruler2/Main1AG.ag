@@ -12,12 +12,12 @@ import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import UU.Pretty
-import FPath
-import Utils
+import EH.Util.FPath
+import EH.Util.Utils
 import Err
 import Common
 import Opts
-import PPUtils
+import EH.Util.PPUtils
 import LaTeXFmtUtils
 import ExprUtils
 import ARuleUtils

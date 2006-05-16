@@ -11,7 +11,7 @@ module JdShpGam
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import UU.Pretty
-import PPUtils
+import EH.Util.PPUtils
 import Common
 import Gam
 import FmGam

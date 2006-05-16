@@ -12,7 +12,7 @@ module CDocInline
 import qualified Data.Map as Map
 import Network.URI
 import System( system, ExitCode(..) )
-import System.Posix.Temp( mkstemp )
+-- import System.Posix.Temp( mkstemp )
 import System.Directory( removeFile )
 import IO
 import Common
@@ -82,8 +82,9 @@ SEM CDoc
                                                                      }
                                                              "exec"
                                                                -> do { let cmd = drop 5 @uref
-                                                                     ; (tmpF,tmpH) <- mkstemp "shuffleXXXXXX.tmp"
-                                                                     ; hClose tmpH
+                                                                     -- ; (tmpF,tmpH) <- mkstemp "shuffleXXXXXX.tmp"
+                                                                     -- ; hClose tmpH
+                                                                     ; let tmpF = "shuffleXXXXXX.tmp"
                                                                      ; exitCode <- system (cmd ++ " > " ++ tmpF)
                                                                      ; case exitCode of
                                                                          ExitSuccess -> do { h <- openFile tmpF ReadMode

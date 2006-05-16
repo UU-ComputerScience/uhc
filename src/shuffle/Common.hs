@@ -6,9 +6,9 @@ module Common
   ( module Data.Maybe
   , module Data.Char
   , module UU.Pretty
-  , module Nm
-  , module FPath
-  , module PPUtils
+  , module EH.Util.Nm
+  , module EH.Util.FPath
+  , module EH.Util.PPUtils
   , Err(..), ErrM, ppErr, showUndef
   , openURI
   , Opts(..), defaultOpts, optsHasNoVerOrder
@@ -27,9 +27,9 @@ import IO
 import System.Directory
 import System.Console.GetOpt
 import UU.Pretty
-import FPath
-import PPUtils
-import Nm
+import EH.Util.FPath
+import EH.Util.PPUtils
+import EH.Util.Nm
 
 -------------------------------------------------------------------------
 -- Errors

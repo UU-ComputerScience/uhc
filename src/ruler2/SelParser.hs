@@ -12,7 +12,7 @@ module SelParser
 
 import UU.Parsing
 import RulerScanner
-import ParseUtils
+import EH.Util.ParseUtils
 import RulerConfig( cfgStrSel )
 
 -------------------------------------------------------------------------

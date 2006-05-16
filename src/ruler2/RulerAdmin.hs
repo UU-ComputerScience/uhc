@@ -96,8 +96,8 @@ import Data.Char
 import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Utils
-import PPUtils
+import EH.Util.Utils
+import EH.Util.PPUtils
 import UU.Pretty
 import qualified UU.DData.Scc as Scc
 import Common

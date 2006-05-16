@@ -1,12 +1,12 @@
-module Nm
+module EH.Util.Nm
 where
 
 import Data.Maybe
 import Data.Char
 import Data.List
 import UU.Pretty
-import Utils
-import PPUtils
+import EH.Util.Utils
+import EH.Util.PPUtils
 
 -------------------------------------------------------------------------
 -- Names (for use in Shuffle, Ruler)

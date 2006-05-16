@@ -14,8 +14,8 @@ module NmParser
 
 import UU.Parsing
 import RulerScanner
-import ParseUtils
-import Nm
+import EH.Util.ParseUtils
+import EH.Util.Nm
 import SelParser
 import KeywParser
 

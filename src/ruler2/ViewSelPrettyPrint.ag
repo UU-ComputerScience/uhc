@@ -10,7 +10,7 @@ module ViewSelPrettyPrint
 
 -- import qualified Data.Set as Set
 import UU.Pretty
-import Nm
+import EH.Util.Nm
 -- import DpdGr
 import ViewSel
 }

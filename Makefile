@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-TOP_PREFIX			:=
+TOP_PREFIX			:= $(shell pwd)/
 
 default: explanation
 
@@ -23,7 +23,7 @@ include src/files.mk
 include $(SRC_PREFIX)ehc/shared.mk
 include mk/shared.mk
 
-include $(SRC_PREFIX)lib/files.mk
+include $(SRC_PREFIX)libutil/files.mk
 
 include $(SRC_PREFIX)shuffle/files.mk
 include $(SRC_PREFIX)ruler2/files.mk
@@ -51,11 +51,11 @@ WWW_SRC_TGZ					:= www/current-ehc-src.tgz
 WWW_DOC_PDF					:= www/current-ehc-doc.pdf
 
 explanation:
-	@echo "make bin/<n>/ehc         : make compiler version <n> (where <n> in {$(EHC_PUB_VARIANTS)})" ; \
-	echo  "make bin/<n>/grini       : make grin interpreter version <n> (where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
+	@echo "make <n>/ehc             : make compiler version <n> (in bin/, where <n> in {$(EHC_PUB_VARIANTS)})" ; \
+	echo  "make <n>/grini           : make grin interpreter version <n> (bin/, where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
 	echo  "make bin/<n>/grinc       : make grin compiler version <n> (where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
-	echo  "make $(RULER2)           : make ruler tool" ; \
-	echo  "make $(SHUFFLE)          : make shuffle tool" ; \
+	echo  "make $(RULER2_NAME)               : make ruler tool" ; \
+	echo  "make $(SHUFFLE_NAME)              : make shuffle tool" ; \
 	echo  "" ; \
 	echo  "make doc/<d>.pdf         : make (public) documentation <d> (where <d> in {$(TEXT_PUB_VARIANTS)})," ; \
 	echo  "                           or (non-public): <d> in {$(TEXT_PRIV_VARIANTS)}" ; \
@@ -69,20 +69,20 @@ explanation:
 	echo  "                           requires corresponding $(EHC_EXEC_NAME)/$(GRINI_EXEC_NAME) already built" ; \
 	echo  "make test-expect         : make expected output (for later comparison with test-regress), see test-regress for remarks" ; \
 	echo  "" ; \
-	echo  "make bin/<n>/infer2pass  : make infer2pass demo version <n> (where <n> in {$(INF2PS_VARIANTS)})" ; \
+	echo  "make <n>/infer2pass      : make infer2pass demo version <n> (in bin/, where <n> in {$(INF2PS_VARIANTS)})" ; \
 
 all: afp-full ehcs doc grinis
 	$(MAKE) initial-test-expect
 
-.PHONY: shuffle ruler ruler2 ehcs dist www www-sync gri grinis agprimer
+.PHONY: ehcs dist www www-sync install lib src build
 
 ruler1: $(RULER1)
 
-$(RULER1): $(RULER1_DIR)/$(RULER1_AG) $(wildcard lib/*.hs)
-	cd $(RULER1_DIR) ; \
-	$(AGC) -csdfr --module=Main `basename $<` ; \
-	$(GHC) --make $(GHC_OPTS) -i../lib $(RULER1_HS) -o ../$@ ; \
-	strip ../$@
+$(RULER1): $(RULER1_DIR)/$(RULER1_AG) $(LIB_EH_UTIL_INS_FLAG)
+	cd $(RULER1_DIR) && \
+	$(AGC) -csdfr --module=Main `basename $<` && \
+	$(GHC) --make $(GHC_OPTS) -package $(LIB_EH_UTIL_PKG_NAME) $(RULER1_HS) -o ../$@ && \
+	$(STRIP) ../$@
 
 rules2.tex: rules2.rul
 	$(RULER1) -l --base=rules $< | $(LHS2TEX) $(LHS2TEX_OPTS_POLY) > $@
@@ -123,9 +123,7 @@ A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
 
 tst:
-	echo $(VERSION_LAST)
-	echo $(A_EH_TEST_EXP)
-	echo $(EHC_ALL_DPDS)
+	@echo $(LIB_EH_UTIL_INS_FLAG)
 
 initial-test-expect: $(A_EH_TEST_EXP)
 

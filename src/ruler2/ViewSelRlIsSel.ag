@@ -10,7 +10,7 @@ module ViewSelRlIsSel
   where
 
 import qualified Data.Set as Set
-import Nm
+import EH.Util.Nm
 import Common
 import DpdGr
 import ViewSel

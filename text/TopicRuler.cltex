@@ -1107,7 +1107,6 @@ In |Ruler| notation, we specify the direction of computation order as follows fo
 
 %%[[wrap=code
 %%@rulerDemoRL.2.expr.scm.A
-%%@rulerDemoRL.2.expr.scm.A.delTex
 %%]
 
 The holes for |expr| are split into three groups, separated by vertical bars `| || |'.

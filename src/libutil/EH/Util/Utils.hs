@@ -1,4 +1,4 @@
-module Utils where
+module EH.Util.Utils where
 
 import UU.Pretty
 import Data.Char

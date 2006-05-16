@@ -5,15 +5,16 @@
 AGC					:= uuagc
 GHC					:= ghc
 OPEN_FOR_EDIT		:= bbedit
+STRIP				:= $(STRIP_CMD)
 
 # lhs2TeX
 LHS2TEX_ENV			:= $(LHS2TEX)
-LHS2TEX				:= LHS2TEX=".:$(FMT_SRC_PREFIX):$(LHS2TEX_ENV)" lhs2TeX
+LHS2TEX				:= LHS2TEX=".$(PATHS_SEP)$(FMT_SRC_PREFIX)$(PATHS_SEP)$(LHS2TEX_ENV)" lhs2TeX
 
 # latex
 LATEX_ENV			:= $(TEXINPUTS)
-PDFLATEX			:= TEXINPUTS=".:../../$(LATEX_SRC_PREFIX):$(LATEX_EHC_SUBDIRS)$(LATEX_ENV)" pdflatex
-BIBTEX				:= BSTINPUTS=".:../../$(LATEX_SRC_PREFIX):$(LATEX_ENV)" BIBINPUTS=".:../../$(LATEX_SRC_PREFIX):$(LATEX_ENV)" bibtex
+PDFLATEX			:= TEXINPUTS=".$(PATHS_SEP)$(LATEX_SRC_PREFIX)$(PATHS_SEP)$(LATEX_EHC_SUBDIRS)$(PATHS_SEP)$(LATEX_ENV)" pdflatex
+BIBTEX				:= BSTINPUTS=".$(PATHS_SEP)$(LATEX_SRC_PREFIX)$(PATHS_SEP)$(LATEX_ENV)" BIBINPUTS=".$(PATHS_SEP)$(LATEX_SRC_PREFIX)$(PATHS_SEP)$(LATEX_ENV)" bibtex
 MAKEINDEX			:= makeindex
 
 # GHC options
@@ -30,23 +31,17 @@ BIN_PREFIX			:= $(TOP_PREFIX)bin/
 # location for libraries
 LIB_PREFIX			:= $(TOP_PREFIX)lib/
 
+# location for cabal installed stuff (mainly libraries)
+INS_PREFIX			:= $(TOP_PREFIX)install/
+INS_FLAG_PREFIX		:= $(INS_PREFIX)ins-flg-
+
 # location building
 BLD_PREFIX			:= $(TOP_PREFIX)build/
 BLD_BIN_PREFIX		:= $(BLD_PREFIX)bin/
-BLD_LIB_PREFIX		:= $(BLD_PREFIX)lib/
+BLD_LIBUTIL_PREFIX	:= $(BLD_PREFIX)libutil/
 
 # location for doc (end products)
 DOC_PREFIX			:= $(TOP_PREFIX)doc/
-
-# location of library src
-# currently, this definition is duplicated from ./src/lib/files.mk
-SRC_LIB_PREFIX		:= $(SRC_PREFIX)lib/
-
-# lib src
-LIB_SRC_HS			:= $(wildcard $(SRC_LIB_PREFIX)*.hs) 
-
-# distribution
-LIB_DIST_FILES		:= $(LIB_SRC_HS)
 
 # lhs2tex options
 LHS2TEX_OPTS_DFLT	:= 

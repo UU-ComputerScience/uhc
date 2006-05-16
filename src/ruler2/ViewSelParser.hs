@@ -14,8 +14,8 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import UU.Parsing
 import RulerScanner
-import ParseUtils
-import Nm
+import EH.Util.ParseUtils
+import EH.Util.Nm
 import KeywParser
 import NmParser
 import ViewSel
