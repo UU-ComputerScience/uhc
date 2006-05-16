@@ -5,7 +5,7 @@
 module Common
   ( module Data.Maybe
   , module Data.Char
-  , module UU.Pretty
+  -- , module UU.Pretty
   , module EH.Util.Nm
   , module DpdGr
   , module EH.Util.FPath

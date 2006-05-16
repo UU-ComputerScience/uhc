@@ -11,6 +11,7 @@ module WrKindGam
   where
 
 import qualified Data.Map as Map
+import UU.Pretty
 import Common
 import Gam
 

@@ -9,6 +9,7 @@ import System
 import IO
 import qualified Data.Map as Map
 import System.Console.GetOpt
+import UU.Pretty
 import EH.Util.Utils( panicJust )
 import EH.Util.ParseUtils
 import EH.Util.ParseErrPrettyPrint
