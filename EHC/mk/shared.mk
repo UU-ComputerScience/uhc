@@ -32,7 +32,7 @@ BIN_PREFIX			:= $(TOP_PREFIX)bin/
 LIB_PREFIX			:= $(TOP_PREFIX)lib/
 
 # location for cabal installed stuff (mainly libraries)
-INS_PREFIX			:= $(TOP_PREFIX)install/
+INS_PREFIX			:= $(TOPABS_PREFIX)install/
 INS_FLAG_PREFIX		:= $(INS_PREFIX)ins-flg-
 
 # location building

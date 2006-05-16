@@ -1,5 +1,6 @@
 #!/usr/bin/make -f
-TOP_PREFIX			:= $(shell pwd)/
+TOP_PREFIX				:= 
+TOPABS_PREFIX			:= $(shell pwd)/
 
 default: explanation
 
