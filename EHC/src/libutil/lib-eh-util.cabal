@@ -1,0 +1,10 @@
+Name:				EH-Util
+Version:			0.1
+License:			PublicDomain
+Author:				Atze Dijkstra
+Homepage:			http://www.cs.uu.nl/wiki/Ehc/WebHome
+Category:			Testing
+Build-Depends:		base, haskell98, uulib
+Extensions:			RankNTypes, MultiParamTypeClasses, FunctionalDependencies
+Synopsis:			General purpose utilities for EH
+Exposed-Modules:	EH.Util.CompileRun, EH.Util.FPath, EH.Util.Nm, EH.Util.ParseErrPrettyPrint, EH.Util.ParseUtils, EH.Util.ScanUtils, EH.Util.Utils, EH.Util.PPUtils
