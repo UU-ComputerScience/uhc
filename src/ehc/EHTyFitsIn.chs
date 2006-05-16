@@ -52,7 +52,7 @@
 %%[6 export(fitsInL)
 %%]
 
-%%[9 import(Utils(groupSortOn,sortByOn))
+%%[9 import(EH.Util.Utils(groupSortOn,sortByOn))
 %%]
 
 %%[9 import(qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty,EHCorePretty,EHPred,EHCore,EHCoreSubst) export(foAppCoe,foAppCoe',fitPredToEvid)

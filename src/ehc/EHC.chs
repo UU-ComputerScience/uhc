@@ -15,7 +15,7 @@
 %%[1 import(qualified EHParser as EHPrs, qualified EHMainAG as EHSem, qualified HSParser as HSPrs, qualified HSMainAG as HSSem)
 %%]
 
-%%[8 import (CompileRun,EHError,EHErrorPretty,FPath,qualified Data.Map as Map,Data.Maybe,Data.List)
+%%[8 import (EH.Util.CompileRun,EHError,EHErrorPretty,EH.Util.FPath,qualified Data.Map as Map,Data.Maybe,Data.List)
 %%]
 
 %%[8 import (EHCoreJava,EHCoreGrin,EHCorePretty)
