@@ -9,7 +9,7 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,EHCommon,EHCore,EHTy,Utils(sortOn)) export(cmodTrfLamLift)
+%%[8 hs import(Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,EHCommon,EHCore,EHTy,EH.Util.Utils(sortOn)) export(cmodTrfLamLift)
 %%]
 
 %%[8 hs import(EHDebug)

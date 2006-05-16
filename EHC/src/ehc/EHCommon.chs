@@ -63,7 +63,7 @@
 %%[7 export(assocLElts,uidHNm)
 %%]
 
-%%[8 import (FPath,IO,Char) export(putPPLn,putWidthPPLn,putPPFile,Verbosity(..),putCompileMsg)
+%%[8 import (EH.Util.FPath,IO,Char) export(putPPLn,putWidthPPLn,putPPFile,Verbosity(..),putCompileMsg)
 %%]
 
 %%[8 export(hsnPrefix,hsnSuffix,hsnConcat)
