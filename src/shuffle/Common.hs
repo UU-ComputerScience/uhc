@@ -16,6 +16,7 @@ module Common
   , CRef, CPos(..)
   , ChKind(..), ChDest(..), ChWrap(..)
   , Version(..), VersionOrder
+  , KVMap
   )
   where
 
@@ -80,6 +81,12 @@ openURI u
   where p = uriPath u
 
 -------------------------------------------------------------------------
+-- Key/value pair handling
+-------------------------------------------------------------------------
+
+type KVMap = Map.Map String String
+
+-------------------------------------------------------------------------
 -- Options
 -------------------------------------------------------------------------
 
@@ -99,6 +106,7 @@ data Opts
       , optWrapLhs2tex  :: ChWrap
       , optMbXRefExcept :: Maybe String
       , optVerOrder     :: VersionOrder
+      , optDefs			:: KVMap
       }
 
 defaultOpts
@@ -117,6 +125,7 @@ defaultOpts
       , optWrapLhs2tex  =  ChWrapCode
       , optMbXRefExcept =  Nothing
       , optVerOrder     =  [[]]
+      , optDefs			=  Map.empty
       }
 
 optsHasNoVerOrder :: Opts -> Bool

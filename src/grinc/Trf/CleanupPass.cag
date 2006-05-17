@@ -1,5 +1,3 @@
-% $Id$
-
 cleanup EHC generated GRIN:
 - eval and apply functions not needed (their semantics are builtin)
 - better F-tag than P0-tag (altough they are aliases)

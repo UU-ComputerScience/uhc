@@ -50,8 +50,8 @@ shuffleScanOpts
         [ ( ScLexMeta 0
           , ScanOpts
               { scoKeywordsTxt      =   Set.fromList (kwTxtAsVarTooB ++ [ "_", "-", ".", "<", "=" ])
-              , scoSpecChars        =   Set.fromList "(),"
-              , scoOpChars          =   Set.fromList "+-=*&^%$#@!\\|><~`;:?/_."
+              , scoSpecChars        =   Set.fromList "(),%"
+              , scoOpChars          =   Set.fromList "+-=*&^$#@!\\|><~`;:?/_."
               }
           )
         ]
@@ -280,6 +280,22 @@ pNm2                =   mkNmForP <$> p <*> pList (pKey "." *> (p <|> pInt))
 pNm                 ::  ShPr Nm
 pNm                 =   mkNmForP <$> pVar <*> pList (pKey "." *> (pVar <|> pInt))
 
+pStrExpr            ::  ShPr T_StrExpr
+pStrExpr            =   pChainr
+                          ((\s l r -> sem_StrExpr_Concat l (sem_StrExpr_Concat (sem_StrExpr_Str s) r)) <$> pKey ".")
+                          pStrExprApp
+
+pStrExprApp         ::  ShPr T_StrExpr
+pStrExprApp         =   foldr1 sem_StrExpr_Concat <$> pList1 pStrExprBase
+
+pStrExprBase        ::  ShPr T_StrExpr
+pStrExprBase        =   sem_StrExpr_Str <$> (pVar <|> pInt <|> pStr)
+                    <|> sem_StrExpr_Var <$ pKey "%" <*> pParens pVar
+                    <|> sem_StrExpr_Paren <$> pParens pStrExpr
+
+pMbStrExpr          ::  ShPr T_MbStrExpr
+pMbStrExpr          =   sem_MbStrExpr_Just <$> pStrExpr `opt` sem_MbStrExpr_Nothing
+
 pId, pIdNest, pIdNest2, pIdNestPart :: ShPr String
 pId                 =   (\h t -> concat . intersperse "." $ h : t) <$> pVar <*> pList (pKey "." *> (pVar <|> pInt))
 pIdNest             =   (concat . intersperse " ") <$> pList1 pIdNestPart
@@ -308,7 +324,8 @@ pChunk              =   pBegChunk
                                  <*> pMaybe NmEmp id (pKey "." *> pNm)
                                  <*> (pKey "-" *> ((:[]) <$> pChunkId <|> pParens (pList1 pChunkId)) <|> pSucceed [])
                                  <*> pChunkOptions
-                                 <*> (Just <$ pKey "module" <*> pId <|> pSucceed Nothing)
+                                 -- <*> (Just <$ pKey "module" <*> pId <|> pSucceed Nothing)
+                                 <*> (sem_MbStrExpr_Just <$ pKey "module" <*> pStrExpr <|> pSucceed sem_MbStrExpr_Nothing)
                                  <*> (pKey "import" *> pParens pIdNests2 <|> pSucceed [])
                                  <*> (pKey "export" *> pParens pIdNests2 <|> pSucceed [])
                              <|> sem_Chunk_Named

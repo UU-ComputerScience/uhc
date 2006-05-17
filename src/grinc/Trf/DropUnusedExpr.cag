@@ -1,5 +1,3 @@
-% $Id$
-
 Drop expression when the results are not used.
 TODO: drop global variables
 

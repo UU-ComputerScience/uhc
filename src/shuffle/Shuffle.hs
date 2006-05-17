@@ -147,6 +147,8 @@ cmdLineOpts
           "output this help"
      ,  Option ""   ["lhs2tex"]         (OptArg oLhs2tex "yes|no")
           "wrap chunks in lhs2tex's code environment, default=yes"
+     ,  Option ""   ["def"]             (ReqArg oDef "key:value")
+          "define key/value pair, alternate form: key=value"
      ]
   where  oAG             o =  o {optAG = True}
          oHS             o =  o {optHS = True}
@@ -167,6 +169,9 @@ cmdLineOpts
                                 ('a':'p':'p':'x':'=':f) -> o {optChDest = (ChHide,f)}
                                 _                       -> o
          oHelp           o =  o {optHelp = True}
+         oDef         s  o =  case break (\c -> c == ':' || c == '=') s of
+                                (k,(_:v)) -> o {optDefs = Map.insert k v (optDefs o)}
+                                _         -> o
          yesno' y n updO  ms  o
                            =  case ms of
                                 Just "yes"  -> updO y o

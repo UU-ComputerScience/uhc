@@ -1,5 +1,3 @@
-% $Id$
-
 Returning catch operation introduces a unit operation after a catch at the
 return spine.
 

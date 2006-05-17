@@ -27,10 +27,12 @@ wrapAG_T :: Opts -> FPath -> XRefExcept -> NmChMp -> T_AGItf -> Syn_AGItf
 wrapAG_T opts fp xr nmChMp pres
   = wrap_AGItf pres
       (Inh_AGItf
-         { opts_Inh_AGItf = opts {optBaseName = maybe (Just (fpathBase fp)) Just (optBaseName opts), optBaseFPath = fp}
+         { opts_Inh_AGItf = opts {optBaseName = mbBaseName, optBaseFPath = fp, optDefs = mbDefs `Map.union` optDefs opts}
          , xrefExcept_Inh_AGItf = xr
          , nmChMp_Inh_AGItf = nmChMp
          })
+  where mbBaseName = maybe (Just (fpathBase fp)) Just (optBaseName opts)
+        mbDefs = maybe Map.empty (\n -> Map.fromList [("basename",n),("base",n)]) mbBaseName
 }
 
 {
@@ -57,7 +59,7 @@ INCLUDE "ChunkAbsSyn.ag"
 -- Global info
 -------------------------------------------------------------------------
 
-ATTR AGItf AllChunk AllLine [ opts: Opts | | ]
+ATTR AGItf AllChunk AllLine AllStrExpr [ opts: Opts | | ]
 
 -------------------------------------------------------------------------
 -- Common. Version
@@ -209,6 +211,23 @@ SEM Line
 SEM Word
   | White Black loc         . wordColNr = @lhs.colNr
                 lhs         . colNr     = @lhs.colNr + length @chars
+
+-------------------------------------------------------------------------
+-- String of StrExpr
+-------------------------------------------------------------------------
+
+ATTR StrExpr [ | | str: String ]
+
+SEM StrExpr
+  | Str			lhs			.	str		=	@str
+  | Var			lhs			.	str		=	Map.findWithDefault "" @nm (optDefs @lhs.opts)
+  | Concat		lhs			.	str		=	@e1.str ++ @e2.str
+
+ATTR MbStrExpr [ | | mbStr: {Maybe String} ]
+
+SEM MbStrExpr
+  | Just		lhs			.	mbStr	=	Just @just.str
+  | Nothing		lhs			.	mbStr	=	Nothing
 
 -------------------------------------------------------------------------
 -- Left + right context
@@ -509,7 +528,7 @@ SEM Chunk
   | Ver         loc         .   chInfo      =   VerChunkInfo
                                                     @chunkLineNr @lhs.seqNr
                                                     @version @subNm @minusL
-                                                    @chOptions.chKind @chOptions.chDest @mbModNm @imports @exports
+                                                    @chOptions.chKind @chOptions.chDest @mbModNm.mbStr @imports @exports
                                                     @lines.mbCD (Seq.toList @lines.xrefL)
                 lhs         .   verChInfoL  =   [@chInfo]
 

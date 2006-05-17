@@ -1,5 +1,3 @@
-% $Id: EHCoreGrin.cag 277 2005-09-01 14:00:21Z cddouma $
-
 %%[0
 %include lhs2TeX.fmt
 %include afp.fmt

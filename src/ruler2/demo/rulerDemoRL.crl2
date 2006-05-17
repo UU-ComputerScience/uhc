@@ -1,5 +1,3 @@
-% $Id: demo.crl2 231 2005-06-07 14:39:41Z atze $
-
 %%[0
 %include lhs2TeX.fmt
 %include afp.fmt
