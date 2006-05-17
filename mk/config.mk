@@ -8,6 +8,7 @@ EH_VERSION			:= $(EH_VERSION_MAJOR).$(EH_VERSION_MINOR)
 # EXEC_SUFFIX	: suffix for executables
 # PATH_SEP		: separator in file paths
 # PATHS_SEP		: separator in sequences of file paths, as in environments
+# PATHS_SEP_COL	: separator in sequences of file paths, as in environments which do not use absolute paths
 # STRIP_CMD		: strip cmd
 # TOPABS_PREFIX	: absolute prefix/pathname to top dir
 
@@ -15,6 +16,7 @@ EH_VERSION			:= $(EH_VERSION_MAJOR).$(EH_VERSION_MINOR)
 EXEC_SUFFIX			:=
 PATH_SEP			:= /
 PATHS_SEP			:= :
+PATHS_SEP_COL		:= :
 STRIP_CMD			:= strip
 TOPABS_PREFIX		:= $(shell pwd)/
 
@@ -22,6 +24,7 @@ TOPABS_PREFIX		:= $(shell pwd)/
 #EXEC_SUFFIX			:= .exe
 #PATH_SEP			:= \
 #PATHS_SEP			:= ;
+#PATHS_SEP_COL		:= :
 #STRIP_CMD				:= echo
 #TOPABS_PREFIX		:= c:/whatever
 
