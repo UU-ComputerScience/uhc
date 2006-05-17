@@ -4,7 +4,7 @@ TOP_PREFIX				:=
 default: explanation
 
 # Ruler, will be obsolete soon
-RULER1				:= bin/ruler1
+RULER1				:= bin/ruler1$(EXEC_SUFFIX)
 RULER1_DIR			:= ruler1
 RULER1_MAIN			:= Ruler
 RULER1_AG			:= $(RULER1_MAIN).ag
