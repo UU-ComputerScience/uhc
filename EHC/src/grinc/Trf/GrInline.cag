@@ -1,5 +1,3 @@
-% $Id$
-
 We will inline apply and eval functions (based on flow analysis)
 
 %%[0

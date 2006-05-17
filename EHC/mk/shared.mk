@@ -72,3 +72,27 @@ INDENT4				:= sed -e 's/^/    /'
 # make programming utils
 head				= $(word 1,$(1))
 tail				= $(wordlist 2,$(words $(1)),$(1))
+comma				:= ,
+empty				:=
+space				:= $(empty) $(empty)
+
+# generate cabal file
+# $1: pkg name
+# $2: version
+# $3: build-depends (additional)
+# $4: extensions (additional)
+# $5: synopsis
+# $6: exposed modules
+GEN_CABAL			= \
+					( \
+					echo   "Name:				$(strip $(1))" ; \
+					echo   "Version:			$(strip $(2))" ; \
+					echo   "License:			PublicDomain" ; \
+					echo   "Author:				Atze Dijkstra" ; \
+					echo   "Homepage:			http://www.cs.uu.nl/wiki/Ehc/WebHome" ; \
+					echo   "Category:			Testing" ; \
+					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip base haskell98 uulib $(3)))" ; \
+					echo   "Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
+					echo   "Synopsis:			$(strip $(5))" ; \
+					echo   "Exposed-Modules:	$(subst $(space),$(comma),$(strip $(6)))" \
+					)

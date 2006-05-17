@@ -1,5 +1,3 @@
-% $Id$
-
 The input gives us A/apply tags with a variable number of fields. We should
 make the tag unique for each such field. eg a node with 4 fields should be named A/apply2.
 

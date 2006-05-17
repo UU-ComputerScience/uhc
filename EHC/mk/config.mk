@@ -1,3 +1,9 @@
+### the overall version of EH
+EH_VERSION_MAJOR	:= 0
+EH_VERSION_MINOR	:= 1
+EH_VERSION_STABLE	:= alpha
+EH_VERSION			:= $(EH_VERSION_MAJOR).$(EH_VERSION_MINOR)
+
 ### platform config
 # EXEC_SUFFIX	: suffix for executables
 # PATH_SEP		: separator in file paths

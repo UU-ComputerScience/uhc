@@ -1,5 +1,3 @@
-% $Id: EHParser.chs 276 2005-08-31 11:54:35Z atze $
-
 %%[0
 %include lhs2TeX.fmt
 %include afp.fmt

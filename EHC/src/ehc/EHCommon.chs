@@ -1,5 +1,3 @@
-% $Id: EHCommon.chs 270 2005-08-14 18:38:07Z cddouma $
-
 %%[0
 %include lhs2TeX.fmt
 %include afp.fmt

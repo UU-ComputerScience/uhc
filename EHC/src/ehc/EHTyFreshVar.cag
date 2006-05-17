@@ -1,5 +1,3 @@
-% $Id: EHTyElimAlts.cag 149 2005-02-11 13:59:25Z atze $
-
 %%[0
 %include lhs2TeX.fmt
 %include afp.fmt

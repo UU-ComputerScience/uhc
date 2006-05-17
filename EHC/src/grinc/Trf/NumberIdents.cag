@@ -1,5 +1,3 @@
-% $Id$
-
 Rename all identifiers to unique numbers. exceptions are the FFI names (and
 primitives) as well as the eval and apply function names (which do not exist anymore).
 

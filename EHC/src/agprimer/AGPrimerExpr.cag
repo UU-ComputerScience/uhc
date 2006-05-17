@@ -1,5 +1,3 @@
-% $Id: EHPretty.cag 148 2005-02-08 18:04:01Z atze $
-
 %%[0
 %include lhs2TeX.fmt
 %include afp.fmt

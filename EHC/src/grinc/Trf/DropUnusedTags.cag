@@ -1,5 +1,3 @@
-% $Id$
-
 Removes all the unused tags in the constructor, eval and apply maps.
 Note: run after inlining eval and apply.
 

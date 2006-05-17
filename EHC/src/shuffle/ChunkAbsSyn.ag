@@ -13,7 +13,7 @@ DATA Chunk
                         subNm       : {Nm}
                         minusL      : {[ChunkId]}
                         chOptions	: ChunkOptions
-                        mbModNm     : {Maybe String}
+                        mbModNm     : MbStrExpr -- {Maybe String}
                         imports     : {[String]}
                         exports     : {[String]}
                         lines       : Lines
@@ -25,6 +25,18 @@ DATA Chunk
 TYPE Chunks     = [Chunk]
 
 SET AllChunk    = Chunk Chunks
+
+-- Expr (describing a string)
+DATA StrExpr
+  | Str					str			: {String}
+  | Var					nm			: {String}
+  | Concat				e1			: StrExpr
+  						e2			: StrExpr
+  | Paren				e 			: StrExpr
+
+TYPE MbStrExpr = MAYBE StrExpr
+
+SET AllStrExpr = StrExpr MbStrExpr
 
 -- ChunkOption
 DATA ChunkOption
@@ -63,5 +75,5 @@ TYPE Words      = [Word]
 SET AllWord     = Word Words Inline
 
 -- Sets
-SET AllNT       = AllWord AllLine AllChunk
+SET AllNT       = AllWord AllLine AllChunk AllStrExpr
 

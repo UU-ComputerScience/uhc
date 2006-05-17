@@ -1,142 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Lhs2TeX + variant config, this is now partially obsolete as config is also mgt via Shuffle
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1
-% $Id$
-
-%include lhs2TeX.fmt
-%include forText.fmt
-%%]
-
-%%[1
-%% configuration of what to include
-
-%if False %% storyPHD || storyAfpTRUU1
-%let inclParts  = True
-%else
-%let inclParts  = False
-%endif
-
-%if storyPHD || storyEhcBook || storyAfpTRUU1
-%let inclTOC    = True
-%else
-%let inclTOC    = False
-%endif
-
-%if storyRuler
-%let inclRulerDemo    = True
-%else
-%let inclRulerDemo    = False
-%endif
-
-%if storyAFP04Notes || storyPHD || storyEhcBook || storyEHIntro || storyAfpTRUU1
-%let incl00     = True
-%else
-%let incl00     = False
-%endif
-
-%if storyAFP04Notes || storyPHD || storyEhcBook || storyAfpTRUU1
-%let incl01     = True
-%let incl02     = True
-%let incl03     = True
-%else
-%let incl01     = False
-%let incl02     = False
-%let incl03     = False
-%endif
-
-%if storyPHD || storyEhcBook || storyAfpTRUU1 || storyImpred
-%let incl04     = True
-%else
-%let incl04     = False
-%endif
-
-%if False %% storyPHD
-%let incl05     = True
-%let incl06     = True
-%let incl07     = True
-%let incl08     = True
-%else
-%let incl05     = False
-%let incl06     = False
-%let incl07     = False
-%let incl08     = False
-%endif
-
-%if storyPHD || storyEhcBook || storyExplImpl
-%let incl09     = True
-%else
-%let incl09     = False
-%endif
-
-%if False %% storyPHD
-%let incl10     = True
-%let incl11     = True
-%let incl12     = True
-%else
-%let incl10     = False
-%let incl11     = False
-%let incl12     = False
-%endif
-
-%if False %% storyPHD
-%let incl13     = True
-%let incl14     = True
-%let incl15     = True
-%let incl16     = True
-%let incl17     = True
-%let inclXX     = True
-%else
-%let incl13     = False
-%let incl14     = False
-%let incl15     = False
-%let incl16     = False
-%let incl17     = False
-%let inclXX     = False
-%endif
-
-%if storyPHD || storyEhcBook || storyImpred || storyRuler
-%let inclApp    = True
-%else
-%let inclApp    = False
-%endif
-
-%if storyPHD || storyEhcBook || storyRulerDoc
-%let inclInx    = True
-%else
-%let inclInx    = False
-%endif
-
-%if storyAFP04Notes
-%let inclConcl  = True
-%let inclAck    = True
-%else
-%let inclConcl  = False
-%let inclAck    = False
-%endif
-
-%if storyAFP04Notes || storyPHD || storyEhcBook
-%let incl01TopicPP  		= False
-%let incl01TopicErr  		= False
-%let incl01TopicParsing  	= False
-%else
-%let incl01TopicPP  		= True
-%let incl01TopicErr  		= True
-%let incl01TopicParsing  	= True
-%endif
-
-%let incl00TopicAGPrimer  = True
-
-
-%let a4       = True
-%let noprelim = True
-%let color    = False
-
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% LaTeX document header
+%%% LaTeX document class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[articleDocumentClass
@@ -279,6 +142,143 @@
 %endif
 
 %endif %% newDocClassHeader
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lhs2TeX + variant config, this is now partially obsolete as config is also mgt via Shuffle
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+% $Id$
+
+%include lhs2TeX.fmt
+%include forText.fmt
+%%]
+
+%%[1
+%% configuration of what to include
+
+%if False %% storyPHD || storyAfpTRUU1
+%let inclParts  = True
+%else
+%let inclParts  = False
+%endif
+
+%if storyPHD || storyEhcBook || storyAfpTRUU1
+%let inclTOC    = True
+%else
+%let inclTOC    = False
+%endif
+
+%if storyRuler
+%let inclRulerDemo    = True
+%else
+%let inclRulerDemo    = False
+%endif
+
+%if storyAFP04Notes || storyPHD || storyEhcBook || storyEHIntro || storyAfpTRUU1
+%let incl00     = True
+%else
+%let incl00     = False
+%endif
+
+%if storyAFP04Notes || storyPHD || storyEhcBook || storyAfpTRUU1
+%let incl01     = True
+%let incl02     = True
+%let incl03     = True
+%else
+%let incl01     = False
+%let incl02     = False
+%let incl03     = False
+%endif
+
+%if storyPHD || storyEhcBook || storyAfpTRUU1 || storyImpred
+%let incl04     = True
+%else
+%let incl04     = False
+%endif
+
+%if False %% storyPHD
+%let incl05     = True
+%let incl06     = True
+%let incl07     = True
+%let incl08     = True
+%else
+%let incl05     = False
+%let incl06     = False
+%let incl07     = False
+%let incl08     = False
+%endif
+
+%if storyPHD || storyEhcBook || storyExplImpl
+%let incl09     = True
+%else
+%let incl09     = False
+%endif
+
+%if False %% storyPHD
+%let incl10     = True
+%let incl11     = True
+%let incl12     = True
+%else
+%let incl10     = False
+%let incl11     = False
+%let incl12     = False
+%endif
+
+%if False %% storyPHD
+%let incl13     = True
+%let incl14     = True
+%let incl15     = True
+%let incl16     = True
+%let incl17     = True
+%let inclXX     = True
+%else
+%let incl13     = False
+%let incl14     = False
+%let incl15     = False
+%let incl16     = False
+%let incl17     = False
+%let inclXX     = False
+%endif
+
+%if storyPHD || storyEhcBook || storyImpred || storyRuler
+%let inclApp    = True
+%else
+%let inclApp    = False
+%endif
+
+%if storyPHD || storyEhcBook || storyRulerDoc
+%let inclInx    = True
+%else
+%let inclInx    = False
+%endif
+
+%if storyAFP04Notes
+%let inclConcl  = True
+%let inclAck    = True
+%else
+%let inclConcl  = False
+%let inclAck    = False
+%endif
+
+%if storyAFP04Notes || storyPHD || storyEhcBook
+%let incl01TopicPP  		= False
+%let incl01TopicErr  		= False
+%let incl01TopicParsing  	= False
+%else
+%let incl01TopicPP  		= True
+%let incl01TopicErr  		= True
+%let incl01TopicParsing  	= True
+%endif
+
+%let incl00TopicAGPrimer  = True
+
+
+%let a4       = True
+%let noprelim = True
+%let color    = False
 
 %%]
 

@@ -1,5 +1,3 @@
-% $Id$
-
 Split fetch operation and right hoist the fetch operation until it does not
 load an undefined value.
 

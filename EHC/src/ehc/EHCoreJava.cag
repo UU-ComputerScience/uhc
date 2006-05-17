@@ -1,5 +1,3 @@
-% $Id: EHCoreJava.cag 269 2005-08-14 12:49:00Z cddouma $
-
 %%[0
 %include lhs2TeX.fmt
 %include afp.fmt

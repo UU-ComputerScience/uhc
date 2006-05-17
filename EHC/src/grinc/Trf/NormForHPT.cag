@@ -1,5 +1,3 @@
-% $Id$
-
 Normalisation for the Heap-points-to analysis
 
 - A case alternative or the last statment of a catch block (body or handler) must end with a simple unit (e.g. "unit var")

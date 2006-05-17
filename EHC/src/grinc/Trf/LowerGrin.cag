@@ -1,5 +1,3 @@
-% $Id$
-
 Some transformations are needed to allow easy code generation for GRIN
   - variables can refer only to pointers or basic values (tags or integers)
   - case statement on tag only (not on a complete node)

@@ -1,5 +1,3 @@
-% $Id$
-
 Restores the right skewed property of the bind (Seq) operator:
 	In a GrExpr_Seq the expr field shall not contain a GrExpr_Seq constructor.
 
