@@ -123,7 +123,7 @@ A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
 
 tst:
-	@echo $(LIB_EH_UTIL_INS_FLAG)
+	@echo $(LIB_EH_UTIL_HS_SRC)
 
 initial-test-expect: $(A_EH_TEST_EXP)
 

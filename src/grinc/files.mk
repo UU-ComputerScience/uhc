@@ -32,7 +32,6 @@ GRINC_ALL_SRC                                           += $(SRC_GRINC_PREFIX)GR
 # files from grini and ehc used by grinc
 
 GRINC_ALL_HS_SRC  := $(GRINC_MAIN_HS) $(GRIN_BLD_VARIANT_PREFIX)GRIParser.hs \
-                     $(addprefix $(EHC_BLD_VARIANT_PREFIX),EHCommon.hs EHScanner.hs EHScannerMachine.hs) \
                      $(addprefix $(GRIN_BLD_VARIANT_PREFIX),GrinCode.hs GrinCodePretty.hs) \
 
 # Just to start the compilation depend on all 'real' files of ehc and grini
@@ -51,7 +50,7 @@ GRINC_UTILS_SRC_HS := $(patsubst %,$(GRIN_BLD_VARIANT_PREFIX)%.hs,$(GRINC_UTILS)
 GRINC_HS_FROM_CHS  += $(GRINC_UTILS_SRC_HS)
 
 #deps
-$(GRIN_BLD_VARIANT_PREFIX)Primitives.hs: $(patsubst %,$(GRIN_BLD_VARIANT_PREFIX)%.hs,HeapPointsToFixpoint GrinCode EHCommon Cmm/CmmCode)
+$(GRIN_BLD_VARIANT_PREFIX)Primitives.hs: $(patsubst %,$(GRIN_BLD_VARIANT_PREFIX)%.hs,HeapPointsToFixpoint GrinCode Cmm/CmmCode)
 
 ### GRIN Transformations ###
 
@@ -126,23 +125,23 @@ $(GRINC_HS_FROM_AG): %.hs: %.ag
 
 $(GRINC_AG_FROM_CAG): $(GRIN_BLD_VARIANT_PREFIX)%.ag: $(SRC_GRINC_PREFIX)%.cag $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(GRIN_VARIANT) --base=$(*F) --ag --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(GRIN_VARIANT) --base=$(*F) --ag --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(GRINC_HS_FROM_CHS): $(GRIN_BLD_VARIANT_PREFIX)%.hs: $(SRC_GRINC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(GRIN_VARIANT) --base=$(*F) --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(GRIN_VARIANT) --base=$(*F) --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(GRINC_MAIN_HS): $(GRIN_BLD_VARIANT_PREFIX)%.hs: $(SRC_GRINC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(GRIN_VARIANT) --base=Main --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(GRIN_VARIANT) --base=Main --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 
 # top rules
 $(patsubst %,grinc-variant-%,$(GRIN_VARIANTS)): grinc-variant-dflt
 
-grinc-variant-dflt: $(GRINC_ALL_HS_SRC) $(LIB_EH_UTIL_INS_FLAG)
+grinc-variant-dflt: $(GRINC_ALL_HS_SRC) $(LIB_EH_UTIL_INS_FLAG) $(LIB_EHC_INS_FLAG)
 	mkdir -p $(dir $(GRINC_BLD_EXEC))
-	$(GHC) --make $(GHC_OPTS) -package $(LIB_EH_UTIL_PKG_NAME) -i$(GRIN_BLD_VARIANT_PREFIX) $(GRINC_MAIN_HS) -o $(GRINC_BLD_EXEC)
+	$(GHC) --make $(GHC_OPTS) -package $(LIB_EH_UTIL_PKG_NAME) -package $(LIB_EHC_PKG_NAME) -i$(GRIN_BLD_VARIANT_PREFIX) $(GRINC_MAIN_HS) -o $(GRINC_BLD_EXEC)
 
 # variant dispatch rules
 $(patsubst $(BIN_PREFIX)%$(EXEC_SUFFIX),%,$(GRINC_ALL_EXECS)): %: $(BIN_PREFIX)%$(EXEC_SUFFIX)

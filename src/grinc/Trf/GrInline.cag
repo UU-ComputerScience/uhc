@@ -12,7 +12,7 @@ We will inline apply and eval functions (based on flow analysis)
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.GrInline import(EHCommon, GRINCCommon, GrinCode, HeapPointsToFixpoint, Data.List) export(inlineEA)
+%%[8 hs module Trf.GrInline import({%{EHC}Common}, GRINCCommon, GrinCode, HeapPointsToFixpoint, Data.List) export(inlineEA)
 inlineEA :: HptMap -> Int -> GrModule -> (HptMap, Int, RenameMap, GrModule)
 inlineEA hptMap unique grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                                     (Inh_GrAGItf { hptMap_Inh_GrAGItf = hptMap

@@ -3,7 +3,7 @@
 %include afp.fmt
 %%]
 
-%%[7 module EHScannerMachine import(Data.Char,Data.List,Data.Maybe,IO,UU.Util.BinaryTrees,UU.Scanner.Token,UU.Scanner.Position)
+%%[7 module {%{EHC}ScannerMachine} import(Data.Char,Data.List,Data.Maybe,IO,UU.Util.BinaryTrees,UU.Scanner.Token,UU.Scanner.Position)
 %%]
 
 %%[7
@@ -35,7 +35,7 @@ defaultScanOpts
 %%[8
         ,   scoDollarIdent      =   False
 %%]
-%%[1
+%%[7
         }
 %%]
 

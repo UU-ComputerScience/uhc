@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module EHParser import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.GenToken, EHCommon, EHScannerCommon, EHMainAG)
+%%[1 module {%{EHC}Parser} import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.GenToken, {%{EHC}Common}, {%{EHC}ScannerCommon}, EHMainAG)
 %%]
 
 %%[1 export(pAGItf)
@@ -80,52 +80,52 @@ type ExprParser       ep    =    (IsParser (OffsideParser i o Token p) Token,Inp
                                     => OffsideParser i o Token p ep
 
 %%[1.parserSigs
-type EHParser         ep    =    (IsParser (OffsideParser i o Token p) Token,InputState i Token p, OutputState o, Position p)
+type EHCParser        ep    =    (IsParser (OffsideParser i o Token p) Token,InputState i Token p, OutputState o, Position p)
                                     => OffsideParser i o Token p ep
 
-pAGItf                      ::   EHParser T_AGItf
+pAGItf                      ::   EHCParser T_AGItf
 
-pExpr, pExprApp, pExprBase  ::   EHParser T_Expr
-pExprPrefix                 ::   EHParser (T_Expr -> T_Expr)
+pExpr, pExprApp, pExprBase  ::   EHCParser T_Expr
+pExprPrefix                 ::   EHCParser (T_Expr -> T_Expr)
 
-pDecls                      ::   EHParser T_Decls
-pDecl                       ::   EHParser T_Decl
+pDecls                      ::   EHCParser T_Decls
+pDecl                       ::   EHCParser T_Decl
 
-pPatExpr, pPatExprBase      ::   EHParser T_PatExpr
+pPatExpr, pPatExprBase      ::   EHCParser T_PatExpr
 
-pTyExpr, pTyExprBase        ::   EHParser T_TyExpr
+pTyExpr, pTyExprBase        ::   EHCParser T_TyExpr
 
-pInt                        ::   EHParser Int
-pChr                        ::   EHParser Char
+pInt                        ::   EHCParser Int
+pChr                        ::   EHCParser Char
 
-pCon                        ::   EHParser HsName
-pVar                        ::   EHParser HsName
+pCon                        ::   EHCParser HsName
+pVar                        ::   EHCParser HsName
 %%]
 
 %%[4
-pTyExprPrefix               ::   EHParser (T_TyExpr -> T_TyExpr)
+pTyExprPrefix               ::   EHCParser (T_TyExpr -> T_TyExpr)
 %%]
 
 %%[4
-pTyExprApp                  ::   EHParser T_TyExpr
+pTyExprApp                  ::   EHCParser T_TyExpr
 %%]
 
 %%[5
-pCaseAlts                   ::   EHParser T_CaseAlts
-pCaseAlt                    ::   EHParser T_CaseAlt
+pCaseAlts                   ::   EHCParser T_CaseAlts
+pCaseAlt                    ::   EHCParser T_CaseAlt
 
-pDataConstr                 ::   EHParser T_DataConstr
-pDataConstrs                ::   EHParser T_DataConstrs
+pDataConstr                 ::   EHCParser T_DataConstr
+pDataConstrs                ::   EHCParser T_DataConstrs
 
-pTyVars                     ::   EHParser T_TyVars
-pTyVar                      ::   EHParser T_TyVar
+pTyVars                     ::   EHCParser T_TyVars
+pTyVar                      ::   EHCParser T_TyVar
 %%]
 
 %%[7
-pDataLabFields              ::   EHParser T_DataFields
-pDataFields                 ::   EHParser T_DataFields
-pDataLabField               ::   EHParser T_DataField
-pDataField                  ::   EHParser T_DataField
+pDataLabFields              ::   EHCParser T_DataFields
+pDataFields                 ::   EHCParser T_DataFields
+pDataLabField               ::   EHCParser T_DataField
+pDataField                  ::   EHCParser T_DataField
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,12 +133,12 @@ pDataField                  ::   EHParser T_DataField
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.pApp
-pApp            ::   SemApp ep => EHParser ep -> EHParser ep
+pApp            ::   SemApp ep => EHCParser ep -> EHCParser ep
 pApp p          =    mkApp <$> pList1 p
 %%]
 
 %%[1.pParenProd
-pParenProd :: SemApp ep => EHParser ep -> EHParser ep
+pParenProd :: SemApp ep => EHCParser ep -> EHCParser ep
 pParenProd pE
   =  pParens pP
   where  pP  =    mkProdApp <$> pSucceed []
@@ -236,7 +236,7 @@ pPatExpr        =    pApp pPatExprBase
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[6
-pKiExpr, pKiExprBase        ::   EHParser T_KiExpr
+pKiExpr, pKiExprBase        ::   EHCParser T_KiExpr
 
 pKiExprBase     =    sem_KiExpr_Con <$> (pCon <|> pHNm pSTAR)
                 <|>  sem_KiExpr_Var <$> pVar
@@ -300,7 +300,7 @@ pTyExpr         =    pTyExprPrefix <*> pTyExpr
 %%]
 
 %%[5.pTyExprs
-pTyExprs        ::   EHParser T_TyExprs
+pTyExprs        ::   EHCParser T_TyExprs
 pTyExprs        =    pFoldr (sem_TyExprs_Cons,sem_TyExprs_Nil) pTyExprBase
 %%]
 
@@ -314,7 +314,7 @@ pTyExprPrefix   =    sem_TyExpr_Quant
 %%]
 
 %%[9.pTyPrExprPrefix
-pTyPrExprPrefix ::   EHParser (T_TyExpr -> T_TyExpr)
+pTyPrExprPrefix ::   EHCParser (T_TyExpr -> T_TyExpr)
 pTyPrExprPrefix =    mk1Arrow
                      <$>  pPackImpl
                             (    pPr <|> pIm
@@ -327,9 +327,9 @@ pTyPrExprPrefix =    mk1Arrow
                      )
                      <*   pKeyw hsnPrArrow
                 where  pPrB  =   sem_TyExpr_Pred   <$>  pPrExprBase
-                       pPr   ::  EHParser T_TyExpr
+                       pPr   ::  EHCParser T_TyExpr
                        pPr   =   sem_TyExpr_Pred   <$>  pPrExpr
-                       pIm   ::  EHParser T_TyExpr
+                       pIm   ::  EHCParser T_TyExpr
                        pIm   =   sem_TyExpr_Impls  <$   pKey "..."
                        pImO  =   (:[]) <$ pComma <*> pIm `opt` []
 %%]
@@ -342,7 +342,7 @@ pTyExprApp      =    pApp pTyExprBase
 %%]
 
 %%[9.pPackImpl
-pPackImpl       ::   EHParser p -> EHParser p
+pPackImpl       ::   EHCParser p -> EHCParser p
 pPackImpl       =    pPacked (pKeyw hsnOImpl) (pKeyw hsnCImpl)
 %%]
 
@@ -481,7 +481,7 @@ pTyVar          =    sem_TyVar_Var <$> pVar
 %%]
 
 %%[9
-pTyVars1        ::   EHParser T_TyVars
+pTyVars1        ::   EHCParser T_TyVars
 pTyVars1        =    pFoldr1 (sem_TyVars_Cons,sem_TyVars_Nil) pTyVar
 %%]
 
@@ -494,7 +494,7 @@ data RowFld a = FldSel HsName a | FldNoSel a | FldUpd HsName a
 
 pParenRow       ::   Bool -> String -> String -> String -> Maybe (String,r -> HsName -> e -> r)
                      -> (r,HsName -> r,r -> Maybe HsName -> e -> r,r -> e,e -> e)
-                     -> EHParser HsName -> EHParser e -> EHParser e
+                     -> EHCParser HsName -> EHCParser e -> EHCParser e
 
 pParenRow singleAsIs o c sep mbUpd (semEmpty,semVar,semExt,semRow,semParens) pSel pE
                 =    pKey o *> pRowFlds <* pKey c
@@ -522,11 +522,11 @@ pParenRow singleAsIs o c sep mbUpd (semEmpty,semVar,semExt,semRow,semParens) pSe
 %%]
 
 %%[7
-pExprSelSuffix  ::   EHParser (T_Expr -> T_Expr)
+pExprSelSuffix  ::   EHCParser (T_Expr -> T_Expr)
 pExprSelSuffix  =    (\lbls e -> foldl sem_Expr_Sel e lbls)
                      <$> pList (pKey "." *> pSel)
 
-pSel            ::   EHParser HsName
+pSel            ::   EHCParser HsName
 pSel            =    pVar <|> pCon <|> HNPos <$> pInt
 %%]
 
@@ -535,30 +535,30 @@ pSel            =    pVar <|> pCon <|> HNPos <$> pInt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-pPrExprClass    ::   EHParser T_PrExpr
+pPrExprClass    ::   EHCParser T_PrExpr
 pPrExprClass    =    sem_PrExpr_Class  <$> pCon <*> pTyExprs
 %%]
 
 %%[9
-pPrExprPrefix   ::   EHParser (T_PrExpr -> T_PrExpr)
+pPrExprPrefix   ::   EHCParser (T_PrExpr -> T_PrExpr)
 pPrExprPrefix   =    sem_PrExpr_Arrow  <$> pPrExprBase <* pKeyw hsnPrArrow
                 <|>  sem_PrExpr_Forall <$  pKey "forall" <*> pVar <* pKey "."
 %%]
 
 %%[9
-pPrExpr         ::   EHParser T_PrExpr
+pPrExpr         ::   EHCParser T_PrExpr
 pPrExpr         =    pPrExprPrefix <*> pPrExpr
                 <|>  pPrExprBase
 %%]
 
 %%[9
-pTyPrExpr       ::   EHParser T_TyExpr
+pTyPrExpr       ::   EHCParser T_TyExpr
 pTyPrExpr       =    pTyPrExprPrefix <*> pTyPrExpr
                 <|>  sem_TyExpr_Pred <$> pPrExprBase
 %%]
 
 %%[9
-pPrExprBase     ::   EHParser T_PrExpr
+pPrExprBase     ::   EHCParser T_PrExpr
 pPrExprBase     =    pPrExprClass
                 <|>  pParens pPrExpr
 %%]
@@ -580,11 +580,11 @@ pPrExprBase     =    pPrExprClass
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-pClassHead      ::   EHParser T_TyExpr
+pClassHead      ::   EHCParser T_TyExpr
 pClassHead      =    pTyPrExprPrefix <*> pHd <|> pHd
                 where pHd = sem_TyExpr_Pred <$> pPrExprClass
 
-pDeclClass      ::   EHParser T_Decl
+pDeclClass      ::   EHCParser T_Decl
 pDeclClass      =    sem_Decl_Class
                      <$   pKey "class"
                      <*>  pClassHead
@@ -594,7 +594,7 @@ pDeclClass      =    sem_Decl_Class
                           )
                      <*   pKey "where" <*> pDecls
 
-pDeclInstance   ::   EHParser T_Decl
+pDeclInstance   ::   EHCParser T_Decl
 pDeclInstance   =    pKey "instance"
                      *>   (    sem_Decl_Instance
                                <$>  ((\n e -> Just (n,e)) <$> pVar <*> (True <$ pKey "<:" <|> False <$ pKey "::") `opt` Nothing)
@@ -609,6 +609,6 @@ pDeclInstance   =    pKey "instance"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[10
-pDynVar         ::   EHParser HsName
+pDynVar         ::   EHCParser HsName
 pDynVar         =    pKeyw hsnDynVar *> pVar
 %%]

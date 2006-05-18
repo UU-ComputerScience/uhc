@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Ty pretty print
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs import(UU.Pretty,EHCommon,EHTy) export(ppTy)
+%%[1 hs import(UU.Pretty,{%{EHC}Common},EHTy) export(ppTy)
 %%]
 
 %%[3 hs import(Char)

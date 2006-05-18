@@ -7,7 +7,7 @@
 %%% Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module GRICommon import(System.Console.GetOpt,EHCommon) export(GRIOpts(..), defaultGRIOpts, griCmdLineOpts)
+%%[8 module GRICommon import(System.Console.GetOpt,{%{EHC}Common}) export(GRIOpts(..), defaultGRIOpts, griCmdLineOpts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

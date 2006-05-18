@@ -7,7 +7,7 @@
 %%% Simplify code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Data.Maybe,Data.Char,qualified Data.Map as Map,EHCommon,EHCore,EHTy) export(cmodTrfRenUniq)
+%%[8 hs import(Data.Maybe,Data.Char,qualified Data.Map as Map,{%{EHC}Common},EHCore,EHTy) export(cmodTrfRenUniq)
 %%]
 
 %%[8.WRAPPER import(EHCoreAbsSyn)

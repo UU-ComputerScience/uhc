@@ -7,7 +7,7 @@
 %%% Gamma (aka Assumptions, Environment)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 import(Data.List,EHCommon) export(Gam,emptyGam,gamLookup, gamPushNew, gamPop, gamTop, gamAddGam, gamUnit, gamAdd, gamPushGam, gamToAssocL, assocLToGam, gamToDups)
+%%[1 module {%{EHC}Gam} import(Data.List,{%{EHC}Common}) export(Gam,emptyGam,gamLookup, gamPushNew, gamPop, gamTop, gamAddGam, gamUnit, gamAdd, gamPushGam, gamToAssocL, assocLToGam, gamToDups)
 %%]
 
 %%[1 import(EHTy,EHError) export(ValGam, ValGamInfo(..), valGamLookup,valGamLookupTy)
@@ -19,16 +19,16 @@
 %%[1 import(UU.Pretty,EHTyPretty) export(ppGam)
 %%]
 
-%%[2 import(EHCnstr,EHSubstitutable)
+%%[2 import({%{EHC}Cnstr},{%{EHC}Substitutable})
 %%]
 
 %%[3 import(EHTyQuantify) export(valGamQuantify, gamMap,gamMapElts,valGamMapTy)
 %%]
 
-%%[4 import(EHOpts,EHTyInstantiate) export(valGamInst1Exists)
+%%[4 import({%{EHC}Opts},EHTyInstantiate) export(valGamInst1Exists)
 %%]
 
-%%[4 import(EHTyFitsInCommon) export(AppSpineGam, appSpineGam, asGamLookup)
+%%[4 import({%{EHC}TyFitsInCommon}) export(AppSpineGam, appSpineGam, asGamLookup)
 %%]
 
 %%[4 export(gamMapThr)
@@ -58,7 +58,7 @@
 %%[8 export(DataGam,DataGamInfo(..),mkDGI)
 %%]
 
-%%[9 import(EHDebug,EHCoreSubst,EHTyFitsInCommon) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
+%%[9 import({%{EHC}Debug},EHCoreSubst,{%{EHC}TyFitsInCommon}) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
 %%]
 
 %%[9 export(TreeGam,emptyTGam,tgamUnit,tgamLookup,tgamLookupAll,tgamElts,tgamPushNew,tgamAddGam,tgamPushGam,tgamAdd,tgamPop,tgamUpdAdd,tgamUpd,tgamMbUpd,tgamInScopes,tgamIsInScope)

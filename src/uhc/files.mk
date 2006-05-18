@@ -1,6 +1,6 @@
 # variant, based on ehc config
 UHC_BLD_VARIANT_PREFIX					:= $(EHC_BLD_VARIANT_PREFIX)
-UHC_BLD_BIN_VARIANT_PREFIX				:= $(EHC_BLD_BIN_VARIANT_PREFIX)
+UHC_BLD_BIN_VARIANT_PREFIX				:= $(EHC_BIN_VARIANT_PREFIX)
 UHC_SHUFFLE_ORDER						:= $(EHC_SHUFFLE_ORDER)
 
 # location of uhc src
@@ -62,7 +62,7 @@ UHC_AG_ALL_DPDS_DRV_AG					:= $(patsubst $(SRC_UHC_PREFIX)%.cag,$(UHC_BLD_VARIAN
 # all dependents for a variant to kick of building
 $(UHC_AG_ALL_MAIN_DRV_AG) $(UHC_AG_ALL_DPDS_DRV_AG): $(UHC_BLD_VARIANT_PREFIX)%.ag: $(SRC_UHC_PREFIX)%.cag $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(UHC_VARIANT) --base=$(*F) --ag --preamble=no --lhs2tex=no --order="$(UHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(UHC_VARIANT) --base=$(*F) --ag --preamble=no --lhs2tex=no --order="$(UHC_SHUFFLE_ORDER)" $< > $@
 
 $(UHC_AG_D_MAIN_DRV_HS): %.hs: %.ag
 	$(AGC) -dr -P$(UHC_BLD_VARIANT_PREFIX) $<
@@ -75,6 +75,6 @@ $(UHC_AG_DS_MAIN_DRV_HS): %.hs: %.ag
 
 $(UHC_HS_UTIL_DRV_HS): $(UHC_BLD_VARIANT_PREFIX)%.hs: $(SRC_UHC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(UHC_VARIANT) --base=$(*F) --hs --preamble=no --lhs2tex=no --order="$(UHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(UHC_VARIANT) --base=$(*F) --hs --preamble=no --lhs2tex=no --order="$(UHC_SHUFFLE_ORDER)" $< > $@
 
 

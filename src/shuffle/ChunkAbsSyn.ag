@@ -14,8 +14,8 @@ DATA Chunk
                         minusL      : {[ChunkId]}
                         chOptions	: ChunkOptions
                         mbModNm     : MbStrExpr -- {Maybe String}
-                        imports     : {[String]}
-                        exports     : {[String]}
+                        imports     : StrExprs
+                        exports     : StrExprs
                         lines       : Lines
                         dumLines    : Lines
   | Named               cref        : {CRef}
@@ -32,11 +32,15 @@ DATA StrExpr
   | Var					nm			: {String}
   | Concat				e1			: StrExpr
   						e2			: StrExpr
-  | Paren				e 			: StrExpr
+  | White				e1			: StrExpr
+  						e2			: StrExpr
+  | Group				e 			: StrExpr
+  | Seq				    es			: StrExprs
 
+TYPE StrExprs = [StrExpr]
 TYPE MbStrExpr = MAYBE StrExpr
 
-SET AllStrExpr = StrExpr MbStrExpr
+SET AllStrExpr = StrExpr MbStrExpr StrExprs
 
 -- ChunkOption
 DATA ChunkOption

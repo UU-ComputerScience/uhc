@@ -7,16 +7,16 @@
 %%% Subsumption (fitting in) for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 import(EHCommon, EHTy, EHError) export (FIOut(..), emptyFO, foHasErrs)
+%%[1 module {%{EHC}TyFitsInCommon} import({%{EHC}Common}, EHTy, EHError) export (FIOut(..), emptyFO, foHasErrs)
 %%]
 
-%%[2 import(EHCnstr)
+%%[2 import({%{EHC}Cnstr})
 %%]
 
-%%[4 import(EHOpts) export(AppSpineInfo(..), unknownAppSpineInfoL, arrowAppSpineInfoL, prodAppSpineInfoL)
+%%[4 import({%{EHC}Opts}) export(AppSpineInfo(..), unknownAppSpineInfoL, arrowAppSpineInfoL, prodAppSpineInfoL)
 %%]
 
-%%[4 import(EHSubstitutable) export(FitsIn, FitsIn',fitsInLWith)
+%%[4 import({%{EHC}Substitutable}) export(FitsIn, FitsIn',fitsInLWith)
 %%]
 
 %%[9 import(EHCore,EHCoreSubst)
