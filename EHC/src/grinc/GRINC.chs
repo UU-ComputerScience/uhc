@@ -10,7 +10,7 @@
 %%[1 module Main import(System.IO, System.Environment, System.Console.GetOpt, Control.Monad.Error, Control.Monad.State)
 %%]
 
-%%[8 import(UU.Parsing, UU.Pretty, {%{EHC}Common}, {%{EHC}Scanner}, GrinCode)
+%%[8 import(UU.Parsing, UU.Pretty, {%{BASE}Common}, {%{BASE}Scanner}, GrinCode)
 %%]
 
 %%[8 import (EH.Util.FPath,GRINCCommon, CompilerDriver)

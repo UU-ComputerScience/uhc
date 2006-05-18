@@ -16,7 +16,7 @@ grin2cmm e gr emitTraceInfo = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf g
                               in cmmUnit_Syn_GrAGItf t
 %%]
 
-%%[8 hs import({%{EHC}Common} hiding "((<+>))") 
+%%[8 hs import({%{BASE}Common} hiding "((<+>))") 
 %%]
 %%[8 hs import("qualified Data.Map as Map", "Data.Bits")
 %%]

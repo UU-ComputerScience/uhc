@@ -18,7 +18,7 @@ Seq m a (Seq k b h)
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.RightSkew import({%{EHC}Common}, GrinCode) export(rightSkew)
+%%[8 hs module Trf.RightSkew import({%{BASE}Common}, GrinCode) export(rightSkew)
 rightSkew :: GrModule -> (GrModule, Bool)
 rightSkew grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) Inh_GrAGItf
                     in (grTrf_Syn_GrAGItf t, active_Syn_GrAGItf t)

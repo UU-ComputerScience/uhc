@@ -7,7 +7,7 @@
 %%% Haskell interface to AG generated code for compiler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs import(Data.Char,Data.List as List,UU.Pretty,{%{EHC}Common},{%{EHC}Opts}, EHTy,{%{EHC}Gam},EHError,EHErrorPretty,{%{EHC}TyFitsIn},{%{EHC}TyFitsInCommon},EHTyPretty,EHAbsSyn)
+%%[1 hs import(Data.Char,Data.List as List,UU.Pretty,{%{BASE}Common},{%{EHC}Opts}, EHTy,{%{EHC}Gam},EHError,EHErrorPretty,{%{EHC}TyFitsIn},{%{EHC}TyFitsInCommon},EHTyPretty,EHAbsSyn)
 %%]
 
 %%[2 hs import({%{EHC}Cnstr},{%{EHC}Substitutable},Data.Maybe)
@@ -16,7 +16,7 @@
 %%[3 hs import(EHTyQuantify,EHTyInstantiate)
 %%]
 
-%%[4 hs import({%{EHC}Debug})
+%%[4 hs import({%{BASE}Debug})
 %%]
 
 %%[4_2 hs import(qualified Data.Set as Set,{%{EHC}GamUtils},EHTyElimAlts,EHTyFreshVar)

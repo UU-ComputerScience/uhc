@@ -21,7 +21,7 @@ WRAPPER GrAGItf
 %%[8 hs import(Debug.Trace)
 %%]
 
-%%[8 hs import(GRINCCommon, {%{EHC}Common}, GrinCode,HeapPointsToFixpoint) export(heapPointsToAnalysis)
+%%[8 hs import(GRINCCommon, {%{BASE}Common}, GrinCode,HeapPointsToFixpoint) export(heapPointsToAnalysis)
 
 type Action          = ST RealWorld ()
 type EnvAction       = ST RealWorld (AbstractEnv RealWorld)

@@ -7,10 +7,10 @@
 %%% Module itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[3 hs import({%{EHC}Common},EHTy,{%{EHC}Cnstr},{%{EHC}Substitutable}) export(tyQuantify, tyQuantifyClosed)
+%%[3 hs import({%{BASE}Common},EHTy,{%{EHC}Cnstr},{%{EHC}Substitutable}) export(tyQuantify, tyQuantifyClosed)
 %%]
 
-%%[4 hs import({%{EHC}Debug},UU.Pretty)
+%%[4 hs import({%{BASE}Debug},UU.Pretty)
 %%]
 
 %%[4 hs import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List)

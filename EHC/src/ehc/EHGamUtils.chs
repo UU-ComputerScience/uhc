@@ -7,7 +7,7 @@
 %%% Gamma utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 module {%{EHC}GamUtils} import(Data.List,{%{EHC}Common},{%{EHC}Opts},EHTy,{%{EHC}TyFitsInCommon},{%{EHC}TyFitsIn},EHError,{%{EHC}Gam},{%{EHC}Cnstr},{%{EHC}Substitutable})
+%%[4 module {%{EHC}GamUtils} import(Data.List,{%{BASE}Common},{%{EHC}Opts},EHTy,{%{EHC}TyFitsInCommon},{%{EHC}TyFitsIn},EHError,{%{EHC}Gam},{%{EHC}Cnstr},{%{EHC}Substitutable})
 %%]
 
 %%[4_2 import(EHTyElimAlts) export(valGamElimAlts)

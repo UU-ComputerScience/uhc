@@ -7,7 +7,7 @@
 %%% Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module GRINCCommon import(System.Console.GetOpt,{%{EHC}Common}, "qualified Data.Map as Map", "qualified Data.Set as Set") export(Opts(..), defaultOpts, cmdLineOpts)
+%%[8 module GRINCCommon import(System.Console.GetOpt,{%{BASE}Common}, "qualified Data.Map as Map", "qualified Data.Set as Set") export(Opts(..), defaultOpts, cmdLineOpts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

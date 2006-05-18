@@ -47,11 +47,11 @@ EHC_HS_MAIN_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,$(EHC_MAIN))
 EHC_HS_MAIN_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_HS_MAIN_SRC_CHS))
 
 LIB_EHC_HS_UTIL_SRC_CHS					:= $(patsubst %,$(SRC_EHC_PREFIX)$(LIB_EHC_BASE)%.chs,\
-													Common ScannerCommon Scanner ScannerMachine \
+													Common ScannerCommon Scanner ScannerMachine Debug \
 											)
 EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)$(LIB_EHC_BASE)%.chs,\
 													Opts Cnstr Substitutable TyFitsIn TyFitsInCommon \
-													Gam GamUtils Pred Parser CoreUtils Debug \
+													Gam GamUtils Pred Parser CoreUtils \
 											)
 EHC_HS_UTIL_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)$(LIB_EHC_BASE)%.chs,$(EHC_BLD_VARIANT_PREFIX)$(LIB_EHC_HS_PREFIX)%.hs,$(EHC_HS_UTIL_SRC_CHS))
 LIB_EHC_HS_UTIL_DRV_HS					:= $(patsubst $(SRC_EHC_PREFIX)$(LIB_EHC_BASE)%.chs,$(EHC_BLD_LIB_VARIANT_PREFIX)$(LIB_EHC_HS_PREFIX)%.hs,$(LIB_EHC_HS_UTIL_SRC_CHS))
@@ -205,6 +205,8 @@ EHC_AG_D_MAIN_SRC_CAG					:= $(EHC_AGTY_MAIN_SRC_CAG) \
 											$(EHC_AGERR_MAIN_SRC_CAG) \
 											$(EHC_AGCORE_MAIN_SRC_CAG) \
 											$(EHC_AGEHAST_MAIN_SRC_CAG)
+LIB_EHC_AG_D_MAIN_SRC_CAG				:= $(EHC_AGTY_MAIN_SRC_CAG)
+
 EHC_AG_S_MAIN_SRC_CAG					:= $(EHC_AGTY_FTV_MAIN_SRC_CAG) \
 											$(EHC_AGTY_INST_MAIN_SRC_CAG) \
 											$(EHC_AGTY_PRETTY_MAIN_SRC_CAG) \
@@ -228,8 +230,13 @@ EHC_AG_S_MAIN_SRC_CAG					:= $(EHC_AGTY_FTV_MAIN_SRC_CAG) \
 											$(EHC_AGCORE_TRF_LETUNREC_MAIN_SRC_CAG) \
 											$(EHC_AGCORE_TRF_RENUNQ_MAIN_SRC_CAG) \
 											$(EHC_AGMAIN_MAIN_SRC_CAG)
+LIB_EHC_AG_S_MAIN_SRC_CAG				:= 
+
 EHC_AG_DS_MAIN_SRC_CAG					:= 
+LIB_EHC_AG_DS_MAIN_SRC_CAG				:= 
+
 EHC_AG_ALL_MAIN_SRC_CAG					:= $(EHC_AG_D_MAIN_SRC_CAG) $(EHC_AG_S_MAIN_SRC_CAG) $(EHC_AG_DS_MAIN_SRC_CAG)
+LIB_EHC_AG_ALL_MAIN_SRC_CAG				:= $(LIB_EHC_AG_D_MAIN_SRC_CAG) $(LIB_EHC_AG_S_MAIN_SRC_CAG) $(LIB_EHC_AG_DS_MAIN_SRC_CAG)
 
 EHC_AG_ALL_DPDS_SRC_CAG					:= $(sort \
 											$(EHC_AGMAIN_DPDS_SRC_CAG) \

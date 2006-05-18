@@ -19,7 +19,7 @@ WRAPPER GrAGItf
 %%[8 hs module Trf.BuildAppBindings import("qualified Data.Set as Set")
 %%]
 
-%%[8 hs import({%{EHC}Common}, GRINCCommon, GrinCode) export(buildAppBindings)
+%%[8 hs import({%{BASE}Common}, GRINCCommon, GrinCode) export(buildAppBindings)
 buildAppBindings :: Int -> GrModule -> (Int, GrModule)
 buildAppBindings uniq grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                                    (Inh_GrAGItf { unique_Inh_GrAGItf = uniq })
