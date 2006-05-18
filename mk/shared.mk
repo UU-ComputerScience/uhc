@@ -41,10 +41,6 @@ MAKEINDEX			:= makeindex
 GHC_OPTS			:= -fglasgow-exts -package util -package lang -package data -package uulib
 GHC_OPTS_OPTIM		:= -O2
 
-# source location (all src's will gradually move to this place, as from 20061515)
-# currently, this definition is duplicated from ./src/files.mk
-SRC_PREFIX			:= $(TOP_PREFIX)src/
-
 # lhs2tex options
 LHS2TEX_OPTS_DFLT	:= 
 LHS2TEX_OPTS_POLY	:= $(LHS2TEX_OPTS_DFLT) --poly
@@ -105,4 +101,5 @@ GEN_CABAL_SETUP		= @(echo "import Distribution.Simple" ; echo "main = defaultMai
 # compile cabal setup
 # $1: src
 # $2: exec
-GHC_CABAL			= $(GHC) -package Cabal -o $(2) $(1)
+GHC_CABAL			= $(GHC) -package Cabal -o $(2) $(1)  ; $(STRIP_CMD) $(2)
+

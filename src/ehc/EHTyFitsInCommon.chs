@@ -7,7 +7,7 @@
 %%% Subsumption (fitting in) for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EHC}TyFitsInCommon} import({%{EHC}Common}, EHTy, EHError) export (FIOut(..), emptyFO, foHasErrs)
+%%[1 module {%{EHC}TyFitsInCommon} import({%{BASE}Common}, EHTy, EHError) export (FIOut(..), emptyFO, foHasErrs)
 %%]
 
 %%[2 import({%{EHC}Cnstr})

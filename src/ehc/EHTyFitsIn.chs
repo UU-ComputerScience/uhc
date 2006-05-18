@@ -26,7 +26,7 @@
 %%% Subsumption (fitting in) for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EHC}TyFitsIn} import({%{EHC}Common}, {%{EHC}TyFitsInCommon}, EHTy, EHError) export (fitsIn)
+%%[1 module {%{EHC}TyFitsIn} import({%{BASE}Common}, {%{EHC}TyFitsInCommon}, EHTy, EHError) export (fitsIn)
 %%]
 
 %%[2 import({%{EHC}Cnstr},{%{EHC}Substitutable})
@@ -38,7 +38,7 @@
 %%[4 export(FIEnv(..),emptyFE)
 %%]
 
-%%[4 import({%{EHC}Debug})
+%%[4 import({%{BASE}Debug})
 %%]
 
 %%[4_2 import(EHTyElimAlts) export(mkFitsInWrap,mkFitsInWrap')

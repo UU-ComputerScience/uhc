@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Code's Java gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(UU.Pretty,{%{EHC}Common},GrinCode) export(ppGrModule,ppGrExpr,ppGrPat,ppGrTag')
+%%[8 hs import(UU.Pretty,{%{BASE}Common},GrinCode) export(ppGrModule,ppGrExpr,ppGrPat,ppGrTag')
 %%]
 
 %%[8.WRAPPER import(GrinCodeAbsSyn)

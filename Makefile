@@ -3,16 +3,6 @@ TOP_PREFIX				:=
 
 default: explanation
 
-# Ruler, will be obsolete soon
-RULER1				:= bin/ruler1$(EXEC_SUFFIX)
-RULER1_DIR			:= ruler1
-RULER1_MAIN			:= Ruler
-RULER1_AG			:= $(RULER1_MAIN).ag
-RULER1_HS			:= $(RULER1_AG:.ag=.hs)
-RULER1_DERIV		:= $(RULER1_DIR)/$(RULER1_HS)
-
-RULER1_SRC			:= $(RULER1_DIR)/$(RULER1_AG)
-
 # files, dependencies, rules
 # do not change the order of these includes
 -include latex/files.mk
@@ -74,7 +64,17 @@ explanation:
 all: afp-full ehcs doc grinis
 	$(MAKE) initial-test-expect
 
-.PHONY: ehcs dist www www-sync install lib src build
+.PHONY: ehcs dist www www-sync install lib src build ruler1
+
+# Ruler, will be obsolete soon
+RULER1				:= bin/ruler1$(EXEC_SUFFIX)
+RULER1_DIR			:= ruler1
+RULER1_MAIN			:= Ruler
+RULER1_AG			:= $(RULER1_MAIN).ag
+RULER1_HS			:= $(RULER1_AG:.ag=.hs)
+RULER1_DERIV		:= $(RULER1_DIR)/$(RULER1_HS)
+
+RULER1_SRC			:= $(RULER1_DIR)/$(RULER1_AG)
 
 ruler1: $(RULER1)
 

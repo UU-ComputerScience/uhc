@@ -14,7 +14,7 @@
 %%% Substitution for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 module {%{EHC}Cnstr} import(Data.List, {%{EHC}Common}, EHTy) export(Cnstr(..), emptyCnstr, cnstrTyUnit, cnstrTyLookup)
+%%[2 module {%{EHC}Cnstr} import(Data.List, {%{BASE}Common}, EHTy) export(Cnstr(..), emptyCnstr, cnstrTyUnit, cnstrTyLookup)
 %%]
 
 %%[2 import(UU.Pretty, EHTyPretty) export(ppCnstrV)
@@ -32,7 +32,7 @@
 %%[4_2 export(tyAsCnstr,cnstrTyRevUnit)
 %%]
 
-%%[9 import(qualified Data.Map as Map,{%{EHC}Debug}) export(CnstrInfo(..),cnstrImplsLookup,cnstrImplsUnit,assocLToCnstrImpls,cnstrToAssocL)
+%%[9 import(qualified Data.Map as Map,{%{BASE}Debug}) export(CnstrInfo(..),cnstrImplsLookup,cnstrImplsUnit,assocLToCnstrImpls,cnstrToAssocL)
 %%]
 
 %%[11 export(cnstrKeys)

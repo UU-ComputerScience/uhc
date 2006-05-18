@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Code's Java gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(UU.Pretty,{%{EHC}Common},EHTy,EHCore,Char) export(cmodJavaSrc)
+%%[8 hs import(UU.Pretty,{%{BASE}Common},EHTy,EHCore,Char) export(cmodJavaSrc)
 %%]
 
 %%[8.WRAPPER import(EHCoreCommonLev,EHCoreAbsSyn)

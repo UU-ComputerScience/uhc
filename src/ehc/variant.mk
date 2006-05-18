@@ -18,4 +18,5 @@ LIB_EHC_INS_FLAG						:= $(INS_FLAG_PREFIX)$(LIB_EHC_PKG_NAME)
 
 # tool use
 LIB_EHC_SHUFFLE_DEFS					:= --def=EHC:$(LIB_EHC_QUAL_PREFIX) \
-											--def=AST:$(LIB_EHC_AST_QUAL_PREFIX)
+											--def=BASE:$(LIB_EHC_QUAL_PREFIX) \
+											--def=AST:$(LIB_EHC_QUAL_PREFIX)

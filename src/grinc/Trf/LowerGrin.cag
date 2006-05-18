@@ -14,7 +14,7 @@ Some transformations are needed to allow easy code generation for GRIN
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.LowerGrin import({%{EHC}Common}, GRINCCommon, "qualified Data.Set as Set", "qualified Data.Map as Map", Data.List, Data.Monoid, GrinCode) export(lowerGrin)
+%%[8 hs module Trf.LowerGrin import({%{BASE}Common}, GRINCCommon, "qualified Data.Set as Set", "qualified Data.Map as Map", Data.List, Data.Monoid, GrinCode) export(lowerGrin)
 lowerGrin :: HptMap -> Int -> GrModule -> (HptMap, Int, RenameMap, GrModule)
 lowerGrin hptMap uniq grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                                           (Inh_GrAGItf { hptMap_Inh_GrAGItf  = hptMap

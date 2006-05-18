@@ -15,7 +15,7 @@ TODO: Rename map for identifiers can be much more efficient.
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.SplitFetch import({%{EHC}Common}, GRINCCommon, GrinCode) export(splitFetch)
+%%[8 hs module Trf.SplitFetch import({%{BASE}Common}, GRINCCommon, GrinCode) export(splitFetch)
 splitFetch :: HptMap -> Int -> GrModule -> (HptMap, Int, RenameMap, GrModule)
 splitFetch hptMap uniq grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                                     (Inh_GrAGItf { hptMap_Inh_GrAGItf  =  hptMap

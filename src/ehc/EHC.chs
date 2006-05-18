@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module Main import(System, System.Console.GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, {%{EHC}Common}, {%{EHC}ScannerCommon}, {%{EHC}Opts})
+%%[1 module Main import(System, System.Console.GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, {%{BASE}Common}, {%{BASE}ScannerCommon}, {%{EHC}Opts})
 %%]
 
 %%[1 import(qualified {%{EHC}Parser} as EHPrs, qualified EHMainAG as EHSem, qualified HSParser as HSPrs, qualified HSMainAG as HSSem)

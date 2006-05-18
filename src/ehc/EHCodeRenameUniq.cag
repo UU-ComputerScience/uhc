@@ -7,7 +7,7 @@
 %%% Simplify code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Maybe,FiniteMap,{%{EHC}Common},EHCode) export(cmodSimplify)
+%%[8 hs import(Maybe,FiniteMap,{%{BASE}Common},EHCode) export(cmodSimplify)
 %%]
 
 %%[9 hs import(EHTy)
