@@ -10,7 +10,7 @@ import qualified Data.Map as Map
 import Data.List
 import IO
 import UU.Parsing
-import UU.Parsing.CharParser
+-- import UU.Parsing.CharParser
 import UU.Scanner.Position( initPos, Pos )
 import EH.Util.ParseUtils
 import Common
@@ -50,7 +50,7 @@ shuffleScanOpts
         [ ( ScLexMeta 0
           , ScanOpts
               { scoKeywordsTxt      =   Set.fromList (kwTxtAsVarTooB ++ [ "_", "-", ".", "<", "=" ])
-              , scoSpecChars        =   Set.fromList "(),%"
+              , scoSpecChars        =   Set.fromList "(),%{}"
               , scoOpChars          =   Set.fromList "+-=*&^$#@!\\|><~`;:?/_."
               }
           )
@@ -280,39 +280,42 @@ pNm2                =   mkNmForP <$> p <*> pList (pKey "." *> (p <|> pInt))
 pNm                 ::  ShPr Nm
 pNm                 =   mkNmForP <$> pVar <*> pList (pKey "." *> (pVar <|> pInt))
 
-pStrExpr            ::  ShPr T_StrExpr
-pStrExpr            =   pChainr
-                          ((\s l r -> sem_StrExpr_Concat l (sem_StrExpr_Concat (sem_StrExpr_Str s) r)) <$> pKey ".")
-                          pStrExprApp
+pStrStr1            ::  ShPr String
+pStrStr1            =   pVar <|> pInt <|> pStr
 
-pStrExprApp         ::  ShPr T_StrExpr
-pStrExprApp         =   foldr1 sem_StrExpr_Concat <$> pList1 pStrExprBase
+pStrStr2            ::  ShPr String
+pStrStr2            =   pStrStr1 <|> foldl1 (<|>) (map pKey kwTxtAsVarTooB)
 
-pStrExprBase        ::  ShPr T_StrExpr
-pStrExprBase        =   sem_StrExpr_Str <$> (pVar <|> pInt <|> pStr)
-                    <|> sem_StrExpr_Var <$ pKey "%" <*> pParens pVar
-                    <|> sem_StrExpr_Paren <$> pParens pStrExpr
+pStrExpr            ::  (IsParser p Tok) => p String -> p T_StrExpr -> p T_StrExpr
+pStrExpr pS pPar    =   pStrExpr pStrExprBase
+                    where pStrExpr     =   pChainr
+                                             ((\s l r -> sem_StrExpr_Concat l (sem_StrExpr_Concat (sem_StrExpr_Str s) r)) <$> pKey ".")
+                          pStrExprConc =   foldr1 sem_StrExpr_Concat <$> pList1 pStrExprBase
+                          pStrExprBase =   sem_StrExpr_Str <$> pS
+                                       <|> sem_StrExpr_Var <$ pKey "%" <*> pCurly pVar
+                                       <|> sem_StrExpr_Group <$> pCurly (pStrExpr pStrExprConc)
+                                       <|> pParens pPar
 
-pMbStrExpr          ::  ShPr T_MbStrExpr
-pMbStrExpr          =   sem_MbStrExpr_Just <$> pStrExpr `opt` sem_MbStrExpr_Nothing
+pStrExprOne         ::  (IsParser p Tok) => p String -> p T_StrExpr
+pStrExprOne pS      =   pStrExprOne
+                    where pStrExprOne = pStrExpr pS pStrExprOne
 
-pId, pIdNest, pIdNest2, pIdNestPart :: ShPr String
-pId                 =   (\h t -> concat . intersperse "." $ h : t) <$> pVar <*> pList (pKey "." *> (pVar <|> pInt))
-pIdNest             =   (concat . intersperse " ") <$> pList1 pIdNestPart
-pIdNest2            =   (concat . intersperse " ") <$> pList1 (pIdNestPart <|> foldl1 (<|>) (map pKey kwTxtAsVarTooB))
-pIdNestPart         =   pId
-                    <|> (\l -> "(" ++ concat (intersperse "," l) ++ ")") <$> pParens pIdNests2
-                    <|> pStr
-
-pIdNests, pIdNests2 ::  ShPr [String]
-pIdNests            =   pListSep (pKey ",") pIdNest
-pIdNests2           =   pListSep (pKey ",") pIdNest2
+pStrExprSeq         ::  (IsParser p Tok) => p String -> p T_StrExprs
+pStrExprSeq pS      =   pStrExprPar
+                    where pStrExprWhite = foldr1 sem_StrExpr_White <$> pList1 (pStrExpr pS (sem_StrExpr_Seq <$> pStrExprPar))
+                          pStrExprPar   = pFoldrSep (sem_StrExprs_Cons,sem_StrExprs_Nil) (pKey ",") pStrExprWhite
 
 pChunkId            ::  ShPr ChunkId
 pChunkId            =   pVersion <+> (pKey "." *> pNm)
 
+pStrPacked          ::  (IsParser p Tok) => String -> String -> p a -> p a
+pStrPacked o c p    =   pKey o *> p <* pKey c
+
 pParens             ::  ShPr2 p
-pParens p           =   pKey "(" *> p <* pKey ")"
+pParens             =   pStrPacked "(" ")"
+
+pCurly              ::  ShPr2 p
+pCurly              =   pStrPacked "{" "}"
 
 pChunks             ::  ShPr T_Chunks
 pChunks             =   pFoldr (sem_Chunks_Cons,sem_Chunks_Nil) pChunk
@@ -324,10 +327,9 @@ pChunk              =   pBegChunk
                                  <*> pMaybe NmEmp id (pKey "." *> pNm)
                                  <*> (pKey "-" *> ((:[]) <$> pChunkId <|> pParens (pList1 pChunkId)) <|> pSucceed [])
                                  <*> pChunkOptions
-                                 -- <*> (Just <$ pKey "module" <*> pId <|> pSucceed Nothing)
-                                 <*> (sem_MbStrExpr_Just <$ pKey "module" <*> pStrExpr <|> pSucceed sem_MbStrExpr_Nothing)
-                                 <*> (pKey "import" *> pParens pIdNests2 <|> pSucceed [])
-                                 <*> (pKey "export" *> pParens pIdNests2 <|> pSucceed [])
+                                 <*> pMod
+                                 <*> pImpExp "import"
+                                 <*> pImpExp "export"
                              <|> sem_Chunk_Named
                                  <$> pNm
                              )
@@ -338,6 +340,8 @@ pChunk              =   pBegChunk
                              <*> pLines
                             )
                     <?> "a chunk"
+                    where pImpExp k = pKey k *> pParens (pStrExprSeq pStrStr2) <|> pSucceed sem_StrExprs_Nil
+                          pMod      = sem_MbStrExpr_Just <$ pKey "module" <*> pStrExprOne pStrStr1 <|> pSucceed sem_MbStrExpr_Nothing
 
 pChKind             ::  ShPr ChKind
 pChKind             =   pAnyFromMap pKey chKindMp
@@ -352,9 +356,6 @@ pMbChDest           ::  ShPr ChDest
 pMbChDest           =   pMaybe ChHere id pChDest
 
 pChWrap             ::  ShPr ChWrap
-{-
-pChWrap             =   pKey "wrap" *> pKey "=" *> pAnyFromMap pKey chWrapMp
--}
 pChWrap             =   pKey "wrap" *> pKey "="
                         *> (   pAnyFromMap pKey chWrapMp
                            <|> ChWrapBeamerBlockCode <$ pKey "beamerblockcode" <*> pStr

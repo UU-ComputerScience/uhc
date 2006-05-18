@@ -37,10 +37,10 @@ $(LIB_EH_UTIL_HS_DRV): $(BLD_LIBUTIL_PREFIX)%.hs: $(SRC_LIBUTIL_PREFIX)%.hs
 
 $(LIB_EH_UTIL_SETUP_HS_DRV): $(LIBUTIL_MKF)
 	mkdir -p $(@D)
-	@(echo "import Distribution.Simple" ; echo "main = defaultMain") > $@
+	$(call GEN_CABAL_SETUP) > $@
 
 $(LIB_EH_UTIL_SETUP2): $(LIB_EH_UTIL_SETUP_HS_DRV)
-	$(GHC) -package Cabal -o $@ $<
+	$(call GHC_CABAL,$<,$@)
 
 $(LIB_EH_UTIL_INS_FLAG): $(LIB_EH_UTIL_HS_DRV) $(LIB_EH_UTIL_CABAL_DRV) $(LIB_EH_UTIL_SETUP2) $(LIBUTIL_MKF)
 	mkdir -p $(@D)

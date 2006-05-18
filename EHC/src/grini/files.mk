@@ -58,16 +58,16 @@ grini-variant-dflt: $(GRINI_HS_ALL_DRV_HS) $(GRINI_AG_ALL_MAIN_DRV_HS) $(GRIN_AG
 
 $(GRINI_AG_ALL_MAIN_DRV_AG) $(GRINI_AG_ALL_DPDS_DRV_AG): $(GRIN_BLD_VARIANT_PREFIX)%.ag: $(SRC_GRINI_PREFIX)%.cag $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(GRIN_VARIANT) --base=$(*F) --ag --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(GRIN_VARIANT) --base=$(*F) --ag --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(GRINI_AG_S_MAIN_DRV_HS): %.hs: %.ag
 	$(AGC) -cfspr -P$(GRIN_BLD_VARIANT_PREFIX) $<
 
 $(GRINI_HS_MAIN_DRV_HS): $(GRIN_BLD_VARIANT_PREFIX)%.hs: $(SRC_GRINI_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(GRIN_VARIANT) --base=Main --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(GRIN_VARIANT) --base=Main --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(GRINI_HS_UTIL_DRV_HS): $(GRIN_BLD_VARIANT_PREFIX)%.hs: $(SRC_GRINI_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(GRIN_VARIANT) --base=$(*F) --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(GRIN_VARIANT) --base=$(*F) --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 

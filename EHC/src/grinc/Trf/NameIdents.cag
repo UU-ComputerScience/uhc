@@ -12,7 +12,7 @@ Rename numbered identifiers to their names.
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.NameIdents import(GRINCCommon, EHCommon, GrinCode, Data.Array.IArray, "qualified Data.Map as Map") export(nameIdents)
+%%[8 hs module Trf.NameIdents import(GRINCCommon, {%{EHC}Common}, GrinCode, Data.Array.IArray, "qualified Data.Map as Map") export(nameIdents)
 
 nameIdents :: IdentNameMap -> GrModule -> GrModule
 nameIdents m grmod = let t        = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))

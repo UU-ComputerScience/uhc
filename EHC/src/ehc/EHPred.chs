@@ -7,13 +7,13 @@
 %%% Pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 import(Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty)
+%%[9 module {%{EHC}Pred} import(Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty)
 %%]
 
-%%[9 import(EHTy,EHTyPretty,EHTyFitsInCommon,EHTyQuantify,EHCore,EHCorePretty,EHCoreSubst,EHCommon,EHGam,EHCnstr,EHSubstitutable)
+%%[9 import(EHTy,EHTyPretty,{%{EHC}TyFitsInCommon},EHTyQuantify,EHCore,EHCorePretty,EHCoreSubst,{%{EHC}Common},{%{EHC}Gam},{%{EHC}Cnstr},{%{EHC}Substitutable})
 %%]
 
-%%[9 import(EHDebug)
+%%[9 import({%{EHC}Debug})
 %%]
 
 %%[9 import(EHError) export(ProofState(..))

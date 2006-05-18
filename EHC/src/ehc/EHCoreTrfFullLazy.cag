@@ -7,10 +7,10 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,EHCommon,EHCore,EHTy) export(cmodTrfFullLazy)
+%%[8 hs import(Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,{%{EHC}Common},EHCore,EHTy) export(cmodTrfFullLazy)
 %%]
 
-%%[8 hs import(EHDebug)
+%%[8 hs import({%{EHC}Debug})
 %%]
 
 %%[8.WRAPPER import(EHCoreAbsSyn,EHCoreCommonLev,EHCoreTrfCommonFv,EHCoreTrfCommonLev)

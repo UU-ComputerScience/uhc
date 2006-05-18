@@ -7,16 +7,16 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module EHScannerCommon import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, EHCommon)
+%%[1 module {%{EHC}ScannerCommon} import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, {%{EHC}Common})
 %%]
 
 %%[1.Scanner import(UU.Scanner) export(module UU.Scanner)
 %%]
 
-%%[1 export(module EHScannerCommon)
+%%[1 export(module {%{EHC}ScannerCommon})
 %%]
 
-%%[7.Scanner -1.Scanner import(EHScanner) export(module EHScanner)
+%%[7.Scanner -1.Scanner import({%{EHC}Scanner}) export(module {%{EHC}Scanner})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

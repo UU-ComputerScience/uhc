@@ -10,7 +10,7 @@
 %%[8 hs import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[8 hs import(EHCommon,EHCore,EHTy) export(cmodTrfEtaRed)
+%%[8 hs import({%{EHC}Common},EHCore,EHTy) export(cmodTrfEtaRed)
 %%]
 
 %%[8.WRAPPER import(EHCoreAbsSyn,EHCoreCommonLev,EHCoreTrfCommonFv)

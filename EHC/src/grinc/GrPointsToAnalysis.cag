@@ -8,7 +8,7 @@ TODO: Mark unique variables as Unique
 %%[8 import(GrinCodeAbsSyn)
 %%]
 
-%%[8 hs import(Data.List(transpose), EHCommon(HsName), Debug.Trace)
+%%[8 hs import(Data.List(transpose), Debug.Trace)
 %%]
 
 %%[8.wrapper
@@ -21,7 +21,7 @@ WRAPPER GrAGItf
 %%[8 hs import(Debug.Trace)
 %%]
 
-%%[8 hs import(GRINCCommon, EHCommon, GrinCode,HeapPointsToFixpoint) export(heapPointsToAnalysis)
+%%[8 hs import(GRINCCommon, {%{EHC}Common}, GrinCode,HeapPointsToFixpoint) export(heapPointsToAnalysis)
 
 type Action          = ST RealWorld ()
 type EnvAction       = ST RealWorld (AbstractEnv RealWorld)

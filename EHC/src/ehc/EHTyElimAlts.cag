@@ -7,10 +7,10 @@
 %%% Haskell importable interface to check/elimination for/of inconsistent/ binds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_2 hs import(qualified Data.Set as Set,Data.List,EHCommon,EHOpts,EHTy,EHError,EHCnstr,EHSubstitutable,EHGam,EHTyFitsInCommon) export(tyElimAlts,tyElimAltsCleanup)
+%%[4_2 hs import(qualified Data.Set as Set,Data.List,{%{EHC}Common},{%{EHC}Opts},EHTy,EHError,{%{EHC}Cnstr},{%{EHC}Substitutable},{%{EHC}Gam},{%{EHC}TyFitsInCommon}) export(tyElimAlts,tyElimAltsCleanup)
 %%]
 
-%%[4_2 hs import(EHDebug,UU.Pretty,EHErrorPretty)
+%%[4_2 hs import({%{EHC}Debug},UU.Pretty,EHErrorPretty)
 %%]
 
 %%[44_2 hs export(tyElimForgetAlts,cnstrElimForgetAlts)

@@ -14,7 +14,7 @@
 %%% Substitution for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 import(Data.List, EHCommon, EHTy, EHCnstr,EHTySubst,EHTyFtv) export(Substitutable(..))
+%%[2 module {%{EHC}Substitutable} import(Data.List, {%{EHC}Common}, EHTy, {%{EHC}Cnstr},EHTySubst,EHTyFtv) export(Substitutable(..))
 %%]
 
 %%[4_2 export((|>>))

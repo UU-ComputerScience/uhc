@@ -222,6 +222,14 @@ SEM StrExpr
   | Str			lhs			.	str		=	@str
   | Var			lhs			.	str		=	Map.findWithDefault "" @nm (optDefs @lhs.opts)
   | Concat		lhs			.	str		=	@e1.str ++ @e2.str
+  | White		lhs			.	str		=	@e1.str ++ " " ++ @e2.str
+  | Seq			lhs			.	str		=	"(" ++ concat (intersperse "," @es.strL) ++ ")"
+
+ATTR StrExprs [ | | strL: {[String]} ]
+
+SEM StrExprs
+  | Nil			lhs			.	strL	=	[]
+  | Cons		lhs			.	strL	=	@hd.str : @tl.strL
 
 ATTR MbStrExpr [ | | mbStr: {Maybe String} ]
 
@@ -528,7 +536,7 @@ SEM Chunk
   | Ver         loc         .   chInfo      =   VerChunkInfo
                                                     @chunkLineNr @lhs.seqNr
                                                     @version @subNm @minusL
-                                                    @chOptions.chKind @chOptions.chDest @mbModNm.mbStr @imports @exports
+                                                    @chOptions.chKind @chOptions.chDest @mbModNm.mbStr @imports.strL @exports.strL
                                                     @lines.mbCD (Seq.toList @lines.xrefL)
                 lhs         .   verChInfoL  =   [@chInfo]
 
@@ -691,9 +699,11 @@ buildHSImps = cdVer . map (cdVer . map ("import" .#.) . vciImps)
 
 buildHSModuleHead :: String -> [VerChunkInfo] -> CDoc
 buildHSModuleHead fileBase is
-  = let ise = [ i | i <- is, not (null (vciExps i) && null (vciImps i))]
-        e = filter (not.null) . map vciExps $ ise
-        m = catMaybes . map vciMbModNm $ ise
+  = let ismie = [ i | i <- is   , isJust (vciMbModNm i) || not (null (vciExps i) && null (vciImps i)) ]
+        isie  = [ i | i <- ismie, not (null (vciExps i) && null (vciImps i)) ]
+        -- e = filter (not.null) . map vciExps $ isie
+        e = [ vciExps i | i <- isie, not (null (vciExps i)) ]
+        m = catMaybes . map vciMbModNm $ ismie
         exps = if null e then CDoc_Emp
                          else cdListSepV "( " " )" ", " . map (cdListSep "" "" ", ") $ e
         modNm = if null m then fileBase else head m

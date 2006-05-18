@@ -18,7 +18,7 @@ WRAPPER GrAGItf
 %%[8 hs module Trf.CleanupPass import("qualified Data.Set as Set")
 %%]
 
-%%[8 hs import(EHCommon, GRINCCommon, GrinCode) export(cleanupPass)
+%%[8 hs import({%{EHC}Common}, GRINCCommon, GrinCode) export(cleanupPass)
 cleanupPass :: GrModule -> GrModule
 cleanupPass grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                          (Inh_GrAGItf)

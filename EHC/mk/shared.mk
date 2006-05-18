@@ -1,11 +1,31 @@
 .SUFFIXES:
 .SUFFIXES: .pdf .tex .bib .html .lhs .sty .lag .cag .chs
 
+# location for binaries
+BIN_PREFIX			:= $(TOP_PREFIX)bin/
+BINABS_PREFIX		:= $(TOPABS_PREFIX)bin/
+
+# location for libraries
+LIB_PREFIX			:= $(TOP_PREFIX)lib/
+
+# location for cabal installed stuff (mainly libraries)
+INS_PREFIX			:= $(TOPABS_PREFIX)install/
+INS_FLAG_PREFIX		:= $(INS_PREFIX)ins-flg-
+
+# location building
+BLD_PREFIX			:= $(TOP_PREFIX)build/
+BLD_BIN_PREFIX		:= $(BLD_PREFIX)bin/
+BLD_LIBUTIL_PREFIX	:= $(BLD_PREFIX)libutil/
+
+# location for doc (end products)
+DOC_PREFIX			:= $(TOP_PREFIX)doc/
+
 # compilers and tools used
 AGC					:= uuagc
 GHC					:= ghc
 OPEN_FOR_EDIT		:= bbedit
 STRIP				:= $(STRIP_CMD)
+FILTER_NONEMP_FILES	:= $(BINABS_PREFIX)filterOutEmptyFiles
 
 # lhs2TeX
 LHS2TEX_ENV			:= $(LHS2TEX)
@@ -24,24 +44,6 @@ GHC_OPTS_OPTIM		:= -O2
 # source location (all src's will gradually move to this place, as from 20061515)
 # currently, this definition is duplicated from ./src/files.mk
 SRC_PREFIX			:= $(TOP_PREFIX)src/
-
-# location for binaries
-BIN_PREFIX			:= $(TOP_PREFIX)bin/
-
-# location for libraries
-LIB_PREFIX			:= $(TOP_PREFIX)lib/
-
-# location for cabal installed stuff (mainly libraries)
-INS_PREFIX			:= $(TOPABS_PREFIX)install/
-INS_FLAG_PREFIX		:= $(INS_PREFIX)ins-flg-
-
-# location building
-BLD_PREFIX			:= $(TOP_PREFIX)build/
-BLD_BIN_PREFIX		:= $(BLD_PREFIX)bin/
-BLD_LIBUTIL_PREFIX	:= $(BLD_PREFIX)libutil/
-
-# location for doc (end products)
-DOC_PREFIX			:= $(TOP_PREFIX)doc/
 
 # lhs2tex options
 LHS2TEX_OPTS_DFLT	:= 
@@ -96,3 +98,11 @@ GEN_CABAL			= \
 					echo   "Synopsis:			$(strip $(5))" ; \
 					echo   "Exposed-Modules:	$(subst $(space),$(comma),$(strip $(6)))" \
 					)
+
+# generate simplest cabal Setup.hs
+GEN_CABAL_SETUP		= @(echo "import Distribution.Simple" ; echo "main = defaultMain")
+
+# compile cabal setup
+# $1: src
+# $2: exec
+GHC_CABAL			= $(GHC) -package Cabal -o $(2) $(1)

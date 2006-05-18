@@ -32,7 +32,7 @@ lookup times.
 
 TODO: Shared set and Unique set instead base and shared part
 
-%%[8 import(Data.Maybe, Data.List, Data.Monoid, Data.Array.ST, Control.Monad.ST, Control.Monad, EHCommon, GrinCode)
+%%[8 import(Data.Maybe, Data.List, Data.Monoid, Data.Array.ST, Control.Monad.ST, Control.Monad, {%{EHC}Common}, GrinCode)
 %%]
 
 %%[8  import(UU.Pretty, GrinCodePretty) export("module Data.Monoid")

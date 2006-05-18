@@ -7,7 +7,7 @@
 %%% Haskell importable interface to eliminate 'Both' types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_2 hs import(EHCommon,EHTy,EHCnstr,EHSubstitutable) export(tyElimBoth)
+%%[4_2 hs import({%{EHC}Common},EHTy,{%{EHC}Cnstr},{%{EHC}Substitutable}) export(tyElimBoth)
 %%]
 
 %%[4_2.WRAPPER import(EHTyAbsSyn)

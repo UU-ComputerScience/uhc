@@ -13,7 +13,7 @@ EHC_MKF									:= $(patsubst %,$(SRC_EHC_PREFIX)%.mk,files shared)
 
 # end products, binary, executable, etc
 EHC_EXEC_NAME							:= ehc
-EHC_BLD_EXEC							:= $(EHC_BLD_BIN_VARIANT_PREFIX)$(EHC_EXEC_NAME)$(EXEC_SUFFIX)
+EHC_BLD_EXEC							:= $(EHC_BIN_VARIANT_PREFIX)$(EHC_EXEC_NAME)$(EXEC_SUFFIX)
 EHC_ALL_PUB_EXECS						:= $(patsubst %,$(EHC_BIN_PREFIX)%/$(EHC_EXEC_NAME)$(EXEC_SUFFIX),$(EHC_PUB_VARIANTS))
 EHC_ALL_EXECS							:= $(patsubst %,$(EHC_BIN_PREFIX)%/$(EHC_EXEC_NAME)$(EXEC_SUFFIX),$(EHC_VARIANTS))
 
@@ -34,20 +34,30 @@ EHC_RULES_4_DPDS_SRC_RUL				:= $(patsubst %,$(SRC_EHC_RULES_PREFIX)%.rul, \
 											)
 EHC_RULES_ALL_SRC						:= $(EHC_RULES_1_SRC_RUL) $(EHC_RULES_2_SRC_RUL) $(EHC_RULES_3_SRC_RL2) $(EHC_RULES_4_MAIN_SRC_RUL) $(EHC_RULES_4_DPDS_SRC_RUL)
 
+# library
+# derived stuff
+LIB_EHC_CABAL_DRV						:= $(EHC_BLD_LIB_VARIANT_PREFIX)lib-eh$(EHC_VARIANT).cabal
+LIB_EHC_SETUP_HS_DRV					:= $(EHC_BLD_LIB_VARIANT_PREFIX)Setup.hs
+LIB_EHC_SETUP2							:= $(EHC_BLD_LIB_VARIANT_PREFIX)setup$(EXEC_SUFFIX)
+LIB_EHC_SETUP							:= ./setup$(EXEC_SUFFIX)
 
 # main + sources + dpds, for .chs
 EHC_MAIN								:= EHC
 EHC_HS_MAIN_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,$(EHC_MAIN))
 EHC_HS_MAIN_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_HS_MAIN_SRC_CHS))
 
-EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
-													EHCommon EHOpts EHCnstr EHSubstitutable EHTyFitsIn EHTyFitsInCommon \
-													EHGam EHGamUtils EHPred EHParser EHScannerCommon EHScanner EHScannerMachine EHCoreUtils EHDebug \
+LIB_EHC_HS_UTIL_SRC_CHS					:= $(patsubst %,$(SRC_EHC_PREFIX)$(LIB_EHC_BASE)%.chs,\
+													Common ScannerCommon Scanner ScannerMachine \
 											)
-EHC_HS_UTIL_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_HS_UTIL_SRC_CHS))
+EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)$(LIB_EHC_BASE)%.chs,\
+													Opts Cnstr Substitutable TyFitsIn TyFitsInCommon \
+													Gam GamUtils Pred Parser CoreUtils Debug \
+											)
+EHC_HS_UTIL_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)$(LIB_EHC_BASE)%.chs,$(EHC_BLD_VARIANT_PREFIX)$(LIB_EHC_HS_PREFIX)%.hs,$(EHC_HS_UTIL_SRC_CHS))
+LIB_EHC_HS_UTIL_DRV_HS					:= $(patsubst $(SRC_EHC_PREFIX)$(LIB_EHC_BASE)%.chs,$(EHC_BLD_LIB_VARIANT_PREFIX)$(LIB_EHC_HS_PREFIX)%.hs,$(LIB_EHC_HS_UTIL_SRC_CHS))
 
-EHC_HS_ALL_SRC_CHS						:= $(EHC_HS_MAIN_SRC_CHS) $(EHC_HS_UTIL_SRC_CHS)
-EHC_HS_ALL_DRV_HS						:= $(EHC_HS_MAIN_DRV_HS) $(EHC_HS_UTIL_DRV_HS)
+EHC_HS_ALL_SRC_CHS						:= $(EHC_HS_MAIN_SRC_CHS) $(EHC_HS_UTIL_SRC_CHS) $(LIB_EHC_HS_UTIL_SRC_CHS)
+EHC_HS_ALL_DRV_HS						:= $(EHC_HS_MAIN_DRV_HS) $(EHC_HS_UTIL_DRV_HS) $(LIB_EHC_HS_UTIL_DRV_HS)
 
 # main + sources + dpds, for .cag
 EHC_AGMAIN_MAIN_SRC_CAG					:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,EHMainAG)
@@ -326,24 +336,52 @@ echo-gen-by-ruler:
 	done ; \
 	echo "\\\\"
 
+# rules for ehc library
+$(LIB_EHC_CABAL_DRV): $(LIB_EHC_HS_UTIL_DRV_HS) $(EHC_MKF)
+	mkdir -p $(@D)
+	$(call GEN_CABAL \
+		, $(LIB_EHC_PKG_NAME) \
+		, $(EH_VERSION) \
+		, $(LIB_EH_UTIL_PKG_NAME) \
+		,  \
+		, Part of EH$(EHC_VARIANT) compiler packaged as library \
+		, $(addprefix $(LIB_EHC_QUAL_PREFIX),$(basename $(notdir $(shell $(FILTER_NONEMP_FILES) $(LIB_EHC_HS_UTIL_DRV_HS))))) \
+	) > $@
+
+$(LIB_EHC_SETUP_HS_DRV): $(EHC_MKF)
+	mkdir -p $(@D)
+	$(call GEN_CABAL_SETUP) > $@
+
+$(LIB_EHC_SETUP2): $(LIB_EHC_SETUP_HS_DRV)
+	$(call GHC_CABAL,$<,$@)
+
+$(LIB_EHC_INS_FLAG): $(LIB_EHC_HS_UTIL_DRV_HS) $(LIB_EHC_CABAL_DRV) $(LIB_EHC_SETUP2) $(EHC_MKF)
+	$(call RM_EMPTY_FILES,$(LIB_EHC_HS_UTIL_DRV_HS))
+	mkdir -p $(@D)
+	cd $(EHC_BLD_LIB_VARIANT_PREFIX) && \
+	$(LIB_EHC_SETUP) configure --prefix=$(INS_PREFIX) --user && \
+	$(LIB_EHC_SETUP) build && \
+	$(LIB_EHC_SETUP) install --user && \
+	echo $@ > $@
+
 # rules for ehc compiler
 ehc-variant: 
 	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=$(EHC_ON_RULES_VIEW_$(EHC_VARIANT)))).($(EHC_BY_RULER_GROUPS_BASE)).($(EHC_BY_RULER_RULES_$(EHC_VARIANT)))" \
 	  ehc-variant-dflt
 
-ehc-variant-dflt: $(EHC_ALL_DPDS) $(EHC_RULES_3_DRV_CAG) $(LIB_EH_UTIL_INS_FLAG)
+ehc-variant-dflt: $(EHC_ALL_DPDS) $(EHC_RULES_3_DRV_CAG) $(LIB_EH_UTIL_INS_FLAG) $(LIB_EHC_INS_FLAG)
 	mkdir -p $(dir $(EHC_BLD_EXEC))
-	$(GHC) --make $(GHC_OPTS) -package $(LIB_EH_UTIL_PKG_NAME) -i$(EHC_BLD_VARIANT_PREFIX) $(EHC_BLD_VARIANT_PREFIX)$(EHC_MAIN).hs -o $(EHC_BLD_EXEC)
+	$(GHC) --make $(GHC_OPTS) -package $(LIB_EH_UTIL_PKG_NAME) -package $(LIB_EHC_PKG_NAME) -i$(EHC_BLD_VARIANT_PREFIX) $(EHC_BLD_VARIANT_PREFIX)$(EHC_MAIN).hs -o $(EHC_BLD_EXEC)
 
 #ehc-variant-selrule: 
 #	$(MAKE) EHC_VARIANT_RULER_SEL="($(EHC_VARIANT)).(expr.base).(e.int e.char)" ehc-variant-dflt
 
 $(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG): $(EHC_BLD_VARIANT_PREFIX)%.ag: $(SRC_EHC_PREFIX)%.cag $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=$(*F) --ag --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --ag --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(EHC_RULES_3_DRV_AG): $(EHC_BLD_VARIANT_PREFIX)%.ag: $(EHC_BLD_VARIANT_PREFIX)%.cag $(SHUFFLE)
-	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=$(*F) --ag --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --ag --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(EHC_AG_D_MAIN_DRV_HS): %.hs: %.ag
 	$(AGC) -dr -P$(EHC_BLD_VARIANT_PREFIX) $<
@@ -356,11 +394,15 @@ $(EHC_AG_DS_MAIN_DRV_HS): %.hs: %.ag
 
 $(EHC_HS_MAIN_DRV_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=Main --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=Main --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
-$(EHC_HS_UTIL_DRV_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE)
+$(EHC_HS_UTIL_DRV_HS): $(EHC_BLD_VARIANT_PREFIX)$(LIB_EHC_HS_PREFIX)%.hs: $(SRC_EHC_PREFIX)$(LIB_EHC_BASE)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(EHC_VARIANT) --base=$(*F) --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+
+$(LIB_EHC_HS_UTIL_DRV_HS): $(EHC_BLD_LIB_VARIANT_PREFIX)$(LIB_EHC_HS_PREFIX)%.hs: $(SRC_EHC_PREFIX)$(LIB_EHC_BASE)%.chs $(SHUFFLE)
+	mkdir -p $(@D)
+	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(EHC_RULES_3_DRV_CAG): $(EHC_RULES_3_SRC_RL2) $(RULER2) $(EHC_MKF)
 	mkdir -p $(@D)
