@@ -1,0 +1,44 @@
+%format unit  = "\mathbf{unit}"
+%format store  = "\mathbf{store}"
+%format update  = "\mathbf{update}"
+%format fetch  = "\mathbf{fetch}"
+%format ffi  = "\mathbf{ffi}"
+
+%format apply = "\mathbf{apply}"
+%format eval  = "\mathbf{eval}"
+
+%format # = "\texttt{\#}"
+
+%format throw = "\mathbf{throw}"
+%format try = "\mathbf{try}"
+%format catch = "\mathbf{catch}"
+
+%%%%%% format identifiers
+
+%format x0
+%format x1
+%format x2
+%format x3
+%format x4
+%format xn = "x_{n}"
+
+%format y0
+%format y1
+%format y2
+%format y3
+%format y4
+%format yn = "y_{n}"
+
+%format v0
+%format v1
+%format v2
+%format v3
+%format v4
+%format vn = "v_{n}"
+
+%format s0
+%format s1
+%format s2
+%format s3
+%format s4
+%format sn = "s_n{n}"
