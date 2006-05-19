@@ -5,7 +5,7 @@
 %%[3 hs import(Data.List,Infer2PassSupport) export(tyElimAlts,tyElimAltsCleanup)
 %%]
 
-%%[33 hs import(EHDebug,UU.Pretty,EHErrorPretty)
+%%[33 hs import(EHDebug,UU.Pretty,{%{ERR}Pretty})
 %%]
  
 %%[3.WRAPPER import(TyAbsSyn)

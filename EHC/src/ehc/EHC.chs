@@ -10,19 +10,19 @@
 %%[1 module Main import(System, System.Console.GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, {%{BASE}Common}, {%{BASE}ScannerCommon}, {%{EHC}Opts})
 %%]
 
-%%[1 import(qualified {%{EHC}Parser} as EHPrs, qualified EHMainAG as EHSem, qualified HSParser as HSPrs, qualified HSMainAG as HSSem)
+%%[1 import(qualified {%{EHC}Parser} as EHPrs, qualified {%{EHC}MainAG} as EHSem, qualified {%{HS}Parser} as HSPrs, qualified {%{HS}MainAG} as HSSem)
 %%]
 
-%%[8 import (EH.Util.CompileRun,EHError,EHErrorPretty,EH.Util.FPath,qualified Data.Map as Map,Data.Maybe,Data.List)
+%%[8 import (EH.Util.CompileRun,{%{AST}Error},{%{ERR}Pretty},EH.Util.FPath,qualified Data.Map as Map,Data.Maybe,Data.List)
 %%]
 
-%%[8 import (EHCoreJava,EHCoreGrin,EHCorePretty)
+%%[8 import ({%{CORE}Java},{%{CORE}Grin},{%{CORE}Pretty})
 %%]
 
-%%[8 import (EHCoreTrfRenUniq,EHCoreTrfFullLazy,EHCoreTrfInlineLetAlias,EHCoreTrfLetUnrec,EHCoreTrfLamLift,EHCoreTrfConstProp,EHCoreTrfEtaRed)
+%%[8 import ({%{TRF}RenUniq},{%{TRF}FullLazy},{%{TRF}InlineLetAlias},{%{TRF}LetUnrec},{%{TRF}LamLift},{%{TRF}ConstProp},{%{TRF}EtaRed})
 %%]
 
-%%[8 import (GrinCodePretty)
+%%[8 import ({%{GRIN}Pretty})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -318,7 +318,8 @@ crCompileCUParseHS modNm cr
                                 }
        ;  tokens <- offsideScanHandle fn fh
        ;  let steps = parseOffside (EHPrs.pAGItf) tokens
-              (res,_) = evalSteps steps
+              (resd,_) = evalSteps steps
+              res = EHSem.sem_AGItf resd
               p1ob = EHSem.wrap_AGItf res p1ib
               errL = mkParseErrInfoL (getMsgs steps)
        ;  cr' <- crUpdCU modNm (\ecu -> return (ecu {ecuMbOut = Just p1ob})) cr
@@ -453,8 +454,9 @@ doCompileRun filename opts
                                   }
          ;  tokens <- offsideScanHandle fn fh
          ;  let steps = parseOffside (EHPrs.pAGItf) tokens
-         ;  (res,_) <- evalStepsIO show steps
-         ;  let wrRes = EHSem.wrap_AGItf res (EHSem.Inh_AGItf {EHSem.opts_Inh_AGItf = opts})
+         ;  (resd,_) <- evalStepsIO show steps
+         ;  let res   = EHSem.sem_AGItf resd
+                wrRes = EHSem.wrap_AGItf res (EHSem.Inh_AGItf {EHSem.opts_Inh_AGItf = opts})
          ;  case ehcoptDumpPP opts of
               Just "pp"   ->  putStrLn (disp (EHSem.pp_Syn_AGItf wrRes) 70 "")
               Just "ast"  ->  putStrLn (disp (EHSem.ppAST_Syn_AGItf wrRes) 1000 "")

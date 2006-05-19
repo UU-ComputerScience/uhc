@@ -10,25 +10,25 @@
 %%[1 module {%{EHC}Gam} import(Data.List,{%{BASE}Common}) export(Gam,emptyGam,gamLookup, gamPushNew, gamPop, gamTop, gamAddGam, gamUnit, gamAdd, gamPushGam, gamToAssocL, assocLToGam, gamToDups)
 %%]
 
-%%[1 import(EHTy,EHError) export(ValGam, ValGamInfo(..), valGamLookup,valGamLookupTy)
+%%[1 import({%{AST}Ty},{%{AST}Error}) export(ValGam, ValGamInfo(..), valGamLookup,valGamLookupTy)
 %%]
 
 %%[1 export(TyGam, TyGamInfo(..), tyGamLookup)
 %%]
 
-%%[1 import(UU.Pretty,EHTyPretty) export(ppGam)
+%%[1 import(UU.Pretty,{%{TY}Pretty}) export(ppGam)
 %%]
 
 %%[2 import({%{EHC}Cnstr},{%{EHC}Substitutable})
 %%]
 
-%%[3 import(EHTyQuantify) export(valGamQuantify, gamMap,gamMapElts,valGamMapTy)
+%%[3 import({%{TY}Quantify}) export(valGamQuantify, gamMap,gamMapElts,valGamMapTy)
 %%]
 
-%%[4 import({%{EHC}Opts},EHTyInstantiate) export(valGamInst1Exists)
+%%[4 import({%{EHC}Opts},{%{TY}Instantiate}) export(valGamInst1Exists)
 %%]
 
-%%[4 import({%{EHC}TyFitsInCommon}) export(AppSpineGam, appSpineGam, asGamLookup)
+%%[4 import({%{TY}FitsInCommon}) export(AppSpineGam, appSpineGam, asGamLookup)
 %%]
 
 %%[4 export(gamMapThr)
@@ -52,13 +52,13 @@
 %%[7 export(mkTGIData)
 %%]
 
-%%[8 import(Data.Maybe,qualified Data.Map as Map,EHCore) export(gamUpd,DataTagMp)
+%%[8 import(Data.Maybe,qualified Data.Map as Map,{%{AST}Core}) export(gamUpd,DataTagMp)
 %%]
 
 %%[8 export(DataGam,DataGamInfo(..),mkDGI)
 %%]
 
-%%[9 import({%{BASE}Debug},EHCoreSubst,{%{EHC}TyFitsInCommon}) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
+%%[9 import({%{BASE}Debug},{%{CORE}Subst},{%{TY}FitsInCommon}) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
 %%]
 
 %%[9 export(TreeGam,emptyTGam,tgamUnit,tgamLookup,tgamLookupAll,tgamElts,tgamPushNew,tgamAddGam,tgamPushGam,tgamAdd,tgamPop,tgamUpdAdd,tgamUpd,tgamMbUpd,tgamInScopes,tgamIsInScope)

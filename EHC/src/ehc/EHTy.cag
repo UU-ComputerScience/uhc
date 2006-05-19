@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs import({%{BASE}Common}) export(TyAGItf(..), Ty(..), TyL, tyInt, tyChar, mkTyCon)
+%%[1 hs module {%{AST}Ty} import({%{BASE}Common}) export(TyAGItf(..), Ty(..), TyL, tyInt, tyChar, mkTyCon)
 %%]
 
 %%[1 hs export(tyLHdAndTl, tyArrowArgRes, tyArrowArgsRes, tyArrowArgs, tyArrowRes, tyAppFunArgs, tyProdArgs, tyAppArgs) 
@@ -88,7 +88,7 @@
 %%[10 hs export(tyExtsOffset)
 %%]
 
-%%[1 import(EHTyAbsSyn)
+%%[1 import(TyAbsSyn)
 DERIVING *     : Show, Eq, Ord
 %%]
 

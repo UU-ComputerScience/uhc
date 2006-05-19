@@ -32,10 +32,10 @@ lookup times.
 
 TODO: Shared set and Unique set instead base and shared part
 
-%%[8 import(Data.Maybe, Data.List, Data.Monoid, Data.Array.ST, Control.Monad.ST, Control.Monad, {%{BASE}Common}, GrinCode)
+%%[8 import(Data.Maybe, Data.List, Data.Monoid, Data.Array.ST, Control.Monad.ST, Control.Monad, {%{BASE}Common}, {%{AST}GrinCode})
 %%]
 
-%%[8  import(UU.Pretty, GrinCodePretty) export("module Data.Monoid")
+%%[8  import(UU.Pretty, {%{GRIN}Pretty}) export("module Data.Monoid")
 %%]
 
 
@@ -56,7 +56,7 @@ instance Ord GrTag where
                                                  otherwise         -> GT
 %%]
 
-%%[8.imports import("qualified Data.Set as Set", "qualified Data.Map as Map")
+%%[8.imports import(qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
 
 %%[8.AbstractValue import(Data.List) export(AbstractValue(..), AbstractNode, Location, Variable)

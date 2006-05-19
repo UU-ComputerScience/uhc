@@ -15,13 +15,13 @@ TODO: Mark unique variables as Unique
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs import("qualified Data.Map as Map", "qualified Data.Set as Set", Data.Maybe, Control.Monad, Control.Monad.ST, Data.Array.ST, Data.Array.IArray)
+%%[8 hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe, Control.Monad, Control.Monad.ST, Data.Array.ST, Data.Array.IArray)
 %%]
 
 %%[8 hs import(Debug.Trace)
 %%]
 
-%%[8 hs import(GRINCCommon, {%{BASE}Common}, GrinCode,HeapPointsToFixpoint) export(heapPointsToAnalysis)
+%%[8 hs import(GRINCCommon, {%{BASE}Common}, {%{AST}GrinCode},HeapPointsToFixpoint) export(heapPointsToAnalysis)
 
 type Action          = ST RealWorld ()
 type EnvAction       = ST RealWorld (AbstractEnv RealWorld)

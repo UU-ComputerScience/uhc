@@ -7,10 +7,10 @@
 %%% Haskell importable interface to Ty subst
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 hs import({%{BASE}Common},EHTy,{%{EHC}Cnstr}) export(tyAppCnstr)
+%%[2 hs module {%{TY}Subst} import({%{BASE}Common},{%{AST}Ty},{%{EHC}Cnstr}) export(tyAppCnstr)
 %%]
 
-%%[2.WRAPPER import(EHTyAbsSyn)
+%%[2.WRAPPER import(TyAbsSyn)
 WRAPPER TyAGItf
 %%]
 

@@ -7,10 +7,10 @@
 %%% Haskell importable interface to Code's GRIN gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import(Data.Maybe,Data.List,qualified Data.Set as Set,qualified Data.Map as Map,UU.Pretty,{%{BASE}Common},EHCore,EHTy,GrinCode,Char) export(cmodGrin)
+%%[8 hs module {%{CORE}Grin} import(Data.Maybe,Data.List,qualified Data.Set as Set,qualified Data.Map as Map,UU.Pretty,{%{BASE}Common},{%{AST}Core},{%{AST}Ty},{%{AST}GrinCode},Char) export(cmodGrin)
 %%]
 
-%%[8.WRAPPER import(EHCoreAbsSyn,EHCoreCommonLev)
+%%[8.WRAPPER import(CoreAbsSyn,CoreCommonLev)
 WRAPPER CodeAGItf
 %%]
 

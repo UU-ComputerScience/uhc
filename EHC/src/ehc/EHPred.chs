@@ -10,13 +10,13 @@
 %%[9 module {%{EHC}Pred} import(Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty)
 %%]
 
-%%[9 import(EHTy,EHTyPretty,{%{EHC}TyFitsInCommon},EHTyQuantify,EHCore,EHCorePretty,EHCoreSubst,{%{BASE}Common},{%{EHC}Gam},{%{EHC}Cnstr},{%{EHC}Substitutable})
+%%[9 import({%{AST}Ty},{%{TY}Pretty},{%{TY}FitsInCommon},{%{TY}Quantify},{%{AST}Core},{%{CORE}Pretty},{%{CORE}Subst},{%{BASE}Common},{%{EHC}Gam},{%{EHC}Cnstr},{%{EHC}Substitutable})
 %%]
 
 %%[9 import({%{BASE}Debug})
 %%]
 
-%%[9 import(EHError) export(ProofState(..))
+%%[9 import({%{AST}Error}) export(ProofState(..))
 %%]
 
 %%[9 export(ProvenNode(..),prvnIsAnd)
@@ -49,7 +49,7 @@
 %%[9 export(PrElimTGam,peTGamAdd,peTGamDel,peTGamAddKnPr,peTGamAddKnPrL,peTGamPoiS)
 %%]
 
-%%[9 import(EHTyFtv) export(prvgArgLeaves,prvgSatisfiedNodeS,prvgOrigs,prvgAppPoiSubst,prvg2BackMp,prvgShareMp)
+%%[9 import({%{TY}Ftv}) export(prvgArgLeaves,prvgSatisfiedNodeS,prvgOrigs,prvgAppPoiSubst,prvg2BackMp,prvgShareMp)
 %%]
 
 %%[9 export(PoiSubst(..),PoiSubstitutable(..))

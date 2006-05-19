@@ -7,14 +7,14 @@ Some transformations are needed to allow easy code generation for GRIN
 %include afp.fmt
 %%]
 
-%%[8 import("../GrinCodeAbsSyn")
+%%[8 import(GrinCodeAbsSyn)
 %%]
 
 %%[8.wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.LowerGrin import({%{BASE}Common}, GRINCCommon, "qualified Data.Set as Set", "qualified Data.Map as Map", Data.List, Data.Monoid, GrinCode) export(lowerGrin)
+%%[8 hs module Trf.LowerGrin import({%{BASE}Common}, GRINCCommon, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, Data.Monoid, {%{AST}GrinCode}) export(lowerGrin)
 lowerGrin :: HptMap -> Int -> GrModule -> (HptMap, Int, RenameMap, GrModule)
 lowerGrin hptMap uniq grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                                           (Inh_GrAGItf { hptMap_Inh_GrAGItf  = hptMap

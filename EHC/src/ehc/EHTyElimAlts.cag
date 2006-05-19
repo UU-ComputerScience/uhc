@@ -7,16 +7,16 @@
 %%% Haskell importable interface to check/elimination for/of inconsistent/ binds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_2 hs import(qualified Data.Set as Set,Data.List,{%{BASE}Common},{%{EHC}Opts},EHTy,EHError,{%{EHC}Cnstr},{%{EHC}Substitutable},{%{EHC}Gam},{%{EHC}TyFitsInCommon}) export(tyElimAlts,tyElimAltsCleanup)
+%%[4_2 hs module {%{TY}ElimAlts} import(qualified Data.Set as Set,Data.List,{%{BASE}Common},{%{EHC}Opts},{%{AST}Ty},{%{AST}Error},{%{EHC}Cnstr},{%{EHC}Substitutable},{%{EHC}Gam},{%{TY}FitsInCommon}) export(tyElimAlts,tyElimAltsCleanup)
 %%]
 
-%%[4_2 hs import({%{BASE}Debug},UU.Pretty,EHErrorPretty)
+%%[4_2 hs import({%{BASE}Debug},UU.Pretty,{%{ERR}Pretty})
 %%]
 
 %%[44_2 hs export(tyElimForgetAlts,cnstrElimForgetAlts)
 %%]
  
-%%[4_2.WRAPPER import(EHTyAbsSyn)
+%%[4_2.WRAPPER import(TyAbsSyn)
 WRAPPER TyAGItf
 %%]
 

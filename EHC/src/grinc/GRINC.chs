@@ -10,7 +10,7 @@
 %%[1 module Main import(System.IO, System.Environment, System.Console.GetOpt, Control.Monad.Error, Control.Monad.State)
 %%]
 
-%%[8 import(UU.Parsing, UU.Pretty, {%{BASE}Common}, {%{BASE}Scanner}, GrinCode)
+%%[8 import(UU.Parsing, UU.Pretty, {%{BASE}Common}, {%{BASE}Scanner}, {%{AST}GrinCode})
 %%]
 
 %%[8 import (EH.Util.FPath,GRINCCommon, CompilerDriver)
@@ -67,7 +67,7 @@ writeToFile str fp
        }
 %%]
 
-%%[8.parse import(GRIParser)
+%%[8.parse import({%{GRIN}Parser})
 parseGrin :: FPath -> Opts -> IO (String, GrModule)
 parseGrin fp opts = do
     (fn,fh) <- openFPath fp ReadMode
@@ -334,7 +334,7 @@ caWriteCmm = do
     -- fpathToStr
     -- fpathBase
 
-%%[8.writeGrin import(GrinCodePretty)
+%%[8.writeGrin import({%{GRIN}Pretty})
 caWriteGrin :: Bool -> String -> CompileAction ()
 caWriteGrin debug fn = harden_ $ do -- bug: when writePP throws an exeption harden will block it
     { when debug (gets (optDebug . csOpts) >>= guard)
@@ -350,7 +350,7 @@ caWriteGrin debug fn = harden_ $ do -- bug: when writePP throws an exeption hard
     }
 %%]
 
-%%[8 import("qualified Data.Map as Map", HeapPointsToFixpoint)
+%%[8 import(qualified Data.Map as Map, HeapPointsToFixpoint)
 doCompileRun :: String -> Opts -> IO ()
 doCompileRun fn opts = let input     = mkTopLevelFPath "grin" fn
                            initState = CompileState

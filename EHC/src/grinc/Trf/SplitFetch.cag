@@ -8,14 +8,14 @@ TODO: Rename map for identifiers can be much more efficient.
 %include afp.fmt
 %%]
 
-%%[8 import("../GrinCodeAbsSyn")
+%%[8 import(GrinCodeAbsSyn)
 %%]
 
 %%[8.wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.SplitFetch import({%{BASE}Common}, GRINCCommon, GrinCode) export(splitFetch)
+%%[8 hs module Trf.SplitFetch import({%{BASE}Common}, GRINCCommon, {%{AST}GrinCode}) export(splitFetch)
 splitFetch :: HptMap -> Int -> GrModule -> (HptMap, Int, RenameMap, GrModule)
 splitFetch hptMap uniq grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                                     (Inh_GrAGItf { hptMap_Inh_GrAGItf  =  hptMap
@@ -175,7 +175,7 @@ SEM GrExpr
   | Throw    loc  .  grTrf  = GrExpr_Throw @newName
 %%]
 
-%%[8 hs import("qualified Data.Map as Map", Data.Maybe, Data.List)
+%%[8 hs import(qualified Data.Map as Map, Data.Maybe, Data.List)
 type FetchEnv = Map.Map HsName [(HsName, GrExpr)]
 
 fromJust' s Nothing = error $ "fromJust':" ++ s

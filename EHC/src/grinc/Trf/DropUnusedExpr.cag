@@ -6,17 +6,17 @@ TODO: drop global variables
 %include afp.fmt
 %%]
 
-%%[8 import("../GrinCodeAbsSyn")
+%%[8 import(GrinCodeAbsSyn)
 %%]
 
 %%[8.wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.DropUnusedExpr import("qualified Data.Set as Set")
+%%[8 hs module Trf.DropUnusedExpr import(qualified Data.Set as Set)
 %%]
 
-%%[8 hs import({%{BASE}Common}, GRINCCommon, GrinCode, Data.Maybe) export(dropUnusedExpr)
+%%[8 hs import({%{BASE}Common}, GRINCCommon, {%{AST}GrinCode}, Data.Maybe) export(dropUnusedExpr)
 dropUnusedExpr :: HptMap -> GrModule -> GrModule
 dropUnusedExpr hptMap grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                                    (Inh_GrAGItf { hptMap_Inh_GrAGItf = hptMap })

@@ -16,7 +16,7 @@
 %%[8 import (EH.Util.FPath,qualified Data.Map as Map,Data.Maybe,Data.List,Directory)
 %%]
 
-%%[8 import (GRICommon,GRIParser,GRIRun,GRISetup,GrinCode)
+%%[8 import (GRICommon,{%{GRIN}Parser},GRIRun,GRISetup,{%{AST}GrinCode})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

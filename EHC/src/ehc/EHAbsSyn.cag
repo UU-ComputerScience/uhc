@@ -7,13 +7,13 @@
 %%% Haskell importable interface to EHAbsSynAG
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs import({%{BASE}Common})
+%%[1 hs module {%{AST}AbsSyn} import({%{BASE}Common})
 %%]
 
 %%[1 hs export(AGItf(..), Decl(..), Decls, TyExpr(..), Expr(..), PatExpr(..))
 %%]
 
-%%[4 hs import(EHTy)
+%%[4 hs import({%{AST}Ty})
 %%]
 
 %%[5 hs export(TyExprs, TyVar(..), TyVars, CaseAlt(..), CaseAlts, DataConstr(..), DataConstrs)
@@ -31,7 +31,7 @@
 %%[11 hs export(DataConstrEq(..), DataConstrEqs)
 %%]
 
-%%[1 import(EHAbsSynAG)
+%%[1 import(AbsSynAG)
 %%]
 
 
