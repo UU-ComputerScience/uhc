@@ -7,13 +7,13 @@
 %%% Haskell importable interface to Ty subst
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 hs import(Data.List,{%{BASE}Common},EHTy) export(tyFtv)
+%%[2 hs module {%{TY}Ftv} import(Data.List,{%{BASE}Common},{%{AST}Ty}) export(tyFtv)
 %%]
 
 %%[4 hs import(qualified Data.Map as Map) export(tyFtvMp)
 %%]
 
-%%[2.WRAPPER import(EHTyAbsSyn)
+%%[2.WRAPPER import(TyAbsSyn)
 WRAPPER TyAGItf
 %%]
 

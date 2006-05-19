@@ -7,7 +7,7 @@ primitives information table.
 - meta info for code generation
 - code snippets to generate the code for a primitive (C--)
 
-%%[8.abstractValues import(HeapPointsToFixpoint,{%{EHC}Common(HsName(..))}, "qualified Data.Set as Set", GrinCode,GRINCCommon)
+%%[8.abstractValues import(HeapPointsToFixpoint,{%{EHC}Common(HsName(..))}, qualified Data.Set as Set, {%{AST}GrinCode},GRINCCommon)
 unboxedBasic = AV_Nodes $ Map.fromList [ (GrTag_Unboxed, [AV_Basic])
                                        ]
 booleanNodes = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "_False"), [AV_Basic])
@@ -59,7 +59,7 @@ assignOrReturn (Left tn) expr = if null tn
                                 else updates (zipWith (\l r -> (varUpdate l,r)) tn expr)
 %%]
 
-%%[8.primitivesMap import("qualified Data.Map as Map")
+%%[8.primitivesMap import(qualified Data.Map as Map)
 type PrimitiveInfo = (Int
                      , [String]
                      , CmmNames -> Either CmmNames [CmmBodyBuilder] -> CmmBodyBuilder

@@ -14,10 +14,10 @@
 %%% Substitution for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 module {%{EHC}Cnstr} import(Data.List, {%{BASE}Common}, EHTy) export(Cnstr(..), emptyCnstr, cnstrTyUnit, cnstrTyLookup)
+%%[2 module {%{EHC}Cnstr} import(Data.List, {%{BASE}Common}, {%{AST}Ty}) export(Cnstr(..), emptyCnstr, cnstrTyUnit, cnstrTyLookup)
 %%]
 
-%%[2 import(UU.Pretty, EHTyPretty) export(ppCnstrV)
+%%[2 import(UU.Pretty, {%{TY}Pretty}) export(ppCnstrV)
 %%]
 
 %%[4 export(cnstrFilterTy,cnstrDel,(|\>) ,cnstrPlus)

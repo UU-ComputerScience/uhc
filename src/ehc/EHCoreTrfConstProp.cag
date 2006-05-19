@@ -7,10 +7,10 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs import({%{BASE}Common},EHCore,EHTy) export(cmodTrfConstProp)
+%%[8 hs module {%{TRF}ConstProp} import({%{BASE}Common},{%{AST}Core},{%{AST}Ty}) export(cmodTrfConstProp)
 %%]
 
-%%[8.WRAPPER import(EHCoreAbsSyn,EHCoreCommonLev)
+%%[8.WRAPPER import(CoreAbsSyn,CoreCommonLev)
 WRAPPER CodeAGItf
 %%]
 

@@ -10,7 +10,7 @@
 %%[8 hs import(Maybe,FiniteMap,{%{BASE}Common},EHCode) export(cmodSimplify)
 %%]
 
-%%[9 hs import(EHTy)
+%%[9 hs import({%{AST}Ty})
 %%]
 
 %%[8.WRAPPER import(EHCodeAbsSyn)

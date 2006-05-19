@@ -7,10 +7,10 @@
 %%% Haskell importable interface to eliminate 'Equal' types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[11 hs import({%{BASE}Common},EHTy,{%{EHC}Cnstr},{%{EHC}Substitutable}) export(tyElimEqual)
+%%[11 hs module {%{TY}ElimEqual} import({%{BASE}Common},{%{AST}Ty},{%{EHC}Cnstr},{%{EHC}Substitutable}) export(tyElimEqual)
 %%]
 
-%%[11.WRAPPER import(EHTyAbsSyn)
+%%[11.WRAPPER import(TyAbsSyn)
 WRAPPER TyAGItf
 %%]
 

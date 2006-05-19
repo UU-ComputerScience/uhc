@@ -5,14 +5,14 @@ TODO: Complete Left unit implementation
 %include afp.fmt
 %%]
 
-%%[8 import("../GrinCodeAbsSyn")
+%%[8 import(GrinCodeAbsSyn)
 %%]
 
 %%[8.wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.CopyPropagation import({%{BASE}Common}, GRINCCommon, GrinCode, Data.Maybe) export(propagate)
+%%[8 hs module Trf.CopyPropagation import({%{BASE}Common}, GRINCCommon, {%{AST}GrinCode}, Data.Maybe) export(propagate)
 propagate :: GrModule -> (Bool, GrModule)
 propagate grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                        (Inh_GrAGItf)
@@ -117,7 +117,7 @@ unit v        ; \v'           -> e => [v/v']
 
 Note: variables are never wildcards - so it does not matter that we store them in the substitution map
 
-%%[8 hs import("qualified Data.Map as Map")
+%%[8 hs import(qualified Data.Map as Map)
 type ValueMap = (Map.Map HsName GrVal, Map.Map HsName GrTag)
 %%]
 

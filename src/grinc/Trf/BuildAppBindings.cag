@@ -9,17 +9,17 @@ of the node and applys all (N) other arguments.
 %include afp.fmt
 %%]
 
-%%[8 import("../GrinCodeAbsSyn")
+%%[8 import(GrinCodeAbsSyn)
 %%]
 
 %%[8.wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.BuildAppBindings import("qualified Data.Set as Set")
+%%[8 hs module Trf.BuildAppBindings import(qualified Data.Set as Set)
 %%]
 
-%%[8 hs import({%{BASE}Common}, GRINCCommon, GrinCode) export(buildAppBindings)
+%%[8 hs import({%{BASE}Common}, GRINCCommon, {%{AST}GrinCode}) export(buildAppBindings)
 buildAppBindings :: Int -> GrModule -> (Int, GrModule)
 buildAppBindings uniq grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                                    (Inh_GrAGItf { unique_Inh_GrAGItf = uniq })

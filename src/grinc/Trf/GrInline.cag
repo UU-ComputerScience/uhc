@@ -5,14 +5,14 @@ We will inline apply and eval functions (based on flow analysis)
 %include afp.fmt
 %%]
 
-%%[8 import("../GrinCodeAbsSyn")
+%%[8 import(GrinCodeAbsSyn)
 %%]
 
 %%[8.wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.GrInline import({%{BASE}Common}, GRINCCommon, GrinCode, HeapPointsToFixpoint, Data.List) export(inlineEA)
+%%[8 hs module Trf.GrInline import({%{BASE}Common}, GRINCCommon, {%{AST}GrinCode}, HeapPointsToFixpoint, Data.List) export(inlineEA)
 inlineEA :: HptMap -> Int -> GrModule -> (HptMap, Int, RenameMap, GrModule)
 inlineEA hptMap unique grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                                     (Inh_GrAGItf { hptMap_Inh_GrAGItf = hptMap
@@ -30,7 +30,7 @@ inlineEA hptMap unique grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf 
 %%% Eval code generation %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.evalCode hs import(Data.Maybe, "qualified Data.Set as Set", "qualified Data.Map as Map")
+%%[8.evalCode hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
 -- first element is the arity information (is always a basic abstract value)
 buildAlternative t (_:av) arity rhsElem unique uf vf tf =
     let elems           = zip [unique..] av

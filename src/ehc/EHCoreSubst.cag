@@ -7,7 +7,7 @@
 %%% Substituting holes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map,UU.Pretty,{%{BASE}Common},EHTy,EHCore,{%{EHC}Cnstr},EHCorePretty,EHCoreFvS) export(CSubstitutable(..),cAppCoeArg)
+%%[9 hs module {%{CORE}Subst} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map,UU.Pretty,{%{BASE}Common},{%{AST}Ty},{%{AST}Core},{%{EHC}Cnstr},{%{CORE}Pretty},{%{CORE}FvS}) export(CSubstitutable(..),cAppCoeArg)
 %%]
 
 %%[9 hs export(CSubst,emptyCSubst,uidCBindLLToCSubst,uidCExprLToCSubst,poiCExprLToCSubst,cnstrImplsToCSubst)
@@ -16,7 +16,7 @@
 %%[9 hs export(coeWipeWeave,coeEvalOn,coeCompose,mkImplsAppCoe, mkImplsLamCoe,mkLamBodyCoe,mkPoiLLamCoe)
 %%]
 
-%%[9.WRAPPER import(EHCoreAbsSyn)
+%%[9.WRAPPER import(CoreAbsSyn)
 WRAPPER CExpr
 %%]
 

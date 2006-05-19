@@ -7,10 +7,13 @@
 %%% Haskell importable interface to Ty instantiate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[3.tyInst hs import({%{BASE}Common},EHTy,{%{EHC}Cnstr},{%{EHC}Substitutable}) export(tyInst)
+%%[3 hs module {%{TY}Instantiate}
 %%]
 
-%%[4.tyInst -3.tyInst hs import({%{BASE}Common},EHTy,{%{EHC}Cnstr},{%{EHC}Substitutable})
+%%[3.tyInst hs import({%{BASE}Common},{%{AST}Ty},{%{EHC}Cnstr},{%{EHC}Substitutable}) export(tyInst)
+%%]
+
+%%[4.tyInst -3.tyInst hs import({%{BASE}Common},{%{AST}Ty},{%{EHC}Cnstr},{%{EHC}Substitutable})
 %%]
 
 %%[4 hs import({%{BASE}Debug},UU.Pretty)
@@ -25,7 +28,7 @@
 %%[6_4 hs export(instCoExist)
 %%]
 
-%%[4 import(EHTyAbsSyn)
+%%[4 import(TyAbsSyn)
 WRAPPER TyAGItf
 %%]
 

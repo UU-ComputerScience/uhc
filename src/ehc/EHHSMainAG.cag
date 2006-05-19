@@ -8,14 +8,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[1 hs import(Data.Char,Data.List as List,UU.Pretty,{%{BASE}Common},{%{EHC}Opts},{%{EHC}Gam},EHError,EHErrorPretty, HSAbsSyn)
+%%[1 hs module {%{HS}MainAG} import(Data.Char,Data.List as List,UU.Pretty,{%{BASE}Common},{%{EHC}Opts},{%{EHC}Gam},{%{AST}Error},{%{ERR}Pretty}, {%{HS}AbsSyn})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 import(UHA_Syntax)
+%%[1 import(HSAbsSynAG)
 WRAPPER AGItf
 %%]
 

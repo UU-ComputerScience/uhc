@@ -7,13 +7,13 @@
 %%% Haskell importable interface to Error pretty print
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs import(Data.List, UU.Pretty, {%{BASE}Common}, EHTy, EHTyPretty, EHError) export(ppErr, ppErrs,ppErrL)
+%%[1 hs module {%{ERR}Pretty} import(Data.List, UU.Pretty, {%{BASE}Common}, {%{AST}Ty}, {%{TY}Pretty}, {%{AST}Error}) export(ppErr, ppErrs,ppErrL)
 %%]
 
-%%[9 hs import(EHCore,EHCorePretty)
+%%[9 hs import({%{AST}Core},{%{CORE}Pretty})
 %%]
 
-%%[1 import(EHErrorAbsSyn)
+%%[1 import(ErrorAbsSyn)
 WRAPPER Err
 %%]
 

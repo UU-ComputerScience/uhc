@@ -26,13 +26,13 @@
 %%% Subsumption (fitting in) for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EHC}TyFitsIn} import({%{BASE}Common}, {%{EHC}TyFitsInCommon}, EHTy, EHError) export (fitsIn)
+%%[1 module {%{EHC}TyFitsIn} import({%{BASE}Common}, {%{TY}FitsInCommon}, {%{AST}Ty}, {%{AST}Error}) export (fitsIn)
 %%]
 
 %%[2 import({%{EHC}Cnstr},{%{EHC}Substitutable})
 %%]
 
-%%[4 import(EHTyInstantiate, {%{EHC}Opts}, {%{EHC}Gam}, Data.Maybe,Data.List as List)
+%%[4 import({%{TY}Instantiate}, {%{EHC}Opts}, {%{EHC}Gam}, Data.Maybe,Data.List as List)
 %%]
 
 %%[4 export(FIEnv(..),emptyFE)
@@ -41,10 +41,10 @@
 %%[4 import({%{BASE}Debug})
 %%]
 
-%%[4_2 import(EHTyElimAlts) export(mkFitsInWrap,mkFitsInWrap')
+%%[4_2 import({%{TY}ElimAlts}) export(mkFitsInWrap,mkFitsInWrap')
 %%]
 
-%%[4_2 import(EHTyElimBoth) export(foHasErrs)
+%%[4_2 import({%{TY}ElimBoth}) export(foHasErrs)
 %%]
 
 %%[6 export(fitsInL)
@@ -53,7 +53,7 @@
 %%[9 import(EH.Util.Utils(groupSortOn,sortByOn))
 %%]
 
-%%[9 import(qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty,EHCorePretty,{%{EHC}Pred},EHCore,EHCoreSubst) export(foAppCoe,foAppCoe',fitPredToEvid)
+%%[9 import(qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty,{%{CORE}Pretty},{%{EHC}Pred},{%{AST}Core},{%{CORE}Subst}) export(foAppCoe,foAppCoe',fitPredToEvid)
 %%]
 
 %%[9 export(prfPreds,prfPredsDbg)

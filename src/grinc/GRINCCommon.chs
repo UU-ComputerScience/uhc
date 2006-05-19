@@ -7,7 +7,7 @@
 %%% Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module GRINCCommon import(System.Console.GetOpt,{%{BASE}Common}, "qualified Data.Map as Map", "qualified Data.Set as Set") export(Opts(..), defaultOpts, cmdLineOpts)
+%%[8 module GRINCCommon import(System.Console.GetOpt,{%{BASE}Common}, qualified Data.Map as Map, qualified Data.Set as Set) export(Opts(..), defaultOpts, cmdLineOpts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -89,7 +89,7 @@ blackholeTag  =  GrTag_Lit GrTagHole  0 (HNm "backhole")
 throwTag      =  GrTag_Lit GrTagFun   0 (HNm "rethrow")
 %%]
 
-%%[8 import(GrinCode)
+%%[8 import({%{AST}GrinCode})
 %%]
 
 %%[8 export(IdentNameMap, IdentOneToMany, RenameMap, mergeRenameMap, getName, getName')

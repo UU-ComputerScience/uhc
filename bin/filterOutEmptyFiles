@@ -4,7 +4,7 @@ f=""
 
 for i in $*
 do
-  if test -s $i
+  if test `wc -c < $i` -gt 75
   then
     f="$f $i"
   fi

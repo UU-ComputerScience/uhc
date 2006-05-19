@@ -7,14 +7,14 @@ calls. (When no hidden function calls exists anymore.)
 %include afp.fmt
 %%]
 
-%%[8 import("../GrinCodeAbsSyn")
+%%[8 import(GrinCodeAbsSyn)
 %%]
 
 %%[8.wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.DropUnusedBindings import("qualified Data.Set as Set","qualified Data.Map as Map",Data.Graph,Data.List,Data.Array)
+%%[8 hs module Trf.DropUnusedBindings import(qualified Data.Set as Set,qualified Data.Map as Map,Data.Graph,Data.List,Data.Array)
 type EdgeF   = [Edge] -> [Edge]
 type VertexF = [Vertex] -> [Vertex]
 
@@ -26,7 +26,7 @@ type NodeInfo  = (Vertex, CallInfo)
 type NodeInfoF = [NodeInfo] -> [NodeInfo]
 %%]
 
-%%[8 hs import({%{BASE}Common}, GRINCCommon, GrinCode) export(dropUnusedBindings)
+%%[8 hs import({%{BASE}Common}, GRINCCommon, {%{AST}GrinCode}) export(dropUnusedBindings)
 dropUnusedBindings :: HsName -> IdentNameMap -> GrModule -> (GrModule, String)
 dropUnusedBindings e m grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                                     (Inh_GrAGItf { entry_Inh_GrAGItf = e, nameMap_Inh_GrAGItf = m })
