@@ -32,7 +32,7 @@
 %%[2 import({%{EHC}Cnstr},{%{EHC}Substitutable})
 %%]
 
-%%[4 import({%{TY}Instantiate}, {%{EHC}Opts}, {%{EHC}Gam}, Data.Maybe,Data.List as List)
+%%[4 import({%{TY}Instantiate}, {%{BASE}Opts}, {%{EHC}Gam}, Data.Maybe,Data.List as List)
 %%]
 
 %%[4 export(FIEnv(..),emptyFE)

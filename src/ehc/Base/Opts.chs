@@ -7,7 +7,7 @@
 %%% Options of all sorts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EHC}Opts} import(System.Console.GetOpt,{%{BASE}Common}) export(EHCOpts(..), defaultEHCOpts, ehcCmdLineOpts)
+%%[1 module {%{BASE}Opts} import(System.Console.GetOpt,{%{BASE}Common}) export(EHCOpts(..), defaultEHCOpts, ehcCmdLineOpts)
 %%]
 
 %%[4 import({%{AST}Ty},UU.Pretty) export(FIOpts(..), fioSwapCoCo, fioSwapOpts, strongFIOpts, instFIOpts, instLRFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)

@@ -9,6 +9,27 @@ default: explanation
 -include lhs2TeX/files.mk
 
 include mk/config.mk
+
+### BEGIN of Ruler1
+# Ruler1, will be obsolete until all type rules are specified with Ruler2 (currently not in Explicit/implicit story)
+RULER1				:= bin/ruler1$(EXEC_SUFFIX)
+RULER1_DIR			:= ruler1
+RULER1_MAIN			:= Ruler
+RULER1_AG			:= $(RULER1_MAIN).ag
+RULER1_HS			:= $(RULER1_AG:.ag=.hs)
+RULER1_DERIV		:= $(RULER1_DIR)/$(RULER1_HS)
+
+RULER1_SRC			:= $(RULER1_DIR)/$(RULER1_AG)
+
+ruler1: $(RULER1)
+
+$(RULER1): $(RULER1_DIR)/$(RULER1_AG) $(LIB_EH_UTIL_INS_FLAG)
+	cd $(RULER1_DIR) && \
+	$(AGC) -csdfr --module=Main `basename $<` && \
+	$(GHC) --make $(GHC_OPTS) -package $(LIB_EH_UTIL_PKG_NAME) $(RULER1_HS) -o ../$@ && \
+	$(STRIP) ../$@
+### END of Ruler1
+
 include src/files.mk
 include $(SRC_PREFIX)ehc/shared.mk
 include mk/shared.mk
@@ -67,24 +88,6 @@ all: afp-full ehcs doc grinis
 
 .PHONY: ehcs dist www www-sync install lib src build ruler1
 
-# Ruler, will be obsolete soon
-RULER1				:= bin/ruler1$(EXEC_SUFFIX)
-RULER1_DIR			:= ruler1
-RULER1_MAIN			:= Ruler
-RULER1_AG			:= $(RULER1_MAIN).ag
-RULER1_HS			:= $(RULER1_AG:.ag=.hs)
-RULER1_DERIV		:= $(RULER1_DIR)/$(RULER1_HS)
-
-RULER1_SRC			:= $(RULER1_DIR)/$(RULER1_AG)
-
-ruler1: $(RULER1)
-
-$(RULER1): $(RULER1_DIR)/$(RULER1_AG) $(LIB_EH_UTIL_INS_FLAG)
-	cd $(RULER1_DIR) && \
-	$(AGC) -csdfr --module=Main `basename $<` && \
-	$(GHC) --make $(GHC_OPTS) -package $(LIB_EH_UTIL_PKG_NAME) $(RULER1_HS) -o ../$@ && \
-	$(STRIP) ../$@
-
 rules2.tex: rules2.rul
 	$(RULER1) -l --base=rules $< | $(LHS2TEX) $(LHS2TEX_OPTS_POLY) > $@
 
@@ -124,8 +127,7 @@ A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
 
 tst:
-	@echo $(EHC_HS_UTIL_DRV_HS)
-	@echo $(EHC_AG_ALL_MAIN_DRV_HS)
+	@echo $(patsubst A%,%,AA AB BB BA)
 
 tstv:
 	$(MAKE) EHC_VARIANT=1 tst

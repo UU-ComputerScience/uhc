@@ -105,14 +105,14 @@ for example the pretty printing of the type
 A type variable is identified by a unique identifier, a |UID|:
 
 %%[[hide wrap=code impl.UID="UID basics"
-%%@EHCommon.2.UID.UIDL
+%%@EHBaseCommon.2.UID.UIDL
 
-%%@EHCommon.2.UID.Show
+%%@EHBaseCommon.2.UID.Show
 
 %%@EHTy.2.TyVarId.Rest
 %%]
 %%[[wrap=code
-%%@EHCommon.2.UID.Base
+%%@EHBaseCommon.2.UID.Base
 
 %%@EHTy.2.TyVarId.Base
 %%]
@@ -222,7 +222,7 @@ The functions |tyAppCnstr| and |tyFtv| are defined in terms of the following AG:
 The application of a |Cnstr| is straightforwardly lifted to lists:
 
 %%[[hide wrap=code impl.unions="unions"
-%%@EHCommon.2.unions
+%%@EHBaseCommon.2.unions
 %%]
 %%@EHSubstitutable.2.SubstitutableList wrap=code
 
@@ -367,13 +367,13 @@ for unique values (|UID|'s)
 through the AST:
 
 %%[[hide wrap=code impl.UID="UID"
-%%@EHCommon.2.UID.Base
+%%@EHBaseCommon.2.UID.Base
 
-%%@EHCommon.2.UID.UIDL
+%%@EHBaseCommon.2.UID.UIDL
 
-%%@EHCommon.2.UID.Show
+%%@EHBaseCommon.2.UID.Show
 
-%%@EHCommon.2.UID.mkNewLevUID
+%%@EHBaseCommon.2.UID.mkNewLevUID
 %%]
 %%@EHUniq.2.gUniq wrap=code
 

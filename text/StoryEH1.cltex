@@ -82,7 +82,7 @@ translation from the abstract to the concrete representation is done by a pretty
 Let us focus our attention first on the abstract syntax for EH1, in particular the part
 defining the structure for expressions (the remaining abstract syntax can be found in \figRef{abs-syn-eh1}):
 
-%%@EHAbsSynAG.1.Expr wrap=code
+%%@EHAbsSyn.1.Expr wrap=code
 
 Integer constants are represented by |IConst|, lowercase (uppercase) identifier occurrences by |Var| (|Con|),
 an |App| represents the application of a function to its argument, |Lam| and |Let| represent lambda expressions and
@@ -116,21 +116,21 @@ does not allow a type signature for the elements of a tuple.
 \begin{CodeFigure}{}{Abstract syntax for EH (without Expr)}{abs-syn-eh1}
 \savecolumns
 %%[[wrap=code
-%%@EHAbsSynAG.1.AGItf
+%%@EHAbsSyn.1.AGItf
 
-%%@EHAbsSynAG.1.Decl 
+%%@EHAbsSyn.1.Decl 
 
-%%@EHAbsSynAG.1.PatExpr
+%%@EHAbsSyn.1.PatExpr
 
-%%@EHAbsSynAG.1.AllPatExpr 
+%%@EHAbsSyn.1.AllPatExpr 
 
-%%@EHAbsSynAG.1.TyExpr 
+%%@EHAbsSyn.1.TyExpr 
 
-%%@EHAbsSynAG.1.AllTyExpr 
+%%@EHAbsSyn.1.AllTyExpr 
 
-%%@EHAbsSynAG.1.AllExpr 
+%%@EHAbsSyn.1.AllExpr 
 
-%%@EHAbsSynAG.1.AllNT 
+%%@EHAbsSyn.1.AllNT 
 %%]
 \end{CodeFigure}
 
@@ -196,12 +196,12 @@ The naming convention for tuples and other naming conventions are available thro
 of Haskell names |HsName| (we remind the reader that a reference in the margin refers to additional, but not inlined, code).
 
 %%[[hide wrap=code impl.hsnImpl="Implementation for HsName functions"
-%%@EHCommon.1.HsName.Base.impl
+%%@EHBaseCommon.1.HsName.Base.impl
 %%]
 %%[[wrap=code
-%%@EHCommon.1.HsName.type
+%%@EHBaseCommon.1.HsName.type
 
-%%@EHCommon.1.HsName.Base.itf
+%%@EHBaseCommon.1.HsName.Base.itf
 %%]
 
 \item
@@ -491,7 +491,7 @@ which then can be treated separate from the rest of the stack:
 %%@EHGam.1.Rest.funs
 %%]
 %%[[wrap=code
-%%@EHCommon.1.AssocL
+%%@EHBaseCommon.1.AssocL
 
 %%@EHGam.1.Base.type
 
@@ -883,14 +883,14 @@ requires some additional type construction functions, for example |mkArrow| used
 The function is part of the class |SemApp| defining (semantic) functions related to building application |App| like structures:
 
 %%[[hide wrap=code impl.SemAppFull="Class SemApp and defaults"
-%%@EHCommon.1.SemApp
+%%@EHBaseCommon.1.SemApp
 
-%%@EHCommon.1.SemApp.default
+%%@EHBaseCommon.1.SemApp.default
 
 %%@EHTy.1.mkTyCon
 %%@EHTy.2.mkTyVar
 %%]
-%%@EHCommon.1.SemApp wrap=code
+%%@EHBaseCommon.1.SemApp wrap=code
 
 The instance for |SemApp Ty| is defined by:
 
@@ -965,7 +965,7 @@ The code for this and other similar functions have been omitted for brevity.
 
 %%@EHTy.1.unMkTy.tyLHdAndTl
 
-%%@EHCommon.1.Misc.hdAndTl
+%%@EHBaseCommon.1.Misc.hdAndTl
 
 %%@EHTy.4.unMkTy.tyConNm
 
@@ -1445,14 +1445,14 @@ Note that no |AppTop| is placed around a singleton list since this is not an app
 and the function |mkApp| is never used on an empty list.
 
 %%[[wrap=code
-%%@EHCommon.1.MkConApp
+%%@EHBaseCommon.1.MkConApp
 
-%%@EHCommon.1.SemApp
+%%@EHBaseCommon.1.SemApp
 %%]
 %%[[hide wrap=code impl.SemAppFull="Class SemApp and defaults"
-%%@EHCommon.1.SemApp
+%%@EHBaseCommon.1.SemApp
 
-%%@EHCommon.1.SemApp.default
+%%@EHBaseCommon.1.SemApp.default
 %%]
 
 It is precisely the group of functions specifying what should be done

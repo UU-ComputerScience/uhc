@@ -167,7 +167,7 @@ The quantifier |forall| cannot be explicitly denoted.
 We only need to extend the abstract syntax for types with an alternative for type variables:
 
 %%[[wrap=code
-%%@EHAbsSynAG.3.TyExpr
+%%@EHAbsSyn.3.TyExpr
 %%]
 
 %if incl01TopicParsing
