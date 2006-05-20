@@ -22,21 +22,27 @@ import CDocSubst
 -- main
 -------------------------------------------------------------------------
 
+type FPathWithAlias = (Maybe String,FPath)
+
 main :: IO ()
 main
   = do { args <- getArgs
        ; let oo@(o,n,errs)  = getOpt Permute cmdLineOpts args
              opts           = foldr ($) defaultOpts o
        ; if optHelp opts
-         then putStrLn (usageInfo "Usage shuffle [options] [file|-]\n\noptions:" cmdLineOpts)
+         then putStrLn (usageInfo "Usage shuffle [options] [file ([alias=]file)*|-]\n\noptions:" cmdLineOpts)
          else if null errs
               then  let (f,frest) = if null n then (emptyFPath,[]) else if head n == "-" then (emptyFPath,tail n) else (mkFPath (head n),tail n)
-                    in  doCompile f (map mkFPath frest) opts
+                    in  doCompile (Nothing,f) (map mkFPathAlias frest) opts
               else  putStr (head errs)
        }
+  where mkFPathAlias s
+          = case break (=='=') s of
+              (a,('=':f)) -> (Just a ,mkFPath f)
+              _           -> (Nothing,mkFPath s)
 
-readShFile :: FPath -> Opts -> IO (FPath,T_AGItf)
-readShFile fp opts
+readShFile :: FPathWithAlias -> Opts -> IO (FPathWithAlias,T_AGItf)
+readShFile (a,fp) opts
   = do { (fp,fh)
              <- if fpathIsEmpty fp
                 then return (mkFPath "<stdin>",stdin)
@@ -48,20 +54,20 @@ readShFile fp opts
        ; let toks = scan shuffleScanOpts ScSkip txt
        ; let (pres,perrs) = parseToResMsgs pAGItf toks
        ; if null perrs
-         then return (fp,pres)
+         then return ((a,fp),pres)
          else do { mapM_ (hPutStrLn stderr . show) perrs
                  ; exitFailure
                  }
        }
 
-doCompile :: FPath -> [FPath] -> Opts -> IO ()
-doCompile fp fpRest opts
+doCompile :: FPathWithAlias -> [FPathWithAlias] -> Opts -> IO ()
+doCompile fpa fpaRest opts
   = do { xrefExceptFileContent
            <- case optMbXRefExcept opts of
                 Just f -> do c <- readFile f
                              return (Set.unions . map (Set.fromList . words) . lines $ c)
                 Nothing -> return Set.empty
-       ; allPRes@((fp',pres):restPRes) <- mapM (\f -> readShFile f opts) (fp:fpRest)
+       ; allPRes@(((_,fp'),pres):restPRes) <- mapM (\f -> readShFile f opts) (fpa:fpaRest)
        ; let (nmChMp,hdL) = allNmChMpOf allPRes
              fb = fpathBase fp'
              res = wrapSem fp' xrefExceptFileContent Map.empty pres
@@ -109,8 +115,9 @@ doCompile fp fpRest opts
           where (m1,m2)
                   = unzip
                        [ (Map.mapKeys mkN (Map.unions (nMp:bMpL)) `Map.union` nMp,concat hdLL)
-                       | (fp,pr) <- pres
-                       , let mkN = mkFullNm (mkNm (fpathBase fp))
+                       | ((ma,fp),pr) <- pres
+                       , let nmPre = maybe (fpathBase fp) id ma
+                             mkN = mkFullNm (mkNm nmPre)
                              r = wrapSem fp Set.empty Map.empty pr
                              nMp = gathNmChMp_Syn_AGItf r
                              (bMpL,hdLL) = unzip [ (bldNmChMp b,[ (mkN n,h) | (n,h) <- bldHideCD b]) | b <- selBld opts r ]

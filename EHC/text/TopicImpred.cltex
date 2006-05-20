@@ -672,11 +672,11 @@ A |FIOpts =@= fiopt| uses the flags from
 \figRef{eh-impredA-fit-options}
 for obtaining the previously discussed desired behavior.
 %%[[hide wrap=code impl.FIOpts="FIOpts"
-%%@EHOpts.4.FIOpts.hd
-%%@EHOpts.4.FIOpts.tl
-%%@EHOpts.4.strongFIOpts.hd
-%%@EHOpts.4.strongFIOpts.tl
-%%@EHOpts.4.FIOpts.instLFIOpts
+%%@EHBaseOpts.4.FIOpts.hd
+%%@EHBaseOpts.4.FIOpts.tl
+%%@EHBaseOpts.4.strongFIOpts.hd
+%%@EHBaseOpts.4.strongFIOpts.tl
+%%@EHBaseOpts.4.FIOpts.instLFIOpts
 %%]
 These options are used in specific combinations throughout the type rules
 (see \figRef{eh-impredA-fit-option-combis} for an overview).

@@ -13,7 +13,7 @@
 %%[2 import({%{EHC}Cnstr})
 %%]
 
-%%[4 import({%{EHC}Opts}) export(AppSpineInfo(..), unknownAppSpineInfoL, arrowAppSpineInfoL, prodAppSpineInfoL)
+%%[4 import({%{BASE}Opts}) export(AppSpineInfo(..), unknownAppSpineInfoL, arrowAppSpineInfoL, prodAppSpineInfoL)
 %%]
 
 %%[4 import({%{EHC}Substitutable}) export(FitsIn, FitsIn',fitsInLWith)

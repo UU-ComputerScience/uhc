@@ -7,10 +7,10 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module Main import(System, System.Console.GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, {%{BASE}Common}, {%{BASE}ScannerCommon}, {%{EHC}Opts})
+%%[1 module Main import(System, System.Console.GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, {%{BASE}Common}, {%{BASE}ScannerCommon}, {%{BASE}Opts})
 %%]
 
-%%[1 import(qualified {%{EHC}Parser} as EHPrs, qualified {%{EHC}MainAG} as EHSem, qualified {%{HS}Parser} as HSPrs, qualified {%{HS}MainAG} as HSSem)
+%%[1 import(qualified {%{EH}Parser} as EHPrs, qualified {%{EH}MainAG} as EHSem, qualified {%{HS}Parser} as HSPrs, qualified {%{HS}MainAG} as HSSem)
 %%]
 
 %%[8 import (EH.Util.CompileRun,{%{AST}Error},{%{ERR}Pretty},EH.Util.FPath,qualified Data.Map as Map,Data.Maybe,Data.List)

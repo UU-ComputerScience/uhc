@@ -4,10 +4,10 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Haskell importable interface to EHAbsSynAG
+%%% Haskell importable interface to EH/AbsSyn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{AST}AbsSyn} import({%{BASE}Common})
+%%[1 hs module {%{AST}EH} import({%{BASE}Common})
 %%]
 
 %%[1 hs export(AGItf(..), Decl(..), Decls, TyExpr(..), Expr(..), PatExpr(..))
@@ -31,7 +31,7 @@
 %%[11 hs export(DataConstrEq(..), DataConstrEqs)
 %%]
 
-%%[1 import(AbsSynAG)
+%%[1 import({EH/AbsSyn})
 %%]
 
 

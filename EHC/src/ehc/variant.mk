@@ -12,7 +12,7 @@ EHC_VARIANT_RULER_SEL					:= ().().()
 
 # lib/cabal/module config
 LIB_EHC_BASE							:= EH
-LIB_EHC_QUAL							:= $(LIB_EHC_BASE)$(EHC_VARIANT)
+LIB_EHC_QUAL							:= $(subst _,x,$(LIB_EHC_BASE)$(EHC_VARIANT))
 LIB_EHC_QUAL_PREFIX						:= $(LIB_EHC_QUAL).
 LIB_EHC_HS_PREFIX						:= $(subst .,$(PATH_SEP),$(LIB_EHC_QUAL_PREFIX))
 LIB_EHC_PKG_NAME						:= $(subst .,-,$(LIB_EHC_QUAL))
@@ -28,11 +28,13 @@ SRC_EHC_LIB_PREFIX						:= $(SRC_EHC_PREFIX)$(LIB_EHC_BASE)
 
 # tool use
 LIB_EHC_SHUFFLE_DEFS					:= --def=EHC:$(LIB_EHC_QUAL_PREFIX) \
-											--def=BASE:$(LIB_EHC_QUAL_PREFIX) \
+											--def=BASE:$(LIB_EHC_QUAL_PREFIX)Base. \
 											--def=CORE:$(LIB_EHC_QUAL_PREFIX)Core. \
 											--def=TRF:$(LIB_EHC_QUAL_PREFIX)Core.Trf. \
+											--def=GAM:$(LIB_EHC_QUAL_PREFIX)Gam. \
 											--def=TY:$(LIB_EHC_QUAL_PREFIX)Ty. \
 											--def=HS:$(LIB_EHC_QUAL_PREFIX)HS. \
+											--def=EH:$(LIB_EHC_QUAL_PREFIX)EH. \
 											--def=ERR:$(LIB_EHC_QUAL_PREFIX)Error. \
 											--def=GRIN:$(LIB_EHC_QUAL_PREFIX)GrinCode. \
 											--def=AST:$(LIB_EHC_QUAL_PREFIX)

@@ -7,7 +7,7 @@ primitives information table.
 - meta info for code generation
 - code snippets to generate the code for a primitive (C--)
 
-%%[8.abstractValues import(HeapPointsToFixpoint,{%{EHC}Common(HsName(..))}, qualified Data.Set as Set, {%{AST}GrinCode},GRINCCommon)
+%%[8.abstractValues import(HeapPointsToFixpoint,{%{BASE}Common(HsName(..))}, qualified Data.Set as Set, {%{AST}GrinCode},GRINCCommon)
 unboxedBasic = AV_Nodes $ Map.fromList [ (GrTag_Unboxed, [AV_Basic])
                                        ]
 booleanNodes = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "_False"), [AV_Basic])

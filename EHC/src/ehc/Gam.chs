@@ -25,7 +25,7 @@
 %%[3 import({%{TY}Quantify}) export(valGamQuantify, gamMap,gamMapElts,valGamMapTy)
 %%]
 
-%%[4 import({%{EHC}Opts},{%{TY}Instantiate}) export(valGamInst1Exists)
+%%[4 import({%{BASE}Opts},{%{TY}Instantiate}) export(valGamInst1Exists)
 %%]
 
 %%[4 import({%{TY}FitsInCommon}) export(AppSpineGam, appSpineGam, asGamLookup)

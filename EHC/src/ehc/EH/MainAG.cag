@@ -7,7 +7,7 @@
 %%% Haskell interface to AG generated code for compiler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EHC}MainAG} import(Data.Char,Data.List as List,UU.Pretty,{%{BASE}Common},{%{EHC}Opts}, {%{AST}Ty},{%{EHC}Gam},{%{AST}Error},{%{ERR}Pretty},{%{TY}FitsIn},{%{TY}FitsInCommon},{%{TY}Pretty},{%{AST}AbsSyn})
+%%[1 hs module {%{EH}MainAG} import(Data.Char,Data.List as List,UU.Pretty,{%{BASE}Common},{%{BASE}Opts}, {%{AST}Ty},{%{EHC}Gam},{%{AST}Error},{%{ERR}Pretty},{%{TY}FitsIn},{%{TY}FitsInCommon},{%{TY}Pretty},{%{AST}EH})
 %%]
 
 %%[2 hs import({%{EHC}Cnstr},{%{EHC}Substitutable},Data.Maybe)
@@ -19,7 +19,7 @@
 %%[4 hs import({%{BASE}Debug})
 %%]
 
-%%[4_2 hs import(qualified Data.Set as Set,{%{EHC}GamUtils},{%{TY}ElimAlts},{%{TY}FreshVar})
+%%[4_2 hs import(qualified Data.Set as Set,{%{GAM}Utils},{%{TY}ElimAlts},{%{TY}FreshVar})
 %%]
 
 %%[8 hs import(EH.Util.Utils(groupSortOn))
@@ -31,30 +31,30 @@
 %%[9 hs import(qualified Data.Set as Set,{%{EHC}Pred},{%{CORE}Subst})
 %%]
 
-%%[11 hs import({%{TY}ElimEqual},{%{EHC}GamUtils})
+%%[11 hs import({%{TY}ElimEqual},{%{GAM}Utils})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 import(AbsSynAG,Pretty,PrettyAST,EHRulerRules,Infer,InferExpr,InferPatExpr,InferTyExpr,ExtraChecks,GatherError)
+%%[1 import({EH/AbsSyn},{EH/Pretty},{EH/PrettyAST},EHRulerRules,{EH/Infer},{EH/InferExpr},{EH/InferPatExpr},{EH/InferTyExpr},{EH/ExtraChecks},{EH/GatherError})
 WRAPPER AGItf
 %%]
 
-%%[2 import(Uniq)
+%%[2 import({EH/Uniq})
 %%]
 
-%%[5 import(InferCaseExpr,InferData)
+%%[5 import({EH/InferCaseExpr},{EH/InferData})
 %%]
 
-%%[6 import(InferKiExpr)
+%%[6 import({EH/InferKiExpr})
 %%]
 
-%%[8 import(GenCore)
+%%[8 import({EH/GenCore})
 %%]
 
-%%[9 import(ResolvePred,InferClass)
+%%[9 import({EH/ResolvePred},{EH/InferClass})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
