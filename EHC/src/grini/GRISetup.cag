@@ -13,7 +13,7 @@
 %%[8 hs import(qualified Data.Map as Map,Data.Array,Data.Array.IO,EH.Util.Utils)
 %%]
 
-%%[8.WRAPPER import(GrinCodeAbsSyn)
+%%[8.WRAPPER import({GrinCode/AbsSyn})
 WRAPPER GrAGItf
 %%]
 

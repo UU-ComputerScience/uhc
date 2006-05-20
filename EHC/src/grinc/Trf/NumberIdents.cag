@@ -12,7 +12,7 @@ Note: after each binding we skip one number (binding needs two number in the HPT
 %include afp.fmt
 %%]
 
-%%[8 import(GrinCodeAbsSyn)
+%%[8 import({GrinCode/AbsSyn})
 %%]
 
 %%[8.wrapper

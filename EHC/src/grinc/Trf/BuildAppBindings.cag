@@ -9,7 +9,7 @@ of the node and applys all (N) other arguments.
 %include afp.fmt
 %%]
 
-%%[8 import(GrinCodeAbsSyn)
+%%[8 import({GrinCode/AbsSyn})
 %%]
 
 %%[8.wrapper

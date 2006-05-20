@@ -11,7 +11,7 @@ Seq m a (Seq k b h)
 %include afp.fmt
 %%]
 
-%%[8 import(GrinCodeAbsSyn)
+%%[8 import({GrinCode/AbsSyn})
 %%]
 
 %%[8.wrapper

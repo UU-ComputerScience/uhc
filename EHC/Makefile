@@ -20,9 +20,10 @@ include $(SRC_PREFIX)ruler2/files.mk
 include $(SRC_PREFIX)grin/files.mk
 include $(SRC_PREFIX)ehc/variant.mk
 #include $(SRC_PREFIX)uhc/files.mk
-include $(SRC_PREFIX)ehc/files.mk
+include $(SRC_PREFIX)ehc/files1.mk
 include $(SRC_PREFIX)grini/files.mk
 include $(SRC_PREFIX)grinc/files.mk
+include $(SRC_PREFIX)ehc/files2.mk
 include $(SRC_PREFIX)agprimer/files.mk
 -include $(SRC_PREFIX)infer2pass/variant.mk
 -include $(SRC_PREFIX)infer2pass/files.mk
@@ -123,7 +124,8 @@ A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
 
 tst:
-	@echo $(INS_EHC_LIB_ALL_AG)
+	@echo $(EHC_HS_UTIL_DRV_HS)
+	@echo $(EHC_AG_ALL_MAIN_DRV_HS)
 
 tstv:
 	$(MAKE) EHC_VARIANT=1 tst
