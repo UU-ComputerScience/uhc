@@ -8,7 +8,7 @@ TODO: Rename map for identifiers can be much more efficient.
 %include afp.fmt
 %%]
 
-%%[8 import(GrinCodeAbsSyn)
+%%[8 import({GrinCode/AbsSyn})
 %%]
 
 %%[8.wrapper

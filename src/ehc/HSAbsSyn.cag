@@ -1,0 +1,19 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to HS/AbsSynAG (was: UHA_Syntax)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs module {%{AST}HSAbsSyn} import(UU.Scanner.Position) export(module UU.Scanner.Position)
+%%]
+
+%%[1 hs export(AGItf(..), Module(..), Body(..), Declaration(..), Declarations, MaybeDeclarations, Type(..), Types, SimpleType(..), Expression(..), Expressions, MaybeExpression, GuardedExpression(..), GuardedExpressions, FunctionBinding(..), FunctionBindings, LeftHandSide(..), RightHandSide(..), Pattern(..), Patterns, Literal(..), Name(..), Names, MaybeName, MaybeNames, Strings, MaybeInt, Range(..))
+%%]
+
+%%[1 import({HS/AbsSynAG})
+%%]
+
+

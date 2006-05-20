@@ -3,7 +3,7 @@
 %include afp.fmt
 %%]
 
-%%[8 import(GrinCodeAbsSyn)
+%%[8 import({GrinCode/AbsSyn})
 %%]
 
 %%[8 hs module Cmm.FromGrin import(GRINCCommon, Data.List(nub), Data.Maybe, {%{AST}GrinCode}, Primitives, Cmm.CmmBuilding) export(grin2cmm,CmmUnit(..))
@@ -25,32 +25,11 @@ grin2cmm e gr emitTraceInfo = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf g
 WRAPPER GrAGItf
 %%]
 
-%%[8 import("../GrLastExpr")
+%%[8 import("../GrLastExpr","FromGrin/TagInfo","FromGrin/ValueInfo","FromGrin/ReturnSize")
 %%]
 
-%%[8 import("FromGrin/TagInfo")
+%%[8 import("FromGrin/Primitives","FromGrin/ImportExport","FromGrin/Globals")
 %%]
 
-%%[8 import("FromGrin/ValueInfo")
-%%]
-
-%%[8 import("FromGrin/ReturnSize")
-%%]
-
-%%[8 import("FromGrin/Primitives")
-%%]
-
-%%[8 import("FromGrin/ImportExport")
-%%]
-
-%%[8 import("FromGrin/Globals")
-%%]
-
-%%[8 import("FromGrin/ExceptionHandlers")
-%%]
-
-%%[8 import("FromGrin/ToCmm")
-%%]
-
-%%[8 import("FromGrin/TraceInfo")
+%%[8 import("FromGrin/ExceptionHandlers","FromGrin/ToCmm","FromGrin/TraceInfo")
 %%]

@@ -1,0 +1,297 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs module {%{AST}Core} import({%{BASE}Common},Data.List,UU.Pretty) export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBindL, CBindCateg(..), CPatRest(..)) 
+%%]
+
+%%[8 hs export(CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL) 
+%%]
+
+%%[8 hs export(CPatNm(..), cpatNmEither,cpatNmNone)
+%%]
+
+%%[8 hs export(cpatVarNm,caltTag,caltIsVar,caltIsConst,caltPatL,caltPat,caltLPatNms,cvarUndefined) 
+%%]
+
+%%[8 hs export(mkCExprLet,mkCExprLetRec,mkCExprLam,mkCExprApp)
+%%]
+
+%%[8 hs export(mkCExprStrictIn)
+%%]
+
+%%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{AST}Ty}) export(FvS,FvSMp,cLevOuter,LevMp,fvLev,fvsLev,levMpAdd)
+%%]
+
+%%[8 hs export(mkCExprAddInt)
+%%]
+
+%%[8 hs export(mkCMod)
+%%]
+
+%%[8 hs export(cTupLbl)
+%%]
+
+%%[8 hs export(ctag,ppCTag,ppCTagInt) 
+%%]
+
+%%[9 hs export(Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLetRecCoe)
+%%]
+
+%%[9 hs import(Data.Maybe) export(CxBindLMap(..), emptyCxBindLMap, mkCxBindLForPoiL, mkCxBindLForPoiL', plusCxBM, cxbmDpdPoiS, cxbmIntroPoiL)
+%%]
+
+%%[9 hs export(cbindLNub)
+%%]
+
+%%[9 hs export(mkCExprPrHole)
+%%]
+
+%%[8 import({Core/AbsSyn})
+DERIVING *     : Show, Eq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tuple operator label
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+cTupLbl :: CExpr -> HsName
+cTupLbl e
+  =  case e of
+         CExpr_TupIns _ _ l _ _ -> l
+         CExpr_TupUpd _ _ l _ _ -> l
+         CExpr_TupDel _ _ l _   -> l
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tag
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+ctag :: a -> (HsName -> HsName -> Int -> Int -> a) -> CTag -> a
+ctag n t tg = case tg of {CTag tn cn i a -> t tn cn i a; _ -> n}
+
+ppCTag :: CTag -> PP_Doc
+ppCTag = ctag (pp "Rec") (\tn cn t a -> pp t >|< "/" >|< pp cn >|< "/" >|< pp a)
+
+ppCTagInt :: CTag -> PP_Doc
+ppCTagInt = ctag (pp "-1") (\_ _ t _ -> pp t)
+
+instance PP CTag where
+  pp = ppCTag
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Binding category
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+data CBindCateg = CBindRec | CBindStrict | CBindPlain | CBindFFI deriving (Show,Eq)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Remove duplicate bindings
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+cbindLNub :: CBindL -> CBindL
+cbindLNub = nubBy (\(CBind_Bind n1 _) (CBind_Bind n2 _) -> n1 == n2)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bindings using a pred
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+newtype CxBindLMap = CxBindLMap (Map.Map PredOccId [(CBind,PredOccId,Set.Set PredOccId)])
+
+emptyCxBindLMap = CxBindLMap Map.empty
+
+infixr `plusCxBM`
+
+plusCxBM :: CxBindLMap -> CxBindLMap -> CxBindLMap
+plusCxBM (CxBindLMap m1) (CxBindLMap m2) = CxBindLMap (m2 `Map.union` m1)
+
+cxbmDpdPoiS :: CxBindLMap -> PredOccId -> Set.Set PredOccId
+cxbmDpdPoiS (CxBindLMap m) poi = maybe Set.empty (Set.unions . map thd) (Map.lookup poi m) `Set.union` Set.singleton poi
+
+cxbmIntroPoiL :: CxBindLMap -> [PredOccId]
+cxbmIntroPoiL (CxBindLMap m) = nub [ i | l <- Map.elems m, (_,i,_) <- l ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bindings using a pred
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+mkCxBindLForPoiL' :: (PredOccId -> Bool) -> CxBindLMap -> [PredOccId] -> CBindL
+mkCxBindLForPoiL' isAvailPoi (CxBindLMap m) inclPoiL
+  = cbindLNub [ b | i <- inclPoiL, bs <- maybeToList (Map.lookup i m), (b,_,dpd) <- bs, all isAvailPoi . Set.toList $ dpd ]
+%%]
+
+%%[9 hs
+mkCxBindLForPoiL :: Set.Set PredOccId -> CxBindLMap -> [PredOccId] -> CBindL
+mkCxBindLForPoiL availPoiS = mkCxBindLForPoiL' (`Set.member` availPoiS)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name of a pattern var/con
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+data CPatNm = CPatNmOrig {cpatNmNm :: HsName} | CPatNmUniq {cpatNmNm :: HsName} deriving (Ord,Eq)
+
+instance Show CPatNm where
+  show pnm = show (cpatNmNm pnm)
+
+cpatNmEither :: (HsName -> a) -> (HsName -> a) -> CPatNm -> a
+cpatNmEither o u pnm = case pnm of {CPatNmOrig n -> o n; CPatNmUniq n -> u n}
+
+cpatNmNone :: CPatNm
+cpatNmNone = CPatNmOrig hsnWild
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Construction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+mkCExprLet :: CBindCateg -> CBindL -> CExpr -> CExpr
+mkCExprLet c bs e = if null bs then e else CExpr_Let c bs e
+
+mkCExprLetRec :: CBindL -> CExpr -> CExpr
+mkCExprLetRec = mkCExprLet CBindRec
+
+mkCExprLam :: [HsName] -> CExpr -> CExpr
+mkCExprLam as e = foldr (\n e -> CExpr_Lam n e) e as
+
+mkCExprApp :: CExpr -> [CExpr] -> CExpr
+mkCExprApp f as = foldl (\f a -> CExpr_App f a) f as
+
+mkCExprStrictIn :: HsName -> CExpr -> (CExpr -> CExpr) -> CExpr
+mkCExprStrictIn nm e mkC = CExpr_Let CBindStrict [CBind_Bind nm e] (mkC (CExpr_Var nm))
+%%]
+
+%%[8 hs
+mkCExprAddInt :: CExpr -> Int -> CExpr
+mkCExprAddInt e i = if i == 0 then e else CExpr_Var hsnPrimAddInt `mkCExprApp` [e,CExpr_Int i]
+%%]
+
+%%[8 hs
+mkCMod :: CExpr -> CModule
+mkCMod e = CModule_Mod "" e []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+cpatVarNm :: CPat -> CPatNm
+cpatVarNm (CPat_Var  n)        = n
+cpatVarNm (CPat_Con  n _ _ _)  = n
+cpatVarNm (CPat_Int  n _    )  = n
+cpatVarNm (CPat_Char n _    )  = n
+
+cpatConTag :: CPat -> CTag
+cpatConTag (CPat_Con  _ t _ _)  = t
+cpatConTag (CPat_Int  _ _    )  = ctagInt
+cpatConTag (CPat_Char _ _    )  = ctagChar
+
+caltTag :: CAlt -> CTag
+caltTag (CAlt_Alt (p : _) _) = cpatConTag p
+
+caltIsVar :: CAlt -> Bool
+caltIsVar (CAlt_Alt (CPat_Var _ : _) _)  = True
+caltIsVar _                              = False
+
+caltIsConst :: CAlt -> Bool
+caltIsConst (CAlt_Alt (CPat_Int  _ _ : _) _)  = True
+caltIsConst (CAlt_Alt (CPat_Char _ _ : _) _)  = True
+caltIsConst _                                 = False
+
+caltPatL :: CAlt -> CPatL
+caltPatL (CAlt_Alt p _) = p
+
+caltPat :: CAlt -> CPat
+caltPat = head . caltPatL
+
+caltLPatNms :: CAltL -> [CPatNm]
+caltLPatNms = nub . sort . map (cpatVarNm . caltPat)
+
+cvarUndefined :: CExpr
+cvarUndefined = CExpr_Var hsnUndefined
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Support for transformations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type FvS = Set.Set HsName
+type FvSMp = Map.Map HsName FvS
+%%]
+
+%%[8 hs
+cLevOuter = 0
+%%]
+
+%%[8 hs
+type LevMp = Map.Map HsName Int
+
+fvLev :: LevMp -> HsName -> Int
+fvLev lm n = Map.findWithDefault cLevOuter n lm
+
+fvsLev :: LevMp -> FvS -> Int
+fvsLev lm fvs = foldr (\n l -> fvLev lm n `max` l) cLevOuter . Set.toList $ fvs
+
+levMpAdd :: LevMp -> FvSMp -> LevMp
+levMpAdd lm fvm = Map.map (fvsLev lm) fvm `Map.union` lm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Hole construction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+mkCExprPrHole :: PredOccId -> CExpr
+mkCExprPrHole = CExpr_Hole . poiId
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Coercion
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+data Coe = CoeId | Coe (CExpr -> CExpr) | CoeC CExpr | CoeImplApp ImplsVarId | CoeImplLam ImplsVarId
+
+coeId :: Coe
+coeId = CoeC CExpr_CoeArg
+
+coeIsId :: Coe -> Bool
+coeIsId (CoeC CExpr_CoeArg) = True
+coeIsId _                   = False
+
+mkCoe :: (CExpr -> CExpr) -> Coe
+mkCoe = Coe
+
+mkAppCoe :: [CExpr] -> Coe
+mkAppCoe eL = mkCoe (\e -> e `mkCExprApp` eL)
+
+mkLamCoe :: HsName -> Coe
+mkLamCoe n = mkCoe (\e -> n `CExpr_Lam` e)
+
+mkLetRecCoe :: CBindL -> Coe
+mkLetRecCoe b = mkCoe (\e -> mkCExprLet CBindRec b e)
+
+instance Show Coe where
+  show _ = "COE"
+%%]
+
+

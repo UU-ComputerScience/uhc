@@ -5,7 +5,7 @@ TODO: Mark unique variables as Unique
 %include afp.fmt
 %%]
 
-%%[8 import(GrinCodeAbsSyn)
+%%[8 import({GrinCode/AbsSyn})
 %%]
 
 %%[8 hs import(Data.List(transpose), Debug.Trace)
