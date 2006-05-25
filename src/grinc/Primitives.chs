@@ -22,7 +22,7 @@ compareNodes = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "_EQ"), [AV_
                                        ]
 %%]
 
-%%[8.codeGeneration import({%{GRIN}CmmCode}, Cmm.CmmBuilding) export(false_node, true_node)
+%%[8.codeGeneration import({%{GRIN}CmmCode}, {%{GRIN}CmmCode.Building}) export(false_node, true_node)
 --buildin datatype
 true_tag   = cmmVar "@C$_True"
 false_tag  = cmmVar "@C$_False"

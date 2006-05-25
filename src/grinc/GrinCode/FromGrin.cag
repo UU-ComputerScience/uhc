@@ -6,7 +6,7 @@
 %%[8 import({GrinCode/AbsSyn})
 %%]
 
-%%[8 hs module Cmm.FromGrin import({%{GRIN}GRINCCommon}, Data.List(nub), Data.Maybe, {%{EH}GrinCode}, {%{GRIN}Primitives}, Cmm.CmmBuilding) export(grin2cmm,CmmUnit(..))
+%%[8 hs module {%{GRIN}GrinCode.CmmCode} import({%{GRIN}GRINCCommon}, Data.List(nub), Data.Maybe, {%{EH}GrinCode}, {%{GRIN}Primitives}, {%{GRIN}CmmCode.Building}) export(grin2cmm,CmmUnit(..))
 grin2cmm :: HsName -> GrModule -> Bool -> CmmUnit
 grin2cmm e gr emitTraceInfo = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr))
                                                    (Inh_GrAGItf { entryNm_Inh_GrAGItf = e
@@ -25,11 +25,11 @@ grin2cmm e gr emitTraceInfo = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf g
 WRAPPER GrAGItf
 %%]
 
-%%[8 import("../GrLastExpr","FromGrin/TagInfo","FromGrin/ValueInfo","FromGrin/ReturnSize")
+%%[8 import("../GrLastExpr",{GrinCode/TagInfo},{GrinCode/ValueInfo},{GrinCode/ReturnSize})
 %%]
 
-%%[8 import("FromGrin/Primitives","FromGrin/ImportExport","FromGrin/Globals")
+%%[8 import({GrinCode/Primitives},{GrinCode/ImportExport},{GrinCode/Globals})
 %%]
 
-%%[8 import("FromGrin/ExceptionHandlers","FromGrin/ToCmm","FromGrin/TraceInfo")
+%%[8 import({GrinCode/ExceptionHandlers},{GrinCode/ToCmm},{GrinCode/TraceInfo})
 %%]
