@@ -7,10 +7,10 @@
 %%% Eta reduce
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{TRF}EtaRed} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
+%%[8 hs module {%{EH}Core.Trf.EtaRed} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[8 hs import({%{BASE}Common},{%{AST}Core},{%{AST}Ty}) export(cmodTrfEtaRed)
+%%[8 hs import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfEtaRed)
 %%]
 
 %%[8.WRAPPER import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv})

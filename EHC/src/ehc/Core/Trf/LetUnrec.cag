@@ -7,10 +7,10 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{TRF}LetUnrec} import(Data.Maybe,qualified Data.Map as Map,{%{BASE}Common},{%{AST}Core},{%{AST}Ty}) export(cmodTrfLetUnrec)
+%%[8 hs module {%{EH}Core.Trf.LetUnrec} import(Data.Maybe,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfLetUnrec)
 %%]
 
-%%[8 hs import({%{BASE}Debug},UU.DData.Scc)
+%%[8 hs import({%{EH}Base.Debug},UU.DData.Scc)
 %%]
 
 %%[8.WRAPPER import({Core/AbsSyn})

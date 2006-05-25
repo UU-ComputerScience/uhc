@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{AST}Core} import({%{BASE}Common},Data.List,UU.Pretty) export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBindL, CBindCateg(..), CPatRest(..)) 
+%%[8 hs module {%{EH}Core} import({%{EH}Base.Common},Data.List,UU.Pretty) export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBindL, CBindCateg(..), CPatRest(..)) 
 %%]
 
 %%[8 hs export(CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL) 
@@ -25,7 +25,7 @@
 %%[8 hs export(mkCExprStrictIn)
 %%]
 
-%%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{AST}Ty}) export(FvS,FvSMp,cLevOuter,LevMp,fvLev,fvsLev,levMpAdd)
+%%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty}) export(FvS,FvSMp,cLevOuter,LevMp,fvLev,fvsLev,levMpAdd)
 %%]
 
 %%[8 hs export(mkCExprAddInt)

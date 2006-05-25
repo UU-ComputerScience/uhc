@@ -6,7 +6,7 @@
 %%[8 import(Control.Monad.Error,Control.Monad.State, Control.Exception, Data.Maybe)
 %%]
 
-%%[8.State import(GRINCCommon, {%{BASE}Common}, {%{AST}GrinCode}, EH.Util.FPath)
+%%[8.State import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}GrinCode}, EH.Util.FPath)
 data CompileState = CompileState
 	{ csUnique    :: Int
 	, csMbCode    :: Maybe GrModule 

@@ -27,7 +27,7 @@ TEXT_TMP_VARIANT_PREFIX		:= $(TEXT_TMP_PREFIX)$(TEXT_VARIANT)/
 TEXT_PUB_VARIANTS			:= ruler-doc shuffle-doc ehc-book
 TEXT_PRIV_VARIANTS			:= flops06-ruler-paper flops06-ruler \
 								pldi06-explimpl \
-								icfp06-impred \
+								hw06-impred \
 								truu-explimpl truu-ruler \
 								phd-paper phd-draft phd-tst phd \
 								ehc-book-tst \
@@ -40,7 +40,7 @@ TEXT_VARIANTS				:= $(TEXT_PUB_VARIANTS) $(TEXT_PRIV_VARIANTS)
 # 2	: ehc book (previously phd)
 # 3	: flops06-ruler, truu-ruler
 # 4	: pldi06-explimpl, truu-explimpl
-# 5	: icfp06-impred
+# 5	: hw06-impred
 # 6	: afp (will be obsolete)
 # 7	: scratch
 # 8	: slides afp
@@ -277,9 +277,9 @@ text-variant-truu-explimpl:
 	  TEXT_SHUFFLE_VARIANT=4 \
 	  text-variant-dflt-bib
 
-text-variant-icfp06-impred:
+text-variant-hw06-impred:
 	$(MAKE) TEXT_INF2PS_MARK_CHANGES_CFG= TEXT_RULER_MARK_CHANGES_CFG= \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=ifcp06 --set=acm --set=kscode --set=limitSize --set=infer2pass --set=storyImpred --set=asArticle" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=hw06 --set=acm --set=kscode --set=limitSize --set=infer2pass --set=storyImpred --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=5 \
 	  text-variant-dflt-bib
 

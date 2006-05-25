@@ -7,10 +7,10 @@
 %%% Options of all sorts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{BASE}Opts} import(System.Console.GetOpt,{%{BASE}Common}) export(EHCOpts(..), defaultEHCOpts, ehcCmdLineOpts)
+%%[1 module {%{EH}Base.Opts} import(System.Console.GetOpt,{%{EH}Base.Common}) export(EHCOpts(..), defaultEHCOpts, ehcCmdLineOpts)
 %%]
 
-%%[4 import({%{AST}Ty},UU.Pretty) export(FIOpts(..), fioSwapCoCo, fioSwapOpts, strongFIOpts, instFIOpts, instLRFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)
+%%[4 import({%{EH}Ty},UU.Pretty) export(FIOpts(..), fioSwapCoCo, fioSwapOpts, strongFIOpts, instFIOpts, instLRFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)
 %%]
 
 %%[4 export(fioIsSubsume)
@@ -31,7 +31,7 @@
 %%[9 export(predFIOpts,implFIOpts)
 %%]
 
-%%[11 import({%{TY}Instantiate})
+%%[11 import({%{EH}Ty.Instantiate})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

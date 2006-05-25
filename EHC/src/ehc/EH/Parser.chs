@@ -7,13 +7,13 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Parser} import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.GenToken, {%{BASE}Common}, {%{BASE}ScannerCommon}, {%{AST}EH})
+%%[1 module {%{EH}EH.Parser} import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.GenToken, {%{EH}Base.Common}, {%{EH}Base.ScannerCommon}, {%{EH}EH})
 %%]
 
 %%[1 export(pAGItf)
 %%]
 
-%%[4 import ({%{AST}Ty})
+%%[4 import ({%{EH}Ty})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

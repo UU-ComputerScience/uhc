@@ -7,7 +7,7 @@
 %%% Inline let bindings for variables and constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{TRF}InlineLetAlias} import(Data.Maybe,qualified Data.Map as Map,{%{BASE}Common},{%{AST}Core},{%{AST}Ty}) export(cmodTrfInlineLetAlias)
+%%[8 hs module {%{EH}Core.Trf.InlineLetAlias} import(Data.Maybe,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfInlineLetAlias)
 %%]
 
 %%[8.WRAPPER import({Core/AbsSyn},{Core/CommonLev})

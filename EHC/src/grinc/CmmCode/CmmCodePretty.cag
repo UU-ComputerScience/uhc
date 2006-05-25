@@ -7,7 +7,7 @@
 %%% C-- pretty printer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module Cmm.CmmCodePretty import(Data.Char,UU.Pretty,GRINCCommon,Cmm.CmmCode) export(ppCmmUnit)
+%%[8 hs module Cmm.CmmCodePretty import(Data.Char,UU.Pretty,{%{GRIN}GRINCCommon},{%{GRIN}CmmCode}) export(ppCmmUnit)
 %%]
 
 %%[8.WRAPPER import(CmmCodeAbsSyn)

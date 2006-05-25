@@ -1,5 +1,5 @@
 let  g   ::  (forall a . a->a) -> Int
-         =   \f -> f 3
+         =   \f ->  f 3
   ;  id  =   \x ->  x
   ;  f   =   \h ->  let  x1  = h 3
                       ;  x2  = h 'x'

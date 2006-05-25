@@ -114,12 +114,12 @@ format ag cnstr     = c
 format ag knCnstr   = kc
 format ag valGam       = g
 
-format ag rulerMk1Uniq = mkNewLevUID
-format ag rulerMk2Uniq = mkNewLevUID2
-format ag rulerMk3Uniq = mkNewLevUID3
-format ag rulerMk4Uniq = mkNewLevUID4
-format ag rulerMk5Uniq = mkNewLevUID5
-format ag rulerMk6Uniq = mkNewLevUID6
+format fmtcmd rulerMk1Uniq = mkNewLevUID
+format fmtcmd rulerMk2Uniq = mkNewLevUID2
+format fmtcmd rulerMk3Uniq = mkNewLevUID3
+format fmtcmd rulerMk4Uniq = mkNewLevUID4
+format fmtcmd rulerMk5Uniq = mkNewLevUID5
+format fmtcmd rulerMk6Uniq = mkNewLevUID6
 
 format ag  fioBindRFirstY = fioBindRFirst `=` True
 format ag  fioBindRFirstN = fioBindRFirst `=` False

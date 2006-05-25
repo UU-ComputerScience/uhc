@@ -7,7 +7,7 @@
 %%% GRI parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{GRIN}Parser} import(IO, UU.Parsing, {%{BASE}Common}, {%{BASE}Scanner}, {%{AST}GrinCode}) export(pModule,scanOpts)
+%%[8 module {%{EH}GrinCode.Parser} import(IO, UU.Parsing, {%{EH}Base.Common}, {%{EH}Base.Scanner}, {%{EH}GrinCode}) export(pModule,scanOpts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

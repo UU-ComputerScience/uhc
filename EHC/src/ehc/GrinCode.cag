@@ -7,7 +7,7 @@
 %%% Haskell importable interface to GRIN code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{AST}GrinCode} import({%{BASE}Common},UU.Pretty) export(GrAGItf(..), GrModule(..), GrExpr(..), GrBind(..), GrBindL, GrGlobal(..), GrGlobalL) 
+%%[8 hs module {%{EH}GrinCode} import({%{EH}Base.Common},UU.Pretty) export(GrAGItf(..), GrModule(..), GrExpr(..), GrBind(..), GrBindL, GrGlobal(..), GrGlobalL) 
 %%]
 
 %%[8 hs export(GrAlt(..), GrAltL, GrPat(..), GrPatL, GrVal(..), GrValL, GrTag(..),GrAdapt(..),GrAdaptL,GrSplit(..),GrSplitL) 

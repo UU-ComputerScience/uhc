@@ -665,6 +665,8 @@
 \toappear{Submitted to the International Conference onf Functional Programming 2006 (ICFP 2006), September xx-xx, xx, USA}
 %elif hw05
 \toappear{In preparation for the Haskell Workshop 2005 (HW2005), September 30, Tallin, Estonia}
+%elif hw06
+\toappear{In preparation for the Haskell Workshop 2006 (HW2006), September 17, Portland, Oregon, USA}
 %elif popl06
 \toappear{Submitted to for Principles of Programming Languages 2006 (POPL2006), January 11-13, Charleston, South Carolina, USA}
 %elif pldi06
@@ -1207,6 +1209,11 @@ The tutorial can safely be skipped if the reader is already familiar with the AG
 \section{Introduction}
 
 %%@TopicImpred.introPaper
+
+\section{Solution by transformation}
+\label{sec-solution-sketch}
+
+%%@TopicImpred.solutionSketch
 
 \section{Hindley-Milner type inference}
 \label{sec-impred-hm}

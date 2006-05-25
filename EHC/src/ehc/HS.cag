@@ -7,7 +7,7 @@
 %%% Haskell importable interface to HS/AbsSyn (was: UHA_Syntax)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{AST}HS} import(UU.Scanner.Position) export(module UU.Scanner.Position)
+%%[1 hs module {%{EH}HS} import(UU.Scanner.Position) export(module UU.Scanner.Position)
 %%]
 
 %%[1 hs export(AGItf(..), Module(..), Body(..), Declaration(..), Declarations, MaybeDeclarations, Type(..), Types, SimpleType(..), Expression(..), Expressions, MaybeExpression, GuardedExpression(..), GuardedExpressions, FunctionBinding(..), FunctionBindings, LeftHandSide(..), RightHandSide(..), Pattern(..), Patterns, Literal(..), Name(..), Names, MaybeName, MaybeNames, Strings, MaybeInt, Range(..))

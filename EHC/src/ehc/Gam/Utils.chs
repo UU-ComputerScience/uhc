@@ -7,13 +7,13 @@
 %%% Gamma utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 module {%{GAM}Utils} import(Data.List,{%{BASE}Common},{%{BASE}Opts},{%{AST}Ty},{%{TY}FitsInCommon},{%{TY}FitsIn},{%{AST}Error},{%{EHC}Gam},{%{EHC}Cnstr},{%{EHC}Substitutable})
+%%[4 module {%{EH}Gam.Utils} import(Data.List,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty},{%{EH}Ty.FitsInCommon},{%{EH}Ty.FitsIn},{%{EH}Error},{%{EH}Gam},{%{EH}Cnstr},{%{EH}Substitutable})
 %%]
 
-%%[4_2 import({%{TY}ElimAlts}) export(valGamElimAlts)
+%%[4_2 import({%{EH}Ty.ElimAlts}) export(valGamElimAlts)
 %%]
 
-%%[11 import({%{TY}ElimEqual}) export(valGamElimEqual)
+%%[11 import({%{EH}Ty.ElimEqual}) export(valGamElimEqual)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

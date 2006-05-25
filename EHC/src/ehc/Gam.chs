@@ -7,28 +7,28 @@
 %%% Gamma (aka Assumptions, Environment)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EHC}Gam} import(Data.List,{%{BASE}Common}) export(Gam,emptyGam,gamLookup, gamPushNew, gamPop, gamTop, gamAddGam, gamUnit, gamAdd, gamPushGam, gamToAssocL, assocLToGam, gamToDups)
+%%[1 module {%{EH}Gam} import(Data.List,{%{EH}Base.Common}) export(Gam,emptyGam,gamLookup, gamPushNew, gamPop, gamTop, gamAddGam, gamUnit, gamAdd, gamPushGam, gamToAssocL, assocLToGam, gamToDups)
 %%]
 
-%%[1 import({%{AST}Ty},{%{AST}Error}) export(ValGam, ValGamInfo(..), valGamLookup,valGamLookupTy)
+%%[1 import({%{EH}Ty},{%{EH}Error}) export(ValGam, ValGamInfo(..), valGamLookup,valGamLookupTy)
 %%]
 
 %%[1 export(TyGam, TyGamInfo(..), tyGamLookup)
 %%]
 
-%%[1 import(UU.Pretty,{%{TY}Pretty}) export(ppGam)
+%%[1 import(UU.Pretty,{%{EH}Ty.Pretty}) export(ppGam)
 %%]
 
-%%[2 import({%{EHC}Cnstr},{%{EHC}Substitutable})
+%%[2 import({%{EH}Cnstr},{%{EH}Substitutable})
 %%]
 
-%%[3 import({%{TY}Quantify}) export(valGamQuantify, gamMap,gamMapElts,valGamMapTy)
+%%[3 import({%{EH}Ty.Quantify}) export(valGamQuantify, gamMap,gamMapElts,valGamMapTy)
 %%]
 
-%%[4 import({%{BASE}Opts},{%{TY}Instantiate}) export(valGamInst1Exists)
+%%[4 import({%{EH}Base.Opts},{%{EH}Ty.Instantiate}) export(valGamInst1Exists)
 %%]
 
-%%[4 import({%{TY}FitsInCommon}) export(AppSpineGam, appSpineGam, asGamLookup)
+%%[4 import({%{EH}Ty.FitsInCommon}) export(AppSpineGam, appSpineGam, asGamLookup)
 %%]
 
 %%[4 export(gamMapThr)
@@ -52,13 +52,13 @@
 %%[7 export(mkTGIData)
 %%]
 
-%%[8 import(Data.Maybe,qualified Data.Map as Map,{%{AST}Core}) export(gamUpd,DataTagMp)
+%%[8 import(Data.Maybe,qualified Data.Map as Map,{%{EH}Core}) export(gamUpd,DataTagMp)
 %%]
 
 %%[8 export(DataGam,DataGamInfo(..),mkDGI)
 %%]
 
-%%[9 import({%{BASE}Debug},{%{CORE}Subst},{%{TY}FitsInCommon}) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
+%%[9 import({%{EH}Base.Debug},{%{EH}Core.Subst},{%{EH}Ty.FitsInCommon}) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
 %%]
 
 %%[9 export(TreeGam,emptyTGam,tgamUnit,tgamLookup,tgamLookupAll,tgamElts,tgamPushNew,tgamAddGam,tgamPushGam,tgamAdd,tgamPop,tgamUpdAdd,tgamUpd,tgamMbUpd,tgamInScopes,tgamIsInScope)
@@ -628,31 +628,41 @@ type KiGam = Gam HsName KiGamInfo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2.Substitutable.Gam
-instance Substitutable v => Substitutable (Gam k v) where
+instance (Eq k,Eq tk,Substitutable k v vv) => Substitutable k v (Gam tk vv) where
   s |=> (Gam ll)    =   Gam (map (assocLMapElt (s |=>)) ll)
   ftv   (Gam ll)    =   unions . map ftv . map snd . concat $ ll
 %%]
 
 %%[9.Substitutable.TreeGam -2.Substitutable.Gam
-instance Substitutable v => Substitutable (TreeGam i k v) where
+instance (Ord tk,Ord k,Substitutable k v vv) => Substitutable k v (TreeGam i tk vv) where
   s |=> g    =   g {tgamEntriesOf = Map.map (\(n,e) -> (n,Map.map (s |=>) e)) (tgamEntriesOf g)}
   ftv   g    =   unions . map (ftv . map head . Map.elems . snd) . Map.elems . tgamEntriesOf $ g
 %%]
 
+%%[2.Substitutable.inst.ValGamInfo
+instance Substitutable TyVarId Ty ValGamInfo where
+%%]
+%%[9 -2.Substitutable.inst.ValGamInfo
+instance Substitutable TyVarId (CnstrInfo Ty) ValGamInfo where
+%%]
 %%[2
-instance Substitutable ValGamInfo where
   s |=> vgi         =   vgi { vgiTy = s |=> vgiTy vgi }
   ftv   vgi         =   ftv (vgiTy vgi)
 %%]
 
+%%[6.Substitutable.inst.TyGamInfo
+instance Substitutable TyVarId Ty TyGamInfo where
+%%]
+%%[9 -6.Substitutable.inst.TyGamInfo
+instance Substitutable TyVarId (CnstrInfo Ty) TyGamInfo where
+%%]
 %%[6
-instance Substitutable TyGamInfo where
   s |=> tgi         =   tgi { tgiKi = s |=> tgiKi tgi }
   ftv   tgi         =   ftv (tgiKi tgi)
 %%]
 
 %%[9
-gamSubstTop :: (Ord k,Substitutable v) => Cnstr -> Gam k v -> Gam k v
+gamSubstTop :: (Ord k,Substitutable k v vv) => Cnstr' k v -> Gam k vv -> Gam k vv
 gamSubstTop s g
   =  let  (h,t) = gamPop g
      in   gamPushGam (s |=> h) t

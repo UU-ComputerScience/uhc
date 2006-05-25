@@ -7,13 +7,13 @@
 %%% Haskell importable interface to EH/AbsSyn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{AST}EH} import({%{BASE}Common})
+%%[1 hs module {%{EH}EH} import({%{EH}Base.Common})
 %%]
 
 %%[1 hs export(AGItf(..), Decl(..), Decls, TyExpr(..), Expr(..), PatExpr(..))
 %%]
 
-%%[4 hs import({%{AST}Ty})
+%%[4 hs import({%{EH}Ty})
 %%]
 
 %%[5 hs export(TyExprs, TyVar(..), TyVars, CaseAlt(..), CaseAlts, DataConstr(..), DataConstrs)

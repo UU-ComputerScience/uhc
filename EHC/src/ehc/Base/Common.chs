@@ -7,7 +7,7 @@
 %%% Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{BASE}Common} export(HsName(..), hsnWild, hsnArrow, hsnProd, hsnProdArity, hsnUnknown, hsnIsArrow, hsnIsProd, hsnInt, hsnChar)
+%%[1 module {%{EH}Base.Common} export(HsName(..), hsnWild, hsnArrow, hsnProd, hsnProdArity, hsnUnknown, hsnIsArrow, hsnIsProd, hsnInt, hsnChar)
 %%]
 
 %%[1 export(AssocL, hdAndTl, hdAndTl', ppAssocL)
@@ -25,7 +25,7 @@
 %%[1 export(ParNeed(..), ParNeedL, parNeedApp, ppParNeed)
 %%]
 
-%%[2 export(UID, mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, uidNext, mkNewUID, mkNewUIDL, uidStart)
+%%[2 export(UID(..), mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, uidNext, mkNewUID, mkNewUIDL, uidStart)
 %%]
 
 %%[2 export(assocLMapElt,assocLMapKey)

@@ -7,22 +7,22 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module Main import(System, System.Console.GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, {%{BASE}Common}, {%{BASE}ScannerCommon}, {%{BASE}Opts})
+%%[1 module Main import(System, System.Console.GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, {%{EH}Base.Common}, {%{EH}Base.ScannerCommon}, {%{EH}Base.Opts})
 %%]
 
-%%[1 import(qualified {%{EH}Parser} as EHPrs, qualified {%{EH}MainAG} as EHSem, qualified {%{HS}Parser} as HSPrs, qualified {%{HS}MainAG} as HSSem)
+%%[1 import(qualified {%{EH}EH.Parser} as EHPrs, qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.Parser} as HSPrs, qualified {%{EH}HS.MainAG} as HSSem)
 %%]
 
-%%[8 import (EH.Util.CompileRun,{%{AST}Error},{%{ERR}Pretty},EH.Util.FPath,qualified Data.Map as Map,Data.Maybe,Data.List)
+%%[8 import (EH.Util.CompileRun,{%{EH}Error},{%{EH}Error.Pretty},EH.Util.FPath,qualified Data.Map as Map,Data.Maybe,Data.List)
 %%]
 
-%%[8 import ({%{CORE}Java},{%{CORE}Grin},{%{CORE}Pretty})
+%%[8 import ({%{EH}Core.Java},{%{EH}Core.Grin},{%{EH}Core.Pretty})
 %%]
 
-%%[8 import ({%{TRF}RenUniq},{%{TRF}FullLazy},{%{TRF}InlineLetAlias},{%{TRF}LetUnrec},{%{TRF}LamLift},{%{TRF}ConstProp},{%{TRF}EtaRed})
+%%[8 import ({%{EH}Core.Trf.RenUniq},{%{EH}Core.Trf.FullLazy},{%{EH}Core.Trf.InlineLetAlias},{%{EH}Core.Trf.LetUnrec},{%{EH}Core.Trf.LamLift},{%{EH}Core.Trf.ConstProp},{%{EH}Core.Trf.EtaRed})
 %%]
 
-%%[8 import ({%{GRIN}Pretty})
+%%[8 import ({%{EH}GrinCode.Pretty})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

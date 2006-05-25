@@ -7,10 +7,10 @@
 %%% Free variables
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{CORE}FvS} import(qualified Data.Set as Set,qualified Data.Map as Map)
+%%[8 hs module {%{EH}Core.FvS} import(qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[8 hs import({%{BASE}Common},{%{AST}Core},{%{AST}Ty}) export(cexprFvS)
+%%[8 hs import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cexprFvS)
 %%]
 
 %%[8.WRAPPER import({Core/AbsSyn},{Core/Trf/CommonFv})

@@ -13,7 +13,7 @@ return spine.
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.ReturningCatch import({%{BASE}Common}, GRINCCommon, {%{AST}GrinCode}) export(returnCatch)
+%%[8 hs module Trf.ReturningCatch import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(returnCatch)
 returnCatch :: HptMap -> Int -> GrModule -> (Int, GrModule)
 returnCatch hptMap uniq grmod  =  let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                                        (Inh_GrAGItf { uniq_Inh_GrAGItf    =  uniq

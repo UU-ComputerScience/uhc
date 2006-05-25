@@ -7,13 +7,13 @@
 %%% Haskell importable interface to Error
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{AST}Error} import(UU.Pretty,{%{BASE}Common},{%{AST}Ty}) export(Err(..), ErrL, mkNestErr)
+%%[1 hs module {%{EH}Error} import(UU.Pretty,{%{EH}Base.Common},{%{EH}Ty}) export(Err(..), ErrL, mkNestErr)
 %%]
 
 %%[1 import({Error/AbsSyn})
 %%]
 
-%%[9 hs import({%{AST}Core})
+%%[9 hs import({%{EH}Core})
 %%]
 
 %%[9

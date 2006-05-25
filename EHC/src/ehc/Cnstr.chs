@@ -14,10 +14,10 @@
 %%% Substitution for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 module {%{EHC}Cnstr} import(Data.List, {%{BASE}Common}, {%{AST}Ty}) export(Cnstr(..), emptyCnstr, cnstrTyUnit, cnstrTyLookup)
+%%[2 module {%{EH}Cnstr} import(Data.List, {%{EH}Base.Common}, {%{EH}Ty}) export(Cnstr'(..), Cnstr, emptyCnstr, cnstrTyUnit, cnstrTyLookup)
 %%]
 
-%%[2 import(UU.Pretty, {%{TY}Pretty}) export(ppCnstrV)
+%%[2 import(UU.Pretty, {%{EH}Ty.Pretty}) export(ppCnstrV)
 %%]
 
 %%[4 export(cnstrFilterTy,cnstrDel,(|\>) ,cnstrPlus)
@@ -32,7 +32,7 @@
 %%[4_2 export(tyAsCnstr,cnstrTyRevUnit)
 %%]
 
-%%[9 import(qualified Data.Map as Map,{%{BASE}Debug}) export(CnstrInfo(..),cnstrImplsLookup,cnstrImplsUnit,assocLToCnstrImpls,cnstrToAssocL)
+%%[9 import(qualified Data.Map as Map,{%{EH}Base.Debug}) export(CnstrInfo(..),cnstrImplsLookup,cnstrImplsUnit,assocLToCnstrImpls,cnstrToAssocL)
 %%]
 
 %%[11 export(cnstrKeys)
@@ -50,48 +50,128 @@ infixr `cnstrPlus`
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Cnstr
+%%% Cnstr'
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2.Cnstr.Base
-newtype Cnstr  = Cnstr (AssocL TyVarId Ty) deriving Show
+%%[2.CnstrQ.Base
+newtype Cnstr' k v = Cnstr (AssocL k v) deriving Show
 %%]
 
-%%[2.cnstrTyLookup
-cnstrTyLookup :: TyVarId -> Cnstr -> Maybe Ty
-cnstrTyLookup tv (Cnstr s) = lookup tv s
-%%]
-
-%%[9 -(2.Cnstr.Base 2.cnstrTyLookup)
-data CnstrInfo  = CITy Ty
-                | CIImpls Impls
-                deriving (Eq,Show)
-
-newtype Cnstr   = Cnstr (Map.Map TyVarId CnstrInfo)
-
-instance Show Cnstr where
-  show (Cnstr c) = show (Map.toList c)
-
-cnstrTyLookup :: TyVarId -> Cnstr -> Maybe Ty
-cnstrTyLookup v (Cnstr s)
-  = case Map.lookup v s of
-      Just (CITy t)  -> Just t
-      _              -> Nothing
+%%[9 -2.CnstrQ.Base
+newtype Cnstr' k v = Cnstr (Map.Map k v)
 %%]
 
 %%[2.Cnstr.emptyCnstr
-emptyCnstr :: Cnstr
+emptyCnstr :: Cnstr' k v
 emptyCnstr = Cnstr []
 %%]
 
 %%[9.Cnstr.emptyCnstr -2.Cnstr.emptyCnstr
-emptyCnstr :: Cnstr
+emptyCnstr :: Cnstr' k v
 emptyCnstr = Cnstr Map.empty
 %%]
 
 %%[2.Cnstr.cnstrTyUnit
-cnstrTyUnit :: TyVarId -> Ty -> Cnstr
+cnstrTyUnit :: k -> v -> Cnstr' k v
 cnstrTyUnit tv t = Cnstr [(tv,t)]
+%%]
+
+%%[9.Cnstr.cnstrTyUnit -2.Cnstr.cnstrTyUnit
+cnstrTyUnit :: Ord k => k -> v -> Cnstr' k (CnstrInfo v)
+cnstrTyUnit v t = Cnstr (Map.fromList [(v,CITy t)])
+%%]
+
+%%[4.cnstrFilter
+cnstrFilter :: (k -> v -> Bool) -> Cnstr' k v -> Cnstr' k v
+cnstrFilter f (Cnstr l) = Cnstr (filter (uncurry f) l)
+%%]
+
+%%[9.cnstrFilter -4.cnstrFilter
+cnstrFilter :: Ord k => (k -> v -> Bool) -> Cnstr' k v -> Cnstr' k v
+cnstrFilter f (Cnstr c) = Cnstr (Map.filterWithKey f c)
+%%]
+
+%%[2.cnstrPlus
+cnstrPlus :: Cnstr' k v -> Cnstr' k v -> Cnstr' k v
+cnstrPlus (Cnstr l1) (Cnstr l2) = Cnstr (l1 ++ l2)
+%%]
+
+%%[9.cnstrPlus -2.cnstrPlus
+cnstrPlus :: Ord k => Cnstr' k v -> Cnstr' k v -> Cnstr' k v
+cnstrPlus (Cnstr l1) (Cnstr l2) = Cnstr (l1 `Map.union` l2)
+%%]
+
+%%[4.cnstrDel
+cnstrDel :: Ord k => [k] -> Cnstr' k v -> Cnstr' k v
+cnstrDel tvL c = cnstrFilter (const.not.(`elem` tvL)) c
+
+(|\>) :: Ord k => Cnstr' k v -> [k] -> Cnstr' k v
+(|\>) = flip cnstrDel
+%%]
+
+%%[4.assocLToCnstr
+assocLToCnstr :: AssocL k v -> Cnstr' k v
+assocLToCnstr = Cnstr
+
+cnstrToAssocTyL :: Cnstr' k v -> AssocL k v
+cnstrToAssocTyL (Cnstr l) = l
+%%]
+
+%%[9.assocLToCnstr -4.assocLToCnstr
+assocLToCnstr :: Ord k => AssocL k v -> Cnstr' k (CnstrInfo v)
+assocLToCnstr = Cnstr . Map.fromList . assocLMapElt CITy
+
+cnstrToAssocL :: Cnstr' k (CnstrInfo v) -> AssocL k (CnstrInfo v)
+cnstrToAssocL (Cnstr l) = Map.toList l
+
+cnstrToAssocTyL :: Cnstr' k (CnstrInfo v) -> AssocL k v
+cnstrToAssocTyL c = [ (v,t) | (v,CITy t) <- cnstrToAssocL c ]
+%%]
+
+%%[9
+cnstrSize :: Cnstr' k v -> Int
+cnstrSize (Cnstr m) = Map.size m
+%%]
+
+%%[4.cnstrKeys
+cnstrKeys :: Cnstr' k v -> [k]
+cnstrKeys (Cnstr l) = assocLKeys l
+%%]
+
+%%[9.cnstrKeys -4.cnstrKeys
+cnstrKeys :: Cnstr' k v -> [k]
+cnstrKeys (Cnstr fm) = Map.keys fm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Cnstr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2.Cnstr.Base
+type Cnstr  = Cnstr' TyVarId Ty
+%%]
+
+%%[2.cnstrTyLookup
+cnstrTyLookup :: Eq k => k -> Cnstr' k v -> Maybe v
+cnstrTyLookup tv (Cnstr s) = lookup tv s
+%%]
+
+%%[9 -(2.Cnstr.Base 2.cnstrTyLookup)
+data CnstrInfo v
+  = CITy v
+  | CIImpls Impls
+  deriving (Eq,Show)
+
+type Cnstr  = Cnstr' TyVarId (CnstrInfo Ty)
+
+instance Show Cnstr where
+  show (Cnstr c) = show (Map.toList c)
+
+cnstrTyLookup :: Ord k => k -> Cnstr' k (CnstrInfo v) -> Maybe v
+cnstrTyLookup v (Cnstr s)
+  = case Map.lookup v s of
+      Just (CITy t)  -> Just t
+      _              -> Nothing
 %%]
 
 %%[4_2.cnstrTyRevUnit
@@ -99,40 +179,14 @@ cnstrTyRevUnit :: TyVarId -> Ty -> (Ty,Cnstr)
 cnstrTyRevUnit tv t = maybe (t,cnstrTyUnit tv t) (\v -> let t' = mkTyVar tv in (t',cnstrTyUnit v t')) . tyMbVar $ t
 %%]
 
-%%[9.Cnstr.cnstrTyUnit -2.Cnstr.cnstrTyUnit
-cnstrTyUnit :: TyVarId -> Ty -> Cnstr
-cnstrTyUnit v t = Cnstr (Map.fromList [(v,CITy t)])
-%%]
-
 %%[4.cnstrFilterTy
-cnstrFilterTy :: (TyVarId -> Ty -> Bool) -> Cnstr -> Cnstr
-cnstrFilterTy f (Cnstr l) = Cnstr (filter (uncurry f) l)
+cnstrFilterTy :: (k -> v -> Bool) -> Cnstr' k v -> Cnstr' k v
+cnstrFilterTy = cnstrFilter
 %%]
 
 %%[9.cnstrFilterTy -4.cnstrFilterTy
-cnstrFilter :: (TyVarId -> CnstrInfo -> Bool) -> Cnstr -> Cnstr
-cnstrFilter f (Cnstr c) = Cnstr (Map.filterWithKey f c)
-
-cnstrFilterTy :: (TyVarId -> Ty -> Bool) -> Cnstr -> Cnstr
+cnstrFilterTy :: Ord k => (k -> v -> Bool) -> Cnstr' k (CnstrInfo v) -> Cnstr' k (CnstrInfo v)
 cnstrFilterTy f = cnstrFilter (\v i -> case i of {CITy t -> f v t ; _ -> True})
-%%]
-
-%%[4.cnstrDel
-cnstrDel :: TyVarIdL -> Cnstr -> Cnstr
-cnstrDel tvL c = cnstrFilterTy (const.not.(`elem` tvL)) c
-
-(|\>) :: Cnstr -> TyVarIdL -> Cnstr
-(|\>) = flip cnstrDel
-%%]
-
-%%[2.cnstrPlus
-cnstrPlus :: Cnstr -> Cnstr -> Cnstr
-cnstrPlus (Cnstr l1) (Cnstr l2) = Cnstr (l1 ++ l2)
-%%]
-
-%%[9.cnstrPlus -2.cnstrPlus
-cnstrPlus :: Cnstr -> Cnstr -> Cnstr
-cnstrPlus (Cnstr l1) (Cnstr l2) = Cnstr (l1 `Map.union` l2)
 %%]
 
 %%[4_2.cnstrMapThr
@@ -151,7 +205,7 @@ cnstrMapTy f = fst . cnstrMapThrTy (\v t _ -> (f v t,())) ()
 %%]
 
 %%[9 -4_2.cnstrMapThr
-cnstrMapThr :: (TyVarId -> CnstrInfo -> thr -> (CnstrInfo,thr)) -> thr -> Cnstr -> (Cnstr,thr)
+cnstrMapThr :: (TyVarId -> CnstrInfo Ty -> thr -> (CnstrInfo Ty,thr)) -> thr -> Cnstr -> (Cnstr,thr)
 cnstrMapThr f thr (Cnstr fm)
   =  let (fm',thr')
            =  Map.foldWithKey
@@ -166,40 +220,6 @@ cnstrMapThrTy :: (TyVarId -> Ty -> thr -> (Ty,thr)) -> thr -> Cnstr -> (Cnstr,th
 cnstrMapThrTy f = cnstrMapThr (\v i thr -> case i of {CITy t -> let (t',thr') = f v t thr in (CITy t,thr'); _ -> (i,thr)})
 %%]
 
-%%[99.cnstrMapTy
-cnstrMap :: (TyVarId -> CnstrInfo -> CnstrInfo) -> Cnstr -> Cnstr
-cnstrMap f (Cnstr l) = Cnstr (Map.mapWithKey f l)
-
-cnstrMapTy :: (TyVarId -> Ty -> Ty) -> Cnstr -> Cnstr
-cnstrMapTy f = cnstrMap (\v i -> case i of {CITy t -> CITy (f v t); _ -> i})
-%%]
-
-%%[4.assocLToCnstr
-assocLToCnstr :: AssocL TyVarId Ty -> Cnstr
-assocLToCnstr = Cnstr
-
-cnstrToAssocTyL :: Cnstr -> AssocL TyVarId Ty
-cnstrToAssocTyL (Cnstr l) = l
-%%]
-
-%%[9.assocLToCnstr -4.assocLToCnstr
-assocLToCnstr :: AssocL TyVarId Ty -> Cnstr
-assocLToCnstr = Cnstr . Map.fromList . assocLMapElt CITy
-
-cnstrToAssocTyL :: Cnstr -> AssocL TyVarId Ty
-cnstrToAssocTyL c = [ (v,t) | (v,CITy t) <- cnstrToAssocL c ]
-%%]
-
-%%[4.cnstrKeys
-cnstrKeys :: Cnstr -> TyVarIdL
-cnstrKeys (Cnstr l) = assocLKeys l
-%%]
-
-%%[9.cnstrKeys -4.cnstrKeys
-cnstrKeys :: Cnstr -> TyVarIdL
-cnstrKeys (Cnstr fm) = Map.keys fm
-%%]
-
 %%[9
 cnstrImplsUnit :: ImplsVarId -> Impls -> Cnstr
 cnstrImplsUnit v i = Cnstr (Map.fromList [(v,CIImpls i)])
@@ -212,19 +232,6 @@ cnstrImplsLookup v (Cnstr s)
   = case Map.lookup v s of
       Just (CIImpls i)  -> Just i
       _                 -> Nothing
-
-cnstrToAssocL :: Cnstr -> AssocL UID CnstrInfo
-cnstrToAssocL (Cnstr l) = Map.toList l
-%%]
-
-%%[9
-cnstrSize :: Cnstr -> Int
-cnstrSize (Cnstr m) = Map.size m
-%%]
-
-%%[11
-cnstrKeys :: Cnstr -> TyVarIdL
-cnstrKeys = assocLKeys . cnstrToAssocL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -286,7 +293,7 @@ instance PP Cnstr where
 %%]
 
 %%[9
-instance PP CnstrInfo where
+instance PP v => PP (CnstrInfo v) where
   pp (CITy t) = pp t
   pp (CIImpls i) = pp i
 %%]

@@ -12,7 +12,7 @@ TODO: Complete Left unit implementation
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.CopyPropagation import({%{BASE}Common}, GRINCCommon, {%{AST}GrinCode}, Data.Maybe) export(propagate)
+%%[8 hs module Trf.CopyPropagation import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}, Data.Maybe) export(propagate)
 propagate :: GrModule -> (Bool, GrModule)
 propagate grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                        (Inh_GrAGItf)
