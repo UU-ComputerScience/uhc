@@ -15,7 +15,7 @@ cleanup EHC generated GRIN:
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.CleanupPass import(qualified Data.Set as Set)
+%%[8 hs module {%{GRIN}GrinCode.Trf.CleanupPass} import(qualified Data.Set as Set)
 %%]
 
 %%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(cleanupPass)
@@ -68,7 +68,7 @@ Introduce global variables: each binding without arguments must have a
 corresponding global variable. (CAF's)
 Note: EHC does not generate these yet
 
-%%[8.caf import("../GrCAFNames")
+%%[8.caf import({GrinCode/CAFNames})
 SEM GrModule
   | Mod  loc  .  newGlobals  =  let buildGlobalVar n  =  GrGlobal_Global n (GrVal_Node (GrTag_Lit GrTagFun 0 n) 
                                                                                        [GrVal_LitInt 0]

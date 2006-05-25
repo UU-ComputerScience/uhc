@@ -3,7 +3,7 @@
 %include afp.fmt
 %%]
 
-%%[8 import(Control.Monad.Error,Control.Monad.State, Control.Exception, Data.Maybe)
+%%[8 module {%{GRIN}CompilerDriver} import(Control.Monad.Error,Control.Monad.State, Control.Exception, Data.Maybe)
 %%]
 
 %%[8.State import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}GrinCode}, EH.Util.FPath)

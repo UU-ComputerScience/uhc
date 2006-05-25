@@ -14,7 +14,7 @@ GRINC_HS_FROM_AG  :=
 GRINC_HS_DATA_FROM_AG :=
 
 #collect all 'real' source code (not derived) - dependencies just to start compilation on the real files
-GRINC_ALL_SRC     :=
+#GRINC_ALL_SRC     :=
 
 # end products, binary, executable, etc
 GRINC_EXEC_NAME							:= grinc
@@ -24,7 +24,7 @@ GRINC_ALL_EXECS							:= $(patsubst %,$(EHC_BIN_PREFIX)%/$(GRINC_EXEC_NAME)$(EXE
 
 # main source
 GRINC_MAIN_HS                                           := $(EHC_BLD_VARIANT_PREFIX)GRINC.hs
-GRINC_ALL_SRC                                           += $(SRC_GRINC_PREFIX)GRINC.chs
+#GRINC_ALL_SRC                                           += $(SRC_GRINC_PREFIX)GRINC.chs
 
 
 ### BEGIN of library (will make part of remainder obsolete)
@@ -44,6 +44,7 @@ GRINC_HS_UTIL_SRC_CHS					:= $(patsubst %,$(SRC_GRINC_PREFIX)%.chs,\
 													GRINCCommon \
 													HeapPointsToFixpoint Primitives \
 													CmmCode/Building \
+													CompilerDriver \
 											)
 GRINC_HS_UTIL_DRV_HS					:= $(patsubst $(SRC_GRINC_PREFIX)%.chs,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_HS_UTIL_SRC_CHS))
 
@@ -61,17 +62,38 @@ GRINC_AGCMMCODE_PRETTY_DPDS_SRC_CAG		:= $(patsubst %,$(SRC_GRINC_PREFIX)CmmCode/
 $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGCMMCODE_PRETTY_MAIN_SRC_CAG)) \
 										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGCMMCODE_PRETTY_DPDS_SRC_CAG))
 
+GRINC_AGGRINCODE_CMMCODE_MAIN_SRC_CAG		:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,CmmCode)
+GRINC_AGGRINCODE_CMMCODE_DPDS_SRC_CAG		:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,TagInfo ValueInfo ReturnSize Primitives ImportExport Globals ExceptionHandlers ToCmm TraceInfo LastExpr)
+$(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGGRINCODE_CMMCODE_MAIN_SRC_CAG)) \
+										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_CMMCODE_DPDS_SRC_CAG))
+
+GRINC_AGGRINCODE_POINTSTO_MAIN_SRC_CAG		:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,PointsToAnalysis)
+GRINC_AGGRINCODE_POINTSTO_DPDS_SRC_CAG		:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,)
+$(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGGRINCODE_POINTSTO_MAIN_SRC_CAG)) \
+										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_POINTSTO_DPDS_SRC_CAG))
+
+GRINC_AGGRINCODE_ALLTRF_MAIN_SRC_CAG		:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/Trf/%.cag,DropUnusedExpr NameIdents SparseCase NormForHPT NumberIdents CaseElimination SplitFetch DropUnusedBindings DropUnusedTags GrInline RightSkew LowerGrin CleanupPass CopyPropagation BuildAppBindings ReturningCatch)
+GRINC_AGGRINCODE_ALLTRF_DPDS_SRC_CAG		:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,CAFNames)
+$(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGGRINCODE_ALLTRF_MAIN_SRC_CAG)) \
+										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_ALLTRF_DPDS_SRC_CAG))
+
 GRINC_AG_D_MAIN_SRC_CAG					:= \
 											$(GRINC_AGCMMCODE_MAIN_SRC_CAG)
 
 GRINC_AG_S_MAIN_SRC_CAG					:= \
-											$(GRINC_AGCMMCODE_PRETTY_MAIN_SRC_CAG)
+											$(GRINC_AGCMMCODE_PRETTY_MAIN_SRC_CAG) \
+											$(GRINC_AGGRINCODE_CMMCODE_MAIN_SRC_CAG) \
+											$(GRINC_AGGRINCODE_POINTSTO_MAIN_SRC_CAG) \
+											$(GRINC_AGGRINCODE_ALLTRF_MAIN_SRC_CAG)
 
 GRINC_AG_ALL_MAIN_SRC_CAG				:= $(GRINC_AG_D_MAIN_SRC_CAG) $(GRINC_AG_S_MAIN_SRC_CAG) $(GRINC_AG_DS_MAIN_SRC_CAG)
 
 GRINC_AG_ALL_DPDS_SRC_CAG				:= $(sort \
 											$(GRINC_AGCMMCODE_DPDS_SRC_CAG) \
 											$(GRINC_AGCMMCODE_PRETTY_DPDS_SRC_CAG) \
+											$(GRINC_AGGRINCODE_CMMCODE_DPDS_SRC_CAG) \
+											$(GRINC_AGGRINCODE_POINTSTO_DPDS_SRC_CAG) \
+											$(GRINC_AGGRINCODE_ALLTRF_DPDS_SRC_CAG) \
 											)
 
 # derived
@@ -98,7 +120,7 @@ $(LIB_GRINC_CABAL_DRV): $(GRINC_ALL_DPDS) $(GRINC_MKF)
 	$(call GEN_CABAL \
 		, $(LIB_GRINC_PKG_NAME) \
 		, $(EH_VERSION) \
-		, $(LIB_EH_UTIL_PKG_NAME) $(LIB_EHC_PKG_NAME) \
+		, mtl $(LIB_EH_UTIL_PKG_NAME) $(LIB_EHC_PKG_NAME) \
 		, AllowUndecidableInstances \
 		, Part of GRINC$(EHC_VARIANT) compiler packaged as library \
 		, $(subst $(PATH_SEP),.,$(patsubst $(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(LIB_GRINC_QUAL_PREFIX)%,$(shell $(FILTER_NONEMP_FILES) $(GRINC_HS_UTIL_DRV_HS) $(GRINC_AG_ALL_MAIN_DRV_HS)))) \
@@ -129,12 +151,16 @@ $(GRINC_AG_ALL_MAIN_DRV_AG) $(GRINC_AG_ALL_DPDS_DRV_AG): $(GRINC_BLD_LIB_HS_VARI
 	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --ag --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(GRINC_AG_D_MAIN_DRV_HS): %.hs: %.ag
-	$(AGC) -dr -P$(EHC_BLD_VARIANT_PREFIX) -P$(GRINC_BLD_LIB_HS_VARIANT_PREFIX) $<
+	$(AGC) -dr -P$(EHC_BLD_VARIANT_PREFIX) -P$(GRINC_BLD_LIB_HS_VARIANT_PREFIX) -P$(INS_EHC_LIB_AG_PREFIX) $<
 
-$(GRINC_AG_S_MAIN_DRV_HS) $(LIB_EHC_AG_S_MAIN_DRV_HS): %.hs: %.ag
-	$(AGC) -cfspr -P$(EHC_BLD_VARIANT_PREFIX) -P$(GRINC_BLD_LIB_HS_VARIANT_PREFIX) $<
+$(GRINC_AG_S_MAIN_DRV_HS): %.hs: %.ag
+	$(AGC) -cfspr -P$(EHC_BLD_VARIANT_PREFIX) -P$(GRINC_BLD_LIB_HS_VARIANT_PREFIX) -P$(INS_EHC_LIB_AG_PREFIX) $<
 
-$(GRINC_HS_UTIL_DRV_HS): $(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_GRINC_PREFIX)%.chs $(SHUFFLE) $(GRINC_MKF)
+$(GRINC_HS_MAIN_DRV_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(SRC_GRINC_PREFIX)%.chs $(SHUFFLE) $(GRINC_MKF)
+	mkdir -p $(@D)
+	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=Main --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+
+$(GRINC_HS_UTIL_DRV_HS): $(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_GRINC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
 	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
@@ -144,13 +170,13 @@ $(GRINC_HS_UTIL_DRV_HS): $(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_GRINC_PRE
 
 # files from grini and ehc used by grinc
 
-GRINC_ALL_HS_SRC  := $(GRINC_MAIN_HS)
+#GRINC_ALL_HS_SRC  := $(GRINC_MAIN_HS)
 #GRINC_ALL_HS_SRC  := $(GRINC_MAIN_HS) $(EHC_BLD_VARIANT_PREFIX)GRIParser.hs \
 #                     $(addprefix $(EHC_BLD_VARIANT_PREFIX),GrinCode.hs GrinCodePretty.hs) \
 
 # Just to start the compilation depend on all 'real' files of ehc and grini
 # comilation will abort after the first step if the files are not used by grinc
-GRINC_ALL_SRC += $(EHC_ALL_SRC) $(GRINI_ALL_SRC)
+#GRINC_ALL_SRC += $(EHC_ALL_SRC) $(GRINI_ALL_SRC)
 
 
 ### Utils ###
@@ -158,10 +184,10 @@ GRINC_ALL_SRC += $(EHC_ALL_SRC) $(GRINI_ALL_SRC)
 # base names of all utils
 GRINC_UTILS := CompilerDriver GRINCCommon Primitives
 
-GRINC_ALL_SRC      += $(patsubst %,$(SRC_GRINC_PREFIX)%.chs,$(GRINC_UTILS))
-GRINC_UTILS_SRC_HS := $(patsubst %,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(GRINC_UTILS))
+#GRINC_ALL_SRC      += $(patsubst %,$(SRC_GRINC_PREFIX)%.chs,$(GRINC_UTILS))
+#GRINC_UTILS_SRC_HS := $(patsubst %,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(GRINC_UTILS))
 
-GRINC_HS_FROM_CHS  += $(GRINC_UTILS_SRC_HS)
+#GRINC_HS_FROM_CHS  += $(GRINC_UTILS_SRC_HS)
 
 #deps
 #$(EHC_BLD_VARIANT_PREFIX)Primitives.hs: $(patsubst %,$(EHC_BLD_VARIANT_PREFIX)%.hs,HeapPointsToFixpoint Cmm/CmmCode)
@@ -182,21 +208,21 @@ GRINC_TRF_UTILS_BASE := GrCAFNames GrLastExpr
 
 GRINC_AG_FROM_CAG += $(GRINC_TRF_SRC_AG) $(patsubst %,$(EHC_BLD_VARIANT_PREFIX)%.ag, $(GRINC_TRF_UTILS_BASE))
 GRINC_HS_FROM_AG  += $(GRINC_TRF_SRC_HS)
-GRINC_ALL_SRC     += $(GRINC_TRF_SRC_CAG) $(patsubst %,$(SRC_GRINC_PREFIX)%.cag,$(GRINC_TRF_UTILS_BASE))
+#GRINC_ALL_SRC     += $(GRINC_TRF_SRC_CAG) $(patsubst %,$(SRC_GRINC_PREFIX)%.cag,$(GRINC_TRF_UTILS_BASE))
 
 #every transformation depends on GrinCodeAbsSyn.ag and GrinCode.hs
 #$(GRINC_TRF_SRC_HS): $(EHC_BLD_VARIANT_PREFIX)GrinCodeAbsSyn.ag $(EHC_BLD_VARIANT_PREFIX)GrinCode.hs
 
 #some transformations depend on some extra files
-$(EHC_BLD_VARIANT_PREFIX)Trf/CleanupPass.hs: $(EHC_BLD_VARIANT_PREFIX)GrCAFNames.ag
-$(EHC_BLD_VARIANT_PREFIX)Trf/DropUnusedTags.hs: $(EHC_BLD_VARIANT_PREFIX)GrCAFNames.ag
+#$(EHC_BLD_VARIANT_PREFIX)Trf/CleanupPass.hs: $(EHC_BLD_VARIANT_PREFIX)GrCAFNames.ag
+#$(EHC_BLD_VARIANT_PREFIX)Trf/DropUnusedTags.hs: $(EHC_BLD_VARIANT_PREFIX)GrCAFNames.ag
 
-$(EHC_BLD_VARIANT_PREFIX)Trf/NormForHPT.hs: $(EHC_BLD_VARIANT_PREFIX)GrLastExpr.ag
-$(EHC_BLD_VARIANT_PREFIX)Trf/SplitFetch.hs: $(EHC_BLD_VARIANT_PREFIX)GrLastExpr.ag
-$(EHC_BLD_VARIANT_PREFIX)Trf/DropUnusedBindings.hs: $(EHC_BLD_VARIANT_PREFIX)GrLastExpr.ag
+#$(EHC_BLD_VARIANT_PREFIX)Trf/NormForHPT.hs: $(EHC_BLD_VARIANT_PREFIX)GrLastExpr.ag
+#$(EHC_BLD_VARIANT_PREFIX)Trf/SplitFetch.hs: $(EHC_BLD_VARIANT_PREFIX)GrLastExpr.ag
+#$(EHC_BLD_VARIANT_PREFIX)Trf/DropUnusedBindings.hs: $(EHC_BLD_VARIANT_PREFIX)GrLastExpr.ag
 
 ### Analysis ###
-GRINC_ALL_SRC      += $(addprefix $(SRC_GRINC_PREFIX),HeapPointsToFixpoint.chs GrPointsToAnalysis.cag)
+#GRINC_ALL_SRC      += $(addprefix $(SRC_GRINC_PREFIX),HeapPointsToFixpoint.chs GrPointsToAnalysis.cag)
 
 GRINC_AG_FROM_CAG  += $(EHC_BLD_VARIANT_PREFIX)GrPointsToAnalysis.ag
 GRINC_HS_FROM_AG   += $(EHC_BLD_VARIANT_PREFIX)GrPointsToAnalysis.hs
@@ -212,7 +238,7 @@ GRINC_CMM_FROMGRIN_AG  := $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(EHC_BLD_VARIANT_
 GRINC_CMM_SRC_CAG      := $(patsubst %,$(SRC_GRINC_PREFIX)CmmCode/%.cag,FromGrin) $(GRINC_CMM_FROMGRIN_CAG)
 GRINC_CMM_BUILDING_CHS := 
 
-GRINC_ALL_SRC          += $(GRINC_CMM_SRC_CAG) $(GRINC_CMM_BUILDING_CHS)
+#GRINC_ALL_SRC          += $(GRINC_CMM_SRC_CAG) $(GRINC_CMM_BUILDING_CHS)
 GRINC_AG_FROM_CAG      += $(patsubst $(SRC_GRINC_PREFIX)Cmm/%.cag,$(EHC_BLD_VARIANT_PREFIX)Cmm/%.ag,$(GRINC_CMM_SRC_CAG))
 GRINC_HS_FROM_AG       += $(patsubst %,$(EHC_BLD_VARIANT_PREFIX)Cmm/%.hs,CmmCodePretty FromGrin)
 GRINC_HS_FROM_CHS      += $(patsubst $(SRC_GRINC_PREFIX)%.chs,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(GRINC_CMM_BUILDING_CHS))
@@ -229,31 +255,31 @@ $(patsubst %,$(EHC_BLD_VARIANT_PREFIX)Cmm/%.hs,CmmCode CmmCodePretty): $(GRINC_C
 ### Build rules ####
 
 #collect all hs source
-GRINC_ALL_HS_SRC += $(GRINC_HS_FROM_AG) $(GRINC_HS_DATA_FROM_AG) $(GRINC_HS_FROM_CHS) $(GRINC_CMM_FROMGRIN_CAG)
+#GRINC_ALL_HS_SRC += $(GRINC_HS_FROM_AG) $(GRINC_HS_DATA_FROM_AG) $(GRINC_HS_FROM_CHS) $(GRINC_CMM_FROMGRIN_CAG)
 
-$(GRINC_HS_DATA_FROM_AG): %.hs: %.ag
-	$(call AGCC,$<,-dr)
+#$(GRINC_HS_DATA_FROM_AG): %.hs: %.ag
+#	$(call AGCC,$<,-dr)
 
-$(GRINC_HS_FROM_AG): %.hs: %.ag
-	$(call AGCC,$<,-cfspr)
+#$(GRINC_HS_FROM_AG): %.hs: %.ag
+#	$(call AGCC,$<,-cfspr)
 
-$(GRINC_AG_FROM_CAG): $(EHC_BLD_VARIANT_PREFIX)%.ag: $(SRC_GRINC_PREFIX)%.cag $(SHUFFLE)
-	mkdir -p $(@D)
-	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --ag --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+#$(GRINC_AG_FROM_CAG): $(EHC_BLD_VARIANT_PREFIX)%.ag: $(SRC_GRINC_PREFIX)%.cag $(SHUFFLE)
+#	mkdir -p $(@D)
+#	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --ag --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
-$(GRINC_HS_FROM_CHS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(SRC_GRINC_PREFIX)%.chs $(SHUFFLE)
-	mkdir -p $(@D)
-	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+#$(GRINC_HS_FROM_CHS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(SRC_GRINC_PREFIX)%.chs $(SHUFFLE)
+#	mkdir -p $(@D)
+#	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
-$(GRINC_MAIN_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(SRC_GRINC_PREFIX)%.chs $(SHUFFLE)
-	mkdir -p $(@D)
-	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=Main --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+#$(GRINC_MAIN_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(SRC_GRINC_PREFIX)%.chs $(SHUFFLE)
+#	mkdir -p $(@D)
+#	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=Main --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 
 # top rules
 $(patsubst %,grinc-variant-%,$(GRIN_VARIANTS)): grinc-variant-dflt
 
-grinc-variant-dflt: $(GRINC_ALL_HS_SRC) $(LIB_EH_UTIL_INS_FLAG) $(LIB_EHC_INS_FLAG) $(LIB_GRINC_INS_FLAG)
+grinc-variant-dflt: $(GRINC_ALL_DPDS) $(LIB_EH_UTIL_INS_FLAG) $(LIB_EHC_INS_FLAG) $(LIB_GRINC_INS_FLAG)
 	mkdir -p $(dir $(GRINC_BLD_EXEC))
 	$(GHC) --make $(GHC_OPTS) -package $(LIB_EH_UTIL_PKG_NAME) -package $(LIB_EHC_PKG_NAME) -package $(LIB_GRINC_PKG_NAME) -i$(EHC_BLD_VARIANT_PREFIX) $(GRINC_MAIN_HS) -o $(GRINC_BLD_EXEC)
 

@@ -25,7 +25,7 @@ grin2cmm e gr emitTraceInfo = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf g
 WRAPPER GrAGItf
 %%]
 
-%%[8 import("../GrLastExpr",{GrinCode/TagInfo},{GrinCode/ValueInfo},{GrinCode/ReturnSize})
+%%[8 import({GrinCode/LastExpr},{GrinCode/TagInfo},{GrinCode/ValueInfo},{GrinCode/ReturnSize})
 %%]
 
 %%[8 import({GrinCode/Primitives},{GrinCode/ImportExport},{GrinCode/Globals})

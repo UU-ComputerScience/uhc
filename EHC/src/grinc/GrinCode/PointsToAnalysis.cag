@@ -8,7 +8,7 @@ TODO: Mark unique variables as Unique
 %%[8 import({GrinCode/AbsSyn})
 %%]
 
-%%[8 hs import(Data.List(transpose), Debug.Trace)
+%%[8 hs module {%{GRIN}GrinCode.PointsToAnalysis} import(Data.List(transpose), Debug.Trace)
 %%]
 
 %%[8.wrapper

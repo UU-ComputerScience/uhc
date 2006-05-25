@@ -16,7 +16,7 @@ of the node and applys all (N) other arguments.
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.BuildAppBindings import(qualified Data.Set as Set)
+%%[8 hs module {%{GRIN}GrinCode.Trf.BuildAppBindings} import(qualified Data.Set as Set)
 %%]
 
 %%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(buildAppBindings)
