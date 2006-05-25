@@ -43,6 +43,7 @@ GRINC_HS_MAIN_DRV_HS					:= $(patsubst $(SRC_GRINC_PREFIX)%.chs,$(EHC_BLD_VARIAN
 GRINC_HS_UTIL_SRC_CHS					:= $(patsubst %,$(SRC_GRINC_PREFIX)%.chs,\
 													GRINCCommon \
 													HeapPointsToFixpoint Primitives \
+													CmmCode/Building \
 											)
 GRINC_HS_UTIL_DRV_HS					:= $(patsubst $(SRC_GRINC_PREFIX)%.chs,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_HS_UTIL_SRC_CHS))
 
@@ -123,6 +124,16 @@ $(INS_GRINC_LIB_ALL_AG): $(INS_GRINC_LIB_AG_PREFIX)%: $(GRINC_BLD_LIB_HS_VARIANT
 	cp $< $@
 
 # rules for ehc library sources+derived
+$(GRINC_AG_ALL_MAIN_DRV_AG) $(GRINC_AG_ALL_DPDS_DRV_AG): $(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag: $(SRC_GRINC_PREFIX)%.cag $(SHUFFLE)
+	mkdir -p $(@D)
+	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --ag --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+
+$(GRINC_AG_D_MAIN_DRV_HS): %.hs: %.ag
+	$(AGC) -dr -P$(EHC_BLD_VARIANT_PREFIX) -P$(GRINC_BLD_LIB_HS_VARIANT_PREFIX) $<
+
+$(GRINC_AG_S_MAIN_DRV_HS) $(LIB_EHC_AG_S_MAIN_DRV_HS): %.hs: %.ag
+	$(AGC) -cfspr -P$(EHC_BLD_VARIANT_PREFIX) -P$(GRINC_BLD_LIB_HS_VARIANT_PREFIX) $<
+
 $(GRINC_HS_UTIL_DRV_HS): $(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_GRINC_PREFIX)%.chs $(SHUFFLE) $(GRINC_MKF)
 	mkdir -p $(@D)
 	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
@@ -153,7 +164,7 @@ GRINC_UTILS_SRC_HS := $(patsubst %,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(GRINC_UTILS))
 GRINC_HS_FROM_CHS  += $(GRINC_UTILS_SRC_HS)
 
 #deps
-$(EHC_BLD_VARIANT_PREFIX)Primitives.hs: $(patsubst %,$(EHC_BLD_VARIANT_PREFIX)%.hs,HeapPointsToFixpoint Cmm/CmmCode)
+#$(EHC_BLD_VARIANT_PREFIX)Primitives.hs: $(patsubst %,$(EHC_BLD_VARIANT_PREFIX)%.hs,HeapPointsToFixpoint Cmm/CmmCode)
 
 ### GRIN Transformations ###
 
@@ -198,8 +209,8 @@ $(EHC_BLD_VARIANT_PREFIX)GrPointsToAnalysis.hs: $(EHC_BLD_VARIANT_PREFIX)GrCAFNa
 
 GRINC_CMM_FROMGRIN_CAG := $(wildcard $(SRC_GRINC_PREFIX)Cmm/FromGrin/*)
 GRINC_CMM_FROMGRIN_AG  := $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(GRINC_CMM_FROMGRIN_CAG))
-GRINC_CMM_SRC_CAG      := $(patsubst %,$(SRC_GRINC_PREFIX)Cmm/%.cag,CmmCode CmmCodePretty FromGrin CmmCodeAbsSyn) $(GRINC_CMM_FROMGRIN_CAG)
-GRINC_CMM_BUILDING_CHS := $(SRC_GRINC_PREFIX)Cmm/CmmBuilding.chs
+GRINC_CMM_SRC_CAG      := $(patsubst %,$(SRC_GRINC_PREFIX)CmmCode/%.cag,FromGrin) $(GRINC_CMM_FROMGRIN_CAG)
+GRINC_CMM_BUILDING_CHS := 
 
 GRINC_ALL_SRC          += $(GRINC_CMM_SRC_CAG) $(GRINC_CMM_BUILDING_CHS)
 GRINC_AG_FROM_CAG      += $(patsubst $(SRC_GRINC_PREFIX)Cmm/%.cag,$(EHC_BLD_VARIANT_PREFIX)Cmm/%.ag,$(GRINC_CMM_SRC_CAG))

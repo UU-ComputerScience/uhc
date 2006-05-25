@@ -18,7 +18,7 @@
 %%[8 hs export(CmmName, CmmNames, CmmExternalName, CmmExternalNames, CmmHwName, CmmHwNames, CmmType(..), CmmOptionalType, CmmKind, CmmFormal, CmmFormals, CmmTargetSpec(..), CmmByteOrder(..), CmmCallConv, CmmKindedName, CmmKindedNames)
 %%]
 
-%%[8 import(CmmCodeAbsSyn)
+%%[8 import({CmmCode/AbsSyn})
 DERIVING * : Show, Eq
 %%]
 

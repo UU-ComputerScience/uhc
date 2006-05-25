@@ -311,7 +311,7 @@ caSplitFetch = do
     }
 %%]
 
-%%[8.writeCmm import(Cmm.FromGrin, Cmm.CmmCodePretty)
+%%[8.writeCmm import({%{GRIN}GrinCode.CmmCode}, {%{GRIN}CmmCode.Pretty})
 caGrin2Cmm :: CompileAction CmmUnit
 caGrin2Cmm = do 
     { code <- gets csGrinCode

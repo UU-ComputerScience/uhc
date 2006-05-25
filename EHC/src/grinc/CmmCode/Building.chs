@@ -3,7 +3,7 @@
 %include afp.fmt
 %%]
 
-%%[8 module Cmm.CmmBuilding import({%{EH}Base.Common}(HsName), Data.Char, Data.List(nubBy), {%{EH}GrinCode}, {%{GRIN}CmmCode}) export(module {%{GRIN}CmmCode})
+%%[8 module {%{GRIN}CmmCode.Building} import({%{EH}Base.Common}(HsName), Data.Char, Data.List(nubBy), {%{EH}GrinCode}, {%{GRIN}CmmCode}) export(module {%{GRIN}CmmCode})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%
