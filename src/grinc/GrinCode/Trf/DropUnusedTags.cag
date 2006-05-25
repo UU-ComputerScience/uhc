@@ -13,7 +13,7 @@ Note: run after inlining eval and apply.
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.DropUnusedTags import(qualified Data.Set as Set)
+%%[8 hs module {%{GRIN}GrinCode.Trf.DropUnusedTags} import(qualified Data.Set as Set)
 %%]
 
 %%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(dropUnusedTags)

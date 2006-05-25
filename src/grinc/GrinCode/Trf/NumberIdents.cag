@@ -19,7 +19,7 @@ Note: after each binding we skip one number (binding needs two number in the HPT
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.NumberIdents import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}GrinCode}, Data.Array.IArray, qualified Data.Map as Map, Data.Maybe) export(numberIdents)
+%%[8 hs module {%{GRIN}GrinCode.Trf.NumberIdents} import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}GrinCode}, Data.Array.IArray, qualified Data.Map as Map, Data.Maybe) export(numberIdents)
 
 numberIdents :: Int -> HsName -> GrModule -> (Int, HsName, GrModule, IdentNameMap, Int)
 numberIdents u entry grmod = let t          = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))

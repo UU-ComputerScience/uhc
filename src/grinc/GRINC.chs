@@ -13,7 +13,7 @@
 %%[8 import(UU.Parsing, UU.Pretty, {%{EH}Base.Common}, {%{EH}Base.Scanner}, {%{EH}GrinCode})
 %%]
 
-%%[8 import (EH.Util.FPath,{%{GRIN}GRINCCommon}, CompilerDriver)
+%%[8 import (EH.Util.FPath,{%{GRIN}GRINCCommon}, {%{GRIN}CompilerDriver})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -84,7 +84,7 @@ caParseGrin = do
     modify (csUpdateGrinCode code)
 %%]
 
-%%[8.cleanup import(Trf.CleanupPass)
+%%[8.cleanup import({%{GRIN}GrinCode.Trf.CleanupPass})
 caCleanupPass :: CompileAction ()
 caCleanupPass = do
     putMsg VerboseALot "Cleanup pass" Nothing
@@ -93,7 +93,7 @@ caCleanupPass = do
     modify (csUpdateGrinCode code)
 %%]
 
-%%[8.dropUnusedBindings import(Trf.DropUnusedBindings)
+%%[8.dropUnusedBindings import({%{GRIN}GrinCode.Trf.DropUnusedBindings})
 caDropUnusedBindings :: CompileAction ()
 caDropUnusedBindings = do
     { putMsg VerboseALot "Remove unused function bindings" Nothing
@@ -113,7 +113,7 @@ caDropUnusedBindings = do
     }
 %%]
 
-%%[8.dropUnusedExpr import(Trf.DropUnusedExpr)
+%%[8.dropUnusedExpr import({%{GRIN}GrinCode.Trf.DropUnusedExpr})
 caDropUnusedExpr :: CompileAction ()
 caDropUnusedExpr = do
     { putMsg VerboseALot "Remove unused expressions" Nothing
@@ -124,7 +124,7 @@ caDropUnusedExpr = do
     }
 %%]
 
-%%[8.dropUnusedTags import(Trf.DropUnusedTags)
+%%[8.dropUnusedTags import({%{GRIN}GrinCode.Trf.DropUnusedTags})
 caDropUnusedTags :: CompileAction ()
 caDropUnusedTags = do
     putMsg VerboseALot "Remove unused tags" Nothing
@@ -133,7 +133,7 @@ caDropUnusedTags = do
     modify (csUpdateGrinCode code)
 %%]
 
-%%[8.addLazyApply import(Trf.BuildAppBindings)
+%%[8.addLazyApply import({%{GRIN}GrinCode.Trf.BuildAppBindings})
 caAddLazyApplySupport :: CompileAction ()
 caAddLazyApplySupport = do
     putMsg VerboseALot "Renaming lazy apply tags" Nothing
@@ -144,7 +144,7 @@ caAddLazyApplySupport = do
     modify (csUpdateUnique unique)
 %%]
 
-%%[8.returningCatch import(Trf.ReturningCatch)
+%%[8.returningCatch import({%{GRIN}GrinCode.Trf.ReturningCatch})
 caReturningCatch :: CompileAction ()
 caReturningCatch = do
     { putMsg VerboseALot "Ensure code exists after catch statement" Nothing
@@ -157,7 +157,7 @@ caReturningCatch = do
     }
 %%]
 
-%%[8.numberIdentifiers import(Trf.NumberIdents, Data.Array.IArray)
+%%[8.numberIdentifiers import({%{GRIN}GrinCode.Trf.NumberIdents}, Data.Array.IArray)
 caNumberIdents :: CompileAction ()
 caNumberIdents = task VerboseALot "Numbering identifiers"
     ( do { code   <- gets csGrinCode
@@ -175,7 +175,7 @@ caNumberIdents = task VerboseALot "Numbering identifiers"
     ) (\i -> Just $ show i ++ " identifiers")
 %%]
 
-%%[8.nameIdents import(Trf.NameIdents, Data.Maybe)
+%%[8.nameIdents import({%{GRIN}GrinCode.Trf.NameIdents}, Data.Maybe)
 caNameIdents :: CompileAction ()
 caNameIdents = do
     putMsg VerboseALot "Naming identifiers" Nothing
@@ -188,7 +188,7 @@ caNameIdents = do
            )
 %%]
 
-%%[8.normForHPT import(Trf.NormForHPT)
+%%[8.normForHPT import({%{GRIN}GrinCode.Trf.NormForHPT})
 caNormForHPT :: CompileAction ()
 caNormForHPT = task VerboseALot "Normalizing"
     ( do { code   <- gets csGrinCode
@@ -201,7 +201,7 @@ caNormForHPT = task VerboseALot "Normalizing"
     ) (\i -> Just $ show i ++ " variable(s) introduced")
 %%]
 
-%%[8.rightSkew import(Trf.RightSkew)
+%%[8.rightSkew import({%{GRIN}GrinCode.Trf.RightSkew})
 caRightSkew1 :: CompileAction Bool
 caRightSkew1 = do 
     code <- gets csGrinCode
@@ -214,7 +214,7 @@ caRightSkew :: CompileAction ()
 caRightSkew = task VerboseALot "Unskewing" (caFix caRightSkew1) (\i -> Just $ show i ++ " iteration(s)")
 %%]
 
-%%[8.heapPointsTo import(GrPointsToAnalysis)
+%%[8.heapPointsTo import({%{GRIN}GrinCode.PointsToAnalysis})
 caHeapPointsTo :: (Int, Int) -> CompileAction ()
 caHeapPointsTo bounds = task VerboseALot "Heap-points-to analysis" 
     ( do { code    <- gets csGrinCode
@@ -226,7 +226,7 @@ caHeapPointsTo bounds = task VerboseALot "Heap-points-to analysis"
            
 %%]
 
-%%[8.inline import(Trf.GrInline)
+%%[8.inline import({%{GRIN}GrinCode.Trf.GrInline})
 caInlineEA :: CompileAction Int
 caInlineEA = do
     putMsg VerboseALot "Inlining Eval and Apply calls" Nothing
@@ -244,7 +244,7 @@ caInlineEA = do
     return $ unique' - unique
 %%]
 
-%%[8.sparseCase import(Trf.SparseCase)
+%%[8.sparseCase import({%{GRIN}GrinCode.Trf.SparseCase})
 caSparseCase :: CompileAction ()
 caSparseCase = do
     putMsg VerboseALot "Removing impossible case alternatives" Nothing
@@ -254,7 +254,7 @@ caSparseCase = do
     modify (csUpdateGrinCode code)
 %%]
 
-%%[8.eliminateCase import(Trf.CaseElimination)
+%%[8.eliminateCase import({%{GRIN}GrinCode.Trf.CaseElimination})
 caEliminateCases :: CompileAction ()
 caEliminateCases = do
     putMsg VerboseALot "Removing evaluated and trivial cases" Nothing
@@ -263,7 +263,7 @@ caEliminateCases = do
     modify (csUpdateGrinCode code)
 %%]
 
-%%[8.propagate import(Trf.CopyPropagation)
+%%[8.propagate import({%{GRIN}GrinCode.Trf.CopyPropagation})
 caCopyPropagation1 :: CompileAction Bool
 caCopyPropagation1 = do
     code <- gets csGrinCode
@@ -276,7 +276,7 @@ caCopyPropagation :: CompileAction ()
 caCopyPropagation = task VerboseALot "Copy propagation" (caFix caCopyPropagation1) (\i -> Just $ show i ++ " iteration(s)")
 %%]
 
-%%[8.lowering import(Trf.LowerGrin)
+%%[8.lowering import({%{GRIN}GrinCode.Trf.LowerGrin})
 caLowerGrin :: CompileAction ()
 caLowerGrin = do
     putMsg VerboseALot "Lowering GRIN" Nothing
@@ -293,7 +293,7 @@ caLowerGrin = do
            )
 %%]
 
-%%[8.splittingFetch import(Trf.SplitFetch)
+%%[8.splittingFetch import({%{GRIN}GrinCode.Trf.SplitFetch})
 caSplitFetch :: CompileAction ()
 caSplitFetch = do
     { putMsg VerboseALot "Splitting and specializing fetch operations" Nothing

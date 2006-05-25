@@ -13,7 +13,7 @@ TODO: drop global variables
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.DropUnusedExpr import(qualified Data.Set as Set)
+%%[8 hs module {%{GRIN}GrinCode.Trf.DropUnusedExpr} import(qualified Data.Set as Set)
 %%]
 
 %%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}, Data.Maybe) export(dropUnusedExpr)

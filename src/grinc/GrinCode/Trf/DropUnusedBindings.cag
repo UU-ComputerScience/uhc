@@ -14,7 +14,7 @@ calls. (When no hidden function calls exists anymore.)
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.DropUnusedBindings import(qualified Data.Set as Set,qualified Data.Map as Map,Data.Graph,Data.List,Data.Array)
+%%[8 hs module {%{GRIN}GrinCode.Trf.DropUnusedBindings} import(qualified Data.Set as Set,qualified Data.Map as Map,Data.Graph,Data.List,Data.Array)
 type EdgeF   = [Edge] -> [Edge]
 type VertexF = [Vertex] -> [Vertex]
 
@@ -40,7 +40,7 @@ ATTR AllGrNT [ | | grTrf: SELF ]
 ATTR GrAGItf GrModule [ entry: HsName nameMap: IdentNameMap | | dot: String ]
 %%]
 
-%%[8.graphInfo import("../GrLastExpr")
+%%[8.graphInfo import({GrinCode/LastExpr})
 ATTR AllBind            [ | | biggest USE {`max`} {minBound}: Int
                               smallest USE {`min`} {maxBound}: Int
                               nodes USE {.} {id}: NodeInfoF
