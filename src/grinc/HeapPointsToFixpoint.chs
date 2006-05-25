@@ -32,10 +32,10 @@ lookup times.
 
 TODO: Shared set and Unique set instead base and shared part
 
-%%[8 import(Data.Maybe, Data.List, Data.Monoid, Data.Array.ST, Control.Monad.ST, Control.Monad, {%{BASE}Common}, {%{AST}GrinCode})
+%%[8 module {%{GRIN}HeapPointsToFixpoint} import(Data.Maybe, Data.List, Data.Monoid, Data.Array.ST, Control.Monad.ST, Control.Monad, {%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
 
-%%[8  import(UU.Pretty, {%{GRIN}Pretty}) export("module Data.Monoid")
+%%[8  import(UU.Pretty, {%{EH}GrinCode.Pretty}) export("module Data.Monoid")
 %%]
 
 
@@ -295,7 +295,7 @@ fromRight = either (const $ error "fromRight: found left value") id
 
 fromJust' s Nothing  = error $ "fromJust' Maybe:" ++ s
 fromJust' _ (Just a) = a
---to break circular dependencies a copy paste from GRINCCommon:
+--to break circular dependencies a copy paste from {%{GRIN}GRINCCommon}:
 getNodes av = case av of
                   AV_Nodes n  -> Map.toList n
                   AV_Nothing  -> []

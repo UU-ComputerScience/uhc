@@ -27,7 +27,7 @@ apply    = 2
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module Trf.NormForHPT import(GRINCCommon, {%{BASE}Common}, {%{AST}GrinCode}) export(normForHPT)
+%%[8 hs module Trf.NormForHPT import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}GrinCode}) export(normForHPT)
 normForHPT :: Int -> GrModule -> (Int, GrModule)
 normForHPT unique grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) 
                                                (Inh_GrAGItf { unique_Inh_GrAGItf = unique })

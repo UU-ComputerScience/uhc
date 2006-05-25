@@ -7,19 +7,19 @@
 %%% Subsumption (fitting in) for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{TY}FitsInCommon} import({%{BASE}Common}, {%{AST}Ty}, {%{AST}Error}) export (FIOut(..), emptyFO, foHasErrs)
+%%[1 module {%{EH}Ty.FitsInCommon} import({%{EH}Base.Common}, {%{EH}Ty}, {%{EH}Error}) export (FIOut(..), emptyFO, foHasErrs)
 %%]
 
-%%[2 import({%{EHC}Cnstr})
+%%[2 import({%{EH}Cnstr})
 %%]
 
-%%[4 import({%{BASE}Opts}) export(AppSpineInfo(..), unknownAppSpineInfoL, arrowAppSpineInfoL, prodAppSpineInfoL)
+%%[4 import({%{EH}Base.Opts}) export(AppSpineInfo(..), unknownAppSpineInfoL, arrowAppSpineInfoL, prodAppSpineInfoL)
 %%]
 
-%%[4 import({%{EHC}Substitutable}) export(FitsIn, FitsIn',fitsInLWith)
+%%[4 import({%{EH}Substitutable}) export(FitsIn, FitsIn',fitsInLWith)
 %%]
 
-%%[9 import({%{AST}Core},{%{CORE}Subst})
+%%[9 import({%{EH}Core},{%{EH}Core.Subst})
 %%]
 
 

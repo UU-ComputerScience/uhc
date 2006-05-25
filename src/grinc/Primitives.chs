@@ -1,3 +1,6 @@
+%%[8 hs module {%{GRIN}Primitives}
+%%]
+
 This file contains utility functions for primitives in GRIN as well as the
 primitives information table.
 
@@ -7,7 +10,7 @@ primitives information table.
 - meta info for code generation
 - code snippets to generate the code for a primitive (C--)
 
-%%[8.abstractValues import(HeapPointsToFixpoint,{%{BASE}Common(HsName(..))}, qualified Data.Set as Set, {%{AST}GrinCode},GRINCCommon)
+%%[8.abstractValues import({%{GRIN}HeapPointsToFixpoint},{%{EH}Base.Common(HsName(..))}, qualified Data.Set as Set, {%{EH}GrinCode},{%{GRIN}GRINCCommon})
 unboxedBasic = AV_Nodes $ Map.fromList [ (GrTag_Unboxed, [AV_Basic])
                                        ]
 booleanNodes = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "_False"), [AV_Basic])
@@ -19,7 +22,7 @@ compareNodes = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "_EQ"), [AV_
                                        ]
 %%]
 
-%%[8.codeGeneration import(Cmm.CmmCode, Cmm.CmmBuilding) export(false_node, true_node)
+%%[8.codeGeneration import({%{GRIN}CmmCode}, Cmm.CmmBuilding) export(false_node, true_node)
 --buildin datatype
 true_tag   = cmmVar "@C$_True"
 false_tag  = cmmVar "@C$_False"

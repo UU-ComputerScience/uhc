@@ -6,7 +6,7 @@
 %%[8 import({GrinCode/AbsSyn})
 %%]
 
-%%[8 hs module Cmm.FromGrin import(GRINCCommon, Data.List(nub), Data.Maybe, {%{AST}GrinCode}, Primitives, Cmm.CmmBuilding) export(grin2cmm,CmmUnit(..))
+%%[8 hs module Cmm.FromGrin import({%{GRIN}GRINCCommon}, Data.List(nub), Data.Maybe, {%{EH}GrinCode}, {%{GRIN}Primitives}, Cmm.CmmBuilding) export(grin2cmm,CmmUnit(..))
 grin2cmm :: HsName -> GrModule -> Bool -> CmmUnit
 grin2cmm e gr emitTraceInfo = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr))
                                                    (Inh_GrAGItf { entryNm_Inh_GrAGItf = e
@@ -16,7 +16,7 @@ grin2cmm e gr emitTraceInfo = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf g
                               in cmmUnit_Syn_GrAGItf t
 %%]
 
-%%[8 hs import({%{BASE}Common} hiding "((<+>))") 
+%%[8 hs import({%{EH}Base.Common} hiding "((<+>))") 
 %%]
 %%[8 hs import(qualified Data.Map as Map, Data.Bits)
 %%]

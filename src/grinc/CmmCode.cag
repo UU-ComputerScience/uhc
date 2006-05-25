@@ -7,7 +7,7 @@
 %%% Haskell importable interface to C--
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module Cmm.CmmCode import (GRINCCommon)
+%%[8 hs module {%{GRIN}CmmCode} import ({%{GRIN}GRINCCommon})
 %%]
 
 %%[8 hs export(CmmUnit(..), CmmToplevel(..), CmmSectionElement(..), CmmDatum(..), CmmSize(..), CmmInitString(..), CmmDeclaration(..), CmmProcedure(..), CmmBody, CmmBodyElement(..), CmmStatement(..), CmmExpression(..), CmmActual(..), CmmLValue(..), CmmAlternative(..), CmmRange(..), CmmFlowElement(..))

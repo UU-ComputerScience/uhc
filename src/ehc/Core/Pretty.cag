@@ -7,10 +7,10 @@
 %%% Haskell importable interface to Code's Java gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{CORE}Pretty} import(UU.Pretty,{%{BASE}Common},{%{AST}Ty},{%{AST}Core}) export(ppCModule)
+%%[8 hs module {%{EH}Core.Pretty} import(UU.Pretty,{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core}) export(ppCModule)
 %%]
 
-%%[9 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{TY}Pretty}) export(ppCxBindLMap,ppCBindL)
+%%[9 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty}) export(ppCxBindLMap,ppCBindL)
 %%]
 
 %%[8.WRAPPER import({Core/AbsSyn})

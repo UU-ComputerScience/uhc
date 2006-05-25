@@ -2836,7 +2836,87 @@ Expression, \figRef{infer2pass.I2.expr.base}
 
 %%]
 
-%%[XX
+%%[solutionSketch
+Original, rank-2 monotype
+\begin{Example}
+\ \label{i2p-ex-how1}
+%%[[wrap=code
+%%@[file:src/infer2pass/test/4-impred-how1.i2p%%]
+%%]
+\end{Example}
+
+Transformed, 
+\begin{Example}
+\ \label{i2p-ex-how1-trf}
+%%[[wrap=code
+%%@[file:src/infer2pass/test/4-impred-how1-trf.i2p%%]
+%%]
+\end{Example}
+
+Original, rank-2 polytype
+\begin{Example}
+\ \label{i2p-ex-how2}
+%%[[wrap=code
+%%@[file:src/infer2pass/test/4-impred-how2.i2p%%]
+%%]
+\end{Example}
+
+Transformed, 
+\begin{Example}
+\ \label{i2p-ex-how2-trf}
+%%[[wrap=code
+%%@[file:src/infer2pass/test/4-impred-how2-trf.i2p%%]
+%%]
+\end{Example}
+
+Original, rank-2 polytype, 1x instantiated
+\begin{Example}
+\ \label{i2p-ex-how3}
+%%[[wrap=code
+%%@[file:src/infer2pass/test/4-impred-how3.i2p%%]
+%%]
+\end{Example}
+
+Transformed, 
+\begin{Example}
+\ \label{i2p-ex-how3-trf}
+%%[[wrap=code
+%%@[file:src/infer2pass/test/4-impred-how3-trf.i2p%%]
+%%]
+\end{Example}
+
+Original, rank-2 polytype, 2x instantiated
+\begin{Example}
+\ \label{i2p-ex-how4}
+%%[[wrap=code
+%%@[file:src/infer2pass/test/4-impred-how4.i2p%%]
+%%]
+\end{Example}
+
+Transformed, 
+\begin{Example}
+\ \label{i2p-ex-how4-trf}
+%%[[wrap=code
+%%@[file:src/infer2pass/test/4-impred-how4-trf.i2p%%]
+%%]
+\end{Example}
+
+Original, rank-3 polytype, contravariance
+\begin{Example}
+\ \label{i2p-ex-demo4}
+%%[[wrap=code
+%%@[file:src/infer2pass/test/4-impred-demo4.i2p%%]
+%%]
+\end{Example}
+
+Transformed, 
+\begin{Example}
+\ \label{i2p-ex-demo4-trf}
+%%[[wrap=code
+%%@[file:src/infer2pass/test/4-impred-demo4-trf.i2p%%]
+%%]
+\end{Example}
+
 %%]
 
 %%[XX

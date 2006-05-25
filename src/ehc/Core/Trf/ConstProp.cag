@@ -7,7 +7,7 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{TRF}ConstProp} import({%{BASE}Common},{%{AST}Core},{%{AST}Ty}) export(cmodTrfConstProp)
+%%[8 hs module {%{EH}Core.Trf.ConstProp} import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfConstProp)
 %%]
 
 %%[8.WRAPPER import({Core/AbsSyn},{Core/CommonLev})

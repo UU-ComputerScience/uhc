@@ -27,14 +27,4 @@ EHC_BLD_LIB_HS_VARIANT_PREFIX			:= $(EHC_BLD_LIBEHC_VARIANT_PREFIX)$(LIB_EHC_HS_
 SRC_EHC_LIB_PREFIX						:= $(SRC_EHC_PREFIX)$(LIB_EHC_BASE)
 
 # tool use
-LIB_EHC_SHUFFLE_DEFS					:= --def=EHC:$(LIB_EHC_QUAL_PREFIX) \
-											--def=BASE:$(LIB_EHC_QUAL_PREFIX)Base. \
-											--def=CORE:$(LIB_EHC_QUAL_PREFIX)Core. \
-											--def=TRF:$(LIB_EHC_QUAL_PREFIX)Core.Trf. \
-											--def=GAM:$(LIB_EHC_QUAL_PREFIX)Gam. \
-											--def=TY:$(LIB_EHC_QUAL_PREFIX)Ty. \
-											--def=HS:$(LIB_EHC_QUAL_PREFIX)HS. \
-											--def=EH:$(LIB_EHC_QUAL_PREFIX)EH. \
-											--def=ERR:$(LIB_EHC_QUAL_PREFIX)Error. \
-											--def=GRIN:$(LIB_EHC_QUAL_PREFIX)GrinCode. \
-											--def=AST:$(LIB_EHC_QUAL_PREFIX)
+LIB_EHC_SHUFFLE_DEFS					:= --def=EH:$(LIB_EHC_QUAL_PREFIX)

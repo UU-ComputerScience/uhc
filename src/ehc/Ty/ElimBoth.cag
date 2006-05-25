@@ -7,7 +7,7 @@
 %%% Haskell importable interface to eliminate 'Both' types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_2 hs module {%{TY}ElimBoth} import({%{BASE}Common},{%{AST}Ty},{%{EHC}Cnstr},{%{EHC}Substitutable}) export(tyElimBoth)
+%%[4_2 hs module {%{EH}Ty.ElimBoth} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyElimBoth)
 %%]
 
 %%[4_2.WRAPPER import({Ty/AbsSyn})

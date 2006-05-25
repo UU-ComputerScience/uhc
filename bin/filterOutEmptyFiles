@@ -4,9 +4,12 @@ f=""
 
 for i in $*
 do
-  if test `wc -c < $i` -gt 75
+  if test -s "$i"
   then
-    f="$f $i"
+    if test `wc -c < $i` -gt 75
+    then
+      f="$f $i"
+    fi
   fi
 done
 

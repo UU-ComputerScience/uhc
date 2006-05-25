@@ -10,13 +10,13 @@
 %%[1 module Main import(System, System.Console.GetOpt, IO)
 %%]
 
-%%[8 import(UU.Parsing, UU.Pretty, {%{BASE}Common},GRICommon,{%{BASE}Scanner})
+%%[8 import(UU.Parsing, UU.Pretty, {%{EH}Base.Common},GRINICommon,{%{EH}Base.Scanner})
 %%]
 
 %%[8 import (EH.Util.FPath,qualified Data.Map as Map,Data.Maybe,Data.List,Directory)
 %%]
 
-%%[8 import (GRICommon,{%{GRIN}Parser},GRIRun,GRISetup,{%{AST}GrinCode})
+%%[8 import (GRINICommon,{%{EH}GrinCode.Parser},GRINIRun,GRINISetup,{%{EH}GrinCode})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -26,7 +26,7 @@
 %%[1.main
 main :: IO ()
 main
-  =  putStrLn "gri: not available for this version (of ehc/gri)"
+  =  putStrLn "grini: not available for this version (of ehc/grini)"
 %%]
 
 %%[8.main -1.main
@@ -36,7 +36,7 @@ main
          ;  let  oo@(o,n,errs)  = getOpt Permute griCmdLineOpts args
                  opts           = foldr ($) defaultGRIOpts o
          ;  if grioptHelp opts
-            then  putStrLn (usageInfo "Usage: gri [options] [file]\n\noptions:" griCmdLineOpts)
+            then  putStrLn (usageInfo "Usage: grini [options] [file]\n\noptions:" griCmdLineOpts)
             else  if null errs
                   then  doCompileRun (if null n then "" else head n) opts
                   else  putStr (head errs)

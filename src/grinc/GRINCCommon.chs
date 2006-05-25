@@ -7,7 +7,7 @@
 %%% Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module GRINCCommon import(System.Console.GetOpt,{%{BASE}Common}, qualified Data.Map as Map, qualified Data.Set as Set) export(Opts(..), defaultOpts, cmdLineOpts)
+%%[8 module {%{GRIN}GRINCCommon} import(System.Console.GetOpt,{%{EH}Base.Common}, qualified Data.Map as Map, qualified Data.Set as Set) export(Opts(..), defaultOpts, cmdLineOpts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -89,7 +89,7 @@ blackholeTag  =  GrTag_Lit GrTagHole  0 (HNm "backhole")
 throwTag      =  GrTag_Lit GrTagFun   0 (HNm "rethrow")
 %%]
 
-%%[8 import({%{AST}GrinCode})
+%%[8 import({%{EH}GrinCode})
 %%]
 
 %%[8 export(IdentNameMap, IdentOneToMany, RenameMap, mergeRenameMap, getName, getName')
@@ -125,7 +125,7 @@ getName' _  nm = error $ "findNewVar: Not a number: " ++ show nm
 %% Heap Points To Analysis Result %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.analysis import(HeapPointsToFixpoint, Data.Array, Data.Monoid) export(HptMap, getEnvVar, getHeapLoc, absFetch, addEnvVar, addEnvVars, getTags, getNodes, isBottom, AbstractValue(..), listInsert)
+%%[8.analysis import({%{GRIN}HeapPointsToFixpoint}, Data.Array, Data.Monoid) export(HptMap, getEnvVar, getHeapLoc, absFetch, addEnvVar, addEnvVars, getTags, getNodes, isBottom, AbstractValue(..), listInsert)
 type HptMap        = ((Array Int AbstractEnvElement, Array Int AbstractHeapElement), Map.Map Int AbstractValue)
 getEnvVar :: HptMap -> Int -> AbstractValue
 getEnvVar ((ea, _),m) i  | snd (bounds ea) >= i = aeBaseSet (ea ! i)

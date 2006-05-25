@@ -21,7 +21,7 @@ WRAPPER GrAGItf
 %%[8 hs import(Debug.Trace)
 %%]
 
-%%[8 hs import(GRINCCommon, {%{BASE}Common}, {%{AST}GrinCode},HeapPointsToFixpoint) export(heapPointsToAnalysis)
+%%[8 hs import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}GrinCode},{%{GRIN}HeapPointsToFixpoint}) export(heapPointsToAnalysis)
 
 type Action          = ST RealWorld ()
 type EnvAction       = ST RealWorld (AbstractEnv RealWorld)
@@ -461,7 +461,7 @@ SEM GrExpr
 Note: we have the ctable, can we do something with that?
       e.g. we could get the result Tags from it. If we save result type for a FFI.
 
-%%[8.prim hs import(Primitives)
+%%[8.prim hs import({%{GRIN}Primitives})
 %%]
 
 %%%%%%%%%%%

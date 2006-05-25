@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Ty subst
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 hs module {%{TY}Ftv} import(Data.List,{%{BASE}Common},{%{AST}Ty}) export(tyFtv)
+%%[2 hs module {%{EH}Ty.Ftv} import(Data.List,{%{EH}Base.Common},{%{EH}Ty}) export(tyFtv)
 %%]
 
 %%[4 hs import(qualified Data.Map as Map) export(tyFtvMp)

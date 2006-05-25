@@ -7,7 +7,7 @@
 %%% Core utilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{CORE}Utils} import(qualified Data.Map as Map,{%{BASE}Common},{%{AST}Ty},{%{AST}Core},{%{EHC}Gam}) export(RCEEnv(..),emptyRCEEnv)
+%%[8 module {%{EH}Core.Utils} import(qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam}) export(RCEEnv(..),emptyRCEEnv)
 %%]
 
 %%[8 export(mkCExprStrictSatCase,mkCExprSelCase)

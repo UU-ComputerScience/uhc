@@ -7,16 +7,16 @@
 %%% Pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 module {%{EHC}Pred} import(Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty)
+%%[9 module {%{EH}Pred} import(Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty)
 %%]
 
-%%[9 import({%{AST}Ty},{%{TY}Pretty},{%{TY}FitsInCommon},{%{TY}Quantify},{%{AST}Core},{%{CORE}Pretty},{%{CORE}Subst},{%{BASE}Common},{%{EHC}Gam},{%{EHC}Cnstr},{%{EHC}Substitutable})
+%%[9 import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Quantify},{%{EH}Core},{%{EH}Core.Pretty},{%{EH}Core.Subst},{%{EH}Base.Common},{%{EH}Gam},{%{EH}Cnstr},{%{EH}Substitutable})
 %%]
 
-%%[9 import({%{BASE}Debug})
+%%[9 import({%{EH}Base.Debug})
 %%]
 
-%%[9 import({%{AST}Error}) export(ProofState(..))
+%%[9 import({%{EH}Error}) export(ProofState(..))
 %%]
 
 %%[9 export(ProvenNode(..),prvnIsAnd)
@@ -49,7 +49,7 @@
 %%[9 export(PrElimTGam,peTGamAdd,peTGamDel,peTGamAddKnPr,peTGamAddKnPrL,peTGamPoiS)
 %%]
 
-%%[9 import({%{TY}Ftv}) export(prvgArgLeaves,prvgSatisfiedNodeS,prvgOrigs,prvgAppPoiSubst,prvg2BackMp,prvgShareMp)
+%%[9 import({%{EH}Ty.Ftv}) export(prvgArgLeaves,prvgSatisfiedNodeS,prvgOrigs,prvgAppPoiSubst,prvg2BackMp,prvgShareMp)
 %%]
 
 %%[9 export(PoiSubst(..),PoiSubstitutable(..))
@@ -581,7 +581,7 @@ mkInstElimRule n i sz ctxtToInstTy
            , rulFuncDeps  = []
            }
 
-instance Substitutable Rule where
+instance Substitutable TyVarId (CnstrInfo Ty) Rule where
   s |=>  r = r { rulRuleTy = s |=> rulRuleTy r }
   ftv    r = ftv (rulRuleTy r)
 
@@ -611,7 +611,7 @@ emptyPIGI = PrIntroGamInfo Ty_Any Ty_Any emptyRule
 instance PP PrIntroGamInfo where
   pp pigi = pp (pigiRule pigi) >#< "::" >#< ppTy (pigiPrToEvidTy pigi) >#< ":::" >#< ppTy (pigiKi pigi)
 
-instance Substitutable PrIntroGamInfo where
+instance Substitutable TyVarId (CnstrInfo Ty) PrIntroGamInfo where
   s |=> pigi        =   pigi { pigiKi = s |=> pigiKi pigi }
   ftv   pigi        =   ftv (pigiKi pigi)
 %%]
@@ -626,7 +626,7 @@ data PrElimGamInfo
        { pegiRuleL          :: [Rule]
        } deriving Show
 
-instance Substitutable PrElimGamInfo where
+instance Substitutable TyVarId (CnstrInfo Ty) PrElimGamInfo where
   s |=>  pegi = pegi { pegiRuleL = s |=> pegiRuleL pegi }
   ftv    pegi = ftv (pegiRuleL pegi)
 

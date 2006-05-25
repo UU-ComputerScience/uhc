@@ -1,0 +1,4 @@
+let  f   =   \h ->  let  x1  = h 3
+                      ;  y   = g h
+                    in   x1
+in   f id

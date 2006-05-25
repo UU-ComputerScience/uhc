@@ -26,25 +26,25 @@
 %%% Subsumption (fitting in) for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{TY}FitsIn} import({%{BASE}Common}, {%{TY}FitsInCommon}, {%{AST}Ty}, {%{AST}Error}) export (fitsIn)
+%%[1 module {%{EH}Ty.FitsIn} import({%{EH}Base.Common}, {%{EH}Ty.FitsInCommon}, {%{EH}Ty}, {%{EH}Error}) export (fitsIn)
 %%]
 
-%%[2 import({%{EHC}Cnstr},{%{EHC}Substitutable})
+%%[2 import({%{EH}Cnstr},{%{EH}Substitutable})
 %%]
 
-%%[4 import({%{TY}Instantiate}, {%{BASE}Opts}, {%{EHC}Gam}, Data.Maybe,Data.List as List)
+%%[4 import({%{EH}Ty.Instantiate}, {%{EH}Base.Opts}, {%{EH}Gam}, Data.Maybe,Data.List as List)
 %%]
 
 %%[4 export(FIEnv(..),emptyFE)
 %%]
 
-%%[4 import({%{BASE}Debug})
+%%[4 import({%{EH}Base.Debug})
 %%]
 
-%%[4_2 import({%{TY}ElimAlts}) export(mkFitsInWrap,mkFitsInWrap')
+%%[4_2 import({%{EH}Ty.ElimAlts}) export(mkFitsInWrap,mkFitsInWrap')
 %%]
 
-%%[4_2 import({%{TY}ElimBoth}) export(foHasErrs)
+%%[4_2 import({%{EH}Ty.ElimBoth}) export(foHasErrs)
 %%]
 
 %%[6 export(fitsInL)
@@ -53,7 +53,7 @@
 %%[9 import(EH.Util.Utils(groupSortOn,sortByOn))
 %%]
 
-%%[9 import(qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty,{%{CORE}Pretty},{%{EHC}Pred},{%{AST}Core},{%{CORE}Subst}) export(foAppCoe,foAppCoe',fitPredToEvid)
+%%[9 import(qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty,{%{EH}Core.Pretty},{%{EH}Pred},{%{EH}Core},{%{EH}Core.Subst}) export(foAppCoe,foAppCoe',fitPredToEvid)
 %%]
 
 %%[9 export(prfPreds,prfPredsDbg)
@@ -62,7 +62,7 @@
 %%[9 export(fitsIn')
 %%]
 
-%%[10 import({%{CORE}Utils})
+%%[10 import({%{EH}Core.Utils})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -117,7 +117,7 @@ emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts        ,  fiUniq  
 %%]
 
 %%[9
-instance Substitutable FIIn where
+instance Substitutable TyVarId (CnstrInfo Ty) FIIn where
   s |=> fi  =  let  e = fiEnv fi
                in   fi {fiEnv = e { fePrElimTGam = s |=> fePrElimTGam e
                                   }}

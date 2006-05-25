@@ -1,0 +1,7 @@
+let  g   ::  (Int -> Int) -> Int
+         =   \f ->  f 3
+  ;  id  =   \x ->  x
+  ;  f   ::  (Int -> Int) -> ...
+         =   \h ->  let  y   = g h
+                    in   y
+in   f id

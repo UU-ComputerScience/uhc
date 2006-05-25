@@ -26,7 +26,7 @@ type NodeInfo  = (Vertex, CallInfo)
 type NodeInfoF = [NodeInfo] -> [NodeInfo]
 %%]
 
-%%[8 hs import({%{BASE}Common}, GRINCCommon, {%{AST}GrinCode}) export(dropUnusedBindings)
+%%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(dropUnusedBindings)
 dropUnusedBindings :: HsName -> IdentNameMap -> GrModule -> (GrModule, String)
 dropUnusedBindings e m grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                                     (Inh_GrAGItf { entry_Inh_GrAGItf = e, nameMap_Inh_GrAGItf = m })

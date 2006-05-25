@@ -103,3 +103,6 @@ GEN_CABAL_SETUP		= @(echo "import Distribution.Simple" ; echo "main = defaultMai
 # $2: exec
 GHC_CABAL			= $(GHC) -package Cabal -o $(2) $(1)  ; $(STRIP_CMD) $(2)
 
+# subst _ by x
+# $1: text
+SUBS_US_X			= $(subst _,x,$(1))

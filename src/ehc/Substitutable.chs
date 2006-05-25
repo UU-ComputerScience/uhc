@@ -14,7 +14,7 @@
 %%% Substitution for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 module {%{EHC}Substitutable} import(Data.List, {%{BASE}Common}, {%{AST}Ty}, {%{EHC}Cnstr},{%{TY}Subst},{%{TY}Ftv}) export(Substitutable(..))
+%%[2 module {%{EH}Substitutable} import(Data.List, {%{EH}Base.Common}, {%{EH}Ty}, {%{EH}Cnstr},{%{EH}Ty.Subst},{%{EH}Ty.Ftv}) export(Substitutable(..))
 %%]
 
 %%[4_2 export((|>>))
@@ -29,10 +29,18 @@
 
 %%[2.Substitutable
 infixr 6 |=>
+%%]
 
-class Substitutable s where
-  (|=>)         ::  Cnstr -> s -> s
-  ftv           ::  s -> TyVarIdL
+%%[2.Substitutable
+class Substitutable k v vv | vv -> v k where
+  (|=>)         ::  Cnstr' k v -> vv -> vv
+  ftv           ::  vv -> [k]
+%%]
+
+%%[9.Substitutable -2.Substitutable
+class Substitutable k v vv | vv -> v k where
+  (|=>)         ::  Cnstr' k v -> vv -> vv
+  ftv           ::  vv -> [k]
 %%]
 
 %%[4_2.partialSubstApp
@@ -47,19 +55,25 @@ c1 |>> c2 = cnstrMapTy (const (c1 |=>)) c2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2.SubstitutableTy
-instance Substitutable Ty where
+instance Substitutable TyVarId Ty Ty where
+  (|=>)  = tyAppCnstr
+  ftv    = tyFtv
+%%]
+
+%%[9.SubstitutableTy -2.SubstitutableTy
+instance Substitutable TyVarId (CnstrInfo Ty) Ty where
   (|=>)  = tyAppCnstr
   ftv    = tyFtv
 %%]
 
 %%[2.SubstitutableList
-instance Substitutable a => Substitutable [a] where
+instance (Ord k,Substitutable k v vv) => Substitutable k v [vv] where
   s      |=>  l   =   map (s |=>) l
   ftv         l   =   unions . map ftv $ l
 %%]
 
 %%[2.SubstitutableCnstr
-instance Substitutable Cnstr where
+instance (Ord k,Substitutable k v v) => Substitutable k v (Cnstr' k v) where
   s1@(Cnstr sl1) |=> s2@(Cnstr sl2)
     = Cnstr (sl1 ++ map (\(v,t) -> (v,s1 |=> t)) sl2')
     where sl2' = deleteFirstsBy (\(v1,_) (v2,_) -> v1 == v2) sl2 sl1
@@ -68,31 +82,31 @@ instance Substitutable Cnstr where
 %%]
 
 %%[7
-instance Substitutable v => Substitutable (HsName,v) where
+instance Substitutable k v vv => Substitutable k v (HsName,vv) where
   s |=>  (k,v) =  (k,s |=> v)
   ftv    (_,v) =  ftv v
 %%]
 
 %%[9.SubstitutableCnstr -2.SubstitutableCnstr
-instance Substitutable Cnstr where
+instance (Ord k,Substitutable k v v) => Substitutable k v (Cnstr' k v) where
   s1@(Cnstr sl1) |=>   s2@(Cnstr sl2)  =   Cnstr (sl1 `Map.union` Map.map (s1 |=>) sl2)
   ftv                  (Cnstr sl)      =   ftv . Map.elems $ sl
 %%]
 
 %%[9
-instance Substitutable Pred where
+instance Substitutable TyVarId (CnstrInfo Ty) Pred where
   s |=>  p  =  (\(Ty_Pred p) -> p) (s |=> (Ty_Pred p))
   ftv    p  =  ftv (Ty_Pred p)
 
-instance Substitutable PredOcc where
+instance Substitutable TyVarId (CnstrInfo Ty) PredOcc where
   s |=>  (PredOcc pr id)  = PredOcc (tyPred (s |=> Ty_Pred pr)) id
   ftv    (PredOcc pr _)   = ftv (Ty_Pred pr)
 
-instance Substitutable Impls where
+instance Substitutable TyVarId (CnstrInfo Ty) Impls where
   s |=>  i  =  (\(Ty_Impls i) -> i) (s |=> (Ty_Impls i))
   ftv    i  =  ftv (Ty_Impls i)
 
-instance Substitutable CnstrInfo where
+instance Substitutable TyVarId (CnstrInfo Ty) (CnstrInfo Ty) where
   s |=>  ci =  case ci of
                  CITy     t -> CITy (s |=> t)
                  CIImpls  i -> CIImpls (s |=> i)
@@ -106,10 +120,10 @@ instance Substitutable CnstrInfo where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-fixTyVarsCnstr :: Substitutable s => s -> Cnstr
+fixTyVarsCnstr :: Ty -> Cnstr
 fixTyVarsCnstr = Cnstr . Map.fromList . map (\v -> (v,CITy (Ty_Var v TyVarCateg_Fixed))) . ftv
 
-tyFixTyVars :: Substitutable s => s -> s
+tyFixTyVars :: Ty -> Ty
 tyFixTyVars s = fixTyVarsCnstr s |=> s
 %%]
 

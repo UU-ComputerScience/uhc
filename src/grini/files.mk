@@ -11,18 +11,18 @@ GRINI_ALL_PUB_EXECS						:= $(patsubst %,$(EHC_BIN_PREFIX)%/$(GRINI_EXEC_NAME)$(
 GRINI_ALL_EXECS							:= $(patsubst %,$(EHC_BIN_PREFIX)%/$(GRINI_EXEC_NAME)$(EXEC_SUFFIX),$(GRIN_VARIANTS))
 
 # main + sources + dpds, for .chs
-GRINI_MAIN								:= GRI
+GRINI_MAIN								:= GRINI
 GRINI_HS_MAIN_SRC_CHS					:= $(patsubst %,$(SRC_GRINI_PREFIX)%.chs,$(GRINI_MAIN))
 GRINI_HS_MAIN_DRV_HS					:= $(patsubst $(SRC_GRINI_PREFIX)%.chs,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(GRINI_HS_MAIN_SRC_CHS))
 
-GRINI_HS_UTIL_SRC_CHS					:= $(patsubst %,$(SRC_GRINI_PREFIX)%.chs,GRICommon GRIParser GRIRun)
+GRINI_HS_UTIL_SRC_CHS					:= $(patsubst %,$(SRC_GRINI_PREFIX)%.chs,GRINICommon GRINIRun)
 GRINI_HS_UTIL_DRV_HS					:= $(patsubst $(SRC_GRINI_PREFIX)%.chs,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(GRINI_HS_UTIL_SRC_CHS))
 
 GRINI_HS_ALL_SRC_CHS					:= $(GRINI_HS_MAIN_SRC_CHS) $(GRINI_HS_UTIL_SRC_CHS)
 GRINI_HS_ALL_DRV_HS						:= $(GRINI_HS_MAIN_DRV_HS) $(GRINI_HS_UTIL_DRV_HS)
 
 # main + sources + dpds, for .cag
-GRINI_AGSETUP_MAIN_SRC_CAG				:= $(patsubst %,$(SRC_GRINI_PREFIX)%.cag,GRISetup)
+GRINI_AGSETUP_MAIN_SRC_CAG				:= $(patsubst %,$(SRC_GRINI_PREFIX)%.cag,GRINISetup)
 GRIN_AGSETUP_DPDS_SRC_CAG				:= $(patsubst %,$(SRC_GRIN_PREFIX)%.cag,GrinCodeAbsSyn)
 #$(patsubst $(SRC_GRINI_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(GRINI_AGSETUP_MAIN_SRC_CAG)) \
 #										: $(patsubst $(SRC_GRIN_PREFIX)%.cag,$(EHC_BLD_VARIANT_PREFIX)%.ag,$(GRIN_AGSETUP_DPDS_SRC_CAG))
@@ -46,8 +46,9 @@ GRINI_DIST_FILES						:= $(GRINI_ALL_SRC) $(GRINI_MKF)
 # variant dispatch rules
 $(patsubst $(BIN_PREFIX)%$(EXEC_SUFFIX),%,$(GRINI_ALL_EXECS)): %: $(BIN_PREFIX)%$(EXEC_SUFFIX)
 
-$(GRINI_ALL_EXECS): %: $(GRINI_ALL_SRC)
-	$(MAKE) EHC_VARIANT=$(notdir $(*D)) grini-variant-$(notdir $(*D))
+$(GRINI_ALL_EXECS): $(EHC_BIN_PREFIX)%/$(GRINI_EXEC_NAME)$(EXEC_SUFFIX): $(GRINI_ALL_SRC)
+	$(MAKE) lib-eh-$*
+	$(MAKE) EHC_VARIANT=$* grini-variant-$*
 
 # rules
 $(patsubst %,grini-variant-%,$(GRIN_VARIANTS)): grini-variant-dflt

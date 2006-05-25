@@ -7,31 +7,31 @@
 %%% Haskell interface to AG generated code for compiler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}MainAG} import(Data.Char,Data.List as List,UU.Pretty,{%{BASE}Common},{%{BASE}Opts}, {%{AST}Ty},{%{EHC}Gam},{%{AST}Error},{%{ERR}Pretty},{%{TY}FitsIn},{%{TY}FitsInCommon},{%{TY}Pretty},{%{AST}EH})
+%%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,UU.Pretty,{%{EH}Base.Common},{%{EH}Base.Opts}, {%{EH}Ty},{%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty},{%{EH}Ty.FitsIn},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Pretty},{%{EH}EH})
 %%]
 
-%%[2 hs import({%{EHC}Cnstr},{%{EHC}Substitutable},Data.Maybe)
+%%[2 hs import({%{EH}Cnstr},{%{EH}Substitutable},Data.Maybe)
 %%]
 
-%%[3 hs import({%{TY}Quantify},{%{TY}Instantiate})
+%%[3 hs import({%{EH}Ty.Quantify},{%{EH}Ty.Instantiate})
 %%]
 
-%%[4 hs import({%{BASE}Debug})
+%%[4 hs import({%{EH}Base.Debug})
 %%]
 
-%%[4_2 hs import(qualified Data.Set as Set,{%{GAM}Utils},{%{TY}ElimAlts},{%{TY}FreshVar})
+%%[4_2 hs import(qualified Data.Set as Set,{%{EH}Gam.Utils},{%{EH}Ty.ElimAlts},{%{EH}Ty.FreshVar})
 %%]
 
 %%[8 hs import(EH.Util.Utils(groupSortOn))
 %%]
 
-%%[8 hs import(qualified Data.Map as Map,{%{AST}Core},{%{CORE}Utils},{%{CORE}Pretty})
+%%[8 hs import(qualified Data.Map as Map,{%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty})
 %%]
 
-%%[9 hs import(qualified Data.Set as Set,{%{EHC}Pred},{%{CORE}Subst})
+%%[9 hs import(qualified Data.Set as Set,{%{EH}Pred},{%{EH}Core.Subst})
 %%]
 
-%%[11 hs import({%{TY}ElimEqual},{%{GAM}Utils})
+%%[11 hs import({%{EH}Ty.ElimEqual},{%{EH}Gam.Utils})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
