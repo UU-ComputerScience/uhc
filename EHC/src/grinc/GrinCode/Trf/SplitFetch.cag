@@ -67,11 +67,11 @@ SEM GrExpr [ | | fetchPointer: {Maybe HsName} ]
 
 
 SEM GrPat [ | | mbTag: {Maybe GrTag} names: {[HsName]} ]
-  |     Tag Node  lhs  .  mbTag  =  Just @tag.grTrf
-  | * - Tag Node  lhs  .  mbTag  =  Nothing
-  | Node  lhs  .  names  =  @fldL
-  | Var   lhs  .  names  =  error "SplitFetch.ag: GrPat.Var: should never this should never be called"
-  | Tag Empty  LitInt  lhs  .  names  =  []
+  |     Tag Node  		lhs  .  mbTag  =  Just @tag.grTrf
+  | * - Tag Node  		lhs  .  mbTag  =  Nothing
+  | Node  				lhs  .  names  =  @fldL
+  | Var   				lhs  .  names  =  error "SplitFetch.ag: GrPat.Var: should never this should never be called"
+  | Tag Empty  LitInt  	lhs  .  names  =  []
 
 SEM GrExpr
   | Seq   loc  .  fetches  = do { p <- @expr.fetchPointer
@@ -83,6 +83,12 @@ SEM GrExpr
                                       buildFetchInfo v l o  =  (v, GrExpr_Fetch p (Just o) tagInfo) : l (o+1)
                                 ; return $ foldr buildFetchInfo (const []) (withTag @pat.names) offset
                                 }
+%%]
+
+-- AD 20060526: avoid AGC error msg
+%%[8
+SEM GrPat
+  | NodeSplit    		loc      .  names  	=  []
 %%]
 
 %%%%%%%%%%%%%%%%

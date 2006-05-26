@@ -38,7 +38,6 @@ include $(SRC_PREFIX)libutil/files.mk
 
 include $(SRC_PREFIX)shuffle/files.mk
 include $(SRC_PREFIX)ruler2/files.mk
-include $(SRC_PREFIX)grin/files.mk
 include $(SRC_PREFIX)ehc/variant.mk
 include $(SRC_PREFIX)grinc/variant.mk
 include $(SRC_PREFIX)ehc/files1.mk
@@ -127,7 +126,7 @@ A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
 
 tst:
-	@echo $(GRINC_ALL_DPDS)
+	@echo $(GRINC_ALL_SRC)
 
 tstv:
 	$(MAKE) EHC_VARIANT=1 tst

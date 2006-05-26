@@ -494,12 +494,12 @@ mkExtAppPP (funNm,funNmPP,funPPL) (argNm,argNmPP,argPPL,argPP)
 %%]
 
 %%[4
+%%]
 instance PP a => PP (Maybe a) where
   pp m = maybe (pp "?") pp m
 
 instance PP Bool where
   pp b = pp (show b)
-%%]
 
 %%[9
 instance (PP a, PP b) => PP (a,b) where

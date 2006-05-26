@@ -92,6 +92,17 @@ SEM GrExpr
                                 -- TODO: hpt must make difference between `no value' (denoted with `()') and `unknown value'
 %%]
 
+-- AD 20060526: avoid AGC error msg
+%%[8
+SEM GrAdapt
+  | *    loc      .  usedVars  =  Set.empty
+
+SEM GrSplit
+  | *    loc      .  usedVars  =  Set.empty
+
+SEM GrGlobal
+  | *    loc      .  usedVars  =  Set.empty
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Remove unused variable bindings %%%
@@ -103,7 +114,7 @@ possible side effect is useless without that result. (The ones
 retained are update, throw and FFI)
 
 %%[8.removeUnusedSeqExpr
-ATTR GrTag GrPat GrPatL [ | | isDead : Bool ]
+ATTR GrTag GrPat [ | | isDead : Bool ]
 
 SEM GrPat
   | Node  lhs  .  isDead  =  not (any (`Set.member` @lhs.usedVars) @fldL) && @tag.isDead

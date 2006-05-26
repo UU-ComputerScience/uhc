@@ -43,6 +43,15 @@ SEM GrTag
   | *    lhs      .  usedTags  =  Set.insert @grTrf @lhs.usedTags
 %%]
 
+-- AD 20060526: avoid AGC error msg
+%%[8
+SEM GrAdapt
+  | *    loc      .  usedTags  =  Set.empty
+
+SEM GrSplit
+  | *    loc      .  usedTags  =  Set.empty
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Remove unused tags %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%

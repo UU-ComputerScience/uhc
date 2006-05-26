@@ -10,7 +10,8 @@ DIST_DATE			:= $(shell /bin/date +%Y%m%d)
 # dist files
 TOP_DIST_FILES		:= Makefile mk/shared.mk $(wildcard lib/*.hs)
 DIST_ALL_FILES		:= $(TOP_DIST_FILES) $(RULER2_DIST_FILES) $(TEXT_DIST_DOC_FILES) $(SHUFFLE_DIST_FILES) $(EHC_DIST_FILES) \
-						$(AGPRIMER_DIST_FILES) $(GRIN_DIST_FILES) $(GRINI_DIST_FILES) $(TEST_DIST_FILES) $(WWW_DIST_FILES) \
+						$(AGPRIMER_DIST_FILES) $(GRIN_DIST_FILES) $(GRINI_DIST_FILES) $(GRINC_DIST_FILES) \
+						$(TEST_DIST_FILES) $(WWW_DIST_FILES) \
 						README
 
 # depending on desired config (currently not exploited)
