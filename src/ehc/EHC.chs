@@ -25,6 +25,9 @@
 %%[8 import ({%{EH}GrinCode.Pretty})
 %%]
 
+%%[8 import (qualified {%{GRIN}CompilerDriver} as GRINC, qualified {%{GRIN}GRINCCommon} as GRINCCommon)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Version of program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,14 +136,6 @@ instance CompileModName HsName where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-{-
-data CompileRunState
-  = CRSOk
-  | CRSFail
-  | CRSFailErrL ErrL
-  | CRSErrInfoL String Bool ErrL -- [(ErrorCateg,Error)]
--}
-
 data EHCompileRunStateInfo
   = EHCompileRunStateInfo
       { crsiOpts        :: EHCOpts
@@ -154,77 +149,6 @@ instance CompileRunStateInfo EHCompileRunStateInfo HsName () where
 
 type EHCompileRun = CompileRun HsName EHCompileUnit EHCompileRunStateInfo Err
 
-{-
-data CompileRun
-  = CompileRun
-      { crCUCache       :: Map.Map HsName CompileUnit
-      , crCompileOrder  :: [[HsName]]
-      , crOpts          :: EHCOpts
-      , crState         :: CompileRunState
-      , crP1In          :: EHSem.Inh_AGItf
-      , crNextUID       :: UID
-      , crHereUID       :: UID
-      }
-
-crHandle1 :: (a -> IO b) -> (a -> b) -> (a -> CompileRunState) -> IO a -> IO b
-crHandle1 action err errs it
-  = do { v <- it
-       ; case errs v of
-           CRSFailErrL es
-             -> do { putPPLn (ppErrL es)
-                   ; return (err v)
-                   }
-           CRSErrInfoL about doPrint is
-             -> do { if null is then return () else putPPLn (about >#< "found errors" >-< e)
-                   ; if not (null is) then return (err v) else action v
-                   }
-             where e = if doPrint then ppErrL is else empty
-           CRSFail
-             -> return (err v)
-           CRSOk
-             -> action v
-       }
-
-crSetFail :: CompileRun -> CompileRun
-crSetFail cr = cr {crState = CRSFail}
-
-crSetOk :: CompileRun -> CompileRun
-crSetOk cr = cr {crState = CRSOk}
-
-crSetErrs :: ErrL -> CompileRun -> CompileRun
-crSetErrs es cr
-  = case es of
-      [] -> cr
-      _  -> cr {crState = CRSFailErrL es}
-
-crSetInfos :: String -> Bool -> ErrL -> CompileRun -> CompileRun
-crSetInfos msg dp is cr
-  = case is of
-      [] -> cr
-      _  -> cr {crState = CRSErrInfoL msg dp is}
-
-crMbCU :: HsName -> CompileRun -> Maybe CompileUnit
-crMbCU modNm cr = Map.lookup modNm (crCUCache cr)
-
-crCU :: HsName -> CompileRun -> CompileUnit
-crCU modNm = fromJust . crMbCU modNm
-
-crCUState :: HsName -> EHCompileRun -> EHCompileUnitState
-crCUState modNm cr = maybe ECUSUnknown ecuState (crMbCU modNm cr)
-
-crCUFPath :: HsName -> EHCompileRun -> FPath
-crCUFPath modNm cr = maybe emptyFPath ecuFilePath (crMbCU modNm cr)
-
-crUpdCU :: HsName -> (CompileUnit -> IO CompileUnit) -> CompileRun -> IO CompileRun
-crUpdCU modNm upd cr
-  = do { cu <- maybe (upd emptyECU) upd (crMbCU modNm cr)
-       ; return (cr {crCUCache = Map.insert modNm cu (crCUCache cr)})
-       }
-
-crSeq :: [CompileRun -> IO CompileRun] -> CompileRun -> IO CompileRun
-crSeq []      cr = return cr
-crSeq (a:as)  cr = crHandle1 (\cr -> crSeq as (crSetOk cr)) crSetFail crState (a cr)
--}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -237,70 +161,11 @@ type FileSuffMp = Map.Map String EHCompileUnitState
 fileSuffMpHs :: FileSuffMp
 fileSuffMpHs = Map.fromList [ ( "hs", ECUSHaskell ), ( "eh", ECUSEh ) ]
 
-{-
-fileSuffLookup :: String -> FileSuffMp -> EHCompileUnitState
-fileSuffLookup s m = maybe ECUSUnknown id $ lookup s m
-
-pathsSearchForReadableFile :: [String] -> FileSuffMp -> FPath -> IO (Maybe (FPath,EHCompileUnitState))
-pathsSearchForReadableFile paths suffs fp
-  = let select f l
-          = do { finds <- mapM f l
-               ; return (listToMaybe . catMaybes $ finds)
-               }
-        tryToOpen mbSuff fp
-          = do { let (cus,fp') = maybe (ECUSEh,fp) (\(suff,cus) -> (cus,fpathSetSuff suff fp)) mbSuff
-               ; fExists <- doesFileExist (fpathToStr fp')
-               ; if fExists
-                  then return (Just (fp',cus))
-                  else return Nothing
-               }
-        tryToOpenWithSuffs suffs fp
-          = case suffs of
-              [] -> tryToOpen Nothing fp
-              _  -> select (\(s,f) -> tryToOpen (Just s) f) (zip suffs (repeat fp))
-        tryToOpenInDir dir
-          = select (tryToOpenWithSuffs suffs) [fpathSetDir dir fp,fpathPrependDir dir fp]
-     in select tryToOpenInDir paths
--}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-{-
-crFindFPath :: Maybe HsName -> FileSuffMp -> FPath -> EHCompileRun -> IO (EHCompileRun,Maybe FPath)
-crFindFPath mbModNm suffs fp cr
-  = case maybe ECUSUnknown (flip crCUState cr) mbModNm of
-      ECUSUnknown
-        -> do { let opts = crsiOpts (crStateInfo cr)
-              ; fpMaybe <- searchPathForReadableFile (ehcoptSearchPath opts) (map fst suffs) fp
-              ; case fpMaybe of
-                  Nothing
-                    -> return (crSetErrs [Err_FileNotFound (fpathToStr fp) (ehcoptSearchPath opts)] cr,Nothing)
-                  Just ff
-                    -> do { cr' <- case mbModNm of
-                                     Just modNm -> crUpdCU modNm (\ecu -> return (ecu {ecuFilePath = ff, ecuState = ecus})) cr
-                                     Nothing    -> return cr
-                          ; return (cr',Just ff)
-                          }
-                    where ecus = fileSuffLookup (fpathSuff ff) suffs
-              }
-      _ -> return (cr,maybe Nothing (\nm -> Just (crCUFPath nm cr)) mbModNm)
-
-crFindTopLevelModule :: FPath -> EHCompileRun -> IO (EHCompileRun,Maybe FPath)
-crFindTopLevelModule
-  = crFindFPath Nothing []
--}
-%%]
-
-%%[8
-{-
-crFindModule :: HsName -> FileSuffMp -> EHCompileRun -> IO (EHCompileRun,Maybe FPath)
-crFindModule modNm suffs = crFindFPath (Just modNm) suffs (mkFPath (show modNm))
--}
-%%]
 
 %%[8
 crCompileCUParseHS :: HsName -> EHCompileRun -> IO EHCompileRun
@@ -397,6 +262,9 @@ crOutputCore modNm cr
                  grinPP = ppGrModule (Just []) grin
          ;  if ehcoptCoreGrin opts
             then  do  {  putPPFile (fpathToStr (fpathSetSuff "grin" fp)) grinPP 1000
+                      ;  GRINC.doCompileGrin
+                           (Right (fp,grin))
+                           (GRINCCommon.defaultOpts {GRINCCommon.optVerbosity = ehcoptVerbosity opts})
                       }
             else  return ()
          ;  case ehcoptDumpPP (crsiOpts crsi) of

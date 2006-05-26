@@ -43,7 +43,7 @@ SEM GrBind [ | | dropBinding: Bool ]
   | Rec   lhs  . dropBinding  =  False
 
 
-SEM GrBindL [ | | count: Int ]
+SEM GrBindL
   | Cons  lhs  .  grTrf  =  if @hd.dropBinding
                             then @tl.grTrf
                             else @hd.grTrf : @tl.grTrf

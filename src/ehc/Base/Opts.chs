@@ -10,7 +10,7 @@
 %%[1 module {%{EH}Base.Opts} import(System.Console.GetOpt,{%{EH}Base.Common}) export(EHCOpts(..), defaultEHCOpts, ehcCmdLineOpts)
 %%]
 
-%%[4 import({%{EH}Ty},UU.Pretty) export(FIOpts(..), fioSwapCoCo, fioSwapOpts, strongFIOpts, instFIOpts, instLRFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)
+%%[4 import({%{EH}Ty},UU.Pretty,EH.Util.PPUtils) export(FIOpts(..), fioSwapCoCo, fioSwapOpts, strongFIOpts, instFIOpts, instLRFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)
 %%]
 
 %%[4 export(fioIsSubsume)
@@ -126,7 +126,7 @@ ehcCmdLineOpts
 %%]
 %%[8.ehcCmdLineOptsA
      ,  Option "c"  ["code"]          (OptArg oCode "java|grin")
-          "dump code (java- > .java, grin -> .grin, - -> none) on file, default=core (-> .core)"
+          "dump code (java- > .java, grin -> .grin + .cmm, - -> none) on file, default=core (-> .core)"
      ,  Option ""   ["trf"]           (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
           "switch on/off transformations"
      ,  Option "v"  ["verbose"]       (OptArg oVerbose "0|1|2")

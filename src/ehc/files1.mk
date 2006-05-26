@@ -5,6 +5,9 @@
 EHC_PUB_VARIANTS						:= 1 2 3 4 5 6 7 8 9 10
 EHC_VARIANTS							:= $(EHC_PUB_VARIANTS) 11 4_2 6_4
 
+GRIN_PUB_VARIANTS						:= 8 9 10
+GRIN_VARIANTS							:= $(GRIN_PUB_VARIANTS) 11
+
 # location of ehc src:
 # see shared.mk
 
@@ -36,7 +39,7 @@ EHC_RULES_ALL_SRC						:= $(EHC_RULES_1_SRC_RUL) $(EHC_RULES_2_SRC_RUL) $(EHC_RU
 
 # library
 # derived stuff
-LIB_EHC_CABAL_DRV						:= $(EHC_BLD_LIBEHC_VARIANT_PREFIX)lib-eh$(EHC_VARIANT).cabal
+LIB_EHC_CABAL_DRV						:= $(EHC_BLD_LIBEHC_VARIANT_PREFIX)lib-$(LIB_EHC_BASE)$(EHC_VARIANT).cabal
 LIB_EHC_SETUP_HS_DRV					:= $(EHC_BLD_LIBEHC_VARIANT_PREFIX)Setup.hs
 LIB_EHC_SETUP2							:= $(EHC_BLD_LIBEHC_VARIANT_PREFIX)setup$(EXEC_SUFFIX)
 LIB_EHC_SETUP							:= ./setup$(EXEC_SUFFIX)
@@ -351,7 +354,7 @@ EHC_AG_ALL_MAIN_DRV_HS					:= $(EHC_AG_D_MAIN_DRV_HS) $(EHC_AG_S_MAIN_DRV_HS) $(
 EHC_AG_ALL_DPDS_DRV_AG					:= $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_AG_ALL_DPDS_SRC_CAG))
 
 # lib installed ag
-INS_EHC_LIB_ALL_AG							:= $(patsubst %,$(INS_EHC_LIB_AG_PREFIX)%.ag,HS/AbsSyn EH/AbsSyn Ty/AbsSyn GrinCode/AbsSyn)
+INS_EHC_LIB_ALL_AG						:= $(patsubst %,$(INS_EHC_LIB_AG_PREFIX)%.ag,HS/AbsSyn EH/AbsSyn Ty/AbsSyn GrinCode/AbsSyn)
 
 # all dependents for a variant to kick of building
 EHC_ALL_DPDS							:= $(EHC_HS_ALL_DRV_HS) $(EHC_AG_ALL_MAIN_DRV_HS)
