@@ -122,14 +122,19 @@ mkCmdNmUse = mkTexCmdUse "rulerCmdUse"
 
 ppNmLaTeX :: Nm -> PP_Doc
 ppNmLaTeX n
-  = ppSelLaTeX (== strVec) (fromJust base) (map (fmap (\s -> (s,pp s))) sels)
+  = ppSelLaTeX ((== strOverl),(== strOverVec)) (fromJust base) (map (fmap (\s -> (s,pp s))) sels)
   where (base:sels) = nmToMbL n
 
-ppSelLaTeX :: (PP base,PP sel) => (sel -> Bool) -> base -> [Maybe (sel,PP_Doc)] -> PP_Doc
-ppSelLaTeX isVec base sels
+ppSelLaTeX :: (PP base,PP sel) => (sel -> Bool,sel -> Bool) -> base -> [Maybe (sel,PP_Doc)] -> PP_Doc
+ppSelLaTeX (isOverl,isOverVec) base sels
   = p
   where sw = (" " >|<) . switchLaTeXLhs
-        over n s = if isVec n then sw (text "\\overline{") else sw ("\\stackrel{" >|< sw s >|< "}{")
+        over n s
+          = if isOverl n
+            then sw (text "\\overline{")
+            else if isOverVec n
+            then sw (text "\\vec{")
+            else sw ("\\stackrel{" >|< sw s >|< "}{")
         p = case (pp base,sels) of
                  (x,[Nothing,Nothing,Just (n3,s3)])
                    -> over n3 s3

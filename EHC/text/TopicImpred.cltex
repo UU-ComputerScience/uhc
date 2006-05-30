@@ -56,8 +56,7 @@ in \thispaper\ we exploit type annotations globally.
 \Paragraph{The problem and our approach}
 Our motivation comes from the following example:
 
-\begin{Example}
-\ \label{eh4B-ex-basic-intro}
+\begin{Example}{eh4B-ex-basic-intro}
 %%[[wrap=code
 %%@[file:test/4-impred-demo1.eh%%]
 %%]
@@ -71,7 +70,7 @@ be a polymorphic function.
 Our approach is to use |h| polymorphically for the two applications to an |Int| and a |Char|,
 because passing |h| to |g| tells us that |h| is of type |forall ^ a . a -> a|.
 
-The reason why this is not accepted is that Haskell is designed to use Hindley-Milner type inference,
+The reason why this is not accepted is that Haskell is designed to use Hindley-Milner (HM) type inference,
 in particular the following aspects:
 \begin{Itemize}
 \item
@@ -105,10 +104,10 @@ We call this \IxAsDef{global quantifier propagation} because the effect is not l
 
 The main problem tackled by \thispaper\ therefore is how
 to propagate type signatures globally.
-Our approach uses a variant of Hindley-Milner type inference
+Our approach uses a variant of HM type inference
 to construct a description of all possible alternative types for type variables.
 If a quantified type is present in these type alternatives,
-we extract and propagate this for further use by a second stage of another Hindley-Milner variant.
+we extract and propagate this for further use by a second stage of another HM variant.
 
 % In passing we note that 
 
@@ -117,7 +116,7 @@ we extract and propagate this for further use by a second stage of another Hindl
 \begin{Itemize}
 \item
 We show how to exploit type signatures by focussing on a two-stage algorithm for type signature propagation.
-Because we use two stages with different Hindley-Milner variants, we avoid the complexity of a one phase type inference
+Because we use two stages with different HM variants, we avoid the complexity of a one phase type inference
 in which types have a more complex structure.
 The inherent complexity of the problem of course does not disappear,
 but we isolate it in a separate stage of type inference.
@@ -153,17 +152,17 @@ As a consequence we do not have to change annotations all over the program
 once a type changes due to further program adaptation.
 
 \Paragraph{Outline of this paper}
-In the remainder of \thispaper\ we first introduce
-our Hindley-Milner type inference machinery (\secRef{sec-impred-hm}).
-This part is standard, and serves as the starting point
-upon which we build our ``type annotation exploitation'' (\secRef{sec-impred-glob-quant-prop}).
+In the remainder of \thispaper\ we first discuss our solution by examples (\secRef{sec-solution-sketch}),
+where each example is accompanied with a transformed variant which includes the type annotation our solution computes.
+We then provide standard HM type inference machinery (\secRef{sec-impred-hm}) upon which our algorithm is build
+(\secRef{sec-impred-glob-quant-prop}).
 The required notation is introduced at the beginning of these sections.
 We conclude with discussion and related work (\secRef{sec-impred-related-work}).
 %%]
 
 %%[prelimHM
 Terms (\figRef{eh4-lang-terms}) and type language (\figRef{impred-hm-lang-types})
-are standard for Hindley-Milner type inference.
+are standard for HM type inference.
 We introduce the full expression language used in \thispaper;
 here we ignore |let| expressions with type annotations as they only become meaningful when 
 we deal with their propagation.
@@ -207,7 +206,7 @@ We use environments, denoted by |Gamma|, to bind program identifiers to types: |
 We use constraints, denoted by |Cnstr|, to bind type variables to types: |Vec(tvarv :-> sigma)|.
 We liberally mix list notation and vector notation, for example |[tvarv :-> sigma]| denotes a constraint
 consisting of a single binding.
-Constraints as used by Hindley-Milner only bind to monotypes |tau|.
+Constraints as used by HM only bind to monotypes |tau|.
 In \thispaper, constraints are used in the same way as substitutions usually are.
 Constraints are applied to types (denoted by juxtapositioning) and
 other constraints, thereby replacing occurrences of type variables with their binding:
@@ -235,7 +234,7 @@ In case of multiple context of results a semicolon `;' separates these.
 %%@AppxNotation.monoBasicTy
 \end{TabularCenterFigure}
 
-The type rules for Hindley-Milner type inference (\figRef{infer2pass.HM.expr.base})
+The type rules for HM type inference (\figRef{infer2pass.HM.expr.base})
 are standard as well.
 Monomorphic types |tau| (see \figRef{impred-hm-lang-types}) participate in type inference,
 whereas polymorphic types |sigma| are bound to identifiers in the environment |Gamma|.
@@ -245,7 +244,7 @@ whenever the identifier to which the type is bound occurs in an expression (\rul
 
 \rulerCmdUse{infer2pass.HM.expr.base}
 
-The algorithmic rules for Hindley-Milner type inference are explicit in their use of constraints.
+The algorithmic rules for HM type inference are explicit in their use of constraints.
 In the type rule scheme of \figRef{infer2pass.HM.expr.base}
 constraints are threaded through all rules, |Cnstrk| refers to the constraints gathered sofar, |Cnstr| refers to
 new constraints combined with those from |Cnstrk|.
@@ -475,8 +474,7 @@ In both cases type matching fills in the gaps represented by type variables.
 Let us look at some examples to see how this works out in different contexts.
 We repeat our initial example:
 
-\begin{Example}
-\ \label{eh4-ex-rank-arg}
+\begin{Example}{eh4-ex-rank-arg}
 %%[[wrap=code
 %%@[file:test/3-demo-rank.eh%%]
 %%]
@@ -558,7 +556,7 @@ before binding because (as a design choice) we want to mimic Haskell's type infe
 As a consequence of binding non-impredicatively
 we cannot infer a type for |f| (from our example),
 because |i| (|f|'s argument) is used monomorphically in the body of |f|.
-Function |i| can not be applied polymorphically.
+Function |i| cannot be applied polymorphically.
 This, of course, can be remedied by putting back the type signature for |f| as in \exRef{eh4-ex-rank-arg}.
 
 In \chapterRef{ehc4B} we will investigate how we can exploit the presence of quantified types even more.
@@ -959,8 +957,8 @@ For each expression it holds that its actual type must be subsumed by its known 
 Both of these types can either be a type variable or be a more specific type.
 We either do not know anything, or we do know something and use subsumption to find out more about both.
 This part of our strategy is relatively straightforward to describe.
-The rules from \figRef{infer2pass.HM.expr.base} from now on
-yield constraints, based on subsumption instead of type unification.
+The rules from \figRef{infer2pass.HM.expr.base} from now are
+based on subsumption instead of type unification.
 \item
 Preceding the adapted version of Hindley-Milner type inference we construct for each expression a description
 of all possible types it can have.
@@ -992,8 +990,7 @@ The local quantifier propagation from the previous chapter then becomes a specia
 The following example illustrates this idea:
 %endif
 
-\begin{Example}
-\ \label{eh4B-ex-basic}
+\begin{Example}{eh4B-ex-basic}
 %if infer2pass
 %%[[wrap=code
 %%@[file:src/infer2pass/test/4-impred-demo1.i2p%%]
@@ -1042,8 +1039,7 @@ For the following example the same type for |h| is inferred.
 It differs from the previous example in that |h| is expected to be used in two different ways (instead of one),
 because it is passed to both |g1| and |g2|.
 
-\begin{Example}
-\ \label{eh4B-ex-most-gen}
+\begin{Example}{eh4B-ex-most-gen}
 %if infer2pass
 %%[[wrap=code
 %%@[file:src/infer2pass/test/4-impred-demo3.i2p%%]
@@ -1086,8 +1082,7 @@ Contravariance, that is, the reversal of |<=| for the arguments of a function ty
 implies that the ``more general'' means ``less general'' for arguments.
 The following example demonstrates this:
 
-\begin{Example}
-\ \label{eh4B-ex-contravariance}
+\begin{Example}{eh4B-ex-contravariance}
 %if infer2pass
 %%[[wrap=code
 %%@[file:src/infer2pass/test/4-impred-demo4.i2p%%]
@@ -2060,8 +2055,7 @@ The following example uses a minimal abstract data type ``|exists ^ a . (a,a->In
 a value tupled with an observer function for that value.
 Note that for all practical purposes this type is isomorphic to |Int|.
 
-\begin{Example}
-\ \label{eh4C-ex-basic}
+\begin{Example}{eh4C-ex-basic}
 %%[[wrap=code
 %%@[file:test/4-demo1.eh%%]
 %%]
@@ -2178,7 +2172,7 @@ sigma <= forall ^ a . a
 exists ^ a . a <= sigma
 %%]
 
-we can not:
+we cannot:
 in case of universal type,
 |a| is chosen by the context,
 whereas |a| is chosen by the creator of the existential type.
@@ -2837,85 +2831,216 @@ Expression, \figRef{infer2pass.I2.expr.base}
 %%]
 
 %%[solutionSketch
-Original, rank-2 monotype
-\begin{Example}
-\ \label{i2p-ex-how1}
-%%[[wrap=code
-%%@[file:src/infer2pass/test/4-impred-how1.i2p%%]
-%%]
-\end{Example}
+Before we proceed with the technical discussion of our approach,
+we informally describe our solution by means of a series of examples.
+Each example consists of a small program fragment together with transformations which include a type annotation
+for identifiers lacking an explicit type annotation,
+The additional type annotation corresponds to the
+type annotation to be inferred by \IxAsDef{global quantifier propagation}
+(\secRef{sec-impred-glob-quant-prop}).
 
-Transformed, 
-\begin{Example}
-\ \label{i2p-ex-how1-trf}
-%%[[wrap=code
-%%@[file:src/infer2pass/test/4-impred-how1-trf.i2p%%]
-%%]
-\end{Example}
+The examples are described in terms of the expression language
+(\figRef{eh4-lang-terms}, \secRef{sec-impred-hm} and \secRef{sec-impred-glob-quant-prop}),
+a subset of Haskell focussed on type annotations and higher-ranked types.
+We will use this expression language later when discussing the technical part of our approach.
+In order to express the intents of our solution,
+we use the following additional type constructors in type expressions:
+\begin{Itemize}
+\item
+Partial type expression:
+|...| denotes the unspecified part of a partial type expression.
+\item
+Type alternatives:
+|t1 =&&= t2| and |t1 =||||= t2| denote a type alternative.
+In the examples from this section |=&&=| is used at rank-2 positions;
+the resulting types then correspond to rank-2 intersection types
+\cite{bakel93phd-intersection,damiani03rank2-localdefs}:
+|t1 =&&= t2| has both type |t1| and |t2|.
+We postpone the discussion of |t1 =||||= t2| until required.
+\end{Itemize}
 
-Original, rank-2 polytype
-\begin{Example}
-\ \label{i2p-ex-how2}
+In the context of transformed program fragments we omit irrelevant parts,
+this omission is also denoted by ``|...|''.
+This has no further meaning, contrary to ``|...|'' in a type which makes explicit the part that is \emph{not}
+to be inferred by \IxAsDef{global quantifier propagation}
+(\secRef{sec-impred-glob-quant-prop}).
+
+The intent of \IxAsDef{global quantifier propagation} is to infer type annotations for identifiers which are introduced
+without a type annotation.
+As this is also the job of Hindley-Milner (HM) type inference,
+the job of \IxAsDef{global quantifier propagation} is to infer those parts of such type annotations which cannot be
+inferred by HM type inference, that is, universally quantified type fragments.
+For example, the following program fragment lacks a type annotation for |f|:
+
+\begin{Example}{i2p-ex-how2}
 %%[[wrap=code
 %%@[file:src/infer2pass/test/4-impred-how2.i2p%%]
 %%]
 \end{Example}
 
-Transformed, 
-\begin{Example}
-\ \label{i2p-ex-how2-trf}
+Without an explicit type annotation for |f| -- which would be the same as for |g| --
+this program fragment is not accepted as correct Haskell.
+However, |h| is used only once inside the body of |f|, as an argument to |g|,
+so we may conclude that the type expected by |g| is also a good choice for the type of |h|.
+Our transformed variant expresses this choice as a partial type annotation for |f|,
+which only specifies the type fragment corresponding to |h|.
+The remaining parts denoted by ``|...|'' are then inferred by HM type inference:
+
 %%[[wrap=code
 %%@[file:src/infer2pass/test/4-impred-how2-trf.i2p%%]
 %%]
-\end{Example}
 
-Original, rank-2 polytype, 1x instantiated
-\begin{Example}
-\ \label{i2p-ex-how3}
+As with HM type inference, we infer a type for an identifier from the use of such an identifier.
+However, the difference is that we allow the recovery of quantified types whenever the identifer in a context expecting
+the identifier to have a quantified type.
+We call this ``touched by'' a quantified type.
+
+Choosing the type of |h| becomes more difficult when |h| is used more than once:
+
+\begin{Example}{i2p-ex-how3}
 %%[[wrap=code
 %%@[file:src/infer2pass/test/4-impred-how3.i2p%%]
 %%]
 \end{Example}
 
-Transformed, 
-\begin{Example}
-\ \label{i2p-ex-how3-trf}
+The first use of |h| requires the argument of |h| to be of type |Int|,
+whereas the second use requires |h| to be of type |forall ^ a . a -> a|.
+This is where we encounter two problems with HM type inference:
+
+\begin{Itemize}
+\item
+Function argument types are assumed to be monomorphic.
+\item
+If we allow function argument types to be polymorphic nevertheless,
+HM is order biased, that is, it will prematurely conclude that |h| has a monomorphic type based on
+the expression |h 3|.
+\end{Itemize}
+
+These problems are circumvented by two subsequent transformations,
+which together express the delay until later of conclusions with respect to the instantiation of
+quantified types.
+First we represent all the different ways |h| is used in |f|'s type signature by the following transformation:
+
 %%[[wrap=code
 %%@[file:src/infer2pass/test/4-impred-how3-trf.i2p%%]
 %%]
-\end{Example}
 
-Original, rank-2 polytype, 2x instantiated
-\begin{Example}
-\ \label{i2p-ex-how4}
+Function |h| has both type |forall ^ a . a -> a| and |Int -> ...| .
+We proceed by choosing |forall ^ a . a -> a| to be the type which can be instantiated to
+both |forall ^ a . a -> a| and |Int -> ...| .
+In general, we choose the type with the quantifier, according to the following rewrite rule for types,
+where we ignore nested quantifiers in either type and assume |t1| and |t2| match on their structure (that is, they unify)
+for simplicity:
+\begin{eqnarray*}
+|forall ^ t1 =&&= t2| & = & |forall ^ t1| \\
+|t1 =&&= t2| & = & |...| \quad , \mbox{where |t1,t2| monotypes}
+\end{eqnarray*}
+The type annotation is transformed correspondingly:
+
+%%[[wrap=code
+%%@[file:src/infer2pass/test/4-impred-how3-trf2.i2p%%]
+%%]
+
+These two transformation steps correspond to the two main steps of our algorithm (\secRef{sec-impred-glob-quant-prop}):
+gathering type alternatives, followed by extracting quantified type fragments from these type alternatives.
+
+In our approach it is essential that a quantified type fragment appears in a type alternative:
+we extract this information, we do not invent it.
+The following example illustrates this necessity.
+Function |h| additionally is passed a value of type |Char| instead of only a value of type |Int|:
+
+\begin{Example}{i2p-ex-how4}
 %%[[wrap=code
 %%@[file:src/infer2pass/test/4-impred-how4.i2p%%]
 %%]
 \end{Example}
 
-Transformed, 
-\begin{Example}
-\ \label{i2p-ex-how4-trf}
+From \exRef{i2p-ex-how3} we could have omitted the expression |g h| as to allow |h| to be monomorphic.
+This cannot be done in \exRef{i2p-ex-how4},
+because |h| is used polymorphically.
+Its corresponding transformation is the following, leading to the same type annotation as for \exRef{i2p-ex-how3}:
+
 %%[[wrap=code
 %%@[file:src/infer2pass/test/4-impred-how4-trf.i2p%%]
 %%]
-\end{Example}
 
-Original, rank-3 polytype, contravariance
-\begin{Example}
-\ \label{i2p-ex-demo4}
+Quantified type fragments can also appear at rank-3 positions.
+In the following, somewhat contrived example, |h| accepts an identity function.
+
+\begin{Example}{i2p-ex-demo4}
 %%[[wrap=code
 %%@[file:src/infer2pass/test/4-impred-demo4.i2p%%]
 %%]
 \end{Example}
 
-Transformed, 
-\begin{Example}
-\ \label{i2p-ex-demo4-trf}
+However, |g1| assumes this identity function to have polymorphic type |forall ^ a . a -> a|,
+whereas |g2| expects it to have monomorphic type |Int -> Int|.
+This is expressed by the following transformation,
+in which the quantified type fragment appears at a contravariant position:
+
 %%[[wrap=code
 %%@[file:src/infer2pass/test/4-impred-demo4-trf.i2p%%]
 %%]
+
+In the previous examples the quantified type fragment appears at a rank-2 covariant position as a type alternative.
+We then did choose the most general type,
+because it can always be instantiated to
+the other monomorphic types of |=&&=|.
+However, with quantified types on a contravariant position, this is no longer the case, as the role of
+type alternatives (with quantified types) in a contravariant position switches from describing the type |t|
+by ``|t| must be instantiatable to all alternatives''
+to ``all alternatives must be instantiatable to |t|''.
+We no longer can choose |t = forall ^ a . a -> a| because |Int -> Int| cannot be instantiated to |forall ^ a . a -> a|;
+instead we choose |t = Int -> Int|.
+
+We informally describe this behaviour in terms of a type alternative \IxAsDef{union type} |t1 =||||= t2|,
+the dual of an intersection type, which is defined by the rewrite rule for type alternatives:
+\begin{eqnarray*}
+|(a1 -> r1) =&&= (a2 -> r2)| & = & |(a1 =||||= a2) -> (r1 =&&= r2)| \\
+|forall ^ t1 =||||= t2| & = & |t2|
+\end{eqnarray*}
+We only use |=||||=| in this section to describe the purpose and meaning of our approach.
+By applying this rewrite rule we arrive at:
+
+%%[[wrap=code
+%%@[file:src/infer2pass/test/4-impred-demo4-trf2.i2p%%]
+%%]
+
+For |Int -> Int =||||= forall a . a -> a| we extract and choose the least general type |Int -> Int|.
+This leads to the following type annotation for |f|,
+which specifies type |(Int -> Int) -> ...| for |h| in accordance with the above discussion:
+
+%%[[wrap=code
+%%@[file:src/infer2pass/test/4-impred-demo4-trf3.i2p%%]
+%%]
+
+The basic strategy for recovering type annotations is to gather type alternatives and subsequently choose the most (or least)
+general from these alternatives.
+Although we will not discuss this further, our approach also allows the combination of type alternatives,
+instead of only a choice between those type alternatives.
+For example, the following fragment specifies polymorphism in two independent parts of a tuple:
+
+\begin{Example}{i2p-ex-demo2}
+%%[[wrap=code
+%%@[file:src/infer2pass/test/4-impred-demo2.i2p%%]
+%%]
 \end{Example}
+
+This leads to two alternatives, both of which are not a generalisation of eachother:
+
+%%[[wrap=code
+%%@[file:src/infer2pass/test/4-impred-demo2-trf.i2p%%]
+%%]
+
+However, type |forall ^ a . forall ^ b . (b,a) -> (b,a)| can be instantiated to both
+|forall ^ a . (Int,a) -> (Int,a)| and |forall ^ b . (b,Int) -> (b,Int)|:
+
+%%[[wrap=code
+%%@[file:src/infer2pass/test/4-impred-demo2-trf2.i2p%%]
+%%]
+
+Such a merge of two types cannot be described by the informal rewrite rules presented in this section,
+but can be handled by the system described in \secRef{sec-impred-glob-quant-prop}.
 
 %%]
 

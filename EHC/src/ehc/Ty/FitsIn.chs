@@ -1105,7 +1105,7 @@ prfOneStep :: FIEnv -> PredOcc -> ProofState -> ProofState
 prfOneStep fe prOcc@(PredOcc pr prPoi) st@(ProofState g@(ProvenGraph _ p2i _ _) _ _ i2d _ errL)
   =  case Map.lookup prPoi i2d of
         Just depth
-          | depth < ehcoptPrfCutOffAt (feEHCOpts fe)
+          | depth < ehcOptPrfCutOffAt (feEHCOpts fe)
               ->  case Map.lookup pr p2i of
                     Just poiL@(poi:_)
                       | poiCxId prPoi `notElem` map poiCxId poiL

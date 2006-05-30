@@ -472,7 +472,7 @@ rlGamUpdVws cxRs opts vwDpdGr extNmS dtInvGam scGam rsGam rlGam rsInfo rlInfo
 
                      in  ( if vrwlIsEmpty vwRlInfo4 then gamDelete nVw vrg else gamInsertShadow nVw vwRlInfo4 vrg
                          , Map.insert nVw br' brMp
-                         , if null errs then errg else gamInsertShadow nVw errsVw errg
+                         , if null errsVw then errg else gamInsertShadow nVw errsVw errg
                          , errsOther ++ errs
                          )
                 )

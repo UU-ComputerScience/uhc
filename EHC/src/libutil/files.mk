@@ -10,7 +10,7 @@ LIB_EH_UTIL_QUAL_PREFIX			:= $(LIB_EH_UTIL_QUAL).
 LIB_EH_UTIL_PKG_NAME			:= $(subst .,-,$(LIB_EH_UTIL_QUAL))
 LIB_EH_UTIL_HS_PREFIX			:= $(SRC_LIBUTIL_PREFIX)$(subst .,$(PATH_SEP),$(LIB_EH_UTIL_QUAL_PREFIX))
 LIB_EH_UTIL_HS_SRC				:= $(wildcard $(LIB_EH_UTIL_HS_PREFIX)*.hs)
-LIB_EH_UTIL_INS_FLAG			:= $(INS_FLAG_PREFIX)$(LIB_EH_UTIL_PKG_NAME)
+LIB_EH_UTIL_INS_FLAG			:= $(INSABS_FLAG_PREFIX)$(LIB_EH_UTIL_PKG_NAME)
 
 # derived stuff
 LIB_EH_UTIL_CABAL_DRV			:= $(BLD_LIBUTIL_PREFIX)lib-eh-util.cabal
@@ -45,7 +45,7 @@ $(LIB_EH_UTIL_SETUP2): $(LIB_EH_UTIL_SETUP_HS_DRV)
 $(LIB_EH_UTIL_INS_FLAG): $(LIB_EH_UTIL_HS_DRV) $(LIB_EH_UTIL_CABAL_DRV) $(LIB_EH_UTIL_SETUP2) $(LIBUTIL_MKF)
 	mkdir -p $(@D)
 	cd $(BLD_LIBUTIL_PREFIX) && \
-	$(LIB_EH_UTIL_SETUP) configure --prefix=$(INS_PREFIX) --user && \
+	$(LIB_EH_UTIL_SETUP) configure --prefix=$(INSABS_PREFIX) --user && \
 	$(LIB_EH_UTIL_SETUP) build && \
 	$(LIB_EH_UTIL_SETUP) install --user && \
 	echo $@ > $@

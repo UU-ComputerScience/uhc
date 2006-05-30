@@ -17,12 +17,13 @@ module Common
   , ExprIsRw(..)
   -- , Err(..), mkPPErr, ppErrPPL, errLIsFatal
   , WrKind(..)
-  , strVec, strUnd, strLhs, strLoc
-  , nmVec, nmUnk, nmApp, nmWild, nmNone, nmList
+  , strOverl, strOverVec, strUnd, strLhs, strLoc
+  , nmOverl, nmOverVec, nmUnk, nmApp, nmWild, nmNone, nmList
   , nmEql, nmComma, nmOParen, nmCParen, nmLhs, nmAny, nmSp1
   , nmUniq
   , nmCmdBegChng, nmCmdEndChng, nmCmdBegSame, nmCmdEndSame
   , nmFunMkUniq
+  , nmIsOver
   , FmKind(..), fmAS2Fm
   , ScKind(..), ScDeriv(..)
   )
@@ -83,15 +84,17 @@ instance PP WrKind where
 -- Names
 -------------------------------------------------------------------------
 
-strUnd = "_"
-strVec = "_"
-strLhs = "lhs"
-strLoc = "loc"
+strUnd   	= "_"
+strOverl 	= "_"
+strOverVec  = ">"
+strLhs   	= "lhs"
+strLoc   	= "loc"
 
-nmVec, nmUnk, nmApp, nmWild, nmNone, nmEql, nmComma, nmOParen, nmCParen, nmLhs, nmAny, nmSp1 :: Nm
-nmVec     = Nm strVec
+nmOverl, nmOverVec, nmUnk, nmApp, nmWild, nmNone, nmEql, nmComma, nmOParen, nmCParen, nmLhs, nmAny, nmSp1 :: Nm
+nmOverl   = Nm strOverl
+nmOverVec = Nm strOverVec
 nmLhs     = Nm strLhs
-nmWild    = nmVec
+nmWild    = Nm strUnd
 nmUnk     = Nm "??"
 nmAny     = Nm "*"
 nmSp1     = Nm "^"
@@ -114,6 +117,9 @@ nmCmdEndSame = Nm "rulerSameEndMark"
 
 nmFunMkUniq :: Int -> Nm
 nmFunMkUniq u = Nm ("rulerMk" ++ show u ++ "Uniq")
+
+nmIsOver :: Nm -> Bool
+nmIsOver n = nmOverl == n || nmOverVec == n
 
 -------------------------------------------------------------------------
 -- Format kinds

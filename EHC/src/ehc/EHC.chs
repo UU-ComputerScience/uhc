@@ -51,19 +51,19 @@ main :: IO ()
 main
   =  do  {  args <- getArgs
          ;  let  oo@(o,n,errs)  = getOpt Permute ehcCmdLineOpts args
-                 opts           = foldr ($) defaultEHCOpts o
-         ;  if ehcoptHelp opts
+                 opts           = foldl (flip ($)) defaultEHCOpts o
+         ;  if ehcOptHelp opts
 %%]
-%%[1.main.ehcoptHelp
+%%[1.main.ehcOptHelp
             then  putStrLn (usageInfo ("version: " ++ versionInfo ++ "\n\nUsage: ehc [options] [file]\n\noptions:") ehcCmdLineOpts)
 %%]
-%%[8.main.ehcoptHelp -1.main.ehcoptHelp
+%%[8.main.ehcOptHelp -1.main.ehcOptHelp
             then  do  {  putStrLn (usageInfo ("version: " ++ versionInfo ++ "\n\nUsage: ehc [options] [file]\n\noptions:") ehcCmdLineOpts)
                       ;  putStrLn ("Transformations:\n" ++ (unlines . map (\(n,t) -> "  " ++ n ++ ": " ++ t) $ cmdLineTrfs))
                       }
 %%]
 %%[1.main.tl
-            else  if ehcoptVersion opts
+            else  if ehcOptVersion opts
             then  putStrLn versionDist
             else  if null errs
                   then  doCompileRun (if null n then "" else head n) opts
@@ -196,7 +196,7 @@ crCompileCUParseHS modNm cr
 crCompileCUPass1HS :: HsName -> EHCompileRun -> IO EHCompileRun
 crCompileCUPass1HS modNm cr
   = do { let p1ob   = fromJust (ecuMbOut (crCU modNm cr))
-       ; case ehcoptDumpPP (crsiOpts (crStateInfo cr)) of
+       ; case ehcOptDumpPP (crsiOpts (crStateInfo cr)) of
               Just "pp"   ->  putWidthPPLn 120 (EHSem.pp_Syn_AGItf p1ob)
               Just "ast"  ->  putPPLn (EHSem.ppAST_Syn_AGItf p1ob)
               _           ->  return ()
@@ -224,7 +224,7 @@ crCore1Trf modNm trfNm cr
                                       )
                                     . EHSem.cmodule_Syn_AGItf
                                     $ synAG}
-         ;  putCompileMsg VerboseALot (ehcoptVerbosity . crsiOpts $ crsi) "Transforming" (lookup trfNm cmdLineTrfs) modNm (ecuFilePath ecu)
+         ;  putCompileMsg VerboseALot (ehcOptVerbosity . crsiOpts $ crsi) "Transforming" (lookup trfNm cmdLineTrfs) modNm (ecuFilePath ecu)
          ;  crUpdCU modNm (\ecu -> return (ecu {ecuMbOut = Just synAG'})) cr
          }
 %%]
@@ -234,7 +234,7 @@ crCoreTrf :: HsName -> [String] -> EHCompileRun -> IO EHCompileRun
 crCoreTrf modNm trfNmL cr
   = trf cr
   where trf  =  crSeq . intersperse crStepUID . map (crCore1Trf modNm)
-             .  filter (maybe True id . trfOptOverrides (ehcoptTrf $ crsiOpts $ crStateInfo $ cr))
+             .  filter (maybe True id . trfOptOverrides (ehcOptTrf $ crsiOpts $ crStateInfo $ cr))
              $  trfNmL
 %%]
 
@@ -249,10 +249,10 @@ crOutputCore modNm cr
                  cMod   = EHSem.cmodule_Syn_AGItf p1ob
                  [u1]   = mkNewLevUIDL 1 . snd . mkNewLevUID . crsiHereUID $ crsi
                  codePP = ppCModule cMod 
-         ;  if ehcoptCore opts
+         ;  if ehcOptCore opts
             then  putPPFile (fpathToStr (fpathSetSuff "core" fp)) codePP 120
             else  return ()
-         ;  if ehcoptCoreJava opts
+         ;  if ehcOptCoreJava opts
             then  do  {  let (jBase,jPP) = cmodJavaSrc cMod
                              jFP = fpathSetBase jBase fp
                       ;  putPPFile (fpathToStr (fpathSetSuff "java" jFP)) jPP 120
@@ -260,14 +260,20 @@ crOutputCore modNm cr
             else  return ()
          ;  let  grin = cmodGrin u1 cMod
                  grinPP = ppGrModule (Just []) grin
-         ;  if ehcoptCoreGrin opts
+         ;  if ehcOptCoreGrin opts
             then  do  {  putPPFile (fpathToStr (fpathSetSuff "grin" fp)) grinPP 1000
                       ;  GRINC.doCompileGrin
                            (Right (fp,grin))
-                           (GRINCCommon.defaultOpts {GRINCCommon.optVerbosity = ehcoptVerbosity opts})
+                           (GRINCCommon.defaultGRINCOpts
+                             { GRINCCommon.grincOptVerbosity = ehcOptVerbosity opts
+                             , GRINCCommon.grincOptGenTrace = ehcOptGenTrace opts
+                             , GRINCCommon.grincOptTimeCompile = ehcOptTimeCompile opts
+                             , GRINCCommon.grincOptDumpTrfGrin = ehcOptDumpTrfGrin opts
+                             , GRINCCommon.grincOptDumpCallGraph = ehcOptDumpCallGraph opts
+                             })
                       }
             else  return ()
-         ;  case ehcoptDumpPP (crsiOpts crsi) of
+         ;  case ehcOptDumpPP (crsiOpts crsi) of
               Just "grin"  ->  putPPLn grinPP
               _            ->  return ()
          ;  return cr
@@ -287,8 +293,8 @@ crCompileCU :: HsName -> EHCompileRun -> IO EHCompileRun
 crCompileCU modNm cr
   = do { let ecu   = crCU modNm cr
              opts  = crsiOpts (crStateInfo cr)
-             msg m = putCompileMsg VerboseNormal (ehcoptVerbosity opts) m Nothing modNm (ecuFilePath ecu)
-             -- msg m = putCompileMsg VerboseNormal (ehcoptVerbosity opts) (m ++ " (" ++ show (ecuState ecu) ++ "/" ++ fpathSuff (ecuFilePath ecu) ++ ")") Nothing modNm (ecuFilePath ecu)
+             msg m = putCompileMsg VerboseNormal (ehcOptVerbosity opts) m Nothing modNm (ecuFilePath ecu)
+             -- msg m = putCompileMsg VerboseNormal (ehcOptVerbosity opts) (m ++ " (" ++ show (ecuState ecu) ++ "/" ++ fpathSuff (ecuFilePath ecu) ++ ")") Nothing modNm (ecuFilePath ecu)
        ; case ecuState ecu of
            ECUSEh
              -> do { msg "Compiling"
@@ -325,11 +331,11 @@ doCompileRun filename opts
          ;  (resd,_) <- evalStepsIO show steps
          ;  let res   = EHSem.sem_AGItf resd
                 wrRes = EHSem.wrap_AGItf res (EHSem.Inh_AGItf {EHSem.opts_Inh_AGItf = opts})
-         ;  case ehcoptDumpPP opts of
+         ;  case ehcOptDumpPP opts of
               Just "pp"   ->  putStrLn (disp (EHSem.pp_Syn_AGItf wrRes) 70 "")
               Just "ast"  ->  putStrLn (disp (EHSem.ppAST_Syn_AGItf wrRes) 1000 "")
               _           ->  return ()
-         ;  if ehcoptShowTopTyPP opts
+         ;  if ehcOptShowTopTyPP opts
             then  putStr (disp (EHSem.topTyPP_Syn_AGItf wrRes) 1000 "")
             else  return ()
          }
@@ -341,12 +347,12 @@ doCompileRun fn opts
   = do { let fp             = mkTopLevelFPath "eh" fn
              topModNm       = HNm (fpathBase fp)
              searchPath     = mkInitSearchPath fp
-             opts'          = opts { ehcoptSearchPath = ehcoptSearchPath opts ++ searchPath }
+             opts'          = opts { ehcOptSearchPath = ehcOptSearchPath opts ++ searchPath }
              p1ib           = EHSem.Inh_AGItf {EHSem.baseName_Inh_AGItf = fpathBase fp, EHSem.gUniq_Inh_AGItf = uidStart, EHSem.opts_Inh_AGItf = opts'}
              aSetup cr      = crHandle1
                                    (\(cr,_) -> return (cr {crCompileOrder = [[topModNm]]}))
                                    (crSetFail . fst) (crState . fst)
-                                   (crFindFileForFPath fileSuffMpHs (ehcoptSearchPath opts') (Just topModNm) (Just fp) cr)
+                                   (crFindFileForFPath fileSuffMpHs (ehcOptSearchPath opts') (Just topModNm) (Just fp) cr)
              aCompile cr    = crCompileOrderedCUs (crCompileOrder cr) cr
        ; cr <- crSeq [ aSetup, aCompile ]
                  (mkEmptyCompileRun topModNm (EHCompileRunStateInfo opts' p1ib uidStart uidStart))

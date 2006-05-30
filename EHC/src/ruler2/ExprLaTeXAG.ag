@@ -20,7 +20,7 @@ SEM Expr
                                                 in  @lExpr.ppLaTeX `c` @rExpr.ppLaTeX
   | Paren           loc     .   ppLaTeX     =   (if @lhs.needToParen then ppParens else id) @expr.ppLaTeX
   | Cnstr           loc     .   ppLaTeX     =   @expr.ppLaTeX
-  | SelTop          loc     .   ppLaTeXSel  =   ppSelLaTeX (== nmVec) @expr.ppLaTeX (reverse @expr.selL)
+  | SelTop          loc     .   ppLaTeXSel  =   ppSelLaTeX ((== nmOverl),(== nmOverVec)) @expr.ppLaTeX (reverse @expr.selL)
                     loc     .   ppLaTeX     =   if @expr.exprKind == EKEmp then empty else @ppLaTeXSel
   | Sel             lhs     .   ppLaTeX     =   @expr.ppLaTeX
   | Var             loc     .   ppLaTeX     =   ppNmLaTeX . nmLhs2TeXSafe $ @nm
@@ -55,7 +55,7 @@ ATTR MbExpr Expr [ needToParen: Bool | | ]
 SEM Expr
   | Sel             selMbExpr   .   needToParen =   False
                     expr        .   needToParen =   case @selMbExpr.mbPPLaTeX of
-                                                        Just (n,_) | n == nmVec
+                                                        Just (n,_) | nmIsOver n
                                                           -> False
                                                         _ -> case @expr.exprKind of
                                                                EKNm _ -> False

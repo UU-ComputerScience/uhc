@@ -209,6 +209,8 @@
 %format .    			= "."
 %format === 			= "\equiv "
 %format =/= 			= "\not\equiv "
+%format =&&= 			= &&
+%format =||= 			= ||
 %format =@= 			= "{\varparallel}"
 % format <=> 			= "\mathrel{\cong}"
 %format <=> 			= "\cong "

@@ -30,7 +30,7 @@ doCompileGrin
 %%]
 
 %%[8 -1.doCompileGrin import(qualified Data.Map as Map, {%{GRIN}HeapPointsToFixpoint})
-doCompileGrin :: Either String (FPath,GrModule)  -> Opts -> IO ()
+doCompileGrin :: Either String (FPath,GrModule)  -> GRINCOpts -> IO ()
 doCompileGrin inp opts
   = drive state putErrs
       ( do { load               -- from phd boquist (fig 4.1)
@@ -90,7 +90,7 @@ writeToFile str fp
 %%]
 
 %%[8.parse import({%{EH}GrinCode.Parser})
-parseGrin :: FPath -> Opts -> IO (String, GrModule)
+parseGrin :: FPath -> GRINCOpts -> IO (String, GrModule)
 parseGrin fp opts = do
     (fn,fh) <- openFPath fp ReadMode
     tokens  <- scanHandle scanOpts fn fh
@@ -124,7 +124,7 @@ caDropUnusedBindings = do
     ; vm    <- gets gcsOrigNms
     ; (code, dot) <- return $ dropUnusedBindings entry vm code
     ; modify (gcsUpdateGrinCode code)
-    ; outputCallGraph <- gets (optWriteCallGraph . gcsOpts)
+    ; outputCallGraph <- gets (grincOptDumpCallGraph . gcsOpts)
     ; when outputCallGraph
         (do { input <- gets gcsPath
             ; let output = fpathSetSuff "dot" input
@@ -338,7 +338,7 @@ caGrin2Cmm :: CompileAction CmmUnit
 caGrin2Cmm = do 
     { code <- gets gcsGrinCode
     ; entry <- gets gcsEntry
-    ; doTrace <- gets (optTrace . gcsOpts)
+    ; doTrace <- gets (grincOptGenTrace . gcsOpts)
     ; return (grin2cmm entry code doTrace)
     }
 
@@ -359,7 +359,7 @@ caWriteCmm = do
 %%[8.writeGrin import({%{EH}GrinCode.Pretty})
 caWriteGrin :: Bool -> String -> CompileAction ()
 caWriteGrin debug fn = harden_ $ do -- bug: when writePP throws an exeption harden will block it
-    { when debug (gets (optDebug . gcsOpts) >>= guard)
+    { when debug (gets (grincOptDebug . gcsOpts) >>= guard)
     ; input <- gets gcsPath
     ; let prefix     = if debug then "debug." else ""
           fileName   = prefix ++ if null fn then fpathBase input ++ "-out" else fn
@@ -389,7 +389,7 @@ caAnalyse = task_ VerboseNormal "Analysing"
          ; caRightSkew
          ; high <- gets gcsUnique
          ; caHeapPointsTo (3,high-1)
-         ; debugging <- gets (optDebug . gcsOpts)
+         ; debugging <- gets (grincOptDebug . gcsOpts)
          ; when debugging (do { ((env, heap),_) <- gets gcsHptMap
                               ; vm    <- gets gcsOrigNms
                               ; let newVar i = show (i, getName vm i)
@@ -450,14 +450,14 @@ caFinalize = task_ VerboseNormal "Finalizing"
 
 -- write final code
 caOutput = task_ VerboseNormal "Writing code"
-    ( do { outputGrin <- gets (optWriteGrin . gcsOpts)
+    ( do { outputGrin <- gets (grincOptDumpTrfGrin . gcsOpts)
          ; maybe (return ()) (caWriteGrin False) outputGrin
          ; caWriteCmm
          }
     )
 
 printArray s f g a = harden_ $ do
-    { isDebugging <- gets (optDebug . gcsOpts)
+    { isDebugging <- gets (grincOptDebug . gcsOpts)
     ; guard isDebugging
     ; putDebugMsg s 
     ; mapM_ (\(k, v) -> putDebugMsg ("  " ++ f k ++ " = " ++ show (g v))) (assocs a)
@@ -476,7 +476,7 @@ data GRINCompileState = GRINCompileState
     , gcsMbOrigNms :: Maybe IdentNameMap
     , gcsMbHptMap  :: Maybe HptMap
 	, gcsPath      :: FPath
-	, gcsOpts      :: Opts
+	, gcsOpts      :: GRINCOpts
     , gcsMsgInfo   :: (Int, Bool)
 	}
 
@@ -538,7 +538,7 @@ putLn = putStrLn ""
  
 putDebugMsg :: String -> CompileAction ()
 putDebugMsg msg = harden_ $ do
-    { isDebugging <- gets (optDebug . gcsOpts)
+    { isDebugging <- gets (grincOptDebug . gcsOpts)
     ; guard isDebugging
     ; (indent, first) <- gets gcsMsgInfo
     ; when first (liftIO putLn >> modify (\s -> s { gcsMsgInfo = (indent, False) }))
@@ -547,7 +547,7 @@ putDebugMsg msg = harden_ $ do
 
 putMsg :: Verbosity -> String -> (Maybe String) -> CompileAction ()
 putMsg minVerbosity msg mbMsg =  harden_ $ do
-    currentVerbosity <- gets (optVerbosity . gcsOpts)
+    currentVerbosity <- gets (grincOptVerbosity . gcsOpts)
     guard (currentVerbosity >= minVerbosity)
     (indent, first) <- gets gcsMsgInfo
     when first (liftIO putLn)
@@ -569,7 +569,7 @@ task minVerbosity taskDesc ca f = do
     where
     startMsg :: Verbosity -> String -> CompileAction ()
     startMsg minVerbosity msg =  harden_ $ do
-        currentVerbosity <- gets (optVerbosity . gcsOpts)
+        currentVerbosity <- gets (grincOptVerbosity . gcsOpts)
         guard (currentVerbosity >= minVerbosity)
         (indent, first) <- gets gcsMsgInfo
         when first (liftIO putLn)
@@ -579,10 +579,10 @@ task minVerbosity taskDesc ca f = do
     
     finishMsg :: Verbosity -> Maybe String -> Integer -> CompileAction ()
     finishMsg minVerbosity mbMsg cpuUsage =  harden_ $ do
-        { currentVerbosity <- gets (optVerbosity . gcsOpts)
+        { currentVerbosity <- gets (grincOptVerbosity . gcsOpts)
         ; guard (currentVerbosity >= minVerbosity)
         ; (oldIndent, first) <- gets gcsMsgInfo
-        ; doTiming <- gets (optTimeCompile . gcsOpts)
+        ; doTiming <- gets (grincOptTimeCompile . gcsOpts)
         ; let indent       =  oldIndent - 4
               timeMsgOld   =  show (cpuUsage `div` fst cpuUsageInfo) ++ " " ++ snd cpuUsageInfo
               timeMsg      =  showFFloat (Just 2) (fromInteger cpuUsage / 1000000000000) " seconds"
