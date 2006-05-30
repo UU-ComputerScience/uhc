@@ -185,12 +185,12 @@ TEXT_ALL_DPD				:= $(TEXT_MAIN_DRV_TEX) $(TEXT_SUBS_DRV_TEX) $(TEXT_MAIN_DRV_STY
 # all shuffle included material
 TEXT_SUBS_SHUFFLE1			:= $(TEXT_SUBS_SRC_CLTEX) $(TEXT_RULES_3_DRV_CAG) $(RULER2_ALL_CHUNK_SRC) $(AGPRIMER_ALL_CHUNK_SRC) $(TEXT_RULES_EXPLAIN_3_DRV_CAG) \
 								$(TEXT_INF2PS_SRC_CRUL) $(TEXT_RULEX_SRC_CRUL) $(TEXT_MAIN_SRC_CLSTY)
-TEXT_SUBS_SHUFFLE2			:= $(EHC_ALL_CHUNK_SRC)
-TEXT_SUBS_SHUFFLE			:= $(TEXT_SUBS_SHUFFLE1) $(TEXT_SUBS_SHUFFLE2)
+TEXT_SUBS_SHUFFLE_SRCS		:= $(if $(TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC),$(EHC_ALL_CHUNK_SRC))
+TEXT_SUBS_SHUFFLE			:= $(TEXT_SUBS_SHUFFLE1) $(TEXT_SUBS_SHUFFLE_SRCS)
 TEXT_SUBS_SHUFFLE_ALIAS		:= $(TEXT_SUBS_SHUFFLE1) \
 								$(patsubst EHEH%,EH%,\
-									$(join $(patsubst %,EH%=,$(basename $(subst /,$(empty),$(patsubst $(SRC_EHC_PREFIX)%,%,$(TEXT_SUBS_SHUFFLE2))))), \
-									       $(TEXT_SUBS_SHUFFLE2) \
+									$(join $(patsubst %,EH%=,$(basename $(subst /,$(empty),$(patsubst $(SRC_EHC_PREFIX)%,%,$(TEXT_SUBS_SHUFFLE_SRCS))))), \
+									       $(TEXT_SUBS_SHUFFLE_SRCS) \
 									))
 
 # distribution
@@ -206,37 +206,37 @@ $(TEXT_VARIANTS) : % : $(DOC_PREFIX)%.pdf
 
 # rules
 text-variant-ehc-book:
-	$(MAKE) TEXT_RULER_MARK_CHANGES_CFG= RULER2_DEMO_MARK_CHANGES_CFG=  \
+	$(MAKE) TEXT_RULER_MARK_CHANGES_CFG= RULER2_DEMO_MARK_CHANGES_CFG= TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyEhcBook --unset=asArticle --set=refToPDF --set=useHyperref --set=targetForPaper" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
 
 text-variant-ehc-book-tst:
-	$(MAKE) TEXT_RULER_MARK_CHANGES_CFG= RULER2_DEMO_MARK_CHANGES_CFG=  \
+	$(MAKE) TEXT_RULER_MARK_CHANGES_CFG= RULER2_DEMO_MARK_CHANGES_CFG= TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyEhcBook --unset=asArticle --set=refToPDF --set=useHyperref --set=targetForPaper" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-once
 
 text-variant-phd:
-	$(MAKE) \
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
 
 text-variant-phd-paper:
-	$(MAKE) TEXT_RULER_MARK_CHANGES_CFG= RULER2_DEMO_MARK_CHANGES_CFG= \
+	$(MAKE) TEXT_RULER_MARK_CHANGES_CFG= RULER2_DEMO_MARK_CHANGES_CFG= TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=targetForPaper" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
 
 text-variant-phd-tst:
-	$(MAKE) \
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=asDraft" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-once
 
 text-variant-phd-draft:
-	$(MAKE) \
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=asDraft" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
@@ -278,13 +278,13 @@ text-variant-truu-explimpl:
 	  text-variant-dflt-bib
 
 text-variant-hw06-impred:
-	$(MAKE) TEXT_INF2PS_MARK_CHANGES_CFG= TEXT_RULER_MARK_CHANGES_CFG= \
+	$(MAKE) TEXT_INF2PS_MARK_CHANGES_CFG= TEXT_RULER_MARK_CHANGES_CFG= TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=hw06 --set=acm --set=kscode --set=limitSize --set=infer2pass --set=storyImpred --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=5 \
 	  text-variant-dflt-bib
 
 text-variant-scratch:
-	$(MAKE) \
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyPHD --unset=asArticle --set=useHyperref --set=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=7 \
 	  text-variant-dflt-once

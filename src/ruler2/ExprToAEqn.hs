@@ -99,7 +99,7 @@ exprMbAEqnRest expr
                       (    'l':'o':'c':'.':nm)  -> Just (ANm_Loc  (Nm nm) props)
                       ('@':'l':'h':'s':'.':nm)  -> Just (ANm_Lhs  (Nm nm) [])
                       (    'l':'h':'s':'.':nm)  -> Just (ANm_Lhs  (Nm nm) [])
-                      s | s == strVec           -> Just (ANm_Wild)
+                      s | s == strUnd           -> Just (ANm_Wild)
                         | otherwise             -> Nothing
         gu = fmGamUnion
         gs n e = fmGamFromList' FmAG [(n,e)]

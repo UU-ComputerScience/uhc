@@ -30,8 +30,8 @@ main :: IO ()
 main
   =  do  {  args <- getArgs
          ;  let  oo@(o,n,errs)  = getOpt Permute cmdLineOpts args
-                 opts           = foldr ($) defaultOpts o
-         ;  if optHelp opts
+                 opts           = foldr ($) defaultGRINCOpts o
+         ;  if grincOptHelp opts
             then  putStrLn (usageInfo "Usage: grinc [options] [file]\n\noptions:" cmdLineOpts)
             else  if null errs
                   then  doCompileGrin (Left (if null n then "" else head n)) opts

@@ -354,7 +354,9 @@ EHC_AG_ALL_MAIN_DRV_HS					:= $(EHC_AG_D_MAIN_DRV_HS) $(EHC_AG_S_MAIN_DRV_HS) $(
 EHC_AG_ALL_DPDS_DRV_AG					:= $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_AG_ALL_DPDS_SRC_CAG))
 
 # lib installed ag
-INS_EHC_LIB_ALL_AG						:= $(patsubst %,$(INS_EHC_LIB_AG_PREFIX)%.ag,HS/AbsSyn EH/AbsSyn Ty/AbsSyn GrinCode/AbsSyn)
+INS_EHC_LIB_ALL_AG_NAMES				:= HS/AbsSyn EH/AbsSyn Ty/AbsSyn GrinCode/AbsSyn
+INS_EHC_LIB_ALL_AG						:= $(patsubst %,$(INS_EHC_LIB_AG_PREFIX)%.ag,$(INS_EHC_LIB_ALL_AG_NAMES))
+INSABS_EHC_LIB_ALL_AG					:= $(patsubst %,$(INSABS_EHC_LIB_AG_PREFIX)%.ag,$(INS_EHC_LIB_ALL_AG_NAMES))
 
 # all dependents for a variant to kick of building
 EHC_ALL_DPDS							:= $(EHC_HS_ALL_DRV_HS) $(EHC_AG_ALL_MAIN_DRV_HS)
@@ -395,12 +397,12 @@ $(LIB_EHC_SETUP2): $(LIB_EHC_SETUP_HS_DRV)
 $(LIB_EHC_INS_FLAG): $(LIB_EHC_CABAL_DRV) $(LIB_EHC_SETUP2) $(INS_EHC_LIB_ALL_AG) $(EHC_MKF)
 	mkdir -p $(@D)
 	cd $(EHC_BLD_LIBEHC_VARIANT_PREFIX) && \
-	$(LIB_EHC_SETUP) configure --prefix=$(INS_PREFIX) --user && \
+	$(LIB_EHC_SETUP) configure --prefix=$(INSABS_PREFIX) --user && \
 	$(LIB_EHC_SETUP) build && \
 	$(LIB_EHC_SETUP) install --user && \
 	echo $@ > $@
 
-$(INS_EHC_LIB_ALL_AG): $(INS_EHC_LIB_AG_PREFIX)%: $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%
+$(INSABS_EHC_LIB_ALL_AG): $(INSABS_EHC_LIB_AG_PREFIX)%: $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%
 	mkdir -p $(@D)
 	cp $< $@
 

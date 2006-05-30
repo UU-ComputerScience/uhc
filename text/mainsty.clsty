@@ -490,12 +490,17 @@ Chapter~\myRef{#1}%
 % theorem env: example
 %if not asSlides
 %if asArticle
-\newtheorem{Example}{Example}
+\newtheorem{ExampleEnv}{Example}
 %else
-\newtheorem{Example}{Example}[chapter]
+\newtheorem{ExampleEnv}{Example}[chapter]
 %endif
-\newtheorem{Theorem}[Example]{Theorem}
-\newtheorem{Definition}[Example]{Definition}
+\newtheorem{Theorem}[ExampleEnv]{Theorem}
+\newtheorem{Definition}[ExampleEnv]{Definition}
+\newenvironment{Example}[1]{%
+\begin{ExampleEnv}\ \label{#1}
+}{%
+\end{ExampleEnv}
+}
 %endif
 
 %% overlay (to be sorted out, these are just placeholders)

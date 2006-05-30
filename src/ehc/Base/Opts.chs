@@ -68,47 +68,59 @@ trfOptOverrides opts trf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.EHCOpts
-data EHCOpts    = EHCOptions    {  ehcoptDumpPP         ::  Maybe String
-                                ,  ehcoptShowTopTyPP    ::  Bool
-                                ,  ehcoptHelp           ::  Bool
-                                ,  ehcoptVersion        ::  Bool
-                                ,  ehcoptDebug          ::  Bool
+data EHCOpts
+  = EHCOpts
+      {  ehcOptDumpPP         ::  Maybe String
+      ,  ehcOptShowTopTyPP    ::  Bool
+      ,  ehcOptHelp           ::  Bool
+      ,  ehcOptVersion        ::  Bool
+      ,  ehcOptDebug          ::  Bool
 %%]
 %%[8.EHCOpts
-                                ,  ehcoptCore           ::  Bool
-                                ,  ehcoptCoreJava       ::  Bool
-                                ,  ehcoptCoreGrin       ::  Bool
-                                ,  ehcoptSearchPath     ::  [String]
-                                ,  ehcoptVerbosity      ::  Verbosity
-                                ,  ehcoptTrf            ::  [TrfOpt]
+      ,  ehcOptDumpCallGraph  ::  Bool
+      ,  ehcOptDumpTrfGrin    ::  Maybe String
+      ,  ehcOptTimeCompile    ::  Bool
+      ,  ehcOptGenTrace       ::  Bool
+      ,  ehcOptCore           ::  Bool
+      ,  ehcOptCoreJava       ::  Bool
+      ,  ehcOptCoreGrin       ::  Bool
+      ,  ehcOptSearchPath     ::  [String]
+      ,  ehcOptVerbosity      ::  Verbosity
+      ,  ehcOptTrf            ::  [TrfOpt]
 %%]
 %%[9.EHCOpts
-                                ,  ehcoptPrfCutOffAt    ::  Int
+      ,  ehcOptPrfCutOffAt    ::  Int
 %%]
 %%[1
-                                }
+      }
 %%]
 
 %%[1.defaultEHCOpts
-defaultEHCOpts  = EHCOptions    {  ehcoptDumpPP         =   Just "pp"
-                                ,  ehcoptShowTopTyPP    =   False
-                                ,  ehcoptHelp           =   False
-                                ,  ehcoptVersion        =   False
-                                ,  ehcoptDebug          =   False
+defaultEHCOpts
+  = EHCOpts
+      {  ehcOptDumpPP         =   Just "pp"
+      ,  ehcOptShowTopTyPP    =   False
+      ,  ehcOptHelp           =   False
+      ,  ehcOptVersion        =   False
+      ,  ehcOptDebug          =   False
 %%]
 %%[8.defaultEHCOpts
-                                ,  ehcoptCore           =   True
-                                ,  ehcoptCoreJava       =   False
-                                ,  ehcoptCoreGrin       =   False
-                                ,  ehcoptSearchPath     =   []
-                                ,  ehcoptVerbosity      =   VerboseQuiet
-                                ,  ehcoptTrf            =   []
+      ,  ehcOptDumpCallGraph  =   False
+      ,  ehcOptDumpTrfGrin    =   Nothing
+      ,  ehcOptTimeCompile    =   False
+      ,  ehcOptGenTrace       =   False
+      ,  ehcOptCore           =   True
+      ,  ehcOptCoreJava       =   False
+      ,  ehcOptCoreGrin       =   False
+      ,  ehcOptSearchPath     =   []
+      ,  ehcOptVerbosity      =   VerboseQuiet
+      ,  ehcOptTrf            =   []
 %%]
 %%[9.defaultEHCOpts
-                                ,  ehcoptPrfCutOffAt    =   20
+      ,  ehcOptPrfCutOffAt    =   20
 %%]
 %%[1
-                                }
+      }
 %%]
 
 %%[1.ehcCmdLineOptsA
@@ -127,8 +139,16 @@ ehcCmdLineOpts
 %%[8.ehcCmdLineOptsA
      ,  Option "c"  ["code"]          (OptArg oCode "java|grin")
           "dump code (java- > .java, grin -> .grin + .cmm, - -> none) on file, default=core (-> .core)"
+     ,  Option ""   ["gen-trace"]     (NoArg oGenTrace)
+          "emit trace info into C-- code (grin only)"
      ,  Option ""   ["trf"]           (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
           "switch on/off transformations"
+     ,  Option ""   ["time-compilation"]  (NoArg oTimeCompile)
+          "show CPU usage for each compilation phase (grin only, with -v2)"
+     ,  Option ""   ["dump-call-graph"]   (NoArg oDumpCallGraph)
+          "dump call graph as dot file (grin only)"
+     ,  Option ""   ["dump-trf-grin"]     (OptArg oDumpTrfGrin "basename")
+          "dump grin code after transformation (grin only)"
      ,  Option "v"  ["verbose"]       (OptArg oVerbose "0|1|2")
           "be verbose, 0=quiet 1=normal 2=noisy, default=1"
 %%]
@@ -137,24 +157,28 @@ ehcCmdLineOpts
 %%]
 %%[1.ehcCmdLineOptsB
   where  oPretty     ms  o =  case ms of
-                                Just "no"   -> o { ehcoptDumpPP        = Nothing   }
-                                Just "off"  -> o { ehcoptDumpPP        = Nothing   }
-                                Just p      -> o { ehcoptDumpPP        = Just p    }
+                                Just "no"   -> o { ehcOptDumpPP        = Nothing   }
+                                Just "off"  -> o { ehcOptDumpPP        = Nothing   }
+                                Just p      -> o { ehcOptDumpPP        = Just p    }
                                 _           -> o
          oShowTopTy  ms  o =  case ms of
-                                Just "yes"  -> o { ehcoptShowTopTyPP   = True      }
+                                Just "yes"  -> o { ehcOptShowTopTyPP   = True      }
                                 _           -> o
-         oHelp           o =  o { ehcoptHelp          = True    }
-         oVersion        o =  o { ehcoptVersion       = True    }
-         oDebug          o =  (oPretty (Just "ast") o) { ehcoptDebug         = True    }
+         oHelp           o =  o { ehcOptHelp          = True    }
+         oVersion        o =  o { ehcOptVersion       = True    }
+         oDebug          o =  (oPretty (Just "ast") o) { ehcOptDebug         = True    }
 %%]
 %%[8.ehcCmdLineOptsB
+         oTimeCompile    o =  o { ehcOptTimeCompile       = True    }
+         oGenTrace       o =  o { ehcOptGenTrace          = True    }
+         oDumpTrfGrin ms o =  o { ehcOptDumpTrfGrin       = maybe (Just "") (const ms) ms }
+         oDumpCallGraph  o =  o { ehcOptDumpCallGraph     = True }
          oCode       ms  o =  case ms of
-                                Just "java"  -> o { ehcoptCoreJava     = True      }
-                                Just "grin"  -> o { ehcoptCoreGrin     = True      }
-                                Just "-"     -> o { ehcoptCore         = False     }
-                                _            -> o { ehcoptCore         = True      }
-         oTrf        s   o =  o { ehcoptTrf           = opt s   }
+                                Just "java"  -> o { ehcOptCoreJava     = True      }
+                                Just "grin"  -> o { ehcOptCoreGrin     = True      }
+                                Just "-"     -> o { ehcOptCore         = False     }
+                                _            -> o { ehcOptCore         = True      }
+         oTrf        s   o =  o { ehcOptTrf           = opt s   }
                            where  opt "" =  []
                                   opt o  =  let  (pm,o2) = span (\c -> c == '+' || c == '-') o
                                                  (tr,o3) = span isAlpha o2
@@ -166,10 +190,10 @@ ehcCmdLineOpts
                                                    ("-",_)    -> [TrfAllNo]
                                                    _          -> []
          oVerbose    ms  o =  case ms of
-                                Just "0"    -> o { ehcoptVerbosity     = VerboseQuiet       }
-                                Just "1"    -> o { ehcoptVerbosity     = VerboseNormal      }
-                                Just "2"    -> o { ehcoptVerbosity     = VerboseALot        }
-                                Nothing     -> o { ehcoptVerbosity     = VerboseNormal      }
+                                Just "0"    -> o { ehcOptVerbosity     = VerboseQuiet       }
+                                Just "1"    -> o { ehcOptVerbosity     = VerboseNormal      }
+                                Just "2"    -> o { ehcOptVerbosity     = VerboseALot        }
+                                Nothing     -> o { ehcOptVerbosity     = VerboseNormal      }
                                 _           -> o
 %%]
 

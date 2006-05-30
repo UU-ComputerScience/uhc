@@ -9,8 +9,9 @@ BINABS_PREFIX		:= $(TOPABS_PREFIX)bin/
 LIB_PREFIX			:= $(TOP_PREFIX)lib/
 
 # location for cabal installed stuff (mainly libraries)
-INS_PREFIX			:= $(TOPABS_PREFIX)install/
-INS_FLAG_PREFIX		:= $(INS_PREFIX)ins-flg-
+INS_PREFIX			:= $(TOP_PREFIX)install/
+INSABS_PREFIX		:= $(TOPABS_PREFIX)install/
+INSABS_FLAG_PREFIX	:= $(INSABS_PREFIX)ins-flg-
 
 # location building
 BLD_PREFIX			:= $(TOP_PREFIX)build/

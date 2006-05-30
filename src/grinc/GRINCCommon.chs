@@ -7,7 +7,7 @@
 %%% Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{GRIN}GRINCCommon} import(System.Console.GetOpt,{%{EH}Base.Common}, qualified Data.Map as Map, qualified Data.Set as Set) export(Opts(..), defaultOpts, cmdLineOpts)
+%%[8 module {%{GRIN}GRINCCommon} import(System.Console.GetOpt,{%{EH}Base.Common}, qualified Data.Map as Map, qualified Data.Set as Set) export(GRINCOpts(..), defaultGRINCOpts, cmdLineOpts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -15,27 +15,31 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-data Opts  = Options  {  optHelp            ::  Bool
-                      ,  optDebug           ::  Bool
-                      ,  optTrace           ::  Bool
-                      ,  optTimeCompile     ::  Bool
-                      ,  optWriteCallGraph  ::  Bool
-                      ,  optWriteGrin       ::  Maybe String
-                      ,  optSearchPath      ::  [String]
-                      ,  optVerbosity       ::  Verbosity
-                      }
+data GRINCOpts
+  = GRINCOpts
+      {  grincOptHelp            ::  Bool
+      ,  grincOptDebug           ::  Bool
+      ,  grincOptGenTrace        ::  Bool
+      ,  grincOptTimeCompile     ::  Bool
+      ,  grincOptDumpCallGraph   ::  Bool
+      ,  grincOptDumpTrfGrin     ::  Maybe String
+      ,  grincOptSearchPath      ::  [String]
+      ,  grincOptVerbosity       ::  Verbosity
+      }
 %%]
 
 %%[8
-defaultOpts  = Options  {  optHelp            =   False
-                        ,  optDebug           =   False
-                        ,  optTrace           =   False
-                        ,  optTimeCompile     =   False
-                        ,  optWriteCallGraph  =   False
-                        ,  optWriteGrin       =   Nothing
-                        ,  optSearchPath      =   []
-                        ,  optVerbosity       =   VerboseQuiet
-                        }
+defaultGRINCOpts
+  = GRINCOpts
+      {  grincOptHelp            =   False
+      ,  grincOptDebug           =   False
+      ,  grincOptGenTrace        =   False
+      ,  grincOptTimeCompile     =   False
+      ,  grincOptDumpCallGraph   =   False
+      ,  grincOptDumpTrfGrin     =   Nothing
+      ,  grincOptSearchPath      =   []
+      ,  grincOptVerbosity       =   VerboseQuiet
+      }
 %%]
 
 %%[8
@@ -48,25 +52,25 @@ cmdLineOpts
           "Write call graph as dot file"
      ,  Option "g"  ["write-grin"]        (OptArg oGrin "BASENAME")
           "Write grin code after transformation"
-     ,  Option "t"  ["trace"]             (NoArg oTrace)
+     ,  Option "t"  ["trace"]             (NoArg oGenTrace)
           "Emit trace info into C-- code"
      ,  Option "T"  ["time-compilation"]  (NoArg oTimeCompile)
           "Show CPU usage for each compilation phase"
      ,  Option "v"  ["verbose"]           (OptArg oVerbose "0|1|2")
           "be verbose, 0=quiet 1=normal 2=noisy, default=1"
      ]
-  where  oHelp           o =  o { optHelp          = True    }
-         oDebug          o =  o { optDebug         = True    }
+  where  oHelp           o =  o { grincOptHelp          = True    }
+         oDebug          o =  o { grincOptDebug         = True    }
          oVerbose    ms  o =  case ms of
-                                Just "0"    -> o { optVerbosity     = VerboseQuiet       }
-                                Just "1"    -> o { optVerbosity     = VerboseNormal      }
-                                Just "2"    -> o { optVerbosity     = VerboseALot        }
-                                Nothing     -> o { optVerbosity     = VerboseNormal      }
+                                Just "0"    -> o { grincOptVerbosity     = VerboseQuiet       }
+                                Just "1"    -> o { grincOptVerbosity     = VerboseNormal      }
+                                Just "2"    -> o { grincOptVerbosity     = VerboseALot        }
+                                Nothing     -> o { grincOptVerbosity     = VerboseNormal      }
                                 _           -> o
-         oGrin       ms  o = o { optWriteGrin       = maybe (Just "") (const ms) ms }
-         oTrace          o = o { optTrace           = True }
-         oTimeCompile    o = o { optTimeCompile     = True }
-         oWriteCallGraph o = o { optWriteCallGraph  = True }
+         oGrin       ms  o = o { grincOptDumpTrfGrin     = maybe (Just "") (const ms) ms }
+         oGenTrace       o = o { grincOptGenTrace        = True }
+         oTimeCompile    o = o { grincOptTimeCompile     = True }
+         oWriteCallGraph o = o { grincOptDumpCallGraph   = True }
 %%]
 
 %%[8 export(wildcardNm, wildcardNr, evalNm, evalNr,  applyNm, applyNr, isSpecialBind, getNr, throwTag, blackholeTag)
