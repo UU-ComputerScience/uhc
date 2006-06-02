@@ -59,7 +59,8 @@
 %format ^ 			= " "
 %format ^^ 			= "\;"
 
-%format (Vec(x))    = "\overline{" x "}"
+%format (Overl(x))    	= "\overline{" x "}"
+%format (Vec(x))    	= "\overline{" x "}"
 %format (VecI(x)(i))    = x "^{\{" i "\}}"
 
 %format (Dot(x)(y)(z))	= "{" x "}_{" y "}^{" z "}"
@@ -230,6 +231,7 @@
 %format <:   			= "\leftsquigarrow "
 %endif
 
+%format cdot			= "{\cdot}"
 %format downarrow		= "{\downarrow}"
 %format uparrow			= "{\uparrow}"
 %format updownarrow		= "{\updownarrow}"
@@ -375,6 +377,8 @@
 %format node1
 %format node2
 
+%% acronyms
+%format MLF				= "\textsf{ML}^{\textsf{F}}"
 
 %elif style == newcode
 %format ^ =

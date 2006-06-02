@@ -141,7 +141,8 @@ SEM Expr
 %%[5.App
 SEM Expr
   | App AppImpred
-                loc         .   knFunTy             =   [Ty_Any] `mkArrow` @lhs.knTy
+                loc         .   argTy               =   Ty_Any
+                            .   knFunTy             =   [@argTy] `mkArrow` @lhs.knTy
                 func        .   knTy                =   @knFunTy
                 (arg.knTy,loc.ty_)                  =   tyArrowArgRes @func.ty
                 loc         .   ty                  =   @ty_
@@ -151,8 +152,9 @@ SEM Expr
 %%[5.App
 SEM Expr
   | App AppImpred
-                loc         .   knFunTy             :=  [mkNewTyVar @lUniq] `mkArrow` @lhs.knTy
+                loc         .   argTy               :=  mkNewTyVar @lUniq
                             .   ty                  :=  @arg.tyCnstr |=> @ty_
+                arg         .   knTy                :=  @argTy
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.App

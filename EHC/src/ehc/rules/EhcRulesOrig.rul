@@ -2744,7 +2744,8 @@ relation fioptSwapMeetJoin =
   view I2 =
     holes [ fiopt: FIOpts | | fiopt.s: FIOpts ]
     judgespec fiopt.s === fiopt
-    judgeuse tex fiopt.s === (text "toggle") ^^ fioMeetY (text "and") ^^ fioJoinY (text "in") ^^ fiopt
+    -- judgeuse tex fiopt.s === (text "toggle") ^^ fioMeetY (text "and") ^^ fioJoinY (text "in") ^^ fiopt
+    judgeuse tex fiopt.s === if ^^ fiopt `=` fioMeetY ^^ then ^^ fioJoinY ^^ else ^^ fioMeetY
 
 relation fioptMkNeed =
   view I2 =

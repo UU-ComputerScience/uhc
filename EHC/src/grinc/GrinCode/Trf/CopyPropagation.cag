@@ -119,13 +119,28 @@ Note: variables are never wildcards - so it does not matter that we store them i
 
 %%[8 hs import(qualified Data.Map as Map)
 type ValueMap = (Map.Map HsName GrVal, Map.Map HsName GrTag)
+
+emptyValueMap :: ValueMap
+emptyValueMap = (Map.empty, Map.empty)
 %%]
 
 %%[8.leftUnit
 ATTR AllExpr [ valueMap: ValueMap | | ]
 
 SEM GrBind
-  | Bind  expr  .  valueMap  =  (Map.empty, Map.empty)
+  | Bind  expr  .  valueMap  =  emptyValueMap
+%%]
+
+-- AD 20060530: avoid AGC error msg
+%%[8
+SEM GrAdapt
+  | *		loc		.	valueMap	=	emptyValueMap
+
+SEM GrSplit
+  | *		loc		.	valueMap	=	emptyValueMap
+
+SEM GrGlobal
+  | *		loc		.	valueMap	=	emptyValueMap
 %%]
 
 remember to update tagMap when mapping a node without fields on a value. Because: a GrVal_Tag t == GrVal_Node t []

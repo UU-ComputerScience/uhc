@@ -48,7 +48,10 @@ include $(SRC_PREFIX)agprimer/files.mk
 -include $(SRC_PREFIX)infer2pass/variant.mk
 -include $(SRC_PREFIX)infer2pass/files.mk
 -include figs/files.mk
--include text/files.mk
+-include text/files1.mk
+-include $(wildcard text/files1-*.mk)
+-include text/files2.mk
+-include $(wildcard text/files2-*.mk)
 -include www/files.mk
 include test/files.mk
 

@@ -69,14 +69,18 @@ SEM Expr
   | Let  lhs  .   pp   =   "let"     >#< pp @i
                            >#< (   "::"  >#< show @pty_e_
                                >-< "="   >#< @e.pp
+                               >-< mkErr @mtErrs
                                )
                            >-< "in " >#< @b.pp
 %%]
 
 %%[2
 SEM Expr
-  | TLet lhs  .   pp   =   "let"     >#< pp @i
-                           >#< (   "::"  >#< @te.pp
+  | Let  loc  .   ppTy =   show @pty_e_
+  | TLet loc  .   ppTy =   @te.pp
+  | Let TLet
+         lhs  .   pp   :=  "let"     >#< pp @i
+                           >#< (   "::"  >#< @ppTy
                                >-< "="   >#< @e.pp
                                )
                            >-< "in " >#< @b.pp

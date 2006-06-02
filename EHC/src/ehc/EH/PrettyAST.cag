@@ -207,9 +207,14 @@ SEM Expr
                                         ]
   | Con         loc     .  info_4   :=  [ mkInfo1 "foCnstr" (pp (foCnstr @fo_))
                                         ]
-  | AppImpred   lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","AppImpred"] [] [@func.ppAST,@arg.ppAST] @info_4
-                loc     .  info_4   =   [ 
+  | AppImpred   lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","AppImpred"] [] [@func.ppAST,@arg.ppAST] (@info_2 ++ @info_4_2 ++ @info_9)
+                loc     .  info_2   =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
+                                        , mkInfo1 "knTy+lhs.cnstr" (ppTy (@lhs.tyCnstr |=> @lhs.knTy))
+                                        , mkInfo1 "func.ty" (ppTy @func.ty)
+                                        , mkInfo1 "ty" (ppTy @ty)
                                         ]
+                        .  info_4_2 =   []
+                        .  info_9   =   []
 
 SEM PatExpr
   | TypeAs      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","TypeAs"] [] [@patExpr.ppAST,@tyExpr.ppAST] @info
@@ -242,7 +247,8 @@ SEM Expr
                                         , mkInfo1 "imprTyCnstr_elim_" (ppCnstrV @imprTyCnstr_elim_)
                                         , mkInfo1 "quValGam_ex_" (ppGam (@quValGam_ex_))
                                         ]
-  | App         loc     .  info_4_2 :=  [ mkInfo1 "arg.imprTy" (ppTy @arg.imprTy)
+  | App AppImpred
+                loc     .  info_4_2 :=  [ mkInfo1 "arg.imprTy" (ppTy @arg.imprTy)
                                         , mkInfo1 "func.imprTy" (ppTy @func.imprTy)
                                         , mkInfo1 "foTy fo_fitA_ (arg)" (ppTy (foTy @fo_fitA_))
                                         , mkInfo1 "foTy fo_fitF_ (fun)" (ppTy (foTy @fo_fitF_))
