@@ -6,7 +6,8 @@ for i in $*
 do
   if test -s "$i"
   then
-    if test `wc -c < $i` -gt 75
+    #if test `wc -c < $i` -gt 75
+    if grep --quiet '^module' $i
     then
       f="$f $i"
     fi

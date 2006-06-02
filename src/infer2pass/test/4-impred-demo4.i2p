@@ -9,5 +9,4 @@ let  id  =   \x -> x
                        ;  x2  =  g2 h
                        ;  h1  =  h id
                      in   h1
-  ;  v   =   f (\i -> i 3)
-in   v
+in   f (\i -> i 3)

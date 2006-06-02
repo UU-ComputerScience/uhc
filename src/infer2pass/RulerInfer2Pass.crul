@@ -181,6 +181,7 @@ rulesgroup expr.forPaper scheme expr "Expression type rules" =
   rule expr.base e.app
   rule expr.base e.lam
   rule expr.base e.let
+  rule expr.base e.tlet
 
 ruleset expr.base scheme expr  "Expression type rules" =
   rule e.int =
@@ -331,18 +332,21 @@ ruleset expr.hm scheme expr.hm  "Expression type rules for Hindley-Milner" =
     view HM =
       judge V : tvFresh = (cnstr..k valGam) :- tvarv
       judge D : expr.hm = cnstr..k ; ((i :-> tvarv) , valGam) :- e : ty.e ~> cnstr.e
-      judge B : expr.hm = cnstr.e ; ((i :-> pty.e), valGam) :- b : ty.b ~> cnstr.b
-      judge G : tyGen = pty.e `=` ty.e \\ (cnstr.e valGam)
+      judge B : expr.hm = (cnstr cnstr.e) ; ((i :-> pty.e), valGam) :- b : ty.b ~> cnstr.b
+      judge M : match    =  :- (cnstr.e tvarv) <=> ty.e ~> cnstr
+      judge G : tyGen = pty.e `=` ty.e \\ (cnstr cnstr.e valGam)
       ---
       judge R : expr.hm = cnstr..k ; valGam :- (let i `=` e in b) : ty.b ~> cnstr.b
     view I1 =
       judge G : tyGen
           | ty = cnstr.e tvarv
+          | valGam = cnstr.e valGam
       -- judge D : expr.hm
       --     | cnstr.inh = knCnstr.e cnstr..k
       judge B : expr.hm
           | cnstr.inh = (tvarv ::-> pty.e) cnstr.e
           | valGam = (i :-> tvarv), valGam
+      judge - M
       ---
       judge R : expr.hm
           | ty = knTy
@@ -468,9 +472,9 @@ ruleset expr.kn scheme expr.kn viewsel I1 - * "Expression quantifier propagation
       judge B : expr.kn
           | ity = ity.b
           | knCnstr.inh = knCnstr.F knCnstr..k
-      judge ftvG : valGamFtv = tvarv.g..> === valGam
-      judge elimK : tyAltTyElim = meetFIOpts ; knCnstr..k ; tvarv.g..> :- knTy : pty.e.k ~> _ ~> fo.elimK
-      judge elimA : tyAltTyElim = meetFIOpts ; knCnstr.b ; tvarv.g..> :- tvarv : _ ~> knCnstr.A ~> fo.elimA
+      judge ftvG : valGamFtv = tvarv.g.._ === valGam
+      judge elimK : tyAltTyElim = meetFIOpts ; knCnstr..k ; tvarv.g.._ :- knTy : pty.e.k ~> _ ~> fo.elimK
+      judge elimA : tyAltTyElim = meetFIOpts ; knCnstr.b ; tvarv.g.._ :- tvarv : _ ~> knCnstr.A ~> fo.elimA
       ---
       judge R : expr.kn
           | ity = tvarv -> ity.b
@@ -736,21 +740,24 @@ relation tvFresh =
   view HM =
     holes [ notFreeInGam: ValGam | | tvarv: Ty ]
     judgespec notFreeInGam :- tvarv
-    judgeuse tex tvarv `notElem` ftv(notFreeInGam)
+    -- judgeuse tex tvarv `notElem` ftv(notFreeInGam)
+    judgeuse tex tvarv (text "fresh")
     judgeuse ag tvarv `=` Ty_Var unique
 
 relation tvFreshTyGam =
   view HM =
     holes [ notFreeInGam: Gam | | tvarv: Ty ]
     judgespec notFreeInGam :- tvarv
-    judgeuse tex tvarv `notElem` ftv(notFreeInGam)
+    -- judgeuse tex tvarv `notElem` ftv(notFreeInGam)
+    judgeuse tex tvarv (text "fresh")
     judgeuse ag tvarv `=` Ty_Var unique
 
 relation tvFresh2 =
   view I1 =
     holes [ notFreeInGam: ValGam | | tvarv.1: Ty, tvarv.2: Ty ]
     judgespec notFreeInGam :- tvarv.1, tvarv.2
-    judgeuse tex tvarv.1, tvarv.2 `notElem` ftv(notFreeInGam)
+    -- judgeuse tex tvarv.1, tvarv.2 `notElem` ftv(notFreeInGam)
+    judgeuse tex tvarv.1, tvarv.2 (text "fresh")
     judgeuse ag tvarv.1 `=` Ty_Var unique
               | tvarv.2 `=` Ty_Var unique
 %%]
@@ -834,7 +841,7 @@ relation valGamFtv =
   view I2 =
     holes [ g: Gam | | tvars: TyVarIdS ]
     judgespec tvars === g
-    judgeuse tex tvars === ftv(g)
+    judgeuse tex tvars `=` ftv(g)
     judgeuse ag tvars `=` ftv(g)
 %%]
 
@@ -847,6 +854,7 @@ relation eqTy =
   view HM =
     holes [ ty.1: Ty, ty.2: Ty | | ]
     judgespec ty.1 === ty.2
+    judgeuse tex ty.1 `=` ty.2
 %%]
 
 -------------------------------------------------------------------------
@@ -858,5 +866,6 @@ relation bind1TyVarToTy =
   view HM =
     holes [ tvarv: TyVarId, ty: Ty | | tyCnstr: Cnstr ]
     judgespec tyCnstr === [tvarv :-> ty]
+    judgeuse tex tyCnstr `=` [tvarv :-> ty]
     judgeuse ag  tyCnstr `=` cnstrTyUnit (tvarv) (ty)
 %%]

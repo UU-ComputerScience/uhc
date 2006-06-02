@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module Main import(System, System.Console.GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, {%{EH}Base.Common}, {%{EH}Base.ScannerCommon}, {%{EH}Base.Opts})
+%%[1 module Main import(System, Control.Monad, System.Console.GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, {%{EH}Base.Common}, {%{EH}Base.ScannerCommon}, {%{EH}Base.Opts})
 %%]
 
 %%[1 import(qualified {%{EH}EH.Parser} as EHPrs, qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.Parser} as HSPrs, qualified {%{EH}HS.MainAG} as HSSem)
@@ -249,30 +249,27 @@ crOutputCore modNm cr
                  cMod   = EHSem.cmodule_Syn_AGItf p1ob
                  [u1]   = mkNewLevUIDL 1 . snd . mkNewLevUID . crsiHereUID $ crsi
                  codePP = ppCModule cMod 
-         ;  if ehcOptCore opts
-            then  putPPFile (fpathToStr (fpathSetSuff "core" fp)) codePP 120
-            else  return ()
-         ;  if ehcOptCoreJava opts
-            then  do  {  let (jBase,jPP) = cmodJavaSrc cMod
+         ;  when (ehcOptCore opts) (putPPFile (fpathToStr (fpathSetSuff "core" fp)) codePP 120)
+         ;  when (ehcOptCoreJava opts)
+                 (do  {  let (jBase,jPP) = cmodJavaSrc cMod
                              jFP = fpathSetBase jBase fp
                       ;  putPPFile (fpathToStr (fpathSetSuff "java" jFP)) jPP 120
-                      }
-            else  return ()
+                      })
          ;  let  grin = cmodGrin u1 cMod
                  grinPP = ppGrModule (Just []) grin
-         ;  if ehcOptCoreGrin opts
-            then  do  {  putPPFile (fpathToStr (fpathSetSuff "grin" fp)) grinPP 1000
-                      ;  GRINC.doCompileGrin
-                           (Right (fp,grin))
-                           (GRINCCommon.defaultGRINCOpts
-                             { GRINCCommon.grincOptVerbosity = ehcOptVerbosity opts
-                             , GRINCCommon.grincOptGenTrace = ehcOptGenTrace opts
-                             , GRINCCommon.grincOptTimeCompile = ehcOptTimeCompile opts
-                             , GRINCCommon.grincOptDumpTrfGrin = ehcOptDumpTrfGrin opts
-                             , GRINCCommon.grincOptDumpCallGraph = ehcOptDumpCallGraph opts
-                             })
-                      }
-            else  return ()
+         ;  when (ehcOptCoreGrin opts)
+                 (do  {  putPPFile (fpathToStr (fpathSetSuff "grin" fp)) grinPP 1000
+                      ;  when (ehcOptCoreCmm opts)
+                              (GRINC.doCompileGrin
+                                 (Right (fp,grin))
+                                 (GRINCCommon.defaultGRINCOpts
+                                   { GRINCCommon.grincOptVerbosity = ehcOptVerbosity opts
+                                   , GRINCCommon.grincOptGenTrace = ehcOptGenTrace opts
+                                   , GRINCCommon.grincOptTimeCompile = ehcOptTimeCompile opts
+                                   , GRINCCommon.grincOptDumpTrfGrin = ehcOptDumpTrfGrin opts
+                                   , GRINCCommon.grincOptDumpCallGraph = ehcOptDumpCallGraph opts
+                                   }))
+                      })
          ;  case ehcOptDumpPP (crsiOpts crsi) of
               Just "grin"  ->  putPPLn grinPP
               _            ->  return ()
@@ -335,9 +332,8 @@ doCompileRun filename opts
               Just "pp"   ->  putStrLn (disp (EHSem.pp_Syn_AGItf wrRes) 70 "")
               Just "ast"  ->  putStrLn (disp (EHSem.ppAST_Syn_AGItf wrRes) 1000 "")
               _           ->  return ()
-         ;  if ehcOptShowTopTyPP opts
-            then  putStr (disp (EHSem.topTyPP_Syn_AGItf wrRes) 1000 "")
-            else  return ()
+         ;  when (ehcOptShowTopTyPP opts)
+                 (putStr (disp (EHSem.topTyPP_Syn_AGItf wrRes) 1000 ""))
          }
 %%]
 

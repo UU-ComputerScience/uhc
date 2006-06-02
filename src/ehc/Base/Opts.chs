@@ -84,6 +84,7 @@ data EHCOpts
       ,  ehcOptCore           ::  Bool
       ,  ehcOptCoreJava       ::  Bool
       ,  ehcOptCoreGrin       ::  Bool
+      ,  ehcOptCoreCmm        ::  Bool
       ,  ehcOptSearchPath     ::  [String]
       ,  ehcOptVerbosity      ::  Verbosity
       ,  ehcOptTrf            ::  [TrfOpt]
@@ -112,6 +113,7 @@ defaultEHCOpts
       ,  ehcOptCore           =   True
       ,  ehcOptCoreJava       =   False
       ,  ehcOptCoreGrin       =   False
+      ,  ehcOptCoreCmm        =   False
       ,  ehcOptSearchPath     =   []
       ,  ehcOptVerbosity      =   VerboseQuiet
       ,  ehcOptTrf            =   []
@@ -137,8 +139,8 @@ ehcCmdLineOpts
           "print version info"
 %%]
 %%[8.ehcCmdLineOptsA
-     ,  Option "c"  ["code"]          (OptArg oCode "java|grin")
-          "dump code (java- > .java, grin -> .grin + .cmm, - -> none) on file, default=core (-> .core)"
+     ,  Option "c"  ["code"]          (OptArg oCode "core|java|grin|cmm")
+          "dump code (java- > .java, grin -> .grin, cmm -> .grin + .cmm, - -> none) on file, default=core (-> .core)"
      ,  Option ""   ["gen-trace"]     (NoArg oGenTrace)
           "emit trace info into C-- code (grin only)"
      ,  Option ""   ["trf"]           (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
@@ -176,6 +178,7 @@ ehcCmdLineOpts
          oCode       ms  o =  case ms of
                                 Just "java"  -> o { ehcOptCoreJava     = True      }
                                 Just "grin"  -> o { ehcOptCoreGrin     = True      }
+                                Just "cmm"   -> o { ehcOptCoreGrin     = True, ehcOptCoreCmm      = True      }
                                 Just "-"     -> o { ehcOptCore         = False     }
                                 _            -> o { ehcOptCore         = True      }
          oTrf        s   o =  o { ehcOptTrf           = opt s   }
