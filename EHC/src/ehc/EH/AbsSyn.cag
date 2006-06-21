@@ -182,6 +182,7 @@ DATA Expr
 
 %%[5
 DATA Expr
+  | SConst          str             : {String}
   | Case            expr            : Expr
                     alts            : CaseAlts
 %%]
@@ -195,6 +196,7 @@ DATA Expr
 
 %%[8
 DATA Expr
+  | FConst          float           : {Float}
   | Undefined
 %%]
 
@@ -245,9 +247,20 @@ DATA PatExpr
                     patExpr         : PatExpr
 %%]
 
+%%[5
+DATA PatExpr
+  | SConst          str             : {String}
+%%]
+
 %%[7
 DATA PatExpr
   | Rec             recPatExpr      : RecPatExpr
+%%]
+
+%%[8
+DATA PatExpr
+  | FConst          float           : {Float}
+  | Irrefutable     patExpr         : PatExpr
 %%]
 
 %%[1.AllPatExpr
@@ -381,6 +394,8 @@ DATA PrExpr
 
 TYPE PrExprs        = [PrExpr]
 %%]
+  | Impls
+  | NoImpls
 
 %%[10
 DATA PrExpr
@@ -417,10 +432,6 @@ TYPE FuncDeps       = [FuncDep]
 
 SET AllFuncDep      = FuncDep FuncDeps
 %%]
-  | Instance        mbNmElim        : {Maybe (HsName,Bool)}
-                    ctxtPrExprs     : PrExprs
-                    prExpr          : PrExpr
-                    decls           : Decls
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Groups of nonterminals

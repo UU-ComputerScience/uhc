@@ -55,7 +55,7 @@ jvNmPP
 jvRet :: PP_Doc -> PP_Doc
 jvRet r = "return" >-< jvInd r >#< ";"
 
-jvBody :: String -> String -> PP_DocL -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
+jvBody :: String -> String -> [PP_Doc] -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
 jvBody cl f as d1 d2 b
   = (cl >#< "{")
     >-< jvInd
@@ -67,10 +67,10 @@ jvBody cl f as d1 d2 b
     >-< "}"
   where as' = jvArgs as
 
-jvArgs :: PP_DocL -> PP_Doc
+jvArgs :: [PP_Doc] -> PP_Doc
 jvArgs = pp_block "(" ")" ","
 
-jvCall :: PP a => a -> PP_DocL -> PP_Doc
+jvCall :: PP a => a -> [PP_Doc] -> PP_Doc
 jvCall f as = let as' = jvArgs as
               in  pp f >-< jvInd as'
 
@@ -86,14 +86,14 @@ jvForceCast c e = jvCast c (jvForceEval e)
 jvForceInt :: PP a => a -> PP_Doc
 jvForceInt e = jvForceCast "Int" e >|< ".intValue()"
 
-jvApp :: PP_Doc -> PP_DocL -> PP_Doc
+jvApp :: PP_Doc -> [PP_Doc] -> PP_Doc
 jvApp f as
   =  let  n = length as
      in   if n <= 5
           then jvCall (jvCast "Eval" f >|< ".apply" ++ show n) as
           else jvCall (jvCast "Eval" f >|< ".applyN") [jvTupApp as]
 
-jvTupApp :: PP_DocL -> PP_Doc
+jvTupApp :: [PP_Doc] -> PP_Doc
 jvTupApp as = "new Object[]" >-< jvInd (pp_block "{" "}" "," as)
 
 jvLam :: HsName -> [HsName] -> PP_Doc -> PP_Doc
@@ -182,6 +182,8 @@ SEM CModule
 SEM CExpr
   | Int         loc         .   jvSrc       =   "new Int" >|< pp_parens (pp @int)
   | Char        loc         .   jvSrc       =   "new Char" >|< pp_parens (pp (show @char))
+  | Float       loc         .   jvSrc       =   "new Float" >|< pp_parens (pp @float)
+  | String      loc         .   jvSrc       =   pp (show @str)
   | Var         loc         .   jvSrc       =   jvNmPP @nm
   | App         loc         .   jvSrc       =   let  (f:as) = reverse @jvSrcL
   												in   case @func.mbTupApp of
@@ -308,7 +310,7 @@ SEM CPat
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR CExpr [ | | jvSrcL: PP_DocL ]
+ATTR CExpr [ | | jvSrcL: {[PP_Doc]} ]
 
 SEM CExpr
   | App         loc         .   jvSrcL      =   @arg.jvSrc : @func.jvSrcL

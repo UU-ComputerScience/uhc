@@ -1,0 +1,736 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation of EH AST
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR AGItf [ | | eh: {EH.AGItf} ]
+
+SEM AGItf
+    | AGItf
+        lhs         .   eh          =   EH.AGItf_AGItf @module.eh
+%%]
+
+-- ------------------------------------------------------------------------
+-- -- Modules                                                            --
+-- ------------------------------------------------------------------------
+
+%%[1
+ATTR Module [ | | eh: {EH.Expr} ]
+%%]
+
+%%[1
+ATTR Body [ | | eh: {EH.Expr} ]
+
+SEM Body
+    | Body
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.Expr_Let @declarations.eh (EH.mkRngEH @range.eh EH.Expr_IConst 0)
+%%]
+
+-- ------------------------------------------------------------------------
+-- -- Declarations                                                       --
+-- ------------------------------------------------------------------------
+
+%%[1
+ATTR MaybeDeclarations [ | | eh USE {`const`} {Nothing}: {Maybe [EH.Decl]} ]
+
+ATTR Declarations [ | | eh USE {++} {[]}: {[EH.Decl]} ]
+
+ATTR Declaration [ | | eh: {[EH.Decl]} ]
+
+SEM MaybeDeclarations
+    | Just
+        lhs         .   eh          =   Just @just.eh
+
+SEM Declaration
+    | FunctionBindings
+        lhs         .   eh          =   @bindings.eh
+    | PatternBinding
+        lhs         .   eh          =   [EH.mkRngEH @range.eh EH.Decl_Val @pattern.eh @righthandside.eh]
+    | TypeSignature
+        lhs         .   eh          =   [EH.mkRngEH @range.eh EH.Decl_TySig (head @names) @type.eh] -- !!!!
+    | Fixity
+        lhs         .   eh          =   []
+    | Empty
+        lhs         .   eh          =   []
+%%]
+%%[5
+    | Data
+        lhs         .   eh          =   let (_,n,ns) = @simpletype.eh
+                                        in  [EH.mkRngEH @range.eh EH.Decl_Data n (map EH.TyVar_Var ns) @constructors.eh]
+%%]
+%%[99
+        context                  : ContextItems
+%%]
+%%[5
+%%]
+%%[55
+        derivings                : Names
+%%]
+%%[9
+    | Class
+        lhs         .   eh          =   let (_,n,ns) = @simpletype.eh
+                                            h = EH.mkRngEH @range.eh EH.TyExpr_Pred
+                                                $ EH.mkRngEH @range.eh EH.PrExpr_Class n (map EH.TyExpr_Var ns)
+                                            c = map (EH.mkRngEH @range.eh EH.TyExpr_Pred) @context.eh
+                                        in  [EH.mkRngEH @range.eh EH.Decl_Class (mkArrow c h) @dependencies.eh (maybe [] id @where.eh)]
+    | Instance
+        lhs         .   eh          =   let h = EH.mkRngEH @range.eh EH.TyExpr_Pred
+                                                $ EH.mkRngEH @range.eh EH.PrExpr_Class @name @types.eh
+                                            c = map (EH.mkRngEH @range.eh EH.TyExpr_Pred) @context.eh
+                                        in  [EH.mkRngEH @range.eh EH.Decl_Instance (fmap (\n -> (n,@useimplicitly)) @instancename) (mkArrow c h) (maybe [] id @where.eh)]
+    | InstanceUseImplicitly
+        lhs         .   eh          =   let h = EH.mkRngEH @range.eh EH.PrExpr_Class @name @types.eh
+                                        in  [EH.mkRngEH @range.eh EH.Decl_InstanceIntro @expression.eh h]
+%%]
+%%[55
+    | Newtype
+        lhs         .   eh          =   EH.mkRngEH @range.eh XX
+        context                  : ContextItems
+        simpletype               : SimpleType
+        constructor              : Constructor  -- has only one field, no strictness
+        derivings                : Names
+%%]
+%%[55
+    | Type
+        lhs         .   eh          =   EH.mkRngEH @range.eh XX
+        simpletype               : SimpleType
+        type                     : Type
+%%]
+%%[55
+    | Default
+        lhs         .   eh          =   EH.mkRngEH @range.eh XX
+        types                    : Types        -- should be instances of Num
+%%]
+
+%%[9
+ATTR FunctionalDependencies [ | | eh USE {:} {[]}: {[EH.FuncDep]} ]
+
+ATTR FunctionalDependency [ | | eh: {EH.FuncDep} ]
+
+SEM FunctionalDependency
+	| Dependency
+		lhs			.	eh			=	EH.mkRngEH @range.eh EH.FuncDep_Dep
+										  (map (EH.mkRngEH @range.eh EH.TyVar_Var) @fromtypevariables)
+										  (map (EH.mkRngEH @range.eh EH.TyVar_Var) @totypevariables)
+%%]
+
+-- ------------------------------------------------------------------------
+-- -- Types                                                              --
+-- ------------------------------------------------------------------------
+
+%%[7 hs
+ehTyExprArg :: EH.TyExpr -> EH.TyExpr
+ehTyExprArg (EH.TyExpr_App  _ a) = a
+ehTyExprArg (EH.TyExpr_AppTop e) = ehTyExprArg e
+%%]
+
+%%[1
+ATTR Types [ | | eh USE {:} {[]}: {[EH.TyExpr]} ]
+
+ATTR Type [ | | eh: {EH.TyExpr} ]
+
+SEM Type
+    | Application
+        lhs         .   eh          =   mkApp (@function.eh : @arguments.eh)
+    | Constructor
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.TyExpr_Con @name
+    | Parenthesized
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.TyExpr_Parens @type.eh
+%%]
+%%[2
+    | Wildcard
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.TyExpr_Wild
+%%]
+%%[3
+    | Variable
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.TyExpr_Var @name
+    | NamedWildcard
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.TyExpr_VarWild @name
+%%]
+%%[4
+    | Forall
+        lhs         .   eh          =   foldr (EH.mkRngEH @range.eh EH.TyExpr_Quant TyQu_Forall) @type.eh @typevariables
+    | Exists
+        lhs         .   eh          =   foldr (EH.mkRngEH @range.eh EH.TyExpr_Quant TyQu_Exists) @type.eh @typevariables
+%%]
+%%[77
+    | Rowtype
+        lhs         .   eh          =   EH.mkRngEH @range.eh XX
+        rowtype                  : RowType
+%%]
+%%[7
+    | RowUpdate
+        lhs         .   eh          =   foldl (flip ($)) @type.eh @rowTypeUpdates.eh
+    | RowEmpty
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.TyExpr_Row (EH.mkRngEH @range.eh EH.RowTyExpr_Empty)
+    | RowRecUpdate
+        lhs         .   eh          =   foldl (\e u -> mk1ConApp hsnRec $ u $ ehTyExprArg $ e) @type.eh @rowTypeUpdates.eh
+    | RowRecEmpty
+        lhs         .   eh          =   mk1ConApp hsnRec $ EH.mkRngEH @range.eh EH.TyExpr_Row (EH.mkRngEH @range.eh EH.RowTyExpr_Empty)
+    | RowSumUpdate
+        lhs         .   eh          =   foldl (\e u -> mk1ConApp hsnSum $ u $ ehTyExprArg $ e) @type.eh @rowTypeUpdates.eh
+    | RowSumEmpty
+        lhs         .   eh          =   mk1ConApp hsnSum $ EH.mkRngEH @range.eh EH.TyExpr_Row (EH.mkRngEH @range.eh EH.RowTyExpr_Empty)
+%%]
+%%[9
+    | Qualified
+        lhs         .   eh          =   foldr mk1Arrow @type.eh @context.ehTy
+%%]
+    | Implicits
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.TyExpr_Impls
+    | NoImplicits
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.TyExpr_NoImpls
+
+%%[5
+ATTR SimpleType [ | | eh: {(Range,Name,Names)} ]
+
+SEM SimpleType
+    | SimpleType
+        lhs         .   eh          =   (@range.eh,@name,@typevariables)
+%%]
+
+%%[9 hs
+%%]
+ehExpUnTop :: EH.Expr -> EH.Expr
+ehExpUnTop (EH.Expr_AppTop e) = e
+ehExpUnTop e                  = e
+
+%%[9
+ATTR ContextItems [ | | eh USE {:} {[]}: {[EH.PrExpr]}  ehTy USE {:} {[]}: {[EH.TyExpr]} ]
+
+ATTR ContextItem [ | | eh: {EH.PrExpr}  ehTy: {EH.TyExpr} ]
+
+SEM ContextItem
+    | Class
+        loc         .   eh          =   EH.mkRngEH @range.eh EH.PrExpr_Class @name @types.eh
+    | Arrow
+        loc         .   eh          =   EH.mkRngEH @range.eh EH.PrExpr_Arrow @argument.eh @result.eh
+    | Forall
+        loc         .   eh          =   foldr (EH.mkRngEH @range.eh EH.PrExpr_Forall) @context.eh @typevariables
+    | Implicits NoImplicits
+        loc         .   eh          =   undefined -- may not occur nested
+
+SEM ContextItem
+	| * - Implicits NoImplicits
+		loc			.	ehTy		=	EH.mkRngEH @range.eh EH.TyExpr_Pred @eh
+    | Implicits
+        loc         .   ehTy        =   EH.mkRngEH @range.eh EH.TyExpr_Impls
+    | NoImplicits
+        loc         .   ehTy        =   EH.mkRngEH @range.eh EH.TyExpr_NoImpls
+%%]
+%%[10
+SEM ContextItem
+    | RowLacksLabel
+        loc         .   eh          =   EH.mkRngEH @range.eh EH.PrExpr_Lacks (EH.RowTyExpr_Var @rowvariable) @name
+%%]
+
+%%[5
+ATTR Constructors [ | | eh USE {:} {[]}: {[EH.DataConstr]} ]
+
+ATTR Constructor [ | | eh: {EH.DataConstr} ]
+%%]
+
+%%[7 hs
+ehPlainDataField :: Range -> EH.TyExpr -> EH.DataField
+ehPlainDataField r
+  = EH.mkRngEH r EH.DataField_Field Nothing
+%%]
+
+%%[5.Constructor
+SEM Constructor
+    | Constructor 
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.DataConstr_Constr @constructor @types.eh
+    | Infix
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.DataConstr_Constr @constructorOperator [@leftType.eh,@rightType.eh]
+%%]
+%%[7.Constructor -5.Constructor
+SEM Constructor
+    | Constructor 
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.DataConstr_Constr @constructor (map (ehPlainDataField emptyRange) @types.eh)
+    | Infix
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.DataConstr_Constr @constructorOperator (map (ehPlainDataField emptyRange) [@leftType.eh,@rightType.eh])
+    | Record
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.DataConstr_Constr @constructor @fieldDeclarations.eh
+%%]
+
+%%[7
+ATTR FieldDeclarations [ | | eh USE {:} {[]}: {[EH.DataField]} ]
+
+ATTR FieldDeclaration [ | | eh: {EH.DataField} ]
+
+SEM FieldDeclaration
+    | FieldDeclaration
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.DataField_Field (Just @names) @type.eh
+%%]
+
+%%[5
+ATTR AnnotatedTypes [ | | eh USE {:} {[]}: {[EH.TyExpr]} ]
+
+ATTR AnnotatedType [ | | eh: {EH.TyExpr} ]
+
+SEM AnnotatedType
+    | Type -- ToDo: or _Type?
+        lhs         .   eh          =   @type.eh
+%%]
+
+-- ------------------------------------------------------------------------
+-- -- Expressions                                                        --
+-- ------------------------------------------------------------------------
+
+%%[1 hs
+ehExpApp' :: (EH.Expr -> a -> EH.Expr) -> Range -> EH.Expr -> [a] -> EH.Expr
+ehExpApp' app r f as
+  = EH.mkRngEH r EH.Expr_AppTop
+    $ foldl (EH.mkRngEH r app) (ehExpUnTop f) as
+
+ehExpApp :: Range -> EH.Expr -> [EH.Expr] -> EH.Expr
+ehExpApp
+  = ehExpApp' EH.Expr_App
+
+ehExpConApp :: Range -> HsName -> [EH.Expr] -> EH.Expr
+ehExpConApp r n as
+  = ehExpApp r (EH.mkRngEH r EH.Expr_Con n) as
+
+ehExpVarApp :: Range -> HsName -> [EH.Expr] -> EH.Expr
+ehExpVarApp r n as
+  = ehExpApp r (EH.mkRngEH r EH.Expr_Var n) as
+
+ehExpUnTop :: EH.Expr -> EH.Expr
+ehExpUnTop (EH.Expr_AppTop e) = e
+ehExpUnTop e                  = e
+%%]
+
+%%[1
+ATTR Expressions [ | | eh USE {:} {[]}: {[EH.Expr]} ]
+
+ATTR MaybeExpression [ | | eh USE {`const`} {Nothing}: {Maybe EH.Expr} ]
+
+ATTR Expression [ | | eh: {EH.Expr} ]
+
+SEM MaybeExpression
+    | Just
+        lhs         .   eh          =   Just @just.eh
+
+SEM Expression
+    | Literal
+        lhs         .   eh          =   case @literal.eh of
+                                          Literal_Int  r s -> EH.mkRngEH r EH.Expr_IConst (read s)
+                                          Literal_Char r s -> EH.mkRngEH r EH.Expr_CConst (head s)
+    | Variable
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.Expr_Var @name
+    | Constructor
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.Expr_Con @name
+    | Parenthesized
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.Expr_Parens @expression.eh
+    | NormalApplication
+        lhs         .   eh          =   ehExpApp @range.eh @function.eh @arguments.eh
+    | InfixApplication
+        lhs         .   eh          =   let n  = mkHNm "x"
+                                            ne = EH.mkRngEH @range.eh EH.Expr_Var n
+                                            np = EH.mkRngEH @range.eh EH.PatExpr_Var n
+                                        in  case (@leftExpression.eh,@rightExpression.eh) of
+                                              (Just l ,Just r ) -> ehExpApp @range.eh @operator.eh [l,r]
+                                              (Nothing,Just r ) -> EH.mkRngEH @range.eh EH.Expr_Lam np (ehExpApp @range.eh @operator.eh [ne,r])
+                                              (Just l ,Nothing) -> ehExpApp @range.eh @operator.eh [l]
+    | Lambda
+        lhs         .   eh          =   foldr (EH.mkRngEH @range.eh EH.Expr_Lam) @expression.eh @patterns.eh
+    | Let
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.Expr_Let @declarations.eh @expression.eh
+    | Tuple
+        lhs         .   eh          =   ehExpConApp @range.eh (hsnProd (length @expressions.eh)) @expressions.eh
+    | Typed
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.Expr_TypeAs @type.eh @expression.eh
+    | Negate
+        lhs         .   eh          =   ehExpVarApp @range.eh hsnNegate [@expression.eh]
+%%]
+%%[4
+    | ImpredicativeApplication
+        lhs         .   eh          =   ehExpApp' EH.Expr_AppImpred @range.eh @function.eh @arguments.eh
+%%]
+%%[5
+    | If
+        lhs         .   eh          =   EH.mkIf @range.eh @guardExpression.eh @thenExpression.eh @elseExpression.eh
+    | Case
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.Expr_Case @expression.eh @alternatives.eh
+    | List
+        lhs         .   eh          =   foldr (\l r -> ehExpConApp @range.eh hsnListCons [l,r]) (EH.Expr_Con (mkHNm hsnListNil)) @expressions.eh
+    | Enum
+        lhs         .   eh          =   case (@from.eh,@then.eh,@to.eh) of
+                                          (fr,Just th,Just to) -> ehExpVarApp @range.eh (mkHNm "enumFromThenTo") [fr,th,to]
+                                          (fr,Just th,Nothing) -> ehExpVarApp @range.eh (mkHNm "enumFromThen"  ) [fr,th   ]
+                                          (fr,Nothing,Just to) -> ehExpVarApp @range.eh (mkHNm "enumFromTo"    ) [fr   ,to]
+                                          (fr,Nothing,Nothing) -> ehExpVarApp @range.eh (mkHNm "enumFrom"      ) [fr      ]
+    | Comprehension
+        lhs         .   eh          =   foldr ($) @expression.eh @qualifiers.eh
+%%]
+%%[7
+    | RecordConstruction
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.Expr_Con @name
+    | RecordUpdate
+        lhs         .   eh          =   @expression.eh
+    | RowRecordUpdate
+        lhs         .   eh          =   foldl (flip ($)) @expression.eh @rowRecordExpressionUpdates.eh
+    | RowRecordEmpty
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.Expr_Rec (EH.mkRngEH @range.eh EH.RecExpr_Empty)
+    | RowRecordSelect
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.Expr_Sel @expression.eh @name
+%%]
+%%[77
+    | RecordConstruction
+        lhs         .   eh          =   EH.mkRngEH @range.eh XX
+        name                     : Name
+        recordExpressionBindings : RecordExpressionBindings
+    | RecordUpdate
+        lhs         .   eh          =   EH.mkRngEH @range.eh XX
+        expression               : Expression
+        recordExpressionBindings : RecordExpressionBindings
+%%]
+%%[9
+    | ImplicitApplication
+        lhs         .   eh          =   ehExpApp' (\f (e,p) -> EH.Expr_AppImpl f p e) @range.eh @function.eh @arguments.eh
+    | ImplicitLambda
+        lhs         .   eh          =   foldr (\(p,c) e -> EH.mkRngEH @range.eh EH.Expr_LamImpl c p e) @expression.eh @patterns.eh
+%%]
+%%[99
+    | Do
+        lhs         .   eh          =   EH.mkRngEH @range.eh XX
+        statements               : Statements
+%%]
+-- Helium
+%%[55
+    | NegateFloat
+        lhs         .   eh          =   EH.mkRngEH @range.eh XX
+        expression               : Expression
+%%]
+
+%%[9
+ATTR ContextedExpressions [ | | eh USE {:} {[]}: {[(EH.Expr,EH.PrExpr)]} ]
+
+ATTR ContextedExpression [ | | eh: {(EH.Expr,EH.PrExpr)} ]
+
+SEM ContextedExpression
+	| Contexted
+		lhs			.	eh			=	(@expression.eh,@context.eh)
+%%]
+
+%%[99
+ATTR Statements [ | | eh USE {:} {[]}: {[EH.Statement]} ]
+
+ATTR Statement [ | | eh: {EH.Statement} ]
+
+SEM Statement
+    | Expression
+        lhs         .   eh          =   EH.mkRngEH @range.eh XX
+        expression               : Expression
+    | Let
+        lhs         .   eh          =   EH.mkRngEH @range.eh XX
+        declarations             : Declarations
+    | Generator
+        lhs         .   eh          =   EH.mkRngEH @range.eh XX
+        pattern                  : Pattern
+        expression               : Expression
+    | Empty
+        lhs         .   eh          =   EH.mkRngEH @range.eh XX
+%%]
+
+%%[5
+ATTR Qualifiers [ | | eh USE {:} {[]}: {[EH.Expr -> EH.Expr]} ]
+
+ATTR Qualifier [ | | eh: {EH.Expr -> EH.Expr} ]
+
+SEM Qualifier
+    | Guard
+        lhs         .   eh          =   \e -> EH.mkIf @range.eh @guard.eh e (semCon hsnListNil)
+    | Let
+        lhs         .   eh          =   \e -> EH.mkLet @range.eh (Just @declarations.eh) e
+    | Generator
+        lhs         .   eh          =   let ok = mkHNm "ok"
+                                            x  = mkHNm "x"
+                                        in  \e -> EH.mkLet @range.eh
+                                                    (Just
+                                                      [EH.Decl_Val
+                                                         (EH.mkRngEH @range.eh EH.PatExpr_Var ok)
+                                                         (EH.mkRngEH @range.eh EH.Expr_Lam
+                                                           (EH.mkRngEH @range.eh EH.PatExpr_Var x)
+                                                           (EH.mkCase @range.eh
+                                                             (EH.mkRngEH @range.eh EH.Expr_Var x)
+                                                             [(@pattern.eh,e),(EH.mkRngEH @range.eh EH.PatExpr_Var hsnWild,semCon hsnListNil)]
+                                                         ) )
+                                                      ])
+                                                    (ehExpVarApp @range.eh (mkHNm "concatMap") [EH.mkRngEH @range.eh EH.Expr_Var ok,@expression.eh])
+    | Empty
+        lhs         .   eh          =   \e -> ehExpConApp @range.eh hsnListCons [e,semCon hsnListNil]
+%%]
+
+%%[5
+ATTR Alternatives [ | | eh USE {++} {[]}: {[EH.CaseAlt]} ]
+
+ATTR Alternative [ | | eh: {[EH.CaseAlt]} ]
+
+SEM Alternative
+    | Alternative
+        lhs         .   eh          =   [EH.mkRngEH @range.eh EH.CaseAlt_Pat @pattern.eh @righthandside.eh]
+    | Empty
+        lhs         .   eh          =   []
+
+ATTR GuardedExpressions [ | | eh USE {:} {[]}: {[EH.Expr -> EH.Expr]} ]
+
+ATTR GuardedExpression [ | | eh: {EH.Expr -> EH.Expr} ]
+
+SEM GuardedExpression -- ToDo: or _Guard?
+    | GuardedExpression
+        lhs         .   eh          =   EH.mkIf @range.eh @guard.eh @expression.eh
+%%]
+
+%%[7
+ATTR RecordExpressionBindings [ | | eh USE {:} {[]}: {[()]} ]
+
+ATTR RecordExpressionBinding [ | | eh: {()} ]
+
+SEM RecordExpressionBinding
+    | RecordExpressionBinding -- ToDo: or _Binding?
+        lhs         .   eh          =   ()
+%%]
+
+%%[77
+ATTR RecordExpressionBindings [ | | eh USE {:} {[]}: {[EH.RecordExpressionBinding]} ]
+
+ATTR RecordExpressionBinding [ | | eh: {EH.RecordExpressionBinding} ]
+
+SEM RecordExpressionBinding
+    | RecordExpressionBinding -- ToDo: or _Binding?
+        lhs         .   eh          =   EH.mkRngEH @range.eh XX
+        name                     : Name
+        expression               : Expression
+%%]
+
+%%[7 hs
+ehRowRecExprUpd :: Range -> nm -> (EH.RecExpr -> nm -> EH.Expr -> EH.RecExpr) -> EH.Expr -> EH.Expr -> EH.Expr
+ehRowRecExprUpd rng nm mk updE recE
+  = case recE of
+      EH.Expr_Rec r
+        -> mkUpd  r
+      _ -> mkUpd (r2e recE)
+  where r2e     = EH.mkRngEH rng EH.RecExpr_Expr
+        mkUpd r = EH.mkRngEH rng EH.Expr_Rec (EH.mkRngEH rng mk r nm updE)
+
+ehRowRecPatExprUpd :: Range -> nm -> (EH.RecPatExpr -> nm -> EH.PatExpr -> EH.RecPatExpr) -> EH.PatExpr -> EH.PatExpr -> EH.PatExpr
+ehRowRecPatExprUpd rng nm mk updE recE
+  = case recE of
+      EH.PatExpr_Rec r
+        -> mkUpd  r
+      _ -> mkUpd (r2e recE)
+  where r2e     = EH.mkRngEH rng EH.RecPatExpr_Expr
+        mkUpd r = EH.mkRngEH rng EH.PatExpr_Rec (EH.mkRngEH rng mk r nm updE)
+%%]
+
+%%[7.ehRowRowTyExprUpd hs
+ehRowRowTyExprUpd :: Range -> nm -> (EH.RowTyExpr -> nm -> EH.TyExpr -> EH.RowTyExpr) -> EH.TyExpr -> EH.TyExpr -> EH.TyExpr
+ehRowRowTyExprUpd rng nm mk updE recE
+  = case recE of
+      EH.TyExpr_Row r
+        -> mkUpd  r
+      _ -> mkUpd (EH.mkRngEH rng EH.RowTyExpr_Empty)
+  where mkUpd r = EH.mkRngEH rng EH.TyExpr_Row (EH.mkRngEH rng mk r nm updE)
+%%]
+
+%%[9.ehRowRowTyExprUpd -7.ehRowRowTyExprUpd hs
+ehRowRowTyExprUpd :: Range -> nm -> (EH.RowTyExpr -> nm -> EH.TyExpr -> EH.RowTyExpr) -> EH.TyExpr -> EH.TyExpr -> EH.TyExpr
+ehRowRowTyExprUpd rng nm mk updE recE
+  = case recE of
+      EH.TyExpr_Row r
+        -> mkUpd  r
+      EH.TyExpr_Var v
+        -> mkUpd (EH.mkRngEH rng EH.RowTyExpr_Var v)
+      _ -> mkUpd (EH.mkRngEH rng EH.RowTyExpr_Empty)
+  where mkUpd r = EH.mkRngEH rng EH.TyExpr_Row (EH.mkRngEH rng mk r nm updE)
+%%]
+
+%%[7
+ATTR RowRecordExpressionUpdates [ | | eh USE {:} {[]}: {[EH.Expr -> EH.Expr]} ]
+
+ATTR RowRecordExpressionUpdate [ | | eh: {EH.Expr -> EH.Expr} ]
+
+SEM RowRecordExpressionUpdate
+    | Extends
+        lhs         .   eh          =   ehRowRecExprUpd @range.eh @name EH.RecExpr_Ext @expression.eh
+    | Update
+        lhs         .   eh          =   ehRowRecExprUpd @range.eh @name EH.RecExpr_Upd @expression.eh
+
+ATTR RowRecordPatternBindings [ | | eh USE {:} {[]}: {[EH.PatExpr -> EH.PatExpr]} ]
+
+ATTR RowRecordPatternBinding [ | | eh: {EH.PatExpr -> EH.PatExpr} ]
+
+SEM RowRecordPatternBinding
+    | Binding
+        lhs         .   eh          =   ehRowRecPatExprUpd @range.eh @name EH.RecPatExpr_Ext @pattern.eh
+
+ATTR RowTypeUpdates [ | | eh USE {:} {[]}: {[EH.TyExpr -> EH.TyExpr]} ]
+
+ATTR RowTypeUpdate [ | | eh: {EH.TyExpr -> EH.TyExpr} ]
+
+SEM RowTypeUpdate
+    | Extends
+        lhs         .   eh          =   ehRowRowTyExprUpd @range.eh @name EH.RowTyExpr_Ext @type.eh
+%%]
+
+%%[77
+ATTR RecordPatternBindings [ | | eh USE {:} {[]}: {[EH.RecordPatternBinding]} ]
+
+ATTR RecordPatternBinding [ | | eh: {EH.RecordPatternBinding} ]
+
+SEM RecordPatternBinding
+    | RecordPatternBinding -- ToDo: or _Binding?
+        lhs         .   eh          =   EH.mkRngEH @range.eh XX
+        name                     : Name
+        pattern                  : Pattern
+%%]
+
+%%[1
+ATTR FunctionBindings [ | | eh USE {:} {[]}: {[EH.Decl]} ]
+
+ATTR FunctionBinding [ | | eh: {EH.Decl} ]
+
+SEM FunctionBinding
+    | FunctionBinding
+        lhs         .   eh          =   let (h,t) = hdAndTl @lefthandside.eh
+                                        in  EH.mkRngEH @range.eh EH.Decl_Val h (foldr (EH.mkRngEH @range.eh EH.Expr_Lam) @righthandside.eh t)
+%%]
+
+%%[1
+ATTR LeftHandSide [ | | eh: {[EH.PatExpr]} ]
+
+SEM LeftHandSide
+    | Function
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.PatExpr_Var @name : @patterns.eh
+    | Infix
+        lhs         .   eh          =   [EH.mkRngEH @range.eh EH.PatExpr_Var @operator,@leftPattern.eh,@rightPattern.eh]
+    | Parenthesized
+        lhs         .   eh          =   @lefthandside.eh ++ @patterns.eh
+%%]
+
+%%[1
+ATTR RightHandSide [ | | eh: {EH.Expr} ]
+
+SEM RightHandSide
+    | Expression
+        lhs         .   eh          =   EH.mkLet @range.eh @where.eh @expression.eh
+%%]
+%%[5
+    | Guarded
+        lhs         .   eh          =   EH.mkLet @range.eh @where.eh (foldr ($) (EH.mkError @range.eh "guarded expr") @guardedexpressions.eh)
+%%]
+
+-- ------------------------------------------------------------------------
+-- -- Patterns                                                           --
+-- ------------------------------------------------------------------------
+
+%%[1 hs
+ehPatConApp r n as
+  = EH.mkRngEH r EH.PatExpr_AppTop
+    $ foldl (EH.mkRngEH r EH.PatExpr_App) (EH.mkRngEH r EH.PatExpr_Con n) as
+%%]
+
+%%[1
+ATTR Patterns [ | | eh USE {:} {[]}: {[EH.PatExpr]} ]
+
+ATTR Pattern [ | | eh: {EH.PatExpr} ]
+
+SEM Pattern
+    | Literal
+        lhs         .   eh          =   case @literal.eh of
+                                          Literal_Int  r s -> EH.mkRngEH r EH.PatExpr_IConst (read s)
+                                          Literal_Char r s -> EH.mkRngEH r EH.PatExpr_CConst (head s)
+    | Variable
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.PatExpr_Var @name       
+    | Constructor
+        lhs         .   eh          =   ehPatConApp @range.eh @name @patterns.eh
+    | Parenthesized
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.PatExpr_Parens @pattern.eh
+    | Tuple
+        lhs         .   eh          =   ehPatConApp @range.eh (hsnProd (length @patterns.eh)) @patterns.eh
+    | As
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.PatExpr_VarAs @name @pattern.eh
+    | Wildcard
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.PatExpr_Var hsnWild
+    | Negate
+        lhs         .   eh          =   case @literal.eh of
+                                          Literal_Int  r s -> EH.mkRngEH r EH.PatExpr_IConst (-(read s))
+%%]
+%%[4
+    | Typed
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.PatExpr_TypeAs @type.eh @pattern.eh
+%%]
+%%[5
+    | InfixConstructor
+        lhs         .   eh          =   ehPatConApp @range.eh @constructorOperator [@leftPattern.eh,@rightPattern.eh]
+    | List
+        lhs         .   eh          =   foldr (\l r -> ehPatConApp @range.eh hsnListCons [l,r]) (semCon (mkHNm hsnListNil)) @patterns.eh
+%%]
+%%[77
+    | Record
+        lhs         .   eh          =   EH.mkRngEH @range.eh XX
+        name                     : Name
+        recordPatternBindings    : RecordPatternBindings
+%%]
+%%[7
+    | RowRecordBinding
+        lhs         .   eh          =   foldl (flip ($)) @pattern.eh @rowRecordPattternBindings.eh
+    | RowRecordEmpty
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.PatExpr_Rec (EH.mkRngEH @range.eh EH.RecPatExpr_Empty)
+%%]
+%%[8
+    | Irrefutable
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.PatExpr_Irrefutable @pattern.eh
+%%]
+%%[55
+    | Successor                    -- n+k patterns        
+        lhs         .   eh          =   EH.mkRngEH @range.eh XX
+        name                     : Name
+        literal                  : Literal -- only integers allowed here
+-- Helium
+    | NegateFloat
+        lhs         .   eh          =   EH.mkRngEH @range.eh XX
+        literal                  : Literal -- only numbers allowed here
+%%]
+
+%%[9
+ATTR ContextedPatterns [ | | eh USE {:} {[]}: {[(EH.PatExpr,EH.PrExpr)]} ]
+
+ATTR ContextedPattern [ | | eh: {(EH.PatExpr,EH.PrExpr)} ]
+
+SEM ContextedPattern
+	| Contexted
+		lhs			.	eh			=	(@pattern.eh,@context.eh)
+%%]
+
+-- ------------------------------------------------------------------------
+-- -- Basics                                                             --
+-- ------------------------------------------------------------------------
+
+%%[1
+ATTR Literal [ | | eh: SELF ]
+%%]
+
+SEM Literal
+    | Int
+        lhs         .   eh          =   @value
+    | Char
+        lhs         .   eh          =   @value
+%%[55
+    | Float
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.Expr_IConst @value
+        value                    : String
+    | String
+        lhs         .   eh          =   EH.mkRngEH @range.eh XX
+        value                    : String -- without the quotes
+%%]
+
+%%[1
+ATTR Strings [ | | eh USE {:} {[]}: {[String]} ]
+
+ATTR MaybeInt [ | | eh USE {`const`} {Nothing}: {Maybe Int} ]
+
+ATTR Range [ | | eh: SELF ]
+%%]
+

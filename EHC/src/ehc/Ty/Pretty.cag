@@ -179,11 +179,11 @@ SEM Ty
   | Alts Both       loc     .   pp      =   ppParNeed  @parNeed @lhs.parNeed
                                                        (maybe (pp @tv) id (lookup @tv @lhs.tnMap) >|< ppListSep @o @c ", " @tyL.ppL)
 
-SEM TyL [ | | ppL: PP_DocL ]
+SEM TyL [ | | ppL: {[PP_Doc]} ]
   | Nil             lhs     .   ppL     =   []
   | Cons            lhs     .   ppL     =   @hd.pp : @tl.ppL
 
-SEM TyPlusL [ | | ppL: PP_DocL ]
+SEM TyPlusL [ | | ppL: {[PP_Doc]} ]
   | Nil             lhs     .   ppL     =   []
   | Cons            lhs     .   ppL     =   @hd.pp : @tl.ppL
 
@@ -267,7 +267,7 @@ SEM Pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.appFunPP
-ATTR Ty [ | | appFunPP: PP_Doc  appArgPPL: PP_DocL ]
+ATTR Ty [ | | appFunPP: PP_Doc  appArgPPL: {[PP_Doc]} ]
 %%]
 
 %%[1.appFunPP.Ty

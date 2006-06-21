@@ -46,6 +46,9 @@
 %%[4_2 hs export(TyNeed(..)) 
 %%]
 
+%%[5 hs export(tyString) 
+%%]
+
 %%[6 hs export(kiStar) 
 %%]
 
@@ -56,6 +59,9 @@
 %%]
 
 %%[7 hs export(tyAppFunArg) 
+%%]
+
+%%[8 hs export(tyFloat) 
 %%]
 
 %%[8 hs export(tyAppFunConNm) 
@@ -277,7 +283,7 @@ tyIsQu = isJust . tyMbQu
 instance SemApp Ty where
   semApp         = Ty_App
   semAppTop      = id
-  semCon         = Ty_Con
+  semCon         = Ty_Con . mkHNm
   semParens      = id
 %%]
 %%[7 hs
@@ -381,6 +387,10 @@ tyInt   = Ty_Con hsnInt
 tyChar  = Ty_Con hsnChar
 %%]
 
+%%[5 hs
+tyString  = Ty_Con hsnString
+%%]
+
 %%[6 hs
 kiStar  = Ty_Con hsnStar
 %%]
@@ -390,6 +400,10 @@ kiRow       = Ty_Con hsnRow
 tyRowEmpty  = Ty_Con hsnRowEmpty
 tyRecEmpty  = mkTyRec []
 tySumEmpty  = mkTySum []
+%%]
+
+%%[8 hs
+tyFloat  = Ty_Con hsnFloat
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

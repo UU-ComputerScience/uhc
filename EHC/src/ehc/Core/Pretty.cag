@@ -64,7 +64,7 @@ ppDef n v   = n >-< indent 1 v
 
 %%[8
 ATTR CodeAGItf AllCodeNT [ | | pp USE {>-<} {empty} : PP_Doc ]
-ATTR CPatBindL CPatL CBindL [ | | ppL: PP_DocL ]
+ATTR CPatBindL CPatL CBindL [ | | ppL: {[PP_Doc]} ]
 
 SEM CModule
   | Mod         lhs         .   pp          =   "module" >#< @baseName >-< @expr.pp

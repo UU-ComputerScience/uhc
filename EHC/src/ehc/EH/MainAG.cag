@@ -22,6 +22,9 @@
 %%[4_2 hs import(qualified Data.Set as Set,{%{EH}Gam.Utils},{%{EH}Ty.ElimAlts},{%{EH}Ty.FreshVar})
 %%]
 
+%%[7 hs import(EH.Util.PPUtils(ppCommas))
+%%]
+
 %%[8 hs import(EH.Util.Utils(groupSortOn))
 %%]
 

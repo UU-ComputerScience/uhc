@@ -81,7 +81,7 @@ SEM ErrL
 
 %%[1
 ATTR Err [ | | pp: PP_Doc ]
-ATTR ErrL [ | | ppL: PP_DocL ]
+ATTR ErrL [ | | ppL: {[PP_Doc]} ]
 
 SEM Err
   | UnifyClash          lhs     .  pp   =   ppUnifyErr  "Type clash"

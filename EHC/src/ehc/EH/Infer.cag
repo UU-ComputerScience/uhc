@@ -600,6 +600,12 @@ SEM PatExpr
   | App         lhs         .   topNm               =   hsnUnknown
   | AppTop Con Rec CConst IConst
                 loc         .   topNm               =   uidHNm @lUniq
+  | SConst      loc         .   topNm               =   uidHNm @uniq1
+%%]
+
+%%[8
+SEM PatExpr
+  | FConst      loc         .   topNm               =   uidHNm @uniq1
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

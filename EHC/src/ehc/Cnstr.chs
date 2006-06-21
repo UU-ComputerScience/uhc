@@ -273,7 +273,7 @@ cnstrFilterTyAltsMappedBy c cMp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2.ppCnstr
-ppCnstr :: (PP_DocL -> PP_Doc) -> Cnstr -> PP_Doc
+ppCnstr :: ([PP_Doc] -> PP_Doc) -> Cnstr -> PP_Doc
 ppCnstr ppL (Cnstr l) = ppL . map (\(n,v) -> pp n >|< ":->" >|< pp v) $ l
 %%]
 
@@ -283,7 +283,7 @@ ppCnstrV = ppCnstr vlist
 %%]
 
 %%[9.ppCnstr -2.ppCnstr
-ppCnstr :: (PP_DocL -> PP_Doc) -> Cnstr -> PP_Doc
+ppCnstr :: ([PP_Doc] -> PP_Doc) -> Cnstr -> PP_Doc
 ppCnstr ppL (Cnstr l) = ppL . map (\(n,v) -> pp n >|< ":->" >|< pp v) . Map.toList $ l
 %%]
 

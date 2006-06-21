@@ -20,9 +20,19 @@ SEM PatExpr
                 lhs         .  arity                =   0
 %%]
 
+%%[5
+SEM PatExpr
+  | SConst      lhs         .  arity                =   0
+%%]
+
 %%[7
 SEM PatExpr
   | Rec         lhs         .  arity                =   0
+%%]
+
+%%[8
+SEM PatExpr
+  | FConst      lhs         .  arity                =   0
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

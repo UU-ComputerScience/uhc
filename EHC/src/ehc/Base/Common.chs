@@ -7,13 +7,19 @@
 %%% Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Base.Common} export(HsName(..), hsnWild, hsnArrow, hsnProd, hsnProdArity, hsnUnknown, hsnIsArrow, hsnIsProd, hsnInt, hsnChar)
+%%[1 module {%{EH}Base.Common}
+%%]
+
+%%[1 import(UU.Scanner.Position) export(HSNM(..),HsName(..), hsnWild, hsnArrow, strProd, hsnProd, hsnProdArity, hsnUnknown, hsnIsArrow, hsnIsProd, hsnInt, hsnChar)
+%%]
+
+%%[1 export(hsnNegate,hsnError)
 %%]
 
 %%[1 export(AssocL, hdAndTl, hdAndTl', ppAssocL)
 %%]
 
-%%[1 import(UU.Pretty, Data.List) export(PP_DocL, ppListSep, ppCommaList, ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
+%%[1 import(UU.Pretty, Data.List) export(ppListSep, ppCommaList, ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
 %%]
 
 %%[1 export(SemApp(..))
@@ -46,6 +52,9 @@
 %%[4 export(FIMode(..),fimOpp,fimSwapCoCo)
 %%]
 
+%%[5 export(hsnBool,hsnTrue,hsnFalse,hsnString,hsnList,hsnListCons,hsnListNil)
+%%]
+
 %%[6 export(hsnStar)
 %%]
 
@@ -62,6 +71,9 @@
 %%]
 
 %%[8 import (EH.Util.FPath,IO,Char) export(putPPLn,putWidthPPLn,putPPFile,Verbosity(..),putCompileMsg)
+%%]
+
+%%[8 export(hsnFloat)
 %%]
 
 %%[8 export(hsnPrefix,hsnSuffix,hsnConcat)
@@ -139,6 +151,10 @@ instance Show HsName where
   show (HNPos p  )  = show p
 %%]
 
+%%[1
+strProd :: Int -> String
+%%]
+
 %%[1.HsName.Base.itf
 hsnArrow, hsnUnknown, hsnInt, hsnChar, hsnWild
                                     ::  HsName
@@ -152,7 +168,8 @@ hsnUnknown                          =   HNm "??"
 hsnInt                              =   HNm "Int"
 hsnChar                             =   HNm "Char"
 hsnWild                             =   HNm "_"
-hsnProd         i                   =   HNm  (',' : show i)
+strProd         i                   =   ',' : show i
+hsnProd                             =   HNm . strProd
 
 hsnIsArrow, hsnIsProd               ::  HsName -> Bool
 hsnIsArrow      hsn                 =   hsn == hsnArrow
@@ -163,6 +180,11 @@ hsnIsProd       _                   =   False
 hsnProdArity    (HNm (_:ar))        =   read ar
 %%]
 
+%%[1.other
+hsnNegate                           =   HNm "negate"
+hsnError                            =   HNm "error"
+%%]
+
 %%[3
 hsnUn                               ::  HsName -> HsName
 hsnUn           nm                  =   HNm ("un" ++ show nm)
@@ -171,6 +193,16 @@ hsnIsUn         (HNm ('u':'n':_))   =   True
 hsnIsUn         _                   =   False
 
 hsnUnUn         (HNm ('u':'n':nm))  =   HNm nm
+%%]
+
+%%[5
+hsnBool                             =   HNm "Bool"
+hsnTrue                             =   HNm "True"
+hsnFalse                            =   HNm "False"
+hsnString                           =   HNm "String"
+hsnList                             =   HNm "[]"
+hsnListCons                         =   HNm ":"
+hsnListNil                          =   HNm "[]"
 %%]
 
 %%[6
@@ -211,6 +243,10 @@ hsnConcat       h1    h2            =   HNm (show h1 ++ show h2)
 %%]
 
 %%[8
+hsnFloat                            =   HNm "Float"
+%%]
+
+%%[8
 hsnMain                             =   HNm "main"
 hsnUndefined                        =   HNm "undefined"
 hsnPrimAddInt						=	HNm "primAddInt"
@@ -228,6 +264,36 @@ hsnIsUnknown                        =   (==hsnUnknown)
 
 %%[10
 hsnDynVar                           =   HNm "?"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Make HsName of something
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+class HSNM a where
+  mkHNm :: a -> HsName
+
+instance HSNM HsName where
+  mkHNm = id
+
+instance HSNM String where
+  mkHNm s = HNm s
+
+instance HSNM Int where
+  mkHNm = mkHNm . show
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% HsName class instances
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+instance Position HsName where
+  line   _ = (-1)
+  column _ = (-1)
+  file   _ = ""
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -370,10 +436,12 @@ seqToList (Seq s) = s []
 class SemApp a where
   semApp            ::  a -> a -> a
   semAppTop         ::  a -> a
-  semCon            ::  HsName -> a
+  semCon            ::  (Position n,HSNM n) => n -> a
   semParens         ::  a -> a
+  mk1App            ::  a -> a -> a
   mkApp             ::  [a] -> a
-  mkConApp          ::  HsName -> [a] -> a
+  mk1ConApp         ::  (Position n,HSNM n) => n -> a -> a
+  mkConApp          ::  (Position n,HSNM n) => n -> [a] -> a
   mkProdApp         ::  [a] -> a
   mk1Arrow          ::  a -> a -> a
   mkArrow           ::  [a] -> a -> a
@@ -381,11 +449,29 @@ class SemApp a where
 %%[1.SemApp.default
   mkApp as          =   case as of  [a]  ->  a
                                     _    ->  semAppTop (foldl1 semApp as)
+  mk1App     a r    =   mkApp [a,r]
   mkConApp   c as   =   mkApp (semCon c : as)
+  mk1ConApp  c a    =   mkConApp c [a]
   mkProdApp  as     =   mkConApp (hsnProd (length as)) as
   mk1Arrow   a r    =   mkApp [semCon hsnArrow,a,r]
   mkArrow           =   flip (foldr mk1Arrow)
 %%]
+class SemApp a where
+  semApp            ::  a -> a -> a
+  semAppTop         ::  a -> a
+  semCon            ::  HsName -> a
+  semParens         ::  a -> a
+  mkApp             ::  [a] -> a
+  mkConApp          ::  HsName -> [a] -> a
+  mkProdApp         ::  [a] -> a
+  mk1Arrow          ::  a -> a -> a
+  mkArrow           ::  [a] -> a -> a
+  mkApp as          =   case as of  [a]  ->  a
+                                    _    ->  semAppTop (foldl1 semApp as)
+  mkConApp   c as   =   mkApp (semCon c : as)
+  mkProdApp  as     =   mkConApp (hsnProd (length as)) as
+  mk1Arrow   a r    =   mkApp [semCon hsnArrow,a,r]
+  mkArrow           =   flip (foldr mk1Arrow)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Building specific structures
@@ -449,8 +535,6 @@ ppAppTop (conNm,con) args dflt
 %%]
 
 %%[1.PP.NeededByExpr
-type PP_DocL = [PP_Doc]
-
 ppListSep :: (PP s, PP c, PP o, PP a) => o -> c -> s -> [a] -> PP_Doc
 ppListSep o c s pps = o >|< hlist (intersperse (pp s) (map pp pps)) >|< c
 
@@ -486,7 +570,7 @@ ppFld sep positionalNm nm f
 mkPPAppFun :: HsName -> PP_Doc -> PP_Doc
 mkPPAppFun c p = if c == hsnRowEmpty then empty else p >|< "|"
 
-mkExtAppPP :: (HsName,PP_Doc,PP_DocL) -> (HsName,PP_Doc,PP_DocL,PP_Doc) -> (PP_Doc,PP_DocL)
+mkExtAppPP :: (HsName,PP_Doc,[PP_Doc]) -> (HsName,PP_Doc,[PP_Doc],PP_Doc) -> (PP_Doc,[PP_Doc])
 mkExtAppPP (funNm,funNmPP,funPPL) (argNm,argNmPP,argPPL,argPP)
   =  if hsnIsRec funNm || hsnIsSum funNm
      then (mkPPAppFun argNm argNmPP,argPPL)

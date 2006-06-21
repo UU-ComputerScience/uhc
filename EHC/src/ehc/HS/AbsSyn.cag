@@ -9,34 +9,34 @@
 %%]
 
 
-%%[1
 -- ------------------------------------------------------------------------
 -- -- AG Interface                                                       --
 -- ------------------------------------------------------------------------
 
+%%[1
 DATA AGItf
     | AGItf
         module                   : Module
 %%]
 
-%%[1
 -- ------------------------------------------------------------------------
 -- -- Modules                                                            --
 -- ------------------------------------------------------------------------
 
+%%[1
 DATA Module
     | Module
         range                    : Range
-%%]
-%%[55
         name                     : MaybeName
+%%]
+%%[8
         exports                  : MaybeExports
 %%]
 %%[1
         body                     : Body
 %%]
 
-%%[55
+%%[8
 TYPE Exports                     = [ Export ]
 
 TYPE MaybeExports                = MAYBE Exports
@@ -65,14 +65,14 @@ DATA Body
     | Body
         range                    : Range
 %%]
-%%[55
+%%[8
         importdeclarations       : ImportDeclarations
 %%]
 %%[1
         declarations             : Declarations
 %%]
 
-%%[55
+%%[8
 TYPE ImportDeclarations          = [ ImportDeclaration ]
 
 DATA ImportDeclaration
@@ -111,50 +111,25 @@ DATA Import
 %%]
 
 %%[1
+SET AllModule
+  = Module Body
+%%]
+%%[8
+    ImportDeclaration ImportDeclarations Import Imports
+    MaybeImportSpecification ImportSpecification
+    Export Exports MaybeExports
+%%]
+
 -- ------------------------------------------------------------------------
 -- -- Declarations                                                       --
 -- ------------------------------------------------------------------------
 
+%%[1
 TYPE MaybeDeclarations           = MAYBE Declarations
 
 TYPE Declarations                = [ Declaration ]
 
 DATA Declaration                                  {- *** -}
-%%]
-%%[55
-    | Type
-        range                    : Range
-        simpletype               : SimpleType
-        type                     : Type
-    | Data                            {- *** -}
-        range                    : Range
-        context                  : ContextItems
-        simpletype               : SimpleType
-        constructors             : Constructors
-        derivings                : Names
-    | Newtype
-        range                    : Range
-        context                  : ContextItems
-        simpletype               : SimpleType
-        constructor              : Constructor  -- has only one field, no strictness
-        derivings                : Names
-    | Class
-        range                    : Range
-        context                  : ContextItems -- is a "simple" context
-        simpletype               : SimpleType   -- Haskell 98 allows only one variable
-        where                    : MaybeDeclarations -- cannot have everything
-    | Instance
-        range                    : Range
-        context                  : ContextItems -- is a "simple" context
-        name                     : Name
-        types                    : Types        -- Haskell 98 allows only one type
-                                                -- that is severely restricted
-        where                    : MaybeDeclarations -- cannot have everything
-    | Default
-        range                    : Range
-        types                    : Types        -- should be instances of Num
-%%]
-%%[1
     | FunctionBindings                {- *** -}
         range                    : Range
         bindings                 : FunctionBindings -- should all be for the same function
@@ -166,8 +141,6 @@ DATA Declaration                                  {- *** -}
         range                    : Range
         names                    : Names
         type                     : Type   -- may have context
-%%]
-%%[55
     | Fixity
         range                    : Range
         fixity                   : Fixity
@@ -176,8 +149,63 @@ DATA Declaration                                  {- *** -}
     | Empty
         range                    : Range
 %%]
-
+%%[5
+    | Data                            {- *** -}
+        range                    : Range
+%%]
+%%[9
+        context                  : ContextItems
+%%]
+%%[5
+        simpletype               : SimpleType
+        constructors             : Constructors
+%%]
+%%[9
+        derivings                : Names
+%%]
+%%[9
+    | Class
+        range                    : Range
+        context                  : ContextItems -- is a "simple" context
+        simpletype               : SimpleType   -- Haskell 98 allows only one variable
+        dependencies             : FunctionalDependencies
+        where                    : MaybeDeclarations -- cannot have everything
+    | Instance
+        range                    : Range
+        instancename			 : MaybeName
+        useimplicitly			 : Bool
+        context                  : ContextItems -- is a "simple" context
+        name                     : Name
+        types                    : Types        -- Haskell 98 allows only one type
+                                                -- that is severely restricted
+        where                    : MaybeDeclarations -- cannot have everything
+    | InstanceUseImplicitly
+        range                    : Range
+        expression  			 : Expression
+        name                     : Name
+        types                    : Types
+%%]
 %%[55
+    | Default
+        range                    : Range
+        types                    : Types        -- should be instances of Num
+%%]
+%%[55
+    | Newtype
+        range                    : Range
+        context                  : ContextItems
+        simpletype               : SimpleType
+        constructor              : Constructor  -- has only one field, no strictness
+        derivings                : Names
+%%]
+%%[55
+    | Type
+        range                    : Range
+        simpletype               : SimpleType
+        type                     : Type
+%%]
+
+%%[1
 DATA Fixity
     | Infixl
         range                    : Range
@@ -187,12 +215,30 @@ DATA Fixity
         range                    : Range
 %%]
 
+%%[9
+TYPE FunctionalDependencies      = [ FunctionalDependency ]
+
+DATA FunctionalDependency
+    | Dependency
+        range                    : Range
+        fromtypevariables        : Names
+        totypevariables          : Names
+%%]
+
 %%[1
+SET AllDeclaration
+  = Declaration Declarations MaybeDeclarations Fixity
+%%]
+%%[9
+    FunctionalDependency FunctionalDependencies
+%%]
+
 -- ------------------------------------------------------------------------
 -- -- Types                                                              --
 -- ------------------------------------------------------------------------
 
-TYPE Types                       = [Type]
+%%[1
+TYPE Types                       = [ Type ]
 
 DATA Type                                         {- *** -}
     | Application                            {- *** -}
@@ -200,18 +246,26 @@ DATA Type                                         {- *** -}
         prefix                   : Bool
         function                 : Type
         arguments                : Types
-    | Variable                               {- *** -}
-        range                    : Range
-        name                     : Name
     | Constructor                            {- *** -}
         range                    : Range
         name                     : Name
-%%]
-%%[55
-    | Qualified
+    | Parenthesized
         range                    : Range
-        context                  : ContextItems
         type                     : Type
+%%]
+%%[2
+    | Wildcard
+        range                    : Range
+%%]
+%%[3
+    | Variable                               {- *** -}
+        range                    : Range
+        name                     : Name
+    | NamedWildcard
+        range                    : Range
+        name                     : Name
+%%]
+%%[4
     | Forall
         range                    : Range
         typevariables            : Names
@@ -221,10 +275,41 @@ DATA Type                                         {- *** -}
         typevariables            : Names
         type                     : Type
 %%]
-%%[1
-    | Parenthesized
+%%[77
+    | Rowtype
+        range                    : Range
+        rowtype                  : RowType
+%%]
+%%[7
+    | RowUpdate
         range                    : Range
         type                     : Type
+        rowTypeUpdates           : RowTypeUpdates
+    | RowEmpty
+        range                    : Range
+    | RowRecUpdate
+        range                    : Range
+        type                     : Type
+        rowTypeUpdates           : RowTypeUpdates
+    | RowRecEmpty
+        range                    : Range
+    | RowSumUpdate
+        range                    : Range
+        type                     : Type
+        rowTypeUpdates           : RowTypeUpdates
+    | RowSumEmpty
+        range                    : Range
+%%]
+%%[9
+    | Qualified
+        range                    : Range
+        context                  : ContextItems
+        type                     : Type
+%%]
+    | Implicits
+        range                    : Range
+    | NoImplicits
+        range                    : Range
 
 -- Representation examples (ranges are skipped):
 --   o "(Int,Int,Int)" as
@@ -274,7 +359,7 @@ DATA Type                                         {- *** -}
 --       True (Type_Constructor (Name_Identifier "Tree"))
 --       [Type_Constructor (Name_Identifier "Int")]
 
-
+%%[5
 DATA SimpleType
     | SimpleType
         range                    : Range
@@ -282,17 +367,35 @@ DATA SimpleType
         typevariables            : Names
 %%]
 
-%%[55
+%%[9
 TYPE ContextItems                = [ ContextItem ]
 
 DATA ContextItem
-    | ContextItem -- ToDo: or _Item?
+    | Class
         range                    : Range
         name                     : Name   -- that is the class
         types                    : Types  -- in Haskell 98, this is only one type
+    | Forall
+        range                    : Range
+        typevariables            : Names
+        context                  : ContextItem
+    | Arrow
+        range                    : Range
+        argument                 : ContextItem
+        result                   : ContextItem
+    | Implicits
+        range                    : Range
+    | NoImplicits
+        range                    : Range
+%%]
+%%[10
+	| RowLacksLabel
+        range                    : Range
+        rowvariable              : Name
+        name                     : Name
 %%]
 
-%%[55
+%%[5
 TYPE Constructors                = [ Constructor ]
 
 DATA Constructor
@@ -305,13 +408,15 @@ DATA Constructor
         leftType                 : AnnotatedType
         constructorOperator      : Name
         rightType                : AnnotatedType
+%%]
+%%[7
     | Record
         range                    : Range
         constructor              : Name
         fieldDeclarations        : FieldDeclarations
 %%]
 
-%%[55
+%%[7
 TYPE FieldDeclarations           = [ FieldDeclaration ]
 
 DATA FieldDeclaration
@@ -319,21 +424,42 @@ DATA FieldDeclaration
         range                    : Range
         names                    : Names
         type                     : AnnotatedType        
+%%]
 
+%%[5
 TYPE AnnotatedTypes              = [ AnnotatedType ]
 
 DATA AnnotatedType
-    | AnnotatedType -- ToDo: or _Type?
+    | Type -- ToDo: or _Type?
         range                    : Range
         strict                   : Bool
         type                     : Type
 %%]
 
 %%[1
+SET AllType
+  = Type Types
+%%]
+%%[5
+    SimpleType
+    Constructor Constructors
+    AnnotatedType AnnotatedTypes
+%%]
+%%[7
+    FieldDeclaration FieldDeclarations
+%%]
+%%[77
+    RowExtension RowExtensions RowType
+%%]
+%%[9
+    ContextItem ContextItems
+%%]
+
 -- ------------------------------------------------------------------------
 -- -- Expressions                                                        --
 -- ------------------------------------------------------------------------
 
+%%[1
 TYPE Expressions                 = [ Expression ]
 
 TYPE MaybeExpression             = MAYBE Expression
@@ -355,63 +481,66 @@ DATA Expression                                   {- *** -}
         range                    : Range
         function                 : Expression
         arguments                : Expressions
-%%]
-%%[55
     | InfixApplication
         range                    : Range
         leftExpression           : MaybeExpression
         operator                 : Expression
         rightExpression          : MaybeExpression
+    | Lambda                           {- *** -}
+        range                    : Range
+        patterns                 : Patterns
+        expression               : Expression
+    | Let                              {- *** -}
+        range                    : Range
+        declarations             : Declarations
+        expression               : Expression
+    | Tuple
+        range                    : Range
+        expressions              : Expressions
+    | Typed
+        range                    : Range
+        expression               : Expression
+        type                     : Type
+    | Negate
+        range                    : Range
+        expression               : Expression
+%%]
+%%[55
+-- Helium
+    | NegateFloat
+        range                    : Range
+        expression               : Expression
+%%]
+%%[4
+    | ImpredicativeApplication                {- *** -}
+        range                    : Range
+        function                 : Expression
+        arguments                : Expressions
+%%]
+%%[5
     | If
         range                    : Range
         guardExpression          : Expression
         thenExpression           : Expression
         elseExpression           : Expression
-%%]
-%%[1
-    | Lambda                           {- *** -}
-        range                    : Range
-        patterns                 : Patterns
-        expression               : Expression
-%%]
-%%[55
     | Case                             {- *** -}
         range                    : Range
         expression               : Expression
         alternatives             : Alternatives
-%%]
-%%[1
-    | Let                              {- *** -}
-        range                    : Range
-        declarations             : Declarations
-        expression               : Expression
-%%]
-%%[55
-    | Do
-        range                    : Range
-        statements               : Statements
     | List
         range                    : Range
         expressions              : Expressions
-%%]
-%%[1
-    | Tuple
+    | Enum
         range                    : Range
-        expressions              : Expressions
-%%]
-%%[55
+        from                     : Expression
+        then                     : MaybeExpression
+        to                       : MaybeExpression
     | Comprehension
         range                    : Range
         expression               : Expression
         qualifiers               : Qualifiers
 %%]
-%%[1
-    | Typed                            {- ??? -}
-        range                    : Range
-        expression               : Expression
-        type                     : Type
-%%]
-%%[55
+%%[7
     | RecordConstruction
         range                    : Range
         name                     : Name
@@ -420,19 +549,34 @@ DATA Expression                                   {- *** -}
         range                    : Range
         expression               : Expression
         recordExpressionBindings : RecordExpressionBindings
-    | Enum
-        range                    : Range
-        from                     : Expression
-        then                     : MaybeExpression
-        to                       : MaybeExpression
-    | Negate
+%%]
+%%[7
+    | RowRecordUpdate
         range                    : Range
         expression               : Expression
-
--- Helium
-    | NegateFloat
+        rowRecordExpressionUpdates
+                                 : RowRecordExpressionUpdates
+    | RowRecordEmpty
+        range                    : Range
+    | RowRecordSelect
         range                    : Range
         expression               : Expression
+        name                     : Name
+%%]
+%%[9
+    | ImplicitApplication
+        range                    : Range
+        function                 : Expression
+        arguments                : ContextedExpressions
+    | ImplicitLambda
+        range                    : Range
+        patterns                 : ContextedPatterns
+        expression               : Expression
+%%]
+%%[99
+    | Do
+        range                    : Range
+        statements               : Statements
 %%]
 
 %%[1
@@ -538,13 +682,21 @@ DATA Expression                                   {- *** -}
 
 %%]
 
-%%[55
+%%[9
+TYPE ContextedExpressions        = [ ContextedExpression ]
+
+DATA ContextedExpression
+    | Contexted
+        range                    : Range
+        expression               : Expression
+        context                  : ContextItem
+%%]
+
+%%[99
 TYPE Statements                  = [ Statement ]
 
 DATA Statement
     | Expression
-        range                    : Range
-        expression               : Expression
     | Let
         range                    : Range
         declarations             : Declarations
@@ -554,7 +706,9 @@ DATA Statement
         expression               : Expression
     | Empty
         range                    : Range
+%%]
 
+%%[5
 TYPE Qualifiers                  = [ Qualifier ]
 
 DATA Qualifier
@@ -570,7 +724,9 @@ DATA Qualifier
         expression               : Expression
     | Empty
         range                    : Range
+%%]
 
+%%[5
 TYPE Alternatives                = [ Alternative ]
 
 DATA Alternative
@@ -580,9 +736,7 @@ DATA Alternative
         righthandside            : RightHandSide
     | Empty
         range                    : Range
-%%]
 
-%%[1
 TYPE GuardedExpressions          = [ GuardedExpression ]
 
 DATA GuardedExpression -- ToDo: or _Guard?
@@ -592,7 +746,7 @@ DATA GuardedExpression -- ToDo: or _Guard?
         expression               : Expression
 %%]
 
-%%[55
+%%[7
 TYPE RecordExpressionBindings    = [ RecordExpressionBinding ]
 
 DATA RecordExpressionBinding
@@ -600,7 +754,39 @@ DATA RecordExpressionBinding
         range                    : Range
         name                     : Name
         expression               : Expression
+%%]
 
+%%[7
+TYPE RowRecordExpressionUpdates  = [ RowRecordExpressionUpdate ]
+
+DATA RowRecordExpressionUpdate
+    | Update
+        range                    : Range
+        name                     : Name
+        expression               : Expression
+    | Extends
+        range                    : Range
+        name                     : MaybeName
+        expression               : Expression
+
+TYPE RowRecordPatternBindings    = [ RowRecordPatternBinding ]
+
+DATA RowRecordPatternBinding
+    | Binding
+        range                    : Range
+        name                     : MaybeName
+        pattern                  : Pattern
+
+TYPE RowTypeUpdates              = [ RowTypeUpdate ]
+
+DATA RowTypeUpdate
+    | Extends
+        range                    : Range
+        name                     : MaybeName
+        type                     : Type
+%%]
+
+%%[77
 TYPE RecordPatternBindings       = [ RecordPatternBinding ]
 
 DATA RecordPatternBinding
@@ -639,6 +825,8 @@ DATA RightHandSide
         range                    : Range
         expression               : Expression
         where                    : MaybeDeclarations
+%%]
+%%[5
     | Guarded
         range                    : Range
         guardedexpressions       : GuardedExpressions
@@ -646,63 +834,104 @@ DATA RightHandSide
 %%]
 
 %%[1
+SET AllExpression
+  = Expression Expressions MaybeExpression
+    FunctionBinding FunctionBindings
+    LeftHandSide RightHandSide
+%%]
+%%[5
+    Alternative Alternatives
+    GuardedExpression GuardedExpressions
+    Qualifier Qualifiers
+%%]
+%%[7
+    RecordExpressionBinding RecordExpressionBindings
+    RowRecordExpressionUpdate RowRecordExpressionUpdates
+    RowRecordPatternBinding RowRecordPatternBindings
+    RowTypeUpdate RowTypeUpdates
+%%]
+%%[77
+    RecordPatternBinding RecordPatternBindings
+%%]
+%%[9
+    ContextedExpression ContextedExpressions
+%%]
+%%[99
+    Statement Statements
+%%]
+
 -- ------------------------------------------------------------------------
 -- -- Patterns                                                           --
 -- ------------------------------------------------------------------------
 
+%%[1
 TYPE Patterns                    = [ Pattern ]
 
 DATA Pattern
-    | Literal                             {- *** -}
+    | Literal
         range                    : Range
         literal                  : Literal
-    | Variable                            {- *** -}
+    | Variable
         range                    : Range          
         name                     : Name
-    | Constructor                         {- *** -}
+    | Constructor
         range                    : Range
         name                     : Name
         patterns                 : Patterns
     | Parenthesized
         range                    : Range
         pattern                  : Pattern
-%%]
-%%[55
-    | InfixConstructor
-        range                    : Range
-        leftPattern              : Pattern
-        constructorOperator      : Name
-        rightPattern             : Pattern
-    | List
-        range                    : Range
-        patterns                 : Patterns
-%%]
-%%[1
-    | Tuple
-        range                    : Range
-        patterns                 : Patterns
-%%]
-%%[55
-    | Record
-        range                    : Range
-        name                     : Name
-        recordPatternBindings    : RecordPatternBindings
-    | Negate
-        range                    : Range
-        literal                  : Literal -- only numbers allowed here
-%%]
-%%[1
-    | As                                  {- ??? -}
+    | As
         range                    : Range
         name                     : Name
         pattern                  : Pattern
     | Wildcard
         range                    : Range
+    | Tuple
+        range                    : Range
+        patterns                 : Patterns
+    | Negate
+        range                    : Range
+        literal                  : Literal -- only numbers allowed here
 %%]
-%%[55
+%%[4
+    | Typed
+        range                    : Range
+        pattern                  : Pattern
+        type                     : Type
+%%]
+%%[5
+    | InfixConstructor
+        range                    : Range
+        leftPattern              : Pattern
+        constructorOperator      : Name
+        rightPattern             : Pattern
+%%]
+%%[5
+    | List
+        range                    : Range
+        patterns                 : Patterns
+%%]
+%%[77
+    | Record
+        range                    : Range
+        name                     : Name
+        recordPatternBindings    : RecordPatternBindings
+%%]
+%%[7
+    | RowRecordBinding
+        range                    : Range
+        pattern                  : Pattern
+        rowRecordPattternBindings: RowRecordPatternBindings
+    | RowRecordEmpty
+        range                    : Range
+%%]
+%%[8
     | Irrefutable
         range                    : Range
         pattern                  : Pattern
+%%]
+%%[55
     | Successor                    -- n+k patterns        
         range                    : Range
         name                     : Name
@@ -713,11 +942,29 @@ DATA Pattern
         literal                  : Literal -- only numbers allowed here
 %%]
 
+%%[9
+TYPE ContextedPatterns           = [ ContextedPattern ]
+
+DATA ContextedPattern
+    | Contexted
+        range                    : Range
+        pattern                  : Pattern
+        context                  : ContextItem
+%%]
+
 %%[1
+SET AllPattern
+  = Pattern Patterns
+%%]
+%%[9
+    ContextedPattern ContextedPatterns
+%%]
+
 -- ------------------------------------------------------------------------
 -- -- Basics                                                             --
 -- ------------------------------------------------------------------------
 
+%%[1
 DATA Literal                                      {- *** -}
     | Int                                 {- *** -}
         range                    : Range
@@ -735,7 +982,7 @@ DATA Literal                                      {- *** -}
         value                    : String -- without the quotes
 %%]
 
-%%[1
+%%[55
 TYPE Names                       = [ Name ]
 
 TYPE MaybeNames                  = MAYBE Names
@@ -768,7 +1015,9 @@ DATA Name                                         {- *** -}
 -- name occurs unqualified, the empty list is used. Multiple list
 -- entries can be used to support a hierarchical module space
 -- (as supported in recent versions of GHC).
+%%]
 
+%%[1
 TYPE Strings                     = [ String ]
 
 TYPE MaybeInt                    = MAYBE Int
@@ -777,6 +1026,7 @@ DATA Range
     | Range
         start                    : Pos
         stop                     : Pos
+    | Unknown
 %%]
 
 %%[55
@@ -791,6 +1041,17 @@ DATA Position
         line                     : Int
         column                   : Int
     | Unknown
+%%]
+
+%%[1
+SET AllBasics
+  = Strings MaybeInt Literal
+%%]
+
+%%[1
+SET AllNT
+  = AllModule AllDeclaration AllType AllPattern AllExpression
+    AllBasics
 %%]
 
 %%[1

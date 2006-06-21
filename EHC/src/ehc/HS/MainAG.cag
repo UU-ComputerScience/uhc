@@ -11,11 +11,17 @@
 %%[1 hs module {%{EH}HS.MainAG} import(Data.Char,Data.List as List,UU.Pretty,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS})
 %%]
 
+%%[1 hs import(qualified {%{EH}EH} as EH)
+%%]
+
+%%[4 hs import({%{EH}Ty}(TyQu(..)))
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 import({HS/AbsSyn})
+%%[1 import({HS/AbsSyn},{HS/EH})
 WRAPPER AGItf
 %%]
 
@@ -24,6 +30,6 @@ WRAPPER AGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
-ATTR AGItf [ opts: EHCOpts | | ]
+ATTR AGItf AllNT [ opts: EHCOpts | | ]
 %%]
 
