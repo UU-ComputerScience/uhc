@@ -121,7 +121,7 @@ format tex predGam = Gamma
 format tex PredGam = Gamma
 
 -- Type
-external tyInt tyChar ANY thardS thardH tneedR tneedO
+external tyInt tyChar tyFloat tyString ANY thardS thardH tneedR tneedO
 
 format tex ity = isigma
 format tex lty = sigma.l
@@ -279,7 +279,7 @@ format ag tyexprCon = Ty_Con
 format ag tyexprQuant = Ty_Quant
 
 -- Translation to core (CExpr)
-external translInt translChar translVar emptyTranslBind
+external translInt translChar translString translFloat translVar emptyTranslBind
 
 format tex translExpr = Transl
 format tex TranslExpr = Transl
@@ -293,6 +293,10 @@ format tex translInt = Transl
 format ag  translInt = CExpr_Int
 format tex translChar = Transl
 format ag  translChar = CExpr_Char
+format tex translString = Transl
+format ag  translString = CExpr_String
+format tex translFloat = Transl
+format ag  translFloat = CExpr_Float
 format tex translVar = Transl
 format ag  translVar = CExpr_Var
 
@@ -468,6 +472,52 @@ ruleset expr.base scheme expr "Expression type rules" =
       ---
       judge R : expr
           | translExpr = coe (translChar (char) | TranslExpr)
+
+  rule e.str : e.int "SConst" =
+    view E =
+      ---
+      judge R : expr
+          | e = str
+          | ty = tyString
+    view K =
+      judge F : fit
+          | lty = tyString
+      ---
+    view I2 =
+      ---
+      judge R : expr
+          | ity = tyString
+    view CG =
+      ---
+      judge R : expr
+          | translExpr = translString (str)
+    view P =
+      ---
+      judge R : expr
+          | translExpr = coe (translString (str) | TranslExpr)
+
+  rule e.float : e.int "FConst" =
+    view E =
+      ---
+      judge R : expr
+          | e = float
+          | ty = tyFloat
+    view K =
+      judge F : fit
+          | lty = tyFloat
+      ---
+    view I2 =
+      ---
+      judge R : expr
+          | ity = tyFloat
+    view CG =
+      ---
+      judge R : expr
+          | translExpr = translFloat (float)
+    view P =
+      ---
+      judge R : expr
+          | translExpr = coe (translFloat (float) | TranslExpr)
 
   rule e.var "Var" =
     view E =
@@ -1304,6 +1354,32 @@ ruleset patexpr.base scheme patexpr viewsel K - * "Pattern expression type rules
       ---
       judge R : patexpr
           | ty = tyChar
+          | patFunTy = ANY
+
+  rule p.str : p.int "SConst" =
+    view K =
+      judge F : fit
+          | rty = tyString
+      ---
+      judge R : patexpr 
+          | p = str
+    view C =
+      ---
+      judge R : patexpr
+          | ty = tyString
+          | patFunTy = ANY
+
+  rule p.float : p.int "FConst" =
+    view K =
+      judge F : fit
+          | rty = tyFloat
+      ---
+      judge R : patexpr 
+          | p = float
+    view C =
+      ---
+      judge R : patexpr
+          | ty = tyFloat
           | patFunTy = ANY
 
   rule p.con "Con" =

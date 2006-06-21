@@ -3,43 +3,10 @@
 %include afp.fmt
 %%]
 
-%%[7 module {%{EH}Base.ScannerMachine} import(Data.Char,Data.List,Data.Maybe,IO,UU.Util.BinaryTrees,UU.Scanner.Token,UU.Scanner.Position)
+%%[5 module {%{EH}Base.ScannerMachine} import(Data.Char,Data.List,Data.Maybe,IO,UU.Util.BinaryTrees,UU.Scanner.Position,EH.Util.ScanUtils,{%{EH}Base.Scanner.Token})
 %%]
 
-%%[7
-data ScanOpts
-  =  ScanOpts
-        {   scoKeywordsTxt      ::  [String]
-        ,   scoKeywordsOps      ::  [String]
-        ,   scoSpecChars        ::  String
-        ,   scoOpChars          ::  String
-        ,   scoSpecPairs        ::  [String]
-%%]
-%%[8
-        ,   scoDollarIdent      ::  Bool
-%%]
-%%[7
-        }
-%%]
-
-%%[7
-defaultScanOpts :: ScanOpts
-defaultScanOpts
-  =  ScanOpts
-        {   scoKeywordsTxt      =   []
-        ,   scoKeywordsOps      =   []
-        ,   scoSpecChars        =   ""
-        ,   scoOpChars          =   ""
-        ,   scoSpecPairs        =   []
-%%]
-%%[8
-        ,   scoDollarIdent      =   False
-%%]
-%%[7
-        }
-%%]
-
-%%[7.scanHandle -1.scanHandle
+%%[5.scanHandle -1.scanHandle
 scanHandle :: ScanOpts -> FilePath -> Handle -> IO [Token]
 scanHandle opts fn fh
   = do  {  txt <- hGetContents fh
@@ -47,7 +14,7 @@ scanHandle opts fn fh
         }
 %%]
 
-%%[7
+%%[5
 scanFile :: ScanOpts -> FilePath -> IO [Token]
 scanFile opts fn = 
         do txt <- readFile fn
@@ -86,7 +53,7 @@ scan opts pos input
                                   in  (c:str,w+1,s')
 %%]
 
-%%[7
+%%[5
    doScan p [] = []
    doScan p (c:s)        | isSpace c = let (sp,next) = span isSpace s
                                        in  doScan (foldl adv p (c:sp)) next
@@ -109,7 +76,14 @@ scan opts pos input
                      else valueToken TkVarid ident p
 %%]
 
-%%[7
+%%[5
+   -- this is experimental, for now, not foolproof, only to be used for the Prelude
+   doScan p ('\'':'\'':ss)
+     = let (s,w,r) = scanDQuoteIdent ss
+        in if null r
+           then errToken "Unterminated double quote ident" p : doScan (advc (w+1) p) r
+           else valueToken TkConid s p : doScan (advc (w+4) p) r
+
    doScan p ('\'':ss)
      = let (mc,cwidth,rest) = scanChar ss
        in case mc of
@@ -178,6 +152,12 @@ getchar s@('\"' :_ ) = (Nothing,0,s)
 getchar   ('\\':xs) = let (c,l,r) = getEscChar xs
                       in (c,l+1,r)
 getchar (x:xs)      = (Just x,1,xs)
+
+scanDQuoteIdent :: String -> (String,Int,String)
+scanDQuoteIdent []             = ("",0,[])
+scanDQuoteIdent ('\'':'\'':xs) = ("",0,xs)
+scanDQuoteIdent (x:xs)         = let (s,w,r) = scanDQuoteIdent xs -- should check similar to getchar
+                                  in (x:s,w+1,r)
 
 getEscChar :: [Char] -> (Maybe Char,Int,[Char])
 getEscChar [] = (Nothing,0,[])

@@ -128,17 +128,13 @@ searchPathFromString
 
 searchPathForReadableFile :: SearchPath -> FileSuffixes -> FPath -> IO (Maybe FPath)
 searchPathForReadableFile paths suffs fp
-  = let select f l
-          = foldM chk Nothing l
+  = let select f fps
+          = foldM chk Nothing fps
           where chk r fp
                   = case r of
                       Nothing -> f fp
                       Just _  -> return r
-{-
-          = do { finds <- mapM f l
-               ; return (listToMaybe . catMaybes $ finds)
-               }
--}      tryToOpen mbSuff fp
+        tryToOpen mbSuff fp
           = do { let fp' = maybe fp (\suff -> fpathSetNonEmptySuff suff fp) mbSuff
                ; fExists <- doesFileExist (fpathToStr fp')
                -- ; hPutStrLn stderr (show fp ++ " - " ++ show fp')
@@ -149,7 +145,7 @@ searchPathForReadableFile paths suffs fp
         tryToOpenWithSuffs suffs fp
           = case suffs of
               [] -> tryToOpen Nothing fp
-              _  -> select (\(s,f) -> tryToOpen (Just s) f) (zip suffs (repeat fp))
+              _  -> select (\(ms,f) -> tryToOpen ms f) ((Nothing,fp) : zipWith (\s f -> (Just s,f)) suffs (repeat fp))
         tryToOpenInDir dir
           = select (tryToOpenWithSuffs suffs) [fpathSetDir dir fp,fpathPrependDir dir fp]
      in select tryToOpenInDir paths

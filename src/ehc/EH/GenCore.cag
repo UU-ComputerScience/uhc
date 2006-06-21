@@ -164,7 +164,7 @@ SEM Expr
 ATTR PatExpr [ | | cpat: CPat ]
 
 SEM PatExpr
-  | Var VarAs AppTop Rec Con IConst CConst
+  | Var VarAs AppTop Rec Con IConst CConst SConst FConst
                 loc         .   cpNm        =   maybe (CPatNmUniq @topNm) CPatNmOrig @mbTopNm
   | Var         lhs         .   cpat        =   CPat_Var @cpNm
   | VarAs       lhs         .   cpat        =   case @patExpr.cpat of
@@ -190,6 +190,8 @@ SEM PatExpr
                                                           where  pbL = rpbReorder . map (\(n,(o,p)) -> CPatBind_Bind n o n p) . reverse $ @fsCPatL
   | IConst      lhs         .   cpat        =   CPat_Int @cpNm @int
   | CConst      lhs         .   cpat        =   CPat_Char @cpNm @char
+  | FConst      lhs         .   cpat        =   CPat_Int @cpNm (-1) -- for now
+  | SConst      lhs         .   cpat        =   CPat_Int @cpNm (-1) -- for now
 %%]
                             .   finResTGI   =   let  (c,_)  = tyAppFunArgs @finResTy
                                                      n      = tyConNm c

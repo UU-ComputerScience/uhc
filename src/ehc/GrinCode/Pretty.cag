@@ -169,7 +169,7 @@ SEM GrTag
 %%]
 
 %%[8
-ATTR GrGlobalL GrBindL GrAltL GrPatL GrValL GrAdaptL GrSplitL [ | | ppL: PP_DocL ]
+ATTR GrGlobalL GrBindL GrAltL GrPatL GrValL GrAdaptL GrSplitL [ | | ppL: {[PP_Doc]} ]
 
 SEM GrGlobalL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL

@@ -1,5 +1,7 @@
 module EH.Util.ScanUtils
   ( ScanOpts(..), defaultScanOpts
+  , isNoPos
+  , genTokVal, genTokTp, genTokMap
   )
   where
 
@@ -10,6 +12,29 @@ import UU.Parsing
 import UU.Scanner.Position( noPos, Pos(..), Position(..) )
 import UU.Scanner.GenToken
 import EH.Util.PPUtils
+
+-------------------------------------------------------------------------
+-- Utils for GenToken
+-------------------------------------------------------------------------
+
+genTokVal :: GenToken v t v -> v
+genTokVal (ValToken _ v _) = v
+genTokVal (Reserved   v _) = v
+
+genTokTp :: GenToken k t v -> Maybe t
+genTokTp (ValToken t _ _) = Just t
+genTokTp _                = Nothing
+
+genTokMap :: (a->b) -> GenToken a t a -> GenToken b t b
+genTokMap f (ValToken t v p) = ValToken t (f v) p
+genTokMap f (Reserved   k p) = Reserved   (f k) p
+
+-------------------------------------------------------------------------
+-- Utils for Pos
+-------------------------------------------------------------------------
+
+isNoPos :: Pos -> Bool
+isNoPos (Pos l c f) = l < 0 || c < 0
 
 -------------------------------------------------------------------------
 -- PP of parse errors

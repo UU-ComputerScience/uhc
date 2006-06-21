@@ -2,6 +2,7 @@ module EH.Util.PPUtils where
 
 import UU.Pretty
 import IO
+import Data.List
 
 -------------------------------------------------------------------------
 -- PP utils
@@ -10,11 +11,14 @@ import IO
 type PP_DocL = [PP_Doc]
 
 ppListSep :: (PP s, PP c, PP o, PP a) => o -> c -> s -> [a] -> PP_Doc
+ppListSep o c s pps = o >|< hlist (intersperse (pp s) (map pp pps)) >|< c
+{-
 ppListSep o c s pps
   = o >|< l pps >|< c
   where l []      = empty
         l [p]     = pp p
         l (p:ps)  = pp p >|< map (s >|<) ps
+-}
 
 ppCommas :: PP a => [a] -> PP_Doc
 ppCommas = ppListSep "" "" ", "

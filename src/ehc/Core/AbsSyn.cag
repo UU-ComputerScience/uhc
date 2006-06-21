@@ -39,6 +39,8 @@ DATA CExpr
                 dflt            : CExpr
   | Int         int             : {Int}
   | Char        char            : {Char}
+  | Float       float           : {Float}
+  | String      str             : {String}
   | Tup         tag             : {CTag}
   | TupDel      expr            : CExpr
                 tag             : {CTag}

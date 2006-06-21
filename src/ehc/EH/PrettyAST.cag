@@ -8,10 +8,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 hs
-ppNest :: PP a => [a] -> PP_DocL -> PP_DocL -> PP_Doc
+ppNest :: PP a => [a] -> [PP_Doc] -> [PP_Doc] -> PP_Doc
 ppNest nms attrs ps = ppNestInfo defaultEHCOpts nms attrs ps []
 
-ppNestInfo :: PP a => EHCOpts -> [a] -> PP_DocL -> PP_DocL -> AssocL String PP_Doc -> PP_Doc
+ppNestInfo :: PP a => EHCOpts -> [a] -> [PP_Doc] -> [PP_Doc] -> AssocL String PP_Doc -> PP_Doc
 ppNestInfo opts nms attrs ps infos
   = ppListSep "" "" "_" nms
     >#< (   (if null attrs then empty else ppSpaced attrs)
@@ -274,9 +274,13 @@ SEM Decl
                 loc     .  info_6   =   []
 
 SEM Expr
+  | SConst      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","SConst"] [@pp] [] []
   | Case        lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Case"] [] [@expr.ppAST,@alts.ppAST] @info
                 loc     .  info     =   [ mkInfo1 "knTy" (ppTy (@lhs.tyCnstr |=> @lhs.knTy))
                                         ]
+
+SEM PatExpr
+  | SConst      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","SConst"] [@pp] [] []
 
 SEM CaseAlt
   | Pat         lhs     .  ppAST    =   ppNest ["CaseAlt","Pat"] [] [@patExpr.ppAST,@expr.ppAST]
@@ -392,6 +396,12 @@ SEM DataFields
 %%]
 
 %%[8
+SEM Expr
+  | FConst      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","FConst"] [@pp] [] []
+
+SEM PatExpr
+  | FConst      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","FConst"] [@pp] [] []
+
 SEM Decl
   | FFI         loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","FFI"] [pp (show @impEnt),ppNm @nm] [@tyExpr.ppAST] @info
                         .  info     =   []

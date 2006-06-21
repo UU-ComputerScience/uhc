@@ -21,63 +21,24 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.SemParser
+%%]
 class SemApp e => SemParser e p t ds where
   semVar        ::  HsName -> e
   semLam        ::  p -> e -> e
   semLet        ::  ds -> e -> e
   semTypeAs     ::  t -> e -> e
-%%]
 
 %%[1
+%%]
 instance SemParser Expr PatExpr TyExpr Decls where
   semVar        =   Expr_Var
   semLam        =   Expr_Lam
   semLet        =   Expr_Let
   semTypeAs     =   Expr_TypeAs
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Parser semantics class instances
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1
-instance SemApp Expr where
-  semApp       = Expr_App
-  semAppTop    = Expr_AppTop
-  semCon       = Expr_Con
-  semParens    = Expr_Parens
-%%]
-
-%%[1
-instance SemApp PatExpr where
-  semApp       = PatExpr_App
-  semAppTop    = PatExpr_AppTop
-  semCon       = PatExpr_Con
-  semParens    = PatExpr_Parens
-%%]
-
-%%[1
-instance SemApp TyExpr where
-  semApp       = TyExpr_App
-  semAppTop    = TyExpr_AppTop
-  semCon       = TyExpr_Con
-  semParens    = TyExpr_Parens
-%%]
-
-%%[6
-instance SemApp KiExpr where
-  semApp       = KiExpr_App
-  semAppTop    = KiExpr_AppTop
-  semCon       = KiExpr_Con
-  semParens    = KiExpr_Parens
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parser signatures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-type ExprParser       ep    =    (IsParser (OffsideParser i o Token p) Token,InputState i Token p, OutputState o, Position p)
-                                    => OffsideParser i o Token p ep
 
 %%[1.parserSigs
 type EHCParser        ep    =    (IsParser (OffsideParser i o Token p) Token,InputState i Token p, OutputState o, Position p)
@@ -342,7 +303,7 @@ pTyExprApp      =    pApp pTyExprBase
 
 %%[9.pPackImpl
 pPackImpl       ::   EHCParser p -> EHCParser p
-pPackImpl       =    pPacked (pKeyw hsnOImpl) (pKeyw hsnCImpl)
+pPackImpl       =    pPacked pOIMPL pOIMPL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

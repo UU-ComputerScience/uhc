@@ -617,12 +617,14 @@ ruleset match.all scheme match viewsel HM "Type matching rules" =
 
   rule m.var.l1 =
     view HM =
+      judge O : tvNotIn = (ftv(ty)) :- tvarv
       judge C : bind1TyVarToTy = cnstr === [tvarv :-> ty]
       ---
       judge R : match = :- tvarv <=> ty ~> cnstr
 
   rule m.var.r1 =
     view HM =
+      judge O : tvNotIn = (ftv(ty)) :- tvarv
       judge C : bind1TyVarToTy = cnstr === [tvarv :-> ty]
       ---
       judge R : match = :- ty <=> tvarv ~> cnstr
@@ -729,6 +731,18 @@ relation gamLookupIdTy =
     holes [ nm: Nm, gam: Gam | | ty: Ty ]
     judgespec nm :-> ty `elem` gam
     judgeuse ag (ty,nmErrs) `=` gamLookup nm gam
+%%]
+
+-------------------------------------------------------------------------------------------
+-- Occur check
+-------------------------------------------------------------------------------------------
+
+%%[1
+relation tvNotIn =
+  view HM =
+    holes [ inh tvarv: Ty, syn tvars: TyVarIdS ]
+    judgespec tvars :- tvarv
+    judgeuse tex tvarv `notElem` tvars
 %%]
 
 -------------------------------------------------------------------------------------------

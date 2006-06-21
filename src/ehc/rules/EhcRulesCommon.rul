@@ -121,7 +121,7 @@ format tex predGam = Gamma
 format tex PredGam = Gamma
 
 -- Type
-external tyInt tyChar ANY thardS thardH tneedR tneedO
+external tyInt tyChar tyFloat tyString ANY thardS thardH tneedR tneedO
 
 format tex ity = isigma
 format tex lty = sigma.l
@@ -279,7 +279,7 @@ format ag tyexprCon = Ty_Con
 format ag tyexprQuant = Ty_Quant
 
 -- Translation to core (CExpr)
-external translInt translChar translVar emptyTranslBind
+external translInt translChar translString translFloat translVar emptyTranslBind
 
 format tex translExpr = Transl
 format tex TranslExpr = Transl
@@ -293,6 +293,10 @@ format tex translInt = Transl
 format ag  translInt = CExpr_Int
 format tex translChar = Transl
 format ag  translChar = CExpr_Char
+format tex translString = Transl
+format ag  translString = CExpr_String
+format tex translFloat = Transl
+format ag  translFloat = CExpr_Float
 format tex translVar = Transl
 format ag  translVar = CExpr_Var
 

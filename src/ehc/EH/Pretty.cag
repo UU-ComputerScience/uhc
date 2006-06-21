@@ -98,12 +98,16 @@ SEM Decl
 %%]
 
 %%[5
-ATTR TyVars CaseAlts [ | | ppL: PP_DocL ]
-ATTR TyExprs [ | | ppL: PP_DocL ]
+ATTR TyVars CaseAlts [ | | ppL: {[PP_Doc]} ]
+ATTR TyExprs [ | | ppL: {[PP_Doc]} ]
 
 SEM Expr
+  | SConst      loc     .   pp      =   pp (show @str)
   | Case        loc     .   pp      =   "case"  >#< @expr.pp >#< "of"
                                                 >-< indent 2 (vlist @alts.ppL)
+
+SEM PatExpr
+  | SConst      loc     .   pp      =   pp (show @str)
 
 SEM CaseAlt
   | Pat         loc     .   pp      =   @patExpr.pp >|< @ppExtra >#< "->" >#< @expr.pp
@@ -139,7 +143,7 @@ SEM Decl
 %%]
 
 %%[7
-ATTR RecExpr RowTyExpr RecPatExpr DataFields [ | | ppL: PP_DocL ]
+ATTR RecExpr RowTyExpr RecPatExpr DataFields [ | | ppL: {[PP_Doc]} ]
 
 SEM Expr
   | Rec         loc     .   pp      =   ppAppTop  (hsnRec,mkPPAppFun @appFunNm @recExpr.pp)
@@ -181,14 +185,19 @@ SEM RowTyExpr
 
 %%[8
 SEM Expr
+  | FConst      loc     .   pp      =   pp (show @float)
   | Undefined   loc     .   pp      =   pp "..."
 
 SEM Decl
   | FFI         loc     .   pp      =   "foreign" >#< pp (show @impEnt) >#< @nm >#< "::" >#< @tyExpr.pp
+
+SEM PatExpr
+  | Irrefutable loc     .   pp      =   "~" >|< @patExpr.pp
+  | FConst      loc     .   pp      =   pp (show @float)
 %%]
 
 %%[9
-ATTR PrExprs FuncDeps [ | | ppL: PP_DocL ]
+ATTR PrExprs FuncDeps [ | | ppL: {[PP_Doc]} ]
 
 SEM Expr
   | AppImpl     loc     .   argPP   =   @arg.pp >#< "<:" >#< @argPr.pp
@@ -255,7 +264,7 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[5
-ATTR DataConstrs [ | | ppL: PP_DocL ]
+ATTR DataConstrs [ | | ppL: {[PP_Doc]} ]
 
 SEM Decl
   | Data        loc     .   pp      =   "data"  >#< @tyNm >#< ppSpaced @tyVars.ppL
@@ -274,11 +283,16 @@ SEM DataFields
   | Nil         lhs     .   ppL     =   []
   | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 
+SEM DataField
+  | Field		lhs		.	pp		=	case @mbLabels of
+  										  Just l  -> ppCommas l >#< "::" >#< @tyExpr.pp
+  										  Nothing -> @tyExpr.pp
+
 SEM DataConstr
   | Constr      loc     .   pp      :=  pp @conNm
                                         >#<  (if null . catMaybes $ @fields.lblL
                                               then ppSpaced @fields.ppL
-                                              else ppListSep "{" "}" "," (zipWith (\(Just l) f -> l >#< "::" >#< f) @fields.lblL @fields.ppL)
+                                              else ppListSep "{" "}" "," @fields.ppL
                                              )
                                         >|<  @ppExtra
                         .   ppExtra =   empty
@@ -289,7 +303,7 @@ SEM DataConstr
 %%]
 
 %%[11
-ATTR DataConstrEqs [ | | ppL: PP_DocL ]
+ATTR DataConstrEqs [ | | ppL: {[PP_Doc]} ]
 
 SEM DataConstrEq
   | Eq          loc     .   pp      =   @tyVar.pp >|< "=" >|< @tyExpr.pp
@@ -304,7 +318,7 @@ SEM DataConstrEqs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.TyExpr.ConNm
-ATTR TyExpr [ | | appFunNm: {HsName}  appFunPP: PP_Doc  appArgPPL: PP_DocL ]
+ATTR TyExpr [ | | appFunNm: HsName  appFunPP: PP_Doc  appArgPPL: {[PP_Doc]} ]
 
 SEM TyExpr
   | Con         lhs     .   appFunNm    =   @nm
@@ -319,7 +333,7 @@ SEM TyExpr
 %%]
 
 %%[7
-ATTR RowTyExpr [ | | extNm: {HsName} ]
+ATTR RowTyExpr [ | | extNm: HsName ]
 
 SEM RowTyExpr
   | Empty       lhs     .   extNm       =   hsnRowEmpty
@@ -340,7 +354,7 @@ SEM TyExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[6
-ATTR KiExpr [ | | appFunNm: {HsName}  appFunPP: PP_Doc  appArgPPL: PP_DocL ]
+ATTR KiExpr [ | | appFunNm: HsName  appFunPP: PP_Doc  appArgPPL: {[PP_Doc]} ]
 
 SEM KiExpr
   | Con         lhs     .   appFunNm    =   @nm
@@ -394,7 +408,7 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.Expr.ConNm
-ATTR Expr [ | | appFunNm: {HsName}  appFunPP: PP_Doc  appArgPPL: PP_DocL ]
+ATTR Expr [ | | appFunNm: HsName  appFunPP: PP_Doc  appArgPPL: {[PP_Doc]} ]
 
 SEM Expr
   | Con         lhs     .   appFunNm    =   @nm
@@ -415,7 +429,7 @@ SEM Expr
 %%]
 
 %%[7
-ATTR RecExpr [ | | extNm: {HsName} ]
+ATTR RecExpr [ | | extNm: HsName ]
 
 SEM RecExpr
   | Empty       lhs     .   extNm       =   hsnRowEmpty
@@ -443,7 +457,7 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.PatExpr
-ATTR PatExpr [ | | appFunNm: {HsName}  appFunPP: PP_Doc  appArgPPL: PP_DocL ]
+ATTR PatExpr [ | | appFunNm: HsName  appFunPP: PP_Doc  appArgPPL: {[PP_Doc]} ]
 
 SEM PatExpr
   | Con         loc     .   appFunNm    =   @nm
@@ -458,7 +472,7 @@ SEM PatExpr
 %%]
 
 %%[7
-ATTR RecPatExpr [ | | extNm: {HsName} ]
+ATTR RecPatExpr [ | | extNm: HsName ]
 
 SEM RecPatExpr
   | Empty       lhs     .   extNm       =   hsnRowEmpty

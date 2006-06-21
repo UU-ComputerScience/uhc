@@ -1037,7 +1037,7 @@ prfPreds u fe prOccL
 prfPredsDbg  :: UID -> FIEnv -> [PredOcc]
                     ->  (CxBindLMap,CBindL,CSubst,[PredOcc],[CExpr],[Err]
                         ,(ProvenGraph,ProvenGraph,ProvenGraph,ProvenGraph,ProvenGraph,PrElimTGam,[Pred]
-                         ,Map.Map PredOccId [PredOccId],Map.Map PredOccId PredOccId,PP_DocL
+                         ,Map.Map PredOccId [PredOccId],Map.Map PredOccId PredOccId,[PP_Doc]
                         ))
 prfPredsDbg u fe prOccL
   =  case prvnErrs of
