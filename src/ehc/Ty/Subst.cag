@@ -74,7 +74,7 @@ SEM Impls
   | Tail            lhs     .   repl        =   maybe @repl id (cnstrImplsLookup @iv @lhs.cnstr)
 %%]
 
-%%[11
+%%[50
 SEM Ty
   | Equal           lhs     .   repl        =   tvRepl @tv @lhs.cnstr @lhs.isBound @repl
 %%]

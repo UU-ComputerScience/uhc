@@ -189,7 +189,7 @@ SEM Expr
   | Undefined   loc     .   pp      =   pp "..."
 
 SEM Decl
-  | FFI         loc     .   pp      =   "foreign" >#< pp (show @impEnt) >#< @nm >#< "::" >#< @tyExpr.pp
+  | FFI         loc     .   pp      =   "foreign import" >#< @callconv >#< @safety >#< pp (show @impEnt) >#< @nm >#< "::" >#< @tyExpr.pp
 
 SEM PatExpr
   | Irrefutable loc     .   pp      =   "~" >|< @patExpr.pp
@@ -267,8 +267,9 @@ SEM Decl
 ATTR DataConstrs [ | | ppL: {[PP_Doc]} ]
 
 SEM Decl
-  | Data        loc     .   pp      =   "data"  >#< @tyNm >#< ppSpaced @tyVars.ppL
-                                                >#< "=" >#< ppListSepFill "" "" " | " @constrs.ppL
+  | Data        loc     .   pp      =   (if @isNewtype then "newtype" else "data")
+                                        >#< @tyNm >#< ppSpaced @tyVars.ppL
+                                        >#< "=" >#< ppListSepFill "" "" " | " @constrs.ppL
 
 SEM DataConstr
   | Constr      loc     .   pp      =   pp @conNm >#< ppSpaced @fields.ppL
@@ -297,12 +298,12 @@ SEM DataConstr
                                         >|<  @ppExtra
                         .   ppExtra =   empty
 %%]
-%%[11
+%%[50
 SEM DataConstr
   | Constr      loc     .   ppExtra :=  hlist . map ("," >#<) $ @eqs.ppL
 %%]
 
-%%[11
+%%[50
 ATTR DataConstrEqs [ | | ppL: {[PP_Doc]} ]
 
 SEM DataConstrEq

@@ -63,7 +63,7 @@ SEM Ty
   | Quant           lhs     .   tvMp        =   @tv `Map.delete` @ty.tvMp 
 %%]
 
-%%[11
+%%[50
 SEM Ty
   | Equal           lhs     .   tvs         =   [@tv] `union` @ty.tvs
 %%]

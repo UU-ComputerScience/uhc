@@ -3,14 +3,14 @@
 %include afp.fmt
 %%]
 
-%%[5 module {%{EH}Base.Scanner}
+%%[5 module {%{EH}Scanner.Scanner}
 
 %%]
 
-%%[5 export(module {%{EH}Base.ScannerMachine}, module {%{EH}Base.Scanner.Token}, module {%{EH}Base.Scanner.TokenParser}, module UU.Scanner.Position)
+%%[5 export(module {%{EH}Scanner.Machine}, module {%{EH}Scanner.Token}, module {%{EH}Scanner.TokenParser}, module UU.Scanner.Position)
 %%]
 
-%%[5 import({%{EH}Base.ScannerMachine}, {%{EH}Base.Scanner.Token},{%{EH}Base.Scanner.TokenParser},UU.Scanner.Position,UU.Scanner.GenTokenOrd(),UU.Scanner.GenTokenSymbol())
+%%[5 import({%{EH}Scanner.Machine}, {%{EH}Scanner.Token},{%{EH}Scanner.TokenParser},UU.Scanner.Position,UU.Scanner.GenTokenOrd(),UU.Scanner.GenTokenSymbol())
 %%]
 
 %%[5

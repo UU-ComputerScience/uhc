@@ -85,6 +85,11 @@ SEM PatExpr
                 lhs         .   errL        :=  []
 %%]
 
+%%[5
+SEM Expr
+  | SConst      lhs         .   errL        =   mkNestErr @pp (foErrL @fo_)
+%%]
+
 %%[5_1
 SEM Expr
   | Case        lhs         .   errL        =   @expr.errL ++ @alts.errL ++ mkNestErr @expr.pp @ebErrs
@@ -122,6 +127,11 @@ SEM RecExpr
   | Ext Upd     lhs         .   errL        =   mkNestErr @pp (@recExpr.errL ++ @expr.errL ++ foErrL @foKnRec)
 %%]
 
+%%[8
+SEM Expr
+  | FConst      lhs         .   errL        =   mkNestErr @pp (foErrL @fo_)
+%%]
+
 %%[9
 SEM RowTyExpr
   | Var         lhs         .   errL        =   mkNestErr @pp (foErrL @fo_)
@@ -140,7 +150,7 @@ SEM Expr
                                                     (@nmErrs ++ foErrL @fo_fitF_ ++ foErrL @foPr ++ @arg.errL ++ @argPr.errL ++ @body.errL)
 %%]
 
-%%[11
+%%[50
 SEM DataConstr
   | Constr      lhs         .   errL        :=  mkNestErr @pp (@fields.errL ++ @eqs.errL ++ foErrL @fo_)
 %%]

@@ -7,14 +7,14 @@
 %%% Haskell importable interface to eliminate 'Equal' types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[11 hs module {%{EH}Ty.ElimEqual} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyElimEqual)
+%%[50 hs module {%{EH}Ty.ElimEqual} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyElimEqual)
 %%]
 
-%%[11.WRAPPER import({Ty/AbsSyn})
+%%[50.WRAPPER import({Ty/AbsSyn})
 WRAPPER TyAGItf
 %%]
 
-%%[11 hs
+%%[50 hs
 tyElimEqual :: Ty -> (Ty,Cnstr)
 tyElimEqual ty
   =  let  t =  wrap_TyAGItf
@@ -27,7 +27,7 @@ tyElimEqual ty
 %%% Replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[11
+%%[50
 ATTR AllTyAndFlds [ | | repl: SELF ]
 ATTR TyAGItf  [ | | repl: Ty ]
 
@@ -39,7 +39,7 @@ SEM Ty
 %%% Replacement for tvars in form of Cnstr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[11
+%%[50
 ATTR AllTyAndFlds [ | tyCnstr: Cnstr | ]
 ATTR TyAGItf  [ | | tyCnstr: Cnstr ]
 

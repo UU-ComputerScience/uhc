@@ -53,7 +53,7 @@ data FIOut  =  FIOut    {  foCnstr           ::  Cnstr               ,  foTy    
 %%[10
                         ,  foRowCoeL         ::  AssocL HsName Coe
 %%]
-%%[11
+%%[50
                         ,  foEqCnstr         ::  Cnstr
 %%]
 %%[4.FIOut.tl
@@ -72,7 +72,7 @@ emptyFO     =  FIOut    {  foCnstr           =   emptyCnstr          ,  foTy    
 %%[10
                         ,  foRowCoeL         =   []
 %%]
-%%[11
+%%[50
                         ,  foEqCnstr         =   emptyCnstr
 %%]
 %%[4.emptyFO.tl

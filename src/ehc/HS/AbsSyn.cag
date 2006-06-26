@@ -144,7 +144,7 @@ DATA Declaration                                  {- *** -}
     | Fixity
         range                    : Range
         fixity                   : Fixity
-        priority                 : MaybeInt
+        priority                 : {Maybe Int}
         operators                : Names
     | Empty
         range                    : Range
@@ -162,6 +162,35 @@ DATA Declaration                                  {- *** -}
 %%]
 %%[9
         derivings                : Names
+%%]
+%%[5
+    | Newtype
+        range                    : Range
+%%]
+%%[9
+        context                  : ContextItems
+%%]
+%%[5
+        simpletype               : SimpleType
+        constructor              : Constructor  -- has only one field, no strictness
+%%]
+%%[9
+        derivings                : Names
+%%]
+%%[8
+    | ForeignImport
+        range                    : Range
+        callconvention           : String
+        safety                   : {Maybe String}
+        importname               : {Maybe String}
+        name                     : Name
+        type                     : Type
+    | ForeignExport
+        range                    : Range
+        callconvention           : String
+        exportname               : {Maybe String}
+        name                     : Name
+        type                     : Type
 %%]
 %%[9
     | Class
@@ -184,21 +213,11 @@ DATA Declaration                                  {- *** -}
         expression  			 : Expression
         name                     : Name
         types                    : Types
-%%]
-%%[55
     | Default
         range                    : Range
         types                    : Types        -- should be instances of Num
 %%]
-%%[55
-    | Newtype
-        range                    : Range
-        context                  : ContextItems
-        simpletype               : SimpleType
-        constructor              : Constructor  -- has only one field, no strictness
-        derivings                : Names
-%%]
-%%[55
+%%[11
     | Type
         range                    : Range
         simpletype               : SimpleType
@@ -573,7 +592,7 @@ DATA Expression                                   {- *** -}
         patterns                 : ContextedPatterns
         expression               : Expression
 %%]
-%%[99
+%%[9
     | Do
         range                    : Range
         statements               : Statements
@@ -692,11 +711,13 @@ DATA ContextedExpression
         context                  : ContextItem
 %%]
 
-%%[99
+%%[9
 TYPE Statements                  = [ Statement ]
 
 DATA Statement
     | Expression
+        range                    : Range
+        expression               : Expression
     | Let
         range                    : Range
         declarations             : Declarations
@@ -704,9 +725,9 @@ DATA Statement
         range                    : Range
         pattern                  : Pattern
         expression               : Expression
+%%]
     | Empty
         range                    : Range
-%%]
 
 %%[5
 TYPE Qualifiers                  = [ Qualifier ]
@@ -856,7 +877,7 @@ SET AllExpression
 %%[9
     ContextedExpression ContextedExpressions
 %%]
-%%[99
+%%[9
     Statement Statements
 %%]
 
@@ -973,13 +994,15 @@ DATA Literal                                      {- *** -}
         range                    : Range
         value                    : String -- without the quotes
 %%]
-%%[55
-    | Float
-        range                    : Range
-        value                    : String
+%%[5
     | String                              {- ??? -}
         range                    : Range
         value                    : String -- without the quotes
+%%]
+%%[8
+    | Float
+        range                    : Range
+        value                    : String
 %%]
 
 %%[55
@@ -1020,14 +1043,14 @@ DATA Name                                         {- *** -}
 %%[1
 TYPE Strings                     = [ String ]
 
-TYPE MaybeInt                    = MAYBE Int
-
 DATA Range
     | Range
         start                    : Pos
         stop                     : Pos
     | Unknown
 %%]
+TYPE MaybeString                 = MAYBE String
+TYPE MaybeInt                    = MAYBE Int
 
 %%[55
 DATA Range
@@ -1045,7 +1068,7 @@ DATA Position
 
 %%[1
 SET AllBasics
-  = Strings MaybeInt Literal
+  = Strings Literal
 %%]
 
 %%[1

@@ -7,10 +7,10 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[5 module {%{EH}Base.Scanner.TokenParser} import(UU.Parsing.Interface(IsParser(..)),UU.Parsing.Derived(pListSep, pPacked),UU.Scanner.Position(Pos),UU.Scanner.GenTokenParser(pReserved, pValToken))
+%%[5 module {%{EH}Scanner.TokenParser} import(UU.Parsing.Interface(IsParser(..)),UU.Parsing.Derived(pListSep, pPacked),UU.Scanner.Position(Pos),UU.Scanner.GenTokenParser(pReserved, pValToken))
 %%]
 
-%%[5 import({%{EH}Base.Scanner.Token})
+%%[5 import({%{EH}Scanner.Token})
 %%]
 
 %%[5

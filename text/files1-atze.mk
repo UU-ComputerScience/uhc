@@ -1,7 +1,7 @@
 # all variants
 TEXT_PUB_VARIANTS			+= ruler-doc shuffle-doc ehc-book
 TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
-								pldi06-explimpl \
+								popl07-explimpl \
 								hw06-impred \
 								truu-explimpl truu-ruler \
 								phd-paper phd-draft phd-tst phd \
@@ -23,7 +23,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 1	: base (share)
 # 2	: ehc book (previously phd)
 # 3	: flops06-ruler, truu-ruler
-# 4	: pldi06-explimpl, truu-explimpl
+# 4	: popl07-explimpl, truu-explimpl
 # 5	: hw06-impred
 # 6	: afp (will be obsolete)
 # 7	: scratch

@@ -534,7 +534,7 @@ SEM Decl
                                         ]
 %%]
 
-%%[11
+%%[50
 SEM DataConstrEq
   | Eq          lhs     .  ppAST    =   ppNest ["DataConstrEq","Eq"] [] [@tyVar.ppAST,@tyExpr.ppAST]
 

@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module Main import(System, Data.List, Control.Monad, System.Console.GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, {%{EH}Base.Common}, {%{EH}Base.ScannerCommon}, {%{EH}Base.Opts})
+%%[1 module Main import(System, Data.List, Control.Monad, System.Console.GetOpt, IO, UU.Pretty, UU.Parsing, UU.Parsing.Offside, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Base.Opts})
 %%]
 
 %%[1 import(qualified {%{EH}EH.Parser} as EHPrs, qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.Parser} as HSPrs, qualified {%{EH}HS.MainAG} as HSSem)
@@ -76,9 +76,9 @@ main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+%%]
 mkParseErrInfoL :: (Eq s, Show s) => [Message s (Maybe Token)] -> ErrL
 mkParseErrInfoL = map (\(Msg exp pos act) -> Err_Parse (show exp) (show act))
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compilation unit
@@ -201,9 +201,10 @@ crCompileCUParseHS modNm cr
               res = HSSem.sem_AGItf resd
               hsSem = HSSem.wrap_AGItf res
                        ((crsiHSInh crsi) {HSSem.opts_Inh_AGItf = opts})
-              errL = mkParseErrInfoL (getMsgs steps)
+              -- errL = mkParseErrInfoL (getMsgs steps)
        ;  cr' <- crUpdCU modNm (\ecu -> return (ecu {ecuMbSemHS = Just hsSem})) cr
-       ;  crSetInfos "Parse (Haskell syntax) of module" True errL cr'
+       -- ;  crSetInfos "Parse (Haskell syntax) of module" True errL cr'
+       ;  crSetLimitErrsWhen 5 "Parse (Haskell syntax) of module" (map mkPPErr (getMsgs steps)) cr'
        }
 %%]
 
@@ -221,9 +222,10 @@ crCompileCUParseEH modNm cr
               res = EHSem.sem_AGItf resd
               ehSem = EHSem.wrap_AGItf res
                         ((crsiEHInh crsi) {EHSem.gUniq_Inh_AGItf = crsiHereUID crsi, EHSem.baseName_Inh_AGItf = fpathBase fp})
-              errL = mkParseErrInfoL (getMsgs steps)
+              -- errL = mkParseErrInfoL (getMsgs steps)
        ;  cr' <- crUpdCU modNm (\ecu -> return (ecu {ecuMbSemEH = Just ehSem})) cr
-       ;  crSetInfos "Parse (EH syntax) of module" True errL cr'
+       -- ;  crSetInfos "Parse (EH syntax) of module" True errL cr'
+       ;  crSetLimitErrsWhen 5 "Parse (EH syntax) of module" (map mkPPErr (getMsgs steps)) cr'
        }
 %%]
 

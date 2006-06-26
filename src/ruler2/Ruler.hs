@@ -131,14 +131,13 @@ crParseCU modNm cr
        -- ; crPP "crParseCU" cr
        ; tokens <- mkHScan fn fh
        ; let (pres,perrs) = parseToResMsgs pAGItf tokens
-             (showErrs,omitErrs) = splitAt 5 perrs
        ; if null perrs
          then do { let impMp = as1Imports pres
                        info = crStateInfo cr
                  ; crUpdCU modNm (\cu -> return (cu {rcuMbOut = Just pres, rcuImpNmL = Map.keys impMp}))
                            (cr {crStateInfo = info {crsiImpPosMp = impMp `Map.union` crsiImpPosMp info}})
                  }
-         else crSetLimitErrs 5 (map mkPPErr perrs) cr
+         else crSetLimitErrs 5 "" (map mkPPErr perrs) cr
        }
 {-
 crParseCU :: Nm -> RCompileRun -> IO RCompileRun

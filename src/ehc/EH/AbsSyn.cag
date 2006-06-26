@@ -34,7 +34,8 @@ SET AllDecl         = Decl Decls
 
 %%[5
 DATA Decl
-  | Data            tyNm            : {HsName}
+  | Data            isNewtype       : {Bool}
+                    tyNm            : {HsName}
                     tyVars          : TyVars
                     constrs         : DataConstrs
 %%]
@@ -299,7 +300,7 @@ DATA DataConstr
   | Constr          conNm           : {HsName}
                     fields          : DataFields
 %%]
-%%[11.DataConstr
+%%[50.DataConstr
                     eqs             : DataConstrEqs
 %%]
 
@@ -315,7 +316,7 @@ DATA DataField
 TYPE DataFields     = [DataField]
 %%]
 
-%%[11.Data
+%%[50.Data
 DATA DataConstrEq
   | Eq              tyVar           : TyVar
                     tyExpr          : TyExpr
@@ -334,7 +335,7 @@ SET AllDataField    = DataField DataFields
 SET AllData         = AllDataField AllDataConstr
 %%]
 
-%%[11.SetsData -7.SetsData
+%%[50.SetsData -7.SetsData
 SET AllDataConstrEq = DataConstrEq DataConstrEqs
 SET AllDataConstr   = DataConstr DataConstrs
 SET AllDataField    = DataField DataFields

@@ -35,10 +35,10 @@
 %%[9 import(qualified Data.Map as Map,{%{EH}Base.Debug}) export(CnstrInfo(..),cnstrImplsLookup,cnstrImplsUnit,assocLToCnstrImpls,cnstrToAssocL)
 %%]
 
-%%[11 export(cnstrKeys)
+%%[50 export(cnstrKeys)
 %%]
 
-%%[99 export(cnstrMapTy)
+%%[90 export(cnstrMapTy)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

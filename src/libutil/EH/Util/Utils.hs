@@ -22,8 +22,12 @@ mkTexCmdUse' cmd nm = mkTexCmdUse cmd nm >|< "%"
 -- Misc
 -------------------------------------------------------------------------
 
+hdAndTl' :: a -> [a] -> (a,[a])
+hdAndTl' _ (a:as) = (a,as)
+hdAndTl' n []     = (n,[])
+
 hdAndTl :: [a] -> (a,[a])
-hdAndTl (x:xs) = (x,xs)
+hdAndTl = hdAndTl' undefined
 
 maybeHd :: r -> (a -> r) -> [a] -> r
 maybeHd n f l = if null l then n else f (head l)

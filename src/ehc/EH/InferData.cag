@@ -43,7 +43,7 @@ SEM DataConstr
                 lhs         .   kiCnstr             =   foCnstr @fo_ |=> @fldsKiCnstr
 %%]
 
-%%[11
+%%[50
 SEM DataConstr
   | Constr      loc         .   fldsKiCnstr         :=  @eqs.kiCnstr
 
@@ -100,7 +100,7 @@ SEM Decl
 %%]
 
 !!!!! Fix following w.r.t. dataUnConTy
-%%[11
+%%[50
 SEM DataConstr
   | Constr      loc         .   dataConTy           :=  @eqs.eqTyCnstr |=> (@fields.tyL `mkArrow` @lhs.dataTy)
                             .   eqEqCnstr           =   assocLToCnstr . map (\(v,t) -> (v,Ty_Equal v t)) . cnstrToAssocTyL $ @eqs.eqTyCnstr
@@ -111,7 +111,7 @@ SEM DataConstr
 %%% Equal constraints for constructors
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[11
+%%[50
 ATTR AllDataConstrEq [ | eqTyCnstr: Cnstr | ]
 
 SEM DataConstr

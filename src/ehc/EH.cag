@@ -37,7 +37,10 @@
 %%[9 hs export(PrExpr(..), PrExprs,FuncDep(..), FuncDeps)
 %%]
 
-%%[11 hs export(DataConstrEq(..), DataConstrEqs)
+%%[9 hs export(mkUnit,mkError')
+%%]
+
+%%[50 hs export(DataConstrEq(..), DataConstrEqs)
 %%]
 
 %%[1 import({EH/AbsSyn})
@@ -65,10 +68,20 @@ mkLet r md e
       _            -> e
 %%]
 
+%%[9 hs
+mkUnit :: Range -> Expr
+mkUnit r = mkRngEH r Expr_Rec (mkRngEH r RecExpr_Empty)
+%%]
+mkUnit :: Range -> Expr
+mkUnit _ = semCon (hsnProd 0)
+
 %%[5 hs
+mkError':: HsName -> Range -> String -> Expr
+mkError' e r m
+  = mkApp [mkRngEH r Expr_Var e,mkStr r (show r ++ ": " ++ m)]
+
 mkError :: Range -> String -> Expr
-mkError r m
-  = mkApp [mkRngEH r Expr_Var hsnError,mkStr r (show r ++ ": " ++ m)]
+mkError = mkError' hsnError
 
 mkStr :: Range -> String -> Expr
 mkStr r s

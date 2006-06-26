@@ -5,7 +5,6 @@
 module Common
   ( module Data.Maybe
   , module Data.Char
-  -- , module UU.Pretty
   , module EH.Util.Nm
   , module DpdGr
   , module EH.Util.FPath
@@ -15,7 +14,6 @@ module Common
   
   , rulesCmdPre
   , ExprIsRw(..)
-  -- , Err(..), mkPPErr, ppErrPPL, errLIsFatal
   , WrKind(..)
   , strOverl, strOverVec, strUnd, strLhs, strLoc
   , nmOverl, nmOverVec, nmUnk, nmApp, nmWild, nmNone, nmList

@@ -13,7 +13,7 @@
 %%[4_2 import({%{EH}Ty.ElimAlts}) export(valGamElimAlts)
 %%]
 
-%%[11 import({%{EH}Ty.ElimEqual}) export(valGamElimEqual)
+%%[50 import({%{EH}Ty.ElimEqual}) export(valGamElimEqual)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -52,7 +52,7 @@ valGamElimAlts opts env globTvL uniq gCnstr g
 %%% Equal elim
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[11.valGamElimEqual
+%%[50.valGamElimEqual
 valGamElimEqual :: ValGam -> ValGam
 valGamElimEqual g
   =  let  (g',_)

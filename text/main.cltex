@@ -671,6 +671,8 @@
 \toappear{Submitted to for Principles of Programming Languages 2006 (POPL2006), January 11-13, Charleston, South Carolina, USA}
 %elif pldi06
 \toappear{Submitted to Programming Language Design and Implementation 2006 (PLDI2006), Ottawa, Canada, June 11-16}
+%elif popl07
+\toappear{Submitted to Principles of Programming Languages 2007 (POPL2007), Nice, France, Jan 17-19}
 %else
 %endif
 %else %% useSigplanconfSty

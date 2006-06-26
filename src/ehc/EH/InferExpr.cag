@@ -37,7 +37,7 @@ ATTR AllExpr [ | | imprTy: Ty ]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.Const
-%%[99.Const
+%%[90.Const
 SEM Expr
   | CConst      loc         .   ty_                 =   tyChar
   | IConst      loc         .   ty_                 =   tyInt
@@ -47,7 +47,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.Const
-%%[99.Const
+%%[90.Const
 SEM Expr
   | IConst CConst
                 loc         .   fo_                 :=  @ty_ `fitsIn` (@lhs.tyCnstr |=> @lhs.knTy)
@@ -55,21 +55,21 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.Const
-%%[99.Const
+%%[90.Const
 SEM Expr
   | IConst CConst
                 loc         .   fo_                 :=  fitsIn @lhs.fiOpts @fe @lUniq @ty_ (@lhs.tyCnstr |=> @lhs.knTy)
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.Const
-%%[99
+%%[90
 SEM Expr
   | CConst      loc         .   imprTy              =   tyChar
   | IConst      loc         .   imprTy              =   tyInt
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.Var
-%%[99.Var
+%%[90.Var
 SEM Expr
   | Var         loc         .   (gTy,nmErrs)
                                                     =   valGamLookupTy @nm @lhs.valGam
@@ -79,7 +79,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.Var
-%%[99.Var
+%%[90.Var
 SEM Expr
   | Var         loc         .   ty_                 :=  @lhs.tyCnstr |=> @gTy
                             .   fo_                 :=  @ty_ `fitsIn` (@lhs.tyCnstr |=> @lhs.knTy)
@@ -87,33 +87,33 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.Var
-%%[99.Var
+%%[90.Var
 SEM Expr
   | Var         loc         .   ty_                 :=  @lhs.tyCnstr |=> tyInst @lUniq @gTy
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.Var
-%%[99.Var
+%%[90.Var
 SEM Expr
   | Var         loc         .   fo_                 :=  fitsIn @lhs.fiOpts @fe @lUniq @ty_ (@lhs.tyCnstr |=> @lhs.knTy)
                             .   ty_                 :=  @lhs.tyCnstr |=> @gTy
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.Var
-%%[99.Var
+%%[90.Var
 SEM Expr
   | Var         loc         .   imprTy              =   @lhs.imprTyCnstr |=> @gTy
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.Con
-%%[99.Con
+%%[90.Con
 SEM Expr
   | Con         loc         .   ty                  =   let  resTy = tyArrowRes @lhs.knTy
                                                         in   tyProdArgs resTy `mkArrow` resTy
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.Con
-%%[99.Con
+%%[90.Con
 SEM Expr
   | Con         loc         .   fo_                 =   let  gTy      = mkTyFreshProdFrom @lUniq (hsnProdArity @nm)
                                                              foKnRes  = gTy `fitsIn` (@lhs.tyCnstr |=> tyArrowRes @lhs.knTy)
@@ -124,7 +124,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.Con
-%%[99.Con
+%%[90.Con
 SEM Expr
   | Con         loc         .   (gTy,nmErrs)        :=  valGamLookupTy @nm @lhs.valGam
                             .   ty_                 :=  @lhs.tyCnstr |=> @gTy
@@ -132,7 +132,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.Con
-%%[99.Con
+%%[90.Con
 SEM Expr
   | Con         loc         .   imprTy              =   @lhs.imprTyCnstr |=> @gTy
 %%]
@@ -158,7 +158,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.App
-%%[99
+%%[90
 SEM Expr
   | App AppImpred
                 loc         .   (imprArgTy,imprResTy)
@@ -239,7 +239,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.Lam
-%%[99
+%%[90
 SEM Expr
   | Lam         loc         .   fo_ifitF_           =   let  fo = fitsIn @knFunFIOpts @fe @lUniq2 @funTy (@lhs.imprTyCnstr |=> @lhs.knTy)
                                                         in   fo {foTy = foCnstr fo |=> @funTy}
@@ -271,7 +271,7 @@ SEM Expr
                                                           `mkArrow` @body.ty
 %%]
 
-%%[11.Lam
+%%[50.Lam
 SEM Expr
   | Lam         body        .   tyCnstr             =   @arg.tyEqCnstr |=> @arg.tyCnstr
                 loc         .   bodyTyCnstr         :=  cnstrDel  (cnstrKeys @arg.tyEqCnstr)
@@ -352,7 +352,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.TypeAs
-%%[99.TypeAs
+%%[90.TypeAs
 SEM Expr
   | TypeAs      loc         .   gTyTvL              :=  let  ftvVal  = ftv (@lhs.imprTyCnstr |=> @lhs.valGam)
                                                              ftvTy   = ftv . (@lhs.imprTyCnstr |=>) . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
@@ -379,7 +379,7 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- moved to AppImpred
-%%[99
+%%[90
 ATTR Expr [ | | isForcedTy: Bool ]
 
 SEM Expr
