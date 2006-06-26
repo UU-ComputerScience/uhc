@@ -10,6 +10,9 @@
 %%[1 hs module {%{EH}Error.Pretty} import(Data.List, UU.Pretty, {%{EH}Base.Common}, {%{EH}Ty}, {%{EH}Ty.Pretty}, {%{EH}Error}) export(ppErr, ppErrs,ppErrL)
 %%]
 
+%%[8 hs import(EH.Util.ParseErrPrettyPrint hiding (ppErr)) export(mkPPErr)
+%%]
+
 %%[9 hs import({%{EH}Core},{%{EH}Core.Pretty})
 %%]
 
@@ -31,6 +34,11 @@ ppErrL errL = if null errL then empty else vlist (map ppErr errL)
 ppErr :: Err -> PP_Doc
 ppErr err =  let  r = wrap_Err (sem_Err err) (Inh_Err {nestDepth_Inh_Err=0})
              in   pp_Syn_Err r
+%%]
+
+%%[8 hs
+mkPPErr :: PP a => a -> Err
+mkPPErr = Err_PP . pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -147,11 +155,12 @@ SEM Err
                                                         (    "file name         :" >#< @fileName
                                                          >-< "searched locations:" >#< vlist (map (text.show) @locations)
                                                         )
+  | PP                  lhs     .  pp   =   @pp
+%%]
   | Parse               lhs     .  pp   =   ppMsgErr    "Parse error"
                                                         (    "expecting  :" >#< text @expecting
                                                          >-< "repaired by:" >#< text @repaired
                                                         )
-%%]
 
 %%[9
 SEM Err

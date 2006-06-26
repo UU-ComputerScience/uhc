@@ -34,7 +34,7 @@
 %%[9 hs import(qualified Data.Set as Set,{%{EH}Pred},{%{EH}Core.Subst})
 %%]
 
-%%[11 hs import({%{EH}Ty.ElimEqual},{%{EH}Gam.Utils})
+%%[50 hs import({%{EH}Ty.ElimEqual},{%{EH}Gam.Utils})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

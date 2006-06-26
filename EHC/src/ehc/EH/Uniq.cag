@@ -245,7 +245,7 @@ SEM RecPatExpr
                                                                     :=  mkNewLevUID3    @lhs.gUniq
 %%]
 
-%%[11
+%%[50
 SEM DataConstrEq
   | Eq             (tyVar.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
 %%]

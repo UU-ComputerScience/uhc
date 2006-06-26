@@ -65,7 +65,7 @@ SEM CaseAlts
 %%% GADT
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[11
+%%[50
 ATTR AllPatExpr [ | | tyEqCnstr USE {|=>} {emptyCnstr}: Cnstr ]
 
 SEM PatExpr

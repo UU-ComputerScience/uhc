@@ -16,7 +16,10 @@
 %%[1 export(hsnNegate,hsnError)
 %%]
 
-%%[1 export(AssocL, hdAndTl, hdAndTl', ppAssocL)
+%%[1 export(AssocL, ppAssocL)
+%%]
+
+%%[1.exp.hdAndTl export(hdAndTl, hdAndTl')
 %%]
 
 %%[1 import(UU.Pretty, Data.List) export(ppListSep, ppCommaList, ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
@@ -70,6 +73,9 @@
 %%[7 export(assocLElts,uidHNm)
 %%]
 
+%%[8 -(1.exp.hdAndTl 1.Misc.hdAndTl) import (EH.Util.Utils hiding (tr,trp)) export(module EH.Util.Utils)
+%%]
+
 %%[8 import (EH.Util.FPath,IO,Char) export(putPPLn,putWidthPPLn,putPPFile,Verbosity(..),putCompileMsg)
 %%]
 
@@ -103,7 +109,7 @@
 %%[8 export(CTagsMp)
 %%]
 
-%%[99 export(groupSortByOn)
+%%[90 export(groupSortByOn)
 %%]
 
 %%[9 export(hsnOImpl,hsnCImpl,hsnPrArrow,hsnIsPrArrow,hsnIsUnknown)
@@ -129,8 +135,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.HsName.type
-data HsName                         =   HNm String
-                                    deriving (Eq,Ord)
+data HsName
+  =   HNm String
+  deriving (Eq,Ord)
 
 instance Show HsName where
   show (HNm s) = s
@@ -142,13 +149,24 @@ instance PP HsName where
 %%]
 
 %%[7.HsName.type -1.HsName.type
-data HsName                         =   HNm String
-                                    |   HNPos Int
-                                    deriving (Eq,Ord)
+data HsName
+  =   HNm String
+  |   HNPos Int
+%%]
+%%[8
+  |   HNmQ [HsName]
+%%]
+%%[7
+  deriving (Eq,Ord)
+%%]
 
+%%[7
 instance Show HsName where
   show (HNm s    )  = s
   show (HNPos p  )  = show p
+%%]
+%%[8
+  show (HNmQ ns  )  = concat $ intersperse "." $ map show ns
 %%]
 
 %%[1
@@ -203,6 +221,10 @@ hsnString                           =   HNm "String"
 hsnList                             =   HNm "[]"
 hsnListCons                         =   HNm ":"
 hsnListNil                          =   HNm "[]"
+%%]
+
+%%[5
+hsnIsList       hsn                 =   hsn == hsnList
 %%]
 
 %%[6
@@ -270,19 +292,29 @@ hsnDynVar                           =   HNm "?"
 %%% Make HsName of something
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs
+%%[1
 class HSNM a where
   mkHNm :: a -> HsName
 
 instance HSNM HsName where
   mkHNm = id
 
-instance HSNM String where
-  mkHNm s = HNm s
-
 instance HSNM Int where
   mkHNm = mkHNm . show
 
+%%]
+
+%%[1.HSNM.String
+instance HSNM String where
+  mkHNm s = HNm s
+%%]
+
+%%[8.HSNM.String -1.HSNM.String
+instance HSNM String where
+  mkHNm s
+    = mk $ map HNm $ wordsBy (=='.') $ s
+    where mk [n] = n
+          mk ns  = HNmQ ns
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -514,24 +546,22 @@ mkArrow = flip (foldr mk1Arrow)
 %%% Pretty printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[ppAppTop.1
+%%[1.PP.ppAppTop
 ppAppTop :: PP arg => (HsName,arg) -> [arg] -> PP_Doc -> PP_Doc
 ppAppTop (conNm,con) args dflt
-  =  if       hsnIsArrow conNm  then     ppListSep "" "" (" " >|< con >|< " ") args
-     else if  hsnIsProd conNm   then     ppListSep "(" ")" "," args
+  =  if       hsnIsArrow conNm  then  ppListSep "" "" (" " >|< con >|< " ") args
+     else if  hsnIsProd  conNm  then  ppListSep "(" ")" "," args
 %%]
-
-%%[1.PP.ppAppTop
-%%@ppAppTop.1
-                                else     dflt
+%%[5
+     else if  hsnIsList  conNm  then  ppListSep "[" "]" "," args
 %%]
-
-%%[7.PP.ppAppTop -1.PP.ppAppTop
-%%@ppAppTop.1
-     else if  hsnIsRec  conNm   then     ppListSep (hsnORec >|< con) hsnCRec "," args
-     else if  hsnIsSum  conNm   then     ppListSep (hsnOSum >|< con) hsnCSum "," args
-     else if  hsnIsRow  conNm   then     ppListSep (hsnORow >|< con) hsnCRow "," args
-                                else     dflt
+%%[7
+     else if  hsnIsRec   conNm  then  ppListSep (hsnORec >|< con) hsnCRec "," args
+     else if  hsnIsSum   conNm  then  ppListSep (hsnOSum >|< con) hsnCSum "," args
+     else if  hsnIsRow   conNm  then  ppListSep (hsnORow >|< con) hsnCRow "," args
+%%]
+%%[1
+                                else  dflt
 %%]
 
 %%[1.PP.NeededByExpr
@@ -837,7 +867,7 @@ groupSortOn :: Ord b => (a -> b) -> [a] -> [[a]]
 groupSortOn sel = groupOn sel . sortOn sel
 %%]
 
-%%[99
+%%[90
 groupByOn :: (b -> b -> Bool) -> (a -> b) -> [a] -> [[a]]
 groupByOn eq sel = groupBy (\e1 e2 -> sel e1 `eq` sel e2)
 

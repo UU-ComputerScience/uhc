@@ -90,9 +90,10 @@ DATA Err
 DATA Err
   | FileNotFound        fileName   : {String}
                         locations  : {[String]}
+  | PP                  pp         : {PP_Doc}
+%%]
   | Parse               expecting  : {String}
                         repaired   : {String}
-%%]
 
 %%[9
 DATA Err

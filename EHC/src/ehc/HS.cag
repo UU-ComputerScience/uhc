@@ -10,13 +10,13 @@
 %%[1 hs module {%{EH}HS} import({%{EH}Base.Common}, UU.Scanner.Position, EH.Util.ScanUtils) export(module UU.Scanner.Position)
 %%]
 
-%%[1 hs export(AGItf(..), Module(..), Body(..), Declaration(..), Declarations, MaybeDeclarations, Type(..), Types, Expression(..), Expressions, MaybeExpression, FunctionBinding(..), FunctionBindings, LeftHandSide(..), RightHandSide(..), Pattern(..), Patterns, Literal(..), Name, Names, MaybeName, MaybeNames, Strings, MaybeInt, Range(..), Fixity(..))
+%%[1 hs export(AGItf(..), Module(..), Body(..), Declaration(..), Declarations, MaybeDeclarations, Type(..), Types, Expression(..), Expressions, MaybeExpression, FunctionBinding(..), FunctionBindings, LeftHandSide(..), RightHandSide(..), Pattern(..), Patterns, Literal(..), Name, Names, MaybeName, MaybeNames, Strings, Range(..), Fixity(..))
 %%]
 
 %%[1 hs export(mkRange1,mkRange2,emptyRange,mkQName,mkQNames)
 %%]
 
-%%[1 hs export(mkRngNm,mkRngStr)
+%%[1 hs export(mkRngNm,mkRngStr,mkInt,mkStr)
 %%]
 
 %%[5 hs export(Constructor(..), Constructors)
@@ -49,13 +49,13 @@
 %%[9 hs export(ContextItem(..), ContextItems, ContextedExpression(..), ContextedExpressions, ContextedPattern(..), ContextedPatterns, FunctionalDependency(..), FunctionalDependencies)
 %%]
 
-%%[99 hs export(Statement(..), Statements)
+%%[9 hs export(Statement(..), Statements)
 %%]
 
 %%[1.Token hs import(UU.Scanner.Token)
 %%]
 
-%%[5 -1.Token hs import({%{EH}Base.Scanner.Token})
+%%[5 -1.Token hs import({%{EH}Scanner.Token})
 %%]
 
 %%[1 import({HS/AbsSyn})
@@ -86,7 +86,7 @@ emptyRange :: Range
 emptyRange = Range_Unknown
 %%]
 
-%%[5 hs
+%%[1 hs
 -- Assumption: tokTpIsInt (genTokTp t) == True
 mkInt :: Token -> Int
 mkInt t
@@ -94,6 +94,9 @@ mkInt t
       Just TkInteger10 -> read v
       _                -> 0
   where v = genTokVal t
+
+mkStr :: Token -> String
+mkStr = genTokVal
 %%]
 
 %%[1.mkQName hs
@@ -106,7 +109,7 @@ mkQName :: Token -> HsName
 mkQName t
   = case genTokTp t of
       Just tp | tokTpIsInt tp -> HNPos $ mkInt t
-      _                       -> HNm   $ genTokVal t
+      _                       -> mkHNm $ genTokVal t
 %%]
 
 %%[1 hs
@@ -122,10 +125,8 @@ mkRngNm :: (Position t,HSNM t) => (Range -> HsName -> r) -> t -> r
 mkRngNm ast t = ast (mkRange1 t) (mkHNm t)
 
 mkRngStr :: (Range -> String -> r) -> Token -> r
-mkRngStr ast t = ast (mkRange1 t) (genTokVal t)
+mkRngStr ast t = ast (mkRange1 t) (mkStr t)
 %%]
-mkRngStr :: (Position t,HSNM t) => (Range -> String -> r) -> t -> r
-mkRngStr ast t = ast (mkRange1 t) (genTokVal t)
 
 %%[1 hs
 instance Show Range where

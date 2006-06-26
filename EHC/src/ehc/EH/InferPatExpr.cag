@@ -61,7 +61,7 @@ SEM PatExpr
 %%]
 
 !!!!!!! fix following later (20050407)
-%%[11.patFunTy
+%%[50.patFunTy
 SEM PatExpr
   | Con         loc         .  patFunTy             :=  let  [a,r]  = mkNewTyVarL 2 @lUniq
                                                              fo     = fitsIn  (instFIOpts {fioInstCoConst = instCoFixed})
@@ -162,7 +162,7 @@ SEM PatExpr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.Var
-%%[99.Var
+%%[90.Var
 SEM PatExpr
   | Var VarAs   loc         .   (varTy,varTyCnstr)  :=  tyAsCnstr @lUniq @ty
   | Var         lhs         .   tyCnstr             =   @varTyCnstr |=> @lhs.tyCnstr
@@ -218,7 +218,7 @@ SEM PatExpr
                 lhs         .   tyCnstr             =   foCnstr @fo_fitR_ |=> @lhs.tyCnstr
 %%]
 
-%%[11.ApptopCon
+%%[50.ApptopCon
 SEM PatExpr
   | AppTop Con  loc         .   fo_fitR_            :=  fitsIn  (@lhs.fiOpts {fioAllowEqOpen = True})
                                                                 @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) @ty_r_

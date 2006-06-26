@@ -9,7 +9,7 @@
 %%[8 import(Control.Monad.Error,Control.Monad.State, Control.Exception, Data.Maybe, EH.Util.FPath)
 %%]
 
-%%[8 import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}GrinCode}, {%{EH}Base.Scanner})
+%%[8 import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}GrinCode}, {%{EH}Scanner.Scanner})
 %%]
 
 %%[8 import( UU.Parsing, UU.Pretty, EH.Util.CompileRun )

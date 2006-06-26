@@ -15,7 +15,7 @@ module EH.Util.CompileRun
 
   , liftCR
   , crCU, crMbCU, crUpdCU
-  , crSetFail, crSetErrs, crSetLimitErrs, crSetInfos
+  , crSetFail, crSetErrs, crSetLimitErrs, crSetLimitErrsWhen, crSetInfos
   , crHandle1, crSeq
 
   , crCUState, crCUFPath
@@ -30,6 +30,7 @@ module EH.Util.CompileRun
 
 import Maybe
 import System.Exit
+import Control.Monad
 import IO
 import qualified Data.Map as Map
 import UU.Pretty
@@ -76,7 +77,7 @@ class CompileRunStateInfo i n p where
 data CompileRunState err
   = CRSOk
   | CRSFail
-  | CRSFailErrL [err] (Maybe Int)
+  | CRSFailErrL String [err] (Maybe Int)
   | CRSErrInfoL String Bool [err]
 
 data CompileRun nm unit info err
@@ -126,13 +127,15 @@ crHandle1 :: CompileRunError e p => (a -> IO b) -> (a -> b) -> (a -> CompileRunS
 crHandle1 action err errs it
   = do { v <- it
        ; case errs v of
-           CRSFailErrL es (Just lim)
+           CRSFailErrL about es (Just lim)
              -> do { let (showErrs,omitErrs) = splitAt lim es
+                   ; unless (null about) (hPutPPLn stderr (pp about))
                    ; putErr' (if null omitErrs then return () else hPutStrLn stderr "... and more errors") showErrs
                    ; failOrNot es v
                    }
-           CRSFailErrL es Nothing
-             -> do { putErr' (return ()) es
+           CRSFailErrL about es Nothing
+             -> do { unless (null about) (hPutPPLn stderr (pp about))
+                   ; putErr' (return ()) es
                    ; failOrNot es v
                    }
            CRSErrInfoL about doPrint is
@@ -167,17 +170,18 @@ crSetFail cr = cr {crState = CRSFail}
 crSetOk :: CompileRun n u i e -> CompileRun n u i e
 crSetOk cr = cr {crState = CRSOk}
 
-crSetErrs' :: Maybe Int -> [e] -> CompileRun n u i e -> CompileRun n u i e
-crSetErrs' limit es cr
+crSetErrs' :: Maybe Int -> String -> [e] -> CompileRun n u i e -> CompileRun n u i e
+crSetErrs' limit about es cr
   = case es of
       [] -> cr
-      _  -> cr {crState = CRSFailErrL es limit}
+      _  -> cr {crState = CRSFailErrL about es limit}
 
 crSetErrs :: [e] -> CompileRun n u i e -> IO (CompileRun n u i e)
-crSetErrs e = liftCR (crSetErrs' Nothing e)
+crSetErrs e = liftCR (crSetErrs' Nothing "" e)
 
-crSetLimitErrs :: Int -> [e] -> CompileRun n u i e -> IO (CompileRun n u i e)
-crSetLimitErrs l e = liftCR (crSetErrs' (Just l) e)
+crSetLimitErrs, crSetLimitErrsWhen :: Int -> String -> [e] -> CompileRun n u i e -> IO (CompileRun n u i e)
+crSetLimitErrs l a e = liftCR (crSetErrs' (Just l) a e)
+crSetLimitErrsWhen l a e cr = if null e then return cr else crSetLimitErrs l a e cr
 
 crSetInfos' :: String -> Bool -> [e] -> CompileRun n u i e -> CompileRun n u i e
 crSetInfos' msg dp is cr

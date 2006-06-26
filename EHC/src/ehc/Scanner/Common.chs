@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Base.ScannerCommon} import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, EH.Util.ScanUtils(), {%{EH}Base.Common})
+%%[1 module {%{EH}Scanner.Common} import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, EH.Util.ScanUtils(), {%{EH}Base.Common})
 %%]
 
 %%[1 import(EH.Util.ScanUtils)
@@ -16,10 +16,10 @@
 %%[1.Scanner import(UU.Scanner) export(module UU.Scanner)
 %%]
 
-%%[1 export(module {%{EH}Base.ScannerCommon})
+%%[1 export(module {%{EH}Scanner.Common})
 %%]
 
-%%[5.Scanner -1.Scanner import({%{EH}Base.Scanner}) export(module {%{EH}Base.Scanner})
+%%[5.Scanner -1.Scanner import({%{EH}Scanner.Scanner}) export(module {%{EH}Scanner.Scanner})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -48,6 +48,9 @@ ehScanOpts
 %%[9
                 ++ tokKeywStrsEH9
 %%]
+%%[11
+                ++ tokKeywStrsEH11
+%%]
 %%[1
         ,   scoKeywordsOps      =
                 tokOpStrsEH1
@@ -75,6 +78,9 @@ ehScanOpts
 %%]
 %%[10
                 ++ tokOpStrsEH10
+%%]
+%%[11
+                ++ tokOpStrsEH11
 %%]
 %%[1
         ,   scoSpecChars        =
@@ -135,6 +141,9 @@ hsScanOpts
 %%[9
                 ++ tokKeywStrsHS9
 %%]
+%%[11
+                ++ tokKeywStrsHS11
+%%]
 %%[1
         ,   scoKeywordsOps      =
                 scoKeywordsOps ehScanOpts
@@ -163,6 +172,9 @@ hsScanOpts
 %%]
 %%[10
                 ++ tokOpStrsHS10
+%%]
+%%[11
+                ++ tokOpStrsHS11
 %%]
 %%[1
         ,   scoOffsideTrigs     =
@@ -229,29 +241,32 @@ pStringTk, pCharTk,
   pQVarsymTk, pQConsymTk,
 %%]
 %%[1
-  pVaridTk, pConidTk,
+  pVaridTk , pConidTk ,
+  pVaridTk', pConidTk',
   pTextnmTk, pTextlnTk, pIntegerTk, pVarsymTk, pConsymTk
     :: IsParser p Token => p Token
 
-pStringTk     =   pCostValToken' 9 TkString    ""        
-pCharTk       =   pCostValToken' 9 TkChar      "\NUL"    
-pInteger8Tk   =   pCostValToken' 9 TkInteger8  "0"       
-pInteger10Tk  =   pCostValToken' 9 TkInteger10 "0"       
-pInteger16Tk  =   pCostValToken' 9 TkInteger16 "0"
-pFractionTk   =   pCostValToken' 9 TkFraction  "0.0"
-pVaridTk      =   pCostValToken' 9 TkVarid     "<identifier>" 
-pConidTk      =   pCostValToken' 9 TkConid     "<Identifier>" 
-pConsymTk     =   pCostValToken' 9 TkConOp     "<conoperator>"
-pVarsymTk     =   pCostValToken' 9 TkOp        "<operator>" 
-pTextnmTk     =   pCostValToken' 9 TkTextnm    "<name>"       
-pTextlnTk     =   pCostValToken' 9 TkTextln    "<line>"     
+pStringTk     =   pCostValToken' 7 TkString    ""        
+pCharTk       =   pCostValToken' 7 TkChar      "\NUL"    
+pInteger8Tk   =   pCostValToken' 7 TkInteger8  "0"       
+pInteger10Tk  =   pCostValToken' 7 TkInteger10 "0"       
+pInteger16Tk  =   pCostValToken' 7 TkInteger16 "0"
+pFractionTk   =   pCostValToken' 7 TkFraction  "0.0"
+pVaridTk      =   pCostValToken' 7 TkVarid     "<identifier>" 
+pVaridTk'     =   pCostValToken' 6 TkVarid     "<identifier>" 
+pConidTk      =   pCostValToken' 7 TkConid     "<Identifier>" 
+pConidTk'     =   pCostValToken' 6 TkConid     "<Identifier>" 
+pConsymTk     =   pCostValToken' 7 TkConOp     "<conoperator>"
+pVarsymTk     =   pCostValToken' 7 TkOp        "<operator>" 
+pTextnmTk     =   pCostValToken' 7 TkTextnm    "<name>"       
+pTextlnTk     =   pCostValToken' 7 TkTextln    "<line>"     
 pIntegerTk    =   pInteger10Tk
 %%]
 %%[8
-pQVaridTk     =   pCostValToken' 9 TkQVarid     "<identifier>" 
-pQConidTk     =   pCostValToken' 9 TkQConid     "<Identifier>" 
-pQConsymTk    =   pCostValToken' 9 TkQConOp     "<conoperator>"
-pQVarsymTk    =   pCostValToken' 9 TkQOp        "<operator>" 
+pQVaridTk     =   pCostValToken' 7 TkQVarid     "<identifier>" 
+pQConidTk     =   pCostValToken' 7 TkQConid     "<Identifier>" 
+pQConsymTk    =   pCostValToken' 7 TkQConOp     "<conoperator>"
+pQVarsymTk    =   pCostValToken' 7 TkQOp        "<operator>" 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -259,11 +274,13 @@ pQVarsymTk    =   pCostValToken' 9 TkQOp        "<operator>"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
-pCONID, pCONSYM, pVARID, pVARSYM :: IsParser p Token => p Token
+pCONID, pCONID', pCONSYM, pVARID, pVARID', pVARSYM :: IsParser p Token => p Token
 
 pCONID           = pConidTk
+pCONID'          = pConidTk
 pCONSYM          = pConsymTk
 pVARID           = pVaridTk
+pVARID'          = pVaridTk'
 pVARSYM          = pVarsymTk
 %%]
 
@@ -409,6 +426,7 @@ tokOpStrsHS4   = [  ]
 pLARROW        ,
     pVBAR      ,
     pDATA      ,
+    pNEWTYPE   ,
     pCASE      ,
     pOF        ,
     pIF        ,
@@ -422,6 +440,7 @@ pLARROW        ,
 pLARROW          = pKeyTk "<-"
 pVBAR            = pKeyTk "|"
 pDATA            = pKeyTk "data"
+pNEWTYPE         = pKeyTk "newtype"
 pCASE            = pKeyTk "case"
 pOF              = pKeyTk "of"
 pIF              = pKeyTk "if"
@@ -430,7 +449,7 @@ pELSE            = pKeyTk "else"
 pDOTDOT          = pKeyTk ".."
 
 tokKeywStrsEH5 = [ "data", "case", "if", "then", "else", "of" ]
-tokKeywStrsHS5 = [  ]
+tokKeywStrsHS5 = [ "newtype" ]
 tokOpStrsEH5   = [ "|" ]
 tokOpStrsHS5   = [ "<-", ".." ]
 %%]
@@ -477,7 +496,6 @@ pLABEL          ,
     pFOREIGN    ,
     pIMPORT     ,
     pJAZY       ,
-    pDO         ,
     pEXPORT     ,
     pQUALIFIED  ,
     pAS         ,
@@ -494,7 +512,6 @@ pCCALL           = pKeyTk "ccallconv"
 pSTDCALL         = pKeyTk "stdcallconv"
 pDYNAMIC         = pKeyTk "dynamic"
 pFOREIGN         = pKeyTk "foreign"
-pDO              = pKeyTk "do"
 pIMPORT          = pKeyTk "import"
 pJAZY            = pKeyTk "jazy"
 pEXPORT          = pKeyTk "export"
@@ -503,7 +520,7 @@ pAS              = pKeyTk "as"
 pHIDING          = pKeyTk "hiding"
 
 tokKeywStrsEH8 = [ "foreign", "import", "jazy" ]
-tokKeywStrsHS8 = [ "export", "qualified", "as", "hiding", "label", "safe", "threadsafe", "ccallconv", "stdcallconv", "dynamic", "do" ]
+tokKeywStrsHS8 = [ "export", "qualified", "as", "hiding", "label", "safe", "unsafe", "threadsafe", "ccallconv", "stdcallconv", "dynamic" ]
 %%]
 
 %%[9
@@ -514,7 +531,8 @@ pDARROW         ,
     pCLASS      ,
     pINSTANCE   ,
     pDERIVING   ,
-    pDEFAULT    
+    pDEFAULT    ,
+    pDO         
   :: IsParser p Token => p Token
 %%]
 
@@ -527,9 +545,10 @@ pCLASS           = pKeyTk "class"
 pINSTANCE        = pKeyTk "instance"
 pDERIVING        = pKeyTk "deriving"
 pDEFAULT         = pKeyTk "default"
+pDO              = pKeyTk "do"
 
 tokKeywStrsEH9 = [ "class", "instance" ]
-tokKeywStrsHS9 = [ "deriving", "default" ]
+tokKeywStrsHS9 = [ "deriving", "default", "do" ]
 tokOpStrsEH9   = [ show hsnPrArrow, "<:" ]
 tokOpStrsHS9   = [  ]
 %%]
@@ -539,18 +558,23 @@ tokOpStrsEH10  = [ show hsnDynVar ]
 tokOpStrsHS10  = [  ]
 %%]
 
-%%[11
+%%[50
 %%]
 
-%%[12
-pTYPE      ,
-    pNEWTYPE   
+%%[11
+pTYPE
   :: IsParser p Token => p Token
 %%]
 
-%%[12
+%%[11
 pTYPE            = pKeyTk "type"
-pNEWTYPE         = pKeyTk "newtype"
+%%]
+
+%%[11
+tokKeywStrsEH11 = [  ]
+tokKeywStrsHS11 = [ "type" ]
+tokOpStrsEH11   = [  ]
+tokOpStrsHS11   = [  ]
 %%]
 
 %%[13
@@ -562,7 +586,7 @@ pDOTNET
 pDOTNET          = pKeyTk "dotnet"
 %%]
 
-%%[99
+%%[90
 pDEPRECATED_prag = pKeyTk "deprecated_prag"
 pCLOSE_prag      = pKeyTk "close_prag"
 pSOURCE_prag     = pKeyTk "source_prag"

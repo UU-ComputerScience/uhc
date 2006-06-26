@@ -3,7 +3,7 @@
 %include afp.fmt
 %%]
 
-%%[5 module {%{EH}Base.ScannerMachine} import(Data.Char,Data.List,Data.Maybe,IO,UU.Util.BinaryTrees,UU.Scanner.Position,EH.Util.ScanUtils,{%{EH}Base.Scanner.Token})
+%%[5 module {%{EH}Scanner.Machine} import(Data.Char,Data.List,Data.Maybe,IO,UU.Util.BinaryTrees,UU.Scanner.Position,EH.Util.ScanUtils,{%{EH}Scanner.Token})
 %%]
 
 %%[5.scanHandle -1.scanHandle
@@ -34,11 +34,12 @@ scan opts pos input
    isPairSym= locatein (scoSpecPairs opts)
 
    isIdStart c = isLower c || c == '_'
-
    isIdChar  c = isAlphaNum c || c == '\'' || c == '_'
+   isQIdChar c = isIdChar c || c == '.'
 
-   scanIdent p s = let (name,rest) = span isIdChar s
-                   in (name,advc (length name) p,rest)
+   scanIdent isId p s
+     = (name,advc (length name) p,rest)
+     where (name,rest) = span isId s
 %%]
 
 %%[8
@@ -99,21 +100,56 @@ scan opts pos input
      | isSymbol c = reserved [c] p
                   : doScan(advc 1 p) s
      | isIdStart c || isUpper c
-         = let (name', p', s')    = scanIdent (advc 1 p) s
+         = let (name', p', s')    = scanIdent isIdChar (advc 1 p) s
                name               = c:name'
                tok                = if iskw name
                                     then reserved name p
                                     else if null name' && isSymbol c
                                     then reserved [c] p
-                                    else valueToken (if isIdStart c then TkVarid else TkConid) name p
+                                    else valueToken (if isUpper c then TkConid else TkVarid) name p
            in tok :  doScan p' s'
      | isOpsym c = let (name, s') = span isOpsym cs
                        tok | isop name = reserved name p
                            | c==':'    = valueToken TkConOp name p
                            | otherwise = valueToken TkOp name p
                    in tok : doScan (foldl adv p name) s'
+%%]
+%%[5.isDigit
      | isDigit c = let (tktype,number,width,s') = getNumber cs
                    in  valueToken tktype number p : doScan (advc width p) s'
+%%]
+%%[8 -5.isDigit
+     | isDigit c
+         = let (tktype,number,width,s2) = getNumber cs
+               int1 = valueToken tktype number p : doScan (advc width p) s2
+           in  case s2 of
+                 ('.':s3) | tktype == TkInteger10 && tktype2 == TkInteger10
+                   -> case s4 of
+                        (c:s5) | c == 'e' || c == 'E'
+                          -> case s5 of
+                               (csign:s6)
+                                 | csign == '+' || csign == '-'
+                                   -> case s6 of
+                                        (c:_) | isDigit c && tktype3 == TkInteger10
+                                          -> float3
+                                          where (tktype3,number3,width3,s7) = getNumber s6
+                                                float3
+                                                  = valueToken TkFraction (number ++ "." ++ number2 ++ "E" ++ [csign] ++ number3) p
+                                                    : doScan (advc (width + width2 + width3 + 3) p) s7
+                                        _ -> float2
+                                 | isDigit csign && tktype3 == TkInteger10
+                                   -> float3
+                                 where (tktype3,number3,width3,s7) = getNumber s5
+                                       float3
+                                         = valueToken TkFraction (number ++ "." ++ number2 ++ "E" ++ number3) p
+                                           : doScan (advc (width + width2 + width3 + 2) p) s7
+                               _ -> float2
+                        _ -> float2
+                   where (tktype2,number2,width2,s4) = getNumber s3
+                         float2 = valueToken TkFraction (number ++ "." ++ number2) p : doScan (advc (width + width2 + 1) p) s4
+                 _ -> int1
+%%]
+%%[5
      | otherwise = errToken ("Unexpected character " ++ show c) p
                  : doScan (adv p c) s
 

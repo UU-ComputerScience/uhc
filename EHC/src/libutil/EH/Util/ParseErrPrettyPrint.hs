@@ -8,7 +8,6 @@ import Data.List
 import UU.Pretty
 import UU.Parsing
 import UU.Scanner.Position( noPos, Pos, Position(..) )
--- import UU.Scanner.GenToken
 import EH.Util.PPUtils
 
 -------------------------------------------------------------------------

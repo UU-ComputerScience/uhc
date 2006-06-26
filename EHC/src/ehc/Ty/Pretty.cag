@@ -228,7 +228,7 @@ SEM Pred
   | Lacks           lhs     .   pp      =   @ty.pp >|< "\\" >|< @nm
 %%]
 
-%%[11
+%%[50
 SEM Ty
   | Equal           loc     .   pp      =   pp_parens (maybe (mkDefaultTvNm "e" @tv) id (lookup @tv @lhs.tnMap) >|< "=" >|< @ty.pp)
 %%]
@@ -342,7 +342,7 @@ SEM Pred
                         .   parNeedL            =   []
 %%]
 
-%%[11
+%%[50
 SEM Ty
   | Equal       loc     .   parNeed             =   ParNotNeeded
 %%]

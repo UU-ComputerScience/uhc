@@ -31,7 +31,7 @@
 %%[9 export(predFIOpts,implFIOpts)
 %%]
 
-%%[11 import({%{EH}Ty.Instantiate})
+%%[50 import({%{EH}Ty.Instantiate})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -220,7 +220,7 @@ data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindR
                         ,  fioPredAsTy       ::  Bool                ,  fioAllowRPredElim       ::  Bool
                         ,  fioDontBind       ::  TyVarIdL
 %%]
-%%[11.FIOpts
+%%[50.FIOpts
                         ,  fioAllowEqOpen    ::  Bool                ,  fioInstCoConst          ::  HowToInst
 %%]
 %%[4.FIOpts.tl
@@ -244,7 +244,7 @@ strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindR
                         ,  fioPredAsTy       =   False               ,  fioAllowRPredElim       =   True
                         ,  fioDontBind       =   []
 %%]
-%%[11.FIOpts
+%%[50.FIOpts
                         ,  fioAllowEqOpen    =   False               ,  fioInstCoConst          =   instCoConst
 %%]
 %%[4.strongFIOpts.tl

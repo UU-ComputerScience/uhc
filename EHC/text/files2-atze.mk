@@ -53,15 +53,15 @@ text-variant-truu-ruler:
 	  TEXT_SHUFFLE_VARIANT=3 \
 	  text-variant-dflt-bib
 
-text-variant-pldi06-explimpl-tst:
+text-variant-popl07-explimpl-tst:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=pldi06 --set=acm --set=kscode --set=limitSize --set=storyExplImpl --set=asArticle" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=popl07 --set=acm --set=kscode --set=limitSize --set=storyExplImpl --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=4 \
 	  text-variant-dflt-once
 
-text-variant-pldi06-explimpl:
+text-variant-popl07-explimpl:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=pldi06 --set=acm --set=kscode --set=limitSize --set=storyExplImpl --set=asArticle" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=popl07 --set=acm --set=kscode --set=limitSize --set=storyExplImpl --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=4 \
 	  text-variant-dflt-bib
 

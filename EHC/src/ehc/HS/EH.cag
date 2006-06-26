@@ -47,7 +47,7 @@ SEM Declaration
     | PatternBinding
         lhs         .   eh          =   [EH.mkRngEH @range.eh EH.Decl_Val @pattern.eh @righthandside.eh]
     | TypeSignature
-        lhs         .   eh          =   [EH.mkRngEH @range.eh EH.Decl_TySig (head @names) @type.eh] -- !!!!
+        lhs         .   eh          =   map (\n -> EH.mkRngEH @range.eh EH.Decl_TySig n @type.eh) @names
     | Fixity
         lhs         .   eh          =   []
     | Empty
@@ -56,15 +56,16 @@ SEM Declaration
 %%[5
     | Data
         lhs         .   eh          =   let (_,n,ns) = @simpletype.eh
-                                        in  [EH.mkRngEH @range.eh EH.Decl_Data n (map EH.TyVar_Var ns) @constructors.eh]
+                                        in  [EH.mkRngEH @range.eh EH.Decl_Data False n (map EH.TyVar_Var ns) @constructors.eh]
+    | Newtype
+        lhs         .   eh          =   let (_,n,ns) = @simpletype.eh
+                                        in  [EH.mkRngEH @range.eh EH.Decl_Data True n (map EH.TyVar_Var ns) [@constructor.eh]]
 %%]
-%%[99
-        context                  : ContextItems
-%%]
-%%[5
-%%]
-%%[55
-        derivings                : Names
+%%[8
+    | ForeignImport
+        lhs         .   eh          =   [EH.mkRngEH @range.eh EH.Decl_FFI @callconvention (maybe "safe" id @safety) (maybe (show @name) id @importname) @name @type.eh]
+    | ForeignExport
+        lhs         .   eh          =   []
 %%]
 %%[9
     | Class
@@ -81,25 +82,12 @@ SEM Declaration
     | InstanceUseImplicitly
         lhs         .   eh          =   let h = EH.mkRngEH @range.eh EH.PrExpr_Class @name @types.eh
                                         in  [EH.mkRngEH @range.eh EH.Decl_InstanceIntro @expression.eh h]
-%%]
-%%[55
-    | Newtype
-        lhs         .   eh          =   EH.mkRngEH @range.eh XX
-        context                  : ContextItems
-        simpletype               : SimpleType
-        constructor              : Constructor  -- has only one field, no strictness
-        derivings                : Names
-%%]
-%%[55
-    | Type
-        lhs         .   eh          =   EH.mkRngEH @range.eh XX
-        simpletype               : SimpleType
-        type                     : Type
-%%]
-%%[55
     | Default
-        lhs         .   eh          =   EH.mkRngEH @range.eh XX
-        types                    : Types        -- should be instances of Num
+        lhs         .   eh          =   []
+%%]
+%%[11
+    | Type
+        lhs         .   eh          =   []
 %%]
 
 %%[9
@@ -108,10 +96,10 @@ ATTR FunctionalDependencies [ | | eh USE {:} {[]}: {[EH.FuncDep]} ]
 ATTR FunctionalDependency [ | | eh: {EH.FuncDep} ]
 
 SEM FunctionalDependency
-	| Dependency
-		lhs			.	eh			=	EH.mkRngEH @range.eh EH.FuncDep_Dep
-										  (map (EH.mkRngEH @range.eh EH.TyVar_Var) @fromtypevariables)
-										  (map (EH.mkRngEH @range.eh EH.TyVar_Var) @totypevariables)
+    | Dependency
+        lhs         .   eh          =   EH.mkRngEH @range.eh EH.FuncDep_Dep
+                                          (map (EH.mkRngEH @range.eh EH.TyVar_Var) @fromtypevariables)
+                                          (map (EH.mkRngEH @range.eh EH.TyVar_Var) @totypevariables)
 %%]
 
 -- ------------------------------------------------------------------------
@@ -211,8 +199,8 @@ SEM ContextItem
         loc         .   eh          =   undefined -- may not occur nested
 
 SEM ContextItem
-	| * - Implicits NoImplicits
-		loc			.	ehTy		=	EH.mkRngEH @range.eh EH.TyExpr_Pred @eh
+    | * - Implicits NoImplicits
+        loc         .   ehTy        =   EH.mkRngEH @range.eh EH.TyExpr_Pred @eh
     | Implicits
         loc         .   ehTy        =   EH.mkRngEH @range.eh EH.TyExpr_Impls
     | NoImplicits
@@ -314,8 +302,16 @@ SEM MaybeExpression
 SEM Expression
     | Literal
         lhs         .   eh          =   case @literal.eh of
-                                          Literal_Int  r s -> EH.mkRngEH r EH.Expr_IConst (read s)
-                                          Literal_Char r s -> EH.mkRngEH r EH.Expr_CConst (head s)
+                                          Literal_Int    r s -> EH.mkRngEH r EH.Expr_IConst (read s)
+                                          Literal_Char   r s -> EH.mkRngEH r EH.Expr_CConst (head s)
+%%]
+%%[5
+                                          Literal_String r s -> EH.mkRngEH r EH.Expr_SConst s
+%%]
+%%[8
+                                          Literal_Float  r s -> EH.mkRngEH r EH.Expr_FConst (read s)
+%%]
+%%[1
     | Variable
         lhs         .   eh          =   EH.mkRngEH @range.eh EH.Expr_Var @name
     | Constructor
@@ -391,10 +387,9 @@ SEM Expression
     | ImplicitLambda
         lhs         .   eh          =   foldr (\(p,c) e -> EH.mkRngEH @range.eh EH.Expr_LamImpl c p e) @expression.eh @patterns.eh
 %%]
-%%[99
+%%[9
     | Do
-        lhs         .   eh          =   EH.mkRngEH @range.eh XX
-        statements               : Statements
+        lhs         .   (eh,_)      =   foldr1 (\(_,s) (e,_) -> (s e,undefined)) @statements.eh
 %%]
 -- Helium
 %%[55
@@ -409,29 +404,49 @@ ATTR ContextedExpressions [ | | eh USE {:} {[]}: {[(EH.Expr,EH.PrExpr)]} ]
 ATTR ContextedExpression [ | | eh: {(EH.Expr,EH.PrExpr)} ]
 
 SEM ContextedExpression
-	| Contexted
-		lhs			.	eh			=	(@expression.eh,@context.eh)
+    | Contexted
+        lhs         .   eh          =   (@expression.eh,@context.eh)
 %%]
 
-%%[99
-ATTR Statements [ | | eh USE {:} {[]}: {[EH.Statement]} ]
+%%[5 hs
+ehGenerator :: Range -> EH.PatExpr -> (EH.Expr -> EH.Expr) -> EH.Expr -> EH.Expr -> EH.Expr
+ehGenerator r p mkRes fail e
+  = EH.mkLet r
+      (Just
+        [EH.Decl_Val
+           (EH.mkRngEH r EH.PatExpr_Var ok)
+           (EH.mkRngEH r EH.Expr_Lam
+             (EH.mkRngEH r EH.PatExpr_Var x)
+             (EH.mkCase r
+               (EH.mkRngEH r EH.Expr_Var x)
+               [(p,e),(EH.mkRngEH r EH.PatExpr_Var hsnWild,fail)]
+           ) )
+        ])
+      (mkRes (EH.mkRngEH r EH.Expr_Var ok))
+  where ok = mkHNm "ok"
+        x  = mkHNm "x"
+%%]
 
-ATTR Statement [ | | eh: {EH.Statement} ]
+%%[9
+ATTR Statements [ | | eh USE {:} {[]}: {[(EH.Expr,EH.Expr -> EH.Expr)]} ]
+
+ATTR Statement [ | | eh: {(EH.Expr,EH.Expr -> EH.Expr)} ]
 
 SEM Statement
     | Expression
-        lhs         .   eh          =   EH.mkRngEH @range.eh XX
-        expression               : Expression
+        lhs         .   eh          =   (@expression.eh,\e -> ehExpVarApp @range.eh (mkHNm ">>") [@expression.eh,e])
     | Let
-        lhs         .   eh          =   EH.mkRngEH @range.eh XX
-        declarations             : Declarations
+        lhs         .   eh          =   (EH.mkUnit @range.eh,EH.mkLet @range.eh (Just @declarations.eh))
     | Generator
-        lhs         .   eh          =   EH.mkRngEH @range.eh XX
-        pattern                  : Pattern
-        expression               : Expression
+        lhs         .   eh          =   (@expression.eh
+                                        ,ehGenerator
+                                           @range.eh @pattern.eh
+                                           (\e -> ehExpVarApp @range.eh (mkHNm ">>=") [@expression.eh,e])
+                                           (EH.mkError' (mkHNm "fail") @range.eh "monadic bind")
+                                        )
+%%]
     | Empty
         lhs         .   eh          =   EH.mkRngEH @range.eh XX
-%%]
 
 %%[5
 ATTR Qualifiers [ | | eh USE {:} {[]}: {[EH.Expr -> EH.Expr]} ]
@@ -444,20 +459,10 @@ SEM Qualifier
     | Let
         lhs         .   eh          =   \e -> EH.mkLet @range.eh (Just @declarations.eh) e
     | Generator
-        lhs         .   eh          =   let ok = mkHNm "ok"
-                                            x  = mkHNm "x"
-                                        in  \e -> EH.mkLet @range.eh
-                                                    (Just
-                                                      [EH.Decl_Val
-                                                         (EH.mkRngEH @range.eh EH.PatExpr_Var ok)
-                                                         (EH.mkRngEH @range.eh EH.Expr_Lam
-                                                           (EH.mkRngEH @range.eh EH.PatExpr_Var x)
-                                                           (EH.mkCase @range.eh
-                                                             (EH.mkRngEH @range.eh EH.Expr_Var x)
-                                                             [(@pattern.eh,e),(EH.mkRngEH @range.eh EH.PatExpr_Var hsnWild,semCon hsnListNil)]
-                                                         ) )
-                                                      ])
-                                                    (ehExpVarApp @range.eh (mkHNm "concatMap") [EH.mkRngEH @range.eh EH.Expr_Var ok,@expression.eh])
+        lhs         .   eh          =   ehGenerator
+                                           @range.eh @pattern.eh
+                                           (\e -> ehExpVarApp @range.eh (mkHNm "concatMap") [e,@expression.eh])
+                                           (semCon hsnListNil)
     | Empty
         lhs         .   eh          =   \e -> ehExpConApp @range.eh hsnListCons [e,semCon hsnListNil]
 %%]
@@ -639,8 +644,16 @@ ATTR Pattern [ | | eh: {EH.PatExpr} ]
 SEM Pattern
     | Literal
         lhs         .   eh          =   case @literal.eh of
-                                          Literal_Int  r s -> EH.mkRngEH r EH.PatExpr_IConst (read s)
-                                          Literal_Char r s -> EH.mkRngEH r EH.PatExpr_CConst (head s)
+                                          Literal_Int    r s -> EH.mkRngEH r EH.PatExpr_IConst (read s)
+                                          Literal_Char   r s -> EH.mkRngEH r EH.PatExpr_CConst (head s)
+%%]
+%%[5
+                                          Literal_String r s -> EH.mkRngEH r EH.PatExpr_SConst s
+%%]
+%%[8
+                                          Literal_Float  r s -> EH.mkRngEH r EH.PatExpr_FConst (read s)
+%%]
+%%[1
     | Variable
         lhs         .   eh          =   EH.mkRngEH @range.eh EH.PatExpr_Var @name       
     | Constructor
@@ -700,8 +713,8 @@ ATTR ContextedPatterns [ | | eh USE {:} {[]}: {[(EH.PatExpr,EH.PrExpr)]} ]
 ATTR ContextedPattern [ | | eh: {(EH.PatExpr,EH.PrExpr)} ]
 
 SEM ContextedPattern
-	| Contexted
-		lhs			.	eh			=	(@pattern.eh,@context.eh)
+    | Contexted
+        lhs         .   eh          =   (@pattern.eh,@context.eh)
 %%]
 
 -- ------------------------------------------------------------------------
@@ -729,8 +742,9 @@ SEM Literal
 %%[1
 ATTR Strings [ | | eh USE {:} {[]}: {[String]} ]
 
-ATTR MaybeInt [ | | eh USE {`const`} {Nothing}: {Maybe Int} ]
-
 ATTR Range [ | | eh: SELF ]
 %%]
+ATTR MaybeInt [ | | eh USE {`const`} {Nothing}: {Maybe Int} ]
+ATTR MaybeString [ | | eh USE {`const`} {Nothing}: {Maybe String} ]
+
 

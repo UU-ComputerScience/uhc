@@ -53,7 +53,10 @@ RULER2_OPTS			:= $(RULER2_OPTS_DFLT)
 
 # order to shuffle
 # 4_99: interim for stuff from 4, needed for 4_2, because of ruler generated material uptil 4_2
-EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11, 4_99 < 4_2, 6 < 6_4
+# 4_2: Quantifier propagation experiment
+# 50: GADT experiment
+# 99: the 'final' version
+EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 99, 4_99 < 4_2, 6 < 6_4, 10 < 50
 
 # target suffix for core
 CORE_TARG_SUFFIX	:= grin

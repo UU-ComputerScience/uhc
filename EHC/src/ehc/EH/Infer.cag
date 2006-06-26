@@ -53,7 +53,7 @@ valElimExprAlts fio fe globTvL u c g
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.Let
-%%[99.Let
+%%[90.Let
 SEM Expr
   | Let         decls       .   tySigTyCnstr        =   emptyCnstr
                 loc         .   (_,lExSigTyCnstr)   =   valGamInst1ExistsWithCnstr @decls.tySigTyCnstr @lUniq @decls.gathTySigGam
@@ -81,7 +81,7 @@ SEM Expr
                             .   tqoTyCnstr          =   foldr (\tqo c -> tqoImplsCnstr tqo |=> c) emptyCnstr (gamElts @tqoGam)
 %%]
 
-%%[11
+%%[50
 %%]
 SEM Expr
   | Let         loc         .   lElimEqualValGam    =   valGamElimEqual (@decls.tyCnstr |=> @valGam_l_)
@@ -222,7 +222,7 @@ SEM AGItf
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.Val
-%%[99.Val
+%%[90.Val
 SEM Decl
   | Val         loc         .   imprFO              =   fitsIn impredFIOpts @fe uidStart (@expr.imprTyCnstr |=> @patExpr.ty) @expr.imprTy
                 lhs         .   imprTyCnstr         =   foCnstr @imprFO |=> @expr.imprTyCnstr
@@ -269,7 +269,7 @@ ATTR AllDataConstr AllCase [ valGam: ValGam | | ]
 ATTR AllCase [ | imprTyCnstr: Cnstr | ]
 %%]
 
-%%[11
+%%[50
 SEM Decl
   | Val         loc         .   (_,elimEqCnstr)     =   tyElimEqual @expr.ty
                 lhs         .   tyCnstr             =   @elimEqCnstr |=> @expr.tyCnstr
@@ -328,7 +328,7 @@ SEM Decl
 ATTR AllDataField [ | tyGam: TyGam | ]
 %%]
 
-%%[11
+%%[50
 ATTR AllDataConstrEq [ | tyGam: TyGam | ]
 %%]
 
@@ -485,7 +485,7 @@ ATTR AllDecl [ | tySigTyCnstr: Cnstr | ]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.TySig
-%%[99
+%%[90
 SEM Decl
   | TySig       loc         .   (gamSigTy,gamSigCnstr)
                                                     :=  tyAsCnstr @lUniq @ty_sig_
@@ -493,7 +493,7 @@ SEM Decl
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.Let.tySigGam
-%%[99.Let.tySigGam
+%%[90.Let.tySigGam
 SEM Expr
   | Let         decls       .   tySigGam            :=  @decls.tySigTyCnstr |=> @decls.gathTySigGam
 %%]

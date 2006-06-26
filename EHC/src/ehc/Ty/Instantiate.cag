@@ -32,7 +32,7 @@
 WRAPPER TyAGItf
 %%]
 
-%%[11 hs export(HowToInst,instCoFixed)
+%%[50 hs export(HowToInst,instCoFixed)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -81,7 +81,7 @@ instCoExist :: HowToInst
 instCoExist  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else Ty_Var v TyVarCateg_Exist
 %%]
 
-%%[11 hs
+%%[50 hs
 instCoFixed :: HowToInst
 instCoFixed  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else Ty_Var v TyVarCateg_Fixed
 %%]
@@ -192,7 +192,7 @@ SEM Ty
   | Var             lhs         .   repl        =   maybe @repl id (cnstrTyLookup @tv @lhs.replSubst)
 %%]
 
-%%[11
+%%[50
 SEM Ty
   | Equal           lhs         .   repl        =   maybe @repl (\t -> Ty_Equal (tyVar t) @ty.repl) (cnstrTyLookup @tv @lhs.replSubst)
 %%]

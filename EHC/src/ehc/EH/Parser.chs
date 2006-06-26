@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}EH.Parser} import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.GenToken, {%{EH}Base.Common}, {%{EH}Base.ScannerCommon}, {%{EH}EH})
+%%[1 module {%{EH}EH.Parser} import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.GenToken, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}EH})
 %%]
 
 %%[1 export(pAGItf)
@@ -135,7 +135,7 @@ pDecl           =    Decl_Val        <$>  pPatExprBase  <*   pEQUAL   <*> pExpr
                 <|>  Decl_TySig      <$>  pVar          <*   pDCOLON  <*> pTyExpr
 %%]
 %%[5.pDecl
-                <|>  Decl_Data       <$   pDATA         <*>  pCon       <*> pTyVars
+                <|>  Decl_Data False <$   pDATA         <*>  pCon       <*> pTyVars
                                                         <*   pEQUAL     <*> pDataConstrs
 %%]
 %%[6.pDecl
@@ -303,7 +303,7 @@ pTyExprApp      =    pApp pTyExprBase
 
 %%[9.pPackImpl
 pPackImpl       ::   EHCParser p -> EHCParser p
-pPackImpl       =    pPacked pOIMPL pOIMPL
+pPackImpl       =    pPacked pOIMPL pCIMPL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -414,7 +414,7 @@ pDataConstr     =    DataConstr_Constr <$> pCon <*> pTyExprs
 pDataConstr     =    DataConstr_Constr
                      <$> pCon <*> (pDataFields <|> pCurly pDataLabFields)
 %%]
-%%[11.DataConstr
+%%[50.DataConstr
                      <*> pList (DataConstrEq_Eq <$ pComma <*> pTyVar <* pKey "=" <*> pTyExpr)
 %%]
 %%[5.DataConstr2
@@ -526,7 +526,7 @@ pPrExprBase     =    pPrExprClass
                 <|>  pVar <**>  (    (\s v -> PrExpr_Lacks (RowTyExpr_Var v) s)
                                      <$ pKey "\\" <*> pSel
 %%]
-%%[11
+%%[50
 %%]
                                 <|>  (flip PrExpr_Equal)
                                      <$ pKey "=" <*> pTyExpr

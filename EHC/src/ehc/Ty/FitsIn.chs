@@ -379,7 +379,7 @@ fitsIn opts env uniq ty1 ty2
                 = fioBindRFirst (fiFIOpts fi) && allowBind fi t
 %%]
 
-%%[99.fitsIn.allowImpredTVBind -4.fitsIn.allowImpredTVBind
+%%[90.fitsIn.allowImpredTVBind -4.fitsIn.allowImpredTVBind
             allowImpredTVBindL fi (Ty_Var _ f) t
                 = fioBindLFirst (fiFIOpts fi) && f == TyVarCateg_Plain && not (tyIsImplsTail . fst . tyArrowArgRes $ t)
             allowImpredTVBindR fi (Ty_Var _ f) t
@@ -428,7 +428,7 @@ fitsIn opts env uniq ty1 ty2
             foCmbCSubst  ffo afo  = afo {foCSubst = foCSubst afo `cSubstApp` foCSubst ffo}
 %%]
 
-%%[11.fitsIn.foCmb
+%%[50.fitsIn.foCmb
             foCmbEqCnstr ffo afo  = afo {foEqCnstr = foEqCnstr afo |=> foEqCnstr ffo}
 %%]
 
@@ -440,7 +440,7 @@ fitsIn opts env uniq ty1 ty2
             foCmbApp     ffo      = foCmbPrfRes ffo . foCmbCoCon ffo . foCmbCnstr ffo . foCmbAppTy ffo
 %%]
 
-%%[11.fitsIn.foCmbApp -9.fitsIn.foCmbApp
+%%[50.fitsIn.foCmbApp -9.fitsIn.foCmbApp
             foCmbApp     ffo      = foCmbEqCnstr ffo . foCmbPrfRes ffo . foCmbCoCon ffo . foCmbCnstr ffo . foCmbAppTy ffo
 %%]
 
@@ -481,7 +481,7 @@ fitsIn opts env uniq ty1 ty2
             fPairWise = fPairWise' (\fo c -> foCnstr fo |=> c)
 %%]
 
-%%[11
+%%[50
             instCoConst = fioInstCoConst opts
 %%]
 
@@ -672,7 +672,7 @@ fitsIn opts env uniq ty1 ty2
                 where  fo = f fi t1 t2b
 %%]
 
-%%[11.fitsIn.EqualVar
+%%[50.fitsIn.EqualVar
             f fi t1@(Ty_Var v1 _) t2@(Ty_Equal v2 t2e)
                 | fioAllowEqOpen (fiFIOpts fi)      = (bind fi v2 t2e) {foEqCnstr = ce}
                 where  ce = v1 `cnstrTyUnit` Ty_Equal v1 t2e
@@ -710,7 +710,7 @@ fitsIn opts env uniq ty1 ty2
                 where  (fipl,t1pl) = mkTyPlusHard fi False v2 t1
 %%]
 
-%%[11.fitsIn.Equal
+%%[50.fitsIn.Equal
             f fi t1@(Ty_Equal v1 t1e)   t2@(Ty_Equal v2 t2e)
                 | v1 == v2                          = rfo
                 where  fo = f fi t1e t2e
