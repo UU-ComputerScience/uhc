@@ -426,6 +426,12 @@ SEM CExpr
                 loc         .   grVal       =   GrVal_Empty
 %%]
 
+%%[99
+SEM CExpr
+  | Integer     loc         .   grVal       :=  (if @lhs.doBox then mkGrBox hsnGrInt  else id)  (GrVal_LitInt $ fromInteger $ @integer)
+  | Double      loc         .   grVal       :=  (if @lhs.doBox then mkGrBox hsnGrInt  else id)  (GrVal_LitInt $ round $ @double)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Do boxing?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

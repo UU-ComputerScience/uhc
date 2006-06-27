@@ -137,5 +137,8 @@ SEM CExpr
   | ImplsLam    loc         .   pp          =   ppDef ("\\" >|< ppHole @uid >#< "-- Impl") ("->" >#< @body.pp)
 %%]
 
-
+%%[99
+SEM CExpr
+  | Integer     loc         .   pp          =   pp (show @integer)
+%%]
 

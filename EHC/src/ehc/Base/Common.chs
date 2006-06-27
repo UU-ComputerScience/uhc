@@ -130,6 +130,9 @@
 %%[10 export(hsnDynVar)
 %%]
 
+%%[99 export(hsnInteger,hsnDouble)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Haskell names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -203,14 +206,23 @@ hsnNegate                           =   HNm "negate"
 hsnError                            =   HNm "error"
 %%]
 
+%%[3.strUn
+strUn                               =   "un"
+%%]
+
+%%[99.strUn -3.strUn
+strUn                               =   "-"
+%%]
+
 %%[3
 hsnUn                               ::  HsName -> HsName
-hsnUn           nm                  =   HNm ("un" ++ show nm)
+hsnUn           nm                  =   HNm (strUn ++ show nm)
+%%]
 
-hsnIsUn         (HNm ('u':'n':_))   =   True
-hsnIsUn         _                   =   False
+%%[3
+hsnIsUn         (HNm s)             =   isPrefixOf strUn s
 
-hsnUnUn         (HNm ('u':'n':nm))  =   HNm nm
+hsnUnUn         (HNm s)             =   HNm (drop (length strUn) s)
 %%]
 
 %%[5
@@ -286,6 +298,11 @@ hsnIsUnknown                        =   (==hsnUnknown)
 
 %%[10
 hsnDynVar                           =   HNm "?"
+%%]
+
+%%[99
+hsnInteger                          =   HNm "Integer"
+hsnDouble                           =   HNm "Double"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

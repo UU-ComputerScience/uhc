@@ -216,6 +216,12 @@ DATA Expr
   | DynVar          nm              : {HsName}
 %%]
 
+%%[99.Expr
+DATA Expr
+  | IIConst         integer         : {Integer}
+  | DConst          double          : {Double}
+%%]
+
 %%[1.AllExpr
 SET AllExpr         = Expr
 %%]

@@ -548,4 +548,10 @@ SEM DataConstr
                                         ]
 %%]
 
+%%[99
+SEM Expr
+  | IIConst     lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","IIConst"] [@pp] [] []
+  | DConst      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","DConst"] [@pp] [] []
+%%]
+
 

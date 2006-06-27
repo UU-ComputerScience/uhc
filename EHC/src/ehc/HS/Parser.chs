@@ -186,9 +186,6 @@ pDeclaration
 %%[5
   <|> pDeclarationData
 %%]
-%%[8
-  <|> pDeclarationForeign
-%%]
 %%[9
   <|> pDeclarationClass
   <|> pDeclarationInstance
@@ -201,6 +198,9 @@ pDeclaration
 pTopDeclaration :: HSParser Declaration
 pTopDeclaration
   =   pDeclaration
+%%]
+%%[8
+  <|> pDeclarationForeign
 %%]
 %%[9
   <|> pDeclarationDefault
@@ -1051,7 +1051,8 @@ special_sym :: HSParser Token
 special_sym 
         =  pBANG    
        <|> pDOT     
-       <|> pSTAR    
+       <|> pSTAR
+       <|> pPERCENT
 
 -----------------------------------------------------------------------------
 -- Data constructors

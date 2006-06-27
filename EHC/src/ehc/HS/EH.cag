@@ -302,14 +302,36 @@ SEM MaybeExpression
 SEM Expression
     | Literal
         lhs         .   eh          =   case @literal.eh of
+%%]
+%%[1.Expression.LiteralInt
                                           Literal_Int    r s -> EH.mkRngEH r EH.Expr_IConst (read s)
+%%]
+%%[99.Expression.LiteralInt -1.Expression.LiteralInt
+                                          Literal_Int    r s -> ehExpVarApp r (HNm "fromInteger") [EH.Expr_IIConst (read s)]
+%%]
+%%[1
                                           Literal_Char   r s -> EH.mkRngEH r EH.Expr_CConst (head s)
 %%]
 %%[5
                                           Literal_String r s -> EH.mkRngEH r EH.Expr_SConst s
 %%]
-%%[8
+%%[8.Expression.LiteralFloat
                                           Literal_Float  r s -> EH.mkRngEH r EH.Expr_FConst (read s)
+%%]
+%%[99.Expression.LiteralFloat -8.Expression.LiteralFloat
+                                          Literal_Float  r s -> ehExpVarApp r (HNm "fromRational")
+                                                                  [EH.mkRngEH r EH.Expr_Parens $ ehExpVarApp r (HNm "%") [EH.Expr_IIConst (numerator f),EH.Expr_IIConst (denominator f)]]
+                                                             where (n,m,e) = getRational s
+                                                                   f :: Rational
+                                                                   f = ((read n * md + mn) * en) % (ed * md)
+                                                                   en, ed, mn, md :: Integer
+                                                                   (en,ed) = case e of
+                                                                               Just (Just "-",e) -> (1,10 ^ read e)
+                                                                               Just (_,e)        -> (10 ^ read e,1)
+                                                                               _                 -> (1,1)
+                                                                   (mn,md) = case m of
+                                                                               Just m -> (read m,10 ^ length m)
+                                                                               _      -> (1,1)
 %%]
 %%[1
     | Variable
