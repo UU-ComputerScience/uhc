@@ -35,6 +35,9 @@ data Expr   		[ expr, expr.impr 	]
     | LamImpl      	[ e.ilam 			]       lamPat  	:: PatExpr
                                 				lamBody 	:: Expr
                                 				lamPred 	:: Pred
+  view HS
+    = IIConst    	[ e.iint : e.int	]       integer   	:: Integer
+    | DConst    	[ e.double : e.int	]       double   	:: Double
 
 data Decl			[ decl, decl.impr	]
   view K

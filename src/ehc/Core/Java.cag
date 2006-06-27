@@ -261,6 +261,12 @@ SEM CExpr
   | ImplsLam    loc         .   jvSrc       =   @body.jvSrc
 %%]
 
+%%[99
+SEM CExpr
+  | Integer     loc         .   jvSrc       =   "new Int" >|< pp_parens (pp (show @integer))
+  | Double      loc         .   jvSrc       =   "new Double" >|< pp_parens (pp (show @double))
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Builtin distr to outer let
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

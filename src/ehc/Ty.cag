@@ -94,6 +94,9 @@
 %%[10 hs export(tyExtsOffset)
 %%]
 
+%%[99 hs export(tyInteger,tyDouble) 
+%%]
+
 %%[1 import({Ty/AbsSyn})
 DERIVING *     : Show, Eq, Ord
 %%]
@@ -409,7 +412,12 @@ tySumEmpty  = mkTySum []
 %%]
 
 %%[8 hs
-tyFloat  = Ty_Con hsnFloat
+tyFloat     = Ty_Con hsnFloat
+%%]
+
+%%[99 hs
+tyInteger   = Ty_Con hsnInteger
+tyDouble    = Ty_Con hsnDouble
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

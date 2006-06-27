@@ -6,6 +6,12 @@
 %%[5 module {%{EH}Scanner.Machine} import(Data.Char,Data.List,Data.Maybe,IO,UU.Util.BinaryTrees,UU.Scanner.Position,EH.Util.ScanUtils,{%{EH}Scanner.Token})
 %%]
 
+%%[5 export(scanHandle,scanFile)
+%%]
+
+%%[8 export(getRational)
+%%]
+
 %%[5.scanHandle -1.scanHandle
 scanHandle :: ScanOpts -> FilePath -> Handle -> IO [Token]
 scanHandle opts fn fh
@@ -120,34 +126,11 @@ scan opts pos input
 %%]
 %%[8 -5.isDigit
      | isDigit c
-         = let (tktype,number,width,s2) = getNumber cs
-               int1 = valueToken tktype number p : doScan (advc width p) s2
-           in  case s2 of
-                 ('.':s3) | tktype == TkInteger10 && tktype2 == TkInteger10
-                   -> case s4 of
-                        (c:s5) | c == 'e' || c == 'E'
-                          -> case s5 of
-                               (csign:s6)
-                                 | csign == '+' || csign == '-'
-                                   -> case s6 of
-                                        (c:_) | isDigit c && tktype3 == TkInteger10
-                                          -> float3
-                                          where (tktype3,number3,width3,s7) = getNumber s6
-                                                float3
-                                                  = valueToken TkFraction (number ++ "." ++ number2 ++ "E" ++ [csign] ++ number3) p
-                                                    : doScan (advc (width + width2 + width3 + 3) p) s7
-                                        _ -> float2
-                                 | isDigit csign && tktype3 == TkInteger10
-                                   -> float3
-                                 where (tktype3,number3,width3,s7) = getNumber s5
-                                       float3
-                                         = valueToken TkFraction (number ++ "." ++ number2 ++ "E" ++ number3) p
-                                           : doScan (advc (width + width2 + width3 + 2) p) s7
-                               _ -> float2
-                        _ -> float2
-                   where (tktype2,number2,width2,s4) = getNumber s3
-                         float2 = valueToken TkFraction (number ++ "." ++ number2) p : doScan (advc (width + width2 + 1) p) s4
-                 _ -> int1
+         = let (tktype,(number,mantissa,exp),w,cs') = getRational' cs
+               m = maybe "" (\mant -> "." ++ mant)
+               e = maybe "" (\(sign,exp) -> "E" ++ maybe "" id sign ++ exp)
+           in  valueToken tktype (number ++ m mantissa ++ e exp) p
+                 : doScan (advc w p) cs'
 %%]
 %%[5
      | otherwise = errToken ("Unexpected character " ++ show c) p
@@ -231,7 +214,47 @@ getNumber cs@(c:s)
           = let nrs@(n,rs) = span p ts
             in  if null n then const0
                           else (tk         , n, 2+length n,rs)
+%%]
 
+%%[8
+getRational' :: String -> (EnumValToken,(String,Maybe String,Maybe (Maybe String,String)),Int,String)
+getRational' s
+  = case s2 of
+      ('.':s3) | tktype == TkInteger10 && tktype2 == TkInteger10
+        -> case scanExp s4 of
+             Just (sign,number3,width3,s5)
+               -> (TkFraction,(number,Just number2,Just (sign,number3)),width + width2 + width3 + 1,s5)
+             _ -> (TkFraction,(number,Just number2,Nothing),width + width2 + 1,s4)
+        where (tktype2,number2,width2,s4) = getNumber s3
+      _ -> case scanExp s2 of
+             Just (sign,number3,width3,s5)
+               -> (TkFraction,(number,Nothing,Just (sign,number3)),width + width3,s5)
+             _ -> (tktype,(number,Nothing,Nothing),width,s2)
+  where (tktype,number,width,s2) = getNumber s
+        scanExp s
+          = case s of
+              (c:s5) | c == 'e' || c == 'E'
+                -> case s5 of
+                     (csign:s6)
+                       | csign == '+' || csign == '-'
+                         -> case s6 of
+                              (c:_) | isDigit c && tktype3 == TkInteger10
+                                -> Just (Just [csign],number3,width3+2,s7)
+                                where (tktype3,number3,width3,s7) = getNumber s6
+                              _ -> Nothing
+                       | isDigit csign && tktype3 == TkInteger10
+                         -> Just (Nothing,number3,width3+1,s7)
+                       where (tktype3,number3,width3,s7) = getNumber s5
+                     _ -> Nothing
+              _ -> Nothing
+
+getRational :: String -> (String,Maybe String,Maybe (Maybe String,String))
+getRational s
+  = n
+  where (_,n,_,_) = getRational' s
+%%]
+
+%%[5
 isHexaDigit :: Char -> Bool
 isHexaDigit  d = isDigit d || (d >= 'A' && d <= 'F') || (d >= 'a' && d <= 'f')
 

@@ -11,7 +11,7 @@ external _ instTyFixed ftv alpha tvarv exists forall
 -- View hierarchy
 -------------------------------------------------------------------------
 
-viewhierarchy = E < K < C < HM < I1 < EX < DT < CG < P, I1 < I2
+viewhierarchy = E < K < C < HM < I1 < EX < DT < CG < P < HS, I1 < I2
 
 -------------------------------------------------------------------------
 -- Rewriting
@@ -121,7 +121,7 @@ format tex predGam = Gamma
 format tex PredGam = Gamma
 
 -- Type
-external tyInt tyChar tyFloat tyString ANY thardS thardH tneedR tneedO
+external tyInt tyChar tyFloat tyInteger tyDouble tyString ANY thardS thardH tneedR tneedO
 
 format tex ity = isigma
 format tex lty = sigma.l
@@ -279,7 +279,7 @@ format ag tyexprCon = Ty_Con
 format ag tyexprQuant = Ty_Quant
 
 -- Translation to core (CExpr)
-external translInt translChar translString translFloat translVar emptyTranslBind
+external translInt translChar translString translFloat translDouble translInteger translVar emptyTranslBind
 
 format tex translExpr = Transl
 format tex TranslExpr = Transl
@@ -297,6 +297,10 @@ format tex translString = Transl
 format ag  translString = CExpr_String
 format tex translFloat = Transl
 format ag  translFloat = CExpr_Float
+format tex translDouble = Transl
+format ag  translDouble = CExpr_Double
+format tex translInteger = Transl
+format ag  translInteger = CExpr_Integer
 format tex translVar = Transl
 format ag  translVar = CExpr_Var
 
@@ -518,6 +522,52 @@ ruleset expr.base scheme expr "Expression type rules" =
       ---
       judge R : expr
           | translExpr = coe (translFloat (float) | TranslExpr)
+
+  rule e.iint : e.int "IIConst" =
+    view E =
+      ---
+      judge R : expr
+          | e = integer
+          | ty = tyInteger
+    view K =
+      judge F : fit
+          | lty = tyInteger
+      ---
+    view I2 =
+      ---
+      judge R : expr
+          | ity = tyInteger
+    view CG =
+      ---
+      judge R : expr
+          | translExpr = translInteger (integer)
+    view P =
+      ---
+      judge R : expr
+          | translExpr = coe (translInteger (integer) | TranslExpr)
+
+  rule e.double : e.int "DConst" =
+    view E =
+      ---
+      judge R : expr
+          | e = double
+          | ty = tyDouble
+    view K =
+      judge F : fit
+          | lty = tyDouble
+      ---
+    view I2 =
+      ---
+      judge R : expr
+          | ity = tyDouble
+    view CG =
+      ---
+      judge R : expr
+          | translExpr = translDouble (double)
+    view P =
+      ---
+      judge R : expr
+          | translExpr = coe (translDouble (double) | TranslExpr)
 
   rule e.var "Var" =
     view E =

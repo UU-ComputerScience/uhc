@@ -11,7 +11,7 @@ external _ instTyFixed ftv alpha tvarv exists forall
 -- View hierarchy
 -------------------------------------------------------------------------
 
-viewhierarchy = E < K < C < HM < I1 < EX < DT < CG < P, I1 < I2
+viewhierarchy = E < K < C < HM < I1 < EX < DT < CG < P < HS, I1 < I2
 
 -------------------------------------------------------------------------
 -- Rewriting
@@ -121,7 +121,7 @@ format tex predGam = Gamma
 format tex PredGam = Gamma
 
 -- Type
-external tyInt tyChar tyFloat tyString ANY thardS thardH tneedR tneedO
+external tyInt tyChar tyFloat tyInteger tyDouble tyString ANY thardS thardH tneedR tneedO
 
 format tex ity = isigma
 format tex lty = sigma.l
@@ -279,7 +279,7 @@ format ag tyexprCon = Ty_Con
 format ag tyexprQuant = Ty_Quant
 
 -- Translation to core (CExpr)
-external translInt translChar translString translFloat translVar emptyTranslBind
+external translInt translChar translString translFloat translDouble translInteger translVar emptyTranslBind
 
 format tex translExpr = Transl
 format tex TranslExpr = Transl
@@ -297,6 +297,10 @@ format tex translString = Transl
 format ag  translString = CExpr_String
 format tex translFloat = Transl
 format ag  translFloat = CExpr_Float
+format tex translDouble = Transl
+format ag  translDouble = CExpr_Double
+format tex translInteger = Transl
+format ag  translInteger = CExpr_Integer
 format tex translVar = Transl
 format ag  translVar = CExpr_Var
 

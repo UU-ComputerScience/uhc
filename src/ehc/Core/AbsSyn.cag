@@ -70,6 +70,12 @@ DATA CExpr
                 body            : CExpr
 %%]
 
+%%[99
+DATA CExpr
+  | Integer     integer         : {Integer}
+  | Double      double          : {Double}
+%%]
+
 %%[8
 DATA CBind
   | Bind        nm              : {HsName}
