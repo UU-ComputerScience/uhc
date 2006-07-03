@@ -470,9 +470,7 @@ Note: we have the ctable, can we do something with that?
 
 Every call to apply equals to an rewrite using the apply map. We must join all
 these apply into one argument, so we join them in a list and put them in the
-equation array at the top level.in a list and put them in the equation array at
-the top level.in a list and put them in the equation array at the top level.in
-a list and put them in the equation array at the top level.
+equation array at the top level.
 
 apply (P2upto  ) a => (P1upto a)
 apply (P1upto a) b => (Fupto  a b)

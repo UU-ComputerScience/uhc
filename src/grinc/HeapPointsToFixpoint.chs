@@ -200,7 +200,7 @@ heapChangeSet ((tag, deps), resultDep) env = do
     }
 	where
     throwTag      =  GrTag_Lit GrTagFun 0 (HNm "rethrow")
-    blackholeTag  =  GrTag_Lit GrTagHole 0 (HNm "blackhole")
+--    blackholeTag  =  GrTag_Lit GrTagHole 0 (HNm "blackhole")
     getBaseSet    =  maybe (return AV_Nothing) (\v -> lookupEnv env v >>= return . aeBaseSet)
 %%]
 

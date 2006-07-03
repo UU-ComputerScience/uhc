@@ -19,7 +19,7 @@
 %%[8 hs export(mkGrPatRecNode,mkGrPatConNode,mkGrPatTagNode,mkGrPatRecSplit,mkGrPatConSplit,mkGrUnbox,mkGrUnboxFFI) 
 %%]
 
-%%[8 hs export(GrNodeAdapt(..),grRecTag,hsnGrApply,hsnGrEval,hsnGrMain,grSpecialNmL,grBuiltinTyNmL) 
+%%[8 hs export(GrNodeAdapt(..),grRecTag,hsnGrApply,hsnGrEval,hsnGrMain,grBuiltinTyNmL) 
 %%]
 
 %%[8 hs export(EvApTagKey,EvApTagElt(..),EvApTagMp) 
@@ -37,14 +37,13 @@ DERIVING *     : Show, Eq
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-hsnGrApply  = HNm "apply"
-hsnGrEval   = HNm "eval"
+hsnGrApply  = HNm "!apply"
+hsnGrEval   = HNm "!eval"
 hsnGrMain   = hsnMain
 
 hsnGrInt    = hsnInt
 hsnGrChar   = hsnChar
 
-grSpecialNmL = [ hsnGrMain, hsnGrApply, hsnGrEval ]
 grBuiltinTyNmL = [ hsnGrInt, hsnGrChar ]
 %%]
 

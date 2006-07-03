@@ -22,11 +22,11 @@ TOPABS_PREFIX		:= $(shell pwd)/
 
 ### WinXX
 #EXEC_SUFFIX			:= .exe
-#PATH_SEP			:= \
+#PATH_SEP			:= /
 #PATHS_SEP			:= ;
 #PATHS_SEP_COL		:= :
-#STRIP_CMD				:= echo
-#TOPABS_PREFIX		:= c:/whatever
+#STRIP_CMD				:= strip
+#TOPABS_PREFIX		:= c:/whatever/
 
 ### remaining config
 # which version (usually v1 = current, v2 == under development)

@@ -1,0 +1,28 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  Llc code, top level %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Merge everyting together into a Low-level C compilation unit
+
+%%[8
+ATTR GrAGItf GrModule GrBindL GrBind [ entryNm: HsName | | llcDoc USE {>-<} {(text "")} : PP_Doc ]
+
+
+
+
+SEM GrModule
+  | Mod   lhs . llcDoc = text ("/* Generated LLC code for module " ++ show @baseName ++ " entry name " ++ show @lhs.entryNm  ++ "*/" )
+                         >-< @bindL.llcDoc
+                        
+                         
+SEM GrBind
+  | Bind  lhs . llcDoc = text ("void " ++ show @nm ++ "(void) {")  
+                         >-< text "    /* TODO */" 
+                         >-< text "}"
+
+%%]
