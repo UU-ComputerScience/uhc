@@ -48,7 +48,7 @@ buildAlternative t (_:av) arity rhsElem unique uf vf tf =
 buildEvalAlt :: HsName -> HsName -> GrTag -> [AbstractValue] -> [(GrTag, (Int, EvApTagElt))] -> HptMap -> Int -> (Int, [(Int, AbstractValue)], GrAlt)
 buildEvalAlt l s t av evalMap hptMap u = buildAlternative t av arity rhs u uf vf tf
     where
-    (arity, rhs) = fromJust' ("tag not found: " ++ show t) (lookup t evalMap)
+    (arity, rhs) = fromJust' ("tag not found: " ++ show t ++ " in " ++ show (map fst evalMap)) (lookup t evalMap)
     tf u args t  = error "no tag at the right hand side of eval map expected"
     uf u args    = (u, [], GrExpr_Unit $ GrVal_Var s)
     vf u args v  = let var      = HNPos u

@@ -7,7 +7,11 @@
 %%% Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{GRIN}GRINCCommon} import(System.Console.GetOpt,{%{EH}Base.Common}, qualified Data.Map as Map, qualified Data.Set as Set) export(GRINCOpts(..), defaultGRINCOpts, cmdLineOpts)
+%%[8 module {%{GRIN}GRINCCommon} 
+%%]
+%%[8 import( System.Console.GetOpt, {%{EH}Base.Common}, qualified Data.Map as Map, qualified Data.Set as Set)
+%%]
+%%[8 export(GRINCOpts(..), defaultGRINCOpts, cmdLineOpts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -74,12 +78,12 @@ cmdLineOpts
 %%]
 
 %%[8 export(wildcardNm, wildcardNr, evalNm, evalNr,  applyNm, applyNr, isSpecialBind, getNr, throwTag, blackholeTag)
-wildcardNm = HNm "__"
+wildcardNm = HNm "_"
 wildcardNr = HNPos (0)
 
-evalNm  =  HNm "eval"
+evalNm  =  HNm "!eval"
 evalNr  =  HNPos 1
-applyNm =  HNm "apply"
+applyNm =  HNm "!apply"
 applyNr =  HNPos 2
 
 isSpecialBind f = f == evalNm || f == applyNm
@@ -89,7 +93,7 @@ getNr (HNPos i) = i
 getNr a         = error $ "not a numbered name: " ++ show a
 
 --note: this is copied to HeapPointsToFixpoint.chs
-blackholeTag  =  GrTag_Lit GrTagHole  0 (HNm "backhole")
+blackholeTag  =  GrTag_Lit GrTagHole  0 (HNm "blackhole")
 throwTag      =  GrTag_Lit GrTagFun   0 (HNm "rethrow")
 %%]
 
@@ -129,7 +133,9 @@ getName' _  nm = error $ "findNewVar: Not a number: " ++ show nm
 %% Heap Points To Analysis Result %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.analysis import({%{GRIN}HeapPointsToFixpoint}, Data.Array, Data.Monoid) export(HptMap, getEnvVar, getHeapLoc, absFetch, addEnvVar, addEnvVars, getTags, getNodes, isBottom, AbstractValue(..), listInsert)
+%%[8.analysis import( {%{GRIN}HeapPointsToFixpoint},Data.Array, Data.Monoid) export(HptMap, getEnvVar, getHeapLoc, absFetch, addEnvVar, addEnvVars, getTags, getNodes, isBottom, AbstractValue(..), listInsert)
+
+
 type HptMap        = ((Array Int AbstractEnvElement, Array Int AbstractHeapElement), Map.Map Int AbstractValue)
 getEnvVar :: HptMap -> Int -> AbstractValue
 getEnvVar ((ea, _),m) i  | snd (bounds ea) >= i = aeBaseSet (ea ! i)

@@ -13,22 +13,22 @@ primitives information table.
 %%[8.abstractValues import({%{GRIN}HeapPointsToFixpoint},{%{EH}Base.Common(HsName(..))}, qualified Data.Set as Set, {%{EH}GrinCode},{%{GRIN}GRINCCommon})
 unboxedBasic = AV_Nodes $ Map.fromList [ (GrTag_Unboxed, [AV_Basic])
                                        ]
-booleanNodes = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "_False"), [AV_Basic])
-                                       , (GrTag_Lit GrTagCon 1 (HNm "_True" ), [AV_Basic])
+booleanNodes = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "False"), [AV_Basic])
+                                       , (GrTag_Lit GrTagCon 1 (HNm "True" ), [AV_Basic])
                                        ]
-compareNodes = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "_EQ"), [AV_Basic])
-                                       , (GrTag_Lit GrTagCon 1 (HNm "_GT"), [AV_Basic])
-                                       , (GrTag_Lit GrTagCon 2 (HNm "_LT"), [AV_Basic])
+compareNodes = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "EQ"), [AV_Basic])
+                                       , (GrTag_Lit GrTagCon 1 (HNm "GT"), [AV_Basic])
+                                       , (GrTag_Lit GrTagCon 2 (HNm "LT"), [AV_Basic])
                                        ]
 %%]
 
 %%[8.codeGeneration import({%{GRIN}CmmCode}, {%{GRIN}CmmCode.Building}) export(false_node, true_node)
 --buildin datatype
-true_tag   = cmmVar "@C$_True"
-false_tag  = cmmVar "@C$_False"
-eq_tag     = cmmVar "@C$_EQ"
-lt_tag     = cmmVar "@C$_LT"
-gt_tag     = cmmVar "@C$_GT"
+true_tag   = cmmVar "@C$True"
+false_tag  = cmmVar "@C$False"
+eq_tag     = cmmVar "@C$EQ"
+lt_tag     = cmmVar "@C$LT"
+gt_tag     = cmmVar "@C$GT"
 
 true_node   = [true_tag , int 0]
 false_node  = [false_tag, int 0]

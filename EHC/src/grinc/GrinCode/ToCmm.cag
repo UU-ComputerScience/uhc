@@ -37,13 +37,13 @@ SEM GrModule
 buildDriver nm env = procedure callConv "@grin_main" [] (vars ~> registerRoots ~> callMain ~> endGrin)
     where
     callConv = "" -- error $ "size=" ++ show (lookup name env)
-    vars     = varDecl False "" valType [("$__", Nothing), ("@result", Nothing)]
-    callMain = cmmCall "" (cmmVar name) [] recievers []
+    vars     = varDecl False "" valType [("$_", Nothing), ("@result", Nothing)]
+    callMain = cmmCall "" (cmmVar name) [] receivers []
     registerRoots = cmmCall "C" (cmmVar "@roots") [ptrArg $ cmmVar "@Global_Nodes", ptrArg $ cmmVar "@Global_Nodes_End"] [] []
     endGrin  = cmmReturn callConv [valArg $ cmmVar resultVar]
     name = cmmName' nm
-    recievers = padWith (const tmpVar) [tmpVar, tmpVar, ("", resultVar)] (fromJust' ("entrypoint not found: " ++ show name) $ lookup name env)
-    tmpVar    = ("", "$__")
+    receivers = padWith (const tmpVar) [tmpVar, tmpVar, ("", resultVar)] (fromJust' ("entrypoint not found: " ++ show name) $ lookup name env)
+    tmpVar    = ("", "$_")
     resultVar = "@result"
 %%]
 
@@ -74,7 +74,7 @@ ATTR GrExpr    [ | | cmmBody USE {~>} {emptyBuilder}: {CmmBodyBuilder} ]
 
 SEM GrBind
   | Bind        loc . cmmBody      = @traceStm ~> @tmpVar ~> @expr.cmmBody ~> @expr.handlers
-                loc . tmpVar       = varDecl False "" valType [("$__", Nothing)]
+                loc . tmpVar       = varDecl False "" valType [("$_", Nothing)]
 %%]
 
 %%%%%%%%%%%%%%%%%%%
@@ -107,11 +107,11 @@ SEM GrBind
 ATTR GrPat [ | | definedNames USE {++} {[]}: {CmmNameRegister} ]
 SEM GrPat
   | Node       loc . fldNames = map (elemVar.cmmName') @fldL
-               loc . definedNames = let knownTag   = maybe @fldNames (const $ tagVar "$__" : @fldNames) @tag.tagName
+               loc . definedNames = let knownTag   = maybe @fldNames (const $ tagVar "$_" : @fldNames) @tag.tagName
                                         unknownTag = maybe @fldNames (\n -> tagVar n : @fldNames) @tag.tagName
                                     in if @tag.isPtr then unknownTag else knownTag
   | NodeSplit  loc . definedNames = error "No NodeAdapt suport in GrPat"
-  | Tag        loc . definedNames = let knownTag   = maybe [] (const [tagVar "$__"]) @tag.tagName
+  | Tag        loc . definedNames = let knownTag   = maybe [] (const [tagVar "$_"]) @tag.tagName
                                         unknownTag = maybe [] (\e -> [tagVar e]) @tag.tagName
                                     in if @tag.isPtr then unknownTag else knownTag
   | Empty      loc . definedNames = []
@@ -194,9 +194,9 @@ newNames base count | count == 0 = []
 
 %%[8.Call
 SEM GrExpr
-  | Call   loc  . realRecievers = nreg2knames @lhs.targetNames
+  | Call   loc  . realReceivers = nreg2knames @lhs.targetNames
                 . argsReturned  = fromJust' ("Call: " ++ show @nm) $ lookup (cmmName' @nm) @lhs.returnSizeEnv
-                . recievers     = padWith mkTempVar @realRecievers @argsReturned
+                . receivers     = padWith mkTempVar @realReceivers @argsReturned
                 . mbFlow        = if null @lhs.handlerName then 
                                     if @isLastExpr then
                                       Nothing
@@ -207,23 +207,23 @@ SEM GrExpr
                                       error "Tailcall found while exception handler is active"
                                     else
                                       Just [ CmmFlowElement_Cuts [@lhs.handlerName] ]
-                . cmmBody       = call' @mbFlow @nm @argL.cmmFunctionArgs @recievers
+                . cmmBody       = call' @mbFlow @nm @argL.cmmFunctionArgs @receivers
 
-  | App    loc  . realRecievers = nreg2knames @lhs.targetNames
+  | App    loc  . realReceivers = nreg2knames @lhs.targetNames
                 . argsReturned  = fromJust' ("Apply: " ++ show @appArgs) $ lookup apply @lhs.returnSizeEnv
-                . recievers     = padWith mkTempVar @realRecievers @argsReturned
+                . receivers     = padWith mkTempVar @realReceivers @argsReturned
                 . evalReturnCount = fromJust $ lookup eval @lhs.returnSizeEnv
                 . appArgs       = map (valArg. cmmVar') (newNames @nm @evalReturnCount)
                 . mbFlow        = if @isLastExpr then Nothing else Just []
                 . cmmBody       = error "Apply call while generating code"
-                                  --call @mbFlow apply (@appArgs ++ @argL.cmmFunctionArgs) @recievers
+                                  --call @mbFlow apply (@appArgs ++ @argL.cmmFunctionArgs) @receivers
 
-  | Eval   loc  . realRecievers = nreg2knames @lhs.targetNames
+  | Eval   loc  . realReceivers = nreg2knames @lhs.targetNames
                 . argsReturned  = fromJust' ("Eval: " ++ show @nm) $ lookup eval @lhs.returnSizeEnv
-                . recievers     = padWith mkTempVar @realRecievers @argsReturned
+                . receivers     = padWith mkTempVar @realReceivers @argsReturned
                 . mbFlow        = if @isLastExpr then Nothing else Just []
                 . cmmBody       = error "Eval call while generating code"
-                                  -- call @mbFlow eval [arg' @nm] @recievers
+                                  -- call @mbFlow eval [arg' @nm] @receivers
 
 -- Collect function arguments 
 ATTR GrValL [ | | cmmFunctionArgs : {CmmActuals} ]
@@ -247,9 +247,9 @@ note that a C call cannot be handled as a last expression, this might change.
 
 %%[8.FFI
 SEM GrExpr
-  | FFI    loc  . recievers   = nreg2knames @lhs.targetNames
+  | FFI    loc  . receivers   = nreg2knames @lhs.targetNames
                 . primStm     = @primStmF (map cmmName' @argL) @options
-                . callStm     = cmmCall "C" (cmmVar $ cmmName @nm) (map (valArg . cmmVar') @argL) @recievers []
+                . callStm     = cmmCall "C" (cmmVar $ cmmName @nm) (map (valArg . cmmVar') @argL) @receivers []
                 . cmmBody     = if @isPrim then @primStm
                                 else if not @isLastExpr then @callStm
                                 else error "FFI as last expression"
@@ -308,23 +308,23 @@ buildStore nms [p] = let (first4, others)  = splitAt 4 nms
                          alloc         = [ (varUpdate p, cmmVar "@hp")
                                          , (varUpdate "@hp", cmmVar "@hp" <+> int grow)
                                          ] ++ (if bigsize > 0
-                                               then [ (varUpdate "$__", cmmVar "@hp" <+> int (5*4))]
+                                               then [ (varUpdate "$_", cmmVar "@hp" <+> int (5*4))]
                                                else []
                                               )
                          assign v e tf i = let hd = (memUpdate valType (cmmVar v) i, e)
                                                tl = tf (i+4)
                                            in hd:tl
                          bigStore      = if bigsize > 0 then
-                                         foldr (assign "$__") (const [(memUpdate ptrType (cmmVar p) (4*4), cmmVar "$__")]) bnms 0
+                                         foldr (assign "$_") (const [(memUpdate ptrType (cmmVar p) (4*4), cmmVar "$_")]) bnms 0
                                          else []
                          store         = foldr (assign p) (const bigStore) snms 0
                          gc_alloc      = cmmCall "C" (cmmVar "@alloc") [valArg $ int 20] [("address", p)] [] ~>
-                                         cmmCall "C" (cmmVar "@alloc") [valArg $ int (grow - 20)] [("address", "$__")] []
+                                         cmmCall "C" (cmmVar "@alloc") [valArg $ int (grow - 20)] [("address", "$_")] []
                      in gc_alloc ~> updates store
 
 buildFetch p offset mbTag tags targetNames = let loadSingle = fetch (cmmVar' p) (offset*4)
-                                                 loadPtr    = cmmAssign [varUpdate "$__"] [fetch (cmmVar' p) (4*4)]
-                                                 loadDouble = fetch (cmmVar "$__") ((offset-4)*4)
+                                                 loadPtr    = cmmAssign [varUpdate "$_"] [fetch (cmmVar' p) (4*4)]
+                                                 loadDouble = fetch (cmmVar "$_") ((offset-4)*4)
                                                  tagLayout = do { t <- mbTag
                                                                 ; let cmmTagName = tagLit2cmmName t
                                                                 ; (layout, _, _) <- Map.lookup cmmTagName tags
@@ -362,17 +362,17 @@ buildUpdate p es = let (first4, others)  = splitAt 4 es
                        (ses, overflow)   = (first4, []) -- if null others then (first4, []) else splitAt 3 first4
                        bes               = overflow ++ others
                        bigsize       = length bes
-                       alloc         =  [ (varUpdate "$__", cmmVar "@hp")
+                       alloc         =  [ (varUpdate "$_", cmmVar "@hp")
                                         , (varUpdate "@hp", cmmVar "@hp" <+> int (4*bigsize))
                                         ]
                        assign v e tf i = let hd = (memUpdate valType (cmmVar v) i, e)
                                              tl = tf (i+4)
                                          in hd:tl
                        bigStore      = if bigsize > 0 then
-                                       foldr (assign "$__") (const [(memUpdate ptrType (cmmVar' p) (4*4), cmmVar "$__")]) bes 0
+                                       foldr (assign "$_") (const [(memUpdate ptrType (cmmVar' p) (4*4), cmmVar "$_")]) bes 0
                                        else []
                        store         = foldr (assign (cmmName' p)) (const bigStore) ses 0
-                       gc_alloc      = cmmCall "C" (cmmVar "@alloc") [valArg $ int (4*bigsize)] [("address", "$__")] []
+                       gc_alloc      = cmmCall "C" (cmmVar "@alloc") [valArg $ int (4*bigsize)] [("address", "$_")] []
                     in if bigsize > 0 then gc_alloc ~> updates store else updates store
 %%]
 
@@ -381,7 +381,7 @@ buildUpdate p es = let (first4, others)  = splitAt 4 es
 %%%%%%%%%%%%%%%%%%%%%%%
 
 Here we introduce the code to enter and leave an exception handler. The handler
-itself are generated by ExceptionHanders.cag
+itself is generated by ExceptionHandlers.cag
 
 %%[8.exceptions
 SEM GrExpr                             

@@ -55,7 +55,7 @@ DATA CmmDeclaration
   | Export        names        : {CmmExternalNames}
   | Constant      type         : {CmmOptionalType}
                   name         : {CmmName}
-		  value        : CmmExpression
+                  value        : CmmExpression
   | Typedef       type         : {CmmType}
                   names        : {CmmNames}
   | Var           invariant    : {Bool} 
@@ -88,17 +88,17 @@ DATA CmmStatement
                   alts         : CmmAlternatives
   | Span          key          : CmmExpression
                   value        : CmmExpression
-		  body         : CmmBody
+                  body         : CmmBody
   | Assign        lvals        : CmmLValues
                   expressions  : CmmExpressions
   | Call          callConv     : {CmmCallConv}
                   fun          : CmmExpression
-		  args         : CmmActuals
+                  args         : CmmActuals
                   recievers    : {CmmKindedNames}
                   flow         : CmmFlow
   | TailCall      callConv     : {CmmCallConv}
                   fun          : CmmExpression
-		  args         : CmmActuals
+                  args         : CmmActuals
   | Return        callConv     : {CmmCallConv}
                   args         : CmmActuals
   | Label         name         : {CmmName}

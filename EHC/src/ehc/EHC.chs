@@ -306,7 +306,7 @@ crOutputCore modNm cr
                       ;  putPPFile (fpathToStr (fpathSetSuff "java" jFP)) jPP 120
                       })
          ;  let  grin = cmodGrin u1 cMod
-                 grinPP = ppGrModule (Just []) grin
+                 grinPP = ppGrModule grin
          ;  when (ehcOptCoreGrin opts)
                  (do  {  putPPFile (fpathToStr (fpathSetSuff "grin" fp)) grinPP 1000
                       ;  when (ehcOptCoreCmm opts)

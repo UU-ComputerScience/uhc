@@ -7,7 +7,7 @@
 %%% GRI parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}GrinCode.Parser} import(IO, UU.Parsing, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Scanner}, {%{EH}GrinCode}) export(pModule,scanOpts)
+%%[8 module {%{EH}GrinCode.Parser} import(IO, UU.Parsing, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Scanner}, {%{EH}GrinCode}) export(pModule,scanOpts,scoSpecChars,scoOpChars,scoKeywordsTxt)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -18,7 +18,7 @@
 scanOpts :: ScanOpts
 scanOpts
   =  defaultScanOpts
-        {   scoKeywordsTxt      =   [ show hsnGrEval, show hsnGrApply
+        {   scoKeywordsTxt      =   [ "eval", "apply"
                                     , "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi"
                                     , "throw", "try", "catch", "ctags", "applymap", "evalmap"
                                     , "C", "F", "P", "A", "R", "H", "U", "W"
@@ -55,7 +55,7 @@ pBindL          ::   GRIParser GrBindL
 pBindL          =    pCurly_pSemics pBind
 
 pBind           ::   GRIParser GrBind
-pBind           =    GrBind_Bind <$> (pGrNm <|> pGrSpecialNm) <*> pGrNmL <* pKey "=" <*> pCurly pExprSeq
+pBind           =    GrBind_Bind <$> pGrNm <*> pGrNmL <* pKey "=" <*> pCurly pExprSeq
                 <|>  GrBind_Rec <$ pKey "rec" <*> pBindL
 
 pCTags          ::   GRIParser CTagsMp
@@ -68,7 +68,7 @@ pEvApTagMp      ::   GRIParser EvApTagMp
 pEvApTagMp      =    pCurly_pSemics
                         ((\t a ea -> ((t,a),ea))
                         <$> pTag <*> pInt <* pKey "->"
-                            <*> (EvApTagTag <$> pTag <|> EvApTagUnit <$ pKey "unit" <|> EvApTagVar <$> pGrOrSpecialNm <|> EvApTagThrow <$ pKey "throw")
+                            <*> (EvApTagTag <$> pTag <|> EvApTagUnit <$ pKey "unit" <|> EvApTagVar <$> pGrNm <|> EvApTagThrow <$ pKey "throw")
                         )
 
 pExprSeq        ::   GRIParser GrExpr
@@ -77,13 +77,13 @@ pExprSeq        =    pChainr ((\p e1 e2 -> GrExpr_Seq e1 p e2) <$ pSemi <* pKey 
 pExpr           ::   GRIParser GrExpr
 pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
                 <|>  GrExpr_Store   <$  pKey "store"        <*> pVal
-                <|>  GrExpr_Eval    <$  pGrKey hsnGrEval    <*> pGrNm
+                <|>  GrExpr_Eval    <$  pKey "eval"         <*> pGrNm
                 <|>  GrExpr_Fetch   <$  pKey "fetch"        <*> pGrNm   <*>  (Just <$> pInt `opt` Nothing)
                                                                         <*>  (Just <$> pTag `opt` Nothing)
                 <|>  GrExpr_Update  <$  pKey "update"       <*> pGrNm   <*>  pVal
                                                                         <*>  (Just <$> pTag `opt` Nothing)
                 <|>  GrExpr_Case    <$  pKey "case"         <*> pVal    <*   pKey "of" <*> pCurly_pSemics pAlt
-                <|>  GrExpr_App     <$  pGrKey hsnGrApply   <*> pGrNm   <*>  pSValL
+                <|>  GrExpr_App     <$  pKey "apply"        <*> pGrNm   <*>  pSValL
                 <|>  GrExpr_FFI     <$  pKey "ffi"          <*> pId     <*>  pGrNmL
                 <|>  GrExpr_Throw   <$  pKey "throw"        <*> pGrNm
                 <|>  GrExpr_Catch   <$  pKey "try"          <*> pCurly pExprSeq
@@ -138,7 +138,7 @@ pSplit          =    GrSplit_Sel <$> pGrNm <* pKey "=" <*> pVal
 
 pTag            ::   GRIParser GrTag
 pTag            =    pKey "#"
-                     *>  (   (\i c n -> GrTag_Lit c i n) <$> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> pGrOrSpecialNm
+                     *>  (   (\i c n -> GrTag_Lit c i n) <$> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> pGrNm
                          <|> GrTag_Unboxed <$ pKey "U"
                          )
 
@@ -159,12 +159,6 @@ pGrNmL          =    pList pGrNm
 
 pGrNm           ::   GRIParser HsName
 pGrNm           =    HNm <$> pVarid
-
-pGrSpecialNm    ::   GRIParser HsName
-pGrSpecialNm    =    pGrKey hsnGrEval <|> pGrKey hsnGrApply
-
-pGrOrSpecialNm  ::   GRIParser HsName
-pGrOrSpecialNm  =    pGrNm <|> pGrSpecialNm
 
 pGrKey          ::   HsName -> GRIParser HsName
 pGrKey k        =    HNm <$> pKey (show k)

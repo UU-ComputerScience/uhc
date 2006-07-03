@@ -50,7 +50,7 @@ doCompileGrin inp opts
               Right (fp,grmod)
                 -> (initState {gcsPath = fp, gcsMbCode = Just grmod},caLoad False)
         initState = GRINCompileState
-            { gcsUnique     = 3                 -- 0,1,2 are reserved (resp: __, eval, apply)
+            { gcsUnique     = 3                 -- 0,1,2 are reserved for wildcard, eval and apply respectively
             , gcsMbCode     = Nothing
             , gcsEntry      = HNm "main"
             , gcsMbOrigNms  = Nothing
@@ -333,7 +333,8 @@ caSplitFetch = do
     }
 %%]
 
-%%[8.writeCmm import({%{GRIN}GrinCode.CmmCode}, {%{GRIN}CmmCode.Pretty})
+%%[8.writeCmm import({%{GRIN}GrinCode.GenCmm}, {%{GRIN}CmmCode.Pretty})
+
 caGrin2Cmm :: CompileAction CmmUnit
 caGrin2Cmm = do 
     { code <- gets gcsGrinCode
@@ -353,13 +354,36 @@ caWriteCmm = do
     }
 %%]
 
+
+%%[8.writeLlc import({%{GRIN}GrinCode.GenLlc}, {%{GRIN}CmmCode.Pretty})
+
+caGrin2Llc :: CompileAction PP_Doc
+caGrin2Llc = do 
+    { code <- gets gcsGrinCode
+    ; entry <- gets gcsEntry
+    ; doTrace <- gets (grincOptGenTrace . gcsOpts)
+    ; return (grin2llc entry code doTrace)
+    }
+
+caWriteLlc :: CompileAction ()
+caWriteLlc = do
+    { input <- gets gcsPath
+    ; let output = fpathSetSuff "llc" input
+    ; options <- gets gcsOpts
+    ; putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
+    ; llc <- caGrin2Llc
+    ; liftIO $ writePP (const llc) () output
+    }
+%%]
+
+
     -- fpathToStr
     -- fpathBase
 
 %%[8.writeGrin import({%{EH}GrinCode.Pretty})
 caWriteGrin :: Bool -> String -> CompileAction ()
 caWriteGrin debug fn = harden_ $ do -- bug: when writePP throws an exeption harden will block it
-    { when debug (gets (grincOptDebug . gcsOpts) >>= guard)
+    { let aa = "dummy"   -- when debug (gets (grincOptDebug . gcsOpts) >>= guard)
     ; input <- gets gcsPath
     ; let prefix     = if debug then "debug." else ""
           fileName   = prefix ++ if null fn then fpathBase input ++ "-out" else fn
@@ -368,7 +392,7 @@ caWriteGrin debug fn = harden_ $ do -- bug: when writePP throws an exeption hard
     ; if debug then putDebugMsg message else putMsg VerboseALot message Nothing
     ; code <- gets gcsGrinCode
     ; options <- gets gcsOpts
-    ; liftIO $ writePP (ppGrModule Nothing) code output
+    ; liftIO $ writePP ppGrModule code output
     }
 %%]
 
@@ -376,6 +400,7 @@ caWriteGrin debug fn = harden_ $ do -- bug: when writePP throws an exeption hard
 -- create initial GRIN
 caLoad doParse = task_ VerboseNormal "Loading" 
     ( do { when doParse caParseGrin
+         ; caWriteGrin True "0-parsed"
          ; caCleanupPass
          ; caNumberIdents
          ; caAddLazyApplySupport
@@ -453,6 +478,7 @@ caOutput = task_ VerboseNormal "Writing code"
     ( do { outputGrin <- gets (grincOptDumpTrfGrin . gcsOpts)
          ; maybe (return ()) (caWriteGrin False) outputGrin
          ; caWriteCmm
+         ; caWriteLlc
          }
     )
 
