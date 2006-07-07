@@ -9,7 +9,7 @@
 %%[8 import(Control.Monad.Error,Control.Monad.State, Control.Exception, Data.Maybe, EH.Util.FPath)
 %%]
 
-%%[8 import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}GrinCode}, {%{EH}Scanner.Scanner})
+%%[8 import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}GrinCode}, {%{EH}Scanner.Scanner})
 %%]
 
 %%[8 import( UU.Parsing, UU.Pretty, EH.Util.CompileRun )
@@ -30,7 +30,7 @@ doCompileGrin
 %%]
 
 %%[8 -1.doCompileGrin import(qualified Data.Map as Map, {%{GRIN}HeapPointsToFixpoint})
-doCompileGrin :: Either String (FPath,GrModule)  -> GRINCOpts -> IO ()
+doCompileGrin :: Either String (FPath,GrModule)  -> EHCOpts -> IO ()
 doCompileGrin inp opts
   = drive state putErrs
       ( do { load               -- from phd boquist (fig 4.1)
@@ -66,31 +66,8 @@ doCompileGrin inp opts
 %%% Compilerdriver for GRINC (will become obsolete once included as part of EHC)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.utils
-openFPath :: FPath -> IOMode -> IO (String, Handle)
-openFPath fp mode | fpathIsEmpty fp = case mode of 
-                                        ReadMode      -> return ("<stdin>" ,stdin )
-                                        WriteMode     -> return ("<stdout>",stdout)
-                                        AppendMode    -> return ("<stdout>",stdout)
-                                        ReadWriteMode -> error "cannot use stdin/stdout with random access"
-                  | otherwise       = do
-                                        let fNm = fpathToStr fp
-                                        h <- openFile fNm mode
-                                        return (fNm,h)
-
-
-writePP ::  (a -> PP_Doc) -> a -> FPath -> IO ()
-writePP f text fp = writeToFile (show.f $ text) fp
-
-writeToFile str fp 
-  = do { (fn, fh) <- openFPath fp WriteMode
-       ; hPutStrLn fh str
-       ; hClose fh
-       }
-%%]
-
 %%[8.parse import({%{EH}GrinCode.Parser})
-parseGrin :: FPath -> GRINCOpts -> IO (String, GrModule)
+parseGrin :: FPath -> EHCOpts -> IO (String, GrModule)
 parseGrin fp opts = do
     (fn,fh) <- openFPath fp ReadMode
     tokens  <- scanHandle scanOpts fn fh
@@ -124,7 +101,7 @@ caDropUnusedBindings = do
     ; vm    <- gets gcsOrigNms
     ; (code, dot) <- return $ dropUnusedBindings entry vm code
     ; modify (gcsUpdateGrinCode code)
-    ; outputCallGraph <- gets (grincOptDumpCallGraph . gcsOpts)
+    ; outputCallGraph <- gets (ehcOptDumpCallGraph . gcsOpts)
     ; when outputCallGraph
         (do { input <- gets gcsPath
             ; let output = fpathSetSuff "dot" input
@@ -339,18 +316,21 @@ caGrin2Cmm :: CompileAction CmmUnit
 caGrin2Cmm = do 
     { code <- gets gcsGrinCode
     ; entry <- gets gcsEntry
-    ; doTrace <- gets (grincOptGenTrace . gcsOpts)
+    ; doTrace <- gets (ehcOptGenTrace . gcsOpts)
     ; return (grin2cmm entry code doTrace)
     }
 
 caWriteCmm :: CompileAction ()
-caWriteCmm = do
+caWriteCmm 
+ = do
     { input <- gets gcsPath
     ; let output = fpathSetSuff "cmm" input
     ; options <- gets gcsOpts
-    ; putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
-    ; cmm <- caGrin2Cmm
-    ; liftIO $ writePP pp cmm output
+    ; when (ehcOptEmitEH options)
+           (do { putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
+               ; cmm <- caGrin2Cmm
+               ; liftIO $ writePP pp cmm output
+               })
     }
 %%]
 
@@ -361,7 +341,7 @@ caGrin2Llc :: CompileAction PP_Doc
 caGrin2Llc = do 
     { code <- gets gcsGrinCode
     ; entry <- gets gcsEntry
-    ; doTrace <- gets (grincOptGenTrace . gcsOpts)
+    ; doTrace <- gets (ehcOptGenTrace . gcsOpts)
     ; return (grin2llc entry code doTrace)
     }
 
@@ -370,9 +350,11 @@ caWriteLlc = do
     { input <- gets gcsPath
     ; let output = fpathSetSuff "llc" input
     ; options <- gets gcsOpts
-    ; putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
-    ; llc <- caGrin2Llc
-    ; liftIO $ writePP (const llc) () output
+    ; when (ehcOptEmitEH options)
+           (do { putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
+               ; llc <- caGrin2Llc
+               ; liftIO $ writePP (const llc) () output
+               })
     }
 %%]
 
@@ -383,7 +365,7 @@ caWriteLlc = do
 %%[8.writeGrin import({%{EH}GrinCode.Pretty})
 caWriteGrin :: Bool -> String -> CompileAction ()
 caWriteGrin debug fn = harden_ $ do -- bug: when writePP throws an exeption harden will block it
-    { let aa = "dummy"   -- when debug (gets (grincOptDebug . gcsOpts) >>= guard)
+    { when debug (gets (ehcOptDebug . gcsOpts) >>= guard)
     ; input <- gets gcsPath
     ; let prefix     = if debug then "debug." else ""
           fileName   = prefix ++ if null fn then fpathBase input ++ "-out" else fn
@@ -414,7 +396,7 @@ caAnalyse = task_ VerboseNormal "Analysing"
          ; caRightSkew
          ; high <- gets gcsUnique
          ; caHeapPointsTo (3,high-1)
-         ; debugging <- gets (grincOptDebug . gcsOpts)
+         ; debugging <- gets (ehcOptDebug . gcsOpts)
          ; when debugging (do { ((env, heap),_) <- gets gcsHptMap
                               ; vm    <- gets gcsOrigNms
                               ; let newVar i = show (i, getName vm i)
@@ -475,7 +457,7 @@ caFinalize = task_ VerboseNormal "Finalizing"
 
 -- write final code
 caOutput = task_ VerboseNormal "Writing code"
-    ( do { outputGrin <- gets (grincOptDumpTrfGrin . gcsOpts)
+    ( do { outputGrin <- gets (ehcOptDumpTrfGrin . gcsOpts)
          ; maybe (return ()) (caWriteGrin False) outputGrin
          ; caWriteCmm
          ; caWriteLlc
@@ -483,7 +465,7 @@ caOutput = task_ VerboseNormal "Writing code"
     )
 
 printArray s f g a = harden_ $ do
-    { isDebugging <- gets (grincOptDebug . gcsOpts)
+    { isDebugging <- gets (ehcOptDebug . gcsOpts)
     ; guard isDebugging
     ; putDebugMsg s 
     ; mapM_ (\(k, v) -> putDebugMsg ("  " ++ f k ++ " = " ++ show (g v))) (assocs a)
@@ -502,7 +484,7 @@ data GRINCompileState = GRINCompileState
     , gcsMbOrigNms :: Maybe IdentNameMap
     , gcsMbHptMap  :: Maybe HptMap
 	, gcsPath      :: FPath
-	, gcsOpts      :: GRINCOpts
+	, gcsOpts      :: EHCOpts
     , gcsMsgInfo   :: (Int, Bool)
 	}
 
@@ -564,7 +546,7 @@ putLn = putStrLn ""
  
 putDebugMsg :: String -> CompileAction ()
 putDebugMsg msg = harden_ $ do
-    { isDebugging <- gets (grincOptDebug . gcsOpts)
+    { isDebugging <- gets (ehcOptDebug . gcsOpts)
     ; guard isDebugging
     ; (indent, first) <- gets gcsMsgInfo
     ; when first (liftIO putLn >> modify (\s -> s { gcsMsgInfo = (indent, False) }))
@@ -573,7 +555,7 @@ putDebugMsg msg = harden_ $ do
 
 putMsg :: Verbosity -> String -> (Maybe String) -> CompileAction ()
 putMsg minVerbosity msg mbMsg =  harden_ $ do
-    currentVerbosity <- gets (grincOptVerbosity . gcsOpts)
+    currentVerbosity <- gets (ehcOptVerbosity . gcsOpts)
     guard (currentVerbosity >= minVerbosity)
     (indent, first) <- gets gcsMsgInfo
     when first (liftIO putLn)
@@ -595,7 +577,7 @@ task minVerbosity taskDesc ca f = do
     where
     startMsg :: Verbosity -> String -> CompileAction ()
     startMsg minVerbosity msg =  harden_ $ do
-        currentVerbosity <- gets (grincOptVerbosity . gcsOpts)
+        currentVerbosity <- gets (ehcOptVerbosity . gcsOpts)
         guard (currentVerbosity >= minVerbosity)
         (indent, first) <- gets gcsMsgInfo
         when first (liftIO putLn)
@@ -605,10 +587,10 @@ task minVerbosity taskDesc ca f = do
     
     finishMsg :: Verbosity -> Maybe String -> Integer -> CompileAction ()
     finishMsg minVerbosity mbMsg cpuUsage =  harden_ $ do
-        { currentVerbosity <- gets (grincOptVerbosity . gcsOpts)
+        { currentVerbosity <- gets (ehcOptVerbosity . gcsOpts)
         ; guard (currentVerbosity >= minVerbosity)
         ; (oldIndent, first) <- gets gcsMsgInfo
-        ; doTiming <- gets (grincOptTimeCompile . gcsOpts)
+        ; doTiming <- gets (ehcOptTimeCompile . gcsOpts)
         ; let indent       =  oldIndent - 4
               timeMsgOld   =  show (cpuUsage `div` fst cpuUsageInfo) ++ " " ++ snd cpuUsageInfo
               timeMsg      =  showFFloat (Just 2) (fromInteger cpuUsage / 1000000000000) " seconds"
@@ -664,5 +646,3 @@ caFix step = caFixCount 1
         changes <- step 
         if changes then (caFixCount $ n+1) else return n
 %%]
-
-% vim:ts=4:et:ai:

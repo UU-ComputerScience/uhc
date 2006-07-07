@@ -70,7 +70,8 @@ trfOptOverrides opts trf
 %%[1.EHCOpts
 data EHCOpts
   = EHCOpts
-      {  ehcOptDumpPP         ::  Maybe String
+      {  ehcOptShowEH         ::  Bool
+      ,  ehcOptShowAst        ::  Bool
       ,  ehcOptShowTopTyPP    ::  Bool
       ,  ehcOptHelp           ::  Bool
       ,  ehcOptVersion        ::  Bool
@@ -81,10 +82,13 @@ data EHCOpts
       ,  ehcOptDumpTrfGrin    ::  Maybe String
       ,  ehcOptTimeCompile    ::  Bool
       ,  ehcOptGenTrace       ::  Bool
-      ,  ehcOptCore           ::  Bool
-      ,  ehcOptCoreJava       ::  Bool
-      ,  ehcOptCoreGrin       ::  Bool
-      ,  ehcOptCoreCmm        ::  Bool
+      ,  ehcOptShowGrin       ::  Bool
+      ,  ehcOptEmitEH         ::  Bool
+      ,  ehcOptEmitCore       ::  Bool
+      ,  ehcOptEmitJava       ::  Bool
+      ,  ehcOptEmitGrin       ::  Bool
+      ,  ehcOptEmitCmm        ::  Bool
+      ,  ehcOptEmitLlc        ::  Bool
       ,  ehcOptSearchPath     ::  [String]
       ,  ehcOptVerbosity      ::  Verbosity
       ,  ehcOptTrf            ::  [TrfOpt]
@@ -99,7 +103,8 @@ data EHCOpts
 %%[1.defaultEHCOpts
 defaultEHCOpts
   = EHCOpts
-      {  ehcOptDumpPP         =   Just "pp"
+      {  ehcOptShowEH         =   True
+      ,  ehcOptShowAst        =   False
       ,  ehcOptShowTopTyPP    =   False
       ,  ehcOptHelp           =   False
       ,  ehcOptVersion        =   False
@@ -110,12 +115,15 @@ defaultEHCOpts
       ,  ehcOptDumpTrfGrin    =   Nothing
       ,  ehcOptTimeCompile    =   False
       ,  ehcOptGenTrace       =   False
-      ,  ehcOptCore           =   True
-      ,  ehcOptCoreJava       =   False
-      ,  ehcOptCoreGrin       =   False
-      ,  ehcOptCoreCmm        =   False
+      ,  ehcOptShowGrin       =   False
+      ,  ehcOptEmitEH         =   False
+      ,  ehcOptEmitCore       =   True
+      ,  ehcOptEmitJava       =   False
+      ,  ehcOptEmitGrin       =   False
+      ,  ehcOptEmitCmm        =   False
+      ,  ehcOptEmitLlc        =   False
       ,  ehcOptSearchPath     =   []
-      ,  ehcOptVerbosity      =   VerboseQuiet
+      ,  ehcOptVerbosity      =   VerboseNormal
       ,  ehcOptTrf            =   []
 %%]
 %%[9.defaultEHCOpts
@@ -127,10 +135,10 @@ defaultEHCOpts
 
 %%[1.ehcCmdLineOptsA
 ehcCmdLineOpts  
-  =  [  Option "p"  ["pretty"]        (OptArg oPretty "pp|ast|grin|no|off")
-          "do output pretty printed version of src (pp), abstract syntax tree (ast) or nothing (no|off), default=pp"
+  =  [  Option "p"  ["pretty"]        (OptArg oPretty "eh|grin|ast|-")
+          "show pretty printed EH/Grin source or EH abstract syntax tree, default=eh, -=off"
      ,  Option "d"  ["debug"]         (NoArg oDebug)
-          "same as --pretty=ast + extra debug info"
+          "show extra debug information"
      ,  Option ""   ["show-top-ty"]   (OptArg oShowTopTy "yes|no")
           "show top ty, default=no"
      ,  Option "h"  ["help"]          (NoArg oHelp)
@@ -139,18 +147,18 @@ ehcCmdLineOpts
           "print version info"
 %%]
 %%[8.ehcCmdLineOptsA
-     ,  Option "c"  ["code"]          (OptArg oCode "core|java|grin|cmm")
-          "dump code (java- > .java, grin -> .grin, cmm -> .grin + .cmm, - -> none) on file, default=core (-> .core)"
+     ,  Option "c"  ["code"]          (OptArg oCode "eh|core|java|grin|cmm|llc|-")
+          "write code to file, default=core"
      ,  Option ""   ["gen-trace"]     (NoArg oGenTrace)
-          "emit trace info into C-- code (grin only)"
+          "emit trace info into cmm code"
      ,  Option ""   ["trf"]           (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
           "switch on/off transformations"
      ,  Option ""   ["time-compilation"]  (NoArg oTimeCompile)
-          "show CPU usage for each compilation phase (grin only, with -v2)"
+          "show grin compiler CPU usage for each compilation phase (only with -v2)"
      ,  Option ""   ["dump-call-graph"]   (NoArg oDumpCallGraph)
-          "dump call graph as dot file (grin only)"
+          "output grin call graph as dot file"
      ,  Option ""   ["dump-trf-grin"]     (OptArg oDumpTrfGrin "basename")
-          "dump grin code after transformation (grin only)"
+          "dump intermediate grin code after transformation"
      ,  Option "v"  ["verbose"]       (OptArg oVerbose "0|1|2")
           "be verbose, 0=quiet 1=normal 2=noisy, default=1"
 %%]
@@ -159,10 +167,17 @@ ehcCmdLineOpts
 %%]
 %%[1.ehcCmdLineOptsB
   where  oPretty     ms  o =  case ms of
-                                Just "no"   -> o { ehcOptDumpPP        = Nothing   }
-                                Just "off"  -> o { ehcOptDumpPP        = Nothing   }
-                                Just p      -> o { ehcOptDumpPP        = Just p    }
-                                _           -> o
+                                Just "-"     -> o { ehcOptShowEH       = False     }
+                                Just "no"    -> o { ehcOptShowEH       = False     }
+                                Just "off"   -> o { ehcOptShowEH       = False     }
+                                Just "eh"    -> o { ehcOptShowEH       = True      }
+                                Just "ast"   -> o { ehcOptShowAst      = True      }
+%%]
+%%[8.ehcCmdLineOptsB
+                                Just "grin"  -> o { ehcOptShowGrin     = True      }
+%%]
+%%[1.ehcCmdLineOptsB
+                                _            -> o
          oShowTopTy  ms  o =  case ms of
                                 Just "yes"  -> o { ehcOptShowTopTyPP   = True      }
                                 _           -> o
@@ -176,11 +191,14 @@ ehcCmdLineOpts
          oDumpTrfGrin ms o =  o { ehcOptDumpTrfGrin       = maybe (Just "") (const ms) ms }
          oDumpCallGraph  o =  o { ehcOptDumpCallGraph     = True }
          oCode       ms  o =  case ms of
-                                Just "java"  -> o { ehcOptCoreJava     = True      }
-                                Just "grin"  -> o { ehcOptCoreGrin     = True      }
-                                Just "cmm"   -> o { ehcOptCoreGrin     = True, ehcOptCoreCmm      = True      }
-                                Just "-"     -> o { ehcOptCore         = False     }
-                                _            -> o { ehcOptCore         = True      }
+                                Just "-"     -> o { ehcOptEmitCore     = False     }
+                                Just "eh"    -> o { ehcOptEmitEH       = True      }
+                                Just "core"  -> o { ehcOptEmitCore     = True      }
+                                Just "java"  -> o { ehcOptEmitJava     = True      }
+                                Just "grin"  -> o { ehcOptEmitGrin     = True      }
+                                Just "cmm"   -> o { ehcOptEmitCmm      = True      }
+                                Just "llc"   -> o { ehcOptEmitLlc      = True      }
+                                _            -> o
          oTrf        s   o =  o { ehcOptTrf           = opt s   }
                            where  opt "" =  []
                                   opt o  =  let  (pm,o2) = span (\c -> c == '+' || c == '-') o

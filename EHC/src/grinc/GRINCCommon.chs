@@ -4,87 +4,22 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Common
+%%% Grinc Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 module {%{GRIN}GRINCCommon} 
 %%]
-%%[8 import( System.Console.GetOpt, {%{EH}Base.Common}, qualified Data.Map as Map, qualified Data.Set as Set)
-%%]
-%%[8 export(GRINCOpts(..), defaultGRINCOpts, cmdLineOpts)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Options
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-data GRINCOpts
-  = GRINCOpts
-      {  grincOptHelp            ::  Bool
-      ,  grincOptDebug           ::  Bool
-      ,  grincOptGenTrace        ::  Bool
-      ,  grincOptTimeCompile     ::  Bool
-      ,  grincOptDumpCallGraph   ::  Bool
-      ,  grincOptDumpTrfGrin     ::  Maybe String
-      ,  grincOptSearchPath      ::  [String]
-      ,  grincOptVerbosity       ::  Verbosity
-      }
-%%]
-
-%%[8
-defaultGRINCOpts
-  = GRINCOpts
-      {  grincOptHelp            =   False
-      ,  grincOptDebug           =   False
-      ,  grincOptGenTrace        =   False
-      ,  grincOptTimeCompile     =   False
-      ,  grincOptDumpCallGraph   =   False
-      ,  grincOptDumpTrfGrin     =   Nothing
-      ,  grincOptSearchPath      =   []
-      ,  grincOptVerbosity       =   VerboseQuiet
-      }
-%%]
-
-%%[8
-cmdLineOpts  
-  =  [  Option "d"  ["debug"]             (NoArg oDebug)
-          "include debug info, for now: print extra progress/debug info"
-     ,  Option "h"  ["help"]              (NoArg oHelp)
-          "output this help"
-     ,  Option ""  ["call-graph"]        (NoArg oWriteCallGraph)
-          "Write call graph as dot file"
-     ,  Option "g"  ["write-grin"]        (OptArg oGrin "BASENAME")
-          "Write grin code after transformation"
-     ,  Option "t"  ["trace"]             (NoArg oGenTrace)
-          "Emit trace info into C-- code"
-     ,  Option "T"  ["time-compilation"]  (NoArg oTimeCompile)
-          "Show CPU usage for each compilation phase"
-     ,  Option "v"  ["verbose"]           (OptArg oVerbose "0|1|2")
-          "be verbose, 0=quiet 1=normal 2=noisy, default=1"
-     ]
-  where  oHelp           o =  o { grincOptHelp          = True    }
-         oDebug          o =  o { grincOptDebug         = True    }
-         oVerbose    ms  o =  case ms of
-                                Just "0"    -> o { grincOptVerbosity     = VerboseQuiet       }
-                                Just "1"    -> o { grincOptVerbosity     = VerboseNormal      }
-                                Just "2"    -> o { grincOptVerbosity     = VerboseALot        }
-                                Nothing     -> o { grincOptVerbosity     = VerboseNormal      }
-                                _           -> o
-         oGrin       ms  o = o { grincOptDumpTrfGrin     = maybe (Just "") (const ms) ms }
-         oGenTrace       o = o { grincOptGenTrace        = True }
-         oTimeCompile    o = o { grincOptTimeCompile     = True }
-         oWriteCallGraph o = o { grincOptDumpCallGraph   = True }
+%%[8 import( {%{EH}Base.Common}, qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 
 %%[8 export(wildcardNm, wildcardNr, evalNm, evalNr,  applyNm, applyNr, isSpecialBind, getNr, throwTag, blackholeTag)
+
 wildcardNm = HNm "_"
 wildcardNr = HNPos (0)
-
-evalNm  =  HNm "!eval"
-evalNr  =  HNPos 1
-applyNm =  HNm "!apply"
-applyNr =  HNPos 2
+evalNm     = HNm "!eval"
+evalNr     = HNPos 1
+applyNm    = HNm "!apply"
+applyNr    = HNPos 2
 
 isSpecialBind f = f == evalNm || f == applyNm
 
@@ -101,6 +36,7 @@ throwTag      =  GrTag_Lit GrTagFun   0 (HNm "rethrow")
 %%]
 
 %%[8 export(IdentNameMap, IdentOneToMany, RenameMap, mergeRenameMap, getName, getName')
+
 type IdentNameMap   = (Array Int HsName, Map.Map Int Int)
 type IdentOneToMany = (Int,  [Int])
 type RenameMap      = [(Int,  [Int])]
@@ -176,5 +112,3 @@ addEnvVars (a,fm) l = (a, foldl (flip $ uncurry Map.insert) fm l)
 
 listInsert l fm = foldl (flip $ uncurry Map.insert) fm l
 %%]
-
-% vim:ts=4:et:ai:

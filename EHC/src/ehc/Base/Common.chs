@@ -76,7 +76,7 @@
 %%[8 -(1.exp.hdAndTl 1.Misc.hdAndTl) import (EH.Util.Utils hiding (tr,trp)) export(module EH.Util.Utils)
 %%]
 
-%%[8 import (EH.Util.FPath,IO,Char) export(putPPLn,putWidthPPLn,putPPFile,Verbosity(..),putCompileMsg)
+%%[8 import (EH.Util.FPath,IO,Char) export(putPPLn,putWidthPPLn,putPPFile,Verbosity(..),putCompileMsg, openFPath,writeToFile, writePP)
 %%]
 
 %%[8 export(hsnFloat)
@@ -670,7 +670,7 @@ putPPLn = putWidthPPLn 4000
 
 putCompileMsg :: Verbosity -> Verbosity -> String -> Maybe String -> HsName -> FPath -> IO ()
 putCompileMsg v optsVerbosity msg mbMsg2 modNm fNm
-  = if optsVerbosity >= v
+  = if optsVerbosity >= v 
     then putStrLn (strBlankPad 25 msg ++ " " ++ strBlankPad 15 (show modNm) ++ " (" ++ fpathToStr fNm ++ maybe "" (\m -> ", " ++ m) mbMsg2 ++ ")")
     else return ()
 
@@ -680,6 +680,27 @@ putPPFile fn pp wid
          ;  hPutStrLn h (disp pp wid "")
          ;  hClose h
          }
+
+openFPath :: FPath -> IOMode -> IO (String, Handle)
+openFPath fp mode | fpathIsEmpty fp = case mode of
+                                        ReadMode      -> return ("<stdin>" ,stdin )
+                                        WriteMode     -> return ("<stdout>",stdout)
+                                        AppendMode    -> return ("<stdout>",stdout)
+                                        ReadWriteMode -> error "cannot use stdin/stdout with random access"
+                  | otherwise       = do
+                                        let fNm = fpathToStr fp
+                                        h <- openFile fNm mode
+                                        return (fNm,h)
+
+writePP ::  (a -> PP_Doc) -> a -> FPath -> IO ()
+writePP f text fp = writeToFile (show.f $ text) fp
+
+writeToFile str fp
+  = do { (fn, fh) <- openFPath fp WriteMode
+       ; hPutStrLn fh str
+       ; hClose fh
+       }
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
