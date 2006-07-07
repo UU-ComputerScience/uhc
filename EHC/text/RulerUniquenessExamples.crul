@@ -1,0 +1,148 @@
+%%[20
+preamble tex "%include lhs2TeX.fmt\n%include afp.fmt\n%include ehrules.fmt\n"
+
+external Ty_Int
+external empty
+
+viewhierarchy = E < U < U2
+
+data Expr [expr]
+  view E
+    | Int  [e.int]  n   :: Int
+    | Var  [e.var]  ident :: HsName
+    | App  [e.app]  f     :: Expr
+                    a     :: Expr
+    | Lam  [e.lam]  ident :: HsName
+                    body  :: Expr
+  view U2
+    | Fix  [e.fix]  ident :: HsName
+                    expr  :: Expr
+                    body  :: Expr
+
+format tex Ty_Int = Int
+format tex Gam = Gamma
+format tex gam = Gamma
+format tex Del = Theta
+format tex del = Theta
+format tex ty = tau
+format tex uty = utau
+format tex empty = emptyset
+format tex cs = zeta
+format tex m = phi
+
+scheme expr "Expr" =
+  view E =
+    holes [ e: Expr, gam: Gam, ty: Ty ]
+    judgespec gam :- e : ty
+    judgeuse tex gam :- e : ty
+  view U =
+    holes [ ty: Ty, uty: Ty, m: CompTree, cs: ConstrSet ]
+    judgespec gam :- e : ty; uty; m; cs
+    judgeuse tex gam :- e : ty; uty; m; cs
+  view U2 =
+    holes [ ty: Ty, uty: Ty, m: CompTree, cs: ConstrSet, del: Del ]
+    judgespec gam; del :- e : ty; uty; m; cs
+    judgeuse tex gam; del :- e : ty; uty; m; cs
+
+ruleset expr.base scheme expr  "Expression type rules" =
+  rule e.int "Int" =
+    view E =
+      -
+      judge R : expr = gam :- n : Ty_Int
+    view U =
+      judge A : annotate = Ty_Int ~> uty
+      -
+      judge R : expr
+        | m  = empty
+        | cs = empty
+  rule e.var "Var" =
+    view E =
+      judge G : lookup = ident :-> ty `elem` gam
+      -
+      judge R : expr = gam :- ident : ty
+    view U =
+      judge A : annotate = ty ~> uty
+      -
+      judge R : expr
+        | m  = ident :-> uty bullet
+        | cs = empty
+    view U2 =
+      judge L : lookupDel = ident :-> cs `elem` del
+      -
+      judge R : expr
+        | cs = cs
+  rule e.app "App" =
+    view E =
+      judge F : expr = gam :- f : ty.f
+      judge A : expr = gam :- f : ty.a 
+      judge C : match = ty.f <=> (ty.a -> ty)
+      -
+      judge R : expr = gam :- f a : ty
+    view U =
+      judge F : expr
+        | uty = uty.f
+        | m   = m.f
+        | cs  = cs.f
+      judge A : expr
+        | uty = uty.a
+        | m   = m.a
+        | cs  = cs.a
+      judge U : match = (uty.p -> uty) <=> uty.f
+      judge M : flow = cs.m `=` { uty.p =>= uty.a }
+      -
+      judge R : expr
+        | m = m.f \+/ m.a
+        | cs = cs.f cs.a
+  rule e.lam "Lam" =
+    view E =
+      judge B : expr = (x :-> ty.x + gam) :- b : ty
+      -
+      judge R : expr = gam :- (\x -> b) : (ty.x -> ty)
+    view U =
+      judge B : expr
+        | cs = cs.b
+        | m  = m.b
+      judge P : comp = m.b :- x ~> cs.p; m
+      -
+      judge R : expr
+        | cs = cs.m cs.b cs.p
+  rule e.fix "Fix" =
+    view U2 =
+      judge X : expr = (x :->ty.x + gam); (x:->cs.p cs.x + del) :- e : ty.x; uty.x; m.x; cs.x
+      judge B : expr = (x :->ty.x + gam); (x:->cs.p cs.x + del) :- b : ty; uty; m.b; cs.b
+      judge P : comp = (m.x \+/ m.b) :- x ~> cs.p; m
+      -
+      judge R : expr = gam; del :- (fix x `=` e in b) : ty; uty; m; cs.p cs.x cs.b
+
+relation flow =
+  view U =
+    holes [ cs:ConstrSet, a:Ty, b:Ty ]
+    judgespec cs `=` { a =>= b }
+
+relation comp =
+  view U =
+    holes [ m:CompTree, nm: Nm, cs:ConstrSet, mr:CompTree ]
+    judgespec m :- nm ~> cs; mr
+    judgeuse tex m :-.."pat" nm ~> cs; mr
+
+relation annotate =
+  view U =
+    holes [ a: Ty, b: Ty ]
+    judgespec a ~> b
+
+relation lookupDel =
+  view U2 =
+    holes [ nm: Nm, del: Del, cs: ConstrSet ]
+    judgespec nm :-> cs `elem` del
+
+relation lookup =
+  view E =
+    holes [ nm: Nm, gam: Gam, ty: Ty ]
+    judgespec nm :-> ty `elem` gam
+
+relation match =
+  view E =
+    holes [ a: Ty, b: Ty ]
+    judgespec a <=> b
+
+%%]

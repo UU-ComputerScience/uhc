@@ -7,7 +7,8 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								phd-paper phd-draft phd-tst phd \
 								ehc-book-tst \
 								scratch poster \
-								slides-ruler slides-explimpl slides-explimpl-fpnl slides-overview
+								slides-ruler slides-explimpl slides-explimpl-fpnl slides-overview \
+								uniqueness
 
 # subtext
 TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
@@ -16,7 +17,8 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred SlidesRuler SlidesShuffle SlidesGRIN \
 								CodeFragsExplImpl \
 								ToolDocShuffle ToolDocRuler \
-								AppxNotation FrontMatter OldText
+								AppxNotation FrontMatter OldText \
+								Uniqueness
 
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
@@ -39,6 +41,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 17: slides overview
 # 18: slides: base (share)
 # 19: ruler doc
+# 20: uniqueness doc
 
-TEXT_SHUFFLE_ORDER			+= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 8, 18 < 9, 1 < 10, 1 < 11, 1 < 13, 18 < 14, 9 < 15, 9 < 16, 18 < 17, 1 < 18, 1 < 19
+TEXT_SHUFFLE_ORDER			+= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 8, 18 < 9, 1 < 10, 1 < 11, 1 < 13, 18 < 14, 9 < 15, 9 < 16, 18 < 17, 1 < 18, 1 < 19, 1 < 20
 

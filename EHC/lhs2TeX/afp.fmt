@@ -64,6 +64,8 @@
 %format (VecI(x)(i))    = x "^{\{" i "\}}"
 
 %format (Dot(x)(y)(z))	= "{" x "}_{" y "}^{" z "}"
+%format (Delta(x)) = "{\delta_{" x "}}"
+%format (Annot(x)(y)) = "{" x "}^{\delta_{" y "}}"
 
 %format restr		= "\backslash "
 
@@ -77,6 +79,7 @@
 %format KGamma      = Theta
 
 %format taua        = tau "_{a}"
+%format utau        = "\widetilde{" tau "}"
 
 %format Forall		= "{\nabla}"
 
@@ -384,3 +387,8 @@
 %format ^ =
 %format ^^ = 
 %endif
+
+%format bullet = "\!\bullet"
+%format =>= = "\triangleright"
+%format \+/ = "\uplus"
+%format \-/ = "\cup"

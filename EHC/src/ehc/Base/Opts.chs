@@ -76,6 +76,9 @@ data EHCOpts
       ,  ehcOptVersion        ::  Bool
       ,  ehcOptDebug          ::  Bool
 %%]
+%%[7_2.EHCOpts
+      , ehcoptUniqueness      ::  Bool
+%%]
 %%[8.EHCOpts
       ,  ehcOptDumpCallGraph  ::  Bool
       ,  ehcOptDumpTrfGrin    ::  Maybe String
@@ -104,6 +107,9 @@ defaultEHCOpts
       ,  ehcOptHelp           =   False
       ,  ehcOptVersion        =   False
       ,  ehcOptDebug          =   False
+%%]
+%%[7_2.defaultEHCOpts
+      ,  ehcoptUniqueness     =   True
 %%]
 %%[8.defaultEHCOpts
       ,  ehcOptDumpCallGraph  =   False
@@ -138,6 +144,10 @@ ehcCmdLineOpts
      ,  Option ""   ["version"]       (NoArg oVersion)
           "print version info"
 %%]
+%%[7_2.ehcCmdLineOptsA
+     ,  Option "nu"  ["nounique"]     (NoArg oUnique)
+          "do not compute uniqueness solution"
+%%]
 %%[8.ehcCmdLineOptsA
      ,  Option "c"  ["code"]          (OptArg oCode "core|java|grin|cmm")
           "dump code (java- > .java, grin -> .grin, cmm -> .grin + .cmm, - -> none) on file, default=core (-> .core)"
@@ -169,6 +179,9 @@ ehcCmdLineOpts
          oHelp           o =  o { ehcOptHelp          = True    }
          oVersion        o =  o { ehcOptVersion       = True    }
          oDebug          o =  (oPretty (Just "ast") o) { ehcOptDebug         = True    }
+%%]
+%%[7_2.ehcCmdLineOptsB
+         oUnique         o =  o { ehcoptUniqueness    = False   }
 %%]
 %%[8.ehcCmdLineOptsB
          oTimeCompile    o =  o { ehcOptTimeCompile       = True    }

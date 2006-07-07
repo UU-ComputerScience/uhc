@@ -39,7 +39,7 @@ BIBTEX				:= BSTINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(PATHS_SEP_CO
 MAKEINDEX			:= makeindex
 
 # GHC options
-GHC_OPTS			:= -fglasgow-exts -package util -package lang -package data -package uulib
+GHC_OPTS			:= -fglasgow-exts -package uulib
 GHC_OPTS_OPTIM		:= -O2
 
 # lhs2tex options
@@ -56,7 +56,7 @@ RULER2_OPTS			:= $(RULER2_OPTS_DFLT)
 # 4_2: Quantifier propagation experiment
 # 50: GADT experiment
 # 99: the 'final' version
-EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 99, 4_99 < 4_2, 6 < 6_4, 10 < 50
+EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 99, 4_99 < 4_2, 6 < 6_4, 10 < 50, 7 < 7_2
 
 # target suffix for core
 CORE_TARG_SUFFIX	:= grin
@@ -93,7 +93,7 @@ GEN_CABAL			= \
 					echo   "Author:				Atze Dijkstra" ; \
 					echo   "Homepage:			http://www.cs.uu.nl/wiki/Ehc/WebHome" ; \
 					echo   "Category:			Testing" ; \
-					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip base haskell98 uulib $(3)))" ; \
+					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip base mtl fgl haskell98 uulib $(3)))" ; \
 					echo   "Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
 					echo   "Synopsis:			$(strip $(5))" ; \
 					echo   "Exposed-Modules:	$(subst $(space),$(comma),$(strip $(6)))" \

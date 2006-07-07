@@ -34,6 +34,12 @@
 %%[7 hs export(RecExpr(..), RecPatExpr(..), RowTyExpr(..), DataField(..), DataFields)
 %%]
 
+%%[7_2 hs import({%{EH}Ty.TyConPat})
+%%]
+
+%%[7_2 hs export(AnnDtMonoRestrictions, AnnDtMonoRestrict(..))
+%%]
+
 %%[9 hs export(PrExpr(..), PrExprs,FuncDep(..), FuncDeps)
 %%]
 

@@ -42,6 +42,10 @@
 \documentclass[a4]{report}
 %%]
 
+%%[20
+\documentclass[sffont=false,color=true,openright=false,a4paper]{st-thesis}
+%%]
+
 %%[7
 \documentclass[%
                headinclude,% new for typearea
@@ -796,6 +800,15 @@ WWW home page:
 \author{Atze Dijkstra}
 %%]
 
+%%[20
+\title {
+%%@Uniqueness.title
+}
+\author {
+%%@Uniqueness.author
+}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Index
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -942,6 +955,11 @@ WWW home page:
 %%@FrontMatter.titleRulerDoc
 %%]
 
+%%[20
+\maketitle
+\clearemptydoublepage
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Indentation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1064,6 +1082,18 @@ have been submitted to POPL2006 in a slighty extended form.
 \begin{abstract}
 %%@ToolDocRuler.abstract
 \end{abstract}
+%%]
+
+%%[20
+\begin{abstract}
+%%@Uniqueness.abstract
+\end{abstract}
+
+\tableofcontents
+
+\clearemptydoublepage
+
+\mainmatter
 %%]
 
 %%[1
@@ -1979,6 +2009,13 @@ To be done ...
 %%@ToolDocShuffle.doc
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Uniqueness
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+%%@Uniqueness.main
+%%]
 
 
 
@@ -2029,7 +2066,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%]
 
 %%[1
-%if not asSlides && not storyPoster
+%if not asSlides && not storyPoster && not storyUniqueness
 \AddContentsLine{References}
 %if refToPDF
 %\bibliographystyle{uhcbook}

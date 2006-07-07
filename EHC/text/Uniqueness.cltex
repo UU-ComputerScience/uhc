@@ -1,0 +1,746 @@
+%%[title
+Improved Uniqueness Typing for Haskell
+%%]
+
+%%[author
+  Arie Middelkoop\\
+  amiddelk@@cs.uu.nl\\
+  ~\\
+  Master Thesis\\
+  ~\\
+  ~\\
+  ~\\
+  ~\\
+  ~\\
+  ~\\
+  ~\\
+  Center for Software Technology,\\
+  Department of Information and Computing Sciences,\\
+  Universiteit Utrecht,\\
+  Utrecht, The Netherlands.
+%%]
+
+%%[abstract
+This master thesis is about adding an improved version of Uniqueness Typing
+to Haskell.
+%%]
+
+%%[main
+
+%format =>= = "\triangleright"
+%format \+/ = "\uplus"
+%format \-/ = "\cup"
+
+\chapter{What is Uniqueness Typing?}
+
+Referential transperancy is an important feature for pure functional languages. Formally,
+referential transperancy means that you can replace any subexpression of an expression with 
+the corresponding value, without changing the value of the expression. The expression with
+it's subexpression replaced stays observational equivalent to the original expression. It
+makes programming and reasoning easier, since you do not have to deal with side-effect.
+
+Unfortunately, referential transparancy comes with a price. A typical way to ensure
+referential transparancy is to copy a value on update. This causes performance problems
+for data types implemented using arrays.
+
+For example, if you use an array update outside the ST-monad in Haskell, it will make a copy
+of the entire array for each update on a single element. Hence, array update is a very
+expensive operation, and the only way to have fast array update in Haskell is to wrap the
+computation in the ST-monad. Unfortunately, that tends to obfuscate the code, or make it
+feel less ``functional''.
+
+Another example is a hashtable. Maps are often used in programs. A choice offered by most
+mainstrain programming platforms is whether to use hashtables or balanced trees as
+implementation for a map. Which implementation to choose is not trivial, but a hashtable
+is a good default choice, except for big maps containing several thousands of elements.
+For Haskell, hashtables are not really an option since they have the same problems as 
+arrays. Haskell provides maps implemented by balanced trees. You might wonder what the
+performance gains would be if updates on a hashtable could be implemented efficiently.
+
+The problem is that it is possible to refer to the old value after we did an update, hence
+the copying. The system works on the assumption that all old values will be referenced, but
+this functionality is not often needed. Especially when dealing with arrays and maps, you
+are often interested in the latest value, or only need the old value in a restricted number
+of places.
+
+Several solutions were and are being proposed that make use of these observations. The
+@Data.Array.Diff@ implementation performs updates in place, but keeps track of the
+differences, such that an old version of the array can be reconstructed if needed. A
+downside of this approach is that it keeps garbage alive when old values are not
+required anymore and has some overhead to maintain the administration of the differences.
+
+A more general solution is to ensure that old values are never needed again. Then all
+updates can be in-place. This can be accomplished by using a linear type system. A
+linear type system guarantees that each value is used exactly once, so referring to an
+old value cannot happen as that would imply using a value at least twice. A pure linear
+type system is too restricted for programming, but it can be combined with a traditional
+type system. The result is what is called Uniqueness Typing in Clean and Mecury. It is a
+combination of pure linear typing and traditional typing, connected by a subtyping
+mechanism\cite{barendsen96uniqueness}.
+
+Haskell does not have uniqueness typing. The suggestion to add it to Haskell has been
+raised by the community, but never led towards an implementation. It is also unclear how
+uniqueness typing interacts with the loads of language features of Haskell and
+extensions. This master thesis presents an answer by giving an implementation of
+uniqueness typing in EH, a large subset of Haskell with some extensions, and a description
+of how this uniqueness typing interacts with several language features.
+
+Todo: add more text about uniqueness typing.
+
+A lot of garbage is generated in a typical Haskell program. 
+
+As mentioned a few times earlier, we can exploid uniqueness information to allow in-place
+update. But we can go further than that. Unique values do not have to participate in
+garbage collection: they could be allocated on a special heap and when a unique
+value is consumed - by a pattern match, or by copying the value to another part of
+memory - the associated memory can be released directly.
+
+Todo: combine with strictness.
+
+Todo: give an explanations of the chapters to come.
+
+
+\chapter{Performing Uniqueness Typing}
+
+The previous chapter explained what uniqueness typing is about: using the type
+system to enforce that there is only one live reference to a value with a unique
+type at a time. We will show in this chapter how to find out if a type is unique or not.
+
+This chapter shows two steps:
+\begin{itemize}
+\item Rewrite the uniqueness typing problem as a compile-time reference counting problem.
+\item Solve the reference counting problem using constraints gathered from the
+      abstract syntax tree of the program.
+\end{itemize}
+
+We make a few assumptions in this chapter to simplify our explanation. For
+didactional purposes, we take a restricted language to work with, and defer
+the explanation of interaction with language features of Haskell to a later chapter. We take
+a small monomorphically typed language, based on the lambda-calculus, dealing only with lambda
+abstraction, function application, variables and integers:
+
+%%[[wrap=code
+expr  :=  Int                   -- integer
+      |   x                     -- variable
+      |   \x -> expr            -- lambda abstraction
+      |   expr expr             -- function application
+      |   fix x = expr in expr  -- recursive let
+%%]
+
+This restricted language has a restricted type language as well:
+
+%%[[wrap=code
+sigma  ::=  sigma -> sigma  -- function type
+       |    Int             -- integer type
+%%]
+
+We only consider expressions that are correctly typed, using a conventional monomorphic
+type system, specified in figure \ref{RulerUniquenessExamples.E.expr.base}. \rulerCmdUse{RulerUniquenessExamples.E.expr.base}The int-rule returns the Int-type and the var-rule looks up the type of the identifier
+in the type-environment. The lambda-rule adds the type of the identifier to the environment
+and creates a function type from the type of the argument and the type of the value. The
+application-rule specifies that the parameter-part of the function type of the function-expression
+should be the same as the type of the argument-expression.
+
+Note that this type system is just a specification, not an implementation of a type checker or
+inferencer. There are programs for which there exist many different, but valid types, according
+to this type system. We make no assumption about which types are chosen - principal types do not
+exist for this type system - we just assume that we can obtain the types and that they are valid.
+In fact, to perform the uniqueness part, we only need the type for identifiers.
+
+Another note is that there is no recursion in this language, and all programs run in finite time.
+Indeed, this language has severe restrictions, but that will keep complications out of our
+explanation.
+
+\section{Uniqueness as a typing problem}
+
+Define the uniqueness problem as enforcing that there is at most one live reference to a unique
+value. We now translate this problem to a typing problem. We want the following property to hold for
+unique types: a type constructor $T$ is only called {\it unique} if all corresponding values of $T$
+are unique. Otherwise, the type constructor is called {\it shared}. We describe what corresponding
+values are in section todo. We call this property the {\it uniqueness property}. 
+
+This property is made explicit in the type, by annoting the type
+constructors with a uniqueness value $\delta$, with $\delta \in {1, \infty}$). We define the
+uniqueness type system in the next section in such a way that it enforces this property.
+
+Now, if we have an assignment of annotated types to values that satisfies this uniqueness type
+system, then we know that by the above property, that all values with a corresponding unique
+type constructor, have a at most one live reference to it. It does say not provide information about the
+uniqueness of the other values, but we assume that they are shared. We can make this assumption,
+since it is safe, but less precise, to assume some values are shared. We traded completeness for
+soundness by translating the uniqueness problem to a typing problem.
+
+\section{Uniqueness typing to constraints}
+
+With the uniqueness type system, we guarantee that the values corresponding to a unique type
+constructor, are unique. The type system does not enforce this directly, we take a little
+detour and let the type system generate a set of constraints on types, such that the
+uniqueness property is enforced if and only if the constraints hold.
+
+For our language, we have to types of constraints: an unification constraint to equate
+
+
+We take a little detour and use the type system to generate a set
+of constraints. The constraints specify to what restrictions hold on 
+
+We take a little detour to 
+
+
+\section{Reference counting}
+
+The main question to answer is if there is at most one live reference to a value.
+For that, we use compile-time reference counting. We only
+count up to two:
+
+\begin{itemize}
+\item 0 means that the value is not referenced
+\item 1 means that the value is at most referenced once
+\item 2 means that the value is referenced at most two or more times. It
+      essentially says that we don't know, but that we expect that it
+      happends two or more times.
+\end{itemize}
+
+
+
+So, why only up to two? The reference counts are interpreted afterward to
+conclude unique or shared. If a value is referenced more than once, then it
+it shared, so there is no difference after two from a uniqueness point of
+view. Futhermore it means that we do not have to worry about aliassing,
+since creating an alias of a value already means that we have to reference
+a value twice. Additional references as a result from aliasses do not make
+a difference in the outcome and we can forget about aliassing alltogether.
+
+Reference count variables are stored at the type constructors in a type. The
+reason for associating reference counts (and later uniqueness) with a type
+instead of a value will be explained later, but for now it means that we have a
+concise representation of a value, and are still able to have different reference
+counts for a function and it's arguments and value. We store variables instead
+of concrete reference counts in the types because the analysis will find constraints
+between reference count variables that are solved at a later point in time. In
+this text, we will denote such variables with a |delta|.
+
+Time for a small example, suppose we have the expression:
+
+%%[[wrap=code
+\x -> f x x
+%%]
+
+Suppose that the variable |x| has the type |(Annot(Int)(1))| for some reference count variable
+|Delta(1)|. The |x| occurs two times in the application of |f|. At this point, we do not know
+what the reference counts for the two occurrences of |x| are, since that depends on how |f|
+treats his arguments. What we do know is that the reference count of |x| is at least the
+reference counts of the two occurrences added together. Futhermore, we know that the reference
+count of the first occurrences of |x| depends on the reference count of the first parameter of
+|f| and the second occurrence of |x| on the reference count of the second parameter of |f|. The
+counts of the parameters on |f| depend entirely on the definition of |f| and on how often the
+result of |f| is used, since if |f| is not used, then due to lazy evaluation, neither of the
+two occurrences of |x| will be referenced.
+
+\section{Constraints}
+
+As the above example already indicates, the reference counts depend on how often an identifier
+appears, and how those values are passed around through functions and finally how those
+functions depend on the result of the expression. This ``flow'' of reference counts we make
+explicit with constraints. The constraints specify which conditions should hold for each
+reference count variable and is essentially a different representation of the reference
+count problem. A solution to the constraints is a solution to the reference counting problem.
+A solution to the constraints is a minimal assignment of reference counts, such that all
+constraints are satisfied.
+
+
+
+There are two different constraints between reference count variables,
+we will introduce some others later:
+
+\begin{itemize}
+\item |(Delta(1)) =>= (Delta(2))|. The reference count of |(Delta(2))| is at least |(Delta(1))|.
+\item |(Delta(1)) \+/ (Delta(2)) <= (Delta(3))|. The reference count of |(Delta(3))| is at least the {\it sum} of the
+      reference counts of |(Delta(1))| and |(Delta(2))|.
+\end{itemize}
+
+The first constraint is used to make sure that the reference counts for parameters of a function flow
+into the argument of the function, and similary, that the reference counts of the value of an expression
+flow into the value of a function. This constraint makes sure that the counts are propagated globally, even
+though we perform the count locally.
+
+The second constraint is used for matching types of variables that occur more than once. If a variable,
+say |x|, occurs more than once, it does not neccessairily means that |x| cannot be unique anymore. If you
+would take the function |const| for |f| in the above example, then the second |x| isn't referenced,
+and the reference count for the first occurrence of |x| depends on how often the entire expression
+is referenced. Furthermore, the occurrences of |x| should be {\it independent}. We know that the
+reference count for |x| is the sum of it's occurrences, but the occurrences itself are not related.
+We therefore give each occurrence a fresh reference count variables and use the |\+/| constraint to
+add them together and relate it to the actual reference count variable. For the above example,
+we would instantiate the first occurrence of |x| to |(Annot(Int)(2))| and the second occurrence
+of |x| to |(Annot(Int)(3))|, and relate it to the annotation of |x| (which is |(Annot(Int)(1))|),
+by generating the constraint: |(Delta(2)) \+/ (Delta(3)) <= (Delta(1))|.
+
+We infer a set of constraints for each expression. These constraints give a specification of the
+uniqueness typing problem: to find a {\it smallest} assignment of uniqueness values to the
+uniqueness variables such that the uniqueness constraints are satisfied.
+
+
+In the previous sections, we schetched an idea how
+we we generate these constraints, but we will now show this in more detail for our restricted language.
+We show in a later section how to find the concrete reference counts for these constraints and how to
+convert it into uniqueness values.
+
+----- whatever:
+
+Every type constructor in our language - in our case, just the arrow
+and Int - comes in two flavours, unique or shared. Compare being
+unique or not to boxed types in GHC. It's yet another property of a
+type and it has consequences: you are not allowed to pass a non-unique
+argument to a function that accepts a unique argument or vice
+versa\footnote{We will relax this restriction somewhat later} and there
+is only one live use of a unique value in the expression. The first
+restriction allows us to determine the second restriction locally, 
+without having problems with aliassing.
+
+The main trick is in enforcing the second restriction. How to determine
+if there is at most one life reference to a value? For that, we use a
+reference counting analysis. 
+
+So, we could have
+a shared function from unique Int to unique Int. You can consider
+the uniqueness property of a type similar to boxedness. GHC 
+
+We reflect the meaning of uniqueness of a type into an annotation on
+type constructors of a type. Types on our restricted language have
+only two type constructors: arrows and integers. We annotate those
+with an annotation |delta|:
+
+%%[[wrap=code
+sigma  :=  (Annot(Int)())             -- annotated int
+       |   sigma (Annot(->)()) sigma  -- annotated arrow
+%%]
+
+
+\rulerCmdUse{RulerUniquenessExamples.E.expr.base}
+
+\rulerCmdUse{RulerUniquenessExamples.U.expr.base}
+
+\rulerCmdUse{RulerUniquenessExamples.U2.expr.base}
+
+
+\chapter{A framework for type properties}
+
+Uniqueness typing is about discovering if a type is unique or not. Such
+uniqueness information is attached to the type as annotation. The entire
+inference is based on having these annotations attached to types. If you
+pass some value to a function, the type of this value has to be as unique
+as the function expects. So, we need a mechanism to attach information to
+types.
+
+This chapter goes into the uniqueness annotations in more detail. Actually,
+it does not really matter what kind of information we attach to types:
+uniqueness values, strictness values, binding times, you name it. Our
+mechanism to annotate a type can be reused for other analyses as well.
+
+We start with an explantation why we annotate types instead of values,
+followed by a global description of how we annotate a type. It is important
+to understand these sections well, since you will encounter these annotations
+almost everywhere in this thesis. The remainder of this chapter is about
+improving the annotation mechanism when dealing with data types.
+
+\section{Introduction}
+
+The problem we solve with uniqueness analysis is tagging values with the label
+unique or with the label shared. For example, suppose x is a tuple |x = (2,3)|,
+then a possible result of uniqueness analysis could be that the tuple itself
+is unique, the first number is shared and the second number is unique.
+
+This tagging is what we want, but tagging \emph{values} is not going to work. Some
+values are only known at runtime, and our analysis is performed at compile
+time. Inferring, for example, the property that a value in a list is unique if
+and only if it is at an index $i$ that satisfies $i `mod` k = n `mod` k$,
+where $n$ is the runtime length of the list and $k$ a runtime value specified
+by the user of the programmer, is next to impossible for an automated analysis
+and would require the programmer to help the inferencer by supplying a lot of
+invariants.
+
+One of our design choices is that the analysis can get with decent results on
+its own, without intervention of the programmer. The programmer can only
+limit the number of programs accepted by our analysis, not enlarge this
+ammount.
+
+Instead of expressing detailed properties about the uniqueness of portions of
+a value, we want to express these properties on a higher level, such that the
+properties can still be enforced for values, but might not be as accurate. For
+example, instead of expressing that certain elements of are unique, we express
+that \emph{all} elements of a list are unique. This property is less accurate
+than being able to express that certain elements are unique, but in practice
+this does not really matter, since putting values in a homogeneous list means
+that you already accept to treat the elements uniformly.
+
+So, we want to deal with a finite representation of values. Types offer this
+representation. In fact, the data type declarations do the job. A data type
+declaration is a finite representation of a possibly infinite value. And
+for each part of such a possibly infinite value, we know which portion of
+the type belongs to it, and with annotations on the type, we also know
+which annotation belongs to a part of a value.
+
+\begin{itemize}
+\item A single annotation on a type will represent the annotations of possibly
+an infinite number of values.
+\item The annotation on a value corresponds with only one annotation on a type.
+\end{itemize}
+
+Here you can also see where we loose precision. When a type is mapped to many
+values, then each of these values could have received a different annotation and
+that is not possible in our approach. The benefit is that our type representation
+is finite, and since we add only a finite numer of annotations to a component of
+a type, it means that the number of annotations is also finite. As a subsequent
+consequence, since the number of uniqueness values is finite, we could in theory
+enumerate all possible uniqueness annotations and pick a valid attribution with
+as much uniqueness values as possible. This shows that there is at least a
+solution that does not require the help of a programmer.
+
+The next question is what kind of information we associate with a type. A
+uniqueness value of course, but potentially also information from another
+analysis such as strictness or binding-time. There are two typical ways to
+associate information with a type. Either by storing a datastructure with the
+type that contains a field for each piece of information attached to it, or
+by adding a placeholder to each type component and store a mapping from
+placeholder to a uniqueness, binding-time or strictness value at a separate
+place.
+
+We take this second approach as it makes it slightly easier to attach new values
+to a type. That essentially boils down to threading a yet another environment,
+instead of changing the annotation data type and possibly all functions that
+depend on it.
+
+\section{Annotating a type expression}
+
+The first step we take is to allow a component in a type expression to be
+annotated with an identifiable label |delta|. A |delta| is an opaque
+value that will be used as key to some named property, such as uniqueness.
+
+We regard the |delta| the \emph{annotation} on the type. We call the corresponding
+uniqueness, strictness or binding-time value a \emph{property} of the type.
+
+We stress the difference between an annotation and a property. An annotation is
+just a tag, used as placeholder for properties attached to the annotated type
+component. A property is a named value that belongs to such annotation. An
+annotation can have multiple properties.
+
+We do not deal with polyvariance on our properties in our annotation mechanism.
+We assume that all annotations are implicitly universally quantified, meaning
+that we provide fresh annotations on each instantiation of a type. It is up
+to the user of the properties to deal with polyvariance, for example, by
+maintaining constraints between annotations for a certain property.
+
+As an example of the latter, the uniqueness property of a type is implicitly
+universally quantified iff it is guaranteed to be below a function arrow. At
+a function application, we unify two annotated types, producing equality
+constraints between those annotations that are non guaranteed to be below
+a function arrow. So, the annotation mechanism just labels types, the annotation
+user has to deal with attaching useful properties and combine them in the proper
+way.
+
+\subsection{Annotated type language}
+
+The question we answer in this section is what the annotations look like. A type
+largely remains the same, the only pieces of a type that can have an annotation
+are type constructors and type variables. Formally, the grammar for the annotated
+type language is:
+
+Each |delta| must be unambiguously globally identifiable. An integer as representation
+for a |delta| will satisfy, though it is likely that in the presence of a module
+system and separate compilation, a more elaborate representation is required. In
+code examples, we will disambiguate a |delta| with a subscript, such as
+|(Delta(1))| or |(Delta(a))|. Examples:
+
+%%[[wrap=code
+(Annot(Int)(1))
+(Annot(Int)(2)) (Annot(->)(2)) (Annot(Int)(2))
+(Annot(Int)(4)) (Annot(->)(3)) (Annot(Int)(5))
+(Annot(Set)(5)) (Annot(Int)(6))
+%%]
+
+Since each |delta| is globally unambiguous, we can store each property in an
+environment and use the |delta| as key.
+
+\subsection{Properties of annotations}
+
+The annotation framework is used for at least the following properties:
+
+\begin{itemize}
+\item A property that stores the variance of the spots an annotation occurs in. 
+\item A property that stores if an annotation is guaranteed to be in spots below
+      a function arrow.
+\item A property that stores the polymorphic kind of a type component in a type expression.
+\end{itemize}
+
+\subsection{Annotating a data type}
+
+We show in this section how we deal with data types. A data type hides
+types. If you encounter a type constructor |D|, then it depends on the
+constructor of a value of type |D Vec(sigma)|, to know what type is behind this
+|D|. Some parts of |D| are known, those parts that are passed as an argument to
+|D| and represented by a type variable in the definition of |D|.
+
+Our first step is to annotate each type component of a data type with a fresh
+|delta|, except for type variables, which do not get an annotation, since they
+will get their annotation from the use-site of the data type (type constructor
+application).
+
+For example, annotating the following data type:
+
+%%[[wrap=code
+data D a = C a (D Int) (D a)
+%%]
+
+Annotating this data type results into:
+
+%%[[wrap=code
+data (Annot(D)(1)) a = C a ((Annot(D)(2)) (Annot(Int)(3))) ((Annot(D)(4)) a)
+%%]
+
+We can only say something about the annotations on the type variable |a| when
+we know to which type this |a| will be instantiated. This will be at the
+use-site of a data type.
+
+In fact, all we do is annotate the parts of a type expression that are hidden
+by the data type. The annotations for these parts are not provided by the
+use-site of the data type. We would like to choose as much annotations at the
+use-site as possible, since that allows us to distinguish more between different
+uses of a data type.
+
+Any annotation that is not chosen by the use-site, has to hold for all uses.
+this might be desirable when we want some relation between annotations to hold
+for all uses, but often is not. For example, consider the following data type
+for a list of integers:
+
+%%[[wrap=code
+data (Annot(IntList)(1)) = CIntList (Annot([(Annot(Int)(3))])(2))
+%%]
+
+Let us also suppose that we have a property for uniqueness on delta and chose
+the uniqueness of |(Delta(2))| and |(Delta(3))| to be unique. This
+means that any |IntList| must be a unique list with unique elements. It is not
+possible to build an |IntList| with non-unique elements for example. We are
+going to expose the annotations, that are hidden by the current
+approach, to the use-site, such that we can choose them at the use-site.
+
+If the programmer wants some statement to hold for all uses of the
+data type, a different mechanism must be used, such as constraints between
+annotations/properties or an overrule of the automatic annotation process
+by programmer supplied annotations.
+
+\subsection{Conclusion}
+
+With the above approach, we can annotate a type and attach properties to
+it. For the implementation, we choose to do the annotation work after
+type inference has been completed. If you want to add constraints between
+annotation as a result of unification, then you have to replay a part of
+the unification afterward.
+
+Another implementation choice is how to change the annotation type. We
+played with several possibilities. A first possibility is to copy the
+type-datatype and add a few annotation fields. This has the advantage that
+you cannot mix a normal type with an annotated type, but has as disadvantage
+that you cannot use functions defined on normal data types on annotated
+data types.
+
+Another choice is to have only annotated types and no normal
+types anymore, but that is not desirable either since we do not want the
+addition of annotations to have consequences for computations on normal
+types. Our last option was adding the annotations as additional non-terminal
+to the type datatype. The advantage is that it did not involve a lot of
+code changes and a lot of functionality defined on normal types did also
+work on annotated types due to automatic copy rules.
+
+Adding annotations to the compiler had minimal effect on the components of
+the compiler, but will be invaluable for our uniqueness analysis. The remainder
+of this chapter is about improvements to the above described annotation
+mechanism.
+
+\section{Refined annotations for a data type}
+
+We implicitly made two decisions with the approach of the previous section:
+
+\begin{itemize}
+\item The annotations for hidden type components cannot be chosen by the
+      use-site of a data type. For example, the |(Delta(2))| below is
+      fixed:
+
+%%[[wrap=code
+data (Annot(D)(1)) = C (Annot(Int)(2))
+
+C x  ::  (Annot(D)(3))
+x    ::  (Annot(Int)(2))  -- cannot choose |(Annot(Int)(2))|
+%%]
+
+\item The use-site cannot make a difference for annotations on multiple
+      occurrences of a type variable. The annotations for the first |a| will
+      be the same as the annotations of the second |a| in the following
+      example:
+
+%%[[wrap=code
+data (Annot(D)(1)) a = C a a
+
+C x y  ::  (Annot(D)(2)) (Annot(Int)(3))
+x      ::  (Annot(Int)(3))  -- can choose |(Annot(Int)(3))| but have to choose
+y      ::  (Annot(Int)(3))  -- exactly the same |(Annot(Int)(3))| for both |x| and |y|
+%%]
+
+\end{itemize}
+
+We will lift these restrictions in this section by annotating the type
+expressions in a slightly different way.
+
+\subsection{Reference annotations}
+
+As we discussed in the previous sections, we first annotate each type component (type
+variable or type constructor) of each type expression, such that we can unambiguously
+reference each type component. For example:
+
+%%[[wrap=code
+(Annot(Int)(2)) (Annot(->)(1)) (Annot(Int)(3))
+data D a = C (Annot(a)(4)) ((Annot(D)(5)) (Annot(Int)(6))) ((Annot(D)(7)) (Annot(a)(8)))
+%%]
+
+We will call these annotations the \emph{reference annotations}, and the type a
+reference annotated type. In the next sections we describe how the use-site of
+a type constructor can choose new annotations for the annotations of a data type.
+The old annotations will be a reference point, to keep track of where the new
+annotations came from. An annotation contains a pointer to the reference annotation.
+This way, we can always get to the reference annotation from the instantiated annotation.
+
+As an example, kind inference and variance inference associate the results with the
+reference annotated type. An example of such a result could be that the kind of a type
+constructor annotated by the annotation |delta| is |* -> *|. When we use this type
+constructor at some place, we will instantiate |delta| to a fresh annotation |(Delta(2))|.
+We can then ask |(Delta(2))| for the reference annotation, which gives |delta|, and
+obtain the kind of the type constructor.
+
+The reference annotations are important as they bridge the gap between obtaining results
+from an analysis on datatype level (such as variance and kind inference) when dealing
+with an analysis that works with the refined annotations (uniqueness inference or
+strictness inference).
+
+\subsection{Hidden annotations as parameter}
+
+We are going to expose the annotations on hidden type expression to the outside world. Only
+type constructors get an annotation, the annotation on a type variable is provided by the
+use-site of a data type. These hidden annotations are considered as additional parameters to
+a data type. For example, look at the following annotated data type definitions:
+
+%%[[wrap=code
+data (Dot(STree)((Delta(1)) (Delta(2)) (Delta(3)) (Delta(4)))()) a  =  STree a ((Dot(STree)(((Delta(1)) (Delta(2)) (Delta(3)) (Delta(4))))(Delta(1))) a) ((Dot(STree)(((Delta(1)) (Delta(2)) (Delta(3)) (Delta(4))))(Delta(2))) (Dot(Int)(())(Delta(3))))
+                                                                |  Leaf (Dot(Int)(())(Delta(4)))
+
+data (Dot(IntTree)((Delta(1)) (Delta(2)) (Delta(3)) (Delta(4)))()) = IntTree ((Dot(STree)((Delta(5)) (Delta(6)) (Delta(7)) (Delta(8)))()) (Dot(Int)(())(Delta(9))))
+%%]
+
+In order to obtain these hidden parameters, we proceed through the data types, binding group
+for binding group. As a result, we obtain for each data type an annotation version of the
+data type, such as the example above. We then directly know for type expressions that contain
+this data type as type constructor, which annotations have to be invented for it.
+
+The tuple of additional annotation parameters for a data type is exactly the same for each
+data type in the binding-group. We proceed through a binding-group in two passes. In the
+first pass, we annotate the type constructors outside this binding-group with an instantiation
+of their annotations. In the second pass, we collect all those instantiated annotations and
+attach this set to all type constructors inside the binding-group and attach it to all
+data types inside the binding-group as well.
+
+It is actually in this last paragraph that you can see how we deal with infinite values: each
+repitition gets the same annotations, e.g. all elements of a list the same annotation, causing
+the number of annotations to be finite. Still, this approach can already result in a lot of
+annotations. We therefore give the programmer the ability to mono-restrict the annotations
+of a datatype, meaning that we do not instantiate the annotations of this datatype, but just
+the original annotations. This mono-restriction can also be conditional, |A -> B|, meaning that
+the annotations of B are kept monomorphic when the type constructor A is called from data type
+B.
+
+With this annotation approach, we can choose the annotations of hidden types at the use-site.
+We still cannot choose a different annotation for the same type variable, we will solve that
+in the next section.
+
+\subsection{Expanded annotated type}
+
+To be able to give different annotations to multiple occurences of the same type variable, we
+choose to expand/unfold the data type definition. For example, when given the following
+data type:
+
+%%[[wrap=code
+data (Dot(D)(())()) a = C a a
+%%]
+
+and a type expression:
+
+%%[[wrap=code
+D (D Int)
+%%]
+
+we unfold the type expression to:
+
+%%[[wrap=code
+(Annot(D)(1)) (C  ((Annot(D)(2)) (C  (Dot(Int)(())(Delta(3))) 
+                                     (Dot(Int)(())(Delta(4))))) 
+                  ((Annot(D)(5)) (C  (Dot(Int)(())(Delta(6))) 
+                                     (Dot(Int)(())(Delta(7))))))
+%%]
+
+As you can see, we just inlined the datatype definition with the actual values for its parameters. We
+only inlined the D datatype and not the |Int| type constructor. We can choose which datatypes to inline,
+those we do not inline, we just give the annotations of the previous section.
+
+Why would we choose not to inline a datatype? First of all, inlining is not always useful: the approach
+of the previous section is sometimes just as good as this expansion approach. For example, for datatypes
+that have no type parameters, or datatypes where a type parameter is only used once and at a covariant
+position, the previous approach will turn up with exactly the same annotations, only represented
+differently.
+
+Another reason is that unfolding does not terminate with a recursive datatype. In fact, with unfolding,
+we can represent the full runtime structure of a finite value. I.e. by unfolding a list five times, we
+could give the first five elements of a list different annotations. But we can't keep this process going
+on forever, we have to stop somewhere. In fact, we would rather stop sooner than later, since expanding
+results into an enourmous ammount of annotations. In case of a tree-like datastructure, each new level
+of unfolding adds up exponentially.
+
+The expansion approach gives us the ability to specify the annotations very accuratly, but at a
+very high cost in terms of the number of annotations. That's why we expansions by default off, but allow
+the programmer to give patterns that allow expansion. We keep track of the type and value constructors
+that we expanded using a stack. We allow the expansion of a certain type constructor, if it is a
+prefix of a pattern. Suppose you have the datatypes:
+
+%%[[wrap=code
+data A = A B B
+data B = B C C
+data C = C A A
+%%]
+
+An example of an expansion pattern is:
+
+%%[[wrap=code
+A B C A B
+%%]
+
+This pattern allows you to unfold each data type twice, espect for the second occurence of datatype C. A
+more consice notation is:
+
+%%[[wrap=code
+A->C A->B
+%%]
+
+The arrow construct means all simple-paths between the two arguments. Essentially, the
+pattern language constains an |Or|, |Sequence| and |Constructor|. The |->| is desugared
+to a series of |Or| and |Sequence|.
+
+With these patterns, the programmer can instruct the compiler to be more accurate at certain points,
+to keep the explosion of expansions within limits. Another expansion limiter is to look at pattern
+matches occuring in the program. There is no need to expand deeper than there are pattern-matches on
+a portion of a type.
+
+\section{Remarks}
+
+To wrap up, in this section we discussed annotations. We showed how we add annotations to types, and
+two mechanisms to increase the precison of the annotations. That is, to allow different annotations
+to be chosen at the use-site without losing the connection to the original annotations. Reference
+annotations play an important part in this story, as bridge to the "simple" annotation mechanism and
+the more complicated ones.
+
+%%]

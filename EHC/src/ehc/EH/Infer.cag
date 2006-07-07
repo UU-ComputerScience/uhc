@@ -168,6 +168,25 @@ SEM Decl
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Final kind
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7.finTyGam
+ATTR AllNT [ finKiCnstr: Cnstr | | ]
+
+SEM AGItf
+  | AGItf       expr        .   finKiCnstr          =   @expr.kiCnstr
+
+ATTR AllNT [ finTyGam: TyGam |  | ]
+SEM AGItf
+  | AGItf       expr        .   finTyGam            =   emptyGam
+
+SEM Expr
+  | Let         loc         .   finTyGam            =   @lhs.finKiCnstr |=> @decls.tyGam
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known kind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -379,6 +398,7 @@ SEM Decl
                                                           , (hsnRow,    mkTGI (Ty_Con hsnUnknown) kiRow)
                                                           , (hsnRec,    mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
                                                           , (hsnSum,    mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
+                                                          , (hsnRowEmpty, mkTGI (Ty_Con hsnRowEmpty) kiRow)
 %%]
 
 %%[1.initTyGam
