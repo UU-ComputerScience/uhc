@@ -594,8 +594,7 @@ buildAG opts wrap fileBase is
                then wrap True (h (buildHSModImpExp fileBase ish))
                else CDoc_Emp
         cds  =   map (\i -> let vnm = vciFullNm i
-                            in  (wrap (not (vciIsPre i)) (mk i)
-                                )
+                            in  linePragma opts (fileBase++".cag") (vciLineNr i) (wrap (not (vciIsPre i)) (mk i))
                      )
                . vciSortBySeqNr
                $ noPre'
@@ -712,8 +711,8 @@ buildHSModuleHead fileBase is
 buildHSModImpExp :: String -> [VerChunkInfo] -> CDoc
 buildHSModImpExp fileBase is = buildHSModuleHead fileBase is .-. buildHSImps is
 
-buildHS :: Opts -> (Bool -> CDoc -> CDoc) -> String -> VerChunkInfoM -> CDoc
-buildHS opts wrap fileBase is
+buildHS1 :: Opts -> (Bool -> CDoc -> CDoc) -> String -> VerChunkInfoM -> CDoc
+buildHS1 opts wrap fileBase is
   = let (pre,noPre) = vciTakePre is
         noPre' = vciMToL noPre
         ppMod = buildHSModImpExp fileBase (vciMToL is)
@@ -739,6 +738,32 @@ buildHS opts wrap fileBase is
                  .-. wrap True ppMod
                  .-. ppNoPre
      in d
+
+
+linePragma opts filename n c 
+  = if not (optLinePragmas opts) || cdIsEmpty c 
+     then c 
+     else CDoc_Ver (CDoc_Str ("{-# LINE "++show (n+1)++" \"" ++ filename ++ "\" #-}")) c
+
+
+buildHS :: Opts -> (Bool -> CDoc -> CDoc) -> String -> VerChunkInfoM -> CDoc
+buildHS opts wrap fileBase is
+  = let (pre,noPre) = vciTakePre is
+        noPre' = vciMToL noPre
+        ppMod = buildHSModImpExp fileBase (vciMToL is)
+        ppNoPreL
+          =   map (cdVer . (map (\i -> linePragma opts (fileBase++".chs") (vciLineNr i) (wrap (vciHasCD i) (vciCD i)))))
+            . vciVerGroup . vciSortBySeqNr
+            $ noPre'
+        isEmpty = all (isNothing.vciMbCD) noPre'
+        ppNoPre = cdVer ppNoPreL
+     in if isEmpty
+         then CDoc_Emp
+         else if optPlain opts
+         then ppNoPre
+         else (if optPreamble opts then cdVer (map (wrap False . vciCD) pre) else CDoc_Emp)
+              .-. wrap True ppMod
+              .-. ppNoPre
 }
 
 ATTR AGItf [ | | bldHS: {[Build]} ]

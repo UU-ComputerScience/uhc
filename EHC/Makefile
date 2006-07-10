@@ -67,7 +67,7 @@ WWW_DOC_PDF					:= www/current-ehc-doc.pdf
 explanation:
 	@echo "make <n>/ehc             : make compiler version <n> (in bin/, where <n> in {$(EHC_PUB_VARIANTS)})" ; \
 	echo  "make <n>/grini           : make grin interpreter version <n> (bin/, where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
-	echo  "make bin/<n>/grinc       : make grin compiler version <n> (where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
+	echo  "make <n>/grinc           : make grin compiler version <n> (where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
 	echo  "make $(RULER2_NAME)               : make ruler tool" ; \
 	echo  "make $(SHUFFLE_NAME)              : make shuffle tool" ; \
 	echo  "" ; \
