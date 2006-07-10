@@ -148,7 +148,7 @@ $(INS_GRINC_LIB_ALL_AG): $(INS_GRINC_LIB_AG_PREFIX)%: $(GRINC_BLD_LIB_HS_VARIANT
 # rules for ehc library sources+derived
 $(GRINC_AG_ALL_MAIN_DRV_AG) $(GRINC_AG_ALL_DPDS_DRV_AG): $(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag: $(SRC_GRINC_PREFIX)%.cag $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --ag --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE_AG) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(GRINC_AG_D_MAIN_DRV_HS): %.hs: %.ag
 	$(AGC) -dr -P$(EHC_BLD_VARIANT_PREFIX) -P$(GRINC_BLD_LIB_HS_VARIANT_PREFIX) -P$(INS_EHC_LIB_AG_PREFIX) $<
@@ -158,11 +158,11 @@ $(GRINC_AG_S_MAIN_DRV_HS): %.hs: %.ag
 
 $(GRINC_HS_MAIN_DRV_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(SRC_GRINC_PREFIX)%.chs $(SHUFFLE) $(GRINC_MKF)
 	mkdir -p $(@D)
-	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=Main --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=Main --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 $(GRINC_HS_UTIL_DRV_HS): $(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_GRINC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --hs --preamble=no --lhs2tex=no --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --order="$(EHC_SHUFFLE_ORDER)" $< > $@
 
 ### END of library
 

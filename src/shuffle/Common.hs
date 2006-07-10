@@ -97,6 +97,7 @@ data Opts
       , optPlain        :: Bool
       , optLaTeX        :: Bool
       , optPreamble     :: Bool
+      , optLinePragmas  :: Bool
       , optIndex        :: Bool
       , optHelp         :: Bool
       , optChDest       :: (ChDest,String)
@@ -115,6 +116,7 @@ defaultOpts
       , optHS           =  False
       , optLaTeX        =  False
       , optPreamble     =  True
+      , optLinePragmas  =  False
       , optPlain        =  False
       , optIndex        =  False
       , optHelp         =  False
