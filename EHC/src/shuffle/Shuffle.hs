@@ -136,6 +136,8 @@ cmdLineOpts
           "generate code for latex, default=no"
      ,  Option ""   ["preamble"]        (OptArg oPreamble "yes|no")
           "include preamble (marked by version=0), default=yes"
+     ,  Option ""   ["line"]            (OptArg oLinePragmas "yes|no")
+          "insert #LINE pragmas, default=no"
      ,  Option "p"  ["plain"]           (NoArg oPlain)
           "generate plain code, default=no"
      ,  Option ""   ["index"]           (NoArg oIndex)
@@ -160,6 +162,7 @@ cmdLineOpts
   where  oAG             o =  o {optAG = True}
          oHS             o =  o {optHS = True}
          oPreamble   ms  o =  yesno (\f o -> o {optPreamble = f}) ms o
+         oLinePragmas ms o =  yesno (\f o -> o {optLinePragmas = f}) ms o
          oLaTeX          o =  o {optLaTeX = True}
          oPlain          o =  o {optPlain = True}
          oIndex          o =  o {optIndex = True}

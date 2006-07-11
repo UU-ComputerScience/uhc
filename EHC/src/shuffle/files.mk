@@ -68,6 +68,10 @@ SHUFFLE_HS_ALL_DRV_HS					:= $(SHUFFLE_HS_MAIN_DRV_HS) $(SHUFFLE_HS_DPDS_DRV_HS)
 SHUFFLE_NAME		:= shuffle
 SHUFFLE_BLD_EXEC	:= $(BIN_PREFIX)$(SHUFFLE_NAME)$(EXEC_SUFFIX)
 SHUFFLE				:= $(SHUFFLE_BLD_EXEC)
+SHUFFLE_HS			:= $(SHUFFLE) --hs --preamble=no --lhs2tex=no --line=yes
+SHUFFLE_AG			:= $(SHUFFLE) --ag --preamble=no --lhs2tex=no --line=no
+# setting --line=yes for AG is not possible because of uuagc's weird interpretation of the layout rule
+
 
 # distribution
 SHUFFLE_DIST_FILES			:= $(SHUFFLE_ALL_SRC) $(SHUFFLE_MKF)

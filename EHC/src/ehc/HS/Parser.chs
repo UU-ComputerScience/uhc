@@ -10,7 +10,7 @@
 %%[1 module {%{EH}HS.Parser} import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.GenToken, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}HS})
 %%]
 
-%%[1 export(pAGItf)
+%%[1 export(pAGItf, HSParser)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

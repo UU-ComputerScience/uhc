@@ -7,6 +7,7 @@ module Main where
 import System
 -- import System.Exit
 import IO
+import Control.Monad.State
 import qualified Data.Map as Map
 import System.Console.GetOpt
 import UU.Pretty
@@ -55,6 +56,9 @@ emptyRCU
       , rcuState             = RCUSUnknown
       }
 
+rcuStoreMbOut x rcu = rcu {rcuMbOut = x}
+rcuStoreImpNmL x rcu = rcu {rcuImpNmL = x}
+
 data RCompileRunStateInfo
   = RCompileRunStateInfo
       { crsiOpts        :: Opts
@@ -62,7 +66,7 @@ data RCompileRunStateInfo
       }
 
 instance CompileUnitState RCompileUnitState where
-  cusDefault		= RCUSRuler
+  cusDefault        = RCUSRuler
   cusUnk            = RCUSUnknown
   cusIsUnk          = (==RCUSUnknown)
   cusIsImpKnown s   = s /= RCUSUnknown
@@ -88,7 +92,8 @@ instance CompileRunStateInfo RCompileRunStateInfo Nm SPos where
 instance CompileModName Nm where
   mkCMNm = Nm
 
-type RCompileRun = CompileRun Nm RCompileUnit RCompileRunStateInfo Err
+type RCompileRun     = CompileRun   Nm RCompileUnit RCompileRunStateInfo Err
+type RCompilePhase a = CompilePhase Nm RCompileUnit RCompileRunStateInfo Err a
 
 -------------------------------------------------------------------------
 -- Pretty printing
@@ -116,139 +121,113 @@ fileSuffMp = Map.fromList [ ( "rul", RCUSRuler ), ( "", RCUSRuler ), ( "*", RCUS
 -- Compile run actions
 -------------------------------------------------------------------------
 
-crParseCU :: Nm -> RCompileRun -> IO RCompileRun
-crParseCU modNm cr
-  = do { let cu     = crCU modNm cr
+cpParseCU :: Nm -> RCompilePhase ()
+cpParseCU modNm
+  = do { cr <- get
+       ; let cu     = crCU modNm cr
              fp     = cuFPath cu
              fNm    = fpathToStr fp
        ; (fn,fb,fh)
              <- if fpathIsEmpty fp
                 then return ("<stdin>","<stdin>",stdin)
                 else do { let fn = fpathToStr fp
-                        ; h <- openFile fn ReadMode
+                        ; h <- lift $ openFile fn ReadMode
                         ; return (fn,fpathToStr (fpathRemoveSuff fp),h)
                         }
-       -- ; crPP "crParseCU" cr
-       ; tokens <- mkHScan fn fh
+       -- ; cpPP "crParseCU"
+       ; tokens <- lift $ mkHScan fn fh
        ; let (pres,perrs) = parseToResMsgs pAGItf tokens
        ; if null perrs
          then do { let impMp = as1Imports pres
                        info = crStateInfo cr
-                 ; crUpdCU modNm (\cu -> return (cu {rcuMbOut = Just pres, rcuImpNmL = Map.keys impMp}))
-                           (cr {crStateInfo = info {crsiImpPosMp = impMp `Map.union` crsiImpPosMp info}})
+                 ; cpUpdCU modNm (rcuStoreMbOut (Just pres) . rcuStoreImpNmL (Map.keys impMp))
+                 ; modify (\cr -> (cr {crStateInfo = info {crsiImpPosMp = impMp `Map.union` crsiImpPosMp info}}))
                  }
-         else crSetLimitErrs 5 "" (map mkPPErr perrs) cr
+         else cpSetLimitErrs 5 "" (map mkPPErr perrs)
        }
-{-
-crParseCU :: Nm -> RCompileRun -> IO RCompileRun
-crParseCU modNm cr
-  = do { let cu     = crCU modNm cr
-             fp     = cuFPath cu
-             fNm    = fpathToStr fp
-       ; (fn,fb,fh)
-             <- if fpathIsEmpty fp
-                then return ("<stdin>","<stdin>",stdin)
-                else do { let fn = fpathToStr fp
-                        ; h <- openFile fn ReadMode
-                        ; return (fn,fpathToStr (fpathRemoveSuff fp),h)
-                        }
-       ; tokens <- mkOffScan fn fh
-       ; let (pres,perrs) = parseOffsideToResMsgs pAGItf tokens
-             (showErrs,omitErrs) = splitAt 5 perrs
-       ; if null perrs
-         then do { let impMp = as1Imports pres
-                       info = crStateInfo cr
-                 ; crUpdCU modNm (\cu -> return (cu {rcuMbOut = Just pres, rcuImpNmL = Map.keys impMp}))
-                           (cr {crStateInfo = info {crsiImpPosMp = impMp `Map.union` crsiImpPosMp info}})
-                 }
-         else crSetLimitErrs 5 (map mkPPErr perrs) cr
-       }
--}
 
-crFindAndParseCU :: Maybe FPath -> Nm -> RCompileRun -> IO RCompileRun
-crFindAndParseCU mbFp modNm cr
-  = crSeq [crFind modNm mbFp, crParseCU modNm] cr
-  where opts = crsiOpts (crStateInfo cr)
-        crFind mn mbFp cr
-          = do { (cr',_) <- crFindFileForFPath fileSuffMp (optSearchPath opts) (Just mn) mbFp cr
-               ; return cr'
-               }
+cpFindAndParseCU :: Maybe FPath -> Nm -> RCompilePhase ()
+cpFindAndParseCU mbFp modNm
+  =  do { cr <- get
+        ; let opts = crsiOpts (crStateInfo cr)
+              cpFind mn mbFp
+                = do { _ <-  cpFindFileForFPath fileSuffMp (optSearchPath opts) (Just mn) mbFp ; return ()}
+        ; cpSeq [cpFind modNm mbFp, cpParseCU modNm]
+        }
 
-crFlattenAndCompileAllCU :: RCompileRun -> IO RCompileRun
-crFlattenAndCompileAllCU cr
-  = crSeq
-      [ crPutDbg
-      , crSetErrs (M1.errL_Syn_AGItf sem1Res)
-      , crMk1
+cpFlattenAndCompileAllCU :: RCompilePhase ()
+cpFlattenAndCompileAllCU
+ = do { cr <- get
+      ; let opts = crsiOpts (crStateInfo cr)
+            isAS2 = fmAS2Fm (optGenFM opts) /= optGenFM opts
+            parseRes = as1JoinAGItfs [ panicJust ("crFlattenAndCompileAllCU: " ++ show n) $ rcuMbOut $ crCU n $ cr | ns <- crCompileOrder cr, n <- ns ]
+            sem1Res
+              = M1.wrap_AGItf (M1.sem_AGItf parseRes)
+                         (M1.Inh_AGItf
+                            { M1.opts_Inh_AGItf = opts {optGenFM = fmAS2Fm (optGenFM opts)}
+                            , M1.fmGam_Inh_AGItf = emptyGam
+                            })
+            hPutBld f h b = if f then hPutPPFile h b 2000 else return ()
+            putBld  f   b = hPutBld f stdout b
+            cpPutBld f b = lift $ putBld f b
+            cpPutDbg = cpPutBld (optDebug opts) (M1.pp_Syn_AGItf sem1Res)
+            cpMk1
+              = do { let t1 = M1.as2_Syn_AGItf sem1Res
+                         ((t2,_,t2errL),doPrint)
+                           = case optGenFM opts of
+                               FmTeX -> bld as2LaTeX
+                               FmAG  -> bld as2ARule
+                               FmHS  -> ((t1,empty,[]),True)
+                               _ | optGenExpl opts -> ((t1,empty,[]),True)
+                                 | otherwise            -> ((t1,empty,[]),False)
+                           where bld f = (f opts (M1.dtInvGam_Syn_AGItf sem1Res) (M1.scGam_Syn_AGItf sem1Res) (M1.fmGam_Syn_AGItf sem1Res) (M1.rwGam_Syn_AGItf sem1Res) t1,True)
+                   ; cpSeq [cpSetErrs t2errL, cpPutBld doPrint (M2.ppAS2 opts (M1.fmGam_Syn_AGItf sem1Res) t2)]
+                   }
 {-
-      , if optGenV2 opts && not isAS2
-        then crMk1
-        else if not isAS2
-        then crMk2
-        else case optGenFM opts of
-               FmAS2 f -> crMk3 f
-               _       -> liftCR id
+            cpMk2
+              = cpSeq [ cpPutBld True (M1.mkPP_Syn_AGItf sem1Res (optGenFM opts))
+                      , cpPutBld (optGenExpl opts) (M1.scExplPP_Syn_AGItf sem1Res)
+                      ]
+            cpMk3 f
+              = do { let t1 = M1.as2_Syn_AGItf sem1Res
+                         (t2,t2ppDbg,t2errL)
+                           = case f of
+                               FmTeX -> as2LaTeX opts (M1.scGam_Syn_AGItf sem1Res) (M1.fmGam_Syn_AGItf sem1Res) (M1.rwGam_Syn_AGItf sem1Res) t1
+                               FmAG  -> as2ARule opts (M1.scGam_Syn_AGItf sem1Res) (M1.fmGam_Syn_AGItf sem1Res) (M1.rwGam_Syn_AGItf sem1Res) t1
+                   ; cpSeq [ cpSetErrs t2errL
+                           , cpPutBld True t2ppDbg
+                           , cpPutBld True (M2.ppAS2 opts t2)
+                           , cpPutBld True (M1.mkPP_Syn_AGItf sem1Res f)
+                           ]
+                   }
 -}
-      ]
-      cr
-  where opts = crsiOpts (crStateInfo cr)
-        isAS2 = fmAS2Fm (optGenFM opts) /= optGenFM opts
-        parseRes = as1JoinAGItfs [ panicJust ("crFlattenAndCompileAllCU: " ++ show n) $ rcuMbOut $ crCU n $ cr | ns <- crCompileOrder cr, n <- ns ]
-        sem1Res
-          = M1.wrap_AGItf (M1.sem_AGItf parseRes)
-                     (M1.Inh_AGItf
-                        { M1.opts_Inh_AGItf = opts {optGenFM = fmAS2Fm (optGenFM opts)}
-                        , M1.fmGam_Inh_AGItf = emptyGam
-                        })
-        hPutBld f h b = if f then hPutPPFile h b 2000 else return ()
-        putBld  f   b = hPutBld f stdout b
-        crPutBld f b cr = do { putBld f b ; return cr }
-        crPutDbg = crPutBld (optDebug opts) (M1.pp_Syn_AGItf sem1Res)
-        crMk1 cr
-          = do { let t1 = M1.as2_Syn_AGItf sem1Res
-                     ((t2,_,t2errL),doPrint)
-                       = case optGenFM opts of
-                           FmTeX -> bld as2LaTeX
-                           FmAG  -> bld as2ARule
-                           FmHS  -> ((t1,empty,[]),True)
-                           _ | optGenExpl opts -> ((t1,empty,[]),True)
-                             | otherwise            -> ((t1,empty,[]),False)
-                       where bld f = (f opts (M1.dtInvGam_Syn_AGItf sem1Res) (M1.scGam_Syn_AGItf sem1Res) (M1.fmGam_Syn_AGItf sem1Res) (M1.rwGam_Syn_AGItf sem1Res) t1,True)
-               ; crSeq [crSetErrs t2errL, crPutBld doPrint (M2.ppAS2 opts (M1.fmGam_Syn_AGItf sem1Res) t2)] cr
-               }
+      ; cpSeq [ cpPutDbg
+              , cpSetErrs (M1.errL_Syn_AGItf sem1Res)
+              , cpMk1
 {-
-        crMk2
-          = crSeq [ crPutBld True (M1.mkPP_Syn_AGItf sem1Res (optGenFM opts))
-                  , crPutBld (optGenExpl opts) (M1.scExplPP_Syn_AGItf sem1Res)
-                  ]
-        crMk3 f cr
-          = do { let t1 = M1.as2_Syn_AGItf sem1Res
-                     (t2,t2ppDbg,t2errL)
-                       = case f of
-                           FmTeX -> as2LaTeX opts (M1.scGam_Syn_AGItf sem1Res) (M1.fmGam_Syn_AGItf sem1Res) (M1.rwGam_Syn_AGItf sem1Res) t1
-                           FmAG  -> as2ARule opts (M1.scGam_Syn_AGItf sem1Res) (M1.fmGam_Syn_AGItf sem1Res) (M1.rwGam_Syn_AGItf sem1Res) t1
-               ; crSeq [ crSetErrs t2errL
-                       , crPutBld True t2ppDbg
-                       , crPutBld True (M2.ppAS2 opts t2)
-                       , crPutBld True (M1.mkPP_Syn_AGItf sem1Res f)
-                       ]
-                       cr
-               }
+              , if optGenV2 opts && not isAS2
+                then cpMk1
+                else if not isAS2
+                then cpMk2
+                else case optGenFM opts of
+                       FmAS2 f -> cpMk3 f
+                       _       -> liftCR id
 -}
+              ]
+      }
 
-crCompileTopLevel :: FPath -> Opts -> IO ()
-crCompileTopLevel fp opts
+compileTopLevel :: FPath -> Opts -> IO ()
+compileTopLevel fp opts
   = do { let topModNm       = Nm (fpathBase fp)
              opts'          = opts { optSearchPath = mkInitSearchPath fp ++ optSearchPath opts }
              cr             = mkEmptyCompileRun topModNm (RCompileRunStateInfo opts' Map.empty)
-       ; cr' <-
-           crSeq [ crFindAndParseCU (Just fp) topModNm
-                 -- , crPP "crCompileTopLevel 1"
-                 , crImportGather (crFindAndParseCU Nothing) topModNm
-                 -- , crPP "crCompileTopLevel 2"
-                 , crFlattenAndCompileAllCU
-                 ]
-                 cr
+       ; _ <- runStateT (cpSeq [ cpFindAndParseCU (Just fp) topModNm
+                               -- , crPP "crCompileTopLevel 1"
+                               , cpImportGather (cpFindAndParseCU Nothing) topModNm
+                               -- , crPP "crCompileTopLevel 2"
+                               , cpFlattenAndCompileAllCU
+                               ])
+                         cr
        ; return ()
        }
 
@@ -271,7 +250,7 @@ main
                  }
          else if null errs
               -- then  doCompile (if null n then emptyFPath else mkFPath (head n)) opts
-              then  crCompileTopLevel (if null n then emptyFPath else mkFPath (head n)) opts
+              then  compileTopLevel (if null n then emptyFPath else mkFPath (head n)) opts
               else  do hPutStr stderr (head errs)
                        exitFailure
        }
