@@ -9,20 +9,258 @@
 
 Merge everyting together into a Low-level C compilation unit
 
+
+
+
 %%[8
-ATTR GrAGItf GrModule GrBindL GrBind [ entryNm: HsName | | llcDoc USE {>-<} {(text "")} : PP_Doc ]
+ATTR GrAGItf GrModule  [ entryNm: {HsName} | |  ]
+
+ATTR GrAGItf GrModule GrBindL GrBind GrExpr GrAltL GrAlt GrVal GrTag GrPat GrGlobal GrGlobalL [ | | llcDoc USE {>-<} {(text "")} : {PP_Doc} ]
+
+ATTR GrValL GrVal [ | | llcDocs : {[PP_Doc]} ]
 
 
+SEM GrValL
+  | Nil lhs.llcDocs = []
+  | Cons lhs.llcDocs = @hd.llcDoc : @tl.llcDocs
 
 
 SEM GrModule
-  | Mod   lhs . llcDoc = text ("/* Generated LLC code for module " ++ show @baseName ++ " entry name " ++ show @lhs.entryNm  ++ "*/" )
+  | Mod   lhs . llcDoc = comment ("Generated C code for module " ++ show @baseName ++ " entry name " ++ show @lhs.entryNm)
+                         >-< comment "Tag constants"
+                         >-< indent 4 (tagConstants @evalTagMp)
+                         >-< comment "Global table"
+                         >-< indent 4 @globalL.llcDoc
+                         >-< comment "Function definitions"
                          >-< @bindL.llcDoc
-                        
-                         
+
+SEM GrGlobal
+  | Global lhs.llcDoc = constantDefinition ((text.show) @nm) @val.llcDoc
+
+
+
 SEM GrBind
-  | Bind  lhs . llcDoc = text ("void " ++ show @nm ++ "(void) {")  
-                         >-< text "    /* TODO */" 
-                         >-< text "}"
+  | Bind  lhs . llcDoc = methodHeader @nm
+                         >-< indent 4 (methodParameters @argNmL)
+                         >-< indent 4 @expr.llcDoc
+                         >-< methodFooter
+
+
+{
+methodHeader :: HsName -> PP_Doc
+methodHeader nm
+ = 	text ("void " ++ show nm ++ "(void) {")
+
+methodFooter ::  PP_Doc
+methodFooter
+ = 	text "}"
+
+methodParameters :: [HsName] -> PP_Doc
+methodParameters ps
+ = vertically (map methodParameter ps)
+ 
+methodParameter :: HsName -> PP_Doc
+methodParameter p
+ = text ("/* parameter " ++ show p ++ " */")
+ 
+vertically :: [PP_Doc] -> PP_Doc
+vertically = foldr (>-<) empty
+
+horizontally :: [PP_Doc] -> PP_Doc
+horizontally = foldr (>|<) empty
+
+intersperse :: a -> [a] -> [a]
+intersperse _ []  = []
+intersperse _ xs@[_] = xs
+intersperse i (x:xs)  = x:i:(intersperse i xs)
+
+
+constantDefinition :: PP_Doc -> PP_Doc -> PP_Doc
+constantDefinition x v
+ = "Pointer" >#< x >#< "=" >#< v >#< ";"
+
+tagConstants :: EvApTagMp -> PP_Doc
+tagConstants eas
+ = let f ((t,s),_) n = constantDefinition ((text.showGrTag) t) ((text.show) n)
+   in  vertically (zipWith f eas [0..])
+
+
+
+}
+
+
+SEM GrExpr
+ | Seq     lhs.llcDoc = @expr.llcDoc 
+                        >-< @body.llcDoc
+           
+ | Unit    lhs.llcDoc = if @isLastExpr
+                         then comment "Unit (Return)"
+                              >-< vertically (map yieldit @val.llcDocs)
+                         else comment "Unit (Intermediate)"
+                              >-< vertically (zipWith assignment (map (text.show) @lhs.targets)
+                                                                 (@val.llcDocs)
+                                             )
+
+ | Store   lhs.llcDoc = let p  = (text.show.head) @lhs.targets
+                            vs = @val.llcDocs
+                            n  = length vs
+                        in comment "Store"
+                           >-< assignment p (allocate n)
+                           >-< vertically (zipWith assignment (map (arrayindex p . text . show) [0..]) vs)
+ 
+ | Update  lhs.llcDoc = let p = (text.show) @nm
+                            vs = @val.llcDocs
+                        in comment "Update"
+                           >-< vertically (zipWith assignment (map (arrayindex p . text . show) [0..]) vs)
+
+ | Fetch   lhs.llcDoc = comment "Fetch"
+                        >-< assignment ((text.show.head) @lhs.targets)
+                                       (arrayindex ((text.show) @nm) ((text.show.fromJust) @mbOffset))
+                                       
+ | Case    lhs.llcDoc = comment "Case"
+                        >-< caseHeader @val.llcDoc
+                        >-< indent 4 @altL.llcDoc
+                        >-< caseFooter
+                        
+ | Call    lhs.llcDoc = (if @isLastExpr
+                         then comment "Call (Tail)"
+                         else comment "Call (Normal)")
+						>-< vertically (map parameter @argL.llcDocs)                         
+						>-< call ((text.show) @nm)
+                        >-< vertically (zipWith assignment (map (text.show) @lhs.targets) (repeat (text "POP()")))
+                         
+ | FFI     lhs.llcDoc = if @isLastExpr
+                         then (   comment "FFI (Return)"
+                              >-< yieldit (fficall (text @nm) (map (text.show) @argL))
+                              )
+                         else (   comment "FFI (Normal)"
+                              >-< assignment ((text.show.head) @lhs.targets) 
+                                             (fficall (text @nm) (map (text.show) @argL))
+                              )
+ 
+ | App     lhs.llcDoc = comment "App: SHOULDNT"
+ | Eval    lhs.llcDoc = comment "Eval: SHOULDNT"
+ | Throw   lhs.llcDoc = comment "Throw: TODO"
+ | Catch   lhs.llcDoc = comment "Catch: TODO"
+
+
+{
+caseHeader :: PP_Doc -> PP_Doc
+caseHeader x
+ = 	"switch (" >|< x >|< ")" >#< "{"
+
+caseFooter :: PP_Doc
+caseFooter 
+ = text "}"
+
+comment :: String -> PP_Doc
+comment s = text ("/* " ++ s ++ " */")
+
+allocate :: Int -> PP_Doc
+allocate n
+ = "heapalloc" >|< "(" >|< show n >|< ")"
+
+call :: PP_Doc -> PP_Doc
+call f
+ = f >|< "()" >|< ";"
+
+fficall :: PP_Doc -> [PP_Doc] -> PP_Doc
+fficall f ps
+ = f >#< "(" >|< horizontally (intersperse (text ", ") ps) >|< ")"
+
+arrayindex :: PP_Doc -> PP_Doc -> PP_Doc
+arrayindex a i 
+ = a >#< "[" >#< i >#< "]"
+
+assignment :: PP_Doc -> PP_Doc -> PP_Doc
+assignment v e
+ = v >#< text "=" >#< e >|< ";"
+
+parameter :: PP_Doc -> PP_Doc
+parameter p
+ = "Push" >#< p
+
+yieldit  :: PP_Doc -> PP_Doc
+yieldit r
+ = "Yield" >#< r
+
+}
+
+
+
+
+
+SEM GrAlt
+ | Alt     lhs.llcDoc = "case" >#< @pat.llcDoc >#< ":"
+                        >-< indent 4 (@expr.llcDoc >-< "break;")
+
+SEM GrVal
+ | LitInt  lhs.llcDoc = text (show @int)
+ | Var     lhs.llcDoc = text (show @nm)
+ | Tag     lhs.llcDoc = @tag.llcDoc
+ | Node    lhs.llcDoc = "{" >#< horizontally (intersperse (text ", ") (@tag.llcDoc : @fldL.llcDocs)) >#< "}"
+ | * - LitInt Var Tag Node lhs.llcDoc = text "GrVal:other"
+
+SEM GrVal
+ | Node     lhs.llcDocs = @tag.llcDoc : @fldL.llcDocs
+ | * - Node lhs.llcDocs = repeat (text "GrVal:others")
+
+
+SEM GrTag
+ | Lit     lhs.llcDoc = text (categStr @categ ++ show @nm)
+ | Var     lhs.llcDoc = text (show @nm)
+ | Unboxed lhs.llcDoc = text "GrTag:Unboxed"
+
+
+{
+showGrTag :: GrTag -> String
+showGrTag(GrTag_Lit categ n nm) = categStr categ ++ show nm	
+showGrTag (GrTag_Var nm) = show nm
+showGrTag (GrTag_Unboxed) = "GrTag:Unboxed"
+}
+
+SEM GrPat
+ | Tag     lhs.llcDoc = @tag.llcDoc
+ | Var     lhs.llcDoc = text "GrPat:Var"
+ | LitInt  lhs.llcDoc = text "GrPat:LitInt"
+ | * - Tag Var LitInt lhs.llcDoc = text "GrPat:other"
+
+
+
+
+{
+categStr c = case c of
+               GrTagCon        -> "C"
+               GrTagHole       -> "H"
+               GrTagRec        -> "R"
+               GrTagApp        -> "A"
+               GrTagFun        -> "F" 
+               GrTagPApp need  -> 'P' : show need
+}
+
+
+
+
+ATTR AllGrExpr [ targets : {[HsName]} | | ]
+ATTR GrPat GrTag [ | |  patternNames: {[HsName]} ]
+
+SEM GrBind
+  | Bind     expr . targets = []
+
+SEM GrExpr
+  | Seq      expr . targets = @pat.patternNames
+             body . targets = @lhs.targets
+
+SEM GrPat 
+  | Var   lhs  .  patternNames = [@nm]
+  | Node  lhs  .  patternNames = @tag.patternNames ++ @fldL
+  | * - Var Node Tag  lhs  .  patternNames  =  []
+
+SEM GrTag
+  | Var      lhs  .  patternNames  = [@nm]
+  | Unboxed  lhs  .  patternNames  = []
+  | * - Var Unboxed lhs  .  patternNames  = [wildcardNr]
+
+
 
 %%]

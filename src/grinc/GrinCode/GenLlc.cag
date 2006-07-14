@@ -6,6 +6,10 @@
 %%[8 import({GrinCode/AbsSyn})
 %%]
 
+%%[8 import({GrinCode/LastExpr})
+%%]
+
+
 %%[8 hs module {%{GRIN}GrinCode.GenLlc} import(UU.Pretty, {%{GRIN}GRINCCommon}, Data.List(nub), Data.Maybe, {%{EH}GrinCode}, {%{GRIN}Primitives}) export(grin2llc)
 
 grin2llc :: HsName -> GrModule -> Bool -> PP_Doc

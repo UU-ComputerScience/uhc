@@ -15,7 +15,7 @@ cleanup EHC generated GRIN:
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.CleanupPass} import(qualified Data.Set as Set)
+%%[8 hs module {%{GRIN}GrinCode.Trf.CleanupPass} import(qualified Data.Set as Set, Char(isUpper))
 %%]
 
 %%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(cleanupPass)
@@ -39,7 +39,7 @@ SEM GrModule
 
 %%[8.dropEvalApply
 SEM GrBind [ | | dropBinding: Bool ]
-  | Bind  lhs  . dropBinding  =  @nm `elem` [evalNm, evalNr,  applyNm, applyNr]
+  | Bind  lhs  . dropBinding  =  @nm `elem` [evalNm, evalNr,  applyNm, applyNr] --  || isUpper (head (show @nm))
   | Rec   lhs  . dropBinding  =  False
 
 
@@ -49,15 +49,25 @@ SEM GrBindL
                             else @hd.grTrf : @tl.grTrf
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%% F-Tag  <==> P0-Tag %%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% F-Tag  <== P0-Tag %%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Ehc outputs P0-tags instead of F-Tags in some situations, we rewrite them to F-Tags
+Also, replace F-Tags for constructorfunctions by C-tags
 
 %%[8.P0tag_TO_Ftag
 SEM GrTag
-  | Lit  lhs  .  grTrf  = GrTag_Lit (if @categ == GrTagPApp 0 then GrTagFun else @categ) @int @nm
+  | Lit  lhs  .  grTrf  = GrTag_Lit 
+                             (if   isUpper (head (show @nm)) && (@categ==GrTagFun || @categ==GrTagPApp 0)
+                              then GrTagCon
+                              else 
+                              if   @categ == GrTagPApp 0 
+                              then GrTagFun 
+                              else @categ
+                             )
+                             @int 
+                             @nm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

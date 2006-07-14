@@ -304,7 +304,7 @@ cpTranslateCore2Grin modNm
                  fp     = ecuFilePath ecu
                  mbCore = ecuMbCore ecu
                  cMod   = fromJust mbCore
-                 [u1]   = mkNewLevUIDL 1 . snd . mkNewLevUID . crsiHereUID $ crsi
+                 u1     = uidChild . crsiHereUID $ crsi
                  grin   = cmodGrin u1 cMod
          ;  when (isJust mbCore && (ehcOptEmitGrin opts || ehcOptEmitCmm opts || ehcOptEmitLlc opts))
                  (cpUpdCU modNm (ecuStoreGrin grin))
@@ -331,7 +331,7 @@ cpCore1Trf modNm trfNm
                  crsi   = crStateInfo cr
                  mbCore = ecuMbCore ecu
                  core   = fromJust mbCore
-                 [u1]   = mkNewLevUIDL 1 . snd . mkNewLevUID . crsiHereUID $ crsi
+                 u1     = uidChild . crsiHereUID $ crsi
                  core2  = ( case trfNm of
                               "CER"     -> cmodTrfEtaRed
                               "CCP"     -> cmodTrfConstProp

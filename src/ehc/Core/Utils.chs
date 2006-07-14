@@ -134,7 +134,7 @@ fuReorder nL fuL
 
 fuMkCExpr :: UID -> FieldUpdateL CExpr -> CExpr -> CExpr
 fuMkCExpr u fuL r
-  =  let  (n:nL) = map uidHNm . mkNewLevUIDL (length fuL + 1) $ u
+  =  let  (n:nL) = map (uidHNm . uidChild) . mkNewUIDL (length fuL + 1) $ u
           (oL,fuL') = fuReorder nL fuL
           bL = CBind_Bind n r : oL
      in   mkCExprLet CBindStrict bL . foldl (\r (_,f) -> f r) (CExpr_Var n) $ fuL'
