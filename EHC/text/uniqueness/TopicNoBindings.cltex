@@ -17,6 +17,36 @@ most of Haskell.
   \end{verbatim}
 
 
+
+  Besides a uniqueness value, a reference count annotation is also required. A reference-count annotation is
+  very similar to a uniqueness annotation. In fact, the only difference is that a reference count also be |0|
+  to indicate that the associated value is not used. In fact, given the program, the uniquenss annotations can be
+  inferred from the reference-coutn annotations. For now, we type the program with tuples as annotations: the
+  left component is the reference count and the right component is the uniqueness value. In case of our
+  example:
+
+  ... bladie bla...
+
+  The notable difference with the first case is that the two occurrences of |x| have a shared uniqueness annotation,
+  but each a |1|-annotation as reference count. This difference is the reason why we need the reference-count annotations, but
+  that becomes clear later in this chapter.
+
+  Back to the main question: how to check that this typing of the program is valid? For that, we first check that
+  each tuple with reference count and uniqueness value is consistent. Such a tuple is consistent when the
+  reference-count annotation is smaller in value than the uniqueness annotation. Secondly, we gather a set of
+  constraints from the annotated program, and check if the constraints are satisfied. When the constraints are
+  satisfied, a value with a unique type is used exactly once (\ref{proof this}).
+
+  Back to the example. We generated constraints at three places: lamda abstraction, application, and for the
+  plus operator. We discuss these cases in general in Section~\ref{fill this one in}, and only discuss what
+  we do at these places with our example.
+
+  For the lambda abstraction |\x -> ... x ... x ...|
+
+  Parameters get their type directly from the corresponding part in the type of the
+  function.
+
+
 \section{Expression language}
 
 
