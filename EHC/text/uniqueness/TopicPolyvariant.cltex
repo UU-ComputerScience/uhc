@@ -1,0 +1,30 @@
+%%[main
+
+\chapter{Polyvariant analysis with monomorphic bindings}
+\label{chapt.Polyvariant}
+
+
+\section{Example}
+
+
+\section{Binding groups}
+
+
+\section{Uniqueness variables}
+
+
+\section{Instantiation constraint}
+
+
+\section{Constraint graph}
+
+
+\section{Graph rewriting}
+
+
+\section{Polymorphic recursion}
+
+
+\section{Conclusion}
+
+%%]

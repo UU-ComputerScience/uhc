@@ -1,0 +1,36 @@
+%%[main
+
+\chapter{Lambda Calculus without bindings}
+\label{chapt.NoBindings}
+
+
+This chapter presents the uniqueness analysis for a restricted language. We take a simply-typed lambda calculus
+to discuss the fundementals of the analysis. In subsequent chapters we extend this language until we cover
+most of Haskell.
+
+
+\section{Example}
+
+  \begin{verbatim}
+  let x = 3
+   in x + x
+  \end{verbatim}
+
+
+\section{Expression language}
+
+
+\section{Types, Annotations and Constraints}
+
+
+\section{Gathering constraints}
+
+
+\section{Checking constraints}
+
+  Parameterizable uniqueness properties.
+  Transfer functions.
+
+\section{Conclusion}
+
+%%]

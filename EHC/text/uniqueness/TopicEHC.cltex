@@ -1,0 +1,228 @@
+%%[main
+
+\chapter{Prerequisite: EH}
+
+  We used the Essential Haskell Compiler as starting point in order to prototype the uniqueness type system.
+  In this chapter we explain why we took this compiler and to bring you up-to-speed with several language
+  features of the EH language. Design decisions of the compiler and the language features to support, influenced
+  the implementation of the prototype. Although not essential, some background knowledge helps to explain the
+  reason behind some decisions taken further on in this thesis. The eager reading could skip this chapter and
+  delve directly into uniqueness typing.
+
+
+\section{Which compiler for prototyping?}
+
+  There are a lot of (partial) compilers for Haskell. Which compiler to use for prototyping uniqueness typing?
+  Choosing the right compiler is important, since uniqueness typing crosscuts almost the entire type system of
+  a compiler. For prototyping, you would need a compiler that does not have too much features (or risk hair
+  loss), but enough to keep it interesting.
+  
+  Several compilers where considered to use for prototyping. GHC is an example of a complete and big compiler.
+  A full implementation of uniqueness typing in such compiler is interesting, since people can directly use it
+  in practice. But, having to deal with all the intimacies of a large compiler is too much for prototyping.
+  A lightweight compiler is preferable to prevent distracting the mind too much. A compiler such as
+  ``Typing Haskell in Haskell'' is the other extreme. It lacks infrastructure. For example, adding additional
+  environments is a tedious task, since it requires explicitly threading the environments as additional parameter
+  and result through all the functions. The compiler to use for experimentation has to lie somewhere in between
+  these extremes.
+
+  Now EH enters the picture. EH is a family of languages that resemble Haskell. Of these languages, there are
+  currently nine main languages. These main languages are totally ordered into versions, meaning that each
+  subsequent language extends the other. Starting with a simply typed lambda calculus, each language adds
+  another language feature until we end up with a language that has a feature set that goes beyond Haskell.
+  Each language has an associated compiler. The compilers are structured to inherit implementation from a
+  previous version. The intention is that spreading out language features over multiple versions, allow
+  an implementation and description in relative isolation.
+  
+  The EH project offers what we need for prototyping:
+  \begin{itemize}
+  \item It allows the implementor to pick a language that has enough features, but omits features that are
+        not required. For example, our base language for the prototype is EH 7, which allows us to focus
+        on the typing problem and not on code generation, which comes in EH 8.
+  \item Infrastructure, including type inference, parser, pretty-printing and facilities for debugging.
+  \item Tools such as the UUAG system, which allows us to add the uniqueness type system without having
+        to touch the existing code.
+  \end{itemize}
+
+
+\section{Language features of EH}
+
+  In this section, we briefly consider some language features of EH that are not in Haskell, but are part
+  of EH. Such features pop up now and then in the implementation. This section touches these features and
+  gives some references for futher reading.
+  
+  \subsection{Quantifiers and qualifiers everywhere}
+  
+    Haskell makes a distinction between types and type schemes. Type variables in a type are
+    (universally) quantified or qualified (type classes) in a type scheme. A type does not contain
+    quantifiers nor qualifiers. In EH this is not the case. Quantifiers and qualifiers may occur
+    everywhere in the type. Allowing quantifiers and qualifiers everywhere in the type, has
+    consequences.
+    
+    The consequences for allowing quantifiers everywhere can best be observed by an example. The
+    following types for the functions |f| and |g| are not equal:
+    
+%%[[wrap=code
+      f :: forall alpha . (alpha -> Int)
+      g :: (forall alpha . alpha) -> Int
+%%]
+
+    When calling f, the caller chooses the type to substitute for |a|. For example, writing
+    |f 3| or |f True| is allowed. The body of |f| is not allowed to make any assumption on the type
+    of |a|:
+
+%%[[wrap=code
+      let  f :: forall alpha . (alpha -> Int)
+           f = \x -> x + 3  -- error
+           f = \_ -> 3      -- ok
+      in   f 3 + f True     -- ok
+%%]
+
+        For |g| the situation is reversed. The body of |g| is allowed to choose the type of |a|, and the
+    caller is not. In this case, the caller can only pass |undefined|, since that is the only value
+    with type |forall a . a|:
+
+%%[[wrap=code
+      let g :: (forall alpha . alpha) -> Int
+          g = \x -> x + x x  -- ok
+      in  g 3                -- error
+      in  g undefined        -- ok
+%%]
+
+    More programs can be typed when quantifiers are allowed everywhere. Programs using the ST-monad
+    require this feature as the |runST| function has a type with a universal quantifier in a
+    contravariant position: |runST :: forall a . (forall s . ST s a) -> a|. Simon Peyton-Jones, et al,
+    give several examples why such \emph{higher ranked} types are useful, and what the (quite severe)
+    limitations for type inference are. Further discussion about this topic is out of the scope of
+    this Thesis.
+    
+    Besides quantifiers everywhere, EH also allows quantifiers everywhere. Similar to quantifiers
+    everywhere, the location of the quantifier determines who (caller or callee) supplies the
+    evidence:
+    
+%%[[wrap=code
+    f :: Eq alpha => alpha -> alpha -> Bool
+    g :: (forall alpha . Eq alpha => [alpha] -> Bool) -> Bool
+%%]
+
+    The caller of |f| supplies the evidence, and the body of |g| passes the evidence to the
+    first argument of |g|. Again, we only mention this feature of EH here, since a more thorough
+    discussion is out of the scope of this thesis.
+    
+  \subsection{Polymorphic kinds}
+  
+    Haskell uses \emph{kind inference} to type check type signatures. Like types, kinds are
+    generalized for each binding-group. Haskell has monomorphic kinds, meaning that free kind
+    variables are defaulted to |*| during generalization. For example:
+    
+%%[[wrap=code
+    data App f a = A (f a)
+    App :: (* -> *) -> * -> *
+%%]
+
+    On the other hand, EH has polymorphic kinds, and would come up with the kind:
+    
+%%[[wrap=code
+    App :: forall alpha . (alpha -> *) -> alpha -> *
+%%]
+
+    The difference is that the |alpha| can not only be instantiated to |*|, but also
+    to a more complex kind:
+    
+%%[[wrap=code
+    type List a = App [] a
+    data Fix f = In (f (Fix f))
+    type InfNested = App Fix []
+    type NestInfNested = App List InfNested
+%%]
+
+    In this example, the occurrence of |App| in List is instantiated to |(*->*) -> * -> *| and
+    the second occurrence of |App| to: |((* -> *) -> *) -> (* -> *) -> *|. In Haskell, you
+    can either get the first, or the second (with a trick), but not both at the same time.
+    
+    Polymorphic kinds are beneficial for type hackers, but complicate analyses on data types,
+    such as polymorphic types complicate type inference.
+
+  \subsection{Extensible records}
+  
+    EH supports lightweight extensible records as discussed by Simon Peyton Jones, et al.
+    Ah simple way to look at the records is as tuples with named components. There are
+    operations to add a component to a record (record extension) and to select a component
+    from it (record extraction):
+    
+%%[[wrap=code
+    let  r = {{() | x = 3} | y = 4}  -- create the record {x=3, y=4}
+         r' = { r | y := 3 }         -- record update
+    in   r.x + r'.y  -- select components from the record
+%%]
+
+    Replace the bars with commas, and the comparison with tuples is striking. Also on type
+    level, records look like tuples with named components:
+
+%%[[wrap=code
+    r :: {{() | x :: Int} | y :: Int}
+%%]
+
+    Consider a function |f| that adds a field |x| of type |Int| to a record:
+    
+%%[[wrap=code
+    f = \r -> {r | x = 3}
+%%]
+
+    What is the type of |f|? We want to be able to pass any record that has no field
+    named |x|. For that, |f| needs to be polymorphic in the type of |r|. For that,
+    we need polymorphic rows. The type of a record is called a \emph{row}. It has a
+    special kind, |row|. A type variable of kind |row| represents an unknown record,
+    it can have any number of components. In our example, the type of |r| is such
+    a type variable, denoted by |v1|, since we know nothing about |r|, except that it
+    may not have a field named |x|. We encode this last fact by qualifying the type
+    variable associated to |r| lacks the field |x|, giving us the following type
+    for |f|:
+    
+%%[[wrap=code
+    f :: forall v1 . (v1 \ x) => v1 -> {v1 | x :: Int}
+%%]
+    
+    Calling |f| requires evidence that the record that is passed as argument does not
+    have a field named |x|. The type system checks this condition and inserts as
+    evidence an offset within the record to store the value of |x|.
+
+\section{Type Inference}
+
+  \subsection{Inference rules}
+  
+  \subsection{Unification}
+
+  \subsection{Hooking into the inferencer}
+
+
+\section{Experience}
+
+  Using EH turned out to be advantagous for several reasons. One reason is that getting to know the
+  compiler and tools turned out to be relatively easy. Examining the first EH language, and gradually
+  going up to languages with more features, and studying the differences, works in practice. It also
+  helps to discover dependencies between features, which is important to discover how isolated each
+  component is, and thus how easily you can make modifications in a certain area.
+  
+  A big advantage is the use of the UUAG system underneath. The UUAG system is used to specify
+  traversals over the AST. The UUAG system allows us to hook into the compiler with virtually no
+  need to touch the original code. Nonterminals and attributes are chosen in such a way that new
+  nonterminals are correctly dealt with by code from copy rules, reducing the amount of required
+  code severely. So, by means of the UUAG system, the code is extensible and short, which is an
+  asset for (rapid) prototyping.
+  
+  Unfortunately, EH is not the perfect compiler (yet). EH distinguishes several versions, but
+  individual features cannot be selected. For example, high-ranked types and existentials are
+  introduced before data types. To support data types, higher-ranked types and existentials have to
+  be supported as well. These features are not essential for the uniqueness typing story, and are
+  thus needless complications.
+    
+  Another problem is that the compiler is still in heavy development. The structure of the compiler
+  is not yet mature, and interfaces change now and then due to refactorings. This does not make
+  EH a stable framework to begin with, since you never know that the function you call now, will
+  be there the next day.
+  
+  The overal experience is that EH suited well for prototyping and becomes more suitable with
+  each drop of effort that is invested into the EH project.
+
+%%]

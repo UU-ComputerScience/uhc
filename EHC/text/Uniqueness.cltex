@@ -20,12 +20,56 @@ Improved Uniqueness Typing for Haskell
   Utrecht, The Netherlands.
 %%]
 
+
 %%[abstract
-This master thesis is about adding an improved version of Uniqueness Typing
-to Haskell.
+
+An unused value has special properties in a pure functional language. An optimizing compiler
+can safely throw away code that produces such a value. Likewise, a value that is referred to once
+also has special properties that can be exploited by an optimizing compiler. A value is called
+unique if it is only referred once. With linear typing or uniqueness typing, this property is
+attached to the type of a value. A linear typesystem or a uniqueness typesystem checks, enforces,
+or infers the uniqueness property of types.
+
+Uniqueness typing is incorporated into the Clean compiler. The input/output model of Clean
+requires heavily upon this feature. Haskell does not need uniqueness typing in order to perform
+IO, but could benefit from optimizations that are possible on unique values, such as
+destructive updates on arrays.
+
+In this master thesis, we discuss an implementation of uniquness typing for Haskell. We take a
+different strategy than Clean, allowing us to overcome a limitation of the typing in Clean. In
+Clean, it is not allowed to have a data type with a shared spine and unique elements, since
+uniqueness propagation would force the spine to be unique as well.
+
+We focus mainly on the typing part and discuss how to deal with language features of Haskell,
+such as polymorphism, data types and overloading.
+
 %%]
 
+
+
 %%[main
+
+%%@TopicIntroduction.main
+%%@TopicEHC.main
+%%@TopicNoBindings.main
+%%@TopicPolyvariant.main
+%%@TopicPolymorphic.main
+%%@TopicDataTypes.main
+%%@TopicOverloading.main
+%%@TopicBeyondEHC.main
+%%@TopicCodeGeneration.main
+%%@TopicInspecting.main
+%%@TopicPerformance.main
+%%@TopicRelatedWork.main
+%%@TopicConclusion.main
+
+%%]
+
+
+
+
+
+
 
 %format =>= = "\triangleright"
 %format \+/ = "\uplus"
@@ -119,20 +163,20 @@ the explanation of interaction with language features of Haskell to a later chap
 a small monomorphically typed language, based on the lambda-calculus, dealing only with lambda
 abstraction, function application, variables and integers:
 
-%%[[wrap=code
+%%%[[wrap=code
 expr  :=  Int                   -- integer
       |   x                     -- variable
       |   \x -> expr            -- lambda abstraction
       |   expr expr             -- function application
       |   fix x = expr in expr  -- recursive let
-%%]
+%%%]
 
 This restricted language has a restricted type language as well:
 
-%%[[wrap=code
+%%%[[wrap=code
 sigma  ::=  sigma -> sigma  -- function type
        |    Int             -- integer type
-%%]
+%%%]
 
 We only consider expressions that are correctly typed, using a conventional monomorphic
 type system, specified in figure \ref{RulerUniquenessExamples.E.expr.base}. \rulerCmdUse{RulerUniquenessExamples.E.expr.base}The int-rule returns the Int-type and the var-rule looks up the type of the identifier
@@ -221,9 +265,9 @@ this text, we will denote such variables with a |delta|.
 
 Time for a small example, suppose we have the expression:
 
-%%[[wrap=code
+%%%[[wrap=code
 \x -> f x x
-%%]
+%%%]
 
 Suppose that the variable |x| has the type |(Annot(Int)(1))| for some reference count variable
 |Delta(1)|. The |x| occurs two times in the application of |f|. At this point, we do not know
@@ -310,10 +354,10 @@ type constructors of a type. Types on our restricted language have
 only two type constructors: arrows and integers. We annotate those
 with an annotation |delta|:
 
-%%[[wrap=code
+%%%[[wrap=code
 sigma  :=  (Annot(Int)())             -- annotated int
        |   sigma (Annot(->)()) sigma  -- annotated arrow
-%%]
+%%%]
 
 
 \rulerCmdUse{RulerUniquenessExamples.E.expr.base}
@@ -451,12 +495,12 @@ system and separate compilation, a more elaborate representation is required. In
 code examples, we will disambiguate a |delta| with a subscript, such as
 |(Delta(1))| or |(Delta(a))|. Examples:
 
-%%[[wrap=code
+%%%[[wrap=code
 (Annot(Int)(1))
 (Annot(Int)(2)) (Annot(->)(2)) (Annot(Int)(2))
 (Annot(Int)(4)) (Annot(->)(3)) (Annot(Int)(5))
 (Annot(Set)(5)) (Annot(Int)(6))
-%%]
+%%%]
 
 Since each |delta| is globally unambiguous, we can store each property in an
 environment and use the |delta| as key.
@@ -487,15 +531,15 @@ application).
 
 For example, annotating the following data type:
 
-%%[[wrap=code
+%%%[[wrap=code
 data D a = C a (D Int) (D a)
-%%]
+%%%]
 
 Annotating this data type results into:
 
-%%[[wrap=code
+%%%[[wrap=code
 data (Annot(D)(1)) a = C a ((Annot(D)(2)) (Annot(Int)(3))) ((Annot(D)(4)) a)
-%%]
+%%%]
 
 We can only say something about the annotations on the type variable |a| when
 we know to which type this |a| will be instantiated. This will be at the
@@ -512,9 +556,9 @@ this might be desirable when we want some relation between annotations to hold
 for all uses, but often is not. For example, consider the following data type
 for a list of integers:
 
-%%[[wrap=code
+%%%[[wrap=code
 data (Annot(IntList)(1)) = CIntList (Annot([(Annot(Int)(3))])(2))
-%%]
+%%%]
 
 Let us also suppose that we have a property for uniqueness on delta and chose
 the uniqueness of |(Delta(2))| and |(Delta(3))| to be unique. This
@@ -565,25 +609,25 @@ We implicitly made two decisions with the approach of the previous section:
       use-site of a data type. For example, the |(Delta(2))| below is
       fixed:
 
-%%[[wrap=code
+%%%[[wrap=code
 data (Annot(D)(1)) = C (Annot(Int)(2))
 
 C x  ::  (Annot(D)(3))
 x    ::  (Annot(Int)(2))  -- cannot choose |(Annot(Int)(2))|
-%%]
+%%%]
 
 \item The use-site cannot make a difference for annotations on multiple
       occurrences of a type variable. The annotations for the first |a| will
       be the same as the annotations of the second |a| in the following
       example:
 
-%%[[wrap=code
+%%%[[wrap=code
 data (Annot(D)(1)) a = C a a
 
 C x y  ::  (Annot(D)(2)) (Annot(Int)(3))
 x      ::  (Annot(Int)(3))  -- can choose |(Annot(Int)(3))| but have to choose
 y      ::  (Annot(Int)(3))  -- exactly the same |(Annot(Int)(3))| for both |x| and |y|
-%%]
+%%%]
 
 \end{itemize}
 
@@ -596,10 +640,10 @@ As we discussed in the previous sections, we first annotate each type component 
 variable or type constructor) of each type expression, such that we can unambiguously
 reference each type component. For example:
 
-%%[[wrap=code
+%%%[[wrap=code
 (Annot(Int)(2)) (Annot(->)(1)) (Annot(Int)(3))
 data D a = C (Annot(a)(4)) ((Annot(D)(5)) (Annot(Int)(6))) ((Annot(D)(7)) (Annot(a)(8)))
-%%]
+%%%]
 
 We will call these annotations the \emph{reference annotations}, and the type a
 reference annotated type. In the next sections we describe how the use-site of
@@ -627,12 +671,12 @@ type constructors get an annotation, the annotation on a type variable is provid
 use-site of a data type. These hidden annotations are considered as additional parameters to
 a data type. For example, look at the following annotated data type definitions:
 
-%%[[wrap=code
+%%%[[wrap=code
 data (Dot(STree)((Delta(1)) (Delta(2)) (Delta(3)) (Delta(4)))()) a  =  STree a ((Dot(STree)(((Delta(1)) (Delta(2)) (Delta(3)) (Delta(4))))(Delta(1))) a) ((Dot(STree)(((Delta(1)) (Delta(2)) (Delta(3)) (Delta(4))))(Delta(2))) (Dot(Int)(())(Delta(3))))
                                                                 |  Leaf (Dot(Int)(())(Delta(4)))
 
 data (Dot(IntTree)((Delta(1)) (Delta(2)) (Delta(3)) (Delta(4)))()) = IntTree ((Dot(STree)((Delta(5)) (Delta(6)) (Delta(7)) (Delta(8)))()) (Dot(Int)(())(Delta(9))))
-%%]
+%%%]
 
 In order to obtain these hidden parameters, we proceed through the data types, binding group
 for binding group. As a result, we obtain for each data type an annotation version of the
@@ -665,24 +709,24 @@ To be able to give different annotations to multiple occurences of the same type
 choose to expand/unfold the data type definition. For example, when given the following
 data type:
 
-%%[[wrap=code
+%%%[[wrap=code
 data (Dot(D)(())()) a = C a a
-%%]
+%%%]
 
 and a type expression:
 
-%%[[wrap=code
+%%%[[wrap=code
 D (D Int)
-%%]
+%%%]
 
 we unfold the type expression to:
 
-%%[[wrap=code
+%%%[[wrap=code
 (Annot(D)(1)) (C  ((Annot(D)(2)) (C  (Dot(Int)(())(Delta(3))) 
                                      (Dot(Int)(())(Delta(4))))) 
                   ((Annot(D)(5)) (C  (Dot(Int)(())(Delta(6))) 
                                      (Dot(Int)(())(Delta(7))))))
-%%]
+%%%]
 
 As you can see, we just inlined the datatype definition with the actual values for its parameters. We
 only inlined the D datatype and not the |Int| type constructor. We can choose which datatypes to inline,
@@ -707,24 +751,24 @@ the programmer to give patterns that allow expansion. We keep track of the type 
 that we expanded using a stack. We allow the expansion of a certain type constructor, if it is a
 prefix of a pattern. Suppose you have the datatypes:
 
-%%[[wrap=code
+%%%[[wrap=code
 data A = A B B
 data B = B C C
 data C = C A A
-%%]
+%%%]
 
 An example of an expansion pattern is:
 
-%%[[wrap=code
+%%%[[wrap=code
 A B C A B
-%%]
+%%%]
 
 This pattern allows you to unfold each data type twice, espect for the second occurence of datatype C. A
 more consice notation is:
 
-%%[[wrap=code
+%%%[[wrap=code
 A->C A->B
-%%]
+%%%]
 
 The arrow construct means all simple-paths between the two arguments. Essentially, the
 pattern language constains an |Or|, |Sequence| and |Constructor|. The |->| is desugared
@@ -742,5 +786,3 @@ two mechanisms to increase the precison of the annotations. That is, to allow di
 to be chosen at the use-site without losing the connection to the original annotations. Reference
 annotations play an important part in this story, as bridge to the "simple" annotation mechanism and
 the more complicated ones.
-
-%%]

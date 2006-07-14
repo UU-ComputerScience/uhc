@@ -1,0 +1,56 @@
+%%[main
+
+\chapter{Adding Data Types}
+\label{chapt.DataTypes}
+
+In this section we deal with data types.
+Data types complicate annotations.
+Flattening constraints require a more complicated analysis to obtain
+polarity or under-the-function-arrow information. Using the same framework: confusing, stress the difference.
+
+
+\section{Example}
+
+
+\section{Language}
+
+
+\section{Exposed annotations}
+
+
+\section{Expanded types}
+
+
+\section{Constraint gathering}
+
+
+\section{Constraint flattening}
+
+
+\section{Conclusion}
+
+
+
+
+\chapter{Polarity and Under-the-arrow analysis}
+\label{chapt.Polarity}
+
+
+\section{Example}
+
+
+\section{Kind inference}
+
+
+\section{Constraint gathering}
+
+
+\section{Constraint solving}
+
+
+\section{Graph simplification}
+
+
+\section{Conclusion}
+
+%%]

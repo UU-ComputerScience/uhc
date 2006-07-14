@@ -18,7 +18,10 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								CodeFragsExplImpl \
 								ToolDocShuffle ToolDocRuler \
 								AppxNotation FrontMatter OldText \
-								Uniqueness
+								Uniqueness uniqueness/TopicIntroduction uniqueness/TopicEHC \
+								uniqueness/TopicNoBindings uniqueness/TopicPolyvariant uniqueness/TopicPolymorphic uniqueness/TopicDataTypes uniqueness/TopicOverloading \
+								uniqueness/TopicBeyondEHC uniqueness/TopicCodeGeneration uniqueness/TopicInspecting \
+								uniqueness/TopicPerformance uniqueness/TopicRelatedWork uniqueness/TopicConclusion
 
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
