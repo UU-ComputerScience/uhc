@@ -326,7 +326,7 @@ caWriteCmm
     { input <- gets gcsPath
     ; let output = fpathSetSuff "cmm" input
     ; options <- gets gcsOpts
-    ; when (ehcOptEmitEH options)
+    ; when (ehcOptEmitCmm options)
            (do { putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
                ; cmm <- caGrin2Cmm
                ; liftIO $ writePP pp cmm output
@@ -348,9 +348,9 @@ caGrin2Llc = do
 caWriteLlc :: CompileAction ()
 caWriteLlc = do
     { input <- gets gcsPath
-    ; let output = fpathSetSuff "llc" input
+    ; let output = fpathSetSuff "c" input
     ; options <- gets gcsOpts
-    ; when (ehcOptEmitEH options)
+    ; when (ehcOptEmitLlc options)
            (do { putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
                ; llc <- caGrin2Llc
                ; liftIO $ writePP (const llc) () output

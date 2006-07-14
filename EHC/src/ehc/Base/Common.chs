@@ -34,7 +34,7 @@
 %%[1 export(ParNeed(..), ParNeedL, parNeedApp, ppParNeed)
 %%]
 
-%%[2 export(UID(..), mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, uidNext, mkNewUID, mkNewUIDL, uidStart)
+%%[2 export(UID(..), mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, mkNewUID, uidNext, uidChild, mkNewUIDL, mkInfNewUIDL, uidStart)
 %%]
 
 %%[2 export(assocLMapElt,assocLMapKey)
@@ -95,9 +95,6 @@
 %%]
 
 %%[8 import (qualified Data.Map as Map) export(showPP,ppPair,ppFM)
-%%]
-
-%%[8 export(mkNewLevUIDL,mkInfNewLevUIDL)
 %%]
 
 %%[8 export(hsnUniqSupplyL,hsnLclSupplyL)
@@ -376,10 +373,13 @@ instance Show UID where
 
 %%[2.UID.mkNewLevUID
 uidNext :: UID -> UID
-uidNext (UID (l:ls)) = UID (l+1:ls)
+uidNext (UID (n:ns)) = UID (n+1:ns)
+
+uidChild :: UID -> UID
+uidChild (UID ns) = UID (0:ns)
 
 mkNewLevUID :: UID -> (UID,UID)
-mkNewLevUID u@(UID ls) = (uidNext u,UID (0:ls))
+mkNewLevUID u = (uidNext u, uidChild u)
 %%]
 
 %%[2.UID.Utils
@@ -407,6 +407,9 @@ mkNewUIDL' mk sz uid
 mkNewUIDL :: Int -> UID -> [UID] -- assume sz > 0
 mkNewUIDL = mkNewUIDL' mkNewUID
 
+mkInfNewUIDL :: UID -> [UID]
+mkInfNewUIDL = mkInfNewUIDL' mkNewUID
+
 instance PP UID where
   pp = text . show
 %%]
@@ -414,14 +417,6 @@ instance PP UID where
 %%[7
 uidHNm :: UID -> HsName
 uidHNm = HNm . show
-%%]
-
-%%[8
-mkInfNewLevUIDL :: UID -> [UID]
-mkInfNewLevUIDL = mkInfNewUIDL' mkNewLevUID
-
-mkNewLevUIDL :: Int -> UID -> [UID]
-mkNewLevUIDL = mkNewUIDL' mkNewLevUID
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

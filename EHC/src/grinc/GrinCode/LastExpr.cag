@@ -53,6 +53,7 @@ SEM GrExpr
 
 SEM GrExpr
   | * - Seq Case Catch  loc . isLastExpr = not @lhs.hasNext
-  |     Seq Case Catch  loc . isLastExpr = False
 %%]
+
+  |     Seq Case Catch  loc . isLastExpr = False
 

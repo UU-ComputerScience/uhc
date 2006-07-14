@@ -38,9 +38,8 @@ ATTR AllCodeNT [ | gUniq: UID | ]
 ATTR CodeAGItf [ gUniq: UID | | ]
 
 SEM CModule
-  | Mod         (loc.gUniq2,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4,loc.lUniq5)
-                                            =   mkNewLevUID5  @lhs.gUniq
-                (expr.gUniq,loc.lUniq6)     =   mkNewLevUID   @gUniq2
+  | Mod         (loc.gUniq,loc.lUniq1,loc.lUniq2)
+                                            =   mkNewLevUID2  @lhs.gUniq
 
 SEM CExpr
   | Var         (lhs.gUniq,loc.lUniq)       =   mkNewLevUID   @lhs.gUniq
@@ -163,86 +162,124 @@ SEM CExpr
 ATTR CodeAGItf CModule [ | | grMod: GrModule ]
 
 SEM CModule
-  | Mod         loc         .   (nmPFun,nmPArg)
-                                            =   let  [u1,u2] = mkNewUIDL 2 @lUniq2
-                                                in   (HNm ("f_" ++ show u1),HNm ("a_" ++ show u2))
-                            .   mkPAppPat   =   \n nL arity -> mkGrPatTagNode (GrTagPApp (arity-(length nL))) 0 n nL
-                            .   applyPAltL  =   zipWith
-                                                     (\u (n,arity)
-                                                       -> let  (uc:um) = mkNewLevUIDL arity u
-                                                               nL = take (arity-1) (hsnUniqSupplyL uc)
-                                                          in   ((arity,n,nL)
-                                                               ,zipWith  (\u a -> let nL = take (a-1) (hsnUniqSupplyL u)
-                                                                                  in  (a,n,nL)
-                                                                         )
-                                                                         um [1..arity-1]
-                                                     )         )
-                                                     (mkInfNewLevUIDL @lUniq6)
-                                                . ((hsnGrApply,2):)
-                                                . Map.toList
-                                                . Map.filterWithKey (\n _ -> n `Set.member` @expr.asArgNmS)
-                                                $ @expr.lamNmMp
-                            .   applyPPatValL
-                                            =   concat
-                                                .  map  (\((arity,n,nL),missAlts)
-                                                            ->  (@mkPAppPat n nL arity,GrExpr_Call n (map GrVal_Var (nL ++ [@nmPArg])))
-                                                                : map  (\(a,n,nL) -> (@mkPAppPat n nL arity
-                                                                                     ,GrExpr_Unit (mkNdPApp n (arity-a) (map GrVal_Var (nL ++ [@nmPArg])))
-                                                                       )             )
-                                                                       missAlts
-                                                        )
-                                                $  @applyPAltL
-                            .   applyBind   =   let  applyAlts =  map (uncurry GrAlt_Alt) @applyPPatValL
-                                                in   GrBind_Bind hsnGrApply [@nmPFun,@nmPArg] (GrExpr_Case (GrVal_Var @nmPFun) applyAlts)
-                            .   applyTagMp  =   map  (\(p,v)
-                                                        ->  let  (GrPat_Node grT pL) = p
-                                                            in   ( (grT,length pL-1)
-                                                                 , case v of
-                                                                        GrExpr_Unit (GrVal_Node grT' _)    -> EvApTagTag grT'
-                                                                        GrExpr_Call n _                    -> EvApTagVar n
-                                                                 )
-                                                     )
-                                                     @applyPPatValL
-                            .   builtinTags =   map (\n -> (n,[(n,CTag n n 0 1)])) grBuiltinTyNmL
-                            .   allCTags    =   @builtinTags ++ @ctagsMp
-                            .   (evalAltL,mkEvalBind)
-                                            =   let  [n1,n2,n3] = map uidHNm . mkNewUIDL 3 $ @lUniq
-                                                     mkCAlt u (CTag _ l t a)
-                                                        = GrAlt_Alt
-                                                            (mkGrPatTagNode GrTagCon t l argL)
-                                                            (GrExpr_Unit (GrVal_Var n2))
-                                                        where (argL) = take (a) (hsnUniqSupplyL u)
-                                                     mkFAlt u (n,arity)
-                                                        = GrAlt_Alt
-                                                            (mkGrPatTagNode GrTagFun 0 n argL)
-                                                            (GrExpr_Seq (GrExpr_Call n (map GrVal_Var argL)) (GrPat_Var n4)
-                                                                (GrExpr_Seq (GrExpr_Update n1 (GrVal_Var n4) Nothing) GrPat_Empty
-                                                                    (GrExpr_Unit (GrVal_Var n4))))
-                                                        where (n4:argL) = take (arity+1) (hsnUniqSupplyL u)
-                                                     mkPAlt n nL arity
-                                                        = GrAlt_Alt
-                                                            (@mkPAppPat n (map (hsnPrefix "~") nL) arity)
-                                                            (GrExpr_Unit (GrVal_Var n2))
-                                                in   (    (zipWith mkCAlt (mkInfNewLevUIDL @lUniq3) $ [ t | (_,ll) <- @allCTags, (_,t) <- ll ])
-                                                      ++  [ mkPAlt n nL arity | ((arity,n,nL),_) <- @applyPAltL ]
-                                                      ++  [ mkPAlt n nL arity | ((arity,_,_),as) <- @applyPAltL, (_,n,nL) <- as ]
-                                                      ++  (zipWith mkFAlt (mkInfNewLevUIDL @lUniq4) . Map.toList $ Map.insert hsnGrApply 2 @expr.lamNmMp)
-                                                      ++  (zipWith mkFAlt (mkInfNewLevUIDL @lUniq5) . Map.toList $ @expr.cafNmMp)
-                                                     ,\alts ->  GrBind_Bind hsnGrEval [n1]
-                                                                    (GrExpr_Seq (GrExpr_Fetch n1 Nothing Nothing) (GrPat_Var n2)
-                                                                      (GrExpr_Case (GrVal_Var n2) alts))
-                                                     )
-                            .   evalBind    =   @mkEvalBind @evalAltL
-                            .   evalTagMp   =   map  (\(GrAlt_Alt p a)
-                                                        ->  case p of
-                                                                GrPat_Node grT@(GrTag_Lit GrTagFun _ n) pL -> ((grT,length pL-1),EvApTagVar n)
-                                                                GrPat_Node grT pL -> ((grT,length pL-1),EvApTagUnit)
-                                                     )
-                                                     @evalAltL
+  | Mod         loc         .   primTyconMp =   map (\n -> (n,[(n,CTag n n 0 1)])) grBuiltinTyNmL
+                            .   constrsMp   =   @primTyconMp ++ @ctagsMp
+                            
+                            .   allFPTags   =   Map.toList @expr.lamNmMp
+                            .   allPTags    =   [ (nm, arity, k)
+                                                | (nm, arity) <- (hsnGrApply,2) : filter ((`Set.member` @expr.asArgNmS) . fst) @allFPTags
+                                                , k <- [1..arity]
+                                                ]
+                            .   allCTags    =   [ ct | (_,xs) <- @constrsMp, (_,ct) <- xs ]
+                            .   allFTags    =   -- filter (\(fNm,_) -> not (fNm `elem` map ctagNm @allCTags))
+                                                       ((hsnGrApply,2) : @allFPTags ++ Map.toList @expr.cafNmMp)
+                            
+                            .   applyTagMp  =   map makeApplyMapEntryP @allPTags  
+                            .   evalTagMp   =   map makeEvalMapEntryC @allCTags
+                                                ++ map makeEvalMapEntryP @allPTags
+                                                ++ map makeEvalMapEntryF @allFTags
+                                               
+                            .   evalBind    =   let (ui1:ui2:uis) = mkInfNewUIDL @lUniq1
+                                                    n1 = uidHNm ui1
+                                                    n2 = uidHNm ui2
+                                                in GrBind_Bind hsnGrEval 
+                                                               [n1]
+                                                               (GrExpr_Seq (GrExpr_Fetch n1 Nothing Nothing) 
+                                                                           (GrPat_Var n2)
+                                                                           (GrExpr_Case (GrVal_Var n2) 
+                                                                                        (zipWith ($)
+                                                                                                 (   map (makeEvalBindEntryC n2) @allCTags
+                                                                                                  ++ map (makeEvalBindEntryP n2) @allPTags
+                                                                                                  ++ map (makeEvalBindEntryF n1) @allFTags    
+                                                                                                 )
+                                                                                                 uis
+                                                                                        )
+                                                                           )
+                                                               )
+                                                               
+                            .   applyBind   =   let (ui1:ui2:uis) = mkInfNewUIDL @lUniq2
+                                                    nf = uidHNm ui1
+                                                    na = uidHNm ui2
+                                                in GrBind_Bind hsnGrApply 
+                                                               [nf,na] 
+                                                               (GrExpr_Case (GrVal_Var nf) 
+                                                                            (zipWith ($)
+                                                                                     (map (makeApplyBindEntryP na) @allPTags)
+                                                                                     uis
+                                                                            )
+                                                               )
+                                                     
                 lhs         .   grMod       =   GrModule_Mod (HNm @baseName)
                                                     [] -- TODO: this should contain all the caf variables
-                                                    (@expr.grBindL ++ [@applyBind,@evalBind])
-                                                    @allCTags @evalTagMp @applyTagMp
+                                                    (@expr.grBindL ++ [@evalBind, @applyBind])
+                                                    @constrsMp
+                                                    @evalTagMp
+                                                    @applyTagMp
+%%]
+
+%%[8 hs
+
+makeEvApKeyP (nm, arity, k) 
+ = ( GrTag_Lit (GrTagPApp k) 0 nm
+   , arity-k
+   )
+
+makeApplyMapEntryP x@(nm, arity, k)
+ = ( makeEvApKeyP x
+   , (if k==1 
+      then EvApTagVar nm 
+      else EvApTagTag (GrTag_Lit (GrTagPApp (k-1)) 0 nm)
+     )
+   )
+
+makeApplyBindEntryP na x@(nm, arity, k) ui
+ = let names = map uidHNm (mkInfNewUIDL (uidChild ui))
+       parameters = take (arity-k) names
+       parameterList = map GrVal_Var (parameters ++ [na])
+   in  GrAlt_Alt (mkGrPatTagNode (GrTagPApp k) 0 nm parameters)
+                 (if k==1 
+                  then GrExpr_Call nm parameterList                 
+                  else GrExpr_Unit (mkNdPApp nm (k-1) parameterList)
+                 )
+
+makeEvalMapEntryP x
+ = ( makeEvApKeyP x
+   , EvApTagUnit
+   )
+
+makeEvalMapEntryC (CTag tyNm nm tag arity)
+ = ( ( GrTag_Lit GrTagCon tag nm, arity)
+   , EvApTagUnit
+   )
+
+makeEvalMapEntryF (nm, arity)
+ = ( ( GrTag_Lit GrTagFun 0 nm, arity)
+   , EvApTagVar nm
+   )
+
+makeEvalBindEntryC n2 (CTag tyNm nm tag arity) ui
+ = let names = repeat hsnWild
+       parameters = take arity names
+   in  GrAlt_Alt (mkGrPatTagNode GrTagCon tag nm parameters)
+                 (GrExpr_Unit (GrVal_Var n2))
+
+makeEvalBindEntryF n1 (nm, arity) ui
+ = let (result:names) = map uidHNm (mkInfNewUIDL (uidChild ui))
+       parameters = take arity names
+   in  GrAlt_Alt (mkGrPatTagNode GrTagFun 0 nm parameters)
+                 (GrExpr_Seq (GrExpr_Call nm (map GrVal_Var parameters)) 
+                             (GrPat_Var result)
+                             (GrExpr_Seq (GrExpr_Update n1 (GrVal_Var result) Nothing) 
+                                         GrPat_Empty
+                                         (GrExpr_Unit (GrVal_Var result))
+                 )           )
+
+makeEvalBindEntryP n2 (nm, arity, k) ui
+ = let names = map uidHNm (mkInfNewUIDL (uidChild ui))
+       parameters = take arity names
+   in  GrAlt_Alt (mkGrPatTagNode (GrTagPApp k) 0 nm parameters)
+                 (GrExpr_Unit (GrVal_Var n2))
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -405,7 +442,7 @@ type TupAdaptFldL = [(GrVal,GrVal,GrVal->GrVal->GrAdapt)]
 
 mkGrAdapt :: UID -> LamInfoMp -> Bool -> TupAdaptFldL -> HsName -> GrExpr
 mkGrAdapt u lamMp isStrict tupFldL tupRecNm
-  =  let  [u1,u2] = mkNewLevUIDL 2 u
+  =  let  [u1,u2] = mkNewUIDL 2 (uidChild u)
           (oL,vL,mkAL) = unzip3 tupFldL
           (oL',wrO) = unboxArgL u1 hsnInt oL
           (vL',wrV) = simplArgL u2 lamMp vL
