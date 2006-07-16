@@ -13,7 +13,12 @@ type if needed.
 ATTR PatExpr Decl Decls [|| decomposedAnns USE {`Map.union`} {Map.empty} : DecomposedAnnMap ]
 
 SEM PatExpr
-  | Con Var
+  | Con
+      -- A Con does not participate in the decomposed anns, since a pattern Con is different
+      -- to the constructor Con. The pattern Con is the actual type, and the constructor Con
+      -- builds the type. The uses of the pattern Con depend on the uses of the body it is
+      -- defined in.
+  | Var
       lhs.decomposedAnns = Map.singleton @nm @lhs.annPatTy
   | VarAs
       lhs.decomposedAnns = Map.singleton @nm @lhs.annPatTy `Map.union` @patExpr.decomposedAnns

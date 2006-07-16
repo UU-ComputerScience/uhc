@@ -536,10 +536,12 @@ doCompileRun filename opts
                       }
          ;  let res   = EHSem.sem_AGItf resd
                 wrRes = EHSem.wrap_AGItf res (EHSem.Inh_AGItf {EHSem.opts_Inh_AGItf = opts})
+{-
          ;  case ehcOptDumpPP opts of
               Just "pp"   ->  putStrLn (disp (EHSem.pp_Syn_AGItf wrRes) 70 "")
               Just "ast"  ->  putStrLn (disp (EHSem.ppAST_Syn_AGItf wrRes) 1000 "")
               _           ->  return ()
+-}
          ;  when (ehcOptShowTopTyPP opts)
                  (putStr (disp (EHSem.topTyPP_Syn_AGItf wrRes) 1000 ""))
          ; when (not (null filename) && ehcoptUniqueness opts)

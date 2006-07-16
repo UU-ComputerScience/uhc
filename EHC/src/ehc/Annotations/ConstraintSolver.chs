@@ -83,7 +83,7 @@ mkSingleTySolver si solveSem
             (annLatMap, g, _) = processConstraints (graphSolve noOptimize) (initialSubst solveSem) flatOps exposedAnns scope exclude bndgs graphs procConstrUid
          in annLatMap `Map.intersection` (Map.fromList [(a, undefined) | a <- annotations_ ty])
          -- Note: remove the intersection. Not required.
-    
+
     flatOps = FlattenOps { flatExpFun     = \anns tys tcNm -> let mp = siExpandTy si anns tys tcNm
                                                                in \conNm -> Map.findWithDefault (error ("mkSingleTySolver:expand:no such constructor " ++ show conNm ++ " in " ++ show tcNm)) conNm mp
                          , inferVariance  = const kindInferVariance
@@ -95,7 +95,7 @@ mkSingleTySolver si solveSem
     
     graphSolve optimizer = stagedPartialSolve stages optimizer
     stages = [ improveSubst (initialValue solveSem) (matchSem stage) (compSem stage) | stage <- (preStagedSem solveSem ++ finalStagedSem solveSem) ]
-    
+
     graphs
       = let scope      = siScope si
             exclude    = excludeAnns solveSem
@@ -133,32 +133,34 @@ data ExprSolverIn s
 
 mkAllExprSolver :: (Ord s, Show s, PP s, Eq l, Show l) => ExprSolverIn s -> SolverSem s l ExprContext -> AllExprSolver l
 mkAllExprSolver si solveSem
-  = subst'
+  = {- error (show (pp (esiBndgs si)))
+  $ -} subst'
   where
     procConstrsUid = esiUid si
-    
+
     graphSolve = stagedPartialSolve stages optimizer
     optimizer  = const (const id) -- composeRewriters [componentReduction]
     stages     = [ improveSubst (initialValue solveSem) (matchSem stage) (compSem stage) | stage <- preStagedSem solveSem ]
-    
+
     addAnns = Map.fromList [(bndgId, Set.empty) | bndgId <- Map.keys bndgs ]
     bndgs   = Map.insertWith Set.union uidNull (initialConstr solveSem) (esiBndgs si)
     scope   = esiScope si
     exclude = Set.singleton touchAnn `Set.union` excludeAnns solveSem
-    
+
     flatOps = FlattenOps { flatExpFun     = \anns tys tcNm -> let mp = esiExpandTy si anns tys tcNm
                                                                in \conNm -> Map.findWithDefault (error ("allExprSolver:expand:no such constructor " ++ show conNm ++ " in " ++ show tcNm)) conNm mp
-                         , inferVariance  = wrapSolver (esiVarianceSolver si)
-                         , inferBelowness = wrapSolver (esiBelownessSolver si)
+                         , inferVariance  = wrapSolver "variance" (esiVarianceSolver si)
+                         , inferBelowness = wrapSolver "belowness" (esiBelownessSolver si)
                          }
 
     (subst, graphs, _) = processConstraints graphSolve (initialSubst solveSem) flatOps addAnns scope exclude bndgs Map.empty procConstrsUid
     subst' = foldr (\stage -> solveToBndgSubstitution (improveSubst (initialValue solveSem) (matchSem stage) (compSem stage)) graphs) subst (finalStagedSem solveSem)
-    
-wrapSolver :: Show l => (Ty -> Map (Annotation Ty) l) -> ExprContext -> [Ty] -> Annotation Ty -> l
-wrapSolver f ctx tyL
+
+wrapSolver :: Show l => String -> (Ty -> Map (Annotation Ty) l) -> ExprContext -> [Ty] -> Annotation Ty -> l
+wrapSolver what f ctx tyL
   = let results = map f tyL
         result  = Map.unions results
-     in \ann -> Map.findWithDefault (error ("mkAllExprSolver:apply: No such solve result for annotation: " ++ show ann ++ " | have: " ++ show results ++ " | " ++ show tyL)) ann result
+     in \ann -> Map.findWithDefault (error ("mkAllExprSolver:apply:"++what++": No such solve result for annotation: " ++ show ann ++ " | have: " ++ show results ++ " | " ++ show tyL)) ann result
 
 %%]
+

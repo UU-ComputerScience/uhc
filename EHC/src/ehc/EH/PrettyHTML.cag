@@ -49,7 +49,7 @@ SEM Expr
   | Parens
       lhs.ppHTML = ppParensHTML @loc.ppParensUniq @expr.ppHTML
   | Lam
-      lhs.ppHTML = ppSymbolHTML (pp "&" >|< invisible (pp "lambda")) >|< @arg.ppHTML >#< ppSymbolHTML (pp "->") >#< @body.ppHTML
+      lhs.ppHTML = ppSymbolHTML (pp "&" >|< invisible (pp "lambda;")) >|< @arg.ppHTML >#< ppSymbolHTML (pp "->") >#< @body.ppHTML
   | Let
       lhs.ppHTML = ppKeywordHTML (pp "let") >|< ppEnclosingTag "<sub class=\"bndg\">" (show @loc.declsBndgId) "</sub>" >#< @decls.ppHTML
                    >-<
@@ -104,7 +104,9 @@ SEM PatExpr
       lhs.ppHTML = ppIdentLink @loc.ppHtmlBlockUID @loc.ppTermHTML
       loc.ppInfos = [invisible @loc.ppInfoHtmlBlock]
       loc.ppInfoHtmlBlock = mkInfoHtmlBlock @loc.ppHtmlBlockUID @loc.ppHtmlInfo
-      loc.ppHtmlInfo = @loc.ppTermHTML >#< ppSymbolHTML "::" >#< ppTyHTML (ppAnn show) @lhs.annPatTy
+      loc.ppHtmlInfo = @loc.ppTermHTML >#< ppSymbolHTML "::" >#< (   ppTyHTML (ppAnn show) @lhs.annPatTy
+                                                                 >-< ppTyHTML (ppAnn (\ann -> show $ Map.findWithDefault UniquenessConflict ann @lhs.uniquenessSubst)) @lhs.annPatTy
+                                                                 )
   | App
       lhs.ppHTML = @func.ppHTML >#< @arg.ppHTML
   | Parens

@@ -41,7 +41,7 @@ Compute a uniqueness substitution
 
 %%[7_2
 
-ATTR AGItf -> Expr [ uniquenessSubst : {Map (Annotation Ty) UniquenessLattice} ||]
+ATTR AGItf -> Expr AGItf -> PatExpr AGItf -> RecPatExpr [ uniquenessSubst : {Map (Annotation Ty) UniquenessLattice} ||]
 
 SEM AGItf
   | AGItf

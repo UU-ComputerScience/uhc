@@ -130,6 +130,7 @@ ATTR AllTyTy [|| tyOutermostAnn USE {`const`} {error "No Annotation in Ty"} : {A
 
 SEM Ty
   | Ann  lhs.tyOutermostAnn = @ann
+  | App  lhs.tyOutermostAnn = @func.tyOutermostAnn
 
 %%]
 

@@ -395,13 +395,13 @@ processConstraints f ini ops additionalAnns scope exclude newBndgs initialPrep u
             (g', uid')  = foldr (uncurry . processInst bndgId bndgGraphs) (g, uid) is
             (g'', ini') = f (aas `Set.union` annotations sc `Set.union` exclude) g' ini
          in (ini', Map.insert bndgId g'' bndgGraphs, uid')
-    
+
     processInst bndgIdTo bndgGraphs (Inst _ bndgIdFrom projs context) g uid
       = let tps = concat (mapProjections (\tA tB -> [tA, tB]) (\_ _ -> []) projs)
             infos = FlattenInfo { flatVarianceFun  = inferVariance ops context tps
                                 , flatBelownessFun = inferBelowness ops context tps
                                 }
-            source = Map.findWithDefault (error ("processInst:source: No such binding group: " ++ show bndgIdFrom)) bndgIdFrom bndgGraphs
+            source = Map.findWithDefault (error ("processInst:source: No such binding group: " ++ show bndgIdFrom ++ " | " ++ show bndgGraphs ++ " | " ++ show (solveOrder newBndgs) ++ " | " ++ show (Map.keys newBndgs))) bndgIdFrom bndgGraphs
             sc = Map.findWithDefault (error ("processInst:sc: No such binding-group: " ++ show bndgIdTo ++ " | " ++ show scope)) bndgIdTo scope
             scfBelowness = inferBelowness ops context sc
             exclude' = exclude `Set.union` Set.filter (\a -> scfBelowness a /= Below) (annotations sc)
@@ -746,7 +746,7 @@ data FlattenOps context
 data FlattenInfo
   = FlattenInfo { flatVarianceFun  :: Annotation Ty -> CoContraVariance
                 , flatBelownessFun :: Annotation Ty -> Belowness
-                } 
+                }
 
 class Flattenable a sem context | a -> sem, a -> context where
   flatten :: [BndgId] -> FlattenOps context -> a -> [AnnConstr sem context]
@@ -809,7 +809,7 @@ flattenMatch uid context sem infos (NotUnifiable atA@(AnnNode annA _ _)) (NotUni
         <+> flattenDefault uidC context sem infos True annB atB
 
 flattenComp :: UID -> context -> FlattenInfo -> AnnComp AnnTree -> AnnTree -> [AnnTree] -> Seq (AnnConstr sem context)
-flattenComp uid context infos compTree 
+flattenComp uid context infos compTree
   = flatComp uid
   where
     flatComp uid annTree annTrees
@@ -824,12 +824,17 @@ flattenComp uid context infos compTree
                 in mkSeq (zipWith (\uid (a:as) -> uid #.. distribute as compTree <== a ..# context) infUidA annsT)
                    <+> concatSeqs (zipWith (\uid (s:ss) -> flatComp uid s ss) infUidB subtreesT)
           NotUnifiable tA@(AnnNode annA _ _) | flatBelownessFun infos annA >= NotBelow
-            -> let (uidA, uidB, uidC) = mkNewLevUID2 uid
+            -> error (  "flattenComp::not unifiable::not below arrow::situation:: uncomment the code in this module to allow this situation to be dealt with:\n"
+                     ++ show tA
+                     )
+               {-
+               let (uidA, uidB, uidC) = mkNewLevUID2 uid
                    infUidB = mkInfNewLevUIDL uidB
                    anns = map (\(NotUnifiable (AnnNode annB _ _)) -> annB) annTrees
                 in unitSeq (uidA #.. distribute anns compTree <== annA ..# context)
                    <+> flattenDefault uidC context hardFlowSem infos False annA tA
                    <+> concatSeqs (zipWith (\t u -> flattenDefault u context hardFlowSem infos False annA t) annTrees infUidB)
+               -}
           _ -> emptySeq
 
 flattenDefault :: UID -> context -> FlowSem sem -> FlattenInfo -> Bool -> Annotation Ty -> AnnTree -> Seq (AnnConstr sem context)

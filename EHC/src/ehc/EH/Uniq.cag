@@ -144,11 +144,11 @@ SEM PatExpr
 
 SEM TyExpr
   | App             (func.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)    =   mkNewLevUID3    @lhs.gUniq
-  
+
 SEM Decl
   | TySig           (tyExpr.gUniq,loc.lUniq,loc.lUniq2)             :=  mkNewLevUID2    @lhs.gUniq
   | Data            (tyVars.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)  =   mkNewLevUID3    @lhs.gUniq
-  
+
 SEM DataConstr
   | Constr          (fields.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
 
@@ -189,6 +189,7 @@ SEM Expr
                                                                     :=   mkNewLevUID3   @lhs.gUniq
   | AppTop          (expr.gUniq,loc.lUniq)                          :=   mkNewLevUID    @lhs.gUniq
   | Parens          (expr.gUniq,loc.ppParensUniq)                   :=   mkNewLevUID    @lhs.gUniq
+  | Case            (expr.gUniq,loc.lUniq,loc.drivingUID,loc.drivingConstrUID)           :=   mkNewLevUID3   @lhs.gUniq
 
 SEM PatExpr
   | Var             (lhs.gUniq,loc.lUniq,loc.lUniq2,loc.ppHtmlBlockUID)
@@ -208,7 +209,7 @@ SEM Decl
                                                                     :=   mkNewLevUID7   @lhs.gUniq
 
 SEM TyVar
-  | Var             (lhs.gUniq,loc.lUniq, loc.annUniq, loc.annUniq2) 
+  | Var             (lhs.gUniq,loc.lUniq, loc.annUniq, loc.annUniq2)
                                                                     :=   mkNewLevUID3   @lhs.gUniq
 SEM Decl
   | Data            (tyVars.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.annUniq,loc.constrUniq1,loc.constrUniq2)
@@ -244,7 +245,7 @@ SEM TyVars
   | Cons            (hd.gUniq, loc.annUniq)                         :=   mkNewLevUID    @lhs.gUniq
 
 SEM CaseAlt
-  | Pat             (patExpr.gUniq, loc.constrUniq)                 :=   mkNewLevUID    @lhs.gUniq
+  | Pat             (patExpr.gUniq, loc.constrUniq, loc.drivingConstrUniq)  :=  mkNewLevUID2    @lhs.gUniq
 
 SEM AGItf
   | AGItf           (expr.gUniq,loc.lUniq1,loc.lUniq2,loc.lUniq3, loc.annKindUniq,loc.solveUID1,loc.solveUID2,loc.constrUniq,loc.constrUniq2)

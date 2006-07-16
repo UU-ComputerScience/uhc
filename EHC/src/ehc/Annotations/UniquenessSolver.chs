@@ -11,7 +11,7 @@
 %%[7_2 import({%{EH}Annotations.Constraints}, {%{EH}Annotations.ConstraintSolver})
 %%]
 
-%%[7_2 export(mkUniquenessSem, UniquenessLattice)
+%%[7_2 export(mkUniquenessSem, UniquenessLattice(..))
 %%]
 
 
@@ -48,7 +48,10 @@ Transfer functions.
 %%[7_2
 
 matchRefCount :: FlowSem UniquenessSem -> UniquenessLattice -> UniquenessLattice -> (UniquenessLattice, UniquenessLattice)
-matchRefCount _ a b
+matchRefCount SoftFlow a b  -- if 1 < a then 1 <= b else a <= b
+  | a > Unique  = (a, joinRefLat b Unique)
+  | otherwise   = (a, joinRefLat a b)
+matchRefCount HardFlow a b
   = (a, joinRefLat a b)
 
 compRefCount :: AnnComp UniquenessLattice -> UniquenessLattice -> (AnnComp UniquenessLattice, UniquenessLattice)
@@ -69,7 +72,9 @@ plusRefLat x Unused = x
 plusRefLat x y      = Shared `joinRefLat` x `joinRefLat` y
 
 matchUnqProp :: FlowSem UniquenessSem -> UniquenessLattice -> UniquenessLattice -> (UniquenessLattice, UniquenessLattice)
-matchUnqProp _ a b
+matchUnqProp SoftFlow a b
+  = (a, b)
+matchUnqProp HardFlow a b
   = case (a, b) of
       z@(x, y) | x >= y -> z
       _ -> let z = max a b in (z, z)
