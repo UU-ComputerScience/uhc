@@ -171,7 +171,9 @@ SEM CModule
                                                 , k <- [1..arity]
                                                 ]
                             .   allCTags    =   [ ct | (_,xs) <- @constrsMp, (_,ct) <- xs ]
-                            .   allFTags    =   -- filter (\(fNm,_) -> not (fNm `elem` map ctagNm @allCTags))
+                            
+                                                -- constructorfunctions are never called via an F-thunk, so no cases for it are generated
+                            .   allFTags    =   filter (\(fNm,_) -> not (fNm `elem` map ctagNm @allCTags))
                                                        ((hsnGrApply,2) : @allFPTags ++ Map.toList @expr.cafNmMp)
                             
                             .   applyTagMp  =   map makeApplyMapEntryP @allPTags  

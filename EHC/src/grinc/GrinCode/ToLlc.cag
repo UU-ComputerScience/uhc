@@ -19,6 +19,7 @@ ATTR GrAGItf GrModule GrBindL GrBind GrExpr GrAltL GrAlt GrVal GrTag GrPat GrGlo
 
 ATTR GrValL GrVal [ | | llcDocs : {[PP_Doc]} ]
 
+ATTR GrExpr GrAlt GrAltL [ numberParameters : {Int} | | localsF USE {.} {id}: {[HsName]->[HsName]} ]
 
 SEM GrValL
   | Nil lhs.llcDocs = []
@@ -41,12 +42,22 @@ SEM GrGlobal
 
 SEM GrBind
   | Bind  lhs . llcDoc = methodHeader @nm
+                         >-< indent 4 (comment ("locals: " ++ show (@expr.localsF [])))
                          >-< indent 4 (methodParameters @argNmL)
                          >-< indent 4 @expr.llcDoc
                          >-< methodFooter
 
+          expr . numberParameters = length @argNmL
+
 
 {
+	
+stackpointer = text "SP";	
+	
+derefPostincrement p = text "*" >|< p >|< "++"
+
+decrementWith p n = p >#< "-=" >#< n >#< ";"
+	
 methodHeader :: HsName -> PP_Doc
 methodHeader nm
  = 	text ("void " ++ show nm ++ "(void) {")
@@ -57,11 +68,13 @@ methodFooter
 
 methodParameters :: [HsName] -> PP_Doc
 methodParameters ps
- = vertically (map methodParameter ps)
+ = comment "parameters"
+   >-< vertically (zipWith methodParameter ps [-(length ps)..])
  
-methodParameter :: HsName -> PP_Doc
-methodParameter p
- = text ("/* parameter " ++ show p ++ " */")
+methodParameter :: HsName -> Int -> PP_Doc
+methodParameter p n
+ = assignment (text (show p)) 
+              (arrayindex stackpointer (text (show n)))
  
 vertically :: [PP_Doc] -> PP_Doc
 vertically = foldr (>-<) empty
@@ -95,7 +108,8 @@ SEM GrExpr
            
  | Unit    lhs.llcDoc = if @isLastExpr
                          then comment "Unit (Return)"
-                              >-< vertically (map yieldit @val.llcDocs)
+                              >-< decrementWith stackpointer @lhs.numberParameters
+                              >-< vertically (zipWith yieldit @val.llcDocs [0..])
                          else comment "Unit (Intermediate)"
                               >-< vertically (zipWith assignment (map (text.show) @lhs.targets)
                                                                  (@val.llcDocs)
@@ -117,21 +131,27 @@ SEM GrExpr
                         >-< assignment ((text.show.head) @lhs.targets)
                                        (arrayindex ((text.show) @nm) ((text.show.fromJust) @mbOffset))
                                        
+           lhs.localsF = (@lhs.targets ++)
+                                       
  | Case    lhs.llcDoc = comment "Case"
                         >-< caseHeader @val.llcDoc
                         >-< indent 4 @altL.llcDoc
                         >-< caseFooter
                         
  | Call    lhs.llcDoc = (if @isLastExpr
-                         then comment "Call (Tail)"
+                         then comment "Call (Tail)" >-< decrementWith stackpointer @lhs.numberParameters
                          else comment "Call (Normal)")
 						>-< vertically (map parameter @argL.llcDocs)                         
 						>-< call ((text.show) @nm)
-                        >-< vertically (zipWith assignment (map (text.show) @lhs.targets) (repeat (text "POP()")))
+                        >-< vertically (zipWith assignment 
+                                               (map (text.show) @lhs.targets)
+                                               (map (arrayindex stackpointer . text . show) [0..])
+                                       )
                          
  | FFI     lhs.llcDoc = if @isLastExpr
                          then (   comment "FFI (Return)"
-                              >-< yieldit (fficall (text @nm) (map (text.show) @argL))
+                              >-< decrementWith stackpointer @lhs.numberParameters
+                              >-< yieldit (fficall (text @nm) (map (text.show) @argL)) 0
                               )
                          else (   comment "FFI (Normal)"
                               >-< assignment ((text.show.head) @lhs.targets) 
@@ -178,11 +198,11 @@ assignment v e
 
 parameter :: PP_Doc -> PP_Doc
 parameter p
- = "Push" >#< p
+ = assignment (derefPostincrement stackpointer) p
 
-yieldit  :: PP_Doc -> PP_Doc
-yieldit r
- = "Yield" >#< r
+yieldit  :: PP_Doc -> Int -> PP_Doc
+yieldit r n
+ = assignment (arrayindex stackpointer (text (show n))) r
 
 }
 

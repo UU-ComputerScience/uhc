@@ -58,15 +58,15 @@ Also, replace F-Tags for constructorfunctions by C-tags
 
 %%[8.P0tag_TO_Ftag
 SEM GrTag
-  | Lit  lhs  .  grTrf  = GrTag_Lit 
+  | Lit  lhs  .  grTrf  = GrTag_Lit
                              (if   isUpper (head (show @nm)) && (@categ==GrTagFun || @categ==GrTagPApp 0)
                               then GrTagCon
-                              else 
-                              if   @categ == GrTagPApp 0 
-                              then GrTagFun 
+                              else
+                              if   @categ == GrTagPApp 0
+                              then GrTagFun
                               else @categ
                              )
-                             @int 
+                             @int
                              @nm
 %%]
 
@@ -76,15 +76,26 @@ SEM GrTag
 
 Introduce global variables: each binding without arguments must have a
 corresponding global variable. (CAF's)
+Filter out the constructor functions.
+
 Note: EHC does not generate these yet
+
+
 
 %%[8.caf import({GrinCode/CAFNames})
 SEM GrModule
-  | Mod  loc  .  newGlobals  =  let buildGlobalVar n  =  GrGlobal_Global n (GrVal_Node (GrTag_Lit GrTagFun 0 n) 
+  | Mod  loc  .  newGlobals  =  let buildGlobalVar n  =  GrGlobal_Global n (GrVal_Node (tag n)
                                                                                        [GrVal_LitInt 0]
                                                                            )
-                                    globalL           =  map buildGlobalVar @cafNames
-                                in if null @globalL.grTrf then globalL else @globalL.grTrf
+                                    tag n             =  let  ts = filter (\x -> n==ctagNm x) @allCTags
+                                                         in   if null ts
+                                                              then GrTag_Lit GrTagFun 0 n
+                                                              else GrTag_Lit GrTagCon (ctagTag (head ts)) n
+                                    globalL           =  map buildGlobalVar
+                                                             @cafNames
+                                in (if null @globalL.grTrf then globalL else @globalL.grTrf)
+              .   allCTags    =   [ ct | (_,xs) <- @ctagsMp, (_,ct) <- xs ]
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -99,7 +110,7 @@ SEM GrModule
 
 SEM GrBind
   | Bind  lhs  .  grTrf    =  GrBind_Bind @nm @argNmL @newExpr
-          loc  .  newExpr  =  if @nm == HNm "_catch" then buildCatchExpr @argNmL 
+          loc  .  newExpr  =  if @nm == HNm "_catch" then buildCatchExpr @argNmL
                               else if @nm == HNm "_throw" then buildThrowExpr @argNmL
                               else @expr.grTrf
 %%]
@@ -116,5 +127,3 @@ buildCatchExpr [tryNm, handlerNm] = let  exceptNm = hsnPrefix "except_ptr@" hand
                                                                 (GrExpr_App evalNm [GrVal_Var exceptNm])
                                                     )
 %%]
-
-% vim:ts=4:et:ai:
