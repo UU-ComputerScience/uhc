@@ -3,60 +3,261 @@
 \chapter{Lambda Calculus without bindings}
 \label{chapt.NoBindings}
 
+This chapter presents a uniqueness type system for a severely restricted language: simply-typed lambda calculus
+with no bindings, but with integers and an addition operator. Although restricted, this languages serves well to
+discuss the fundametals of uniqueness typing, and our implementation of the uniqueness type system. In subsequent
+chapters, we extend the language with features, until we cover most of Haskell.
 
-This chapter presents the uniqueness analysis for a restricted language. We take a simply-typed lambda calculus
-to discuss the fundementals of the analysis. In subsequent chapters we extend this language until we cover
-most of Haskell.
+This chapter is organized as follows. We start with an example that touches all aspects of the uniqueness system
+for the language in this chapter. Each aspect, such as the definition of the language, constraint gathering, and
+constraint solving, is treated more formally in subsequent sections.
 
 
 \section{Example}
 
-  \begin{verbatim}
-  let x = 3
-   in x + x
-  \end{verbatim}
+  Our main goal is to find out which values in a program are used once. Consider the following example:
+  
+%%[[wrap=code
+  (\x y -> (y + x) + x) 3 4
+%%]
+
+  The result of this program is evaluated once when the program is executed. Consequently, the results of
+  both additions are used once, and thus is the |x| parameter used twice and the |y| parameter once. Which
+  in turn means that the value |3| is used twice and the value |4| once. We say that a value that is used
+  once (such as |x|) is \emph{unique}, and that the value that is not used, or used more than once
+  (such as |y|), is \emph{shared}.
+  
+  Efficient code can be produced with this information. A conventional implementation of |+| in a pure,
+  lazy language, would evalutate both arguments, allocate memory for an integer, and store the result of
+  the addition there. But in this case, no memory needs to be allocated for the result of the additions.
+  Since |y| is unique, the value of |x| can be added directly to the value of |y|. The result of the
+  addition is also unique, and the value of |x| can be added directly again for the second addition. 
+  The result: less memory allocation, less copying, and better cache utilization.
+  
+  We encode this property as annotation on type constructors in the type of a value (\ref{to be explained}).
+  If the outermost type constructor is unique, then we say that the type is unique, which means that the
+  associated values (\ref{to be explained}) are unique. A value with a shared type is used any number of
+  times. We write |(Sup(Int)(1))| for a unique integer and |(Sup(Int)(*))| for a shared integer. Then for
+  our example, the types are:
+
+%%[[wrap=code
+    (  (\x y ->  ((  y :: (Sup(Int)(1))
+                 +   x :: (Sup(Int)(*)))  :: (Sup(Int)(1)))
+                 +   x :: (Sup(Int)(*)))  :: (Sup(Int)(1))
+       ) :: (Sup(Int)(*)) (Sup(->)(1)) (Sup(Int)(1)) (Sup(->)(1)) (Sup(Int)(1))
+    ) (3 :: (Sup(Int)(*))) (4 :: (Sup(Int)(1))) :: (Sup(Int)(1))
+%%]
+
+  We will now focus on the main problem of this chapter: suppose the programmer
+  supplies the annotated program above. How can we check that these annotations
+  are valid? The answer to this question is the uniqueness type system. However,
+  before we go to the uniqueness type system, it turns out that the above annotations
+  are not sufficient (Section~\ref{fill this in}).
+  
+  Besides a uniqueness value, a reference count annotation is required. We truncate reference
+  counts at 2. A reference-count annotation is very similar to a uniqueness annotation. The notable
+  differences are that reference-count annotations for the same variable are independent of each other,
+  and that there is a reference-count annotation |0| for values that are not used. For our example,
+  the reference-counts are:
+  
+%%[[wrap=code
+    (  (\x y ->  ((  y :: (Sup(Int)(1))
+                 +   x :: (Sup(Int)(1)))  :: (Sup(Int)(1)))
+                 +   x :: (Sup(Int)(1)))  :: (Sup(Int)(1))
+       ) :: (Sup(Int)(2)) (Sup(->)(1)) (Sup(Int)(1)) (Sup(->)(1)) (Sup(Int)(1))
+    ) (3 :: (Sup(Int)(2))) (4 :: (Sup(Int)(1))) :: (Sup(Int)(1))
+%%]
+
+  Note that we added up the reference counts for the individual |x| occurences to get the
+  reference count of |2| for |x| itself. To see that this is the only difference, we put
+  both annotations into the same picture, as a tuple. The left component is the reference
+  count and the right component is the uniqueness value:
+
+%%[[wrap=code
+    (  (\x y ->  ((  y :: (Sup(Int)((1, 1)))
+                 +   x :: (Sup(Int)((1, *))))  :: (Sup(Int)((1, 1))))
+                 +   x :: (Sup(Int)((1, *))))  :: (Sup(Int)((1, 1)))
+       ) :: (Sup(Int)((2, *))) (Sup(->)((1, 1))) (Sup(Int)((1, 1))) (Sup(->)((1, 1))) (Sup(Int)((1, 1)))
+    ) (3 :: (Sup(Int)((2, *)))) (4 :: (Sup(Int)((1, 1)))) :: (Sup(Int)((1, 1)))
+%%]
+
+  The uniqueness annotations and reference-count annotations are very similar. For a valid annotation
+  of a program holds the property that a uniqueness annotation is be greater or equal to the
+  reference-count annotation. But, in general, the uniqueness annotations can be inferred,
+  given a program annotated with reference-count annotations (Section~\ref{fill in}).
+
+  Back to the main question: how to check that this typing of the program is valid? First we check that
+  the program is correctly typed for the conventional type system of simply typed lambda calculus. Secondly,
+  we check that all reference-count annotations are smaller or equal to the uniqueness annotations. Then it
+  is time for the real work: we gather a set of constraints from the annotated program, and check if the
+  constraints are satisfied. When the constraints are satisfied, a value with a unique type is used exactly
+  once (\ref{proof this}).
+
+  Back to the example. We generated constraints at three places: lamda abstraction, function application, and for the
+  |+| operator. We discuss these cases in general in Section~\ref{Sect.ConstraintGathering}, and only discuss what
+  we do at these places with our example:
+  
+  \begin{itemize}
+  \item For the lambda abstraction |\x :: (Sup(Int)((2, *)))) -> ... x :: (Sup(Int)((1, *)))) ... x :: (Sup(Int)((1, *)))) ...|,
+        the constraint add the occurences of |x| together: |(1,*) ++ (1,*) <= (2, *)|.
+  \item The |y| occurs only once, so the lambda abstraction |\y :: (Sup(Int)(1)) -> ... y :: (Sup(Int)(1)) ...|, results
+        into a constraint without an addition: |(1,1) <= (1,1)|.
+  \item A |+| uses up both arguments to produce a single result, so for both arguments, there is a result that
+        specifies that the argument should not be more unique than the arguments, denoted by |res =>= arg|. Thus
+        |(y :: (Sup(Int)((1, 1))) + x :: (Sup(Int)((1, *)))) :: (Sup(Int)((1, 1)))|, results into:
+        |(1, 1) =>= (1, 1)|, and |(Sup(Int)((1, 1))) =>= (1, *)|. Similarly,
+        |(((y + x) :: (Sup(Int)((1, 1)))) + x :: (Sup(Int)((1, *)))) :: (Sup(Int)((1, 1)))|, results into the
+        same constraints as above.
+  \item For the function application on the arguments |3| and |4|, we generate a constraint that specifies that the
+        uniqueness of the argument is not more unique than that of the parameter. So, we match the annotations of
+        |x| to the corresponding argument |3|, and the annotation of |y| to |4|, resulting into:
+        |(2, *) =>= (2, *)| for |x|, and |(1, 1) =>= (1, 1)| for
+        |y|.
+  \item We assume that the result of the program (|(...) :: Sup(Int)((1, 1)))|) is evaluated at once:
+        |(1, 1) =>= (1, 1)|.
+  \item Nothing is done for the occurences of the variables themselves.
+  \item We ignore in this example the effect of function application on the spine of a function.
+  \end{itemize}
+  
+  The final part of this example is to verify that the constraints hold. The three variants in the above example are:
+  |a =>= b|, |a <= b|, and |a ++ b <= c|. The first two are roughly the same. They specify that |b| should be component-wise
+  greater than |a|. The difference is that |<=| should be interpreted as equality (|==|) for the uniqueness component. The
+  addition constraint differs for the reference-count and uniqueness annotation. For the reference-count annotation, it
+  specifies that |c| is greater or equal to the addition of |a| and |b|. For uniqueness, it specifies that |a|, |b|, and |c|
+  should be equal. Check Section~\ref{Sect.CheckingConstraints} for a more extensive explanation for the meaning of these
+  constraints.
+  
+  We can now verify that the constraints hold:
+  
+  \begin{tabular}{lllr}
+  |(1,*) ++ (1,*) <= (2, *)| & |1 + 1 <= 2| & |* === * === *| & ok \\
+  |(1,1) <= (1,1)|           & |1 <= 1| & |1 === 1|         & ok \\
+  |(1, 1) =>= (1, 1)| & |1 <= 1| & |1 <= 1| & ok \\
+  |(1, 1) =>= (1, *)| & |1 <= 1| & |1 <= *| & ok \\
+  |(2, *) =>= (2, *)| & |2 <= 2| & |* <= *| & ok \\
+  |(1, 1) =>= (1, 1)| & |1 <= 1| & |1 <= 1| & ok
+  \end{tabular}
+  
+  So, the annotated program type checks. There are other annotations that also
+  type check. For example, set all uniqueness annotations to |*| and all
+  reference-count annotations to |2|. The constraints still hold. However,
+  annotating |x| to be unique will not work.
+  
+  On to a more precise description on the type system. (blabla)
+  Definition of the language.
+  Specification of the constraints and their interpretation.
 
 
+\section{Language}
+\label{sect.ExprLanguage}
 
-  Besides a uniqueness value, a reference count annotation is also required. A reference-count annotation is
-  very similar to a uniqueness annotation. In fact, the only difference is that a reference count also be |0|
-  to indicate that the associated value is not used. In fact, given the program, the uniquenss annotations can be
-  inferred from the reference-coutn annotations. For now, we type the program with tuples as annotations: the
-  left component is the reference count and the right component is the uniqueness value. In case of our
-  example:
+  As mentioned before, the language in this chapter is a simply typed
+  lambda calculus without bindings. The latter means no (recursive) let, but
+  there are bindings by lambda abstraction:
+  
+%%[[wrap=code
+  expr  ::=  int           -- integer expression (Int)
+        |    var           -- variable expression (Var)
+        |    expr + expr   -- plus operator (Plus)
+        |    expr expr     -- application (App)
+        |    \var -> expr  -- lambda abstraction (Lam)
 
-  ... bladie bla...
+%%]
 
-  The notable difference with the first case is that the two occurrences of |x| have a shared uniqueness annotation,
-  but each a |1|-annotation as reference count. This difference is the reason why we need the reference-count annotations, but
-  that becomes clear later in this chapter.
+  Types are assigned to each subexpression and variable. The language of
+  types is:
 
-  Back to the main question: how to check that this typing of the program is valid? For that, we first check that
-  each tuple with reference count and uniqueness value is consistent. Such a tuple is consistent when the
-  reference-count annotation is smaller in value than the uniqueness annotation. Secondly, we gather a set of
-  constraints from the annotated program, and check if the constraints are satisfied. When the constraints are
-  satisfied, a value with a unique type is used exactly once (\ref{proof this}).
+%%[[wrap=code
+  ty  ::=  Int    -- tycon int (Int)
+        |  (->)   -- tycon arrow (Arrow)
+        |  ty ty  -- type application (App)
+%%]
 
-  Back to the example. We generated constraints at three places: lamda abstraction, application, and for the
-  plus operator. We discuss these cases in general in Section~\ref{fill this one in}, and only discuss what
-  we do at these places with our example.
-
-  For the lambda abstraction |\x -> ... x ... x ...|
-
-  Parameters get their type directly from the corresponding part in the type of the
-  function.
-
-
-\section{Expression language}
-
-
+  We assume that all programs are correctly typed according to the type
+  system in Figure~\ref{RulerUniquenessExamples.E.expr.base}. We further
+  assume that all types are 
+  
+  \rulerCmdUse{RulerUniquenessExamples.E.expr.base}
+  
+  
 \section{Types, Annotations and Constraints}
 
+  For the uniqueness type system, we extend the language of types to include
+  reference-count annotations and uniqueness annotations. These annotations are
+  attached to type constructors:
+  
+%%[[wrap=code
+  ty  ::=  Sup(Int)((count,unq))    -- tycon int (Int)
+        |  Sup((->))((count,unq))   -- tycon arrow (Arrow)
+        |  ty ty                    -- type application (App)
+  
+  count ::=  0 | 1 | 2              -- reference-count annotation
+  unq   ::=  0 | 1 | *              -- uniqueness annotation
+%%]
+
+  Why annotate the type constructors? Consider how a value is represented in
+  memory. The type constructors of a type partition the memory representation
+  of a value. Each area of memory for a certain value is associated with a
+  single type constructor in the corresponding type. We get the uniqueness
+  properties of an area of memory by looking at the annotation on the
+  corresponding type constructor.
+  
+  Another question is: why is the arrow type constructor annotated? There are
+  several reasons. From a practical view considering code generation: functions
+  are also values: \emph{closures}. Such a value is represented by an area of
+  memory, and can be unique or shared like any other value. From a more
+  theoretical point of view, unique functions have the property that they can
+  be safely inlined. So, the arrow type constructor has to be annotated as well,
+  like any other value.
+  
+  A type constructor gets two annotations: a reference-count annotation and
+  a uniqueness annotation. Both the reference-count annotations and the
+  uniqueness annotations are totally ordered. For the reference-count
+  annotations, the ordening is |0 < 1 < 2|. For the uniqueness annotations,
+  the ordening is |0 < 1 < *|. The reference-count annotations and uniqueness
+  annotations can be compared with each other in the obvious way. A
+  reference-count annotation should be smaller or equal to the uniqueness
+  annotation.
+  
+  These ordenings are important. The type system gets as input an annotated
+  program and produces a set of constraints that hold between the annotations,
+  if the annotations are valid. The semantics of these constraints make heavy
+  use of the fact that one annotation is greater or equal to another annotation.
+  
+  There are two types of constraints for the type system in this chapter:
+
+%format sumtuples = "\sum_{i}"
+%%[[wrap=code
+  constr  ::=  (count,unq) =>= (count,unq)                               -- smaller or equal with coercion
+          |    sumtuples ((Sub(count)(i)),(Sub(unq)(i))) <= (count,unq)  -- total smaller or equal
+%%]
+
+  The |=>=| constraint is generated at function applications. At function applications,
+  there is an annotated type for the parameter of the function and an annotated type
+  for the argument of the function application. These annotations are not independent:
+  
+  These two annotations should match:
+  the number of times the argument is used, contributes to the number of times the
+  parameter is used. So, the information of the parameter should \emph{flow} into
+  the argument, denoted by |parameter =>= argument|.
+  
+  For example:
+
+%%[[wrap=code
+    (f :: Int -> Int 3
+%%]
+  
+  The |sumtuples| constraint sums up the results of the individual annotations
+  on each use-site of an identifier to the definition site of the identifier.
 
 \section{Gathering constraints}
+\label{Sect.ConstraintGathering}
+
+direction
 
 
 \section{Checking constraints}
+\label{Sect.CheckingConstraints}
 
   Parameterizable uniqueness properties.
   Transfer functions.

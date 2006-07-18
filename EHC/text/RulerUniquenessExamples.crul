@@ -10,6 +10,8 @@ data Expr [expr]
   view E
     | Int  [e.int]  n   :: Int
     | Var  [e.var]  ident :: HsName
+    | Plus [e.plus] a     :: Expr
+                    b     :: Expr
     | App  [e.app]  f     :: Expr
                     a     :: Expr
     | Lam  [e.lam]  ident :: HsName
@@ -71,6 +73,12 @@ ruleset expr.base scheme expr  "Expression type rules" =
       -
       judge R : expr
         | cs = cs
+  rule e.plus "Plus" =
+    view E =
+      judge A : expr = gam :- a : Int
+      judge B : expr = gam :- b : Int
+      -
+      judge R : expr = gam :- (a + b) : Int
   rule e.app "App" =
     view E =
       judge F : expr = gam :- f : ty.f

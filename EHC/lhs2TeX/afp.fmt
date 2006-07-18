@@ -66,6 +66,8 @@
 %format (Dot(x)(y)(z))	= "{" x "}_{" y "}^{" z "}"
 %format (Delta(x)) = "{\delta_{" x "}}"
 %format (Annot(x)(y)) = "{" x "}^{\delta_{" y "}}"
+%format (Sup(x)(y)) = "{" x "}^{" y "}"
+%format (Sub(x)(y)) = "{" x "}_{" y "}"
 
 %format restr		= "\backslash "
 

@@ -2,6 +2,8 @@
 
 \chapter{Prerequisite: EH}
 
+  Todo: add citations, add other topics of EH if needed.
+
   We used the Essential Haskell Compiler as starting point in order to prototype the uniqueness type system.
   In this chapter we explain why we took this compiler and to bring you up-to-speed with several language
   features of the EH language. Design decisions of the compiler and the language features to support, influenced
@@ -169,31 +171,20 @@
     f = \r -> {r | x = 3}
 %%]
 
-    What is the type of |f|? We want to be able to pass any record that has no field
-    named |x|. For that, |f| needs to be polymorphic in the type of |r|. For that,
-    we need polymorphic rows. The type of a record is called a \emph{row}. It has a
-    special kind, |row|. A type variable of kind |row| represents an unknown record,
-    it can have any number of components. In our example, the type of |r| is such
-    a type variable, denoted by |v1|, since we know nothing about |r|, except that it
-    may not have a field named |x|. We encode this last fact by qualifying the type
-    variable associated to |r| lacks the field |x|, giving us the following type
-    for |f|:
+    What is the type of |r| in |f|? If |r| has a polymorphic type, then we can
+    pass any record, as long as it does not have a field |x|. The type system
+    encodes the fact that the record is polymorphic by assigning a special,
+    universally quantified, type variable to |r|, and encodes the fact that the
+    record may not have a field |x| by qualifying the type variable with
+    a \emph{lacks}-predicate:
     
 %%[[wrap=code
-    f :: forall v1 . (v1 \ x) => v1 -> {v1 | x :: Int}
+    f :: Lacks x v1 => v1 -> {v1 | x :: Int}
 %%]
     
     Calling |f| requires evidence that the record that is passed as argument does not
-    have a field named |x|. The type system checks this condition and inserts as
+    have a field |x|. The type system checks this condition and inserts as
     evidence an offset within the record to store the value of |x|.
-
-\section{Type Inference}
-
-  \subsection{Inference rules}
-  
-  \subsection{Unification}
-
-  \subsection{Hooking into the inferencer}
 
 
 \section{Experience}
