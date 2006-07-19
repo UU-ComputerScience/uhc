@@ -1,16 +1,18 @@
 %%[main
 
+%format sumtuples = "\sum_{i}"
+
 \chapter{Lambda Calculus without bindings}
 \label{chapt.NoBindings}
 
 This chapter presents a uniqueness type system for a severely restricted language: simply-typed lambda calculus
 with no bindings, but with integers and an addition operator. Although restricted, this languages serves well to
 discuss the fundametals of uniqueness typing, and our implementation of the uniqueness type system. In subsequent
-chapters, we extend the language with features, until we cover most of Haskell.
+chapters, we extend the language with features, until most of Haskell is covered.
 
-This chapter is organized as follows. We start with an example that touches all aspects of the uniqueness system
-for the language in this chapter. Each aspect, such as the definition of the language, constraint gathering, and
-constraint solving, is treated more formally in subsequent sections.
+This chapter is organized as follows. We start with a rather large example that touches all aspects of the
+uniqueness system for the language in this chapter. Each aspect, such as the definition of the language,
+constraint gathering, and constraint solving, is treated more formally in subsequent sections.
 
 
 \section{Example}
@@ -34,6 +36,8 @@ constraint solving, is treated more formally in subsequent sections.
   addition is also unique, and the value of |x| can be added directly again for the second addition. 
   The result: less memory allocation, less copying, and better cache utilization.
   
+  \subsubsection{Uniqueness annotations}
+  
   We encode this property as annotation on type constructors in the type of a value (\ref{to be explained}).
   If the outermost type constructor is unique, then we say that the type is unique, which means that the
   associated values (\ref{to be explained}) are unique. A value with a shared type is used any number of
@@ -50,15 +54,18 @@ constraint solving, is treated more formally in subsequent sections.
 
   We will now focus on the main problem of this chapter: suppose the programmer
   supplies the annotated program above. How can we check that these annotations
-  are valid? The answer to this question is the uniqueness type system. However,
-  before we go to the uniqueness type system, it turns out that the above annotations
-  are not sufficient (Section~\ref{fill this in}).
+  are valid? The answer to this question is the uniqueness type system. We take
+  a rather indirect approach. The uniqueness annotations alone are not sufficient for the
+  uniqueness type system. Besides a uniqueness annotation, we need a
+  \emph{reference-count annotation} as well.
   
-  Besides a uniqueness value, a reference count annotation is required. We truncate reference
-  counts at 2. A reference-count annotation is very similar to a uniqueness annotation. The notable
-  differences are that reference-count annotations for the same variable are independent of each other,
-  and that there is a reference-count annotation |0| for values that are not used. For our example,
-  the reference-counts are:
+  \subsubsection{Reference-count annotations}
+  
+  A reference-count annotation tells us how often a certain expression or identifier is
+  referenced. We only count up to two; higher counts are truncated to two. A reference-count
+  annotation is very similar to a uniqueness annotation. The notable differences are that reference-count
+  annotations for the same variable are independent of each other, and that there is a reference-count
+  annotation |0| for values that are not used. For our example, the reference-counts are:
   
 %%[[wrap=code
     (  (\x y ->  ((  y :: (Sup(Int)(1))
@@ -85,57 +92,149 @@ constraint solving, is treated more formally in subsequent sections.
   of a program holds the property that a uniqueness annotation is be greater or equal to the
   reference-count annotation. But, in general, the uniqueness annotations can be inferred,
   given a program annotated with reference-count annotations (Section~\ref{fill in}).
+  
+  \subsubsection{Checking reference-count annotations and uniqueness annotations}
 
-  Back to the main question: how to check that this typing of the program is valid? First we check that
-  the program is correctly typed for the conventional type system of simply typed lambda calculus. Secondly,
-  we check that all reference-count annotations are smaller or equal to the uniqueness annotations. Then it
-  is time for the real work: we gather a set of constraints from the annotated program, and check if the
-  constraints are satisfied. When the constraints are satisfied, a value with a unique type is used exactly
-  once (\ref{proof this}).
+  How to check that the annotated typing of a program is valid? First we check that the program is correctly
+  typed for the conventional type system of simply typed lambda calculus. Secondly, we check that all
+  reference-count annotations are smaller or equal to the uniqueness annotations. Then it is time for the real work:
+  we gather a set of constraints from the annotated program, and check if the constraints are satisfied. When the
+  constraints are satisfied, a value with a unique type is used exactly once (\ref{proof this}).
+  
+  We illustrate the constraints by analyzing the example program\footnote{For clearity, the annotations values have a number
+  superscripted, such that you can see which annotation appears where in the constraints.}. For a description of the constraints and their
+  meaning, check Section~\ref{fill this one in}. We reason about a program in an outermost-to-innermost way. We
+  start with the entire program (expression):
 
-  Back to the example. We generated constraints at three places: lamda abstraction, function application, and for the
-  |+| operator. We discuss these cases in general in Section~\ref{Sect.ConstraintGathering}, and only discuss what
-  we do at these places with our example:
+%%[[wrap=code
+    ( ... ) :: (Sup(Int)(((Sup(1)(1)), (Sup(1)(2)))))
+%%]
   
-  \begin{itemize}
-  \item For the lambda abstraction |\x :: (Sup(Int)((2, *)))) -> ... x :: (Sup(Int)((1, *)))) ... x :: (Sup(Int)((1, *)))) ...|,
-        the constraint add the occurences of |x| together: |(1,*) ++ (1,*) <= (2, *)|.
-  \item The |y| occurs only once, so the lambda abstraction |\y :: (Sup(Int)(1)) -> ... y :: (Sup(Int)(1)) ...|, results
-        into a constraint without an addition: |(1,1) <= (1,1)|.
-  \item A |+| uses up both arguments to produce a single result, so for both arguments, there is a result that
-        specifies that the argument should not be more unique than the arguments, denoted by |res =>= arg|. Thus
-        |(y :: (Sup(Int)((1, 1))) + x :: (Sup(Int)((1, *)))) :: (Sup(Int)((1, 1)))|, results into:
-        |(1, 1) =>= (1, 1)|, and |(Sup(Int)((1, 1))) =>= (1, *)|. Similarly,
-        |(((y + x) :: (Sup(Int)((1, 1)))) + x :: (Sup(Int)((1, *)))) :: (Sup(Int)((1, 1)))|, results into the
-        same constraints as above.
-  \item For the function application on the arguments |3| and |4|, we generate a constraint that specifies that the
-        uniqueness of the argument is not more unique than that of the parameter. So, we match the annotations of
-        |x| to the corresponding argument |3|, and the annotation of |y| to |4|, resulting into:
-        |(2, *) =>= (2, *)| for |x|, and |(1, 1) =>= (1, 1)| for
-        |y|.
-  \item We assume that the result of the program (|(...) :: Sup(Int)((1, 1)))|) is evaluated at once:
-        |(1, 1) =>= (1, 1)|.
-  \item Nothing is done for the occurences of the variables themselves.
-  \item We ignore in this example the effect of function application on the spine of a function.
-  \end{itemize}
+  The result of the program is used at least once. To verify this, we have a constriant |a =>= b|, that tells us
+  that (component-wise) |b| should be at least |a|. In this case, we produce as condition to verify, the constraint:
+  |(1,1) =>= ((Sup(1)(1)), (Sup(1)(2))))|.
   
-  The final part of this example is to verify that the constraints hold. The three variants in the above example are:
-  |a =>= b|, |a <= b|, and |a ++ b <= c|. The first two are roughly the same. They specify that |b| should be component-wise
-  greater than |a|. The difference is that |<=| should be interpreted as equality (|==|) for the uniqueness component. The
-  addition constraint differs for the reference-count and uniqueness annotation. For the reference-count annotation, it
-  specifies that |c| is greater or equal to the addition of |a| and |b|. For uniqueness, it specifies that |a|, |b|, and |c|
-  should be equal. Check Section~\ref{Sect.CheckingConstraints} for a more extensive explanation for the meaning of these
-  constraints.
+  One step into the expression, an application is encountered:
+
+%%[[wrap=code
+    (( ... :: (Sup(Int)(((Sup(1)(5)), (Sup(1)(6))))) (Sup(->)(((Sup(1)(3)), (Sup(1)(4))))) (Sup(Int)(((Sup(1)(7)), (Sup(1)(8)))))) (4 :: (Sup(Int)(((Sup(1)(9)), (Sup(1)(10))))))) :: (Sup(Int)(((Sup(1)(1)), (Sup(1)(2)))))
+%%]
+
+  Applications are complicated: several things happen here. The idea is that we dive into the function expression
+  to obtain counts for the parameter. But that depends on how often the result of the function is
+  used. So: information about the value \emph{flows} into the function, meaning that the result of the
+  function is at least as often used (or: at most as unique) as the entire application:
+  |((Sup(1)(1)), (Sup(1)(2))) =>= ((Sup(1)(7)), (Sup(1)(8)))|.
   
-  We can now verify that the constraints hold:
+  We analyze the function expression later, but assume that a constraint set will come out of it that relates
+  information about the value to the parameters. Then our next step is to flow the information about the
+  parameters into the arguments. The argument that is passed to a function
+  is at least as much used as the parameter of the function. Or in other words: should be at least as
+  unique as the parameter of the function: |((Sup(1)(5)), (Sup(1)(6))) =>= ((Sup(1)(9)), (Sup(1)(10)))|.
+  
+  Only one issue remains before we can continue with analyzing the function and argument. We applied a 
+  function, so we used the function: the function is at least as much used as the application
+  itself, which we expressed by: |((Sup(1)(1)), (Sup(1)(2))) =>= ((Sup(1)(3)), (Sup(1)(4)))|.
+  
+  Now there are two expressions two analyze: the function expression and the argument expression. The order in which
+  we analyze these subexpressions does not matter: the constraints are order independent. We proceed with the
+  argument expression first, since that is an integer. We do not have to check anything for an integer, since an
+  integer can appear in both variants. So, we continue with analyzing the function expression.
+
+  The function expression is again an application:
+  
+%%[[wrap=code
+    (( ... :: (Sup(Int)(((Sup(2)(15)), (Sup(*)(16))))) (Sup(->)(((Sup(1)(11)), (Sup(1)(12)))) (Sup(Int)(((Sup(1)(17)), (Sup(1)(18)))) (Sup(->)(((Sup(1)(13)), (Sup(1)(14))))) (Sup(Int)(((Sup(1)(19)), (Sup(1)(20)))))))) (3 :: (Sup(Int)(((Sup(1)(21)), (Sup(1)(22))))))) :: (Sup(Int)(((Sup(1)(5)), (Sup(1)(6))))) (Sup(->)(((Sup(1)(3)), (Sup(1)(4))))) (Sup(Int)(((Sup(1)(7)), (Sup(1)(8)))))
+%%]
+   
+  Applying the same reasoning as above, we end up with the constraints:
+
+%%[[wrap=code
+    
+    ((Sup(1)(3)), (Sup(1)(4))) =>= ((Sup(1)(13)), (Sup(1)(14)))    -- (1) flow from application to result
+    ((Sup(1)(17)), (Sup(1)(18))) =>= ((Sup(1)(5)), (Sup(1)(6)))    -- contravariant (flow back)
+    ((Sup(1)(7)), (Sup(1)(8))) =>= ((Sup(1)(19)), (Sup(1)(20)))
+    
+    ((Sup(2)(15)), (Sup(*)(16))) =>= ((Sup(2)(21)), (Sup(*)(22)))  -- (2) flow from parameter to argument
+    
+    ((Sup(1)(3)), (Sup(1)(4))) =>= ((Sup(1)(11)), (Sup(1)(12)))    -- (3) use of the function
+%%]
+  
+  There is one difference, and that's in the first three constraints. The value of the function is
+  itself a function and has a type with three type constructors in it. Each corresponding pair of
+  type constructors gets its own constraint. The direction of the constraint matters: to get the
+  flow right, the direction needs to be reversed for constravariant type constructors. The following
+  picture illustrates the reason:
+    
+%%[[wrap=code
+  ... insert picture ...
+%%]
+  
+  An lambda abstraction is encountered when we step into the function body:
+
+%%[[wrap=code
+    (\x y ->  (... y :: (Sup(Int)(((Sup(1)(27)), (Sup(1)(28))))) ... x :: (Sup(Int)(((Sup(1)(29)), (Sup(*)(30))))) ... x :: (Sup(Int)(((Sup(1)(31)), (Sup(*)(32))))) ...) :: (Sup(Int)(((Sup(2)(15)), (Sup(*)(16))))) (Sup(->)(((Sup(1)(11)), (Sup(1)(12)))) (Sup(Int)(((Sup(1)(17)), (Sup(1)(18)))) (Sup(->)(((Sup(1)(13)), (Sup(1)(14))))) (Sup(Int)(((Sup(1)(19)), (Sup(1)(20))))))
+%%]
+   
+  At such a lambda abstraction, we perform two tasks: analyze the body of the lambda abstraction, and
+  combine the results of the uses of the parameters. If a parameter is unique, but occurs twice in the
+  body of the function, we want to verify that it is only used once at one of the sites, and zero
+  times at the other place. We combine the use-sites of the parameters by
+  summing up the annotations on the use-sites of the parameters, with a special constraint:
+  |sumtuples (Sub(use_site)(i)) <= def_site|.
+  
+  Another way of looking at this case is nothing that the use-sites of paramters are leaves in the
+  syntax tree. The information flow stops at these places. But information about the use of
+  a parameter needs to be propagated to the definition site. The above constraint connects the
+  use-site to the definition site.
+  
+  With only one use-site of |y|, and two use-sites of |x|, the constraints are:
+  
+%%[[wrap=code
+   ((Sup(1)(29)), (Sup(*)(30))) ++ ((Sup(1)(31)), (Sup(*)(32))) <= ((Sup(2)(15)), (Sup(*)(16)))  -- for x
+   ((Sup(1)(27)), (Sup(1)(28))) <= ((Sup(1)(17)), (Sup(1)(18)))                                 -- for y
+%%]
+
+  That leaves us with only the addition-expressions to consider:
+
+%%[[wrap=code
+  (( ... :: (Sup(Int)(((Sup(1)(25)), (Sup(1)(26)))))) + (x :: (Sup(Int)(((Sup(1)(31)), (Sup(*)(32))))))) :: (Sup(Int)(((Sup(1)(23)), (Sup(1)(24)))))
+  ((y :: (Sup(Int)(((Sup(1)(27)), (Sup(*)(28)))))) + (x :: (Sup(Int)(((Sup(1)(29)), (Sup(*)(30))))))) :: (Sup(Int)(((Sup(1)(25)), (Sup(1)(26)))))
+%%]
+  
+   
+  The plus operator evaluates both the arguments at least as many times as the result is evaluated. But aside from
+  this restriction, all other combinations are allowed. For example, the result is allowed to be unique, but one
+  of the arguments shared. Or even both the arguments shared and the result unique. We express this by putting
+  the constraint only on the reference-count annotation:
+  
+%%[[wrap=code
+  (Sup(1)(23)) =>= (Sup(1)(25))
+  (Sup(1)(23)) =>= (Sup(1)(31))
+  (Sup(1)(25)) =>= (Sup(1)(27))
+  (Sup(1)(25)) =>= (Sup(1)(29))
+%%]
+  
+  The standard code generated for |+| can handle all allowed combinations. To optimize code, a code generator can
+  choose to insert special code for a |+| that performs the addition in place if one of the parameters is unique.
+
+  The final part of this example is to verify that the constraints hold. We show by an example how we interpret
+  the constraints. We define when a constraint hold more precisely in Section~\ref{fill this in}. We assume that
+  the constraints are already checked for consistency, meaning that the uniqueness annotation is greater or
+  equal to the reference-count annotation. How a uniqueness annotation should be compared to a reference-count
+  annotation will be explained in Section~\ref{fill this in}. But assume for now that it is the obvious way,
+  considering how much the annotations look like normal numbers. With the constraints being consistent, the
+  following table\footnote{Again, the annotations are labelled to see where they end up in the interpretation.}
+  lists the constraints and the interpretation:
   
   \begin{tabular}{lllr}
-  |(1,*) ++ (1,*) <= (2, *)| & |1 + 1 <= 2| & |* === * === *| & ok \\
-  |(1,1) <= (1,1)|           & |1 <= 1| & |1 === 1|         & ok \\
-  |(1, 1) =>= (1, 1)| & |1 <= 1| & |1 <= 1| & ok \\
-  |(1, 1) =>= (1, *)| & |1 <= 1| & |1 <= *| & ok \\
-  |(2, *) =>= (2, *)| & |2 <= 2| & |* <= *| & ok \\
-  |(1, 1) =>= (1, 1)| & |1 <= 1| & |1 <= 1| & ok
+    constraint & count interpretation & uniqueness interpretation & holds \\
+    \hline
+    |((Sup(1)(a)),(Sup(1)(b))) =>= ((Sup(1)(c)),(Sup(1)(d)))| & |(Sup(1)(a)) <= (Sup(1)(b))| & |(Sup(1)(c)) >= (Sup(1)(d))|  & ok \\
+    |((Sup(2)(a)),(Sup(*)(b))) =>= ((Sup(2)(c)),(Sup(*)(d)))| & |(Sup(2)(a)) <= (Sup(2)(b))| & |(Sup(*)(c)) >= (Sup(*)(d))|  & ok \\
+    |((Sup(1)(a)),(Sup(1)(b))) <= ((Sup(1)(c)),(Sup(1)(d)))|  & |(Sup(1)(a)) <= (Sup(1)(b))| & |(Sup(1)(c)) === (Sup(1)(d))| & ok \\
+    |((Sup(1)(a)),(Sup(*)(b))) ++ ((Sup(1)(c)),(Sup(*)(d))) <= ((Sup(2)(e)), (Sup(*)(f)))| & |(Sup(1)(a)) + (Sup(1)(c)) <= (Sup(2)(e))| & |(Sup(*)(b)) === (Sup(*)(d)) === (Sup(*)(f))| & ok \\
+    |(Sup(1)(a)) =>= (Sup(1)(b))| & |(Sup(1)(a)) <= (Sup(1)(b))| & & ok
   \end{tabular}
   
   So, the annotated program type checks. There are other annotations that also
@@ -226,7 +325,6 @@ constraint solving, is treated more formally in subsequent sections.
   
   There are two types of constraints for the type system in this chapter:
 
-%format sumtuples = "\sum_{i}"
 %%[[wrap=code
   constr  ::=  (count,unq) =>= (count,unq)                               -- smaller or equal with coercion
           |    sumtuples ((Sub(count)(i)),(Sub(unq)(i))) <= (count,unq)  -- total smaller or equal
@@ -254,6 +352,7 @@ constraint solving, is treated more formally in subsequent sections.
 \label{Sect.ConstraintGathering}
 
 direction
+co contra variant
 
 
 \section{Checking constraints}
@@ -261,6 +360,8 @@ direction
 
   Parameterizable uniqueness properties.
   Transfer functions.
+  Coercions.
+  Ignore-me-flow-constraint for uniqueness.
 
 \section{Conclusion}
 
