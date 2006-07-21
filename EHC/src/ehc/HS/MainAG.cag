@@ -8,13 +8,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[1 hs module {%{EH}HS.MainAG} import(Data.Char,Data.List as List,UU.Pretty,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS})
+%%[1 hs module {%{EH}HS.MainAG} import(Data.Char,Data.List as List,UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS})
 %%]
 
 %%[1 hs import(qualified {%{EH}EH} as EH)
 %%]
 
 %%[4 hs import({%{EH}Ty}(TyQu(..)))
+%%]
+
+%%[8 hs import(qualified EH.Util.Rel as Rel,qualified Data.Set as Set,{%{EH}Module})
 %%]
 
 %%[99 hs import(Data.Ratio,{%{EH}Scanner.Scanner(getRational)})
@@ -24,7 +27,7 @@
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 import({HS/AbsSyn},{HS/EH})
+%%[1 import({HS/AbsSyn},{HS/EH},{HS/Fixity},{HS/Pretty},{HS/GatherError},{HS/NameAnalysis},{HS/Module})
 WRAPPER AGItf
 %%]
 
@@ -35,4 +38,102 @@ WRAPPER AGItf
 %%[1
 ATTR AGItf AllNT [ opts: EHCOpts | | ]
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tying together gam's, combining with imported info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+SEM Body
+    | Body
+        declarations    .   fixityGam   =   @declarations.gathFixityGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc: simpletype internal info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+ATTR SimpleType [ | | range: Range  name: Name  typevariables: Names ]
+
+SEM SimpleType
+    | SimpleType
+        lhs         .   range       =   @range
+                    .   name        =   @name
+                    .   typevariables
+                                    =   @typevariables
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc: constructor internal info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+ATTR AllConstructor [ | | conNames USE {++} {[]} : Names ]
+
+SEM Constructor
+    | Constructor
+        lhs         .   conNames    =   [@constructor]
+    | Infix
+        lhs         .   conNames    =   [@constructorOperator]
+%%]
+%%[7
+SEM Constructor
+    | Record
+        lhs         .   conNames    =   [@constructor]
+%%]
+
+%%[7
+ATTR AllFieldDeclaration AllConstructor [ | | fldNames USE {++} {[]} : Names ]
+
+SEM FieldDeclaration
+    | FieldDeclaration
+        lhs         .   fldNames    =   @names
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc: LeftHandSide internal info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR LeftHandSide [ | | name: Name ]
+
+SEM LeftHandSide
+    | Function
+        lhs         .   name        =   @name
+    | Infix
+        lhs         .   name        =   @operator
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc: Type internal info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR Type Expression [ | | conNm: Name ]
+
+SEM Type
+    | Constructor
+        lhs         .   conNm     	=   @name
+    | * - Constructor
+        lhs         .   conNm     	=   hsnUnknown
+
+SEM Expression
+    | Constructor
+        lhs         .   conNm     	=   @name
+    | * - Constructor
+        lhs         .   conNm     	=   hsnUnknown
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Names of imported modules
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+%%]
+ATTR AllModule AGItf [ | | impModNms USE {++} {[]}: Names ]
+
+SEM ImportDeclaration
+	| Import
+		lhs			.	impModNms	=	[@name]
 

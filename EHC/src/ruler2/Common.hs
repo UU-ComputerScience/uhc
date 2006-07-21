@@ -6,7 +6,7 @@ module Common
   ( module Data.Maybe
   , module Data.Char
   , module EH.Util.Nm
-  , module DpdGr
+  , module EH.Util.DependencyGraph
   , module EH.Util.FPath
   , module EH.Util.PPUtils
   , module AttrProps
@@ -38,7 +38,7 @@ import EH.Util.PPUtils
 import EH.Util.ParseErrPrettyPrint
 import EH.Util.ScanUtils
 import EH.Util.Nm
-import DpdGr
+import EH.Util.DependencyGraph
 import AttrProps
 
 -------------------------------------------------------------------------

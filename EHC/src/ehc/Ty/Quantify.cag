@@ -102,7 +102,7 @@ instance PP TyQuOut where
 %%]
               , tqoPredAsArgLocs    ::  PredAsArgLocs
 instance PP TyQuOut where
-  pp tqo = pp (tqoImplsCnstr tqo) >|< "/" >|< ppCommaList (tqoPredAsArgLocs tqo)
+  pp tqo = pp (tqoImplsCnstr tqo) >|< "/" >|< ppBracketsCommas (tqoPredAsArgLocs tqo)
 
 %%[9 hs
 tyQuantifyPr :: TyQuOpts -> (TyVarId -> Bool) -> TyQu -> [PredOcc] -> Ty -> TyQuOut
@@ -641,8 +641,8 @@ SEM Ty
 %%]
 SEM Ty
   | App         loc         .   quTy            =   mkTyQuEx @hereQu @qBndTvL @qBndExTvL (Ty_App @func.quTy @arg.quTy)
-  | Var         lhs         .   quTy            =   tr "Var" (pp @self >#< "coco=" >|< @lhs.coco >#< "isQuLoc=" >|< @isQuLoc >#< ppCommaList @qBndTvL >#< ppCommaList @frTvL) $ mkTyQuEx @hereQu @qBndTvL @qBndExTvL (Ty_Var @tv @categ.quTy)
-  | App         loc         .   quTy            =   tr "App" (pp @self >#< "coco=" >|< @lhs.coco >#< "isQuLoc=" >|< @isQuLoc >#< "isQuFxLoc=" >|< @isQuFxLoc >#< "isSpineRoot=" >|< @isSpineRoot >#< ppCommaList @qBndTvL >#< ppCommaList (map ppCommaList @frTvLL)) $ mkTyQuEx @hereQu @qBndTvL @qBndExTvL (Ty_App @func.quTy @arg.quTy)
+  | Var         lhs         .   quTy            =   tr "Var" (pp @self >#< "coco=" >|< @lhs.coco >#< "isQuLoc=" >|< @isQuLoc >#< ppBracketsCommas @qBndTvL >#< ppBracketsCommas @frTvL) $ mkTyQuEx @hereQu @qBndTvL @qBndExTvL (Ty_Var @tv @categ.quTy)
+  | App         loc         .   quTy            =   tr "App" (pp @self >#< "coco=" >|< @lhs.coco >#< "isQuLoc=" >|< @isQuLoc >#< "isQuFxLoc=" >|< @isQuFxLoc >#< "isSpineRoot=" >|< @isSpineRoot >#< ppBracketsCommas @qBndTvL >#< ppBracketsCommas (map ppBracketsCommas @frTvLL)) $ mkTyQuEx @hereQu @qBndTvL @qBndExTvL (Ty_App @func.quTy @arg.quTy)
 
 %%[9 hs
 mkTyQuForRank :: Bool -> TyQu -> TyVarIdL -> TyVarIdL -> Ty -> Ty

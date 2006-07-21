@@ -17,7 +17,7 @@ RULER2_MAIN			:= Ruler
 RULER2_HS_MAIN_SRC_HS					:= $(addprefix $(SRC_RULER2_PREFIX),$(RULER2_MAIN).hs)
 RULER2_HS_MAIN_DRV_HS					:= $(patsubst $(SRC_RULER2_PREFIX)%.hs,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_HS_MAIN_SRC_HS))
 RULER2_HS_DPDS_SRC_HS					:= $(patsubst %,$(SRC_RULER2_PREFIX)%.hs,\
-											Version Common Err Opts DpdGr AttrProps \
+											Version Common Err Opts AttrProps \
 											NmParser ViewSelParser SelParser KeywParser RulerParser \
 											ARuleUtils ExprUtils TyUtils LaTeXFmtUtils RulerUtils ViewSelUtils \
 											Gam FmGam ECnstrGam RwExprGam WrKindGam JdShpGam \

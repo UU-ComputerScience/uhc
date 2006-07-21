@@ -5,7 +5,7 @@
 ATTR AllARule AGARuleItf [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM ARule
-  | Rule            lhs     .   pp          =   "SEM" >#< pp (head @ndNmL) -- >#< "--" >#< ppCommas @info
+  | Rule            lhs     .   pp          =   "SEM" >#< pp (head @ndNmL) -- >#< "--" >#< ppCommas' @info
                                                 >-< indent atLhs2texDist ("|" >#< @rlNm >|< indent atLhs2texDist @eqns.pp)
 
 SEM AEqn
@@ -20,7 +20,7 @@ SEM AEqn
   | Err             lhs     .   pp          =   "ERR" >#< @expr.pp
 
 SEM AEqnDest
-  | Many            lhs     .   pp          =   ppListSep "(" ")" "," @dests.ppL
+  | Many            lhs     .   pp          =   ppParensCommas @dests.ppL
 
 SEM AExpr
   | Expr            lhs     .   pp          =   exprNeedPar ParCtxtOther nmUnk @expr.self @expr.pp

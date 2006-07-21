@@ -224,7 +224,7 @@ SEM Decl
                                                                   )
                                                                   (scVwGam si)
                                                             mkNm n = n `nmStrApd` Nm "s"
-                                                    vwSels = vgVertices @lhs.vwDpdGr
+                                                    vwSels = dgVertices @lhs.vwDpdGr
                                                     mkg mkn l = gamFromAssocs [ (mkn i,i) | i <- l ]
                                                     mkRsInfo nl scGam
                                                       = RsInfo (@nm `nmApd` Nm "base") @pos @nm vwSels ("Rules for " ++ show @nm) (mkg rlNm [rl1])
@@ -270,7 +270,7 @@ SEM AGItf
                                                                in  (gamFromAssocs ascL `gamUnionShadow` scGam,concat errLL ++ scErrs)
                                                           )
                                                           (@decls.gathScGam,[])
-                                                          (vgTopSort @scDpdGr)
+                                                          (dgTopSort @scDpdGr)
                                                 in  r
 
 SEM Decl
@@ -391,7 +391,7 @@ SEM AGItf
                                                                in  (gamUnionsShadow rsGamBldL `gamUnionShadow` rsGam,concat errLL ++ rsErrs)
                                                           )
                                                           (@decls.gathRsGam,[])
-                                                          (vgTopSort @scDpdGr)
+                                                          (dgTopSort @scDpdGr)
                                                 in  r
 
 SEM Decl

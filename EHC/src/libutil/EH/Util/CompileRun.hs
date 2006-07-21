@@ -111,7 +111,7 @@ ppCR :: (PP n,PP u) => CompileRun n u i e -> PP_Doc
 ppCR cr
   = "CR:" >#<
       (   (ppListSepVV "[" "]" "," $ map (\(n,u) -> pp n >#< "->" >#< pp u) $ Map.toList $ crCUCache $ cr)
-      >-< ppCommaList (map ppCommaList $ crCompileOrder $ cr)
+      >-< ppBracketsCommas (map ppBracketsCommas $ crCompileOrder $ cr)
       )
 
 crPP :: (PP n,PP u) => String -> CompileRun n u i e -> IO (CompileRun n u i e)
@@ -177,13 +177,13 @@ crCUFPath modNm cr = maybe emptyFPath cuFPath (crMbCU modNm cr)
 -------------------------------------------------------------------------
 
 cpFindFileForFPath
-  :: (Ord n,Show n,CompileUnitState s,CompileRunError e p,CompileUnit u n s,CompileModName n,CompileRunStateInfo i n p)
+  :: (Ord n,FPATH n,CompileUnitState s,CompileRunError e p,CompileUnit u n s,CompileModName n,CompileRunStateInfo i n p)
        => Map.Map String s -> [String] -> Maybe n -> Maybe FPath -> CompilePhase n u i e (Maybe FPath)
 cpFindFileForFPath suffs sp mbModNm mbFp
   = do { cr <- get
        ; let cus = maybe cusUnk (flip crCUState cr) mbModNm
        ; if cusIsUnk cus
-          then do { let fp = maybe (mkFPath $ show $ panicJust ("cpFindFileForFPath") $ mbModNm) id mbFp
+          then do { let fp = maybe (mkFPath $ panicJust ("cpFindFileForFPath") $ mbModNm) id mbFp
                         modNm = maybe (mkCMNm $ fpathBase $ fp) id mbModNm
                   ; mbFpFound <- lift (searchPathForReadableFile sp (Map.keys suffs) fp)
                   ; case mbFpFound of
@@ -201,7 +201,6 @@ cpFindFileForFPath suffs sp mbModNm mbFp
                                       Nothing -> case Map.lookup "*" suffs of
                                                    Just c  -> c
                                                    Nothing -> cusUnk
-
                   }
           else return (maybe Nothing (\nm -> Just (crCUFPath nm cr)) mbModNm)
        }

@@ -16,6 +16,9 @@
 %%[1 export(TyGam, TyGamInfo(..), tyGamLookup)
 %%]
 
+%%[1 export(FixityGam, FixityGamInfo(..), defaultFixityGamInfo)
+%%]
+
 %%[1 import(UU.Pretty,{%{EH}Ty.Pretty}) export(ppGam)
 %%]
 
@@ -52,7 +55,7 @@
 %%[7 export(mkTGIData)
 %%]
 
-%%[8 import(Data.Maybe,qualified Data.Map as Map,{%{EH}Core}) export(gamUpd,DataTagMp)
+%%[8 import(Data.Maybe,qualified Data.Map as Map,{%{EH}Core}) export(gamUpd,gamKeys,DataTagMp)
 %%]
 
 %%[8 export(DataGam,DataGamInfo(..),mkDGI)
@@ -200,6 +203,11 @@ gamUpd k upd = fromJust . gamMbUpd k upd
 %%[9.gamUpd -8.gamUpd
 gamUpd :: Ord k => k -> (k -> v -> v) -> Gam k v -> Gam k v
 gamUpd k upd g = tgamUpd (tgamSize1 g) k upd g
+%%]
+
+%%[8
+gamKeys :: Ord k => Gam k v -> [k]
+gamKeys = assocLKeys . gamToAssocL
 %%]
 
 %%[9
@@ -370,6 +378,20 @@ type ErrGam = Gam HsName ErrL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fixity gam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+data FixityGamInfo = FixityGamInfo { fgiPrio :: Int, fgiFixity :: Fixity } deriving Show
+
+defaultFixityGamInfo = FixityGamInfo 9 Fixity_Infixl
+%%]
+
+%%[1.FixityGam
+type FixityGam = Gam HsName FixityGamInfo
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% "Type of value" gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -388,7 +410,7 @@ valGamLookup = gamLookup
 valGamLookupTy :: HsName -> ValGam -> (Ty,ErrL)
 valGamLookupTy n g
   =  case valGamLookup n g of
-       Nothing    ->  (Ty_Any,[Err_NamesNotIntrod [n]])
+       Nothing    ->  (Ty_Any,[Err_NamesNotIntrod "value" [n]])
        Just vgi   ->  (vgiTy vgi,[])
 %%]
 

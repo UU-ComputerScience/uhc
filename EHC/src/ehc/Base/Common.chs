@@ -22,7 +22,7 @@
 %%[1.exp.hdAndTl export(hdAndTl, hdAndTl')
 %%]
 
-%%[1 import(UU.Pretty, Data.List) export(ppListSep, ppCommaList, ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
+%%[1 import(UU.Pretty, EH.Util.PPUtils,Data.List) export(ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
 %%]
 
 %%[1 export(SemApp(..))
@@ -34,7 +34,13 @@
 %%[1 export(ParNeed(..), ParNeedL, parNeedApp, ppParNeed)
 %%]
 
-%%[2 export(UID(..), mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, mkNewUID, uidNext, uidChild, mkNewUIDL, mkInfNewUIDL, uidStart)
+%%[1 export(Fixity(..))
+%%]
+
+%%[1 export(Range(..),emptyRange,mkRange1,mkRange2,rngLift)
+%%]
+
+%%[2 export(UID(..), mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, uidNext, mkNewUID, uidChild, mkNewUIDL, mkInfNewUIDL, uidStart)
 %%]
 
 %%[2 export(assocLMapElt,assocLMapKey)
@@ -76,16 +82,19 @@
 %%[8 -(1.exp.hdAndTl 1.Misc.hdAndTl) import (EH.Util.Utils hiding (tr,trp)) export(module EH.Util.Utils)
 %%]
 
-%%[8 import (EH.Util.FPath,IO,Char) export(putPPLn,putWidthPPLn,putPPFile,Verbosity(..),putCompileMsg, openFPath,writeToFile, writePP)
+%%[8 import (EH.Util.FPath,IO,Char,Data.Maybe) export(Verbosity(..),putCompileMsg, openFPath,writeToFile, writePP)
 %%]
 
 %%[8 export(hsnFloat)
 %%]
 
-%%[8 export(hsnPrefix,hsnSuffix,hsnConcat)
+%%[8 export(hsnPrefix,hsnSuffix)
 %%]
 
 %%[8 export(hsnUndefined,hsnPrimAddInt,hsnMain)
+%%]
+
+%%[8 export(hsnQualified,hsnQualifier,hsnPrefixQual,hsnSetQual,hsnIsQual)
 %%]
 
 %%[88 export(sortByOn,sortOn,groupOn,groupSortOn)
@@ -124,14 +133,14 @@
 %%[9 hs export(snd3,thd)
 %%]
 
-%%[10 export(hsnDynVar)
+%%[10 export(hsnDynVar,hsnConcat)
 %%]
 
 %%[99 export(hsnInteger,hsnDouble)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Haskell names
+%%% Haskell names, datatype
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.HsName.type
@@ -168,6 +177,117 @@ instance Show HsName where
 %%[8
   show (HNmQ ns  )  = concat $ intersperse "." $ map show ns
 %%]
+
+%%[8
+%%]
+
+%%[8
+hsnToList :: HsName -> [HsName]
+hsnToList (HNmQ ns) = ns
+hsnToList n         = [n]
+
+hsnInitLast :: HsName -> ([HsName],HsName)
+hsnInitLast = maybe (panic "hsnInitLast") id . initlast . hsnToList
+%%]
+
+%%[8
+hsnPrefix                           ::  String -> HsName -> HsName
+hsnPrefix   p   hsn
+  = case hsnInitLast hsn of
+      (ns,n) -> mkHNm (ns,HNm (p ++ show n))
+
+hsnSuffix                           ::  HsName -> String -> HsName
+hsnSuffix       hsn   p
+  = case hsnInitLast hsn of
+      (ns,n) -> mkHNm (ns,HNm (show n ++ p))
+%%]
+
+%%[8
+hsnToFPath :: HsName -> FPath
+hsnToFPath n
+  = mkFPathFromDirsFile qs b
+  where (qs,b) = hsnInitLast n
+
+instance FPATH HsName where
+  mkFPath = hsnToFPath
+%%]
+
+
+
+-- replace this by something better, taking into account qualifiers
+%%[10
+hsnConcat                           ::  HsName -> HsName -> HsName
+hsnConcat       h1    h2            =   HNm (show h1 ++ show h2)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% HsName & module related
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+hsnQualified :: HsName -> HsName
+hsnQualified = snd . hsnInitLast
+
+hsnQualifier :: HsName -> Maybe HsName
+hsnQualifier n
+  = case hsnInitLast n of
+  	  ([],_) -> Nothing
+  	  (ns,_) -> Just (mkHNm ns)
+
+hsnPrefixQual :: HsName -> HsName -> HsName
+hsnPrefixQual m n = mkHNm (hsnToList m ++ hsnToList n)
+
+hsnSetQual :: HsName -> HsName -> HsName
+hsnSetQual m = hsnPrefixQual m . hsnQualified
+
+hsnIsQual :: HsName -> Bool
+hsnIsQual = isJust . hsnQualifier
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Make HsName of something
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+class HSNM a where
+  mkHNm :: a -> HsName
+
+instance HSNM HsName where
+  mkHNm = id
+
+instance HSNM Int where
+  mkHNm = mkHNm . show
+
+%%]
+
+%%[1.HSNM.String
+instance HSNM String where
+  mkHNm s = HNm s
+%%]
+
+%%[8.HSNM.String -1.HSNM.String
+instance HSNM String where
+  mkHNm s
+    = mkHNm $ map HNm $ ws'
+    where ws  = wordsBy (=='.') s
+          ws' = case initlast2 ws of
+                  Just (ns,"","") -> ns ++ ["."]
+                  _               -> ws
+%%]
+
+%%[8
+instance HSNM ([HsName],HsName) where
+  mkHNm (l,n) = mkHNm (l ++ [n])
+
+instance HSNM [HsName] where
+  mkHNm [n] = n
+  mkHNm []  = HNm "" -- ????, or empty alternative of HsName
+  mkHNm ns  = HNmQ ns
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell names, constants
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
 strProd :: Int -> String
@@ -263,17 +383,6 @@ positionalFldNames                  =   map HNPos [1..]
 %%]
 
 %%[8
-hsnPrefix                           ::  String -> HsName -> HsName
-hsnPrefix   p   hsn                 =   HNm (p ++ show hsn)
-
-hsnSuffix                           ::  HsName -> String -> HsName
-hsnSuffix       hsn   p             =   HNm (show hsn ++ p)
-
-hsnConcat                           ::  HsName -> HsName -> HsName
-hsnConcat       h1    h2            =   HNm (show h1 ++ show h2)
-%%]
-
-%%[8
 hsnFloat                            =   HNm "Float"
 %%]
 
@@ -300,35 +409,6 @@ hsnDynVar                           =   HNm "?"
 %%[99
 hsnInteger                          =   HNm "Integer"
 hsnDouble                           =   HNm "Double"
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Make HsName of something
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1
-class HSNM a where
-  mkHNm :: a -> HsName
-
-instance HSNM HsName where
-  mkHNm = id
-
-instance HSNM Int where
-  mkHNm = mkHNm . show
-
-%%]
-
-%%[1.HSNM.String
-instance HSNM String where
-  mkHNm s = HNm s
-%%]
-
-%%[8.HSNM.String -1.HSNM.String
-instance HSNM String where
-  mkHNm s
-    = mk $ map HNm $ wordsBy (=='.') $ s
-    where mk [n] = n
-          mk ns  = HNmQ ns
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -490,6 +570,11 @@ class SemApp a where
   mk1Arrow          ::  a -> a -> a
   mkArrow           ::  [a] -> a -> a
 %%]
+%%[1
+  mkRngApp          ::  Range -> [a] -> a
+  mkRngVar          ::  HSNM n => Range -> n -> a
+  mkRngCon          ::  HSNM n => Range -> n -> a
+%%]
 %%[1.SemApp.default
   mkApp as          =   case as of  [a]  ->  a
                                     _    ->  semAppTop (foldl1 semApp as)
@@ -499,6 +584,9 @@ class SemApp a where
   mkProdApp  as     =   mkConApp (hsnProd (length as)) as
   mk1Arrow   a r    =   mkApp [semCon hsnArrow,a,r]
   mkArrow           =   flip (foldr mk1Arrow)
+%%]
+%%[1
+  mkRngApp _        =   mkApp
 %%]
 class SemApp a where
   semApp            ::  a -> a -> a
@@ -562,10 +650,10 @@ mkArrow = flip (foldr mk1Arrow)
 ppAppTop :: PP arg => (HsName,arg) -> [arg] -> PP_Doc -> PP_Doc
 ppAppTop (conNm,con) args dflt
   =  if       hsnIsArrow conNm  then  ppListSep "" "" (" " >|< con >|< " ") args
-     else if  hsnIsProd  conNm  then  ppListSep "(" ")" "," args
+     else if  hsnIsProd  conNm  then  ppParensCommas args
 %%]
 %%[5
-     else if  hsnIsList  conNm  then  ppListSep "[" "]" "," args
+     else if  hsnIsList  conNm  then  ppBracketsCommas args
 %%]
 %%[7
      else if  hsnIsRec   conNm  then  ppListSep (hsnORec >|< con) hsnCRec "," args
@@ -576,10 +664,11 @@ ppAppTop (conNm,con) args dflt
                                 else  dflt
 %%]
 
-%%[1.PP.NeededByExpr
+-- ppListSep to EH.Util
 ppListSep :: (PP s, PP c, PP o, PP a) => o -> c -> s -> [a] -> PP_Doc
 ppListSep o c s pps = o >|< hlist (intersperse (pp s) (map pp pps)) >|< c
 
+%%[1.PP.NeededByExpr
 ppCon :: HsName -> PP_Doc
 ppCon nm =  if    hsnIsProd nm
             then  pp_parens (text (replicate (hsnProdArity nm - 1) ','))
@@ -589,9 +678,10 @@ ppCmt :: PP_Doc -> PP_Doc
 ppCmt p = "{-" >#< p >#< "-}"
 %%]
 
-%%[1.PP.Rest
+-- ppCommaList now in EH.Util lib
 ppCommaList :: PP a => [a] -> PP_Doc
 ppCommaList = ppListSep "[" "]" ","
+%%[1.PP.Rest
 
 ppSpaced :: PP a => [a] -> PP_Doc
 ppSpaced = ppListSep "" "" " "
@@ -629,7 +719,7 @@ instance PP Bool where
 
 %%[9
 instance (PP a, PP b) => PP (a,b) where
-  pp (a,b) = ppListSep "(" ")" "," [pp a,pp b]
+  pp (a,b) = ppParensCommas' [pp a,pp b]
 %%]
 
 %%[8
@@ -657,25 +747,14 @@ ppListV = vlist . map pp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-putWidthPPLn :: Int -> PP_Doc -> IO ()
-putWidthPPLn w pp = putStrLn (disp pp w "")
-
-putPPLn :: PP_Doc -> IO ()
-putPPLn = putWidthPPLn 4000
-
 putCompileMsg :: Verbosity -> Verbosity -> String -> Maybe String -> HsName -> FPath -> IO ()
 putCompileMsg v optsVerbosity msg mbMsg2 modNm fNm
-  = if optsVerbosity >= v 
+  = if optsVerbosity >= v
     then putStrLn (strBlankPad 25 msg ++ " " ++ strBlankPad 15 (show modNm) ++ " (" ++ fpathToStr fNm ++ maybe "" (\m -> ", " ++ m) mbMsg2 ++ ")")
     else return ()
+%%]
 
-putPPFile :: String -> PP_Doc -> Int -> IO ()
-putPPFile fn pp wid
-  =  do  {  h <- openFile fn WriteMode
-         ;  hPutStrLn h (disp pp wid "")
-         ;  hClose h
-         }
-
+%%[8
 openFPath :: FPath -> IOMode -> IO (String, Handle)
 openFPath fp mode | fpathIsEmpty fp = case mode of
                                         ReadMode      -> return ("<stdin>" ,stdin )
@@ -930,3 +1009,44 @@ data Verbosity
   = VerboseQuiet | VerboseNormal | VerboseALot
   deriving (Eq,Ord)
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fixity
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+data Fixity
+  = Fixity_Infix | Fixity_Infixr | Fixity_Infixl
+  deriving (Eq,Ord,Show)
+
+instance PP Fixity where
+  pp Fixity_Infix  = pp "infix"
+  pp Fixity_Infixl = pp "infixl"
+  pp Fixity_Infixr = pp "infixr"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Range
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+data Range = Range_Range Pos Pos | Range_Unknown
+
+emptyRange :: Range
+emptyRange = Range_Unknown
+
+mkPos :: Position p => p -> Pos
+mkPos p = Pos (line p) (column p) (file p)
+
+mkRange1 :: Position p => p -> Range
+mkRange1 p = Range_Range (mkPos p) noPos
+
+mkRange2 :: Position p => p -> p -> Range
+mkRange2 p1 p2 = Range_Range (mkPos p1) (mkPos p2)
+%%]
+
+%%[1
+rngLift :: Range -> v -> v
+rngLift r v = v
+%%]
+rngLift :: Range -> (Range -> v) -> v

@@ -85,6 +85,9 @@ DATA ImportDeclaration
     | Empty
         range                    : Range
 
+SET AllImportDeclaration
+  = ImportDeclaration ImportDeclarations
+
 TYPE MaybeImportSpecification    = MAYBE ImportSpecification
 
 DATA ImportSpecification
@@ -92,6 +95,9 @@ DATA ImportSpecification
         range                    : Range
         hiding                   : Bool
         imports                  : Imports
+
+SET AllImportSpecification
+  = ImportSpecification MaybeImportSpecification
 
 TYPE Imports                     = [ Import ] 
 
@@ -115,8 +121,8 @@ SET AllModule
   = Module Body
 %%]
 %%[8
-    ImportDeclaration ImportDeclarations Import Imports
-    MaybeImportSpecification ImportSpecification
+    AllImportDeclaration Import Imports
+    AllImportSpecification
     Export Exports MaybeExports
 %%]
 
@@ -172,7 +178,7 @@ DATA Declaration                                  {- *** -}
 %%]
 %%[5
         simpletype               : SimpleType
-        constructor              : Constructor  -- has only one field, no strictness
+        constructors             : Constructor  -- has only one field, no strictness
 %%]
 %%[9
         derivings                : Names
@@ -224,7 +230,7 @@ DATA Declaration                                  {- *** -}
         type                     : Type
 %%]
 
-%%[1
+%%[90
 DATA Fixity
     | Infixl
         range                    : Range
@@ -246,7 +252,10 @@ DATA FunctionalDependency
 
 %%[1
 SET AllDeclaration
-  = Declaration Declarations MaybeDeclarations Fixity
+  = Declaration Declarations MaybeDeclarations
+%%]
+%%[90
+    Fixity
 %%]
 %%[9
     FunctionalDependency FunctionalDependencies
@@ -435,6 +444,11 @@ DATA Constructor
         fieldDeclarations        : FieldDeclarations
 %%]
 
+%%[5
+SET AllConstructor
+  = Constructor Constructors
+%%]
+
 %%[7
 TYPE FieldDeclarations           = [ FieldDeclaration ]
 
@@ -442,7 +456,10 @@ DATA FieldDeclaration
     | FieldDeclaration
         range                    : Range
         names                    : Names
-        type                     : AnnotatedType        
+        type                     : AnnotatedType
+
+SET AllFieldDeclaration
+  = FieldDeclaration FieldDeclarations
 %%]
 
 %%[5
@@ -461,11 +478,12 @@ SET AllType
 %%]
 %%[5
     SimpleType
-    Constructor Constructors
+    AllConstructor
     AnnotatedType AnnotatedTypes
 %%]
 %%[7
-    FieldDeclaration FieldDeclarations
+    AllFieldDeclaration
+    RowTypeUpdate RowTypeUpdates
 %%]
 %%[77
     RowExtension RowExtensions RowType
@@ -500,11 +518,19 @@ DATA Expression                                   {- *** -}
         range                    : Range
         function                 : Expression
         arguments                : Expressions
-    | InfixApplication
+    | SectionApplication
         range                    : Range
         leftExpression           : MaybeExpression
         operator                 : Expression
         rightExpression          : MaybeExpression
+    | InfixApplication
+        range                    : Range
+        leftExpression           : Expression
+        operator                 : Expression
+        rightExpression          : Expression
+    | InfixApplicationChainTop
+        range                    : Range
+        expression               : Expression
     | Lambda                           {- *** -}
         range                    : Range
         patterns                 : Patterns
@@ -604,7 +630,7 @@ DATA Expression                                   {- *** -}
 --   o "(+) 2 3" as
 --     
 --     Expression_NormalApplication
---       (Expression_InfixApplication 
+--       (Expression_SectionApplication 
 --          Nothing (Name_Operator [] "+") Nothing)
 --       [Expression_Literal (Literal_Int "2")
 --       ,Expression_Literal (Literal_Int "3")]
@@ -620,7 +646,7 @@ DATA Expression                                   {- *** -}
 --   o "(+3) 2" as
 --
 --     Expression_NormalApplication
---       (Expression_InfixApplication
+--       (Expression_SectionApplication
 --          Nothing (Name_Operator [] "+") 
 --          (Just (Expression_Literal (Literal_Int "3"))))
 --       [Expression_Literal (Literal_Int "2")]
@@ -628,7 +654,7 @@ DATA Expression                                   {- *** -}
 --   o "(2+) 3" as
 --
 --     Expression_NormalApplication
---       (Expression_InfixApplication
+--       (Expression_SectionApplication
 --          (Just (Expression_Literal (Literal_Int "2")))
 --          (Name_Operator [] "+") Nothing)
 --       [Expression_Literal (Literal_Int "3")]
@@ -650,7 +676,7 @@ DATA Expression                                   {- *** -}
 --   o "(`mod` 2) 5" as
 --
 --     Expression_NormalApplication
---       (Expression_InfixApplication
+--       (Expression_SectionApplication
 --          Nothing (Name_Identifier [] "mod") 
 --          (Just (Expression_Literal (Literal_Int "2"))))
 --       [Expression_Literal (Literal_Int "5")]
@@ -658,7 +684,7 @@ DATA Expression                                   {- *** -}
 --   o "(5 `mod`) 2" as
 --
 --     Expression_NormalApplication
---       (Expression_InfixApplication
+--       (Expression_SectionApplication
 --          (Just (Expression_Literal (Literal_Int "5")))
 --          (Name_Identifier [] "mod") Nothing)
 --       [Expression_Literal (Literal_Int "2")]
@@ -690,7 +716,7 @@ DATA Expression                                   {- *** -}
 --
 --   o "(2-)" as
 --
---     Expression_InfixApplication
+--     Expression_SectionApplication
 --       (Just (Expression_Literal (Literal_Int "2")))
 --       (Name_Operator [] "-") Nothing
 --
@@ -792,11 +818,17 @@ DATA RowRecordExpressionUpdate
 
 TYPE RowRecordPatternBindings    = [ RowRecordPatternBinding ]
 
+SET AllRowRecordExpressionUpdate
+  = RowRecordExpressionUpdate RowRecordExpressionUpdates
+
 DATA RowRecordPatternBinding
     | Binding
         range                    : Range
         name                     : MaybeName
         pattern                  : Pattern
+
+SET AllRowRecordPatternBinding
+  = RowRecordPatternBinding RowRecordPatternBindings
 
 TYPE RowTypeUpdates              = [ RowTypeUpdate ]
 
@@ -826,6 +858,9 @@ DATA FunctionBinding
         lefthandside             : LeftHandSide
         righthandside            : RightHandSide
 
+SET AllFunctionBinding
+  = FunctionBinding FunctionBindings
+
 DATA LeftHandSide
     | Function
         range                    : Range
@@ -854,30 +889,31 @@ DATA RightHandSide
         where                    : MaybeDeclarations
 %%]
 
+%%[5
+SET AllGuardedExpression
+  = GuardedExpression GuardedExpressions
+%%]
+
 %%[1
 SET AllExpression
   = Expression Expressions MaybeExpression
-    FunctionBinding FunctionBindings
+    AllFunctionBinding
     LeftHandSide RightHandSide
 %%]
 %%[5
     Alternative Alternatives
-    GuardedExpression GuardedExpressions
+    AllGuardedExpression
     Qualifier Qualifiers
 %%]
 %%[7
     RecordExpressionBinding RecordExpressionBindings
-    RowRecordExpressionUpdate RowRecordExpressionUpdates
-    RowRecordPatternBinding RowRecordPatternBindings
-    RowTypeUpdate RowTypeUpdates
+    AllRowRecordExpressionUpdate
 %%]
 %%[77
     RecordPatternBinding RecordPatternBindings
 %%]
 %%[9
     ContextedExpression ContextedExpressions
-%%]
-%%[9
     Statement Statements
 %%]
 
@@ -977,6 +1013,9 @@ DATA ContextedPattern
 SET AllPattern
   = Pattern Patterns
 %%]
+%%[7
+    AllRowRecordPatternBinding
+%%]
 %%[9
     ContextedPattern ContextedPatterns
 %%]
@@ -1042,12 +1081,6 @@ DATA Name                                         {- *** -}
 
 %%[1
 TYPE Strings                     = [ String ]
-
-DATA Range
-    | Range
-        start                    : Pos
-        stop                     : Pos
-    | Unknown
 %%]
 TYPE MaybeString                 = MAYBE String
 TYPE MaybeInt                    = MAYBE Int
@@ -1108,8 +1141,10 @@ Documented Design Decisions:
         <>    hierarchical module names
         <>    Haskell toplevel declarations everywhere
 
-  o    `Expression_InfixApplication' is used to store sections and
+  o    `Expression_InfixApplication' is used to store
        prefixed operators.
+
+  o    `Expression_SectionApplication' is used to store sections.
 
   o    General where rule: A "where" with no declarations is represented
        as "Just []". A missing "where" clause is represented as "Nothing".

@@ -70,7 +70,8 @@ trfOptOverrides opts trf
 %%[1.EHCOpts
 data EHCOpts
   = EHCOpts
-      {  ehcOptShowEH         ::  Bool
+      {  ehcOptShowHS         ::  Bool
+      ,  ehcOptShowEH         ::  Bool
       ,  ehcOptShowAst        ::  Bool
       ,  ehcOptShowTopTyPP    ::  Bool
       ,  ehcOptHelp           ::  Bool
@@ -83,6 +84,7 @@ data EHCOpts
       ,  ehcOptTimeCompile    ::  Bool
       ,  ehcOptGenTrace       ::  Bool
       ,  ehcOptShowGrin       ::  Bool
+      ,  ehcOptEmitHS         ::  Bool
       ,  ehcOptEmitEH         ::  Bool
       ,  ehcOptEmitCore       ::  Bool
       ,  ehcOptEmitJava       ::  Bool
@@ -103,7 +105,8 @@ data EHCOpts
 %%[1.defaultEHCOpts
 defaultEHCOpts
   = EHCOpts
-      {  ehcOptShowEH         =   True
+      {  ehcOptShowHS         =   False
+      ,  ehcOptShowEH         =   True
       ,  ehcOptShowAst        =   False
       ,  ehcOptShowTopTyPP    =   False
       ,  ehcOptHelp           =   False
@@ -116,6 +119,7 @@ defaultEHCOpts
       ,  ehcOptTimeCompile    =   False
       ,  ehcOptGenTrace       =   False
       ,  ehcOptShowGrin       =   False
+      ,  ehcOptEmitHS         =   False
       ,  ehcOptEmitEH         =   False
       ,  ehcOptEmitCore       =   True
       ,  ehcOptEmitJava       =   False
@@ -123,7 +127,7 @@ defaultEHCOpts
       ,  ehcOptEmitCmm        =   False
       ,  ehcOptEmitLlc        =   False
       ,  ehcOptSearchPath     =   []
-      ,  ehcOptVerbosity      =   VerboseNormal
+      ,  ehcOptVerbosity      =   VerboseQuiet
       ,  ehcOptTrf            =   []
 %%]
 %%[9.defaultEHCOpts
@@ -135,8 +139,8 @@ defaultEHCOpts
 
 %%[1.ehcCmdLineOptsA
 ehcCmdLineOpts  
-  =  [  Option "p"  ["pretty"]        (OptArg oPretty "eh|grin|ast|-")
-          "show pretty printed EH/Grin source or EH abstract syntax tree, default=eh, -=off"
+  =  [  Option "p"  ["pretty"]        (OptArg oPretty "hs|eh|grin|ast|-")
+          "show pretty printed EH/Grin source or EH abstract syntax tree, default=eh, -=off, (hs only for .hs files)"
      ,  Option "d"  ["debug"]         (NoArg oDebug)
           "show extra debug information"
      ,  Option ""   ["show-top-ty"]   (OptArg oShowTopTy "yes|no")
@@ -170,7 +174,9 @@ ehcCmdLineOpts
                                 Just "-"     -> o { ehcOptShowEH       = False     }
                                 Just "no"    -> o { ehcOptShowEH       = False     }
                                 Just "off"   -> o { ehcOptShowEH       = False     }
+                                Just "hs"    -> o { ehcOptShowHS       = True      }
                                 Just "eh"    -> o { ehcOptShowEH       = True      }
+                                Just "pp"    -> o { ehcOptShowEH       = True      }
                                 Just "ast"   -> o { ehcOptShowAst      = True      }
 %%]
 %%[8.ehcCmdLineOptsB
@@ -183,7 +189,9 @@ ehcCmdLineOpts
                                 _           -> o
          oHelp           o =  o { ehcOptHelp          = True    }
          oVersion        o =  o { ehcOptVersion       = True    }
-         oDebug          o =  (oPretty (Just "ast") o) { ehcOptDebug         = True    }
+         oDebug          o =  o { ehcOptDebug         = True
+                                , ehcOptShowEH        = True
+                                }
 %%]
 %%[8.ehcCmdLineOptsB
          oTimeCompile    o =  o { ehcOptTimeCompile       = True    }
@@ -192,6 +200,7 @@ ehcCmdLineOpts
          oDumpCallGraph  o =  o { ehcOptDumpCallGraph     = True }
          oCode       ms  o =  case ms of
                                 Just "-"     -> o { ehcOptEmitCore     = False     }
+                                Just "hs"    -> o { ehcOptEmitHS       = True      }
                                 Just "eh"    -> o { ehcOptEmitEH       = True      }
                                 Just "core"  -> o { ehcOptEmitCore     = True      }
                                 Just "java"  -> o { ehcOptEmitJava     = True      }

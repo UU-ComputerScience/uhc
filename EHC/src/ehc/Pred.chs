@@ -7,7 +7,7 @@
 %%% Pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 module {%{EH}Pred} import(Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty)
+%%[9 module {%{EH}Pred} import(Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty,EH.Util.PPUtils)
 %%]
 
 %%[9 import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Quantify},{%{EH}Core},{%{EH}Core.Pretty},{%{EH}Core.Subst},{%{EH}Base.Common},{%{EH}Gam},{%{EH}Cnstr},{%{EH}Substitutable})
@@ -153,10 +153,10 @@ instance Show ProvenNode where
   show _ = ""
 
 instance PP ProvenNode where
-  pp (ProvenOr  pr es c         )   = "OR:"    >#< "pr=" >|< pp pr >#< "edges=" >|< ppCommaList es                                      >#< "cost=" >|< pp c
-  pp (ProvenAnd pr es les c ev  )   = "AND:"   >#< "pr=" >|< pp pr >#< "edges=" >|< ppCommaList es >#< "lamedges=" >|< ppCommaList les  >#< "cost=" >|< pp c >#< "evid=" >|< pp ev
-  pp (ProvenShare pr e          )   = "SHARE:" >#< "pr=" >|< pp pr >#< "edge="  >|< ppCommaList [e]
-  pp (ProvenArg pr c            )   = "ARG:"   >#< "pr=" >|< pp pr                                                                      >#< "cost=" >|< pp c
+  pp (ProvenOr  pr es c         )   = "OR:"    >#< "pr=" >|< pp pr >#< "edges=" >|< ppBracketsCommas es                                           >#< "cost=" >|< pp c
+  pp (ProvenAnd pr es les c ev  )   = "AND:"   >#< "pr=" >|< pp pr >#< "edges=" >|< ppBracketsCommas es >#< "lamedges=" >|< ppBracketsCommas les  >#< "cost=" >|< pp c >#< "evid=" >|< pp ev
+  pp (ProvenShare pr e          )   = "SHARE:" >#< "pr=" >|< pp pr >#< "edge="  >|< ppBracketsCommas [e]
+  pp (ProvenArg pr c            )   = "ARG:"   >#< "pr=" >|< pp pr                                                                                >#< "cost=" >|< pp c
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -193,7 +193,7 @@ instance PP ProvenGraph where
        >-< "Id->Nd   :" >#< ppAssocLV (Map.toList i2n)
        >-< "Pr->Orig :" >#< pp2i p2oi
        >-< "Pr->Facts:" >#< pp2i p2fi
-    where pp2i = ppAssocLV . assocLMapElt ppCommaList . Map.toList
+    where pp2i = ppAssocLV . assocLMapElt ppBracketsCommas . Map.toList
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -527,7 +527,7 @@ instance Show ProofState where
 instance PP ProofState where
   pp s = "PrfSt:" >#<  (pp (prfs2ProvenGraph s)
                        >-< pp (prfs2Uniq s)
-                       >-< ppCommaList (prfs2PredsToProve s)
+                       >-< ppBracketsCommas (prfs2PredsToProve s)
                        )
 %%]
 
@@ -551,7 +551,7 @@ prfsAddPrOccL prOccL depth st
 data ClsFuncDep = ClsFuncDep [Int] [Int] deriving Show
 
 instance PP ClsFuncDep where
-  pp (ClsFuncDep f t) = ppCommaList f >|< "->" >|< ppCommaList t
+  pp (ClsFuncDep f t) = ppBracketsCommas f >|< "->" >|< ppBracketsCommas t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -589,7 +589,7 @@ instance Show Rule where
   show r = show (rulNmEvid r) ++ "::" ++ show (rulRuleTy r)
 
 instance PP Rule where
-  pp r = pp (rulRuleTy r) >#< ":>" >#< pp (rulNmEvid r) >|< "/" >|< pp (rulId r) >#< "|" >|< ppCommaList (rulFuncDeps r)
+  pp r = pp (rulRuleTy r) >#< ":>" >#< pp (rulNmEvid r) >|< "/" >|< pp (rulId r) >#< "|" >|< ppBracketsCommas (rulFuncDeps r)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -631,7 +631,7 @@ instance Substitutable TyVarId (CnstrInfo Ty) PrElimGamInfo where
   ftv    pegi = ftv (pegiRuleL pegi)
 
 instance PP PrElimGamInfo where
-  pp pegi = ppCommaList (pegiRuleL pegi)
+  pp pegi = ppBracketsCommas (pegiRuleL pegi)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

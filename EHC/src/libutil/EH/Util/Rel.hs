@@ -1,0 +1,70 @@
+module EH.Util.Rel
+  ( Rel
+  , empty
+  , toList, fromList, singleton
+  , dom, rng
+  , restrictDom, restrictRng
+  , mapDom, mapRng
+  , partitionDom
+  , intersection, difference, union, unions
+  , apply
+  )
+  where
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+
+-------------------------------------------------------------------------
+-- Relation
+-------------------------------------------------------------------------
+
+type Rel a b = Set.Set (a,b)
+
+toList :: Rel a b -> [(a,b)]
+toList = Set.toList
+
+fromList :: (Ord a, Ord b) => [(a,b)] -> Rel a b
+fromList = Set.fromList
+
+singleton :: (Ord a, Ord b) => a -> b -> Rel a b
+singleton a b = fromList [(a,b)]
+
+empty :: Rel a b
+empty = Set.empty
+
+dom :: (Ord a, Ord b) => Rel a b -> Set.Set a
+dom = Set.map fst
+
+rng :: (Ord a, Ord b) => Rel a b -> Set.Set b
+rng = Set.map snd
+
+restrictDom :: (Ord a, Ord b) => (a -> Bool) -> Rel a b -> Rel a b
+restrictDom p = Set.filter (p . fst)
+
+restrictRng :: (Ord a, Ord b) => (b -> Bool) -> Rel a b -> Rel a b
+restrictRng p = Set.filter (p . snd)
+
+mapDom :: (Ord a, Ord b, Ord x) => (a -> x) -> Rel a b -> Rel x b
+mapDom f = Set.map (\(a,b) -> (f a,b))
+
+mapRng :: (Ord a, Ord b, Ord x) => (b -> x) -> Rel a b -> Rel a x
+mapRng f = Set.map (\(a,b) -> (a,f b))
+
+partitionDom :: (Ord a, Ord b) => (a -> Bool) -> Rel a b -> (Rel a b,Rel a b)
+partitionDom f = Set.partition (f . fst)
+
+intersection :: (Ord a, Ord b) => Rel a b -> Rel a b -> Rel a b
+intersection = Set.intersection
+
+difference :: (Ord a, Ord b) => Rel a b -> Rel a b -> Rel a b
+difference = Set.difference
+
+union :: (Ord a, Ord b) => Rel a b -> Rel a b -> Rel a b
+union = Set.union
+
+unions :: (Ord a, Ord b) => [Rel a b] -> Rel a b
+unions = Set.unions
+
+apply :: (Ord a, Ord b) => Rel a b -> a -> [b]
+apply r a = Set.toList $ rng $ restrictDom (==a) $ r
+

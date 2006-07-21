@@ -11,7 +11,7 @@ module ViewSelPrettyPrint
 -- import qualified Data.Set as Set
 import UU.Pretty
 import EH.Util.Nm
--- import DpdGr
+-- import EH.Util.DependencyGraph
 import ViewSel
 }
 
