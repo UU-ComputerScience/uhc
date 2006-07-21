@@ -930,4 +930,3 @@ data Verbosity
   = VerboseQuiet | VerboseNormal | VerboseALot
   deriving (Eq,Ord)
 %%]
-

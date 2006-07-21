@@ -199,6 +199,3 @@ SEM GrSplitL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
   | Nil         lhs         .   ppL         =   []
 %%]
-
-
-
