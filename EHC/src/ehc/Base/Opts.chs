@@ -361,5 +361,3 @@ fioIsSubsume fio =  case fioMode fio of {FitSubLR -> True ; _ -> False}
 fioIsMeetJoin :: FIOpts -> Bool
 fioIsMeetJoin fio =  case fioMode fio of {FitMeet -> True ; FitJoin -> True ; _ -> False}
 %%]
-
-

@@ -327,3 +327,4 @@ cpHandle1 rest first
                                 ; hFlush stderr
                                 }
         failOrNot es = if creAreFatal es then cpSetFail else rest
+
