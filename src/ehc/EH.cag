@@ -13,7 +13,7 @@
 %%[1 hs export(AGItf(..), Decl(..), Decls, TyExpr(..), Expr(..), PatExpr(..))
 %%]
 
-%%[1 hs import({%{EH}HS}(Range)) export(mkRngEH)
+%%[1 hs import({%{EH}HS}(Range))
 %%]
 
 %%[1 hs export(mkLet)
@@ -50,11 +50,6 @@
 %%% Utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs
-mkRngEH :: r -> v -> v
-mkRngEH r v = v
-%%]
-mkRngEH :: r -> (r -> v) -> v
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Constructing
@@ -64,13 +59,13 @@ mkRngEH :: r -> (r -> v) -> v
 mkLet :: Range -> Maybe [Decl] -> Expr -> Expr
 mkLet r md e
   = case md of
-      Just d@(_:_) -> mkRngEH r Expr_Let d e
+      Just d@(_:_) -> rngLift r Expr_Let d e
       _            -> e
 %%]
 
 %%[9 hs
 mkUnit :: Range -> Expr
-mkUnit r = mkRngEH r Expr_Rec (mkRngEH r RecExpr_Empty)
+mkUnit r = rngLift r Expr_Rec (rngLift r RecExpr_Empty)
 %%]
 mkUnit :: Range -> Expr
 mkUnit _ = semCon (hsnProd 0)
@@ -78,18 +73,18 @@ mkUnit _ = semCon (hsnProd 0)
 %%[5 hs
 mkError':: HsName -> Range -> String -> Expr
 mkError' e r m
-  = mkApp [mkRngEH r Expr_Var e,mkStr r (show r ++ ": " ++ m)]
+  = mkApp [rngLift r Expr_Var e,mkStr r (show r ++ ": " ++ m)]
 
 mkError :: Range -> String -> Expr
 mkError = mkError' hsnError
 
 mkStr :: Range -> String -> Expr
 mkStr r s
-  = mkRngEH r Expr_SConst s
+  = rngLift r Expr_SConst s
 
 mkCase :: Range -> Expr -> [(PatExpr,Expr)] -> Expr
 mkCase r c as
-  = mkRngEH r Expr_Case c [ CaseAlt_Pat p e | (p,e) <- as ]
+  = rngLift r Expr_Case c [ CaseAlt_Pat p e | (p,e) <- as ]
 
 mkIf :: Range -> Expr -> Expr -> Expr -> Expr
 mkIf r c t e
@@ -110,6 +105,8 @@ instance SemApp Expr where
   semAppTop    = Expr_AppTop
   semCon       = Expr_Con . mkHNm
   semParens    = Expr_Parens
+  mkRngCon _   = Expr_Con . mkHNm
+  mkRngVar _   = Expr_Var . mkHNm
 %%]
 
 %%[1 hs
@@ -118,6 +115,8 @@ instance SemApp PatExpr where
   semAppTop    = PatExpr_AppTop
   semCon       = PatExpr_Con . mkHNm
   semParens    = PatExpr_Parens
+  mkRngCon _   = PatExpr_Con . mkHNm
+  mkRngVar _   = PatExpr_Var . mkHNm
 %%]
 
 %%[1 hs
@@ -126,6 +125,13 @@ instance SemApp TyExpr where
   semAppTop    = TyExpr_AppTop
   semCon       = TyExpr_Con . mkHNm
   semParens    = TyExpr_Parens
+  mkRngCon _   = TyExpr_Con . mkHNm
+%%]
+%%[1.mkRngVar hs
+  mkRngVar     = mkRngCon
+%%]
+%%[3 -1.mkRngVar hs
+  mkRngVar _   = TyExpr_Var . mkHNm
 %%]
 
 %%[6 hs
@@ -134,5 +140,7 @@ instance SemApp KiExpr where
   semAppTop    = KiExpr_AppTop
   semCon       = KiExpr_Con . mkHNm
   semParens    = KiExpr_Parens
+  mkRngCon _   = KiExpr_Con . mkHNm
+  mkRngVar _   = KiExpr_Var . mkHNm
 %%]
 

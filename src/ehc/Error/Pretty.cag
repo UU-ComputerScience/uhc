@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Error pretty print
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}Error.Pretty} import(Data.List, UU.Pretty, {%{EH}Base.Common}, {%{EH}Ty}, {%{EH}Ty.Pretty}, {%{EH}Error}) export(ppErr, ppErrs,ppErrL)
+%%[1 hs module {%{EH}Error.Pretty} import(Data.List, UU.Pretty, EH.Util.Utils, EH.Util.PPUtils, {%{EH}Base.Common}, {%{EH}Ty}, {%{EH}Ty.Pretty}, {%{EH}Error}) export(ppErr, ppErrs,ppErrL)
 %%]
 
 %%[8 hs import(EH.Util.ParseErrPrettyPrint hiding (ppErr)) export(mkPPErr)
@@ -94,7 +94,7 @@ ATTR ErrL [ | | ppL: {[PP_Doc]} ]
 SEM Err
   | UnifyClash          lhs     .  pp   =   ppUnifyErr  "Type clash"
                                                         @ty1 @ty2 @ty1detail @ty2detail
-  | NamesNotIntrod      lhs     .  pp   =   ppMsgErr    "Names not introduced"
+  | NamesNotIntrod      lhs     .  pp   =   ppMsgErr    (strCapitalize @kind ++ " names not introduced")
                                                         (ppListSep "" "" ", " @nmL)
   | NamesDupIntrod      lhs     .  pp   =   ppMsgErr    "Names introduced more than once"
                                                         (ppListSep "" "" ", " @nmL)
@@ -115,6 +115,11 @@ SEM ErrL
 %%[1.MissingSig
 SEM Err
   | MissingSig          lhs     .  pp   =   ppMsgErr    "Missing sig for" (@wher)
+%%]
+
+%%[1.HS
+SEM Err
+  | Fixity              lhs     .  pp   =   ppMsgErr    "Fixity mismatch between" (ppListSep "" "" ", " [@op1,@op2])
 %%]
 
 %%[2 -1.MissingSig
@@ -155,12 +160,12 @@ SEM Err
                                                         (    "file name         :" >#< @fileName
                                                          >-< "searched locations:" >#< vlist (map (text.show) @locations)
                                                         )
+  | AmbiguousExport     lhs     .  pp   =   ppMsgErr    "Ambiguous export"
+                                                        (    "name   :" >#< @name
+                                                         >-< "exports:" >#< ppCommas @entities
+                                                        )
   | PP                  lhs     .  pp   =   @pp
 %%]
-  | Parse               lhs     .  pp   =   ppMsgErr    "Parse error"
-                                                        (    "expecting  :" >#< text @expecting
-                                                         >-< "repaired by:" >#< text @repaired
-                                                        )
 
 %%[9
 SEM Err
@@ -169,10 +174,10 @@ SEM Err
                                                          >-< "pred :" >#< pp @pred
                                                         )
   | NotProvenPreds      lhs     .  pp   =   ppMsgErr    "Predicates did remain unproven"
-                                                        (    "preds:" >#< ppCommaList @preds
+                                                        (    "preds:" >#< ppBracketsCommas @preds
                                                         )
   | OverlapPreds        lhs     .  pp   =   ppMsgErr    "Proof for predicates did overlap"
-                                                        (    vlist . map (\(p,evs) -> p >#< ":" >#< ppCommaList evs) $ @overl
+                                                        (    vlist . map (\(p,evs) -> p >#< ":" >#< ppBracketsCommas evs) $ @overl
                                                         )
   | TyHasFreeTVars      lhs     .  pp   =   ppMsgErr    "Type has free type vars (not allowed)"
                                                         (    "type:" >#< pp @ty

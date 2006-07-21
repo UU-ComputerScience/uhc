@@ -5,6 +5,7 @@ import Data.Maybe
 import Data.Char
 import Data.List
 import UU.Pretty
+import EH.Util.FPath(FPATH(mkFPath))
 import EH.Util.Utils
 import EH.Util.PPUtils
 
@@ -133,4 +134,9 @@ instance NM String where
 instance NM Int where
   mkNm = mkNm . show
 
+-------------------------------------------------------------------------
+-- Make FPath of Nm
+-------------------------------------------------------------------------
 
+instance FPATH Nm where
+  mkFPath = mkFPath . show

@@ -3,6 +3,7 @@ module EH.Util.Utils where
 import UU.Pretty
 import Data.Char
 import Data.List
+import qualified Data.Set as Set
 import Debug.Trace
 
 -------------------------------------------------------------------------
@@ -17,6 +18,13 @@ mkTexCmdUse cmd nm = "\\" >|< pp cmd >|< "{" >|< pp nm >|< "}"
 
 mkTexCmdUse' :: (PP cmd, PP a) => cmd -> a -> PP_Doc
 mkTexCmdUse' cmd nm = mkTexCmdUse cmd nm >|< "%"
+
+-------------------------------------------------------------------------
+-- Set
+-------------------------------------------------------------------------
+
+unionMapSet :: Ord b => (a -> Set.Set b) -> (Set.Set a -> Set.Set b)
+unionMapSet f = Set.unions . map f . Set.toList
 
 -------------------------------------------------------------------------
 -- Misc
@@ -50,7 +58,22 @@ wordsBy p l
   where w [] = []
         w l  = let (l',ls') = break p l
                in  l' : case ls' of []       -> []
+                                    (_:[])   -> [[]]
                                     (_:ls'') -> w ls''
+
+initlast :: [a] -> Maybe ([a],a)
+initlast as
+  = il [] as
+  where il acc [a]    = Just (reverse acc,a)
+        il acc (a:as) = il (a:acc) as
+        il _   _      = Nothing
+
+initlast2 :: [a] -> Maybe ([a],a,a)
+initlast2 as
+  = il [] as
+  where il acc [a,b]  = Just (reverse acc,a,b)
+        il acc (a:as) = il (a:acc) as
+        il _   _      = Nothing
 
 panic m = error ("panic: " ++ m)
 

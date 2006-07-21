@@ -52,7 +52,7 @@ ppErr pos p
 
 instance PP Err where
   pp (Err_UndefNm pos knd nmL)
-    = ppErr pos (knd >|< "(s) are undefined:" >#< ppCommas nmL)
+    = ppErr pos (knd >|< "(s) are undefined:" >#< ppCommas' nmL)
   pp (Err_UndefURI pos u)
     = ppErr pos ("could not open:" >#< u)
   pp (Err_Exec pos f e)

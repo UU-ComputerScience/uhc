@@ -21,10 +21,31 @@ ppListSep o c s pps
 -}
 
 ppCommas :: PP a => [a] -> PP_Doc
-ppCommas = ppListSep "" "" ", "
+ppCommas = ppListSep "" "" ","
 
-ppCommaList :: PP a => [a] -> PP_Doc
-ppCommaList = ppListSep "[" "]" ", "
+ppCommas' :: PP a => [a] -> PP_Doc
+ppCommas' = ppListSep "" "" ", "
+
+ppSpaces :: PP a => [a] -> PP_Doc
+ppSpaces = ppListSep "" "" " "
+
+ppBracketsCommas :: PP a => [a] -> PP_Doc
+ppBracketsCommas = ppListSep "[" "]" ","
+
+ppBracketsCommas' :: PP a => [a] -> PP_Doc
+ppBracketsCommas' = ppListSep "[" "]" ", "
+
+ppParensCommas :: PP a => [a] -> PP_Doc
+ppParensCommas = ppListSep "(" ")" ","
+
+ppParensCommas' :: PP a => [a] -> PP_Doc
+ppParensCommas' = ppListSep "(" ")" ", "
+
+ppCurlysCommas :: PP a => [a] -> PP_Doc
+ppCurlysCommas = ppListSep "{" "}" ","
+
+ppCurlysCommas' :: PP a => [a] -> PP_Doc
+ppCurlysCommas' = ppListSep "{" "}" ", "
 
 ppCommaListV :: PP a => [a] -> PP_Doc
 ppCommaListV = ppListSepVV "[" "]" ", "
@@ -88,8 +109,14 @@ instance PP Bool where
 hPutWidthPPLn :: Handle -> Int -> PP_Doc -> IO ()
 hPutWidthPPLn h w pp = hPutStrLn h (disp pp w "")
 
+putWidthPPLn :: Int -> PP_Doc -> IO ()
+putWidthPPLn = hPutWidthPPLn stdout
+
 hPutPPLn :: Handle -> PP_Doc -> IO ()
 hPutPPLn h = hPutWidthPPLn h 4000
+
+putPPLn :: PP_Doc -> IO ()
+putPPLn = hPutPPLn stdout
 
 hPutPPFile :: Handle -> PP_Doc -> Int -> IO ()
 hPutPPFile h pp wid

@@ -31,7 +31,8 @@ DATA Err
 
 %%[1.NamesNotIntrod
 DATA Err
-  | NamesNotIntrod      nmL        : {[HsName]}
+  | NamesNotIntrod      kind       : String
+                        nmL        : {[HsName]}
 %%]
 
 %%[1.Rest
@@ -50,6 +51,12 @@ TYPE ErrL       = [Err]
 %%[1.MissingSig
 DATA Err
   | MissingSig          wher       : {PP_Doc}
+%%]
+
+%%[1.HS
+DATA Err
+  | Fixity              op1        : {PP_Doc}
+                        op2        : {PP_Doc}
 %%]
 
 %%[2.UnifyOccurs -1.MissingSig
@@ -90,10 +97,10 @@ DATA Err
 DATA Err
   | FileNotFound        fileName   : {String}
                         locations  : {[String]}
+  | AmbiguousExport     name       : {HsName}
+                        entities   : {[PP_Doc]}
   | PP                  pp         : {PP_Doc}
 %%]
-  | Parse               expecting  : {String}
-                        repaired   : {String}
 
 %%[9
 DATA Err

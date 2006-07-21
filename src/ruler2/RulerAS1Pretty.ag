@@ -26,7 +26,7 @@ SEM Decl
   | Rule            lhs     .   pp          =   "rule"          >#< @nm >#< "viewsel" >#< pp @viewSel >-< "=" >#< @decls.pp
   | ViewHierarchy   lhs     .   pp          =   "viewhierarchy" >#< text (show @nmOrder)
   | ShpJudge        lhs     .   pp          =   "judgeshape"    >#< @expr.pp
-  | ShpDel          lhs     .   pp          =   "judgeshape"    >#< "-" >#< ppCommas @fmKinds
+  | ShpDel          lhs     .   pp          =   "judgeshape"    >#< "-" >#< ppCommas' @fmKinds
   | Attr            lhs     .   pp          =   "holes"         >#< @intros.pp
   | Explain         lhs     .   pp          =   "explain"       >#< @mbNm >#< "=" >#< pp_parens @expr.pp
 

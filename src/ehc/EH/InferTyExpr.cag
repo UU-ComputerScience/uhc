@@ -20,7 +20,7 @@ ATTR AllTyExpr [ | | tyGam: TyGam ]
 SEM TyExpr
   | Con         loc         .  (tgi_,nmErrs)        =   case tyGamLookup @nm @lhs.tyGam of
                                                           Nothing    ->  (TyGamInfo Ty_Any
-                                                                         ,[Err_NamesNotIntrod [@nm]])
+                                                                         ,[Err_NamesNotIntrod "type" [@nm]])
                                                           Just tgi   ->  (tgi,[])
 %%]
 
@@ -142,7 +142,7 @@ SEM TyExpr
   | Wild        loc         .   tgi_                :=  let t = mkNewTyVar @tyVarId in mkTGI t t
                             .   ki                  =   tgiKi @tgi_
   | Con         loc         .   (tgi_,nmErrs)       :=  case tyGamLookup @nm @lhs.tyGam of
-                                                          Nothing    ->  (mkTGI Ty_Any kiStar,[Err_NamesNotIntrod [@nm]])
+                                                          Nothing    ->  (mkTGI Ty_Any kiStar,[Err_NamesNotIntrod "type" [@nm]])
                                                           Just tgi   ->  (@lhs.kiCnstr |=> tgi,[])
                 loc         .   ki                  =   tgiKi @tgi_
   | Quant       loc         .   (tv,tgi_)           :=  let  t = mkTyVar @lUniq

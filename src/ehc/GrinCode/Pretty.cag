@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Code's Java gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}GrinCode.Pretty} import(UU.Pretty,{%{EH}Base.Common},{%{EH}GrinCode},{%{EH}GrinCode.Parser}) export(ppGrModule,ppGrExpr,ppGrPat)
+%%[8 hs module {%{EH}GrinCode.Pretty} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}GrinCode},{%{EH}GrinCode.Parser}) export(ppGrModule,ppGrExpr,ppGrPat)
 %%]
 
 %%[8.WRAPPER import({GrinCode/AbsSyn})
@@ -47,15 +47,14 @@ ppGrPat tg
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-
 grNmEscapeeChars :: [Char]
 grNmEscapeeChars = '$' : scoSpecChars scanOpts ++ scoOpChars scanOpts
 
-ppCurly :: PP_Doc -> PP_Doc
-ppCurly p = ppCurlyV [p]
+ppCurlysSemis :: PP_Doc -> PP_Doc
+ppCurlysSemis p = ppCurlysSemisV [p]
 
-ppCurlyV :: [PP_Doc] -> PP_Doc
-ppCurlyV pL = pp_block "{ " "} " "; " pL
+ppCurlysSemisV :: [PP_Doc] -> PP_Doc
+ppCurlysSemisV pL = pp_block "{ " "} " "; " pL
 
 ppGrNm :: HsName -> PP_Doc
 ppGrNm n
@@ -76,7 +75,7 @@ ppEvApTagElt e
 
 ppEvApTagMp :: EvApTagMp -> PP_Doc
 ppEvApTagMp m
-  =  ppCurlyV
+  =  ppCurlysSemisV
         (map  (\((tag,arity),evap)
                   ->  ppGrTag tag >#< pp arity >#< "->" >#< ppEvApTagElt evap >-< ""
               )
@@ -89,10 +88,10 @@ ATTR GrAGItf AllGrNT [ | | pp USE {>-<} {empty}: PP_Doc ]
 
 SEM GrModule
   | Mod         lhs         .   pp          =   "module" >#< show (show @baseName)
-                                                >-< ppCurlyV @globalL.ppL
-                                                >-< ppCurlyV @bindL.ppL
+                                                >-< ppCurlysSemisV @globalL.ppL
+                                                >-< ppCurlysSemisV @bindL.ppL
                                                 >-< "ctags"
-                                                >-< ppCurlyV
+                                                >-< ppCurlysSemisV
                                                          (map  (\(tn,ts)
                                                                     ->  ppGrNm tn >#< "="
                                                                         >#< ( ppListSep "" "" " | "
@@ -113,14 +112,14 @@ SEM GrGlobal
 
 SEM GrBind
   | Bind        lhs         .   pp          =   ppGrNm @nm >#< ppSpaced (map ppGrNm @argNmL) >-<
-                                                    indent 2 ("=" >#< ppCurly @expr.pp)
-  | Rec         lhs         .   pp          =   "rec" >-< indent 2 (ppCurlyV @bindL.ppL)
+                                                    indent 2 ("=" >#< ppCurlysSemis @expr.pp)
+  | Rec         lhs         .   pp          =   "rec" >-< indent 2 (ppCurlysSemisV @bindL.ppL)
 
 SEM GrExpr
   | Seq         lhs         .   pp          =   @expr.pp >#< ";" >#< "\\" >|< @pat.pp >#< "->"
                                                 >-< @body.pp
   | Case        lhs         .   pp          =   "case" >#< @val.pp >#< "of" >-<
-                                                    indent 2 (ppCurlyV @altL.ppL)
+                                                    indent 2 (ppCurlysSemisV @altL.ppL)
   | App         lhs         .   pp          =   "apply" >#< ppSpaced (ppGrNm @nm : @argL.ppL)
   | Call        lhs         .   pp          =   ppSpaced (ppGrNm @nm : @argL.ppL)
   | FFI         lhs         .   pp          =   "ffi" >#< ppSpaced (pp @nm : map ppGrNm @argL)
@@ -133,12 +132,12 @@ SEM GrExpr
                                                                         >#< maybe empty ppGrTag @mbTag
   | Throw       lhs         .   pp          =   "throw" >#< ppGrNm @nm
   | Catch       lhs         .   pp          =   "try" >-<
-                                                indent 2 (ppCurly @body.pp) >-<
+                                                indent 2 (ppCurlysSemis @body.pp) >-<
                                                 "catch" >|< pp_parens (ppGrNm @arg) >-<
-                                                indent 2 (ppCurly @handler.pp)
+                                                indent 2 (ppCurlysSemis @handler.pp)
 
 SEM GrAlt
-  | Alt         lhs         .   pp          =   @pat.pp >-< indent 4 ("->" >#< ppCurly @expr.pp)
+  | Alt         lhs         .   pp          =   @pat.pp >-< indent 4 ("->" >#< ppCurlysSemis @expr.pp)
 
 SEM GrVal
   | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : @fldL.ppL)

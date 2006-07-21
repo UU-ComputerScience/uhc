@@ -94,7 +94,7 @@ SEM AGItf
 -------------------------------------------------------------------------
 
 SEM AGItf
-  | AGItf           loc     .   rsMetaSel   =   let nVwS = vgVertices @vwDpdGr
+  | AGItf           loc     .   rsMetaSel   =   let nVwS = dgVertices @vwDpdGr
                                                 in  gamFromAssocsWith Set.union
                                                       [ (rsScNm i,vs) | i <- gamElemsShadow @rsGam
                                                                       , let vs = Set.filter (\v -> @rlSelIsSel v (rsNm i) nmAny) nVwS, not (Set.null vs)
@@ -186,7 +186,7 @@ SEM AGItf
                                                             -> topWrap
                                                                $ AS2.RsVwDecl_Rs nRs nSc d
                                                                    [ AS2.VwDecl_Vw nVw (mkFullVwNm nRs nVw) (mkRls nVw rlNms) | nVw <- vwOrder ]
-                                                            where vwOrder = [ v | v <- vgTopSort @vwDpdGr, @rlSelIsSel v nmAny nmAny ]
+                                                            where vwOrder = [ v | v <- dgTopSort @vwDpdGr, @rlSelIsSel v nmAny nmAny ]
                                                                   mkRls nVw rlNms
                                                                     = [ AS2.RlDecl_LTXAlias (mkFullRlNm nRs nVw nRl) (mkFullRlNm nRs' nVw nRl)
                                                                       | (nRs',nRl) <- rlNms, rlVwIsDef nRs' nVw nRl

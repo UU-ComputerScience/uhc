@@ -26,8 +26,8 @@ ATTR AllDecl [ vwDpdGr: {DpdGr Nm} | | ]
 SEM AGItf
   | AGItf           loc     .   vwDpdGr     =   let vwOrderL = concat @decls.gathVwOrder
                                                     missing = @decls.allVwNmS `Set.difference` Set.fromList (concat vwOrderL)
-                                                in  mkVwDpdGr (Set.toList missing) vwOrderL
+                                                in  mkDpdGrFromOrderWithMissing (Set.toList missing) vwOrderL
 
 SEM Decl
-  | SchemeDeriv     loc     .   firstVwNm   =   last (vgTopSort @lhs.vwDpdGr)
+  | SchemeDeriv     loc     .   firstVwNm   =   last (dgTopSort @lhs.vwDpdGr)
 

@@ -35,7 +35,7 @@ import RulerAdmin
 
 prevWRTDpd :: Nm -> DpdGr Nm -> Map.Map Nm v -> v -> v
 prevWRTDpd n g m v
-  = maybeHd v (\n -> maybe v id . Map.lookup n $ m) (vgDpdsOn g n)
+  = maybeHd v (\n -> maybe v id . Map.lookup n $ m) (dgDpdsOn g n)
 
 -------------------------------------------------------------------------
 -- Data/AST
@@ -71,7 +71,7 @@ bldDtInfo vwDpdGr dtInfo
                    in  (vdGam', bdMp', bldErrs ++ errs)
               )
               (dtVwGam dtInfo,Map.empty,[])
-              (vgTopSort vwDpdGr)
+              (dgTopSort vwDpdGr)
 
 -------------------------------------------------------------------------
 -- Scheme
@@ -190,7 +190,7 @@ bldScInfo vwDpdGr scGam si@(ScInfo pos nm mbAGNm scKind vwScGam)
                          )
               )
               (vwScGam,Map.empty,[])
-              (vgTopSort vwDpdGr)
+              (dgTopSort vwDpdGr)
 
 -------------------------------------------------------------------------
 -- Rule set building, util functions
@@ -377,12 +377,12 @@ rlGamUpdVws cxRs opts vwDpdGr extNmS dtInvGam scGam rsGam rlGam rsInfo rlInfo
                        _      -> case dtInvGamRlVwS (rsScNm rsInfo) (rlNm rlInfo) dtInvGam of
                                    Just vs -- | optGenFM opts /= FmTeX
                                            -> vs
-                                   _       -> vgVertices vwDpdGr
+                                   _       -> dgVertices vwDpdGr
         vwIsIncl n = n `Set.member` vwSel
         doMarkChngForVw
           = case optMbMarkChange opts of
               Just vs
-                -> \vw -> (vw `Set.member` vs',vgIsFirst vwDpdGr vw vs')
+                -> \vw -> (vw `Set.member` vs',dgIsFirst vwDpdGr vw vs')
                 where vs' = viewSelsNmS vwDpdGr vs `Set.intersection` vwSel
               _ -> const (False,False)
         (g,_,eg,errs)
@@ -401,12 +401,12 @@ rlGamUpdVws cxRs opts vwDpdGr extNmS dtInvGam scGam rsGam rlGam rsInfo rlInfo
                          revRlOnL = rlVwRlOnL dtInvGam rlGam (rsScNm rsInfo) nVw rlInfo
                          (initBldL,rlJdBldOnL)
                            = case revRlOnL of
-                               (i:_) | vgIsFirst vwDpdGr nVw vwSel
+                               (i:_) | dgIsFirst vwDpdGr nVw vwSel
                                  -> ([RlJdBldDirect Set.empty (vwrlFullNoDfltPreGam i) (vwrlFullNoDfltPostGam i)],[])
                                _ -> (brJdBldL br,b)
                            where b = concat $ map vwrlJdBldL $ reverse $ revRlOnL
 {-
-                         vwIsFirst = vgIsFirst vwDpdGr nVw vwSel
+                         vwIsFirst = dgIsFirst vwDpdGr nVw vwSel
                          rlJdBldOnL rlInfo
                            = case maybe Nothing (\n -> gamLookup n rlGam) (mbOnNm rlInfo) of
                                Just i -> case gamLookup nVw (rlVwGam i) of
@@ -461,9 +461,9 @@ rlGamUpdVws cxRs opts vwDpdGr extNmS dtInvGam scGam rsGam rlGam rsInfo rlInfo
                              then [Err_RlPost (rlPos rlInfo) cx (rsScNm rsInfo)]
                              else []
                          errTr = []
-                                 -- [mkTr (ppCommaList [rsScNm rsInfo,rlNm rlInfo,nVw]) (pp (mbOnNm rlInfo))]
-                                 -- [mkTr (ppCommaList [rsScNm rsInfo,rlNm rlInfo,nVw]) (ppCommaListV rlJdBldL >-< ppGam pregBld)]
-                                 -- [mkTr (ppCommaList [rsScNm rsInfo,rlNm rlInfo,nVw]) (ppCommaList $ Set.toList $ vwSel)]
+                                 -- [mkTr (ppBracketsCommas [rsScNm rsInfo,rlNm rlInfo,nVw]) (pp (mbOnNm rlInfo))]
+                                 -- [mkTr (ppBracketsCommas [rsScNm rsInfo,rlNm rlInfo,nVw]) (ppBracketsCommasV rlJdBldL >-< ppGam pregBld)]
+                                 -- [mkTr (ppBracketsCommas [rsScNm rsInfo,rlNm rlInfo,nVw]) (ppBracketsCommas $ Set.toList $ vwSel)]
                          errsVw = errFirst [errPost,errDups,errUndefs,errChkBldL,errBldL] ++ errTr
                          errsOther = errVwNotSel
                          
@@ -477,7 +477,7 @@ rlGamUpdVws cxRs opts vwDpdGr extNmS dtInvGam scGam rsGam rlGam rsInfo rlInfo
                          )
                 )
                 (rlVwGam rlInfo,Map.empty,emptyGam,[])
-                (vgTopSort vwDpdGr)
+                (dgTopSort vwDpdGr)
         errsG = concat . gamElemsShadow . gamFilterWithKey (\n _ -> vwIsIncl n) $ eg
     in  (rlInfo { rlVwGam = gamFilterWithKey (\n _ -> vwIsIncl n) g, rlMbInclVwS = Just vwSel },errFirst [errs,errsG])
 
@@ -493,13 +493,13 @@ bldRsInfo vwDpdGr extNmS opts dtInvGam scGam rsGam rsInfo@(RsInfo nm pos schemeN
                    in  (gamInsertShadow rNm rlInfo rlGam,errs' ++ errs)
               )
               (rlGam,[])
-              (vgTopSort rlDpdGr)
-        errTr = [] -- [mkTr (ppCommaList [nm]) (pp rlDpdGr)]
+              (dgTopSort rlDpdGr)
+        errTr = [] -- [mkTr (ppBracketsCommas [nm]) (pp rlDpdGr)]
         rlDpdGr
-          = mkScDpdGr misL dpdL
+          = mkDpdGrFromAssocWithMissing misL dpdL
           where -- dpdL = [ (rlNm i,onNm) | i <- gamElemsShadow rlGam, onNm <- maybeToList (rlMbOnNm i) ]
                 dpdL = [ (rlNm i,onNm) | i <- gamElemsShadow rlGam, nVw <- gamKeys (rlVwGam i), onNm <- maybeToList (dtInvGamRlMbOn dtInvGam i (rsScNm rsInfo) nVw) ]
                 misL = gamKeys rlGam \\ map fst dpdL
         cx = "ruleset '" ++ show (rsNm rsInfo) ++ "'"
-        mutErrs = vgCheckSCCMutuals (Err_MutDpds pos cx "rule") rlDpdGr
+        mutErrs = dgCheckSCCMutuals (Err_MutDpds pos cx "rule") rlDpdGr
 

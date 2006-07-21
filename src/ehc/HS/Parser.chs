@@ -240,7 +240,7 @@ pWhere = pWhere' pDeclaration
 pDeclarationFixity :: HSParser Declaration
 pDeclarationFixity
   = (\f p o -> Declaration_Fixity emptyRange f p (mkQNames o))
-    <$> ((Fixity_Infixl . mkRange1) <$> pINFIXL <|> (Fixity_Infixr . mkRange1) <$> pINFIXR <|> (Fixity_Infix . mkRange1) <$> pINFIX)
+    <$> (Fixity_Infixl <$ pINFIXL <|> Fixity_Infixr <$ pINFIXR <|> Fixity_Infix <$ pINFIX)
     <*> ((Just . mkInt) <$> pInteger10Tk <|> pSucceed Nothing)
     <*> pListSep pCOMMA varop
 %%]
@@ -599,7 +599,7 @@ pLiteral
 pExpressionBase :: HSParser Expression
 pExpressionBase
   =   Expression_Literal emptyRange  <$> pLiteral
-  <|> mkRngNm Expression_Variable    <$> qvar
+  <|> mkRngNm Expression_Variable    <$> qvarid
   <|> gcon
       <**> (   pSucceed (mkRngNm Expression_Constructor)
 %%]
@@ -617,16 +617,19 @@ pExpressionBase
   where pInParens :: HSParser (Range -> Expression)
         pInParens
           =   (pExpression
-               <**> (   (\o e r -> Expression_InfixApplication r (Just e) (mkOpExpr o) Nothing) <$> qop
+               <**> (   (\(o,_) e r -> Expression_SectionApplication r (Just e) o Nothing) <$> pOp
 %%]
 %%[1.parenExprAsProdA
                     <|> pSucceed (flip Expression_Parenthesized)
-                    <|> (\es e r -> Expression_NormalApplication r (Expression_Constructor r $ hsnProd $ length es + 1) (e:es))
+                    <|> (\es e r -> Expression_Tuple r (e:es))
                         <$>  pList1 (pComma *> pExpression)
 %%]
 %%[1
               )     )
-          <|> (\o e r -> Expression_InfixApplication r Nothing (mkOpExpr o) (Just e)) <$> qopm <*> pExpression
+          <|> (pOpm
+               <**> (   (\e (o,_) r -> Expression_SectionApplication r Nothing o (Just e)) <$> pExpression
+                    <|> pSucceed (\(o,_) r -> Expression_SectionApplication r Nothing o Nothing)
+              )     )
 %%]
 %%[1.parenExprAsProdB
           <|> pSucceed (\r -> Expression_Constructor r (hsnProd 0))
@@ -635,9 +638,6 @@ pExpressionBase
           <|> pParenRow' True pOROWREC pCROWREC pEQUAL True pCOLEQUAL RowRecordExpressionUpdate_Update
                  (Expression_RowRecordEmpty,Expression_Variable,RowRecordExpressionUpdate_Extends,Expression_RowRecordUpdate,Expression_Parenthesized)
                  qvarid pExpression
-%%]
-%%[1
-        mkOpExpr = mkRngNm Expression_Variable
 %%]
 
 %%[5
@@ -738,9 +738,14 @@ pExpressionLayout
 %%[1
 pExpressionOp :: HSParser Expression
 pExpressionOp
-  =   pChainr_ng
-        ((\o l r -> Expression_InfixApplication (mkRange1 o) (Just l) (mkRngNm Expression_Variable o) (Just r)) <$> qop)
-        pExpressionLayout
+  = Expression_InfixApplicationChainTop emptyRange
+    <$> pChainr_ng
+          ((\(o,rng) l r -> Expression_InfixApplication rng l o r) <$> pOp)
+          pExpressionLayout
+
+pOp, pOpm :: HSParser (Expression,Range)
+pOp  = mkRngNm' Expression_Variable <$> qvarop  <|> mkRngNm' Expression_Constructor <$> qconop
+pOpm = mkRngNm' Expression_Variable <$> qvaropm <|> mkRngNm' Expression_Constructor <$> qconop
 %%]
 
 %%[1
@@ -923,7 +928,7 @@ pSelector
 
 %%[1
 commas :: HSParser Token 
-commas =  genTokMap (strProd . length) <$> pFoldr (tokConcat,tokEmpty) pCOMMA
+commas =  genTokMap (\s -> strProd (length s + 1)) <$> pFoldr (tokConcat,tokEmpty) pCOMMA
 %%]
 
 %%[1
@@ -969,17 +974,17 @@ var =  varid
 
 qvar    :: HSParser Token
 qvar =  qvarid      
-    <|> pParens
-          (   varsym
+    <|> pParens qvarsym_forpar
+%%]
+
+%%[1
+qvarsym_forpar :: HSParser Token
+qvarsym_forpar
+  =   varsym
 %%]
 %%[8
-          <|> qvarsym1
+  <|> qvarsym1
 %%]
-%%[1
-          )
--- We've inlined qvarsym here so that the decision about
--- whether it's a qvar or a var can be postponed until
--- *after* we see the close paren.
 
 {-
 ipvar   :: HParser (IPName RdrName)
@@ -987,6 +992,7 @@ ipvar =  liftM (Dupable . mkUnqual varName) <$> pDUPIPVARID
      <|> liftM (Linear . mkUnqual varName)  <$> pSPLITIPVARID
 -}
 
+%%[1
 qcon    :: HSParser Token
 qcon    = qconid <|> pParens qconsym
 

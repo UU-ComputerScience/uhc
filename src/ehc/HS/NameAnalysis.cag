@@ -1,0 +1,295 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Names: dependencies, binding group, in scope
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Levels
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+type NmLev = Int
+
+nmLevAbsent, nmLevBuiltin, nmLevOutside, nmLevModule :: NmLev
+nmLevAbsent  = -3
+nmLevBuiltin = -2
+nmLevOutside = -1
+nmLevModule  =  0
+%%]
+
+%%[1
+ATTR AllNT [ nmLev: NmLev | | ]
+%%]
+
+%%[5
+ATTR
+  Qualifier
+%%]
+%%[9
+  Statement
+%%]
+%%[5
+  [ | | nmLev: NmLev ]
+%%]
+
+%%[1
+SEM AGItf
+    | AGItf
+        loc             .   nmLev       =   nmLevModule
+%%]
+
+%%[1
+SEM Declaration
+    | TypeSignature
+        type            .   nmLev       =   @lhs.nmLev + 1
+%%]
+%%[5
+    | Data Newtype
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%]
+%%[9
+    | Class Instance InstanceUseImplicitly Default
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%]
+%%[11
+    | Type
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[4
+SEM Type
+    | Forall Exists
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[9
+SEM ContextItem
+    | Forall
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[1
+SEM Expression
+    | Lambda Let
+        loc             .   nmLev       =   @lhs.nmLev + 1
+    | Typed
+        type            .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[4
+SEM Pattern
+    | Typed
+        type            .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[1
+SEM FunctionBinding
+    | FunctionBinding
+        righthandside   .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[1
+SEM LeftHandSide
+    | Function Infix
+        loc             .   nmLev       =   @lhs.nmLev + 1
+    | Parenthesized
+        patterns        .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[1
+SEM RightHandSide
+    | *
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[5
+SEM Alternative
+    | Alternative
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[5
+SEM Qualifier
+    | Let Generator
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[9
+SEM Statement
+    | Let Generator
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module name
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllNT AGItf [ moduleNm: HsName | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Identifier occurrences
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+data IdOccKind
+  = IdOcc_Val
+  | IdOcc_Type
+  | IdOcc_Class
+  | IdOcc_Inst
+  | IdOcc_Any 
+  deriving (Show,Eq,Ord)
+
+data IdAspect
+  = IdAsp_Val_Var
+  | IdAsp_Val_Con
+  | IdAsp_Val_Sig
+  | IdAsp_Val_Fix
+  | IdAsp_Val_Fld
+  | IdAsp_Type_Var
+  | IdAsp_Type_Con
+  | IdAsp_Class_Class
+  | IdAsp_Inst_Inst
+  | IdAsp_Any 
+  deriving (Show,Eq,Ord)
+
+data IdOcc
+  = IdOcc
+      { ioccNm      :: HsName
+      , ioccKind    :: IdOccKind
+      , ioccAsp     :: IdAspect
+      , ioccLev     :: NmLev
+      , ioccRange   :: Range
+      }
+
+emptyIdOcc = IdOcc hsnUnknown IdOcc_Any IdAsp_Any nmLevAbsent emptyRange
+
+type IdOccGam = Gam HsName IdOcc
+
+idOccGamByKind :: IdOccKind -> IdOccGam -> AssocL HsName IdOcc
+idOccGamByKind k g = [ i | i@(n,(IdOcc _ k' _ _ _)) <- gamToAssocL g, k == k' ]
+
+data IdUseOcc
+  = IdUseOcc
+      { uoccNm      :: HsName
+      , uoccLev     :: NmLev
+      , uoccMbDef   :: Maybe IdOcc
+      }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Identifier def's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR
+  AllPattern
+  AllDeclaration AllFunctionBinding
+  LeftHandSide
+%%]
+%%[5
+  Qualifier
+%%]
+%%[7
+  AllRowRecordPatternBinding
+%%]
+%%[9
+  Statement
+%%]
+%%[1
+    [ | | idOccDefGam USE {`gamAddGam`} {emptyGam} : IdOccGam ]
+%%]
+
+%%[1
+SEM Declaration
+    | TypeSignature
+        loc             .   idOccDefGam =   assocLToGam [ (n,IdOcc n IdOcc_Val IdAsp_Val_Sig @lhs.nmLev @range) | n <- @names ]
+    | Fixity
+        loc             .   idOccDefGam =   assocLToGam [ (n,IdOcc n IdOcc_Val IdAsp_Val_Fix @lhs.nmLev @range) | n <- @operators ]
+%%]
+%%[5
+    | Data Newtype
+        loc             .   idOccDefGam =   gamUnit @simpletype.name (IdOcc @simpletype.name IdOcc_Type IdAsp_Type_Con @lhs.nmLev @simpletype.range)
+                                            `gamAddGam`
+                                            assocLToGam [ (n,IdOcc n IdOcc_Val IdAsp_Val_Con @lhs.nmLev @simpletype.range) | n <- @constructors.conNames ]
+%%]
+%%[7
+                                            `gamAddGam`
+                                            assocLToGam [ (n,IdOcc n IdOcc_Val IdAsp_Val_Fld @lhs.nmLev @simpletype.range) | n <- @constructors.fldNames ]
+%%]
+%%[9
+    | Class
+        loc             .   idOccDefGam =   gamUnit @simpletype.name (IdOcc @simpletype.name IdOcc_Class IdAsp_Class_Class @lhs.nmLev @simpletype.range)
+%%]
+%%[11
+    | Type
+        loc             .   idOccDefGam =   gamUnit @simpletype.name (IdOcc @simpletype.name IdOcc_Type IdAsp_Type_Con @lhs.nmLev @simpletype.range)
+%%]
+%%[5
+    | Data Newtype
+%%]
+%%[9
+      Class
+%%]
+%%[11
+      Type
+%%]
+%%[5
+        loc             .   idOccDefGamInside
+                                        =   assocLToGam [ (n,IdOcc n IdOcc_Type IdAsp_Type_Var @nmLev @simpletype.range) | n <- @simpletype.typevariables ]
+%%]
+%%[8
+    | ForeignImport
+        loc             .   idOccDefGam =   gamUnit @name (IdOcc @name IdOcc_Val IdAsp_Val_Var @lhs.nmLev @range)
+%%]
+%%[88
+    | ForeignExport -- ??
+        loc             .   idOccDefGam =   gamUnit @name (IdOcc @name IdOcc_Val IdAsp_Val_Var @lhs.nmLev @range)
+%%]
+
+%%[1
+SEM FunctionBinding
+    | FunctionBinding
+        loc             .   idOccDefGam =   gamUnit @lefthandside.name (IdOcc @lefthandside.name IdOcc_Val IdAsp_Val_Var @lhs.nmLev @range)
+%%]
+
+%%[1
+SEM Pattern
+    | Variable As
+        loc             .   idOccDefGam =   gamUnit @name (IdOcc @name IdOcc_Val IdAsp_Val_Var @lhs.nmLev @range)
+    | As
+        lhs             .   idOccDefGam =   @idOccDefGam `gamAddGam` @pattern.idOccDefGam
+%%]
+
+%%[4
+SEM Type
+    | Forall Exists
+        loc             .   idOccDefGamInside
+                                        =   assocLToGam [ (n,IdOcc n IdOcc_Type IdAsp_Type_Var @nmLev @range) | n <- @typevariables ]
+%%]
+
+%%[9
+SEM ContextItem
+    | Forall
+        loc             .   idOccDefGamInside
+                                        =   assocLToGam [ (n,IdOcc n IdOcc_Type IdAsp_Type_Var @nmLev @range) | n <- @typevariables ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Identifier use's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR AllNT [ idGam: IdOccGam | | ]
+%%]
+
+%%[1.AGItf.idGam
+SEM AGItf
+	| AGItf
+		loc				.	idGam		=	emptyGam
+%%]
+
+%%[8 -1.AGItf.idGam
+ATTR AGItf [ idGam: IdOccGam | | ]
+%%]
+

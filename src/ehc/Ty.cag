@@ -19,7 +19,7 @@
 %%[3 hs export(mkTyQu, TyVarCateg(..))
 %%]
 
-%%[3 hs import(Data.Maybe) export(tyVar) 
+%%[3 hs import(Data.Maybe,EH.Util.Utils(panic)) export(tyVar) 
 %%]
 
 %%[4 hs export(TyQu(..), tyquExists, tyquIsExists, tyquIsForall, showTyQu) 
@@ -288,6 +288,13 @@ instance SemApp Ty where
   semAppTop      = id
   semCon         = Ty_Con . mkHNm
   semParens      = id
+  mkRngCon _     = Ty_Con . mkHNm
+%%]
+%%[1.mkRngVar hs
+  mkRngVar       = mkRngCon
+%%]
+%%[3 -1.mkRngVar hs
+  mkRngVar _     = panic "Ty:mkRngVar"
 %%]
 %%[7 hs
   mkProdApp tyL  = mkTyRec (zip positionalFldNames tyL)

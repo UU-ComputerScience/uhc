@@ -1396,7 +1396,7 @@ fitPredToEvid u prTy g
                              -> let (u',u1,u2) = mkNewLevUID2 u
                                     fo = fitsIn fOpts emptyFE u1 (pigiPrToEvidTy pigi) ([prTy] `mkArrow` mkTyVar u2)
                                 in  fo {foTy = snd (tyArrowArgRes (foTy fo))}
-                           _ -> emptyFO {foErrL = [Err_NamesNotIntrod [tyPredMatchNm prTy]]}
+                           _ -> emptyFO {foErrL = [Err_NamesNotIntrod "class" [tyPredMatchNm prTy]]}
                  Ty_Pred (Pred_Pred t)
                     ->  let  (aL,r) = tyArrowArgsRes t
                              (_,aLr'@(r':aL')) = foldr (\t (u,ar) -> let (u',u1) = mkNewLevUID u in (u',fPr u1 t : ar)) (u,[]) (r : aL)

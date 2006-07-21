@@ -37,7 +37,7 @@ SEM Decl
 
 %%[9 hs
 checkClNms :: Set.Set HsName -> [Err]
-checkClNms s = if Set.null s then [] else [Err_NamesNotIntrod (Set.toList s)]
+checkClNms s = if Set.null s then [] else [Err_NamesNotIntrod "class" (Set.toList s)]
 %%]
 
 %%[9

@@ -389,7 +389,7 @@ SEM RlDecl
 -}
 SEM RlDecl
   | Rl              lhs     .   ppDbg       =   "-- debug info"
-                                                >-< @nm >#< ppCommaList [pp @pos,pp @agStr]
+                                                >-< @nm >#< ppBracketsCommas [pp @pos,pp @agStr]
                                                 >-< "introFmGam" >#< ppGam @introFmGam
                                                 >-< "introECGam" >#< ppECGam @introECGam
                                                 >-< "lhs.rwGam" >#< ppGam @lhs.rwGam

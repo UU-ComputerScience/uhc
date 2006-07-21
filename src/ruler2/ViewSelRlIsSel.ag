@@ -12,7 +12,7 @@ module ViewSelRlIsSel
 import qualified Data.Set as Set
 import EH.Util.Nm
 import Common
-import DpdGr
+import EH.Util.DependencyGraph
 import ViewSel
 }
 

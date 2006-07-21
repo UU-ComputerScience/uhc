@@ -39,7 +39,7 @@ SEM Expr
 -}
 
 SEM ECnstr
-  | Ty              lhs     .   pp          =   ppCommas @nms
+  | Ty              lhs     .   pp          =   ppCommas' @nms
   | Var             lhs     .   pp          =   pp @nm
 
 SEM ANm

@@ -1,10 +1,15 @@
 module EH.Util.FPath 
   ( FPath(..), fpathSuff
-  , mkFPath, emptyFPath
+  , FPATH(..)
+  , emptyFPath
+  -- , mkFPath
+  , mkFPathFromDirsFile
   , fpathToStr, fpathIsEmpty
   , fpathSetBase, fpathSetSuff, fpathSetDir
   , fpathRemoveSuff
   , fpathPrependDir, mkTopLevelFPath
+  
+  , fpathDirSep, fpathDirSepChar
   
   , SearchPath, FileSuffixes
   , mkInitSearchPath
@@ -40,8 +45,8 @@ fpathIsEmpty fp = null (fpathBase fp)
 
 fpathToStr :: FPath -> String
 fpathToStr fpath
-  = let adds f = maybe f (\s -> f ++ "." ++ s) (fpathMbSuff fpath)
-        addd f = maybe f (\d -> d ++ "/" ++ f) (fpathMbDir fpath)
+  = let adds f = maybe f (\s -> f ++ "."         ++ s) (fpathMbSuff fpath)
+        addd f = maybe f (\d -> d ++ fpathDirSep ++ f) (fpathMbDir fpath)
      in addd . adds . fpathBase $ fpath
 
 fpathSuff :: FPath -> String
@@ -73,7 +78,7 @@ fpathPrependDir :: String -> FPath -> FPath
 fpathPrependDir "" fp
   = fp
 fpathPrependDir d fp
-  = maybe (fpathSetDir d fp) (\fd -> fpathSetDir (d ++ "/" ++ fd) fp) (fpathMbDir fp)
+  = maybe (fpathSetDir d fp) (\fd -> fpathSetDir (d ++ fpathDirSep ++ fd) fp) (fpathMbDir fp)
 
 fpathRemoveSuff :: FPath -> FPath
 fpathRemoveSuff fp
@@ -92,23 +97,52 @@ splitOnLast splitch fn
                     then maybe (Just ("",fs)) (\(p,s)->Just (f:p,s)) rem
                     else maybe Nothing (\(p,s)->Just (f:p,s)) rem
 
+{-
 mkFPath :: String -> FPath
 mkFPath fn
-  = let (d,b)  = maybe (Nothing,fn) (\(d,b) -> (Just d,b)) (splitOnLast '/' fn)
+  = let (d,b)  = maybe (Nothing,fn) (\(d,b) -> (Just d,b)) (splitOnLast fpathDirSepChar fn)
         (b',s) = maybe (b,Nothing) (\(b,s) -> (b,Just s)) (splitOnLast '.' b)
      in FPath d b' s
+-}
+
+mkFPathFromDirsFile :: Show s => [s] -> s -> FPath
+mkFPathFromDirsFile dirs f
+  = fpathSetDir (concat $ intersperse fpathDirSep $ map show $ dirs) (mkFPath (show f))
 
 fpathSplit :: String -> (String,String)
 fpathSplit fn
-  = let (d,b)  = maybe ("",fn) id (splitOnLast '/' fn)
+  = let (d,b)  = maybe ("",fn) id (splitOnLast fpathDirSepChar fn)
         (b',s) = maybe (b,"") id (splitOnLast '.' b)
-        b''    = if null d then b' else d ++ "/" ++ b'
+        b''    = if null d then b' else d ++ fpathDirSep ++ b'
      in (b'',s)
 
 mkTopLevelFPath :: String -> String -> FPath
 mkTopLevelFPath suff fn
   = let fpNoSuff = mkFPath fn
      in maybe (fpathSetSuff suff fpNoSuff) (const fpNoSuff) . fpathMbSuff $ fpNoSuff
+
+-------------------------------------------------------------------------------------------
+-- Config
+-------------------------------------------------------------------------------------------
+
+fpathDirSep :: String
+fpathDirSep = "/"
+
+fpathDirSepChar :: Char
+fpathDirSepChar = head fpathDirSep
+
+-------------------------------------------------------------------------------------------
+-- Class 'can make FPath of ...'
+-------------------------------------------------------------------------------------------
+
+class FPATH f where
+  mkFPath :: f -> FPath
+
+instance FPATH String where
+  mkFPath fn
+    = FPath d b' s
+    where (d,b)  = maybe (Nothing,fn) (\(d,b) -> (Just d,b)) (splitOnLast fpathDirSepChar fn)
+          (b',s) = maybe (b,Nothing) (\(b,s) -> (b,Just s)) (splitOnLast '.' b)
 
 -------------------------------------------------------------------------------------------
 -- Search path utils

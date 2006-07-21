@@ -19,13 +19,16 @@ LIB_EH_UTIL_SETUP_HS_DRV		:= $(BLD_LIBUTIL_PREFIX)Setup.hs
 LIB_EH_UTIL_SETUP2				:= $(BLD_LIBUTIL_PREFIX)setup$(EXEC_SUFFIX)
 LIB_EH_UTIL_SETUP				:= ./setup$(EXEC_SUFFIX)
 
+# target
+lib-eh: $(LIB_EH_UTIL_INS_FLAG)
+
 # rules
-$(LIB_EH_UTIL_CABAL_DRV): $(LIBUTIL_MKF)
+$(LIB_EH_UTIL_CABAL_DRV): $(LIBUTIL_MKF) $(LIB_EH_UTIL_HS_SRC)
 	mkdir -p $(@D)
 	$(call GEN_CABAL \
 		, $(LIB_EH_UTIL_PKG_NAME) \
 		, $(EH_VERSION) \
-		,  \
+		, mtl \
 		,  \
 		, General purpose utilities for EH \
 		, $(addprefix $(LIB_EH_UTIL_QUAL_PREFIX),$(basename $(notdir $(LIB_EH_UTIL_HS_SRC)))) \

@@ -10,7 +10,7 @@ module ViewSelSelf
   where
 
 import EH.Util.Nm
-import DpdGr
+import EH.Util.DependencyGraph
 import ViewSel
 }
 

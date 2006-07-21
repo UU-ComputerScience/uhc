@@ -54,7 +54,7 @@ SEM Decl
 -------------------------------------------------------------------------
 
 SEM RlDecl
-  | Rl              lhs     .   pp          =   @nm >#< ppCommaList [pp @pos,pp @agStr]
+  | Rl              lhs     .   pp          =   @nm >#< ppBracketsCommas [pp @pos,pp @agStr]
                                                 >-< indent 2 (@preJds.pp >-< "---" >-< @postJds.pp)
 
 SEM Jd

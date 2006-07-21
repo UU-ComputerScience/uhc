@@ -39,9 +39,9 @@ scan opts pos input
    isOpsym  = locatein (scoOpChars opts)
    isPairSym= locatein (scoSpecPairs opts)
 
-   isIdStart c = isLower c || c == '_'
+   isIdStart c = isLower    c || c == '_'
    isIdChar  c = isAlphaNum c || c == '\'' || c == '_'
-   isQIdChar c = isIdChar c || c == '.'
+   isQIdChar c = isIdChar   c || c == '.'
 
    scanIdent isId p s
      = (name,advc (length name) p,rest)
@@ -105,6 +105,8 @@ scan opts pos input
    doScan p cs@(c:s)
      | isSymbol c = reserved [c] p
                   : doScan(advc 1 p) s
+%%]
+%%[5.id
      | isIdStart c || isUpper c
          = let (name', p', s')    = scanIdent isIdChar (advc 1 p) s
                name               = c:name'
@@ -114,6 +116,36 @@ scan opts pos input
                                     then reserved [c] p
                                     else valueToken (if isUpper c then TkConid else TkVarid) name p
            in tok :  doScan p' s'
+%%]
+%%[8 -5.id
+     | isIdStart c || isUpper c
+         = let (name', p', s')    = scanIdent isIdChar (advc 1 p) s
+               name               = c:name'
+               toksDflt           = doScan p' s'
+               (tok,toks'')       = if iskw name || null name' && isSymbol c
+                                    then (reserved name p,toksDflt)
+                                    else case s' of
+                                           ('.':s''@(c':_))
+                                             | isUpper c && not (isSpace c')
+                                                 -> case extract toksDflt of
+                                                      Just (tp,val,toksQual)
+                                                        -> (valueToken (tokTpQual tp) (name ++ val) p,toksQual)
+                                                      _ -> (valueToken (if isIdStart c then TkVarid else TkConid) name p,toksDflt)
+                                               where
+                                                 extract (ValToken _ "." _:ValToken tp val _:toks)
+                                                   | tokTpIsId tp                             = Just (tp,'.':val,toks)
+                                                 extract (ValToken TkOp val@('.':_) _:toks)   = further
+                                                 extract (Reserved val@('.':_) _:toks)        = further
+                                                 extract _                                    = Nothing
+                                                 further = do (tp,v,tk) <- extract' (doScan (advc 1 p') s'')
+                                                              return (tp,'.':v,tk)
+                                                 extract' (ValToken tp val _:toks)
+                                                   | tokTpIsId tp                             = Just (tp,val,toks)
+                                                 extract' _                                   = Nothing
+                                           _ -> (valueToken (if isIdStart c then TkVarid else TkConid) name p,toksDflt)
+           in tok : toks''
+%%]
+%%[5
      | isOpsym c = let (name, s') = span isOpsym cs
                        tok | isop name = reserved name p
                            | c==':'    = valueToken TkConOp name p

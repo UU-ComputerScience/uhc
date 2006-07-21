@@ -292,14 +292,14 @@ SEM DataFields
 
 SEM DataField
   | Field		lhs		.	pp		=	case @mbLabels of
-  										  Just l  -> ppCommas l >#< "::" >#< @tyExpr.pp
+  										  Just l  -> ppCommas' l >#< "::" >#< @tyExpr.pp
   										  Nothing -> @tyExpr.pp
 
 SEM DataConstr
   | Constr      loc     .   pp      :=  pp @conNm
                                         >#<  (if null . catMaybes $ @fields.lblL
                                               then ppSpaced @fields.ppL
-                                              else ppListSep "{" "}" "," @fields.ppL
+                                              else ppCurlysCommas' @fields.ppL
                                              )
                                         >|<  @ppExtra
                         .   ppExtra =   empty
