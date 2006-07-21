@@ -17,7 +17,15 @@ constraint gathering, and constraint solving, is treated more formally in subseq
 
 \section{Example}
 
-  Our main goal is to find out which values in a program are used once. Consider the following example:
+  The goal is to find out which values in a program are used once. We show the steps involved by an
+  extensive example. First we show what uniqueness annotations are, and what we consider to be an annotated
+  program. Note that we assume in this section that the program is already annotated; in later section
+  we infer the annotations. After it is clear what the input to the problem is, the task is to check
+  that the annotations are correct by analyzing the program from outermost expression to innermost expression,
+  and identifying which conditions should hold at each place. These conditions are formulated as constraints
+  that should hold, and we finish our example by demonstrating how this can be done.
+  
+  The example is the following program:
   
 %%[[wrap=code
   (\x y -> (y + x) + x) 3 4
@@ -181,7 +189,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   body of the function, we want to verify that it is only used once at one of the sites, and zero
   times at the other place. We combine the use-sites of the parameters by
   summing up the annotations on the use-sites of the parameters, with a special constraint:
-  |sumtuples (Sub(use_site)(i)) <= def_site|.
+  |sumi (Sub(use_site)(i)) <= def_site|.
   
   Another way of looking at this case is nothing that the use-sites of paramters are leaves in the
   syntax tree. The information flow stops at these places. But information about the use of
@@ -192,7 +200,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   
 %%[[wrap=code
    ((Sup(1)(29)), (Sup(*)(30))) ++ ((Sup(1)(31)), (Sup(*)(32))) <= ((Sup(2)(15)), (Sup(*)(16)))  -- for x
-   ((Sup(1)(27)), (Sup(1)(28))) <= ((Sup(1)(17)), (Sup(1)(18)))                                 -- for y
+   ((Sup(1)(27)), (Sup(1)(28))) <= ((Sup(1)(17)), (Sup(1)(18)))                                  -- for y
 %%]
 
   That leaves us with only the addition-expressions to consider:
@@ -263,8 +271,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
 
 %%]
 
-  Types are assigned to each subexpression and variable. The language of
-  types is:
+  Types are assigned to each subexpression. The language of types is:
 
 %%[[wrap=code
   ty  ::=  Int    -- tycon int (Int)
@@ -273,8 +280,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
 %%]
 
   We assume that all programs are correctly typed according to the type
-  system in Figure~\ref{RulerUniquenessExamples.E.expr.base}. We further
-  assume that all types are 
+  system in Figure~\ref{RulerUniquenessExamples.E.expr.base}.
   
   \rulerCmdUse{RulerUniquenessExamples.E.expr.base}
   
@@ -318,41 +324,52 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   reference-count annotation should be smaller or equal to the uniqueness
   annotation.
   
-  These ordenings are important. The type system gets as input an annotated
+  The ordenings are important. The type system gets as input an annotated
   program and produces a set of constraints that hold between the annotations,
   if the annotations are valid. The semantics of these constraints make heavy
-  use of the fact that one annotation is greater or equal to another annotation.
+  use of the fact that one annotation is greater or equal to another annotation,
+  as we will see in Section~\ref{fill this in}.
   
   There are two types of constraints for the type system in this chapter:
 
 %%[[wrap=code
-  constr  ::=  (count,unq) =>= (count,unq)                               -- smaller or equal with coercion
-          |    sumtuples ((Sub(count)(i)),(Sub(unq)(i))) <= (count,unq)  -- total smaller or equal
+  constr  ::=  (count,unq) =>= (count,unq)                          -- smaller or equal with coercion
+          |    sumi ((Sub(count)(i)),(Sub(unq)(i))) <= (count,unq)  -- total smaller or equal
 %%]
 
-  The |=>=| constraint is generated at function applications. At function applications,
-  there is an annotated type for the parameter of the function and an annotated type
-  for the argument of the function application. These annotations are not independent:
+  As demonstrated in the example, the |=>=| constraint is used to propagate counts.
+  It specifies that the right-hand side should be greater or equal to the left-hand
+  side. So, counts for the left-hand side flow over the the right-hand side. The
+  right-hand side is allowed to be greater, if via another way a higher count is
+  demanded. 
   
-  These two annotations should match:
-  the number of times the argument is used, contributes to the number of times the
-  parameter is used. So, the information of the parameter should \emph{flow} into
-  the argument, denoted by |parameter =>= argument|.
+  With the |=>=| constraint ("flow"), we essentially check that all counts are
+  properly propagated from outermost expression to innermost expression. In a
+  function, the propagation is from body to parameters. The use-sites of the
+  parameters are at the leaves of the body. Counts and uniqueness properties
+  are established for each of these use-sites individually. These separate
+  pieces of information are combined to the definition-site of the parameters
+  by means of summing them up with the |sumi| constraint ("sum").
   
-  For example:
-
-%%[[wrap=code
-    (f :: Int -> Int 3
-%%]
-  
-  The |sumtuples| constraint sums up the results of the individual annotations
-  on each use-site of an identifier to the definition site of the identifier.
+  Section~\ref{Sect.CheckingConstraints} describes how the constraints are
+  checked.
 
 \section{Gathering constraints}
 \label{Sect.ConstraintGathering}
 
-direction
-co contra variant
+  Figure~\ref{RulerUniquenessExamples.U1.expr.base} lists the type rules for
+  the uniqueness type system.
+  
+  \rulerCmdUse{RulerUniquenessExamples.U1.expr.base}
+  
+  \rulerCmdUse{RulerUniquenessExamples.U1.prog.base}
+  
+  \rulerCmdUse{RulerUniquenessExamples.U1.flow.base}
+
+
+direction.
+co contra variant.
+constraint versus unification.
 
 
 \section{Checking constraints}

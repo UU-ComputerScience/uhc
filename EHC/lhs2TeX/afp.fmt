@@ -394,3 +394,6 @@
 %format =>= = "\triangleright"
 %format \+/ = "\uplus"
 %format \-/ = "\cup"
+%format tyx = "{\tau_{x}}"
+%format sumi = "\sum_{i}"
+%format opplus = "+"

@@ -341,4 +341,4 @@ $(TEXT_RULEUX_DRV_RUL): $(TEXT_RULEUX_SRC_CRUL) $(SHUFFLE)
 	$(SHUFFLE) --gen=20 --plain --order="1<20" --lhs2tex=no $< > $@
 
 $(TEXT_RULEUX_DRV_LTEX): $(TEXT_RULEUX_DRV_RUL) $(RULER2)
-	$(RULER2) $(RULER2_OPTS) -c --lhs2tex --base=$(TEXT_RULEUX) $< > $@
+	$(RULER2) $(RULER2_OPTS) --markchanges="* - E" --lhs2tex --base=$(TEXT_RULEUX) $< > $@
