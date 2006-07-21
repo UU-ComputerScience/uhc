@@ -61,7 +61,7 @@ type ARenMp = Map.Map HsName HsName
 aRenAdd :: [HsName] -> UID -> ARenMp -> ARenMp
 aRenAdd nL u m
   =  let  uL = mkNewUIDL (length nL) u
-     in   Map.fromList [ (n,hsnSuffix n ("~" ++ show u)) | (n,u) <- zip nL uL] `Map.union` m
+     in   Map.fromList [ (n,hsnSuffix n ("__" ++ show u)) | (n,u) <- zip nL uL] `Map.union` m
 
 aRenRepl :: ARenMp -> HsName -> HsName
 aRenRepl m n = maybe n id . Map.lookup n $ m
