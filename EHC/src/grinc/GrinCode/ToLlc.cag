@@ -3,211 +3,209 @@
 %include afp.fmt
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%  Llc code, top level %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options to adapt the structure of the generated code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[8
+-- Change the options according to your taste
 
-Merge everyting together into a Low-level C compilation unit
+SEM GrAGItf
+  | AGItf module.optJumpTailCalls = True   -- when True, tail calls are implemented with a goto
+                                           --            need to define the stackTweakInstruction in that case
+          module.optOwnParameters = True   -- when True, parameter passing is via the Stack datastructure
+                                           --            (forced to True when optJumpTailCalls is True)
+          module.optOwnLocals     = False  -- when True, local variables are allocated on the Stack datastructure
+          module.optTraceCall     = False  -- when True, function entrance/exit is logged
+          module.optTraceAssign   = False  -- not passed around yet, so not used.
 
+{
+-- assembler instruction to correct the C stack when
+-- jumping out of a function instead of doing a tail call
+-- should be "leave" for x86 processor
 
+stackTweakInstruction = "leave"
+}
 
+-- Declaration of the option attirbutes
 
+ATTR GrModule GrBind GrBindL GrExpr GrAlt GrAltL
+  [ optJumpTailCalls : {Bool}
+    optOwnParameters : {Bool}
+    optOwnLocals     : {Bool} 
+    optTraceCall     : {Bool}
+    optTraceAssign   : {Bool}
+  | | ]
+
+-- Force OwnParameters when JumpTailCalls
+
+SEM GrModule
+  | Mod bindL.optOwnParameters = @lhs.optOwnParameters || @lhs.optJumpTailCalls
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Attribute declarations: almost everything has a PP-representation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[8
 ATTR GrAGItf GrModule  [ entryNm: {HsName} | |  ]
 
 ATTR GrAGItf GrModule GrBindL GrBind GrExpr GrAltL GrAlt GrVal GrTag GrPat GrGlobal GrGlobalL [ | | llcDoc USE {>-<} {(text "")} : {PP_Doc} ]
 
+ATTR GrGlobal GrGlobalL [ | | initDoc USE {>-<} {(text "")} : {PP_Doc}
+                              declDoc USE {>-<} {(text "")} : {PP_Doc}]
+
 ATTR GrValL GrVal [ | | llcDocs : {[PP_Doc]} ]
 
-ATTR GrExpr GrAlt GrAltL [ numberParameters : {Int} | | localsF USE {.} {id}: {[HsName]->[HsName]} ]
+ATTR GrExpr GrAlt GrAltL [ numberParameters : {Int}
+                         |
+                         | localsF USE {.} {id}: {[HsName]->[HsName]} 
+                           maxChildParameters USE {`max`} {0} : {Int}
+                         ]
 
+ATTR GrBindL GrBind GrExpr GrAlt GrAltL GrGlobal GrGlobalL [ maxConstrParameters : {Int} | | ]
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code generation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[8
+                  
 SEM GrValL
   | Nil lhs.llcDocs = []
   | Cons lhs.llcDocs = @hd.llcDoc : @tl.llcDocs
 
-
 SEM GrModule
-  | Mod   lhs . llcDoc = comment ("Generated C code for module " ++ show @baseName ++ " entry name " ++ show @lhs.entryNm)
+  | Mod   lhs . llcDoc = moduleHeader @baseName @lhs.entryNm
                          >-< comment "Tag constants"
-                         >-< indent 4 (tagConstants @evalTagMp)
+                         >-< tagConstants @evalTagMp
                          >-< comment "Global table"
-                         >-< indent 4 @globalL.llcDoc
+                         >-< @globalL.declDoc
+                         >-< initMethod @globalL.initDoc
                          >-< comment "Function definitions"
                          >-< @bindL.llcDoc
 
+          loc . maxConstrParameters = foldr max 0 (map (ctagArity.snd) (concat (map snd @ctagsMp)))
+
 SEM GrGlobal
-  | Global lhs.llcDoc = constantDefinition ((text.show) @nm) @val.llcDoc
+  | Global lhs.initDoc =  let vs = @val.llcDocs
+                              n  = length vs
+                              pn = show @nm
+                              p  = text pn
+                          in  assignment p (allocate pn n @lhs.maxConstrParameters)
+                              >-< vertically (zipWith assignment (map (arrayindex (castpt p)) [0..]) vs)
 
-
+           lhs.declDoc =  "GrWord" >#< show @nm >|< ";"
 
 SEM GrBind
-  | Bind  lhs . llcDoc = methodHeader @nm
-                         >-< indent 4 (comment ("locals: " ++ show (@expr.localsF [])))
-                         >-< indent 4 (methodParameters @argNmL)
-                         >-< indent 4 @expr.llcDoc
-                         >-< methodFooter
+  | Bind  lhs . llcDoc = methodHeader @lhs.optTraceCall @lhs.optOwnParameters @nm @argNmL
+                         >-< indent 4 (   methodLocals @lhs.optOwnLocals @loc.locals
+                                      >-< ppWhen @lhs.optOwnParameters 
+                                                 (methodParameters @lhs.optOwnLocals @argNmL)
+                                      >-< ppWhen @loc.ownAllocation
+                                                 (methodEnter (if @lhs.optOwnLocals     then length @loc.locals       else 0) 
+                                                              (if @lhs.optOwnParameters then @expr.maxChildParameters else 0)
+                                                 )
+                                      >-< @expr.llcDoc
+                                      >-< ppWhen @loc.ownAllocation
+                                                 methodLeave
+                                      )
+                         >-< methodFooter @lhs.optTraceCall @nm
 
           expr . numberParameters = length @argNmL
-
-
-{
-	
-stackpointer = text "SP";	
-	
-derefPostincrement p = text "*" >|< p >|< "++"
-
-decrementWith p n = p >#< "-=" >#< n >#< ";"
-	
-methodHeader :: HsName -> PP_Doc
-methodHeader nm
- = 	text ("void " ++ show nm ++ "(void) {")
-
-methodFooter ::  PP_Doc
-methodFooter
- = 	text "}"
-
-methodParameters :: [HsName] -> PP_Doc
-methodParameters ps
- = comment "parameters"
-   >-< vertically (zipWith methodParameter ps [-(length ps)..])
- 
-methodParameter :: HsName -> Int -> PP_Doc
-methodParameter p n
- = assignment (text (show p)) 
-              (arrayindex stackpointer (text (show n)))
- 
-vertically :: [PP_Doc] -> PP_Doc
-vertically = foldr (>-<) empty
-
-horizontally :: [PP_Doc] -> PP_Doc
-horizontally = foldr (>|<) empty
-
-intersperse :: a -> [a] -> [a]
-intersperse _ []  = []
-intersperse _ xs@[_] = xs
-intersperse i (x:xs)  = x:i:(intersperse i xs)
-
-
-constantDefinition :: PP_Doc -> PP_Doc -> PP_Doc
-constantDefinition x v
- = "Pointer" >#< x >#< "=" >#< v >#< ";"
-
-tagConstants :: EvApTagMp -> PP_Doc
-tagConstants eas
- = let f ((t,s),_) n = constantDefinition ((text.showGrTag) t) ((text.show) n)
-   in  vertically (zipWith f eas [0..])
-
-
-
-}
+          loc  . locals = @expr.localsF []
+          loc  . ownAllocation = @lhs.optOwnParameters || @lhs.optOwnLocals
 
 
 SEM GrExpr
- | Seq     lhs.llcDoc = @expr.llcDoc 
+ | Seq     lhs.llcDoc = @expr.llcDoc
                         >-< @body.llcDoc
-           
- | Unit    lhs.llcDoc = if @isLastExpr
-                         then comment "Unit (Return)"
-                              >-< decrementWith stackpointer @lhs.numberParameters
-                              >-< vertically (zipWith yieldit @val.llcDocs [0..])
-                         else comment "Unit (Intermediate)"
-                              >-< vertically (zipWith assignment (map (text.show) @lhs.targets)
-                                                                 (@val.llcDocs)
-                                             )
 
- | Store   lhs.llcDoc = let p  = (text.show.head) @lhs.targets
+ | Unit    lhs.llcDoc = comment "Unit"
+                        >-< vertically (zipWith assignment
+                                                (if @isLastExpr
+                                                 then (map (arrayindex returnpointer) [0..])
+                                                 else (map (text.show) @lhs.targets)
+                                                )
+                                                @val.llcDocs
+                                       )
+
+
+ | Store   lhs.llcDoc = let pn = (show.head) @lhs.targets
+                            p  = text pn
                             vs = @val.llcDocs
                             n  = length vs
                         in comment "Store"
-                           >-< assignment p (allocate n)
-                           >-< vertically (zipWith assignment (map (arrayindex p . text . show) [0..]) vs)
- 
+                           >-< assignment p (allocate pn n @lhs.maxConstrParameters)
+                           >-< vertically (zipWith assignment (map (arrayindex (castpt p)) [0..]) vs)
+
+           lhs.localsF = (@lhs.targets ++)
+
  | Update  lhs.llcDoc = let p = (text.show) @nm
                             vs = @val.llcDocs
                         in comment "Update"
-                           >-< vertically (zipWith assignment (map (arrayindex p . text . show) [0..]) vs)
+                           >-< vertically (zipWith assignment (map (arrayindex (castpt p)) [0..]) vs)
 
  | Fetch   lhs.llcDoc = comment "Fetch"
                         >-< assignment ((text.show.head) @lhs.targets)
-                                       (arrayindex ((text.show) @nm) ((text.show.fromJust) @mbOffset))
-                                       
+                                       (arrayindex ((castpt.text.show) @nm) (fromJust @mbOffset))
+
            lhs.localsF = (@lhs.targets ++)
-                                       
+
  | Case    lhs.llcDoc = comment "Case"
                         >-< caseHeader @val.llcDoc
                         >-< indent 4 @altL.llcDoc
                         >-< caseFooter
-                        
- | Call    lhs.llcDoc = (if @isLastExpr
-                         then comment "Call (Tail)" >-< decrementWith stackpointer @lhs.numberParameters
-                         else comment "Call (Normal)")
-						>-< vertically (map parameter @argL.llcDocs)                         
-						>-< call ((text.show) @nm)
-                        >-< vertically (zipWith assignment 
-                                               (map (text.show) @lhs.targets)
-                                               (map (arrayindex stackpointer . text . show) [0..])
+
+           lhs.localsF = ((filter (not . (=="_") . show) @lhs.targets) ++) . @altL.localsF
+
+ | Call    lhs.llcDoc = if @isLastExpr && @lhs.optJumpTailCalls
+                         then (   comment "Call (Tail)"
+                              >-< vertically (zipWith assignment
+                                                      (map (arrayindex returnpointer) [1..])
+                                                      @argL.llcDocs
+                                             )
+                              >-< indent 4 methodLeave
+                              >-< incrementWith stackpointer (length @argL - @lhs.numberParameters)
+						      >-< vertically (zipWith assignment
+                                                      (map (arrayindex stackpointer ) [-1,-2..])
+                                                      (map (arrayindex returnpointer) [1..length @argL])
+                                             )
+						      >-< ppWhen @lhs.optTraceCall (trace ("jumping to "++ show @nm))
+                              >-< jump @nm
+                              )
+                         else (   comment "Call (Normal)"
+						      >-< (if @lhs.optOwnParameters
+						           then (   vertically (zipWith assignment
+                                                                (map (arrayindex stackpointer) [-1,-2..])
+                                                                @argL.llcDocs
+                                                       )
+                                        >-< callStat @nm []
+                                        )
+                                   else callStat @nm @argL.llcDocs
+                                  )
+                              >-< vertically (zipWith assignment
+                                                      (map (text.show) @lhs.targets)
+                                                      (map (arrayindex returnpointer) [0..])
+                                             )         
+                              )
+
+           lhs.localsF = (@lhs.targets ++)
+           lhs.maxChildParameters = length @argL
+
+ | FFI     lhs.llcDoc = comment "FFI"
+                        >-< assignment (if @isLastExpr
+                                        then (arrayindex returnpointer 0)
+                                        else ((text.show.head) @lhs.targets)
                                        )
-                         
- | FFI     lhs.llcDoc = if @isLastExpr
-                         then (   comment "FFI (Return)"
-                              >-< decrementWith stackpointer @lhs.numberParameters
-                              >-< yieldit (fficall (text @nm) (map (text.show) @argL)) 0
-                              )
-                         else (   comment "FFI (Normal)"
-                              >-< assignment ((text.show.head) @lhs.targets) 
-                                             (fficall (text @nm) (map (text.show) @argL))
-                              )
+                                       (call @nm (map (text.show) @argL))
  
+           lhs.localsF = (@lhs.targets ++)
+
  | App     lhs.llcDoc = comment "App: SHOULDNT"
  | Eval    lhs.llcDoc = comment "Eval: SHOULDNT"
  | Throw   lhs.llcDoc = comment "Throw: TODO"
  | Catch   lhs.llcDoc = comment "Catch: TODO"
-
-
-{
-caseHeader :: PP_Doc -> PP_Doc
-caseHeader x
- = 	"switch (" >|< x >|< ")" >#< "{"
-
-caseFooter :: PP_Doc
-caseFooter 
- = text "}"
-
-comment :: String -> PP_Doc
-comment s = text ("/* " ++ s ++ " */")
-
-allocate :: Int -> PP_Doc
-allocate n
- = "heapalloc" >|< "(" >|< show n >|< ")"
-
-call :: PP_Doc -> PP_Doc
-call f
- = f >|< "()" >|< ";"
-
-fficall :: PP_Doc -> [PP_Doc] -> PP_Doc
-fficall f ps
- = f >#< "(" >|< horizontally (intersperse (text ", ") ps) >|< ")"
-
-arrayindex :: PP_Doc -> PP_Doc -> PP_Doc
-arrayindex a i 
- = a >#< "[" >#< i >#< "]"
-
-assignment :: PP_Doc -> PP_Doc -> PP_Doc
-assignment v e
- = v >#< text "=" >#< e >|< ";"
-
-parameter :: PP_Doc -> PP_Doc
-parameter p
- = assignment (derefPostincrement stackpointer) p
-
-yieldit  :: PP_Doc -> Int -> PP_Doc
-yieldit r n
- = assignment (arrayindex stackpointer (text (show n))) r
-
-}
-
-
-
 
 
 SEM GrAlt
@@ -221,6 +219,7 @@ SEM GrVal
  | Node    lhs.llcDoc = "{" >#< horizontally (intersperse (text ", ") (@tag.llcDoc : @fldL.llcDocs)) >#< "}"
  | * - LitInt Var Tag Node lhs.llcDoc = text "GrVal:other"
 
+
 SEM GrVal
  | Node     lhs.llcDocs = @tag.llcDoc : @fldL.llcDocs
  | * - Node lhs.llcDocs = repeat (text "GrVal:others")
@@ -231,14 +230,6 @@ SEM GrTag
  | Var     lhs.llcDoc = text (show @nm)
  | Unboxed lhs.llcDoc = text "GrTag:Unboxed"
 
-
-{
-showGrTag :: GrTag -> String
-showGrTag(GrTag_Lit categ n nm) = categStr categ ++ show nm	
-showGrTag (GrTag_Var nm) = show nm
-showGrTag (GrTag_Unboxed) = "GrTag:Unboxed"
-}
-
 SEM GrPat
  | Tag     lhs.llcDoc = @tag.llcDoc
  | Var     lhs.llcDoc = text "GrPat:Var"
@@ -246,20 +237,28 @@ SEM GrPat
  | * - Tag Var LitInt lhs.llcDoc = text "GrPat:other"
 
 
-
-
 {
+showGrTag :: GrTag -> String
+showGrTag (GrTag_Lit categ n nm) = categStr categ ++ show nm
+showGrTag (GrTag_Var nm) = show nm
+showGrTag (GrTag_Unboxed) = "GrTag:Unboxed"
+
 categStr c = case c of
                GrTagCon        -> "C"
                GrTagHole       -> "H"
                GrTagRec        -> "R"
                GrTagApp        -> "A"
-               GrTagFun        -> "F" 
+               GrTagFun        -> "F"
                GrTagPApp need  -> 'P' : show need
 }
 
 
+%%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Determining the target
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[8
 
 ATTR AllGrExpr [ targets : {[HsName]} | | ]
 ATTR GrPat GrTag [ | |  patternNames: {[HsName]} ]
@@ -271,7 +270,7 @@ SEM GrExpr
   | Seq      expr . targets = @pat.patternNames
              body . targets = @lhs.targets
 
-SEM GrPat 
+SEM GrPat
   | Var   lhs  .  patternNames = [@nm]
   | Node  lhs  .  patternNames = @tag.patternNames ++ @fldL
   | * - Var Node Tag  lhs  .  patternNames  =  []
@@ -280,7 +279,228 @@ SEM GrTag
   | Var      lhs  .  patternNames  = [@nm]
   | Unboxed  lhs  .  patternNames  = []
   | * - Var Unboxed lhs  .  patternNames  = [wildcardNr]
+%%]
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%  EHC specific constructions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[8
+{
+moduleHeader :: HsName -> HsName -> PP_Doc
+moduleHeader baseNm entryNm
+ = comment ("Generated C code for module " ++ show baseNm ++ " entry name " ++ show entryNm)
+   >-< text "typedef int GrWord;"
+   >-< text "typedef GrWord* Pointer;"
+   >-< text ""
+   >-< text "extern Pointer SP, RP;"
+   >-< text "Pointer BP;"
+   >-< text "GrWord _;"
+   >-< text ""
+
+
+methodHeader :: Bool -> Bool -> HsName -> [HsName] -> PP_Doc
+methodHeader optTrace optOwn nm params
+ = 	let parameters = if optOwn 
+                      then "void"
+                      else commaSeparated (map (declareName "GrWord") params)
+    in  "int" >#< functionName nm >|< "(" >|< parameters >|< ")" >#< "{"
+        >-< ppWhen optTrace (trace ("entering " ++ show nm))
+
+
+methodFooter ::  Bool -> HsName -> PP_Doc
+methodFooter optTrace nm
+ =  ppWhen optTrace (trace ("leaving "++show nm))
+    >-< text "}"
+
+methodEnter :: Int -> Int -> PP_Doc
+methodEnter n k
+ = comment "Enter"
+   >-< assignment (deref stackpointer) (castword basepointer)
+   >-< assignment basepointer stackpointer
+   >-< incrementWith stackpointer (n+k+1)
+   
+methodLeave :: PP_Doc
+methodLeave
+ = comment "Leave"
+   >-< assignment stackpointer basepointer
+   >-< assignment basepointer (castpt (deref stackpointer))
+
+methodLocals :: Bool -> [HsName] -> PP_Doc
+methodLocals optOwn ns
+ = ppUnless (null ns)
+            (   comment "Local names"
+            >-< if optOwn
+                then allocateNames ns [1..]
+                else declareNames "GrWord" ns
+            )
+
+methodParameters :: Bool -> [HsName] -> PP_Doc
+methodParameters optOwn ns
+ = ppUnless (null ns)
+            (   comment "Parameters"
+            >-< if optOwn
+                then allocateNames ns [-1,-2..]
+                else (   declareNames "GrWord" ns
+                     >-< vertically (zipWith methodParameter ns [-1,-2..])
+                     )
+            )
+
+methodParameter :: HsName -> Int -> PP_Doc
+methodParameter p n
+ = assignment (text (show p))
+              (arrayindex stackpointer n)
+
+allocateNames :: [HsName] -> [Int] -> PP_Doc
+allocateNames names numbers
+ = vertically (zipWith allocateName names numbers)
+
+allocateName :: HsName -> Int -> PP_Doc
+allocateName name number
+ = macrodefinition (text (show name)) (arrayindex basepointer number)
+
+declareNames :: String -> [HsName] -> PP_Doc
+declareNames tp ns
+ = tp >#< commaSeparated (map show ns) >|< ";"
+
+declareName :: String -> HsName -> String
+declareName tp nm
+ = tp ++ (' ' : show nm)
+
+tagConstants :: EvApTagMp -> PP_Doc
+tagConstants eas
+ = let f ((t,s),_) n = constantDefinition "GrWord" ((text.showGrTag) t) ((text.show) n)
+   in  vertically (zipWith f eas [0..])
+
+functionName :: HsName -> String
+functionName nm
+ = "fun_" ++ show nm
+
+callStat ::  HsName -> [PP_Doc] -> PP_Doc
+callStat nm ps
+ = call (functionName nm) ps >|< ";"
+
+jump :: HsName -> PP_Doc
+jump nm
+ =  ("asm(\"" ++ stackTweakInstruction ++ "\");")
+    >-< "goto *((void*)" >|< functionName nm >|< ");"
+
+basepointer   = text "BP";
+stackpointer  = text "SP";
+returnpointer = text "RP";
+
+initMethod :: PP_Doc -> PP_Doc
+initMethod b
+ = text "void initialize(void) {"
+   >-< indent 4 (assignment basepointer (text "0"))
+   >-< indent 4 b
+   >-< text "}"
+
+constantDefinition :: String -> PP_Doc -> PP_Doc -> PP_Doc
+constantDefinition tp x v
+ = "#define" >#< x >#< v
+
+castpt :: PP_Doc -> PP_Doc
+castpt = cast "Pointer"
+
+castword :: PP_Doc -> PP_Doc
+castword = cast "GrWord"
+
+-- n1 is the number of parameters of the tag
+-- n2 is the maximum number of parameters of all constructorfunctions
+-- tags other than C may be overwritten later with a C-tag, which might have more parameters.
+-- We anticipate here for the maximum number of parameters.
+-- Obvious improvement: do not take the global maximum, but only the maximum over the constructors
+-- that are actually possible for this function.
+-- Source of this information could be the Haskell-type, or the Grin HPT-analysis.
+
+allocate :: String -> Int -> Int -> PP_Doc
+allocate (tag:_) n1 n2
+ = let n | tag=='C'  = n1
+         | otherwise = max n1 n2
+   in text "heapalloc(" >|< show n >|< ")"
+}
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Auxiliary PrettyPrint functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[8
+{
+ppUnless :: Bool -> PP_Doc -> PP_Doc
+ppUnless b p = if b then empty else p
+
+ppWhen :: Bool -> PP_Doc -> PP_Doc
+ppWhen b p = if b then p else empty
+
+vertically :: [PP_Doc] -> PP_Doc
+vertically = foldr (>-<) empty
+
+horizontally :: [PP_Doc] -> PP_Doc
+horizontally = foldr (>|<) empty
+
+intersperse :: a -> [a] -> [a]
+intersperse _ []  = []
+intersperse _ xs@[_] = xs
+intersperse i (x:xs)  = x:i:(intersperse i xs)
+
+commaSeparated :: [String] -> String
+commaSeparated = concat . intersperse ", "
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Building a C program
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[8
+{
+macrodefinition :: PP_Doc -> PP_Doc -> PP_Doc
+macrodefinition nm body
+ = "#define" >#< nm >#< body
+
+deref p = text "*" >|< p
+
+decrementWith p n
+ = incrementWith p (-n)
+
+incrementWith p n
+ = if n>0
+   then p >#< "+=" >#< n >#< ";"
+   else if n<0
+   then p >#< "-=" >#< (-n) >#< ";"
+   else empty
+
+trace :: String -> PP_Doc
+trace s
+ = text ("printf(\"" ++ s ++ "\\n\");")
+
+cast :: String -> PP_Doc -> PP_Doc
+cast tp x = "((" >|< tp >|< ")(" >|< x >|< "))"
+
+caseHeader :: PP_Doc -> PP_Doc
+caseHeader x
+ = 	"switch (" >|< x >|< ")" >#< "{"
+
+caseFooter :: PP_Doc
+caseFooter
+ = text "}"
+
+comment :: String -> PP_Doc
+comment s = text ("/* " ++ s ++ " */")
+
+call :: String -> [PP_Doc] -> PP_Doc
+call f ps
+ = f >|< "(" >|< horizontally (intersperse (text ", ") ps) >|< ")"
+
+arrayindex :: PP_Doc -> Int -> PP_Doc
+arrayindex a i
+ = a >#< "[" >#< show i >#< "]"
+
+assignment :: PP_Doc -> PP_Doc -> PP_Doc
+assignment v e
+ = v >#< text "=" >#< e >|< ";"
+--   >#< "printf(\"assignment" >#< v >#< "=" >#< e >#< " : %d\\n\", " >#< v >#< ");"
+}
 
 %%]
