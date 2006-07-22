@@ -214,10 +214,12 @@ cpImportGather
        => (n -> CompilePhase n u i e ()) -> n -> CompilePhase n u i e ()
 cpImportGather imp1Mod modNm
   = do { cr <- get
-       ; let impL m = [ i | i <- cuImports (crCU m cr), not (cusIsImpKnown (crCUState i cr)) ]
-             imps m = cpSeq (map (\n -> cpSeq [imp1Mod n, imps n]) (impL m))
        ; cpSeq [imp1Mod modNm, imps modNm, cpImportScc]
        }
+  where imps m = do { cr <- get
+                    ; let impL m = [ i | i <- cuImports (crCU m cr), not (cusIsImpKnown (crCUState i cr)) ]
+                    ; cpSeq (map (\n -> cpSeq [imp1Mod n, imps n]) (impL m))
+                    }
 
 crImportDepL :: (CompileUnit u n s) => CompileRun n u i e -> [(n,[n])]
 crImportDepL = map (\cu -> (cuKey cu,cuImports cu)) . Map.elems . crCUCache
