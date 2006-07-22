@@ -651,9 +651,7 @@ doCompileRun fn opts
                            (cpCompileCU (Just HSOnlyImports) nm)
                     }
        ; _ <- runStateT (cpSeq [ imp (Just fp) topModNm
-                               -- , cpPP "1"
                                , cpImportGather (imp Nothing) topModNm
-                               -- , cpPP "2"
                                , cpCompileOrderedCUs
                                ]) initialState
        ; return ()
