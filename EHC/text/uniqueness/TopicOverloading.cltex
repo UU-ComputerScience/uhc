@@ -3,16 +3,114 @@
 \chapter{Dealing with overloading}
 \label{chapt.Overloading}
 
+Uniqueness typing and overloading interact with each other. There are several ways to deal with
+this interaction. The easiest way is to assume that all uniqueness annotations on an overloaded
+function are shared, which basically keeps the uniqueness typing out of the overloading
+business, but results into poor typings for expressions that use overloaded functions. There are
+other ways, which does involve a higher amount of interaction between both systems, that give
+better results.
+
 
 \section{Example}
+
+  Consider the following expression:
+
+%%[[wrap=code
+class Replaceable f where
+  replace :: b -> f a -> f b
+
+instance Replace Maybe where
+  replace _ Nothing   = Nothing
+  replace x (Just _)  = Just x
+
+data Tup a = Tup a a
+
+instance Replace Tup where
+  replace x (Tup _ _) = Tup x x
+
+instance Functor f => Replaceable f where
+  replace x = fmap (const x)
+%%]
+
+  The question is: what is the constraint set of |replace|?
 
 
 \section{Conservative approach}
 
+  The approach we mentioned in the introduction of this chapter, works by inventing an annotated type of |replace|, with all
+  annotations set to shared. This has an effect on the uses of an overloaded identifier, and for the expressions of an
+  instance declaration.
+  
+  Suppose we have the following situation:
+
+%%[[wrap=code
+class ... where
+  (Sup(ident)(a)) :: (Sub(utau)(1))
+
+instance I .. where
+  (Sup(ident)(b)) = E :: (Sub(utau)(2))
+
+... (Sup(ident)(c)) :: (Sub(utau)(3)) ...
+%%]
+
+  To correctly deal with all uses of an overloaded identifier, we construct a new binding group for each identifier
+  in a class declaration, and generate a constraint set which forces each uniqueness variable on the annotated type
+  of the overloaded identifier to |*|. In this case, there is only one overloaded identifier, so only one new
+  binding group is created, with constraints that map each uniqueness variable in |(Sub(utau)(1))| to |*|.
+  
+  At the use-site of an overloaded identifier, in this case |(Sup(ident)(c))|, we generate an |Inst| constraint
+  that refers to the corresponding binding group.
+
+  An |Inst| constraint for an overloaded identifier, refers to
+  the corresponding binding group.
+
+  For |replace|, this would give the following annotated type and constraints:
+
+%%[[wrap=code
+replace :: (Annot(b)(3)) (Annot(->)(1)) (Annot(f)(4)) (Annot(a)(5)) (Annot(->)(2)) (Annot(f)(6)) (Annot(b)(7)) & { * =>= (Delta(i)), (Delta(i)) =>= * | 1 <= i <= 7 }
+%%]
+
+  An instance declaration requires special treatment. Without special treatment, inference on the constraint set for an
+  expression in an instance declaration, can result into a substitution with lower values than |*|.
+
+  T
+
+
+  An optimizer
+
+
+  The result is that
+  the use-site type and the definition-site type do not match, giving potential problems with certain optimizations or
+  coercions. The solution is simple: obtain the annotated type of each right-hand side expression in an instance declaration,
+  and add the constraints that map each uniqueness variable to |*|, in a
+  way that we explained above. This annotated type is an instantiation of the type of the corresponding annotated type of the class declaration.
+
+  Technical details.
+
+  Are we allowed to use the above described constraint set, which causes a substitution to map each uniqueness variable to
+  |*|, as the \emph{entire} constraint set for an overloaded identifier? To prove this, we show that any valid substitution
+  of the invented constraint set, is also a valid substitution for the constraint set inferred for each right-hand side
+  expression in an instance declaration.
+
+  Suppose that |Q| is the constraint set obtained by performing constraint gathering on the right-hand side |E| of a binding
+  in an instance declaration. Suppose that |P| is the corresponding constraint set constructed by the method described
+  above, on the annotated type of |E|. The final constraint set |Q'| of the right-hand side is |Q| with |P| added, as
+  described above. We now have to show that |P| \emph{entails} |Q'| for the uniqueness variables that are mentioned in |P|.
+  Since |P| maps each uniqueness variable to the highest value, no constraint in |Q| can demand a higher value for a uniquness variable. So, each
+  substitution of |P| is also a valid substitution for |Q'|. We are almost there: we showed that the approach is valid for
+  the annotated type of |E|, but not the annotated type of the class declaration.
+
+  The assumption to map each uniqueness variable to the
+  highest value, is a valid, but concervative, assumption.
 
 \section{Improved approach}
+
+  The above procedure gives poor uniqueness results when using overloaded identifiers.
+
+  is too conservative.
 
 
 \section{Advanced approach}
 
 %%]
+

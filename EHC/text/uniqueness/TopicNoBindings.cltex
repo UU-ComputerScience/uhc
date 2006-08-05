@@ -41,7 +41,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   lazy language, would evalutate both arguments, allocate memory for an integer, and store the result of
   the addition there. But in this case, no memory needs to be allocated for the result of the additions.
   Since |y| is unique, the value of |x| can be added directly to the value of |y|. The result of the
-  addition is also unique, and the value of |x| can be added directly again for the second addition. 
+  addition is also unique, and the value of |x| can be added directly again for the second addition.
   The result: less memory allocation, less copying, and better cache utilization.
   
   \subsubsection{Uniqueness annotations}
@@ -274,30 +274,30 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   Types are assigned to each subexpression. The language of types is:
 
 %%[[wrap=code
-  ty  ::=  Int    -- tycon int (Int)
-        |  (->)   -- tycon arrow (Arrow)
-        |  ty ty  -- type application (App)
+  tau  ::=  Int      -- tycon int (Int)
+       |    (->)     -- tycon arrow (Arrow)
+       |    tau tau  -- type application (App)
 %%]
 
   We assume that all programs are correctly typed according to the type
   system in Figure~\ref{RulerUniquenessExamples.E.expr.base}.
-  
+
   \rulerCmdUse{RulerUniquenessExamples.E.expr.base}
-  
-  
+
+
 \section{Types, Annotations and Constraints}
 
   For the uniqueness type system, we extend the language of types to include
   reference-count annotations and uniqueness annotations. These annotations are
   attached to type constructors:
-  
+
 %%[[wrap=code
-  ty  ::=  Sup(Int)((count,unq))    -- tycon int (Int)
-        |  Sup((->))((count,unq))   -- tycon arrow (Arrow)
-        |  ty ty                    -- type application (App)
-  
-  count ::=  0 | 1 | 2              -- reference-count annotation
-  unq   ::=  0 | 1 | *              -- uniqueness annotation
+  utau  ::=  Sup(Int)((count,unq))    -- tycon int (Int)
+        |    Sup((->))((count,unq))   -- tycon arrow (Arrow)
+        |    utau utau                -- type application (App)
+
+  count ::=  0 | 1 | 2                -- reference-count annotation
+  unq   ::=  0 | 1 | *                -- uniqueness annotation
 %%]
 
   Why annotate the type constructors? Consider how a value is represented in
@@ -306,7 +306,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   single type constructor in the corresponding type. We get the uniqueness
   properties of an area of memory by looking at the annotation on the
   corresponding type constructor.
-  
+
   Another question is: why is the arrow type constructor annotated? There are
   several reasons. From a practical view considering code generation: functions
   are also values: \emph{closures}. Such a value is represented by an area of
@@ -314,7 +314,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   theoretical point of view, unique functions have the property that they can
   be safely inlined. So, the arrow type constructor has to be annotated as well,
   like any other value.
-  
+
   A type constructor gets two annotations: a reference-count annotation and
   a uniqueness annotation. Both the reference-count annotations and the
   uniqueness annotations are totally ordered. For the reference-count
@@ -323,13 +323,13 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   annotations can be compared with each other in the obvious way. A
   reference-count annotation should be smaller or equal to the uniqueness
   annotation.
-  
+
   The ordenings are important. The type system gets as input an annotated
   program and produces a set of constraints that hold between the annotations,
   if the annotations are valid. The semantics of these constraints make heavy
   use of the fact that one annotation is greater or equal to another annotation,
   as we will see in Section~\ref{fill this in}.
-  
+
   There are two types of constraints for the type system in this chapter:
 
 %%[[wrap=code
@@ -341,8 +341,8 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   It specifies that the right-hand side should be greater or equal to the left-hand
   side. So, counts for the left-hand side flow over the the right-hand side. The
   right-hand side is allowed to be greater, if via another way a higher count is
-  demanded. 
-  
+  demanded.
+
   With the |=>=| constraint ("flow"), we essentially check that all counts are
   properly propagated from outermost expression to innermost expression. In a
   function, the propagation is from body to parameters. The use-sites of the
@@ -351,35 +351,178 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   pieces of information are combined to the definition-site of the parameters
   by means of summing them up with the |sumi| constraint ("sum").
   
+  When we say that some annotation \emph{flows} into another annotation, we mean that
+  the counts and uniqueness values are propagated accordingly, witnessed by some
+  |=>=| constraints.
+
   Section~\ref{Sect.CheckingConstraints} describes how the constraints are
   checked.
 
 \section{Gathering constraints}
 \label{Sect.ConstraintGathering}
 
-  Figure~\ref{RulerUniquenessExamples.U1.expr.base} lists the type rules for
-  the uniqueness type system.
-  
-  \rulerCmdUse{RulerUniquenessExamples.U1.expr.base}
-  
+  This section lists type rules for the uniqueness type system. Figure~\ref{RulerUniquenessExamples.U1.prog.base} defines
+  that an annotated program is valid when the gathered constraints are satisfied. Section~\ref{Sect.CheckingConstraints}
+  deals with constraint satisfiability. Constraints are gathered according to the expression type rules in
+  Figure~\ref{RulerUniquenessExamples.U1.expr.base}. We will now consider the rules in more detail.
+
   \rulerCmdUse{RulerUniquenessExamples.U1.prog.base}
+
+  The type rule for the whole program (Figure~\ref{RulerUniquenessExamples.U1.prog.base}) states that the resulting expression has at least a reference count of one. By assuming
+  that all annotation pairs are consistent - meaning that the uniqueness annotation is greater or equal than the
+  reference-count annotation - this means that the resulting expression is either unique or shared. We pattern
+  match on the annotated type of the expression to obtain the annotation |delta| on the outermost type constructor.
+  We pattern match further to extract the reference-count annotation from |delta|, and generate a constraint
+  that specifies that |(Sub(delta)(ref))| is at least greater or equal to |1|. This constraint, and the
+  constraints gathered from the expression itself, must be satisfied for the program to be valid according to
+  the uniqueness type system.
+
+  We write types in two ways in the type rules. A type written as |utau| has annotations. A type written as
+  |tau| has no annotations. We sometimes write |(Sub(tau)(a))| to refer to the unannotated version of |(Sub(utau)(a))|.
+  A |utau| is also denoted as |Sup(tau)(delta)|, where |delta| is the annotation.
+
+  \rulerCmdUse{RulerUniquenessExamples.U1.expr.base}
+
+  Constraints for an expression are gathered by a traversal over the expression, as is described by Figure~\ref{RulerUniquenessExamples.U1.expr.base}.
+  The case for integers is the easiest: integers come in both fashions and nothing has to be checked for them. We neither have to check anything
+  for the use-sites of identifiers, except that the annotated type is the type connected to the identifier, with some arbitrary annotation. This
+  anotation is not really arbitrary, but that is handled by the case for the lambda. So, not much has to be done for the base-cases of an
+  expression.
+
+  The case for integer addition is slightly more complicated. Aside from consistency, we demand nothing else about the uniqueness
+  component of the result of the addition. On the other hand, we check that the reference-count annotation of the parameters is
+  greater than the reference-count components of the result of the plus. For that, we generate the |=>=| constraint between the
+  reference-count annotation on the result and both arguments by means of pattern matching on the annotation.
+
+  The function application is perhaps the most difficult case in the uniqueness type system. Three things have to be done: check that
+  the annotations on the result of the function application propagate into the function, check that the annotations on the parameter
+  of the function propagate into the argument, and finally, check that the reference-count annotation on the function is at least the
+  reference-count of the value.
   
+  For checking propagation, we bring to the attention that the value passed to a function, or the value returned by the function, can
+  be a function itself. Propagation deals with all annotated type constructors in the type to make sure that argument and parameter, and
+  function result and result, are properly connected. Note that variance playes a role here: the direction of an argument of a function
+  is the opposite to the result of the function. Suppose that a function |f| is passed to function |g| as parameter, then |g| applies the
+  function, and passes some argument |x|. Propagation is from |x|, to the parameter of |g|, and inside |g| to the result-value of |g|. The
+  flow for such an annotation is the other way around than the usual flow. In Figure~\ref{RulerUniquenessExamples.U1.flow.base} we list the
+  type rules that walk over the type and generate the flow-constraints for each two corresponding annotations in the proper direction.
+
   \rulerCmdUse{RulerUniquenessExamples.U1.flow.base}
+  
+  The last case to deal with is lambda abstraction. We use an auxilery rule that gathers all annotated types of the use-sites of the
+  identifier that is lambda lifted. There is no check of propagation between the result of the body and the result-part of the
+  annotated type of the lambda function. As is visible in the type rules, we force the annotated types to be the same. Weakening this
+  annotation such that it fits is left over the the use of the function, the |=>=| generation at the function application case.
 
-
-direction.
-co contra variant.
-constraint versus unification.
+  As a final note about the type rules: the type system can be formulated in a less complicated, but not syntax directed, way. By adding
+  an additional case for coercions, the places where we generated a |=>=|-constraint can be extracted and handled by this special
+  non-deterministic case. However, that would make it unclear at which places the |=>=| constraint pops up, which would in the end
+  more difficult to understand than our syntax directed version.
 
 
 \section{Checking constraints}
 \label{Sect.CheckingConstraints}
 
-  Parameterizable uniqueness properties.
-  Transfer functions.
-  Coercions.
-  Ignore-me-flow-constraint for uniqueness.
+  We focus on checking the constraints in this section. There are several ways to interpret the constraints, depending on what
+  properties we want that hold when the constraints are satisfied. For example, like linearity, a type is unique when the
+  corresponding values are \emph{exactly} used once. But, we could interpret the constraints also in a weaker way, and say that the
+  corresponding values of a unique type are \emph{at most} used once. In the first case, unique values are also strict, in the
+  second case, could never be called, and thus not strict. Which way is preferred depends on what has to be done with the result
+  of the typing. The checks in this section will allow unused values to be considered unique or shared, but we give an inference
+  algorithm in the next section that will only mark values to be unique if they are really used.
+
+  \subsection{The flow constraint}
+
+  For checking that annotations are correctly propagated, we define a class for specific flow constraints:
+
+%%[[wrap=code
+  data FlowConstr t = t =>= t
+
+  class CheckFlow t where
+    holds :: FlowConstr t -> Bool
+
+  instance CheckFlow (Ref, Unq) where
+    holds ((rA,uA) =>= (rB,uB))
+      =  holds (rA =>= rB) &&
+         holds (uA =>= uB)
+%%]
+
+  As a first approach, the following instances suffice:
+
+%%[[wrap=code
+  instance CheckFlow Ref where
+    holds (a =>= b) = a <= b
+
+  instance CheckFlow Unq where
+    holds (a =>= b) = b <= a
+%%]
+
+  These constraints allow us to consider a type shared when it is proven that it is allowed to consider it
+  unique. For example, when all the reference-count annotations are |2|, and all uniqueness annotations are |*|,
+  the holds-function will always return |True|. But once a type is marked as unique, we cannot get rid of it.
+
+  We can be a bit less picky by allowing a value marked as unique (and a reference count of |1|), to be
+  considered shared from that point on. Depending on what is done with the annotations, a coercion function
+  might need to be inserted in this case. For a code generator that only selects special operations for
+  unique types, this coercion is the identity function, since it is the first use of the value. Note that
+  the reference-count has to be non-zero in order not to violate the ``exactly used once'' property during
+  the type the type is marked as unique.
+
+  The checks are slightly more difficult in this case:
+
+%%[[wrap=code
+  instance CheckFlow Ref where
+    holds (a =>= b)
+      | a == 2 && b == 1  = True  -- coercion
+      | otherwise         = a <= b
+
+  instance CheckFlow Unq where
+      | a == * && b == 1  = True  -- coercion
+      | otherwise         = b <= a
+%%]
+
+  \subsection{Sum constraint}
+
+  We deal with the sum constraint in a different way with the reference-count component, than with
+  the uniqueness component. We interpret the reference-count component in the expected way: add up
+  the individual counts to at most 2 and then check if it is smaller than the result. For uniqueness,
+  we don't add up the counts but force all components to have the same uniqueness. The difference
+  is that we assume that the definition-site and use-site have the same uniqueness, but can have
+  a different reference-count.
+
+%format aunderscorei = "a_{i}"
+%format aunderscore1 = "a_{1}"
+%format aunderscore2 = "a_{2}"
+%format aunderscoren = "a_{n}"
+%format sum2         = sum"_{"2"}"
+
+%%[[wrap=code
+  instance CheckFlow (Ref, Unq) where
+    holds (sumi aunderscorei <= a)
+      =  holds (sumi (fst aunderscorei) <= fst a) &&
+         holds (sumi (snd aunderscorei) <= snd a)
+
+  instance CheckFlow Ref where
+    holds (sumi aunderscorei <= a)
+      = sum [aunderscore1, ..., aunderscoren] <= a
+
+  instance CheckFlwo Unq where
+    holds (sumi aunderscorei <= a)
+      = aunderscore1 === aunderscore2 === ... === aunderscoren === a
+%%]
 
 \section{Conclusion}
 
+  In this chapter we showed what we mean with uniqueness typing, be it with a simple language. Our appraoch
+  consists of a set of type rules that specify that the program is correctly annotated with uniqueness annotations
+  if the constraints hold. Turning the problem into the question if the constraints hold, gives us great flexibility
+  in giving different interpretations in types being unique. In the next chapter, we will find out that the
+  constraints also allow us to \emph{infer} uniqueness annotations, instead of requireing that they are supplied
+  by the programmer.
+
+  In this chapter, we also told that uniqueness annotations are not sufficient. We required reference-count annotations
+  as well. In the next chapter, we switch to inferring uniqueness properties, and then we will infer reference-count
+  annotations first, and from the reference-count annotations, the uniqueness annotations.
+
 %%]
+

@@ -4,7 +4,7 @@ preamble tex "%include lhs2TeX.fmt\n%include afp.fmt\n%include ehrules.fmt\n"
 external Ty_Int
 external empty
 
-viewhierarchy = E < U1
+viewhierarchy = E < U1, E < U2
 
 data Expr [expr]
   view E
@@ -60,9 +60,11 @@ ruleset prog.base scheme prog  "Program type rule" =
   rule p "Prog" =
     view U1 =
       judge E : expr = gam :- e : uty ~> cs
-      judge P : unpack = uty === (ty, delta)
-      judge F : flowPrim = cs.f === { ((1,*)) =>= delta }
+      judge P : unpack = uty === (_, delta)
+      judge P2 : unpackTup = delta === { delta.ref, _ }
+      judge F : flowPrim = cs.f === { 1 =>= delta.ref }
       judge C : check = cs.f cs
+      judge K : consistency =
       -
       judge R : prog = gam :- (e : uty)
 
@@ -75,7 +77,7 @@ ruleset expr.base scheme expr  "Expression type rules" =
     view U1 =
       -
       judge R : expr
-        | uty = Ty_Int..a
+        | uty = Ty_Int..delta
         | cs = empty
   rule e.var "Var" =
     view E =
@@ -90,10 +92,10 @@ ruleset expr.base scheme expr  "Expression type rules" =
         | cs = empty
   rule e.plus "Plus" =
     view E =
-      judge A : expr = gam :- a : Ty_Int
-      judge B : expr = gam :- b : Ty_Int
+      judge A : expr = gam :- x : Ty_Int
+      judge B : expr = gam :- y : Ty_Int
       -
-      judge R : expr = gam :- (a opplus b) : Ty_Int
+      judge R : expr = gam :- (x opplus y) : Ty_Int
     view U1 =
       judge A : expr
         | uty = Ty_Int..a
@@ -113,7 +115,7 @@ ruleset expr.base scheme expr  "Expression type rules" =
   rule e.app "App" =
     view E =
       judge F : expr = gam :- f : ty.f
-      judge A : expr = gam :- a : ty.a 
+      judge A : expr = gam :- a : ty.a
       judge C : match = ty.f <=> (ty.a -> ty)
       -
       judge R : expr = gam :- f a : ty
@@ -127,12 +129,15 @@ ruleset expr.base scheme expr  "Expression type rules" =
       judge C  : match = uty.f <=> (uty.a.1 ->..(delta.1) uty.r)
       judge C2 : match = ty.r <=> ty
       judge C3 : match = ty.a.1 <=> ty.a
-      judge P : unpack = uty === (ty, delta)
+      judge P : unpack = uty === (_, delta)
       judge F1 : flow = :- uty.a.1 =>= uty.a ~> cs.m1
-      judge F2 : flowPrim = cs.m2 === { delta =>= delta.1 }
+      judge T1 : unpackTup = delta === { delta.ref, _ }
+      judge T2 : unpackTup = delta.1 === { (delta.1,ref), _ }
+      judge F2 : flowPrim = cs.m2 === { delta.ref =>= (delta.1,ref) }
+      judge F3 : flow = :- uty =>= uty.r ~> cs.r
       -
       judge R : expr
-        | cs = cs.m1 cs.m2 cs.a cs.f
+        | cs = cs.m1 cs.m2 cs.r cs.a cs.f
   rule e.lam "Lam" =
     view E =
       judge B : expr = (x :-> ty.x + gam) :- b : ty
@@ -140,8 +145,8 @@ ruleset expr.base scheme expr  "Expression type rules" =
       judge R : expr = gam :- (\x -> b) : (ty.x -> ty)
     view U1 =
       judge B : expr = (x :-> ty.x + gam) :- b : uty ~> cs.b
-      judge S1 : gather = x :- b ~> ({ x.1:ty.1.a1, "...", x.n:ty.n.an })
-      judge P : unpack = uty.x === (tyx, a)
+      judge S1 : gather = x :- b ~> ({ x.1:uty.1.a1, "...", x.n:uty.n.an })
+      judge P : unpack = uty.x === (_, a)
       judge S2 : sum = cs.sum === { sum <= a }
       -
       judge R : expr
@@ -208,10 +213,17 @@ relation sum =
     judgespec cs === { sum <= a }
     judgeuse tex cs === { sumi a.i <= a }
 
-relation check = 
+relation check =
   view U1 =
     holes [ cs : Cs ]
     judgespec cs
     judgeuse tex satisfied cs
 
+relation consistency =
+  view U1 =
+    holes [ x : Dummy ]
+    judgespec
+    judgeuse tex "all annotation pairs consistent"
+
 %%]
+

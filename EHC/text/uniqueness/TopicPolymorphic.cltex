@@ -3,6 +3,9 @@
 \chapter{Polymorphic bindings}
 \label{chapt.Polymorphic}
 
+In Chapter~\ref{blaat}, we added a monomorhic and non-recursive binding to the expression language. In this chapter, we go a
+bit futher to support polymorhic and (mutually) recursive bindings.
+
 
 \section{Example}
 

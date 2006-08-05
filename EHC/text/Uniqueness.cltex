@@ -56,8 +56,8 @@ such as polymorphism, data types and overloading.
 %%@TopicPolymorphic.main
 %%@TopicDataTypes.main
 %%@TopicOverloading.main
-%%@TopicBeyondEHC.main
 %%@TopicCodeGeneration.main
+%%@TopicBeyondEHC.main
 %%@TopicInspecting.main
 %%@TopicPerformance.main
 %%@TopicRelatedWork.main

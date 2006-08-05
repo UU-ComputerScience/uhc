@@ -23,6 +23,8 @@ polarity or under-the-function-arrow information. Using the same framework: conf
 
 \section{Constraint gathering}
 
+Case expressions.
+
 
 \section{Constraint flattening}
 
