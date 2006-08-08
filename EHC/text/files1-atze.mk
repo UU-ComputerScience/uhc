@@ -19,7 +19,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								ToolDocShuffle ToolDocRuler \
 								AppxNotation FrontMatter OldText \
 								Uniqueness uniqueness/TopicIntroduction uniqueness/TopicEHC \
-								uniqueness/TopicNoBindings uniqueness/TopicPolyvariant uniqueness/TopicPolymorphic uniqueness/TopicDataTypes uniqueness/TopicOverloading \
+								uniqueness/TopicNoBindings uniqueness/TopicPolyvariant uniqueness/TopicRecursion uniqueness/TopicPolymorphic uniqueness/TopicDataTypes uniqueness/TopicOverloading \
 								uniqueness/TopicBeyondEHC uniqueness/TopicCodeGeneration uniqueness/TopicInspecting \
 								uniqueness/TopicPerformance uniqueness/TopicRelatedWork uniqueness/TopicConclusion
 

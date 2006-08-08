@@ -53,6 +53,7 @@ such as polymorphism, data types and overloading.
 %%@TopicEHC.main
 %%@TopicNoBindings.main
 %%@TopicPolyvariant.main
+%%@TopicRecursion.main
 %%@TopicPolymorphic.main
 %%@TopicDataTypes.main
 %%@TopicOverloading.main

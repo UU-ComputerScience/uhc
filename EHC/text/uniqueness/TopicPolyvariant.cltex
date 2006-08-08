@@ -284,12 +284,37 @@ We can apply the same strategy for the uniqueness type system. A set of constrai
 of |id|, $S$ is copied as the constraint set of the identifier. To show why this approach works, we need the concept of
 \emph{referential transparency}. Referential transparancy means that an identifier can be replaced by its definition, without
 changing the result of the program. A pure functional programming language has this property by definition~\cite{fill this in}.
-Suppose the occurrences |1..n| of |id| in |body_expr| are replaced by |def_expr|, to |(Sub(inst_expr)(1))..(Sub(inst_expr)(n))|.
-Then the constraint sets of such an |(Sub(inst_expr)(i))| is a copy of |S|, except that  the uniqueness variables are different.
-The reason for this difference is because of the fresh annotations of the types occurring in |(Sub(inst_expr)(1))..(Sub(inst_expr)(n))|,
-compared to the types in |def_expr| (Section~\ref{fill this in - previous section}).
 
-We introduce a special constraint that deals with uniqueness constraint set instantiation:
+Suppose the occurrences |1..n| of |id| in |body_expr| are replaced by |def_expr|, to |(Sub(inst_expr)(1))..(Sub(inst_expr)(n))|.
+In other words, in the expression:
+
+%%[[wrap=code
+let  id = def_expr
+ in  ... (Sub(id)(1)) ... (Sub(id)(n)) ...
+%%]
+
+The definition for |id| is inlined:
+
+%%[[wrap=code
+... (Sub(inst_expr(1)) ... (Sub(inst_expr(n)) ...
+%%]
+
+We now compare the constraint sets resulting from constraint gathering on |def_expr| and each |(Sub(inst_expr)(i))|. The constraint
+sets of such an |(Sub(inst_expr)(i))| is a copy of |S|, except that the uniqueness variables are different. The reason for this difference
+is due to the fresh annotations of the types occurring in |(Sub(inst_expr)(1))..(Sub(inst_expr)(n))|, compared to the types in
+|def_expr| (Section~\ref{fill this in - previous section}).
+
+There is one other difference in the constraint set of the whole expression. If |def_expr| uses some identifier |x| from an outer
+binding group, then the |x| occurs |n| times more often in the inlined version. The corresponding |\+/| constraint will be |n|
+times bigger. We solve this difference with a trick: when instantiating the constraint set of |def_expr|, the uniqueness variables
+occurring on the use-site-types of identifiers are not given fresh variables, unless they are an argument or result of a function.
+This gives us |n| of the smaller |\+/| constraints, slightly different, but giving the same results as the |n| times as big |\+/|
+constraint. These uniqueness variables on the use-site-types of identifiers, we call the mono-annotations, and all mono-variables
+occuring in a binding group (including nested binding groups), are collected for each binding-group and passed to the
+inferencer. These details are omitted in the type rules.
+
+The inferencer performs the constraint duplication. In the gathered constraint set, we insert a placeholder to represent the
+place where the constraints will be inserted, by means of the following constraint:
 
 %%[[wrap=code
 Inst <binding_group_id> [(<definition_site_uniqueness_variable>, <use_site_uniqueness_variable>)]
@@ -302,6 +327,14 @@ mapped to which uniqueness variables of the use-site. The other uniqueness varia
 are replaced by fresh variables in the inferencer (Section~\ref{fill this in}). This gives us the following rule for identifiers:
 
 ...type rule for Var...
+
+There is a slight complication here. Identifiers can refer to bindings, but to function parameters as well. How to deal with
+those? In principle, uses of function parameters do not require a constraint set, since the connections between the uniqueness
+variables occurring on the type of function arguments are specified by the constraint set of the caller of the function. So,
+for function parameters, the constraint set can be kept empty. Technically speaking, an |Inst| constraint can be generated for
+a function parameter, but the constraints it represents will only not tell anything new about the uniqueness variables on the
+type of a function parameter. So, in our description, we do not make this difference for concisenes, but make the difference
+in the implementation for performance reasons.
 
 For the Let, we have the following type rule to deal with a Let:
 
@@ -385,7 +418,7 @@ a binding-group, which can be exploited by a code generator that can perform cod
 \section{Graph rewriting}
 
 The performance of an implementation of the uniqueness type system is directly connected to the size of the
-uniqueness graphs. Without special treatment, these graphs eplode in size. For example, consider
+uniqueness graphs. Without special treatment, these graphs explode in size. For example, consider
 Picture~\ref{create a picture}, which is a constraint graph\footnote{In a slightly different representation as used by our
 prototype implementation.} for the program:
 
@@ -397,16 +430,16 @@ in   let  inc4 = \x -> inc1 (inc1 (inc1 (inc1 x))
 %%]
 
 By applying several reduction strategies, we end up with the graph in Figure~\ref{create a picture}, which is
-considerably smaller. The reason is that only uniqueness variables that occur on the types of identifiers of
-the bindings matter. The other uniqueness variables are intermediates, for example, taken freshly when
-instantiating a constraint graph. A constraint graph can be converted into an equivalent constraint graph
-with all intermediate uniqueness variables eliminated, resulting only in constraints (or edges in the
-constraint graph) between the uniqueness variables on the types of an identifier.
+considerably smaller. The reason is that only mono-variables, and uniqueness variables that occur on the types of identifiers of
+the bindings, matter. These are essentially all use-site and definition-site uniqueness varaibles. The other uniqueness variables
+are intermediates, for example, taken freshly when instantiating a constraint graph. A constraint graph can be converted into an
+equivalent constraint graph with all intermediate uniqueness variables eliminated, resulting only in constraints (or edges in the
+constraint graph) between the uniqueness variables on the types of an identifier or the mono variables.
 
 The theoretical maximum number of constraints between these \emph{sacred} uniqueness variables is only dependent on the
-number of uniqueness variables, which in turn only depends on the size of the types in question. Without elimination,
-the number of constraints depends on the structure of the abstract syntax tree as well, which can easily cause the
-number of constraints to explode, as the example shows. With intermediate uniqueness variables elimination, and $n$
+number of uniqueness variables, which in turn only depends on the size of the types in question, and the number of uses
+of an identifier. Without elimination, the number of constraints depend on the amount of duplication, which can easily
+cause the number of constraints to explode, as the example shows. With intermediate uniqueness variables elimination, and $n$
 sacred uniqueness variables, the theoretical maximum number of normal edges is $O(n^2)$, but the theoretical number
 of hyper edges is still high: $O(n!)$. In pratice, these numbers are not reached. A uniqueness variable represents
 memory, and memory in a program is largely independent. The constraint graphs are sparse, with the number of
@@ -462,7 +495,10 @@ normal edge contains exactly one sacred uniqueness variable, and the other uniqu
 to a hyper edge. Call this graph $F'$. The number of nodes in $F'$ is therefore proportional to the number
 of hyper edges between the sacred uniqueness variables.
 
-The graph we use for instantation is the union between $H$ and $F'$. If we look at the constraint sets of
+The graph we use for instantation is the union between $H$ and $F'$. This graph is considered to be in
+\emph{normal form}. (todo: probably some more explanation about the normal form is required for later chapters)
+
+If we look at the constraint sets of
 which both graphs are a representation, then the constraint set of $H$ consists of the |=>=| constraints
 between sacred uniqueness variables. $F'$ consists of the |\+/| constraints between sacred uniqueness
 variables, with occassional a coercion. For example, suppose that |a|, |b|, and |c| are
@@ -499,9 +535,9 @@ subsequent chapters. The main motivation for reduction of this graph is to lower
 the graph to improve the performance of instantiations and fixpoint computations on the graph.
 
 Again, some uniqueness variables may not be eliminated. The sacred uniquenes variables are those
-that occur on the types of bindings in the binding group. These are the uniqueness variables
-that can have counter part in the destination graph during instantiation. The other variabels can
-be eliminated, since their values can be reconstructed once we have a substitution for the
+that occur on the types of bindings in the binding group, and the mono variables. These are the
+uniqueness variables that can have counter part in the destination graph during instantiation. The
+other variabels can be eliminated, since their values can be reconstructed once we have a substitution for the
 sacred uniqueness variables, by filling in the values in the original graph, and performing the
 fixpoint computation again, as we discussed earlier in this chapter.
 
@@ -552,7 +588,9 @@ number of sacred uniqueness variables. This helps to improve the performance of 
 on real-life programs. The number of sacred uniqueness variables is basically an indicator of
 the required processing time of the uniqueness type system. To take this a step further, by
 controlling the number of uniqueness variables, a compiler could trade accurracy concervatively
-for compilation speed. For example, in Chapter~\ref{fill this in - data types} we introduce data types,
+for compilation speed. For example, the use-site types can be replaced by defintion-site types,
+reducing the number of uniqueness annotations severely, but also reducing the quality of the
+inference for these types. In Chapter~\ref{fill this in - data types} we introduce data types,
 which leads to an explosion of sacred uniqueness variables, and we discuss several ways to allow control
 over the number of uniqueness variables, and thus to control the size of the uniqueness graphs, and
 the performance of the compiler.

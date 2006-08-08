@@ -3,9 +3,13 @@
 \chapter{Polymorphic bindings}
 \label{chapt.Polymorphic}
 
-In Chapter~\ref{blaat}, we added a monomorhic and non-recursive binding to the expression language. In this chapter, we go a
-bit futher to support polymorhic and (mutually) recursive bindings.
-
+Note: I think this chapter should be removed and the contents places somewhere else. The problem is that without data types,
+a chapter about polymorphism is not much use, since polymorphism doesn't complicate the uniqueness type system that much, as
+dpulication of subgraphs is not needed for that. But it does complicate dealing with data types. But I would like the topic
+about data types to be separate from this topic, or better, this topic as a prelude to data types, so that I can discuss
+data types in somewhat more isolation. Perhaps this is the idea: discuss polymorphism in a language with build in support
+for tuples (since these are simple, non-recursive data types). Then I can disuss all these issues of this chapter. And then
+in the next chapter discuss how to support abitrary data types. Yes, I guess that's the way to do it.
 
 \section{Example}
 
