@@ -258,4 +258,3 @@ let f :: forall alpha . alpha -> alpha
   since instantiation to a type with more structure requires another form of duplication of graphs.
 
 %%]
-

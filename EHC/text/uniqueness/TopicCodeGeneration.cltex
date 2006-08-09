@@ -9,4 +9,10 @@
 
 \section{Using specialization}
 
+
+\section{Other optimizations}
+
+Inlining bindings that are used once.
+Floating in bindings over lambdas. (cite: some paper of a student of SPJ)
+
 %%]

@@ -6,8 +6,8 @@
 \label{chapt.NoBindings}
 
 This chapter presents a uniqueness type system for a severely restricted language: simply-typed lambda calculus
-with no bindings, but with integers and an addition operator. Although restricted, this languages serves well to
-discuss the fundametals of uniqueness typing, and our implementation of the uniqueness type system. In subsequent
+with no Let bindings, but with integers and an addition operator. Although restricted, this languages serves well to
+discuss the fundamentals of uniqueness typing, and our implementation of the uniqueness type system. In subsequent
 chapters, we extend the language with features, until most of Haskell is covered.
 
 This chapter is organized as follows. We start with a rather large example that touches all aspects of the
@@ -19,8 +19,8 @@ constraint gathering, and constraint solving, is treated more formally in subseq
 
   The goal is to find out which values in a program are used once. We show the steps involved by an
   extensive example. First we show what uniqueness annotations are, and what we consider to be an annotated
-  program. Note that we assume in this section that the program is already annotated; in later section
-  we infer the annotations. After it is clear what the input to the problem is, the task is to check
+  program. Note that we assume in this section that the program is already annotated; 
+  we infer the annotations in later chapters. After it is clear what the input to the problem is, the task is to check
   that the annotations are correct by analyzing the program from outermost expression to innermost expression,
   and identifying which conditions should hold at each place. These conditions are formulated as constraints
   that should hold, and we finish our example by demonstrating how this can be done.
@@ -37,8 +37,8 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   once (such as |x|) is \emph{unique}, and that the value that is not used, or used more than once
   (such as |y|), is \emph{shared}.
   
-  Efficient code can be produced with this information. A conventional implementation of |+| in a pure,
-  lazy language, would evalutate both arguments, allocate memory for an integer, and store the result of
+  Efficient code can be produced with this \emph{uniqueness information}. A conventional implementation of addition in a pure,
+  lazy language, would evaluate both arguments, allocate memory for an integer, and store the result of
   the addition there. But in this case, no memory needs to be allocated for the result of the additions.
   Since |y| is unique, the value of |x| can be added directly to the value of |y|. The result of the
   addition is also unique, and the value of |x| can be added directly again for the second addition.
@@ -46,7 +46,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   
   \subsubsection{Uniqueness annotations}
   
-  We encode this property as annotation on type constructors in the type of a value (\ref{to be explained}).
+  We encode uniqueness information as an annotation on the type constructors in the type of a value (\ref{to be explained}).
   If the outermost type constructor is unique, then we say that the type is unique, which means that the
   associated values (\ref{to be explained}) are unique. A value with a shared type is used any number of
   times. We write |(Sup(Int)(1))| for a unique integer and |(Sup(Int)(*))| for a shared integer. Then for
@@ -62,15 +62,18 @@ constraint gathering, and constraint solving, is treated more formally in subseq
 
   We will now focus on the main problem of this chapter: suppose the programmer
   supplies the annotated program above. How can we check that these annotations
-  are valid? The answer to this question is the uniqueness type system. We take
-  a rather indirect approach. The uniqueness annotations alone are not sufficient for the
-  uniqueness type system. Besides a uniqueness annotation, we need a
-  \emph{reference-count annotation} as well.
+  are valid? The answer to this question is the uniqueness type system.
+  
+  We take a rather indirect approach, and demand that the program is also annotated
+  with \emph{usage information}, besides uniqueness information. So, we demand that
+  a program has two annotations on a type constructor. A uniqueness annotation, and
+  a reference-count annotation. This can be confusing, since these two values are
+  tightly related.
   
   \subsubsection{Reference-count annotations}
   
   A reference-count annotation tells us how often a certain expression or identifier is
-  referenced. We only count up to two; higher counts are truncated to two. A reference-count
+  referenced (usage information). We only count up to two; higher counts are truncated to two. A reference-count
   annotation is very similar to a uniqueness annotation. The notable differences are that reference-count
   annotations for the same variable are independent of each other, and that there is a reference-count
   annotation |0| for values that are not used. For our example, the reference-counts are:
@@ -83,7 +86,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
     ) (3 :: (Sup(Int)(2))) (4 :: (Sup(Int)(1))) :: (Sup(Int)(1))
 %%]
 
-  Note that we added up the reference counts for the individual |x| occurences to get the
+  Note that we added up the reference counts for the individual |x| occurrences to get the
   reference count of |2| for |x| itself. To see that this is the only difference, we put
   both annotations into the same picture, as a tuple. The left component is the reference
   count and the right component is the uniqueness value:
@@ -98,8 +101,8 @@ constraint gathering, and constraint solving, is treated more formally in subseq
 
   The uniqueness annotations and reference-count annotations are very similar. For a valid annotation
   of a program holds the property that a uniqueness annotation is be greater or equal to the
-  reference-count annotation. But, in general, the uniqueness annotations can be inferred,
-  given a program annotated with reference-count annotations (Section~\ref{fill in}).
+  reference-count annotation. But, in general, the uniqueness annotations can be inferred from
+  a program annotated with reference-count annotations (Section~\ref{fill in}).
   
   \subsubsection{Checking reference-count annotations and uniqueness annotations}
 
@@ -107,9 +110,9 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   typed for the conventional type system of simply typed lambda calculus. Secondly, we check that all
   reference-count annotations are smaller or equal to the uniqueness annotations. Then it is time for the real work:
   we gather a set of constraints from the annotated program, and check if the constraints are satisfied. When the
-  constraints are satisfied, a value with a unique type is used exactly once (\ref{proof this}).
+  constraints are satisfied, a value with a unique type is used at most once.
   
-  We illustrate the constraints by analyzing the example program\footnote{For clearity, the annotations values have a number
+  We illustrate the constraints by analyzing the example program\footnote{For clarity, the annotations values have a number
   superscripted, such that you can see which annotation appears where in the constraints.}. For a description of the constraints and their
   meaning, check Section~\ref{fill this one in}. We reason about a program in an outermost-to-innermost way. We
   start with the entire program (expression):
@@ -118,7 +121,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
     ( ... ) :: (Sup(Int)(((Sup(1)(1)), (Sup(1)(2)))))
 %%]
   
-  The result of the program is used at least once. To verify this, we have a constriant |a =>= b|, that tells us
+  The result of the program is used at least once. To verify this, we have a constraint |a =>= b|, that tells us
   that (component-wise) |b| should be at least |a|. In this case, we produce as condition to verify, the constraint:
   |(1,1) =>= ((Sup(1)(1)), (Sup(1)(2))))|.
   
@@ -129,8 +132,8 @@ constraint gathering, and constraint solving, is treated more formally in subseq
 %%]
 
   Applications are complicated: several things happen here. The idea is that we dive into the function expression
-  to obtain counts for the parameter. But that depends on how often the result of the function is
-  used. So: information about the value \emph{flows} into the function, meaning that the result of the
+  to obtain counts for the parameter. But these counts depends on how often the result of the function is
+  used. So, information about the value \emph{flows} into the function, meaning that the result of the
   function is at least as often used (or: at most as unique) as the entire application:
   |((Sup(1)(1)), (Sup(1)(2))) =>= ((Sup(1)(7)), (Sup(1)(8)))|.
   
@@ -160,7 +163,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
 %%[[wrap=code
     
     ((Sup(1)(3)), (Sup(1)(4))) =>= ((Sup(1)(13)), (Sup(1)(14)))    -- (1) flow from application to result
-    ((Sup(1)(17)), (Sup(1)(18))) =>= ((Sup(1)(5)), (Sup(1)(6)))    -- contravariant (flow back)
+    ((Sup(1)(17)), (Sup(1)(18))) =>= ((Sup(1)(5)), (Sup(1)(6)))    -- contra variant (flow back)
     ((Sup(1)(7)), (Sup(1)(8))) =>= ((Sup(1)(19)), (Sup(1)(20)))
     
     ((Sup(2)(15)), (Sup(*)(16))) =>= ((Sup(2)(21)), (Sup(*)(22)))  -- (2) flow from parameter to argument
@@ -168,10 +171,10 @@ constraint gathering, and constraint solving, is treated more formally in subseq
     ((Sup(1)(3)), (Sup(1)(4))) =>= ((Sup(1)(11)), (Sup(1)(12)))    -- (3) use of the function
 %%]
   
-  There is one difference, and that's in the first three constraints. The value of the function is
+  There is one difference, and that is in the first three constraints. The value of the function is
   itself a function and has a type with three type constructors in it. Each corresponding pair of
   type constructors gets its own constraint. The direction of the constraint matters: to get the
-  flow right, the direction needs to be reversed for constravariant type constructors. The following
+  flow right, the direction needs to be reversed for contra-variant type constructors. The following
   picture illustrates the reason:
     
 %%[[wrap=code
@@ -191,7 +194,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   summing up the annotations on the use-sites of the parameters, with a special constraint:
   |sumi (Sub(use_site)(i)) <= def_site|.
   
-  Another way of looking at this case is nothing that the use-sites of paramters are leaves in the
+  Another way of looking at this case is noting that the use-sites of parameters are leafs in the
   syntax tree. The information flow stops at these places. But information about the use of
   a parameter needs to be propagated to the definition site. The above constraint connects the
   use-site to the definition site.
@@ -210,7 +213,6 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   ((y :: (Sup(Int)(((Sup(1)(27)), (Sup(*)(28)))))) + (x :: (Sup(Int)(((Sup(1)(29)), (Sup(*)(30))))))) :: (Sup(Int)(((Sup(1)(25)), (Sup(1)(26)))))
 %%]
   
-   
   The plus operator evaluates both the arguments at least as many times as the result is evaluated. But aside from
   this restriction, all other combinations are allowed. For example, the result is allowed to be unique, but one
   of the arguments shared. Or even both the arguments shared and the result unique. We express this by putting
@@ -223,8 +225,8 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   (Sup(1)(25)) =>= (Sup(1)(29))
 %%]
   
-  The standard code generated for |+| can handle all allowed combinations. To optimize code, a code generator can
-  choose to insert special code for a |+| that performs the addition in place if one of the parameters is unique.
+  The standard code generated for addition can handle all allowed combinations. To optimize code, a code generator can
+  choose to insert special code for a addition that performs the addition in place if one of the parameters is unique.
 
   The final part of this example is to verify that the constraints hold. We show by an example how we interpret
   the constraints. We define when a constraint hold more precisely in Section~\ref{fill this in}. We assume that
@@ -232,17 +234,17 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   equal to the reference-count annotation. How a uniqueness annotation should be compared to a reference-count
   annotation will be explained in Section~\ref{fill this in}. But assume for now that it is the obvious way,
   considering how much the annotations look like normal numbers. With the constraints being consistent, the
-  following table\footnote{Again, the annotations are labelled to see where they end up in the interpretation.}
+  following table\footnote{Again, the annotations are labeled to see where they end up in the interpretation.}
   lists the constraints and the interpretation:
   
   \begin{tabular}{lllr}
     constraint & count interpretation & uniqueness interpretation & holds \\
     \hline
-    |((Sup(1)(a)),(Sup(1)(b))) =>= ((Sup(1)(c)),(Sup(1)(d)))| & |(Sup(1)(a)) <= (Sup(1)(b))| & |(Sup(1)(c)) >= (Sup(1)(d))|  & ok \\
-    |((Sup(2)(a)),(Sup(*)(b))) =>= ((Sup(2)(c)),(Sup(*)(d)))| & |(Sup(2)(a)) <= (Sup(2)(b))| & |(Sup(*)(c)) >= (Sup(*)(d))|  & ok \\
-    |((Sup(1)(a)),(Sup(1)(b))) <= ((Sup(1)(c)),(Sup(1)(d)))|  & |(Sup(1)(a)) <= (Sup(1)(b))| & |(Sup(1)(c)) === (Sup(1)(d))| & ok \\
-    |((Sup(1)(a)),(Sup(*)(b))) ++ ((Sup(1)(c)),(Sup(*)(d))) <= ((Sup(2)(e)), (Sup(*)(f)))| & |(Sup(1)(a)) + (Sup(1)(c)) <= (Sup(2)(e))| & |(Sup(*)(b)) === (Sup(*)(d)) === (Sup(*)(f))| & ok \\
-    |(Sup(1)(a)) =>= (Sup(1)(b))| & |(Sup(1)(a)) <= (Sup(1)(b))| & & ok
+    |((Sup(1)(a)),(Sup(1)(b))) =>= ((Sup(1)(c)),(Sup(1)(d)))| & |(Sup(1)(a)) <= (Sup(1)(b))| & |(Sup(1)(c)) >= (Sup(1)(d))|  & OK \\
+    |((Sup(2)(a)),(Sup(*)(b))) =>= ((Sup(2)(c)),(Sup(*)(d)))| & |(Sup(2)(a)) <= (Sup(2)(b))| & |(Sup(*)(c)) >= (Sup(*)(d))|  & OK \\
+    |((Sup(1)(a)),(Sup(1)(b))) <= ((Sup(1)(c)),(Sup(1)(d)))|  & |(Sup(1)(a)) <= (Sup(1)(b))| & |(Sup(1)(c)) === (Sup(1)(d))| & OK \\
+    |((Sup(1)(a)),(Sup(*)(b))) ++ ((Sup(1)(c)),(Sup(*)(d))) <= ((Sup(2)(e)), (Sup(*)(f)))| & |(Sup(1)(a)) + (Sup(1)(c)) <= (Sup(2)(e))| & |(Sup(*)(b)) === (Sup(*)(d)) === (Sup(*)(f))| & OK \\
+    |(Sup(1)(a)) =>= (Sup(1)(b))| & |(Sup(1)(a)) <= (Sup(1)(b))| & & OK
   \end{tabular}
   
   So, the annotated program type checks. There are other annotations that also
@@ -250,16 +252,13 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   reference-count annotations to |2|. The constraints still hold. However,
   annotating |x| to be unique will not work.
   
-  On to a more precise description on the type system. (blabla)
-  Definition of the language.
-  Specification of the constraints and their interpretation.
-
+  The remainder of this chapter delves more precisely into each subject that we encountered.
 
 \section{Language}
 \label{sect.ExprLanguage}
 
   As mentioned before, the language in this chapter is a simply typed
-  lambda calculus without bindings. The latter means no (recursive) let, but
+  lambda calculus without Let bindings. The latter means no (recursive) let, but
   there are bindings by lambda abstraction:
   
 %%[[wrap=code
@@ -312,19 +311,19 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   are also values: \emph{closures}. Such a value is represented by an area of
   memory, and can be unique or shared like any other value. From a more
   theoretical point of view, unique functions have the property that they can
-  be safely inlined. So, the arrow type constructor has to be annotated as well,
-  like any other value.
+  be safely inlined~\cite{fill this in}. So, the arrow type constructor has to
+  be annotated as well, like any other value.
 
   A type constructor gets two annotations: a reference-count annotation and
   a uniqueness annotation. Both the reference-count annotations and the
   uniqueness annotations are totally ordered. For the reference-count
-  annotations, the ordening is |0 < 1 < 2|. For the uniqueness annotations,
-  the ordening is |0 < 1 < *|. The reference-count annotations and uniqueness
-  annotations can be compared with each other in the obvious way. A
+  annotations, the ordering is |0 < 1 < 2|. For the uniqueness annotations,
+  the ordering is |0 < 1 < *|. The reference-count annotations and uniqueness
+  annotations can be compared with each other in the obvious way (with |* === 2|). A
   reference-count annotation should be smaller or equal to the uniqueness
   annotation.
 
-  The ordenings are important. The type system gets as input an annotated
+  The ordering are important. The type system gets as input an annotated
   program and produces a set of constraints that hold between the annotations,
   if the annotations are valid. The semantics of these constraints make heavy
   use of the fact that one annotation is greater or equal to another annotation,
@@ -346,7 +345,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   With the |=>=| constraint ("flow"), we essentially check that all counts are
   properly propagated from outermost expression to innermost expression. In a
   function, the propagation is from body to parameters. The use-sites of the
-  parameters are at the leaves of the body. Counts and uniqueness properties
+  parameters are at the leafs of the body. Counts and uniqueness properties
   are established for each of these use-sites individually. These separate
   pieces of information are combined to the definition-site of the parameters
   by means of summing them up with the |sumi| constraint ("sum").
@@ -377,7 +376,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   constraints gathered from the expression itself, must be satisfied for the program to be valid according to
   the uniqueness type system.
 
-  We write types in two ways in the type rules. A type written as |utau| has annotations. A type written as
+  Types are written in two ways in the type rules. A type written as |utau| has annotations. A type written as
   |tau| has no annotations. We sometimes write |(Sub(tau)(a))| to refer to the unannotated version of |(Sub(utau)(a))|.
   A |utau| is also denoted as |Sup(tau)(delta)|, where |delta| is the annotation.
 
@@ -386,12 +385,12 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   Constraints for an expression are gathered by a traversal over the expression, as is described by Figure~\ref{RulerUniquenessExamples.U1.expr.base}.
   The case for integers is the easiest: integers come in both fashions and nothing has to be checked for them. We neither have to check anything
   for the use-sites of identifiers, except that the annotated type is the type connected to the identifier, with some arbitrary annotation. This
-  anotation is not really arbitrary, but that is handled by the case for the lambda. So, not much has to be done for the base-cases of an
+  annotation is not really arbitrary, but that is handled by the case for the lambda. So, not much has to be done for the base-cases of an
   expression.
 
-  The case for integer addition is slightly more complicated. Aside from consistency, we demand nothing else about the uniqueness
+  The case for integer addition is slightly more complicated. Aside from consistency, there are no demands on the uniqueness
   component of the result of the addition. On the other hand, we check that the reference-count annotation of the parameters is
-  greater than the reference-count components of the result of the plus. For that, we generate the |=>=| constraint between the
+  greater than the reference-count components of the result of the plus. For that, a |=>=| constraint is generated between the
   reference-count annotation on the result and both arguments by means of pattern matching on the annotation.
 
   The function application is perhaps the most difficult case in the uniqueness type system. Three things have to be done: check that
@@ -401,7 +400,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   
   For checking propagation, we bring to the attention that the value passed to a function, or the value returned by the function, can
   be a function itself. Propagation deals with all annotated type constructors in the type to make sure that argument and parameter, and
-  function result and result, are properly connected. Note that variance playes a role here: the direction of an argument of a function
+  function result and result, are properly connected. Note that variance plays a role here: the direction of an argument of a function
   is the opposite to the result of the function. Suppose that a function |f| is passed to function |g| as parameter, then |g| applies the
   function, and passes some argument |x|. Propagation is from |x|, to the parameter of |g|, and inside |g| to the result-value of |g|. The
   flow for such an annotation is the other way around than the usual flow. In Figure~\ref{RulerUniquenessExamples.U1.flow.base} we list the
@@ -409,27 +408,26 @@ constraint gathering, and constraint solving, is treated more formally in subseq
 
   \rulerCmdUse{RulerUniquenessExamples.U1.flow.base}
   
-  The last case to deal with is lambda abstraction. We use an auxilery rule that gathers all annotated types of the use-sites of the
+  The last case to deal with is lambda abstraction. We use an auxiliary rule that gathers all annotated types of the use-sites of the
   identifier that is lambda lifted. There is no check of propagation between the result of the body and the result-part of the
   annotated type of the lambda function. As is visible in the type rules, we force the annotated types to be the same. Weakening this
   annotation such that it fits is left over the the use of the function, the |=>=| generation at the function application case.
 
   As a final note about the type rules: the type system can be formulated in a less complicated, but not syntax directed, way. By adding
   an additional case for coercions, the places where we generated a |=>=|-constraint can be extracted and handled by this special
-  non-deterministic case. However, that would make it unclear at which places the |=>=| constraint pops up, which would in the end
-  more difficult to understand than our syntax directed version.
-
+  non-deterministic rule. However, that would make it unclear at which places the |=>=| constraint pops up, but we want to make explicit
+  where constraints are generated, so we choose for a more elaborate, syntax directed, representation of the type rules.
 
 \section{Checking constraints}
 \label{Sect.CheckingConstraints}
 
-  We focus on checking the constraints in this section. There are several ways to interpret the constraints, depending on what
+  In this section, the focus is on checking the constraints. There are several ways to interpret the constraints, depending on what
   properties we want that hold when the constraints are satisfied. For example, like linearity, a type is unique when the
   corresponding values are \emph{exactly} used once. But, we could interpret the constraints also in a weaker way, and say that the
   corresponding values of a unique type are \emph{at most} used once. In the first case, unique values are also strict, in the
-  second case, could never be called, and thus not strict. Which way is preferred depends on what has to be done with the result
-  of the typing. The checks in this section will allow unused values to be considered unique or shared, but we give an inference
-  algorithm in the next section that will only mark values to be unique if they are really used.
+  second case, there is no guarantee that they are always evaluated, and thus not strict. Which way is preferred depends on what has
+  to be done with the result of the typing. The checks in this section only verify that unique types are used at most once, but we
+  give an inference algorithm in Chapter~\ref{fill this in} that will only mark values to be unique if they are really used.
 
   \subsection{The flow constraint}
 
@@ -454,19 +452,24 @@ constraint gathering, and constraint solving, is treated more formally in subseq
     holds (a =>= b) = a <= b
 
   instance CheckFlow Unq where
-    holds (a =>= b) = b <= a
+    holds (a =>= b) = b <= a  -- note the inverse
 %%]
 
   These constraints allow us to consider a type shared when it is proven that it is allowed to consider it
   unique. For example, when all the reference-count annotations are |2|, and all uniqueness annotations are |*|,
-  the holds-function will always return |True|. But once a type is marked as unique, we cannot get rid of it.
+  the holds-function will always return |True|. But we cannot go the other way. Once a type is marked as shared,
+  then it is propagated all the way upward (to the right-hand side of the |=>=|).
 
   We can be a bit less picky by allowing a value marked as unique (and a reference count of |1|), to be
-  considered shared from that point on. Depending on what is done with the annotations, a coercion function
-  might need to be inserted in this case. For a code generator that only selects special operations for
-  unique types, this coercion is the identity function, since it is the first use of the value. Note that
-  the reference-count has to be non-zero in order not to violate the ``exactly used once'' property during
-  the type the type is marked as unique.
+  considered shared from that point on. In terms of constraints, this means that we can accept |2 =>= 1|
+  and |* =>= 1|. The reason why we can allow this is because of the unique right-hand side. This means that
+  when evaluating the expression where the constraint came from, that only this expression has a
+  reference to this value. We can give up uniqueness of this value at this point, since there is no reference
+  to it anymore that can think that it is still unique. Depending on the code generation, some coercion function
+  may need to be inserted, for example, to unregister the value as unique in some garbage collection table.
+  For a code generator that only selects special operations for
+  unique types, this coercion is just identity function, since the default evaluation strategy is copy on
+  modification.
 
   The checks are slightly more difficult in this case:
 
@@ -486,7 +489,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   We deal with the sum constraint in a different way with the reference-count component, than with
   the uniqueness component. We interpret the reference-count component in the expected way: add up
   the individual counts to at most 2 and then check if it is smaller than the result. For uniqueness,
-  we don't add up the counts but force all components to have the same uniqueness. The difference
+  we do not add up the counts, but force all components to have the same uniqueness. The difference
   is that we assume that the definition-site and use-site have the same uniqueness, but can have
   a different reference-count.
 
@@ -506,23 +509,24 @@ constraint gathering, and constraint solving, is treated more formally in subseq
     holds (sumi aunderscorei <= a)
       = sum [aunderscore1, ..., aunderscoren] <= a
 
-  instance CheckFlwo Unq where
+  instance CheckFlow Unq where
     holds (sumi aunderscorei <= a)
       = aunderscore1 === aunderscore2 === ... === aunderscoren === a
 %%]
 
 \section{Conclusion}
 
-  In this chapter we showed what we mean with uniqueness typing, be it with a simple language. Our appraoch
+  In this chapter we showed what we mean with uniqueness typing, be it with a simple language. Our approach
   consists of a set of type rules that specify that the program is correctly annotated with uniqueness annotations
   if the constraints hold. Turning the problem into the question if the constraints hold, gives us great flexibility
-  in giving different interpretations in types being unique. In the next chapter, we will find out that the
-  constraints also allow us to \emph{infer} uniqueness annotations, instead of requireing that they are supplied
+  in giving different interpretations of types being unique. In the next chapter, we show that the
+  constraints also allow us to \emph{infer} uniqueness annotations, instead of requiring that they are supplied
   by the programmer.
 
   In this chapter, we also told that uniqueness annotations are not sufficient. We required reference-count annotations
   as well. In the next chapter, we switch to inferring uniqueness properties, and then we will infer reference-count
-  annotations first, and from the reference-count annotations, the uniqueness annotations.
+  annotations first, and from the reference-count annotations, the uniqueness annotations. The distinction between those
+  (confusing) values, becomes only marginal, and very implicit. These two pieces of information appear everywhere in
+  this thesis, so it is important to keep this difference in mind.
 
 %%]
-

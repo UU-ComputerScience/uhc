@@ -16,17 +16,17 @@ in Chapter~\ref{chapt.NoBindings}. With the existence of uniqueness variables, w
 means that we infer a most general uniqueness typing for a binding, and allow different instantiations for each use of an
 identifier.
 
-This chapter is organized as follows. We illustrate by an example the concepts of uniquness variables, and polyvariance.
+This chapter is organized as follows. We illustrate by an example the concepts of uniqueness variables, and polyvariance.
 Then we discuss the addition of bindings to the expression language, and consequently the concept of binding-groups and
 instantiation~\ref{fill this in}. Then we go into the concept of the type inference process~\ref{fill this in}.
-The constraints play an importante role here, but we rewrite the constraints to a graph-representation on which we can
-perform graph rewriting~\ref{fill this in} to simplify the constraints.
+The constraints play an important role here, but we go to yet another representation: the constraints are rewritten to
+a graph-representation on which we can perform graph rewriting~\ref{fill this in} to simplify the constraints.
 
 
 \section{Example}
 
 A type can now have uniqueness variables as annotations. Reference-count annotations do not exist anymore, but are used
-interally by the constraint solver. Annotated types now look like:
+internally by the constraint solver. Annotated types now look like:
 
 %%[[wrap=code
 f  ::  forall (Delta(1))                      .  (Annot(Int)(1))
@@ -36,7 +36,7 @@ j  ::  forall (Delta(3))(Delta(4))(Delta(5))  .  (Annot(Int)(4)) (Annot(->)(3)) 
 %%]
 
 In this case, |f| can be instantiated to |(Sup(Int)(0))|, |(Sup(Int)(1))|, or |(Sup(Int)(*))|. For |g|, only
-|(Sup(Int)(1))|, and |(Sup(Int)(*))|, are allowed, but |(Sup(Int)(0))| does not pass the constraint. The annotated
+|(Sup(Int)(1))|, and |(Sup(Int)(*))|, are allowed, since |(Sup(Int)(0))| does not pass the constraint. The annotated
 type of |h| demands that the annotations on the argument, value and function are exactly the same. The annotated type
 of |j| allows different annotations on argument, value and function, but they have to satisfy the given constraints.
 
@@ -89,9 +89,9 @@ Of which the following assignment of uniqueness values to annotations is the min
 The constraints we generate for a program specify
 a whole family of solutions. Among this family is the solution that sets each uniqueness variable to |*|. But in general, more
 specific solutions are possible. There is only one least solution to the constraints, and we show in Section~\ref{fill this in}
-how to opbtain it. Altough we can obtain this least solution, keep in mind that this is the least solution to the constraints.
+how to obtain it. Although we can obtain this least solution, keep in mind that this is the least solution to the constraints.
 The constraints are a conservative specification of the original uniqueness typing problem, and there are uniqueness typings
-of a program that are valid, but do not satisfy the constraints.
+of a program that are valid, but that do not satisfy the constraints.
 
 
 \section{Uniqueness variables}
@@ -119,14 +119,14 @@ variables are properly connected to each other.
 
 The above approach allows uniqueness coercions everywhere in the abstract syntax tree. But there is redundancy in
 the places where coercions can occur. In the binding |x = f 3|, it is possible to coerce the result of |f| at the
-function application, but also at the place where the result of |f| is bound to |x|. Or at both places.
+function application, but also at the place where the result of |f| is bound to |x|, or even both.
 Coercions lead to additional code insertion in the program, depending on the code generator. We therefore want to
 limit the number of coercions that can be inserted, and for clarity, restrict it to clearly defined places.
 
 We can restrict the places where uniqueness coercions are inserted to the argument of function applications and
 the right hand side of a binding to an identifier, without reducing the quality of the uniqueness inference,
 that is, without inferring worse uniqueness types. At the other places, an annotated type can be constructed by
-using the uniqueness variables occuring on type constructors in types of the subexpressions. For the
+using the uniqueness variables occurring on type constructors in types of the subexpressions. For the
 above example:
 
 %%[[wrap=code
@@ -143,14 +143,23 @@ annotations severely, and thus preventing choking up on the number of annotation
 Limiting coercions can also positively impact runtime performance, depending on the additional code that is inserted for it,
 and what the code-improvements are up to the point of the coercion (Section~\ref{fill this in - code generation}).
 
-Take a look at the example again. The types at the use-site of an identifier are fresly annotated, but this has nothing to
+Take a look at the example again. The types at the use-site of an identifier are freshly annotated, but this has nothing to
 do with coercions. The reason for freshly annotating the use-sites of an identifier is because we treat each use of an
 identifier independently, and combine the results at the definition site with the |\+/| constraint.
 
 Figure~\ref{fill this in} lists the type rules for the uniqueness type system with uniqueness inference. The constraint
-generation ramained virtually the same, the notable changes are the places where a normal type is freshly annotated to
-an annotated type with uniqueness variables. The result of the inference proces are annotated types for each expression,
+generation remained virtually the same, the notable changes are the places where a normal type is freshly annotated to
+an annotated type with uniqueness variables. The result of the inference process are annotated types for each expression,
 and a substitution, mapping a uniqueness result to each uniqueness variable.
+
+
+\section{Constraints}
+
+The constraint gathering rules of Section~\ref{fill this in} do not need much change in order to support
+uniqueness inference. The major difference, aside from constraints between uniqueness variables, is in
+the typing of the addition. To type the addition, we need a softer |=>=| constraint that works on
+reference-counts only. This soft version is denoted by |(Sub(=>=)(s))|. The default version, we either
+denote by |=>=|, or by |(Sub(=>=)(h))|.
 
 
 \section{The inferencer}
@@ -158,7 +167,7 @@ and a substitution, mapping a uniqueness result to each uniqueness variable.
 The question that now remains is: how to obtain the substitution that maps a concrete uniqueness value to a uniqueness
 variable. Since we have a finite number of uniqueness variables, and a finite number of uniqueness values (|0|, |1|, and |*|),
 an obvious approach is to iterate through all combinations, and pick from the combinations that satisfy the constraints,
-the least solution. This approach works, but is not feasable in practice.
+the least solution. This approach works, but is not feasible in practice.
 
 A better approach is creating an initial substitution of each uniqueness variable to |0|, and then for each constraint
 minimally increasing this substitution until the constraint holds, repeatedly until the substitution does not change
@@ -209,9 +218,9 @@ The |referenceCount| function performs the addition for the |\+/| constraint, an
 the reference-count to the right-hand side for the |=>=| constraint:
 
 %%[[wrap=code
-referenceCount (a =>= b)
-  | a == 2     = a =>= (b `max` 1)  -- coercion
-  | otherwise  = a =>= (a `max` b)
+referenceCount (a (Sub(=>=)(delta)) b)
+  | a == 2     = a (Sub(=>=)(delta)) (b `max` 1)  -- coercion
+  | otherwise  = a (Sub(=>=)(delta)) (a `max` b)
 referenceCount (a \+/ b <= c)
   =  let  z = c `max` (a + b)
      in   a \+/ b <= z
@@ -222,8 +231,10 @@ of an identifier to the same uniqueness value, and uses the |=>=| to propagate c
 the uniqueness variables:
 
 %%[[wrap=code
-uniquenessPropagate (a =>= b)
-  = (a `max` b) =>= b
+uniquenessPropagate (a (Sub(=>=)(h)) b)
+  = (a `max` b) (Sub(=>=)(h) b
+uniquenessPropagate (a (Sub(=>=)(s)) b)  -- soft version, no effect on uniqueness substitution
+  = a (Sub(=>=)(s)) b
 uniquenessPropagate (a \+/ b <= c)
   =  let  z = a `max` b `max` c
      in   z \+/ z <= z
@@ -234,7 +245,7 @@ reference counting. Can this undo what is done at the reference-count stage? The
 uniqueness propagation phase can only increase the substitution.
 
 Another technical detail is that the data type representing reference counts and uniqueness values
-is not considered the same, with |*| also representing |2|, and the other way around.
+is considered the same, with |*| also representing |2|, and the other way around.
 
 To summarize: in Chapter~\ref{fill this in} we showed how to gather the constraints. In this chapter,
 and this section specifically, we showed how to infer the uniqueness types given the constraints,
@@ -242,8 +253,8 @@ using a fixpoint iteration approach.
 
 We are now going to make life a bit interesting by supporting a non-recursive Let. This will complicate
 the inferencer, especially since we are paving a way to support a polymorphic and recursive Let for
-Chapter~\ref{fill this in}. A gentle warning: make sure you have a feeling of the inference process
-up to this point, otherwise subsequent chapters will be difficult to understand!
+Chapter~\ref{fill this in} and Chapter~\ref{fill this in}. A gentle warning: make sure you have a feeling
+of the inference process up to this point, otherwise subsequent chapters will be difficult to understand!
 
 
 
@@ -253,9 +264,9 @@ The remainder of this chapter is about adding a non-recursive Let. We will show 
 this language construct by means of constraint duplication. We can handle this constraint duplication
 during the constraint gathering phase, but also during the uniqueness inference phase. There are several
 reasons to deal with constraint duplication during the inference phase. Some of the reasons will only
-become clear in Chapter~\ref{fill this in} about adding a polymorphic and recursive Let, but we can
+become clear in Chapter~\ref{fill this in} and Chapter~\ref{fill this in} about adding a polymorphic and recursive Let, but we can
 already mention an advantage in this chapter. Constraint duplication leads to an explosion in the
-number of constraints, but we keep this constraint set managable by applying several simplification
+number of constraints, but we keep this constraint set manageable by applying several simplification
 strategies to it (Section~\ref{fill this in}), which benefits from uniqueness information that is produced during the
 uniqueness inference phase.
 
@@ -269,12 +280,12 @@ in   body_expr
 
 Technically speaking, there is no use for allowing more than one binding to occur in a Let, since the
 Let is non-recursive and monomorphic as well. However, in preparation for subsequent chapters, we assume there
-can be many bindings inside the same Let, although we only one binding in each Let, for type rules and
+can be many bindings inside the same Let, although we often only use one binding in each Let for type rules and
 examples.
 
 For the conventional type system, a non-recursive, monomorphic Let is a trivial addition to the type system: infer a type |tau|
 for |def_expr| with the same environment |Gamma| as the entire expression, then use |tau| for each occurrence of |id|
-by ading it to |Gamma| for |body_expr|. Since the Let is non-recursive, the environment for |def_expr| does not need knowledge
+by adding it to |Gamma| for |body_expr|. Since the Let is non-recursive, the environment for |def_expr| does not need knowledge
 about |id|, but that will change once we want to support a recursive Let in chapter~\ref{fill this in}. Figure~\ref{fill this in}
 shows the type rule in a more formal fashion.
 
@@ -282,7 +293,7 @@ shows the type rule in a more formal fashion.
 
 We can apply the same strategy for the uniqueness type system. A set of constraints $S$ is inferred for |expr_def|. For each use
 of |id|, $S$ is copied as the constraint set of the identifier. To show why this approach works, we need the concept of
-\emph{referential transparency}. Referential transparancy means that an identifier can be replaced by its definition, without
+\emph{referential transparency}. Referential transparency means that an identifier can be replaced by its definition, without
 changing the result of the program. A pure functional programming language has this property by definition~\cite{fill this in}.
 
 Suppose the occurrences |1..n| of |id| in |body_expr| are replaced by |def_expr|, to |(Sub(inst_expr)(1))..(Sub(inst_expr)(n))|.
@@ -310,7 +321,7 @@ times bigger. We solve this difference with a trick: when instantiating the cons
 occurring on the use-site-types of identifiers are not given fresh variables, unless they are an argument or result of a function.
 This gives us |n| of the smaller |\+/| constraints, slightly different, but giving the same results as the |n| times as big |\+/|
 constraint. These uniqueness variables on the use-site-types of identifiers, we call the mono-annotations, and all mono-variables
-occuring in a binding group (including nested binding groups), are collected for each binding-group and passed to the
+occurring in a binding group (including nested binding groups), are collected for each binding-group and passed to the
 inferencer. These details are omitted in the type rules.
 
 The inferencer performs the constraint duplication. In the gathered constraint set, we insert a placeholder to represent the
@@ -333,7 +344,7 @@ those? In principle, uses of function parameters do not require a constraint set
 variables occurring on the type of function arguments are specified by the constraint set of the caller of the function. So,
 for function parameters, the constraint set can be kept empty. Technically speaking, an |Inst| constraint can be generated for
 a function parameter, but the constraints it represents will only not tell anything new about the uniqueness variables on the
-type of a function parameter. So, in our description, we do not make this difference for concisenes, but make the difference
+type of a function parameter. So, in our description, we do not make this difference for conciseness, but make the difference
 in the implementation for performance reasons.
 
 For the Let, we have the following type rule to deal with a Let:
@@ -341,10 +352,10 @@ For the Let, we have the following type rule to deal with a Let:
 ... type rule for Let...
 
 The term \emph{binding group} refers to the bindings of the Let. We assume that each Let is numbered, and this number is
-identifies the binding group. In EH, each Let only constains a single binding group, but technically speaking, the Let
+identifies the binding group. In EH, each Let only contains a single binding group, but technically speaking, the Let
 can be partitioned into multiple binding groups (such as in Haskell), without invalidating this text.
 
-Similary to the discussion of parameters of a function, we need to sum up the individual uses of an identifier in
+Similarly to the discussion of parameters of a function, we need to sum up the individual uses of an identifier in
 subexpression, resulting in the generation of a |\+/| constraint for each binding. The second task of the Let is
 to gather the constraint for the bindings. The input to the type inferencer is a constraint set for each binding
 group.
@@ -396,15 +407,15 @@ The inferencer now applies the following steps:
 \item Convert the constraints, excluding |Inst| constraints, of each binding group to a constraint graph.
 \item For binding group |p|, with an |Inst q l| constraint, instantiate binding group |q| into |p|, with
 definition-site uniqueness variables replaced by use-site uniqueness variables, as specified by |l|. What
-basically happends is that for each node in |q|, a fresh node is inserted in |p|, except when it occurs
+basically happens is that for each node in |q|, a fresh node is inserted in |p|, except when it occurs
 in |l|. Then each edge in |q| is inserted in |p|, taking the corresponding node in |p|.
 \item Perform a fixpoint uniqueness inference on the constraint graph of the outermost binding group.
 \end{itemize}
 
 The last step results into a uniqueness substitution for each uniqueness variable occurring in types
 of the outermost binding group of the program. It does not directly give a substitution for another
-binding group, since that is potentially different for each use of an identifier occuring in such a
-binding group. We can construct such a definition-site substitution from a use-site substition. Suppose
+binding group, since that is potentially different for each use of an identifier occurring in such a
+binding group. We can construct such a definition-site substitution from a use-site substitution. Suppose
 we know the substitution $R$ for binding group |k|, and |k| contains the use-site of an identifier |x|
 of binding group |j|. We can construct a substitution $S$ from $R$ and the |Inst|
 constraint generated for |x|. We take $S$ such that it maps to |0| for each uniqueness variable of |j|,
@@ -431,7 +442,7 @@ in   let  inc4 = \x -> inc1 (inc1 (inc1 (inc1 x))
 
 By applying several reduction strategies, we end up with the graph in Figure~\ref{create a picture}, which is
 considerably smaller. The reason is that only mono-variables, and uniqueness variables that occur on the types of identifiers of
-the bindings, matter. These are essentially all use-site and definition-site uniqueness varaibles. The other uniqueness variables
+the bindings, matter. These are essentially all use-site and definition-site uniqueness variables. The other uniqueness variables
 are intermediates, for example, taken freshly when instantiating a constraint graph. A constraint graph can be converted into an
 equivalent constraint graph with all intermediate uniqueness variables eliminated, resulting only in constraints (or edges in the
 constraint graph) between the uniqueness variables on the types of an identifier or the mono variables.
@@ -441,15 +452,15 @@ number of uniqueness variables, which in turn only depends on the size of the ty
 of an identifier. Without elimination, the number of constraints depend on the amount of duplication, which can easily
 cause the number of constraints to explode, as the example shows. With intermediate uniqueness variables elimination, and $n$
 sacred uniqueness variables, the theoretical maximum number of normal edges is $O(n^2)$, but the theoretical number
-of hyper edges is still high: $O(n!)$. In pratice, these numbers are not reached. A uniqueness variable represents
+of hyper edges is still high: $O(n!)$. In practice, these numbers are not reached. A uniqueness variable represents
 memory, and memory in a program is largely independent. The constraint graphs are sparse, with the number of
 constraints proportional to the number of uniqueness variables.
 
 There are two moments to rewrite a constraint graph. Just before instantiation of a constraint graph, and after
 all instantiations are done. In the first case, the graph is specialized to only those uniqueness variables that are
 used in the new binding group, to prevent ending up with graphs that explode in size due to the structure of
-an expression. For second case, the graph consists of the nodes and edges comming from the constraint set
-of the binding group, and all nodes and edges comming from (rewritten) graphs of other binding groups. This
+an expression. For second case, the graph consists of the nodes and edges coming from the constraint set
+of the binding group, and all nodes and edges coming from (rewritten) graphs of other binding groups. This
 graph can have some redundancy, and by applying a set of rewrite rules, we reduce this graph. A smaller
 graph of the second case, makes the procedure to obtain graphs of the first case, faster. We discuss both
 reduction moments in more detail.
@@ -491,17 +502,17 @@ Graph $F$ can be reduced further. We would like to end up with only the hyper ed
 variables. However, this does not work, because there can be an intermediate uniqueness variable between
 a sacred uniqueness variable and a hyper edge connected by a coercion, which cannot be eliminated. We can
 reduce from $F$ each intermediate node not connected by a hyper edge. Due to this construction, each
-normal edge contains exactly one sacred uniqueness variable, and the other uniqueness variable is conneted
+normal edge contains exactly one sacred uniqueness variable, and the other uniqueness variable is connected
 to a hyper edge. Call this graph $F'$. The number of nodes in $F'$ is therefore proportional to the number
 of hyper edges between the sacred uniqueness variables.
 
-The graph we use for instantation is the union between $H$ and $F'$. This graph is considered to be in
+The graph we use for instantiation is the union between $H$ and $F'$. This graph is considered to be in
 \emph{normal form}. (todo: probably some more explanation about the normal form is required for later chapters)
 
 If we look at the constraint sets of
 which both graphs are a representation, then the constraint set of $H$ consists of the |=>=| constraints
 between sacred uniqueness variables. $F'$ consists of the |\+/| constraints between sacred uniqueness
-variables, with occassional a coercion. For example, suppose that |a|, |b|, and |c| are
+variables, with occasional a coercion. For example, suppose that |a|, |b|, and |c| are
 sacred uniqueness variables. Then the constraint set of which $F'$ is a representation, can contain
 constraints like |a \+/ b <= c|, but also |a =>= a', b =>= b', c' =>= c, a' \+/ b' <= c'|.
 
@@ -515,12 +526,12 @@ of the graph to be worthwhile.
 
 In the next subsection, we discuss a reduction procedure that makes the graph of the binding group smaller,
 such the procedure of this section works faster. The reduction procedure of this subsection has to be
-performed for each instantation, so if we can save time on this procedure, it helps to improve the
+performed for each instantiation, so if we can save time on this procedure, it helps to improve the
 speed of the compiler. In fact, after the procedure of the next subsection has reduced the graph,
 we can apply the procedure of this subsection once to this graph, taking all the uniqueness
 variables on all types of the bindings of the binding group as sacred annotations. Then all the
 path-finding work has to be done once (reducing the reduction work for instantiation to taking
-a subgraph of the reduced graph, containing only those components that have annotations occuring
+a subgraph of the reduced graph, containing only those components that have annotations occurring
 on the type of the binding that is instantiated), instead of each time again for an instantiation.
 This saves time for binding groups with high dependencies between the identifiers, or when the
 identifiers are used a lot.
@@ -534,10 +545,10 @@ reducing a sequence of edges to a single edge, but most of these opportunities a
 subsequent chapters. The main motivation for reduction of this graph is to lower the size of
 the graph to improve the performance of instantiations and fixpoint computations on the graph.
 
-Again, some uniqueness variables may not be eliminated. The sacred uniquenes variables are those
+Again, some uniqueness variables may not be eliminated. The sacred uniqueness variables are those
 that occur on the types of bindings in the binding group, and the mono variables. These are the
 uniqueness variables that can have counter part in the destination graph during instantiation. The
-other variabels can be eliminated, since their values can be reconstructed once we have a substitution for the
+other variables can be eliminated, since their values can be reconstructed once we have a substitution for the
 sacred uniqueness variables, by filling in the values in the original graph, and performing the
 fixpoint computation again, as we discussed earlier in this chapter.
 
@@ -545,7 +556,7 @@ A simple elimination strategy is splitting the constraint graph into connected c
 and dropping those components without a sacred uniqueness variable. These components cannot influence
 the substitution on sacred uniqueness variables, since there is no path between them. This strategy
 is only effective when there are multiple, independent (mutual exclusive), bindings in a binding group.
-A possible use for this strategy arised in the context of a module system, where bindings from another
+A possible use for this strategy arises in the context of a module system, where bindings from another
 module can be considered to be in the same binding group.
 
 Another elimination strategy is cycle reduction. But, cycles in the constraint graph cannot occur
@@ -574,21 +585,21 @@ on the size of the input graph.
 
 Note that we did not discuss reduction strategies for hyper edges. There are two reasons, the first
 reason is that they do not form much of a problem in practice, due to the reduction work of
-Subsection~\ref{fill this in}. The other reason is related to the first, in the sence that due to
+Subsection~\ref{fill this in}. The other reason is related to the first, in the sense that due to
 the low priority of this subject, it remains still a research problem to properly reduce hyper
 edges in a way that offers improvements in practice.
 
 \subsection{Concluding remarks about graph reduction}
 
 The concept of sacred uniqueness variables, or sacred nodes, is important. The number of sacred
-uniqueness variables is a small subset of all uniqueness variables involved, especially when
-there are a lot of instantiations in the expressions of the binding group. The reduction strategies
+uniqueness variables is a subset of all uniqueness variables involved, especially when
+there are a lot of places where coercions occur (which creates intermediates). The reduction strategies
 that we discussed, rewrite the graphs such that the size of the graph is proportional to the
 number of sacred uniqueness variables. This helps to improve the performance of the compiler
 on real-life programs. The number of sacred uniqueness variables is basically an indicator of
 the required processing time of the uniqueness type system. To take this a step further, by
-controlling the number of uniqueness variables, a compiler could trade accurracy concervatively
-for compilation speed. For example, the use-site types can be replaced by defintion-site types,
+controlling the number of uniqueness variables, a compiler could trade accuracy conservatively
+for compilation speed. For example, the use-site types can be replaced by definition-site types,
 reducing the number of uniqueness annotations severely, but also reducing the quality of the
 inference for these types. In Chapter~\ref{fill this in - data types} we introduce data types,
 which leads to an explosion of sacred uniqueness variables, and we discuss several ways to allow control
@@ -605,15 +616,15 @@ this separation to allow non-recursive and monomorphic Let-bindings in the expre
 
 The translation of the constraints to a graph representation allows another way of looking at the
 typing problem. Paths in the constraint graph tell how uniqueness variables are related to each
-other. Futhermore, we are only interested in the uniqueness values of a small subset of the nodes
+other. Furthermore, we are only interested in the uniqueness values of a small subset of the nodes
 of the constraint graph. By looking at the paths between these special, \emph{sacred}, nodes,
-we elimante the other, intermediate, nodes, such that the resuling constraint graphs are small,
+we eliminate the other, intermediate, nodes, such that the resulting constraint graphs are small,
 which is important for the performance of the compiler.
 
 In the next chapter, Chapter~\ref{fill this in}, the notion of a constraint graph will be exploited further,
 to allow polymorphic and recursive Let bindings. The reduction work on graphs will become even more
 important, as the recursion will cause a fixpoint construction of a constraint set of a binding group,
-which would explode beyond immagination without the reduction work of this chapter.
+which would explode beyond imagination without the reduction work of this chapter.
 
 %%]
 
