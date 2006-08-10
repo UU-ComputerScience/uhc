@@ -164,56 +164,60 @@ ATTR CodeAGItf CModule [ | | grMod: GrModule ]
 SEM CModule
   | Mod         loc         .   primTyconMp =   map (\n -> (n,[(n,CTag n n 0 1)])) grBuiltinTyNmL
                             .   constrsMp   =   @primTyconMp ++ @ctagsMp
-                            
+
                             .   allFPTags   =   Map.toList @expr.lamNmMp
                             .   allPTags    =   [ (nm, arity, k)
                                                 | (nm, arity) <- (hsnGrApply,2) : filter ((`Set.member` @expr.asArgNmS) . fst) @allFPTags
                                                 , k <- [1..arity]
                                                 ]
                             .   allCTags    =   [ ct | (_,xs) <- @constrsMp, (_,ct) <- xs ]
-                            
+
                                                 -- constructorfunctions are never called via an F-thunk, so no cases for it are generated
                             .   allFTags    =   filter (\(fNm,_) -> not (fNm `elem` map ctagNm @allCTags))
-                                                       ((hsnGrApply,2) : @allFPTags ++ Map.toList @expr.cafNmMp)
-                            
-                            .   applyTagMp  =   map makeApplyMapEntryP @allPTags  
+                                                       ((hsnUndefined,0) : (hsnGrApply,2) : @allFPTags ++ Map.toList @expr.cafNmMp)
+
+                            .   applyTagMp  =   map makeApplyMapEntryP @allPTags
                             .   evalTagMp   =   map makeEvalMapEntryC @allCTags
                                                 ++ map makeEvalMapEntryP @allPTags
                                                 ++ map makeEvalMapEntryF @allFTags
-                                               
+
                             .   evalBind    =   let (ui1:ui2:uis) = mkInfNewUIDL @lUniq1
                                                     n1 = uidHNm ui1
                                                     n2 = uidHNm ui2
-                                                in GrBind_Bind hsnGrEval 
+                                                in GrBind_Bind hsnGrEval
                                                                [n1]
-                                                               (GrExpr_Seq (GrExpr_Fetch n1 Nothing Nothing) 
+                                                               (GrExpr_Seq (GrExpr_Fetch n1 Nothing Nothing)
                                                                            (GrPat_Var n2)
-                                                                           (GrExpr_Case (GrVal_Var n2) 
+                                                                           (GrExpr_Case (GrVal_Var n2)
                                                                                         (zipWith ($)
                                                                                                  (   map (makeEvalBindEntryC n2) @allCTags
                                                                                                   ++ map (makeEvalBindEntryP n2) @allPTags
-                                                                                                  ++ map (makeEvalBindEntryF n1) @allFTags    
+                                                                                                  ++ map (makeEvalBindEntryF n1) @allFTags
                                                                                                  )
                                                                                                  uis
                                                                                         )
                                                                            )
                                                                )
-                                                               
+
                             .   applyBind   =   let (ui1:ui2:uis) = mkInfNewUIDL @lUniq2
                                                     nf = uidHNm ui1
                                                     na = uidHNm ui2
-                                                in GrBind_Bind hsnGrApply 
-                                                               [nf,na] 
-                                                               (GrExpr_Case (GrVal_Var nf) 
+                                                in GrBind_Bind hsnGrApply
+                                                               [nf,na]
+                                                               (GrExpr_Case (GrVal_Var nf)
                                                                             (zipWith ($)
                                                                                      (map (makeApplyBindEntryP na) @allPTags)
                                                                                      uis
                                                                             )
                                                                )
-                                                     
+
+                            .   undefBind   =   GrBind_Bind hsnUndefined
+                                                            []
+                                                 			(GrExpr_FFI "primUndefined" [])
+
                 lhs         .   grMod       =   GrModule_Mod (HNm @baseName)
                                                     [] -- TODO: this should contain all the caf variables
-                                                    (@expr.grBindL ++ [@evalBind, @applyBind])
+                                                    (@expr.grBindL ++ [@undefBind, @evalBind, @applyBind])
                                                     @constrsMp
                                                     @evalTagMp
                                                     @applyTagMp
@@ -221,15 +225,15 @@ SEM CModule
 
 %%[8 hs
 
-makeEvApKeyP (nm, arity, k) 
+makeEvApKeyP (nm, arity, k)
  = ( GrTag_Lit (GrTagPApp k) 0 nm
    , arity-k
    )
 
 makeApplyMapEntryP x@(nm, arity, k)
  = ( makeEvApKeyP x
-   , (if k==1 
-      then EvApTagVar nm 
+   , (if k==1
+      then EvApTagVar nm
       else EvApTagTag (GrTag_Lit (GrTagPApp (k-1)) 0 nm)
      )
    )
@@ -239,8 +243,8 @@ makeApplyBindEntryP na x@(nm, arity, k) ui
        parameters = take (arity-k) names
        parameterList = map GrVal_Var (parameters ++ [na])
    in  GrAlt_Alt (mkGrPatTagNode (GrTagPApp k) 0 nm parameters)
-                 (if k==1 
-                  then GrExpr_Call nm parameterList                 
+                 (if k==1
+                  then GrExpr_Call nm parameterList
                   else GrExpr_Unit (mkNdPApp nm (k-1) parameterList)
                  )
 
@@ -269,9 +273,9 @@ makeEvalBindEntryF n1 (nm, arity) ui
  = let (result:names) = map uidHNm (mkInfNewUIDL (uidChild ui))
        parameters = take arity names
    in  GrAlt_Alt (mkGrPatTagNode GrTagFun 0 nm parameters)
-                 (GrExpr_Seq (GrExpr_Call nm (map GrVal_Var parameters)) 
+                 (GrExpr_Seq (GrExpr_Call nm (map GrVal_Var parameters))
                              (GrPat_Var result)
-                             (GrExpr_Seq (GrExpr_Update n1 (GrVal_Var result) Nothing) 
+                             (GrExpr_Seq (GrExpr_Update n1 (GrVal_Var result) Nothing)
                                          GrPat_Empty
                                          (GrExpr_Unit (GrVal_Var result))
                  )           )
@@ -373,7 +377,7 @@ SEM CExpr
   | Let         (loc.grExpr,lhs.grBindL,binds.isStrict)
                                             =   if @lhs.lev == cLevOuter
                                                 then  (emptyGrExpr
-                                                      ,let  
+                                                      ,let
                                                        in   case @categ of
                                                               CBindRec     ->  [GrBind_Rec @binds.grBindL] ++ @body.grBindL
                                                               _            ->  @binds.grBindL ++ @body.grBindL

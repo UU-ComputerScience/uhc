@@ -22,7 +22,7 @@ Pupto_1(1) -> upto
 Now we retrieve the equations and initial environment and heap:
 
 - Every variable gets a number
-- The equations are represented by a base set a change set and an eqution part
+- The equations are represented by a base set a change set and an equation part
 
 On every iteration we merge the changeSet with the BaseSet and define the new
 changeSet based on the previous values. This is only possible if we update all equations each iteration.
@@ -71,8 +71,8 @@ data AbstractValue
 
 instance Show AbstractValue where
     show av = case av of
-                  AV_Nothing      -> "_|_"
-                  AV_Basic        -> "{BAS}"
+                  AV_Nothing      -> "bot"
+                  AV_Basic        -> "bas"
                   AV_Locations ls -> "{" ++ show ls ++ "}"
                   AV_Nodes     ns -> "{" ++ show ns ++ "}"
                   AV_Tags      ts -> "{" ++ show ts ++ "}"
@@ -94,7 +94,9 @@ instance Monoid AbstractValue where
                                       (AV_Tags      at, AV_Tags      bt) -> AV_Tags (Set.union at bt)
                                       (AV_Error     _ , _              ) -> a
                                       (_              , AV_Error     _ ) -> b
-                                      otherwise                          -> AV_Error $ "Wrong variable usage: Location, node or basic value mixed"
+                                      (AV_Basic       , _              ) -> b   -- works, but is it correct? --JF
+                                      (_              , AV_Basic       ) -> a   -- works, but is it correct? --JF
+                                      otherwise                          -> AV_Error $ "Wrong variable usage: Location, node or basic value mixed" ++ show a ++ " / " ++ show b
 
 mergeNodes an bn = Map.unionWith (zipWith mappend) an bn
 %%]
@@ -107,12 +109,12 @@ data AbstractHeapElement = AbstractHeapElement
     , ahMod        ::  !AbstractHeapModifier
     }
 	deriving (Eq)
-	
+
 -- TODO: which should ahSharedSet hold: <value when shared> - <value when uniq> or <value when shared>
 -- Note: ahSharedSet currently holds the former, Nothing means it the cell shared, Just means unique (and shared part is kept off the record)
 
 instance Show AbstractHeapElement where
-	show (AbstractHeapElement b s m) =    "unique = "       ++ show b 
+	show (AbstractHeapElement b s m) =    "unique = "       ++ show b
                                        ++ ";\tshared = "  ++ show s
                                        ++ ";\tmod = "     ++ show m
 
@@ -120,7 +122,7 @@ type AbstractHeapModifier = (AbstractNodeModifier, Maybe Variable)
 type AbstractNodeModifier = (GrTag, [Maybe Variable]) --(tag, [fields])
 
 updateHeapElement :: AbstractHeapElement -> AbstractEnv s -> ST s AbstractHeapElement
-updateHeapElement he env = do 
+updateHeapElement he env = do
     { (baseChange, sharedChange) <- heapChangeSet (ahMod he) env
     ; let  sharedSet       =  ahSharedSet he
            newBaseSet'     =  baseChange   `mappend` ahBaseSet he
@@ -140,7 +142,7 @@ data AbstractEnvElement = AbstractEnvElement
 	deriving (Eq)
 
 instance Show AbstractEnvElement where
-	show (AbstractEnvElement b s m) =  "base = " ++ show b 
+	show (AbstractEnvElement b s m) =  "base = " ++ show b
                                        ++ ";\tshared = " ++ show s
                                        ++ ";\tmod = " ++ show m
 
@@ -171,7 +173,7 @@ setSharingInfo heap v = case aeBaseSet v of
                            AV_Locations ls  ->  when (aeIsShared v) (mapM_ (setShared heap) (Set.toList ls))
                            otherwise        ->  return ()
 
-setShared heap l = do 
+setShared heap l = do
     { he <- lookupHeap heap l
     ; maybe (return ())  (\s -> do { let  baseSet  =  ahBaseSet he `mappend` s
                                           newElem  =  he { ahBaseSet = baseSet
@@ -211,7 +213,7 @@ envChangeSet am env heap applyMap = case am of
                                         EnvUnion    vs mbS -> let addApplyArgument s av = envChangeSet s env heap applyMap >>= return . flip mappend av
                                                               in mapM valAbsEnv vs >>= return . mconcat >>= maybe return addApplyArgument mbS
                                         EnvEval     v ev     -> valAbsEnv v >>= evalChangeSet ev
-                                        EnvApp      f a ev   -> do { pnodes  <- valAbsEnv f 
+                                        EnvApp      f a ev   -> do { pnodes  <- valAbsEnv f
                                                                    ; argsVal <- mapM (\(Left v) -> valAbsEnv v) a
                                                                    ; applyChangeSet pnodes argsVal ev
                                                                    }
@@ -275,7 +277,7 @@ envChangeSet am env heap applyMap = case am of
                                     --getNewNode :: GrTag -> [AbstractValue] -> ST s AbstractValue
                                     getNewNode tag args       = let newArgs = args ++ [arg]
                                                                     partialF tag' = return $ AV_Nodes (Map.singleton tag' newArgs)
-                                                                    saturatedF var = 
+                                                                    saturatedF var =
                                                                         do { appendApplyArg env (AV_Nodes (Map.singleton (GrTag_Var (HNPos var))
                                                                                                                          newArgs
                                                                                                           )
@@ -394,5 +396,3 @@ isChanged old new = old /= new
                     --  (AV_Nodes     on, AV_Nodes nn    ) -> not $ nn <=! on
                     --  otherwise                          -> old /= new
 %%]
-
-% vim:ts=4:et:ai:

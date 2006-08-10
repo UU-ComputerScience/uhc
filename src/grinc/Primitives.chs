@@ -11,6 +11,13 @@ primitives information table.
 - code snippets to generate the code for a primitive (C--)
 
 %%[8.abstractValues import({%{GRIN}HeapPointsToFixpoint},{%{EH}Base.Common(HsName(..))}, qualified Data.Set as Set, {%{EH}GrinCode},{%{GRIN}GRINCCommon})
+
+undefinedAV  = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "False"), [AV_Basic])
+                                       ]
+                                       -- HPT-analysis seems to insist that there is at least one value here,
+                                       -- so an arbitrary value (False) is inserted in this list.
+                                       -- as fun_undefined exits the program, this value is never really used. --JF
+
 unboxedBasic = AV_Nodes $ Map.fromList [ (GrTag_Unboxed, [AV_Basic])
                                        ]
 booleanNodes = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "False"), [AV_Basic])
@@ -84,6 +91,7 @@ primitivesMap  =   Map.fromList primitivesTable
          , ("primAndWord"  , (1, [], undefined     ,  unboxedBasic))
          , ("primXorWord"  , (1, [], undefined     ,  unboxedBasic))
          , ("primOrWord"   , (1, [], undefined     ,  unboxedBasic))
+         , ("primUndefined", (1, [], undefined     ,  undefinedAV ))
          , ("primEqInt"    , (2, [], emitPrimEqInt ,  booleanNodes))
          , ("primLtInt"    , (2, [], emitPrimLtInt ,  booleanNodes))
          , ("primGtInt"    , (2, [], emitPrimGtInt ,  booleanNodes))
@@ -104,5 +112,3 @@ primCode     =  getPrimInfo (\ (_, _, c, _) -> c)
 primAV       =  getPrimInfo (\ (_, _, _, d) -> d)
 codeGenInfo  =  getPrimInfo (\ (a, b, c, _) -> (a, b, c))
 %%]
-
-% vim:et:ts=4:ai:
