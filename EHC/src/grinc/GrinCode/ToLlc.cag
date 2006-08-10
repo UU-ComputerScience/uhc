@@ -16,7 +16,11 @@ SEM GrAGItf
                                            --            (forced to True when optJumpTailCalls is True)
           module.optOwnLocals     = False  -- when True, local variables are allocated on the Stack datastructure
           module.optTraceCall     = False  -- when True, function entrance/exit is logged
-          module.optTraceAssign   = False  -- not passed around yet, so not used.
+
+{
+optTraceAssign = False
+}
+
 
 {
 -- assembler instruction to correct the C stack when
@@ -31,9 +35,8 @@ stackTweakInstruction = "leave"
 ATTR GrModule GrBind GrBindL GrExpr GrAlt GrAltL
   [ optJumpTailCalls : {Bool}
     optOwnParameters : {Bool}
-    optOwnLocals     : {Bool} 
+    optOwnLocals     : {Bool}
     optTraceCall     : {Bool}
-    optTraceAssign   : {Bool}
   | | ]
 
 -- Force OwnParameters when JumpTailCalls
@@ -58,11 +61,13 @@ ATTR GrValL GrVal [ | | llcDocs : {[PP_Doc]} ]
 
 ATTR GrExpr GrAlt GrAltL [ numberParameters : {Int}
                          |
-                         | localsF USE {.} {id}: {[HsName]->[HsName]} 
+                         | localsF USE {.} {id}: {[HsName]->[HsName]}
                            maxChildParameters USE {`max`} {0} : {Int}
                          ]
 
 ATTR GrBindL GrBind GrExpr GrAlt GrAltL GrGlobal GrGlobalL [ maxConstrParameters : {Int} | | ]
+
+ATTR GrBindL GrBind [ | | fwdDoc USE {>-<} {(text "")} : {PP_Doc} ]
 
 %%]
 
@@ -70,7 +75,7 @@ ATTR GrBindL GrBind GrExpr GrAlt GrAltL GrGlobal GrGlobalL [ maxConstrParameters
 %%% Code generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[8
-                  
+
 SEM GrValL
   | Nil lhs.llcDocs = []
   | Cons lhs.llcDocs = @hd.llcDoc : @tl.llcDocs
@@ -82,6 +87,8 @@ SEM GrModule
                          >-< comment "Global table"
                          >-< @globalL.declDoc
                          >-< initMethod @globalL.initDoc
+                         >-< comment "Function declarations"
+                         >-< @bindL.fwdDoc
                          >-< comment "Function definitions"
                          >-< @bindL.llcDoc
 
@@ -97,14 +104,18 @@ SEM GrGlobal
 
            lhs.declDoc =  "GrWord" >#< show @nm >|< ";"
 
+
+SEM GrBind
+  | Bind  lhs . fwdDoc = methodHead @lhs.optOwnParameters @nm @argNmL >#< ";"
+
 SEM GrBind
   | Bind  lhs . llcDoc = methodHeader @lhs.optTraceCall @lhs.optOwnParameters @nm @argNmL
                          >-< indent 4 (   methodLocals @lhs.optOwnLocals @loc.locals
-                                      >-< ppWhen @lhs.optOwnParameters 
+                                      >-< ppWhen @lhs.optOwnParameters
                                                  (methodParameters @lhs.optOwnLocals @argNmL)
                                       >-< ppWhen @loc.ownAllocation
-                                                 (methodEnter (if @lhs.optOwnLocals     then length @loc.locals       else 0) 
-                                                              (if @lhs.optOwnParameters then @expr.maxChildParameters else 0)
+                                                 (methodEnter (if @lhs.optOwnLocals     then length @loc.locals       else 0)
+                                                              (if @lhs.optOwnParameters then 9 + @expr.maxChildParameters else 0)
                                                  )
                                       >-< @expr.llcDoc
                                       >-< ppWhen @loc.ownAllocation
@@ -155,6 +166,7 @@ SEM GrExpr
  | Case    lhs.llcDoc = comment "Case"
                         >-< caseHeader @val.llcDoc
                         >-< indent 4 @altL.llcDoc
+                        >-< caseDefault @val.llcDoc
                         >-< caseFooter
 
            lhs.localsF = ((filter (not . (=="_") . show) @lhs.targets) ++) . @altL.localsF
@@ -187,7 +199,7 @@ SEM GrExpr
                               >-< vertically (zipWith assignment
                                                       (map (text.show) @lhs.targets)
                                                       (map (arrayindex returnpointer) [0..])
-                                             )         
+                                             )
                               )
 
            lhs.localsF = (@lhs.targets ++)
@@ -199,7 +211,7 @@ SEM GrExpr
                                         else ((text.show.head) @lhs.targets)
                                        )
                                        (call @nm (map (text.show) @argL))
- 
+
            lhs.localsF = (@lhs.targets ++)
 
  | App     lhs.llcDoc = comment "App: SHOULDNT"
@@ -222,7 +234,8 @@ SEM GrVal
 
 SEM GrVal
  | Node     lhs.llcDocs = @tag.llcDoc : @fldL.llcDocs
- | * - Node lhs.llcDocs = repeat (text "GrVal:others")
+ | Var      lhs.llcDocs = [text (show @nm)]
+ | * - Node Var lhs.llcDocs = repeat (text "GrVal:others")
 
 
 SEM GrTag
@@ -299,12 +312,18 @@ moduleHeader baseNm entryNm
    >-< text ""
 
 
-methodHeader :: Bool -> Bool -> HsName -> [HsName] -> PP_Doc
-methodHeader optTrace optOwn nm params
- = 	let parameters = if optOwn 
+methodHead :: Bool -> HsName -> [HsName] -> PP_Doc
+methodHead optOwn nm params
+ = 	let parameters = if optOwn
                       then "void"
                       else commaSeparated (map (declareName "GrWord") params)
-    in  "int" >#< functionName nm >|< "(" >|< parameters >|< ")" >#< "{"
+    in  "int" >#< functionName nm >|< "(" >|< parameters >|< ")"
+
+
+methodHeader :: Bool -> Bool -> HsName -> [HsName] -> PP_Doc
+methodHeader optTrace optOwn nm params
+ = 	methodHead optOwn nm params
+        >#< "{"
         >-< ppWhen optTrace (trace ("entering " ++ show nm))
 
 
@@ -319,7 +338,7 @@ methodEnter n k
    >-< assignment (deref stackpointer) (castword basepointer)
    >-< assignment basepointer stackpointer
    >-< incrementWith stackpointer (n+k+1)
-   
+
 methodLeave :: PP_Doc
 methodLeave
  = comment "Leave"
@@ -482,6 +501,11 @@ caseHeader :: PP_Doc -> PP_Doc
 caseHeader x
  = 	"switch (" >|< x >|< ")" >#< "{"
 
+caseDefault :: PP_Doc -> PP_Doc
+caseDefault x
+ = 	"    default: printf(\"undefined case for " >|< x >|< " : %d\\n\", " >|< x >|< ");"
+
+
 caseFooter :: PP_Doc
 caseFooter
  = text "}"
@@ -500,7 +524,7 @@ arrayindex a i
 assignment :: PP_Doc -> PP_Doc -> PP_Doc
 assignment v e
  = v >#< text "=" >#< e >|< ";"
---   >#< "printf(\"assignment" >#< v >#< "=" >#< e >#< " : %d\\n\", " >#< v >#< ");"
+     >|< ppWhen optTraceAssign (" printf(\"assignment" >#< v >#< "=" >#< e >#< " : %d\\n\", " >#< v >#< ");")
 }
 
 %%]

@@ -82,7 +82,7 @@ SEM GrAGItf
                    .  bind2idList  = Map.toList @module.bind2idFrag
                    .  var2idList   = Map.toList @module.var2id
                    .  bindMapping  = concat [ [(i, n), (i+1, n)] | (n, HNPos i) <- @bind2idList, not (n `elem` [applyNm, evalNm]) ] -- ugly
-                   .  varMapping   = let changeCaf n = if Map.member n @module.globalVars then hsnSuffix n "$global" else n
+                   .  varMapping   = let changeCaf n = if Map.member n @module.globalVars then hsnPrefix "global_" n else n
                                      in [ (i, changeCaf n) | (n, HNPos i) <- @var2idList ]
                    .  varMap       = (array (@low, @high-1) (@bindMapping ++ @varMapping), Map.empty)
 
@@ -139,7 +139,7 @@ SEM GrExpr
   | Catch      handler  .  var2id   = Map.insert @arg @newName @body.var2id
                         .  unique   = @body.unique + 1
                loc      .  newName  = HNPos @body.unique
- 
+
 SEM GrBind
   | Bind      loc   .  (var2id', newNames, unique'')  =  addList @unique' @lhs.var2id @argNmL
               expr  .  var2id                         =  @var2id'
@@ -202,5 +202,3 @@ newMap mp (k, EvApTagVar nm)  =  let newNm = if applyNm == nm
                                  in (k, EvApTagVar newNm)
 newMap mp x                   =  x
 %%]
-
-% vim:ts=4:et:ai:

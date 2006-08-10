@@ -1,11 +1,7 @@
 typedef int GrWord;
 typedef GrWord* Pointer;
 
-#define CFalse 3
-#define CTrue 4
-
-
-#define HEAPSIZE 10000
+#define HEAPSIZE 100000
 #define STACKSIZE 100000
 #define RETURNSIZE 100
 
@@ -14,8 +10,9 @@ Pointer Stack, Heap, ReturnArea;
 Pointer HeapEndCAF, HeapLimit;
 
 
-extern GrWord False$global;
-extern GrWord True$global;
+extern Pointer global_False;
+extern Pointer global_True;
+
 extern int fun_main();
 
 int main(int argc, char** argv)
@@ -34,21 +31,26 @@ int main(int argc, char** argv)
     HeapEndCAF = HP;
     fun_main();
 
-/*
-    typedef int (*continuation)(void);
-    continuation cont;
-    int res;
-    res = 1;
-    cont = fun_main;
-    while (res)
+
+    int i;
+
+    for (i=0; i<10; i++)
     {
-        res = (*cont)();
-        printf("intermediate res=%d SP-offset=%d tag=%d arity=%d value=%d\n", res, SP-Stack, SP[0], SP[1], SP[2] );
-        cont = (continuation) res;
+    	printf("RP[%d] = %d\n", i, RP[i] );
     }
- */
+    for (i=0; i<10; i++)
+    {
+    	printf("%d: St[%d] = %d\n", Stack+i, i, Stack[i] );
+    }
+    for (i=0; i<HP-Heap; i++)
+    {
+    	printf("%d: Heap[%d] = %d\n", Heap+i, i, Heap[i] );
+    }
 
     printf("result SP-offset=%d HP-offset=%d tag=%d arity=%d value=%d\n", SP-Stack, HP-Heap, RP[0], RP[1], RP[2] );
+    /* printf("result SP-offset=%d HP-offset=%d tag=%d value=%d\n", SP-Stack, HP-Heap, RP[0], RP[1] ); */
+
+
     return 0;
 }
 
@@ -92,16 +94,23 @@ int primModInt(int x, int y)
 
 int primGtInt(int x, int y)
 {	if (x>y)
-	    return CTrue;
-	return CFalse;
+	    return global_True[0];
+	return global_False[0];
 }
 int primLtInt(int x, int y)
 {	if (x<y)
-	    return CTrue;
-	return CFalse;
+	    return global_True[0];
+	return global_False[0];
 }
 int primEqInt(int x, int y)
 {	if (x==y)
-	    return CTrue;
-	return CFalse;
+	    return global_True[0];
+	return global_False[0];
+}
+
+int primUndefined()
+{
+	printf("attempt tot evaluate undefined\n");
+	exit(1);
+	return 0;
 }

@@ -30,12 +30,20 @@ type HPTResult       = (Int, Array Int AbstractEnvElement, Array Int AbstractHea
 type SetEnv          = Variable -> Bool -> AbstractEnvModifier -> Action
 type GetEnv          = Variable -> ST RealWorld AbstractEnvElement
 
+
+error2 s = AbstractEnvElement
+           { aeBaseSet    =  AV_Nothing
+           , aeIsShared   =  False
+           , aeMod        =  EnvSetAV (AV_Error s)
+           }
+
+
 heapPointsToAnalysis :: (Int,Int) -> GrModule -> IO HPTResult
 heapPointsToAnalysis (low,high) grmod = stToIO $ do
     { let applyArg = low - 1 ;
     ; absEnv <- (newArray_ (applyArg,high) ) :: EnvAction
-    ; foldM_ (\_ v -> writeArray absEnv v (error $ "no equation for variable " ++ show v)) () [applyArg..high]
-    ; let setEnvVar v shared eq = writeArray absEnv v (AbstractEnvElement  
+    ; foldM_ (\_ v -> writeArray absEnv v (error2 $ "no equation for variable " ++ show v )) () [applyArg..high]
+    ; let setEnvVar v shared eq = writeArray absEnv v (AbstractEnvElement
                                                            { aeBaseSet    =  AV_Nothing
                                                            , aeIsShared   =  shared
                                                            , aeMod        =  eq
@@ -582,7 +590,9 @@ ATTR AllGrNT [ | | actualsEnv USE {.} {id} : {[(Int, [Maybe Int])] -> [(Int, [Ma
 ATTR AllBind [ allActuals: {[(Int, [Maybe Int])]} | | ]
 
 SEM GrExpr
-  | Store Unit  loc  .  fGenActuals  = \tag mns n -> let args      = tail mns -- first element is the size of the rest of the node
+  | Store Unit  loc  .  fGenActuals  = \tag mns n -> let args      = if grinStoreArity
+                                                                      then tail mns -- first element is the size of the rest of the node
+                                                                      else      mns
                                                          resultVar = lookup tag @lhs.tag2resultVar
                                                          actuals r = ((r, args) :)
                                                      in maybe id actuals resultVar
@@ -639,5 +649,3 @@ makeHeapElem l eq =  (l, AbstractHeapElement  {  ahBaseSet = AV_Nothing
                                               }
                      )
 %%]
-
-% vim:et:ts=4:ai:

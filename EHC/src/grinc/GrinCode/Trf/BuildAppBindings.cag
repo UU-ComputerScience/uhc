@@ -37,7 +37,7 @@ ATTR GrAGItf GrModule [ | unique: Int | ]
 ATTR AllBind AllGrExpr [ | applyNodeSizes: {Set.Set Int} | ]
 
 SEM GrModule
-  | Mod           bindL  .  applyNodeSizes  = Set.empty 
+  | Mod           bindL  .  applyNodeSizes  = Set.empty
 
 SEM GrExpr
   | Store  lhs . applyNodeSizes = maybe @lhs.applyNodeSizes (\e -> Set.insert e @lhs.applyNodeSizes) @val.applyNodeSize
@@ -45,17 +45,17 @@ SEM GrExpr
 SEM GrVal [ | | applyNodeSize: {Maybe Int} ]
   | Node          loc  . fieldCount             =  @fldL.fieldCount
   | Tag           loc  . fieldCount             =  0
-  | Node Tag      lhs  .  applyNodeSize         =  if @tag.isGenApplyTag 
+  | Node Tag      lhs  .  applyNodeSize         =  if @tag.isGenApplyTag
                                                    then Just @fieldCount
                                                    else Nothing
   | * - Node Tag  lhs  .  applyNodeSize         =  Nothing
- 
+
 SEM GrValL [ | | fieldCount: Int ]
   | Cons  lhs  .  fieldCount  =  1 + @tl.fieldCount
   | Nil   lhs  .  fieldCount  =  0
 
 SEM GrTag [ | | isGenApplyTag : Bool ]
-  | Lit      lhs  .  isGenApplyTag  =  @categ == GrTagApp && @nm == HNm "apply"
+  | Lit      lhs  .  isGenApplyTag  =  @categ == GrTagApp && @nm == HNm "!apply"
   | * - Lit  lhs  .  isGenApplyTag  =  False
 %%]
 
@@ -72,7 +72,7 @@ A 'tag only value' A/apply should never occur. If it does, it will now become A/
 
 %%[8.replaceApplyTags
 SEM GrVal
-  | Node Tag  loc  . appTag      = size2tag (@fieldCount - 2)
+  | Node Tag  loc  . appTag      = size2tag (@fieldCount - 2) -- (if grinStoreArity then 2 else 1))
                    . newTag      = if @tag.isGenApplyTag then @appTag else @tag.grTrf
   | Node      lhs  . grTrf       = GrVal_Node @newTag @fldL.grTrf
   | Tag       lhs  . grTrf       = GrVal_Tag @newTag
@@ -105,17 +105,15 @@ node2app size (unique, origNamesMap, evalMap, bindings) =
         (unique', origFuncName, funcName, code) = buildAppBinding unique applyArgs
         origNameMap = (funcName, origFuncName)
         evalMapElem = (key, EvApTagVar funcName)
-        
+
     in (unique', origNameMap:origNamesMap, evalMapElem:evalMap, code:bindings)
 %%]
 
 %%[8.addAppBindings
 SEM GrModule
-  | Mod  loc  . (unique', origNamesMap, evalTagMp', binds)  = foldr node2app 
+  | Mod  loc  . (unique', origNamesMap, evalTagMp', binds)  = foldr node2app
                                                                     (@lhs.unique, [], @evalTagMp, @bindL.grTrf)
                                                                     (Set.elems @bindL.applyNodeSizes)
          lhs  . unique = @unique'
          lhs  . grTrf  = GrModule_Mod @baseName @globalL.grTrf @binds @ctagsMp @evalTagMp' @applyTagMp
 %%]
-
-% vim:ts=4:et:ai:
