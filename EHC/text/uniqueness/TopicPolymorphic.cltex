@@ -3,29 +3,239 @@
 \chapter{Polymorphic bindings}
 \label{chapt.Polymorphic}
 
-Note: I think this chapter should be removed and the contents places somewhere else. The problem is that without data types,
-a chapter about polymorphism is not much use, since polymorphism doesn't complicate the uniqueness type system that much, as
-dpulication of subgraphs is not needed for that. But it does complicate dealing with data types. But I would like the topic
-about data types to be separate from this topic, or better, this topic as a prelude to data types, so that I can discuss
-data types in somewhat more isolation. Perhaps this is the idea: discuss polymorphism in a language with build in support
-for tuples (since these are simple, non-recursive data types). Then I can disuss all these issues of this chapter. And then
-in the next chapter discuss how to support abitrary data types. Yes, I guess that's the way to do it.
+This chapter finishes the story about the Let, by explaining how to deal with polymorphism.
+At first glance, the addition of polymorphism doesn't seem to be a very involving change.
+In essence, we need to deal with annotated type variables in the type rules and that is
+all. Unfortunately, there is one big complication. A type variable can be instantiated
+by a function type, which has more than one type constructor, and consequently, more
+than one uniqueness annotation. Why this is a problem, and how to deal with it, is the
+central theme of this chapter.
+
 
 \section{Example}
+
+  To demonstrate what the problem is, we show what the changes are to support polymorphism,
+  until we run into the problem. For that, we need type variables, and some changes in
+  the typing rules to support them.
+
+  The type language is extended with type variables. A type variable is annotated like a
+  type constructor, and is a placeholder for a real annotated type. In the case of our
+  language, this can only be an Int or a function.
+
+  We assume that we have the final types at our disposal, which means
+  that each encountered type variable is universally quantified. Existentially quantified
+  type variables are not allowed, we defer the discussion of them to Section~\ref{sect.ExistentialTypes}.
+  Applying these changes to the type language results into:
+
+  %%[[wrap=code
+  utau  ::=  Sup(alpha)(delta)    -- tyvar
+        |    Sup(Int)(delta)      -- tycon int (Int)
+        |    Sup((->))(delta)     -- tycon arrow (Arrow)
+        |    utau utau            -- type application (App)
+        |    forall alpha . utau  -- universal quantification (silently ignored)
+  %%]
+
+  There are two places in the type rules that need to be changed. These are the
+  flow type rules (Figure~\ref{fill this in}), and the type rule that generates
+  the |Inst| constraint (Figure~\ref{fill this in}). Both have one and the same
+  problem, so let us look only at instantiation.
+
+  Consider the folowing example:
+
+%%[[wrap=code
+       f  :: (Annot(Int)(2)) (Annot(->)(1)) (Annot(Int)(3))
+       f = ...
+       id :: forall alpha . (Annot(alpha)(5)) (Annot(->)(4)) (Annot(alpha)(6))
+       id = \x -> x
+       g :: (Annot(Int)(8)) (Annot(->)(7)) (Annot(Int)(9))
+       g = (id :: (Annot(Int)(12)) (Annot(->)(11)) (Annot(Int)(13)) (Annot(->)(10)) (Annot(Int)(15)) (Annot(->)(14)) (Annot(Int)(16))) f
+%%]
+
+  Here we see that the use-site type of |id| has more annotations than the definition-site type of |id|. From
+  the constraints of |id|, we get information about how |(Delta(8))| and |(Delta(9))| are related. With these,
+  we can relate |(Delta(11))| and |(Delta(14))|, but what about |(Delta(12))|, |(Delta(13))|, |(Delta(15))|, and |(Delta(16))|?
+
+  Leaving these annotations unconstrained is not an allowed option. Assuming that the argument and value of |f|
+  are related, then the argument and value of |g| (which is identical to |f|), should also be related. How this
+  is done is up to |id|, and thus there must be some constraints between |(Delta(12))|, |(Delta(13))|, |(Delta(15))|, and |(Delta(16))|, and the
+  annotations of |id|. There are two ad-hoc options to get these constraints in place.
+
+
+\section{Ad-hoc strategy 1: defaulting}
+
+  The first option is uses a defaulting strategy. Suppose we instantiate some annotated type
+  variable |(Annot(alpha)(1))| to |(Sub(utau)(a)) (Annot(->)(2)) (Sub(utau)(b))|. We generate additional constraints that
+  equate the uniqueness variables of |(Sub(utau)(a))| and |(Sub(utau)(b))| with |(Delta(2))|. This effectively puts
+  |(Delta(2))| on the type constructors of |(Sub(utau)(a))| and |(Sub(utau)(b))|. The annotations are now properly
+  connected, albeit in a crude way, resulting into poor typings when |id| is used.
+
+\section{Ad-hoc strategy 2: equality}
+
+  The second option is less conservative. Assume that each type variable is instantiated to exactly the same annotated
+  type. For example:
+
+%%[[wrap=code
+g = (id :: (Annot(Int)(12)) (Annot(->)(11)) (Annot(Int)(13)) (Annot(->)(10)) (Annot(Int)(12)) (Annot(->)(11)) (Annot(Int)(13))) f
+%%]
+
+  This works, since the underlying type system will guarantee that each occurrence of the same type variable is instantiated
+  to exactly the same type, thus we can always put the same annotations there. For the |id| function, this is a perfect
+  solution, because now the uniqueness typing of |g| is equivalent to that of |f|. But in general, this approach is still
+  too consertative as it ignores how the polymorphic function handles it's arguments, as is demonstrated by the
+  following alternative version of the :
+
+%%[[wrap=code
+first :: forall a b c . a -> a -> a
+first = \x y -> x
+%%]
+
+  In this example, the |y| parameter will never be evaluated, but that will not be discovered as |x| and |y| have the
+  same annotated type.
+
+
+\section{Strategy 3: graph duplication}
+
+  We take an approach in this chapter that deals with the problem by investigating the constraint graph belonging to the
+  type that is instantiated. A function with a polymorhpic type cannot touch the contents of a value with a type variable
+  as type, but it can duplicate the value, and pass it to functions, that it gets as parameter, that can. This duplication
+  and passing around of values is captured in the constraint graph\footnote{For simplicity, we assume that there are no hyper edges in the constraint graph.}. Each simple path between uniqueness annotations on a
+  type variable (not neccesairily the same type variable), gives information about the uniqueness information flow between
+  the annotations on type variables. The uniqueness information flow means that a change of uniqueness value in the
+  substitution on the uniqueness variables in question, gives rise to a change on the substitution of other uniqueness
+  variables in the information flow, or in other words: it just means that they are related.
+
+  An example first. Consider the |id| function again. There is an uniqueness information flow from the result
+  of the |id| function to the argument. When |id| is passed the function |f|, then the result |g| is also a
+  function. Now, there should be an information flow between the annotations on the result of |g| to the
+  result of |f|, and an information flow between the parameter of |g| and the parameter of |f|. Due to variance
+  differences between argument and result, the information flow between the arguments should be the opposite
+  of the information flow between the values. That creates one encapsulating information flow:
+  from the value of |g|, to the value of |f|, from this value to the parameter of |f| and finally to the parameter of |g|.
+
+  Another example. Consider the |first| function again. There is an information flow between the result of |first| and
+  the first parameter of |first|. But not to the second parameter. So, if the type variable |alpha| is instantiated
+  to some function type, then there should be a similar information flow as in the above example, from the result of
+  first to the function passed as first argument to first.
+
+  Formulating this in general is a bit tricky. Suppose there is a path $P$ in the constraint graph that has annotated type variables
+  |(Annot((Sub(alpha)(1)))(1),...,Annot((Sub(alpha)(n)))(n))|. These are annotations that occur on the definition-site type.
+  At the use-site type, there are corresponding types: |(Sub(utau)(1)),...,(Sub(utau)(n))|. These types have an important
+  property. Aside from the uniqueness annotations, the types themselves exactly equal: |(Sub(tau)(1)) === ... === (Sub(tau)(n))|,
+  due to unifications performed by the underlying type system. Let |(Delta(i,j))| denote the |j|th annotation from |(Sub(tau)(i))|.
+  For each |j|, we  duplicate the path $P$, taking |(Delta(i,j))| for the annotation |(Delta(i))| that occurred on |Annot((Sub(alpha)(i)))(i))|.
+  With the exception that the path is inversed if the variance of the |(Delta(i,j))|s differs from the |(Delta(i))|s, since the
+  information flow is the other way around in that case.
+
+  With this approach, instantiation is correctly dealt with in the presence of polymorphism. But there is a price due to constraint
+  duplication. But this price is less than expected. After reduction to normal form, the constraints will only be between sacred
+  uniqueness variables, which are typically not many for the ``deeper'' variables.
+  
+
+\section{Other complications}
+
+  The problem with instantiation shows up at other places as well in the presence of impredicativity. Consider the following
+  example:
+
+%%[[wrap=code
+
+  let  id :: forall alpha . alpha -> alpha
+
+       f :: ((Int -> Int) -> (Int -> Int)) -> Int
+       f = \g ->  g id 3
+  in   f id
+%%]
+
+  A problem occurs in the presence of impredicativity in the application of |id| to |f|. Constraint generation of |=>=|
+  dictates that we generate |=>=| constraints between uniqueness annotations on the type of the parameter of |f| and the
+  uniqueness annotations on the type of |id|. But the type of the parameter of |f| has a deeper structure than that of
+  the |id| function. The same strategies that we discussed above can be applied in this case.
+  
+  In practice, this means that the position of an annotation in a type and constraint is starting to play an important
+  role. This role gets even more important in Chapter~\ref{fill this in - data types} about data types. In the type
+  system, dealing with position information of an annotation shows up at two places. During the constraint gathering
+  process, we obtain the information, and during inferencing, we use the information. It complicates the implementation
+  of both parts of the type system. In the remainder of this chapter, we factor this subject out of both parts of the
+  type system and give it its own part. This results in a better separater of functionality, easier understanding of
+  the implementation, more code reuse, and not to forget, allows us to parameterize over the strategy that deals with
+  the ``deeper'' annotations.
 
 
 \section{Types in constraints}
 
+  The trick is to put the annotated type in the constraints, instead of a single annotation.
 
-\section{Flattening constraints}
+%%[[wrap=code
+  constr  ::=  delta =>= delta
+          |    utau =>= utau
+          |    sumi (Sub(utau)(i)) <= utau
+          |    Inst n utau utau
+%%]
+
+  The =>= constraint on single uniqueness variables are still there, in case a particular annotation
+  need to be constrained.
+
+  This simplifies the constraint gathering process, as there is no longer a need to delve into the annotated
+  type and to keep track of variance. For example, the type rule of Figure~\ref{RulerUniquenessExamples.U1.flow.base}
+  is no longer required, and replaced by the generation of a single constraint.
+
+ %%[[wrap=code
+  -- insert new type rules here? (don't think it is interesting enough though, might as well leave them out)
+%%]
+
+  For the inferencer, the abstraction comes in the form of \emph{annotation trees}. This is a representation
+  that clearly shows the ``vertical'' structure of annotations on a type:
+
+%%[[wrap=code
+data AnnTree
+  =  AnnNode Annotation [AnnTree] [Annotation]
+  |  ...  -- some other constructors that are only there for technical purposes
+%%]
+
+  Each type constructor corresponds to an |AnnNode|, and the parameters of a type constructor are the
+  childeren of the type constructor. The list of annotations is empty in this chapter, but in Chapter~\ref{fill this in}
+  this list will represent additional annotations of a type constructor.
+
+  The idea is that we simultaneously convert some types to annotation trees, one annotation tree for each type, with
+  the property that all annotation trees have exactly the same shape, assuming that the types are unifyable, which is
+  guaranteed by the constraint generation process\footnote{Not all types in a |\+/| constraint are unifyable, but the
+  annotation trees are lazily constructed and the inferencer only examines only the unifiable parts of the annotation
+  trees for a type correct program.}. If one type |(Sub(utau)(1))| has an annotation |delta| that has no counter part
+  in in some other type |(Sub(utau)(2))|, then |(Sub(utau)(1))| has a deeper structure at this place than |(Sub(utau)(2))|.
+  We fill up the gaps in |(Sub(utau)(2))| by duplicating an annotation |(Delta(2))| in |(Sub(utau)(2))|. |(Delta(2))| is
+  the deepest annotation in |(Sub(utau)(2))|, such that its counter part in |(Sub(utau)(1))| is a parent of |delta|.
+  This constructs the annotation trees by means of the defaulting strategy of Section~\ref{fill this in}. Note that we
+  only use this for constructing the annotation trees, which parts of the annotation tree that are used, depend on the
+  actual instantiation strategy of the inferencer. With the concept of annotation trees, we merely make sure that the
+  inferencer does not have to deal with types that have no identical shape.
+  
+  The gap between the constraint gathering and the inferencer is filled by the procedure that constructs the
+  annotation trees, and several environments that capture properties of annotations. Among these properties is
+  the variance of an annotation, and whether or not it is attached to a type variable. Changes to the type language
+  that we made in order to support polymorphism are covered by this procedure, the only task left to the inferencer is
+  to perform the constraint duplication, which is now considerably easier with the annotation trees and some
+  annotation environments as input.
 
 
-\section{Annotation Trees}
+\section{Existential types}
+\label{sect.ExistentialTypes}
 
-
-\section{Duplicating subgraphs}
+  Since we support universal quantification, the question arises what we have to do for existential quantification.
+  Existential quantification results into the same problems we have with universal quantification, and the
+  existing infrastructure takes care of it. For example, the constraint duplication strategy (Section~\ref{fill this in})
+  makes sure that annotations on ``forgotten'' parts of existential types, are properly propagated to the annotations on
+  types of functions that remember the ``forgotten'' parts.
 
 
 \section{Conclusion}
 
+  Dealing with polymorphism is interesting. Up front, you would expect that it has severe consequences on the
+  uniqueness type system, especially in the presence of higher-ranked types. But with the right abstractions in
+  place, these changes are rather isolated.
+  
+  The work we did to put the types into the constraints will be useful in Chapter~\ref{fill this in}. Dealing with
+  data types is essentially the problem of additional annotations, and will cause some additional annotations to
+  appear in the annotation trees. To support data types, we do not need to change anything beyond the annotation
+  trees. This means that with this chapter, we close the subjects about the inferencer and constraint graphs.
+
 %%]
+

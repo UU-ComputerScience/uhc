@@ -24,7 +24,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   that the annotations are correct by analyzing the program from outermost expression to innermost expression,
   and identifying which conditions should hold at each place. These conditions are formulated as constraints
   that should hold, and we finish our example by demonstrating how this can be done.
-  
+
   The example is the following program:
   
 %%[[wrap=code
@@ -63,7 +63,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   We will now focus on the main problem of this chapter: suppose the programmer
   supplies the annotated program above. How can we check that these annotations
   are valid? The answer to this question is the uniqueness type system.
-  
+
   We take a rather indirect approach, and demand that the program is also annotated
   with \emph{usage information}, besides uniqueness information. So, we demand that
   a program has two annotations on a type constructor. A uniqueness annotation, and
@@ -145,62 +145,63 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   
   Only one issue remains before we can continue with analyzing the function and argument. We applied a 
   function, so we used the function: the function is at least as much used as the application
-  itself, which we expressed by: |((Sup(1)(1)), (Sup(1)(2))) =>= ((Sup(1)(3)), (Sup(1)(4)))|.
-  
+  itself. The uniqueness of the function application is separate however, so we only constrain the
+  referene-count annotations in this case: |(Sup(1)(1)) =>= (Sup(1)(3))|.
+
   Now there are two expressions two analyze: the function expression and the argument expression. The order in which
   we analyze these subexpressions does not matter: the constraints are order independent. We proceed with the
   argument expression first, since that is an integer. We do not have to check anything for an integer, since an
   integer can appear in both variants. So, we continue with analyzing the function expression.
 
   The function expression is again an application:
-  
+
 %%[[wrap=code
     (( ... :: (Sup(Int)(((Sup(2)(15)), (Sup(*)(16))))) (Sup(->)(((Sup(1)(11)), (Sup(1)(12)))) (Sup(Int)(((Sup(1)(17)), (Sup(1)(18)))) (Sup(->)(((Sup(1)(13)), (Sup(1)(14))))) (Sup(Int)(((Sup(1)(19)), (Sup(1)(20)))))))) (3 :: (Sup(Int)(((Sup(1)(21)), (Sup(1)(22))))))) :: (Sup(Int)(((Sup(1)(5)), (Sup(1)(6))))) (Sup(->)(((Sup(1)(3)), (Sup(1)(4))))) (Sup(Int)(((Sup(1)(7)), (Sup(1)(8)))))
 %%]
-   
+
   Applying the same reasoning as above, we end up with the constraints:
 
 %%[[wrap=code
-    
+
     ((Sup(1)(3)), (Sup(1)(4))) =>= ((Sup(1)(13)), (Sup(1)(14)))    -- (1) flow from application to result
     ((Sup(1)(17)), (Sup(1)(18))) =>= ((Sup(1)(5)), (Sup(1)(6)))    -- contra variant (flow back)
     ((Sup(1)(7)), (Sup(1)(8))) =>= ((Sup(1)(19)), (Sup(1)(20)))
-    
+
     ((Sup(2)(15)), (Sup(*)(16))) =>= ((Sup(2)(21)), (Sup(*)(22)))  -- (2) flow from parameter to argument
-    
+
     ((Sup(1)(3)), (Sup(1)(4))) =>= ((Sup(1)(11)), (Sup(1)(12)))    -- (3) use of the function
 %%]
-  
+
   There is one difference, and that is in the first three constraints. The value of the function is
   itself a function and has a type with three type constructors in it. Each corresponding pair of
   type constructors gets its own constraint. The direction of the constraint matters: to get the
   flow right, the direction needs to be reversed for contra-variant type constructors. The following
   picture illustrates the reason:
-    
+
 %%[[wrap=code
   ... insert picture ...
 %%]
-  
+
   An lambda abstraction is encountered when we step into the function body:
 
 %%[[wrap=code
     (\x y ->  (... y :: (Sup(Int)(((Sup(1)(27)), (Sup(1)(28))))) ... x :: (Sup(Int)(((Sup(1)(29)), (Sup(*)(30))))) ... x :: (Sup(Int)(((Sup(1)(31)), (Sup(*)(32))))) ...) :: (Sup(Int)(((Sup(2)(15)), (Sup(*)(16))))) (Sup(->)(((Sup(1)(11)), (Sup(1)(12)))) (Sup(Int)(((Sup(1)(17)), (Sup(1)(18)))) (Sup(->)(((Sup(1)(13)), (Sup(1)(14))))) (Sup(Int)(((Sup(1)(19)), (Sup(1)(20))))))
 %%]
-   
+
   At such a lambda abstraction, we perform two tasks: analyze the body of the lambda abstraction, and
   combine the results of the uses of the parameters. If a parameter is unique, but occurs twice in the
   body of the function, we want to verify that it is only used once at one of the sites, and zero
   times at the other place. We combine the use-sites of the parameters by
   summing up the annotations on the use-sites of the parameters, with a special constraint:
   |sumi (Sub(use_site)(i)) <= def_site|.
-  
+
   Another way of looking at this case is noting that the use-sites of parameters are leafs in the
   syntax tree. The information flow stops at these places. But information about the use of
   a parameter needs to be propagated to the definition site. The above constraint connects the
   use-site to the definition site.
-  
+
   With only one use-site of |y|, and two use-sites of |x|, the constraints are:
-  
+
 %%[[wrap=code
    ((Sup(1)(29)), (Sup(*)(30))) ++ ((Sup(1)(31)), (Sup(*)(32))) <= ((Sup(2)(15)), (Sup(*)(16)))  -- for x
    ((Sup(1)(27)), (Sup(1)(28))) <= ((Sup(1)(17)), (Sup(1)(18)))                                  -- for y
@@ -212,19 +213,19 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   (( ... :: (Sup(Int)(((Sup(1)(25)), (Sup(1)(26)))))) + (x :: (Sup(Int)(((Sup(1)(31)), (Sup(*)(32))))))) :: (Sup(Int)(((Sup(1)(23)), (Sup(1)(24)))))
   ((y :: (Sup(Int)(((Sup(1)(27)), (Sup(*)(28)))))) + (x :: (Sup(Int)(((Sup(1)(29)), (Sup(*)(30))))))) :: (Sup(Int)(((Sup(1)(25)), (Sup(1)(26)))))
 %%]
-  
+
   The plus operator evaluates both the arguments at least as many times as the result is evaluated. But aside from
   this restriction, all other combinations are allowed. For example, the result is allowed to be unique, but one
   of the arguments shared. Or even both the arguments shared and the result unique. We express this by putting
   the constraint only on the reference-count annotation:
-  
+
 %%[[wrap=code
   (Sup(1)(23)) =>= (Sup(1)(25))
   (Sup(1)(23)) =>= (Sup(1)(31))
   (Sup(1)(25)) =>= (Sup(1)(27))
   (Sup(1)(25)) =>= (Sup(1)(29))
 %%]
-  
+
   The standard code generated for addition can handle all allowed combinations. To optimize code, a code generator can
   choose to insert special code for a addition that performs the addition in place if one of the parameters is unique.
 
@@ -236,7 +237,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   considering how much the annotations look like normal numbers. With the constraints being consistent, the
   following table\footnote{Again, the annotations are labeled to see where they end up in the interpretation.}
   lists the constraints and the interpretation:
-  
+
   \begin{tabular}{lllr}
     constraint & count interpretation & uniqueness interpretation & holds \\
     \hline
@@ -246,12 +247,12 @@ constraint gathering, and constraint solving, is treated more formally in subseq
     |((Sup(1)(a)),(Sup(*)(b))) ++ ((Sup(1)(c)),(Sup(*)(d))) <= ((Sup(2)(e)), (Sup(*)(f)))| & |(Sup(1)(a)) + (Sup(1)(c)) <= (Sup(2)(e))| & |(Sup(*)(b)) === (Sup(*)(d)) === (Sup(*)(f))| & OK \\
     |(Sup(1)(a)) =>= (Sup(1)(b))| & |(Sup(1)(a)) <= (Sup(1)(b))| & & OK
   \end{tabular}
-  
+
   So, the annotated program type checks. There are other annotations that also
   type check. For example, set all uniqueness annotations to |*| and all
   reference-count annotations to |2|. The constraints still hold. However,
   annotating |x| to be unique will not work.
-  
+
   The remainder of this chapter delves more precisely into each subject that we encountered.
 
 \section{Language}
@@ -260,7 +261,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   As mentioned before, the language in this chapter is a simply typed
   lambda calculus without Let bindings. The latter means no (recursive) let, but
   there are bindings by lambda abstraction:
-  
+
 %%[[wrap=code
   expr  ::=  int           -- integer expression (Int)
         |    var           -- variable expression (Var)
@@ -407,7 +408,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   type rules that walk over the type and generate the flow-constraints for each two corresponding annotations in the proper direction.
 
   \rulerCmdUse{RulerUniquenessExamples.U1.flow.base}
-  
+
   The last case to deal with is lambda abstraction. We use an auxiliary rule that gathers all annotated types of the use-sites of the
   identifier that is lambda lifted. There is no check of propagation between the result of the body and the result-part of the
   annotated type of the lambda function. As is visible in the type rules, we force the annotated types to be the same. Weakening this
@@ -530,3 +531,4 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   this thesis, so it is important to keep this difference in mind.
 
 %%]
+

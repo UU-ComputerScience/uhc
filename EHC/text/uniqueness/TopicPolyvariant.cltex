@@ -378,7 +378,7 @@ graph representation: the \emph{constraint graph}. By simplifying the graph, it 
 use (Section~\ref{fill this in}.
 
 The graph representation is rather simple: the uniqueness variables are nodes. The constraints are directed edges
-between the nodes. The constraint |a =>= b| is translated to a directed edge from node |a| to node |b|. The constraint
+between the nodes. The constraint |a =>= b| is translated to a directed edge\footnote{There are two variants of the |=>=| constraint. This is only a slight, but not interesting, complication, so we leave it out of this description.} from node |a| to node |b|. The constraint
 |(Sub(a)(1)) \+/ ... \+/ (Sub(a)(n)) <= b| is translated to a hyper edge from nodes |(Sub(a)(1)), ..., (Sub(a)(n))| to
 node |b|. The inference of the substitution is analogous to the inference on the constraint set, except that now
 the edges of the graph are traversed instead of the constraints.
@@ -523,6 +523,11 @@ procedure of to obtain $F'$ already combined some hyper edges if they existed on
 that most hyper edges range over different sets of sacred uniqueness variables, which means that
 subsumed hyper edges do not exist often, and the elimination does not contribute enough to the size
 of the graph to be worthwhile.
+
+To be done: the coercions on hyper edges are confusing, and for normalisation, also annoying. What
+if I would decorate the edges of a hype redge with a boolean value value that specifies if it has
+a coercion or not. Then there are only constraints between the sacred uniqueness variables, and
+no confusing intermediates anymore.
 
 In the next subsection, we discuss a reduction procedure that makes the graph of the binding group smaller,
 such the procedure of this section works faster. The reduction procedure of this subsection has to be

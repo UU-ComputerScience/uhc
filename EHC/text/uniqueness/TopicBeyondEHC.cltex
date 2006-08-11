@@ -81,5 +81,13 @@ complicate these problems.
   Since this is a common problem for an optimizing compiler, perhaps that separate code generation is too much to
   ask for, and is separate compilation without code generation, the approach to take.
 
+\section{Unboxed types}
+
+  Consider unboxed tuples. An unboxed tuple does not have a spine, the only memory that is available is on the
+  two components of the tuple. Thus, the type constructor of an unboxed tuple cannot have a uniqueness annotation.
+  But the problem is then: how to deal with polymorphism in case of unboxed tuples? That is not possible, but
+  a polymorhpic function cannot be applied to an unboxed tuple in the first place.
+  Todo: turn this into a section (if there is more to say about this subject, that is).
+
 %%]
 

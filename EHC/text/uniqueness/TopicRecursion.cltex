@@ -122,11 +122,17 @@ let f :: forall alpha . alpha -> alpha
            in y
 %%]
 
-  In normal Haskell, we are unable to specify the type for |y| in this case. A solution is to give a name to the skolemnized
+  In Haskell, we are unable to specify the type for |y| in this case. A solution is to give a name to the skolemnized
   version of type variable |alpha|, such that this name can be used in the signature of |y|. Unfortunately, the dependencies
   in our case a much higher, requiring naming all the mono variables that are affected by the expression for which we want to
-  specify the constraint set. It is questionable if there is a solution to this problem that doesn't require naming all the
-  mono variables that can have an influence.
+  specify the constraint set.
+  
+  On the other hand, if we are talking about a signature for a top-level function, then virtually all mono
+  variables will be annotations on the function spine of toplevel functions. By enforcing with constraints on the toplevel
+  bindings that the function spine of a toplevel function is shared, we can eliminate the need to specify the dependencies
+  on mono-variables. This is not a very bad assumption to make, since from a design perspective, a function should only be
+  toplevel if it is intended to be shared by multiple functions or modules. With this approach, programmer specified constraint
+  sets are feasible.
 
 \subsection{Entailment check}
 
@@ -173,10 +179,10 @@ let f :: forall alpha . alpha -> alpha
   * & 1 & 1 & 1 & 0 & 0 & 1 & $p_1 \wedge \neg{p_2} \wedge \neg{q_1} \wedge q_2$ \\
   * & * & 1 & 1 & 0 & 1 & 0 & $p_1 \wedge \neg{p_2} \wedge q_1 \wedge \neg{q_2}$ \\
   \end{tabular}
-  
+
   The propositional variant of the constraint is the disjunction of the above
   propositions.
-  
+
   Instead of translating an arbitrary |\+/| constraint directly, we split it first up
   into multiple, but smaller, |\+/| constraints. Since the |\+/| is commutative, and
   the |<=| transitive, we can introduce some fresh uniqueness variables, and shape
@@ -188,7 +194,7 @@ let f :: forall alpha . alpha -> alpha
 
   Each |\+/| constraint has at most three uniqueness variables this way. The translation
   scheme is then similar to the scheme for |=>=|, only three times as big.
-  
+
   After converting the entire constraint set into propositions, tools from propositional
   logic are used to verify that the proposition holds, or to come up with a counter example.
   Converting such a counter example into a piece of information understandable by the
@@ -196,8 +202,9 @@ let f :: forall alpha . alpha -> alpha
 
 \subsection{Final remarks about helping the inferencer}
 
-  All in all, asking the programmer to supply a constraint set to totally replace the constraint set that we infer ourselves, does
-  not seem to work in practice. We can only ask the programmer to augment an inferred constraint set (Section~\ref{fill this in}).
+  Helping the inferencer by specifying a replacement constraint set, gives some mixed feelings.
+  Technically it is possible, but the effort it takes to get it implemented, is excessively
+  huge, compared to the gains.
 
 
 \section{Full polyvariant recursion}
@@ -251,7 +258,7 @@ let f :: forall alpha . alpha -> alpha
   abstraction barrier between the two ways, allowing both to exist at the same time. In practice, the fast approach
   is virtually always sufficient, but in case the programmer really needs the additional power, it is possible to turn on
   the slow approach for specific parts of the program.
-  
+
   This chapter also showed the need for constraint graphs and the corresponding reductions of Chapter~\ref{fill this in}. Without the
   reductions, the fixpoint iteration process is not possible for all but the tiniest programs. That said, this almost concludes
   the story about constraint graphs. Only Chapter~\ref{fill this in - polymorphism} about polymorphism will mention constraint graphs again,
