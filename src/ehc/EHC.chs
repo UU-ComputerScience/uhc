@@ -299,10 +299,11 @@ foldEH inh fp uid opts eh
                          , EHSem.opts_Inh_AGItf     = opts
                          })
 
-foldHs :: HSSem.Inh_AGItf -> HsName -> EHCOpts -> HS.AGItf -> HSSem.Syn_AGItf
-foldHs inh modNm opts hs
+foldHs :: HSSem.Inh_AGItf -> HsName -> UID -> EHCOpts -> HS.AGItf -> HSSem.Syn_AGItf
+foldHs inh modNm uid opts hs
  = HSSem.wrap_AGItf (HSSem.sem_AGItf hs)
                     (inh { HSSem.opts_Inh_AGItf     = opts
+                         , HSSem.gUniq_Inh_AGItf    = uid
                          , HSSem.moduleNm_Inh_AGItf = modNm
                          })
 
@@ -324,7 +325,7 @@ cpFoldHs modNm
          ;  let  ecu    = crCU modNm cr
                  crsi   = crStateInfo cr
                  mbHS   = ecuMbHS ecu
-                 hsSem  = foldHs (crsiHSInh crsi) modNm (crsiOpts crsi) (fromJust mbHS)
+                 hsSem  = foldHs (crsiHSInh crsi) modNm (crsiHereUID crsi) (crsiOpts crsi) (fromJust mbHS)
          ;  when (isJust mbHS)
                  (cpUpdCU modNm (ecuStoreHSSem hsSem))
          }
@@ -638,6 +639,7 @@ doCompileRun fn opts
              opts2          = opts { ehcOptSearchPath = searchPath }
              hsInh          = HSSem.Inh_AGItf { HSSem.opts_Inh_AGItf     = opts2
                                               , HSSem.idGam_Inh_AGItf    = emptyGam
+                                              , HSSem.gUniq_Inh_AGItf    = uidStart
                                               , HSSem.moduleNm_Inh_AGItf = hsnUnknown
                                               }
              ehInh          = EHSem.Inh_AGItf { EHSem.baseName_Inh_AGItf = fpathBase fp

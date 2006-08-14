@@ -57,6 +57,7 @@ DATA Line
   | AsIs                words       : Words
   | Named               cref        : {CRef}
   | Group               extraLine   : Int
+                        version     : {Version}
                         chOptions	: ChunkOptions
                         userRef     : {Maybe (Nm,Maybe String)}
                         lines       : Lines

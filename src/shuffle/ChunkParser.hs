@@ -270,6 +270,9 @@ pAGItf = sem_AGItf_AGItf <$> (pFoldr (sem_Lines_Cons,sem_Lines_Nil) (sem_Line_As
 pVersion            ::  ShPr Version
 pVersion            =   mkVerFromIntL <$> pList1Sep (pKey "_") pInt'
 
+pOptVersion         ::  ShPr Version
+pOptVersion         =   pMaybe VAll id pVersion
+
 pVerOrder           ::  ShPr VersionOrder
 pVerOrder           =   pListSep (pKey ",") (pList1Sep (pKey "<") pVersion)
 
@@ -378,11 +381,11 @@ pLines              =   pFoldr (sem_Lines_Cons,sem_Lines_Nil) pLine
 pLine               ::  ShPr T_Line
 pLine               =   sem_Line_AsIs  <$> pLineChars  <*  pNl
                     <|> (\n (o,r)
-                          -> sem_Line_Group 0 o r (sem_Lines_Cons (sem_Line_Named n) sem_Lines_Nil))
+                          -> sem_Line_Group 0 VAll o r (sem_Lines_Cons (sem_Line_Named n) sem_Lines_Nil))
                              <$  pBegNameRef <*> pN <*> pD <* pNl
-                    <|> (\(o,r) l
-                          -> sem_Line_Group 1 o r l)
-                             <$  pBegGroup   <*> pD <* pNl <*> pLines <* pEndChunk <* pNl
+                    <|> (\v (o,r) l
+                          -> sem_Line_Group 1 v o r l)
+                             <$  pBegGroup   <*> pOptVersion <*> pD <* pNl <*> pLines <* pEndChunk <* pNl
                     <?> "a line"
                     where pN =   pNm
                              <|> (\v n -> mkNm v `nmApd` n) <$> pVersion <*> pMaybe NmEmp id (pKey "." *> pNm)

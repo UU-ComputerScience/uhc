@@ -47,7 +47,8 @@ SEM Declaration
     | PatternBinding
         lhs         .   eh          =   [rngLift @range EH.Decl_Val @pattern.eh @righthandside.eh]
     | TypeSignature
-        lhs         .   eh          =   map (\n -> rngLift @range EH.Decl_TySig n @type.eh) @names
+        loc         .   mkEHSig     =   \n -> rngLift @range EH.Decl_TySig n @type.eh
+        lhs         .   eh          =   map @mkEHSig @names
     | Fixity
         lhs         .   eh          =   []
     | Empty
@@ -55,9 +56,11 @@ SEM Declaration
 %%]
 %%[5
     | Data
-        lhs         .   eh          =   [rngLift @range EH.Decl_Data False @simpletype.name (map EH.TyVar_Var @simpletype.typevariables) @constructors.eh]
+        loc         .   eh          =   rngLift @range EH.Decl_Data False @simpletype.name (map EH.TyVar_Var @simpletype.typevariables) @constructors.eh
+        lhs         .   eh          =   [@eh]
     | Newtype
-        lhs         .   eh          =   [rngLift @range EH.Decl_Data True @simpletype.name (map EH.TyVar_Var @simpletype.typevariables) [@constructors.eh]]
+        loc         .   eh          =   rngLift @range EH.Decl_Data True @simpletype.name (map EH.TyVar_Var @simpletype.typevariables) [@constructors.eh]
+        lhs         .   eh          =   [@eh]
 %%]
 %%[8
     | ForeignImport
@@ -84,6 +87,7 @@ SEM Declaration
 %%]
 %%[11
     | Type
+        loc         .   eh          =   undefined
         lhs         .   eh          =   []
 %%]
 

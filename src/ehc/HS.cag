@@ -46,7 +46,7 @@
 %%[8 hs export(Export(..), Exports, MaybeExports, ImportDeclaration(..), ImportDeclarations, ImportSpecification(..), MaybeImportSpecification, Import(..), Imports)
 %%]
 
-%%[9 hs export(ContextItem(..), ContextItems, ContextedExpression(..), ContextedExpressions, ContextedPattern(..), ContextedPatterns, FunctionalDependency(..), FunctionalDependencies)
+%%[9 hs export(ContextItem(..), ContextItems, ContextedExpression(..), ContextedExpressions, ContextedPattern(..), ContextedPatterns, FunctionalDependency(..), FunctionalDependencies, Deriving(..), Derivings)
 %%]
 
 %%[9 hs export(Statement(..), Statements)

@@ -1,0 +1,34 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique id per AST node
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR AllNT [ | gUniq: UID | ]
+%%]
+
+%%[8
+ATTR AGItf [ gUniq: UID | | ]
+%%]
+
+%%[1.AGItf
+SEM AGItf
+	| AGItf
+		loc				.	gUniq		=	uidStart
+%%]
+
+%%[8 -1.AGItf
+SEM AGItf
+	| AGItf
+		loc				.	gUniq		=	@lhs.gUniq
+%%]
+
+%%[1
+SEM Declaration
+  | PatternBinding
+  		(pattern.gUniq,loc.lUniq)		=   mkNewLevUID @lhs.gUniq
+%%]

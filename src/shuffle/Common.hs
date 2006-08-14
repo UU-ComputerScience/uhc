@@ -5,7 +5,6 @@
 module Common
   ( module Data.Maybe
   , module Data.Char
-  -- , module UU.Pretty
   , module EH.Util.Nm
   , module EH.Util.FPath
   , module EH.Util.PPUtils
@@ -16,6 +15,7 @@ module Common
   , CRef, CPos(..)
   , ChKind(..), ChDest(..), ChWrap(..)
   , Version(..), VersionOrder
+  , verMember
   , KVMap
   )
   where
@@ -23,6 +23,7 @@ module Common
 import Data.Maybe
 import Data.Char
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Network.URI
 import IO
 import System.Directory
@@ -178,6 +179,10 @@ data Version    = VAll
                 deriving (Show,Eq,Ord)
 
 type VersionOrder = [[Version]]
+
+verMember :: Version -> Set.Set Version -> Bool
+verMember VAll _ = True
+verMember v    s = Set.member v s
 
 
 

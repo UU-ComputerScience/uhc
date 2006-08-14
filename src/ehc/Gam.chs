@@ -7,7 +7,7 @@
 %%% Gamma (aka Assumptions, Environment)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Gam} import(Data.List,{%{EH}Base.Common}) export(Gam,emptyGam,gamLookup, gamPushNew, gamPop, gamTop, gamAddGam, gamUnit, gamAdd, gamPushGam, gamToAssocL, assocLToGam, gamToDups)
+%%[1 module {%{EH}Gam} import(Data.List,EH.Util.Utils,{%{EH}Base.Common}) export(Gam,emptyGam,gamLookup, gamPushNew, gamPop, gamTop, gamAddGam, gamUnit, gamAdd, gamPushGam, gamToAssocL, assocLToGam, gamToAssocDupL, gamToDups)
 %%]
 
 %%[1 import({%{EH}Ty},{%{EH}Error}) export(ValGam, ValGamInfo(..), valGamLookup,valGamLookupTy)
@@ -19,7 +19,7 @@
 %%[1 export(FixityGam, FixityGamInfo(..), defaultFixityGamInfo)
 %%]
 
-%%[1 import(UU.Pretty,{%{EH}Ty.Pretty}) export(ppGam)
+%%[1 import(UU.Pretty,EH.Util.PPUtils,{%{EH}Ty.Pretty}) export(ppGam,ppGamDup)
 %%]
 
 %%[2 import({%{EH}Cnstr},{%{EH}Substitutable})
@@ -134,14 +134,19 @@ gamTop                              = fst . gamPop
 assocLToGam                         = assocLToTGam 1 
 %%]
 
-%%[1.gamToDups
-gamToDups :: Ord k => Gam k v -> [k]
-gamToDups g = [ n | ns@(n:_) <- group . sort . assocLKeys . gamToAssocL $ g, length ns > 1 ]
+%%[1.gamToAssocDupL
+gamToAssocDupL :: Ord k => Gam k v -> AssocL k [v]
+gamToAssocDupL = map (foldr (\(k,v) (_,vs) -> (k,v:vs)) (undefined,[])) . groupSortOn fst . gamToAssocL
 %%]
 
-%%[9.gamToDups -1.gamToDups
+%%[9 -1.gamToAssocDupL
+gamToAssocDupL :: Ord k => Gam k v -> AssocL k [v]
+gamToAssocDupL g = tgamToAssocL2 (tgamSize1 g) g
+%%]
+
+%%[1.gamToDups
 gamToDups :: Ord k => Gam k v -> [k]
-gamToDups g = [ n | (n,vs) <- tgamToAssocL2 (tgamSize1 g) g, length vs > 1 ]
+gamToDups g = [ n | (n,(_:_:_)) <- gamToAssocDupL g ]
 %%]
 
 %%[3.gamMap
@@ -697,6 +702,11 @@ gamSubstTop s g
 %%[1.ppGam
 ppGam :: (PP k, PP v) => Gam k v -> PP_Doc
 ppGam g = ppAssocL (gamToAssocL g)
+%%]
+
+%%[1
+ppGamDup :: (Ord k,PP k, PP v) => Gam k v -> PP_Doc
+ppGamDup g = ppAssocL $ map (\(k,v) -> (k,ppBracketsCommas v)) $ gamToAssocDupL $ g
 %%]
 
 %%[9.ppTGam

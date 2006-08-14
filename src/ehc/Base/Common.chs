@@ -40,7 +40,10 @@
 %%[1 export(Range(..),emptyRange,mkRange1,mkRange2,rngLift)
 %%]
 
-%%[2 export(UID(..), mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, uidNext, mkNewUID, uidChild, mkNewUIDL, mkInfNewUIDL, uidStart)
+%%[1 export(UID(..), mkNewLevUID, uidStart)
+%%]
+
+%%[2 export(mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, uidNext, mkNewUID, uidChild, mkNewUIDL, mkInfNewUIDL)
 %%]
 
 %%[2 export(assocLMapElt,assocLMapKey)
@@ -438,20 +441,25 @@ hsnLclSupplyL = map (\i -> HNm ("_" ++ show i)) [1..]
 %%% Unique id's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2.UID.Base
-newtype UID= UID [Int] deriving (Eq,Ord)
+%%[1.UID.Base
+newtype UID = UID [Int] deriving (Eq,Ord)
+%%]
+
+%%[1
+instance HSNM UID where
+  mkHNm = mkHNm . show
 %%]
 
 %%[2.UID.UIDL
 type UIDL = [UID]
 %%]
 
-%%[2.UID.Show
+%%[1.UID.Show
 instance Show UID where
   show (UID ls) = concat . intersperse "_" . map show . reverse $ ls
 %%]
 
-%%[2.UID.mkNewLevUID
+%%[1.UID.mkNewLevUID
 uidNext :: UID -> UID
 uidNext (UID (n:ns)) = UID (n+1:ns)
 
@@ -462,15 +470,17 @@ mkNewLevUID :: UID -> (UID,UID)
 mkNewLevUID u = (uidNext u, uidChild u)
 %%]
 
+%%[1
+uidStart :: UID
+uidStart = UID [0]
+%%]
+
 %%[2.UID.Utils
 mkNewLevUID2 u = let { (u',u1)          = mkNewLevUID   u; (u'',u2)         = mkNewLevUID   u'} in (u'',u1,u2)
 mkNewLevUID3 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3)         = mkNewLevUID   u'} in (u'',u1,u2,u3)
 mkNewLevUID4 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3,u4)      = mkNewLevUID2  u'} in (u'',u1,u2,u3,u4)
 mkNewLevUID5 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3,u4,u5)   = mkNewLevUID3  u'} in (u'',u1,u2,u3,u4,u5)
 mkNewLevUID6 u = let { (u',u1,u2,u3)    = mkNewLevUID3  u; (u'',u4,u5,u6)   = mkNewLevUID3  u'} in (u'',u1,u2,u3,u4,u5,u6)
-
-uidStart :: UID
-uidStart = UID [0]
 
 mkNewUID :: UID -> (UID,UID)
 mkNewUID   uid = (uidNext uid,uid)

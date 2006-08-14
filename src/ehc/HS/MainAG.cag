@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[1 hs module {%{EH}HS.MainAG} import(Data.Char,Data.List as List,UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS})
+%%[1 hs module {%{EH}HS.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS})
 %%]
 
 %%[1 hs import(qualified {%{EH}EH} as EH)
@@ -27,7 +27,7 @@
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 import({HS/AbsSyn},{HS/EH},{HS/Fixity},{HS/Pretty},{HS/GatherError},{HS/NameAnalysis},{HS/Module})
+%%[1 import({HS/AbsSyn},{HS/EH},{HS/Fixity},{HS/Pretty},{HS/GatherError},{HS/NameAnalysis},{HS/Module},{HS/Uniq})
 WRAPPER AGItf
 %%]
 
@@ -106,6 +106,30 @@ SEM LeftHandSide
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc: Pattern internal info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+SEM Pattern
+    | Constructor
+        loc         .   conNm       =   @name
+%%[[5
+    | InfixConstructor
+        loc         .   conNm       =   @constructorOperator
+%%]
+%%]
+
+%%[1
+ATTR Pattern [ | | mbTopNm: {Maybe HsName} ]
+
+SEM Pattern
+	| Variable As
+		lhs			.	mbTopNm		=	Just @name
+	| * - Variable As
+		lhs			.	mbTopNm		=	Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Misc: Type internal info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -114,15 +138,15 @@ ATTR Type Expression [ | | conNm: Name ]
 
 SEM Type
     | Constructor
-        lhs         .   conNm     	=   @name
+        lhs         .   conNm       =   @name
     | * - Constructor
-        lhs         .   conNm     	=   hsnUnknown
+        lhs         .   conNm       =   hsnUnknown
 
 SEM Expression
     | Constructor
-        lhs         .   conNm     	=   @name
+        lhs         .   conNm       =   @name
     | * - Constructor
-        lhs         .   conNm     	=   hsnUnknown
+        lhs         .   conNm       =   hsnUnknown
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -134,6 +158,6 @@ SEM Expression
 ATTR AllModule AGItf [ | | impModNms USE {++} {[]}: Names ]
 
 SEM ImportDeclaration
-	| Import
-		lhs			.	impModNms	=	[@name]
+    | Import
+        lhs         .   impModNms   =   [@name]
 
