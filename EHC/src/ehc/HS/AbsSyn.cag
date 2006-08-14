@@ -1,5 +1,5 @@
 %%[1
--- Atze Dijkstra, 20051123: adapted to shuffle format, for stepwise use
+-- Atze Dijkstra, 20051123: adapted to shuffle format, for stepwise use, extended to cater for EH extensions
 -- Andres Loeh, May 21, 2002
 
 -- Read using a monospaced font!
@@ -167,7 +167,7 @@ DATA Declaration                                  {- *** -}
         constructors             : Constructors
 %%]
 %%[9
-        derivings                : Names
+        derivings                : Derivings
 %%]
 %%[5
     | Newtype
@@ -181,7 +181,7 @@ DATA Declaration                                  {- *** -}
         constructors             : Constructor  -- has only one field, no strictness
 %%]
 %%[9
-        derivings                : Names
+        derivings                : Derivings
 %%]
 %%[8
     | ForeignImport
@@ -248,17 +248,25 @@ DATA FunctionalDependency
         range                    : Range
         fromtypevariables        : Names
         totypevariables          : Names
+
+TYPE Derivings      			 = [ Deriving ]
+
+DATA Deriving
+	| Deriving
+		range                    : Range
+        name        			 : Name
 %%]
 
 %%[1
 SET AllDeclaration
   = Declaration Declarations MaybeDeclarations
+%%[[9
+    FunctionalDependency FunctionalDependencies
+    Deriving Derivings
 %%]
-%%[90
+%%[[90
     Fixity
 %%]
-%%[9
-    FunctionalDependency FunctionalDependencies
 %%]
 
 -- ------------------------------------------------------------------------
@@ -751,9 +759,12 @@ DATA Statement
         range                    : Range
         pattern                  : Pattern
         expression               : Expression
-%%]
     | Empty
         range                    : Range
+
+SET AllStatement
+  = Statement Statements
+%%]
 
 %%[5
 TYPE Qualifiers                  = [ Qualifier ]
@@ -771,6 +782,9 @@ DATA Qualifier
         expression               : Expression
     | Empty
         range                    : Range
+
+SET AllQualifier
+  = Qualifier Qualifiers
 %%]
 
 %%[5
@@ -903,7 +917,7 @@ SET AllExpression
 %%[5
     Alternative Alternatives
     AllGuardedExpression
-    Qualifier Qualifiers
+    AllQualifier
 %%]
 %%[7
     RecordExpressionBinding RecordExpressionBindings
@@ -914,7 +928,7 @@ SET AllExpression
 %%]
 %%[9
     ContextedExpression ContextedExpressions
-    Statement Statements
+    AllStatement
 %%]
 
 -- ------------------------------------------------------------------------

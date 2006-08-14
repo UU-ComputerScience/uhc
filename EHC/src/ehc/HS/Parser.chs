@@ -301,7 +301,13 @@ pDeclarationData
             <*> pSimpleType <*> pC
 %%]
 %%[9
-            <*> (pDERIVING *> (mkQNames <$> ((:[]) <$> qconid <|> pParens (pList1Sep pCOMMA qconid))) <|> pSucceed [])
+            <*> (pDERIVING *> ((:[]) <$> pDeriving <|> pParens (pList1Sep pCOMMA pDeriving)) <|> pSucceed [])
+%%]
+
+%%[9
+pDeriving :: HSParser Deriving
+pDeriving
+  = mkRngNm Deriving_Deriving <$> qconid
 %%]
 
 %%[5.pConstructor

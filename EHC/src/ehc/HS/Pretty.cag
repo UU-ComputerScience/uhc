@@ -12,6 +12,22 @@ ATTR AllNT AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Top level    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.Body
+SEM Body
+    | Body
+        lhs         .   pp          =   @declarations.pp >-< @ppExtra
+%%]
+
+%%[8.Body -1.Body
+SEM Body
+    | Body
+        lhs         .   pp          =   @importdeclarations.pp >-< @declarations.pp >-< @ppExtra
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Declarations    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -211,7 +227,7 @@ SEM Expression
     | Lambda
         loc         .   pp          =   "\\" >|< ppSpaces @patterns.ppL >#< "->" >#< @expression.pp
     | Let
-        loc         .   pp          =   "let" >#< @declarations.pp >#< "in" >#< @expression.pp
+        loc         .   pp          =   "let" >#< (@declarations.pp >-< @ppExtra) >#< "in" >#< @expression.pp
     | Tuple
         loc         .   pp          =   ppParensCommas @expressions.ppL
     | Typed
@@ -586,5 +602,19 @@ SEM ContextedPatterns
     | Nil
         lhs         .   ppL         =   []
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extra info for pp
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+SEM Body
+    | Body
+        loc         .   ppExtra     =   ppCmt (ppGamDup @declarations.idOccDefGam >-< ppGamDup @declarations.idUseOccGam)
+
+SEM Expression
+    | Let
+        loc         .   ppExtra     =   ppCmt (ppGamDup @declarations.idOccDefGam >-< ppGamDup @declarations.idUseOccGam)
 %%]
 

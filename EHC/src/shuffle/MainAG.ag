@@ -109,8 +109,8 @@ voAllLE vo v
     )
   $ vo
 
-voAllLE' :: VersionOrder -> Version -> [Version]
-voAllLE' vo v
+voAllLE_2 :: VersionOrder -> Version -> [Version]
+voAllLE_2 vo v
   = let voPrefixes
           = map (\p@((v,_):_) -> (v,map snd p))
           . groupBy (\(v1,_) (v2,_) -> v1 == v2)
@@ -123,8 +123,8 @@ voAllLE' vo v
               _    -> maybe [] concat (lookup v voPrefixes)
      in sortBy (cmpByVersionOrder vo) . nub . sort $ all
 
-voAllLE'' :: VersionOrder -> Version -> [Version]
-voAllLE'' vo v
+voAllLE_3 :: VersionOrder -> Version -> [Version]
+voAllLE_3 vo v
   = let allN = nub . sort . concat $ vo
         nrN = length allN
         nsN = [(0::Int)..nrN-1]
@@ -155,10 +155,26 @@ voAllLE'' vo v
                   _    -> [ allN !! i | (i,b) <- nsV, b ]
      in sortBy (cmpByVersionOrder vo) . nub . sort $ allN'
 
+voAllLE_4 :: Opts -> Set.Set Version
+voAllLE_4 opts
+  = Set.fromList $ voAllLE_3 (if optsHasNoVerOrder opts then voDefault else optVerOrder opts) (optGenVersion opts)
+
 voDefault :: VersionOrder
 voDefault = [take 100 (map VRef [1..])]
 
 }
+
+-------------------------------------------------------------------------
+-- Allowed versions
+-------------------------------------------------------------------------
+
+ATTR AllChunk AllLine [ allowedVersions: {Set.Set Version} | | ]
+
+SEM AGItf
+  | AGItf       loc         .   allowedVersions
+                                            =   voAllLE_4 @lhs.opts
+                            .   allowedLaTeXVersions
+                                            =   voAllLE_4 (@lhs.opts {optGenVersion=VAll})
 
 -------------------------------------------------------------------------
 -- Chunk id
@@ -199,6 +215,10 @@ SEM Chunk
                 lines       . lineNr    = @chunkLineNr + 1
                 dumLines    . lineNr    = @lines.lineNr {- + 1 -}
 
+SEM Chunk
+  | Ver         loc         . dumIsOnlyNl
+  										= @lines.lineNr + 1 == @dumLines.lineNr
+
 SEM Line
   | AsIs        words       . colNr     = 1
                 lhs         . lineNr    = @lhs.lineNr + 1
@@ -219,23 +239,23 @@ SEM Word
 ATTR StrExpr [ | | str: String ]
 
 SEM StrExpr
-  | Str			lhs			.	str		=	@str
-  | Var			lhs			.	str		=	Map.findWithDefault "" @nm (optDefs @lhs.opts)
-  | Concat		lhs			.	str		=	@e1.str ++ @e2.str
-  | White		lhs			.	str		=	@e1.str ++ " " ++ @e2.str
-  | Seq			lhs			.	str		=	"(" ++ concat (intersperse "," @es.strL) ++ ")"
+  | Str         lhs         .   str     =   @str
+  | Var         lhs         .   str     =   Map.findWithDefault "" @nm (optDefs @lhs.opts)
+  | Concat      lhs         .   str     =   @e1.str ++ @e2.str
+  | White       lhs         .   str     =   @e1.str ++ " " ++ @e2.str
+  | Seq         lhs         .   str     =   "(" ++ concat (intersperse "," @es.strL) ++ ")"
 
 ATTR StrExprs [ | | strL: {[String]} ]
 
 SEM StrExprs
-  | Nil			lhs			.	strL	=	[]
-  | Cons		lhs			.	strL	=	@hd.str : @tl.strL
+  | Nil         lhs         .   strL    =   []
+  | Cons        lhs         .   strL    =   @hd.str : @tl.strL
 
 ATTR MbStrExpr [ | | mbStr: {Maybe String} ]
 
 SEM MbStrExpr
-  | Just		lhs			.	mbStr	=	Just @just.str
-  | Nothing		lhs			.	mbStr	=	Nothing
+  | Just        lhs         .   mbStr   =   Just @just.str
+  | Nothing     lhs         .   mbStr   =   Nothing
 
 -------------------------------------------------------------------------
 -- Left + right context
@@ -379,6 +399,8 @@ SEM Line
   | AsIs Named  lhs         .   mbCD        =   Just (CDoc_Pos (CPos (optBaseFPath @lhs.opts) @lhs.lineNr) @cdoc)
   | Group       loc         .   mbCD        =   fmap (chWrap @chOptions.chWrap) @lines.mbCD
                 (lhs.mbCD,loc.gathHideMp)   =   case @chOptions.chDest of
+                                                  _ | not (verMember @version @lhs.allowedVersions)
+                                                         -> (Nothing,Map.empty)
                                                   ChHere -> (@mbCD,Map.empty)
                                                   h      -> (Just (mkHideNmRef (cd n)),Map.singleton n (HideInfo n i @lhs.seqNr @chOptions.chDest @mbCD @lhs.chFullNm))
                                                          where (n,i) = case @userRef of
@@ -474,14 +496,11 @@ vciTakePre is
         ((VPre,p):r) -> (p,r)
         _            -> ([],is)
 
-selectChunks :: Bool -> Opts -> [VerChunkInfo] -> [(Version,[VerChunkInfo])]
-selectChunks appMinus opts agl
+selectChunks :: Bool -> Set.Set Version -> [VerChunkInfo] -> [(Version,[VerChunkInfo])]
+selectChunks appMinus allowedVersions agl
   = let (pre,nonPre)    = vciSplitPre agl
         availVersions   = nub . sort . map vciVer $ nonPre
-        v               = optGenVersion opts
-        vo              = optVerOrder opts
-        allowedVersions = voAllLE'' (if optsHasNoVerOrder opts then voDefault else vo) v
-        vAndVciL        = map (\v -> (v,vciSortBySeqNr . vciVerFilter (==v) $ nonPre)) allowedVersions
+        vAndVciL        = map (\v -> (v,vciSortBySeqNr . vciVerFilter (==v) $ nonPre)) (Set.toList allowedVersions)
         isNotMinused
           = let minuses = if appMinus then [ m | (_,vciL) <- vAndVciL, ml <- map vciMinusL vciL, m <- ml ] else []
              in \i -> (vciVer i,vciSubNm i) `notElem` minuses
@@ -522,9 +541,16 @@ ATTR AllChunkOption [ | | chDest USE {`chDestCmb`} {ChHere} : ChDest ]
 ATTR AllChunkOption [ | | chWrap USE {`chWrapCmb`} {ChWrapPlain} : ChWrap ]
 
 SEM ChunkOption
-  | Kind		lhs			.	chKind		=	@chKind
-  | Dest		lhs			.	chDest		=	@chDest
-  | Wrap		lhs			.	chWrap		=	@chWrap
+  | Kind        lhs         .   chKind      =   @chKind
+  | Dest        lhs         .   chDest      =   @chDest
+  | Wrap        lhs         .   chWrap      =   @chWrap
+
+-------------------------------------------------------------------------
+-- Additional lines between chunks collapsed to single line
+-------------------------------------------------------------------------
+
+SEM Chunk
+  | Ver         loc         .   addBlankLine=   if @dumIsOnlyNl then id else (.-. CDoc_Str "")
 
 -------------------------------------------------------------------------
 -- Gathering chunk info
@@ -537,7 +563,7 @@ SEM Chunk
                                                     @chunkLineNr @lhs.seqNr
                                                     @version @subNm @minusL
                                                     @chOptions.chKind @chOptions.chDest @mbModNm.mbStr @imports.strL @exports.strL
-                                                    @lines.mbCD (Seq.toList @lines.xrefL)
+                                                    (fmap @addBlankLine @lines.mbCD) (Seq.toList @lines.xrefL)
                 lhs         .   verChInfoL  =   [@chInfo]
 
 -------------------------------------------------------------------------
@@ -558,9 +584,9 @@ SEM AGItf
 -------------------------------------------------------------------------
 
 SEM AGItf
-  | AGItf       loc         . selChunks = selectChunks True @lhs.opts @chunks.verChInfoL
+  | AGItf       loc         . selChunks = selectChunks True @allowedVersions @chunks.verChInfoL
                             . selLaTeXChunks
-                                        = selectChunks False (@lhs.opts {optGenVersion=VAll}) @chunks.verChInfoL
+                                        = selectChunks False @allowedLaTeXVersions @chunks.verChInfoL
                             . wrapLhs2tex
                                         = \doWr -> if doWr then chWrap (optWrapLhs2tex @lhs.opts) else id
                             . build     = \bld chunks

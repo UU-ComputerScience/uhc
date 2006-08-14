@@ -116,7 +116,7 @@ SEM Body
     | Body
         lhs             .   modDefsRel  =   @declarations.modDefsRel
                                             `Rel.union` 
-                                            (Rel.fromList [ (n,ModEntVal n) | (n,_) <- idOccGamByKind IdOcc_Val @declarations.idOccDefGam ])
+                                            (Rel.fromList [ (n,ModEntVal n) | (n,_) <- idDefOccGamByKind IdOcc_Val @declarations.idOccDefGam ])
 %%]
 
 %%[9
@@ -125,7 +125,7 @@ SEM Declaration
         lhs             .   modDefsRel  =   Rel.singleton
                                               @simpletype.name
                                               (ModEntClass @simpletype.name
-                                                           (Set.fromList [ ModEntVal n | (n,_) <- idOccGamByKind IdOcc_Val @where.idOccDefGam ]))
+                                                           (Set.fromList [ ModEntVal n | (n,_) <- idDefOccGamByKind IdOcc_Val @where.idOccDefGam ]))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
