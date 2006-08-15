@@ -27,13 +27,13 @@ central theme of this chapter.
   type variables are not allowed, we defer the discussion of them to Section~\ref{sect.ExistentialTypes}.
   Applying these changes to the type language results into:
 
-  %%[[wrap=code
+%%[[wrap=code
   utau  ::=  Sup(alpha)(delta)    -- tyvar
         |    Sup(Int)(delta)      -- tycon int (Int)
         |    Sup((->))(delta)     -- tycon arrow (Arrow)
         |    utau utau            -- type application (App)
         |    forall alpha . utau  -- universal quantification (silently ignored)
-  %%]
+%%]
 
   There are two places in the type rules that need to be changed. These are the
   flow type rules (Figure~\ref{fill this in}), and the type rule that generates
@@ -178,7 +178,7 @@ first = \x y -> x
   type and to keep track of variance. For example, the type rule of Figure~\ref{RulerUniquenessExamples.U1.flow.base}
   is no longer required, and replaced by the generation of a single constraint.
 
- %%[[wrap=code
+%%[[wrap=code
   -- insert new type rules here? (don't think it is interesting enough though, might as well leave them out)
 %%]
 

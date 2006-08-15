@@ -2,25 +2,47 @@
 
 \chapter{Introduction}
 
+Jan is a student with only one passion in his life aside from programming: a daily shot of coffee in the morning. But, Jan is lazy
+and does not want to bring his own coffee cup with him. Each time he buys a plastic cup, and throws it away.
+One day Jan thinks about the cost of buying all these plastic cups and the cost for the government to collect
+the waste. Jan gets a brilliant idea: recycling. If he changes the process such that he does not throw the cup away, but give it
+back to machine, let the machine clean it, and give it back to him the following day, then he does not need
+to buy the plastic cups each time, and does not need to throw them away, then he can both be lazy and reduce
+the cost of acquiring and disposing the cup.
+
+Taking notice of this life lesson, consider pure, lazy functional programming languages. A program written in
+such a language produces much more garbage than a program written in an imperative language. Referential
+transparency is to blame. To guarantee referential transperancy, compilers generate code that treat values
+as atomic. As a result, a destructive update is performed on a copy of the original value. The old values
+are garbage collected when they are not used anymore. Suppose that a program is only interested in the
+most up-to-date value. Directly after copying, the old value becomes garbage. But, if we directly recycle
+the old value, then a copy does not need to be made. The result is less copying and less garbage. The
+identification of which values can be safely recycled without violating referential transparency, is the
+focus of this thesis.
+
 
 \section{Uniqueness and Typing}
 
+  Usage analysis is the topic of research that deals with the identification of values that can be recycled. Usage analysis determines
+  from a program how often certain values are used. Such an analysis is formulated by means of a type system. Examples of these type
+  systems are the type systems of linear typing~\cite{fill this in} and uniqueness typing~\cite{fill this in}. Uniqueness typing
+  is part of the Clean language~\ref{fill this in}, and is implemented in the Clean compiler. In this thesis, we give a type
+  system with similar features to the uniqueness type system of Clean, but with some improvements.
 
+  More specifically, the type system that is discussed in subsequent chapters, has the following features:
 
-\section{The analysis in a nutshell}
-
-
-
-\section{Improving the analysis}
-
+  \begin{itemize}
+  \item The type system deals with language features, such as recursion, polymorhpism and data types.
+  \item The uniqueness typing is polyvariant, allowing different uniqueness typings for each use of
+        an identifier.
+  \item The spine of a value can have different uniqueness properties than the components of a value.
+  \item Constraint-based typing, separating the specification and the inferencing of uniqueness types.
+  \end{itemize}
 
 
 \section{Organisation of this Thesis}
 
-
-
-
 Incremental explanation of functionality. Isolation.
-Each chapter starts with an example.
 
 %%]
+

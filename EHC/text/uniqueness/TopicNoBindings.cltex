@@ -379,7 +379,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
 
   Types are written in two ways in the type rules. A type written as |utau| has annotations. A type written as
   |tau| has no annotations. We sometimes write |(Sub(tau)(a))| to refer to the unannotated version of |(Sub(utau)(a))|.
-  A |utau| is also denoted as |Sup(tau)(delta)|, where |delta| is the annotation.
+  A |utau| is also denoted as |Sup(tau)(delta)|, where |delta| is the outermost\footnote{In this chapter, this is the annotation on the outermost type constructor of the type expression. In the presence of data type, this is the outermost annotation on the result-kind of the type expression.} annotation.
 
   \rulerCmdUse{RulerUniquenessExamples.U1.expr.base}
 
