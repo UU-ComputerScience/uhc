@@ -524,6 +524,14 @@ that most hyper edges range over different sets of sacred uniqueness variables, 
 subsumed hyper edges do not exist often, and the elimination does not contribute enough to the size
 of the graph to be worthwhile.
 
+Removal of subsumed non-hyper edges, on the other hand, is worth-while. Immagine the following
+situation: |a =>= c, a =>= b, b =>= c|, where |a|, |b|, and |c| are sacred annotation variables. The
+constraint |a =>= c| is not required in this case, it is subsumed by |a =>= b, b =>= c|, due to transitivity.
+Due to the top-down pushing of annotations, the constraints are visually like long threads from the
+annotations on the root of the expression to the annotations on the inner expressions. The procedure in this
+section, in fact, inserts an edge |a =>= c| if there are edges |a =>= b| and |b =>= c|. Preventing the
+insertion of |a =>= c| thus saves quite some edges.
+
 To be done: the coercions on hyper edges are confusing, and for normalisation, also annoying. What
 if I would decorate the edges of a hype redge with a boolean value value that specifies if it has
 a coercion or not. Then there are only constraints between the sacred uniqueness variables, and

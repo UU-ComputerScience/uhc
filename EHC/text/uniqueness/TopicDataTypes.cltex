@@ -412,6 +412,10 @@ We consider these changes in isolation.
   technical perspective, but make the matters only more resource-intensive for the compiler, influences
   the graph reduction strategies, and will not be useful in practice.
 
+\section{Records}
+
+  Todo. Don't know if I should spend time on records, since it is not interesting for the reader.
+
 \section{Conclusion}
 
   Data types are an interesting language feature in terms of what complications they give in order to
@@ -419,13 +423,13 @@ We consider these changes in isolation.
   so interconnected that it is no longer feasible to grasp. Our approach with constraint gathering,
   constraint graph construction with annotation trees, and constraint solving, provides ways of splitting
   concerns in small enough pieces.
-  
+
   An important aspect of the approach taken in this chapter is, is that the part that is concerned with
   the analysis itself (constaint solving), is almost not affected. This means that data types do not
   require us to change our way of reasoning about uniqueness typing, and only complicate the analysis on
   a technical level, instead of a conceptual level. Perhaps that the work on data types can be reused
   for other analyses as wel.
-  
+
   One aspect that we did not cover in this chapter, is how we determine the variance of an annotation,
   and whether or not the values it classifies are parameters or values of a function. We discuss this
   in Chapter~\ref{chapt.Polarity}.
@@ -434,23 +438,229 @@ We consider these changes in isolation.
 \chapter{Polarity and Under-the-arrow analysis}
 \label{chapt.Polarity}
 
+Chapter~\ref{chapt.DataTypes} introduces data types. For annotations on the type constructors of these
+data types, we need to know what their variance is and if they occur as function parameter or value. In
+this chapter we discuss how to infer this information from the data type definitions and the types in
+the program. For that, we reuse the entire analysis that we explained in this thesis, and apply it to
+the type language instead of the expression language. Notice that this chapter is not about uniqueness
+typing, but about a whole other analysis!
+
+\section{Introduction}
+
+  In this section we introduce the concepts of covariance and below-the-function-arrow on simple types
+  without data types.
+
+  An annotation is \emph{covariant} if it only occurs of types that are covariant. Likewise, an annotation
+  is \emph{contra-variant} if it only occurs on types that are contra-variant. If it is neither, then it
+  is called \emph{variant}. Without data types, a type is either an |Int|, or the function type |tau -> tau|,
+  and suppose that we also have tupples |(tau, tau)|. We then define the variance as follows:
+
+%%[[wrap=code
+  variance t = var t CoVariant
+
+  var (Sup(Int)(delta)) c         = [(delta, c)]
+  var (t1 (Sup(->)(delta)) t2) c  = [(delta, c)] ++ var t1 (neg c) ++ var t2 c
+  var (t1 (Sup(,)(delta)) t2) c   = [(delta, c)] ++ var t1 c ++ var t2 c
+
+  neg  CoVariant      = ContraVariant
+  neg  ContraVariant  = CoVariant
+%%]
+
+  Effectively, this definition means that the variance of a function argument is the inverse of a
+  function result. Apply the |variance| function to |(((Annot(Int)(1)) (Annot(->)(4)) (Annot(Int)(2))) (Annot(->)(5)) (Annot(Int)(3)))|
+  to discover that |(Delta(3))| and |(Delta(5))| are covariant, that |(Delta(2))| and |(Delta(4))| are contra variant (because of the negation),
+  and that |(Delta(1))| is covariant again.
+
+  We give a similar definition for below-the-function arrow. An annotation is \emph{below-the-function-arrow} if
+  it only occurs of types that are below-the-function-arrow. Likewise, an annotation
+  is \emph{not-below-the-function-arrow} if it only occurs on types that are not-below-the-function-arow. If it is neither, then we
+  assume that it is both. Again, we can give a defintion in terms of the simple types:
+
+%%[[wrap=code
+  below t = bel t NotBelow
+  bel (Sup(Int)(delta)) c         = [(delta, c)]
+  bel (t1 (Sup(->)(delta)) t2) c  = [(delta, c)] ++ bel t1 Below ++ bel t2 Below
+  bel (t1 (Sup(,)(delta)) t2) c   = [(delta, c)] ++ bel t1 c ++ bel t2 c
+%%]
+
+  For the example |(((Annot(Int)(1)) (Annot(->)(4)) (Annot(Int)(2))) (Annot(->)(5)) (Annot(Int)(3)))|, this definition means that
+  |(Delta)(1)|, |(Delta(2))|, |(Delta(3))|, and |(Delta(4))| are below the function arrow, and |(Delta(5))| is not.
+
+  But, these are just definitions for a type language without data types. Data types complicate these concepts because it depends
+  on the definition of the data type what is done with the type arguments of a type constructor. We demonstrate by an example
+  in the following section.
 
 \section{Example}
 
+  Suppose we have a slight alteration of the commonly known |GRose| data type, which we will call |FRose|:
 
-\section{Kind inference}
+%%[[wrap=code
+  data (Dot(FRose)(Delta(2))(Delta(1))()) f a = FBranch (f a ((Dot(FRose)(Delta(1))(Delta(1))()) f a))
+  FRose :: forall a . (a -> * -> *) -> a -> *
+%%]
+
+  And consider the following types:
+
+%%[[wrap=code
+  (Dot(FRose)(Delta(4))(Delta(3))()) (Annot((,))(5)) (Annot(Int)(6))
+  (Dot(FRose)(Delta(8))(Delta(7))()) (Annot((->))(9)) (Annot(Int)(10))
+%%]
+
+  We now ask ourself the following questions:
+
+  \begin{itemize}
+  \item What is the variance of |(Delta(6))| and |(Delta(10))|?
+  \item If the type will be expanded indefnitely, will |(Delta(6))| and
+        |(Delta(10))| always occur below a |(->)|? Which means that |(Delta(10))|
+        always occurs on types of values that are function arguments or results.
+  \end{itemize}
+
+  An analysis on the types is required to answer these questions. For |(Delta(6))|
+  we see that the type definition represents an right-infinitely deep tupple:
+
+%%[[wrap=code
+  ((Annot(Int)(6)), ((Annot(Int)(6)), ((Annot(Int)(6)), ((Annot(Int)(6)), ((Annot(Int)(6)), ... )))))
+%%]
+
+  Applying what we know from Section~\ref{fill this in}, we discover that |(Delta(6))| is covariant
+  and not below a function arrow.
+
+  The inverse is case for |(Delta(10))|. The type with |(Delta(10))| represents the type of
+  a function with infinitely many parameters:
+
+%%[[wrap=code
+  ((Annot(Int)(6)) -> ((Annot(Int)(6)) -> ((Annot(Int)(6)) -> ((Annot(Int)(6)) -> ((Annot(Int)(6)) -> ... )))))
+%%]
+
+  Applying the techniques of Section~\ref{fill this in} again, and we see that for the variance, each |(Delta(6))|
+  is a multiple of two negations away from an other |(Delta(6))|, and that if there would be a final |(Delta(6))|,
+  that it is the result of a function, thus all occurrences of |(Delta(6))| are covariant. As is plainfully
+  visible in this example, all occurrences of |(Delta(6))| are below a function arrow.
+  
+  How are we going to infer these results? What we see here is that the analyses work by pushing some known information
+  topdown into a definition. This is exactly what we did with the propagation of reference counts. Similary, combining the
+  results of each individual use-site to one single definition-site, is what we did with the |\+/| constraint. So, by
+  performing the analysis on the type level, instead of the expression level, on kinds instead of types, we can use the
+  results of previous chapters to solve the problem of this chapter. For that, we only need different constraint gathering
+  rules (although they look a lot like those for uniqueness typing) and a different interpretation of the constraints.
 
 
 \section{Constraint gathering}
 
+  Constraint gathering is performed on the type level. A type expression does not differ much compared to a normal
+  expression, except that there are no lambda abstractions.
+  
+  Figure~\ref{fill this in} lists the typing rules for constraint gathering on type expressions. We see here that the
+  rules are virtually the same as those for normal expressions. At each use of a type constructor, we generate an
+  |Inst| constraint. Uses of type variables do not need constraints (similar to lambda-bound identifiers for
+  expressions), and at the definition site of variables, we combine the individual results of the variables with a
+  |\+/| constraint. Finally, at an application, at type applications, there are two |=>=| constraints generated to
+  flow results from parameter to argument, and from type expression result to function result.
 
-\section{Constraint solving}
+\section{Constraint interpretation}
+
+  To solve the constraints, we refer back to Chapter~\ref{fill this in}, and especially Section~\ref{fill this in}. Instead
+  of two solver phases, we only need a single solver phase.
+
+  We consider variance first. There is a problem with variance in the sence that some of the propagation constraints are
+  not negations, and negations where not represented by the constraint gathering in Section~\ref{fill this in}. But, the
+  negations only occur in the constraint set of the function arrow, and thus we only have to put this new constraint
+  into the initial constraint set:
+
+%%[[wrap=code
+  (->) :: (Annot(*)(1)) -> (Annot(*)(2)) -> (Annot(*)(3)), (Delta(3)) =>= (Delta(2)), (Delta(3)) (Sub(=>=)(/=)) (Delta(1))
+  Int  :: (Annot(*)(4))
+%%]
+
+  This new constraint has some slight complications on the constraint graph, however, since care has to be taken that
+  simplification of an odd number of negation edges, results still into an odd number of negation edges. In principle,
+  all the rewrites rules can be reused, but some have to be adjusted slightly in order to guarantee that negation edges
+  are properly dealt with.
+
+  The infrastructure remains the same. You may wonder how we deal with variance and below-the-function-arrow when
+  converting a constraint with kinds to edges in the constraint graph, since this was a missing feature of the
+  infrastructure that required this chapter. In this case, the type language of kinds is simple enough that
+  we do not need this analysis, but use a variation on the definitions mentioned in the introduction of this chapter,
+  instead.
+
+  So, the only change now is in the interpretation of the constraints. We interpret the constraints to find a
+  substitution. A substitution maps an annotation to some analysis result. In case of variance, we use for
+  that the following lattice:
+
+%%[[wrap=code
+  -- insert a picture with '?' <= '+' <= '+/-', and '?' <= '-' <= '+/-'
+%%]
+
+  Then the interpretation is defined as follows:
+
+%%[[wrap=code
+variance (a =>= b)
+  = a =>= (a `join` b)
+variance (a (Sub(=>=)(/=)) b)
+  = a =>= (neg a `join` b)
+variance (a \+/ b <= c)
+  =  let  z = a `join` b `join` c
+     in   z \+/ z <= z
+
+join  ?  x  = x
+join  x  ?  = x
+join  x  y
+  |  x == y     = x
+  |  otherwise  = +/-
+%%]
+
+  For the below-the-function-arrow analysis, no special constraints are needed. But, the initial substitution needs
+  to be adapted for a special annotation |delta| that represents below-the-function-arrow. Then the initial constraint
+  set for below-the-function-arrow analysis is:
+
+%%[[wrap=code
+  (->) :: (Annot(*)(1)) -> (Annot(*)(2)) -> (Annot(*)(3)), delta =>= (Delta(1)), delta =>= (Delta(2))
+  Int  :: (Annot(*)(4))
+%%]
+
+  The lattice that we use is similar to that of variance:
+
+%%[[wrap=code
+  -- insert a picture with '?' <= 'below' <= 'both', and '?' <= 'not-below' <= 'both'
+%%]
+
+  Again, we formulate the interpretation function in a familiar way:
+
+%%[[wrap=code
+below (a =>= b)
+  = a =>= (a `join` b)
+below (a \+/ b <= c)
+  =  let  z = a `join` b `join` c
+     in   z \+/ z <= z
+
+join  ?  x  = x
+join  x  ?  = x
+join  x  y
+  |  x == y     = x
+  |  otherwise  = both
+%%]
+
+  The result is that the constraints specify the traversal over the data types, and that the interpretation function
+  perform the analsis that we did by hand in the introduction of this chapter.
 
 
 \section{Graph simplification}
 
+  As we noted, the graph simplification can remain largely unaltered. But we can optimize the graphs resulting from
+  these analyses more. The reason is that the |\+/| constraint can be rewritten to |=>=| constraints. A constraint
+  of the form |a \+/ b <= c| means |a == b == c| in the interpretation, thus we can replace it with |a =>= b =>= c|
+  and |c =>= b =>= a|. The graphs for data types are even more sparse than those of expressions, with the result that
+  the resulting graphs are very small. This is important, since we have to perform the above analyses for each type
+  in the constraints.
+
 
 \section{Conclusion}
+
+  This chapter shows that the results of previous chapters can not only be used for uniqueness typing, but for
+  two `completely different' analyses as well, without much additional work. We did not compare the performance
+  of the variance approach to a non-constraint based variance approach, but we think that due to the simplifications
+  on the constraint graphs, that our approach is not much slower, although from some perspective, all the work that
+  we did for uniqueness typing, may be seem as overkill to solve the variance problem.
 
 %%]
 
