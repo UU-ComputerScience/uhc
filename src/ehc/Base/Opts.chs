@@ -98,6 +98,9 @@ data EHCOpts
 %%[9.EHCOpts
       ,  ehcOptPrfCutOffAt    ::  Int
 %%]
+%%[99
+      ,  ehcProgName          ::  String
+%%]
 %%[1
       }
 %%]
@@ -132,6 +135,9 @@ defaultEHCOpts
 %%]
 %%[9.defaultEHCOpts
       ,  ehcOptPrfCutOffAt    =   20
+%%]
+%%[99
+      ,  ehcProgName          =   ""
 %%]
 %%[1
       }

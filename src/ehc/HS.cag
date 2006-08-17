@@ -123,10 +123,10 @@ mkRngStr ast t = ast (mkRange1 t) (mkStr t)
 %%]
 
 %%[1 hs
+%%]
 instance Show Range where
   show (Range_Range p _) = show p
   show Range_Unknown     = "??"
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% SemApp instances

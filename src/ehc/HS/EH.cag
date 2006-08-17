@@ -23,8 +23,9 @@ ATTR Body [ | | eh: {EH.Expr} ]
 
 SEM Body
     | Body
-        lhs         .   eh          =   rngLift @range EH.Expr_Let @declarations.eh (rngLift @range EH.Expr_IConst 0)
+        lhs         .   eh          =   @mkSccLet (rngLift @range EH.Expr_IConst 0)
 %%]
+        lhs         .   eh          =   rngLift @range EH.Expr_Let @declarations.eh (rngLift @range EH.Expr_IConst 0)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Declarations    
@@ -45,7 +46,8 @@ SEM Declaration
     | FunctionBindings
         lhs         .   eh          =   @bindings.eh
     | PatternBinding
-        lhs         .   eh          =   [rngLift @range EH.Decl_Val @pattern.eh @righthandside.eh]
+        loc         .   eh          =   rngLift @range EH.Decl_Val @pattern.eh @righthandside.eh
+        lhs         .   eh          =   [@eh]
     | TypeSignature
         loc         .   mkEHSig     =   \n -> rngLift @range EH.Decl_TySig n @type.eh
         lhs         .   eh          =   map @mkEHSig @names
@@ -70,15 +72,17 @@ SEM Declaration
 %%]
 %%[9
     | Class
-        lhs         .   eh          =   let h = rngLift @range EH.TyExpr_Pred
+        loc         .   eh          =   let h = rngLift @range EH.TyExpr_Pred
                                                 $ rngLift @range EH.PrExpr_Class @simpletype.name (map EH.TyExpr_Var @simpletype.typevariables)
                                             c = map (rngLift @range EH.TyExpr_Pred) @context.eh
-                                        in  [rngLift @range EH.Decl_Class (mkArrow c h) @dependencies.eh (maybe [] id @where.eh)]
+                                        in  rngLift @range EH.Decl_Class (mkArrow c h) @dependencies.eh (maybe [] id @where.eh)
+        lhs         .   eh          =   [@eh]
     | Instance
-        lhs         .   eh          =   let h = rngLift @range EH.TyExpr_Pred
+        loc         .   eh          =   let h = rngLift @range EH.TyExpr_Pred
                                                 $ rngLift @range EH.PrExpr_Class @name @types.eh
                                             c = map (rngLift @range EH.TyExpr_Pred) @context.eh
-                                        in  [rngLift @range EH.Decl_Instance (fmap (\n -> (n,@useimplicitly)) @instancename) (mkArrow c h) (maybe [] id @where.eh)]
+                                        in  rngLift @range EH.Decl_Instance (Just (@instancename,@useimplicitly)) (mkArrow c h) (maybe [] id @where.eh)
+        lhs         .   eh          =   [@eh]
     | InstanceUseImplicitly
         lhs         .   eh          =   let h = rngLift @range EH.PrExpr_Class @name @types.eh
                                         in  [rngLift @range EH.Decl_InstanceIntro @expression.eh h]
@@ -277,9 +281,12 @@ ehExpUnTop (EH.Expr_AppTop e) = e
 ehExpUnTop e                  = e
 %%]
 
-ehExpApp :: Range -> EH.Expr -> [EH.Expr] -> EH.Expr
-ehExpApp
-  = ehExpApp' EH.Expr_App
+%%[1.ehExpProd hs
+ehExpProd :: Range -> [EH.Expr] -> EH.Expr
+ehExpProd r as
+  = ehExpConApp r (hsnProd a) as
+  where a = length as
+%%]
 
 %%[1
 ATTR Expressions [ | | eh USE {:} {[]}: {[EH.Expr]} ]
@@ -300,7 +307,7 @@ SEM Expression
                                           Literal_Int    r s -> rngLift r EH.Expr_IConst (read s)
 %%]
 %%[99.Expression.LiteralInt -1.Expression.LiteralInt
-                                          Literal_Int    r s -> ehExpVarApp r (HNm "fromInteger") [EH.Expr_IIConst (read s)]
+                                          Literal_Int    r s -> ehExpVarApp r hsnFromInteger [EH.Expr_IIConst (read s)]
 %%]
 %%[1
                                           Literal_Char   r s -> rngLift r EH.Expr_CConst (head s)
@@ -312,8 +319,8 @@ SEM Expression
                                           Literal_Float  r s -> rngLift r EH.Expr_FConst (read s)
 %%]
 %%[99.Expression.LiteralFloat -8.Expression.LiteralFloat
-                                          Literal_Float  r s -> ehExpVarApp r (HNm "fromRational")
-                                                                  [rngLift r EH.Expr_Parens $ ehExpVarApp r (HNm "%") [EH.Expr_IIConst (numerator f),EH.Expr_IIConst (denominator f)]]
+                                          Literal_Float  r s -> ehExpVarApp r hsnFromRational
+                                                                  [rngLift r EH.Expr_Parens $ ehExpVarApp r hsnMkRatio [EH.Expr_IIConst (numerator f),EH.Expr_IIConst (denominator f)]]
                                                              where (n,m,e) = getRational s
                                                                    f :: Rational
                                                                    f = ((read n * md + mn) * en) % (ed * md)
@@ -369,13 +376,13 @@ SEM Expression
     | Case
         loc         .   eh          =   rngLift @range EH.Expr_Case @expression.eh @alternatives.eh
     | List
-        loc         .   eh          =   foldr (\l r -> ehExpConApp @range hsnListCons [l,r]) (EH.Expr_Con (mkHNm hsnListNil)) @expressions.eh
+        loc         .   eh          =   foldr (\l r -> ehExpConApp @range hsnListCons [l,r]) (EH.Expr_Con hsnListNil) @expressions.eh
     | Enum
-        loc         .   eh          =   case (@from.eh,@then.eh,@to.eh) of
-                                          (fr,Just th,Just to) -> ehExpVarApp @range (mkHNm "enumFromThenTo") [fr,th,to]
-                                          (fr,Just th,Nothing) -> ehExpVarApp @range (mkHNm "enumFromThen"  ) [fr,th   ]
-                                          (fr,Nothing,Just to) -> ehExpVarApp @range (mkHNm "enumFromTo"    ) [fr   ,to]
-                                          (fr,Nothing,Nothing) -> ehExpVarApp @range (mkHNm "enumFrom"      ) [fr      ]
+        loc         .   (eh,enumNm) =   case (@from.eh,@then.eh,@to.eh) of
+                                          (fr,Just th,Just to) -> (ehExpVarApp @range hsnEnumFromThenTo [fr,th,to],hsnEnumFromThenTo)
+                                          (fr,Just th,Nothing) -> (ehExpVarApp @range hsnEnumFromThen   [fr,th   ],hsnEnumFromThen  )
+                                          (fr,Nothing,Just to) -> (ehExpVarApp @range hsnEnumFromTo     [fr   ,to],hsnEnumFromTo    )
+                                          (fr,Nothing,Nothing) -> (ehExpVarApp @range hsnEnumFrom       [fr      ],hsnEnumFrom      )
     | Comprehension
         loc         .   eh          =   foldr ($) @expression.eh @qualifiers.eh
 %%]
@@ -454,19 +461,19 @@ ATTR Statement [ | | eh: {(EH.Expr,EH.Expr -> EH.Expr)} ]
 
 SEM Statement
     | Expression
-        lhs         .   eh          =   (@expression.eh,\e -> ehExpVarApp @range (mkHNm ">>") [@expression.eh,e])
+        lhs         .   eh          =   (@expression.eh,\e -> ehExpVarApp @range hsnMonadSeq [@expression.eh,e])
     | Let
         lhs         .   eh          =   (EH.mkUnit @range,EH.mkLet @range (Just @declarations.eh))
     | Generator
         lhs         .   eh          =   (@expression.eh
                                         ,ehGenerator
                                            @range @pattern.eh
-                                           (\e -> ehExpVarApp @range (mkHNm ">>=") [@expression.eh,e])
-                                           (EH.mkError' (mkHNm "fail") @range "monadic bind")
+                                           (\e -> ehExpVarApp @range hsnMonadBind [@expression.eh,e])
+                                           (EH.mkError' hsnMonadFail @range "monadic bind")
                                         )
-%%]
     | Empty
-        lhs         .   eh          =   rngLift @range XX
+        lhs         .   eh          =   (undefined,id)
+%%]
 
 %%[5
 ATTR Qualifiers [ | | eh USE {:} {[]}: {[EH.Expr -> EH.Expr]} ]
@@ -481,7 +488,7 @@ SEM Qualifier
     | Generator
         lhs         .   eh          =   ehGenerator
                                            @range @pattern.eh
-                                           (\e -> ehExpVarApp @range (mkHNm "concatMap") [e,@expression.eh])
+                                           (\e -> ehExpVarApp @range hsnConcatMap [e,@expression.eh])
                                            (semCon hsnListNil)
     | Empty
         lhs         .   eh          =   \e -> ehExpConApp @range hsnListCons [e,semCon hsnListNil]
@@ -656,6 +663,13 @@ ehPatConApp r n as
     $ foldl (rngLift r EH.PatExpr_App) (rngLift r EH.PatExpr_Con n) as
 %%]
 
+%%[1.ehPatProd hs
+ehPatProd :: Range -> [EH.PatExpr] -> EH.PatExpr
+ehPatProd r as
+  = ehPatConApp r (hsnProd a) as
+  where a = length as
+%%]
+
 %%[1
 ATTR Patterns [ | | eh USE {:} {[]}: {[EH.PatExpr]} ]
 
@@ -698,7 +712,7 @@ SEM Pattern
     | InfixConstructor
         lhs         .   eh          =   ehPatConApp @range @constructorOperator [@leftPattern.eh,@rightPattern.eh]
     | List
-        lhs         .   eh          =   foldr (\l r -> ehPatConApp @range hsnListCons [l,r]) (semCon (mkHNm hsnListNil)) @patterns.eh
+        lhs         .   eh          =   foldr (\l r -> ehPatConApp @range hsnListCons [l,r]) (semCon hsnListNil) @patterns.eh
 %%]
 %%[77
     | Record
@@ -764,5 +778,4 @@ ATTR Strings [ | | eh USE {:} {[]}: {[String]} ]
 %%]
 ATTR MaybeInt [ | | eh USE {`const`} {Nothing}: {Maybe Int} ]
 ATTR MaybeString [ | | eh USE {`const`} {Nothing}: {Maybe String} ]
-
 

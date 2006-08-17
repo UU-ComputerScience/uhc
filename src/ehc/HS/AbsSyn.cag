@@ -207,7 +207,7 @@ DATA Declaration                                  {- *** -}
         where                    : MaybeDeclarations -- cannot have everything
     | Instance
         range                    : Range
-        instancename			 : MaybeName
+        maybeinstancename   	 : MaybeName
         useimplicitly			 : Bool
         context                  : ContextItems -- is a "simple" context
         name                     : Name

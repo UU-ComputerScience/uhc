@@ -27,7 +27,7 @@ unionMapSet :: Ord b => (a -> Set.Set b) -> (Set.Set a -> Set.Set b)
 unionMapSet f = Set.unions . map f . Set.toList
 
 -------------------------------------------------------------------------
--- Misc
+-- List
 -------------------------------------------------------------------------
 
 hdAndTl' :: a -> [a] -> (a,[a])
@@ -39,18 +39,6 @@ hdAndTl = hdAndTl' undefined
 
 maybeHd :: r -> (a -> r) -> [a] -> r
 maybeHd n f l = if null l then n else f (head l)
-
-strWhite :: Int -> String
-strWhite sz = replicate sz ' '
-
-strPad :: String -> Int -> String
-strPad s sz = s ++ strWhite (sz - length s)
-
-strCapitalize :: String -> String
-strCapitalize s
-  = case s of
-      (c:cs) -> toUpper c : cs
-      _      -> s
 
 wordsBy :: (a -> Bool) -> [a] -> [[a]]
 wordsBy p l
@@ -74,6 +62,26 @@ initlast2 as
   where il acc [a,b]  = Just (reverse acc,a,b)
         il acc (a:as) = il (a:acc) as
         il _   _      = Nothing
+
+-------------------------------------------------------------------------
+-- String
+-------------------------------------------------------------------------
+
+strWhite :: Int -> String
+strWhite sz = replicate sz ' '
+
+strPad :: String -> Int -> String
+strPad s sz = s ++ strWhite (sz - length s)
+
+strCapitalize :: String -> String
+strCapitalize s
+  = case s of
+      (c:cs) -> toUpper c : cs
+      _      -> s
+
+-------------------------------------------------------------------------
+-- Misc
+-------------------------------------------------------------------------
 
 panic m = error ("panic: " ++ m)
 

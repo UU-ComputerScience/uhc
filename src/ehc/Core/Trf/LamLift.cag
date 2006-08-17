@@ -96,7 +96,7 @@ startFvSLamMp bLamS lamS varS fvm bFvm
 
 iterFvSLamMp :: FvSMp -> FvSMp -> FvSMp
 iterFvSLamMp frLamMp frVarMp
-  =  let  frVarMp2 = Map.mapWithKey (\n s -> s `Set.union` (Set.unions . map (\n -> fromJust . Map.lookup n $ frVarMp) . Set.toList . fromJust . Map.lookup n $ frLamMp)) frVarMp
+  =  let  frVarMp2 = Map.mapWithKey (\n s -> s `Set.union` (Set.unions . map (\n -> panicJust "iterFvSLamMp.1" . Map.lookup n $ frVarMp) . Set.toList . panicJust "iterFvSLamMp.2" . Map.lookup n $ frLamMp)) frVarMp
           sz = sum . map Set.size . Map.elems
      in   if sz frVarMp2 > sz frVarMp
           then iterFvSLamMp frLamMp frVarMp2
@@ -231,7 +231,7 @@ ATTR AllBind [ | | bindLamBindL, bindCAFBindL, bindVarBindL USE {++} {[]}: CBind
 SEM CBind
   | Bind        (expr.gUniq,loc.argMp,loc.bindLamBindL,loc.bindCAFBindL,loc.bindVarBindL,loc.bindLamArgMp)
                                             =   if @expr.isLam
-                                                then  let  argLevL = fvLAsArg @lhs.levMp . fromJust . Map.lookup @nm $ @lhs.fvSLamMp
+                                                then  let  argLevL = fvLAsArg @lhs.levMp . panicJust "CBind.Bind.argLevL" . Map.lookup @nm $ @lhs.fvSLamMp
                                                            (argOL,argNL,argONMp) = fvLArgRepl @lhs.gUniq argLevL
                                                       in   (@lhs.gUniq + length argOL,argONMp
                                                            ,[CBind_Bind @nm (mkCExprLam argNL @expr.cTrf)],[],[]

@@ -67,7 +67,7 @@ SEM Declaration
         loc         .   pp          =   "class" >#< pp_parens @context.pp >#< "=>" >#< @simpletype.pp >#< "|" >#< @dependencies.pp
                                         >-< indent 2 @where.pp
     | Instance
-        loc         .   pp          =   "instance" >|< maybe empty (\n -> " " >|< n >#< (if @useimplicitly then "<:" else "::")) @instancename
+        loc         .   pp          =   "instance" >|< maybe empty (\n -> " " >|< n >#< (if @useimplicitly then "<:" else "::")) @maybeinstancename
                                         >#< pp_parens @context.pp >#< "=>" >#< @name >#< ppSpaces @types.ppL
                                         >-< indent 2 @where.pp
     | InstanceUseImplicitly
@@ -611,7 +611,12 @@ SEM ContextedPatterns
 %%[1
 SEM Body
     | Body
-        loc         .   ppExtra     =   ppCmt (ppGamDup @declarations.idOccDefGam >-< ppGamDup @declarations.idUseOccGam)
+        loc         .   ppExtra     =   ppCmt
+        								  (   ppGamDup @declarations.idOccDefGam
+        								  >-< ppGamDup @declarations.idUseOccGam
+        								  >-< (ppBracketsCommas $ map ppBracketsCommas $ @sccOrder)
+        								  -- >-< ppGamDup @declarations.undefOccGam
+        								  )
 
 SEM Expression
     | Let

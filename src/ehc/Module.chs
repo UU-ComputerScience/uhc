@@ -201,7 +201,7 @@ checkMod expsOf inscp mod
     ++ if null missingModules
        then checkExpSpec inscp mod
             ++ [ err | (imp,Just exps) <- impSources, err <- checkImp exps imp ]
-       else map (\n -> Err_NamesNotIntrod "module" [n]) missingModules
+       else map (\n -> mkErr_NamesNotIntrod "module" [n]) missingModules
   where Just modExports = expsOf (modName mod)
         impSources      = [ (imp,expsOf (mimpSource imp)) | imp <- modImpL mod ]
         missingModules  = nub [ mimpSource imp | (imp,Nothing) <- impSources ]
@@ -243,10 +243,10 @@ checkExpSpec inscp mod
   where aliases = modName mod : mimpAs `map` modImpL mod
         chk (ModExpMod x)
           | x `elem` aliases = []
-          | otherwise        = [Err_NamesNotIntrod "module alias" [x]]
+          | otherwise        = [mkErr_NamesNotIntrod "module alias" [x]]
         chk (ModExpEnt spec) = checkEntSpec False err1 err2 spec inscp
-        err1   x = Err_NamesNotIntrod ("export") [x]
-        err2 e x = Err_NamesNotIntrod ("subexport of export " ++ show e) [x]
+        err1   x = mkErr_NamesNotIntrod ("export") [x]
+        err2 e x = mkErr_NamesNotIntrod ("subexport of export " ++ show e) [x]
 %%]
 
 %%[8
@@ -255,7 +255,7 @@ checkImp exps imp
   = concatMap chk (mimpImpL imp)
   where src = mimpSource imp
         chk spec = checkEntSpec (mimpHiding imp) err1 err2 spec exps
-        err1   x = Err_NamesNotIntrod ("module " ++ show src ++ " import") [x]
-        err2 i x = Err_NamesNotIntrod ("module " ++ show src ++ " subimport of import " ++ show i) [x]
+        err1   x = mkErr_NamesNotIntrod ("module " ++ show src ++ " import") [x]
+        err2 i x = mkErr_NamesNotIntrod ("module " ++ show src ++ " subimport of import " ++ show i) [x]
 %%]
 

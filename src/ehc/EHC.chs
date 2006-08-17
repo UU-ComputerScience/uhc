@@ -68,16 +68,21 @@ versionInfo     = versionProg ++ versionDist ++ ", " ++ versionSvn
 %%[1.main
 main :: IO ()
 main
-  =  do  {  args <- getArgs
-         ;  let  oo@(o,n,errs)  = getOpt Permute ehcCmdLineOpts args
-                 opts           = foldl (flip ($)) defaultEHCOpts o
+  =  do  {  args      <- getArgs
+         ;  progName  <- getProgName
+         ;  let  ehcOpts        = defaultEHCOpts
+%%[[99
+                                    {ehcProgName = progName}
+%%]
+                 oo@(o,n,errs)  = getOpt Permute ehcCmdLineOpts args
+                 opts           = foldl (flip ($)) ehcOpts o
          ;  if ehcOptHelp opts
 %%]
 %%[1.main.ehcOptHelp
-            then  putStrLn (usageInfo ("version: " ++ versionInfo ++ "\n\nUsage: ehc [options] [file[.eh|.hs]]\n\noptions:") ehcCmdLineOpts)
+            then  putStrLn (usageInfo ("version: " ++ versionInfo ++ "\n\nUsage: " ++ progName ++ " [options] [file[.eh|.hs]]\n\noptions:") ehcCmdLineOpts)
 %%]
 %%[8.main.ehcOptHelp -1.main.ehcOptHelp
-            then  do  {  putStrLn (usageInfo ("version: " ++ versionInfo ++ "\n\nUsage: ehc [options] [file[.eh|.hs]]\n\noptions:") ehcCmdLineOpts)
+            then  do  {  putStrLn (usageInfo ("version: " ++ versionInfo ++ "\n\nUsage: " ++ progName ++ " [options] [file[.eh|.hs]]\n\noptions:") ehcCmdLineOpts)
                       ;  putStrLn ("Transformations:\n" ++ (unlines . map (\(n,t) -> "  " ++ n ++ ": " ++ t) $ cmdLineTrfs))
                       }
 %%]
@@ -177,7 +182,7 @@ emptyECU :: EHCompileUnit
 emptyECU
   = EHCompileUnit
       { ecuFilePath          = emptyFPath
-      , ecuGrpNm			 = hsnUnknown
+      , ecuGrpNm             = hsnUnknown
       , ecuModNm             = hsnUnknown
       , ecuImpNmL            = []
       , ecuMbHSSem           = Nothing
@@ -314,7 +319,7 @@ cpFoldEH modNm
          ;  let  ecu    = crCU modNm cr
                  crsi   = crStateInfo cr
                  mbEH   = ecuMbEH ecu
-                 ehSem  = foldEH (crsiEHInh crsi) (ecuFilePath ecu) (crsiHereUID crsi) (crsiOpts crsi) (fromJust mbEH)
+                 ehSem  = foldEH (crsiEHInh crsi) (ecuFilePath ecu) (crsiHereUID crsi) (crsiOpts crsi) (panicJust "cpFoldEH" mbEH)
          ;  when (isJust mbEH)
                  (cpUpdCU modNm (ecuStoreEHSem ehSem))
          }
@@ -325,7 +330,7 @@ cpFoldHs modNm
          ;  let  ecu    = crCU modNm cr
                  crsi   = crStateInfo cr
                  mbHS   = ecuMbHS ecu
-                 hsSem  = foldHs (crsiHSInh crsi) modNm (crsiHereUID crsi) (crsiOpts crsi) (fromJust mbHS)
+                 hsSem  = foldHs (crsiHSInh crsi) modNm (crsiHereUID crsi) (crsiOpts crsi) (panicJust "cpFoldHs" mbHS)
          ;  when (isJust mbHS)
                  (cpUpdCU modNm (ecuStoreHSSem hsSem))
          }
@@ -335,7 +340,7 @@ cpGetHsImports modNm
   =  do  {  cr <- get
          ;  let  ecu    = crCU modNm cr
                  mbHsSem= ecuMbHSSem ecu
-                 hsSem  = fromJust mbHsSem
+                 hsSem  = panicJust "cpGetHsImports" mbHsSem
                  mod    = HSSem.mod_Syn_AGItf hsSem
          ;  when (isJust mbHsSem)
                  (cpUpdCU modNm (ecuStoreMod mod))
@@ -349,7 +354,7 @@ cpTranslateHs2EH modNm
                  opts   = crsiOpts crsi
                  fp     = ecuFilePath ecu
                  mbHsSem= ecuMbHSSem ecu
-                 hsSem  = fromJust mbHsSem
+                 hsSem  = panicJust "cpTranslateHs2EH" mbHsSem
                  eh     = HSSem.eh_Syn_AGItf hsSem
                  errs   = HSSem.errL_Syn_AGItf hsSem
          ;  when (isJust mbHsSem)
@@ -370,7 +375,7 @@ cpTranslateEH2Core modNm
                  opts   = crsiOpts crsi
                  mbEHSem= ecuMbEHSem ecu
                  fp     = ecuFilePath ecu
-                 ehSem  = fromJust mbEHSem
+                 ehSem  = panicJust "cpTranslateEH2Core" mbEHSem
                  core   = EHSem.cmodule_Syn_AGItf ehSem
                  errs   = EHSem.allErrL_Syn_AGItf ehSem
          ;  when (isJust mbEHSem)
@@ -394,7 +399,7 @@ cpTranslateCore2Grin modNm
                  opts   = crsiOpts crsi
                  fp     = ecuFilePath ecu
                  mbCore = ecuMbCore ecu
-                 cMod   = fromJust mbCore
+                 cMod   = panicJust "cpTranslateCore2Grin" mbCore
                  u1     = uidChild . crsiHereUID $ crsi
                  grin   = cmodGrin u1 cMod
          ;  when (isJust mbCore && (ehcOptEmitGrin opts || ehcOptEmitCmm opts || ehcOptEmitLlc opts))
@@ -409,7 +414,7 @@ cpTranslateGrin modNm
                  opts   = crsiOpts crsi
                  fp     = ecuFilePath ecu
                  mbGrin = ecuMbGrin ecu
-                 grin   = fromJust mbGrin
+                 grin   = panicJust "cpTranslateGrin" mbGrin
          ;  when (isJust mbGrin && (ehcOptEmitCmm opts || ehcOptEmitLlc opts))
                  (lift $ GRINC.doCompileGrin (Right (fp,grin)) opts)
          }
@@ -421,7 +426,7 @@ cpCore1Trf modNm trfNm
          ;  let  ecu    = crCU modNm cr
                  crsi   = crStateInfo cr
                  mbCore = ecuMbCore ecu
-                 core   = fromJust mbCore
+                 core   = panicJust "cpCore1Trf" mbCore
                  u1     = uidChild . crsiHereUID $ crsi
                  core2  = ( case trfNm of
                               "CER"     -> cmodTrfEtaRed
@@ -493,7 +498,7 @@ cpOutputCore modNm
                  fp     = ecuFilePath ecu
                  mbCore = ecuMbCore ecu
                  opts   = crsiOpts crsi
-                 cMod   = fromJust mbCore
+                 cMod   = panicJust "cpOutputCore" mbCore
                  (jBase,jPP) = cmodJavaSrc cMod
                  jFP = fpathSetBase jBase fp                 
          ;  when (ehcOptEmitCore opts) 
@@ -510,7 +515,7 @@ cpOutputGrin modNm
                  fp     = ecuFilePath ecu
                  mbGrin = ecuMbGrin ecu
                  opts   = crsiOpts crsi
-                 grin   = fromJust mbGrin
+                 grin   = panicJust "cpOutputGrin" mbGrin
                  grinPP = ppGrModule grin
          ;  when (ehcOptEmitGrin opts)
                  (lift $ putPPFile (fpathToStr (fpathSetSuff "grin2" fp)) grinPP 1000)
@@ -554,6 +559,8 @@ cpCompileCU targHSState modNm
                    ; cpSeq [cpParseHs modNm, cpStepUID, cpFoldHs modNm, cpProcessHs modNm]
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
                    }
+           (_,Just HSOnlyImports)
+             -> return ()
            (ECUSEh,_)
              -> do { msg "Compiling EH"
                    ; cpSeq [cpParseEH modNm, cpProcessEH modNm]
@@ -638,13 +645,16 @@ doCompileRun fn opts
              searchPath     = ehcOptSearchPath opts ++ mkInitSearchPath fp
              opts2          = opts { ehcOptSearchPath = searchPath }
              hsInh          = HSSem.Inh_AGItf { HSSem.opts_Inh_AGItf     = opts2
-                                              , HSSem.idGam_Inh_AGItf    = emptyGam
+                                              , HSSem.idGam_Inh_AGItf    = HSSem.tyGam2IdDefOccGam initTyGam
+                                                                           `gamUnion` HSSem.kiGam2IdDefOccGam initKiGam
                                               , HSSem.gUniq_Inh_AGItf    = uidStart
                                               , HSSem.moduleNm_Inh_AGItf = hsnUnknown
                                               }
              ehInh          = EHSem.Inh_AGItf { EHSem.baseName_Inh_AGItf = fpathBase fp
                                               , EHSem.gUniq_Inh_AGItf    = uidStart
                                               , EHSem.opts_Inh_AGItf     = opts2
+                                              , EHSem.tyGam_Inh_AGItf    = initTyGam
+                                              , EHSem.kiGam_Inh_AGItf    = initKiGam
                                               }
              initialState   = mkEmptyCompileRun topModNm (EHCompileRunStateInfo opts2 hsInh ehInh uidStart uidStart Map.empty)
              imp mbFp nm

@@ -32,3 +32,9 @@ SEM Declaration
   | PatternBinding
   		(pattern.gUniq,loc.lUniq)		=   mkNewLevUID @lhs.gUniq
 %%]
+
+%%[9
+SEM Declaration
+  | Instance
+  		(context.gUniq,loc.lUniq)		=   mkNewLevUID @lhs.gUniq
+%%]

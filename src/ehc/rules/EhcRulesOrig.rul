@@ -2398,7 +2398,7 @@ relation tyGamLookupId =
     judgespec nm :-> tgi, ty `elem` tyGam
     judgeuse tex nm :-> ty `elem` tyGam
     judgeuse ag  (tgi,nmErrs) `=` case ( tyGamLookup nm tyGam of
-                                       - Nothing    ->  (TyGamInfo Ty_Any,[Err_NamesNotIntrod "\"type\"" [nm]])
+                                       - Nothing    ->  (TyGamInfo Ty_Any,[mkErr_NamesNotIntrod "\"type\"" [nm]])
                                        - Just tgi   ->  (tgi,[])
                                        )
               |  ty           `=` tgiTy tgi
