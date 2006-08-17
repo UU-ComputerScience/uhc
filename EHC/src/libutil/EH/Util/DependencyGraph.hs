@@ -10,7 +10,11 @@ module EH.Util.DependencyGraph
   , dgDpdsOn
   , dgIsFirst
   , dgCheckSCCMutuals
-  , mkDpdGrFromEdges, mkDpdGrFromAssocWithMissing, mkDpdGrFromOrderWithMissing
+  , dgSCCToList
+  , mkDpdGrFromEdges
+  , mkDpdGrFromEdgesMp, mkDpdGrFromEdgesMpPadMissing
+  , mkDpdGrFromAssocWithMissing
+  , mkDpdGrFromOrderWithMissing
   )
   where
 
@@ -46,7 +50,7 @@ instance Show (DpdGr n) where
   show _ = "DpdGr"
 
 instance (Ord n,PP n) => PP (DpdGr n) where
-  pp g = "DpdGr" >#< ("topsort:" >#< ppCommas (dgTopSort g) >-< "scc:" >#< ppBracketsCommas (dgSCC g) >-< "orig:" >#< (ppBracketsCommas $ map (\(n,_,ns) -> n >|< ":" >|< ppBracketsCommas ns) $ dgEdges $ g))
+  pp g = "DpdGr" >#< ("topsort:" >#< ppCommas (dgTopSort g) >-< "scc   :" >#< ppBracketsCommas (dgSCC g) >-< "edges  :" >#< (ppBracketsCommas $ map (\(n,_,ns) -> n >|< ":" >|< ppBracketsCommas ns) $ dgEdges $ g))
 
 instance Show (SCC n) where
   show _ = "SCC"
@@ -59,8 +63,8 @@ instance PP n => PP (SCC n) where
 -- Building from dpds
 -------------------------------------------------------------------------
 
-dpdGrFromEdges' :: Ord n => [Map.Map n [n]] -> ((Graph, Vertex -> (n, n, [n]), n -> Maybe Vertex),[(n, n, [n])])
-dpdGrFromEdges' ns
+dpdGrFromEdgesMp :: Ord n => [Map.Map n [n]] -> ((Graph, Vertex -> (n, n, [n]), n -> Maybe Vertex),[(n, n, [n])])
+dpdGrFromEdgesMp ns
   = (graphFromEdges es,es)
   where cmbChain = Map.unionWith (++)
         mkEdges = map (\(n,ns) -> (n,n,ns)) . Map.toList
@@ -68,20 +72,33 @@ dpdGrFromEdges' ns
 
 dpdGrFromEdges :: Ord n => [[(n,[n])]] -> ((Graph, Vertex -> (n, n, [n]), n -> Maybe Vertex),[(n, n, [n])])
 dpdGrFromEdges
-  = dpdGrFromEdges' . map Map.fromList
+  = dpdGrFromEdgesMp . map Map.fromList
 
 dpdGrFromOrder :: Ord n => [[n]] -> ((Graph, Vertex -> (n, n, [n]), n -> Maybe Vertex),[(n, n, [n])])
 dpdGrFromOrder
-  = dpdGrFromEdges' . map mkChain
+  = dpdGrFromEdgesMp . map mkChain
   where mkChain = Map.fromList . fst . foldl (\(c,prev) n -> ((n,prev) : c,[n])) ([],[])
 
 mkDpdGr :: Ord n => ((Graph, Vertex -> (n, n, [n]), n -> Maybe Vertex),[(n, n, [n])]) -> DpdGr n
 mkDpdGr ((g,n2,v2),es)
   = DpdGr g (transposeG g) es (\v -> let (n,_,ns) = n2 v in (n,ns)) v2
 
+mkDpdGrFromEdgesMp :: Ord n => Map.Map n [n] -> DpdGr n
+mkDpdGrFromEdgesMp
+  = mkDpdGr . dpdGrFromEdgesMp . (:[])
+
 mkDpdGrFromEdges :: Ord n => [(n,[n])] -> DpdGr n
 mkDpdGrFromEdges
   = mkDpdGr . dpdGrFromEdges . (:[])
+
+mkDpdGrFromEdgesMpWithMissing :: Ord n => [n] -> Map.Map n [n] -> DpdGr n
+mkDpdGrFromEdgesMpWithMissing missing
+  = mkDpdGrFromEdgesMp
+    . (Map.fromList [(n,[n]) | n <- missing] `Map.union`)
+
+mkDpdGrFromEdgesMpPadMissing :: Ord n => Map.Map n [n] -> DpdGr n
+mkDpdGrFromEdgesMpPadMissing m
+  = mkDpdGrFromEdgesMpWithMissing [ n | ns <- Map.elems m, n <- ns, not (Map.member n m) ] m
 
 mkDpdGrFromOrderWithMissing :: Ord n => [n] -> [[n]] -> DpdGr n
 mkDpdGrFromOrderWithMissing missing
@@ -137,6 +154,9 @@ dgIsFirst g n ns
 
 dgSCC :: Ord n => DpdGr n -> [SCC n]
 dgSCC g = stronglyConnComp . dgEdges $ g
+
+dgSCCToList :: Ord n => DpdGr n -> [[n]]
+dgSCCToList = map (flattenSCC) . dgSCC
 
 dgSCCMutuals :: Ord n => DpdGr n -> [[n]]
 dgSCCMutuals g = [ ns | (CyclicSCC ns@(_:_:_)) <- dgSCC g ]

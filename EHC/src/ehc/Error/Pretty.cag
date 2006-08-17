@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Error pretty print
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}Error.Pretty} import(Data.List, UU.Pretty, EH.Util.Utils, EH.Util.PPUtils, {%{EH}Base.Common}, {%{EH}Ty}, {%{EH}Ty.Pretty}, {%{EH}Error}) export(ppErr, ppErrs,ppErrL)
+%%[1 hs module {%{EH}Error.Pretty} import(Data.List, Data.Maybe,UU.Pretty, EH.Util.Utils, EH.Util.PPUtils, {%{EH}Base.Common}, {%{EH}Ty}, {%{EH}Ty.Pretty}, {%{EH}Error}) export(ppErr, ppErrs,ppErrL)
 %%]
 
 %%[8 hs import(EH.Util.ParseErrPrettyPrint hiding (ppErr)) export(mkPPErr)
@@ -94,8 +94,15 @@ ATTR ErrL [ | | ppL: {[PP_Doc]} ]
 SEM Err
   | UnifyClash          lhs     .  pp   =   ppUnifyErr  "Type clash"
                                                         @ty1 @ty2 @ty1detail @ty2detail
-  | NamesNotIntrod      lhs     .  pp   =   ppMsgErr    (strCapitalize @kind ++ " names not introduced")
-                                                        (ppListSep "" "" ", " @nmL)
+  | NamesNotIntrod      lhs     .  pp   =   ppMsgErr    (maybeHd
+                                                          "Names not in scope"
+                                                          (const (strCapitalize @kind ++ " names not in scope"))
+                                                          @kind
+                                                        )
+                                                        (case catMaybes $ map snd $ @nmL of
+                                                           [] -> ppListSep "" "" ", " $ map fst $ @nmL
+                                                           _  -> vlist [ n >|< ":" >#< maybe empty vlist rs | (n,rs) <- @nmL ]
+                                                        )
   | NamesDupIntrod      lhs     .  pp   =   ppMsgErr    "Names introduced more than once"
                                                         (ppListSep "" "" ", " @nmL)
   | PatArity            lhs     .  pp   =   ppMsgErr    "Known type has wrong arity for pattern"

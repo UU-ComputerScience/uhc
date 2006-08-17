@@ -108,6 +108,12 @@ instance SemApp Expr where
   mkRngCon _   = Expr_Con . mkHNm
   mkRngVar _   = Expr_Var . mkHNm
 %%]
+%%[7 hs
+  mkProdApp l
+    = Expr_Rec $ RecExpr_Empty `mkRow` l
+    where mkRow = foldl (\r e -> RecExpr_Ext r Nothing e)
+%%]
+
 
 %%[1 hs
 instance SemApp PatExpr where
@@ -117,6 +123,11 @@ instance SemApp PatExpr where
   semParens    = PatExpr_Parens
   mkRngCon _   = PatExpr_Con . mkHNm
   mkRngVar _   = PatExpr_Var . mkHNm
+%%]
+%%[7 hs
+  mkProdApp l
+    = PatExpr_Rec $ RecPatExpr_Empty `mkRow` l
+    where mkRow = foldl (\r e -> RecPatExpr_Ext r Nothing e)
 %%]
 
 %%[1 hs
@@ -132,6 +143,11 @@ instance SemApp TyExpr where
 %%]
 %%[3 -1.mkRngVar hs
   mkRngVar _   = TyExpr_Var . mkHNm
+%%]
+%%[7 hs
+  mkProdApp l
+    = TyExpr_Row $ RowTyExpr_Empty `mkRow` l
+    where mkRow = foldl (\r e -> RowTyExpr_Ext r Nothing e)
 %%]
 
 %%[6 hs

@@ -12,7 +12,15 @@ ATTR AllNT AGItf [ | | errL USE {++} {[]} : ErrL ]
 %%]
 
 %%[1
+SEM Body
+    | Body
+        loc         .   errL        =   let ns = [ (ioccNm o >#< ppParens (ioccKind o),Just (map uoccRange os)) | (o,os) <- gamToAssocDupL @declarations.undefOccGam, not $ hsnIsProd $ ioccNm $ o ]
+                                        in  (if null ns then [] else [mkErr_NamesNotIntrod' "" ns]) ++ @declarations.errL
+%%]
+
+%%[1
 SEM Expression
     | InfixApplicationChainTop
-        loc         .   errL       	=   @errRearr ++ @expression.errL
+        loc         .   errL        =   @errRearr ++ @expression.errL
 %%]
+

@@ -375,7 +375,7 @@ pDeclarationInstance :: HSParser Declaration
 pDeclarationInstance
   = pINSTANCE
     <**> (   (\(n,u) c cl ts d t -> Declaration_Instance (mkRange1 t) n u c (mkQName cl) ts d)
-             <$> ((\n e -> (Just (mkQName n),e)) <$> varid <*> (True <$ pLTCOLON <|> False <$ pDCOLON) <|> pSucceed (Nothing,False))
+             <$> ((\n e -> (Just (mkQName n),e)) <$> varid <*> (True <$ pLTCOLON <|> False <$ pDCOLON) <|> pSucceed (Nothing,True))
              <*> pContextItemsPrefixOpt <*> qconid <*> pList1 pType
              <*> pWhere' pDeclarationValue
          <|> (\e cl ts t -> Declaration_InstanceUseImplicitly (mkRange1 t) e (mkQName cl) ts)

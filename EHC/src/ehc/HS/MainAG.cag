@@ -8,16 +8,25 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[1 hs module {%{EH}HS.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS})
+%%[1 hs module {%{EH}HS.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS}, EH.Util.DependencyGraph)
 %%]
 
 %%[1 hs import(qualified {%{EH}EH} as EH)
+%%]
+
+%%[1 hs export(Inh_AGItf(..),Syn_AGItf(..),sem_AGItf,wrap_AGItf)
+%%]
+
+%%[3 hs import(qualified Data.Set as Set)
 %%]
 
 %%[4 hs import({%{EH}Ty}(TyQu(..)))
 %%]
 
 %%[8 hs import(qualified EH.Util.Rel as Rel,qualified Data.Set as Set,{%{EH}Module})
+%%]
+
+%%[8 hs export(tyGam2IdDefOccGam,kiGam2IdDefOccGam)
 %%]
 
 %%[99 hs import(Data.Ratio,{%{EH}Scanner.Scanner(getRational)})
@@ -65,7 +74,7 @@ SEM SimpleType
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Misc: constructor internal info
+%%% Misc: Data constructor internal info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[5
@@ -123,10 +132,20 @@ SEM Pattern
 ATTR Pattern [ | | mbTopNm: {Maybe HsName} ]
 
 SEM Pattern
-	| Variable As
-		lhs			.	mbTopNm		=	Just @name
-	| * - Variable As
-		lhs			.	mbTopNm		=	Nothing
+    | Variable As
+        lhs         .   mbTopNm     =   Just @name
+    | * - Variable As
+        lhs         .   mbTopNm     =   Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc: Instance internal info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+SEM Declaration
+    | Instance
+        loc         .   instancename=   maybe (mkHNm @lUniq) id @maybeinstancename
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -147,6 +166,28 @@ SEM Expression
         lhs         .   conNm       =   @name
     | * - Constructor
         lhs         .   conNm       =   hsnUnknown
+%%]
+
+%%[3
+ATTR AllType [ | | freeTvarS USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
+
+SEM Type
+    | Variable NamedWildcard
+        lhs         .   freeTvarS   =   Set.singleton @name
+%%[[4
+    | Forall Exists
+        lhs         .   freeTvarS   =   @type.freeTvarS `Set.difference` Set.fromList @typevariables
+%%]
+
+%%[[9
+SEM ContextItem
+    | Forall
+        lhs         .   freeTvarS   =   @context.freeTvarS `Set.difference` Set.fromList @typevariables
+%%]
+%%[[10
+    | RowLacksLabel
+        lhs         .   freeTvarS   =   Set.singleton @rowvariable
+%%]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

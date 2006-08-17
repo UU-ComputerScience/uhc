@@ -32,7 +32,7 @@ DATA Err
 %%[1.NamesNotIntrod
 DATA Err
   | NamesNotIntrod      kind       : String
-                        nmL        : {[HsName]}
+                        nmL        : {[(PP_Doc,Maybe [Range])]}
 %%]
 
 %%[1.Rest

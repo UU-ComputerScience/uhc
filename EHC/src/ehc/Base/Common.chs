@@ -25,10 +25,10 @@
 %%[1 import(UU.Pretty, EH.Util.PPUtils,Data.List) export(ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
 %%]
 
-%%[1 export(SemApp(..))
+%%[1 export(SemApp(..),mkRngProdOpt)
 %%]
 
-%%[1 export(assocLKeys)
+%%[1 export(assocLElts,assocLKeys)
 %%]
 
 %%[1 export(ParNeed(..), ParNeedL, parNeedApp, ppParNeed)
@@ -37,16 +37,16 @@
 %%[1 export(Fixity(..))
 %%]
 
-%%[1 export(Range(..),emptyRange,mkRange1,mkRange2,rngLift)
+%%[1 export(Range(..),emptyRange,builtinRange,mkRange1,mkRange2,rngLift)
 %%]
 
 %%[1 export(UID(..), mkNewLevUID, uidStart)
 %%]
 
-%%[2 export(mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, uidNext, mkNewUID, uidChild, mkNewUIDL, mkInfNewUIDL)
+%%[1 export(assocLMapElt,assocLMapKey)
 %%]
 
-%%[2 export(assocLMapElt,assocLMapKey)
+%%[2 export(mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, uidNext, mkNewUID, uidChild, mkNewUIDL, mkInfNewUIDL)
 %%]
 
 %%[2 export(unions)
@@ -79,7 +79,7 @@
 %%[7 export(positionalFldNames,ppFld,mkExtAppPP,mkPPAppFun)
 %%]
 
-%%[7 export(assocLElts,uidHNm)
+%%[7 export(uidHNm)
 %%]
 
 %%[8 -(1.exp.hdAndTl 1.Misc.hdAndTl) import (EH.Util.Utils hiding (tr,trp)) export(module EH.Util.Utils)
@@ -112,7 +112,7 @@
 %%[8 export(hsnUniqSupplyL,hsnLclSupplyL)
 %%]
 
-%%[8 export(CTag(..),ctagChar,ctagInt)
+%%[8 export(CTag(..),ctagTag,ctagChar,ctagInt)
 %%]
 
 %%[8 export(CTagsMp)
@@ -140,6 +140,15 @@
 %%]
 
 %%[99 export(hsnInteger,hsnDouble)
+%%]
+
+%%[5 export(hsnEnumFromThenTo,hsnEnumFromThen,hsnEnumFromTo,hsnEnumFrom,hsnConcatMap)
+%%]
+
+%%[9 export(hsnMonadSeq,hsnMonadBind,hsnMonadFail)
+%%]
+
+%%[99 export(hsnFromInteger,hsnFromRational,hsnMkRatio)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -414,6 +423,26 @@ hsnInteger                          =   HNm "Integer"
 hsnDouble                           =   HNm "Double"
 %%]
 
+%%[5
+hsnEnumFromThenTo                   =   HNm "enumFromThenTo"
+hsnEnumFromThen                     =   HNm "enumFromThen"
+hsnEnumFromTo                       =   HNm "enumFromTo"
+hsnEnumFrom                         =   HNm "enumFrom"
+hsnConcatMap                        =   HNm "concatMap"
+%%]
+
+%%[9
+hsnMonadSeq                         =   HNm ">>"
+hsnMonadBind                        =   HNm ">>="
+hsnMonadFail                        =   HNm "fail"
+%%]
+
+%%[99
+hsnFromInteger                      =   HNm "fromInteger"
+hsnFromRational                     =   HNm "fromRational"
+hsnMkRatio                          =   HNm "%"
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% HsName class instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -584,6 +613,7 @@ class SemApp a where
   mkRngApp          ::  Range -> [a] -> a
   mkRngVar          ::  HSNM n => Range -> n -> a
   mkRngCon          ::  HSNM n => Range -> n -> a
+  mkRngProd         ::  Range -> [a] -> a
 %%]
 %%[1.SemApp.default
   mkApp as          =   case as of  [a]  ->  a
@@ -597,23 +627,14 @@ class SemApp a where
 %%]
 %%[1
   mkRngApp _        =   mkApp
+  mkRngProd _       =   mkProdApp
 %%]
-class SemApp a where
-  semApp            ::  a -> a -> a
-  semAppTop         ::  a -> a
-  semCon            ::  HsName -> a
-  semParens         ::  a -> a
-  mkApp             ::  [a] -> a
-  mkConApp          ::  HsName -> [a] -> a
-  mkProdApp         ::  [a] -> a
-  mk1Arrow          ::  a -> a -> a
-  mkArrow           ::  [a] -> a -> a
-  mkApp as          =   case as of  [a]  ->  a
-                                    _    ->  semAppTop (foldl1 semApp as)
-  mkConApp   c as   =   mkApp (semCon c : as)
-  mkProdApp  as     =   mkConApp (hsnProd (length as)) as
-  mk1Arrow   a r    =   mkApp [semCon hsnArrow,a,r]
-  mkArrow           =   flip (foldr mk1Arrow)
+
+%%[1
+mkRngProdOpt :: SemApp e => Range -> [e] -> e
+mkRngProdOpt r [e] = e
+mkRngProdOpt r es  = mkRngProd r es
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Building specific structures
@@ -839,8 +860,12 @@ cocoOpp  _              =   CoContraVariant
 %%[8 hs
 data CTag
   = CTagRec
-  | CTag {ctagTyNm :: HsName, ctagNm :: HsName, ctagTag :: Int, ctagArity :: Int}
+  | CTag {ctagTyNm :: HsName, ctagNm :: HsName, ctagTag' :: Int, ctagArity :: Int}
   deriving (Show,Eq,Ord)
+
+ctagTag :: CTag -> Int
+ctagTag CTagRec = 0
+ctagTag t       = ctagTag' t
 
 ctagInt  =  CTag hsnInt  hsnInt  0 1
 ctagChar =  CTag hsnChar hsnChar 0 1
@@ -878,7 +903,7 @@ ppAssocLV :: (PP k, PP v) => AssocL k v -> PP_Doc
 ppAssocLV = ppAssocL' vlist
 %%]
 
-%%[2
+%%[1
 assocLMap :: (k -> v -> (k',v')) -> AssocL k v -> AssocL k' v'
 assocLMap f = map (uncurry f)
 
@@ -892,9 +917,7 @@ assocLMapKey f = assocLMap (\k v -> (f k,v))
 %%[1
 assocLKeys :: AssocL k v -> [k]
 assocLKeys = map fst
-%%]
 
-%%[7
 assocLElts :: AssocL k v -> [v]
 assocLElts = map snd
 %%]
@@ -1040,10 +1063,16 @@ instance PP Fixity where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
-data Range = Range_Range Pos Pos | Range_Unknown
+data Range
+  = Range_Range    Pos Pos
+  | Range_Unknown
+  | Range_Builtin
 
 emptyRange :: Range
 emptyRange = Range_Unknown
+
+builtinRange :: Range
+builtinRange = Range_Builtin
 
 mkPos :: Position p => p -> Pos
 mkPos p = Pos (line p) (column p) (file p)
@@ -1053,6 +1082,16 @@ mkRange1 p = Range_Range (mkPos p) noPos
 
 mkRange2 :: Position p => p -> p -> Range
 mkRange2 p1 p2 = Range_Range (mkPos p1) (mkPos p2)
+%%]
+
+%%[1
+instance Show Range where
+  show (Range_Range p _) = show p
+  show Range_Unknown     = "??"
+  show Range_Builtin     = "builtin"
+
+instance PP Range where
+  pp = pp . show
 %%]
 
 %%[1

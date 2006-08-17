@@ -363,86 +363,35 @@ SEM Decl
 %%% Init of tyGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[initTyGam.1
-                                                          [ (hsnArrow,  TyGamInfo (Ty_Con hsnArrow))
-                                                          , (hsnInt,    TyGamInfo tyInt)
-                                                          , (hsnChar,   TyGamInfo tyChar)
-%%]
-
-%%[initTyGam.6
-                                                          [ (hsnArrow,  mkTGI (Ty_Con hsnArrow) ([kiStar,kiStar] `mkArrow` kiStar))
-                                                          , (hsnInt,    mkTGI tyInt kiStar)
-                                                          , (hsnChar,   mkTGI tyChar kiStar)
-%%]
-
-%%[initTyGam.7
-                                                          , (hsnRow,    mkTGI (Ty_Con hsnUnknown) kiRow)
-                                                          , (hsnRec,    mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
-                                                          , (hsnSum,    mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
-%%]
-
 %%[1.initTyGam
 SEM AGItf
-  | AGItf       loc         .   tyGam               =   assocLToGam
-%%@initTyGam.1
-                                                          ]
+  | AGItf       loc         .   tyGam               =   initTyGam
 %%]
 
-%%[6
-SEM AGItf
-  | AGItf       loc         .   tyGam               :=  assocLToGam
-%%@initTyGam.6
-                                                          ]
-                            .   kiCnstr             =   emptyCnstr
-%%]
-
-%%[7
-SEM AGItf
-  | AGItf       loc         .   tyGam               :=  assocLToGam
-%%@initTyGam.6
-                                                          , (hsnRow,    	mkTGI (Ty_Con hsnUnknown) kiRow)
-                                                          , (hsnRec,    	mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
-                                                          , (hsnSum,    	mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
-%%]
-%%[8
-                                                          , (hsnFloat  ,	mkTGI tyFloat   kiStar)
-%%]
-%%[99
-                                                          , (hsnInteger,	mkTGI tyInteger kiStar)
-                                                          , (hsnDouble ,	mkTGI tyDouble  kiStar)
-%%]
-%%[7
-                                                          ]
+%%[8 -1.initTyGam
+ATTR AGItf [ tyGam: TyGam | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Sort, but no inferencing && etc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[initKiGam.6
-                                                          [ (hsnArrow,  KiGamInfo (Ty_Con hsnArrow))
-                                                          , (hsnStar,   KiGamInfo kiStar)
+%%[6
+ATTR AllExpr AllTyExpr AllPatExpr AllData AllCase AllDecl [ kiGam: KiGam | | ]
 %%]
 
 %%[6
-ATTR AllExpr AllTyExpr AllPatExpr AllData AllCase AllDecl [ kiGam: KiGam | | ]
-
 SEM AGItf
-  | AGItf       loc         .   kiGam               =   assocLToGam
-%%@initKiGam.6
-                                                          ]
+  | AGItf       loc         .   kiCnstr             =   emptyCnstr
 %%]
 
-%%[initKiGam.7
-                                                          , (hsnRow,    KiGamInfo kiRow)
+%%[6.initKiGam
+SEM AGItf
+  | AGItf       loc         .   kiGam               =   initKiGam
 %%]
 
-%%[7
-SEM AGItf
-  | AGItf       loc         .   kiGam               :=  assocLToGam
-%%@initKiGam.6
-%%@initKiGam.7
-                                                          ]
+%%[8 -6.initKiGam
+ATTR AGItf [ kiGam: KiGam | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
