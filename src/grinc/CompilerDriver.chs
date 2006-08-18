@@ -34,7 +34,7 @@ doCompileGrin :: Either String (FPath,GrModule)  -> EHCOpts -> IO ()
 doCompileGrin inp opts
   = drive state putErrs
       ( do { load               -- from phd boquist (fig 4.1)
-           ; caAnalyse          
+           ; caAnalyse
            ; caKnownCalls       -- part I
            ; caOptimizePartly   -- optimisations (small subset)
            ; caNormalize        -- part II
@@ -202,7 +202,7 @@ caNormForHPT = task VerboseALot "Normalizing"
 
 %%[8.rightSkew import({%{GRIN}GrinCode.Trf.RightSkew})
 caRightSkew1 :: CompileAction Bool
-caRightSkew1 = do 
+caRightSkew1 = do
     code <- gets gcsGrinCode
     (code, changed) <- return $ rightSkew code
     modify (gcsUpdateGrinCode code)
@@ -215,14 +215,14 @@ caRightSkew = task VerboseALot "Unskewing" (caFix caRightSkew1) (\i -> Just $ sh
 
 %%[8.heapPointsTo import({%{GRIN}GrinCode.PointsToAnalysis})
 caHeapPointsTo :: (Int, Int) -> CompileAction ()
-caHeapPointsTo bounds = task VerboseALot "Heap-points-to analysis" 
+caHeapPointsTo bounds = task VerboseALot "Heap-points-to analysis"
     ( do { code    <- gets gcsGrinCode
          ; (c,e,h) <- liftIO $ heapPointsToAnalysis bounds code
          ; modify (\s -> s { gcsMbHptMap = Just ((e,h), Map.empty) })
          ; return c
          }
      ) (\i -> Just $ show i ++ " iteration(s)")
-           
+
 %%]
 
 %%[8.inline import({%{GRIN}GrinCode.Trf.GrInline})
@@ -313,7 +313,7 @@ caSplitFetch = do
 %%[8.writeCmm import({%{GRIN}GrinCode.GenCmm}, {%{GRIN}CmmCode.Pretty})
 
 caGrin2Cmm :: CompileAction CmmUnit
-caGrin2Cmm = do 
+caGrin2Cmm = do
     { code <- gets gcsGrinCode
     ; entry <- gets gcsEntry
     ; doTrace <- gets (ehcOptGenTrace . gcsOpts)
@@ -321,7 +321,7 @@ caGrin2Cmm = do
     }
 
 caWriteCmm :: CompileAction ()
-caWriteCmm 
+caWriteCmm
  = do
     { input <- gets gcsPath
     ; let output = fpathSetSuff "cmm" input
@@ -338,7 +338,7 @@ caWriteCmm
 %%[8.writeLlc import({%{GRIN}GrinCode.GenLlc}, {%{GRIN}CmmCode.Pretty})
 
 caGrin2Llc :: CompileAction PP_Doc
-caGrin2Llc = do 
+caGrin2Llc = do
     { code <- gets gcsGrinCode
     ; entry <- gets gcsEntry
     ; doTrace <- gets (ehcOptGenTrace . gcsOpts)
@@ -367,10 +367,10 @@ caWriteGrin :: Bool -> String -> CompileAction ()
 caWriteGrin debug fn = harden_ $ do -- bug: when writePP throws an exeption harden will block it
     { when debug (gets (ehcOptDebug . gcsOpts) >>= guard)
     ; input <- gets gcsPath
-    ; let prefix     = if debug then "debug." else ""
-          fileName   = prefix ++ if null fn then fpathBase input ++ "-out" else fn
-          output   =  fpathSetBase fileName input 
-          message  =  "Writing " ++ fpathToStr output
+    ; let prefix     = if debug then "debug-" else ""
+          fileName   = prefix ++ fpathBase input ++ if null fn then "-out" else fn
+          output     = fpathSetSuff "grin" (fpathSetBase fileName input)
+          message    = "Writing " ++ fpathToStr output
     ; if debug then putDebugMsg message else putMsg VerboseALot message Nothing
     ; code <- gets gcsGrinCode
     ; options <- gets gcsOpts
@@ -380,18 +380,18 @@ caWriteGrin debug fn = harden_ $ do -- bug: when writePP throws an exeption hard
 
 %%[8
 -- create initial GRIN
-caLoad doParse = task_ VerboseNormal "Loading" 
+caLoad doParse = task_ VerboseNormal "Loading"
     ( do { when doParse caParseGrin
          ; caWriteGrin True "0-parsed"
          ; caCleanupPass
          ; caNumberIdents
          ; caAddLazyApplySupport
-         ; caWriteGrin True "0-loaded"
+         ; caWriteGrin True "1-loaded"
          }
     )
 
 -- create HPT info
-caAnalyse = task_ VerboseNormal "Analysing"
+caAnalyse = task_ VerboseNormal "Analyzing"
     ( do { caNormForHPT
          ; caRightSkew
          ; high <- gets gcsUnique
@@ -406,52 +406,52 @@ caAnalyse = task_ VerboseNormal "Analysing"
                               ; putDebugMsg "*** Abstract Values ***"
                               ; printArray "env:"  newVar aeBaseSet env
                               ; printArray "heap:" show ahBaseSet heap
-                              ; caWriteGrin True "0-analyzed"
+                              ; caWriteGrin True "2-analyzed"
                               }
                           )
          }
     )
-    
+
 -- simplification part I
 caKnownCalls = task_ VerboseNormal "Removing unknown calls"
     ( do { caInlineEA
          ; caRightSkew
-         ; caWriteGrin True "1-knownCalls"
+         ; caWriteGrin True "3-knownCalls"
          }
-    )     
+    )
 -- optionsations part I
 caOptimizePartly = task_ VerboseNormal "Optimizing (partly)"
     ( do { caSparseCase
          ; caEliminateCases
          ; caDropUnusedExpr
          ; caDropUnusedBindings
-         ; caWriteGrin True "2-partlyOptimized"
+         ; caWriteGrin True "4-partlyOptimized"
          }
     )
 -- simplification part II
-caNormalize = task_ VerboseNormal "Normalizing" 
+caNormalize = task_ VerboseNormal "Normalizing"
     ( do { caLowerGrin
-         ; caWriteGrin True "3-normalized"
+         ; caWriteGrin True "5-normalized"
          }
-    )     
+    )
 
 -- optionsations part II
 caOptimize = task_ VerboseNormal "Optimizing (full)"
     ( do { caCopyPropagation
-         ; caWriteGrin True "4-after-cp"
+         ; caWriteGrin True "6-after-cp"
          ; caDropUnusedExpr
-         ; caWriteGrin True "4-optimized"
+         ; caWriteGrin True "7-optimized"
          }
     )
 
 -- simplification part III
 caFinalize = task_ VerboseNormal "Finalizing"
     ( do { caSplitFetch
-         ; caDropUnusedExpr         
+         ; caDropUnusedExpr
          ; caDropUnusedTags
          ; caReturningCatch
          ; caNameIdents
-         ; caWriteGrin True "5-final"
+         ; caWriteGrin True "8-final"
          }
     )
 
@@ -467,7 +467,7 @@ caOutput = task_ VerboseNormal "Writing code"
 printArray s f g a = harden_ $ do
     { isDebugging <- gets (ehcOptDebug . gcsOpts)
     ; guard isDebugging
-    ; putDebugMsg s 
+    ; putDebugMsg s
     ; mapM_ (\(k, v) -> putDebugMsg ("  " ++ f k ++ " = " ++ show (g v))) (assocs a)
     }
 %%]
@@ -478,15 +478,15 @@ printArray s f g a = harden_ $ do
 
 %%[8.State
 data GRINCompileState = GRINCompileState
-	{ gcsUnique    :: Int
-	, gcsMbCode    :: Maybe GrModule 
-	, gcsEntry     :: !HsName
+    { gcsUnique    :: Int
+    , gcsMbCode    :: Maybe GrModule
+    , gcsEntry     :: !HsName
     , gcsMbOrigNms :: Maybe IdentNameMap
     , gcsMbHptMap  :: Maybe HptMap
-	, gcsPath      :: FPath
-	, gcsOpts      :: EHCOpts
+    , gcsPath      :: FPath
+    , gcsOpts      :: EHCOpts
     , gcsMsgInfo   :: (Int, Bool)
-	}
+    }
 
 gcsGrinCode           = fromJust . gcsMbCode
 gcsOrigNms            = fromJust . gcsMbOrigNms
@@ -499,11 +499,11 @@ gcsUpdateHptMap   m s = s { gcsMbHptMap = Just m }
 
 %%[8.Errors
 newtype CompileError = CompileError String
-	deriving (Show)
+    deriving (Show)
 
 instance Error CompileError where
-	noMsg    = CompileError "internal error"
-	strMsg s = CompileError s
+    noMsg    = CompileError "internal error"
+    strMsg s = CompileError s
 %%]
 
 %%[8.CompilerDriver
@@ -511,12 +511,12 @@ type CompileAction a = ErrorT CompileError (StateT GRINCompileState IO) a
 
 drive :: GRINCompileState -> (CompileError -> IO a) -> CompileAction a -> IO a
 drive initState errorHandler action = do
-	result <- doAction action
-	case result of
-		Right suc -> return suc
-		Left  err -> errorHandler err
-	where
-	doAction = flip evalStateT initState . runErrorT
+    result <- doAction action
+    case result of
+        Right suc -> return suc
+        Left  err -> errorHandler err
+    where
+    doAction = flip evalStateT initState . runErrorT
 
 %%]
 
@@ -535,7 +535,7 @@ harden_  :: (MonadError e m) => m() -> m ()
 harden_  =  harden ()
 
 force :: a -> CompileAction a
-force = liftIO . evaluate 
+force = liftIO . evaluate
 %%]
 
 %%[8.messages import(System.CPUTime, Numeric)
@@ -543,7 +543,7 @@ initMsgInfo :: (Int, Bool) -- indent, FirstMessageInLevel, CPUTime
 initMsgInfo = (0, False)
 
 putLn = putStrLn ""
- 
+
 putDebugMsg :: String -> CompileAction ()
 putDebugMsg msg = harden_ $ do
     { isDebugging <- gets (ehcOptDebug . gcsOpts)
@@ -563,13 +563,13 @@ putMsg minVerbosity msg mbMsg =  harden_ $ do
         message = replicate indent ' ' ++ strBlankPad 36 msg ++ msg2
     liftIO $ putStrLn message
     when first (modify (\s -> s { gcsMsgInfo = (indent, False) }))
-    
+
 
 task_ :: Verbosity -> String -> CompileAction a -> CompileAction ()
 task_ minVerbosity td ca = task minVerbosity td ca (const Nothing)
 
 task :: Verbosity -> String -> CompileAction a -> (a -> Maybe String) -> CompileAction ()
-task minVerbosity taskDesc ca f = do 
+task minVerbosity taskDesc ca f = do
     { startMsg minVerbosity taskDesc
     ; (cpuTime, r) <- cpuUsage ca
     ; finishMsg minVerbosity (f r) cpuTime
@@ -584,7 +584,7 @@ task minVerbosity taskDesc ca f = do
         let message = replicate indent ' ' ++ strBlankPad 36 msg
         liftIO $ putStr message
         modify (\s -> s { gcsMsgInfo = (indent+4, True) })
-    
+
     finishMsg :: Verbosity -> Maybe String -> Integer -> CompileAction ()
     finishMsg minVerbosity mbMsg cpuUsage =  harden_ $ do
         { currentVerbosity <- gets (ehcOptVerbosity . gcsOpts)
@@ -594,7 +594,7 @@ task minVerbosity taskDesc ca f = do
         ; let indent       =  oldIndent - 4
               timeMsgOld   =  show (cpuUsage `div` fst cpuUsageInfo) ++ " " ++ snd cpuUsageInfo
               timeMsg      =  showFFloat (Just 2) (fromInteger cpuUsage / 1000000000000) " seconds"
-              
+
               formatMsg m  | doTiming   =  if first
                                            then " (" ++ m ++ ", " ++ timeMsg ++ ")"
                                            else replicate indent ' ' ++ m ++ " (" ++ timeMsg ++ ")"
@@ -619,7 +619,7 @@ cpuUsage ca = do
     }
 
 
-{- returns - a value to remove all tailing zero's. Devide the CPU timing 
+{- returns - a value to remove all tailing zero's. Devide the CPU timing
              to change the precision so that no decimal point is needed but
              without needless zeros are included (folowing SI-prefixes)
            - a string reprenstation of the precision of the resulting devision
@@ -643,6 +643,6 @@ caFix :: CompileAction Bool -> CompileAction Int
 caFix step = caFixCount 1
     where
     caFixCount n = do
-        changes <- step 
+        changes <- step
         if changes then (caFixCount $ n+1) else return n
 %%]
