@@ -13,17 +13,26 @@
 %%[5 export(reserved,valueToken,errToken,tokTpIsInt)
 %%]
 
-%%[8 import(Data.Set) export(tokTpQual,tokTpIsId)
+%%[8 import(Data.Set) export(tokTpIsId)
+%%]
+
+%%[12 export(tokTpQual)
 %%]
 
 %%[5
 type Token = GenToken String EnumValToken String
 
 data EnumValToken
-  = TkQVarid
-  | TkQConid
-  | TkVarid
+  = TkVarid
   | TkConid
+  | TkOp
+  | TkConOp
+%%[[12
+  | TkQVarid
+  | TkQConid
+  | TkQOp
+  | TkQConOp
+%%]
   | TkString
   | TkChar
   | TkInteger8
@@ -32,13 +41,11 @@ data EnumValToken
   | TkFraction
   | TkTextnm
   | TkTextln 
-  | TkQOp
-  | TkQConOp
-  | TkOp
-  | TkConOp
   | TkError
   deriving (Eq, Ord)
+%%]
 
+%%[5
 reserved                :: String -> Pos -> Token
 reserved                =  Reserved 
 
@@ -47,7 +54,6 @@ valueToken              =  ValToken
 
 errToken                :: String -> Pos -> Token
 errToken                =  valueToken TkError 
-
 %%]
 
 %%[5
@@ -59,10 +65,15 @@ tokTpIsInt tp = tp == TkInteger8 || tp == TkInteger10 || tp == TkInteger16
 tokTpIsId :: EnumValToken -> Bool
 tokTpIsId
   = (`member` ts)
-  where ts = fromList [TkVarid,TkConid,TkOp,TkConOp,TkQVarid,TkQConid,TkQOp,TkQConOp]
+  where ts = fromList
+  			   [TkVarid,TkConid,TkOp,TkConOp
+%%[[12
+  			   ,TkQVarid,TkQConid,TkQOp,TkQConOp
+%%]
+  			   ]
 %%]
 
-%%[8
+%%[12
 tokTpQual :: EnumValToken -> EnumValToken
 tokTpQual TkVarid = TkQVarid
 tokTpQual TkConid = TkQConid

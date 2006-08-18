@@ -1,0 +1,19 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional checks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+%%]
+idDefOccGamCheckAllowedKind :: String -> [IdOccKind] -> IdDefOccGam -> [Err]
+idDefOccGamCheckAllowedKind m ks g
+  = case idDefOccGamPartitionByKind ks g of
+      (_,[]) -> []
+      (_,ds) -> [Err_DeclsNotAllowed m [ (ioccKind o,map ioccNm os) | os@(o:_) <- groupSortOn ioccKind (assocLKeys ds)]]
+
+%%[9
+%%]
+SEM Declaration
+  	| Class
+  		loc				.	errNotAllowed
+  										=	idDefOccGamCheckAllowedKind "class" [IdOcc_Val] @where.idOccDefGam
+

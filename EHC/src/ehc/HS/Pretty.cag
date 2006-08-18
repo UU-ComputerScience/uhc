@@ -21,7 +21,7 @@ SEM Body
         lhs         .   pp          =   @declarations.pp >-< @ppExtra
 %%]
 
-%%[8.Body -1.Body
+%%[12.Body -1.Body
 SEM Body
     | Body
         lhs         .   pp          =   @importdeclarations.pp >-< @declarations.pp >-< @ppExtra
@@ -614,6 +614,7 @@ SEM Body
         loc         .   ppExtra     =   ppCmt
         								  (   ppGamDup @declarations.idOccDefGam
         								  >-< ppGamDup @declarations.idUseOccGam
+        								  >-< (pp $ mkDpdGrFromEdgesMp $ @declarations.idDpdMp)
         								  >-< (ppBracketsCommas $ map ppBracketsCommas $ @sccOrder)
         								  -- >-< ppGamDup @declarations.undefOccGam
         								  )

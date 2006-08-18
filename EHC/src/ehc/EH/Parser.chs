@@ -554,7 +554,7 @@ pDeclClass      =    Decl_Class
 
 pDeclInstance   ::   EHCParser Decl
 pDeclInstance   =    pKey "instance"
-                     *>   (    Decl_Instance
+                     *>   (    (\n h d -> Decl_Instance n InstNormal h d)
                                <$>  ((\n e -> Just (n,e)) <$> pVar <*> (True <$ pKey "<:" <|> False <$ pKey "::") `opt` Nothing)
                                <*>  pClassHead
                                <*   pKey "where" <*> pDecls

@@ -7,7 +7,7 @@
 %%% Run GRI
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module GRINIRun import({%{EH}Base.Common},GRINICommon,{%{EH}GrinCode},{%{EH}GrinCode.Pretty})
+%%[8 module GRINIRun import(EH.Util.PPUtils,{%{EH}Base.Common},GRINICommon,{%{EH}GrinCode},{%{EH}GrinCode.Pretty})
 %%]
 
 %%[8 import(qualified Data.Map as Map,Data.Maybe,Data.Array,Data.Array.IO)
@@ -205,7 +205,7 @@ grFFI rs f aL
   =  case Map.lookup f primMp of
         Just f'
             ->  f' rs aL
-        _   ->  do  { rs' <- halt rs ("No ffi for:" >#< f >-< indent 2 ("with args:" >#< (ppCommaList . map pp $ aL)))
+        _   ->  do  { rs' <- halt rs ("No ffi for:" >#< f >-< indent 2 ("with args:" >#< (ppBracketsCommas . map pp $ aL)))
                     ; return (rs',Nothing)
                     }
 %%]

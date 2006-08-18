@@ -109,5 +109,7 @@ DATA Err
   | NotProvenPreds      preds      : {[PredOcc]}
   | OverlapPreds        overl      : {AssocL Pred [CExpr]}
   | TyHasFreeTVars      ty         : {Ty}
+  | DeclsNotAllowed     inside     : String
+                        decls      : {AssocL IdOccKind [HsName]}
 %%]
 

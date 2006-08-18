@@ -117,7 +117,7 @@ scan opts pos input
                                     else valueToken (if isUpper c then TkConid else TkVarid) name p
            in tok :  doScan p' s'
 %%]
-%%[8 -5.id
+%%[12 -5.id
      | isIdStart c || isUpper c
          = let (name', p', s')    = scanIdent isIdChar (advc 1 p) s
                name               = c:name'

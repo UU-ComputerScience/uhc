@@ -13,7 +13,7 @@
 %%[1 import(qualified {%{EH}EH.Parser} as EHPrs, qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.Parser} as HSPrs, qualified {%{EH}HS.MainAG} as HSSem)
 %%]
 
-%%[8 import (EH.Util.CompileRun,{%{EH}Error},{%{EH}Gam},{%{EH}Module},EH.Util.FPath,qualified Data.Map as Map,Data.Maybe,Data.List)
+%%[8 import (EH.Util.CompileRun,{%{EH}Error},{%{EH}Gam},EH.Util.FPath,qualified Data.Map as Map,Data.Maybe,Data.List)
 %%]
 
 %%[8 import ({%{EH}Core.Java},{%{EH}Core.Grin},{%{EH}Core.Pretty})
@@ -45,7 +45,8 @@
 %%[8 import(qualified {%{EH}GrinCode.Parser} as GrinParser)
 %%]
 
-
+%%[12 import ({%{EH}Module})
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Version of program
@@ -129,7 +130,11 @@ emptyECG
 
 %%[8
 data HaskellState
-  = HSStart | HSOnlyImports | HSAllSem
+  = HSStart
+  | HSAllSem
+%%[[12
+  | HSOnlyImports
+%%]
   deriving (Show,Eq)
 
 data EHCompileUnitState
@@ -149,7 +154,9 @@ data EHCompileUnit
       , ecuMbCore            :: Maybe Core.CModule
       , ecuMbGrin            :: Maybe Grin.GrModule
       , ecuState             :: EHCompileUnitState
+%%[[12
       , ecuMod               :: Mod
+%%]
       }
 
 type EcuUpdater a = a -> EHCompileUnit -> EHCompileUnit
@@ -171,10 +178,14 @@ ecuStoreCore x ecu = ecu { ecuMbCore = Just x }
 
 ecuStoreGrin :: EcuUpdater Grin.GrModule
 ecuStoreGrin x ecu = ecu { ecuMbGrin = Just x }
+%%]
 
+%%[12
 ecuStoreMod :: EcuUpdater Mod
 ecuStoreMod x ecu = ecu { ecuMod = x, ecuImpNmL = map mimpSource $ modImpL $ x }
+%%]
 
+%%[8
 ecuStoreState :: EcuUpdater EHCompileUnitState
 ecuStoreState x ecu = ecu { ecuState = x }
 
@@ -192,18 +203,29 @@ emptyECU
       , ecuMbCore            = Nothing
       , ecuMbGrin            = Nothing
       , ecuState             = ECUSUnknown
+%%[[12
       , ecuMod               = emptyMod
+%%]
       }
+%%]
 
+%%[8
 instance CompileUnitState EHCompileUnitState where
   cusDefault      = ECUSEh
   cusUnk          = ECUSUnknown
   cusIsUnk        = (==ECUSUnknown)
+%%]
+%%[8.cusIsImpKnown
+  cusIsImpKnown _ = True
+%%]
+%%[12 -8.cusIsImpKnown
   cusIsImpKnown s = case s of
                       ECUSHaskell HSOnlyImports -> True
                       ECUSHaskell HSAllSem      -> True
                       _                         -> False
+%%]
 
+%%[8
 instance CompileUnit EHCompileUnit HsName EHCompileUnitState where
   cuDefault         = emptyECU
   cuFPath           = ecuFilePath
@@ -226,7 +248,12 @@ instance Show EHCompileUnit where
   show _ = "EHCompileUnit"
 
 instance PP EHCompileUnit where
-  pp ecu = ecuModNm ecu >|< ":" >#< ppCommas (ecuImpNmL ecu) >|< "," >#< show (ecuState ecu)
+  pp ecu
+    = ecuModNm ecu >|<
+%%[[12
+      ":" >#< ppCommas (ecuImpNmL ecu) >|<
+%%]
+      "," >#< show (ecuState ecu)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -334,7 +361,9 @@ cpFoldHs modNm
          ;  when (isJust mbHS)
                  (cpUpdCU modNm (ecuStoreHSSem hsSem))
          }
+%%]
 
+%%[12
 cpGetHsImports :: HsName -> EHCompilePhase ()
 cpGetHsImports modNm
   =  do  {  cr <- get
@@ -345,7 +374,9 @@ cpGetHsImports modNm
          ;  when (isJust mbHsSem)
                  (cpUpdCU modNm (ecuStoreMod mod))
          }
+%%]
 
+%%[8
 cpTranslateHs2EH :: HsName -> EHCompilePhase ()
 cpTranslateHs2EH modNm
   =  do  {  cr <- get
@@ -534,15 +565,28 @@ cpStepUID
       }
 %%]
 
-%%[8
+%%[8.cpCompileCU.sig
+cpCompileCU :: HsName -> EHCompilePhase ()
+cpCompileCU modNm
+%%]
+%%[12 -8.cpCompileCU.sig
 cpCompileCU :: Maybe HaskellState -> HsName -> EHCompilePhase ()
 cpCompileCU targHSState modNm
+%%]
+%%[8
   = do { cr <- get
        ; let ecu   = crCU modNm cr
              opts  = crsiOpts (crStateInfo cr)
              msg m = lift (putCompileMsg VerboseNormal (ehcOptVerbosity opts) m Nothing modNm (ecuFilePath ecu))
              -- msg m = lift (putCompileMsg VerboseNormal (ehcOptVerbosity opts) (m ++ " (" ++ show (ecuState ecu) ++ "/" ++ fpathSuff (ecuFilePath ecu) ++ ")") Nothing modNm (ecuFilePath ecu))
+%%]
+%%[8.cpCompileCU.case
+       ; case (ecuState ecu,undefined) of
+%%]
+%%[12 -8.cpCompileCU.case
        ; case (ecuState ecu,targHSState) of
+%%]
+%%[12
            (ECUSHaskell HSStart,Just HSOnlyImports)
              -> do { cpSeq [cpParseHs modNm, cpStepUID, cpFoldHs modNm, cpGetHsImports modNm]
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSOnlyImports))
@@ -554,13 +598,17 @@ cpCompileCU targHSState modNm
                    ; cpProcessHs modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
                    }
+%%]
+%%[8
            (ECUSHaskell HSStart,_)
              -> do { msg "Compiling Haskell"
                    ; cpSeq [cpParseHs modNm, cpStepUID, cpFoldHs modNm, cpProcessHs modNm]
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
                    }
+%%[[12
            (_,Just HSOnlyImports)
              -> return ()
+%%]
            (ECUSEh,_)
              -> do { msg "Compiling EH"
                    ; cpSeq [cpParseEH modNm, cpProcessEH modNm]
@@ -569,8 +617,7 @@ cpCompileCU targHSState modNm
              -> do { msg "Compiling Grin"
                    ; cpSeq [cpParseGrin modNm, cpProcessGrin modNm]
                    }
-           _ -> do { msg "Skipping"
-                   }
+           _ -> return ()
        }
 %%]
 
@@ -589,7 +636,12 @@ crCompileCG targHSState modNmL cr
 cpCompileOrderedCUs :: EHCompilePhase ()
 cpCompileOrderedCUs
  = do { modNmLL <- gets crCompileOrder
-      ; cpSeq (map (cpCompileCU Nothing . head) modNmLL)
+      ; cpSeq (map (cpCompileCU
+%%[[12
+                      Nothing
+%%]
+                    . head
+                   ) modNmLL)
       }
 %%]
 
@@ -653,14 +705,20 @@ doCompileRun fn opts
              ehInh          = EHSem.Inh_AGItf { EHSem.baseName_Inh_AGItf = fpathBase fp
                                               , EHSem.gUniq_Inh_AGItf    = uidStart
                                               , EHSem.opts_Inh_AGItf     = opts2
+%%[[12
                                               , EHSem.tyGam_Inh_AGItf    = initTyGam
                                               , EHSem.kiGam_Inh_AGItf    = initKiGam
+%%]
                                               }
              initialState   = mkEmptyCompileRun topModNm (EHCompileRunStateInfo opts2 hsInh ehInh uidStart uidStart Map.empty)
              imp mbFp nm
                = do { mbFoundFp <- cpFindFileForFPath fileSuffMpHs searchPath (Just nm) mbFp
                     ; when (isJust mbFoundFp)
-                           (cpCompileCU (Just HSOnlyImports) nm)
+                           (cpCompileCU
+%%[[12
+                              (Just HSOnlyImports)
+%%]
+                              nm)
                     }
        ; _ <- runStateT (cpSeq [ imp (Just fp) topModNm
                                , cpImportGather (imp Nothing) topModNm

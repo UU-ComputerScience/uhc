@@ -22,7 +22,7 @@ tyPrLToSupNmL = zipWith (\i p -> hsnSuffix (tyPredNm p) (show i)) [1..]
 
 %%[9
 SEM Decl
-  | Class       tyPrExpr        .   tyGam           =   gamPushNew @lhs.patTyGam
+  | Class       tyPrExpr        .   tyGam           =   gamPushNew @lhs.tyGam
                 loc             .   (ctxtPrTyL,hdPrTy)
                                                     =   tyArrowArgsRes @tyPrExpr.ty
                 loc             .   lSigGam         =   @decls.gathTySigGam
@@ -85,7 +85,7 @@ SEM Decl
 SEM Decl
   | Instance InstanceIntro
                 loc             .   instId          =   mkPrId @lhs.prfCtxtId @lUniq
-  | Instance    tyPrExpr        .   tyGam           =   gamPushNew @lhs.patTyGam
+  | Instance    tyPrExpr        .   tyGam           =   gamPushNew @lhs.tyGam
                 loc             .   prTyFix         =   tyFixTyVars . tyQuantifyRank [2..] $ @tyPrExpr.ty
                                 .   (ctxtPrTyFixL,hdPrTyFix)
                                                     =   tyArrowArgsRes @prTyFix

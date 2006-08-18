@@ -81,12 +81,14 @@ SEM Declaration
         loc         .   eh          =   let h = rngLift @range EH.TyExpr_Pred
                                                 $ rngLift @range EH.PrExpr_Class @name @types.eh
                                             c = map (rngLift @range EH.TyExpr_Pred) @context.eh
-                                        in  rngLift @range EH.Decl_Instance (Just (@instancename,@useimplicitly)) (mkArrow c h) (maybe [] id @where.eh)
+                                        in  rngLift @range EH.Decl_Instance (Just (@instancename,@useimplicitly)) InstNormal (mkArrow c h) (concat @ehReorderedDecls)
         lhs         .   eh          =   [@eh]
     | InstanceUseImplicitly
-        lhs         .   eh          =   let h = rngLift @range EH.PrExpr_Class @name @types.eh
-                                        in  [rngLift @range EH.Decl_InstanceIntro @expression.eh h]
+        loc         .   eh          =   let h = rngLift @range EH.PrExpr_Class @name @types.eh
+                                        in  rngLift @range EH.Decl_InstanceIntro @expression.eh h
+        lhs         .   eh          =   [@eh]
     | Default
+        loc         .   eh          =   undefined
         lhs         .   eh          =   []
 %%]
 %%[11
@@ -358,7 +360,7 @@ SEM Expression
     | Lambda
         loc         .   eh          =   foldr (rngLift @range EH.Expr_Lam) @expression.eh @patterns.eh
     | Let
-        loc         .   eh          =   rngLift @range EH.Expr_Let @declarations.eh @expression.eh
+        loc         .   eh          =   @mkSccLet @expression.eh
     | Tuple
         loc         .   eh          =   ehExpConApp @range (hsnProd (length @expressions.eh)) @expressions.eh
     | Typed
@@ -463,7 +465,7 @@ SEM Statement
     | Expression
         lhs         .   eh          =   (@expression.eh,\e -> ehExpVarApp @range hsnMonadSeq [@expression.eh,e])
     | Let
-        lhs         .   eh          =   (EH.mkUnit @range,EH.mkLet @range (Just @declarations.eh))
+        lhs         .   eh          =   (EH.mkUnit @range,@mkSccLet)
     | Generator
         lhs         .   eh          =   (@expression.eh
                                         ,ehGenerator
@@ -484,7 +486,7 @@ SEM Qualifier
     | Guard
         lhs         .   eh          =   \e -> EH.mkIf @range @guard.eh e (semCon hsnListNil)
     | Let
-        lhs         .   eh          =   \e -> EH.mkLet @range (Just @declarations.eh) e
+        lhs         .   eh          =   @mkSccLet
     | Generator
         lhs         .   eh          =   ehGenerator
                                            @range @pattern.eh
@@ -646,12 +648,13 @@ ATTR RightHandSide [ | | eh: {EH.Expr} ]
 
 SEM RightHandSide
     | Expression
-        lhs         .   eh          =   EH.mkLet @range @where.eh @expression.eh
-%%]
-%%[5
+        lhs         .   eh          =   @mkSccLet @expression.eh
+%%[[5
     | Guarded
-        lhs         .   eh          =   EH.mkLet @range @where.eh (foldr ($) (EH.mkError @range "guarded expr") @guardedexpressions.eh)
+        lhs         .   eh          =   @mkSccLet (foldr ($) (EH.mkError @range "guarded expr") @guardedexpressions.eh)
 %%]
+%%]
+        lhs         .   eh          =   EH.mkLet @range @where.eh (foldr ($) (EH.mkError @range "guarded expr") @guardedexpressions.eh)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Patterns        

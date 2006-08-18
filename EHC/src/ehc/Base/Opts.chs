@@ -130,7 +130,7 @@ defaultEHCOpts
       ,  ehcOptEmitCmm        =   False
       ,  ehcOptEmitLlc        =   False
       ,  ehcOptSearchPath     =   []
-      ,  ehcOptVerbosity      =   VerboseQuiet
+      ,  ehcOptVerbosity      =   VerboseNormal
       ,  ehcOptTrf            =   []
 %%]
 %%[9.defaultEHCOpts
