@@ -1,4 +1,4 @@
-# variant dispatch rules
+# ehc/uhc variant dispatch rules
 $(patsubst $(BIN_PREFIX)%$(EXEC_SUFFIX),%,$(EHC_ALL_EXECS)): %: $(BIN_PREFIX)%$(EXEC_SUFFIX)
 
 $(EHC_ALL_EXECS): %: $(EHC_ALL_SRC) $(GRINC_ALL_SRC) $(EHC_MKF)
@@ -25,3 +25,6 @@ ehc-variant-dflt: $(EHC_ALL_DPDS) $(LIB_EH_UTIL_INS_FLAG) $(LIB_EHC_INS_FLAG) $(
 #ehc-variant-selrule: 
 #	$(MAKE) EHC_VARIANT_RULER_SEL="($(EHC_VARIANT)).(expr.base).(e.int e.char)" ehc-variant-dflt
 
+# rules for uhc
+$(BIN_PREFIX)uhc$(EXEC_SUFFIX): $(BIN_PREFIX)$(EHC_UHC_VARIANT)/ehc$(EXEC_SUFFIX)
+	cp $< $@

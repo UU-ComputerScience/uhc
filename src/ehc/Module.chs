@@ -12,20 +12,20 @@
 %%% Module adm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}Module} import(Data.Maybe,Data.List,qualified Data.Set as Set,UU.Pretty,qualified EH.Util.Rel as Rel,{%{EH}Base.Common},{%{EH}Error})
+%%[12 module {%{EH}Module} import(Data.Maybe,Data.List,qualified Data.Set as Set,UU.Pretty,qualified EH.Util.Rel as Rel,{%{EH}Base.Common},{%{EH}Error})
 %%]
 
-%%[8 export(ModEnt(..),ModExp(..),ModEntSpec(..),ModEntSubSpec(..),ModImp(..),Mod(..),ModEntRel)
+%%[12 export(ModEnt(..),ModExp(..),ModEntSpec(..),ModEntSubSpec(..),ModImp(..),Mod(..),ModEntRel)
 %%]
 
-%%[8 export(emptyMod)
+%%[12 export(emptyMod)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Imp/Exp entity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[12
 data ModEnt
   = ModEntVal   { mentName :: HsName }
   | ModEntType  { mentName :: HsName }
@@ -46,7 +46,7 @@ mentOwns (ModEntClass _ s) = s
 mentOwns _                 = Set.empty
 %%]
 
-%%[8
+%%[12
 instance PP ModEnt where
   pp e = pp (mentName e)
 %%]
@@ -55,7 +55,7 @@ instance PP ModEnt where
 %%% Imp/Exp's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[12
 data ModExp
   = ModExpEnt ModEntSpec
   | ModExpMod HsName
@@ -81,7 +81,7 @@ data ModImp
 %%% Module
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[12
 data Mod
   = Mod
       { modName     :: HsName
@@ -97,7 +97,7 @@ emptyMod = Mod hsnUnknown Nothing [] Rel.empty
 %%% 5.1 Importing or exporting an entity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[12
 modEntSpec :: Bool -> ModEntRel -> ModEntSpec -> ModEntRel
 modEntSpec isHiding rel (ModEntSpec x subspec)
   = Rel.unions [mSpec,mSub]
@@ -117,7 +117,7 @@ modEntSpec isHiding rel (ModEntSpec x subspec)
 %%% 5.2 Export relations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[12
 modExports :: Mod -> ModEntRel -> ModEntRel
 modExports mod inscp
   = case modExpL mod of
@@ -126,7 +126,7 @@ modExports mod inscp
               where exps = modExpListEntry inscp `map` es
 %%]
 
-%%[8
+%%[12
 modExpListEntry :: ModEntRel -> ModExp -> ModEntRel
 modExpListEntry inscp (ModExpEnt it)
   = modEntSpec False inscp it
@@ -139,7 +139,7 @@ modExpListEntry inscp (ModExpMod m)
 %%% 5.3 In-scope relations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[12
 modInscope :: Mod -> (HsName -> ModEntRel) -> ModEntRel
 modInscope m expsOf
   = Rel.unions [imports,locals]
@@ -151,7 +151,7 @@ modInscope m expsOf
         imports = Rel.unions $ map (modImp expsOf) (modImpL m)
 %%]
 
-%%[8
+%%[12
 modImp :: (HsName -> ModEntRel) -> ModImp -> ModEntRel
 modImp expsOf imp
   | mimpQualified imp = qs
@@ -170,7 +170,7 @@ modImp expsOf imp
 %%% 5.4 Recursive modules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[12
 modInsOuts :: (HsName -> ModEntRel) -> [Mod] -> [(ModEntRel,ModEntRel)]
 modInsOuts otherExps mods
   = inscps `zip` exps
@@ -183,7 +183,7 @@ modInsOuts otherExps mods
         modIxs       = map modName mods `zip` [0..]
 %%]
 
-%%[8
+%%[12
 lfpAfter :: Eq x => (x -> x) -> x -> x
 lfpAfter f x
   = if fx == x then fx else lfpAfter f fx
@@ -194,7 +194,7 @@ lfpAfter f x
 %%% 6 Error detection
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[12
 checkMod :: (HsName -> Maybe ModEntRel) -> ModEntRel -> Mod -> [Err]
 checkMod expsOf inscp mod
   = checkAmbigExps modExports
@@ -207,7 +207,7 @@ checkMod expsOf inscp mod
         missingModules  = nub [ mimpSource imp | (imp,Nothing) <- impSources ]
 %%]
 
-%%[8
+%%[12
 checkAmbigExps :: ModEntRel -> [Err]
 checkAmbigExps exps
   = concatMap isAmbig (Set.toList (Rel.dom exps))
@@ -217,7 +217,7 @@ checkAmbigExps exps
         ambig n _            = []
 %%]
 
-%%[8
+%%[12
 checkEntSpec :: Bool -> (HsName -> Err) -> (HsName -> HsName -> Err) -> ModEntSpec -> ModEntRel -> [Err]
 checkEntSpec isHiding errUndef errUndefSub (ModEntSpec x subspec) rel
   = case xents of
@@ -234,7 +234,7 @@ checkEntSpec isHiding errUndef errUndefSub (ModEntSpec x subspec) rel
           | otherwise                     = not . mentIsCon
 %%]
 
-%%[8
+%%[12
 checkExpSpec :: ModEntRel -> Mod -> [Err]
 checkExpSpec inscp mod
   = case modExpL mod of
@@ -249,7 +249,7 @@ checkExpSpec inscp mod
         err2 e x = mkErr_NamesNotIntrod ("subexport of export " ++ show e) [x]
 %%]
 
-%%[8
+%%[12
 checkImp :: ModEntRel -> ModImp -> [Err]
 checkImp exps imp
   = concatMap chk (mimpImpL imp)

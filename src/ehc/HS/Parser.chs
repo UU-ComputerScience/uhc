@@ -104,7 +104,7 @@ pModule
   =   (\b -> Module_Module emptyRange Nothing b) <$> pBody
   <|> (\t m b -> Module_Module (mkRange1 t) (Just $ mkQName $ m) b) <$> pMODULE <*> modid <* pWHERE <*> pBody
 %%]
-%%[8.pModule -1.pModule
+%%[12.pModule -1.pModule
 pModule
   =   (\b -> Module_Module emptyRange Nothing Nothing b) <$> pBody
   <|> (\t m e b -> Module_Module (mkRange1 t) (Just $ mkQName $ m) e b) <$> pMODULE <*> modid <*> pMaybeExports <* pWHERE <*> pBody
@@ -116,7 +116,7 @@ pBody
   =   Body_Body emptyRange <$> pDeclarations1' pTopDeclaration
   <|> pSucceed (Body_Body emptyRange [])
 %%]
-%%[8 -1.pBody
+%%[12 -1.pBody
 pBody :: HSParser Body
 pBody
   =   (\ids -> let (i,d) = foldr cmbid ([],[]) ids in Body_Body emptyRange i d)
@@ -130,7 +130,7 @@ pBody
 %%% Export, import
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[12
 pImportExport :: (Range -> Name -> ie,Range -> Name -> MaybeNames -> ie,Range -> Name -> ie) -> HSParser ie
 pImportExport (sem_Var,sem_tOrC,sem_tOrC_complete)
   =   mkRngNm sem_Var <$> qvar
@@ -143,7 +143,7 @@ pImportExport (sem_Var,sem_tOrC,sem_tOrC_complete)
            )
 %%]
 
-%%[8
+%%[12
 pExport :: HSParser Export
 pExport
   =   (\t m -> Export_Module (mkRange1 t) (mkQName m)) <$> pMODULE <*> modid
@@ -153,7 +153,7 @@ pMaybeExports :: HSParser MaybeExports
 pMaybeExports = Just <$> pParens (pListSep pCOMMA pExport) <|> pSucceed Nothing         
 %%]
 
-%%[8
+%%[12
 pImport :: HSParser Import
 pImport
   =   pImportExport (Import_Variable,Import_TypeOrClass,Import_TypeOrClassComplete)
@@ -673,7 +673,7 @@ pExpressionList
         one  r h = Expression_List r [h]
         pQualifier :: HSParser Qualifier
         pQualifier
-          =   Qualifier_Guard emptyRange <$> pExpression
+          =   Qualifier_Guard emptyRange <$> pExpressionNoLet
           <|> (Qualifier_Let . mkRange1) <$> pLET <*> pDeclarations
           <|> Qualifier_Generator emptyRange <$> pPattern <* pLARROW <*> pExpression
 %%]
@@ -691,7 +691,7 @@ pExpressionDo
   = (Expression_Do . mkRange1) <$> pDO <*> pBlock1 pOCURLY pSEMI pCCURLY pStatement
   where pStatement :: HSParser Statement
         pStatement
-          =   Statement_Expression emptyRange <$> pExpression
+          =   Statement_Expression emptyRange <$> pExpressionNoLet
           <|> (\p t e -> Statement_Generator (mkRange1 t) p e) <$> pPattern <*> pLARROW <*> pExpression
           <|> (Statement_Let . mkRange1) <$> pLET <*> pDeclarations
 %%]
@@ -755,18 +755,35 @@ pOpm = mkRngNm' Expression_Variable <$> qvaropm <|> mkRngNm' Expression_Construc
 %%]
 
 %%[1
-pExpression :: HSParser Expression
-pExpression
+pExpression' :: HSParser (Expression -> Expression) -> HSParser Expression
+pExpression' pExprPre
   = pE <??> ((\c t e -> Expression_Typed (mkRange1 c) e t) <$> pDCOLON <*> pType)
-  where pE =   pExpressionPrefix <*> pE
+  where pE =   pExprPre <*> pE
            <|> pExpressionOp
 %%]
 
+%%[1
+pExpression :: HSParser Expression
+pExpression
+  = pExpression' pExpressionPrefix
+%%]
+
+%%[1
+pExpressionNoLet :: HSParser Expression
+pExpressionNoLet
+  = pExpression' pExpressionNoLetPrefix
+%%]
+
 %%[1.pExprPrefix
-pExpressionPrefix :: HSParser (Expression -> Expression)
-pExpressionPrefix
+pExpressionLetPrefix :: HSParser (Expression -> Expression)
+pExpressionLetPrefix
   =   (Expression_Let . mkRange1) <$> pLET <*> pDeclarations <* pIN
-  <|> (Expression_Negate . mkRange1) <$> pMINUS
+%%]
+
+%%[1.pExprPrefix
+pExpressionNoLetPrefix :: HSParser (Expression -> Expression)
+pExpressionNoLetPrefix
+  =   (Expression_Negate . mkRange1) <$> pMINUS
 %%]
 %%[5.pExprPrefix
   <|> (Expression_If . mkRange1) <$> pIF <*> pExpression <* pTHEN <*> pExpression <* pELSE
@@ -788,6 +805,13 @@ pExpressionPrefix
 %%[9
         pContextedPattern = (\p c r -> ContextedPattern_Contexted r p c) <$> pPattern <* pLTCOLON <*> pContextItem
         pContextedPattern :: HSParser (Range -> ContextedPattern)
+%%]
+
+%%[1.pExprPrefix
+pExpressionPrefix :: HSParser (Expression -> Expression)
+pExpressionPrefix
+  =   pExpressionLetPrefix
+  <|> pExpressionNoLetPrefix
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -941,11 +965,11 @@ commas =  genTokMap (\s -> strProd (length s + 1)) <$> pFoldr (tokConcat,tokEmpt
 modid :: HSParser Token
 modid =   pCONID
 %%]
-%%[8
+%%[12
       <|> pQCONID
 %%]
 
-%%[8
+%%[12
 qcnames :: HSParser [Token] 
 qcnames =  pListSep pCOMMA qcname
 
@@ -988,7 +1012,7 @@ qvarsym_forpar :: HSParser Token
 qvarsym_forpar
   =   varsym
 %%]
-%%[8
+%%[12
   <|> qvarsym1
 %%]
 
@@ -1032,7 +1056,7 @@ qconop =  qconsym
 qvarsym :: HSParser Token 
 qvarsym =  varsym
 %%]
-%%[8
+%%[12
        <|> qvarsym1
 %%]
 
@@ -1040,11 +1064,11 @@ qvarsym =  varsym
 qvarsym_no_minus :: HSParser Token
 qvarsym_no_minus =  varsym_no_minus
 %%]
-%%[8
+%%[12
                 <|> qvarsym1
 %%]
 
-%%[8
+%%[12
 qvarsym1 :: HSParser Token
 qvarsym1 = pQVARSYM 
 %%]
@@ -1072,7 +1096,7 @@ special_sym
 qconid :: HSParser Token    -- Qualified or unqualifiedb
 qconid =  conid
 %%]
-%%[8
+%%[12
       <|> pQCONID
 %%]
 
@@ -1083,7 +1107,7 @@ conid   =  pCONID
 qconsym :: HSParser Token   -- Qualified or unqualified
 qconsym = consym
 %%]
-%%[8
+%%[12
        <|> pQCONSYM
 %%]
 
@@ -1119,7 +1143,7 @@ qopm    = qvaropm <|> qconop
 qvarid :: HSParser Token
 qvarid = varid
 %%]
-%%[8
+%%[12
      <|> pQVARID
 %%]
 
@@ -1181,12 +1205,14 @@ tyvar   =  pVARID
 -- except 'unsafe' and 'forall' whose treatment differs depending on context
 special_id_no_callconv :: HSParser Token 
 special_id_no_callconv
-  =   pAS      
+  =   pLABEL   
+  <|> pDYNAMIC
+  <|> pEXPORT
+%%[[12
+  <|> pAS      
   <|> pQUALIFIED   
   <|> pHIDING
-  <|> pEXPORT  
-  <|> pLABEL   
-  <|> pDYNAMIC
+%%]
 
 special_id :: HSParser Token 
 special_id
@@ -1225,7 +1251,7 @@ oqtycon =  qtycon
 qtycon :: HSParser Token    -- Qualified or unqualified
 qtycon =  tycon
 %%]
-%%[8
+%%[12
       <|> pQCONID
 %%]
 
@@ -1233,7 +1259,7 @@ qtycon =  tycon
 qtyconsym :: HSParser Token
 qtyconsym =  tyconsym
 %%]
-%%[8
+%%[12
          <|> pQCONSYM
 %%]
 
@@ -1242,11 +1268,13 @@ tyconsym :: HSParser Token
 tyconsym = pCONSYM          
 %%]
 
-%%[8
+%%[12
 qtyconop :: HSParser Token  -- Qualified or unqualified
 qtyconop = qtyconsym
        <|> pBACKQUOTE *> qtycon <* pBACKQUOTE
+%%]
 
+%%[8
 tyconop :: HSParser Token   -- Unqualified
 tyconop = tyconsym  
        <|> pBACKQUOTE *> tycon <* pBACKQUOTE

@@ -426,6 +426,7 @@ DATA Decl
                     funcDeps        : FuncDeps
                     decls           : Decls
   | Instance        mbNmElim        : {Maybe (HsName,Bool)}
+                    instVariant     : InstVariant
                     tyPrExpr        : TyExpr
                     decls           : Decls
   | InstanceIntro   expr            : Expr

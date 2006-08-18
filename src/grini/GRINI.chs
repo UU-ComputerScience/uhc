@@ -10,7 +10,7 @@
 %%[1 module Main import(System, System.Console.GetOpt, IO)
 %%]
 
-%%[8 import(UU.Parsing, UU.Pretty, {%{EH}Base.Common},GRINICommon,{%{EH}Scanner.Scanner})
+%%[8 import(UU.Parsing, UU.Pretty, EH.Util.PPUtils,{%{EH}Base.Common},GRINICommon,{%{EH}Scanner.Scanner})
 %%]
 
 %%[8 import (EH.Util.FPath,qualified Data.Map as Map,Data.Maybe,Data.List,Directory)

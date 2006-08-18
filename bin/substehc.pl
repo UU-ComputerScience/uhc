@@ -14,11 +14,11 @@ sub ehc {
    } elsif ( $opt eq "srcfile" ) {
      $repl = `cat '$src'` ;
    } elsif ( $opt eq "ppinline" ) {
-     $repl = `echo '$src' | $pre$ehcVersion/ehc --pretty=pp` ;
+     $repl = `echo '$src' | $pre$ehcVersion/ehc --pretty=eh` ;
    } elsif ( $opt eq "astinline" ) {
      $repl = `echo '$src' | $pre$ehcVersion/ehc --pretty=ast` ;
    } elsif ( $opt eq "ppfile" ) {
-     $repl = `$pre$ehcVersion/ehc '$src' --pretty=pp` ;
+     $repl = `$pre$ehcVersion/ehc '$src' --pretty=eh` ;
    } elsif ( $opt eq "astfile" ) {
      $repl = `$pre$ehcVersion/ehc '$src' --pretty=ast` ;
    } elsif ( $opt eq "grinfile" ) {

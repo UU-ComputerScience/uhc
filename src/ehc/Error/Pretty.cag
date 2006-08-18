@@ -189,6 +189,9 @@ SEM Err
   | TyHasFreeTVars      lhs     .  pp   =   ppMsgErr    "Type has free type vars (not allowed)"
                                                         (    "type:" >#< pp @ty
                                                         )
+  | DeclsNotAllowed     lhs     .  pp   =   ppMsgErr    ("Declarations are not allowed " ++ @inside)
+                                                        (vlist [ k >|< ":" >#< ppCommas ns | (k,ns) <- @decls ]
+                                                        )
 %%]
 
 

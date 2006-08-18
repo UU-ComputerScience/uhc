@@ -37,4 +37,8 @@ SEM Declaration
 SEM Declaration
   | Instance
   		(context.gUniq,loc.lUniq)		=   mkNewLevUID @lhs.gUniq
+  | InstanceUseImplicitly
+  		(expression.gUniq,loc.lUniq)	=   mkNewLevUID @lhs.gUniq
+  | Default
+  		(types.gUniq,loc.lUniq)			=   mkNewLevUID @lhs.gUniq
 %%]

@@ -368,7 +368,7 @@ SEM AGItf
   | AGItf       loc         .   tyGam               =   initTyGam
 %%]
 
-%%[8 -1.initTyGam
+%%[12 -1.initTyGam
 ATTR AGItf [ tyGam: TyGam | | ]
 %%]
 
@@ -390,7 +390,7 @@ SEM AGItf
   | AGItf       loc         .   kiGam               =   initKiGam
 %%]
 
-%%[8 -6.initKiGam
+%%[12 -6.initKiGam
 ATTR AGItf [ kiGam: KiGam | | ]
 %%]
 

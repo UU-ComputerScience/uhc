@@ -51,6 +51,9 @@ ehScanOpts
 %%[11
                 ++ tokKeywStrsEH11
 %%]
+%%[12
+                ++ tokKeywStrsEH12
+%%]
 %%[1
         ,   scoKeywordsOps      =
                 tokOpStrsEH1
@@ -144,6 +147,9 @@ hsScanOpts
 %%[11
                 ++ tokKeywStrsHS11
 %%]
+%%[12
+                ++ tokKeywStrsHS12
+%%]
 %%[1
         ,   scoKeywordsOps      =
                 scoKeywordsOps ehScanOpts
@@ -236,7 +242,7 @@ pKeyw k                 =   pKeyTk (show k)
 pStringTk, pCharTk,
   pInteger8Tk, pInteger10Tk, pInteger16Tk, pFractionTk,
 %%]
-%%[8
+%%[12
   pQVaridTk, pQConidTk,
   pQVarsymTk, pQConsymTk,
 %%]
@@ -262,7 +268,7 @@ pTextnmTk     =   pCostValToken' 7 TkTextnm    "<name>"
 pTextlnTk     =   pCostValToken' 7 TkTextln    "<line>"     
 pIntegerTk    =   pInteger10Tk
 %%]
-%%[8
+%%[12
 pQVaridTk     =   pCostValToken' 7 TkQVarid     "<identifier>" 
 pQConidTk     =   pCostValToken' 7 TkQConid     "<Identifier>" 
 pQConsymTk    =   pCostValToken' 7 TkQConOp     "<conoperator>"
@@ -284,7 +290,7 @@ pVARID'          = pVaridTk'
 pVARSYM          = pVarsymTk
 %%]
 
-%%[8
+%%[12
 pQCONID, pQCONSYM, pQVARID, pQVARSYM :: IsParser p Token => p Token
 
 pQCONID          = pQConidTk
@@ -494,12 +500,9 @@ pLABEL          ,
     pSTDCALL    ,
     pDYNAMIC    ,
     pFOREIGN    ,
-    pIMPORT     ,
     pJAZY       ,
-    pEXPORT     ,
-    pQUALIFIED  ,
-    pAS         ,
-    pHIDING     
+    pIMPORT     ,
+    pEXPORT
   :: IsParser p Token => p Token
 %%]
 
@@ -512,15 +515,12 @@ pCCALL           = pKeyTk "ccallconv"
 pSTDCALL         = pKeyTk "stdcallconv"
 pDYNAMIC         = pKeyTk "dynamic"
 pFOREIGN         = pKeyTk "foreign"
-pIMPORT          = pKeyTk "import"
 pJAZY            = pKeyTk "jazy"
+pIMPORT          = pKeyTk "import"
 pEXPORT          = pKeyTk "export"
-pQUALIFIED       = pKeyTk "qualified"
-pAS              = pKeyTk "as"
-pHIDING          = pKeyTk "hiding"
 
 tokKeywStrsEH8 = [ "foreign", "import", "jazy" ]
-tokKeywStrsHS8 = [ "export", "qualified", "as", "hiding", "label", "safe", "unsafe", "threadsafe", "ccallconv", "stdcallconv", "dynamic" ]
+tokKeywStrsHS8 = [ "export", "label", "safe", "unsafe", "threadsafe", "ccallconv", "stdcallconv", "dynamic" ]
 %%]
 
 %%[9
@@ -575,6 +575,22 @@ tokKeywStrsEH11 = [  ]
 tokKeywStrsHS11 = [ "type" ]
 tokOpStrsEH11   = [  ]
 tokOpStrsHS11   = [  ]
+%%]
+
+%%[12
+pQUALIFIED      ,
+    pAS         ,
+    pHIDING     
+  :: IsParser p Token => p Token
+%%]
+
+%%[12
+pQUALIFIED       = pKeyTk "qualified"
+pAS              = pKeyTk "as"
+pHIDING          = pKeyTk "hiding"
+
+tokKeywStrsEH12 = [  ]
+tokKeywStrsHS12 = [ "qualified", "as", "hiding" ]
 %%]
 
 %%[13

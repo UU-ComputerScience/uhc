@@ -23,10 +23,13 @@
 %%[4 hs import({%{EH}Ty}(TyQu(..)))
 %%]
 
-%%[8 hs import(qualified EH.Util.Rel as Rel,qualified Data.Set as Set,{%{EH}Module})
+%%[8 hs import(qualified Data.Set as Set)
 %%]
 
 %%[8 hs export(tyGam2IdDefOccGam,kiGam2IdDefOccGam)
+%%]
+
+%%[12 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
 %%]
 
 %%[99 hs import(Data.Ratio,{%{EH}Scanner.Scanner(getRational)})
@@ -38,6 +41,9 @@
 
 %%[1 import({HS/AbsSyn},{HS/EH},{HS/Fixity},{HS/Pretty},{HS/GatherError},{HS/NameAnalysis},{HS/Module},{HS/Uniq})
 WRAPPER AGItf
+%%]
+
+%%[9 import({HS/ExtraChecks})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -146,6 +152,10 @@ SEM Pattern
 SEM Declaration
     | Instance
         loc         .   instancename=   maybe (mkHNm @lUniq) id @maybeinstancename
+    | InstanceUseImplicitly
+        loc         .   instancename=   mkHNm @lUniq
+    | Default
+        loc         .   defaultname =   mkHNm @lUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

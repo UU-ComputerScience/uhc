@@ -6,7 +6,7 @@
 %%% Import
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[12
 ATTR Import [ | | modEntSpec: ModEntSpec ]
 
 SEM Import
@@ -20,7 +20,7 @@ SEM Import
         lhs             .   modEntSpec  =   ModEntSpec @name (Just ModEntSubAll)
 %%]
 
-%%[8
+%%[12
 ATTR Imports AllImportSpecification [ | | modEntSpecL: {[ModEntSpec]} ]
 
 SEM Imports
@@ -34,7 +34,7 @@ SEM MaybeImportSpecification
         lhs             .   modEntSpecL =   []
 %%]
 
-%%[8
+%%[12
 ATTR AllImportSpecification [ | | isHiding: Bool ]
 
 SEM ImportSpecification
@@ -46,7 +46,7 @@ SEM MaybeImportSpecification
         lhs             .   isHiding    =   True
 %%]
 
-%%[8
+%%[12
 ATTR AllImportDeclaration Body [ | | modImpL USE {++} {[]}: {[ModImp]} ]
 
 SEM ImportDeclaration
@@ -61,7 +61,7 @@ SEM ImportDeclaration
 %%% Export
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[12
 ATTR Export [ | | modExp: ModExp ]
 
 SEM Export
@@ -77,7 +77,7 @@ SEM Export
         lhs             .   modExp      =   ModExpMod @name
 %%]
 
-%%[8
+%%[12
 ATTR Exports [ | | modExpL: {[ModExp]} ]
 
 SEM Exports
@@ -88,7 +88,7 @@ SEM Exports
 %%]
 
 
-%%[8
+%%[12
 ATTR MaybeExports [ | | modExpsMb: {Maybe [ModExp]} ]
 
 SEM MaybeExports
@@ -102,7 +102,7 @@ SEM MaybeExports
 %%% Definitions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[12
 ATTR Declaration Declarations Body [ | | modDefsRel USE {`Rel.union`} {Rel.empty}: ModEntRel ]
 
 SEM Declaration
@@ -117,9 +117,6 @@ SEM Body
         lhs             .   modDefsRel  =   @declarations.modDefsRel
                                             `Rel.union` 
                                             (Rel.fromList [ (n,ModEntVal n) | (n,_) <- idDefOccGamByKind IdOcc_Val @declarations.idOccDefGam ])
-%%]
-
-%%[9
 SEM Declaration
     | Class
         lhs             .   modDefsRel  =   Rel.singleton
@@ -132,7 +129,7 @@ SEM Declaration
 %%% Module
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[12
 ATTR Module AGItf [ | | mod: Mod ]
 
 SEM Module

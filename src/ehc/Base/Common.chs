@@ -16,6 +16,9 @@
 %%[1 export(hsnNegate,hsnError)
 %%]
 
+%%[1 export(IdOccKind(..),IdOcc(..))
+%%]
+
 %%[1 export(AssocL, ppAssocL)
 %%]
 
@@ -97,9 +100,6 @@
 %%[8 export(hsnUndefined,hsnPrimAddInt,hsnMain)
 %%]
 
-%%[8 export(hsnQualified,hsnQualifier,hsnPrefixQual,hsnSetQual,hsnIsQual)
-%%]
-
 %%[88 export(sortByOn,sortOn,groupOn,groupSortOn)
 %%]
 
@@ -127,16 +127,22 @@
 %%[9 export(ppListV,ppAssocLV)
 %%]
 
-%%[9 hs export(PredOccId(..),mkPrId,poiHNm)
+%%[9 export(PredOccId(..),mkPrId,poiHNm)
 %%]
 
-%%[9 hs export(PrfCtxtId)
+%%[9 export(PrfCtxtId)
 %%]
 
-%%[9 hs export(snd3,thd)
+%%[9 export(snd3,thd)
+%%]
+
+%%[9 export(InstVariant(..))
 %%]
 
 %%[10 export(hsnDynVar,hsnConcat)
+%%]
+
+%%[12 export(hsnQualified,hsnQualifier,hsnPrefixQual,hsnSetQual,hsnIsQual)
 %%]
 
 %%[99 export(hsnInteger,hsnDouble)
@@ -174,7 +180,7 @@ data HsName
   =   HNm String
   |   HNPos Int
 %%]
-%%[8
+%%[12
   |   HNmQ [HsName]
 %%]
 %%[7
@@ -186,16 +192,15 @@ instance Show HsName where
   show (HNm s    )  = s
   show (HNPos p  )  = show p
 %%]
-%%[8
+%%[12
   show (HNmQ ns  )  = concat $ intersperse "." $ map show ns
 %%]
 
 %%[8
-%%]
-
-%%[8
 hsnToList :: HsName -> [HsName]
+%%[[12
 hsnToList (HNmQ ns) = ns
+%%]
 hsnToList n         = [n]
 
 hsnInitLast :: HsName -> ([HsName],HsName)
@@ -236,7 +241,7 @@ hsnConcat       h1    h2            =   HNm (show h1 ++ show h2)
 %%% HsName & module related
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[12
 hsnQualified :: HsName -> HsName
 hsnQualified = snd . hsnInitLast
 
@@ -294,7 +299,9 @@ instance HSNM ([HsName],HsName) where
 instance HSNM [HsName] where
   mkHNm [n] = n
   mkHNm []  = HNm "" -- ????, or empty alternative of HsName
+%%[[12
   mkHNm ns  = HNmQ ns
+%%]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1059,6 +1066,21 @@ instance PP Fixity where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Eq,Ord for Pos
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+instance Eq Pos where
+  p1 == p2 = line p1 == line p2 && column p2 == column p2
+
+instance Ord Pos where
+  compare p1 p2
+    = case compare (line p1) (line p2) of
+        EQ -> compare (column p1) (column p2)
+        c  -> c
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Range
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1095,7 +1117,77 @@ instance PP Range where
 %%]
 
 %%[1
+rngAdd :: Range -> Range -> Range
+rngAdd r1 r2
+  = case (r1,r2) of
+      (Range_Range l1 h1,Range_Range l2 h2)
+        -> Range_Range (l1 `min` l2) (h1 `max` h2)
+      (Range_Range _ _,_)
+        -> r1
+      (_,Range_Range _ _)
+        -> r2
+      _ -> Range_Unknown
+%%]
+
+%%[1
 rngLift :: Range -> v -> v
 rngLift r v = v
 %%]
 rngLift :: Range -> (Range -> v) -> v
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instance variant
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+data InstVariant
+  = InstNormal | InstDefault | InstDeriving
+  deriving (Eq,Ord,Show)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Identifier occurrences
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+data IdOccKind
+  = IdOcc_Val
+  | IdOcc_Pat
+  | IdOcc_Type
+%%[[6
+  | IdOcc_Kind
+%%]
+%%[[9
+  | IdOcc_Class
+  | IdOcc_Inst
+  | IdOcc_Dflt
+%%]
+  | IdOcc_Any 
+  deriving (Show,Eq,Ord)
+%%]
+
+%%[1 hs
+instance PP IdOccKind where
+  pp IdOcc_Val      = pp "Value"
+  pp IdOcc_Pat      = pp "Pat"
+  pp IdOcc_Type     = pp "Type"
+%%[[6
+  pp IdOcc_Kind     = pp "Kind"
+%%]
+%%[[9
+  pp IdOcc_Class    = pp "Class"
+  pp IdOcc_Inst     = pp "Instance"
+  pp IdOcc_Dflt     = pp "Default"
+%%]
+  pp IdOcc_Any      = pp "Any"
+%%]
+
+%%[1 hs
+data IdOcc
+  = IdOcc { ioccNm :: HsName, ioccKind :: IdOccKind }
+  deriving (Show,Eq,Ord)
+
+instance PP IdOcc where
+  pp (IdOcc n k) = n >|< "/" >|< k
+%%]
+

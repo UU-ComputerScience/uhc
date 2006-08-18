@@ -1,6 +1,30 @@
 .SUFFIXES:
 .SUFFIXES: .pdf .tex .bib .html .lhs .sty .lag .cag .chs
 
+# all ehc variants
+# 1 : explicitly typed lambda calculus
+# 2 : + type inference (implicit typing)
+# 3 : + polymorphism
+# 4 : + quantifiers everywhere, existentials
+# 5 : + datatypes
+# 6 : + kinds (+inference)
+# 7 : + fixed size records
+# 8 : + code gen
+# 9 : + (class) predicates + class system
+# 10: + extensible records (lack predicates)
+# 11: + type synonyms
+# 12: + module system
+# 99: + the rest to make uhc
+
+# 50: + GADT experiment
+# 4_2: + 2 pass type inference, quantifier propagation experiment
+EHC_UHC_VARIANT							:= 99
+EHC_PUB_VARIANTS						:= 1 2 3 4 5 6 7 8 9 10 11 12
+EHC_VARIANTS							:= $(EHC_PUB_VARIANTS) 50 $(EHC_UHC_VARIANT) 4_2 6_4
+
+GRIN_PUB_VARIANTS						:= 8 9 10 11 12
+GRIN_VARIANTS							:= $(GRIN_PUB_VARIANTS) $(EHC_UHC_VARIANT)
+
 # location for binaries
 BIN_PREFIX			:= $(TOP_PREFIX)bin/
 BINABS_PREFIX		:= $(TOPABS_PREFIX)bin/
@@ -51,15 +75,12 @@ LHS2TEX_OPTS_NEWC	:= $(LHS2TEX_OPTS_DFLT) --newcode
 RULER2_OPTS_DFLT	:= $(RULER2_OPTS_VERSION)
 RULER2_OPTS			:= $(RULER2_OPTS_DFLT)
 
-# order to shuffle
+# order to shuffle (see ehc/src/files1.mk for a complete list)
 # 4_99: interim for stuff from 4, needed for 4_2, because of ruler generated material uptil 4_2
-# 4_2: Quantifier propagation experiment
-# 50: GADT experiment
-# 99: the 'final' version
-EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 99, 4_99 < 4_2, 6 < 6_4, 10 < 50
+EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < $(EHC_UHC_VARIANT), 4_99 < 4_2, 6 < 6_4, 10 < 50
 
 # target suffix for core
-CORE_TARG_SUFFIX	:= grin
+CORE_TARG_SUFFIX	:= grin2
 
 # subst's
 SUBST_BAR_IN_TT		:= sed -e '/begin{TT[^}]*}/,/end{TT[^}]*}/s/|/||/g'
