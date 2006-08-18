@@ -144,7 +144,7 @@ defaultEHCOpts
 %%]
 
 %%[1.ehcCmdLineOptsA
-ehcCmdLineOpts  
+ehcCmdLineOpts
   =  [  Option "p"  ["pretty"]        (OptArg oPretty "hs|eh|grin|ast|-")
           "show pretty printed EH/Grin source or EH abstract syntax tree, default=eh, -=off, (hs only for .hs files)"
      ,  Option "d"  ["debug"]         (NoArg oDebug)
@@ -157,7 +157,7 @@ ehcCmdLineOpts
           "print version info"
 %%]
 %%[8.ehcCmdLineOptsA
-     ,  Option "c"  ["code"]          (OptArg oCode "eh|core|java|grin|cmm|llc|-")
+     ,  Option "c"  ["code"]          (OptArg oCode "eh|core|java|grin|cmm|c|-")
           "write code to file, default=core"
      ,  Option ""   ["gen-trace"]     (NoArg oGenTrace)
           "emit trace info into cmm code"
@@ -212,7 +212,7 @@ ehcCmdLineOpts
                                 Just "java"  -> o { ehcOptEmitJava     = True      }
                                 Just "grin"  -> o { ehcOptEmitGrin     = True      }
                                 Just "cmm"   -> o { ehcOptEmitCmm      = True      }
-                                Just "llc"   -> o { ehcOptEmitLlc      = True      }
+                                Just "c"     -> o { ehcOptEmitLlc      = True      }
                                 _            -> o
          oTrf        s   o =  o { ehcOptTrf           = opt s   }
                            where  opt "" =  []

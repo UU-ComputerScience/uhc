@@ -32,24 +32,25 @@ int main(int argc, char** argv)
     fun_main();
 
 
-    int i;
 
+/*
+    int i;
     for (i=0; i<10; i++)
     {
-    	printf("RP[%d] = %d\n", i, RP[i] );
+        printf("RP[%d] = %d\n", i, RP[i] );
     }
     for (i=0; i<10; i++)
     {
-    	printf("%d: St[%d] = %d\n", Stack+i, i, Stack[i] );
+        printf("%d: St[%d] = %d\n", Stack+i, i, Stack[i] );
     }
     for (i=0; i<HP-Heap; i++)
     {
-    	printf("%d: Heap[%d] = %d\n", Heap+i, i, Heap[i] );
+        printf("%d: Heap[%d] = %d\n", Heap+i, i, Heap[i] );
     }
+*/
 
-    printf("result SP-offset=%d HP-offset=%d tag=%d arity=%d value=%d\n", SP-Stack, HP-Heap, RP[0], RP[1], RP[2] );
-    /* printf("result SP-offset=%d HP-offset=%d tag=%d value=%d\n", SP-Stack, HP-Heap, RP[0], RP[1] ); */
-
+/*    printf("result SP-offset=%d HP-offset=%d tag=%d arity=%d value=%d\n", SP-Stack, HP-Heap, RP[0], RP[1], RP[2] ); */
+     printf("result SP-offset=%d HP-offset=%d tag=%d value=%d\n", SP-Stack, HP-Heap, RP[0], RP[1] );
 
     return 0;
 }
@@ -60,32 +61,33 @@ GrWord heapalloc(int n)
     HP += n;
     if (HP>=HeapLimit)
     {
-    	printf("heap overflow\n");
-    	exit(1);
+        printf("heap overflow\n");
+        exit(1);
     }
 
     return res;
 }
 
 int primAddInt(int x, int y)
-{	return x+y;
+{   return x+y;
 }
 
 int primSubInt(int x, int y)
-{	return x-y;
+{   return x-y;
 }
 int primMulInt(int x, int y)
-{	return x*y;
+{   return x*y;
 }
 int primDivInt(int x, int y)
-{	return x/y;
+{   return x/y;
 }
 int primModInt(int x, int y)
-{	return x%y;
+{   return x%y;
 }
 
 
 /* In the following 3 functions, only the constructor of Bool is returned.
+
    The arity of the constructor should also be returned, but we can return only one value.
    So, the arity will obtain a random value.
    Luckily, the arity is never used anywhere.
@@ -93,24 +95,24 @@ int primModInt(int x, int y)
 */
 
 int primGtInt(int x, int y)
-{	if (x>y)
-	    return global_True[0];
-	return global_False[0];
+{   if (x>y)
+        return global_True[0];
+    return global_False[0];
 }
 int primLtInt(int x, int y)
-{	if (x<y)
-	    return global_True[0];
-	return global_False[0];
+{   if (x<y)
+        return global_True[0];
+    return global_False[0];
 }
 int primEqInt(int x, int y)
-{	if (x==y)
-	    return global_True[0];
-	return global_False[0];
+{   if (x==y)
+        return global_True[0];
+    return global_False[0];
 }
 
 int primUndefined()
 {
-	printf("attempt tot evaluate undefined\n");
-	exit(1);
-	return 0;
+    printf("attempt tot evaluate undefined\n");
+    exit(1);
+    return 0;
 }

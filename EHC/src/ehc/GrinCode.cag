@@ -99,7 +99,7 @@ grRecTag = GrTag_Lit GrTagRec 0 hsnRec
 %%[8 hs
 
 grinStoreArity :: Bool
-grinStoreArity = True
+grinStoreArity = False
 
 mkGrTagNode :: GrTagCateg -> Int -> HsName -> GrValL -> GrVal
 mkGrTagNode c t n vL

@@ -1,4 +1,3 @@
-% $Id$
 %%[0
 %include lhs2TeX.fmt
 %include afp.fmt
@@ -67,7 +66,7 @@ data AbstractValue
   | AV_Nodes (Map.Map GrTag [AbstractValue]) -- TODO: use Data.Map GrTag [AbstractValue]
   | AV_Tags  (Set.Set GrTag) -- TODO: use Data.Set GrTag
   | AV_Error !String
-	deriving (Eq, Ord)
+    deriving (Eq, Ord)
 
 instance Show AbstractValue where
     show av = case av of
@@ -108,13 +107,13 @@ data AbstractHeapElement = AbstractHeapElement
     , ahSharedSet  ::  !(Maybe AbstractValue)
     , ahMod        ::  !AbstractHeapModifier
     }
-	deriving (Eq)
+    deriving (Eq)
 
 -- TODO: which should ahSharedSet hold: <value when shared> - <value when uniq> or <value when shared>
 -- Note: ahSharedSet currently holds the former, Nothing means it the cell shared, Just means unique (and shared part is kept off the record)
 
 instance Show AbstractHeapElement where
-	show (AbstractHeapElement b s m) =    "unique = "       ++ show b
+    show (AbstractHeapElement b s m) =    "unique = "       ++ show b
                                        ++ ";\tshared = "  ++ show s
                                        ++ ";\tmod = "     ++ show m
 
@@ -139,10 +138,10 @@ data AbstractEnvElement = AbstractEnvElement
     , aeIsShared  :: !Bool
     , aeMod       :: !AbstractEnvModifier
     }
-	deriving (Eq)
+    deriving (Eq)
 
 instance Show AbstractEnvElement where
-	show (AbstractEnvElement b s m) =  "base = " ++ show b
+    show (AbstractEnvElement b s m) =  "base = " ++ show b
                                        ++ ";\tshared = " ++ show s
                                        ++ ";\tmod = " ++ show m
 
@@ -153,7 +152,7 @@ data AbstractEnvModifier
   | EnvApp Variable [ApplyArg] Variable
   | EnvSelect Variable GrTag Int
   | EnvTag GrTag [Maybe Variable] (Maybe Variable)
-	deriving (Show, Eq)
+    deriving (Show, Eq)
 
 type ApplyArg = Either Variable AbstractEnvModifier -- only contains the EnvTag here
 
@@ -200,13 +199,14 @@ heapChangeSet ((tag, deps), resultDep) env = do
           sharedAV    =  exceptNode `mappend` resCS
     ; return (uniqueAV, sharedAV)
     }
-	where
+    where
     throwTag      =  GrTag_Lit GrTagFun 0 (HNm "rethrow")
 --    blackholeTag  =  GrTag_Lit GrTagHole 0 (HNm "blackhole")
     getBaseSet    =  maybe (return AV_Nothing) (\v -> lookupEnv env v >>= return . aeBaseSet)
 %%]
 
 %%[8.envChangeSet
+
 envChangeSet :: AbstractEnvModifier -> AbstractEnv s -> AbstractHeap s -> AssocL GrTag (Either GrTag Int) -> ST s AbstractValue
 envChangeSet am env heap applyMap = case am of
                                         EnvSetAV    av     -> return av
@@ -219,7 +219,7 @@ envChangeSet am env heap applyMap = case am of
                                                                    }
                                         EnvSelect   v n i  -> valAbsEnv v >>= return . selectChangeSet n i
                                         EnvTag      t f r  -> tagChangeSet t f r
-	where
+    where
     --valAbsEnv :: Variable -> ST s AbstractValue
     valAbsEnv v = do
         { elem <- lookupEnv env v

@@ -605,9 +605,22 @@ SEM GrModule
   | Mod       bindL  .  allActuals   = @bindL.actualsEnv []
 
 SEM GrBind
-  | Bind      loc    .  bindActuals  = transpose [ actuals | (resVar, actuals) <- @lhs.allActuals, resVar == @resultVar ]
-                     .  fillEnvBind  = let envElem (formal, i) actuals = @lhs.setEnvVar (getNr formal) True (EnvUnion [ actual | Just actual <- actuals] (Just . @applySelect $ i))
-                                       in zipWithM_ envElem (zip @argNmL [1..]) (if null @bindActuals then replicate (length @argNmL) [] else @bindActuals)
+  | Bind      loc    .  bindActuals  = transpose [ actuals
+                                                 | (resVar, actuals) <- @lhs.allActuals
+                                                 , resVar == @resultVar
+                                                 ]
+                     .  fillEnvBind  = let envElem (formal, i) actuals
+                                            = @lhs.setEnvVar (getNr formal)
+                                                             True
+                                                             (EnvUnion [ actual | Just actual <- actuals]
+                                                                       (Just . @applySelect $ i)
+                                                             )
+                                       in zipWithM_ envElem
+                                                    (zip @argNmL [(if grinStoreArity then 1 else 0)..])
+                                                    ( if    null @bindActuals
+                                                       then replicate (length @argNmL) []
+                                                       else @bindActuals
+                                                    )
                      .  actualsEnv   = if @prune then id else @expr.actualsEnv
                      .  applySelect  = EnvSelect @lhs.tmpVar (GrTag_Var @nm)
 %%]
@@ -636,7 +649,7 @@ SEM GrGlobal
 %%[8 hs
 --revLookup :: (Eq b) => [(a,b)] -> b -> Maybe a
 revLookup l e = lookup e (map swap l)
-	where swap = uncurry (flip (,))
+    where swap = uncurry (flip (,))
 
 getCafVar m k = getNr . fromJust' ("cafVar not found " ++ show k) $ Map.lookup k m
 
