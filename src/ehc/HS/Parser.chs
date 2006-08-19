@@ -347,7 +347,7 @@ pDeclarationForeign
              <$ pEXPORT <*> callconv <*> pFSpec
          )
   where pSafety =  (Just . mkStr) <$> safety <|> pSucceed Nothing
-        pFSpec = (,,) <$> ((Just . mkStr) <$> pStringTk <|> pSucceed Nothing) <*> varid_no_foreign <* pDCOLON <*> pType
+        pFSpec = (,,) <$> ((Just . mkStr) <$> pStringTk <|> pSucceed Nothing) <*> var{-id_no_foreign-} <* pDCOLON <*> pType
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1181,7 +1181,7 @@ varid_no_unsafe
 %%[1
 varid_no_foreign :: HSParser Token
 varid_no_foreign
-  =   pVARID'
+  =   pVARID
 %%]
 %%[4
   <|> pFORALL

@@ -152,6 +152,9 @@ data IdAspect
 %%[[6
   | IdAsp_Kind_Con
 %%]
+%%[[8
+  | IdAsp_Val_FFI       {iaspDecl ::  EH.Decl                         }
+%%]
 %%[[9
   | IdAsp_Class_Class
   | IdAsp_Class_Def     {iaspDecl ::  EH.Decl                         }
@@ -187,6 +190,9 @@ instance PP IdAspect where
 %%]
 %%[[6
   pp  IdAsp_Kind_Con        = pp "CON"
+%%]
+%%[[8
+  pp (IdAsp_Val_FFI _  )    = pp "FFI"
 %%]
 %%[[9
   pp  IdAsp_Class_Class     = pp "CLS"
@@ -384,7 +390,7 @@ SEM Declaration
                                         =   tvarS2IdDefOccGam @lhs.nmLev @range @type.freeTvarS
     | ForeignImport
         loc             .   idOccDef    =   IdOcc @name IdOcc_Val
-                        .   idOccDefGam =   gamUnit @idOccDef (IdDefOcc @idOccDef IdAsp_Val_Var @lhs.nmLev @range)
+                        .   idOccDefGam =   gamUnit @idOccDef (IdDefOcc @idOccDef (IdAsp_Val_FFI @eh) @lhs.nmLev @range)
 %%]
 %%[88
     | ForeignExport -- ??
@@ -865,6 +871,10 @@ mkIdDefEH def
       IdAsp_Type_Def decl
         -> [decl]
 %%]
+%%[[8
+      IdAsp_Val_FFI decl
+        -> [decl]
+%%]
 %%[[9
       IdAsp_Class_Def decl
         -> [decl]
@@ -970,6 +980,16 @@ SEM Statement
     | Let
         loc             .   (mkSccLet,_,errReorder)
                                         =   mkIdOccSccEH @range @declarations.idOccDefGam (Just @sccOrder)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% 'main' exists?         
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+SEM Body
+    | Body
+        loc             .   mainExists  =   maybe False (const True) $ gamLookup (IdOcc hsnMain IdOcc_Val) @declarations.idOccDefGam
 %%]
 
 

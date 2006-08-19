@@ -88,11 +88,14 @@ mkCase r c as
 
 mkIf :: Range -> Expr -> Expr -> Expr -> Expr
 mkIf r c t e
-  = mkCase r
-      ( Expr_TypeAs (TyExpr_Con hsnBool) c )
-      [ (PatExpr_Con hsnTrue , t)
-      , (PatExpr_Con hsnFalse, e)
-      ]
+  = case c of
+      Expr_Con n | n == hsnTrue  -> t
+                 | n == hsnFalse -> e
+      _ -> mkCase r
+             ( Expr_TypeAs (TyExpr_Con hsnBool) c )
+             [ (PatExpr_Con hsnTrue , t)
+             , (PatExpr_Con hsnFalse, e)
+             ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

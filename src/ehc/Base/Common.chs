@@ -379,11 +379,15 @@ hsnIsList       hsn                 =   hsn == hsnList
 hsnStar                             =   HNm "*"
 %%]
 
-%%[7
 hsnORow                             =   HNm "(|"
 hsnCRow                             =   HNm "|)"
 hsnOSum                             =   HNm "(<"
 hsnCSum                             =   HNm ">)"
+%%[7
+hsnORow                             =   HNm "{|"
+hsnCRow                             =   HNm "|}"
+hsnOSum                             =   HNm "{<"
+hsnCSum                             =   HNm ">}"
 hsnORec                             =   HNm "("
 hsnCRec                             =   HNm ")"
 
@@ -411,9 +415,11 @@ hsnUndefined                        =   HNm "undefined"
 hsnPrimAddInt						=	HNm "primAddInt"
 %%]
 
-%%[9
 hsnOImpl                            =   HNm "(!"
 hsnCImpl                            =   HNm "!)"
+%%[9
+hsnOImpl                            =   HNm "{!"
+hsnCImpl                            =   HNm "!}"
 hsnPrArrow                          =   HNm "=>"
 
 hsnIsPrArrow                        ::  HsName -> Bool
