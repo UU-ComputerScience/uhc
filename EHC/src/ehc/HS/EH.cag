@@ -23,9 +23,10 @@ ATTR Body [ | | eh: {EH.Expr} ]
 
 SEM Body
     | Body
-        lhs         .   eh          =   @mkSccLet (rngLift @range EH.Expr_IConst 0)
+        lhs         .   eh          =   @mkSccLet (if @mainExists then rngLift @range EH.Expr_Var hsnMain
+                                                                  else rngLift @range EH.Expr_IConst 0
+                                                  )
 %%]
-        lhs         .   eh          =   rngLift @range EH.Expr_Let @declarations.eh (rngLift @range EH.Expr_IConst 0)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Declarations    
@@ -66,7 +67,8 @@ SEM Declaration
 %%]
 %%[8
     | ForeignImport
-        lhs         .   eh          =   [rngLift @range EH.Decl_FFI @callconvention (maybe "safe" id @safety) (maybe (show @name) id @importname) @name @type.eh]
+        loc         .   eh          =   rngLift @range EH.Decl_FFI @callconvention (maybe "safe" id @safety) (maybe (show @name) id @importname) @name @type.eh
+        lhs         .   eh          =   [@eh]
     | ForeignExport
         lhs         .   eh          =   []
 %%]
@@ -654,7 +656,6 @@ SEM RightHandSide
         lhs         .   eh          =   @mkSccLet (foldr ($) (EH.mkError @range "guarded expr") @guardedexpressions.eh)
 %%]
 %%]
-        lhs         .   eh          =   EH.mkLet @range @where.eh (foldr ($) (EH.mkError @range "guarded expr") @guardedexpressions.eh)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Patterns        

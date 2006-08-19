@@ -236,7 +236,7 @@ t2 = nubBy (\x y -> (x `mod` 2) == (y `mod` 2)) [3,3,4,5]
 %%@TopicExplImpl.HaskellsNubBy
 
 %%@CodeFragsExplImpl.nubUseWithInt1
-t2 = nub (! ((==) = ...) <: Eq Int !) [3,3,4,5]
+t2 = nub {! ((==) = ...) <: Eq Int !} [3,3,4,5]
 %%]
 \item This can almost be done in Haskell, but how?
 \end{itemize}
@@ -467,7 +467,7 @@ f  =   \  ^^  dEq x y -> if dEq.eq x y then 3 else 4
      f = \p q r s -> (eq p q, eq r s)
      eqMod2 = \x y -> eq (mod x 2) (mod y 2)
 in   f  ^                              3 4
-        (! (eq = eqMod2) <: Eq Int !)  5 6
+        {! (eq = eqMod2) <: Eq Int !}  5 6
 %%]
 \item Predicate position in type determines parameter passing position
 \end{itemize}
@@ -477,12 +477,12 @@ in   f  ^                              3 4
 {
 \frametitle{Explicit passing for implicit parameter}
 \begin{itemize}
-\item |(! ^^ !)| specifies value to be passed for an implicit parameter
+\item |{! ^^ !}| specifies value to be passed for an implicit parameter
 \begin{itemize}
 \item implicitly passed: dictionary for |Eq a| for |eq p q|
 \item explicitly passed: dictionary for |Eq b| for |eq r s|
 \end{itemize}
-\item |(! (eq = eqMod2) <: Eq Int !)|
+\item |{! (eq = eqMod2) <: Eq Int !}|
 \begin{itemize}
 \item |(eq = eqMod2)| must be evidence for predicate |Eq Int|
 \end{itemize}
@@ -548,7 +548,7 @@ let  instance Eq Int where
        eq = eqMod2
      f = \p q r s -> ...
 in   f  ^                        3 4
-        (! dEqInt2 <: Eq Int !)  5 6
+        {! dEqInt2 <: Eq Int !}  5 6
 %%]
 \item |::| (only) binds to identifier
 \end{itemize}

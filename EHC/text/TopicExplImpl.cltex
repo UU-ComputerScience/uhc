@@ -204,12 +204,12 @@ f  ::    Eq a =>  a ->  a ->  Int
 f  =   \          x     y ->  if x == y then 3 else 4
 
 v1 = f  2 4
-v2 = f  (! ((==) = \x y -> (x `mod` 2) == (y `mod` 2)) <: Eq Int !)
+v2 = f  {! ((==) = \x y -> (x `mod` 2) == (y `mod` 2)) <: Eq Int !}
         2 4
 %%]
 
 A dictionary (encoded as a record) |d| of an instance is constructed and passed directly as part of
-the language construct |(! d <: ... !)| (to be explained later).
+the language construct |{! d <: ... !}| (to be explained later).
 
 %if not limitSize
 As a second example we briefly discuss the use
@@ -632,7 +632,7 @@ nub []                   =   []
 nub (h:t)                =   h : nub (filter (not . (h ==)) t)
 
 nubBy                    ::  (a -> a -> Bool) -> [a] -> [a]
-nubBy eq                 =   nub (! ((==) = eq) <: Eq Int !)
+nubBy eq                 =   nub {! ((==) = eq) <: Eq Int !}
 %%]
 %%]
 
@@ -645,7 +645,7 @@ The notation |<:| binds an identifier, here |dEqInt|, to the dictionary represen
 The record |dEqInt| from now on is available as a normal value.
 \item
 Explicitly passing a parameter is syntactically denoted by an expression between
-|(!| and |!)|.
+|{!| and |!}|.
 The predicate after the |<:| explicitly states the predicate for which the expression is an 
 instance dictionary (or \IxAsDef{evidence}).
 The dictionary expression for |n1| is formed by using |dEqInt|,
@@ -664,7 +664,7 @@ In the implicit case the language definition determines which value to take from
 \item
 Switching between the explicit and implicit world is accomplished by means of additional notation.
 We go from
-implicit to explicit by instance definitions with the naming extension, and in the reverse direction by means of the |(! ^^ !)| construct.
+implicit to explicit by instance definitions with the naming extension, and in the reverse direction by means of the |{! ^^ !}| construct.
 \end{Itemize}
 
 %if not limitSize
@@ -686,7 +686,7 @@ instance (Modular a,Integral a) => Num (M a) where
 
 withModulus ::  a ->         (Modular a => w) -> w
 withModulus     (m :: a)     k
-  =  k (! (modulus = m) <: Modular a !)
+  =  k {! (modulus = m) <: Modular a !}
 %%]
 %}
 %endif
@@ -753,7 +753,7 @@ The following example is taken from Hinze \cite{hinze00derive-type-class}:
 The explicit variant of the computation for |v1| using the explicit parameter passing mechanism reads:
 
 %%[[wrap=code
-v1 = showBin  (! dBG dBI dBL <: Binary (GRose List Int) !)
+v1 = showBin  {! dBG dBI dBL <: Binary (GRose List Int) !}
               (GBranch 3 Nil)
 %%]
 
@@ -842,14 +842,14 @@ and finally we must pass two normal arguments:
 let  f :: forall ^ a . Eq a => a -> a -> forall ^ b . Eq b => b -> b -> (Bool,Bool)
      f = \p q r s -> (eq p q, eq r s)
 in   f  ^                              3 4
-        (! (eq = eqMod2) <: Eq Int !)  5 6
+        {! (eq = eqMod2) <: Eq Int !}  5 6
 %%]
 
 Both for |Eq a| and |Eq b| a dictionary value corresponding to |Eq Int| has to be passed.
 For the first one the implicit |Eq Int| that is currently in scope is passed,
-whereas the second one is explicitly constructed and passed by means of |(! ^^ !)|.
+whereas the second one is explicitly constructed and passed by means of |{! ^^ !}|.
 Inside these delimiters we specify both the value and the predicate for which it is a witness.
-The notation |(! e <: p !)| suggests a combination of ``is of type'' and ``is evidence for''.
+The notation |{! e <: p !}| suggests a combination of ``is of type'' and ``is evidence for''.
 Here ``is of type'' means that the dictionary |e| must be of the record type introduced by the class declaration
 for the predicate |p|.
 The phrase ``is evidence for'' means that the dictionary |e| is used
@@ -895,8 +895,8 @@ let  instance dEqInt1 <: Eq Int where
      instance dEqInt2 <: Eq Int where
        eq = eqMod2
      f = \p q r s -> ...
-in   f  (! dEqInt1 <: Eq Int !) 3 4
-        (! dEqInt2 <: Eq Int !) 5 6
+in   f  {! dEqInt1 <: Eq Int !} 3 4
+        {! dEqInt2 <: Eq Int !} 5 6
 %%]
 
 The two instances for |Eq Int| overlap, but we still can refer to each associated dictionary individually,
@@ -1009,8 +1009,8 @@ a dictionary for |Eq (List a)| is explicitly constructed and passed to |eq|:
 %% 9-eq5.eh
 %%[[wrap=code test9eq5EqExplPassed
 f :: forall a . Eq a  =>  a ->  List a  -> Bool
-f = \(! dEq_a <: Eq a !)
-                      ->  \p q -> eq  (! dEqList dEq_a <: Eq (List a) !)
+f = \{! dEq_a <: Eq a !}
+                      ->  \p q -> eq  {! dEqList dEq_a <: Eq (List a) !}
                                       (Cons p Nil) q
 %%]
 
@@ -1027,8 +1027,8 @@ Such transformers can also be made explicit in the following variant:
 %% 9-eq6.eh
 %%[[wrap=code test9eq6DictTransf
 f  ::  (forall ^ a . Eq a => Eq (List a))  =>  Int ->  List Int  -> Bool
-f  =   \(! dEq_La <: forall ^ a . Eq a => Eq (List a) !)
-          ->  \p  q  -> eq  (! dEq_La dEqInt <: Eq (List Int) !)
+f  =   \{! dEq_La <: forall ^ a . Eq a => Eq (List a) !}
+          ->  \p  q  -> eq  {! dEq_La dEqInt <: Eq (List Int) !}
                             (Cons p Nil) q
 %%]
 
@@ -1372,8 +1372,8 @@ so the environment |Gamma| for |e| is extended with a binding for the predicate 
 %if False
 Whereas the rules in \figRef{rules2.exprI.baseExplImpl} describe the implicit passing of parameters,
 the rules \figRef{rules2.exprI.explimpl} describe their explicit counterpart, that is,
-the use of the |(! ... !)| notation.
-Because we require the explicit specification of predicates inside |(! ... !)| the
+the use of the |{! ... !}| notation.
+Because we require the explicit specification of predicates inside |{! ... !}| the
 rules in \figRef{rules2.exprI.explimpl} actually are simpler than the rules for normal application.
 For example, in \ruleRef{e-iapp} we do not perform any proving of predicates but query the environment
 directly to obtain the dictionary type |sigmad| for the predicate |pid|.
@@ -1591,34 +1591,34 @@ our
 %endif
 
 \Paragraph{How much explicitness is needed}
-Being explicit by means of the |(! ... !)| language construct very soon becomes cumbersome because
-our current implementation requires full specification of all predicates involved inside |(! ... !)|.
+Being explicit by means of the |{! ... !}| language construct very soon becomes cumbersome because
+our current implementation requires full specification of all predicates involved inside |{! ... !}|.
 Can we do with less?
 
 \begin{Itemize}
 \item
-\RuleRef{e-iapp} from \figRef{rules2.exprI.explimpl} uses the predicate |pi2| in |(! e2 <: pi2 !)|
+\RuleRef{e-iapp} from \figRef{rules2.exprI.explimpl} uses the predicate |pi2| in |{! e2 <: pi2 !}|
 directly, that is, without
 any predicate proving, to obtain |pid| and its corresponding dictionary type |sigmad|.
-Alternatively we could interpret |(! e2 <: pi2 !)| as an addition of |pi2| to the set of predicates used
+Alternatively we could interpret |{! e2 <: pi2 !}| as an addition of |pi2| to the set of predicates used
 by the predicate proving machinery for finding a predicate whose dictionary matches the type
 of |e2|.
 However, if insufficient type information is known about |e2| more than one solution may be found.
 Even if the type of |e2| would be fully known, its type could be coerced in dropping record fields so as to match different
 dictionary types.
 \item
-We could drop the requirement to specify a predicate and write just |(! e2 !)| instead of |(! e2 <: pi2 !)|.
+We could drop the requirement to specify a predicate and write just |{! e2 !}| instead of |{! e2 <: pi2 !}|.
 In this case we need a mechanism to find a predicate for the type of the evidence provided by
 |e2|.
 This is most likely to succeed in the case of a class system as the functions introduced by a class need to have
 globally unique names.
 %if not limitSize
 For other types of predicates like those for dynamically scoped values this is less clear.
-By dropping the predicate in |(! e2 !)| we also loose our advocated advantage of explicitness because we can no longer
+By dropping the predicate in |{! e2 !}| we also loose our advocated advantage of explicitness because we can no longer
 specify type related information.
 %endif
 \item
-The syntax \ruleRef{e-ilam} requires a predicate |pi| in its implicit argument |(! p <: pi !)|.
+The syntax \ruleRef{e-ilam} requires a predicate |pi| in its implicit argument |{! p <: pi !}|.
 It is sufficient to either specify a predicate for this form of a lambda expression or to specify a predicate
 in a corresponding type annotation.
 \end{Itemize}
@@ -1642,7 +1642,7 @@ In a variation of the example for |nub|, the following invocation of |nub| is pa
 a new definition for |eq| is provided:
 
 %%[[wrap=code
-nub  (! (dEqInt | eq := eqMod2) <: Eq Int !)
+nub  {! (dEqInt | eq := eqMod2) <: Eq Int !}
      (Cons 3 (Cons 3 (Cons 4 Nil)))
 %%]
 
@@ -1734,7 +1734,7 @@ Our approach has the additional benefit that we are not obliged to rely on the p
 let  class Has_x a ...
      f  ::  (Has_x Int) =>  ...
      f  =   \               ... -> ... value_x + 2 ...
-in   f (! (value_x = 3) <: Has_x Int !) ...
+in   f {! (value_x = 3) <: Has_x Int !} ...
 %%]
 
 %if False
@@ -1899,10 +1899,10 @@ let  f  ::  r lacks l =>  (r | l :: a)  -> a
 Alternatively a more explicit notation could be employed:
 
 %%[[wrap=code
-let  f  ::  (! r lacks l !) ->  (r | l :: a)  -> a
+let  f  ::  {! r lacks l !} ->  (r | l :: a)  -> a
      f  =                       \r            -> r.l
-     g  ::  (! Eq a !) ->  [a] ->  [a] -> Bool
-     g  =   \(! eq !)      \x      \y  -> (==) (!eq!) ... && (==) ...
+     g  ::  {! Eq a !} ->  [a] ->  [a] -> Bool
+     g  =   \{! eq !}      \x      \y  -> (==) {!eq!} ... && (==) ...
 %%]
 
 The latter approach has a couple of advantages.
@@ -1913,7 +1913,7 @@ LL parsing is made easier.
 The same notation can be used for expressions (value terms) and patterns.
 \end{Itemize}
 
-The obvious syntactic sugar can be added, e.g. |(! p, q !) ->| for |(! p !) -> (! q !) ->|
+The obvious syntactic sugar can be added, e.g. |{! p, q !} ->| for |{! p !} -> {! q !} ->|
 
 The idea is that two worlds of terms co-exist, one for normal (explicit) values and one for implicit values.
 Implicit values are associated with a predicate.
@@ -1940,8 +1940,8 @@ by means of bindings of the form |[pi :~> e]|, associating predicates |pi| to im
 The type language has an additional alternative:
 %%[[wrap=code
 sigma  =  ..
-       |  (! pi !)
-       |  (! ... !)
+       |  {! pi !}
+       |  {! ... !}
 pi     =  r lacks \
        |  C ^^ Vec(sigma)
        |  v = sigma
@@ -1949,9 +1949,9 @@ pi     =  r lacks \
 %%]
 The alternatives for |pi| respectively denote the lacking constraint for extensible records, class constraint and equality constraint
 (for use by generalized data types).
-Partial type signatures w.r.t. predicates are denoted by |(! ... !)|.
-Alternatively, the more concise denotations |pi| and |pvar| are used for |(! pi !)| and |(! ... !)| respectively.
-A predicate var |(! pivar !)| is shorthanded by |pivar|.
+Partial type signatures w.r.t. predicates are denoted by |{! ... !}|.
+Alternatively, the more concise denotations |pi| and |pvar| are used for |{! pi !}| and |{! ... !}| respectively.
+A predicate var |{! pivar !}| is shorthanded by |pivar|.
 \item
 The constraint language has to deal with additional constraints on predicates:
 %%[[wrap=code
@@ -1962,7 +1962,7 @@ Cnstr  =  ..
 %%]
 These additional
 alternatives deal with 
-which predicate may replace a predicate variable |p| or how much predicates may replace a wildcard |(! ... !)| or |pvar|.
+which predicate may replace a predicate variable |p| or how much predicates may replace a wildcard |{! ... !}| or |pvar|.
 The constraint |p :-> pi| is similar to type variables; the |pvar :-> | constraints limit the number of
 predicates.
 \item The environment |Gamma| now also may contain evidence for predicates:
@@ -2004,7 +2004,7 @@ passed.
 Predicates corresponding to class declarations are introduced by:
 %%[[wrap=code
 pred  Eq a :~> ( eq :: a -> a -> Bool )
-pred  Eq a :~> x => Ord a :~> ( lt :: a -> a -> Bool, Eq :: (! Eq a !) ) = ( r | Eq = x )
+pred  Eq a :~> x => Ord a :~> ( lt :: a -> a -> Bool, Eq :: {! Eq a !} ) = ( r | Eq = x )
 %%]
 This should be read as:
 \begin{Itemize}
@@ -2024,8 +2024,8 @@ Or just only use the notation but under the hood use record structure as being k
 Rules, corresponding to instance declaratations, populate the world of predicates:
 %%[[wrap=code
 rule Eq Int = ( eq = primEqInt )
-rule Eq a :~> e => Eq [a] :~> l =  ( eq = \a -> \b ->  eq (! e !) (head a) (head b) &&
-                                                       eq (! l !) (tail a) (tail b)
+rule Eq a :~> e => Eq [a] :~> l =  ( eq = \a -> \b ->  eq {! e !} (head a) (head b) &&
+                                                       eq {! l !} (tail a) (tail b)
                                    )
 %%]
 This should be read as:
@@ -2059,11 +2059,11 @@ rule eqInt1 :: Eq Int = ( eq = primEqInt )
 Sofar an explicit parameter passed to a function just consisted of an identifier.
 Implicit parameter application could/should also be allowed
 %%[[wrap=code
-rule eqList1 :: Eq a :~> e => Eq [a] :~> l =  ( eq = \a -> \b ->  eq (! e !) (head a) (head b) &&
-                                                                  eq (! l !) (tail a) (tail b)
+rule eqList1 :: Eq a :~> e => Eq [a] :~> l =  ( eq = \a -> \b ->  eq {! e !} (head a) (head b) &&
+                                                                  eq {! l !} (tail a) (tail b)
                                               )
 
-... eq (! eqList1 eqInt1 !) ...
+... eq {! eqList1 eqInt1 !} ...
 %%]
 
 \Paragraph{Eq as predicate}
@@ -2132,9 +2132,9 @@ Issues/problems:
 \item
 Type inference means we do not yet know if a predicate must be passed.
 \item
-Yet the explicit passing via |(! expr !)| requires the presence of an implicit parameter (i.e. predicate in the corresponding type).
+Yet the explicit passing via |{! expr !}| requires the presence of an implicit parameter (i.e. predicate in the corresponding type).
 \item
-If given a |(! expr !)| how do we find the corresponding predicate |pi| for which |expr| is the evidence/proof?
+If given a |{! expr !}| how do we find the corresponding predicate |pi| for which |expr| is the evidence/proof?
 \end{Enumerate}
 
 Corresponding solutions:
