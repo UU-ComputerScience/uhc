@@ -3,13 +3,91 @@
 \chapter{Inspecting Results}
 \label{chap.InspectingResults}
 
+Optimizations, such as in-place update, can have severe consequences on performance. In some circumstances, a programmer
+relies upon some optimizations being applied. As a programmer, we want to make sure that this is also the case, and if
+it is not, we want to know why not. This requires a way to open up the output of the compiler for the programmer to
+inspect the results and interpret them, and some way to enforce some restrictions.
 
 \section{HTML Pretty Printing}
 
+  When creating the prototype, we discovered that there are a lot of annotations occurring everywhere, and big
+  constraint graphs. This is difficult to interpret as a human being. We discovered that once you know how
+  the type system works that the graphs are not important to see. The analysis is essentially a huge propagation
+  of reference counts with some coercions and some additions. What we are interested in, is reading the results
+  of the analysis on the types of identifiers that occur in the program. For example, if the analysis returns that
+  some annotation is shared, we want to see where in the type the annotation is located, and then we can check the
+  other types in the expression to see what is causing it.
+  
+  But, there is a problem: the analysis is polyvariant. In a single picture, we can only give the uniqueness types
+  of the outermost binding-group. For the inner binding-groups, we have no substitution, since there can be many or
+  even no uses of a binding-group, so which one should we pick? Therefore, we propose an interactive solution.
+
+  The compiler creates an HTML file with a pretty print of the program. Initially, all the pretty-print of the
+  binding-groups is inactive, indicated with a gray color. Only the outermost binding-group is active, indicated
+  by a black color and some syntax highlighting. The identifiers of an active binding-group are clickable. If you
+  click such an identifier, it activates the corresponding binding-group. For each active binding-group, we know
+  the path from the root of the program, and the corresponding uniqueness substitution. Each identifier in an
+  active binding group can be expanded such that the annotated type becomes visible, with the substitution applied
+  to it.
+  
+  Interactive inspection of the analysis result appears to be very useful. The outcome of the analysis is typically
+  large, but the pretty print only shows what you want to see. For example, a typical scenario is:
+  
+  \begin{quote}
+  Why is this integer not unique? Oh I see, it is passed to a function that says that it is shared. Ok, lets
+  open up the definition of the function to see why this is the case. Ah, the parameter is passed twice to
+  some function and it appears that it uses both arguments once.
+  \end{quote}
+
+  There are some issues. We just assume that clicking on a recursive definition does not change anything. But this
+  way we cannot look into a function that has different uniqueness properties for some recursive call. On the other
+  hand, this does not occur often. But even with ignoring recursive definitions, the number of possible substitutions
+  on binding groups is large, since chunks of HTML-code need to be generated for each sequence of identifiers on an
+  execution path. This does not scale up to large programs. For a large program, either some direct interaction
+  with the solver is required, or if we keep using HTML pretty-prints, the compiler needs to generate some piece
+  of javascript code that can calculate the substitutions. Unfortunately, this does not work well together with
+  the fixpoint interation on constraints (Section~\ref{fill this in}), since that would require most of the
+  inferencer to be available in javascript as well. For the normal fixpoint iteration approach (Section~\ref{fill this in}),
+  only a table representing the constraint graph and the computation of a substitution from this table, needs to be
+  generated for each binding group.
+
+  Our experience in this field shows that in order to understand the uniqueness typing of a program, it helps to have
+  some interactive and visual feedback. The pretty printing approach of this section helps a lot, and it may be an
+  interesting future work to see if there are other visualisation techniques to explain to the programmer why or why
+  not the compiler infers that some value is unique or not.
 
 \section{Signatures}
 
+  But inspecting a program is not enough. Sometimes, you want to enforce that some type is unique, in order to
+  guarantee that some optimization is made. Or in case of clean where unique worlds are the main idom for specifying
+  IO. Care has to be taken that the world remains unique throughout the program. We discuss how we can use signatures
+  to enforce certain uniqueness properties.
+  
+  Section~\ref{fill this in} described how signatures can be specified by the programmer. Signatures to replace the
+  constraints for a binding group are difficult to specify since it needs to capture dependencies on other
+  binding groups. But we can augment signatures with additional constraints given by the programmer.
+  
+  We assume that the programmer specifies the constraints in the same way as in Section~\ref{fill this in}, but
+  treat the specification differently. The programmer gives a partially annotated type, and a set of
+  constraints. Parts of the type that are not annotated do not result into additional constraints. The solver
+  is adapted such that it signals an error when the value of a concrete annotation is changed. For example,
+  if the programmer supplies the constraints |delta =>= 1, 1 =>= delta|, and |delta| is |*|, then the substitution
+  changes |1| in the constraints to |*|. We detect this situation and put the value |top| in the substitution, and
+  the inferencer continues in calculated the fixpoint. If everything is ok, then there are only |0|, |1|, or |*|
+  values in the substitution.
 
-\section{Entailment}
+  To improve the quality of the error message, the programmer can attach an error message to a constraint. For example:
+
+%%[[wrap=code
+  data (Sup(FileHandle)(delta)) = ... , delta === 1 {A file handle must remain unique}
+  inplaceSort :: Array (Sup(Int)(delta)) -> Array Int, delta === 1 {Only arrays with unique elements can be sorted in place}
+%%]
+
+  There are two ways to proceed from here. The HTML file can be used to investigate a trail of |top| values through
+  the program and indicate the sites that cause trouble. Or, we can generate an error message if we encode some
+  context information in the constraints, such as the file location from the corresponding expression that generated
+  the constraint. Care needs to be taken that this context information is preserved when reducing the graph, or, the
+  substution is replayed on the unreduced graph and context information obtained from there.
 
 %%]
+

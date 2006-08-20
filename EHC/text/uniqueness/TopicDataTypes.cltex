@@ -548,14 +548,41 @@ typing, but about a whole other analysis!
 \section{Constraint gathering}
 
   Constraint gathering is performed on the type level. A type expression does not differ much compared to a normal
-  expression, except that there are no lambda abstractions.
+  expression, except that there are no lambda abstractions. Instead of lambda abstractions, there are data-type
+  definitions in the declarations of a Let.
   
-  Figure~\ref{fill this in} lists the typing rules for constraint gathering on type expressions. We see here that the
-  rules are virtually the same as those for normal expressions. At each use of a type constructor, we generate an
-  |Inst| constraint. Uses of type variables do not need constraints (similar to lambda-bound identifiers for
-  expressions), and at the definition site of variables, we combine the individual results of the variables with a
-  |\+/| constraint. Finally, at an application, at type applications, there are two |=>=| constraints generated to
-  flow results from parameter to argument, and from type expression result to function result.
+  The type of a type is called a kind, denoted by |kappa| (see Section~\ref{fill this in - ehc section}). We allow
+  a kind to be annotated, similary to a type. An annotated kind is denoted by |ukappa|, following the same conventions
+  as for types in Section~\ref{fill this in}.
+
+  Figure~\ref{RulerUniquenessExamples.DC.tp.base} lists the typing rules for constraint gathering on type expressions. We
+  omit the cases for extensible records and expanded types, these cases clutter up the type rules, but do nothing more than
+  collect the constraints for the type expressions occurring in them.
+  
+  \rulerCmdUse{RulerUniquenessExamples.DC.tp.base}
+
+  Figure~\ref{RulerUniquenessExamples.DC.tp.base} has a lot of resemblance with Figure~\ref{fill this in}. At each use of a type constructor, we generate an
+  |Inst| constraint. Uses of type variables do not need constraints, similar to lambda-bound identifiers for
+  expressions. Finally, at an application, at type applications, there are two |=>=| constraints generated to
+  flow results from parameter to argument, and from type expression result to function result. This way, we connect
+  the annotations on the kinds from the root of the type expression to the leaves.
+
+  How we treat annotations that occur in the type, we made explicit with a separate case for annotations on a
+  type constructor. This is a subtile rule in the sense that it connects two annotations that live in different
+  worlds: one annotation lives in the kind world and one annotation lives in the type world. An annotated type constructor is encoded as the nonterminal |Ann| just above the nonterminal
+  |Con|. For example |Ann delta (Con "Int" [])| represents |(Dot(Int)([])(delta)())|. In the type rule, we connect
+  the annotation on the type constructor to the topmost annotation on the annotated kind of the type constructor.
+  We want to know the results of the analysis for the annotations occurring on types, but the analysis only finds
+  results for the annotated kinds. With the constraint generated for the annotations, the results of kinds are
+  propagated to the actual annotations. From an implementation point of view, this approach makes sure that
+  a data-type definition collects proper constraints for exposed annotations.
+
+  We omit the type rules for data-type definitions and leave it with a textual description. For a data-type definition,
+  the constraints for al lthe types in the constructors are collected. The environment is enlarged with annotated kinds
+  of the type variables, derived by means of pattern matching from the annotated kind of the data type. A |\-/|
+  constraint is generated for each type variable, that combines each use-site of the type variable. These constraints
+  are then collected in binding-groups and passed to the solver. Types in a constraint each get their own binding group.
+
 
 \section{Constraint interpretation}
 
@@ -607,6 +634,10 @@ join  x  ?  = x
 join  x  y
   |  x == y     = x
   |  otherwise  = +/-
+
+neg +  = -
+neg -  = +
+neg x  = x
 %%]
 
   For the below-the-function-arrow analysis, no special constraints are needed. But, the initial substitution needs
@@ -659,8 +690,10 @@ join  x  y
   This chapter shows that the results of previous chapters can not only be used for uniqueness typing, but for
   two `completely different' analyses as well, without much additional work. We did not compare the performance
   of the variance approach to a non-constraint based variance approach, but we think that due to the simplifications
-  on the constraint graphs, that our approach is not much slower, although from some perspective, all the work that
-  we did for uniqueness typing, may be seem as overkill to solve the variance problem.
+  on the constraint graphs, that our approach is not much slower than a direct implementation, although from some
+  perspective, all the work that we did for uniqueness typing, may be seem as overkill to solve the variance problem.
+  On the other hand, the code of the analysis can be reused substantially, which has it charms in seperation of
+  concerns, documentation, and understanding.
 
 %%]
 

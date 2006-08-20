@@ -3,6 +3,10 @@
 \chapter{Dealing with overloading}
 \label{chapt.Overloading}
 
+An usage analysis at the backend of a compiler does not need to deal with overloading, as overloading
+is resolved before construction of the core language. Our uniqueness typing is situated in the
+frontend of the compiler and needs to deal with overloading.
+
 Uniqueness typing and overloading interact with each other. There are several ways to deal with
 this interaction. The easiest way is to assume that all uniqueness annotations on an overloaded
 function are shared, which basically keeps the uniqueness typing out of the overloading
@@ -40,7 +44,7 @@ instance Functor f => Replaceable f where
   The approach we mentioned in the introduction of this chapter, works by inventing an annotated type of |replace|, with all
   annotations set to shared. This has an effect on the uses of an overloaded identifier, and for the expressions of an
   instance declaration.
-  
+
   Suppose we have the following situation:
 
 %%[[wrap=code
@@ -53,64 +57,109 @@ instance I .. where
 ... (Sup(ident)(c)) :: (Sub(utau)(3)) ...
 %%]
 
-  To correctly deal with all uses of an overloaded identifier, we construct a new binding group for each identifier
-  in a class declaration, and generate a constraint set which forces each uniqueness variable on the annotated type
-  of the overloaded identifier to |*|. In this case, there is only one overloaded identifier, so only one new
-  binding group is created, with constraints that map each uniqueness variable in |(Sub(utau)(1))| to |*|.
-  
   At the use-site of an overloaded identifier, in this case |(Sup(ident)(c))|, we generate an |Inst| constraint
-  that refers to the corresponding binding group.
+  that refers to the corresponding binding group. The interpretation of the |Inst| constraint is slightly different,
+  in the sence that all annotations on the use-site type need to be constrainted to |*|. In this case, the
+  |Inst| constraint for |(Sup(ident)(c))| maps each annotation in |(Sub(utau)(3))| to |*|. We augment the constraint
+  set of each binding in an instance declaration with constraints mapping the annotations on an instance declaration
+  to |*|.
 
-  An |Inst| constraint for an overloaded identifier, refers to
-  the corresponding binding group.
-
-  For |replace|, this would give the following annotated type and constraints:
-
-%%[[wrap=code
-replace :: (Annot(b)(3)) (Annot(->)(1)) (Annot(f)(4)) (Annot(a)(5)) (Annot(->)(2)) (Annot(f)(6)) (Annot(b)(7)) & { * =>= (Delta(i)), (Delta(i)) =>= * | 1 <= i <= 7 }
-%%]
-
-  An instance declaration requires special treatment. Without special treatment, inference on the constraint set for an
-  expression in an instance declaration, can result into a substitution with lower values than |*|.
-
-  T
-
-
-  An optimizer
-
-
-  The result is that
-  the use-site type and the definition-site type do not match, giving potential problems with certain optimizations or
-  coercions. The solution is simple: obtain the annotated type of each right-hand side expression in an instance declaration,
-  and add the constraints that map each uniqueness variable to |*|, in a
-  way that we explained above. This annotated type is an instantiation of the type of the corresponding annotated type of the class declaration.
-
-  Technical details.
-
-  Are we allowed to use the above described constraint set, which causes a substitution to map each uniqueness variable to
-  |*|, as the \emph{entire} constraint set for an overloaded identifier? To prove this, we show that any valid substitution
-  of the invented constraint set, is also a valid substitution for the constraint set inferred for each right-hand side
-  expression in an instance declaration.
-
-  Suppose that |Q| is the constraint set obtained by performing constraint gathering on the right-hand side |E| of a binding
-  in an instance declaration. Suppose that |P| is the corresponding constraint set constructed by the method described
-  above, on the annotated type of |E|. The final constraint set |Q'| of the right-hand side is |Q| with |P| added, as
-  described above. We now have to show that |P| \emph{entails} |Q'| for the uniqueness variables that are mentioned in |P|.
-  Since |P| maps each uniqueness variable to the highest value, no constraint in |Q| can demand a higher value for a uniquness variable. So, each
-  substitution of |P| is also a valid substitution for |Q'|. We are almost there: we showed that the approach is valid for
-  the annotated type of |E|, but not the annotated type of the class declaration.
-
-  The assumption to map each uniqueness variable to the
-  highest value, is a valid, but concervative, assumption.
+  This way, we created a barrier of |*| annotations between the use-site of an overloaded identifier and
+  instance declarations, and ensured that dictionary passing, instance transformation, and instance selection are
+  fully separated from uniqueness typing. We achieved this at a cost: values passed or obtained from an
+  overloaded function cannot be unique and cannot be optimized.
 
 \section{Improved approach}
 
-  The above procedure gives poor uniqueness results when using overloaded identifiers.
+  The above procedure gives poor uniqueness results when using overloaded identifiers. The problem is that we are
+  too conservative with the constraints. Instead of mapping everything to |*|, the greatest-restricted constraint
+  set of all instance declarations is a better approximation. Determining this constraint set is difficult, as
+  instances can be added later, and because one instance may have a deeper structured type than another instance.
+  But instead of calculating this constraint set, we can ask the programmer to specify it, and force it upon each
+  instance declaration.
 
-  is too conservative.
-
+  In Section~\ref{fill this in}, we discussed how to deal with programmer-specified constraint sets, and what
+  the problems are. This approach allows better results for overloaded identifiers, but is not a very good
+  solution either.
 
 \section{Advanced approach}
+
+  A proper way to deal with overloading is by a careful inspection of the results of overloading resolving.
+  Since conventional type inferencing already took place, we can obtain a proof for each overloaded
+  identifier, that specifies which dictionaries need to be inserted and how these dictionaries are obtained.
+  For overloaded identifiers, we store this proof in the |Inst| constraint, instead of a binding-group
+  identifier. When constructing the constraint graph, we keep track of the binding-groups of dictionaries that
+  are passed to overloaded functions, such that when we encounter a proof of an |Inst| constraint, know for
+  each dictionary which binding-group it belongs to. From the proof, we determine what the constraints
+  between (possibly multiple) binding-groups are, and perform the conventional constraint duplication procedure.
+
+  But, what is this proof? For our expanation, we can consider the proof as the expression that is inserted
+  to resolve the overloading by the conventional type system, where each identifier in this expression
+  represents a dictionary. We kept track of the binding-groups where each dictionary points to, and can thus
+  run a conventional constraint gathering on top of it. This gives us the constraint that we need to properly
+  instantiate each binding-group and properly connect them.
+
+  A way to look at this approach is that we took a piece of the backend (the generated code for overloading
+  resolving) and examined it in the frontend for constraint generation. This approach gives the best results,
+  as the outcome is the same as if overloading would already be resolved. A downside is that this approach
+  needs to examine the results of overloading resolving, and depending on the compiler, these results may
+  be hard to obtain if they are produced very deep inside the compiler. EHC has an unconventional overloading
+  mechanism, making it harder to obtain these results.
+
+\section{Probing one step further}
+
+  We can yet go one step further by letting the uniqueness typing influence the overloading resolving
+  process. Unfortunately, this is not possible in our implementation that assumes that conventional
+  type inferencing already took place. Integrating it into the type system becomes a non-trivial problem:
+  normal typing influences the constraint sets, and if uniqueness typing influences the typing, then
+  it becomes tricky. However, our entire approach is based upon some fixpoint improvement of the
+  constraint sets, so from this perspective, taking care of improved type information while constructing
+  this fixpoint should be doable. But, to keep this manageable from an engineering point of view, a
+  good starting point may be a type system where aspects of unification are encoded in relative
+  isolation, such as in the Top-solver~\cite{fill this in} for Helium~\cite{fill this in}.
+
+  The question in this case is, is it worth it? For that, we investigate what kind of influence the
+  uniqueness typing can have upon conventional type inference. Instead of type variables, we can
+  give a class declaration uniqueness variables. For example:
+  
+%%[[wrap=code
+  class Array alpha delta where
+    array :: Ix i => (i, i) -> [(i, alpha)] -> (Sup(Arr)(delta)) i alpha
+    (!) :: Ix i => i -> (Sup(Arr)(delta)) i alpha -> alpha
+    update :: Ix i => i -> alpha -> (Sup(Arr)(delta)) i alpha -> (Sup(Arr)(delta)) i alpha
+%%]
+
+  At the root of the program, or earlier, |delta| will become known. Subsequently, an instance
+  is selected that fits |delta| (if such instance exists). For example, suppose there is an
+  instance for any delta that just uses the default array implementation that we know from
+  Haskell, and an instance that is only allowed when |delta| is unique. This instance can
+  implement |update| by means of an in-place update.
+  
+  With this feature we can accomplish some code-generation for uniqueness typing by using
+  the class system. Unfortunately, the runtime overhead of dictionary passing can become more
+  costly than the optimization is worth. But that can partially be resolved by inlining and
+  partial evaluation of dictionaries~\cite{fill this in - partial evaluation of dictionaries}.
+  
+  But, it is important to note that once an instance is chosen, that it cannot be
+  replaced by another instance. For example, if a program via an instance, results into
+  another value of |delta|, then we assume that the program or instance declaration is
+  wrong.
+  
+  In fact, an instance can only be selected if a value for |delta| is fixed. This means that
+  there must be a lower-bound reference count for delta and an upper-bound reference count,
+  where both are equal. Otherwise, the order in which instances are selected can make
+  a difference. Whether it is always possible to have a fixed delta before getting stuck,
+  remains a research question.
+
+\section{Conclusion}
+
+  What we saw in this chapter is that overloading offers intresting complications. We can
+  approach these complications at different levels of interaction. We saw in
+  Section~\ref{fill this in} that we can separate both aspect by means of a barrier of
+  |*| annotations, but we saw in Section~\ref{fill this in } that we can also make use
+  of the overloading results to get better uniqueness results. Or allow both systems to
+  interact, although this has severe complications on the complexity of the
+  implementation.
 
 %%]
 

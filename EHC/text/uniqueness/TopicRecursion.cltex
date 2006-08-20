@@ -101,8 +101,9 @@ in   f 1
 %%]
 
   Each type constructor is prefixed with a uniqueness variable chosen by the programmer, a concrete uniquness value, or nothing. A
-  concrete uniqueness value |v| is converted into a fresly invented variable |delta|, together with the constraints |v =>= delta| and
-  |delta =>= v|. Specifying no annotation has the same meaning as the concrete uniqueness annotation |*|.
+  concrete uniqueness value |v| is converted into a fresly invented variable |delta|, together with a special equality
+  constraint |v === delta|. We can represent the |===| constraint internally with two |=>=| constraints without coercions. Specifying
+  no annotation has the same meaning as the concrete uniqueness annotation |*|.
 
   To construct the desired constraint set |S|, the type given by the programmer is extended with uniqueness variables for the concrete or
   missing annotations, and the constraint set of the user updated accordingly. By overlaying the type of the programmer on the type
@@ -126,7 +127,7 @@ let f :: forall alpha . alpha -> alpha
   version of type variable |alpha|, such that this name can be used in the signature of |y|. Unfortunately, the dependencies
   in our case a much higher, requiring naming all the mono variables that are affected by the expression for which we want to
   specify the constraint set.
-  
+
   On the other hand, if we are talking about a signature for a top-level function, then virtually all mono
   variables will be annotations on the function spine of toplevel functions. By enforcing with constraints on the toplevel
   bindings that the function spine of a toplevel function is shared, we can eliminate the need to specify the dependencies
@@ -249,6 +250,15 @@ let f :: forall alpha . alpha -> alpha
   the choice of the programmer, either the quick equation approach of Section~\ref{fill this in} is taken, or the iterative approach
   of this chapter, by reinserting this binding group and the binding groups dependent on it, back in the work list. We can thus have
   best of both worlds, without a performance penalty if the fixpoint approach is never selected.
+  
+  However, if we support the fixpoint approach, allowing full user-defined constraint sets (Section~\ref{fill this in}), becomes
+  a problem. We can no longer verify the constraint set given by the programmer beforehand, since the full constraint set is
+  only known at the use-site of an identifier. We can check that the constraint set is correct for each use of an identifier,
+  just by checking if the substitution for the use-site is also a valid substitution for the constraints obtained by augmenting
+  the programmer-supplied constraint set with the gathered constraint set, but that has many subtilities, due to dependencies
+  on other binding-groups, differences between use-site type and definition-site type, and perhaps most important, the problem
+  is detected at a very late time, with probably no reasonable way to relate the error back to a location in the constraint
+  set specified by the programmer. Letting the programmer specify additional constraints, is not a problem, however (\ref{fill this in - conclusion of help}).
 
 
 \section{Conclusion}
@@ -265,3 +275,4 @@ let f :: forall alpha . alpha -> alpha
   since instantiation to a type with more structure requires another form of duplication of graphs.
 
 %%]
+

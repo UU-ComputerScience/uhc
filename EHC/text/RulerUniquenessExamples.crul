@@ -4,23 +4,50 @@ preamble tex "%include lhs2TeX.fmt\n%include afp.fmt\n%include ehrules.fmt\n"
 external Ty_Int
 external empty
 
-viewhierarchy = E < U1, E < U2
+viewhierarchy = B < E0 < E1 < E < U1, B < E0 < EL < UL, B < D < DC
 
 data Expr [expr]
-  view E
-    | Int  [e.int]  n     :: Int
+  view E0
     | Var  [e.var]  ident :: HsName
-    | Plus [e.plus] a     :: Expr
-                    b     :: Expr
+  view E1
+    | Int  [e.int]  n     :: Int
     | App  [e.app]  f     :: Expr
                     a     :: Expr
     | Lam  [e.lam]  ident :: HsName
+                    body  :: Expr
+  view E
+    | Plus [e.plus] a     :: Expr
+                    b     :: Expr
+  view EL
+    | Let  [e.let]  n     :: Int
+                    ident :: HsName
+                    expr  :: Expr
                     body  :: Expr
 
 data Prog [prog]
   view U1
     | Prog [p] e   :: Expr
                uty :: Ty
+
+data Tp [ty]
+  view D
+    | Con  [d.con] ident :: HsName
+    | Var  [d.var] ident :: HsName
+    | Ann  [d.ann] ann   :: Annotation
+                   tp    :: Tp
+    | App  [d.app] f     :: Tp
+                   a     :: Tp
+
+data Data [dt]
+  view D
+    | Data [dt] ident   :: HsName
+                tyvars  :: Tyvars
+                constrs :: Constrs
+
+data Constr [constr]
+  view D
+    | Constr [constr]  ident :: HsName
+                       tps   :: Tp
 
 format tex Ty_Int = Int
 format tex Gam = Gamma
@@ -32,6 +59,8 @@ format tex utyB = utau
 format tex empty = emptyset
 format tex cs = zeta
 format tex Cs = zeta
+format tex bcs = omega
+format tex Bcs = omega
 
 scheme expr "Expr" =
   view E =
@@ -48,6 +77,20 @@ scheme expr "Expr" =
     explain (Within environment |gam| , |e| has annotated type |uty| , provided that the constraints in |cs| are satisfied.)
     explain cs = (Constraints between annotations)
     explain ty = (Annotated type of the expression)
+  view EL =
+    holes [ e: Expr, gam: Gam, ty: Ty ]
+    judgespec gam :- e : ty
+    judgeuse tex gam :-..type e : ty
+    explain (Within environment |gam| , |e| has type |ty| .)
+    explain gam = (Environment | (ident :-> ty)..._ | with types of identifiers)
+    explain ty = (Type of the expression)
+  view UL =
+    holes [ cs: Cs, uty: Ty, bcs: Bcs ]
+    judgespec gam :- e : uty ~> cs, bcs
+    judgeuse tex gam :-..unq e : uty ~> cs, bcs
+    explain (Within environment |gam| , |e| has annotated type |uty| , provided that the constraints in |bcs| are satisfied.)
+    explain cs = (Constraints between annotations)
+    explain ty = (Annotated type of the expression)
 
 scheme prog "Prog" =
   view U1 =
@@ -60,7 +103,7 @@ ruleset prog.base scheme prog  "Program type rule" =
   rule p "Prog" =
     view U1 =
       judge E : expr = gam :- e : uty ~> cs
-      judge P : unpack = uty === (_, delta)
+      judge P : unpack = uty === { _ , delta }
       judge P2 : unpackTup = delta === { delta.ref, _ }
       judge F : flowPrim = cs.f === { 1 =>= delta.ref }
       judge C : check = cs.f cs
@@ -86,10 +129,23 @@ ruleset expr.base scheme expr  "Expression type rules" =
       judge R : expr = gam :- ident : ty
     view U1 =
       judge G : lookup = ident :-> ty `elem` gam
-      judge P : unpack = uty === (ty, delta)
+      judge P : unpack = uty === { ty , delta }
       -
       judge R : expr
         | cs = empty
+    view EL =
+      judge G : lookup = ident.n :-> ty `elem` gam
+      -
+      judge R : expr = gam :- ident : ty
+    view UL =
+      judge G : lookup = ident.n :-> uty.x `elem` gam
+      judge A : freshAnnot = uty.x ~> uty
+      judge U1 : unpack = uty.x === { _ , a }
+      judge U2 : unpack = uty === { _ , b }
+      -
+      judge R : expr
+        | cs = { Inst n [(a, b)] }
+        | bcs = empty
   rule e.plus "Plus" =
     view E =
       judge A : expr = gam :- x : Ty_Int
@@ -129,7 +185,7 @@ ruleset expr.base scheme expr  "Expression type rules" =
       judge C  : match = uty.f <=> (uty.a.1 ->..(delta.1) uty.r)
       judge C2 : match = ty.r <=> ty
       judge C3 : match = ty.a.1 <=> ty.a
-      judge P : unpack = uty === (_, delta)
+      judge P : unpack = uty === { _, delta }
       judge F1 : flow = :- uty.a.1 =>= uty.a ~> cs.m1
       judge T1 : unpackTup = delta === { delta.ref, _ }
       judge T2 : unpackTup = delta.1 === { (delta.1,ref), _ }
@@ -146,15 +202,35 @@ ruleset expr.base scheme expr  "Expression type rules" =
     view U1 =
       judge B : expr = (x :-> ty.x + gam) :- b : uty ~> cs.b
       judge S1 : gather = x :- b ~> ({ x.1:uty.1.a1, "...", x.n:uty.n.an })
-      judge P : unpack = uty.x === (_, a)
+      judge P : unpack = uty.x === { _, a }
       judge S2 : sum = cs.sum === { sum <= a }
       -
       judge R : expr
         | uty = uty.x ->..delta uty
         | cs  = cs.sum cs.b
+  rule e.let "Let" =
+    view EL =
+      judge E : expr = gam :- expr : ty.expr
+      judge B : expr = (x.m :-> ty.expr + gam) :- body : ty
+      -
+      judge R : expr = gam :- (let.m x "=" expr in body) : ty
+  view UL =
+      judge E : expr
+        | uty = uty.e
+        | cs  = cs.e
+        | bcs = bcs.e
+      judge B : expr = (x.m :-> uty.expr + gam) :- body : uty ~> cs.b , bcs.b
+      judge C1 : gather = x :- (expr, body) ~> ({ x.1:uty.1.a1, "...", x.n:uty.n.an })
+      judge P : unpack = uty.x === {_ , delta }
+      judge S : sum = cs.sum === { sum <= delta }
+      -
+      judge R : expr
+        | cs  = cs.sum cs.b
+        | bcs = {(m, cs.e)} bcs.e bcs.b
+
 
 relation lookup =
-  view E =
+  view B =
     holes [ nm: Nm, gam: Gam, ty: Ty ]
     judgespec nm :-> ty `elem` gam
 
@@ -162,12 +238,15 @@ relation match =
   view E =
     holes [ a: Ty, b: Ty ]
     judgespec a <=> b
+  view D =
+    holes [ a: Ty, b: Ty ]
+    judgespec a <=> b
 
 relation unpack =
-  view U1 =
+  view B =
     holes [ a : Ty, b: Ty, c: Ann ]
-    judgespec a === (b, c)
-    judgeuse tex a === "(Sup(" b ")(" c "))"
+    judgespec a === { b, c }
+    judgeuse tex a === "(Sup(" b ")(" c
 
 relation unpackTup =
   view U1 =
@@ -202,13 +281,13 @@ ruleset flow.base scheme flow "Flow type rules" =
 
 
 relation gather =
-  view U1 =
+  view B =
     holes [ x : HsName, b : Expr, r : Set ]
     judgespec x :- b ~> r
     judgeuse tex x :-..gather b ~> r
 
 relation sum =
-  view U1 =
+  view B =
     holes [ a : Ann, cs : Cs ]
     judgespec cs === { sum <= a }
     judgeuse tex cs === { sumi a.i <= a }
@@ -224,6 +303,99 @@ relation consistency =
     holes [ x : Dummy ]
     judgespec
     judgeuse tex "all annotation pairs consistent"
+
+
+
+
+scheme tp "Type" =
+  view D =
+    holes [ tau: Tp, gam: Gam, kappa: Ty ]
+    judgespec gam :- tau : kappa
+    judgeuse tex gam :-..kind tau : kappa
+    explain (Within environment |gam| , |tau| has kind |kappa| .)
+    explain gam = (Environment | (ident :-> kappa)..._ | with kinds of identifiers)
+    explain kappa = (Kind of the type)
+  view DC =
+    holes [ cs: Cs, ukappa: Ty ]
+    judgespec gam :- tau : ukappa ~> cs
+    judgeuse tex gam :-..kind tau : ukappa ~> cs
+    explain (Within environment |gam| , |tau| has annotated type |ukappa| , provided that the constraints in |cs| are satisfied.)
+    explain cs = (Constraints between annotations)
+    explain ty = (Annotated kind of the type)
+
+
+ruleset tp.base scheme tp  "Type type rules" =
+  rule d.var "Var" =
+    view D =
+      judge G : lookup = ident :-> kappa `elem` gam
+      -
+      judge R : tp = gam :- ident : kappa
+    view DC =
+      judge G : lookup = ident :-> ukappa.env `elem` gam
+      judge F : freshAnnot = ukappa.env ~> ukappa
+      -
+      judge R : tp
+        | cs = empty
+  rule d.con "Con" =
+    view D =
+      judge G : lookup = ident.n :-> kappa `elem` gam
+      -
+      judge R : tp = gam :- ident.n : kappa
+    view DC =
+      judge G : lookup = ident.n :-> ukappa.env `elem` gam
+      judge F : freshAnnot = ukappa.env ~> ukappa
+      -
+      judge R : tp
+        | cs = { Inst n " " ukappa.env " " ukappa }
+  rule d.ann "Ann" =
+    view D =
+      judge K : tp = gam :- tau : kappa
+      -
+      judge R : tp = gam :- tau..delta : kappa
+    view DC =
+      judge K : tp = gam :- tau : ukappa ~> cs
+      judge P : unpack = ukappa === { kappa , delta.top }
+      judge M : mkFlow = cs.ann === delta.top =>= delta
+      -
+      judge R : tp = gam :- tau..delta : ukappa ~> cs.ann cs
+  rule d.app "App" =
+    view D =
+      judge F : tp = gam :- f : kappa.f
+      judge A : tp = gam :- a : kappa.a
+      judge C : match = kappa.f <=> (kappa.a -> kappa)
+      -
+      judge R : tp = gam :- f a : kappa
+    view DC =
+      judge F : tp
+        | ukappa = ukappa.f
+        | cs     = cs.f
+      judge A : tp
+        | ukappa = ukappa.a
+        | cs     = cs.a
+      judge C : match = ukappa.f <=> (ukappa.a.1 ->..(delta.1) ukappa.r)
+      judge C2 : freshAnnot = ukappa.r ~> ukappa
+      judge C3 : match = kappa.a.1 <=> kappa.a
+      judge T1 : unpack = ukappa === { kappa , delta.top }
+      judge M1 : mkFlow = cs.md === delta.top =>= delta
+      judge M2 : mkFlow = cs.ma === ukappa.a.1 =>= ukappa.a
+      judge M3 : mkFlow = cs.mr === ukappa =>= ukappa.r
+      -
+      judge R : tp
+        | cs = cs.md cs.ma cs.mr cs.a cs.f
+
+
+relation freshAnnot =
+  view B =
+    holes [ utyA: Ty, utyB: Ty ]
+    judgespec utyA ~> utyB
+    judgeuse tex freshAnnotate utyA ~> utyB
+
+relation mkFlow =
+  view DC =
+    holes [ tyA : Ty, tyB : Ty, cs : Cs ]
+    judgespec cs === tyA =>= tyB
+    judgeuse tex cs === { tyA =>= tyB }
+
 
 %%]
 

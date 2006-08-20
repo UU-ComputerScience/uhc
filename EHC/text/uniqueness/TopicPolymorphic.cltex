@@ -129,7 +129,7 @@ first = \x y -> x
   With this approach, instantiation is correctly dealt with in the presence of polymorphism. But there is a price due to constraint
   duplication. But this price is less than expected. After reduction to normal form, the constraints will only be between sacred
   uniqueness variables, which are typically not many for the ``deeper'' variables.
-  
+
 
 \section{Other complications}
 
@@ -149,7 +149,7 @@ first = \x y -> x
   dictates that we generate |=>=| constraints between uniqueness annotations on the type of the parameter of |f| and the
   uniqueness annotations on the type of |id|. But the type of the parameter of |f| has a deeper structure than that of
   the |id| function. The same strategies that we discussed above can be applied in this case.
-  
+
   In practice, this means that the position of an annotation in a type and constraint is starting to play an important
   role. This role gets even more important in Chapter~\ref{fill this in - data types} about data types. In the type
   system, dealing with position information of an annotation shows up at two places. During the constraint gathering
@@ -207,7 +207,7 @@ data AnnTree
   only use this for constructing the annotation trees, which parts of the annotation tree that are used, depend on the
   actual instantiation strategy of the inferencer. With the concept of annotation trees, we merely make sure that the
   inferencer does not have to deal with types that have no identical shape.
-  
+
   The gap between the constraint gathering and the inferencer is filled by the procedure that constructs the
   annotation trees, and several environments that capture properties of annotations. Among these properties is
   the variance of an annotation, and whether or not it is attached to a type variable. Changes to the type language
@@ -231,7 +231,7 @@ data AnnTree
   Dealing with polymorphism is interesting. Up front, you would expect that it has severe consequences on the
   uniqueness type system, especially in the presence of higher-ranked types. But with the right abstractions in
   place, these changes are rather isolated.
-  
+
   The work we did to put the types into the constraints will be useful in Chapter~\ref{fill this in}. Dealing with
   data types is essentially the problem of additional annotations, and will cause some additional annotations to
   appear in the annotation trees. To support data types, we do not need to change anything beyond the annotation

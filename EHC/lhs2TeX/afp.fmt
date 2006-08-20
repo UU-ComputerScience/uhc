@@ -82,6 +82,8 @@
 
 %format taua        = tau "_{a}"
 %format utau        = "\widetilde{" tau "}"
+%format kappa       = "\kappa"
+%format ukappa      = "\widetilde{\kappa}"
 
 %format Forall		= "{\nabla}"
 

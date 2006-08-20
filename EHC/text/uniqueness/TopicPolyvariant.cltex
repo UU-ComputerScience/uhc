@@ -247,6 +247,26 @@ uniqueness propagation phase can only increase the substitution.
 Another technical detail is that the data type representing reference counts and uniqueness values
 is considered the same, with |*| also representing |2|, and the other way around.
 
+\section{Minimal solution}
+
+  In the introduction, we told that the inferencer infers the minimal solution to the constraints.
+  By means of the fixpoint iteration, we compute a least solution to the constraints~\cite{fill this in - apa boek}
+  , but is this really a single least solution? We verify that this is the case.
+
+  In order for |P| and |Q| to be different, there must be some annotation |delta| for which |P(delta) < Q(delta)|.
+
+  Now comes the clue: the interpretation of the constraints has the property that an increase of a substitution
+  never leads to a decrease of another substitution: the interpretation is monotone increasing. This means that
+  if there exists some solution where some annotation |delta| has some value |eta|, then for any least solution,
+  the value of |delta| should be less or equal to |eta|.
+
+  Consider all the values of |P|. Since |P| is a solution, according to the above property, any least solution
+  will have values that are either equal or smaller to the values of |P|. Since |Q| is a least solution,
+  |Q(delta)| must be smaller or equal to |P(delta)|. But, |P(delta)| is smaller than |Q(delta)|, so
+  |delta| cannot exist, and thus |P| and |Q| are equal.
+
+\section{Summary}
+
 To summarize: in Chapter~\ref{fill this in} we showed how to gather the constraints. In this chapter,
 and this section specifically, we showed how to infer the uniqueness types given the constraints,
 using a fixpoint iteration approach.
@@ -286,10 +306,10 @@ examples.
 For the conventional type system, a non-recursive, monomorphic Let is a trivial addition to the type system: infer a type |tau|
 for |def_expr| with the same environment |Gamma| as the entire expression, then use |tau| for each occurrence of |id|
 by adding it to |Gamma| for |body_expr|. Since the Let is non-recursive, the environment for |def_expr| does not need knowledge
-about |id|, but that will change once we want to support a recursive Let in chapter~\ref{fill this in}. Figure~\ref{fill this in}
-shows the type rule in a more formal fashion.
+about |id|, but that will change once we want to support a recursive Let in chapter~\ref{fill this in}. This gives the
+type rule:
 
-...type rule for Let...
+\rulerCmdUse{RulerUniquenessExamples.EL.expr.base.e.let}
 
 We can apply the same strategy for the uniqueness type system. A set of constraints $S$ is inferred for |expr_def|. For each use
 of |id|, $S$ is copied as the constraint set of the identifier. To show why this approach works, we need the concept of
@@ -324,6 +344,10 @@ constraint. These uniqueness variables on the use-site-types of identifiers, we 
 occurring in a binding group (including nested binding groups), are collected for each binding-group and passed to the
 inferencer. These details are omitted in the type rules.
 
+The type scheme now has an additional result |omega|, where the collected constraints for each binding group are stored:
+
+\rulerCmdUse{RulerUniquenessExamples.UL.expr.base.scheme}
+
 The inferencer performs the constraint duplication. In the gathered constraint set, we insert a placeholder to represent the
 place where the constraints will be inserted, by means of the following constraint:
 
@@ -337,7 +361,7 @@ differ. The list of pairs in the constraint specify which uniqueness variables i
 mapped to which uniqueness variables of the use-site. The other uniqueness variables occurring in the definition-site constraint set
 are replaced by fresh variables in the inferencer (Section~\ref{fill this in}). This gives us the following rule for identifiers:
 
-...type rule for Var...
+\rulerCmdUse{RulerUniquenessExamples.UL.expr.base.e.var}
 
 There is a slight complication here. Identifiers can refer to bindings, but to function parameters as well. How to deal with
 those? In principle, uses of function parameters do not require a constraint set, since the connections between the uniqueness
@@ -349,7 +373,7 @@ in the implementation for performance reasons.
 
 For the Let, we have the following type rule to deal with a Let:
 
-... type rule for Let...
+\rulerCmdUse{RulerUniquenessExamples.UL.expr.base.e.let}
 
 The term \emph{binding group} refers to the bindings of the Let. We assume that each Let is numbered, and this number is
 identifies the binding group. In EH, each Let only contains a single binding group, but technically speaking, the Let
@@ -589,8 +613,10 @@ fixpoint computation on the constraint graph, we can already get lower bound ref
 uniqueness variables. Most of these values will still be |0|, since these values depend largely on the
 usage of the binding group. But constraints from annotations of the user (Section~\ref{fill this in}), or
 ways to deal with a module system (Section~\ref{fill this in}), can give some information that
-allow |*| to be inferred as lower bound reference count. In that case, constraints between nodes with
-such a uniqueness value can be erased. The effectiveness of this strategy remains a question.
+allow |*| to be inferred as lower bound reference count. If we also compute a lower-bound reference-counts,
+we can also infer that some value must be |0| or |1|. In either case, constraints can be removed from the
+graph, thus disconnecting nodes for which we have concrete values. The effectiveness of this strategy, however,
+remains a question.
 
 The rewrites strategies discussed in this subsection, all have the property that they can be implemented in an efficient way. This
 is important, since the performance of the procedure in Subsection~\ref{fill this in} depends largely

@@ -427,8 +427,10 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   corresponding values are \emph{exactly} used once. But, we could interpret the constraints also in a weaker way, and say that the
   corresponding values of a unique type are \emph{at most} used once. In the first case, unique values are also strict, in the
   second case, there is no guarantee that they are always evaluated, and thus not strict. Which way is preferred depends on what has
-  to be done with the result of the typing. The checks in this section only verify that unique types are used at most once, but we
-  give an inference algorithm in Chapter~\ref{fill this in} that will only mark values to be unique if they are really used.
+  to be done with the result of the typing. The checks in this section only verify that unique types are used at most once, since
+  the reference-count annotations only compute an upper bound. To check for exactluy used once, we need to compute a lower bound
+  as well. However, this would not introduce anything new and only obfuscate our discussion, so we omit it for didactic purposes. But,
+  we give an inference algorithm in Chapter~\ref{fill this in} that only marks values to be unique if they are really used.
 
   \subsection{The flow constraint}
 

@@ -1,7 +1,7 @@
 %%[main
 
-\chapter{Beyond EH}
-\label{chapt.EH}
+\chapter{Separate compilation}
+\label{chapt.BeyondEH}
 
 The type system we discussed is tailored to several languages of the EH family. At the time of writing, the languages of the
 EH family are not ready for industrial use, but that is a work in progress. To make the EH language industry ready, some
@@ -35,7 +35,7 @@ complicate these problems.
   values. Exported functions are intended to be shared, otherwise there would be not much use to put the function
   in another module. Arguments and results are not affected, which is important, otherwise almost no value can
   be made unique when using such an exported function.
-  
+
   Depending on the code generator, additional restrictions need to be specified. In case of separate compilation
   with a code generator, the type system can require that the exported binding has a monovariant uniqueness
   type (Section~\ref{fill this in}). But that leads to language design issues: is the programmer forced to
@@ -58,11 +58,11 @@ complicate these problems.
   since there are exponentially many of variations in the number of uniqueness annotations, and there are already a
   lot of uniqueness annotations.
 
-  The other extreme is not to generate any variants for a module, but to put a description in the module of how a 
+  The other extreme is not to generate any variants for a module, but to put a description in the module of how a
   variant can be obtained. This description is a representation of the abstract syntax tree of the module decorated
   with some information needed for the specialization process. This process can hardly be called separate compilation,
   as the code generation process itself is effectively performed on a whole program at a time.
-  
+
   A way in between is to only allow variants for an exported bindings within the same module, and for other modules,
   only allow one variant. That is, the binding of an exported identifier is polyvariant in the same module, but
   monovariant from other modules. The selection of a monovariant uniqueness type from the allowed types given its
@@ -80,14 +80,6 @@ complicate these problems.
 
   Since this is a common problem for an optimizing compiler, perhaps that separate code generation is too much to
   ask for, and is separate compilation without code generation, the approach to take.
-
-\section{Unboxed types}
-
-  Consider unboxed tuples. An unboxed tuple does not have a spine, the only memory that is available is on the
-  two components of the tuple. Thus, the type constructor of an unboxed tuple cannot have a uniqueness annotation.
-  But the problem is then: how to deal with polymorphism in case of unboxed tuples? That is not possible, but
-  a polymorhpic function cannot be applied to an unboxed tuple in the first place.
-  Todo: turn this into a section (if there is more to say about this subject, that is).
 
 %%]
 
