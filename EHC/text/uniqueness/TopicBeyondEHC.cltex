@@ -38,7 +38,7 @@ complicate these problems.
 
   Depending on the code generator, additional restrictions need to be specified. In case of separate compilation
   with a code generator, the type system can require that the exported binding has a monovariant uniqueness
-  type (Section~\ref{fill this in}). But that leads to language design issues: is the programmer forced to
+  type. But that leads to language design issues: is the programmer forced to
   specify a monovariant type, or should the compiler choose one. The first case puts a burden on the programmer,
   the second case leads to yet another choice: should the compiler pick a monovariant type that is valid for
   all uses, or a more restricted type, with the consequence that some legal programs will not be accepted?
@@ -70,16 +70,14 @@ complicate these problems.
   bindings, but choose it too general, and opportunities for optimizations are lost, or result into worse code due
   to insertion of coercions.
 
-  There is no problem if the code generator works with code specialization by dictionary insertion, as we discussed
-  in Section~\ref{fill this in - chapter code generation section bla}. The dictionaries represent the variability,
+  There is no problem if the code generator works with code specialization by dictionary insertion.
+  The dictionaries represent the variability,
   and the code for a module itself can stay the same. But this approach has as problems the overhead of
   dictionary passing, and does not support all code generation optimizations that are possible. The overhead of
   dictionary passing can be eliminated by specialization of dictionaries by means of partial evaluation
-  techniques~\cite{fill this in - huges and partial evaluation dictionaries}, but leads to similar problems with
-  separate compilation.
+  techniques~\cite{jones94dictionaryfree}, but leads to similar problems with separate compilation.
 
   Since this is a common problem for an optimizing compiler, perhaps that separate code generation is too much to
   ask for, and is separate compilation without code generation, the approach to take.
 
 %%]
-

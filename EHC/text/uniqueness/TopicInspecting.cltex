@@ -46,8 +46,8 @@ inspect the results and interpret them, and some way to enforce some restriction
   execution path. This does not scale up to large programs. For a large program, either some direct interaction
   with the solver is required, or if we keep using HTML pretty-prints, the compiler needs to generate some piece
   of javascript code that can calculate the substitutions. Unfortunately, this does not work well together with
-  the fixpoint interation on constraints (Section~\ref{fill this in}), since that would require most of the
-  inferencer to be available in javascript as well. For the normal fixpoint iteration approach (Section~\ref{fill this in}),
+  the fixpoint interation on constraints (Section~\ref{sect.FullRecursion}), since that would require most of the
+  inferencer to be available in javascript as well. For the normal fixpoint iteration approach (Section~\ref{Sect.MonovariantRecursion}),
   only a table representing the constraint graph and the computation of a substitution from this table, needs to be
   generated for each binding group.
 
@@ -57,23 +57,24 @@ inspect the results and interpret them, and some way to enforce some restriction
   not the compiler infers that some value is unique or not.
 
 \section{Signatures}
+\label{sect.Signatures}
 
   But inspecting a program is not enough. Sometimes, you want to enforce that some type is unique, in order to
   guarantee that some optimization is made. Or in case of clean where unique worlds are the main idom for specifying
   IO. Care has to be taken that the world remains unique throughout the program. We discuss how we can use signatures
   to enforce certain uniqueness properties.
   
-  Section~\ref{fill this in} described how signatures can be specified by the programmer. Signatures to replace the
+  Section~\ref{sect.Helping} described how signatures can be specified by the programmer. Signatures to replace the
   constraints for a binding group are difficult to specify since it needs to capture dependencies on other
   binding groups. But we can augment signatures with additional constraints given by the programmer.
   
-  We assume that the programmer specifies the constraints in the same way as in Section~\ref{fill this in}, but
+  We assume that the programmer specifies the constraints in the same way as in Section~\ref{sect.ProgSpecified}, but
   treat the specification differently. The programmer gives a partially annotated type, and a set of
   constraints. Parts of the type that are not annotated do not result into additional constraints. The solver
   is adapted such that it signals an error when the value of a concrete annotation is changed. For example,
   if the programmer supplies the constraints |delta =>= 1, 1 =>= delta|, and |delta| is |*|, then the substitution
   changes |1| in the constraints to |*|. We detect this situation and put the value |top| in the substitution, and
-  the inferencer continues in calculated the fixpoint. If everything is ok, then there are only |0|, |1|, or |*|
+  the inferencer continues in calculated the fixpoint. If everything is ok, there are only |0|, |1|, or |*|
   values in the substitution.
 
   To improve the quality of the error message, the programmer can attach an error message to a constraint. For example:

@@ -4,7 +4,7 @@ preamble tex "%include lhs2TeX.fmt\n%include afp.fmt\n%include ehrules.fmt\n"
 external Ty_Int
 external empty
 
-viewhierarchy = B < E0 < E1 < E < U1, B < E0 < EL < UL, B < D < DC
+viewhierarchy = B < E0 < E1 < E2 < E < U1, B < E0 < E1 < EL < UL, B < D < DC, B < E0 < E1 < E2 < EX < UX
 
 data Expr [expr]
   view E0
@@ -15,7 +15,7 @@ data Expr [expr]
                     a     :: Expr
     | Lam  [e.lam]  ident :: HsName
                     body  :: Expr
-  view E
+  view E2
     | Plus [e.plus] a     :: Expr
                     b     :: Expr
   view EL
@@ -91,6 +91,20 @@ scheme expr "Expr" =
     explain (Within environment |gam| , |e| has annotated type |uty| , provided that the constraints in |bcs| are satisfied.)
     explain cs = (Constraints between annotations)
     explain ty = (Annotated type of the expression)
+  view EX =
+    holes [ e: Expr, gam: Gam, ty: Ty ]
+    judgespec gam :- e : ty
+    judgeuse tex gam :-..type e : ty
+    explain (Within environment |gam| , |e| has type |ty| .)
+    explain gam = (Environment | (ident :-> ty)..._ | with types of identifiers)
+    explain ty = (Type of the expression)
+  view UX =
+    holes [ cs: Cs, uty: Ty ]
+    judgespec gam :- e : uty ~> cs
+    judgeuse tex gam :-..unq e : uty ~> cs
+    explain (Within environment |gam| , |e| has annotated type |uty| , provided that the constraints in |cs| are satisfied.)
+    explain cs = (Constraints between annotations)
+    explain ty = (Annotated type of the expression)
 
 scheme prog "Prog" =
   view U1 =
@@ -122,6 +136,14 @@ ruleset expr.base scheme expr  "Expression type rules" =
       judge R : expr
         | uty = Ty_Int..delta
         | cs = empty
+    view EX =
+      -
+      judge R : expr = gam :- n : Ty_Int
+    view UX =
+      -
+      judge R : expr
+        | uty = Ty_Int..delta
+        | cs = empty
   rule e.var "Var" =
     view E =
       judge G : lookup = ident :-> ty `elem` gam
@@ -146,6 +168,16 @@ ruleset expr.base scheme expr  "Expression type rules" =
       judge R : expr
         | cs = { Inst n [(a, b)] }
         | bcs = empty
+    view EX =
+      judge G : lookup = ident :-> tau `elem` gam
+      -
+      judge R : expr = gam :- ident : tau
+    view UX =
+      judge G : lookup = ident :-> utau.env `elem` gam
+      judge F : freshAnnot = utau.env ~> utau
+      -
+      judge R : expr
+        | cs = empty
   rule e.plus "Plus" =
     view E =
       judge A : expr = gam :- x : Ty_Int
@@ -161,6 +193,27 @@ ruleset expr.base scheme expr  "Expression type rules" =
         | cs = cs.b
       judge C1 : flowPrim = cs.c1 === {c.ref =>= a.ref}
       judge C2 : flowPrim = cs.c2 === {c.ref =>= b.ref}
+      judge P1 : unpackTup = a === { a.ref, _ }
+      judge P2 : unpackTup = b === { b.ref, _ }
+      judge P3 : unpackTup = c === { c.ref, _ }
+      -
+      judge R : expr
+        | cs  = cs.c1 cs.c2 cs.a cs.b
+        | uty = Ty_Int..c
+    view EX =
+      judge A : expr = gam :- x : Ty_Int
+      judge B : expr = gam :- y : Ty_Int
+      -
+      judge R : expr = gam :- (x opplus y) : Ty_Int
+    view UX =
+      judge A : expr
+        | uty = Ty_Int..a
+        | cs = cs.a
+      judge B : expr
+        | uty = Ty_Int..b
+        | cs = cs.b
+      judge C1 : flowPrim2 = cs.c1 === {c.ref =>= a.ref}
+      judge C2 : flowPrim2 = cs.c2 === {c.ref =>= b.ref}
       judge P1 : unpackTup = a === { a.ref, _ }
       judge P2 : unpackTup = b === { b.ref, _ }
       judge P3 : unpackTup = c === { c.ref, _ }
@@ -194,6 +247,29 @@ ruleset expr.base scheme expr  "Expression type rules" =
       -
       judge R : expr
         | cs = cs.m1 cs.m2 cs.r cs.a cs.f
+    view EX =
+      judge F : expr = gam :- f : ty.f
+      judge A : expr = gam :- a : ty.a
+      judge C : match = ty.f <=> (ty.a -> ty)
+      -
+      judge R : expr = gam :- f a : ty
+    view UX =
+      judge F : expr
+        | uty = uty.f
+        | cs  = cs.f
+      judge A : expr
+        | uty = uty.a
+        | cs  = cs.a
+      judge C : match = uty.f <=> (uty.a.1 ->..(delta.1) uty.r)
+      judge C2 : freshAnnot = uty.r ~> uty
+      judge C3 : match = uty.a.1 <=> uty.a
+      judge T1 : unpack = uty === { ty , delta.top }
+      judge M1 : mkFlow = cs.md === delta.top =>= delta
+      judge M2 : mkFlow = cs.ma === uty.a.1 =>= uty.a
+      judge M3 : mkFlow = cs.mr === uty =>= uty.r
+      -
+      judge R : expr
+        | cs = cs.md cs.ma cs.mr cs.a cs.f
   rule e.lam "Lam" =
     view E =
       judge B : expr = (x :-> ty.x + gam) :- b : ty
@@ -208,6 +284,20 @@ ruleset expr.base scheme expr  "Expression type rules" =
       judge R : expr
         | uty = uty.x ->..delta uty
         | cs  = cs.sum cs.b
+    view EX =
+      judge B : expr = (x :-> ty.x + gam) :- b : ty
+      -
+      judge R : expr = gam :- (\x -> b) : (ty.x -> ty)
+    view UX =
+      judge B : expr = (x :-> ty.x + gam) :- b : uty ~> cs.b
+      judge S1 : gather = x :- b ~> ({ x.1:uty.1.a1, "...", x.n:uty.n.an })
+      judge P : unpack = uty.x === { _, a }
+      judge S2 : sum = cs.sum === { sum <= a }
+      -
+      judge R : expr
+        | uty = uty.x ->..delta uty
+        | cs  = cs.sum cs.b
+
   rule e.let "Let" =
     view EL =
       judge E : expr = gam :- expr : ty.expr
@@ -235,10 +325,7 @@ relation lookup =
     judgespec nm :-> ty `elem` gam
 
 relation match =
-  view E =
-    holes [ a: Ty, b: Ty ]
-    judgespec a <=> b
-  view D =
+  view B =
     holes [ a: Ty, b: Ty ]
     judgespec a <=> b
 
@@ -249,18 +336,24 @@ relation unpack =
     judgeuse tex a === "(Sup(" b ")(" c
 
 relation unpackTup =
-  view U1 =
+  view B =
     holes [ a : Ann', b : Ann', c : Ann' ]
     judgespec a === {b, c}
     judgeuse tex a === (b, c)
 
 relation flowPrim =
-  view U1 =
+  view B =
     holes [ a: Ann, b: Ann, cs: Cs ]
     judgespec cs === { a =>= b }
 
+relation flowPrim2 =
+  view UX =
+    holes [ a: Ann, b: Ann, cs: Cs ]
+    judgespec cs === { a =>= b }
+    judgeuse tex cs === { a =>=.s b }
+
 relation flow =
-  view U1 =
+  view B =
     holes [ utyA: Ty, utyB: Ty, cs: Cs ]
     judgespec :- utyA =>= utyB ~> cs
     judgeuse tex :-..flow utyA =>= utyB ~> cs
@@ -391,11 +484,9 @@ relation freshAnnot =
     judgeuse tex freshAnnotate utyA ~> utyB
 
 relation mkFlow =
-  view DC =
+  view B =
     holes [ tyA : Ty, tyB : Ty, cs : Cs ]
     judgespec cs === tyA =>= tyB
     judgeuse tex cs === { tyA =>= tyB }
 
-
 %%]
-

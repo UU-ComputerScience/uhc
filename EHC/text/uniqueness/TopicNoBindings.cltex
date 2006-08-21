@@ -2,7 +2,7 @@
 
 %format sumtuples = "\sum_{i}"
 
-\chapter{Lambda Calculus without bindings}
+\chapter{Lambda calculus without bindings}
 \label{chapt.NoBindings}
 
 This chapter presents a uniqueness type system for a severely restricted language: simply-typed lambda calculus
@@ -46,9 +46,9 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   
   \subsubsection{Uniqueness annotations}
   
-  We encode uniqueness information as an annotation on the type constructors in the type of a value (\ref{to be explained}).
+  We encode uniqueness information as an annotation on the type constructors in the type of a value.
   If the outermost type constructor is unique, then we say that the type is unique, which means that the
-  associated values (\ref{to be explained}) are unique. A value with a shared type is used any number of
+  associated values are unique (Section~\ref{sect.TpAnnConstr}). A value with a shared type is used any number of
   times. We write |(Sup(Int)(1))| for a unique integer and |(Sup(Int)(*))| for a shared integer. Then for
   our example, the types are:
 
@@ -71,6 +71,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   tightly related.
   
   \subsubsection{Reference-count annotations}
+  \label{sect.ReferenceCountAnnotations}
   
   A reference-count annotation tells us how often a certain expression or identifier is
   referenced (usage information). We only count up to two; higher counts are truncated to two. A reference-count
@@ -102,7 +103,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   The uniqueness annotations and reference-count annotations are very similar. For a valid annotation
   of a program holds the property that a uniqueness annotation is be greater or equal to the
   reference-count annotation. But, in general, the uniqueness annotations can be inferred from
-  a program annotated with reference-count annotations (Section~\ref{fill in}).
+  a program annotated with reference-count annotations (Section~\ref{sect.TheInferencer}).
   
   \subsubsection{Checking reference-count annotations and uniqueness annotations}
 
@@ -114,7 +115,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   
   We illustrate the constraints by analyzing the example program\footnote{For clarity, the annotations values have a number
   superscripted, such that you can see which annotation appears where in the constraints.}. For a description of the constraints and their
-  meaning, check Section~\ref{fill this one in}. We reason about a program in an outermost-to-innermost way. We
+  meaning, check Section~\ref{sect.TpAnnConstr}. We reason about a program in an outermost-to-innermost way. We
   start with the entire program (expression):
 
 %%[[wrap=code
@@ -230,10 +231,10 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   choose to insert special code for a addition that performs the addition in place if one of the parameters is unique.
 
   The final part of this example is to verify that the constraints hold. We show by an example how we interpret
-  the constraints. We define when a constraint hold more precisely in Section~\ref{fill this in}. We assume that
+  the constraints. We define when a constraint hold more precisely in Section~\ref{Sect.CheckingConstraints}. We assume that
   the constraints are already checked for consistency, meaning that the uniqueness annotation is greater or
   equal to the reference-count annotation. How a uniqueness annotation should be compared to a reference-count
-  annotation will be explained in Section~\ref{fill this in}. But assume for now that it is the obvious way,
+  annotation will be explained in Section~\ref{sect.TpAnnConstr}. But assume for now that it is the obvious way,
   considering how much the annotations look like normal numbers. With the constraints being consistent, the
   following table\footnote{Again, the annotations are labeled to see where they end up in the interpretation.}
   lists the constraints and the interpretation:
@@ -286,6 +287,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
 
 
 \section{Types, Annotations and Constraints}
+\label{sect.TpAnnConstr}
 
   For the uniqueness type system, we extend the language of types to include
   reference-count annotations and uniqueness annotations. These annotations are
@@ -312,7 +314,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   are also values: \emph{closures}. Such a value is represented by an area of
   memory, and can be unique or shared like any other value. From a more
   theoretical point of view, unique functions have the property that they can
-  be safely inlined~\cite{fill this in}. So, the arrow type constructor has to
+  be safely inlined~\cite{Wansbrough:PhDThesis}. So, the arrow type constructor has to
   be annotated as well, like any other value.
 
   A type constructor gets two annotations: a reference-count annotation and
@@ -328,7 +330,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   program and produces a set of constraints that hold between the annotations,
   if the annotations are valid. The semantics of these constraints make heavy
   use of the fact that one annotation is greater or equal to another annotation,
-  as we will see in Section~\ref{fill this in}.
+  as we will see in Section~\ref{Sect.CheckingConstraints}.
 
   There are two types of constraints for the type system in this chapter:
 
@@ -430,7 +432,7 @@ constraint gathering, and constraint solving, is treated more formally in subseq
   to be done with the result of the typing. The checks in this section only verify that unique types are used at most once, since
   the reference-count annotations only compute an upper bound. To check for exactluy used once, we need to compute a lower bound
   as well. However, this would not introduce anything new and only obfuscate our discussion, so we omit it for didactic purposes. But,
-  we give an inference algorithm in Chapter~\ref{fill this in} that only marks values to be unique if they are really used.
+  we give an inference algorithm in Chapter~\ref{chapt.Polyvariant} that only marks values to be unique if they are really used.
 
   \subsection{The flow constraint}
 

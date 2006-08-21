@@ -40,6 +40,7 @@ instance Functor f => Replaceable f where
 
 
 \section{Conservative approach}
+\label{sect.Conservative}
 
   The approach we mentioned in the introduction of this chapter, works by inventing an annotated type of |replace|, with all
   annotations set to shared. This has an effect on the uses of an overloaded identifier, and for the expressions of an
@@ -78,11 +79,12 @@ instance I .. where
   But instead of calculating this constraint set, we can ask the programmer to specify it, and force it upon each
   instance declaration.
 
-  In Section~\ref{fill this in}, we discussed how to deal with programmer-specified constraint sets, and what
+  In Section~\ref{sect.Helping}, we discussed how to deal with programmer-specified constraint sets, and what
   the problems are. This approach allows better results for overloaded identifiers, but is not a very good
   solution either.
 
 \section{Advanced approach}
+\label{sect.OverloadedAdvanced}
 
   A proper way to deal with overloading is by a careful inspection of the results of overloading resolving.
   Since conventional type inferencing already took place, we can obtain a proof for each overloaded
@@ -116,7 +118,7 @@ instance I .. where
   constraint sets, so from this perspective, taking care of improved type information while constructing
   this fixpoint should be doable. But, to keep this manageable from an engineering point of view, a
   good starting point may be a type system where aspects of unification are encoded in relative
-  isolation, such as in the Top-solver~\cite{fill this in} for Helium~\cite{fill this in}.
+  isolation, such as in the Top-solver~\cite{heeren05phd-errormsg} for Helium~\cite{heeren05www-helium}.
 
   The question in this case is, is it worth it? For that, we investigate what kind of influence the
   uniqueness typing can have upon conventional type inference. Instead of type variables, we can
@@ -138,7 +140,7 @@ instance I .. where
   With this feature we can accomplish some code-generation for uniqueness typing by using
   the class system. Unfortunately, the runtime overhead of dictionary passing can become more
   costly than the optimization is worth. But that can partially be resolved by inlining and
-  partial evaluation of dictionaries~\cite{fill this in - partial evaluation of dictionaries}.
+  partial evaluation of dictionaries~\cite{jones94dictionaryfree}.
   
   But, it is important to note that once an instance is chosen, that it cannot be
   replaced by another instance. For example, if a program via an instance, results into
@@ -155,11 +157,10 @@ instance I .. where
 
   What we saw in this chapter is that overloading offers intresting complications. We can
   approach these complications at different levels of interaction. We saw in
-  Section~\ref{fill this in} that we can separate both aspect by means of a barrier of
-  |*| annotations, but we saw in Section~\ref{fill this in } that we can also make use
+  Section~\ref{sect.Conservative} that we can separate both aspect by means of a barrier of
+  |*| annotations, but we saw in Section~\ref{sect.OverloadedAdvanced} that we can also make use
   of the overloading results to get better uniqueness results. Or allow both systems to
   interact, although this has severe complications on the complexity of the
   implementation.
 
 %%]
-

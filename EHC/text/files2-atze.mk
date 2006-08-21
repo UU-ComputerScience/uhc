@@ -123,4 +123,4 @@ text-variant-uniqueness:
 	$(MAKE) \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyUniqueness --set=inclTOC --set=asArticle --set=useHyperref --set=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=20 \
-	  text-variant-dflt-once # text-variant-dflt-bib
+	  text-variant-dflt-bib

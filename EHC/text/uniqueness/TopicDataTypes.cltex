@@ -14,8 +14,8 @@ by the types in a data-type definition. Although data types influence a lot of p
 required changes are surprisingly isolated. The constraint gathering phase uses a slightly different |\+/|
 constraint, and has now cases for case expressions and pattern matches. The solver needs to deal with
 this altered version of the |\+/| constraint, but that is not much different than we discussed in
-Chapter~\ref{fill this in}, so we leave that out. The only place that is heavily affected, is the conversion
-to annotation trees (Section~\ref{fill this in}). In order to perform this conversion, it turns out that we
+Chapter~\ref{Sect.ConstraintGathering}, so we leave that out. The only place that is heavily affected, is the conversion
+to annotation trees (Section~\ref{sect.ReferenceCountAnnotations}). In order to perform this conversion, it turns out that we
 have to perform two analysis on the data type definitions (Chapter~\ref{chapt.Polarity}).
 
 This chapter is organised as follows. We start with an example that illustrate what the problems are to
@@ -38,7 +38,7 @@ list is a region of memory representing a |Cons| or a |Nil|. In the first case, 
 has two pointers, one to a value of type |a|, and a pointer to the remainder of the list. Each area
 of memory has a corresponding type in the data-type definition. The other way around, each type in
 a data-type definition, corresponds to zero or more memory regions of a value of that data type.
-Similar to Section~\ref{fill this in}, annotations on the type constructors of the data type, classify
+Similar to Section~\ref{sect.TpAnnConstr}, annotations on the type constructors of the data type, classify
 the uniqueness properties of a piece of memory. This example also shows why annotations on the types
 are useful: a value can be infinite, but the representation of the type is finite.
 
@@ -53,7 +53,7 @@ The annotations are important in the case of pattern matching. Pattern matching 
 a value, and if it succeedes, can bring identifiers into scope. Constraints need to be generated
 in order to properly flow use-counts into the annotations on the spine of data types. Annotations
 for the types of the identifiers introduced by the pattern match, needs to be obtained from
-the type of the pattern and the corresponding data-type definition (Section~\ref{fill this in}).
+the type of the pattern and the corresponding data-type definition (Section~\ref{sect.PatternMatch}).
 For example, if some value has type |(Annot(tau)(0)) === (Annot(List)(1)) (Annot(Int)(2))|, and we perform a successful
 pattern match on |Cons (x :: (Annot((Sub(tau)(1)))(3)) (xs :: (Annot((Sub(tau)(2)))(4)))|, then each use
 of |x| and |xs| can potentially result in a use of the spine of the value towards the location where
@@ -72,7 +72,7 @@ the first pattern match that succeeds, is evaluated. Consider the following exam
                     False  -> (x :: (Sub(utau)(3)))
 %%]
 
-The constraint gathering of Section~\ref{fill this in}, generates the constraint |(Sub(utau)(1))) \+/ (Sub(utau)(2))) \+/ (Sub(utau)(3))) <= utau|.
+The constraint gathering of Section~\ref{Sect.ConstraintGathering}, generates the constraint |(Sub(utau)(1))) \+/ (Sub(utau)(2))) \+/ (Sub(utau)(3))) <= utau|.
 This constraint is overly conservative. We only need to add up the occurrences within a single execution path, and take the maximum over
 all execution paths. Suppose that |\-/| stands for maximum, then the constraint is in this case: |((Sub(utau)(1))) \+/ (Sub(utau)(2)))) \-/ (Sub(utau)(3))) <= utau|.
 The result will be that we put a hyper-edge in the constraint graph that contains a addition/max computation, instead of only additions.
@@ -81,6 +81,7 @@ We consider these changes in isolation.
 
 
 \section{Exposed annotations}
+\label{sect.ExposedAnnotations}
 
   Data types complicate the annotation process. Consider the following data-type definition:
 
@@ -92,7 +93,7 @@ We consider these changes in isolation.
   with this situation. A straightforward was is to annotate each |Int| with |delta|. That way we treat the components of a data type the same
   as the data type itself. Although allowed, this does not provide the accurracy we aim for. A second way is to ask the programmer for the
   annotations on the components of the type, and assume that they are shared if that is not the case. This is the approach taken by
-  Clean~\cite{fill this in}. The third way is to expose the annotations on inner types for choosing by the outside world~\cite{fill this in - spj paper}:
+  Clean~\cite{barendsen96uniqueness}. The third way is to expose the annotations on inner types for choosing by the outside world~\cite{Wansbrough:PhDThesis}:
 
 %%[[wrap=code
   data (Dot(Tupple)(delta)([(Sub(delta)(1)), (Sub(delta)(2))])()) = T (Dot(Int)((Delta(1)))({})()) (Dot(Int)((Delta(2)))({})())
@@ -135,13 +136,13 @@ We consider these changes in isolation.
   \subsection{Implementation}
 
   After obtaining the set of annotations for each data type, the implementation of this approach appears to be straightforward
-  after the work that we did for annotation trees in Section~\ref{fill this in}. When annotating a type constructor in a
+  after the work that we did for annotation trees in Section~\ref{sect.AnnotationTrees}. When annotating a type constructor in a
   type, pick fresh annotations for the exposed annotations, and when processing a constraints with these type in them,
   construct an annotation tree with the list of annotations as attachment on the corresponding node in the annotation
   tree. The treatment of exposed annotations in the annotation tree is the same as the other annotations in the
   annotation trees. There is a complication, however, since we need to know the variance of annotations and the fact
   if they are below a function arrow or not. These two subjects are more involved in the presence of data types.
-  Chapter~\ref{fill this in} provides a way to obtain the required information about the location of annotations.
+  Chapter~\ref{chapt.Polarity} provides a way to obtain the required information about the location of annotations.
 
   \subsection{Conclusion}
 
@@ -153,6 +154,7 @@ We consider these changes in isolation.
   component is shared, then the component of |v| is also considered shared, although it could be unique.
 
 \section{Expanded types}
+\label{sect.ExpandedTypes}
 
   There are limitations on the exposed annotations approach. If we look at a list, then each |Cons| in the list is
   treated the same way. We, for example, cannot make a distinction between certain elements of a list. On the other
@@ -239,15 +241,16 @@ We consider these changes in isolation.
   in special circumstances, specified by the programmer by path expressions.
 
 \section{Pattern matches}
+\label{sect.PatternMatch}
 
   Pattern matches bring identifiers into scope, and force evaluation of a certain part of a value to
   determine if a pattern matches or not.
 
   The structure of a pattern match dictates how to pattern match on a type to obtain the type of
-  the subpatterns. An expanded type (Section~\ref{fill this in}) can directly be overlayed on top
+  the subpatterns. An expanded type (Section~\ref{sect.ExpandedTypes}) can directly be overlayed on top
   of a pattern match. An exposed-annotated type can be overlayed on a pattern match after a
   one-step expansion for each pattern match on a constructor. For example, if we take the one-step
-  expansion of Section~ref{fill this in} as example, then a match |Cons x xs|, with the type of
+  expansion of Section~\ref{sect.ExpandedTypes} as example, then a match |Cons x xs|, with the type of
   the entire pattern match being |<Cons (Dot(Int)((Delta(4)))([])()) ((Dot(List)((Delta(2)))((Delta(6)))()) (Dot(Int)((Delta(5)))([])())), Nil>|,
   gives |(Dot(Int)((Delta(4)))([])())| for |x| and |(Dot(List)((Delta(2)))((Delta(6)))()) (Dot(Int)((Delta(5)))([])())| for
   |xs|. So, for pattern matches, we the annotated type is pushed inwards, expanding it if needed for
@@ -335,8 +338,8 @@ We consider these changes in isolation.
   instead of adding up, it is safe to only take the maximum.
 
   To get this improvement implemented, we need to determine which bindings do not appear in the same execution
-  path. These can be obtained from the syntactical structure of the program, by means of a control flow
-  analysis with monotone frameworks~\cite{fill this in}. Each use-site of an identifier is labelled, and we
+  path. These can be obtained from the syntactical structure of the program, by means of an analysis similar
+  to control flow analysis~\cite{nnh99}. Each use-site of an identifier is labelled, and we
   determine for each expression a set, where each element in the set is a set of identifier labels that occur
   sequential. To illustrate this, consider the above example again:
 
@@ -373,9 +376,8 @@ We consider these changes in isolation.
   $\{3\}$ and $\{ \{1, 4\}, \{2, 5\} \}$. Finally, result 10 shows that sets are removed when none of the
   labels are in scope.
 
-  Unfortunately, the existence of (higher order) functions, make this analysis more complicated. At least,
-  if we want to treat each use of a function independently (intra-functional analysis). See
-  InsertAuthorNameHere, et al~\cite{fill this in} for more information about this subject.
+  Unfortunately, the existence of (higher order) functions, make this analysis more complicated. See
+  Flemming Nielson, et all~\cite{nnh99}, for more information about this subject.
 
   With this information, we can determine the addition constraints. We take the result
   set |S| of expression 11 and build the arithmetic expression by taking the maximum (|\-/|) over the groups,
@@ -401,7 +403,7 @@ We consider these changes in isolation.
   are being used, the control flow analysis will produce more sets, and the constraint then evolves to
   a constraint that properly adds annotations where needed. Essentially, the fixpoint computation in
   the solve process does not only involve the substitution, but also the constraints. This is not
-  surprizing, since this already is the case with the instantiation discussed in Section~\ref{fill this in},
+  surprizing, since this already is the case with the instantiation discussed in Section~\ref{sect.Instantiation},
   where constraints are duplicated during the fixpoint computation.
 
   The benefits of the control flow analysis are questionable. The sets can grow large, and the analysis
@@ -446,6 +448,7 @@ the type language instead of the expression language. Notice that this chapter i
 typing, but about a whole other analysis!
 
 \section{Introduction}
+\label{sect.VarIntro}
 
   In this section we introduce the concepts of covariance and below-the-function-arrow on simple types
   without data types.
@@ -522,7 +525,7 @@ typing, but about a whole other analysis!
   ((Annot(Int)(6)), ((Annot(Int)(6)), ((Annot(Int)(6)), ((Annot(Int)(6)), ((Annot(Int)(6)), ... )))))
 %%]
 
-  Applying what we know from Section~\ref{fill this in}, we discover that |(Delta(6))| is covariant
+  Applying the variance rules given in Section~\ref{sect.VarIntro} results in |(Delta(6))| in being covariant
   and not below a function arrow.
 
   The inverse is case for |(Delta(10))|. The type with |(Delta(10))| represents the type of
@@ -532,7 +535,7 @@ typing, but about a whole other analysis!
   ((Annot(Int)(6)) -> ((Annot(Int)(6)) -> ((Annot(Int)(6)) -> ((Annot(Int)(6)) -> ((Annot(Int)(6)) -> ... )))))
 %%]
 
-  Applying the techniques of Section~\ref{fill this in} again, and we see that for the variance, each |(Delta(6))|
+  Applying the techniques of Section~\ref{sect.VarIntro} again, and we see that for the variance, each |(Delta(6))|
   is a multiple of two negations away from an other |(Delta(6))|, and that if there would be a final |(Delta(6))|,
   that it is the result of a function, thus all occurrences of |(Delta(6))| are covariant. As is plainfully
   visible in this example, all occurrences of |(Delta(6))| are below a function arrow.
@@ -551,9 +554,9 @@ typing, but about a whole other analysis!
   expression, except that there are no lambda abstractions. Instead of lambda abstractions, there are data-type
   definitions in the declarations of a Let.
   
-  The type of a type is called a kind, denoted by |kappa| (see Section~\ref{fill this in - ehc section}). We allow
+  The type of a type is called a kind, denoted by |kappa| (see Section~\ref{sect.PolymorphicKinds}). We allow
   a kind to be annotated, similary to a type. An annotated kind is denoted by |ukappa|, following the same conventions
-  as for types in Section~\ref{fill this in}.
+  as for types in Section~\ref{sect.TpAnnConstr}.
 
   Figure~\ref{RulerUniquenessExamples.DC.tp.base} lists the typing rules for constraint gathering on type expressions. We
   omit the cases for extensible records and expanded types, these cases clutter up the type rules, but do nothing more than
@@ -561,7 +564,8 @@ typing, but about a whole other analysis!
   
   \rulerCmdUse{RulerUniquenessExamples.DC.tp.base}
 
-  Figure~\ref{RulerUniquenessExamples.DC.tp.base} has a lot of resemblance with Figure~\ref{fill this in}. At each use of a type constructor, we generate an
+  Figure~\ref{RulerUniquenessExamples.UX.expr.base} has a lot of resemblance with Figure~\ref{RulerUniquenessExamples.DC.tp.base}.
+  At each use of a type constructor, we generate an
   |Inst| constraint. Uses of type variables do not need constraints, similar to lambda-bound identifiers for
   expressions. Finally, at an application, at type applications, there are two |=>=| constraints generated to
   flow results from parameter to argument, and from type expression result to function result. This way, we connect
@@ -586,11 +590,11 @@ typing, but about a whole other analysis!
 
 \section{Constraint interpretation}
 
-  To solve the constraints, we refer back to Chapter~\ref{fill this in}, and especially Section~\ref{fill this in}. Instead
+  To solve the constraints, we refer back to Chapter~\ref{chapt.Polyvariant}, and especially Section~\ref{sect.TheInferencer}. Instead
   of two solver phases, we only need a single solver phase.
 
   We consider variance first. There is a problem with variance in the sence that some of the propagation constraints are
-  not negations, and negations where not represented by the constraint gathering in Section~\ref{fill this in}. But, the
+  not negations, and negations where not represented by the constraint gathering in Section~\ref{Sect.ConstraintGathering}. But, the
   negations only occur in the constraint set of the function arrow, and thus we only have to put this new constraint
   into the initial constraint set:
 

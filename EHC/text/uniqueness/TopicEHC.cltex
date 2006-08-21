@@ -2,7 +2,7 @@
 
 \chapter{Prerequisite: EH}
 
-  We use the Essential Haskell Compiler~\cite{fill this in} as a starting point in order to prototype the uniqueness type system.
+  We use the Essential Haskell Compiler~\cite{dijkstra04ehc-web} as a starting point in order to prototype the uniqueness type system.
   In this chapter we explain why we took this compiler and to bring you up-to-speed with several language
   features of the EH language. Design decisions of the compiler and the language features to support, influenced
   the implementation of the prototype. Although not essential, some background knowledge helps to explain the
@@ -21,7 +21,7 @@
   A full implementation of uniqueness typing in such a compiler is interesting, since people can directly use it
   in practice. But, having to deal with all the intimacies of a large compiler is too much for prototyping.
   A lightweight compiler is preferable to prevent distracting the mind too much. A compiler such as
-  ``Typing Haskell in Haskell''~\cite{fill this in} is the other extreme. It lacks infrastructure. For example,
+  ``Typing Haskell in Haskell''~\cite{jones99typing} is the other extreme. It lacks infrastructure. For example,
   adding additional environments is a tedious task, since it requires explicitly threading of the environments
   as additional parameter and result through all the functions. The compiler to use for experimentation has to
   lie somewhere in between these extremes.
@@ -40,8 +40,8 @@
         not required. For example, our base language for the prototype is EH 7, which allows us to focus
         on the typing problem and not on code generation, which comes in EH 8.
   \item Infrastructure, including type inference, parser, pretty-printing and facilities for debugging.
-  \item Tools such as the UUAG system, which allows us to add the uniqueness type system without having
-        to touch the existing code much.
+  \item Tools such as the UUAG system~\cite{dijkstra04thag-part1}, which allows us to add the uniqueness
+        type system without having to touch the existing code much.
   \end{itemize}
 
 
@@ -91,10 +91,10 @@
 
     More programs can be typed when quantifiers are allowed everywhere. Programs using the ST-monad
     require this feature as the |runST| function has a type with a universal quantifier in a
-    contra-variant position: |runST :: forall a . (forall s . ST s a) -> a|. Simon Peyton Jones, et al,
+    contra-variant position: |runST :: forall a . (forall s . ST s a) -> a|. Simon Peyton Jones, et al~\cite{jones04practical},
     give several examples why such \emph{higher ranked} types are useful, and what the (quite severe)
-    limitations for type inference are~\cite{fill this in}. Further discussion about this topic is out of the scope of
-    this Thesis.
+    limitations for type inference are~\cite{DBLP:journals/toplas/KfouryTU93}. Further discussion about this topic is out of the scope of
+    this master thesis.
     
     Besides quantifiers everywhere, EH also allows qualifiers everywhere. Similar to quantifiers
     everywhere, the location of the qualifier determines who (caller or callee) supplies the
@@ -110,6 +110,7 @@
     discussion is out of the scope of this thesis.
     
   \subsection{Polymorphic kinds}
+  \label{sect.PolymorphicKinds}
   
     Haskell uses \emph{kind inference} to check type signatures. Haskell has monomorphic kinds,
     meaning that free kind variables are defaulted to |*| during generalization, instead of
@@ -120,7 +121,7 @@
     App :: (* -> *) -> * -> *
 %%]
 
-    On the other hand, EH has polymorphic kinds, and would come up with the kind:
+    On the other hand, EH has polymorphic kinds, and comes up with the kind:
     
 %%[[wrap=code
     App :: forall alpha . (alpha -> *) -> alpha -> *
@@ -145,7 +146,7 @@
 
   \subsection{Extensible records}
   
-    EH supports lightweight extensible records as discussed by Simon Peyton Jones, et al~\cite{fill this in}.
+    EH supports lightweight extensible records as discussed by Simon Peyton Jones, et al~\cite{jones99lightweight-ext-rec}.
     A simple way to look at the records is as tuples with named components. There are
     operations to add a component to a record (record extension) and to select a component
     from it (record extraction):
@@ -193,7 +194,7 @@
   helps to discover dependencies between features, which is important to discover how isolated each
   component is, and thus how easily you can make modifications in a certain area.
   
-  A big advantage is the use of the UUAG system underneath. The UUAG system~\cite{fill this in} is used to specify
+  A big advantage is the use of the UUAG system underneath. The UUAG system is used to specify
   traversals over the AST. The UUAG system allows us to hook into the compiler with virtually no
   need to touch the original code. Nonterminals and attributes are chosen in such a way that new
   nonterminals are correctly dealt with by code from copy rules, reducing the amount of required

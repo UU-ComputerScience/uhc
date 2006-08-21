@@ -4,7 +4,7 @@
 \label{chapt.Polymorphic}
 
 This chapter finishes the story about the Let, by explaining how to deal with polymorphism.
-At first glance, the addition of polymorphism doesn't seem to be a very involving change.
+At first glance, the addition of polymorphism does not seem to be a very involving change.
 In essence, we need to deal with annotated type variables in the type rules and that is
 all. Unfortunately, there is one big complication. A type variable can be instantiated
 by a function type, which has more than one type constructor, and consequently, more
@@ -36,9 +36,10 @@ central theme of this chapter.
 %%]
 
   There are two places in the type rules that need to be changed. These are the
-  flow type rules (Figure~\ref{fill this in}), and the type rule that generates
-  the |Inst| constraint (Figure~\ref{fill this in}). Both have one and the same
+  flow type rules (Figure~\ref{RulerUniquenessExamples.U1.flow.base}), and the type rule that generates
+  the |Inst| constraint (Figure~\ref{RulerUniquenessExamples.U1.expr.base}). Both have one and the same
   problem, so let us look only at instantiation.
+  
 
   Consider the folowing example:
 
@@ -62,6 +63,7 @@ central theme of this chapter.
 
 
 \section{Ad-hoc strategy 1: defaulting}
+\label{sect.Defaulting}
 
   The first option is uses a defaulting strategy. Suppose we instantiate some annotated type
   variable |(Annot(alpha)(1))| to |(Sub(utau)(a)) (Annot(->)(2)) (Sub(utau)(b))|. We generate additional constraints that
@@ -94,6 +96,7 @@ first = \x y -> x
 
 
 \section{Strategy 3: graph duplication}
+\label{sect.ConstrDup}
 
   We take an approach in this chapter that deals with the problem by investigating the constraint graph belonging to the
   type that is instantiated. A function with a polymorhpic type cannot touch the contents of a value with a type variable
@@ -151,7 +154,7 @@ first = \x y -> x
   the |id| function. The same strategies that we discussed above can be applied in this case.
 
   In practice, this means that the position of an annotation in a type and constraint is starting to play an important
-  role. This role gets even more important in Chapter~\ref{fill this in - data types} about data types. In the type
+  role. This role gets even more important in Chapter~\ref{chapt.DataTypes} about data types. In the type
   system, dealing with position information of an annotation shows up at two places. During the constraint gathering
   process, we obtain the information, and during inferencing, we use the information. It complicates the implementation
   of both parts of the type system. In the remainder of this chapter, we factor this subject out of both parts of the
@@ -161,6 +164,7 @@ first = \x y -> x
 
 
 \section{Types in constraints}
+\label{sect.AnnotationTrees}
 
   The trick is to put the annotated type in the constraints, instead of a single annotation.
 
@@ -192,7 +196,7 @@ data AnnTree
 %%]
 
   Each type constructor corresponds to an |AnnNode|, and the parameters of a type constructor are the
-  childeren of the type constructor. The list of annotations is empty in this chapter, but in Chapter~\ref{fill this in}
+  childeren of the type constructor. The list of annotations is empty in this chapter, but in Chapter~\ref{chapt.DataTypes}
   this list will represent additional annotations of a type constructor.
 
   The idea is that we simultaneously convert some types to annotation trees, one annotation tree for each type, with
@@ -203,7 +207,7 @@ data AnnTree
   in in some other type |(Sub(utau)(2))|, then |(Sub(utau)(1))| has a deeper structure at this place than |(Sub(utau)(2))|.
   We fill up the gaps in |(Sub(utau)(2))| by duplicating an annotation |(Delta(2))| in |(Sub(utau)(2))|. |(Delta(2))| is
   the deepest annotation in |(Sub(utau)(2))|, such that its counter part in |(Sub(utau)(1))| is a parent of |delta|.
-  This constructs the annotation trees by means of the defaulting strategy of Section~\ref{fill this in}. Note that we
+  This constructs the annotation trees by means of the defaulting strategy of Section~\ref{sect.Defaulting}. Note that we
   only use this for constructing the annotation trees, which parts of the annotation tree that are used, depend on the
   actual instantiation strategy of the inferencer. With the concept of annotation trees, we merely make sure that the
   inferencer does not have to deal with types that have no identical shape.
@@ -221,7 +225,7 @@ data AnnTree
 
   Since we support universal quantification, the question arises what we have to do for existential quantification.
   Existential quantification results into the same problems we have with universal quantification, and the
-  existing infrastructure takes care of it. For example, the constraint duplication strategy (Section~\ref{fill this in})
+  existing infrastructure takes care of it. For example, the constraint duplication strategy (Section~\ref{sect.ConstrDup})
   makes sure that annotations on ``forgotten'' parts of existential types, are properly propagated to the annotations on
   types of functions that remember the ``forgotten'' parts.
 
@@ -232,7 +236,7 @@ data AnnTree
   uniqueness type system, especially in the presence of higher-ranked types. But with the right abstractions in
   place, these changes are rather isolated.
 
-  The work we did to put the types into the constraints will be useful in Chapter~\ref{fill this in}. Dealing with
+  The work we did to put the types into the constraints will be useful in Chapter~\ref{chapt.DataTypes}. Dealing with
   data types is essentially the problem of additional annotations, and will cause some additional annotations to
   appear in the annotation trees. To support data types, we do not need to change anything beyond the annotation
   trees. This means that with this chapter, we close the subjects about the inferencer and constraint graphs.

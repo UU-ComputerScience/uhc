@@ -2,9 +2,9 @@
 
 \chapter{Introduction}
 
-Jan is a student with only one passion in his life aside from programming: a daily shot of coffee in the morning. But, Jan is lazy
-and does not want to bring his own coffee cup with him. Each time he buys a plastic cup, and throws it away afterwards, since he
-does not need the cup anymore after a single use. One day Jan thinks about the cost of buying all these plastic cups and the cost for the government to collect
+Jan is a student with, aside from programming, only one passion in his life: a daily shot of coffee in the morning. But, Jan is lazy
+and does not want to bring his own coffee cup with him. Each time he buys a plastic cup, and throws it away after wards, since he
+does not need the cup after a single use anymore. One day Jan thinks about the cost of buying all these plastic cups and the cost for the government to collect
 the waste. Jan suddenly gets a brilliant idea: recycling. If he changes the process such that he does not throw the cup away, but give it
 back to machine, let the machine clean it now and then, and give it back to him the following day, then he does not need
 to buy the plastic cups each time, and does not need to throw them away, then he can both be lazy and reduce
@@ -12,7 +12,7 @@ the cost of acquiring and disposing the cup.
 
 Taking notice of this life lesson, consider pure, lazy functional programming languages. A program written in
 such a language produces much more garbage than a program written in an imperative language. Referential
-transparency is to blame. To guarantee referential transperancy, compilers generate code that treat values
+transparency is to blame. To guarantee referential transparency, compilers generate code that treat values
 as atomic. As a result, a destructive update is performed on a copy of the original value. The old values
 are garbage collected when they are not used anymore. Suppose that a program is only interested in the
 most up-to-date value. Directly after copying, the old value becomes garbage. But, if we directly recycle
@@ -28,9 +28,9 @@ focus of this thesis.
 
   Usage analysis is the topic of research that deals with the identification of values that can be recycled. Usage analysis determines
   from a program how often certain values are used. Such an analysis is formulated by means of a type system. In linear
-  typing~\cite{fill this in}, the types are partitioned in linear types and non-linear types. A linear type is exactly used once and
+  typing~\cite{DBLP:conf/fpca/TurnerWM95}, the types are partitioned in linear types and non-linear types. A linear type is exactly used once and
   non-linear types are used any number of times. Suppose linear integer is denoted as |(Sup(Int)(linearannot))| and a non-linear integer
-  as |(Sup(Int)(nonlinearannot))|, then the following is a correctly lineary-typed program, assuming that the plus operator requires a
+  as |(Sup(Int)(nonlinearannot))|, then the following is a correctly linearly-typed program, assuming that the plus operator requires a
   linear left argument and a non-linear right argument:
 
 %%[[wrap=code
@@ -42,14 +42,14 @@ focus of this thesis.
    in  (y (Sub(+)(l)) x (Sub(+)(l))) x
 %%]
 
-  Linear types open up a can of optimizations~\cite{fill this in1}\cite{fill this in1}\cite{fill this in1}\cite{fill this in1}\cite{fill this in1}\cite{fill this in1}\cite{fill this in1}\cite{fill this in1}.
+  Linear types open up a can of optimizations~\cite{DBLP:conf/icfp/JonesPS96}\cite{DBLP:journals/entcs/Santos98}\cite{DBLP:conf/ifip/GillJ94}\cite{DBLP:conf/esop/Jones96a}.
   In case of the example, the implementation of addition can, instead of allocating new memory to store the result of the addition, reuse
   the memory of |y|. But these optimizations need a guarantee that a linear type is used exactly once. A linear type system is used to
   either verify that these types are correct, or to infer them.
 
-  Production compilers such as GHC~\cite{fill this in}, typically perform some usage analysis on their core language~\cite{fill this in - update analysis}\cite{fil this in - linear types}\cite{fill this in - other thingie} in the back-end, but
-  there are some compilers that perform the analysis in the front-end. For Clean~\cite{fill this in}, usage analysis is part of the language
-  specification, called \emph{uniqueness typing}. Uniqueness typing and linear typing are virtually the same~\cite{fill this in}.
+  Production compilers such as GHC~\cite{DBLP:conf/fp/HallHPJW92}, typically perform some usage analysis on their core language in the back-end
+  of the compiler, but there are some compilers that perform the analysis in the front-end. For Clean~\cite{barendsen96uniqueness}, usage analysis
+  is part of the language specification, called \emph{uniqueness typing}. Uniqueness typing and linear typing are virtually the same~\cite{DBLP:journals/tcs/Harrington06}.
 
 \section{Goals}
 
@@ -62,46 +62,56 @@ focus of this thesis.
   to be used more than its spine. The absence of these assumptions complicates the type system severely.
   
   The results of this master project is this master thesis discussing the uniqueness type system, and a prototype implementation in
-  the EH compiler~\cite{fill this in}.
+  the EH compiler~\cite{dijkstra04ehc-web}.
 
-\section{Organisation of this thesis}
+\section{Organization of this thesis}
 
   This thesis is organized as follows. We start with our choice for EHC as starting point for our prototype. Then there are several
-  chapters explainnig the type system. We introduce language features such as recursion and data types chapter by chapter. The chosen
+  chapters explaining the type system. We introduce language features such as recursion and data types chapter by chapter. The chosen
   order allows us to discuss features in isolation, and to let earlier chapters pave the way for subsequent chapters. The following
   table lists the chapters and the main contents:
 
   \begin{tabular}{l||p{40em}}
   Chapter & Contents \\
   \hline
-  Chapter~\ref{fill this in} & Constraint-based uniqueness type checking on a simply-typed lambda calculus. We show how types
+  Chapter~\ref{chapt.NoBindings} & Constraint-based uniqueness type checking on a simply-typed lambda calculus. We show how types
                                are annotated, and how constraints are generated between the annotations on the types. In the end
                                we show how we can interpret the constraints to verify that the types are correctly annotated.\\
-  Chapter~\ref{fill this in} & Polyvariant uniqueness-type inference on generated constraints, and the support for a monomorphic and
-                               non-recursive Let. Constraints are translated to a graph representation, which we rewrite to prevent
+  Chapter~\ref{chapt.Polyvariant} & Polyvariant uniqueness-type inference on generated constraints, and the support for a monomorphic and
+                               non-recursive |let|. Constraints are translated to a graph representation, which we rewrite to prevent
                                constraint duplication.
                                \\
-  Chapter~\ref{fill this in} & We extend the Let in this chapter to support recursion. Recursion has influence on the constraint
-                               generation process, and we show how we can abstract from is by using a special instantiation
+  Chapter~\ref{chapt.Recursion} & We extend the |let| in this chapter to support recursion. Recursion has influence on the constraint
+                               generation process, and we show how we can abstract from it by using a special instantiation
                                constraint. We show that there are several ways to deal with this instantiation constraint in
                                the uniqueness-type inferencer.\\
-  Chapter~\ref{fill this in} & Support for full Haskell-like Lets, by supporting polymorhpism. We show that instantiation of
+  Chapter~\ref{chapt.Polymorphic} & Support for full Haskell-like Lets, by supporting polymorphism. We show that instantiation of
                                a polymorphic type to a type with more structure, gives complications and give several approaches
-                               of how to deal with this problem.\\
-  Chapter~\ref{fill this in} & In this chapter, we add data types. We do not need much new concepts in order to support
-                               data types, but the complications on the type level make it an involving change. It also requires
-                               a thorough understanding of Chapter~\ref{fill this in} and Chapter~\ref{fill this in}, and
-                               requires some minor concepts of the other earlier chapters. We also discuss
-                               a case-statement in this chapter, and show how to deal with parallel execution paths. \\
-  Chapter~\ref{fill this in} & We show how we can use the type system on the type level for analyses on data types. As an
+                               to deal with this problem.\\
+  Chapter~\ref{chapt.DataTypes} & In this chapter, we add data types to the language. We do not need much new concepts in order to support
+                               data types, but the complications on the type level make it an involving change. It requires
+                               a thorough understanding of Chapter~\ref{chapt.NoBindings} and Chapter~\ref{chapt.Polyvariant}, and
+                               requires some concepts of the other earlier chapters. We also discuss
+                               a |case| expression in this chapter, and show how to deal with parallel execution paths. \\
+  Chapter~\ref{chapt.Polarity} & We show how we can use the type system on the type level for analyzes on data types. As an
                                example, we show how we can use it to determine polarity (variance) for data types of Haskell.\\
-  Chapter~\ref{fill this in} & How to deal with overloading is the last aspect of the type system that we discuss. We discuss
-                               several approaches and their consequences.
+  Chapter~\ref{chapt.Overloading} & How to deal with overloading is the last aspect of the type system that we discuss. We discuss
+                               several approaches and their consequences.\\
+  Chapter~\ref{chap.InspectingResults} & There comes a time when the programmer is not satisfied with the results of the
+                                         uniqueness typing, or wants to make sure that some result is enforced. Our type
+                                         system is located in the front-end of the compiler, allowing interaction between
+                                         the type system and the programmer. We discuss some mechanisms that the
+                                         programmer can use to influence the type system, or to inspect the derived
+                                         uniqueness types of a program.
   \end{tabular}
-
-  The remaining chapters look at the type system from a more practical view. How to use the types to optimize code, how to
-  explain to the programmer why and how a certain uniqueness property is derived, and we finish with some performance
-  issues that need to be taken care of in order to implement the type system in a real production compiler.
+  
+  Of these chapters, Chapter~\ref{chapt.NoBindings} and Chapter~\ref{chapt.Polyvariant} are required to understand the
+  other chapters, and some understanding of these chapters is required to understand the others. The other chapters
+  are incremental in the sense that they build on the results of previous chapters, but less heavily.
+  
+  Finally, as a sidenote, we want to disambiguate our uses of the word Haskell. With haskell, we mean Haskell 98
+  as defined by Simon Peyton Jones, et all~\cite{peytonjones03has98-rev-rep}. If required, we assume the
+  presence of some commonly used extensions such as multiparameter type classes, functional dependencies, and
+  higher-ranked types.
 
 %%]
-

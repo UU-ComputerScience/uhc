@@ -3,52 +3,52 @@
 \chapter{Conclusion}
 \label{chapt.Conclusion}
 
-Chapter~\ref{fill this in - 2} defines a constraint-based type system for uniqueness typing. The language of
+Chapter~\ref{chapt.NoBindings} defines a constraint-based type system for uniqueness typing. The language of
 this chapter does not even come close to that of a real function programming language, but had sufficient
 features to show which constraints are generated and how they are interpreted to check a uniqueness typing
-of a program. Chapter~\ref{fill this in - 3} extends on this approach by showing how uniqueness inference
+of a program. Chapter~\ref{chapt.Polyvariant} extends on this approach by showing how uniqueness inference
 can be performed on the constraints. In the chapters that follow, we gradually showed how language features
 interact with the type system. We did not shy away from implementation-level problems (such as supporting
-data types) and present problems that we encountered and discuss solutions. Finally, in Chapter~\ref{fill this in - overloading}
+data types) and present problems that we encountered and discuss solutions. Finally, in Chapter~\ref{chapt.Overloading}
 we ended up with a uniqueness type inferencer that supports sufficient language features to use in the
-front-end of a compiler. Chapter~\ref{fill this in} shows that the analysis of the inferencer in the front-end
+front-end of a compiler. Chapter~\ref{chap.InspectingResults} shows that the analysis of the inferencer in the front-end
 of the compiler, is important to interact demands and results with the programmer.
 
 Key advantages of the type system are that it is constraint-based, fully polyvarant, accurate and scalable. It is constraint-based
-so the implementation is split up in multiple phases, seperating concerns and isolating changes. It is fully polyvariant (Chapter~\ref{fill this in}),
+so the implementation is split up in multiple phases, seperating concerns and isolating changes. It is fully polyvariant (Chapter~\ref{chapt.Polyvariant}),
 meaning that each use-site can have different uniqueness types (if the constraints allow it), also in the presence of
-recursion (Chapter~\ref{fill this in}). We show in Section~\ref{fill this in} that polyvariant recursion for uniqueness types is decidable, if
+recursion (Chapter~\ref{chapt.Recursion}). We show in Section~\ref{sect.FullRecursion} that polyvariant recursion for uniqueness types is decidable, if
 polymorhpic recursion is taken care of. The type system is accurate in the sense that it allows components of a value to
 be typed differently that the spine of a value, such that functions that only touch the spine, do not influence the
 components. This is our main difference with other approaches, as it require us to assume that the presence of some
 identifier does not guarantee that the identifier is actually used. Finally, with scalable, we mean that there are several
 possibilities to improve the performance drastically by giving up some accuracy. Performance is scaled by influencing two
-factors, the number of annotations (Section~\ref{fill this in}, Section~\ref{fill this in}) and the number of instantiation-operations on the constraint graph (Section~\ref{fill this in}).
+factors, the number of annotations (Section~\ref{sect.Defaulting}, Section~\ref{sect.ExposedAnnotations}) and the number of instantiation-operations on the constraint graph (Section~\ref{sect.FullRecursion}).
 
 Unfortunately, there are some disadvantages. During prototyping, we discovered that despite our ways to
 isolate changes, it still complicates the compiler from an engineering point of view. Since uniqueness
 types can occur everywhere, any change to the compiler requires a verification that the uniqueness types
-are preserved by the change. Since Haskell does not rely on uniqueness typing in order to perform IO~\cite{paper of IO monad}, and
-the rise of smart data-type implementations, such as versioned arrays~\cite{fill this in}, it remains a
+are preserved by the change. Since Haskell does not rely on uniqueness typing in order to perform IO~\cite{DBLP:journals/jfp/Jones03t}, and
+the rise of smart data-type implementations, such as versioned arrays (|Data.Array.Diff|), it remains a
 question if the additional complications of uniqueness typing are worth it.
 
 \section{Related work}
 
-  Philip Wadler~\cite{fill this in}, presented a linear type system for functional languages. This system
+  Philip Wadler~\cite{wadler90linear}, presented a linear type system for functional languages. This system
   assumes that each occurrence of an identifier occurs sequential and is always used. As a consequence, the
   type system is virtually the same as a conventional type system, except with restrictions on the
-  environment~\cite{fill this in - environments}.
+  environment.
   
-  Clean~\cite{fill this in} analyzes the abstract syntax tree how different uses of an identifier occur, and
+  The Clean compiler~\cite{barendsen96uniqueness} analyzes the abstract syntax tree how different uses of an identifier occur, and
   marks a type of an identifier shared if it occurs more than once in sequence. The type system then
   propagates these values accordingly. The type system of clean gives a polyvariant uniqueness typing. There
   is support for data types, but data types cannot be parameterized over uniqueness annotations occurring in
-  types of a data-type definition (Section~\ref{fill this in - exposed types}).
+  types of a data-type definition (Section~\ref{sect.ExposedAnnotations}).
   
   Clean has a restriction that if a component of a value is unique, then the spine must be unique as well. Or
   in other words, that the components are assumed to be used at least as much as the spine. This ensures that
   Clean does not have the graph-duplication problems for instantiation in the presence of polymorphism
-  (Section~\ref{fill this in}). A consequence is that in curry-style function application, the order in which
+  (Section~\ref{sect.ConstrDup}). A consequence is that in curry-style function application, the order in which
   the parameters are defined matters. There can be no unique parameter to the left of a shared parameter.
   
   Another restriction is that clean assumes that each occurrence of an identifier means that it is also
@@ -61,14 +61,15 @@ question if the additional complications of uniqueness typing are worth it.
 
   A consequence of these restrictions is that the type sytem is much easier and has to do less work. Uniqueness
   signatures are rather trivial to implement in the system of Clean, as well as the interaction with a
-  class system, in countrary to our system (Section~\ref{fill this in}) and (Section~\ref{fill this in}).
+  class system, in countrary to our system (Section~\ref{sect.Helping}) and (Section~\ref{sect.OverloadedAdvanced}).
   
-  In a recent PhD thesis, SomeGuyOfWhichIForgotTheName~\cite{fill this in}, gives an overview of different usability-analysis,
+  In a recent PhD thesis, Keith Wansbrough~\cite{Wansbrough:PhDThesis}, gives an overview of different usability-analysis,
   and discusses an implementation of usage-analysis in the backend of the GHC compiler. Their implementation
-  is polyvariant, and uses a similar way of dealing with data types as our exposed annotations in Section~\ref{fill this in}.
+  is polyvariant, and uses a similar way of dealing with data types as our exposed annotations in Section~\ref{sect.ExposedAnnotations}.
   However, this type system also makes the assumption on the spine of values.
 
 \section{Future work}
+\label{sect.FutureWork}
 
   There are three directions of future work. In the first place, the lessons learned by the prototype and this
   thesis, can be used to create a faster performing prototype, where more care is taken to speed up the
@@ -78,11 +79,10 @@ question if the additional complications of uniqueness typing are worth it.
   the identification of problem sites, or other mechanisms to inspect the result of the analysis.
   
   At last, there is the topic of using the uniqueness types to improve code. At the time of writing, a
-  code generator is added to EHC~\cite{fill this in}, and other approaches of code generation for EHC
+  code generator is added to EHC~\cite{ExceptionalGRIN}, and other approaches of code generation for EHC
   are under investigation. There is already a lot of work done in this field, but it remains a question which
   of that work is applicable for EHC, and how to treat the problem of polyvariance.
   
   So, this master thesis opens up several topics of research for other master-thesis projects.
 
 %%]
-
