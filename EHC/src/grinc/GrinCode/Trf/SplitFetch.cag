@@ -1,7 +1,7 @@
 Split fetch operation and right hoist the fetch operation until it does not
 load an undefined value.
 
-TODO: Rename map for identifiers can be much more efficient. 
+TODO: Rename map for identifiers can be much more efficient.
 
 %%[0
 %include lhs2TeX.fmt
@@ -67,11 +67,11 @@ SEM GrExpr [ | | fetchPointer: {Maybe HsName} ]
 
 
 SEM GrPat [ | | mbTag: {Maybe GrTag} names: {[HsName]} ]
-  |     Tag Node  		lhs  .  mbTag  =  Just @tag.grTrf
-  | * - Tag Node  		lhs  .  mbTag  =  Nothing
-  | Node  				lhs  .  names  =  @fldL
-  | Var   				lhs  .  names  =  error "SplitFetch.ag: GrPat.Var: should never this should never be called"
-  | Tag Empty  LitInt  	lhs  .  names  =  []
+  |     Tag Node        lhs  .  mbTag  =  Just @tag.grTrf
+  | * - Tag Node        lhs  .  mbTag  =  Nothing
+  | Node                lhs  .  names  =  @fldL
+  | Var                 lhs  .  names  =  error "SplitFetch.ag: GrPat.Var: should never this should never be called"
+  | Tag Empty  LitInt   lhs  .  names  =  []
 
 SEM GrExpr
   | Seq   loc  .  fetches  = do { p <- @expr.fetchPointer
@@ -88,14 +88,14 @@ SEM GrExpr
 -- AD 20060526: avoid AGC error msg
 %%[8
 SEM GrPat
-  | NodeSplit    		loc      .  names  	=  []
+  | NodeSplit           loc      .  names   =  []
 %%]
 
 %%%%%%%%%%%%%%%%
 %% RightHoist %%
 %%%%%%%%%%%%%%%%
 
-invariant: a field will only be used after the tag is used.  
+invariant: a field will only be used after the tag is used.
 
 invariant: a fetch is followed by a case which scrutenizes the tag variable or
 tag is known at compile time. (is this truly the case?)
@@ -120,7 +120,7 @@ SEM GrExpr
                                           tagVar            = fst h
                                           buildFetches tag  = (tagVar, GrExpr_Unit (GrVal_Tag tag))
                                                               : map (\(a,b) -> (a, specializeFetch tag b)) t
-                                          knownFetches = if @isLit 
+                                          knownFetches = if @isLit
                                                          then l
                                                          else maybe [h] buildFetches mbTag
                                           unknownFetches = if @isLit || isJust mbTag then [] else t
@@ -137,7 +137,7 @@ ATTR AllAlt [ mbFetches: {Maybe [(HsName, GrExpr)]} | | ]
 SEM GrAlt
   | Alt  loc  .  mbExprInfo  =  do { fetches <- @lhs.mbFetches
                                    ; tag     <- @pat.mbTag
-                                   ; fetches <- return $ take (nodeSize tag @lhs.nodeSizes)  fetches
+                                   ; fetches <- return $ take (nodeSize tag @lhs.nodeSizes) fetches
                                    ; return $  (foldr (specializeFetch' tag)
                                                       (@lhs.uniq, @lhs.renameMap, [])
                                                       fetches
@@ -187,7 +187,7 @@ type FetchEnv = Map.Map HsName [(HsName, GrExpr)]
 fromJust' s Nothing = error $ "fromJust':" ++ s
 fromJust' _ (Just v) = v
 
-nodeSize t nodeSizes = (1 + Map.findWithDefault 0 t nodeSizes)
+nodeSize t nodeSizes = (if grinStoreArity then 1 else 0) + Map.findWithDefault 0 t nodeSizes
 
 getTagName (GrVal_Var    v               )  =  v
 getTagName (GrVal_Tag   (GrTag_Var v)    )  =  v
@@ -234,10 +234,10 @@ smallestNode hptMap p = fst $ inBetweenLength (map snd nodes) 0
     where
     nodes = getNodes (absFetch hptMap p)
 
-inBetweenLength list n = if allHaveMore 
+inBetweenLength list n = if allHaveMore
                          then inBetweenLength newList (n+1)
                          else (n, n + foldl (flip $ max . length) 0 list)
-    where 
+    where
     (newList, allHaveMore) = all' hasMore list
 
 hasMore []     =  ([], False)
@@ -250,5 +250,3 @@ all' f (h:t)  =  (h':t', b && b')
     (t', b') = all' f t
 
 %%]
-
-% vim:ts=4:et:ai:

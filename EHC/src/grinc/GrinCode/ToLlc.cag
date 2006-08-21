@@ -246,7 +246,7 @@ SEM GrVal
 
 
 SEM GrTag
- | Lit     lhs.llcDoc = text (categStr @categ ++ show @nm)
+ | Lit     lhs.llcDoc = text (categStr @categ ++ show (hsnAlphanumeric @nm))
  | Var     lhs.llcDoc = text (show @nm)
  | Unboxed lhs.llcDoc = text "GrTag:Unboxed"
 
@@ -259,7 +259,7 @@ SEM GrPat
 
 {
 showGrTag :: GrTag -> String
-showGrTag (GrTag_Lit categ n nm) = categStr categ ++ show nm
+showGrTag (GrTag_Lit categ n nm) = categStr categ ++ show (hsnAlphanumeric nm)
 showGrTag (GrTag_Var nm) = show nm
 showGrTag (GrTag_Unboxed) = "GrTag:Unboxed"
 
@@ -403,7 +403,7 @@ tagConstants eas
 
 functionName :: HsName -> String
 functionName nm
- = "fun_" ++ show nm
+ = show nm
 
 callStat ::  HsName -> [PP_Doc] -> PP_Doc
 callStat nm ps
@@ -484,6 +484,7 @@ commaSeparated = concat . intersperse ", "
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[8
 {
+
 macrodefinition :: PP_Doc -> PP_Doc -> PP_Doc
 macrodefinition nm body
  = "#define" >#< nm >#< body

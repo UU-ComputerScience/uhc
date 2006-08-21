@@ -12,7 +12,13 @@ primitives information table.
 
 %%[8.abstractValues import({%{GRIN}HeapPointsToFixpoint},{%{EH}Base.Common(HsName(..))}, qualified Data.Set as Set, {%{EH}GrinCode},{%{GRIN}GRINCCommon})
 
-undefinedAV  = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "False"), [AV_Basic])
+
+avForArity = if grinStoreArity
+              then [AV_Basic]
+              else []
+
+
+undefinedAV  = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "False"), avForArity)
                                        ]
                                        -- HPT-analysis seems to insist that there is at least one value here,
                                        -- so an arbitrary value (False) is inserted in this list.
@@ -20,12 +26,12 @@ undefinedAV  = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "False"), [A
 
 unboxedBasic = AV_Nodes $ Map.fromList [ (GrTag_Unboxed, [AV_Basic])
                                        ]
-booleanNodes = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "False"), [AV_Basic])
-                                       , (GrTag_Lit GrTagCon 1 (HNm "True" ), [AV_Basic])
+booleanNodes = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "False"), avForArity)
+                                       , (GrTag_Lit GrTagCon 1 (HNm "True" ), avForArity)
                                        ]
-compareNodes = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "EQ"), [AV_Basic])
-                                       , (GrTag_Lit GrTagCon 1 (HNm "GT"), [AV_Basic])
-                                       , (GrTag_Lit GrTagCon 2 (HNm "LT"), [AV_Basic])
+compareNodes = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "EQ"), avForArity)
+                                       , (GrTag_Lit GrTagCon 1 (HNm "GT"), avForArity)
+                                       , (GrTag_Lit GrTagCon 2 (HNm "LT"), avForArity)
                                        ]
 %%]
 

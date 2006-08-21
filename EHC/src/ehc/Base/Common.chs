@@ -94,7 +94,7 @@
 %%[8 export(hsnFloat)
 %%]
 
-%%[8 export(hsnPrefix,hsnSuffix)
+%%[8 export(hsnPrefix,hsnSuffix, hsnAlphanumeric)
 %%]
 
 %%[8 export(hsnUndefined,hsnPrimAddInt,hsnMain)
@@ -217,7 +217,51 @@ hsnSuffix                           ::  HsName -> String -> HsName
 hsnSuffix       hsn   p
   = case hsnInitLast hsn of
       (ns,n) -> mkHNm (ns,HNm (show n ++ p))
+
+stringAlphanumeric :: String -> String
+stringAlphanumeric s
+ | isAlphaNum c || c=='_'  = s
+ | otherwise               = concat (map (('_':).charAlphanumeric) s)
+  where c = head s   -- we assume that the whole string is alphanumeric if the first character is.
+                     -- this is more efficient than testing each character of the string separately,
+                     -- and can safely be assumed in Haskell
+
+charAlphanumeric :: Char -> String
+charAlphanumeric ':' = "colon"
+charAlphanumeric '!' = "exclam"
+charAlphanumeric '@' = "at"
+charAlphanumeric '#' = "number"
+charAlphanumeric '$' = "dollar"
+charAlphanumeric '%' = "percent"
+charAlphanumeric '^' = "circon"
+charAlphanumeric '&' = "amp"
+charAlphanumeric '*' = "star"
+charAlphanumeric '+' = "plus"
+charAlphanumeric '-' = "minus"
+charAlphanumeric '.' = "dot"
+charAlphanumeric '/' = "slash"
+charAlphanumeric '\\' = "backsl"
+charAlphanumeric '|' = "bar"
+charAlphanumeric '<' = "lt"
+charAlphanumeric '=' = "eq"
+charAlphanumeric '>' = "gt"
+charAlphanumeric '?' = "quest"
+charAlphanumeric '~' = "tilde"
+charAlphanumeric '[' = "sub"    -- although this is not a legal Haskell operator symbol, it can be part of the Nil constructor
+charAlphanumeric ']' = "bus"
+charAlphanumeric '(' = "open"    -- although this is not a legal Haskell operator symbol, it can be part of the tuple constructor
+charAlphanumeric ',' = "comma"
+charAlphanumeric ')' = "close"
+charAlphanumeric  c  = error ("no alphanumeric representation for " ++ [c])
+
+hsnAlphanumeric :: HsName -> HsName
+hsnAlphanumeric (HNm s) = HNm (stringAlphanumeric s)
+hsnAlphanumeric n@(HNPos p) = n
 %%]
+%%[12
+hsnAlphanumeric (HNmQ ns) = HNmQ (map hsnAlphanumeric ns)
+%%]
+
 
 %%[8
 hsnToFPath :: HsName -> FPath
@@ -248,8 +292,8 @@ hsnQualified = snd . hsnInitLast
 hsnQualifier :: HsName -> Maybe HsName
 hsnQualifier n
   = case hsnInitLast n of
-  	  ([],_) -> Nothing
-  	  (ns,_) -> Just (mkHNm ns)
+      ([],_) -> Nothing
+      (ns,_) -> Just (mkHNm ns)
 
 hsnPrefixQual :: HsName -> HsName -> HsName
 hsnPrefixQual m n = mkHNm (hsnToList m ++ hsnToList n)
@@ -412,7 +456,7 @@ hsnFloat                            =   HNm "Float"
 %%[8
 hsnMain                             =   HNm "main"
 hsnUndefined                        =   HNm "undefined"
-hsnPrimAddInt						=	HNm "primAddInt"
+hsnPrimAddInt                       =   HNm "primAddInt"
 %%]
 
 hsnOImpl                            =   HNm "(!"
@@ -1168,7 +1212,7 @@ data IdOccKind
   | IdOcc_Inst
   | IdOcc_Dflt
 %%]
-  | IdOcc_Any 
+  | IdOcc_Any
   deriving (Show,Eq,Ord)
 %%]
 
