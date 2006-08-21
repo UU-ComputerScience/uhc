@@ -137,8 +137,13 @@ data HaskellState
 %%]
   deriving (Show,Eq)
 
+data EHState
+  = EHStart
+  | EHAllSem
+  deriving (Show,Eq)
+
 data EHCompileUnitState
-  = ECUSUnknown | ECUSHaskell HaskellState | ECUSEh | ECUSGrin | ECUSFail
+  = ECUSUnknown | ECUSHaskell HaskellState | ECUSEh EHState | ECUSGrin | ECUSFail
   deriving (Show,Eq)
 
 data EHCompileUnit
@@ -211,7 +216,7 @@ emptyECU
 
 %%[8
 instance CompileUnitState EHCompileUnitState where
-  cusDefault      = ECUSEh
+  cusDefault      = ECUSEh EHStart
   cusUnk          = ECUSUnknown
   cusIsUnk        = (==ECUSUnknown)
 %%]
@@ -287,7 +292,7 @@ type EHCompilePhase a = CompilePhase HsName EHCompileUnit EHCompileRunStateInfo 
 type FileSuffMp = Map.Map String EHCompileUnitState
 
 fileSuffMpHs :: FileSuffMp
-fileSuffMpHs = Map.fromList [ ( "hs", ECUSHaskell HSStart ), ( "eh", ECUSEh ), ( "grin", ECUSGrin ) ]
+fileSuffMpHs = Map.fromList [ ( "hs", ECUSHaskell HSStart ), ( "eh", ECUSEh EHStart ), ( "grin", ECUSGrin ) ]
 
 %%]
 
@@ -513,13 +518,9 @@ cpProcessCore modNm
           
 cpProcessGrin :: HsName -> EHCompilePhase ()
 cpProcessGrin modNm 
-  = cpSeq [ cpOutputGrin modNm
+  = cpSeq [ cpOutputGrin "grin2" modNm
           , cpTranslateGrin modNm
           ]
-
-
-
-
 
 cpOutputCore :: HsName -> EHCompilePhase ()
 cpOutputCore modNm
@@ -538,8 +539,8 @@ cpOutputCore modNm
                  (lift (putPPFile (fpathToStr (fpathSetSuff "java" jFP)) jPP 120))
          }
 
-cpOutputGrin :: HsName -> EHCompilePhase ()
-cpOutputGrin modNm
+cpOutputGrin :: String -> HsName -> EHCompilePhase ()
+cpOutputGrin suff modNm
   =  do  {  cr <- get
          ;  let  ecu    = crCU modNm cr
                  crsi   = crStateInfo cr
@@ -549,7 +550,7 @@ cpOutputGrin modNm
                  grin   = panicJust "cpOutputGrin" mbGrin
                  grinPP = ppGrModule grin
          ;  when (ehcOptEmitGrin opts)
-                 (lift $ putPPFile (fpathToStr (fpathSetSuff "grin2" fp)) grinPP 1000)
+                 (lift $ putPPFile (fpathToStr (fpathSetSuff suff fp)) grinPP 1000)
          ;  when (ehcOptShowGrin opts)
                  (lift $ putPPLn grinPP)
          }
@@ -609,9 +610,10 @@ cpCompileCU targHSState modNm
            (_,Just HSOnlyImports)
              -> return ()
 %%]
-           (ECUSEh,_)
+           (ECUSEh EHStart,_)
              -> do { msg "Compiling EH"
                    ; cpSeq [cpParseEH modNm, cpProcessEH modNm]
+                   ; cpUpdCU modNm (ecuStoreState (ECUSEh EHAllSem))
                    }
            (ECUSGrin,_)
              -> do { msg "Compiling Grin"

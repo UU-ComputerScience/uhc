@@ -134,9 +134,9 @@ ATTR AllNT AGItf [ moduleNm: HsName | | ]
 %%[1 hs
 data IdAspect
   = IdAsp_Val_Var
-  | IdAsp_Val_Pat       {iaspDecl ::  EH.Decl                         }
-  | IdAsp_Val_Fun       {iaspPatL :: [EH.PatExpr], iaspBody :: EH.Expr}
-  | IdAsp_Val_Sig       {iaspDecl ::  EH.Decl                         }
+  | IdAsp_Val_Pat       {iaspDecl   ::  EH.Decl                         }
+  | IdAsp_Val_Fun       {iaspPatL   :: [EH.PatExpr], iaspBody :: EH.Expr}
+  | IdAsp_Val_Sig       {iaspDecl   ::  EH.Decl                         }
   | IdAsp_Val_Fix
   | IdAsp_Val_Con
 %%[[5
@@ -147,20 +147,20 @@ data IdAspect
   | IdAsp_Type_Var
 %%]
 %%[[5
-  | IdAsp_Type_Def      {iaspDecl ::  EH.Decl                         }
+  | IdAsp_Type_Def      {iaspDecl   ::  EH.Decl                         }
 %%]
 %%[[6
   | IdAsp_Kind_Con
 %%]
 %%[[8
-  | IdAsp_Val_FFI       {iaspDecl ::  EH.Decl                         }
+  | IdAsp_Val_FFI       {iaspDecl   ::  EH.Decl                         }
 %%]
 %%[[9
   | IdAsp_Class_Class
-  | IdAsp_Class_Def     {iaspDecl ::  EH.Decl                         }
+  | IdAsp_Class_Def     {iaspDecls  ::  EH.Decl                         }
   | IdAsp_Inst_Inst
-  | IdAsp_Inst_Def      {iaspDecl ::  EH.Decl                         }
-  | IdAsp_Dflt_Def      {iaspDecl ::  EH.Decl                         }
+  | IdAsp_Inst_Def      {iaspDecl   ::  EH.Decl, iaspClassNm :: HsName  }
+  | IdAsp_Dflt_Def      {iaspDecl   ::  EH.Decl                         }
 %%]
   | IdAsp_Any
 %%]
@@ -198,7 +198,7 @@ instance PP IdAspect where
   pp  IdAsp_Class_Class     = pp "CLS"
   pp (IdAsp_Class_Def _)    = pp "DEF"
   pp  IdAsp_Inst_Inst       = pp "INS"
-  pp (IdAsp_Inst_Def _ )    = pp "DEF"
+  pp (IdAsp_Inst_Def _ _)   = pp "DEF"
   pp (IdAsp_Dflt_Def _ )    = pp "DEF"
 %%]
   pp  IdAsp_Any             = pp "ANY"
@@ -352,16 +352,16 @@ SEM Declaration
                         .   idOccDefGamType
                                         =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
                         .   idOccDefGamSigAsVar
-                                        =   gamMapElts (\o -> o {doccAsp = case doccAsp o of {IdAsp_Val_Sig _ -> IdAsp_Val_Var ; a -> a}}) @where.idOccDefGam
+                                        =   assocLToGam [ (o,d {doccAsp = IdAsp_Val_Var}) | (o,d@(IdDefOcc _ (IdAsp_Val_Sig _) _ _)) <- gamToAssocL @where.idOccDefGam ]
                         .   idOccDefGam =   gamUnit @idOccDef (IdDefOcc @idOccDef (IdAsp_Class_Def @eh) @lhs.nmLev @simpletype.range)
                                             `gamUnion` @idOccDefGamSigAsVar
     | Instance
         loc             .   idOccDef    =   IdOcc @instancename IdOcc_Inst
                         .   idOccDefVal =   IdOcc @instancename IdOcc_Val
-                        .   idOccDefGam =   assocLToGam [ (o,IdDefOcc o a @lhs.nmLev @range) | (o,a) <- [(@idOccDef,IdAsp_Inst_Def @eh),(@idOccDefVal,IdAsp_Val_Var)] ]
+                        .   idOccDefGam =   assocLToGam [ (o,IdDefOcc o a @lhs.nmLev @range) | (o,a) <- [(@idOccDef,IdAsp_Inst_Def @eh @name),(@idOccDefVal,IdAsp_Val_Var)] ]
     | InstanceUseImplicitly
         loc             .   idOccDef    =   IdOcc @instancename IdOcc_Inst
-                        .   idOccDefGam =   gamUnit @idOccDef (IdDefOcc @idOccDef (IdAsp_Inst_Def @eh) @lhs.nmLev @range)
+                        .   idOccDefGam =   gamUnit @idOccDef (IdDefOcc @idOccDef (IdAsp_Inst_Def @eh @name) @lhs.nmLev @range)
     | Default
         loc             .   idOccDef    =   IdOcc @defaultname IdOcc_Dflt
                         .   idOccDefGam =   gamUnit @idOccDef (IdDefOcc @idOccDef (IdAsp_Dflt_Def @eh) @lhs.nmLev @range)
@@ -511,6 +511,8 @@ SEM Declaration
 %%[[9
     | Class
         loc             .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
+                        .   idOccDefGamInstForClass
+                                        =   fst $ gamPartition (\_ d -> case doccAsp d of {IdAsp_Inst_Def _ n | n == @simpletype.name -> True ; _ -> False}) $ @lhs.idGam
 %%]
 %%]
 
@@ -776,13 +778,13 @@ SEM Declaration
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
                                         =   splitIdUseOccGam @lhs.nmLev
                                                 (gamUnions [@context.idUseOccGam,@where.idUseOccGam])
-                        .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
-                                            `idDpdMpUnion`
-                                            idToOccGam2DpdMp [@idOccDef] @idOccDefGamSigAsVar
-                                            `idDpdMpUnion`
-                                            idFrOccGam2DpdMp @idOccDefGamSigAsVar [@idOccDef]
-                                            `idDpdMpUnion`
-                                            @where.idDpdMp
+                        .   idDpdMp     =   idDpdMpUnions
+                                                [ idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+                                                , idToOccGam2DpdMp [@idOccDef] @idOccDefGamSigAsVar
+                                                , idToOccGam2DpdMp [@idOccDef] @idOccDefGamInstForClass
+                                                , idFrOccGam2DpdMp @idOccDefGamSigAsVar [@idOccDef]
+                                                , @where.idDpdMp
+                                                ]
         lhs             .   undefOccGam =   gamUnions [@undefOccGam,@where.undefOccGam]
     | Instance
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
@@ -805,6 +807,18 @@ SEM Declaration
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
 %%]
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Split of class decls into sigs + value bindings
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+%%]
+SEM Declaration
+    | Class
+        loc             .   (idOccDefSigGam,idOccDefValGam)
+                                        =   gamPartition (\_ d -> case doccAsp d of {IdAsp_Val_Sig _ -> True ; _ -> False})
+                                                         @where.idOccDefGam
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Ordering according to dependencies
@@ -878,7 +892,7 @@ mkIdDefEH def
 %%[[9
       IdAsp_Class_Def decl
         -> [decl]
-      IdAsp_Inst_Def decl
+      IdAsp_Inst_Def decl _
         -> [decl]
       IdAsp_Dflt_Def decl
         -> [] -- [decl]
@@ -934,24 +948,17 @@ mkIdOccSccEH r g moss
         oss = maybe [gamKeys g] id moss
 %%]
 
-%%[9
-%%]
-
 %%[1
 SEM Body
     | Body
         loc             .   (mkSccLet,_,errReorder)
                                         =   mkIdOccSccEH @range @declarations.idOccDefGam (Just @sccOrder)
-%%]
 
-%%[1
 SEM Expression
     | Let
         loc             .   (mkSccLet,_,errReorder)
                                         =   mkIdOccSccEH @range @declarations.idOccDefGam (Just @sccOrder)
-%%]
 
-%%[1
 SEM RightHandSide
     | Expression
 %%[[5
@@ -961,19 +968,24 @@ SEM RightHandSide
                                         =   mkIdOccSccEH @range @where.idOccDefGam (Just @sccOrder)
 %%]
 
-%%[9
-SEM Declaration
-    | Instance
-        loc             .   (_,ehReorderedDecls,errReorder)
-                                        =   mkIdOccSccEH @range @where.idOccDefGam Nothing
-%%]
-
 %%[5
 SEM Qualifier
     | Let
         loc             .   (mkSccLet,_,errReorder)
                                         =   mkIdOccSccEH @range @declarations.idOccDefGam (Just @sccOrder)
 %%]
+
+%%[9
+SEM Declaration
+    | Instance
+        loc             .   (_,ehReorderedDecls,errReorder)
+                                        =   mkIdOccSccEH @range @where.idOccDefGam Nothing
+    | Class
+        loc             .   (_,ehReorderedDecls,errReorder)
+                                        =   mkIdOccSccEH @range @where.idOccDefGam Nothing
+%%]
+                        .   (_,ehReorderedSigDecls,errReorderSig)
+                                        =   mkIdOccSccEH @range @idOccDefSigGam Nothing
 
 %%[9
 SEM Statement
@@ -986,7 +998,7 @@ SEM Statement
 %%% 'main' exists?         
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1
+%%[8
 SEM Body
     | Body
         loc             .   mainExists  =   maybe False (const True) $ gamLookup (IdOcc hsnMain IdOcc_Val) @declarations.idOccDefGam

@@ -49,7 +49,7 @@ instance PP RunVal where
   pp (RVInt     v       ) = "I:" >|< pp v
   pp (RVNode    v       ) = "N:" >|< ppListSep "(" ")" " " (elems v)
   pp (RVPtr     v       ) = "P:" >|< pp v
-  pp (RVGlob    v _ _   ) = "G:" >|< pp v
+  pp (RVGlob    v ns e  ) = "G:" >|< pp v >#< ppSpaces ns -- >#< "= ..."
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -141,30 +141,32 @@ primMp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-grEvalTag :: RunState -> GrTag -> Int -> ([RunVal],RunVal->[RunVal])
-grEvalTag rs t sz
+grEvalTag :: RunState -> GrTag -> ([RunVal],Bool)
+grEvalTag rs t
   =  case t of
         GrTag_Lit GrTagCon           i _    ->  ([RVCat NdCon,RVInt i],szYes)
         GrTag_Lit GrTagHole          _ _    ->  ([RVCat NdHole],szNo)
         GrTag_Lit GrTagRec           _ _    ->  ([RVCat NdRec,RVInt 0],szYes)
-        GrTag_Lit GrTagFun           i n    ->  ([RVCat NdFun,rsVar rs n],szNo)
+        GrTag_Lit GrTagFun           _ n    ->  ([RVCat NdFun,rsVar rs n],szNo)
         GrTag_Lit GrTagApp           _ _    ->  ([RVCat NdApp],szNo)
         GrTag_Lit (GrTagPApp nMiss)  _ n    ->  ([RVCat NdPApp,RVInt nMiss,rsVar rs n],szNo)
-  where  szNo   = const []
-         szYes  = (:[])
+  where  szNo   = False -- const []
+         szYes  = True  -- (:[])
 %%]
 
 %%[8
 grEvalVal :: RunState -> GrVal -> RunVal
 grEvalVal rs v
   =  case v of
-        GrVal_Node t    (s:fL)  ->  mkRN (tgL ++ mkSz (grEvalVal rs s) ++ map (grEvalVal rs) fL)
-                                    where (tgL,mkSz) = grEvalTag rs t (length fL)
+        GrVal_Node t    fL      ->  case grEvalTag rs t of
+                                        (tgL,True ) -> mkRN (tgL ++ [RVInt (length fL)] ++ vL)
+                                        (tgL,False) -> mkRN (tgL ++                        vL)
+                                where vL = map (grEvalVal rs) fL
         GrVal_Tag  t            ->  error "tag only variables not implemented"
         GrVal_NodeAdapt r adL   ->  case rsVar rs r of
                                         RVNode a
                                           ->  case elems a of
-                                                (c:t:RVInt sz:fL)
+                                                (c:t:_:fL)
                                                   ->  mkRN (c:t:RVInt (length fL'):fL')
                                                       where  fL' = ad adL fL 0
                                                              ad (GrAdapt_Ins o v:adL') fL fO | o' == fO
@@ -376,7 +378,7 @@ grPatBind rs re v p
           ->  case v of
                 RVNode a
                   ->  case elems a of
-                        (RVCat _:_:vfL)
+                        (RVCat _:_:_:vfL)
                           ->  Map.fromList (zip pfL vfL) `Map.union` re
         GrPat_Tag _
           ->  re

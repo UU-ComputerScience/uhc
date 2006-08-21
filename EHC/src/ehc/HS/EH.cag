@@ -20,7 +20,15 @@ ATTR Module [ | | eh: {EH.Expr} ]
 
 %%[1
 ATTR Body [ | | eh: {EH.Expr} ]
+%%]
 
+%%[1.hsnMain
+SEM Body
+    | Body
+        lhs         .   eh          =   rngLift @range EH.Expr_IConst 0
+%%]
+
+%%[8 -1.hsnMain
 SEM Body
     | Body
         lhs         .   eh          =   @mkSccLet (if @mainExists then rngLift @range EH.Expr_Var hsnMain
@@ -77,7 +85,7 @@ SEM Declaration
         loc         .   eh          =   let h = rngLift @range EH.TyExpr_Pred
                                                 $ rngLift @range EH.PrExpr_Class @simpletype.name (map EH.TyExpr_Var @simpletype.typevariables)
                                             c = map (rngLift @range EH.TyExpr_Pred) @context.eh
-                                        in  rngLift @range EH.Decl_Class (mkArrow c h) @dependencies.eh (maybe [] id @where.eh)
+                                        in  rngLift @range EH.Decl_Class (mkArrow c h) @dependencies.eh (concat @ehReorderedDecls)
         lhs         .   eh          =   [@eh]
     | Instance
         loc         .   eh          =   let h = rngLift @range EH.TyExpr_Pred

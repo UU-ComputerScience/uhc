@@ -18,18 +18,35 @@ SEM Body
                                         in  (if null ns then [] else [mkErr_NamesNotIntrod' "" ns])
                                         ++ @errReorder
                                         ++ @declarations.errL
-%%]
 
-%%[1
 SEM Expression
+    | Let
+        loc         .   errL        =   @errReorder ++ @declarations.errL ++ @expression.errL
     | InfixApplicationChainTop
         loc         .   errL        =   @errRearr ++ @expression.errL
+
+SEM RightHandSide
+    | Expression
+        loc         .   errL        =   @errReorder ++ @expression.errL ++ @where.errL
+
+%%]
+
+%%[5
+SEM Qualifier
+    | Let
+        loc         .   errL        =   @errReorder ++ @declarations.errL
 %%]
 
 %%[9
-%%]
+SEM Statement
+    | Let
+        loc         .   errL        =   @errReorder ++ @declarations.errL
+
 SEM Declaration
 	| Class
-		loc			.	errL		=	@errNotAllowed ++ @context.errL ++ @simpletype.errL ++ @dependencies.errL ++ @where.errL
+		loc			.	errL		=	@errReorder ++ @context.errL ++ @simpletype.errL ++ @dependencies.errL ++ @where.errL
+	| Instance
+		loc			.	errL		=	@errReorder ++ @context.errL ++ @types.errL ++ @where.errL
+%%]
 
 
