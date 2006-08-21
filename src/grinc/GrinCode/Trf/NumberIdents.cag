@@ -38,15 +38,15 @@ type LookupList = Map.Map HsName HsName
 findNewVar fm e = Map.findWithDefault (error $ "undeclared variable " ++ show e) e fm
 
 addMaybe u fm = maybe (fm, u) addName
-	where
-	addName e | e == wildcardNm  = (fm                       , u  )
-	          | otherwise        = (Map.insert e (HNPos u) fm, u+1)
+    where
+    addName e | e == wildcardNm  = (fm                       , u  )
+              | otherwise        = (Map.insert e (HNPos u) fm, u+1)
 
 addList u fm = onFst (flip listInsert fm) . foldr addName ([], [], u)
-	where
-	onFst f (a, b, c)                       = (f a          , b             , c  )
-	addName e (l, l2, u) | e == wildcardNm  = (l            , wildcardNr:l2 , u  )
-	                     | otherwise        = ((e,HNPos u):l, ((HNPos u):l2), u+1)
+    where
+    onFst f (a, b, c)                       = (f a          , b             , c  )
+    addName e (l, l2, u) | e == wildcardNm  = (l            , wildcardNr:l2 , u  )
+                         | otherwise        = ((e,HNPos u):l, ((HNPos u):l2), u+1)
 %%]
 
 %%[8.grTrf
@@ -81,9 +81,20 @@ SEM GrAGItf
            loc     .  bind2id      = @module.bind2idFrag
                    .  bind2idList  = Map.toList @module.bind2idFrag
                    .  var2idList   = Map.toList @module.var2id
-                   .  bindMapping  = concat [ [(i, n), (i+1, n)] | (n, HNPos i) <- @bind2idList, not (n `elem` [applyNm, evalNm]) ] -- ugly
-                   .  varMapping   = let changeCaf n = if Map.member n @module.globalVars then hsnPrefix "global_" n else n
-                                     in [ (i, changeCaf n) | (n, HNPos i) <- @var2idList ]
+                   .  bindMapping  = concat [ [ (i, n2)
+                                              , (i+1, n2)
+                                              ]
+                                            | (n, HNPos i) <- @bind2idList
+                                            , not (n `elem` [applyNm, evalNm])
+                                            , let n2 = hsnPrefix "fun_" (hsnAlphanumeric n)
+                                            ] -- ugly
+                   .  varMapping   = let changeCaf n
+                                           = if    Map.member n @module.globalVars
+                                              then hsnPrefix "global_" (hsnAlphanumeric n)
+                                              else hsnAlphanumeric n
+                                     in  [ (i, changeCaf n)
+                                         | (n, HNPos i) <- @var2idList
+                                         ]
                    .  varMap       = (array (@low, @high-1) (@bindMapping ++ @varMapping), Map.empty)
 
 SEM GrModule

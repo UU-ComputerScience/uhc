@@ -57,9 +57,17 @@ Ehc outputs P0-tags instead of F-Tags in some situations, we rewrite them to F-T
 Also, replace F-Tags for constructorfunctions by C-tags
 
 %%[8.P0tag_TO_Ftag
+
+{
+isConstructorInitial :: Char -> Bool
+isConstructorInitial c = isUpper c || c==':' || c=='['
+}
+
+
+
 SEM GrTag
   | Lit  lhs  .  grTrf  = GrTag_Lit
-                             (if   isUpper (head (show @nm)) && (@categ==GrTagFun || @categ==GrTagPApp 0)
+                             (if   isConstructorInitial (head (show @nm)) && (@categ==GrTagFun || @categ==GrTagPApp 0)
                               then GrTagCon
                               else
                               if   @categ == GrTagPApp 0
