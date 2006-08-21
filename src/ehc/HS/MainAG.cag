@@ -152,7 +152,7 @@ SEM Pattern
 SEM Declaration
     | Instance
         loc         .   instancename=   maybe (mkHNm @lUniq) id @maybeinstancename
-    | InstanceUseImplicitly
+    | Class InstanceUseImplicitly
         loc         .   instancename=   mkHNm @lUniq
     | Default
         loc         .   defaultname =   mkHNm @lUniq

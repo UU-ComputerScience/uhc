@@ -21,7 +21,7 @@ test-lists:
 	for v in $(EHC_VARIANTS) ; \
 	do \
 	  ehs= ; \
-	  vv=`echo $$v | sed -e 's/_[0-9]+//'` ; \
+	  vv=`echo $$v | sed -e 's/_[0-9]//'` ; \
 	  for ((i = 1 ; i <= $${vv} ; i++)) ; do ehs="$$ehs `echo $${i}-*.eh`" ; done ; \
 	  echo "$$ehs" > $$v.lst ; \
 	done
