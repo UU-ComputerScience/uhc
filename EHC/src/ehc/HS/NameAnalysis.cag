@@ -3,6 +3,86 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The actual name used for referring to value/type/...
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+SEM Declaration
+    | TypeSignature
+        loc             .   refnames 	=   @names
+%%[[8
+	| ForeignImport ForeignExport
+		loc				.	refname		=	@name
+%%]
+%%[[9
+	| Instance InstanceUseImplicitly
+		loc				.	refname		=	@name
+	| Class Instance InstanceUseImplicitly
+		loc				.	instancerefname
+										=	@instancename
+%%]
+%%]
+
+%%[1
+SEM LeftHandSide
+	| Function
+		loc				.	refname		=	@name
+	| Infix
+		loc				.	refname		=	@operator
+%%]
+
+%%[1
+SEM Type
+	| Constructor
+		loc				.	refname		=	@name
+%%]
+
+%%[1
+SEM Expression
+	| Variable Constructor
+%%[[7
+	  RecordConstruction
+%%]
+		loc				.	refname		=	@name
+%%]
+
+%%[1
+SEM Pattern
+	| Variable Constructor As
+		loc				.	refname		=	@name
+	| InfixConstructor
+		loc				.	refname		=	@constructorOperator
+%%]
+
+%%[5
+ATTR SimpleType [ | | refname: HsName ]
+
+SEM SimpleType
+	| SimpleType
+		loc				.	refname		=	@name
+%%]
+
+%%[7
+SEM FieldDeclaration
+	| FieldDeclaration
+        loc             .   refnames 	=   @names
+
+SEM RecordExpressionBinding
+	| RecordExpressionBinding
+        loc             .   refname 	=   @name
+%%]
+
+%%[9
+SEM ContextItem
+	| Class
+		loc				.	refname		=	@name
+
+SEM Deriving
+	| Deriving
+		loc				.	refname		=	@name
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Levels
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -319,7 +399,7 @@ ATTR
 %%[1
 SEM Declaration
     | TypeSignature
-        loc             .   idOccDefGam =   assocLToGam [ (o,IdDefOcc o (IdAsp_Val_Sig (@mkEHSig n)) @lhs.nmLev @range) | n <- @names, let o = IdOcc n IdOcc_Val ]
+        loc             .   idOccDefGam =   assocLToGam [ (o,IdDefOcc o (IdAsp_Val_Sig (@mkEHSig n)) @lhs.nmLev @range) | n <- @refnames, let o = IdOcc n IdOcc_Val ]
 %%[[3
                         .   idOccDefGamType
                                         =   tvarS2IdDefOccGam @nmLev @range @type.freeTvarS
@@ -334,7 +414,7 @@ SEM Declaration
 %%]
 %%[5
     | Data Newtype
-        loc             .   idOccDef    =   IdOcc @simpletype.name IdOcc_Type
+        loc             .   idOccDef    =   IdOcc @simpletype.refname IdOcc_Type
                         .   idOccDefGamType
                                         =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables -- ???? or from constrs itself, so implicit exists is allowed
                         .   idOccDefGamConstrs
@@ -348,7 +428,7 @@ SEM Declaration
 %%]
 %%[9
     | Class
-        loc             .   idOccDef    =   IdOcc @simpletype.name IdOcc_Class
+        loc             .   idOccDef    =   IdOcc @simpletype.refname IdOcc_Class
                         .   idOccDefGamType
                                         =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
                         .   idOccDefGamSigAsVar
@@ -356,19 +436,19 @@ SEM Declaration
                         .   idOccDefGam =   gamUnit @idOccDef (IdDefOcc @idOccDef (IdAsp_Class_Def @eh) @lhs.nmLev @simpletype.range)
                                             `gamUnion` @idOccDefGamSigAsVar
     | Instance
-        loc             .   idOccDef    =   IdOcc @instancename IdOcc_Inst
-                        .   idOccDefVal =   IdOcc @instancename IdOcc_Val
-                        .   idOccDefGam =   assocLToGam [ (o,IdDefOcc o a @lhs.nmLev @range) | (o,a) <- [(@idOccDef,IdAsp_Inst_Def @eh @name),(@idOccDefVal,IdAsp_Val_Var)] ]
+        loc             .   idOccDef    =   IdOcc @instancerefname IdOcc_Inst
+                        .   idOccDefVal =   IdOcc @instancerefname IdOcc_Val
+                        .   idOccDefGam =   assocLToGam [ (o,IdDefOcc o a @lhs.nmLev @range) | (o,a) <- [(@idOccDef,IdAsp_Inst_Def @eh @refname),(@idOccDefVal,IdAsp_Val_Var)] ]
     | InstanceUseImplicitly
-        loc             .   idOccDef    =   IdOcc @instancename IdOcc_Inst
-                        .   idOccDefGam =   gamUnit @idOccDef (IdDefOcc @idOccDef (IdAsp_Inst_Def @eh @name) @lhs.nmLev @range)
+        loc             .   idOccDef    =   IdOcc @instancerefname IdOcc_Inst
+                        .   idOccDefGam =   gamUnit @idOccDef (IdDefOcc @idOccDef (IdAsp_Inst_Def @eh @refname) @lhs.nmLev @range)
     | Default
         loc             .   idOccDef    =   IdOcc @defaultname IdOcc_Dflt
                         .   idOccDefGam =   gamUnit @idOccDef (IdDefOcc @idOccDef (IdAsp_Dflt_Def @eh) @lhs.nmLev @range)
 %%]
 %%[11
     | Type
-        loc             .   idOccDef    =   IdOcc @simpletype.name IdOcc_Type
+        loc             .   idOccDef    =   IdOcc @simpletype.refname IdOcc_Type
                         .   idOccDefGam =   gamUnit @idOccDef (IdDefOcc @idOccDef (IdAsp_Type_Def @eh) @lhs.nmLev @simpletype.range)
 %%]
 %%[5
@@ -389,12 +469,12 @@ SEM Declaration
         loc             .   idOccDefGamType
                                         =   tvarS2IdDefOccGam @lhs.nmLev @range @type.freeTvarS
     | ForeignImport
-        loc             .   idOccDef    =   IdOcc @name IdOcc_Val
+        loc             .   idOccDef    =   IdOcc @refname IdOcc_Val
                         .   idOccDefGam =   gamUnit @idOccDef (IdDefOcc @idOccDef (IdAsp_Val_FFI @eh) @lhs.nmLev @range)
 %%]
 %%[88
     | ForeignExport -- ??
-        loc             .   idOccDef    =   IdOcc @name IdOcc_Val
+        loc             .   idOccDef    =   IdOcc @refname IdOcc_Val
                         .   idOccDefGam =   gamUnit @idOccDef (IdDefOcc @idOccDef IdAsp_Val_Var @lhs.nmLev @range)
 %%]
 
@@ -408,7 +488,7 @@ SEM FunctionBinding
 %%[1
 SEM Pattern
     | Variable As
-        loc             .   idOccDef    =   IdOcc @name IdOcc_Val
+        loc             .   idOccDef    =   IdOcc @refname IdOcc_Val
                         .   idOccDefGam =   gamUnit @idOccDef (IdDefOcc @idOccDef IdAsp_Val_Var @lhs.nmLev @range)
     | As
         lhs             .   idOccDefGam =   @idOccDefGam `gamAddGam` @pattern.idOccDefGam
@@ -512,7 +592,7 @@ SEM Declaration
     | Class
         loc             .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
                         .   idOccDefGamInstForClass
-                                        =   fst $ gamPartition (\_ d -> case doccAsp d of {IdAsp_Inst_Def _ n | n == @simpletype.name -> True ; _ -> False}) $ @lhs.idGam
+                                        =   fst $ gamPartition (\_ d -> case doccAsp d of {IdAsp_Inst_Def _ n | n == @simpletype.refname -> True ; _ -> False}) $ @lhs.idGam
 %%]
 %%]
 
@@ -595,7 +675,7 @@ SEM Expression
 %%[[7
       RecordConstruction
 %%]
-        loc             .   idUseOccGam =   mkUseOccGam @lhs.idGam [@name] IdOcc_Val @idAsp @range
+        loc             .   idUseOccGam =   mkUseOccGam @lhs.idGam [@refname] IdOcc_Val @idAsp @range
     | Negate
         loc             .   idUseOccGam =   mkUseOccGam @lhs.idGam [hsnNegate] IdOcc_Val IdAsp_Val_Var @range
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@expression.idUseOccGam]
@@ -678,17 +758,17 @@ SEM Type
 %%[9
 SEM ContextItem
     | Class
-        loc             .   idUseOccGam =   mkUseOccGam @lhs.idGam [@name] IdOcc_Class IdAsp_Class_Class @range
+        loc             .   idUseOccGam =   mkUseOccGam @lhs.idGam [@refname] IdOcc_Class IdAsp_Class_Class @range
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@types.idUseOccGam]
 
 SEM Deriving
     | Deriving
-        loc             .   idUseOccGam =   mkUseOccGam @lhs.idGam [@name] IdOcc_Class IdAsp_Class_Class @range
+        loc             .   idUseOccGam =   mkUseOccGam @lhs.idGam [@refname] IdOcc_Class IdAsp_Class_Class @range
 
 SEM Declaration
     | Instance InstanceUseImplicitly
         loc             .   idUseOccGamInst
-                                        =   mkUseOccGam @lhs.idGam [@name] IdOcc_Class IdAsp_Class_Class @range
+                                        =   mkUseOccGam @lhs.idGam [@refname] IdOcc_Class IdAsp_Class_Class @range
 %%]
 
 %%[9

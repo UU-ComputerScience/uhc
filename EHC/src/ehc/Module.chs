@@ -27,10 +27,11 @@
 
 %%[12
 data ModEnt
-  = ModEntVal   { mentName :: HsName }
-  | ModEntType  { mentName :: HsName }
-  | ModEntData  { mentName :: HsName, mentSubs :: Set.Set ModEnt }
-  | ModEntClass { mentName :: HsName, mentSubs :: Set.Set ModEnt }
+  = ModEntVal               { mentName :: HsName }
+  | ModEntType              { mentName :: HsName }
+  | ModEntData              { mentName :: HsName, mentSubs :: Set.Set ModEnt }
+  | ModEntClass             { mentName :: HsName, mentSubs :: Set.Set ModEnt }
+  | ModEntImplicitInstance  { mentName :: HsName }
   deriving (Show,Eq,Ord)
 
 type ModEntRel = Rel.Rel HsName ModEnt

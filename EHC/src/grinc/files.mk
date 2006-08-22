@@ -28,7 +28,7 @@ GRINC_HS_UTIL_SRC_CHS					:= $(patsubst %,$(SRC_GRINC_PREFIX)%.chs,\
 													GRINCCommon \
 													HeapPointsToFixpoint Primitives \
 													CmmCode/Building \
-													CompilerDriver \
+													CompilerDriver Config \
 											)
 GRINC_HS_UTIL_DRV_HS					:= $(patsubst $(SRC_GRINC_PREFIX)%.chs,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_HS_UTIL_SRC_CHS))
 

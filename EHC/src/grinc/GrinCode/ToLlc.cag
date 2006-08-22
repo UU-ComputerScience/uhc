@@ -28,7 +28,8 @@ optTraceAssign = False
 -- jumping out of a function instead of doing a tail call
 -- should be "leave" for x86 processor
 
-stackTweakInstruction = "leave"
+-- moved to Config
+-- stackTweakInstruction = "leave"
 }
 
 -- Declaration of the option attirbutes
@@ -411,8 +412,10 @@ callStat nm ps
 
 jump :: HsName -> PP_Doc
 jump nm
- =  ("asm(\"" ++ stackTweakInstruction ++ "\");")
-    >-< "goto *((void*)" >|< functionName nm >|< ");"
+ =  machDepCForTailcallLeave1
+    >-< "register void* _tail_call_dest = ((void*)" >|< functionName nm >|< ");"
+    >-< machDepCForTailcallLeave2
+    >-< "goto *_tail_call_dest;"
 
 basepointer   = text "BP";
 stackpointer  = text "SP";

@@ -95,7 +95,7 @@ SEM Declaration
         lhs         .   eh          =   [@eh]
     | InstanceUseImplicitly
         loc         .   eh          =   let h = rngLift @range EH.PrExpr_Class @name @types.eh
-                                        in  rngLift @range EH.Decl_InstanceIntro @expression.eh h
+                                        in  rngLift @range EH.Decl_InstanceIntro (Just @instancename) @expression.eh h
         lhs         .   eh          =   [@eh]
     | Default
         loc         .   eh          =   undefined

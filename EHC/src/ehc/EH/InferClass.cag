@@ -110,7 +110,7 @@ SEM Decl
                                 .   patPrElimTGam   =   (if @inclForElim then peTGamAdd @lhs.prfCtxtId @instClsNm @elimRule else id) @lhs.patPrElimTGam
   | InstanceIntro
                 loc             .   instClsNm       =   tyPredMatchNm @prExpr.ty
-                                .   dictNm          =   poiHNm @instId
+                                .   dictNm          =   maybe (poiHNm @instId) id @mbNmElim
                                 .   elimRule        =   mkInstElimRule @dictNm @instId 0 @prExpr.ty
                                 .   patPrElimTGam   =   peTGamAdd @lhs.prfCtxtId @instClsNm @elimRule @lhs.patPrElimTGam
                 loc             .   foPr            =   fitPredToEvid @lUniq @prExpr.ty @lhs.prIntroGam
