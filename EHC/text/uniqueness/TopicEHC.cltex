@@ -21,7 +21,7 @@
   A full implementation of uniqueness typing in such a compiler is interesting, since people can directly use it
   in practice. But, having to deal with all the intimacies of a large compiler is too much for prototyping.
   A lightweight compiler is preferable to prevent distracting the mind too much. A compiler such as
-  ``Typing Haskell in Haskell''~\cite{jones99typing} is the other extreme. It lacks infrastructure. For example,
+  ``Typing Haskell in Haskell''~\cite{jones99thih} is the other extreme. It lacks infrastructure. For example,
   adding additional environments is a tedious task, since it requires explicitly threading of the environments
   as additional parameter and result through all the functions. The compiler to use for experimentation has to
   lie somewhere in between these extremes.

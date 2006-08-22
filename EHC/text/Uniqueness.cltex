@@ -26,7 +26,7 @@ Improved Uniqueness Typing for Haskell
 An unused value has special properties in a pure functional language. An optimizing compiler
 can safely throw away code that produces such a value. Likewise, a value that is referred to once
 has special properties that can be exploited by an optimizing compiler~\cite{DBLP:conf/icfp/JonesPS96}. In
-Clean~\cite{plasmeijer98language}, a type is called unique if the corresponding values are only
+Clean~\cite{plasmeijer01clean-rep-2}, a type is called unique if the corresponding values are only
 referred to once. A uniqueness type system checks, enforces, or infers the uniqueness property
 of types.
 
@@ -62,7 +62,7 @@ independently from the spine and discuss the consequences.
 %@TopicRelatedWork.main
 %%@TopicConclusion.main
 
-\bibliographystyle{plain}
+\bibliographystyle{abbrv}
 {\sloppy\raggedright\small
 \setlength{\parskip}{-.2ex}
 \def\newblock{\hskip -.2em}
@@ -70,3 +70,4 @@ independently from the spine and discuss the consequences.
 }
 
 %%]
+

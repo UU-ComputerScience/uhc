@@ -9,7 +9,7 @@ annotated, program and decorate the type constructors with \emph{uniqueness vari
 annotations. Then we generate the set of constraints, which now consists of variables instead of concrete values. A solution
 is an assignment of concrete values to the annotations such that the constraints are satisfied. The constraints thus specify
 a whole family of solutions. In this chapter, we discuss a technique that infers \emph{the minimal} solution to the
-constraints.
+constraints (Section~\ref{sect.TheMinimalSolution}).
 
 To make this chapter slightly more challenging, we add a monomorphic and non-recursive |let| to the expression language defined
 in Chapter~\ref{chapt.NoBindings}. With the existence of uniqueness variables, we make the type system polyvariant, which
@@ -258,22 +258,45 @@ Another technical detail is that the data type representing reference counts and
 is considered the same, with |*| also representing |2|, and the other way around.
 
 \section{Minimal solution}
+\label{sect.TheMinimalSolution}
 
   In the introduction, we told that the inferencer infers the minimal solution to the constraints.
   By means of the fixpoint iteration, we compute a least solution to the constraints~\cite{nnh99}
   , but is this really a single least solution? We verify that this is the case.
 
-  In order for |P| and |Q| to be different, there must be some annotation |delta| for which |P(delta) < Q(delta)|.
+  To verify this, we will first show that the minimum of two solutions is also a solution.
+  Assume that |S| and |R| are solutions. The minimum |Z| of these solutions is defined as
+  |Z === S `min` R === { S(delta) `min` R(delta) || delta `elem` annotations }|. We will now
+  show that if we perform the fixpoint iteration process on |Z|, that it does not increase
+  |Z|, which means that |Z| is a solution. For that, we prove the invariant that |Z| does
+  not change when performing the itertation step for some constraint |C|.
 
-  Now comes the clue: the interpretation of the constraints has the property that an increase of a substitution
-  never leads to a decrease of another substitution: the interpretation is monotone increasing. This means that
-  if there exists some solution where some annotation |delta| has some value |eta|, then for any least solution,
-  the value of |delta| should be less or equal to |eta|.
+  Suppose |C === (Sub(delta)(1)) =>= (Sub(delta)(2))|. Since fixpoint iteration is completed
+  for |S| and |R|, |S((Sub(delta)(1))) <= S((Sub(delta)(2)))| and |R((Sub(delta)(1))) <= R((Sub(delta)(2)))|.
+  Since |Z((Sub(delta)(1))) === S((Sub(delta)(1))) `min` R((Sub(delta)(1)))|, we conclude that by
+  transitivity |Z((Sub(delta)(1))) <= S((Sub(delta)(2)))| and |Z((Sub(delta)(1))) <= R((Sub(delta)(2)))|,
+  which implies that |Z((Sub(delta)(1))) <= S((Sub(delta)(2))) `min` S((Sub(delta)(2))) = Z((Sub(delta)(2)))|. This
+  means that |Z((Sub(delta)(1))) `join` Z((Sub(delta)(2))) = Z((Sub(delta)(2)))|, and we
+  conclude that |Z| does not change.
 
-  Consider all the values of |P|. Since |P| is a solution, according to the above property, any least solution
-  will have values that are either equal or smaller to the values of |P|. Since |Q| is a least solution,
-  |Q(delta)| must be smaller or equal to |P(delta)|. But, |P(delta)| is smaller than |Q(delta)|, so
-  |delta| cannot exist, and thus |P| and |Q| are equal.
+  Supopse that |C === sumi (Sub(delta)(i)) <= delta|. Since fixpoint iteration is completed
+  for |S| and |R|, |sumi S((Sub(delta)(i))) <= S(delta)| and |sumi R((Sub(delta)(i))) <= R(delta)|.
+  Analogous to the previous section, we conclude that |sumi Z((Sub(delta)(i))) <= S(delta)| and |sumi Z((Sub(delta)(i))) <= R(delta)|,
+  which means that |sumi Z((Sub(delta)(i))) <= S(delta) `min` R(delta) = Z(delta)|, and we
+  conclude that |Z| does not change.
+
+  So, taking the minimum of two solutions gives another solution. With this fact, we prove that
+  there can only be one least solution. Assume that the opposite is the case, such that
+  |P| and |Q| are different least solutions. In order for |P| and |Q|
+  to be different, there must be some annotation |(Sub(delta)(0))| for which |Q((Sub(delta)(0))) < P((Sub(delta)(0)))|. The
+  other way around as well, but we do not need that here. Consider the
+  solution obtained by taking the minimum from |P| and |Q|: |M === P `min` Q|. For each annotation |delta|,
+  |M(delta) <= P(delta)|. But for |(Sub(delta)(0))|, |M((Sub(delta)(0))) = Q((Sub(delta)(0))) < P((Sub(delta)(0)))|.
+  This means that |M| is a smaller solution that |P|. Thus |P| cannot be a least solution, and that there is only
+  one least solution.
+
+  A consequence of this is that, assuming the constraints are part of the types, our analysis gives
+  a principal uniqueness typing.
 
 \section{Summary}
 
@@ -421,7 +444,11 @@ the edges of the graph are traversed instead of the constraints.
 For example of a uniqueness graph, take the following constraint set:
 
 %%[[wrap=code
-constraint set
+a =>= b
+b =>= c
+b =>= d
+c \+/ d <= e
+e =>= b
 %%]
 
 Converting this constraint set into a constraint graph gives the following picture:
@@ -430,7 +457,23 @@ Converting this constraint set into a constraint graph gives the following pictu
 picture
 %%]
 
-Performing uniqueness inference gives the following substitution:
+We perform reference counting on this graph, and initially take as substitution:
+
+%%[[wrap=code
+S(a) = 1, S(b) = 0, S(c) = 0, S(d) = 0, S(e) = 0
+%%]
+
+After processing the constraints from top to bottom, we get:
+
+%%[[wrap=code
+picture
+%%]
+
+Note that |S(e) = *| because both the inputs are |1|. Because of the coercion between
+|b| and |e|, |S(b)| is not changed despite the fact that |S(e) = *| and |S(b) = 1|. A
+new iteration does not change the substitution and it terminates.
+
+Deriving uniqueness values from this graph gives:
 
 %%[[wrap=code
 picture
