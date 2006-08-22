@@ -1,10 +1,10 @@
 ### the overall version of EH
-EH_VERSION_MAJOR	:= 0
-EH_VERSION_MINOR	:= 1
-EH_VERSION_STABLE	:= alpha
-EH_VERSION			:= $(EH_VERSION_MAJOR).$(EH_VERSION_MINOR)
+EH_VERSION_MAJOR	:= @EH_VERSION_MAJOR@
+EH_VERSION_MINOR	:= @EH_VERSION_MINOR@
+EH_VERSION_STABLE	:= @EH_VERSION_STABILITY@
+EH_VERSION			:= @EH_VERSION@
 
-### platform config
+### platform config, currently changed to config by autoconf
 # EXEC_SUFFIX	: suffix for executables
 # PATH_SEP		: separator in file paths
 # PATHS_SEP		: separator in sequences of file paths, as in environments
@@ -13,12 +13,12 @@ EH_VERSION			:= $(EH_VERSION_MAJOR).$(EH_VERSION_MINOR)
 # TOPABS_PREFIX	: absolute prefix/pathname to top dir
 
 ### Unix
-EXEC_SUFFIX			:=
+EXEC_SUFFIX			:= @SUFFIX_EXEC@
 PATH_SEP			:= /
-PATHS_SEP			:= :
+PATHS_SEP			:= @PATHS_SEP@
 PATHS_SEP_COL		:= :
 STRIP_CMD			:= strip
-TOPABS_PREFIX		:= $(shell pwd)/
+TOPABS_PREFIX		:= @TOP_ABS@/
 
 ### WinXX
 #EXEC_SUFFIX			:= .exe

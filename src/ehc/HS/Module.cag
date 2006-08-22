@@ -123,6 +123,12 @@ SEM Declaration
                                               @simpletype.name
                                               (ModEntClass @simpletype.name
                                                            (Set.fromList [ ModEntVal n | (n,_) <- idDefOccGamByKind IdOcc_Val @where.idOccDefGam ]))
+    | Instance
+        lhs             .   modDefsRel  =   if @useimplicitly
+                                            then Rel.singleton @instancename (ModEntImplicitInstance @instancename)
+                                            else Rel.empty
+    | InstanceUseImplicitly
+        lhs             .   modDefsRel  =   Rel.singleton @instancename (ModEntImplicitInstance @instancename)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

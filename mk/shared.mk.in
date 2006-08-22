@@ -46,8 +46,8 @@ BLD_LIBUTIL_PREFIX	:= $(BLD_PREFIX)libutil/
 DOC_PREFIX			:= $(TOP_PREFIX)doc/
 
 # compilers and tools used
-AGC					:= uuagc
-GHC					:= ghc
+AGC					:= @UUAGC_CMD@
+GHC					:= @GHC_CMD@
 OPEN_FOR_EDIT		:= bbedit
 STRIP				:= $(STRIP_CMD)
 FILTER_NONEMP_FILES	:= $(BINABS_PREFIX)filterOutEmptyFiles

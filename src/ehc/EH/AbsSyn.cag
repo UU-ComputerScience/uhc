@@ -429,7 +429,8 @@ DATA Decl
                     instVariant     : InstVariant
                     tyPrExpr        : TyExpr
                     decls           : Decls
-  | InstanceIntro   expr            : Expr
+  | InstanceIntro   mbNmElim        : {Maybe (HsName)}
+                    expr            : Expr
                     prExpr          : PrExpr
 
 DATA FuncDep
