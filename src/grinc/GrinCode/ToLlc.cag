@@ -75,6 +75,23 @@ ATTR GrBindL GrBind [ | | fwdDoc USE {>-<} {empty} : {PP_Doc} ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Find out whether a tailcall optimized call has been done
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrExpr [ | | isLastExprTailCall: Bool ]
+
+SEM GrExpr
+  | Call    lhs.isLastExprTailCall
+                        = @isLastExpr && @lhs.optJumpTailCalls
+  | Seq     lhs.isLastExprTailCall
+                        = @body.isLastExprTailCall
+  | * - Call Seq
+            lhs.isLastExprTailCall
+                        = False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Code generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[8
@@ -117,7 +134,9 @@ SEM GrBind
 
 SEM GrBind
   | Bind  lhs . llcDoc = methodHeader @lhs.optTraceCall @lhs.optOwnParameters @nm @argNmL
-                         >-< indent 4 (   methodLocals @lhs.optOwnLocals @loc.locals
+                         >-< indent 4 (   ppWhen @expr.isLastExprTailCall
+                                                 jumpPrepare
+                                      >-< methodLocals @lhs.optOwnLocals @loc.locals
                                       >-< ppWhen @lhs.optOwnParameters
                                                  (methodParameters @lhs.optOwnLocals @argNmL)
                                       >-< ppWhen @loc.ownAllocation
@@ -409,6 +428,10 @@ functionName nm
 callStat ::  HsName -> [PP_Doc] -> PP_Doc
 callStat nm ps
  = call (functionName nm) ps >|< ";"
+
+jumpPrepare :: PP_Doc
+jumpPrepare 
+ =  pp machDepCForTailcallEnter
 
 jump :: HsName -> PP_Doc
 jump nm

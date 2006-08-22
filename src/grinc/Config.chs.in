@@ -1,4 +1,4 @@
-%%[8 module {%{GRIN}Config} export( machDepCForTailcallLeave1, machDepCForTailcallLeave2 )
+%%[8 module {%{GRIN}Config} export( machDepCForTailcallEnter, machDepCForTailcallLeave1, machDepCForTailcallLeave2 )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -9,6 +9,9 @@
 -- assembler instruction(s) to correct the C stack when
 -- jumping out of a function instead of doing a tail call
 -- should be "leave" for x86 processor
+
+machDepCForTailcallEnter :: String
+machDepCForTailcallEnter = "@MACH_DEP_C_FOR_TAILCALL_ENTER@"
 
 machDepCForTailcallLeave1 :: String
 machDepCForTailcallLeave1 = "@MACH_DEP_C_FOR_TAILCALL_LEAVE1@"

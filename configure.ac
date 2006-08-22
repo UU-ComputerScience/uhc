@@ -112,16 +112,20 @@ case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
         mach_dep_c_for_tailcall_leave2=""
+        mach_dep_c_for_tailcall_enter=""
         ;;
   powerpc-apple-* )
         mach_dep_c_for_tailcall_leave1="asm(\\\"lwz r1,0(r1)\\\") ; asm(\\\"lwz r0,8(r1)\\\") ; asm(\\\"mtlr r0\\\") ;"
         mach_dep_c_for_tailcall_leave2="asm(\\\"lmw r30,-8(r1)\\\") ;"
+        mach_dep_c_for_tailcall_enter="asm( \\\"lwz r2,0(r1)\\\" ) ; asm( \\\"stw r0,8(r2)\\\" ) ;"
         ;;
   *)
         mach_dep_c_for_tailcall_leave1=""
         mach_dep_c_for_tailcall_leave2=""
+        mach_dep_c_for_tailcall_enter=""
         ;;
 esac
+AC_SUBST(MACH_DEP_C_FOR_TAILCALL_ENTER,"$mach_dep_c_for_tailcall_enter")
 AC_SUBST(MACH_DEP_C_FOR_TAILCALL_LEAVE1,"$mach_dep_c_for_tailcall_leave1")
 AC_SUBST(MACH_DEP_C_FOR_TAILCALL_LEAVE2,"$mach_dep_c_for_tailcall_leave2")
 
