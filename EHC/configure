@@ -274,7 +274,7 @@ PACKAGE_VERSION='0.1'
 PACKAGE_STRING='EH 0.1'
 PACKAGE_BUGREPORT='atze@cs.uu.nl'
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_STABILITY EH_VERSION GHC_CMD GHC_VERSION UUAGC_CMD MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC PATHS_SEP TOP_ABS LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_STABILITY EH_VERSION GHC_CMD GHC_VERSION UUAGC_CMD MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC PATHS_SEP TOP_ABS LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1518,16 +1518,21 @@ case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
         mach_dep_c_for_tailcall_leave2=""
+        mach_dep_c_for_tailcall_enter=""
         ;;
   powerpc-apple-* )
         mach_dep_c_for_tailcall_leave1="asm(\\\"lwz r1,0(r1)\\\") ; asm(\\\"lwz r0,8(r1)\\\") ; asm(\\\"mtlr r0\\\") ;"
         mach_dep_c_for_tailcall_leave2="asm(\\\"lmw r30,-8(r1)\\\") ;"
+        mach_dep_c_for_tailcall_enter="asm( \\\"lwz r2,0(r1)\\\" ) ; asm( \\\"stw r0,8(r2)\\\" ) ;"
         ;;
   *)
         mach_dep_c_for_tailcall_leave1=""
         mach_dep_c_for_tailcall_leave2=""
+        mach_dep_c_for_tailcall_enter=""
         ;;
 esac
+MACH_DEP_C_FOR_TAILCALL_ENTER="$mach_dep_c_for_tailcall_enter"
+
 MACH_DEP_C_FOR_TAILCALL_LEAVE1="$mach_dep_c_for_tailcall_leave1"
 
 MACH_DEP_C_FOR_TAILCALL_LEAVE2="$mach_dep_c_for_tailcall_leave2"
@@ -2230,6 +2235,7 @@ s,@EH_VERSION@,$EH_VERSION,;t t
 s,@GHC_CMD@,$GHC_CMD,;t t
 s,@GHC_VERSION@,$GHC_VERSION,;t t
 s,@UUAGC_CMD@,$UUAGC_CMD,;t t
+s,@MACH_DEP_C_FOR_TAILCALL_ENTER@,$MACH_DEP_C_FOR_TAILCALL_ENTER,;t t
 s,@MACH_DEP_C_FOR_TAILCALL_LEAVE1@,$MACH_DEP_C_FOR_TAILCALL_LEAVE1,;t t
 s,@MACH_DEP_C_FOR_TAILCALL_LEAVE2@,$MACH_DEP_C_FOR_TAILCALL_LEAVE2,;t t
 s,@SUFFIX_SHELL@,$SUFFIX_SHELL,;t t
