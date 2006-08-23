@@ -12,6 +12,9 @@ Pointer HeapEndCAF, HeapLimit;
 
 extern Pointer global_False;
 extern Pointer global_True;
+extern Pointer global_LT;
+extern Pointer global_GT;
+extern Pointer global_EQ;
 
 extern int fun_main();
 
@@ -115,4 +118,12 @@ int primUndefined()
     printf("attempt tot evaluate undefined\n");
     exit(1);
     return 0;
+}
+
+int primCmpInt(int x, int y)
+{   if (x>y)
+        return global_GT[0];
+    if (x==y)
+        return global_EQ[0];
+    return global_LT[0];
 }

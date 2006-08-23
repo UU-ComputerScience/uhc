@@ -154,6 +154,10 @@ SEM AGItf
   | AGItf       loc         .   prfCtxtId           =   @lUniq
 %%]
 
+%%[12
+ATTR AGItf [ prfCtxtId: PrfCtxtId | | ]
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Available introduced predicates (tgam version), after pred resolution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

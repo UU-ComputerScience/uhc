@@ -62,6 +62,9 @@ ATTR AGItf AllNT [ opts: EHCOpts | | ]
 SEM Body
     | Body
         declarations    .   fixityGam   =   @declarations.gathFixityGam
+%%[[12
+                                            `gamUnion` @lhs.fixityGam
+%%]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -84,6 +87,7 @@ SEM SimpleType
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[5
+%%]
 ATTR AllConstructor [ | | conNames USE {++} {[]} : Names ]
 
 SEM Constructor
@@ -91,26 +95,26 @@ SEM Constructor
         lhs         .   conNames    =   [@constructor]
     | Infix
         lhs         .   conNames    =   [@constructorOperator]
-%%]
 %%[7
+%%]
 SEM Constructor
     | Record
         lhs         .   conNames    =   [@constructor]
-%%]
 
 %%[7
+%%]
 ATTR AllFieldDeclaration AllConstructor [ | | fldNames USE {++} {[]} : Names ]
 
 SEM FieldDeclaration
     | FieldDeclaration
         lhs         .   fldNames    =   @names
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Misc: LeftHandSide internal info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
+%%]
 ATTR LeftHandSide [ | | name: Name ]
 
 SEM LeftHandSide
@@ -118,7 +122,6 @@ SEM LeftHandSide
         lhs         .   name        =   @name
     | Infix
         lhs         .   name        =   @operator
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Misc: Pattern internal info
@@ -199,16 +202,4 @@ SEM ContextItem
         lhs         .   freeTvarS   =   Set.singleton @rowvariable
 %%]
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Names of imported modules
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-%%]
-ATTR AllModule AGItf [ | | impModNms USE {++} {[]}: Names ]
-
-SEM ImportDeclaration
-    | Import
-        lhs         .   impModNms   =   [@name]
 

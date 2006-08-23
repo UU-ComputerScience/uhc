@@ -13,6 +13,7 @@ module Err
 
 import UU.Pretty
 import EH.Util.PPUtils
+import EH.Util.Utils
 import RulerScanner( SPos, emptySPos )
 import EH.Util.ParseErrPrettyPrint
 import EH.Util.Nm
@@ -99,4 +100,4 @@ errLIsFatal :: [Err] -> Bool
 errLIsFatal es = not (null es) && any errIsFatal es
 
 errFirst :: [[Err]] -> [Err]
-errFirst = maybeHd [] id . filter (not . null)
+errFirst = firstNotEmpty

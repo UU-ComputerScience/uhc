@@ -194,6 +194,12 @@ SEM Err
                                                         )
 %%]
 
-
+%%[12
+SEM Err
+  | ModNameMismatch     lhs     .  pp   =   ppMsgErr    "Module names do not match"
+                                                        (    "filename        :" >#< @nmOfFile
+                                                         >-< "name from source:" >#< @nmFromSrc
+                                                        )
+%%]
 
 

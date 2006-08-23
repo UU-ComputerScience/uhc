@@ -59,7 +59,8 @@ SEM Decls
   | Cons        lhs     .   pp      =   @hd.pp >-< @errPP >-< @tl.pp
 
 SEM AGItf
-  | AGItf       lhs     .   pp      =   @expr.pp >-< @errTopPP
+  | AGItf       lhs     .   pp      =   @ppExtra >-< @expr.pp >-< @errTopPP
+                loc     .   ppExtra =   empty
 %%]
 
 %%[2.Wild.pp
@@ -259,6 +260,11 @@ SEM Decl
                         .   pp      =   hsnDynVar >|< @nm >#< "::" >#< @tyPP
 %%]
 
+%%[12
+%%]
+SEM AGItf
+  | AGItf       loc     .   ppExtra :=  ppCmt (ppGam @lhs.valGam)
+
 %%[99
 SEM Expr
   | IIConst     loc     .   pp      =   pp (show @integer)
@@ -291,9 +297,9 @@ SEM DataFields
   | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 
 SEM DataField
-  | Field		lhs		.	pp		=	case @mbLabels of
-  										  Just l  -> ppCommas' l >#< "::" >#< @tyExpr.pp
-  										  Nothing -> @tyExpr.pp
+  | Field       lhs     .   pp      =   case @mbLabels of
+                                          Just l  -> ppCommas' l >#< "::" >#< @tyExpr.pp
+                                          Nothing -> @tyExpr.pp
 
 SEM DataConstr
   | Constr      loc     .   pp      :=  pp @conNm

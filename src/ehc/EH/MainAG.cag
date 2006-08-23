@@ -71,3 +71,61 @@ ATTR AllNT AGItf [ opts: EHCOpts | | ]
 %%[8
 ATTR AGItf [ baseName: String | | ]
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tying together gam's, combining with imported info, gathering for following modules
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR AGItf Expr [ | | gathValGam: ValGam ]
+
+SEM Expr
+  | Let			lhs			.	gathValGam			=	@body.gathValGam `gamUnion` @finValGam
+  | * - Let		lhs			.	gathValGam			=	emptyGam
+%%]
+
+%%[12
+ATTR AGItf Expr [ | | gathTyGam: TyGam ]
+
+SEM Expr
+  | Let			lhs			.	gathTyGam			=	@body.gathTyGam `gamUnion` @lQuTyGam
+  | * - Let		lhs			.	gathTyGam			=	emptyGam
+%%]
+
+%%[12
+ATTR AGItf Expr [ | | gathKiGam: KiGam ]
+
+SEM Expr
+  | Let			lhs			.	gathKiGam			=	@body.gathKiGam -- `gamUnion` @xxx
+  | * - Let		lhs			.	gathKiGam			=	emptyGam
+%%]
+
+%%[12
+ATTR AGItf [ | | gathDataGam: DataGam ]
+%%]
+
+%%[12
+SEM AGItf
+  | AGItf       expr        .   dataGam             =   @expr.gathDataGam `gamUnion` @lhs.dataGam
+%%]
+
+%%[12
+ATTR AGItf Expr [ | | gathPrIntroGam: PrIntroGam ]
+
+SEM Expr
+  | Let			lhs			.	gathPrIntroGam		=	@body.gathPrIntroGam `gamUnion` @lQuPrIGam
+  | * - Let		lhs			.	gathPrIntroGam		=	emptyGam
+%%]
+
+%%[12
+ATTR AGItf Expr [ | | gathPrElimTGam: PrElimTGam ]
+ATTR AGItf [ | | gathPrfCtxtId: PrfCtxtId ]
+
+SEM AGItf
+  | AGItf		lhs			.	gathPrfCtxtId		=	@prfCtxtId
+
+SEM Expr
+  | Let			lhs			.	gathPrElimTGam		=	@body.gathPrElimTGam -- `gamUnion` @lQuPrIGam
+  | * - Let		lhs			.	gathPrElimTGam		=	emptyTGam uidStart
+%%]
+

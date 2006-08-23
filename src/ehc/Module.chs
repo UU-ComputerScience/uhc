@@ -12,7 +12,7 @@
 %%% Module adm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 module {%{EH}Module} import(Data.Maybe,Data.List,qualified Data.Set as Set,UU.Pretty,qualified EH.Util.Rel as Rel,{%{EH}Base.Common},{%{EH}Error})
+%%[12 module {%{EH}Module} import(Data.Maybe,Data.List,qualified Data.Set as Set,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Common},{%{EH}Error})
 %%]
 
 %%[12 export(ModEnt(..),ModExp(..),ModEntSpec(..),ModEntSubSpec(..),ModImp(..),Mod(..),ModEntRel)
@@ -60,13 +60,16 @@ instance PP ModEnt where
 data ModExp
   = ModExpEnt ModEntSpec
   | ModExpMod HsName
+  deriving (Show)
 
 data ModEntSpec
   = ModEntSpec HsName (Maybe ModEntSubSpec)
+  deriving (Show)
 
 data ModEntSubSpec
   = ModEntSubAll
   | ModEntSubs [HsName]
+  deriving (Show)
 
 data ModImp
   = ModImp
@@ -76,6 +79,23 @@ data ModImp
       , mimpHiding      :: Bool
       , mimpImpL        :: [ModEntSpec]
       }
+  deriving (Show)
+%%]
+
+%%[12
+instance PP ModExp where
+  pp (ModExpEnt s) = pp s
+  pp (ModExpMod m) = "module" >#< m
+
+instance PP ModEntSpec where
+  pp (ModEntSpec n s) = n >|< maybe empty pp s
+
+instance PP ModEntSubSpec where
+  pp ModEntSubAll = pp "*"
+  pp (ModEntSubs ns) = ppParensCommas ns
+
+instance PP ModImp where
+  pp i = mimpSource i >|< ppParensCommas (mimpImpL i)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -85,13 +105,21 @@ data ModImp
 %%[12
 data Mod
   = Mod
-      { modName     :: HsName
-      , modExpL     :: Maybe [ModExp]
-      , modImpL     :: [ModImp]
-      , modDefs     :: ModEntRel
+      { modName     	:: HsName
+      , modNameInSrc 	:: Maybe HsName
+      , modExpL     	:: Maybe [ModExp]
+      , modImpL     	:: [ModImp]
+      , modDefs     	:: ModEntRel
       }
+  deriving (Show)
 
-emptyMod = Mod hsnUnknown Nothing [] Rel.empty
+emptyMod = Mod hsnUnknown Nothing Nothing [] Rel.empty
+%%]
+
+%%[12
+instance PP Mod where
+  pp m = modName m >|< "/" >|< modNameInSrc m
+         >-< indent 2 (ppParensCommas (modImpL m) >-< maybe empty ppParensCommas (modExpL m))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

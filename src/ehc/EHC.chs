@@ -151,6 +151,9 @@ data EHCompileUnit
       { ecuFilePath          :: FPath
       , ecuGrpNm             :: HsName
       , ecuModNm             :: HsName
+%%[[12
+      , ecuIsTopMod          :: Bool
+%%]
       , ecuImpNmL            :: [HsName]
       , ecuMbHSSem           :: Maybe HSSem.Syn_AGItf
       , ecuMbEHSem           :: Maybe EHSem.Syn_AGItf
@@ -188,6 +191,9 @@ ecuStoreGrin x ecu = ecu { ecuMbGrin = Just x }
 %%[12
 ecuStoreMod :: EcuUpdater Mod
 ecuStoreMod x ecu = ecu { ecuMod = x, ecuImpNmL = map mimpSource $ modImpL $ x }
+
+ecuSetIsTopMod :: EcuUpdater Bool
+ecuSetIsTopMod x ecu = ecu { ecuIsTopMod = x }
 %%]
 
 %%[8
@@ -200,6 +206,9 @@ emptyECU
       { ecuFilePath          = emptyFPath
       , ecuGrpNm             = hsnUnknown
       , ecuModNm             = hsnUnknown
+%%[[12
+      , ecuIsTopMod          = False
+%%]
       , ecuImpNmL            = []
       , ecuMbHSSem           = Nothing
       , ecuMbEHSem           = Nothing
@@ -293,7 +302,6 @@ type FileSuffMp = Map.Map String EHCompileUnitState
 
 fileSuffMpHs :: FileSuffMp
 fileSuffMpHs = Map.fromList [ ( "hs", ECUSHaskell HSStart ), ( "eh", ECUSEh EHStart ), ( "grin", ECUSGrin ) ]
-
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -302,7 +310,6 @@ fileSuffMpHs = Map.fromList [ ( "hs", ECUSHaskell HSStart ), ( "eh", ECUSEh EHSt
 
 
 %%[8
-
 cpParseOffside :: HSPrs.HSParser a -> ScanUtils.ScanOpts -> EcuUpdater a -> String -> HsName -> EHCompilePhase ()
 cpParseOffside parse scanOpts store description modNm
  = do { cr <- get
@@ -336,15 +343,19 @@ foldEH inh fp uid opts eh
                          , EHSem.opts_Inh_AGItf     = opts
                          })
 
-foldHs :: HSSem.Inh_AGItf -> HsName -> UID -> EHCOpts -> HS.AGItf -> HSSem.Syn_AGItf
-foldHs inh modNm uid opts hs
+foldHs :: HSSem.Inh_AGItf -> HsName -> EHCompileUnit -> UID -> EHCOpts -> HS.AGItf -> HSSem.Syn_AGItf
+foldHs inh modNm ecu uid opts hs
  = HSSem.wrap_AGItf (HSSem.sem_AGItf hs)
                     (inh { HSSem.opts_Inh_AGItf     = opts
                          , HSSem.gUniq_Inh_AGItf    = uid
+%%[[12
                          , HSSem.moduleNm_Inh_AGItf = modNm
+                         , HSSem.isTopMod_Inh_AGItf = ecuIsTopMod ecu
+%%]
                          })
+%%]
 
-
+%%[8
 cpFoldEH :: HsName -> EHCompilePhase ()
 cpFoldEH modNm
   =  do  {  cr <- get
@@ -362,9 +373,45 @@ cpFoldHs modNm
          ;  let  ecu    = crCU modNm cr
                  crsi   = crStateInfo cr
                  mbHS   = ecuMbHS ecu
-                 hsSem  = foldHs (crsiHSInh crsi) modNm (crsiHereUID crsi) (crsiOpts crsi) (panicJust "cpFoldHs" mbHS)
+                 hsSem  = foldHs (crsiHSInh crsi) modNm ecu (crsiHereUID crsi) (crsiOpts crsi) (panicJust "cpFoldHs" mbHS)
          ;  when (isJust mbHS)
                  (cpUpdCU modNm (ecuStoreHSSem hsSem))
+         }
+%%]
+
+%%[12
+cpFlowHsSem :: HsName -> EHCompilePhase ()
+cpFlowHsSem modNm
+  =  do  {  cr <- get
+         ;  let  ecu    = crCU modNm cr
+                 crsi   = crStateInfo cr
+                 hsSem  = fromJust (ecuMbHSSem ecu)
+                 hsInh  = crsiHSInh crsi
+                 hsInh' = hsInh
+                            { HSSem.fixityGam_Inh_AGItf = HSSem.gathFixityGam_Syn_AGItf hsSem `gamUnion` HSSem.fixityGam_Inh_AGItf hsInh
+                            }
+         ;  when (isJust (ecuMbHSSem ecu))
+                 (put (cr {crStateInfo = crsi {crsiHSInh = hsInh'}}))
+         }
+
+cpFlowEHSem :: HsName -> EHCompilePhase ()
+cpFlowEHSem modNm
+  =  do  {  cr <- get
+         ;  let  ecu    = crCU modNm cr
+                 crsi   = crStateInfo cr
+                 ehSem  = fromJust (ecuMbEHSem ecu)
+                 ehInh  = crsiEHInh crsi
+                 ehInh' = ehInh
+                            { EHSem.valGam_Inh_AGItf  = EHSem.gathValGam_Syn_AGItf  ehSem `gamUnion` EHSem.valGam_Inh_AGItf  ehInh
+                            , EHSem.tyGam_Inh_AGItf   = EHSem.gathTyGam_Syn_AGItf   ehSem `gamUnion` EHSem.tyGam_Inh_AGItf   ehInh
+                            , EHSem.kiGam_Inh_AGItf   = EHSem.gathKiGam_Syn_AGItf   ehSem `gamUnion` EHSem.kiGam_Inh_AGItf   ehInh
+                            , EHSem.dataGam_Inh_AGItf = EHSem.gathDataGam_Syn_AGItf ehSem `gamUnion` EHSem.dataGam_Inh_AGItf ehInh
+                            , EHSem.prIntroGam_Inh_AGItf = EHSem.gathPrIntroGam_Syn_AGItf ehSem `gamUnion` EHSem.prIntroGam_Inh_AGItf ehInh
+                            , EHSem.prElimTGam_Inh_AGItf = tgamPushGam (EHSem.gathPrfCtxtId_Syn_AGItf ehSem) (EHSem.prfCtxtId_Inh_AGItf ehInh) (EHSem.gathPrfCtxtId_Syn_AGItf ehSem) (EHSem.gathPrElimTGam_Syn_AGItf ehSem) (EHSem.prElimTGam_Inh_AGItf ehInh)
+                            , EHSem.prfCtxtId_Inh_AGItf  = EHSem.gathPrfCtxtId_Syn_AGItf ehSem
+                            }
+         ;  when (isJust (ecuMbEHSem ecu))
+                 (put (cr {crStateInfo = crsi {crsiEHInh = ehInh'}}))
          }
 %%]
 
@@ -634,17 +681,26 @@ crCompileCG targHSState modNmL cr
        ; crSetNm cr2
        }
 
-%%[8
+%%[8.cpCompileOrderedCUs
 cpCompileOrderedCUs :: EHCompilePhase ()
 cpCompileOrderedCUs
  = do { modNmLL <- gets crCompileOrder
-      ; cpSeq (map (cpCompileCU
-%%[[12
-                      Nothing
-%%]
-                    . head
-                   ) modNmLL)
+      ; cpSeq [ cpCompileCU m | (m:_) <- modNmLL ]
       }
+%%]
+
+%%[12 -8.cpCompileOrderedCUs
+cpCompileOrderedCUs :: EHCompilePhase ()
+cpCompileOrderedCUs
+ = do { modNmLL <- gets crCompileOrder
+      ; let modNmL = map head modNmLL
+      ; cpSeq (merge [ cpCompileCU Nothing m | m <- modNmL ]
+                     [ cpSeq [cpFlowHsSem m,cpFlowEHSem m] | m <- take (length modNmL - 1) modNmL ]
+              )
+      }
+  where merge (c1:cs1) (c2:cs2) = c1 : c2 : merge cs1 cs2
+        merge []       cs       = cs
+        merge cs       []       = cs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -702,19 +758,32 @@ doCompileRun fn opts
                                               , HSSem.idGam_Inh_AGItf    = HSSem.tyGam2IdDefOccGam initTyGam
                                                                            `gamUnion` HSSem.kiGam2IdDefOccGam initKiGam
                                               , HSSem.gUniq_Inh_AGItf    = uidStart
+%%[[12
+                                              , HSSem.isTopMod_Inh_AGItf = False
                                               , HSSem.moduleNm_Inh_AGItf = hsnUnknown
+                                              , HSSem.fixityGam_Inh_AGItf= emptyGam
+%%]
                                               }
              ehInh          = EHSem.Inh_AGItf { EHSem.baseName_Inh_AGItf = fpathBase fp
                                               , EHSem.gUniq_Inh_AGItf    = uidStart
                                               , EHSem.opts_Inh_AGItf     = opts2
 %%[[12
+                                              , EHSem.valGam_Inh_AGItf   = emptyGam
+                                              , EHSem.dataGam_Inh_AGItf  = emptyGam
                                               , EHSem.tyGam_Inh_AGItf    = initTyGam
                                               , EHSem.kiGam_Inh_AGItf    = initKiGam
+                                              , EHSem.prIntroGam_Inh_AGItf = emptyGam
+                                              , EHSem.prElimTGam_Inh_AGItf = emptyTGam uidStart
+                                              , EHSem.prfCtxtId_Inh_AGItf  = uidStart
 %%]
                                               }
              initialState   = mkEmptyCompileRun topModNm (EHCompileRunStateInfo opts2 hsInh ehInh uidStart uidStart Map.empty)
              imp mbFp nm
                = do { mbFoundFp <- cpFindFileForFPath fileSuffMpHs searchPath (Just nm) mbFp
+%%[[12
+                    ; when (isJust mbFp)
+                           (cpUpdCU nm (ecuSetIsTopMod True))
+%%]
                     ; when (isJust mbFoundFp)
                            (cpCompileCU
 %%[[12

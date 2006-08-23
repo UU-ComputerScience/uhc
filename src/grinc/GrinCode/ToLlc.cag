@@ -11,7 +11,7 @@
 
 SEM GrAGItf
   | AGItf module.optJumpTailCalls = True   -- when True, tail calls are implemented with a goto
-                                           --            need to define the stackTweakInstruction in that case
+                                           --            need to define the Config.machDepCForTailcallXXX variables in that case
           module.optOwnParameters = True   -- when True, parameter passing is via the Stack datastructure
                                            --            (forced to True when optJumpTailCalls is True)
           module.optOwnLocals     = False  -- when True, local variables are allocated on the Stack datastructure
