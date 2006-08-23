@@ -43,10 +43,15 @@ SEM Statement
         loc         .   errL        =   @errReorder ++ @declarations.errL
 
 SEM Declaration
-	| Class
-		loc			.	errL		=	@errReorder ++ @context.errL ++ @simpletype.errL ++ @dependencies.errL ++ @where.errL
-	| Instance
-		loc			.	errL		=	@errReorder ++ @context.errL ++ @types.errL ++ @where.errL
+    | Class
+        loc         .   errL        =   @errReorder ++ @context.errL ++ @simpletype.errL ++ @dependencies.errL ++ @where.errL
+    | Instance
+        loc         .   errL        =   @errReorder ++ @context.errL ++ @types.errL ++ @where.errL
 %%]
 
+%%[12
+SEM Module
+    | Module
+        lhs         .   errL        =   firstNotEmpty [@errModName,@body.errL]
+%%]
 

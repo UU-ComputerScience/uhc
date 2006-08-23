@@ -63,6 +63,9 @@ initlast2 as
         il acc (a:as) = il (a:acc) as
         il _   _      = Nothing
 
+firstNotEmpty :: [[x]] -> [x]
+firstNotEmpty = maybeHd [] id . filter (not . null)
+
 -------------------------------------------------------------------------
 -- String
 -------------------------------------------------------------------------

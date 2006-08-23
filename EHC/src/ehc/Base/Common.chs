@@ -217,7 +217,9 @@ hsnSuffix                           ::  HsName -> String -> HsName
 hsnSuffix       hsn   p
   = case hsnInitLast hsn of
       (ns,n) -> mkHNm (ns,HNm (show n ++ p))
+%%]
 
+%%[8
 stringAlphanumeric :: String -> String
 stringAlphanumeric s
  | isAlphaNum c || c=='_'  = s
@@ -252,7 +254,7 @@ charAlphanumeric ']' = "bus"
 charAlphanumeric '(' = "open"    -- although this is not a legal Haskell operator symbol, it can be part of the tuple constructor
 charAlphanumeric ',' = "comma"
 charAlphanumeric ')' = "close"
-charAlphanumeric  c  = error ("no alphanumeric representation for " ++ [c])
+charAlphanumeric  c  = error ("no alphanumeric representation for " ++ show c)
 
 hsnAlphanumeric :: HsName -> HsName
 hsnAlphanumeric (HNm s) = HNm (stringAlphanumeric s)
@@ -261,7 +263,6 @@ hsnAlphanumeric n@(HNPos p) = n
 %%[12
 hsnAlphanumeric (HNmQ ns) = HNmQ (map hsnAlphanumeric ns)
 %%]
-
 
 %%[8
 hsnToFPath :: HsName -> FPath
@@ -272,8 +273,6 @@ hsnToFPath n
 instance FPATH HsName where
   mkFPath = hsnToFPath
 %%]
-
-
 
 -- replace this by something better, taking into account qualifiers
 %%[10
@@ -394,15 +393,38 @@ strUn                               =   "un"
 strUn                               =   "-"
 %%]
 
-%%[3
+%%[3.hsnUn
 hsnUn                               ::  HsName -> HsName
 hsnUn           nm                  =   HNm (strUn ++ show nm)
 %%]
 
-%%[3
-hsnIsUn         (HNm s)             =   isPrefixOf strUn s
+%%[12 -3.hsnUn
+hsnUn                               ::  HsName -> HsName
+hsnUn           nm                  =   strUn `hsnPrefix` nm
+%%]
 
+%%[3.hsnIsUn
+hsnIsUn                             ::  HsName -> Bool
+hsnIsUn         (HNm s)             =   isPrefixOf strUn s
+%%]
+
+%%[12 -3.hsnIsUn
+hsnIsUn                             ::  HsName -> Bool
+hsnIsUn         hsn
+  = case hsnInitLast hsn of
+      (_,HNm s) -> isPrefixOf strUn s
+%%]
+
+%%[3.hsnUnUn
+hsnUnUn                             ::  HsName -> HsName
 hsnUnUn         (HNm s)             =   HNm (drop (length strUn) s)
+%%]
+
+%%[12 -3.hsnUnUn
+hsnUnUn                             ::  HsName -> HsName
+hsnUnUn         hsn
+  = case hsnInitLast hsn of
+      (ns,HNm s) -> mkHNm (ns,HNm (drop (length strUn) s))
 %%]
 
 %%[5

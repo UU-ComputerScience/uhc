@@ -8,15 +8,26 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
-ATTR AllDeclaration [ | | gathFixityGam USE {`gamAddGam`} {emptyGam}: FixityGam ]
+ATTR
+  AllDeclaration
+%%[[5
+  Qualifier
+%%]
+%%[[9
+  Statement
+%%]
+%%[[12
+  AllModule AGItf
+%%]
+    [ | | gathFixityGam USE {`gamAddGam`} {emptyGam}: FixityGam ]
+%%]
+
+%%[1
 ATTR
   AllDeclaration AllExpression
+%%[[12
+  AGItf AllModule
 %%]
-%%[7
-%%]
-  AllRowRecordExpressionUpdate
-  AllRowRecordPatternBinding
-%%[1
     [ fixityGam: FixityGam | | ]
 %%]
 
@@ -25,7 +36,34 @@ SEM Declaration
     | Fixity
         lhs         .   gathFixityGam   =   let p = maybe (fgiPrio defaultFixityGamInfo) id @priority
                                                 mk n = (n,FixityGamInfo p @fixity)
-                                            in  assocLToGam $ map mk $ @operators
+                                            in  assocLToGam $ map mk $ @oprefnames
+%%]
+
+%%[1
+SEM Expression
+	| Let
+		loc			.	fixityGam		=	@declarations.gathFixityGam `gamUnion` @lhs.fixityGam
+%%]
+
+%%[1
+SEM RightHandSide
+	| Expression
+%%[[5
+	  Guarded
+%%]
+		loc			.	fixityGam		=	@where.gathFixityGam `gamUnion` @lhs.fixityGam
+%%]
+
+%%[5
+SEM Qualifiers
+	| Cons
+		loc			.	fixityGam		=	@hd.gathFixityGam `gamUnion` @lhs.fixityGam
+%%]
+
+%%[9
+SEM Statements
+	| Cons
+		loc			.	fixityGam		=	@hd.gathFixityGam `gamUnion` @lhs.fixityGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

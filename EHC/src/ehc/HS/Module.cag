@@ -110,7 +110,8 @@ SEM Declaration
         lhs             .   modDefsRel  =   Rel.singleton
                                               @simpletype.name
                                               (ModEntData @simpletype.name
-                                                          (Set.fromList $ map ModEntVal $ @constructors.conNames))
+                                                          (Set.fromList $ map (ModEntVal . hsnQualified)
+                                                           $ @constructors.conrefnames ++ @constructors.fldrefnames))
 
 SEM Body
     | Body
@@ -132,6 +133,14 @@ SEM Declaration
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is toplevel mod?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR Module AGItf [ isTopMod: Bool | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Module
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -140,7 +149,7 @@ ATTR Module AGItf [ | | mod: Mod ]
 
 SEM Module
     | Module
-        lhs             .   mod         =   Mod (maybe (mkHNm "Main") id @name)
+        lhs             .   mod         =   Mod @lhs.moduleNm @name
                                                 @exports.modExpsMb @body.modImpL @body.modDefsRel
 %%]
 

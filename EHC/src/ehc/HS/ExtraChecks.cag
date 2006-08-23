@@ -13,7 +13,15 @@ idDefOccGamCheckAllowedKind m ks g
 %%[9
 %%]
 SEM Declaration
-  	| Class
-  		loc				.	errNotAllowed
-  										=	idDefOccGamCheckAllowedKind "class" [IdOcc_Val] @where.idOccDefGam
+    | Class
+        loc             .   errNotAllowed
+                                        =   idDefOccGamCheckAllowedKind "class" [IdOcc_Val] @where.idOccDefGam
 
+%%[12
+SEM Module
+    | Module
+        loc             .   errModName  =   case @name of
+                                              Just n | n /= @lhs.moduleNm && not @lhs.isTopMod
+                                                -> [Err_ModNameMismatch @lhs.moduleNm n]
+                                              _ -> []
+%%]

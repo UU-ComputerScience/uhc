@@ -252,7 +252,7 @@ getNumber cs@(c:s)
 getRational' :: String -> (EnumValToken,(String,Maybe String,Maybe (Maybe String,String)),Int,String)
 getRational' s
   = case s2 of
-      ('.':s3) | tktype == TkInteger10 && tktype2 == TkInteger10
+      ('.':s3@(c:_)) | isDigit c && tktype == TkInteger10 && tktype2 == TkInteger10
         -> case scanExp s4 of
              Just (sign,number3,width3,s5)
                -> (TkFraction,(number,Just number2,Just (sign,number3)),width + width2 + width3 + 1,s5)

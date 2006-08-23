@@ -148,12 +148,12 @@ SEM AGItf
 
 %%[3.finValGam
 SEM Expr
-  | Let         decls       .   finValGam           :=  @lhs.finTyCnstr |=> @quValGam_
+  | Let         loc         .   finValGam           :=  @lhs.finTyCnstr |=> @quValGam_
 %%]
 
 %%[4.finValGam
 SEM Expr
-  | Let         decls       .   finValGam           :=  @lhs.finTyCnstr |=> @quValGam_ex_
+  | Let         loc         .   finValGam           :=  @lhs.finTyCnstr |=> @quValGam_ex_
 %%]
 
 %%[9
@@ -182,9 +182,15 @@ SEM Decl
 
 %%[1.valGam
 ATTR AllDecl AllExpr [ valGam: ValGam | | ]
+%%]
 
+%%[1.initValGam
 SEM AGItf
   | AGItf       expr        .   valGam              =   emptyGam
+%%]
+
+%%[12 -6.initValGam
+ATTR AGItf [ valGam: ValGam | | ]
 %%]
 
 %%[1.patValGam
@@ -342,7 +348,15 @@ ATTR AllDecl AllExpr AllCase AllPatExpr [ dataGam: DataGam | | ]
 
 SEM AGItf
   | AGItf       expr        .   gathDataGam         =   emptyGam
-                            .   dataGam             =   @expr.gathDataGam
+%%]
+
+%%[8.initDataGam
+SEM AGItf
+  | AGItf       expr        .   dataGam             =   @expr.gathDataGam
+%%]
+
+%%[12 -8.initDataGam
+ATTR AGItf [ dataGam: DataGam | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -688,9 +702,18 @@ SEM Decl
 %%[9
 ATTR AllDecl [ | patPrElimTGam: PrElimTGam | ]
 ATTR NTPrf [ | prElimTGam: PrElimTGam | ]
+%%]
 
+%%[9.initPrElimTGam
 SEM AGItf
   | AGItf       loc         .   prElimTGam          =   emptyTGam @prfCtxtId
+%%]
+
+%%[12 -9.initPrElimTGam
+ATTR AGItf [ prElimTGam: PrElimTGam | | ]
+
+SEM AGItf
+  | AGItf       loc         .   prElimTGam          =   tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -700,7 +723,18 @@ SEM AGItf
 %%[9
 ATTR AllDecl [ | patPrIntroGam: PrIntroGam | ]
 ATTR NTPrf AllPrExpr AllTyExpr AllData AllPatExpr [ prIntroGam: PrIntroGam | | ]
+%%]
 
+%%[9.initPrIntroGam
+SEM AGItf
+  | AGItf       loc         .   prIntroGam          =   emptyGam
+%%]
+
+%%[12 -9.initPrIntroGam
+ATTR AGItf [ prIntroGam: PrIntroGam | | ]
+%%]
+
+%%[9
 SEM Expr
   | Let         decls       .   patPrIntroGam       =   gamPushNew @lhs.prIntroGam
                 loc         .   (lPrIGam,gPrIGam)   =   gamPop @decls.patPrIntroGam
@@ -712,8 +746,6 @@ SEM Expr
                                                             (\(n,t) -> (n,t {pigiKi = tyQuantify (`elem` @gKiTvL) (pigiKi t)}))
                                                             @lSubsPrIGam
                 body        .   prIntroGam          =   gamPushGam @lQuPrIGam @gSubsPrIGam
-
-SEM AGItf
-  | AGItf       loc         .   prIntroGam          =   emptyGam
 %%]
+
 

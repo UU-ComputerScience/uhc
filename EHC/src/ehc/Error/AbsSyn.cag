@@ -113,3 +113,10 @@ DATA Err
                         decls      : {AssocL IdOccKind [HsName]}
 %%]
 
+%%[12
+DATA Err
+  | ModNameMismatch		nmOfFile   : HsName
+    					nmFromSrc  : HsName
+%%]
+
+

@@ -27,6 +27,12 @@ SEM Body
         lhs         .   pp          =   @importdeclarations.pp >-< @declarations.pp >-< @ppExtra
 %%]
 
+%%[12
+SEM AGItf
+	| AGItf
+		lhs			.	pp			=	ppCmt (pp @module.mod) >-< @module.pp
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Declarations    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
