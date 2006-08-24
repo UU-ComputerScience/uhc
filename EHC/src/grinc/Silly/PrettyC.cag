@@ -1,0 +1,282 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Prettyprint Silly program as C
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs module {%{GRIN}Silly.PrettyC} import(Data.List(intersperse), UU.Pretty, EH.Util.PPUtils,{%{GRIN}GRINCCommon},{%{GRIN}Silly}, {%{GRIN}Config}) export(prettyC)
+%%]
+
+%%[8 import({Silly/AbsSyn})
+WRAPPER SilModule
+%%]
+
+%%[8 hs
+prettyC :: SilModule -> PP_Doc
+prettyC silmod
+  =  let  t = wrap_SilModule (sem_SilModule silmod) (Inh_SilModule False False)
+     in   (prettyC_Syn_SilModule t)
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options to adapt the structure of the generated code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[8
+
+ATTR SilModule Functions Function Statements Statement Alternatives Alternative
+  [ optTraceCall     : {Bool}
+    optCaseDefault   : {Bool}
+  | | ]
+
+-- Change the options according to your taste
+
+SEM SilModule
+  | SilModule
+          functions.optTraceCall     = False  -- when True, function entrance/exit is logged
+          functions.optCaseDefault   = False  -- when True, error messages are given as default case for each switch
+
+{
+optTraceAssign = False
+}
+%%]
+
+
+%%[8
+ATTR SilModule Functions Function Statements Statement Alternatives Alternative Value Variable Constant
+         [ | | prettyC USE {>-<} {empty} : PP_Doc ]
+
+ATTR Functions Function [ | | protoC USE {>-<} {empty} : {PP_Doc} ]
+
+ATTR Values [ | | prettyCs : {[PP_Doc]} ]
+
+ATTR Variable [ | | prettyPtr : {PP_Doc}  ]
+
+
+SEM SilModule
+  | SilModule   lhs.prettyC   = preambule
+                                >-< comment "Tag constants"
+                                >-< ppVertically (map constantDefinition @constants)
+                                >-< text ""
+                                >-< comment "Global table"
+                                >-< ppVertically (map variableDeclaration @variables)
+                                >-< text ""
+                                >-< comment "Function prototypes"
+                                >-< @functions.protoC
+                                >-< text ""
+                                >-< comment "Function definitions"
+                                >-< @functions.prettyC
+
+SEM Function
+  | Function    lhs.prettyC   = methodHeader @lhs.optTraceCall @name @parameters
+                                >-< indent 4 (   ppWhen @tailJumps jumpPrepare
+                                             >-< methodLocals @locals
+                                             >-< @body.prettyC
+                                             )
+                                >-< methodFooter @lhs.optTraceCall @name
+
+                lhs.protoC    = methodHead @name @parameters >|< ";"
+
+SEM Statement
+  | Comment     lhs.prettyC   = comment @comment
+  | Assignment  lhs.prettyC   = assignment @dest.prettyC @source.prettyC
+  | Switch      lhs.prettyC   = switch @lhs.optCaseDefault @scrutinee.prettyC @body.prettyC
+  | Call        lhs.prettyC   = call @name @args.prettyCs >|< ";"
+  | Jump        lhs.prettyC   = jump @name
+  | Enter       lhs.prettyC   = methodEnter @nLocal @nParam
+  | Leave       lhs.prettyC   = methodLeave @diff
+
+
+SEM Alternative
+  | Alternative lhs.prettyC   = alternative @when.prettyC @body.prettyC
+
+SEM Values
+  | Nil         lhs.prettyCs  = []
+  | Cons        lhs.prettyCs  = @hd.prettyC : @tl.prettyCs
+
+SEM Value
+  | Con         lhs.prettyC   = @con.prettyC
+  | Var         lhs.prettyC   = @var.prettyC
+  | Call        lhs.prettyC   = call @name @args.prettyCs
+
+SEM Constant
+  | Literal     lhs.prettyC   = text (show @value)
+  | Alias       lhs.prettyC   = text @name
+
+SEM Variable
+  | Var         lhs.prettyC   = text @name
+                lhs.prettyPtr = "((Pointer)" >|< text @name >|< ")"
+  | SP          lhs.prettyC   = text "SP"
+                lhs.prettyPtr = text "SP"
+  | BP          lhs.prettyC   = text "BP"
+                lhs.prettyPtr = text "BP"
+  | RP          lhs.prettyC   = text "RP"
+                lhs.prettyPtr = text "RP"
+  | Subs        lhs.prettyC   = @array.prettyPtr >|< "[" >|< @index.prettyC >|< "]"
+                lhs.prettyPtr = error "attempt to use subscription as pointer"
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Auxiliary PrettyPrint functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[8
+{
+commaSeparated :: [String] -> String
+commaSeparated = concat . intersperse ", "
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Building a C program
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+
+macroDefinition :: PP_Doc -> PP_Doc -> PP_Doc
+macroDefinition nm body
+ = "#define" >#< nm >#< body
+
+decrementWith p n
+ = incrementWith p (-n)
+
+incrementWith p n
+ = if n>0
+   then p >#< "+=" >#< n >#< ";"
+   else if n<0
+   then p >#< "-=" >#< (-n) >#< ";"
+   else empty
+
+declareNames :: String -> [String] -> PP_Doc
+declareNames tp ns
+ = tp >#< commaSeparated ns >|< ";"
+
+declareName :: String -> String -> String
+declareName tp nm
+ = tp ++ (' ' : show nm)
+
+trace :: String -> PP_Doc
+trace s
+ = text ("printf(\"" ++ s ++ " SP=%d\\n\", SP-Stack); fflush(stdout);")
+
+caseDefault :: PP_Doc -> PP_Doc
+caseDefault x
+ =  "    default: printf(\"undefined case for " >|< x >|< " : %d\\n\", " >|< x >|< "); exit(1);"
+
+comment :: String -> PP_Doc
+comment s = text ("/* " ++ s ++ " */")
+
+call :: String -> [PP_Doc] -> PP_Doc
+call f ps
+ = f >|< "(" >|< ppHorizontally (intersperse (text ", ") ps) >|< ")"
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Semantic functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[8 hs
+
+preambule :: PP_Doc
+preambule
+ = comment "Generated C code"
+   >-< text "#include <stdio.h>"
+   >-< text ""
+   >-< text "typedef int GrWord;"
+   >-< text "typedef GrWord* Pointer;"
+   >-< text ""
+   >-< text "extern Pointer SP, RP, Stack;"
+   >-< text "Pointer BP;"
+   >-< text "GrWord _;"
+   >-< text ""
+
+constantDefinition :: (String,Int) -> PP_Doc
+constantDefinition (x,n)
+ = macroDefinition (text x) (text (show n))
+
+variableDeclaration :: String -> PP_Doc
+variableDeclaration x
+ = "GrWord" >#< text x >|< ";"
+
+methodHead :: String -> [String] -> PP_Doc
+methodHead nm params
+ =  let parameters = if null params
+                      then "void"
+                      else commaSeparated (map (declareName "GrWord") params)
+    in  "void" >#< nm >|< "(" >|< parameters >|< ")"
+
+methodHeader :: Bool -> String -> [String] -> PP_Doc
+methodHeader optTrace nm params
+ =  methodHead nm params
+    >#< "{"
+    >-< ppWhen optTrace (trace ("enter " ++ show nm))
+
+methodFooter ::  Bool -> String -> PP_Doc
+methodFooter optTrace nm
+ =  ppWhen optTrace (trace ("leave "++show nm))
+    >-< text "}"
+    >-< text ""
+
+methodLocals :: [String] -> PP_Doc
+methodLocals ns
+ = ppUnless (null ns)
+            (   comment "Local names"
+            >-< declareNames "GrWord" ns
+            )
+
+jumpPrepare :: PP_Doc
+jumpPrepare
+ =  pp machDepCForTailcallEnter
+
+jump :: String -> PP_Doc
+jump nm
+ =  machDepCForTailcallLeave1
+    >-< "register void* _tail_call_dest = ((void*)" >|< nm >|< ");"
+    >-< machDepCForTailcallLeave2
+    >-< "goto *_tail_call_dest;"
+
+assignment :: PP_Doc -> PP_Doc -> PP_Doc
+assignment v e
+ = v
+   >#< "="
+   >#< e
+   >|< ";"
+   >|< ppWhen optTraceAssign
+              (" printf(\"assignment" >#< show v >#< "=" >#< e >#< " : %d\\n\", " >#< show v >#< ");")
+
+switch :: Bool -> PP_Doc -> PP_Doc -> PP_Doc
+switch optDef scrutinee body
+ = "switch ("
+   >|< scrutinee
+   >|< ")"
+   >#< "{"
+   >-< indent 4 (   body
+                >-< ppWhen optDef (caseDefault scrutinee)
+                )
+   >-< "}"
+
+alternative :: PP_Doc -> PP_Doc -> PP_Doc
+alternative when body
+ = "case"
+   >#< when
+   >|< ":"
+   >-< indent 4 (body >-< "break;")
+
+methodEnter :: Int -> Int -> PP_Doc
+methodEnter nLocal nParam
+ = comment "Enter"
+   >-< assignment (text "*SP") (text "((GrWord)BP)")
+   >-< assignment (text "BP")  (text "SP")
+   >-< incrementWith (text "SP") (nLocal+nParam+1)
+
+methodLeave :: Int -> PP_Doc
+methodLeave nDiff
+ = comment "Leave"
+   >-< assignment (text "SP")  (text "BP")
+   >-< assignment (text "BP") (text "((Pointer)*SP)")
+   >-< incrementWith (text "SP") (nDiff)
+
+%%]

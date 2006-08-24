@@ -1,0 +1,67 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abstract syntax for Silly (Simple Imperative Language)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%[8
+
+TYPE Functions  = [Function]
+TYPE Variables  = [Variable]
+TYPE Statements = [Statement]
+TYPE Alternatives = [Alternative]
+TYPE Values       = [Value]
+
+DATA SilModule
+  |  SilModule   constants  : {[(String,Int)]}
+                 variables  : {[String]}
+                 functions  : Functions
+
+DATA Function
+  |  Function    name       : {String}
+                 tailJumps  : {Bool}
+                 parameters : {[String]}
+                 locals     : {[String]}
+                 body       : Statements
+
+DATA Statement
+  |  Assignment  dest       : Variable
+                 source     : Value
+  |  Switch      scrutinee  : Value
+                 body       : Alternatives
+  |  Call        name       : {String}
+                 args       : Values
+  |  Jump        name       : {String}
+  |  Leave       diff       : {Int}
+  |  Comment     comment    : {String}
+  |  Enter       nParam     : {Int}
+                 nLocal     : {Int}
+
+DATA Alternative
+  |  Alternative when       : Constant
+                 body       : Statements
+
+DATA Constant
+  | Literal      value      : {Int}
+  | Alias        name       : {String}
+
+DATA Variable
+  |  Var         name       : String
+  |  Subs        array      : Variable
+                 index      : Constant
+  |  SP
+  |  BP
+  |  RP
+
+DATA Value
+  | Con          con        : Constant
+  | Var          var        : Variable
+  | Call         name       : String
+                 args       : Values
+
+
+%%]

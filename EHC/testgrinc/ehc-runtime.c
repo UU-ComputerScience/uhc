@@ -119,7 +119,7 @@ int primUndefined()
     exit(1);
     return 0;
 }
-
+/*
 int primCmpInt(int x, int y)
 {   if (x>y)
         return global_GT[0];
@@ -127,3 +127,4 @@ int primCmpInt(int x, int y)
         return global_EQ[0];
     return global_LT[0];
 }
+*/
