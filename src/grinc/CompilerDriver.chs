@@ -8,12 +8,17 @@
 
 %%[8 import(Control.Monad.Error,Control.Monad.State, Control.Exception, Data.Maybe, EH.Util.FPath)
 %%]
-
 %%[8 import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}GrinCode}, {%{EH}Scanner.Scanner})
 %%]
-
 %%[8 import( UU.Parsing, UU.Pretty, EH.Util.CompileRun )
 %%]
+%%[8 import({%{GRIN}GrinCode.GenSilly})
+%%]
+%%[8 import({%{GRIN}Silly})
+%%]
+%%[8 import({%{GRIN}Silly.PrettyC})
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Packaging as CompileRun actions
@@ -345,15 +350,28 @@ caGrin2Llc = do
     ; return (grin2llc entry code doTrace)
     }
 
+caGrin2Silly :: CompileAction SilModule
+caGrin2Silly = do
+    { code <- gets gcsGrinCode
+    ; entry <- gets gcsEntry
+    ; doTrace <- gets (ehcOptGenTrace . gcsOpts)
+    ; return (grin2silly entry code doTrace)
+    }
+
+
+
 caWriteLlc :: CompileAction ()
 caWriteLlc = do
     { input <- gets gcsPath
     ; let output = fpathSetSuff "c" input
+--    ; let output2 = fpathSetSuff "cc" input
     ; options <- gets gcsOpts
     ; when (ehcOptEmitLlc options)
            (do { putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
-               ; llc <- caGrin2Llc
-               ; liftIO $ writePP (const llc) () output
+--               ; llc <- caGrin2Llc
+               ; silly <- caGrin2Silly
+--               ; liftIO $ writePP (const llc) () output2
+               ; liftIO $ writePP prettyC silly output
                })
     }
 %%]

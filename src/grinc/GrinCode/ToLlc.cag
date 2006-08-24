@@ -23,15 +23,6 @@ optTraceAssign = False
 }
 
 
-{
--- assembler instruction to correct the C stack when
--- jumping out of a function instead of doing a tail call
--- should be "leave" for x86 processor
-
--- moved to Config
--- stackTweakInstruction = "leave"
-}
-
 -- Declaration of the option attirbutes
 
 ATTR GrModule GrBind GrBindL GrExpr GrAlt GrAltL
@@ -48,6 +39,33 @@ SEM GrModule
   | Mod bindL.optOwnParameters = @lhs.optOwnParameters || @lhs.optJumpTailCalls
 
 %%]
+
+
+
+%%[8
+
+{
+data Var = VarHs  HsName
+         | VarIdx Var Int
+         | VarDeref Var
+         | VarSP
+         | VarBP
+         | VarRP
+
+instance Show Var
+ where show (VarHs h) = show h
+       show VarSP     = "SP"
+       show VarBP     = "BP"
+       show VarRP     = "RP"
+       show (VarIdx a i) = showPt a ++ "[" ++ show i ++ "]"
+       show (VarDeref p) = "*" ++ show p
+
+showPt :: Var -> String
+showPt (VarHs h) =  "((Pointer)" ++ show h ++ ")"
+showPt x = show x
+}
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Attribute declarations: almost everything has a PP-representation
@@ -79,16 +97,15 @@ ATTR GrBindL GrBind [ | | fwdDoc USE {>-<} {empty} : {PP_Doc} ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR GrExpr [ | | isLastExprTailCall: Bool ]
+
+ATTR GrExpr GrAlt GrAltL [ | | tailJumps USE {&&} {True} : {Bool} ]
 
 SEM GrExpr
-  | Call    lhs.isLastExprTailCall
-                        = @isLastExpr && @lhs.optJumpTailCalls
-  | Seq     lhs.isLastExprTailCall
-                        = @body.isLastExprTailCall
-  | * - Call Seq
-            lhs.isLastExprTailCall
-                        = False
+ | Seq     lhs.tailJumps = @body.tailJumps
+ | Call    lhs.tailJumps = @isLastExpr && @lhs.optJumpTailCalls
+ | Case    lhs.tailJumps = @altL.tailJumps
+ | * - Seq Call Case
+           lhs.tailJumps = False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -123,18 +140,18 @@ SEM GrGlobal
                               n  = length vs
                               pn = show @nm
                               p  = text pn
-                          in  assignment p (allocate pn n @lhs.maxConstrParameters)
-                              >-< vertically (zipWith assignment (map (arrayindex (castpt p)) [0..]) vs)
+                          in  assignment (VarHs @nm) (allocate pn n @lhs.maxConstrParameters)
+                              >-< vertically (zipWith assignment (map (VarIdx (VarHs @nm)) [0..]) vs)
 
            lhs.declDoc =  "GrWord" >#< show @nm >|< ";"
 
 
 SEM GrBind
-  | Bind  lhs . fwdDoc = methodHead @lhs.optOwnParameters @nm @argNmL >#< ";"
+  | Bind  lhs . fwdDoc = methodHead @lhs.optOwnParameters @nm @argNmL >|< ";"
 
 SEM GrBind
   | Bind  lhs . llcDoc = methodHeader @lhs.optTraceCall @lhs.optOwnParameters @nm @argNmL
-                         >-< indent 4 (   ppWhen @expr.isLastExprTailCall
+                         >-< indent 4 (   ppWhen @expr.tailJumps
                                                  jumpPrepare
                                       >-< methodLocals @lhs.optOwnLocals @loc.locals
                                       >-< ppWhen @lhs.optOwnParameters
@@ -144,7 +161,7 @@ SEM GrBind
                                                               (if @lhs.optOwnParameters then @expr.maxChildParameters else 0)
                                                  )
                                       >-< @expr.llcDoc
-                                      >-< ppWhen @loc.ownAllocation
+                                      >-< ppWhen (@loc.ownAllocation && not @expr.tailJumps)
                                                  methodLeave
                                       )
                          >-< methodFooter @lhs.optTraceCall @nm
@@ -159,32 +176,34 @@ SEM GrExpr
                         >-< @body.llcDoc
 
  | Unit    lhs.llcDoc = comment "Unit"
-                        >-< vertically (zipWith assignment
-                                                (if @isLastExpr
-                                                 then (map (arrayindex returnpointer) [0..])
-                                                 else (map (text.show) @lhs.targets)
-                                                )
-                                                @val.llcDocs
-                                       )
+                        >-< vertically [ assignment v e
+                                       | (v,e) <-zip  (if @isLastExpr
+                                                       then (map (VarIdx VarRP) [0..])
+                                                       else (map VarHs @lhs.targets)
+                                                      )
+                                                      @val.llcDocs
+
+                                       ]
 
 
- | Store   lhs.llcDoc = let pn = (show.head) @lhs.targets
+ | Store   lhs.llcDoc = let ph = head @lhs.targets
+                            pn = show ph
                             p  = text pn
                             vs = @val.llcDocs
                             n  = length vs
                         in comment "Store"
-                           >-< assignment p (allocate pn n @lhs.maxConstrParameters)
-                           >-< vertically (zipWith assignment (map (arrayindex (castpt p)) [0..]) vs)
+                           >-< assignment (VarHs ph) (allocate pn n @lhs.maxConstrParameters)
+                           >-< vertically (zipWith assignment (map (VarIdx (VarHs ph)) [0..]) vs)
 
            lhs.localsF = (@lhs.targets ++)
 
  | Update  lhs.llcDoc = let p = (text.show) @nm
                             vs = @val.llcDocs
                         in comment "Update"
-                           >-< vertically (zipWith assignment (map (arrayindex (castpt p)) [0..]) vs)
+                           >-< vertically (zipWith assignment (map (VarIdx (VarHs @nm)) [0..]) vs)
 
  | Fetch   lhs.llcDoc = comment "Fetch"
-                        >-< assignment ((text.show.head) @lhs.targets)
+                        >-< assignment (VarHs (head @lhs.targets))
                                        (arrayindex ((castpt.text.show) @nm) (fromJust @mbOffset))
 
            lhs.localsF = (@lhs.targets ++)
@@ -200,14 +219,14 @@ SEM GrExpr
  | Call    lhs.llcDoc = if @isLastExpr && @lhs.optJumpTailCalls
                          then (   comment "Call (Tail)"
                               >-< vertically (zipWith assignment
-                                                      (map (arrayindex returnpointer) [1..])
+                                                      (map (VarIdx VarRP) [1..])
                                                       @argL.llcDocs
                                              )
                               >-< indent 4 methodLeave
                               >-< let n = length @argL - @lhs.numberParameters
                                   in  ppWhen (n>0) (incrementWith stackpointer n)
                               >-< vertically (zipWith assignment
-                                                      (map (arrayindex stackpointer ) [-1,-2..])
+                                                      (map (VarIdx VarSP) [-1,-2..])
                                                       (map (arrayindex returnpointer) [1..length @argL])
                                              )
                               >-< ppWhen @lhs.optTraceCall (trace ("jumps "++ show @nm))
@@ -216,7 +235,7 @@ SEM GrExpr
                          else (   comment "Call (Normal)"
                               >-< (if @lhs.optOwnParameters
                                    then (   vertically (zipWith assignment
-                                                                (map (arrayindex stackpointer) [-1,-2..])
+                                                                (map (VarIdx VarSP) [-1,-2..])
                                                                 @argL.llcDocs
                                                        )
                                         >-< callStat @nm []
@@ -224,7 +243,7 @@ SEM GrExpr
                                    else callStat @nm @argL.llcDocs
                                   )
                               >-< vertically (zipWith assignment
-                                                      (map (text.show) @lhs.targets)
+                                                      (map VarHs @lhs.targets)
                                                       (map (arrayindex returnpointer) [0..])
                                              )
                               )
@@ -234,8 +253,8 @@ SEM GrExpr
 
  | FFI     lhs.llcDoc = comment "FFI"
                         >-< assignment (if @isLastExpr
-                                        then (arrayindex returnpointer 0)
-                                        else ((text.show.head) @lhs.targets)
+                                        then (VarIdx VarRP 0)
+                                        else (VarHs (head @lhs.targets))
                                        )
                                        (call @nm (map (text.show) @argL))
 
@@ -248,7 +267,7 @@ SEM GrExpr
 
 
 SEM GrAlt
- | Alt     lhs.llcDoc = "case" >#< @pat.llcDoc >#< ":"
+ | Alt     lhs.llcDoc = "case" >#< @pat.llcDoc >|< ":"
                         >-< indent 4 (@expr.llcDoc >-< "break;")
 
 SEM GrVal
@@ -275,6 +294,10 @@ SEM GrPat
  | Var     lhs.llcDoc = text "GrPat:Var"
  | LitInt  lhs.llcDoc = text "GrPat:LitInt"
  | * - Tag Var LitInt lhs.llcDoc = text "GrPat:other"
+
+
+
+
 
 
 {
@@ -365,15 +388,15 @@ methodFooter optTrace nm
 methodEnter :: Int -> Int -> PP_Doc
 methodEnter n k
  = comment "Enter"
-   >-< assignment (deref stackpointer) (castword basepointer)
-   >-< assignment basepointer stackpointer
+   >-< assignment (VarDeref VarSP) (castword basepointer)
+   >-< assignment VarBP stackpointer
    >-< incrementWith stackpointer (n+k+1)
 
 methodLeave :: PP_Doc
 methodLeave
  = comment "Leave"
-   >-< assignment stackpointer basepointer
-   >-< assignment basepointer (castpt (deref stackpointer))
+   >-< assignment VarSP basepointer
+   >-< assignment VarBP (castpt (deref stackpointer))
 
 methodLocals :: Bool -> [HsName] -> PP_Doc
 methodLocals optOwn ns
@@ -397,7 +420,7 @@ methodParameters optOwn ns
 
 methodParameter :: HsName -> Int -> PP_Doc
 methodParameter p n
- = assignment (text (show p))
+ = assignment (VarHs p)
               (arrayindex stackpointer n)
 
 allocateNames :: [HsName] -> [Int] -> PP_Doc
@@ -430,7 +453,7 @@ callStat nm ps
  = call (functionName nm) ps >|< ";"
 
 jumpPrepare :: PP_Doc
-jumpPrepare 
+jumpPrepare
  =  pp machDepCForTailcallEnter
 
 jump :: HsName -> PP_Doc
@@ -447,7 +470,7 @@ returnpointer = text "RP";
 initMethod :: PP_Doc -> PP_Doc
 initMethod b
  = text "void initialize(void) {"
-   >-< indent 4 (assignment basepointer (text "0"))
+   >-< indent 4 (assignment VarBP (text "0"))
    >-< indent 4 b
    >-< text "}"
 
@@ -532,7 +555,7 @@ trace s
  = text ("printf(\"" ++ s ++ " SP=%d\\n\", SP-Stack); fflush(stdout);")
 
 cast :: String -> PP_Doc -> PP_Doc
-cast tp x = "((" >|< tp >|< ")(" >|< x >|< "))"
+cast tp x = "((" >|< tp >|< ")" >|< x >|< ")"
 
 caseHeader :: PP_Doc -> PP_Doc
 caseHeader x
@@ -556,12 +579,16 @@ call f ps
 
 arrayindex :: PP_Doc -> Int -> PP_Doc
 arrayindex a i
- = a >#< "[" >#< show i >#< "]"
+ = a >|< "[" >|< show i >|< "]"
 
-assignment :: PP_Doc -> PP_Doc -> PP_Doc
+assignment :: Var -> PP_Doc -> PP_Doc
 assignment v e
- = v >#< text "=" >#< e >|< ";"
-     >|< ppWhen optTraceAssign (" printf(\"assignment" >#< v >#< "=" >#< e >#< " : %d\\n\", " >#< v >#< ");")
+ = show v
+   >#< "="
+   >#< e
+   >|< ";"
+   >|< ppWhen optTraceAssign
+              (" printf(\"assignment" >#< show v >#< "=" >#< e >#< " : %d\\n\", " >#< show v >#< ");")
 }
 
 %%]

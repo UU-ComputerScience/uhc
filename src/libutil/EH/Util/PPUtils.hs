@@ -91,6 +91,19 @@ ppDots = ppListSep "" "" "."
 ppMb :: PP a => Maybe a -> PP_Doc
 ppMb = maybe empty pp
 
+ppUnless :: Bool -> PP_Doc -> PP_Doc
+ppUnless b p = if b then empty else p
+
+ppWhen :: Bool -> PP_Doc -> PP_Doc
+ppWhen b p = if b then p else empty
+
+ppVertically :: [PP_Doc] -> PP_Doc
+ppVertically = foldr (>-<) empty
+
+ppHorizontally :: [PP_Doc] -> PP_Doc
+ppHorizontally = foldr (>|<) empty
+
+
 {-
 instance PP a => PP [a] where
   pp = ppCommaList
