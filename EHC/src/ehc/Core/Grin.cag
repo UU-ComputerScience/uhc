@@ -213,7 +213,7 @@ SEM CModule
 
                             .   undefBind   =   GrBind_Bind hsnUndefined
                                                             []
-                                                 			(GrExpr_FFI "primUndefined" [])
+                                                            (GrExpr_FFI "primUndefined" [])
 
                 lhs         .   grMod       =   GrModule_Mod (HNm @baseName)
                                                     [] -- TODO: this should contain all the caf variables
@@ -463,16 +463,16 @@ ATTR CExpr   [ | | grVal: GrVal ]
 SEM CExpr
   | Tup         loc         .   grVal       =   ctag (mkGrRecNode []) (\_ l t _ -> mkGrConNode t l []) @tag
   | Var         loc         .   grVal       =   maybe (GrVal_Var @nm) (\a -> mkNdPApp @nm a []) @mbLam
-  | Int         loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnGrInt  else id)  (GrVal_LitInt @int)
-  | Char        loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnGrChar else id)  (GrVal_LitInt (ord @char))
+  | Int         loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnInt  else id)  (GrVal_LitInt @int)
+  | Char        loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnChar else id)  (GrVal_LitInt (ord @char))
   | * - Int Char Var Tup
                 loc         .   grVal       =   GrVal_Empty
 %%]
 
 %%[99
 SEM CExpr
-  | Integer     loc         .   grVal       :=  (if @lhs.doBox then mkGrBox hsnGrInt  else id)  (GrVal_LitInt $ fromInteger $ @integer)
-  | Double      loc         .   grVal       :=  (if @lhs.doBox then mkGrBox hsnGrInt  else id)  (GrVal_LitInt $ round $ @double)
+  | Integer     loc         .   grVal       :=  (if @lhs.doBox then mkGrBox hsnInt  else id)  (GrVal_LitInt $ fromInteger $ @integer)
+  | Double      loc         .   grVal       :=  (if @lhs.doBox then mkGrBox hsnInt  else id)  (GrVal_LitInt $ round $ @double)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -602,7 +602,7 @@ ATTR AllPat AllAlt [ | | grWrapCaseSel USE {`const`} {idGrWrapCaseSel}: {GrVal -
 SEM CPat
   | Int Char    lhs         .   grWrapCaseSel
                                             =   let n = uidHNm @lUniq
-                                                in  \v -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v) (mkGrUnbox hsnGrInt n))
+                                                in  \v -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v) (mkGrUnbox hsnInt n))
 %%]
 
 %%[8

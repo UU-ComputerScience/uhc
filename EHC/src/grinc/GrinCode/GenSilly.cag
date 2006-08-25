@@ -17,7 +17,6 @@
 
 %%[8 import({GrinCode/AbsSyn})
 %%]
-
 %%[8 import({GrinCode/LastExpr})
 %%]
 
@@ -25,23 +24,17 @@
 WRAPPER GrAGItf
 %%]
 
-
-%%[8
-{
-grin2silly :: HsName -> GrModule -> Bool -> SilModule
-grin2silly e gr emitTraceInfo
+%%[8 hs
+grin2silly :: GrModule -> Bool -> Bool -> Bool -> SilModule
+grin2silly gr optJump optPar optLoc
  = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr))
-                        (Inh_GrAGItf { entryNm_Inh_GrAGItf = e
---                                   , doFunctionTrace_Inh_GrAGItf = emitTraceInfo
+                        (Inh_GrAGItf { optJumpTailCalls_Inh_GrAGItf = optJump
+                                     , optOwnParameters_Inh_GrAGItf = optPar
+                                     , optOwnLocals_Inh_GrAGItf = optLoc
                                      }
                         )
    in silModule_Syn_GrAGItf t
-
-}
 %%]
-
-
 
 %%[8 import({GrinCode/ToSilly})
 %%]
-

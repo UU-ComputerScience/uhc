@@ -59,7 +59,7 @@ SEM GrModule
                                                      p2v         = p2vLam ++ p2vCaf ++ p2vCode
                                                      sz          = length p2v
                                                      szAll       = sz + sz `div` 2
-                                                     initGrExpr  = GrExpr_Eval hsnGrMain
+                                                     initGrExpr  = GrExpr_Eval hsnMain
                                                 in   do  {  m <- newListArray (0,szAll-1) ((assocLElts . sortOn fst $ p2v) ++ replicate (szAll-sz) RVNil)
                                                          ;  let  h = RunHeap { rhMem = m, rhSize = sz, rhFree = sz }
                                                          ;  return

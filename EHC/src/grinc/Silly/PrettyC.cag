@@ -11,14 +11,17 @@
 %%]
 
 %%[8 import({Silly/AbsSyn})
-WRAPPER SilModule
 %%]
 
 %%[8 hs
-prettyC :: SilModule -> PP_Doc
-prettyC silmod
-  =  let  t = wrap_SilModule (sem_SilModule silmod) (Inh_SilModule False False)
-     in   (prettyC_Syn_SilModule t)
+prettyC :: Bool -> Bool -> SilModule -> PP_Doc
+prettyC optTrace optDef silmod
+  = let t = wrap_SilModule (sem_SilModule silmod)
+                           (Inh_SilModule { optTraceCall_Inh_SilModule = optTrace
+                                          , optCaseDefault_Inh_SilModule = optDef
+                                          }
+                           )
+     in  prettyC_Syn_SilModule t
 
 %%]
 
@@ -27,17 +30,12 @@ prettyC silmod
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[8
 
+WRAPPER SilModule
+
 ATTR SilModule Functions Function Statements Statement Alternatives Alternative
-  [ optTraceCall     : {Bool}
-    optCaseDefault   : {Bool}
+  [ optTraceCall     : {Bool} -- when True, function entrance/exit is logged
+    optCaseDefault   : {Bool} -- when True, error messages are given as default case for each switch
   | | ]
-
--- Change the options according to your taste
-
-SEM SilModule
-  | SilModule
-          functions.optTraceCall     = False  -- when True, function entrance/exit is logged
-          functions.optCaseDefault   = False  -- when True, error messages are given as default case for each switch
 
 {
 optTraceAssign = False
@@ -121,20 +119,13 @@ SEM Variable
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Auxiliary PrettyPrint functions
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8
-{
-commaSeparated :: [String] -> String
-commaSeparated = concat . intersperse ", "
-}
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Building a C program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
+
+commaSeparated :: [String] -> String
+commaSeparated = concat . intersperse ", "
 
 macroDefinition :: PP_Doc -> PP_Doc -> PP_Doc
 macroDefinition nm body
@@ -156,7 +147,7 @@ declareNames tp ns
 
 declareName :: String -> String -> String
 declareName tp nm
- = tp ++ (' ' : show nm)
+ = tp ++ (' ' : nm)
 
 trace :: String -> PP_Doc
 trace s
@@ -164,7 +155,7 @@ trace s
 
 caseDefault :: PP_Doc -> PP_Doc
 caseDefault x
- =  "    default: printf(\"undefined case for " >|< x >|< " : %d\\n\", " >|< x >|< "); exit(1);"
+ =  "default: printf(\"undefined case for " >|< x >|< " : %d\\n\", " >|< x >|< "); exit(1);"
 
 comment :: String -> PP_Doc
 comment s = text ("/* " ++ s ++ " */")
@@ -190,7 +181,6 @@ preambule
    >-< text ""
    >-< text "extern Pointer SP, RP, Stack;"
    >-< text "Pointer BP;"
-   >-< text "GrWord _;"
    >-< text ""
 
 constantDefinition :: (String,Int) -> PP_Doc
@@ -253,9 +243,8 @@ switch optDef scrutinee body
    >|< scrutinee
    >|< ")"
    >#< "{"
-   >-< indent 4 (   body
-                >-< ppWhen optDef (caseDefault scrutinee)
-                )
+   >-< indent 4 body
+   >-< ppWhen optDef (indent 4 (caseDefault scrutinee))
    >-< "}"
 
 alternative :: PP_Doc -> PP_Doc -> PP_Doc
