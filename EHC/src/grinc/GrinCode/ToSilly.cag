@@ -1,0 +1,353 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options to adapt the structure of the generated code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[8
+ATTR GrModule GrBind GrBindL GrExpr GrAlt GrAltL
+  [ optJumpTailCalls : {Bool}
+    optOwnParameters : {Bool}
+    optOwnLocals     : {Bool}
+  | | ]
+
+-- Change the options according to your taste
+
+SEM GrAGItf
+  | AGItf module.optJumpTailCalls = True   -- when True, tail calls are implemented with a goto
+                                           --            need to define the stackTweakInstruction in that case
+          module.optOwnParameters = True   -- when True, parameter passing is via the Stack datastructure
+                                           --            (forced to True when optJumpTailCalls is True)
+          module.optOwnLocals     = False  -- when True, local variables are allocated on the Stack datastructure
+
+-- Force OwnParameters when JumpTailCalls
+
+SEM GrModule
+  | Mod bindL.optOwnParameters = @lhs.optOwnParameters || @lhs.optJumpTailCalls
+
+%%]
+
+
+
+%%[8
+
+ATTR GrAGItf GrModule  [ entryNm: {HsName} | |  ]
+
+ATTR GrAGItf GrModule [ | | silModule : {SilModule} ]
+
+ATTR GrBindL GrBind [ | | functions USE {++} {[]} : {Functions} ]
+
+ATTR GrExpr [ | | stats USE {++} {[]} : {Statements} ]
+
+ATTR GrAltL [ | | alternatives : {Alternatives} ]
+
+ATTR GrAlt [ | | alternative : {Alternative} ]
+
+ATTR GrVal GrPat GrTag [ | | value : {Value} ]
+
+ATTR GrPat GrTag [ | | constant : {Constant} ]
+
+ATTR GrValL GrVal [ | | values : {Values} ]
+
+ATTR GrGlobal GrGlobalL [ | | initStats USE {++} {[]} : {Statements}
+                              names     USE {++} {[]} : {[String]}
+                        ]
+
+ATTR GrExpr GrAlt GrAltL [ numberParameters : {Int}
+                         |
+                         | localsF USE {.} {id}: {[HsName]->[HsName]}
+                           maxChildParameters USE {`max`} {0} : {Int}
+                           tailJumps USE {&&} {True} : {Bool}
+                         ]
+
+ATTR GrBindL GrBind GrExpr GrAlt GrAltL GrGlobal GrGlobalL [ maxConstrParameters : {Int} | | ]
+
+%%]
+
+%%[8
+SEM GrModule
+  | Mod lhs.silModule    =   SilModule_SilModule
+                                (tagConstants @evalTagMp)   -- constants
+                                @globalL.names              -- variables
+                                ( Function_Function "initialize" False [] []
+                                                    ( Statement_Assignment Variable_BP (Value_Con (Constant_Literal 0))
+                                                    : @globalL.initStats
+                                                    )
+                                : @bindL.functions            -- functions
+                                )
+
+        loc . maxConstrParameters = foldr max 0 (map (ctagArity.snd) (concat (map snd @ctagsMp)))
+
+
+SEM GrBind
+  | Bind   lhs.functions =  [ Function_Function
+                                -- name
+                                (show @nm)
+                                @expr.tailJumps
+                                -- parameters
+                                (    if @lhs.optOwnParameters then [] else @loc.params
+                                )
+                                -- locals
+                                (   (if @lhs.optOwnLocals     then [] else @loc.locals)
+                                ++  (if @lhs.optOwnParameters then @loc.params else [])
+                                )
+                                -- body
+                                (  (if   @lhs.optOwnParameters && not (null @argNmL)
+                                    then Statement_Comment "Parameters"
+                                         : zipWith Statement_Assignment
+                                                   (map Variable_Var @loc.params)
+                                                   (map (arrayValue Variable_SP) [-1,-2..])
+                                    else []
+                                   )
+                                ++ (if   @loc.ownAllocation
+                                    then [ Statement_Enter (if @lhs.optOwnLocals     then length @loc.locals       else 0)
+                                                           (if @lhs.optOwnParameters then @expr.maxChildParameters else 0)
+                                         ]
+                                    else []
+                                   )
+                                ++ @expr.stats
+                                ++ ( if @loc.ownAllocation && not @expr.tailJumps
+                                     then [Statement_Leave 0]
+                                     else []
+                                   )
+                                )
+                            ]
+
+          expr . numberParameters = length @argNmL
+          loc  . locals = map show (@expr.localsF [])
+          loc  . params = map show @argNmL
+          loc  . ownAllocation = @lhs.optOwnParameters || @lhs.optOwnLocals
+
+
+
+SEM GrExpr
+ | Seq     lhs.stats = @expr.stats ++ @body.stats
+
+ | Unit    lhs.stats  = Statement_Comment "Unit"
+                        : [ Statement_Assignment v e
+                          | (v,e) <-zip  (if @isLastExpr
+                                          then [arrayVariab Variable_RP i | i <- [0..]       ]
+                                          else [Variable_Var   (show x)   | x <- @lhs.targets]
+                                         )
+                                         @val.values
+                          ]
+
+
+ | Store   lhs.stats  = let ph = head @lhs.targets
+                            vs = @val.values
+                            n  = length vs
+                        in Statement_Comment "Store"
+                           : store (show ph) n @lhs.maxConstrParameters vs
+
+           lhs.localsF = (@lhs.targets ++)
+
+ | Update  lhs.stats  = let p = show @nm
+                            vs = @val.values
+                         in Statement_Comment "Update"
+                            : zipWith Statement_Assignment
+                                     (map (arrayVariab (Variable_Var p)) [0..])
+                                     vs
+
+ | Fetch   lhs.stats  = Statement_Comment "Fetch"
+                        : Statement_Assignment (Variable_Var (show (head @lhs.targets)))
+                                               (arrayValue (Variable_Var (show @nm)) (fromJust @mbOffset))
+                        : []
+
+           lhs.localsF = (@lhs.targets ++)
+
+ | Case    lhs.stats  = Statement_Comment "Case"
+                        : Statement_Switch @val.value
+                                           @altL.alternatives
+                        : []
+
+           lhs.localsF = ((filter (not . (=="_") . show) @lhs.targets) ++) . @altL.localsF
+
+ | Call    lhs.stats  = if @isLastExpr && @lhs.optJumpTailCalls
+                         then (   Statement_Comment "Call (Tail)"
+                              :   zipWith Statement_Assignment
+                                          (map (arrayVariab Variable_RP) [1..])
+                                          @argL.values
+                              )
+                              ++
+                              (   Statement_Leave (length @argL - @lhs.numberParameters)
+                              :   zipWith Statement_Assignment
+                                          (map (arrayVariab Variable_SP) [-1,-2..])
+                                          (map (arrayValue  Variable_RP) [1..length @argL])
+                              )
+                              ++ [Statement_Jump (show @nm)]
+                         else (   Statement_Comment "Call (Normal)"
+                              :   (if @lhs.optOwnParameters
+                                   then (  zipWith Statement_Assignment
+                                                   (map (arrayVariab Variable_SP) [-1,-2..])
+                                                   @argL.values
+                                        ++ [Statement_Call (show @nm) [] ]
+                                        )
+                                   else [Statement_Call (show @nm) @argL.values ]
+                                  )
+                              ++ zipWith Statement_Assignment
+                                         (map (Variable_Var . show) @lhs.targets)
+                                         (map (arrayValue Variable_RP) [0..])
+                              )
+
+           lhs.localsF = (@lhs.targets ++)
+           lhs.maxChildParameters = length @argL
+
+ | FFI     lhs.stats  = Statement_Comment "FFI"
+                        : Statement_Assignment
+                               (if @isLastExpr
+                                then (arrayVariab Variable_RP 0)
+                                else (Variable_Var (show (head @lhs.targets)))
+                               )
+                               (Value_Call @nm (map (Value_Var . Variable_Var . show) @argL))
+                        : []
+
+           lhs.localsF = (@lhs.targets ++)
+
+ | App     lhs.stats  = [Statement_Comment "App: SHOULDNT"]
+ | Eval    lhs.stats  = [Statement_Comment "Eval: SHOULDNT"]
+ | Throw   lhs.stats  = [Statement_Comment "Throw: TODO"]
+ | Catch   lhs.stats  = [Statement_Comment "Catch: TODO"]
+
+
+SEM GrAltL
+  | Nil    lhs.alternatives = []
+  | Cons   lhs.alternatives = @hd.alternative : @tl.alternatives
+
+SEM GrAlt
+ | Alt     lhs.alternative = Alternative_Alternative @pat.constant
+                                                     @expr.stats
+
+
+SEM GrGlobal
+ | Global  lhs.names       = [show @nm]
+           lhs.initStats   = let vs = @val.values
+                                 n  = length vs
+                             in  store (show @nm) n @lhs.maxConstrParameters vs
+
+SEM GrVal
+ | LitInt  lhs.value = Value_Con (Constant_Literal @int)
+ | Var     lhs.value = Value_Var (Variable_Var (show @nm))
+ | Tag     lhs.value = @tag.value
+ | * - LitInt Var Tag lhs.value = error "GrVal:other"
+
+
+SEM GrVal
+ | Node     lhs.values = @tag.value : @fldL.values
+ | Var      lhs.values = [Value_Var (Variable_Var(show @nm))]
+ | * - Node Var lhs.values = error "GrVal:others"
+
+
+SEM GrValL
+ | Nil    lhs.values = []
+ | Cons   lhs.values = @hd.value : @tl.values
+
+SEM GrTag
+ | Lit     lhs.value = Value_Con (Constant_Alias (categStr @categ ++ show (hsnAlphanumeric @nm)))
+ | Var     lhs.value = Value_Var (Variable_Var (show @nm))
+ | Unboxed lhs.value = error "GrTag:Unboxed value"
+
+SEM GrTag
+ | Lit     lhs.constant = Constant_Alias (categStr @categ ++ show (hsnAlphanumeric @nm))
+ | * - Lit lhs.constant = error "GrTag:other constant"
+
+
+SEM GrPat
+ | Tag     lhs.value = @tag.value
+ | Var     lhs.value = error "GrPat:Var value"
+ | LitInt  lhs.value = error "GrPat:LitInt value"
+ | * - Tag Var LitInt lhs.value = error "GrPat:other value"
+
+SEM GrPat
+ | Tag     lhs.constant = @tag.constant
+ | * - Tag  lhs.constant = error "GrPat:other constant"
+
+
+SEM GrExpr
+ | Seq     lhs.tailJumps = @body.tailJumps
+ | Call    lhs.tailJumps = @isLastExpr && @lhs.optJumpTailCalls
+ | Case    lhs.tailJumps = @altL.tailJumps
+ | * - Seq Call Case
+           lhs.tailJumps = False
+
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Determining the target
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[8
+
+ATTR AllGrExpr [ targets : {[HsName]} | | ]
+ATTR GrPat GrTag [ | |  patternNames: {[HsName]} ]
+
+SEM GrBind
+  | Bind     expr . targets = []
+
+SEM GrExpr
+  | Seq      expr . targets = @pat.patternNames
+             body . targets = @lhs.targets
+
+SEM GrPat
+  | Var   lhs  .  patternNames = [@nm]
+  | Node  lhs  .  patternNames = @tag.patternNames ++ @fldL
+  | * - Var Node Tag  lhs  .  patternNames  =  []
+
+SEM GrTag
+  | Var      lhs  .  patternNames  = [@nm]
+  | Unboxed  lhs  .  patternNames  = []
+  | * - Var Unboxed lhs  .  patternNames  = [wildcardNr]
+%%]
+
+
+%%[8 hs
+
+-- n1 is the number of parameters of the tag
+-- n2 is the maximum number of parameters of all constructorfunctions
+-- tags other than C may be overwritten later with a C-tag, which might have more parameters.
+-- We anticipate here for the maximum number of parameters.
+-- Obvious improvement: do not take the global maximum, but only the maximum over the constructors
+-- that are actually possible for this function.
+-- Source of this information could be the Haskell-type, or the Grin HPT-analysis.
+
+allocate :: String -> Int -> Int -> Value
+allocate (tagcat:_) n1 n2
+ = let n | tagcat=='C'  = n1
+         | otherwise    = max n1 n2
+   in Value_Call "heapalloc" [ Value_Con (Constant_Literal n) ]
+
+
+store :: String -> Int -> Int -> [Value] -> Statements
+store pn n1 n2 vs
+       =  Statement_Assignment (Variable_Var pn) (allocate pn n1 n2)
+          : zipWith Statement_Assignment
+                    (map (arrayVariab (Variable_Var pn)) [0..])
+                    vs
+
+arrayValue :: Variable -> Int -> Value
+arrayValue a i = Value_Var (Variable_Subs a (Constant_Literal i))
+
+arrayVariab :: Variable -> Int -> Variable
+arrayVariab a i = Variable_Subs a (Constant_Literal i)
+
+tagConstants :: EvApTagMp -> [(String,Int)]
+tagConstants eas
+ = let f ((t,s),_) n = (showGrTag t,n)
+   in  zipWith f eas [0..]
+
+showGrTag :: GrTag -> String
+showGrTag (GrTag_Lit categ n nm) = categStr categ ++ show (hsnAlphanumeric nm)
+showGrTag (GrTag_Var nm) = show nm
+showGrTag (GrTag_Unboxed) = "GrTag:Unboxed"
+
+categStr c = case c of
+               GrTagCon        -> "C"
+               GrTagHole       -> "H"
+               GrTagRec        -> "R"
+               GrTagApp        -> "A"
+               GrTagFun        -> "F"
+               GrTagPApp need  -> 'P' : show need
+
+%%]
