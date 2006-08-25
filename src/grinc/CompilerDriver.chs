@@ -12,12 +12,6 @@
 %%]
 %%[8 import( UU.Parsing, UU.Pretty, EH.Util.CompileRun )
 %%]
-%%[8 import({%{GRIN}GrinCode.GenSilly})
-%%]
-%%[8 import({%{GRIN}Silly})
-%%]
-%%[8 import({%{GRIN}Silly.PrettyC})
-%%]
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -350,35 +344,45 @@ caGrin2Llc = do
     ; return (grin2llc entry code doTrace)
     }
 
+%%]
+
+
+
+
+
+
+%%[8 import({%{GRIN}GrinCode.GenSilly(grin2silly)}, {%{GRIN}Silly(SilModule)})
+
 caGrin2Silly :: CompileAction SilModule
 caGrin2Silly = do
     { code <- gets gcsGrinCode
-    ; entry <- gets gcsEntry
-    ; doTrace <- gets (ehcOptGenTrace . gcsOpts)
-    ; return (grin2silly entry code doTrace)
+    ; optJump <- gets (ehcOptGenTailCall  . gcsOpts)
+    ; optPar  <- gets (ehcOptGenOwnParams . gcsOpts)
+    ; optLoc  <- gets (ehcOptGenOwnLocals . gcsOpts)
+    ; return (grin2silly code optJump optPar optLoc)
     }
+%%]
 
 
+%%[8 import({%{GRIN}Silly.PrettyC(prettyC)})
 
 caWriteLlc :: CompileAction ()
 caWriteLlc = do
     { input <- gets gcsPath
     ; let output = fpathSetSuff "c" input
---    ; let output2 = fpathSetSuff "cc" input
     ; options <- gets gcsOpts
     ; when (ehcOptEmitLlc options)
            (do { putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
---               ; llc <- caGrin2Llc
+--             ; llc <- caGrin2Llc
+--             ; liftIO $ writePP (const llc) () output
                ; silly <- caGrin2Silly
---               ; liftIO $ writePP (const llc) () output2
-               ; liftIO $ writePP prettyC silly output
+               ; optTrace    <- gets (ehcOptGenTrace . gcsOpts)
+               ; optCaseDef  <- gets (ehcOptGenCaseDefault . gcsOpts)
+               ; liftIO $ writePP (prettyC optTrace optCaseDef) silly output
                })
     }
 %%]
 
-
-    -- fpathToStr
-    -- fpathBase
 
 %%[8.writeGrin import({%{EH}GrinCode.Pretty})
 caWriteGrin :: Bool -> String -> CompileAction ()

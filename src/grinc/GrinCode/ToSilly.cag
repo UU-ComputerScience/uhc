@@ -4,56 +4,19 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Options to adapt the structure of the generated code
+%%% Code generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[8
-ATTR GrModule GrBind GrBindL GrExpr GrAlt GrAltL
-  [ optJumpTailCalls : {Bool}
-    optOwnParameters : {Bool}
-    optOwnLocals     : {Bool}
-  | | ]
-
--- Change the options according to your taste
-
-SEM GrAGItf
-  | AGItf module.optJumpTailCalls = True   -- when True, tail calls are implemented with a goto
-                                           --            need to define the stackTweakInstruction in that case
-          module.optOwnParameters = True   -- when True, parameter passing is via the Stack datastructure
-                                           --            (forced to True when optJumpTailCalls is True)
-          module.optOwnLocals     = False  -- when True, local variables are allocated on the Stack datastructure
-
--- Force OwnParameters when JumpTailCalls
-
-SEM GrModule
-  | Mod bindL.optOwnParameters = @lhs.optOwnParameters || @lhs.optJumpTailCalls
-
-%%]
-
-
-
-%%[8
-
-ATTR GrAGItf GrModule  [ entryNm: {HsName} | |  ]
-
-ATTR GrAGItf GrModule [ | | silModule : {SilModule} ]
-
-ATTR GrBindL GrBind [ | | functions USE {++} {[]} : {Functions} ]
-
-ATTR GrExpr [ | | stats USE {++} {[]} : {Statements} ]
-
-ATTR GrAltL [ | | alternatives : {Alternatives} ]
-
-ATTR GrAlt [ | | alternative : {Alternative} ]
-
-ATTR GrVal GrPat GrTag [ | | value : {Value} ]
-
-ATTR GrPat GrTag [ | | constant : {Constant} ]
-
-ATTR GrValL GrVal [ | | values : {Values} ]
-
-ATTR GrGlobal GrGlobalL [ | | initStats USE {++} {[]} : {Statements}
-                              names     USE {++} {[]} : {[String]}
-                        ]
+ATTR GrAGItf GrModule   [ | | silModule                  : {SilModule}    ]
+ATTR GrBindL GrBind     [ | | functions    USE {++} {[]} : {Functions}    ]
+ATTR GrExpr             [ | | stats        USE {++} {[]} : {Statements}   ]
+ATTR GrAltL             [ | | alternatives               : {Alternatives} ]
+ATTR GrAlt              [ | | alternative                : {Alternative}  ]
+ATTR GrVal GrPat GrTag  [ | | value                      : {Value}        ]
+ATTR GrPat GrTag        [ | | constant                   : {Constant}     ]
+ATTR GrValL GrVal       [ | | values                     : {Values}       ]
+ATTR GrGlobal GrGlobalL [ | | initStats    USE {++} {[]} : {Statements}
+                              names        USE {++} {[]} : {[String]}     ]
 
 ATTR GrExpr GrAlt GrAltL [ numberParameters : {Int}
                          |
@@ -120,10 +83,9 @@ SEM GrBind
           loc  . params = map show @argNmL
           loc  . ownAllocation = @lhs.optOwnParameters || @lhs.optOwnLocals
 
-
-
 SEM GrExpr
- | Seq     lhs.stats = @expr.stats ++ @body.stats
+ | Seq     lhs.stats  = @expr.stats
+                        ++ @body.stats
 
  | Unit    lhs.stats  = Statement_Comment "Unit"
                         : [ Statement_Assignment v e
@@ -132,6 +94,7 @@ SEM GrExpr
                                           else [Variable_Var   (show x)   | x <- @lhs.targets]
                                          )
                                          @val.values
+                          , v /= Variable_Var "_"
                           ]
 
 
@@ -226,42 +189,38 @@ SEM GrGlobal
                                  n  = length vs
                              in  store (show @nm) n @lhs.maxConstrParameters vs
 
-SEM GrVal
- | LitInt  lhs.value = Value_Con (Constant_Literal @int)
- | Var     lhs.value = Value_Var (Variable_Var (show @nm))
- | Tag     lhs.value = @tag.value
- | * - LitInt Var Tag lhs.value = error "GrVal:other"
 
 
 SEM GrVal
- | Node     lhs.values = @tag.value : @fldL.values
- | Var      lhs.values = [Value_Var (Variable_Var(show @nm))]
- | * - Node Var lhs.values = error "GrVal:others"
-
+ | LitInt  lhs.value  = Value_Con (Constant_Literal @int)
+ | Var     loc.value  = Value_Var (Variable_Var (show @nm))
+           lhs.value  = @loc.value
+           lhs.values = [@loc.value]
+ | Tag     lhs.value  = @tag.value
+ | Node    lhs.values = @tag.value : @fldL.values
+ | * - LitInt Var Tag
+           lhs.value  = error "GrVal:other value"
+ | * - Node Var
+           lhs.values = error "GrVal:other values"
 
 SEM GrValL
  | Nil    lhs.values = []
  | Cons   lhs.values = @hd.value : @tl.values
 
 SEM GrTag
- | Lit     lhs.value = Value_Con (Constant_Alias (categStr @categ ++ show (hsnAlphanumeric @nm)))
- | Var     lhs.value = Value_Var (Variable_Var (show @nm))
- | Unboxed lhs.value = error "GrTag:Unboxed value"
-
-SEM GrTag
- | Lit     lhs.constant = Constant_Alias (categStr @categ ++ show (hsnAlphanumeric @nm))
+ | Lit     loc.constant = Constant_Alias (tagName @categ @nm)
+           lhs.constant = @loc.constant
+           lhs.value    = Value_Con (@loc.constant)
+ | Var     lhs.value    = Value_Var (Variable_Var (show @nm))
+ | Unboxed lhs.value    = error "GrTag:Unboxed value"
  | * - Lit lhs.constant = error "GrTag:other constant"
 
-
 SEM GrPat
- | Tag     lhs.value = @tag.value
- | Var     lhs.value = error "GrPat:Var value"
- | LitInt  lhs.value = error "GrPat:LitInt value"
- | * - Tag Var LitInt lhs.value = error "GrPat:other value"
+ | Tag     lhs.value    = @tag.value
+           lhs.constant = @tag.constant
+ | * - Tag lhs.value    = error "GrPat:other value"
+           lhs.constant = error "GrPat:other constant"
 
-SEM GrPat
- | Tag     lhs.constant = @tag.constant
- | * - Tag  lhs.constant = error "GrPat:other constant"
 
 
 SEM GrExpr
@@ -302,6 +261,25 @@ SEM GrTag
 %%]
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options to adapt the structure of the generated code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[8
+ATTR GrAGItf GrModule GrBind GrBindL GrExpr GrAlt GrAltL
+  [ optJumpTailCalls : {Bool} -- when True, tail calls are implemented with a goto
+    optOwnParameters : {Bool} -- when True, parameter passing is via the Stack datastructure
+    optOwnLocals     : {Bool} -- when True, local variables are allocated on the Stack datastructure
+  | | ]
+
+-- Force OwnParameters when JumpTailCalls
+SEM GrModule
+  | Mod bindL.optOwnParameters = @lhs.optOwnParameters || @lhs.optJumpTailCalls
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Auxiliary Haskell
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[8 hs
 
 -- n1 is the number of parameters of the tag
@@ -334,20 +312,16 @@ arrayVariab a i = Variable_Subs a (Constant_Literal i)
 
 tagConstants :: EvApTagMp -> [(String,Int)]
 tagConstants eas
- = let f ((t,s),_) n = (showGrTag t,n)
+ = let f ((t,s),k) n = (showGrTag t,n)
    in  zipWith f eas [0..]
 
+
+
+tagName categ nm = show categ ++ show (hsnAlphanumeric nm)
+
 showGrTag :: GrTag -> String
-showGrTag (GrTag_Lit categ n nm) = categStr categ ++ show (hsnAlphanumeric nm)
+showGrTag (GrTag_Lit categ n nm) = tagName categ nm
 showGrTag (GrTag_Var nm) = show nm
 showGrTag (GrTag_Unboxed) = "GrTag:Unboxed"
-
-categStr c = case c of
-               GrTagCon        -> "C"
-               GrTagHole       -> "H"
-               GrTagRec        -> "R"
-               GrTagApp        -> "A"
-               GrTagFun        -> "F"
-               GrTagPApp need  -> 'P' : show need
 
 %%]

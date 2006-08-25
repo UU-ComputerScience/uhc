@@ -19,13 +19,10 @@
 %%[8 hs export(mkGrPatRecNode,mkGrPatConNode,mkGrPatTagNode,mkGrPatRecSplit,mkGrPatConSplit,mkGrUnbox,mkGrUnboxFFI)
 %%]
 
-%%[8 hs export(GrNodeAdapt(..),grRecTag,hsnGrApply,hsnGrEval,hsnGrMain,grBuiltinTyNmL)
+%%[8 hs export(GrNodeAdapt(..),grRecTag,hsnGrApply,hsnGrEval,hsnGrRec,grBuiltinTyNmL)
 %%]
 
 %%[8 hs export(EvApTagKey,EvApTagElt(..),EvApTagMp)
-%%]
-
-%%[8 hs export(hsnGrInt,hsnGrChar)
 %%]
 
 %%[8 import({GrinCode/AbsSyn})
@@ -39,12 +36,9 @@ DERIVING *     : Show, Eq
 %%[8 hs
 hsnGrApply  = HNm "!apply"
 hsnGrEval   = HNm "!eval"
-hsnGrMain   = hsnMain
+hsnGrRec n  = HNm ("()"++show n)
 
-hsnGrInt    = hsnInt
-hsnGrChar   = hsnChar
-
-grBuiltinTyNmL = [ hsnGrInt, hsnGrChar ]
+grBuiltinTyNmL = [ hsnInt, hsnChar ] ++ map hsnGrRec (0:[2..10])
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -60,15 +54,19 @@ data GrTagCateg
   |  GrTagFun
   |  GrTagPApp {grtgNeeds :: Int}
   |  GrTagWorld
-  deriving (Show,Eq,Ord)
+  deriving (Eq,Ord)
+
+instance Show GrTagCateg where
+  show GrTagCon         = "C"
+  show GrTagHole        = "H"
+  show GrTagRec         = "R"
+  show GrTagApp         = "A"
+  show GrTagFun         = "F"
+  show (GrTagPApp need) = "P/" ++ show need
 
 instance PP GrTagCateg where
-  pp GrTagCon       = pp "C"
-  pp GrTagHole      = pp "H"
-  pp GrTagRec       = pp "R"
-  pp GrTagApp       = pp "A"
-  pp GrTagFun       = pp "F"
-  pp (GrTagPApp need) = pp "P/" >|< pp need
+  pp t = text (show t)
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -129,19 +127,22 @@ mkGrConNode ::  Int -> HsName -> GrValL -> GrVal
 mkGrConNode = mkGrTagNode GrTagCon
 
 mkGrRecNode ::  GrValL -> GrVal
-mkGrRecNode  = mkGrTagNode GrTagRec 0 hsnRec
+--mkGrRecNode  = mkGrTagNode GrTagRec 0 hsnRec
+mkGrRecNode xs = mkGrTagNode GrTagCon 0 (hsnGrRec (length xs)) xs
 
 mkGrPatConNode :: Int -> HsName -> [HsName] -> GrPat
 mkGrPatConNode = mkGrPatTagNode GrTagCon
 
 mkGrPatRecNode :: [HsName] -> GrPat
-mkGrPatRecNode = mkGrPatTagNode GrTagRec 0 hsnRec
+--mkGrPatRecNode  = mkGrPatTagNode GrTagRec 0 hsnRec
+mkGrPatRecNode xs = mkGrPatTagNode GrTagCon 0 (hsnGrRec (length xs)) xs
+
 
 mkGrPatConSplit :: Int -> HsName -> HsName -> GrSplitL -> GrPat
 mkGrPatConSplit = mkGrPatTagSplit GrTagCon
 
 mkGrPatRecSplit :: HsName -> GrSplitL -> GrPat
-mkGrPatRecSplit = mkGrPatTagSplit GrTagRec 0 hsnRec
+mkGrPatRecSplit  = mkGrPatTagSplit GrTagRec 0 hsnRec
 
 
 mkGrBox :: HsName -> GrVal -> GrVal

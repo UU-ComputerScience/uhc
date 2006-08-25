@@ -254,7 +254,8 @@ charAlphanumeric ']' = "bus"
 charAlphanumeric '(' = "open"    -- although this is not a legal Haskell operator symbol, it can be part of the tuple constructor
 charAlphanumeric ',' = "comma"
 charAlphanumeric ')' = "close"
-charAlphanumeric  c  = error ("no alphanumeric representation for " ++ show c)
+charAlphanumeric  c  | isDigit c = [c]
+                     | otherwise = error ("no alphanumeric representation for " ++ show c)
 
 hsnAlphanumeric :: HsName -> HsName
 hsnAlphanumeric (HNm s) = HNm (stringAlphanumeric s)
