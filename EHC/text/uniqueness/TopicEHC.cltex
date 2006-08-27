@@ -33,7 +33,7 @@
   Haskell. Each language has an associated compiler. The compilers are structured to inherit implementation from a
   previous version. The intention is that spreading out language features over multiple versions, allow
   an implementation and explanation in relative isolation.
-  
+
   The EH project offers what we need for prototyping:
   \begin{itemize}
   \item It allows the implementor to pick a language that has enough features, but omits features that are
@@ -53,15 +53,16 @@
   
   \subsection{Quantifiers and qualifiers everywhere}
   
-    Haskell makes a distinction between types and type schemes. Type variables in a type are
+    Haskell makes a distinction between types and type schemes. A type scheme is never shown to the
+    programmer since there is no explicit quantification. Type variables in a type are
     (universally) quantified or qualified (type classes) in a type scheme. A type does not contain
     quantifiers nor qualifiers. In EH this is not the case. Quantifiers and qualifiers may occur
     everywhere in the type. Allowing quantifiers and qualifiers everywhere in the type, has
     consequences.
-    
+
     The consequences for allowing quantifiers everywhere can best be observed by an example. The
     following types for the functions |f| and |g| are not equal:
-    
+
 %%[[wrap=code
       f :: forall alpha . (alpha -> Int)
       g :: (forall alpha . alpha) -> Int
@@ -89,13 +90,13 @@
       in  g undefined        -- OK
 %%]
 
-    More programs can be typed when quantifiers are allowed everywhere. Programs using the ST-monad
+    More programs can be typed when quantifiers are allowed everywhere. Programs using the ST monad
     require this feature as the |runST| function has a type with a universal quantifier in a
-    contra-variant position: |runST :: forall a . (forall s . ST s a) -> a|. Simon Peyton Jones, et al~\cite{jones04practical},
+    contra-variant position: |runST :: forall a . (forall s . ST s a) -> a|. Peyton Jones et al.~\cite{jones04practical},
     give several examples why such \emph{higher ranked} types are useful, and what the (quite severe)
     limitations for type inference are~\cite{DBLP:journals/toplas/KfouryTU93}. Further discussion about this topic is out of the scope of
     this master thesis.
-    
+
     Besides quantifiers everywhere, EH also allows qualifiers everywhere. Similar to quantifiers
     everywhere, the location of the qualifier determines who (caller or callee) supplies the
     evidence:
@@ -106,51 +107,52 @@
 %%]
 
     The caller of |f| supplies the evidence, and the body of |g| passes the evidence to the
-    first argument of |g|. Again, we only mention this feature of EH here, since a more thorough
+    first argument of |g|. Again, we only mention this feature of EH here. A more thorough
     discussion is out of the scope of this thesis.
-    
+
   \subsection{Polymorphic kinds}
   \label{sect.PolymorphicKinds}
-  
-    Haskell uses \emph{kind inference} to check type signatures. Haskell has monomorphic kinds,
-    meaning that free kind variables are defaulted to |*| during generalization, instead of
-    being universally quantified. For example:
-    
+
+    A type system for Haskell uses \emph{kind inference} to check type signatures. Haskell has monomorphic kinds. At the
+    end of kind inference, all remaining kind variables are defaulted to |*|.
+
 %%[[wrap=code
     data App f a = A (f a)
     App :: (* -> *) -> * -> *
 %%]
 
-    On the other hand, EH has polymorphic kinds, and comes up with the kind:
-    
+    On the other hand, EH has polymorphic kinds. After kind inference for some binding group, the remaining
+    kind variables are generalized and universally quantified:
+
 %%[[wrap=code
     App :: forall alpha . (alpha -> *) -> alpha -> *
 %%]
 
     The difference is that the |alpha| can not only be instantiated to |*|, but also
-    to a more complex kind:
-    
+    to a more complex kind. The following set of types cannot be written in
+    Haskell, but can in EH:
+
 %%[[wrap=code
-    type List a = App [] a
+    type List a = (Sub(App)(1)) [] a
     data Fix f = In (f (Fix f))
-    type InfNested = App Fix []
-    type NestInfNested = App List InfNested
+    type InfNested = (Sub(App)(2)) Fix List
 %%]
 
-    In this example, the occurrence of |App| in List is instantiated to |(*->*) -> * -> *| and
-    the second occurrence of |App| to: |((* -> *) -> *) -> (* -> *) -> *|. In Haskell, you
+    In this example, the kind of |(Sub(App)(1))| is instantiated to |(*->*) -> * -> *| and
+    |(Sub(App)(2))| to: |((* -> *) -> *) -> (* -> *) -> *|. In Haskell, you
     can either get the first, or the second (with a trick), but not both at the same time.
     
-    Polymorphic kinds are beneficial for type hackers, but complicate analyzes on data types,
-    similar to the complications of polymorphism on type inference.
+    This is a rather contrived example, showing that polymorphic kinds are beneficial for
+    type hackers, but complicate analyses on data types, similar to the complications of
+    polymorphism on type inference.
 
   \subsection{Extensible records}
-  
-    EH supports lightweight extensible records as discussed by Simon Peyton Jones, et al~\cite{jones99lightweight-ext-rec}.
-    A simple way to look at the records is as tuples with named components. There are
+
+    EH supports lightweight extensible records as discussed by Jones et al.~\cite{jones99lightweight-ext-rec}.
+    A simple way to look at records is as tuples with named components. There are
     operations to add a component to a record (record extension) and to select a component
     from it (record extraction):
-    
+
 %%[[wrap=code
     let  r = {{() | x = 3} | y = 4}  -- create the record {x=3, y=4}
          r' = { r | y := 3 }         -- record update
@@ -165,7 +167,7 @@
 %%]
 
     Consider a function |f| that adds a field |x| of type |Int| to a record:
-    
+
 %%[[wrap=code
     f = \r -> {r | x = 3}
 %%]
@@ -176,13 +178,13 @@
     universally quantified, type variable to |r|, and encodes the fact that the
     record may not have a field |x| by qualifying the type variable with
     a \emph{lacks}-predicate:
-    
+
 %%[[wrap=code
     f :: Lacks x v1 => v1 -> {v1 | x :: Int}
 %%]
-    
-    Calling |f| requires evidence that the record that is passed as argument, does not
-    have a field |x|. The type system checks this condition, and inserts as
+
+    Calling |f| requires evidence that the record that is passed as argument does not
+    have a field |x|. The compiler checks this condition, and inserts as
     evidence an offset within the record to store the value of |x|.
 
 
@@ -190,10 +192,10 @@
 
   Using EH for prototyping turned out to be an advantage over other compilers for several reasons. One reason is that getting to know the
   compiler and tools turned out to be relatively easy. Examining the first EH language, and gradually
-  going up to languages with more features, studying the differences, works in practice. It also
+  going up to languages with more features - studying the differences - works in practice. It also
   helps to discover dependencies between features, which is important to discover how isolated each
   component is, and thus how easily you can make modifications in a certain area.
-  
+
   A big advantage is the use of the UUAG system underneath. The UUAG system is used to specify
   traversals over the AST. The UUAG system allows us to hook into the compiler with virtually no
   need to touch the original code. Nonterminals and attributes are chosen in such a way that new
@@ -203,16 +205,16 @@
   
   Unfortunately, EH is not the perfect compiler (yet). EH distinguishes several versions, but
   individual features cannot be selected. For example, high-ranked types and existentials are
-  introduced before data types. To support data types, higher-ranked types and existentials have to
+  introduced before data types. To support data types, higher types and existentials have to
   be supported as well. These features are not essential for the uniqueness typing story, and are
   thus needless complications.
-    
-  Another problem is that the compiler is still in heavy development. The structure of the compiler
+
+  Another problem is that the compiler is still in heavy development. This is not a theoretical
+  problem, but sometimes a nuisance in practice. The structure of the compiler
   is not yet mature, and interfaces change now and then due to refactorings. This does not make
-  EH a stable framework to begin with, since you never know that the function you call now, will
-  be there the next day.
-  
-  The overall experience is that EH suited well for prototyping and becomes more suitable with
+  EH a stable framework to begin with. Some function that exists today, may be gone tomorrow.
+
+  The overall experience is that EH well suited for prototyping and becomes more suitable with
   each drop of effort that is invested into the EH project.
 
 %%]
