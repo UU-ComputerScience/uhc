@@ -1,0 +1,270 @@
+%%[main
+
+\chapter{Parallel execution paths}
+\label{chapt.Parallel}
+
+
+  All programs, written in the languages up to this chapter, are always executed in the same way. There is only
+  one execution path in the control flow graph of such a program. In fact, using these simple languages is a bit
+  cheating, because problems such as the Halting problem do not exist here. A program terminates if and only if there is no
+  cycle reachable from the root of the control flow graph. Or in other words, if and only if
+  there is no recursive call encountered during beta reduction. But, we change this in this chapter.
+  As a prelude to |case| expressions in the next chapter, we introduce an |if-then-else| expressions.
+  The |then| and the |else| expression are mutual exclusive. Only one of the two expressions is
+  evaluated at runtime. Or in terms of a control flow graph: there are parallel execution paths.
+
+  Our typing approach does not work correctly with parallel execution paths. There are two
+  reasons. We do not take into account that some identifier may not occur on some parallel
+  execution path, and the definition of the aggregation constraint is wrong for parallel execution
+  paths.
+  
+  For an example of the first reason, consider the following example:
+  
+%%[[wrap=code
+  ( \x ->  if 0 > 0
+           then  (Sub(x)(1))
+           else  3
+  ) 1
+%%]
+
+  Among the constraints gathered for this expression, is the aggregation constraint for the identifier
+  |x|. Since |x| occurs only once, the generated constraint is |tp((Sub(x)(1))) <= tp(x)|. The occurrence
+  |(Sub(x)(1))| has a lower bound of |1|, resulting in a lower bound of |1| for |x|. But the lower
+  bound is incorrect, because the lower bound should be |0|!
+  
+  The second reason comes from our assumption that all occurrences of an an identifier are sequential.
+  An occurrence |(Sub(x)(1))| is sequential with |(Sub(x)(2))| if an only if they occur both on every
+  path in the control flow graph of any program. They are parallel if they never occur simultaneously
+  on every path in the control flow graph of any program. In all other cases, we do not know if the
+  occurrences are sequential or parallel. It does not matter for the upper bound if we classify some
+  parallel occurrences as sequential. For
+  sequential occurrences, the upper bounds are added up. For parallel occurrences, the maximum is taken from upper
+  bounds. Since |a + b >= a `max` b| for |a, b >= 0|, and the fact that the upper bound may
+  be higher than strictly necessary, it is allowed for the upper bound to consider some parallel
+  occurrences sequential. This is not the case for the lower bound. For sequential occurrences,
+  the lower bounds are added up. For parallel occurrences, the minimum is taken from the
+  lower bounds. Since |a + b <= a `min` b| does not hold for |a,b = 1|, classifying some parallel
+  occurrences as sequential is a problem. On the other hand, classifying some sequential occurrences
+  parallel is allowed for the lower bound, since |a `min` b <= a + b|. The duality between the
+  lower and upper bound is clearly visible here.
+  
+  We present several approaches in this chapter that correctly deal with the issue at hand. Our
+  first approach ensures that it is also conservative with respect to the lower bound, thus
+  solving the problem. Later approaches try to be smarter in distinguishing sequential or
+  parallel occurrences of identifiers to gain better results at the cost of some complexity.
+
+
+\section{Conservative solution}
+
+  We present a conservative solution in this section. The interpretation of the
+  aggregation constraint is modified, such that it assumes that all occurrences are sequential for the
+  upper bound, and all occurrences parallel for the lower bound. This is a safe, but
+  inaccurate solution.
+  
+  The first step towards a solution is to fix the problem with 'missing' occurrences of an
+  identifier on an execution path. If an identifier occurs syntactically in a |then| branch but not
+  in an |else| branch (or vice versa), we add a face occurrence of |x| with an upper bound and a lower
+  bound of |0|. The upper bound is not influenced by this choice (|0| is a unit for |\+/|), and the
+  lower-bound is correctly forced to |0|. The cardinality is allowed to be anything. Figure~\ref{code.fake}
+  lists pseudo code in AG syntax that defines the identification of identifiers requiring a fake
+  occurrence.
+
+  \begin{figure}
+  \label{code.fake}
+  \caption{AG definition for determining fake occurrences of identifiers}
+%%[[wrap=code
+  SEM Expr [ | | occurs USE {`Set.union`} {Set.empty} : {Set Ident} ]
+    | Var  lhs.occurs = Set.singleton @ident
+    | Lam  lhs.occurs = @body.occurs / Set.singleton @pat.ident
+    | Let  lhs.occurs = @body.occurs / @decls.idents
+    | IfThenElse
+           loc.thenFakes = @elseExpr.occurs / @thenExpr.occurs
+           loc.elseFakes = @thenExpr.occurs / @elseExpr.occurs
+%%]
+  \end{figure}
+  
+  A solution is obtain by replacing the |\+/| (Figure~\ref{code.sumsat}) by a |\*/|, which
+  is interpreted as:
+  
+%%[[wrap=code
+  ((Sub(a)(1)), (Sub(b)(1)), (Sub(c)(1))) \*/ ... \*/ ((Sub(a)(n)), (Sub(b)(n)), (Sub(c)(n))) <= (a, b, c)
+  ===  (Sub(a)(1)) `min` ... `min` (Sub(a)(n)) >= a
+  &&   (Sub(c)(1))  +    ...  +    (Sub(c)(n)) <= c
+  &&   isSplit [(Sub(b)(1)), ..., (Sub(b)(n))] b
+%%]
+
+  This possibly causes an over estimation of the upper bound and an under estimation of the
+  lower bound for parallel occurrences of an identifier.
+
+
+\section{Improvement}
+
+  In some situations it is guaranteed that some occurrences of an identifier are parallel to each
+  other. The syntax of an |if-then-else| expression guarantees that occurrences of an identifier
+  on a |then| branch are parallel to identifiers occurring on an |else| branch. There is also a
+  syntactic guarantee that occurrences in the guard are sequential to both the |then| and the
+  |else| branch. There is no other syntax that guarantees that two occurrences are sequential
+  to each other. For example, in the case of |f x x|, it depends on how |f| treats its parameters
+  in order to know if the two occurrences of |x| are parallel or not. But, we can already improve
+  the solution with only the knowledge that some occurrences of identifiers are necessarily parallel,
+  and some are necessarily sequential.
+  
+  The sum constraint consists of a sequence of annotated types of which the aggregated result needs
+  to be smaller than some annotated type. Since |\+/| is commutative, we can change the order of
+  the additions. For example, |a \+/ b \+/ c \+/ d <= e| can be written as |((a \+/ b) \+/ c) \+/ d <= e|,
+  or as |(a \+/ b) \+/ (c \+/ d) <= e|. Our improved approach uses this property and we change
+  the structure of the aggregation constraint accordingly:
+
+%%[[wrap=code
+  sum_constr ::= sum_expr  <=  uty
+  sum_expr  ::=  uty
+            |    sum_expr \+/ sum_expr  -- sequential only
+            |    sum_expr \*/ sum_expr  -- sequential or parallel
+            |    sum_expr \-/ sum_expr  -- parallel only
+%%]
+
+  The difference with the previous structure of the aggregation constraint is that the sum is not a list
+  anymore, but a tree, where the internal nodes are aggregations by means of one of the three
+  aggregation operators. The annotated types of the occurrences form the leafs of the tree. The representation
+  in the graph is still a hyper edge, where the leafs are cardinality variables of the
+  corresponding types in the constraint, and the computation is attached as label of the
+  hyper edge.
+
+  After conversion to graph form and during the inference of a substitution, the operators form
+  a computation on lower and upper bound values. The operators are defined as follows:
+
+%%[[wrap=code
+
+  lower  (a \-/ b)  = lower a `min` lower b
+  lower  (a \*/ b)  = lower a `min` lower b
+  lower  (a \+/ b)  = lower a + lower b
+  lower  delta      = delta `lookup` subst
+
+  upper  (a \-/ b)  = upper a `max` upper b
+  upper  (a \*/ b)  = upper a + upper b
+  upper  (a \+/ b)  = upper a + upper b
+  upper  delta      = delta `lookup` subst
+
+%%]
+
+  The operator |\*/| can be used anywhere, but |\+/| and |\-/| are less conservative versions
+  in case we know that some occurrences are parallel or sequential.
+  
+  The idea is that we construct a computation from the structure of an expression (Figure~\ref{RulerUniquenessExamples.B.comp.base}).
+  An occurrence of occurrence |x :: utau| is turned into the computation |utau|. If we have such a
+  computation for the function expression and argument expression of a function, we combine these
+  two computations with the |\*/| operator, since it depends on the function whether or not they are
+  sequential or parallel, and our approach does not have this knowledge. For an |if-then-else|
+  expression, the computations of the two branches are parallel, and are combined by the |\-/| operator. The |\+/|
+  operator is used between the guard and the branches. There are some other rules
+  in case there is no occurrence inside an expression. However, we assume that fake occurrences
+  are inserted, in such a way that if an identifier |x| occurs in a |then| expression, it also occurs in the
+  |else| expression, or vice versa. We omitted the case for the |let| in the above type rules, but
+  assume that occurrences in expressions of a |let| are combined by means of the |\*/| operator.
+  
+  \rulerCmdUse{RulerUniquenessExamples.B.comp.base}
+  
+  At the case for a lambda and a |let|, we generate the sum constraint for an identifier |x :: (Sub(utau)(def))| by
+  taking the computation |compFormat| and turn it into the constraint |compFormat <= (Sub(utau)(def))|.
+  
+  This approach allows us to improve the upper and lower bounds of identifiers that occur in parallel. This
+  is a fairly easy improvement, since we know exactly from the structure of the abstract syntax tree where
+  the execution paths are split up.
+
+
+\section{Another improvement?}
+
+  There is still a deficiency in the sense that we do not know when occurrences of an identifier are sequential, and 
+  are over-conservative in this case. The problem is the function application. The function in the
+  function application determines how arguments of a function are related. Consider for example:
+  
+%%[[wrap=code
+  let  f g t e =  if g then t else e
+  in   \x -> f True x x
+%%]
+
+  The two occurrences of |x| are parallel to each other, although they appear to be sequential. Determining
+  whether or not the occurrences of |x| are sequential is a difficult problem. The function |f| can
+  be a function that puts the arguments into a list and passes it to some function that extracts the second
+  element if the first element is greater than ten. Or does some other arbitrary stuff. This makes it difficult
+  to capture the relations between occurrences of a variable.
+
+  However, there is an elegant way to discover from most of the perhaps-sequential occurrences that they
+  are in fact sequential. Consider the following expression:
+
+%%[[wrap=code
+  f (Sub(x)(1)) (Sub(x)(2))
+%%]
+
+  If we know that both |(Sub(x)(1))| and |(Sub(x)(2))| are used at least once, then the relation between
+  the two is sequential. Why? A lower bound of |1| means that the value represented by |(Sub(x)(1))| is
+  used at least once on each execution path. The same for |(Sub(x)(2))|. So, they occur both on every
+  execution path, and thus occur together on each execution path.
+
+  So, we can replace the |\*/| operator by the |\+/| operator if the lower bound of both arguments
+  is at least |1|. But, compare the definition of |\*/| and |\+/|. The only difference is in the
+  computation of the lower bound. But, our lower bound values cannot get higher than |1|. There is the
+  following property that |1 + 1 = 1 = 1 `min` 1|. So, replacing the |\*/| operator by the |\+/| operator
+  if the lower bound of both arguments is at least |1| results into an equal result! Because of the
+  property that the lower bound is only |0| or |1|, the presumed deficiency does not exist.
+
+  On the other hand, if we allow bigger values for the lower bound, then the implementation for the
+  |\+/| operator does improve the result. Although we do not need it for
+  our implementation, the fact that we can determine from strict values that the relation is
+  sequential, is interesting to note. But we leave it at that.
+
+  There is, however, a situation where it does matter to make a distinction between occurrences that
+  are guaranteed to be sequential and occurrences that may be sequential. With the |\*/| operator,
+  it is not always possible to discover that a parameter of a recursive function is strict. Consider
+  the following contrived version of the faculty function:
+
+%%[[wrap=code
+  let fac = \n m ->  if n == 0
+                     then m
+                     else (Sub(m)(1)) * fac (n-1)((Sub(m)(2))-1)
+  in  fac 3 3
+%%]
+
+  With the aggregation constraints containing computations of the previous section, we discover that |n| is strict. However, since the
+  values of |m| are combined by means of the |\*/| operator, we are unable to discover that |m| is
+  used at least once. Instead, the discovered result that |m| is used at least zero times. Technically,
+  this is a correct result, but not as good.
+
+  However, we can solve most of the deficiencies caused by recursion. The places where recursive calls are made are visible
+  in the abstract syntax tree. Like the correspondence between the guard and the branches of
+  an |if-then-else| expression, the combination of occurrences of the parameters of recursive
+  function call are sequential with with an expression outside the recursive call. So, when
+  we generate a |\*/| computation for a function application, we first check if one of the
+  arguments originated from a recursive call, with topmost application $R$, and the current
+  expression is a parent of $R$. If that is the case, then we combine the results with
+  a |\+/| operator instead of a |\*/| operator.
+
+  If this procedure is applied to the above faculty function, a |\+/| operator is used between
+  the annotated types of the occurrences |(Sub(m)(1))| and |(Sub(m)(2))|, because |(Sub(m)(2))|
+  is a parameter to a recursive call, and the location in the abstract syntax tree where this
+  computation is generated (at the call to the multiplication function) is a parent expression
+  of the recursive call to the faculty function.
+
+  This solves most of the inefficiencies with recursive functions. Only when a parameter is only
+  used as argument to another recursive call, is the result still too conservative:
+
+%%[[wrap=code
+  let f = \x y ->  if y == 0
+                   then 1
+                   else f (x-1) (x-1)
+   in f 3 3
+%%]
+
+  In this example, |y| is discovered as strict, but |x| is not. Improving the sum constraint for
+  these kinds of recursion, we leave as future work.
+
+
+  
+\section{Conclusion}
+
+  Parallel execution paths pose interesting problems. It puts the difference between upper and lower bounds into perspective.
+  Properly dealing with the existence of parallel execution paths require us to determine which occurrences of an identifier
+  are parallel and which occurrences are sequential. We can accomplish this with an analysis that can reuse the general
+  components of our analysis framework.
+
+%%]

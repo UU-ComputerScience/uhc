@@ -394,8 +394,11 @@
 
 %format bullet = "\!\bullet"
 %format =>= = "\triangleright"
-%format \+/ = "\uplus"
-%format \-/ = "\cup"
+%format \+/ = "\oplus"
+%format \-/ = "\ominus"
+%format \*/ = "\odot"
 %format tyx = "{\tau_{x}}"
 %format sumi = "\sum_{i}"
 %format opplus = "+"
+%format hsnameFormat = "\hbar"
+%format compFormat = "\Im"

@@ -4,11 +4,11 @@
 \label{chapt.Introduction}
 
 Jan is a student with, aside from programming, only one passion in his life: a daily shot of coffee in the morning. But, Jan is lazy
-and does not want to bring his own coffee cup with him. Each time he buys a plastic cup and throws it away afterwards, since he
-does not need the cup anymore after a single use. One day Jan thinks about the cost of buying all these plastic cups and the cost for the government to collect
-the waste. Jan suddenly gets a brilliant idea: recycling. If he changes the process such that he does not throw the cup away, but give it
+and does not want to bring his own coffee cup with him. Each time he buys a plastic cup and throws it away afterward, since he
+does not need the cup after a single use anymore. One day Jan thinks about the cost of buying all these plastic cups and the cost for the government to collect
+the waste. Jan suddenly gets a brilliant idea: recycling. If he changes the process such that he does not throw away the cup, but give it
 back to the machine, let the machine clean it now and then, and give it back to him the following day, then he does not need
-to buy the plastic cups each time, and does not need to throw them away. This gives him the best of both worlds. He can both be lazy and reduce
+to buy plastic cups all the time, and does not need to throw them away. This gives him the best of both worlds. He can both be lazy and reduce
 the cost of acquiring and disposing the cup.
 
 Taking notice of this life lesson, consider lazy purely functional programming languages. A program written in
@@ -27,7 +27,7 @@ changing the first element to ten. Suppose that this is done by updating the mem
 is typical for assignments in imperative languages.
 
 Referential transparency tells us that we are allowed to replace an expression by its value. Due to the
-side-effect, |a| and |a'| point to the same value. So, the behaviour of this program is that a tupple
+side-effect, |a| and |a'| point to the same value. So, the behavior of this program is that a tuple
 is constructor where the first component points to an array where the first element has the value ten.
 
 But, if we evaluate this expression by beta reduction, we get a different result. If we beta reduce the
@@ -38,8 +38,8 @@ above expression one step, we get the expression:
 ,  array (1, 10000) (zip [1..] (repeat 5)) \\ [(1, 10)] )
 %%]
 
-Further beta reduction results in a tupple being constructed with the first component pointing to an
-array with the first component haaving the value five. This outcome is different, so referential transparency
+Further beta reduction results in a tuple being constructed with the first component pointing to an
+array with the first component having the value five. This outcome is different, so referential transparency
 does not hold! The problem is that we changed the value where |a| pointed to, in order to obtain
 the value of |a'|.
 
@@ -48,7 +48,7 @@ words, code is generated in such a way that the value where |a| points to, is ne
 is done by making a copy of the original value before performing a destructive update. So, in our
 example, a copy of |a| is made before updating it. This has a considerable impact on performance.
 
-However, performing a destructive update without making a copy, does not always violate referential
+However, performing a destructive update without making a copy does not always violate referential
 transparency. Consider the following variation of the above expression:
 
 %%[[wrap=code
@@ -57,11 +57,11 @@ let  a   =  array (1, 10000) (zip [1..] (repeat 5))
  in  a'
 %%]
 
-Call the value where |a| points to |v|. |v| is only used once. After making a copy of |v| to perform the destructive updaten,
+Suppose that |a| points to a value |v|. |v| is only used once. After making a copy of |v| to perform the destructive update,
 |v| becomes garbage, since there are no references to it anymore. If we directly recycle |v|, then a copy does not need to be
 made, and |v| can be changed instead. Referential transparency holds in this case (verify this).
 
-The lesson that we learn here is that value that are used at most once, can by recycled or updated without
+The lesson that we learn here is that values that are used at most once, can by recycled or updated without
 violating referential transparency. This results into less copying and less garbage, with the result that
 functional programs run faster and use less memory. The identification of values that are used at most once,
 is the focus of this master thesis.
@@ -84,10 +84,10 @@ is the focus of this master thesis.
   of such a value be described? With first-order logic, some invariants can be defined over infinite values, but the
   inference of such invariants from the definition of |fibs| is difficult, and the verification of invariants
   undecidable. But, the properties on values can be approximated by describing the properties on the types of these
-  values. The fibonacci sequence may be infinite, but its type |List Int| is not. The type constructors in the type,
+  values. The Fibonacci sequence may be infinite, but its type |List Int| is not. The type constructors in the type,
   in this case |List| and |Int|, can be individually given a usage property, for example |(Sup(List)(20)) (Sup(Int)(10))|,
   where the List is considered to be used up to twenty times, and each element of the list up to ten times, for some program
-  that only evaluates a few fibonacci numbers. Note that this is an approximation of the original problem, since the |Int|
+  that only evaluates a few Fibonacci numbers. Note that this is an approximation of the original problem, since the |Int|
   ranges over all elements of the list, and each element gets the same property, although given our intuition of the
   definition of |fibs|, lower numbers are used much more than higher numbers, since the lower numbers are used to obtain
   a higher number. The approximation makes it easier to deal with usage properties, hence usage analyses are defined in
@@ -118,33 +118,33 @@ is the focus of this master thesis.
 
   Linear types open up a can of optimizations~\cite{DBLP:conf/icfp/JonesPS96,DBLP:journals/entcs/Santos98,DBLP:conf/ifip/GillJ94,DBLP:conf/esop/Jones96a}.
   Let us consider a few of them. Linear typing solves the problem of array updates, since an array with a linear type can be updated without making a copy.
-  But there are also optimalizations for smaller values. A function is strict in its linear arguments, so any linear argument can be evaluated before passing
+  But there are also optimizations for smaller values. A function is strict in its linear arguments, so any linear argument can be evaluated before passing
   it to a function. The place where a linear value is used, is known, so code can be inserted to allocate the value on a heap that is not
   garbage collected, and code inserted to manually deallocate the value after its use. Expressions with a linear type - functions that
   are used exactly once for example - can be safely inlined without causing the inliner to loop. These are all optimizations that improve
   the memory utilization and runtime of functional programs.
 
   Clean~\cite{plasmeijer01clean-rep-2} uses the results of usage analysis for another purpose besides optimization, namely for their
-  IO model~\cite{achten95ins}. The usage analysis of Clean is called uniqueness typing, although it is virtually the same as linear
+  IO model~\cite{achten95ins}. The usage analysis of Clean is called uniqueness typing, although it has a close correspondence to linear
   typing~\cite{barendsen96uniqueness, DBLP:journals/tcs/Harrington06}. A type is called unique if it is used
   at most once (i.e. affine instead of linear). Uniqueness typing is important for Clean since its IO model depends on it.
-  Haskell uses monads for IO~\cite{DBLP:conf/icfp/JonesPS96}. A monad guarantees that interaction with the outside-world is
+  Haskell programs uses monads for IO~\cite{DBLP:conf/icfp/JonesPS96}. A monad guarantees that interaction with the outside-world is
   single threaded, or in other words, that there is a guaranteed evaluation order on computations that interact with the
-  outside world, which is made explicit with the |do| notation. Clean does not use monads, but use their uniqueness typing to
+  outside world, which is made explicit with the |do| notation. Clean programs do not use monads, but use the uniqueness typing to
   enforce that the interaction with the outside world is single threaded. The world is represented by value of the type
   |(Sup(World)(1))|. The initial function of a program gets a world but has to return it as well\footnote{In this thesis, we write all code in Haskell-like notation}:
   |main :: (Sup(World)(1)) -> (Sup(World)(1))|. Any function with side-effect, such as
   |readline :: (Sup(World)(1)) -> (String, (Sup(World)(1)))|, requires the current world as parameter and returns a new world.
   Suppose that |w| is an identifier representing a unique world. Passing |w| to a function means that |w| cannot be used
   elsewhere. Since the main function demands a unique world as result, this means that if we pass |w| to a function, the
-  function has to return a unique world, otherwise there is no way to get a unique world. This efectively means that a
-  world is threaded through all function calls, which ensures an evaluation order between functions with side-effects.
+  function has to return a unique world, otherwise there is no way to get a unique world. This effectively means that a
+  world is threaded (without sharing) through all function calls, which ensures an evaluation order between functions with side-effects.
 
   What distinguishes Clean is that the uniqueness typing is part of the language and performed in the front-end of the compiler. The programmer can
-  interact with the uniqueness typesystem by writing uniqueness type signatures, or inspecting the signatures returned
+  interact with the uniqueness type system by writing uniqueness type signatures, or inspecting the signatures returned
   by the type inferencer. Production compilers such as GHC~\cite{DBLP:conf/fp/HallHPJW92}, typically perform some form usage
-  analysis (linear type inference for example) on their core language in the back-end of the compiler, but that is not
-  visible to the programmer and does not offer guarantees that certain usage properties were derived by the compiler.
+  analysis (linear type inference for example) on the core language in the back-end of the compiler, but that is not
+  visible to the programmer and does not offer guarantees that certain usage properties are derived by the compiler.
 
 \section{Goals}
 
@@ -159,11 +159,14 @@ is the focus of this master thesis.
   abstract syntax tree of the program (Chapter~\ref{chapt.Parallel}).
 
   An improvement is that we consider the components of a value independent of the spine of the value. In Clean, if
-  a component of a value is unique, then the spine of the value must neccessairly be unique as well. This is an
+  a component of a value is unique, then the spine of the value must necessarily be unique as well. This is an
   unfortunate restriction in the presence of partial application, as the result of passing a unique parameter must
   be unique as well. The order in which parameters are passed to a function matter in terms of uniqueness, since
   unique parameters are best passed as late as possible, because from that moment on, the function may not be shared
   anymore. Our approach does not have this restriction, although we pay a price for it in terms of complexity (Chapter~\ref{chapt.Polymorphic}).
+
+  Besides for uniqueness, our approach can be used to infer strictness properties as well. From a certain perspective,
+  uniqueness and strictness are complementary problems, but we show that we can infer them both with our approach.
 
   The results of this master project are this master thesis that explains how uniqueness typing can be integrated
   in a Haskell-like language, using conventional type theory, and a prototype implementation in the EH compiler~\cite{dijkstra04ehc-web}.
@@ -173,6 +176,8 @@ is the focus of this master thesis.
   The intended audience are second-year master students in the discipline of software technology with type
   systems as specialization. We do not give proofs of our results (we are not so naive to think that a
   master student will actually read those), but rather clarify our results with examples and argumentation.
+  For example, we do not give an operational semantics for Haskell programs to explain how values are
+  represented in memory, but rather leave that up to the intuition of the reader.
 
 \section{Organization of this thesis}
 
@@ -221,9 +226,9 @@ is the focus of this master thesis.
   other chapters, and some understanding of these chapters is required to understand the others. The other chapters
   are incremental in the sense that they build on the results of previous chapters, but less heavily.
 
-  Finally, as a sidenote, we want to disambiguate our uses of the word Haskell. With haskell, we mean Haskell 98
+  Finally, as a side note, we want to disambiguate our uses of the word Haskell. With Haskell, we mean Haskell 98
   as defined by Peyton Jones et al.~\cite{peytonjones03has98-rev-rep}. If required, we assume the
-  presence of some commonly used extensions such as multiparameter type classes, functional dependencies, and
+  presence of some commonly used extensions such as multi-parameter type classes, functional dependencies, and
   higher-ranked types.
 
 %%]

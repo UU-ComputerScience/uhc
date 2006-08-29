@@ -53,6 +53,7 @@ independently from the spine and discuss the consequences.
 %%@TopicPolyvariant.main
 %%@TopicRecursion.main
 %%@TopicPolymorphic.main
+%%@TopicParallel.main
 %%@TopicDataTypes.main
 %%@TopicOverloading.main
 %@TopicCodeGeneration.main

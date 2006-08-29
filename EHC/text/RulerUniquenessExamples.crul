@@ -63,6 +63,10 @@ format tex bcs = omega
 format tex Bcs = omega
 format tex addme = "\\+/"
 format tex dots = "..."
+format tex HsName = hsnameFormat
+format tex Comp = compFormat
+format tex xFormat = hsnameFormat
+format tex cFormat = compFormat
 
 scheme expr "Expr" =
   view E =
@@ -513,5 +517,51 @@ relation mkFlow =
     holes [ tyA : Ty, tyB : Ty, cs : Cs ]
     judgespec cs === tyA =>= tyB
     judgeuse tex cs === { tyA =>= tyB }
+
+relation comp =
+  view B =
+    holes [ e : Expr, xFormat : HsName, cFormat : Comp ]
+    judgespec xFormat :- e ~> cFormat
+    judgeuse tex xFormat :-..addme e ~> cFormat
+
+ruleset comp.base scheme comp  "Aggregation type rule" =
+  rule e.var "Var" =
+    view B =
+      -
+      judge R : comp = x :- (n : utau) ~> utau
+  rule e.app "App" =
+    view B =
+      judge F : comp = x :- f ~> c.f
+      judge A : comp = x :- a ~> c.a
+      -
+      judge R : comp = x :- f a ~> (c.f \*/ c.a)
+  rule e.app.1 "App1" =
+    view B =
+      judge F : comp = x :- f ~> c.f
+      -
+      judge R : comp = x :- f a ~> c.f
+  rule e.app.2 "App2" =
+    view B =
+      judge A : comp = x :- a ~> c.a
+      -
+      judge R : comp = x :- f a ~> c.a
+  rule e.ite "Ite" =
+    view B =
+      judge G : comp = x :- g ~> c.g
+      judge L : comp = x :- l ~> c.l
+      judge R : comp = x :- r ~> c.r
+      -
+      judge X : comp = x :- (if g then l else r) ~> (c.g \+/ (c.l \-/ c.r))
+  rule e.ite.1 "Ite1" =
+    view B =
+      judge L : comp = x :- l ~> c.l
+      judge R : comp = x :- r ~> c.r
+      -
+      judge X : comp = x :- (if g then l else r) ~> (c.l \-/ c.r)
+  rule e.ite.2 "Ite2" =
+    view B =
+      judge G : comp = x :- g ~> c.g
+      -
+      judge X : comp = x :- (if g then l else r) ~> c.g
 
 %%]
