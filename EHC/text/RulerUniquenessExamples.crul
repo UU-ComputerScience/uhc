@@ -4,7 +4,7 @@ preamble tex "%include lhs2TeX.fmt\n%include afp.fmt\n%include ehrules.fmt\n"
 external Ty_Int
 external empty
 
-viewhierarchy = B < E0 < E1 < E2 < E < U1, B < E0 < E1 < EL < UL, B < D < DC, B < E0 < E1 < E2 < EX < UX, B < E0 < E1 < L
+viewhierarchy = B < E0 < E1 < E2 < E < U1, B < E0 < E1 < EL < UL, B < D < DC, B < E0 < E1 < E2 < EX < UX, B < E0 < E1 < L, B < E0 < E1 < EL < EF < UF
 
 data Expr [expr]
   view E0
@@ -23,6 +23,10 @@ data Expr [expr]
                     ident :: HsName
                     expr  :: Expr
                     body  :: Expr
+  view EF
+    | ITE  [e.ite]  g     :: Expr
+                    t     :: Expr
+                    e     :: Expr
 
 data Prog [prog]
   view U1
@@ -50,6 +54,7 @@ data Constr [constr]
                        tps   :: Tp
 
 format tex Ty_Int = Int
+format tex Ty_Bool = Bool
 format tex Gam = Gamma
 format tex gam = Gamma
 format tex ty = tau
@@ -61,7 +66,7 @@ format tex cs = zeta
 format tex Cs = zeta
 format tex bcs = omega
 format tex Bcs = omega
-format tex addme = "\\+/"
+format tex addme = "\\*/"
 format tex dots = "..."
 format tex HsName = hsnameFormat
 format tex Comp = compFormat
@@ -91,6 +96,20 @@ scheme expr "Expr" =
     explain gam = (Environment | (ident :-> ty)..._ | with types of identifiers)
     explain ty = (Type of the expression)
   view UL =
+    holes [ cs: Cs, uty: Ty, bcs: Bcs ]
+    judgespec gam :- e : uty ~> cs, bcs
+    judgeuse tex gam :-..unq e : uty ~> cs, bcs
+    explain (Within environment |gam| , |e| has annotated type |uty| , provided that the constraints in |bcs| are satisfied.)
+    explain cs = (Constraints between annotations)
+    explain ty = (Annotated type of the expression)
+  view EF =
+    holes [ e: Expr, gam: Gam, ty: Ty ]
+    judgespec gam :- e : ty
+    judgeuse tex gam :-..type e : ty
+    explain (Within environment |gam| , |e| has type |ty| .)
+    explain gam = (Environment | (ident :-> ty)..._ | with types of identifiers)
+    explain ty = (Type of the expression)
+  view UF =
     holes [ cs: Cs, uty: Ty, bcs: Bcs ]
     judgespec gam :- e : uty ~> cs, bcs
     judgeuse tex gam :-..unq e : uty ~> cs, bcs
@@ -327,7 +346,7 @@ ruleset expr.base scheme expr  "Expression type rules" =
       judge B : expr = (x.m :-> ty.expr + gam) :- body : ty
       -
       judge R : expr = gam :- (let.m x "=" expr in body) : ty
-  view UL =
+    view UL =
       judge E : expr
         | uty = uty.e
         | cs  = cs.e
@@ -340,6 +359,35 @@ ruleset expr.base scheme expr  "Expression type rules" =
       judge R : expr
         | cs  = cs.sum cs.b
         | bcs = {(m, cs.e)} bcs.e bcs.b
+  rule e.ite "ITE" =
+    view EF =
+      judge G : expr = gam :- g : Ty_Bool
+      judge T : expr = gam :- t : ty
+      judge E : expr = gam :- e : ty
+      -
+      judge R : expr = gam :- (let g then t else e) : ty
+    view UF =
+      judge G : expr
+        | uty = Ty_Bool..delta
+        | cs  = cs.g
+        | bcs = bcs.g
+      judge T : expr
+        | uty = uty.t
+        | cs  = cs.t
+        | bcs = bcs.t
+      judge E : expr
+        | uty = uty.e
+        | cs  = cs.e
+        | bcs = bcs.e
+      judge MT : match = ty <=> ty.t
+      judge ME : match = ty <=> ty.e
+      judge TC : mkFlow = cs.gc === uty =>= (Ty_Bool..delta)
+      judge TT : mkFlowITE = cs.tc === uty =>= uty.t
+      judge TE : mkFlowITE = cs.ec === uty =>= uty.e
+      -
+      judge R : expr
+        | cs  = cs.gc cs.tc cs.ec cs.g cs.t cs.e
+        | bcs = bcs.g bcs.t bcs.e
 
 
 relation lookup =
@@ -518,6 +566,12 @@ relation mkFlow =
     judgespec cs === tyA =>= tyB
     judgeuse tex cs === { tyA =>= tyB }
 
+relation mkFlowITE =
+  view B =
+    holes [ tyA : Ty, tyB : Ty, cs : Cs ]
+    judgespec cs === tyA =>= tyB
+    judgeuse tex cs === { tyA =>=.q tyB }
+
 relation comp =
   view B =
     holes [ e : Expr, xFormat : HsName, cFormat : Comp ]
@@ -563,5 +617,27 @@ ruleset comp.base scheme comp  "Aggregation type rule" =
       judge G : comp = x :- g ~> c.g
       -
       judge X : comp = x :- (if g then l else r) ~> c.g
+  rule e.ite.3 "Ite3" =
+    view B =
+      judge G : comp = x :- g ~> c.g
+      judge L : comp = x :- l ~> c.l
+      -
+      judge X : comp = x :- (if g then l else r) ~> (c.g \+/ c.l)
+  rule e.ite.4 "Ite14" =
+    view B =
+      judge G : comp = x :- g ~> c.g
+      judge R : comp = x :- r ~> c.r
+      -
+      judge X : comp = x :- (if g then l else r) ~> (c.g \+/ c.r)
+  rule e.ite.5 "Ite5" =
+    view B =
+      judge L : comp = x :- l ~> c
+      -
+      judge X : comp = x :- (if g then l else r) ~> c
+  rule e.ite.6 "Ite6" =
+    view B =
+      judge R : comp = x :- r ~> c
+      -
+      judge X : comp = x :- (if g then l else r) ~> c
 
 %%]

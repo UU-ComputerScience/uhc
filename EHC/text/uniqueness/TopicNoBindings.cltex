@@ -76,7 +76,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   We therefore ask the programmer to specify the upper and lower bound as well. The types in an expression are
   thus annotated with three (!) annotations. A cardinality annotation, a lower-bound usage-count annotation,
   and an upper-bound usage-count annotation. The lower-bound usage-count annotation tells us that a value is at
-  least a certain number of times, and the upper-bound usage-count annotation tells us that a value is at most
+  least used a certain number of times, and the upper-bound usage-count annotation tells us that a value is at most
   used a certain number of times. The reference check demands that the cardinality annotation is in between
   these bounds (Figure~\ref{code.FitsInBounds}). The upper and lower bound can be verified by means of an
   analysis, which in turn means that we can verify the cardinality annotations.
@@ -366,11 +366,15 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
 %%]
 
   For a lambda abstraction, we perform two tasks: analyze the body of the lambda abstraction, and
-  combine the results of the uses of the values represented by the parameters. We check that the aggregated
-  results match the sum of the individual results with the special constraint: |triple((Sub(use_site)(1))) \+/ ... \+/ triple((Sub(use_site)(n))) <= triple(def_site)|.
-  This constraint ensures that we check that the lower-bound is low enough and the upper-bound is high enough (as we explained in
-  the previous section). Furthermore, the constraint ensures that if the parameter has some usage value |u|, that all its
-  occurrences added up correspond to |u|. For example, if |u| is linear, it means that one of the occurrences must be linear and
+  combine the results of the uses of the values represented by the parameters. The bounds of each
+  occurrence of some parameter are individually established. We generate an aggregation constraint
+  to comine the bounds and to check that the cardinality value is properly split over the
+  occurrences: |triple((Sub(use_site)(1))) \*/ ... \*/ triple((Sub(use_site)(n))) <= triple(def_site)|.
+  We use the safe approximation that the upper bounds are combined by addition and the lower bounds
+  by taking the minimum. This approach is improved in Chapter~\ref{chapt.Parallel}.
+  This constraint ensures that we check that the lower-bound is low enough and the upper-bound is high enough. Furthermore,
+  the constraint ensures that if the parameter has some cardinality value |u|, that the combined
+  occurrences correspond to |u|. For example, if |u| is linear, it means that one of the occurrences must be linear and
   all the other occurrences not used.
 
   With only one use-site of |y|, and two use-sites of |x|, the constraints are:
@@ -425,7 +429,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
       |((Sup(1)(7)), (Sup(1)(8)), (Sup(1)(9)))      =>=  ((Sup(1)(28)), (Sup(1)(29)), (Sup(1)(30)))|    & |(Sup(1)(7)) >= (Sup(1)(28))| & |(Sup(1)(8)) <= (Sup(1)(29))| & |(Sup(1)(9)) <= (Sup(1)(30))| & OK  \\
       |((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27)))   =>=  ((Sup(1)(4)), (Sup(1)(5)), (Sup(1)(6)))|    & |(Sup(1)(25)) >= (Sup(1)(4))| & |(Sup(1)(26)) <= (Sup(1)(5))| & |(Sup(1)(27)) <= (Sup(1)(6))| & OK  \\
       |((Sup(1)(19)), (Sup(1+)(20)), (Sup(*)(21)))  =>=  ((Sup(1)(34)), (Sup(1+)(35)), (Sup(*)(36)))|    & |(Sup(1)(19)) >= (Sup(1)(34))| & |(Sup(1+)(20)) <= (Sup(1+)(35))| & |(Sup(*)(20)) <= (Sup(*)(36))| & OK  \\
-      |((Sup(1)(40)), (Sup(1+)(41)), (Sup(*)(42))) \+/ ((Sup(1)(43)), (Sup(1+)(44)), (Sup(*)(45)))| & |(Sup(1)(40)) + (Sup(1)(43)) >= (Sup(1)(19))| & |properSplit {(Sup(1+)(41)), (Sup(1+)(44))} (Sup(1+)(20))| & |(Sup(1)(42)) + (Sup(1)(45)) <= (Sup(1)(21))| & OK  \\
+      |((Sup(1)(40)), (Sup(1+)(41)), (Sup(*)(42))) \+/ ((Sup(1)(43)), (Sup(1+)(44)), (Sup(*)(45)))| & |(Sup(1)(40)) `max` (Sup(1)(43)) >= (Sup(1)(19))| & |properSplit {(Sup(1+)(41)), (Sup(1+)(44))} (Sup(1+)(20))| & |(Sup(1)(42)) + (Sup(1)(45)) <= (Sup(1)(21))| & OK  \\
       |  <= ((Sup(1)(19)), (Sup(1+)(20)), (Sup(*)(21)))|   & & & & \\
       |((Sup(1)(37)), (Sup(1)(38)), (Sup(1)(39))) <= ((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27)))|  & |(Sup(1)(37)) >= (Sup(1)(25))| & |properSplit {(Sup(1)(38))} (Sup(1)(26))| & |(Sup(1)(39)) <= (Sup(1)(27))| & OK  \\
       |((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))  (Sub(=>=)(s))  ((Sup(1)(37)), (Sup(1)(38)), (Sup(1)(39)))|  & |(Sup(1)(46)) >= (Sup(1)(37))| &  & |(Sup(1)(48)) <= (Sup(1)(39))| & OK  \\
@@ -496,6 +500,13 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   usage property for a value. For example, the cardinality annotation |1-| means
   that the corresponding value is at most used once.
 
+  When we write that a variable is \emph{used}, we actually mean that the memory that
+  is represented by the value is touched, either for reading or for writing. If a
+  value has a lower-bound usage count of |1|, then we know that its memory is
+  at least touched once. If it has an upper-bound usage count of |0|, the memory
+  is never touched, altough there may be references to it during program execution. Such
+  references are never evaluated though.
+
   Why annotate the type constructors? Consider how a value is represented in
   memory. The type constructors of a type partition the memory representation
   of a value. Each area of memory for a certain value is associated with a
@@ -555,18 +566,18 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
           |    (low,use,up) \+/ ... \+/ (low,use,up) <= (low,use,up)  -- aggregation
 %%]
 
-  As demonstrated in the examples, the |=>=| constraint is used to propagate usage
+  As demonstrated in the examples, the coercion constraint (|=>=|) is used to propagate usage
   information. It specifies that the lower bound on the left-hand side is greater
   than the lower bound on the right-hand side. Vice versa, it specifies that
   the upper bound on the left-hand side is smaller than the upper bound on the
   right-hand side. Finally, it specifies that the two cardinality values are equal,
   unless the left-hand side can be coerced into the right-hand side.
 
-  With the |=>=| constraint, we essentially check that all boundary information is
+  With the coercion constraint, we essentially check that all boundary information is
   properly propagated from outermost expression to innermost expression, from
   body to parameters. The usages of values bound to identifiers, are treated separately
-  for each use-site of an identifier and added to each other by using the |\+/|
-  constraint. Section~\ref{Sect.CheckingConstraints} describes how the constraints are
+  for each use-site of an identifier and added to each other by using the aggregation
+  constraint |\*/|. Section~\ref{Sect.CheckingConstraints} describes how the constraints are
   checked.
 
 \section{Gathering constraints}
@@ -620,8 +631,8 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   \rulerCmdUse{RulerUniquenessExamples.U1.flow.base}
 
   The last case to deal with is lambda abstraction. We use an auxiliary rule that gathers all annotated types of the use-sites of the
-  identifier of the lambda. There is no constraint generated between the triple of the result of the body and the result-part of the
-  annotated type of the lambda function. As is visible in the type rules, we force the annotated types to be exactly the same. This
+  identifier of the lambda and turns these into an aggregation constraint. There is no constraint generated between the triple of the
+  result of the body and the result-part of the annotated type of the lambda function. As is visible in the type rules, we force the annotated types to be exactly the same. This
   means that we cannot weaken the annotations of the body. But, a function application can weaken the bounds and usage information
   of the result, if needed.
 
@@ -639,11 +650,11 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
 satisfied :: Check
 satisfied  (a =>= b)                                   = a `coercionSatisfied` b
 satisfied  (a (Sub(=>=)(s)) b)                         = a `weakCoercionSatisfied` b
-satisfied  ((Sub(a)(1)) \+/ ... \+/ (Sub(a)(2)) <= a)  = [(Sub(a)(1)) ... (Sub(a)(n))] `sumSatisfied` a
+satisfied  ((Sub(a)(1)) \*/ ... \*/ (Sub(a)(2)) <= a)  = [(Sub(a)(1)) ... (Sub(a)(n))] `aggregationSatisfied` a
 %%]
 
   \subsection{Coercion constraints}
-  
+
   For a coercion constraint, the lower bound of the left-hand side should be
   greater than the lower bound of the right-hand side. It is the other way around
   for the upper bound. If the coercion is weak, then the cardinality annotation is ignored,
@@ -663,14 +674,14 @@ weakCoercionSatisfied (a, b, c) (d, e, f)
   generator that only selects special operations for types that are used at most once,
   no coercion function is required.
 
-  \subsection{Sum constraint}
+  \subsection{Aggregation constraint}
 
-  For the sum constraint, we conservatively approximate the upper and lower bound. Things
+  For the aggregation constraint, we conservatively approximate the upper and lower bound. Things
   are a bit more complicated for the cardinality annotation. We check that the usage annotation
   is properly split up to the individual use sites (Figure~\ref{splitFunc}). We mean with this that if a value
   is linear, that one use site is linear and all the other use sites are not used at all.
-  Figure~\ref{code.sumsat} defines when a sum constraint is satisfied.
-  
+  Figure~\ref{code.sumsat} defines when an aggregation constraint is satisfied.
+
   \begin{figure}
   \label{splitFunc}
   \caption{The isSplit function.}
@@ -687,24 +698,32 @@ isSplit as eenm  = all (== 1-) as
 isSplit as *     = all (== *) as
 %%]
   \end{figure}
-  
+
   \begin{figure}
   \label{code.sumsat}
-  \caption{sum constraint satisfaction}
+  \caption{aggregation constraint satisfaction}
 
 %%[[wrap=code
-sumSatisfied [((Sub(a)(1)), (Sub(b)(1)), (Sub(c)(1))), ..., ((Sub(a)(b)), (Sub(b)(n)), (Sub(c)(n)))] (a, b, c)
-  =   (Sub(a)(1))  +  ...  +  (Sub(a)(n))  >=  a
+aggregationSatisfied [((Sub(a)(1)), (Sub(b)(1)), (Sub(c)(1))), ..., ((Sub(a)(b)), (Sub(b)(n)), (Sub(c)(n)))] (a, b, c)
+  =   (Sub(a)(1))  `max`  ...  `max`  (Sub(a)(n))  >=  a
   &&  (Sub(c)(1))  +  ...  +  (Sub(c)(n))  <=  c
   &&  isSplit [(Sub(b)(1)), ..., (Sub(b)(n))] b
 %%]
   \end{figure}
 
-  There is at this moment only a single execution path possible during the evaluation of
-  the program. This changes in Chapter~\ref{chapt.Parallel}. In that chapter, we change
-  this constraint as well, to deal with mutual exclusive occurrences.
+  Note that when $n = 0$, |(Sub(a)(1))  `max` ... `max` (Sub(a)(n)) === 0| and |(Sub(c)(1)) +  ...  +  (Sub(c)(n)) === 0|.
+  If an identifier does not occur syntactically, then the value cannot be touched though that identifier, and the lower
+  bound corresponding to the type of the identifier is forced to |0| and the upper bound can be anything.
+  
+  All occurrences of an identifier point to the same value. So, if one occurrence of an identifier has a lower bound
+  of |1|, it means that the occurrence is evaluated at least once, so the value is used at least once. We approximate the
+  lower bound by taking the maximum of all lower bounds.
 
-
+  At this moment, we do not distinguish between parallel and sequential occurrences of
+  values. For parallel occurrences, we can use the maximum of the upper bounds instead
+  of the sum, which is a better approximation. And in a similar way take the sum of the
+  lower bounds instead of the maximum (note the duality here). We discuss this subject
+  in Chapter~\ref{chapt.Parallel}.
 
 \section{Conclusion}
 
