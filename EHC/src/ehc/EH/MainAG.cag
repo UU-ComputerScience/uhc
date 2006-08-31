@@ -7,7 +7,7 @@
 %%% Haskell interface to AG generated code for compiler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,UU.Pretty, EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Opts}, {%{EH}Ty},{%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty},{%{EH}Ty.FitsIn},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Pretty},{%{EH}EH})
+%%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,EH.Util.Utils,UU.Pretty, EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Opts}, {%{EH}Ty},{%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty},{%{EH}Ty.FitsIn},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Pretty},{%{EH}EH})
 %%]
 
 %%[2 hs import({%{EH}Cnstr},{%{EH}Substitutable},Data.Maybe)
@@ -23,9 +23,6 @@
 %%]
 
 %%[7 hs import(EH.Util.PPUtils)
-%%]
-
-%%[8 hs import(EH.Util.Utils(groupSortOn))
 %%]
 
 %%[8 hs import(qualified Data.Map as Map,{%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty})
@@ -80,24 +77,24 @@ ATTR AGItf [ baseName: String | | ]
 ATTR AGItf Expr [ | | gathValGam: ValGam ]
 
 SEM Expr
-  | Let			lhs			.	gathValGam			=	@body.gathValGam `gamUnion` @finValGam
-  | * - Let		lhs			.	gathValGam			=	emptyGam
+  | Let         lhs         .   gathValGam          =   @body.gathValGam `gamUnion` @finValGam
+  | * - Let     lhs         .   gathValGam          =   emptyGam
 %%]
 
 %%[12
 ATTR AGItf Expr [ | | gathTyGam: TyGam ]
 
 SEM Expr
-  | Let			lhs			.	gathTyGam			=	@body.gathTyGam `gamUnion` @lQuTyGam
-  | * - Let		lhs			.	gathTyGam			=	emptyGam
+  | Let         lhs         .   gathTyGam           =   @body.gathTyGam `gamUnion` @lQuTyGam
+  | * - Let     lhs         .   gathTyGam           =   emptyGam
 %%]
 
 %%[12
 ATTR AGItf Expr [ | | gathKiGam: KiGam ]
 
 SEM Expr
-  | Let			lhs			.	gathKiGam			=	@body.gathKiGam -- `gamUnion` @xxx
-  | * - Let		lhs			.	gathKiGam			=	emptyGam
+  | Let         lhs         .   gathKiGam           =   @body.gathKiGam -- `gamUnion` @xxx
+  | * - Let     lhs         .   gathKiGam           =   emptyGam
 %%]
 
 %%[12
@@ -113,8 +110,8 @@ SEM AGItf
 ATTR AGItf Expr [ | | gathPrIntroGam: PrIntroGam ]
 
 SEM Expr
-  | Let			lhs			.	gathPrIntroGam		=	@body.gathPrIntroGam `gamUnion` @lQuPrIGam
-  | * - Let		lhs			.	gathPrIntroGam		=	emptyGam
+  | Let         lhs         .   gathPrIntroGam      =   @body.gathPrIntroGam `gamUnion` @lQuPrIGam
+  | * - Let     lhs         .   gathPrIntroGam      =   emptyGam
 %%]
 
 %%[12
@@ -122,10 +119,10 @@ ATTR AGItf Expr [ | | gathPrElimTGam: PrElimTGam ]
 ATTR AGItf [ | | gathPrfCtxtId: PrfCtxtId ]
 
 SEM AGItf
-  | AGItf		lhs			.	gathPrfCtxtId		=	@prfCtxtId
+  | AGItf       lhs         .   gathPrfCtxtId       =   uidStart
 
 SEM Expr
-  | Let			lhs			.	gathPrElimTGam		=	@body.gathPrElimTGam -- `gamUnion` @lQuPrIGam
-  | * - Let		lhs			.	gathPrElimTGam		=	emptyTGam uidStart
+  | Let         lhs         .   gathPrElimTGam      =   tgamAddGam @prfCtxtId uidStart @decls.patPrElimTGam @body.gathPrElimTGam
+  | * - Let     lhs         .   gathPrElimTGam      =   emptyTGam uidStart
 %%]
 

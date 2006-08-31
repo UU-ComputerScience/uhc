@@ -7,7 +7,7 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.Trf.LamLift} import(Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty},EH.Util.Utils(sortOn)) export(cmodTrfLamLift)
+%%[8 hs module {%{EH}Core.Trf.LamLift} import(EH.Util.Utils,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty},EH.Util.Utils(sortOn)) export(cmodTrfLamLift)
 %%]
 
 %%[8 hs import({%{EH}Base.Debug})

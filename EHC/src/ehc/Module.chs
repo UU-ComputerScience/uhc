@@ -12,13 +12,22 @@
 %%% Module adm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 module {%{EH}Module} import(Data.Maybe,Data.List,qualified Data.Set as Set,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Common},{%{EH}Error})
+%%[12 module {%{EH}Module} import(Data.Maybe,Data.List,qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.Utils,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Common},{%{EH}Error})
 %%]
 
-%%[12 export(ModEnt(..),ModExp(..),ModEntSpec(..),ModEntSubSpec(..),ModImp(..),Mod(..),ModEntRel)
+%%[12 export(ModEnt(..),ModExp(..),ModEntSpec(..),ModEntSubSpec(..),ModImp(..),Mod(..),ModEntRel,ModEntMp)
 %%]
 
 %%[12 export(emptyMod)
+%%]
+
+%%[12 import ({%{EH}Gam}) export(modBuiltin,modImpBuiltin)
+%%]
+
+%%[12 export(ModMpInfo(..),ModMp,modMpCombine)
+%%]
+
+%%[12 export(ppModMp,ppModEntMp,ppModEntRel)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -27,29 +36,41 @@
 
 %%[12
 data ModEnt
-  = ModEntVal               { mentName :: HsName }
-  | ModEntType              { mentName :: HsName }
-  | ModEntData              { mentName :: HsName, mentSubs :: Set.Set ModEnt }
-  | ModEntClass             { mentName :: HsName, mentSubs :: Set.Set ModEnt }
-  | ModEntImplicitInstance  { mentName :: HsName }
-  deriving (Show,Eq,Ord)
+  = ModEnt
+      { mentKind 	:: IdOccKind
+      , mentIdOcc 	:: IdOcc
+      , mentOwns 	:: Set.Set ModEnt
+      }
+  deriving (Show)
 
-type ModEntRel = Rel.Rel HsName ModEnt
+instance Eq ModEnt where
+  e1 == e2 = mentKind e1 == mentKind e2 && mentIdOcc e1 == mentIdOcc e2
+
+instance Ord ModEnt where
+  e1 `compare` e2
+    = case mentKind e1 `compare` mentKind e2 of
+        EQ -> mentIdOcc e1 `compare` mentIdOcc e2
+        c  -> c
+
+type ModEntRel = Rel.Rel HsName  ModEnt
+type ModEntMp  = Map.Map HsName [ModEnt]
 
 mentIsCon :: ModEnt -> Bool
-mentIsCon (ModEntData  _ _) = True
-mentIsCon (ModEntClass _ _) = True
-mentIsCon _                 = False
+mentIsCon e = mentKind e == IdOcc_Data || mentKind e == IdOcc_Class
 
-mentOwns :: ModEnt -> Set.Set ModEnt
-mentOwns (ModEntData  _ s) = s
-mentOwns (ModEntClass _ s) = s
-mentOwns _                 = Set.empty
 %%]
 
 %%[12
 instance PP ModEnt where
-  pp e = pp (mentName e)
+  pp e = mentIdOcc e >|<  "/" >|< mentKind e >|< ppParensCommas (map pp $ Set.toList $ mentOwns e)
+
+ppModEntRel :: ModEntRel -> PP_Doc
+ppModEntRel
+  = ppBracketsCommas . map (\(a,b) -> pp a >|< "<>" >|< pp b) . Rel.toList
+
+ppModEntMp :: ModEntMp -> PP_Doc
+ppModEntMp
+  = ppBracketsCommas . map (\(a,b) -> pp a >|< "<>" >|< ppBracketsCommas b) . Map.toList
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -80,6 +101,16 @@ data ModImp
       , mimpImpL        :: [ModEntSpec]
       }
   deriving (Show)
+
+emptyModImp :: ModImp
+emptyModImp = ModImp False hsnUnknown hsnUnknown True []
+
+modImpBuiltin :: ModImp
+modImpBuiltin
+  = emptyModImp
+      { mimpSource		= hsnModBuiltin
+      , mimpAs			= hsnModBuiltin
+      }
 %%]
 
 %%[12
@@ -105,21 +136,30 @@ instance PP ModImp where
 %%[12
 data Mod
   = Mod
-      { modName     	:: HsName
-      , modNameInSrc 	:: Maybe HsName
-      , modExpL     	:: Maybe [ModExp]
-      , modImpL     	:: [ModImp]
-      , modDefs     	:: ModEntRel
+      { modName         :: HsName
+      , modNameInSrc    :: Maybe HsName
+      , modExpL         :: Maybe [ModExp]
+      , modImpL         :: [ModImp]
+      , modDefs         :: ModEntRel
       }
   deriving (Show)
 
 emptyMod = Mod hsnUnknown Nothing Nothing [] Rel.empty
+
+modBuiltin
+  = emptyMod
+      { modName			= hsnModBuiltin
+      , modDefs			= defs
+      }
+  where defs
+          = Rel.fromList [ (n,ModEnt IdOcc_Type (IdOcc n IdOcc_Type) Set.empty) | (n,_) <- gamToAssocL initTyGam ]
+            `Rel.union` Rel.fromList [ (n,ModEnt IdOcc_Kind (IdOcc n IdOcc_Kind) Set.empty) | (n,_) <- gamToAssocL initKiGam ]
 %%]
 
 %%[12
 instance PP Mod where
   pp m = modName m >|< "/" >|< modNameInSrc m
-         >-< indent 2 (ppParensCommas (modImpL m) >-< maybe empty ppParensCommas (modExpL m))
+         >-< indent 2 (ppParensCommas (modImpL m) >-< maybe empty ppParensCommas (modExpL m) >-< ppModEntRel (modDefs m))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -288,3 +328,40 @@ checkImp exps imp
         err2 i x = mkErr_NamesNotIntrod ("module " ++ show src ++ " subimport of import " ++ show i) [x]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% 7 Top level (The semantics of a Haskell program)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+data ModMpInfo
+  = ModMpInfo
+      { mmiInscps   :: ModEntRel
+      , mmiExps     :: ModEntRel
+      }
+
+instance Show ModMpInfo where
+  show _ = "ModMpInfo"
+
+instance PP ModMpInfo where
+  pp i =   "In scp:" >#< (ppAssocL $ Rel.toList $ mmiInscps i)
+       >-< "Exps  :" >#< (ppAssocL $ Rel.toList $ mmiExps   i)
+
+emptyModMpInfo :: ModMpInfo
+emptyModMpInfo = ModMpInfo Rel.empty Rel.empty
+
+type ModMp = Map.Map HsName ModMpInfo
+
+ppModMp :: ModMp -> PP_Doc
+ppModMp = vlist . map (\(n,i) -> n >#< pp i) . Map.toList
+%%]
+
+%%[12
+modMpCombine ::  [Mod] -> ModMp -> (ModMp,[Err])
+modMpCombine ms mp
+  = (newMp `Map.union` mp,concat errs)
+  where expsOf mp n     = mmiExps $ Map.findWithDefault emptyModMpInfo n mp
+        rels            = modInsOuts (expsOf mp) ms
+        (inscps,exps)   = unzip rels
+        newMp           = Map.fromList $ zipWith3 (\n i o -> (n,ModMpInfo i o)) (map modName ms) inscps exps
+        errs            = zipWith (checkMod (fmap mmiExps . (`Map.lookup` newMp))) inscps ms
+%%]

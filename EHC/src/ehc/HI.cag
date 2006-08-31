@@ -1,0 +1,59 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to HI/AbsSyn
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12 hs module {%{EH}HI} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam},qualified {%{EH}Pred} as Pr)
+%%]
+
+%%[12 hs import(qualified Data.Map as Map)
+%%]
+
+%%[12 export(AGItf(..),Module(..),Binding(..),Bindings,Rule(..),Rules)
+%%]
+
+%%[12 export(hiFromAllGams)
+%%]
+
+%%[12 import({HI/AbsSyn})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional defs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Building
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12 hs
+hiFromGam :: (HsName -> v -> Binding) -> Gam HsName v -> Bindings
+hiFromGam mk g = [ mk n v | (n,v) <- gamToAssocL g ]
+
+hiFromTGam :: (HsName -> v -> Binding) -> PrfCtxtId -> TreeGam PrfCtxtId HsName v -> Bindings
+hiFromTGam mk cx g = [ mk n v | (n,v) <- tgamToAssocL cx g ]
+
+hiFromAllGams 
+  :: FixityGam
+     -> ValGam
+     -> TyGam
+     -> DataGam
+     -> Pr.PrIntroGam
+     -> (Pr.PrElimTGam,PrfCtxtId)
+     -> Bindings
+hiFromAllGams fg vg tg dg ig (eg,ecx)
+  = hiFromGam (\n fgi -> Binding_Fixity n (fgiPrio fgi) (fgiFixity fgi)) fg
+    ++ hiFromGam (\n vgi -> Binding_Val n (vgiTy vgi)) vg
+    ++ hiFromGam (\n tgi -> Binding_Ty n (tgiTy tgi) (tgiKi tgi)) tg
+    ++ hiFromGam (\n dgi -> Binding_DataCon n (Map.toList $ dgiDataTagMp dgi)) dg
+    ++ hiFromGam (\n pigi -> Binding_Class n (Pr.pigiPrToEvidTy pigi) (Pr.pigiKi pigi) (mkr $ Pr.pigiRule pigi)) ig
+    ++ hiFromTGam (\n pegi -> Binding_Instance n (map mkr $ Pr.pegiRuleL pegi)) ecx eg
+  where mkr r = Rule_Rule (Pr.rulNmEvid r) (Pr.rulRuleTy r) ([],CExpr_Var $ Pr.rulNmEvid r) (Pr.rulId r) (Pr.rulCost r) []
+%%]
+
+
+

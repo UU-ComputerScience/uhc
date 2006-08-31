@@ -19,18 +19,21 @@ ATTR AllNT AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
 SEM Body
     | Body
         lhs         .   pp          =   @declarations.pp >-< @ppExtra
+		loc			.	ppExtra		=	empty
 %%]
 
 %%[12.Body -1.Body
 SEM Body
     | Body
         lhs         .   pp          =   @importdeclarations.pp >-< @declarations.pp >-< @ppExtra
+		loc			.	ppExtra		=	empty
 %%]
 
 %%[12
 SEM AGItf
 	| AGItf
-		lhs			.	pp			=	ppCmt (pp @module.mod) >-< @module.pp
+		lhs			.	pp			=	@ppExtra >-< @module.pp
+		loc			.	ppExtra		=	empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -234,6 +237,7 @@ SEM Expression
         loc         .   pp          =   "\\" >|< ppSpaces @patterns.ppL >#< "->" >#< @expression.pp
     | Let
         loc         .   pp          =   "let" >#< (@declarations.pp >-< @ppExtra) >#< "in" >#< @expression.pp
+		loc			.	ppExtra		=	empty
     | Tuple
         loc         .   pp          =   ppParensCommas @expressions.ppL
     | Typed
@@ -614,19 +618,29 @@ SEM ContextedPatterns
 %%% Extra info for pp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[12
+%%]
+SEM AGItf
+	| AGItf
+		loc			.	ppExtra		:=	ppCmt (pp @module.mod)
+
 %%[1
+%%]
 SEM Body
     | Body
-        loc         .   ppExtra     =   ppCmt
-        								  (   ppGamDup @declarations.idOccDefGam
-        								  >-< ppGamDup @declarations.idUseOccGam
-        								  >-< (pp $ mkDpdGrFromEdgesMp $ @declarations.idDpdMp)
-        								  >-< (ppBracketsCommas $ map ppBracketsCommas $ @sccOrder)
+        loc         .   ppExtra     :=  ppCmt
+        								  (   "declarations.idOccDefGam:" >#< ppGamDup @declarations.idOccDefGam
+        								  >-< "loc.idGam:" >#< ppGam @idGam
+        								  >-< "lhs.modInScope:" >#< ppModEntMp @lhs.modInScope
+        								  -- >-< "declarations.idUseOccGam:" >#< ppGamDup @declarations.idUseOccGam
+        								  >-< "declarations.idDpdMp:" >#< (pp $ mkDpdGrFromEdgesMp $ @declarations.idDpdMp)
+        								  -- >-< (ppBracketsCommas $ map ppBracketsCommas $ @sccOrder)
         								  -- >-< ppGamDup @declarations.undefOccGam
         								  )
 
+%%[1
+%%]
 SEM Expression
     | Let
-        loc         .   ppExtra     =   ppCmt (ppGamDup @declarations.idOccDefGam >-< ppGamDup @declarations.idUseOccGam)
-%%]
+        loc         .   ppExtra     :=  ppCmt (ppGamDup @declarations.idOccDefGam >-< ppGamDup @declarations.idUseOccGam)
 

@@ -154,8 +154,8 @@ SEM Expr
 SEM RecExpr
   | Empty       loc     .   pp      =   hsnORec >|< hsnCRec
                 lhs     .   ppL     =   []
-  | Ext         loc     .   pp      =   ppFld "=" @positionalNm @nm @expr.pp
-  | Upd         loc     .   pp      =   ppFld ":=" hsnUnknown @nm @expr.pp
+  | Ext         loc     .   pp      =   ppFld "=" @positionalNm @nm (pp @nm) @expr.pp
+  | Upd         loc     .   pp      =   ppFld ":=" hsnUnknown @nm (pp @nm) @expr.pp
   | Ext Upd     lhs     .   ppL     =   @pp : @recExpr.ppL
                         .   pp      =   @recExpr.pp
   | Expr        loc     .   pp      =   @expr.pp
@@ -170,7 +170,7 @@ SEM RecPatExpr
   | Empty       loc     .   pp      =   hsnORec >|< hsnCRec
                 lhs     .   ppL     =   []
   | Ext         loc     .   pp      =   @recPatExpr.pp
-                lhs     .   ppL     =   ppFld "=" @positionalNm @nm @patExpr.pp : @recPatExpr.ppL
+                lhs     .   ppL     =   ppFld "=" @positionalNm @nm (pp @nm) @patExpr.pp : @recPatExpr.ppL
   | Expr        loc     .   pp      =   @patExpr.pp
                 lhs     .   ppL     =   []
 
@@ -181,7 +181,7 @@ SEM TyExpr
 SEM RowTyExpr
   | Empty       lhs     .   ppL     =   []
   | Ext         lhs     .   pp      =   @rowTyExpr.pp
-                        .   ppL     =   ppFld "::" @positionalNm @nm @tyExpr.pp : @rowTyExpr.ppL
+                        .   ppL     =   ppFld "::" @positionalNm @nm (pp @nm) @tyExpr.pp : @rowTyExpr.ppL
 %%]
 
 %%[8

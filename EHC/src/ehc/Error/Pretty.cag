@@ -200,6 +200,10 @@ SEM Err
                                                         (    "filename        :" >#< @nmOfFile
                                                          >-< "name from source:" >#< @nmFromSrc
                                                         )
+  | AmbiguousNameRef    lhs     .  pp   =   ppMsgErr    "Ambiguous name reference"
+                                                        (    "name        :" >#< @nm
+                                                         >-< "may refer to:" >#< vlist (map pp @nmAlts)
+                                                        )
 %%]
 
 

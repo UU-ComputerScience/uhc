@@ -14,39 +14,104 @@ ATTR AllNT AGItf [ | | errL USE {++} {[]} : ErrL ]
 %%[1
 SEM Body
     | Body
-        loc         .   errL        =   let ns = [ (ioccNm o >#< ppParens (ioccKind o),Just (map uoccRange os)) | (o,os) <- gamToAssocDupL @declarations.undefOccGam, not $ hsnIsProd $ ioccNm $ o ]
-                                        in  (if null ns then [] else [mkErr_NamesNotIntrod' "" ns])
-                                        ++ @errReorder
-                                        ++ @declarations.errL
+        loc         .   errL        =   firstNotEmpty [@errUndef,@declarations.errL,@errReorder]
 
 SEM Expression
+    | Variable Constructor
+        loc         .   errL        =   @errIdUse
     | Let
         loc         .   errL        =   @errReorder ++ @declarations.errL ++ @expression.errL
-    | InfixApplicationChainTop
+    | InfixApplicationChainTop 
         loc         .   errL        =   @errRearr ++ @expression.errL
+    | Negate 
+        loc         .   errL        =   @errIdUse ++ @expression.errL
+%%[[5
+    | List
+        loc         .   errL        =   @errIdUse ++ @expressions.errL
+    | Enum
+        loc         .   errL        =   @errIdUse ++ @from.errL ++ @then.errL ++ @to.errL
+    | If
+        loc         .   errL        =   @errIdUseVal ++ @errIdUseType ++ @guardExpression.errL ++ @thenExpression.errL ++ @elseExpression.errL
+%%]
+%%[[7
+    | RecordConstruction
+        loc         .   errL        =   @errIdUse ++ @recordExpressionBindings.errL
+%%]
 
 SEM RightHandSide
     | Expression
         loc         .   errL        =   @errReorder ++ @expression.errL ++ @where.errL
+%%]
 
+%%[1
+SEM Pattern
+    | Constructor
+        loc         .   errL        =   @errIdUse ++ @patterns.errL
+%%[[5
+    | InfixConstructor
+        loc         .   errL        =   @errIdUse ++ @leftPattern.errL ++ @rightPattern.errL
+    | List
+        loc         .   errL        =   @errIdUse ++ @patterns.errL
+%%]
+%%]
+
+%%[1
+SEM Type
+    | Constructor
+%%[[3
+      Variable NamedWildcard
+%%]
+        loc         .   errL        =   @errIdUse
+%%]
+
+%%[5
+SEM GuardedExpression
+    | GuardedExpression
+        loc         .   errL        =   @errIdUseVal ++ @errIdUseType ++ @guard.errL ++ @expression.errL
 %%]
 
 %%[5
 SEM Qualifier
     | Let
-        loc         .   errL        =   @errReorder ++ @declarations.errL
+        loc         .   errL        =   firstNotEmpty [@declarations.errL, @errReorder]
+    | Guard
+        loc         .   errL        =   @errIdUseVal ++ @errIdUseType ++ @guard.errL
+    | Generator
+        loc         .   errL        =   @errIdUse ++ @pattern.errL ++ @expression.errL
+    | Empty
+        loc         .   errL        =   @errIdUse
+%%]
+
+%%[7
+SEM RecordExpressionBinding
+    | RecordExpressionBinding
+        loc         .   errL        =   @errIdUse ++ @expression.errL
 %%]
 
 %%[9
 SEM Statement
     | Let
         loc         .   errL        =   @errReorder ++ @declarations.errL
+    | Expression
+        loc         .   errL        =   @errIdUse ++ @expression.errL
+    | Generator
+        loc         .   errL        =   @errIdUse ++ @pattern.errL ++ @expression.errL
+
+SEM ContextItem
+    | Class
+        loc         .   errL        =   @errIdUse ++ @types.errL
 
 SEM Declaration
     | Class
         loc         .   errL        =   @errReorder ++ @context.errL ++ @simpletype.errL ++ @dependencies.errL ++ @where.errL
     | Instance
-        loc         .   errL        =   @errReorder ++ @context.errL ++ @types.errL ++ @where.errL
+        loc         .   errL        =   firstNotEmpty [@errIdUse ++ @context.errL ++ @types.errL ++ @where.errL, @errReorder]
+    | InstanceUseImplicitly
+        loc         .   errL        =   @errIdUse ++ @expression.errL ++ @types.errL
+
+SEM Deriving
+    | Deriving
+        loc         .   errL        =   @errIdUse
 %%]
 
 %%[12

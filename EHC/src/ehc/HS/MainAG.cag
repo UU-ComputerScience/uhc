@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[1 hs module {%{EH}HS.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS}, EH.Util.DependencyGraph)
+%%[1 hs module {%{EH}HS.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.Utils,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS}, {%{EH}NameAspect}, EH.Util.DependencyGraph)
 %%]
 
 %%[1 hs import(qualified {%{EH}EH} as EH)
@@ -21,9 +21,6 @@
 %%]
 
 %%[4 hs import({%{EH}Ty}(TyQu(..)))
-%%]
-
-%%[8 hs import(qualified Data.Set as Set)
 %%]
 
 %%[8 hs export(tyGam2IdDefOccGam,kiGam2IdDefOccGam)
@@ -39,12 +36,19 @@
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 import({HS/AbsSyn},{HS/EH},{HS/Fixity},{HS/Pretty},{HS/GatherError},{HS/NameAnalysis},{HS/Module},{HS/Uniq})
+%%[1 import({HS/AbsSyn},{HS/EH},{HS/Fixity},{HS/Pretty},{HS/GatherError},{HS/ExtraChecks},{HS/NameLevel},{HS/NameDef},{HS/NameAnalysis},{HS/Module},{HS/Uniq})
 WRAPPER AGItf
 %%]
 
-%%[9 import({HS/ExtraChecks})
+%%[12 hs
 %%]
+type HSModAndRest = (Mod,ModEntMp -> Syn_AGItf)
+
+wrapModAndRest :: T_AGItf -> Inh_AGItf -> HSModAndRest
+wrapModAndRest sem inh
+  = 
+  where mksyn inscps = wrap_AGItf sem (inh {modInScope_Inh_AGItf = inscps})
+        inh' = 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Options
@@ -58,107 +62,23 @@ ATTR AGItf AllNT [ opts: EHCOpts | | ]
 %%% Tying together gam's, combining with imported info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1
+%%[1.initFixityGam
 SEM Body
     | Body
         declarations    .   fixityGam   =   @declarations.gathFixityGam
-%%[[12
-                                            `gamUnion` @lhs.fixityGam
-%%]
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Misc: simpletype internal info
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[5
-ATTR SimpleType [ | | range: Range  name: Name  typevariables: Names ]
-
-SEM SimpleType
-    | SimpleType
-        lhs         .   range       =   @range
-                    .   name        =   @name
-                    .   typevariables
-                                    =   @typevariables
+%%[12 -1.initFixityGam
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Misc: Data constructor internal info
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[5
-%%]
-ATTR AllConstructor [ | | conNames USE {++} {[]} : Names ]
-
-SEM Constructor
-    | Constructor
-        lhs         .   conNames    =   [@constructor]
-    | Infix
-        lhs         .   conNames    =   [@constructorOperator]
-%%[7
-%%]
-SEM Constructor
-    | Record
-        lhs         .   conNames    =   [@constructor]
-
-%%[7
-%%]
-ATTR AllFieldDeclaration AllConstructor [ | | fldNames USE {++} {[]} : Names ]
-
-SEM FieldDeclaration
-    | FieldDeclaration
-        lhs         .   fldNames    =   @names
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Misc: LeftHandSide internal info
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1
-%%]
-ATTR LeftHandSide [ | | name: Name ]
-
-SEM LeftHandSide
-    | Function
-        lhs         .   name        =   @name
-    | Infix
-        lhs         .   name        =   @operator
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Misc: Pattern internal info
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1
-SEM Pattern
-    | Constructor
-        loc         .   conNm       =   @name
-%%[[5
-    | InfixConstructor
-        loc         .   conNm       =   @constructorOperator
-%%]
+%%[12
+ATTR AGItf Module Body [ | | gathIdGam: IdDefOccGam ]
 %%]
 
-%%[1
-ATTR Pattern [ | | mbTopNm: {Maybe HsName} ]
-
-SEM Pattern
-    | Variable As
-        lhs         .   mbTopNm     =   Just @name
-    | * - Variable As
-        lhs         .   mbTopNm     =   Nothing
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Misc: Instance internal info
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-SEM Declaration
-    | Instance
-        loc         .   instancename=   maybe (mkHNm @lUniq) id @maybeinstancename
-    | Class InstanceUseImplicitly
-        loc         .   instancename=   mkHNm @lUniq
-    | Default
-        loc         .   defaultname =   mkHNm @lUniq
+%%[12
+SEM Body
+  	| Body
+  		lhs        		.   gathIdGam	=   @declarations.idOccDefGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -201,5 +121,13 @@ SEM ContextItem
     | RowLacksLabel
         lhs         .   freeTvarS   =   Set.singleton @rowvariable
 %%]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is toplevel mod?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR Module AGItf [ isTopMod: Bool | | ]
 %%]
 

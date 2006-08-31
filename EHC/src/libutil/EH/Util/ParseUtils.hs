@@ -8,6 +8,16 @@ import UU.Parsing.Offside
 import UU.Scanner.Position( Position(..) )
 
 -------------------------------------------------------------------------
+-- Type(s) of parsers
+-------------------------------------------------------------------------
+
+type LayoutParser tok ep
+  = (IsParser (OffsideParser i o tok p) tok,InputState i tok p, OutputState o, Position p)
+       => OffsideParser i o tok p ep
+
+type PlainParser tok gp = IsParser p tok => p gp
+
+-------------------------------------------------------------------------
 -- Parsing utils
 -------------------------------------------------------------------------
 
