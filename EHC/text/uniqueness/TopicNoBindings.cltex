@@ -67,7 +67,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   Chapter~\ref{chapt.Polyvariant}). Unfortunately, we cannot easily formulate the conditions of when an annotation is
   correct or not. We have to check two things: does the annotation fit with related annotations (the context), and
   does the annotation fit with the number of references there are to the value. With context we mean that if two types are unified,
-  that their annotations also unify. For example, a value with cardinality |1| cannot be passed to a function that has a |1-| cardinality for its parameter,
+  that their annotations also unify. For example, a value with cardinality |1| cannot be passed to a function that has a |onemin| cardinality for its parameter,
   because the function cannot guarantee that the value will always be used. With the number of references we mean the
   guaranteed upper and lower bound on the number of times the value will be evaluated or referenced. For example, a value
   that is referenced at least once cannot have the cardinality annotation |0|. We have sufficient information for the
@@ -200,7 +200,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
 
   With the intuitions gained in the previous section, we introduce a constraint-based approach to uniqueness
   typing. For example, for the upper bound analysis of the previous section, we generate a constraint
-  |... =>= ...| for each time we wrote `at least', and a constraint |... \+/ ... \+/ ... <= ...| where
+  |... =>= ...| for each time we wrote `at least', and a constraint |... \*/ ... \*/ ... <= ...| where
   we aggregated upper bounds. It that it? Yes, that is it basically, because we will show that the
   same constraints can be used for the lower bound analysis and the analysis for the actual usage
   values.
@@ -233,7 +233,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   in the introduction, a type has three annotations. This looks horrible, but unfortunately, we cannot
   do anything against it until next chapter.
 
-  As an example of a triple of annotations, consider the type |(Sup(Int)((1,1+,*)))|. The first
+  As an example of a triple of annotations, consider the type |(Sup(Int)((1,oneplus,*)))|. The first
   annotation is the lower-bound usage-count annotation, which specifies that the value is at least used once.
   The second annotation is the cardinality annotation, specifying that the value is strict, meaning that it is used
   one or more times. The third annotation is the upper-bound usage-count annotation, which specifies
@@ -246,12 +246,12 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
 
 %%[[wrap=code
     (  (\x y ->  (  (  y :: (Sup(Int)((1, 1, 1)))
-                    +  x :: (Sup(Int)((1, 1+, *)))
+                    +  x :: (Sup(Int)((1, oneplus, *)))
                     ) :: (Sup(Int)((1, 1, 1))))
-                 +  x :: (Sup(Int)((1, 1+, *)))
+                 +  x :: (Sup(Int)((1, oneplus, *)))
                  ) :: (Sup(Int)((1, 1, 1)))
-       ) :: (Sup(Int)((1, 1+, *))) (Sup(->)((1, 1, 1))) (Sup(Int)((1, 1, 1))) (Sup(->)((1, 1, 1))) (Sup(Int)((1, 1, 1))))
-       (3 :: (Sup(Int)((1, 1+, *)))) (4 :: (Sup(Int)((1, 1, 1)))
+       ) :: (Sup(Int)((1, oneplus, *))) (Sup(->)((1, 1, 1))) (Sup(Int)((1, 1, 1))) (Sup(->)((1, 1, 1))) (Sup(Int)((1, 1, 1))))
+       (3 :: (Sup(Int)((1, oneplus, *)))) (4 :: (Sup(Int)((1, 1, 1)))
     ) :: (Sup(Int)((1, 1, 1)))
 %%]
 
@@ -328,8 +328,8 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   The function expression is again an application:
 
 %%[[wrap=code
-    ( ... :: (Sup(Int)(((Sup(1)(19)), (Sup(1+)(20)), (Sup(*)(21))))) (Sup(->)(((Sup(1)(22)), (Sup(1)(23)), (Sup(1)(24))))) ((Sup(Int)(((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27))))) (Sup(->)(((Sup(1)(28)), (Sup(1)(29)), (Sup(1)(30))))) (Sup(Int)(((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33)))))))
-      (3 :: (Sup(Int)(((Sup(1)(34)), (Sup(1+)(35)), (Sup(*)(36))))))
+    ( ... :: (Sup(Int)(((Sup(1)(19)), (Sup(oneplus)(20)), (Sup(*)(21))))) (Sup(->)(((Sup(1)(22)), (Sup(1)(23)), (Sup(1)(24))))) ((Sup(Int)(((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27))))) (Sup(->)(((Sup(1)(28)), (Sup(1)(29)), (Sup(1)(30))))) (Sup(Int)(((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33)))))))
+      (3 :: (Sup(Int)(((Sup(1)(34)), (Sup(oneplus)(35)), (Sup(*)(36))))))
         :: (Sup(Int)(((Sup(1)(4)), (Sup(1)(5)), (Sup(1)(6))))) (Sup(->)(((Sup(1)(7)), (Sup(1)(8)), (Sup(1)(9))))) (Sup(Int)(((Sup(1)(10)), (Sup(1)(11)), (Sup(1)(12)))))
 %%]
 
@@ -348,11 +348,11 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
 
 %%[[wrap=code
 
-    ((Sup(1)(7)), (Sup(1)(8)), (Sup(1)(9)))      (Sub(=>=)(s))  ((Sup(1)(22)), (Sup(1)(23)), (Sup(1)(24)))   -- use of the function
-    ((Sup(1)(10)), (Sup(1)(11)), (Sup(1)(12)))   =>=            ((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33)))   -- use of the function value (resulting Int, co-variant)
-    ((Sup(1)(7)), (Sup(1)(8)), (Sup(1)(9)))      =>=            ((Sup(1)(28)), (Sup(1)(29)), (Sup(1)(30)))   -- use of the function value (function type, co-variant)
-    ((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27)))   =>=            ((Sup(1)(4)), (Sup(1)(5)), (Sup(1)(6)))      -- use of the function value (argument Int, contra-variant)
-    ((Sup(1)(19)), (Sup(1+)(20)), (Sup(*)(21)))  =>=            ((Sup(1)(34)), (Sup(1+)(35)), (Sup(*)(36)))  -- use of the argument
+    ((Sup(1)(7)), (Sup(1)(8)), (Sup(1)(9)))           (Sub(=>=)(s))  ((Sup(1)(22)), (Sup(1)(23)), (Sup(1)(24)))        -- use of the function
+    ((Sup(1)(10)), (Sup(1)(11)), (Sup(1)(12)))        =>=            ((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33)))        -- use of the function value (resulting Int, co-variant)
+    ((Sup(1)(7)), (Sup(1)(8)), (Sup(1)(9)))           =>=            ((Sup(1)(28)), (Sup(1)(29)), (Sup(1)(30)))        -- use of the function value (function type, co-variant)
+    ((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27)))        =>=            ((Sup(1)(4)), (Sup(1)(5)), (Sup(1)(6)))           -- use of the function value (argument Int, contra-variant)
+    ((Sup(1)(19)), (Sup(oneplus)(20)), (Sup(*)(21)))  =>=            ((Sup(1)(34)), (Sup(oneplus)(35)), (Sup(*)(36)))  -- use of the argument
 %%]
 
   This leaves to analyse the function of the function application, and the argument of the function application. The argument
@@ -361,8 +361,8 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   The function expression is a lambda abstraction:
 
 %%[[wrap=code
-    ( \(x :: (Sup(Int)(((Sup(1)(19)), (Sup(1+)(20)), (Sup(*)(21)))))) (y :: (Sup(Int)(((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27)))))) -> ... y :: (Sup(Int)(((Sup(1)(37)), (Sup(1)(38)), (Sup(1)(39))))) ... (Sub(x)(1)) :: (Sup(Int)(((Sup(1)(40)), (Sup(1+)(41)), (Sup(*)(42))))) ... (Sub(x)(2)) :: (Sup(Int)(((Sup(1)(43)), (Sup(1+)(44)), (Sup(*)(45)))))
-    ) :: (Sup(Int)(((Sup(1)(19)), (Sup(1+)(20)), (Sup(*)(21))))) (Sup(->)(((Sup(1)(22)), (Sup(1)(23)), (Sup(1)(24))))) ((Sup(Int)(((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27))))) (Sup(->)(((Sup(1)(28)), (Sup(1)(29)), (Sup(1)(30))))) (Sup(Int)(((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33))))))
+    ( \(x :: (Sup(Int)(((Sup(1)(19)), (Sup(oneplus)(20)), (Sup(*)(21)))))) (y :: (Sup(Int)(((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27)))))) -> ... y :: (Sup(Int)(((Sup(1)(37)), (Sup(1)(38)), (Sup(1)(39))))) ... (Sub(x)(1)) :: (Sup(Int)(((Sup(1)(40)), (Sup(oneplus)(41)), (Sup(*)(42))))) ... (Sub(x)(2)) :: (Sup(Int)(((Sup(1)(43)), (Sup(oneplus)(44)), (Sup(*)(45)))))
+    ) :: (Sup(Int)(((Sup(1)(19)), (Sup(oneplus)(20)), (Sup(*)(21))))) (Sup(->)(((Sup(1)(22)), (Sup(1)(23)), (Sup(1)(24))))) ((Sup(Int)(((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27))))) (Sup(->)(((Sup(1)(28)), (Sup(1)(29)), (Sup(1)(30))))) (Sup(Int)(((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33))))))
 %%]
 
   For a lambda abstraction, we perform two tasks: analyze the body of the lambda abstraction, and
@@ -380,15 +380,15 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   With only one use-site of |y|, and two use-sites of |x|, the constraints are:
 
 %%[[wrap=code
-   ((Sup(1)(40)), (Sup(1+)(41)), (Sup(*)(42))) \+/ ((Sup(1)(43)), (Sup(1+)(44)), (Sup(*)(45))) <= ((Sup(1)(19)), (Sup(1+)(20)), (Sup(*)(21)))  -- for x
-   ((Sup(1)(37)), (Sup(1)(38)), (Sup(1)(39))) <= ((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27)))                                                    -- for y
+   ((Sup(1)(40)), (Sup(oneplus)(41)), (Sup(*)(42))) \*/ ((Sup(1)(43)), (Sup(oneplus)(44)), (Sup(*)(45))) <= ((Sup(1)(19)), (Sup(oneplus)(20)), (Sup(*)(21)))  -- for x
+   ((Sup(1)(37)), (Sup(1)(38)), (Sup(1)(39))) <= ((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27)))                                                                   -- for y
 %%]
 
   The function body remains to be checked. The function body consists of the additions:
 
 %%[[wrap=code
-  ((y :: (Sup(Int)(((Sup(1)(37)), (Sup(1)(38)), (Sup(1)(39)))))) + ((Sub(x)(1)) :: (Sup(Int)(((Sup(1)(40)), (Sup(1+)(41)), (Sup(*)(42))))))) :: (Sup(Int)(((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))))
-  ((( ... ) :: (Sup(Int)(((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))))) + ((Sub(x)(2)) :: (Sup(Int)(((Sup(1)(43)), (Sup(1+)(44)), (Sup(*)(45))))))) :: (Sup(Int)(((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33))))))
+  ((y :: (Sup(Int)(((Sup(1)(37)), (Sup(1)(38)), (Sup(1)(39)))))) + ((Sub(x)(1)) :: (Sup(Int)(((Sup(1)(40)), (Sup(oneplus)(41)), (Sup(*)(42))))))) :: (Sup(Int)(((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))))
+  ((( ... ) :: (Sup(Int)(((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))))) + ((Sub(x)(2)) :: (Sup(Int)(((Sup(1)(43)), (Sup(oneplus)(44)), (Sup(*)(45))))))) :: (Sup(Int)(((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33))))))
 %%]
 
   The addition operator uses both the arguments at least as many times as the result is used. The default operational
@@ -405,9 +405,9 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
 
 %%[[wrap=code
     ((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))  (Sub(=>=)(s))  ((Sup(1)(37)), (Sup(1)(38)), (Sup(1)(39)))
-    ((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))  (Sub(=>=)(s))  ((Sup(1)(40)), (Sup(1+)(41)), (Sup(*)(42)))
+    ((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))  (Sub(=>=)(s))  ((Sup(1)(40)), (Sup(oneplus)(41)), (Sup(*)(42)))
     ((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33)))  (Sub(=>=)(s))  ((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))
-    ((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33)))  (Sub(=>=)(s))  ((Sup(1)(43)), (Sup(1+)(44)), (Sup(*)(45)))
+    ((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33)))  (Sub(=>=)(s))  ((Sup(1)(43)), (Sup(oneplus)(44)), (Sup(*)(45)))
 %%]
 
   \subsection{Checking the constraints}
@@ -428,14 +428,14 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
       |((Sup(1)(10)), (Sup(1)(11)), (Sup(1)(12)))   =>=  ((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33)))|    & |(Sup(1)(10)) >= (Sup(1)(31))| & |(Sup(1)(11)) <= (Sup(1)(32))| & |(Sup(1)(12)) <= (Sup(1)(33))| & OK  \\
       |((Sup(1)(7)), (Sup(1)(8)), (Sup(1)(9)))      =>=  ((Sup(1)(28)), (Sup(1)(29)), (Sup(1)(30)))|    & |(Sup(1)(7)) >= (Sup(1)(28))| & |(Sup(1)(8)) <= (Sup(1)(29))| & |(Sup(1)(9)) <= (Sup(1)(30))| & OK  \\
       |((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27)))   =>=  ((Sup(1)(4)), (Sup(1)(5)), (Sup(1)(6)))|    & |(Sup(1)(25)) >= (Sup(1)(4))| & |(Sup(1)(26)) <= (Sup(1)(5))| & |(Sup(1)(27)) <= (Sup(1)(6))| & OK  \\
-      |((Sup(1)(19)), (Sup(1+)(20)), (Sup(*)(21)))  =>=  ((Sup(1)(34)), (Sup(1+)(35)), (Sup(*)(36)))|    & |(Sup(1)(19)) >= (Sup(1)(34))| & |(Sup(1+)(20)) <= (Sup(1+)(35))| & |(Sup(*)(20)) <= (Sup(*)(36))| & OK  \\
-      |((Sup(1)(40)), (Sup(1+)(41)), (Sup(*)(42))) \+/ ((Sup(1)(43)), (Sup(1+)(44)), (Sup(*)(45)))| & |(Sup(1)(40)) `max` (Sup(1)(43)) >= (Sup(1)(19))| & |properSplit {(Sup(1+)(41)), (Sup(1+)(44))} (Sup(1+)(20))| & |(Sup(1)(42)) + (Sup(1)(45)) <= (Sup(1)(21))| & OK  \\
-      |  <= ((Sup(1)(19)), (Sup(1+)(20)), (Sup(*)(21)))|   & & & & \\
+      |((Sup(1)(19)), (Sup(oneplus)(20)), (Sup(*)(21)))  =>=  ((Sup(1)(34)), (Sup(oneplus)(35)), (Sup(*)(36)))|    & |(Sup(1)(19)) >= (Sup(1)(34))| & |(Sup(oneplus)(20)) <= (Sup(oneplus)(35))| & |(Sup(*)(20)) <= (Sup(*)(36))| & OK  \\
+      |((Sup(1)(40)), (Sup(oneplus)(41)), (Sup(*)(42))) \*/ ((Sup(1)(43)), (Sup(oneplus)(44)), (Sup(*)(45)))| & |(Sup(1)(40)) `max` (Sup(1)(43)) >= (Sup(1)(19))| & |properSplit {(Sup(oneplus)(41)), (Sup(oneplus)(44))} (Sup(oneplus)(20))| & |(Sup(1)(42)) + (Sup(1)(45)) <= (Sup(1)(21))| & OK  \\
+      |  <= ((Sup(1)(19)), (Sup(oneplus)(20)), (Sup(*)(21)))|   & & & & \\
       |((Sup(1)(37)), (Sup(1)(38)), (Sup(1)(39))) <= ((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27)))|  & |(Sup(1)(37)) >= (Sup(1)(25))| & |properSplit {(Sup(1)(38))} (Sup(1)(26))| & |(Sup(1)(39)) <= (Sup(1)(27))| & OK  \\
       |((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))  (Sub(=>=)(s))  ((Sup(1)(37)), (Sup(1)(38)), (Sup(1)(39)))|  & |(Sup(1)(46)) >= (Sup(1)(37))| &  & |(Sup(1)(48)) <= (Sup(1)(39))| & OK  \\
-      |((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))  (Sub(=>=)(s))  ((Sup(1)(40)), (Sup(1+)(41)), (Sup(*)(42)))|  & |(Sup(1)(46)) >= (Sup(1)(40))| &  & |(Sup(1)(48)) <= (Sup(*)(42))| & OK  \\
+      |((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))  (Sub(=>=)(s))  ((Sup(1)(40)), (Sup(oneplus)(41)), (Sup(*)(42)))|  & |(Sup(1)(46)) >= (Sup(1)(40))| &  & |(Sup(1)(48)) <= (Sup(*)(42))| & OK  \\
       |((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33)))  (Sub(=>=)(s))  ((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))|  & |(Sup(1)(31)) >= (Sup(1)(46))| &  & |(Sup(1)(33)) <= (Sup(1)(48))| & OK  \\
-      |((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33)))  (Sub(=>=)(s))  ((Sup(1)(43)), (Sup(1+)(44)), (Sup(*)(45)))|  & |(Sup(1)(13)) >= (Sup(1)(43))| & & |(Sup(1)(33)) <= (Sup(*)(45))| & OK  \\
+      |((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33)))  (Sub(=>=)(s))  ((Sup(1)(43)), (Sup(oneplus)(44)), (Sup(*)(45)))|  & |(Sup(1)(13)) >= (Sup(1)(43))| & & |(Sup(1)(33)) <= (Sup(*)(45))| & OK  \\
   \end{tabular}
 
   All constraints are satisfied, so the annotated program is properly annotated. But this is not the only annotated program that satisfies the
@@ -484,20 +484,20 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   attached to type constructors:
 
 %%[[wrap=code
-  utau  ::=  Sup(Int)((low,use,up))   -- tycon int (Int)
-        |    Sup((->))((low,use,up))  -- tycon arrow (Arrow)
-        |    utau utau                -- type application (App)
+  utau  ::=  Sup(Int)((low,use,up))            -- tycon int (Int)
+        |    Sup((->))((low,use,up))           -- tycon arrow (Arrow)
+        |    utau utau                         -- type application (App)
 
-  low   ::=  0 | 1                    -- lower-bound usage-count annotation
-  use   ::=  0 | 1- | 1 | 1+ | *      -- cardinality annotation
-  up    ::=  0 | 1 | *                -- upper-bound usage-count annotation
+  low   ::=  0 | 1                             -- lower-bound usage-count annotation
+  use   ::=  0 | onemin | 1 | oneplus | *      -- cardinality annotation
+  up    ::=  0 | 1 | *                         -- upper-bound usage-count annotation
 %%]
 
   The lower-bound usage-count annotation specifies that a value represented
   by the annotated type constructor, is at least used |0| or |1| times. The
   upper-bound usage-annotation specifies that a value represented by the annotated type constructor,
   is at most used |0|, |1|, or an arbitrary number of times. The cardinality annotation specifies a
-  usage property for a value. For example, the cardinality annotation |1-| means
+  usage property for a value. For example, the cardinality annotation |onemin| means
   that the corresponding value is at most used once.
 
   When we write that a variable is \emph{used}, we actually mean that the memory that
@@ -525,7 +525,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   A type constructor gets a triple with three annotations: a lower-bound usage-count annotation,
   a cardinality annotation, and an upper-bound usage-count annotation. The values of
   the two bound annotations are totally ordered (|0 <= 1 <= *|). Cardinality annotations are partially
-  ordered, but almost incomparable: |0 <= 0, 1- <= 1-, 1- <= *, 1 <= 1, 1+ <= 1+, * <= *|. Only
+  ordered, but almost incomparable: |0 <= 0, onemin <= onemin, onemin <= *, 1 <= 1, oneplus <= oneplus, * <= *|. Only
   a value that is at most used once can be weakened to a value that is used an arbitrary number
   of times. This is where the term coercion comes from. The fact that a value is used at most once
   may be forgotten, but can require the insertion of some coercion function, depending on the
@@ -543,12 +543,12 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   \caption{Consistency of tripples}
 
 %%[[wrap=code
-  fits  (0,  0,   0)  = True
-  fits  (1,  1,   1)  = True
-  fits  (1,  1+,  h)  = h >= 1
-  fits  (_,  1-,  1)  = True
-  fits  (l,  *,   h)  = l <= h
-  fits  (_,  _,   _)  = False
+  fits  (0,  0,        0)  = True
+  fits  (1,  1,        1)  = True
+  fits  (1,  oneplus,  h)  = h >= 1
+  fits  (_,  onemin,   1)  = True
+  fits  (l,  *,        h)    = l <= h
+  fits  (_,  _,        _)  = False
 %%]
   \end{figure}
 
@@ -563,7 +563,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
 %%[[wrap=code
   constr  ::=  (low,use,up) =>= (low,use,up)                          -- coercion
           |    (low,use,up) (Sub(=>=)(s)) (low,use,up)                -- coercion (ignores use)
-          |    (low,use,up) \+/ ... \+/ (low,use,up) <= (low,use,up)  -- aggregation
+          |    (low,use,up) \*/ ... \*/ (low,use,up) <= (low,use,up)  -- aggregation
 %%]
 
   As demonstrated in the examples, the coercion constraint (|=>=|) is used to propagate usage
@@ -686,16 +686,13 @@ weakCoercionSatisfied (a, b, c) (d, e, f)
   \label{splitFunc}
   \caption{The isSplit function.}
 
-%format eenp = (Sup(1)(+))
-%format eenm = (Sup(1)(-))
-
 %%[[wrap=code
-isSplit as 0     = all (== 0) as
-isSplit as 1     =  let (eq0, neq0) = partition (== 0) as
-                    in length neq0 == 1 && head neq0 == 1
-isSplit as eenp  = length as > 0 && any (== 1+) as && all (/= 0) as && all (/= 1) as
-isSplit as eenm  = all (== 1-) as
-isSplit as *     = all (== *) as
+isSplit as 0        = all (== 0) as
+isSplit as 1        =  let (eq0, neq0) = partition (== 0) as
+                       in length neq0 == 1 && head neq0 == 1
+isSplit as oneplus  = length as > 0 && any (== oneplus) as && all (/= 0) as && all (/= 1) as
+isSplit as onemin   = all (== onemin) as
+isSplit as *        = all (== *) as
 %%]
   \end{figure}
 
@@ -714,7 +711,7 @@ aggregationSatisfied [((Sub(a)(1)), (Sub(b)(1)), (Sub(c)(1))), ..., ((Sub(a)(b))
   Note that when $n = 0$, |(Sub(a)(1))  `max` ... `max` (Sub(a)(n)) === 0| and |(Sub(c)(1)) +  ...  +  (Sub(c)(n)) === 0|.
   If an identifier does not occur syntactically, then the value cannot be touched though that identifier, and the lower
   bound corresponding to the type of the identifier is forced to |0| and the upper bound can be anything.
-  
+
   All occurrences of an identifier point to the same value. So, if one occurrence of an identifier has a lower bound
   of |1|, it means that the occurrence is evaluated at least once, so the value is used at least once. We approximate the
   lower bound by taking the maximum of all lower bounds.
