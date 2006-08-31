@@ -115,8 +115,10 @@ DATA Err
 
 %%[12
 DATA Err
-  | ModNameMismatch		nmOfFile   : HsName
-    					nmFromSrc  : HsName
+  | ModNameMismatch     nmOfFile   : HsName
+                        nmFromSrc  : HsName
+  | AmbiguousNameRef    nm         : HsName
+                        nmAlts     : {[HsName]}
 %%]
 
 

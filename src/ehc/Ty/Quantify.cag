@@ -7,7 +7,7 @@
 %%% Module itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[3 hs module {%{EH}Ty.Quantify} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyQuantify, tyQuantifyClosed)
+%%[3 hs module {%{EH}Ty.Quantify} import(EH.Util.Utils,{%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyQuantify, tyQuantifyClosed)
 %%]
 
 %%[4 hs import({%{EH}Base.Debug},UU.Pretty)
@@ -23,7 +23,7 @@ WRAPPER TyAGItf
 %%[6 hs export(kiQuantify)
 %%]
 
-%%[9 hs import(Data.Maybe,UU.Pretty) export(tyQuantifyPr,tyQuantifyRank,TyQuOut(..),TyQuOpts(..),defaultTyQuOpts)
+%%[9 hs import(Data.Maybe,EH.Util.Utils,UU.Pretty) export(tyQuantifyPr,tyQuantifyRank,TyQuOut(..),TyQuOpts(..),defaultTyQuOpts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

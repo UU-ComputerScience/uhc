@@ -25,7 +25,7 @@ ATTR Body [ | | eh: {EH.Expr} ]
 %%[1.hsnMain
 SEM Body
     | Body
-        lhs         .   eh          =   rngLift @range EH.Expr_IConst 0
+        lhs         .   eh          =   @mkSccLet (rngLift @range EH.Expr_IConst 0)
 %%]
 
 %%[8 -1.hsnMain
@@ -376,7 +376,7 @@ SEM Expression
     | Typed
         loc         .   eh          =   rngLift @range EH.Expr_TypeAs @type.eh @expression.eh
     | Negate
-        loc         .   eh          =   ehExpVarApp @range hsnNegate [@expression.eh]
+        loc         .   eh          =   ehExpVarApp @range @refname [@expression.eh]
 %%]
 %%[4
     | ImpredicativeApplication
@@ -384,17 +384,22 @@ SEM Expression
 %%]
 %%[5
     | If
-        loc         .   eh          =   EH.mkIf @range @guardExpression.eh @thenExpression.eh @elseExpression.eh
+        loc         .   eh          =   EH.mkIf' (@typerefname : @valrefnames) @range @guardExpression.eh @thenExpression.eh @elseExpression.eh
     | Case
         loc         .   eh          =   rngLift @range EH.Expr_Case @expression.eh @alternatives.eh
     | List
-        loc         .   eh          =   foldr (\l r -> ehExpConApp @range hsnListCons [l,r]) (EH.Expr_Con hsnListNil) @expressions.eh
+        loc         .   eh          =   foldr (\l r -> ehExpConApp @range (@refnames !! 0) [l,r]) (EH.Expr_Con (@refnames !! 1)) @expressions.eh
     | Enum
-        loc         .   (eh,enumNm) =   case (@from.eh,@then.eh,@to.eh) of
-                                          (fr,Just th,Just to) -> (ehExpVarApp @range hsnEnumFromThenTo [fr,th,to],hsnEnumFromThenTo)
-                                          (fr,Just th,Nothing) -> (ehExpVarApp @range hsnEnumFromThen   [fr,th   ],hsnEnumFromThen  )
-                                          (fr,Nothing,Just to) -> (ehExpVarApp @range hsnEnumFromTo     [fr   ,to],hsnEnumFromTo    )
-                                          (fr,Nothing,Nothing) -> (ehExpVarApp @range hsnEnumFrom       [fr      ],hsnEnumFrom      )
+        loc         .   enumNm      =   case (@from.eh,@then.eh,@to.eh) of
+                                          (fr,Just th,Just to) -> hsnEnumFromThenTo
+                                          (fr,Just th,Nothing) -> hsnEnumFromThen  
+                                          (fr,Nothing,Just to) -> hsnEnumFromTo    
+                                          (fr,Nothing,Nothing) -> hsnEnumFrom      
+                    .   eh          =   case (@from.eh,@then.eh,@to.eh) of
+                                          (fr,Just th,Just to) -> ehExpVarApp @range @refname [fr,th,to]
+                                          (fr,Just th,Nothing) -> ehExpVarApp @range @refname [fr,th   ]
+                                          (fr,Nothing,Just to) -> ehExpVarApp @range @refname [fr   ,to]
+                                          (fr,Nothing,Nothing) -> ehExpVarApp @range @refname [fr      ]
     | Comprehension
         loc         .   eh          =   foldr ($) @expression.eh @qualifiers.eh
 %%]
@@ -473,15 +478,15 @@ ATTR Statement [ | | eh: {(EH.Expr,EH.Expr -> EH.Expr)} ]
 
 SEM Statement
     | Expression
-        lhs         .   eh          =   (@expression.eh,\e -> ehExpVarApp @range hsnMonadSeq [@expression.eh,e])
+        lhs         .   eh          =   (@expression.eh,\e -> ehExpVarApp @range @refname [@expression.eh,e])
     | Let
         lhs         .   eh          =   (EH.mkUnit @range,@mkSccLet)
     | Generator
         lhs         .   eh          =   (@expression.eh
                                         ,ehGenerator
                                            @range @pattern.eh
-                                           (\e -> ehExpVarApp @range hsnMonadBind [@expression.eh,e])
-                                           (EH.mkError' hsnMonadFail @range "monadic bind")
+                                           (\e -> ehExpVarApp @range (@refnames !! 0) [@expression.eh,e])
+                                           (EH.mkError' (@refnames !! 1) @range "monadic bind")
                                         )
     | Empty
         lhs         .   eh          =   (undefined,id)
@@ -494,16 +499,16 @@ ATTR Qualifier [ | | eh: {EH.Expr -> EH.Expr} ]
 
 SEM Qualifier
     | Guard
-        lhs         .   eh          =   \e -> EH.mkIf @range @guard.eh e (semCon hsnListNil)
+        lhs         .   eh          =   \e -> EH.mkIf' (@typerefname : @valrefnames) @range @guard.eh e (semCon (@valrefnames !! 2))
     | Let
         lhs         .   eh          =   @mkSccLet
     | Generator
         lhs         .   eh          =   ehGenerator
                                            @range @pattern.eh
-                                           (\e -> ehExpVarApp @range hsnConcatMap [e,@expression.eh])
-                                           (semCon hsnListNil)
+                                           (\e -> ehExpVarApp @range (@refnames !! 0) [e,@expression.eh])
+                                           (semCon (@refnames !! 1))
     | Empty
-        lhs         .   eh          =   \e -> ehExpConApp @range hsnListCons [e,semCon hsnListNil]
+        lhs         .   eh          =   \e -> ehExpConApp @range (@refnames !! 0) [e,semCon (@refnames !! 1)]
 %%]
 
 %%[5
@@ -523,7 +528,7 @@ ATTR GuardedExpression [ | | eh: {EH.Expr -> EH.Expr} ]
 
 SEM GuardedExpression -- ToDo: or _Guard?
     | GuardedExpression
-        lhs         .   eh          =   EH.mkIf @range @guard.eh @expression.eh
+        lhs         .   eh          =   EH.mkIf' (@typerefname : @valrefnames) @range @guard.eh @expression.eh
 %%]
 
 %%[7
@@ -724,7 +729,7 @@ SEM Pattern
     | InfixConstructor
         lhs         .   eh          =   ehPatConApp @range @refname [@leftPattern.eh,@rightPattern.eh]
     | List
-        lhs         .   eh          =   foldr (\l r -> ehPatConApp @range hsnListCons [l,r]) (semCon hsnListNil) @patterns.eh
+        lhs         .   eh          =   foldr (\l r -> ehPatConApp @range (@refnames !! 0) [l,r]) (semCon (@refnames !! 1)) @patterns.eh
 %%]
 %%[77
     | Record

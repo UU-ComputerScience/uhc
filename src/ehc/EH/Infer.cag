@@ -189,7 +189,7 @@ SEM AGItf
   | AGItf       expr        .   valGam              =   emptyGam
 %%]
 
-%%[12 -6.initValGam
+%%[12 -1.initValGam
 ATTR AGItf [ valGam: ValGam | | ]
 %%]
 

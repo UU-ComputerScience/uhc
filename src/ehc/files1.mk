@@ -45,8 +45,9 @@ EHC_HS_MAIN_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_P
 EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													Substitutable Gam Cnstr Pred Module \
 													Base/Opts Base/Common Base/Debug \
+													NameAspect \
 													Scanner/Common Scanner/Machine Scanner/Scanner Scanner/Token Scanner/TokenParser \
-													EH/Parser HS/Parser GrinCode/Parser \
+													EH/Parser HS/Parser HI/Parser GrinCode/Parser \
 													Ty/FitsInCommon Ty/FitsIn \
 													Core/Utils \
 													Gam/Utils \
@@ -81,11 +82,32 @@ $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_AGH
 
 EHC_AGHSMAIN_MAIN_SRC_CAG				:= $(patsubst %,$(SRC_EHC_PREFIX)HS/%.cag,MainAG)
 EHC_AGHSMAIN_DPDS_SRC_CAG				:= $(patsubst %,$(SRC_EHC_PREFIX)HS/%.cag,AbsSyn \
-													EH Fixity Pretty NameAnalysis Module Uniq \
+													EH Fixity Pretty Module Uniq \
+													NameAnalysis NameDef NameLevel \
 													ExtraChecks GatherError \
 											)
 $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_AGHSMAIN_MAIN_SRC_CAG)) \
 										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_AGHSMAIN_DPDS_SRC_CAG))
+
+EHC_AGHSIMPEXP_MAIN_SRC_CAG				:= $(patsubst %,$(SRC_EHC_PREFIX)HS/%.cag,ModImpExp)
+EHC_AGHSIMPEXP_DPDS_SRC_CAG				:= $(patsubst %,$(SRC_EHC_PREFIX)HS/%.cag,AbsSyn \
+													NameDef NameLevel \
+													Module Uniq \
+											)
+$(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_AGHSIMPEXP_MAIN_SRC_CAG)) \
+										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_AGHSIMPEXP_DPDS_SRC_CAG))
+
+EHC_AGHIAST_MAIN_SRC_CAG				:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,HI)
+EHC_AGHIAST_DPDS_SRC_CAG				:= $(patsubst %,$(SRC_EHC_PREFIX)HI/%.cag,AbsSyn)
+$(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_AGHIAST_MAIN_SRC_CAG)) \
+										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_AGHIAST_DPDS_SRC_CAG))
+
+EHC_AGHIMAIN_MAIN_SRC_CAG				:= $(patsubst %,$(SRC_EHC_PREFIX)HI/%.cag,MainAG)
+EHC_AGHIMAIN_DPDS_SRC_CAG				:= $(patsubst %,$(SRC_EHC_PREFIX)HI/%.cag,AbsSyn \
+													Pretty Uniq \
+											)
+$(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_AGHIMAIN_MAIN_SRC_CAG)) \
+										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_AGHIMAIN_DPDS_SRC_CAG))
 
 EHC_AGTY_MAIN_SRC_CAG					:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty)
 EHC_AGTY_DPDS_SRC_CAG					:= $(patsubst %,$(SRC_EHC_PREFIX)Ty/%.cag,AbsSyn)
@@ -225,6 +247,7 @@ $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_AGG
 EHC_AG_D_MAIN_SRC_CAG					:= \
 											$(EHC_AGEHAST_MAIN_SRC_CAG) \
 											$(EHC_AGHSAST_MAIN_SRC_CAG) \
+											$(EHC_AGHIAST_MAIN_SRC_CAG) \
 											$(EHC_AGTY_MAIN_SRC_CAG) \
 											$(EHC_AGCORE_MAIN_SRC_CAG) \
 											$(EHC_AGGRINCODE_MAIN_SRC_CAG) \
@@ -233,6 +256,8 @@ EHC_AG_D_MAIN_SRC_CAG					:= \
 EHC_AG_S_MAIN_SRC_CAG					:= \
 											$(EHC_AGEHMAIN_MAIN_SRC_CAG) \
 											$(EHC_AGHSMAIN_MAIN_SRC_CAG) \
+											$(EHC_AGHSIMPEXP_MAIN_SRC_CAG) \
+											$(EHC_AGHIMAIN_MAIN_SRC_CAG) \
 											$(EHC_AGERR_PRETTY_MAIN_SRC_CAG) \
 											$(EHC_AGCORE_JAVA_MAIN_SRC_CAG) \
 											$(EHC_AGCORE_GRIN_MAIN_SRC_CAG) \
@@ -266,6 +291,9 @@ EHC_AG_ALL_DPDS_SRC_CAG					:= $(sort \
 											$(EHC_AGEHMAIN_DPDS_SRC_CAG) \
 											$(EHC_AGHSAST_DPDS_SRC_CAG) \
 											$(EHC_AGHSMAIN_DPDS_SRC_CAG) \
+											$(EHC_AGHSIMPEXP_DPDS_SRC_CAG) \
+											$(EHC_AGHIAST_DPDS_SRC_CAG) \
+											$(EHC_AGHIMAIN_DPDS_SRC_CAG) \
 											$(EHC_AGCORE_DPDS_SRC_CAG) \
 											$(EHC_AGCORE_JAVA_DPDS_SRC_CAG) \
 											$(EHC_AGCORE_GRIN_DPDS_SRC_CAG) \

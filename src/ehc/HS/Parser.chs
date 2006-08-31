@@ -7,10 +7,13 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}HS.Parser} import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.GenToken, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}HS})
+%%[1 module {%{EH}HS.Parser} import(IO, UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils(LayoutParser,PlainParser), UU.Scanner.GenToken, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}HS})
 %%]
 
 %%[1 export(pAGItf, HSParser)
+%%]
+
+%%[12 export(pFixity, HSParser')
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -30,8 +33,8 @@ tokEmpty = Reserved "" noPos
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
-type HSParser         ep    =    (IsParser (OffsideParser i o Token p) Token,InputState i Token p, OutputState o, Position p)
-                                    => OffsideParser i o Token p ep
+type HSParser         ep    =    LayoutParser Token ep
+type HSParser'        ep    =    PlainParser Token ep
 %%]
 
 %%[1
@@ -240,9 +243,12 @@ pWhere = pWhere' pDeclaration
 pDeclarationFixity :: HSParser Declaration
 pDeclarationFixity
   = (\f p o -> Declaration_Fixity emptyRange f p (mkQNames o))
-    <$> (Fixity_Infixl <$ pINFIXL <|> Fixity_Infixr <$ pINFIXR <|> Fixity_Infix <$ pINFIX)
+    <$> pFixity
     <*> ((Just . mkInt) <$> pInteger10Tk <|> pSucceed Nothing)
     <*> pListSep pCOMMA varop
+
+pFixity :: HSParser' Fixity
+pFixity = Fixity_Infixl <$ pINFIXL <|> Fixity_Infixr <$ pINFIXR <|> Fixity_Infix <$ pINFIX
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

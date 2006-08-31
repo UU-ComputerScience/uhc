@@ -1,0 +1,78 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printed source
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12 hs
+hiNV :: String -> HsName -> [PP_Doc] -> PP_Doc
+hiNV k n v = k >#< ppHINm n >-< indent 1 ("=" >#< ppCurlysSemis v)
+
+ppCurlysSemis :: PP a => [a] -> PP_Doc
+ppCurlysSemis = pp_block "{ " "}" "; " . map pp
+
+ppHINm :: HsName -> PP_Doc
+ppHINm = ppHsnNonAlpha hiScanOpts
+%%]
+ppAttr :: PP b => HsName -> b -> PP_Doc
+ppAttr a b = ppHINm a >#< ":" >#< b
+
+
+%%[12 hs
+cfgPPTyHI :: CfgPPTy
+cfgPPTyHI
+  = cfgPPTyConViaCfg
+      { cfgPPTyPPHsn        = ppHINm
+      , cfgPPTyFollowAST    = True
+      , cfgPPTyPPVar        = \c u _ -> pp u
+      }
+%%]
+
+%%[2
+ATTR AllNT AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
+%%]
+
+%%[12
+SEM Module
+    | Module
+        lhs         .   pp          =   hiNV "module" @nm @bindings.ppL
+
+SEM Binding
+    | Stamp
+        lhs         .   pp          =   hiNV "stamp" hsnUnknown [pp $ show $ @timestamp,pp $ show $ @hash]
+    | Fixity
+        lhs         .   pp          =   hiNV "fixity" @nm [pp @prio,pp @fixity]
+    | Val
+        lhs         .   pp          =   hiNV "value" @nm [ppTyWithCfg cfgPPTyHI @ty]
+    | DataCon
+        lhs         .   pp          =   let ppCTag t = ppCommas [pp (ctagTag' t),pp (ctagArity t)]
+                                        in  hiNV "data" @nm (map (\(n,t) -> ppHINm n >#< "=" >#< ppCTag t) @tags)
+    | Ty
+        lhs         .   pp          =   hiNV "type" @nm [ppTyWithCfg cfgPPTyHI @ty,ppTyWithCfg cfgPPTyHI @ki]
+    | Class
+        lhs         .   pp          =   hiNV "class" @nm [ppTyWithCfg cfgPPTyHI @prToEvidTy,@rule.pp]
+    | Instance
+        lhs         .   pp          =   hiNV "instance" @nm @rules.ppL
+%%]
+
+%%[12
+SEM Rule
+    | Rule
+        lhs         .   pp          =   hiNV "rule" @nm [ppTyWithCfg cfgPPTyHI @ty,pp @uid,pp @mkEvid,pp @cost]
+%%]
+
+%%[12
+ATTR
+  Bindings Rules
+    [ | | ppL: {[PP_Doc]} ]
+
+SEM Bindings
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+
+SEM Rules
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+%%]

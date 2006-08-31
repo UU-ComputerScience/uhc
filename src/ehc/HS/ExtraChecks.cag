@@ -2,6 +2,13 @@
 %%% Additional checks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[1
+SEM Body
+    | Body
+        loc         .   errUndef    =   let ns = [ (ioccNm o >#< ppParens (ioccKind o),Just (map uoccRange os)) | (o,os) <- gamToAssocDupL @declarations.undefOccGam, not $ hsnIsProd $ ioccNm $ o ]
+                                        in  (if null ns then [] else [mkErr_NamesNotIntrod' "" ns])
+%%]
+
 %%[9 hs
 %%]
 idDefOccGamCheckAllowedKind :: String -> [IdOccKind] -> IdDefOccGam -> [Err]

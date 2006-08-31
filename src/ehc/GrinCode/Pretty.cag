@@ -47,9 +47,6 @@ ppGrPat tg
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-grNmEscapeeChars :: [Char]
-grNmEscapeeChars = '$' : scoSpecChars scanOpts ++ scoOpChars scanOpts
-
 ppCurlysSemis :: PP_Doc -> PP_Doc
 ppCurlysSemis p = ppCurlysSemisV [p]
 
@@ -57,13 +54,7 @@ ppCurlysSemisV :: [PP_Doc] -> PP_Doc
 ppCurlysSemisV pL = pp_block "{ " "} " "; " pL
 
 ppGrNm :: HsName -> PP_Doc
-ppGrNm n
-  =  let name = show n
-     in  {- if name `elem`  scoKeywordsTxt scanOpts
-          then pp ('$' : '_' : name)
-          else -} 
-               let s = foldr (\c r -> if c `elem` grNmEscapeeChars then '$':c:r else c:r) [] name
-                in  pp ('$':s)
+ppGrNm = ppHsnNonAlpha scanOpts
 
 ppEvApTagElt :: EvApTagElt -> PP_Doc
 ppEvApTagElt e

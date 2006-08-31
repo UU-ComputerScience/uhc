@@ -7,7 +7,7 @@
 %%% Gamma (aka Assumptions, Environment)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Gam} import(Data.List,EH.Util.Utils,{%{EH}Base.Common}) export(Gam,emptyGam,gamMap,gamLookup,gamLookupDup, gamPushNew, gamPop, gamTop, gamAddGam, gamUnit, gamAdd, gamPushGam, gamToAssocL, gamToAssocDupL, gamToDups, assocLToGam, assocDupLToGam,gamKeys)
+%%[1 module {%{EH}Gam} import(Data.List,EH.Util.Utils,{%{EH}Base.Common},{%{EH}NameAspect}) export(Gam,emptyGam,gamMap,gamLookup,gamLookupDup, gamPushNew, gamPop, gamTop, gamAddGam, gamUnit, gamAdd, gamPushGam, gamToAssocL, gamToAssocDupL, gamToDups, assocLToGam, assocDupLToGam,gamKeys)
 %%]
 
 %%[1 import({%{EH}Ty},{%{EH}Error}) export(ValGam, ValGamInfo(..), valGamLookup,valGamLookupTy)
@@ -23,6 +23,9 @@
 %%]
 
 %%[1 export(gamSingleton,gamInsert,gamUnion,gamUnions,gamFromAssocL)
+%%]
+
+%%[1 export(IdDefOccGam,IdDefOccAsc)
 %%]
 
 %%[2 import({%{EH}Cnstr},{%{EH}Substitutable})
@@ -70,10 +73,16 @@
 %%[9 import({%{EH}Base.Debug},{%{EH}Core.Subst},{%{EH}Ty.FitsInCommon}) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
 %%]
 
-%%[9 export(TreeGam,emptyTGam,tgamUnit,tgamLookup,tgamLookupAll,tgamElts,tgamPushNew,tgamAddGam,tgamPushGam,tgamAdd,tgamPop,tgamUpdAdd,tgamUpd,tgamMbUpd,tgamInScopes,tgamIsInScope)
+%%[9 export(TreeGam,emptyTGam,tgamUnit,tgamLookup,tgamLookupAll,tgamElts,tgamPushNew,tgamAddGam,tgamPushGam,tgamAdd,tgamPop,tgamUpdAdd,tgamUpd,tgamMbUpd,tgamInScopes,tgamIsInScope,tgamToAssocL)
 %%]
 
 %%[9 export(ppTGam)
+%%]
+
+%%[9 export(idDefOccGamPartitionByKind)
+%%]
+
+%%[12 export(idDefOccGamByKind)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -730,6 +739,26 @@ appSpineGam =  assocLToGam
 data KiGamInfo = KiGamInfo { kgiKi :: Ty } deriving Show
 
 type KiGam = Gam HsName KiGamInfo
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Identifier definition occurrence gam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+type IdDefOccGam = Gam    IdOcc  IdDefOcc
+type IdDefOccAsc = AssocL IdOcc [IdDefOcc]
+%%]
+
+%%[9 hs
+idDefOccGamPartitionByKind :: [IdOccKind] -> IdDefOccGam -> (IdDefOccAsc,IdDefOccAsc)
+idDefOccGamPartitionByKind ks
+  = partition (\(IdOcc n k',_) -> k' `elem` ks) . gamToAssocDupL
+%%]
+
+%%[12 hs
+idDefOccGamByKind :: IdOccKind -> IdDefOccGam -> AssocL HsName IdDefOcc
+idDefOccGamByKind k g = [ (n,head i) | (IdOcc n _,i) <- fst (idDefOccGamPartitionByKind [k] g) ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

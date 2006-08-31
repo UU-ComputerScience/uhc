@@ -7,7 +7,7 @@
 %%% Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Base.Common}
+%%[1 module {%{EH}Base.Common} import(EH.Util.Utils)
 %%]
 
 %%[1 import(UU.Scanner.Position) export(HSNM(..),HsName(..), hsnWild, hsnArrow, strProd, hsnProd, hsnProdArity, hsnUnknown, hsnIsArrow, hsnIsProd, hsnInt, hsnChar)
@@ -22,7 +22,7 @@
 %%[1 export(AssocL, ppAssocL)
 %%]
 
-%%[1.exp.hdAndTl export(hdAndTl, hdAndTl')
+%%[1111.exp.hdAndTl export(hdAndTl, hdAndTl')
 %%]
 
 %%[1 import(UU.Pretty, EH.Util.PPUtils,Data.List) export(ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
@@ -47,6 +47,9 @@
 %%]
 
 %%[1 export(assocLMapElt,assocLMapKey)
+%%]
+
+%%[1 export(NmLev,nmLevAbsent, nmLevBuiltin, nmLevOutside, nmLevModule)
 %%]
 
 %%[2 export(mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, uidNext, mkNewUID, uidChild, mkNewUIDL, mkInfNewUIDL)
@@ -85,7 +88,7 @@
 %%[7 export(uidHNm)
 %%]
 
-%%[8 -(1.exp.hdAndTl 1.Misc.hdAndTl) import (EH.Util.Utils hiding (tr,trp)) export(module EH.Util.Utils)
+%%[8888 -(1.exp.hdAndTl 1.Misc.hdAndTl) import (EH.Util.Utils hiding (tr,trp)) export(module EH.Util.Utils)
 %%]
 
 %%[8 import (EH.Util.FPath,IO,Char,Data.Maybe) export(Verbosity(..),putCompileMsg, openFPath,writeToFile, writePP)
@@ -98,6 +101,9 @@
 %%]
 
 %%[8 export(hsnUndefined,hsnPrimAddInt,hsnMain)
+%%]
+
+%%[8 import(qualified Data.Set as Set, EH.Util.ScanUtils) export(ppHsnNonAlpha)
 %%]
 
 %%[88 export(sortByOn,sortOn,groupOn,groupSortOn)
@@ -142,10 +148,13 @@
 %%[10 export(hsnDynVar,hsnConcat)
 %%]
 
-%%[12 export(hsnQualified,hsnQualifier,hsnPrefixQual,hsnSetQual,hsnIsQual)
+%%[12 export(hsnQualified,hsnQualifier,hsnPrefixQual,hsnSetQual,hsnIsQual,hsnSetLevQual)
 %%]
 
-%%[99 export(hsnInteger,hsnDouble)
+%%[12 export(hsnModBuiltin)
+%%]
+
+%%[99 export(hsnInteger,hsnDouble,hsnModPrelude)
 %%]
 
 %%[5 export(hsnEnumFromThenTo,hsnEnumFromThen,hsnEnumFromTo,hsnEnumFrom,hsnConcatMap)
@@ -303,6 +312,10 @@ hsnSetQual m = hsnPrefixQual m . hsnQualified
 
 hsnIsQual :: HsName -> Bool
 hsnIsQual = isJust . hsnQualifier
+
+hsnSetLevQual :: Int -> HsName -> HsName -> HsName
+hsnSetLevQual 0 m n = hsnSetQual m n
+hsnSetLevQual _ _ n = n
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -517,6 +530,14 @@ hsnMonadBind                        =   HNm ">>="
 hsnMonadFail                        =   HNm "fail"
 %%]
 
+%%[12
+hsnModBuiltin						=	mkHNm "#Builtin"
+%%]
+
+%%[99
+hsnModPrelude						=	mkHNm "Prelude"
+%%]
+
 %%[99
 hsnFromInteger                      =   HNm "fromInteger"
 hsnFromRational                     =   HNm "fromRational"
@@ -544,6 +565,27 @@ hsnUniqSupplyL = map uidHNm . iterate uidNext
 
 hsnLclSupplyL :: [HsName]
 hsnLclSupplyL = map (\i -> HNm ("_" ++ show i)) [1..]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Printing of names with non-alpha numeric constants
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+hsnEscapeeChars :: ScanOpts -> Set.Set Char
+hsnEscapeeChars scanOpts
+  = Set.fromList ('$' : scoSpecChars scanOpts ++ scoOpChars scanOpts)
+
+ppHsnNonAlpha :: ScanOpts -> HsName -> PP_Doc
+ppHsnNonAlpha scanOpts
+  = p
+  where escapeeChars = hsnEscapeeChars scanOpts
+        p n = let name = show n
+              in  {- if name `elem`  scoKeywordsTxt scanOpts
+                   then pp ('$' : '_' : name)
+                   else -} 
+                        let s = foldr (\c r -> if c `Set.member` escapeeChars then '$':c:r else c:r) [] name
+                         in  pp ('$':s)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -806,9 +848,9 @@ ppListSepFill o c s pps
 %%]
 
 %%[7
-ppFld :: String -> HsName -> HsName -> PP_Doc -> PP_Doc
-ppFld sep positionalNm nm f
-  = if nm == positionalNm then f else nm >#< sep >#< f
+ppFld :: String -> HsName -> HsName -> PP_Doc -> PP_Doc -> PP_Doc
+ppFld sep positionalNm nm nmPP f
+  = if nm == positionalNm then f else nmPP >#< sep >#< f
 
 mkPPAppFun :: HsName -> PP_Doc -> PP_Doc
 mkPPAppFun c p = if c == hsnRowEmpty then empty else p >|< "|"
@@ -1060,13 +1102,13 @@ instance PP FIMode where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.Misc.hdAndTl
+%%]
 hdAndTl' :: a -> [a] -> (a,[a])
 hdAndTl' _ (a:as) = (a,as)
 hdAndTl' n []     = (n,[])
 
 hdAndTl :: [a] -> (a,[a])
 hdAndTl = hdAndTl' undefined
-%%]
 
 %%[2.unions
 unions :: Eq a => [[a]] -> [a]
@@ -1236,6 +1278,9 @@ data IdOccKind
   | IdOcc_Dflt
 %%]
   | IdOcc_Any
+%%[[12
+  | IdOcc_Data
+%%]
   deriving (Show,Eq,Ord)
 %%]
 
@@ -1253,6 +1298,9 @@ instance PP IdOccKind where
   pp IdOcc_Dflt     = pp "Default"
 %%]
   pp IdOcc_Any      = pp "Any"
+%%[[12
+  pp IdOcc_Data     = pp "Data"
+%%]
 %%]
 
 %%[1 hs
@@ -1262,5 +1310,19 @@ data IdOcc
 
 instance PP IdOcc where
   pp (IdOcc n k) = n >|< "/" >|< k
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Levels
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+type NmLev = Int
+
+nmLevAbsent, nmLevBuiltin, nmLevOutside, nmLevModule :: NmLev
+nmLevAbsent  = -3
+nmLevBuiltin = -2
+nmLevOutside = -1
+nmLevModule  =  0
 %%]
 

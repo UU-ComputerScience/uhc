@@ -1,13 +1,15 @@
 module EH.Util.Rel
   ( Rel
   , empty
-  , toList, fromList, singleton
+  , toList, fromList
+  , singleton
   , dom, rng
   , restrictDom, restrictRng
   , mapDom, mapRng
   , partitionDom
   , intersection, difference, union, unions
   , apply
+  , toDomMap, toRanMap
   )
   where
 
@@ -67,4 +69,10 @@ unions = Set.unions
 
 apply :: (Ord a, Ord b) => Rel a b -> a -> [b]
 apply r a = Set.toList $ rng $ restrictDom (==a) $ r
+
+toDomMap :: Ord a => Rel a b -> Map.Map a [b]
+toDomMap r = Map.unionsWith (++) [ Map.singleton a [b] | (a,b) <- toList r ]
+
+toRanMap :: Ord b => Rel a b -> Map.Map b [a]
+toRanMap r = Map.unionsWith (++) [ Map.singleton b [a] | (a,b) <- toList r ]
 

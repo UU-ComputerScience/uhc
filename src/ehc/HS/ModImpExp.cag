@@ -1,0 +1,30 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell interface to module import/export info extraction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%[12 hs module {%{EH}HS.ModImpExp} import({%{EH}Base.Common}, {%{EH}HS}, {%{EH}Gam}, {%{EH}NameAspect})
+%%]
+
+%%[12 hs export(Inh_AGItf(..),Syn_AGItf(..),sem_AGItf,wrap_AGItf)
+%%]
+
+%%[12 hs import(qualified Data.Set as Set)
+%%]
+
+%%[12 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Import of all separate aspects
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 import({HS/AbsSyn},{HS/NameLevel},{HS/NameDef},{HS/Module},{HS/Uniq})
+WRAPPER AGItf
+%%]
+

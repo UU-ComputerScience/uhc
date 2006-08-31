@@ -1,0 +1,302 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Defining name occurrences
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module name
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR
+  AGItf AllModule AllDeclaration AllFunctionBinding LeftHandSide AllFieldDeclaration AllConstructor
+  AllExpression AllPattern AllRowRecordPatternBinding
+    [ moduleNm: HsName | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The actual name (refname) used for referring to defining occurrences
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.Declaration.refname
+SEM Declaration
+    | Fixity
+        loc             .   oprefnames  =   @operators
+    | TypeSignature
+        loc             .   refnames    =   @names
+%%[[5
+    | Data Newtype
+        loc             .   typerefname =   @simpletype.name
+%%]
+%%[[8
+    | ForeignImport ForeignExport
+        loc             .   refname     =   @name
+%%]
+%%[[9
+    | Class Instance InstanceUseImplicitly
+        loc             .   instancerefname
+                                        =   @instancename
+    | Class
+        loc             .   classrefname=   @simpletype.name
+%%]
+%%[[11
+    | Type
+        loc             .   typerefname =   @simpletype.name
+%%]
+%%]
+    | Instance InstanceUseImplicitly
+        loc             .   classrefname=   @name
+
+%%[12 -1.Declaration.refname
+SEM Declaration
+    | Fixity
+        loc             .   oprefnames  =   map (hsnSetLevQual @lhs.nmLev @lhs.moduleNm) @operators
+    | TypeSignature
+        loc             .   refnames    =   map (hsnSetLevQual @lhs.nmLev @lhs.moduleNm) @names
+    | Data Newtype
+        loc             .   typerefname =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @simpletype.name
+    | ForeignImport ForeignExport
+        loc             .   refname     =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
+    | Class Instance InstanceUseImplicitly
+        loc             .   instancerefname
+                                        =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @instancename
+    | Class
+        loc             .   classrefname=   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @simpletype.name
+    | Type
+        loc             .   typerefname =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @simpletype.name
+%%]
+    | Instance InstanceUseImplicitly
+        loc             .   classrefname=   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
+
+%%[1
+ATTR LeftHandSide [ | | refname: HsName ]
+%%]
+
+%%[1.LeftHandSide.refname
+SEM LeftHandSide
+    | Function
+        loc             .   refname     =   @name
+    | Infix
+        loc             .   refname     =   @operator
+%%]
+
+%%[12 -1.LeftHandSide.refname
+SEM LeftHandSide
+    | Function
+        loc             .   refname     =   hsnSetLevQual @lhs.nmLevFun @lhs.moduleNm @name
+    | Infix
+        loc             .   refname     =   hsnSetLevQual @lhs.nmLevFun @lhs.moduleNm @operator
+%%]
+
+%%[1.Pattern.refname
+SEM Pattern
+    | Variable As
+        loc             .   refname     =   @name
+%%]
+    | InfixConstructor
+        loc             .   refname     =   @constructorOperator
+
+%%[12 -1.Pattern.refname
+SEM Pattern
+    | Variable As
+        loc             .   refname     =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
+%%]
+    | Constructor
+        loc             .   refname     =   @name
+    | InfixConstructor
+        loc             .   refname     =   @constructorOperator
+
+%%[5
+ATTR AllConstructor [ | | conrefnames USE {++} {[]} : Names ]
+%%]
+
+%%[5.Constructor.refname
+SEM Constructor
+    | Constructor
+        loc             .   conrefname  =   @constructor
+    | Infix
+        loc             .   conrefname  =   @constructorOperator
+%%[[7
+SEM Constructor
+    | Record
+        loc             .   conrefname  =   @constructor
+%%]
+%%]
+
+%%[12 -5.Constructor.refname
+SEM Constructor
+    | Constructor Record
+        loc             .   conrefname  =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @constructor
+    | Infix
+        loc             .   conrefname  =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @constructorOperator
+%%]
+
+%%[5
+SEM Constructor
+    | Constructor
+        lhs             .   conrefnames =   [@conrefname]
+    | Infix
+        lhs             .   conrefnames =   [@conrefname]
+%%[[7
+SEM Constructor
+    | Record
+        lhs             .   conrefnames =   [@conrefname]
+%%]
+%%]
+
+%%[7
+ATTR AllFieldDeclaration AllConstructor [ | | fldrefnames USE {++} {[]} : Names ]
+%%]
+
+%%[7.FieldDeclaration.refname
+SEM FieldDeclaration
+    | FieldDeclaration
+        loc             .   fldrefnames =   @names
+%%]
+
+%%[12 -7.FieldDeclaration.refname
+SEM FieldDeclaration
+    | FieldDeclaration
+        loc             .   fldrefnames =   map (hsnSetLevQual @lhs.nmLev @lhs.moduleNm) @names
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name occurrence
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR
+  AllPattern
+  AllDeclaration AllFunctionBinding
+  LeftHandSide
+%%[[7
+  AllRowRecordPatternBinding
+%%]
+    [ | | idOccDefs USE {++} {[]} : {[IdOcc]} ]
+%%]
+
+%%[1
+SEM Declaration
+    | TypeSignature
+        loc             .   idOccDefs 	=   [ IdOcc n IdOcc_Val | n <- @refnames ]
+    | FunctionBindings
+        loc             .   idOccDefs 	=   @bindings.idOccDefs
+    | PatternBinding
+        loc             .   idOccDef    =   IdOcc (maybe (mkHNm @lUniq) id @pattern.mbTopRefname) IdOcc_Pat
+                        .   idOccDefsPat=   [@idOccDef]
+                        .   idOccDefs 	=   @pattern.idOccDefs
+%%]
+%%[5
+    | Data Newtype
+        loc             .   idOccDef    =   IdOcc @typerefname IdOcc_Type
+                        .   idOccDefsCon=   [ IdOcc n IdOcc_Val | n <- @constructors.conrefnames ]
+%%[[7
+                        .   idOccDefsFld=   [ IdOcc n IdOcc_Val | n <- @constructors.fldrefnames ]
+%%]
+                        .   idOccDefs 	=   [@idOccDef]
+                        					++ @idOccDefsCon
+%%[[7
+                        					++ @idOccDefsFld
+%%]
+%%]
+%%[9
+    | Class
+        loc             .   idOccDef    =   IdOcc @classrefname IdOcc_Class
+                        .   idOccDefsSig=   @where.idOccDefs -- !!!! a bit too optimistic, value defs also included (but they are not permitted, checked later only)
+                        .   idOccDefs 	=   [@idOccDef] ++ @idOccDefsSig
+    | Instance
+        loc             .   idOccDef    =   IdOcc @instancerefname IdOcc_Inst
+                        .   idOccDefVal =   IdOcc @instancerefname IdOcc_Val
+                        .   idOccDefs 	=   [@idOccDef,@idOccDefVal]
+    | InstanceUseImplicitly
+        loc             .   idOccDef    =   IdOcc @instancerefname IdOcc_Inst
+                        .   idOccDefs 	=   [@idOccDef]
+    | Default
+        loc             .   idOccDef    =   IdOcc @defaultname IdOcc_Dflt
+                        .   idOccDefs 	=   [@idOccDef]
+%%]
+%%[11
+    | Type
+        loc             .   idOccDef    =   IdOcc @typerefname IdOcc_Type
+                        .   idOccDefs 	=   [@idOccDef]
+%%]
+%%[8
+    | ForeignImport
+        loc             .   idOccDef    =   IdOcc @refname IdOcc_Val
+                        .   idOccDefs 	=   [@idOccDef]
+%%]
+%%[88
+    | ForeignExport -- ??
+        loc             .   idOccDef    =   IdOcc @refname IdOcc_Val
+%%]
+
+%%[1
+SEM FunctionBinding
+    | FunctionBinding
+        loc             .   idOccDef    =   IdOcc @lefthandside.refname IdOcc_Val
+                        .   idOccDefs 	=   [@idOccDef]
+%%]
+
+%%[1
+SEM Pattern
+    | Variable As
+        loc             .   idOccDef    =   IdOcc @refname IdOcc_Val
+    | Variable
+        loc             .   idOccDefs 	=   [@idOccDef]
+    | As
+        loc             .   idOccDefs 	=   [@idOccDef] ++ @pattern.idOccDefs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc: simpletype internal info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+ATTR SimpleType [ | | range: Range  name: Name  typevariables: Names ]
+
+SEM SimpleType
+    | SimpleType
+        lhs         .   range       =   @range
+                    .   name        =   @name
+                    .   typevariables
+                                    =   @typevariables
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc: Pattern internal info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+SEM Pattern
+    | Constructor
+        loc         .   conNm       =   @name
+%%[[5
+    | InfixConstructor
+        loc         .   conNm       =   @constructorOperator
+%%]
+%%]
+
+%%[1
+ATTR Pattern [ | | mbTopRefname: {Maybe HsName} ]
+
+SEM Pattern
+    | Variable As
+        lhs         .   mbTopRefname=   Just @refname
+    | * - Variable As
+        lhs         .   mbTopRefname=   Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc: Instance internal info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+SEM Declaration
+    | Instance
+        loc         .   instancename=   maybe (mkHNm @lUniq) id @maybeinstancename
+    | Class InstanceUseImplicitly
+        loc         .   instancename=   mkHNm @lUniq
+    | Default
+        loc         .   defaultname =   mkHNm @lUniq
+%%]
+
+

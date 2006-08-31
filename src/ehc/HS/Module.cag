@@ -106,39 +106,36 @@ SEM MaybeExports
 ATTR Declaration Declarations Body [ | | modDefsRel USE {`Rel.union`} {Rel.empty}: ModEntRel ]
 
 SEM Declaration
+    | TypeSignature FunctionBindings PatternBinding ForeignImport -- ForeignExport
+        lhs             .   modDefsRel  =   Rel.fromList [ (hsnQualified (ioccNm o),ModEnt IdOcc_Val o Set.empty) | o <- @idOccDefs ]
+    | Type
+        lhs             .   modDefsRel  =   Rel.fromList [ (hsnQualified (ioccNm o),ModEnt IdOcc_Type o Set.empty) | o <- @idOccDefs ]
     | Data Newtype
-        lhs             .   modDefsRel  =   Rel.singleton
+        loc             .   modDefsRel  =   Rel.singleton
                                               @simpletype.name
-                                              (ModEntData @simpletype.name
-                                                          (Set.fromList $ map (ModEntVal . hsnQualified)
-                                                           $ @constructors.conrefnames ++ @constructors.fldrefnames))
-
+                                              (ModEnt IdOcc_Data @idOccDef (Set.fromList @modEntsSub))
+                        .   modEntsSub  =   [ ModEnt IdOcc_Val o Set.empty | o <- @idOccDefsCon ++ @idOccDefsFld ]
+    | Class
+        loc             .   modDefsRel  =   Rel.singleton
+                                              @simpletype.name
+                                              (ModEnt IdOcc_Class @idOccDef (Set.fromList @modEntsSub))
+                        .   modEntsSub  =   [ ModEnt IdOcc_Val o Set.empty | o <- @idOccDefsSig ]
+    | Data Newtype Class
+        lhs             .   modDefsRel  =   @modDefsRel
+                                            `Rel.union`
+                                            Rel.fromList [ (hsnQualified $ ioccNm $ mentIdOcc e,e) | e <- @modEntsSub ]
+    | Instance
+        lhs             .   modDefsRel  =   if @useimplicitly
+                                            then Rel.singleton @instancename (ModEnt IdOcc_Inst @idOccDef Set.empty)
+                                            else Rel.empty
+    | InstanceUseImplicitly
+        lhs             .   modDefsRel  =   Rel.singleton @instancename (ModEnt IdOcc_Inst @idOccDef Set.empty)
+%%]
 SEM Body
     | Body
         lhs             .   modDefsRel  =   @declarations.modDefsRel
                                             `Rel.union` 
-                                            (Rel.fromList [ (n,ModEntVal n) | (n,_) <- idDefOccGamByKind IdOcc_Val @declarations.idOccDefGam ])
-SEM Declaration
-    | Class
-        lhs             .   modDefsRel  =   Rel.singleton
-                                              @simpletype.name
-                                              (ModEntClass @simpletype.name
-                                                           (Set.fromList [ ModEntVal n | (n,_) <- idDefOccGamByKind IdOcc_Val @where.idOccDefGam ]))
-    | Instance
-        lhs             .   modDefsRel  =   if @useimplicitly
-                                            then Rel.singleton @instancename (ModEntImplicitInstance @instancename)
-                                            else Rel.empty
-    | InstanceUseImplicitly
-        lhs             .   modDefsRel  =   Rel.singleton @instancename (ModEntImplicitInstance @instancename)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Is toplevel mod?
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[12
-ATTR Module AGItf [ isTopMod: Bool | | ]
-%%]
+                                            (Rel.fromList [ (hsnQualified n,ModEnt IdOcc_Val (doccOcc d) Set.empty) | (n,d) <- idDefOccGamByKind IdOcc_Val @declarations.idOccDefGam ])
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Module

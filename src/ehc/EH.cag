@@ -25,7 +25,7 @@
 %%[5 hs export(TyExprs, TyVar(..), TyVars, CaseAlt(..), CaseAlts, DataConstr(..), DataConstrs)
 %%]
 
-%%[5 hs export(mkCase,mkIf,mkError,mkStr)
+%%[5 hs export(mkCase,mkIf,mkIf',mkError,mkStr)
 %%]
 
 %%[6 hs export(KiExpr(..))
@@ -86,16 +86,19 @@ mkCase :: Range -> Expr -> [(PatExpr,Expr)] -> Expr
 mkCase r c as
   = rngLift r Expr_Case c [ CaseAlt_Pat p e | (p,e) <- as ]
 
-mkIf :: Range -> Expr -> Expr -> Expr -> Expr
-mkIf r c t e
+mkIf' :: [HsName] -> Range -> Expr -> Expr -> Expr -> Expr
+mkIf' (bn:tn:fn:_) r c t e
   = case c of
-      Expr_Con n | n == hsnTrue  -> t
-                 | n == hsnFalse -> e
+      Expr_Con n | n == tn -> t
+                 | n == fn -> e
       _ -> mkCase r
-             ( Expr_TypeAs (TyExpr_Con hsnBool) c )
-             [ (PatExpr_Con hsnTrue , t)
-             , (PatExpr_Con hsnFalse, e)
+             ( Expr_TypeAs (TyExpr_Con bn) c )
+             [ (PatExpr_Con tn, t)
+             , (PatExpr_Con fn, e)
              ]
+
+mkIf :: Range -> Expr -> Expr -> Expr -> Expr
+mkIf = mkIf' [hsnBool,hsnTrue,hsnFalse]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

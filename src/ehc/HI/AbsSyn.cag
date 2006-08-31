@@ -1,0 +1,71 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AST for HI (Haskell Interface) of modules
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+DATA AGItf
+    | AGItf
+        module                  : Module
+%%]
+
+%%[12
+DATA Module
+	| Module
+		nm						: HsName
+		bindings				: Bindings
+%%]
+
+%%[12
+DATA Binding
+	| Stamp
+		timestamp				: String
+		hash					: Integer
+	| Fixity
+		nm						: HsName
+		prio					: Int
+		fixity					: Fixity
+	| Val
+		nm						: HsName
+		ty						: Ty
+	| DataCon
+		nm						: HsName
+		tags					: {[(HsName,CTag)]}
+	| Ty
+		nm						: HsName
+		ty						: Ty
+		ki						: Ty
+	| Class
+		nm						: HsName
+		prToEvidTy				: Ty
+		ki						: Ty
+		rule					: Rule
+	| Instance
+		nm						: HsName
+		rules					: Rules
+
+TYPE Bindings					= [ Binding ]
+
+SET AllBinding
+  = Binding Bindings
+%%]
+
+%%[12
+DATA Rule
+	| Rule
+		nm						: HsName
+		ty						: Ty
+		mkEvid					: {([CExpr],CExpr)}
+		uid						: PredOccId
+		cost					: {Pr.ProofCost}
+		fundeps					: {[([HsName],[HsName])]}
+
+TYPE Rules						= [ Rule ]
+
+SET AllRule
+  = Rule Rules
+%%]
+
+%%[12
+SET AllNT
+  = AllBinding AllRule Module
+%%]
