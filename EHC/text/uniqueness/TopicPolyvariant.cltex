@@ -16,9 +16,9 @@ in Chapter~\ref{chapt.NoBindings}. With the existence of cardinality variables, 
 means that we infer a most general uniqueness typing for a binding, and allow different instantiations for each use of an
 identifier.
 
-This chapter is organized as follows. We illustrate the concepts of cardinality variables and polyvariance by an example.
+This chapter is organized as follows. We illustrate the concept of cardinality inference by an example.
 Then we go into the concept of the type inference process~\ref{sect.TheInferencer}. We follow this up with a discussion about
-the addition of bindings to the expression language, and consequently the concept of binding-groups and
+the addition of bindings to the expression language, and consequently the concept of binding groups and
 instantiation~\ref{sect.Instantiation}. The constraints play an important role here, but we go to yet another representation:
 the constraints are rewritten to a graph-representation on which we can perform graph rewriting~\ref{sect.Rewriting} to
 simplify the constraints.
@@ -112,7 +112,7 @@ is a least solution to the constraints of the above example.
 \section{Cardinality variables and type rules}
 \label{sect.UniquenessVariables}
 
-In contrast to previous chapter where the type constructors are annotated by a tripple of annotations, we now only
+In contrast to previous chapter where the type constructors are annotated by a triple of annotations, we now only
 annotate the type constructors with a fresh cardinality variable. The example
 in Section~\ref{sect.ExamplePoly} showed several types annotated with such cardinality variables. In this thesis, we
 often refer to cardinality variables as cardinality annotations.
@@ -139,9 +139,9 @@ The above approach allows cardinality coercions everywhere in the abstract synta
 a relaxation of an established cardinality result to a weaker variant. For example, we can coerce a value with cardinality
 |onemin| to a value with cardinality |*| by forgetting that the value is used at most once. Depending on the code
 generator, an coercion function needs to be inserted, for example to move the value from one heap to another. But, there
-is some redudancy between annotations on some types. For example, a parameter of a function can use the cardinality
+is some redundancy between annotations on some types. For example, a parameter of a function can use the cardinality
 variables of the enclosing function for its annotated type. It does not need fresh cardinality variables. There is no
-need to put a coercion at the use sites of identifiers. Another redudancy is that in the binding |x = f 3|, it is possible
+need to put a coercion at the use sites of identifiers. Another redundancy is that in the binding |x = f 3|, it is possible
 to coerce the result of |f| at the function application, but also at the place where the result of |f| is bound to |x|, or even both.
 Coercions lead to additional code insertion in the program, depending on the code generator. We therefore want to
 limit the number of coercions that can be inserted, and restrict it to clearly defined places.
@@ -193,8 +193,8 @@ constraints are all satisfied. That means three fixpoint computations on the sam
 different solving function. Figure~\ref{code.fixSolve} gives an overview of the implementation.
 
 \begin{figure}
-\label{code.fixSolve}
 \caption{Pseudo code of the inferencer}
+\label{code.fixSolve}
 
 %%[[wrap=code
 infer :: ConstrSet -> Subst Cardinality
@@ -216,7 +216,7 @@ bestFit  _    _  =  *
 %%[[wrap=code
 worklistFix :: (Constr a -> Constr a) -> ConstrSet -> Subst a
 worklistFix solveF cs initial
-  = iter initial
+  = iter (toList cs) initial
   where
     deps = [ (c, [d `elem` cs, c `shareVar` d, c /= d]) | c `elem` cs ]
 
@@ -232,11 +232,11 @@ worklistFix solveF cs initial
 \end{figure}
 
 The fixpoint iteration proceeds as follows. We start with the best possible substitution, which is the
-lowest value in the ordening defined on the values where the substitutions are mapped to. If one
+lowest value in the ordering defined on the values where the substitutions are mapped to. If one
 particular value |v| does not satisfy the constraint, then |v| is too low and we select a value
 |v' >= v| such that |v| is as small as possible, but satisfies the constraint. Such a value |v| is
-always found because the biggest value in the ordening always satisfies the constraints. It is possible that
-satisfying one constraint makes another constraint not satisfied. Such a contraint is visited again,
+always found because the biggest value in the ordering always satisfies the constraints. It is possible that
+satisfying one constraint makes another constraint not satisfied. Such a constraint is visited again,
 which causes the substitution to increase to make it satisfied. After several iterations back and
 forth the constraints, the values do not change anymore and the iteration process terminates. The
 iteration process always terminates because the substitution needs to grow in order for the
@@ -273,8 +273,8 @@ constraint specify that a cardinality value needs to be split up in a proper way
 result is |1|, then there must be one occurrence with cardinality |1| and all the other occurrences cardinality |0|.
 
 \begin{figure}
-\label{code.iterate}
 \caption{Solve functions}
+\label{code.iterate}
 
 %%[[wrap=code
 lowerSolveF (a (Sub(=>=)(beta)) b)
@@ -333,7 +333,7 @@ join  _        _        =  *
 \label{sect.TheMinimalSolution}
 
   We mentioned in the introduction that the inferencer infers the minimal solution to the constraints.
-  This minimal solution is computed by obtaining a least solution by means of a fixpoint interation~\cite{nnh99}.
+  This minimal solution is computed by obtaining a least solution by means of a fixpoint iteration~\cite{nnh99}.
   However, is this really a single least solution? We verify that this is the case. To simplify matters, only the
   upper bound annotations are considered. Proofs for the lower bound and the cardinality annotations are similar.
 
@@ -355,7 +355,7 @@ join  _        _        =  *
   means that |Z((Sub(delta)(1))) `join` Z((Sub(delta)(2))) = Z((Sub(delta)(2)))|, and we
   conclude that |Z| does not change.
 
-  Supopse that |C === sumi (Sub(delta)(i)) <= delta|. Since fixpoint iteration is completed
+  Suppose that |C === sumi (Sub(delta)(i)) <= delta|. Since fixpoint iteration is completed
   for |S| and |R|, |sumi S((Sub(delta)(i))) <= S(delta)| and |sumi R((Sub(delta)(i))) <= R(delta)|.
   Analogous to the previous section, we conclude that |sumi Z((Sub(delta)(i))) <= S(delta)| and |sumi Z((Sub(delta)(i))) <= R(delta)|,
   which means that |sumi Z((Sub(delta)(i))) <= S(delta) `min` R(delta) = Z(delta)|, and we
@@ -418,11 +418,13 @@ by adding it to |Gamma| for |body_expr|. Since the |let| is non-recursive, the e
 about |id|, but that will change once we want to support a recursive |let| in Chapter~\ref{chapt.Recursion}. This gives the
 type rule:
 
+\begin{center}
 \rulerCmdUse{RulerUniquenessExamples.EL.expr.base.e.let}
+\end{center}
 
 We can apply the same strategy for the uniqueness type system. A set of constraints $S$ is inferred for |expr_def|. For each use
 of |id|, $S$ is copied as the constraint set of the identifier. To show why this approach works, remember that referential
-transparancy allows to substitute an identifier by its definition.
+transparency allows to substitute an identifier by its definition.
 
 Suppose the occurrences |1..n| of |id| in |body_expr| are replaced by |def_expr|, to |(Sub(inst_expr)(1))..(Sub(inst_expr)(n))|.
 In other words, in the expression:
@@ -538,7 +540,7 @@ between the nodes. The constraint |a =>= b| is translated to a directed edge\foo
 node |b|. The inference of the substitution is analogous to the inference on the constraint set, except that now
 the edges of the graph are traversed instead of the constraints.
 
-As an example, Figure ~\ref{fig.graph} is a graph representation of the following constraint set:
+As an example of the above approach, take the following constraint set:
 
 %%[[wrap=code
 a =>= b
@@ -548,11 +550,18 @@ c \*/ d <= e
 e =>= b
 %%]
 
-\begin{figure}
-\label{fig.graph}
-\caption{Constraint graph of the example}
-\includegraphics[width=8cm]{unq-graph}
-\end{figure}
+The representation as a graph is:
+
+\begin{center}
+\includegraphics[width=6cm]{unq-graph}
+\end{center}
+
+The variables |a..e| are the nodes in the graph. The coercion constraints are the edges and the aggregation
+constraint is a hyper edge. To calculate an upper bound substitution from initial substitution |S(a) = 1, S(delta) = 0, delta `elem` [b..e]|,
+we iterate over the (hyper) edges of the graph. The edge between |a| and |b|, combined with the substitution |S(a) = 1|, force |S(b)| to |1|. |S(b) = 1|
+forces both |S(c)| and |S(d)| to |1|. The hyper edge combines |S(c) = 1| and |S(d) = 1|, resulting in |*|, and forces |S(b)| to |*|. Repeating the
+above procedure forces |S(c)| and |S(d)| to |*|. The hyper edge combines |S(c) = *| and |S(d) = *| in |*| for |S(b)|, which is already the case. None of the edges
+in the graph change the substitution anymore, and the iteration stops with a final substitution S', with |S'(a) = 1, S'(delta) = *, delta `elem` [b..e]|.
 
 Back to the inferencer. The inferencer applies the following steps:
 
@@ -673,7 +682,7 @@ that most hyper edges range over different sets of sacred cardinality variables,
 subsumed hyper edges do not exist often, and the elimination does not contribute enough to the size
 of the graph to be worthwhile.
 
-Removal of subsumed non-hyper edges, on the other hand, is worth-while. Immagine the following
+Removal of subsumed non-hyper edges, on the other hand, is worth-while. Imagine the following
 situation: |a =>= c, a =>= b, b =>= c|, where |a|, |b|, and |c| are sacred annotation variables. The
 constraint |a =>= c| is not required in this case, it is subsumed by |a =>= b, b =>= c|, due to transitivity.
 Due to the top-down pushing of annotations, the constraints are visually like long threads from the

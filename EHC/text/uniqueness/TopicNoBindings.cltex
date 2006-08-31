@@ -36,6 +36,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   probably not.
 
   \subsection{Annotations}
+  \label{sect.Annotations}
 
   Instead of just classifying types as unique or shared, we distinguish five different values:
 
@@ -539,8 +540,8 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   annotation fitting between the two boundary annotations.
 
   \begin{figure}
-  \label{code.FitsInBounds}
   \caption{Consistency of tripples}
+  \label{code.FitsInBounds}
 
 %%[[wrap=code
   fits  (0,  0,        0)  = True
@@ -683,8 +684,8 @@ weakCoercionSatisfied (a, b, c) (d, e, f)
   Figure~\ref{code.sumsat} defines when an aggregation constraint is satisfied.
 
   \begin{figure}
-  \label{splitFunc}
   \caption{The isSplit function.}
+  \label{splitFunc}
 
 %%[[wrap=code
 isSplit as 0        = all (== 0) as
@@ -697,8 +698,8 @@ isSplit as *        = all (== *) as
   \end{figure}
 
   \begin{figure}
-  \label{code.sumsat}
   \caption{aggregation constraint satisfaction}
+  \label{code.sumsat}
 
 %%[[wrap=code
 aggregationSatisfied [((Sub(a)(1)), (Sub(b)(1)), (Sub(c)(1))), ..., ((Sub(a)(b)), (Sub(b)(n)), (Sub(c)(n)))] (a, b, c)
