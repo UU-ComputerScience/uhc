@@ -111,6 +111,7 @@ DATA Err
   | TyHasFreeTVars      ty         : {Ty}
   | DeclsNotAllowed     inside     : String
                         decls      : {AssocL IdOccKind [HsName]}
+  | ValWithoutSig       nmL        : {[HsName]}
 %%]
 
 %%[12

@@ -192,6 +192,9 @@ SEM Err
   | DeclsNotAllowed     lhs     .  pp   =   ppMsgErr    ("Declarations are not allowed " ++ @inside)
                                                         (vlist [ k >|< ":" >#< ppCommas ns | (k,ns) <- @decls ]
                                                         )
+  | ValWithoutSig       lhs     .  pp   =   ppMsgErr    ("Instance members without corresponding signature from class")
+                                                        (    "names:" >#< ppCommas @nmL
+                                                        )
 %%]
 
 %%[12

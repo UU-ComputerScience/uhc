@@ -5,7 +5,7 @@
 \begin{itemize}
 \item Type need not be specified completely
 %%[[wrap=safecode
-%%@[file:test/2-ty-wild.eh%%]
+%%@[file:test/2/ty-wild.eh%%]
 %%]
 \item
 Only the part which needs to be specified or constrained further
@@ -22,7 +22,7 @@ As an afterthought to see how well an additional feature can be added
 \begin{itemize}
 \item Pretty printing shows inferred types
 \begin{TT}
-%%2ppfile(test/2-ty-wild.eh%%)
+%%2ppfile(test/2/ty-wild.eh%%)
 \end{TT}
 \item Shows inferred type only if partially specified
 \end{itemize}

@@ -48,6 +48,10 @@ SEM Decl
   | Instance    loc         .   predNotPrfErrs      =   if null @supPrfArgPrOccL && null @prfArgPrOccL 
                                                         then []
                                                         else [Err_NotProvenPreds (@prfArgPrOccL ++ @supPrfArgPrOccL)]
+                            .   valNoSigErrs        =   let ns = gamKeys (gamTop @decls.patValGam) \\ gamKeys @tySigGam
+                                                        in  if null ns
+                                                            then []
+                                                            else [Err_ValWithoutSig ns]
   | InstanceIntro
                 loc         .   predErrs            =   if null (ftv @prExpr.ty) then [] else [Err_TyHasFreeTVars @prExpr.ty]
 

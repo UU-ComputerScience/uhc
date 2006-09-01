@@ -715,7 +715,7 @@ in   v1
 \item Haskell forbids local instances
 {\small
 %%[[wrap=safecode
-%%@[file:test/9-local-inst1.eh%%]
+%%@[file:test/9/local-inst1.eh%%]
 %%]
 }
 \item Why? (EHC: type checking fails)

@@ -223,11 +223,11 @@
 \begin{itemize}
 \item EH program is single expression
 %%[[wrap=safecode
-%%@[file:test/1-demo2.eh%%]
+%%@[file:test/1/demo2.eh%%]
 %%]
 \item Types |Int|, |Char|, tuples and functions
 %%[[wrap=safecode
-%%@[file:test/1-demo3.eh%%]
+%%@[file:test/1/demo3.eh%%]
 %%]
 \end{itemize}
 }
@@ -239,11 +239,11 @@
 \item Type signatures are required
 \item Types are checked
 %%[[wrap=safecode
-%%@[file:test/1-all-fail2.eh%%]
+%%@[file:test/1/all-fail2.eh%%]
 %%]
 gives rise to error annotated representation of program:
 \begin{TT}
-%%1ppfile(test/1-all-fail2.eh%%)
+%%1ppfile(test/1/all-fail2.eh%%)
 \end{TT}
 \end{itemize}
 }
@@ -256,16 +256,16 @@ gives rise to error annotated representation of program:
 \begin{itemize}
 \item Type signature may be omitted
 %%[[wrap=safecode
-%%@[file:test/1-sig-fail.eh%%]
+%%@[file:test/1/sig-fail.eh%%]
 %%]
 \item
-Missing type is inferred: |i :: %%2file(test/1-sig-fail.eh%%)|
+Missing type is inferred: |i :: %%2file(test/1/sig-fail.eh%%)|
 \item Inferred types are monomorphic
 %%[[wrap=safecode
-%%@[file:test/2-demo1.eh%%]
+%%@[file:test/2/demo1.eh%%]
 %%]
 gives rise to type
-|id :: %%2file(test/2-demo1.eh%%)|
+|id :: %%2file(test/2/demo1.eh%%)|
 \end{itemize}
 }
 %%]
@@ -307,7 +307,7 @@ in   id 3
 \item
 Type signatures for quantifiers on argument (higher ranked) positions
 %%[[wrap=safecode
-%%@[file:test/4-demo2.eh%%]
+%%@[file:test/4/demo2.eh%%]
 %%]
 \begin{itemize}
 \item Notational sugaring allows omission of quantifier
@@ -323,7 +323,7 @@ Type signatures for quantifiers on argument (higher ranked) positions
 \item
 Impredicativity
 %%[[wrap=safecode
-%%@[file:test/4-impred-demo1.eh%%]
+%%@[file:test/4/impred-demo1.eh%%]
 %%]
 \begin{itemize}
 \item Propagation of explicit type information
@@ -361,7 +361,7 @@ in   f
 \item
 Existential quantification: hiding/forgetting type information
 %%[[wrap=safecode
-%%@[file:test/4-demo1.eh%%]
+%%@[file:test/4/demo1.eh%%]
 %%]
 \end{itemize}
 }
@@ -394,7 +394,7 @@ Existential quantification: hiding/forgetting type information
 \item
 User defined data types
 %%[[wrap=safecode
-%%@[file:test/5-list.eh%%]
+%%@[file:test/5/list.eh%%]
 %%]
 \item Unpacking via case expression
 \end{itemize}
@@ -409,7 +409,7 @@ User defined data types
 \item
 Type expressions can be incorrectly used
 %%[[wrap=safecode
-%%@[file:test/5-list-wrong.eh%%]
+%%@[file:test/5/list-wrong.eh%%]
 %%]
 \item
 Requires type system for types (similar to type system for values)
@@ -439,12 +439,12 @@ Kind inferencing/checking for types
 \item
 Kind signatures for types (similar to type signatures for values)
 %%[[wrap=safecode
-%%@[file:test/6-expl-ki.eh%%]
+%%@[file:test/6/expl-ki.eh%%]
 %%]
 \item
 Polymorphic kinds can also be inferred
 %%[[wrap=safecode
-%%@[file:test/5-all-ok2.eh%%]
+%%@[file:test/5/all-ok2.eh%%]
 %%]
 infers kind @Eq :: Forall a . a -> a -> *@
 \end{itemize}
@@ -458,7 +458,7 @@ infers kind @Eq :: Forall a . a -> a -> *@
 \begin{itemize}
 \item Replacement for tuples
 %%[[wrap=safecode
-%%@[file:test/7-demo1.eh%%]
+%%@[file:test/7/demo1.eh%%]
 %%]
 \end{itemize}
 }
@@ -508,7 +508,7 @@ infers kind @Eq :: Forall a . a -> a -> *@
 {
 \frametitle{EH version 9: higher order predicate}
 %%[[wrap=safecode
-%%@[file:test/9-snd-order1.eh%%]
+%%@[file:test/9/snd-order1.eh%%]
 %%]
 }
 %%]
@@ -520,11 +520,11 @@ infers kind @Eq :: Forall a . a -> a -> *@
 \begin{itemize}
 \item Flexibility w.r.t. presence of labels
 %%[[wrap=safecode
-%%10srcfile(test/10-demo1.eh%%)
+%%10srcfile(test/10/demo1.eh%%)
 %%]
 \item More general tuple access
 %%[[wrap=safecode
-%%10srcfile(test/10-snd.eh%%)
+%%10srcfile(test/10/snd.eh%%)
 %%]
 \end{itemize}
 }

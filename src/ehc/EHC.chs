@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module Main import(System, Data.List, Control.Monad, System.Console.GetOpt, IO, UU.Pretty,EH.Util.PPUtils,{%{EH}Error.Pretty}, UU.Parsing, UU.Parsing.Offside, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Base.Opts})
+%%[1 module Main import(System, Data.List, Control.Monad, System.Console.GetOpt, IO, EH.Util.Utils,UU.Pretty,EH.Util.PPUtils,{%{EH}Error.Pretty}, UU.Parsing, UU.Parsing.Offside, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Base.Opts})
 %%]
 
 %%[1 import(qualified {%{EH}EH.Parser} as EHPrs, qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.Parser} as HSPrs, qualified {%{EH}HS.MainAG} as HSSem)

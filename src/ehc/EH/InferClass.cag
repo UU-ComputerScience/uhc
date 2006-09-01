@@ -101,8 +101,9 @@ SEM Decl
                                 .   supClsNmL       =   tyPrLToSupNmL @supPrTyL
                                 .   ctxtPrFixL      =   map tyPred @ctxtPrTyFixL
                                 .   recTy           =   tyFixTyVars . tyQuantifyRank [2..] . tyArrowRes $ @tyPrExpr.evTy
-                decls           .   tySigGam        =   assocLToGam . assocLMapElt ValGamInfo . snd . tyRecExts $ @recTy
+                                .   tySigGam        =   assocLToGam . assocLMapElt ValGamInfo . snd . tyRecExts $ @recTy
                 loc             .   elimRule        =   mkInstElimRule @dictNm @instId (length @ctxtPrTyFixL + length @supPrTyL) (tyQuantifyClosed @prTyFix)
+                decls           .   patValGam       =   gamPushNew @lhs.patValGam
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   tyGam           =   @lhs.tyGam
                                 .   gathTySigGam    =   maybe emptyGam (\(n,_) -> n `gamUnit` ValGamInfo (tyQuantifyClosed @tyPrExpr.evTy)) @mbNmElim

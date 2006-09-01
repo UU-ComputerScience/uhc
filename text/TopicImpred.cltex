@@ -59,7 +59,7 @@ Our motivation comes from the following example:
 
 \begin{Example}{eh4B-ex-basic-intro}
 %%[[wrap=code
-%%@[file:test/4-impred-demo1.eh%%]
+%%@[file:test/4/impred-demo1.eh%%]
 %%]
 \end{Example}
 
@@ -372,7 +372,7 @@ The following is an example for demonstrating the usefulness of a universal quan
 a higher-ranked position.
 
 %%[[wrap=code
-%%@[file:test/3-demo-rank.eh%%]
+%%@[file:test/3/demo-rank.eh%%]
 %%]
 
 The \IxAsDef{rank position}
@@ -519,7 +519,7 @@ We repeat our initial example:
 
 \begin{Example}{eh4-ex-rank-arg}
 %%[[wrap=code
-%%@[file:test/3-demo-rank.eh%%]
+%%@[file:test/3/demo-rank.eh%%]
 %%]
 \end{Example}
 
@@ -579,7 +579,7 @@ The real tricky point arises when the type of |f|'s argument is not known, for e
 is specified for |f|:
 
 %%[[wrap=code
-%%@[file:test/4-demo-rank.eh%%]
+%%@[file:test/4/demo-rank.eh%%]
 %%]
 
 The argument type of |f| then still is a type variable |tvarv|:
@@ -840,7 +840,7 @@ passing different flags to the argument:
 The effect of this modification can best be observed from the following example:
 
 %%[[wrap=code
-%%@[file:test/4-impred-demo5.eh%%]
+%%@[file:test/4/impred-demo5.eh%%]
 %%]
 
 First assume that we are still using |fioBindRFirstN|.
@@ -878,7 +878,7 @@ and subsequently to do normal type inference.
 The effect of this modification can best be observed from the following example:
 
 %%[[wrap=code
-%%@[file:test/4-choose.eh%%]
+%%@[file:test/4/choose.eh%%]
 %%]
 
 Again, first assume that we are still using |fioBindLFirstN|.
@@ -918,7 +918,7 @@ the difference with \ruleRef{e.app} lies in the passing of |strongFIOpts|:
 
 For example, the following program uses both variants:
 %%[[wrap=code
-%%@[file:test/4-impred-choose.eh%%]
+%%@[file:test/4/impred-choose.eh%%]
 %%]
 
 This leads to the following bindings:
@@ -930,7 +930,7 @@ v2  ::                (forall ^ a .  a -> a)  ->  (forall ^ b .  b -> b)
 
 Alternatively, we could have provided an explicit type instead, but this is more verbose:
 
-% from: test/4-impred-choose2.eh
+% from: test/4/impred-choose2.eh
 %%[[wrap=code
 let  v3      =   (choose :: (forall a . a -> a) -> (forall b . b -> b) -> (forall c . c -> c)) id
      v4      ::  (forall a . a -> a) -> (forall b . b -> b)
@@ -1040,11 +1040,11 @@ The following example illustrates this:
 \begin{Example}{eh4B-ex-basic}
 %if infer2pass
 %%[[wrap=code
-%%@[file:src/infer2pass/test/4-impred-demo1.i2p%%]
+%%@[file:src/infer2pass/test/4/impred-demo1.i2p%%]
 %%]
 %else
 %%[[wrap=code
-%%@[file:test/4-impred-demo1.eh%%]
+%%@[file:test/4/impred-demo1.eh%%]
 %%]
 %endif
 \end{Example}
@@ -1092,11 +1092,11 @@ because it is passed to both |g1| and |g2|.
 \begin{Example}{eh4B-ex-most-gen}
 %if infer2pass
 %%[[wrap=code
-%%@[file:src/infer2pass/test/4-impred-demo3.i2p%%]
+%%@[file:src/infer2pass/test/4/impred-demo3.i2p%%]
 %%]
 %else
 %%[[wrap=code
-%%@[file:test/4-impred-demo3.eh%%]
+%%@[file:test/4/impred-demo3.eh%%]
 %%]
 %endif
 \end{Example}
@@ -1113,7 +1113,7 @@ but is the greatest common instance \cite{pfenning91anti-unif}
 (or least general anti-unification, defined later in \thischapt\ as the meet of two types).
 
 %%[[wrap=code
-%%@[file:test/4-impred-demo2.eh%%]
+%%@[file:test/4/impred-demo2.eh%%]
 %%]
 
 Here |h| is expected to be used as ``|forall ^ a . (Int,a) -> (Int,a)|''
@@ -1137,11 +1137,11 @@ The following example demonstrates this:
 \begin{Example}{eh4B-ex-contravariance}
 %if infer2pass
 %%[[wrap=code
-%%@[file:src/infer2pass/test/4-impred-demo4.i2p%%]
+%%@[file:src/infer2pass/test/4/impred-demo4.i2p%%]
 %%]
 %else
 %%[[wrap=code
-%%@[file:test/4-impred-demo4.eh%%]
+%%@[file:test/4/impred-demo4.eh%%]
 %%]
 %endif
 \end{Example}
@@ -1695,7 +1695,7 @@ We walk through \exRef{eh4B-ex-basic-intro}%
 %else
 , which we repeat here:
 %%[[wrap=code
-%%@[file:test/4-impred-demo1.eh%%]
+%%@[file:test/4/impred-demo1.eh%%]
 %%]
 %endif
 Our implementation finds the following information for |h|
@@ -1997,14 +1997,14 @@ We do not discuss this further but only show it because the use of meet and join
 |f :: (Int,Int -> Int) -> Int| in:
 
 %%[[wrap=code
-%%@[file:test/4-impred24.eh%%]
+%%@[file:test/4/impred24.eh%%]
 %%]
 
 %if False
 Whereas a contravariant example:
 
 %%[[wrap=code
-%%@[file:test/4-impred26.eh%%]
+%%@[file:test/4/impred26.eh%%]
 %%]
 
 finds:
@@ -2016,7 +2016,7 @@ f :: ((exists ^ a . (a,a -> Int)) -> Int) -> Int
 We also can deduce a type from:
 
 %%[[wrap=code
-%%@[file:test/4-impred-demo2.eh%%]
+%%@[file:test/4/impred-demo2.eh%%]
 %%]
 
 the types:
@@ -2239,7 +2239,7 @@ Note that for all practical purposes this type is isomorphic to |Int|.
 
 \begin{Example}{eh4C-ex-basic}
 %%[[wrap=code
-%%@[file:test/4-demo1.eh%%]
+%%@[file:test/4/demo1.eh%%]
 %%]
 \end{Example}
 
@@ -2275,7 +2275,7 @@ Opening an existential type by binding
 also means that the following example does not type check\footnote{Case expressions are introduced together with data types, \chapterEHVRef.}:
 
 %%[[wrap=code
-%%@[file:test/5-demo1.eh%%]
+%%@[file:test/5/demo1.eh%%]
 %%]
 
 Function |f| returns |(2,id)| when passed |2| and |('a',ord)|
@@ -2293,7 +2293,7 @@ The opening of an existential for a value binding is only done for a top-level e
 If an existential quantifier is nested inside a composite type, then the opening is not done:
 
 %%[[wrap=code
-%%@[file:test/4-ex-extr4.eh%%]
+%%@[file:test/4/ex-extr4.eh%%]
 %%]
 
 The opening is delayed until the binding of |v1|'s components:
@@ -2314,7 +2314,7 @@ EH is also pessimistic when an value with an existential type is passed through 
 For example, the following extends our simplistic abstract data type with an additional observer function:
 
 %%[[wrap=code
-%%@[file:test/4-demo6.eh%%]
+%%@[file:test/4/demo6.eh%%]
 %%]
 
 We do not preserve type equality through |f|;
@@ -2387,7 +2387,7 @@ The effect of this duality can be seen in the example type lattice (\figPageRef{
 and in the following example:
 
 %%[[wrap=code
-%%@[file:test/4-impred24.eh%%]
+%%@[file:test/4/impred24.eh%%]
 %%]
 
 |h| is expected to be used as ``|exists ^ a . (a,a->Int)|'' and as ``|(Int,Int->Int)|''.
@@ -2410,7 +2410,7 @@ From this, we compute ``|v_13_0:->(Int,Int -> Int)|''.
 Again, a contravariant position requires us to compute the least general type (instead of the most general):
 
 %%[[wrap=code
-%%@[file:test/4-impred26.eh%%]
+%%@[file:test/4/impred26.eh%%]
 %%]
 
 Functions |g1| and |g2| provide the context in which |h| will be used,
@@ -2562,7 +2562,7 @@ Basic (introductory example): type signature information bound to identifier
 
 Polymorphism can be deduced from occurrences at parameter positions:
 %%[[wrap=code
-%%4_2srcfile(test/4-impred-demo1.eh%%)
+%%4_2srcfile(test/4/impred-demo1.eh%%)
 %%]
 
 Type for |f :: (forall ^ a . a -> a) -> Int|,
@@ -2570,28 +2570,28 @@ but absence of |g h| gives `normal' type error.
 
 Most general type:
 %%[[wrap=code
-%%4_2srcfile(test/4-impred-demo3.eh%%)
+%%4_2srcfile(test/4/impred-demo3.eh%%)
 %%]
 
 Type for |f :: (forall ^ a . a -> a) -> Int|.
 
 Which in contravariant position is least general:
 %%[[wrap=code
-%%4_2srcfile(test/4-impred-demo4.eh%%)
+%%4_2srcfile(test/4/impred-demo4.eh%%)
 %%]
 
-Type for |f :: %%4_2file(test/4-impred-demo4.eh%%)|.
+Type for |f :: %%4_2file(test/4/impred-demo4.eh%%)|.
 
 Partial polymorphism can be combined:
 %%[[wrap=code
-%%4_2srcfile(test/4-impred-demo2.eh%%)
+%%4_2srcfile(test/4/impred-demo2.eh%%)
 %%]
 
 Type for |f :: (forall ^ a . forall ^ b . (a,b) -> (a,b)) -> Int|.
 
 Yes/no propagation (or: System F/Haskell):
 %%[[wrap=code
-%%4_2srcfile(test/4-impred-choose.eh%%)
+%%4_2srcfile(test/4/impred-choose.eh%%)
 %%]
 
 Type of |v1 :: forall a . (a -> a) -> a -> a|, |v2 :: (forall a . a -> a) -> forall b . b -> b|.
@@ -2777,10 +2777,10 @@ Rules for |qu|, |quGam| (insertion of quantifiers, just assume explicit quantifi
 Trouble:
 
 %%[[wrap=code
-%%4_2srcfile(test/4-impred9.eh%%)
+%%4_2srcfile(test/4/impred9.eh%%)
 %%]
 
-Too forgetful w.r.t. |v1 :: %%4_2file(test/4-impred9.eh%%)|.
+Too forgetful w.r.t. |v1 :: %%4_2file(test/4/impred9.eh%%)|.
 The algorithm is pessimistic and takes the least general type (i.e. |<->|) of the existential and the actual value.
 This is ok for identifiers in parameter positions because we do not say anything about their actual value.
 It is not ok when actual values are involved because we do not want to forget types there.
@@ -2822,7 +2822,7 @@ for which it is then impossible to find back forgotten polymorphism.
 This idea works well for the examples encountered so far, for example:
 
 %%[[wrap=code
-%%@[file:test/3-demo-rank.eh%%]
+%%@[file:test/3/demo-rank.eh%%]
 %%]
 
 Polymorphism for |i| has been declared explicitly before any use of this information in de type checking of the body of |f| is done or any parameter is
@@ -2830,14 +2830,14 @@ passed to |f|.
 Because we allow type variables to be bound to quantified types the following example also infers |f :: (forall a . a -> a) -> Int| correctly:
 
 %%[[wrap=code
-%%@[file:test/4-impred2.eh%%]
+%%@[file:test/4/impred2.eh%%]
 %%]
 
 This works because initially we assign a type variable to the type of |h| which is later bound to |forall a . a -> a| when it is used as an argument of |g|.
 However, the following example breaks because we first bind the type of |h| to a monomorphic type:
 
 %%[[wrap=code
-%%@[file:test/4-impred-demo1.eh%%]
+%%@[file:test/4/impred-demo1.eh%%]
 %%]
 
 This example breaks at three different places:
@@ -2916,7 +2916,7 @@ Some additional options need to be passed as well:
 The following example really is responsible for delaying subsumption checks:
 
 %%[[wrap=code
-%%@[file:test/4-impred4.eh%%]
+%%@[file:test/4/impred4.eh%%]
 %%]
 
 There is no single usage of |h| which enforces |h :: forall a . forall b . (a,b) -> (a,b)|,
@@ -3054,7 +3054,7 @@ For example, the following program fragment lacks a type annotation for |f|:
 
 \begin{Example}{i2p-ex-how2}
 %%[[wrap=code
-%%@[file:src/infer2pass/test/4-impred-how2.i2p%%]
+%%@[file:src/infer2pass/test/4/impred-how2.i2p%%]
 %%]
 \end{Example}
 
@@ -3067,7 +3067,7 @@ which only specifies the type fragment corresponding to |h|.
 The remaining parts denoted by ``|...|'' are then inferred later by the conventional HM type inference:
 
 %%[[wrap=code
-%%@[file:src/infer2pass/test/4-impred-how2-trf.i2p%%]
+%%@[file:src/infer2pass/test/4/impred-how2-trf.i2p%%]
 %%]
 
 As with HM type inference, we infer a type for an identifier from the use of such an identifier.
@@ -3079,7 +3079,7 @@ Choosing the type of |h| becomes more difficult when |h| is used more than once:
 
 \begin{Example}{i2p-ex-how3}
 %%[[wrap=code
-%%@[file:src/infer2pass/test/4-impred-how3.i2p%%]
+%%@[file:src/infer2pass/test/4/impred-how3.i2p%%]
 %%]
 \end{Example}
 
@@ -3105,7 +3105,7 @@ quantified types.
 First we represent all the different ways |h| is used in |f|'s type signature by the following transformation:
 
 %%[[wrap=code
-%%@[file:src/infer2pass/test/4-impred-how3-trf.i2p%%]
+%%@[file:src/infer2pass/test/4/impred-how3-trf.i2p%%]
 %%]
 
 Function |h| has both type |forall ^ a . a -> a| and |Int -> ...| .
@@ -3124,7 +3124,7 @@ for simplicity:
 The type annotation is transformed correspondingly:
 
 %%[[wrap=code
-%%@[file:src/infer2pass/test/4-impred-how3-trf2.i2p%%]
+%%@[file:src/infer2pass/test/4/impred-how3-trf2.i2p%%]
 %%]
 
 These two transformation steps correspond to the two main steps of our algorithm (\secRef{sec-impred-glob-quant-prop}):
@@ -3137,7 +3137,7 @@ Function |h| additionally is passed a value of type |Char| instead of only a val
 
 \begin{Example}{i2p-ex-how4}
 %%[[wrap=code
-%%@[file:src/infer2pass/test/4-impred-how4.i2p%%]
+%%@[file:src/infer2pass/test/4/impred-how4.i2p%%]
 %%]
 \end{Example}
 
@@ -3148,7 +3148,7 @@ because |h| is used polymorphically.
 Its corresponding transformation is the following, leading to the same type annotation as for \exRef{i2p-ex-how3}:
 
 %%[[wrap=code
-%%@[file:src/infer2pass/test/4-impred-how4-trf.i2p%%]
+%%@[file:src/infer2pass/test/4/impred-how4-trf.i2p%%]
 %%]
 
 Quantified type fragments can also appear at rank-3 positions.
@@ -3156,7 +3156,7 @@ In the following, somewhat contrived example, |h| accepts an identity function.
 
 \begin{Example}{eh4B-ex-contravariance}
 %%[[wrap=code
-%%@[file:src/infer2pass/test/4-impred-demo4.i2p%%]
+%%@[file:src/infer2pass/test/4/impred-demo4.i2p%%]
 %%]
 \end{Example}
 
@@ -3166,7 +3166,7 @@ This is expressed by the following transformation,
 in which the quantified type fragment appears at a contravariant position:
 
 %%[[wrap=code
-%%@[file:src/infer2pass/test/4-impred-demo4-trf.i2p%%]
+%%@[file:src/infer2pass/test/4/impred-demo4-trf.i2p%%]
 %%]
 
 In the previous examples the quantified type fragment appears at a rank-2 covariant position as a type alternative.
@@ -3190,7 +3190,7 @@ We only use |=||||=| in this section to describe the purpose and meaning of our 
 By applying this rewrite rule we arrive at:
 
 %%[[wrap=code
-%%@[file:src/infer2pass/test/4-impred-demo4-trf2.i2p%%]
+%%@[file:src/infer2pass/test/4/impred-demo4-trf2.i2p%%]
 %%]
 
 For |Int -> Int =||||= forall ^ a . a -> a| we choose the least general type |Int -> Int|.
@@ -3198,7 +3198,7 @@ This leads to the following type annotation for |f|,
 which specifies type |(Int -> Int) -> ...| for |h| in accordance with the above discussion:
 
 %%[[wrap=code
-%%@[file:src/infer2pass/test/4-impred-demo4-trf3.i2p%%]
+%%@[file:src/infer2pass/test/4/impred-demo4-trf3.i2p%%]
 %%]
 
 The basic strategy for recovering type annotations is to gather type alternatives and subsequently choose the most (or least)
@@ -3209,21 +3209,21 @@ For example, the following fragment specifies polymorphism in two independent pa
 
 \begin{Example}{i2p-ex-demo2}
 %%[[wrap=code
-%%@[file:src/infer2pass/test/4-impred-demo2.i2p%%]
+%%@[file:src/infer2pass/test/4/impred-demo2.i2p%%]
 %%]
 \end{Example}
 
 This leads to two alternatives, both of which are not a generalisation of the other:
 
 %%[[wrap=code
-%%@[file:src/infer2pass/test/4-impred-demo2-trf.i2p%%]
+%%@[file:src/infer2pass/test/4/impred-demo2-trf.i2p%%]
 %%]
 
 However, type |forall ^ a . forall ^ b . (b,a) -> (b,a)| can be instantiated to both
 |forall ^ a . (Int,a) -> (Int,a)| and |forall ^ b . (b,Int) -> (b,Int)|:
 
 %%[[wrap=code
-%%@[file:src/infer2pass/test/4-impred-demo2-trf2.i2p%%]
+%%@[file:src/infer2pass/test/4/impred-demo2-trf2.i2p%%]
 %%]
 
 Such a merge of two types cannot be described by the informal rewrite rules presented in this section,
