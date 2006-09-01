@@ -68,6 +68,7 @@
 %format (Annot(x)(y)) = "{" x "}^{\delta_{" y "}}"
 %format (Sup(x)(y)) = "{" x "}^{" y "}"
 %format (Sub(x)(y)) = "{" x "}_{" y "}"
+%format (Card(x)(y)) = "{{" x "} \bowtie {" y "}}"
 
 %format restr		= "\backslash "
 
@@ -404,3 +405,6 @@
 %format compFormat = "\Im"
 %format oneplus = "{1^{+}}"
 %format onemin  = "{1^{-}}"
+%format Usage = "\jmath"
+%format UpperBound = "\imath"
+%format LowerBound = "\ell"

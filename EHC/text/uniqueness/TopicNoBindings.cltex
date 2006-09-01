@@ -2,7 +2,7 @@
 
 %format sumtuples = "\sum_{i}"
 
-\chapter{Lambda calculus without bindings}
+\chapter{Lambda-calculus without bindings}
 \label{chapt.NoBindings}
 
 In the introduction (Chapter~\ref{chapt.Introduction}) we showed that functional programs perform a lot of copying
@@ -12,7 +12,7 @@ done: the first step is to analyse which values are guaranteed to be used at mos
 is to insert special code for destructive updates on values that are used at most once. We devote this entire
 thesis to the first step, and leave the second step as future work.
 
-This chapter presents a uniqueness type system for a severely restricted language: simply-typed lambda calculus
+This chapter presents a uniqueness type system for a severely restricted language: simply-typed lambda-calculus
 with no |let| bindings, but with integers and an addition operator. Although restricted, this languages serves well to
 discuss the fundamentals of uniqueness typing, and our implementation of the uniqueness type system. In subsequent
 chapters, we extend the language with features, until most of Haskell is covered.
@@ -37,52 +37,103 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
 
   \subsection{Annotations}
   \label{sect.Annotations}
-
-  Instead of just classifying types as unique or shared, we distinguish five different values:
+  
+  We consider for a moment what a usage property actually is. During the execution of a program, there are \emph{values} in memory
+  and there are \emph{names} bound to values. These names are actually present in memory as \emph{pointers} to a
+  value\footnote{Unless the value is unboxed, then the name only exists conceptually.}.
+  Consider the program\footnote{The subscripts on |x| are not part of the code, but used as a
+  textual disambiguation of the occurrences of |x|.}:
 
 %%[[wrap=code
-  data Usage
-    =  Zero          -- not used (0)
-    |  Affine        -- at most used once (1-) "unique"
-    |  Linear        -- exactly used once (1)
-    |  Strict        -- at least used once, possibly more (1+)
-    |  Arbitrary     -- arbitrary usage (*) "shared"
+  (\x -> (\z -> (Sub(z)(3))) (Sub(x)(1)) + (\z -> (Sub(z)(4))) (Sub(x)(2))) 3
 %%]
 
-  We call this usage value the \emph{cardinality}~\cite{jur} of a value. Later in this thesis, we associate a
-  cardinality annotation with a type constructor. This annotation has nothing to do with the number of arguments
-  of a type constructor in this thesis. It specifies how often a certain value is used.
+  The names for values are the identifiers and their occurrences: |x|, |(Sub(x)(1))|, |(Sub(x)(2))|, |z|, |(Sub(z)(3))| and |(Sub(z)(4))|. Since
+  |(Sub(x)(1))| and |(Sub(x)(2))| are occurrences of |x|, they represent the same value, say |v| (which happens to be 3). The value |v| is exactly
+  used once \emph{via} the name |(Sub(x)(1))|. The value |v| is exactly used once via the name |(Sub(x)(2))|. So, in total |v| is used more than
+  once via |x|. Thus, |x| represents a value that is used more than once. Because the name |(Sub(x)(1))| represents
+  the same value, it also represents a value that is used more than once, even though this value is used only once via |x|. Similary,
+  |(Sub(x)(2))| represents a value that is used more than once. These are two different properties for a name: a propery that describes
+  the usage of a value via a name, and a property that describes the entire usage of a value represented by a name.
+  
+  This concept of names can be generalized to expressions (via referential transparency). Suppose that |v| is a value represented by an
+  expression |E|. There is a difference between a usage property that specifies that |v| is used a number of times through |E|, and
+  the property that specifies how often |v| is used in total.
+  
+  For uniqueness typing as defined in Clean, only usage properties of values are important. In Clean, a unique type represents a value
+  that is used at most once. For each name |x| with a unique type, we know that the corresponding value is used at most once. For example,
+  the value represented by |x| is used at most once in |(\x -> const (Sub(x)(5)) (Sub(x)(6))) 3|, but this property does not specify that
+  it is used at exactly once via |(Sub(x)(5))| and never through |(Sub(x)(6))|. An optimizer can only assume that if the value is used via
+  one of the names, that it will not be used via any of the other names. This is sufficient for destructive updates optimisations. Code that
+  performs destructive updates can be generated for any operation on a value that is used at most once, because at most one of these operations
+  will be performed during a program execution.
+  
+  However, there are optimisations that benefit from knowing that a value is used exactly once. A value that is used exactly once, can be
+  safely pre-evaluated before passing it to a function. Or a function that is used exactly once, can be inlined safely, always resulting
+  into better performing code and a smaller code size.Futhermore, an expression that will not be used at all, can be omitted. These are
+  realistic and beneficial optimisations, thus for our analysis, we support both types of usage properties.
+  
+  We define the \emph{cardiality}~\cite{jur} property of a type as follows:
+  
+%%[[wrap=code
+  (Card(Usage)(Usage))
+%%]
+
+  The left component defines the usage of some individual name or expression. The second component defines the total usage of
+  some value represented by the name or expression. The usage |Usage| is defined as:
+
+%%[[wrap=code
+  Usage  ::=  0        -- not used: zero
+         |    onemin   -- used at most once: affine, unique
+         |    1        -- exactly used once: linear
+         |    oneplus  -- at least used once: strict
+         |    *        -- arbitrary usage: shared
+%%]
+
+  A possible future generalisation of this approach is to support |Usage|-values up to |k > 0|, such that we can specify that some value
+  is exactly used |3| times, or at most |10| times. Although this generalisation is fairly straight forward, it is also doubtful
+  if there is a use for determining that some value is used at most a certain number of times. Since it only complicates our
+  expanation, we keep it with the above definition.
 
   Some optimizations demand that a value is exactly used once, while for other optimizations it is sufficient that a value
   is used at most once, which is slightly less demanding. Our approach can verify both uniqueness properties and
   strictness properties. Although our focus is on uniqueness properties, we consider strictness as well, since we get it
   almost for free with our approach. We still call our approach uniqueness typing, but it is technically more than that.
+  
+  A cardinality property is attached to type constructors as \emph{cardinality annotation}. Cardinality originates
+  from set theory where it is defined as the number of elements in a set. Some authors use the word cardinality as alternative
+  for arity. Our definition of cardinality is unrelated to arity, which is the reason why we stress the difference here.
 
-  To specify that a value |v| of type |Int| is exactly used once, we write: |v :: (Sup(Int)(1))|. The |1| is a
-  cardinality annotation specifying that the values corresponding to the |Int| type constructor, are used exactly
-  once. Likewise, if |f| is a function with annotated type |f :: (Sup(Int)(1)) (Sup(->)(1)) (Sup(Int)(*))|, then |f| is a function that is used
-  exactly once, producing a value that requires to be used any number of times, and states that the parameter is used
-  exactly once, and may not be used elsewhere.
+  Suppose that |x| is a name for value |v| of type |Int|, i.e. |x :: Int| with |memory(x) = v|. To specify that |x|
+  uses |v| exactly once via |x|, and that |x| requires that |v| is used exactly once in total, we write:
+  |x :: (Sup(Int)(Card(1)(1)))|. To specify that |x| does not use |v| via |x|, and that |x| requires |v| to be
+  used exactly once in total, we write: |x :: (Sup(Int)(Card(0)(1)))|. Similarly, suppose that |f| is the name for a closure |cl|,
+  i.e. a function |f :: Int -> Int|. Then |f :: (Sup(Int)(Card(1)(*))) (Sup(->)(Card(1)(1))) (Sup(Int)(Card(1)(*)))| specifies that
+  |f| uses |cl| exactly once via |f|, and that |f| requires that |cl| is used exactly once in total. Furthermore,
+  the annotated type specifies that for an argument-value |a|, |f| provides that it uses |a| exactly once, and makes no
+  demands about the total usage of |a|. Finally, the annotated type specifies that for a result-value |r|, |f| requires that |r| is
+  used exactly once, and gives no guarantees about the total usage of |r|.
 
   The analysis expects a program annotated in this fashion and verifies that the annotations are correct (inference in
   Chapter~\ref{chapt.Polyvariant}). Unfortunately, we cannot easily formulate the conditions of when an annotation is
   correct or not. We have to check two things: does the annotation fit with related annotations (the context), and
-  does the annotation fit with the number of references there are to the value. With context we mean that if two types are unified,
-  that their annotations also unify. For example, a value with cardinality |1| cannot be passed to a function that has a |onemin| cardinality for its parameter,
-  because the function cannot guarantee that the value will always be used. With the number of references we mean the
-  guaranteed upper and lower bound on the number of times the value will be evaluated or referenced. For example, a value
-  that is referenced at least once cannot have the cardinality annotation |0|. We have sufficient information for the
-  context check (which is basically a form of unification), but insufficient information for the reference-check.
+  does the annotation fit with the actual uses of the value. With context we mean that if two types are unified,
+  that their annotations also unify. For example, a value with cardinality |(Card(1)(1))| cannot be passed to a function that 
+  has |(Card(onemin)(1))| cardinality for its parameter, because the function does not guarantee that the value will always be used.
+  With the actual uses of the value, we mean the guaranteed upper and lower bound on the number of times the value will be evaluated
+  or referenced. For example, a value that is referenced at least once cannot have the cardinality annotation |(Card(0)(0))|. We have
+  sufficient information for the context check (which is basically a form of unification), but insufficient information for the
+  the check on the usages.
 
   We therefore ask the programmer to specify the upper and lower bound as well. The types in an expression are
-  thus annotated with three (!) annotations. A cardinality annotation, a lower-bound usage-count annotation,
+  thus annotated with three (!) annotations: A cardinality annotation, a lower-bound usage-count annotation,
   and an upper-bound usage-count annotation. The lower-bound usage-count annotation tells us that a value is at
   least used a certain number of times, and the upper-bound usage-count annotation tells us that a value is at most
-  used a certain number of times. The reference check demands that the cardinality annotation is in between
-  these bounds (Figure~\ref{code.FitsInBounds}). The upper and lower bound can be verified by means of an
-  analysis, which in turn means that we can verify the cardinality annotations.
+  used a certain number of times. The usage-check demands that the cardinality annotation \emph{fits} with these
+  bounds~\ref{code.FitsInBounds}). The upper and lower bound can be verified by means of an analysis, which in turn
+  means that we can verify the cardinality annotations.
 
-  We explain by means of an example how these three annotations interact and how we formulate the checks into
+  We explain by means of an example how these three annotations interact and how we formulate the checks as
   a constraint satisfaction problem. Unfortunately, that is rather hard to grasp at this point, so we defer
   the explanation to Section~\ref{sect.BigExample}. Instead, we discuss how to check the upper-bound
   usage-count annotations here, since the checks on the lower-bound usage-count and also the context-check on the
@@ -94,25 +145,25 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   |u| times:
 
 %%[[wrap=code
-  data UpperBound
-    | 0             -- not used
-    | 1             -- at most used once
-    | *             -- arbitrary usage, but typically represents a number greater than one
+  UpperBound  ::=  0            -- not used
+              |    1            -- used at most once
+              |    *            -- arbitrary usage, but typically represents a number greater than one
 %%]
 
   We assume that expressions are annotated with upper-bound usage-count annotations. That means that
   all type constructors occurring in the types of an expression have an upper-bound usage-count annotation.
-  For example, an annotated version of the expression |(\x -> x) 3| is:
+  For example, an annotated version of the expression |(\x -> x) 3| is\footnote{Again, note that the subscripts are not part of the code. They are used in the text to refer to a particular type.}:
 
 %%[[wrap=code
-  (\x -> x) 3
-  (((\(x :: (Sup(Sub(Int)(a))(1))) -> x :: (Sup(Sub(Int)(b))(1))) :: (Sup(Sub(Int)(c))(1)) (Sup(Sub(->)(d))(1)) (Sup(Sub(Int)(e))(1))) (3 :: (Sup(Sub(Int)(f))(1)))) :: (Sup(Sub(Int)(g))(1))
+  (\x -> x) 3  -- original expression
+  (((\(x :: Int) -> x :: Int) :: Int -> Int) (3 :: Int)) :: Int  -- typed expression
+  (((\(x :: (Sup(Sub(Int)(a))(1))) -> x :: (Sup(Sub(Int)(b))(1))) :: (Sup(Sub(Int)(c))(1)) (Sup(Sub(->)(d))(1)) (Sup(Sub(Int)(e))(1))) (3 :: (Sup(Sub(Int)(f))(1)))) :: (Sup(Sub(Int)(g))(1))  -- typed expression with annotations
 %%]
 
   This looks quite intimidating, but let us consider what is displayed here. The outermost expression is annotated
   with |(Sup(Sub(Int)(g))(1))|, which means that the result of the expression is used at most once. The outermost expression
   is an application of an argument to a function. The annotated type of the function is |(Sup(Sub(Int)(c))(1)) (Sup(Sub(->)(d))(1)) (Sup(Sub(Int)(e))(1))|. The annotation on the
-  arrow type constructor, (Sup((Sub(->)(d)))(1)), specifies that the function is used at most once. The annotation
+  arrow type constructor, |(Sup((Sub(->)(d)))(1))|, specifies that the function is used at most once. The annotation
   |(Sup(Sub(Int)(c))(1))| specifies that the parameter is used at most once, and |(Sup(Sub(Int)(e))(1))| demands
   that the result is used at most once. The annotation |(Sup(Sub(Int)(f))(1))| specifies that the argument
   is used at most once. The annotation on the parameter of the function and the annotation on the argument of the
@@ -133,10 +184,10 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   is evaluated once to obtain the value. So, the upper bound for the root of the expression is at least |1|. The annotated
   type of the root, |(Sup(Int)(1))|, is therefore correct. The root of the expression is a function application. Since the
   annotation is correct, it means that the upper bound for the function application is at least the upper bound of the
-  root of the expression, thus at least |1|. The function is at least as often used than the function application, so
+  root of the expression, thus at least |1|. The function is used at least as often as the function application, so
   the upper bound of the function is at least the upper bound of the function application, thus at least |1|. The annotation
   on |(Sup(Sub(->)(d))(1))| is correct. The same reasoning applies to the result of the function. The upper bound of the result
-  of the function is at least the upper bound of the function application . The annotation on |(Sup(Sub(Int)(e))(1))| is correct.
+  of the function is at least the upper bound of the function application. The annotation on |(Sup(Sub(Int)(e))(1))| is correct.
 
   Now the function and the argument. Consider the argument first. The function fully determines how often it
   is used. The upper bound of the argument is at least the upper bound of the parameter of the function. The annotation
@@ -155,8 +206,9 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   the above example shows why it is important:
 
 %%[[wrap=code
-  (\x -> x + x) 3
-  (\((Sub(x)(0)) :: (Sup(Sub(Int)(a))(*))) -> ((Sub(x)(1)) :: (Sup(Sub(Int)(b))(1))) + ((Sub(x)(2)) :: (Sup(Sub(Int)(c))(1)))) (3 :: (Sup(Sub(Int)(d))(*)))
+  (\x -> x + x) 3  -- original expression
+  (((\(x :: Int) -> ((x :: Int) + (x :: Int)) :: Int) :: Int -> Int) (3 :: Int)) :: Int  -- typed expression
+  (\((Sub(x)(0)) :: (Sup(Sub(Int)(a))(*))) -> ((Sub(x)(1)) :: (Sup(Sub(Int)(b))(1))) + ((Sub(x)(2)) :: (Sup(Sub(Int)(c))(1)))) (3 :: (Sup(Sub(Int)(d))(*)))  -- typed expression with annotations
 %%]
 
   The number of times a value bound to |(Sub(x)(0))| is used, is the aggregated number of times the value is used as |(Sub(x)(1))| and
@@ -165,7 +217,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   bounds of |(Sub(x)(1))| and |(Sub(x)(2))| are both |1|, so the sum is |*| and the annotation is correct.
 
   As we mentioned several times already, a conservative approximation of the upper bound is allowed. The upper bound may
-  be higher than it practice will be the case. For example, if we know that a value is not used, we may also assume that
+  be higher than is strictly neccessairy. For example, if we know that a value is not used, we may also assume that
   it is at most used once. Furthermore, assuming that some value is used an arbitrary number of times is always allowed. It
   is safe to pretend that the upper bound is higher than is actually the case, but it makes the analysis result less accurate.
 
@@ -193,7 +245,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   and `push' it through the abstract syntax tree from outermost to innermost, and in case of functions from result to
   arguments based on the body. A mental picture is that there is an `flow' of count-information from the
   root of the expression to the leaves. We say that the analysis 'propagates' counts. We see in later sections that
-  dealing with a lower bound, and dealing with usage annotations, is not much different than what we did in
+  dealing with a lower bound, and dealing with cardinality annotations, is not much different than what we did in
   this section.
 
 \section{The next step}
@@ -203,7 +255,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   typing. For example, for the upper bound analysis of the previous section, we generate a constraint
   |... =>= ...| for each time we wrote `at least', and a constraint |... \*/ ... \*/ ... <= ...| where
   we aggregated upper bounds. It that it? Yes, that is it basically, because we will show that the
-  same constraints can be used for the lower bound analysis and the analysis for the actual usage
+  same constraints can be used for the lower bound analysis and the analysis for the actual cardinality
   values.
 
   The running example in this section is the following expression:
@@ -214,7 +266,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
 
   The result of this program is evaluated once when the program is executed. Consequently, the results of
   both additions are used once, and thus is the |x| parameter used twice and the |y| parameter once. Which
-  in turn means that the value |3| is used twice and the value |4| once. In terms of usage, |3| the
+  in turn means that the value |3| is used twice and the value |4| once. In terms of usage, the
   value |3| is linear (exactly once), and the value |4| is strict (more than once).
 
   Efficient code can be produced with this usage information. A conventional implementation of addition in a pure,
@@ -224,35 +276,56 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   (destructively updating the value of |y|). The result of the addition is again linear, and the
   value of |x| can be added directly again for the second addition. The result: less memory allocation,
   less copying, and better cache utilization. If the compiler also inlines functions that are at most
-  used once, and evaluates strict values before passing it to a function, then this code is as efficient
-  as a corresponding imperative program.
+  used once, and evaluates strict values before passing it to a function, then we believe that this code is
+  as efficient as the imperative program:
+
+%%[[wrap=code
+  int y;
+  y = 4;
+  y += 3;
+  y += 3;
+  return y;
+%%]
 
   \subsection{Annotations}
 
-  Usage information is encoded as a cardinality annotation on the type constructors in the type of a value. The type
-  specifies how much certain regions of a value are used (Section~\ref{sect.TpAnnConstr}). As mentioned
-  in the introduction, a type has three annotations. This looks horrible, but unfortunately, we cannot
-  do anything against it until next chapter.
+  Usage information is encoded as a cardinality annotation on the type constructors in the type of a value.
+  The type constructors specify how a value is represented in memory. For example, the value 3 is represented
+  as a sequence of 32 bits somewhere in memory. The type constructor |Int| of the type of the value 3,
+  corresponds with this area of memory. The cardinality annotation determines the cardinality properties of the
+  area of memory. Likewise, the function type constructor |(->)| corresponds to a closure, which is an area
+  of memory which contains a pointer to the code of the function, and pointers to values where the
+  function depends on, among other information~\cite{wray89nonstrict}. The exact contents of the closure does
+  not matter for our explanation. Just assume that it represents the bookkeeping required for applying the
+  function to some value. The cardinality annotation on the function type constructor specifies the cardinality
+  property of this closure. To know the cardinality of a memory area (part of a value), lookup the annotation on
+  the type constructor that corresponds to the area of memory (Section~\ref{sect.TpAnnConstr}).
 
-  As an example of a triple of annotations, consider the type |(Sup(Int)((1,oneplus,*)))|. The first
+  As mentioned in the introduction, a type has three annotations. This looks horrible, but unfortunately, we cannot
+  do anything against it until next chapter. As an example of a triple of annotations, consider the type |(Sup(Int)((1,(Card(oneplus)(oneplus)),*)))|. The first
   annotation is the lower-bound usage-count annotation, which specifies that the value is at least used once.
   The second annotation is the cardinality annotation, specifying that the value is strict, meaning that it is used
   one or more times. The third annotation is the upper-bound usage-count annotation, which specifies
-  that the value is at most used an arbitrary number of times. This triple is consistent if the lower bound
-  is smaller or equal than the cardinality annotation, and the usage annotation is smaller or equal to the upper bound.
+  that the value is at most used an arbitrary number of times. This triple is consistent if the cardinality annotation
+  fits the two bounds and the cardinaltiy annotat
+
+the lower bound
+  is smaller or equal than the cardinality annotation, and the cardinalt annotation is smaller or equal to the upper bound.
   The smaller or equal relation is defined between the three types of annotations in the obvious way, and
   consistency for a triple is defined in Figure~\ref{code.FitsInBounds}.
 
   For the above example, a possible annotation is:
 
 %%[[wrap=code
-    (  (\x y ->  (  (  y :: (Sup(Int)((1, 1, 1)))
+    (  (  (\x y ->  (  (  y :: (Sup(Int)((1, 1, 1)))
+                       +  x :: (Sup(Int)((1, oneplus, *)))
+                       ) :: (Sup(Int)((1, 1, 1))))
                     +  x :: (Sup(Int)((1, oneplus, *)))
-                    ) :: (Sup(Int)((1, 1, 1))))
-                 +  x :: (Sup(Int)((1, oneplus, *)))
-                 ) :: (Sup(Int)((1, 1, 1)))
-       ) :: (Sup(Int)((1, oneplus, *))) (Sup(->)((1, 1, 1))) (Sup(Int)((1, 1, 1))) (Sup(->)((1, 1, 1))) (Sup(Int)((1, 1, 1))))
-       (3 :: (Sup(Int)((1, oneplus, *)))) (4 :: (Sup(Int)((1, 1, 1)))
+                    ) :: (Sup(Int)((1, 1, 1)))
+          ) :: (Sup(Int)((1, oneplus, *))) (Sup(->)((1, 1, 1))) (Sup(Int)((1, 1, 1))) (Sup(->)((1, 1, 1))) (Sup(Int)((1, 1, 1))))
+          (3 :: (Sup(Int)((1, oneplus, *)))))
+       ) :: (Sup(Int)((1, 1, 1))) (Sup(->)((1, 1, 1))) (Sup(Int)((1, 1, 1))))
+       (4 :: (Sup(Int)((1, 1, 1))))
     ) :: (Sup(Int)((1, 1, 1)))
 %%]
 
@@ -264,7 +337,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   \subsection{Checking the annotations}
 
   How to check that the annotated typing of a program is valid? First we check that the program is correctly
-  typed for the conventional type system of simply typed lambda calculus. Secondly, we check that all
+  typed for the conventional type system of simply typed lambda-calculus. Secondly, we check that all
   triples of annotations are consistent. Then it is time for the real work:
   gather a set of constraints from the annotated program, and check if the constraints are satisfied. When the
   constraints are satisfied, the annotations are correct and the program is correctly typed according to the
@@ -451,7 +524,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
 \label{sect.ExprLanguage}
 
   As mentioned before, the language in this chapter is a simply typed
-  lambda calculus without |let| bindings. The latter means no (recursive) |let|, but
+  lambda-calculus without |let| bindings. The latter means no (recursive) |let|, but
   there are bindings by lambda abstraction:
 
 %%[[wrap=code
