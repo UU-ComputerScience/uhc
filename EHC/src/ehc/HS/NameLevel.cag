@@ -34,7 +34,7 @@ SEM Declaration
     | Class InstanceUseImplicitly Default
         loc             .   nmLev       =   @lhs.nmLev -- + 1
     | Instance
-        loc             .   nmLev       =   @lhs.nmLev + 1
+        loc             .   nmLev       =   @lhs.nmLev -- + 1
 %%]
 %%[[11
     | Type

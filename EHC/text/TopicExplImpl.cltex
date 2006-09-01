@@ -837,7 +837,7 @@ For example, for |f| in the following fragment first we may pass a dictionary fo
 then we must pass two normal arguments, then we may pass a dictionary,
 and finally we must pass two normal arguments:
 
-%% test/9-eq2.eh
+%% test/9/eq2.eh
 %%[[wrap=code
 let  f :: forall ^ a . Eq a => a -> a -> forall ^ b . Eq b => b -> b -> (Bool,Bool)
      f = \p q r s -> (eq p q, eq r s)
@@ -888,7 +888,7 @@ By explicitly providing a dictionary the default decision made by EH is overrule
 This is useful in situations where ambiguities arise, as
 in the presence of overlapping instances:
 
-%% test/9-eq3.eh
+%% test/9/eq3.eh
 %%[[wrap=code test9eq3TwoExpl
 let  instance dEqInt1 <: Eq Int where
        eq = primEqInt
@@ -972,7 +972,7 @@ As we mentioned earlier,
 the declaration of an instance with a context actually introduces a function taking dictionaries
 as arguments:
 
-%% test/9-eq4.eh
+%% test/9/eq4.eh
 %%[[wrap=code test9eq4EqList
 let  instance dEqInt <: Eq Int where
        eq = primEqInt

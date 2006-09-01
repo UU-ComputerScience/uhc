@@ -14,7 +14,7 @@ intermediate imperative notation translated to @C@ (@C--@)
 \end{itemize}
 \item Example
 %%[[wrap=safecode
-%%@[file:test/8-demo-grin2.eh%%]
+%%@[file:test/8/demo-grin2.eh%%]
 %%]
 \end{itemize}
 }

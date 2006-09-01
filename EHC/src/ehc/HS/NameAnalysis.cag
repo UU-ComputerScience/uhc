@@ -166,7 +166,9 @@ SEM Declaration
                         .   idOccDefGam =   mkDefGam @lhs.nmLev @simpletype.range (IdAsp_Class_Def @eh) [@idOccDef]
                                             `gamUnion` @idOccDefGamSigAsVar
     | Instance
-        loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @range (IdAsp_Inst_Def @eh @classrefname) [@idOccDef]
+        loc             .   idOccDefGamType
+                                        =   tvarS2IdDefOccGam @lhs.nmLev @range @types.freeTvarS
+                        .   idOccDefGam =   mkDefGam @lhs.nmLev @range (IdAsp_Inst_Def @eh @classrefname) [@idOccDef]
                                             `gamUnion` mkDefGam @lhs.nmLev @range IdAsp_Val_Var [@idOccDefVal]
     | InstanceUseImplicitly
         loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @range (IdAsp_Inst_Def @eh @classrefname) @idOccDefs
@@ -334,6 +336,8 @@ SEM Declaration
         loc             .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
                         .   idOccDefGamInstForClass
                                         =   fst $ gamPartition (\_ d -> case doccAsp d of {IdAsp_Inst_Def _ n | n == @classrefname -> True ; _ -> False}) $ @lhs.idGam
+    | Instance
+        loc             .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
 %%]
 %%]
 

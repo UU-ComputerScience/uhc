@@ -6,9 +6,9 @@ quantified types.
 \Paragraph{Higher ranked explicit polymorphism}
 For example in
 \begin{code}
-%%@[file:test/3-demo-rank.eh%%]
+%%@[file:test/3/demo-rank.eh%%]
 \end{code}
-|f| has type |f :: %%4file(test/3-demo-rank.eh%%)|,
+|f| has type |f :: %%4file(test/3/demo-rank.eh%%)|,
 which means that |i| has type |forall a. a ->a| in the body of |f|.
 Therefore |i| can be used polymorphically in the body of |f|.
 
@@ -40,7 +40,7 @@ implemented by not forgetting higher-ranked type information.
 Quantifiers on higher-ranked positions are also necessary to make existential types useful
 
 \begin{code}
-%%@[file:test/4-demo1.eh%%]
+%%@[file:test/4/demo1.eh%%]
 \end{code}
 
 An existentially quantified type \Ix{existential quantification}
@@ -55,7 +55,7 @@ All we know is that we can apply the second component to the first component
 This constraint is not upheld for |pq|, so an error is produced:
 
 \begin{TT}
-%%4ppfile(test/4-demo1.eh%%)
+%%4ppfile(test/4/demo1.eh%%)
 \end{TT}
 
 \Paragraph{Opening an existentially quantified type}
@@ -73,13 +73,13 @@ It also means that we can create values with which we cannot do much useful.
 For example
 
 \begin{code}
-%%@[file:test/4-ex-extr3.eh%%]
+%%@[file:test/4/ex-extr3.eh%%]
 \end{code}
 
 gives
 
 \begin{TT}
-%%4ppfile(test/4-ex-extr3.eh%%)
+%%4ppfile(test/4/ex-extr3.eh%%)
 \end{TT}
 
 Both examples also demonstrate the place where opening an existentially quantified type is done.
@@ -90,13 +90,13 @@ bound to a value identifier.
 For example:
 
 \begin{code}
-%%@[file:test/4-ex-extr4.eh%%]
+%%@[file:test/4/ex-extr4.eh%%]
 \end{code}
 
 gives
 
 \begin{TT}
-%%4ppfile(test/4-ex-extr4.eh%%)
+%%4ppfile(test/4/ex-extr4.eh%%)
 \end{TT}
 
 Also, opening the same type twice, as done in the given example for |v1|,
@@ -113,7 +113,7 @@ Quantifiers need not always be specified.
 For example in
 
 \begin{code}
-%%@[file:test/4-ex-extr2.eh%%]
+%%@[file:test/4/ex-extr2.eh%%]
 \end{code}
 
 no quantifiers are specified in the type signatures, for |ixy| a type signature is even absent.
@@ -138,7 +138,7 @@ More rules are needed but we will look into this further when we look at the imp
 For the given example the following will be concluded
 
 \begin{TT}
-%%4ppfile(test/4-ex-extr2.eh%%)
+%%4ppfile(test/4/ex-extr2.eh%%)
 \end{TT}
 
 Note that an explicit type is needed to hide type information (as for |xy|),
@@ -199,7 +199,7 @@ becomes a partial ordering on types.
 For example,
 \label{ehc4-exists-sub}
 \begin{code}
-%%@[file:test/4-exists-sub.eh%%]
+%%@[file:test/4/exists-sub.eh%%]
 \end{code}
 
 makes the type inferencer check |Int <= exists a . a|,
@@ -214,7 +214,7 @@ holds as we can use a more generally applicable function |id|
 in the more restricted required setting |Int -> Int|.
 \label{ehc4-forall-sub}
 \begin{code}
-%%@[file:test/4-forall-sub.eh%%]
+%%@[file:test/4/forall-sub.eh%%]
 \end{code}
 
 Losing generality, or specialization/instantiation to a specific type is ok,
@@ -237,7 +237,7 @@ The following example (from Botlan \cite{botlan03ml-power-f})
 
 \label{ehc4-choose}
 \begin{code}
-%%@[file:test/4-impred-choose.eh%%]
+%%@[file:test/4/impred-choose.eh%%]
 \end{code}
 
 demonstrates a choice we can make.
@@ -461,7 +461,7 @@ The rules for quantified types also deserve a bit more attention.
 \item
 \RuleRef{f-forall-r2} applies in
 \begin{code}
-%%@[file:test/4-forall-sub.eh%%]
+%%@[file:test/4/forall-sub.eh%%]
 \end{code}
 to the check |Int -> Int <= forall a . a -> a| which has to be done for |id = ii|.
 If |forall a . a -> a| is instantiated with type variables |tvarv|,

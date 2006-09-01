@@ -22,7 +22,7 @@ test-lists:
 	do \
 	  ehs= ; \
 	  vv=`echo $$v | sed -e 's/_[0-9]//'` ; \
-	  for ((i = 1 ; i <= $${vv} ; i++)) ; do ehs="$$ehs `echo $${i}-*.eh`" ; done ; \
+	  for ((i = 1 ; i <= $${vv} ; i++)) ; do ehs="$$ehs `echo $${i}/*.{eh,hs}`" ; done ; \
 	  echo "$$ehs" > $$v.lst ; \
 	done
 
@@ -38,21 +38,30 @@ test-expect test-regress: test-lists
 	  then \
 	    for t in `cat $$v.lst` ; \
 	    do \
+	      tdir=`dirname $$t` ; \
 	      tb=`basename $$t .eh` ; \
+	      if test $${tdir}/$${tb} = $${t} ; \
+	      then \
+	        tb=`basename $$t .hs` ; \
+	        suff=".hs" ; \
+	      else \
+	        suff=".eh" ; \
+	      fi ; \
 	      if test -r $$t -a -x $$ehc ; \
 	      then \
 	        te=$${t}.exp$${v} ; tr=$${t}.reg$${v} ; th=$${t}.$${how}$${v} ; \
-	        tc=$${tb}.core ; \
+	        tc=$${tdir}/$${tb}.core ; \
 	        rm -f $${tc} ; \
 	        $$ehc $$t > $$th 2>&1 ; \
 	        if test -r $${tc} ; \
 	        then \
 	          echo "== core ==" >> $${th} ; \
 	          cat $${tc} >> $${th} ; \
-	          cp $$t t.eh ; \
+	          ttest=t$${suff} ; \
+	          cp $$t $${ttest} ; \
 	          if test -x ../bin/jc -a -x ../bin/jr -a "x$(CORE_TARG_SUFFIX)" = "xjava" ; \
 	          then \
-	            $$ehc --code=java t.eh > /dev/null ; \
+	            $$ehc --code=java $${ttest} > /dev/null ; \
 	            rm -f t.class ; \
 	            ../bin/jc t &> /dev/null ; \
 	            if test -r t.class ; \
@@ -63,7 +72,7 @@ test-expect test-regress: test-lists
 	          elif test -x $$gri -a "x$(CORE_TARG_SUFFIX)" = "x$(TEST_GRIN_SUFFIX)" ; \
 	          then \
 	            rm -f t.$(TEST_GRIN_SUFFIX) ; \
-	            $$ehc --code=grin t.eh > /dev/null ; \
+	            $$ehc --code=grin $${ttest} > /dev/null ; \
 	            echo "== grin execution ==" >> $${th} ; \
 	            $$gri t.$(TEST_GRIN_SUFFIX) >> $${th} 2>&1 ; \
 	          fi \

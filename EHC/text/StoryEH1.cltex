@@ -7,20 +7,20 @@ value definitions.
 For example
 
 %%[[wrap=code
-%%@[file:test/1-demo2.eh%%]
+%%@[file:test/1/demo2.eh%%]
 %%]
 
 is accepted, whereas
 
 %%[[wrap=code
-%%@[file:test/1-all-fail2.eh%%]
+%%@[file:test/1/all-fail2.eh%%]
 %%]
 produces a pretty printed version of the erroneous program,
 annotated with errors.
 Type errors are reported in terms of a failed 'fit' (@<=@) which is our mechanism
 for matching, or fitting (because of the asymmetry in later EH versions), two types:
 \begin{TT}
-%%1ppfile(test/1-all-fail2.eh%%)
+%%1ppfile(test/1/all-fail2.eh%%)
 \end{TT}
 
 Type signatures have to be specified for identifiers bound in a |let| expression.
@@ -32,7 +32,7 @@ In that case a type signature for the |lambda|-expression is required in the exp
 This program will not typecheck because a |Char->Char| function is applied to an |Int|.
 
 %%[[wrap=code
-%%@[file:test/1-polylam1.eh%%]
+%%@[file:test/1/polylam1.eh%%]
 %%]
 
 

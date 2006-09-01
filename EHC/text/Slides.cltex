@@ -352,7 +352,7 @@ c1 = eCata  (  id                      ,  \v1 v2 -> v1 ++ " " ++ v2
 \begin{itemize}
 \item Input
 %%[[wrap=safecode
-%%@[file:test/1-all-fail2.eh%%]
+%%@[file:test/1/all-fail2.eh%%]
 %%]
 \end{itemize}
 \end{column}
@@ -360,7 +360,7 @@ c1 = eCata  (  id                      ,  \v1 v2 -> v1 ++ " " ++ v2
 \begin{itemize}
 \item Abstract syntax
 \begin{TT}
-%%1astfile(test/1-all-fail2.eh%%)
+%%1astfile(test/1/all-fail2.eh%%)
 \end{TT}
 \end{itemize}
 \end{column}
@@ -373,7 +373,7 @@ c1 = eCata  (  id                      ,  \v1 v2 -> v1 ++ " " ++ v2
 \begin{itemize}
 \item Output
 \begin{TT}
-%%1ppfile(test/1-all-fail2.eh%%)
+%%1ppfile(test/1/all-fail2.eh%%)
 \end{TT}
 \end{itemize}
 }
@@ -1103,11 +1103,11 @@ generated functions
 \item Type signature may be omitted
 \item For example
 %%[[wrap=safecode
-%%@[file:test/1-sig-fail.eh%%]
+%%@[file:test/1/sig-fail.eh%%]
 %%]
 \item gives
 \begin{TT}
-%%2ppfile(test/1-sig-fail.eh%%)
+%%2ppfile(test/1/sig-fail.eh%%)
 \end{TT}
 \item Type is inferred/reconstructed
 \end{itemize}
@@ -1120,11 +1120,11 @@ generated functions
 \item Functions can only be used for one type, not many (polymorphism)
 \item For example
 %%[[wrap=safecode
-%%@[file:test/2-demo1.eh%%]
+%%@[file:test/2/demo1.eh%%]
 %%]
 \item infers
 \begin{TT}
-%%2ppfile(test/2-demo1.eh%%)
+%%2ppfile(test/2/demo1.eh%%)
 \end{TT}
 \end{itemize}
 }
@@ -1136,11 +1136,11 @@ generated functions
 \item Polymorphic use leads to errors
 \item For example
 %%[[wrap=safecode
-%%@[file:test/2-id-intchar.eh%%]
+%%@[file:test/2/id-intchar.eh%%]
 %%]
 \item gives
 \begin{TT}
-%%2ppfile(test/2-id-intchar.eh%%)
+%%2ppfile(test/2/id-intchar.eh%%)
 \end{TT}
 \end{itemize}
 }
@@ -1498,11 +1498,11 @@ constraints |tyCnstr| and |patTyCnstr|
 \item Arguments may not be polymorphic
 \item Incorrect:
 %%[[wrap=safecode
-%%@[file:test/3-mono-arg.eh%%]
+%%@[file:test/3/mono-arg.eh%%]
 %%]
 \item Incorrect:
 %%[[wrap=safecode
-%%@[file:test/3-mono-arg3.eh%%]
+%%@[file:test/3/mono-arg3.eh%%]
 %%]
 \item Only identifiers bound by |let|
 \end{itemize}
@@ -1515,15 +1515,15 @@ constraints |tyCnstr| and |patTyCnstr|
 \item<+-> Type inferencer deduces polymorphism at |let| bindings only
 \item Bindings can only be polymorphically used in body of |let|:
 %%[[wrap=safecode
-%%@[file:test/3-mono-arg2.eh%%]
+%%@[file:test/3/mono-arg2.eh%%]
 %%]
-\item Type of \alert<+>{|f :: %%3file(test/3-mono-arg2.eh%%)|}
+\item Type of \alert<+>{|f :: %%3file(test/3/mono-arg2.eh%%)|}
 \onslide<+->
 \item If used in same group of bindings:
 %%[[wrap=safecode
-%%@[file:test/3-mono-arg4.eh%%]
+%%@[file:test/3/mono-arg4.eh%%]
 %%]
-\item Type of \alert<+>{|f :: %%3file(test/3-mono-arg4.eh%%)|}
+\item Type of \alert<+>{|f :: %%3file(test/3/mono-arg4.eh%%)|}
 \item<+-> Analysis per \emph{binding group}
 \end{itemize}
 }
@@ -1578,7 +1578,7 @@ constraints |tyCnstr| and |patTyCnstr|
 \begin{itemize}
 \item
 %%[[wrap=safecode
-%%@[file:test/7-all-ok.eh%%]
+%%@[file:test/7/all-ok.eh%%]
 %%]
 \end{itemize}
 }
