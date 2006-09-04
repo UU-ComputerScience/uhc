@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Code's Java gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.Pretty} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core}) export(ppCModule)
+%%[8 hs module {%{EH}Core.Pretty} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)}) export(ppCModule)
 %%]
 
 %%[9 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty}) export(ppCxBindLMap,ppCBindL)
@@ -30,6 +30,11 @@ ppCExpr ce
 
 instance PP CExpr where
   pp ce = ppCExpr ce
+%%]
+
+%%[8 hs
+ppCNm :: HsName -> PP_Doc
+ppCNm = ppHsnNonAlpha coreScanOpts
 %%]
 
 %%[9 hs
@@ -60,54 +65,96 @@ ppCxBindLMap (CxBindLMap m)
 %%[8 hs
 ppDef :: (PP a, PP b) => a -> b -> PP_Doc
 ppDef n v   = n >-< indent 1 v
+
+ppDef' :: (PP a, PP b) => a -> b -> PP_Doc
+ppDef' n v   = ppOr (n >-< indent 1 v) (n >#< v)
+-- ppDef' n v   = ppDef n v
+
+ppOr :: (PP a, PP b) => a -> b -> PP_Doc
+ppOr a b   = join (a >//< b)
+-- ppOr a b   = pp a
+
+ppOr' :: (PP a, PP b) => a -> b -> PP_Doc
+-- ppOr' a b   = ppOr a b
+ppOr' a b   = pp a
+
+ppLit :: String -> String -> PP_Doc
+ppLit kind val = "#" >|< kind >|< pp (show val)
+
+ppTag :: CTag -> PP_Doc
+ppTag t = "#Tag" >|< ppCTag' ppCNm t
 %%]
 
 %%[8
 ATTR CodeAGItf AllCodeNT [ | | pp USE {>-<} {empty} : PP_Doc ]
-ATTR CPatBindL CPatL CBindL [ | | ppL: {[PP_Doc]} ]
+ATTR CPatBindL CPatL CBindL CAltL [ | | ppL: {[PP_Doc]} ]
+ATTR CExpr [ | | lamBodyPP: PP_Doc  lamArgPPL: {[PP_Doc]} ]
+ATTR CExpr [ | | appFunPP : PP_Doc  appArgPPL: {[PP_Doc]} ]
 
 SEM CModule
-  | Mod         lhs         .   pp          =   "module" >#< @baseName >-< @expr.pp
+  | Mod         lhs         .   pp          =   "module" >#< ppCNm (mkHNm @baseName) >-< @expr.pp
 
 SEM CExpr
-  | Int         loc         .   pp          =   pp @int
-  | Char        loc         .   pp          =   pp (show @char)
-  | Var         loc         .   pp          =   pp @nm
-  | App         loc         .   pp          =   ppDef @func.pp (pp_parens @arg.pp)
+  | Int         loc         .   pp          =   ppLit "Int"    (show @int)
+  | Char        loc         .   pp          =   ppLit "Char"   [@char]
+  | Float       loc         .   pp          =   ppLit "Float"  (show @float)
+  | String      loc         .   pp          =   ppLit "String" @str
+%%[[99
+  | Integer     loc         .   pp          =   ppLit "Integer" (show @integer)
+  | Double      loc         .   pp          =   ppLit "Double"  (show @double)
+%%]
+  | Var         loc         .   pp          =   ppCNm @nm
+  | App         loc         .   pp          =   let args = reverse $ map pp_parens $ @appArgPPL
+                                                in  ppOr (ppDef @appFunPP (vlist args))
+                                                         (@appFunPP >#< (ppSpaces args))
   | Let         loc         .   ppCateg     =   case @categ of
-                                                    CBindRec     -> pp "rec"
-                                                    CBindStrict  -> pp "!"
-                                                    CBindFFI     -> pp "ffi"
-                                                    _            -> empty
-                            .   pp          =   ppDef ("let" >#< @ppCateg) @binds.pp >-< ppDef "in" @body.pp
-  | Lam         loc         .   pp          =   ppDef ("\\" >|< @arg) ("->" >#< @body.pp)
-  | Case        loc         .   pp          =   ppDef ("case" >#< @expr.pp)
-                                                    (ppDef "of"
-                                                        (@alts.pp >-< "_->" >#< @dflt.pp))
-  | Tup         loc         .   pp          =   "#" >|< pp_parens (pp @tag)
-  | TupDel      loc         .   pp          =   ppDef (pp_parens @expr.pp) (".-" >|< pp_parens (pp @tag >|< ":" >|< @offset.pp >|< ":" >|< @nm))
-  | TupIns      loc         .   pp          =   ppDef (pp_parens @expr.pp) (ppDef (".+" >|< pp_parens (pp @tag >|< ":" >|< @offset.pp >|< ":" >|< @nm)) (@fldExpr.pp))
-  | TupUpd      loc         .   pp          =   ppDef (pp_parens @expr.pp) (ppDef (".-+" >|< pp_parens (pp @tag >|< ":" >|< @offset.pp >|< ":" >|< @nm)) (@fldExpr.pp))
+                                                  CBindRec     -> pp " rec"
+                                                  CBindStrict  -> pp " !"
+                                                  CBindFFI     -> pp " foreign"
+                                                  _            -> empty
+                            .   pp          =   ppDef ("let" >|< @ppCateg) (ppCurlysSemisBlock @binds.ppL) >-< "in" >-< @body.pp
+  | Lam         loc         .   pp          =   ppOr' (ppDef ("\\" >|< ppSpaces @lamArgPPL >#< "->") (@lamBodyPP))
+                                                      ("\\" >|< ppSpaces @lamArgPPL >#< "->" >#< @lamBodyPP)
+  | Case        loc         .   pp          =   "case" >#< @expr.pp >#< "of" >-< indent 1 (ppCurlysSemisBlock @alts.ppL >-< ppCurlysSemisBlock [ppDef "default" @dflt.pp])
+  | Tup         loc         .   pp          =   ppTag @tag
+  | TupDel      loc         .   pp          =   ppDef (pp_parens @expr.pp) ("-=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm])
+  | TupIns      loc         .   pp          =   ppDef (pp_parens @expr.pp) (ppDef ("+=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (pp_parens @fldExpr.pp))
+  | TupUpd      loc         .   pp          =   ppDef (pp_parens @expr.pp) (ppDef (":=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (pp_parens @fldExpr.pp))
+
+SEM CExpr
+  | Lam         loc         .   lamBodyPP   =   @body.lamBodyPP
+                            .   lamArgPPL   =   ppCNm @arg : @body.lamArgPPL
+  | * - Lam     lhs         .   lamBodyPP   =   @pp
+                            .   lamArgPPL   =   []
+
+SEM CExpr
+  | App         loc         .   appFunPP    =   @func.appFunPP
+                            .   appArgPPL   =   @arg.pp : @func.appArgPPL
+  | * - App     lhs         .   appFunPP    =   @pp
+                            .   appArgPPL   =   []
 
 SEM CBind
-  | Bind        lhs         .   pp          =   ppDef @nm ("=" >#< @expr.pp)
-  | FFI         lhs         .   pp          =   ppDef @nm ("=" >#< "ffi" >#< pp (show @impEnt))
+  | Bind        lhs         .   pp          =   ppDef (ppCNm @nm >#< "=") (@expr.pp)
+  | FFI         lhs         .   pp          =   ppDef (ppCNm @nm >#< "=")
+                                                      ("foreign" >#< ppCurlysCommasBlock [pp (show @callconv),pp (show @safety),pp (show @impEnt),ppTyWithCfg cfgPPTyHI @ty])
 
 SEM CBindL
   | Nil         lhs         .   ppL         =   []
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 
 SEM CAlt
-  | Alt         lhs         .   pp          =   ppDef (head @pats.ppL) ("->" >#< @expr.pp)
+  | Alt         lhs         .   pp          =   ppDef (head @pats.ppL >#< "->") (@expr.pp)
+
+SEM CAltL
+  | Nil         lhs         .   ppL         =   []
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 
 SEM CPat
-  | Int         lhs         .   pp          =   pp @int
-  | Char        lhs         .   pp          =   pp (show @char)
-  | Var         lhs         .   pp          =   pp (cpatNmNm @pnm)
-  | Con         lhs         .   pp          =   (cpatNmEither ((>|< "@") . pp) (const empty) @pnm)
-                                                >|< pp_parens   (   @tag >|< ":"
-                                                                >|< pp_parens (@rest.pp >|< "|" >|< ppListSep "" "" "," @binds.ppL)
-                                                                )
+  | Int         lhs         .   pp          =   ppCPatNmNm ppCNm @pnm >#< ppLit "Int"    (show @int)
+  | Char        lhs         .   pp          =   ppCPatNmNm ppCNm @pnm >#< ppLit "Char"   [@char]
+  | Var         lhs         .   pp          =   ppCPatNmNm ppCNm @pnm
+  | Con         lhs         .   pp          =   ppDef (ppCPatNmNm ppCNm @pnm >#< ppTag @tag)
+                                                      (ppCurly (@rest.pp >|< "|" >|< ppCommas' @binds.ppL))
   | Undef       lhs         .   pp          =   pp hsnUnknown
 
 SEM CPatL
@@ -115,10 +162,10 @@ SEM CPatL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 
 SEM CPatBind
-  | Bind        lhs         .   pp          =   @lbl >|< "/" >|< @offset.pp >|< "=" >|< @pat.pp
+  | Bind        lhs         .   pp          =   ppCurlysCommas' [ppCNm @lbl,@offset.pp,ppCNm @nm] >|< "=" >|< @pat.pp
 
 SEM CPatRest
-  | Var         lhs         .   pp          =   pp @nm
+  | Var         lhs         .   pp          =   ppCNm @nm
 
 SEM CPatBindL
   | Nil         lhs         .   ppL         =   []
@@ -135,10 +182,5 @@ SEM CExpr
   | CoeArg      loc         .   pp          =   pp "<_>"
   | ImplsApp    loc         .   pp          =   ppDef (@func.pp >#< "-- Impl") (ppHole @uid)
   | ImplsLam    loc         .   pp          =   ppDef ("\\" >|< ppHole @uid >#< "-- Impl") ("->" >#< @body.pp)
-%%]
-
-%%[99
-SEM CExpr
-  | Integer     loc         .   pp          =   pp (show @integer)
 %%]
 

@@ -52,7 +52,7 @@ hiFromAllGams fg vg tg dg ig (eg,ecx)
     ++ hiFromGam (\n dgi -> Binding_DataCon n (Map.toList $ dgiDataTagMp dgi)) dg
     ++ hiFromGam (\n pigi -> Binding_Class n (Pr.pigiPrToEvidTy pigi) (Pr.pigiKi pigi) (mkr $ Pr.pigiRule pigi)) ig
     ++ hiFromTGam (\n pegi -> Binding_Instance n (map mkr $ Pr.pegiRuleL pegi)) ecx eg
-  where mkr r = Rule_Rule (Pr.rulNmEvid r) (Pr.rulRuleTy r) ([],CExpr_Var $ Pr.rulNmEvid r) (Pr.rulId r) (Pr.rulCost r) []
+  where mkr r = Rule_Rule (Pr.rulNmEvid r) (Pr.rulRuleTy r) (Pr.rulMkEvidCExpr r) (Pr.rulId r) (Pr.rulCost r) []
 %%]
 
 

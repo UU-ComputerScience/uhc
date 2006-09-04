@@ -194,6 +194,56 @@ hsScanOpts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Scan opts for other parsers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+coreScanOpts :: ScanOpts
+coreScanOpts
+  =  grinScanOpts
+        {   scoKeywordsTxt      =   [ "let", "in", "case", "of", "rec", "foreign", "uniq"
+                                    , "Int", "Char", "Float", "String", "Tag", "Rec"
+                                    , "module", "default"
+%%[[12
+                                    , "Integer", "Double" 
+%%]
+                                    ]
+        ,   scoDollarIdent      =   True
+        ,   scoOpChars          =          scoOpChars   grinScanOpts ++ scoOpChars   hsScanOpts
+        ,   scoSpecChars        =   "!=" ++ scoSpecChars grinScanOpts ++ scoSpecChars hsScanOpts
+        }
+%%]
+
+%%[8
+grinScanOpts :: ScanOpts
+grinScanOpts
+  =  defaultScanOpts
+        {   scoKeywordsTxt      =   [ "eval", "apply"
+                                    , "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi"
+                                    , "throw", "try", "catch", "ctags", "applymap", "evalmap"
+                                    , "C", "F", "P", "A", "R", "H", "U", "W"
+                                    ]
+        ,   scoKeywordsOps      =   [ "<-", "->", "=", "+=", "-=", ":=", "-" ]
+        ,   scoSpecChars        =   "();{}#/\\|,"
+        ,   scoOpChars          =   "<->:=+"
+        ,   scoDollarIdent      =   True
+        }
+%%]
+
+%%[8
+hiScanOpts :: ScanOpts
+hiScanOpts
+  =  hsScanOpts
+        {   scoKeywordsTxt      =   [ "value", "fixity", "stamp", "uid", "rule"
+                                    ]
+                                    ++ scoKeywordsTxt hsScanOpts
+        ,   scoOpChars          =   scoOpChars coreScanOpts
+        ,   scoDollarIdent      =   True
+        ,   scoSpecChars        =   scoSpecChars coreScanOpts
+        }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Scan file/handle to tokenlist
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -580,7 +630,8 @@ tokOpStrsHS11   = [  ]
 %%[12
 pQUALIFIED      ,
     pAS         ,
-    pHIDING     
+    pHIDING     ,
+    pNUMBER     
   :: IsParser p Token => p Token
 %%]
 
@@ -588,6 +639,7 @@ pQUALIFIED      ,
 pQUALIFIED       = pKeyTk "qualified"
 pAS              = pKeyTk "as"
 pHIDING          = pKeyTk "hiding"
+pNUMBER          = pKeyTk "#"
 
 tokKeywStrsEH12 = [  ]
 tokKeywStrsHS12 = [ "qualified", "as", "hiding" ]

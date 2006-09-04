@@ -9,7 +9,7 @@ module EH.Util.Rel
   , partitionDom
   , intersection, difference, union, unions
   , apply
-  , toDomMap, toRanMap
+  , toDomMap, toRngMap
   )
   where
 
@@ -73,6 +73,6 @@ apply r a = Set.toList $ rng $ restrictDom (==a) $ r
 toDomMap :: Ord a => Rel a b -> Map.Map a [b]
 toDomMap r = Map.unionsWith (++) [ Map.singleton a [b] | (a,b) <- toList r ]
 
-toRanMap :: Ord b => Rel a b -> Map.Map b [a]
-toRanMap r = Map.unionsWith (++) [ Map.singleton b [a] | (a,b) <- toList r ]
+toRngMap :: Ord b => Rel a b -> Map.Map b [a]
+toRngMap r = Map.unionsWith (++) [ Map.singleton b [a] | (a,b) <- toList r ]
 

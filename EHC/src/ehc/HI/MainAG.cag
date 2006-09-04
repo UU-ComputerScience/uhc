@@ -11,7 +11,7 @@
 %%[12 hs module {%{EH}HI.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Gam},qualified {%{EH}Pred} as Pr,{%{EH}HI})
 %%]
 
-%%[12 hs import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}HI.Parser}(hiScanOpts))
+%%[12 hs import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

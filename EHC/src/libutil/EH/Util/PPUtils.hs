@@ -29,6 +29,12 @@ ppCommas' = ppListSep "" "" ", "
 ppSpaces :: PP a => [a] -> PP_Doc
 ppSpaces = ppListSep "" "" " "
 
+ppCurlysSemisBlock :: PP a => [a] -> PP_Doc
+ppCurlysSemisBlock = pp_block "{ " "}" "; " . map pp
+
+ppCurlysCommasBlock :: PP a => [a] -> PP_Doc
+ppCurlysCommasBlock = pp_block "{ " "}" ", " . map pp
+
 ppBracketsCommas :: PP a => [a] -> PP_Doc
 ppBracketsCommas = ppListSep "[" "]" ","
 
@@ -47,8 +53,14 @@ ppCurlysCommas = ppListSep "{" "}" ","
 ppCurlysCommas' :: PP a => [a] -> PP_Doc
 ppCurlysCommas' = ppListSep "{" "}" ", "
 
+ppCurlysSemis :: PP a => [a] -> PP_Doc
+ppCurlysSemis = ppListSep "{" "}" ";"
+
+ppCurlysSemis' :: PP a => [a] -> PP_Doc
+ppCurlysSemis' = ppListSep "{" "}" ", "
+
 ppCommaListV :: PP a => [a] -> PP_Doc
-ppCommaListV = ppListSepVV "[" "]" ", "
+ppCommaListV = ppListSepVV "[" "]" "; "
 
 ppListSepV' :: (PP s, PP c, PP o, PP a) => (forall x y . (PP x, PP y) => x -> y -> PP_Doc) -> o -> c -> s -> [a] -> PP_Doc
 ppListSepV' aside o c s pps

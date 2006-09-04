@@ -39,42 +39,27 @@ test-expect test-regress: test-lists
 	    for t in `cat $$v.lst` ; \
 	    do \
 	      tdir=`dirname $$t` ; \
-	      tb=`basename $$t .eh` ; \
-	      if test $${tdir}/$${tb} = $${t} ; \
+	      tb="$${tdir}/"`basename $$t .eh` ; \
+	      if test $${tb} = $${t} ; \
 	      then \
-	        tb=`basename $$t .hs` ; \
-	        suff=".hs" ; \
-	      else \
-	        suff=".eh" ; \
+	        tb="$${tdir}/"`basename $$t .hs` ; \
 	      fi ; \
 	      if test -r $$t -a -x $$ehc ; \
 	      then \
 	        te=$${t}.exp$${v} ; tr=$${t}.reg$${v} ; th=$${t}.$${how}$${v} ; \
-	        tc=$${tdir}/$${tb}.core ; \
+	        tc=$${tb}.core ; \
 	        rm -f $${tc} ; \
 	        $$ehc $$t > $$th 2>&1 ; \
 	        if test -r $${tc} ; \
 	        then \
 	          echo "== core ==" >> $${th} ; \
 	          cat $${tc} >> $${th} ; \
-	          ttest=t$${suff} ; \
-	          cp $$t $${ttest} ; \
-	          if test -x ../bin/jc -a -x ../bin/jr -a "x$(CORE_TARG_SUFFIX)" = "xjava" ; \
+	          if test -x $$gri -a "x$(CORE_TARG_SUFFIX)" = "x$(TEST_GRIN_SUFFIX)" ; \
 	          then \
-	            $$ehc --code=java $${ttest} > /dev/null ; \
-	            rm -f t.class ; \
-	            ../bin/jc t &> /dev/null ; \
-	            if test -r t.class ; \
-	            then \
-	              echo "== java execution ==" >> $${th} ; \
-	              ../bin/jr t >> $${th} 2>&1 ; \
-	            fi \
-	          elif test -x $$gri -a "x$(CORE_TARG_SUFFIX)" = "x$(TEST_GRIN_SUFFIX)" ; \
-	          then \
-	            rm -f t.$(TEST_GRIN_SUFFIX) ; \
-	            $$ehc --code=grin $${ttest} > /dev/null ; \
+	            rm -f $${tb}.$(TEST_GRIN_SUFFIX) ; \
+	            $$ehc --code=grin $${t} > /dev/null ; \
 	            echo "== grin execution ==" >> $${th} ; \
-	            $$gri t.$(TEST_GRIN_SUFFIX) >> $${th} 2>&1 ; \
+	            $$gri $${tb}.$(TEST_GRIN_SUFFIX) >> $${th} 2>&1 ; \
 	          fi \
 	        fi ; \
 	        if test $$tr = $$th -a -r $$te ; \

@@ -88,14 +88,6 @@ SEM FunctionBinding
 %%]
 
 %%[1
-%%]
-SEM LeftHandSide
-    | Function Infix
-        loc             .   nmLev       =   @lhs.nmLev + 1
-    | Parenthesized
-        patterns        .   nmLev       =   @lhs.nmLev + 1
-
-%%[1
 SEM RightHandSide
     | *
         loc             .   nmLev       =   @lhs.nmLev + 1

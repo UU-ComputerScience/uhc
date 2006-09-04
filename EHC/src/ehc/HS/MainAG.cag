@@ -42,7 +42,7 @@ WRAPPER AGItf
 
 %%[12 hs
 %%]
-type HSModAndRest = (Mod,ModEntMp -> Syn_AGItf)
+type HSModAndRest = (Mod,ModEntDomMp -> Syn_AGItf)
 
 wrapModAndRest :: T_AGItf -> Inh_AGItf -> HSModAndRest
 wrapModAndRest sem inh
@@ -72,13 +72,17 @@ SEM Body
 %%]
 
 %%[12
-ATTR AGItf Module Body [ | | gathIdGam: IdDefOccGam ]
+ATTR AGItf Module Body [ modEntToOrig: ModEntRngMp | | gathIdGam: IdDefOccGam ]
 %%]
 
 %%[12
 SEM Body
-  	| Body
-  		lhs        		.   gathIdGam	=   @declarations.idOccDefGam
+    | Body
+        lhs             .   gathIdGam   =   @declarations.idOccDefGam
+                                            `gamUnion` assocLToGam [ (o {ioccNm = hsnSetQual @lhs.moduleNm (ioccNm o)},d)
+                                                                   | (o,d) <- gamToAssocL @lhs.idGam
+                                                                   , n <- Map.findWithDefault [] o @lhs.modEntToOrig
+                                                                   ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

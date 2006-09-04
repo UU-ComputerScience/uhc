@@ -15,7 +15,7 @@
 %%[12 module {%{EH}Module} import(Data.Maybe,Data.List,qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.Utils,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Common},{%{EH}Error})
 %%]
 
-%%[12 export(ModEnt(..),ModExp(..),ModEntSpec(..),ModEntSubSpec(..),ModImp(..),Mod(..),ModEntRel,ModEntMp)
+%%[12 export(ModEnt(..),ModExp(..),ModEntSpec(..),ModEntSubSpec(..),ModImp(..),Mod(..),ModEntRel,ModEntDomMp,ModEntRngMp)
 %%]
 
 %%[12 export(emptyMod)
@@ -27,7 +27,7 @@
 %%[12 export(ModMpInfo(..),ModMp,modMpCombine)
 %%]
 
-%%[12 export(ppModMp,ppModEntMp,ppModEntRel)
+%%[12 export(ppModMp,ppModEntDomMp,ppModEntRel)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -52,8 +52,9 @@ instance Ord ModEnt where
         EQ -> mentIdOcc e1 `compare` mentIdOcc e2
         c  -> c
 
-type ModEntRel = Rel.Rel HsName  ModEnt
-type ModEntMp  = Map.Map HsName [ModEnt]
+type ModEntRel     = Rel.Rel HsName  ModEnt
+type ModEntDomMp   = Map.Map HsName [ModEnt]
+type ModEntRngMp   = Map.Map IdOcc  [HsName]
 
 mentIsCon :: ModEnt -> Bool
 mentIsCon e = mentKind e == IdOcc_Data || mentKind e == IdOcc_Class
@@ -68,8 +69,8 @@ ppModEntRel :: ModEntRel -> PP_Doc
 ppModEntRel
   = ppBracketsCommas . map (\(a,b) -> pp a >|< "<>" >|< pp b) . Rel.toList
 
-ppModEntMp :: ModEntMp -> PP_Doc
-ppModEntMp
+ppModEntDomMp :: ModEntDomMp -> PP_Doc
+ppModEntDomMp
   = ppBracketsCommas . map (\(a,b) -> pp a >|< "<>" >|< ppBracketsCommas b) . Map.toList
 %%]
 
@@ -270,7 +271,7 @@ checkMod expsOf inscp mod
     ++ if null missingModules
        then checkExpSpec inscp mod
             ++ [ err | (imp,Just exps) <- impSources, err <- checkImp exps imp ]
-       else map (\n -> mkErr_NamesNotIntrod "module" [n]) missingModules
+       else [mkErr_NamesNotIntrod "module" missingModules]
   where Just modExports = expsOf (modName mod)
         impSources      = [ (imp,expsOf (mimpSource imp)) | imp <- modImpL mod ]
         missingModules  = nub [ mimpSource imp | (imp,Nothing) <- impSources ]
@@ -282,7 +283,9 @@ checkAmbigExps exps
   = concatMap isAmbig (Set.toList (Rel.dom exps))
   where isAmbig n = ambig n cons ++ ambig n other
                   where (cons,other) = partition mentIsCon (Rel.apply exps n)
-        ambig n ents@(_:_:_) = [Err_AmbiguousExport n (map pp ents)]
+        ambig n ents@(_:_:_) | not (null a)
+                             = [Err_AmbiguousExport n (map (pp . ioccNm . mentIdOcc) $ concat $ a)]
+                             where a = [ l | l@(_:_:_) <- groupSortOn (ioccKind . mentIdOcc) ents ]
         ambig n _            = []
 %%]
 
@@ -358,10 +361,11 @@ ppModMp = vlist . map (\(n,i) -> n >#< pp i) . Map.toList
 %%[12
 modMpCombine ::  [Mod] -> ModMp -> (ModMp,[Err])
 modMpCombine ms mp
-  = (newMp `Map.union` mp,concat errs)
+  = (newMp,concat errs)
   where expsOf mp n     = mmiExps $ Map.findWithDefault emptyModMpInfo n mp
         rels            = modInsOuts (expsOf mp) ms
         (inscps,exps)   = unzip rels
-        newMp           = Map.fromList $ zipWith3 (\n i o -> (n,ModMpInfo i o)) (map modName ms) inscps exps
+        newMp           = (Map.fromList $ zipWith3 (\n i o -> (n,ModMpInfo i o)) (map modName ms) inscps exps)
+                           `Map.union` mp
         errs            = zipWith (checkMod (fmap mmiExps . (`Map.lookup` newMp))) inscps ms
 %%]

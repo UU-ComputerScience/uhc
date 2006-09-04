@@ -4,27 +4,15 @@
 
 %%[12 hs
 hiNV :: String -> HsName -> [PP_Doc] -> PP_Doc
-hiNV k n v = k >#< ppHINm n >-< indent 1 ("=" >#< ppCurlysSemis v)
+hiNV k n v = k >#< ppHINm n >-< indent 1 ("=" >#< ppCurlysSemisBlock v)
 
-ppCurlysSemis :: PP a => [a] -> PP_Doc
-ppCurlysSemis = pp_block "{ " "}" "; " . map pp
-
+%%]
 ppHINm :: HsName -> PP_Doc
 ppHINm = ppHsnNonAlpha hiScanOpts
-%%]
+
 ppAttr :: PP b => HsName -> b -> PP_Doc
 ppAttr a b = ppHINm a >#< ":" >#< b
 
-
-%%[12 hs
-cfgPPTyHI :: CfgPPTy
-cfgPPTyHI
-  = cfgPPTyConViaCfg
-      { cfgPPTyPPHsn        = ppHINm
-      , cfgPPTyFollowAST    = True
-      , cfgPPTyPPVar        = \c u _ -> pp u
-      }
-%%]
 
 %%[2
 ATTR AllNT AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
@@ -48,7 +36,7 @@ SEM Binding
     | Ty
         lhs         .   pp          =   hiNV "type" @nm [ppTyWithCfg cfgPPTyHI @ty,ppTyWithCfg cfgPPTyHI @ki]
     | Class
-        lhs         .   pp          =   hiNV "class" @nm [ppTyWithCfg cfgPPTyHI @prToEvidTy,@rule.pp]
+        lhs         .   pp          =   hiNV "class" @nm [ppTyWithCfg cfgPPTyHI @prToEvidTy,ppTyWithCfg cfgPPTyHI @ki,@rule.pp]
     | Instance
         lhs         .   pp          =   hiNV "instance" @nm @rules.ppL
 %%]
@@ -56,7 +44,7 @@ SEM Binding
 %%[12
 SEM Rule
     | Rule
-        lhs         .   pp          =   hiNV "rule" @nm [ppTyWithCfg cfgPPTyHI @ty,pp @uid,pp @mkEvid,pp @cost]
+        lhs         .   pp          =   hiNV "rule" @nm [ppTyWithCfg cfgPPTyHI @ty,pp @mkEvid,ppPredOccId' ppUID' @uid,Pr.ppProofCost' @cost]
 %%]
 
 %%[12

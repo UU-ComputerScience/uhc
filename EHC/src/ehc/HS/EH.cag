@@ -653,7 +653,7 @@ SEM LeftHandSide
     | Function
         lhs         .   eh          =   rngLift @range EH.PatExpr_Var @refname : @patterns.eh
     | Infix
-        lhs         .   eh          =   [rngLift @range EH.PatExpr_Var @operator,@leftPattern.eh,@rightPattern.eh]
+        lhs         .   eh          =   [rngLift @range EH.PatExpr_Var @refname,@leftPattern.eh,@rightPattern.eh]
     | Parenthesized
         lhs         .   eh          =   @lefthandside.eh ++ @patterns.eh
 %%]

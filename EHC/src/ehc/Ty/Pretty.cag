@@ -13,13 +13,13 @@
 %%[3 hs import(Char)
 %%]
 
+%%[8 hs import({%{EH}Scanner.Common(hiScanOpts)}) export(ppTyWithCfg,cfgPPTyHI,ppHINm)
+%%]
+
+%%[8 hs export(CfgPPTy(..),cfgPPTyDflt,cfgPPTyConViaCfg)
+%%]
+
 %%[9 hs export(ppTyPr)
-%%]
-
-%%[9 hs export(CfgPPTy(..),cfgPPTyDflt,cfgPPTyConViaCfg)
-%%]
-
-%%[12 hs export(ppTyWithCfg)
 %%]
 
 %%[1.WRAPPER import({Ty/AbsSyn},{Ty/CommonAG})
@@ -38,7 +38,7 @@ instance PP Ty where
   pp t = ppTy t
 %%]
 
-%%[9.ppTy -1.ppTy hs
+%%[8.ppTy -1.ppTy hs
 ppTyWithCfg :: CfgPPTy -> Ty -> PP_Doc
 ppTyWithCfg c ty
   =  let  t =  wrap_TyAGItf
@@ -49,11 +49,14 @@ ppTyWithCfg c ty
 ppTy :: Ty -> PP_Doc
 ppTy = ppTyWithCfg cfgPPTyDflt
 
+instance PP Ty where
+  pp t = ppTy t
+%%]
+
+%%[9 hs
 ppTyPr :: Ty -> PP_Doc
 ppTyPr = ppTyWithCfg cfgPPTyPred
 
-instance PP Ty where
-  pp t = ppTy t
 %%]
 
 %%[4_2 hs
@@ -79,16 +82,16 @@ instance PP PredOcc where
 %%% Configuration of PP of Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
+%%[8 hs
 data CfgPPTy
   = CfgPPTy
       { cfgPPTyPPHsn        :: HsName -> PP_Doc
       , cfgPPTyPPCon        :: CfgPPTy -> HsName -> PP_Doc
       , cfgPPTyPPVar        :: CfgPPTy -> UID -> Int -> PP_Doc
+%%[[9
       , cfgPPTyCtxt         :: TyCtxt
-%%[[12
-      , cfgPPTyFollowAST    :: Bool
 %%]
+      , cfgPPTyFollowAST    :: Bool
       }
 
 cfgPPTyDflt :: CfgPPTy
@@ -96,11 +99,11 @@ cfgPPTyDflt
   = CfgPPTy
       { cfgPPTyPPHsn        = pp
       , cfgPPTyPPCon        = \_ -> ppCon
-      , cfgPPTyPPVar		= \c _ i -> ppTnUniq c i
+      , cfgPPTyPPVar        = \c _ i -> ppTnUniq c i
+%%[[9
       , cfgPPTyCtxt         = TyCtxt_Ty
-%%[[12
-      , cfgPPTyFollowAST    = False
 %%]
+      , cfgPPTyFollowAST    = False
       }
 
 cfgPPTyConViaCfg :: CfgPPTy
@@ -108,7 +111,9 @@ cfgPPTyConViaCfg
   = cfgPPTyDflt
       { cfgPPTyPPCon        = \c n -> if n == hsnRowEmpty then hsnORow >#< hsnCRow else cfgPPTyPPHsn c n
       }
+%%]
 
+%%[9 hs
 cfgPPTyPred :: CfgPPTy
 cfgPPTyPred
   = cfgPPTyDflt
@@ -116,13 +121,30 @@ cfgPPTyPred
       }
 %%]
 
+%%[8 hs
+ppHINm :: HsName -> PP_Doc
+ppHINm = ppHsnNonAlpha hiScanOpts
+%%]
+
+%%[8 hs
+cfgPPTyHI :: CfgPPTy
+cfgPPTyHI
+  = cfgPPTyConViaCfg
+      { cfgPPTyPPHsn        = ppHINm
+      , cfgPPTyFollowAST    = True
+      , cfgPPTyPPVar        = \c u _ -> "uid" >#< ppUID' u
+      }
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% The context (of a config) of a type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[8
 ATTR TyAGItf AllTy [ cfg: CfgPPTy | | ]
+%%]
 
+%%[9
 SEM Pred
   | Pred        loc         .   cfg             =   @lhs.cfg { cfgPPTyCtxt = TyCtxt_Pred }
   | * - Pred    loc         .   cfg             =   @lhs.cfg { cfgPPTyCtxt = TyCtxt_Ty   }
@@ -152,7 +174,7 @@ ppTnUniq :: Int -> PP_Doc
 ppTnUniq = pp . tnUniqRepr
 %%]
 
-%%[9 -3.ppTnUniq hs
+%%[8 -3.ppTnUniq hs
 ppTnUniq :: CfgPPTy -> Int -> PP_Doc
 ppTnUniq c = cfgPPTyPPHsn c . mkHNm . tnUniqRepr
 %%]
@@ -162,7 +184,7 @@ mkDefaultTvNm :: String -> TyVarId -> PP_Doc
 mkDefaultTvNm pre tv = text (pre ++ "_" ++ show tv)
 %%]
 
-%%[9 -3.mkDefaultTvNm hs
+%%[8 -3.mkDefaultTvNm hs
 mkDefaultTvNm :: CfgPPTy -> String -> TyVarId -> PP_Doc
 mkDefaultTvNm cfg pre tv = cfgPPTyPPHsn cfg $ mkHNm $ pre ++ "_" ++ show tv
 %%]
@@ -190,7 +212,7 @@ SEM Ty
                     lhs     .   tnMap       =   filter (\(v,_) -> v /= @tv) @ty.tnMap
 %%]
 
-%%[9
+%%[8
 SEM Ty
   | Quant           loc     .   tnPP        :=  cfgPPTyPPVar @lhs.cfg @lhs.cfg @tv @lhs.tnUniq
 %%]
@@ -211,7 +233,7 @@ SEM Ty
   | Any             loc     .   pp      =   pp hsnUnknown
 %%]
 
-%%[12
+%%[8
 SEM Ty
   | Con             loc     .   pp      :=  cfgPPTyPPCon @lhs.cfg @lhs.cfg @nm
   | App             loc     .   ppDflt  :=  if cfgPPTyFollowAST @lhs.cfg then ppParens @func.pp >#< ppParens @arg.pp else @func.pp >#< @arg.pp
@@ -228,7 +250,7 @@ SEM Ty
   | Var             loc     .   pp      :=  maybe (mkDefaultTvNm (tvCategPrefix @categ.self) @tv) id (lookup @tv @lhs.tnMap)
 %%]
 
-%%[9.Var -3.Var
+%%[8.Var -3.Var
 SEM Ty
   | Var             loc     .   pp      :=  maybe (mkDefaultTvNm @lhs.cfg (tvCategPrefix @categ.self) @tv) id (lookup @tv @lhs.tnMap)
 %%]
@@ -284,7 +306,7 @@ SEM Ty
                             .   pp      =   @ppNice
 %%]
 
-%%[12
+%%[8
 SEM Ty
   | Ext             loc     .   ppDflt  =   hsnORow >#< @ty.pp >#< "|" >#< @fldPP >#< hsnCRow
                             .   pp      :=  if cfgPPTyFollowAST @lhs.cfg then @ppDflt else @ppNice
@@ -372,16 +394,17 @@ SEM Ty
   | App             loc     .  (appFunPP,appArgPPL)
                                             :=  mkExtAppPP  (@appFunNm,@func.appFunPP,@func.appArgPPL)
                                                             (@arg.appFunNm,@arg.appFunPP,@arg.appArgPPL,@arg.pp)
-  | Ext             loc     .  fldPP        =   ppFld "::" @positionalNm @nm (pp @nm) @extTy.pp
+  | Ext             loc     .  fldPP        =   ppFld "::" (Just @positionalNm) @nm (pp @nm) @extTy.pp
                             .  appArgPPL    :=  @ty.appArgPPL ++ [@fldPP]
                             .  appFunPP     :=  @ty.appFunPP
   | * - App Ext     lhs     .  appArgPPL    :=  []
                             .  appFunPP     :=  @pp
 %%]
 
-%%[9
+%%[8
 SEM Ty
-  | Ext             loc     .  fldPP        :=  ppFld "::" @positionalNm @nm (cfgPPTyPPHsn @lhs.cfg @nm) @extTy.pp
+  | Ext             loc     .  fldPP        :=  let pn = if cfgPPTyFollowAST @lhs.cfg then Nothing else Just @positionalNm
+                                                in  ppFld "::" pn @nm (cfgPPTyPPHsn @lhs.cfg @nm) @extTy.pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

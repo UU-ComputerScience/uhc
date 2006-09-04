@@ -1013,6 +1013,18 @@ ruleset expr.base scheme expr "Expression type rules" =
       judge Q : valGamQuantify = quValGam, gTyTvL, lSubsValGam, gSubsValGam === valGam.l, valGam.g, tyCnstr.d
       ---
 
+{-
+    view EX =
+      judge ED : valGamInst1Exists = gathTySigGam.ex === gathTySigGam
+      judge EP : valGamInst1Exists = patValGam.ex === (patTyCnstr.syn valGam.l)
+      judge EB : valGamInst1Exists = quValGam.ex === quValGam
+      judge D : decl
+          | patValGam.inh = gathTySigGam.ex ++ valGam
+          | valGam = patValGam.ex
+      judge B : expr
+          | valGam = quValGam.ex + valGam.g
+      ---
+-}
     view EX =
       judge ED : valGamInst1Exists = gathTySigGam.ex === gathTySigGam
       judge EB : valGamInst1Exists = quValGam.ex === quValGam

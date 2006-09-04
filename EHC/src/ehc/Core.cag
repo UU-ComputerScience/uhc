@@ -13,7 +13,7 @@
 %%[8 hs export(CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL) 
 %%]
 
-%%[8 hs export(CPatNm(..), cpatNmEither,cpatNmNone)
+%%[8 hs export(CPatNm(..), cpatNmEither,cpatNmNone,ppCPatNmNm)
 %%]
 
 %%[8 hs export(cpatVarNm,caltTag,caltIsVar,caltIsConst,caltPatL,caltPat,caltLPatNms,cvarUndefined) 
@@ -35,9 +35,6 @@
 %%]
 
 %%[8 hs export(cTupLbl)
-%%]
-
-%%[8 hs export(ctag,ppCTag,ppCTagInt) 
 %%]
 
 %%[9 hs export(Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLetRecCoe)
@@ -74,6 +71,7 @@ cTupLbl e
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
+%%]
 ctag :: a -> (HsName -> HsName -> Int -> Int -> a) -> CTag -> a
 ctag n t tg = case tg of {CTag tn cn i a -> t tn cn i a; _ -> n}
 
@@ -85,7 +83,6 @@ ppCTagInt = ctag (pp "-1") (\_ _ t _ -> pp t)
 
 instance PP CTag where
   pp = ppCTag
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Binding category
@@ -155,6 +152,9 @@ cpatNmEither o u pnm = case pnm of {CPatNmOrig n -> o n; CPatNmUniq n -> u n}
 
 cpatNmNone :: CPatNm
 cpatNmNone = CPatNmOrig hsnWild
+
+ppCPatNmNm :: (HsName -> PP_Doc) -> CPatNm -> PP_Doc
+ppCPatNmNm ppNm = cpatNmEither (ppNm) (\n -> "uniq" >#< ppNm n)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -185,7 +185,7 @@ mkCExprAddInt e i = if i == 0 then e else CExpr_Var hsnPrimAddInt `mkCExprApp` [
 
 %%[8 hs
 mkCMod :: CExpr -> CModule
-mkCMod e = CModule_Mod "" e []
+mkCMod e = CModule_Mod (HNm "") e []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

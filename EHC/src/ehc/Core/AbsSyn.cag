@@ -19,7 +19,7 @@ DATA CodeAGItf
 
 %%[8
 DATA CModule
-  | Mod         baseName        : {String}
+  | Mod         baseName        : {HsName}
                 expr            : CExpr
                 ctagsMp         : {CTagsMp}
 %%]
