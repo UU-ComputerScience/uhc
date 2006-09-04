@@ -1,7 +1,5 @@
 %%[main
 
-%format sumtuples = "\sum_{i}"
-
 \chapter{Lambda-calculus without bindings}
 \label{chapt.NoBindings}
 
@@ -37,7 +35,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
 
   \subsection{Annotations}
   \label{sect.Annotations}
-  
+
   We consider for a moment what a usage property actually is. During the execution of a program, there are \emph{values} in memory
   and there are \emph{names} bound to values. These names are actually present in memory as \emph{pointers} to a
   value\footnote{Unless the value is unboxed, then the name only exists conceptually.}.
@@ -55,11 +53,15 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   the same value, it also represents a value that is used more than once, even though this value is used only once via |x|. Similary,
   |(Sub(x)(2))| represents a value that is used more than once. These are two different properties for a name: a propery that describes
   the usage of a value via a name, and a property that describes the entire usage of a value represented by a name.
-  
-  This concept of names can be generalized to expressions (via referential transparency). Suppose that |v| is a value represented by an
-  expression |E|. There is a difference between a usage property that specifies that |v| is used a number of times through |E|, and
-  the property that specifies how often |v| is used in total.
-  
+
+  This concept of names can be generalized to expressions (via referential transparency: an unevaluated expression in a \emph{thunk}, of which
+  the memory is later replaced by the actual value). Suppose that |v| is a value represented by an
+  expression |E|.
+
+  An important observation is that there is a difference between a usage property that specifies that |v| is used a number of times
+  via |E|, and the property that specifies how often |v| is used in total. An analysis typically focusses on one of of these two
+  usage properties.
+
   For uniqueness typing as defined in Clean, only usage properties of values are important. In Clean, a unique type represents a value
   that is used at most once. For each name |x| with a unique type, we know that the corresponding value is used at most once. For example,
   the value represented by |x| is used at most once in |(\x -> const (Sub(x)(5)) (Sub(x)(6))) 3|, but this property does not specify that
@@ -67,14 +69,14 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   one of the names, that it will not be used via any of the other names. This is sufficient for destructive updates optimisations. Code that
   performs destructive updates can be generated for any operation on a value that is used at most once, because at most one of these operations
   will be performed during a program execution.
-  
+
   However, there are optimisations that benefit from knowing that a value is used exactly once. A value that is used exactly once, can be
   safely pre-evaluated before passing it to a function. Or a function that is used exactly once, can be inlined safely, always resulting
   into better performing code and a smaller code size.Futhermore, an expression that will not be used at all, can be omitted. These are
   realistic and beneficial optimisations, thus for our analysis, we support both types of usage properties.
-  
+
   We define the \emph{cardiality}~\cite{jur} property of a type as follows:
-  
+
 %%[[wrap=code
   (Card(Usage)(Usage))
 %%]
@@ -99,7 +101,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   is used at most once, which is slightly less demanding. Our approach can verify both uniqueness properties and
   strictness properties. Although our focus is on uniqueness properties, we consider strictness as well, since we get it
   almost for free with our approach. We still call our approach uniqueness typing, but it is technically more than that.
-  
+
   A cardinality property is attached to type constructors as \emph{cardinality annotation}. Cardinality originates
   from set theory where it is defined as the number of elements in a set. Some authors use the word cardinality as alternative
   for arity. Our definition of cardinality is unrelated to arity, which is the reason why we stress the difference here.
@@ -118,18 +120,18 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   Chapter~\ref{chapt.Polyvariant}). Unfortunately, we cannot easily formulate the conditions of when an annotation is
   correct or not. We have to check two things: does the annotation fit with related annotations (the context), and
   does the annotation fit with the actual uses of the value. With context we mean that if two types are unified,
-  that their annotations also unify. For example, a value with cardinality |(Card(1)(1))| cannot be passed to a function that 
+  that their annotations also unify. For example, a value with cardinality |(Card(1)(1))| cannot be passed to a function that
   has |(Card(onemin)(1))| cardinality for its parameter, because the function does not guarantee that the value will always be used.
   With the actual uses of the value, we mean the guaranteed upper and lower bound on the number of times the value will be evaluated
   or referenced. For example, a value that is referenced at least once cannot have the cardinality annotation |(Card(0)(0))|. We have
-  sufficient information for the context check (which is basically a form of unification), but insufficient information for the
-  the check on the usages.
+  sufficient information for the context check (which is basically a form of unification, and checks the right-hand side of the cardinality annotation), but insufficient information for the
+  the check on the usages (the left-hand side of the cardinality annotation).
 
-  We therefore ask the programmer to specify the upper and lower bound as well. The types in an expression are
-  thus annotated with three (!) annotations: A cardinality annotation, a lower-bound usage-count annotation,
-  and an upper-bound usage-count annotation. The lower-bound usage-count annotation tells us that a value is at
-  least used a certain number of times, and the upper-bound usage-count annotation tells us that a value is at most
-  used a certain number of times. The usage-check demands that the cardinality annotation \emph{fits} with these
+  We therefore ask the programmer to specify an upper and lower bound on the type of an expression (or name). The types in an expression are
+  thus annotated with three (!) annotations: A cardinality annotation, a lower-bound usage-count annotation, and an upper-bound usage-count annotation.
+  The lower-bound usage-count annotation tells us that a value is at
+  least used a certain number of times via the expression, and the upper-bound usage-count annotation tells us that a value is at most
+  used a certain number of times via the expression. The usage-check demands that left-hand side of the cardinality annotation \emph{fits} with these
   bounds~\ref{code.FitsInBounds}). The upper and lower bound can be verified by means of an analysis, which in turn
   means that we can verify the cardinality annotations.
 
@@ -225,7 +227,8 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   is strictly necessary:
 
 %%[[wrap=code
-  (\x -> x) 3
+  (\x -> x) 3  -- original expression
+  (((\(x :: Int) -> x :: Int) :: Int -> Int) (3 :: Int)) :: Int  -- typed expression
   (((\(x :: (Sup(Sub(Int)(a))(*))) -> x :: (Sup(Sub(Int)(b))(1))) :: (Sup(Sub(Int)(c))(*)) (Sup(Sub(->)(d))(*)) (Sup(Sub(Int)(e))(1))) (3 :: (Sup(Sub(Int)(f))(*)))) :: (Sup(Sub(Int)(g))(1))
 %%]
 
@@ -307,26 +310,24 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   The second annotation is the cardinality annotation, specifying that the value is strict, meaning that it is used
   one or more times. The third annotation is the upper-bound usage-count annotation, which specifies
   that the value is at most used an arbitrary number of times. This triple is consistent if the cardinality annotation
-  fits the two bounds and the cardinaltiy annotat
-
-the lower bound
-  is smaller or equal than the cardinality annotation, and the cardinalt annotation is smaller or equal to the upper bound.
-  The smaller or equal relation is defined between the three types of annotations in the obvious way, and
-  consistency for a triple is defined in Figure~\ref{code.FitsInBounds}.
+  fits the two bounds (Figure~\ref{code.FitsInBounds}) and the left-hand side of the cardinality annotation does not conflict with the right-hand side
+  of the cardinality annotation (Section~\ref{sect.TpAnnConstr}).
 
   For the above example, a possible annotation is:
 
 %%[[wrap=code
-    (  (  (\x y ->  (  (  y :: (Sup(Int)((1, 1, 1)))
-                       +  x :: (Sup(Int)((1, oneplus, *)))
-                       ) :: (Sup(Int)((1, 1, 1))))
-                    +  x :: (Sup(Int)((1, oneplus, *)))
-                    ) :: (Sup(Int)((1, 1, 1)))
-          ) :: (Sup(Int)((1, oneplus, *))) (Sup(->)((1, 1, 1))) (Sup(Int)((1, 1, 1))) (Sup(->)((1, 1, 1))) (Sup(Int)((1, 1, 1))))
-          (3 :: (Sup(Int)((1, oneplus, *)))))
-       ) :: (Sup(Int)((1, 1, 1))) (Sup(->)((1, 1, 1))) (Sup(Int)((1, 1, 1))))
-       (4 :: (Sup(Int)((1, 1, 1))))
-    ) :: (Sup(Int)((1, 1, 1)))
+    (  (  (  \(x :: (Sup(Int)((1, (Card(1)(oneplus)), *)))) ->
+               \(y :: (Sup(Int)((1, (Card(1)(1)), *)))) ->
+                 (  (  y :: (Sup(Int)((1, (Card(1)(1)), 1)))
+                    +  x :: (Sup(Int)((1, (Card(1)(oneplus)), *)))
+                    ) :: (Sup(Int)((1, (Card(1)(1)), 1))))
+                 +  x :: (Sup(Int)((1, (Card(1)(oneplus)), *)))
+                 ) :: (Sup(Int)((1, (Card(1)(1)), 1)))
+          ) :: (Sup(Int)((1, (Card(1)(oneplus)), *))) (Sup(->)((1, (Card(1)(1)), 1))) (Sup(Int)((1, (Card(1)(1)), 1))) (Sup(->)((1, (Card(1)(1)), 1))) (Sup(Int)((1, (Card(1)(1)), 1))))
+          (3 :: (Sup(Int)((1, (Card(1)(oneplus)), *))))
+       ) :: (Sup(Int)((1, (Card(1)(1)), 1))) (Sup(->)((1, (Card(1)(1)), 1))) (Sup(Int)((1, (Card(1)(1)), 1))))
+       (4 :: (Sup(Int)((1, (Card(1)(1)), 1))))
+    ) :: (Sup(Int)((1, (Card(1)(1)), 1)))
 %%]
 
   This looks quite intimidating, but that is just because there are a lot of types involved and the
@@ -343,7 +344,7 @@ the lower bound
   constraints are satisfied, the annotations are correct and the program is correctly typed according to the
   uniqueness type system.
 
-  As a side note, in order to keep the explanation compact, we are a bit
+  As an aside, in order to keep the explanation compact, we are a bit
   sloppy in distinguishing identifiers, values and types. For example, if we talk about the upper bound of
   a function, we intend the upper-bound usage-count annotation on the type constructor associated with the
   value representing the function. Or when we talk about the cardinality of an expression, we actually mean how
@@ -356,41 +357,42 @@ the lower bound
   start with the entire program (expression):
 
 %%[[wrap=code
-    ( ... ) :: (Sup(Int)(((Sup(1)(1)), (Sup(1)(2)), (Sup(1)(3)))))
+    ( ... ) :: (Sup(Int)(((Sup(1)(1)), (SCard(1)(2)(1)), (Sup(1)(3)))))
 %%]
 
   The result of the entire expression is exactly used once. However, we are allowed to be less accurate for the result
-  of the entire expression. Any usage value that is consistent is allowed. We generate the constraint |(1, *, 1) (Sub(=>=)(s)) ((Sup(1)(1)), (Sup(1)(2)), (Sup(1)(3)))|. This constraint specifies that the lower bound
+  of the entire expression. Any usage value that is consistent is allowed. We generate the constraint |(1, (Card(1)(*)), 1) (Sub(=>=)(s)) ((Sup(1)(1)), (SCard(1)(2)(1)), (Sup(1)(3)))|. This constraint specifies that the lower bound
   is at most |1|, the upper bound is at least |1|, and the cardinality annotation can be anything as long as it is consistent with
-  the two bounds in the triple. The subscript |s| indicates that the usage annotation is ignored in this constraint. A |=>=| constraint
-  without the |s| suffix is encountered later in the example. The generated constraint expresses what we know about the result of the entire expression. We call this
-  constraint a flow or propagation constraint, because with some imagination, it `pushes' values on the
-  left-hand side to the right-hand side. We often call a |=>=| constraint a coercion, which is explained in the next
-  section.
+  the two bounds in the triple. The subscript |s| indicates that the cardinality annotation is ignored in this
+  constraint. A |=>=| constraint without the |s| suffix is encountered later in the example. The generated constraint expresses what
+  we know about the result of the entire expression. We call this constraint a flow or propagation constraint, because with some
+  imagination, it `pushes' values on the left-hand side to the right-hand side. We often call a |=>=| constraint a coercion, which
+  is explained in the next section.
 
   One step into the expression, an application is encountered:
 
 %%[[wrap=code
-    (( ... :: (Sup(Int)(((Sup(1)(4)), (Sup(1)(5)), (Sup(1)(6))))) (Sup(->)(((Sup(1)(7)), (Sup(1)(8)), (Sup(1)(9))))) (Sup(Int)(((Sup(1)(10)), (Sup(1)(11)), (Sup(1)(12)))))) (4 :: (Sup(Int)(((Sup(1)(13)), (Sup(1)(14)), (Sup(1)(15))))))) :: (Sup(Int)(((Sup(1)(16)), (Sup(1)(17)), (Sup(1)(18)))))
+    (( ... :: (Sup(Int)(((Sup(1)(4)), (SCard(1)(5)(1)), (Sup(1)(6))))) (Sup(->)(((Sup(1)(7)), (SCard(1)(8)(1)), (Sup(1)(9))))) (Sup(Int)(((Sup(1)(10)), (SCard(1)(11)(1)), (Sup(1)(12)))))) (4 :: (Sup(Int)(((Sup(1)(13)), (SCard(1)(14)(1)), (Sup(1)(15))))))) :: (Sup(Int)(((Sup(1)(16)), (SCard(1)(17)(1)), (Sup(1)(18)))))
 %%]
 
   Several constraints are generated for a function application:
 
   \begin{itemize}
   \item The function application and the function. The number of usages of the function depends on the number of usages of the
-        function application. We generate the constraint |((Sup(1)(16)), (Sup(1)(17)), (Sup(1)(18))) (Sub(=>=)(s)) ((Sup(1)(7)), (Sup(1)(8)), (Sup(1)(9)))|.
+        function application. We generate the constraint |((Sup(1)(16)), (SCard(1)(17)(1)), (Sup(1)(18))) (Sub(=>=)(s)) ((Sup(1)(7)), (SCard(1)(8)(1)), (Sup(1)(9)))|.
         The lower bound of the function (|(Sup(1)(7))|) is at most the lower bound of the function application (|(Sup(1)(16))|). The upper bound of
         the function (|(Sup(1)(18))|) is at least the upper bound of the function application (|(Sup(1)(9))|). The constraint
         expresses precisely how often the function is used, if we know how often the function application itself is used.
-        The cardinality annotations are unrelated, since the memory occupied by the function has nothing to do with the memory
+        The cardinality annotations are unrelated, since the memory occupied by the closure (function) is unrelated to the memory
         occupied by the result of the function.
   \item The function application and result of the function. The number of uses of the result of the function application depends on
-        how often the function application itself is used. We generate the constraint |((Sup(1)(16)), (Sup(1)(17)), (Sup(1)(18))) =>= ((Sup(1)(10)), (Sup(1)(11)), (Sup(1)(12)))|.
+        how often the function application itself is used. We generate the constraint |((Sup(1)(16)), (SCard(1)(17)(1)), (Sup(1)(18))) =>= ((Sup(1)(10)), (SCard(1)(11)(1)), (Sup(1)(12)))|.
         The lower bound of the result of the function (|(Sup(1)(10))|) is at most the lower bound of the function application (|(Sup(1)(16))|). The upper bound of
-        the result of the function function (|(Sup(1)(18))|) is at least the upper bound of the function application (|(Sup(1)(11))|). The cardinality annotation (|(Sup(1)(12))|)
-        of the result of the function should be equal (modulo coercion) to the cardinality annotation of the function application (|(Sup(1)(17))|).
+        the result of the function function (|(Sup(1)(18))|) is at least the upper bound of the function application (|(Sup(1)(12))|). The cardinality annotation (|(SCard(1)(11)(1))|)
+        of the result of the function should be equal (modulo coercion/weakening) to the cardinality annotation of the function application (|(SCard(1)(17)(1))|), since they
+        represent the same value (via referential transparancy).
   \item The function and the argument of the function application. The uses of the argument of the function
-        application depend on the annotations of the parameter of the function. We generate the constraint |((Sup(1)(4)), (Sup(1)(5)), (Sup(1)(6))) =>= ((Sup(1)(13)), (Sup(1)(14)), (Sup(1)(15)))|.
+        application depend on the annotations of the parameter of the function. We generate the constraint |((Sup(1)(4)), (SCard(1)(5)(1)), (Sup(1)(6))) =>= ((Sup(1)(13)), (SCard(1)(14)(1)), (Sup(1)(15)))|.
         The semantics of the constraint capture the relations between the three annotations on the type of the function parameter and
         the type of the argument value.
   \end{itemize}
@@ -402,41 +404,40 @@ the lower bound
   The function expression is again an application:
 
 %%[[wrap=code
-    ( ... :: (Sup(Int)(((Sup(1)(19)), (Sup(oneplus)(20)), (Sup(*)(21))))) (Sup(->)(((Sup(1)(22)), (Sup(1)(23)), (Sup(1)(24))))) ((Sup(Int)(((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27))))) (Sup(->)(((Sup(1)(28)), (Sup(1)(29)), (Sup(1)(30))))) (Sup(Int)(((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33)))))))
-      (3 :: (Sup(Int)(((Sup(1)(34)), (Sup(oneplus)(35)), (Sup(*)(36))))))
-        :: (Sup(Int)(((Sup(1)(4)), (Sup(1)(5)), (Sup(1)(6))))) (Sup(->)(((Sup(1)(7)), (Sup(1)(8)), (Sup(1)(9))))) (Sup(Int)(((Sup(1)(10)), (Sup(1)(11)), (Sup(1)(12)))))
+    ( ... :: (Sup(Int)(((Sup(1)(19)), (SCard(oneplus)(20)(oneplus)), (Sup(*)(21))))) (Sup(->)(((Sup(1)(22)), (SCard(1)(23)(1)), (Sup(1)(24))))) ((Sup(Int)(((Sup(1)(25)), (SCard(1)(26)(1)), (Sup(1)(27))))) (Sup(->)(((Sup(1)(28)), (SCard(1)(29)(1)), (Sup(1)(30))))) (Sup(Int)(((Sup(1)(31)), (SCard(1)(32)(1)), (Sup(1)(33)))))))
+      (3 :: (Sup(Int)(((Sup(1)(34)), (SCard(oneplus)(35)(oneplus)), (Sup(*)(36))))))
+        :: (Sup(Int)(((Sup(1)(4)), (SCard(1)(5)(1)), (Sup(1)(6))))) (Sup(->)(((Sup(1)(7)), (SCard(1)(8)(1)), (Sup(1)(9))))) (Sup(Int)(((Sup(1)(10)), (SCard(1)(11)(1)), (Sup(1)(12)))))
 %%]
 
   This is basically the same situation as above, except with one important difference. The type of the result of the
   function application is a function. Its type has more than one type constructor, and multiple triples of annotations.
   Each type constructor in one type has a corresponding type constructor in the other type. The |=>=| constraint is generated
-  between triples attached on corresponding type constructors. This way we check annotations that specify
-  usages of the same regions of a value. The direction of the |=>=| constraint depends on co-variance and contra-variance. The
-  direction is reversed for |=>=| constraint between |contra-variant| type constructors. The reason is that co-variant type
-  constructors correspond to values for which the annotation require some property (``I must be used exactly once''), whereas
+  between triples attached on corresponding type constructors. This way we check annotations that represent the same values. The direction of the |=>=| constraint depends on co-variance and contra-variance. The
+  direction is reversed for |=>=| constraints between \emph{contra-variant} type constructors. The reason is that a co-variant type
+  constructor corresponds to values for which the annotation requires some property (``I must be used exactly once''), whereas
   contra-variant type constructors correspond to values for which the annotations provide some property (``I am used exactly once''),
   which is essentially the inverse direction. See Peyton Jones~\cite{peytonjones04pract-inf-rank} for an elaborate explanation
-  on co-variance and contra-variance and subtyping.
+  on co-variance, contra-variance, and subtyping.
 
   Applying the same reasoning as with the previous function application, we generate the following constraints:
 
 %%[[wrap=code
 
-    ((Sup(1)(7)), (Sup(1)(8)), (Sup(1)(9)))           (Sub(=>=)(s))  ((Sup(1)(22)), (Sup(1)(23)), (Sup(1)(24)))        -- use of the function
-    ((Sup(1)(10)), (Sup(1)(11)), (Sup(1)(12)))        =>=            ((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33)))        -- use of the function value (resulting Int, co-variant)
-    ((Sup(1)(7)), (Sup(1)(8)), (Sup(1)(9)))           =>=            ((Sup(1)(28)), (Sup(1)(29)), (Sup(1)(30)))        -- use of the function value (function type, co-variant)
-    ((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27)))        =>=            ((Sup(1)(4)), (Sup(1)(5)), (Sup(1)(6)))           -- use of the function value (argument Int, contra-variant)
-    ((Sup(1)(19)), (Sup(oneplus)(20)), (Sup(*)(21)))  =>=            ((Sup(1)(34)), (Sup(oneplus)(35)), (Sup(*)(36)))  -- use of the argument
+    ((Sup(1)(7)), (SCard(1)(8)(1)), (Sup(1)(9)))                 (Sub(=>=)(s))  ((Sup(1)(22)), (SCard(1)(23)(1)), (Sup(1)(24)))              -- use of the function
+    ((Sup(1)(10)), (SCard(1)(11)(1)), (Sup(1)(12)))              =>=            ((Sup(1)(31)), (SCard(1)(32)(1)), (Sup(1)(33)))              -- use of the function value (resulting Int, co-variant)
+    ((Sup(1)(7)), (SCard(1)(8)(1)), (Sup(1)(9)))                 =>=            ((Sup(1)(28)), (SCard(1)(29)(1)), (Sup(1)(30)))              -- use of the function value (function type, co-variant)
+    ((Sup(1)(25)), (SCard(1)(26)(1)), (Sup(1)(27)))              =>=            ((Sup(1)(4)),  (SCard(1)(5)(1)), (Sup(1)(6)))                -- use of the function value (argument Int, contra-variant)
+    ((Sup(1)(19)), (SCard(oneplus)(20)(oneplus)), (Sup(*)(21)))  =>=            ((Sup(1)(34)), (SCard(oneplus)(35)(oneplus)), (Sup(*)(36)))  -- use of the argument
 %%]
 
-  This leaves to analyse the function of the function application, and the argument of the function application. The argument
+  Still to analyse are the function of the function application, and the argument of the function application. The argument
   is again an |Int| expression, which does not result in constraints, so we proceed with the function expression.
 
   The function expression is a lambda abstraction:
 
 %%[[wrap=code
-    ( \(x :: (Sup(Int)(((Sup(1)(19)), (Sup(oneplus)(20)), (Sup(*)(21)))))) (y :: (Sup(Int)(((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27)))))) -> ... y :: (Sup(Int)(((Sup(1)(37)), (Sup(1)(38)), (Sup(1)(39))))) ... (Sub(x)(1)) :: (Sup(Int)(((Sup(1)(40)), (Sup(oneplus)(41)), (Sup(*)(42))))) ... (Sub(x)(2)) :: (Sup(Int)(((Sup(1)(43)), (Sup(oneplus)(44)), (Sup(*)(45)))))
-    ) :: (Sup(Int)(((Sup(1)(19)), (Sup(oneplus)(20)), (Sup(*)(21))))) (Sup(->)(((Sup(1)(22)), (Sup(1)(23)), (Sup(1)(24))))) ((Sup(Int)(((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27))))) (Sup(->)(((Sup(1)(28)), (Sup(1)(29)), (Sup(1)(30))))) (Sup(Int)(((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33))))))
+    ( \(x :: (Sup(Int)(((Sup(1)(19)), (SCard(oneplus)(20)(oneplus)), (Sup(*)(21)))))) (y :: (Sup(Int)(((Sup(1)(25)), (SCard(1)(26)(1)), (Sup(1)(27)))))) -> ... y :: (Sup(Int)(((Sup(1)(37)), (SCard(1)(38)(1)), (Sup(1)(39))))) ... (Sub(x)(1)) :: (Sup(Int)(((Sup(1)(40)), (SCard(1)(41)(oneplus)), (Sup(*)(42))))) ... (Sub(x)(2)) :: (Sup(Int)(((Sup(1)(43)), (SCard(1)(44)(oneplus)), (Sup(*)(45)))))
+    ) :: (Sup(Int)(((Sup(1)(19)), (SCard(oneplus)(20)(oneplus)), (Sup(*)(21))))) (Sup(->)(((Sup(1)(22)), (SCard(1)(23)(1)), (Sup(1)(24))))) ((Sup(Int)(((Sup(1)(25)), (SCard(1)(26)(1)), (Sup(1)(27))))) (Sup(->)(((Sup(1)(28)), (SCard(1)(29)(1)), (Sup(1)(30))))) (Sup(Int)(((Sup(1)(31)), (SCard(1)(32)(1)), (Sup(1)(33))))))
 %%]
 
   For a lambda abstraction, we perform two tasks: analyze the body of the lambda abstraction, and
@@ -454,15 +455,15 @@ the lower bound
   With only one use-site of |y|, and two use-sites of |x|, the constraints are:
 
 %%[[wrap=code
-   ((Sup(1)(40)), (Sup(oneplus)(41)), (Sup(*)(42))) \*/ ((Sup(1)(43)), (Sup(oneplus)(44)), (Sup(*)(45))) <= ((Sup(1)(19)), (Sup(oneplus)(20)), (Sup(*)(21)))  -- for x
-   ((Sup(1)(37)), (Sup(1)(38)), (Sup(1)(39))) <= ((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27)))                                                                   -- for y
+   ((Sup(1)(40)), (SCard(1)(41)(oneplus)), (Sup(*)(42))) \*/ ((Sup(1)(43)), (SCard(1)(44)(oneplus)), (Sup(*)(45))) <= ((Sup(1)(19)), (SCard(oneplus)(20)(oneplus)), (Sup(*)(21)))  -- for x
+   ((Sup(1)(37)), (SCard(1)(38)(1)), (Sup(1)(39))) <= ((Sup(1)(25)), (SCard(1)(26)(1)), (Sup(1)(27)))                                                                              -- for y
 %%]
 
   The function body remains to be checked. The function body consists of the additions:
 
 %%[[wrap=code
-  ((y :: (Sup(Int)(((Sup(1)(37)), (Sup(1)(38)), (Sup(1)(39)))))) + ((Sub(x)(1)) :: (Sup(Int)(((Sup(1)(40)), (Sup(oneplus)(41)), (Sup(*)(42))))))) :: (Sup(Int)(((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))))
-  ((( ... ) :: (Sup(Int)(((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))))) + ((Sub(x)(2)) :: (Sup(Int)(((Sup(1)(43)), (Sup(oneplus)(44)), (Sup(*)(45))))))) :: (Sup(Int)(((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33))))))
+  ((y :: (Sup(Int)(((Sup(1)(37)), (SCard(1)(38)(1)), (Sup(1)(39)))))) + ((Sub(x)(1)) :: (Sup(Int)(((Sup(1)(40)), (SCard(oneplus)(41)(oneplus)), (Sup(*)(42))))))) :: (Sup(Int)(((Sup(1)(46)), (SCard(1)(47)(1)), (Sup(1)(48)))))
+  ((( ... ) :: (Sup(Int)(((Sup(1)(46)), (SCard(1)(47)(1)), (Sup(1)(48)))))) + ((Sub(x)(2)) :: (Sup(Int)(((Sup(1)(43)), (SCard(oneplus)(44)(oneplus)), (Sup(*)(45))))))) :: (Sup(Int)(((Sup(1)(31)), (SCard(1)(32)(1)), (Sup(1)(33))))))
 %%]
 
   The addition operator uses both the arguments at least as many times as the result is used. The default operational
@@ -472,53 +473,59 @@ the lower bound
   upper-bound annotations of the result of the expression. The cardinality annotation on the result of the addition may be
   any value that fits the two bounds. For the relation between the arguments of the addition and the result of the
   addition, we generate a weaker version of the |=>=| constraint that ignores the cardinality annotation, but does not
-  ignore the two bounds: |(Sub(=>=)(s))|, with the |s| of 'soft'. When we want to stress the difference between these
-  two |=>=| constraints, we write the normal |=>=| constraint as |(Sub(=>=)(h))|, with the |h| of 'hard'.
+  ignore the two bounds: |(Sub(=>=)(s))|, with the |s| of \emph{soft}. When we want to stress the difference between these
+  two |=>=| constraints, we write the normal |=>=| constraint as |(Sub(=>=)(h))|, with the |h| of \emph{hard}.
 
   The following constraints relate the result of the additions properly to the arguments of the addition:
 
 %%[[wrap=code
-    ((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))  (Sub(=>=)(s))  ((Sup(1)(37)), (Sup(1)(38)), (Sup(1)(39)))
-    ((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))  (Sub(=>=)(s))  ((Sup(1)(40)), (Sup(oneplus)(41)), (Sup(*)(42)))
-    ((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33)))  (Sub(=>=)(s))  ((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))
-    ((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33)))  (Sub(=>=)(s))  ((Sup(1)(43)), (Sup(oneplus)(44)), (Sup(*)(45)))
+    ((Sup(1)(46)), (SCard(1)(47)(1)), (Sup(1)(48)))  (Sub(=>=)(s))  ((Sup(1)(37)), (SCard(1)(38)(1)), (Sup(1)(39)))
+    ((Sup(1)(46)), (SCard(1)(47)(1)), (Sup(1)(48)))  (Sub(=>=)(s))  ((Sup(1)(40)), (SCard(1)(41)(oneplus)), (Sup(*)(42)))
+    ((Sup(1)(31)), (SCard(1)(32)(1)), (Sup(1)(33)))  (Sub(=>=)(s))  ((Sup(1)(46)), (SCard(1)(47)(1)), (Sup(1)(48)))
+    ((Sup(1)(31)), (SCard(1)(32)(1)), (Sup(1)(33)))  (Sub(=>=)(s))  ((Sup(1)(43)), (SCard(1)(44)(oneplus)), (Sup(*)(45)))
 %%]
 
   \subsection{Checking the constraints}
 
   The final part of this example is to verify that the constraints hold. We show by an example how we interpret
-  the constraints. We define when a constraint hold more precisely in Section~\ref{Sect.CheckingConstraints}. We assume that
-  the triples are already checked for consistency, meaning that the usage annotation fits between the upper and
-  lower bound. The following table lists the constraints and their interpretation (see Figure~\ref{splitFunc} for the definition of |properSplit|):
+  the constraints. We define when a constraint holds more precisely in Section~\ref{Sect.CheckingConstraints}. We assume that
+  the triples are already checked for consistency, meaning that the cardinality annotation fits between the upper and
+  lower bound, and that the cardianltiy annotation itself is consistent. A cardinality annotation is consistent if the
+  left-hand side does not conflict with the right-hand side. The following table lists the constraints and their
+  interpretation (see Figure~\ref{splitFunc} for the definition of |isSplit|):
 
   \begin{tabular}{llllr}
     constraint & lower bound & usage & upper bound & holds \\
     \hline
-      |(1, *, 1) (Sub(=>=)(s)) ((Sup(1)(1)), (Sup(1)(2)), (Sup(1)(3)))|   & |1 >= (Sup(1)(1))| & & |1 <= (Sup(1)(3))| & OK  \\
-      |((Sup(1)(16)), (Sup(1)(17)), (Sup(1)(18))) (Sub(=>=)(s)) ((Sup(1)(7)), (Sup(1)(8)), (Sup(1)(9)))| & |(Sup(1)(16)) >= (Sup(1)(7))| & & |(Sup(1)(18)) <= (Sup(1)(9))| & OK  \\
-      |((Sup(1)(16)), (Sup(1)(17)), (Sup(1)(18))) =>= ((Sup(1)(10)), (Sup(1)(11)), (Sup(1)(12)))|  & |(Sup(1)(16)) >= (Sup(1)(10))| & |(Sup(1)(17)) <= (Sup(1)(11))| & |(Sup(1)(18)) <= (Sup(1)(12))| & OK  \\
-      |((Sup(1)(4)), (Sup(1)(5)), (Sup(1)(6))) =>= ((Sup(1)(13)), (Sup(1)(14)), (Sup(1)(15)))|       & |(Sup(1)(4)) >= (Sup(1)(13))| & |(Sup(1)(5)) <= (Sup(1)(14))| & |(Sup(1)(6)) <= (Sup(1)(15))| & OK  \\
-      |((Sup(1)(7)), (Sup(1)(8)), (Sup(1)(9)))      (Sub(=>=)(s))  ((Sup(1)(22)), (Sup(1)(23)), (Sup(1)(24)))|    & |(Sup(1)(7)) >= (Sup(1)(22))| &  & |(Sup(1)(9)) <= (Sup(1)(24))| & OK  \\
-      |((Sup(1)(10)), (Sup(1)(11)), (Sup(1)(12)))   =>=  ((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33)))|    & |(Sup(1)(10)) >= (Sup(1)(31))| & |(Sup(1)(11)) <= (Sup(1)(32))| & |(Sup(1)(12)) <= (Sup(1)(33))| & OK  \\
-      |((Sup(1)(7)), (Sup(1)(8)), (Sup(1)(9)))      =>=  ((Sup(1)(28)), (Sup(1)(29)), (Sup(1)(30)))|    & |(Sup(1)(7)) >= (Sup(1)(28))| & |(Sup(1)(8)) <= (Sup(1)(29))| & |(Sup(1)(9)) <= (Sup(1)(30))| & OK  \\
-      |((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27)))   =>=  ((Sup(1)(4)), (Sup(1)(5)), (Sup(1)(6)))|    & |(Sup(1)(25)) >= (Sup(1)(4))| & |(Sup(1)(26)) <= (Sup(1)(5))| & |(Sup(1)(27)) <= (Sup(1)(6))| & OK  \\
-      |((Sup(1)(19)), (Sup(oneplus)(20)), (Sup(*)(21)))  =>=  ((Sup(1)(34)), (Sup(oneplus)(35)), (Sup(*)(36)))|    & |(Sup(1)(19)) >= (Sup(1)(34))| & |(Sup(oneplus)(20)) <= (Sup(oneplus)(35))| & |(Sup(*)(20)) <= (Sup(*)(36))| & OK  \\
-      |((Sup(1)(40)), (Sup(oneplus)(41)), (Sup(*)(42))) \*/ ((Sup(1)(43)), (Sup(oneplus)(44)), (Sup(*)(45)))| & |(Sup(1)(40)) `max` (Sup(1)(43)) >= (Sup(1)(19))| & |properSplit {(Sup(oneplus)(41)), (Sup(oneplus)(44))} (Sup(oneplus)(20))| & |(Sup(1)(42)) + (Sup(1)(45)) <= (Sup(1)(21))| & OK  \\
-      |  <= ((Sup(1)(19)), (Sup(oneplus)(20)), (Sup(*)(21)))|   & & & & \\
-      |((Sup(1)(37)), (Sup(1)(38)), (Sup(1)(39))) <= ((Sup(1)(25)), (Sup(1)(26)), (Sup(1)(27)))|  & |(Sup(1)(37)) >= (Sup(1)(25))| & |properSplit {(Sup(1)(38))} (Sup(1)(26))| & |(Sup(1)(39)) <= (Sup(1)(27))| & OK  \\
-      |((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))  (Sub(=>=)(s))  ((Sup(1)(37)), (Sup(1)(38)), (Sup(1)(39)))|  & |(Sup(1)(46)) >= (Sup(1)(37))| &  & |(Sup(1)(48)) <= (Sup(1)(39))| & OK  \\
-      |((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))  (Sub(=>=)(s))  ((Sup(1)(40)), (Sup(oneplus)(41)), (Sup(*)(42)))|  & |(Sup(1)(46)) >= (Sup(1)(40))| &  & |(Sup(1)(48)) <= (Sup(*)(42))| & OK  \\
-      |((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33)))  (Sub(=>=)(s))  ((Sup(1)(46)), (Sup(1)(47)), (Sup(1)(48)))|  & |(Sup(1)(31)) >= (Sup(1)(46))| &  & |(Sup(1)(33)) <= (Sup(1)(48))| & OK  \\
-      |((Sup(1)(31)), (Sup(1)(32)), (Sup(1)(33)))  (Sub(=>=)(s))  ((Sup(1)(43)), (Sup(oneplus)(44)), (Sup(*)(45)))|  & |(Sup(1)(13)) >= (Sup(1)(43))| & & |(Sup(1)(33)) <= (Sup(*)(45))| & OK  \\
+      |(1, *, 1) (Sub(=>=)(s)) ((Sup(1)(1)), (SCard(1)(2)(1)), (Sup(1)(3)))|   & |1 leqL (Sup(1)(1))| & & |1 <= (Sup(1)(3))| & OK  \\
+      |((Sup(1)(16)), (SCard(1)(17)(1)), (Sup(1)(18))) (Sub(=>=)(s)) ((Sup(1)(7)), (SCard(1)(8)(1)), (Sup(1)(9)))| & |(Sup(1)(16)) leqL (Sup(1)(7))| & & |(Sup(1)(18)) leqU (Sup(1)(9))| & OK  \\
+      |((Sup(1)(16)), (SCard(1)(17)(1)), (Sup(1)(18))) =>= ((Sup(1)(10)), (SCard(1)(11)(1)), (Sup(1)(12)))|  & |(Sup(1)(16)) leqL (Sup(1)(10))| & |(SCard(1)(17)(1)) leqC (SCard(1)(11)(1))| & |(Sup(1)(18)) leqU (Sup(1)(12))| & OK  \\
+      |((Sup(1)(4)), (SCard(1)(5)(1)), (Sup(1)(6))) =>= ((Sup(1)(13)), (SCard(1)(14)(1)), (Sup(1)(15)))|       & |(Sup(1)(4)) leqL (Sup(1)(13))| & |(SCard(1)(5)(1)) leqC (SCard(1)(14)(1))| & |(Sup(1)(6)) leqU (Sup(1)(15))| & OK  \\
+      |((Sup(1)(7)), (SCard(1)(8)(1)), (Sup(1)(9)))      (Sub(=>=)(s))  ((Sup(1)(22)), (SCard(1)(23)(1)), (Sup(1)(24)))|    & |(Sup(1)(7)) leqL (Sup(1)(22))| &  & |(Sup(1)(9)) leqU (Sup(1)(24))| & OK  \\
+      |((Sup(1)(10)), (SCard(1)(11)(1)), (Sup(1)(12)))   =>=  ((Sup(1)(31)), (SCard(1)(32)(1)), (Sup(1)(33)))|    & |(Sup(1)(10)) leqL (Sup(1)(31))| & |(SCard(1)(11)(1)) leqC (SCard(1)(32)(1))| & |(Sup(1)(12)) leqU (Sup(1)(33))| & OK  \\
+      |((Sup(1)(7)), (SCard(1)(8)(1)), (Sup(1)(9)))      =>=  ((Sup(1)(28)), (SCard(1)(29)(1)), (Sup(1)(30)))|    & |(Sup(1)(7)) leqL (Sup(1)(28))| & |(SCard(1)(8)(1)) leqC (SCard(1)(29)(1))| & |(Sup(1)(9)) leqU (Sup(1)(30))| & OK  \\
+      |((Sup(1)(25)), (SCard(1)(26)(1)), (Sup(1)(27)))   =>=  ((Sup(1)(4)), (SCard(1)(5)(1)), (Sup(1)(6)))|    & |(Sup(1)(25)) leqL (Sup(1)(4))| & |(SCard(1)(26)(1)) leqC (SCard(1)(5)(1))| & |(Sup(1)(27)) leqU (Sup(1)(6))| & OK  \\
+      |((Sup(1)(19)), (SCard(oneplus)(20)(oneplus)), (Sup(*)(21)))  =>=  ((Sup(1)(34)), (SCard(oneplus)(35)(oneplus)), (Sup(*)(36)))|    & |(Sup(1)(19)) leqL (Sup(1)(34))| & |(SCard(oneplus)(20)(oneplus)) leqC (SCard(oneplus)(35)(oneplus))| & |(Sup(*)(20)) leqU (Sup(*)(36))| & OK  \\
+      |((Sup(1)(40)), (SCard(1)(41)(oneplus)), (Sup(*)(42))) \*/ ((Sup(1)(43)), (SCard(1)(44)(oneplus)), (Sup(*)(45)))| & |(Sup(1)(40)) `max` (Sup(1)(43)) leqL (Sup(1)(19))| & |{(Sub(1)(41)), (Sub(1)(44))} `isSplit` (Sub(oneplus)(20)) && (Sub(oneplus)(20)) === (Sub(oneplus)(20)) === (Sub(oneplus)(20)))|  & |(Sup(1)(42)) + (Sup(1)(45)) leqU (Sup(1)(21))| & OK  \\
+      |  <= ((Sup(1)(19)), (SCard(oneplus)(20)(oneplus)), (Sup(*)(21)))|   & & & & \\
+      |((Sup(1)(37)), (SCard(1)(38)(1)), (Sup(1)(39))) <= ((Sup(1)(25)), (SCard(1)(26)(1)), (Sup(1)(27)))|  & |(Sup(1)(37)) leqL (Sup(1)(25))| & |{(Sub(1)(38))} `isSplit` (Sub(1)(26)) && (Sub(1)(38)) === (Sub(1)(26))| & |(Sup(1)(39)) leqU (Sup(1)(27))| & OK  \\
+      |((Sup(1)(46)), (SCard(1)(47)(1)), (Sup(1)(48)))  (Sub(=>=)(s))  ((Sup(1)(37)), (SCard(1)(38)(1)), (Sup(1)(39)))|  & |(Sup(1)(46)) leqL (Sup(1)(37))| &  & |(Sup(1)(48)) leqU (Sup(1)(39))| & OK  \\
+      |((Sup(1)(46)), (SCard(1)(47)(1)), (Sup(1)(48)))  (Sub(=>=)(s))  ((Sup(1)(40)), (SCard(1)(41)(oneplus)), (Sup(*)(42)))|  & |(Sup(1)(46)) leqC (Sup(1)(40))| &  & |(Sup(1)(48)) leqU (Sup(*)(42))| & OK  \\
+      |((Sup(1)(31)), (SCard(1)(32)(1)), (Sup(1)(33)))  (Sub(=>=)(s))  ((Sup(1)(46)), (SCard(1)(47)(1)), (Sup(1)(48)))|  & |(Sup(1)(31)) leqL (Sup(1)(46))| &  & |(Sup(1)(33)) leqU (Sup(1)(48))| & OK  \\
+      |((Sup(1)(31)), (SCard(1)(32)(1)), (Sup(1)(33)))  (Sub(=>=)(s))  ((Sup(1)(43)), (SCard(1)(44)(oneplus)), (Sup(*)(45)))|  & |(Sup(1)(13)) leqL (Sup(1)(43))| & & |(Sup(1)(33)) leqU (Sup(*)(45))| & OK  \\
   \end{tabular}
 
-  All constraints are satisfied, so the annotated program is properly annotated. But this is not the only annotated program that satisfies the
-  above constraints. For example, set all annotations to |*| and verify that constraints still hold. However, set
-  some annotations to |0| to find out that not all combinations are allowed. In the next chapter, we determine
-  a least solution to the constraints, which means a least upper bound, a highest lower bound, and a most precise
-  usage annotation.
+  The relation |leqL| should be interpreted as the relation |>=| on natural numers. The relation |leqU| as |<=| on natural numbers. The |leqC|
+  relation is somewhat complicated. For the left component in the cardinality annotation, the |leqC| relation specifies 'is more specific',
+  and for the right component the relation is equality modulo coercion. We cover these relations in more detail in Section~\ref{sect.TpAnnConstr}.
 
-  The remainder of this chapter delves more precisely into each subject that is encountered in this section.
+  All constraints are satisfied, so the program was properly annotated. But this is only one of the annotated programs that satisfies the
+  above constraints. For example, take |0| for all lower bounds, |(Card(*)(*))| for all cardinalities, and |*| for all upper bounds and verify that
+  the constraints are satisfied. However, set lower bounds to |0|, cardinalities to |(Card(0)(0))|, and upper bounds to |0|, and verify that some
+  constraints are violated.
+
+  In the next chapter, we determine a least solution to the constraints, which means a least upper bound, a highest lower bound,
+  and a most precise usage annotation. The remainder of this chapter delves more precisely into subjects encountered in this section.
 
 \section{Language}
 \label{sect.ExprLanguage}
@@ -545,7 +552,12 @@ the lower bound
 %%]
 
   We assume that all programs are correctly typed according to the type
-  system in Figure~\ref{RulerUniquenessExamples.E.expr.base}.
+  system in Figure~\ref{RulerUniquenessExamples.E.expr.base}. In this specification of the type
+  system, |Gamma| is the evironments that constains a type for each identifier
+  in scope, and |tau| represents types. An integer expression has type |Int|. The type of a variable is recorded in the
+  environment. The result and operands of an addition are |Int|s. When applying a function to a value, the parameter
+  type and argument type should unify. Finally, a lambda abstraction brings the type of an identifier in scope, which
+  means into the environment |Gamma| of the body.
 
   \rulerCmdUse{RulerUniquenessExamples.E.expr.base}
 
@@ -558,71 +570,249 @@ the lower bound
   attached to type constructors:
 
 %%[[wrap=code
-  utau  ::=  Sup(Int)((low,use,up))            -- tycon int (Int)
-        |    Sup((->))((low,use,up))           -- tycon arrow (Arrow)
-        |    utau utau                         -- type application (App)
+  utau         ::=  Sup(Int)((LowerBound,c,UpperBound)))                             -- tycon int
+               |    Sup(->)((LowerBound,c,UpperBound))                               -- tycon arrow
+               |    utau utau                                                        -- type application
 
-  low   ::=  0 | 1                             -- lower-bound usage-count annotation
-  use   ::=  0 | onemin | 1 | oneplus | *      -- cardinality annotation
-  up    ::=  0 | 1 | *                         -- upper-bound usage-count annotation
+  c            ::=  (Card(Usage)(Usage))                                             -- cardinality annotation
+  LowerBound   ::=  1 | 0                                                            -- lower-bound usage-count annotation
+  UpperBound   ::=  0 | 1 | *                                                        -- upper-bound usage-count annotation
+  Usage        ::=  0 | onemin | 1 | oneplus | *                                     -- cardinality annotation
 %%]
 
-  The lower-bound usage-count annotation specifies that a value represented
-  by the annotated type constructor, is at least used |0| or |1| times. The
-  upper-bound usage-annotation specifies that a value represented by the annotated type constructor,
-  is at most used |0|, |1|, or an arbitrary number of times. The cardinality annotation specifies a
-  usage property for a value. For example, the cardinality annotation |onemin| means
-  that the corresponding value is at most used once.
+  Why annotate the type constructors? Types describe the structure of a value in
+  a concise way. A type constructor corresponds with a certain area of memory.
+  For example, the |Int| type constructor represents all bits of an integer value.
+  But in |List Int| (algebraic data types are introduced later in this master's thesis, Chapter~\ref{chapt.DataTypes}),
+  the |List| type constructor represents the spine of a list, and the |Int| type constructor
+  represents each element of the list (Figure~\ref{fig.ListRep}).
 
-  When we write that a variable is \emph{used}, we actually mean that the memory that
-  is represented by the value is touched, either for reading or for writing. If a
-  value has a lower-bound usage count of |1|, then we know that its memory is
-  at least touched once. If it has an upper-bound usage count of |0|, the memory
-  is never touched, altough there may be references to it during program execution. Such
-  references are never evaluated though.
+\begin{figure}
+\caption{Representation of a |List| in memory}
+\label{fig.ListRep}
+\includegraphics[width=12cm]{list-rep}
+\end{figure}
 
-  Why annotate the type constructors? Consider how a value is represented in
-  memory. The type constructors of a type partition the memory representation
-  of a value. Each area of memory for a certain value is associated with a
-  single type constructor in the corresponding type. We get the usage
-  properties of an area of memory by looking at the annotations on the
-  corresponding type constructor.
+  Each bit of the list belongs to a single type constructor, the \emph{corresponding}
+  type constructor. The cardinality of a single bit, is the cardinality of the
+  corresponding type constructor. Or, the other way around, the cardinality of a
+  type constructor is the \emph{join} over all the cardinalities of the bits that correspond
+  to the type constructor. So, the reason is that the type constructors allow us to specify
+  cardinalities of bits in a concise way, although we loose the ability give different
+  cardinalities to bits represented by the same type constructor.
 
-  Another question is: why is the arrow type constructor annotated? There are
+  A related question is: why is the arrow type constructor annotated? There are
   several reasons. From a practical view considering code generation: functions
   are also values: \emph{closures}. Such a value is represented by an area of
-  memory, and can be unique or shared like any other value. From a more
-  theoretical point of view, unique functions have the property that they can
-  be safely inlined~\cite{Wansbrough:PhDThesis}. So, the arrow type constructor is
-  annotated as well, like any other value.
+  memory, and can have a cardinality like any other value. From a more
+  theoretical point of view, functions that are used exactly once have the property that they can
+  be safely inlined~\cite{Wansbrough:PhDThesis}. So, the arrow type constructor
+  requires an annotation as well.
 
-  A type constructor gets a triple with three annotations: a lower-bound usage-count annotation,
-  a cardinality annotation, and an upper-bound usage-count annotation. The values of
-  the two bound annotations are totally ordered (|0 <= 1 <= *|). Cardinality annotations are partially
-  ordered, but almost incomparable: |0 <= 0, onemin <= onemin, onemin <= *, 1 <= 1, oneplus <= oneplus, * <= *|. Only
-  a value that is at most used once can be weakened to a value that is used an arbitrary number
-  of times. This is where the term coercion comes from. The fact that a value is used at most once
-  may be forgotten, but can require the insertion of some coercion function, depending on the
-  optimizations of the back-end. For example, the code generator can choose to generate code that
-  allocates values that are used at most once on a compile-time garbage-collected heap, and insert a
-  coercion functionthat moves the value to a runtime garbage-collected heap when the restriction
-  that a value is used at most once is forgotten.
+  \subsection{The annotations}
+  \label{sect.partialorderings}
+  
+  The lower-bound usage-count annotation |LowerBound| on a type constructor of a type originating from
+  expression |E|, specifies that the value of |E| is used at least |0| or |1| times via
+  |E|. A lower bound of |0| means that there is no guarantee that the value is used via |E|.
+  The |LowerBound| values are totally ordered with |1 leqL 0|\footnote{All the |leq| relations that we define are partial orders.}. Note that the
+  relation |leqL| corresponds to the relation |>=| if the |LowerBound| values are considered natural
+  numbers. We use this relation later to specify that when we know that |E| uses its value at least
+  once, that we are allowed to forget it and think that we do not have any guarantee about how often
+  the value of |E| is used. The definition of lower bound values can be generalised to lower
+  bounds up to some value |k|, but we will not complicate this description with this generalisation.
 
-  A triple is consistent if the cardinality annotation fits into the boundaries given by the two boundary
-  annotations. See Figure~\ref{code.FitsInBounds} for a specification of a cardinality
-  annotation fitting between the two boundary annotations.
+  The upper-bound usage-count annotation |UpperBound| is the dual to the lower-bound usage-count
+  annotation. It specifies that the value of |E| is used at most |0|, |1|, or |*| times via
+  |E|. An upper bound of |0| means that the value of |E| is never used via |E|. An upper bound of
+  |1| specifies that |E| used its value at most once. It can occur that the value of |E| is never
+  used via |E|, but an upper bound of |1| does not guarantee that. However, it does guarantee that
+  |E| is not used twice or thrice via |E|. Finally, an upper bound of |*| means that the value of
+  |E| is used an arbitrary number of times via |E|, but probably twice or more. The |UpperBound|
+  values are totally ordered with: |0 leqU 1| and |1 leqU *|.
+  The |<=| relation on natural numbers corresponds to the above relation. The above relation is used in
+  the checks to allow relaxation of an upper bound to a higher upper bound.
+
+  The cardinality annotation consists of two |Usage| values. The left |Usage| value defines the
+  usage of the value via |E|, and the right |Usage| value defines the total usage of the
+  value. The left |Usage| value must fit the two bounds (Figure~\ref{code.FitsInBounds}). The
+  right |Usage| value is at most as specific as the left |Usage| value.
+
+  We define several orderings on |Usage| values. We start with an ordering that is used in
+  the definition for consistency of cardinality annotations. If |a leqX b| then |a| does not
+  conflict with |b|. There is a conflict when the left |Usage| value specifies that the
+  value is used at least |k| times and the right |Usage| value specifies that the value is
+  used strictly less than |k| times. For example, |a = 1| and |b = 0| conflict. The following
+  partial order defines when two values do not conflict (see Figure~\ref{fig.conflict}):
+
+%%[[wrap=code
+  0        leqX  onemin
+  0        leqX  oneplus
+  1        leqX  oneplus
+  onemin   leqX  oneplus
+  onemin   leqX  *
+  oneplus  leqX  *
+%%]
+
+\begin{figure}
+\caption{The does-not-conflict semi-lattice}
+\label{fig.conflict}
+\begin{center}
+\includegraphics{conflict-lattice}
+\end{center}
+\end{figure}
+
+  If the left-hand side of a cardinality annotation is |*|, then the only possibility is
+  |*| for the right-hand side. If we do not know the usage of one particular occurrence
+  of some value, then we neither know it for the aggregation of all occurrences. Another
+  interesting example is |onemin leqX oneplus|. A specific occurrence of a value can
+  be used at most time, but then it is still possible that the value is in total
+  guaranteed to be used more than once.
+
+  Furthermore, we have a partial order for checking that one |Usage| value is more
+  specific than another |Usage| value. If |a leqQ b|, then |a| is more specific than
+  |b|. It is defined as follows (see also Figure~\ref{fig.specificness}):
+
+%%[[wrap=code
+  0        leqQ  onemin
+  onemin   leqQ  *
+  1        leqQ  oneplus
+  oneplus  leqQ  *
+%%]
+
+\begin{figure}
+\caption{A semi-lattice on specificness of |Usage| values}
+\label{fig.specificness}
+\begin{center}
+\includegraphics{specific-lattice}
+\end{center}
+\end{figure}
+
+  The above ordering is used in Chapter~\ref{Chapt.Polyvariance} to specify which right-hand side
+  values of a cardinality annotation are preferable over others. |Usage| values of |0| and
+  |1| are preferable over |onemin| or |*| because it is more precise.
+
+  Similar to|leqQ| is |leqP|, which also specify that one |Usage| value is more specific
+  than another |Usage| value, but then for the left-hand side values of cardinality annotations:
+
+%%[[wrap=code
+  0        leqP  *
+  onemin   leqP  *
+  1        leqP  *
+  oneplus  leqP  *
+%%]
+
+  The rationale behind this ordering is that the join between two left-hand side
+  values of a cardinality annotation, does not violate the lower bound and upper bound corresponding
+  to these values.
+
+  Furthermore, we define an ordering for coercions on the right-hand side |Usage| values of
+  a cardinality annotation. A value with a total usage of |u| may be relaxed into a
+  value with total usage |u'| (denoted by |u' leqZ u|) if there is a coercion function that changes a value
+  with usage of |u| to a value with usage |u'|, such that optimisations of the compiler
+  are still valid.
+
+  For example, we can coerce a value with total usage of |onemin| to
+  a value with total usage of |*| by means of the identity function if we assume that
+  the the compiler only uses cardinality annotations to insert code for destructive
+  updates on unique values. The reason for this particular example is that due to the
+  fact that the coercion is the first use of the value, that there can only be unused
+  references (besides the coercion) to the value that consider it to be used at most once.
+  And after the coercion, any active reference assumes that the value is used in an
+  arbitrary way, such that no inplace updates can be performed on it. On the other hand,
+  if the compiler generates code that allocates values with a total usage of |onemin| on
+  a special compile-time garbage collected heap, then such a coercion is not allowed,
+  unless there is an coercion function inserted into the generated code that copies the
+  value to a normal garbage collected heap.
+
+  So, it depends on optimisations of the compiler and the availability of coercion function,
+  to allow certain coercions between right-hand side annotations of cardinality annotations.
+  Therefore, by default |leqZ| is an equality relation, but we assume that it can be a
+  subset of the |leqS| with left and right arguments swapped. Note that |a leqZ b| defines
+  that the total usage |b| can be relaxed by coercion in total usage |a|. This is the inverse direction compared to the other
+  orderings in this section. This is intential: the two bound annotations and the
+  left-hand side value of a cardinality annotation combine usage information of individual
+  occurrences of a value into usage information about the total usage of some value. Subsequently,
+  this aggregate result is passed back to the individual occurrences via the right-hand side
+  value of the cardinality annotations. We are only allowed to forget some property about the
+  total usage of a value, if our uses of the value do not conflict with optimized uses of the
+  value at other places, possibly by doing some additional administrative work (the coercion).
+
+  We define a similar ordering as the ordering above for left-hand side of a cardinality
+  annotation is relaxed. If |a leqS b|, then |a| can  be relaxed to |b|. This ordering
+  is typically an equality relation, unless a relaxation does not conflict with optimisations
+  of the backend or can be resolved using a coercion function.
+
+  Or in other words: we can relax the left-hand side of a cardinality annotation only
+  to |*|. However, there is an important restriction here: if we make a relaxation for
+  one particular occurrence of some value, then we must make this relaxation for all
+  anotations of this particular occurrence. For example,
+
+  Finally, we define an ordering to verify that the right-hand side of a
+  cardinality annotation does not conflict with the left-hand side of a cardinality
+  annotation:
+
+%%[[wrap=code
+  leqB :: LowerBound -> UpperBound -> Bool
+  0  leqB  _  =  True
+  1  leqB  u  =  1 leqU u
+  _  leqB  _  =  False
+%%]
+
+  The orderings on the left-hand side and right-hand side of a cardinality annotation can be
+  combined into a single ordering on cardinality annotations as a whole:
+
+%%[[wrap=code
+  (Card(a)(b)) leqC (Card(c)(d))
+    =   a  leqS  c
+    &&  b  leqZ  d
+    &&  a  leqB  b
+    &&  c  leqB  d
+%%]
+
+  \subsection{Triple consistency}
+
+  A triple is consistent if the left-hand side of the cardinality annotation fits into the boundaries given by the two boundary
+  annotations, and the left-hand side of the cardinality annotation is consistent with the right-hand side. See Figure~\ref{code.FitsInBounds} for a specification.
+  We do not allow a |Usage| value that might violate the bounds. For example, the |Usage| value |oneplus| is not allowed when the upper bound is |0| or |1|, because
+   `at least zero' or 'at least once' does not guarantee that the upper bound is violated. We make one exception to this rule for |*|.
+   It always fits the bounds. We know that once |*| has been derived for an individual occurrence of a value, that the value in total
+   will have a |Usage| value of |*|. Nowhere in the program can guarantees be made about a value with |Usage| value of |*|, so the
+   bounds can be ignored for this value. Strictly speaking, this is not required: we could enforce a stronger notion of fitting and require that the boundaries itself are relaxed to
+  |0| for the lower bound or |*| for the upper bound when the |Usage| value is |*|. However, in Chapter~\ref{chapt.Polyvariant}, we present an
+  approach that infers the annotations, and the above relaxation allows us to infer lower and upper bounds seperately from the cardinality annotations
+  (Figure~\ref{code.iterate}).
 
   \begin{figure}
-  \caption{Consistency of tripples}
+  \caption{Consistency of triples}
   \label{code.FitsInBounds}
 
 %%[[wrap=code
-  fits  (0,  0,        0)  = True
-  fits  (1,  1,        1)  = True
-  fits  (1,  oneplus,  h)  = h >= 1
-  fits  (_,  onemin,   1)  = True
-  fits  (l,  *,        h)    = l <= h
-  fits  (_,  _,        _)  = False
+  trippleConsistent (a, (Card(b)(c)), d)
+    =   a `leftFit` b
+    &&  b `rightFit` d
+    &&  b leqX c
+    &&  a leqB d
+%%]
+\\
+%%[[wrap=code
+      leftFit :: LowerBound -> Usage -> Bool
+      leftFit  0  _        =  True  -- bound gives no info
+      leftFit  _  *        =  True  -- `don't know' fits bounds
+      leftFit  1  1        =  True
+      leftFit  1  oneplus  =  True
+      leftFit  _  _        =  False
+%%]
+\\
+%%[[wrap=code
+      rightFit :: Usage -> UpperBound -> Bool
+      rightFit  _       *  =  True  -- bound gives no info
+      rightFit  *       _  =  True  -- `don't know' fits bounds
+      rightFit  0       1  =  True
+      rightFit  1       1  =  True
+      rightFit  onemin  1  =  True
+      rightFit  0       0  =  True
+      rightFit  _       _  =  False
 %%]
   \end{figure}
 
@@ -635,21 +825,22 @@ the lower bound
   There are three types of constraints for the type system in this chapter:
 
 %%[[wrap=code
-  constr  ::=  (low,use,up) =>= (low,use,up)                          -- coercion
-          |    (low,use,up) (Sub(=>=)(s)) (low,use,up)                -- coercion (ignores use)
-          |    (low,use,up) \*/ ... \*/ (low,use,up) <= (low,use,up)  -- aggregation
+  constr  ::=  (LowerBound,c,UpperBound)  =>=            (LowerBound,c,UpperBound)                   -- coercion
+          |    (LowerBound,c,UpperBound)  (Sub(=>=)(s))  (LowerBound,c,UpperBound)                   -- coercion (ignores use)
+          |    (LowerBound,c,UpperBound) \*/ ... \*/ (LowerBound,c,up) <= (LowerBound,c,UpperBound)  -- aggregation
 %%]
 
   As demonstrated in the examples, the coercion constraint (|=>=|) is used to propagate usage
-  information. It specifies that the lower bound on the left-hand side is greater
-  than the lower bound on the right-hand side. Vice versa, it specifies that
-  the upper bound on the left-hand side is smaller than the upper bound on the
-  right-hand side. Finally, it specifies that the two cardinality values are equal,
-  unless the left-hand side can be coerced into the right-hand side.
+  information. It specifies that the lower bound on the left-hand side is greater or equal
+  than the lower bound on the right-hand side (|left \leqL right|). Vice versa, it specifies that
+  the upper bound on the left-hand side is smaller or equal to the upper bound on the
+  right-hand side (|left \leqU right|). Finally, it specifies how the cardianlity annotations
+  are relaxed: for the left-hand side |Usage| value from left to right, and for the right-hand side
+  |Usage| value from right to left. In the last case only when there is a coercion.
 
   With the coercion constraint, we essentially check that all boundary information is
   properly propagated from outermost expression to innermost expression, from
-  body to parameters. The usages of values bound to identifiers, are treated separately
+  body to parameters. The cardinalities of values bound to identifiers are treated separately
   for each use-site of an identifier and added to each other by using the aggregation
   constraint |\*/|. Section~\ref{Sect.CheckingConstraints} describes how the constraints are
   checked.
@@ -665,7 +856,8 @@ the lower bound
   \rulerCmdUse{RulerUniquenessExamples.U1.prog.base}
 
   The type rule for the whole program (Figure~\ref{RulerUniquenessExamples.U1.prog.base}) states that the resulting expression has a lower and upper bound of |1|. By assuming
-  that all the triples are consistent, this means that the resulting expression can have an arbitrary usage value (except not 0). We pattern
+  that all the triples are consistent, this means that the resulting expression is allowed to have a cardinality of which the left-hand side
+  is either |1| or |*|, although the total cardinality may be any |Usage| value except |0|. We pattern
   match on the annotated type of the expression to obtain the annotation |delta| on the outermost type constructor and generate a constraint
   that specifies that the lower bound is at least |1| and the upper bound is at most |1|. This constraint, and the
   constraints gathered from the expression itself, must be satisfied for the program to be valid according to
@@ -674,18 +866,26 @@ the lower bound
   Types are written in two ways in the type rules. A type written as |utau| has annotations. A type written as
   |tau| has no annotations. We sometimes write |(Sub(tau)(a))| to refer to the unannotated version of |(Sub(utau)(a))|.
   A |utau| is also denoted as |Sup(tau)(delta)|, where |delta| is the outermost\footnote{In this chapter, this is the
-  triple on the outermost type constructor of the type expression. In the presence of data type, this is the outermost
+  triple on the outermost type constructor of the type expression. In the presence of algebraic data types, this is the outermost
   annotation on the result-kind of the type expression.} annotation.
+
+  The structure of the type rules of Figure~\ref{RulerUniquenessExamples.U1.expr.base} is as follows. |Gamma| represents an environment that contains bindings from identifier to (unannotated)
+  type. The |e| stands for an expression with the annotated type |utau|. Finally |zeta| stands for a set of generated constraints.
+
+  A few words on syntax: we write |(Sub(zeta)(1)) (Sub(zeta)(2))| to denote a constraint set obtained by taking the union of
+  |(Sub(zeta)(1))| with |(Sub(zeta)(2))|. We write |(Sub(tau)(a)) <=> (Sub(tau)(b))| for the unification of |(Sub(tau)(a))|
+  with |(Sub(tau)(b))|. Finally, unbound identifiers such as |delta| in the |Var| and |Lam| rule, specify that there are
+  no limitations on that identifier.
 
   \rulerCmdUse{RulerUniquenessExamples.U1.expr.base}
 
-  Constraints for an expression are gathered by a traversal over the expression, as is described by Figure~\ref{RulerUniquenessExamples.U1.expr.base}.
+  Constraints for an expression are gathered by a syntax directed traversal over the expression.
   The case for integers is the easiest: integers can be produced for any usage annotation and nothing has to be checked for them. We neither have to check anything
   for the use-sites of identifiers, since we deal with these identifiers in the case for lambda abstraction.
 
   The case for integer addition is slightly more complicated. Aside from consistency, there are no demands on the uniqueness
   component of the result of the addition. On the other hand, we check that the upper and lower bound annotations of the parameters are
-  properly propagation from result of the addition to the arguments of the addition. For that, a |(Sub(=>=)(s))| constraint is generated
+  properly propagated from result of the addition to the arguments of the addition. For that, a |(Sub(=>=)(s))| constraint is generated
   between the triple on the result type and the triples on the argument types.
 
   The function application is perhaps the most difficult case in the uniqueness type system. Three things have to be done: check
@@ -699,7 +899,7 @@ the lower bound
   function result and result, are properly connected. Note that variance plays a role here: the direction of an argument of a function
   is the opposite to the result of the function. Suppose that a function |f| is passed to function |g| as parameter, then |g| applies the
   function, and passes some argument |x|. Propagation is from |x|, to the parameter of |g|, and inside |g| to the result-value of |g|. The
-  flow of boundaries and usage information for such an annotation is the other way around than the usual flow. In Figure~\ref{RulerUniquenessExamples.U1.flow.base} we list the
+  propagation of boundaries and usage information for such an annotation is the other way around than the usual flow. In Figure~\ref{RulerUniquenessExamples.U1.flow.base} we list the
   type rules that walk over the type and generate the |=>=|-constraints for each two corresponding annotations in the proper direction.
 
   \rulerCmdUse{RulerUniquenessExamples.U1.flow.base}
@@ -723,7 +923,7 @@ the lower bound
 %%[[wrap=code
 satisfied :: Check
 satisfied  (a =>= b)                                   = a `coercionSatisfied` b
-satisfied  (a (Sub(=>=)(s)) b)                         = a `weakCoercionSatisfied` b
+satisfied  (a (Sub(=>=)(s)) b)                         = a `softCoercionSatisfied` b
 satisfied  ((Sub(a)(1)) \*/ ... \*/ (Sub(a)(2)) <= a)  = [(Sub(a)(1)) ... (Sub(a)(n))] `aggregationSatisfied` a
 %%]
 
@@ -736,9 +936,12 @@ satisfied  ((Sub(a)(1)) \*/ ... \*/ (Sub(a)(2)) <= a)  = [(Sub(a)(1)) ... (Sub(a
 
 %%[[wrap=code
 coercionSatisfied (a, b, c) (d, e, f)
-  = a >= d && e <= b && c <= f
-weakCoercionSatisfied (a, b, c) (d, e, f)
-  = a >= d && c <= f
+  =   a  leqL  d
+  &&  b  leqC  e
+  &&  c  leqU  f
+softCoercionSatisfied (a, b, c) (d, e, f)
+  =   a  leqL  d
+  &&  c  leqU  f
 %%]
 
   This constraint is generated in such a way that we may weaken what we know of the
@@ -751,20 +954,25 @@ weakCoercionSatisfied (a, b, c) (d, e, f)
   \subsection{Aggregation constraint}
 
   For the aggregation constraint, we conservatively approximate the upper and lower bound. Things
-  are a bit more complicated for the cardinality annotation. We check that the usage annotation
-  is properly split up to the individual use sites (Figure~\ref{splitFunc}). We mean with this that if a value
-  is linear, that one use site is linear and all the other use sites are not used at all.
-  Figure~\ref{code.sumsat} defines when an aggregation constraint is satisfied.
+  are a bit more complicated for the cardinality annotation. We check that the left-hand side of the cardinality annotation
+  is properly split up to the individual use sites (Figure~\ref{splitFunc}) and that the right-hand side is equal for
+  all use-sites. We mean with this that if a value is linear, that the left-hand side of the cardinality annotation is
+  linear for one use site, and not used for the other use sites. For the right-hand side of the cardinality, we check that
+  that all use-sites consider the total usage of the value to be linear. See Figure~\ref{code.sumsat} for the
+  definition.
 
   \begin{figure}
   \caption{The isSplit function.}
   \label{splitFunc}
-
 %%[[wrap=code
 isSplit as 0        = all (== 0) as
-isSplit as 1        =  let (eq0, neq0) = partition (== 0) as
-                       in length neq0 == 1 && head neq0 == 1
-isSplit as oneplus  = length as > 0 && any (== oneplus) as && all (/= 0) as && all (/= 1) as
+isSplit as 1        = let  (eq0, neq0) = partition (== 0) as
+                      in   length neq0 == 1
+                           && head neq0 == 1
+isSplit as oneplus  =  length as > 0
+                    && any (== oneplus) as
+                    && all (/= 0) as
+                    && all (/= 1) as
 isSplit as onemin   = all (== onemin) as
 isSplit as *        = all (== *) as
 %%]
@@ -773,12 +981,12 @@ isSplit as *        = all (== *) as
   \begin{figure}
   \caption{aggregation constraint satisfaction}
   \label{code.sumsat}
-
 %%[[wrap=code
-aggregationSatisfied [((Sub(a)(1)), (Sub(b)(1)), (Sub(c)(1))), ..., ((Sub(a)(b)), (Sub(b)(n)), (Sub(c)(n)))] (a, b, c)
-  =   (Sub(a)(1))  `max`  ...  `max`  (Sub(a)(n))  >=  a
-  &&  (Sub(c)(1))  +  ...  +  (Sub(c)(n))  <=  c
+aggregationSatisfied [((Sub(a)(1)), (Card(Sub(b)(1))(Sub(c)(1))), (Sub(d)(1))), ..., ((Sub(a)(n)), (Card(Sub(b)(n))(Sub(c)(n))), (Sub(d)(n)))] (a, (Card(b)(c)), d)
+  =   (Sub(a)(1)) `max` ... `max` (Sub(a)(n)) leqL  a
   &&  isSplit [(Sub(b)(1)), ..., (Sub(b)(n))] b
+  &&  (Sub(c)(1)) === ... === (Sub(c)(n))
+  &&  (Sub(d)(1)) + ... + (Sub(d)(n)) leqU  d
 %%]
   \end{figure}
 
@@ -796,16 +1004,34 @@ aggregationSatisfied [((Sub(a)(1)), (Sub(b)(1)), (Sub(c)(1))), ..., ((Sub(a)(b))
   lower bounds instead of the maximum (note the duality here). We discuss this subject
   in Chapter~\ref{chapt.Parallel}.
 
+\section{Strictness?}
+
+  As we mentioned in Chapter~\ref{chapt.Introduction}, we can also infer strictness with our approach. Strictness is
+  defined as follows: consider a function |f = \x -> ...| and the application |r = f bottom|. If reduction of |r| to
+  weak-head normal form results into |bottom|, then |f| is strict in |x|.
+  
+  After performing the analysis that we explained in this chapter, we know from some parameters that they are
+  used. This information almost tells us that the parameters are strict, but not entirely: in our analysis it is
+  possible that we consider a value used because the result of the function is reduced further than weak-head
+  normal form.
+
+  But, we can obtain strictness properties of a function |f| with result type |r|. Suppose we only have the expression
+  of |f|. If we use |(1, (Card(1)(oneplus)), 1)| for the outermost annotation on |r| and |(0, (Card(0)(0)), 0)| for
+  all other annotations of |r|, and expect a valid annotation, then |f| is strict in those parameters that can have a
+  cardinality annotation with |oneplus| or |1| as left-hand side value. An optimisation is that we can |seq| the
+  parameters before applying them to the function. The annotations on the types further specify how deep the
+  |seq| function can evaluate the value.
+
 \section{Conclusion}
 
   We showed in this chapter what we mean with uniqueness typing, be it with a simple language. Our approach
-  consists of a set of type rules that specify when a program is correctly annotated with coercion annotations.
-  We turn this problem into a constraint satisfaction problem, which gives us a separation between the
+  consists of a set of type rules that specify when a program is correctly annotated with cardinality annotations.
+  We turned this problem into a constraint satisfaction problem, which gives us a separation between the
   gathering of the constraint and the checking of them. In the next chapter, we show that the
-  constraints also allow us to \emph{infer} coercion annotations, instead of requiring that they are supplied
+  constraints also allow us to \emph{infer} cardinality annotations, instead of requiring that they are supplied
   by the programmer.
 
-  In this chapter, we also told that usage annotations are not sufficient. We required lower-bound and upper-bound annotations
-  as well. In the next chapter, we switch to inferring uniqueness properties, and there we infer these bounds as well.
+  In this chapter, we also told that cardinality annotations are not sufficient. We required lower-bound and upper-bound annotations
+  as well. In the next chapter, we switch to inferring cardinality properties, and there we infer these bounds as well.
 
 %%]

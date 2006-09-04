@@ -115,7 +115,8 @@ of values that are used at most once, is the focus of this master's thesis.
   ranges over all elements of the list, and each element gets the same property, although given our intuition of the
   definition of |fibs|, lower numbers are used much more than higher numbers, since the lower numbers are used to obtain
   a higher number. The approximation makes it easier to deal with usage properties, hence usage analyses are defined in
-  terms of type systems, at the cost of accuracy. In practice this is not much of a problem: if a programmer uses a list,
+  terms of type systems, at the cost of accuracy (see Figure~\ref{fig.ListRep} for an example why types cannot cannot
+  differentiate between individual bits of memory). In practice this is not much of a problem: if a programmer uses a list,
   then the elements of this list are typically used in a similar way, otherwise the programmer would have used two lists or
   another data type.
 
@@ -145,7 +146,7 @@ of values that are used at most once, is the focus of this master's thesis.
 
   In practice, a linear type system mixes linear type and non-linear types, demanding
   the environment restrictions on linear types, and no restrictions for non-linear types (see the type systems given
-  by Wadler~\cite{wadler90linear} for more information). In this thesis, we use a richer representation than just
+  by Wadler~\cite{wadler90linear} for more information). In this master's thesis, we use a richer representation than just
   linear and non-linear to represent uniqueness properties (Section~\ref{sect.Annotations}), but assume that linear types are annotated with
   a |1| (i.e. |(Sup(Int)(1))|), and non-linear types with a |*| (i.e. |(Sup(Int)(*))|).
 

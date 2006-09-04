@@ -13,20 +13,20 @@ EH_VERSION			:= $(EH_VERSION_MAJOR).$(EH_VERSION_MINOR)
 # TOPABS_PREFIX	: absolute prefix/pathname to top dir
 
 ### Unix
-EXEC_SUFFIX			:=
-PATH_SEP			:= /
-PATHS_SEP			:= :
-PATHS_SEP_COL		:= :
-STRIP_CMD			:= strip
-TOPABS_PREFIX		:= $(shell pwd)/
+#EXEC_SUFFIX			:=
+#PATH_SEP			:= /
+#PATHS_SEP			:= :
+#PATHS_SEP_COL		:= :
+#STRIP_CMD			:= strip
+#TOPABS_PREFIX		:= $(shell pwd)/
 
 ### WinXX
-#EXEC_SUFFIX			:= .exe
-#PATH_SEP			:= /
-#PATHS_SEP			:= ;
-#PATHS_SEP_COL		:= :
-#STRIP_CMD				:= strip
-#TOPABS_PREFIX		:= c:/whatever/
+EXEC_SUFFIX			:= .exe
+PATH_SEP			:= /
+PATHS_SEP			:= ;
+PATHS_SEP_COL		:= :
+STRIP_CMD				:= strip
+TOPABS_PREFIX		:= c:/EHC/
 
 ### remaining config
 # which version (usually v1 = current, v2 == under development)

@@ -65,10 +65,11 @@
 
 %format (Dot(x)(y)(z))	= "{" x "}_{" y "}^{" z "}"
 %format (Delta(x)) = "{\delta_{" x "}}"
-%format (Annot(x)(y)) = "{" x "}^{\delta_{" y "}}"
-%format (Sup(x)(y)) = "{" x "}^{" y "}"
-%format (Sub(x)(y)) = "{" x "}_{" y "}"
+%format (Annot(x)(y)) = "{{" x "}^{\delta_{" y "}}}"
+%format (Sup(x)(y)) = "{{" x "}^{" y "}}"
+%format (Sub(x)(y)) = "{{" x "}_{" y "}}"
 %format (Card(x)(y)) = "{{" x "} \bowtie {" y "}}"
+%format (SCard(x)(z)(y)) = "{{" x "} \bowtie^{" z "} {" y "}}"
 
 %format restr		= "\backslash "
 
@@ -408,3 +409,17 @@
 %format Usage = "\jmath"
 %format UpperBound = "\imath"
 %format LowerBound = "\ell"
+%format leq  = "\sqsubseteq"
+%format leqB = "\sqsubseteq_B"
+%format leqL = "\sqsubseteq_L"
+%format leqU = "\sqsubseteq_U"
+%format leqC = "\sqsubseteq_C"
+%format leqS = "\sqsubseteq_S"
+%format leqX = "\sqsubseteq_X"
+%format leqZ = "\sqsubseteq_Z"
+%format leqM = "\sqsubseteq_M"
+%format leqP = "\sqsubseteq_P"
+%format leqQ = "\sqsubseteq_Q"
+%format join = "\sqcup"
+%format ConstrSet = zeta
+%format bottom = "\bot"

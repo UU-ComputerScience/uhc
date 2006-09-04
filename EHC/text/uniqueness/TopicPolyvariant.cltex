@@ -3,7 +3,7 @@
 \chapter{Polyvariant analysis with monomorphic bindings}
 \label{chapt.Polyvariant}
 
-In the previous chapter, we generate constrains from an annotated program, and call the annotations valid if and only if
+In the previous chapter, we generate constraints from an annotated program, and call the annotations valid if and only if
 the constraints are satisfied. In this chapter, we take a closer look at the constraints. We take a validly typed, but not
 annotated, program and decorate the type constructors with \emph{cardinality variables} |delta| instead of concrete
 annotations. Then we generate the set of constraints, which now contain variables instead of concrete values. A solution
@@ -12,15 +12,15 @@ a whole family of solutions. In this chapter, we discuss a technique that infers
 constraints (Section~\ref{sect.TheMinimalSolution}).
 
 To make this chapter slightly more challenging, we add a monomorphic and non-recursive |let| to the expression language defined
-in Chapter~\ref{chapt.NoBindings}. With the existence of cardinality variables, we turn the analysis into a polyvariant analysis, which
+in Chapter (Section~\ref{chapt.NoBindings}). With the existence of cardinality variables, we turn the analysis into a polyvariant analysis, which
 means that we infer a most general uniqueness typing for a binding, and allow different instantiations for each use of an
 identifier.
 
 This chapter is organized as follows. We illustrate the concept of cardinality inference by an example.
-Then we go into the concept of the type inference process~\ref{sect.TheInferencer}. We follow this up with a discussion about
+Then we go into the concept of the type inference process (Section~\ref{sect.TheInferencer}). We follow this up with a discussion about
 the addition of bindings to the expression language, and consequently the concept of binding groups and
 instantiation~\ref{sect.Instantiation}. The constraints play an important role here, but we go to yet another representation:
-the constraints are rewritten to a graph-representation on which we can perform graph rewriting~\ref{sect.Rewriting} to
+the constraints are rewritten to a graph-representation on which we can perform graph reduction (Section~\ref{sect.Rewriting}) to
 simplify the constraints.
 
 
@@ -28,36 +28,35 @@ simplify the constraints.
 \label{sect.ExamplePoly}
 
 A type can now have cardinality variables as annotations. Upper and lower-bound cardinality annotations do not exist anymore,
-but are used internally by the constraint solver. The following example demonstrates some annotated types and constraint
+but are used internally by the inferencer. The following example demonstrates some annotated types and constraint
 sets:
 
 %%[[wrap=code
 f  ::  forall (Delta(1))                      .  (Annot(Int)(1))
-g  ::  forall (Delta(1))                      .  (Annot(Int)(1)),  onemin =>= (Delta(1))
+g  ::  forall (Delta(1))                      .  (Annot(Int)(1)),  (Card(onemin,*)) =>= (Delta(1))
 h  ::  forall (Delta(2))                      .  (Annot(Int)(2)) (Annot(->)(2)) (Annot(Int)(2))
-j  ::  forall (Delta(3))(Delta(4))(Delta(5))  .  (Annot(Int)(4)) (Annot(->)(3)) (Annot(Int)(5)),  (Delta(5)) =>= (Delta(4)), (Delta(5)) =>= (Delta(3))
+j  ::  forall (Delta(3))(Delta(4))(Delta(5))  .  (Annot(Int)(4)) (Annot(->)(3)) (Annot(Int)(5)),  (Delta(5)) =>= (Delta(4)), (Delta(5)) (Sub(=>=)(s)) (Delta(3))
 %%]
 
 All cardinality variables are universally quantified, but are constrained by a constraint set. For example, |f| represents
-a value with a type that has an unconstrained annotation |(Delta(1))|. This annotation can be instantiated with any of
-the five cardinality annotations. The annotation on the type of |g| can only be |(Sub(Int)(onemin))| and |(Sub(Int)(*))|,
-since the annotations |0|, |oneplus| and |1| are not allowed according to the constraint (Section~\ref{Sect.CheckingConstraints}).
-The type of |h| corresponds to a function that may have any of the five cardinality values as long as the function, the argument,
-and the result type have the same cardinality value. The three annotations of the type of |j| can have any cardinality value
-as long as the two coercions are satisfied.
+a value with a type that has an unconstrained annotation |(Delta(1))|. This annotation can be instantiated with any consistent
+cardinalty value. The annotation on the type of |g| can only be |(Card(onemin)(*))|, or |(Card(*)(*))|, since the
+constraint disalows other combinations (Section~\ref{Sect.CheckingConstraints}). The type of |h| corresponds to a function
+that may have any of the five cardinality values as long as the function, the argument, and the result type have the same cardinality value.
+The three annotations on the type of |j| can have any cardinality value as long as the two coercions are satisfied.
 
 We annotate a program with cardinality variables, perform the constraint gathering of the previous chapter, and
-perform cardinality inference on the constraints.
+perform cardinality inference on the constraints. We remark that a cardinality annotation is a cardinality
+variable (i.e. |delta|), and a concrete cardinality annotation is a cardinality value (i.e. |(Card(1)(*))|).
 
-The first step is to take a typed program and annotate it:
+The first step in this process is to take a typed program and annotate it with fresh annotations:
 
 %%[[wrap=code
 (\x -> x) 3
 ((\(x :: Int) -> x :: Int) :: Int -> Int) (3 :: Int) :: Int
 %%]
 
-Each type constructor in the types is annotated with a fresh
-cardinality variable (the |x| parameter gets its annotation from
+Each type constructor in the types is annotated with a fresh cardinality variable (the |x| parameter gets its annotation from
 the type of the function).
 
 %%[[wrap=code
@@ -65,35 +64,42 @@ the type of the function).
 ((\(x :: (Annot(Int)(1))) -> x :: (Annot(Int)(2))) :: (Annot(Int)(3)) (Annot(->)(4)) (Annot(Int)(5))) (3 :: (Annot(Int)(6))) :: (Annot(Int)(7))
 %%]
 
-Constraint gathering of Section~\ref{Sect.ConstraintGathering} results into the following constraints:
+Constraint gathering of Section~\ref{Sect.ConstraintGathering} results in the following constraints:
 
 %%[[wrap=code
-(1,bottom,0) (Sub(=>=)(s)) (Delta(7))   -- root of the expression
-(Delta(7)) =>= (Delta(5))               -- function application to function result
-(Delta(7)) (Sub(=>=)(s)) (Delta(4))     -- function application to function spine
-(Delta(3)) =>= (Delta(6))               -- function parameter to function type
-(Delta(5)) =>= (Delta(2))               -- function result to function body
-(Delta(2)) <= (Delta(1))                -- aggregation of use-sites of |x|
-(Delta(1)) =>= (Delta(3))               -- parameter to function
+(1,(Card(1)(*)),0) (Sub(=>=)(s)) (Delta(7))   -- root of the expression
+(Delta(7)) =>= (Delta(5))                     -- function application to function result
+(Delta(7)) (Sub(=>=)(s)) (Delta(4))           -- function application to function spine
+(Delta(3)) =>= (Delta(6))                     -- function parameter to function type
+(Delta(5)) =>= (Delta(2))                     -- function result to function body
+(Delta(2)) <= (Delta(1))                      -- aggregation of use-sites of |x|
+(Delta(1)) =>= (Delta(3))                     -- parameter to function
 %%]
 
 These constraints specify a whole family of solutions. A solution is a substitution that maps each cardinality
-variable to a cardinality value and satisfies the constraints. The substitution that maps |*| to each
-cardinality variable always satisfies the constraint. But in this case is a substitution that maps |1| or
-|oneplus| to each cardinality variable also consistent with the constraints. Annotate the program with corresponding
-upper and lower bound annotations and apply the constraint checking of the previous chapter if in doubt.
+variable to a cardinality value and satisfies the constraints. The substitution that maps each
+cardinality variable to |(Card(*)(*))| always satisfies the constraint. But in this case, a substitution that maps
+each cardinality variable to |(Card(1)(1))|, |(Card(1)(oneplus))|, or |(Card(oneplus)(oneplus))|, also satisfies
+the constraints. Annotate the program with corresponding upper and lower bound annotations and apply the constraint
+checking of the previous chapter if in doubt.
 
-The above constraints are passed to the constraint solver, which finds the least solution to the constraints. With a least
-solution we mean a solution that is as specific as possible for each cardinality annotation. The annotations |1| and
+The above constraints are passed to the inferencer (we call it the constraint solver), which infers the least solution to
+the constraints. With a least Solution we mean a solution that is as specific as possible for each cardinality annotation
+(see the ordering |leqS| in Section~\ref{sect.TpAnnConstr}). The |Usage| values |1| and
 |0| are the most specific (and mutual exclusive), the annotations |onemin| and |oneplus| annotations are in between (also
-mutual exclusive) and |*| is the least specific annotation. There is exactly one least solution to the constraints. See
-Section~\ref{sect.TheMinimalSolution} for a proof. Keep in mind that this solution is still a conservative approximation
+mutual exclusive) and |*| is the least specific |Usage| value. There is exactly one least solution to the constraints (see
+Section~\ref{sect.TheMinimalSolution} for a proof). Keep in mind that this solution is still a conservative approximation
 of the actual usage of a value.
 
 We obtain the solution as follows. Based upon the constraints, a lower and an upper bound is inferred for each cardinality
-annotation. Then the most specific cardinality annotation that fits the bounds is chosen for each cardinality variable. Then
-we check for each constraint if the cardinality values agree with the constraint, otherwise the cardinality values are made
-less specific until they fit the constraints. This process is repeated until all cardinality values fit.
+annotation. After the lower and upper bounds are inferred, we choose the most specific |Usage| value for both |Usage|
+values of the cardinality annotations. We then relax (make them less specific according to |leqS|) the left-hand side and
+right-hand side of the cardinality values independendly until they satisfy the constraints. A relaxation of the
+left-hand side possibly leads to a relaxation of the right-hand side to keep the cardinality value consistent
+(see |leqB| in Section~\ref{sect.partialorderings}). Satisfying one constraint by relaxing one of the |Usage| values of
+a cardinality annotation, can cause a need for relaxation of the cardinalities of another constraint. This process is repeated
+until all cardinality values satisfies the constraints. This process terminates since we cannot relax |Usage| values
+beyond |*|.
 
 The upper and lower bound are obtained in a similar way. An initial substitution is created that maps the lower bound of
 each cardinality variable to |1|. Each coercion constraint that is not satisfied has a higher lower bound in the substitution
@@ -101,8 +107,8 @@ for the right-hand side than the left-hand side. The constraint becomes satisfie
 right-hand side to the lower-bound of the left-hand side. An aggregation constraint that is not satisfied, becomes satisfied
 by changing the right-hand side to the result of the computation of the left-hand side. This process is repeated until
 all constraints are satisfied. The same process is performed for the right-hand side, except that we start with the
-value |0|. Performing this approach on the constraints of the example results into lower-bound values of all |1| (none
-of the constraints are satisfied to start with), and an upper bound values of |1| (some work had to be done for this one).
+value |0|. Performing this approach on the constraints of the example results in lower-bound values of all |1| (none
+of the constraints are satisfied to start with), and upper bound values of |1| (some work had to be done for this one).
 
 The most specific cardinality value that fits (Figure~\ref{code.FitsInBounds}) an upper bound and lower bound of |1|, is
 the value |1| (linear). A cardinality of |1| satisfies all the above constraints. The substitution |S (Delta(i)) = 1|, with |1 <= i <= 7|
@@ -112,12 +118,11 @@ is a least solution to the constraints of the above example.
 \section{Cardinality variables and type rules}
 \label{sect.UniquenessVariables}
 
-In contrast to previous chapter where the type constructors are annotated by a triple of annotations, we now only
+In contrast to the previous chapter where the type constructors are annotated by a triple of annotations, we now only
 annotate the type constructors with a fresh cardinality variable. The example
-in Section~\ref{sect.ExamplePoly} showed several types annotated with such cardinality variables. In this thesis, we
-often refer to cardinality variables as cardinality annotations.
+in Section~\ref{sect.ExamplePoly} showed several types annotated with such cardinality variables.
 
-Consider the following expression with types at every place:
+Consider the following expression with types of every identifier and subexpression:
 
 %%[[wrap=code
 let  (f :: Int -> Int) = (\x :: Int -> (x :: Int) + (1 :: Int) :: Int) :: Int -> Int
@@ -136,44 +141,49 @@ As demonstrated in Chapter~\ref{chapt.NoBindings}, the constraints between annot
 variables are properly connected to each other.
 
 The above approach allows cardinality coercions everywhere in the abstract syntax tree. A cardinality coercion allows
-a relaxation of an established cardinality result to a weaker variant. For example, we can coerce a value with cardinality
-|onemin| to a value with cardinality |*| by forgetting that the value is used at most once. Depending on the code
-generator, an coercion function needs to be inserted, for example to move the value from one heap to another. But, there
-is some redundancy between annotations on some types. For example, a parameter of a function can use the cardinality
-variables of the enclosing function for its annotated type. It does not need fresh cardinality variables. There is no
-need to put a coercion at the use sites of identifiers. Another redundancy is that in the binding |x = f 3|, it is possible
-to coerce the result of |f| at the function application, but also at the place where the result of |f| is bound to |x|, or even both.
-Coercions lead to additional code insertion in the program, depending on the code generator. We therefore want to
-limit the number of coercions that can be inserted, and restrict it to clearly defined places.
+a relaxation of an established cardinality result to a weaker variant. For example, we can coerce a value with a total
+|usage| value of |onemin| to a value with a total usage of |*| by forgetting that the value is used at most once in total,
+if optimisations do not conflict with this coercion and possibly requires a coercion to be applied to the value at the
+moment of relaxation. There is some redundancy between annotations on some types. For example, a parameter of a function can use the cardinality
+variables of the enclosing function for its annotated type. It does not need fresh cardinality variables. Since we allow a
+coercion from argument to parameter, there is no need for a coercion from parameter to use-site of the parameter in the body
+of the function. Similary, for a function application like such as |f 3|, it is possible to coerce the result of |f| at the
+function application. However, the result of |f 3| can be used at three places: as argument of a function application, as
+body of a lambda, or as right-hand side of a |let| binding (later in this chapter). In case it is used as argument to another function application (i.e. |g (f 3)|), then the function
+application of |g| already allows an coercion. In case it is used as the body of lambda, we already allow a coercion from the type of
+the body to the type of the result of the lambda. Finally, we also already allow a coercion of the right-hand side of a
+|let|. So, a coercion of the result of a function at a function application is redundant. Coercions possibly lead to additional
+code depending on the code generator. We therefore want to limit the number
+of coercions that can be inserted, and restrict it to clearly defined places. Therefore, we restrict coercion to the three
+places mentioned above. This has no influence on the quality of the inference process. It leads to
+fewer coercion constraints and fewer annotations, which is beneficial for the performance of the compiler and possibly the
+performance of the program itself.
 
-We can restrict the places where cardinality coercions are inserted, to two places: the argument of function applications and
-the right hand side of a binding to an identifier, without reducing the quality of the cardinality inference. At the other places,
-an annotated type can be constructed by using the cardinality variables occurring on type constructors in types of the
-subexpressions.
-
-Compare the difference with the following example and the previous example:
+Consider the difference between the following example and the previous example:
 
 %%[[wrap=code
-let  (f :: (Annot(Int)(1)) (Annot(->)(2)) (Annot(Int)(3))) = (\(x :: (Annot(Int)(1))) -> (x :: (Annot(Int)(4))) + (1 :: (Annot(Int)(5))) :: (Annot(Int)(3))) :: (Annot(Int)(1)) (Annot(->)(2)) (Annot(Int)(3))
-in   (f :: (Annot(Int)(6)) (Annot(->)(7)) (Annot(Int)(8))) (1 :: (Annot(Int)(9))) :: (Annot(Int)(10))
+let  (f :: (Annot(Int)(1)) (Annot(->)(2)) (Annot(Int)(3))) = (\(x :: (Annot(Int)(1))) -> (x :: (Annot(Int)(4))) + (1 :: (Annot(Int)(5))) :: (Annot(Int)(6))) :: (Annot(Int)(1)) (Annot(->)(2)) (Annot(Int)(3))
+in   (f :: (Annot(Int)(7)) (Annot(->)(8)) (Annot(Int)(9))) (1 :: (Annot(Int)(10))) :: (Annot(Int)(11))
 %%]
 
-With this strategy, less different cardinality annotations are used compared with the annotation strategy above.
+With this strategy, fewer different cardinality annotations are used compared with the annotation strategy above.
 The difference is that we allow coercions only at restricted places. The result is less constraints and less
-coercion variables, which results into better performance of the inferencer. To scale up to typing big real-life
+coercion variables, which results in better performance of the inferencer. To scale up to typing big real-life
 programs, a cardinality inferencer can decide to reduce accuracy for certain unimportant pieces of a program,
 by limiting the coercions and reusing cardinality variables even more, to reduce the number of
-annotations severely, thus preventing choking up on the number of annotations (Section~\ref{sect.FutureWork}).
+annotations severely, thus preventing choking on the number of annotations (Section~\ref{sect.FutureWork}).
 Limiting coercions can also positively impact runtime performance, depending on the additional code that is inserted for it,
 and what the code-improvements are up to the point of the coercion.
 
-Take a look at the example again. The types at the use-site of an identifier are freshly annotated, but this has nothing to
-do with coercions. The reason for freshly annotating the use-sites of an identifier is because we treat each use of an
-identifier independently, and combine the results at the definition site with the aggregation constraint.
+Take a look at the example again. The types at the use-site of an identifier are freshly annotated, but this is unrelated
+to coercions. The reason for freshly annotating the use-sites of an identifier is because we treat each use of an
+identifier independently, and combine the results at the definition site with the aggregation constraint. For similar
+reasons are integer expressions and the spine of a lambda freshly annotated: we can produce integers and functions
+for any cardinality annotation.
 
 Figure~\ref{RulerUniquenessExamples.UX.expr.base} lists the type rules for the uniqueness type system with cardinality inference. The constraint
-generation remained virtually the same. The notable changes are the places where a normal type is freshly annotated to
-an annotated type with cardinality variables. The result of the inference process are annotated types for each expression,
+generation remained virtually the same. The notable changes are the places where identifiers are freshly annotated, and a reduction in the
+number of coercion constraints. The result of the inference process are annotated types for each expression,
 and a substitution. The substitution maps each cardinality variable to a cardinality value.
 
 \rulerCmdUse{RulerUniquenessExamples.UX.expr.base}
@@ -182,14 +192,28 @@ and a substitution. The substitution maps each cardinality variable to a cardina
 \section{The inferencer}
 \label{sect.TheInferencer}
 
-The question that now remains is: how to obtain the substitution that maps a cardinality value to a cardinality
-variable. Since we have a finite number of cardinality variables, and a finite number of cardinality values, an obvious
-approach is to iterate through all combinations, and pick the least solution from the combinations that satisfy the constraints.
-This is not a feasible approach in practice.
+The question that now remains is: how to obtain the substitution that assigns a cardinality value to a cardinality
+variable? Since we have a finite number of cardinality variables and a finite number of cardinality values, an obvious
+approach is to iterate through all combinations, and pick a least solution from the combinations that satisfy the constraints.
+A least solution is a lowest value in the ordering |leqM| such that the cardinality values satisfy the constraints:
 
-We first compute with an fixpoint computation the upper and lower bounds. Then choose the most specific cardinality value
-that fits the bounds. With a fixpoint computation, the cardinality values are relaxed to less specific values until the
-constraints are all satisfied. That means three fixpoint computations on the same constraint set, each time with a
+%%[[wrap=code
+((Sub(c)(1)), ..., (Sub(c)(n))) leqM ((Sub(d)(1)), ..., (Sub(d)(n)))
+  =   (Sub(c)(1)) leqC (Sub(d)(1))
+  &&  ...
+  &&  (Sub(c)(n)) leqC (Sub(d)(n))
+%%]
+
+Although it is not obvious from the definition |leqM|, we show in Section~\ref{sect.TheMinimalSolution} that there is only one least solution
+to a set of constrains. Unfortunately, the above approach is not feasible in practice. The problem is for |n| annotations, there are
+$5^n$ combinations, which is not feasible to calculate in practice.
+
+Fortuantely, there is no need to compute all possible combinations. Due to the orderings defined on the cardinalities,
+upper bound and lower bounds, we can use a fixpoint computation to obtain a least fixpoint. Actually, we need three
+of these computations: one for the lower bound, one for the upper bound, and one for the cardinalities. We first
+compute the lower and upper bounds. Then choose for each cardinality the most specific cardinality that fits with
+the two bounds. The third iteration process relaxes the cardinalities according to |leqC|, until all constraints
+are satisfied. This means that there are three fixpoint computations on the same constraint set, each time with a
 different solving function. Figure~\ref{code.fixSolve} gives an overview of the implementation.
 
 \begin{figure}
@@ -205,12 +229,17 @@ infer cs
 %%]
 \\
 %%[[wrap=code
-bestFit :: LBound -> UBound -> Cardinality
-bestFit  0    0  =  0
-bestFit  1    1  =  1
-bestFit  1    _  =  oneplus
-bestFit  _    1  =  onemin
-bestFit  _    _  =  *
+bestFit :: LowerBound -> UpperBound -> c
+bestFit l u
+  =  let  z = l `bestFitAux` u
+     in   (Card(z)(z))
+  where
+    bestFitAux :: LowerBound -> UpperBound -> Usage
+    bestFitAux  0    0  =  0
+    bestFitAux  1    1  =  1
+    bestFitAux  1    _  =  oneplus
+    bestFitAux  _    1  =  onemin
+    bestFitAux  _    _  =  *
 %%]
 \\
 %%[[wrap=code
@@ -224,7 +253,7 @@ worklistFix solveF cs initial
     iter (c : cs) subst
       =  let  c1      = subst `apply` c
               c2      = solveF c1
-              subst'  = c2 `improve` subst
+              subst'  = c2 `update` subst
          in   if subst' == subst
               then  iter cs subst'
               else  iter ((c `lookup` deps) ++ cs) subst'
@@ -232,25 +261,26 @@ worklistFix solveF cs initial
 \end{figure}
 
 The fixpoint iteration proceeds as follows. We start with the best possible substitution, which is the
-lowest value in the ordering defined on the values where the substitutions are mapped to. If one
-particular value |v| does not satisfy the constraint, then |v| is too low and we select a value
-|v' >= v| such that |v| is as small as possible, but satisfies the constraint. Such a value |v| is
-always found because the biggest value in the ordering always satisfies the constraints. It is possible that
-satisfying one constraint makes another constraint not satisfied. Such a constraint is visited again,
-which causes the substitution to increase to make it satisfied. After several iterations back and
-forth the constraints, the values do not change anymore and the iteration process terminates. The
-iteration process always terminates because the substitution needs to grow in order for the
-iteration to continue and the substitution cannot grow beyond the point where each variable
-is mapped to the maximum value. When the fixpoint procedure terminates, we say that a least
-fixpoint is reached.
+lowest value in the ordering. If one particular value |v| does not satisfy a constraint, then |v| is
+too low in the ordering and we select a value v', with |v leq v'| and v' as low as possible in the
+ordering and satisfies the constraint. We relaxed |v| to |v'|, since |v'| can only be higher in the
+ordering. Such a value can alawys be found since the orderings are finite join-semilattices, wich
+implies there is a value |t| such that |v leq t| for any |x|. It is possible that satisfying one constraint
+makes another constraint not satisfied. Processing the constraints once is called an iteration, and we
+repeat iterations until the substitution does not change anymore. If a substitution does not change, then
+no relaxations took place, which implies that all constraints are satisfied. Futhermore, the number of
+relaxations is limited, since we have a finite substitution of which the value for each variable can
+be relaxed a finite number of times. A property of the fixpoint procedure is that a least fixpoint is
+reached after the process terminates.
 
 For our constraints and their interpretation, there is only one such least fixpoint, and it
 is the optimal solution to the constraint set (Section~\ref{sect.TheMinimalSolution}). This  approach is fast:
 when the constraints are topologically ordered, with the left-hand side(s) as dependency on the right-hand-side, and a special treatment
-for constraints that form a cycle, at most 5 iterations are required for the upper bound computation: 3+1 iterations (in the worst case) to get |*| everywhere in the substitution, and one
-iteration to discover that nothing changed. With an implementation by means of a worklist algorithm, it takes even less
+for constraints that form a cycle (a change of the substitution of a variable in a cycle is directly propagated to the substitution of the
+other variables in the cycle), at most four iterations are required for the upper bound computation: three iterations (in the worst case) to get |*| everywhere in the substitution, and one
+iteration to discover that the substitution did not change. With an implementation by means of a worklist algorithm, it takes even less
 time in practice, due to several reasons, including that the constraints represented as a graph (Section~\ref{sect.Rewriting})
-is sparse. The worklist version takes a single constraint, ensures that it is satisfied, and
+are sparse. The worklist version takes a single constraint, ensures that it is satisfied, and
 if it changes the substitution, adds all dependent constraints on the stack of constraints to
 process. See Figure~\ref{code.fixSolve} for the worklist implementation.
 
@@ -259,18 +289,18 @@ Figure~\ref{code.iterate} lists the solve functions. The worklist function appli
 substitution to a constraint, such that the solve function gets a constraint with concrete
 values filled in for the variables. The solve function returns the constraint with possibly
 increased values for the variables. The worklist function takes these values out of the constraint
-again and improves the substitution with it. Over and over again until the substitution does not
+again and updates the substitution with it. This happens over and over again until the substitution does not
 change anymore. Compare these functions with the constraint checking functions of Section~\ref{Sect.CheckingConstraints}. The
 solve functions are similar to the constraint checking functions, which is not surprising since the iteration functions
 just increase values until they fit.
 
-The solve functions for the lower bound and the upper bound are fairly straightforward. The solve function for
-cardinality values requires some explanation. The |join| function relaxes a cardinality if the two cardinalities do not fit.
-For example, if one of the cardinalities specifies that some value has cardinality |0|, and the other specifies that it
-has cardinality |oneplus|, then we relax the value to |oneplus|, which is less specific. A special variant of the |join| function
-is used to only increase the left-hand side if the right-hand side cannot be coerced to it. The cases for the aggregation
-constraint specify that a cardinality value needs to be split up in a proper way. For example, if the cardinality of the
-result is |1|, then there must be one occurrence with cardinality |1| and all the other occurrences cardinality |0|.
+Figure~\ref{code.iterate} lists the solve functions. The solve functions for the lower bound and the upper bound are fairly straightforward.
+The |beta| in the coercion constraint means that we do not differentiate between soft and hard coercion constraints for the lower and
+upper bounds. The solve function for cardinality values requires some explanation. The |increase| function minimally relaxes both |Usage| parameters
+until they coerce into each other. The |split| function relaxes |Usage| values minimally until usages are properly split over the individual
+occurrences. This means for example that if we know that the combined occurrences are used in total exactly once, then once of the occurrences must
+be used exactly once and the others not. If we know that the total is used more than once, then one of the individual occurrences must be used
+more than once and the others can be arbitrarily used.
 
 \begin{figure}
 \caption{Solve functions}
@@ -293,38 +323,43 @@ upperSolveF ((Sub(a)(1)) \*/ ... \*/ (Sub(a)(n)) <=  a)
 %%]
 \\
 %%[[wrap=code
-cardSolveF c@(a (Sub(=>=)(s)) b)  -- weak constraint ignores cardinality
-  =  c
-cardSolveF (a (Sub(=>=)(h)) b)
-  =  let  z  = a `leftJoin` b
-          z' = a `join` b
-     in z (Sub(=>=)(h)) z'
-  where
-    leftJoin  *  -1  = -1  -- coercion
-    leftJoin  a  b   = join a b
-cardSolveF c@(0 \*/ ... \*/ 0 <= 0)                      -- all 0
+cardSolveF c@(_ (Sub(=>=)(s)) _)  -- soft constraint ignores cardinality
   = c
-cardSolveF c@((Sub(a)(1)) \*/ ... \*/ (Sub(a)(n)) <= 1)  -- one exactly 1 and the rest all 0
-  | length neq0 == 1 && head neq0 == 1
-      = c
-  where
-    (_, neq0) = partition (== 0) [(Sub(a)(1)) ... (Sub(a)(n))]
-
-cardSolveF ((Sub(a)(1)) \*/ ... \*/ (Sub(a)(n)) <=  a)   -- all 1+ or all 1- or all *
-  =  let  z = (Sub(a)(1)) `join` ... `join` (Sub(a)(n))
-     in   (z \*/ ... \*/ z <=  z)
+cardSolveF ((Card(a)(b)) (Sub(=>=)(h)) (Card(c)(d)))
+  = let  (a1, c1)  =  increase (leqP) (leqS) a c
+         (b1, d1)  =  increase (leqQ) (leqZ) b d
+         b2 = a1 `(Sub(join)(leqX))` b1
+         d2 = c1 `(Sub(join)(leqX))` d1
+    in   ((Card(a1)(b2)) (Sub(=>=)(h)) (Card(c1)(d2)))
+cardSolveF ((Card(Sub(a)(1))(Sub(b)(1))) \*/ ... \*/ (Card(Sub(a)(n))(Sub(b)(1))) <= (Card(a)(b)))
+  = let  ((Sub(a1)(1)), ..., (Sub(a1)(n)), a1) = split ((Sub(a)(1)), ..., (Sub(a)(b)), a)
+         (Sub(b1)(1))  =  (Sub(a1)(1))  `(Sub(join)(leqX))`  (Sub(b)(1))
+         ...
+         (Sub(b1)(n))  =  (Sub(a1)(n))  `(Sub(join)(leqX))`  (Sub(b)(n))
+         b1            =  a1            `(Sub(join)(leqX))`  b
+         b2 = (Sub(b1)(1)) `(Sub(join)(leqQ))` ... `(Sub(join)(leqQ))` (Sub(b1)(n))
+    in   ((Card(Sub(a1)(1))(b2)) \*/ ... \*/ (Card(Sub(a1)(n))(b2)) <= (Card(a1)(b2)))
 %%]
 \\
 %%[[wrap=code
-join  *        _        =  *
-join  _        *        =  *
-join  oneplus  onemin   =  *
-join  onemin   oneplus  =  *
-join  oneplus  _        =  oneplus
-join  _        oneplus  =  oneplus
-join  onemin   _        =  oneplus
-join  _        onemin   =  oneplus
-join  _        _        =  *
+split c@(0, ..., 0, 0)                      -- all exactly 0
+  = c
+split c@((Sub(a)(1)), ..., (Sub(a)(n)), 1)  -- one exactly 1, the others exactly 0
+  | length neq0 == 1 && head neq0 == 1
+      = c
+  where
+    (_, neq0) = partition (== 0) [(Sub(a)(1)), ..., (Sub(a)(n))]
+split ((Sub(a)(1)), ..., (Sub(a)(n)), a)    -- all 1+ or all 1- or all *
+  =  let  z = (Sub(a)(1)) `(Sub(join)(leqP))` ... `(Sub(join)(leqP))` (Sub(a)(n)) `(Sub(join)(leqP))` a
+     in   (z, ..., z, z)
+%%]
+\\
+%%[[wrap=code
+increase relaxR coercionR a b
+  = (Sub(min)((leqQ, leqQ)))  [ (a', b')  |  a' <- Usage, b' <- Usage
+                                          ,  a `relaxR` a'
+                                          ,  b `relaxR` b'
+                                          ,  a `coercionR` b' ]
 %%]
 \end{figure}
 
@@ -364,8 +399,8 @@ join  _        _        =  *
   So, taking the minimum of two solutions gives another solution. With this fact, we prove that
   there can only be one least solution. Assume that the opposite is the case, such that
   |P| and |Q| are different least solutions. In order for |P| and |Q|
-  to be different, there must be some annotation |(Sub(delta)(0))| for which |Q((Sub(delta)(0))) < P((Sub(delta)(0)))|. The
-  other way around as well, but we do not need that here. Consider the
+  to be different, there must be some annotation |(Sub(delta)(0))| for which |Q((Sub(delta)(0))) < P((Sub(delta)(0)))| (the
+  other way around as well, but we do not need that here). Consider the
   solution obtained by taking the minimum from |P| and |Q|: |M === P `min` Q|. For each annotation |delta|,
   |M(delta) <= P(delta)|. But for |(Sub(delta)(0))|, |M((Sub(delta)(0))) = Q((Sub(delta)(0))) < P((Sub(delta)(0)))|.
   This means that |M| is a smaller solution that |P|. Thus |P| cannot be a least solution, and that there is only
@@ -381,8 +416,8 @@ In Chapter~\ref{chapt.NoBindings} we showed how to gather the constraints. In th
 uniqueness types given the constraints, using a fixpoint iteration approach.
 
 We are now going to make life a bit interesting by supporting a non-recursive |let|. This will complicate
-the inferencer, especially since we are paving a way to support a polymorphic and recursive |let| for
-Chapter~\ref{chapt.Recursion} and Chapter~\ref{chapt.Polymorphic}. A gentle warning: make sure you have a feeling
+the inferencer, especially since we are paving the way to support a polymorphic and recursive |let| for
+Chapter~\ref{chapt.Recursion} in Chapter~\ref{chapt.Polymorphic}. A gentle warning: make sure you have a feeling
 of the inference process up to this point, otherwise subsequent sections and chapters will be difficult to understand!
 
 
@@ -423,10 +458,10 @@ type rule:
 \end{center}
 
 We can apply the same strategy for the uniqueness type system. A set of constraints $S$ is inferred for |expr_def|. For each use
-of |id|, $S$ is copied as the constraint set of the identifier. To show why this approach works, remember that referential
-transparency allows to substitute an identifier by its definition.
+of |id|, $S$ is copied as the constraint set of the identifier. To show why this approach works, remember that beta-reduction
+allows us to substitute an identifier by its definition.
 
-Suppose the occurrences |1..n| of |id| in |body_expr| are replaced by |def_expr|, to |(Sub(inst_expr)(1))..(Sub(inst_expr)(n))|.
+Suppose the occurrences |1..n| of |id| in |body_expr| are replaced by |def_expr| to |(Sub(inst_expr)(1))..(Sub(inst_expr)(n))|.
 In other words, in the expression:
 
 %%[[wrap=code
@@ -434,10 +469,10 @@ let  id = def_expr
  in  ... (Sub(id)(1)) ... (Sub(id)(n)) ...
 %%]
 
-The definition for |id| is inlined:
+The definition for |id| is inlined to (beta-reduction):
 
 %%[[wrap=code
-... (Sub(inst_expr(1)) ... (Sub(inst_expr(n)) ...
+... (Sub(inst_expr)(1)) ... (Sub(inst_expr)(n)) ...
 %%]
 
 We now compare the constraint sets resulting from constraint gathering on |def_expr| and each |(Sub(inst_expr)(i))|. The constraint
@@ -448,35 +483,38 @@ is due to the fresh annotations of the types occurring in |(Sub(inst_expr)(1))..
 There is one other difference in the constraint set of the whole expression. If |def_expr| uses some identifier |x| from an outer
 binding group, then the |x| occurs |n| times more often in the inlined version. The corresponding aggregation constraint will be |n|
 times bigger. We solve this difference with a trick: when instantiating the constraint set of |def_expr|, the cardinality variables
-occurring on the use-site-types of identifiers are not given fresh variables, unless they are an argument or result of a function.
-This gives us |n| of the smaller aggregation constraints, slightly different, but gives a conservative result towards the |n| times as big aggregation
-constraint.
+occurring on the use-site-types of identifiers are not given fresh variables (unless they are an argument or result of a function, but that
+is not important for this explanation). This gives us |n| of the smaller aggregation constraints, slightly different, but gives a
+conservative result towards the |n| times as big aggregation constraint, as the following example shows:
 
-The following example explains it in a more intuitive way:
-
-%%[[wrap=code
-let  x = ...
-in   (x ... x) ... (x ... x)
-%%]
 %%[[wrap=code
 let  x = ...
      y = x ... x
 in   y ... y
 %%]
+%%[[wrap=code
+let  x = ...
+in   (x ... x) ... (x ... x)
+%%]
 
-We note here that computing the bounds through |y| gives bounds for |x| that are conservative to bounds computed directly from
-the four usages of |x|.
+In the version where |y| is inlined, we compute the bounds of |x| directly. In the inlined version, the bound of |x| are
+computed from the bounds of |y|. This potentially leads to a less accurate, but conservative result, since we already
+approximate the bounds of |y|. This means that the constraint set that we obtain by separately analysing |y| and
+inserting this constraint set at each use-site of |y|, gives solutions that are equal, or conservatively less
+accurate, compared to solutions obtained from analysing an expression without a |let|.
 
-The cardinality variables that may not be replaced by a fresh cardinality variable, are called the \emph{sacred variables}
-or sacred annotations. These sacred variables are the annotations on the definition-site types of identifiers and the
-annotations on use-site types of identifiers that are in scope for a binding group. These sacred variables are collected and
+The \emph{sacred variables}, or sacred annotations, are those cardinality variables that may not be replaced by a fresh
+cardinality variable. These sacred variables are the annotations on the definition-site types of identifiers and the
+annotations on use-site types of identifiers that are in scope for a binding group. Basically, the sacred annotations
+are the annotations on identifiers that are directly influenced and visible by the binding group. The number of sacred
+annotation variables is linear in the size of the abstract syntax tree. The sacred variables are collected and
 passed to the inferencer. We omit this detail in the type rules.
 
 The type scheme has an additional result |omega|, which represents the constraints of a binding group:
 
 \rulerCmdUse{RulerUniquenessExamples.UL.expr.base.scheme}
 
-The inferencer performs the constraint duplication. In the gathered constraint set, we insert a placeholder to represent the
+The inferencer performs the constraint duplication. In the inferred constraint set, we insert a placeholder to represent the
 constraints that are to be inserted, by means of the following constraint:
 
 %%[[wrap=code
@@ -509,88 +547,121 @@ For the |let|, we have the following type rule:
 
 The term \emph{binding group} refers to the bindings of the |let|. We assume that each |let| is numbered. This number
 identifies the binding group. In EH, each |let| only contains a single binding group, but technically speaking, the |let|
-can be partitioned into multiple binding groups (such as in Haskell), without invalidating this text.
+can be partitioned in multiple binding groups (such as in Haskell). Binding groups are nested. Binding group |A| is a
+parent of binding group |B| if and only if the |let| of |B| occurs in the expression of the identifier of the |let| of
+|A|. The body of the |let| belongs to the same binding group of the encloding expression. An identifier in binding group
+|C| is also in binding group |D| if and only if |D| is |C|, or is a parent of |C|. Two identifiers are in the same binding group if
+and only if the binding group of one identifier is the parent of the binding group of the other
+identifier. A binding group is outermost if it has no parent.
 
-Similarly to the discussion of parameters of a function, we need to aggregate the individual uses of an identifier in
-a subexpression, resulting in the generation of an aggregation constraint for each binding. The second task of the |let| is
-to gather the constraint for the bindings. The input to the type inferencer is a constraint set for each binding
-group.
+The type rule for the |let| specifies that a compiler performs two tasks for a |let|: generate a constraint to
+aggregate the cardinalities of individual occurrences of the identifier bound to the |let|, and collect constraints
+of the binding group.
+
+In the end, a result of the constraint gathering phase is a set of constraints for each binding group. These constraints
+are passed to the inferencer. The inferencer combines the individual results  computes a least substitution.
 
 
 \section{The inferencer revisited}
 \label{sect.Instantiation}
 
+
 The inferencer processes the constraint sets of binding groups in the order such that if $A$ is a constraint set
 containing an |Inst| constraint referencing binding group $B$, then $B$ is processed before $A$. In other
 words: the binding groups are processed in the order specified by a topological sort on the dependency graph
-between constraints. Since the binding groups are non-recursive, it is guaranteed that when the inferencer
+between constraint sets. Since the binding groups are non-recursive, it is guaranteed that when the inferencer
 processes a binding group, that all the binding groups it depends on are already processed.
 
 The processing of a binding group consists essentially of getting rid of the |Inst| constraints, and
 replace them by normal constraints. Then, we end up with a normal constraint set again, and can continue with
-the uniqueness inference as specified in the first part of this chapter. However, replacing the |Inst|
+the cardinality inference as specified in the first part of this chapter. However, replacing the |Inst|
 constraint by the constraint set of the corresponding binding group, tends to let the number of constraints
-explode (Section~\ref{sect.Rewriting}). We take a different approach, by converting each constraint set to an equivalent
+explode. We take a different approach, by converting each constraint set to an equivalent
 graph representation: the \emph{constraint graph}. By simplifying the graph, it becomes small enough for practical
-use (Section~\ref{sect.Rewriting}.
+use (Section~\ref{sect.Rewriting}).
 
-The graph representation is straightforward. It is a directed graph with the cardinality variables as nodes and the constraints as directed edges
-between the nodes. The constraint |a =>= b| is translated to a directed edge\footnote{There are two variants of the |=>=| constraint. This is only a slight, but not interesting, complication, so we leave it out of this description.} from node |a| to node |b|. The constraint
-|(Sub(a)(1)) \+/ ... \+/ (Sub(a)(n)) <= b| is translated to a hyper edge from nodes |(Sub(a)(1)), ..., (Sub(a)(n))| to
-node |b|. The inference of the substitution is analogous to the inference on the constraint set, except that now
-the edges of the graph are traversed instead of the constraints.
+The graph representation of a constraint set |Cs| is obtained as follows. Let $G = (V, E, H)$ be a directed graph with
+vertices $V$, edges $E$, and hyper edges $H$. The vertices of $G$ are the cardinality annotations of |Cs|: |delta `elem` V| if and only
+if |delta `isAnnotation` Cs|. The labelled edges of $G$ are the coercion constraints of |Cs|:
+|E((Delta(1)), (Delta(2))) = beta| if and only if |((Delta(1)) (Sub(=>=)(beta)) (Delta(2))) `elem` Cs|. The labelled hyper edges of $G$ are aggregation
+constraints of |Cs|: |H [(Delta(1)), ..., (Delta(n))] = (delta, Nothing)| if and only if
+|((Delta(1)) \*/ ... \*/ (Delta(n)) <= delta) `elem` Cs|. This |Nothing| value is a label on the block
+symbol of a hyper edge. We come back to this value later.
 
-As an example of the above approach, take the following constraint set:
+As an example of the above approach, take the following constraint set (we make an explicit difference between the
+soft and hard versions of the coercion constraints):
 
 %%[[wrap=code
-a =>= b
-b =>= c
-b =>= d
+a (Sub(=>=)(s)) b
+b (Sub(=>=)(h)) c
+b (Sub(=>=)(h)) d
 c \*/ d <= e
-e =>= b
+e (Sub(=>=)(h)) b
 %%]
 
-The representation as a graph is:
+The variables |a..e| become vertices in the graph. The coercion constraints become the edges and the aggregation
+constraints become hyper edges. Suppose that the variables |a|, |c|, and |e| are sacred cardinality
+variables. We visually represent sacred vertices with a double circle, and normal vertices with just a single circle.
+This results in the graph:
 
 \begin{center}
-\includegraphics[width=6cm]{unq-graph}
+\includegraphics{unq-graph}
 \end{center}
 
-The variables |a..e| are the nodes in the graph. The coercion constraints are the edges and the aggregation
-constraint is a hyper edge. To calculate an upper bound substitution from initial substitution |S(a) = 1, S(delta) = 0, delta `elem` [b..e]|,
+To calculate an upper bound substitution from initial substitution |S(a) = 1, S(delta) = 0, delta `elem` [b..e]|,
 we iterate over the (hyper) edges of the graph. The edge between |a| and |b|, combined with the substitution |S(a) = 1|, force |S(b)| to |1|. |S(b) = 1|
 forces both |S(c)| and |S(d)| to |1|. The hyper edge combines |S(c) = 1| and |S(d) = 1|, resulting in |*|, and forces |S(b)| to |*|. Repeating the
 above procedure forces |S(c)| and |S(d)| to |*|. The hyper edge combines |S(c) = *| and |S(d) = *| in |*| for |S(b)|, which is already the case. None of the edges
 in the graph change the substitution anymore, and the iteration stops with a final substitution S', with |S'(a) = 1, S'(delta) = *, delta `elem` [b..e]|.
 
-Back to the inferencer. The inferencer applies the following steps:
+Figure~\ref{fig.graphinferencer} gives an overview of inferencer. The inferencer applies the following steps:
 
 \begin{itemize}
 \item Convert the constraints, excluding |Inst| constraints, of each binding group to a constraint graph.
-\item For binding group |p|, with an |Inst q l| constraint, instantiate binding group |q| into |p|, with
+\item For binding group |p|, with an |Inst q l| constraint, instantiate binding group graph |Q| into |P|, with
 definition-site cardinality variables replaced by use-site cardinality variables, as specified by |l|. What
-basically happens is that for each node in |q|, a fresh node is inserted in |p|, except when it occurs
-in |l|. Then each edge in |q| is inserted in |p|, taking the corresponding node in |p|.
+basically happens is that for each vertex in |Q|, a fresh vertex is inserted in |P|, except when it occurs
+in |l|. Then each edge in |Q| is inserted in |P|, taking the corresponding vertex in |P|.
 \item Perform a fixpoint cardinality inference on the constraint graph of the outermost binding group.
 \end{itemize}
 
-The last step results into a cardinality substitution for each cardinality variable occurring in types
+\begin{figure}
+\caption{Overview of the inferencer}
+\label{fig.graphinferencer}
+
+%%[[wrap=code
+inferSubst constrSets
+  = let  deps     = [(i, j, c) | (i, cs) <- constrSets, c@(Inst j _) <- insts cs]
+         order    = topsort deps
+         initial  = [(i, csToGraph cs) | (i, cs) <- constrSets]
+         graphs   = foldr instantiate initial order
+    in  infer (outermost graphs)
+  where
+    instantiate (to, from, (Inst _ tups)) graphs
+      =  let  src   = fresh (sacred to) tups (to `lookup` graphs)
+              dst   = (from `lookup` graphs) `union` src
+              dst'  = reduce dst
+         in  (to, dst') `insert` graphs
+%%]
+\end{figure}
+
+The last step results in a cardinality substitution for each cardinality variable occurring in types
 of the outermost binding group of the program. It does not directly give a substitution for another
 binding group, since the substitution is potentially different for each use of an identifier occurring in such a
 binding group. We can construct such a definition-site substitution from a use-site substitution. Suppose
 we know the cardinality substitution $R$ for binding group |k|, and |k| contains the use-site of an identifier |x|
-of binding group |j|. We can construct the substitution $S$ for the upper bound and the substitution $W$ for the lower bound
-from $R$ by translating the guarantees that cardinality values of $R$ give, to upper and lower bounds.
-Take the upper bound substitution $S$ as example. Take $S$ such that it maps to |0| for each cardinality variable of |j|,
+defined in binding group |j|. We can construct the substitution $S$ for the upper bound and the substitution $W$ for the lower bound
+from $R$ by translating the guarantees that left-hand side |Usage| values of cardinality values of $R$ give to upper and lower bounds.
+Consider an upper bound substitution $S$ for example. Take $S$ such that it maps to |0| for each cardinality variable of |j|,
 except for the cardinality variables mentioned by the |Inst| constraint. These we set to a value determined by the
-cardinality use-site counterpart in $R$. If the cardinality is |0|, the upper bound is |0|, for |onemin| and |1| the
-upper bound is |1|, and otherwise |*|. By feeding $S$ as initial substitution into the inferencer for the fixpoint
+cardinality of the use-site counterpart in $R$. If the left-hand side cardinality value is |0|, the upper bound is |0|, and
+for |onemin| and |1| the upper bound is |1|, and otherwise |*|. By feeding $S$ as initial substitution to the inferencer for the fixpoint
 computations on the constraint graph of |j|, we get a final substitution for the upper bound of each cardinality variable of |j|.
 This allows us to get a use-site dependent typing for a binding-group, which can be exploited by a code generator that performs
 code specialization.
 
 
-\section{Graph rewriting}
+\section{Graph reduction}
 \label{sect.Rewriting}
 \label{sect.Rewrite}
 \label{sect.Strategies}
@@ -606,118 +677,150 @@ in   let  inc4 = \x -> inc1 (inc1 (inc1 (inc1 x))
 %%]
 
 With constraint duplication, the size of the graph corresponding to |inc16| is at least four times as big as the graph of |inc4|, and at least
-sixteen times as big as the graph of |inc1|.
+sixteen times as big as the graph of |inc1|. The reason is that only the sacred variables matter. These are all use-site and definition-site cardinality variables in scope of
+the binding group. The other cardinality variables, for example, those taken freshly when instantiating a constraint graph, are
+intermediates. The vertices corresponding to sacred cardinalities are sacred vertices. The other vertices are intermediates. We present
+a reduction strategy that removes all intermediates from the graph, and preserves the substitution that the graph represents.
 
-By applying several reduction strategies, we end up with a graph that is considerably smaller. A lot of intermediate nodes can be
-dropped. The reason is that only the sacred variables matter. These are all use-site and definition-site cardinality variables in scope of
-the binding group. The other cardinality variables (for example, those as a result of a coercion in a function application, or the fresh variables resulting from instantiations) are intermediates. A constraint graph can be converted into an
-equivalent constraint graph with all intermediate cardinality variables eliminated, resulting only in constraints (or edges in the
-constraint graph) between the cardinality variables on the types of an identifier or the mono variables.
+The theoretical maximum number of constraints between these sacred vertices is only dependent on the
+number of sacred vertices, which are in turn only dependent on the size of the abstract syntax tree. Without reduction, the number of
+constraints depend on the amount of duplication, which can easily
+cause the number of constraints to explode, as the example shows. With the reduction of intermediate vertices, and $n$
+sacred vertices, the theoretical maximum number of normal edges is $O(n^2)$, but the theoretical number
+of hyper edges is still high: $O(n!)$. In practice, these numbers are not reached. The constraint graphs are
+sparse, with the number of edges proportial (on average) to the number of vertices. The reason is that the
+sacred annotations corresponds to values, and evaluation of some value depends typically on only a few
+other values. Futhermore, there are only a few hyper edges with many sources (those related to functions that
+are used a lot, such as prelude functions), but most identifiers in a program have only a hand ful of
+occurrences.
 
-The theoretical maximum number of constraints between these sacred cardinality variables is only dependent on the
-number of variables, which in turn only depends on the size of the types in question, and the number of uses
-of an identifier. Without elimination, the number of constraints depend on the amount of duplication, which can easily
-cause the number of constraints to explode, as the example shows. With the elimination of intermediate cardinality variables, and $n$
-sacred cardinality variables, the theoretical maximum number of normal edges is $O(n^2)$, but the theoretical number
-of hyper edges is still high: $O(n!)$. In practice, these numbers are not reached. A cardinality variable represents
-memory, and memory in a program is largely independent. The constraint graphs are sparse, with the number of
-constraints proportional to the number of cardinality variables.
-
-There are two moments to rewrite a constraint graph. Just before instantiation of a constraint graph, and after
-all instantiations are done. In the first case, the graph is specialized to only those cardinality variables that are
-used in the new binding group, to prevent ending up with graphs that explode in size due to the structure of
-an expression. For second case, the graph consists of the nodes and edges coming from the constraint set
-of the binding group, and all nodes and edges coming from (rewritten) graphs of other binding groups. This
-graph can have some redundancy, and by applying a set of rewrite rules, we reduce this graph. A smaller
-graph of the second case, makes the procedure to obtain graphs of the first case, faster. We discuss both
-reduction moments in more detail.
-
-\subsection{Reducing instantiation graphs}
+\subsection{Reduction of intermediates}
 \label{sect.RedInstGraphs}
 
-We reduce the graph of a binding group just before instantiating it. The cardinality variables that have a
-counterpart in the destination graph, are not reduced, they are sacred. The other cardinality
-variables are intermediates and are eliminated.
+Figure~\ref{fig.graphinferencer} mentioned the function |reduce|. We describe the implementation of this function
+in this section. This is an important function: it ensures that graphs do not explode due to constraint duplication.
 
-Suppose $G$ represents the original graph, and suppose that $G$ does not contain any hyper edges. Further,
-suppose that $H$ is the reduced graph. Only simple paths in $G$ between sacred
-cardinality variables matter for the reduction to $H$. Each simple path in $G$, not containing sacred
-cardinality variables as intermediate nodes, between
-sacred cardinality variables can be replaced by a single edge between the cardinality variables in $H$, since
-|p =>= ... (Sub(s)(i)) ... =>= q| equals |p =>= q|, as long as each cardinality variable |(Sub(s)(i))|
-is not a sacred cardinality variable. A path in $G$ between sacred cardinality variables with a sacred
-cardinality variable in between, does not matter, since |p =>= ... =>= r =>= ... =>= q| equals
-|p =>= r, r =>= q|, which are already present in $H$ by the above procedure.
+We take the graph |G = ((Sub(N)(G)), (Sub(E)(G)))| (encountered above) as example:
 
-But, a constraint graph can contain hyper edges. Suppose that $G$ has hyper edges, and that we construct
-a graph $F$ from $G$, such that $F$ only consists of all simple paths from $G$, on which there is a hyper edge, and no sacred cardinality
-variables as intermediate nodes, and only sacred cardinality variables at both ends. A hyper edge in $F$
-can have less branches than in $G$, if some branch is not on a path to a sacred uniqueness variable.
-Now, if we union the graphs $F$ and $H$, we have a graph on which cardinality inference results into the
-same solution for the sacred cardinality variables, as cardinality inference gives for $G$.
+\begin{center}
+\includegraphics{unq-graph}
+\end{center}
 
-Graph $F$ can be reduced further. We would like to end up with only the hyper edges between sacred cardinality
-variables. However, this does not work, because there can be an intermediate cardinality variable between
-a sacred cardinality variable and a hyper edge connected by a coercion, which cannot be eliminated. We can
-reduce from $F$ each intermediate node not connected by a hyper edge. Due to this construction, each
-normal edge contains exactly one sacred cardinality variable, and the other uniqueness variable is connected
-to a hyper edge. Call this graph $F'$. The number of nodes in $F'$ is therefore proportional to the number
-of hyper edges between the sacred cardinality variables.
+From this graph, we construct a reduced graph |R| that does not have the vertices |b| and |d|. We take a two step approach:
+first we created a reduced graph |K| that contains only normal edges, and then a reduced graph |L| that contains
+only hyper edges. The reduced graph |R| is the union of |K| and |L|.
 
-The graph we use for instantiation is the union between $H$ and $F'$. This graph is considered to be in
-normal form.
+We start with the reduced graph |K=((Sub(V)(K)),(Sub(E)(K)),emptyset)|. This reduced graph only contains the
+sacred vertices of |G|: |(Sub(V)(K)) = [ v `elem` (Sub(V)(G)) || v sacred ]|. The set of edges |(Sub(E)(K))|
+is defined as follows:
 
-If we look at the constraint sets of
-which both graphs are a representation, then the constraint set of $H$ consists of the coercion constraints
-between sacred cardinality variables. $F'$ consists of the aggregation constraints between sacred cardinality
-variables, with an occasional coercion. For example, suppose that |a|, |b|, and |c| are
-sacred uniqueness variables. Then the constraint set of which $F'$ is a representation, can contain
-constraints like |a \*/ b <= c|, but also |a =>= a', b =>= b', c' =>= c, a' \*/ b' <= c'|.
+%%[[wrap=code
+[ ((Delta(1)),(Delta(2)), h) `elem` (Sub(E)(K)) || (Delta(1)) `hardPath` (Delta(2)) ]
+[ ((Delta(1)),(Delta(2)), s) `elem` (Sub(E)(K)) || (Delta(1)) `softPath` (Delta(2)) && not ((Delta(1)) `softPath` (Delta(2))) ]
+%%]
 
-The graph can be reduced a bit further by eliminating subsumed hyper edges, or in other words,
-subsumed |\*/| constraints. For example, suppose that we have |a \*/ b \*/ c <= d| and
-|a \*/ b <= d|, then |a \*/ b <= d| is subsumed by |a \*/ b \*/ c <= d|, and can be erased. But, the
-procedure of to obtain $F'$ already combined some hyper edges if they existed on the same path, such
-that most hyper edges range over different sets of sacred cardinality variables, which means that
-subsumed hyper edges do not exist often, and the elimination does not contribute enough to the size
-of the graph to be worthwhile.
+There is a hard path between |x| and |y| (|x /= y|) if there is a simple path between |x| and |y| that:
+\begin{itemize}
+\item Contains no sacred vertices except |x| and |y|.
+\item All edges are labelled with |h|.
+\end{itemize}
 
-Removal of subsumed non-hyper edges, on the other hand, is worth-while. Imagine the following
-situation: |a =>= c, a =>= b, b =>= c|, where |a|, |b|, and |c| are sacred annotation variables. The
-constraint |a =>= c| is not required in this case, it is subsumed by |a =>= b, b =>= c|, due to transitivity.
-Due to the top-down pushing of annotations, the constraints are visually like long threads from the
-annotations on the root of the expression to the annotations on the inner expressions. The procedure in this
-section, in fact, inserts an edge |a =>= c| if there are edges |a =>= b| and |b =>= c|. Preventing the
-insertion of |a =>= c| thus saves quite some edges.
+Similary, a soft path between |x| and |y| (|x /= y|) if there is a simple path between |x| and |y| that:
+\begin{itemize}
+\item Contains no sacred vertices except |x| and |y|.
+\item Has an edge labelled with |s|.
+\end{itemize}
 
-In the next subsection, we discuss a reduction procedure that makes the graph of the binding group smaller,
-such the procedure of this section works faster. The reduction procedure of this subsection has to be
-performed for each instantiation, so if we can save time on this procedure, it helps to improve the
-speed of the compiler. In fact, after the procedure of the next subsection has reduced the graph,
-we can apply the procedure of this subsection once to this graph, taking all the cardinality
-variables on all types of the bindings of the binding group as sacred annotations. Then all the
-path-finding work has to be done once (reducing the reduction work for instantiation to taking
-a subgraph of the reduced graph, containing only those components that have annotations occurring
-on the type of the binding that is instantiated), instead of each time again for an instantiation.
-This saves time for binding groups with high dependencies between the identifiers, or when the
-identifiers are used a lot.
+The idea behind these two definitions is that a soft edge is overruled by a hard edge.
 
-\subsection{Reducing binding group graphs}
+When we look at the example, we see that there is only a soft path between |a| and |c|. There is
+a hard path between |e| and |c| (via |b|). The result is:
 
-The constraint graph of a binding group is constructed by converting the constraints to their
-graph representation, followed by the insertion of nodes and edges from instantiated graphs for
-each |Inst| constraint. The resulting graph has several opportunities for reduction, such as
-reducing a sequence of edges to a single edge, but most of these opportunities arise only in
-subsequent chapters. The main motivation for reduction of this graph is to lower the size of
-the graph to improve the performance of instantiations and fixpoint computations on the graph.
+\begin{center}
+\includegraphics{unq-graph2}
+\end{center}
+
+Now the graph |L=((Sub(V)(L)),emptyset,(Sub(H)(L)))| containing only hyper edges. This reduced graph only contains the
+sacred vertices of |G|: |(Sub(V)(L)) = [ v `elem` (Sub(V)(G)) || v sacred ]|. The set of hyper edges |(Sub(H)(L))|
+is defined as follows:
+
+|(Sub(H)(L)) [(Delta(1)), ..., (Delta(n))] = (delta, eta)|, if:
+
+\begin{itemize}
+\item |delta| is a sacred vertex.
+\item Each |(Delta(i))| is a sacred vertex.
+\item There is a path P between |(Delta(i))| and |delta| in |G|, not containing any other sacred vertices.
+\item P traverses a hyper edge (possibly more). The hyper edge |HG| is the hyper edge closest to |delta|.
+\item |eta| is the |eta| of |HG| if all the vertices |(Delta(i))| are the sources of |HG|. Otherwise |eta| is
+      the value |Just X| where |X| is a constraint graph that describes how |(Delta(1)) ... (Delta(n))|
+      are combined into |delta|.
+\end{itemize}
+
+Before we talk about the graph |X|, we consider the example again. There is a path from both |a| end |c| to
+|e| traversing a hyper edge. We therefore expect |L| to be:
+
+\begin{center}
+\includegraphics{unq-graph3}
+\end{center}
+
+Unfortunately, there is a coercion (actually two) between |a| and the source vertex |d| on
+the hyper edge in |G|. The problem is that the hyper edge can force some value for the substitution of
+|d| which is relaxed by the coercion before it reaches |a|. If we blindly connect |a| to the hyper edge
+(as in the example), then the hyper edge can force the value directly on |a|, which is not the case
+with the original graph |G|. Or formulated in terms of constraints, there is a difference between
+|a (Sub(=>=)(s)) d, d \+/ c <= e| and |a \+/ c <= e|.
+
+Even worse, consider a slightly different graph:
+
+\begin{center}
+\includegraphics{unq-graph5}
+\end{center}
+
+A reduction from the left graph to the right graph gives a constraint graph that results into
+wrong solutions! This is where |eta = Just X| enters the picture. We store a graph on a hyper
+egde (|HL|) in |L| that describes how the sources of |HL| are combined. This is basically a subgraph
+of |G| representing |HL|. When performing a solve step for |HL|, the inferencer
+either applies the solve step for an aggregation constraint (|eta = Nothing|), or recurses on the
+graph |X| (|eta = Just X|). In that case, the inferencer temporarily extends the substitution with
+initial values for the vertices in |X| that are not on |HL|.
+
+We construct the constraint graph |X = ((Sub(V)(X)),(Sub(E)(X)))| as follows. We first construct
+a graph |X1| which is a subgraph of |G| such that it contains only vertices and edges on simple
+paths from |(Delta(i))| to |delta| that traverse hyper edge |HG|. In other words, it is just
+the part of |G| that is related to the hyper edge that we are inserting into |L|. The second step
+is that we clone |X1| to |X2| with a fresh variable on each vertex of |X2|, except for the
+source and destination vertices of |HL|. Now comes the trick: we mark all source
+and destination vertices of hyper edges in |X2| sacred and recursively reduce |X2| to |X|. Since
+all sources and destinations of the hyper edges are marked as sacred, reduction of this graph does
+not recurse futher, but create a small graph that connects the sources of |HL| properly to the destination of |HL|.
+
+Applying this approach on the running example of this section, gives us the following graphs for |L| and |X|:
+
+\begin{center}
+\includegraphics{unq-graph5}
+\end{center}
+
+The last step is to take the union between |K| and |L| to obtain:
+
+\begin{center}
+\includegraphics{unq-graph4}
+\end{center}
+
+
+\subsection{Preprocessing reductions}
+
+The reduction approach of the previous section is an effective reduction strategy. A downside is
+that the reduction strategy involves a lot of path-finding. We therefore preprocess the graph
+with a series of simple, but efficient, reduction techniques aimed to lower the number of
+vertices and paths in the graph, such that the actual reduction strategy performs better.
 
 Again, some cardinality variables may not be eliminated. The sacred cardinality variables can have counter
 part in the destination graph during instantiation and should not be eliminated. The
-other variables can be eliminated, since their values can be reconstructed once we have a substitution for the
+other variables are allowed to be eliminated, since their values can be reconstructed once we have a substitution for the
 sacred variables, by filling in the values in the original graph, and performing the
 fixpoint computation again, as we discussed earlier in this chapter.
 
-A simple elimination strategy is splitting the constraint graph into connected components,
+A simple elimination strategy is splitting the constraint graph in connected components,
 and dropping those components without a sacred cardinality variable. These components cannot influence
 the substitution on sacred cardinality variables, since there is no path to them. This strategy
 is only effective when there are multiple, independent (mutual exclusive), bindings in a binding group.
@@ -730,56 +833,50 @@ are discussed, which can cause cycles in the constraint graph. A cycle in the co
 reduced to all sacred nodes in the cycle, or to an arbitrary node if there are no sacred nodes in the
 cycle. The edges of a singleton cycle, \emph{self edges}, can be removed entirely.
 
-There is an effective rewrite strategy that can be applied in this chapter. Each non-sacred node |u| that
+There is an effective reduction strategy that can be applied in this chapter. Each non-sacred node |u| that
 is not connected by hyper edges, can be eliminated. For each pair of nodes |a| and |b|, such that there
 exists an edge |a| to |u|, and an edge from |u| to |b|, create an edge from |a| to |b|. Then remove
-|u| and the corresponding edges from the graph. This strategy replaces intermediate nodes from the graph,
-or in terms of constraint sets, removes redundant cardinality nodes from the graph.
+|u| and the corresponding edges from the graph. This strategy removes some of the intermediate nodes,
+but not all of them (but that is where the reduction of previous section is used for).
 
-A final rewrite strategy that we discuss makes use of upper and lower bound information. By applying the
-fixpoint substitution computations for the lower and upper bound on the constraint graph, we can get bounds
-for the cardinality variables. Take the upper bound values for example. Most of these values will still be |0|,
-since these values depend largely on the usage of the binding group. But constraints from annotations of the user
-(Section~\ref{sect.Signatures}), or ways to deal with a module system (Chapter~\ref{chapt.BeyondEH}), can give
-some information that allow |*| to be inferred as an upper bound. If we also get a lower bound value of |0|, we
-know that the two substitutions do not change anymore, and that the only possible cardinality annotation is |*|.
-Suppose that this is the case for node |n|. Then for each node |m| with an edge from |m| to |n|, we know that
+A final reduction strategy that we discuss makes use of upper and lower bound information. By applying the
+fixpoint substitution computations for the lower and upper bound on the constraint graph (while the graph
+is being constructed), we can get bounds for the cardinality variables. Take the upper bound values for example. Most
+of these values will still be |0|, since these values depend largely on the usage of the binding group. But constraints
+from annotations of the user (Section~\ref{sect.Signatures}), or ways to deal with a module system (Chapter~\ref{chapt.BeyondEH}),
+can give some information that allow |*| to be inferred as an upper bound. If we also get a lower bound value of |0|, we
+know that the two substitutions do not change anymore, and that the only possible cardinality annotation is |(Card(*)(*))|.
+Suppose that this is the case for vertex |n|. Then for each vertex |m| with an edge from |m| to |n|, we know that
 |m| also has a lower bound substitution of |0| and an upper bound substitution of |*|, and a corresponding
-cardinality value of |*|, because that is the result of one solve step on this the edge from |m| to |n|. In
+cardinality value of |(Card(*)(*))|, because that is the result of one solve step on this the edge from |m| to |n|. In
 that case, we can remove the edge from |m| to |n| from the constraint graph. This approach disconnects nodes
 from the graph for which we already know that we cannot optimize the corresponding values.
 
-All the rewrites strategies discussed in this subsection have the property that they can be implemented in an efficient way. This
+All the reduction strategies discussed in this subsection have the property that they can be implemented in an efficient way. This
 is important, since the performance of the procedure in Subsection~\ref{sect.RedInstGraphs} depends largely
 on the size of the graph that it gets as input.
 
-Note that we did not discuss reduction strategies for hyper edges. There are two reasons, the first
-reason is that they do not form much of a problem in practice, due to the reduction work of
-Subsection~\ref{sect.RedInstGraphs}. The other reason is related to the first, in the sense that due to
-the low priority of this subject, it remains still a research problem to properly reduce hyper
-edges in a way that offers improvements in practice.
-
 \subsection{Remarks about graph reduction}
 
-The concept of sacred cardinality variables, or sacred nodes, is important. The number of sacred
-cardinality variables is a subset of all cardinality variables involved, especially when
-there are a lot of places where coercions occur (which creates intermediates). The reduction strategies
-that we discussed, rewrite the graphs such that the size of the graph is proportional to the
-number of sacred cardinality variables. This helps to improve the performance of the compiler
-on real-life programs. The number of sacred cardinality variables is basically an indicator of
-the required processing time of the type system. To take this a step further, by
+The concept of sacred cardinality variables, or sacred vertices, is important. The number of sacred
+cardinality variables is a subset of all cardinality variables involved, especially where
+instantiations occur (which creates intermediates). The reduction strategies
+that we discussed, reduce the graphs such that the size is determined by the number of sacred
+vertices instead of the amount of constraint duplication (which would be a severe problem otherwise).
+This helps to improve the performance of the compiler on real-life programs. The number of sacred cardinality
+variables is basically an indicator of the required processing time of the type system. To take this a step further, by
 controlling the number of cardinality variables, a compiler could trade accuracy conservatively
 for compilation speed. For example, the use-site types can be replaced by definition-site types,
 reducing the number of cardinality annotations severely, but also reducing the quality of the
 inference for these types. In Chapter~\ref{chapt.DataTypes} we introduce data types,
 which leads to an explosion of sacred cardinality variables, and we discuss several ways to allow control
-over the number of cardinality variables, and thus to control the size of the uniqueness graphs, and
+over the number of cardinality variables, and thus to control the size of the constraint graphs, and
 the performance of the compiler.
 
 
 \section{Conclusion}
 
-The inferencing of cardinality annotations on types is rather indirect. The typing problem is translated into a constraint problem, which
+The inferencing of cardinality annotations on types is rather indirect. The typing problem is translated in a constraint problem, which
 is turn is converted to a graph problem. This can be rather overkill at first thought, but it allows a certain separation
 of concerns and abstraction, which is further exploited in subsequent chapters. However, in this chapter, we already use
 this separation to allow non-recursive and monomorphic |let|-bindings in the expression language.

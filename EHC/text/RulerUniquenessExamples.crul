@@ -151,7 +151,7 @@ ruleset prog.base scheme prog  "Program type rule" =
     view U1 =
       judge E : expr = gam :- e : uty ~> cs
       judge P : unpack = uty === { _ , delta }
-      judge F : flowPrimWeak = cs.f === { (1,*,1) =>= delta }
+      judge F : flowPrimWeak = cs.f === { ((1,"(Card(*)(*))",1)) =>= delta }
       judge C : check = cs.f cs
       judge K : consistency =
       -
@@ -164,6 +164,7 @@ ruleset expr.base scheme expr  "Expression type rules" =
       -
       judge R : expr = gam :- n : Ty_Int
     view U1 =
+      judge A : arbitrary = delta
       -
       judge R : expr
         | uty = Ty_Int..delta
@@ -172,6 +173,7 @@ ruleset expr.base scheme expr  "Expression type rules" =
       -
       judge R : expr = gam :- n : Ty_Int
     view UX =
+      judge F : fresh = delta
       -
       judge R : expr
         | uty = Ty_Int..delta
@@ -247,11 +249,9 @@ ruleset expr.base scheme expr  "Expression type rules" =
       judge B : expr
         | uty = Ty_Int..b
         | cs = cs.b
-      judge C1 : flowPrim2 = cs.c1 === {c.ref =>= a.ref}
-      judge C2 : flowPrim2 = cs.c2 === {c.ref =>= b.ref}
-      judge P1 : unpackTup = a === { a.ref, _ }
-      judge P2 : unpackTup = b === { b.ref, _ }
-      judge P3 : unpackTup = c === { c.ref, _ }
+      judge C1 : flowPrim2 = cs.c1 === {c =>= a}
+      judge C2 : flowPrim2 = cs.c2 === {c =>= b}
+      judge F : fresh = c
       -
       judge R : expr
         | cs  = cs.c1 cs.c2 cs.a cs.b
@@ -293,16 +293,14 @@ ruleset expr.base scheme expr  "Expression type rules" =
       judge A : expr
         | uty = uty.a
         | cs  = cs.a
-      judge C : match = uty.f <=> (uty.a.1 ->..(delta.1) uty.r)
-      judge C2 : freshAnnot = uty.r ~> uty
-      judge C3 : match = uty.a.1 <=> uty.a
-      judge T1 : unpack = uty === { ty , delta.top }
-      judge M1 : mkFlow = cs.md === delta.top =>= delta
-      judge M2 : mkFlow = cs.ma === uty.a.1 =>= uty.a
-      judge M3 : mkFlow = cs.mr === uty =>= uty.r
+      judge C : match = uty.f <=> (uty.p ->..(delta.f) uty)
+      judge C3 : match = ty.p <=> ty.a
+      judge T1 : unpack = uty === { ty , delta }
+      judge M1 : flowPrimWeak = cs.md === { delta =>= delta.f }
+      judge M2 : flow = :- uty.p =>= uty.a ~> cs.ma
       -
       judge R : expr
-        | cs = cs.md cs.ma cs.mr cs.a cs.f
+        | cs = cs.md cs.ma cs.a cs.f
     view L =
       judge F : expr = gam.f :- f : (ty.a -> ty)
       judge A : expr = gam.a :- a : ty.a
@@ -314,27 +312,30 @@ ruleset expr.base scheme expr  "Expression type rules" =
       -
       judge R : expr = gam :- (\x -> b) : (ty.x -> ty)
     view U1 =
+      judge A : arbitrary = delta
       judge B : expr = (x :-> ty.x + gam) :- b : uty ~> cs.b
-      judge S1 : gather = x :- b ~> ({ x.1:uty.1.a1, "...", x.n:uty.n.an })
+      judge S1 : gather = x :- b ~> ({ x.1:"(Sub(Sup(utau)(Sub(a)(1)))(1))", "...", x.n:"(Sub(Sup(utau)(Sub(a)(n)))(n))" })
       judge P : unpack = uty.x === { _, a }
-      judge S2 : sum = cs.sum === { sum <= a }
+      judge S2 : sum = cs.gat === { sum <= a }
       -
       judge R : expr
         | uty = uty.x ->..delta uty
-        | cs  = cs.sum cs.b
+        | cs  = cs.gat cs.b
     view EX =
       judge B : expr = (x :-> ty.x + gam) :- b : ty
       -
       judge R : expr = gam :- (\x -> b) : (ty.x -> ty)
     view UX =
-      judge B : expr = (x :-> ty.x + gam) :- b : uty ~> cs.b
-      judge S1 : gather = x :- b ~> ({ x.1:uty.1.a1, "...", x.n:uty.n.an })
+      judge F : fresh = delta
+      judge B : expr = (x :-> ty.x + gam) :- b : uty.b ~> cs.b
+      judge M : flow = :- uty =>= uty.b ~> cs.r
+      judge S1 : gather = x :- b ~> ({ x.1:"(Sub(Sup(utau)(Sub(a)(1)))(1))", "...", x.n:"(Sub(Sup(utau)(Sub(a)(n)))(n))" })
       judge P : unpack = uty.x === { _, a }
       judge S2 : sum = cs.sum === { sum <= a }
       -
       judge R : expr
         | uty = uty.x ->..delta uty
-        | cs  = cs.sum cs.b
+        | cs  = cs.sum cs.r cs.b
     view L =
       judge B : expr = (x :-> ty.x + gam) :- b : ty
       -
@@ -342,8 +343,8 @@ ruleset expr.base scheme expr  "Expression type rules" =
 
   rule e.let "Let" =
     view EL =
-      judge E : expr = gam :- expr : ty.expr
-      judge B : expr = (x.m :-> ty.expr + gam) :- body : ty
+      judge E : expr = gam :- expr : ty.x
+      judge B : expr = (x.m :-> ty.x + gam) :- body : ty
       -
       judge R : expr = gam :- (let.m x "=" expr in body) : ty
     view UL =
@@ -351,8 +352,9 @@ ruleset expr.base scheme expr  "Expression type rules" =
         | uty = uty.e
         | cs  = cs.e
         | bcs = bcs.e
-      judge B : expr = (x.m :-> uty.expr + gam) :- body : uty ~> cs.b , bcs.b
-      judge C1 : gather = x :- (expr, body) ~> ({ x.1:uty.1.a1, "...", x.n:uty.n.an })
+      judge A : freshAnnot = uty.e ~> uty.x
+      judge B : expr = (x.m :-> uty.x + gam) :- body : uty ~> cs.b , bcs.b
+      judge C1 : gather = x :- (expr, body) ~> ({ x.1:"(Sub(Sup(utau)(Sub(a)(1)))(1))", "...", x.n:"(Sub(Sup(utau)(Sub(a)(n)))(n))" })
       judge P : unpack = uty.x === {_ , delta }
       judge S : sum = cs.sum === { sum <= delta }
       -
@@ -389,6 +391,11 @@ ruleset expr.base scheme expr  "Expression type rules" =
         | cs  = cs.gc cs.tc cs.ec cs.g cs.t cs.e
         | bcs = bcs.g bcs.t bcs.e
 
+relation arbitrary =
+  view B =
+    holes [ x : Nm ]
+    judgespec x
+    judgeuse tex x " arbitrary"
 
 relation lookup =
   view B =
@@ -435,7 +442,7 @@ relation flow =
     judgespec :- utyA =>= utyB ~> cs
     judgeuse tex :-..flow utyA =>= utyB ~> cs
 
-ruleset flow.base scheme flow "Flow type rules" =
+ruleset flow.base scheme flow "Coercion generating type rules" =
   rule int "Int" =
     view U1 =
       judge F : flowPrim = cs === { a =>= b }
@@ -474,6 +481,11 @@ relation consistency =
     judgespec
     judgeuse tex "all tripples consistent"
 
+relation fresh =
+  view B =
+    holes [ delta : Dummy ]
+    judgespec delta
+    judgeuse tex delta " |fresh|"
 
 
 
