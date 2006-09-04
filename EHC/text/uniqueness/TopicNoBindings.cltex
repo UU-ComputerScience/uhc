@@ -1005,11 +1005,12 @@ aggregationSatisfied [((Sub(a)(1)), (Card(Sub(b)(1))(Sub(c)(1))), (Sub(d)(1))), 
   in Chapter~\ref{chapt.Parallel}.
 
 \section{Strictness?}
+\label{sect.strictness}
 
   As we mentioned in Chapter~\ref{chapt.Introduction}, we can also infer strictness with our approach. Strictness is
   defined as follows: consider a function |f = \x -> ...| and the application |r = f bottom|. If reduction of |r| to
   weak-head normal form results into |bottom|, then |f| is strict in |x|.
-  
+
   After performing the analysis that we explained in this chapter, we know from some parameters that they are
   used. This information almost tells us that the parameters are strict, but not entirely: in our analysis it is
   possible that we consider a value used because the result of the function is reduced further than weak-head

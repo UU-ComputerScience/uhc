@@ -11,7 +11,7 @@
   true     = \t f -> t
   false    = \t f -> f
   ite      = \g t e -> g t e
-  example  = ite true 1 undefined  
+  example  = ite true 1 undefined
     -- the result: example = 1
 %%]
 
@@ -22,57 +22,57 @@
   on an execution path. And sometimes, no guarantees can be made: |\g x -> ite g x 1 + x|. In this case, it
   depends entirely on |g| if  the two occurrences of |x| will be always be on the same execution path, or
   not.
-  
+
   If occurrences are sequential, we can add up the lower bounds instead of taking the maximum. If occurrences
   are parallel, we can take the maximum of the upper bounds instead of adding them up. This gives a better
   approximation of the result, but requires us to discover which occurrences are parallel and which
   are sequential.
 
   Analyzing function applications to determine whether the operators are guaranteed to be sequential, or
-  guaranteed parallel, is tricky. We discuss this subject in Section~\ref{sect.SeqParTricky}. But,
-  instead of analyzing the function applications in the hard way, we take a look at syntactic constructs
+  guaranteed parallel, is tricky. We discuss this subject in Section~\ref{sect.SeqParTricky}. Instead of
+  analyzing the function applications in the hard way, we take a look at syntactic constructs
   that guarantee that some occurrences of an identifier are sequential or parallel. For example, in practice,
   most splits in an execution path are explicitly indicated by alternatives for a function definition,
-  branches of a |case| expression, or the |then| and |else| branch of an |if-then-else| expression. Since
-  |if-then-else| expressions capture the essence of this section and are a prelude to |case| expressions
-  of Chapter~\ref{chapt.DataTypes}, we introduce |if-then-else| expression in this chapter (Section~\ref{sect.ite}).
+  branches of a |case| expression, or the |then| and |else| branch of an |if..then..else| expression. Since
+  |if..then..else| expressions capture the essence of this section and are a prelude to |case| expressions
+  of Chapter~\ref{chapt.DataTypes}, we introduce |if..then..else| expression in this chapter (Section~\ref{sect.ite}).
 
 \section{Adding an if-then-else expression}
 \label{sect.ite}
 
-  The addition of an |if-then-else| expression is discussed in this section. Such an expression guarantees
-  syntactically that occurrences on a |then| branch, are parallel to occurrences on an |else| branch. It
+  The addition of an |if..then..else| expression is discussed in this section. Such an expression guarantees
+  syntactically that occurrences on a |then| branch are parallel to occurrences on an |else| branch. It
   also guarantees that an occurrence of the guard is sequential with occurrences in the branches. Unfortunately,
   the bad news that we (in general) cannot determine the lower bound of the branches. If we know that the
   entire expression is evaluated at least once, we know that one of the branches is at least once
   evaluated, but we do not know which one. So, we are conservative and assume that the lower bound of the
   branches is |0|.
 
-  The following type rule specifies what the analysis does when it encounters an |if-then-else| nonterminal:
+  The following type rule specifies what the analysis does when it encounters an |if..then..else| nonterminal:
 
   \begin{center}
   \rulerCmdUse{RulerUniquenessExamples.UF.expr.base.e.ite}
   \end{center}
 
-  The guard of the |if-then-else| expression is exactly evaluated as often as the entire expression, indicated
-  the the coercion between |uty| and |uty.g|. The least upper bound of the |then| and |else| branch is at
-  most the upper bound of the entire expression. The lower bound of the |then| and |else| branch depends
-  on the guard and the lower bound of the entire expression. We express this with a special version of
-  the coercion constraint:
+  The guard is as often evaluated as often as the expression is evaluated, which we specify by a soft coercion between
+  the outermost annotation of the result type of the expression and the annotation on the |Bool| type of the guard.
+  The least upper bound of the |then| and |else| branch is at most the upper bound of the entire expression. The lower
+  bound of the |then| and |else| branch depends on which branch is taken. We do not know this in general, so we set
+  these lower bounds to |0|, with a special coercion constraint |(Sub(=>=)(q))|, which is interpreted as follows:
 
 %%[[wrap=code
-  satisfied (a, b, c) (Sub(=>=)(q)) (d, e, f)
-    =   d == 0  -- force lower bound to 0
-    &&  e <= b
-    &&  c <= f
+satisfied (a, b, c) (Sub(=>=)(q)) (d, e, f)
+  =   0  leqL  d  -- force lower bound to 0
+  &&  b  leqC  e
+  &&  c  leqU  f
 %%]
 
-  So, an |if-then-else| expression gives us some information about upper bounds, at the expense of
+  So, an |if..then..else| expression gives us some information about upper bounds, at the expense of
   lower bounds for branches. We take a closer at this particular problem in section~\ref{sect.lowerite}.
-  We are now going to use the information that the |if-then-else| expression provides to improve
+  We are now going to use the information that the |if..then..else| expression provides to improve
   the aggregation constraints.
 
-  The syntax of an |if-then-else| expression guarantees that occurrences of an identifier
+  The syntax of an |if..then..else| expression guarantees that occurrences of an identifier
   on a |then| branch are parallel to identifiers occurring on an |else| branch. There is also a
   syntactic guarantee that occurrences in the guard are sequential to both the |then| and the
   |else| branch. There is no other syntax that guarantees that two occurrences are sequential
@@ -126,7 +126,7 @@
   An occurrence of occurrence |x :: utau| is turned into the computation |utau|. If we have such a
   computation for the function expression and argument expression of a function, we combine these
   two computations with the |\*/| operator, since it depends on the function whether or not they are
-  sequential or parallel, and our approach does not have this knowledge. For an |if-then-else|
+  sequential or parallel, and our approach does not have this knowledge. For an |if..then..else|
   expression, the computations of the two branches are parallel, and are combined by the |\-/| operator. The |\+/|
   operator is used between the guard and the branches. As it is guaranteed that used occurrences of the guard are
   on the same execution path as used occurrences in the branches. There are some additional rules in case there
@@ -147,24 +147,28 @@
 \section{Lower bounds and if-then-else}
 \label{sect.lowerite}
 
-  The |if-then-else| is a problem for the lower bound of the branches, because we do not know which branch
+  The |if..then..else| is a problem for the lower bound of the branches, because we do not know which branch
   is taken. In the general case with a |case|-expression, it is even possible that none of the branches is
-  taken, but we can ignore this situation for strictness, since the result of a failed pattern match is
-  |bottom|, and a function that returns |bottom| is strict in all its arguments. But we can say something
-  about all branches of an |if-then-else| (or |case|) expression). Suppose that some identifier |x| occurs
-  (indirectly) on each branch and has a lower bound of |1| if each branch has a lower bound of |1|. This
-  means that the value represented by |x| is used if a branch is evaluated. Every branch evaluates |x|,
-  so it does not matter which branch is taken, thus the lower bound of |x| is at least the lower bound
-  of the entire expression.
+  taken. We can say something about all branches of an |if..then..else| (or |case|) expression). Suppose that
+  some identifier |x| occurs (indirectly) on each branch and has a lower bound of |1| if each branch has a
+  lower bound of |1|. This means that the value represented by |x| is used if a branch is evaluated. Every
+  branch evaluates |x|, so it does not matter which branch is taken, thus the lower bound of |x| is at least
+  the lower bound of the entire expression.
 
-  This situation can be detected in the constraint graph. The above description translates informally
+  One way to detect this situation is by performing a strictness analysis on the |if..then..else| or case expression (Section~\ref{sect.strictness}).
+  If we know that some |(Delta(1))| in the definition-site type of |x| is used if some |(Delta(2))| in the type of the
+  expression is used, then we can add |(Delta(2))| to the aggregation of |(Delta(1))| (i.e. |(...) \*/ (Delta(2)) <= (Delta(1))|
+  instead of |(...) <= (Delta(1))|). However, this can depend on functions that are passed to a function where the
+  |if..then..else| appears is, such that we cannot perform the analysis beforehand.
+
+  Alternatively, we can detect this situation in the constraint graph. The above description translates informally
   as follows: if there is a path from an annotation on a type of the branch to an annotation of the type
   of an occurrence of |x| in that branch, and all branches have such a path, then we can use the lower
-  bound of the corresponding annotation on the result of the |if-then-else| expression as lower bound
-  of the annotation on the identifier.
+  bound of the corresponding annotation on the result of the |if..then..else| expression in the aggregation of the
+  lower bound of the annotation on the identifier.
 
-  More formally, the implementation is as follows. We generate the following constraint and the
-  definition-site of an identifier:
+  More formally, the implementation is as follows. We add the following information to the aggregation
+  constraint at the definition-site of an identifier:
 
 %%[[wrap=code
   BranchCombine
@@ -183,12 +187,10 @@
   the lower bound of |delta| is allowed to be |(Sub(delta)(r))|. If there is an hyper edge on
   such a path, then all leaves of the hyper edge must be on such a path as well.
 
-  Technically speaking, this approach has several complications. The first problem is that it
-  is rather expensive to check. Furthermore, in case the constraint graph is not
-  fully determined (when fixpoint iterating over the constraint set), the path may not be
-  there yet, which causes trouble with monotonicity of the fixpoint iteration of the
-  substitution. And the graph rewrite rule that replaces paths by concrete substitutions may
-  not be used in combination with this optimization.
+  We only have to check for this path once. This can be done just before graph reduction. If there
+  is a path, we change the aggregation constraint such that it includes those |(Sub(delta)(r))|. The
+  only problem is that when the graph is constructed using a fixpoint iteration on the graph, that
+  the path may not exist yet (for example, due to recursion in one of the branches).
 
 
 \section{Function application and sequential occurrences of an identifier}
@@ -204,7 +206,7 @@
   function, are sequential to each other.
 
   Assuming that the relation between occurrences is sequential when it is actually parallel,
-  has only minor influence on the upper bound. We are a bit too conservative in this case, but
+  has only minor influence on the upper bound. We are a bit too conservative in this case, but it
   rarely results in much worse upper bounds in practice. Unfortunately, this story does not
   hold for the lower bound. If we assume that a relation is sequential when it is parallel, then
   we add lower bounds when we are only allowed to take the maximum value and we can give a
@@ -267,10 +269,10 @@
   Parallel execution paths pose interesting problems. It puts the difference between upper and lower bounds into perspective.
   Properly dealing with the existence of parallel execution paths require us to determine which occurrences of an identifier
   are parallel and which occurrences are sequential.
-  
+
   The usage analysis of Clean (called labeling or marking) is related to our approach in this
   chapter. Like Clean, we make a distinction between the |then| and |else| branch of an
-  |if-then-else| expression. Unlike Clean, our analysis can detect that some identifiers are not
+  |if..then..else| expression. Unlike Clean, our analysis can detect that some identifiers are not
   used, which has consequences for the aggregation result.
 
   However, the two approaches are difficult to compare. The usage analysis of Clean is described in
@@ -279,8 +281,8 @@
   possible to distinguish read and write access. If it is guaranteed that a value is accessed
   for writing only once, and all other operations on the value are read accesses that occur before
   the write access, then the value can still be updated in place. This distinction cannot be
-  easily made in Haskell since the evaluation order is implicit and difficult to analyze, as
-  evaluation order is determined by (lazy) pattern matches and functions such as |seq|.
+  easily made in Haskell since the evaluation order is implicit and difficult to analyse, as
+  evaluation order is determined by (lazy) pattern matches.
 
 %%]
 

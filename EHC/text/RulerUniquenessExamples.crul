@@ -383,7 +383,8 @@ ruleset expr.base scheme expr  "Expression type rules" =
         | bcs = bcs.e
       judge MT : match = ty <=> ty.t
       judge ME : match = ty <=> ty.e
-      judge TC : mkFlow = cs.gc === uty =>= (Ty_Bool..delta)
+      judge P  : unpack = uty === { ty , delta.e }
+      judge TC : flowPrimWeak = cs.gc === { delta.e =>= delta }
       judge TT : mkFlowITE = cs.tc === uty =>= uty.t
       judge TE : mkFlowITE = cs.ec === uty =>= uty.e
       -
@@ -577,6 +578,12 @@ relation mkFlow =
     holes [ tyA : Ty, tyB : Ty, cs : Cs ]
     judgespec cs === tyA =>= tyB
     judgeuse tex cs === { tyA =>= tyB }
+
+relation mkFlowSoft =
+  view B =
+    holes [ tyA : Ty, tyB : Ty, cs : Cs ]
+    judgespec cs === tyA =>= tyB
+    judgeuse tex cs === { tyA =>=.s tyB }
 
 relation mkFlowITE =
   view B =

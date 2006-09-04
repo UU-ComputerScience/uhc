@@ -1,27 +1,26 @@
 %%[main
 
-\chapter{Adding Data Types}
+\chapter{Adding algebraic data types}
 \label{chapt.DataTypes}
 
-The language that we evolved during the previous chapter still misses many features that a industry-ready
-functional programming language has. But from a typing point of view, the feature set is fairly complete,
-with only one major feature missing: support for data types. In this chapter, we discuss how to support
-data types.
+Note: need to look again at pattern matches.
+Note: need to say something about which parts of a value are evaluated at the root of the expression (the others should have a lower bound of 0).
 
-Support for data types involves changes at two levels. The expression level needs support for pattern matches
-and case-expressions. At the type level, the types become more complicated, with more annotations, dictated
-by the types in a data-type definition. Although data types influence a lot of parts within a computer, the
-required changes are surprisingly isolated. The constraint gathering phase uses a slightly different |\+/|
-constraint, and has now cases for case expressions and pattern matches. The solver needs to deal with
-this altered version of the |\+/| constraint, but that is not much different than we discussed in
-Chapter~\ref{Sect.ConstraintGathering}, so we leave that out. The only place that is heavily affected, is the conversion
+We almost have an industry-ready language from a typing point of view. The mayor type system feature that we
+lack are algebraic data types. We will encounter pattern matches as the only new concept of this chapter,
+all other features are already covered in previous chapters.
+
+Support for data types involves changes at two levels. The expression level needs to deal with pattern matches
+and case-expressions. At the type level, the types become more complicated. Types have more annotations, dictated
+by the types in an algebraic data type definition. Although algebraic data types influence a lot of components of a computer, the
+required changes are surprisingly isolated. The constraint gathering phase need to deal with case expressions and pattern matches.
+The solver is unaffected. The only place that is heavily affected, is the conversion
 to annotation trees (Section~\ref{sect.ReferenceCountAnnotations}). In order to perform this conversion, it turns out that we
 have to perform two analysis on the data type definitions (Chapter~\ref{chapt.Polarity}).
 
 This chapter is organised as follows. We start with an example that illustrate what the problems are to
 support the data types. Each of these problems are discussed in a subsequent section in isolation. The
-contents of these sections require a fair understanding of the previous chapters. This chapter scales up
-the concepts to support the data types, but does not introduce new concepts.
+contents of these sections require a fair understanding of the previous chapters.
 
 
 \section{Example}
@@ -33,11 +32,11 @@ data List a  =  Cons a (List a)
              |  Nil
 %%]
 
-The data-type definition dictates how the representation of a |List| in memory is. In this case, a
+The algebraic data type definition dictates how the representation of a |List Int| in memory is (see Figure~\ref{fig.ListRep}). In this case, a
 list is a region of memory representing a |Cons| or a |Nil|. In the first case, the area of memory
 has two pointers, one to a value of type |a|, and a pointer to the remainder of the list. Each area
-of memory has a corresponding type in the data-type definition. The other way around, each type in
-a data-type definition, corresponds to zero or more memory regions of a value of that data type.
+of memory has a corresponding type in the algebraic data type definition. The other way around, each type in
+a algebraic data type definition, corresponds to zero or more memory regions of a value of that data type.
 Similar to Section~\ref{sect.TpAnnConstr}, annotations on the type constructors of the data type, classify
 the uniqueness properties of a piece of memory. This example also shows why annotations on the types
 are useful: a value can be infinite, but the representation of the type is finite.
@@ -46,63 +45,50 @@ With the annotation problem taken care of, the existing infrastructure knows how
 expressions with user-defined data types as types. But, in order to construct and deconstruct such
 values we need a few alterations in the expression language, by means of value constructors,
 pattern matching, and case-expressions. Value construtors are just functions with a type derived
-from the corresponding data-type definition. We already know how to deal with those. But
+from the corresponding algebraic data type definition. We already know how to deal with those. But
 pattern matches and case-expressions deserve some attention.
 
 The annotations are important in the case of pattern matching. Pattern matching touches the spine of
 a value, and if it succeeds, can bring identifiers into scope. Constraints need to be generated
 in order to properly flow use-counts into the annotations on the spine of data types. Annotations
 for the types of the identifiers introduced by the pattern match, needs to be obtained from
-the type of the pattern and the corresponding data-type definition (Section~\ref{sect.PatternMatch}).
+the type of the pattern and the corresponding algebraic data type definition (Section~\ref{sect.PatternMatch}).
 For example, if some value has type |(Annot(tau)(0)) === (Annot(List)(1)) (Annot(Int)(2))|, and we perform a successful
 pattern match on |Cons (x :: (Annot((Sub(tau)(1)))(3)) (xs :: (Annot((Sub(tau)(2)))(4)))|, then each use
 of |x| and |xs| can potentially result in a use of the spine of the value towards the location where
 |x| or |xs| is stored, so we generate the constraints: |(Delta(3)) (Sub(=>=)(s)) (Delta(0))| and |(Delta(4)) (Sub(=>=)(s)) (Delta(0))|.
 For the strict parts in the pattern, in this case the |Cons| constructor alone (with |(Delta(0))| being the corresponding
-annotation), we generate a constraint |delta =>= (Delta(0))|, where |delta| is then number of uses of the expression containing the
+annotation), we generate a constraint |delta (Sub(=>=)(s)) (Delta(0))|, where |delta| is then number of uses of the expression containing the
 pattern match.
 
-To support case expressions, we need to support patterns first. But then there is still something special about
-case constructions with regards to the expressions occurring in the branches. Only the expression connected to
-the first pattern match that succeeds, is evaluated. Consider the following example:
-
-%%[[wrap=code
-\b (x :: utau) -> case b of
-                    True   -> (x :: (Sub(utau)(1))) + (x :: (Sub(utau)(2)))
-                    False  -> (x :: (Sub(utau)(3)))
-%%]
-
-The constraint gathering of Section~\ref{Sect.ConstraintGathering}, generates the constraint |(Sub(utau)(1))) \+/ (Sub(utau)(2))) \+/ (Sub(utau)(3))) <= utau|.
-This constraint is overly conservative. We only need to add up the occurrences within a single execution path, and take the maximum over
-all execution paths. Suppose that |\-/| stands for maximum, then the constraint is in this case: |((Sub(utau)(1))) \+/ (Sub(utau)(2)))) \-/ (Sub(utau)(3))) <= utau|.
-The result will be that we put a hyper-edge in the constraint graph that contains a addition/max computation, instead of only additions.
-
-We consider these changes in isolation.
+Case expressions are a generalisation of the |if..then..else| expressions of Chapter~\ref{chapt.Parallel}. We are not going to
+explain this subject again here: the generalisation is straightforward after we know how to deal with pattern matches.
 
 
 \section{Exposed annotations}
 \label{sect.ExposedAnnotations}
 
-  Data types complicate the annotation process. Consider the following data-type definition:
+  Data types complicate the annotation process. Consider the following algebraic data type definition:
 
 %%[[wrap=code
-  data Tupple = T Int Int
+  data Tuple = T Int Int
 %%]
 
-  Only the |Tupple| type constructor gets an annotation |delta|. But what annotations to give to both integers? There are several ways to deal
-  with this situation. A straightforward was is to annotate each |Int| with |delta|. That way we treat the components of a data type the same
+  Only the |Tuple| type constructor gets an annotation |delta|. But what are the annotations to give to both integers? There are several ways to deal
+  with this situation. A straightforward way is to annotate each |Int| with |delta|. That way we treat the components of a data type the same
   as the data type itself. Although allowed, this does not provide the accuracy we aim for. A second way is to ask the programmer for the
-  annotations on the components of the type, and assume that they are shared if that is not the case. This is the approach taken by
-  Clean~\cite{barendsen96uniqueness}. The third way is to expose the annotations on inner types for choosing by the outside world~\cite{Wansbrough:PhDThesis}:
+  annotations on the components of the type, and assume that the annotation is |(Card(*)(*))| if that is not the case. This is the approach taken by
+  Clean~\cite{barendsen96uniqueness}. The third way is to expose the annotations on inner types such that the use-site of a data type can choose
+  the annotations~\cite{Wansbrough:PhDThesis}:
 
 %%[[wrap=code
-  data (Dot(Tupple)(delta)([(Sub(delta)(1)), (Sub(delta)(2))])()) = T (Dot(Int)((Delta(1)))({})()) (Dot(Int)((Delta(2)))({})())
+  data (Dot(Tuple)(delta)([(Sub(delta)(1)), (Sub(delta)(2))])) = T (Dot(Int)((Delta(1)))({})) (Dot(Int)((Delta(2)))({}))
 %%]
 
-  This way, the use-site can choose if the |Tupple| contains two unique integers, a unique and
-  a shared integer, or two shared integers. The list subscripted on a type constructor we call
+  This way, the use-site can choose if the |Tuple| contains two unique integers, two strict integers, or
+  perhaps a unique integer and an arbitrary used integer. The list subscripted on a type constructor we call
   the set of exposed annotations. This list contains all annotations occurring inside the
-  data-type definition.
+  algebraic data type definition.
 
   This approach is slightly complicated in case of (mutual) recursive data types, since what list of
   annotations should we pass to the recursive type constructor? This is a familiar problem, for which there is
@@ -110,26 +96,26 @@ We consider these changes in isolation.
   binding group, and take the empty list for annotations from the same binding group. Collect
   all the exposed annotations for each binding-group. In the second pass, set the exposed annotations
   for type constructors of the same binding-group to the list of the entire binding-group. Now, each
-  annotation occurring inside the data-type definition, occurs in the list of exposed annotations of
+  annotation occurring inside the algebraic data type definition, occurs in the list of exposed annotations of
   the corresponding type constructor.
 
   For example:
 
 %%[[wrap=code
-  data (Dot(InfIntList)(delta)([(Delta(1)),(Delta(2))])()) = Cell (Annot(Int)(1)) (Dot(InfIntList)((Delta(2)))([(Delta(1)),(Delta(2))])())
+  data (Dot(InfIntList)(delta)([(Delta(1)),(Delta(2))])) = Cell (Annot(Int)(1)) (Dot(InfIntList)((Delta(2)))([(Delta(1)),(Delta(2))]))
 %%]
 
-  But what about named type variables in a data-type definition? The problem with type variables is that the
+  But what about named type variables in a algebraic data type definition? The problem with type variables is that the
   structure of a type variable can be substituted to virtually any structure at the use-site of a
   data type, and we cannot give the annotations beforehand. But that is not required either: the annotated
   types passed as arguments to a type constructor, contain exactly the annotations that we did not know yet.
   For example:
 
 %%[[wrap=code
-  data (Dot(Embed)(delta)([])()) a = Emb a
+  data (Dot(Embed)(delta)([])) a = Emb a
 %%]
 
-  The annotations to choose for |a| come from the use-site. For example, the type |(Dot(Embed)((Delta(1)))([])()) (Annot(Int)(2))|
+  The annotations to choose for |a| come from the use-site. For example, the type |(Dot(Embed)((Delta(1)))([])) (Annot(Int)(2))|
   specifies that a value of this type has |(Delta(1))| as annotation on Emb constructor, and |(Delta(2))| on the integer
   that it contains.
 
@@ -147,30 +133,30 @@ We consider these changes in isolation.
   \subsection{Conclusion}
 
   Thus, this approach is flexible and the changes are fairly isolated. There is a downside to this approach, which is
-  that types take a lot of annotations this way. We can control this number of annotations by giving up accuracy, for
+  that types can contain a lot of annotations this way. We can control this number of annotations by giving up accuracy, for
   example by enforcing that the annotations of a certain data type are never taken freshly. This saves annotations when
-  the data type is used a lot, but has as consequence that there is only one uniqueness variant of it, such that a value
-  |v| of such a type has a component that is used in a unique fashion, and there is a value |w| of this type of which that
-  component is shared, then the component of |v| is also considered shared, although it could be unique.
+  the data type is used a lot, but has as consequence that there is only one uniqueness variant of the data type. All values
+  of such a data type then have the same cardinality values, which is less flexible.
 
 \section{Expanded types}
 \label{sect.ExpandedTypes}
 
-  There are limitations on the exposed annotations approach. If we look at a list, then each |Cons| in the list is
-  treated the same way. We, for example, cannot make a distinction between certain elements of a list. On the other
+  The exposed annotations approach has limitations. If we look at a list, then each |Cons| in the list is
+  treated the same way. We cannot make a distinction between certain elements of a list. On the other
   hand, the reason for taking a list (which is of varying size), is to treat each element in the same way, so that
-  is not really an issue. A bigger limitation is that a type variable can only be used in one fashion. For example:
+  is not a big issue. A bigger limitation is that a type variable can only be used in one fashion. For example:
 
 %%[[wrap=code
-  data Tupple a = T a a
+  data Tuple a = T a a
 %%]
 
-  In this example, both occurrences of |a| will get the same uniqueness properties, since we take the annotations from
-  the type passed to |Tupple|. But in memory, each |a| is a separate area and thus can have different uniqueness
-  properties. So, can we change the system such that we can treat occurrences of the same type variable differently?
+  In this example, both occurrences of |a| will get the same cardinality annotation, since we take the annotations from
+  the type passed as |a| to |Tuple|. But in the memory representation of such a data type, each |a| is a separate area
+  and thus can have different cardinalities. So, can we change the system such that we can treat occurrences of the
+  same type variable differently?
 
-  We can achieve this by using an ad-hoc trick: by unfolding the data-type definitions a couple of times. For
-  example, unfolding |Tupple Int| results into the type |<T Int Int>|, and can be annotated with annotations in the
+  We can achieve this by using an ad-hoc trick: by unfolding the algebraic data type definitions a couple of times. For
+  example, unfolding |Tuple Int| results into the type |<T Int Int>|, and can be annotated with annotations in the
   conventional way.  The value-constructor name does not need an annotation, but is part of the type in order to
   determine of which constructor the fields are an expansion. Type expansion is dangerous for recursive types, since
   the expansion process will not terminate, and the representation can explode quickly, especially for nested
@@ -185,31 +171,31 @@ We consider these changes in isolation.
   of |T| is unfolded with a freshly annotated version of |(Sub(utau)(i))| at each occurrence of type variable |i|. This
   procedure thus works by performing one-step expansions.
 
-  For example, consider the data-type definition of |List|:
+  For example, consider the algebraic data type definition of |List|:
 
 %%[[wrap=code
-  data (Dot(List)((Delta(1)))((Delta(2)))()) a  = Cons a ((Dot(List)((Delta(2)))((Delta(2)))()) a)
-                                                | Nil
+  data (Dot(List)((Delta(1)))((Delta(2)))) a  =  Cons a ((Dot(List)((Delta(2)))((Delta(2)))) a)
+                                              |  Nil
 %%]
 
   Suppose that we annotate the type |List Int|. By means of exposed annotations, we obtain the
   type:
 
 %%[[wrap=code
-  (Dot(List)((Delta(1)))((Delta(2)))()) (Dot(Int)((Delta(3)))([])())
+  (Dot(List)((Delta(1)))((Delta(2)))) (Dot(Int)((Delta(3)))([]))
 %%]
 
   A one step expansion gives:
 
 %%[[wrap=code
-<Cons (Dot(Int)((Delta(4)))([])()) ((Dot(List)((Delta(2)))((Delta(6)))()) (Dot(Int)((Delta(5)))([])())), Nil>
+<Cons (Dot(Int)((Delta(4)))([])) ((Dot(List)((Delta(2)))((Delta(6)))) (Dot(Int)((Delta(5)))([]))), Nil>
 %%]
 
   Note how the exposed annotation |(Delta(2))| is used on his corresponding occurrence on the
   data type during the expansion. Expanding yet another step further, gives:
 
 %%[[wrap=code
-<Cons (Dot(Int)((Delta(4)))([])()) <Cons (Dot(Int)((Delta(7)))([])()) ((Dot(List)((Delta(6)))((Delta(9)))()) (Dot(Int)((Delta(8)))([])())), Nil>, Nil>
+<Cons (Dot(Int)((Delta(4)))([])) <Cons (Dot(Int)((Delta(7)))([])) ((Dot(List)((Delta(6)))((Delta(9)))) (Dot(Int)((Delta(8)))([]))), Nil>, Nil>
 %%]
 
   These one-step expansions are not only used for annotating the data types, but also for expanding a type for a
@@ -251,14 +237,14 @@ We consider these changes in isolation.
   of a pattern match. An exposed-annotated type can be overlayed on a pattern match after a
   one-step expansion for each pattern match on a constructor. For example, if we take the one-step
   expansion of Section~\ref{sect.ExpandedTypes} as example, then a match |Cons x xs|, with the type of
-  the entire pattern match being |<Cons (Dot(Int)((Delta(4)))([])()) ((Dot(List)((Delta(2)))((Delta(6)))()) (Dot(Int)((Delta(5)))([])())), Nil>|,
-  gives |(Dot(Int)((Delta(4)))([])())| for |x| and |(Dot(List)((Delta(2)))((Delta(6)))()) (Dot(Int)((Delta(5)))([])())| for
+  the entire pattern match being |<Cons (Dot(Int)((Delta(4)))([])) ((Dot(List)((Delta(2)))((Delta(6)))) (Dot(Int)((Delta(5)))([]))), Nil>|,
+  gives |(Dot(Int)((Delta(4)))([]))| for |x| and |(Dot(List)((Delta(2)))((Delta(6)))) (Dot(Int)((Delta(5)))([]))| for
   |xs|. So, for pattern matches, we the annotated type is pushed inwards, expanding it if needed for
   each match on a constructor.
 
   A pattern match cannot obtain a component from a value without evaluating the spine of that
-  value. The reference-counts of the spine are thus at least the reference-count of any
-  component. Define the parent of a pattern to be the match on a constructor closest to the
+  value. The upper and lower bounds of the spine are thus at least the upper and lower bound
+  of any component. Define the parent of a pattern to be the match on a constructor closest to the
   pattern. For example, in the match |(Sub(Cons)(1)) x ((Sub(Cons)(2)) y ys)|, the parent of
   both |y| and |ys| is |(Sub(Cons)(2))|, and the pattern of |(Sub(Cons)(2))| and |x| is
   |(Sub(Cons)(1))|. Associated with each variable binding, and each constructor, is the
@@ -266,7 +252,7 @@ We consider these changes in isolation.
   outermost annotation on a constructor match or variable binding, and |(Delta(2))| is the
   outermost annotation on the type of the value of the corresponding parent. We generate a
   constraint |(Delta(1)) (Sub(=>=)(s)) (Delta(2))| to propagate reference counts. Due to
-  transitivity in the |=>=| constraint, each pattern is connected to the parent, the
+  transitivity in the coercion constraint, each pattern is connected to the parent, the
   parent of the parent, and so on.
 
   This approach can be refined a bit, depending on guarantees of the code-generation process.
@@ -276,7 +262,7 @@ We consider these changes in isolation.
   expression tied to the pattern match. In other words, suppose that |delta| is the annotation on
   a pattern, |(Sub(delta)(par))| the annotation on the corresponding parent, and |(Sub(delta)(expr))|
   the annotation on the expression tied to the pattern match. Then generate the constraint:
-  |delta `min` (Sub(delta)(expr)) <= |Sub(delta)(par))|.
+  |delta \-/ (Sub(delta)(expr)) <= |Sub(delta)(par))|.
 
   The other aspect of pattern matches, strictness, is resolved by propagating reference counts from
   the expression tied to the pattern match to the matches on constructors. If |delta| is the outermost
@@ -551,7 +537,7 @@ typing, but about a whole other analysis!
 \section{Constraint gathering}
 
   Constraint gathering is performed on the type level. A type expression does not differ much compared to a normal
-  expression, except that there are no lambda abstractions. Instead of lambda abstractions, there are algebraic data-type
+  expression, except that there are no lambda abstractions. Instead of lambda abstractions, there are algebraic algebraic data type
   definitions in the declarations of a Let.
   
   The type of a type is called a kind, denoted by |kappa| (see Section~\ref{sect.PolymorphicKinds}). We allow
@@ -579,9 +565,9 @@ typing, but about a whole other analysis!
   We want to know the results of the analysis for the annotations occurring on types, but the analysis only finds
   results for the annotated kinds. With the constraint generated for the annotations, the results of kinds are
   propagated to the actual annotations. From an implementation point of view, this approach makes sure that
-  a data-type definition collects proper constraints for exposed annotations.
+  a algebraic data type definition collects proper constraints for exposed annotations.
 
-  We omit the type rules for data-type definitions and leave it with a textual description. For a data-type definition,
+  We omit the type rules for algebraic data type definitions and leave it with a textual description. For a algebraic data type definition,
   the constraints for al the types in the constructors are collected. The environment is enlarged with annotated kinds
   of the type variables, derived by means of pattern matching from the annotated kind of the data type. An aggregation
   constraint is generated for each type variable, that combines each use-site of the type variable. These constraints
@@ -651,22 +637,22 @@ neg x  = x
   Int  :: (Annot(*)(4))
 %%]
 
-  The lattice |leqB| that we use is similar to that of variance:
+  The lattice |leqBL| that we use is similar to that of variance:
 
 %%[[wrap=code
-  ?          leqB  below
-  ?          leqB  not_below
-  below      leqB  any
-  not_below  leqB  any
+  ?          leqBL  below
+  ?          leqBL  not_below
+  below      leqBL  both
+  not_below  leqBL  both
 %%]
 
   Again, we formulate the interpretation function in a familiar way:
 
 %%[[wrap=code
 belowSolveF (a =>= b)
-  = a =>= (a `(Sub(join)(leqB))` b)
+  = a =>= (a `(Sub(join)(leqBL))` b)
 belowSolveF ((Sub(a)(1)) \*/ ... \*/ (Sub(a)(n)) <= a)
-  =  let  z = (Sub(a)(1)) `(Sub(join)(leqB))` ... `(Sub(join)(leqB))` (Sub(a)(n)) `(Sub(join)(leqB))` a
+  =  let  z = (Sub(a)(1)) `(Sub(join)(leqBL))` ... `(Sub(join)(leqBL))` (Sub(a)(n)) `(Sub(join)(leqBL))` a
      in   z \*/ ... \*/ z <= z
 %%]
 
@@ -679,7 +665,7 @@ belowSolveF ((Sub(a)(1)) \*/ ... \*/ (Sub(a)(n)) <= a)
 
   As we mentioned before, the graph simplification can remain largely unaltered. However, we can convert an aggregation
   constraint for these analysis into coercion constraints. This has the advantage that the graph reducer does not need
-  to deal with aggregation constraints. A constraint of the form |a \+/ b <= c| means |a == b == c| in the interpretation,
+  to deal with aggregation constraints. A constraint of the form |a \*/ b <= c| means |a == b == c| in the interpretation,
   thus we can replace it with |a =>= b =>= c| and |c =>= b =>= a|. The graphs for data types are even more sparse than those
   of expressions, which means that the resulting graphs are very small. This is important, because the above analysis is applied
   to all types occurring in constraints.
