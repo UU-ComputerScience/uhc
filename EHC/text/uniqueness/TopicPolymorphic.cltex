@@ -41,7 +41,7 @@ central theme of this chapter.
   problem, so let us look only at instantiation.
   
 
-  Consider the folowing example:
+  Consider the following example:
 
 %%[[wrap=code
        f  :: (Annot(Int)(2)) (Annot(->)(1)) (Annot(Int)(3))
@@ -83,7 +83,7 @@ g = (id :: (Annot(Int)(12)) (Annot(->)(11)) (Annot(Int)(13)) (Annot(->)(10)) (An
   This works, since the underlying type system will guarantee that each occurrence of the same type variable is instantiated
   to exactly the same type, thus we can always put the same annotations there. For the |id| function, this is a perfect
   solution, because now the uniqueness typing of |g| is equivalent to that of |f|. But in general, this approach is still
-  too consertative as it ignores how the polymorphic function handles it's arguments, as is demonstrated by the
+  too conservative as it ignores how the polymorphic function handles it's arguments, as is demonstrated by the
   following alternative version of the :
 
 %%[[wrap=code
@@ -99,10 +99,10 @@ first = \x y -> x
 \label{sect.ConstrDup}
 
   We take an approach in this chapter that deals with the problem by investigating the constraint graph belonging to the
-  type that is instantiated. A function with a polymorhpic type cannot touch the contents of a value with a type variable
+  type that is instantiated. A function with a polymorphic type cannot touch the contents of a value with a type variable
   as type, but it can duplicate the value, and pass it to functions, that it gets as parameter, that can. This duplication
   and passing around of values is captured in the constraint graph\footnote{For simplicity, we assume that there are no hyper edges in the constraint graph.}. Each simple path between uniqueness annotations on a
-  type variable (not neccesairily the same type variable), gives information about the uniqueness information flow between
+  type variable (not necessarily the same type variable), gives information about the uniqueness information flow between
   the annotations on type variables. The uniqueness information flow means that a change of uniqueness value in the
   substitution on the uniqueness variables in question, gives rise to a change on the substitution of other uniqueness
   variables in the information flow, or in other words: it just means that they are related.
@@ -158,7 +158,7 @@ first = \x y -> x
   system, dealing with position information of an annotation shows up at two places. During the constraint gathering
   process, we obtain the information, and during inferencing, we use the information. It complicates the implementation
   of both parts of the type system. In the remainder of this chapter, we factor this subject out of both parts of the
-  type system and give it its own part. This results in a better separater of functionality, easier understanding of
+  type system and give it its own part. This results in a better separation of functionality, easier understanding of
   the implementation, more code reuse, and not to forget, allows us to parameterize over the strategy that deals with
   the ``deeper'' annotations.
 
@@ -196,12 +196,12 @@ data AnnTree
 %%]
 
   Each type constructor corresponds to an |AnnNode|, and the parameters of a type constructor are the
-  childeren of the type constructor. The list of annotations is empty in this chapter, but in Chapter~\ref{chapt.DataTypes}
+  children of the type constructor. The list of annotations is empty in this chapter, but in Chapter~\ref{chapt.DataTypes}
   this list will represent additional annotations of a type constructor.
 
   The idea is that we simultaneously convert some types to annotation trees, one annotation tree for each type, with
-  the property that all annotation trees have exactly the same shape, assuming that the types are unifyable, which is
-  guaranteed by the constraint generation process\footnote{Not all types in a |\+/| constraint are unifyable, but the
+  the property that all annotation trees have exactly the same shape, assuming that the types are unifiable, which is
+  guaranteed by the constraint generation process\footnote{Not all types in a |\+/| constraint are unifiable, but the
   annotation trees are lazily constructed and the inferencer only examines only the unifiable parts of the annotation
   trees for a type correct program.}. If one type |(Sub(utau)(1))| has an annotation |delta| that has no counter part
   in in some other type |(Sub(utau)(2))|, then |(Sub(utau)(1))| has a deeper structure at this place than |(Sub(utau)(2))|.

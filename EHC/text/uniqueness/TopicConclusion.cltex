@@ -4,21 +4,21 @@
 \label{chapt.Conclusion}
 
 Chapter~\ref{chapt.NoBindings} defines a constraint-based type system for uniqueness typing. The language of
-this chapter does not even come close to that of a real function programming language, but had sufficient
+this chapter does not even come close to that of a real function programming language, but provides sufficient
 features to show which constraints are generated and how they are interpreted to check a uniqueness typing
 of a program. Chapter~\ref{chapt.Polyvariant} extends on this approach by showing how uniqueness inference
 can be performed on the constraints. In the chapters that follow, we gradually showed how language features
 interact with the type system. We did not shy away from implementation-level problems (such as supporting
-data types) and present problems that we encountered and discuss solutions. Finally, in Chapter~\ref{chapt.Overloading}
+data types) and present problems that we encountered and discuss solutions. Finally, in Chapter~\ref{chapt.DataTypes}
 we ended up with a uniqueness type inferencer that supports sufficient language features to use in the
 front-end of a compiler. Chapter~\ref{chap.InspectingResults} shows that the analysis of the inferencer in the front-end
 of the compiler, is important to interact demands and results with the programmer.
 
-Key advantages of the type system are that it is constraint-based, fully polyvarant, accurate and scalable. It is constraint-based
-so the implementation is split up in multiple phases, seperating concerns and isolating changes. It is fully polyvariant (Chapter~\ref{chapt.Polyvariant}),
+Key advantages of the type system are that it is constraint-based, fully polyvariant, accurate and scalable. It is constraint-based
+so the implementation is split up in multiple phases, separating concerns and isolating changes. It is fully polyvariant (Chapter~\ref{chapt.Polyvariant}),
 meaning that each use-site can have different uniqueness types (if the constraints allow it), also in the presence of
 recursion (Chapter~\ref{chapt.Recursion}). We show in Section~\ref{sect.FullRecursion} that polyvariant recursion for uniqueness types is decidable, if
-polymorhpic recursion is taken care of. The type system is accurate in the sense that it allows components of a value to
+polymorphic recursion is taken care of. The type system is accurate in the sense that it allows components of a value to
 be typed differently that the spine of a value, such that functions that only touch the spine, do not influence the
 components. This is our main difference with other approaches, as it require us to assume that the presence of some
 identifier does not guarantee that the identifier is actually used. Finally, with scalable, we mean that there are several
@@ -51,29 +51,33 @@ question if the additional complications of uniqueness typing are worth it.
   (Section~\ref{sect.ConstrDup}). A consequence is that in curry-style function application, the order in which
   the parameters are defined matters. There can be no unique parameter to the left of a shared parameter.
   
-  Another restriction is that clean assumes that each occurrence of an identifier means that it is also
+  Another restriction is that Clean assumes that each occurrence of an identifier means that it is also
   used. The elements of the list |xs| cannot be marked as unique in clean, despite that the elements are
   used only once, since the |length| function does not touch the elements:
 
 %%[[wrap=code
-  (\xs -> map (+ length xs) xs) [1,2,3,4]
+  (\xs -> map (+ length (Sub(xs)(1))) (Sub(xs)(2))) [1,2,3,4]
 %%]
 
-  A consequence of these restrictions is that the type sytem is much easier and has to do less work. Uniqueness
+  Our analysis discovers that length does use values of |xs|; it derives |(Sub(xs)(1)) :: (Sup(List)(Card(1)(*))) (Sup(Int)(Card(0)(1)))|
+  and |(Sub(xs)(2)) :: (Sup(List)(Card(1)(*))) (Sup(Int)(Card(1)(1)))|, which results in a linear type for the
+  integers in the list.
+
+  A consequence of these restrictions is that the type system of Clean performs less work. Uniqueness
   signatures are rather trivial to implement in the system of Clean, as well as the interaction with a
-  class system, in countrary to our system (Section~\ref{sect.Helping}) and (Section~\ref{sect.OverloadedAdvanced}).
+  class system, contrary to signatures in our system (Section~\ref{sect.Helping}) and (Section~\ref{sect.OverloadedAdvanced}).
   
   In a recent PhD thesis, Keith Wansbrough~\cite{Wansbrough:PhDThesis}, gives an overview of different usability-analysis,
-  and discusses an implementation of usage-analysis in the backend of the GHC compiler. Their implementation
+  and discusses an implementation of usage-analysis in the back-end of the GHC compiler. His implementation
   is polyvariant, and uses a similar way of dealing with data types as our exposed annotations in Section~\ref{sect.ExposedAnnotations}.
-  However, this type system also makes the assumption on the spine of values.
+  However, this type system also makes the assumption that spine of a value is as unique as the elements.
 
 \section{Future work}
 \label{sect.FutureWork}
 
   There are three directions of future work. In the first place, the lessons learned by the prototype and this
   thesis, can be used to create a faster performing prototype, where more care is taken to speed up the
-  graph algorithms, and has more options to choose between accuraccy and performance.
+  graph algorithms, and has more options to choose between accuracy and performance.
 
   In the second case, the question is if the interaction with the user can be improved, by means of signatures,
   the identification of problem sites, or other mechanisms to inspect the result of the analysis.
@@ -83,6 +87,6 @@ question if the additional complications of uniqueness typing are worth it.
   are under investigation. There is already a lot of work done in this field, but it remains a question which
   of that work is applicable for EHC, and how to treat the problem of polyvariance.
   
-  So, this master thesis opens up several topics of research for other master-thesis projects.
+  So, this master's thesis opens up several topics of research for other master's thesis projects.
 
 %%]

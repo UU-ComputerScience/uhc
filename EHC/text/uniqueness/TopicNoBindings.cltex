@@ -50,8 +50,8 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   |(Sub(x)(1))| and |(Sub(x)(2))| are occurrences of |x|, they represent the same value, say |v| (which happens to be 3). The value |v| is exactly
   used once \emph{via} the name |(Sub(x)(1))|. The value |v| is exactly used once via the name |(Sub(x)(2))|. So, in total |v| is used more than
   once via |x|. Thus, |x| represents a value that is used more than once. Because the name |(Sub(x)(1))| represents
-  the same value, it also represents a value that is used more than once, even though this value is used only once via |x|. Similary,
-  |(Sub(x)(2))| represents a value that is used more than once. These are two different properties for a name: a propery that describes
+  the same value, it also represents a value that is used more than once, even though this value is used only once via |x|. Similarly,
+  |(Sub(x)(2))| represents a value that is used more than once. These are two different properties for a name: a property that describes
   the usage of a value via a name, and a property that describes the entire usage of a value represented by a name.
 
   This concept of names can be generalized to expressions (via referential transparency: an unevaluated expression in a \emph{thunk}, of which
@@ -59,7 +59,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   expression |E|.
 
   An important observation is that there is a difference between a usage property that specifies that |v| is used a number of times
-  via |E|, and the property that specifies how often |v| is used in total. An analysis typically focusses on one of of these two
+  via |E|, and the property that specifies how often |v| is used in total. An analysis typically focuses on one of of these two
   usage properties.
 
   For uniqueness typing as defined in Clean, only usage properties of values are important. In Clean, a unique type represents a value
@@ -72,10 +72,10 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
 
   However, there are optimisations that benefit from knowing that a value is used exactly once. A value that is used exactly once, can be
   safely pre-evaluated before passing it to a function. Or a function that is used exactly once, can be inlined safely, always resulting
-  into better performing code and a smaller code size.Futhermore, an expression that will not be used at all, can be omitted. These are
+  into better performing code and a smaller code size. Furthermore, an expression that will not be used at all, can be omitted. These are
   realistic and beneficial optimisations, thus for our analysis, we support both types of usage properties.
 
-  We define the \emph{cardiality}~\cite{jur} property of a type as follows:
+  We define the \emph{cardinality}~\cite{jur} property of a type as follows:
 
 %%[[wrap=code
   (Card(Usage)(Usage))
@@ -95,7 +95,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   A possible future generalisation of this approach is to support |Usage|-values up to |k > 0|, such that we can specify that some value
   is exactly used |3| times, or at most |10| times. Although this generalisation is fairly straight forward, it is also doubtful
   if there is a use for determining that some value is used at most a certain number of times. Since it only complicates our
-  expanation, we keep it with the above definition.
+  explanation, we keep it with the above definition.
 
   Some optimizations demand that a value is exactly used once, while for other optimizations it is sufficient that a value
   is used at most once, which is slightly less demanding. Our approach can verify both uniqueness properties and
@@ -219,7 +219,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   bounds of |(Sub(x)(1))| and |(Sub(x)(2))| are both |1|, so the sum is |*| and the annotation is correct.
 
   As we mentioned several times already, a conservative approximation of the upper bound is allowed. The upper bound may
-  be higher than is strictly neccessairy. For example, if we know that a value is not used, we may also assume that
+  be higher than is strictly necessary. For example, if we know that a value is not used, we may also assume that
   it is at most used once. Furthermore, assuming that some value is used an arbitrary number of times is always allowed. It
   is safe to pretend that the upper bound is higher than is actually the case, but it makes the analysis result less accurate.
 
@@ -390,7 +390,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
         The lower bound of the result of the function (|(Sup(1)(10))|) is at most the lower bound of the function application (|(Sup(1)(16))|). The upper bound of
         the result of the function function (|(Sup(1)(18))|) is at least the upper bound of the function application (|(Sup(1)(12))|). The cardinality annotation (|(SCard(1)(11)(1))|)
         of the result of the function should be equal (modulo coercion/weakening) to the cardinality annotation of the function application (|(SCard(1)(17)(1))|), since they
-        represent the same value (via referential transparancy).
+        represent the same value (via referential transparency).
   \item The function and the argument of the function application. The uses of the argument of the function
         application depend on the annotations of the parameter of the function. We generate the constraint |((Sup(1)(4)), (SCard(1)(5)(1)), (Sup(1)(6))) =>= ((Sup(1)(13)), (SCard(1)(14)(1)), (Sup(1)(15)))|.
         The semantics of the constraint capture the relations between the three annotations on the type of the function parameter and
@@ -443,7 +443,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   For a lambda abstraction, we perform two tasks: analyze the body of the lambda abstraction, and
   combine the results of the uses of the values represented by the parameters. The bounds of each
   occurrence of some parameter are individually established. We generate an aggregation constraint
-  to comine the bounds and to check that the cardinality value is properly split over the
+  to combine the bounds and to check that the cardinality value is properly split over the
   occurrences: |triple((Sub(use_site)(1))) \*/ ... \*/ triple((Sub(use_site)(n))) <= triple(def_site)|.
   We use the safe approximation that the upper bounds are combined by addition and the lower bounds
   by taking the minimum. This approach is improved in Chapter~\ref{chapt.Parallel}.
@@ -490,7 +490,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   The final part of this example is to verify that the constraints hold. We show by an example how we interpret
   the constraints. We define when a constraint holds more precisely in Section~\ref{Sect.CheckingConstraints}. We assume that
   the triples are already checked for consistency, meaning that the cardinality annotation fits between the upper and
-  lower bound, and that the cardianltiy annotation itself is consistent. A cardinality annotation is consistent if the
+  lower bound, and that the cardinality annotation itself is consistent. A cardinality annotation is consistent if the
   left-hand side does not conflict with the right-hand side. The following table lists the constraints and their
   interpretation (see Figure~\ref{splitFunc} for the definition of |isSplit|):
 
@@ -515,7 +515,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
       |((Sup(1)(31)), (SCard(1)(32)(1)), (Sup(1)(33)))  (Sub(=>=)(s))  ((Sup(1)(43)), (SCard(1)(44)(oneplus)), (Sup(*)(45)))|  & |(Sup(1)(13)) leqL (Sup(1)(43))| & & |(Sup(1)(33)) leqU (Sup(*)(45))| & OK  \\
   \end{tabular}
 
-  The relation |leqL| should be interpreted as the relation |>=| on natural numers. The relation |leqU| as |<=| on natural numbers. The |leqC|
+  The relation |leqL| should be interpreted as the relation |>=| on natural numbers. The relation |leqU| as |<=| on natural numbers. The |leqC|
   relation is somewhat complicated. For the left component in the cardinality annotation, the |leqC| relation specifies 'is more specific',
   and for the right component the relation is equality modulo coercion. We cover these relations in more detail in Section~\ref{sect.TpAnnConstr}.
 
@@ -553,7 +553,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
 
   We assume that all programs are correctly typed according to the type
   system in Figure~\ref{RulerUniquenessExamples.E.expr.base}. In this specification of the type
-  system, |Gamma| is the evironments that constains a type for each identifier
+  system, |Gamma| is the environments that contains a type for each identifier
   in scope, and |tau| represents types. An integer expression has type |Int|. The type of a variable is recorded in the
   environment. The result and operands of an addition are |Int|s. When applying a function to a value, the parameter
   type and argument type should unify. Finally, a lambda abstraction brings the type of an identifier in scope, which
@@ -730,7 +730,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   Therefore, by default |leqZ| is an equality relation, but we assume that it can be a
   subset of the |leqS| with left and right arguments swapped. Note that |a leqZ b| defines
   that the total usage |b| can be relaxed by coercion in total usage |a|. This is the inverse direction compared to the other
-  orderings in this section. This is intential: the two bound annotations and the
+  orderings in this section. This is intentional: the two bound annotations and the
   left-hand side value of a cardinality annotation combine usage information of individual
   occurrences of a value into usage information about the total usage of some value. Subsequently,
   this aggregate result is passed back to the individual occurrences via the right-hand side
@@ -741,12 +741,12 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   We define a similar ordering as the ordering above for left-hand side of a cardinality
   annotation is relaxed. If |a leqS b|, then |a| can  be relaxed to |b|. This ordering
   is typically an equality relation, unless a relaxation does not conflict with optimisations
-  of the backend or can be resolved using a coercion function.
+  of the back-end or can be resolved using a coercion function.
 
   Or in other words: we can relax the left-hand side of a cardinality annotation only
   to |*|. However, there is an important restriction here: if we make a relaxation for
   one particular occurrence of some value, then we must make this relaxation for all
-  anotations of this particular occurrence. For example,
+  annotations of this particular occurrence. For example,
 
   Finally, we define an ordering to verify that the right-hand side of a
   cardinality annotation does not conflict with the left-hand side of a cardinality
@@ -780,7 +780,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
    will have a |Usage| value of |*|. Nowhere in the program can guarantees be made about a value with |Usage| value of |*|, so the
    bounds can be ignored for this value. Strictly speaking, this is not required: we could enforce a stronger notion of fitting and require that the boundaries itself are relaxed to
   |0| for the lower bound or |*| for the upper bound when the |Usage| value is |*|. However, in Chapter~\ref{chapt.Polyvariant}, we present an
-  approach that infers the annotations, and the above relaxation allows us to infer lower and upper bounds seperately from the cardinality annotations
+  approach that infers the annotations, and the above relaxation allows us to infer lower and upper bounds separately from the cardinality annotations
   (Figure~\ref{code.iterate}).
 
   \begin{figure}
@@ -834,7 +834,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   information. It specifies that the lower bound on the left-hand side is greater or equal
   than the lower bound on the right-hand side (|left \leqL right|). Vice versa, it specifies that
   the upper bound on the left-hand side is smaller or equal to the upper bound on the
-  right-hand side (|left \leqU right|). Finally, it specifies how the cardianlity annotations
+  right-hand side (|left \leqU right|). Finally, it specifies how the cardinality annotations
   are relaxed: for the left-hand side |Usage| value from left to right, and for the right-hand side
   |Usage| value from right to left. In the last case only when there is a coercion.
 

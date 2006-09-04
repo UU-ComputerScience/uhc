@@ -40,8 +40,8 @@ j  ::  forall (Delta(3))(Delta(4))(Delta(5))  .  (Annot(Int)(4)) (Annot(->)(3)) 
 
 All cardinality variables are universally quantified, but are constrained by a constraint set. For example, |f| represents
 a value with a type that has an unconstrained annotation |(Delta(1))|. This annotation can be instantiated with any consistent
-cardinalty value. The annotation on the type of |g| can only be |(Card(onemin)(*))|, or |(Card(*)(*))|, since the
-constraint disalows other combinations (Section~\ref{Sect.CheckingConstraints}). The type of |h| corresponds to a function
+cardinality value. The annotation on the type of |g| can only be |(Card(onemin)(*))|, or |(Card(*)(*))|, since the
+constraint disallows other combinations (Section~\ref{Sect.CheckingConstraints}). The type of |h| corresponds to a function
 that may have any of the five cardinality values as long as the function, the argument, and the result type have the same cardinality value.
 The three annotations on the type of |j| can have any cardinality value as long as the two coercions are satisfied.
 
@@ -94,7 +94,7 @@ of the actual usage of a value.
 We obtain the solution as follows. Based upon the constraints, a lower and an upper bound is inferred for each cardinality
 annotation. After the lower and upper bounds are inferred, we choose the most specific |Usage| value for both |Usage|
 values of the cardinality annotations. We then relax (make them less specific according to |leqS|) the left-hand side and
-right-hand side of the cardinality values independendly until they satisfy the constraints. A relaxation of the
+right-hand side of the cardinality values independently until they satisfy the constraints. A relaxation of the
 left-hand side possibly leads to a relaxation of the right-hand side to keep the cardinality value consistent
 (see |leqB| in Section~\ref{sect.partialorderings}). Satisfying one constraint by relaxing one of the |Usage| values of
 a cardinality annotation, can cause a need for relaxation of the cardinalities of another constraint. This process is repeated
@@ -147,7 +147,7 @@ if optimisations do not conflict with this coercion and possibly requires a coer
 moment of relaxation. There is some redundancy between annotations on some types. For example, a parameter of a function can use the cardinality
 variables of the enclosing function for its annotated type. It does not need fresh cardinality variables. Since we allow a
 coercion from argument to parameter, there is no need for a coercion from parameter to use-site of the parameter in the body
-of the function. Similary, for a function application like such as |f 3|, it is possible to coerce the result of |f| at the
+of the function. Similarly, for a function application like such as |f 3|, it is possible to coerce the result of |f| at the
 function application. However, the result of |f 3| can be used at three places: as argument of a function application, as
 body of a lambda, or as right-hand side of a |let| binding (later in this chapter). In case it is used as argument to another function application (i.e. |g (f 3)|), then the function
 application of |g| already allows an coercion. In case it is used as the body of lambda, we already allow a coercion from the type of
@@ -208,7 +208,7 @@ Although it is not obvious from the definition |leqM|, we show in Section~\ref{s
 to a set of constrains. Unfortunately, the above approach is not feasible in practice. The problem is for |n| annotations, there are
 $5^n$ combinations, which is not feasible to calculate in practice.
 
-Fortuantely, there is no need to compute all possible combinations. Due to the orderings defined on the cardinalities,
+Fortunately, there is no need to compute all possible combinations. Due to the orderings defined on the cardinalities,
 upper bound and lower bounds, we can use a fixpoint computation to obtain a least fixpoint. Actually, we need three
 of these computations: one for the lower bound, one for the upper bound, and one for the cardinalities. We first
 compute the lower and upper bounds. Then choose for each cardinality the most specific cardinality that fits with
@@ -264,11 +264,11 @@ The fixpoint iteration proceeds as follows. We start with the best possible subs
 lowest value in the ordering. If one particular value |v| does not satisfy a constraint, then |v| is
 too low in the ordering and we select a value v', with |v leq v'| and v' as low as possible in the
 ordering and satisfies the constraint. We relaxed |v| to |v'|, since |v'| can only be higher in the
-ordering. Such a value can alawys be found since the orderings are finite join-semilattices, wich
+ordering. Such a value can always be found since the orderings are finite join-semilattices, which
 implies there is a value |t| such that |v leq t| for any |x|. It is possible that satisfying one constraint
 makes another constraint not satisfied. Processing the constraints once is called an iteration, and we
 repeat iterations until the substitution does not change anymore. If a substitution does not change, then
-no relaxations took place, which implies that all constraints are satisfied. Futhermore, the number of
+no relaxations took place, which implies that all constraints are satisfied. Furthermore, the number of
 relaxations is limited, since we have a finite substitution of which the value for each variable can
 be relaxed a finite number of times. A property of the fixpoint procedure is that a least fixpoint is
 reached after the process terminates.
@@ -549,7 +549,7 @@ The term \emph{binding group} refers to the bindings of the |let|. We assume tha
 identifies the binding group. In EH, each |let| only contains a single binding group, but technically speaking, the |let|
 can be partitioned in multiple binding groups (such as in Haskell). Binding groups are nested. Binding group |A| is a
 parent of binding group |B| if and only if the |let| of |B| occurs in the expression of the identifier of the |let| of
-|A|. The body of the |let| belongs to the same binding group of the encloding expression. An identifier in binding group
+|A|. The body of the |let| belongs to the same binding group of the encoding expression. An identifier in binding group
 |C| is also in binding group |D| if and only if |D| is |C|, or is a parent of |C|. Two identifiers are in the same binding group if
 and only if the binding group of one identifier is the parent of the binding group of the other
 identifier. A binding group is outermost if it has no parent.
@@ -582,8 +582,8 @@ use (Section~\ref{sect.Rewriting}).
 
 The graph representation of a constraint set |Cs| is obtained as follows. Let $G = (V, E, H)$ be a directed graph with
 vertices $V$, edges $E$, and hyper edges $H$. The vertices of $G$ are the cardinality annotations of |Cs|: |delta `elem` V| if and only
-if |delta `isAnnotation` Cs|. The labelled edges of $G$ are the coercion constraints of |Cs|:
-|E((Delta(1)), (Delta(2))) = beta| if and only if |((Delta(1)) (Sub(=>=)(beta)) (Delta(2))) `elem` Cs|. The labelled hyper edges of $G$ are aggregation
+if |delta `isAnnotation` Cs|. The labeled edges of $G$ are the coercion constraints of |Cs|:
+|E((Delta(1)), (Delta(2))) = beta| if and only if |((Delta(1)) (Sub(=>=)(beta)) (Delta(2))) `elem` Cs|. The labeled hyper edges of $G$ are aggregation
 constraints of |Cs|: |H [(Delta(1)), ..., (Delta(n))] = (delta, Nothing)| if and only if
 |((Delta(1)) \*/ ... \*/ (Delta(n)) <= delta) `elem` Cs|. This |Nothing| value is a label on the block
 symbol of a hyper edge. We come back to this value later.
@@ -688,10 +688,10 @@ constraints depend on the amount of duplication, which can easily
 cause the number of constraints to explode, as the example shows. With the reduction of intermediate vertices, and $n$
 sacred vertices, the theoretical maximum number of normal edges is $O(n^2)$, but the theoretical number
 of hyper edges is still high: $O(n!)$. In practice, these numbers are not reached. The constraint graphs are
-sparse, with the number of edges proportial (on average) to the number of vertices. The reason is that the
+sparse, with the number of edges proportional (on average) to the number of vertices. The reason is that the
 sacred annotations corresponds to values, and evaluation of some value depends typically on only a few
-other values. Futhermore, there are only a few hyper edges with many sources (those related to functions that
-are used a lot, such as prelude functions), but most identifiers in a program have only a hand ful of
+other values. Furthermore, there are only a few hyper edges with many sources (those related to functions that
+are used a lot, such as prelude functions), but most identifiers in a program have only a handful of
 occurrences.
 
 \subsection{Reduction of intermediates}
@@ -722,13 +722,13 @@ is defined as follows:
 There is a hard path between |x| and |y| (|x /= y|) if there is a simple path between |x| and |y| that:
 \begin{itemize}
 \item Contains no sacred vertices except |x| and |y|.
-\item All edges are labelled with |h|.
+\item All edges are labeled with |h|.
 \end{itemize}
 
-Similary, a soft path between |x| and |y| (|x /= y|) if there is a simple path between |x| and |y| that:
+Similarly, a soft path between |x| and |y| (|x /= y|) if there is a simple path between |x| and |y| that:
 \begin{itemize}
 \item Contains no sacred vertices except |x| and |y|.
-\item Has an edge labelled with |s|.
+\item Has an edge labeled with |s|.
 \end{itemize}
 
 The idea behind these two definitions is that a soft edge is overruled by a hard edge.
@@ -778,7 +778,7 @@ Even worse, consider a slightly different graph:
 
 A reduction from the left graph to the right graph gives a constraint graph that results into
 wrong solutions! This is where |eta = Just X| enters the picture. We store a graph on a hyper
-egde (|HL|) in |L| that describes how the sources of |HL| are combined. This is basically a subgraph
+edge (|HL|) in |L| that describes how the sources of |HL| are combined. This is basically a subgraph
 of |G| representing |HL|. When performing a solve step for |HL|, the inferencer
 either applies the solve step for an aggregation constraint (|eta = Nothing|), or recurses on the
 graph |X| (|eta = Just X|). In that case, the inferencer temporarily extends the substitution with
@@ -792,7 +792,7 @@ is that we clone |X1| to |X2| with a fresh variable on each vertex of |X2|, exce
 source and destination vertices of |HL|. Now comes the trick: we mark all source
 and destination vertices of hyper edges in |X2| sacred and recursively reduce |X2| to |X|. Since
 all sources and destinations of the hyper edges are marked as sacred, reduction of this graph does
-not recurse futher, but create a small graph that connects the sources of |HL| properly to the destination of |HL|.
+not recurse further, but create a small graph that connects the sources of |HL| properly to the destination of |HL|.
 
 Applying this approach on the running example of this section, gives us the following graphs for |L| and |X|:
 
@@ -800,11 +800,45 @@ Applying this approach on the running example of this section, gives us the foll
 \includegraphics{unq-graph5}
 \end{center}
 
+Unfortunately, this reduction is insufficient. It saves us from an explosion of coercion constraints,
+but does not safe us from an explosion of hyper edges. Consider the example at the beginning of
+Section~\ref{sect.Rewrite}. The resulting graph has a hyper edge containing for hyper edges who
+each in turn contain four hyper edges. This problem can be solved by merging hyper edges in
+a constraint graph to a single hyper edge.
+
+The reason comes from the fact that a hyper edge can be considered as a computation with
+addition operator |\*/| (to combine sources of a hyper edge) and maximum |\-/| (to combine
+incoming edges of a vertex, we discuss this operator in Chapter~\ref{chapt.Parallel}). Technical detail: we assume that coercions in between
+hyper edges are equalities. If this is not the case, then the merge between hyper edges
+is a conservative approximation to the original graph.
+
+Merging hyper edges basically corresponds to simplifying an expression consisting of
+additions and maximums. 
+
+A set of rewrite rules can then merge graphs:
+
+%%[[wrap=code
+a \*/ (b \*/ c)          ===  a \*/ b \*/ c
+a \-/ (b \-/ c)          ===  a \-/ b \-/ c
+(a \*/ b) \-/ (a \*/ d)  ===  a \-/ (b \*/ d)
+a \-/ (... a ...)        ===  (... a ...)              -- values can only grow
+(a \*/ b) \-/ (c \*/ d)  ===  (a \-/ b) \*/ (c \-/ d)  -- property of lower bound <= 1 and upper bound <= 2
+(a \-/ b)                <=   a \*/ b                  -- conservative (approximates upper bound, if all else fails)
+%%]
+
+An alternative is to put the expression representing the hyper edge into algebraic normal form.
+
+Note that a graph merge is not required when there occurs only one non-atomic hyper edge in the constraint graph of a hyper
+edge. An atomic hyper edge contains no constraint graph. A non-atomic hyper edge does have a constraint graph.
+Merging ensures that a hyper edge contains indirectly in total only a number of constraint graphs proportional to the
+size of the abstract syntax tree. So, |L| is a graph that circumvents the problem of constraint duplication.
+
 The last step is to take the union between |K| and |L| to obtain:
 
 \begin{center}
 \includegraphics{unq-graph4}
 \end{center}
+
 
 
 \subsection{Preprocessing reductions}

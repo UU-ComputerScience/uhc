@@ -129,7 +129,7 @@
   sequential or parallel, and our approach does not have this knowledge. For an |if-then-else|
   expression, the computations of the two branches are parallel, and are combined by the |\-/| operator. The |\+/|
   operator is used between the guard and the branches. As it is guaranteed that used occurrences of the guard are
-  on the same exection path as used occurrences in the branches. There are some additional rules in case there
+  on the same execution path as used occurrences in the branches. There are some additional rules in case there
   is no occurrence in a subexpression. We omit the case for the |let| in the above type rules, but
   assume that occurrences in expressions of a |let| are combined by means of the |\*/| operator.
 
@@ -140,7 +140,7 @@
 
   This approach allows us to improve the upper bounds of identifiers that occur parallel. The approach
   does not help much with the lower bound of identifiers (see next section). However, in general the
-  approximation of the bounds in presence of multiple exection paths, is improved. Perhaps as important,
+  approximation of the bounds in presence of multiple execution paths, is improved. Perhaps as important,
   is that it is a fairly easy improvement, since we know exactly from the structure of the abstract
   syntax tree where the execution paths are split up.
 
@@ -176,7 +176,7 @@
   Suppose the definition-site annotated type is |D|, the annotated types of each branch are
   |(Sub(T)(1)) ... (Sub(T)(n))|, and the annotated type of the result of the if-then-else
   is |R|. Take an annotation |delta| from |D|. Subsequently, take an annotation |(Sub(delta)(r))|
-  from |R|. Asuming that the types of the branches and the result of the expression have the
+  from |R|. Assuming that the types of the branches and the result of the expression have the
   same structure, take annotations |(Sub(delta)(1)) ... (Sub(delta)(n))| respectively from
   |(Sub(T)(1)) ... (Sub(T)(n))|, such that each |(Sub(delta)(i))| corresponds to |(Sub(delta)(r))|.
   Now, if there is a path from each |(Sub(delta)(i))| to |delta| in the constraint graph, then
@@ -184,7 +184,7 @@
   such a path, then all leaves of the hyper edge must be on such a path as well.
 
   Technically speaking, this approach has several complications. The first problem is that it
-  is rather expensive to check. Futhermore, in case the constraint graph is not
+  is rather expensive to check. Furthermore, in case the constraint graph is not
   fully determined (when fixpoint iterating over the constraint set), the path may not be
   there yet, which causes trouble with monotonicity of the fixpoint iteration of the
   substitution. And the graph rewrite rule that replaces paths by concrete substitutions may
@@ -206,7 +206,7 @@
   Assuming that the relation between occurrences is sequential when it is actually parallel,
   has only minor influence on the upper bound. We are a bit too conservative in this case, but
   rarely results in much worse upper bounds in practice. Unfortunately, this story does not
-  hold for the lower bound. If we assume that a relation is equential when it is parallel, then
+  hold for the lower bound. If we assume that a relation is sequential when it is parallel, then
   we add lower bounds when we are only allowed to take the maximum value and we can give a
   wrong estimation for the lower bound. Thus, we can only assume that the relation
   between occurrences is sequential for the lower bound if it is guaranteed to be the case.
@@ -268,7 +268,7 @@
   Properly dealing with the existence of parallel execution paths require us to determine which occurrences of an identifier
   are parallel and which occurrences are sequential.
   
-  The usage analysis of Clean (called labelling or marking) is related to our approach in this
+  The usage analysis of Clean (called labeling or marking) is related to our approach in this
   chapter. Like Clean, we make a distinction between the |then| and |else| branch of an
   |if-then-else| expression. Unlike Clean, our analysis can detect that some identifiers are not
   used, which has consequences for the aggregation result.
