@@ -13,10 +13,7 @@
 %%[1 hs export(AGItf(..), Module(..), Body(..), Declaration(..), Declarations, MaybeDeclarations, Type(..), Types, Expression(..), Expressions, MaybeExpression, FunctionBinding(..), FunctionBindings, LeftHandSide(..), RightHandSide(..), Pattern(..), Patterns, Literal(..), Name, Names, MaybeName, MaybeNames, Strings, Range(..), Fixity(..))
 %%]
 
-%%[1 hs export(mkQName,mkQNames)
-%%]
-
-%%[1 hs export(mkRngNm,mkRngNm',mkRngStr,mkInt,mkStr)
+%%[1 hs export(mkRngNm,mkRngNm',mkRngStr)
 %%]
 
 %%[5 hs export(Constructor(..), Constructors)
@@ -76,40 +73,6 @@ type MaybeNames = Maybe Names
 %%]
 
 %%[1 hs
--- Assumption: tokTpIsInt (genTokTp t) == True
-mkInt :: Token -> Int
-mkInt t
-  = case genTokTp t of
-      Just TkInteger10 -> read v
-      _                -> 0
-  where v = genTokVal t
-
-mkStr :: Token -> String
-mkStr = genTokVal
-%%]
-
-%%[1.mkQName hs
-mkQName :: Token -> HsName
-mkQName = HNm . genTokVal
-%%]
-
-%%[7 -1.mkQName hs
-mkQName :: Token -> HsName
-mkQName t
-  = case genTokTp t of
-      Just tp | tokTpIsInt tp -> HNPos $ mkInt t
-      _                       -> mkHNm $ genTokVal t
-%%]
-
-%%[1 hs
-mkQNames :: [Token] -> [HsName]
-mkQNames = map mkQName
-
-instance HSNM Token where
-  mkHNm = mkQName
-%%]
-
-%%[1 hs
 mkRngNm' :: (Position t,HSNM t) => (Range -> HsName -> r) -> t -> (r,Range)
 mkRngNm' ast t
   = (ast r (mkHNm t),r)
@@ -119,7 +82,7 @@ mkRngNm :: (Position t,HSNM t) => (Range -> HsName -> r) -> t -> r
 mkRngNm ast t = fst (mkRngNm' ast t)
 
 mkRngStr :: (Range -> String -> r) -> Token -> r
-mkRngStr ast t = ast (mkRange1 t) (mkStr t)
+mkRngStr ast t = ast (mkRange1 t) (tokMkStr t)
 %%]
 
 %%[1 hs

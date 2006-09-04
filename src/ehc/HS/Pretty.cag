@@ -631,7 +631,7 @@ SEM Body
         loc         .   ppExtra     :=  ppCmt
         								  (   "declarations.idOccDefGam:" >#< ppGamDup @declarations.idOccDefGam
         								  >-< "loc.idGam:" >#< ppGam @idGam
-        								  >-< "lhs.modInScope:" >#< ppModEntMp @lhs.modInScope
+        								  >-< "lhs.modInScope:" >#< ppModEntDomMp @lhs.modInScope
         								  -- >-< "declarations.idUseOccGam:" >#< ppGamDup @declarations.idUseOccGam
         								  >-< "declarations.idDpdMp:" >#< (pp $ mkDpdGrFromEdgesMp $ @declarations.idDpdMp)
         								  -- >-< (ppBracketsCommas $ map ppBracketsCommas $ @sccOrder)

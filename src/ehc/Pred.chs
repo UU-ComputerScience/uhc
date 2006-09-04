@@ -34,7 +34,7 @@
 %%[9 export(Rule(..),emptyRule,mkInstElimRule)
 %%]
 
-%%[9 export(ProofCost(..),mkCost,mkCostAvailImpl,costVeryMuch,costAvailArg,costZero,costNeg,costAdd,costBase,costAddHi,costMulBy)
+%%[9 export(ProofCost(..),ppProofCost',mkCost,mkCostAvailImpl,costVeryMuch,costAvailArg,costZero,costNeg,costAdd,costBase,costAddHi,costMulBy)
 %%]
 
 %%[9 export(ClsFuncDep(..))
@@ -121,8 +121,11 @@ c1@(Cost h1 l1) `costAdd` c2@(Cost h2 l2) = Cost (h1 + h2) (l1 + l2)
 costAddHi :: ProofCost -> Int -> ProofCost
 (Cost h l) `costAddHi` i = Cost (h+i) l
 
+ppProofCost' :: ProofCost -> PP_Doc
+ppProofCost' (Cost h l) = ppCurlysCommas [pp h,pp l]
+
 instance PP ProofCost where
-  pp (Cost h l) = "C:" >|< pp h >|< ":" >|< l
+  pp c = "Cost" >|< ppProofCost' c
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -563,23 +566,26 @@ data Rule
   =  Rule
        { rulRuleTy          :: Ty
        , rulMkEvid          :: [CExpr] -> CExpr
+       , rulMkEvidCExpr     :: CExpr
        , rulNmEvid          :: HsName
        , rulId              :: PredOccId
        , rulCost            :: ProofCost
        , rulFuncDeps        :: [ClsFuncDep]
        }
 
-emptyRule = Rule Ty_Any head hsnUnknown (mkPrId uidStart uidStart) costVeryMuch []
+emptyRule = Rule Ty_Any head (CExpr_Var hsnUnknown) hsnUnknown (mkPrId uidStart uidStart) costVeryMuch []
 
 mkInstElimRule :: HsName -> PredOccId -> Int -> Ty -> Rule
 mkInstElimRule n i sz ctxtToInstTy
-  =  Rule  { rulRuleTy    = ctxtToInstTy
-           , rulMkEvid    = \ctxt -> CExpr_Var n `mkCExprApp` ctxt
-           , rulNmEvid    = n
-           , rulId        = i
-           , rulCost      = costBase `costAdd` (costBase `costMulBy` 2 * sz)
-           , rulFuncDeps  = []
+  =  Rule  { rulRuleTy    	= ctxtToInstTy
+           , rulMkEvid    	= \ctxt -> CExpr_Var n `mkCExprApp` ctxt
+           , rulMkEvidCExpr	= ns `mkCExprLam` (CExpr_Var n `mkCExprApp` (map CExpr_Var ns))
+           , rulNmEvid    	= n
+           , rulId        	= i
+           , rulCost      	= costBase `costAdd` (costBase `costMulBy` 2 * sz)
+           , rulFuncDeps  	= []
            }
+  where ns = take sz hsnLclSupplyL
 
 instance Substitutable TyVarId (CnstrInfo Ty) Rule where
   s |=>  r = r { rulRuleTy = s |=> rulRuleTy r }

@@ -8,7 +8,7 @@
 
 %%[8 import(Control.Monad.Error,Control.Monad.State, Control.Exception, Data.Maybe, EH.Util.FPath)
 %%]
-%%[8 import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}GrinCode}, {%{EH}Scanner.Scanner})
+%%[8 import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}Scanner.Common(grinScanOpts)}, {%{EH}Base.Opts}, {%{EH}GrinCode}, {%{EH}Scanner.Scanner})
 %%]
 %%[8 import( UU.Parsing, UU.Pretty, EH.Util.CompileRun )
 %%]
@@ -69,7 +69,7 @@ doCompileGrin inp opts
 parseGrin :: FPath -> EHCOpts -> IO (String, GrModule)
 parseGrin fp opts = do
     (fn,fh) <- openFPath fp ReadMode
-    tokens  <- scanHandle scanOpts fn fh
+    tokens  <- scanHandle grinScanOpts fn fh
     gr      <- parseIO (pModule) tokens
     return (fn, gr)
 

@@ -52,6 +52,15 @@
 %%[1 export(NmLev,nmLevAbsent, nmLevBuiltin, nmLevOutside, nmLevModule)
 %%]
 
+%%[1 import(EH.Util.ScanUtils) export(tokMkQName,tokMkQNames,tokMkInt,tokMkStr)
+%%]
+
+%%[1.Token hs import(UU.Scanner.Token)
+%%]
+
+%%[5 -1.Token hs import({%{EH}Scanner.Token})
+%%]
+
 %%[2 export(mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, uidNext, mkNewUID, uidChild, mkNewUIDL, mkInfNewUIDL)
 %%]
 
@@ -103,7 +112,7 @@
 %%[8 export(hsnUndefined,hsnPrimAddInt,hsnMain)
 %%]
 
-%%[8 import(qualified Data.Set as Set, EH.Util.ScanUtils) export(ppHsnNonAlpha)
+%%[8 import(qualified Data.Set as Set) export(ppHsnNonAlpha)
 %%]
 
 %%[88 export(sortByOn,sortOn,groupOn,groupSortOn)
@@ -121,7 +130,13 @@
 %%[8 export(CTag(..),ctagTag,ctagChar,ctagInt)
 %%]
 
+%%[8 hs export(ctag,ppCTag,ppCTag',ppCTagInt) 
+%%]
+
 %%[8 export(CTagsMp)
+%%]
+
+%%[8 export(ppUID')
 %%]
 
 %%[90 export(groupSortByOn)
@@ -133,7 +148,7 @@
 %%[9 export(ppListV,ppAssocLV)
 %%]
 
-%%[9 export(PredOccId(..),mkPrId,poiHNm)
+%%[9 export(PredOccId(..),mkPrId,poiHNm,ppPredOccId')
 %%]
 
 %%[9 export(PrfCtxtId)
@@ -148,7 +163,7 @@
 %%[10 export(hsnDynVar,hsnConcat)
 %%]
 
-%%[12 export(hsnQualified,hsnQualifier,hsnPrefixQual,hsnSetQual,hsnIsQual,hsnSetLevQual)
+%%[12 export(hsnQualified,hsnQualifier,hsnPrefixQual,hsnSetQual,hsnIsQual,hsnMapQual,hsnSetLevQual)
 %%]
 
 %%[12 export(hsnModBuiltin)
@@ -309,6 +324,12 @@ hsnPrefixQual m n = mkHNm (hsnToList m ++ hsnToList n)
 
 hsnSetQual :: HsName -> HsName -> HsName
 hsnSetQual m = hsnPrefixQual m . hsnQualified
+
+hsnMapQual :: (HsName -> HsName) -> HsName -> HsName
+hsnMapQual f qn
+  = case hsnInitLast qn of
+      ([],n) -> n
+      (ns,n) -> hsnSetQual (f (mkHNm ns)) n
 
 hsnIsQual :: HsName -> Bool
 hsnIsQual = isJust . hsnQualifier
@@ -655,6 +676,11 @@ instance PP UID where
   pp = text . show
 %%]
 
+%%[8
+ppUID' :: UID -> PP_Doc
+ppUID' (UID ls) = ppCurlysCommas ls
+%%]
+
 %%[7
 uidHNm :: UID -> HsName
 uidHNm = HNm . show
@@ -681,8 +707,11 @@ mkPrId ci u = PredOccId ci u
 poiHNm :: PredOccId -> HsName
 poiHNm = uidHNm . poiId
 
+ppPredOccId' :: (UID -> PP_Doc) -> PredOccId -> PP_Doc
+ppPredOccId' ppi poi = ppCurlysCommas [ppi (poiCxId poi),ppi (poiId poi)]
+
 instance PP PredOccId where
-  pp poi = "Cx:" >|< pp (poiCxId poi) >|< "/Pr:" >|< pp (poiId poi)
+  pp poi = "Poi" >|< ppPredOccId' pp poi
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -848,9 +877,11 @@ ppListSepFill o c s pps
 %%]
 
 %%[7
-ppFld :: String -> HsName -> HsName -> PP_Doc -> PP_Doc -> PP_Doc
+ppFld :: String -> Maybe HsName -> HsName -> PP_Doc -> PP_Doc -> PP_Doc
 ppFld sep positionalNm nm nmPP f
-  = if nm == positionalNm then f else nmPP >#< sep >#< f
+  = case positionalNm of
+      Just pn | pn == nm -> f
+      _                  -> nmPP >#< sep >#< f
 
 mkPPAppFun :: HsName -> PP_Doc -> PP_Doc
 mkPPAppFun c p = if c == hsnRowEmpty then empty else p >|< "|"
@@ -991,6 +1022,26 @@ ctagTag t       = ctagTag' t
 
 ctagInt  =  CTag hsnInt  hsnInt  0 1
 ctagChar =  CTag hsnChar hsnChar 0 1
+%%]
+
+%%[8 hs
+ctag :: a -> (HsName -> HsName -> Int -> Int -> a) -> CTag -> a
+ctag n t tg = case tg of {CTag tn cn i a -> t tn cn i a; _ -> n}
+
+ppCTag' :: (HsName -> PP_Doc) -> CTag -> PP_Doc
+ppCTag' ppNm t
+  = case t of
+      CTagRec              -> ppCurly "Rec"
+      CTag ty nm tag arity -> ppCurlysSemis' [ppNm ty,ppNm nm,pp tag, pp arity]
+
+ppCTag :: CTag -> PP_Doc
+ppCTag = ctag (pp "Rec") (\tn cn t a -> pp t >|< "/" >|< pp cn >|< "/" >|< pp a)
+
+ppCTagInt :: CTag -> PP_Doc
+ppCTagInt = ctag (pp "-1") (\_ _ t _ -> pp t)
+
+instance PP CTag where
+  pp = ppCTag
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1324,5 +1375,43 @@ nmLevAbsent  = -3
 nmLevBuiltin = -2
 nmLevOutside = -1
 nmLevModule  =  0
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Token related
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+-- Assumption: tokTpIsInt (genTokTp t) == True
+tokMkInt :: Token -> Int
+tokMkInt t
+  = case genTokTp t of
+      Just TkInteger10 -> read v
+      _                -> 0
+  where v = genTokVal t
+
+tokMkStr :: Token -> String
+tokMkStr = genTokVal
+%%]
+
+%%[1.tokMkQName hs
+tokMkQName :: Token -> HsName
+tokMkQName = HNm . genTokVal
+%%]
+
+%%[7 -1.tokMkQName hs
+tokMkQName :: Token -> HsName
+tokMkQName t
+  = case genTokTp t of
+      Just tp | tokTpIsInt tp -> HNPos $ tokMkInt t
+      _                       -> mkHNm $ genTokVal t
+%%]
+
+%%[1 hs
+tokMkQNames :: [Token] -> [HsName]
+tokMkQNames = map tokMkQName
+
+instance HSNM Token where
+  mkHNm = tokMkQName
 %%]
 

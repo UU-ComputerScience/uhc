@@ -47,7 +47,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													Base/Opts Base/Common Base/Debug \
 													NameAspect \
 													Scanner/Common Scanner/Machine Scanner/Scanner Scanner/Token Scanner/TokenParser \
-													EH/Parser HS/Parser HI/Parser GrinCode/Parser \
+													Base/Parser Ty/Parser EH/Parser HS/Parser HI/Parser Core/Parser GrinCode/Parser \
 													Ty/FitsInCommon Ty/FitsIn \
 													Core/Utils \
 													Gam/Utils \

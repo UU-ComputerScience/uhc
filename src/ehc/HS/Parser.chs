@@ -105,12 +105,12 @@ pModule :: HSParser Module
 %%[1.pModule
 pModule
   =   (\b -> Module_Module emptyRange Nothing b) <$> pBody
-  <|> (\t m b -> Module_Module (mkRange1 t) (Just $ mkQName $ m) b) <$> pMODULE <*> modid <* pWHERE <*> pBody
+  <|> (\t m b -> Module_Module (mkRange1 t) (Just $ tokMkQName $ m) b) <$> pMODULE <*> modid <* pWHERE <*> pBody
 %%]
 %%[12.pModule -1.pModule
 pModule
   =   (\b -> Module_Module emptyRange Nothing Nothing b) <$> pBody
-  <|> (\t m e b -> Module_Module (mkRange1 t) (Just $ mkQName $ m) e b) <$> pMODULE <*> modid <*> pMaybeExports <* pWHERE <*> pBody
+  <|> (\t m e b -> Module_Module (mkRange1 t) (Just $ tokMkQName $ m) e b) <$> pMODULE <*> modid <*> pMaybeExports <* pWHERE <*> pBody
 %%]
 
 %%[1.pBody
@@ -139,7 +139,7 @@ pImportExport (sem_Var,sem_tOrC,sem_tOrC_complete)
   =   mkRngNm sem_Var <$> qvar
   <|> oqtycon
       <**> (   pParens
-                 (   (\c n -> mkRngNm sem_tOrC n (Just (mkQNames c))) <$> qcnames
+                 (   (\c n -> mkRngNm sem_tOrC n (Just (tokMkQNames c))) <$> qcnames
                  <|> mkRngNm sem_tOrC_complete <$ pDOTDOT
                  )
            <|> pSucceed (\n -> mkRngNm sem_tOrC n Nothing)
@@ -149,7 +149,7 @@ pImportExport (sem_Var,sem_tOrC,sem_tOrC_complete)
 %%[12
 pExport :: HSParser Export
 pExport
-  =   (\t m -> Export_Module (mkRange1 t) (mkQName m)) <$> pMODULE <*> modid
+  =   (\t m -> Export_Module (mkRange1 t) (tokMkQName m)) <$> pMODULE <*> modid
   <|> pImportExport (Export_Variable,Export_TypeOrClass,Export_TypeOrClassComplete)
 
 pMaybeExports :: HSParser MaybeExports
@@ -163,7 +163,7 @@ pImport
 
 pImportDeclaration :: HSParser ImportDeclaration
 pImportDeclaration
-  = (\q m a i -> ImportDeclaration_Import (mkRange1 m) q (mkQName m) (fmap mkQName a) i)
+  = (\q m a i -> ImportDeclaration_Import (mkRange1 m) q (tokMkQName m) (fmap tokMkQName a) i)
     <$  pIMPORT <*> (True <$ pQUALIFIED <|> pSucceed False)
     <*> modid
     <*> (Just <$ pAS <*> modid <|> pSucceed Nothing)
@@ -242,9 +242,9 @@ pWhere = pWhere' pDeclaration
 %%[1
 pDeclarationFixity :: HSParser Declaration
 pDeclarationFixity
-  = (\f p o -> Declaration_Fixity emptyRange f p (mkQNames o))
+  = (\f p o -> Declaration_Fixity emptyRange f p (tokMkQNames o))
     <$> pFixity
-    <*> ((Just . mkInt) <$> pInteger10Tk <|> pSucceed Nothing)
+    <*> ((Just . tokMkInt) <$> pInteger10Tk <|> pSucceed Nothing)
     <*> pListSep pCOMMA varop
 
 pFixity :: HSParser' Fixity
@@ -258,7 +258,7 @@ pFixity = Fixity_Infixl <$ pINFIXL <|> Fixity_Infixr <$ pINFIXR <|> Fixity_Infix
 %%[1
 pDeclarationSignature :: HSParser Declaration
 pDeclarationSignature
-  =   (\(v:vs) t -> Declaration_TypeSignature (mkRange1 v) (mkQNames (v:vs)) t)
+  =   (\(v:vs) t -> Declaration_TypeSignature (mkRange1 v) (tokMkQNames (v:vs)) t)
       <$> pList1Sep pCOMMA var <* pDCOLON <*> pType
 
 pDeclarationValue :: HSParser Declaration
@@ -284,7 +284,7 @@ pLhs :: HSParser LeftHandSide
 pLhs
   =   mkRngNm LeftHandSide_Function <$> qvar <*> pLhsTail
   <|> pParens' ((\l r t -> LeftHandSide_Parenthesized r l t) <$> pLhs) <*> pLhsTail
-  <|> (\l o r -> LeftHandSide_Infix (mkRange1 o) l (mkQName o) r) <$> pPatternOp <*> varop <*> pPatternOp
+  <|> (\l o r -> LeftHandSide_Infix (mkRange1 o) l (tokMkQName o) r) <$> pPatternOp <*> varop <*> pPatternOp
   where pLhsTail = pList1 pPatternBase
 %%]
 
@@ -327,7 +327,7 @@ pConstructor
 %%]
 %%[5
            )
-  <|> (\l o r -> Constructor_Infix (mkRange1 o) l (mkQName o) r) <$> pT <*> conop <*> pT
+  <|> (\l o r -> Constructor_Infix (mkRange1 o) l (tokMkQName o) r) <$> pT <*> conop <*> pT
   where pT  = pAnnotatedType pType
         pTB = pAnnotatedType pTypeBase
 %%]
@@ -335,7 +335,7 @@ pConstructor
 %%[7
 pFieldDeclaration :: HSParser FieldDeclaration
 pFieldDeclaration
-  = (\vs@(v:_) -> FieldDeclaration_FieldDeclaration (mkRange1 v) (mkQNames vs))
+  = (\vs@(v:_) -> FieldDeclaration_FieldDeclaration (mkRange1 v) (tokMkQNames vs))
     <$> pList1Sep pCOMMA var <* pDCOLON <*> pAnnotatedType pType
 %%]
 
@@ -347,13 +347,13 @@ pFieldDeclaration
 pDeclarationForeign :: HSParser Declaration
 pDeclarationForeign
   = pFOREIGN
-    <**> (   (\c s (i,n,t) r -> Declaration_ForeignImport (mkRange1 r) (mkStr c) s i (mkQName n) t)
+    <**> (   (\c s (i,n,t) r -> Declaration_ForeignImport (mkRange1 r) (tokMkStr c) s i (tokMkQName n) t)
              <$ pIMPORT <*> callconv <*> pSafety <*> pFSpec
-         <|> (\c (i,n,t) r -> Declaration_ForeignExport (mkRange1 r) (mkStr c) i (mkQName n) t)
+         <|> (\c (i,n,t) r -> Declaration_ForeignExport (mkRange1 r) (tokMkStr c) i (tokMkQName n) t)
              <$ pEXPORT <*> callconv <*> pFSpec
          )
-  where pSafety =  (Just . mkStr) <$> safety <|> pSucceed Nothing
-        pFSpec = (,,) <$> ((Just . mkStr) <$> pStringTk <|> pSucceed Nothing) <*> var{-id_no_foreign-} <* pDCOLON <*> pType
+  where pSafety =  (Just . tokMkStr) <$> safety <|> pSucceed Nothing
+        pFSpec = (,,) <$> ((Just . tokMkStr) <$> pStringTk <|> pSucceed Nothing) <*> var{-id_no_foreign-} <* pDCOLON <*> pType
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -372,7 +372,7 @@ pDeclarationClass
     <*> pWhere' (pDeclarationValue <|> pDeclarationSignature)
   where pFunctionalDependency :: HSParser FunctionalDependency
         pFunctionalDependency
-          = (\vs1@(v:_) vs2 -> FunctionalDependency_Dependency (mkRange1 v) (mkQNames vs1) (mkQNames vs2))
+          = (\vs1@(v:_) vs2 -> FunctionalDependency_Dependency (mkRange1 v) (tokMkQNames vs1) (tokMkQNames vs2))
             <$> pList1 tyvar <* pRARROW <*> pList1 tyvar
 %%]
 
@@ -380,11 +380,11 @@ pDeclarationClass
 pDeclarationInstance :: HSParser Declaration
 pDeclarationInstance
   = pINSTANCE
-    <**> (   (\(n,u) c cl ts d t -> Declaration_Instance (mkRange1 t) n u c (mkQName cl) ts d)
-             <$> ((\n e -> (Just (mkQName n),e)) <$> varid <*> (True <$ pLTCOLON <|> False <$ pDCOLON) <|> pSucceed (Nothing,True))
+    <**> (   (\(n,u) c cl ts d t -> Declaration_Instance (mkRange1 t) n u c (tokMkQName cl) ts d)
+             <$> ((\n e -> (Just (tokMkQName n),e)) <$> varid <*> (True <$ pLTCOLON <|> False <$ pDCOLON) <|> pSucceed (Nothing,True))
              <*> pContextItemsPrefixOpt <*> qconid <*> pList1 pType
              <*> pWhere' pDeclarationValue
-         <|> (\e cl ts t -> Declaration_InstanceUseImplicitly (mkRange1 t) e (mkQName cl) ts)
+         <|> (\e cl ts t -> Declaration_InstanceUseImplicitly (mkRange1 t) e (tokMkQName cl) ts)
              <$> pExpression <* pLTCOLON <*> qconid <*> pList1 pType
          )
 %%]
@@ -465,7 +465,7 @@ pType =   pTypePrefix <*> pType
 pTypePrefix :: HSParser (Type -> Type)
 pTypePrefix
   =  ((Type_Forall . mkRange1) <$> pFORALL <|> (Type_Exists . mkRange1) <$> pEXISTS)
-     <*> (mkQNames <$> pTyVarBinds) <* pDOT
+     <*> (tokMkQNames <$> pTyVarBinds) <* pDOT
 %%]
 %%[9.pTypePrefix
   <|>  pTyPrefixContextItems
@@ -491,7 +491,7 @@ pTyVarBinds =  pList1 pTyVarBind
 %%[5
 pSimpleType :: HSParser SimpleType
 pSimpleType
-  = mkRngNm SimpleType_SimpleType <$> gtycon <*> (mkQNames <$> pList tyvar)
+  = mkRngNm SimpleType_SimpleType <$> gtycon <*> (tokMkQNames <$> pList tyvar)
 %%]
 
 %%[5
@@ -544,7 +544,7 @@ pContextItemClass
 pContextItemPrefix :: HSParser (ContextItem -> ContextItem)
 pContextItemPrefix
   =   ContextItem_Arrow emptyRange <$> pContextItemBase <* pDARROW
-  <|> (ContextItem_Forall . mkRange1) <$> pFORALL <*> (mkQNames <$> pTyVarBinds) <* pDOT
+  <|> (ContextItem_Forall . mkRange1) <$> pFORALL <*> (tokMkQNames <$> pTyVarBinds) <* pDOT
 %%]
 
 %%[9
@@ -571,7 +571,7 @@ pContextItemBase
   <|>  ContextItem_DynVar <$> pDynVar <* pKey "::" <*> pType
 %%]
 %%[10
-  <|> tyvar <**>  (    (\s v -> mkRngNm ContextItem_RowLacksLabel v (mkQName s))
+  <|> tyvar <**>  (    (\s v -> mkRngNm ContextItem_RowLacksLabel v (tokMkQName s))
                        <$ pLAM <*> pSelector
 %%]
 %%[50
@@ -841,7 +841,7 @@ pAlternatives
 %%[1.pPatternBase
 pPatternBase :: HSParser Pattern
 pPatternBase
-  =   qvar <**> (   (\a p v -> Pattern_As (mkRange1 a) (mkQName v) p) <$> pAT <*> pPatternBase
+  =   qvar <**> (   (\a p v -> Pattern_As (mkRange1 a) (tokMkQName v) p) <$> pAT <*> pPatternBase
                 <|> pSucceed (mkRngNm Pattern_Variable)
                 )
   <|> Pattern_Literal emptyRange <$> pLiteral
@@ -932,7 +932,7 @@ pParenRow' singleAsIs pO pC pS allowUpd pSUpd' (semUpd' :: Range -> HsName -> e 
                                   else id
         mkR rng e fs  = semRow rng e (mkE fs)
         mkE           = map (\f -> case f of 
-                                     FldSel   l e -> semExt (mkRange1 l) (Just (mkQName l)) e
+                                     FldSel   l e -> semExt (mkRange1 l) (Just (tokMkQName l)) e
                                      FldNoSel   e -> semExt emptyRange Nothing e
                                      FldUpd   l e -> mkRngNm semUpd l e
                             )
@@ -948,7 +948,7 @@ pParenRow' singleAsIs pO pC pS allowUpd pSUpd' (semUpd' :: Range -> HsName -> e 
 %%[7
 pRowRecordSelectionSuffix :: HSParser (Expression -> Expression)
 pRowRecordSelectionSuffix
-  = (\lbls e -> foldl (\e l -> Expression_RowRecordSelect (mkRange1 l) e (mkQName l)) e lbls)
+  = (\lbls e -> foldl (\e l -> Expression_RowRecordSelect (mkRange1 l) e (tokMkQName l)) e lbls)
     <$> pList1 (pRARROW *> pSelector)
 %%]
 

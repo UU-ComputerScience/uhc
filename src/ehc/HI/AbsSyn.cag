@@ -54,7 +54,7 @@ DATA Rule
 	| Rule
 		nm						: HsName
 		ty						: Ty
-		mkEvid					: {([CExpr],CExpr)}
+		mkEvid					: CExpr
 		uid						: PredOccId
 		cost					: {Pr.ProofCost}
 		fundeps					: {[([HsName],[HsName])]}

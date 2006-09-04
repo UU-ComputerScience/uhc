@@ -282,11 +282,12 @@ SEM Body
 %%]
 
 %%[12 -1.initIdGam
-ATTR AGItf Module Body [ modInScope: ModEntMp | | ]
+ATTR AGItf Module Body [ modInScope: ModEntDomMp | | ]
 
 SEM Body
     | Body
         loc             .   idGam       =   let lk n = fmap (\es -> (n,es)) $ Map.lookup n @lhs.modInScope
+                                                as n = Map.findWithDefault n n @importdeclarations.modAsMp
                                                 mkg sel g
                                                    = gamFromAssocL
                                                        [ (o {ioccNm = n},d {doccNmAlts = Just ns})
@@ -294,8 +295,9 @@ SEM Body
                                                        , (n,es) <- catMaybes (sel o)
                                                        , let ns = [ ioccNm eo | e <- es, let eo = mentIdOcc e, ioccKind eo == ioccKind o ]
                                                        ]
-                                                g1 = mkg (\o -> [lk (ioccNm o),lk (hsnQualified $ ioccNm o)]) @declarations.idOccDefGam
-                                                g2 = mkg (\o -> [lk (ioccNm o),lk (hsnQualified $ ioccNm o)]) @lhs.idGam
+                                                mkg' = mkg (\o -> [lk (hsnMapQual as $ ioccNm o),lk (hsnQualified $ ioccNm o)])
+                                                g1 = mkg' @declarations.idOccDefGam
+                                                g2 = mkg' @lhs.idGam
                                                 -- g2 = mkg (\o -> [lk (ioccNm o)                             ]) @lhs.idGam
                                             in  g1 `gamUnion` g2
 %%]
@@ -892,6 +894,20 @@ SEM Statement
 SEM Body
     | Body
         loc             .   mainExists  =   maybe False (const True) $ gamLookup (IdOcc hsnMain IdOcc_Val) @declarations.idOccDefGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Mapping of module names via 'as'
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR AllImportDeclaration [ | | modAsMp USE {`Map.union`} {Map.empty}: {Map.Map HsName HsName} ]
+
+SEM ImportDeclaration
+    | Import
+        lhs             .   modAsMp     =   maybe Map.empty (Map.singleton @name) @asname
+    | * - Import
+        lhs             .   modAsMp     =   Map.empty
 %%]
 
 

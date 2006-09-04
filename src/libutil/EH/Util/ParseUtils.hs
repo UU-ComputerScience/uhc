@@ -21,6 +21,15 @@ type PlainParser tok gp = IsParser p tok => p gp
 -- Parsing utils
 -------------------------------------------------------------------------
 
+parsePlain :: (Symbol s, InputState inp s pos) 
+      => AnaParser inp Pair s pos a 
+      -> inp 
+      -- -> Steps (Pair a (Pair inp ())) s pos
+      -> Steps (a, inp) s pos
+parsePlain p inp
+  = val fromPair (parse p inp)
+  where fromPair (Pair x (Pair y _)) = (x,y)
+
 parseToResMsgs :: (Symbol s,InputState inp s pos) => AnaParser inp Pair s pos a -> inp -> (a,[Message s pos])
 parseToResMsgs p inp
   = (r,getMsgs steps)
