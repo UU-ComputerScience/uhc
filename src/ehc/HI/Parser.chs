@@ -14,23 +14,6 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Scanner
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[12
-%%]
-hiScanOpts :: ScanOpts
-hiScanOpts
-  =  hsScanOpts
-        {   scoKeywordsTxt      =   [ "value", "fixity", "stamp", "uid", "rule"
-                                    ]
-                                    ++ scoKeywordsTxt hsScanOpts
-        ,   scoOpChars          =   scoOpChars coreScanOpts
-        ,   scoDollarIdent      =   True
-        ,   scoSpecChars        =   scoSpecChars coreScanOpts
-        }
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -53,6 +36,7 @@ pBinding
   =   Binding_Fixity    <$> pNmIs "fixity" <* pOCURLY <*> pInt     <* pSEMI <*> pFixity                <* pCCURLY
   <|> Binding_Val       <$> pNmIs "value"  <* pOCURLY <*> pTy                                          <* pCCURLY
   <|> Binding_Stamp     <$  pNmIs "stamp"  <* pOCURLY <*> pString  <* pSEMI <*> (read <$> pInteger)    <* pCCURLY
+  <|> Binding_Export    <$  pNmIs "export"            <*> pModEntRel
   <|> Binding_Ty        <$> pNmIs "type"   <* pOCURLY <*> pTy      <* pSEMI <*> pTy                    <* pCCURLY
   <|> (\tn cs -> Binding_DataCon tn (map (\f -> f tn) cs))
       <$> pNmIs "data" <*  pOCURLY
@@ -67,22 +51,12 @@ pRule
     <$> pNmIs "rule"
     <*  pOCURLY
     <*> pTy <* pSEMI
-    <*> pCExpr <* pSEMI
+    <*> (   Pr.MkEvidVar  <$ pKeyTk "var"  <*> pDollNm
+        <|> Pr.MkEvidCtxt <$ pKeyTk "ctxt" <*> pDollNm
+        <|> Pr.MkEvidSup  <$ pKeyTk "sup"  <*> pDollNm <*> pInt
+        ) <* pSEMI
     <*> pPredOccId <* pSEMI
     <*> (Pr.Cost <$ pOCURLY <*> pInt <* pCOMMA <*> pInt <* pCCURLY)
     <*  pCCURLY
 %%]
-
-DATA Rule
-    | Rule
-        nm                      : HsName
-        ty                      : Ty
-        mkEvid                  : {([CExpr],CExpr)}
-        uid                     : PredOccId
-        cost                    : {Pr.ProofCost}
-        fundeps                 : {[([HsName],[HsName])]}
-
-SEM Rule
-    | Rule
-        lhs         .   pp          =   hiNV "rule" @nm [ppTyWithCfg cfgPPTyHI @ty,pp @uid,pp @mkEvid,pp @cost]
 

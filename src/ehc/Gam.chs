@@ -61,7 +61,7 @@
 %%[6 export(mkTGI)
 %%]
 
-%%[7 export(mkTGIData)
+%%[7777 export(mkTGIData)
 %%]
 
 %%[8 import(Data.Maybe,qualified Data.Map as Map,{%{EH}Core}) export(gamUpd,DataTagMp)
@@ -621,10 +621,10 @@ mkTGI t k = TyGamInfo t k
 %%]
 
 %%[7.TyGamInfo -6.TyGamInfo
-data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty, tgiData :: Ty } deriving Show
+data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty } deriving Show
 
 mkTGIData :: Ty -> Ty -> Ty -> TyGamInfo
-mkTGIData t k d = TyGamInfo t k d
+mkTGIData t k _ = TyGamInfo t k
 
 mkTGI :: Ty -> Ty -> TyGamInfo
 mkTGI t k = mkTGIData t k Ty_Any

@@ -58,7 +58,7 @@ SEM GrSplit
 
 %%[8.remveUnusedTags
 SEM GrModule
-  | Mod  lhs  .  grTrf        =  GrModule_Mod @baseName
+  | Mod  lhs  .  grTrf        =  GrModule_Mod @moduleNm
                                               @globalL.grTrf
                                               @bindL.grTrf
                                               @ctagsMp'

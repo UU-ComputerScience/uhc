@@ -20,6 +20,8 @@ DATA Binding
 	| Stamp
 		timestamp				: String
 		hash					: Integer
+	| Export
+		exports					: ModEntRel
 	| Fixity
 		nm						: HsName
 		prio					: Int
@@ -54,7 +56,7 @@ DATA Rule
 	| Rule
 		nm						: HsName
 		ty						: Ty
-		mkEvid					: CExpr
+		mkEvid					: {Pr.HowMkEvid}
 		uid						: PredOccId
 		cost					: {Pr.ProofCost}
 		fundeps					: {[([HsName],[HsName])]}

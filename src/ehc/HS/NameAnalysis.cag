@@ -893,7 +893,16 @@ SEM Statement
 %%[8
 SEM Body
     | Body
-        loc             .   mainExists  =   maybe False (const True) $ gamLookup (IdOcc hsnMain IdOcc_Val) @declarations.idOccDefGam
+        loc             .   (mainExists,mainNmFromGam)
+                                        =   maybe (False,hsnMain) (\d -> (True,ioccNm $ doccOcc d))
+                                            $ gamLookup (IdOcc hsnMain IdOcc_Val) @declarations.idOccDefGam
+                        .   mainNm      =   @mainNmFromGam
+%%]
+
+%%[12
+SEM Body
+    | Body
+        loc             .   mainNm      :=  hsnSetQual @lhs.moduleNm @mainNmFromGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

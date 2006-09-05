@@ -19,7 +19,7 @@ DATA CodeAGItf
 
 %%[8
 DATA CModule
-  | Mod         baseName        : {HsName}
+  | Mod         moduleNm        : {HsName}
                 expr            : CExpr
                 ctagsMp         : {CTagsMp}
 %%]
@@ -132,5 +132,6 @@ TYPE CPatBindL  =   [CPatBind]
 SET AllBind     =   CBind CBindL
 SET AllPat      =   CPatRest CPat CPatL CPatBind CPatBindL
 SET AllAlt      =   CAlt CAltL
-SET AllCodeNT   =   CModule CExpr AllBind AllAlt AllPat
+SET AllExpr     =   CExpr AllBind AllAlt AllPat
+SET AllCodeNT   =   CModule AllExpr
 %%]

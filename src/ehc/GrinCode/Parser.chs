@@ -40,7 +40,7 @@ grinScanOpts = scanOpts
 type GRIParser       gp     =    PlainParser Token gp
 
 pModule         ::   GRIParser GrModule
-pModule         =    GrModule_Mod <$ pKey "module" <*> (HNm <$> pString)
+pModule         =    GrModule_Mod <$ pKey "module" <*> (pGrNm <|> mkHNm <$> pString)
                      <*> pGlobalL
                      <*> pBindL
                      <*  pKey "ctags"     <*> pCTags
@@ -160,7 +160,7 @@ pGrNmL          ::   GRIParser [HsName]
 pGrNmL          =    pList pGrNm
 
 pGrNm           ::   GRIParser HsName
-pGrNm           =    HNm <$> pVarid
+pGrNm           =    mkHNm <$> pVarid
 
 pGrKey          ::   HsName -> GRIParser HsName
 pGrKey k        =    HNm <$> pKey (show k)

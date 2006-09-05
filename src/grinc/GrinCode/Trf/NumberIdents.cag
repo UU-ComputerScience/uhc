@@ -193,7 +193,7 @@ SEM GrExpr
   | FFI                          lhs  .  grTrf    =  GrExpr_FFI @nm (map (findNewVar @lhs.var2id) @argL)
 
 SEM GrModule
-  | Mod  lhs  . grTrf         = GrModule_Mod @baseName @globalL.grTrf @bindL.grTrf @ctagsMp @newEvalTagMp @newAppTagMp
+  | Mod  lhs  . grTrf         = GrModule_Mod @moduleNm @globalL.grTrf @bindL.grTrf @ctagsMp @newEvalTagMp @newAppTagMp
          loc  . newEvalTagMp  = map (newMap @lhs.bind2id) @evalTagMp
               . newAppTagMp   = map (newMap @lhs.bind2id) @applyTagMp
 %%]

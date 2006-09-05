@@ -30,7 +30,7 @@ ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllGrNT [ | | grTrf: SELF ]
 
 SEM GrModule
-  | Mod  lhs  .  grTrf         =  GrModule_Mod @baseName @newGlobals @bindL.grTrf @ctagsMp @newEvalTagMp @applyTagMp
+  | Mod  lhs  .  grTrf         =  GrModule_Mod @moduleNm @newGlobals @bindL.grTrf @ctagsMp @newEvalTagMp @applyTagMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

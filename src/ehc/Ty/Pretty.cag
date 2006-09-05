@@ -136,6 +136,11 @@ cfgPPTyHI
       }
 %%]
 
+%%[8 hs
+cfgAside :: (PP a, PP b) => CfgPPTy -> a -> b -> PP_Doc
+cfgAside c a b = if cfgPPTyFollowAST c then a >-< b else a >#< b
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% The context (of a config) of a type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -237,8 +242,14 @@ SEM Ty
 SEM Ty
   | Con             loc     .   pp      :=  cfgPPTyPPCon @lhs.cfg @lhs.cfg @nm
   | App             loc     .   ppDflt  :=  if cfgPPTyFollowAST @lhs.cfg then ppParens @func.pp >#< ppParens @arg.pp else @func.pp >#< @arg.pp
-                            .   pp      :=  if @isSpineRoot && not (cfgPPTyFollowAST @lhs.cfg) then @ppNice else @ppDflt
+                            .   ppAST   :=  hv ([ppParens @appFunPP] ++ map ((" " >|<) . ppParens) @appArgPPL)
+                            .   pp      :=  if @isSpineRoot
+                                            then if cfgPPTyFollowAST @lhs.cfg
+                                                 then @ppAST
+                                                 else @ppNice
+                                            else @ppDflt
 %%]
+                            .   ppAST   :=  ppParens @appFunPP >#< (vlist $ map ppParens $ @appArgPPL)
 
 %%[2.Var
 SEM Ty
@@ -270,6 +281,12 @@ SEM Ty
   
 SEM TyQu
   | Forall Exists   lhs     .   pp      =   text (showTyQu @self)
+%%]
+
+%%[8
+SEM Ty
+  | Quant           loc     .   pp      :=  ppParNeed  @parNeed @lhs.parNeed
+                                                       (cfgAside @lhs.cfg (@qu.pp >#< @tnPP) ("." >#< @ty.pp))
 %%]
 
 %%[4_2
@@ -309,7 +326,12 @@ SEM Ty
 %%[8
 SEM Ty
   | Ext             loc     .   ppDflt  =   hsnORow >#< @ty.pp >#< "|" >#< @fldPP >#< hsnCRow
-                            .   pp      :=  if cfgPPTyFollowAST @lhs.cfg then @ppDflt else @ppNice
+                            .   pp      :=  if @isSpineRoot
+                                            then if cfgPPTyFollowAST @lhs.cfg
+                                                 then let (e:es) = @appArgPPL 
+                                                      in  hv ([hsnORow >#< @appFunPP,"|" >#< e] ++ map ("," >#<) es ++ [pp hsnCRow])
+                                                 else @ppNice
+                                            else @ppNice
 %%]
 
 %%[9
@@ -403,6 +425,11 @@ SEM Ty
 
 %%[8
 SEM Ty
+  | App             loc     .  (appFunPP,appArgPPL)
+                                            :=  if cfgPPTyFollowAST @lhs.cfg
+                                                then (@func.appFunPP,@func.appArgPPL ++ [@arg.pp])
+                                                else mkExtAppPP  (@appFunNm,@func.appFunPP,@func.appArgPPL)
+                                                                 (@arg.appFunNm,@arg.appFunPP,@arg.appArgPPL,@arg.pp)
   | Ext             loc     .  fldPP        :=  let pn = if cfgPPTyFollowAST @lhs.cfg then Nothing else Just @positionalNm
                                                 in  ppFld "::" pn @nm (cfgPPTyPPHsn @lhs.cfg @nm) @extTy.pp
 %%]

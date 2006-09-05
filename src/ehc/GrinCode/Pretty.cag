@@ -75,7 +75,7 @@ ppEvApTagMp m
 ATTR GrAGItf AllGrNT [ | | pp USE {>-<} {empty}: PP_Doc ]
 
 SEM GrModule
-  | Mod         lhs         .   pp          =   "module" >#< show (show @baseName)
+  | Mod         lhs         .   pp          =   "module" >#< ppGrNm @moduleNm
                                                 >-< ppCurlysSemisV @globalL.ppL
                                                 >-< ppCurlysSemisV @bindL.ppL
                                                 >-< "ctags"

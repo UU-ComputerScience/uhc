@@ -43,6 +43,17 @@ SEM CAlt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module name used to uniqify globally over all modules
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR AllExpr [ moduleNm: HsName | | ]
+
+SEM CModule
+  | Mod         expr        .   moduleNm    =   @moduleNm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -57,12 +68,32 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 
 %%[8 hs
 type ARenMp = Map.Map HsName HsName
+%%]
 
+%%[12 hs
+-- breaks assumption that globals are qualified, locals not. Problem in future when records are used for globals and access differs.
+mkUniq :: HsName -> HsName -> UID -> HsName
+mkUniq q n u
+  = (if hsnIsQual n
+    then id
+    else hsnSetQual q) $ hsnSuffix n ("__" ++ show u)
+%%]
+
+%%[8.aRenAdd hs
 aRenAdd :: [HsName] -> UID -> ARenMp -> ARenMp
 aRenAdd nL u m
   =  let  uL = mkNewUIDL (length nL) u
      in   Map.fromList [ (n,hsnSuffix n ("__" ++ show u)) | (n,u) <- zip nL uL] `Map.union` m
+%%]
 
+%%[12 -8.aRenAdd hs
+aRenAdd :: HsName -> [HsName] -> UID -> ARenMp -> ARenMp
+aRenAdd q nL u m
+  =  let  uL = mkNewUIDL (length nL) u
+     in   Map.fromList [ (n,mkUniq q n u) | (n,u) <- zip nL uL] `Map.union` m
+%%]
+
+%%[8 hs
 aRenRepl :: ARenMp -> HsName -> HsName
 aRenRepl m n = maybe n id . Map.lookup n $ m
 %%]
@@ -100,6 +131,17 @@ SEM CExpr
 SEM CAlt
   | Alt         loc         .   aRenMp      =   aRenAdd @pats.nmL @lUniq @lhs.aRenMp
                 expr        .   lev         =   @lhs.lev + 1
+%%]
+
+%%[12
+SEM CExpr
+  | Let         loc         .   aRenMp      :=  if @lhs.lev == cLevOuter
+                                                then @lhs.aRenMp
+                                                else aRenAdd @lhs.moduleNm @binds.nmL @lUniq @lhs.aRenMp
+  | Lam         loc         .   aRenMp      :=  aRenAdd @lhs.moduleNm [@arg] @lUniq @lhs.aRenMp
+
+SEM CAlt
+  | Alt         loc         .   aRenMp      :=  aRenAdd @lhs.moduleNm @pats.nmL @lUniq @lhs.aRenMp
 %%]
 
 %%[8

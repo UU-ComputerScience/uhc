@@ -44,17 +44,14 @@ pTyBase
   where pRow :: P Ty
         pRow
           = pOROWROW
-             *> (   Ty_Ext <$> pRow <* pVBAR <*> pDollNm <* pDCOLON <*> pTy
+             *> (   foldl (\r (l,e) -> Ty_Ext r l e) <$> pRow <* pVBAR <*> pList1Sep pCOMMA ((,) <$> pDollNm <* pDCOLON <*> pTy)
                 <|> pSucceed (Ty_Con hsnRowEmpty)
                 )
             <*  pCROWROW
 
 pTyApp :: P Ty
 pTyApp
-  =   pTyBase
-      <**> (   pSucceed id
-           <|> flip Ty_App <$> pTyBase
-           )
+  =   foldl1 Ty_App <$> pList1 pTyBase
 
 pTy :: P Ty
 pTy

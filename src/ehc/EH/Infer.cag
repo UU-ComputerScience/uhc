@@ -136,7 +136,8 @@ ATTR AllDecl [ finValGam: ValGam | | ]
 ATTR AllNT [ finTyCnstr: Cnstr | | ]
 
 SEM Expr
-  | Let         decls       .   finValGam           =   @lhs.finTyCnstr |=> (gamTop @decls.patValGam)
+  | Let         loc         .   finValGamDecls      =   @lhs.finTyCnstr |=> (gamTop @decls.patValGam)
+                decls       .   finValGam           =   @finValGamDecls
 
 SEM Decl
   | TySig       loc         .   finalTy             =   vgiTy . fromJust
@@ -148,12 +149,12 @@ SEM AGItf
 
 %%[3.finValGam
 SEM Expr
-  | Let         loc         .   finValGam           :=  @lhs.finTyCnstr |=> @quValGam_
+  | Let         loc         .   finValGamDecls      :=  @lhs.finTyCnstr |=> @quValGam_
 %%]
 
 %%[4.finValGam
 SEM Expr
-  | Let         loc         .   finValGam           :=  @lhs.finTyCnstr |=> @quValGam_ex_
+  | Let         loc         .   finValGamDecls      :=  @lhs.finTyCnstr |=> @quValGam_ex_
 %%]
 
 %%[9

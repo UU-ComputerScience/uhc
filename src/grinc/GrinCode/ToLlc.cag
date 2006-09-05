@@ -118,7 +118,7 @@ SEM GrValL
   | Cons lhs.llcDocs = @hd.llcDoc : @tl.llcDocs
 
 SEM GrModule
-  | Mod   lhs . llcDoc = moduleHeader @baseName @lhs.entryNm
+  | Mod   lhs . llcDoc = moduleHeader @moduleNm @lhs.entryNm
                          >-< comment "Tag constants"
                          >-< tagConstants @evalTagMp
                          >-< text ""

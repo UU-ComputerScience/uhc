@@ -16,7 +16,7 @@
 %%[1 export(hsnNegate,hsnError)
 %%]
 
-%%[1 export(IdOccKind(..),IdOcc(..))
+%%[1 export(IdOccKind(..),IdOcc(..),ppIdOcc)
 %%]
 
 %%[1 export(AssocL, ppAssocL)
@@ -133,7 +133,7 @@
 %%[8 hs export(ctag,ppCTag,ppCTag',ppCTagInt) 
 %%]
 
-%%[8 export(CTagsMp)
+%%[8 export(CTagsMp,ppCTagsMp)
 %%]
 
 %%[8 export(ppUID')
@@ -167,6 +167,12 @@
 %%]
 
 %%[12 export(hsnModBuiltin)
+%%]
+
+%%[12 export(ppCurlysAssocL)
+%%]
+
+%%[12 export(basePrfCtxtId)
 %%]
 
 %%[99 export(hsnInteger,hsnDouble,hsnModPrelude)
@@ -694,6 +700,11 @@ uidHNm = HNm . show
 type PrfCtxtId = UID
 %%]
 
+%%[12
+basePrfCtxtId :: PrfCtxtId
+basePrfCtxtId = uidStart
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pred occurrence id
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1028,6 +1039,7 @@ ctagChar =  CTag hsnChar hsnChar 0 1
 ctag :: a -> (HsName -> HsName -> Int -> Int -> a) -> CTag -> a
 ctag n t tg = case tg of {CTag tn cn i a -> t tn cn i a; _ -> n}
 
+-- intended for parsing
 ppCTag' :: (HsName -> PP_Doc) -> CTag -> PP_Doc
 ppCTag' ppNm t
   = case t of
@@ -1050,6 +1062,11 @@ instance PP CTag where
 
 %%[8 hs
 type CTagsMp = AssocL HsName (AssocL HsName CTag)
+
+ppCTagsMp :: (HsName -> PP_Doc) -> CTagsMp -> PP_Doc
+ppCTagsMp pn
+  = mkl (mkl (ppCTag' pn))
+  where mkl pe = ppCurlysSemisBlock . map (\(n,e) -> pn n >-< indent 1 ("=" >#< pe e))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1074,6 +1091,12 @@ ppAssocL = ppAssocL' (pp_block "[" "]" ",")
 
 ppAssocLV :: (PP k, PP v) => AssocL k v -> PP_Doc
 ppAssocLV = ppAssocL' vlist
+%%]
+
+%%[12
+-- intended for parsing
+ppCurlysAssocL :: (k -> PP_Doc) -> (v -> PP_Doc) -> AssocL k v -> PP_Doc
+ppCurlysAssocL pk pv = ppCurlysCommasBlock . map (\(k,v) -> pk k >#< "=" >#< pv v)
 %%]
 
 %%[1
@@ -1336,6 +1359,7 @@ data IdOccKind
 %%]
 
 %%[1 hs
+-- intended for parsing
 instance PP IdOccKind where
   pp IdOcc_Val      = pp "Value"
   pp IdOcc_Pat      = pp "Pat"
@@ -1359,8 +1383,12 @@ data IdOcc
   = IdOcc { ioccNm :: HsName, ioccKind :: IdOccKind }
   deriving (Show,Eq,Ord)
 
+-- intended for parsing
+ppIdOcc :: (HsName -> PP_Doc) -> IdOcc -> PP_Doc
+ppIdOcc pn o = ppCurlysCommas [pn (ioccNm o),pp (ioccKind o)]
+
 instance PP IdOcc where
-  pp (IdOcc n k) = n >|< "/" >|< k
+  pp = ppIdOcc pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
