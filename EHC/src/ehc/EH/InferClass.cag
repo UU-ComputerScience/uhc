@@ -34,26 +34,30 @@ SEM Decl
                                                              n =  uidHNm @lUniq
                                                              r =  Rule
                                                                     { rulRuleTy    	= tyQuantifyClosed @tyPrExpr.ty
-                                                                    , rulMkEvid    	= \_ -> CExpr_Var n
-                                                                    , rulMkEvidCExpr= CExpr_Var n
+                                                                    , rulMkEvid    	= mkEvid ev
+                                                                    -- , rulMkEvidCExpr= CExpr_Var n
+                                                                    , rulMkEvidHow  = ev
                                                                     , rulNmEvid    	= n
                                                                     , rulId        	= mkPrId @lhs.prfCtxtId @lUniq
                                                                     , rulCost      	= mkCost 10
                                                                     , rulFuncDeps  	= @funcDeps.funcDeps
                                                                     }
+                                                               where ev = MkEvidVar n
                                                         in   PrIntroGamInfo (tyQuantifyClosed ([@hdPrTy] `mkArrow` @clsTyRec)) k r
                                 .   elimRules       =   let  mkR u sub sup supNm
                                                                =  Rule
                                                                     { rulRuleTy    	= tyQuantifyClosed ([sub] `mkArrow` sup)
-                                                                    , rulMkEvid    	= \[sub] -> mkCExprSelCase emptyRCEEnv (hsnSuffix supNm "!") sub CTagRec supNm supNm o
-                                                                    , rulMkEvidCExpr= [subn] `mkCExprLam` (mkCExprSelCase emptyRCEEnv (hsnSuffix supNm "!") (CExpr_Var subn) CTagRec supNm supNm o)
+                                                                    , rulMkEvid    	= mkEvid ev
+                                                                    -- , rulMkEvidCExpr= [subn] `mkCExprLam` (mkCExprSelCase emptyRCEEnv (hsnSuffix supNm "!") (CExpr_Var subn) CTagRec supNm supNm o)
+                                                                    , rulMkEvidHow  = ev
                                                                     , rulNmEvid    	= hsnUnknown
                                                                     , rulId        	= mkPrId @lhs.prfCtxtId u
                                                                     , rulCost      	= costBase `costMulBy` 2
                                                                     , rulFuncDeps  	= []
                                                                     }
-                                                               where o   = (CExpr_Int . tyRecOffset supNm $ @clsTyRec)
-                                                                     [subn] = take 1 hsnLclSupplyL
+                                                               where -- o   = (CExpr_Int . tyRecOffset supNm $ @clsTyRec)
+                                                                     -- [subn] = take 1 hsnLclSupplyL
+                                                                     ev = MkEvidSup supNm (tyRecOffset supNm @clsTyRec)
                                                         in   zipWith3 (\p n u -> (tyPredMatchNm p,mkR u @hdPrTy p n)) @ctxtPrTyL @supClsNmL (mkNewUIDL (length @ctxtPrTyL) @lUniq2)
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   tyGam           =   @lhs.tyGam

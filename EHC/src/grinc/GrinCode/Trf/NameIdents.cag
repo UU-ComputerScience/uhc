@@ -58,7 +58,7 @@ SEM GrExpr
   | Catch                             lhs  .  grTrf    =  GrExpr_Catch   @body.grTrf (getName' @lhs.names @arg) @handler.grTrf
 
 SEM GrModule
-  | Mod  lhs  . grTrf         = GrModule_Mod @baseName @globalL.grTrf @bindL.grTrf @ctagsMp @newEvalTagMp @newAppTagMp
+  | Mod  lhs  . grTrf         = GrModule_Mod @moduleNm @globalL.grTrf @bindL.grTrf @ctagsMp @newEvalTagMp @newAppTagMp
          loc  . newEvalTagMp  = map (newMap @lhs.names) @evalTagMp
               . newAppTagMp   = map (newMap @lhs.names) @applyTagMp
 %%]

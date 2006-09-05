@@ -113,7 +113,11 @@ data TyQuCtxt = TyQuCtxtArrow | TyQuCtxtProd | TyQuCtxtOnTop | TyQuCtxtOther der
 
 %%[1
 SEM Ty
-  | App         loc         .   isSpineRoot     =   @lhs.appSpinePos == 0
+  | App
+%%[[7
+    Ext
+%%]
+  				loc         .   isSpineRoot     =   @lhs.appSpinePos == 0
 %%]
 
 %%[4

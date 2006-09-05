@@ -8,10 +8,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[12 hs module {%{EH}HI.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Gam},qualified {%{EH}Pred} as Pr,{%{EH}HI})
+%%[12 hs module {%{EH}HI.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Common},{%{EH}Gam},qualified {%{EH}Pred} as Pr,{%{EH}HI})
 %%]
 
-%%[12 hs import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core})
+%%[12 hs import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Module})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -20,5 +20,71 @@
 
 %%[12 import({HI/AbsSyn},{HI/Pretty},{HI/Uniq})
 WRAPPER AGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Reconstruction of original info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12 hs
+prElimTGamUnion :: Pr.PrElimTGam -> Pr.PrElimTGam -> Pr.PrElimTGam
+prElimTGamUnion = tgamAddGam basePrfCtxtId basePrfCtxtId
+
+emptyPrElimTGam :: Pr.PrElimTGam
+emptyPrElimTGam = emptyTGam basePrfCtxtId
+%%]
+
+%%[12
+ATTR
+  AllNT AGItf
+    [ | |
+      exportRel     USE {`Rel.union`} {Rel.empty}: ModEntRel
+      fixityGam     USE {`gamUnion`} {emptyGam}: FixityGam
+      valGam        USE {`gamUnion`} {emptyGam}: ValGam
+      tyGam         USE {`gamUnion`} {emptyGam}: TyGam
+      dataGam       USE {`gamUnion`} {emptyGam}: DataGam
+      prIntroGam    USE {`gamUnion`} {emptyGam}: {Pr.PrIntroGam}
+      prElimTGam    USE {`prElimTGamUnion`} {emptyPrElimTGam}: {Pr.PrElimTGam}
+    ]
+
+SEM Binding
+    | Export
+        lhs             .   exportRel   =   @exports
+    | Fixity
+        lhs             .   fixityGam   =   gamSingleton @nm (FixityGamInfo @prio @fixity)
+    | Val
+        lhs             .   valGam      =   gamSingleton @nm (ValGamInfo @ty)
+    | Ty
+        lhs             .   tyGam       =   gamSingleton @nm (mkTGI @ty @ki)
+    | DataCon
+        lhs             .   dataGam     =   gamSingleton @nm (DataGamInfo (Map.fromList @tags))
+    | Class
+        lhs             .   prIntroGam  =   gamSingleton @nm (Pr.PrIntroGamInfo @prToEvidTy @ki @rule.rule)
+    | Instance
+        lhs             .   prElimTGam  =   tgamUnit basePrfCtxtId @nm (Pr.PrElimGamInfo @rules.rules)
+%%]
+
+%%[12
+ATTR Rule [ | | rule: {Pr.Rule} ]
+ATTR Rules [ | | rules: {[Pr.Rule]} ]
+
+SEM Rule
+    | Rule
+        lhs             .   rule        =   Pr.emptyRule
+                                              { Pr.rulRuleTy      = @ty
+                                              , Pr.rulMkEvid      = Pr.mkEvid @mkEvid
+                                              , Pr.rulMkEvidHow   = @mkEvid
+                                              , Pr.rulNmEvid      = @nm
+                                              , Pr.rulId          = @uid -- {poiCxId = basePrfCtxtId}
+                                              , Pr.rulCost        = @cost
+                                              , Pr.rulFuncDeps    = []
+                                              }
+
+SEM Rules
+	| Cons
+		lhs				.	rules		=	@hd.rule : @tl.rules
+	| Nil
+		lhs				.	rules		=	[]
+
 %%]
 

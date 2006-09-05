@@ -13,7 +13,7 @@
 %%[8 export(pDollNm,pUID,pInt,pCTag)
 %%]
 
-%%[12 export(pPredOccId)
+%%[12 import({%{EH}Module},qualified Data.Set as Set,qualified EH.Util.Rel as Rel) export(pPredOccId,pModEntRel)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -51,3 +51,39 @@ pPredOccId :: P PredOccId
 pPredOccId
   = PredOccId <$ pOCURLY <*> pUID <* pCOMMA <*> pUID <* pCCURLY
 %%]
+
+%%[12
+-- counterpart of PP IdOccKind instance
+pIdOccKind :: P IdOccKind
+pIdOccKind
+  =   IdOcc_Val     <$ pKeyTk "Value"
+  <|> IdOcc_Pat     <$ pKeyTk "Pat"
+  <|> IdOcc_Type    <$ pKeyTk "Type"
+  <|> IdOcc_Kind    <$ pKeyTk "Kind"
+  <|> IdOcc_Class   <$ pKeyTk "Class"
+  <|> IdOcc_Inst    <$ pKeyTk "Instance"
+  <|> IdOcc_Dflt    <$ pKeyTk "Default"
+  <|> IdOcc_Data    <$ pKeyTk "Data"
+  <|> IdOcc_Any     <$ pKeyTk "Any"
+
+pIdOcc :: P IdOcc
+pIdOcc = IdOcc <$ pOCURLY <*> pDollNm <* pCOMMA <*> pIdOccKind <* pCCURLY
+%%]
+
+%%[12
+pAssocL :: P a -> P b -> P (AssocL a b)
+pAssocL pA pB = pOCURLY *> pListSep pCOMMA ((,) <$> pA <* pEQUAL <*> pB) <* pCCURLY
+%%]
+
+%%[12
+pModEnt :: P ModEnt
+pModEnt
+  = ModEnt <$  pOCURLY <*> pIdOccKind <* pCOMMA <*> pIdOcc <* pCOMMA
+           <*> (Set.fromList <$ pOCURLY <*> pListSep pCOMMA pModEnt <* pCCURLY)
+           <*  pCCURLY
+
+pModEntRel :: P ModEntRel
+pModEntRel
+  = Rel.fromList <$> pAssocL pDollNm pModEnt
+%%]
+

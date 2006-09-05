@@ -92,7 +92,7 @@ ATTR CExpr [ | | lamBodyPP: PP_Doc  lamArgPPL: {[PP_Doc]} ]
 ATTR CExpr [ | | appFunPP : PP_Doc  appArgPPL: {[PP_Doc]} ]
 
 SEM CModule
-  | Mod         lhs         .   pp          =   "module" >#< ppCNm (mkHNm @baseName) >-< @expr.pp
+  | Mod         lhs         .   pp          =   "module" >#< ppCNm @moduleNm >-< @expr.pp >-< ppCTagsMp ppCNm @ctagsMp
 
 SEM CExpr
   | Int         loc         .   pp          =   ppLit "Int"    (show @int)

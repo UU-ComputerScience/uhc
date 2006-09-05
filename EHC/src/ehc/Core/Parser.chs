@@ -26,7 +26,8 @@ type CParser       hp     =    PlainParser Token hp
 
 pCModule :: CParser CModule
 pCModule
-  = (\m e -> CModule_Mod m e undefined) <$ pMODULE <*> pDollNm <*> pCExpr
+  = (\m e tm -> CModule_Mod m e tm) <$ pMODULE <*> pDollNm <*> pCExpr <*> pA (pA pCTag)
+  where pA pE = pOCURLY *> pListSep pSEMI ((,) <$> pDollNm <* pEQUAL <*> pE) <* pCCURLY
 
 pCTagOnly :: CParser CTag
 pCTagOnly = pNUMBER *> pKeyTk "Tag" *> pCTag
@@ -35,16 +36,16 @@ pCExprBase :: CParser CExpr
 pCExprBase
   =   CExpr_Var <$> pDollNm
   <|> pNUMBER
-       *> (   (   (CExpr_Int     . tokMkInt       ) <$ pKeyTk "Int"
-              <|> (CExpr_Char    . head . tokMkStr) <$ pKeyTk "Char"
-              <|> (CExpr_Float   . read . tokMkStr) <$ pKeyTk "Float"
-              <|> (CExpr_String  .        tokMkStr) <$ pKeyTk "String"
+       *> (   (   (CExpr_Int     . read) <$ pKeyTk "Int"
+              <|> (CExpr_Char    . head) <$ pKeyTk "Char"
+              <|> (CExpr_Float   . read) <$ pKeyTk "Float"
+              <|> (CExpr_String        ) <$ pKeyTk "String"
 %%[[99
-              <|> (CExpr_Integer . read . tokMkStr) <$ pKeyTk "Integer"
-              <|> (CExpr_Double  . read . tokMkStr) <$ pKeyTk "Double"
+              <|> (CExpr_Integer . read) <$ pKeyTk "Integer"
+              <|> (CExpr_Double  . read) <$ pKeyTk "Double"
 %%]
               )
-              <*> pStringTk
+              <*> (tokMkStr <$> pStringTk)
           <|> CExpr_Tup <$ pKeyTk "Tag" <*> pCTag
           )
   <|> pParens pCExpr

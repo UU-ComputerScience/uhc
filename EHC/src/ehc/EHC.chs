@@ -440,12 +440,12 @@ cpParsePrevHI modNm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-foldEH :: EHSem.Inh_AGItf -> FPath -> UID -> EHCOpts -> EH.AGItf -> EHSem.Syn_AGItf
-foldEH inh fp uid opts eh
+foldEH :: EHSem.Inh_AGItf -> EHCompileUnit -> EHCompileRunStateInfo ->EH.AGItf -> EHSem.Syn_AGItf
+foldEH inh ecu crsi eh
  = EHSem.wrap_AGItf (EHSem.sem_AGItf eh)
-                    (inh { EHSem.baseName_Inh_AGItf = mkHNm (fpathBase fp)
-                         , EHSem.gUniq_Inh_AGItf    = uid
-                         , EHSem.opts_Inh_AGItf     = opts
+                    (inh { EHSem.moduleNm_Inh_AGItf = ecuModNm ecu
+                         , EHSem.gUniq_Inh_AGItf    = crsiHereUID crsi
+                         , EHSem.opts_Inh_AGItf     = crsiOpts crsi
                          })
 
 foldHs :: HSSem.Inh_AGItf -> HsName -> EHCompileUnit -> EHCompileRunStateInfo -> HS.AGItf -> HSSem.Syn_AGItf
@@ -484,7 +484,7 @@ cpFoldEH modNm
          ;  let  ecu    = crCU modNm cr
                  crsi   = crStateInfo cr
                  mbEH   = ecuMbEH ecu
-                 ehSem  = foldEH (crsiEHInh crsi) (ecuFilePath ecu) (crsiHereUID crsi) (crsiOpts crsi) (panicJust "cpFoldEH" mbEH)
+                 ehSem  = foldEH (crsiEHInh crsi) ecu crsi (panicJust "cpFoldEH" mbEH)
          ;  when (isJust mbEH)
                  (cpUpdCU modNm (ecuStoreEHSem ehSem))
          }
@@ -610,6 +610,34 @@ cpGetModfTimes modNm
                           ; cpUpdCU modNm $ store t
                           })
                }
+%%]
+
+%%[12
+crPartitionNewerOlderImports :: HsName -> EHCompileRun -> ([EHCompileUnit],[EHCompileUnit])
+crPartitionNewerOlderImports modNm cr
+  = partition isNewer $ map (flip crCU cr) $ ecuImpNmL ecu
+  where ecu = crCU modNm cr
+        t   = panicJust "crPartitionNewerOlderImports1" $ ecuMbHSTime ecu
+        isNewer ecu'
+            = t' `diffClockTimes` t > noTimeDiff 
+            where t' = panicJust "crPartitionNewerOlderImports2" $ ecuMbHITime ecu'
+%%]
+
+%%[12
+ecuIsHSNewerThanHI :: EHCompileUnit -> Bool
+ecuIsHSNewerThanHI ecu
+  = case ecuMbHITime ecu of
+      Just thi -> ths `diffClockTimes` thi > noTimeDiff 
+               where ths = panicJust "ecuIsHSNewerThanHI" $ ecuMbHSTime ecu
+      _        -> True
+%%]
+
+%%[12
+crModNeedsCompile :: HsName -> EHCompileRun -> Bool
+crModNeedsCompile modNm cr
+  = ecuIsHSNewerThanHI ecu || not (null newer)
+  where ecu = crCU modNm cr
+        (newer,_) = crPartitionNewerOlderImports modNm cr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -750,7 +778,7 @@ cpProcessEH modNm
   = cpSeq [ cpStepUID
           , cpFoldEH modNm
 %%[[12
-          , cpOutputHI modNm
+          , cpOutputHI "hi" modNm
 %%]
           , cpTranslateEH2Core modNm
           , cpProcessCore modNm
@@ -780,6 +808,7 @@ cpProcessGrin modNm
 cpOutputCore :: String -> HsName -> EHCompilePhase ()
 cpOutputCore suff modNm
   =  do  {  cr <- get
+         -- part 1: current .core
          ;  let  ecu    = crCU modNm cr
                  crsi   = crStateInfo cr
                  fp     = ecuFilePath ecu
@@ -792,8 +821,17 @@ cpOutputCore suff modNm
                  (lift (putPPFile (fpathToStr (fpathSetSuff suff fp)) (ppCModule cMod) 100))
          ;  when (ehcOptEmitJava opts)
                  (lift (putPPFile (fpathToStr (fpathSetSuff "java" jFP)) jPP 100))
-         }
 
+%%[[12
+         -- part 2: previous .core
+         ;  let  mbCore2= ecuMbPrevCore ecu
+         ;  when (isJust mbCore2)
+                 (lift $ putPPFile (fpathToStr (fpathSetSuff (suff ++ "-prev") fp)) (ppCModule (fromJust mbCore2)) 100)
+%%]
+         }
+%%]
+
+%%[8
 cpOutputGrin :: String -> HsName -> EHCompilePhase ()
 cpOutputGrin suff modNm
   =  do  {  cr <- get
@@ -812,14 +850,17 @@ cpOutputGrin suff modNm
 %%]
 
 %%[12
-cpOutputHI :: HsName -> EHCompilePhase ()
-cpOutputHI modNm
+cpOutputHI :: String -> HsName -> EHCompilePhase ()
+cpOutputHI suff modNm
   =  do  {  cr <- get
+         -- part 1: current .hi
          ;  let  ecu    = crCU modNm cr
+                 crsi   = crStateInfo cr
                  fp     = ecuFilePath ecu
                  hsSem  = fromJust (ecuMbHSSem ecu)
                  ehSem  = fromJust (ecuMbEHSem ecu)
                  binds  = HI.hiFromAllGams
+                            (mmiExps $ fromJust $ Map.lookup modNm $ crsiModMp crsi)
                             (HSSem.gathFixityGam_Syn_AGItf  hsSem)
                             (EHSem.gathValGam_Syn_AGItf     ehSem)
                             (EHSem.gathTyGam_Syn_AGItf      ehSem)
@@ -828,7 +869,18 @@ cpOutputHI modNm
                             (EHSem.gathPrElimTGam_Syn_AGItf ehSem,EHSem.gathPrfCtxtId_Syn_AGItf ehSem)
                  hi     = HISem.wrap_AGItf (HISem.sem_AGItf (HI.AGItf_AGItf $ HI.Module_Module modNm $ HI.Binding_Stamp "stamp" 0 : binds))
                             (HISem.Inh_AGItf)
-         ;  lift (putPPFile (fpathToStr (fpathSetSuff "hi" fp)) (HISem.pp_Syn_AGItf hi) 4000)
+         ;  when (isJust (ecuMbHSSem ecu) && isJust (ecuMbEHSem ecu))
+                 (do { lift $ putPPFile (fpathToStr (fpathSetSuff suff fp)) (HISem.pp_Syn_AGItf hi) 120
+                     ; now <- lift $ getClockTime
+                     ; cpUpdCU modNm $ ecuStoreHITime now
+                     })
+
+         -- part 2: previous .hi
+         ;  let  mbHI2  = ecuMbPrevHI ecu
+                 hi2    = HISem.wrap_AGItf (HISem.sem_AGItf (fromJust mbHI2))
+                            (HISem.Inh_AGItf)
+         ;  when (isJust mbHI2)
+                 (lift $ putPPFile (fpathToStr (fpathSetSuff (suff ++ "-prev") fp)) (HISem.pp_Syn_AGItf hi2) 120)
          }
 
 %%]
@@ -1019,7 +1071,7 @@ doCompileRun fn opts
                                               , HSSem.fixityGam_Inh_AGItf   = emptyGam
 %%]
                                               }
-             ehInh          = EHSem.Inh_AGItf { EHSem.baseName_Inh_AGItf    = mkHNm (fpathBase fp)
+             ehInh          = EHSem.Inh_AGItf { EHSem.moduleNm_Inh_AGItf    = mkHNm (fpathBase fp)
                                               , EHSem.gUniq_Inh_AGItf       = uidStart
                                               , EHSem.opts_Inh_AGItf        = opts2
 %%[[12
@@ -1028,8 +1080,8 @@ doCompileRun fn opts
                                               , EHSem.tyGam_Inh_AGItf       = initTyGam
                                               , EHSem.kiGam_Inh_AGItf       = initKiGam
                                               , EHSem.prIntroGam_Inh_AGItf  = emptyGam
-                                              , EHSem.prElimTGam_Inh_AGItf  = emptyTGam uidStart
-                                              , EHSem.prfCtxtId_Inh_AGItf   = uidStart
+                                              , EHSem.prElimTGam_Inh_AGItf  = emptyTGam basePrfCtxtId
+                                              , EHSem.prfCtxtId_Inh_AGItf   = basePrfCtxtId
 %%]
                                               }
 %%[[12

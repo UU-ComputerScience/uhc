@@ -215,7 +215,7 @@ SEM CModule
                                                             []
                                                             (GrExpr_FFI "primUndefined" [])
 
-                lhs         .   grMod       =   GrModule_Mod @baseName
+                lhs         .   grMod       =   GrModule_Mod @moduleNm
                                                     [] -- TODO: this should contain all the caf variables
                                                     (@expr.grBindL ++ [@undefBind, @evalBind, @applyBind])
                                                     @constrsMp

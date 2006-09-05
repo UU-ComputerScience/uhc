@@ -10,7 +10,7 @@
 %%[9 module {%{EH}Pred} import(Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty,EH.Util.PPUtils)
 %%]
 
-%%[9 import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Quantify},{%{EH}Core},{%{EH}Core.Pretty},{%{EH}Core.Subst},{%{EH}Base.Common},{%{EH}Gam},{%{EH}Cnstr},{%{EH}Substitutable})
+%%[9 import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Quantify},{%{EH}Core},{%{EH}Core.Pretty},{%{EH}Core.Subst},{%{EH}Core.Utils},{%{EH}Base.Common},{%{EH}Gam},{%{EH}Cnstr},{%{EH}Substitutable})
 %%]
 
 %%[9 import({%{EH}Base.Debug})
@@ -29,6 +29,9 @@
 %%]
 
 %%[9 export(prvg2ReachableFrom)
+%%]
+
+%%[9 export(HowMkEvid(..),mkEvid,ppHowMkEvid)
 %%]
 
 %%[9 export(Rule(..),emptyRule,mkInstElimRule)
@@ -558,6 +561,32 @@ instance PP ClsFuncDep where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% How to make evidence
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+data HowMkEvid
+  = MkEvidVar		HsName			-- just a variable
+  | MkEvidCtxt		HsName			-- apply variable to context
+  | MkEvidSup		HsName Int		-- superclass
+
+instance Show HowMkEvid where
+  show _ = "HowMkEvid"
+
+ppHowMkEvid :: (HsName -> PP_Doc) -> HowMkEvid -> PP_Doc
+ppHowMkEvid pn (MkEvidVar  n  ) = "var"  >#< pn n
+ppHowMkEvid pn (MkEvidCtxt n  ) = "ctxt" >#< pn n
+ppHowMkEvid pn (MkEvidSup  n o) = "sup"  >#< pn n >#< pp o
+
+mkEvid :: HowMkEvid -> [CExpr] -> CExpr
+mkEvid h
+  = case h of
+      MkEvidVar  n   -> \_     -> CExpr_Var n
+      MkEvidCtxt n   -> \ctxt  -> CExpr_Var n `mkCExprApp` ctxt
+      MkEvidSup  n o -> \[sub] -> mkCExprSelCase emptyRCEEnv (hsnSuffix n "!") sub CTagRec n n (CExpr_Int o)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Rule
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -566,26 +595,28 @@ data Rule
   =  Rule
        { rulRuleTy          :: Ty
        , rulMkEvid          :: [CExpr] -> CExpr
-       , rulMkEvidCExpr     :: CExpr
+       -- , rulMkEvidCExpr     :: CExpr
+       , rulMkEvidHow       :: HowMkEvid
        , rulNmEvid          :: HsName
        , rulId              :: PredOccId
        , rulCost            :: ProofCost
        , rulFuncDeps        :: [ClsFuncDep]
        }
 
-emptyRule = Rule Ty_Any head (CExpr_Var hsnUnknown) hsnUnknown (mkPrId uidStart uidStart) costVeryMuch []
+emptyRule = Rule Ty_Any head (MkEvidVar hsnUnknown) hsnUnknown (mkPrId uidStart uidStart) costVeryMuch []
 
 mkInstElimRule :: HsName -> PredOccId -> Int -> Ty -> Rule
 mkInstElimRule n i sz ctxtToInstTy
   =  Rule  { rulRuleTy    	= ctxtToInstTy
-           , rulMkEvid    	= \ctxt -> CExpr_Var n `mkCExprApp` ctxt
-           , rulMkEvidCExpr	= ns `mkCExprLam` (CExpr_Var n `mkCExprApp` (map CExpr_Var ns))
+           , rulMkEvid    	= mkEvid ev
+           , rulMkEvidHow	= ev
            , rulNmEvid    	= n
            , rulId        	= i
            , rulCost      	= costBase `costAdd` (costBase `costMulBy` 2 * sz)
            , rulFuncDeps  	= []
            }
   where ns = take sz hsnLclSupplyL
+        ev = MkEvidCtxt n
 
 instance Substitutable TyVarId (CnstrInfo Ty) Rule where
   s |=>  r = r { rulRuleTy = s |=> rulRuleTy r }

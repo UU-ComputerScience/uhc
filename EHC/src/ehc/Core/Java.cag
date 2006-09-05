@@ -137,7 +137,7 @@ ATTR CBind CBindL [ | | jvSrcInd USE {>-<} {empty} : PP_Doc  jvSrcSetInd USE {>-
 ATTR CodeAGItf CModule [ | | jvBasename: String ]
 
 SEM CModule
-  | Mod         loc         .   jvBasename  =   jvNm @baseName
+  | Mod         loc         .   jvBasename  =   jvNm @moduleNm
                 expr        .   jvBuiltin   =   let primCmpIntNm = HNm "primCmpInt"
                                                 in  jvBind "Function2" jvSelNm
                                                         (jvLam jvSelNm [HNm "tup",HNm "off"] (jvRet (jvForceCast "Object[]" "tup" >|< pp_brackets (jvForceInt "off"))))

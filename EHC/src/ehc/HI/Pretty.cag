@@ -3,8 +3,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[12 hs
+hiNV' :: String -> HsName -> PP_Doc -> PP_Doc
+hiNV' k n v = k >#< ppHINm n >-< indent 1 ("=" >#< v)
+
 hiNV :: String -> HsName -> [PP_Doc] -> PP_Doc
-hiNV k n v = k >#< ppHINm n >-< indent 1 ("=" >#< ppCurlysSemisBlock v)
+hiNV k n v = hiNV' k n (ppCurlysSemisBlock v)
 
 %%]
 ppHINm :: HsName -> PP_Doc
@@ -28,6 +31,8 @@ SEM Binding
         lhs         .   pp          =   hiNV "stamp" hsnUnknown [pp $ show $ @timestamp,pp $ show $ @hash]
     | Fixity
         lhs         .   pp          =   hiNV "fixity" @nm [pp @prio,pp @fixity]
+    | Export
+        lhs         .   pp          =   hiNV' "export" hsnUnknown (ppModEntRel' ppHINm @exports)
     | Val
         lhs         .   pp          =   hiNV "value" @nm [ppTyWithCfg cfgPPTyHI @ty]
     | DataCon
@@ -44,7 +49,7 @@ SEM Binding
 %%[12
 SEM Rule
     | Rule
-        lhs         .   pp          =   hiNV "rule" @nm [ppTyWithCfg cfgPPTyHI @ty,pp @mkEvid,ppPredOccId' ppUID' @uid,Pr.ppProofCost' @cost]
+        lhs         .   pp          =   hiNV "rule" @nm [ppTyWithCfg cfgPPTyHI @ty,Pr.ppHowMkEvid ppHINm @mkEvid,ppPredOccId' ppUID' @uid,Pr.ppProofCost' @cost]
 %%]
 
 %%[12

@@ -27,7 +27,7 @@
 %%[12 export(ModMpInfo(..),ModMp,modMpCombine)
 %%]
 
-%%[12 export(ppModMp,ppModEntDomMp,ppModEntRel)
+%%[12 export(ppModMp,ppModEntDomMp,ppModEntRel,ppModEntRel')
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -62,16 +62,22 @@ mentIsCon e = mentKind e == IdOcc_Data || mentKind e == IdOcc_Class
 %%]
 
 %%[12
+-- intended for parsing
+ppModEnt :: (HsName -> PP_Doc) -> ModEnt -> PP_Doc
+ppModEnt pn e = ppCurlysCommasBlock [pp (mentKind e),ppIdOcc pn (mentIdOcc e),ppCurlysCommasBlock (map (ppModEnt pn) $ Set.toList $ mentOwns e)]
+
 instance PP ModEnt where
-  pp e = mentIdOcc e >|<  "/" >|< mentKind e >|< ppParensCommas (map pp $ Set.toList $ mentOwns e)
+  pp = ppModEnt pp
+
+-- intended for parsing
+ppModEntRel' :: (HsName -> PP_Doc) -> ModEntRel -> PP_Doc
+ppModEntRel' pn = ppCurlysAssocL pn (ppModEnt pn) . Rel.toList
 
 ppModEntRel :: ModEntRel -> PP_Doc
-ppModEntRel
-  = ppBracketsCommas . map (\(a,b) -> pp a >|< "<>" >|< pp b) . Rel.toList
+ppModEntRel = ppModEntRel' pp
 
 ppModEntDomMp :: ModEntDomMp -> PP_Doc
-ppModEntDomMp
-  = ppBracketsCommas . map (\(a,b) -> pp a >|< "<>" >|< ppBracketsCommas b) . Map.toList
+ppModEntDomMp = ppCurlysCommasBlock . map (\(a,b) -> pp a >|< "<>" >|< ppBracketsCommas b) . Map.toList
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

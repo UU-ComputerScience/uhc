@@ -115,5 +115,5 @@ SEM GrModule
                                                                     (@lhs.unique, [], @evalTagMp, @bindL.grTrf)
                                                                     (Set.elems @bindL.applyNodeSizes)
          lhs  . unique = @unique'
-         lhs  . grTrf  = GrModule_Mod @baseName @globalL.grTrf @binds @ctagsMp @evalTagMp' @applyTagMp
+         lhs  . grTrf  = GrModule_Mod @moduleNm @globalL.grTrf @binds @ctagsMp @evalTagMp' @applyTagMp
 %%]

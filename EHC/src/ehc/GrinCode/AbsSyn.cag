@@ -16,7 +16,7 @@ DATA GrAGItf
   | AGItf       module          : GrModule
 
 DATA GrModule
-  | Mod         baseName        : {HsName}
+  | Mod         moduleNm        : {HsName}
                 globalL         : GrGlobalL
                 bindL           : GrBindL
                 ctagsMp         : {CTagsMp}
