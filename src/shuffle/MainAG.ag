@@ -398,7 +398,7 @@ SEM Line
   | Named       loc         .   cdoc        =   CDoc_Ref @cref ChHere
   | AsIs Named  lhs         .   mbCD        =   Just (CDoc_Pos (CPos (optBaseFPath @lhs.opts) @lhs.lineNr) @cdoc)
   | Group       loc         .   mbCD        =   fmap (chWrap @chOptions.chWrap) @lines.mbCD
-{-                lhs         .   mbCD        =   case @chOptions.chDest of
+                lhs         .   mbCD        =   case @chOptions.chDest of
                                                   _ | not (verMember @version @lhs.allowedVersions)
                                                          -> Nothing
                                                   ChHere -> @mbCD
@@ -412,15 +412,6 @@ SEM Line
                                                          -> Map.empty
                                                   ChHere -> Map.empty
                                                   h      -> Map.singleton n (HideInfo n i @lhs.seqNr @chOptions.chDest @mbCD @lhs.chFullNm)
-                                                         where (n,i) = case @userRef of
-                                                                         Just (r,Just i ) -> (r,cd i)
-                                                                         Just (r,Nothing) -> (r,cd r)
-                                                                         _                -> (mkNm (show h) `nmApd` mkNm @lhs.seqNr,CDoc_Emp) -}
-                (lhs.mbCD,loc.gathHideMp)   =   case @chOptions.chDest of
-                                                  _ | not (verMember @version @lhs.allowedVersions)
-                                                         -> (Nothing,Map.empty)
-                                                  ChHere -> (@mbCD,Map.empty)
-                                                  h      -> (Just (mkHideNmRef (cd n)),Map.singleton n (HideInfo n i @lhs.seqNr @chOptions.chDest @mbCD @lhs.chFullNm))
                                                          where (n,i) = case @userRef of
                                                                          Just (r,Just i ) -> (r,cd i)
                                                                          Just (r,Nothing) -> (r,cd r)
