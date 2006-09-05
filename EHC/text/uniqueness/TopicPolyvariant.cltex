@@ -33,7 +33,7 @@ sets:
 
 %%[[wrap=code
 f  ::  forall (Delta(1))                      .  (Annot(Int)(1))
-g  ::  forall (Delta(1))                      .  (Annot(Int)(1)),  (Card(onemin,*)) =>= (Delta(1))
+g  ::  forall (Delta(1))                      .  (Annot(Int)(1)),  (Card(onemin)(*)) =>= (Delta(1))
 h  ::  forall (Delta(2))                      .  (Annot(Int)(2)) (Annot(->)(2)) (Annot(Int)(2))
 j  ::  forall (Delta(3))(Delta(4))(Delta(5))  .  (Annot(Int)(4)) (Annot(->)(3)) (Annot(Int)(5)),  (Delta(5)) =>= (Delta(4)), (Delta(5)) (Sub(=>=)(s)) (Delta(3))
 %%]
@@ -182,11 +182,15 @@ reasons are integer expressions and the spine of a lambda freshly annotated: we 
 for any cardinality annotation.
 
 Figure~\ref{RulerUniquenessExamples.UX.expr.base} lists the type rules for the uniqueness type system with cardinality inference. The constraint
-generation remained virtually the same. The notable changes are the places where identifiers are freshly annotated, and a reduction in the
-number of coercion constraints. The result of the inference process are annotated types for each expression,
-and a substitution. The substitution maps each cardinality variable to a cardinality value.
+generation remained virtually the same (see Section~\ref{Sect.HigherGathering}). The notable changes are the places where identifiers are freshly
+annotated, and a reduction in the number of coercion constraints. Furthermore, we take a copy of the constraint set of an identifier with the
+annotations of the definition site replaced by annotations of the use-site (the relation |rename| in the type rules), which is needed to ensure
+that we still know about which types we are talking.
 
 \rulerCmdUse{RulerUniquenessExamples.UX.expr.base}
+
+The generated constraints are passed to the inferencer, and the results are annotated types for each expression,
+and a substitution. The substitution maps each cardinality variable to a cardinality value.
 
 
 \section{The inferencer}
@@ -503,6 +507,20 @@ approximate the bounds of |y|. This means that the constraint set that we obtain
 inserting this constraint set at each use-site of |y|, gives solutions that are equal, or conservatively less
 accurate, compared to solutions obtained from analysing an expression without a |let|.
 
+An alternative way to look at this problem is as follows. Consider the function |(\f -> f 3 + f 3) (\x -> x)| from
+Chapter~\ref{Sect.HigherGathering}. There is an equivalent way to write this function:
+
+%%[[wrap=code
+let  f = \x -> x
+in  f 3 + f 3
+%%]
+
+This expression is exactly the same because the let is monomorphic. Since we use a full polyvariant analysis, we expect
+the constraint set of the let-expression to equal the constraint set of the function-expression. The function expression
+copied the constraint set of |\x -> x| to the use-sites of |f|. In our description of how to deal with a |let|, we
+copy the constraint set of |f|---which is the constraint set of |\x -> x|---to the use-sites of |f|. So, technically
+speaking, this is not something new!
+
 The \emph{sacred variables}, or sacred annotations, are those cardinality variables that may not be replaced by a fresh
 cardinality variable. These sacred variables are the annotations on the definition-site types of identifiers and the
 annotations on use-site types of identifiers that are in scope for a binding group. Basically, the sacred annotations
@@ -510,7 +528,9 @@ are the annotations on identifiers that are directly influenced and visible by t
 annotation variables is linear in the size of the abstract syntax tree. The sacred variables are collected and
 passed to the inferencer. We omit this detail in the type rules.
 
-The type scheme has an additional result |omega|, which represents the constraints of a binding group:
+The type scheme has an additional result |omega|, which represents the constraints of a binding group. Note that we
+consider an argument expression to be a (pseudo) nested binding group of the binding group of the function application, since
+conceptually that is the same. The type scheme is now:
 
 \rulerCmdUse{RulerUniquenessExamples.UL.expr.base.scheme}
 
@@ -521,23 +541,24 @@ constraints that are to be inserted, by means of the following constraint:
 Inst <binding_group_id> [(<definition_site_uniqueness_variable>, <use_site_uniqueness_variable>)]
 %%]
 
-This constraint is inserted at the use-site of an identifier. It specifies that we take the constraint set gathered for the
-identifier and insert it at the use-site. We already mentioned that the constraint set is the same, but the annotations
+This constraint is inserted at the use-site of an identifier and at a function application. We use the relation
+|genInst| in the type rule to convert a source and destination type into an |Inst| constraint. This |Inst| constraint
+specifies that we take the constraint set for the identifier (or argument expression) and insert it at the
+use-site. We already mentioned that the constraint set is the same, but the annotations
 differ. The list of pairs in the constraint specify which cardinality variables in the constraint set of the definition-site are
 mapped to which cardinality variables of the use-site. The other cardinality variables occurring in the definition-site constraint set
 are replaced by fresh variables in the inferencer (Section~\ref{sect.TheInferencer}). This gives us the following rule for identifiers:
 
 \begin{center}
 \rulerCmdUse{RulerUniquenessExamples.UL.expr.base.e.var}
+\rulerCmdUse{RulerUniquenessExamples.UL.expr.base.e.app}
 \end{center}
 
-There is a slight complication here. Identifiers can refer to bindings, but to function parameters as well. How to deal with
-those? In principle, uses of function parameters do not require a constraint set, since the connections between the cardinality
-variables occurring on the type of function arguments are specified by the constraint set of the caller of the function. So,
-for function parameters, the constraint set can be kept empty. Technically speaking, an |Inst| constraint can be generated for
-a function parameter, but the constraints it represents do not tell anything new about the cardinality variables on the
-type of a function parameter. So, in our description, we do not make this difference for conciseness, but make the difference
-in the implementation for performance reasons.
+A nice result is that the type rules do not have the seemingly complex propagation of constraint sets: the inferencer takes care
+of it. 
+
+There is a slight optimization possible. If a parameter of a function is not a function itself, then we do not need to generate an
+|Inst| constraint for it. The reason is that the aggregation constraint properly relates the annotations of such a variable.
 
 For the |let|, we have the following type rule:
 
@@ -548,9 +569,9 @@ For the |let|, we have the following type rule:
 The term \emph{binding group} refers to the bindings of the |let|. We assume that each |let| is numbered. This number
 identifies the binding group. In EH, each |let| only contains a single binding group, but technically speaking, the |let|
 can be partitioned in multiple binding groups (such as in Haskell). Binding groups are nested. Binding group |A| is a
-parent of binding group |B| if and only if the |let| of |B| occurs in the expression of the identifier of the |let| of
-|A|. The body of the |let| belongs to the same binding group of the encoding expression. An identifier in binding group
-|C| is also in binding group |D| if and only if |D| is |C|, or is a parent of |C|. Two identifiers are in the same binding group if
+parent of binding group |B| if and only if |B| occurs in an expression of |A|. The body of the |let| belongs to the same
+binding group of the encoding expression. An identifier in binding group |C| is also in binding group |D| if and only if
+|D| is |C|, or is a parent of |C|. Two identifiers are in the same binding group if
 and only if the binding group of one identifier is the parent of the binding group of the other
 identifier. A binding group is outermost if it has no parent.
 
@@ -825,8 +846,6 @@ a \-/ (... a ...)        ===  (... a ...)              -- values can only grow
 (a \*/ b) \-/ (c \*/ d)  ===  (a \-/ b) \*/ (c \-/ d)  -- property of lower bound <= 1 and upper bound <= 2
 (a \-/ b)                <=   a \*/ b                  -- conservative (approximates upper bound, if all else fails)
 %%]
-
-An alternative is to put the expression representing the hyper edge into algebraic normal form.
 
 Note that a graph merge is not required when there occurs only one non-atomic hyper edge in the constraint graph of a hyper
 edge. An atomic hyper edge contains no constraint graph. A non-atomic hyper edge does have a constraint graph.

@@ -982,11 +982,22 @@ a receive point and spread points as a special annotation on the arrow type cons
   identifiers of the expression to such a unique identifier |beta|. The idea is that we give each parameter of a function
   a unique identifier |beta|, which is recorded in |Phi| at a lambda abstraction. This |beta| represents a receive point
   of a constraint set. At each use of an identifier, we lookup what the corresponding receive point is and demand that the
-  future constraint set will become the constraint set of the use of the identifier. This future constraint set is provided
-  by the function application by demanding that the receive point |beta| corresponds with the constraint set resulting from
-  argument expression.
+  future constraint set will become the constraint set of the use of the identifier. Because this |beta| ends up as
+  annotation on the function arrow and is used during unifications, we know at applications of this function how to refer
+  to this |beta|. The future constraint set is then provided by the function application by demanding that the receive
+  point |beta| corresponds with the constraint set resulting from argument expression.
   
   \rulerCmdUse{RulerUniquenessExamples.U2.expr.base}
+  
+  Note that a constraint set of node |e| in the abstract syntax tree cannot spread to a node that is a child of |e| due
+  to the fact that we only spread from argument to function in a function application. This ensures that we can write this
+  spreading concisely using a few AG attributes: unifications already took place so we know what |beta| is at the
+  function application and at the use-sites of parameters. For a function application, we can then just add the synthesized
+  constraint set of a function application paired with |beta| to the inherited environment |Psi| of the function expression,
+  take out the constraint set at the use sites of the corresponding parameter, and then synthesize the constraints of the
+  function expression, argument expression, and the coercion constraints of the function application as the constraint set
+  of the function application. This is not the case for a recursive |let|. However, a solution will be presented in
+  Chapter~\ref{chapt.Recursion}, based upon instantiation and constraint graphs of Chapter~\ref{chapt.Polyvariant}.
 
 
 \section{Checking constraints}

@@ -3,9 +3,6 @@
 \chapter{Adding algebraic data types}
 \label{chapt.DataTypes}
 
-Note: need to look again at pattern matches.
-Note: need to say something about which parts of a value are evaluated at the root of the expression (the others should have a lower bound of 0).
-
 We almost have an industry-ready language from a typing point of view. The mayor type system feature that we
 lack are algebraic data types. We will encounter pattern matches as the only new concept of this chapter,
 all other features are already covered in previous chapters.
@@ -44,7 +41,7 @@ are useful: a value can be infinite, but the representation of the type is finit
 With the annotation problem taken care of, the existing infrastructure knows how to deal with
 expressions with user-defined data types as types. But, in order to construct and deconstruct such
 values we need a few alterations in the expression language, by means of value constructors,
-pattern matching, and case-expressions. Value construtors are just functions with a type derived
+pattern matching, and case-expressions. Value constructors are just functions with a type derived
 from the corresponding algebraic data type definition. We already know how to deal with those. But
 pattern matches and case-expressions deserve some attention.
 
@@ -230,8 +227,8 @@ explain this subject again here: the generalisation is straightforward after we 
 \label{sect.PatternMatch}
 
   Pattern matches bring identifiers into scope, and force evaluation of a certain part of a value to
-  determine if a pattern matches or not.
-
+  determine if a pattern matches or not. We assume that we only have pattern matches in a |case| expression.
+  
   The structure of a pattern match dictates how to pattern match on a type to obtain the type of
   the subpatterns. An expanded type (Section~\ref{sect.ExpandedTypes}) can directly be overlayed on top
   of a pattern match. An exposed-annotated type can be overlayed on a pattern match after a
@@ -239,37 +236,51 @@ explain this subject again here: the generalisation is straightforward after we 
   expansion of Section~\ref{sect.ExpandedTypes} as example, then a match |Cons x xs|, with the type of
   the entire pattern match being |<Cons (Dot(Int)((Delta(4)))([])) ((Dot(List)((Delta(2)))((Delta(6)))) (Dot(Int)((Delta(5)))([]))), Nil>|,
   gives |(Dot(Int)((Delta(4)))([]))| for |x| and |(Dot(List)((Delta(2)))((Delta(6)))) (Dot(Int)((Delta(5)))([]))| for
-  |xs|. So, for pattern matches, we the annotated type is pushed inwards, expanding it if needed for
-  each match on a constructor.
+  |xs|. So, for pattern matches, the annotated type is pushed inwards, expanding it if needed for
+  each match on a constructor. This ensures that we have a definition-site type for every part of
+  a pattern.
 
-  A pattern match cannot obtain a component from a value without evaluating the spine of that
-  value. The upper and lower bounds of the spine are thus at least the upper and lower bound
-  of any component. Define the parent of a pattern to be the match on a constructor closest to the
-  pattern. For example, in the match |(Sub(Cons)(1)) x ((Sub(Cons)(2)) y ys)|, the parent of
-  both |y| and |ys| is |(Sub(Cons)(2))|, and the pattern of |(Sub(Cons)(2))| and |x| is
-  |(Sub(Cons)(1))|. Associated with each variable binding, and each constructor, is the
-  type of the value that on which the pattern is applied. Suppose |(Delta(1))| is the
-  outermost annotation on a constructor match or variable binding, and |(Delta(2))| is the
-  outermost annotation on the type of the value of the corresponding parent. We generate a
-  constraint |(Delta(1)) (Sub(=>=)(s)) (Delta(2))| to propagate reference counts. Due to
-  transitivity in the coercion constraint, each pattern is connected to the parent, the
-  parent of the parent, and so on.
+  We now discuss which coercion and aggregation constraints are generated for a pattern match. Take the
+  following pattern as example:
 
-  This approach can be refined a bit, depending on guarantees of the code-generation process.
-  If the code generator guarantees that a pattern match is only evaluated once for each binding
-  (which is a valid assumption with call-by-name semantics), then for each parent pattern, we can take the
-  \emph{minimum} between the reference-count via the conventional way, and the reference-count of the
-  expression tied to the pattern match. In other words, suppose that |delta| is the annotation on
-  a pattern, |(Sub(delta)(par))| the annotation on the corresponding parent, and |(Sub(delta)(expr))|
-  the annotation on the expression tied to the pattern match. Then generate the constraint:
-  |delta \-/ (Sub(delta)(expr)) <= |Sub(delta)(par))|.
+%%[[wrap=code
+  Cons x (Cons 3 y@(Cons _ ~(Cons z zs)))
+%%]
 
-  The other aspect of pattern matches, strictness, is resolved by propagating reference counts from
-  the expression tied to the pattern match to the matches on constructors. If |delta| is the outermost
-  annotation of the type of the value on which a \emph{refutable| constructor match is applied, and
-  |(Sub(delta)(expr))| is the outermost annotation on the type of the corresponding expression, then
-  we generate a constraint |(Sub(delta)(expr)) (Sub(=>=)(s)) delta| to capture the strictness effects
-  of a pattern match.
+  This pattern shows some possibilities for a pattern, such as aliasing (|y@...|) and
+  irrefutable patterns (|~(Cons ...)|) and an underscore (|_|).
+
+  If a pattern has a topmost constructor (in our case the |Cons| on the left), then this constructor is special: it has the same
+  annotation as the outermost annotation of the type of the pattern. There is guaranteed to be an
+  evaluation of a value corresponding to the match if all patterns in branches above this constructor have topmost
+  constructors. These constructors have one thing in common: the corresponding type constructor (and thus the annotation) is
+  equal. So the case expression will always lead to a weak-head normal form evaluation of the value where we match upon. Thus
+  we can safely set the annotation corresponding to such a special constructor to the upper and lower bound of the
+  enclosing expression.
+
+  For the non-special parts of the pattern, we proceed as follows. The lower bound of each annotation is forced
+  to |0|, except for function arguments or parameters, since we do not have guarantees of evaluation. The upper
+  bound depends on the specific part of a pattern.
+
+  Suppose that the pattern is a constructor. A constructor is irrefutable if it is inside a irrefutable pattern (|~|),
+  otherwise it is refutable. For a refutable pattern we force the upper bound to at least the upper bound of the
+  enclosing expression, since such a match only needs to be performed at most once for each evaluation of the
+  |case| expression. This is not the case for an irrefutable pattern. For an irrefutable pattern, we can force
+  the upper bound to at least the minimum of the upper bound of the enclosing expression, and the maximum of
+  the upper bounds of all the variables inside the same irrefutable pattern. This reason is that the irrefutable
+  pattern is at most as often evaluated as the enclosing expression, but can be less if none of the identifiers
+  it brings in scope are used. If there is an alias connected to the constructor, then we generate an aggregation
+  constraint between the annotation of the constructor and the corresponding annotation on the use-sites of such
+  an alias.
+ 
+  Suppose that the pattern is a variable or underscore. We force, by means of an aggregation constraint, the upper
+  bound to at least the upper bound of the sum of the corresponding upper bounds from all aliases and the aggregation result of
+  the individual uses of the variable. For example, we create an aggregation constraint for all uses of |z| and combine
+  this aggregation with the annotations from the corresponding part of the definition site of |y|.
+
+  Pattern matches are not really complicated, but present some technical details due to forced evaluation and
+  patterns that introduce aliasing.
+
 
 \section{Case expressions}
 
@@ -277,145 +288,69 @@ explain this subject again here: the generalisation is straightforward after we 
   pattern matches. For the pattern matches and the subexpressions, we apply the constraint
   gathering rules as discussed before. A freshly annotated type |utau| is invented for the result
   type |tau| of the case-expression. Each branch |i|, with annotated type |(Sub(utau)(i))|, is coerced
-  to the result type of the case-expressions by generating the constraint |utau =>= (Sub(utau)(i))|.
+  to the result type of the case-expressions by generating the constraint |utau (Sub(=>=)(q)) (Sub(utau)(i))|.
+  We discussed this particular subject in the previous chapter when we dealt with |if..then..else| expressions.
 
-  The difficulty of a case expression is in the uses of identifiers. Without a case expression, all
-  identifiers appear in the same execution path. With a case expression, this is no longer the case,
-  if some identifier |x| occurs in a branch, and also in another branch, then these two uses of |x| are
-  not in the same execution path. For each execution path, we determine how often an identifier is
-  used and take the maximum over the execution paths.
-  
-  Consider the following example:
+\section{|beta| annotations and constructors}
 
-%%[[wrap=code
-  \(x :: (Sub(utau)(1))) -> case (x :: (Sub(utau)(1))) of
-                              True   -> (x :: (Sub(utau)(2)))
-                              False  -> (x :: (Sub(utau)(3))) && (x :: (Sub(utau)(4)))
-%%]
+  We assume that each data type is annotated with a |beta| annotation for each field in one of the
+  constructors. So, a data type with |n| fields gets annotations |(Sub(beta)(1)) ... (Sub(beta)(n))|. These
+  |beta| annotations are pointers to the binding groups from which the constraints are taken at the
+  use-sites of fields from a value of this data type.
 
-  We know build from the abstract syntax tree an arithmetic expression that combines the individual results
-  of the uses of |x|. We start with the first branch. Only one occurrence of |x|, so the arithmetic
-  expression is just |(Sub(utau)(2))|. Then the second branch. There are two occurrences of |x| in sequence,
-  so the arithmetic expression is |(Sub(utau)(3)) \+/ (Sub(utau)(4))|. We now combine the branches by taking
-  the maximum of the two execution paths, denoted by |\-/|: |(Sub(utau)(2)) \-/ ((Sub(utau)(3)) \+/ (Sub(utau)(4)))|.
-  The guard of the case expression has only a single occurrence of |x|, resulting in the expression |(Sub(utau)(1)))|.
-  Finally, for the entire case expression we combine the guard and the branches. The guard is in the same execution
-  path as all the branches, resulting into the arithmetic expression: |(Sub(utau)(1))) \+/ ((Sub(utau)(2)) \-/ ((Sub(utau)(3)) \+/ (Sub(utau)(4))))|.
-  By means of the definition site, the arithmetic expression is turned into a constraint:
-  |(Sub(utau)(1))) \+/ ((Sub(utau)(2)) \-/ ((Sub(utau)(3)) \+/ (Sub(utau)(4)))) <= (Sub(utau)(0))|.
-  
-  To summarize: we treat each occurrence of an identifier as being in the same execution path, unless they appear in
-  different branches of a case expression. In the presence of a |Let| binding, this approach is somewhat conservative.
-  For example:
+  From the data type definition, we derive an annotated signature from the data type definition, using the
+  conventional approach to get a signature from a data type definition, except that we take the annotated
+  types of the fields.
+
+  Consider the |List| data type. The algebraic data type definition of a |List| has two fields, so the
+  |List| has two |beta| annotations. It also has one exposed annotation |delta|. This gives us the
+  following annotated algebraic data type declaration (in a slightly different notation):
 
 %%[[wrap=code
-  \b ->  let  x = 3
-              y = x
-              z = x
-         in   case b of
-                True   -> y
-                False  -> z
+forall beta1 beta2 .
+  forall delta1 delta2 .
+    forall alpha .
+      data (Dot(List)((delta1,delta2)(beta1,beta2))(delta1)) alpha  =  Cons (Sub(alpha)(beta1)) (Sub(((Dot(List)((delta1,delta2))(delta2)) alpha))(beta2))
+                                                                    |  Nil
+
 %%]
 
-  The |y| and |z| are both used once, assuming that the entire expression is used once. So, both occurrences of
-  |x| are used once. We assumed by the above approach that these two occurrences of |x| are in the same
-  execution path, and will thus add up the reference counts, with the result that |x| is considered shared. But
-  if we look at the case-expression, we see that |y| and |z| do not appear together on an execution path. So,
-  instead of adding up, it is safe to only take the maximum.
-
-  To get this improvement implemented, we need to determine which bindings do not appear in the same execution
-  path. These can be obtained from the syntactical structure of the program, by means of an analysis similar
-  to control flow analysis~\cite{nnh99}. Each use-site of an identifier is labeled, and we
-  determine for each expression a set, where each element in the set is a set of identifier labels that occur
-  sequential. To illustrate this, consider the above example again:
+  From this definition, we generate the signature for |Cons| in the obvious way:
 
 %%[[wrap=code
-  (\b ->  (  let  x = 3 [12]
-                  y = (Sub(x)(1)) [13]
-                  z = (Sub(x)(2)) [14]
-             in   (  case (Sub(b)(3)) [16] of
-                       True   -> (Sub(y)(4)) [17]
-                       False  -> (Sub(z)(5)) [18]
-                  ) [15]
-          ) [11] ) [10]
+forall beta1 beta2 .
+  forall delta1 delta2 delta3 .
+    forall alpha .
+      Cons :: (Sup(alpha)(delta3)) (Sub(->)(beta1)) ((Dot(List)((delta1,delta2)(beta1,beta2))(delta2)) (Sup(alpha)(delta3))) (Sub(->)(beta2)) ((Dot(List)((delta1,delta2)(beta1,beta2))(delta1)) (Sup(alpha)(delta3)))
 %%]
 
-  Each use of an identifier is labeled (1-5), as well as each expression (10-17). For each expression we
-  find the following sets:
-
-  \begin{tabular}{l||l}
-  Expression & Labels \\
-  \hline
-  10 & $\{ \{\} \}$ \\
-  11 & $\{ \{1, 3, 4\}, \{2, 3, 5\} \}$ \\
-  12 & $\{ \{\} \}$ \\
-  13 & $\{ \{1\} \}$ \\
-  14 & $\{ \{2\} \}$ \\
-  15 & $\{ \{1, 3, 4\}, \{2, 3, 5\} \}$ \\
-  16 & $\{ \{3\} \}$ \\
-  17 & $\{ \{1, 4\} \}$ \\
-  18 & $\{ \{2, 5\} \}$
-  \end{tabular}
-
-  The results for expressions 17 and 18 show that branch 17 and 18 are independent. Result 15 shows that
-  label 3 is sequential to either expression, and the results are obtained by a Cartesian product between
-  $\{3\}$ and $\{ \{1, 4\}, \{2, 5\} \}$. Finally, result 10 shows that sets are removed when none of the
-  labels are in scope.
-
-  Unfortunately, the existence of (higher order) functions, make this analysis more complicated. See
-  Flemming Nielson, et all~\cite{nnh99}, for more information about this subject.
-
-  With this information, we can determine the addition constraints. We take the result
-  set |S| of expression 11 and build the arithmetic expression by taking the maximum (|\-/|) over the groups,
-  and the sum (|\+/|) over each occurrence of |x| in such group:
+  This allows us to use constructors as arbitrary functions. Also note the interaction with the |beta| annotations.
+  We can put functions into lists, but the |beta| annotations will ensure that we still know which constraints
+  belong to a function:
 
 %%[[wrap=code
-  toConstraint x s
-    =  foldr  (\p q -> sumup p \-/ sumup q) (<=)               -- use maximum between groups
-              [s' | s' <- s, any (`isLabelOf` x) s' ]          -- take only a group with x in it
-    where
-      sumup s
-        = foldr1 (\+/) [ typeOf l | l <- s, l `isLabelOf` x ]  -- use addition inside group
+xs = (Cons f (Cons g (Cons h Nil)))
 %%]
 
-  This approach can be improved further by incorporating the results from reference-counts. For that we
-  need to change the initial solution of the control flow analysis. Instead of the empty set, we take a
-  set with has the singleton set |{l}| for each use-site occurring in it, labeled |l|. This makes sure
-  that we initial assume that there is a constraint |(Sub(utau)(1)) \-/ ... \-/ (Sub(utau)(2)) <= utau|
-  between some identifier |x :: utau| with use-sites |(Sub(x)(i)) :: (Sub(utau)(i))|. This initial solution
-  properly propagates information about if a value is used zero or one or more times, but does not properly
-  propagate if a value is used more than once (since that requires the use of |\+/| operators in the
-  constraints). But, as soon as information becomes available of expressions that
-  are being used, the control flow analysis will produce more sets, and the constraint then evolves to
-  a constraint that properly adds annotations where needed. Essentially, the fixpoint computation in
-  the solve process does not only involve the substitution, but also the constraints. This is not
-  surprising, since this already is the case with the instantiation discussed in Section~\ref{sect.Instantiation},
-  where constraints are duplicated during the fixpoint computation.
-
-  The benefits of the control flow analysis are questionable. The sets can grow large, and the analysis
-  can be an intensive job for the compiler, especially in the presence of higher-order functions. So,
-  in a practical setup, some conservative approximations to the sets will be needed, but in that case,
-  not performing this analysis gives probably equivalent results. However, this is a topic that may
-  be interesting to investigate. The improvements to the control flow analysis are nice from a
-  technical perspective, but make the matters only more resource-intensive for the compiler, influences
-  the graph reduction strategies, and will not be useful in practice.
-
-\section{Records}
-
-  Todo. Don't know if I should spend time on records, since it is not interesting for the reader.
+  Since we assume that |beta| annotations are part of the underlying type system, unifications on |beta| annotations
+  took place when constructing the list, such that the |beta1| is the same for each |Cons|. This means that the
+  constraint sets of |f|, |g|, and |h| are merged into a single constraint set. When pattern matching on a function
+  in this |List|, we do not know which of the three functions it is. But the constraint set that we get is the
+  merged version of the three constraint sets, which is at least as restrictive than any of the individual
+  functions, thus correct.
 
 \section{Conclusion}
 
-  Data types are an interesting language feature in terms of what complications they give in order to
+  Algebraic data types are an interesting language feature in terms of what complications they give in order to
   support them. Good abstractions are required in the implementation, otherwise code becomes soon
   so interconnected that it is no longer feasible to grasp. Our approach with constraint gathering,
   constraint graph construction with annotation trees, and constraint solving, provides ways of splitting
   concerns in small enough pieces.
 
   An important aspect of the approach taken in this chapter is, is that the part that is concerned with
-  the analysis itself (constraint solving), is almost not affected. This means that data types do not
+  the analysis itself (constraint solving), is almost not affected. This means that algebraic data types do not
   require us to change our way of reasoning about uniqueness typing, and only complicate the analysis on
-  a technical level, instead of a conceptual level. Perhaps that the work on data types can be reused
+  a technical level, instead of a conceptual level. Perhaps that the work on algebraic data types can be reused
   for other analyses as well.
 
   One aspect that we did not cover in this chapter, is how we determine the variance of an annotation,
@@ -596,7 +531,7 @@ typing, but about a whole other analysis!
   can eliminate hyper edges for the analysis in this chapter entirely (Section~\ref{sect.vargraphsimplification}).
 
   The infrastructure remains the same. This may raise the question how we deal with variance and below-the-function-arrow
-  when converting the constraints of this chapter to constraint graphs. We do not need an exstensive analysis for this:
+  when converting the constraints of this chapter to constraint graphs. We do not need an extensive analysis for this:
   the kind language is simple enough that we can obtain variance information with a variation of the functions given
   in the introduction of this chapter. And belowness we fix at |NotBelow| as the concept of belowness is not important
   for the analysis on algebraic data types.

@@ -285,4 +285,3 @@ satisfied (a, b, c) (Sub(=>=)(q)) (d, e, f)
   evaluation order is determined by (lazy) pattern matches.
 
 %%]
-
