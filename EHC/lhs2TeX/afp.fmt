@@ -138,7 +138,7 @@
 %format Qu          = "\mathcal{Q}"
 %format nQu         = "\neg" Qu
 
-%format ident       = iota
+%format ident       = "i"
 %format identv      = "i"
 %format identc      = "I"
 
@@ -425,3 +425,5 @@
 %format join = "\sqcup"
 %format ConstrSet = zeta
 %format bottom = "\bot"
+%format Phi = "\Phi"
+%format Psi = "\Psi"

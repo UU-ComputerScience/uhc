@@ -4,7 +4,7 @@ preamble tex "%include lhs2TeX.fmt\n%include afp.fmt\n%include ehrules.fmt\n"
 external Ty_Int
 external empty
 
-viewhierarchy = B < E0 < E1 < E2 < E < U1, B < E0 < E1 < EL < UL, B < D < DC, B < E0 < E1 < E2 < EX < UX, B < E0 < E1 < L, B < E0 < E1 < EL < EF < UF
+viewhierarchy = B < E0 < E1 < E2 < E < U1, B < E0 < E1 < E2 < E < U1 < U2, B < E0 < E1 < EL < UL, B < D < DC, B < E0 < E1 < E2 < EX < UX, B < E0 < E1 < L, B < E0 < E1 < EL < EF < UF
 
 data Expr [expr]
   view E0
@@ -57,6 +57,8 @@ format tex Ty_Int = Int
 format tex Ty_Bool = Bool
 format tex Gam = Gamma
 format tex gam = Gamma
+format tex psi = Psi
+format tex phi = Phi
 format tex ty = tau
 format tex uty = utau
 format tex utyA = utau
@@ -86,6 +88,13 @@ scheme expr "Expr" =
     judgespec gam :- e : uty ~> cs
     judgeuse tex gam :-..unq e : uty ~> cs
     explain (Within environment |gam| , |e| has annotated type |uty| , provided that the constraints in |cs| are satisfied.)
+    explain cs = (Constraints between annotations)
+    explain ty = (Annotated type of the expression)
+  view U2 =
+    holes [ cs: Cs, uty: Ty, phi: Gam, psi: Gam ]
+    judgespec phi ; gam :- e : uty ~> cs ; psi
+    judgeuse tex phi ; gam :-..unq e : uty ~> cs ; psi
+    explain (Within environment |gam| , |e| has annotated type |uty| , provided that the constraints in |cs| are satisfied , with |psi| an environment of receive points , and |phi| an environment of spread points.)
     explain cs = (Constraints between annotations)
     explain ty = (Annotated type of the expression)
   view EL =
@@ -169,6 +178,10 @@ ruleset expr.base scheme expr  "Expression type rules" =
       judge R : expr
         | uty = Ty_Int..delta
         | cs = empty
+    view U2 =
+      -
+      judge R : expr
+        | psi = empty
     view EX =
       -
       judge R : expr = gam :- n : Ty_Int
@@ -192,6 +205,12 @@ ruleset expr.base scheme expr  "Expression type rules" =
       -
       judge R : expr
         | cs = empty
+    view U2 =
+      judge G2 : lookup = ident :-> beta `elem` phi
+      -
+      judge R : expr
+        | psi = { (beta, cs.psi) }
+        | cs  = cs.psi
     view EL =
       judge G : lookup = ident.n :-> ty `elem` gam
       -
@@ -237,6 +256,15 @@ ruleset expr.base scheme expr  "Expression type rules" =
       judge R : expr
         | cs  = cs.c1 cs.c2 cs.a cs.b
         | uty = Ty_Int..c
+
+    view U2 =
+      judge A : expr
+        | psi = psi.a
+      judge B : expr
+        | psi = psi.b
+      -
+      judge R : expr
+        | psi = psi.a psi.b
     view EX =
       judge A : expr = gam :- x : Ty_Int
       judge B : expr = gam :- y : Ty_Int
@@ -280,6 +308,17 @@ ruleset expr.base scheme expr  "Expression type rules" =
       -
       judge R : expr
         | cs = cs.m1 cs.m2 cs.r cs.a cs.f
+    view U2 =
+      judge F : expr
+        | psi = psi.f
+      judge A : expr
+        | psi = psi.a
+      judge C : match = uty.f <=> (uty.a.1 ->.beta.(delta.1) uty.r)
+      judge S : lookup = beta :-> cs.a `elem` psi.f
+      -
+      judge R : expr
+        | psi = psi.f psi.a
+      
     view EX =
       judge F : expr = gam :- f : ty.f
       judge A : expr = gam :- a : ty.a
@@ -321,6 +360,11 @@ ruleset expr.base scheme expr  "Expression type rules" =
       judge R : expr
         | uty = uty.x ->..delta uty
         | cs  = cs.gat cs.b
+    view U2 =
+      judge B : expr = (x :-> beta + phi) ; (x :-> ty.x + gam) :- b : uty ~> cs.b ; psi
+      -
+      judge R : expr
+        | uty = uty.x ->.beta.delta uty
     view EX =
       judge B : expr = (x :-> ty.x + gam) :- b : ty
       -

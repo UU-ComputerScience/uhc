@@ -43,7 +43,7 @@
 %%]
 
 %%[20
-\documentclass[a4paper]{st-thesis}
+\documentclass[sffont=false,a4paper]{st-thesis}
 %%]
 
 %%[7

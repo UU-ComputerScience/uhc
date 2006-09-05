@@ -632,8 +632,18 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   values are totally ordered with: |0 leqU 1| and |1 leqU *|.
   The |<=| relation on natural numbers corresponds to the above relation. The above relation is used in
   the checks to allow relaxation of an upper bound to a higher upper bound.
+  
+  The upper bound should be greater than the lower bound, which is defined by the following
+  predicate |leqB| (it is not a partial order, although we write it as such):
 
-  The cardinality annotation consists of two |Usage| values. The left |Usage| value defines the
+%%[[wrap=code
+  leqB :: LowerBound -> UpperBound -> Bool
+  0  leqB  _  =  True
+  1  leqB  u  =  1 leqU u
+  _  leqB  _  =  False
+%%]
+
+  An cardinality annotation consists of two |Usage| values. The left |Usage| value defines the
   usage of the value via |E|, and the right |Usage| value defines the total usage of the
   value. The left |Usage| value must fit the two bounds (Figure~\ref{code.FitsInBounds}). The
   right |Usage| value is at most as specific as the left |Usage| value.
@@ -688,7 +698,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
 \end{center}
 \end{figure}
 
-  The above ordering is used in Chapter~\ref{Chapt.Polyvariance} to specify which right-hand side
+  The above ordering is used in Chapter~\ref{chapt.Polyvariant} to specify which right-hand side
   values of a cardinality annotation are preferable over others. |Usage| values of |0| and
   |1| are preferable over |onemin| or |*| because it is more precise.
 
@@ -748,17 +758,6 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   one particular occurrence of some value, then we must make this relaxation for all
   annotations of this particular occurrence. For example,
 
-  Finally, we define an ordering to verify that the right-hand side of a
-  cardinality annotation does not conflict with the left-hand side of a cardinality
-  annotation:
-
-%%[[wrap=code
-  leqB :: LowerBound -> UpperBound -> Bool
-  0  leqB  _  =  True
-  1  leqB  u  =  1 leqU u
-  _  leqB  _  =  False
-%%]
-
   The orderings on the left-hand side and right-hand side of a cardinality annotation can be
   combined into a single ordering on cardinality annotations as a whole:
 
@@ -766,8 +765,8 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   (Card(a)(b)) leqC (Card(c)(d))
     =   a  leqS  c
     &&  b  leqZ  d
-    &&  a  leqB  b
-    &&  c  leqB  d
+    &&  a  leqX  b
+    &&  c  leqX  d
 %%]
 
   \subsection{Triple consistency}
@@ -789,10 +788,10 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
 
 %%[[wrap=code
   trippleConsistent (a, (Card(b)(c)), d)
-    =   a `leftFit` b
-    &&  b `rightFit` d
-    &&  b leqX c
-    &&  a leqB d
+    =   a  `leftFit`   b
+    &&  b  `rightFit`  d
+    &&  b  leqX        c
+    &&  a  leqB        d
 %%]
 \\
 %%[[wrap=code
@@ -845,13 +844,15 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   constraint |\*/|. Section~\ref{Sect.CheckingConstraints} describes how the constraints are
   checked.
 
-\section{Gathering constraints}
+\section{Gathering constraints for first-order functions}
 \label{Sect.ConstraintGathering}
 
   This section lists type rules for the uniqueness type system. Figure~\ref{RulerUniquenessExamples.U1.prog.base} defines
   that an annotated program is valid when the gathered constraints are satisfied. Section~\ref{Sect.CheckingConstraints}
   deals with constraint satisfiability. Constraints are gathered according to the expression type rules in
-  Figure~\ref{RulerUniquenessExamples.U1.expr.base}. We will now consider the rules in more detail.
+  Figure~\ref{RulerUniquenessExamples.U1.expr.base}. The constraints are gathered bottom up: this only holds if all
+  functions are first order. In the next section (Section~\ref{Sect.HigherGathering}), we present type rules that
+  support higher-order functions (which are slightly more complicated). We will now consider the rules in more detail.
 
   \rulerCmdUse{RulerUniquenessExamples.U1.prog.base}
 
@@ -864,13 +865,13 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   the uniqueness type system.
 
   Types are written in two ways in the type rules. A type written as |utau| has annotations. A type written as
-  |tau| has no annotations. We sometimes write |(Sub(tau)(a))| to refer to the unannotated version of |(Sub(utau)(a))|.
+  |tau| has no annotations. We sometimes write |(Sub(tau)(a))| to refer to |(Sub(utau)(a))| without annotations.
   A |utau| is also denoted as |Sup(tau)(delta)|, where |delta| is the outermost\footnote{In this chapter, this is the
   triple on the outermost type constructor of the type expression. In the presence of algebraic data types, this is the outermost
   annotation on the result-kind of the type expression.} annotation.
 
-  The structure of the type rules of Figure~\ref{RulerUniquenessExamples.U1.expr.base} is as follows. |Gamma| represents an environment that contains bindings from identifier to (unannotated)
-  type. The |e| stands for an expression with the annotated type |utau|. Finally |zeta| stands for a set of generated constraints.
+  The structure of the type rules of Figure~\ref{RulerUniquenessExamples.U1.expr.base} is as follows. |Gamma| represents an environment that contains mappings from an identifier to a
+  type (not annotated). The |e| stands for an expression with the annotated type |utau|. Finally |zeta| stands for a set of generated constraints.
 
   A few words on syntax: we write |(Sub(zeta)(1)) (Sub(zeta)(2))| to denote a constraint set obtained by taking the union of
   |(Sub(zeta)(1))| with |(Sub(zeta)(2))|. We write |(Sub(tau)(a)) <=> (Sub(tau)(b))| for the unification of |(Sub(tau)(a))|
@@ -881,7 +882,9 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
 
   Constraints for an expression are gathered by a syntax directed traversal over the expression.
   The case for integers is the easiest: integers can be produced for any usage annotation and nothing has to be checked for them. We neither have to check anything
-  for the use-sites of identifiers, since we deal with these identifiers in the case for lambda abstraction.
+  for the use-sites of identifiers, since we deal with these identifiers in the case for lambda abstraction. The idea is that the occurrences of identifiers are independent,
+  and we combine the results at the lambda abstraction. This works only when the identifiers are not functions. If an identifier is a function, we need the constraint
+  set corresponding to the function (Section~\ref{Sect.HigherGathering}).
 
   The case for integer addition is slightly more complicated. Aside from consistency, there are no demands on the uniqueness
   component of the result of the addition. On the other hand, we check that the upper and lower bound annotations of the parameters are
@@ -902,7 +905,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   propagation of boundaries and usage information for such an annotation is the other way around than the usual flow. In Figure~\ref{RulerUniquenessExamples.U1.flow.base} we list the
   type rules that walk over the type and generate the |=>=|-constraints for each two corresponding annotations in the proper direction.
 
-  \rulerCmdUse{RulerUniquenessExamples.U1.flow.base}
+  \rulerCmdUse{RulerUniquenessExamples.U1.expr.base}
 
   The last case to deal with is lambda abstraction. We use an auxiliary rule that gathers all annotated types of the use-sites of the
   identifier of the lambda and turns these into an aggregation constraint. There is no constraint generated between the triple of the
@@ -915,10 +918,81 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   non-deterministic rule. However, that would make it unclear at which places the |=>=| constraint is generated, and that is actually
   what we want to make explicit, so we choose for a more elaborate, syntax directed, representation of the type rules.
 
+
+\section{Gathering constraints for higher-order functions}
+\label{Sect.HigherGathering}
+
+Consider the expression |(\x -> x + x) 3|. Since |x| is not a function, it only has one triple (say |delta|) that describes
+how |x| is used. With only a single triple, there cannot be constraints between triples on the type of |x|. Since two
+occurrences of |x| can have a different triple than |delta|, there is actually a constraint for |x|: the aggregation constraint
+generated at the lambda. Conceptually, this constraint belongs to the (empty) constraint set of the two occurrences of |x|. However,
+there is no need to transport this constraint set to the occurrences of |x| because it is already included in the constraint set
+generated for the lambda. Figure~\ref{fig.unqConstrProp} illustrates this: the thick lines indicates the propagation of constraint
+sets from the leafs to the root. The dotted lines correspond to a conceptual constraint sets.
+
+\begin{figure}
+\caption{Propagation of constraint sets for first-order functions}
+\label{fig.unqConstrProp}
+\begin{center}
+\includegraphics{unq-constr-prop}
+\end{center}
+\end{figure}
+
+Now consider the expression |(\f -> f 3 + f 3) (\x -> x)|. Since |f| is a function, there are relations between triples occurring
+on the type constructors of the type of |f|. In this case, there is a coercion between the result of |f| and the argument of |f|.
+The aggregation constraint only aggregates the triple on the spine of |f|, not the triples on the argument and result part of the
+type of |f|. This directly means that we do not check if each occurrence of |f| is correctly used according to the expression
+that is passed as |f|!
+
+Since all annotations in this chapter are monovariant, we have an easy way out of this problem. The triples deeper into the
+type of an occurrence of |f| need to be equal to the corresponding triple in the definition-type of |f|. For example, if
+the definition site of |f| has the type |f :: (Sup(Int)((1,(Card(1)(1)),1))) (Sup(->)((1,Card(oneplus)(oneplus),*))) (Sup(Int)((1,(Card(1)(1)),1)))|,
+then the occurrences of |f| are allowed to have a different annotation for the spine, such as:
+|(Sup(Int)((1,(Card(1)(1)),1))) (Sup(->)((1,(Card(1)(oneplus)),*))) (Sup(Int)((1,(Card(1)(1)),1)))|, but not:
+|(Sup(Int)((1,(Card(*)(*)),1))) (Sup(->)((1,(Card(1)(oneplus)),*))) (Sup(Int)((1,(Card(*)(*)),1)))|. We can enforce this by
+generating an equality constraint between these deeper triples of |f| during the generation of an aggregation constraint.
+
+However, in the next chapter (Chapter~\ref{chapt.Polyvariant}) we support polyvariant cardinality annotations, such that we are
+able to apply |f| to arguments with different cardinalities. This requires a rather complicated propagation of constraint sets,
+as the use-sites of a higher-order parameter need the constraint set belonging to the expression that is passed as higher-order
+argument. Figure~\ref{fig.unqConstrProp2} illustrates this. The thick lines represents the leafs to root propagation of
+constraint sets as presented in Section~\ref{Sect.ConstraintGathering}. The tiny dotted lines are the original aggregation
+rules that only aggregate the spine annotation of use-sites of parameters. The dotted lines represent the propagation of
+constraint sets from argument expression to use site of a parameter. For example, the constraint set for the value |3| (which is empty)
+needs to be passed at the function application with |f| as the constraint set of the use-site of |x| in the constraint set
+of |f|. Likewise, at the application at the root, the constraint set of the argument should be passed as the constraint set
+for the two occurrences of |f| (this constraint set is not complete as it still requires a constraint set, which is provided
+by an application of |f|). We solve this constraint passing problem in the next chapter in a similar way as the spread
+function in Heeren~\cite{heeren05phd-errormsg}, with receive points indicated using a special |Inst| constraint to represent
+a receive point and spread points as a special annotation on the arrow type constructor.
+
+\begin{figure}
+\caption{Propagation of constraint sets for higher-order functions}
+\label{fig.unqConstrProp2}
+\begin{center}
+\includegraphics{unq-constr-prop2}
+\end{center}
+\end{figure}
+
+  As preparation for the next chapter, we present a set of type rules that implement the above approach. It does not have
+  any benefits for this chapter due to monovariance, but serves as a preparation for Chapter~\ref{chapt.Polyvariant}.
+  Figure~\ref{RulerUniquenessExamples.U2.flow.base} lists the modified set of type rules. We now have two additional
+  environments and function arrows have an additional annotation (a unique identifier). The environment |Psi| consists of
+  mappings from a unique identifier |beta| to a constraint set. The environment |Phi| consists of mappings from
+  identifiers of the expression to such a unique identifier |beta|. The idea is that we give each parameter of a function
+  a unique identifier |beta|, which is recorded in |Phi| at a lambda abstraction. This |beta| represents a receive point
+  of a constraint set. At each use of an identifier, we lookup what the corresponding receive point is and demand that the
+  future constraint set will become the constraint set of the use of the identifier. This future constraint set is provided
+  by the function application by demanding that the receive point |beta| corresponds with the constraint set resulting from
+  argument expression.
+  
+  \rulerCmdUse{RulerUniquenessExamples.U2.expr.base}
+
+
 \section{Checking constraints}
 \label{Sect.CheckingConstraints}
 
-  We define precisely when a constraint is satisfied or not:
+  The following definition defines precisely when a constraint is satisfied or not:
 
 %%[[wrap=code
 satisfied :: Check
@@ -926,6 +1000,8 @@ satisfied  (a =>= b)                                   = a `coercionSatisfied` b
 satisfied  (a (Sub(=>=)(s)) b)                         = a `softCoercionSatisfied` b
 satisfied  ((Sub(a)(1)) \*/ ... \*/ (Sub(a)(2)) <= a)  = [(Sub(a)(1)) ... (Sub(a)(n))] `aggregationSatisfied` a
 %%]
+
+  This function is lifted to work on constraint sets as a whole.
 
   \subsection{Coercion constraints}
 
