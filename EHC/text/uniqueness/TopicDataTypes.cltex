@@ -319,9 +319,9 @@ forall beta1 beta2 .
 
 %%[[wrap=code
 forall beta1 beta2 .
-  forall delta1 delta2 delta3 .
+  forall delta1 delta2 .
     forall alpha .
-      Cons :: (Sup(alpha)(delta3)) (Sub(->)(beta1)) ((Dot(List)((delta1,delta2)(beta1,beta2))(delta2)) (Sup(alpha)(delta3))) (Sub(->)(beta2)) ((Dot(List)((delta1,delta2)(beta1,beta2))(delta1)) (Sup(alpha)(delta3)))
+      Cons :: (Sup(alpha)(delta3)) (Sub(->)(beta1)) ((Dot(List)((delta1,delta2)(beta1,beta2))(delta2)) (Sup(alpha)(delta3))) (Sub(->)(beta2)) ((Dot(List)((delta1,delta2)(beta1,beta2))(delta1)) alpha)
 %%]
 
   This allows us to use constructors as arbitrary functions. Also note the interaction with the |beta| annotations.

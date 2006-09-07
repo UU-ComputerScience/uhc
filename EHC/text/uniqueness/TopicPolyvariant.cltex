@@ -538,13 +538,20 @@ The inferencer performs the constraint duplication. In the inferred constraint s
 constraints that are to be inserted, by means of the following constraint:
 
 %%[[wrap=code
-Inst <binding_group_id> [(<definition_site_uniqueness_variable>, <use_site_uniqueness_variable>)]
+Inst <binding_group_id>                                                         -- Identifier of binding group
+     [(replace_binding_group_id, by_binding_goup_id)]                           -- How to map Inst constraints
+     [(<definition_site_uniqueness_variable>, <use_site_uniqueness_variable>)]  -- How to map the annotations
 %%]
 
 This constraint is inserted at the use-site of an identifier and at a function application. We use the relation
 |genInst| in the type rule to convert a source and destination type into an |Inst| constraint. This |Inst| constraint
 specifies that we take the constraint set for the identifier (or argument expression) and insert it at the
-use-site. We already mentioned that the constraint set is the same, but the annotations
+use-site. This constraint sets can contain |Inst| constraints. These |Inst| constraint point to some binding
+group |beta|, which is known at the use site. Therefore, the |Inst| constraint contains a mapping how to rename
+the |Inst| constraints of the definition site, such that they refer to the binding groups of the use site. These
+|beta| annotations can be considered universally quantified phantom variables on type constructors, which are
+instantiated at a use site. We have to keep track of where they are instantiated too: which is why we add a
+list of pairs to the |Inst| constraint. We already mentioned that the constraint set is the same, but the cardinality annotations
 differ. The list of pairs in the constraint specify which cardinality variables in the constraint set of the definition-site are
 mapped to which cardinality variables of the use-site. The other cardinality variables occurring in the definition-site constraint set
 are replaced by fresh variables in the inferencer (Section~\ref{sect.TheInferencer}). This gives us the following rule for identifiers:
@@ -635,16 +642,11 @@ forces both |S(c)| and |S(d)| to |1|. The hyper edge combines |S(c) = 1| and |S(
 above procedure forces |S(c)| and |S(d)| to |*|. The hyper edge combines |S(c) = *| and |S(d) = *| in |*| for |S(b)|, which is already the case. None of the edges
 in the graph change the substitution anymore, and the iteration stops with a final substitution S', with |S'(a) = 1, S'(delta) = *, delta `elem` [b..e]|.
 
-Figure~\ref{fig.graphinferencer} gives an overview of inferencer. The inferencer applies the following steps:
-
-\begin{itemize}
-\item Convert the constraints, excluding |Inst| constraints, of each binding group to a constraint graph.
-\item For binding group |p|, with an |Inst q l| constraint, instantiate binding group graph |Q| into |P|, with
-definition-site cardinality variables replaced by use-site cardinality variables, as specified by |l|. What
-basically happens is that for each vertex in |Q|, a fresh vertex is inserted in |P|, except when it occurs
-in |l|. Then each edge in |Q| is inserted in |P|, taking the corresponding vertex in |P|.
-\item Perform a fixpoint cardinality inference on the constraint graph of the outermost binding group.
-\end{itemize}
+Figure~\ref{fig.graphinferencer} gives an overview of inferencer. The inferencer constructs the constraint graph of the outermost binding group and
+performs a fixpoint substitution calculation no it. To obtain this graph, the inferencer takes the constraint set without |Inst| constraints and
+creates a constraint graph out of it. Then we fill this missing holes by constructing the constraint graphs belonging to the |Inst| constraints. Note that we make
+a difference between constraint graphs and binding groups here. A binding group can have multiple constraint graphs if it contains higher-order functions. In
+these cases, there is a separate constraint graph for each instantiation of an identifier of the binding group occurring in the program.
 
 \begin{figure}
 \caption{Overview of the inferencer}
@@ -652,17 +654,23 @@ in |l|. Then each edge in |Q| is inserted in |P|, taking the corresponding verte
 
 %%[[wrap=code
 inferSubst constrSets
-  = let  deps     = [(i, j, c) | (i, cs) <- constrSets, c@(Inst j _) <- insts cs]
-         order    = topsort deps
-         initial  = [(i, csToGraph cs) | (i, cs) <- constrSets]
-         graphs   = foldr instantiate initial order
-    in  infer (outermost graphs)
+  =  infer (construct (outermostBndgId, []))
   where
-    instantiate (to, from, (Inst _ tups)) graphs
-      =  let  src   = fresh (sacred to) tups (to `lookup` graphs)
-              dst   = (from `lookup` graphs) `union` src
+    construct key@(bndgId, idMap)
+      | inMemo key  =  key `lookup` memo
+      | otherwise   =  let  cs   = bndgId `lookup` constrSets
+                            cs'  = rename idMap cs
+                            gr   = csToGraph cs'
+                            gr'  = foldr (instantiate bndgId) gr (insts cs')
+                       in   returnAndStoreInMemo gr'
+
+    instantiate to (Inst from idMap tups) gr
+      =  let  key   = (from, idMap)
+              src   = construct key
+              src'  = fresh (sacred to) tups src
+              dst   = src `union` gr
               dst'  = reduce dst
-         in  (to, dst') `insert` graphs
+         in  dst'
 %%]
 \end{figure}
 
@@ -827,30 +835,28 @@ Section~\ref{sect.Rewrite}. The resulting graph has a hyper edge containing for 
 each in turn contain four hyper edges. This problem can be solved by merging hyper edges in
 a constraint graph to a single hyper edge.
 
-The reason comes from the fact that a hyper edge can be considered as a computation with
-addition operator |\*/| (to combine sources of a hyper edge) and maximum |\-/| (to combine
-incoming edges of a vertex, we discuss this operator in Chapter~\ref{chapt.Parallel}). Technical detail: we assume that coercions in between
-hyper edges are equalities. If this is not the case, then the merge between hyper edges
-is a conservative approximation to the original graph.
-
 Merging hyper edges basically corresponds to simplifying an expression consisting of
-additions and maximums. 
-
-A set of rewrite rules can then merge graphs:
+additions and maximums (or minimums), if we assume that coercions between destinations of a
+hyper edge and a source of another hyper edge are equalities (which is a conservative
+approximation). Expressions with additions and maximums can be rewritten to a
+canonical form, called \emph{max-min-plus canonical form}~\cite{DeSvan:02-002}. This is
+achieved by applying the following rewrite rules:
 
 %%[[wrap=code
-a \*/ (b \*/ c)          ===  a \*/ b \*/ c
-a \-/ (b \-/ c)          ===  a \-/ b \-/ c
-(a \*/ b) \-/ (a \*/ d)  ===  a \-/ (b \*/ d)
-a \-/ (... a ...)        ===  (... a ...)              -- values can only grow
-(a \*/ b) \-/ (c \*/ d)  ===  (a \-/ b) \*/ (c \-/ d)  -- property of lower bound <= 1 and upper bound <= 2
-(a \-/ b)                <=   a \*/ b                  -- conservative (approximates upper bound, if all else fails)
+max(alpha,beta) + gamma === max(alpha+gamma,beta+gamma)
+max(alpha,beta) + max(gamma,delta) === max(alpha+gamma,alpha+delta,beta+gamma,beta+delta)
 %%]
 
-Note that a graph merge is not required when there occurs only one non-atomic hyper edge in the constraint graph of a hyper
-edge. An atomic hyper edge contains no constraint graph. A non-atomic hyper edge does have a constraint graph.
-Merging ensures that a hyper edge contains indirectly in total only a number of constraint graphs proportional to the
-size of the abstract syntax tree. So, |L| is a graph that circumvents the problem of constraint duplication.
+Note that the rewrite rules for plus/max and max/min are equivalent, such that there is no
+difference between the graph for upper and lower bound.
+
+This leads to a possible future work: we generated constraint graph in such a way that the
+edges correspond to constraints. But what if we if we store constraints as computations in
+the vertices, such that the edges connect inputs and outputs of these computations. A
+constraint graph is then a \emph{Max-Min-Plus System} which we can reduce to a canonical
+form of a fixed size in the number of annotations. This should be possible for the
+upper and lower bounds, although it is not clear if this graph can be used for the
+cardinality propagation.
 
 The last step is to take the union between |K| and |L| to obtain:
 

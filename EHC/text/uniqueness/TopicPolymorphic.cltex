@@ -3,7 +3,7 @@
 \chapter{Polymorphic bindings}
 \label{chapt.Polymorphic}
 
-This chapter finishes the story about the Let, by explaining how to deal with polymorphism.
+This chapter finishes the story about the |let| by explaining how to deal with polymorphism.
 At first glance, the addition of polymorphism does not seem to be a very involving change.
 In essence, we need to deal with annotated type variables in the type rules and that is
 all. Unfortunately, there is one big complication. A type variable can be instantiated
@@ -25,7 +25,7 @@ central theme of this chapter.
   We assume that we have the final types at our disposal, which means
   that each encountered type variable is universally quantified. Existentially quantified
   type variables are not allowed, we defer the discussion of them to Section~\ref{sect.ExistentialTypes}.
-  Applying these changes to the type language results into:
+  Applying these changes to the type language results in:
 
 %%[[wrap=code
   utau  ::=  Sup(alpha)(delta)    -- tyvar
@@ -37,7 +37,7 @@ central theme of this chapter.
 
   There are two places in the type rules that need to be changed. These are the
   flow type rules (Figure~\ref{RulerUniquenessExamples.U1.flow.base}), and the type rule that generates
-  the |Inst| constraint (Figure~\ref{RulerUniquenessExamples.U1.expr.base}). Both have one and the same
+  the |Inst| constraint (Figure~\ref{RulerUniquenessExamples.UX.expr.base}). Both have one and the same
   problem, so let us look only at instantiation.
   
 
@@ -54,7 +54,7 @@ central theme of this chapter.
 
   Here we see that the use-site type of |id| has more annotations than the definition-site type of |id|. From
   the constraints of |id|, we get information about how |(Delta(8))| and |(Delta(9))| are related. With these,
-  we can relate |(Delta(11))| and |(Delta(14))|, but what about |(Delta(12))|, |(Delta(13))|, |(Delta(15))|, and |(Delta(16))|?
+  we can relate |(Delta(11))| and |(Delta(14))|. However, what to do with: |(Delta(12))|, |(Delta(13))|, |(Delta(15))|, and |(Delta(16))|?
 
   Leaving these annotations unconstrained is not an allowed option. Assuming that the argument and value of |f|
   are related, then the argument and value of |g| (which is identical to |f|), should also be related. How this
@@ -102,36 +102,34 @@ first = \x y -> x
   type that is instantiated. A function with a polymorphic type cannot touch the contents of a value with a type variable
   as type, but it can duplicate the value, and pass it to functions, that it gets as parameter, that can. This duplication
   and passing around of values is captured in the constraint graph\footnote{For simplicity, we assume that there are no hyper edges in the constraint graph.}. Each simple path between uniqueness annotations on a
-  type variable (not necessarily the same type variable), gives information about the uniqueness information flow between
-  the annotations on type variables. The uniqueness information flow means that a change of uniqueness value in the
-  substitution on the uniqueness variables in question, gives rise to a change on the substitution of other uniqueness
-  variables in the information flow, or in other words: it just means that they are related.
+  type variable (not necessarily the same type variable), gives information about the relation of cardinality information between
+  the annotations on type variables.
 
-  An example first. Consider the |id| function again. There is an uniqueness information flow from the result
-  of the |id| function to the argument. When |id| is passed the function |f|, then the result |g| is also a
-  function. Now, there should be an information flow between the annotations on the result of |g| to the
+  An example first. Consider |g = f id|. The cardinality information of the result
+  of the |id| function is related (i.e. there is a path in the graph) to the argument. When |id| is passed the function |f|, then the result |g| is also a
+  function. Now, there should be a relation between the annotations on the result of |g| to the
   result of |f|, and an information flow between the parameter of |g| and the parameter of |f|. Due to variance
-  differences between argument and result, the information flow between the arguments should be the opposite
-  of the information flow between the values. That creates one encapsulating information flow:
+  differences between argument and result, the relation between the arguments should be the opposite
+  of the relation between the results. This creates one encapsulating chain of relations:
   from the value of |g|, to the value of |f|, from this value to the parameter of |f| and finally to the parameter of |g|.
 
-  Another example. Consider the |first| function again. There is an information flow between the result of |first| and
-  the first parameter of |first|. But not to the second parameter. So, if the type variable |alpha| is instantiated
-  to some function type, then there should be a similar information flow as in the above example, from the result of
-  first to the function passed as first argument to first.
+  Another example. Consider the |first| function again. There is a relation between the result of |first| and
+  the first parameter of |first|. However, not to the second parameter. So, if the type variable |alpha| is instantiated
+  to some function type, then there should be a similar relation as in the above example; from the result of
+  |first| to the function passed as first argument to |first|.
 
   Formulating this in general is a bit tricky. Suppose there is a path $P$ in the constraint graph that has annotated type variables
   |(Annot((Sub(alpha)(1)))(1),...,Annot((Sub(alpha)(n)))(n))|. These are annotations that occur on the definition-site type.
   At the use-site type, there are corresponding types: |(Sub(utau)(1)),...,(Sub(utau)(n))|. These types have an important
-  property. Aside from the uniqueness annotations, the types themselves exactly equal: |(Sub(tau)(1)) === ... === (Sub(tau)(n))|,
+  property. Aside from the cardinality annotations, the types themselves are exactly equal: |(Sub(tau)(1)) === ... === (Sub(tau)(n))|,
   due to unifications performed by the underlying type system. Let |(Delta(i,j))| denote the |j|th annotation from |(Sub(tau)(i))|.
   For each |j|, we  duplicate the path $P$, taking |(Delta(i,j))| for the annotation |(Delta(i))| that occurred on |Annot((Sub(alpha)(i)))(i))|.
   With the exception that the path is inversed if the variance of the |(Delta(i,j))|s differs from the |(Delta(i))|s, since the
-  information flow is the other way around in that case.
+  relation is the other way around in that case.
 
   With this approach, instantiation is correctly dealt with in the presence of polymorphism. But there is a price due to constraint
-  duplication. But this price is less than expected. After reduction to normal form, the constraints will only be between sacred
-  uniqueness variables, which are typically not many for the ``deeper'' variables.
+  duplication. But this price is not high. After graph reduction, the constraints will only be between sacred uniqueness variables,
+  which are typically not many for the ``deeper'' variables.
 
 
 \section{Other complications}
@@ -149,17 +147,17 @@ first = \x y -> x
 %%]
 
   A problem occurs in the presence of impredicativity in the application of |id| to |f|. Constraint generation of |=>=|
-  dictates that we generate |=>=| constraints between uniqueness annotations on the type of the parameter of |f| and the
-  uniqueness annotations on the type of |id|. But the type of the parameter of |f| has a deeper structure than that of
+  dictates that we generate |=>=| constraints between cardinality annotations on the type of the parameter of |f| and the
+  cardinality annotations on the type of |id|. But the type of the parameter of |f| has a deeper structure than that of
   the |id| function. The same strategies that we discussed above can be applied in this case.
 
   In practice, this means that the position of an annotation in a type and constraint is starting to play an important
   role. This role gets even more important in Chapter~\ref{chapt.DataTypes} about data types. In the type
-  system, dealing with position information of an annotation shows up at two places. During the constraint gathering
-  process, we obtain the information, and during inferencing, we use the information. It complicates the implementation
+  system, dealing with position information of an annotation shows up at two places. During constraint gathering and
+  during inferencing. It complicates the implementation
   of both parts of the type system. In the remainder of this chapter, we factor this subject out of both parts of the
   type system and give it its own part. This results in a better separation of functionality, easier understanding of
-  the implementation, more code reuse, and not to forget, allows us to parameterize over the strategy that deals with
+  the implementation, more code reuse, and not to forget, allows us to parameterise over the strategy that deals with
   the ``deeper'' annotations.
 
 
@@ -175,16 +173,12 @@ first = \x y -> x
           |    Inst n utau utau
 %%]
 
-  The =>= constraint on single uniqueness variables are still there, in case a particular annotation
+  The =>= constraint on single cardinality variables is still there, in case a particular annotation
   need to be constrained.
 
   This simplifies the constraint gathering process, as there is no longer a need to delve into the annotated
   type and to keep track of variance. For example, the type rule of Figure~\ref{RulerUniquenessExamples.U1.flow.base}
-  is no longer required, and replaced by the generation of a single constraint.
-
-%%[[wrap=code
-  -- insert new type rules here? (don't think it is interesting enough though, might as well leave them out)
-%%]
+  is no longer required, and is replaced by the generation of a single constraint.
 
   For the inferencer, the abstraction comes in the form of \emph{annotation trees}. This is a representation
   that clearly shows the ``vertical'' structure of annotations on a type:
@@ -208,7 +202,7 @@ data AnnTree
   We fill up the gaps in |(Sub(utau)(2))| by duplicating an annotation |(Delta(2))| in |(Sub(utau)(2))|. |(Delta(2))| is
   the deepest annotation in |(Sub(utau)(2))|, such that its counter part in |(Sub(utau)(1))| is a parent of |delta|.
   This constructs the annotation trees by means of the defaulting strategy of Section~\ref{sect.Defaulting}. Note that we
-  only use this for constructing the annotation trees, which parts of the annotation tree that are used, depend on the
+  only use this for constructing the annotation trees. The parts of the annotation tree that are used, depends on the
   actual instantiation strategy of the inferencer. With the concept of annotation trees, we merely make sure that the
   inferencer does not have to deal with types that have no identical shape.
 
@@ -232,7 +226,7 @@ data AnnTree
 
 \section{Conclusion}
 
-  Dealing with polymorphism is interesting. Up front, you would expect that it has severe consequences on the
+  Dealing with polymorphism is interesting. Up front, one would expect that it has severe consequences on the
   uniqueness type system, especially in the presence of higher-ranked types. But with the right abstractions in
   place, these changes are rather isolated.
 
@@ -242,4 +236,3 @@ data AnnTree
   trees. This means that with this chapter, we close the subjects about the inferencer and constraint graphs.
 
 %%]
-

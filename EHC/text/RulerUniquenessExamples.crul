@@ -74,6 +74,7 @@ format tex HsName = hsnameFormat
 format tex Comp = compFormat
 format tex xFormat = hsnameFormat
 format tex cFormat = compFormat
+format tex emptylist = []
 
 scheme expr "Expr" =
   view E =
@@ -217,9 +218,10 @@ ruleset expr.base scheme expr  "Expression type rules" =
       -
       judge R : expr = gam :- ident : ty
     view UL =
-      judge G : lookup = ident.beta :-> uty.i `elem` gam
-      judge A : freshAnnot = uty.i ~> uty
-      judge I : genInst = uty.i ; uty :- beta ~> cs
+      judge G : lookup = ident.beta :-> uty.b `elem` gam
+      judge N : instBeta = ty.b ~> ty ; pairs
+      judge A : freshAnnot = uty.b ~> uty
+      judge I : genInst = uty.i ; uty ; pairs :- beta ~> cs
       -
       judge R : expr
         | bcs = empty
@@ -338,7 +340,7 @@ ruleset expr.base scheme expr  "Expression type rules" =
       judge F1 : flow = :- uty.p =>= uty.a ~> cs.m1
       judge F2 : flowPrimWeak = cs.m2 === { delta =>= delta.1 }
       judge F3 : flow = :- uty =>= uty.r ~> cs.r
-      judge I : genInst = uty.a ; uty.p :- beta ~> cs.ap
+      judge I : genInst = uty.a ; uty.p ; emptylist :- beta ~> cs.ap
       -
       judge R : expr
         | cs = cs.m1 cs.m2 cs.r cs.ap cs.f
@@ -467,15 +469,22 @@ ruleset expr.base scheme expr  "Expression type rules" =
         | cs  = cs.gc cs.tc cs.ec cs.g cs.t cs.e
         | bcs = bcs.g bcs.t bcs.e
 
+relation instBeta =
+  view B =
+    holes [ ty.from: Ty, ty.to: Ty, pairs: Pairs ]
+    judgespec ty.from ~> ty.to ; pairs
+
 relation genInst =
   view B =
-    holes [ uty.from: Ty, uty.to: Ty, cs.from : Cs, cs.to : Cs ]
-    judgespec uty.from ; uty.to :-..genInst cs.from ~> cs.to
+    holes [ uty.from: Ty, uty.to: Ty, cs.from : Cs, cs.to : Cs, pairs: Pairs ]
+    judgespec uty.from ; uty.to ; pairs :- cs.from ~> cs.to
+    judgeuse tex uty.from ; uty.to ; pairs :-..genInst cs.from ~> cs.to
 
 relation rename =
   view B =
     holes [ uty.from: Ty, uty.to: Ty, cs.from : Cs, cs.to : Cs ]
-    judgespec uty.from ; uty.to :-..rename cs.from ~> cs.to
+    judgespec uty.from ; uty.to :- cs.from ~> cs.to
+    judgeuse tex uty.from ; uty.to :-..rename cs.from ~> cs.to
 
 relation arbitrary =
   view B =
@@ -600,8 +609,9 @@ ruleset tp.base scheme tp  "Type type rules" =
       judge R : tp = gam :- ident : kappa
     view DC =
       judge G : lookup = ident.beta :-> ukappa.i `elem` gam
+      judge B : instBeta = kappa.i ~> kappa ; pairs
       judge A : freshAnnot = ukappa.i ~> ukappa
-      judge I : genInst = ukappa.i ; ukappa :- beta ~> cs
+      judge I : genInst = ukappa.i ; ukappa ; pairs :- beta ~> cs
       -
       judge R : tp
         | bcs = empty
@@ -611,9 +621,10 @@ ruleset tp.base scheme tp  "Type type rules" =
       -
       judge R : tp = gam :- ident.n : kappa
     view DC =
-      judge G : lookup = ident.n :-> ukappa.env `elem` gam
+      judge G : lookup = ident.beta :-> ukappa.i `elem` gam
+      judge B : instBeta = kappa.i ~> kappa ; pairs
       judge F : freshAnnot = ukappa.i ~> ukappa
-      judge I : genInst = ukappa.i ; ukappa :- n ~> cs
+      judge I : genInst = ukappa.i ; ukappa ; pairs :- beta ~> cs
       -
       judge R : tp
         | bcs = empty
@@ -651,7 +662,7 @@ ruleset tp.base scheme tp  "Type type rules" =
       judge F1 : flow = :- ukappa.p =>= ukappa.a ~> cs.m1
       judge F2 : flowPrimWeak = cs.m2 === { delta =>= delta.top }
       judge F3 : flow = :- ukappa =>= ukappa.r ~> cs.r
-      judge I : genInst = ukappa.a ; ukappa.p :- beta ~> cs.ap
+      judge I : genInst = ukappa.a ; ukappa.p ; emptylist :- beta ~> cs.ap
       -
       judge R : tp
         | cs = cs.m1 cs.m2 cs.r cs.ap cs.f

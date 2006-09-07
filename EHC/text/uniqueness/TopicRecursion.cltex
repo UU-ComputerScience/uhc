@@ -3,8 +3,8 @@
 \chapter{Recursion}
 \label{chapt.Recursion}
 
-In Chapter~\ref{chapt.Polyvariant}, we discussed inferencing of uniqueness types for a non-recursive
-Let. We go one step further in this chapter, in order to support a (mutual) recursive Let. It is important
+In Chapter~\ref{chapt.Polyvariant}, we discussed inferencing of cardinalities for a non-recursive
+|let|. We go one step further in this chapter, in order to support a (mutual) recursive Let. It is important
 to fully understand Chapter~\ref{chapt.Polyvariant} before proceeding with this chapter, especially
 the part about the inferencer (Section~\ref{sect.TheInferencer} and Section~\ref{sect.Instantiation}), since we set up
 the type system by means of the |Inst| constraint in such a way that only the inferencer is affected to
@@ -33,15 +33,16 @@ in   fac 3
   be solved when a programmer provides a polymorphic type signature~\cite{jones04practical}. Similarly, we can bypass
   this problem, when the programmer supplies a polyvariant constraint set (Section~\ref{sect.Helping}).
 
-  But, contrary to the conventional typing problem, full polyvariant uniqueness type inference is possible in the presence of
-  recursion, by means of a fixpoint iteration on the constraint graph, which assumes initially an empty constraint graph for
-  the binding group and keeps expanding the graph, until a fixpoint is reached. We come to this in Section~\ref{sect.FullRecursion}.
+  Contrary to the conventional typing problem, full polyvariant cardinality inference is possible in the presence of
+  recursion. We perform Kleene-Mycroft Iteration~\cite{DussartHengleinMossin:PolynomialTimeBTA:95}, which amounts to
+  a fixpoint iteration on the constraint graph, which assumes initially an empty constraint graph for
+  a binding group and keeps expanding the graph, until a fixpoint is reached. We come to this in Section~\ref{sect.FullRecursion}.
 
 
 \section{Monovariant recursion}
 \label{Sect.MonovariantRecursion}
 
-  A solution is to forget instantiation for recursive identifiers, and choose as use-site annotated type, the definition-site
+  A solution is to forget instantiation for recursive identifiers, and choose instead of a use-site annotated type, the definition-site
   annotated type. For example, for the |fac| function:
 
 %%[[wrap=code
@@ -52,7 +53,7 @@ let  fac :: (Annot(Int)(2)) (Annot(->)(1)) (Annot(Int)(3)) = \n -> n * (fac :: (
   In the type system, this can be accomplished by equating each pair in an |Inst| constraint that refers to the same binding
   group as it is defined in. An |Inst| constraint contains a pairs |(a, b)|, with |a| as the definition-site uniqueness annotation,
   and |b| the use-site uniqueness annotation. By generating the constraint |a =>= b| and |b =>= a| for each pair |(a, b)|, the two
-  uniqueness variables are effectively forced to have the same values.
+  cardinality variables are effectively forced to have the same values.
 
   There is a slight complication in the presence of nested binding groups. An |Inst| constraint is in binding group |n| when it
   generated from any expression in the right-hand side of a binding of binding group |n|. In the presence of nested binding groups,
@@ -76,13 +77,13 @@ in   f 1
 \section{Helping the inferencer with manual constraint sets}
 \label{sect.Helping}
 
-  In Section~\ref{Sect.MonovariantRecursion}, we bypassed the problem of needing a constraint graph while building it, by removing the
-  requirement of the constraint graph. This approach has limitations, although it is questionable if these limitations
+  In Section~\ref{Sect.MonovariantRecursion}, we by-passed the problem of needing a constraint graph while building it, by removing the
+  requirement on a constraint graph. This approach has limitations, although it is questionable if these limitations
   are ever a problem in practice. However, we can consider what the impact on the type system is in circumventing this limitation.
 
   Instead of dropping the requirement on constraint graph |A| while building |A|, we can change the requirement on |A| to some
   other graph |B|, which is at least as restrictive as |A|. This means that any valid substitution of |B| is also
-  a valid substitution of |A|, and can replace |A|. When constructing the graph of |A|, the type system can just insert a copy
+  a valid substitution of |A|, such that it can replace |A|. When constructing the graph of |A|, the type system can just insert a copy
   of |B| where |A| is expected. This basically shifts the problem to another place, since we still need this graph |B|, but
   we come to that in a second.
 
@@ -99,24 +100,25 @@ in   f 1
   and a constraint set. For example:
 
 %%[[wrap=code
-  f :: a:Int -> 1:Int, 1 =>= a
+  f :: a:Int -> (1,1):Int, (1,1) =>= a
 %%]
 
-  Each type constructor is prefixed with a uniqueness variable chosen by the programmer, a concrete uniqueness value, or nothing. A
-  concrete uniqueness value |v| is converted into a freshly invented variable |delta|, together with a special equality
+  Each type constructor is prefixed with a cardinality variable chosen by the programmer, a concrete cardinality value, or nothing. A
+  concrete cardinality value |v| is converted into a freshly invented variable |delta|, together with a special equality
   constraint |v === delta|. We can represent the |===| constraint internally with two |=>=| constraints without coercions. Specifying
-  no annotation has the same meaning as the concrete uniqueness annotation |*|.
+  no annotation has the same meaning as the concrete cardinality annotation |(Card(*)(*))|.
 
-  To construct the desired constraint set |S|, the type given by the programmer is extended with uniqueness variables for the concrete or
+  To construct the desired constraint set |S|, the type given by the programmer is extended with cardinality variables for the concrete or
   missing annotations, and the constraint set of the user updated accordingly. By overlaying the type of the programmer on the type
-  inferred for the identifier, the uniqueness variables in the constraints are renamed to the actual uniqueness variables, instead of
+  inferred for the identifier, the cardinality variables in the constraints are renamed to the actual cardinality variables, instead of
   the symbols of the programmer. The result is |S|.
 
-\subsection{The problem with mono uniqueness variables}
+\subsection{The problem with sacred cardinality variables}
 
-  There is a problem with |S|. Binding groups are not independent. Mono uniqueness variables occur all over the place, and
-  put links between binding groups. Unfortunately, the programmer cannot specify the effects on the mono-variables, since they do not have
-  a name where the programmer can refer to. Conventional type signatures have this problem as well, as the following example shows:
+  There is a problem with |S|. Binding groups are not independent. Sacred cardinality variables occur all over the place, and
+  create links between binding groups. Unfortunately, the programmer cannot specify the effects on the sacred cardinality variables, since
+  they do not have a name where the programmer can refer to. Conventional type signatures have this problem as well, as the following example
+  shows:
 
 %%[[wrap=code
 let f :: forall alpha . alpha -> alpha
@@ -127,35 +129,40 @@ let f :: forall alpha . alpha -> alpha
 
   In Haskell, we are unable to specify the type for |y| in this case. A solution is to give a name to the skolemnised
   version of type variable |alpha|, such that this name can be used in the signature of |y|. Unfortunately, the dependencies
-  in our case a much higher, requiring naming all the mono variables that are affected by the expression for which we want to
+  in our case a much higher, requiring naming all the sacred variables that are affected by the expression for which we want to
   specify the constraint set.
 
-  On the other hand, if we are talking about a signature for a top-level function, then virtually all mono
-  variables will be annotations on the function spine of toplevel functions. By enforcing with constraints on the toplevel
+  On the other hand, if we are talking about a signature for a top-level function, then virtually all cardinality
+  variables will be annotations on the function spine of toplevel functions. By enforcing which constraints on the toplevel
   bindings that the function spine of a toplevel function is shared, we can eliminate the need to specify the dependencies
-  on mono-variables. This is not a very bad assumption to make, since from a design perspective, a function should only be
-  toplevel if it is intended to be shared by multiple functions or modules. With this approach, programmer specified constraint
-  sets are feasible.
+  on sacred cardinality variables. This is not a very bad assumption to make, since from a design perspective, a function should only be
+  toplevel if it is intended to be shared by multiple functions or modules. With this approach, constraint sets specified by the
+  programmer are feasible.
 
 \subsection{Entailment check}
 
   Unfortunately, there is another problem: Suppose we have such an |S|. How do we know that the programmer specified the right constraint
-  set? For example, how can we be sure that the constraint set of the programmer does not forget a constraint between some uniqueness
+  set? For example, how can we be sure that the constraint set of the programmer does not forget a constraint between some cardinality
   variables? For that, the compiler has to prove that |S| \emph{entails} |S'|, where |S'| is the constraint set resulting from
-  constraint gathering on the expression. This means that a substitution on the sacred uniqueness variables, that is valid for
-  |S|, should also be valid for |S'|.
+  constraint gathering on the expression. This means that a substitution on the sacred uniqueness variables that is valid for
+  |S|, is also valid for |S'|.
 
   As a side note, the word \emph{substitution} is a bit ambiguous here, since there are two solve phases. Normally, we talk about the final
-  substitution, so the substitution resulting from the uniqueness propagation phase. In this case, however, it is enough that
-  we can prove that |S| entails |S'|, for substitutions resulting from the reference-counting phase, since if |S'| is more
-  restrictive in the reference count that |S|, it also is more restrictive in the uniqueness values.
-
-  One way to prove that the constraint set is valid, is to enumerate each combination of uniqueness values and check the implication |S => S'|, but this is
-  not practical in practice. For propositional logic, there are many satisfiability checkers that can help us out here, but our
-  final constraint set (which only have |=>=| and |\+/| constraints) is an expression in a three-valued logic. Fortunately, we
-  can translate the constraints to propositional logic.
-
-  For each uniqueness variable |delta|, we require two propositional symbols, |P| and |Q|:
+  substitution, so the substitution resulting from the cardinality inference phase. In this case, however, it is enough that
+  we can prove that |S| entails |S'|, for substitutions resulting from the lower and upper bound inference phase, since if |S'| is more
+  restrictive in terms of bounds than |S|, it also is more restrictive in the cardinality values (ignoring soft coercion constraints).
+  
+  One attempt to verify this condition is to check the paths between sacred vertices. After reducing (Section~\ref{sect.Rewriting}) the graph 
+  |S| to |R| and |S'| to |R'|, then |S| entails |S'| if each path in |R| is also a path in |R'| (assuming that hyper edges are reduced to
+  canonical form). However, a constraint set specified by the user typically contains concrete annotations; these concrete annotations can
+  hide a complete graph, such that the graphs are incomparable. This approach is not going to work.
+  
+  One way to prove that the constraint set is valid, is to enumerate each combination of upper/lower bound values and check the implication |S => S'|,
+  but this is not doable in practice. For propositional logic, there are many satisfiability checkers that can help us out here, but our
+  final constraint set (which only has |=>=| and |\*/| constraints) is an expression in a three-valued logic for the upper bound. We can
+  rewrite the upper bounds to propositional logic, but that results into many propositions.
+    
+  For each cardinality variable |delta|, we require two propositional symbols for the upper bound, |P| and |Q|:
 
   \begin{tabular}{l||ll}
   |delta| & |P| & |Q| \\
@@ -166,8 +173,7 @@ let f :: forall alpha . alpha -> alpha
   - & 1 & 1 \\
   \end{tabular}
 
-  With this scheme, we can construct truth-tables for the constraints, and use a well-known
-  trick to obtain a propositional expression~\cite{how the hell should I know}:
+  With this scheme, we can construct truth-tables for the constraints, and construct a proposition from it:
 
   \begin{tabular}{ll||l||llll||l}
   |p| & |q| & |p =>= q| & |(Sub(p)(1))| & |(Sub(p)(2))| & |(Sub(q)(1))| & |(Sub(q)(2))| \\
@@ -186,16 +192,12 @@ let f :: forall alpha . alpha -> alpha
   The propositional variant of the constraint is the disjunction of the above
   propositions.
 
-  Instead of translating an arbitrary |\+/| constraint directly, we split it first up
-  into multiple, but smaller, |\+/| constraints. Since the |\+/| is commutative, and
-  the |<=| transitive, we can introduce some fresh uniqueness variables, and shape
-  the |\+/| constraints into a tree form:
+  Instead of translating an arbitrary |\*/| constraint directly, we split it first up
+  into multiple, but smaller, |\*/| constraints. Since the |\*/| is commutative, and
+  the |<=| transitive, we can introduce some fresh cardinality variables, and shape
+  the |\*/| constraints into a tree form (see Section~\ref{sect.ite}).
 
-%%[[wrap=code
-... picture ...
-%%]
-
-  Each |\+/| constraint has at most three uniqueness variables this way. The translation
+  Each |\*/| constraint has at most three cardinality variables this way. The translation
   scheme is then similar to the scheme for |=>=|, only three times as big.
 
   After converting the entire constraint set into propositions, tools from propositional
@@ -222,19 +224,32 @@ let f :: forall alpha . alpha -> alpha
   subset of sacred annotations, including with and without coercions. Of course, a smaller graph is desired.
 
   To obtain a smallest graph that satisfies the specification, we perform a fixpoint computation on the constraint graph. Each
-  binding group initially has an empty graph, and each iteration, the insertion of graphs at the |Inst| constraints, is
-  replayed. The graphs are normalized at the end of the iteration. This process proceeds until the graphs do not change anymore.
+  binding group initially has an empty graph, and the insertion of graphs at the |Inst| constraints is replayed for each iteration.
+  The graphs are reduced at the end of the iteration. This process proceeds until the graphs do not change anymore (see Figure~\ref{fig.graphfix}).
+  The graph reduction ensures convergence: hyper edges cannot grow indefinitely, and if one coercion is in the constraint set, then it will
+  continue to be in the constraint set the next iteration, which guarantees that the number of coercions cannot grow indefinitely.
 
-\subsection{Fixpoint iterate the substitution}
+\begin{figure}
+\caption{Fixpoint iterating inferencer}
+\label{fig.graphfix}
 
-  We can complicate the procedure lightly, such that it converges faster, by not fixpoint iterating on the constraint graph,
-  but by fixpoint iterating on the substitution on the sacred uniqueness annotations of the constraint graph. If after a new
-  insertion of the graph, the substitution on the sacred uniqueness variables does not change, then there is not a new path
-  in the graph (or a subsumed path), and thus a new iteration will have no further effect. An advantage of this approach is
-  that the reduction procedure can benefit from reference-count information, and that subsumed paths do not inflict new
-  iterations, thus causing faster convergence. In fact, graphs do not have to be reduced to normal form either, so the
-  implementation can decide to perform only the quick reduction strategies, and reduction to normal form only when graphs reach
-  a certain size. For example, twice as big as the last time we reduced the graph to normal form.
+%%[[wrap=code
+inferSubst constrSets
+  = let  deps     = [(i, j, c) | (i, cs) <- constrSets, c@(Inst j _) <- insts cs]
+         order    = topsort deps
+         initial  = [(i, csToGraph cs) | (i, cs) <- constrSets]
+         graphs   = iterate (\current -> foldr instantiate current order) initial
+         fixpnt   = snd . last . takeWhile (\(g,g') -> g /= g') . zip graphs $ tail graphs
+    in  infer (outermost fixpnt)
+  where
+    instantiate (to, from, (Inst _ tups)) graphs
+      =  let  src   = fresh (sacred to) tups (to `lookup` graphs)
+              dst   = (from `lookup` graphs) `union` src
+              dst'  = reduce dst
+         in  (to, dst') `insert` graphs
+%%]
+\end{figure}
+
 
 \subsection{Consequences}
 
