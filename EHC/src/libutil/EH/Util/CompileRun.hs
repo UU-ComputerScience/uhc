@@ -178,14 +178,14 @@ crCUFPath modNm cr = maybe emptyFPath cuFPath (crMbCU modNm cr)
 
 cpFindFileForFPath
   :: (Ord n,FPATH n,CompileUnitState s,CompileRunError e p,CompileUnit u n s,CompileModName n,CompileRunStateInfo i n p)
-       => Map.Map String s -> [String] -> Maybe n -> Maybe FPath -> CompilePhase n u i e (Maybe FPath)
+       => [(String,s)] -> [String] -> Maybe n -> Maybe FPath -> CompilePhase n u i e (Maybe FPath)
 cpFindFileForFPath suffs sp mbModNm mbFp
   = do { cr <- get
        ; let cus = maybe cusUnk (flip crCUState cr) mbModNm
        ; if cusIsUnk cus
           then do { let fp = maybe (mkFPath $ panicJust ("cpFindFileForFPath") $ mbModNm) id mbFp
                         modNm = maybe (mkCMNm $ fpathBase $ fp) id mbModNm
-                  ; mbFpFound <- lift (searchPathForReadableFile sp (Map.keys suffs) fp)
+                  ; mbFpFound <- lift (searchPathForReadableFile sp (map fst suffs) fp)
                   ; case mbFpFound of
                       Nothing
                         -> do { cpSetErrs (creMkNotFoundErrL (crsiImportPosOfCUKey modNm (crStateInfo cr)) (fpathToStr fp) sp)
@@ -195,10 +195,9 @@ cpFindFileForFPath suffs sp mbModNm mbFp
                         -> do { cpUpdCU modNm (cuUpdFPath ff . cuUpdState cus . cuUpdKey modNm)
                               ; return (Just ff)
                               }
-                        where -- cus = Map.findWithDefault cusUnk (fpathSuff ff) suffs
-                              cus = case Map.lookup (fpathSuff ff) suffs of
+                        where cus = case lookup (fpathSuff ff) suffs of
                                       Just c  -> c
-                                      Nothing -> case Map.lookup "*" suffs of
+                                      Nothing -> case lookup "*" suffs of
                                                    Just c  -> c
                                                    Nothing -> cusUnk
                   }

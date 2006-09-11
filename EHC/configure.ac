@@ -16,12 +16,17 @@ HostPlatform=`/bin/sh $srcdir/config.sub $host` || exit 1
 echo $host
 
 # Version info
+# big change
 EH_VERSION_MAJOR=0
+# small change, not usable with previous
 EH_VERSION_MINOR=1
+# small change, still usable with previous
+EH_VERSION_MINORMINOR=1
 EH_VERSION_STABILITY=alpha
 
 AC_SUBST(EH_VERSION_MAJOR)
 AC_SUBST(EH_VERSION_MINOR)
+AC_SUBST(EH_VERSION_MINORMINOR)
 AC_SUBST(EH_VERSION_STABILITY)
 AC_SUBST(EH_VERSION,$EH_VERSION_MAJOR.$EH_VERSION_MINOR)
 
@@ -64,21 +69,36 @@ AC_DEFUN(REQUIRED_OPTIONAL_PROG_FOR_EH,
 AC_ARG_WITH(ghc,
 [AC_HELP_STRING([--with-ghc=<haskell compiler>],
                 [Use a command different from 'ghc' to compile with GHC.])],
-[ GHC_CMD="$withval" ],
+[ ghcCmd="$withval" ],
 [ 
   if test "$GHC" = ""; then
-    AC_PATH_PROG(GHC_CMD,ghc)
+    AC_PATH_PROG(ghcCmd,ghc)
   else
-    GHC_CMD=$GHC
+    ghcCmd=$GHC
   fi
 ]
 )
-if test "$GHC_CMD" = "no"; then
-  GHC_CMD=""
+if test "$ghcCmd" = "no"; then
+  ghcCmd=""
+  ghcExists="no"
+else
+  ghcExists="yes"
 fi
-AC_SUBST(GHC_CMD)
-GHC_VERSION=`$GHC_CMD --numeric-version`
-AC_SUBST(GHC_VERSION, $GHC_VERSION)
+AC_SUBST(GHC_CMD,$ghcCmd)
+ghcVersion=`$ghcCmd --numeric-version`
+AC_SUBST(GHC_VERSION, $ghcVersion)
+
+# after ghc 6.4.1 the names of cabal option(s) changed
+case $ghcVersion in
+  6.4.1)
+    optCabalAllowUndecidableInstances=AllowUndecidableInstances
+    ;;
+  *)
+    optCabalAllowUndecidableInstances=UndecidableInstances
+    ;;
+esac
+
+AC_SUBST(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES,"$optCabalAllowUndecidableInstances")
 
 AC_ARG_WITH(uuagc,
 [AC_HELP_STRING([--with-uuagc=<uu ag compiler>],
@@ -174,12 +194,12 @@ echo "Installation/build summary:"
 echo "  host                          : $host"
 echo "  prefix                        : $prefix"
 
-#echo "  ghc is available?             : $GHC_EXISTS"
-#if test "x$GHC_EXISTS" = "xyes" ;then 
-#echo "    version                     : $ghcVersion"
-#echo "    command for ghc             : $GHC_CMD"
+echo "  ghc is available?             : $ghcExists"
+if test "x$ghcExists" = "xyes" ;then 
+echo "    version                     : $ghcVersion"
+echo "    command for ghc             : $ghcCmd"
 #echo "    library install dir for ghc : $ghcLibDir"
-#fi
+fi
 
 echo
 echo "Misc debug/tmp info:"

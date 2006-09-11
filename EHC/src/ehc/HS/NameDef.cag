@@ -58,7 +58,8 @@ SEM Declaration
         loc             .   refname     =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
     | Class Instance InstanceUseImplicitly
         loc             .   instancerefname
-                                        =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @instancename
+                                        =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm
+                                            $ maybe @instancename id @mbPrevInstancename
     | Class
         loc             .   classrefname=   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @simpletype.name
     | Type
@@ -177,13 +178,13 @@ ATTR
 %%[1
 SEM Declaration
     | TypeSignature
-        loc             .   idOccDefs 	=   [ IdOcc n IdOcc_Val | n <- @refnames ]
+        loc             .   idOccDefs   =   [ IdOcc n IdOcc_Val | n <- @refnames ]
     | FunctionBindings
-        loc             .   idOccDefs 	=   @bindings.idOccDefs
+        loc             .   idOccDefs   =   @bindings.idOccDefs
     | PatternBinding
         loc             .   idOccDef    =   IdOcc (maybe (mkHNm @lUniq) id @pattern.mbTopRefname) IdOcc_Pat
                         .   idOccDefsPat=   [@idOccDef]
-                        .   idOccDefs 	=   @pattern.idOccDefs
+                        .   idOccDefs   =   @pattern.idOccDefs
 %%]
 %%[5
     | Data Newtype
@@ -192,37 +193,37 @@ SEM Declaration
 %%[[7
                         .   idOccDefsFld=   [ IdOcc n IdOcc_Val | n <- @constructors.fldrefnames ]
 %%]
-                        .   idOccDefs 	=   [@idOccDef]
-                        					++ @idOccDefsCon
+                        .   idOccDefs   =   [@idOccDef]
+                                            ++ @idOccDefsCon
 %%[[7
-                        					++ @idOccDefsFld
+                                            ++ @idOccDefsFld
 %%]
 %%]
 %%[9
     | Class
         loc             .   idOccDef    =   IdOcc @classrefname IdOcc_Class
                         .   idOccDefsSig=   @where.idOccDefs -- !!!! a bit too optimistic, value defs also included (but they are not permitted, checked later only)
-                        .   idOccDefs 	=   [@idOccDef] ++ @idOccDefsSig
+                        .   idOccDefs   =   [@idOccDef] ++ @idOccDefsSig
     | Instance
         loc             .   idOccDef    =   IdOcc @instancerefname IdOcc_Inst
                         .   idOccDefVal =   IdOcc @instancerefname IdOcc_Val
-                        .   idOccDefs 	=   [@idOccDef,@idOccDefVal]
+                        .   idOccDefs   =   [@idOccDef,@idOccDefVal]
     | InstanceUseImplicitly
         loc             .   idOccDef    =   IdOcc @instancerefname IdOcc_Inst
-                        .   idOccDefs 	=   [@idOccDef]
+                        .   idOccDefs   =   [@idOccDef]
     | Default
         loc             .   idOccDef    =   IdOcc @defaultname IdOcc_Dflt
-                        .   idOccDefs 	=   [@idOccDef]
+                        .   idOccDefs   =   [@idOccDef]
 %%]
 %%[11
     | Type
         loc             .   idOccDef    =   IdOcc @typerefname IdOcc_Type
-                        .   idOccDefs 	=   [@idOccDef]
+                        .   idOccDefs   =   [@idOccDef]
 %%]
 %%[8
     | ForeignImport
         loc             .   idOccDef    =   IdOcc @refname IdOcc_Val
-                        .   idOccDefs 	=   [@idOccDef]
+                        .   idOccDefs   =   [@idOccDef]
 %%]
 %%[88
     | ForeignExport -- ??
@@ -233,7 +234,7 @@ SEM Declaration
 SEM FunctionBinding
     | FunctionBinding
         loc             .   idOccDef    =   IdOcc @lefthandside.refname IdOcc_Val
-                        .   idOccDefs 	=   [@idOccDef]
+                        .   idOccDefs   =   [@idOccDef]
 %%]
 
 %%[1
@@ -241,9 +242,9 @@ SEM Pattern
     | Variable As
         loc             .   idOccDef    =   IdOcc @refname IdOcc_Val
     | Variable
-        loc             .   idOccDefs 	=   [@idOccDef]
+        loc             .   idOccDefs   =   [@idOccDef]
     | As
-        loc             .   idOccDefs 	=   [@idOccDef] ++ @pattern.idOccDefs
+        loc             .   idOccDefs   =   [@idOccDef] ++ @pattern.idOccDefs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

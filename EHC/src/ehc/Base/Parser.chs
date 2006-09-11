@@ -7,7 +7,7 @@
 %%% Basic/shared parsers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}Base.Parser} import(UU.Parsing, EH.Util.ParseUtils(PlainParser), EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner})
+%%[8 module {%{EH}Base.Parser} import(UU.Parsing, EH.Util.ParseUtils, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner})
 %%]
 
 %%[8 export(pDollNm,pUID,pInt,pCTag)
@@ -78,8 +78,8 @@ pAssocL pA pB = pOCURLY *> pListSep pCOMMA ((,) <$> pA <* pEQUAL <*> pB) <* pCCU
 %%[12
 pModEnt :: P ModEnt
 pModEnt
-  = ModEnt <$  pOCURLY <*> pIdOccKind <* pCOMMA <*> pIdOcc <* pCOMMA
-           <*> (Set.fromList <$ pOCURLY <*> pListSep pCOMMA pModEnt <* pCCURLY)
+  = ModEnt <$  pOCURLY <*> pIdOccKind <* pCOMMA <*> pIdOcc
+           <*> pMaybe Set.empty id (Set.fromList <$ pCOMMA <* pOCURLY <*> pListSep pCOMMA pModEnt <* pCCURLY)
            <*  pCCURLY
 
 pModEntRel :: P ModEntRel

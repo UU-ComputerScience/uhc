@@ -412,6 +412,8 @@ ATTR AGItf [ | | rwGam: RwExprGam ]
 SEM AGItf
   | AGItf           loc     .   fmGam       =   @decls.gathFmGam
                                                 `gamUnionShadow`
+                                                @lhs.fmGam
+                                                `gamUnionShadow`
                                                 fmGamFromList' FmFmtCmd [ (Nm f,Expr_Var (Nm t)) | (f,t) <- cfgFmFmtCmdAsc ]
                             .   rwGam       =   @decls.gathRwGam
 

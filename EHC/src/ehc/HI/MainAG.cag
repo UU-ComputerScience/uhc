@@ -38,12 +38,12 @@ emptyPrElimTGam = emptyTGam basePrfCtxtId
 ATTR
   AllNT AGItf
     [ | |
-      exportRel     USE {`Rel.union`} {Rel.empty}: ModEntRel
-      fixityGam     USE {`gamUnion`} {emptyGam}: FixityGam
-      valGam        USE {`gamUnion`} {emptyGam}: ValGam
-      tyGam         USE {`gamUnion`} {emptyGam}: TyGam
-      dataGam       USE {`gamUnion`} {emptyGam}: DataGam
-      prIntroGam    USE {`gamUnion`} {emptyGam}: {Pr.PrIntroGam}
+      exportRel     USE {`Rel.union`}       {Rel.empty}      : ModEntRel
+      fixityGam     USE {`gamUnion`}        {emptyGam}       : FixityGam
+      valGam        USE {`gamUnion`}        {emptyGam}       : ValGam
+      tyGam         USE {`gamUnion`}        {emptyGam}       : TyGam
+      dataGam       USE {`gamUnion`}        {emptyGam}       : DataGam
+      prIntroGam    USE {`gamUnion`}        {emptyGam}       : {Pr.PrIntroGam}
       prElimTGam    USE {`prElimTGamUnion`} {emptyPrElimTGam}: {Pr.PrElimTGam}
     ]
 
@@ -75,16 +75,16 @@ SEM Rule
                                               , Pr.rulMkEvid      = Pr.mkEvid @mkEvid
                                               , Pr.rulMkEvidHow   = @mkEvid
                                               , Pr.rulNmEvid      = @nm
-                                              , Pr.rulId          = @uid -- {poiCxId = basePrfCtxtId}
+                                              , Pr.rulId          = @uid
                                               , Pr.rulCost        = @cost
                                               , Pr.rulFuncDeps    = []
                                               }
 
 SEM Rules
-	| Cons
-		lhs				.	rules		=	@hd.rule : @tl.rules
-	| Nil
-		lhs				.	rules		=	[]
+    | Cons
+        lhs             .   rules       =   @hd.rule : @tl.rules
+    | Nil
+        lhs             .   rules       =   []
 
 %%]
 

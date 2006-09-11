@@ -64,7 +64,10 @@ mentIsCon e = mentKind e == IdOcc_Data || mentKind e == IdOcc_Class
 %%[12
 -- intended for parsing
 ppModEnt :: (HsName -> PP_Doc) -> ModEnt -> PP_Doc
-ppModEnt pn e = ppCurlysCommasBlock [pp (mentKind e),ppIdOcc pn (mentIdOcc e),ppCurlysCommasBlock (map (ppModEnt pn) $ Set.toList $ mentOwns e)]
+ppModEnt pn e
+  = ppCurlysCommasBlock (l1 ++ l2)
+  where l1 = [pp (mentKind e),ppIdOcc pn (mentIdOcc e)]
+        l2 = if Set.null (mentOwns e) then [] else [ppCurlysCommasBlock (map (ppModEnt pn) $ Set.toList $ mentOwns e)]
 
 instance PP ModEnt where
   pp = ppModEnt pp
@@ -148,10 +151,11 @@ data Mod
       , modExpL         :: Maybe [ModExp]
       , modImpL         :: [ModImp]
       , modDefs         :: ModEntRel
+      , modInstNmL		:: [HsName]
       }
   deriving (Show)
 
-emptyMod = Mod hsnUnknown Nothing Nothing [] Rel.empty
+emptyMod = Mod hsnUnknown Nothing Nothing [] Rel.empty []
 
 modBuiltin
   = emptyMod

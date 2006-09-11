@@ -37,6 +37,11 @@ LIB_EHC_SETUP_HS_DRV					:= $(EHC_BLD_LIBEHC_VARIANT_PREFIX)Setup.hs
 LIB_EHC_SETUP2							:= $(EHC_BLD_LIBEHC_VARIANT_PREFIX)setup$(EXEC_SUFFIX)
 LIB_EHC_SETUP							:= ./setup$(EXEC_SUFFIX)
 
+# special files
+# file with signature of code
+EHC_HS_SIG_MAIN							:= SourceCodeSig
+EHC_HS_SIG_DRV_HS						:= $(EHC_BLD_LIB_HS_VARIANT_PREFIX)$(EHC_HS_SIG_MAIN).hs
+
 # main + sources + dpds, for .chs
 EHC_MAIN								:= EHC
 EHC_HS_MAIN_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,$(EHC_MAIN))
@@ -82,7 +87,7 @@ $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_AGH
 
 EHC_AGHSMAIN_MAIN_SRC_CAG				:= $(patsubst %,$(SRC_EHC_PREFIX)HS/%.cag,MainAG)
 EHC_AGHSMAIN_DPDS_SRC_CAG				:= $(patsubst %,$(SRC_EHC_PREFIX)HS/%.cag,AbsSyn \
-													EH Fixity Pretty Module Uniq \
+													EH Fixity Pretty Uniq \
 													NameAnalysis NameDef NameLevel \
 													ExtraChecks GatherError \
 											)
@@ -388,7 +393,7 @@ INS_EHC_LIB_ALL_AG						:= $(patsubst %,$(INS_EHC_LIB_AG_PREFIX)%.ag,$(INS_EHC_L
 INSABS_EHC_LIB_ALL_AG					:= $(patsubst %,$(INSABS_EHC_LIB_AG_PREFIX)%.ag,$(INS_EHC_LIB_ALL_AG_NAMES))
 
 # all dependents for a variant to kick of building
-EHC_ALL_DPDS							:= $(EHC_HS_ALL_DRV_HS) $(EHC_AG_ALL_MAIN_DRV_HS)
+EHC_ALL_DPDS							:= $(EHC_HS_ALL_DRV_HS) $(EHC_AG_ALL_MAIN_DRV_HS) $(EHC_HS_SIG_DRV_HS)
 
 # variant dispatch rules
 $(patsubst %,echo-gen-by-ruler-%,$(EHC_VARIANTS)):
@@ -411,9 +416,9 @@ $(LIB_EHC_CABAL_DRV): $(EHC_ALL_DPDS) $(EHC_MKF)
 		, $(LIB_EHC_PKG_NAME) \
 		, $(EH_VERSION) \
 		, $(LIB_EH_UTIL_PKG_NAME) \
-		, AllowUndecidableInstances \
+		, $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) \
 		, Part of EH$(EHC_VARIANT) compiler packaged as library \
-		, $(subst $(PATH_SEP),.,$(patsubst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(LIB_EHC_QUAL_PREFIX)%,$(shell $(FILTER_NONEMP_FILES) $(EHC_HS_UTIL_DRV_HS) $(EHC_AG_ALL_MAIN_DRV_HS)))) \
+		, $(subst $(PATH_SEP),.,$(patsubst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(LIB_EHC_QUAL_PREFIX)%,$(shell $(FILTER_NONEMP_FILES) $(EHC_HS_UTIL_DRV_HS) $(EHC_AG_ALL_MAIN_DRV_HS) $(EHC_HS_SIG_DRV_HS)))) \
 	) > $@
 
 $(LIB_EHC_SETUP_HS_DRV): $(EHC_MKF)
@@ -426,7 +431,7 @@ $(LIB_EHC_SETUP2): $(LIB_EHC_SETUP_HS_DRV)
 $(LIB_EHC_INS_FLAG): $(LIB_EHC_CABAL_DRV) $(LIB_EHC_SETUP2) $(INSABS_EHC_LIB_ALL_AG) $(EHC_MKF)
 	mkdir -p $(@D)
 	cd $(EHC_BLD_LIBEHC_VARIANT_PREFIX) && \
-	$(LIB_EHC_SETUP) configure --prefix=$(INSABS_PREFIX) --user && \
+	$(LIB_EHC_SETUP) configure $(CABAL_SETUP_OPTS) --prefix=$(INSABS_PREFIX) --user && \
 	$(LIB_EHC_SETUP) build && \
 	$(LIB_EHC_SETUP) install --user && \
 	echo $@ > $@
@@ -451,6 +456,12 @@ $(EHC_AG_S_MAIN_DRV_HS) $(LIB_EHC_AG_S_MAIN_DRV_HS): %.hs: %.ag
 
 $(EHC_AG_DS_MAIN_DRV_HS) $(LIB_EHC_AG_DS_MAIN_DRV_HS): %.hs: %.ag
 	$(AGC) -dcfspr -P$(EHC_BLD_VARIANT_PREFIX) -P$(EHC_BLD_LIB_HS_VARIANT_PREFIX) $<
+
+$(EHC_HS_SIG_DRV_HS): $(EHC_ALL_CHUNK_SRC) $(EHC_RULES_ALL_SRC) $(EHC_MKF)
+	@(echo "module $(LIB_EHC_PKG_NAME).$(EHC_HS_SIG_MAIN) where" ; \
+	  echo "sig = \"`cat $^ | md5`\"" ; \
+	  echo "timestamp = \"`date`\"" \
+	) > $@
 
 $(EHC_HS_MAIN_DRV_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)

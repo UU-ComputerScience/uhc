@@ -107,8 +107,8 @@ mkDpdGrFromOrderWithMissing missing
 
 mkDpdGrFromAssocWithMissing :: Ord n => [n] -> [(n,n)] -> DpdGr n
 mkDpdGrFromAssocWithMissing missing
-  = mkDpdGrFromEdges
-    . map (\(n1,n2) -> (n1,[n2]))
+  = mkDpdGr . dpdGrFromEdges
+    . map (\(n1,n2) -> [(n1,[n2])])
     . ([(n,n) | n <- missing] ++)
 
 -------------------------------------------------------------------------

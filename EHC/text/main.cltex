@@ -54,7 +54,7 @@
 
 %%[13
 %\documentclass[a4paper,headexclude,footexclude,mpexclude,10pt,DIV15,BCOR0mm]{scrartcl}
-\documentclass[10pt]{article}
+\documentclass[10pt,headexclude,footexclude]{article}
 %%]
 
 %%[18
@@ -368,6 +368,10 @@
 %%]
 
 %%[13
+\usepackage{tikz}
+\setlength\parindent{0pt}
+\pagestyle{empty}
+%%]
 \usepackage[showboxes,absolute]{textpos}
 
 \setlength\parindent{0pt}
@@ -375,7 +379,6 @@
 
 \textblockorigin{0mm}{0cm}
 
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Beamer
@@ -569,34 +572,6 @@
 %%% Sizes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1
-%if not (asSlides || llncs || acm)
-%if wide
-%if asArticle
-\usepackage[left=2.75cm,right=2.75cm,top=3cm,bottom=3cm,nohead]{geometry}
-%else
-\usepackage[left=2.75cm,right=2.75cm,top=3cm,bottom=3cm,asymmetric]{geometry}
-%endif %% asArticle
-%elif veryWide
-\usepackage[left=2.25cm,right=2.25cm,top=2.5cm,bottom=2.5cm,nohead]{geometry}
-%endif %% wide
-%endif %% not (...)
-
-%if llncs || acm
-%if blockstyle
-\setlength{\mathindent}{.03\textwidth}
-%else
-\setlength{\mathindent}{\parindent}
-%endif
-%elif not storyPoster
-\setlength{\mathindent}{.05\textwidth}
-%endif
-
-%if truu
-\setlength{\marginparsep}{.015\textwidth}
-%endif
-%%]
-
 %%[2
 \setlength{\paperwidth}{170mm}
 \setlength{\paperheight}{240mm}
@@ -620,9 +595,43 @@
 %%]
 
 %%[13
+\setlength{\paperwidth}{210mm}
+\setlength{\paperheight}{297mm}
+%%]
 \usepackage[a4paper,headexclude,footexclude]{typearea}
 
 \typearea[0mm]{1}
+
+%%[1
+%if not (asSlides || llncs || acm)
+%if wide
+%if asArticle
+\usepackage[left=2.75cm,right=2.75cm,top=3cm,bottom=3cm,nohead]{geometry}
+%else
+\usepackage[left=2.75cm,right=2.75cm,top=3cm,bottom=3cm,asymmetric]{geometry}
+%endif %% asArticle
+%elif veryWide
+\usepackage[left=2.25cm,right=2.25cm,top=2.5cm,bottom=2.5cm,nohead]{geometry}
+%elif fullWide
+\usepackage[left=0cm,right=0cm,top=0cm,bottom=0cm,nohead,nofoot]{geometry}
+%endif %% wide
+%endif %% not (...)
+
+%if llncs || acm
+%if blockstyle
+\setlength{\mathindent}{.03\textwidth}
+%else
+\setlength{\mathindent}{\parindent}
+%endif
+%elif storyPoster
+\setlength{\mathindent}{0\textwidth}
+%elif not storyPoster
+\setlength{\mathindent}{.05\textwidth}
+%endif
+
+%if truu
+\setlength{\marginparsep}{.015\textwidth}
+%endif
 %%]
 
 %%[19
@@ -857,6 +866,10 @@ WWW home page:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2
+\tolerance=400
+%%]
+
+%%[13
 \tolerance=400
 %%]
 
@@ -1776,7 +1789,7 @@ this has been omitted as \chapterRef{agtut} can be read instead.
 
 %%@TopicRuler.rulesByRulerBasics
 
-%if limitSize
+%if shortStory
 %{
 %include lag2TeX.fmt
 %%@TopicRuler.extendToAlgorithmicSmall
@@ -1789,7 +1802,7 @@ this has been omitted as \chapterRef{agtut} can be read instead.
 %%@TopicRuler.explainAG
 
 %%@TopicRuler.extendToAGLarge
-%endif %% limitSize
+%endif %% shortStory
 
 %}
 
@@ -1904,6 +1917,8 @@ To be done ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[13
+%%@Poster.poster
+%%]
 \TPGrid[10mm,10mm]{100}{100}
 \TPMargin{.5ex}
 %\textblockcolour{yellow}
@@ -1927,7 +1942,6 @@ To be done ...
 \begin{textblock}{55}[0.5,0.5](50,50)
 \FigPDF{system-overview}
 \end{textblock}
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Scratch
@@ -2184,13 +2198,18 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%@SlidesRuler.FLOPS2006.basicsAndViews.toc
  %%@SlidesRuler.basicsAndViews.firstPage
 %%@SlidesRuler.basicsAndViews.basecase
- %%@SlidesRuler.basicsAndViews.relation
+%if longStory
+%%@SlidesRuler.basicsAndViews.relation
+%endif
 %%@SlidesRuler.basicsAndViews.incrementAlgorithmic
- %%@SlidesRuler.mappingToAG
+%if longStory
+%%@SlidesRuler.mappingToAG
+%endif
 
-%\section{Aspects}
- %%@SlidesRuler.aspectCombination
-%}
+%if longStory
+\section{Aspects}
+%%@SlidesRuler.aspectCombination
+%endif
 
 \section{Conclusion}
 %%@SlidesRuler.conclusion

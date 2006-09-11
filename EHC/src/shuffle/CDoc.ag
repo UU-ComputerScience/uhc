@@ -129,9 +129,10 @@ chWrap :: ChWrap -> CDoc -> CDoc
 chWrap w d
   = case w of
       ChWrapCode  		-> "\\begin{code}" .-. d .-. "\\end{code}"
-      ChWrapBoxCode  	-> "\\parbox{\\linewidth}{%" .-. chWrap ChWrapCode d .-. "}"
+      ChWrapBoxCode mw
+      					-> "\\parbox{" .|. maybe "" id mw .|. "\\linewidth}{%" .-. chWrap ChWrapCode d .-. "}"
       ChWrapBeamerBlockCode title
-                        -> "\\begin{block}{%" .-. title .-. "}" .-. chWrap ChWrapBoxCode d .-. "\\end{block}"
+                        -> "\\begin{block}{%" .-. title .-. "}" .-. chWrap (ChWrapBoxCode Nothing) d .-. "\\end{block}"
       ChWrapTT    		-> "\\begin{TT}" .-. d .-. "\\end{TT}"
       ChWrapTTtiny  	-> "\\begin{TTtiny}" .-. d .-. "\\end{TTtiny}"
       _           		-> d

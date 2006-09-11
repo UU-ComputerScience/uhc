@@ -359,6 +359,9 @@ then generate the implementation
 \item Three views: E, A, AG
 \item Ruler source texts and results
 \end{itemize}
+%if longStory
+\item More implementation
+%endif
 \item Conclusion
 \end{itemize}
 }
@@ -405,7 +408,12 @@ then generate the implementation
  \begin{itemize}
  \item each rule judgement has views, parallel to views of its scheme
  \end{itemize}
-\item<+-> (Aspects)
+\item<+->
+%if longStory
+Aspects
+%else
+(Aspects)
+%endif
 \end{itemize}
 }
 
@@ -422,7 +430,12 @@ then generate the implementation
 \frametitle{Ruler `dimensions'}
 \begin{itemize}
 \item<+-> Views allow \alert<.>{incremental} extension of a language
-\item<+-> (Schemes allow ``\alert<.>{by aspect}'' organisation by treating holes and associated rules together)
+\item<+->
+%if longStory
+ Schemes allow ``\alert<.>{by aspect}'' organisation by treating holes and associated rules together
+%else
+ (Schemes allow ``\alert<.>{by aspect}'' organisation by treating holes and associated rules together)
+%endif
 \item<+-> Ruler
  \begin{itemize}
  \item combines views in a hierarchical, inheriting manner

@@ -36,7 +36,7 @@
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 import({HS/AbsSyn},{HS/EH},{HS/Fixity},{HS/Pretty},{HS/GatherError},{HS/ExtraChecks},{HS/NameLevel},{HS/NameDef},{HS/NameAnalysis},{HS/Module},{HS/Uniq})
+%%[1 import({HS/AbsSyn},{HS/EH},{HS/Fixity},{HS/Pretty},{HS/GatherError},{HS/ExtraChecks},{HS/NameLevel},{HS/NameDef},{HS/NameAnalysis},{HS/Uniq})
 WRAPPER AGItf
 %%]
 
@@ -135,3 +135,18 @@ SEM ContextItem
 ATTR Module AGItf [ isTopMod: Bool | | ]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Top level instance names, propagated from prev phase -- a hack :-(
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR AllNT [ | topInstanceNmL: {[HsName]} | ]
+ATTR AGItf [ topInstanceNmL: {[HsName]} | | ]
+
+SEM Declaration
+    | Class Instance InstanceUseImplicitly
+        (loc.mbPrevInstancename,lhs.topInstanceNmL)
+                                        =   case @lhs.topInstanceNmL of
+                                              (n:t) -> (Just n,t)
+                                              _     -> (Nothing,[])
+%%]
