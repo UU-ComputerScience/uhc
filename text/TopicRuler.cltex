@@ -91,7 +91,7 @@ Whatever route we take, that is,
 either retrofitting an implementation with a description or the other way around,
 there is little help in guaranteeing that the formal description and the implementation are mutually consistent.
 Even worse, we cannot be sure that an extension preserves the possibility to prove desirable properties.
-%if not limitSize
+%if not shortStory
 As a example, it has already been shown that Haskell does not have principal types,
 due to a combination of language features and seemingly innocent extensions
 \cite{faxen03hask-princ-types}.
@@ -179,7 +179,7 @@ in the conclusion (\secRef{ruler-conclude}) we will further discuss additional d
 %%]
 \end{CodeFigure}
 
-%if not limitSize
+%if not shortStory
 \Paragraph{How our approach contributes to solving the problems}
 %endif
 
@@ -191,7 +191,7 @@ The focus of \thischapt\ is on the construction of the figures, not on their mea
 Our aim is to look at these figures from a metalevel
 and to see how type rules can be specified and how their content can be generated using our |Ruler| system.
 Nevertheless, we have chosen a small, well known, and realistic
-%if not limitSize
+%if not shortStory
 running
 %endif
 example: the Hindley-Milner (HM) type system.
@@ -202,7 +202,7 @@ later sections discuss the involved technicalities.
 %%]
 
 %%[introExampleExplain
-%if limitSize
+%if shortStory
 Both type rules and their implementation can be used to explain a type system.
 This is what we have done
 within the context of the EH project.
@@ -318,7 +318,7 @@ other tools.
 Preliminaries for the example language and type systems are given
 in \secRef{ruler-prelim}.
 In \secRef{ruler-basics} we specify the contents of
-%if limitSize
+%if shortStory
 \figRef{rulerDemo.E.expr.base}.
 %else
 \figRef{rulerDemo.E.expr.base},
@@ -330,7 +330,7 @@ In \secRef{ruler-ag-basics} we explain the AG (attribute grammar) system.
 %endif
 In \secRef{ruler-ag-infer} we extend the example |Ruler| specification so that
 |Ruler| can generate AG code.
-%endif %% limitSize
+%endif %% shortStory
 In \secRef{ruler-extendinitial} we continue with the extension towards an algorithmic version from which attribute grammar (AG) code can be generated.
 Finally, we discuss related work in \secRef{ruler-relatedwork}, and experiences and future work in \secRef{ruler-conclude}.
 %%]
@@ -339,7 +339,7 @@ Finally, we discuss related work in \secRef{ruler-relatedwork}, and experiences 
 \subsection{|Ruler| overview}
 \label{ruler-overview}
 
-%if not limitSize
+%if not shortStory
 \begin{XFigFigure}{}{ruler-overview}{Ruler overview}{ruler-fig-overview}
 \end{XFigFigure}
 
@@ -350,7 +350,7 @@ Finally, we discuss related work in \secRef{ruler-relatedwork}, and experiences 
 %%]
 %endif
 
-%if limitSize
+%if shortStory
 %else
 \Paragraph{Infrastructure around Ruler}
 Although the |Ruler| system allows us to generate part of an implementation, it is by no means the only
@@ -378,7 +378,7 @@ A separate fragment management tool, called |shuffle| (part of the EH project \c
 is used to generate AG and Haskell code from code fragments describing the view inheritance chains for
 AG and Haskell code.
 Because we do not discuss this any further, this part has been omitted (from \figRef{ruler-fig-overview}).
-%endif %% limitSize
+%endif %% shortStory
 %%]
 
 %%[designOfRuler.Concepts
@@ -398,7 +398,7 @@ A view on a scheme consists of named \IxAsDef{holes} and judgeshapes, which come
 
 Holes are the parameters of a scheme and are given concrete values when instantiated as a judgement by means of a judgespec template.
 
-%if limitSize
+%if shortStory
 %%@TopicRuler.highLevelStructure
 %endif
 
@@ -454,12 +454,12 @@ We call the scheme of such a judgement variant a \IxAsDef{relation}.
 %%]
 
 %%[designOfRuler
-%if limitSize
+%if shortStory
 %else
 \Paragraph{The design of |Ruler|}
 In the remainder of this section we discuss the concepts used in |Ruler| by inspecting elements of
 figures~\ref{rulerDemo.E.expr.base}, \ref{rulerDemo.A.expr.base} and \ref{ruler-demo-impl}.
-%endif %% limitSize
+%endif %% shortStory
 
 The design of |Ruler| is driven by the need to check the following \emph{properties} of type rules:
 \begin{Itemize}
@@ -468,7 +468,7 @@ All judgements match an explicitly specified structure for the judgement.
 For example, in \figRef{rulerDemo.E.expr.base} all judgements for an expression should match the structure of the expression judgement in the box at the top of the same figure.
 \item
 If an identifier is used for the generation of an implementation, it must be defined before it can be used.
-%if limitSize
+%if shortStory
 %else
 The meaning of this will be explained later.
 %endif
@@ -480,7 +480,7 @@ but we limit ourselves to this list and the requirement of output generation for
 
 In the remainder of this section we give a high-level overview of the concepts manipulated by |Ruler|.
 \figRef{ruler-src-template} gives a schematic |Ruler| specification, showing how the concepts relate syntactically.
-%if not limitSize
+%if not shortStory
 \figRef{ruler-legenda-syntax} provides an overview of the full concrete syntax of |Ruler|.
 
 %{
@@ -500,7 +500,7 @@ In the remainder of this section we give a high-level overview of the concepts m
 
 %}
 
-%endif %% not limitSize
+%endif %% not shortStory
 
 %%]
 
@@ -509,14 +509,14 @@ In the remainder of this section we give a high-level overview of the concepts m
 \label{ruler-prelim}
 
 In this section we explain notation in our 
-%if not limitSize
+%if not shortStory
 running
 %endif
 example,
 that is, the set of type rules to be specified with |Ruler|.
 There should be no surprises here as we use
 a standard term language based on the |lambda|-calculus (see \figRef{ruler-demo-lang-terms}).
-%if not limitSize
+%if not shortStory
 An overview of the type related notation is included in
 \figRef{ruler-legenda-ty-symbols}.
 %endif
@@ -531,7 +531,7 @@ in   let  v1 = id 3
 %%]
 
 The type language for our example term language is given in
-%if limitSize
+%if shortStory
 \figRef{ruler-demo-lang-terms}.
 %else
 \figRef{ruler-demo-hm-lang-types}.
@@ -544,7 +544,7 @@ or an unknown type represented by a type variable |tvarv|.
 We discuss the use of these types when we introduce the type rules for our term language
 in the following sections.
 
-%if limitSize
+%if shortStory
 \begin{TabularCenterFigure}{}{Terms and types}{ruler-demo-lang-terms}{c||c}
 \begin{tabular}
 %%@AppxNotation.termTableFormat
@@ -579,7 +579,7 @@ holding bindings for program identifiers with their typings:
 Gamma   ::=  Vec(i :-> sigma)
 %%]
 
-%if not limitSize
+%if not shortStory
 During HM type inferencing, type variables
 will be bound to monotypes:
 
@@ -594,11 +594,11 @@ it replaces type variables with types.
 \begin{TabularCenterFigure}{th}{Legenda of type related notation}{ruler-legenda-ty-symbols}{ll}
 %%@AppxNotation.notationTableHeader
 %%@AppxNotation.notationRulerDemoBasic
-%if not limitSize
+%if not shortStory
 %%@AppxNotation.notationRulerDemoCnstr
 %endif
 \end{TabularCenterFigure}
-%endif %% not limitSize
+%endif %% not shortStory
 %%]
 
 %%[rulesByRulerBasics
@@ -606,7 +606,7 @@ it replaces type variables with types.
 \label{ruler-basics}
 
 In this section we make the use of |Ruler| more precise.
-%if limitSize
+%if shortStory
 We describe
 |Ruler| notation, and explain
 %else
@@ -626,7 +626,7 @@ The use of an equational version of type rules usually serves to explain a type 
 An algorithmic version is introduced subsequently to specify an implementation for such a type system.
 In \thischapt\ we follow the same pattern,
 but use it to show how |Ruler| can be used to describe
-%if limitSize
+%if shortStory
 the equational version
 %else
 both type systems
@@ -634,7 +634,7 @@ both type systems
 in such a way
 that its type rule representation can be included in the documentation
 (read here: \thischapt).
-%if limitSize
+%if shortStory
 In the extended version of \thischapt\ \cite{dijkstra05phd} we also describe how to extend the equational version to an algorithmic one,
 and a version from which a partial implementation can be generated.
 %else
@@ -666,7 +666,7 @@ We first examine the |scheme| definition in detail, and then the |ruleset| defin
 The operator |:-.."e"| forms a single operator in which the dot notation expresses subscripting and superscripting when pretty printed;
 the part after the first dot is used as a subscript, the part after the second dot as a superscript.
 Here the turnstyle symbol is superscripted with |e|.
-%if limitSize
+%if shortStory
 We refer to the extended version of \thischapt\ \cite{dijkstra05phd} for further explanation about the dot notation.
 %else
 We will come back to this later.
@@ -678,7 +678,7 @@ This scheme is instantiated in the conclusion of \ruleRef{e.int}
 by using the judgespec of the scheme.
 In later views, we will (re)define individual holes.
 Each hole has an associated hole type, for instance |e| has type |Expr|;
-%if limitSize
+%if shortStory
 we will not discuss this further.
 %else
 we postpone the discussion of hole types until \secRef{ruler-ag-infer}.
@@ -693,7 +693,7 @@ the |ag| target is meant for attribute grammar generation.
 We will refer to these three shapes as the |spec|, |tex| and |ag| judgement shapes.
 The |spec| shape is used as the input template, the |tex| and |ag| shapes are used as output templates.
 
-%if limitSize
+%if shortStory
 %else
 The shape of a judgespec is defined by a |Ruler| expression,
 which effectively introduces a distfix operator,
@@ -712,7 +712,7 @@ The |spec| shape of the scheme of a judgement is used to extract |Ruler| express
 (defined by |judge|) and bind these to the corresponding hole identifiers.
 
 %%[[selNotation
-%if limitSize
+%if shortStory
 %else
 The dot character `.' has a special role in |Ruler| expressions and names for the |tex| target output generation.
 It is used to specify subscripts, superscripts and stacking.
@@ -749,10 +749,10 @@ We do not discuss this further;
 we only note that part of the \LaTeX\ formatting
 is delegated to external \LaTeX\ commands.
 
-%if not limitSize
+%if not shortStory
 The ruleset heading is immediately followed by a list of rules, of
 which only one is shown here (|e.int| is pretty printed in small caps as \textsc{e.int})%
-%if ((storyPHD || storyEhcBook) && targetForPaper) || limitSize
+%if ((storyPHD || storyEhcBook) && targetForPaper) || shortStory
 .
 %else
 ;
@@ -786,7 +786,7 @@ The judgement is named |R|, follows scheme |expr|,
 and is specified using the |spec| judgement shape for view |E|.
 The name of the judgement is used to refer to the judgement from later views, either to
 overwrite it completely or to redefine the values of the individual holes.
-%if not limitSize
+%if not shortStory
 Later, when we introduce subsequent views we will see examples of this.
 %endif
 
@@ -794,7 +794,7 @@ The rule for integer constants refers to |Ty_Int|.
 This is an identifier which is not introduced as part of the rule,
 and its occurrence generates an
 error message unless we specify it to be external%
-%if limitSize
+%if shortStory
 ~(we do not discuss this nor its proper \LaTeX\ formatting further).
 %else
 :
@@ -827,7 +827,7 @@ Premises now relate the type of the function and its argument:
 \rulerCmdUse{rulerDemo.E.expr.base.e.app}
 %%@AppxNotation.rulerRulerAsideRuleEnd
 
-%if not limitSize
+%if not shortStory
 The dot notation allows us to treat @ty.a@ as a single identifier, which is at the same time rendered as
 the subscripted representation |taua|.
 Also note that we parenthesize |(ty.a -> ty)| such that |Ruler| treats it
@@ -1618,7 +1618,7 @@ we emphasize that |Ruler| is meant as a lightweight tool for the construction of
 
 \Paragraph{AST based tools}
 Various
-%if limitSize
+%if shortStory
 abstract syntax tree (AST)
 %else
 AST

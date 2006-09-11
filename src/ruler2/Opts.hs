@@ -41,6 +41,7 @@ data Opts
       , optMbRlSel      :: Maybe RlSel
       , optBaseNm       :: String
       , optSearchPath   :: [String]
+      , optDefs   		:: [(String,String)]
       }
       deriving Show
 
@@ -67,6 +68,7 @@ defaultOpts
       , optMbRlSel      =  Nothing
       , optBaseNm       =  rulesCmdPre
       , optSearchPath   =  []
+      , optDefs			=  []
       }
 
 cmdLineOpts  
@@ -85,6 +87,8 @@ cmdLineOpts
           "generate DATA defs (for AG, HS), default=no"
      , Option "d"  ["debug"]            (NoArg oDebug)
           "output debugging info"
+     , Option "D"  ["def"]              (ReqArg oDef "key[=|:]value")
+          "define key/value"
      , Option ""   ["dot2dash"]         (NoArg oDot2Dash)
           "change '.' in rule names to '-', default=no"
      , Option ""   ["explain"]          (NoArg oGenExpl)
@@ -138,6 +142,9 @@ cmdLineOpts
          oSvnVersion     o =  o {optSvnVersion = True}
          oBase       s   o =  o {optBaseNm = s}
          oPath       s   o =  o {optSearchPath = searchPathFromString s}
+         oDef        s   o =  case break (\c -> c == ':' || c == '=') s of
+                                (s1,(_:s2)) -> o {optDefs = (s1,s2) : optDefs o}
+                                _           -> o
          oMarkCh     ms  o =  o {optMbMarkChange = fmap (viewSelsSelfT . fst . parseToResMsgs pViewSels . mkScan "") ms}
          oRlSel      ms  o =  o {optMbRlSel = fmap (rlSelSelfT . fst . parseToResMsgs pRlSel . mkScan "") ms}
          yesno updO  ms  o =  case ms of

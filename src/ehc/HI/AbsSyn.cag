@@ -18,7 +18,12 @@ DATA Module
 %%[12
 DATA Binding
 	| Stamp
-		timestamp				: String
+		srcTimestamp			: String
+		srcSig					: String
+		srcVersionMajor			: Int
+		srcVersionMinor			: Int
+		srcVersionQuality		: String
+		srcVersionSvn			: String
 		hash					: Integer
 	| Export
 		exports					: ModEntRel

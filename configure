@@ -274,7 +274,7 @@ PACKAGE_VERSION='0.1'
 PACKAGE_STRING='EH 0.1'
 PACKAGE_BUGREPORT='atze@cs.uu.nl'
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_STABILITY EH_VERSION GHC_CMD GHC_VERSION UUAGC_CMD MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC PATHS_SEP TOP_ABS LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_STABILITY EH_VERSION ghcCmd GHC_CMD GHC_VERSION CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES UUAGC_CMD MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC PATHS_SEP TOP_ABS LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1388,7 +1388,7 @@ EH_VERSION=$EH_VERSION_MAJOR.$EH_VERSION_MINOR
 # Check whether --with-ghc or --without-ghc was given.
 if test "${with_ghc+set}" = set; then
   withval="$with_ghc"
-   GHC_CMD="$withval"
+   ghcCmd="$withval"
 else
 
   if test "$GHC" = ""; then
@@ -1396,12 +1396,12 @@ else
 set dummy ghc; ac_word=$2
 echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
-if test "${ac_cv_path_GHC_CMD+set}" = set; then
+if test "${ac_cv_path_ghcCmd+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  case $GHC_CMD in
+  case $ghcCmd in
   [\\/]* | ?:[\\/]*)
-  ac_cv_path_GHC_CMD="$GHC_CMD" # Let the user override the test with a path.
+  ac_cv_path_ghcCmd="$ghcCmd" # Let the user override the test with a path.
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
@@ -1411,7 +1411,7 @@ do
   test -z "$as_dir" && as_dir=.
   for ac_exec_ext in '' $ac_executable_extensions; do
   if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_GHC_CMD="$as_dir/$ac_word$ac_exec_ext"
+    ac_cv_path_ghcCmd="$as_dir/$ac_word$ac_exec_ext"
     echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -1421,28 +1421,45 @@ done
   ;;
 esac
 fi
-GHC_CMD=$ac_cv_path_GHC_CMD
+ghcCmd=$ac_cv_path_ghcCmd
 
-if test -n "$GHC_CMD"; then
-  echo "$as_me:$LINENO: result: $GHC_CMD" >&5
-echo "${ECHO_T}$GHC_CMD" >&6
+if test -n "$ghcCmd"; then
+  echo "$as_me:$LINENO: result: $ghcCmd" >&5
+echo "${ECHO_T}$ghcCmd" >&6
 else
   echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
 fi
 
   else
-    GHC_CMD=$GHC
+    ghcCmd=$GHC
   fi
 
 
 fi;
-if test "$GHC_CMD" = "no"; then
-  GHC_CMD=""
+if test "$ghcCmd" = "no"; then
+  ghcCmd=""
+  ghcExists="no"
+else
+  ghcExists="yes"
 fi
+GHC_CMD=$ghcCmd
 
-GHC_VERSION=`$GHC_CMD --numeric-version`
-GHC_VERSION=$GHC_VERSION
+ghcVersion=`$ghcCmd --numeric-version`
+GHC_VERSION=$ghcVersion
+
+
+# after ghc 6.4.1 the names of cabal option(s) changed
+case $ghcVersion in
+  6.4.1)
+    optCabalAllowUndecidableInstances=AllowUndecidableInstances
+    ;;
+  *)
+    optCabalAllowUndecidableInstances=UndecidableInstances
+    ;;
+esac
+
+CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES="$optCabalAllowUndecidableInstances"
 
 
 
@@ -2232,8 +2249,10 @@ s,@EH_VERSION_MAJOR@,$EH_VERSION_MAJOR,;t t
 s,@EH_VERSION_MINOR@,$EH_VERSION_MINOR,;t t
 s,@EH_VERSION_STABILITY@,$EH_VERSION_STABILITY,;t t
 s,@EH_VERSION@,$EH_VERSION,;t t
+s,@ghcCmd@,$ghcCmd,;t t
 s,@GHC_CMD@,$GHC_CMD,;t t
 s,@GHC_VERSION@,$GHC_VERSION,;t t
+s,@CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES@,$CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES,;t t
 s,@UUAGC_CMD@,$UUAGC_CMD,;t t
 s,@MACH_DEP_C_FOR_TAILCALL_ENTER@,$MACH_DEP_C_FOR_TAILCALL_ENTER,;t t
 s,@MACH_DEP_C_FOR_TAILCALL_LEAVE1@,$MACH_DEP_C_FOR_TAILCALL_LEAVE1,;t t
@@ -2513,12 +2532,12 @@ echo "Installation/build summary:"
 echo "  host                          : $host"
 echo "  prefix                        : $prefix"
 
-#echo "  ghc is available?             : $GHC_EXISTS"
-#if test "x$GHC_EXISTS" = "xyes" ;then
-#echo "    version                     : $ghcVersion"
-#echo "    command for ghc             : $GHC_CMD"
+echo "  ghc is available?             : $ghcExists"
+if test "x$ghcExists" = "xyes" ;then
+echo "    version                     : $ghcVersion"
+echo "    command for ghc             : $ghcCmd"
 #echo "    library install dir for ghc : $ghcLibDir"
-#fi
+fi
 
 echo
 echo "Misc debug/tmp info:"

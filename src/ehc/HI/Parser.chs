@@ -35,7 +35,11 @@ pBinding :: HIParser Binding
 pBinding
   =   Binding_Fixity    <$> pNmIs "fixity" <* pOCURLY <*> pInt     <* pSEMI <*> pFixity                <* pCCURLY
   <|> Binding_Val       <$> pNmIs "value"  <* pOCURLY <*> pTy                                          <* pCCURLY
-  <|> Binding_Stamp     <$  pNmIs "stamp"  <* pOCURLY <*> pString  <* pSEMI <*> (read <$> pInteger)    <* pCCURLY
+  <|> Binding_Stamp     <$  pNmIs "stamp"  <* pOCURLY <*> pString <* pSEMI <*> pString
+                                           <* pSEMI   <*> pInt    <* pSEMI <*> pInt
+                                           <* pSEMI   <*> pString <* pSEMI <*> pString
+                                           <* pSEMI   <*> (read <$> pInteger)
+                                           <* pCCURLY
   <|> Binding_Export    <$  pNmIs "export"            <*> pModEntRel
   <|> Binding_Ty        <$> pNmIs "type"   <* pOCURLY <*> pTy      <* pSEMI <*> pTy                    <* pCCURLY
   <|> (\tn cs -> Binding_DataCon tn (map (\f -> f tn) cs))

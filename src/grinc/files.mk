@@ -156,7 +156,7 @@ $(LIB_GRINC_SETUP2): $(LIB_GRINC_SETUP_HS_DRV)
 $(LIB_GRINC_INS_FLAG): $(LIB_GRINC_CABAL_DRV) $(LIB_GRINC_SETUP2) $(INS_GRINC_LIB_ALL_AG) $(GRINC_MKF)
 	mkdir -p $(@D)
 	cd $(EHC_BLD_LIBGRINC_VARIANT_PREFIX) && \
-	$(LIB_GRINC_SETUP) configure --prefix=$(INSABS_PREFIX) --user && \
+	$(LIB_GRINC_SETUP) configure $(CABAL_SETUP_OPTS) --prefix=$(INSABS_PREFIX) --user && \
 	$(LIB_GRINC_SETUP) build && \
 	$(LIB_GRINC_SETUP) install --user && \
 	echo $@ > $@

@@ -28,7 +28,9 @@ SEM Module
 
 SEM Binding
     | Stamp
-        lhs         .   pp          =   hiNV "stamp" hsnUnknown [pp $ show $ @timestamp,pp $ show $ @hash]
+        lhs         .   pp          =   let ps :: Show a => a -> PP_Doc
+                                            ps = pp . show
+                                        in  hiNV "stamp" hsnUnknown [ps @srcTimestamp,ps @srcSig,ps @srcVersionMajor,ps @srcVersionMinor,ps @srcVersionQuality,ps @srcVersionSvn,ps @hash]
     | Fixity
         lhs         .   pp          =   hiNV "fixity" @nm [pp @prio,pp @fixity]
     | Export

@@ -125,9 +125,11 @@ SEM Declaration
                                             `Rel.union`
                                             Rel.fromList [ (hsnQualified $ ioccNm $ mentIdOcc e,e) | e <- @modEntsSub ]
     | Instance
-        lhs             .   modDefsRel  =   if @useimplicitly
-                                            then Rel.singleton @instancename (ModEnt IdOcc_Inst @idOccDef Set.empty)
-                                            else Rel.empty
+        lhs             .   modDefsRel  =   (if @useimplicitly
+                                             then Rel.singleton @instancename (ModEnt IdOcc_Inst @idOccDef Set.empty)
+                                             else Rel.empty)
+                                            `Rel.union`
+                                            maybe (Rel.empty) (\_ -> Rel.singleton @instancename (ModEnt IdOcc_Val @idOccDefVal Set.empty)) @maybeinstancename
     | InstanceUseImplicitly
         lhs             .   modDefsRel  =   Rel.singleton @instancename (ModEnt IdOcc_Inst @idOccDef Set.empty)
 %%]
@@ -148,6 +150,7 @@ SEM Module
     | Module
         lhs             .   mod         =   Mod @lhs.moduleNm @name
                                                 @exports.modExpsMb @body.modImpL @body.modDefsRel
+                                                (reverse @body.topInstanceNmL)
 %%]
 
 

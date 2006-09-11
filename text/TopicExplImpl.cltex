@@ -18,13 +18,13 @@ In \thischapt\ we describe, in the context of Haskell, a mechanism that allows
 a programmer to explicitly construct implicit arguments. This extension
 blends well with existing resolution mechanisms, since it only overrides
 the default behavior.
-%if not (storyPHD || storyEhcBook || limitSize)
+%if not (storyPHD || storyEhcBook || shortStory)
 We include a
 description of the use of partial type signatures, which liberates the
 programmer from having to choose  between specifying a complete type
 signature  or no type signature at all.
 %endif
-%if limitSize
+%if shortStory
 We show how, by a careful set of design decisions,
 we manage to combine type inferencing with a type system that deals
 with implicit arguments.
@@ -127,7 +127,7 @@ Thus the expression
 |f 3 4| can be seen as an abbreviation for the semantically more complete |f eqDInt 3 4|.
 
 Traditionally, the name ``implicit parameter'' is used to refer to dynamically scoped variables
-%if limitSize
+%if shortStory
 \cite{lewis00implicit-param}.
 %else
 (see \secRef{ehc09-discussion} \cite{lewis00implicit-param}).
@@ -211,7 +211,7 @@ v2 = f  {! ((==) = \x y -> (x `mod` 2) == (y `mod` 2)) <: Eq Int !}
 A dictionary (encoded as a record) |d| of an instance is constructed and passed directly as part of
 the language construct |{! d <: ... !}| (to be explained later).
 
-%if not limitSize
+%if not shortStory
 As a second example we briefly discuss the use
 Kiselyov and Chan \cite{kiselyov04impl-config} make of the type class system to configure programs.
 In their modular arithmetic example integer arithmetic is configured by a modulus: all integer arithmetic is done modulo this modulus.
@@ -260,7 +260,7 @@ The use of explicit parameter passing for an implicit argument proposed by us in
 even further simplified the example, as we can avoid the phantom type |Label| and related type hackery
 altogether and instead create and pass the instance directly.
 %}
-%endif %% not limitSize
+%endif %% not shortStory
 
 As we may infer from the above the Haskell class system,
 which was originally only introduced to describe simple overloading,
@@ -381,7 +381,7 @@ the proof machinery can be used as normal values,
 and normal (record) values can be used as dictionaries for predicates as well.
 \item
 The automatic choice for a dictionary at the call site of a function can be disambiguated.
-%if not (storyPHD || storyEhcBook || limitSize)
+%if not (storyPHD || storyEhcBook || shortStory)
 \item
 Types can be partially specified, thus having the benefit of explictness as well as inference,
 but avoiding the obligation of the ``all or nothing''
@@ -432,7 +432,7 @@ Haskell variant
 in which all features described in \thischapt\ have been implemented.
 In \secRef{ehc09-prelim} we start with preliminaries required for understanding the remainder of \thischapt.
 In \secRef{ehc09-implparam} we present examples of what we can express in EH.
-%if not limitSize
+%if not shortStory
 The use of partial type signatures and their interaction with
 predicates is demonstrated in
 %if (storyPHD || storyEhcBook)
@@ -667,7 +667,7 @@ We go from
 implicit to explicit by instance definitions with the naming extension, and in the reverse direction by means of the |{! ^^ !}| construct.
 \end{Itemize}
 
-%if not limitSize
+%if not shortStory
 The |Modular| motivating example now can be simplified to (merging our notation into Haskell):
 
 %{
@@ -736,7 +736,7 @@ dictionary would be computed only once globally by:
 let  dEqListInt = dEqList dEqInt
 %%]
 
-%if limitSize
+%if shortStory
 The need for such higher order predicates really becomes apparent
 when genericity is implemented using the class system \cite{hinze00derive-type-class}.
 The elaboration of this aspect can be found in the extended version of \thischapt\
@@ -790,7 +790,7 @@ the higher order predicate |Binary b => Binary (f b)| as |forall ^ b . Binary b 
 that is, universally quantified over the |b| which does not appear elsewhere in the context.
 %endif
 
-%endif %% limitSize
+%endif %% shortStory
 
 
 \Paragraph{Argument ordering and mixing implicit and explicit parameters}
@@ -965,7 +965,7 @@ in an outer scope.
 
 In our discussion we will come back to local instances.
 
-%if not limitSize
+%if not shortStory
 
 \Paragraph{Higher order predicates revisited}
 As we mentioned earlier,
@@ -1038,9 +1038,9 @@ This dictionary is explicitly constructed and passed to |eq|; both the construct
 We must either pass a dictionary for |Eq a => Eq (List a)| to |f| ourselves explicitly or let it happen automatically;
 here in both cases |dEqList| is the only choice possible.
 
-%endif %% not limitSize
+%endif %% not shortStory
 
-%if not (storyPHD || storyEhcBook || limitSize)
+%if not (storyPHD || storyEhcBook || shortStory)
 
 \subsection{Partial type signatures}
 \label{ehc09-partialtysig}
@@ -1612,7 +1612,7 @@ In this case we need a mechanism to find a predicate for the type of the evidenc
 |e2|.
 This is most likely to succeed in the case of a class system as the functions introduced by a class need to have
 globally unique names.
-%if not limitSize
+%if not shortStory
 For other types of predicates like those for dynamically scoped values this is less clear.
 By dropping the predicate in |{! e2 !}| we also loose our advocated advantage of explicitness because we can no longer
 specify type related information.
@@ -1632,7 +1632,7 @@ In our design we position based parameter passing.
 Compared to a keyword based approach, this avoids (even more) clutter at the cost of flexibility.
 %endif
 
-%if not limitSize
+%if not shortStory
 \Paragraph{Binding time of instances}
 One other topic deserves attention, especially since it deviates from the
 standard semantics of Haskell.
@@ -1681,7 +1681,7 @@ where a value for a labeled field should be inserted
 \cite{jones94phd-qual-types,gaster96poly-ext-rec-var,jones99lightweight-ext-rec}.
 %endif
 
-%if not limitSize
+%if not shortStory
 \Paragraph{Dynamically scoped variables}
 GHC \cite{www04ghc} enables the passing of plain values as
 dynamically scoped variables (also known as implicit parameters).

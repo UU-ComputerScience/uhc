@@ -41,17 +41,31 @@
  \end{center}
 }
 
-\newcommand{\FigPDF}[1]{%
- \includegraphics{#1.pdf}
+\newcommand{\FigScaledEPS}[2]{%
+ \includegraphics[scale=#1]{#2.eps}
+}
+
+\newcommand{\FigEPS}[1]{%
+ \FigScaledEPS{1}{#1}
 }
 
 \newcommand{\FigScaledPDF}[2]{%
  \includegraphics[scale=#1]{#2.pdf}
 }
 
+\newcommand{\FigPDF}[1]{%
+ \FigScaledPDF{1}{#1}
+}
+
+\newcommand{\FigCenteredScaledPDF}[2]{%
+ \begin{center}
+ \includegraphics[scale=#1]{#2.pdf}
+ \end{center}
+}
+
 \newcommand{\FigCenterPDF}[1]{%
  \begin{center}
- \FigPDF{#1}
+ \FigScaledPDF{1}{#1}
  \end{center}
 }
 
@@ -209,7 +223,7 @@
 %%]
 
 %%[1.rulerRule
-% Cmd for single rule
+% Cmd for single rule, name horizontally
 % #1: rule name
 % #2: view name
 % #3: premise judgements
@@ -232,6 +246,67 @@
   \, \textsc{#1}_{#2}%
  }%
 }
+\endgroup
+}
+%%]
+
+%%[1
+%%]
+% Cmd for single rule, name vertically
+% #1: rule name
+% #2: view name
+% #3: premise judgements
+% #4: conclusion judgement
+\newcommand{\rulerRuleVert}[4]{%
+\begingroup
+\renewcommand{\arraystretch}{1}%
+\mbox{%
+\ensuremath{%
+  (\textsc{#1}_{#2})%
+  \\
+  \frac{%
+    \begin{array}{@@{}c@@{}}%
+    \ \\
+    #3
+    \end{array}%
+  }{%
+    \begin{array}{@@{}c@@{}}%
+    #4
+    \end{array}%
+  }%
+ }%
+}
+\endgroup
+}
+
+%%[1
+% Cmd for single rule, name vertically
+% #1: rule name
+% #2: view name
+% #3: premise judgements
+% #4: conclusion judgement
+\newcommand{\rulerRuleVert}[4]{%
+\begingroup
+\renewcommand{\arraystretch}{1}%
+\begin{array}{@@{}l@@{}}
+\mbox{%
+\ensuremath{%
+  \frac{%
+    \begin{array}{@@{}c@@{}}%
+    \ \\
+    #3
+    \end{array}%
+  }{%
+    \begin{array}{@@{}c@@{}}%
+    #4
+    \end{array}%
+  }%
+ }%
+}
+\\
+(\textsc{#1}_{#2})%
+\\
+\end{array}
 \endgroup
 }
 %%]

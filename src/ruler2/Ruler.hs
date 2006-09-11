@@ -28,6 +28,8 @@ import TrfAS2GenARule
 import TrfAS2GenLaTeX
 import KeywParser
 import RulerParser
+import Expr
+import FmGam
 
 -------------------------------------------------------------------------
 -- Compile run state
@@ -106,16 +108,16 @@ instance Show RCompileUnit where
   show _ = "RCU"
 
 instance PP RCompileUnit where
-  pp u = "RCU:" >#< pp (show $ rcuFilePath $ u) >#< ":" >#< pp (rcuState u)
+  pp u = "RCU:" >#< pp (show $ rcuFilePath $ u) >#< ": state " >#< pp (rcuState u) >#< ": impL " >#< pp (show $ rcuImpNmL u)
 
 -------------------------------------------------------------------------
 -- File suffix
 -------------------------------------------------------------------------
 
-type FileSuffMp = Map.Map String RCompileUnitState
+type FileSuffMp = [(String,RCompileUnitState)]
 
 fileSuffMp :: FileSuffMp
-fileSuffMp = Map.fromList [ ( "rul", RCUSRuler ), ( "", RCUSRuler ), ( "*", RCUSRuler ) ]
+fileSuffMp = [ ( "rul", RCUSRuler ), ( "", RCUSRuler ), ( "*", RCUSRuler ) ]
 
 -------------------------------------------------------------------------
 -- Compile run actions
@@ -158,6 +160,7 @@ cpFindAndParseCU mbFp modNm
 cpFlattenAndCompileAllCU :: RCompilePhase ()
 cpFlattenAndCompileAllCU
  = do { cr <- get
+      -- ; lift $ hPutStrLn stderr (show $ crCompileOrder cr)
       ; let opts = crsiOpts (crStateInfo cr)
             isAS2 = fmAS2Fm (optGenFM opts) /= optGenFM opts
             parseRes = as1JoinAGItfs [ panicJust ("crFlattenAndCompileAllCU: " ++ show n) $ rcuMbOut $ crCU n $ cr | ns <- crCompileOrder cr, n <- ns ]
@@ -165,7 +168,7 @@ cpFlattenAndCompileAllCU
               = M1.wrap_AGItf (M1.sem_AGItf parseRes)
                          (M1.Inh_AGItf
                             { M1.opts_Inh_AGItf = opts {optGenFM = fmAS2Fm (optGenFM opts)}
-                            , M1.fmGam_Inh_AGItf = emptyGam
+                            , M1.fmGam_Inh_AGItf = fmGamFromList' FmFmtCmd [ (Nm n,Expr_Var (Nm v)) | (n,v) <- optDefs opts ]
                             })
             hPutBld f h b = if f then hPutPPFile h b 2000 else return ()
             putBld  f   b = hPutBld f stdout b

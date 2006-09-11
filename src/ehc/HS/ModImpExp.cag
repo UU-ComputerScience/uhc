@@ -28,3 +28,27 @@
 WRAPPER AGItf
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Top level instance names, to be propagated to next phase -- a hack :-(
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR AllNT [ | topInstanceNmL: {[HsName]} | ]
+
+SEM Declaration
+    | Class Instance InstanceUseImplicitly
+        lhs             .   topInstanceNmL
+                                        =   @instancename : @lhs.topInstanceNmL
+
+SEM AGItf
+    | AGItf
+        loc             .   topInstanceNmL
+                                        =   []
+%%]
+
+%%[12
+SEM Declaration
+    | Class Instance InstanceUseImplicitly
+        loc             .   mbPrevInstancename
+                                        =   Nothing
+%%]

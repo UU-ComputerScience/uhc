@@ -32,7 +32,7 @@ type ScanOptsMp = Map.Map ScState ScanOpts
 
 chKindMp = Map.fromList [ ("hs",ChHS), ("ag",ChAG), ("plain",ChPlain) ]
 chDestMp = Map.fromList [ ("here",ChHere), ("hide",ChHide) ]
-chWrapMp = Map.fromList [ ("code",ChWrapCode), ("safecode",ChWrapBoxCode), ("boxcode",ChWrapBoxCode), ("tt",ChWrapTT), ("tttiny",ChWrapTTtiny) ]
+chWrapMp = Map.fromList [ ("code",ChWrapCode), ("safecode",ChWrapBoxCode Nothing), ("tt",ChWrapTT), ("tttiny",ChWrapTTtiny) ]
 
 kwTxtAsVarTooA
   = [ "module", "import", "export", "wrap" ]
@@ -42,7 +42,7 @@ kwTxtAsVarTooB
   = kwTxtAsVarTooA
     ++ Map.keys chDestMp
     ++ Map.keys chWrapMp
-    ++ [ "beamerblockcode" ]
+    ++ [ "beamerblockcode", "boxcode" ]
 
 shuffleScanOpts :: ScanOptsMp
 shuffleScanOpts
@@ -241,6 +241,11 @@ pVar = tokBlack <$> pSym (Tok TkText "" "<ident>" tkpNone ScSkip)
 pInt :: (IsParser p Tok) => p String
 pInt = tokBlack <$> pSym (Tok TkInt "" "0" tkpNone ScSkip)
 
+pFrac :: (IsParser p Tok) => p String
+pFrac
+  = (++) <$> (pMaybe "" id pInt)
+         <*> (pMaybe "" ("."++) (pKey "." *> pInt))
+
 pInt' :: (IsParser p Tok) => p Int
 pInt' = str2int <$> pInt
 
@@ -362,6 +367,7 @@ pChWrap             ::  ShPr ChWrap
 pChWrap             =   pKey "wrap" *> pKey "="
                         *> (   pAnyFromMap pKey chWrapMp
                            <|> ChWrapBeamerBlockCode <$ pKey "beamerblockcode" <*> pStr
+                           <|> ChWrapBoxCode         <$ pKey "boxcode" <*> pMb (pCurly pFrac)
                            )
 
 pMbChWrap           ::  ShPr ChWrap

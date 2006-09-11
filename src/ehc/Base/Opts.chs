@@ -106,6 +106,7 @@ data EHCOpts
 %%]
 %%[99
       ,  ehcProgName          ::  String
+      ,  ehcOptShowNumVersion ::  Bool
 %%]
 %%[1
       }
@@ -150,6 +151,7 @@ defaultEHCOpts
 %%]
 %%[99
       ,  ehcProgName          =   ""
+      ,  ehcOptShowNumVersion =   False
 %%]
 %%[1
       }
@@ -160,8 +162,8 @@ ehcCmdLineOpts
   =  [  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|grin|ast|-")  "show pretty printed EH/Grin source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
      ,  Option "d"  ["debug"]            (NoArg oDebug)                       "show extra debug information"
      ,  Option ""   ["show-top-ty"]      (OptArg oShowTopTy "yes|no")         "show top ty, default=no"
-     ,  Option "h"  ["help"]             (NoArg oHelp)                        "output this help"
-     ,  Option ""   ["version"]          (NoArg oVersion)                     "print version info"
+     ,  Option "h"  ["help"]             (NoArg oHelp)                        "only show this help"
+     ,  Option ""   ["version"]          (NoArg oVersion)                     "only show version info"
 %%]
 %%[8.ehcCmdLineOptsA
      ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|cmm|c|-")  "write code to file, default=core (downstream only)"
@@ -177,7 +179,9 @@ ehcCmdLineOpts
      ,  Option ""   ["gen-tailcall"]     (boolArg optSetGenTailCall)          "jumps for tail calls in C (yes)"
      ,  Option ""   ["gen-ownparams"]    (boolArg optSetGenOwnParams)         "explicit parameter allocation (yes)"
      ,  Option ""   ["gen-ownlocals"]    (boolArg optSetGenOwnLocals)         "explicit local allocation (no, broken!)"
-
+%%]
+%%[99
+     ,  Option ""   ["numeric-version"]  (NoArg oNumVersion)                  "only show numeric version"
 %%]
 %%[1
      ]
@@ -238,9 +242,12 @@ ehcCmdLineOpts
                                 Just "2"    -> o { ehcOptVerbosity     = VerboseALot        }
                                 Nothing     -> o { ehcOptVerbosity     = VerboseNormal      }
                                 _           -> o
+%%]
+%%[99
+         oNumVersion     o =  o { ehcOptShowNumVersion          = True    }
+%%]
 
-
-
+%%[8
 boolArg tr = OptArg (optBoolean tr) "0|1|no|yes|-|+"
 
 optSetGenTrace       o b = o { ehcOptGenTrace       = b }

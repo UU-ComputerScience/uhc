@@ -72,6 +72,7 @@ TEXT_BIB_DRV				:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN).bib
 FIGS_XFIG_DRV_TEX			:= $(patsubst $(FIGS_SRC_PREFIX)%.fig,$(TEXT_TMP_VARIANT_PREFIX)%.tex,$(FIGS_XFIG_SRC_FIG))
 FIGS_XFIG_DRV_PDF			:= $(patsubst $(FIGS_SRC_PREFIX)%.fig,$(TEXT_TMP_VARIANT_PREFIX)%.pdf,$(FIGS_XFIG_SRC_FIG_NOPDF))
 FIGS_ASIS_DRV				:= $(patsubst $(FIGS_SRC_PREFIX)%,$(TEXT_TMP_VARIANT_PREFIX)%,$(FIGS_ASIS_SRC))
+FIGS_EPS_DRV_PDF			:= $(patsubst $(FIGS_SRC_PREFIX)%.eps,$(TEXT_TMP_VARIANT_PREFIX)%.pdf,$(FIGS_EPS_SRC_EPS))
 
 TEXT_ALL_MK_FILES			:= $(AGPRIMER_MKF) $(EHC_MKF) $(RULER2_MKF) $(TEXT_MKF)
 
@@ -115,7 +116,7 @@ TEXT_ALL_SRC				:= $(TEXT_EDIT_SRC) $(TEXT_SUBS_ASIS_SRC) $(TEXT_BIB_SRC) $(TEXT
 
 # all deriveds (as counting for make dependencies)
 TEXT_ALL_DPD				:= $(TEXT_MAIN_DRV_TEX) $(TEXT_SUBS_DRV_TEX) $(TEXT_MAIN_DRV_STY) $(TEXT_RULER2_DEMO_TEX) $(TEXT_INF2PS_ALL_DRV_TEX) $(TEXT_RULEX_ALL_DRV_TEX) $(TEXT_RULER2_DEMO_ALL_DRV_TEX) \
-								$(TEXT_SUBS_ASIS_DRV) $(FIGS_XFIG_DRV_TEX) $(FIGS_XFIG_DRV_PDF) $(TEXT_RULER2_DEMO_STUFF) $(FIGS_ASIS_DRV) $(TEXT_HIDE_DRV_TEX)  \
+								$(TEXT_SUBS_ASIS_DRV) $(FIGS_XFIG_DRV_TEX) $(FIGS_XFIG_DRV_PDF) $(FIGS_EPS_DRV_PDF) $(TEXT_RULER2_DEMO_STUFF) $(FIGS_ASIS_DRV) $(TEXT_HIDE_DRV_TEX)  \
 								$(TEXT_GEN_BY_RULER_TABLE_TEX) $(TEXT_INCL_LIST_TEX)
 
 # all shuffle included material
@@ -139,12 +140,6 @@ $(TEXT_ALL_PDFS): $(DOC_PREFIX)%.pdf: $(TEXT_ALL_SRC) $(RULER2_DEMO_ALL_SRC) $(E
 
 $(TEXT_VARIANTS) : % : $(DOC_PREFIX)%.pdf
 	open $<
-
-text-variant-slides-overview:
-	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyOverview --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
-	  TEXT_SHUFFLE_VARIANT=17 \
-	  text-variant-dflt-once
 
 text-variant-dflt-once: $(TEXT_ALL_DPD)
 	mkdir -p $(dir $(TEXT_BLD_PDF))
@@ -221,20 +216,20 @@ $(RULER_12_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(SRC_EHC_PREFIX)%.rul
 
 $(RULER_3_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(SRC_EHC_PREFIX)%.rul $(RULER2)
 	mkdir -p $(@D)
-	$(RULER2) $(RULER2_OPTS) --lhs2tex $(TEXT_RULER_MARK_CHANGES_CFG) --base=$(RULER_3_BASE) $< > $@
+	$(RULER2) $(RULER2_OPTS) $(TEXT_RULER_DEFS_TEX) --lhs2tex $(TEXT_RULER_MARK_CHANGES_CFG) --base=$(RULER_3_BASE) $< > $@
 
 $(RULER_4_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(SRC_EHC_RULES_PREFIX)%.rul $(EHC_RULES_4_DPDS_SRC_RUL) $(RULER2)
 	mkdir -p $(@D)
 #	$(RULER2) $(RULER2_OPTS) --lhs2tex --base=$(RULER_4_BASE) $< > $@
-	$(RULER2) $(RULER2_OPTS) --lhs2tex $(TEXT_RULER_MARK_CHANGES_CFG) --base=$(RULER_4_BASE) $< > $@
+	$(RULER2) $(RULER2_OPTS) $(TEXT_RULER_DEFS_TEX) --lhs2tex $(TEXT_RULER_MARK_CHANGES_CFG) --base=$(RULER_4_BASE) $< > $@
 
 $(RULER2_RULES_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(SRC_RULER2_PREFIX)%.rul $(RULER2)
 	mkdir -p $(@D)
-	$(RULER2) $(RULER2_OPTS) --lhs2tex --base=$(*F) $< > $@
+	$(RULER2) $(RULER2_OPTS) $(TEXT_RULER_DEFS_TEX) --lhs2tex --base=$(*F) $< > $@
 
 $(TEXT_RULES_TH_DRV_LTEX) : $(TEXT_TMP_VARIANT_PREFIX)%.ltex : $(TEXT_SRC_PREFIX)%.rul $(RULER2)
 	mkdir -p $(@D)
-	$(RULER2) $(RULER2_OPTS) --lhs2tex --base=$(*F) $< > $@
+	$(RULER2) $(RULER2_OPTS) $(TEXT_RULER_DEFS_TEX) --lhs2tex --base=$(*F) $< > $@
 
 $(TEXT_RULES_3_DRV_CAG): $(EHC_RULES_3_SRC_RL2) $(RULER2)
 	mkdir -p $(@D)
@@ -268,6 +263,10 @@ $(FIGS_XFIG_DRV_TEX): $(TEXT_TMP_VARIANT_PREFIX)%.tex : $(FIGS_SRC_PREFIX)%.fig 
 $(FIGS_XFIG_DRV_PDF): $(TEXT_TMP_VARIANT_PREFIX)%.pdf : $(FIGS_SRC_PREFIX)%.fig
 	mkdir -p $(@D)
 	fig2dev -L pdf -p dummy $< > $@
+
+$(FIGS_EPS_DRV_PDF): $(TEXT_TMP_VARIANT_PREFIX)%.pdf : $(FIGS_SRC_PREFIX)%.eps
+	mkdir -p $(@D)
+	ps2pdf $< $@
 
 $(TEXT_INCL_LIST_TEX): $(TEXT_ALL_MK_FILES)
 	@(for f in $(sort $(notdir $(TEXT_SUBS_DRV_TEX) $(TEXT_RULER2_DEMO_ALL_DRV_TEX) $(TEXT_INF2PS_ALL_DRV_TEX) $(TEXT_RULEX_ALL_DRV_TEX) $(TEXT_RULER2_DEMO_TEX))) ; \
@@ -306,7 +305,7 @@ $(TEXT_RULEX_DRV_RUL): $(TEXT_RULEX_SRC_CRUL) $(SHUFFLE) $(TEXT_MKF)
 	$(SHUFFLE) --gen=1 --plain --order="1"  --lhs2tex=no $< > $@
 
 $(TEXT_RULER2_DEMO_DRV_LRTEX): $(TEXT_RULER2_DEMO_DRV_RL2) $(RULER2)
-	$(RULER2) $(RULER2_OPTS) --lhs2tex --selrule="(E - *).(*).(*)" $(RULER2_DEMO_MARK_CHANGES_CFG) --base=rulerDemo $< > $@
+	$(RULER2) $(RULER2_OPTS) $(TEXT_RULER_DEFS_TEX) --lhs2tex --selrule="(E - *).(*).(*)" $(RULER2_DEMO_MARK_CHANGES_CFG) --base=rulerDemo $< > $@
 
 $(TEXT_RULER2_DEMO_DRV_RTEX): $(TEXT_RULER2_DEMO_DRV_LRTEX)
 	$(LHS2TEX_CMD) $(LHS2TEX_OPTS_POLY) $< > $@
@@ -324,8 +323,8 @@ $(TEXT_RULER2_DEMO_DRV_ATEX): $(TEXT_RULER2_DEMO_DRV_LATEX)
 	$(LHS2TEX_CMD) $(LHS2TEX_OPTS_POLY) $< > $@
 
 $(TEXT_INF2PS_DRV_LTEX): $(TEXT_INF2PS_DRV_RUL) $(RULER2)
-	$(RULER2) $(RULER2_OPTS) --lhs2tex --selrule="(HM - *).(*).(*)" $(TEXT_INF2PS_MARK_CHANGES_CFG) --base=infer2pass $< > $@
+	$(RULER2) $(RULER2_OPTS) $(TEXT_RULER_DEFS_TEX) --lhs2tex --selrule="(HM - *).(*).(*)" $(TEXT_INF2PS_MARK_CHANGES_CFG) --base=infer2pass $< > $@
 
 $(TEXT_RULEX_DRV_LTEX): $(TEXT_RULEX_DRV_RUL) $(RULER2)
-	$(RULER2) $(RULER2_OPTS) --lhs2tex --base=$(TEXT_RULEX) $< > $@
+	$(RULER2) $(RULER2_OPTS) $(TEXT_RULER_DEFS_TEX) --lhs2tex --base=$(TEXT_RULEX) $< > $@
 

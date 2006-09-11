@@ -37,13 +37,13 @@ text-variant-phd-draft:
 
 text-variant-flops06-ruler-paper:
 	$(MAKE) RULER2_DEMO_MARK_CHANGES_CFG= \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=flops06 --set=llncs --set=kscode --set=limitSize --set=storyRuler --set=asArticle --set=targetForPaper" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=flops06 --set=llncs --set=kscode --set=shortStory --set=storyRuler --set=asArticle --set=targetForPaper" \
 	  TEXT_SHUFFLE_VARIANT=3 \
 	  text-variant-dflt-bib
 
 text-variant-flops06-ruler:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=flops06 --set=llncs --set=kscode --set=limitSize --set=storyRuler --set=asArticle" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=flops06 --set=llncs --set=kscode --set=shortStory --set=storyRuler --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=3 \
 	  text-variant-dflt-bib
 
@@ -55,13 +55,13 @@ text-variant-truu-ruler:
 
 text-variant-popl07-explimpl-tst:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=popl07 --set=acm --set=kscode --set=limitSize --set=storyExplImpl --set=asArticle" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=popl07 --set=acm --set=kscode --set=shortStory --set=storyExplImpl --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=4 \
 	  text-variant-dflt-once
 
 text-variant-popl07-explimpl:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=popl07 --set=acm --set=kscode --set=limitSize --set=storyExplImpl --set=asArticle" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=popl07 --set=acm --set=kscode --set=shortStory --set=storyExplImpl --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=4 \
 	  text-variant-dflt-bib
 
@@ -73,7 +73,7 @@ text-variant-truu-explimpl:
 
 text-variant-hw06-impred:
 	$(MAKE) TEXT_INF2PS_MARK_CHANGES_CFG= TEXT_RULER_MARK_CHANGES_CFG= TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=hw06 --set=acm --set=kscode --set=limitSize --set=infer2pass --set=storyImpred --set=asArticle" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=hw06 --set=acm --set=kscode --set=shortStory --set=infer2pass --set=storyImpred --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=5 \
 	  text-variant-dflt-bib
 
@@ -96,14 +96,20 @@ text-variant-ruler-doc:
 	  text-variant-dflt-once
 
 text-variant-poster:
-	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyPoster --set=asArticle --unset=useHyperref --unset=refToPDF" \
+	$(MAKE) TEXT_RULER_DEFS_TEX="-DrulerRuleCmd=rulerRuleVert" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyPoster --set=asArticle --set=fullWide --unset=useHyperref --unset=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=13 \
 	  text-variant-dflt-once
 
 text-variant-slides-ruler:
 	$(MAKE) \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyRuler --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
+	  TEXT_SHUFFLE_VARIANT=14 \
+	  text-variant-dflt-once
+
+text-variant-slides-ruler-long:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyRuler --set=longStory --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=14 \
 	  text-variant-dflt-once
 
@@ -118,3 +124,10 @@ text-variant-slides-explimpl-fpnl:
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyExplImpl --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=16 \
 	  text-variant-dflt-once
+
+text-variant-slides-overview:
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyOverview --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
+	  TEXT_SHUFFLE_VARIANT=17 \
+	  text-variant-dflt-once
+
