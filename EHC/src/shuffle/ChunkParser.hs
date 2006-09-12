@@ -91,7 +91,7 @@ tkpNone = TokPos (-1) (-1)
 data TokKind
   = TkBegChunk  | TkEndChunk
   | TkBegInline | TkEndInline
-  | TkBegGroup
+  | TkBegGroup  | TkElseGroup
   | TkNameRef
   | TkReserved
   | TkNl   | TkEOF
@@ -181,8 +181,12 @@ scan scoMp st s
           | isOpch st c                             = scKw (isOpch st) p st s
         sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':'[':'[':s')
                                                     = Tok TkBegGroup   "" "%%[[" p st : sc (ai 4 p) (ScLexMeta (l+1)) s'
+        sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':']':'[':s')
+                                                    = Tok TkElseGroup  "" "%%][" p st : sc (ai 4 p) (ScLexMeta (l)) s'
         sc p@(TokPos _ 1) ScSkip            ('%':'%':'[':s')
                                                     = Tok TkBegChunk   "" "%%["  p ScSkip  : sc (ai 3 p) (ScLexMeta 0) s'
+        sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':']':']':s')
+          | l >  0                                  = Tok TkEndChunk   "" "%%]]" p st : sc (ai 4 p) (ScChunk (l-1)) s'
         sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':']':s')
           | l == 0                                  = Tok TkEndChunk   "" "%%]"  p st : sc (ai 3 p) ScSkip s'
           | l >  0                                  = Tok TkEndChunk   "" "%%]"  p st : sc (ai 3 p) (ScChunk (l-1)) s'
@@ -223,12 +227,13 @@ scan scoMp st s
              | otherwise = ([],xs)
                                where (ys,zs) = span' p xs'
 
-pBegChunk, pEndChunk, pBegInline, pEndInline, pBegGroup, pBegNameRef, pNl :: (IsParser p Tok) => p Tok
+pBegChunk, pEndChunk, pBegInline, pEndInline, pBegGroup, pElseGroup, pBegNameRef, pNl :: (IsParser p Tok) => p Tok
 pBegChunk   = pSym (Tok TkBegChunk  "" "%%["  tkpNone ScSkip)
 pEndChunk   = pSym (Tok TkEndChunk  "" "%%]"  tkpNone ScSkip)
 pBegInline  = pSym (Tok TkBegInline "" "%%@[" tkpNone ScSkip)
 pEndInline  = pSym (Tok TkEndInline "" "%%]"  tkpNone ScSkip)
 pBegGroup   = pSym (Tok TkBegGroup  "" "%%[[" tkpNone ScSkip)
+pElseGroup  = pSym (Tok TkElseGroup "" "%%][" tkpNone ScSkip)
 pBegNameRef = pSym (Tok TkNameRef   "" "%%@"  tkpNone ScSkip)
 pNl         = pSym (Tok TkNl        "" "LF"   tkpNone ScSkip)
 
@@ -387,16 +392,16 @@ pLines              =   pFoldr (sem_Lines_Cons,sem_Lines_Nil) pLine
 pLine               ::  ShPr T_Line
 pLine               =   sem_Line_AsIs  <$> pLineChars  <*  pNl
                     <|> (\n (o,r)
-                          -> sem_Line_Group 0 VAll o r (sem_Lines_Cons (sem_Line_Named n) sem_Lines_Nil))
+                          -> sem_Line_Groups 0 (sem_Groups_Cons (sem_Group_Group VAll o r (sem_Lines_Cons (sem_Line_Named n) sem_Lines_Nil)) sem_Groups_Nil))
                              <$  pBegNameRef <*> pN <*> pD <* pNl
-                    <|> (\v (o,r) l
-                          -> sem_Line_Group 1 v o r l)
-                             <$  pBegGroup   <*> pOptVersion <*> pD <* pNl <*> pLines <* pEndChunk <* pNl
+                    <|> sem_Line_Groups 1
+                             <$  pBegGroup   <*> pFoldr1Sep (sem_Groups_Cons,sem_Groups_Nil) pElseGroup pG <* pEndChunk <* pNl
                     <?> "a line"
                     where pN =   pNm
                              <|> (\v n -> mkNm v `nmApd` n) <$> pVersion <*> pMaybe NmEmp id (pKey "." *> pNm)
                           pD =   pChunkOptions
                              <+> pMaybe Nothing Just ((pNm2 <|> mkNm <$> pStr) <+> pMaybe Nothing Just (pKey "=" *> pMaybe "" id pStr))
+                          pG =   (\v (o,r) ls -> sem_Group_Group v o r ls) <$> pOptVersion <*> pD <* pNl <*> pLines
 
 pLineChars          ::  ShPr T_Words
 pLineChars          =   (foldr sem_Words_Cons sem_Words_Nil . concat)

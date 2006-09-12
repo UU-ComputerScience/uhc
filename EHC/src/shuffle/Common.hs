@@ -16,6 +16,7 @@ module Common
   , ChKind(..), ChDest(..), ChWrap(..)
   , Version(..), VersionOrder
   , verMember
+  , VOMp, sortOnVOMp
   , KVMap
   )
   where
@@ -30,6 +31,7 @@ import System.Directory
 import System.Console.GetOpt
 import UU.Pretty
 import EH.Util.FPath
+import EH.Util.Utils
 import EH.Util.PPUtils
 import EH.Util.Nm
 
@@ -184,11 +186,12 @@ data Version    = VAll
                 deriving (Show,Eq,Ord)
 
 type VersionOrder = [[Version]]
+type VOMp = Map.Map Version Int
 
-verMember :: Version -> Set.Set Version -> Bool
+verMember :: Version -> VOMp -> Bool
 verMember VAll _ = True
-verMember v    s = Set.member v s
+verMember v    s = Map.member v s
 
-
-
+sortOnVOMp :: VOMp -> [(Version,x)] -> [x]
+sortOnVOMp m = map snd . sortOn fst . map (\(v,x) -> (Map.findWithDefault 0 v m,x))
 

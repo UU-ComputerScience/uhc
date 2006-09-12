@@ -36,7 +36,7 @@ pBinding
   =   Binding_Fixity    <$> pNmIs "fixity" <* pOCURLY <*> pInt     <* pSEMI <*> pFixity                <* pCCURLY
   <|> Binding_Val       <$> pNmIs "value"  <* pOCURLY <*> pTy                                          <* pCCURLY
   <|> Binding_Stamp     <$  pNmIs "stamp"  <* pOCURLY <*> pString <* pSEMI <*> pString
-                                           <* pSEMI   <*> pInt    <* pSEMI <*> pInt
+                                           <* pSEMI   <*> pString <* pSEMI <*> pString
                                            <* pSEMI   <*> pString <* pSEMI <*> pString
                                            <* pSEMI   <*> (read <$> pInteger)
                                            <* pCCURLY

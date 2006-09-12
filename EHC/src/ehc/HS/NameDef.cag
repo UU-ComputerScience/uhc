@@ -247,6 +247,12 @@ SEM Pattern
         loc             .   idOccDefs   =   [@idOccDef] ++ @pattern.idOccDefs
 %%]
 
+%%[8
+SEM Body
+    | Body
+        loc             .   idOccDefMain=   IdOcc hsnMain IdOcc_Val
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Misc: simpletype internal info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

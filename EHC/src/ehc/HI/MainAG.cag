@@ -11,7 +11,7 @@
 %%[12 hs module {%{EH}HI.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Common},{%{EH}Gam},qualified {%{EH}Pred} as Pr,{%{EH}HI})
 %%]
 
-%%[12 hs import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Module})
+%%[12 hs import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Config},{%{EH}Module})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -86,5 +86,18 @@ SEM Rules
     | Nil
         lhs             .   rules       =   []
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Valid version?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR AllNT AGItf [ | | isValidVersion USE {||} {False}: Bool ]
+
+SEM Binding
+    | Stamp
+        lhs             .   isValidVersion
+                                        =   @srcSig == verSig version
 %%]
 
