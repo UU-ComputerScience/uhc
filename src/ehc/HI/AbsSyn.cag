@@ -20,8 +20,8 @@ DATA Binding
 	| Stamp
 		srcTimestamp			: String
 		srcSig					: String
-		srcVersionMajor			: Int
-		srcVersionMinor			: Int
+		srcVersionMajor			: String
+		srcVersionMinor			: String
 		srcVersionQuality		: String
 		srcVersionSvn			: String
 		hash					: Integer

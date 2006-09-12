@@ -24,7 +24,7 @@
 %%[12 import ({%{EH}Gam}) export(modBuiltin,modImpBuiltin)
 %%]
 
-%%[12 export(ModMpInfo(..),ModMp,modMpCombine)
+%%[12 export(ModMpInfo(..),ModMp,modMpCombine,emptyModMpInfo)
 %%]
 
 %%[12 export(ppModMp,ppModEntDomMp,ppModEntRel,ppModEntRel')

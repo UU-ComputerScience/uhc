@@ -11,11 +11,27 @@
 ATTR AllNT AGItf [ | | errL USE {++} {[]} : ErrL ]
 %%]
 
-%%[1
+%%[1.Module
+SEM Module
+    | Module
+        loc         .   errL        =   firstNotEmpty [@errUndef,@body.errL]
+
 SEM Body
     | Body
-        loc         .   errL        =   firstNotEmpty [@errUndef,@declarations.errL,@errReorder]
+        loc         .   errL        =   @errReorder ++ @declarations.errL
+%%]
 
+%%[12 -1.Module
+SEM Module
+    | Module
+        lhs         .   errL        =   firstNotEmpty [@errUndef,@errModName,@body.errL]
+
+SEM Body
+    | Body
+        lhs         .   errL        =   firstNotEmpty [@errIdUse,@errReorder ++ @declarations.errL]
+%%]
+
+%%[1
 SEM Expression
     | Variable Constructor
         loc         .   errL        =   @errIdUse
@@ -112,11 +128,5 @@ SEM Declaration
 SEM Deriving
     | Deriving
         loc         .   errL        =   @errIdUse
-%%]
-
-%%[12
-SEM Module
-    | Module
-        lhs         .   errL        =   firstNotEmpty [@errModName,@body.errL]
 %%]
 

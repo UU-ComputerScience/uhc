@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module Main import(System, Data.List, Control.Monad, System.Console.GetOpt, IO, EH.Util.Utils,UU.Pretty,EH.Util.PPUtils,{%{EH}Error.Pretty}, UU.Parsing, UU.Parsing.Offside, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Base.Opts})
+%%[1 module Main import(System, Data.List, Control.Monad, System.Console.GetOpt, IO, EH.Util.Utils,UU.Pretty,EH.Util.PPUtils,{%{EH}Error.Pretty}, UU.Parsing, UU.Parsing.Offside, {%{EH}Base.Common}, {%{EH}Config}, {%{EH}Scanner.Common}, {%{EH}Base.Opts})
 %%]
 
 %%[1 import(qualified {%{EH}EH.Parser} as EHPrs, qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.Parser} as HSPrs, qualified {%{EH}HS.MainAG} as HSSem)
@@ -51,9 +51,6 @@
 %%[12 import (System.Time, System.Directory)
 %%]
 
-%%[12 import (qualified {%{EH}SourceCodeSig} as Sig)
-%%]
-
 %%[12 import (qualified {%{EH}HI.Parser} as HIPrs, {%{EH}Module}, qualified {%{EH}HI} as HI, qualified {%{EH}HI.MainAG} as HISem)
 %%]
 
@@ -61,22 +58,6 @@
 %%]
 
 %%[12 import (qualified {%{EH}HS.ModImpExp} as HSSemMod)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Version of program
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1
-versionSvn      	= "$Id$"
-versionMajor    	= 0
-versionMinor    	= 1
-versionMinorMinor	= 1
-versionQuality  	= "alpha"
-versionNumeric     	= show versionMajor ++ "." ++ show versionMinor ++ "." ++ show versionMinorMinor
-versionDist     	= versionNumeric ++ versionQuality
-versionProg     	= "ehc"
-versionInfo     	= versionProg ++ versionDist ++ ", " ++ versionSvn
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -97,19 +78,19 @@ main
          ;  if ehcOptHelp opts
 %%]
 %%[1.main.ehcOptHelp
-            then  putStrLn (usageInfo ("version: " ++ versionInfo ++ "\n\nUsage: " ++ progName ++ " [options] [file[.eh|.hs]]\n\noptions:") ehcCmdLineOpts)
+            then  putStrLn (usageInfo ("version: " ++ verInfo version ++ "\n\nUsage: " ++ progName ++ " [options] [file[.eh|.hs]]\n\noptions:") ehcCmdLineOpts)
 %%]
 %%[8.main.ehcOptHelp -1.main.ehcOptHelp
-            then  do  {  putStrLn (usageInfo ("version: " ++ versionInfo ++ "\n\nUsage: " ++ progName ++ " [options] [file[.eh|.hs]]\n\noptions:") ehcCmdLineOpts)
+            then  do  {  putStrLn (usageInfo ("version: " ++ verInfo version ++ "\n\nUsage: " ++ progName ++ " [options] [file[.eh|.hs]]\n\noptions:") ehcCmdLineOpts)
                       ;  putStrLn ("Transformations:\n" ++ (unlines . map (\(n,t) -> "  " ++ n ++ ": " ++ t) $ cmdLineTrfs))
                       }
 %%]
 %%[1.main.tl
             else  if ehcOptVersion opts
-            then  putStrLn versionInfo
+            then  putStrLn (verInfo version)
 %%[[99
             else  if ehcOptShowNumVersion opts
-            then  putStrLn versionNumeric
+            then  putStrLn (verNumeric version)
 %%]
             else  if null errs
                   then  doCompileRun (if null n then "" else head n) opts
@@ -207,6 +188,7 @@ data EHCompileUnit
       , ecuMbHSSemMod        :: Maybe HSSemMod.Syn_AGItf
       , ecuMod               :: Mod
       , ecuMbPrevCore        :: Maybe Core.CModule
+      , ecuMbPrevHISem       :: Maybe HISem.Syn_AGItf
       , ecuMbPrevHI          :: Maybe HI.AGItf
 %%]
       }
@@ -257,6 +239,9 @@ ecuStorePrevCore x ecu = ecu { ecuMbPrevCore = Just x }
 ecuStorePrevHI :: EcuUpdater HI.AGItf
 ecuStorePrevHI x ecu = ecu { ecuMbPrevHI = Just x }
 
+ecuStorePrevHISem :: EcuUpdater HISem.Syn_AGItf
+ecuStorePrevHISem x ecu = ecu { ecuMbPrevHISem = Just x }
+
 %%]
 
 %%[8
@@ -287,6 +272,7 @@ emptyECU
       , ecuMbHSSemMod        = Nothing
       , ecuMod               = emptyMod
       , ecuMbPrevCore        = Nothing
+      , ecuMbPrevHISem       = Nothing
       , ecuMbPrevHI          = Nothing
 %%]
       }
@@ -352,6 +338,7 @@ data EHCompileRunStateInfo
       , crsiNextUID     :: UID
       , crsiHereUID     :: UID
 %%[[12
+      , crsiHIInh       :: HISem.Inh_AGItf
       , crsiHSModInh    :: HSSemMod.Inh_AGItf
       , crsiModMp       :: ModMp
       , crsiGrpMp       :: Map.Map HsName EHCompileGroup
@@ -441,17 +428,6 @@ cpParseGrin modNm
   = do { cr <- get
        ; cpParsePlain GrinParser.pModule grinScanOpts ecuStoreGrin "Parse grin" (ecuFilePath (crCU modNm cr)) modNm
        }
-
-{-
-cpParseGrin :: HsName -> EHCompilePhase ()
-cpParseGrin modNm
- = do { cr <- get
-      ; (fn,fh) <- lift $ openFPath (ecuFilePath (crCU modNm cr)) ReadMode
-      ; tokens  <- lift $ scanHandle GrinParser.scanOpts fn fh
-      ; gr      <- lift $ parseIO GrinParser.pModule tokens
-      ; cpUpdCU modNm (ecuStoreGrin gr)
-      }
--}
 %%]
 
 %%[12
@@ -473,7 +449,7 @@ cpParsePrevHI modNm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-foldEH :: EHSem.Inh_AGItf -> EHCompileUnit -> EHCompileRunStateInfo ->EH.AGItf -> EHSem.Syn_AGItf
+foldEH :: EHSem.Inh_AGItf -> EHCompileUnit -> EHCompileRunStateInfo -> EH.AGItf -> EHSem.Syn_AGItf
 foldEH inh ecu crsi eh
  = EHSem.wrap_AGItf (EHSem.sem_AGItf eh)
                     (inh { EHSem.moduleNm_Inh_AGItf = ecuModNm ecu
@@ -509,6 +485,13 @@ foldHsMod inh modNm ecu crsi hs
                        (inh { HSSemMod.gUniq_Inh_AGItf        = crsiHereUID crsi
                             , HSSemMod.moduleNm_Inh_AGItf     = modNm
                             })
+%%]
+
+%%[12
+foldHI :: HISem.Inh_AGItf -> EHCompileUnit -> EHCompileRunStateInfo -> HI.AGItf -> HISem.Syn_AGItf
+foldHI inh ecu crsi eh
+ = HISem.wrap_AGItf (HISem.sem_AGItf eh)
+                    (inh)
 %%]
 
 %%[8
@@ -548,6 +531,19 @@ cpFoldHsMod modNm
          }
 %%]
 
+%%[12
+cpFoldHI :: HsName -> EHCompilePhase ()
+cpFoldHI modNm
+  =  do  {  cr <- get
+         ;  let  ecu    = crCU modNm cr
+                 crsi   = crStateInfo cr
+                 mbHI   = ecuMbPrevHI ecu
+                 hiSem  = foldHI (crsiHIInh crsi) ecu crsi (panicJust "cpFoldHI" mbHI)
+         ;  when (isJust mbHI && HISem.isValidVersion_Syn_AGItf hiSem)
+                 (cpUpdCU modNm (ecuStorePrevHISem hiSem))
+         }
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: flowing info between module compiles
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -576,14 +572,48 @@ cpFlowEHSem modNm
                  ehSem  = fromJust (ecuMbEHSem ecu)
                  ehInh  = crsiEHInh crsi
                  ehInh' = ehInh
-                            { EHSem.valGam_Inh_AGItf  = EHSem.gathValGam_Syn_AGItf  ehSem `gamUnion` EHSem.valGam_Inh_AGItf  ehInh
-                            , EHSem.tyGam_Inh_AGItf   = EHSem.gathTyGam_Syn_AGItf   ehSem `gamUnion` EHSem.tyGam_Inh_AGItf   ehInh
-                            , EHSem.kiGam_Inh_AGItf   = EHSem.gathKiGam_Syn_AGItf   ehSem `gamUnion` EHSem.kiGam_Inh_AGItf   ehInh
-                            , EHSem.dataGam_Inh_AGItf = EHSem.gathDataGam_Syn_AGItf ehSem `gamUnion` EHSem.dataGam_Inh_AGItf ehInh
+                            { EHSem.valGam_Inh_AGItf     = EHSem.gathValGam_Syn_AGItf     ehSem `gamUnion` EHSem.valGam_Inh_AGItf     ehInh
+                            , EHSem.tyGam_Inh_AGItf      = EHSem.gathTyGam_Syn_AGItf      ehSem `gamUnion` EHSem.tyGam_Inh_AGItf      ehInh
+                            , EHSem.kiGam_Inh_AGItf      = EHSem.gathKiGam_Syn_AGItf      ehSem `gamUnion` EHSem.kiGam_Inh_AGItf      ehInh
+                            , EHSem.dataGam_Inh_AGItf    = EHSem.gathDataGam_Syn_AGItf    ehSem `gamUnion` EHSem.dataGam_Inh_AGItf    ehInh
                             , EHSem.prIntroGam_Inh_AGItf = EHSem.gathPrIntroGam_Syn_AGItf ehSem `gamUnion` EHSem.prIntroGam_Inh_AGItf ehInh
                             , EHSem.prElimTGam_Inh_AGItf = tgamAddGam (EHSem.gathPrfCtxtId_Syn_AGItf ehSem) (EHSem.prfCtxtId_Inh_AGItf ehInh) (EHSem.gathPrElimTGam_Syn_AGItf ehSem) (EHSem.prElimTGam_Inh_AGItf ehInh)
                             }
          ;  when (isJust (ecuMbEHSem ecu))
+                 (put (cr {crStateInfo = crsi {crsiEHInh = ehInh'}}))
+         }
+
+cpFlowHIModSem :: HsName -> EHCompilePhase ()
+cpFlowHIModSem modNm
+  =  do  {  cr <- get
+         ;  let  ecu    = crCU modNm cr
+                 crsi   = crStateInfo cr
+                 hiSem  = fromJust (ecuMbPrevHISem ecu)
+                 mm     = crsiModMp crsi
+                 mmi    = Map.findWithDefault emptyModMpInfo modNm mm
+                 mmi'   = mmi
+                 			{ mmiExps = HISem.exportRel_Syn_AGItf     hiSem
+                 			}
+         ;  when (isJust (ecuMbPrevHISem ecu))
+                 (put (cr {crStateInfo = crsi {crsiModMp = Map.insert modNm mmi' mm}}))
+         }
+
+cpFlowHISem :: HsName -> EHCompilePhase ()
+cpFlowHISem modNm
+  =  do  {  cr <- get
+         ;  let  ecu    = crCU modNm cr
+                 crsi   = crStateInfo cr
+                 hiSem  = fromJust (ecuMbPrevHISem ecu)
+                 hsInh  = crsiHSInh crsi
+                 ehInh  = crsiEHInh crsi
+                 ehInh' = ehInh
+                            { EHSem.valGam_Inh_AGItf     = HISem.valGam_Syn_AGItf     hiSem `gamUnion` EHSem.valGam_Inh_AGItf     ehInh
+                            , EHSem.tyGam_Inh_AGItf      = HISem.tyGam_Syn_AGItf      hiSem `gamUnion` EHSem.tyGam_Inh_AGItf      ehInh
+                            , EHSem.dataGam_Inh_AGItf    = HISem.dataGam_Syn_AGItf    hiSem `gamUnion` EHSem.dataGam_Inh_AGItf    ehInh
+                            , EHSem.prIntroGam_Inh_AGItf = HISem.prIntroGam_Syn_AGItf hiSem `gamUnion` EHSem.prIntroGam_Inh_AGItf ehInh
+                            , EHSem.prElimTGam_Inh_AGItf = tgamAddGam basePrfCtxtId (EHSem.prfCtxtId_Inh_AGItf ehInh) (HISem.prElimTGam_Syn_AGItf hiSem) (EHSem.prElimTGam_Inh_AGItf ehInh)
+                            }
+         ;  when (isJust (ecuMbPrevHISem ecu))
                  (put (cr {crStateInfo = crsi {crsiEHInh = ehInh'}}))
          }
 %%]
@@ -600,16 +630,24 @@ cpSetupMod _ = return ()
 %%[12 -8.cpSetupMod
 cpSetupMod :: HsName -> EHCompilePhase ()
 cpSetupMod modNm
-  = cpSeq [cpGetModfTimes modNm,cpGetPrevCompile modNm]
+  = cpSeq [cpGetModfTimes modNm,cpGetPrevHI modNm,cpFoldHI modNm]
 %%]
 
 %%[12
-cpGetPrevCompile :: HsName -> EHCompilePhase ()
-cpGetPrevCompile modNm
+cpGetPrevHI :: HsName -> EHCompilePhase ()
+cpGetPrevHI modNm
   = do { cr <- get
        ; let  ecu        = crCU modNm cr
        ; when (isJust $ ecuMbHITime ecu)
               (cpParsePrevHI modNm)
+       }
+%%]
+
+%%[12
+cpGetPrevCore :: HsName -> EHCompilePhase ()
+cpGetPrevCore modNm
+  = do { cr <- get
+       ; let  ecu        = crCU modNm cr
        ; when (isJust $ ecuMbCoreTime ecu)
               (cpParsePrevCore modNm)
        }
@@ -667,9 +705,14 @@ ecuIsHSNewerThanHI ecu
 %%]
 
 %%[12
+ecuIsValidHI :: EHCompileUnit -> Bool
+ecuIsValidHI = isJust . ecuMbPrevHISem
+%%]
+
+%%[12
 crModNeedsCompile :: HsName -> EHCompileRun -> Bool
 crModNeedsCompile modNm cr
-  = ecuIsHSNewerThanHI ecu || not (null newer)
+  = ecuIsHSNewerThanHI ecu || not (ecuIsValidHI ecu) || not (null newer)
   where ecu = crCU modNm cr
         (newer,_) = crPartitionNewerOlderImports modNm cr
 %%]
@@ -904,7 +947,7 @@ cpOutputHI suff modNm
                  hi     = HISem.wrap_AGItf
                             (HISem.sem_AGItf
                               (HI.AGItf_AGItf $ HI.Module_Module modNm
-                                $ HI.Binding_Stamp Sig.timestamp Sig.sig versionMajor versionMinor versionQuality versionSvn 0
+                                $ HI.Binding_Stamp (verTimestamp version) (verSig version) (verMajor version) (verMinor version) (verQuality version) (verSvn version) 0
                                   : binds))
                             (HISem.Inh_AGItf)
          ;  when (isJust (ecuMbHSSem ecu) && isJust (ecuMbEHSem ecu))
@@ -955,16 +998,15 @@ cpCompileCU targHSState modNm
              opts  = crsiOpts (crStateInfo cr)
              msg m = lift (putCompileMsg VerboseNormal (ehcOptVerbosity opts) m Nothing modNm (ecuFilePath ecu))
              -- msg m = lift (putCompileMsg VerboseNormal (ehcOptVerbosity opts) (m ++ " (" ++ show (ecuState ecu) ++ "/" ++ fpathSuff (ecuFilePath ecu) ++ ")") Nothing modNm (ecuFilePath ecu))
-%%]
-%%[8.cpCompileCU.case
+%%[[8
        ; case (ecuState ecu,undefined) of
-%%]
-%%[12 -8.cpCompileCU.case
+%%][12
        ; case (ecuState ecu,targHSState) of
+%%]]
 %%]
 %%[12
            (ECUSHaskell HSStart,Just HSOnlyImports)
-             -> do { cpSeq [cpSetupMod modNm,cpParseHs modNm, cpStepUID, cpFoldHsMod modNm, cpGetHsImports modNm]
+             -> do { cpSeq [cpSetupMod modNm, cpParseHs modNm, cpStepUID, cpFoldHsMod modNm, cpGetHsImports modNm]
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSOnlyImports))
                    }
            (ECUSHaskell HSOnlyImports,Just HSOnlyImports)
@@ -975,6 +1017,12 @@ cpCompileCU targHSState modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
                    }
 %%]
+             where setup = cpSetupMod modNm
+                   hsOrHi= do { cr <- get
+                              ; if crModNeedsCompile modNm cr
+                                then cpSeq [cpParseHs modNm, cpStepUID, cpFoldHsMod modNm, cpGetHsImports modNm]
+                                else cpSeq [cpParseHs modNm, cpStepUID, cpFoldHsMod modNm, cpGetHsImports modNm]
+                              }
 %%[8
            (ECUSHaskell HSStart,_)
              -> do { msg "Compiling Haskell"
@@ -1127,12 +1175,13 @@ doCompileRun fn opts
              hsModInh       = HSSemMod.Inh_AGItf { HSSemMod.gUniq_Inh_AGItf       = uidStart
                                                  , HSSemMod.moduleNm_Inh_AGItf    = hsnUnknown
                                                  }
+             hiInh          = HISem.Inh_AGItf
 %%]
              initialState   = mkEmptyCompileRun
                                 topModNm
                                 (EHCompileRunStateInfo opts2 hsInh ehInh uidStart uidStart
 %%[[12
-                                 hsModInh Map.empty Map.empty
+                                 hiInh hsModInh Map.empty Map.empty
 %%]
                                 )
              imp mbFp nm

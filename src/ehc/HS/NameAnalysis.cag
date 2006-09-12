@@ -244,6 +244,14 @@ SEM ContextItem
                                         =   tvarL2IdDefOccGam @lhs.nmLev @range @typevariables
 %%]
 
+%%[8
+SEM Body
+    | Body
+        loc             .   idOccDefGamMain
+                                        =   gamUnit @idOccDefMain (mkIdDefOcc @idOccDefMain (IdAsp_Val_Pat @ehMainDecl) @lhs.nmLev @range)
+                                            `gamUnion` gamUnit @idOccDefMain (mkIdDefOcc @idOccDefMain IdAsp_Val_Var @lhs.nmLev @range)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Identifiers in scope
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -585,6 +593,13 @@ SEM Statement
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@pattern.idUseOccGam,@expression.idUseOccGam]
 %%]
 
+%%[8
+SEM Body
+    | Body
+        loc             .   (mainrefname,_,idUseOccGamMain,errIdUse)
+                                        =   mkUseOccGam @idGam [hsnMain] IdOcc_Val IdAsp_Val_Var @range
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Identifier use's: splitting according to level + def'd check + dependencies
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -699,6 +714,26 @@ SEM Declaration
 %%]
 %%]
 
+%%[8
+SEM Body
+    | Body
+        loc             .   (_,idUseHereOccL,_,undefOccGamMain)
+                                        =   splitIdUseOccGam @lhs.nmLev @idUseOccGamMain
+                        .   mainExists  =   null @errIdUse && (null $ gamToAssocL $ @undefOccGamMain)
+%%]
+
+%%[12
+SEM Body
+    | Body
+        loc             .   idDpdMp     =   idToOccL2DpdMp [@idOccDefMain] ((IdOcc @mainrefname IdOcc_Val,undefined) : @idUseHereOccL)
+                                            `idDpdMpUnion`
+                                            idFrOccGam2DpdMp @idOccDefGamMain [@idOccDefMain]
+                                            `idDpdMpUnion`
+                                            @declarations.idDpdMp
+        lhs             .   undefOccGam =   let g = if @lhs.isTopMod then @undefOccGamMain else emptyGam
+                                            in  gamUnions [g,@declarations.undefOccGam]
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Split of class decls into sigs + value bindings
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -723,10 +758,16 @@ idDpdMp2SccOrder gam mp
         gr = mkDpdGrFromEdgesMp (idDpdMpUnions [mp,dflt])
 %%]
 
-%%[1
+%%[1.Body.sccOrder
 SEM Body
     | Body
         loc             .   sccOrder    =   idDpdMp2SccOrder @declarations.idOccDefGam @declarations.idDpdMp
+%%]
+
+%%[8.Body.sccOrder -1.Body.sccOrder
+SEM Body
+    | Body
+        loc             .   sccOrder    =   idDpdMp2SccOrder (@idOccDefGamMain `gamUnion` @declarations.idOccDefGam) @declarations.idDpdMp
 %%]
 
 %%[1
@@ -840,12 +881,30 @@ mkIdOccSccEH r g moss
         oss = maybe [gamKeys g] id moss
 %%]
 
-%%[1
+%%[1.Body.mkSccLet
 SEM Body
     | Body
         loc             .   (mkSccLet,_,errReorder)
                                         =   mkIdOccSccEH @range @declarations.idOccDefGam (Just @sccOrder)
+%%]
 
+%%[8.Body.mkSccLet -1.Body.mkSccLet
+SEM Body
+    | Body
+        loc             .   (mkSccLet,_,errReorder)
+                                        =   let g = if not @mainExists then @idOccDefGamMain else emptyGam
+                                            in  mkIdOccSccEH @range (g `gamUnion` @declarations.idOccDefGam) (Just @sccOrder)
+%%]
+
+%%[12 -8.Body.mkSccLet
+SEM Body
+    | Body
+        loc             .   (mkSccLet,_,errReorder)
+                                        =   let g = if @lhs.isTopMod then @idOccDefGamMain else emptyGam
+                                            in  mkIdOccSccEH @range (g `gamUnion` @declarations.idOccDefGam) (Just @sccOrder)
+%%]
+
+%%[1
 SEM Expression
     | Let
         loc             .   (mkSccLet,_,errReorder)
@@ -884,25 +943,6 @@ SEM Statement
     | Let
         loc             .   (mkSccLet,_,errReorder)
                                         =   mkIdOccSccEH @range @declarations.idOccDefGam (Just @sccOrder)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% 'main' exists?         
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-SEM Body
-    | Body
-        loc             .   (mainExists,mainNmFromGam)
-                                        =   maybe (False,hsnMain) (\d -> (True,ioccNm $ doccOcc d))
-                                            $ gamLookup (IdOcc hsnMain IdOcc_Val) @declarations.idOccDefGam
-                        .   mainNm      =   @mainNmFromGam
-%%]
-
-%%[12
-SEM Body
-    | Body
-        loc             .   mainNm      :=  hsnSetQual @lhs.moduleNm @mainNmFromGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

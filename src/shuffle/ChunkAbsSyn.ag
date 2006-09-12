@@ -56,15 +56,23 @@ SET AllChunkOption		= ChunkOption ChunkOptions
 DATA Line
   | AsIs                words       : Words
   | Named               cref        : {CRef}
-  | Group               extraLine   : Int
-                        version     : {Version}
-                        chOptions	: ChunkOptions
-                        userRef     : {Maybe (Nm,Maybe String)}
-                        lines       : Lines
+  | Groups              extraLine   : Int
+                        groups      : Groups
 
 TYPE Lines      = [Line]
 
 SET AllLine     = Line Lines
+
+-- Single group of lines
+DATA Group
+  | Group               version     : {Version}
+                        chOptions	: ChunkOptions
+                        userRef     : {Maybe (Nm,Maybe String)}
+                        lines       : Lines
+
+TYPE Groups     = [Group]
+
+SET AllGroup    = Group Groups
 
 -- Single word
 DATA Word
@@ -80,5 +88,5 @@ TYPE Words      = [Word]
 SET AllWord     = Word Words Inline
 
 -- Sets
-SET AllNT       = AllWord AllLine AllChunk AllStrExpr
+SET AllNT       = AllWord AllLine AllGroup AllChunk AllStrExpr
 

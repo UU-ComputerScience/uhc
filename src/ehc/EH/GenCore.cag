@@ -9,20 +9,9 @@
 
 %%[8.mainExists
 SEM AGItf
-  | AGItf       loc         .   (mainExists,mainNm)
-                                            =   case @expr.letCBody of
-                                                  CExpr_Var n | n == hsnMain -> (True,hsnMain)
-                                                  _                          -> (False,hsnMain)
-%%]
-
-%%[12 -8.mainExists
-SEM AGItf
-  | AGItf       loc         .   (mainExists,mainNm)
-                                            =   case @expr.letCBody of
-                                                  CExpr_Var n | n' == hsnMain
-                                                    -> (True,n)
-                                                    where n' = hsnQualified n
-                                                  _ -> (False,hsnSetQual @lhs.moduleNm hsnMain)
+  | AGItf       loc         .   mainExists  =   case @expr.letCBody of
+                                                  CExpr_Var n | n == hsnMain -> True
+                                                  _                          -> False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,7 +25,7 @@ SEM AGItf
   | AGItf       lhs         .   cmodule     =   CModule_Mod @lhs.moduleNm
                                                     (foldr (\(c,b) e -> mkCExprLet c b e)
                                                         (if @mainExists then @expr.letCBody
-                                                                        else mkCExprLet CBindPlain [CBind_Bind @mainNm @expr.letCBody] (CExpr_Var @mainNm))
+                                                                        else mkCExprLet CBindPlain [CBind_Bind hsnMain @expr.letCBody] (CExpr_Var hsnMain))
                                                         @expr.letCBindL)
                                                     [ (tn,Map.toList m) | (tn,dgi) <- gamToAssocL @expr.gathDataGam, let m = dgiDataTagMp dgi ]
 %%]

@@ -1,0 +1,58 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Configuration
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 module {%{EH}Config} export( Version(..), version, verNumeric, verDist, verInfo )
+%%]
+
+%%[12 import(qualified {%{EH}SourceCodeSig} as Sig)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Version
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+data Version
+  = Version
+      { verSvn              :: String
+      , verMajor            :: String
+      , verMinor            :: String
+      , verMinorMinor       :: String
+      , verQuality          :: String
+      , verProg             :: String
+%%[[12
+      , verTimestamp        :: String
+      , verSig              :: String
+%%]
+      }
+%%]
+
+%%[1
+version :: Version
+version
+  = Version
+      { verSvn              = "$Id$"
+      , verMajor            = "@EH_VERSION_MAJOR@"
+      , verMinor            = "@EH_VERSION_MINOR@"
+      , verMinorMinor       = "@EH_VERSION_MINORMINOR@"
+      , verQuality          = "@EH_VERSION_STABILITY@"
+      , verProg             = "ehc"
+%%[[12
+      , verTimestamp        = Sig.timestamp
+      , verSig              = Sig.sig
+%%]
+      }
+%%]
+
+%%[1
+verNumeric :: Version -> String
+verNumeric v = verMajor v ++ "." ++ verMinor v ++ "." ++ verMinorMinor v
+
+verDist :: Version -> String
+verDist v = verNumeric v ++ verQuality v
+
+verInfo :: Version -> String
+verInfo v = verProg v ++ verDist v ++ ", " ++ verSvn v
+%%]
+

@@ -187,6 +187,7 @@ AC_SUBST(TOP_ABS, "$hardtop_plat")
 AC_CONFIG_FILES([mk/config.mk])
 AC_CONFIG_FILES([mk/shared.mk])
 AC_CONFIG_FILES([src/grinc/Config.chs])
+AC_CONFIG_FILES([src/ehc/Config.chs])
 AC_OUTPUT
 
 echo

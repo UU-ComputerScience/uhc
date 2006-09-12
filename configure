@@ -274,7 +274,7 @@ PACKAGE_VERSION='0.1'
 PACKAGE_STRING='EH 0.1'
 PACKAGE_BUGREPORT='atze@cs.uu.nl'
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_STABILITY EH_VERSION ghcCmd GHC_CMD GHC_VERSION CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES UUAGC_CMD MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC PATHS_SEP TOP_ABS LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_MINORMINOR EH_VERSION_STABILITY EH_VERSION ghcCmd GHC_CMD GHC_VERSION CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES UUAGC_CMD MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC PATHS_SEP TOP_ABS LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1365,9 +1365,14 @@ HostPlatform=`/bin/sh $srcdir/config.sub $host` || exit 1
 echo $host
 
 # Version info
+# big change
 EH_VERSION_MAJOR=0
+# small change, not usable with previous
 EH_VERSION_MINOR=1
+# small change, still usable with previous
+EH_VERSION_MINORMINOR=1
 EH_VERSION_STABILITY=alpha
+
 
 
 
@@ -1599,6 +1604,8 @@ TOP_ABS="$hardtop_plat"
           ac_config_files="$ac_config_files mk/shared.mk"
 
           ac_config_files="$ac_config_files src/grinc/Config.chs"
+
+          ac_config_files="$ac_config_files src/ehc/Config.chs"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -2153,6 +2160,7 @@ do
   "mk/config.mk" ) CONFIG_FILES="$CONFIG_FILES mk/config.mk" ;;
   "mk/shared.mk" ) CONFIG_FILES="$CONFIG_FILES mk/shared.mk" ;;
   "src/grinc/Config.chs" ) CONFIG_FILES="$CONFIG_FILES src/grinc/Config.chs" ;;
+  "src/ehc/Config.chs" ) CONFIG_FILES="$CONFIG_FILES src/ehc/Config.chs" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
    { (exit 1); exit 1; }; };;
@@ -2247,6 +2255,7 @@ s,@host_vendor@,$host_vendor,;t t
 s,@host_os@,$host_os,;t t
 s,@EH_VERSION_MAJOR@,$EH_VERSION_MAJOR,;t t
 s,@EH_VERSION_MINOR@,$EH_VERSION_MINOR,;t t
+s,@EH_VERSION_MINORMINOR@,$EH_VERSION_MINORMINOR,;t t
 s,@EH_VERSION_STABILITY@,$EH_VERSION_STABILITY,;t t
 s,@EH_VERSION@,$EH_VERSION,;t t
 s,@ghcCmd@,$ghcCmd,;t t
