@@ -124,3 +124,10 @@ text-variant-uniqueness:
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyUniqueness --set=inclTOC --set=asArticle --set=useHyperref --set=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=20 \
 	  text-variant-dflt-bib
+
+text-variant-slides-uniqueness:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyExplImpl --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
+	  TEXT_SHUFFLE_VARIANT=21 \
+	  text-variant-dflt-once
+

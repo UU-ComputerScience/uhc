@@ -8,7 +8,7 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								ehc-book-tst \
 								scratch poster \
 								slides-ruler slides-explimpl slides-explimpl-fpnl slides-overview \
-								uniqueness
+								uniqueness slides-uniqueness
 
 # subtext
 TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
@@ -21,7 +21,8 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								Uniqueness uniqueness/TopicIntroduction uniqueness/TopicEHC \
 								uniqueness/TopicNoBindings uniqueness/TopicPolyvariant uniqueness/TopicRecursion uniqueness/TopicPolymorphic uniqueness/TopicParallel uniqueness/TopicDataTypes uniqueness/TopicOverloading \
 								uniqueness/TopicBeyondEHC uniqueness/TopicCodeGeneration uniqueness/TopicInspecting \
-								uniqueness/TopicPerformance uniqueness/TopicRelatedWork uniqueness/TopicConclusion
+								uniqueness/TopicPerformance uniqueness/TopicRelatedWork uniqueness/TopicConclusion \
+								uniqueness/Slides
 
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
@@ -45,6 +46,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 18: slides: base (share)
 # 19: ruler doc
 # 20: uniqueness doc
+# 21: uniqueness slides
 
-TEXT_SHUFFLE_ORDER			+= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 8, 18 < 9, 1 < 10, 1 < 11, 1 < 13, 18 < 14, 9 < 15, 9 < 16, 18 < 17, 1 < 18, 1 < 19, 1 < 20
+TEXT_SHUFFLE_ORDER			+= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 8, 18 < 9, 1 < 10, 1 < 11, 1 < 13, 18 < 14, 9 < 15, 9 < 16, 18 < 17, 1 < 18, 1 < 19, 1 < 20, 18 < 21
 

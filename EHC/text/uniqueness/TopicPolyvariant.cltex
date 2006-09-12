@@ -315,7 +315,7 @@ lowerSolveF (a (Sub(=>=)(beta)) b)
   =  a (Sub(=>=)(beta)) (a `min` b)
 lowerSolveF ((Sub(a)(1)) \*/ ... \*/ (Sub(a)(n)) <=  a)
   =  let  z = (Sub(a)(1)) `max` ... `max` (Sub(a)(n))  -- 0 if n == 0
-     in   ((Sub(a)(1)) \*/ ... \*/ (Sub(a)(n)) <=  z)
+     in   ((Sub(a)(1)) \*/ ... \*/ (Sub(a)(n)) <=  (a `min` z))
 %%]
 \\
 %%[[wrap=code
@@ -323,7 +323,7 @@ upperSolveF (a (Sub(=>=)(beta)) b)
   =  a (Sub(=>=)(beta)) (a `max` b)
 upperSolveF ((Sub(a)(1)) \*/ ... \*/ (Sub(a)(n)) <=  a)
   =  let  z = (Sub(a)(1)) + ... + (Sub(a)(n))          -- 0 if n == 0
-     in   ((Sub(a)(1)) \*/ ... \*/ (Sub(a)(n)) <=  z)
+     in   ((Sub(a)(1)) \*/ ... \*/ (Sub(a)(n)) <=  (a `max` z))
 %%]
 \\
 %%[[wrap=code
