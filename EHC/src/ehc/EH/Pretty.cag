@@ -13,7 +13,7 @@ ATTR AllNT AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
 SEM Expr
   | IConst      loc     .   pp      =   pp (show @int)
   | CConst      loc     .   pp      =   pp (show @char)
-  | Var         loc     .   pp      =   pp @nm
+  | Var         loc     .   pp      =   "(" >|< pp @nm >#< "::" >#< ppTy @loc.annTy_ >|< " | " >|< show @loc.cs >|< ")"
   | Con         loc     .   pp      =   ppCon @nm
   | Let         loc     .   pp      =   "let"
                                         >#< (@decls.pp >-< @ppExtra)
@@ -40,7 +40,7 @@ SEM Decl
 SEM PatExpr
   | IConst      loc     .   pp      =   pp (show @int)
   | CConst      loc     .   pp      =   pp (show @char)
-  | Var         loc     .   pp      =   pp @nm
+  | Var         loc     .   pp      =   "(" >|< pp @nm >#< "::" >#< ppTy @lhs.annTyIn >|< ")"
   | VarAs       loc     .   pp      =   pp @nm >|< "@" >|< @patExpr.pp
   | Con         loc     .   pp      =   ppCon @nm
   | App         loc     .   pp      =   @func.pp >#< @arg.pp
@@ -59,7 +59,7 @@ SEM Decls
   | Cons        lhs     .   pp      =   @hd.pp >-< @errPP >-< @tl.pp
 
 SEM AGItf
-  | AGItf       lhs     .   pp      =   @ppExtra >-< @expr.pp >-< @errTopPP
+  | AGItf       lhs     .   pp      =   @ppExtra >-< @expr.pp >-< @errTopPP >-< " " >-< "bndgs: " >-< ("  " >|< (foldr (>-<) empty [pp b >|< ": " >|< show cs | (b, cs) <- Map.toList @loc.bndgs])) >-< " " >-< "sol:" >-< ("  " >|< show @loc.res)
                 loc     .   ppExtra =   empty
 %%]
 

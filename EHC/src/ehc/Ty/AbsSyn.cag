@@ -23,14 +23,19 @@ DATA TyAGItf
 %%[1.Ty
 DATA Ty
   | Con         nm              : {HsName}
+                bndgs           : BndgIdList
   | App         func            : Ty
                 arg             : Ty
   | Any
+
+TYPE BndgIdList = [ Ty ]
 %%]
 
 %%[2.TyVar
 DATA Ty
   | Var         tv              : {TyVarId}
+  | Ann         ann             : {UID}
+                ty              : Ty
 %%]
 
 %%[3.TyVar -2.TyVar
@@ -154,7 +159,7 @@ DATA Pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.AllTy
-SET AllTyTy         = Ty
+SET AllTyTy         = Ty BndgIdList
 SET AllTy           = AllTyTy
 SET AllTyAndFlds    = AllTy
 %%]

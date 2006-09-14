@@ -31,6 +31,9 @@
 %%[2 import({%{EH}Cnstr},{%{EH}Substitutable})
 %%]
 
+%%[2 export(valGamToBndgGam)
+%%]
+
 %%[3 import({%{EH}Ty.Quantify}) export(valGamQuantify,gamMapElts,valGamMapTy)
 %%]
 
@@ -123,7 +126,7 @@ gamAdd          k v g               = gamAddGam (k `gamUnit` v) g
 %%]
 
 %%[9.Base.funs -1.Base.funs
-emptyGam                            = emptyTGam 1 
+emptyGam                            = emptyTGam 1
 gamUnit                             = tgamUnit 1
 gamLookup       k g                 = tgamLookup (tgamSize1 g) k g
 gamToAssocL     g                   = tgamToAssocL (tgamSize1 g) g
@@ -604,7 +607,7 @@ data TyGamInfo = TyGamInfo { tgiTy :: Ty } deriving Show
 tyGamLookup :: HsName -> TyGam -> Maybe TyGamInfo
 tyGamLookup nm g
   =  case gamLookup nm g of
-       Nothing | hsnIsProd nm   -> Just (TyGamInfo (Ty_Con nm))
+--       Nothing | hsnIsProd nm   -> Just (TyGamInfo (Ty_Con nm))
        Just tgi                 -> Just tgi
        _                        -> Nothing
 %%]
@@ -860,7 +863,7 @@ instance PP TyGamInfo where
 initTyGam :: TyGam
 initTyGam
   = assocLToGam
-      [ (hsnArrow,  TyGamInfo (Ty_Con hsnArrow))
+      [ (hsnArrow,  TyGamInfo (Ty_Con hsnArrow (error "Uninstantiated bndg id")))
       , (hsnInt,    TyGamInfo tyInt)
       , (hsnChar,   TyGamInfo tyChar)
       ]
@@ -902,5 +905,11 @@ initKiGam
       , (hsnRow,    KiGamInfo kiRow)
 %%]
       ]
+%%]
+
+%%[2
+valGamToBndgGam :: UID -> ValGam -> ValGam
+valGamToBndgGam bndgId valGam
+  = assocLToGam [ (x, ValGamInfo { vgiTy = Ty_Var bndgId })  | (x, _) <- gamToAssocL valGam ]
 %%]
 

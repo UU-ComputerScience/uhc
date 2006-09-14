@@ -26,10 +26,10 @@ SEM PatExpr
   | Var             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
   | VarAs           (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
   | Con             (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
-  
+
 %%[2
 SEM AGItf
-  | AGItf           expr        .   gUniq                           =   uidStart
+  | AGItf           (expr.gUniq, loc.lUniq)                         =   mkNewLevUID uidStart
 %%]
 
 -- generated from ruler rules into EHRulerRules

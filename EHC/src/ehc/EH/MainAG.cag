@@ -10,7 +10,7 @@
 %%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,EH.Util.Utils,UU.Pretty, EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Opts}, {%{EH}Ty},{%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty},{%{EH}Ty.FitsIn},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Pretty},{%{EH}EH})
 %%]
 
-%%[2 hs import({%{EH}Cnstr},{%{EH}Substitutable},Data.Maybe)
+%%[2 hs import({%{EH}Cnstr},{%{EH}Substitutable},Data.Maybe,qualified Data.Map as Map, Data.Map(Map),Debug.Trace)
 %%]
 
 %%[3 hs import({%{EH}Ty.Quantify},{%{EH}Ty.Instantiate})

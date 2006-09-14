@@ -187,7 +187,7 @@ ATTR AllDecl AllExpr [ valGam: ValGam | | ]
 
 %%[1.initValGam
 SEM AGItf
-  | AGItf       expr        .   valGam              =   emptyGam
+  | AGItf       expr        .   valGam              =   gamFromAssocL [(HNm "plus", ValGamInfo { vgiTy = @loc.plusTy})]
 %%]
 
 %%[12 -1.initValGam
@@ -196,6 +196,133 @@ ATTR AGItf [ valGam: ValGam | | ]
 
 %%[1.patValGam
 ATTR AllDecl [ | patValGam: ValGam | ]
+%%]
+
+%%[2
+ATTR AllDecl AllExpr [ bndgGam: ValGam ||]
+ATTR AllDecl AllExpr [ annGam:  ValGam ||]
+ATTR AllDecl AllPatExpr [|| annGamCol USE {`gamAddGam`} {emptyGam}: ValGam ]
+
+SEM AGItf
+  | AGItf  expr.bndgGam = trace ("initial: " ++ show @loc.initialBndgId)
+                           $ gamFromAssocL [(HNm "plus", ValGamInfo { vgiTy = Ty_Var @loc.initialBndgId })]
+           expr.annGam  = gamFromAssocL [(HNm "plus", ValGamInfo { vgiTy = @loc.plusAnnTy })]
+           loc.plusTy   = Ty_App (Ty_App (Ty_Con hsnArrow [Ty_Var @loc.beta1]) (Ty_Con hsnInt [])) @loc.plusAux
+           loc.plusAux  = Ty_App (Ty_App (Ty_Con hsnArrow [Ty_Var @loc.beta2]) (Ty_Con hsnInt [])) (Ty_Con hsnInt [])
+           loc.plusAnnTy   = Ty_App (Ty_App (Ty_Ann @loc.delta1 (Ty_Con hsnArrow [Ty_Var @loc.beta1])) (Ty_Ann @loc.delta2 (Ty_Con hsnInt []))) @loc.plusAnnAux
+           loc.plusAnnAux  = Ty_App (Ty_App (Ty_Ann @loc.delta3 (Ty_Con hsnArrow [Ty_Var @loc.beta2])) (Ty_Ann @loc.delta4 (Ty_Con hsnInt []))) (Ty_Ann @loc.delta5 (Ty_Con hsnInt []))
+
+
+ATTR AllDecl [|| bndgGamCol USE {`gamAddGam`} {emptyGam}: ValGam ]
+
+ATTR AllPatExpr [| valGam2 : ValGam |]
+SEM Expr
+  | Lam  arg.valGam2 = emptyGam
+SEM PatExpr
+  | Var  lhs.valGam2 = gamAdd @nm undefined @lhs.valGam2
+SEM Decl
+  | Val patExpr.valGam2 = emptyGam
+
+
+ATTR AllDecl AllExpr [|| bndgs USE {`mergeBndgs`} {emptyBndgs}: Bndgs uses USE {++} {[]}: {[(HsName,Ty)]} cs USE {++} {[]}: {[Constr]} ]
+ATTR AllPatExpr AllDecl  [|| defs USE {++} {[]}: {[(HsName,Ty)]} ]
+ATTR AllExpr [|| annTy : Ty ]
+
+ATTR AllPatExpr [ annTyIn : Ty ||]
+SEM PatExpr
+  | App  (func.annTyIn, arg.annTyIn) = let (Ty_App f a) = @lhs.annTyIn
+                                       in (f, a)
+  | Var  lhs.defs = [(@nm, @lhs.annTyIn)]
+         lhs.annGamCol = gamUnit @nm (ValGamInfo { vgiTy = @lhs.annTyIn })
+SEM Expr
+  | Lam  arg.annTyIn = @loc.ty_p_in_
+         (loc.sumCs, lhs.uses) = tyGathSums @arg.defs @body.uses
+         loc.annGam = @arg.annGamCol `gamAddGam` @lhs.annGam
+  | Let  (loc.sumCs, loc.declUses) = tyGathSums @decls.defs (@decls.uses ++ @body.uses)
+         loc.annGam = @decls.annGamCol `gamAddGam` @lhs.annGam
+         lhs.uses = @body.uses ++ @loc.declUses
+  | Con  lhs.uses = [(@nm, @loc.annTy_)]
+  | Var  lhs.uses = [(@nm, @loc.annTy_)]
+SEM Decl
+  | Val  patExpr.annTyIn = @loc.annTy_fresh_
+
+SEM Expr
+  | Var  loc.defBndgTyId = maybe undefined vgiTy (@nm `gamLookup` @lhs.bndgGam )
+         loc.defBndgId   = tyVarId (@lhs.finTyCnstr |=> @loc.defBndgTyId)
+         loc.defAnnTy    = maybe undefined vgiTy (@nm `gamLookup` @lhs.annGam)
+         loc.pairs       = [ let (Ty_Var a) = @lhs.finTyCnstr |=> ta
+                                 (Ty_Var b) = @lhs.finTyCnstr |=> tb
+                              in (a, b)
+                           | (ta,tb) <- @loc.pairs_ ]
+         loc.cs = [tyInst @loc.pairs @loc.defBndgId @loc.defAnnTy @loc.annTy_]
+  | Con  loc.cs = []
+  | App  (loc.annTy, loc.paramTy, loc.finBndgId, loc.spineAnn) = let (Ty_App (Ty_App (Ty_Ann a (Ty_Con _ [Ty_Var b])) p) r) = @func.annTy in (r, p, b, a)
+         loc.csParamArg = tyToCoercions @loc.paramTy @arg.annTy
+         loc.csFunSpine = [tyOutermostAnn @loc.annTy :=>=: @loc.spineAnn]
+         loc.argInst    = [tyInst [] @loc.finBndgId @arg.annTy @paramTy]
+         loc.argBndg    = singletonBndgs @loc.finBndgId [@arg.annTy] @arg.cs
+         loc.cs         = @loc.csParamArg ++ @loc.csFunSpine ++ @loc.argInst ++ @func.cs
+         loc.bndgs      = @loc.argBndg `mergeBndgs` @func.bndgs `mergeBndgs` @arg.bndgs
+  | Lam  loc.cs         = @loc.sumCs ++ @arg.cs ++ @body.cs
+  | Let  loc.cs         = @loc.sumCs ++ @decls.cs ++ @body.cs
+
+SEM Decl
+  | Val  loc.resCs = tyToCoercions @loc.annTy_fresh_ @expr.annTy
+         loc.valCs = @loc.resCs ++ @expr.cs
+         loc.bndg  = singletonBndgs @loc.bndgId_ [] @loc.valCs
+         lhs.bndgs = @loc.bndg `mergeBndgs` @expr.bndgs
+         lhs.cs    = @patExpr.cs
+
+ATTR AllExpr AllPatExpr AllDecl [ enclosingAnn : UID ||]
+ATTR AllPatExpr [|| cs USE {++} {[]} : {[Constr]} ]
+
+SEM AGItf
+  | AGItf  expr.enclosingAnn = error "Enclosing ann of root of the AST used"
+
+SEM Expr
+  | Let    loc.enclosingAnn  = tyOutermostAnn @body.annTy
+  | Lam    loc.enclosingAnn  = tyOutermostAnn @loc.annTy
+
+SEM PatExpr
+  | Con    loc.cs = [@lhs.enclosingAnn :=>=: tyOutermostAnn @lhs.annTyIn]
+
+SEM AGItf
+  | AGItf  (loc.lUniq2, loc.initialBndgId, loc.rootBndgId, loc.deltaRoot) = mkNewLevUID3 @loc.lUniq
+           loc.cs   = [[@loc.deltaRoot] :<=: tyOutermostAnn @expr.annTy] ++ @expr.cs
+           loc.initialCs = [@loc.delta5 :=>=: @loc.delta3, @loc.delta5 :=>=: @loc.delta4]
+           loc.bndg = singletonBndgs @loc.rootBndgId [] @loc.cs `mergeBndgs` singletonBndgs @loc.initialBndgId [] @loc.initialCs
+           loc.bndgs = @loc.bndg `mergeBndgs` @expr.bndgs
+
+           (loc.lUniq3, loc.delta1, loc.delta2, loc.delta3, loc.delta4) = mkNewLevUID4 @loc.lUniq2
+           (loc.lUniq4, loc.delta5, loc.beta1, loc.beta2) = mkNewLevUID3 @loc.lUniq3
+
+ATTR AllDecl AllExpr AllPatExpr [|| sacredAnns USE {++} {[]} : {[(HsName, UID)]} ]
+SEM Expr
+  | Lam  lhs.sacredAnns = filter (\(n,_) -> not (n `elem` (map fst @arg.sacredAnns))) @body.sacredAnns
+  | Var  lhs.sacredAnns = map (\x -> (@nm, x)) (tyAnns @loc.annTy)
+  | Con  lhs.sacredAnns = map (\x -> (@nm, x)) (tyAnns @loc.annTy)
+  | Let  lhs.sacredAnns = filter (\(n,_) -> not (n `elem` (map fst @decls.sacredAnns))) @body.sacredAnns
+SEM PatExpr
+  | Var  lhs.sacredAnns = map (\x -> (@nm, x)) (tyAnns @lhs.annTyIn)
+
+ATTR AllDecl AllExpr [ sacredAnnsIn : {[UID]} ||]
+SEM AGItf
+  | AGItf  expr.sacredAnnsIn = map snd @expr.sacredAnns
+SEM Expr
+  | Lam  body.sacredAnnsIn = @lhs.sacredAnnsIn ++ map snd @arg.sacredAnns
+  | Let  loc.sacredAnnsIn  = @lhs.sacredAnnsIn ++ map snd @decls.sacredAnns
+
+ATTR AllDecl AllExpr [|| sacredAnnsOut USE {++} {[]} : {[(UID,[UID])]}]
+SEM Expr
+  | App   lhs.sacredAnnsOut = [(@loc.finBndgId, @lhs.sacredAnnsIn)] ++ @func.sacredAnnsOut ++ @arg.sacredAnnsOut
+SEM Decl
+  | Val   lhs.sacredAnnsOut = [(@loc.bndgId_, @lhs.sacredAnnsIn)] ++ @expr.sacredAnnsOut
+
+SEM AGItf
+  | AGItf  loc.sacsForSolver = trace ("initial bndg id: " ++ show @loc.initialBndgId ++", root bndg id: " ++ show @loc.rootBndgId ++ "\n" ++ show @loc.bndgs)
+                               $ mkSacsMap ([(@loc.initialBndgId, []), (@loc.rootBndgId, map snd @expr.sacredAnns)]++ @expr.sacredAnnsOut)
+           loc.res = solve @loc.bndgs @loc.sacsForSolver @loc.rootBndgId @loc.deltaRoot
+
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.patValGam.Val
@@ -748,5 +875,4 @@ SEM Expr
                                                             @lSubsPrIGam
                 body        .   prIntroGam          =   gamPushGam @lQuPrIGam @gSubsPrIGam
 %%]
-
 

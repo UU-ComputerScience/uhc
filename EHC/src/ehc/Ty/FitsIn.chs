@@ -29,7 +29,7 @@
 %%[1 module {%{EH}Ty.FitsIn} import({%{EH}Base.Common}, {%{EH}Ty.FitsInCommon}, {%{EH}Ty}, {%{EH}Error}) export (fitsIn)
 %%]
 
-%%[2 import({%{EH}Cnstr},{%{EH}Substitutable})
+%%[2 import({%{EH}Cnstr},{%{EH}Substitutable},Debug.Trace)
 %%]
 
 %%[4 import({%{EH}Ty.Instantiate}, {%{EH}Base.Opts}, {%{EH}Gam}, Data.Maybe,Data.List as List)
@@ -174,9 +174,13 @@ fitsIn ty1 ty2
 %%[fitsInBotCon.1
             f  Ty_Any               t2              = res t2                                -- m.any.l
             f  t1                   Ty_Any          = res t1                                -- m.any.r
-            f  t1@(Ty_Con s1)                                                               -- m.con
-               t2@(Ty_Con s2)
-                 | s1 == s2                         = res t2
+            f  t1@(Ty_Con s1 bndgs1)                                                        -- m.con
+               t2@(Ty_Con s2 bndgs2)
+                 | s1 == s2                         = let pairs = zip bndgs1 bndgs2
+                                                          foc   = foldr (uncurry comb) emptyCnstr pairs
+                                                          comb  ta tb cnstr = foCnstr (f ta tb) |=> cnstr
+                                                       in trace ("fitting: " ++ show bndgs1 ++ " with " ++ show bndgs2)
+                                                        $ (res t2) { foCnstr = foc }
 %%]
 
 %%[fitsInBind.2
@@ -207,10 +211,10 @@ fitsIn ty1 ty2
 %%]
 
 %%[fitsInApp.1
-            f  t1@(Ty_App (Ty_App (Ty_Con c1) ta1) tr1)                                     -- m.arrow
-               t2@(Ty_App (Ty_App (Ty_Con c2) ta2) tr2)
-                 | hsnIsArrow c1 && c1 == c2
-                 = comp ta2 tr1 ta1 tr2 (\a r -> [a] `mkArrow` r)
+--            f  t1@(Ty_App (Ty_App (Ty_Con c1) ta1) tr1)                                     -- m.arrow
+--               t2@(Ty_App (Ty_App (Ty_Con c2) ta2) tr2)
+--                 | hsnIsArrow c1 && c1 == c2
+--                 = comp ta2 tr1 ta1 tr2 (\a r -> [a] `mkArrow` r)
             f  t1@(Ty_App tf1 ta1)                                                          -- m.prod
                t2@(Ty_App tf2 ta2)
                  = comp tf1 ta1 tf2 ta2 Ty_App
@@ -571,7 +575,7 @@ fitsIn opts env uniq ty1 ty2
 
 %%[10.fitsIn.fRow.foR -7.fitsIn.fRow.foR
                        fo         = fR fi2 r1 r2 extsIn1 extsIn12 extsIn2
-                       foR        = (if isRec then foUpdRecCoe (foCnstr fo |=> r1) (foCnstr fo |=> r2) extsIn1 extsIn12 extsIn2 else id) fo 
+                       foR        = (if isRec then foUpdRecCoe (foCnstr fo |=> r1) (foCnstr fo |=> r2) extsIn1 extsIn12 extsIn2 else id) fo
                        foUpdRecCoe r1 r2 e1 e12 e2 fo
                          =  let  rn = uidHNm u1
                                  prfCxId = fePrfCtxtId (fiEnv fi)

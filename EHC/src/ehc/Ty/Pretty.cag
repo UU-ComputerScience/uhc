@@ -230,12 +230,16 @@ SEM Ty
 ATTR TyAGItf AllTy [ | | pp USE {>#<} {empty}: PP_Doc ]
 
 SEM Ty
-  | Con             loc     .   pp      =   ppCon @nm
+  | Con             loc     .   pp      =   ppCon @nm >|< @bndgs.pp
   | App             loc     .   ppDflt  =   @func.pp >#< @arg.pp
                             .   ppNice  =   ppParNeed  @parNeed @lhs.parNeed
                                                        (ppAppTop (@appFunNm,@appFunPP) @appArgPPL @ppDflt)
                             .   pp      =   if @isSpineRoot then @ppNice else @ppDflt
   | Any             loc     .   pp      =   pp hsnUnknown
+
+SEM BndgIdList
+  | Nil             lhs     .   pp      =   empty
+  | Cons            lhs     .   pp      =   "^" >|< @hd.pp >|< @tl.pp
 %%]
 
 %%[8
@@ -254,6 +258,7 @@ SEM Ty
 %%[2.Var
 SEM Ty
   | Var             loc     .   pp      =   pp ("v_" ++ show @tv)
+  | Ann             loc     .   pp      =   pp ("d_" ++ show @ann) >|< ":" >|< @ty.pp
 %%]
 
 %%[3.Var -2.Var
@@ -452,6 +457,10 @@ SEM Ty
                                                     else  (ParNotNeeded,@lhs.parNeedL)
                 (arg.parNeed,func.parNeedL)
                                                 =   hdAndTl @argsParNeedL
+
+SEM BndgIdList
+  | Cons        loc     .  parNeed              =   ParNotNeeded
+                        .  parNeedL             =   []
 %%]
 
 %%[3

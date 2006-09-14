@@ -10,10 +10,13 @@
 %%[1 hs module {%{EH}Ty} import(EH.Util.Utils,{%{EH}Base.Common}) export(TyAGItf(..), Ty(..), TyL, tyInt, tyChar, mkTyCon)
 %%]
 
-%%[1 hs export(tyLHdAndTl, tyArrowArgRes, tyArrowArgsRes, tyArrowArgs, tyArrowRes, tyAppFunArgs, tyProdArgs, tyAppArgs) 
+%%[1 hs export(tyLHdAndTl, tyArrowArgRes, tyArrowArgsRes, tyArrowArgs, tyArrowRes, tyAppFunArgs, tyProdArgs, tyAppArgs,BndgIdList)
 %%]
 
-%%[2 hs export(TyVarId, TyVarIdL, mkTyVar, mkNewTyVar, mkNewUIDTyVarL, mkNewTyVarL, mkTyFreshProd, mkTyFreshProdFrom, tyEnsureNonAny) 
+%%[2 hs import(Data.Map(Map), qualified Data.Map as Map, Data.List(intersect, partition, nub), Data.Maybe, Debug.Trace)
+%%]
+
+%%[2 hs export(TyVarId, TyVarIdL, mkTyVar, mkNewTyVar, mkNewUIDTyVarL, mkNewTyVarL, mkTyFreshProd, mkTyFreshProdFrom, tyEnsureNonAny, mkBndgArr, tyExtractBndgs, tyAnnotate, tyOutermostAnn, tyToCoercions, tyGathSums, Constr(..), tyInst, mergeBndgs, singletonBndgs, emptyBndgs, Bndgs, tyVarId, mkBndgAnnArr, bndgIdInst, worklistFix, SolveConstr(..), flatten, solve, tyAnns, mkSacsMap)
 %%]
 
 %%[3 hs export(mkTyQu, TyVarCateg(..))
@@ -22,7 +25,7 @@
 %%[3 hs import(Data.Maybe) export(tyVar) 
 %%]
 
-%%[4 hs export(TyQu(..), tyquExists, tyquIsExists, tyquIsForall, showTyQu) 
+%%[4 hs export(TyQu(..), tyquExists, tyquIsExists, tyquIsForall, showTyQu)
 %%]
 
 %%[4 hs export(tyConNm) 
@@ -31,37 +34,37 @@
 %%[4 hs export(tvCatIsFixed) 
 %%]
 
-%%[4 hs import(qualified Data.Map as Map) export(TvCatMp) 
+%%[4 hs import(qualified Data.Map as Map) export(TvCatMp)
 %%]
 
-%%[4_2 hs export(tyMbQu,tyIsQu,tyIsVar,tyMbVar,tyIsAlts) 
+%%[4_2 hs export(tyMbQu,tyIsQu,tyIsVar,tyMbVar,tyIsAlts)
 %%]
 
-%%[4_2 hs export(TyPlus(..),TyPlusL,tyPlusTy) 
+%%[4_2 hs export(TyPlus(..),TyPlusL,tyPlusTy)
 %%]
 
-%%[4_2 hs export(TyHardness(..)) 
+%%[4_2 hs export(TyHardness(..))
 %%]
 
-%%[4_2 hs export(TyNeed(..)) 
+%%[4_2 hs export(TyNeed(..))
 %%]
 
-%%[5 hs export(tyString) 
+%%[5 hs export(tyString)
 %%]
 
-%%[6 hs export(kiStar) 
+%%[6 hs export(kiStar)
 %%]
 
-%%[6_4 hs export(tvIsEx) 
+%%[6_4 hs export(tvIsEx)
 %%]
 
-%%[7 hs import(Data.List) export(rowExtCmp,rowLabCmp,tyRowCanonOrder,kiRow,tyRowEmpty,tyRecEmpty,tySumEmpty,tyRowExtr,tyRecExtr,mkTyRow,mkTyRec,mkTySum,mkTyRecExt,tyRowExts) 
+%%[7 hs import(Data.List) export(rowExtCmp,rowLabCmp,tyRowCanonOrder,kiRow,tyRowEmpty,tyRecEmpty,tySumEmpty,tyRowExtr,tyRecExtr,mkTyRow,mkTyRec,mkTySum,mkTyRecExt,tyRowExts)
 %%]
 
 %%[7 hs export(tyAppFunArg) 
 %%]
 
-%%[8 hs export(tyFloat) 
+%%[8 hs export(tyFloat)
 %%]
 
 %%[8 hs export(tyAppFunConNm) 
@@ -94,7 +97,7 @@
 %%[10 hs export(tyExtsOffset)
 %%]
 
-%%[99 hs export(tyInteger,tyDouble) 
+%%[99 hs export(tyInteger,tyDouble)
 %%]
 
 %%[1 import({Ty/AbsSyn})
@@ -286,9 +289,9 @@ tyIsQu = isJust . tyMbQu
 instance SemApp Ty where
   semApp         = Ty_App
   semAppTop      = id
-  semCon         = Ty_Con . mkHNm
+  semCon         = (\nm -> Ty_Con nm (error "Need bndgs: tysigs not allowed for uniqueness inference.")) . mkHNm
   semParens      = id
-  mkRngCon _     = Ty_Con . mkHNm
+  mkRngCon _     = (\nm -> Ty_Con nm (error "Need bndgs: tysigs not allowed for uniqueness inference.")) . mkHNm
 %%]
 %%[1.mkRngVar hs
   mkRngVar       = mkRngCon
@@ -303,6 +306,14 @@ instance SemApp Ty where
 %%[1.mkTyCon hs
 mkTyCon :: String -> Ty
 mkTyCon n = semCon (HNm n)
+%%]
+
+%%[2 hs
+mkBndgArr :: TyVarId -> Ty -> Ty -> Ty
+mkBndgArr u a r = Ty_App (Ty_App (Ty_Con hsnArrow [mkTyVar u]) a) r
+
+mkBndgAnnArr :: UID -> TyVarId -> Ty -> Ty -> Ty
+mkBndgAnnArr u1 u2 a r = Ty_App (Ty_App (Ty_Ann u1 (Ty_Con hsnArrow [mkTyVar u2])) a) r
 %%]
 
 %%[2.mkTyVar hs
@@ -390,11 +401,11 @@ mkTyPr p
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.tyInt hs
-tyInt   = Ty_Con hsnInt
+tyInt   = Ty_Con hsnInt []
 %%]
 
 %%[1.tyChar hs
-tyChar  = Ty_Con hsnChar
+tyChar  = Ty_Con hsnChar []
 %%]
 
 %%[5.tyString hs
@@ -448,7 +459,7 @@ tyLHdAndTl      :: [Ty] -> (Ty,TyL)
 %%[1.unMkTy.tyArrowArgRes hs
 tyArrowArgRes t
   =  case t of
-       Ty_App (Ty_App (Ty_Con nm) a) r
+       Ty_App (Ty_App (Ty_Con nm _) a) r
          | hsnIsArrow nm  -> (a,r)
        _                  -> (Ty_Any,t)
 %%]
@@ -456,16 +467,29 @@ tyArrowArgRes t
 %%[1.unMkTy.tyArrowArgsRes hs
 tyArrowArgsRes t
   =  case t of
-       Ty_App (Ty_App (Ty_Con nm) a) r
+       Ty_App (Ty_App (Ty_Con nm _) a) r
          | hsnIsArrow nm  -> let (as,r') = tyArrowArgsRes r in (a:as,r')
        _                  -> ([],t)
+%%]
+
+%%[2 hs
+tyExtractBndgs :: Ty -> [TyVarId]
+tyExtractBndgs ty
+  = case ty of
+      Ty_App f _ -> tyExtractBndgs f
+      Ty_Var _   -> []
+      Ty_Con _  bndgs -> [b | Ty_Var b <- bndgs]
+
+tyVarId :: Ty -> TyVarId
+tyVarId (Ty_Var v) = v
+tyVarId _  = error "tyVarId: no Ty_Var"
 %%]
 
 %%[8.unMkTy.tyArrowArgsRes -1.unMkTy.tyArrowArgsRes hs
 tyArrowArgsRes t
   =  case t of
        Ty_Quant _ _ t     -> tyArrowArgsRes t
-       Ty_App (Ty_App (Ty_Con nm) a) r
+       Ty_App (Ty_App (Ty_Con nm _) a) r
          | hsnIsArrow nm  -> let (as,r') = tyArrowArgsRes r in (a:as,r')
        _                  -> ([],t)
 %%]
@@ -746,5 +770,225 @@ implsPrIds = map poPoi . fst . implsPredsTail
 
 %%[9 hs
 data TyCtxt = TyCtxt_Ty | TyCtxt_Pred | TyCtxt_Class deriving (Show,Eq)
+%%]
+
+
+%%[2 hs
+mergeBndgs :: Bndgs -> Bndgs -> Bndgs
+mergeBndgs = Map.unionWith (\(a,b) (c,d) -> (a++c,b++d))
+
+singletonBndgs :: UID -> [Ty] -> [Constr] -> Bndgs
+singletonBndgs u tps cs = Map.singleton u (tps, cs)
+
+emptyBndgs :: Bndgs
+emptyBndgs = Map.empty
+
+tyAnnotate :: Ty -> UID -> (Ty, UID)
+tyAnnotate t u
+  = case t of
+      Ty_App f a -> let (f1, u1) = tyAnnotate f u
+                        (a1, u2) = tyAnnotate a u1
+                     in (Ty_App f1 a1, u2)
+      t1@(Ty_Var _) -> let (u2, u1) = mkNewUID u
+                        in (Ty_Ann u1 t1, u2)
+      t1@(Ty_Con _ _) -> let (u2, u1) = mkNewUID u
+                          in (Ty_Ann u1 t1, u2)
+
+tyOutermostAnn :: Ty -> UID
+tyOutermostAnn t
+  = case t of
+      Ty_App f _ -> tyOutermostAnn f
+      Ty_Ann u _ -> u
+      _          -> error "tyOutermostAnn: no such outermost ann"
+
+tyAnns :: Ty -> [UID]
+tyAnns t
+  = case t of
+      Ty_App f a -> tyAnns f ++ tyAnns a
+      Ty_Ann u _ -> [u]
+
+tyToCoercions :: Ty -> Ty -> [Constr]
+tyToCoercions (Ty_App (Ty_App (Ty_Ann u1 (Ty_Con nm1 _)) a1) b1) (Ty_App (Ty_App (Ty_Ann u2 (Ty_Con nm2 _)) a2) b2)
+  | nm1 == hsnArrow
+      =  [ u1 :=>=: u2 ]
+      ++ tyToCoercions a2 a1
+      ++ tyToCoercions b1 b2
+tyToCoercions (Ty_App f1 a1) (Ty_App f2 a2)
+  =  tyToCoercions f1 f2
+  ++ tyToCoercions a1 a2
+tyToCoercions (Ty_Ann u1 _) (Ty_Ann u2 _)
+  = [ u1 :=>=: u2 ]
+
+tyGathSums :: [(HsName, Ty)] -> [(HsName, Ty)] -> ([Constr], [(HsName, Ty)])
+tyGathSums pats gats
+  = ( [ [tyOutermostAnn t | (n,t) <- gats, n == nm] :<=: tyOutermostAnn ty | (nm, ty) <- pats ]
+    , filter (not . (`elem` (map fst pats)) . fst) gats
+    )
+
+tyInst :: [(UID,UID)] -> UID -> Ty -> Ty -> Constr
+tyInst pairs bndgId tyA tyB
+  = Inst pairs bndgId tyA tyB
+
+eqs' tyL ty = concatMap (\t -> eqs t ty) tyL
+eqs (Ty_App f1 a1) (Ty_App f2 a2)
+  = eqs f1 f2 ++ eqs a1 a2
+eqs (Ty_Ann u1 _) (Ty_Ann u2 _)
+  = [(u1,u2)] --[(u1,u2),(u2,u1)]
+eqs _ _
+  = error "tyInst: tycon encountered: type not annotated?"
+
+bndgIdInst :: UID -> Ty -> (Ty, [(Ty, Ty)])
+bndgIdInst uid ty
+  = let (t, pairs, _) = rec uid ty in (t, pairs)
+  where
+    rec uid ty
+      = case ty of
+          Ty_App f a -> let (f1, fp, uid1) = rec uid f
+                            (a1, ap, uid2) = rec uid1 a
+                         in (f1 `Ty_App` a1, fp ++ ap, uid2)
+          Ty_Ann u t -> let (t', p, uid') = rec uid t
+                         in (Ty_Ann u t', p, uid')
+          Ty_Con nm bndgIds -> let (uid1, uid2) = mkNewLevUID uid
+                                   uidL         = mkInfNewUIDL uid2
+                                   bndgIds'     = map (Ty_Var) (take (length bndgIds) uidL)
+                                   p            = zip bndgIds bndgIds'
+                                in (Ty_Con nm bndgIds', p, uid1)
+          t@(Ty_Var _) -> (t, [], uid)
+
+%%]
+
+%%[2 hs
+data Constr
+  = UID :=>=: UID
+  | [UID] :<=: UID
+  | Inst [(UID, UID)] UID Ty Ty
+  deriving (Eq, Ord, Show)
+
+data SolveConstr a
+  = a   ::=>=:: a
+  | [a] ::<=:: a
+  deriving (Eq, Ord, Show)
+
+type Bndgs = Map UID ([Ty], [Constr])
+
+worklistFix :: Eq a => (SolveConstr a -> SolveConstr a) -> a -> [SolveConstr UID] -> Map UID a -> Map UID a
+worklistFix solveF bot cs initial
+  = iter cs initial
+  where
+    deps = [ (c, [d | d <- cs, c `shareVar` d, c /= d]) | c <- cs ]
+
+    shareVar p q = shareVarAux2 (shareVarAux1 p) (shareVarAux1 q)
+    shareVarAux1 (a ::=>=:: b) = [a, b]
+    shareVarAux1 (al ::<=:: b) = b: al
+    shareVarAux2 p q = not (null (intersect p q))
+
+    iter [] subst = subst
+    iter (c : cs) subst
+      =  let  c1      = subst `apply` c
+              c2      = solveF c1
+              subst'  = (c, c2) `update` subst
+         in   if subst' == subst
+              then  iter cs subst'
+              else  iter ((c `lookup'` deps) ++ cs) subst'
+
+    apply s (a ::=>=:: b)
+      = applyAux s a ::=>=:: applyAux s b
+    apply s (al ::<=:: b)
+      = map (applyAux s) al ::<=:: applyAux s b
+    applyAux
+      = flip (Map.findWithDefault bot)
+
+    update (ua ::=>=:: ub, a ::=>=:: b) s
+      = updateAux ub b (updateAux ua a s)
+    update (ual ::<=:: ub, al ::<=:: b) s
+      = foldr (uncurry updateAux) (updateAux ub b s) (zip ual al)
+    updateAux
+      = Map.insert
+
+    lookup' k h = maybe [] id (lookup k h)
+
+upperSolveF (a ::=>=:: b)
+  =  a ::=>=:: ((a `max` b) `min` 2)
+upperSolveF (l ::<=:: b)
+  =  let  z = sum l
+     in   l ::<=:: ((b `max` z) `min` 2)
+
+flatten :: Bndgs -> UID -> Map UID [UID] -> [SolveConstr UID]
+flatten bndgs outermostId sacreds
+  = fst $ construct outermostId [] (uidChild outermostId)
+  where
+    construct bndgId idMap uid
+      = let -- cs = Map.findWithDefault (error ("cannot find cs: " ++ show bndgId ++ " | " ++ show bndgs)) bndgId bndgs
+            (mCanonTy, cs)  = Map.findWithDefault ( trace ("no cs info for: " ++ show bndgId) ([], [])) bndgId bndgs
+            cs' = rename cs idMap
+            (csI, csN) = partition isInst cs'
+            csN' = map toSolveConstr csN
+            csN'' = foldr (uncurry (instantiate bndgId)) csN' (zip (mkInfNewUIDL uid) csI)
+         in (csN'', mCanonTy)
+
+    toSolveConstr (a :=>=: b) = a ::=>=:: b
+    toSolveConstr (a :<=: b) = a ::<=:: b
+
+    rename cs idMap
+      = map ren cs
+      where
+        ren (Inst mp bndgId fromTy toTy) = Inst [(renAux a, renAux b) | (a,b) <- mp ] (renAux bndgId) fromTy toTy
+        ren c                            = c
+        renAux a = maybe a id (a `lookup` idMap)
+
+    insts cs = [c | c <- cs, isInst c]
+    isInst (Inst _ _ _ _) = True
+    isInst _              = False
+
+    instantiate uid to (Inst idMap from fromTy toTy) dst
+      = trace ("inst " ++ show from ++ " ~> " ++ show to ++ " | " ++ show idMap)
+      $ let (gUID, lUID) = mkNewLevUID uid
+            (src, mCanonTy) = construct from idMap gUID
+            src' = fresh (sacred to ++ sacred from) (eqs' (fromTy : mCanonTy) toTy) src lUID
+         in dst ++ src'
+
+    -- sacred bndgId = Map.findWithDefault (error ("no sacred anns for binding group: " ++ show bndgId ++ " | " ++ show sacreds)) bndgId sacreds
+    sacred bndgId = Map.findWithDefault [] bndgId sacreds
+
+{-
+    fresh _ tups src
+      = concatMap eqs tups ++ src
+      where
+        eqs (a, b) = [a ::=>=:: b, b ::=>=:: a]
+-}
+    fresh sacs tups src uid
+      = let uidL  = mkInfNewUIDL uid
+            anns (a ::=>=:: b) = [a, b]
+            anns (l ::<=:: a)  = a : l
+            allAnns = nub (concatMap anns src)
+            fsubst = zipWith (\a u -> (a, repl a u)) allAnns uidL
+            tups' = map (\(f, t) -> (repl2 f f, repl2 t t)) tups
+            src' = map fr src
+
+            fr (a ::=>=:: b) = (repl2 a a) ::=>=:: (repl2 b b)
+            fr (l ::<=:: a) = (zipWith repl2 l l) ::<=:: (repl2 a a)
+
+            repl v u
+              | v `elem` sacs = v
+              | otherwise     = u
+            repl2 v u
+              | isJust m  = fromJust m
+              | otherwise = u
+              where
+                m = v `lookup` fsubst
+
+            eqs (a, b) = [a ::=>=:: b, b ::=>=:: a]
+         in concatMap eqs tups' ++ src'
+
+solve :: Bndgs -> Map UID [UID] -> UID -> UID -> Map UID Int
+solve bndgs sacred outerUID startUID
+  = let cs = flatten bndgs outerUID sacred
+        cs' = seq (length (show cs)) ( trace "flattening complete" cs)
+     in  -- error (show sacred)
+         worklistFix  upperSolveF 0 cs' $ Map.singleton startUID 1
+
+mkSacsMap :: [(UID, [UID])] -> Map UID [UID]
+mkSacsMap = foldr (uncurry (Map.insertWith (++))) Map.empty
+
 %%]
 
