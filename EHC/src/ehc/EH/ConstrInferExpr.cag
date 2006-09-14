@@ -260,7 +260,15 @@ SEM Expr
                            then wrappedSetEmpty -- constraints will flow in/out through applications
                            else wrappedSingleton @loc.instConstr
   | Con
-      loc.annConstrs     = wrappedSingleton @loc.instConstr
+      loc.conAnnTy       = Map.findWithDefault (error ("No such identifier: " ++ show @nm ++ " in " ++ show @lhs.annConstrTyMapInh)) @nm @lhs.annConstrTyMapInh
+      loc.refreshedConTy = let allAnns = Set.toList (tyAnnotations @loc.conAnnTy)
+                               uidL = mkInfNewLevUIDL @loc.freshUID_
+                               subst = Map.fromList (zipWith mkFreshAnn allAnns uidL)
+                               mkFreshAnn a u = (a, a { annUID = u, annInstFrom = Just a })
+                           in tyAnnSubst subst @loc.conAnnTy
+      loc.annConstrs     = wrappedFromList [ @loc.instConstr
+                                           , @loc.constrUID2_ #.. @loc.refreshedConTy =>= @loc.annTy ..# @loc.constrCtx
+                                           ]
   | App AppImpred
       loc.annFlowConstr  = wrappedFromList [ @loc.constrUniq1 #.. tyToplevelArrowArg @func.annTy =>= @arg.annTy ..# @loc.constrCtx
                                            , @loc.constrUniq2 #.. touchAnn =>= tyOutermostAnn @func.annTy ..# @loc.constrCtx ]
@@ -328,7 +336,7 @@ SEM Expr
   | Let    loc.annBndgConstrs = @decls.annBndgConstrs `Map.union` @body.annBndgConstrs `Map.union` Map.singleton @loc.declsBndgId @loc.bndgConstrs
 
 SEM AGItf
-  | AGItf  loc.addUseConstr   = wrappedSingleton (@loc.constrUniq #.. (touchAnn =>=! tyOutermostAnn @expr.annTy) softFlowSem ..# @loc.constrCtx)
+  | AGItf  loc.addUseConstr   = wrappedSingleton (@loc.constrUniq #.. Embed touchAnnTy <== @expr.annTy ..# @loc.constrCtx)
            loc.annConstrs     = @loc.addUseConstr `wrappedSetUnion` @expr.annConstrs
            loc.annBndgConstrs = {- Map.singleton uidNull @loc.compConstrSet
                                 `Map.union` -}

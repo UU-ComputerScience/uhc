@@ -229,6 +229,8 @@ format fmtcmd rulerMk3Uniq = mkNewLevUID3
 format fmtcmd rulerMk4Uniq = mkNewLevUID4
 format fmtcmd rulerMk5Uniq = mkNewLevUID5
 format fmtcmd rulerMk6Uniq = mkNewLevUID6
+format fmtcmd rulerMk7Uniq = mkNewLevUID7
+format fmtcmd rulerMk8Uniq = mkNewLevUID8
 
 format ag decls.hd = hd
 format ag decls.tl = tl
@@ -668,6 +670,10 @@ ruleset expr.base scheme expr "Expression type rules" =
       judge V1 : createUID
           | uid = (retain constrUID)
       judge V2 : createUID
+          | uid = (retain constrUID2)
+      judge V3 : createUID
+          | uid = (retain freshUID)
+      judge V4 : createUID
           | uid = (retain ppHtmlBlockUID)
       ---
     view CG =
@@ -680,7 +686,7 @@ ruleset expr.base scheme expr "Expression type rules" =
           | translExpr = coe (translVar (ident) | TranslExpr)
 
   rule e.con : e.var viewsel K - * "Con" =
-    view K =	
+    view K =
       judge O: tyOpenProd = ty.p.._, n === ty.r
       judge - G F
       ---
@@ -1760,7 +1766,7 @@ ruleset tyexpr.base scheme tyexpr viewsel E - * "Type expression type rules" =
       judge split : valGamPop = tyGam.l ++ _ === tyGam.t
       ---
       judge R : tyexpr = tyGam.inh :- ((tQu|TyQu) tVar (.) (node 1 = tExpr)) : (tyexprQuant tQu tvarv `.` ty.t) ~> (tyGam.l + tyGam.inh) ; tvarv.t.._
-    
+
 -------------------------------------------------------------------------
 -- Predicates (proving of)
 -------------------------------------------------------------------------
@@ -2150,7 +2156,7 @@ ruleset match.all scheme match viewsel K - * "Type matching rules" =
       ---
 
   rule m.forall.l viewsel I1 - * =
-    view I1 = 
+    view I1 =
       judge F : match = fiopt :- ty.i <=>.(<=) ty.2 : ty ~> tyCnstr
       judge I : inst.tvarv' = ty.i, tvarv, tvarv..._ === ty.1, alpha
       ---
@@ -2161,7 +2167,7 @@ ruleset match.all scheme match viewsel K - * "Type matching rules" =
       judge F : match = fiopt :- ty.1 <=>.(<=) ty.i : ty ~> tyCnstr
       judge I : inst.tvarv' = ty.i, tvarf, tvarf..._ === ty.2, alpha
       ---
-      judge R : match = fiopt :- ty.1 <=>.(<=) (forall ^ alpha..._ `.` ty.2) : (tyCnstr (forall ^ alpha..._ `.` ty.2)) ~> tyCnstr  
+      judge R : match = fiopt :- ty.1 <=>.(<=) (forall ^ alpha..._ `.` ty.2) : (tyCnstr (forall ^ alpha..._ `.` ty.2)) ~> tyCnstr
     view DT = 
       judge O : fioptHasOpt = fioLeaveRInstN `elem` fiopt
       ---
@@ -3058,7 +3064,7 @@ relation tyAltPartition =
     judgespec partitionTy === ty
 
 relation tyAltSelect =
-  view I2 = 
+  view I2 =
     holes [ tyAlts: TyPlusL, thard: TyHardness, tneed: TyNeed | | tys: TyL, tyElt: Ty ]
     judgespec tys === tyAlts, tyElt, thard, tneed
     judgeuse tex tys === [ tyElt `|` (tyElt :: thard / tneed) <- tyAlts ]

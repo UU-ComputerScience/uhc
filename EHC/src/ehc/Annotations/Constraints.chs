@@ -814,7 +814,7 @@ flattenComp uid context infos compTree
   where
     flatComp uid annTree annTrees
       = case annTree of
-          AnnNode ann _ _ | flatBelownessFun infos ann >= NotBelow
+          AnnNode ann _ _ -- | flatBelownessFun infos ann >= NotBelow
             -> let (anns, subtrees) = unzip (map unAnnNode (annTree : annTrees))
                    annsT     = transpose anns
                    subtreesT = transpose subtrees
@@ -823,18 +823,16 @@ flattenComp uid context infos compTree
                    infUidB = mkInfNewLevUIDL uidB
                 in mkSeq (zipWith (\uid (a:as) -> uid #.. distribute as compTree <== a ..# context) infUidA annsT)
                    <+> concatSeqs (zipWith (\uid (s:ss) -> flatComp uid s ss) infUidB subtreesT)
-          NotUnifiable tA@(AnnNode annA _ _) | flatBelownessFun infos annA >= NotBelow
-            -> error (  "flattenComp::not unifiable::not below arrow::situation:: uncomment the code in this module to allow this situation to be dealt with:\n"
-                     ++ show tA
-                     )
-               {-
+          NotUnifiable tA@(AnnNode annA _ _) -- | flatBelownessFun infos annA >= NotBelow
+            -> -- error (  "flattenComp::not unifiable::not below arrow::situation:: uncomment the code in this module to allow this situation to be dealt with:\n"
+               --      ++ show tA
+               --      )
                let (uidA, uidB, uidC) = mkNewLevUID2 uid
                    infUidB = mkInfNewLevUIDL uidB
                    anns = map (\(NotUnifiable (AnnNode annB _ _)) -> annB) annTrees
                 in unitSeq (uidA #.. distribute anns compTree <== annA ..# context)
                    <+> flattenDefault uidC context hardFlowSem infos False annA tA
                    <+> concatSeqs (zipWith (\t u -> flattenDefault u context hardFlowSem infos False annA t) annTrees infUidB)
-               -}
           _ -> emptySeq
 
 flattenDefault :: UID -> context -> FlowSem sem -> FlattenInfo -> Bool -> Annotation Ty -> AnnTree -> Seq (AnnConstr sem context)

@@ -423,6 +423,7 @@ SEM AGItf
                                                           , (hsnRow,    	mkTGI (Ty_Con hsnUnknown) kiRow)
                                                           , (hsnRec,    	mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
                                                           , (hsnSum,    	mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
+                                                          , (hsnRowEmpty, mkTGI (Ty_Con hsnRowEmpty) kiRow)
 %%]
 %%[8
                                                           , (hsnFloat  ,	mkTGI tyFloat   kiStar)

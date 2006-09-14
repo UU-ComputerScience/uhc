@@ -64,7 +64,7 @@
 %%[7_2 hs import(qualified Data.Set as Set, Data.Set(Set), qualified Data.Map as Map, Data.Map(Map))
 %%]
 
-%%[7_2 hs export(tyInsertAnnRec, tyReplaceAnnRec, touchAnn, touchAnnTy, addAnn, mkTruncArrow, rightmostResultAnnotation, annotationsStar, mkAnnArrow, addTrunc)
+%%[7_2 hs export(tyInsertAnnRec, tyReplaceAnnRec, touchAnn, touchAnnTy, addAnn, mkTruncArrow, rightmostResultAnnotation, annotationsStar, mkAnnArrow, addTrunc, tyAnnSubst)
 %%]
 
 %%[7_2 hs export(TyExpConstr(..),TyExpConstrs,TyExpFields,TyExpField(..),Annotations,Annotation(..), DecomposedAnnMap)
@@ -103,7 +103,7 @@
 %%[10 hs export(tyExtsOffset)
 %%]
 
-%%[99 hs export(tyInteger,tyDouble) 
+%%[99 hs export(tyInteger,tyDouble)
 %%]
 
 %%[1 import({Ty/AbsSyn})
@@ -912,3 +912,28 @@ tyReplaceAnnRec (Ty_App tyInit tyExts) nm replTy
 tyReplaceAnnRec _ _ _ = Ty_Any
 
 %%]
+
+Substitution on an annotated type.
+
+%%[7_2 hs
+
+tyAnnSubst :: Map (Annotation Ty) (Annotation Ty) -> Ty -> Ty
+tyAnnSubst mp
+  = rec
+  where
+    rec (Ty_App f a)            = Ty_App (rec f) (rec a)
+    rec (Ty_Ann a t)            = Ty_Ann (repl a) (rec t)
+    rec (Ty_Quant tv cat ty)    = Ty_Quant tv cat (rec ty)
+    rec (Ty_TruncTyCon anns ty) = Ty_TruncTyCon (Set.map repl anns) (rec ty)
+    rec (Ty_ExpTyCon cs as ty)  = Ty_ExpTyCon (map recCon cs) as (rec ty)
+    rec t                       = t
+
+    recCon (TyExpConstr_Constr nm fs)
+      = TyExpConstr_Constr nm (map recFld fs)
+    recFld (TyExpField_Field ty)
+      = TyExpField_Field (rec ty)
+
+    repl a = Map.findWithDefault a a mp
+
+%%]
+

@@ -57,6 +57,10 @@ SEM DataConstr
   | Constr
       lhs.annConstrTyMap = Map.singleton @conNm @loc.expAnnTy
 
+ATTR AGItf -> Expr [ annConstrTyMapInh : {Map HsName Ty} ||]
+SEM AGItf
+  | AGItf  loc.annConstrTyMapInh = @expr.annConstrTyMap
+
 %%]
 
 
