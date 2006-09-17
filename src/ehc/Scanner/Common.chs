@@ -234,8 +234,8 @@ grinScanOpts
 hiScanOpts :: ScanOpts
 hiScanOpts
   =  hsScanOpts
-        {   scoKeywordsTxt      =   [ "value", "fixity", "stamp", "uid", "rule", "var", "ctxt", "sup", "Value"
-                                    , "Pat", "Type", "Kind", "Class", "Instance", "Default", "Any", "Data"
+        {   scoKeywordsTxt      =   [ "value", "fixity", "stamp", "uid", "rule", "var", "ctxt", "sup", "iddef"
+                                    , "Value", "Pat", "Type", "Kind", "Class", "Instance", "Default", "Any", "Data"
                                     ]
                                     ++ scoKeywordsTxt hsScanOpts
         ,   scoOpChars          =   scoOpChars coreScanOpts

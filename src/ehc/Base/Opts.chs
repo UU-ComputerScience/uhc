@@ -77,8 +77,7 @@ data EHCOpts
       ,  ehcOptHelp           ::  Bool
       ,  ehcOptVersion        ::  Bool
       ,  ehcOptDebug          ::  Bool
-%%]
-%%[8.EHCOpts
+%%[[8
       ,  ehcOptDumpCallGraph  ::  Bool
       ,  ehcOptDumpTrfGrin    ::  Maybe String
       ,  ehcOptTimeCompile    ::  Bool
@@ -100,15 +99,17 @@ data EHCOpts
       ,  ehcOptSearchPath     ::  [String]
       ,  ehcOptVerbosity      ::  Verbosity
       ,  ehcOptTrf            ::  [TrfOpt]
-%%]
-%%[9.EHCOpts
+%%]]
+%%[[9
       ,  ehcOptPrfCutOffAt    ::  Int
-%%]
-%%[99
+%%]]
+%%[[12
+      ,  ehcCheckRecompile    ::  Bool
+%%]]
+%%[[99
       ,  ehcProgName          ::  String
       ,  ehcOptShowNumVersion ::  Bool
-%%]
-%%[1
+%%]]
       }
 %%]
 
@@ -122,8 +123,7 @@ defaultEHCOpts
       ,  ehcOptHelp           =   False
       ,  ehcOptVersion        =   False
       ,  ehcOptDebug          =   False
-%%]
-%%[8.defaultEHCOpts
+%%[[8
       ,  ehcOptDumpCallGraph  =   False
       ,  ehcOptDumpTrfGrin    =   Nothing
       ,  ehcOptTimeCompile    =   False
@@ -145,27 +145,28 @@ defaultEHCOpts
       ,  ehcOptSearchPath     =   []
       ,  ehcOptVerbosity      =   VerboseNormal
       ,  ehcOptTrf            =   []
-%%]
-%%[9.defaultEHCOpts
+%%]]
+%%[[9
       ,  ehcOptPrfCutOffAt    =   20
-%%]
-%%[99
+%%]]
+%%[[12
+      ,  ehcCheckRecompile    =   True
+%%]]
+%%[[99
       ,  ehcProgName          =   ""
       ,  ehcOptShowNumVersion =   False
-%%]
-%%[1
+%%]]
       }
 %%]
 
-%%[1.ehcCmdLineOptsA
+%%[1
 ehcCmdLineOpts
   =  [  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|grin|ast|-")  "show pretty printed EH/Grin source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
      ,  Option "d"  ["debug"]            (NoArg oDebug)                       "show extra debug information"
      ,  Option ""   ["show-top-ty"]      (OptArg oShowTopTy "yes|no")         "show top ty, default=no"
      ,  Option "h"  ["help"]             (NoArg oHelp)                        "only show this help"
      ,  Option ""   ["version"]          (NoArg oVersion)                     "only show version info"
-%%]
-%%[8.ehcCmdLineOptsA
+%%[[8
      ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|cmm|c|-")  "write code to file, default=core (downstream only)"
      ,  Option ""   ["trf"]              (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
                                                                               "switch on/off transformations"
@@ -179,14 +180,16 @@ ehcCmdLineOpts
      ,  Option ""   ["gen-tailcall"]     (boolArg optSetGenTailCall)          "jumps for tail calls in C (yes)"
      ,  Option ""   ["gen-ownparams"]    (boolArg optSetGenOwnParams)         "explicit parameter allocation (yes)"
      ,  Option ""   ["gen-ownlocals"]    (boolArg optSetGenOwnLocals)         "explicit local allocation (no, broken!)"
-%%]
-%%[99
+%%]]
+%%[[12
+     ,  Option ""   ["no-recomp"]        (NoArg oNoRecomp)                    "turn off recompilation check (force recompile)"
+%%]]
+%%[[99
      ,  Option ""   ["numeric-version"]  (NoArg oNumVersion)                  "only show numeric version"
-%%]
-%%[1
+%%]]
      ]
 %%]
-%%[1.ehcCmdLineOptsB
+%%[1
   where  oPretty     ms  o =  case ms of
                                 Just "-"     -> o { ehcOptShowEH       = False     }
                                 Just "no"    -> o { ehcOptShowEH       = False     }
@@ -195,11 +198,9 @@ ehcCmdLineOpts
                                 Just "eh"    -> o { ehcOptShowEH       = True      }
                                 Just "pp"    -> o { ehcOptShowEH       = True      }
                                 Just "ast"   -> o { ehcOptShowAst      = True      }
-%%]
-%%[8.ehcCmdLineOptsB
+%%[[8
                                 Just "grin"  -> o { ehcOptShowGrin     = True      }
-%%]
-%%[1.ehcCmdLineOptsB
+%%]]
                                 _            -> o
          oShowTopTy  ms  o =  case ms of
                                 Just "yes"  -> o { ehcOptShowTopTyPP   = True      }
@@ -209,8 +210,7 @@ ehcCmdLineOpts
          oDebug          o =  o { ehcOptDebug         = True
                                 , ehcOptShowEH        = True
                                 }
-%%]
-%%[8.ehcCmdLineOptsB
+%%[[8
          oTimeCompile    o =  o { ehcOptTimeCompile       = True    }
          oDumpTrfGrin ms o =  o { ehcOptDumpTrfGrin       = maybe (Just "") (const ms) ms }
          oDumpCallGraph  o =  o { ehcOptDumpCallGraph     = True }
@@ -242,9 +242,13 @@ ehcCmdLineOpts
                                 Just "2"    -> o { ehcOptVerbosity     = VerboseALot        }
                                 Nothing     -> o { ehcOptVerbosity     = VerboseNormal      }
                                 _           -> o
-%%]
-%%[99
+%%]]
+%%[[12
+         oNoRecomp       o =  o { ehcCheckRecompile             = False   }
+%%]]
+%%[[99
          oNumVersion     o =  o { ehcOptShowNumVersion          = True    }
+%%]]
 %%]
 
 %%[8

@@ -11,7 +11,7 @@
 %%[12 hs module {%{EH}HI.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Common},{%{EH}Gam},qualified {%{EH}Pred} as Pr,{%{EH}HI})
 %%]
 
-%%[12 hs import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Config},{%{EH}Module})
+%%[12 hs import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Config},{%{EH}NameAspect},{%{EH}Module})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,6 +40,7 @@ ATTR
     [ | |
       exportRel     USE {`Rel.union`}       {Rel.empty}      : ModEntRel
       fixityGam     USE {`gamUnion`}        {emptyGam}       : FixityGam
+      idGam         USE {`gamUnion`}        {emptyGam}       : IdDefOccGam
       valGam        USE {`gamUnion`}        {emptyGam}       : ValGam
       tyGam         USE {`gamUnion`}        {emptyGam}       : TyGam
       dataGam       USE {`gamUnion`}        {emptyGam}       : DataGam
@@ -50,6 +51,8 @@ ATTR
 SEM Binding
     | Export
         lhs             .   exportRel   =   @exports
+    | Ids
+        lhs             .   idGam       =   gamFromAssocL [ (o,mkIdDefOcc od IdAsp_Any nmLevOutside emptyRange) | (o,od) <- @idOccs ]
     | Fixity
         lhs             .   fixityGam   =   gamSingleton @nm (FixityGamInfo @prio @fixity)
     | Val
@@ -87,6 +90,12 @@ SEM Rules
         lhs             .   rules       =   []
 
 %%]
+
+%%[12
+%%]
+SEM AGItf
+    | AGItf
+        lhs             .   idGam       =   [ | (n,me) <- Rel.toList @module.exportRel ]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Valid version?

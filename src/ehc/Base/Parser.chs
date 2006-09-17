@@ -13,7 +13,7 @@
 %%[8 export(pDollNm,pUID,pInt,pCTag)
 %%]
 
-%%[12 import({%{EH}Module},qualified Data.Set as Set,qualified EH.Util.Rel as Rel) export(pPredOccId,pModEntRel)
+%%[12 import({%{EH}Module},qualified Data.Set as Set,qualified EH.Util.Rel as Rel) export(pPredOccId,pModEntRel,pIdOcc)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
