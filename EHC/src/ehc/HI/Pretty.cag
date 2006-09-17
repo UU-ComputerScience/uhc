@@ -30,11 +30,23 @@ SEM Binding
     | Stamp
         lhs         .   pp          =   let ps :: Show a => a -> PP_Doc
                                             ps = pp . show
-                                        in  hiNV "stamp" hsnUnknown [ps @srcTimestamp,ps @srcSig,ps @srcVersionMajor,ps @srcVersionMinor,ps @srcVersionQuality,ps @srcVersionSvn,ps @hash]
+                                            pc :: PP a => a -> PP_Doc
+                                            pc = ("--" >#<)
+                                        in  hiNV "stamp" hsnUnknown
+                                              [ ps @srcTimestamp        >#< pc "time of compiler build"
+                                              , ps @srcSig              >#< pc "cryptographic hash of compiler sources"
+                                              , ps @srcVersionMajor     >#< pc "version major"
+                                              , ps @srcVersionMinor     >#< pc "version minor"
+                                              , ps @srcVersionQuality   >#< pc "build stability"
+                                              , ps @srcVersionSvn       >#< pc "svn of compiler build"
+                                              , ps @hash                >#< pc "hash for faster equality check of this info, not yet used"
+                                              ]
     | Fixity
         lhs         .   pp          =   hiNV "fixity" @nm [pp @prio,pp @fixity]
     | Export
         lhs         .   pp          =   hiNV' "export" hsnUnknown (ppModEntRel' ppHINm @exports)
+    | Ids
+        lhs         .   pp          =   hiNV "iddef" hsnUnknown (map (\(o,d) -> ppCurlysSemisBlock [ppIdOcc ppHINm o,ppIdOcc ppHINm d]) @idOccs)
     | Val
         lhs         .   pp          =   hiNV "value" @nm [ppTyWithCfg cfgPPTyHI @ty]
     | DataCon

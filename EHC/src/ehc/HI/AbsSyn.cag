@@ -31,6 +31,8 @@ DATA Binding
 		nm						: HsName
 		prio					: Int
 		fixity					: Fixity
+	| Ids
+		idOccs					: {[(IdOcc,IdOcc)]}
 	| Val
 		nm						: HsName
 		ty						: Ty

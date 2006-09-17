@@ -10,7 +10,7 @@
 %%[1 module Main import(System, System.Console.GetOpt, IO)
 %%]
 
-%%[8 import(UU.Parsing, UU.Pretty, EH.Util.PPUtils,{%{EH}Base.Common},GRINICommon,{%{EH}Scanner.Scanner})
+%%[8 import(UU.Parsing, UU.Pretty, EH.Util.PPUtils,{%{EH}Base.Common},GRINICommon,{%{EH}Scanner.Common},{%{EH}Scanner.Scanner})
 %%]
 
 %%[8 import (EH.Util.FPath,qualified Data.Map as Map,Data.Maybe,Data.List,Directory)
@@ -56,7 +56,7 @@ parseGrin fp opts
                       else  do  {  h <- openFile fNm ReadMode
                                 ;  return (fNm,h)
                                 }
-       ;  tokens <- scanHandle scanOpts fn fh
+       ;  tokens <- scanHandle grinScanOpts fn fh
        ;  gr <- parseIO (pModule) tokens
        ;  return gr
        }

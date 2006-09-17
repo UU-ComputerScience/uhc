@@ -49,6 +49,9 @@
 %%[9 hs export(mkCExprPrHole)
 %%]
 
+%%[12 hs export(cModMerge)
+%%]
+
 %%[8 import({Core/AbsSyn})
 DERIVING *     : Show, Eq
 %%]
@@ -294,4 +297,16 @@ instance Show Coe where
   show _ = "COE"
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module merge
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[12 hs
+cModMerge :: [CModule] -> CModule
+cModMerge mL
+  = foldr1 cmb mL
+  where get (CExpr_Let c b e) = CExpr_Let c b . get e
+        get  _                = id
+        cmb (CModule_Mod m1 e1 t1) (CModule_Mod m2 e2 t2)
+          = CModule_Mod m2 (get e1 e2) (t1++t2)
+%%]

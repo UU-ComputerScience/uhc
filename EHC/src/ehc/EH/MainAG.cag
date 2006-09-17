@@ -116,13 +116,17 @@ SEM Expr
 
 %%[12
 ATTR AGItf Expr [ | | gathPrElimTGam: PrElimTGam ]
-ATTR AGItf [ | | gathPrfCtxtId: PrfCtxtId ]
-
-SEM AGItf
-  | AGItf       lhs         .   gathPrfCtxtId       =   uidStart
 
 SEM Expr
-  | Let         lhs         .   gathPrElimTGam      =   tgamAddGam @prfCtxtId uidStart @decls.patPrElimTGam @body.gathPrElimTGam
-  | * - Let     lhs         .   gathPrElimTGam      =   emptyTGam uidStart
+  | Let         lhs         .   gathPrElimTGam      =   tgamAddGam @prfCtxtId basePrfCtxtId @decls.patPrElimTGam @body.gathPrElimTGam
+  | * - Let     lhs         .   gathPrElimTGam      =   emptyTGam basePrfCtxtId
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is toplevel mod?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR AGItf [ isTopMod: Bool | | ]
 %%]
 

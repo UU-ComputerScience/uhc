@@ -350,6 +350,7 @@ data ModMpInfo
   = ModMpInfo
       { mmiInscps   :: ModEntRel
       , mmiExps     :: ModEntRel
+      , mmiExpsHI   :: ModEntRel
       }
 
 instance Show ModMpInfo where
@@ -360,7 +361,7 @@ instance PP ModMpInfo where
        >-< "Exps  :" >#< (ppAssocL $ Rel.toList $ mmiExps   i)
 
 emptyModMpInfo :: ModMpInfo
-emptyModMpInfo = ModMpInfo Rel.empty Rel.empty
+emptyModMpInfo = ModMpInfo Rel.empty Rel.empty Rel.empty
 
 type ModMp = Map.Map HsName ModMpInfo
 
@@ -375,7 +376,8 @@ modMpCombine ms mp
   where expsOf mp n     = mmiExps $ Map.findWithDefault emptyModMpInfo n mp
         rels            = modInsOuts (expsOf mp) ms
         (inscps,exps)   = unzip rels
-        newMp           = (Map.fromList $ zipWith3 (\n i o -> (n,ModMpInfo i o)) (map modName ms) inscps exps)
+        newMp           = (Map.fromList $ zipWith3 (\n i o -> (n,mk i o)) (map modName ms) inscps exps)
                            `Map.union` mp
+                        where mk i o = emptyModMpInfo {mmiInscps = i, mmiExps = o}
         errs            = zipWith (checkMod (fmap mmiExps . (`Map.lookup` newMp))) inscps ms
 %%]
