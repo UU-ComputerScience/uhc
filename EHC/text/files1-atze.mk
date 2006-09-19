@@ -22,7 +22,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								uniqueness/TopicNoBindings uniqueness/TopicPolyvariant uniqueness/TopicRecursion uniqueness/TopicPolymorphic uniqueness/TopicParallel uniqueness/TopicDataTypes uniqueness/TopicOverloading \
 								uniqueness/TopicBeyondEHC uniqueness/TopicCodeGeneration uniqueness/TopicInspecting \
 								uniqueness/TopicPerformance uniqueness/TopicRelatedWork uniqueness/TopicConclusion \
-								uniqueness/Slides
+								uniqueness/Slides uniqueness/TopicImplementation
 
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism

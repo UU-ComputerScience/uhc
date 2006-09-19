@@ -1,10 +1,252 @@
 %%[[body
 
-\frame
-{
-  \frametitle{Test}
+\frame<presentation>{\titlepage}
 
-  Bla bla.
-}
+\frame<presentation>{\tableofcontents}
+
+
+\section{Motivation}
+
+  \frame<presentation>
+  {
+    \frametitle{The problem}
+
+    Haskell programs suck at updating values
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{The problem}
+    \framesubtitle{The cause}
+
+    \begin{minipage}[b]{20em}
+%%[[wrap=code
+  let  a   = 3
+       a'  = a + 1
+  in   a * a'
+%%]
+    \end{minipage}
+    
+    ~\\  
+    \begin{itemize}
+    \item Referential transparency
+    \item Values are atomic
+    \item Updates are performed on a copy
+    \end{itemize}
+  }
+  
+  \frame<presentation>
+  {
+    \frametitle{The Problem}
+    \framesubtitle{Superfluous copying}
+    
+        \begin{minipage}[b]{20em}
+%%[[wrap=code
+  let  a   = 3
+       a'  = a + 1
+  in   a'
+%%]
+    \end{minipage}
+    
+    ~\\  
+    \begin{itemize}
+    \item The old value is not used anywhere else
+    \item The old value is not used after the update to |a'|
+    \item The old value is used at most once (important!)
+    \item There is no need to make a copy
+    \end{itemize}
+  }
+
+  \frame
+  {
+    \frametitle{The Problem}
+    \framesubtitle{Updating big values}
+
+\begin{minipage}{50em}
+%%[[wrap=code
+  data BigData
+    = BigCon  { ... many fields ...
+              , field :: Int
+              }
+%%]
+ ~\\
+%%[[wrap=code
+  let  state1 = BigCon { ... }
+       state2 = state1 { field = 1 + field state1 }
+  in   state2
+%%]
+\end{minipage}
+~\\
+    \begin{itemize}
+    \item Only a small part of the big value is updated
+    \item A copy of the entire value is made
+    \end{itemize}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{A real problem?}
+
+    \begin{itemize}
+    \item Consider programs written in an imperative language
+    \item Consider arrays
+    \item Consider hashtables
+    \end{itemize}
+  }
+  
+  \frame<presentation>
+  {
+    \frametitle{Solutions?}
+    
+    \begin{itemize}
+    \item Monads (ST monad, IO monad)
+    \item Special data-type implementations (versioned arrays)
+    \item Or ... \emph{uniqueness typing}
+    \end{itemize}
+  }
+
+\section{What is uniqueness typing?}
+
+  \frame<presentation>
+  {
+    \frametitle{Definition of unique and shared}
+
+    \begin{itemize}
+    \item A \emph{unique} value is used at most once, otherwise it is called \emph{shared}
+    \item When a unique value is used by some operation, the value is:
+          \begin{itemize}
+          \item Not used anywhere else in the program
+          \item Not used anymore in the program
+          \item Thus becomes garbage
+          \item Does not need to be atomic
+          \end{itemize}
+    \item Unique values can be updated in-place
+    \end{itemize}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{Uniqueness typing is...}
+
+    Uniqueness typing:
+    \begin{itemize}
+    \item Store uniqueness as property of a type
+    \item A value is unique if its type is unique
+    \item Use type checking to check uniqueness types
+    \item Infer uniqueness types
+    \end{itemize}
+    ~\\
+    Why encode uniqueness property on types instead of values?
+    \begin{itemize}
+    \item Short answer: it is easier (values can be nested, infinite, etc)
+    \item Long answer: see my master's thesis
+    \end{itemize}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{Example types}
+
+    \begin{minipage}[b]{50em}
+%%[[wrap=code
+    u  ::  (Sup(Int)(0))  -- u is an integer that is not used
+    v  ::  (Sup(Int)(1))  -- v is an unique integer
+    w  ::  (Sup(Int)(*))  -- w is a shared integer
+%%]
+    \end{minipage}
+    ~\
+    \begin{minipage}[b]{50em}
+%%[[wrap=code
+      t  ::  (Sup((,))(*)) (Sup(Int)(1)) (Sup(Int)(*))   -- shared tupple
+      f  ::  (Sup((->))(1)) (Sup(Int)(1)) (Sup(Int)(*))  -- unique function
+%%]
+    \end{minipage}
+    ~\
+    In general: the uniqueness annotation (|0|/|1|/|*|) on a type constructor specifies the
+    uniqueness properties of the values that belong to the type constructor.
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{Approach}
+
+    Given the program:
+
+    \begin{minipage}[b]{50em}
+%%[[wrap=code
+    (\x y -> y + x + x) 3 4
+%%]
+    \end{minipage}
+
+    Infer the following types:
+
+    \begin{minipage}[b]{50em}
+%%[[wrap=code
+    (\x y -> y + x + x) (3 :: (Sup(Int)(*))) (4 :: (Sup(Int)(1)))
+      :: (Sup(Int)(1))
+%%]
+    \end{minipage}
+
+    ... how?
+  }
+
+
+  \frame<presentation>
+  {
+    \frametitle{Our approach}
+
+    Two phases:
+    \begin{itemize}
+    \item Reference counting
+    \item Uniqueness propagation
+    \end{itemize}
+
+    Distinguishing features:
+    \begin{itemize}
+    \item Individual uniqueness types
+    \item Higher-ranked uniqueness types
+    \item Constraint based
+    \item Constraint solving with graphs
+    \item Graph reduction to limit size of graphs
+    \end{itemize}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{How to implement?}
+
+    \begin{itemize}
+    \item Values are complicated: can be infinitely large, can be passed as argument to a function that is embedded into another value.
+    \item Escape to the less-complicated type level: types specify in a finite way how a value is structured
+    \item Annotations on types specify properties of parts of a value
+    \item Approximation!
+    \end{itemize}
+
+    \begin{minipage}[b]{40em}
+%%[[wrap=code
+  Cons 3 (Cons 4 Nil) :: (Sup(List)(*)) (Sup(Int)(1))
+%%]
+    \end{minipage}
+  }
+
+
+\section{Constraint-based inference}
+
+  \frame<presentation>
+  {
+  }
+
+
+  \frame<presentation>
+  {
+  }
+
+
+\section{Conclusions}
+
+  \frame<presentation>
+  {
+    \frametitle{Conclusion}
+  }
 
 %%]

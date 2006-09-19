@@ -3,7 +3,7 @@
 \chapter{Recursion}
 \label{chapt.Recursion}
 
-In Chapter~\ref{chapt.Polyvariant}, we discussed inferencing of cardinalities for a non-recursive
+In Chapter~\ref{chapt.Polyvariant}, we discussed the inferencing of cardinalities for a non-recursive
 |let|. We go one step further in this chapter, in order to support a (mutual) recursive Let. It is important
 to fully understand Chapter~\ref{chapt.Polyvariant} before proceeding with this chapter, especially
 the part about the inferencer (Section~\ref{sect.TheInferencer} and Section~\ref{sect.Instantiation}), since we set up
@@ -22,11 +22,11 @@ in   fac 3
 %%]
 
   So, what is the challenge of the recursion? The problem is that when gathering the constraint set of (the binding group of) |(Sub(fac)(a))|,
-  we encounter the variable |(Sub(fac)(b))|, which results into an |Inst| constraint that refers to |(Sub(fac)(a))|. So, the constraint
+  we encounter the variable |(Sub(fac)(b))|, which results in an |Inst| constraint that refers to |(Sub(fac)(a))|. So, the constraint
   graph of |(Sub(fac)(a)| is needed to construct the constraint graph of |(Sub(fac)(a)|, which is a problem, since it is not yet there.
 
   This is a familiar problem. This problem already occurs with a conventional type system. Hindley-Milner type inference solves this
-  problem by treating an identifier, that occurs recursively, monomorphically. That is also a solution solution to our problem. By
+  problem by treating an identifier, that occurs recursively, monomorphically. That is also a solution to our problem. By
   giving up a polyvariant typing for an identifier occurring in an expression of its own binding group, we do not need the constraint
   graph when dealing with the corresponding |Inst| constraint (Section~\ref{Sect.MonovariantRecursion}). A downside is that we loose some
   accuracy this way~\cite{DBLP:conf/sas/DussartHM95}. In a conventional type system, this problem can
@@ -42,23 +42,21 @@ in   fac 3
 \section{Monovariant recursion}
 \label{Sect.MonovariantRecursion}
 
-  A solution is to forget instantiation for recursive identifiers, and choose instead of a use-site annotated type, the definition-site
-  annotated type. For example, for the |fac| function:
+  A solution is to forget instantiation for recursive identifiers, and choose the definition-site annotated of an identifier
+  as use-site annotated type instead of a freshly annotated type. For example, for the |fac| function:
 
 %%[[wrap=code
 let  fac :: (Annot(Int)(2)) (Annot(->)(1)) (Annot(Int)(3)) = \n -> n * (fac :: (Annot(Int)(2)) (Annot(->)(1)) (Annot(Int)(3))) (n - 1)
  in  fac :: (Annot(Int)(5)) (Annot(->)(4)) (Annot(Int)(6))
 %%]
 
-  In the type system, this can be accomplished by equating each pair in an |Inst| constraint that refers to the same binding
-  group as it is defined in. An |Inst| constraint contains a pairs |(a, b)|, with |a| as the definition-site uniqueness annotation,
-  and |b| the use-site uniqueness annotation. By generating the constraint |a =>= b| and |b =>= a| for each pair |(a, b)|, the two
-  cardinality variables are effectively forced to have the same values.
-
-  There is a slight complication in the presence of nested binding groups. An |Inst| constraint is in binding group |n| when it
-  generated from any expression in the right-hand side of a binding of binding group |n|. In the presence of nested binding groups,
-  an |Inst| constraint can be in multiple binding groups. The binding group in which it is created, and all the parents of that
-  binding group.
+  In our implementation, we always use fresh identifiers for the use-site annotated type. An |Inst| constraint contains a
+  mapping from annotations on the definition-site type to the (fresh) annotations on the use-site type. Then it is just a matter
+  of equating the annotations on the definition-site type to those on each use-site type. So, with this approach we interpret
+  |Inst| constraints belonging to recursive identifiers differently, and instead of inserting the constraint set of the
+  corresponding binding group, we just insert the constraints |a =>= b| and |b =>= a| for each pair |(a, b)| mentioned in the
+  |Inst| constraint. An |Inst| constraint corresponds to a recursive identifier if it occurs in a right-hand side expression
+  of a binding-group.
 
   To support recursion, only a minor change of the inferencer is required. But, in this approach, individual recursive identifiers
   are treated in exactly the same way. This gives suboptimal typings for some, perhaps contrived, programs~\cite{jones04practical}, such as:
@@ -70,8 +68,11 @@ in   f 1
 %%]
 
   What happens here is that the |x| is discovered to be shared. It is passed as argument to |f|, which makes the parameter of |f|
-  shared. The |n| is also a argument of |f|, and since the parameter of |f| is considered to be shared, it makes |n| shared as
-  well, although |n| can be unique as well.
+  shared. The |n| is also an argument of |f|, and since the parameter of |f| is considered to be shared, it makes |n| shared as
+  well, although |n| can be unique.
+
+  This approach is the easiest way to deal with recursion and corresponds closely to how recursion is treated with conventional
+  type inference.
 
 
 \section{Helping the inferencer with manual constraint sets}
@@ -79,7 +80,7 @@ in   f 1
 
   In Section~\ref{Sect.MonovariantRecursion}, we by-passed the problem of needing a constraint graph while building it, by removing the
   requirement on a constraint graph. This approach has limitations, although it is questionable if these limitations
-  are ever a problem in practice. However, we can consider what the impact on the type system is in circumventing this limitation.
+  are ever a problem in practice. However, we can consider what the impact on the type system is when circumventing this limitation.
 
   Instead of dropping the requirement on constraint graph |A| while building |A|, we can change the requirement on |A| to some
   other graph |B|, which is at least as restrictive as |A|. This means that any valid substitution of |B| is also
@@ -117,7 +118,7 @@ in   f 1
 
   There is a problem with |S|. Binding groups are not independent. Sacred cardinality variables occur all over the place, and
   create links between binding groups. Unfortunately, the programmer cannot specify the effects on the sacred cardinality variables, since
-  they do not have a name where the programmer can refer to. Conventional type signatures have this problem as well, as the following example
+  they do not have a name which the programmer can refer to. Conventional type signatures have this problem as well, as the following example
   shows:
 
 %%[[wrap=code
@@ -128,14 +129,19 @@ let f :: forall alpha . alpha -> alpha
 %%]
 
   In Haskell, we are unable to specify the type for |y| in this case. A solution is to give a name to the skolemnised
-  version of type variable |alpha|, such that this name can be used in the signature of |y|. Unfortunately, the dependencies
-  in our case a much higher, requiring naming all the sacred variables that are affected by the expression for which we want to
-  specify the constraint set.
+  version of type variable |alpha|, such that this name can be used in the signature of |y|. Unfortunately, this requires
+  naming all sacred variables that are affected by the expression for which we want to specify the constraint set. I.e. this
+  requires that we name the annotations on the type of each toplevel function that is used by the expression. That is infeasible,
+  just because of the amount of annotations.
 
-  On the other hand, if we are talking about a signature for a top-level function, then virtually all cardinality
-  variables will be annotations on the function spine of toplevel functions. By enforcing which constraints on the toplevel
-  bindings that the function spine of a toplevel function is shared, we can eliminate the need to specify the dependencies
-  on sacred cardinality variables. This is not a very bad assumption to make, since from a design perspective, a function should only be
+  On the other hand, if we assume that we only specify replacement signatures for top-level functions, then we only have dependencies
+  on annotations of other toplevel definitions. These annotations are on the spine of toplevel functions or values. Since the
+  idea is that toplevel functions and values are shared, we can suffice by automatically enforcing a |(Card(*)(*))| cardinality
+  value for these annotations (by means of specifying some additional constraints during the constraint gathering process). This way,
+  we assume that all toplevel values are fully shared and toplevel functions have a shared spine. As a result, it is impossible for any
+  other definition to influence these annotations (they already have the highest value in the lattice). So, the programmer does not need
+  to mention these annotations in the constraint set, which allows us to bypass the problem at the loss of precision for toplevel
+  functions. This is not a very bad assumption to make, since from a design perspective, a function should only be
   toplevel if it is intended to be shared by multiple functions or modules. With this approach, constraint sets specified by the
   programmer are feasible.
 
@@ -159,7 +165,7 @@ let f :: forall alpha . alpha -> alpha
   
   One way to prove that the constraint set is valid, is to enumerate each combination of upper/lower bound values and check the implication |S => S'|,
   but this is not doable in practice. For propositional logic, there are many satisfiability checkers that can help us out here, but our
-  final constraint set (which only has |=>=| and |\*/| constraints) is an expression in a three-valued logic for the upper bound. We can
+  final constraint set (which only has coercion and aggregation constraints) is an expression in a three-valued logic for the upper bound. We can
   rewrite the upper bounds to propositional logic, but that results into many propositions.
     
   For each cardinality variable |delta|, we require two propositional symbols for the upper bound, |P| and |Q|:
@@ -192,12 +198,12 @@ let f :: forall alpha . alpha -> alpha
   The propositional variant of the constraint is the disjunction of the above
   propositions.
 
-  Instead of translating an arbitrary |\*/| constraint directly, we split it first up
-  into multiple, but smaller, |\*/| constraints. Since the |\*/| is commutative, and
+  Instead of translating an arbitrary aggregation constraint directly, we split it first up
+  into multiple, but smaller, aggregation constraints. Since the |\*/| is commutative, and
   the |<=| transitive, we can introduce some fresh cardinality variables, and shape
-  the |\*/| constraints into a tree form (see Section~\ref{sect.ite}).
+  the aggregation constraints into a tree form (see Section~\ref{sect.ite}).
 
-  Each |\*/| constraint has at most three cardinality variables this way. The translation
+  Each aggregation constraint has at most three cardinality variables this way. The translation
   scheme is then similar to the scheme for |=>=|, only three times as big.
 
   After converting the entire constraint set into propositions, tools from propositional
@@ -229,53 +235,69 @@ let f :: forall alpha . alpha -> alpha
   The graph reduction ensures convergence: hyper edges cannot grow indefinitely, and if one coercion is in the constraint set, then it will
   continue to be in the constraint set the next iteration, which guarantees that the number of coercions cannot grow indefinitely.
 
-\begin{figure}
-\caption{Fixpoint iterating inferencer}
-\label{fig.graphfix}
+\begin{CodeFigure}{}{Fixpoint iterating inferencer}{fig.graphfix}
 
 %%[[wrap=code
 inferSubst constrSets
-  = let  deps     = [(i, j, c) | (i, cs) <- constrSets, c@(Inst j _) <- insts cs]
-         order    = topsort deps
-         initial  = [(i, csToGraph cs) | (i, cs) <- constrSets]
-         graphs   = iterate (\current -> foldr instantiate current order) initial
-         fixpnt   = snd . last . takeWhile (\(g,g') -> g /= g') . zip graphs $ tail graphs
-    in  infer (outermost fixpnt)
+  =  let  initial  =  [((outermostBndgId, []), emptygraph)]
+          graphs   =  iterate (\current -> foldr iteration current
+                   .  keys
+                   $  topsortByInstDeps current) initial
+          fixpnt   =  snd . last . takeWhile (\(g,g') -> g /= g')
+                   .  zip graphs
+                   $  tail graphs
+     in   infer (outermost fixpnt)
   where
-    instantiate (to, from, (Inst _ tups)) graphs
-      =  let  src   = fresh (sacred to) tups (to `lookup` graphs)
-              dst   = (from `lookup` graphs) `union` src
-              dst'  = reduce dst
-         in  (to, dst') `insert` graphs
+    iteration key grs
+      =  update grs key (construct key grs)
+  
+    construct key@(bndgId, idMap) grs
+      =  let  cs   =  bndgId `lookup` constrSets
+              cs'  =  rename idMap cs
+              gr   =  lookupWithDefault (csToGraph cs') key grs
+              gr'  =  foldr (instantiate grs bndgId) gr (insts cs')
+         in   reduce gr' `union` gr  -- ensure monotonicity
+
+    instantiate grs to (Inst from idMap tups) gr
+      =  let  key   =  (from, idMap)
+              src   =  lookupWithDefault emptygraph key grs
+              src'  =  fresh (sacred to) tups src
+              dst   =  src `union` gr
+         in   dst
 %%]
-\end{figure}
+\end{CodeFigure}
 
+  This approach is less obvious than it appears. The constraint reduction is essential: without it, the constraint graph can
+  grow forever. In fact, without reduction, the hyper edges increase in size with each iteration. But, graph reduction does
+  not reduce to a canonical form. A result of this is that monotonicity is not guaranteed. We solve this by taking the union
+  of the newly computed (and reduced) graph for the binding group (|gr'|) with the previous (reduced) graph of the binding group (|gr|). This
+  graph has two important properties. It can only stay the same or grow between iterations (monotonically increasing). It
+  has the same vertices as both |gr| and |gr'| (due to reduction). Only the number of edges can grow between iterations, and
+  the number of edges is bounded (depending on the number of vertices). These two properties ensure that a fixpoint is reached.
 
-\subsection{Consequences}
-
-  Implementation of this procedure in the inferencer, has only a slight impact. It does not influence the other operations of
+  Implementation of this procedure in the inferencer has only a slight impact. It does not influence the other operations of
   the inferencer much, and given functions that reduce a graph, and functions for dealing with the |Inst| constraint, implementing
   functionality as discussed in Chapter~\ref{chapt.Polyvariant}, this procedure is not very difficult to implement.
 
-  But there is a downside: even with the reduction strategies, the graphs for even toy programs programs are big. Fixpoint
+  But there is a downside: even with the reduction strategies, the graphs for even toy programs are big. Fixpoint
   iterations on these graphs require at least the procedure to be performed twice, and depending on the nesting level and
   amount of recursion, several more times. For most programs, this fixpoint iteration process will be overkill. The question
   is whether this approach will be worth it.
 
-  We would like to give this choice to the programmer. This choice is possible due to the |Inst| constraint. The programmer
-  specifies for which binding groups are fixpoint strategy is required. The inferencer uses the implementation of this section
+  We give this choice to the programmer. This choice is possible due to the |Inst| constraint. The programmer
+  specifies for which binding groups a fixpoint strategy is required. The inferencer uses the implementation of this section
   as main inference strategy. All binding groups are put in the worklist in the earlier descried topologically sorted order
   (Section~\ref{sect.TheInferencer}). When a recursive |Inst| constraint is encountered while processing a binding-group, then depending on
-  the choice of the programmer, either the quick equation approach of Section~\ref{Sect.MonovariantRecursion} is taken, or the iterative approach
+  the choice of the programmer, either the quick equational approach of Section~\ref{Sect.MonovariantRecursion} is taken, or the iterative approach
   (Section~\ref{sect.FullRecursion}) by reinserting this binding group and the binding groups dependent on it, back in the work list. We can thus have
   best of both worlds, without a performance penalty if the fixpoint approach is never selected.
   
-  However, if we support the fixpoint approach, allowing full user-defined constraint sets (Section~\ref{sect.Helping}), becomes
+  However, if we support the fixpoint approach, we pay a price: allowing full user-defined constraint sets (Section~\ref{sect.Helping}) becomes
   a problem. We can no longer verify the constraint set given by the programmer beforehand, since the full constraint set is
   only known at the use-site of an identifier. We can check that the constraint set is correct for each use of an identifier,
   just by checking if the substitution for the use-site is also a valid substitution for the constraints obtained by augmenting
-  the programmer-supplied constraint set with the gathered constraint set, but that has many subtleties, due to dependencies
-  on other binding-groups, differences between use-site type and definition-site type, and perhaps most important, the problem
+  the programmer-supplied constraint set with the gathered constraint set. Unfortunately, there are many subtleties, due to dependencies
+  on other binding-groups, and differences between use-site type and definition-site type. Perhaps most important, the problem
   is detected at a very late time, with probably no reasonable way to relate the error back to a location in the constraint
   set specified by the programmer. Letting the programmer specify additional constraints, is not a problem, however (Section~\ref{sect.Signatures}).
 
@@ -283,12 +305,12 @@ inferSubst constrSets
 \section{Conclusion}
 
   The |Inst| constraint plays an important role in dealing with recursion. At least two different ways of dealing with this
-  constraint are possibly. One way is fast, but less accurate. One way is accurate, but slow. The constraint creates an
-  abstraction barrier between the two ways, allowing both to exist at the same time. In practice, the fast approach
+  constraint are possible. One way is fast, but less accurate. One way is accurate, but slow. The constraint creates an
+  abstraction barrier between the two ways, allowing both to exist side by side. In practice, the fast approach
   is virtually always sufficient, but in case the programmer really needs the additional power, it is possible to turn on
   the slow approach for specific parts of the program.
 
-  This chapter also showed the need for constraint graphs and the corresponding reductions of Chapter~\ref{chapt.Polymorphic}. Without the
+  This chapter also showed the need for constraint graphs and the corresponding reductions of Chapter~\ref{chapt.Polyvariant}. Without the
   reductions, the fixpoint iteration process is not possible for all but the tiniest programs. That said, this almost concludes
   the story about constraint graphs. Only Chapter~\ref{chapt.Polymorphic} about polymorphism will mention constraint graphs again,
   since instantiation to a type with more structure requires another form of duplication of graphs.

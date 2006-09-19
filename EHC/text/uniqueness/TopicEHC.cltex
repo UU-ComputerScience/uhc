@@ -3,7 +3,7 @@
 \chapter{Prerequisites}
 
   We use the Essential Haskell Compiler~\cite{dijkstra04ehc-web} as a starting point in order to prototype the uniqueness type system.
-  In this chapter we explain why we choose this compiler and to bring you up-to-speed with several language
+  In this chapter we explain why we chose this compiler and to bring you up-to-speed with several language
   features of the EH language. Design decisions of the compiler and the language features to support, influenced
   the implementation of the prototype. Although not essential, some background knowledge helps to understand some
   decisions taken further on in this thesis. The eager reader can skip this chapter and
@@ -39,7 +39,7 @@
   \item It allows the implementor to pick a language that has enough features, but omits features that are
         not required. For example, we do not deal with code generation (EH 8), nor want to touch the intimacies
         of overloading in EH (EH 9). On the other hand, we want polymorphic types (EH 4) and algebraic data types
-        (EH 5). We also need kind information (EH 7) (Chapter~\ref{Chapt.Polarity}). So, our base language is EH 7.
+        (EH 5). We also need kind information (EH 7) (Chapter~\ref{chapt.Polarity}). So, our base language is EH 7.
         We thus have the features we need, but not too many features.
   \item Infrastructure, including type inference, parser, pretty-printing and facilities for debugging.
   \item Compatibility with the UUAG system~\cite{dijkstra04thag-part1}. The UUAG system allows us to encode the

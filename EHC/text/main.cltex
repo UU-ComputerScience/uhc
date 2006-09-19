@@ -43,7 +43,7 @@
 %%]
 
 %%[20
-\documentclass[sffont=false,a4paper]{st-thesis}
+\documentclass[sffont=false,color=false,a4paper]{st-thesis}
 %%]
 
 %%[7
@@ -651,6 +651,23 @@
 %endif
 %%]
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Environments
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{collorary}[theorem]{Collorary}
+
+\newenvironment{proof}
+    {\textbf{Proof}}
+    {\samepage \vspace{0.1 cm}
+     \ensuremath{\blacksquare}}
+%%]
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Title
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -809,6 +826,12 @@ WWW home page:
 }
 %%]
 
+%%[21
+\title{Uniqueness Typing}
+\author{Arie Middelkoop}
+\date{Thu, 28 September 2006}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Index
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -884,10 +907,10 @@ WWW home page:
 \frontmatter
 %endif
 
-%%[20
-\frontmatter
 %%]
 
+%%[20
+\frontmatter
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -5,11 +5,11 @@
 
 Jan is a student with, aside from programming, only one passion in life: a daily shot of coffee at school in the morning. But, Jan is lazy
 and does not want to bring his own coffee cup with him. Each time he buys a plastic cup and throws it away afterwards, since he
-does not need the cup after a single use anymore. One day Jan thinks about the cost of buying all these plastic cups and the cost for
+does not need the cup anymore after a single use. One day Jan thinks about the cost of buying all these plastic cups and the cost for
 the government to collect the waste. Jan suddenly gets a brilliant idea: recycling. If he puts his cup in a dish washing machine 
 (normally reserved for teachers) after using the coffee and picks it up the following day, then he does not need to buy plastic cups all
 the time. Neither does he need to throw them away. This gives him the best of both worlds. He can both be lazy and reduce the cost of
-acquiring and disposing the cup.
+acquiring and disposing of the cup.
 
 Taking notice of this life lesson, consider lazy purely functional programming languages. A program written in
 such a language produces much more garbage than a program written in an imperative language. Referential
@@ -39,7 +39,7 @@ above expression a few steps, we get the expression:
 %%]
 
 Further beta reduction results in a tuple being constructed, with the first component pointing to an
-array, of which the first component has the value five. This tuple is differs with the tuple above,
+array, of which the first component has the value five. This tuple differs from the tuple above,
 so the two evaluations of the expressions give different results. Referential transparency
 does not hold! The problem is that we changed the value where |a| pointed to, in order to obtain
 the value of |a'|. In general, referential transparency and destructive updates cannot be combined.
@@ -82,7 +82,7 @@ arr \\ changes
        return arr
 %%]
 
-In case the array is used at most once, then the changed implementation does not copy the array and reused the
+In case the array is used at most once, then the changed implementation does not copy the array and reuses the
 old value. The changed implementation of the |\\| operator does not have the overhead of copying and produces
 less garbage by reusing the old value of the array.
 
@@ -115,7 +115,7 @@ of values that are used at most once, is the focus of this master's thesis.
   ranges over all elements of the list, and each element gets the same property, although given our intuition of the
   definition of |fibs|, lower numbers are used much more than higher numbers, since the lower numbers are used to obtain
   a higher number. The approximation makes it easier to deal with usage properties, hence usage analyses are defined in
-  terms of type systems, at the cost of accuracy (see Figure~\ref{fig.ListRep} for an example why types cannot cannot
+  terms of type systems, at the cost of accuracy (see Figure~\ref{fig.ListRep} for an example why types cannot
   differentiate between individual bits of memory). In practice this is not much of a problem: if a programmer uses a list,
   then the elements of this list are typically used in a similar way, otherwise the programmer would have used two lists or
   another data type.
@@ -125,11 +125,12 @@ of values that are used at most once, is the focus of this master's thesis.
   like Haskell. It is not always possible to know an exact number. Again, an approximation is needed.
   A usage property of zero of a value is interesting for a compiler, since that means that a compiler does not need to
   generate code for the construction of the value. Likewise, knowing that a value is used once is useful as we mentioned in the beginning of
-  this chapter. But knowing that a value is used twice, thrice or maybe a zillion times is not interesting for us,
-  since that just means that optimizations are not possible on such a value. So, a typical approximation is
-  to use |0|, respectively |1|, if we are certain that some value is not used, respectively only used once. If
-  the number of uses is more than once or cannot be determined, the symbol |*| is used to represent an
-  arbitrary number of usages.
+  this chapter. But knowing that a value is used twice, thrice or maybe a zillion times is not that interesting for us,
+  since there at not many optimisations possible for such a value. It can be used to help an optimising compiler in
+  making a trade-off between code size and execution speed, or to identify often used values for caching purposes. However, more detail
+  has a cost at runtime (the number of iterations of the fixpoint iteration process of Section~\ref{sect.TheInferencer} depends on
+  the amount of detail), therefore a typical approximation is to distinguish |0| for not used, |1| for at most once, and |*| for
+  arbitrary usage.
 
   This approximation is clearly visible in linear typing~\cite{wadler90linear} (which has roots in linear logic~\cite{girard95linear}).
   In linear typing, values of a non-linear type can be used an arbitrary number of times, but for a type to be linear, the
@@ -197,7 +198,7 @@ of values that are used at most once, is the focus of this master's thesis.
   same execution path or always in mutual exclusive execution paths, the marks are combined to a uniqueness type
   for identifiers. These types are then propagated according to the type system of Clean. In our approach, we do not
   have a separate procedure for marking, but generate an aggregation constraint of which the interpretation provides
-  similar functionality. Our approach does not take evaluation order in approach, as this is largely implicit in
+  similar functionality. Our approach does not take evaluation order in account, as this is largely implicit in
   Haskell. Our marking-like approach is defined in a more conventional notation of a typed abstract syntax tree of
   the program (Chapter~\ref{chapt.Parallel}) instead of term graphs.
 
@@ -219,9 +220,9 @@ of values that are used at most once, is the focus of this master's thesis.
 
   In fact, the above restriction is rather unfortunate in the presence of partial application, as the result of
   passing a unique parameter must be unique as well. The order in which parameters are passed to a function matters
-  in in the presence of the above restriction, because unique parameters are best passed as late as possible. At the
+  in the presence of the above restriction, because unique parameters are best passed as late as possible. At the
   moment a unique parameter is passed to a function, the function itself becomes unique. This is not a severe restriction
-  in Clean because parameters to a function can be passed all at once, such that the compiler can shuffle the order
+  in Clean because parameters to a function can be passed all at once (although currying is supported), such that the compiler can shuffle the order
   in which the parameters are passed. This is not the case in Haskell, where we curry one argument at a time.
 
   Besides for uniqueness, our approach can be used to infer strictness properties~\cite{wadler87projections} as well. Uniqueness and strictness
@@ -241,7 +242,7 @@ of values that are used at most once, is the focus of this master's thesis.
 \section{Organisation of this thesis}
 
   This thesis is organised as follows. We start with our choice for EHC as starting point for our prototype, followed by
-  several chapters that gradually explains the our uniqueness-type system. We introduce language features such as recursion and
+  several chapters that gradually explain our uniqueness-type system. We introduce language features such as recursion and
   algebraic data types chapter by chapter. The chosen
   order allows us to discuss features in isolation, and to let earlier chapters pave the way for subsequent chapters. The following
   table lists the chapters and their main contents:
@@ -265,11 +266,14 @@ of values that are used at most once, is the focus of this master's thesis.
                                  to deal with an |if ... then ... else| expression, which presents an opportunity to write about parallel execution paths.
                                  It also allows us to deal with this particular aspect of |case| expressions (Chapter~\ref{chapt.DataTypes}) in isolation.\\
   Chapter~\ref{chapt.DataTypes} & In this chapter, we add algebraic data types to the language. We do not need many new concepts in order to support
-                               algebraic data types, but some complications arise on the level. A thorough understanding of Chapter~\ref{chapt.NoBindings} and Chapter~\ref{chapt.Polyvariant} is required.\\
+                               algebraic data types, but some complications arise because we need some information about type constructors. A thorough understanding of Chapter~\ref{chapt.NoBindings} and Chapter~\ref{chapt.Polyvariant} is required.\\
   Chapter~\ref{chapt.Polarity} & We show how we can use the analysis on the type level (on kinds) for analyses on algebraic data types. As an
                                example, we show how we can use it to determine polarity (variance) for data types of Haskell.\\
   Chapter~\ref{chapt.Overloading} & This chapter covers overloading. Overloading presents some difficulties for the uniqueness-type
                                     system. We present several ways of how to deal with overloading and show what the consequences are.\\
+  Chapter~\ref{chapt.BeyondEH} & The remainder of this thesis deals with some practical issues, such as separate compilation what is
+                                 covered in this chapter. It turns out that it is not difficult for the type system to deal with
+                                 separate complication, but that we run into problems with code generation.\\
   Chapter~\ref{chap.InspectingResults} & There comes a time when the programmer is not satisfied with the results of the
                                          uniqueness typing, or wants to make sure that some result is enforced. Our type
                                          system is located in the front-end of the compiler, allowing interaction between

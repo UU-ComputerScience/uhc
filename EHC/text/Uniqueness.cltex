@@ -6,10 +6,13 @@ Improved Uniqueness Typing for Haskell
   Arie Middelkoop\\
   amiddelk@@cs.uu.nl\\
   ~\\
-  Master Thesis\\
+  Master's Thesis\\
+  INF/SCR-06-04\\
   ~\\
   ~\\
   ~\\
+  Daily Supervisor: dr. J. Hage\\
+  Supervisor: prof.dr. S.D. Swierstra\\
   ~\\
   ~\\
   ~\\
@@ -62,6 +65,10 @@ independently from the spine and discuss the consequences.
 %@TopicPerformance.main
 %@TopicRelatedWork.main
 %%@TopicConclusion.main
+
+\appendix
+
+%%@TopicImplementation.main
 
 \bibliographystyle{abbrv}
 {\sloppy\raggedright\small

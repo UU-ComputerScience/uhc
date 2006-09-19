@@ -5,7 +5,7 @@
 
   In the languages covered up to this chapter, there is no syntactic way to write that an expression is
   conditionally evaluated. However, conditional evaluation is already possible, for example, by using
-  Church booleans~\ref{typing:types-prog-lang:pierce}:
+  Church booleans~\cite{typing:types-prog-lang:pierce}:
 
 %%[[wrap=code
   true     = \t f -> t
@@ -16,9 +16,9 @@
 %%]
 
   Some occurrences of an identifier are sequential. If one occurrence is referenced on an execution path,
-  then the other is referenced as well. An example of this is the expression |\x -> x + x|. Both occurrences
+  then the other is referenced as well if they are sequential. An example of this is the expression |\x -> x + x|. Both occurrences
   of |x| are always on the same execution path. This is not the case for the expression |\x -> ite true x x|.
-  In this expression, the two occurrences are mutual exclusive or parallel. They never occur simultaneously
+  In this expression, the two occurrences are mutually exclusive or parallel. They never occur simultaneously
   on an execution path. And sometimes, no guarantees can be made: |\g x -> ite g x 1 + x|. In this case, it
   depends entirely on |g| if  the two occurrences of |x| will be always be on the same execution path, or
   not.
@@ -30,7 +30,7 @@
 
   Analyzing function applications to determine whether the operators are guaranteed to be sequential, or
   guaranteed parallel, is tricky. We discuss this subject in Section~\ref{sect.SeqParTricky}. Instead of
-  analyzing the function applications in the hard way, we take a look at syntactic constructs
+  analyzing the function applications the hard way, we take a look at syntactic constructs
   that guarantee that some occurrences of an identifier are sequential or parallel. For example, in practice,
   most splits in an execution path are explicitly indicated by alternatives for a function definition,
   branches of a |case| expression, or the |then| and |else| branch of an |if..then..else| expression. Since
@@ -44,9 +44,8 @@
   syntactically that occurrences on a |then| branch are parallel to occurrences on an |else| branch. It
   also guarantees that an occurrence of the guard is sequential with occurrences in the branches. Unfortunately,
   the bad news that we (in general) cannot determine the lower bound of the branches. If we know that the
-  entire expression is evaluated at least once, we know that one of the branches is at least once
-  evaluated, but we do not know which one. So, we are conservative and assume that the lower bound of the
-  branches is |0|.
+  entire expression is evaluated at least once, we know that one of the branches is evaluated at least once,
+  but we do not know which one. So, we are conservative and assume that the lower bound of the branches is |0|.
 
   The following type rule specifies what the analysis does when it encounters an |if..then..else| nonterminal:
 
@@ -54,7 +53,7 @@
   \rulerCmdUse{RulerUniquenessExamples.UF.expr.base.e.ite}
   \end{center}
 
-  The guard is as often evaluated as often as the expression is evaluated, which we specify by a soft coercion between
+  The guard is evaluated as often as the expression is evaluated, which we specify by a soft coercion between
   the outermost annotation of the result type of the expression and the annotation on the |Bool| type of the guard.
   The least upper bound of the |then| and |else| branch is at most the upper bound of the entire expression. The lower
   bound of the |then| and |else| branch depends on which branch is taken. We do not know this in general, so we set
@@ -99,8 +98,7 @@ satisfied (a, b, c) (Sub(=>=)(q)) (d, e, f)
   anymore, but a tree, where the internal nodes are aggregations by means of one of the three
   aggregation operators. The annotated types of the occurrences form the leafs of the tree. The representation
   in the graph is still a hyper edge, where the leafs are cardinality variables of the
-  corresponding types in the constraint, and the computation is attached as label of the
-  hyper edge.
+  corresponding types in the constraint, and the computation is attached as label to the hyper edge.
 
   After conversion to graph form and during the inference of a substitution, the operators form
   a computation on lower and upper bound values. The operators are defined as follows:
@@ -128,17 +126,17 @@ satisfied (a, b, c) (Sub(=>=)(q)) (d, e, f)
   two computations with the |\*/| operator, since it depends on the function whether or not they are
   sequential or parallel, and our approach does not have this knowledge. For an |if..then..else|
   expression, the computations of the two branches are parallel, and are combined by the |\-/| operator. The |\+/|
-  operator is used between the guard and the branches. As it is guaranteed that used occurrences of the guard are
-  on the same execution path as used occurrences in the branches. There are some additional rules in case there
+  operator is used between the guard and the branches, since it is guaranteed that identifier occurrences of the guard are
+  on the same execution path as identifier occurrences in the branches. There are some additional rules in case there
   is no occurrence in a subexpression. We omit the case for the |let| in the above type rules, but
   assume that occurrences in expressions of a |let| are combined by means of the |\*/| operator.
 
   \rulerCmdUse{RulerUniquenessExamples.B.comp.base}
 
-  At the case for a lambda and a |let|, we generate the aggregation constraint for an identifier |x :: (Sub(utau)(def))| by
+  In the case for a lambda and a |let|, we generate the aggregation constraint for an identifier |x :: (Sub(utau)(def))| by
   taking the computation |compFormat| and turn it into the constraint |compFormat <= (Sub(utau)(def))|.
 
-  This approach allows us to improve the upper bounds of identifiers that occur parallel. The approach
+  This approach allows us to improve the upper bounds of identifiers that occur only parallel. The approach
   does not help much with the lower bound of identifiers (see next section). However, in general the
   approximation of the bounds in presence of multiple execution paths, is improved. Perhaps as important,
   is that it is a fairly easy improvement, since we know exactly from the structure of the abstract
@@ -159,7 +157,7 @@ satisfied (a, b, c) (Sub(=>=)(q)) (d, e, f)
   If we know that some |(Delta(1))| in the definition-site type of |x| is used if some |(Delta(2))| in the type of the
   expression is used, then we can add |(Delta(2))| to the aggregation of |(Delta(1))| (i.e. |(...) \*/ (Delta(2)) <= (Delta(1))|
   instead of |(...) <= (Delta(1))|). However, this can depend on functions that are passed to a function where the
-  |if..then..else| appears is, such that we cannot perform the analysis beforehand.
+  |if..then..else| appears is, so that we cannot perform the analysis beforehand.
 
   Alternatively, we can detect this situation in the constraint graph. The above description translates informally
   as follows: if there is a path from an annotation on a type of the branch to an annotation of the type
@@ -184,7 +182,7 @@ satisfied (a, b, c) (Sub(=>=)(q)) (d, e, f)
   same structure, take annotations |(Sub(delta)(1)) ... (Sub(delta)(n))| respectively from
   |(Sub(T)(1)) ... (Sub(T)(n))|, such that each |(Sub(delta)(i))| corresponds to |(Sub(delta)(r))|.
   Now, if there is a path from each |(Sub(delta)(i))| to |delta| in the constraint graph, then
-  the lower bound of |delta| is allowed to be |(Sub(delta)(r))|. If there is an hyper edge on
+  the lower bound of |delta| is allowed to be |(Sub(delta)(r))|. If there is a hyper edge on
   such a path, then all leaves of the hyper edge must be on such a path as well.
 
   We only have to check for this path once. This can be done just before graph reduction. If there
@@ -197,8 +195,8 @@ satisfied (a, b, c) (Sub(=>=)(q)) (d, e, f)
 \label{sect.SeqParTricky}
 
   There is still a deficiency in combination with function applications. Arguments to a function
-  application are most of the time sequential to each other in practice, except for
-  functions that make an exclusive choice between a parameter |a| and a parameter |b|, depending
+  application are usually sequential, except for functions that make an exclusive choice between
+  a parameter |a| and a parameter |b|, depending
   on some other condition or parameter. An example is the function |ite| given in the introduction
   of this chapter. The arguments passed to |a| and |b| are unlikely to share occurrences of
   the same identifier, because one can ask himself why one would make a choice then. So, we
@@ -244,7 +242,7 @@ satisfied (a, b, c) (Sub(=>=)(q)) (d, e, f)
   This means that the |\*/| can be replaced by the |\+/| operator if the lower bound of both arguments
   is at least |1|. Now compare the definition of |\*/| and |\+/|. The only difference is in the
   computation of the lower bound. Lower bound values are special in the sense that it is addition
-  modulo 1, which results into the following properties:
+  up to at most 1, which results into the following properties:
 
 %%[[wrap=code
   1 + 1 = 1 = 1 `max` 1
@@ -258,8 +256,8 @@ satisfied (a, b, c) (Sub(=>=)(q)) (d, e, f)
   we generalize our approach by allowing higher lower bounds, then the above property does not hold
   anymore. Then there is a difference between the |\+/| operator and the |\*/| operator for the
   lower bound. In such a situation, the property that two occurrences are sequential if they both
-  have a lower bound of at least |1|, does still hold and we can exchange the |\*/| operator by
-  the |\+/| operator to improve the approximation in this case. Although this result is not useful for
+  have a lower bound of at least |1|, does still hold and we can replace the |\*/| operator with
+  the |\+/| operator to improve the approximation in this case. Although this fact is not useful for
   our analysis, it is important enough to keep it in mind for possible generalizations of our
   approach.
 
