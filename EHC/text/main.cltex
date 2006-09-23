@@ -397,7 +397,7 @@
 
 %%[18
 %\usetheme{Darmstadt}
-\usetheme[sidebar=true, style=fancy]{uu}
+\usetheme[sidebar=true, style=fancy, showpagenr=true]{uu}
 %\usefonttheme{serif}
 \setbeamertemplate{blocks}[rounded][shadow=true]
 %\setbeamertemplate{blocks}[rounded]
@@ -828,7 +828,9 @@ WWW home page:
 
 %%[21
 \title{Uniqueness Typing}
-\author{Arie Middelkoop}
+\subtitle{Master's thesis defence}
+\author[Arie Middelkoop]{Arie Middelkoop\\Daily supervisor: dr. J. Hage\\Supervisor: prof. dr. S.D. Swierstra}
+\institute[Universiteit Utrecht]{Department of Information \& Computing Sciences\\Universiteit Utrecht\\Utrecht, The Netherlands}
 \date{Thu, 28 September 2006}
 %%]
 
@@ -1115,6 +1117,13 @@ have been submitted to POPL2006 in a slighty extended form.
 \begin{abstract}
 %%@Uniqueness.abstract
 \end{abstract}
+
+\chapter*{Acknowledgements}
+\markboth{Acknowledgements}{Acknowledgements}
+
+%%@Uniqueness.ack
+
+\clearemptydoublepage
 
 \tableofcontents
 

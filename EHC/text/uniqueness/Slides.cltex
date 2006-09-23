@@ -2,7 +2,12 @@
 
 \frame<presentation>{\titlepage}
 
-\frame<presentation>{\tableofcontents}
+\frame<presentation>
+{
+    \frametitle{Contents}
+
+    \tableofcontents
+}
 
 
 \section{Motivation}
@@ -11,7 +16,7 @@
   {
     \frametitle{The problem}
 
-    Haskell programs suck at updating values
+    Updates of values are horribly slow in pure functional languages
   }
 
   \frame<presentation>
@@ -19,16 +24,16 @@
     \frametitle{The problem}
     \framesubtitle{The cause}
 
-    \begin{minipage}[b]{20em}
-%%[[wrap=code
+\begin{block}{example with shared value}
+%%[[wrap=safecode
   let  a   = 3
        a'  = a + 1
   in   a * a'
 %%]
-    \end{minipage}
+\end{block}
     
-    ~\\  
     \begin{itemize}
+    \item Both the value of |a| and |a'| are needed for the multiplication
     \item Referential transparency
     \item Values are atomic
     \item Updates are performed on a copy
@@ -39,16 +44,15 @@
   {
     \frametitle{The Problem}
     \framesubtitle{Superfluous copying}
-    
-        \begin{minipage}[b]{20em}
-%%[[wrap=code
+
+\begin{block}{example with unique value}
+%%[[wrap=safecode
   let  a   = 3
        a'  = a + 1
   in   a'
 %%]
-    \end{minipage}
-    
-    ~\\  
+\end{block}
+
     \begin{itemize}
     \item The old value is not used anywhere else
     \item The old value is not used after the update to |a'|
@@ -62,24 +66,25 @@
     \frametitle{The Problem}
     \framesubtitle{Updating big values}
 
-\begin{minipage}{50em}
-%%[[wrap=code
+    \begin{block}{Type with a lot of fields}
+%%[[wrap=safecode
   data BigData
-    = BigCon  { ... many fields ...
-              , field :: Int
+    = BigCon  {  ... many fields ...
+              ,  field :: Int
               }
 %%]
- ~\\
-%%[[wrap=code
+    \end{block}
+    \begin{block}{Updating a single field}
+%%[[wrap=safecode
   let  state1 = BigCon { ... }
        state2 = state1 { field = 1 + field state1 }
   in   state2
 %%]
-\end{minipage}
-~\\
+    \end{block}
+
     \begin{itemize}
     \item Only a small part of the big value is updated
-    \item A copy of the entire value is made
+    \item A copy of the entire value is made (bad!)
     \end{itemize}
   }
 
@@ -90,7 +95,7 @@
     \begin{itemize}
     \item Consider programs written in an imperative language
     \item Consider arrays
-    \item Consider hashtables
+    \item Consider hash-tables
     \end{itemize}
   }
   
@@ -99,8 +104,44 @@
     \frametitle{Solutions?}
     
     \begin{itemize}
+    \item Monads (ST monad, IO monad)\\
+          ~\\
+%%[[wrap=safecode
+loop arr m n c | arr `seq` m `seq` n `seq` c `seq` False = undefined
+loop arr m n c
+  =  if n == m 
+     then  return c 
+     else  do  el <- unsafeRead arr n
+               if el
+               then  let  loop' j
+                       | j > m      =  loop arr m (n+1) (c + 1)
+                       | otherwise  =  unsafeWrite arr j False
+                                       >> loop' (j+n)
+                     in   loop' (n+n)
+               else  loop (arr :: IOUArray Int Bool) m (n+1) c
+%%]
+    \end{itemize}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{Solutions?}
+
+    \begin{itemize}
     \item Monads (ST monad, IO monad)
-    \item Special data-type implementations (versioned arrays)
+    \item Versioned data structures\\
+          ~\\
+          \includegraphics{unq-versioned-arr}
+    \end{itemize}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{Solutions?}
+    
+    \begin{itemize}
+    \item Monads (ST monad, IO monad)
+    \item Versioned data structures
     \item Or ... \emph{uniqueness typing}
     \end{itemize}
   }
@@ -126,6 +167,47 @@
 
   \frame<presentation>
   {
+    \frametitle{Idea}
+
+    \begin{enumerate}
+    \item Determine how often each expression is used
+    \item Combine the results for identifiers
+    \item Extract a proof that some value is unique
+    \item Distribute the fact that a value is unique throughout the AST
+    \end{enumerate}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{Idea}
+
+    \begin{center}
+    \includegraphics{unq-count-flow}
+    \end{center}
+  }
+  
+  \frame<presentation>
+  {
+    \frametitle{Idea}
+
+    \begin{center}
+    \includegraphics{unq-count-flow2}
+    \end{center}
+  }
+  
+  \frame<presentation>
+  {
+    \frametitle{Idea}
+
+    \begin{center}
+    \includegraphics{unq-count-flow3}
+    \end{center}
+  }
+
+%%@Slides.typeSysIntro
+
+  \frame<presentation>
+  {
     \frametitle{Uniqueness typing is...}
 
     Uniqueness typing:
@@ -147,46 +229,52 @@
   {
     \frametitle{Example types}
 
-    \begin{minipage}[b]{50em}
-%%[[wrap=code
+    \begin{block}{the annotations}
+%%[[wrap=safecode
     u  ::  (Sup(Int)(0))  -- u is an integer that is not used
     v  ::  (Sup(Int)(1))  -- v is an unique integer
     w  ::  (Sup(Int)(*))  -- w is a shared integer
 %%]
-    \end{minipage}
-    ~\
-    \begin{minipage}[b]{50em}
-%%[[wrap=code
-      t  ::  (Sup((,))(*)) (Sup(Int)(1)) (Sup(Int)(*))   -- shared tupple
+   \end{block}
+
+    \begin{block}{more complex types}
+%%[[wrap=safecode
+      t  ::  (Sup((,))(*)) (Sup(Int)(1)) (Sup(Int)(*))   -- shared tuple
       f  ::  (Sup((->))(1)) (Sup(Int)(1)) (Sup(Int)(*))  -- unique function
 %%]
-    \end{minipage}
-    ~\
-    In general: the uniqueness annotation (|0|/|1|/|*|) on a type constructor specifies the
-    uniqueness properties of the values that belong to the type constructor.
+    \end{block}
+
+    \begin{itemize}
+    \item Annotations |0|, |1|, and |*| (sets, |<=|)
+    \item Annotations on all type constructors
+    \item Algebraic Data Types: type constructor can have many annotations
+    \end{itemize}
   }
 
   \frame<presentation>
   {
     \frametitle{Approach}
 
-    Given the program:
-
-    \begin{minipage}[b]{50em}
-%%[[wrap=code
+    \begin{block}{Given the program:}
+%%[[wrap=safecode
     (\x y -> y + x + x) 3 4
 %%]
-    \end{minipage}
+    \end{block}
 
-    Infer the following types:
-
-    \begin{minipage}[b]{50em}
-%%[[wrap=code
-    (\x y -> y + x + x) (3 :: (Sup(Int)(*))) (4 :: (Sup(Int)(1)))
-      :: (Sup(Int)(1))
+    \begin{block}{Infer the following types:}
+%%[[wrap=safecode
+    ( (\x y -> y + x + x) (3 :: (Sup(Int)(*))) (4 :: (Sup(Int)(1))) ) :: (Sup(Int)(1))
 %%]
-    \end{minipage}
-
+    \end{block}
+    \begin{block}{More precisely:}
+%%[[wrap=safecode
+    (  (\x y ->  (y :: (Sup(Int)(1)))
+                 +  (x :: (Sup(Int)(*)))
+                 +  (x :: (Sup(Int)(*))) :: (Sup(Int)(1)))
+       (3 :: (Sup(Int)(*))) (4 :: (Sup(Int)(1)))
+    ) :: (Sup(Int)(1))
+%%]
+    \end{block}
     ... how?
   }
 
@@ -195,10 +283,12 @@
   {
     \frametitle{Our approach}
 
-    Two phases:
+    Phases:
     \begin{itemize}
-    \item Reference counting
-    \item Uniqueness propagation
+    \item Gather constraint sets
+    \item Reference counting on constraints
+    \item Construct initial uniqueness substitution
+    \item Uniqueness propagation on constraints
     \end{itemize}
 
     Distinguishing features:
@@ -211,42 +301,128 @@
     \end{itemize}
   }
 
+\section{Constraint gathering}
+  
   \frame<presentation>
   {
-    \frametitle{How to implement?}
+    \frametitle{Analysis over the Abstract Syntax Tree}
+
+    \includegraphics{unq-pres-ast}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{The coercion constraint}
+
+    \includegraphics{unq-pres-coercion}
 
     \begin{itemize}
-    \item Values are complicated: can be infinitely large, can be passed as argument to a function that is embedded into another value.
-    \item Escape to the less-complicated type level: types specify in a finite way how a value is structured
-    \item Annotations on types specify properties of parts of a value
-    \item Approximation!
+    \item Reference counting: |(Delta(1)) <= (Delta(2))|
+    \item Uniqueness: |(Delta(1)) >= (Delta(2))|
     \end{itemize}
+  }
 
-    \begin{minipage}[b]{40em}
-%%[[wrap=code
-  Cons 3 (Cons 4 Nil) :: (Sup(List)(*)) (Sup(Int)(1))
+
+  \frame<presentation>
+  {
+    \frametitle{Root of the expression}
+
+    \begin{center}
+    \includegraphics{unq-pres-root}
+    \end{center}
+
+    \begin{itemize}
+    \item reference count: |a === 1|
+    \item uniqueness: |a| arbitrary
+    \end{itemize}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{Application}
+
+    \begin{center}
+    \includegraphics{unq-pres-app}
+    \end{center}
+
+    \begin{itemize}
+    \item |a =>= d|, |a (Sub(=>=)(s)) c|, |b =>= e|
+    \end{itemize}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{Lambda abstraction}
+
+    \begin{center}
+    \includegraphics{unq-pres-lam}
+    \end{center}
+
+    \begin{itemize}
+    \item |c| arbitrary, |g \*/ h <= b|, |d =>= f|
+    \end{itemize}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{Plus}
+
+    \begin{center}
+    \includegraphics{unq-pres-plus}
+    \end{center}
+
+    \begin{itemize}
+    \item |f (Sub(=>=)(s)) g|
+    \item |f (Sub(=>=)(s)) h|
+    \end{itemize}
+  }
+
+
+\section{Constraint solving}
+
+  \frame<presentation>
+  {
+    \frametitle{Constraints}
+
+    \begin{block}{Set of constraints}
+%%[[wrap=safecode
+    a (Sub(=>=)(s)) c
+    a =>= d
+    d =>= f
+    f (Sub(=>=)(s)) g
+    f (Sub(=>=)(s)) h
+    g \*/ h <= b
+    b =>= e
 %%]
-    \end{minipage}
+    \end{block}
+
+    \begin{itemize}
+    \item Initial substitution (ref): |a === 1, b ... h === 0|
+    \item Fixpoint iteration: |a c d f g h === 1, b === *, e === *|
+    \item Initial substitution (unq): |a c d f g h === 1, b === *, e === *|
+    \item Fixpoint iteration: |a c d f === 1, b e g h === *|
+    \end{itemize}
   }
-
-
-\section{Constraint-based inference}
-
-  \frame<presentation>
-  {
-  }
-
-
-  \frame<presentation>
-  {
-  }
-
 
 \section{Conclusions}
 
   \frame<presentation>
   {
     \frametitle{Conclusion}
+
+     How to scale this approach to:
+
+     \begin{itemize}
+     \item Polyvariant uniqueness types
+     \item Higher-ranked uniqueness types
+     \item |let| construct and constraint duplication
+     \item Parallel expressions
+     \item Polymorphism and overloading
+     \item Data types, case statements, and pattern matches
+     \item Specific optimisations (+ coercions)
+     \end{itemize}
+
+     See my master's thesis!
   }
 
 %%]

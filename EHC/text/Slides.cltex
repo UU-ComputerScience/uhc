@@ -419,10 +419,7 @@ c1 = eCata  (  id                      ,  \v1 v2 -> v1 ++ " " ++ v2
 \item type information implicitly inferred/reconstructed from
 (non type related) program text
 \end{itemize}
-\item Types are described by type language, here:
-%%[[wrap=safecode
-\EHCOneTyLangA
-%%]
+\item Types are described by type language
 \end{itemize}
 }
 %%]

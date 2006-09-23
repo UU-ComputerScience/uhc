@@ -223,7 +223,17 @@ of values that are used at most once, is the focus of this master's thesis.
   in the presence of the above restriction, because unique parameters are best passed as late as possible. At the
   moment a unique parameter is passed to a function, the function itself becomes unique. This is not a severe restriction
   in Clean because parameters to a function can be passed all at once (although currying is supported), such that the compiler can shuffle the order
-  in which the parameters are passed. This is not the case in Haskell, where we curry one argument at a time.
+  in which the parameters are passed. This is not the case in Haskell, where we curry one argument at a time. This
+  makes a difference when we abstract from certain recurring patterns. For example, consider the expression:
+  
+%%[[wrap=code
+  let  f x y g = g x y
+       h = f 3 4
+  in   h (+) + h const
+%%]
+
+  Our inferencer discovers that |4| is a unique value and |3| is a shared value. The Clean compiler infers that both
+  |3| and |4| are (coerced to) shared.
 
   Besides for uniqueness, our approach can be used to infer strictness properties~\cite{wadler87projections} as well. Uniqueness and strictness
   are complementary problems, and we show that we can infer them both with our approach. However, we will not go

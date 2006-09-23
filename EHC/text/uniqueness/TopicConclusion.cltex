@@ -73,6 +73,23 @@ question if the additional complications of uniqueness typing are worth it.
   is polyvariant, and uses a similar way of dealing with data types as our exposed annotations in Section~\ref{sect.ExposedAnnotations}.
   However, this type system also makes the assumption that spine of a value is as unique as the elements.
 
+\section{Complexity comparison to Clean}
+
+  Using information about expressions that are not used, has consequences. Uniqueness typing for Clean, for instance, assumes that all expressions are
+  used at most once. The reference counting phase then amounts to marking identifiers unique if there is only one occurrence in the abstract syntax
+  tree or only parallel occurrences, and shared if that is not the case. The uniqueness propagation phase then ensures that the expressions that were
+  incorrectly assumed to be used at most once (these are the values that are passed as argument to a shared parameter of a function), get a shared
+  type and propagates this sharing to all places where the value occurs. So, the Clean compiler performs a local reference count analysis and a global
+  uniqueness propagation.
+
+  We do not make the assumption during reference counting that expressions are used at most once. We just assume that an expression is used
+  |delta| times, where |delta| is determined at another time. This means that in situations where there are multiple (sequential) occurrences of an
+  identifier, we do not yet know if the identifier is shared because the occurrences may be unused. So, our reference count analysis is a
+  global analysis and we pay for that in complexity. Consequences are that we need constraints that combine multiple occurrences (the
+  aggregation constraint), which makes constraint sets complicated. For example, the notion of entailment is difficult to express. As a result,
+  dealing with constraint duplication in the presence of polyvariance is hard (graphs with hyper edges, graph reduction). On the other hand,
+  our uniqueness propagation phase is rather trivial, because all the work is done by the reference counting phase.
+
 \section{Future work}
 \label{sect.FutureWork}
 

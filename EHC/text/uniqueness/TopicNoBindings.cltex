@@ -73,7 +73,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   into better performing code and a smaller code size. Furthermore, an expression that will not be used at all, can be omitted. These are
   realistic and beneficial optimisations, thus for our analysis, we support both types of usage properties.
 
-  We define the \emph{cardinality}~\cite{jur} property of a type as follows:
+  We define the \emph{cardinality} property of a type as follows:
 
 %%[[wrap=code
   (Card(Usage)(Usage))
@@ -144,9 +144,9 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   An upper-bound usage-count annotation |u| specifies that the corresponding values are used at most |u| times:
 
 %%[[wrap=code
-  UpperBound  ::=  0            -- not used
-              |    1            -- used at most once
-              |    *            -- arbitrary usage, but typically represents a number greater than one
+  UpperBound  ::=  0            -- Not used.
+              |    1            -- Used at most once.
+              |    *            -- Arbitrary usage. However, typically represents a number greater than one.
 %%]
 
   We assume that expressions are annotated with upper-bound usage-count annotations. That means that

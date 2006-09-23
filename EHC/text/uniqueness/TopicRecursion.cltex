@@ -302,6 +302,28 @@ inferSubst constrSets
   set specified by the programmer. Letting the programmer specify additional constraints, is not a problem, however (Section~\ref{sect.Signatures}).
 
 
+\section{Aliassing and cyclic definitions}
+
+  A question that arises is: does our approach correctly deal with aliassing and cyclic definitions. The following example demonstrates
+  a possible problem:
+
+%%[[wrap=code
+  let  x    =  1 + f 3
+       f z  =  z + y
+       y    =  x
+  in   f 1
+%%]
+
+  The fact that |x| is a cyclic definition is not directly visible, since |x| only occurs one. Our analysis can detect this situation:
+  the spine of |f| is discovered to be shared, because |f| is used in the |in| expression and in the body of |x|. As a result, |y| is
+  discovered to be shared, and subsequently |x| is discovered to be shared.
+
+  If there is a cyclic definition, then there is at least an identifier |v| that occurs twice in the abstract syntax tree that causes
+  the definition to be cyclic. Since our approach assumes that identifiers hidden by a function or hidden by an alias, have the same
+  usage counts as the identifier that hides it, we in the end discover that the occurrences of |v| are individually used and that
+  |v| itself is shared. Subsequently, this propagates to the aliassed and hidden identifiers, which ensures that any cyclic definition
+  is discovered to be shared.
+
 \section{Conclusion}
 
   The |Inst| constraint plays an important role in dealing with recursion. At least two different ways of dealing with this
