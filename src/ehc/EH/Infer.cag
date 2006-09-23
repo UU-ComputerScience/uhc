@@ -122,7 +122,7 @@ SEM Decl
   | Val         expr        .   knTy                :=  if @hasTySig  then @knTy
                                                                       else [mkImplsVar @lUniq2] `mkArrow` @patExpr.ty
 
-%%[10.tyInstKnown
+%%[1010.tyInstKnown
 SEM Decl
   | DynVal      loc         .   knTy                =   Ty_Any
 %%]
@@ -162,7 +162,7 @@ SEM Expr
   | Let         loc         .   finTyCnstr          =   @tqoTyCnstr |=> @lhs.finTyCnstr
 %%]
 
-%%[10
+%%[1010
 SEM Decl
   | DynTySig    loc         .   finalTy             =   vgiTy . fromJust
                                                         . valGamLookup @nm $ @lhs.finValGam
@@ -691,7 +691,7 @@ SEM Decl
                 expr        .  fiOpts               =   strongFIOpts
 %%]
 
-%%[10
+%%[1010
 SEM Decl
   | DynVal      expr        .  fiOpts               =   strongFIOpts
 %%]
@@ -702,20 +702,30 @@ SEM Decl
 
 %%[9
 ATTR AllDecl [ | patPrElimTGam: PrElimTGam | ]
+%%]
+
+%%[9
+SEM Expr
+  | Let         decls       .   patPrElimTGam       =   emptyTGam @prfCtxtId
+%%]
+
+%%[9
 ATTR NTPrf [ | prElimTGam: PrElimTGam | ]
 %%]
 
 %%[9.initPrElimTGam
 SEM AGItf
-  | AGItf       loc         .   prElimTGam          =   emptyTGam @prfCtxtId
+  | AGItf       loc         .   prElimTGam          =   tgamPushNew basePrfCtxtId @prfCtxtId @expr.gathPrElimTGam
 %%]
+  | AGItf       loc         .   prElimTGam          =   emptyTGam @prfCtxtId
 
 %%[12 -9.initPrElimTGam
 ATTR AGItf [ prElimTGam: PrElimTGam | | ]
 
 SEM AGItf
-  | AGItf       loc         .   prElimTGam          =   tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam
+  | AGItf       loc         .   prElimTGam          =   tgamPushGam basePrfCtxtId @lhs.prfCtxtId @prfCtxtId @expr.gathPrElimTGam @lhs.prElimTGam
 %%]
+  | AGItf       loc         .   prElimTGam          =   tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Predicate env, for intro of predicates

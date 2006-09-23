@@ -57,7 +57,7 @@
 %%[12 import (qualified {%{EH}Core.Parser} as CorePrs)
 %%]
 
-%%[12 import (qualified {%{EH}HS.ModImpExp} as HSSemMod)
+%%[12 import (qualified {%{EH}Pred} as Pr,qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -597,7 +597,7 @@ cpFlowEHSem modNm
                             , EHSem.kiGam_Inh_AGItf      = EHSem.gathKiGam_Syn_AGItf      ehSem `gamUnion` EHSem.kiGam_Inh_AGItf      ehInh
                             , EHSem.dataGam_Inh_AGItf    = EHSem.gathDataGam_Syn_AGItf    ehSem `gamUnion` EHSem.dataGam_Inh_AGItf    ehInh
                             , EHSem.prIntroGam_Inh_AGItf = EHSem.gathPrIntroGam_Syn_AGItf ehSem `gamUnion` EHSem.prIntroGam_Inh_AGItf ehInh
-                            , EHSem.prElimTGam_Inh_AGItf = tgamAddGam basePrfCtxtId (EHSem.prfCtxtId_Inh_AGItf ehInh) (EHSem.gathPrElimTGam_Syn_AGItf ehSem) (EHSem.prElimTGam_Inh_AGItf ehInh)
+                            , EHSem.prElimTGam_Inh_AGItf = Pr.peTGamUnion basePrfCtxtId (EHSem.prfCtxtId_Inh_AGItf ehInh) (EHSem.gathPrElimTGam_Syn_AGItf ehSem) (EHSem.prElimTGam_Inh_AGItf ehInh)
                             }
          ;  when (isJust (ecuMbEHSem ecu))
                  (put (cr {crStateInfo = crsi {crsiEHInh = ehInh'}}))
@@ -617,7 +617,7 @@ cpFlowHISem modNm
                             , EHSem.tyGam_Inh_AGItf      = HISem.tyGam_Syn_AGItf      hiSem `gamUnion` EHSem.tyGam_Inh_AGItf      ehInh
                             , EHSem.dataGam_Inh_AGItf    = HISem.dataGam_Syn_AGItf    hiSem `gamUnion` EHSem.dataGam_Inh_AGItf    ehInh
                             , EHSem.prIntroGam_Inh_AGItf = HISem.prIntroGam_Syn_AGItf hiSem `gamUnion` EHSem.prIntroGam_Inh_AGItf ehInh
-                            , EHSem.prElimTGam_Inh_AGItf = tgamAddGam basePrfCtxtId (EHSem.prfCtxtId_Inh_AGItf ehInh) (HISem.prElimTGam_Syn_AGItf hiSem) (EHSem.prElimTGam_Inh_AGItf ehInh)
+                            , EHSem.prElimTGam_Inh_AGItf = Pr.peTGamUnion basePrfCtxtId (EHSem.prfCtxtId_Inh_AGItf ehInh) (HISem.prElimTGam_Syn_AGItf hiSem) (EHSem.prElimTGam_Inh_AGItf ehInh)
                             }
                  hsInh  = crsiHSInh crsi
                  hsInh' = hsInh
@@ -753,7 +753,7 @@ cpCheckMods' modL
   = do { cr <- get
        ; let crsi   = crStateInfo cr
              (mm,e) = modMpCombine modL (crsiModMp crsi)
-       -- ; lift $ putWidthPPLn 120 (ppModMp modMp) -- debug
+       -- ; lift $ putWidthPPLn 120 (pp (head modL) >-< ppModMp mm) -- debug
        ; put (cr {crStateInfo = crsi {crsiModMp = mm}})
        ; cpSetLimitErrsWhen 5 "Module analysis" e
        }

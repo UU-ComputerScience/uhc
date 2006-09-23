@@ -22,7 +22,7 @@
 %%[9 export(ProvenNode(..),prvnIsAnd)
 %%]
 
-%%[9 export(ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,prvgBackToOrig,prvgReachableFrom,prvgReachableTo,prvgIsFact,prvgFactL)
+%%[9 export(ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,prvgBackToOrig,prvgReachableFrom,prvgReachableTo,prvgIsFact,prvgFactL,prvgFactPrL)
 %%]
 
 %%[9 export(prvgCxBindLMap,prvgIntroBindL,prvgLetHoleCSubst)
@@ -46,10 +46,10 @@
 %%[9 export(PrIntroGamInfo(..),PrIntroGam,emptyPIGI)
 %%]
 
-%%[9 export(PrElimGamInfo(..))
+%%[9 export(PrElimGamInfo(..),emptyPrElimGamInfo)
 %%]
 
-%%[9 export(PrElimTGam,peTGamAdd,peTGamDel,peTGamAddKnPr,peTGamAddKnPrL,peTGamPoiS)
+%%[9 export(PrElimTGam,peTGamInsert,peTGamUnion,peTGamDel,peTGamInsertKnPr,peTGamInsertKnPrL,peTGamPoiS,peTGamUnion2)
 %%]
 
 %%[9 import({%{EH}Ty.Ftv}) export(prvgArgLeaves,prvgSatisfiedNodeS,prvgOrigs,prvgAppPoiSubst,prvg2BackMp,prvgShareMp)
@@ -59,6 +59,9 @@
 %%]
 
 %%[9 export(prfsAddPrOccL)
+%%]
+
+%%[12 export(emptyPrElimTGam)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -338,6 +341,10 @@ prvgOrigs (ProvenGraph _ _ p2oi _)
 %%]
 
 %%[9
+prvgFactPrL :: ProvenGraph -> [Pred]
+prvgFactPrL (ProvenGraph _ _ _ p2fi)
+  =  Map.keys p2fi
+
 prvgFactL :: ProvenGraph -> [PredOccId]
 prvgFactL (ProvenGraph _ _ _ p2fi)
   =  concat (Map.elems p2fi)
@@ -603,6 +610,9 @@ data Rule
        , rulFuncDeps        :: [ClsFuncDep]
        }
 
+instance Eq Rule where
+  r1 == r2 = poiId (rulId r1) == poiId (rulId r2)
+
 emptyRule = Rule Ty_Any head (MkEvidVar hsnUnknown) hsnUnknown (mkPrId uidStart uidStart) costVeryMuch []
 
 mkInstElimRule :: HsName -> PredOccId -> Int -> Ty -> Rule
@@ -626,7 +636,7 @@ instance Show Rule where
   show r = show (rulNmEvid r) ++ "::" ++ show (rulRuleTy r)
 
 instance PP Rule where
-  pp r = pp (rulRuleTy r) >#< ":>" >#< pp (rulNmEvid r) >|< "/" >|< pp (rulId r) >#< "|" >|< ppBracketsCommas (rulFuncDeps r)
+  pp r = pp (rulRuleTy r) >#< ":>" >#< pp (rulNmEvid r) >|< "/" >|< pp (rulId r) -- >#< "|" >|< ppBracketsCommas (rulFuncDeps r)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -663,12 +673,15 @@ data PrElimGamInfo
        { pegiRuleL          :: [Rule]
        } deriving Show
 
+emptyPrElimGamInfo :: PrElimGamInfo
+emptyPrElimGamInfo = PrElimGamInfo []
+
 instance Substitutable TyVarId (CnstrInfo Ty) PrElimGamInfo where
   s |=>  pegi = pegi { pegiRuleL = s |=> pegiRuleL pegi }
   ftv    pegi = ftv (pegiRuleL pegi)
 
 instance PP PrElimGamInfo where
-  pp pegi = ppBracketsCommas (pegiRuleL pegi)
+  pp pegi = "PEGI" >#< ppCurlysCommasBlock (pegiRuleL pegi)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -678,28 +691,52 @@ instance PP PrElimGamInfo where
 %%[9
 type PrElimTGam = TreeGam PrfCtxtId HsName PrElimGamInfo
 
-peTGamAdd :: PrfCtxtId -> HsName -> Rule -> PrElimTGam -> PrElimTGam
-peTGamAdd ci n r g
-  =  let  (h,mnci,t) = tgamPop ci ci g
-          h' = tgamUpdAdd ci n (PrElimGamInfo [r]) (\_ p -> p {pegiRuleL = r : pegiRuleL p}) h
-     in   maybe h' (\nci -> tgamPushGam ci nci ci h' t) mnci
+peTGamSingleton :: PrfCtxtId -> HsName -> Rule -> PrElimTGam
+peTGamSingleton ci n r = tgamSingleton ci n (PrElimGamInfo [r])
+
+peTGamInsert :: PrfCtxtId -> HsName -> Rule -> PrElimTGam -> PrElimTGam
+peTGamInsert ci n r g = peTGamUnion ci ci (peTGamSingleton ci n r) g
+
+peTGamUnion :: PrfCtxtId -> PrfCtxtId -> PrElimTGam -> PrElimTGam -> PrElimTGam
+peTGamUnion c1 c2 g1 g2
+  = maybe h' (\nci -> tgamPushGam c2 nci c2 h' t) mnci
+  where h' = foldr (\(n,i) g -> tgamUpdAdd c2 n i (\_ p -> p {pegiRuleL = pegiRuleL i ++ pegiRuleL p}) g)
+                   h (tgamToAssocL c1 g1)
+        (h,mnci,t) = tgamPop c2 c2 g2
 
 peTGamDel :: PrfCtxtId -> HsName -> Rule -> PrElimTGam -> PrElimTGam
 peTGamDel ci n r g
-  =  maybe g id . tgamMbUpd ci n (\_ p -> p {pegiRuleL = deleteBy (\r1 r2 -> rulId r1 == rulId r2) r . pegiRuleL $ p}) $ g
+  =  maybe g id
+     $ tgamMbUpd ci n (\_ p -> p {pegiRuleL = deleteBy (==) r . pegiRuleL $ p})
+     $ g
 
-peTGamAddKnPr :: PrfCtxtId -> HsName -> PredOccId -> Pred -> PrElimTGam -> PrElimTGam
-peTGamAddKnPr ci n i p
-  = peTGamAdd ci (predMatchNm p) (mkInstElimRule n i 0 (mkTyPr p))
+peTGamInsertKnPr :: PrfCtxtId -> HsName -> PredOccId -> Pred -> PrElimTGam -> PrElimTGam
+peTGamInsertKnPr ci n i p
+  = peTGamInsert ci (predMatchNm p) (mkInstElimRule n i 0 (mkTyPr p))
 
-peTGamAddKnPrL :: PrfCtxtId -> UID -> [Pred] -> PrElimTGam -> (PrElimTGam,[HsName],[PredOccId])
-peTGamAddKnPrL ci i prL g
-  =  foldr  (\(i,p) (g,nL,idL) -> let n = poiHNm i in (peTGamAddKnPr ci n i p g,n:nL,i:idL))
+peTGamInsertKnPrL :: PrfCtxtId -> UID -> [Pred] -> PrElimTGam -> (PrElimTGam,[HsName],[PredOccId])
+peTGamInsertKnPrL ci i prL g
+  =  foldr  (\(i,p) (g,nL,idL) -> let n = poiHNm i in (peTGamInsertKnPr ci n i p g,n:nL,i:idL))
             (g,[],[])
             (zip (map (mkPrId ci) . mkNewUIDL (length prL) $ i) prL)
 
 peTGamPoiS :: PrfCtxtId -> PrElimTGam -> Set.Set PredOccId
 peTGamPoiS ci = Set.unions . map (Set.fromList . map rulId . pegiRuleL) . tgamElts ci
+
+peTGamSetRuleCtxt :: PrfCtxtId -> PrfCtxtId -> PrElimTGam -> PrElimTGam
+peTGamSetRuleCtxt c cNew g
+  = tgamMap c (\(n,i) -> (n,i {pegiRuleL = map u (pegiRuleL i)})) g
+  where u r = r {rulId = (rulId r) {poiCxId = cNew}}
+
+peTGamUnion2 :: PrfCtxtId -> PrfCtxtId -> PrElimTGam -> PrElimTGam -> PrElimTGam
+peTGamUnion2 c1 c2 g1 g2
+  = peTGamUnion c1 c2 (peTGamSetRuleCtxt c1 c2 g1) g2
 %%]
+
+%%[12
+emptyPrElimTGam :: PrElimTGam
+emptyPrElimTGam = emptyTGam basePrfCtxtId
+%%]
+
 
 

@@ -106,6 +106,8 @@ SEM Expr
   | SConst      loc     .   pp      =   pp (show @str)
   | Case        loc     .   pp      =   "case"  >#< @expr.pp >#< "of"
                                                 >-< indent 2 (vlist @alts.ppL)
+                                                >-< @ppExtra
+                        .   ppExtra =   empty
 
 SEM PatExpr
   | SConst      loc     .   pp      =   pp (show @str)
@@ -188,6 +190,7 @@ SEM RowTyExpr
 SEM Expr
   | FConst      loc     .   pp      =   pp (show @float)
   | Undefined   loc     .   pp      =   pp "..."
+  | CaseAltFail loc     .   pp      =   pp "FAIL"
 
 SEM Decl
   | FFI         loc     .   pp      =   "foreign import" >#< @callconv >#< @safety >#< pp (show @impEnt) >#< @nm >#< "::" >#< @tyExpr.pp
@@ -251,7 +254,9 @@ SEM PrExpr
 
 SEM Expr
   | DynVar      loc     .   pp      =   hsnDynVar >|< pp @nm
+%%]
 
+%%[1010
 SEM Decl
   | DynVal      loc     .   pp      =   hsnDynVar >|< @nm >#< "=" >#< @expr.pp
   | DynTySig    loc     .   tyPP    =   if null @tyExpr.tyVarWildL
@@ -408,6 +413,11 @@ SEM Expr
 SEM Expr
   | Let         loc     .   ppExtra     :=  ppCmt (ppGam @lQuTyGam) >-< ppCmt (ppGam (@lhs.finTyCnstr |=> @quValGam_ex_))
 %%]
+
+%%[8
+%%]
+SEM Expr
+  | Case        loc     .   ppExtra     :=  ppCmt (pp @mbCaseId)
 
 %%[9
 SEM Expr

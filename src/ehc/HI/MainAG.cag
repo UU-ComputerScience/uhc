@@ -28,24 +28,21 @@ WRAPPER AGItf
 
 %%[12 hs
 prElimTGamUnion :: Pr.PrElimTGam -> Pr.PrElimTGam -> Pr.PrElimTGam
-prElimTGamUnion = tgamAddGam basePrfCtxtId basePrfCtxtId
-
-emptyPrElimTGam :: Pr.PrElimTGam
-emptyPrElimTGam = emptyTGam basePrfCtxtId
+prElimTGamUnion = Pr.peTGamUnion basePrfCtxtId basePrfCtxtId
 %%]
 
 %%[12
 ATTR
   AllNT AGItf
     [ | |
-      exportRel     USE {`Rel.union`}       {Rel.empty}      : ModEntRel
-      fixityGam     USE {`gamUnion`}        {emptyGam}       : FixityGam
-      idGam         USE {`gamUnion`}        {emptyGam}       : IdDefOccGam
-      valGam        USE {`gamUnion`}        {emptyGam}       : ValGam
-      tyGam         USE {`gamUnion`}        {emptyGam}       : TyGam
-      dataGam       USE {`gamUnion`}        {emptyGam}       : DataGam
-      prIntroGam    USE {`gamUnion`}        {emptyGam}       : {Pr.PrIntroGam}
-      prElimTGam    USE {`prElimTGamUnion`} {emptyPrElimTGam}: {Pr.PrElimTGam}
+      exportRel     USE {`Rel.union`}       {Rel.empty}         : ModEntRel
+      fixityGam     USE {`gamUnion`}        {emptyGam}          : FixityGam
+      idGam         USE {`gamUnion`}        {emptyGam}          : IdDefOccGam
+      valGam        USE {`gamUnion`}        {emptyGam}          : ValGam
+      tyGam         USE {`gamUnion`}        {emptyGam}          : TyGam
+      dataGam       USE {`gamUnion`}        {emptyGam}          : DataGam
+      prIntroGam    USE {`gamUnion`}        {emptyGam}          : {Pr.PrIntroGam}
+      prElimTGam    USE {`prElimTGamUnion`} {Pr.emptyPrElimTGam}: {Pr.PrElimTGam}
     ]
 
 SEM Binding
@@ -64,7 +61,7 @@ SEM Binding
     | Class
         lhs             .   prIntroGam  =   gamSingleton @nm (Pr.PrIntroGamInfo @prToEvidTy @ki @rule.rule)
     | Instance
-        lhs             .   prElimTGam  =   tgamUnit basePrfCtxtId @nm (Pr.PrElimGamInfo @rules.rules)
+        lhs             .   prElimTGam  =   tgamSingleton basePrfCtxtId @nm (Pr.PrElimGamInfo @rules.rules)
 %%]
 
 %%[12

@@ -258,8 +258,11 @@ DATA Deriving
 %%]
 
 %%[1
-SET AllDeclaration
+SET AllDeclarationPlain
   = Declaration Declarations MaybeDeclarations
+
+SET AllDeclaration
+  = AllDeclarationPlain
 %%[[9
     FunctionalDependency FunctionalDependencies
     Deriving Derivings
@@ -798,6 +801,9 @@ DATA Alternative
     | Empty
         range                    : Range
 
+SET AllAlternative
+  = Alternative Alternatives
+
 TYPE GuardedExpressions          = [ GuardedExpression ]
 
 DATA GuardedExpression -- ToDo: or _Guard?
@@ -805,6 +811,9 @@ DATA GuardedExpression -- ToDo: or _Guard?
         range                    : Range
         guard                    : Expression -- type: Boolean
         expression               : Expression
+
+SET AllGuardedExpression
+  = GuardedExpression GuardedExpressions
 %%]
 
 %%[7
@@ -903,11 +912,6 @@ DATA RightHandSide
         where                    : MaybeDeclarations
 %%]
 
-%%[5
-SET AllGuardedExpression
-  = GuardedExpression GuardedExpressions
-%%]
-
 %%[1
 SET AllExpression
   = Expression Expressions MaybeExpression
@@ -915,7 +919,7 @@ SET AllExpression
     LeftHandSide RightHandSide
 %%]
 %%[5
-    Alternative Alternatives
+    AllAlternative
     AllGuardedExpression
     AllQualifier
 %%]

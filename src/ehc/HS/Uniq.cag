@@ -33,6 +33,12 @@ SEM Declaration
   		(pattern.gUniq,loc.lUniq)		=   mkNewLevUID @lhs.gUniq
 %%]
 
+%%[8
+SEM Expression
+  | Case
+  		(expression.gUniq,loc.lUniq)	=   mkNewLevUID @lhs.gUniq
+%%]
+
 %%[9
 SEM Declaration
   | Class Instance

@@ -55,7 +55,7 @@ DATA Decl
                     tyExpr          : TyExpr
 %%]
 
-%%[10.Decl
+%%[1010.Decl
 DATA Decl
   | DynTySig        nm              : {HsName}
                     tyExpr          : TyExpr
@@ -186,6 +186,9 @@ DATA Expr
   | SConst          str             : {String}
   | Case            expr            : Expr
                     alts            : CaseAlts
+%%[[8
+                    mbCaseId        : {Maybe UID}
+%%]]
 %%]
 
 %%[7
@@ -199,6 +202,7 @@ DATA Expr
 DATA Expr
   | FConst          float           : {Float}
   | Undefined
+  | CaseAltFail     caseId          : {UID}
 %%]
 
 %%[9

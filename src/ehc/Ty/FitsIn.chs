@@ -455,7 +455,7 @@ fitsIn opts env uniq ty1 ty2
 %%[9
             fiAddPr ci n i prTy fi
                 =  let  e = fiEnv fi
-                        tg = peTGamAddKnPr ci n i (tyPred prTy) (tgamPushNew (fePrfCtxtId e) ci (fePrElimTGam e))
+                        tg = peTGamInsertKnPr ci n i (tyPred prTy) (tgamPushNew (fePrfCtxtId e) ci (fePrElimTGam e))
                    in   fi { fiEnv = e {fePrElimTGam = tg, fePrfCtxtId = ci} }
             foUpdErrs e fo = fo {foErrL = e ++ foErrL fo}
             foUpdLCoe l fo = fo {foLCoeL = l : foLCoeL fo}
@@ -1050,9 +1050,11 @@ prfPredsDbg u fe prOccL
           prOrigs                       = prvgOrigs g
           (_,revTopSort)                = prvg2ReachableFrom g prOrigs
           topSort                       = reverse revTopSort
-          prLeaves                      = prvgArgLeaves g topSort
+          prLeaves                      = {- trm "LVS" pp $ -} prvgArgLeaves g topSort
+          prFacts                       = prvgFactPrL g
+          isPrCheap                     = \pr cx -> pr `elem` prLeaves && not (pr `elem` prFacts)
           (gPrune@(ProvenGraph i2n _ _ _),gOr,backMp,(gInterm1,gInterm2))
-                                        = prfPredsPruneProvenGraph (\pr cx -> pr `elem` prLeaves) g
+                                        = prfPredsPruneProvenGraph isPrCheap g
           factPoiS                      = Set.fromList (prvgFactL gPrune)
           isFact                        = (`Set.member` factPoiS)
           cSubst                        = poiCExprLToCSubst . assocLMapElt (CExpr_Var . poiHNm) . Map.toList $ backMp
@@ -1162,10 +1164,10 @@ prfOneStepClass  fe prOcc@(PredOcc pr@(Pred_Class t) prPoi) depth
                  st@(ProofState g@(ProvenGraph i2n p2i p2oi p2fi) u _ _ _ _)
   =  let  nm = tyAppFunConNm t
           ndFail = ProvenArg pr costVeryMuch
-     in   case tgamLookupAll (poiCxId prPoi) nm (fePrElimTGam fe) of
+     in   case {- trm "LOOKUP" (\x -> prPoi >#< x) $ -} tgamLookupAllEmp (poiCxId prPoi) nm emptyPrElimGamInfo (fePrElimTGam fe) of
              pegis@(_:_)
                  ->  let  (u',u1,u2)    = mkNewLevUID2 u
-                          rules         = pegiLScopedCostRuleL pegis
+                          rules         = pegiLScopedCostRuleL {- $ trm "PEGIS" pp -} $ pegis
                           ruleMatches   = prfRuleMatches u1 prOcc rules
                           ((g',newPrOccL),depth')
                              = case ruleMatches of
@@ -1260,7 +1262,7 @@ prfOneStepPred  fe prOcc@(PredOcc pr@(Pred_Pred t) prPoi) depth
                             = tyArrowArgsRes (foCnstr fo |=> t')
            prfCtxtPrL       = map tyPred prfCtxtTyPrL
            (prfElimTGam,prfCtxtNmL,prfCtxtUIDL)
-                            = peTGamAddKnPrL newCxId u3 prfCtxtPrL (tgamPushNew (poiCxId prPoi) newCxId (fePrElimTGam fe))
+                            = peTGamInsertKnPrL newCxId u3 prfCtxtPrL (tgamPushNew (poiCxId prPoi) newCxId (fePrElimTGam fe))
            prf              = ProvenAnd (pr) (poi4 : []) (poi5 : poi4 : prfCtxtUIDL) (mkCost 1) (prfCtxtNmL `mkCExprLam` (poiId poi5 `CExpr_HoleLet` CExpr_Hole u4))
            g'               = prvgAddPrNd pr [prPoi] prf g
            g''              = g'

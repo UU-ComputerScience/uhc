@@ -22,6 +22,9 @@
 %%[5.Scanner -1.Scanner import({%{EH}Scanner.Scanner}) export(module {%{EH}Scanner.Scanner})
 %%]
 
+%%[99 import (Data.Ratio)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Scanner options: keywords etc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -276,6 +279,28 @@ offsideScanHandle scanOpts fn fh
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Splitting up a rational into nominator/denominator
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+floatDenot2NomDenom :: String -> (Integer,Integer)
+floatDenot2NomDenom denot
+  = (numerator f,denominator f)
+  where (n,m,e) = getRational denot
+        f :: Rational
+        f = ((read n * md + mn) * en) % (ed * md)
+        en, ed, mn, md :: Integer
+        (en,ed) = case e of
+                    Just (Just "-",e) -> (1,10 ^ read e)
+                    Just (_,e)        -> (10 ^ read e,1)
+                    _                 -> (1,1)
+        (mn,md) = case m of
+                    Just m -> (read m,10 ^ length m)
+                    _      -> (1,1)
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Scanner related parser abstractions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -523,7 +548,8 @@ pOROWREC        ,
     pCROWROW    ,
     pOROWSUM    ,
     pCROWSUM    ,
-    pCOLEQUAL
+    pCOLEQUAL   ,
+    pHASH
   :: IsParser p Token => p Token
 %%]
 
@@ -535,10 +561,11 @@ pCROWROW         = pKeyTk (show hsnCRow)
 pOROWSUM         = pKeyTk (show hsnOSum)
 pCROWSUM         = pKeyTk (show hsnCSum)
 pCOLEQUAL        = pKeyTk ":="
+pHASH            = pKeyTk "#"
 %%]
 
 %%[7
-tokOpStrsEH7   = [ ":=" ]
+tokOpStrsEH7   = [ ":=", "#" ]
 tokOpStrsHS7   = [  ]
 %%]
 

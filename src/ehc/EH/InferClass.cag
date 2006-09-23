@@ -63,7 +63,7 @@ SEM Decl
                                 .   tyGam           =   @lhs.tyGam
                                 .   gathTySigGam    =   valGamMapTy tyQuantifyClosed @clsTySigGam
                                 .   patPrIntroGam   =   gamAdd (tyPredMatchNm @hdPrTy) @pigi @lhs.patPrIntroGam
-                                .   patPrElimTGam   =   foldr (\(n,r) g -> peTGamAdd @lhs.prfCtxtId n r g) @lhs.patPrElimTGam @elimRules
+                                .   patPrElimTGam   =   foldr (\(n,r) g -> peTGamInsert @lhs.prfCtxtId n r g) @lhs.patPrElimTGam @elimRules
 %%]
                 decls           .   gathTySigGam    =   gamPushNew @lhs.gathTySigGam
                 loc             .   (lSigGam,_)     =   gamPop @decls.gathTySigGam
@@ -115,12 +115,12 @@ SEM Decl
                                 .   tyGam           =   @lhs.tyGam
                                 .   gathTySigGam    =   maybe emptyGam (\(n,_) -> n `gamUnit` ValGamInfo (tyQuantifyClosed @tyPrExpr.evTy)) @mbNmElim
                                 .   patValGam       =   @lhs.patValGam
-                                .   patPrElimTGam   =   (if @inclForElim then peTGamAdd @lhs.prfCtxtId @instClsNm @elimRule else id) @lhs.patPrElimTGam
+                                .   patPrElimTGam   =   (if @inclForElim then peTGamInsert @lhs.prfCtxtId @instClsNm @elimRule else id) @lhs.patPrElimTGam
   | InstanceIntro
                 loc             .   instClsNm       =   tyPredMatchNm @prExpr.ty
                                 .   dictNm          =   maybe (poiHNm @instId) id @mbNmElim
                                 .   elimRule        =   mkInstElimRule @dictNm @instId 0 @prExpr.ty
-                                .   patPrElimTGam   =   peTGamAdd @lhs.prfCtxtId @instClsNm @elimRule @lhs.patPrElimTGam
+                                .   patPrElimTGam   =   peTGamInsert @lhs.prfCtxtId @instClsNm @elimRule @lhs.patPrElimTGam
                 loc             .   foPr            =   fitPredToEvid @lUniq @prExpr.ty @lhs.prIntroGam
                 expr            .   knTy            =   foTy @foPr
 %%]

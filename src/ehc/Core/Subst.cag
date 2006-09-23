@@ -65,8 +65,6 @@ instance PP CSubstInfo where
   pp (CSIImpls      l r  )  = pp (coeWeaveOn emptyCSubst l r CExpr_CoeArg)
   pp (CSIBinds      b    )  = ppCBindL b
 %%]
-instance Show CSubst where
-  show = show . Map.toList
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Code substitution as class

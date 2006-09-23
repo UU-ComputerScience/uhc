@@ -160,6 +160,9 @@
 %%[9 export(InstVariant(..))
 %%]
 
+%%[9 export(basePrfCtxtId)
+%%]
+
 %%[10 export(hsnDynVar,hsnConcat)
 %%]
 
@@ -170,9 +173,6 @@
 %%]
 
 %%[12 export(ppCurlysAssocL)
-%%]
-
-%%[12 export(basePrfCtxtId)
 %%]
 
 %%[99 export(hsnInteger,hsnDouble,hsnModPrelude)
@@ -700,7 +700,7 @@ uidHNm = HNm . show
 type PrfCtxtId = UID
 %%]
 
-%%[12
+%%[9
 basePrfCtxtId :: PrfCtxtId
 basePrfCtxtId = uidStart
 %%]

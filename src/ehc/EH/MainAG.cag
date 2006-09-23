@@ -25,7 +25,7 @@
 %%[7 hs import(EH.Util.PPUtils)
 %%]
 
-%%[8 hs import(qualified Data.Map as Map,{%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty})
+%%[8 hs import(qualified Data.Map as Map,{%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty},{%{EH}Core.SubstCaseAltFail})
 %%]
 
 %%[9 hs import(qualified Data.Set as Set,{%{EH}Pred},{%{EH}Core.Subst})
@@ -70,7 +70,7 @@ ATTR AGItf [ moduleNm: HsName | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Tying together gam's, combining with imported info, gathering for following modules
+%%% Tying together gam's, combining with imported info, gathering for following modules and/or global use
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[12
@@ -114,12 +114,31 @@ SEM Expr
   | * - Let     lhs         .   gathPrIntroGam      =   emptyGam
 %%]
 
-%%[12
-ATTR AGItf Expr [ | | gathPrElimTGam: PrElimTGam ]
+%%[9
+ATTR Expr [ | | gathPrElimTGam: PrElimTGam ]
+ATTR Expr [ gathPrfCtxtId: PrfCtxtId | | ]
+
+SEM AGItf
+  | AGItf       loc         .   gathPrfCtxtId       =   basePrfCtxtId
+
+SEM CaseAlt
+  | Pat         loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId
+
+SEM RecExpr
+  | Expr Ext Upd
+                loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId
+
+SEM Decl
+  | InstanceIntro Val
+                loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId
 
 SEM Expr
-  | Let         lhs         .   gathPrElimTGam      =   tgamAddGam @prfCtxtId basePrfCtxtId @decls.patPrElimTGam @body.gathPrElimTGam
-  | * - Let     lhs         .   gathPrElimTGam      =   emptyTGam basePrfCtxtId
+  | Let         lhs         .   gathPrElimTGam      =   peTGamUnion2 @prfCtxtId @lhs.gathPrfCtxtId @decls.patPrElimTGam @body.gathPrElimTGam
+  | * - Let     lhs         .   gathPrElimTGam      =   emptyTGam @lhs.gathPrfCtxtId
+%%]
+
+%%[12
+ATTR AGItf [ | | gathPrElimTGam: PrElimTGam ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

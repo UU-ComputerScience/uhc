@@ -152,7 +152,7 @@ pDecl           =    Decl_Val        <$>  pPatExprBase  <*   pEQUAL   <*> pExpr
                 <|>  pDeclClass
                 <|>  pDeclInstance
 %%]
-%%[10.pDecl
+%%[1010.pDecl
                 <|>  Decl_DynVal     <$>  pDynVar       <*   pEQUAL     <*> pExpr
                 <|>  Decl_DynTySig   <$>  pDynVar       <*   pDCOLON    <*> pTyExpr
 %%]
@@ -320,7 +320,12 @@ pExprBase       =    Expr_IConst     <$>  pInt
                 <|>  pParenProd pExpr
 %%]
 %%[5.pExprBase
-                <|>  Expr_Case       <$   pKey "case" <*> pExpr <* pKey "of" <*> pCaseAlts
+%%[[5
+                <|>  Expr_Case
+%%][8
+                <|>  (\e a -> Expr_Case e a Nothing)
+%%]]
+                     <$   pKey "case" <*> pExpr <* pKey "of" <*> pCaseAlts
 %%]
 %%[7.pExprBase -1.pExprBaseParenProd
                 <|>  pParenRow True (show hsnORec) (show hsnCRec) "=" (Just (":=",RecExpr_Upd))
@@ -380,6 +385,9 @@ pExprPrefix     =    Expr_Let      <$ pLET
                                    [ CaseAlt_Pat (PatExpr_Con (HNm "True")) t
                                    , CaseAlt_Pat (PatExpr_Con (HNm "False")) e
                                    ]
+%%[[8
+                                   Nothing
+%%]]
                      )
                      <$ pIF <*> pExpr <* pTHEN <*> pExpr <* pELSE
 %%]
@@ -482,7 +490,7 @@ pParenRow singleAsIs o c sep mbUpd (semEmpty,semVar,semExt,semRow,semParens) pSe
 %%[7
 pExprSelSuffix  ::   EHCParser (Expr -> Expr)
 pExprSelSuffix  =    (\lbls e -> foldl Expr_Sel e lbls)
-                     <$> pList (pKey "." *> pSel)
+                     <$> pList (pHASH *> pSel)
 
 pSel            ::   EHCParser HsName
 pSel            =    pVar <|> pCon <|> HNPos <$> pInt

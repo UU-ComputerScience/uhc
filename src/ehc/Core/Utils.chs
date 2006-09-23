@@ -21,10 +21,17 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-data RCEEnv = RCEEnv {rceValGam :: ValGam, rceDataGam :: DataGam}
+data RCEEnv
+  = RCEEnv
+      { rceValGam           :: ValGam
+      , rceDataGam          :: DataGam
+      , rceCaseFailSubst    :: CaseFailSubst
+      , rceCaseId           :: UID
+      , rceCaseCont         :: CExpr
+      }
 
 emptyRCEEnv :: RCEEnv
-emptyRCEEnv = RCEEnv emptyGam emptyGam
+emptyRCEEnv = RCEEnv emptyGam emptyGam Map.empty uidStart cvarUndefined
 
 rceEnvDataAlts :: RCEEnv -> CTag -> [CTag]
 rceEnvDataAlts env t
@@ -43,12 +50,12 @@ rceEnvDataAlts env t
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-caltLSaturate :: RCEEnv -> CAltL -> CExpr -> CAltL
-caltLSaturate env alts ce
+caltLSaturate :: RCEEnv -> CAltL -> CAltL
+caltLSaturate env alts
   =  let  altTags = [ t | (CAlt_Alt (CPat_Con _ t _ _ : _) _) <- alts ]
           absentAlts
             = case altTags of
-                (altTag:_) -> [ CAlt_Alt [mkP ct a] ce | ct@(CTag _ _ _ a) <- absentTagArities ]
+                (altTag:_) -> [ CAlt_Alt [mkP ct a] (rceCaseCont env) | ct@(CTag _ _ _ a) <- absentTagArities ]
                       where absentTagArities = filter (\t -> t `notElem` altTags) . rceEnvDataAlts env $ altTag
                             mkB o = CPatBind_Bind hsnUnknown (CExpr_Int o) (cpatNmNm cpatNmNone) (CPat_Var cpatNmNone)
                             mkP ct a = CPat_Con cpatNmNone ct CPatRest_Empty [mkB o | o <- [0..a-1]]
@@ -89,11 +96,11 @@ caltOffsetL alt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-mkCExprStrictSatCase :: RCEEnv -> HsName -> CExpr -> CAltL -> CExpr -> CExpr
-mkCExprStrictSatCase env eNm e (alt:alts) ce
+mkCExprStrictSatCase :: RCEEnv -> HsName -> CExpr -> CAltL -> CExpr
+mkCExprStrictSatCase env eNm e (alt:alts)
   =  let  (alt',altOffBL) = caltOffsetL alt
      in   mkCExprStrictIn eNm e
-            (\n -> mkCExprLet CBindStrict altOffBL (CExpr_Case n (caltLSaturate env (alt':alts) ce) ce))
+            (\n -> mkCExprLet CBindStrict altOffBL (CExpr_Case n (caltLSaturate env (alt':alts)) (rceCaseCont env)))
 
 mkCExprSelCase :: RCEEnv -> HsName -> CExpr -> CTag -> HsName -> HsName -> CExpr -> CExpr
 mkCExprSelCase env ne e ct n lbl off
@@ -101,7 +108,7 @@ mkCExprSelCase env ne e ct n lbl off
                     [CPat_Con (CPatNmOrig ne) ct (CPatRest_Var hsnWild)
                         [CPatBind_Bind lbl off n (CPat_Var (CPatNmOrig n))]]
                     (CExpr_Var n)
-     in   mkCExprStrictSatCase env ne e [alt] cvarUndefined
+     in   mkCExprStrictSatCase (env {rceCaseCont = cvarUndefined}) ne e [alt]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

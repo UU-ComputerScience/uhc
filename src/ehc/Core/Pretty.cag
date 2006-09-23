@@ -112,7 +112,7 @@ SEM CExpr
                                                   CBindStrict  -> pp " !"
                                                   CBindFFI     -> pp " foreign"
                                                   _            -> empty
-                            .   pp          =   ppDef ("let" >|< @ppCateg) (ppCurlysSemisBlock @binds.ppL) >-< "in" >-< @body.pp
+                            .   pp          =   ppDef ("let" >|< @ppCateg) (ppCurlysSemisBlock @binds.ppL) >#< "in" >-< @body.pp
   | Lam         loc         .   pp          =   ppOr' (ppDef ("\\" >|< ppSpaces @lamArgPPL >#< "->") (@lamBodyPP))
                                                       ("\\" >|< ppSpaces @lamArgPPL >#< "->" >#< @lamBodyPP)
   | Case        loc         .   pp          =   "case" >#< @expr.pp >#< "of" >-< indent 1 (ppCurlysSemisBlock @alts.ppL >-< ppCurlysSemisBlock [ppDef "default" @dflt.pp])
@@ -120,6 +120,7 @@ SEM CExpr
   | TupDel      loc         .   pp          =   ppDef (pp_parens @expr.pp) ("-=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm])
   | TupIns      loc         .   pp          =   ppDef (pp_parens @expr.pp) (ppDef ("+=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (pp_parens @fldExpr.pp))
   | TupUpd      loc         .   pp          =   ppDef (pp_parens @expr.pp) (ppDef (":=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (pp_parens @fldExpr.pp))
+  | CaseAltFail loc			.	pp			=	pp "FAIL" >#< @caseId
 
 SEM CExpr
   | Lam         loc         .   lamBodyPP   =   @body.lamBodyPP
