@@ -54,13 +54,14 @@ SEM Expr
   | App AppImpred
                 loc         .   cexpr       =   CExpr_App @func.cexpr @arg.cexpr
   | Lam         loc         .   cexpr       =   CExpr_Lam @arg.topNm
-                                                    (rceMatch @rceEnv [@arg.topNm] [CAlt_Alt [@arg.cpat] @body.cexpr] cvarUndefined)
+                                                    (rceMatch @rceEnv [@arg.topNm] [CAlt_Alt [@arg.cpat] @body.cexpr])
   | Case        loc         .   cexpr       =   let  n = uidHNm @lUniq2
                                                 in   mkCExprLet CBindPlain [CBind_Bind n @expr.cexpr]
-                                                        (rceMatch @rceEnv [n] @alts.caltL cvarUndefined)
+                                                        (rceMatch @rceEnv [n] @alts.caltL)
   | AppTop Parens TypeAs
                 loc         .   cexpr       =   @expr.cexpr
   | Undefined   loc         .   cexpr       =   cvarUndefined
+  | CaseAltFail loc         .   cexpr       =   CExpr_CaseAltFail @caseId
 %%]
 
 -- generated from ruler rules into EHRulerRules
@@ -73,8 +74,8 @@ SEM Expr
                             .   cexpr       :=  foAppCoe @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBase
 %%[9
 SEM Expr
-  | Let         loc         .   letCBindL   :=  [(CBindFFI,@decls.ffiCBindL)
-                                                ,(CBindRec,@decls.cbindL ++ (@cSubst `cSubstApp` (@prfIntroCBindL ++ @bodyPrfIntroCBindL)))
+  | Let         loc         .   letCBindL   :=  [ (CBindFFI,@decls.ffiCBindL)
+                                                , (CBindRec,@decls.cbindL ++ (@cSubst `cSubstApp` (@prfIntroCBindL ++ @bodyPrfIntroCBindL)))
                                                 ]
   | App AppImpred AppImpl
                 loc         .   cexpr       :=  CExpr_App
@@ -458,13 +459,13 @@ rceSplit f (x:xs@(x':_))
 rceRebinds :: HsName -> CAltL -> CBindL
 rceRebinds nm alts = [ CBind_Bind n (CExpr_Var nm) | (CPatNmOrig n) <- caltLPatNms alts, n /= nm ]
 
-rceMatchVar :: RCEEnv ->  [HsName] -> CAltL -> CExpr -> CExpr
-rceMatchVar env (arg:args') alts ce
-  =  let  remMatch  = rceMatch env args' [CAlt_Alt remPats e | (CAlt_Alt (CPat_Var n : remPats) e) <- alts] ce
+rceMatchVar :: RCEEnv ->  [HsName] -> CAltL -> CExpr
+rceMatchVar env (arg:args') alts
+  =  let  remMatch  = rceMatch env args' [CAlt_Alt remPats e | (CAlt_Alt (CPat_Var n : remPats) e) <- alts]
      in   mkCExprLet CBindPlain (rceRebinds arg alts) remMatch
 
-rceMkAltAndSubAlts :: RCEEnv -> [HsName] -> CExpr -> CAltL -> CAlt
-rceMkAltAndSubAlts env (arg:args) ce alts@(alt:_)
+rceMkAltAndSubAlts :: RCEEnv -> [HsName] -> CAltL -> CAlt
+rceMkAltAndSubAlts env (arg:args) alts@(alt:_)
   =  let  (subAlts,subAltSubNms)
             =  unzip
                  [ (CAlt_Alt (pats ++ ps) e, map (cpatNmNm . cpatVarNm) pats)
@@ -472,7 +473,7 @@ rceMkAltAndSubAlts env (arg:args) ce alts@(alt:_)
                    let pats = [ p | (CPatBind_Bind _ _ _ p) <- pbinds ]
                  ]
           subMatch
-            =  rceMatch env (head subAltSubNms ++ args) subAlts ce
+            =  rceMatch env (head subAltSubNms ++ args) subAlts
           altPat
             =  case alt of
                  CAlt_Alt (CPat_Con n t r pbL : _) _
@@ -480,42 +481,54 @@ rceMkAltAndSubAlts env (arg:args) ce alts@(alt:_)
                        where  pbL' = [ CPatBind_Bind l o n (CPat_Var (cpatVarNm p))| (CPatBind_Bind l o n p) <- pbL ]
      in   CAlt_Alt [altPat] (mkCExprLet CBindPlain (rceRebinds arg alts) subMatch)
 
-rceMatchCon :: RCEEnv -> [HsName] -> CAltL -> CExpr -> CExpr
-rceMatchCon env (arg:args) alts ce
+rceMatchCon :: RCEEnv -> [HsName] -> CAltL -> CExpr
+rceMatchCon env (arg:args) alts
   =  let  arg'   =  hsnSuffix arg "!"
-          alts'  =  map (rceMkAltAndSubAlts env (arg':args) ce) . groupSortOn (ctagTag . caltTag)
-                 .  filter (not . null . caltPatL) $ alts
-     in   mkCExprStrictSatCase env arg' (CExpr_Var arg) alts' ce
+          alts'  =  map (rceMkAltAndSubAlts env (arg':args)) . groupSortOn (ctagTag . caltTag)
+                    $ filter (not . null . caltPatL)
+                    $ alts
+     in   mkCExprStrictSatCase env arg' (CExpr_Var arg) alts'
 
-rceMatchConst :: RCEEnv -> [HsName] -> CAltL -> CExpr -> CExpr
-rceMatchConst env (arg:args) alts ce
-  =  let  arg'   =  hsnSuffix arg "!"
-     in   mkCExprStrictIn arg' (CExpr_Var arg) (\n -> mkCExprLet CBindPlain (rceRebinds arg alts) (CExpr_Case n alts ce))
+rceMatchConst :: RCEEnv -> [HsName] -> CAltL -> CExpr
+rceMatchConst env (arg:args) alts
+  = mkCExprStrictIn arg' (CExpr_Var arg) (\n -> mkCExprLet CBindPlain (rceRebinds arg alts') (CExpr_Case n alts' (rceCaseCont env)))
+  where arg' = hsnSuffix arg "!"
+        alts' = [ CAlt_Alt p (cSubstCaseAltFail (rceCaseFailSubst env) e) | (CAlt_Alt p e) <- alts ]
 
-rceMatchSplits :: RCEEnv -> [HsName] -> CAltL -> CExpr -> CExpr
-rceMatchSplits env args alts@(alt:_) ce
-  |  caltIsVar   alt  = rceMatchVar   env args alts ce
-  |  caltIsConst alt  = rceMatchConst env args alts ce
-  |  otherwise        = rceMatchCon   env args alts ce
+rceMatchSplits :: RCEEnv -> [HsName] -> CAltL -> CExpr
+rceMatchSplits env args alts@(alt:_)
+  |  caltIsVar   alt  = rceMatchVar   env args alts
+  |  caltIsConst alt  = rceMatchConst env args alts
+  |  otherwise        = rceMatchCon   env args alts
 
-rceMatch :: RCEEnv -> [HsName] -> CAltL -> CExpr -> CExpr
-rceMatch _ [] []    ce =  ce
-rceMatch _ [] alts  ce
+rceMatch :: RCEEnv -> [HsName] -> CAltL -> CExpr
+rceMatch env [] []    =  rceCaseCont env
+rceMatch env [] alts  
   =  case [ e | (CAlt_Alt [] e) <- alts ] of
-       (e:_)  -> e
-       _      -> ce
-rceMatch env args alts ce
+       (e:_)  -> cSubstCaseAltFail (rceCaseFailSubst env) e
+       _      -> rceCaseCont env
+rceMatch env args alts
   =  foldr
         (\alts e
            ->  case e of
                   CExpr_Var _
-                     ->  rceMatchSplits env args alts e
-                  _  ->  let  bnm = hsnPrefix "_casecont_" (cpatNmNm . cpatVarNm . caltPat . head $ alts)
-                              vc = rceMatchSplits env args alts (CExpr_Var bnm)
-                         in   mkCExprLet CBindPlain [CBind_Bind bnm e] vc
+                     ->  rceMatchSplits (rceUpdEnv e env) args alts
+                  _  ->  mkCExprLet CBindPlain [CBind_Bind nc e] ce'
+                     where nc  = hsnPrefix "_casecont_" (cpatNmNm . cpatVarNm . caltPat . head $ alts)
+                           ce' = rceMatchSplits (rceUpdEnv vc env) args alts
+                           vc  = CExpr_Var nc
         )
-        ce
-     $ (rceSplit (\a -> if caltIsVar a then RCESplitVar else if caltIsConst a then RCESplitConst else RCESplitCon) alts)
+        (rceCaseCont env)
+     $ (rceSplit (\a -> if      caltIsVar a   then RCESplitVar
+                        else if caltIsConst a then RCESplitConst
+                                              else RCESplitCon
+                 ) alts)
+
+rceUpdEnv :: CExpr -> RCEEnv -> RCEEnv
+rceUpdEnv e env
+  = env { rceCaseFailSubst = Map.insert (rceCaseId env) e (rceCaseFailSubst env)
+        , rceCaseCont = e
+        }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -541,13 +554,18 @@ SEM DataConstr
 
 %%[8
 SEM Expr
-  | Lam Case Sel
-                loc         .   rceEnv      =   RCEEnv @lhs.valGam @lhs.dataGam
+  | Lam Sel
+%%[[9
+    LamImpl
+%%]]
+                loc         .   rceEnv      =   emptyRCEEnv { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+  | Case        loc         .   rceEnv      =   emptyRCEEnv { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam
+                                                            , rceCaseId = maybe uidStart id @mbCaseId
+                                                            }
 %%]
 
 %%[8
 SEM PatExpr
-  | AppTop Rec
-                loc         .   rceEnv      =   RCEEnv @lhs.valGam @lhs.dataGam
+  | AppTop Rec  loc         .   rceEnv      =   emptyRCEEnv { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
 %%]
 

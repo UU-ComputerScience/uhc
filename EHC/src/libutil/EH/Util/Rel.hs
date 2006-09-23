@@ -6,7 +6,7 @@ module EH.Util.Rel
   , dom, rng
   , restrictDom, restrictRng
   , mapDom, mapRng
-  , partitionDom
+  , partitionDom, partitionRng
   , intersection, difference, union, unions
   , apply
   , toDomMap, toRngMap
@@ -54,6 +54,9 @@ mapRng f = Set.map (\(a,b) -> (a,f b))
 
 partitionDom :: (Ord a, Ord b) => (a -> Bool) -> Rel a b -> (Rel a b,Rel a b)
 partitionDom f = Set.partition (f . fst)
+
+partitionRng :: (Ord a, Ord b) => (b -> Bool) -> Rel a b -> (Rel a b,Rel a b)
+partitionRng f = Set.partition (f . snd)
 
 intersection :: (Ord a, Ord b) => Rel a b -> Rel a b -> Rel a b
 intersection = Set.intersection

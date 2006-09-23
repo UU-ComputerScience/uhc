@@ -34,6 +34,9 @@
 %%[7 hs export(RecExpr(..), RecPatExpr(..), RowTyExpr(..), DataField(..), DataFields)
 %%]
 
+%%[8 hs export(mkCase',mkIf'')
+%%]
+
 %%[9 hs export(PrExpr(..), PrExprs,FuncDep(..), FuncDeps)
 %%]
 
@@ -81,24 +84,57 @@ mkError = mkError' hsnError
 mkStr :: Range -> String -> Expr
 mkStr r s
   = rngLift r Expr_SConst s
+%%]
 
-mkCase :: Range -> Expr -> [(PatExpr,Expr)] -> Expr
-mkCase r c as
-  = rngLift r Expr_Case c [ CaseAlt_Pat p e | (p,e) <- as ]
-
+%%[5 hs
+%%[[5
 mkIf' :: [HsName] -> Range -> Expr -> Expr -> Expr -> Expr
 mkIf' (bn:tn:fn:_) r c t e
+%%][8
+mkIf'' :: [HsName] -> Range -> Expr -> Expr -> Expr -> Maybe UID -> Expr
+mkIf'' (bn:tn:fn:_) r c t e i
+%%]]
   = case c of
       Expr_Con n | n == tn -> t
                  | n == fn -> e
+%%[[5
       _ -> mkCase r
+%%][8
+      _ -> mkCase' r
+%%]]
              ( Expr_TypeAs (TyExpr_Con bn) c )
              [ (PatExpr_Con tn, t)
              , (PatExpr_Con fn, e)
              ]
+%%[[8
+             i
+%%]]
+%%]
 
+%%[8 hs
+mkIf' :: [HsName] -> Range -> Expr -> Expr -> Expr -> Expr
+mkIf' ns r c t e = mkIf'' ns r c t e Nothing
+%%]
+
+%%[5 hs
 mkIf :: Range -> Expr -> Expr -> Expr -> Expr
 mkIf = mkIf' [hsnBool,hsnTrue,hsnFalse]
+%%]
+
+%%[5.mkCase hs
+mkCase :: Range -> Expr -> [(PatExpr,Expr)] -> Expr
+mkCase r c as
+  = rngLift r Expr_Case c [ CaseAlt_Pat p e | (p,e) <- as ]
+%%]
+
+%%[8 -5.mkCase hs
+mkCase' :: Range -> Expr -> [(PatExpr,Expr)] -> Maybe UID -> Expr
+mkCase' r c as id
+  = rngLift r Expr_Case c [ CaseAlt_Pat p e | (p,e) <- as ] id
+
+mkCase :: Range -> Expr -> [(PatExpr,Expr)] -> Expr
+mkCase r c as
+  = mkCase' r c as Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

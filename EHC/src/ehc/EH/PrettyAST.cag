@@ -432,6 +432,7 @@ SEM Decl
                                         , mkInfo1 "recTy" (ppTy @recTy)
                                         , mkInfo1 "decls.prElimTGam" (pp @decls.prElimTGam)
                                         , mkInfo1 "gathDeclSubsPredL" (ppBracketsCommas @gathDeclSubsPredL)
+                                        , mkInfo1 "instPrElimTGam" (pp @instPrElimTGam)
                                         , mkInfo1 "dbg2PrfG (decl)" (pp @dbg2PrfG)
                                         , mkInfo1 "dbg2PrfPruneG (decl)" (pp @dbg2PrfPruneG)
                                         , mkInfo1 "dbg2PrfOrG (decl)" (pp @dbg2PrfOrG)
@@ -442,6 +443,14 @@ SEM Decl
                                         , mkInfo1 "dbg2TrPPL (decl)" (vlist @dbg2TrPPL)
                                         , mkInfo1 "prfFrPoiCxBindLM" (ppCxBindLMap @prfFrPoiCxBindLM)
                                         , mkInfo1 "prfCSubst" (ppAssocLV . Map.toList $ @prfCSubst)
+                                        , mkInfo1 "supPrElimTGam" (pp @supPrElimTGam)
+                                        , mkInfo1 "supForPrfPrOccL" (ppBracketsCommas @supForPrfPrOccL)
+                                        , mkInfo1 "dbg2PrfG (sup)" (pp @dbgSup2PrfG)
+                                        , mkInfo1 "dbg2PrfPruneG (sup)" (pp @dbgSup2PrfPruneG)
+                                        , mkInfo1 "dbg2PrfOrG (sup)" (pp @dbgSup2PrfOrG)
+                                        , mkInfo1 "dbg2PrfIntermG1 (sup)" (pp @dbgSup2PrfIntermG1)
+                                        , mkInfo1 "dbg2PrfIntermG2 (sup)" (pp @dbgSup2PrfIntermG2)
+                                        , mkInfo1 "dbg2PrLeaves (sup)" (ppBracketsCommas @dbgSup2PrLeaves)
                                         ]
   | InstanceIntro
                 loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","InstanceIntro"] [] [@expr.ppAST,@prExpr.ppAST] @info
@@ -524,7 +533,9 @@ SEM Expr
 SEM PrExpr
   | Lacks       loc     .  ppAST    =   ppNest ["PrExpr","Lacks"] [ppNm @nm] [@rowTyExpr.ppAST]
   | DynVar      loc     .  ppAST    =   ppNest ["PrExpr","DynVar"] [ppNm @nm] [@tyExpr.ppAST]
+%%]
 
+%%[1010
 SEM Decl
   | DynVal      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","DynVal"] [ppNm @nm] [@expr.ppAST] @info
                 loc     .  info     =   [

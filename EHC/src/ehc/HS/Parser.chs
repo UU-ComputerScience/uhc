@@ -949,7 +949,7 @@ pParenRow' singleAsIs pO pC pS allowUpd pSUpd' (semUpd' :: Range -> HsName -> e 
 pRowRecordSelectionSuffix :: HSParser (Expression -> Expression)
 pRowRecordSelectionSuffix
   = (\lbls e -> foldl (\e l -> Expression_RowRecordSelect (mkRange1 l) e (tokMkQName l)) e lbls)
-    <$> pList1 (pRARROW *> pSelector)
+    <$> pList1 (pHASH *> pSelector)
 %%]
 
 %%[7

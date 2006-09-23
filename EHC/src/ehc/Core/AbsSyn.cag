@@ -56,6 +56,7 @@ DATA CExpr
                 nm              : {HsName}
                 offset          : CExpr
                 fldExpr         : CExpr
+  | CaseAltFail caseId          : {UID}
 %%]
 
 %%[9

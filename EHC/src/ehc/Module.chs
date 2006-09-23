@@ -132,7 +132,7 @@ instance PP ModEntSpec where
   pp (ModEntSpec n s) = n >|< maybe empty pp s
 
 instance PP ModEntSubSpec where
-  pp ModEntSubAll = pp "*"
+  pp ModEntSubAll = pp "(..)"
   pp (ModEntSubs ns) = ppParensCommas ns
 
 instance PP ModImp where
@@ -170,14 +170,14 @@ modBuiltin
 %%[12
 instance PP Mod where
   pp m = modName m >|< "/" >|< modNameInSrc m
-         >-< indent 2 (ppParensCommas (modImpL m) >-< maybe empty ppParensCommas (modExpL m) >-< ppModEntRel (modDefs m))
+         >-< indent 2 ("IMP" >#< ppParensCommas (modImpL m) >-< "EXP" >#< maybe empty ppParensCommas (modExpL m) >-< "DEF" >#< ppModEntRel (modDefs m))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% 5.1 Importing or exporting an entity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[1212
 modEntSpec :: Bool -> ModEntRel -> ModEntSpec -> ModEntRel
 modEntSpec isHiding rel (ModEntSpec x subspec)
   = Rel.unions [mSpec,mSub]
@@ -191,6 +191,21 @@ modEntSpec isHiding rel (ModEntSpec x subspec)
         consider
           | isHiding && isNothing subspec = const True
           | otherwise                     = not . mentIsCon
+%%]
+
+%%[12
+modEntSpec :: Bool -> ModEntRel -> ModEntSpec -> ModEntRel
+modEntSpec isHiding rel (ModEntSpec x subspec)
+  | isHiding && isNothing subspec
+              = mSpec
+  | otherwise = Rel.unions [mSpec,mSub mSpec]
+  where mSpec       = Rel.restrictDom (==x) rel
+        mSub spec   = case subspec of
+                        Nothing              -> Rel.empty
+                        Just ModEntSubAll    -> subs
+                        Just (ModEntSubs xs) -> Rel.restrictDom ((`elem` xs) . hsnQualified) subs
+                    where allSubs     = mentOwns `unionMapSet` Rel.rng spec
+                          subs        = Rel.restrictRng (`Set.member` allSubs) rel
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -299,7 +314,7 @@ checkAmbigExps exps
         ambig n _            = []
 %%]
 
-%%[12
+%%[1212
 checkEntSpec :: Bool -> (HsName -> Err) -> (HsName -> HsName -> Err) -> ModEntSpec -> ModEntRel -> [Err]
 checkEntSpec isHiding errUndef errUndefSub (ModEntSpec x subspec) rel
   = case xents of
@@ -309,11 +324,35 @@ checkEntSpec isHiding errUndef errUndefSub (ModEntSpec x subspec) rel
         chk ent = case subspec of
                     Just (ModEntSubs subs)
                       -> map (errUndefSub x) (filter (not . (`Set.member` subsInScope)) subs)
-                      where subsInScope = Set.map hsnQualified $ Rel.dom $ Rel.restrictRng (`Set.member` mentOwns ent) rel
+                      where subsInScope
+                              = Set.map hsnQualified
+                                $ Rel.dom
+                                $ Rel.restrictRng (`Set.member` mentOwns ent) rel
                     _ -> []
         consider
           | isHiding && isNothing subspec = const True
           | otherwise                     = not . mentIsCon
+%%]
+
+%%[12
+checkEntSpec :: Bool -> (HsName -> Err) -> (HsName -> HsName -> Err) -> ModEntSpec -> ModEntRel -> [Err]
+checkEntSpec isHiding errUndef errUndefSub (ModEntSpec x subspec) rel
+  | isHiding && isNothing subspec
+              = case xents of
+                  []   -> [errUndef x]
+                  _    -> []
+  | otherwise = case xents of
+                  []   -> [errUndef x]
+                  ents -> concatMap chk $ filter mentIsCon $ ents
+  where xents   = Rel.apply rel x
+        chk ent = case subspec of
+                    Just (ModEntSubs subs)
+                      -> map (errUndefSub x) (filter (not . (`Set.member` subsInScope)) subs)
+                      where subsInScope
+                              = Set.map hsnQualified
+                                $ Rel.dom
+                                $ Rel.restrictRng (`Set.member` mentOwns ent) rel
+                    _ -> []
 %%]
 
 %%[12

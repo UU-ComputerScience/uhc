@@ -8,11 +8,11 @@ let id :: a -> a
             (a,b) -> (b,a)
     v4 :: (a::a,f::a->Int)
     v4 = (a=3,f=id)
-    v4fa = v4.f v4.a
+    v4fa = v4#f v4#a
     v5 :: Rec {|c::Int|}
     v6 :: {<c::Int>}
-    v6c = v6.c
-    vs = v.c v.a
+    v6c = v6 # c
+    vs = v#c v#a
     vc = case v of
            (a = aa, b = bb,c) -> (c aa,c bb)
 in  vs

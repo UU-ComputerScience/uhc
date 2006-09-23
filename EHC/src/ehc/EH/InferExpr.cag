@@ -315,7 +315,8 @@ SEM Expr
 
 %%[8.Undefined
 SEM Expr
-  | Undefined   loc         .   ty                  =   @lhs.tyCnstr |=> (tyEnsureNonAny @lUniq @lhs.knTy)
+  | Undefined CaseAltFail
+                loc         .   ty                  =   @lhs.tyCnstr |=> (tyEnsureNonAny @lUniq @lhs.knTy)
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.TypeAs

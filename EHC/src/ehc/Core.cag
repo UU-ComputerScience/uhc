@@ -37,6 +37,9 @@
 %%[8 hs export(cTupLbl)
 %%]
 
+%%[8 hs export(CaseFailSubst)
+%%]
+
 %%[9 hs export(Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLetRecCoe)
 %%]
 
@@ -215,9 +218,11 @@ caltIsVar (CAlt_Alt (CPat_Var _ : _) _)  = True
 caltIsVar _                              = False
 
 caltIsConst :: CAlt -> Bool
-caltIsConst (CAlt_Alt (CPat_Int  _ _ : _) _)  = True
-caltIsConst (CAlt_Alt (CPat_Char _ _ : _) _)  = True
-caltIsConst _                                 = False
+caltIsConst (CAlt_Alt (p : _) _)
+  = c p
+  where c (CPat_Int   _ _) = True
+        c (CPat_Char  _ _) = True
+        c _                = False
 
 caltPatL :: CAlt -> CPatL
 caltPatL (CAlt_Alt p _) = p
@@ -310,3 +315,12 @@ cModMerge mL
         cmb (CModule_Mod m1 e1 t1) (CModule_Mod m2 e2 t2)
           = CModule_Mod m2 (get e1 e2) (t1++t2)
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Subst to replace CaseAltFail
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type CaseFailSubst = Map.Map UID CExpr
+%%]
+

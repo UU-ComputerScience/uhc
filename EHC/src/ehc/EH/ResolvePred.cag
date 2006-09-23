@@ -39,7 +39,7 @@ SEM RecPatExpr
 %%[9
 SEM Decl
   | Instance    loc         .   (instPrElimTGam,ctxtArgNmL,_)
-                                                    =   peTGamAddKnPrL @prfCtxtId @lUniq6 @ctxtPrFixL (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam)
+                                                    =   peTGamInsertKnPrL @prfCtxtId @lUniq6 @ctxtPrFixL (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam)
                             .   supPrUIDL           =   map (mkPrId @prfCtxtId) . mkNewUIDL (length @supPrTyL) $ @lUniq4
                             .   delPrElimTGam       =   peTGamDel @prfCtxtId @instClsNm @elimRule @instPrElimTGam
                             .   supPrElimTGam       =   @delPrElimTGam
@@ -72,12 +72,12 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | LamImpl     loc         .   lPrElimTGam         =   peTGamAddKnPr @prfCtxtId @arg.topNm @knPrUid @knPr (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam)
-  | AppTop Lam  loc         .   lPrElimTGam         =   foldr  (\p g -> peTGamAddKnPr @prfCtxtId (poiHNm (poPoi p)) (poPoi p) (poPr p) g)
+  | LamImpl     loc         .   lPrElimTGam         =   peTGamInsertKnPr @prfCtxtId @arg.topNm @knPrUid @knPr (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam)
+  | AppTop Lam  loc         .   lPrElimTGam         =   foldr  (\p g -> peTGamInsertKnPr @prfCtxtId (poiHNm (poPoi p)) (poPoi p) (poPr p) g)
                                                                (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam) @knPrL
-  | Let         decls       .   patPrElimTGam       =   emptyTGam @prfCtxtId
-                loc         .   lPrElimTGam         =   tgamPushGam @prfCtxtId @lhs.prfCtxtId @prfCtxtId @decls.patPrElimTGam @lhs.prElimTGam
+  | Let         loc         .   lPrElimTGam         =   tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam
 %%]
+  | Let         loc         .   lPrElimTGam         =   tgamPushGam @prfCtxtId @lhs.prfCtxtId @prfCtxtId @decls.patPrElimTGam @lhs.prElimTGam
 
 %%[9
 SEM Expr
@@ -130,10 +130,13 @@ SEM Decl
                                   ,(dbg2PrfG,dbg2PrfPruneG,dbg2PrfOrG,dbg2PrfIntermG1,dbg2PrfIntermG2,dbg2PrElimTGam,dbg2PrLeaves,prfPoiFwdMp,prfPoiBackMp,dbg2TrPPL))
                                                     =   prfPredsDbg @lUniq7 (@fe {fePrElimTGam = @decls.prElimTGam}) @gathDeclSubsPredL
                             .   supForPrfPrOccL     =   zipWith PredOcc (map tyPred @supPrTyL) @supPrUIDL
-                            .   (supPrfFrPoiCxBindLM,supPrfIntroCBindL,supPrfCSubst,supPrfArgPrOccL,supPrfEvidL,supPrfErrs)
-                                                    =   prfPreds @lUniq5 (@fe {fePrElimTGam = @supPrElimTGam}) @supForPrfPrOccL
+                            .   (supPrfFrPoiCxBindLM,supPrfIntroCBindL,supPrfCSubst,supPrfArgPrOccL,supPrfEvidL,supPrfErrs
+                                  ,(dbgSup2PrfG,dbgSup2PrfPruneG,dbgSup2PrfOrG,dbgSup2PrfIntermG1,dbgSup2PrfIntermG2,dbgSup2PrElimTGam,dbgSup2PrLeaves,prfSupPoiFwdMp,prfSupPoiBackMp,dbgSup2TrPPL))
+                                                    =   prfPredsDbg @lUniq5 (@fe {fePrElimTGam = @supPrElimTGam}) @supForPrfPrOccL
                 lhs         .   gathPredL           =   []
 %%]
+                            .   (supPrfFrPoiCxBindLM,supPrfIntroCBindL,supPrfCSubst,supPrfArgPrOccL,supPrfEvidL,supPrfErrs)
+                                                    =   prfPreds @lUniq5 (@fe {fePrElimTGam = @supPrElimTGam}) @supForPrfPrOccL
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Predicate proving context identifier
@@ -153,6 +156,7 @@ SEM Decl
 SEM AGItf
   | AGItf       loc         .   prfCtxtId           =   @lUniq
 %%]
+  | Let         body		.	prfCtxtId			=	@lhs.prfCtxtId
 
 %%[12
 ATTR AGItf [ prfCtxtId: PrfCtxtId | | ]
@@ -219,7 +223,7 @@ SEM Expr
 %%[9
 SEM Expr
   | Lam LamImpl loc         .   lamBodyCoeL         =   mkLamBodyCoe
-                                                            (mkCoe (\e -> rceMatch (RCEEnv @lhs.valGam @lhs.dataGam) [@arg.topNm] [CAlt_Alt [@arg.cpat] e] cvarUndefined))
+                                                            (mkCoe (\e -> rceMatch @rceEnv [@arg.topNm] [CAlt_Alt [@arg.cpat] e]))
                                                             @body.appArgCoeL
 %%]
 

@@ -208,7 +208,7 @@ ehcCmdLineOpts
          oHelp           o =  o { ehcOptHelp          = True    }
          oVersion        o =  o { ehcOptVersion       = True    }
          oDebug          o =  o { ehcOptDebug         = True
-                                , ehcOptShowEH        = True
+                                , ehcOptShowAst       = True
                                 }
 %%[[8
          oTimeCompile    o =  o { ehcOptTimeCompile       = True    }

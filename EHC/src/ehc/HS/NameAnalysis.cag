@@ -687,8 +687,9 @@ SEM Declaration
                         .   idDpdMp     =   idDpdMpUnions
                                                 [ idToOccL2DpdMp [@idOccDef] @idUseHereOccL
                                                 , idToOccGam2DpdMp [@idOccDef] @idOccDefGamSigAsVar
-                                                , idToOccGam2DpdMp [@idOccDef] @idOccDefGamInstForClass
-                                                , idFrOccGam2DpdMp @idOccDefGamSigAsVar [@idOccDef]
+                                                -- , idToOccGam2DpdMp [@idOccDef] @idOccDefGamInstForClass
+                                                -- , idFrOccGam2DpdMp @idOccDefGamSigAsVar [@idOccDef]
+                                                , idFrOccGam2DpdMp @idOccDefGamSigAsVar (gamKeys @idOccDefGamInstForClass)
                                                 , @where.idDpdMp
                                                 ]
         lhs             .   undefOccGam =   gamUnions [@undefOccGam,@where.undefOccGam]
@@ -696,11 +697,11 @@ SEM Declaration
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
                                         =   splitIdUseOccGam @lhs.nmLev
                                                 (gamUnions [@idUseOccGamInst,@context.idUseOccGam,@types.idUseOccGam,@where.idUseOccGam])
-                        .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
-                                            `idDpdMpUnion`
-                                            idDpdMpSingleton @idOccDefVal @idOccDef
-                                            `idDpdMpUnion`
-                                            @where.idDpdMp
+                        .   idDpdMp     =   idDpdMpUnions
+                                                [ idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+                                                , idDpdMpSingleton @idOccDefVal @idOccDef
+                                                , @where.idDpdMp
+                                                ]
         lhs             .   undefOccGam =   gamUnions [@undefOccGam,@where.undefOccGam]
     | InstanceUseImplicitly
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
@@ -861,24 +862,74 @@ mergeFunDefL ds
       _   -> ([],[])
 %%]
 
+%%[9 hs
+splitOffClsInst :: [IdDefOcc] -> [[IdDefOcc]]
+splitOffClsInst
+  = foldr (\df dfs -> zipWith (++) (s df) dfs) [[],[],[]]
+  where s d = case doccAsp d of
+                (IdAsp_Class_Def _  ) -> [[d],[],[]]
+                (IdAsp_Inst_Def  _ _) -> [[],[d],[]]
+                _                     -> [[],[],[d]]
+%%]
+
+%%[1.splitOff hs
+splitOff :: [IdDefOcc] -> [[IdDefOcc]]
+splitOff os = [os,[]]
+%%]
+
+%%[9 -1.splitOff hs
+splitOff :: [IdDefOcc] -> [[IdDefOcc]]
+splitOff
+  = foldr (\df dfs -> zipWith (++) (s df) dfs) (repeat [])
+  where s d = case doccAsp d of
+                (IdAsp_Inst_Def  _ _) -> [[],[d]]
+                _                     -> [[d],[]]
+%%]
+
 %%[1 hs
-mkIdOccEH :: IdDefOccGam -> IdOcc -> ([EH.Decl],[Err])
-mkIdOccEH idDefOccGam occ
-  = case gamLookupDup occ idDefOccGam of
-      Just defs
+idOcc2Defs :: IdDefOccGam -> IdOcc -> [IdDefOcc]
+idOcc2Defs idDefOccGam occ = maybe [] id $ gamLookupDup occ idDefOccGam
+
+mkIdOccEH :: [IdDefOcc] -> ([EH.Decl],[Err])
+mkIdOccEH defs
+  = case defs of
+      (_:_)
         -> (concatMap mkIdDefEH (otherDefs ++ funDef),errL)
         where (funDefs,otherDefs) = partition (\d -> case doccAsp d of {IdAsp_Val_Fun _ _ -> True ; _ -> False}) defs
               (funDef,errL) = mergeFunDefL funDefs
       _ -> ([],[])
+%%]
 
+%%[1.idDefOccs2Decls hs
+idDefOccs2Decls :: [[IdDefOcc]] -> ([[EH.Decl]],[Err])
+idDefOccs2Decls docss
+  = ([concat ds], concat es)
+  where (ds,es) = unzip $ map mkIdOccEH $ docss
+%%]
+
+%%[999 -1.idDefOccs2Decls hs
+idDefOccs2Decls :: [[IdDefOcc]] -> ([[EH.Decl]],[Err])
+idDefOccs2Decls docss
+  = (foldr (zipWith (++)) (repeat []) ds, concat es)
+  where (ds,es) = unzip [ (ds,concat es) | l <- map splitOffClsInst docss, let (ds,es) = unzip $ map mkIdOccEH $ l ]
+%%]
+
+%%[1.mkIdOccSccEH hs
 mkIdOccSccEH :: Range -> IdDefOccGam -> Maybe [[IdOcc]] -> (EH.Expr -> EH.Expr,[[EH.Decl]],[Err])
 mkIdOccSccEH r g moss
-  = foldr mkl (id,[],[]) oss
-  where mkl os (mke,d,e)
-          = (EH.mkLet r (Just ds) . mke,ds:d,concat es ++ e)
-          where (dss,es) = unzip $ map (mkIdOccEH g) $ os
-                ds = concat dss
-        oss = maybe [gamKeys g] id moss
+  = (m . mkLet (concat sds), d ++ sds, e ++ ses)
+  where (m,d,e) = foldr mkl (id,[],[]) doss
+        mkl dos (mke,d,e)
+          = ((\e -> foldr mkLet e dss) . mke,dss ++ d, es ++ e)
+          where (dss,es) = idDefOccs2Decls dos
+        mkLet ds = EH.mkLet r (Just ds)
+        (sds,ses) = idDefOccs2Decls $ concat $ spls
+        (doss:spls:_)
+          = collapse
+              [ collapse [ splitOff $ idOcc2Defs g $ l | l <- ll ]
+              | ll <- maybe [gamKeys g] id moss
+              ]
+        collapse = foldr (zipWith (:)) (repeat [])
 %%]
 
 %%[1.Body.mkSccLet
