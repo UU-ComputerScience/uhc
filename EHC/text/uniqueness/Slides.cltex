@@ -317,8 +317,9 @@ loop arr m n c
     \includegraphics{unq-pres-coercion}
 
     \begin{itemize}
-    \item Reference counting: |(Delta(1)) <= (Delta(2))|
-    \item Uniqueness: |(Delta(1)) >= (Delta(2))|
+    \item |b =>= a|
+    \item Reference counting: |b <= a|
+    \item Uniqueness: |a >= b|
     \end{itemize}
   }
 

@@ -26,22 +26,22 @@ Uniqueness Typing Refined
 
 %%[abstract
 
-An unused value has special properties in a pure functional language. An optimizing compiler
+An unused value has special properties in a pure functional language. An optimising compiler
 can safely throw away code that produces such a value. Likewise, a value that is referred to once
-has special properties that can be exploited by an optimizing compiler~\cite{DBLP:conf/icfp/JonesPS96}. In
+has special properties that can be exploited by an optimising compiler~\cite{DBLP:conf/icfp/JonesPS96}. In
 Clean~\cite{plasmeijer01clean-rep-2}, a type is called unique if the corresponding values are only
 referred to once. A compiler implementing a uniqueness type system checks, enforces, or infers the
 uniqueness property of types.
 
 Uniqueness typing is incorporated into the Clean compiler~\cite{barendsen96uniqueness}. The
-input/output model of Clean requires heavily upon this feature. Haskell does not need uniqueness
-typing in order to perform IO~\cite{DBLP:journals/jfp/Jones03t}, but can benefit from optimizations
+input/output model of Clean relies heavily upon this feature. Haskell does not need uniqueness
+typing in order to perform IO~\cite{DBLP:journals/jfp/Jones03t}, but can benefit from optimisations
 that are possible on unique values, such as destructive updates on arrays.
 
 In this master thesis, we discuss an implementation of uniqueness typing for Haskell. We take a
 different strategy than Clean, allowing us to overcome a limitation of the typing in Clean. In
 Clean, it is not allowed to have a data type with a shared spine and unique components, since
-uniqueness propagation would force the spine to be unique as well. We treat the components
+uniqueness propagation forces the spine to be unique as well. We treat the components
 independently from the spine and show the consequences.
 
 %%]
