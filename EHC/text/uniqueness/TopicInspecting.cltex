@@ -23,13 +23,18 @@ analysis, or a way for the programmer to enforce restrictions. We briefly consid
   since there can be many or even no uses of a binding-group, so which one should we pick? Therefore, we propose an
   interactive solution.
 
-  The compiler creates an HTML file with a pretty print of the program. Initially, all the pretty-prints of the
+  The compiler creates an HTML file with a pretty print of the program (See Figure~\ref{fig.pretty} for an example). Initially, all the pretty-prints of the
   binding-groups are inactive, indicated with a gray color. Only the outermost binding-group is active, indicated
   by a black color and some syntax highlighting. The identifiers of an active binding-group are clickable. If such
   an identifier is clicked, it activates the corresponding binding-group. For each active binding-group, we know
   the path from the root of the program, and the corresponding substitutions. Each identifier in an
   active binding group can be expanded such that the annotated type becomes visible, with the substitution applied
   to it.
+
+  \begin{PlainFigure}{}{Example of an HTML pretty print}{fig.pretty}
+  ~\\
+  \includegraphics[width=10cm]{unq-inspection}
+  \end{PlainFigure}
   
   Interactive inspection of the analysis result appears to be very useful. The outcome of the analysis is typically
   large, but the interactive pretty print gives tight control over what is visible and what not. For example, a
