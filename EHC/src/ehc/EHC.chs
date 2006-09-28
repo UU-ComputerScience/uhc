@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module Main import(System, Data.List, Control.Monad, System.Console.GetOpt, IO, EH.Util.Utils,UU.Pretty,EH.Util.PPUtils,{%{EH}Error.Pretty}, UU.Parsing, UU.Parsing.Offside, {%{EH}Base.Common}, {%{EH}Config}, {%{EH}Scanner.Common}, {%{EH}Base.Opts})
+%%[1 module Main import(System, Data.List, Control.Monad, System.Console.GetOpt, IO, EH.Util.Utils,UU.Pretty,EH.Util.PPUtils,{%{EH}Error.Pretty}, UU.Parsing, UU.Parsing.Offside, {%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Config}, {%{EH}Scanner.Common}, {%{EH}Base.Opts})
 %%]
 
 %%[1 import(qualified {%{EH}EH.Parser} as EHPrs, qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.Parser} as HSPrs, qualified {%{EH}HS.MainAG} as HSSem)
@@ -408,8 +408,8 @@ cpParseOffside parser scanOpts store description modNm
       ; cpSetLimitErrsWhen 5 description (map mkPPErr (getMsgs steps))
       }
 
-cpParsePlain' :: PlainParser Token a -> ScanUtils.ScanOpts -> EcuUpdater a -> String -> FPath -> HsName -> EHCompilePhase [Err]
-cpParsePlain' parser scanOpts store description fp modNm
+cpParsePlain' :: PlainParser Token a -> ScanUtils.ScanOpts -> EcuUpdater a -> FPath -> HsName -> EHCompilePhase [Err]
+cpParsePlain' parser scanOpts store fp modNm
  = do { cr <- get
       ; (fn,fh) <- lift $ openFPath fp ReadMode
       ; tokens  <- lift $ scanHandle scanOpts fn fh
@@ -422,7 +422,7 @@ cpParsePlain' parser scanOpts store description fp modNm
 
 cpParsePlain :: PlainParser Token a -> ScanUtils.ScanOpts -> EcuUpdater a -> String -> FPath -> HsName -> EHCompilePhase ()
 cpParsePlain parser scanOpts store description fp modNm
- = do { errs <- cpParsePlain' parser scanOpts store description fp modNm
+ = do { errs <- cpParsePlain' parser scanOpts store fp modNm
       ; cpSetLimitErrsWhen 5 description errs
       }
 
@@ -443,14 +443,23 @@ cpParseGrin modNm
 cpParseCore :: HsName -> EHCompilePhase ()
 cpParseCore modNm
   = do { cr <- get
-       ; cpParsePlain CorePrs.pCModule coreScanOpts ecuStoreCore "Parse Core (of previous compile) of module" (fpathSetSuff "core" $ ecuFilePath (crCU modNm cr)) modNm
+       ; let  ecu    = crCU modNm cr
+              opts   = crsiOpts (crStateInfo cr)
+              fp     = fpathSetSuff "core" $ ecuFilePath ecu
+       ; lift $ putCompileMsg VerboseALot (ehcOptVerbosity opts) "Parsing" Nothing modNm fp
+       ; cpParsePlain CorePrs.pCModule coreScanOpts ecuStoreCore "Parse Core (of previous compile) of module" fp modNm
        }
 
 cpParsePrevHI :: HsName -> EHCompilePhase ()
 cpParsePrevHI modNm
   = do { cr <- get
-       ; _ <- cpParsePlain' HIPrs.pAGItf hiScanOpts ecuStorePrevHI "Parse HI (of previous compile) of module" (fpathSetSuff "hi" $ ecuFilePath (crCU modNm cr)) modNm
-       ; return ()
+       ; let  ecu    = crCU modNm cr
+              opts   = crsiOpts (crStateInfo cr)
+              fp     = fpathSetSuff "hi" $ ecuFilePath ecu
+       ; lift $ putCompileMsg VerboseALot (ehcOptVerbosity opts) "Parsing" Nothing modNm fp
+       ; errs <- cpParsePlain' HIPrs.pAGItf hiScanOpts ecuStorePrevHI fp modNm
+       ; cpSetLimitErrsWhen 5 "Parse HI (of previous compile) of module" errs
+       -- ; return ()
        }
 %%]
 
@@ -659,7 +668,7 @@ cpGetPrevHI modNm
 cpGetPrevCore :: HsName -> EHCompilePhase ()
 cpGetPrevCore modNm
   = do { cr <- get
-       ; let  ecu        = crCU modNm cr
+       ; let  ecu    = crCU modNm cr
        ; when (isJust (ecuMbCoreTime ecu) && isNothing (ecuMbCore ecu))
               (cpParseCore modNm)
        }
@@ -673,7 +682,10 @@ cpGetHsImports modNm
                  mbHsSemMod = ecuMbHSSemMod ecu
                  hsSemMod   = panicJust "cpGetHsImports" mbHsSemMod
          ;  when (isJust mbHsSemMod)
-                 (cpUpdCU modNm $ ecuStoreImpL $ HSSemMod.modImpNmL_Syn_AGItf hsSemMod)
+                 (cpUpdCU modNm
+                  $ ecuStoreImpL
+                  $ HSSemMod.modImpNmL_Syn_AGItf hsSemMod
+                 )
          -- ; lift $ putWidthPPLn 120 (pp mod)
          }
 
@@ -753,7 +765,8 @@ cpCheckMods' modL
   = do { cr <- get
        ; let crsi   = crStateInfo cr
              (mm,e) = modMpCombine modL (crsiModMp crsi)
-       -- ; lift $ putWidthPPLn 120 (pp (head modL) >-< ppModMp mm) -- debug
+       ; when (ehcOptVerbosity (crsiOpts crsi) >= VerboseDebug)
+              (lift $ putWidthPPLn 120 (pp (head modL) >-< ppModMp mm)) -- debug
        ; put (cr {crStateInfo = crsi {crsiModMp = mm}})
        ; cpSetLimitErrsWhen 5 "Module analysis" e
        }
@@ -762,9 +775,9 @@ cpCheckMods :: [HsName] -> EHCompilePhase ()
 cpCheckMods modNmL
   = do { cr <- get
        ; let modL   = [ addBuiltin $ ecuMod $ crCU n cr | n <- modNmL ]
-                    where addBuiltin m = m { modImpL = modImpBuiltin : modImpL m }
        ; cpCheckMods' modL
        }
+  where addBuiltin m = m { modImpL = modImpBuiltin : modImpL m }
 %%]
 
 %%[8
@@ -1217,7 +1230,7 @@ doCompileRun :: String -> EHCOpts -> IO ()
 doCompileRun fn opts
   = do { let fp             = mkTopLevelFPath "hs" fn
              topModNm       = mkHNm (fpathBase fp)
-             searchPath     = ehcOptSearchPath opts ++ mkInitSearchPath fp
+             searchPath     = mkInitSearchPath fp ++ ehcOptSearchPath opts
              opts2          = opts { ehcOptSearchPath = searchPath }
              hsInh          = HSSem.Inh_AGItf { HSSem.opts_Inh_AGItf            = opts2
                                               , HSSem.idGam_Inh_AGItf           = HSSem.tyGam2IdDefOccGam initTyGam

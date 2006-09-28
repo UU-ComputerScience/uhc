@@ -40,8 +40,11 @@ SEM Deriving
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 hs
-doccForUse :: Maybe IdDefOcc -> Maybe NmLev
-doccForUse = fmap doccLev
+doccForUse ::Maybe IdDefOcc -> IdIsDef
+doccForUse md
+  = case md of
+      Just d  -> IdIsDef (doccLev d)
+      Nothing -> IdIsNotDef
 %%]
 
 %%[1 hs
@@ -60,17 +63,38 @@ kiGam2IdDefOccGam = gamMap (\(n,kgi) -> mkBuiltinIdDefOcc n IdOcc_Kind)
 %%]
 
 %%[1 hs
+data IdIsDef
+  = IdIsDef             { idIsDefLev :: NmLev }
+  | IdIsNotDef
+%%[[12
+  | IdIsInWrongModule   IdOcc
+%%]]
+  deriving (Show)
+
+idIsDef :: IdIsDef -> Bool
+idIsDef (IdIsDef _) = True
+idIsDef _           = False
+
+instance PP IdIsDef where
+  pp (IdIsDef _)            = pp "Def'd"
+  pp IdIsNotDef             = pp "Undef'd"
+%%[[12
+  pp (IdIsInWrongModule o)  = "Wrong" >#< o
+%%]]
+%%]
+
+%%[1 hs
 data IdUseOcc
   = IdUseOcc
       { uoccOcc     :: IdOcc
       , uoccAsp     :: IdAspect
       , uoccRange   :: Range
-      , uoccMbDef   :: Maybe NmLev
+      , uoccIsDef   :: IdIsDef
       }
   deriving (Show)
 
 instance PP IdUseOcc where
-  pp o = uoccOcc o >|< "/" >|< uoccMbDef o
+  pp o = uoccOcc o >|< "/" >|< uoccIsDef o
 
 type IdUseOccGam = Gam    IdOcc  IdUseOcc
 type IdUseOccAsc = AssocL IdOcc [IdUseOcc]
@@ -83,8 +107,8 @@ splitIdUseOccGam level g
   where (o,h,i,e)
           = foldr
               (\x@(k,occs) (o,h,i,e)
-                 -> case partition (isJust . uoccMbDef) occs of
-                      (occ:_,[]) -> case compare (fromJust $ uoccMbDef $ occ) level of
+                 -> case partition (idIsDef . uoccIsDef) occs of
+                      (occ:_,[]) -> case compare (idIsDefLev $ uoccIsDef $ occ) level of
                                       LT -> (x:o,  h,  i,  e)
                                       EQ -> (  o,x:h,  i,  e)
                                       GT -> (  o,  h,x:i,  e)
@@ -163,7 +187,7 @@ SEM Declaration
                                         =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
                         .   idOccDefGamSigAsVar
                                         =   assocLToGam [ (o,d {doccAsp = IdAsp_Val_Var}) | (o,d) <- gamToAssocL @where.idOccDefGam, iaspIsSig (doccAsp d) ]
-                        .   idOccDefGam =   mkDefGam @lhs.nmLev @simpletype.range (IdAsp_Class_Def @eh) [@idOccDef]
+                        .   idOccDefGam =   mkDefGam @lhs.nmLev @simpletype.range (IdAsp_Class_Def @eh @ehInst) [@idOccDef]
                                             `gamUnion` @idOccDefGamSigAsVar
     | Instance
         loc             .   idOccDefGamType
@@ -177,7 +201,9 @@ SEM Declaration
 %%]
 %%[11
     | Type
-        loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @simpletype.range (IdAsp_Type_Def @eh) @idOccDefs
+        loc             .   idOccDefGamType
+                                        =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
+                        .   idOccDefGam =   mkDefGam @lhs.nmLev @simpletype.range (IdAsp_Type_Def @eh) @idOccDefs
 %%]
 %%[5
     | Data Newtype
@@ -207,7 +233,7 @@ SEM Declaration
 %%[1
 SEM FunctionBinding
     | FunctionBinding
-        loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @range (IdAsp_Val_Fun @lefthandside.eh @righthandside.eh) @idOccDefs
+        loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @range (IdAsp_Val_Fun @lefthandside.eh @righthandside.eh @lUniq) @idOccDefs
 %%]
 
 %%[1
@@ -339,8 +365,11 @@ SEM Declaration
         type            .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
 %%[[5
     | Data Newtype
+%%[[11
+      Type
+%%]]
         loc             .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
-%%]
+%%]]
 %%[[9
     | Class
         loc             .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
@@ -348,7 +377,7 @@ SEM Declaration
                                         =   fst $ gamPartition (\_ d -> case doccAsp d of {IdAsp_Inst_Def _ n | n == @classrefname -> True ; _ -> False}) $ @lhs.idGam
     | Instance
         loc             .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
-%%]
+%%]]
 %%]
 
 %%[1
@@ -421,12 +450,18 @@ mkUseOccGam idGam names kind asp rng
         mkUse idGam name kind asp rng
           = (nmOfDef,idUseOccGam,errs)
           where idOccUse    = IdOcc name kind
-                occOfDef    = idOccUse {ioccNm = nmOfDef}
+%%[[12
                 mbDef       = gamLookup idOccUse idGam
-                idUseOccGam = gamUnit occOfDef (IdUseOcc occOfDef asp rng (doccForUse mbDef))
+%%][99
+                mbDef       = case gamLookup idOccUse idGam of
+                                Nothing | hsnIsInPrelude name -> Just (emptyIdDefOcc {doccOcc = idOccUse})
+                                md                            -> md
+%%]]
                 nmOfDef     = case mbDef of
                                 Just d -> ioccNm $ doccOcc d
                                 _      -> name
+                occOfDef    = idOccUse {ioccNm = nmOfDef}
+                idUseOccGam = gamUnit occOfDef (IdUseOcc occOfDef asp rng (doccForUse mbDef))
                 errs        = case mbDef of
                                 Just d | isJust (doccNmAlts d) && length alts > 1
                                   -> [Err_AmbiguousNameRef name alts]
@@ -666,19 +701,19 @@ SEM Declaration
                                                 (@constructors.idUseOccGam
 %%[[9
                                                  `gamUnion` @context.idUseOccGam `gamUnion` @derivings.idUseOccGam
-%%]
+%%]]
                                                 )
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
                                             `idDpdMpUnion`
                                             idFrOccGam2DpdMp @idOccDefGamConstrs [@idOccDef]
-%%]
+%%]]
 %%[[8
     | ForeignImport
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
                                         =   splitIdUseOccGam @lhs.nmLev @type.idUseOccGam
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
         lhs             .   undefOccGam =   gamUnions [@undefOccGam,@type.undefOccGam]
-%%]
+%%]]
 %%[[9
     | Class
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
@@ -712,7 +747,14 @@ SEM Declaration
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
                                         =   splitIdUseOccGam @lhs.nmLev @types.idUseOccGam
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
-%%]
+%%]]
+%%[[11
+    | Type
+        loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
+                                        =   splitIdUseOccGam @lhs.nmLev @type.idUseOccGam
+                        .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+        lhs             .   undefOccGam =   gamUnions [@undefOccGam,@type.undefOccGam]
+%%]]
 %%]
 
 %%[8
@@ -810,7 +852,7 @@ mkIdDefEH def
         -> [decl]
       IdAsp_Val_Sig decl
         -> [decl]
-      IdAsp_Val_Fun lhs rhs
+      IdAsp_Val_Fun lhs rhs _
         -> [decl]
         where (h,t) = hdAndTl lhs
               decl  = rngLift (doccRange def) EH.Decl_Val h (foldr (rngLift (doccRange def) EH.Expr_Lam) rhs t)
@@ -823,8 +865,8 @@ mkIdDefEH def
         -> [decl]
 %%]
 %%[[9
-      IdAsp_Class_Def decl
-        -> [decl]
+      IdAsp_Class_Def decl declInst
+        -> [decl,declInst]
       IdAsp_Inst_Def decl _
         -> [decl]
       IdAsp_Dflt_Def decl
@@ -850,15 +892,19 @@ mergeFunDefL ds
       [_] -> (ds,[])
       (od : _ : _) | iaspIsFun (doccAsp od)
           -> ([d],[])
-          where (IdAsp_Val_Fun (patf:pats1) _) = doccAsp od
+          where (IdAsp_Val_Fun (patf:pats1) _ uniq) = doccAsp od
                 xSz   = length pats1
                 xNmL  = [ mkHNm ("x" ++ show i) | i <- [1..xSz] ]
                 xPatL = map (rngLift (doccRange od) EH.PatExpr_Var) xNmL
-                b = EH.mkCase (doccRange od) (mkRngProdOpt (doccRange od) $ map (rngLift (doccRange od) EH.Expr_Var) $ xNmL)
-                    $ zip
+                b = EH.mkCase'
+                      (doccRange od) (mkRngProdOpt (doccRange od) $ map (rngLift (doccRange od) EH.Expr_Var) $ xNmL)
+%%[[8
+                      (Just uniq) (length xNmL > 1)
+%%]]
+                    $ zipWith (EH.mkAlt (doccRange od))
                        [ mkRngProdOpt (doccRange od) $ tail $ iaspPatL $ doccAsp $ d | d <- ds ]
                        [ iaspBody $ doccAsp $ d | d <- ds ]
-                d = mkIdDefOcc (doccOcc od) (IdAsp_Val_Fun (patf:xPatL) b) 0 (doccRange od)
+                d = mkIdDefOcc (doccOcc od) (IdAsp_Val_Fun (patf:xPatL) b uniq) 0 (doccRange od)
       _   -> ([],[])
 %%]
 
@@ -867,7 +913,7 @@ splitOffClsInst :: [IdDefOcc] -> [[IdDefOcc]]
 splitOffClsInst
   = foldr (\df dfs -> zipWith (++) (s df) dfs) [[],[],[]]
   where s d = case doccAsp d of
-                (IdAsp_Class_Def _  ) -> [[d],[],[]]
+                (IdAsp_Class_Def _ _) -> [[d],[],[]]
                 (IdAsp_Inst_Def  _ _) -> [[],[d],[]]
                 _                     -> [[],[],[d]]
 %%]
@@ -895,7 +941,7 @@ mkIdOccEH defs
   = case defs of
       (_:_)
         -> (concatMap mkIdDefEH (otherDefs ++ funDef),errL)
-        where (funDefs,otherDefs) = partition (\d -> case doccAsp d of {IdAsp_Val_Fun _ _ -> True ; _ -> False}) defs
+        where (funDefs,otherDefs) = partition (iaspIsFun . doccAsp) defs
               (funDef,errL) = mergeFunDefL funDefs
       _ -> ([],[])
 %%]
@@ -986,8 +1032,6 @@ SEM Declaration
         loc             .   (_,ehReorderedDecls,errReorder)
                                         =   mkIdOccSccEH @range @where.idOccDefGam Nothing
 %%]
-                        .   (_,ehReorderedSigDecls,errReorderSig)
-                                        =   mkIdOccSccEH @range @idOccDefSigGam Nothing
 
 %%[9
 SEM Statement

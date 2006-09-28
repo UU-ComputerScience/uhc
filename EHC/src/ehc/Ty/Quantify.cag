@@ -7,7 +7,7 @@
 %%% Module itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[3 hs module {%{EH}Ty.Quantify} import(EH.Util.Utils,{%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyQuantify, tyQuantifyClosed)
+%%[3 hs module {%{EH}Ty.Quantify} import(EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyQuantify, tyQuantifyClosed)
 %%]
 
 %%[4 hs import({%{EH}Base.Debug},UU.Pretty)
@@ -148,9 +148,16 @@ SEM Ty
   | App         loc         .   frTvLL      =   @arg.frTvLL ++ @func.frTvLL
                             .   frTvL       =   listCombineUniq @frTvLL
                 lhs         .   frTvLL      =   if @isSpineRoot then [@frTvL] else @frTvLL
-  | Quant       loc         .   frTvL       =   head @ty.frTvLL \\ @introTVarL
+  | Quant
+%%[[11
+    Lam
+%%]]
+                loc         .   frTvL       =   head @ty.frTvLL \\ @introTVarL
   | Any Con     loc         .   frTvL       =   []
   | Quant Var Any Con
+%%[[11
+    Lam
+%%]]
                 lhs         .   frTvLL      =   [@frTvL]
 %%]
 
@@ -581,6 +588,11 @@ SEM Ty
                                                         =   tvarsToQuant @isQuLoc @lhs.fxTvM (const False) @lhs.tvIsBound @qHereTvL
 %%]
 
+%%[11
+SEM Ty
+  | Lam         loc         .   tvIsBound               =   tvBoundAdd @lhs.tvIsBound @introTVarL
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Which quantifier to use for quantification
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -661,6 +673,11 @@ SEM Ty
                                                              else maybe (Ty_App @func.quTy @arg.quTy) (const @arg.quTy) @func.mbImpls
                                                             )
   | Pred        lhs         .   quTy            =   mkTyQuForRank @isQuRank @hereQu @qBndTvL @qBndExTvL (Ty_Pred @pr.quTy)
+%%]
+
+%%[11
+SEM Ty
+  | Lam         lhs         .   quTy            =   Ty_Lam @tv @ty.quTy
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

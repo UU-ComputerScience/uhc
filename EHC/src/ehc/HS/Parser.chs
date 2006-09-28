@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}HS.Parser} import(IO, UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils(LayoutParser,PlainParser), UU.Scanner.GenToken, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}HS})
+%%[1 module {%{EH}HS.Parser} import(IO, UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils(LayoutParser,PlainParser), UU.Scanner.GenToken, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Scanner.Common}, {%{EH}HS})
 %%]
 
 %%[1 export(pAGItf, HSParser)
@@ -245,7 +245,7 @@ pDeclarationFixity
   = (\f p o -> Declaration_Fixity emptyRange f p (tokMkQNames o))
     <$> pFixity
     <*> ((Just . tokMkInt) <$> pInteger10Tk <|> pSucceed Nothing)
-    <*> pListSep pCOMMA varop
+    <*> pListSep pCOMMA op
 
 pFixity :: HSParser' Fixity
 pFixity = Fixity_Infixl <$ pINFIXL <|> Fixity_Infixr <$ pINFIXR <|> Fixity_Infix <$ pINFIX
@@ -612,17 +612,9 @@ pExpressionBase :: HSParser Expression
 pExpressionBase
   =   Expression_Literal emptyRange  <$> pLiteral
   <|> mkRngNm Expression_Variable    <$> qvarid
-  <|> gcon
-      <**> (   pSucceed (mkRngNm Expression_Constructor)
-%%]
-%%[7
-           <|> pCurlys' ((\bs _ c -> mkRngNm Expression_RecordConstruction c bs) <$> pListSep pCOMMA pRecordExpressionBinding)
-%%]
-%%[1
-           )
-%%]
-%%[5
+%%[[5
   <|> pExpressionList
+%%]]
 %%]
 %%[1
   <|> pParens' pInParens
@@ -703,14 +695,20 @@ pExpressionDo
 %%]
 
 %%[1
-pExpressionUpd :: HSParser Expression
-pExpressionUpd
-  = pExpressionBase
-%%]
-%%[7
-    <**> ((\u e -> foldr ($) e u) <$> pList pU)
+pExpressionConUpd :: HSParser Expression
+pExpressionConUpd
+  =   gcon
+      <**> (   pSucceed (mkRngNm Expression_Constructor)
+%%[[7
+           <|> pCurlys' ((\bs _ c -> mkRngNm Expression_RecordConstruction c bs) <$> pListSep pCOMMA pRecordExpressionBinding)
+%%]]
+           )
+  <|> pExpressionBase
+%%[[7
+      <**> ((\u e -> foldr ($) e u) <$> pList pU)
   where pU =   pCurlys' ((\bs r e -> Expression_RecordUpdate r e bs) <$> pListSep pCOMMA pRecordExpressionBinding)
            <|> pRowRecordSelectionSuffix
+%%]]
 %%]
 
 %%[7
@@ -723,50 +721,63 @@ pRecordExpressionBinding
 pExpressionApp :: HSParser Expression
 pExpressionApp
   = pE <**> ((\as e -> foldl (flip ($)) e as) <$> pList pA)
-  where pE =   pExpressionUpd
+  where pE =   pExpressionConUpd
         pA =   (\es e -> Expression_NormalApplication emptyRange e es) <$> pList1 pE
-%%]
-%%[4
+%%[[4
            <|> (\es e -> Expression_ImpredicativeApplication emptyRange e es) <$> pList1 (pTILDE *> pE)
-%%]
-%%[9
+%%]]
+%%[[9
            <|> (\es e -> Expression_ImplicitApplication emptyRange e es) <$> pList1 (pImpls' pContextedExpression)
            where pContextedExpression = (\e c r -> ContextedExpression_Contexted r e c) <$> pExpression <* pLTCOLON <*> pContextItem
                  pContextedExpression :: HSParser (Range -> ContextedExpression)
+%%]]
 %%]
 
 %%[1
 pExpressionLayout :: HSParser Expression
 pExpressionLayout
   =   pExpressionApp
-%%]
-%%[5
+%%[[5
   <|> (Expression_Case . mkRange1) <$> pCASE <*> pExpression <* pOF <*> pAlternatives
-%%]
-%%[9
+%%]]
+%%[[9
   <|> pExpressionDo
+%%]]
 %%]
 
 %%[1
-pExpressionOp :: HSParser Expression
-pExpressionOp
-  = Expression_InfixApplicationChainTop emptyRange
-    <$> pChainr_ng
-          ((\(o,rng) l r -> Expression_InfixApplication rng l o r) <$> pOp)
-          pExpressionLayout
-
 pOp, pOpm :: HSParser (Expression,Range)
 pOp  = mkRngNm' Expression_Variable <$> qvarop  <|> mkRngNm' Expression_Constructor <$> qconop
 pOpm = mkRngNm' Expression_Variable <$> qvaropm <|> mkRngNm' Expression_Constructor <$> qconop
 %%]
 
 %%[1
-pExpression' :: HSParser (Expression -> Expression) -> HSParser Expression
-pExpression' pExprPre
-  = pE <??> ((\c t e -> Expression_Typed (mkRange1 c) e t) <$> pDCOLON <*> pType)
-  where pE =   pExprPre <*> pE
-           <|> pExpressionOp
+pExpressionOpPrefix :: HSParser Expression -> HSParser (Expression -> Expression)
+pExpressionOpPrefix pLeftOpndE
+  = (\l e -> Expression_InfixApplicationChainTop emptyRange
+             $ foldr (\(l,(op,rng)) r -> Expression_InfixApplication rng l op r) e l
+    )
+    <$> pList1_ng ((,) <$> pLeftOpndE <*> pOp)
 %%]
+
+%%[1
+pExpression' :: HSParser (Expression -> Expression) -> HSParser Expression
+pExpression' pPreE
+  = pE1 <??> ((\c t e -> Expression_Typed (mkRange1 c) e t) <$> pDCOLON <*> pType)
+  where pE1, pE2 :: HSParser Expression
+        pE1  = pExpressionOpPrefix pExpressionLayout <*> pE2 <|> pE2
+        pE2  = pPre1 <*> pExpressionLayout <|> pExpressionLayout
+        pPre1 :: HSParser (Expression -> Expression)
+        pPre1 = foldr (.) id <$> pList1 pPreE
+%%]
+pExpression' :: HSParser (Expression -> Expression) -> HSParser Expression
+pExpression' pPreE
+  = (pE1 <|> pE2) <??> ((\c t e -> Expression_Typed (mkRange1 c) e t) <$> pDCOLON <*> pType)
+  where pE1, pE2 :: HSParser Expression
+        pE1  = pExpressionOpPrefix pExpressionLayout <*> (pPre1 <*> pE1 <|> pExpressionLayout)
+        pE2  = pPre1 <*> (pExpressionOpPrefix pExpressionLayout <*> pE2 <|> pExpressionLayout)
+        pPre1 :: HSParser (Expression -> Expression)
+        pPre1 = foldr (.) id <$> pList1 pPreE
 
 %%[1
 pExpression :: HSParser Expression
@@ -780,40 +791,36 @@ pExpressionNoLet
   = pExpression' pExpressionNoLetPrefix
 %%]
 
-%%[1.pExprPrefix
+%%[1.pExpressionLetPrefix
 pExpressionLetPrefix :: HSParser (Expression -> Expression)
 pExpressionLetPrefix
   =   (Expression_Let . mkRange1) <$> pLET <*> pDeclarations <* pIN
 %%]
 
-%%[1.pExprPrefix
+%%[1.pExpressionNoLetPrefix
 pExpressionNoLetPrefix :: HSParser (Expression -> Expression)
 pExpressionNoLetPrefix
   =   (Expression_Negate . mkRange1) <$> pMINUS
-%%]
-%%[5.pExprPrefix
+%%[[5
   <|> (Expression_If . mkRange1) <$> pIF <*> pExpression <* pTHEN <*> pExpression <* pELSE
-%%]
-%%[1.pExprPrefixLam
+%%]]
   <|> pLAM <**> pLamArgs
   where pLamArgs
           =   (\a1 a2 t e -> a1 t (a2 t e))
               <$> (   (\ps t e -> Expression_Lambda (mkRange1 t) ps e) <$> pList1 pPatternBase
-%%]
-%%[9
+%%[[9
                   <|> (\ps t e -> Expression_ImplicitLambda (mkRange1 t) ps e) <$> pList1 (pImpls' pContextedPattern)
-%%]
-%%[1
+%%]]
                   )
               <*> pLamArgs
           <|> (\_ e -> e) <$ pRARROW
-%%]
-%%[9
+%%[[9
         pContextedPattern = (\p c r -> ContextedPattern_Contexted r p c) <$> pPattern <* pLTCOLON <*> pContextItem
         pContextedPattern :: HSParser (Range -> ContextedPattern)
+%%]]
 %%]
 
-%%[1.pExprPrefix
+%%[1.pExpressionPrefix
 pExpressionPrefix :: HSParser (Expression -> Expression)
 pExpressionPrefix
   =   pExpressionLetPrefix
@@ -844,6 +851,7 @@ pPatternBase
   =   qvar <**> (   (\a p v -> Pattern_As (mkRange1 a) (tokMkQName v) p) <$> pAT <*> pPatternBase
                 <|> pSucceed (mkRngNm Pattern_Variable)
                 )
+  <|> (\c -> mkRngNm Pattern_Constructor c []) <$> qconid
   <|> Pattern_Literal emptyRange <$> pLiteral
   <|> (Pattern_Negate . mkRange1) <$> pMINUS <*> pLiteralNumber
 %%]
@@ -873,7 +881,7 @@ pPatternBase
 %%[1
 pPatternApp :: HSParser Pattern
 pPatternApp
-  =   mkRngNm Pattern_Constructor <$> qconid <*> pList pPatternBase
+  =   mkRngNm Pattern_Constructor <$> qconid <*> pList1 pPatternBase
   <|> pPatternBase
 %%]
 

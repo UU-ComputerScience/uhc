@@ -73,7 +73,7 @@ runGrin opts rs
                 ->  do  {  if grioptDebug opts
                            then do  {  putPPLn (pp "-------")
                                     ;  prs <- ppRunState rs'
-                                    ;  putPPLn prs
+                                    ;  putWidthPPLn 120 prs
                                     }
                            else return ()
                         ;  runGrin opts rs'

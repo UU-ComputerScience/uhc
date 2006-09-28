@@ -7,13 +7,13 @@
 %%% Core utilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}Core.Utils} import(qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam}) export(RCEEnv(..),emptyRCEEnv)
+%%[8 module {%{EH}Core.Utils} import(qualified Data.Map as Map,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam}) export(RCEEnv(..),emptyRCEEnv)
 %%]
 
 %%[8 export(mkCExprStrictSatCase,mkCExprSelCase)
 %%]
 
-%%[8 import(Data.List,EH.Util.Utils(sortOn)) export(FieldUpdateL,fuMkCExpr)
+%%[8 import(Data.List,EH.Util.Utils(sortOn)) export(FieldUpdateL,fuL2ExprL,fuMkCExpr)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -117,6 +117,9 @@ mkCExprSelCase env ne e ct n lbl off
 
 %%[8
 type FieldUpdateL e = AssocL HsName e
+
+fuL2ExprL :: FieldUpdateL CExpr -> [CExpr]
+fuL2ExprL l = [ e | (_,CExpr_TupIns _ _ _ _ e) <- l ]
 
 fuReorder :: [HsName] -> FieldUpdateL CExpr -> (CBindL,FieldUpdateL (CExpr -> CExpr))
 fuReorder nL fuL

@@ -10,7 +10,7 @@
 %%[9 module {%{EH}Pred} import(Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty,EH.Util.PPUtils)
 %%]
 
-%%[9 import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Quantify},{%{EH}Core},{%{EH}Core.Pretty},{%{EH}Core.Subst},{%{EH}Core.Utils},{%{EH}Base.Common},{%{EH}Gam},{%{EH}Cnstr},{%{EH}Substitutable})
+%%[9 import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Quantify},{%{EH}Core},{%{EH}Core.Pretty},{%{EH}Core.Subst},{%{EH}Core.Utils},{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Gam},{%{EH}Cnstr},{%{EH}Substitutable})
 %%]
 
 %%[9 import({%{EH}Base.Debug})
@@ -37,7 +37,7 @@
 %%[9 export(Rule(..),emptyRule,mkInstElimRule)
 %%]
 
-%%[9 export(ProofCost(..),ppProofCost',mkCost,mkCostAvailImpl,costVeryMuch,costAvailArg,costZero,costNeg,costAdd,costBase,costAddHi,costMulBy)
+%%[9 export(ProofCost(..),ppProofCost',mkPCostExec,pcostNotAvail,pcostAvailAsArg,pcostZero,pcostZero',pcostCmb,pcostBase,pcostInf,pcostLevelSet,pcostExecMulBy)
 %%]
 
 %%[9 export(ClsFuncDep(..))
@@ -94,41 +94,48 @@ instance PoiSubstitutable PoiSubst where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-data ProofCost  = Cost {costHi, costLo :: Int}
-                deriving (Eq,Show)
+data ProofCost
+  = PCost {pcostLevel, pcostAvail, pcostExec :: Int}
+    deriving (Eq,Show)
+
+emptyProofCost = PCost 0 0 0
 
 instance Ord ProofCost where
-  (Cost h1 l1) `compare` (Cost h2 l2)
-    | hcmp == EQ  = l1 `compare` l2
-    | otherwise   = hcmp
-    where hcmp = h1 `compare` h2
+  c1 `compare` c2
+    = case pcostLevel c1 `compare` pcostLevel c2 of
+        EQ -> case pcostAvail c1 `compare` pcostAvail c2 of
+                EQ -> pcostExec  c1 `compare` pcostExec  c2
+                c  -> c
+        c  -> c
 
-mkCost :: Int -> ProofCost
-mkCost c = Cost 0 c
+mkPCostExec :: Int -> ProofCost
+mkPCostExec c = emptyProofCost { pcostExec = c }
 
-costVeryMuch    = Cost 100 0
-costZero        = mkCost 0
-costBase        = mkCost 1
-costAvailArg    = mkCost 2
-costNeg         = Cost (-2) 0
+pcostNotAvail l  	= emptyProofCost { pcostLevel = l, pcostAvail = 1 }
+pcostZero        	= mkPCostExec 0
+pcostZero' c     	= pcostZero {pcostLevel = pcostLevel c}
+pcostBase        	= mkPCostExec 1
+pcostAvailAsArg    	= mkPCostExec 2
+pcostInf    		= PCost 1000000 0 0
 
-mkCostAvailImpl :: Int -> ProofCost
-mkCostAvailImpl c = Cost (-1) c
+infixr 2 `pcostCmb`, `pcostLevelSet`
+infixr 3 `pcostExecMulBy`
 
-infixr 2 `costAdd`, `costAddHi`
-infixr 3 `costMulBy`
+pcostExecMulBy :: ProofCost -> Int -> ProofCost
+c `pcostExecMulBy` i = c {pcostExec = pcostExec c * i}
 
-costMulBy :: ProofCost -> Int -> ProofCost
-c1@(Cost h l) `costMulBy` i = Cost h (l * i)
+pcostCmb :: ProofCost -> ProofCost -> ProofCost
+c1 `pcostCmb` c2
+  = c1 { pcostLevel = pcostLevel c1 `min` pcostLevel c2
+       , pcostAvail = pcostAvail c1 `max` pcostAvail c2
+       , pcostExec  = pcostExec  c1  +    pcostExec  c2
+       }
 
-costAdd :: ProofCost -> ProofCost -> ProofCost
-c1@(Cost h1 l1) `costAdd` c2@(Cost h2 l2) = Cost (h1 + h2) (l1 + l2)
-
-costAddHi :: ProofCost -> Int -> ProofCost
-(Cost h l) `costAddHi` i = Cost (h+i) l
+pcostLevelSet :: ProofCost -> Int -> ProofCost
+c `pcostLevelSet` i = c { pcostLevel = i }
 
 ppProofCost' :: ProofCost -> PP_Doc
-ppProofCost' (Cost h l) = ppCurlysCommas [pp h,pp l]
+ppProofCost' (PCost l a e) = ppCurlysCommas [pp l,pp a,pp e]
 
 instance PP ProofCost where
   pp c = "Cost" >|< ppProofCost' c
@@ -613,7 +620,7 @@ data Rule
 instance Eq Rule where
   r1 == r2 = poiId (rulId r1) == poiId (rulId r2)
 
-emptyRule = Rule Ty_Any head (MkEvidVar hsnUnknown) hsnUnknown (mkPrId uidStart uidStart) costVeryMuch []
+emptyRule = Rule Ty_Any head (MkEvidVar hsnUnknown) hsnUnknown (mkPrId uidStart uidStart) pcostInf []
 
 mkInstElimRule :: HsName -> PredOccId -> Int -> Ty -> Rule
 mkInstElimRule n i sz ctxtToInstTy
@@ -622,7 +629,7 @@ mkInstElimRule n i sz ctxtToInstTy
            , rulMkEvidHow	= ev
            , rulNmEvid    	= n
            , rulId        	= i
-           , rulCost      	= costBase `costAdd` (costBase `costMulBy` 2 * sz)
+           , rulCost      	= pcostBase `pcostExecMulBy` (2 * sz + 1)
            , rulFuncDeps  	= []
            }
   where ns = take sz hsnLclSupplyL

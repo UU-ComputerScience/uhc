@@ -29,22 +29,28 @@ SEM AGItf
 
 %%[1
 SEM Declaration
-  | PatternBinding
+  	| PatternBinding
   		(pattern.gUniq,loc.lUniq)		=   mkNewLevUID @lhs.gUniq
+%%]
+
+%%[1
+SEM FunctionBinding
+  	| FunctionBinding
+  		(lefthandside.gUniq,loc.lUniq)	=   mkNewLevUID @lhs.gUniq
 %%]
 
 %%[8
 SEM Expression
   | Case
-  		(expression.gUniq,loc.lUniq)	=   mkNewLevUID @lhs.gUniq
+ 	 	(expression.gUniq,loc.lUniq)	=   mkNewLevUID @lhs.gUniq
 %%]
 
 %%[9
 SEM Declaration
-  | Class Instance
+  	| Class Instance
   		(context.gUniq,loc.lUniq)		=   mkNewLevUID @lhs.gUniq
-  | InstanceUseImplicitly
+  	| InstanceUseImplicitly
   		(expression.gUniq,loc.lUniq)	=   mkNewLevUID @lhs.gUniq
-  | Default
+  	| Default
   		(types.gUniq,loc.lUniq)			=   mkNewLevUID @lhs.gUniq
 %%]

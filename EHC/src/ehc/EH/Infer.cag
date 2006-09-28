@@ -174,7 +174,11 @@ SEM Decl
 
 %%[6
 SEM Decl
-  | Data        loc         .   knKi                =   @sigKi
+  | Data
+%%[[11
+    Type
+%%]]
+                loc         .   knKi                =   @sigKi
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -344,7 +348,12 @@ ATTR AllDataConstrEq [ | tyGam: TyGam | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8.dataGam
-ATTR AllDecl AllExpr AllCase [ | gathDataGam: DataGam | ]
+ATTR
+  AllDecl AllExpr AllCase
+%%[[99
+  AllPatExpr
+%%]]
+    [ | gathDataGam: DataGam | ]
 ATTR AllDecl AllExpr AllCase AllPatExpr [ dataGam: DataGam | | ]
 
 SEM AGItf
@@ -371,7 +380,16 @@ SEM Decl
 
 %%[9
 SEM Decl
-  | Instance    loc         .   fe                  :=  emptyFE {fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts}
+  | Instance    loc         .   fe                  :=  emptyFE
+                                                            { fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+                                                            }
+                            .   fe2                 :=  emptyFE
+%%[[11
+                                                            { feTyGam = @lhs.tyGam }
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -507,7 +525,11 @@ SEM Expr
                             .   kiSigGam            =   @decls.gathKiSigGam
 
 SEM Decl
-  | Data        loc         .   (sigKi,hasKiSig)    =   case gamLookup @tyNm @lhs.kiSigGam of
+  | Data
+%%[[11
+    Type
+%%]]
+                loc         .   (sigKi,hasKiSig)    =   case gamLookup @tyNm @lhs.kiSigGam of
                                                           Nothing   -> (Ty_Any,False)
                                                           Just tgi  -> (tgiKi tgi,True)
 %%]
@@ -574,6 +596,9 @@ SEM PatExpr
   | Var VarAs   loc         .   topNm               =   if @nm == hsnWild then uidHNm @lUniq else @nm
   | App         lhs         .   topNm               =   hsnUnknown
   | AppTop Con Rec CConst IConst
+%%[[99
+    Expr
+%%]]
                 loc         .   topNm               =   uidHNm @lUniq
   | SConst      loc         .   topNm               =   uidHNm @uniq1
 %%]

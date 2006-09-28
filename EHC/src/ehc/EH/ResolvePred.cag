@@ -87,13 +87,6 @@ SEM Expr
                 body        .   prElimTGam          =   @lPrElimTGam
 %%]
 
-%%[9
-%%]
-SEM Expr
-  | LamImpl     loc         .   prf2FE              =   emptyFE {fePrElimTGam = @body.prElimTGam, feDontBind = ftv @knPr}
-  | Lam         loc         .   prf2FE              =   emptyFE {fePrElimTGam = @body.prElimTGam}
-  | AppTop      loc         .   prf2FE              =   emptyFE {fePrElimTGam = @expr.prElimTGam}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pred resolution (tgam version)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -156,7 +149,6 @@ SEM Decl
 SEM AGItf
   | AGItf       loc         .   prfCtxtId           =   @lUniq
 %%]
-  | Let         body		.	prfCtxtId			=	@lhs.prfCtxtId
 
 %%[12
 ATTR AGItf [ prfCtxtId: PrfCtxtId | | ]

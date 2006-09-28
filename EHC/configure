@@ -274,7 +274,7 @@ PACKAGE_VERSION='0.1'
 PACKAGE_STRING='EH 0.1'
 PACKAGE_BUGREPORT='atze@cs.uu.nl'
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_MINORMINOR EH_VERSION_STABILITY EH_VERSION ghcCmd GHC_CMD GHC_VERSION CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES UUAGC_CMD MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC PATHS_SEP TOP_ABS LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_MINORMINOR EH_VERSION_STABILITY EH_VERSION ghcCmd GHC_CMD GHC_VERSION CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES uuagcCmd UUAGC_CMD MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC PATHS_SEP TOP_ABS LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1471,7 +1471,7 @@ CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES="$optCabalAllowUndecidableInstances"
 # Check whether --with-uuagc or --without-uuagc was given.
 if test "${with_uuagc+set}" = set; then
   withval="$with_uuagc"
-   UUAGC_CMD="$withval"
+   uuagcCmd="$withval"
 else
 
   if test "$UUAGC" = ""; then
@@ -1479,12 +1479,12 @@ else
 set dummy uuagc; ac_word=$2
 echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
-if test "${ac_cv_path_UUAGC_CMD+set}" = set; then
+if test "${ac_cv_path_uuagcCmd+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  case $UUAGC_CMD in
+  case $uuagcCmd in
   [\\/]* | ?:[\\/]*)
-  ac_cv_path_UUAGC_CMD="$UUAGC_CMD" # Let the user override the test with a path.
+  ac_cv_path_uuagcCmd="$uuagcCmd" # Let the user override the test with a path.
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
@@ -1494,7 +1494,7 @@ do
   test -z "$as_dir" && as_dir=.
   for ac_exec_ext in '' $ac_executable_extensions; do
   if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_UUAGC_CMD="$as_dir/$ac_word$ac_exec_ext"
+    ac_cv_path_uuagcCmd="$as_dir/$ac_word$ac_exec_ext"
     echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -1504,25 +1504,31 @@ done
   ;;
 esac
 fi
-UUAGC_CMD=$ac_cv_path_UUAGC_CMD
+uuagcCmd=$ac_cv_path_uuagcCmd
 
-if test -n "$UUAGC_CMD"; then
-  echo "$as_me:$LINENO: result: $UUAGC_CMD" >&5
-echo "${ECHO_T}$UUAGC_CMD" >&6
+if test -n "$uuagcCmd"; then
+  echo "$as_me:$LINENO: result: $uuagcCmd" >&5
+echo "${ECHO_T}$uuagcCmd" >&6
 else
   echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
 fi
 
   else
-    UUAGC_CMD=$UUAGC
+    uuagcCmd=$UUAGC
   fi
 
 
 fi;
-if test "$UUAGC_CMD" = "no"; then
-  UUAGC_CMD=""
+if test "$uuagcCmd" = "no"; then
+  uuagcCmd=""
+  uuagcExists="no"
+else
+  uuagcExists="yes"
+  uuagcVersion=`$uuagcCmd --version`
 fi
+UUAGC_CMD=$uuagcCmd
+
 
 # Checks for libraries.
 
@@ -2262,6 +2268,7 @@ s,@ghcCmd@,$ghcCmd,;t t
 s,@GHC_CMD@,$GHC_CMD,;t t
 s,@GHC_VERSION@,$GHC_VERSION,;t t
 s,@CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES@,$CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES,;t t
+s,@uuagcCmd@,$uuagcCmd,;t t
 s,@UUAGC_CMD@,$UUAGC_CMD,;t t
 s,@MACH_DEP_C_FOR_TAILCALL_ENTER@,$MACH_DEP_C_FOR_TAILCALL_ENTER,;t t
 s,@MACH_DEP_C_FOR_TAILCALL_LEAVE1@,$MACH_DEP_C_FOR_TAILCALL_LEAVE1,;t t
@@ -2540,6 +2547,12 @@ echo
 echo "Installation/build summary:"
 echo "  host                          : $host"
 echo "  prefix                        : $prefix"
+
+echo "  uuagc is available?           : $uuagcExists"
+if test "x$uuagcExists" = "xyes" ;then
+echo "    version                     : $uuagcVersion"
+echo "    command for uuagc           : $uuagcCmd"
+fi
 
 echo "  ghc is available?             : $ghcExists"
 if test "x$ghcExists" = "xyes" ;then

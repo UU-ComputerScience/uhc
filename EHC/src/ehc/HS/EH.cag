@@ -110,11 +110,15 @@ SEM Declaration
 %%]
 %%[9
     | Class
-        loc         .   eh          =   let h = rngLift @range EH.TyExpr_Pred
+        loc         .   (eh,ehInst) =   let h = rngLift @range EH.TyExpr_Pred
                                                 $ rngLift @range EH.PrExpr_Class @classrefname (map EH.TyExpr_Var @simpletype.typevariables)
                                             c = map (rngLift @range EH.TyExpr_Pred) @context.eh
-                                        in  rngLift @range EH.Decl_Class (mkArrow c h) @dependencies.eh (concat @ehReorderedDecls)
-        lhs         .   eh          =   [@eh]
+                                            a = mkArrow c h
+                                            (vals,sigs) = partition EH.ehIsDeclVal $ concat @ehReorderedDecls
+                                        in  ( rngLift @range EH.Decl_Class a @dependencies.eh (Just @instancerefname) sigs
+                                            , rngLift @range EH.Decl_Instance (Just (@instancerefname,False)) InstDefault a vals
+                                            )
+        lhs         .   eh          =   [@eh,@ehInst]
     | Instance
         loc         .   eh          =   let h = rngLift @range EH.TyExpr_Pred
                                                 $ rngLift @range EH.PrExpr_Class @classrefname @types.eh
@@ -131,8 +135,8 @@ SEM Declaration
 %%]
 %%[11
     | Type
-        loc         .   eh          =   undefined
-        lhs         .   eh          =   []
+        loc         .   eh          =   rngLift @range EH.Decl_Type @typerefname (foldr (rngLift @range EH.TyExpr_Lam) @type.eh @simpletype.typevariables)
+        lhs         .   eh          =   [@eh]
 %%]
 
 %%[9
@@ -338,32 +342,28 @@ ATTR Expression [ | | eh: {EH.Expr} ]
 SEM MaybeExpression
     | Just
         lhs         .   eh          =   Just @just.eh
+%%]
 
+%%[1
 SEM Expression
     | Literal
         loc         .   eh          =   case @literal.eh of
-%%]
-%%[1.Expression.LiteralInt
+%%[[1
                                           Literal_Int    r s -> rngLift r EH.Expr_IConst (read s)
-%%]
-%%[99.Expression.LiteralInt -1.Expression.LiteralInt
+%%][99
                                           Literal_Int    r s -> ehExpVarApp r hsnFromInteger [EH.Expr_IIConst (read s)]
-%%]
-%%[1
+%%]]
                                           Literal_Char   r s -> rngLift r EH.Expr_CConst (head s)
-%%]
-%%[5
+%%[[5
                                           Literal_String r s -> rngLift r EH.Expr_SConst s
-%%]
-%%[8.Expression.LiteralFloat
+%%]]
+%%[[8
                                           Literal_Float  r s -> rngLift r EH.Expr_FConst (read s)
-%%]
-%%[99.Expression.LiteralFloat -8.Expression.LiteralFloat
+%%][99
                                           Literal_Float  r s -> ehExpVarApp r hsnFromRational
                                                                   [rngLift r EH.Expr_Parens $ ehExpVarApp r hsnMkRatio [EH.Expr_IIConst n,EH.Expr_IIConst d]]
                                                              where (n,d) = floatDenot2NomDenom s
-%%]
-%%[1
+%%]]
     | Variable
         loc         .   eh          =   rngLift @range EH.Expr_Var @refname
     | Constructor
@@ -405,10 +405,10 @@ SEM Expression
         loc         .   eh          =   EH.mkIf' (@typerefname : @valrefnames) @range @guardExpression.eh @thenExpression.eh @elseExpression.eh
 %%[[5
     | Case
-        loc         .   eh          =   rngLift @range EH.Expr_Case @expression.eh @alternatives.eh
+        loc         .   eh          =   EH.mkCase' @range @expression.eh @alternatives.eh
 %%][8
     | Case
-        loc         .   eh          =   rngLift @range EH.Expr_Case @expression.eh @alternatives.eh (Just @caseId)
+        loc         .   eh          =   EH.mkCase' @range @expression.eh (Just @caseId) False @alternatives.eh
 %%]]
     | List
         loc         .   eh          =   foldr (\l r -> ehExpConApp @range (@refnames !! 0) [l,r]) (EH.Expr_Con (@refnames !! 1)) @expressions.eh
@@ -541,7 +541,7 @@ ATTR Alternative [ | | eh: {[EH.CaseAlt]} ]
 
 SEM Alternative
     | Alternative
-        lhs         .   eh          =   [rngLift @range EH.CaseAlt_Pat @pattern.eh @righthandside.eh]
+        lhs         .   eh          =   [EH.mkAlt @range @pattern.eh @righthandside.eh]
     | Empty
         lhs         .   eh          =   []
 
@@ -722,20 +722,29 @@ ehPatProd r as
 ATTR Patterns [ | | eh USE {:} {[]}: {[EH.PatExpr]} ]
 
 ATTR Pattern [ | | eh: {EH.PatExpr} ]
+%%]
 
+%%[1
 SEM Pattern
     | Literal
         lhs         .   eh          =   case @literal.eh of
+%%[[1
                                           Literal_Int    r s -> rngLift r EH.PatExpr_IConst (read s)
+%%][99
+                                          Literal_Int    r s -> rngLift r EH.PatExpr_Expr $ ehExpVarApp r hsnFromInteger [EH.Expr_IIConst (read s)]
+%%]]
                                           Literal_Char   r s -> rngLift r EH.PatExpr_CConst (head s)
-%%]
-%%[5
+%%[[5
                                           Literal_String r s -> rngLift r EH.PatExpr_SConst s
-%%]
-%%[8
+%%]]
+%%[[8
                                           Literal_Float  r s -> rngLift r EH.PatExpr_FConst (read s)
-%%]
-%%[1
+%%][99
+                                          Literal_Float  r s -> rngLift r EH.PatExpr_Expr
+                                                                $ ehExpVarApp r hsnFromRational
+                                                                $ [rngLift r EH.Expr_Parens $ ehExpVarApp r hsnMkRatio [EH.Expr_IIConst n,EH.Expr_IIConst d]]
+                                                             where (n,d) = floatDenot2NomDenom s
+%%]]
     | Variable
         lhs         .   eh          =   rngLift @range EH.PatExpr_Var @refname       
     | Constructor
@@ -813,8 +822,8 @@ SEM Expression
         loc         .   caseId      =   @lUniq
 
 SEM Body
-	| Body
-		loc			.	caseId		=	uidStart
+    | Body
+        loc         .   caseId      =   uidStart
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

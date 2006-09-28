@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[12 hs module {%{EH}HS.ModImpExp} import({%{EH}Base.Common}, {%{EH}HS}, {%{EH}Gam}, {%{EH}NameAspect})
+%%[12 hs module {%{EH}HS.ModImpExp} import({%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}HS}, {%{EH}Gam}, {%{EH}NameAspect})
 %%]
 
 %%[12 hs export(Inh_AGItf(..),Syn_AGItf(..),sem_AGItf,wrap_AGItf)

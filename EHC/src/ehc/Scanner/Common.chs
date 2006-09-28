@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Scanner.Common} import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, EH.Util.ScanUtils(), {%{EH}Base.Common})
+%%[1 module {%{EH}Scanner.Common} import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, EH.Util.ScanUtils(), {%{EH}Base.Builtin}, {%{EH}Base.Common})
 %%]
 
 %%[1 import(EH.Util.ScanUtils)
@@ -211,6 +211,8 @@ coreScanOpts
                                     , "Integer", "Double" 
 %%]
                                     ]
+                                    ++ scoKeywordsTxt tyScanOpts
+                                    ++ scoKeywordsTxt hsScanOpts
         ,   scoDollarIdent      =   True
         ,   scoOpChars          =          scoOpChars   grinScanOpts ++ scoOpChars   hsScanOpts
         ,   scoSpecChars        =   "!=" ++ scoSpecChars grinScanOpts ++ scoSpecChars hsScanOpts
@@ -241,9 +243,19 @@ hiScanOpts
                                     , "Value", "Pat", "Type", "Kind", "Class", "Instance", "Default", "Any", "Data"
                                     ]
                                     ++ scoKeywordsTxt hsScanOpts
+                                    ++ scoKeywordsTxt tyScanOpts
         ,   scoOpChars          =   scoOpChars coreScanOpts
         ,   scoDollarIdent      =   True
         ,   scoSpecChars        =   scoSpecChars coreScanOpts
+        ,   scoKeywordsOps      =   [ "??" ] ++ scoKeywordsOps coreScanOpts ++ scoKeywordsOps hsScanOpts
+        }
+%%]
+
+%%[8
+tyScanOpts :: ScanOpts
+tyScanOpts
+  =  defaultScanOpts
+        {   scoKeywordsTxt      =   [ "uid" ]
         }
 %%]
 
@@ -649,14 +661,15 @@ pTYPE            = pKeyTk "type"
 %%]
 
 %%[11
-tokKeywStrsEH11 = [  ]
-tokKeywStrsHS11 = [ "type" ]
+tokKeywStrsEH11 = [ "type" ]
+tokKeywStrsHS11 = [  ]
 tokOpStrsEH11   = [  ]
 tokOpStrsHS11   = [  ]
 %%]
 
 %%[12
 pQUALIFIED      ,
+    pQUESTQUEST ,
     pAS         ,
     pHIDING     ,
     pNUMBER     
@@ -668,6 +681,7 @@ pQUALIFIED       = pKeyTk "qualified"
 pAS              = pKeyTk "as"
 pHIDING          = pKeyTk "hiding"
 pNUMBER          = pKeyTk "#"
+pQUESTQUEST      = pKeyTk "??"
 
 tokKeywStrsEH12 = [  ]
 tokKeywStrsHS12 = [ "qualified", "as", "hiding" ]

@@ -6,4 +6,8 @@ let class A a => B a where
       aa = \x -> x
     instance B Int where
       bb = \x -> x
-in  aa 3
+in
+let
+    main = aa 3
+in  main
+

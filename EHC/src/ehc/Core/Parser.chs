@@ -26,7 +26,7 @@ type CParser       hp     =    PlainParser Token hp
 
 pCModule :: CParser CModule
 pCModule
-  = (\m e tm -> CModule_Mod m e tm) <$ pMODULE <*> pDollNm <*> pCExpr <*> pA (pA pCTag)
+  = (\m e tm -> CModule_Mod m e tm) <$ pMODULE <*> pDollNm <* pEQUAL <*> pCExpr <*> pA (pA pCTag)
   where pA pE = pOCURLY *> pListSep pSEMI ((,) <$> pDollNm <* pEQUAL <*> pE) <* pCCURLY
 
 pCTagOnly :: CParser CTag
@@ -48,7 +48,7 @@ pCExprBase
               <*> (tokMkStr <$> pStringTk)
           <|> CExpr_Tup <$ pKeyTk "Tag" <*> pCTag
           )
-  <|> pParens pCExpr
+  <|> pOPAREN *> pCExpr <* pCPAREN
 
 pCExprSelSuffix :: CParser (CExpr -> CExpr)
 pCExprSelSuffix
@@ -87,8 +87,7 @@ pCAlt
 
 pCPat :: CParser CPat
 pCPat
-  =   CPat_Var <$> pCPatNm
-  <|> pCPatNm
+  =   pCPatNm
       <**> (   pNUMBER
 				*> (   (   (\s n -> CPat_Int  n (read s)) <$ pKeyTk "Int"
 					   <|> (\s n -> CPat_Char n (head s)) <$ pKeyTk "Char"

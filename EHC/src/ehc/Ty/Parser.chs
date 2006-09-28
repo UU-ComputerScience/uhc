@@ -7,7 +7,7 @@
 %%% Ty parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 module {%{EH}Ty.Parser} import(UU.Parsing, EH.Util.ParseUtils(PlainParser), {%{EH}Base.Parser}, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Ty})
+%%[12 module {%{EH}Ty.Parser} import(UU.Parsing, EH.Util.ParseUtils(PlainParser), {%{EH}Base.Parser}, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Ty})
 %%]
 
 %%[12 export(pUIDHI,pTy)
@@ -31,6 +31,7 @@ pUIDHI = pKeyTk "uid" *> pUID
 pTyBase :: P Ty
 pTyBase
   =   mkTyVar <$> pUIDHI
+  <|> Ty_Any  <$  pQUESTQUEST
   <|> Ty_Con  <$> pDollNm
   <|> pParens pTy
   <|> Ty_Pred
@@ -56,6 +57,7 @@ pTyApp
 pTy :: P Ty
 pTy
   =   pTyApp
-  <|> Ty_Quant TyQu_Forall <$ pFORALL <*> pUIDHI <* pDOT <*> pTyApp
-  <|> Ty_Quant TyQu_Exists <$ pEXISTS <*> pUIDHI <* pDOT <*> pTyApp
+  <|> (Ty_Quant TyQu_Forall <$ pFORALL <|> Ty_Quant TyQu_Exists <$ pEXISTS)
+      <*> pUIDHI <* pDOT <*> pTy
+  <|> Ty_Lam <$ pLAM <*> pUIDHI <* pRARROW <*> pTy
 %%]

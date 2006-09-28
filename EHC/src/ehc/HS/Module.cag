@@ -57,6 +57,20 @@ SEM ImportDeclaration
         lhs             .   modImpL     =   []
 %%]
 
+%%[12.Module.modImpL
+SEM Module
+	| Module
+		loc				.	modImpL		=	@body.modImpL
+%%]
+
+%%[99 -12.Module.modImpL
+SEM Module
+	| Module
+		loc				.	modImpL		=	if hsnModPrelude `elem` map mimpSource @body.modImpL || @lhs.moduleNm == hsnModPrelude || hsnIsInPrelude @lhs.moduleNm
+											then @body.modImpL
+											else modImpPrelude : @body.modImpL
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Imports for module dpd anal only
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -66,7 +80,7 @@ ATTR AGItf Module [ | | modImpNmL: {[HsName]} ]
 
 SEM Module
     | Module
-        lhs             .   modImpNmL   =   map mimpSource @body.modImpL
+        lhs             .   modImpNmL   =   map mimpSource @modImpL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -161,7 +175,7 @@ ATTR Module AGItf [ | | mod: Mod ]
 SEM Module
     | Module
         lhs             .   mod         =   Mod @lhs.moduleNm @name
-                                                @exports.modExpsMb @body.modImpL @body.modDefsRel
+                                                @exports.modExpsMb @modImpL @body.modDefsRel
                                                 (reverse @body.topInstanceNmL)
 %%]
 

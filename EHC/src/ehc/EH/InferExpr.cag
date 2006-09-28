@@ -406,14 +406,34 @@ SEM RecExpr
 
 %%[9.FIEnv -(4.FIEnv 7.FIEnv)
 SEM Expr
-  | Let         loc         .   fe                  =   emptyFE {fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts}
+  | Let         loc         .   fe                  =   emptyFE
+  															{ fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+  															}
   | Lam AppTop LamImpl
-                loc         .   fe                  =   emptyFE {fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts}
+                loc         .   fe                  =   emptyFE
+                											{ fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+                											}
   | * - Lam AppTop LamImpl Let
-                loc         .   fe                  =   emptyFE {fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts}
+                loc         .   fe                  =   emptyFE
+                											{ fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+                											}
 
 SEM RecExpr
-  | *           loc         .   fe                  =   emptyFE {fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts}
+  | *           loc         .   fe                  =   emptyFE
+  															{ fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+  															}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

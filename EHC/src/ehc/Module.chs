@@ -12,7 +12,7 @@
 %%% Module adm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 module {%{EH}Module} import(Data.Maybe,Data.List,qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.Utils,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Common},{%{EH}Error})
+%%[12 module {%{EH}Module} import(Data.Maybe,Data.List,qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.Utils,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Error})
 %%]
 
 %%[12 export(ModEnt(..),ModExp(..),ModEntSpec(..),ModEntSubSpec(..),ModImp(..),Mod(..),ModEntRel,ModEntDomMp,ModEntRngMp)
@@ -28,6 +28,9 @@
 %%]
 
 %%[12 export(ppModMp,ppModEntDomMp,ppModEntRel,ppModEntRel')
+%%]
+
+%%[99 export(modImpPrelude)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -120,6 +123,15 @@ modImpBuiltin
   = emptyModImp
       { mimpSource		= hsnModBuiltin
       , mimpAs			= hsnModBuiltin
+      }
+%%]
+
+%%[99
+modImpPrelude :: ModImp
+modImpPrelude
+  = emptyModImp
+      { mimpSource		= hsnModPrelude
+      , mimpAs			= hsnModPrelude
       }
 %%]
 

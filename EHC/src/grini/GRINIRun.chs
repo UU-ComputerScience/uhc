@@ -7,7 +7,7 @@
 %%% Run GRI
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module GRINIRun import(EH.Util.PPUtils,{%{EH}Base.Common},GRINICommon,{%{EH}GrinCode},{%{EH}GrinCode.Pretty})
+%%[8 module GRINIRun import(EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Builtin},GRINICommon,{%{EH}GrinCode},{%{EH}GrinCode.Pretty})
 %%]
 
 %%[8 import(qualified Data.Map as Map,Data.Maybe,Data.Array,Data.Array.IO)

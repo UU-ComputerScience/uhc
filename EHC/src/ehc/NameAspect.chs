@@ -2,7 +2,7 @@
 %%% Aspect of name, for use by HS -> EH
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}NameAspect} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},qualified {%{EH}EH} as EH) export(IdAspect(..),iaspIsSig,iaspIsFun)
+%%[1 module {%{EH}NameAspect} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Builtin},qualified {%{EH}EH} as EH) export(IdAspect(..),iaspIsSig,iaspIsFun)
 %%]
 
 %%[1 export(IdDefOcc(..),emptyIdDefOcc,mkIdDefOcc)
@@ -16,7 +16,7 @@
 data IdAspect
   = IdAsp_Val_Var
   | IdAsp_Val_Pat       {iaspDecl   ::  EH.Decl                         }
-  | IdAsp_Val_Fun       {iaspPatL   :: [EH.PatExpr], iaspBody :: EH.Expr}
+  | IdAsp_Val_Fun       {iaspPatL   :: [EH.PatExpr], iaspBody :: EH.Expr, iaspUniq :: UID}
   | IdAsp_Val_Sig       {iaspDecl   ::  EH.Decl                         }
   | IdAsp_Val_Fix
   | IdAsp_Val_Con
@@ -38,9 +38,9 @@ data IdAspect
 %%]
 %%[[9
   | IdAsp_Class_Class
-  | IdAsp_Class_Def     {iaspDecls  ::  EH.Decl                         }
+  | IdAsp_Class_Def     {iaspDecl   ::  EH.Decl, iaspDeclInst :: EH.Decl}
   | IdAsp_Inst_Inst
-  | IdAsp_Inst_Def      {iaspDecl   ::  EH.Decl, iaspClassNm :: HsName  }
+  | IdAsp_Inst_Def      {iaspDecl   ::  EH.Decl, iaspClassNm  :: HsName }
   | IdAsp_Dflt_Def      {iaspDecl   ::  EH.Decl                         }
 %%]
   | IdAsp_Any
@@ -54,8 +54,8 @@ iaspIsSig _                 = False
 
 %%[1 hs
 iaspIsFun :: IdAspect -> Bool
-iaspIsFun (IdAsp_Val_Fun _ _) = True
-iaspIsFun _                   = False
+iaspIsFun (IdAsp_Val_Fun _ _ _) = True
+iaspIsFun _                     = False
 %%]
 
 %%[1 hs
@@ -66,9 +66,9 @@ instance Show IdAspect where
 %%[1 hs
 instance PP IdAspect where
   pp  IdAsp_Val_Var         = pp "VAR"
-  pp (IdAsp_Val_Pat _  )    = pp "PAT"
-  pp (IdAsp_Val_Fun _ _)    = pp "FUN"
-  pp (IdAsp_Val_Sig _  )    = pp "SIG"
+  pp (IdAsp_Val_Pat _    )  = pp "PAT"
+  pp (IdAsp_Val_Fun _ _ _)  = pp "FUN"
+  pp (IdAsp_Val_Sig _    )  = pp "SIG"
   pp  IdAsp_Val_Fix         = pp "FIX"
   pp  IdAsp_Val_Con         = pp "CON"
 %%[[5
@@ -79,20 +79,20 @@ instance PP IdAspect where
   pp  IdAsp_Type_Var        = pp "VAR"
 %%]
 %%[[5
-  pp (IdAsp_Type_Def _ )    = pp "DEF"
+  pp (IdAsp_Type_Def _   )  = pp "DEF"
 %%]
 %%[[6
   pp  IdAsp_Kind_Con        = pp "CON"
 %%]
 %%[[8
-  pp (IdAsp_Val_FFI _  )    = pp "FFI"
+  pp (IdAsp_Val_FFI _    )  = pp "FFI"
 %%]
 %%[[9
   pp  IdAsp_Class_Class     = pp "CLS"
-  pp (IdAsp_Class_Def _)    = pp "DEF"
+  pp (IdAsp_Class_Def _ _)  = pp "DEF"
   pp  IdAsp_Inst_Inst       = pp "INS"
-  pp (IdAsp_Inst_Def _ _)   = pp "DEF"
-  pp (IdAsp_Dflt_Def _ )    = pp "DEF"
+  pp (IdAsp_Inst_Def  _ _)  = pp "DEF"
+  pp (IdAsp_Dflt_Def  _  )  = pp "DEF"
 %%]
   pp  IdAsp_Any             = pp "ANY"
 %%]

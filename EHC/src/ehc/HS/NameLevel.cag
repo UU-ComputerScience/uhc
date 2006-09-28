@@ -38,7 +38,7 @@ SEM Declaration
 %%]
 %%[[11
     | Type
-        loc             .   nmLev       =   @lhs.nmLev + 1
+        loc             .   nmLev       =   @lhs.nmLev -- + 1
 %%]
 %%]
 
