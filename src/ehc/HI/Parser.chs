@@ -63,7 +63,7 @@ pRule
         <|> Pr.MkEvidSup  <$ pKeyTk "sup"  <*> pDollNm <*> pInt
         ) <* pSEMI
     <*> pPredOccId <* pSEMI
-    <*> (Pr.Cost <$ pOCURLY <*> pInt <* pCOMMA <*> pInt <* pCCURLY)
+    <*> pProofCost
     <*  pCCURLY
 %%]
 

@@ -150,6 +150,11 @@ SEM Expr
                                                     (@nmErrs ++ foErrL @fo_fitF_ ++ foErrL @foPr ++ @arg.errL ++ @argPr.errL ++ @body.errL)
 %%]
 
+%%[11
+SEM Decl
+  | Type        lhs         .   errL        =   mkNestErr @pp (@tyExpr.errL ++ foErrL @fo_)
+%%]
+
 %%[50
 SEM DataConstr
   | Constr      lhs         .   errL        :=  mkNestErr @pp (@fields.errL ++ @eqs.errL ++ foErrL @fo_)

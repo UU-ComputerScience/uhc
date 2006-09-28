@@ -31,6 +31,9 @@
 %%[9 export(predFIOpts,implFIOpts)
 %%]
 
+%%[99 import(EH.Util.Utils)
+%%]
+
 %%[50 import({%{EH}Ty.Instantiate})
 %%]
 
@@ -103,6 +106,10 @@ data EHCOpts
 %%[[9
       ,  ehcOptPrfCutOffAt    ::  Int
 %%]]
+%%[[11
+      ,  ehcOptTyBetaRedCutOffAt
+      						  ::  Int
+%%]]
 %%[[12
       ,  ehcCheckRecompile    ::  Bool
 %%]]
@@ -117,7 +124,11 @@ data EHCOpts
 defaultEHCOpts
   = EHCOpts
       {  ehcOptShowHS         =   False
+%%[[1
       ,  ehcOptShowEH         =   True
+%%][99
+      ,  ehcOptShowEH         =   False
+%%]]
       ,  ehcOptShowAst        =   False
       ,  ehcOptShowTopTyPP    =   False
       ,  ehcOptHelp           =   False
@@ -141,13 +152,21 @@ defaultEHCOpts
       ,  ehcOptEmitJava       =   False
       ,  ehcOptEmitGrin       =   False
       ,  ehcOptEmitCmm        =   False
-      ,  ehcOptEmitLlc        =   False
       ,  ehcOptSearchPath     =   []
       ,  ehcOptVerbosity      =   VerboseNormal
       ,  ehcOptTrf            =   []
 %%]]
+%%[[8
+      ,  ehcOptEmitLlc        =   False
+%%][99
+      ,  ehcOptEmitLlc        =   True
+%%]]
 %%[[9
       ,  ehcOptPrfCutOffAt    =   20
+%%]]
+%%[[11
+      ,  ehcOptTyBetaRedCutOffAt
+      						  =   20
 %%]]
 %%[[12
       ,  ehcCheckRecompile    =   True
@@ -173,7 +192,7 @@ ehcCmdLineOpts
      ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
      ,  Option ""   ["dump-call-graph"]  (NoArg oDumpCallGraph)               "output grin call graph as dot file"
      ,  Option ""   ["dump-trf-grin"]    (OptArg oDumpTrfGrin "basename")     "dump intermediate grin code after transformation"
-     ,  Option "v"  ["verbose"]          (OptArg oVerbose "0|1|2")            "be verbose, 0=quiet 1=normal 2=noisy, default=1"
+     ,  Option "v"  ["verbose"]          (OptArg oVerbose "0|1|2|3")            "be verbose, 0=quiet 1=normal 2=noisy 3=debug-noisy, default=1"
 
      ,  Option ""   ["gen-trace"]        (boolArg optSetGenTrace)             "trace functioncalls in C (no)"
      ,  Option ""   ["gen-casedefault"]  (boolArg optSetGenCaseDefault)       "trap wrong casedistinction in C (no)"
@@ -186,6 +205,7 @@ ehcCmdLineOpts
 %%]]
 %%[[99
      ,  Option ""   ["numeric-version"]  (NoArg oNumVersion)                  "only show numeric version"
+     ,  Option "P"  ["search-path"]      (ReqArg oSearchPath "path")          "search path for all files, path separators=';', appended to previous"
 %%]]
      ]
 %%]
@@ -240,6 +260,7 @@ ehcCmdLineOpts
                                 Just "0"    -> o { ehcOptVerbosity     = VerboseQuiet       }
                                 Just "1"    -> o { ehcOptVerbosity     = VerboseNormal      }
                                 Just "2"    -> o { ehcOptVerbosity     = VerboseALot        }
+                                Just "3"    -> o { ehcOptVerbosity     = VerboseDebug       }
                                 Nothing     -> o { ehcOptVerbosity     = VerboseNormal      }
                                 _           -> o
 %%]]
@@ -248,6 +269,7 @@ ehcCmdLineOpts
 %%]]
 %%[[99
          oNumVersion     o =  o { ehcOptShowNumVersion          = True    }
+         oSearchPath  s  o =  o { ehcOptSearchPath = ehcOptSearchPath o ++ wordsBy (==';') s }
 %%]]
 %%]
 

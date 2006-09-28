@@ -246,9 +246,22 @@ SEM RecPatExpr
                                                                     :=  mkNewLevUID3    @lhs.gUniq
 %%]
 
+%%[11
+SEM Decl
+  | Type            (tyExpr.gUniq,loc.lUniq,loc.lUniq2)  			=   mkNewLevUID2    @lhs.gUniq
+
+SEM TyExpr
+  | Lam             (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
+%%]
+
+%%[99
+SEM PatExpr
+  | Expr            (expr.gUniq,loc.lUniq)            				=   mkNewLevUID     @lhs.gUniq
+%%]
+
 %%[50
 SEM DataConstrEq
-  | Eq             (tyVar.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
+  | Eq             	(tyVar.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
 %%]
 
 

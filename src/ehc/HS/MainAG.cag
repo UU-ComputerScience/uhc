@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[1 hs module {%{EH}HS.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.Utils,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS}, {%{EH}NameAspect}, EH.Util.DependencyGraph)
+%%[1 hs module {%{EH}HS.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.Utils,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS}, {%{EH}NameAspect}, EH.Util.DependencyGraph)
 %%]
 
 %%[1 hs import(qualified {%{EH}EH} as EH)

@@ -106,6 +106,12 @@ DATA Impls
   | Nil
 %%]
 
+%%[11
+DATA Ty
+  | Lam         tv              : {TyVarId}
+                ty              : Ty
+%%]
+
 %%[50.Ty
 DATA Ty
   | Equal       tv              : {TyVarId}

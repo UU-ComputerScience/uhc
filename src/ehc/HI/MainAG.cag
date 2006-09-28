@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[12 hs module {%{EH}HI.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Common},{%{EH}Gam},qualified {%{EH}Pred} as Pr,{%{EH}HI})
+%%[12 hs module {%{EH}HI.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Gam},qualified {%{EH}Pred} as Pr,{%{EH}HI})
 %%]
 
 %%[12 hs import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Config},{%{EH}NameAspect},{%{EH}Module})

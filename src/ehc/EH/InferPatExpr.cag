@@ -35,6 +35,11 @@ SEM PatExpr
   | FConst      lhs         .  arity                =   0
 %%]
 
+%%[99
+SEM PatExpr
+  | Expr        lhs         .  arity                =   0
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Destruction function, known ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -231,11 +236,25 @@ SEM PatExpr
 %%[4.FIEnv
 SEM PatExpr
   | *           loc         .   fe                  =   emptyFE
+%%[[9
+															{ fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+                											}
+%%]]
 %%]
 
 %%[7.FIEnv
 SEM RecPatExpr
   | *           loc         .   fe                  =   emptyFE
+%%[[9
+															{ fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+                											}
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

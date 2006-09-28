@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}EH.Parser} import(IO, UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils(LayoutParser), UU.Scanner.GenToken, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}EH})
+%%[1 module {%{EH}EH.Parser} import(IO, UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils(LayoutParser), UU.Scanner.GenToken, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}EH})
 %%]
 
 %%[1 export(pAGItf)
@@ -152,6 +152,10 @@ pDecl           =    Decl_Val        <$>  pPatExprBase  <*   pEQUAL   <*> pExpr
                 <|>  pDeclClass
                 <|>  pDeclInstance
 %%]
+%%[11
+                <|>  Decl_Type       <$   pTYPE         <*>  pCon
+                                                        <*   pEQUAL     <*> pTyExpr
+%%]
 %%[1010.pDecl
                 <|>  Decl_DynVal     <$>  pDynVar       <*   pEQUAL     <*> pExpr
                 <|>  Decl_DynTySig   <$>  pDynVar       <*   pDCOLON    <*> pTyExpr
@@ -271,6 +275,9 @@ pTyExprPrefix   =    TyExpr_Quant
 %%[9.pTyExprPrefix
                 <|>  pTyPrExprPrefix
 %%]
+%%[11
+                <|>  TyExpr_Lam <$ pLAM <*> pVar <* pRARROW
+%%]
 
 %%[9.pTyPrExprPrefix
 pTyPrExprPrefix ::   EHCParser (TyExpr -> TyExpr)
@@ -323,7 +330,7 @@ pExprBase       =    Expr_IConst     <$>  pInt
 %%[[5
                 <|>  Expr_Case
 %%][8
-                <|>  (\e a -> Expr_Case e a Nothing)
+                <|>  (\e a -> Expr_Case e a Nothing False)
 %%]]
                      <$   pKey "case" <*> pExpr <* pKey "of" <*> pCaseAlts
 %%]
@@ -386,7 +393,7 @@ pExprPrefix     =    Expr_Let      <$ pLET
                                    , CaseAlt_Pat (PatExpr_Con (HNm "False")) e
                                    ]
 %%[[8
-                                   Nothing
+                                   Nothing False
 %%]]
                      )
                      <$ pIF <*> pExpr <* pTHEN <*> pExpr <* pELSE
@@ -551,7 +558,7 @@ pClassHead      =    pTyPrExprPrefix <*> pHd <|> pHd
                 where pHd = TyExpr_Pred <$> pPrExprClass
 
 pDeclClass      ::   EHCParser Decl
-pDeclClass      =    Decl_Class
+pDeclClass      =    (\h deps d -> Decl_Class h deps Nothing d)
                      <$   pKey "class"
                      <*>  pClassHead
                      <*>  (pKey "|" *> pListSep pComma (FuncDep_Dep <$> pTyVars1 <* pKey "->" <*> pTyVars1)

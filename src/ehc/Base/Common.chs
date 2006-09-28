@@ -7,13 +7,7 @@
 %%% Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Base.Common} import(EH.Util.Utils)
-%%]
-
-%%[1 import(UU.Scanner.Position) export(HSNM(..),HsName(..), hsnWild, hsnArrow, strProd, hsnProd, hsnProdArity, hsnUnknown, hsnIsArrow, hsnIsProd, hsnInt, hsnChar)
-%%]
-
-%%[1 export(hsnNegate,hsnError)
+%%[1 module {%{EH}Base.Common} import(UU.Scanner.Position,EH.Util.Utils,{%{EH}Base.HsName},{%{EH}Base.Builtin}) export(module {%{EH}Base.HsName})
 %%]
 
 %%[1 export(IdOccKind(..),IdOcc(..),ppIdOcc)
@@ -67,9 +61,6 @@
 %%[2 export(unions)
 %%]
 
-%%[3 export(hsnUn, hsnIsUn, hsnUnUn)
-%%]
-
 %%[4 export(listCombineUniq)
 %%]
 
@@ -79,19 +70,7 @@
 %%[4 export(FIMode(..),fimOpp,fimSwapCoCo)
 %%]
 
-%%[5 export(hsnBool,hsnTrue,hsnFalse,hsnString,hsnList,hsnListCons,hsnListNil)
-%%]
-
-%%[6 export(hsnStar)
-%%]
-
-%%[7 export(hsnRow,hsnRec,hsnSum,hsnRowEmpty,hsnIsRec,hsnIsSum)
-%%]
-
-%%[7 export(hsnORow,hsnCRow,hsnORec,hsnCRec,hsnOSum,hsnCSum)
-%%]
-
-%%[7 export(positionalFldNames,ppFld,mkExtAppPP,mkPPAppFun)
+%%[7 export(ppFld,mkExtAppPP,mkPPAppFun)
 %%]
 
 %%[7 export(uidHNm)
@@ -101,15 +80,6 @@
 %%]
 
 %%[8 import (EH.Util.FPath,IO,Char,Data.Maybe) export(Verbosity(..),putCompileMsg, openFPath,writeToFile, writePP)
-%%]
-
-%%[8 export(hsnFloat)
-%%]
-
-%%[8 export(hsnPrefix,hsnSuffix, hsnAlphanumeric)
-%%]
-
-%%[8 export(hsnUndefined,hsnPrimAddInt,hsnMain)
 %%]
 
 %%[8 import(qualified Data.Set as Set) export(ppHsnNonAlpha)
@@ -124,9 +94,6 @@
 %%[8 import (qualified Data.Map as Map) export(showPP,ppPair,ppFM)
 %%]
 
-%%[8 export(hsnUniqSupplyL,hsnLclSupplyL)
-%%]
-
 %%[8 export(CTag(..),ctagTag,ctagChar,ctagInt)
 %%]
 
@@ -139,10 +106,10 @@
 %%[8 export(ppUID')
 %%]
 
-%%[90 export(groupSortByOn)
+%%[8 export(hsnUniqSupplyL,hsnLclSupplyL)
 %%]
 
-%%[9 export(hsnOImpl,hsnCImpl,hsnPrArrow,hsnIsPrArrow,hsnIsUnknown)
+%%[90 export(groupSortByOn)
 %%]
 
 %%[9 export(ppListV,ppAssocLV)
@@ -163,435 +130,7 @@
 %%[9 export(basePrfCtxtId)
 %%]
 
-%%[10 export(hsnDynVar,hsnConcat)
-%%]
-
-%%[12 export(hsnQualified,hsnQualifier,hsnPrefixQual,hsnSetQual,hsnIsQual,hsnMapQual,hsnSetLevQual)
-%%]
-
-%%[12 export(hsnModBuiltin)
-%%]
-
 %%[12 export(ppCurlysAssocL)
-%%]
-
-%%[99 export(hsnInteger,hsnDouble,hsnModPrelude)
-%%]
-
-%%[5 export(hsnEnumFromThenTo,hsnEnumFromThen,hsnEnumFromTo,hsnEnumFrom,hsnConcatMap)
-%%]
-
-%%[9 export(hsnMonadSeq,hsnMonadBind,hsnMonadFail)
-%%]
-
-%%[99 export(hsnFromInteger,hsnFromRational,hsnMkRatio)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Haskell names, datatype
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1.HsName.type
-data HsName
-  =   HNm String
-  deriving (Eq,Ord)
-
-instance Show HsName where
-  show (HNm s) = s
-%%]
-
-%%[1
-instance PP HsName where
-  pp h = pp (show h)
-%%]
-
-%%[7.HsName.type -1.HsName.type
-data HsName
-  =   HNm String
-  |   HNPos Int
-%%]
-%%[12
-  |   HNmQ [HsName]
-%%]
-%%[7
-  deriving (Eq,Ord)
-%%]
-
-%%[7
-instance Show HsName where
-  show (HNm s    )  = s
-  show (HNPos p  )  = show p
-%%]
-%%[12
-  show (HNmQ ns  )  = concat $ intersperse "." $ map show ns
-%%]
-
-%%[8
-hsnToList :: HsName -> [HsName]
-%%[[12
-hsnToList (HNmQ ns) = ns
-%%]
-hsnToList n         = [n]
-
-hsnInitLast :: HsName -> ([HsName],HsName)
-hsnInitLast = maybe (panic "hsnInitLast") id . initlast . hsnToList
-%%]
-
-%%[8
-hsnPrefix                           ::  String -> HsName -> HsName
-hsnPrefix   p   hsn
-  = case hsnInitLast hsn of
-      (ns,n) -> mkHNm (ns,HNm (p ++ show n))
-
-hsnSuffix                           ::  HsName -> String -> HsName
-hsnSuffix       hsn   p
-  = case hsnInitLast hsn of
-      (ns,n) -> mkHNm (ns,HNm (show n ++ p))
-%%]
-
-%%[8
-stringAlphanumeric :: String -> String
-stringAlphanumeric s
- | isAlphaNum c || c=='_'  = s
- | otherwise               = concat (map (('_':).charAlphanumeric) s)
-  where c = head s   -- we assume that the whole string is alphanumeric if the first character is.
-                     -- this is more efficient than testing each character of the string separately,
-                     -- and can safely be assumed in Haskell
-
-charAlphanumeric :: Char -> String
-charAlphanumeric ':' = "colon"
-charAlphanumeric '!' = "exclam"
-charAlphanumeric '@' = "at"
-charAlphanumeric '#' = "number"
-charAlphanumeric '$' = "dollar"
-charAlphanumeric '%' = "percent"
-charAlphanumeric '^' = "circon"
-charAlphanumeric '&' = "amp"
-charAlphanumeric '*' = "star"
-charAlphanumeric '+' = "plus"
-charAlphanumeric '-' = "minus"
-charAlphanumeric '.' = "dot"
-charAlphanumeric '/' = "slash"
-charAlphanumeric '\\' = "backsl"
-charAlphanumeric '|' = "bar"
-charAlphanumeric '<' = "lt"
-charAlphanumeric '=' = "eq"
-charAlphanumeric '>' = "gt"
-charAlphanumeric '?' = "quest"
-charAlphanumeric '~' = "tilde"
-charAlphanumeric '[' = "sub"    -- although this is not a legal Haskell operator symbol, it can be part of the Nil constructor
-charAlphanumeric ']' = "bus"
-charAlphanumeric '(' = "open"    -- although this is not a legal Haskell operator symbol, it can be part of the tuple constructor
-charAlphanumeric ',' = "comma"
-charAlphanumeric ')' = "close"
-charAlphanumeric  c  | isDigit c = [c]
-                     | otherwise = error ("no alphanumeric representation for " ++ show c)
-
-hsnAlphanumeric :: HsName -> HsName
-hsnAlphanumeric (HNm s) = HNm (stringAlphanumeric s)
-hsnAlphanumeric n@(HNPos p) = n
-%%]
-%%[12
-hsnAlphanumeric (HNmQ ns) = HNmQ (map hsnAlphanumeric ns)
-%%]
-
-%%[8
-hsnToFPath :: HsName -> FPath
-hsnToFPath n
-  = mkFPathFromDirsFile qs b
-  where (qs,b) = hsnInitLast n
-
-instance FPATH HsName where
-  mkFPath = hsnToFPath
-%%]
-
--- replace this by something better, taking into account qualifiers
-%%[10
-hsnConcat                           ::  HsName -> HsName -> HsName
-hsnConcat       h1    h2            =   HNm (show h1 ++ show h2)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% HsName & module related
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[12
-hsnQualified :: HsName -> HsName
-hsnQualified = snd . hsnInitLast
-
-hsnQualifier :: HsName -> Maybe HsName
-hsnQualifier n
-  = case hsnInitLast n of
-      ([],_) -> Nothing
-      (ns,_) -> Just (mkHNm ns)
-
-hsnPrefixQual :: HsName -> HsName -> HsName
-hsnPrefixQual m n = mkHNm (hsnToList m ++ hsnToList n)
-
-hsnSetQual :: HsName -> HsName -> HsName
-hsnSetQual m = hsnPrefixQual m . hsnQualified
-
-hsnMapQual :: (HsName -> HsName) -> HsName -> HsName
-hsnMapQual f qn
-  = case hsnInitLast qn of
-      ([],n) -> n
-      (ns,n) -> hsnSetQual (f (mkHNm ns)) n
-
-hsnIsQual :: HsName -> Bool
-hsnIsQual = isJust . hsnQualifier
-
-hsnSetLevQual :: Int -> HsName -> HsName -> HsName
-hsnSetLevQual 0 m n = hsnSetQual m n
-hsnSetLevQual _ _ n = n
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Make HsName of something
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1
-class HSNM a where
-  mkHNm :: a -> HsName
-
-instance HSNM HsName where
-  mkHNm = id
-
-instance HSNM Int where
-  mkHNm = mkHNm . show
-
-%%]
-
-%%[1.HSNM.String
-instance HSNM String where
-  mkHNm s = HNm s
-%%]
-
-%%[8.HSNM.String -1.HSNM.String
-instance HSNM String where
-  mkHNm s
-    = mkHNm $ map HNm $ ws'
-    where ws  = wordsBy (=='.') s
-          ws' = case initlast2 ws of
-                  Just (ns,"","") -> ns ++ ["."]
-                  _               -> ws
-%%]
-
-%%[8
-instance HSNM ([HsName],HsName) where
-  mkHNm (l,n) = mkHNm (l ++ [n])
-
-instance HSNM [HsName] where
-  mkHNm [n] = n
-  mkHNm []  = HNm "" -- ????, or empty alternative of HsName
-%%[[12
-  mkHNm ns  = HNmQ ns
-%%]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Haskell names, constants
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1
-strProd :: Int -> String
-%%]
-
-%%[1.HsName.Base.itf
-hsnArrow, hsnUnknown, hsnInt, hsnChar, hsnWild
-                                    ::  HsName
-hsnProd                             ::  Int -> HsName
-hsnProdArity                        ::  HsName -> Int
-%%]
-
-%%[1.HsName.Base.impl
-hsnArrow                            =   HNm "->"
-hsnUnknown                          =   HNm "??"
-hsnInt                              =   HNm "Int"
-hsnChar                             =   HNm "Char"
-hsnWild                             =   HNm "_"
-strProd         i                   =   ',' : show i
-hsnProd                             =   HNm . strProd
-
-hsnIsArrow, hsnIsProd               ::  HsName -> Bool
-hsnIsArrow      hsn                 =   hsn == hsnArrow
-
-hsnIsProd       (HNm (',':_))       =   True
-hsnIsProd       _                   =   False
-
-hsnProdArity    (HNm (_:ar))        =   read ar
-%%]
-
-%%[1.other
-hsnNegate                           =   HNm "negate"
-hsnError                            =   HNm "error"
-%%]
-
-%%[3.strUn
-strUn                               =   "un"
-%%]
-
-%%[99.strUn -3.strUn
-strUn                               =   "-"
-%%]
-
-%%[3.hsnUn
-hsnUn                               ::  HsName -> HsName
-hsnUn           nm                  =   HNm (strUn ++ show nm)
-%%]
-
-%%[12 -3.hsnUn
-hsnUn                               ::  HsName -> HsName
-hsnUn           nm                  =   strUn `hsnPrefix` nm
-%%]
-
-%%[3.hsnIsUn
-hsnIsUn                             ::  HsName -> Bool
-hsnIsUn         (HNm s)             =   isPrefixOf strUn s
-%%]
-
-%%[12 -3.hsnIsUn
-hsnIsUn                             ::  HsName -> Bool
-hsnIsUn         hsn
-  = case hsnInitLast hsn of
-      (_,HNm s) -> isPrefixOf strUn s
-%%]
-
-%%[3.hsnUnUn
-hsnUnUn                             ::  HsName -> HsName
-hsnUnUn         (HNm s)             =   HNm (drop (length strUn) s)
-%%]
-
-%%[12 -3.hsnUnUn
-hsnUnUn                             ::  HsName -> HsName
-hsnUnUn         hsn
-  = case hsnInitLast hsn of
-      (ns,HNm s) -> mkHNm (ns,HNm (drop (length strUn) s))
-%%]
-
-%%[5
-hsnBool                             =   HNm "Bool"
-hsnTrue                             =   HNm "True"
-hsnFalse                            =   HNm "False"
-hsnString                           =   HNm "String"
-hsnList                             =   HNm "[]"
-hsnListCons                         =   HNm ":"
-hsnListNil                          =   HNm "[]"
-%%]
-
-%%[5
-hsnIsList       hsn                 =   hsn == hsnList
-%%]
-
-%%[6
-hsnStar                             =   HNm "*"
-%%]
-
-hsnORow                             =   HNm "(|"
-hsnCRow                             =   HNm "|)"
-hsnOSum                             =   HNm "(<"
-hsnCSum                             =   HNm ">)"
-%%[7
-hsnORow                             =   HNm "{|"
-hsnCRow                             =   HNm "|}"
-hsnOSum                             =   HNm "{<"
-hsnCSum                             =   HNm ">}"
-hsnORec                             =   HNm "("
-hsnCRec                             =   HNm ")"
-
-hsnRow                              =   HNm "Row"
-hsnRec                              =   HNm "Rec"
-hsnSum                              =   HNm "Var"
-hsnRowEmpty                         =   HNm (show hsnORow ++ show hsnCRow)
-
-hsnIsRec, hsnIsSum, hsnIsRow        ::  HsName -> Bool
-hsnIsRec        hsn                 =   hsn == hsnRec
-hsnIsSum        hsn                 =   hsn == hsnSum
-hsnIsRow        hsn                 =   hsn == hsnRow
-
-positionalFldNames                  ::  [HsName]
-positionalFldNames                  =   map HNPos [1..]
-%%]
-
-%%[8
-hsnFloat                            =   HNm "Float"
-%%]
-
-%%[8
-hsnMain                             =   HNm "main"
-hsnUndefined                        =   HNm "undefined"
-hsnPrimAddInt                       =   HNm "primAddInt"
-%%]
-
-hsnOImpl                            =   HNm "(!"
-hsnCImpl                            =   HNm "!)"
-%%[9
-hsnOImpl                            =   HNm "{!"
-hsnCImpl                            =   HNm "!}"
-hsnPrArrow                          =   HNm "=>"
-
-hsnIsPrArrow                        ::  HsName -> Bool
-hsnIsPrArrow    hsn                 =   hsn == hsnPrArrow
-hsnIsUnknown                        =   (==hsnUnknown)
-%%]
-
-%%[10
-hsnDynVar                           =   HNm "?"
-%%]
-
-%%[99
-hsnInteger                          =   HNm "Integer"
-hsnDouble                           =   HNm "Double"
-%%]
-
-%%[5
-hsnEnumFromThenTo                   =   HNm "enumFromThenTo"
-hsnEnumFromThen                     =   HNm "enumFromThen"
-hsnEnumFromTo                       =   HNm "enumFromTo"
-hsnEnumFrom                         =   HNm "enumFrom"
-hsnConcatMap                        =   HNm "concatMap"
-%%]
-
-%%[9
-hsnMonadSeq                         =   HNm ">>"
-hsnMonadBind                        =   HNm ">>="
-hsnMonadFail                        =   HNm "fail"
-%%]
-
-%%[12
-hsnModBuiltin						=	mkHNm "#Builtin"
-%%]
-
-%%[99
-hsnModPrelude						=	mkHNm "Prelude"
-%%]
-
-%%[99
-hsnFromInteger                      =   HNm "fromInteger"
-hsnFromRational                     =   HNm "fromRational"
-hsnMkRatio                          =   HNm "%"
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% HsName class instances
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1 hs
-instance Position HsName where
-  line   _ = (-1)
-  column _ = (-1)
-  file   _ = ""
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Name supply, with/without uniqueness required
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 hs
-hsnUniqSupplyL :: UID -> [HsName]
-hsnUniqSupplyL = map uidHNm . iterate uidNext
-
-hsnLclSupplyL :: [HsName]
-hsnLclSupplyL = map (\i -> HNm ("_" ++ show i)) [1..]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1235,7 +774,7 @@ thd (a,b,c) = c
 
 %%[8
 data Verbosity
-  = VerboseQuiet | VerboseNormal | VerboseALot
+  = VerboseQuiet | VerboseNormal | VerboseALot | VerboseDebug
   deriving (Eq,Ord)
 %%]
 
@@ -1441,5 +980,17 @@ tokMkQNames = map tokMkQName
 
 instance HSNM Token where
   mkHNm = tokMkQName
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name supply, with/without uniqueness required
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+hsnUniqSupplyL :: UID -> [HsName]
+hsnUniqSupplyL = map uidHNm . iterate uidNext
+
+hsnLclSupplyL :: [HsName]
+hsnLclSupplyL = map (\i -> HNm ("_" ++ show i)) [1..]
 %%]
 

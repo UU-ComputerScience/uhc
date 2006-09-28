@@ -7,7 +7,7 @@
 %%% Haskell interface to AG generated code for compiler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,EH.Util.Utils,UU.Pretty, EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Opts}, {%{EH}Ty},{%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty},{%{EH}Ty.FitsIn},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Pretty},{%{EH}EH})
+%%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,EH.Util.Utils,UU.Pretty, EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Base.Opts}, {%{EH}Ty},{%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty},{%{EH}Ty.FitsIn},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Pretty},{%{EH}EH})
 %%]
 
 %%[2 hs import({%{EH}Cnstr},{%{EH}Substitutable},Data.Maybe)
@@ -135,6 +135,11 @@ SEM Decl
 SEM Expr
   | Let         lhs         .   gathPrElimTGam      =   peTGamUnion2 @prfCtxtId @lhs.gathPrfCtxtId @decls.patPrElimTGam @body.gathPrElimTGam
   | * - Let     lhs         .   gathPrElimTGam      =   emptyTGam @lhs.gathPrfCtxtId
+%%]
+
+%%[99
+SEM PatExpr
+  | Expr        loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId
 %%]
 
 %%[12

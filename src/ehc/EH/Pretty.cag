@@ -265,6 +265,14 @@ SEM Decl
                         .   pp      =   hsnDynVar >|< @nm >#< "::" >#< @tyPP
 %%]
 
+%%[11
+SEM Decl
+  | Type        loc     .   pp      =   "type" >#< @tyNm >#< "=" >#< @tyExpr.pp
+
+SEM TyExpr
+  | Lam         loc     .   pp      =   "\\" >|< @tyVar >#< "->" >#< @tyExpr.pp
+%%]
+
 %%[12
 %%]
 SEM AGItf
@@ -274,6 +282,9 @@ SEM AGItf
 SEM Expr
   | IIConst     loc     .   pp      =   pp (show @integer)
   | DConst      loc     .   pp      =   pp (show @double)
+
+SEM PatExpr
+  | Expr        loc     .   pp      =   "`" >|< @expr.pp >|< "`"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

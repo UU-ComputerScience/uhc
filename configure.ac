@@ -103,18 +103,23 @@ AC_SUBST(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES,"$optCabalAllowUndecidableInstanc
 AC_ARG_WITH(uuagc,
 [AC_HELP_STRING([--with-uuagc=<uu ag compiler>],
                 [Use a command different from 'uuagc' to compile with UUAGC.])],
-[ UUAGC_CMD="$withval" ],
+[ uuagcCmd="$withval" ],
 [ 
   if test "$UUAGC" = ""; then
-    AC_PATH_PROG(UUAGC_CMD,uuagc)
+    AC_PATH_PROG(uuagcCmd,uuagc)
   else
-    UUAGC_CMD=$UUAGC
+    uuagcCmd=$UUAGC
   fi
 ]
 )
-if test "$UUAGC_CMD" = "no"; then
-  UUAGC_CMD=""
+if test "$uuagcCmd" = "no"; then
+  uuagcCmd=""
+  uuagcExists="no"
+else
+  uuagcExists="yes"
+  uuagcVersion=`$uuagcCmd --version`
 fi
+AC_SUBST(UUAGC_CMD,$uuagcCmd)
 
 # Checks for libraries.
 
@@ -195,6 +200,12 @@ echo "Installation/build summary:"
 echo "  host                          : $host"
 echo "  prefix                        : $prefix"
 
+echo "  uuagc is available?           : $uuagcExists"
+if test "x$uuagcExists" = "xyes" ;then 
+echo "    version                     : $uuagcVersion"
+echo "    command for uuagc           : $uuagcCmd"
+fi
+
 echo "  ghc is available?             : $ghcExists"
 if test "x$ghcExists" = "xyes" ;then 
 echo "    version                     : $ghcVersion"
@@ -202,7 +213,7 @@ echo "    command for ghc             : $ghcCmd"
 #echo "    library install dir for ghc : $ghcLibDir"
 fi
 
-echo
-echo "Misc debug/tmp info:"
-echo "  hardtop_plat                        : $hardtop_plat"
+#echo
+#echo "Misc debug/tmp info:"
+#echo "  hardtop_plat                        : $hardtop_plat"
 

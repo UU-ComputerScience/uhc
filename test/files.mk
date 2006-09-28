@@ -48,7 +48,7 @@ test-expect test-regress: test-lists
 	      then \
 	        te=$${t}.exp$${v} ; tr=$${t}.reg$${v} ; th=$${t}.$${how}$${v} ; \
 	        tc=$${tb}.core ; \
-	        rm -f $${tc} ; \
+	        rm -f $${tc} $${tb}.$(TEST_GRIN_SUFFIX) ; \
 	        $$ehc $$t > $$th 2>&1 ; \
 	        if test -r $${tc} ; \
 	        then \

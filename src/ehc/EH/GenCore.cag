@@ -55,9 +55,13 @@ SEM Expr
                 loc         .   cexpr       =   CExpr_App @func.cexpr @arg.cexpr
   | Lam         loc         .   cexpr       =   CExpr_Lam @arg.topNm
                                                     (rceMatch @rceEnv [@arg.topNm] [CAlt_Alt [@arg.cpat] @body.cexpr])
-  | Case        loc         .   cexpr       =   let  n = uidHNm @lUniq2
-                                                in   mkCExprLet CBindPlain [CBind_Bind n @expr.cexpr]
-                                                        (rceMatch @rceEnv [n] @alts.caltL)
+  | Case        loc         .   cexpr       =   let (ns,bs,as)
+                                                      = if @isTupOfArg
+                                                        then let ns = [ n | (CExpr_Var n) <- fuL2ExprL (reverse @expr.fuCExprL) ]
+                                                             in  (ns,[],@alts.caltL')
+                                                        else let n = uidHNm @lUniq2
+                                                             in  ([n],[CBind_Bind n @expr.cexpr],@alts.caltL)
+                                                in  mkCExprLet CBindPlain bs (rceMatch @rceEnv ns as)
   | AppTop Parens TypeAs
                 loc         .   cexpr       =   @expr.cexpr
   | Undefined   loc         .   cexpr       =   cvarUndefined
@@ -100,15 +104,14 @@ SEM Expr
 SEM Expr
   | Rec         loc         .   rcexpr          =   if @recExpr.isExtFromEmpty
                                                     then  foldl CExpr_App (CExpr_Tup CTagRec)
-                                                          . map (\(_,CExpr_TupIns _ _ _ _ e) -> e)
-                                                          . tyRowCanonOrder
-                                                          $ @recExpr.fuCExprL
+                                                            $ fuL2ExprL $ tyRowCanonOrder $ @recExpr.fuCExprL
                                                     else  fuMkCExpr @lUniq3 (reverse @recExpr.fuCExprL) @recExpr.recCExpr
                 loc         .   cexpr           =   @rcexpr
 %%]
 
 %%[8
-ATTR RecExpr [ | | recCExpr: CExpr  fuCExprL: {FieldUpdateL CExpr} ]
+ATTR RecExpr [ | | recCExpr: CExpr ]
+ATTR RecExpr Expr [ | | fuCExprL: {FieldUpdateL CExpr} ]
 
 SEM RecExpr
   | Empty       loc         .   recCExpr        =   CExpr_Tup CTagRec
@@ -120,6 +123,9 @@ SEM RecExpr
   | Ext Upd     lhs         .   fuCExprL        =   if @knRecHasLab
                                                     then (@nm,@rcexpr) : @recExpr.fuCExprL
                                                     else @recExpr.fuCExprL
+
+SEM Expr
+  | * - Rec     lhs         .   fuCExprL        =   []
 %%]
 
 %%[88
@@ -177,6 +183,9 @@ ATTR PatExpr [ | | cpat: CPat ]
 
 SEM PatExpr
   | Var VarAs AppTop Rec Con IConst CConst SConst FConst
+%%[[99
+    Expr
+%%]]
                 loc         .   cpNm        =   maybe (CPatNmUniq @topNm) CPatNmOrig @mbTopNm
   | Var         lhs         .   cpat        =   CPat_Var @cpNm
   | VarAs       lhs         .   cpat        =   case @patExpr.cpat of
@@ -206,6 +215,11 @@ SEM PatExpr
   | CConst      lhs         .   cpat        =   CPat_Char @cpNm @char
   | FConst      lhs         .   cpat        =   CPat_Int @cpNm (-1) -- for now
   | SConst      lhs         .   cpat        =   CPat_Int @cpNm (-1) -- for now
+%%]
+
+%%[99
+SEM PatExpr
+  | Expr        lhs         .   cpat        =   CPat_Int @cpNm (-1) -- for now
 %%]
 
 %%[8 hs
@@ -262,7 +276,7 @@ SEM PatExpr
   | AppTop      loc         .   fsCPatL     =   @patExpr.fsCPatL
   | Rec         loc         .   fsCPatL     =   @recPatExpr.fsCPatL
   | Con         loc         .   fsCPatL     =   []
-  | * - App Con
+  | * - App Con Rec
                 lhs         .   fsCPatL     =   []
 %%]
 
@@ -334,6 +348,22 @@ cdictOffset n r = CExpr_Int . tyRecOffset n $ r
 
 %%[9
 SEM Decl
+  | Class       lhs         .   cbindL      =   let  x = HNm "x"
+                                                     vx = CExpr_Var x
+                                                     xStrict = hsnSuffix x "!"
+                                                     vxStrict = CExpr_Var xStrict
+                                                     mkSel n = mkCExprSelCase emptyRCEEnv xStrict vx CTagRec n n (cdictOffset n @clsTyRec)
+                                                     dDflt
+                                                       = [CBind_Bind nDflt (mkCExprLam [nD] d)] 
+                                                       where nDflt = rulNmEvid . pigiRule $ @pigi
+                                                             d = mkCExprApp (CExpr_Tup CTagRec) (replicate (length $ snd $ tyRecExts $ @clsTyRec) cvarUndefined)
+                                                             nD = hsnPrefix "_self_" nDflt
+                                                in   (maybe dDflt (const []) @mbDefaultInstNm)
+                                                     ++ [ CBind_Bind n (x `CExpr_Lam` (mkSel n `CExpr_App` vx))
+                                                        | (n,_) <- @clsFldL
+                                                        ]
+%%]
+SEM Decl
   | Class       lhs         .   cbindL      =   let  nDflt = rulNmEvid . pigiRule $ @pigi
                                                      nD = hsnPrefix "_self_" nDflt
                                                      nR = hsnPrefix "_res_" nDflt
@@ -343,7 +373,7 @@ SEM Decl
                                                                 (mkCExprLetRec
                                                                     [CBind_Bind nR
                                                                         (mkCExprApp (CExpr_Tup CTagRec)
-                                                                            (map (\(n,_) -> maybe cvarUndefined id (lookupBnd n)) . tyRowCanonOrder . snd . tyRecExts $ @clsTyRec))]
+                                                                            (map (\(n,_) -> maybe cvarUndefined id (lookupBnd n)) $ tyRowCanonOrder $ snd $ tyRecExts $ @clsTyRec))]
                                                                     (CExpr_Var nR)
                                                                 )
                                                      x = HNm "x"
@@ -353,7 +383,6 @@ SEM Decl
                                                      ++ [ CBind_Bind n (x `CExpr_Lam` (mkSel n `CExpr_App` vx))
                                                         | (n,_) <- @clsFldL
                                                         ]
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instance
@@ -361,23 +390,39 @@ SEM Decl
 
 %%[9
 SEM Decl
-  | Instance    lhs         .   cbindL      =   let  nDflt = rulNmEvid . pigiRule $ @pigi
-                                                     nStrictDflt = hsnSuffix nDflt "!"
-                                                     nR = hsnPrefix "_res_" @dictNm
-                                                     nStrictR = hsnSuffix nR "!"
-                                                     mkSet d n v = CExpr_TupUpd d CTagRec n (cdictOffset n @recTy) v
-                                                     dDflt
-                                                        = mkCExprStrictIn nStrictDflt (CExpr_App (CExpr_Var nDflt) (CExpr_Var nR))
-                                                            (\d -> mkSetFlds d (zipWith CBind_Bind @supClsNmL @supPrfEvidL))
-                                                     mkSetFlds d bs = foldr (\(CBind_Bind n v) d -> mkSet d n v) d bs
-                                                     dD = mkCExprLam @ctxtArgNmL
-                                                                (mkCExprLetRec
-                                                                    ([CBind_Bind nR
-                                                                        (mkCExprStrictIn nStrictR dDflt (\d -> mkSetFlds d @decls.cbindL))]
-                                                                     ++ (@cSubst `cSubstApp` (@supPrfIntroCBindL ++ @prfIntroCBindL)))
-                                                                    (CExpr_Var nR)
-                                                                )
-                                                in   [CBind_Bind @dictNm (@cSubst `cSubstApp` dD)]
+  | Instance    lhs         .   cbindL      =   let  (nD,dD)
+                                                       = case @instVariant of
+                                                           InstNormal
+                                                             -> (@dictNm,dD)
+                                                             where nDflt = rulNmEvid . pigiRule $ @pigi
+                                                                   nStrictDflt = hsnSuffix nDflt "!"
+                                                                   nR = hsnPrefix "_res_" @dictNm
+                                                                   nStrictR = hsnSuffix nR "!"
+                                                                   dDflt = mkCExprStrictIn nStrictDflt (CExpr_App (CExpr_Var nDflt) (CExpr_Var nR))
+                                                                             (\d -> mkSetFlds d (zipWith CBind_Bind @supClsNmL @supPrfEvidL))
+                                                                   dD = mkCExprLam @ctxtArgNmL
+                                                                          (mkCExprLetRec
+                                                                              ([CBind_Bind nR
+                                                                                  (mkCExprStrictIn nStrictR dDflt (\d -> mkSetFlds d @decls.cbindL))]
+                                                                               ++ (@cSubst `cSubstApp` (@supPrfIntroCBindL ++ @prfIntroCBindL)))
+                                                                              (CExpr_Var nR)
+                                                                          )
+                                                                   mkSetFlds d bs = foldr (\(CBind_Bind n v) d -> mkSet d n v) d bs
+                                                                   mkSet d n v = CExpr_TupUpd d CTagRec n (cdictOffset n @recTy) v
+                                                           InstDefault
+                                                             -> (@dictNm,dD)
+                                                             where nD = hsnPrefix "_self_" @dictNm
+                                                                   nR = hsnPrefix "_res_" @dictNm
+                                                                   dD = mkCExprLam [nD]
+                                                                          (mkCExprLetRec
+                                                                              [CBind_Bind nR
+                                                                                  (mkCExprApp (CExpr_Tup CTagRec)
+                                                                                      (map (\(n,_) -> maybe cvarUndefined id (lookupBnd n)) . tyRowCanonOrder . snd . tyRecExts $ @recTy))]
+                                                                              (CExpr_Var nR))
+                                                                   lookupBnd
+                                                                     = \n -> lookup n b
+                                                                     where b = map (\(CBind_Bind n v) -> (n,v)) @decls.cbindL
+                                                in   [CBind_Bind nD (@cSubst `cSubstApp` dD)]
   | InstanceIntro
                 lhs         .   cbindL      =   [CBind_Bind @dictNm @expr.cexpr]
 %%]
@@ -387,15 +432,18 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR CaseAlt [ | | calt: CAlt ]
-ATTR CaseAlts [ | | caltL: CAltL ]
+ATTR CaseAlt [ | | calt: CAlt  calt': CAlt ]
+ATTR CaseAlts [ | | caltL: CAltL  caltL': CAltL ]
 
 SEM CaseAlt
   | Pat         lhs         .   calt        =   CAlt_Alt [@patExpr.cpat] @expr.cexpr
+                            .   calt'       =   CAlt_Alt [ p | (_,(_,p)) <- reverse @patExpr.fsCPatL ] @expr.cexpr
 
 SEM CaseAlts
   | Nil         lhs         .   caltL       =   []
-  | Cons        lhs         .   caltL       =   @hd.calt : @tl.caltL
+                            .   caltL'      =   []
+  | Cons        lhs         .   caltL       =   @hd.calt  : @tl.caltL
+                            .   caltL'      =   @hd.calt' : @tl.caltL'
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

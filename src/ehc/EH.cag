@@ -7,7 +7,7 @@
 %%% Haskell importable interface to EH/AbsSyn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}EH} import({%{EH}Base.Common})
+%%[1 hs module {%{EH}EH} import({%{EH}Base.Common},{%{EH}Base.Builtin})
 %%]
 
 %%[1 hs export(AGItf(..), Decl(..), Decls, TyExpr(..), Expr(..), PatExpr(..))
@@ -25,7 +25,7 @@
 %%[5 hs export(TyExprs, TyVar(..), TyVars, CaseAlt(..), CaseAlts, DataConstr(..), DataConstrs)
 %%]
 
-%%[5 hs export(mkCase,mkIf,mkIf',mkError,mkStr)
+%%[5 hs export(mkCase,mkCase',mkIf,mkIf',mkError,mkStr,mkAlt)
 %%]
 
 %%[6 hs export(KiExpr(..))
@@ -34,7 +34,10 @@
 %%[7 hs export(RecExpr(..), RecPatExpr(..), RowTyExpr(..), DataField(..), DataFields)
 %%]
 
-%%[8 hs export(mkCase',mkIf'')
+%%[8 hs export(mkIf'')
+%%]
+
+%%[9 hs export(ehIsDeclVal)
 %%]
 
 %%[9 hs export(PrExpr(..), PrExprs,FuncDep(..), FuncDeps)
@@ -50,9 +53,14 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Utils
+%%% Observations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[9 hs
+ehIsDeclVal :: Decl -> Bool
+ehIsDeclVal (Decl_Val _ _) = True
+ehIsDeclVal _              = False
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Constructing
@@ -97,18 +105,14 @@ mkIf'' (bn:tn:fn:_) r c t e i
   = case c of
       Expr_Con n | n == tn -> t
                  | n == fn -> e
-%%[[5
-      _ -> mkCase r
-%%][8
       _ -> mkCase' r
-%%]]
              ( Expr_TypeAs (TyExpr_Con bn) c )
-             [ (PatExpr_Con tn, t)
-             , (PatExpr_Con fn, e)
-             ]
 %%[[8
-             i
+             i False
 %%]]
+             [ mkAlt r (PatExpr_Con tn) t
+             , mkAlt r (PatExpr_Con fn) e
+             ]
 %%]
 
 %%[8 hs
@@ -121,20 +125,27 @@ mkIf :: Range -> Expr -> Expr -> Expr -> Expr
 mkIf = mkIf' [hsnBool,hsnTrue,hsnFalse]
 %%]
 
+%%[5 hs
+mkAlt :: Range -> PatExpr -> Expr -> CaseAlt
+mkAlt r p e = rngLift r CaseAlt_Pat p e
+%%]
+
 %%[5.mkCase hs
 mkCase :: Range -> Expr -> [(PatExpr,Expr)] -> Expr
-mkCase r c as
-  = rngLift r Expr_Case c [ CaseAlt_Pat p e | (p,e) <- as ]
+mkCase r c as = mkCase' r c [ mkAlt r p e | (p,e) <- as ]
+
+mkCase' :: Range -> Expr -> [CaseAlt] -> Expr
+mkCase' r c as = rngLift r Expr_Case c as
 %%]
 
 %%[8 -5.mkCase hs
-mkCase' :: Range -> Expr -> [(PatExpr,Expr)] -> Maybe UID -> Expr
-mkCase' r c as id
-  = rngLift r Expr_Case c [ CaseAlt_Pat p e | (p,e) <- as ] id
+mkCase' :: Range -> Expr  -> Maybe UID -> Bool -> [CaseAlt] -> Expr
+mkCase' r c id istup as
+  = rngLift r Expr_Case c as id istup
 
 mkCase :: Range -> Expr -> [(PatExpr,Expr)] -> Expr
 mkCase r c as
-  = mkCase' r c as Nothing
+  = mkCase' r c Nothing False [ mkAlt r p e | (p,e) <- as ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -7,13 +7,16 @@
 %%% Basic/shared parsers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}Base.Parser} import(UU.Parsing, EH.Util.ParseUtils, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner})
+%%[8 module {%{EH}Base.Parser} import(UU.Parsing, EH.Util.ParseUtils, EH.Util.ScanUtils, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner})
 %%]
 
 %%[8 export(pDollNm,pUID,pInt,pCTag)
 %%]
 
 %%[12 import({%{EH}Module},qualified Data.Set as Set,qualified EH.Util.Rel as Rel) export(pPredOccId,pModEntRel,pIdOcc)
+%%]
+
+%%[12 import(qualified {%{EH}Pred} as Pr) export(pProofCost)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -85,5 +88,10 @@ pModEnt
 pModEntRel :: P ModEntRel
 pModEntRel
   = Rel.fromList <$> pAssocL pDollNm pModEnt
+%%]
+
+%%[12
+pProofCost :: P Pr.ProofCost
+pProofCost = (Pr.PCost <$ pOCURLY <*> pInt <* pCOMMA <*> pInt <* pCOMMA <*> pInt <* pCCURLY)
 %%]
 
