@@ -223,6 +223,24 @@ SEM PatExpr
                 lhs         .   tyCnstr             =   foCnstr @fo_fitR_ |=> @lhs.tyCnstr
 %%]
 
+%%[99
+SEM PatExpr
+  | Expr        loc         .   (eqTy,nmErrs)       =   valGamLookupTy hsnEq @lhs.valGam
+                            .   knExprTy            =   mkTyVar @lUniq
+                            .   fo_                 =   fitsIn strongFIOpts @fe @lUniq2
+                                                            (@lhs.tyCnstr |=> @eqTy)
+                                                            ([@knExprTy,@lhs.knTy] `mkArrow` tyBool)
+                expr        .   knTy                =   @knExprTy
+%%]
+SEM PatExpr
+  | Expr        loc         .   (eqTy,nmErrs)       =   valGamLookupTy hsnEq @lhs.valGam
+                            .   knExprTy            =   mkTyVar @lUniq
+                            .   fo_                 =   fitsIn strongFIOpts @fe @lUniq2
+                                                            (@lhs.tyCnstr |=> @eqTy)
+                                                            ([@knExprTy,@lhs.tyCnstr |=> @lhs.knTy] `mkArrow` tyBool)
+                expr        .   knTy                =   @knExprTy
+                            .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
+
 %%[50.ApptopCon
 SEM PatExpr
   | AppTop Con  loc         .   fo_fitR_            :=  fitsIn  (@lhs.fiOpts {fioAllowEqOpen = True})
@@ -237,11 +255,11 @@ SEM PatExpr
 SEM PatExpr
   | *           loc         .   fe                  =   emptyFE
 %%[[9
-															{ fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]
-                											}
+                                                            }
 %%]]
 %%]
 
@@ -249,11 +267,11 @@ SEM PatExpr
 SEM RecPatExpr
   | *           loc         .   fe                  =   emptyFE
 %%[[9
-															{ fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]
-                											}
+                                                            }
 %%]]
 %%]
 

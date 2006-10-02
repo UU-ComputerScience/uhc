@@ -15,6 +15,7 @@ EH_VERSION				:= @EH_VERSION@
 
 ### Unix
 EXEC_SUFFIX			:= @SUFFIX_EXEC@
+LIB_SUFFIX			:= @SUFFIX_LIB@
 PATH_SEP			:= /
 PATHS_SEP			:= @PATHS_SEP@
 PATHS_SEP_COL		:= :
@@ -34,3 +35,7 @@ TOPABS_PREFIX		:= @TOP_ABS@/
 #RULER2_OPTS_VERSION	:= --v1
 #RULER2_OPTS_VERSION	:= --v2
 RULER2_OPTS_VERSION	:=
+
+### names of packages assumed by the compiler driver
+RTS_PKG_NAME				:= @RTS_PKG_NAME@
+EXTLIBS_BGC_PKG_NAME		:= @EXTLIBS_BGC_PKG_NAME@

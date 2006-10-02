@@ -1,0 +1,7 @@
+/* currently just a placeholder for config settings */
+
+/* use Boehm's GC */
+#undef USE_BOEHM_GC
+
+/* size of Pointer */
+#undef SIZEOF_VOID_P

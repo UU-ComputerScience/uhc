@@ -99,6 +99,7 @@ data EHCOpts
       ,  ehcOptEmitGrin       ::  Bool
       ,  ehcOptEmitCmm        ::  Bool
       ,  ehcOptEmitLlc        ::  Bool
+      ,  ehcOptEmitExec       ::  Bool
       ,  ehcOptSearchPath     ::  [String]
       ,  ehcOptVerbosity      ::  Verbosity
       ,  ehcOptTrf            ::  [TrfOpt]
@@ -108,7 +109,7 @@ data EHCOpts
 %%]]
 %%[[11
       ,  ehcOptTyBetaRedCutOffAt
-      						  ::  Int
+                              ::  Int
 %%]]
 %%[[12
       ,  ehcCheckRecompile    ::  Bool
@@ -116,6 +117,7 @@ data EHCOpts
 %%[[99
       ,  ehcProgName          ::  String
       ,  ehcOptShowNumVersion ::  Bool
+      ,  ehcCfgClassViaRec    ::  Bool
 %%]]
       }
 %%]
@@ -158,15 +160,17 @@ defaultEHCOpts
 %%]]
 %%[[8
       ,  ehcOptEmitLlc        =   False
+      ,  ehcOptEmitExec       =   False
 %%][99
       ,  ehcOptEmitLlc        =   True
+      ,  ehcOptEmitExec       =   True
 %%]]
 %%[[9
       ,  ehcOptPrfCutOffAt    =   20
 %%]]
 %%[[11
       ,  ehcOptTyBetaRedCutOffAt
-      						  =   20
+                              =   20
 %%]]
 %%[[12
       ,  ehcCheckRecompile    =   True
@@ -174,6 +178,7 @@ defaultEHCOpts
 %%[[99
       ,  ehcProgName          =   ""
       ,  ehcOptShowNumVersion =   False
+      ,  ehcCfgClassViaRec    =   True
 %%]]
       }
 %%]
@@ -186,7 +191,7 @@ ehcCmdLineOpts
      ,  Option "h"  ["help"]             (NoArg oHelp)                        "only show this help"
      ,  Option ""   ["version"]          (NoArg oVersion)                     "only show version info"
 %%[[8
-     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|cmm|c|-")  "write code to file, default=core (downstream only)"
+     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|cmm|c|exec|-")  "write code to file, default=core (downstream only)"
      ,  Option ""   ["trf"]              (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
                                                                               "switch on/off transformations"
      ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
@@ -242,6 +247,7 @@ ehcCmdLineOpts
                                 Just "core"  -> o { ehcOptEmitCore     = True      }
                                 Just "java"  -> o { ehcOptEmitJava     = True      }
                                 Just "grin"  -> o { ehcOptEmitGrin     = True      }
+                                Just "exec"  -> o { ehcOptEmitExec     = True, ehcOptEmitLlc = True }
                                 Just "cmm"   -> o { ehcOptEmitCmm      = True      }
                                 Just "c"     -> o { ehcOptEmitLlc      = True      }
                                 _            -> o

@@ -155,6 +155,11 @@ SEM Decl
   | Type        lhs         .   errL        =   mkNestErr @pp (@tyExpr.errL ++ foErrL @fo_)
 %%]
 
+%%[99
+SEM PatExpr
+  | Expr        lhs         .   errL        =   mkNestErr @pp (@expr.errL ++ @nmErrs ++ foErrL @fo_)
+%%]
+
 %%[50
 SEM DataConstr
   | Constr      lhs         .   errL        :=  mkNestErr @pp (@fields.errL ++ @eqs.errL ++ foErrL @fo_)

@@ -36,7 +36,7 @@
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 import({HS/AbsSyn},{HS/EH},{HS/Fixity},{HS/Pretty},{HS/GatherError},{HS/ExtraChecks},{HS/NameLevel},{HS/NameDef},{HS/NameAnalysis},{HS/Uniq})
+%%[1 import({HS/AbsSyn},{HS/ToEH},{HS/Fixity},{HS/Pretty},{HS/GatherError},{HS/ExtraChecks},{HS/NameLevel},{HS/NameDef},{HS/NameAnalysis},{HS/Uniq})
 WRAPPER AGItf
 %%]
 

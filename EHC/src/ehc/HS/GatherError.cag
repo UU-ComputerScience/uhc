@@ -48,11 +48,11 @@ SEM Expression
         loc         .   errL        =   @errIdUse ++ @from.errL ++ @then.errL ++ @to.errL
     | If
         loc         .   errL        =   @errIdUseVal ++ @errIdUseType ++ @guardExpression.errL ++ @thenExpression.errL ++ @elseExpression.errL
-%%]
+%%]]
 %%[[7
     | RecordConstruction
         loc         .   errL        =   @errIdUse ++ @recordExpressionBindings.errL
-%%]
+%%]]
 
 SEM RightHandSide
     | Expression
@@ -68,7 +68,13 @@ SEM Pattern
         loc         .   errL        =   @errIdUse ++ @leftPattern.errL ++ @rightPattern.errL
     | List
         loc         .   errL        =   @errIdUse ++ @patterns.errL
-%%]
+    | Literal
+        loc         .   errL        =   @errIdUse ++ @errIdUseEq
+%%[[9
+                                        ++ @errIdUseCls
+%%]]
+                                        ++ @literal.errL
+%%]]
 %%]
 
 %%[1
@@ -76,7 +82,7 @@ SEM Type
     | Constructor
 %%[[3
       Variable NamedWildcard
-%%]
+%%]]
         loc         .   errL        =   @errIdUse
 %%]
 

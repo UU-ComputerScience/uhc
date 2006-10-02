@@ -174,13 +174,7 @@ call f ps
 preambule :: PP_Doc
 preambule
  = comment "Generated C code"
-   >-< text "#include <stdio.h>"
-   >-< text ""
-   >-< text "typedef int GrWord;"
-   >-< text "typedef GrWord* Pointer;"
-   >-< text ""
-   >-< text "extern Pointer SP, RP, Stack;"
-   >-< text "Pointer BP;"
+   >-< text "#include \"rts.h\""
    >-< text ""
 
 constantDefinition :: (String,Int) -> PP_Doc
