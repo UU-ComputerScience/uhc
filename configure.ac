@@ -65,6 +65,10 @@ AC_DEFUN(REQUIRED_OPTIONAL_PROG_FOR_EH,
   fi
 ])
 
+# gcc
+REQUIRED_PROG_FOR_EH(gccCmd,gcc)
+AC_SUBST(GCC_CMD,$gccCmd)
+
 # 'with' options
 AC_ARG_WITH(ghc,
 [AC_HELP_STRING([--with-ghc=<haskell compiler>],
@@ -132,6 +136,10 @@ AC_SUBST(UUAGC_CMD,$uuagcCmd)
 # what to make
 #AC_SUBST(UUST_SUBDIRS,"shc lib")
 
+# configuration
+AC_CHECK_SIZEOF([void *])
+AC_DEFINE([USE_BOEHM_GC],[0])
+
 # machine dependent code
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
@@ -159,16 +167,19 @@ case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         suffix_shell=".bat"
         suffix_exec=".exe"
+        suffix_lib=".a"
         paths_sep=";"
         ;;
   *)
         suffix_shell=""
         suffix_exec=""
+        suffix_lib=".a"
         paths_sep=":"
         ;;
 esac
 AC_SUBST(SUFFIX_SHELL,"$suffix_shell")
 AC_SUBST(SUFFIX_EXEC,"$suffix_exec")
+AC_SUBST(SUFFIX_LIB,"$suffix_lib")
 AC_SUBST(PATHS_SEP,"$paths_sep")
 
 hardtop=`pwd`
@@ -188,11 +199,27 @@ case $HostPlatform in
 esac
 AC_SUBST(TOP_ABS, "$hardtop_plat")
 
+# libtool used, currently still independent of platform
+libtoolStatic="libtool -static -o"
+libtoolDynamic="libtool -dynamic -o"
+AC_SUBST(LIBTOOL_STATIC_CMD, "$libtoolStatic")
+AC_SUBST(LIBTOOL_DYNAMIC_CMD, "$libtoolDynamic")
+
+# install locations
+inplaceInstallDir="install"
+installPrefix=${prefix}
+AC_SUBST(INSTALL_PREFIX, ${installPrefix})
+AC_SUBST(INPLACE_PREFIX, "$hardtop_plat/$inplaceInstallDir")
+AC_SUBST(INPLACE_INSTALL_DIR, "$inplaceInstallDir")
+
+# package names assumed by compiler driver
+AC_SUBST(RTS_PKG_NAME, "EH-RTS")
+AC_SUBST(EXTLIBS_BGC_PKG_NAME, "gc") # should coincide with installed lib in extlibs/bgc
+
 # file generation
-AC_CONFIG_FILES([mk/config.mk])
-AC_CONFIG_FILES([mk/shared.mk])
-AC_CONFIG_FILES([src/grinc/Config.chs])
-AC_CONFIG_FILES([src/ehc/Config.chs])
+AC_CONFIG_FILES([mk/config.mk mk/shared.mk])
+AC_CONFIG_FILES([src/grinc/Config.chs src/ehc/Config.chs])
+AC_CONFIG_HEADERS([src/grinc/ConfigDefines.chs src/rts/config.h])
 AC_OUTPUT
 
 echo

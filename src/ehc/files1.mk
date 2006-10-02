@@ -74,7 +74,7 @@ EHC_AGEHMAIN_DPDS_SRC_CAG				:= $(patsubst %,$(SRC_EHC_PREFIX)EH/%.cag,AbsSyn \
 													InferPatExpr InferTyExpr InferKiExpr InferData \
 													InferCaseExpr Pretty PrettyAST \
 													Uniq ExtraChecks GatherError \
-													GenCore ResolvePred InferClass \
+													ToCore ResolvePred InferClass \
 											)
 $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_AGEHMAIN_MAIN_SRC_CAG)) \
 										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_AGEHMAIN_DPDS_SRC_CAG)) \
@@ -87,7 +87,7 @@ $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_AGH
 
 EHC_AGHSMAIN_MAIN_SRC_CAG				:= $(patsubst %,$(SRC_EHC_PREFIX)HS/%.cag,MainAG)
 EHC_AGHSMAIN_DPDS_SRC_CAG				:= $(patsubst %,$(SRC_EHC_PREFIX)HS/%.cag,AbsSyn \
-													EH Fixity Pretty Uniq \
+													ToEH Fixity Pretty Uniq \
 													NameAnalysis NameDef NameLevel \
 													ExtraChecks GatherError \
 											)
@@ -179,12 +179,12 @@ EHC_AGCORE_DPDS_SRC_CAG					:= $(patsubst %,$(SRC_EHC_PREFIX)Core/%.cag,AbsSyn)
 $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_AGCORE_MAIN_SRC_CAG)) \
 										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_AGCORE_DPDS_SRC_CAG))
 
-EHC_AGCORE_GRIN_MAIN_SRC_CAG			:= $(patsubst %,$(SRC_EHC_PREFIX)Core/%.cag,Grin)
+EHC_AGCORE_GRIN_MAIN_SRC_CAG			:= $(patsubst %,$(SRC_EHC_PREFIX)Core/%.cag,ToGrin)
 EHC_AGCORE_GRIN_DPDS_SRC_CAG			:= $(patsubst %,$(SRC_EHC_PREFIX)Core/%.cag,CommonLev AbsSyn)
 $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_AGCORE_GRIN_MAIN_SRC_CAG)) \
 										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_AGCORE_GRIN_DPDS_SRC_CAG))
 
-EHC_AGCORE_JAVA_MAIN_SRC_CAG			:= $(patsubst %,$(SRC_EHC_PREFIX)Core/%.cag,Java)
+EHC_AGCORE_JAVA_MAIN_SRC_CAG			:= $(patsubst %,$(SRC_EHC_PREFIX)Core/%.cag,ToJava)
 EHC_AGCORE_JAVA_DPDS_SRC_CAG			:= $(patsubst %,$(SRC_EHC_PREFIX)Core/%.cag,CommonLev AbsSyn)
 $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_AGCORE_JAVA_MAIN_SRC_CAG)) \
 										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_AGCORE_JAVA_DPDS_SRC_CAG))
@@ -450,10 +450,12 @@ $(INSABS_EHC_LIB_ALL_AG): $(INSABS_EHC_LIB_AG_PREFIX)%: $(EHC_BLD_LIB_HS_VARIANT
 # rules for ehc library sources+derived
 $(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag: $(SRC_EHC_PREFIX)%.cag $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE_AG) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F)  --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE_AG) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F)  --order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
+	touch $@
 
 $(EHC_RULES_3_DRV_AG): $(EHC_BLD_VARIANT_PREFIX)%.ag: $(EHC_BLD_VARIANT_PREFIX)%.cag $(SHUFFLE)
-	$(SHUFFLE_AG) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F)  --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE_AG) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F)  --order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
+	touch $@
 
 $(EHC_AG_D_MAIN_DRV_HS) $(LIB_EHC_AG_D_MAIN_DRV_HS): %.hs: %.ag
 	$(AGC) -dr -P$(EHC_BLD_VARIANT_PREFIX) -P$(EHC_BLD_LIB_HS_VARIANT_PREFIX) $<
@@ -472,11 +474,13 @@ $(EHC_HS_SIG_DRV_HS): $(EHC_ALL_CHUNK_SRC) $(EHC_RULES_ALL_SRC) $(EHC_MKF)
 
 $(EHC_HS_MAIN_DRV_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=Main --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=Main --order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
+	touch $@
 
 $(EHC_HS_UTIL_DRV_HS): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --order="$(EHC_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
+	touch $@
 
 $(EHC_RULES_3_DRV_CAG): $(EHC_RULES_3_SRC_RL2) $(RULER2) $(EHC_MKF)
 	mkdir -p $(@D)

@@ -55,6 +55,9 @@
 %%[12 hs export(cModMerge)
 %%]
 
+%%[99 hs export(caltIsBoolExpr)
+%%]
+
 %%[8 import({Core/AbsSyn})
 DERIVING *     : Show, Eq
 %%]
@@ -78,17 +81,6 @@ cTupLbl e
 
 %%[8 hs
 %%]
-ctag :: a -> (HsName -> HsName -> Int -> Int -> a) -> CTag -> a
-ctag n t tg = case tg of {CTag tn cn i a -> t tn cn i a; _ -> n}
-
-ppCTag :: CTag -> PP_Doc
-ppCTag = ctag (pp "Rec") (\tn cn t a -> pp t >|< "/" >|< pp cn >|< "/" >|< pp a)
-
-ppCTagInt :: CTag -> PP_Doc
-ppCTagInt = ctag (pp "-1") (\_ _ t _ -> pp t)
-
-instance PP CTag where
-  pp = ppCTag
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Binding category
@@ -200,10 +192,13 @@ mkCMod e = CModule_Mod (HNm "") e []
 
 %%[8 hs
 cpatVarNm :: CPat -> CPatNm
-cpatVarNm (CPat_Var  n)        = n
-cpatVarNm (CPat_Con  n _ _ _)  = n
-cpatVarNm (CPat_Int  n _    )  = n
-cpatVarNm (CPat_Char n _    )  = n
+cpatVarNm (CPat_Var         n      )  = n
+cpatVarNm (CPat_Con         n _ _ _)  = n
+cpatVarNm (CPat_Int         n _    )  = n
+cpatVarNm (CPat_Char        n _    )  = n
+%%[[99
+cpatVarNm (CPat_BoolExpr    n _    )  = n
+%%]]
 
 cpatConTag :: CPat -> CTag
 cpatConTag (CPat_Con  _ t _ _)  = t
@@ -235,6 +230,12 @@ caltLPatNms = nub . sort . map (cpatVarNm . caltPat)
 
 cvarUndefined :: CExpr
 cvarUndefined = CExpr_Var hsnUndefined
+%%]
+
+%%[99 hs
+caltIsBoolExpr :: CAlt -> Bool
+caltIsBoolExpr (CAlt_Alt (CPat_BoolExpr _ _ : _) _)  = True
+caltIsBoolExpr _                                     = False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

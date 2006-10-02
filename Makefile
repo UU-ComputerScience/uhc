@@ -43,6 +43,8 @@ include $(SRC_PREFIX)grinc/variant.mk
 include $(SRC_PREFIX)ehc/files1.mk
 include $(SRC_PREFIX)grini/files.mk
 include $(SRC_PREFIX)grinc/files.mk
+include extlibs/bgc/files.mk
+include $(SRC_PREFIX)rts/files.mk
 include $(SRC_PREFIX)ehc/files2.mk
 include $(SRC_PREFIX)agprimer/files.mk
 -include $(SRC_PREFIX)infer2pass/variant.mk
@@ -129,10 +131,10 @@ A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
 
 tst:
-	@echo $(GRINC_ALL_SRC)
+	@echo $(if $(filter $(EHC_VARIANT),$(EHC_CODE_VARIANTS)),$(RTS_INS_FLAG),)
 
 tstv:
-	$(MAKE) EHC_VARIANT=1 tst
+	$(MAKE) EHC_VARIANT=8 tst
 
 initial-test-expect: $(A_EH_TEST_EXP)
 

@@ -20,6 +20,9 @@
 %%[5 export(hsnIsList)
 %%]
 
+%%[5 export(hsnEq)
+%%]
+
 %%[6 export(hsnStar)
 %%]
 
@@ -42,6 +45,9 @@
 %%]
 
 %%[9 export(hsnOImpl,hsnCImpl,hsnPrArrow,hsnIsPrArrow,hsnIsUnknown)
+%%]
+
+%%[9 export(hsnClassEq)
 %%]
 
 %%[10 export(hsnDynVar,hsnConcat)
@@ -183,7 +189,6 @@ hsnFloat                            =   HNm "Float"
 
 %%[8
 hsnMain                             =   HNm "main"
-hsnUndefined                        =   HNm "undefined"
 hsnPrimAddInt                       =   HNm "primAddInt"
 %%]
 
@@ -257,8 +262,9 @@ mkRV m = hsnSetQual m . HNm
 
 %%[5
 [hsnList,hsnListCons,hsnListNil,hsnConcatMap
- ,hsnBool,hsnTrue,hsnFalse
- ,hsnString
+ , hsnBool,hsnTrue,hsnFalse
+ , hsnString
+ , hsnEq
  ]
   = map
 %%[[5
@@ -269,18 +275,36 @@ mkRV m = hsnSetQual m . HNm
       [ "[]", ":", "[]", "concatMap"
       , "Bool", "True", "False"
       , "String"
+      , "=="
+      ]
+%%]
+
+%%[8
+[hsnUndefined
+ ]
+  = map
+%%[[8
+      mkRV
+%%][99
+      (mkRV hsnModBase)
+%%]]
+      [ "undefined"
       ]
 %%]
 
 %%[9
-[hsnMonadSeq,hsnMonadBind,hsnMonadFail]
+[hsnMonadSeq,hsnMonadBind,hsnMonadFail
+ , hsnClassEq
+ ]
   = map
 %%[[9
       mkRV
 %%][99
       (mkRV hsnModBase)
 %%]]
-      [ ">>", ">>=", "fail" ]
+      [ ">>", ">>=", "fail"
+      , "Eq"
+      ]
 %%]
 
 %%[99

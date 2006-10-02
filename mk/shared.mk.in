@@ -19,8 +19,12 @@
 # 50: + GADT experiment
 # 4_2: + 2 pass type inference, quantifier propagation experiment
 EHC_UHC_VARIANT							:= 99
-EHC_PUB_VARIANTS						:= 1 2 3 4 5 6 7 8 9 10 11 12
-EHC_VARIANTS							:= $(EHC_PUB_VARIANTS) 50 $(EHC_UHC_VARIANT) 4_2 6_4
+EHC_NOCODE_VARIANTS						:= 1 2 3 4 5 6 7
+EHC_PUB_CODE_VARIANTS					:= 8 9 10 11 12
+EHC_PUB_VARIANTS						:= $(EHC_NOCODE_VARIANTS) $(EHC_PUB_CODE_VARIANTS)
+EHC_OTHER_VARIANTS						:= 50 $(EHC_UHC_VARIANT) 4_2 6_4
+EHC_CODE_VARIANTS						:= $(EHC_PUB_CODE_VARIANTS) $(EHC_OTHER_VARIANTS)
+EHC_VARIANTS							:= $(EHC_PUB_VARIANTS) $(EHC_OTHER_VARIANTS)
 
 GRIN_PUB_VARIANTS						:= 8 9 10 11 12
 GRIN_VARIANTS							:= $(GRIN_PUB_VARIANTS) $(EHC_UHC_VARIANT)
@@ -32,13 +36,16 @@ BINABS_PREFIX		:= $(TOPABS_PREFIX)bin/
 # location for libraries
 LIB_PREFIX			:= $(TOP_PREFIX)lib/
 
-# location for cabal installed stuff (mainly libraries)
-INS_PREFIX			:= $(TOP_PREFIX)install/
-INSABS_PREFIX		:= $(TOPABS_PREFIX)install/
+# location for cabal installed stuff (mainly libraries), and other inplace installs
+INS_PREFIX			:= $(TOP_PREFIX)@INPLACE_INSTALL_DIR@/
+INSABS_PREFIX		:= $(TOPABS_PREFIX)@INPLACE_INSTALL_DIR@/
 INSABS_FLAG_PREFIX	:= $(INSABS_PREFIX)ins-flg-
+INSABS_LIB_PREFIX	:= $(INSABS_PREFIX)lib/
+INSABS_INC_PREFIX	:= $(INSABS_PREFIX)include/
 
-# location building
+# location for building
 BLD_PREFIX			:= $(TOP_PREFIX)build/
+BLDABS_PREFIX		:= $(TOPABS_PREFIX)build/
 BLD_BIN_PREFIX		:= $(BLD_PREFIX)bin/
 BLD_LIBUTIL_PREFIX	:= $(BLD_PREFIX)libutil/
 
@@ -48,6 +55,7 @@ DOC_PREFIX			:= $(TOP_PREFIX)doc/
 # compilers and tools used
 AGC					:= @UUAGC_CMD@
 GHC					:= @GHC_CMD@
+GCC					:= @GCC_CMD@
 OPEN_FOR_EDIT		:= bbedit
 STRIP				:= $(STRIP_CMD)
 FILTER_NONEMP_FILES	:= $(BINABS_PREFIX)filterOutEmptyFiles
@@ -69,6 +77,14 @@ GHC_OPTS_OPTIM		:= -O2
 # cabal options
 CABAL_SETUP_OPTS	:= --ghc --with-compiler=$(GHC)
 CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES := @CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES@
+
+# C compiler options, some are also extended by sub makefiles
+EHC_GCC_CC_OPTS		:= -I$(INSABS_INC_PREFIX)
+EHC_GCC_LD_OPTS		:= -L$(INSABS_LIB_PREFIX)
+
+# library building, using libtool
+LIBTOOL_STATIC		:= @LIBTOOL_STATIC_CMD@
+LIBTOOL_DYNAMIC		:= @LIBTOOL_DYNAMIC_CMD@
 
 # lhs2tex options
 LHS2TEX_OPTS_DFLT	:= 

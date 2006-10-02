@@ -51,7 +51,7 @@ WRAPPER AGItf
 %%[6 import({EH/InferKiExpr})
 %%]
 
-%%[8 import({EH/GenCore})
+%%[8 import({EH/ToCore})
 %%]
 
 %%[9 import({EH/ResolvePred},{EH/InferClass})

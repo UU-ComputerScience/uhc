@@ -13,10 +13,10 @@
 %%[1 import(qualified {%{EH}EH.Parser} as EHPrs, qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.Parser} as HSPrs, qualified {%{EH}HS.MainAG} as HSSem)
 %%]
 
-%%[8 import (EH.Util.CompileRun,{%{EH}Error},{%{EH}Gam},EH.Util.FPath,qualified Data.Map as Map,Data.Maybe,Data.List, EH.Util.ParseUtils)
+%%[8 import (EH.Util.CompileRun,{%{EH}Error},{%{EH}Gam},EH.Util.FPath,qualified Data.Map as Map,Data.Maybe,Data.List, EH.Util.ParseUtils, System)
 %%]
 
-%%[8 import ({%{EH}Core.Java},{%{EH}Core.Grin},{%{EH}Core.Pretty})
+%%[8 import ({%{EH}Core.ToJava},{%{EH}Core.ToGrin},{%{EH}Core.Pretty})
 %%]
 
 %%[8 import ({%{EH}Core.Trf.RenUniq},{%{EH}Core.Trf.FullLazy},{%{EH}Core.Trf.InlineLetAlias},{%{EH}Core.Trf.LetUnrec},{%{EH}Core.Trf.LamLift},{%{EH}Core.Trf.ConstProp},{%{EH}Core.Trf.EtaRed})
@@ -855,6 +855,35 @@ cpTranslateGrin modNm
          }
 %%]
 
+%%[8
+cpCompileWithGCC :: HsName -> EHCompilePhase ()
+cpCompileWithGCC modNm
+  =  do  {  cr <- get
+         ;  let  ecu    = crCU modNm cr
+                 crsi   = crStateInfo cr
+                 opts   = crsiOpts crsi
+                 fp     = ecuFilePath ecu
+                 fpC    = fpathSetSuff "c" fp
+                 fpExec = maybe (fpathRemoveSuff fp) (\s -> fpathSetSuff s fp) mbSuffixExec
+         ;  when (ehcOptEmitExec opts)
+                 (do { let compileC
+                             = concat $ intersperse " "
+                               $ (  [ shellCmdGcc ]
+                                 ++ [ "-L" ++ fileprefixInplaceInstall ++ "lib", "-I" ++ fileprefixInplaceInstall ++ "include" ]
+                                 ++ [ "-o", fpathToStr fpExec ]
+                                 ++ [ fpathToStr fpC ]
+                                 ++ map ("-l" ++) libnamesGcc
+                                 )
+                     ; when (ehcOptVerbosity opts >= VerboseALot)
+                            (lift $ putStrLn compileC)
+                     ; exitCode <- lift $ system compileC
+                     ; case exitCode of
+                         ExitSuccess -> return ()
+                         _           -> cpSetFail
+                     })
+         }
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: transformations, on core
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1099,7 +1128,7 @@ cpCompileCU targHSState modNm
 %%[8
            (ECUSHaskell HSStart,_)
              -> do { msg "Compiling Haskell"
-                   ; cpSeq [cpSetupMod modNm,cpParseHs modNm, cpStepUID, cpProcessHs modNm, cpProcessCore2 modNm]
+                   ; cpSeq [cpSetupMod modNm,cpParseHs modNm, cpStepUID, cpProcessHs modNm, cpProcessCore2 modNm, cpCompileWithGCC modNm]
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
                    }
 %%[[12
@@ -1108,7 +1137,7 @@ cpCompileCU targHSState modNm
 %%]
            (ECUSEh EHStart,_)
              -> do { msg "Compiling EH"
-                   ; cpSeq [cpParseEH modNm, cpProcessEH modNm, cpProcessCore2 modNm]
+                   ; cpSeq [cpParseEH modNm, cpProcessEH modNm, cpProcessCore2 modNm, cpCompileWithGCC modNm]
                    ; cpUpdCU modNm (ecuStoreState (ECUSEh EHAllSem))
                    }
            (ECUSGrin,_)

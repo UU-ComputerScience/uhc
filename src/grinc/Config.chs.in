@@ -1,6 +1,9 @@
 %%[8 module {%{GRIN}Config} export( machDepCForTailcallEnter, machDepCForTailcallLeave1, machDepCForTailcallLeave2 )
 %%]
 
+%%[8 import({%{GRIN}ConfigDefines}) export(module {%{GRIN}ConfigDefines})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Options to adapt the structure of the generated code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -19,3 +22,4 @@ machDepCForTailcallLeave1 = "@MACH_DEP_C_FOR_TAILCALL_LEAVE1@"
 machDepCForTailcallLeave2 :: String
 machDepCForTailcallLeave2 = "@MACH_DEP_C_FOR_TAILCALL_LEAVE2@"
 %%]
+

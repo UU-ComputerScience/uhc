@@ -8,6 +8,15 @@
 %%[12 import(qualified {%{EH}SourceCodeSig} as Sig)
 %%]
 
+%%[8 export(fileprefixInplaceInstall)
+%%]
+
+%%[8 export(libnamesGcc, shellCmdGcc, mbSuffixExec)
+%%]
+
+%%[99 export(fileprefixInstall)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Version
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -56,3 +65,50 @@ verInfo :: Version -> String
 verInfo v = verProg v ++ verDist v ++ ", " ++ verSvn v
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% File locations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+fileprefixInplaceInstall :: String
+fileprefixInplaceInstall = "@INPLACE_PREFIX@/"
+%%]
+
+%%[99
+fileprefixInstall :: String
+fileprefixInstall = "@INSTALL_PREFIX@/"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Cmds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+shellCmdGcc :: String
+shellCmdGcc = "@GCC_CMD@"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Libraries
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+libnamesGcc :: [String]
+libnamesGcc = [ "@RTS_PKG_NAME@", "@EXTLIBS_BGC_PKG_NAME@" ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% File suffixes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+suffixExec :: String
+suffixExec = "@SUFFIX_EXEC@"
+
+mbSuffixExec :: Maybe String
+mbSuffixExec
+  = case suffixExec of
+      ('.':s) -> Just s
+      ""      -> Nothing
+      s       -> Just s
+%%]

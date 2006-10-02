@@ -97,7 +97,7 @@
 %%[11 hs export(tyLamArgsRes)
 %%]
 
-%%[99 hs export(tyInteger,tyDouble) 
+%%[99 hs export(tyInteger,tyDouble,tyBool) 
 %%]
 
 %%[1 import({Ty/AbsSyn})
@@ -426,6 +426,7 @@ tyFloat     = Ty_Con hsnFloat
 %%]
 
 %%[99 hs
+tyBool      = Ty_Con hsnBool
 tyInteger   = Ty_Con hsnInteger
 tyDouble    = Ty_Con hsnDouble
 %%]

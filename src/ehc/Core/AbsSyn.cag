@@ -122,6 +122,12 @@ DATA CPatBind
 TYPE CPatBindL  =   [CPatBind]
 %%]
 
+%%[99
+DATA CPat
+  | BoolExpr    pnm             : {CPatNm}
+                cexpr           : {CExpr}
+%%]
+
   | TupSplit    pnm             : {CPatNm}
                 pat             : CPat
                 tag             : {CTag}

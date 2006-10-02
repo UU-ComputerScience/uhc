@@ -496,7 +496,8 @@ allocate :: String -> Int -> Int -> PP_Doc
 allocate (tag:_) n1 n2
  = let n | tag=='C'  = n1
          | otherwise = max n1 n2
-   in text "heapalloc(" >|< show n >|< ")"
+       alloc = if useBoehmGC then text "GC_MALLOC" else text "heapalloc" -- duplicate code in ToSilly
+   in castword (alloc >|< "(" >|< show n >|< ")")
 }
 %%]
 

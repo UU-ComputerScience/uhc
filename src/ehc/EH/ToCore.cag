@@ -96,6 +96,13 @@ SEM Expr
   | DynVar      loc         .   cexpr       =   cvarUndefined
 %%]
 
+%%[99
+SEM PatExpr
+  | Expr        loc         .   cexprBaseEq =   CExpr_Var hsnEq
+                            .   cexpr       =   mkCExprApp (foAppCoe @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBaseEq)
+                                                           [@expr.cexpr]
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Records, construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -219,7 +226,7 @@ SEM PatExpr
 
 %%[99
 SEM PatExpr
-  | Expr        lhs         .   cpat        =   CPat_Int @cpNm (-1) -- for now
+  | Expr        lhs         .   cpat        =   CPat_BoolExpr @cpNm @cexpr
 %%]
 
 %%[8 hs
@@ -358,10 +365,12 @@ SEM Decl
                                                        where nDflt = rulNmEvid . pigiRule $ @pigi
                                                              d = mkCExprApp (CExpr_Tup CTagRec) (replicate (length $ snd $ tyRecExts $ @clsTyRec) cvarUndefined)
                                                              nD = hsnPrefix "_self_" nDflt
-                                                in   (maybe dDflt (const []) @mbDefaultInstNm)
-                                                     ++ [ CBind_Bind n (x `CExpr_Lam` (mkSel n `CExpr_App` vx))
-                                                        | (n,_) <- @clsFldL
-                                                        ]
+                                                in   if ehcCfgClassViaRec @lhs.opts
+                                                     then (maybe dDflt (const []) @mbDefaultInstNm)
+                                                          ++ [ CBind_Bind n (x `CExpr_Lam` (mkSel n `CExpr_App` vx))
+                                                             | (n,_) <- @clsFldL
+                                                             ]
+                                                     else []
 %%]
 SEM Decl
   | Class       lhs         .   cbindL      =   let  nDflt = rulNmEvid . pigiRule $ @pigi
@@ -422,7 +431,9 @@ SEM Decl
                                                                    lookupBnd
                                                                      = \n -> lookup n b
                                                                      where b = map (\(CBind_Bind n v) -> (n,v)) @decls.cbindL
-                                                in   [CBind_Bind nD (@cSubst `cSubstApp` dD)]
+                                                in   if ehcCfgClassViaRec @lhs.opts
+                                                     then [CBind_Bind nD (@cSubst `cSubstApp` dD)]
+                                                     else []
   | InstanceIntro
                 lhs         .   cbindL      =   [CBind_Bind @dictNm @expr.cexpr]
 %%]
@@ -494,7 +505,12 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-data RCESplitCateg = RCESplitVar | RCESplitCon | RCESplitConst deriving Eq
+data RCESplitCateg
+  = RCESplitVar | RCESplitCon | RCESplitConst
+%%[[99
+  | RCESplitBoolExpr
+%%]]
+  deriving Eq
 
 rceSplit :: (CAlt -> RCESplitCateg) -> CAltL -> [CAltL]
 rceSplit f []   = []
@@ -545,9 +561,12 @@ rceMatchConst env (arg:args) alts
 
 rceMatchSplits :: RCEEnv -> [HsName] -> CAltL -> CExpr
 rceMatchSplits env args alts@(alt:_)
-  |  caltIsVar   alt  = rceMatchVar   env args alts
-  |  caltIsConst alt  = rceMatchConst env args alts
-  |  otherwise        = rceMatchCon   env args alts
+  |  caltIsVar      alt  = rceMatchVar      env args alts
+  |  caltIsConst    alt  = rceMatchConst    env args alts
+%%[[99
+  |  caltIsBoolExpr alt  = rceMatchBoolExpr env args alts
+%%]]
+  |  otherwise           = rceMatchCon      env args alts
 
 rceMatch :: RCEEnv -> [HsName] -> CAltL -> CExpr
 rceMatch env [] []    =  rceCaseCont env
@@ -567,9 +586,12 @@ rceMatch env args alts
                            vc  = CExpr_Var nc
         )
         (rceCaseCont env)
-     $ (rceSplit (\a -> if      caltIsVar a   then RCESplitVar
-                        else if caltIsConst a then RCESplitConst
-                                              else RCESplitCon
+     $ (rceSplit (\a -> if      caltIsVar       a  then RCESplitVar
+                        else if caltIsConst     a  then RCESplitConst
+%%[[99
+                        else if caltIsBoolExpr  a  then RCESplitBoolExpr
+%%]]
+                                                   else RCESplitCon
                  ) alts)
 
 rceUpdEnv :: CExpr -> RCEEnv -> RCEEnv
@@ -577,6 +599,12 @@ rceUpdEnv e env
   = env { rceCaseFailSubst = Map.insert (rceCaseId env) e (rceCaseFailSubst env)
         , rceCaseCont = e
         }
+%%]
+
+%%[99 hs
+-- for now
+rceMatchBoolExpr :: RCEEnv -> [HsName] -> CAltL -> CExpr
+rceMatchBoolExpr env (arg:args) alts = cvarUndefined
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

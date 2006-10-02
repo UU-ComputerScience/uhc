@@ -102,7 +102,7 @@ SEM GrExpr
                             vs = @val.values
                             n  = length vs
                         in Statement_Comment "Store"
-                           : store (show ph) n @lhs.maxConstrParameters vs
+                           : store (show ph) (Just "GrWord") True n @lhs.maxConstrParameters vs
 
            lhs.localsF = (@lhs.targets ++)
 
@@ -187,7 +187,7 @@ SEM GrGlobal
  | Global  lhs.names       = [show @nm]
            lhs.initStats   = let vs = @val.values
                                  n  = length vs
-                             in  store (show @nm) n @lhs.maxConstrParameters vs
+                             in  store (show @nm) (Just "GrWord") False n @lhs.maxConstrParameters vs
 
 
 
@@ -290,16 +290,32 @@ SEM GrModule
 -- that are actually possible for this function.
 -- Source of this information could be the Haskell-type, or the Grin HPT-analysis.
 
-allocate :: String -> Int -> Int -> Value
-allocate (tagcat:_) n1 n2
+allocate :: String -> Maybe String -> Bool -> Int -> Int -> Value
+allocate (tagcat:_) mbcast allowgc n1 n2
+ = Value_Call alloc [ Value_Con (Constant_Literal (sz n)) ]
+ where alloc =  maybe "" (\c -> "(" ++ c ++ ")") mbcast ++ fc
+       fc = if useBoehmGC
+            then if allowgc then "GC_MALLOC" else "GC_MALLOC_UNCOLLECTABLE"
+            else "heapalloc"
+       sz = if useBoehmGC then (* sizeofPointer) else id
+       n | tagcat=='C'  = n1
+         | otherwise    = max n1 n2
+       
+{-
+allocate (tagcat:_) mbcast allowgc n1 n2
  = let n | tagcat=='C'  = n1
          | otherwise    = max n1 n2
-   in Value_Call "heapalloc" [ Value_Con (Constant_Literal n) ]
+       alloc =  maybe "" (\c -> "(" ++ c ++ ")") mbcast
+                ++ (if useBoehmGC
+                    then if allowgc then "GC_MALLOC" else "GC_MALLOC_UNCOLLECTABLE"
+                    else "heapalloc"
+                   )
+   in Value_Call alloc [ Value_Con (Constant_Literal n) ]
+-}
 
-
-store :: String -> Int -> Int -> [Value] -> Statements
-store pn n1 n2 vs
-       =  Statement_Assignment (Variable_Var pn) (allocate pn n1 n2)
+store :: String -> Maybe String -> Bool -> Int -> Int -> [Value] -> Statements
+store pn mbcast allowgc n1 n2 vs
+       =  Statement_Assignment (Variable_Var pn) (allocate pn mbcast allowgc n1 n2)
           : zipWith Statement_Assignment
                     (map (arrayVariab (Variable_Var pn)) [0..])
                     vs
