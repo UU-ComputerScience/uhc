@@ -201,8 +201,8 @@ class AnnConstrOps a where
   (=>=)  :: a -> a -> UID -> context -> AnnConstr sem context
   (=<=)  :: a -> a -> UID -> context -> AnnConstr sem context
   (<==)  :: AnnComp a -> a -> UID -> context -> AnnConstr sem context
-  (=>=!) :: AnnConstrOps a => a -> a -> FlowSem sem -> UID -> context -> AnnConstr sem context
-  (=<=!) :: AnnConstrOps a => a -> a -> FlowSem sem -> UID -> context -> AnnConstr sem context
+  (=>=!) :: a -> a -> FlowSem sem -> UID -> context -> AnnConstr sem context
+  (=<=!) :: a -> a -> FlowSem sem -> UID -> context -> AnnConstr sem context
   (=<=)  = flip (=>=)
   (=<=!) = flip (=>=!)
 
