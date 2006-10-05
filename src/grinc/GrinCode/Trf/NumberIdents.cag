@@ -15,6 +15,9 @@ Note: after each binding we skip one number (binding needs two number in the HPT
 %%[8 import({GrinCode/AbsSyn})
 %%]
 
+%%[8 hs import({%{GRIN}Config})
+%%]
+
 %%[8.wrapper
 WRAPPER GrAGItf
 %%]
@@ -86,12 +89,12 @@ SEM GrAGItf
                                               ]
                                             | (n, HNPos i) <- @bind2idList
                                             , not (n `elem` [applyNm, evalNm])
-                                            , let n2 = hsnPrefix "fun_" (hsnAlphanumeric n)
+                                            , let n2 = hsnPrefix "fun_" n
                                             ] -- ugly
                    .  varMapping   = let changeCaf n
                                            = if    Map.member n @module.globalVars
-                                              then hsnPrefix "global_" (hsnAlphanumeric n)
-                                              else hsnAlphanumeric n
+                                              then hsnPrefix rtsGlobalVarPrefix n
+                                              else n
                                      in  [ (i, changeCaf n)
                                          | (n, HNPos i) <- @var2idList
                                          ]
@@ -190,7 +193,7 @@ SEM GrExpr
   | Update                       lhs  .  grTrf    =  GrExpr_Update  @newName @val.grTrf @mbTag
   | Throw                        lhs  .  grTrf    =  GrExpr_Throw   @newName
   | Catch                        lhs  .  grTrf    =  GrExpr_Catch   @body.grTrf @newName @handler.grTrf
-  | FFI                          lhs  .  grTrf    =  GrExpr_FFI @nm (map (findNewVar @lhs.var2id) @argL)
+  | FFI                          lhs  .  grTrf    =  GrExpr_FFI @nm (map (findNewVar @lhs.var2id) @argL) @resTagL.grTrf
 
 SEM GrModule
   | Mod  lhs  . grTrf         = GrModule_Mod @moduleNm @globalL.grTrf @bindL.grTrf @ctagsMp @newEvalTagMp @newAppTagMp

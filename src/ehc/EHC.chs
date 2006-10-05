@@ -168,29 +168,29 @@ data EHCompileUnitState
 
 data EHCompileUnit
   = EHCompileUnit
-      { ecuFilePath          :: !FPath
-      , ecuGrpNm             :: ! HsName
-      , ecuModNm             :: ! HsName
+      { ecuFilePath          :: FPath
+      , ecuGrpNm             :: HsName
+      , ecuModNm             :: HsName
 %%[[12
-      , ecuIsTopMod          :: ! Bool
+      , ecuIsTopMod          :: Bool
 %%]
-      , ecuImpNmL            :: ! [HsName]
-      , ecuMbHSSem           :: ! (Maybe HSSem.Syn_AGItf)
-      , ecuMbEHSem           :: ! (Maybe EHSem.Syn_AGItf)
-      , ecuMbHS              :: ! (Maybe HS.AGItf)
-      , ecuMbEH              :: ! (Maybe EH.AGItf)
-      , ecuMbCore            :: ! (Maybe Core.CModule)
-      , ecuMbGrin            :: ! (Maybe Grin.GrModule)
-      , ecuState             :: ! EHCompileUnitState
+      , ecuImpNmL            :: [HsName]
+      , ecuMbHSSem           :: (Maybe HSSem.Syn_AGItf)
+      , ecuMbEHSem           :: (Maybe EHSem.Syn_AGItf)
+      , ecuMbHS              :: (Maybe HS.AGItf)
+      , ecuMbEH              :: (Maybe EH.AGItf)
+      , ecuMbCore            :: (Maybe Core.CModule)
+      , ecuMbGrin            :: (Maybe Grin.GrModule)
+      , ecuState             :: EHCompileUnitState
 %%[[12
-      , ecuMbHSTime          :: ! (Maybe ClockTime)
-      , ecuMbHITime          :: ! (Maybe ClockTime)
-      , ecuMbCoreTime        :: ! (Maybe ClockTime)
-      , ecuMbHSSemMod        :: ! (Maybe HSSemMod.Syn_AGItf)
-      , ecuMod               :: ! Mod
+      , ecuMbHSTime          :: (Maybe ClockTime)
+      , ecuMbHITime          :: (Maybe ClockTime)
+      , ecuMbCoreTime        :: (Maybe ClockTime)
+      , ecuMbHSSemMod        :: (Maybe HSSemMod.Syn_AGItf)
+      , ecuMod               :: Mod
       -- , ecuMbPrevCore        :: Maybe Core.CModule
-      , ecuMbPrevHISem       :: ! (Maybe HISem.Syn_AGItf)
-      , ecuMbPrevHI          :: ! (Maybe HI.AGItf)
+      , ecuMbPrevHISem       :: (Maybe HISem.Syn_AGItf)
+      , ecuMbPrevHI          :: (Maybe HI.AGItf)
 %%]
       }
 
@@ -345,16 +345,16 @@ ecuStorePrevHISem x ecu = ecu { ecuMbPrevHISem = Just x }
 %%[8
 data EHCompileRunStateInfo
   = EHCompileRunStateInfo
-      { crsiOpts        :: ! EHCOpts
-      , crsiHSInh       :: ! HSSem.Inh_AGItf
-      , crsiEHInh       :: ! EHSem.Inh_AGItf
-      , crsiNextUID     :: ! UID
-      , crsiHereUID     :: ! UID
+      { crsiOpts        :: EHCOpts
+      , crsiHSInh       :: HSSem.Inh_AGItf
+      , crsiEHInh       :: EHSem.Inh_AGItf
+      , crsiNextUID     :: UID
+      , crsiHereUID     :: UID
 %%[[12
-      , crsiHIInh       :: ! HISem.Inh_AGItf
-      , crsiHSModInh    :: ! HSSemMod.Inh_AGItf
-      , crsiModMp       :: ! ModMp
-      , crsiGrpMp       :: ! (Map.Map HsName EHCompileGroup)
+      , crsiHIInh       :: HISem.Inh_AGItf
+      , crsiHSModInh    :: HSSemMod.Inh_AGItf
+      , crsiModMp       :: ModMp
+      , crsiGrpMp       :: (Map.Map HsName EHCompileGroup)
 %%]
       }
 %%]
@@ -403,9 +403,10 @@ cpParseOffside parser scanOpts store description modNm
  = do { cr <- get
       ; (fn,fh) <- lift $ openFPath (ecuFilePath (crCU modNm cr)) ReadMode
       ; tokens  <- lift $ offsideScanHandle scanOpts fn fh
-      ; let steps = parseOffside parser tokens
-      ; cpUpdCU modNm (store (fst (evalSteps steps)))
-      ; cpSetLimitErrsWhen 5 description (map mkPPErr (getMsgs steps))
+      ; let (res,msgs) = parseOffsideToResMsgs parser tokens
+            errs       = map mkPPErr msgs
+      ; cpUpdCU modNm (store res)
+      ; cpSetLimitErrsWhen 5 description errs
       }
 
 cpParsePlain' :: PlainParser Token a -> ScanUtils.ScanOpts -> EcuUpdater a -> FPath -> HsName -> EHCompilePhase [Err]
@@ -413,10 +414,10 @@ cpParsePlain' parser scanOpts store fp modNm
  = do { cr <- get
       ; (fn,fh) <- lift $ openFPath fp ReadMode
       ; tokens  <- lift $ scanHandle scanOpts fn fh
-      ; let steps = parsePlain parser tokens
-            errs  = map mkPPErr (getMsgs steps)
+      ; let (res,msgs) = parseToResMsgs parser tokens
+            errs       = map mkPPErr msgs
       ; when (null errs)
-             (cpUpdCU modNm (store (fst (evalSteps steps))))
+             (cpUpdCU modNm (store res))
       ; return errs
       }
 
@@ -440,6 +441,20 @@ cpParseGrin modNm
 %%]
 
 %%[12
+cpParseOffsideStopAtErr :: HSPrs.HSParser a -> ScanUtils.ScanOpts -> EcuUpdater a -> HsName -> EHCompilePhase ()
+cpParseOffsideStopAtErr parser scanOpts store modNm
+ = do { cr <- get
+      ; (fn,fh) <- lift $ openFPath (ecuFilePath (crCU modNm cr)) ReadMode
+      ; tokens  <- lift $ offsideScanHandle scanOpts fn fh
+      ; let (res,_) = parseOffsideToResMsgsStopAtErr parser tokens
+      ; cpUpdCU modNm (store res)
+      }
+
+cpParseHsImport :: HsName -> EHCompilePhase ()
+cpParseHsImport = cpParseOffsideStopAtErr HSPrs.pAGItfImport hsScanOpts ecuStoreHS
+%%]
+
+%%[12
 cpParseCore :: HsName -> EHCompilePhase ()
 cpParseCore modNm
   = do { cr <- get
@@ -458,8 +473,8 @@ cpParsePrevHI modNm
               fp     = fpathSetSuff "hi" $ ecuFilePath ecu
        ; lift $ putCompileMsg VerboseALot (ehcOptVerbosity opts) "Parsing" Nothing modNm fp
        ; errs <- cpParsePlain' HIPrs.pAGItf hiScanOpts ecuStorePrevHI fp modNm
-       ; cpSetLimitErrsWhen 5 "Parse HI (of previous compile) of module" errs
-       -- ; return ()
+       -- ; cpSetLimitErrsWhen 5 "Parse HI (of previous compile) of module" errs
+       ; return ()
        }
 %%]
 
@@ -747,7 +762,8 @@ ecuIsValidHI = isJust . ecuMbPrevHISem
 %%[12
 crModNeedsCompile :: HsName -> EHCompileRun -> Bool
 crModNeedsCompile modNm cr
-  = (not $ ehcCheckRecompile $ crsiOpts $ crStateInfo cr)
+  = ecuIsTopMod ecu
+    || (not $ ehcCheckRecompile $ crsiOpts $ crStateInfo cr)
     || ecuIsHSNewerThanHI ecu
     || not (ecuIsValidHI ecu)
     || not (null newer)
@@ -836,7 +852,14 @@ cpTranslateCore2Grin modNm
                  mbCore = ecuMbCore ecu
                  cMod   = panicJust "cpTranslateCore2Grin" mbCore
                  u1     = uidChild . crsiHereUID $ crsi
-                 grin   = cmodGrin u1 cMod
+%%[[8
+                 dg     = EHSem.gathDataGam_Syn_AGItf    ehSem
+                        where ehSem  = fromJust (ecuMbEHSem ecu)
+%%][12
+                 dg     = EHSem.dataGam_Inh_AGItf    ehInh
+                        where ehInh  = crsiEHInh crsi
+%%]]
+                 grin   = cmodGrin u1 dg cMod
          ;  when (isJust mbCore && (ehcOptEmitGrin opts || ehcOptEmitCmm opts || ehcOptEmitLlc opts))
                  (cpUpdCU modNm (ecuStoreGrin grin))
          }
@@ -1110,14 +1133,15 @@ cpCompileCU targHSState modNm
 %%]
 %%[12
            (ECUSHaskell HSStart,Just HSOnlyImports)
-             -> do { cpSeq [cpSetupMod modNm, cpParseHs modNm, cpStepUID, cpFoldHsMod modNm, cpGetHsImports modNm]
+             -> do { msg "Imports of Haskell"
+                   ; cpSeq [cpSetupMod modNm, cpParseHsImport modNm, cpStepUID, cpFoldHsMod modNm, cpGetHsImports modNm]
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSOnlyImports))
                    }
            (ECUSHaskell HSOnlyImports,Just HSOnlyImports)
              -> return ()
            (ECUSHaskell HSOnlyImports,Just HSAllSem)
              -> do { msg "Compiling Haskell"
-                   ; cpSeq [cpGetHsMod modNm, cpCheckMods [modNm], cpProcessHs modNm, cpOutputHI "hi" modNm]
+                   ; cpSeq [cpParseHs modNm, cpStepUID, cpFoldHsMod modNm, cpGetHsMod modNm, cpCheckMods [modNm], cpProcessHs modNm, cpOutputHI "hi" modNm]
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
                    }
            (ECUSHaskell HSOnlyImports,Just HSAllSemHI)
@@ -1128,7 +1152,7 @@ cpCompileCU targHSState modNm
 %%[8
            (ECUSHaskell HSStart,_)
              -> do { msg "Compiling Haskell"
-                   ; cpSeq [cpSetupMod modNm,cpParseHs modNm, cpStepUID, cpProcessHs modNm, cpProcessCore2 modNm, cpCompileWithGCC modNm]
+                   ; cpSeq [cpSetupMod modNm, cpParseHs modNm, cpStepUID, cpProcessHs modNm, cpProcessCore2 modNm, cpCompileWithGCC modNm]
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
                    }
 %%[[12
@@ -1167,9 +1191,7 @@ cpCompileOrderedCUs
       ; cpSeq [anal modNmL, core modNmL, grin modNmL]
       }
   where anal ms
-          = cpSeq (merge [ comp m | m <- ms ]
-                         [ flow m | m <- take (length ms - 1) ms ]
-                  )
+          = cpSeq (merge (map comp ms) (map flow ms))
         merge (c1:cs1) (c2:cs2) = c1 : c2 : merge cs1 cs2
         merge []       cs       = cs
         merge cs       []       = cs
@@ -1187,7 +1209,7 @@ cpCompileOrderedCUs
         core mL
           = cpSeq [cpGetPrevCore m | m <- mL]
         grin mL
-          = cpSeq [oneBigCore, cpProcessCore2 mMain]
+          = cpSeq [oneBigCore, cpProcessCore2 mMain, cpCompileWithGCC mMain]
           where Just (_,mMain) = initlast mL
                 oneBigCore
                   = do { cr <- get

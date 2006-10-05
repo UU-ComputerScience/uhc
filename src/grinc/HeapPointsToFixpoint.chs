@@ -41,10 +41,15 @@ TODO: Shared set and Unique set instead base and shared part
 %%[8.OrdTag
 instance Ord GrTag where
     compare t1 t2 = case t1 of
+                        GrTag_Any         -> case t2 of
+                                                 GrTag_Any         -> EQ
+                                                 otherwise         -> LT
                         GrTag_Unboxed     -> case t2 of
+                                                 GrTag_Any         -> GT
                                                  GrTag_Unboxed     -> EQ
                                                  otherwise         -> LT
                         GrTag_Lit c1 _ n1 -> case t2 of
+                                                 GrTag_Any         -> GT
                                                  GrTag_Unboxed     -> GT
                                                  GrTag_Lit c2 _ n2 -> case compare c1 c2 of
                                                                           EQ -> compare n1 n2
@@ -233,6 +238,7 @@ envChangeSet am env heap applyMap = case am of
         ; return (ahBaseSet elem `mappend` maybe AV_Nothing id (ahSharedSet elem), exceptions)
         }
     evalFilter (AV_Nodes nodes) = let isValueTag t = case t of
+                                                         GrTag_Any          -> True
                                                          GrTag_Unboxed      -> True
                                                          GrTag_Lit cat _ _  -> case cat of
                                                                                    GrTagCon     -> True

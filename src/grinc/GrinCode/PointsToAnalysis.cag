@@ -87,6 +87,14 @@ SEM GrBind
 %%]
 
 %%%%%%%%%%%%%%%%%%%
+%% Self replica  %%
+%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllGrTag [ | | self: SELF ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%
 %% Tag2ResultVar %%
 %%%%%%%%%%%%%%%%%%%
 
@@ -453,11 +461,14 @@ ffi "foo"; \(Tag e1 e2)      => note: (Tag == Unboxed)
 
 %%[8.ffi
 SEM GrExpr
-  | FFI  loc . primAbsVal = primAV @nm
+  | FFI  loc . primAbsVal = let l = case @resTagL.self of
+                                      (GrTag_Unboxed : _) -> [(GrTag_Unboxed,[AV_Basic])]
+                                      ts                  -> map (\t -> (t,avForArity)) ts
+                            in  AV_Nodes (Map.fromList l)
              . prim       = case @lhs.targetInfo of
                               Left nm          -> @lhs.setEnvVar nm True (EnvSetAV @primAbsVal)
                               Right (tag, nms) -> let (AV_Nodes nodes) = @primAbsVal
-                                                      tagElementsAV    = fromJust' "FFI" $ Map.lookup tag nodes
+                                                      tagElementsAV    = fromJust' "PointsToAnalysis.GrExpr.FFI" $ Map.lookup tag nodes
                                                       makeAV teAV nm   = @lhs.setEnvVar nm True (EnvSetAV teAV)
                                                   in zipWithM_ makeAV tagElementsAV nms
              . ffi        = case @lhs.targetInfo of
@@ -465,6 +476,7 @@ SEM GrExpr
                               Right (tag, nms) -> mapM_ (\e -> @lhs.setEnvVar e True (EnvSetAV AV_Basic)) nms
              . fillEnv    = if isPrim @nm then @prim else @ffi
 %%]
+  | FFI  loc . primAbsVal = primAV @nm
 
 Note: we have the ctable, can we do something with that?
       e.g. we could get the result Tags from it. If we save result type for a FFI.

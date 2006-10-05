@@ -94,7 +94,7 @@
 %%[8 import (qualified Data.Map as Map) export(showPP,ppPair,ppFM)
 %%]
 
-%%[8 export(CTag(..),ctagTag,ctagChar,ctagInt)
+%%[8 export(CTag(..),ctagTag,ctagChar,ctagInt,emptyCTag)
 %%]
 
 %%[8 hs export(ctag,ppCTag,ppCTag',ppCTagInt) 
@@ -484,7 +484,9 @@ ppListV = vlist . map pp
 putCompileMsg :: Verbosity -> Verbosity -> String -> Maybe String -> HsName -> FPath -> IO ()
 putCompileMsg v optsVerbosity msg mbMsg2 modNm fNm
   = if optsVerbosity >= v
-    then putStrLn (strBlankPad 25 msg ++ " " ++ strBlankPad 22 (show modNm) ++ " (" ++ fpathToStr fNm ++ maybe "" (\m -> ", " ++ m) mbMsg2 ++ ")")
+    then do { putStrLn (strBlankPad 25 msg ++ " " ++ strBlankPad 22 (show modNm) ++ " (" ++ fpathToStr fNm ++ maybe "" (\m -> ", " ++ m) mbMsg2 ++ ")")
+            ; hFlush stdout
+            }
     else return ()
 %%]
 
@@ -572,6 +574,8 @@ ctagTag t       = ctagTag' t
 
 ctagInt  =  CTag hsnInt  hsnInt  0 1
 ctagChar =  CTag hsnChar hsnChar 0 1
+
+emptyCTag = CTag hsnUnknown hsnUnknown 0 0
 %%]
 
 %%[8 hs

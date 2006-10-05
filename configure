@@ -1314,13 +1314,13 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
-# version of autoconf used (and required)
+### version of autoconf used (and required)
 #AC_PREREQ(2.52)
 
-# revision
+### revision
 
 
-# set MAKE flag in relevant makefiles
+### set MAKE flag in relevant makefiles
 echo "$as_me:$LINENO: checking whether ${MAKE-make} sets \$(MAKE)" >&5
 echo $ECHO_N "checking whether ${MAKE-make} sets \$(MAKE)... $ECHO_C" >&6
 set dummy ${MAKE-make}; ac_make=`echo "$2" | sed 'y,:./+-,___p_,'`
@@ -1433,7 +1433,7 @@ host_os=`echo $ac_cv_host | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\3/'`
 HostPlatform=`/bin/sh $srcdir/config.sub $host` || exit 1
 echo $host
 
-# Version info
+### Version info
 # big change
 EH_VERSION_MAJOR=0
 # small change, not usable with previous
@@ -1457,7 +1457,7 @@ EH_VERSION=$EH_VERSION_MAJOR.$EH_VERSION_MINOR
 
 
 
-# gcc
+### gcc
 
   # Extract the first word of "gcc", so it can be a program name with args.
 set dummy gcc; ac_word=$2
@@ -1513,7 +1513,7 @@ echo "$as_me: error:
 GCC_CMD=$gccCmd
 
 
-# 'with' options
+### 'with' options
 
 # Check whether --with-ghc or --without-ghc was given.
 if test "${with_ghc+set}" = set; then
@@ -1655,18 +1655,20 @@ fi
 UUAGC_CMD=$uuagcCmd
 
 
-# Checks for libraries.
+### Checks for libraries.
 
-# Checks for header files.
+### Checks for header files.
 
 # Checks for typedefs, structures, and compiler characteristics.
 
 # Checks for library functions.
 
-# what to make
+### what to make
 #AC_SUBST(UUST_SUBDIRS,"shc lib")
 
-# configuration
+### configuration
+
+# sizeof GrWord
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -3086,9 +3088,9 @@ fi
 done
 
 
-echo "$as_me:$LINENO: checking for void *" >&5
-echo $ECHO_N "checking for void *... $ECHO_C" >&6
-if test "${ac_cv_type_void_p+set}" = set; then
+echo "$as_me:$LINENO: checking for unsigned int" >&5
+echo $ECHO_N "checking for unsigned int... $ECHO_C" >&6
+if test "${ac_cv_type_unsigned_int+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   cat >conftest.$ac_ext <<_ACEOF
@@ -3101,9 +3103,9 @@ $ac_includes_default
 int
 main ()
 {
-if ((void * *) 0)
+if ((unsigned int *) 0)
   return 0;
-if (sizeof (void *))
+if (sizeof (unsigned int))
   return 0;
   ;
   return 0;
@@ -3131,24 +3133,24 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  ac_cv_type_void_p=yes
+  ac_cv_type_unsigned_int=yes
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-ac_cv_type_void_p=no
+ac_cv_type_unsigned_int=no
 fi
 rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
-echo "$as_me:$LINENO: result: $ac_cv_type_void_p" >&5
-echo "${ECHO_T}$ac_cv_type_void_p" >&6
+echo "$as_me:$LINENO: result: $ac_cv_type_unsigned_int" >&5
+echo "${ECHO_T}$ac_cv_type_unsigned_int" >&6
 
-echo "$as_me:$LINENO: checking size of void *" >&5
-echo $ECHO_N "checking size of void *... $ECHO_C" >&6
-if test "${ac_cv_sizeof_void_p+set}" = set; then
+echo "$as_me:$LINENO: checking size of unsigned int" >&5
+echo $ECHO_N "checking size of unsigned int... $ECHO_C" >&6
+if test "${ac_cv_sizeof_unsigned_int+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  if test "$ac_cv_type_void_p" = yes; then
+  if test "$ac_cv_type_unsigned_int" = yes; then
   # The cast to unsigned long works around a bug in the HP C Compiler
   # version HP92453-01 B.11.11.23709.GP, which incorrectly rejects
   # declarations like `int a3[[(sizeof (unsigned char)) >= 0]];'.
@@ -3165,7 +3167,7 @@ $ac_includes_default
 int
 main ()
 {
-static int test_array [1 - 2 * !(((long) (sizeof (void *))) >= 0)];
+static int test_array [1 - 2 * !(((long) (sizeof (unsigned int))) >= 0)];
 test_array [0] = 0
 
   ;
@@ -3206,7 +3208,7 @@ $ac_includes_default
 int
 main ()
 {
-static int test_array [1 - 2 * !(((long) (sizeof (void *))) <= $ac_mid)];
+static int test_array [1 - 2 * !(((long) (sizeof (unsigned int))) <= $ac_mid)];
 test_array [0] = 0
 
   ;
@@ -3263,7 +3265,7 @@ $ac_includes_default
 int
 main ()
 {
-static int test_array [1 - 2 * !(((long) (sizeof (void *))) < 0)];
+static int test_array [1 - 2 * !(((long) (sizeof (unsigned int))) < 0)];
 test_array [0] = 0
 
   ;
@@ -3304,7 +3306,7 @@ $ac_includes_default
 int
 main ()
 {
-static int test_array [1 - 2 * !(((long) (sizeof (void *))) >= $ac_mid)];
+static int test_array [1 - 2 * !(((long) (sizeof (unsigned int))) >= $ac_mid)];
 test_array [0] = 0
 
   ;
@@ -3369,7 +3371,7 @@ $ac_includes_default
 int
 main ()
 {
-static int test_array [1 - 2 * !(((long) (sizeof (void *))) <= $ac_mid)];
+static int test_array [1 - 2 * !(((long) (sizeof (unsigned int))) <= $ac_mid)];
 test_array [0] = 0
 
   ;
@@ -3408,10 +3410,10 @@ fi
 rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
 done
 case $ac_lo in
-?*) ac_cv_sizeof_void_p=$ac_lo;;
-'') { { echo "$as_me:$LINENO: error: cannot compute sizeof (void *), 77
+?*) ac_cv_sizeof_unsigned_int=$ac_lo;;
+'') { { echo "$as_me:$LINENO: error: cannot compute sizeof (unsigned int), 77
 See \`config.log' for more details." >&5
-echo "$as_me: error: cannot compute sizeof (void *), 77
+echo "$as_me: error: cannot compute sizeof (unsigned int), 77
 See \`config.log' for more details." >&2;}
    { (exit 1); exit 1; }; } ;;
 esac
@@ -3430,8 +3432,8 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
-long longval () { return (long) (sizeof (void *)); }
-unsigned long ulongval () { return (long) (sizeof (void *)); }
+long longval () { return (long) (sizeof (unsigned int)); }
+unsigned long ulongval () { return (long) (sizeof (unsigned int)); }
 #include <stdio.h>
 #include <stdlib.h>
 int
@@ -3441,17 +3443,17 @@ main ()
   FILE *f = fopen ("conftest.val", "w");
   if (! f)
     exit (1);
-  if (((long) (sizeof (void *))) < 0)
+  if (((long) (sizeof (unsigned int))) < 0)
     {
       long i = longval ();
-      if (i != ((long) (sizeof (void *))))
+      if (i != ((long) (sizeof (unsigned int))))
 	exit (1);
       fprintf (f, "%ld\n", i);
     }
   else
     {
       unsigned long i = ulongval ();
-      if (i != ((long) (sizeof (void *))))
+      if (i != ((long) (sizeof (unsigned int))))
 	exit (1);
       fprintf (f, "%lu\n", i);
     }
@@ -3472,16 +3474,16 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  ac_cv_sizeof_void_p=`cat conftest.val`
+  ac_cv_sizeof_unsigned_int=`cat conftest.val`
 else
   echo "$as_me: program exited with status $ac_status" >&5
 echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
 ( exit $ac_status )
-{ { echo "$as_me:$LINENO: error: cannot compute sizeof (void *), 77
+{ { echo "$as_me:$LINENO: error: cannot compute sizeof (unsigned int), 77
 See \`config.log' for more details." >&5
-echo "$as_me: error: cannot compute sizeof (void *), 77
+echo "$as_me: error: cannot compute sizeof (unsigned int), 77
 See \`config.log' for more details." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -3490,22 +3492,446 @@ fi
 fi
 rm -f conftest.val
 else
-  ac_cv_sizeof_void_p=0
+  ac_cv_sizeof_unsigned_int=0
 fi
 fi
-echo "$as_me:$LINENO: result: $ac_cv_sizeof_void_p" >&5
-echo "${ECHO_T}$ac_cv_sizeof_void_p" >&6
+echo "$as_me:$LINENO: result: $ac_cv_sizeof_unsigned_int" >&5
+echo "${ECHO_T}$ac_cv_sizeof_unsigned_int" >&6
 cat >>confdefs.h <<_ACEOF
-#define SIZEOF_VOID_P $ac_cv_sizeof_void_p
+#define SIZEOF_UNSIGNED_INT $ac_cv_sizeof_unsigned_int
 _ACEOF
 
 
+
+# sizeof GrWord*, Pointer
+echo "$as_me:$LINENO: checking for unsigned int *" >&5
+echo $ECHO_N "checking for unsigned int *... $ECHO_C" >&6
+if test "${ac_cv_type_unsigned_int_p+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+int
+main ()
+{
+if ((unsigned int * *) 0)
+  return 0;
+if (sizeof (unsigned int *))
+  return 0;
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_type_unsigned_int_p=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_cv_type_unsigned_int_p=no
+fi
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+echo "$as_me:$LINENO: result: $ac_cv_type_unsigned_int_p" >&5
+echo "${ECHO_T}$ac_cv_type_unsigned_int_p" >&6
+
+echo "$as_me:$LINENO: checking size of unsigned int *" >&5
+echo $ECHO_N "checking size of unsigned int *... $ECHO_C" >&6
+if test "${ac_cv_sizeof_unsigned_int_p+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  if test "$ac_cv_type_unsigned_int_p" = yes; then
+  # The cast to unsigned long works around a bug in the HP C Compiler
+  # version HP92453-01 B.11.11.23709.GP, which incorrectly rejects
+  # declarations like `int a3[[(sizeof (unsigned char)) >= 0]];'.
+  # This bug is HP SR number 8606223364.
+  if test "$cross_compiling" = yes; then
+  # Depending upon the size, compute the lo and hi bounds.
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+int
+main ()
+{
+static int test_array [1 - 2 * !(((long) (sizeof (unsigned int *))) >= 0)];
+test_array [0] = 0
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_lo=0 ac_mid=0
+  while :; do
+    cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+int
+main ()
+{
+static int test_array [1 - 2 * !(((long) (sizeof (unsigned int *))) <= $ac_mid)];
+test_array [0] = 0
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_hi=$ac_mid; break
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_lo=`expr $ac_mid + 1`
+		    if test $ac_lo -le $ac_mid; then
+		      ac_lo= ac_hi=
+		      break
+		    fi
+		    ac_mid=`expr 2 '*' $ac_mid + 1`
+fi
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+  done
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+int
+main ()
+{
+static int test_array [1 - 2 * !(((long) (sizeof (unsigned int *))) < 0)];
+test_array [0] = 0
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_hi=-1 ac_mid=-1
+  while :; do
+    cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+int
+main ()
+{
+static int test_array [1 - 2 * !(((long) (sizeof (unsigned int *))) >= $ac_mid)];
+test_array [0] = 0
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_lo=$ac_mid; break
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_hi=`expr '(' $ac_mid ')' - 1`
+		       if test $ac_mid -le $ac_hi; then
+			 ac_lo= ac_hi=
+			 break
+		       fi
+		       ac_mid=`expr 2 '*' $ac_mid`
+fi
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+  done
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_lo= ac_hi=
+fi
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+# Binary search between lo and hi bounds.
+while test "x$ac_lo" != "x$ac_hi"; do
+  ac_mid=`expr '(' $ac_hi - $ac_lo ')' / 2 + $ac_lo`
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+int
+main ()
+{
+static int test_array [1 - 2 * !(((long) (sizeof (unsigned int *))) <= $ac_mid)];
+test_array [0] = 0
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_hi=$ac_mid
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_lo=`expr '(' $ac_mid ')' + 1`
+fi
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+done
+case $ac_lo in
+?*) ac_cv_sizeof_unsigned_int_p=$ac_lo;;
+'') { { echo "$as_me:$LINENO: error: cannot compute sizeof (unsigned int *), 77
+See \`config.log' for more details." >&5
+echo "$as_me: error: cannot compute sizeof (unsigned int *), 77
+See \`config.log' for more details." >&2;}
+   { (exit 1); exit 1; }; } ;;
+esac
+else
+  if test "$cross_compiling" = yes; then
+  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&5
+echo "$as_me: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&2;}
+   { (exit 1); exit 1; }; }
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+long longval () { return (long) (sizeof (unsigned int *)); }
+unsigned long ulongval () { return (long) (sizeof (unsigned int *)); }
+#include <stdio.h>
+#include <stdlib.h>
+int
+main ()
+{
+
+  FILE *f = fopen ("conftest.val", "w");
+  if (! f)
+    exit (1);
+  if (((long) (sizeof (unsigned int *))) < 0)
+    {
+      long i = longval ();
+      if (i != ((long) (sizeof (unsigned int *))))
+	exit (1);
+      fprintf (f, "%ld\n", i);
+    }
+  else
+    {
+      unsigned long i = ulongval ();
+      if (i != ((long) (sizeof (unsigned int *))))
+	exit (1);
+      fprintf (f, "%lu\n", i);
+    }
+  exit (ferror (f) || fclose (f) != 0);
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_sizeof_unsigned_int_p=`cat conftest.val`
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+{ { echo "$as_me:$LINENO: error: cannot compute sizeof (unsigned int *), 77
+See \`config.log' for more details." >&5
+echo "$as_me: error: cannot compute sizeof (unsigned int *), 77
+See \`config.log' for more details." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+rm -f core *.core gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+fi
+rm -f conftest.val
+else
+  ac_cv_sizeof_unsigned_int_p=0
+fi
+fi
+echo "$as_me:$LINENO: result: $ac_cv_sizeof_unsigned_int_p" >&5
+echo "${ECHO_T}$ac_cv_sizeof_unsigned_int_p" >&6
+cat >>confdefs.h <<_ACEOF
+#define SIZEOF_UNSIGNED_INT_P $ac_cv_sizeof_unsigned_int_p
+_ACEOF
+
+
+
+# Use Boehm's GC
 cat >>confdefs.h <<\_ACEOF
 #define USE_BOEHM_GC 0
 _ACEOF
 
 
-# machine dependent code
+# Prefix used for global values, assumed to be present by RTS
+cat >>confdefs.h <<\_ACEOF
+#define RTS_GLOBAL_VAR_PREFIX "global_"
+_ACEOF
+
+
+### machine dependent code
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
@@ -3530,7 +3956,7 @@ MACH_DEP_C_FOR_TAILCALL_LEAVE1="$mach_dep_c_for_tailcall_leave1"
 MACH_DEP_C_FOR_TAILCALL_LEAVE2="$mach_dep_c_for_tailcall_leave2"
 
 
-# platform specific stuff
+### platform specific stuff
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         suffix_shell=".bat"
@@ -3554,6 +3980,7 @@ SUFFIX_LIB="$suffix_lib"
 PATHS_SEP="$paths_sep"
 
 
+### absolute path to this dir
 hardtop=`pwd`
 hardtop=`echo $hardtop | sed 's|^/tmp_mnt.*\(/local/.*\)$|\1|' | sed 's|^/tmp_mnt/|/|' | sed 's|^/grasp_tmp|/local/grasp_tmp|' | sed 's|^//\(.\)/|\1:/|' `
 #
@@ -3572,7 +3999,7 @@ esac
 TOP_ABS="$hardtop_plat"
 
 
-# libtool used, currently still independent of platform
+### libtool used, currently still independent of platform
 libtoolStatic="libtool -static -o"
 libtoolDynamic="libtool -dynamic -o"
 LIBTOOL_STATIC_CMD="$libtoolStatic"
@@ -3580,7 +4007,7 @@ LIBTOOL_STATIC_CMD="$libtoolStatic"
 LIBTOOL_DYNAMIC_CMD="$libtoolDynamic"
 
 
-# install locations
+### install locations
 inplaceInstallDir="install"
 installPrefix=${prefix}
 INSTALL_PREFIX=${installPrefix}
@@ -3590,13 +4017,13 @@ INPLACE_PREFIX="$hardtop_plat/$inplaceInstallDir"
 INPLACE_INSTALL_DIR="$inplaceInstallDir"
 
 
-# package names assumed by compiler driver
+### package names assumed by compiler driver
 RTS_PKG_NAME="EH-RTS"
 
 EXTLIBS_BGC_PKG_NAME="gc"
  # should coincide with installed lib in extlibs/bgc
 
-# file generation
+### file generation
                     ac_config_files="$ac_config_files mk/config.mk mk/shared.mk"
 
                     ac_config_files="$ac_config_files src/grinc/Config.chs src/ehc/Config.chs"

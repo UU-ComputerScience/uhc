@@ -16,16 +16,20 @@ int main(int argc, char** argv)
 {
 #if USE_BOEHM_GC
     GC_INIT() ;
+
+    Stack = (Pointer)GC_MALLOC_UNCOLLECTABLE(SIZEOF_GRWORD*STACKSIZE);
+    ReturnArea = (Pointer)GC_MALLOC_UNCOLLECTABLE(SIZEOF_GRWORD*RETURNSIZE);
 #else
     Heap = (Pointer)malloc(sizeof(GrWord)*HEAPSIZE);
 
     HeapLimit = Heap + HEAPSIZE;
 
     HP = Heap;
-#endif
+
     Stack = (Pointer)malloc(sizeof(GrWord)*STACKSIZE);
     ReturnArea = (Pointer)malloc(sizeof(GrWord)*RETURNSIZE);
-
+#endif
+    
     SP = Stack;
     RP = ReturnArea;
 

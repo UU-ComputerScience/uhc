@@ -10,7 +10,7 @@
 %%[8 hs module {%{EH}GrinCode} import({%{EH}Base.Common},{%{EH}Base.Builtin},UU.Pretty) export(GrAGItf(..), GrModule(..), GrExpr(..), GrBind(..), GrBindL, GrGlobal(..), GrGlobalL)
 %%]
 
-%%[8 hs export(GrAlt(..), GrAltL, GrPat(..), GrPatL, GrVal(..), GrValL, GrTag(..),GrAdapt(..),GrAdaptL,GrSplit(..),GrSplitL)
+%%[8 hs export(GrAlt(..), GrAltL, GrPat(..), GrPatL, GrVal(..), GrValL, GrTag(..), GrTagL, GrAdapt(..),GrAdaptL,GrSplit(..),GrSplitL)
 %%]
 
 %%[8 hs export(GrTagCateg(..),grinStoreArity,mkGrBox,mkGrTagNode,mkGrRecNode,mkGrConNode)

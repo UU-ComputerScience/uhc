@@ -53,7 +53,7 @@ SEM GrExpr
   | Call                              lhs  .  grTrf    =  GrExpr_Call    @newName @argL.grTrf
   | Fetch                             lhs  .  grTrf    =  GrExpr_Fetch   @newName @mbOffset @mbTag
   | Update                            lhs  .  grTrf    =  GrExpr_Update  @newName @val.grTrf @mbTag
-  | FFI                               lhs  .  grTrf    =  GrExpr_FFI     @nm (map (getName' @lhs.names) @argL)
+  | FFI                               lhs  .  grTrf    =  GrExpr_FFI     @nm (map (getName' @lhs.names) @argL) @resTagL.grTrf
   | Throw                             lhs  .  grTrf    =  GrExpr_Throw   @newName
   | Catch                             lhs  .  grTrf    =  GrExpr_Catch   @body.grTrf (getName' @lhs.names @arg) @handler.grTrf
 

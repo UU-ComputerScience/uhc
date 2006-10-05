@@ -2,10 +2,7 @@
 {-# OPTIONS_GHC -cpp #-}
 %%]
 
-%%[8 module {%{GRIN}ConfigDefines} export( sizeofPointer )
-%%]
-
-%%[8 export(useBoehmGC)
+%%[8 module {%{GRIN}ConfigDefines}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -21,21 +18,38 @@ mkB x = if x /= 0 then True else False
 %%% Sizes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
-#undef SIZEOF_VOID_P
+%%[8 export(sizeofPointer)
+#undef SIZEOF_UNSIGNED_INT_P
 
 sizeofPointer :: Int
-sizeofPointer = SIZEOF_VOID_P
+sizeofPointer = SIZEOF_UNSIGNED_INT_P
+%%]
+
+%%[8 export(sizeofGrWord)
+#undef SIZEOF_UNSIGNED_INT
+
+sizeofGrWord :: Int
+sizeofGrWord = SIZEOF_UNSIGNED_INT
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Configuration
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[8 export(useBoehmGC)
 #undef USE_BOEHM_GC
 
 useBoehmGC :: Bool
 useBoehmGC = mkB USE_BOEHM_GC
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% RTS related
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(rtsGlobalVarPrefix)
+#undef RTS_GLOBAL_VAR_PREFIX
+
+rtsGlobalVarPrefix :: String
+rtsGlobalVarPrefix = RTS_GLOBAL_VAR_PREFIX
+%%]

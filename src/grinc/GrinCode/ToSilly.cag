@@ -47,7 +47,7 @@ SEM GrModule
 SEM GrBind
   | Bind   lhs.functions =  [ Function_Function
                                 -- name
-                                (show @nm)
+                                (hsnShowAlphanumeric @nm)
                                 @expr.tailJumps
                                 -- parameters
                                 (    if @lhs.optOwnParameters then [] else @loc.params
@@ -79,8 +79,8 @@ SEM GrBind
                             ]
 
           expr . numberParameters = length @argNmL
-          loc  . locals = map show (@expr.localsF [])
-          loc  . params = map show @argNmL
+          loc  . locals = map hsnShowAlphanumeric (@expr.localsF [])
+          loc  . params = map hsnShowAlphanumeric @argNmL
           loc  . ownAllocation = @lhs.optOwnParameters || @lhs.optOwnLocals
 
 SEM GrExpr
@@ -91,7 +91,7 @@ SEM GrExpr
                         : [ Statement_Assignment v e
                           | (v,e) <-zip  (if @isLastExpr
                                           then [arrayVariab Variable_RP i | i <- [0..]       ]
-                                          else [Variable_Var   (show x)   | x <- @lhs.targets]
+                                          else [Variable_Var   (hsnShowAlphanumeric x)   | x <- @lhs.targets]
                                          )
                                          @val.values
                           , v /= Variable_Var "_"
@@ -102,11 +102,11 @@ SEM GrExpr
                             vs = @val.values
                             n  = length vs
                         in Statement_Comment "Store"
-                           : store (show ph) (Just "GrWord") True n @lhs.maxConstrParameters vs
+                           : store (hsnShowAlphanumeric ph) (Just "GrWord") True n @lhs.maxConstrParameters vs
 
            lhs.localsF = (@lhs.targets ++)
 
- | Update  lhs.stats  = let p = show @nm
+ | Update  lhs.stats  = let p = hsnShowAlphanumeric @nm
                             vs = @val.values
                          in Statement_Comment "Update"
                             : zipWith Statement_Assignment
@@ -114,8 +114,8 @@ SEM GrExpr
                                      vs
 
  | Fetch   lhs.stats  = Statement_Comment "Fetch"
-                        : Statement_Assignment (Variable_Var (show (head @lhs.targets)))
-                                               (arrayValue (Variable_Var (show @nm)) (fromJust @mbOffset))
+                        : Statement_Assignment (Variable_Var (hsnShowAlphanumeric (head @lhs.targets)))
+                                               (arrayValue (Variable_Var (hsnShowAlphanumeric @nm)) (fromJust @mbOffset))
                         : []
 
            lhs.localsF = (@lhs.targets ++)
@@ -125,7 +125,7 @@ SEM GrExpr
                                            @altL.alternatives
                         : []
 
-           lhs.localsF = ((filter (not . (=="_") . show) @lhs.targets) ++) . @altL.localsF
+           lhs.localsF = ((filter (not . (=="_") . hsnShowAlphanumeric) @lhs.targets) ++) . @altL.localsF
 
  | Call    lhs.stats  = if @isLastExpr && @lhs.optJumpTailCalls
                          then (   Statement_Comment "Call (Tail)"
@@ -139,18 +139,18 @@ SEM GrExpr
                                           (map (arrayVariab Variable_SP) [-1,-2..])
                                           (map (arrayValue  Variable_RP) [1..length @argL])
                               )
-                              ++ [Statement_Jump (show @nm)]
+                              ++ [Statement_Jump (hsnShowAlphanumeric @nm)]
                          else (   Statement_Comment "Call (Normal)"
                               :   (if @lhs.optOwnParameters
                                    then (  zipWith Statement_Assignment
                                                    (map (arrayVariab Variable_SP) [-1,-2..])
                                                    @argL.values
-                                        ++ [Statement_Call (show @nm) [] ]
+                                        ++ [Statement_Call (hsnShowAlphanumeric @nm) [] ]
                                         )
-                                   else [Statement_Call (show @nm) @argL.values ]
+                                   else [Statement_Call (hsnShowAlphanumeric @nm) @argL.values ]
                                   )
                               ++ zipWith Statement_Assignment
-                                         (map (Variable_Var . show) @lhs.targets)
+                                         (map (Variable_Var . hsnShowAlphanumeric) @lhs.targets)
                                          (map (arrayValue Variable_RP) [0..])
                               )
 
@@ -161,9 +161,9 @@ SEM GrExpr
                         : Statement_Assignment
                                (if @isLastExpr
                                 then (arrayVariab Variable_RP 0)
-                                else (Variable_Var (show (head @lhs.targets)))
+                                else (Variable_Var (hsnShowAlphanumeric (head @lhs.targets)))
                                )
-                               (Value_Call @nm (map (Value_Var . Variable_Var . show) @argL))
+                               (Value_Call @nm (map (Value_Var . Variable_Var . hsnShowAlphanumeric) @argL))
                         : []
 
            lhs.localsF = (@lhs.targets ++)
@@ -184,16 +184,25 @@ SEM GrAlt
 
 
 SEM GrGlobal
- | Global  lhs.names       = [show @nm]
+%%[[8
+ | Global  loc.globNm      = @nm
+%%][12
+ | Global  loc.globNm      = hsnToGlobal @nm
+%%]]
+ 		   lhs.names       = [hsnShowAlphanumeric @globNm]
            lhs.initStats   = let vs = @val.values
                                  n  = length vs
-                             in  store (show @nm) (Just "GrWord") False n @lhs.maxConstrParameters vs
+                             in  store (hsnShowAlphanumeric @globNm) (Just "GrWord") False n @lhs.maxConstrParameters vs
 
 
 
 SEM GrVal
  | LitInt  lhs.value  = Value_Con (Constant_Literal @int)
- | Var     loc.value  = Value_Var (Variable_Var (show @nm))
+%%[[8
+ | Var     loc.value  = Value_Var (Variable_Var (hsnShowAlphanumeric @nm))
+%%][12
+ | Var     loc.value  = Value_Var (Variable_Var (hsnShowAlphanumeric $ hsnToGlobal @nm))
+%%]]
            lhs.value  = @loc.value
            lhs.values = [@loc.value]
  | Tag     lhs.value  = @tag.value
@@ -211,8 +220,9 @@ SEM GrTag
  | Lit     loc.constant = Constant_Alias (tagName @categ @nm)
            lhs.constant = @loc.constant
            lhs.value    = Value_Con (@loc.constant)
- | Var     lhs.value    = Value_Var (Variable_Var (show @nm))
+ | Var     lhs.value    = Value_Var (Variable_Var (hsnShowAlphanumeric @nm))
  | Unboxed lhs.value    = error "GrTag:Unboxed value"
+ | Any     lhs.value    = error "GrTag:Any value"
  | * - Lit lhs.constant = error "GrTag:other constant"
 
 SEM GrPat
@@ -333,11 +343,12 @@ tagConstants eas
 
 
 
-tagName categ nm = show categ ++ show (hsnAlphanumeric nm)
+tagName categ nm = show categ ++ hsnShowAlphanumeric nm
 
 showGrTag :: GrTag -> String
 showGrTag (GrTag_Lit categ n nm) = tagName categ nm
-showGrTag (GrTag_Var nm) = show nm
+showGrTag (GrTag_Var nm) = hsnShowAlphanumeric nm
 showGrTag (GrTag_Unboxed) = "GrTag:Unboxed"
+showGrTag (GrTag_Any    ) = "GrTag:Any"
 
 %%]

@@ -286,7 +286,7 @@ grEvalExpr rs e
           ->  do  {  fn' <- rsVarDeref rs fn
                   ;  return (grCall rs fn' (map (grEvalVal rs) aL),Nothing)
                   }
-        GrExpr_FFI fn aL
+        GrExpr_FFI fn aL _
           ->  grFFI rs fn (map (rsVar rs) aL)
         GrExpr_App fn aL
           ->  grEvalApp rs (rsVar rs fn) aL

@@ -25,7 +25,8 @@ ATTR GrTag [ | | tagName: {Maybe CmmName} ]
 SEM GrTag
   | Lit      loc . tagName = Just $ '@' : categStr @categ ++ cmmName' @nm
   | Var      loc . tagName = Just $ cmmName' @nm
-  | Unboxed  loc . tagName = Nothing
+  | Unboxed Any
+             loc . tagName = Nothing
 
 -- is a tag unknown?
 ATTR GrTag [ | | isPtr: {Bool} ]

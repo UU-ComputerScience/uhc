@@ -97,7 +97,7 @@ SEM Expr
   | * - Let     lhs         .   gathKiGam           =   emptyGam
 %%]
 
-%%[12
+%%[8
 ATTR AGItf [ | | gathDataGam: DataGam ]
 %%]
 

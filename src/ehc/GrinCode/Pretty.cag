@@ -110,7 +110,7 @@ SEM GrExpr
                                                     indent 2 (ppCurlysSemisV @altL.ppL)
   | App         lhs         .   pp          =   "apply" >#< ppSpaced (ppGrNm @nm : @argL.ppL)
   | Call        lhs         .   pp          =   ppSpaced (ppGrNm @nm : @argL.ppL)
-  | FFI         lhs         .   pp          =   "ffi" >#< ppSpaced (pp @nm : map ppGrNm @argL)
+  | FFI         lhs         .   pp          =   "ffi" >#< ppSpaced (pp @nm : map ppGrNm @argL) >#< ppCurlysSemisV @resTagL.ppL
   | Eval        lhs         .   pp          =   "eval" >#< ppGrNm @nm
   | Unit        lhs         .   pp          =   "unit" >#< @val.pp
   | Store       lhs         .   pp          =   "store" >#< @val.pp
@@ -153,10 +153,11 @@ SEM GrTag
   | Lit         lhs         .   pp          =   "#" >|< @int >|< "/" >|< pp @categ >|< "/" >|< ppGrNm @nm
   | Var         lhs         .   pp          =   ppGrNm @nm
   | Unboxed     lhs         .   pp          =   pp "#U"
+  | Any         lhs         .   pp          =   pp "#*"
 %%]
 
 %%[8
-ATTR GrGlobalL GrBindL GrAltL GrPatL GrValL GrAdaptL GrSplitL [ | | ppL: {[PP_Doc]} ]
+ATTR GrGlobalL GrBindL GrAltL GrTagL GrPatL GrValL GrAdaptL GrSplitL [ | | ppL: {[PP_Doc]} ]
 
 SEM GrGlobalL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
@@ -167,6 +168,10 @@ SEM GrBindL
   | Nil         lhs         .   ppL         =   []
 
 SEM GrAltL
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+  | Nil         lhs         .   ppL         =   []
+
+SEM GrTagL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
   | Nil         lhs         .   ppL         =   []
 

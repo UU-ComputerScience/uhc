@@ -39,8 +39,8 @@ rceEnvDataAlts env t
        CTag _ conNm _ _
           ->  case valGamLookup conNm (rceValGam env) of
                 Just vgi
-                   ->  let  tyNm = tyAppFunConNm . snd . tyArrowArgsRes . vgiTy $ vgi
-                       in   maybe [] (Map.elems . dgiDataTagMp) . gamLookup tyNm $ rceDataGam env
+                   ->  let  ty = snd $ tyArrowArgsRes $ vgiTy $ vgi
+                       in   maybe [] id $ tagsOfTy ty (rceDataGam env)
                 _  ->  []
        _  ->  []
 %%]
@@ -132,9 +132,9 @@ fuReorder nL fuL
                                    in  CBind_Bind n (o `mkCExprAddInt` off)
                               no = CExpr_Var n
                          in   case f of
-                                 CExpr_TupIns _ t l o e -> ((l,\r -> CExpr_TupIns r t l no e) : fuL,(mkOff n l o):offL,l:exts,dels)
-                                 CExpr_TupUpd _ t l o e -> ((l,\r -> CExpr_TupUpd r t l no e) : fuL,(mkOff n l o):offL,exts,dels)
-                                 CExpr_TupDel _ t l o   -> ((l,\r -> CExpr_TupDel r t l no) : fuL,(mkOff n l o):offL,exts,l:dels)
+                                 CExpr_TupIns _ t l o e -> ((l,\r -> CExpr_TupIns r t l no e) : fuL,(mkOff n l o):offL,l:exts,dels  )
+                                 CExpr_TupUpd _ t l o e -> ((l,\r -> CExpr_TupUpd r t l no e) : fuL,(mkOff n l o):offL,exts  ,dels  )
+                                 CExpr_TupDel _ t l o   -> ((l,\r -> CExpr_TupDel r t l no  ) : fuL,(mkOff n l o):offL,exts  ,l:dels)
                  )
                  ([],[],[],[])
             .  zip nL

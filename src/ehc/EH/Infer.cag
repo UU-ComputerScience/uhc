@@ -748,8 +748,10 @@ SEM AGItf
 ATTR AGItf [ prElimTGam: PrElimTGam | | ]
 
 SEM AGItf
-  | AGItf       loc         .   prElimTGam          =   tgamPushGam basePrfCtxtId @lhs.prfCtxtId @prfCtxtId @expr.gathPrElimTGam @lhs.prElimTGam
+  | AGItf       loc         .   prElimTGam          =   peTGamUnion2 basePrfCtxtId @prfCtxtId @expr.gathPrElimTGam
+                                                            (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam)
 %%]
+  | AGItf       loc         .   prElimTGam          =   tgamPushGam basePrfCtxtId @lhs.prfCtxtId @prfCtxtId @expr.gathPrElimTGam @lhs.prElimTGam
   | AGItf       loc         .   prElimTGam          =   tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

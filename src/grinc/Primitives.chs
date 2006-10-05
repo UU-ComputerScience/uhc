@@ -10,7 +10,7 @@ primitives information table.
 - meta info for code generation
 - code snippets to generate the code for a primitive (C--)
 
-%%[8.abstractValues import({%{GRIN}HeapPointsToFixpoint},{%{EH}Base.Common(HsName(..))}, qualified Data.Set as Set, {%{EH}GrinCode},{%{GRIN}GRINCCommon})
+%%[8.abstractValues import({%{GRIN}HeapPointsToFixpoint},{%{EH}Base.HsName}, qualified Data.Set as Set, {%{EH}GrinCode},{%{GRIN}GRINCCommon}) export(avForArity)
 
 
 avForArity = if grinStoreArity
@@ -105,16 +105,33 @@ primitivesMap  =   Map.fromList primitivesTable
         ]
 %%]
 
-%%[8.utils export(isPrim,isConditionalPrim,codeGenInfo,primSize, primImports,primCode,primAV)
+%%[8.utils export(isPrim,isConditionalPrim,codeGenInfo,primAV)
 isPrim             = ("prim" ==) . take 4
 isConditionalPrim  = flip elem ["primEqInt", "primLtInt", "primGtInt"]
 
 getPrimInfo :: (PrimitiveInfo -> b) -> String -> b
 getPrimInfo f prim = f (Map.findWithDefault (error $ "prim '" ++ prim ++ "' not found!") prim primitivesMap)
 
-primSize     =  getPrimInfo (\ (a, _, _, _) -> a)
-primImports  =  getPrimInfo (\ (_, b, _, _) -> b)
-primCode     =  getPrimInfo (\ (_, _, c, _) -> c)
+-- primSize     =  getPrimInfo (\ (a, _, _, _) -> a)
+-- primImports  =  getPrimInfo (\ (_, b, _, _) -> b)
+-- primCode     =  getPrimInfo (\ (_, _, c, _) -> c)
 primAV       =  getPrimInfo (\ (_, _, _, d) -> d)
 codeGenInfo  =  getPrimInfo (\ (a, b, c, _) -> (a, b, c))
 %%]
+
+%%[12 import({%{EH}Base.Builtin},{%{GRIN}Config}) export(hsnToGlobal)
+-- primitive related names which should be globally available, in unqualified form
+primGlobalNames :: Set.Set HsName
+primGlobalNames
+  = Set.fromList
+  $ map (hsnPrefix rtsGlobalVarPrefix . hsnQualified)
+  $ [ hsnTrue, hsnFalse
+    ]
+
+hsnToGlobal :: HsName -> HsName
+hsnToGlobal n
+  = if n2 `Set.member` primGlobalNames then n2 else n
+  where n2 = hsnQualified n
+%%]
+
+

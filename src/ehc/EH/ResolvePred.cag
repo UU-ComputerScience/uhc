@@ -150,13 +150,18 @@ SEM Expr
 SEM Decl
   | Instance Class
                 loc         .   prfCtxtId           =   @lUniq
+%%]
 
+%%[9.initPrfCtxtId
 SEM AGItf
   | AGItf       loc         .   prfCtxtId           =   @lUniq
 %%]
 
-%%[12
+%%[12 -9.initPrfCtxtId
 ATTR AGItf [ prfCtxtId: PrfCtxtId | | ]
+
+SEM AGItf
+  | AGItf       loc         .   prfCtxtId           =   @lhs.prfCtxtId
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
