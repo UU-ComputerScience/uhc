@@ -47,6 +47,7 @@ DATA GrExpr
                 argL            : GrValL
   | FFI         nm              : {String}
                 argL            : {[HsName]}
+                resTagL         : GrTagL
   | App         nm              : {HsName}
                 argL            : GrValL
   | Eval        nm              : {HsName}
@@ -115,6 +116,9 @@ DATA GrTag
                 nm              : {HsName}
   | Var         nm              : {HsName}
   | Unboxed
+  | Any
+
+TYPE GrTagL     =   [GrTag]
 %%]
 
 
@@ -125,6 +129,9 @@ SET AllAdapt    =   GrAdapt GrAdaptL
 SET AllSplit    =   GrSplit GrSplitL
 SET AllAlt      =   GrAlt GrAltL
 SET AllGrExpr   =   GrExpr AllAlt
-SET AllExpr     =   AllGrExpr GrPat GrPatL GrTag GrVal GrValL
+SET AllGrTag    =   GrTag GrTagL
+SET AllGrVal    =   GrVal GrValL
+SET AllGrPat    =   GrPat GrPatL
+SET AllExpr     =   AllGrExpr AllGrPat AllGrTag AllGrVal
 SET AllGrNT     =   GrModule AllExpr AllGlobal AllBind AllAdapt AllSplit
 %%]

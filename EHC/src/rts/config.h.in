@@ -1,7 +1,13 @@
-/* currently just a placeholder for config settings */
 
 /* use Boehm's GC */
 #undef USE_BOEHM_GC
 
 /* size of Pointer */
-#undef SIZEOF_VOID_P
+#undef SIZEOF_UNSIGNED_INT_P
+
+#define SIZEOF_POINTER	SIZEOF_UNSIGNED_INT_P
+
+/* size of GrWord */
+#undef SIZEOF_UNSIGNED_INT
+
+#define SIZEOF_GRWORD	SIZEOF_UNSIGNED_INT

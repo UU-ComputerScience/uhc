@@ -33,7 +33,7 @@ SEM AGItf
                                                         (if @insertMain then mkCExprLet CBindPlain [CBind_Bind hsnMain @expr.letCBody] (CExpr_Var hsnMain)
                                                                         else @expr.letCBody)
                                                         @expr.letCBindL)
-                                                    [ (tn,Map.toList m) | (tn,dgi) <- gamToAssocL @expr.gathDataGam, let m = dgiDataTagMp dgi ]
+                                                    [ (tn,Map.toList m) | (tn,dgi) <- gamToAssocL @expr.gathDataGam, let m = Map.map dtiCTag $ dgiDataTagMp dgi ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -205,7 +205,7 @@ SEM PatExpr
                                                      dgi    = panicJust ("PatExpr.{AppTop,Con}.dgi:" ++ show (tyConNm c))
                                                               $ dataGamLookup (tyConNm c) $ @lhs.dataGam
                                                 in   panicJust "PatExpr.{AppTop,Con}.tag"
-                                                     $ Map.lookup @appFunNm $ dgiDataTagMp $ dgi
+                                                     $ fmap dtiCTag $ Map.lookup @appFunNm $ dgiDataTagMp dgi
                             .   rest        =   CPatRest_Empty
   | Rec         loc         .   tag         =   CTagRec
                             .   rest        =   @recPatExpr.patCRest
@@ -416,7 +416,7 @@ SEM Decl
                                                                                ++ (@cSubst `cSubstApp` (@supPrfIntroCBindL ++ @prfIntroCBindL)))
                                                                               (CExpr_Var nR)
                                                                           )
-                                                                   mkSetFlds d bs = foldr (\(CBind_Bind n v) d -> mkSet d n v) d bs
+                                                                   mkSetFlds d bs = foldl (\d (CBind_Bind n v) -> mkSet d n v) d bs
                                                                    mkSet d n v = CExpr_TupUpd d CTagRec n (cdictOffset n @recTy) v
                                                            InstDefault
                                                              -> (@dictNm,dD)

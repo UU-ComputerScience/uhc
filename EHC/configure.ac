@@ -1,13 +1,13 @@
-# Process this file with autoconf to produce a configure script.
+### Process this file with autoconf to produce a configure script.
 AC_INIT(EH, [0.1], [atze@cs.uu.nl])
 
-# version of autoconf used (and required)
+### version of autoconf used (and required)
 #AC_PREREQ(2.52)
 
-# revision
+### revision
 AC_REVISION($Revision: 1.26 $)
 
-# set MAKE flag in relevant makefiles
+### set MAKE flag in relevant makefiles
 AC_PROG_MAKE_SET
 # Checks for host/target
 AC_CANONICAL_HOST
@@ -15,7 +15,7 @@ dnl ** canonicalize platform names
 HostPlatform=`/bin/sh $srcdir/config.sub $host` || exit 1
 echo $host
 
-# Version info
+### Version info
 # big change
 EH_VERSION_MAJOR=0
 # small change, not usable with previous
@@ -65,11 +65,11 @@ AC_DEFUN(REQUIRED_OPTIONAL_PROG_FOR_EH,
   fi
 ])
 
-# gcc
+### gcc
 REQUIRED_PROG_FOR_EH(gccCmd,gcc)
 AC_SUBST(GCC_CMD,$gccCmd)
 
-# 'with' options
+### 'with' options
 AC_ARG_WITH(ghc,
 [AC_HELP_STRING([--with-ghc=<haskell compiler>],
                 [Use a command different from 'ghc' to compile with GHC.])],
@@ -125,22 +125,32 @@ else
 fi
 AC_SUBST(UUAGC_CMD,$uuagcCmd)
 
-# Checks for libraries.
+### Checks for libraries.
 
-# Checks for header files.
+### Checks for header files.
 
 # Checks for typedefs, structures, and compiler characteristics.
 
 # Checks for library functions.
 
-# what to make
+### what to make
 #AC_SUBST(UUST_SUBDIRS,"shc lib")
 
-# configuration
-AC_CHECK_SIZEOF([void *])
+### configuration
+
+# sizeof GrWord
+AC_CHECK_SIZEOF([unsigned int])
+
+# sizeof GrWord*, Pointer
+AC_CHECK_SIZEOF([unsigned int *])
+
+# Use Boehm's GC
 AC_DEFINE([USE_BOEHM_GC],[0])
 
-# machine dependent code
+# Prefix used for global values, assumed to be present by RTS
+AC_DEFINE([RTS_GLOBAL_VAR_PREFIX],["global_"])
+
+### machine dependent code
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
@@ -162,7 +172,7 @@ AC_SUBST(MACH_DEP_C_FOR_TAILCALL_ENTER,"$mach_dep_c_for_tailcall_enter")
 AC_SUBST(MACH_DEP_C_FOR_TAILCALL_LEAVE1,"$mach_dep_c_for_tailcall_leave1")
 AC_SUBST(MACH_DEP_C_FOR_TAILCALL_LEAVE2,"$mach_dep_c_for_tailcall_leave2")
 
-# platform specific stuff
+### platform specific stuff
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         suffix_shell=".bat"
@@ -182,6 +192,7 @@ AC_SUBST(SUFFIX_EXEC,"$suffix_exec")
 AC_SUBST(SUFFIX_LIB,"$suffix_lib")
 AC_SUBST(PATHS_SEP,"$paths_sep")
 
+### absolute path to this dir
 hardtop=`pwd`
 hardtop=`echo $hardtop | sed 's|^/tmp_mnt.*\(/local/.*\)$|\1|' | sed 's|^/tmp_mnt/|/|' | sed 's|^/grasp_tmp|/local/grasp_tmp|' | sed 's|^//\(.\)/|\1:/|' `
 #
@@ -199,24 +210,24 @@ case $HostPlatform in
 esac
 AC_SUBST(TOP_ABS, "$hardtop_plat")
 
-# libtool used, currently still independent of platform
+### libtool used, currently still independent of platform
 libtoolStatic="libtool -static -o"
 libtoolDynamic="libtool -dynamic -o"
 AC_SUBST(LIBTOOL_STATIC_CMD, "$libtoolStatic")
 AC_SUBST(LIBTOOL_DYNAMIC_CMD, "$libtoolDynamic")
 
-# install locations
+### install locations
 inplaceInstallDir="install"
 installPrefix=${prefix}
 AC_SUBST(INSTALL_PREFIX, ${installPrefix})
 AC_SUBST(INPLACE_PREFIX, "$hardtop_plat/$inplaceInstallDir")
 AC_SUBST(INPLACE_INSTALL_DIR, "$inplaceInstallDir")
 
-# package names assumed by compiler driver
+### package names assumed by compiler driver
 AC_SUBST(RTS_PKG_NAME, "EH-RTS")
 AC_SUBST(EXTLIBS_BGC_PKG_NAME, "gc") # should coincide with installed lib in extlibs/bgc
 
-# file generation
+### file generation
 AC_CONFIG_FILES([mk/config.mk mk/shared.mk])
 AC_CONFIG_FILES([src/grinc/Config.chs src/ehc/Config.chs])
 AC_CONFIG_HEADERS([src/grinc/ConfigDefines.chs src/rts/config.h])

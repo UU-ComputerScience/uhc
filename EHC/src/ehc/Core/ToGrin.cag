@@ -14,7 +14,7 @@
 WRAPPER CodeAGItf
 %%]
 
-%%[8 hs
+%%[8 hs import({%{EH}Gam}(DataGam,tagsOfTy))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -22,11 +22,19 @@ WRAPPER CodeAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-cmodGrin :: UID -> CModule -> GrModule
-cmodGrin uniq cmod
+cmodGrin :: UID -> DataGam -> CModule -> GrModule
+cmodGrin uniq dg cmod
   =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
-                              (Inh_CodeAGItf {gUniq_Inh_CodeAGItf = uniq})
+                              (Inh_CodeAGItf {gUniq_Inh_CodeAGItf = uniq, dataGam_Inh_CodeAGItf = dg})
      in   grMod_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% DataGam required for FFI possible tags
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllCodeNT CodeAGItf [ dataGam: DataGam | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -174,7 +182,7 @@ SEM CModule
 
                                                 -- constructorfunctions are never called via an F-thunk, so no cases for it are generated
                             .   allFTags    =   filter (\(fNm,_) -> not (fNm `elem` map ctagNm @allCTags))
-                                                       ((hsnUndefined,0) : (hsnGrApply,2) : @allFPTags ++ Map.toList @expr.cafNmMp)
+                                                       ({- (hsnUndefined,0) : -} (hsnGrApply,2) : @allFPTags ++ Map.toList @expr.cafNmMp)
 
                             .   applyTagMp  =   map makeApplyMapEntryP @allPTags
                             .   evalTagMp   =   map makeEvalMapEntryC @allCTags
@@ -211,17 +219,17 @@ SEM CModule
                                                                             )
                                                                )
 
-                            .   undefBind   =   GrBind_Bind hsnUndefined
-                                                            []
-                                                            (GrExpr_FFI "primUndefined" [])
-
                 lhs         .   grMod       =   GrModule_Mod @moduleNm
                                                     [] -- TODO: this should contain all the caf variables
-                                                    (@expr.grBindL ++ [@undefBind, @evalBind, @applyBind])
+                                                    (@expr.grBindL ++ [ {- @undefBind, -} @evalBind, @applyBind])
                                                     @constrsMp
                                                     @evalTagMp
                                                     @applyTagMp
 %%]
+                            .   undefBind   =   GrBind_Bind hsnUndefined
+                                                            []
+                                                            (GrExpr_FFI "primUndefined" [] [GrTag_Any])
+
 
 %%[8 hs
 
@@ -503,7 +511,7 @@ SEM CAlt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Bindings
+%%% Normal bindings
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -511,21 +519,43 @@ ATTR CBind CBindL  [ | | grBindL USE {++} {[]}: GrBindL ]
 
 SEM CBind
   | Bind        lhs         .   grBindL     =   [GrBind_Bind @nm @expr.grLamArgL @expr.grLamBody]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% FFI binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+tyNmIsUnboxedForFFIRes :: HsName -> Bool
+tyNmIsUnboxedForFFIRes
+  = (`elem` ns)
+  where ns = [ hsnInt, hsnChar ]
+%%]
+
+%%[8
+SEM CBind
   | FFI         loc         .   (nmRes,nmArgL,nmArgPatL)
                                             =   let  (nmRes:nmArgL) = take (length @argTyL + 1) (hsnUniqSupplyL @lUniq)
                                                      nmArgPatL = map (hsnPrefix "_") nmArgL
                                                 in   (nmRes,nmArgL,nmArgPatL)
                 lhs         .   grBindL     =   let  mkPat ty n
                                                        =  case tyConNm ty of
-                                                            t | t == hsnInt -> mkGrPatConNode 0 t [n]
-                                                            _               -> GrPat_Var n
-                                                     mkRes ty v
-                                                       =  case tyConNm ty of
-                                                            t | t == hsnInt -> \e -> GrExpr_Seq e (mkGrUnboxFFI @nmRes) (GrExpr_Unit (mkGrBox t (GrVal_Var v)))
-                                                            _               -> id
+                                                            t | tyNmIsUnboxedForFFIRes t -> mkGrPatConNode 0 t [n]
+                                                            _                            -> GrPat_Var n
+                                                     resTyNm = tyConNm @resTy
+                                                     resIsUnboxed = tyNmIsUnboxedForFFIRes resTyNm
+                                                     resTagL
+                                                       = case tagsOfTy @resTy @lhs.dataGam of
+                                                           Just ts          -> [ GrTag_Lit GrTagCon (ctagTag' t) (ctagNm t) | t <- ts ]
+                                                           _ | resIsUnboxed -> [ GrTag_Unboxed ]
+                                                             | otherwise    -> [ GrTag_Any ]
+                                                     mkRes v
+                                                       = if resIsUnboxed
+                                                         then \e -> GrExpr_Seq e (mkGrUnboxFFI @nmRes) (GrExpr_Unit (mkGrBox resTyNm (GrVal_Var v)))
+                                                         else id
                                                 in   [GrBind_Bind @nm @nmArgL
                                                         (foldr  (\(n,p) e -> GrExpr_Seq (GrExpr_Eval n) p e)
-                                                                (mkRes @resTy @nmRes (GrExpr_FFI @impEnt @nmArgPatL))
+                                                                (mkRes @nmRes (GrExpr_FFI @impEnt @nmArgPatL resTagL))
                                                         . zip @nmArgL
                                                         . zipWith mkPat @argTyL
                                                         $ @nmArgPatL

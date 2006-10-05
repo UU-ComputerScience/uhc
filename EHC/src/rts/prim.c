@@ -1,5 +1,15 @@
 #include "rts.h"
 
+/* Test primitive
+*/
+
+int primXXXInt(int x, int y, int z)
+{   return x+y+z;
+}
+
+/* Int related primitives
+*/
+
 int primAddInt(int x, int y)
 {   return x+y;
 }
@@ -26,6 +36,9 @@ int primModInt(int x, int y)
    (So I wonder why it is stored at all!)
 */
 
+/* Ord Int related primitives
+*/
+
 int primGtInt(int x, int y)
 {   if (x>y)
         return ((Pointer)global_True)[0];
@@ -36,10 +49,21 @@ int primLtInt(int x, int y)
         return ((Pointer)global_True)[0];
     return ((Pointer)global_False)[0];
 }
+
+/* Eq Int related primitives
+*/
+
 int primEqInt(int x, int y)
 {   if (x==y)
         return ((Pointer)global_True)[0];
     return ((Pointer)global_False)[0];
+}
+
+/* Misc primitives
+*/
+
+GrWord primUnsafeId(GrWord x)
+{   return x ;
 }
 
 int primUndefined()

@@ -64,7 +64,8 @@ $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRI
 GRINC_AGGRINCODE_GENCMM_MAIN_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,GenCmm)
 GRINC_AGGRINCODE_GENCMM_DPDS_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,TagInfo ValueInfo ReturnSize Primitives ImportExport Globals ExceptionHandlers ToCmm TraceInfo LastExpr)
 $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGGRINCODE_GENCMM_MAIN_SRC_CAG)) \
-										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_GENCMM_DPDS_SRC_CAG))
+										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_GENCMM_DPDS_SRC_CAG)) \
+											$(LIB_EHC_INS_FLAG)
 
 GRINC_AGGRINCODE_GENLLC_MAIN_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,GenLlc)
 GRINC_AGGRINCODE_GENLLC_DPDS_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,TagInfo ValueInfo ReturnSize Primitives ImportExport Globals ExceptionHandlers ToLlc TraceInfo LastExpr)

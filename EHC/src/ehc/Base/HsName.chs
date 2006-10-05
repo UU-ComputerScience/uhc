@@ -8,13 +8,16 @@
 %%[1 import(UU.Scanner.Position) export(HSNM(..),HsName(..))
 %%]
 
+%%[8 export(hsnShowAlphanumeric)
+%%]
+
 %%[8 import(EH.Util.FPath,Char,Data.Maybe)
 %%]
 
 %%[8 export(hsnInitLast)
 %%]
 
-%%[8 export(hsnPrefix,hsnSuffix, hsnAlphanumeric)
+%%[8 export(hsnPrefix,hsnSuffix,stringAlphanumeric,  hsnAlphanumeric)
 %%]
 
 %%[10 export(hsnConcat)
@@ -54,12 +57,22 @@ data HsName
 %%]
 
 %%[7
-instance Show HsName where
-  show (HNm s    )  = s
-  show (HNPos p  )  = show p
+hsnShow :: String -> HsName -> String
+hsnShow _   (HNm s    )  = s
+hsnShow _   (HNPos p  )  = show p
+%%[[12
+hsnShow sep (HNmQ ns  )  = concat $ intersperse sep $ map show ns
+%%]]
 %%]
-%%[12
-  show (HNmQ ns  )  = concat $ intersperse "." $ map show ns
+
+%%[8
+hsnShowAlphanumeric :: HsName -> String
+hsnShowAlphanumeric = show . hsnAlphanumeric
+%%]
+
+%%[7
+instance Show HsName where
+  show = hsnShow "."
 %%]
 
 %%[8
@@ -88,12 +101,17 @@ hsnSuffix       hsn   p
 %%[8
 stringAlphanumeric :: String -> String
 stringAlphanumeric s
+  = concat (map (charAlphanumeric) s)
+%%]
+stringAlphanumeric :: String -> String
+stringAlphanumeric s
  | isAlphaNum c || c=='_'  = s
  | otherwise               = concat (map (('_':).charAlphanumeric) s)
   where c = head s   -- we assume that the whole string is alphanumeric if the first character is.
                      -- this is more efficient than testing each character of the string separately,
                      -- and can safely be assumed in Haskell
 
+%%[8
 charAlphanumeric :: Char -> String
 charAlphanumeric ':' = "colon"
 charAlphanumeric '!' = "exclam"
@@ -120,15 +138,18 @@ charAlphanumeric ']' = "bus"
 charAlphanumeric '(' = "open"    -- although this is not a legal Haskell operator symbol, it can be part of the tuple constructor
 charAlphanumeric ',' = "comma"
 charAlphanumeric ')' = "close"
+charAlphanumeric  c  = [c]
+%%]
 charAlphanumeric  c  | isDigit c = [c]
                      | otherwise = error ("no alphanumeric representation for " ++ show c)
 
+%%[8
 hsnAlphanumeric :: HsName -> HsName
 hsnAlphanumeric (HNm s) = HNm (stringAlphanumeric s)
 hsnAlphanumeric n@(HNPos p) = n
 %%]
 %%[12
-hsnAlphanumeric (HNmQ ns) = HNmQ (map hsnAlphanumeric ns)
+hsnAlphanumeric (HNmQ ns) = HNm $ hsnShow "_" $ HNmQ (map hsnAlphanumeric ns)
 %%]
 
 %%[8

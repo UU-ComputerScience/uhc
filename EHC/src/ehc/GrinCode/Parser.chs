@@ -87,6 +87,7 @@ pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
                 <|>  GrExpr_Case    <$  pKey "case"         <*> pVal    <*   pKey "of" <*> pCurly_pSemics pAlt
                 <|>  GrExpr_App     <$  pKey "apply"        <*> pGrNm   <*>  pSValL
                 <|>  GrExpr_FFI     <$  pKey "ffi"          <*> pId     <*>  pGrNmL
+                                                            <*> pCurly_pSemics pTag
                 <|>  GrExpr_Throw   <$  pKey "throw"        <*> pGrNm
                 <|>  GrExpr_Catch   <$  pKey "try"          <*> pCurly pExprSeq
                                     <*  pKey "catch"        <*> pParens pGrNm <*> pCurly pExprSeq
@@ -142,6 +143,7 @@ pTag            ::   GRIParser GrTag
 pTag            =    pKey "#"
                      *>  (   (\i c n -> GrTag_Lit c i n) <$> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> pGrNm
                          <|> GrTag_Unboxed <$ pKey "U"
+                         <|> GrTag_Any     <$ pKey "*"
                          )
 
 pTagVar         ::   GRIParser GrTag

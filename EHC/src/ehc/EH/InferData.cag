@@ -133,8 +133,16 @@ SEM Decl
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Map for tag + arity
+%%% Map for tag + arity + fld labels offsets
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM DataConstr
+  | Constr      loc         .   fldMp               =   let mk o = emptyDataFldInfo {dfiOffset = o}
+                                                        in  Map.fromList
+                                                            $ fst $ foldl (\(m,o) ml -> maybe (m,o+1) (\l -> ((l,mk o):m,o+1)) ml) ([],0)
+                                                            $ @fields.lblL
+%%]
 
 %%[8
 ATTR AllDataConstr [ | | dataTagMp USE {`Map.union`} {Map.empty}: DataTagMp ]
@@ -143,7 +151,7 @@ SEM DataConstr
   | Constr      loc         .   tag                 =   tyRecOffset @conNm @lhs.dataAltTy
                             .   arity               =   length @fields.tyL
                             .   ctag                =   CTag @lhs.tyNm @conNm @tag @arity
-                lhs         .   dataTagMp           =   @conNm `Map.singleton` @ctag
+                lhs         .   dataTagMp           =   @conNm `Map.singleton` (emptyDataTagInfo {dtiCTag = @ctag, dtiFldMp = @fldMp})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

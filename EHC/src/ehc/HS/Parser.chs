@@ -13,7 +13,7 @@
 %%[1 export(pAGItf, HSParser)
 %%]
 
-%%[12 export(pFixity, HSParser')
+%%[12 export(pFixity, pAGItfImport, HSParser')
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,7 +40,13 @@ type HSParser'        ep    =    PlainParser Token ep
 %%[1
 pAGItf :: HSParser AGItf
 pAGItf
-  =   AGItf_AGItf <$> pModule
+  =   AGItf_AGItf <$> pModule pBody
+%%]
+
+%%[12
+pAGItfImport :: HSParser AGItf
+pAGItfImport
+  =   AGItf_AGItf <$> pModule pBodyImport
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -100,15 +106,15 @@ close = pWrap f g (pVCCURLY)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
-pModule :: HSParser Module
+pModule :: HSParser Body -> HSParser Module
 %%]
 %%[1.pModule
-pModule
+pModule pBody
   =   (\b -> Module_Module emptyRange Nothing b) <$> pBody
   <|> (\t m b -> Module_Module (mkRange1 t) (Just $ tokMkQName $ m) b) <$> pMODULE <*> modid <* pWHERE <*> pBody
 %%]
 %%[12.pModule -1.pModule
-pModule
+pModule pBody
   =   (\b -> Module_Module emptyRange Nothing Nothing b) <$> pBody
   <|> (\t m e b -> Module_Module (mkRange1 t) (Just $ tokMkQName $ m) e b) <$> pMODULE <*> modid <*> pMaybeExports <* pWHERE <*> pBody
 %%]
@@ -127,6 +133,16 @@ pBody
   <|> pSucceed (Body_Body emptyRange [] [])
   where cmbid ([i],_) (is,ds) = (i:is,ds)
         cmbid (_,[d]) (_ ,ds) = ([],d:ds)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module header + import only
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+pBodyImport :: HSParser Body
+pBodyImport
+  =   (\d -> Body_Body emptyRange d []) <$> pDeclarations' pImportDeclaration
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

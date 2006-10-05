@@ -64,10 +64,10 @@
 %%[7777 export(mkTGIData)
 %%]
 
-%%[8 import(Data.Maybe,qualified Data.Map as Map,{%{EH}Core}) export(gamUpd,DataTagMp)
+%%[8 import(Data.Maybe,qualified Data.Map as Map,{%{EH}Core}) export(gamUpd,DataTagInfo(..),emptyDataTagInfo,DataFldInfo(..),emptyDataFldInfo,DataTagMp,DataFldMp)
 %%]
 
-%%[8 export(DataGam,DataGamInfo(..),mkDGI,dataGamLookup)
+%%[8 export(DataGam,DataGamInfo(..),mkDGI,dataGamLookup,tagsOfTy)
 %%]
 
 %%[9 import({%{EH}Base.Debug},{%{EH}Core.Subst},{%{EH}Ty.FitsInCommon}) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
@@ -412,7 +412,9 @@ assocDupLToTGam :: Ord k => i -> AssocL k [v] -> TreeGam i k v
 assocDupLToTGam i l = TreeGam (i `Map.singleton` (Nothing,Map.fromList l))
 
 tgamPushNew :: Ord i => i -> i -> TreeGam i k v -> TreeGam i k v
-tgamPushNew i iNew g = g {tgamEntriesOf = Map.insert iNew (Just i,Map.empty) (tgamEntriesOf g)}
+tgamPushNew i iNew g
+  | i /= iNew = g {tgamEntriesOf = Map.insert iNew (Just i,Map.empty) (tgamEntriesOf g)}
+  | otherwise = g
 
 tgamAddGam :: (Ord i,Ord k) => i -> i -> TreeGam i k v -> TreeGam i k v -> TreeGam i k v
 tgamAddGam i2 i1 g2 g1
@@ -636,24 +638,6 @@ mkTGI :: Ty -> Ty -> TyGamInfo
 mkTGI t k = mkTGIData t k Ty_Any
 %%]
 
-%%[8.DataTagMp
-type DataTagMp = Map.Map HsName CTag
-%%]
-
-%%[8.TyGamInfo
-%%]
-
-data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty, tgiData :: Ty, tgiDataTagMp :: DataTagMp }
-
-instance Show TyGamInfo where
-  show _ = "TyGamInfo"
-
-mkTGIData :: Ty -> Ty -> Ty -> DataTagMp -> TyGamInfo
-mkTGIData t k d m = TyGamInfo t k d m
-
-mkTGI :: Ty -> Ty -> TyGamInfo
-mkTGI t k = mkTGIData t k Ty_Any Map.empty
-
 %%[6.tyGamLookup -1.tyGamLookup
 tyGamLookup :: HsName -> TyGam -> Maybe TyGamInfo
 tyGamLookup nm g
@@ -683,8 +667,29 @@ tyGamInst1Exists = gamInst1Exists (tgiKi,(\tgi k -> tgi {tgiKi=k}))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Data tag info gam
+%%% Data tag/etc info gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8.DataTagMp
+data DataFldInfo
+  = DataFldInfo
+      { dfiOffset 	:: Int
+      } deriving Show
+
+type DataFldMp = Map.Map HsName DataFldInfo
+
+emptyDataFldInfo = DataFldInfo (-1)
+
+data DataTagInfo
+  = DataTagInfo
+      { dtiCTag 	:: CTag
+      , dtiFldMp    :: DataFldMp
+      } deriving Show
+
+type DataTagMp = Map.Map HsName DataTagInfo
+
+emptyDataTagInfo = DataTagInfo emptyCTag Map.empty
+%%]
 
 %%[8.DataGamInfo
 data DataGamInfo = DataGamInfo { dgiDataTagMp :: DataTagMp }
@@ -705,6 +710,9 @@ dataGamLookup nm g
                  -> Just (DataGamInfo Map.empty)
        Just dgi  -> Just dgi
        _         -> Nothing
+
+tagsOfTy :: Ty -> DataGam -> Maybe [CTag]
+tagsOfTy t g = fmap (map dtiCTag . Map.elems . dgiDataTagMp) $ gamLookup (tyAppFunConNm t) $ g
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

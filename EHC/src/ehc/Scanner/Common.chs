@@ -213,6 +213,7 @@ coreScanOpts
                                     ]
                                     ++ scoKeywordsTxt tyScanOpts
                                     ++ scoKeywordsTxt hsScanOpts
+        ,   scoKeywordsOps      =   scoKeywordsOps grinScanOpts ++ scoKeywordsOps hsScanOpts
         ,   scoDollarIdent      =   True
         ,   scoOpChars          =          scoOpChars   grinScanOpts ++ scoOpChars   hsScanOpts
         ,   scoSpecChars        =   "!=" ++ scoSpecChars grinScanOpts ++ scoSpecChars hsScanOpts
@@ -228,9 +229,9 @@ grinScanOpts
                                     , "throw", "try", "catch", "ctags", "applymap", "evalmap"
                                     , "C", "F", "P", "A", "R", "H", "U", "W"
                                     ]
-        ,   scoKeywordsOps      =   [ "<-", "->", "=", "+=", "-=", ":=", "-" ]
+        ,   scoKeywordsOps      =   [ "<-", "->", "=", "+=", "-=", ":=", "-", "*" ]
         ,   scoSpecChars        =   "();{}#/\\|,"
-        ,   scoOpChars          =   "<->:=+"
+        ,   scoOpChars          =   "<->:=+*"
         ,   scoDollarIdent      =   True
         }
 %%]
@@ -247,7 +248,7 @@ hiScanOpts
         ,   scoOpChars          =   scoOpChars coreScanOpts
         ,   scoDollarIdent      =   True
         ,   scoSpecChars        =   scoSpecChars coreScanOpts
-        ,   scoKeywordsOps      =   [ "??" ] ++ scoKeywordsOps coreScanOpts ++ scoKeywordsOps hsScanOpts
+        ,   scoKeywordsOps      =   [ "??" ] ++ scoKeywordsOps coreScanOpts
         }
 %%]
 
@@ -601,8 +602,8 @@ pLABEL           = pKeyTk "label"
 pSAFE            = pKeyTk "safe"
 pUNSAFE          = pKeyTk "unsafe"
 pTHREADSAFE      = pKeyTk "threadsafe"
-pCCALL           = pKeyTk "ccallconv"
-pSTDCALL         = pKeyTk "stdcallconv"
+pCCALL           = pKeyTk "ccall"
+pSTDCALL         = pKeyTk "stdcall"
 pDYNAMIC         = pKeyTk "dynamic"
 pFOREIGN         = pKeyTk "foreign"
 pJAZY            = pKeyTk "jazy"
@@ -610,7 +611,7 @@ pIMPORT          = pKeyTk "import"
 pEXPORT          = pKeyTk "export"
 
 tokKeywStrsEH8 = [ "foreign", "import", "jazy" ]
-tokKeywStrsHS8 = [ "export", "label", "safe", "unsafe", "threadsafe", "ccallconv", "stdcallconv", "dynamic" ]
+tokKeywStrsHS8 = [ "export", "label", "safe", "unsafe", "threadsafe", "ccall", "stdcall", "dynamic" ]
 %%]
 
 %%[9

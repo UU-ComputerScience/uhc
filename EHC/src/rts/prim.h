@@ -2,3 +2,5 @@
 
 extern int primAddInt(int x, int y) ;
 extern int primGtInt(int x, int y) ;
+
+extern GrWord primUnsafeId(GrWord x) ;

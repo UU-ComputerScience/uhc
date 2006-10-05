@@ -106,6 +106,7 @@ data EHCOpts
 %%]]
 %%[[9
       ,  ehcOptPrfCutOffAt    ::  Int
+      ,  ehcCfgClassViaRec    ::  Bool
 %%]]
 %%[[11
       ,  ehcOptTyBetaRedCutOffAt
@@ -117,7 +118,6 @@ data EHCOpts
 %%[[99
       ,  ehcProgName          ::  String
       ,  ehcOptShowNumVersion ::  Bool
-      ,  ehcCfgClassViaRec    ::  Bool
 %%]]
       }
 %%]
@@ -167,6 +167,7 @@ defaultEHCOpts
 %%]]
 %%[[9
       ,  ehcOptPrfCutOffAt    =   20
+      ,  ehcCfgClassViaRec    =   True
 %%]]
 %%[[11
       ,  ehcOptTyBetaRedCutOffAt
@@ -178,7 +179,6 @@ defaultEHCOpts
 %%[[99
       ,  ehcProgName          =   ""
       ,  ehcOptShowNumVersion =   False
-      ,  ehcCfgClassViaRec    =   True
 %%]]
       }
 %%]
