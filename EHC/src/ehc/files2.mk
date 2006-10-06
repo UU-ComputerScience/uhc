@@ -5,7 +5,7 @@ $(EHC_ALL_EXECS): %: $(EHC_ALL_SRC) $(GRINC_ALL_SRC) $(EHC_MKF) \
 			$(if $(filter $(EHC_VARIANT),$(EHC_CODE_VARIANTS)),$(RTS_ALL_SRC),)
 	$(MAKE) EHC_VARIANT=$(notdir $(*D)) ehc-variant
 
-$(patsubst %,lib-eh-%,$(EHC_VARIANTS)): $(EHC_ALL_SRC)
+$(patsubst %,lib-eh-%,$(EHC_VARIANTS)):
 	@v=`echo $@ | sed -e 's/.*eh-\([0-9_]*\)/\1/'` ; \
 	$(MAKE) EHC_VARIANT=$$v lib-eh-variant
 
@@ -20,7 +20,7 @@ ehc-variant:
 	  ehc-variant-dflt
 
 ehc-variant-dflt: $(EHC_ALL_DPDS) $(LIB_EH_UTIL_INS_FLAG) $(LIB_EHC_INS_FLAG) $(LIB_GRINC_INS_FLAG) \
-			$(if $(filter $(EHC_VARIANT),$(EHC_CODE_VARIANTS)),$(RTS_INS_FLAG),)
+			$(if $(filter $(EHC_VARIANT),$(EHC_CODE_VARIANTS)),$(INSABS_LIB_RTS),)
 	mkdir -p $(dir $(EHC_BLD_EXEC)) && \
 	$(GHC) --make $(GHC_OPTS) -package $(LIB_EH_UTIL_PKG_NAME) -package $(LIB_EHC_PKG_NAME) -package $(LIB_GRINC_PKG_NAME) -i$(EHC_BLD_VARIANT_PREFIX) $(EHC_BLD_VARIANT_PREFIX)$(EHC_MAIN).hs -o $(EHC_BLD_EXEC)
 

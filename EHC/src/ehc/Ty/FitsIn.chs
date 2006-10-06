@@ -586,7 +586,7 @@ fitsIn opts env uniq ty1 ty2
                                  r = CExpr_Var rn
                                  tr1s = foCnstr fo |=> tr1
                                  (u',u2,u3,u4) = mkNewLevUID3 (foUniq fo)
-                                 mkLSel n u = mkCExprSelCase emptyRCEEnv (hsnSuffix rn "!") r CTagRec n n (CExpr_Hole u)
+                                 mkLSel n u = mkCExprSelCase emptyRCEEnv (Just $ hsnSuffix rn "!") r CTagRec n n (CExpr_Hole u)
                                  mkLPred' r l u
                                    =  let  r' = maybe Ty_Any fst . tyRowExtr l $ r
                                       in   (PredOcc (Pred_Lacks r' l) (mkPrId prfCxId u),r')

@@ -10,9 +10,6 @@
 %%[8 module {%{EH}Core.Utils} import(qualified Data.Map as Map,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam}) export(RCEEnv(..),emptyRCEEnv)
 %%]
 
-%%[8 export(mkCExprStrictSatCase,mkCExprSelCase)
-%%]
-
 %%[8 import(Data.List,EH.Util.Utils(sortOn)) export(FieldUpdateL,fuL2ExprL,fuMkCExpr)
 %%]
 
@@ -95,20 +92,71 @@ caltOffsetL alt
 %%% Construct case with: strict in expr, offsets strict
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
-mkCExprStrictSatCase :: RCEEnv -> HsName -> CExpr -> CAltL -> CExpr
+%%[8 export(mkCExprStrictSatCase)
+mkCExprStrictSatCase :: RCEEnv -> Maybe HsName -> CExpr -> CAltL -> CExpr
 mkCExprStrictSatCase env eNm e (alt:alts)
   =  let  (alt',altOffBL) = caltOffsetL alt
-     in   mkCExprStrictIn eNm e
-            (\n -> mkCExprLet CBindStrict altOffBL (CExpr_Case n (caltLSaturate env (alt':alts)) (rceCaseCont env)))
+          mk n = mkCExprLet CBindStrict altOffBL (CExpr_Case n (caltLSaturate env (alt':alts)) (rceCaseCont env))
+     in   case eNm of
+            Just n  -> mkCExprStrictIn n e mk
+            Nothing -> mk e
+%%]
 
-mkCExprSelCase :: RCEEnv -> HsName -> CExpr -> CTag -> HsName -> HsName -> CExpr -> CExpr
+%%[8 export(mkCExprSelCase)
+mkCExprSelCase :: RCEEnv -> Maybe HsName -> CExpr -> CTag -> HsName -> HsName -> CExpr -> CExpr
 mkCExprSelCase env ne e ct n lbl off
-  =  let  alt = CAlt_Alt
-                    [CPat_Con (CPatNmOrig ne) ct (CPatRest_Var hsnWild)
-                        [CPatBind_Bind lbl off n (CPat_Var (CPatNmOrig n))]]
-                    (CExpr_Var n)
+  = mkCExprSelsCase' env ne e ct [(n,lbl,off)] (CExpr_Var n)
+%%]
+
+%%[8
+mkCExprSelsCase' :: RCEEnv -> Maybe HsName -> CExpr -> CTag -> [(HsName,HsName,CExpr)] -> CExpr -> CExpr
+mkCExprSelsCase' env ne e ct nmLblOffL sel
+  =  let  n = maybe (cexprVar e) id ne
+          alt = CAlt_Alt
+                  [CPat_Con (CPatNmOrig $ maybe (cexprVar e) id ne) ct
+                            (ctag (CPatRest_Var hsnWild) (\_ _ _ _ -> CPatRest_Empty) ct)
+                      [CPatBind_Bind lbl off n (CPat_Var (CPatNmOrig n)) | (n,lbl,off) <- nmLblOffL]]
+                  sel
      in   mkCExprStrictSatCase (env {rceCaseCont = cvarUndefined}) ne e [alt]
+%%]
+
+mkCExprSelsCase' :: RCEEnv -> Maybe HsName -> CExpr -> CTag -> [(HsName,HsName,CExpr)] -> CExpr -> CExpr
+mkCExprSelsCase' env ne e ct nmLblOffL sel
+  =  let  n = maybe (cexprVar e) id ne
+          alt = CAlt_Alt [CPat_Con (CPatNmOrig $ maybe (cexprVar e) id ne) ct patrest pats] sel
+          (pats,patrest)
+            = case ct of
+                CTagRec
+                  -> (ps,pr)
+                  where ps = [CPatBind_Bind lbl off n (CPat_Var (CPatNmOrig n)) | (n,lbl,off) <- nmLblOffL]]
+                        pr = CPatRest_Var hsnWild
+                CTag _ _ _ arity
+                  -> (ps,pr)
+                  where ps = [ | o <- [0..arity-1] ]
+                        pr = CPatRest_Empty
+                        om = Map.fromList [ (off,(n,lbl)) | (n,lbl,off) <- nmLblOffL ]
+     in   mkCExprStrictSatCase (env {rceCaseCont = cvarUndefined}) ne e [alt]
+
+%%[8 export(mkCExprSatSelsCase)
+mkCExprSatSelsCase :: RCEEnv -> Maybe HsName -> CExpr -> CTag -> [(HsName,Int)] -> CExpr -> CExpr
+mkCExprSatSelsCase env ne e ct nmOffL sel
+  =  mkCExprSelsCase' env ne e ct nmLblOffL sel
+  where nmLblOffL
+          = case ct of
+              CTagRec      -> [ mk n o | (n,o) <- nmOffL ]
+              CTag _ _ _ a -> [ maybe (mk hsnWild o) (\n -> mk n o) $ Map.lookup o offMp | o <- [0..a-1] ]
+                           where offMp = Map.fromList [ (o,n) | (n,o) <- nmOffL ]
+        mk n o = (n,n,CExpr_Int o)
+%%]
+
+%%[8 export(mkCExprSatSelsCaseUpd)
+mkCExprSatSelsCaseUpd :: RCEEnv -> Maybe HsName -> CExpr -> CTag -> Int -> [(Int,CExpr)] -> CExpr
+mkCExprSatSelsCaseUpd env ne e ct arity offValL
+  = mkCExprSatSelsCase env ne e ct nmOffL sel
+  where ns = take arity hsnLclSupplyL
+        nmOffL = zip ns [0..]
+        valMp = Map.fromList offValL
+        sel = mkCExprApp (CExpr_Tup ct) [ Map.findWithDefault (CExpr_Var n) o valMp | (n,o) <- nmOffL ] 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

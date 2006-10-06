@@ -1,4 +1,5 @@
 
+%%[8
 /* use Boehm's GC */
 #undef USE_BOEHM_GC
 
@@ -11,3 +12,4 @@
 #undef SIZEOF_UNSIGNED_INT
 
 #define SIZEOF_GRWORD	SIZEOF_UNSIGNED_INT
+%%]

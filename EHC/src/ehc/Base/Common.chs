@@ -578,6 +578,12 @@ ctagChar =  CTag hsnChar hsnChar 0 1
 emptyCTag = CTag hsnUnknown hsnUnknown 0 0
 %%]
 
+%%[9 export(mkClassCTag)
+-- only used when `not ehcCfgClassViaRec'
+mkClassCTag :: HsName -> Int -> CTag
+mkClassCTag n sz = CTag n n 0 sz
+%%]
+
 %%[8 hs
 ctag :: a -> (HsName -> HsName -> Int -> Int -> a) -> CTag -> a
 ctag n t tg = case tg of {CTag tn cn i a -> t tn cn i a; _ -> n}
