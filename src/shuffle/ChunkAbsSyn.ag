@@ -79,6 +79,7 @@ DATA Word
   | White               chars       : {String}
   | Black               chars       : {String}
   | Inline              inl         : Inline
+  | Expand              exp         : StrExpr
 
 DATA Inline
   | URI                 str         : {String}

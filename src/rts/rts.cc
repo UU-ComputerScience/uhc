@@ -1,3 +1,4 @@
+%%[8
 #include "rts.h"
 
 Pointer SP, RP, BP ;
@@ -84,3 +85,4 @@ GrWord heapalloc(int n)
 }
 #endif
 
+%%]

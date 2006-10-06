@@ -892,7 +892,11 @@ cpCompileWithGCC modNm
                  (do { let compileC
                              = concat $ intersperse " "
                                $ (  [ shellCmdGcc ]
-                                 ++ [ "-L" ++ fileprefixInplaceInstall ++ "lib", "-I" ++ fileprefixInplaceInstall ++ "include" ]
+                                 ++ [ "-L" ++ fileprefixInplaceInstall ++ "%%@{%{VARIANT}%%}/lib"
+                                    , "-L" ++ fileprefixInplaceInstall ++ "lib"
+                                    , "-I" ++ fileprefixInplaceInstall ++ "%%@{%{VARIANT}%%}/include"
+                                    , "-I" ++ fileprefixInplaceInstall ++ "include"
+                                    ]
                                  ++ [ "-o", fpathToStr fpExec ]
                                  ++ [ fpathToStr fpC ]
                                  ++ map ("-l" ++) libnamesGcc

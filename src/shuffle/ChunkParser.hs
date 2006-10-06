@@ -91,6 +91,7 @@ tkpNone = TokPos (-1) (-1)
 data TokKind
   = TkBegChunk  | TkEndChunk
   | TkBegInline | TkEndInline
+  | TkBegExpand | TkEndExpand
   | TkBegGroup  | TkElseGroup
   | TkNameRef
   | TkReserved
@@ -156,6 +157,7 @@ scan scoMp st s
           | isWhite c                               = t {tokWhite = w} : ts
                                                     where (w,s') = span isWhite s
                                                           (t:ts) = sc (a w p) st s'
+        sc p st@(ScLexMeta l) ('%':'%':'}':s')      = Tok TkEndExpand  "" "%%}"  p st : sc (ai 3 p) (ScChunk l) s'
         sc p st@(ScLexMeta _) s@(c:_)
           | isWhite c                               = sc (a w p) st s'
                                                     where (w,s') = span isWhite s
@@ -192,6 +194,8 @@ scan scoMp st s
           | l >  0                                  = Tok TkEndChunk   "" "%%]"  p st : sc (ai 3 p) (ScChunk (l-1)) s'
         sc p@(TokPos _ _) st@(ScChunk l)    ('%':'%':'@':'[':s')
                                                     = Tok TkBegInline  "" "%%@[" p st : sc (ai 4 p) (ScInline l) s'
+        sc p@(TokPos _ _) st@(ScChunk l)    ('%':'%':'@':'{':s')
+                                                    = Tok TkBegExpand  "" "%%@{" p st : sc (ai 4 p) (ScLexMeta l) s'
         sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':'%':s)
                                                     = Tok TkText       "" b'     p st : sc (ai (1 + length b') p) (ScChunk l) s'
                                                     where (b,s') = span isBlack s
@@ -220,6 +224,7 @@ scan scoMp st s
         isOpch st c                                 = opt st (\o -> c `Set.member` scoOpChars o)
         isKeyw st w                                 = opt st (\o -> w `Set.member` scoKeywordsTxt o)
         isInline  ('%':'%':'@':'[':_)               = True
+        isInline  ('%':'%':'@':'{':_)               = True
         isInline  _                                 = False
         span' p []       = ([],[])
         span' p xs@(x:xs')
@@ -227,11 +232,17 @@ scan scoMp st s
              | otherwise = ([],xs)
                                where (ys,zs) = span' p xs'
 
-pBegChunk, pEndChunk, pBegInline, pEndInline, pBegGroup, pElseGroup, pBegNameRef, pNl :: (IsParser p Tok) => p Tok
+pBegChunk, pEndChunk
+ , pBegInline, pEndInline
+ , pBegExpand, pEndExpand
+ , pBegGroup, pElseGroup
+ , pBegNameRef, pNl :: (IsParser p Tok) => p Tok
 pBegChunk   = pSym (Tok TkBegChunk  "" "%%["  tkpNone ScSkip)
 pEndChunk   = pSym (Tok TkEndChunk  "" "%%]"  tkpNone ScSkip)
 pBegInline  = pSym (Tok TkBegInline "" "%%@[" tkpNone ScSkip)
 pEndInline  = pSym (Tok TkEndInline "" "%%]"  tkpNone ScSkip)
+pBegExpand  = pSym (Tok TkBegExpand "" "%%@{" tkpNone ScSkip)
+pEndExpand  = pSym (Tok TkEndExpand "" "%%}"  tkpNone ScSkip)
 pBegGroup   = pSym (Tok TkBegGroup  "" "%%[[" tkpNone ScSkip)
 pElseGroup  = pSym (Tok TkElseGroup "" "%%][" tkpNone ScSkip)
 pBegNameRef = pSym (Tok TkNameRef   "" "%%@"  tkpNone ScSkip)
@@ -409,6 +420,8 @@ pLineChars          =   (foldr sem_Words_Cons sem_Words_Nil . concat)
                                       <$> pWhiteBlack
                                   <|> bwToWords2 (\s -> sem_Word_Inline (sem_Inline_URI (tokBlack s)))
                                       <$> pBegInline <*> pText <* pEndInline
+                                  <|> bwToWords2 (\s -> sem_Word_Expand s)
+                                      <$> pBegExpand <*> pStrExprOne pStrStr2 <* pEndExpand
                                   )
                     where bwToWords1 sem (mw,b) =  maybe [] (\w -> [sem_Word_White w])                mw  ++ [sem b]
                           bwToWords2 sem  tk t  = (maybe [] (\w -> [sem_Word_White w]) $ mbTokWhite $ tk) ++ [sem t]

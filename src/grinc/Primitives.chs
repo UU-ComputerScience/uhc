@@ -126,6 +126,9 @@ primGlobalNames
   = Set.fromList
   $ map (hsnPrefix rtsGlobalVarPrefix . hsnQualified)
   $ [ hsnTrue, hsnFalse
+%%[[99
+    , hsnEQ, hsnLT, hsnGT
+%%]]
     ]
 
 hsnToGlobal :: HsName -> HsName

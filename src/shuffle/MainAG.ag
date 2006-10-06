@@ -60,7 +60,7 @@ INCLUDE "ChunkAbsSyn.ag"
 -- Global info
 -------------------------------------------------------------------------
 
-ATTR AGItf AllChunk AllLine AllGroup AllStrExpr [ opts: Opts | | ]
+ATTR AGItf AllChunk AllLine AllWord AllGroup AllStrExpr [ opts: Opts | | ]
 
 -------------------------------------------------------------------------
 -- Common. Version
@@ -430,6 +430,7 @@ ATTR AllWord [ | | cdoc USE {.|.} {CDoc_Emp} : CDoc ]
 
 SEM Word
   | White Black lhs         .   cdoc        =   cd @chars
+  | Expand      lhs         .   cdoc		=	cd @exp.str
 
 SEM Inline
   | URI         lhs         .   cdoc        =   CDoc_Inl @str

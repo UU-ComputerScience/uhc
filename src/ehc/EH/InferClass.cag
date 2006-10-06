@@ -25,43 +25,51 @@ SEM Decl
   | Class       tyPrExpr        .   tyGam           =   gamPushNew @lhs.tyGam
                 loc             .   (ctxtPrTyL,hdPrTy)
                                                     =   tyArrowArgsRes @tyPrExpr.ty
-                loc             .   lSigGam         =   @decls.gathTySigGam
+                                .   clsNm           =   tyPredMatchNm @hdPrTy
+                                .   lSigGam         =   @decls.gathTySigGam
                                 .   clsTySigGam     =   valGamMapTy (\t -> [@hdPrTy] `mkArrow` t) @lSigGam
                                 .   supClsNmL       =   tyPrLToSupNmL @ctxtPrTyL
                                 .   clsFldL         =   assocLMapElt vgiTy (gamToAssocL @clsTySigGam)
-                                .   clsTyRec        =   mkTyRec (@clsFldL ++ zip @supClsNmL (repeat Ty_Any))
+                                .   clsAllFldL      =   @clsFldL ++ zip @supClsNmL (repeat Ty_Any)
+                                .   clsTyRec        =   mkTyRec @clsAllFldL
+                                .   dataDictNm      =   hsnClass2Dict @clsNm -- only used when `not ehcCfgClassViaRec'
+                                .   dataDictTag     =   mkClassCTag @dataDictNm (length @clsAllFldL) -- only used when `not ehcCfgClassViaRec'
+                                .   dictTag         =   if ehcCfgClassViaRec @lhs.opts then CTagRec else @dataDictTag
                                 .   pigi            =   let  k =  mkNewTyVar @lUniq
                                                              n =  maybe (uidHNm @lUniq) id @mbDefaultInstNm
                                                              r =  Rule
-                                                                    { rulRuleTy    	= tyQuantifyClosed @tyPrExpr.ty
-                                                                    , rulMkEvid    	= mkEvid ev
+                                                                    { rulRuleTy     = tyQuantifyClosed @tyPrExpr.ty
+                                                                    , rulMkEvid     = mkEvid ev
                                                                     , rulMkEvidHow  = ev
-                                                                    , rulNmEvid    	= n
-                                                                    , rulId        	= mkPrId @lhs.prfCtxtId @lUniq
-                                                                    , rulCost      	= mkPCostExec 10
-                                                                    , rulFuncDeps  	= @funcDeps.funcDeps
+                                                                    , rulNmEvid     = n
+                                                                    , rulId         = mkPrId @lhs.prfCtxtId @lUniq
+                                                                    , rulCost       = mkPCostExec 10
+                                                                    , rulFuncDeps   = @funcDeps.funcDeps
                                                                     }
                                                                where ev = MkEvidVar n
                                                         in   PrIntroGamInfo (tyQuantifyClosed ([@hdPrTy] `mkArrow` @clsTyRec)) k r
                                 .   elimRules       =   let  mkR u sub sup supNm
                                                                =  Rule
-                                                                    { rulRuleTy    	= tyQuantifyClosed ([sub] `mkArrow` sup)
-                                                                    , rulMkEvid    	= mkEvid ev
+                                                                    { rulRuleTy     = tyQuantifyClosed ([sub] `mkArrow` sup)
+                                                                    , rulMkEvid     = mkEvid ev
                                                                     , rulMkEvidHow  = ev
-                                                                    , rulNmEvid    	= hsnUnknown
-                                                                    , rulId        	= mkPrId @lhs.prfCtxtId u
-                                                                    , rulCost      	= pcostBase `pcostExecMulBy` 2
-                                                                    , rulFuncDeps  	= []
+                                                                    , rulNmEvid     = hsnUnknown
+                                                                    , rulId         = mkPrId @lhs.prfCtxtId u
+                                                                    , rulCost       = pcostBase `pcostExecMulBy` 2
+                                                                    , rulFuncDeps   = []
                                                                     }
                                                                where -- o   = (CExpr_Int . tyRecOffset supNm $ @clsTyRec)
                                                                      -- [subn] = take 1 hsnLclSupplyL
-                                                                     ev = MkEvidSup supNm (tyRecOffset supNm @clsTyRec)
+                                                                     ev = MkEvidSup supNm (tyRecOffset supNm @clsTyRec) @dictTag
                                                         in   zipWith3 (\p n u -> (tyPredMatchNm p,mkR u @hdPrTy p n)) @ctxtPrTyL @supClsNmL (mkNewUIDL (length @ctxtPrTyL) @lUniq2)
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   tyGam           =   @lhs.tyGam
                                 .   gathTySigGam    =   valGamMapTy tyQuantifyClosed @clsTySigGam
-                                .   patPrIntroGam   =   gamAdd (tyPredMatchNm @hdPrTy) @pigi @lhs.patPrIntroGam
+                                .   patPrIntroGam   =   gamAdd @clsNm @pigi @lhs.patPrIntroGam
                                 .   patPrElimTGam   =   foldr (\(n,r) g -> peTGamInsert @lhs.prfCtxtId n r g) @lhs.patPrElimTGam @elimRules
+                                .   gathDataGam     =   if ehcCfgClassViaRec @lhs.opts
+                                                        then @lhs.gathDataGam
+                                                        else gamAdd @dataDictNm (mkDGI (@dataDictNm `Map.singleton` emptyDataTagInfo {dtiCTag = @dataDictTag})) @lhs.gathDataGam
 %%]
                 decls           .   gathTySigGam    =   gamPushNew @lhs.gathTySigGam
                 loc             .   (lSigGam,_)     =   gamPop @decls.gathTySigGam
@@ -105,8 +113,12 @@ SEM Decl
                                                         in   tyArrowArgs . foTy $ fo
                                 .   supClsNmL       =   tyPrLToSupNmL @supPrTyL
                                 .   ctxtPrFixL      =   map tyPred @ctxtPrTyFixL
-                                .   recTy           =   tyFixTyVars . tyQuantifyRank [2..] . tyArrowRes $ @tyPrExpr.evTy
-                                .   tySigGam        =   assocLToGam . assocLMapElt ValGamInfo . snd . tyRecExts $ @recTy
+                                .   recTy           =   tyFixTyVars $ tyQuantifyRank [2..] $ tyArrowRes $ @tyPrExpr.evTy
+                                .   recTyExts       =   snd $ tyRecExts $ @recTy
+                                .   dataDictNm      =   hsnClass2Dict @instClsNm -- only used when `not ehcCfgClassViaRec'
+                                .   dataDictTag     =   mkClassCTag @dataDictNm (length @recTyExts) -- only used when `not ehcCfgClassViaRec'
+                                .   dictTag         =   if ehcCfgClassViaRec @lhs.opts then CTagRec else @dataDictTag
+                                .   tySigGam        =   assocLToGam $ assocLMapElt ValGamInfo $ @recTyExts
                 loc             .   elimRule        =   mkInstElimRule @dictNm @instId (length @ctxtPrTyFixL + length @supPrTyL) (tyQuantifyClosed @prTyFix)
                 decls           .   patValGam       =   gamPushNew @lhs.patValGam
                 lhs             .   patTyGam        =   @lhs.patTyGam

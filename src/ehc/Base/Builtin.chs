@@ -8,19 +8,10 @@
 %%[1 export(hsnWild, hsnArrow, strProd, hsnProd, hsnProdArity, hsnUnknown, hsnIsArrow, hsnIsProd, hsnInt, hsnChar)
 %%]
 
-%%[1 export(hsnNegate,hsnError)
-%%]
-
 %%[3 import(Data.List) export(hsnUn, hsnIsUn, hsnUnUn)
 %%]
 
-%%[5 export(hsnBool,hsnTrue,hsnFalse,hsnString,hsnList,hsnListCons,hsnListNil)
-%%]
-
 %%[5 export(hsnIsList)
-%%]
-
-%%[5 export(hsnEq)
 %%]
 
 %%[6 export(hsnStar)
@@ -47,31 +38,7 @@
 %%[9 export(hsnOImpl,hsnCImpl,hsnPrArrow,hsnIsPrArrow,hsnIsUnknown)
 %%]
 
-%%[9 export(hsnClassEq)
-%%]
-
-%%[10 export(hsnDynVar,hsnConcat)
-%%]
-
-%%[12 export(hsnModBuiltin)
-%%]
-
-%%[99 export(hsnInteger,hsnDouble,hsnModPrelude)
-%%]
-
-%%[5 export(hsnEnumFromThenTo,hsnEnumFromThen,hsnEnumFromTo,hsnEnumFrom,hsnConcatMap)
-%%]
-
-%%[9 export(hsnMonadSeq,hsnMonadBind,hsnMonadFail)
-%%]
-
-%%[99 export(hsnFromInteger,hsnFromRational,hsnMkRatio)
-%%]
-
-%%[99 export(hsnModBase,hsnModEnum,hsnModNum,hsnModReal)
-%%]
-
-%%[99 export(hsnIsInPrelude)
+%%[99 export(hsnOrdering, hsnEQ, hsnLT, hsnGT)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -204,11 +171,11 @@ hsnIsPrArrow    hsn                 =   hsn == hsnPrArrow
 hsnIsUnknown                        =   (==hsnUnknown)
 %%]
 
-%%[10
+%%[10 export(hsnDynVar)
 hsnDynVar                           =   HNm "?"
 %%]
 
-%%[99
+%%[99 export(hsnInteger,hsnDouble)
 hsnInteger                          =   HNm "Integer"
 hsnDouble                           =   HNm "Double"
 %%]
@@ -227,7 +194,7 @@ mkRV :: HsName -> String -> HsName
 mkRV m = hsnSetQual m . HNm
 %%]
 
-%%[1
+%%[1 export(hsnNegate)
 [hsnNegate]
   = map
 %%[[1
@@ -238,7 +205,7 @@ mkRV m = hsnSetQual m . HNm
       [ "negate" ]
 %%]
 
-%%[1
+%%[1 export(hsnError)
 [hsnError]
   = map
 %%[[1
@@ -249,7 +216,7 @@ mkRV m = hsnSetQual m . HNm
       [ "error" ]
 %%]
 
-%%[5
+%%[5 export(hsnEnumFromThenTo,hsnEnumFromThen,hsnEnumFromTo,hsnEnumFrom)
 [hsnEnumFromThenTo,hsnEnumFromThen,hsnEnumFromTo,hsnEnumFrom]
   = map
 %%[[5
@@ -260,11 +227,14 @@ mkRV m = hsnSetQual m . HNm
       [ "enumFromThenTo", "enumFromThen", "enumFromTo", "enumFrom" ]
 %%]
 
-%%[5
+%%[5 export(hsnBool,hsnTrue,hsnFalse,hsnString,hsnList,hsnListCons,hsnListNil,hsnEq,hsnConcatMap)
 [hsnList,hsnListCons,hsnListNil,hsnConcatMap
  , hsnBool,hsnTrue,hsnFalse
  , hsnString
  , hsnEq
+%%[[99
+ , hsnOrdering, hsnEQ, hsnLT, hsnGT
+%%]]
  ]
   = map
 %%[[5
@@ -276,6 +246,9 @@ mkRV m = hsnSetQual m . HNm
       , "Bool", "True", "False"
       , "String"
       , "=="
+%%[[99
+	  , "Ordering", "EQ", "LT", "GT"
+%%]]
       ]
 %%]
 
@@ -292,7 +265,7 @@ mkRV m = hsnSetQual m . HNm
       ]
 %%]
 
-%%[9
+%%[9 export(hsnMonadSeq,hsnMonadBind,hsnMonadFail,hsnClassEq)
 [hsnMonadSeq,hsnMonadBind,hsnMonadFail
  , hsnClassEq
  ]
@@ -307,14 +280,14 @@ mkRV m = hsnSetQual m . HNm
       ]
 %%]
 
-%%[99
+%%[99 export(hsnFromInteger)
 [hsnFromInteger]
   = map
       (mkRV hsnModNum)
       [ "fromInteger" ]
 %%]
 
-%%[99
+%%[99 export(hsnFromRational,hsnMkRatio)
 [hsnFromRational,hsnMkRatio]
   = map
       (mkRV hsnModReal)
@@ -325,11 +298,11 @@ mkRV m = hsnSetQual m . HNm
 %%% Fixed modules + names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[12 export(hsnModBuiltin)
 hsnModBuiltin                       =   mkHNm "#Builtin"
 %%]
 
-%%[99
+%%[99 export(hsnModPrelude)
 hsnModPrelude                       =   mkHNm "Prelude"
 %%]
 
@@ -337,7 +310,7 @@ hsnModPrelude                       =   mkHNm "Prelude"
 %%% Fixed modules behind Prelude
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[99 export(hsnIsInPrelude)
 hsnEHC                              =   HNm "EHC"
 
 hsnIsInPrelude :: HsName -> Bool
@@ -347,9 +320,19 @@ hsnIsInPrelude n
       _         -> False
 %%]
 
-%%[99
+%%[99 export(hsnModBase,hsnModEnum,hsnModNum,hsnModReal)
 hsnModBase                          =   hsnPrefixQual hsnEHC (HNm "Base")
 hsnModEnum                          =   hsnPrefixQual hsnEHC (HNm "Enum")
 hsnModNum                           =   hsnPrefixQual hsnEHC (HNm "Num")
 hsnModReal                          =   hsnPrefixQual hsnEHC (HNm "Real")
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Naming conventions for class
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 export(hsnClass2Dict)
+-- Dict datatype name for class name, only used when `not ehcCfgClassViaRec'
+hsnClass2Dict :: HsName -> HsName
+hsnClass2Dict = hsnPrefix "Dict-"
 %%]

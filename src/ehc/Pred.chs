@@ -580,25 +580,27 @@ instance PP ClsFuncDep where
 
 %%[9
 data HowMkEvid
-  = MkEvidVar		HsName			-- just a variable
-  | MkEvidCtxt		HsName			-- apply variable to context
-  | MkEvidSup		HsName Int		-- superclass
+  = MkEvidVar		HsName				-- just a variable
+  | MkEvidCtxt		HsName				-- apply variable to context
+  | MkEvidSup		HsName Int CTag		-- superclass
 
 instance Show HowMkEvid where
   show _ = "HowMkEvid"
 
 ppHowMkEvid :: (HsName -> PP_Doc) -> HowMkEvid -> PP_Doc
-ppHowMkEvid pn (MkEvidVar  n  ) = "var"  >#< pn n
-ppHowMkEvid pn (MkEvidCtxt n  ) = "ctxt" >#< pn n
-ppHowMkEvid pn (MkEvidSup  n o) = "sup"  >#< pn n >#< pp o
+ppHowMkEvid pn (MkEvidVar  n    ) = "var"  >#< pn n
+ppHowMkEvid pn (MkEvidCtxt n    ) = "ctxt" >#< pn n
+ppHowMkEvid pn (MkEvidSup  n o t) = "sup"  >#< pn n >#< pp o >#< ppCTag' pn t
 
 mkEvid :: HowMkEvid -> [CExpr] -> CExpr
 mkEvid h
   = case h of
-      MkEvidVar  n   -> \_     -> CExpr_Var n
-      MkEvidCtxt n   -> \ctxt  -> CExpr_Var n `mkCExprApp` ctxt
-      MkEvidSup  n o -> \[sub] -> mkCExprSelCase emptyRCEEnv (hsnSuffix n "!") sub CTagRec n n (CExpr_Int o)
+      MkEvidVar  n     -> \_     -> CExpr_Var n
+      MkEvidCtxt n     -> \ctxt  -> CExpr_Var n `mkCExprApp` ctxt
+      MkEvidSup  n o t -> \[sub] -> mkCExprSatSelsCase (emptyRCEEnv) (Just $ hsnSuffix n "!") sub t
+                                                       [(n,o)] (CExpr_Var n)
 %%]
+mkCExprSelCase emptyRCEEnv (Just $ hsnSuffix n "!") sub t n n (CExpr_Int o)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Rule

@@ -173,18 +173,36 @@ AC_SUBST(MACH_DEP_C_FOR_TAILCALL_LEAVE1,"$mach_dep_c_for_tailcall_leave1")
 AC_SUBST(MACH_DEP_C_FOR_TAILCALL_LEAVE2,"$mach_dep_c_for_tailcall_leave2")
 
 ### platform specific stuff
+# defaults:
+# file suffixes
+suffix_shell=""
+suffix_exec=""
+suffix_lib=".a"
+# path separator
+paths_sep=":"
+# libtool usage
+libtoolStatic="libtool -static -o"
+libtoolDynamic="echo Dynamic linking not available: "
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
+        # file suffixes
         suffix_shell=".bat"
         suffix_exec=".exe"
-        suffix_lib=".a"
+        suffix_lib=".lib"
+        # path separator
         paths_sep=";"
+        # libtool usage
+        ;;
+  *-linux-gnu )
+        # file suffixes
+        # path separator
+        # libtool usage
+        libtoolStatic="libtool --mode=link ${gccCmd} -static -o"
         ;;
   *)
-        suffix_shell=""
-        suffix_exec=""
-        suffix_lib=".a"
-        paths_sep=":"
+        # file suffixes
+        # path separator
+        # libtool usage
         ;;
 esac
 AC_SUBST(SUFFIX_SHELL,"$suffix_shell")
@@ -210,9 +228,7 @@ case $HostPlatform in
 esac
 AC_SUBST(TOP_ABS, "$hardtop_plat")
 
-### libtool used, currently still independent of platform
-libtoolStatic="libtool -static -o"
-libtoolDynamic="libtool -dynamic -o"
+### libtool used
 AC_SUBST(LIBTOOL_STATIC_CMD, "$libtoolStatic")
 AC_SUBST(LIBTOOL_DYNAMIC_CMD, "$libtoolDynamic")
 
@@ -230,7 +246,7 @@ AC_SUBST(EXTLIBS_BGC_PKG_NAME, "gc") # should coincide with installed lib in ext
 ### file generation
 AC_CONFIG_FILES([mk/config.mk mk/shared.mk])
 AC_CONFIG_FILES([src/grinc/Config.chs src/ehc/Config.chs])
-AC_CONFIG_HEADERS([src/grinc/ConfigDefines.chs src/rts/config.h])
+AC_CONFIG_HEADERS([src/grinc/ConfigDefines.chs src/rts/config.ch])
 AC_OUTPUT
 
 echo

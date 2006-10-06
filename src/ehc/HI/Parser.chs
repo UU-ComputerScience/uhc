@@ -60,7 +60,7 @@ pRule
     <*> pTy <* pSEMI
     <*> (   Pr.MkEvidVar  <$ pKeyTk "var"  <*> pDollNm
         <|> Pr.MkEvidCtxt <$ pKeyTk "ctxt" <*> pDollNm
-        <|> Pr.MkEvidSup  <$ pKeyTk "sup"  <*> pDollNm <*> pInt
+        <|> Pr.MkEvidSup  <$ pKeyTk "sup"  <*> pDollNm <*> pInt <*> pCTag
         ) <* pSEMI
     <*> pPredOccId <* pSEMI
     <*> pProofCost
