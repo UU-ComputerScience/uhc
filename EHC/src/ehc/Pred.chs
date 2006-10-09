@@ -598,9 +598,9 @@ mkEvid h
       MkEvidVar  n     -> \_     -> CExpr_Var n
       MkEvidCtxt n     -> \ctxt  -> CExpr_Var n `mkCExprApp` ctxt
       MkEvidSup  n o t -> \[sub] -> mkCExprSatSelsCase (emptyRCEEnv) (Just $ hsnSuffix n "!") sub t
-                                                       [(n,n,o)] (CExpr_Var n)
+                                                       [(n,n,o)] Nothing (CExpr_Var n)
 %%]
-mkCExprSelCase emptyRCEEnv (Just $ hsnSuffix n "!") sub t n n (CExpr_Int o)
+mkCExprSelCase emptyRCEEnv (Just $ hsnSuffix n "!") sub t n n (CExpr_Int o) Nothing
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Rule
