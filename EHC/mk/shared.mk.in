@@ -56,6 +56,8 @@ DOC_PREFIX			:= $(TOP_PREFIX)doc/
 AGC					:= @UUAGC_CMD@
 GHC					:= @GHC_CMD@
 GCC					:= @GCC_CMD@
+AR					:= @AR_CMD@
+RANLIB				:= @RANLIB_CMD@
 OPEN_FOR_EDIT		:= bbedit
 STRIP				:= $(STRIP_CMD)
 FILTER_NONEMP_FILES	:= $(BINABS_PREFIX)filterOutEmptyFiles
@@ -151,3 +153,12 @@ GHC_CABAL			= $(GHC) -package Cabal -o $(2) $(1)  ; $(STRIP_CMD) $(2)
 # subst _ by x
 # $1: text
 SUBS_US_X			= $(subst _,x,$(1))
+
+# make a static library
+# $1: library
+# $2: files
+ifeq ($(LIBTOOL_STATIC),no)
+LIB_MK_STATIC		= $(AR) r $(1) $(2) ; $(RANLIB) $(1)
+else
+LIB_MK_STATIC		= $(LIBTOOL_STATIC) $(1) $(2)
+endif

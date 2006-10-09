@@ -97,6 +97,11 @@ libnamesGcc :: [String]
 libnamesGcc = [ "@RTS_PKG_NAME@", "@EXTLIBS_BGC_PKG_NAME@" ]
 %%]
 
+%%[8 export(ehcGccOptsStatic)
+ehcGccOptsStatic :: [String]
+ehcGccOptsStatic = [ "@EHC_GCC_OPTS_STATIC@" ]
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% File suffixes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

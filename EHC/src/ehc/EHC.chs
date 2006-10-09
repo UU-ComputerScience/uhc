@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module Main import(System, Data.List, Control.Monad, System.Console.GetOpt, IO, EH.Util.Utils,UU.Pretty,EH.Util.PPUtils,{%{EH}Error.Pretty}, UU.Parsing, UU.Parsing.Offside, {%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Config}, {%{EH}Scanner.Common}, {%{EH}Base.Opts})
+%%[1 module Main import(System, Data.List, Control.Monad, System.Console.GetOpt, IO, EH.Util.Utils,UU.Pretty,EH.Util.PPUtils,{%{EH}Error.Pretty}, UU.Parsing, UU.Parsing.Offside, {%{EH}Base.Common}, {%{EH}Base.Builtin}, qualified {%{EH}Config} as Cfg, {%{EH}Scanner.Common}, {%{EH}Base.Opts})
 %%]
 
 %%[1 import(qualified {%{EH}EH.Parser} as EHPrs, qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.Parser} as HSPrs, qualified {%{EH}HS.MainAG} as HSSem)
@@ -78,19 +78,19 @@ main
          ;  if ehcOptHelp opts
 %%]
 %%[1.main.ehcOptHelp
-            then  putStrLn (usageInfo ("version: " ++ verInfo version ++ "\n\nUsage: " ++ progName ++ " [options] [file[.eh|.hs]]\n\noptions:") ehcCmdLineOpts)
+            then  putStrLn (usageInfo ("version: " ++ Cfg.verInfo Cfg.version ++ "\n\nUsage: " ++ progName ++ " [options] [file[.eh|.hs]]\n\noptions:") ehcCmdLineOpts)
 %%]
 %%[8.main.ehcOptHelp -1.main.ehcOptHelp
-            then  do  {  putStrLn (usageInfo ("version: " ++ verInfo version ++ "\n\nUsage: " ++ progName ++ " [options] [file[.eh|.hs]]\n\noptions:") ehcCmdLineOpts)
+            then  do  {  putStrLn (usageInfo ("version: " ++ Cfg.verInfo Cfg.version ++ "\n\nUsage: " ++ progName ++ " [options] [file[.eh|.hs]]\n\noptions:") ehcCmdLineOpts)
                       ;  putStrLn ("Transformations:\n" ++ (unlines . map (\(n,t) -> "  " ++ n ++ ": " ++ t) $ cmdLineTrfs))
                       }
 %%]
 %%[1.main.tl
             else  if ehcOptVersion opts
-            then  putStrLn (verInfo version)
+            then  putStrLn (Cfg.verInfo Cfg.version)
 %%[[99
             else  if ehcOptShowNumVersion opts
-            then  putStrLn (verNumeric version)
+            then  putStrLn (Cfg.verNumeric Cfg.version)
 %%]
             else  if null errs
                   then  doCompileRun (if null n then "" else head n) opts
@@ -887,19 +887,20 @@ cpCompileWithGCC modNm
                  opts   = crsiOpts crsi
                  fp     = ecuFilePath ecu
                  fpC    = fpathSetSuff "c" fp
-                 fpExec = maybe (fpathRemoveSuff fp) (\s -> fpathSetSuff s fp) mbSuffixExec
+                 fpExec = maybe (fpathRemoveSuff fp) (\s -> fpathSetSuff s fp) Cfg.mbSuffixExec
          ;  when (ehcOptEmitExec opts)
                  (do { let compileC
                              = concat $ intersperse " "
-                               $ (  [ shellCmdGcc ]
-                                 ++ [ "-L" ++ fileprefixInplaceInstall ++ "%%@{%{VARIANT}%%}/lib"
-                                    , "-L" ++ fileprefixInplaceInstall ++ "lib"
-                                    , "-I" ++ fileprefixInplaceInstall ++ "%%@{%{VARIANT}%%}/include"
-                                    , "-I" ++ fileprefixInplaceInstall ++ "include"
+                               $ (  [ Cfg.shellCmdGcc ]
+                                 ++ [ "-L" ++ Cfg.fileprefixInplaceInstall ++ "%%@{%{VARIANT}%%}/lib"
+                                    , "-L" ++ Cfg.fileprefixInplaceInstall ++ "lib"
+                                    , "-I" ++ Cfg.fileprefixInplaceInstall ++ "%%@{%{VARIANT}%%}/include"
+                                    , "-I" ++ Cfg.fileprefixInplaceInstall ++ "include"
                                     ]
+                                 ++ Cfg.ehcGccOptsStatic
                                  ++ [ "-o", fpathToStr fpExec ]
                                  ++ [ fpathToStr fpC ]
-                                 ++ map ("-l" ++) libnamesGcc
+                                 ++ map ("-l" ++) Cfg.libnamesGcc
                                  )
                      ; when (ehcOptVerbosity opts >= VerboseALot)
                             (lift $ putStrLn compileC)
@@ -1078,7 +1079,7 @@ cpOutputHI suff modNm
                  hi     = HISem.wrap_AGItf
                             (HISem.sem_AGItf
                               (HI.AGItf_AGItf $ HI.Module_Module modNm
-                                $ HI.Binding_Stamp (verTimestamp version) (verSig version) (verMajor version) (verMinor version) (verQuality version) (verSvn version) 0
+                                $ HI.Binding_Stamp (Cfg.verTimestamp Cfg.version) (Cfg.verSig Cfg.version) (Cfg.verMajor Cfg.version) (Cfg.verMinor Cfg.version) (Cfg.verQuality Cfg.version) (Cfg.verSvn Cfg.version) 0
                                   : binds))
                             (HISem.Inh_AGItf)
          ;  when (isJust (ecuMbHSSem ecu) && isJust (ecuMbEHSem ecu))

@@ -1,6 +1,6 @@
 # location of Boehm's garbage collector src
 SRC_EXTLIBS_BGC_PREFIX			:= $(TOP_PREFIX)extlibs/bgc/
-SRCABS_EXTLIBS_BGC_PREFIX		:= $(TOPABS_PREFIX)extlibs/bgc/
+SRCABS_EXTLIBS_BGC_PREFIX		:= $(TOPABS2_PREFIX)extlibs/bgc/
 
 # this file
 EXTLIBS_BGC_MKF					:= $(SRC_EXTLIBS_BGC_PREFIX)files.mk

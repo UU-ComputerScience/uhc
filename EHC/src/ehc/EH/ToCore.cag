@@ -360,7 +360,7 @@ SEM Decl
                                                      xStrict = hsnSuffix x "!"
                                                      vxStrict = CExpr_Var xStrict
                                                      mkSel n = mkCExprSatSelsCase (emptyRCEEnv {rceDataGam = @lhs.dataGam}) (Just xStrict) vx @dictTag
-                                                                                  [(n,cdictOffset n @clsTyRec)] (CExpr_Var n)
+                                                                                  [(n,n,cdictOffset n @clsTyRec)] (CExpr_Var n)
                                                      dDflt
                                                        = [CBind_Bind nDflt (mkCExprLam [nD] d)] 
                                                        where nDflt = rulNmEvid . pigiRule $ @pigi

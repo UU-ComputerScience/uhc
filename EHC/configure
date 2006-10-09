@@ -311,7 +311,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_MINORMINOR EH_VERSION_STABILITY EH_VERSION gccCmd GCC_CMD ghcCmd GHC_CMD GHC_VERSION CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES uuagcCmd UUAGC_CMD CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC SUFFIX_LIB PATHS_SEP TOP_ABS LIBTOOL_STATIC_CMD LIBTOOL_DYNAMIC_CMD INSTALL_PREFIX INPLACE_PREFIX INPLACE_INSTALL_DIR RTS_PKG_NAME EXTLIBS_BGC_PKG_NAME LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_MINORMINOR EH_VERSION_STABILITY EH_VERSION gccCmd GCC_CMD ranlibCmd RANLIB_CMD arCmd AR_CMD ghcCmd GHC_CMD GHC_VERSION CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES uuagcCmd UUAGC_CMD CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC SUFFIX_LIB PATHS_SEP LIBTOOL_STATIC_CMD LIBTOOL_DYNAMIC_CMD EHC_GCC_OPTS_STATIC TOP_ABS TOP_ABS2 INSTALL_PREFIX INPLACE_PREFIX INPLACE_INSTALL_DIR RTS_PKG_NAME EXTLIBS_BGC_PKG_NAME LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1511,6 +1511,117 @@ echo "$as_me: error:
   fi
 
 GCC_CMD=$gccCmd
+
+
+### ar, ranlib
+
+  # Extract the first word of "ranlib", so it can be a program name with args.
+set dummy ranlib; ac_word=$2
+echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
+if test "${ac_cv_path_ranlibCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $ranlibCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_ranlibCmd="$ranlibCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_ranlibCmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+
+  ;;
+esac
+fi
+ranlibCmd=$ac_cv_path_ranlibCmd
+
+if test -n "$ranlibCmd"; then
+  echo "$as_me:$LINENO: result: $ranlibCmd" >&5
+echo "${ECHO_T}$ranlibCmd" >&6
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+  if test -z "$ranlibCmd"; then
+
+  { { echo "$as_me:$LINENO: error:
+     You must install ranlib before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&5
+echo "$as_me: error:
+     You must install ranlib before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&2;}
+   { (exit 1); exit 1; }; }
+
+  fi
+
+RANLIB_CMD=$ranlibCmd
+
+
+
+  # Extract the first word of "ar", so it can be a program name with args.
+set dummy ar; ac_word=$2
+echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
+if test "${ac_cv_path_arCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $arCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_arCmd="$arCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_arCmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+
+  ;;
+esac
+fi
+arCmd=$ac_cv_path_arCmd
+
+if test -n "$arCmd"; then
+  echo "$as_me:$LINENO: result: $arCmd" >&5
+echo "${ECHO_T}$arCmd" >&6
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+  if test -z "$arCmd"; then
+
+  { { echo "$as_me:$LINENO: error:
+     You must install ar before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&5
+echo "$as_me: error:
+     You must install ar before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&2;}
+   { (exit 1); exit 1; }; }
+
+  fi
+
+AR_CMD=$arCmd
 
 
 ### 'with' options
@@ -3943,6 +4054,9 @@ case $HostPlatform in
         mach_dep_c_for_tailcall_leave2="asm(\\\"lmw r30,-8(r1)\\\") ;"
         mach_dep_c_for_tailcall_enter="asm( \\\"lwz r2,0(r1)\\\" ) ; asm( \\\"stw r0,8(r2)\\\" ) ;"
         ;;
+  i*86-pc-linux-gnu )
+        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
+        ;;
   *)
         mach_dep_c_for_tailcall_leave1=""
         mach_dep_c_for_tailcall_leave2=""
@@ -3957,7 +4071,7 @@ MACH_DEP_C_FOR_TAILCALL_LEAVE2="$mach_dep_c_for_tailcall_leave2"
 
 
 ### platform specific stuff
-#defaults:
+# defaults:
 # file suffixes
 suffix_shell=""
 suffix_exec=""
@@ -3966,7 +4080,8 @@ suffix_lib=".a"
 paths_sep=":"
 # libtool usage
 libtoolStatic="libtool -static -o"
-libtoolDynamic="libtool -dynamic -o"
+libtoolDynamic="echo Dynamic linking not available: "
+ehcGccOptsStatic=""
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         # file suffixes
@@ -3977,12 +4092,20 @@ case $HostPlatform in
         paths_sep=";"
         # libtool usage
         ;;
+  i*86-pc-linux-gnu )
+        # file suffixes
+        # path separator
+        # libtool usage
+        libtoolStatic="no"
+        ehcGccOptsStatic="-static"
+        ;;
   *)
         # file suffixes
         # path separator
         # libtool usage
         ;;
 esac
+# suffixes, path separator, ...
 SUFFIX_SHELL="$suffix_shell"
 
 SUFFIX_EXEC="$suffix_exec"
@@ -3990,6 +4113,16 @@ SUFFIX_EXEC="$suffix_exec"
 SUFFIX_LIB="$suffix_lib"
 
 PATHS_SEP="$paths_sep"
+
+
+# libtool used, if any
+LIBTOOL_STATIC_CMD="$libtoolStatic"
+
+LIBTOOL_DYNAMIC_CMD="$libtoolDynamic"
+
+
+# flags passed to gcc by ehc related to static/dynamic libraries
+EHC_GCC_OPTS_STATIC="$ehcGccOptsStatic"
 
 
 ### absolute path to this dir
@@ -4003,18 +4136,16 @@ case $HostPlatform in
         # get rid off /cygdrive/ prefix
         hardtop=`echo ${hardtop} | sed -e 's%^/cygdrive/\(.\)/%\1:/%' `
         hardtop_plat=`cygpath -w ${hardtop} | sed -e 's@\\\\@/@g' `
+        hardtop_plat2=`echo ${hardtop_plat} | sed -e 's@^\(.\):@/\1@' `
         ;;
   *)
         hardtop_plat=${hardtop}
+        hardtop_plat2=${hardtop}
         ;;
 esac
 TOP_ABS="$hardtop_plat"
 
-
-### libtool used
-LIBTOOL_STATIC_CMD="$libtoolStatic"
-
-LIBTOOL_DYNAMIC_CMD="$libtoolDynamic"
+TOP_ABS2="$hardtop_plat2"
 
 
 ### install locations
@@ -4670,6 +4801,10 @@ s,@EH_VERSION_STABILITY@,$EH_VERSION_STABILITY,;t t
 s,@EH_VERSION@,$EH_VERSION,;t t
 s,@gccCmd@,$gccCmd,;t t
 s,@GCC_CMD@,$GCC_CMD,;t t
+s,@ranlibCmd@,$ranlibCmd,;t t
+s,@RANLIB_CMD@,$RANLIB_CMD,;t t
+s,@arCmd@,$arCmd,;t t
+s,@AR_CMD@,$AR_CMD,;t t
 s,@ghcCmd@,$ghcCmd,;t t
 s,@GHC_CMD@,$GHC_CMD,;t t
 s,@GHC_VERSION@,$GHC_VERSION,;t t
@@ -4692,9 +4827,11 @@ s,@SUFFIX_SHELL@,$SUFFIX_SHELL,;t t
 s,@SUFFIX_EXEC@,$SUFFIX_EXEC,;t t
 s,@SUFFIX_LIB@,$SUFFIX_LIB,;t t
 s,@PATHS_SEP@,$PATHS_SEP,;t t
-s,@TOP_ABS@,$TOP_ABS,;t t
 s,@LIBTOOL_STATIC_CMD@,$LIBTOOL_STATIC_CMD,;t t
 s,@LIBTOOL_DYNAMIC_CMD@,$LIBTOOL_DYNAMIC_CMD,;t t
+s,@EHC_GCC_OPTS_STATIC@,$EHC_GCC_OPTS_STATIC,;t t
+s,@TOP_ABS@,$TOP_ABS,;t t
+s,@TOP_ABS2@,$TOP_ABS2,;t t
 s,@INSTALL_PREFIX@,$INSTALL_PREFIX,;t t
 s,@INPLACE_PREFIX@,$INPLACE_PREFIX,;t t
 s,@INPLACE_INSTALL_DIR@,$INPLACE_INSTALL_DIR,;t t

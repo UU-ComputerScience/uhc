@@ -53,7 +53,7 @@ $(RTS_C_RTS_DRV_O): $(RTS_BLD_RTS_PREFIX)%.o: $(RTS_BLD_RTS_PREFIX)%.c $(RTS_H_R
 
 $(INSABS_LIB_RTS): $(EXTLIBS_BGC_INS_FLAG) $(RTS_C_RTS_DRV_O) $(RTS_H_RTS_INS_H) $(RTS_MKF)
 	mkdir -p $(@D)
-	$(LIBTOOL_STATIC) $@ $(RTS_C_RTS_DRV_O)
+	$(call LIB_MK_STATIC,$@,$(RTS_C_RTS_DRV_O))
 	touch $@
 
 $(RTS_H_RTS_PRIM_DRV_H): %.h: %.c $(RTS_MKF)

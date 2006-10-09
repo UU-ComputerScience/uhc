@@ -21,6 +21,7 @@ PATHS_SEP			:= @PATHS_SEP@
 PATHS_SEP_COL		:= :
 STRIP_CMD			:= strip
 TOPABS_PREFIX		:= @TOP_ABS@/
+TOPABS2_PREFIX		:= @TOP_ABS2@/
 
 ### WinXX
 #EXEC_SUFFIX			:= .exe
