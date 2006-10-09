@@ -167,7 +167,7 @@ defaultEHCOpts
 %%]]
 %%[[9
       ,  ehcOptPrfCutOffAt    =   20
-      ,  ehcCfgClassViaRec    =   True
+      ,  ehcCfgClassViaRec    =   False -- True
 %%]]
 %%[[11
       ,  ehcOptTyBetaRedCutOffAt
