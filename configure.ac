@@ -65,10 +65,6 @@ AC_DEFUN(REQUIRED_OPTIONAL_PROG_FOR_EH,
   fi
 ])
 
-### gcc
-REQUIRED_PROG_FOR_EH(gccCmd,gcc)
-AC_SUBST(GCC_CMD,$gccCmd)
-
 ### ar, ranlib
 REQUIRED_PROG_FOR_EH(ranlibCmd,ranlib)
 AC_SUBST(RANLIB_CMD,$ranlibCmd)
@@ -111,6 +107,7 @@ esac
 
 AC_SUBST(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES,"$optCabalAllowUndecidableInstances")
 
+# uuagc
 AC_ARG_WITH(uuagc,
 [AC_HELP_STRING([--with-uuagc=<uu ag compiler>],
                 [Use a command different from 'uuagc' to compile with UUAGC.])],
@@ -131,6 +128,29 @@ else
   uuagcVersion=`$uuagcCmd --version`
 fi
 AC_SUBST(UUAGC_CMD,$uuagcCmd)
+
+# gcc
+AC_ARG_WITH(gcc,
+[AC_HELP_STRING([--with-gcc=<gcc compiler>],
+                [Use a command different from 'gcc' to compile with GCC.])],
+[ gccCmd="$withval" ],
+[ 
+  if test "$GCC" = ""; then
+    AC_PATH_PROG(gccCmd,gcc)
+  else
+    gccCmd=$GCC
+  fi
+]
+)
+if test "$gccCmd" = "no"; then
+  gccCmd=""
+  gccExists="no"
+else
+  gccExists="yes"
+  gccVersion=`$gccCmd --version`
+fi
+AC_SUBST(GCC_CMD,$gccCmd)
+
 
 ### Checks for libraries.
 
