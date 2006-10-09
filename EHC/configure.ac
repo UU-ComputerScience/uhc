@@ -208,6 +208,7 @@ AC_SUBST(MACH_DEP_C_FOR_TAILCALL_LEAVE2,"$mach_dep_c_for_tailcall_leave2")
 suffix_shell=""
 suffix_exec=""
 suffix_lib=".a"
+prefix_lib=""
 # path separator
 paths_sep=":"
 # libtool usage
@@ -219,7 +220,8 @@ case $HostPlatform in
         # file suffixes
         suffix_shell=".bat"
         suffix_exec=".exe"
-        suffix_lib=".lib"
+        #suffix_lib=".lib"
+        #prefix_lib="lib"
         # path separator
         paths_sep=";"
         # libtool usage
@@ -242,6 +244,7 @@ esac
 AC_SUBST(SUFFIX_SHELL,"$suffix_shell")
 AC_SUBST(SUFFIX_EXEC,"$suffix_exec")
 AC_SUBST(SUFFIX_LIB,"$suffix_lib")
+AC_SUBST(PREFIX_LIB,"$prefix_lib")
 AC_SUBST(PATHS_SEP,"$paths_sep")
 
 # libtool used, if any

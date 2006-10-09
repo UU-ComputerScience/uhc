@@ -212,12 +212,13 @@ caRightSkew :: CompileAction ()
 caRightSkew = task VerboseALot "Unskewing" (caFix caRightSkew1) (\i -> Just $ show i ++ " iteration(s)")
 %%]
 
-%%[8.heapPointsTo import({%{GRIN}GrinCode.PointsToAnalysis})
+%%[8.heapPointsTo import({%{GRIN}GrinCode.PointsToAnalysis}, {%{GRIN}GrinCode.AbsEval})
 caHeapPointsTo :: (Int, Int) -> CompileAction ()
 caHeapPointsTo bounds = task VerboseALot "Heap-points-to analysis"
     ( do { code    <- gets gcsGrinCode
          ; (c,e,h) <- liftIO $ heapPointsToAnalysis bounds code
          ; modify (\s -> s { gcsMbHptMap = Just ((e,h), Map.empty) })
+--       ; let n = abstractEvaluation code
          ; return c
          }
      ) (\i -> Just $ show i ++ " iteration(s)")
@@ -309,47 +310,6 @@ caSplitFetch = do
     }
 %%]
 
-%%[8.writeCmm import({%{GRIN}GrinCode.GenCmm}, {%{GRIN}CmmCode.Pretty})
-
-caGrin2Cmm :: CompileAction CmmUnit
-caGrin2Cmm = do
-    { code <- gets gcsGrinCode
-    ; entry <- gets gcsEntry
-    ; doTrace <- gets (ehcOptGenTrace . gcsOpts)
-    ; return (grin2cmm entry code doTrace)
-    }
-
-caWriteCmm :: CompileAction ()
-caWriteCmm
- = do
-    { input <- gets gcsPath
-    ; let output = fpathSetSuff "cmm" input
-    ; options <- gets gcsOpts
-    ; when (ehcOptEmitCmm options)
-           (do { putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
-               ; cmm <- caGrin2Cmm
-               ; liftIO $ writePP pp cmm output
-               })
-    }
-%%]
-
-
-%%[8.writeLlc import({%{GRIN}GrinCode.GenLlc}, {%{GRIN}CmmCode.Pretty})
-
-caGrin2Llc :: CompileAction PP_Doc
-caGrin2Llc = do
-    { code <- gets gcsGrinCode
-    ; entry <- gets gcsEntry
-    ; doTrace <- gets (ehcOptGenTrace . gcsOpts)
-    ; return (grin2llc entry code doTrace)
-    }
-
-%%]
-
-
-
-
-
 
 %%[8 import({%{GRIN}GrinCode.GenSilly(grin2silly)}, {%{GRIN}Silly(SilModule)})
 
@@ -373,8 +333,6 @@ caWriteLlc = do
     ; options <- gets gcsOpts
     ; when (ehcOptEmitLlc options)
            (do { putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
---             ; llc <- caGrin2Llc
---             ; liftIO $ writePP (const llc) () output
                ; silly <- caGrin2Silly
                ; optTrace    <- gets (ehcOptGenTrace . gcsOpts)
                ; optCaseDef  <- gets (ehcOptGenCaseDefault . gcsOpts)
@@ -481,7 +439,6 @@ caFinalize = task_ VerboseNormal "Finalizing"
 caOutput = task_ VerboseNormal "Writing code"
     ( do { outputGrin <- gets (ehcOptDumpTrfGrin . gcsOpts)
          ; maybe (return ()) (caWriteGrin False) outputGrin
-         ; caWriteCmm
          ; caWriteLlc
          }
     )

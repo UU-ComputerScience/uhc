@@ -93,8 +93,11 @@ shellCmdGcc = "@GCC_CMD@@SUFFIX_EXEC@"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+prefixLib :: String
+prefixLib = "@PREFIX_LIB@"
+
 libnamesGcc :: [String]
-libnamesGcc = [ "@RTS_PKG_NAME@", "@EXTLIBS_BGC_PKG_NAME@" ]
+libnamesGcc = [ prefixLib ++ "@RTS_PKG_NAME@", "@EXTLIBS_BGC_PKG_NAME@" ]
 %%]
 
 %%[8 export(ehcGccOptsStatic)

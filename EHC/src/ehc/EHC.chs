@@ -36,8 +36,6 @@
 %%]
 %%[8 import (qualified {%{EH}GrinCode} as Grin)
 %%]
-%%[8 import (qualified {%{GRIN}CmmCode} as Cmm)
-%%]
 %%[8 import (Control.Monad.State)
 %%]
 %%[8 import (qualified EH.Util.ScanUtils as ScanUtils)
@@ -860,7 +858,7 @@ cpTranslateCore2Grin modNm
                         where ehInh  = crsiEHInh crsi
 %%]]
                  grin   = cmodGrin u1 dg cMod
-         ;  when (isJust mbCore && (ehcOptEmitGrin opts || ehcOptEmitCmm opts || ehcOptEmitLlc opts))
+         ;  when (isJust mbCore && (ehcOptEmitGrin opts || ehcOptEmitLlc opts))
                  (cpUpdCU modNm (ecuStoreGrin grin))
          }
 
@@ -873,7 +871,7 @@ cpTranslateGrin modNm
                  fp     = ecuFilePath ecu
                  mbGrin = ecuMbGrin ecu
                  grin   = panicJust "cpTranslateGrin" mbGrin
-         ;  when (isJust mbGrin && (ehcOptEmitCmm opts || ehcOptEmitLlc opts))
+         ;  when (isJust mbGrin && (ehcOptEmitLlc opts))
                  (lift $ GRINC.doCompileGrin (Right (fp,grin)) opts)
          }
 %%]

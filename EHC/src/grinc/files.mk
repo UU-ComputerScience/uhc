@@ -27,7 +27,6 @@ GRINC_HS_MAIN_DRV_HS					:= $(patsubst $(SRC_GRINC_PREFIX)%.chs,$(EHC_BLD_VARIAN
 GRINC_HS_UTIL_SRC_CHS					:= $(patsubst %,$(SRC_GRINC_PREFIX)%.chs,\
 													GRINCCommon \
 													HeapPointsToFixpoint Primitives \
-													CmmCode/Building \
 													CompilerDriver Config \
 											)
 GRINC_HS_UTIL_DRV_HS					:= $(patsubst $(SRC_GRINC_PREFIX)%.chs,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_HS_UTIL_SRC_CHS))
@@ -41,16 +40,6 @@ GRINC_HS_ALL_SRC_CHS					:= $(GRINC_HS_MAIN_SRC_CHS) $(GRINC_HS_UTIL_SRC_CHS) $(
 GRINC_HS_ALL_DRV_HS						:= $(GRINC_HS_MAIN_DRV_HS) $(GRINC_HS_UTIL_DRV_HS) $(GRINC_HS_UTILCPP_DRV_HS)
 
 # main + sources + dpds, for .cag
-GRINC_AGCMMCODE_MAIN_SRC_CAG			:= $(patsubst %,$(SRC_GRINC_PREFIX)%.cag,CmmCode)
-GRINC_AGCMMCODE_DPDS_SRC_CAG			:= $(patsubst %,$(SRC_GRINC_PREFIX)CmmCode/%.cag,AbsSyn)
-$(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGCMMCODE_MAIN_SRC_CAG)) \
-										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGCMMCODE_DPDS_SRC_CAG))
-
-GRINC_AGCMMCODE_PRETTY_MAIN_SRC_CAG		:= $(patsubst %,$(SRC_GRINC_PREFIX)CmmCode/%.cag,Pretty)
-GRINC_AGCMMCODE_PRETTY_DPDS_SRC_CAG		:= $(patsubst %,$(SRC_GRINC_PREFIX)CmmCode/%.cag,AbsSyn)
-$(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGCMMCODE_PRETTY_MAIN_SRC_CAG)) \
-										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGCMMCODE_PRETTY_DPDS_SRC_CAG))
-
 GRINC_AGSILLY_MAIN_SRC_CAG			:= $(patsubst %,$(SRC_GRINC_PREFIX)%.cag,Silly)
 GRINC_AGSILLY_DPDS_SRC_CAG			:= $(patsubst %,$(SRC_GRINC_PREFIX)Silly/%.cag,AbsSyn)
 $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGSILLY_MAIN_SRC_CAG)) \
@@ -61,65 +50,45 @@ GRINC_AGSILLY_PRETTYC_DPDS_SRC_CAG		:= $(patsubst %,$(SRC_GRINC_PREFIX)Silly/%.c
 $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGSILLY_PRETTYC_MAIN_SRC_CAG)) \
 										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGSILLY_PRETTYC_DPDS_SRC_CAG))
 
-GRINC_AGGRINCODE_GENCMM_MAIN_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,GenCmm)
-GRINC_AGGRINCODE_GENCMM_DPDS_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,TagInfo ValueInfo ReturnSize Primitives ImportExport Globals ExceptionHandlers ToCmm TraceInfo LastExpr)
-$(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGGRINCODE_GENCMM_MAIN_SRC_CAG)) \
-										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_GENCMM_DPDS_SRC_CAG)) \
-											$(LIB_EHC_INS_FLAG)
-
-GRINC_AGGRINCODE_GENLLC_MAIN_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,GenLlc)
-GRINC_AGGRINCODE_GENLLC_DPDS_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,TagInfo ValueInfo ReturnSize Primitives ImportExport Globals ExceptionHandlers ToLlc TraceInfo LastExpr)
-$(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGGRINCODE_GENLLC_MAIN_SRC_CAG)) \
-										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_GENLLC_DPDS_SRC_CAG))
-
 GRINC_AGGRINCODE_GENSILLY_MAIN_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,GenSilly)
-GRINC_AGGRINCODE_GENSILLY_DPDS_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,TagInfo ValueInfo ReturnSize Primitives ImportExport Globals ExceptionHandlers ToSilly TraceInfo LastExpr)
+GRINC_AGGRINCODE_GENSILLY_DPDS_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,ToSilly LastExpr)
 $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGGRINCODE_GENSILLY_MAIN_SRC_CAG)) \
 										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_GENSILLY_DPDS_SRC_CAG))
 
+GRINC_AGGRINCODE_ABSEVAL_MAIN_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,AbsEval)
+GRINC_AGGRINCODE_ABSEVAL_DPDS_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,)
+$(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGGRINCODE_ABSEVAL_MAIN_SRC_CAG)) \
+										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_ABSEVAL_DPDS_SRC_CAG))
 
 GRINC_AGGRINCODE_POINTSTO_MAIN_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,PointsToAnalysis)
 GRINC_AGGRINCODE_POINTSTO_DPDS_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,)
 $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGGRINCODE_POINTSTO_MAIN_SRC_CAG)) \
 										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_POINTSTO_DPDS_SRC_CAG))
 
-GRINC_AGGRINCODE_ALLTRF_MAIN_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/Trf/%.cag,DropUnusedExpr NameIdents SparseCase NormForHPT NumberIdents CaseElimination SplitFetch DropUnusedBindings DropUnusedTags GrInline RightSkew LowerGrin CopyPropagation BuildAppBindings ReturningCatch)
+GRINC_AGGRINCODE_ALLTRF_MAIN_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/Trf/%.cag,DropUnusedExpr NameIdents SparseCase NormForHPT NumberIdents CaseElimination SplitFetch DropUnusedBindings DropUnusedTags GrInline RightSkew LowerGrin CopyPropagation BuildAppBindings ReturningCatch CleanupPass)
 GRINC_AGGRINCODE_ALLTRF_DPDS_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,)
 $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGGRINCODE_ALLTRF_MAIN_SRC_CAG)) \
 										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_ALLTRF_DPDS_SRC_CAG))
 
-GRINC_AGGRINCODE_TRFCLEANUP_MAIN_SRC_CAG:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/Trf/%.cag,CleanupPass)
-GRINC_AGGRINCODE_TRFCLEANUP_DPDS_SRC_CAG:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,CAFNames)
-$(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGGRINCODE_TRFCLEANUP_MAIN_SRC_CAG)) \
-										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_TRFCLEANUP_DPDS_SRC_CAG))
-
 GRINC_AG_D_MAIN_SRC_CAG					:= \
-											$(GRINC_AGCMMCODE_MAIN_SRC_CAG) \
 											$(GRINC_AGSILLY_MAIN_SRC_CAG)
 
 GRINC_AG_S_MAIN_SRC_CAG					:= \
-											$(GRINC_AGCMMCODE_PRETTY_MAIN_SRC_CAG) \
 											$(GRINC_AGSILLY_PRETTYC_MAIN_SRC_CAG) \
-											$(GRINC_AGGRINCODE_GENCMM_MAIN_SRC_CAG) \
-											$(GRINC_AGGRINCODE_GENLLC_MAIN_SRC_CAG) \
 											$(GRINC_AGGRINCODE_GENSILLY_MAIN_SRC_CAG) \
 											$(GRINC_AGGRINCODE_POINTSTO_MAIN_SRC_CAG) \
-											$(GRINC_AGGRINCODE_ALLTRF_MAIN_SRC_CAG) \
-											$(GRINC_AGGRINCODE_TRFCLEANUP_MAIN_SRC_CAG)
+											$(GRINC_AGGRINCODE_ABSEVAL_MAIN_SRC_CAG) \
+											$(GRINC_AGGRINCODE_ALLTRF_MAIN_SRC_CAG)
 
 GRINC_AG_ALL_MAIN_SRC_CAG				:= $(GRINC_AG_D_MAIN_SRC_CAG) $(GRINC_AG_S_MAIN_SRC_CAG) $(GRINC_AG_DS_MAIN_SRC_CAG)
 
 GRINC_AG_ALL_DPDS_SRC_CAG				:= $(sort \
-											$(GRINC_AGCMMCODE_DPDS_SRC_CAG) \
-											$(GRINC_AGCMMCODE_PRETTY_DPDS_SRC_CAG) \
 											$(GRINC_AGSILLY_DPDS_SRC_CAG) \
 											$(GRINC_AGSILLY_PRETTYC_DPDS_SRC_CAG) \
-											$(GRINC_AGGRINCODE_GENCMM_DPDS_SRC_CAG) \
-											$(GRINC_AGGRINCODE_GENLLC_DPDS_SRC_CAG) \
 											$(GRINC_AGGRINCODE_GENSILLY_DPDS_SRC_CAG) \
 											$(GRINC_AGGRINCODE_POINTSTO_DPDS_SRC_CAG) \
+											$(GRINC_AGGRINCODE_ABSEVAL_DPDS_SRC_CAG) \
 											$(GRINC_AGGRINCODE_ALLTRF_DPDS_SRC_CAG) \
-											$(GRINC_AGGRINCODE_TRFCLEANUP_DPDS_SRC_CAG) \
 											)
 
 # derived

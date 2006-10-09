@@ -35,6 +35,9 @@
 %%[8 export(hsnUndefined,hsnPrimAddInt,hsnMain)
 %%]
 
+%%[8 import(Char(isUpper)) export(hsnIsConstructorName)
+%%]
+
 %%[9 export(hsnOImpl,hsnCImpl,hsnPrArrow,hsnIsPrArrow,hsnIsUnknown)
 %%]
 
@@ -158,6 +161,29 @@ hsnFloat                            =   HNm "Float"
 hsnMain                             =   HNm "main"
 hsnPrimAddInt                       =   HNm "primAddInt"
 %%]
+
+%%[8
+constructorInitial :: Char -> Bool
+constructorInitial ':' = True
+constructorInitial '[' = True
+constructorInitial ',' = True
+constructorInitial '(' = True
+constructorInitial c   = isUpper c
+
+hsnIsConstructorName :: HsName -> Bool
+hsnIsConstructorName (HNm (x:xs)) = constructorInitial x
+hsnIsConstructorName (HNPos n) = False
+%%]
+%%[12
+hsnIsConstructorName (HNmQ hs) = hsnIsConstructorName (last hs)
+%%]
+
+
+
+
+
+
+
 
 hsnOImpl                            =   HNm "(!"
 hsnCImpl                            =   HNm "!)"
