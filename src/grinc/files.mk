@@ -147,7 +147,7 @@ $(LIB_GRINC_CABAL_DRV): $(GRINC_ALL_DPDS) $(GRINC_MKF)
 		, $(LIB_GRINC_PKG_NAME) \
 		, $(EH_VERSION) \
 		, mtl $(LIB_EH_UTIL_PKG_NAME) $(LIB_EHC_PKG_NAME) \
-		, AllowUndecidableInstances \
+		, $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) \
 		, Part of GRINC$(EHC_VARIANT) compiler packaged as library \
 		, $(subst $(PATH_SEP),.,$(patsubst $(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(LIB_GRINC_QUAL_PREFIX)%,$(shell $(FILTER_NONEMP_FILES) $(GRINC_HS_UTIL_DRV_HS) $(GRINC_HS_UTILCPP_DRV_HS) $(GRINC_AG_ALL_MAIN_DRV_HS)))) \
 	) > $@

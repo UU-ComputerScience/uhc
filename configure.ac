@@ -69,6 +69,13 @@ AC_DEFUN(REQUIRED_OPTIONAL_PROG_FOR_EH,
 REQUIRED_PROG_FOR_EH(gccCmd,gcc)
 AC_SUBST(GCC_CMD,$gccCmd)
 
+### ar, ranlib
+REQUIRED_PROG_FOR_EH(ranlibCmd,ranlib)
+AC_SUBST(RANLIB_CMD,$ranlibCmd)
+
+REQUIRED_PROG_FOR_EH(arCmd,ar)
+AC_SUBST(AR_CMD,$arCmd)
+
 ### 'with' options
 AC_ARG_WITH(ghc,
 [AC_HELP_STRING([--with-ghc=<haskell compiler>],
@@ -162,6 +169,9 @@ case $HostPlatform in
         mach_dep_c_for_tailcall_leave2="asm(\\\"lmw r30,-8(r1)\\\") ;"
         mach_dep_c_for_tailcall_enter="asm( \\\"lwz r2,0(r1)\\\" ) ; asm( \\\"stw r0,8(r2)\\\" ) ;"
         ;;
+  i*86-pc-linux-gnu )
+        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
+        ;;
   *)
         mach_dep_c_for_tailcall_leave1=""
         mach_dep_c_for_tailcall_leave2=""
@@ -183,6 +193,7 @@ paths_sep=":"
 # libtool usage
 libtoolStatic="libtool -static -o"
 libtoolDynamic="echo Dynamic linking not available: "
+ehcGccOptsStatic=""
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         # file suffixes
@@ -193,11 +204,12 @@ case $HostPlatform in
         paths_sep=";"
         # libtool usage
         ;;
-  *-linux-gnu )
+  i*86-pc-linux-gnu )
         # file suffixes
         # path separator
         # libtool usage
-        libtoolStatic="libtool --mode=link ${gccCmd} -static -o"
+        libtoolStatic="no"
+        ehcGccOptsStatic="-static"
         ;;
   *)
         # file suffixes
@@ -205,10 +217,18 @@ case $HostPlatform in
         # libtool usage
         ;;
 esac
+# suffixes, path separator, ...
 AC_SUBST(SUFFIX_SHELL,"$suffix_shell")
 AC_SUBST(SUFFIX_EXEC,"$suffix_exec")
 AC_SUBST(SUFFIX_LIB,"$suffix_lib")
 AC_SUBST(PATHS_SEP,"$paths_sep")
+
+# libtool used, if any
+AC_SUBST(LIBTOOL_STATIC_CMD, "$libtoolStatic")
+AC_SUBST(LIBTOOL_DYNAMIC_CMD, "$libtoolDynamic")
+
+# flags passed to gcc by ehc related to static/dynamic libraries
+AC_SUBST(EHC_GCC_OPTS_STATIC, "$ehcGccOptsStatic")
 
 ### absolute path to this dir
 hardtop=`pwd`
@@ -221,16 +241,15 @@ case $HostPlatform in
         # get rid off /cygdrive/ prefix
         hardtop=`echo ${hardtop} | sed -e 's%^/cygdrive/\(.\)/%\1:/%' `
         hardtop_plat=`cygpath -w ${hardtop} | sed -e 's@\\\\@/@g' `
+        hardtop_plat2=`echo ${hardtop_plat} | sed -e 's@^\(.\):@/\1@' `
         ;;
   *)
         hardtop_plat=${hardtop}
+        hardtop_plat2=${hardtop}
         ;;
 esac
 AC_SUBST(TOP_ABS, "$hardtop_plat")
-
-### libtool used
-AC_SUBST(LIBTOOL_STATIC_CMD, "$libtoolStatic")
-AC_SUBST(LIBTOOL_DYNAMIC_CMD, "$libtoolDynamic")
+AC_SUBST(TOP_ABS2, "$hardtop_plat2")
 
 ### install locations
 inplaceInstallDir="install"
