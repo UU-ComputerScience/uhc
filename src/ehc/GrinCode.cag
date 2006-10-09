@@ -19,7 +19,7 @@
 %%[8 hs export(mkGrPatRecNode,mkGrPatConNode,mkGrPatTagNode,mkGrPatRecSplit,mkGrPatConSplit,mkGrUnbox,mkGrUnboxFFI)
 %%]
 
-%%[8 hs export(GrNodeAdapt(..),grRecTag,hsnGrApply,hsnGrEval,hsnGrRec,grBuiltinTyNmL)
+%%[8 hs export(GrNodeAdapt(..),grRecTag,hsnGrApply,hsnGrEval,grBuiltinTyNmL)
 %%]
 
 %%[8 hs export(EvApTagKey,EvApTagElt(..),EvApTagMp)
@@ -36,9 +36,8 @@ DERIVING *     : Show, Eq
 %%[8 hs
 hsnGrApply  = HNm "!apply"
 hsnGrEval   = HNm "!eval"
-hsnGrRec n  = HNm ("()"++show n)
 
-grBuiltinTyNmL = [ hsnInt, hsnChar ] ++ map hsnGrRec (0:[2..10])
+grBuiltinTyNmL = [ hsnInt, hsnChar ] ++ map hsnProd (0:[2..10])
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -128,14 +127,14 @@ mkGrConNode = mkGrTagNode GrTagCon
 
 mkGrRecNode ::  GrValL -> GrVal
 --mkGrRecNode  = mkGrTagNode GrTagRec 0 hsnRec
-mkGrRecNode xs = mkGrTagNode GrTagCon 0 (hsnGrRec (length xs)) xs
+mkGrRecNode xs = mkGrTagNode GrTagCon 0 (hsnProd (length xs)) xs
 
 mkGrPatConNode :: Int -> HsName -> [HsName] -> GrPat
 mkGrPatConNode = mkGrPatTagNode GrTagCon
 
 mkGrPatRecNode :: [HsName] -> GrPat
 --mkGrPatRecNode  = mkGrPatTagNode GrTagRec 0 hsnRec
-mkGrPatRecNode xs = mkGrPatTagNode GrTagCon 0 (hsnGrRec (length xs)) xs
+mkGrPatRecNode xs = mkGrPatTagNode GrTagCon 0 (hsnProd (length xs)) xs
 
 
 mkGrPatConSplit :: Int -> HsName -> HsName -> GrSplitL -> GrPat

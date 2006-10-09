@@ -15,7 +15,7 @@ cleanup EHC generated GRIN:
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.CleanupPass} import(qualified Data.Set as Set, Char(isUpper))
+%%[8 hs module {%{GRIN}GrinCode.Trf.CleanupPass} import(qualified Data.Set as Set, {%{EH}Base.Builtin}(hsnIsConstructorName))
 %%]
 
 %%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(cleanupPass)
@@ -39,7 +39,7 @@ SEM GrModule
 
 %%[8.dropEvalApply
 SEM GrBind [ | | dropBinding: Bool ]
-  | Bind  lhs  . dropBinding  =  @nm `elem` [evalNm, evalNr,  applyNm, applyNr] --  || isUpper (head (show @nm))
+  | Bind  lhs  . dropBinding  =  @nm `elem` [evalNm, evalNr,  applyNm, applyNr] 
   | Rec   lhs  . dropBinding  =  False
 
 
@@ -58,16 +58,9 @@ Also, replace F-Tags for constructorfunctions by C-tags
 
 %%[8.P0tag_TO_Ftag
 
-{
-isConstructorInitial :: Char -> Bool
-isConstructorInitial c = isUpper c || c==':' || c=='['
-}
-
-
-
 SEM GrTag
   | Lit  lhs  .  grTrf  = GrTag_Lit
-                             (if   isConstructorInitial (head (show @nm)) && (@categ==GrTagFun || @categ==GrTagPApp 0)
+                             (if   hsnIsConstructorName @nm && (@categ==GrTagFun || @categ==GrTagPApp 0)
                               then GrTagCon
                               else
                               if   @categ == GrTagPApp 0
@@ -88,9 +81,21 @@ Filter out the constructor functions.
 
 Note: EHC does not generate these yet
 
+A CAF is a GRIN function which takes no parametes. every CAF has a variable
+named the same as GRIN function that maps to a FNode. Which, if evaluated,
+calls the corresponding GRIN function.
+
+%%[8.caf
+
+ATTR GrModule  [ | | cafNames              : {[HsName]}              ]
+ATTR AllBind   [ | | cafNamesF USE {.} {id}: {[HsName]->[HsName]}    ]
+
+SEM GrModule
+  | Mod         loc . cafNames   =  @bindL.cafNamesF []
+SEM GrBind
+  | Bind        loc . cafNamesF  =  if null @argNmL then (@nm:) else id
 
 
-%%[8.caf import({GrinCode/CAFNames})
 SEM GrModule
   | Mod  loc  .  newGlobals  =  let arity             =  if grinStoreArity
                                                           then [GrVal_LitInt 0]

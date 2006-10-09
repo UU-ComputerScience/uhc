@@ -69,8 +69,12 @@ SEM GrAGItf
 %%[8.translateEntry
 ATTR GrAGItf [ | entry: HsName | ]
 SEM GrAGItf
-  | AGItf  lhs . entry = fromJust $ Map.lookup @lhs.entry @bind2id
+  | AGItf  lhs . entry = case Map.lookup @lhs.entry @bind2id of
+                              Just x -> x
+                              Nothing -> error ("cannot find " ++ show @lhs.entry ++ " in " ++ show @bind2id)
+                           
 %%]
+  | AGItf  lhs . entry = fromJust $ Map.lookup @lhs.entry @bind2id
 
 %%[8.maps
 ATTR GrAGItf          [ | | varMap:  IdentNameMap ]

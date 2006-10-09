@@ -97,7 +97,6 @@ data EHCOpts
       ,  ehcOptEmitCore       ::  Bool
       ,  ehcOptEmitJava       ::  Bool
       ,  ehcOptEmitGrin       ::  Bool
-      ,  ehcOptEmitCmm        ::  Bool
       ,  ehcOptEmitLlc        ::  Bool
       ,  ehcOptEmitExec       ::  Bool
       ,  ehcOptSearchPath     ::  [String]
@@ -153,7 +152,6 @@ defaultEHCOpts
       ,  ehcOptEmitCore       =   True
       ,  ehcOptEmitJava       =   False
       ,  ehcOptEmitGrin       =   False
-      ,  ehcOptEmitCmm        =   False
       ,  ehcOptSearchPath     =   []
       ,  ehcOptVerbosity      =   VerboseNormal
       ,  ehcOptTrf            =   []
@@ -191,7 +189,7 @@ ehcCmdLineOpts
      ,  Option "h"  ["help"]             (NoArg oHelp)                        "only show this help"
      ,  Option ""   ["version"]          (NoArg oVersion)                     "only show version info"
 %%[[8
-     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|cmm|c|exec|-")  "write code to file, default=core (downstream only)"
+     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exec|-")  "write code to file, default=core (downstream only)"
      ,  Option ""   ["trf"]              (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
                                                                               "switch on/off transformations"
      ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
@@ -248,7 +246,7 @@ ehcCmdLineOpts
                                 Just "java"  -> o { ehcOptEmitJava     = True      }
                                 Just "grin"  -> o { ehcOptEmitGrin     = True      }
                                 Just "exec"  -> o { ehcOptEmitExec     = True, ehcOptEmitLlc = True }
-                                Just "cmm"   -> o { ehcOptEmitCmm      = True      }
+                                Just "exe"   -> o { ehcOptEmitExec     = True, ehcOptEmitLlc = True }
                                 Just "c"     -> o { ehcOptEmitLlc      = True      }
                                 _            -> o
          oTrf        s   o =  o { ehcOptTrf           = opt s   }

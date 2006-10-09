@@ -26,16 +26,22 @@ undefinedAV  = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "False"), av
 
 unboxedBasic = AV_Nodes $ Map.fromList [ (GrTag_Unboxed, [AV_Basic])
                                        ]
-booleanNodes = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "False"), avForArity)
+booleanNodes = AV_Nodes $ Map.fromList [ 
+                                         (GrTag_Lit GrTagCon 0 (HNm "False"), avForArity)
                                        , (GrTag_Lit GrTagCon 1 (HNm "True" ), avForArity)
                                        ]
-compareNodes = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "EQ"), avForArity)
+compareNodes = AV_Nodes $ Map.fromList [ 
+                                       {-
+                                         (GrTag_Lit GrTagCon 0 (HNm "EQ"), avForArity)
                                        , (GrTag_Lit GrTagCon 1 (HNm "GT"), avForArity)
                                        , (GrTag_Lit GrTagCon 2 (HNm "LT"), avForArity)
+                                       -}
                                        ]
 %%]
 
-%%[8.codeGeneration import({%{GRIN}CmmCode}, {%{GRIN}CmmCode.Building}) export(false_node, true_node)
+%%[8.codeGeneration 
+
+{-
 --buildin datatype
 true_tag   = cmmVar "@C$True"
 false_tag  = cmmVar "@C$False"
@@ -73,9 +79,24 @@ emitPrimCmpInt (l:r:[]) tn
 assignOrReturn (Left tn) expr = if null tn
                                 then cmmReturn "" (map valArg expr)
                                 else updates (zipWith (\l r -> (varUpdate l,r)) tn expr)
+-}
+
+emitPrimAddInt = undefined
+emitPrimSubInt = undefined
+emitPrimMulInt = undefined
+emitPrimDivInt = undefined
+emitPrimModInt = undefined
+emitPrimEqInt = undefined
+emitPrimLtInt = undefined
+emitPrimGtInt = undefined
+emitPrimCmpInt = undefined
+
+
 %%]
 
 %%[8.primitivesMap import(qualified Data.Map as Map)
+
+{-
 type PrimitiveInfo = (Int
                      , [String]
                      , CmmNames -> Either CmmNames [CmmBodyBuilder] -> CmmBodyBuilder
@@ -83,6 +104,9 @@ type PrimitiveInfo = (Int
                      )
 
 primitivesMap  ::  Map.Map String PrimitiveInfo
+-}
+
+
 primitivesMap  =   Map.fromList primitivesTable
     where
     -- primitivesTable: list of name |-> (return size, required imports, arguments -> result vars or bodies -> primitive, AV)
@@ -109,7 +133,7 @@ primitivesMap  =   Map.fromList primitivesTable
 isPrim             = ("prim" ==) . take 4
 isConditionalPrim  = flip elem ["primEqInt", "primLtInt", "primGtInt"]
 
-getPrimInfo :: (PrimitiveInfo -> b) -> String -> b
+--getPrimInfo :: (PrimitiveInfo -> b) -> String -> b
 getPrimInfo f prim = f (Map.findWithDefault (error $ "prim '" ++ prim ++ "' not found!") prim primitivesMap)
 
 -- primSize     =  getPrimInfo (\ (a, _, _, _) -> a)
