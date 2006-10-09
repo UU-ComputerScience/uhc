@@ -203,6 +203,7 @@ case $HostPlatform in
         # path separator
         paths_sep=";"
         # libtool usage
+        libtoolStatic="no"
         ;;
   i*86-pc-linux-gnu )
         # file suffixes

@@ -85,7 +85,7 @@ fileprefixInstall = "@INSTALL_PREFIX@/"
 
 %%[8
 shellCmdGcc :: String
-shellCmdGcc = "@GCC_CMD@"
+shellCmdGcc = "@GCC_CMD@@SUFFIX_EXEC@"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
