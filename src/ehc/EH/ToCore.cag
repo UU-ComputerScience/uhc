@@ -173,7 +173,7 @@ SEM RecExpr
 SEM Expr
   | Sel         loc         .   offset          =   CExpr_Int (tyRecOffset @lbl (@lhs.finTyCnstr |=> @expr.ty))
                             .   cexpr           =   let  [n1,n2] = map uidHNm . mkNewUIDL 2 $ @lUniq
-                                                    in   mkCExprSelCase @rceEnv (Just n1) @expr.cexpr CTagRec n2 @lbl @offset
+                                                    in   mkCExprSelCase @rceEnv (Just n1) @expr.cexpr CTagRec n2 @lbl @offset Nothing
 %%]
 
 %%[10
@@ -209,12 +209,12 @@ SEM PatExpr
                             .   rest        =   CPatRest_Empty
   | Rec         loc         .   tag         =   CTagRec
                             .   rest        =   @recPatExpr.patCRest
-  | AppTop Rec  loc         .   cpatBinds   =   map (\(o,(n,(_,p))) -> CPatBind_Bind n (CExpr_Int o) n p) . zip [0..] . tyRowCanonOrder . reverse $ @fsCPatL
-  | AppTop      lhs         .   cpat        =   CPat_Con @cpNm @tag @rest @cpatBinds
+  | AppTop Rec  loc         .   cpatBinds   =   [ (CPatBind_Bind n (CExpr_Int o) n p,Just o) | (o,(n,(_,p))) <- zip [0..] $ tyRowCanonOrder $ reverse $ @fsCPatL ]
+  | AppTop      lhs         .   cpat        =   CPat_Con @cpNm @tag @rest (map fst @cpatBinds)
   | Con         lhs         .   cpat        =   CPat_Con @cpNm @tag CPatRest_Empty []
   | Rec         lhs         .   cpat        =   case @rest of
                                                     CPatRest_Empty
-                                                      ->  CPat_Con @cpNm @tag @rest @cpatBinds
+                                                      ->  CPat_Con @cpNm @tag @rest (map fst @cpatBinds)
                                                     CPatRest_Var r
                                                       ->  CPat_Con @cpNm @tag @rest pbL
                                                           where  pbL = rpbReorder . map (\(n,(o,p)) -> CPatBind_Bind n o n p) . reverse $ @fsCPatL
@@ -360,7 +360,7 @@ SEM Decl
                                                      xStrict = hsnSuffix x "!"
                                                      vxStrict = CExpr_Var xStrict
                                                      mkSel n = mkCExprSatSelsCase (emptyRCEEnv {rceDataGam = @lhs.dataGam}) (Just xStrict) vx @dictTag
-                                                                                  [(n,n,cdictOffset n @clsTyRec)] (CExpr_Var n)
+                                                                                  [(n,n,cdictOffset n @clsTyRec)] Nothing (CExpr_Var n)
                                                      dDflt
                                                        = [CBind_Bind nDflt (mkCExprLam [nD] d)] 
                                                        where nDflt = rulNmEvid . pigiRule $ @pigi
@@ -372,7 +372,7 @@ SEM Decl
                                                         ]
 %%]
                                                      mkSel n = mkCExprSelCase (emptyRCEEnv {rceDataGam = @lhs.dataGam}) (Just xStrict) vx @dictTag
-                                                                              n n (CExpr_Int $ cdictOffset n @clsTyRec)
+                                                                              n n (CExpr_Int $ cdictOffset n @clsTyRec) Nothing
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instance
@@ -386,7 +386,7 @@ SEM Decl
                                                        = foldl (\d (CBind_Bind n v) -> mkSet d n v) d bs
                                                        where mkSet d n v = CExpr_TupUpd d @dictTag n (CExpr_Int $ off n) v
                                                      mkSetFlds2 d bs
-                                                       = mkCExprSatSelsCaseUpd env Nothing d @dictTag (length @recTyExts) offValL
+                                                       = mkCExprSatSelsCaseUpd env Nothing d @dictTag (length @recTyExts) offValL Nothing
                                                        where env = emptyRCEEnv {rceDataGam = @lhs.dataGam}
                                                              offValL = [ (off n,v) | (CBind_Bind n v) <- bs ]
                                                      mkSetFlds = if ehcCfgClassViaRec @lhs.opts then mkSetFlds1 else mkSetFlds2
@@ -453,10 +453,13 @@ ATTR AllPatExpr [ ceParentNm: HsName | | ]
 
 SEM PatExpr
   | AppTop Rec  loc         .   cbindL      =   concat
-                                                .  map  (\(CPatBind_Bind l o _ p)
-                                                            -> let  b n = [CBind_Bind n (mkCExprSelCase @rceEnv (Just pn') (CExpr_Var pn) @tag n l o)]
-                                                                          where pn = @lhs.ceParentNm
-                                                                                pn' = hsnSuffix pn "!"
+                                                .  map  (\(CPatBind_Bind l o _ p,mbOff)
+                                                            -> let  b n = [CBind_Bind n (mkc n mbOff)]
+                                                                    pn  = @lhs.ceParentNm
+                                                                    pn' = hsnSuffix pn "!"
+                                                                    mkc n (Just o) = mkCExprSatSelCase @rceEnv (Just pn') (CExpr_Var pn) @tag n l o r
+                                                                    mkc n Nothing  = mkCExprSelCase    @rceEnv (Just pn') (CExpr_Var pn) @tag n l o r
+                                                                    r = Just (@rest,length @fsCPatL)
                                                                in   case cpatVarNm p of
                                                                         CPatNmOrig n                          -> b n
                                                                         CPatNmUniq n | not (null @cbindLSub)  -> b n

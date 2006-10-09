@@ -311,7 +311,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_MINORMINOR EH_VERSION_STABILITY EH_VERSION ranlibCmd RANLIB_CMD arCmd AR_CMD ghcCmd GHC_CMD GHC_VERSION CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES uuagcCmd UUAGC_CMD gccCmd GCC_CMD CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC SUFFIX_LIB PATHS_SEP LIBTOOL_STATIC_CMD LIBTOOL_DYNAMIC_CMD EHC_GCC_OPTS_STATIC TOP_ABS TOP_ABS2 INSTALL_PREFIX INPLACE_PREFIX INPLACE_INSTALL_DIR RTS_PKG_NAME EXTLIBS_BGC_PKG_NAME LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_MINORMINOR EH_VERSION_STABILITY EH_VERSION ranlibCmd RANLIB_CMD arCmd AR_CMD ghcCmd GHC_CMD GHC_VERSION CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES uuagcCmd UUAGC_CMD gccCmd GCC_CMD CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC SUFFIX_LIB PREFIX_LIB PATHS_SEP LIBTOOL_STATIC_CMD LIBTOOL_DYNAMIC_CMD EHC_GCC_OPTS_STATIC TOP_ABS TOP_ABS2 INSTALL_PREFIX INPLACE_PREFIX INPLACE_INSTALL_DIR RTS_PKG_NAME EXTLIBS_BGC_PKG_NAME LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -4089,6 +4089,7 @@ MACH_DEP_C_FOR_TAILCALL_LEAVE2="$mach_dep_c_for_tailcall_leave2"
 suffix_shell=""
 suffix_exec=""
 suffix_lib=".a"
+prefix_lib=""
 # path separator
 paths_sep=":"
 # libtool usage
@@ -4100,7 +4101,8 @@ case $HostPlatform in
         # file suffixes
         suffix_shell=".bat"
         suffix_exec=".exe"
-        suffix_lib=".lib"
+        #suffix_lib=".lib"
+        #prefix_lib="lib"
         # path separator
         paths_sep=";"
         # libtool usage
@@ -4125,6 +4127,8 @@ SUFFIX_SHELL="$suffix_shell"
 SUFFIX_EXEC="$suffix_exec"
 
 SUFFIX_LIB="$suffix_lib"
+
+PREFIX_LIB="$prefix_lib"
 
 PATHS_SEP="$paths_sep"
 
@@ -4840,6 +4844,7 @@ s,@MACH_DEP_C_FOR_TAILCALL_LEAVE2@,$MACH_DEP_C_FOR_TAILCALL_LEAVE2,;t t
 s,@SUFFIX_SHELL@,$SUFFIX_SHELL,;t t
 s,@SUFFIX_EXEC@,$SUFFIX_EXEC,;t t
 s,@SUFFIX_LIB@,$SUFFIX_LIB,;t t
+s,@PREFIX_LIB@,$PREFIX_LIB,;t t
 s,@PATHS_SEP@,$PATHS_SEP,;t t
 s,@LIBTOOL_STATIC_CMD@,$LIBTOOL_STATIC_CMD,;t t
 s,@LIBTOOL_DYNAMIC_CMD@,$LIBTOOL_DYNAMIC_CMD,;t t

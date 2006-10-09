@@ -170,7 +170,7 @@ SEM CExpr
 ATTR CodeAGItf CModule [ | | grMod: GrModule ]
 
 SEM CModule
-  | Mod         loc         .   primTyconMp =   map (\n -> (n,[(n,CTag n n 0 1)])) grBuiltinTyNmL
+  | Mod         loc         .   primTyconMp =   map (\n -> (n,[(n,CTag n n 0 (if hsnIsProd n then hsnProdArity n else 1))])) grBuiltinTyNmL
                             .   constrsMp   =   @primTyconMp ++ @ctagsMp
 
                             .   allFPTags   =   Map.toList @expr.lamNmMp
@@ -182,7 +182,10 @@ SEM CModule
 
                                                 -- constructorfunctions are never called via an F-thunk, so no cases for it are generated
                             .   allFTags    =   filter (\(fNm,_) -> not (fNm `elem` map ctagNm @allCTags))
-                                                       ({- (hsnUndefined,0) : -} (hsnGrApply,2) : @allFPTags ++ Map.toList @expr.cafNmMp)
+                                                       ( (hsnUndefined,0)
+                                                       : (hsnGrApply,2)
+                                                       : @allFPTags ++ Map.toList @expr.cafNmMp
+                                                       )
 
                             .   applyTagMp  =   map makeApplyMapEntryP @allPTags
                             .   evalTagMp   =   map makeEvalMapEntryC @allCTags
@@ -218,17 +221,21 @@ SEM CModule
                                                                                      uis
                                                                             )
                                                                )
+                            .   undefBind   =   GrBind_Bind hsnUndefined
+                                                            []
+                                                            (GrExpr_FFI "primUndefined" [] [{- GrTag_Any -}])
 
                 lhs         .   grMod       =   GrModule_Mod @moduleNm
                                                     [] -- TODO: this should contain all the caf variables
-                                                    (@expr.grBindL ++ [ {- @undefBind, -} @evalBind, @applyBind])
+                                                    (@expr.grBindL
+                                                     ++ [ @evalBind
+                                                        , @applyBind
+                                                        , @undefBind
+                                                        ])
                                                     @constrsMp
                                                     @evalTagMp
                                                     @applyTagMp
 %%]
-                            .   undefBind   =   GrBind_Bind hsnUndefined
-                                                            []
-                                                            (GrExpr_FFI "primUndefined" [] [GrTag_Any])
 
 
 %%[8 hs
