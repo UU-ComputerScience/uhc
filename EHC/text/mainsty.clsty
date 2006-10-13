@@ -159,9 +159,18 @@
 
 % Plain figure
 \newenvironment{PlainFigure}[3]{%
-  \begin{TabularFigure}{#1}{#2}{#3}{p{.94\linewidth}}
+  \begin{TabularFigure}{#1}{#2}{#3}{p{.98\linewidth}}
 }{%
   \end{TabularFigure}
+}
+
+% Plain figure
+\newenvironment{PlainCenterFigure}[3]{%
+  \begin{PlainFigure}{#1}{#2}{#3}
+  \begin{center}
+}{%
+  \end{center}
+  \end{PlainFigure}
 }
 
 % Env for xfig in a figure

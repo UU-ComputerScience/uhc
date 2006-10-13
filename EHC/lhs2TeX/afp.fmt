@@ -91,6 +91,7 @@
 %format sigmal      = sigma "^{l}"
 %format sigmar      = sigma "^{r}"
 %format sigma_r 	= sigma "_{r}"
+%format sigmag 		= sigma "_{g}"
 %format sigmai     	= sigma "_{i}"
 %format sigmaa      = sigma "_{a}"
 %format sigmaaa     = sigma "^{a}"
@@ -376,6 +377,15 @@
 %format attr2
 %format node1
 %format node2
+
+%format v10
+%format v22
+%format v23
+
+%format at				= "@"
+%format at1
+%format at2
+%format at3
 
 %% acronyms
 %format MLF				= "\textsf{ML}^{\textsf{F}}"
