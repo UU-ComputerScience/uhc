@@ -52,6 +52,10 @@
                10pt]{scrbook}
 %%]
 
+%%[77
+%%@main.articleDocumentClass
+%%]
+
 %%[13
 %\documentclass[a4paper,headexclude,footexclude,mpexclude,10pt,DIV15,BCOR0mm]{scrartcl}
 \documentclass[10pt,headexclude,footexclude]{article}
@@ -61,88 +65,30 @@
 \documentclass[ignorenonframetext]{beamer}
 %%]
 
-%%[12
-%if newDocClassHeader
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Paper size
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%if acm && popl06 && (storyExplImpl || storyRuler)
-%\documentclass[blockstyle]{sigplanconf}
-\documentclass{sigplanconf}
-%elif storyPHD
-\documentclass[%
-               headinclude,% new for typearea
-               footexclude,% new for typearea
-               openright,
-               twoside,
-               nopictures,
-               10pt]{scrbook}
-%else
-\documentclass{article}
+%%[1
+%if storyPHD
+\setlength{\paperwidth}{170mm}
+\setlength{\paperheight}{240mm}
 %endif
+%%]
 
-%else %% newDocClassHeader
+%%[2
+\typearea[1.2cm]{15}% was BCOR: [0.5]{12}
+%%]
 
-\documentclass[%
-%if yesBeamer
-%if asSlides
-               ignorenonframetext,
-%else %% asSlides
-%if asArticle
-%if llncs
-               class=llncs,
-%elif acm
-%if icfp05 || hw05 || popl06
-%if asDraft
-               class=sigplanconf,onecolumn,11pt,preprint,
-%else %% asDraft
-               class=sigplanconf,preprint,blockstyle,
-%endif %% asDraft
-%else %% icfp05
-               class=sigplan-proc,preprint,
-%endif %% icfp05
-%else %% acm
-               class=article,
-%endif %% llncs
-%else %% asArticle
-               class=book,
-%endif %% asArticle
-%endif %% asSlides
-%endif %% yesBeamer
-%if not (asSlides || acm)
-               a4paper,
-%if veryWide
-               11pt,
-%else
-               10pt,
-%endif %% veryWide
-               headinclude,% new for typearea
-               footexclude,% new for typearea
-               nopictures%
-%elif acm
-%if asDraft
-               onecolumn,11pt,blockstyle,preprint
-%else
-%endif %% asDraft
-               blockstyle
-%endif
-]
-%if yesBeamer
-               {beamer}
-%else
-%if acm
-%if useSigplanconfSty
-               {sigplanconf}%{article}
-%else
-               {sigplan-proc}%{article}
-%endif %% useSigplanconfSty
-%elif asArticle
-               {beamer}%{article}
-%else
-               {beamer}%{book}
-%endif
-%endif
+%%[7
+\typearea[1.2cm]{15}% was BCOR: [0.5]{12}
+%%]
+\setlength{\paperwidth}{170mm}
+\setlength{\paperheight}{240mm}
 
-%endif %% newDocClassHeader
-
+%%[13
+\setlength{\paperwidth}{210mm}
+\setlength{\paperheight}{297mm}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -368,17 +314,9 @@
 %%]
 
 %%[13
-\usepackage{tikz}
 \setlength\parindent{0pt}
 \pagestyle{empty}
 %%]
-\usepackage[showboxes,absolute]{textpos}
-
-\setlength\parindent{0pt}
-\pagestyle{empty}
-
-\textblockorigin{0mm}{0cm}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Beamer
@@ -407,13 +345,25 @@
 \usepackage[headheight=12pt,footheight=12pt]{beamerthemeboxes}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% PGF
+%%% PGF, TikZ
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
 \usepackage{pgf}
 \usepackage{pgfarrows}
 \usepackage{pgfnodes}
+%%]
+
+%%[5
+\usepackage{tikz}
+%%]
+
+%%[13
+\usepackage{tikz}
+%%]
+
+%%[77
+\usepackage{tikz}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -427,15 +377,6 @@
 \pgfputat{\pgfxy(0,0)}{\pgfbox[left,base]{\pgfuseimage{wwwlogo}}}%
 \end{pgfpicture}
 }
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Type rules
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1
-% moved to mainsty.sty
-%\usepackage{infrule}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -559,6 +500,10 @@
 \SetSectionsForBook
 %%]
 
+%%[77
+\SetSectionsForArticle
+%%]
+
 %%[11
 \SetSectionsForArticle
 %%]
@@ -573,9 +518,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2
-\setlength{\paperwidth}{170mm}
-\setlength{\paperheight}{240mm}
-\typearea[1.2cm]{15}% was BCOR: [0.5]{12}
 \setlength{\marginparsep}{.025\textwidth}
 %if targetForPaper
 \setlength{\marginparwidth}{.07\textwidth}
@@ -587,20 +529,6 @@
 \renewcommand{\floatpagefraction}{0.85}
 \renewcommand{\textfraction}{0.1}
 %%]
-
-%%[7
-\setlength{\paperwidth}{170mm}
-\setlength{\paperheight}{240mm}
-\typearea[1.2cm]{15}% was BCOR: [0.5]{12}
-%%]
-
-%%[13
-\setlength{\paperwidth}{210mm}
-\setlength{\paperheight}{297mm}
-%%]
-\usepackage[a4paper,headexclude,footexclude]{typearea}
-
-\typearea[0mm]{1}
 
 %%[1
 %if not (asSlides || llncs || acm)
@@ -615,6 +543,8 @@
 %elif fullWide
 \usepackage[left=0cm,right=0cm,top=0cm,bottom=0cm,nohead,nofoot]{geometry}
 %endif %% wide
+%elif llncs %% not (...)
+%\usepackage{geometry}
 %endif %% not (...)
 
 %if llncs || acm
@@ -855,6 +785,9 @@ WWW home page:
 %elif storyEhcBook
 \newcommand{\thispaper}{this book}
 \newcommand{\thischapt}{this chapter}
+%elif truu
+\newcommand{\thispaper}{this report}
+\newcommand{\thischapt}{this report}
 %else
 \newcommand{\thispaper}{this paper}
 \newcommand{\thischapt}{this paper}
@@ -920,35 +853,16 @@ WWW home page:
 
 %%[5
 %if truu
+\TRtitlepage
+{Exploiting Type Annotations}
+{Atze Dijkstra \\ S. Doaitse Swierstra}
+{UU-CS-2006-051}
 %endif
 \maketitle
 %%]
 
 %%[7
  %%@FrontMatter.titlePHD
-%%]
-
-%%[12
-%if storyAfpTRUU1
-\TRtitlepage
-{Typing Haskell with an Attribute Grammar (Part I)}
-{Atze Dijkstra \\ Doaitse Swierstra}
-{UU-CS-2004-037}
-%elif storyExplImpl && truu
-\TRtitlepage
-{Making Implicit Parameters Explicit}
-{Atze Dijkstra \\ S. Doaitse Swierstra}
-{UU-CS-2005-032}
-\maketitle
-%elif storyRuler && truu
-\TRtitlepage
-{Ruler: Programming Type Rules}
-{Atze Dijkstra \\ S. Doaitse Swierstra}
-{UU-CS-2005-033}
-\maketitle
-%else
-\maketitle
-%endif
 %%]
 
 %%[19
@@ -1222,13 +1136,21 @@ The tutorial can safely be skipped if the reader is already familiar with the AG
 
 %%[5
 \section{Introduction}
+\label{sec-impred-intro}
 
 %%@TopicImpred.introPaper
 
 \section{Solution by transformation}
 \label{sec-solution-sketch}
 
-%%@TopicImpred.solutionSketch
+%%@TopicImpred.solutionByTransformation
+
+\section{Global quantifier propagation overview}
+\label{sec-impred-glob-quant-prop-overview}
+
+%%@TopicImpred.quantpropByASTPicture
+
+%if longStory || trStory
 
 \section{Hindley-Milner type inference}
 \label{sec-impred-hm}
@@ -1262,6 +1184,10 @@ The tutorial can safely be skipped if the reader is already familiar with the AG
 %%@TopicImpred.globProp.computeActualQu
 
 %%@TopicImpred.globProp.impredInfer
+
+%elif shortStory
+
+%endif %% longStory || trStory
 
 \section{Discussion and related work}
 \label{sec-impred-related-work}
@@ -1983,6 +1909,10 @@ To be done ...
 
 %%]
 
+%%[77
+%%@TopicImpred.quantpropByASTPicture
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Shuffle doc
@@ -2053,7 +1983,12 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %else
 \bibliographystyle{plain}
 %endif
-{\sloppy\raggedright\small
+{\sloppy\raggedright
+%if False %% storyImpred && llncs
+\footnotesize
+%else
+\small
+%endif
 \setlength{\parskip}{-.2ex}
 \def\newblock{\hskip -.2em}
 \bibliography{\jobname}

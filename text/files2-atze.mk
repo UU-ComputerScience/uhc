@@ -77,10 +77,28 @@ text-variant-hw06-impred:
 	  TEXT_SHUFFLE_VARIANT=5 \
 	  text-variant-dflt-bib
 
+text-variant-esop07-impred:
+	$(MAKE) TEXT_INF2PS_MARK_CHANGES_CFG= TEXT_RULER_MARK_CHANGES_CFG= TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=esop07 --set=llncs --set=kscode --set=shortStory --set=infer2pass --set=storyImpred --set=asArticle" \
+	  TEXT_SHUFFLE_VARIANT=5 \
+	  text-variant-dflt-bib
+
+text-variant-esop07-impred-tr:
+	$(MAKE) TEXT_INF2PS_MARK_CHANGES_CFG= TEXT_RULER_MARK_CHANGES_CFG= TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=esop07 --set=truu --set=kscode --set=trStory --set=infer2pass --set=storyImpred --set=asArticle --set=wide" \
+	  TEXT_SHUFFLE_VARIANT=5 \
+	  text-variant-dflt-bib
+
 text-variant-scratch:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyPHD --unset=asArticle --set=useHyperref --set=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=7 \
+	  text-variant-dflt-once
+
+text-variant-scratch2:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=asArticle --set=useHyperref --set=refToPDF" \
+	  TEXT_SHUFFLE_VARIANT=77 \
 	  text-variant-dflt-once
 
 text-variant-shuffle-doc:

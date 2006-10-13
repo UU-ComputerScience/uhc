@@ -1,23 +1,40 @@
-%%[0
-%include lhs2TeX.fmt
-%include afp.fmt
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Is main body 'main'?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.mainExists
+%%[8.mainUseExists
 SEM AGItf
-  | AGItf       loc         .   mainExists  =   case @expr.letCBody of
+  | AGItf       loc         .   mainUseExists
+                                            =   case @expr.letCBody of
                                                   CExpr_Var n | n == hsnMain -> True
                                                   _                          -> False
-                            .   insertMain  =   not @mainExists
+                            .   insertMainUse
+                                            =   not @mainUseExists
 %%]
 
 %%[12
 SEM AGItf
-  | AGItf       loc         .   insertMain  :=  not @mainExists && @lhs.isTopMod
+  | AGItf       loc         .   insertMainUse
+                                            :=  not @mainUseExists && @lhs.isTopMod
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Does a binding for main exist?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8.mainDefExists
+SEM AGItf
+  | AGItf       loc         .   mainDefExists
+                                            =   let ds = [ n | (_,g) <- @expr.letCBindL, (CBind_Bind n _) <- g, n == hsnMain ]
+                                                in  not (null ds)
+                            .   insertMainDef
+                                            =   not @mainDefExists
+%%]
+
+%%[12
+SEM AGItf
+  | AGItf       loc         .   insertMainDef
+                                            :=  not @mainDefExists && @lhs.isTopMod
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -28,12 +45,11 @@ SEM AGItf
 ATTR AGItf [ | | cmodule: CModule ]
 
 SEM AGItf
-  | AGItf       lhs         .   cmodule     =   CModule_Mod @lhs.moduleNm
-                                                    (foldr (\(c,b) e -> mkCExprLet c b e)
-                                                        (if @insertMain then mkCExprLet CBindPlain [CBind_Bind hsnMain @expr.letCBody] (CExpr_Var hsnMain)
-                                                                        else @expr.letCBody)
-                                                        @expr.letCBindL)
-                                                    [ (tn,Map.toList m) | (tn,dgi) <- gamToAssocL @expr.gathDataGam, let m = Map.map dtiCTag $ dgiDataTagMp dgi ]
+  | AGItf       lhs         .   cmodule     =   let b = if @insertMainUse then CExpr_Var hsnMain else @expr.letCBody
+                                                    d = if @insertMainDef then mkCExprLet CBindPlain [CBind_Bind hsnMain @expr.letCBody] else id
+                                                in  CModule_Mod @lhs.moduleNm
+                                                        (foldr (\(c,b) e -> mkCExprLet c b e) (d b) @expr.letCBindL)
+                                                        [ (tn,Map.toList m) | (tn,dgi) <- gamToAssocL @expr.gathDataGam, let m = Map.map dtiCTag $ dgiDataTagMp dgi ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

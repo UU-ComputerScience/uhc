@@ -1,5 +1,5 @@
 %%[abstract
-The Haskell type system has been designed in such a way that all allowed types can be inferred completely automatically;
+The Haskell type system has been designed in such a way that all allowed types can be inferred automatically;
 any explicit type specification only serves as a means of documentation and safeguarding.
 Consequently, a programmer is free to omit any type signature, and the program will still type check.
 The price to be paid for this convenience is limited expressiveness of the type system:
@@ -11,7 +11,7 @@ has received much attention in recent years.
 Because type inference for such types in general is not possible,
 much work has been done to investigate which limitations on higher ranked types still allow type inference.
 In this paper we explore an alternative, algorithmic, approach to this problem, which does not limit expressiveness:
-we propagate explicitly specified type information to program locations
+we propagate explicitly specified type information to all program locations
 where this information provides starting information for a standard Hindley-Milner type inference algorithm.
 %%]
 
@@ -29,9 +29,9 @@ Common to examples like this is the abstraction achieved by using
 a function that constructs one parametric polymorphic function
 from another; higher ranked types are essential for such functions.
 
-Standard Hindley-Milner type inferencing can be easily extended to cope
-with such higher ranked types, provided they are all given explicitly,
-but unfortunately type inference for higher ranked types is impossible \cite{wells98undec-type-sysf}.
+Unfortunately type inference for higher ranked types is impossible \cite{wells98undec-type-sysf},
+but standard Hindley-Milner type inferencing can be easily extended to cope
+with such higher ranked types, provided they are all given explicitly.
 Type inference for rank-2 types is possible \cite{kfoury94direct,kfoury99rank2-decid},
 but has not found its way into practical systems,
 most likely because of its complexity and unclear interaction with other language features.
@@ -39,47 +39,63 @@ most likely because of its complexity and unclear interaction with other languag
 So, we are stuck with the obligation to specify higher ranked types ourselves.
 From a pragmatic and general perspective this is not a bad thing.
 As programs become more complex we want more expressive types in order to specify this complexity,
-but we cannot expect an implementation for a type system to infer arbitrary complex types for us.
+and we cannot expect an implementation for a type system to infer arbitrarily complex types for us.
 The best we can hope for is that a language exploits any information that is provided by the programmer to the utmost.
 These observations are summarized by the following design starting points underlying \thispaper:
 
 \begin{Itemize}
 \item
-A programmer can specify all types which are allowed by the type system.
+A programmer can use type annotations to embed all system F typeable programs in our type system.
 \item
-The language exploits type annotations as well as possible.
+If a programmer is required to provide type annotations,
+the language minimizes the amount of such required type annotations by exploiting the provided type annotations as well
+as possible.
 \end{Itemize}
 
 Type annotations have already been put to work locally (in terms of program text)
 \cite{odersky97putting-ann,vytiniotis06boxy-impred};
 in \thispaper\ we exploit type annotations globally.
+
+We note that other strategies for minimizing the amount of required  type annotations exist. For example, in the context of
+the EH project \cite{dijkstra04ehc-web,dijkstra05phd} partial type signatures are allowed as well.
+We do not explore this in \thispaper, neither do we explore other closely related topics such as impredicativity.
+However, EH's type system, of which the type rules in
+%if trStory
+\secRef{sec-impred-glob-quant-prop}
+%else
+the accompanying technical report \cite{dijkstra06exploit-tyann-tr}
+%endif
+are an extract,
+do support these features.
  
 \Paragraph{The problem and our approach}
-Our motivation comes from the following example:
+Our motivation comes from the following example, denoted using the Haskell like example language used in the
+remainder of \thispaper:
 
 \begin{Example}{eh4B-ex-basic-intro}
 %%[[wrap=code
-%%@[file:test/4/impred-demo1.eh%%]
+%%@[file:src/infer2pass/test/4/impred-demo1.i2p%%]
 %%]
 \end{Example}
 
 In Haskell98, this program fragment does not type check.
-We need to specify a type signature for |f|, just as for |g|, to make Haskell accept the program fragment.
+We need to specify a type signature for |f|, just as we did for |g|, to make Haskell accept the program fragment.
 On the other hand, in its scope in |f|, the parameter |h| is used polymorphically twice,
-and passed to |g| where it is required to
+and also passed to |g| where it is required to
 be a polymorphic function.
 Our approach is to use |h| polymorphically for the two applications to an |Int| and a |Char|,
 because passing |h| to |g| tells us that |h| has to be of type |forall ^ a . a -> a|.
 
 The reason why this is not accepted in Haskell is that the language
 is designed to use Hindley-Milner (HM) type inference,
-with the folllowing consequences:
+in particular algorithm W,
+with the following consequences:
 \begin{Itemize}
 \item
 Types for function parameters are restricted to be monomorphic types, that is, without quantifiers inside.
 \item
-The standard HM type inference algorithm \cite{milner78type-poly} is order sensitive,
-so if we would wave the above restriction,
+The standard HM type inference algorithm W \cite{milner78type-poly} is order sensitive,
+so if we would waive the above restriction,
 then the order in which type inference takes place forces type inference to make
 decisions about polymorphism too early.
 For example, if the application of |g| to |h| would be encountered first,
@@ -92,7 +108,7 @@ With this in mind,
 we therefore exploit type signatures in the following ways:
 
 \begin{Itemize}
-\item
+\item \textbf{Required type.}
 Specified type signatures are used as the known, or required,
 type of the expression for which the type signature is specified.
 For example, the body of |g| is type checked under the constraint that |g|'s type must be |(forall ^ a . a->a) -> Int|.
@@ -100,32 +116,35 @@ Our approach here resembles local type inference combined with subsumption
 (e.g. \cite{vytiniotis06boxy-impred,pierce00local-type-inference,odersky01col-loc-infer}).
 We call this \IxAsDef{local quantifier propagation} because the constraint enforced by the type signature propagates locally,
 from outside an expression to its components inside.
-\item
+\item \textbf{Argument occurrence.}
 The application of a function with a known type (as specified by a type signature) constrains the type of its argument.
-However, as the example demonstrates, this constraint also influences other occurrences of (parts of) the argument, and also their arguments.
+\item  \textbf{Transitivity}
+As the example demonstrates, a constraint resulting from an argument occurrence
+also influences other occurrences of (parts of) the argument, and also their arguments.
 We call this \IxAsDef{global quantifier propagation} because the effect is not locally restricted to the argument expression.
 \end{Itemize}
 
-The main problem tackled by \thispaper\ therefore is how
-to propagate type signatures globally.
-Our approach uses a variant of HM type inference
-to construct a description of all possible types for type variables.
+The main problem tackled in \thispaper\ therefore is how
+to propagate type signatures globally while still using algorithm W.
+We stick to algorithm W because it has proven itself over the years.
+Our approach uses a two variants of algorithm W, applied in two stages.
+The first stage constructs a description of all encountered instantiations for type variables.
 If a quantified type is present in these type alternatives,
-we extract and propagate this for further use by a second stage of another HM variant.
+we extract and propagate this for further use by the second stage.
 
-% In passing we note that 
 
 \Paragraph{Our contribution}
 
 \begin{Itemize}
 \item
 We show how to exploit type signatures by focussing on a two-stage algorithm for 
-type inference, one to extract type signature information related to quantified type fragments,
-and a second one to do normal HM type inference.
-Because we use two stages with different HM variants, we avoid the complexity of a one-phase type inference
+type inference: one to extract type signature information related to quantified type fragments,
+and a second one which does normal HM type inference in the presence of type specifications.
+Because we use two stages with different HM variants,
+in particular algorithm W, we avoid the complexity of a one-phase type inference
 in which types have a more complex structure.
 The inherent complexity of the problem of course does not disappear,
-but we isolate it in a separate stage of type inference.
+but we isolate it in a separate stage.
 \item
 A related consequence is that we do not limit the expressiveness of type signatures
 in order to enable some sophisticated
@@ -146,7 +165,7 @@ of the Essential Haskell project
 \cite{dijkstra05phd,dijkstra04ehc-web}.
 \item
 Both the type rules and their implementation
-for the expression language used in \thispaper\ are generated from common sourcecode by means
+for the expression language used in \thispaper\ are generated from common source code by means
 of the Ruler system \cite{dijkstra06ruler},
 thereby providing the consistency guarantee that what the type rules specify is what you get in the implementation.
 \end{Itemize}
@@ -160,9 +179,15 @@ once a type changes due to further program adaptation.
 \Paragraph{Outline of this paper}
 In the remainder of \thispaper\ we first discuss our solution by examples (\secRef{sec-solution-sketch}),
 where each example is accompanied with a transformed variant which includes the type annotation our solution computes.
-We then provide standard HM type inference machinery (\secRef{sec-impred-hm}) upon which our algorithm is build
+We then demonstrate again by example both how algorithm W fails and our algorithm succeeds (\secRef{sec-impred-glob-quant-prop-overview})%
+%if trStory
+, followed by standard HM algorithm W type inference machinery (\secRef{sec-impred-hm}) upon which our algorithm is build
 (\secRef{sec-impred-glob-quant-prop}).
 The required notation is introduced at the beginning of these sections.
+%else
+. The explanation in terms of algorithmically formulated type rules can be found in the accompanying technical report
+\cite{dijkstra06exploit-tyann-tr}.
+%endif
 We conclude with discussion and related work (\secRef{sec-impred-related-work}).
 %%]
 
@@ -173,13 +198,16 @@ When referring to Hindley-Milner (HM) in \thispaper\ we distinguish between:
 \item
 HM type system, with rank-1 types, polytypes in environments, expressions are of a monotype.
 \item
-HM type inference, the classical inference algorithm \cite{milner78type-poly}.
+HM type inference, the classical inference, also known as algorithm W \cite{milner78type-poly,damas82principal-type}.
+Other algorithms exist, but we do not explore these in the context of \thispaper.
 \item
 HM local type system + inference, with higher ranked types, HM type inference in which type checking and type inference are combined
-\cite{vytiniotis06boxy-impred,pierce00local-type-inference,odersky01col-loc-infer}
-by employing a type system which encodes checking/inference mode in its types.
+\cite{vytiniotis06boxy-impred}
+by employing a type system which encodes checking/inference mode in its types (see also \cite{odersky01col-loc-infer}).
 \item
-HM strong local type inference, HM local type inference without checking/inference mode encoded in types \cite{dijkstra05phd}.
+HM strong local type inference, HM local type inference without checking/inference mode encoded in types \cite{pierce00local-type-inference,dijkstra05phd}.
+\item
+HM quantifier propagation type inference, to be discussed in \thispaper.
 \end{Itemize}
 
 We describe HM type inference in this section as the starting point for the following sections,
@@ -256,18 +284,21 @@ The conclusion of each rule matches the scheme of the figure.
 Each rule is labeled with a name which by convention is suffixed with the version of the rule.
 In \thispaper\ we have a Hindley-Milner version, denoted by \textRL{HM},
 and a quantifier propagation version, 
-denoted by\footnote{By convention \textRL{I2} |===| 2nd version of impredicativity inference.}
+denoted by\footnote{By convention \textRL{I2} |===| 2nd version of impredicativity inference (impredicativity not discussed here).}
 \textRL{I2}.
-We have omitted rules related to |Char| as these are similar to those for |Int|.
+Whenever rules overlap the most specialised version takes precedence;
+by convention such a rule comes first in the normal top-to-bottom left-to-right reading order of a figure with rules.
+We have omitted rules related to |Char| as these are similar to those for |Int|;
+however, we still use |Char| in our examples.
 
-By convention type rules have the form |c :- x : r ~> r'|.
+By convention typing judgements have the form |c :- x : r ~> r'|.
 Contextual information |c| appears at the left of the turnstyle |:-|,
 the construct |x| about which we want to express some fact |r| at the right, followed by |~>| and additional conclusions |r'|.
 In case of multiple contexts or results a semicolon `;' separates these.
 
 In type rules a type variable |tvarv| is called \IxAsDef{fresh} when it does not occur as a free type variable in contextual information |c|,
 and when relevant, in the construct |x|: |tvarv `notElem` ftv ^ (c,x)|.
-In algorithmic terms this means that we assumee that an infinite supply of unique values is threaded through the rules, from
+In algorithmic terms this means that we assume that an infinite supply of unique values is threaded through the rules, from
 which the freshness condition takes as many as necessary.
 The function |inst| instantiates a quantified type by removing the quantifiers and replacing the quantified type variables with fresh ones.
 
@@ -436,7 +467,7 @@ The previous version of EH uses two mechanisms for the propagation of type infor
 
 \begin{Itemize}
 \item
-Expected types are passed top-to-bottom through the AST, whereas result (or inferred) types travel bottom-to-top.
+Expected, or required types are passed top-to-bottom through the AST, whereas result (or inferred) types travel bottom-to-top.
 \item
 Unknown types are encoded by type variables.
 Additional type information about these type variables is encoded in sets of
@@ -484,7 +515,7 @@ Types are quantified either because a programmer has specified a type signature 
 or because the type inferencer has decided that a monomorphic type may be universally
 quantified over its (non-global) type variables.
 These quantified types may now enter the type inferencing process when extracted from an environment |Gamma| or
-when passed top-to-bottom through the AST as the expected type of an expression.
+when passed top-to-bottom through the AST as the required type of an expression.
 
 This has the following consequences:
 
@@ -974,7 +1005,7 @@ and we allow quantified types to participate in the type inference process.
 %%]
 
 %%[globProp.introForPaper
-In our approach types get known to expressions through the following routes:
+In our approach types for expressions become known through the following routes:
 \begin{Itemize}
 \item
 A type signature was explicitly specified for the name to which the expression in a type annotated let expression is bound.
@@ -988,7 +1019,7 @@ The expression is an application, the argument part of the function type is the 
 The expression is an abstraction, the known type of the argument is the argument type of the known type for the abstraction.
 \end{Itemize}
 
-With the known types of these expression we adhere to the following strategy:
+With the known types of these expressions we adhere to the following strategy:
 \begin{Itemize}
 \item
 Types participate in type inference without instantiation.
@@ -1080,7 +1111,7 @@ An identifier having a type which comes from another touched identifier.
 \end{Itemize}
 
 So, in our example, |h| is touched by type ``|forall ^ a . a -> a|''.
-If the application `|g h|' would be removed, no touching would take place and the applications `|h 3|' and `|h 'x'|' would
+If the application `|g h|' were removed, no touching would take place and the applications `|h 3|' and `|h 'x'|' would
 result in an error:
 we propagate polymorphic type information, we do not invent it.
 
@@ -1424,16 +1455,27 @@ parameterising them with four boolean options
 |fioBindToTyAlts|,
 |fioFit|,
 |fioMeet|, and
-|fioJoin| (\figRef{eh4B-impred-fit-options}).
-The options being true or false is denoted by a superscript |+| or |-|
+|fioJoin| (\figRef{eh4B-impred-fit-options}),
+grouped together and passed throughout the rules as a record of booleans.
+An option being true or false is denoted by a superscript |+| or |-|
 like |fioBindToTyAltsY| or |fioMeetN|.
+Occurrence of such a boolean value in type rule means that either a reference or update is made to the boolean.
+
+Of the options |fioFit|, |fioMeet|, and |fioJoin| exactly one must be true,
+as these specialise the generalised matching relation |<=>| into the three different variants of type matching.
+A rule for type matching is may be valid for all variants; in that case such a rule superscripts the turnstyle |:-| with |<=>|
+and has |<=>| between the two matching types.
+Alternatively, a rule may be valid for a subset of |{fioFit, fioMeet, fioJoin}|, the subset, usually just a singleton, is
+then used instead of |<=>|.
+For example, the rules in \figRef{rules4.I2.match.forallForPaper} are valid only for |fioFit|, that is, when |fioFitY|.
+
 Now we can define the subsumption relation |<=| by passing the option |fioFitY|
 to the generalised matching relation |<=>|, in \figRef{infer2pass.I2.fit}.
 The other three options will be used later.
 If a matching rule is used for all its variants, |<=>| is used in the concluding judgement.
 If a matching rule is only used for a particular variant, then the particular variant is used in the conclusion,
 for example the rules in \figRef{rules4.I2.match.forallForPaper} are only valid for |<=|.
-The additional notational complexity pays off because we use matching for different purposed.
+The additional notational complexity pays off because we use matching for different purposes.
 
 %if False
 The actual binding takes place as part of subsumption |<=|.
@@ -1468,7 +1510,7 @@ This is accomplished by instantiating |a| with a fresh type variable |tvarv| whi
 
 On the other hand, |sigma1| can only be subsumed by |forall ^ a . sigma2| if |sigma1| can be generalized to |forall ^ a . sigma2|.
 (\ruleRef{m.forall.R}).
-To accomplish this, |forall ^ a . sigma2| is instantiated with fresh type constants, usually called skolemized type variables.
+To accomplish this, |forall ^ a . sigma2| is instantiated with fresh type constants.
 Fresh type constants |f| differ from type variables in that they cannot be constrained and bound to another type.
 In this way we simulate that corresponding type variables in |sigma1| must match with all possible types.
 
@@ -1513,7 +1555,7 @@ New bindings for type alternatives are combined, for example in \ruleRef{m.alt} 
 %if not infer2pass
 %%@SharedFIOpts.fiOptsCombisEH4forEH4B
 %endif
-%%@SharedFIOpts.fiOptsCombisEH4B
+%%@SharedFIOpts.fiOptsCombisEH4B2
 \end{TabularCenterFigure}
 
 %if infer2pass
@@ -1708,12 +1750,12 @@ Our implementation finds the following information for |h|
 %format O = tneedO
 
 %%[[wrap=code
-h :: v_23_0
-v_23_0 :->  v_23_0
-              [ forall ^ a .  a                      -> a       :: S/R
-              ,               (v_38_0[Int :: S/O])   -> v_35_0  :: S/R
-              ,               (v_47_0[Char :: S/O])  -> v_44_0  :: S/R
-              ]
+h :: v1    
+v1  :->  v1    
+           [ forall ^ a .  (a                  -> a   )   :: S/R
+           ,               ((v2[Int :: S/O])   -> v3  )   :: S/R
+           ,               ((v4[Char :: S/O])  -> v5  )   :: S/R
+           ]
 %%]
 
 Function |h| is used in three different contexts, of which one requires |h| to be polymorphic,
@@ -1722,9 +1764,9 @@ Because the type of |h| must be the most general type we eliminate type alternat
 \RuleRef{ty.ae.alts} then extracts type alternative subsets:
 
 %%[[wrap=code
-Vec(sigmaQu)     ===  [ forall ^ a .  a                      -> a      ]
-Vec(sigmaNQu)    ===  [               (v_38_0[Int :: S/O])   -> v_35_0
-                      ,               (v_47_0[Char :: S/O])  -> v_44_0
+Vec(sigmaQu)     ===  [ forall ^ a .  (a                  -> a   )  ]
+Vec(sigmaNQu)    ===  [               ((v2[Int :: S/O])   -> v3  ) 
+                      ,               ((v4[Char :: S/O])  -> v5  ) 
                       ]
 Vec(sigmaHard)   ===  []
 %%]
@@ -1732,7 +1774,7 @@ Vec(sigmaHard)   ===  []
 The solution |forall ^ a . a -> a| does not contain nested type alternatives, so we end with the constraint:
 
 %%[[wrap=code
-v_23_0 :-> forall ^ a . a -> a
+v1     :-> forall ^ a . a -> a
 %%]
 
 In the remainder of the type inference process we can now use |h| polymorphically.
@@ -1915,6 +1957,7 @@ Type variables act as placeholders for (future) type information.
 Hence we must take care to avoid inconsistencies between constraints.
 Inconsistencies arise as the result of double instantiation (during each inference stage),
 and instantiated type variables are not constrained to be equal when the semantics require this.
+Another example is the option |fioBindLBeforeRN|, not discussed earlier, to make type matching prefer binding type variables from the left type.
 \item
 We assume that all known type information is available during the first inference stage,
 so we can include this information into type alternatives.
@@ -1926,6 +1969,7 @@ used in the first stage,
 to remain consistent with results from the second stage.
 %endif
 \end{Itemize}
+Future work will address these hairy details further.
 
 \RuleRef{e.lam} first extracts possibly polymorphic information from the known type |sigmak|,
 which may contain type alternatives (introduced as part of \ruleRef{e.app}).
@@ -1993,7 +2037,7 @@ We show typical examples taken from the EH project \cite{dijkstra05phd,dijkstra0
 
 Existential types are the dual of universally quantified types in the type lattice induced by subsumption |<=|.
 Only a few additional rules where meet and join are swapped are required to support the following example.
-We do not discuss this further but only show it because the use of meet and join is general enough to also infer
+We show this because the use of meet and join is general enough to also infer
 |f :: (Int,Int -> Int) -> Int| in:
 
 %%[[wrap=code
@@ -2030,6 +2074,33 @@ f :: (  forall ^ a . forall ^ b . (a,b)  -> (a,b)) -> Int
 %%]
 
 %%[relatedWork
+\Paragraph{Formalization}
+The approach taken in \thispaper\ is to tackle the problem of the use of type annotations in the context of type inference
+by doing type inference twice, once to extract type annotations, and a second time to do normal type inference.
+As we have taken an algorithmic approach, we obviously have not formalized this in the sense of providing a characterizing
+type system for which properties like completeness can be proven.
+Because we do not place restrictions on type annotations, and the programmer can achieve full system F expressiveness by
+type annotating all values, we feel that proving properties relative to system F is not the real issue.
+Instead the formalization problem shifts to making precise the following:
+\begin{Itemize}
+\item \textbf{Predictability.}
+Under what condition is a type annotation required,
+and when can our algorithm infer this by propagating type annotations from other locations of a program?
+Currently we use the informal notion of ``touched by'' (see \secRef{sec-impred-intro}) to characterize this.
+\item \textbf{Minimal type annotation.}
+Said slightly differently, what is the minimal type annotation required for a program using higher-ranked types?
+Is this unique, does some notion of principality exist, in the sense that there is exactly one place where a type annotation should
+be added in case the second type inference phase fails?
+\item \textbf{Characterizing type system.}
+Is it nevertheless possible to construct a characterizing type system,
+like boxy types \cite{vytiniotis06boxy-impred} (see also discussion below),
+that captures these issues?
+\item \textbf{Error reporting.}
+Both phases can produce errors, some of which overlap. For example, two given type annotations for a value cannot be unified,
+in which phase is this reported?
+\end{Itemize}
+These topics require further study.
+
 \Paragraph{Literature}
 Higher-ranked types have received a fair amount of attention.
 Type inference for higher-ranked types in general is undecidable \cite{wells98undec-type-sysf};
@@ -2078,9 +2149,9 @@ a much wanted feature when one is obliged to specify a full signature when only 
 Their design decision to hardcode into the type system when impredicativity is allowed,
 avoids non-determinism of the type inference algorithm, but also requires additional `smart' type rules for application to circumvent
 non-reversable switching between boxy and non-boxy types.
-|MLF| \cite{botlan03ml-power-f} solves this by representing the non-deterministic choice for impredicativity in their type language,
+|MLF| \cite{botlan03ml-power-f} solves this by representing the non-deterministic choice for impredicativity in the type language,
 but another solution is to let the programmer specify this choice explicity \cite{dijkstra05phd},
-enabled by the approach described in \thispaper.
+which is the approach described in \thispaper.
 
 \Paragraph{Quantifier propagation}
 Our approach relies on explicitly provided type annotations,
@@ -2098,9 +2169,9 @@ Their and our approach share the two-pass nature in which the first pass infers 
 
 %With respect of the correctnees of our approach we notice the following:
 We make no claims about the correctness of our algorithm;
-we present it as an experiment.
+we present it as an experiment in the extension of `classic' HM type inference to accomodate new language constructs and a richer type language.
 However, having said this,
-on the positive side we notice that quantifier propagation only propagates that which is already available in the first place,
+on the positive side we notice that quantifier propagation only propagates information which is already available in the first place,
 thus being true to our conservative ``don't invent polymorphism'' design starting point.
 Furthermore, quantifier propagation preprocesses a type derivation by filling in known types and then
 lets HM type inference do its job.
@@ -2743,7 +2814,8 @@ for example for |fioLeaveRInst| with |fioLeaveRInstY| and |fioLeaveRInstN| respe
 %%@SharedFIOpts.fiOptsCombisTableHeader
 %%@SharedFIOpts.fiOptsCombisDefault
 %%@SharedFIOpts.fiOptsCombisEH4forEH4B
-%%@SharedFIOpts.fiOptsCombisEH4B
+%%@SharedFIOpts.fiOptsCombisEH4B1
+%%@SharedFIOpts.fiOptsCombisEH4B2
 \end{TabularCenterFigure}
 \FigRef{eh-impred-fit-option-combis} shows combinations |fiopt| of options to |fit|.
 
@@ -3012,20 +3084,28 @@ Expression, \figRef{infer2pass.I2.expr.base}
 
 %%]
 
-%%[solutionSketch
+%%[solutionByTransformation
 Before we proceed with the technical discussion of our approach,
 we informally describe our solution by means of a series of examples.
 Each example consists of a small program fragment together with
 additional type annotations for some of the identifiers that lack an explicit type annotation.
 The additional type annotations correspond to the
-type annotations that are inferred by \IxAsDef{global quantifier propagation}
-(\secRef{sec-impred-glob-quant-prop}).
+type annotations that are inferred by \IxAsDef{global quantifier propagation}%
+%if trStory
+ (see \secRef{sec-impred-glob-quant-prop}).
+%else
+.
+%endif
 
 The examples are described in terms of an expression language
-(\figRef{eh4-lang-terms}, \secRef{sec-impred-hm} and \secRef{sec-impred-glob-quant-prop}),
+%if trStory
+(see \figRef{eh4-lang-terms}, \secRef{sec-impred-hm} and \secRef{sec-impred-glob-quant-prop}),
+%else
+(see the accompanying technical report for a precise definition),
+%endif
 a subset of Haskell focussed on type annotations and higher-ranked types.
 We will use this expression language later when discussing the technical part of our approach.
-In order to express the intents of our solution,
+In order to express the intentions of our solution,
 we use the following additional type constructors in type expressions:
 \begin{Itemize}
 \item
@@ -3036,20 +3116,21 @@ Type alternatives:
 |t1 =&&= t2| and |t1 =||||= t2| denote a type alternative.
 In the examples from this section |=&&=| is used at rank-2 positions;
 the resulting types then correspond to rank-2 intersection types
-\cite{bakel93phd-intersection,damiani03rank2-localdefs}:
+\cite{bakel93phd-intersection}:
 |t1 =&&= t2| has both type |t1| and |t2|.
 We postpone the discussion of |t1 =||||= t2| until required.
 \end{Itemize}
 
 The notation ``|...|'' in a type which makes that part explicit that is \emph{not}
-to be inferred by \IxAsDef{global quantifier propagation}
-(\secRef{sec-impred-glob-quant-prop}).
+to be inferred by \IxAsDef{global quantifier propagation}.
 
 The intent of \IxAsDef{global quantifier propagation} is to infer type annotations for identifiers which are introduced
 without a type annotation.
+%if False
 As this is also the job of Hindley-Milner (HM) type inference,
 the job of \IxAsDef{global quantifier propagation} is to infer those parts of such type annotations which cannot be
 inferred by HM type inference, that is, universally quantified type fragments.
+%endif
 For example, the following program fragment lacks a type annotation for |f|:
 
 \begin{Example}{i2p-ex-how2}
@@ -3064,7 +3145,7 @@ However, |h| is used inside the body of |f|, as an argument to |g|,
 so we may conclude that the type expected by |g| is also a good choice for the type of |h|.
 Our transformed variant expresses this choice as a partial type annotation for |f|,
 which only specifies the type fragment corresponding to |h|.
-The remaining parts denoted by ``|...|'' are then inferred later by the conventional HM type inference:
+The remaining parts denoted by ``|...|'' are to be inferred in the second stage:
 
 %%[[wrap=code
 %%@[file:src/infer2pass/test/4/impred-how2-trf.i2p%%]
@@ -3127,10 +3208,10 @@ The type annotation is transformed correspondingly:
 %%@[file:src/infer2pass/test/4/impred-how3-trf2.i2p%%]
 %%]
 
-These two transformation steps correspond to the two main steps of our algorithm (\secRef{sec-impred-glob-quant-prop}):
+These two transformation steps correspond to the two main steps of our algorithm:
 gathering type alternatives, followed by extracting quantified type fragments from these type alternatives.
 
-In our approach it is essential that a quantified type fragment appears in a type alternative:
+In our approach it is essential that a quantified type fragment appears in at least one of a type's alternatives:
 we extract this information, we do not invent it.
 The following example illustrates this necessity.
 Function |h| additionally is passed a value of type |Char| instead of only a value of type |Int|:
@@ -3143,7 +3224,7 @@ Function |h| additionally is passed a value of type |Char| instead of only a val
 
 If the call |g h| had not occurred in \exRef{i2p-ex-how3}
 there would not have been a problem since in that case |h| would be monomorphic.
-This is not the case in \exRef{i2p-ex-how4},
+This is not anymore the case in \exRef{i2p-ex-how4},
 because |h| is used polymorphically.
 Its corresponding transformation is the following, leading to the same type annotation as for \exRef{i2p-ex-how3}:
 
@@ -3160,8 +3241,8 @@ In the following, somewhat contrived example, |h| accepts an identity function.
 %%]
 \end{Example}
 
-However, |g1| assumes this identity function to have polymorphic type |forall ^ a . a -> a|,
-whereas |g2| expects it to have monomorphic type |Int -> Int|.
+However, |g1| gets passed |h| as |f| and assumes it can pass a polymorphic identity function |forall ^ a . a -> a| to |f|.
+On the other hand, |g2| assumes that it can pass a monomorphic |Int -> Int| to its |f|.
 This is expressed by the following transformation,
 in which the quantified type fragment appears at a contravariant position:
 
@@ -3186,8 +3267,9 @@ the dual of an intersection type, which is defined by the rewrite rule for type 
 |(a1 -> r1) =&&= (a2 -> r2)| & = & |(a1 =||||= a2) -> (r1 =&&= r2)| \\
 |forall ^ a . t1 =||||= t2| & = & |t2|
 \end{eqnarray*}
-We only use |=||||=| in this section to describe the purpose and meaning of our approach.
-By applying this rewrite rule we arrive at:
+We only use |=||||=| in this section to describe our approach,
+the actual type rules tackle this situation differently.
+By applying this rewrite rule we first arrive at:
 
 %%[[wrap=code
 %%@[file:src/infer2pass/test/4/impred-demo4-trf2.i2p%%]
@@ -3213,7 +3295,7 @@ For example, the following fragment specifies polymorphism in two independent pa
 %%]
 \end{Example}
 
-This leads to two alternatives, both of which are not a generalisation of the other:
+This leads to two alternatives, neither of which is a generalisation of the other:
 
 %%[[wrap=code
 %%@[file:src/infer2pass/test/4/impred-demo2-trf.i2p%%]
@@ -3227,11 +3309,399 @@ However, type |forall ^ a . forall ^ b . (b,a) -> (b,a)| can be instantiated to 
 %%]
 
 Such a merge of two types cannot be described by the informal rewrite rules presented in this section,
-but can be handled by the system described in \secRef{sec-impred-glob-quant-prop}.
+but can be handled by the system described in
+%if trStory
+\secRef{sec-impred-glob-quant-prop}.
+%else
+the accompanying technical report.
+%endif
 
 %%]
 
-%%[XX
+%%[quantpropByASTPicture
+% Quantifier Propagation by example/picture
+%{
+%format :->			= "{\relax :\relax}"
+%format ->			= "{\relax\rightarrow\relax}"
+%format Cnstr		= "C"
+% format ICnstr		= "\mathbb{S}"
+%format C			= "\mathcal{C}"
+%format I			= "\mathcal{I}"
+
+% bunch of configurable sizes
+\def\qpSizes{%
+  \def\qpsxx{1.2cm}
+  \def\qpsx{2cm}
+  \def\qpsX{2.4cm}
+  \def\qpsXX{3cm}
+  \def\qpsXXX{4.5cm}
+}
+
+% font in picture
+\def\qpFnt{\footnotesize}
+% vertical positioning
+\def\qpVert#1{{\setlength\tabcolsep{0pt}\begin{tabular}[t]{l}#1\end{tabular}}}
+% named node
+\def\qpASNdC(#1)#2{node (#1) [fill=black!25,rounded corners] {#2}}
+% node
+\def\qpASNd#1{node [fill=black!25,rounded corners] {#1}}
+% upward/synthesized attr's
+\def\qpUpAt[#1]#2#3{%
+                  node[anchor=north west,inner sep=1pt,draw,name=#1] {{\qpFnt #3}}
+  (#1.north west) node[anchor=south west,inner sep=0pt]                 {{\qpFnt #2}}
+}
+% downward/inherited attr's
+\def\qpDwAt[#1]#2#3{%
+                  node[anchor=north east,inner sep=1pt,draw,name=#1] {{\qpFnt #3}}
+  (#1.north west) node[anchor=south west,inner sep=0pt]                 {{\qpFnt #2}}
+}
+
+% arrow for syn
+\def\qpUpArr(#1){%
+  \draw[->] (#1) ++(right:0.2em) -- ++(up:1.8ex) ;
+}
+% arrow for inh
+\def\qpDwArr(#1){%
+  \draw[<-] (#1) ++(left:0.2em) -- ++(up:1.8ex) ;
+}
+
+% attr's for phase A
+\def\qpUpAtsA(#1)#2;#3;{%
+  \draw (#1.east) ++(1ex,0.4em)
+          \qpUpAt [#1-up-ty]    {|tau|} {#2}
+        (#1-up-ty.north east)
+          \qpUpAt [#1-up-cnstr] {|Cnstr|} {#3}
+        ;
+}
+\def\qpDwAtsA(#1)#2;#3;{%
+  \draw (#1.west) ++(-1ex,0.4em)
+          \qpDwAt [#1-dw-cnstr]  {|Cnstr|} {#3}
+        (#1-dw-cnstr.north west)
+          \qpDwAt [#1-dw-valgam] {|Gamma|} {#2}
+        ;
+}
+
+\def\qpUpFlowA(#1)#2;#3;{%
+  \qpUpArr(#1.east)
+  \qpUpAtsA(#1)#2;#3;
+}
+\def\qpDwFlowA(#1)#2;#3;{%
+  \qpDwArr(#1.west)
+  \qpDwAtsA(#1)#2;#3;
+}
+
+% attr's for QP first phase
+\def\qpUpAtsB(#1)#2;#3;{%
+  \draw (#1.east) ++(1ex,0.4em)
+          \qpUpAt [#1-up-ity]    {|isigma|} {#2}
+        (#1-up-ity.north east)
+          \qpUpAt [#1-up-icnstr] {|ICnstr|} {#3}
+        ;
+}
+\def\qpDwAtsB(#1)#2;#3;#4;{%
+  \draw (#1.west) ++(-1ex,0.4em)
+%          \qpDwAt [#1-dw-ity]    {|sigmak|} {#2}
+%        (#1-dw-ity.north west)
+          \qpDwAt [#1-dw-icnstr] {|ICnstr|} {#4}
+        (#1-dw-icnstr.north west)
+          \qpDwAt [#1-dw-valgam] {|Gamma|} {#3}
+        ;
+}
+
+\def\qpUpFlowB(#1)#2;#3;{%
+  \qpUpArr(#1.east)
+  \qpUpAtsB(#1)#2;#3;
+}
+\def\qpDwFlowB(#1)#2;#3;#4;{%
+  \qpDwArr(#1.west)
+  \qpDwAtsB(#1)#2;#3;#4;
+}
+
+% attr's for QP second phase
+\def\qpUpAtsC(#1)#2;#3;{%
+  \draw (#1.east) ++(1ex,0.4em)
+          \qpUpAt [#1-up-ty]    {|sigma|} {#2}
+        (#1-up-ty.north east)
+          \qpUpAt [#1-up-cnstr] {|Cnstr|} {#3}
+        ;
+}
+\def\qpDwAtsC(#1)#2;#3;#4;{%
+  \draw (#1.west) ++(-1ex,0.4em)
+%          \qpDwAt [#1-dw-ty]    {|sigmak|} {#2}
+%        (#1-dw-ity.north west)
+          \qpDwAt [#1-dw-cnstr] {|Cnstr|} {#4}
+        (#1-dw-cnstr.north west)
+          \qpDwAt [#1-dw-valgam] {|Gamma|} {#3}
+        ;
+}
+
+\def\qpUpFlowC(#1)#2;#3;{%
+  \qpUpArr(#1.east)
+  \qpUpAtsC(#1)#2;#3;
+}
+\def\qpDwFlowC(#1)#2;#3;#4;{%
+  \qpDwArr(#1.west)
+  \qpDwAtsC(#1)#2;#3;#4;
+}
+
+% parts of the AST for the example
+\def\qpASTreeTailA{%
+          \qpASNd {|let|}
+          child[sibling distance=\qpsxx] {\qpASNd {|y|}}
+          child[sibling distance=\qpsxx] {
+           \qpASNdC (app-g) {|at3|}
+            child {\qpASNdC (g) {|g|}}
+            child {\qpASNd {|h|}}
+          }
+          child[sibling distance=\qpsxx] {\qpASNd {|x1|}}
+}
+
+\def\qpASTreeTailB{%
+          \qpASNd {|let|}
+          child[sibling distance=\qpsxx] {\qpASNd {|y|}}
+          child[level distance=\qpsx] {
+           \qpASNdC (app-g) {|at3|}
+            child {\qpASNdC (g) {|g|}}
+            child {\qpASNd {|h|}}
+          }
+          child {\qpASNd {|x1|}}
+}
+
+\def\qpASTreeTailC{%
+          \qpASNd {|...|}
+}
+
+% the AST for the example
+\def\qpASTree#1{%
+\path
+%  \qpASNd {|let f = |}
+%  child {\qpASNd {|->|}
+%    child[sibling distance=\qpsxx] {\qpASNd {|h|}}
+%    child[sibling distance=\qpsXXX] {
+      \qpASNd {|let|}
+      child[sibling distance=\qpsxx] {\qpASNd {|x1|}}
+      child[level distance=\qpsx] {
+        \qpASNdC (app-h1) {|at1|}
+        child {\qpASNdC (h1) {|h|}}
+        child {\qpASNdC (h1-int) {|3|}}
+      }
+      child[sibling distance=\qpsXXX] {
+        \qpASNd {|let|}
+        child[sibling distance=\qpsxx] {\qpASNd {|x2|}}
+        child[level distance=\qpsx] {
+          \qpASNdC (app-h2) {|at2|}
+          child {\qpASNdC (h2) {|h|}}
+          child {\qpASNdC (h2-char) {|'x'|}}
+        }
+        child[sibling distance=\qpsXXX] {
+          #1
+        }
+      }
+%    }
+%  }
+  ;
+}
+
+% attr defs for HM style inference
+\def\qpASAttrA{%
+  \qpDwFlowA (app-h1)  \qpVert{|[g:->sigmag|\\|,h:->v3|\\|,x1:->v4]|};[..];
+  \qpUpFlowA (app-h1)  |v5|;\qpVert{|[v3:->I->v5|\\,..]};
+  \qpUpFlowA (h1)      |v3|;[..];
+  \qpUpFlowA (h1-int)  |I|;[..];
+  \qpUpFlowA (h2)      |I->v5|;[..];
+  \qpUpFlowA (h2-char) |C|;[..];
+  \qpUpFlowA (app-h2)  |??|;[..];
+}
+
+% attr defs for Quant Prop style inference, first phase
+\def\qpASAttrB{%
+  \qpDwFlowB (app-h1)  |v5|;\qpVert{|[g:->sigmag|\\|,h:->v3|\\|,x1:->v4]|};[..];
+  \qpUpFlowB (app-h1)  |v5|;\qpVert{|[v3:->[I->v5]|\\,..]};
+  \qpUpFlowB (h1)      |v3|;[..];
+  \qpUpFlowB (h1-int)  |I|;[..];
+  \qpUpFlowB (h2)      |v3|;[..];
+  \qpUpFlowB (h2-char) |C|;[..];
+%  \qpDwFlowB (app-h2)  |v8|;\qpVert{|[x2:->v7|\\,..]};[..];
+  \qpUpFlowB (app-h2)  |v8|;\qpVert{|[v3:->|\qpVert{|[C->v8|\\|=&&= I->v5]|}\\,..]};
+  \qpUpFlowB (app-g)   |v10|;\qpVert{|[v3:->|\qpVert{|[sigmaa|\\|=&&= C->v8|\\|=&&= I->v5]|}\\,..]};
+}
+
+% attr defs for Quant Prop style inference, second phase
+\def\qpASAttrC{%
+  \qpDwFlowC (app-h1)  |v5|;\qpVert{|[g:->sigmag|\\|,h:->v3|\\|,x1:->v4]|};|[v3:->sigmaa]|;
+  \qpUpFlowC (h1)      |v22->v22|;[..];
+  \qpUpFlowC (h1-int)  |I|;[..];
+  \qpUpFlowC (app-h1)  |I|;\qpVert{|[v22:->I|\\,..]};
+  \qpUpFlowC (h2)      |v23->v23|;[..];
+  \qpUpFlowC (h2-char) |C|;[..];
+  \qpUpFlowC (app-h2)  |C|;\qpVert{|[v23:->C|\\,..]};
+}
+
+% config for
+% \def\qpTikZStyles{%
+%   \tikzstyle{level 1}=[level distance=1cm,sibling distance=\qpsX]
+%   \tikzstyle{level 2}=[level distance=1cm,sibling distance=\qpsX]
+%   \tikzstyle{level 3}=[level distance=1.25cm,sibling distance=\qpsX]
+%   \tikzstyle{level 4}=[sibling distance=\qpsX]
+%   \tikzstyle{level 5}=[sibling distance=\qpsX]
+% }
+
+\def\qpTikZStyles{%
+  \tikzstyle{level 1}=[level distance=1.25cm,sibling distance=\qpsX]
+  \tikzstyle{level 2}=[sibling distance=\qpsX]
+  \tikzstyle{level 3}=[sibling distance=\qpsX]
+  \tikzstyle{level 4}=[sibling distance=\qpsX]
+}
+
+%if shortStory
+The accompanying technical report \cite{dijkstra06exploit-tyann-tr} of \thispaper\
+describes our algorithm in terms of algorithmic type rules.
+In \thispaper\ we restrict ourselves to conveying the underlying idea of quantifier propagation using \exRef{eh4B-ex-basic-intro}.
+%else
+We demonstrate our approach using \exRef{eh4B-ex-basic-intro}.
+%endif
+First we show how the standard algorithm W fails (\figRef{qp-ex-flow-algW}),
+then we show how our two phase approach fixes this (\figRef{qp-ex-qp1}, \figRef{qp-ex-qp2}).
+
+\Paragraph{Algorithm W}
+
+We assume the reader is familiar with algorithm W, in particular the use of type variables |v1, v2, ...|
+for representing yet unknown types |tau|,
+constraints (or substitutions) |Cnstr === Vec(tvarv :-> tau)| for representing more precise type information about
+type variables as a result of unification,
+and an environment |Gamma === Vec(i :-> sigma)| holding bindings for program variables.
+The calligraphic |I| and |C| denote |Int| and |Char| type respectively.
+The type of |g| is abbreviated by |sigmag === sigmaa -> I| where |sigmaa === forall a . a -> a|.
+
+The abstract syntax tree (\figRef{qp-ex-flow-algW}) for the body of |f| from \exRef{eh4B-ex-basic-intro} is decorated with
+values for attributes representing the type |tau| of an expression, the environment |Gamma| in which such an expression has
+type |tau|, and under which constraints |Cnstr| this holds.
+Constraints |Cnstr| are threaded through the abstract syntax tree; that is, known constraints are provided as context,
+extended with new constraints and returned as a result.
+Both the form of the abstract syntax tree and its attribute decoration correspond to their judgement form in
+algorithmically formulated type rules.
+We also assume this is obvious to the reader, and refer to the technical report for
+type rules.
+
+\FigRef{qp-ex-flow-algW} highlights the problematic issues addressed in \thispaper,
+but omits the parts which are irrelevant for an understanding of the problem and the design of our solution for it,
+either indicated by dots or absence of tree decoration.
+The painful part for algorithm W occurs
+after having dealt with the application |h 3| at tree node |at1|,
+at |h 'x'| at tree node |at2|.
+At tree node |at1| we find that the type variable |v3| bound to |h| stands for type |I -> v5|.
+However, as a consequence of this premature choice for a monomorphic type, inherent to algorithm W,
+we have a conflict with the application of |h| to |'x'| in |at2| where we require |h| to have a type of the form |C -> ..|.
+Furthermore, in tree node |at3|, |h| is even required to be polymorphic as argument to |g|;
+algorithm W cannot deal with such a situation, so we have omitted the corresponding attribution of the tree.
+
+% HM style
+\begin{PlainCenterFigure}{}{Flow of computation for HM Algorithm W}{qp-ex-flow-algW}
+\begin{tikzpicture}[scale=0.9]
+\qpSizes
+\qpTikZStyles
+\qpASTree{\qpASTreeTailA}
+\qpASAttrA
+\end{tikzpicture}
+\end{PlainCenterFigure}
+
+\Paragraph{Quantifier Propagation, phase 1}
+
+%if False
+Our approach exploits type annotations in the following ways, solving the above problem:
+\begin{Itemize}
+\item
+A known type for an expression, available from a programmer provided type annotation, is provided as context to
+the tree node (and its corresponding type rule judgement).
+This is a well known technique \cite{vytiniotis06boxy-impred,pierce00local-type-inference,odersky01col-loc-infer},
+so we have omitted this bit of information from \figRef{qp-ex-qp1} and do not discuss this further.
+\item
+We allow impredicativity, that is, quantified types may be bound to type variables.
+Quantified type thus can be propagated via type variables.
+Because this behavior is not always desirable we provide syntax to influence this,
+however, this falls outside the scope of this paper, so we will not discuss this either.
+\item
+We split the type inference in two parts of which the first, quantifier propagation,
+phase gathers type annotations and ensures that the
+type annotations with a universal quantifier end up in the right places.
+The second phase then performs algorithm W extended with the above.
+In \thispaper\ we focus on this two phase type inference.
+\end{Itemize}
+%endif
+
+\FigRef{qp-ex-qp1} shows the first phase of the two phase type inference.
+The key idea is to delay the choice for a particular type,
+and gather the alternatives for such a choice instead.
+These choices are grouped together with the type variable for which these alternatives were found in the form of
+a \IxAsDef{type alternative}, denoted by |[sigma1 =&&= sigma2 =&&= ...]| where |sigma| is a possibly quantified type.
+Type alternatives for a type variable are gathered in a constraint |ICnstr|.
+An expression may have a type alternative as its type |isigma|.
+
+Both |ICnstr| and |isigma| are denoted in a different font to emphasize the possible presence of type alternatives,
+and to make clear that these represent constraints and types used for the first phase only.
+The tree decoration for |ICnstr| and |isigma| in \figRef{qp-ex-qp1} shows that at the application |at1| of |h| to |3| the
+first alternative is found: |v3| may be |I -> v5|.
+Similarly, the second alternative |C -> v8| is found at |at2|,
+and finally at |at3| the polymorphic type |sigmaa === forall ^ a . a -> a| is found from |g :-> sigmaa -> I| which lives in |Gamma|.
+
+Gathering type alternatives for a type variable is complete when the type variable can no longer be referred to.
+This is similar to the generalization step in algorithm W's let bound polymorphism: a type variable may be generalized
+if not occurring free in its context.
+For gathered type alternatives we do the same, also for the same reason: no additional constraints for a type variable
+can be found when the type variable can not be referred to
+any further.
+In our example, for |v3|, this is the case at the let binding for |f|, because no references to |h| and thus its type variable |v3|
+can occur.
+For |v3| we compute the binding |v3 :-> sigmaa|, which is propagated to the next phase.
+
+% QP first phase
+\begin{PlainCenterFigure}{ht}{Flow of computation for Quantifier Propagation, phase 1}{qp-ex-qp1}
+\begin{tikzpicture}
+\qpSizes
+\qpTikZStyles
+\qpASTree{\qpASTreeTailB}
+\qpASAttrB
+\draw (h1.west ||- g.south) node[anchor=south west,draw,dashed]
+      {\qpVert{Legenda:\\|sigmag === sigmaa -> I|\\|sigmaa === forall ^ a . a -> a|}} ;
+\end{tikzpicture}
+\end{PlainCenterFigure}
+
+\Paragraph{Quantifier Propagation, phase 2}
+
+Phase two of our type inference is rather similar to normal HM type inference.
+The resulting bindings for type variables of phase one are simply used in phase two.
+No type alternatives occur in this phase.
+For example, in \figRef{qp-ex-qp2}, inside application |at1| as well as |at2|,
+|h| is bound to type |sigmaa === forall ^ a . a -> a|,
+via type variable |v3|.
+In both applications the type is instantiated with fresh type variables, and type inference proceeds normally.
+
+% QP second phase
+\begin{PlainCenterFigure}{ht}{Flow of computation for Quantifier Propagation, phase 2}{qp-ex-qp2}
+\begin{tikzpicture}
+\qpSizes
+\qpTikZStyles
+\qpASTree{\qpASTreeTailC}
+\qpASAttrC
+\end{tikzpicture}
+\end{PlainCenterFigure}
+
+Although the key idea demonstrated by the given example is fairly simple (if one type inference is not enough do it twice)
+the algorithmic type rules in the accompanying technical report also have to deal with additional complexities:
+\begin{Itemize}
+\item
+In the above example we have ignored co- and contravariance.
+\item
+Type variables act as references to types for which we find more precise type information in two separate phases.
+The actual substition usually immediately performed as part of algorithm W thus has to be delayed.
+\item
+The type rules become more complex as a result of a joint presentation of the two phases.
+It would be best to view the two phases as two different aspects which interact only at places where program identifiers are introduced,
+and split up the type rules accordingly.
+\end{Itemize}
+
+%}
+
 %%]
 
 %%[XX

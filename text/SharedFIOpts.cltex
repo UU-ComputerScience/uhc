@@ -72,11 +72,14 @@ Combination & options (relative to default) & context \\
  \\
 %%]
 
-%%[fiOptsCombisEH4B
+%%[fiOptsCombisEH4B1
 |impredFIOpts|
  &  |fioBindToTyAltsY|
  & impredicative inference
  \\
+%%]
+
+%%[fiOptsCombisEH4B2
 |meetFIOpts|
  &  |fioMeetY|
  & meet
