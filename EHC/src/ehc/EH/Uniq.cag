@@ -212,6 +212,7 @@ SEM TyVar
   | Var             (lhs.gUniq,loc.lUniq, loc.annUniq, loc.annUniq2)
                                                                     :=   mkNewLevUID3   @lhs.gUniq
 SEM Decl
+  | Val             (patExpr.gUniq,loc.lUniq,loc.constrUniq)        :=   mkNewLevUID2   @lhs.gUniq
   | Data            (tyVars.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.annUniq,loc.constrUniq1,loc.constrUniq2)
                                                                     :=   mkNewLevUID6   @lhs.gUniq
 

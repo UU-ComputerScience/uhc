@@ -40,6 +40,7 @@ instance Show BelownessLattice where
 latticeToBelowness :: BelownessLattice -> Belowness
 latticeToBelowness b
   = case b of
+      BLBottom   -> Below
       BLBelow    -> Below
       BLNotBelow -> NotBelow
       _          -> UnknownBelow

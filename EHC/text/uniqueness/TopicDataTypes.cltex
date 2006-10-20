@@ -55,8 +55,8 @@ pattern match on |Cons (x :: (Annot(Sub(tau)(1))(3)) (xs :: (Annot(Sub(tau)(2))(
 of |x| and |xs| can potentially result in a use of the spine of the value towards the location where
 |x| or |xs| is stored, so we generate the constraints: |(Delta(3)) (Sub(=>=)(s)) (Delta(0))| and |(Delta(4)) (Sub(=>=)(s)) (Delta(0))|.
 For the strict parts in the pattern, in this case the |Cons| constructor alone (with |(Delta(0))| being the corresponding
-annotation), we generate a constraint |delta (Sub(=>=)(s)) (Delta(0))|, where |delta| is the number of uses of the expression containing the
-pattern match.
+annotation), we generate a constraint |delta (Sub(=>=)(s)) (Delta(0))|, where |delta| is the number of uses of the value of the expression
+containing the pattern match.
 
 Case expressions are a generalisation of the |if..then..else| expressions of Chapter~\ref{chapt.Parallel}. We are not going to
 explain this subject again here: the generalisation is straightforward after we know how to deal with pattern matches.

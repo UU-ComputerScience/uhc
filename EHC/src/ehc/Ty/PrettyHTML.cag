@@ -40,13 +40,14 @@ SEM Ty
   | Any    lhs.ppHTML = pp "??"
   | Var    lhs.ppHTML = ppVarHTML (Map.findWithDefault (if @categ.isFixed then "c_" ++ show @tv else "v_" ++ show @tv) @tv @lhs.tvarMap) (@lhs.annPPF @lhs.ann)
   | Quant  lhs.ppHTML = ppQuantHTML (Map.findWithDefault (if @qu.isForall then "v_" ++ show @tv else "c_" ++ show @tv) @tv @lhs.tvarMap) @qu.isForall @ty.ppHTML
-  | App    lhs.ppHTML = if @func.isOnArrSpine
-                        then if @func.isArrCon
-                             then @arg.ppHTML
-                             else ppArrowHTML (@lhs.annPPF @func.arrAnn) @func.ppHTML @arg.ppHTML
-                        else if @lhs.noParens
-                             then @loc.ppHTML
-                             else ppSymbolHTML "(" >|< @loc.ppHTML >|< ppSymbolHTML ")"
+  | App    loc.whatToPP = if @func.isOnArrSpine
+                          then if @func.isArrCon
+                               then @arg.ppHTML
+                               else ppArrowHTML (@lhs.annPPF @func.arrAnn) @func.ppHTML @arg.ppHTML
+                          else @loc.ppHTML
+           lhs.ppHTML = if @lhs.noParens
+                        then @loc.whatToPP
+                        else ppSymbolHTML "(" >|< @loc.whatToPP >|< ppSymbolHTML ")"
            loc.ppHTML = @func.ppHTML >#< @arg.ppHTML
   | Ext    lhs.ppHTML = if @lhs.isExtRoot
                         then ppExtHTML @loc.extPPL
@@ -82,6 +83,13 @@ SEM Ty
           arg.noParens = @func.isOnArrSpine
   | Ext   loc.noParens = True
   | Quant ty.noParens  = True
+
+ATTR AllTyTy [ isRHSOfApp : Bool ||]
+SEM TyAGItf
+  | AGItf  loc.isRHSOfApp = True
+SEM Ty
+  | App  func.isRHSOfApp = False
+         arg.isRHSOfApp  = True
 
 ATTR AllTyTy [|| isOnArrSpine USE {&&} {False} : Bool ]
 SEM TyAGItf

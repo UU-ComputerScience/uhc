@@ -25,7 +25,7 @@
 %%[7 hs import(EH.Util.PPUtils(ppCommas))
 %%]
 
-%%[7_2 hs import({%{EH}Ty.AnnCommon},{%{EH}Ty.InfuseAnn},{%{EH}Ty.TyConPat},{%{EH}Ty.AnnInferKind}, {%{EH}Ty.InferExposedAnns}, {%{EH}Ty.InfuseExp}, {%{EH}Annotations.Constraints}, {%{EH}Ty.AnnSubst}, {%{EH}Ty.Expand}, {%{EH}EH.ConstrInferTy}, {%{EH}Annotations.ConstraintSolver}, {%{EH}Annotations.BelownessSolver}, {%{EH}Annotations.VarianceSolver}, {%{EH}Annotations.UniquenessSolver}, {%{EH}Ty.InfuseDataTruncs}, {%{EH}Base.HtmlCommon}, {%{EH}Ty.PrettyHTML})
+%%[7_2 hs import({%{EH}Ty.AnnCommon},{%{EH}Ty.InfuseAnn},{%{EH}Ty.TyConPat},{%{EH}Ty.AnnInferKind}, {%{EH}Ty.InferExposedAnns}, {%{EH}Ty.InfuseExp}, {%{EH}Annotations.Constraints}, {%{EH}Ty.AnnSubst}, {%{EH}Ty.Expand}, {%{EH}EH.ConstrInferTy}, {%{EH}Annotations.ConstraintSolver}, {%{EH}Annotations.BelownessSolver}, {%{EH}Annotations.VarianceSolver}, {%{EH}Annotations.UniquenessSolver}, {%{EH}Ty.InfuseDataTruncs}, {%{EH}Base.HtmlCommon}, {%{EH}Ty.PrettyHTML}, Debug.Trace(trace))
 %%]
 
 %%[7_2 hs import(qualified Data.Set as Set,Data.Set(Set),qualified Data.Map as Map,Data.Map(Map))

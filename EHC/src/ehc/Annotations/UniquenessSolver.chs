@@ -48,11 +48,9 @@ Transfer functions.
 %%[7_2
 
 matchRefCount :: FlowSem UniquenessSem -> UniquenessLattice -> UniquenessLattice -> (UniquenessLattice, UniquenessLattice)
-matchRefCount SoftFlow a b  -- if 1 < a then 1 <= b else a <= b
+matchRefCount _ a b  -- if 1 < a then 1 <= b else a <= b
   | a > Unique  = (a, joinRefLat b Unique)
   | otherwise   = (a, joinRefLat a b)
-matchRefCount HardFlow a b
-  = (a, joinRefLat a b)
 
 compRefCount :: AnnComp UniquenessLattice -> UniquenessLattice -> (AnnComp UniquenessLattice, UniquenessLattice)
 compRefCount tree a
@@ -77,13 +75,13 @@ matchUnqProp SoftFlow a b
 matchUnqProp HardFlow a b
   = case (a, b) of
       z@(x, y) | x >= y -> z
-      _ -> let z = max a b in (z, z)
+      _ -> let z = max a b in (z, b)
 
 compUnqProp :: AnnComp UniquenessLattice -> UniquenessLattice -> (AnnComp UniquenessLattice, UniquenessLattice)
 compUnqProp tree a
   = let as = collect tree
         a' = foldr max a as
-     in (distribute (repeat a') tree, a')
+     in (distribute (repeat a') tree, a)
 
 %%]
 

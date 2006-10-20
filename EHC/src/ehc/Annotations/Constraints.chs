@@ -56,6 +56,7 @@ data FlowSem s = HardFlow | SoftFlow | UserFlow !s deriving (Eq, Ord)
 data AnnConstr sem context
   = Match    !UID !(FlowSem sem) !(Annotation Ty) !(Annotation Ty) !context
   | MatchTy  !UID !(FlowSem sem) !Ty !Ty !context
+  | MatchTyAnn !UID !(FlowSem sem) !Ty !(Annotation Ty) !context
   | Comp     !UID !(AnnComp (Annotation Ty)) !(Annotation Ty) !context
   | CompTy   !UID !(AnnComp Ty) !Ty !context
   | Inst     !UID !BndgId !InstProjections !context
@@ -86,6 +87,8 @@ instance Ord sem => Ord (AnnConstr sem context) where
     = compare semA semB `sequenceComp` compare annA1 annB1 `sequenceComp` compare annA2 annB2
   compare (MatchTy _ semA tyA1 tyA2 _) (MatchTy _ semB tyB1 tyB2 _)
     = compare semA semB `sequenceComp` compare tyA1 tyB1 `sequenceComp` compare tyA2 tyB2
+  compare (MatchTyAnn _ semA tyA1 a2 _) (MatchTyAnn _ semB tyB1 b2 _)
+    = compare semA semB `sequenceComp` compare tyA1 tyB1 `sequenceComp` compare a2 b2
   compare (Comp _ compA annA _) (Comp _ compB annB _)
     = compare compA compB `sequenceComp` compare annA annB
   compare (CompTy _ compA tyA _) (CompTy _ compB tyB _)
@@ -93,8 +96,11 @@ instance Ord sem => Ord (AnnConstr sem context) where
   compare (Inst uA _ _ _) (Inst uB _ _ _)
     = compare uA uB
   compare (Match _ _ _ _ _) _                  = GT
+  compare (MatchTy _ _ _ _ _) (MatchTyAnn _ _ _ _ _) = GT
   compare (MatchTy _ _ _ _ _) (Comp _ _ _ _)   = GT
   compare (MatchTy _ _ _ _ _) (CompTy _ _ _ _) = GT
+  compare (MatchTyAnn _ _ _ _ _) (Comp _ _ _ _) = GT
+  compare (MatchTyAnn _ _ _ _ _) (CompTy _ _ _ _) = GT
   compare (Comp _ _ _ _) (CompTy _ _ _ _)      = GT
   compare _ (Inst _ _ _ _)                     = GT
   compare _ _                                  = LT
@@ -106,6 +112,7 @@ sequenceComp c  _ = c
 getUID :: AnnConstr sem context -> UID
 getUID (Match uid _ _ _ _)   = uid
 getUID (MatchTy uid _ _ _ _) = uid
+getUID (MatchTyAnn uid _ _ _ _) = uid
 getUID (Comp uid _ _ _)      = uid
 getUID (CompTy uid _ _ _)    = uid
 getUID (Inst uid _ _ _)      = uid
@@ -156,6 +163,7 @@ instance HasAnnotations a => HasAnnotations [a] where
 instance HasAnnotations (AnnConstr sem context) where
   annotations (Match _ _ a b _)   = annotations a `Set.union` annotations b
   annotations (MatchTy _ _ a b _) = annotations a `Set.union` annotations b
+  annotations (MatchTyAnn _ _ a b _) = annotations a `Set.union` annotations b
   annotations (Comp _ tree a _)   = annotations a `Set.union` annotations tree
   annotations (CompTy _ tree a _) = annotations a `Set.union` annotations tree
   annotations (Inst _ _ proj _)   = annotations proj
@@ -764,6 +772,7 @@ instance Show sem => Flattenable (AnnConstr sem context) sem context where
     = let (tps, context)
             = case c of
                 MatchTy _ _ tyA tyB ctx -> ([tyA, tyB], ctx)
+                MatchTyAnn _ _ ty _ ctx -> ([ty], ctx)
                 CompTy _ tree ty ctx -> (ty : (seqToList (compTys tree)), ctx)
                 Inst _ _ projs ctx -> (concat (mapProjections (\tA tB -> [tA, tB]) (\_ _ -> []) projs), ctx)
           infos = FlattenInfo { flatVarianceFun  = inferVariance ops context tps
@@ -773,18 +782,25 @@ instance Show sem => Flattenable (AnnConstr sem context) sem context where
             MatchTy uid sem tyA tyB context
               -> let [atA, atB] = unifyToAnnTree (flatExpFun ops) [tyA, tyB]
                   in flattenMatch uid context sem infos atA atB
+            MatchTyAnn uid sem ty ann context
+              -> let anns = filter ((/= Below) . flatBelownessFun infos) (annotations_ ty)
+                     uids = mkInfNewLevUIDL uid
+                  in mkSeq (zipWith (\a u -> u #.. (ann =>=! a) sem ..# context) anns uids)
             CompTy uid tree ty context
               -> let trees = unifyToAnnTree (flatExpFun ops) (ty : collect tree)
                      tree' = distribute trees tree
                   in flattenComp uid context infos tree' (head trees) (tail trees)
             Inst uid bndgId projs context | bndgId `elem` bndgIds
-              -> let flatMatchTy tyFrom tyTo uid
+              -> let belowFilter
+                       = filterSeq (\(Match _ _ a1 a2 _) -> not (flatBelownessFun infos a1 == NotBelow && flatBelownessFun infos a2 == NotBelow) )
+                     flatMatchTy tyFrom tyTo uid
                        = let [atA, atB] = unifyToAnnTree (flatExpFun ops) [tyFrom, tyTo]
                              (uidL, uidR) = mkNewLevUID uid
-                          in flattenMatch uidL context hardFlowSem infos atA atB <+> flattenMatch uidR context hardFlowSem infos atB atA
+                             cs = flattenMatch uidL context hardFlowSem infos atA atB <+> flattenMatch uidR context hardFlowSem infos atB atA
+                          in belowFilter cs
                      matchAnn annA annB uid
                        = let (uidL, uidR) = mkNewLevUID uid
-                          in unitSeq (uidL #.. annA =>= annB ..# context) <+> unitSeq (uidR #.. annB =>= annA ..# context)
+                          in belowFilter $ unitSeq (uidL #.. annA =>= annB ..# context) <+> unitSeq (uidR #.. annB =>= annA ..# context)
                      uids = mkInfNewLevUIDL uid
                   in concatSeqs (zipWith ($) (mapProjections flatMatchTy matchAnn projs) uids)
             _ -> unitSeq c
@@ -814,7 +830,7 @@ flattenComp uid context infos compTree
   where
     flatComp uid annTree annTrees
       = case annTree of
-          AnnNode ann _ _ -- | flatBelownessFun infos ann >= NotBelow
+          AnnNode ann _ _ | flatBelownessFun infos ann >= NotBelow
             -> let (anns, subtrees) = unzip (map unAnnNode (annTree : annTrees))
                    annsT     = transpose anns
                    subtreesT = transpose subtrees
@@ -823,16 +839,18 @@ flattenComp uid context infos compTree
                    infUidB = mkInfNewLevUIDL uidB
                 in mkSeq (zipWith (\uid (a:as) -> uid #.. distribute as compTree <== a ..# context) infUidA annsT)
                    <+> concatSeqs (zipWith (\uid (s:ss) -> flatComp uid s ss) infUidB subtreesT)
-          NotUnifiable tA@(AnnNode annA _ _) -- | flatBelownessFun infos annA >= NotBelow
-            -> -- error (  "flattenComp::not unifiable::not below arrow::situation:: uncomment the code in this module to allow this situation to be dealt with:\n"
-               --      ++ show tA
-               --      )
+          NotUnifiable tA@(AnnNode annA _ _) | flatBelownessFun infos annA >= NotBelow
+            -> error (  "flattenComp::not unifiable::not below arrow::situation:: uncomment the code in this module to allow this situation to be dealt with:\n"
+                     ++ show tA
+                     )
+               {-
                let (uidA, uidB, uidC) = mkNewLevUID2 uid
                    infUidB = mkInfNewLevUIDL uidB
                    anns = map (\(NotUnifiable (AnnNode annB _ _)) -> annB) annTrees
                 in unitSeq (uidA #.. distribute anns compTree <== annA ..# context)
                    <+> flattenDefault uidC context hardFlowSem infos False annA tA
                    <+> concatSeqs (zipWith (\t u -> flattenDefault u context hardFlowSem infos False annA t) annTrees infUidB)
+               -}
           _ -> emptySeq
 
 flattenDefault :: UID -> context -> FlowSem sem -> FlattenInfo -> Bool -> Annotation Ty -> AnnTree -> Seq (AnnConstr sem context)

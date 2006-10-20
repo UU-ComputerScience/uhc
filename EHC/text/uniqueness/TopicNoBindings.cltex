@@ -70,7 +70,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
 
   However, there are optimisations that benefit from knowing that a value is used exactly once. A value that is used exactly once, can be
   safely pre-evaluated before passing it to a function. Or a function that is used exactly once, can be inlined safely, always resulting
-  into better performing code and a smaller code size. Furthermore, an expression that will not be used at all, can be omitted. These are
+  into better performing code and a smaller code size. Furthermore, an value that will not be used at all, can be omitted. These are
   realistic and beneficial optimisations, thus for our analysis, we support both types of usage properties.
 
   We define the \emph{cardinality} property of a type as follows:
@@ -79,8 +79,8 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   (Card(Usage)(Usage))
 %%]
 
-  The left component defines the usage of some individual name or expression. The second component defines the total usage of
-  some value represented by the name or expression. The usage |Usage| is defined as:
+  The left component defines the usage of some individual name or value. The second component defines the total usage of
+  some value. The usage |Usage| is defined as:
 
 %%[[wrap=code
   Usage  ::=  0        -- not used: zero
@@ -229,7 +229,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   (((\(x :: (Sup(Sub(Int)(a))(*))) -> x :: (Sup(Sub(Int)(b))(1))) :: (Sup(Sub(Int)(c))(*)) (Sup(Sub(->)(d))(*)) (Sup(Sub(Int)(e))(1))) (3 :: (Sup(Sub(Int)(f))(*)))) :: (Sup(Sub(Int)(g))(1))
 %%]
 
-  We verify again that these annotations are correct. The outermost expression is used at most once, so
+  We verify again that these annotations are correct. The value of the outermost expression is used at most once, so
   the upper bound is at least |1|. The annotation on |(Sup(Sub(Int)(g))(1))| is correct. The upper bound for
   the function itself is at least as high as the upper bound for the function application. The upper bound
   for the function is |*|, which is at least as high as the upper bound of |1| of the function application.
@@ -613,7 +613,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
 
   In this section, we introduce the annotations on a type constructor, their values and some orderings on this
   values. A type constructor contains
-  a tripple with a lower-bound usage-count annotation (which we call the lower bound),
+  a triple with a lower-bound usage-count annotation (which we call the lower bound),
   a cardinality annotation, and an upper-bound usage-count annotation (which we call the upper bound). We
   consider these annotations in more detail and define some orderings on it which will be used when
   checking constraints or inferring values later (see the summary at the end of this section).
@@ -654,7 +654,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
 
   This |leqB| predicate tests if the lower and upper bound are consistent with each other. For
   example, a lower bound of |1| is inconsistent an the upper bound of |0|. This predicate is
-  used to verify the consistency of a tripple. It is not used for weakening purposes.
+  used to verify the consistency of a triple. It is not used for weakening purposes.
 
   An cardinality annotation consists of two |Usage| values. The left |Usage| value defines the
   usage of the value via |E|, and the right |Usage| value defines the total usage of the
@@ -817,7 +817,7 @@ solving. In the remainder of the chapter, we treat these aspects in a more forma
   \begin{CodeFigure}{}{Consistency of triples}{code.FitsInBounds}
 
 %%[[wrap=code
-  trippleConsistent (a, (Card(b)(c)), d)
+  tripleConsistent (a, (Card(b)(c)), d)
     =   a  `leftFit`   b
     &&  b  `rightFit`  d
     &&  b  leqX        c

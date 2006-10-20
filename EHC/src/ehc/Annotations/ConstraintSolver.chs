@@ -100,7 +100,7 @@ mkSingleTySolver si solveSem
       = let scope      = siScope si
             exclude    = excludeAnns solveSem
             bndgs      = Map.insertWith Set.union uidNull (initialConstr solveSem) (siBndgs si)
-            (_, gs, _) = processConstraints (graphSolve optimize) (initialSubst solveSem) flatOps (siExposedAnns si) scope exclude bndgs Map.empty procConstrsUid
+            (_, gs, _) = processConstraints (graphSolve noOptimize) (initialSubst solveSem) flatOps (siExposedAnns si) scope exclude bndgs Map.empty procConstrsUid
          in gs
 
 

@@ -73,7 +73,7 @@
 %%[7 export(assocLElts,uidHNm)
 %%]
 
-%%[7 export(Seq,mkSeq,unitSeq,concatSeq,"(<+>)",seqToList,emptySeq,concatSeqs)
+%%[7 export(Seq,mkSeq,unitSeq,concatSeq,"(<+>)",seqToList,emptySeq,concatSeqs,filterSeq)
 %%]
 
 %%[7 export(mkNewLevUIDL,mkInfNewLevUIDL)
@@ -492,6 +492,9 @@ seqToList (Seq s) = s []
 
 instance Functor Seq where
   fmap f = mkSeq . map f . seqToList
+
+filterSeq :: (a -> Bool) -> Seq a -> Seq a
+filterSeq p = mkSeq . filter p . seqToList
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

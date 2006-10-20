@@ -40,9 +40,9 @@ SEM Expr
       lhs.ppInfos = [invisible @loc.ppInfoHtmlBlock]
       loc.ppInfoHtmlBlock = mkInfoHtmlBlock @loc.ppHtmlBlockUID_ @loc.ppHtmlInfo
       loc.ppHtmlInfo = @loc.ppTermHTML >#< ppSymbolHTML "::" >#< (   ppTyHTML (ppAnn show) @loc.tyAnnExp
-                                                                 >-< ppTyHTML (ppAnn (\ann -> show $ Map.findWithDefault (error "pretty::undefined") ann @lhs.uniquenessSubst)) @loc.tyAnnExp
-                                                                 >-< ppTyHTML (ppAnn (\ann -> show $ Map.findWithDefault (error "pretty::undefined") ann @loc.belownessInfo)) @loc.tyAnnExp
-                                                                 >-< ppTyHTML (ppAnn (\ann -> show $ Map.findWithDefault (error "pretty::undefined") ann @loc.varianceInfo)) @loc.tyAnnExp
+                                                                 >-< ppTyHTML (ppAnn (\ann -> Map.findWithDefault (show "?") ann (Map.map show @lhs.uniquenessSubst))) @loc.tyAnnExp
+                                                                 >-< ppTyHTML (ppAnn (\ann -> Map.findWithDefault (show "?") ann (Map.map show @loc.belownessInfo))) @loc.tyAnnExp
+                                                                 >-< ppTyHTML (ppAnn (\ann -> Map.findWithDefault (show "?") ann (Map.map show @loc.varianceInfo))) @loc.tyAnnExp
                                                                  )
   | App AppImpred
       lhs.ppHTML = @func.ppHTML >#< @arg.ppHTML
