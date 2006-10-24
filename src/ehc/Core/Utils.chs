@@ -7,10 +7,10 @@
 %%% Core utilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}Core.Utils} import(qualified Data.Map as Map,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam}) export(RCEEnv(..),emptyRCEEnv)
+%%[8 module {%{EH}Core.Utils} import(qualified Data.Map as Map,Data.Maybe,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam}) export(RCEEnv(..),emptyRCEEnv)
 %%]
 
-%%[8 import(Data.List,EH.Util.Utils(sortOn)) export(FieldUpdateL,fuL2ExprL,fuMkCExpr)
+%%[8 import(Data.List,EH.Util.Utils) export(FieldUpdateL,fuL2ExprL,fuMkCExpr)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -37,9 +37,28 @@ rceEnvDataAlts env t
           ->  case valGamLookup conNm (rceValGam env) of
                 Just vgi
                    ->  let  ty = snd $ tyArrowArgsRes $ vgiTy $ vgi
-                       in   maybe [] id $ tagsOfTy ty (rceDataGam env)
-                _  ->  []
-       _  ->  []
+                       in   maybe [] id $ dataGamTagsOfTy ty (rceDataGam env)
+                _  ->  [t]
+       _  ->  [t]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% General purpose saturate (should move to lib, or Common)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+listSaturate :: (Enum a,Ord a) => a -> a -> (x -> a) -> (a -> x) -> [x] -> [x]
+listSaturate min max get mk l
+  = [ Map.findWithDefault (mk i) i mp | i <- [min..max] ]
+  where mp = Map.fromList [ (get x,x) | x <- l ]
+%%]
+
+%%[8
+listSaturateWith :: (Enum a,Ord a) => a -> a -> (x -> a) -> [(a,x)] -> [x] -> [x]
+listSaturateWith min max get missing l
+  = listSaturate min max get mk l
+  where mp = Map.fromList missing
+        mk a = panicJust "listSaturateWith" $ Map.lookup a mp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -49,15 +68,14 @@ rceEnvDataAlts env t
 %%[8
 caltLSaturate :: RCEEnv -> CAltL -> CAltL
 caltLSaturate env alts
-  =  let  altTags = [ t | (CAlt_Alt (CPat_Con _ t _ _ : _) _) <- alts ]
-          absentAlts
-            = case altTags of
-                (altTag:_) -> [ CAlt_Alt [mkP ct a] (rceCaseCont env) | ct@(CTag _ _ _ a) <- absentTagArities ]
-                      where absentTagArities = filter (\t -> t `notElem` altTags) . rceEnvDataAlts env $ altTag
-                            mkB o = CPatBind_Bind hsnUnknown (CExpr_Int o) (cpatNmNm cpatNmNone) (CPat_Var cpatNmNone)
-                            mkP ct a = CPat_Con cpatNmNone ct CPatRest_Empty [mkB o | o <- [0..a-1]]
-                _     -> []
-     in   sortOn caltTag (alts ++ absentAlts)
+  = case alts of
+      (alt1:_) -> listSaturateWith 0 (length allAlts - 1) (ctagTag . caltTag) allAlts alts
+            where allAlts
+                    = [ (ctagTag t,mkA env t (ctagArity t)) | t <- rceEnvDataAlts env (caltTag alt1) ]
+                    where mkA env ct a = CAlt_Alt [mkP ct a] (rceCaseCont env)
+                          mkP     ct a = CPat_Con cpatNmNone ct CPatRest_Empty [mkB o | o <- [0..a-1]]
+                          mkB o        = CPatBind_Bind hsnUnknown (CExpr_Int o) (cpatNmNm cpatNmNone) (CPat_Var cpatNmNone)
+      _     -> []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -136,12 +154,11 @@ mkCExprSatSelsCase env ne e ct nmLblOffL mbRest sel
   =  mkCExprSelsCase' env ne e ct nmLblOffL' mbRest sel
   where nmLblOffL'
           = case (ct,mbRest) of
-              (CTagRec     ,Nothing   ) -> [ mklo n l o | (n,l,o) <- nmLblOffL ]
+              (CTagRec     ,Nothing   ) -> map mklo nmLblOffL
               (CTagRec     ,Just (_,a)) -> mkloL a
               (CTag _ _ _ a,_         ) -> mkloL a
-        mklo  n l o = (n,l,CExpr_Int o)
-        mkloL a = [ maybe (mklo l l o) (\(n,l) -> mklo n l o) $ Map.lookup o offMp | (o,l) <- zip [0..a-1] hsnLclSupplyL ]
-                where offMp = Map.fromList [ (o,(n,l)) | (n,l,o) <- nmLblOffL ]
+        mklo (n,l,o) = (n,l,CExpr_Int o)
+        mkloL a = map mklo $ listSaturateWith 0 (a-1) (\(n,l,o) -> o) [(o,(l,l,o)) | (o,l) <- zip [0..a-1] hsnLclSupplyL] $ nmLblOffL
 %%]
 
 %%[8 export(mkCExprSatSelsCaseUpd)
@@ -159,25 +176,25 @@ mkCExprSatSelsCaseUpd env ne e ct arity offValL mbRest
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-type FieldUpdateL e = AssocL HsName e
+type FieldUpdateL e = AssocL HsName (e,Maybe Int)
 
 fuL2ExprL :: FieldUpdateL CExpr -> [CExpr]
-fuL2ExprL l = [ e | (_,CExpr_TupIns _ _ _ _ e) <- l ]
+fuL2ExprL l = [ e | (_,(CExpr_TupIns _ _ _ _ e,_)) <- l ]
 
 fuReorder :: [HsName] -> FieldUpdateL CExpr -> (CBindL,FieldUpdateL (CExpr -> CExpr))
 fuReorder nL fuL
   =  let  (fuL',offL,_,_)
             =  foldl
-                 (\(fuL,offL,exts,dels) (n,(_,f))
+                 (\(fuL,offL,exts,dels) (n,(_,(f,_)))
                      ->  let  mkOff n lbl o
                                 =  let smaller l = rowLabCmp l lbl == LT
                                        off = length (filter smaller dels) - length (filter smaller exts)
                                    in  CBind_Bind n (o `mkCExprAddInt` off)
                               no = CExpr_Var n
                          in   case f of
-                                 CExpr_TupIns _ t l o e -> ((l,\r -> CExpr_TupIns r t l no e) : fuL,(mkOff n l o):offL,l:exts,dels  )
-                                 CExpr_TupUpd _ t l o e -> ((l,\r -> CExpr_TupUpd r t l no e) : fuL,(mkOff n l o):offL,exts  ,dels  )
-                                 CExpr_TupDel _ t l o   -> ((l,\r -> CExpr_TupDel r t l no  ) : fuL,(mkOff n l o):offL,exts  ,l:dels)
+                                 CExpr_TupIns _ t l o e -> ((l,(\r -> CExpr_TupIns r t l no e,Nothing)) : fuL,(mkOff n l o):offL,l:exts,dels  )
+                                 CExpr_TupUpd _ t l o e -> ((l,(\r -> CExpr_TupUpd r t l no e,Nothing)) : fuL,(mkOff n l o):offL,exts  ,dels  )
+                                 CExpr_TupDel _ t l o   -> ((l,(\r -> CExpr_TupDel r t l no  ,Nothing)) : fuL,(mkOff n l o):offL,exts  ,l:dels)
                  )
                  ([],[],[],[])
             .  zip nL
@@ -190,7 +207,7 @@ fuMkCExpr u fuL r
   =  let  (n:nL) = map (uidHNm . uidChild) . mkNewUIDL (length fuL + 1) $ u
           (oL,fuL') = fuReorder nL fuL
           bL = CBind_Bind n r : oL
-     in   mkCExprLet CBindStrict bL . foldl (\r (_,f) -> f r) (CExpr_Var n) $ fuL'
+     in   mkCExprLet CBindStrict bL $ foldl (\r (_,(f,_)) -> f r) (CExpr_Var n) $ fuL'
 %%]
 
 

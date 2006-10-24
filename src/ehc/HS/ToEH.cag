@@ -428,7 +428,7 @@ SEM Expression
 %%]
 %%[7
     | RecordConstruction
-        loc         .   eh          =   rngLift @range EH.Expr_Con @refname
+        loc         .   eh          =   rngLift @range EH.Expr_DataFields $ foldl (flip ($)) (rngLift @range EH.DataFieldExpr_Con @refname) @recordExpressionBindings.eh
     | RecordUpdate
         loc         .   eh          =   @expression.eh
     | RowRecordUpdate
@@ -560,13 +560,13 @@ SEM GuardedExpression -- ToDo: or _Guard?
 %%]
 
 %%[7
-ATTR RecordExpressionBindings [ | | eh USE {:} {[]}: {[()]} ]
+ATTR RecordExpressionBindings [ | | eh USE {:} {[]}: {[EH.DataFieldExpr -> EH.DataFieldExpr]} ]
 
-ATTR RecordExpressionBinding [ | | eh: {()} ]
+ATTR RecordExpressionBinding [ | | eh: {EH.DataFieldExpr -> EH.DataFieldExpr} ]
 
 SEM RecordExpressionBinding
     | RecordExpressionBinding -- ToDo: or _Binding?
-        lhs         .   eh          =   ()
+        lhs         .   eh          =   \df -> rngLift @range EH.DataFieldExpr_Upd df @refname @expression.eh
 %%]
 
 %%[77

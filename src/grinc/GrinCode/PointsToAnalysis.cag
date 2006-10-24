@@ -528,7 +528,7 @@ SEM GrModule
 %% Fetch %%
 %%%%%%%%%%%
 
-Fetch sould not occur outside eval. And eval is skipped.
+Fetch should not occur outside eval. And eval is skipped.
 
 %%[8.fetch
 SEM GrExpr

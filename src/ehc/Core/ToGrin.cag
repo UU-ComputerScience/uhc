@@ -14,7 +14,7 @@
 WRAPPER CodeAGItf
 %%]
 
-%%[8 hs import({%{EH}Gam}(DataGam,tagsOfTy))
+%%[8 hs import({%{EH}Gam}(DataGam,dataGamTagsOfTy))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -552,7 +552,7 @@ SEM CBind
                                                      resTyNm = tyConNm @resTy
                                                      resIsUnboxed = tyNmIsUnboxedForFFIRes resTyNm
                                                      resTagL
-                                                       = case tagsOfTy @resTy @lhs.dataGam of
+                                                       = case dataGamTagsOfTy @resTy @lhs.dataGam of
                                                            Just ts          -> [ GrTag_Lit GrTagCon (ctagTag' t) (ctagNm t) | t <- ts ]
                                                            _ | resIsUnboxed -> [ GrTag_Unboxed ]
                                                              | otherwise    -> [ GrTag_Any ]

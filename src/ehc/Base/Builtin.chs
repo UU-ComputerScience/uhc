@@ -29,6 +29,9 @@
 %%[7 export(positionalFldNames)
 %%]
 
+%%[7 export(hsnFldUpd)
+%%]
+
 %%[8 export(hsnFloat)
 %%]
 
@@ -85,6 +88,14 @@ strUn                               =   "un"
 strUn                               =   "-"
 %%]
 
+%%[7.strFldUpd
+strFldUpd                           =   "upd_"
+%%]
+
+%%[99 -7.strFldUpd
+strFldUpd                           =   strUn
+%%]
+
 %%[3.hsnUn
 hsnUn                               ::  HsName -> HsName
 hsnUn           nm                  =   HNm (strUn ++ show nm)
@@ -117,6 +128,16 @@ hsnUnUn                             ::  HsName -> HsName
 hsnUnUn         hsn
   = case hsnInitLast hsn of
       (ns,HNm s) -> mkHNm (ns,HNm (drop (length strUn) s))
+%%]
+
+%%[7.hsnFldUpd
+hsnFldUpd                           ::  HsName -> HsName
+hsnFldUpd       nm                  =   HNm (strFldUpd ++ show nm)
+%%]
+
+%%[12 -7.hsnFldUpd
+hsnFldUpd                           ::  HsName -> HsName
+hsnFldUpd       nm                  =   strFldUpd `hsnPrefix` nm
 %%]
 
 %%[5

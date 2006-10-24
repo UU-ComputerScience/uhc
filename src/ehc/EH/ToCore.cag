@@ -120,7 +120,7 @@ SEM PatExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Records, construction
+%%% Row based records, construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -129,7 +129,7 @@ SEM Expr
                                                     then  foldl CExpr_App (CExpr_Tup CTagRec)
                                                             $ fuL2ExprL $ tyRowCanonOrder $ @recExpr.fuCExprL
                                                     else  fuMkCExpr @lUniq3 (reverse @recExpr.fuCExprL) @recExpr.recCExpr
-                loc         .   cexpr           =   @rcexpr
+                            .   cexpr           =   @rcexpr
 %%]
 
 %%[8
@@ -144,7 +144,7 @@ SEM RecExpr
   | Ext         loc         .   rcexpr          =   CExpr_TupIns @recExpr.recCExpr CTagRec @nm @offset @expr.cexpr
   | Upd         loc         .   rcexpr          =   CExpr_TupUpd @recExpr.recCExpr CTagRec @nm @offset @expr.cexpr
   | Ext Upd     lhs         .   fuCExprL        =   if @knRecHasLab
-                                                    then (@nm,@rcexpr) : @recExpr.fuCExprL
+                                                    then (@nm,(@rcexpr,Nothing)) : @recExpr.fuCExprL
                                                     else @recExpr.fuCExprL
 
 SEM Expr
@@ -182,7 +182,50 @@ SEM RecExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Records, dissection
+%%% Data based records, construction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM Expr
+  | DataFields  loc         .   dfexpr     =   foldl CExpr_App @dataFieldExpr.dfeCExpr
+                                               $ fuL2ExprL $ tyRowOffsetOrder (fromJust . snd) $ @dataFieldExpr.fuCExprL
+                            .   cexpr      =   @dfexpr
+%%]
+
+%%[8
+ATTR DataFieldExpr [ | | dfeCExpr: CExpr  fuCExprL: {FieldUpdateL CExpr} ]
+
+SEM DataFieldExpr
+  | Upd         loc         .   dfexpr      =   case @dataFieldExpr.mbDti of
+                                                  Just dti -> CExpr_TupIns @dataFieldExpr.dfeCExpr (dtiCTag dti) @nm @offset @expr.cexpr
+                lhs         .   fuCExprL    =   (@nm,(@dfexpr,Just @ioffset)) : @dataFieldExpr.fuCExprL
+  | Con         lhs         .   dfeCExpr    =   CExpr_Tup (dtiCTag @dti)
+                            .   fuCExprL    =   []
+  | Expr        loc         .   dfeCExpr    =   @expr.cexpr
+                            .   fuCExprL    =   []
+
+ATTR DataFieldExpr [ | | mbDti: {Maybe DataTagInfo} ]
+
+SEM DataFieldExpr
+  | Con         loc         .   dti         =   dgiDtiOfCon @nm @dgi
+                lhs         .   mbDti       =   Just @dti
+  | * - Con Upd lhs         .   mbDti       =   Nothing
+
+ATTR DataFieldExpr [ | | dgi: DataGamInfo ]
+
+SEM DataFieldExpr
+  | Con Expr    loc         .   dgi         =   panicJust "DataFieldExpr.dataGamDgiOfTy" $ dataGamDgiOfTy @finConTy @lhs.dataGam
+
+SEM DataFieldExpr
+  | Con Expr    loc         .   finConTy    =   @lhs.finTyCnstr |=> @ty
+
+SEM DataFieldExpr
+  | Upd         loc         .   ioffset     =   dtiOffsetOfFld @nm $ panicJust "DataFieldExpr.mbDti" @dataFieldExpr.mbDti
+                            .	offset      =   CExpr_Int @ioffset
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Row based records, dissection
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -620,7 +663,7 @@ rceMatchBoolExpr env (arg:args) alts = cvarUndefined
 ATTR AllDataConstr [ dataAltTy: Ty | | ]
 
 SEM DataConstr
-  | Constr      lhs         .   cbindL      =   let  len = length @fields.tyL
+  | Constr      lhs         .   cbindL      =   let  len = length @fields.fldTyL
                                                      nms = map (\i -> HNm ("x" ++ show i)) [1..len]
                                                 in   [CBind_Bind @conNm
                                                         (mkCExprLam nms

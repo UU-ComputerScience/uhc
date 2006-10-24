@@ -87,6 +87,8 @@ DATA Err
 
 %%[7
 DATA Err
+  | InconsistentIntros  kind       : String
+                        nmL        : {[HsName]}
   | MissingRowLabels    nmL        : {[HsName]}
                         ty         : {Ty}
   | TooManyRowLabels    nmL        : {[HsName]}
