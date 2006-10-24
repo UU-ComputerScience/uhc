@@ -249,6 +249,12 @@ case $HostPlatform in
         libtoolStatic="no"
         ehcGccOptsStatic="-static"
         ;;
+  x86*-*-linux-gnu )
+        # file suffixes
+        # path separator
+        # libtool usage
+        libtoolStatic="no"
+        ;;
   *)
         # file suffixes
         # path separator

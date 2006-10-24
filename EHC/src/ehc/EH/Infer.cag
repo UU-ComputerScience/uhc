@@ -344,38 +344,17 @@ ATTR AllDataConstrEq [ | tyGam: TyGam | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Data info gam
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8.dataGam
-ATTR
-  AllDecl AllExpr AllCase
-%%[[99
-  AllPatExpr
-%%]]
-    [ | gathDataGam: DataGam | ]
-ATTR AllDecl AllExpr AllCase AllPatExpr [ dataGam: DataGam | | ]
-
-SEM AGItf
-  | AGItf       expr        .   gathDataGam         =   emptyGam
-%%]
-
-%%[8.initDataGam
-SEM AGItf
-  | AGItf       expr        .   dataGam             =   @expr.gathDataGam
-%%]
-
-%%[12 -8.initDataGam
-ATTR AGItf [ dataGam: DataGam | | ]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gamma/Environment for fitting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+%%[4.Decl.fe
 SEM Decl
   | *           loc         .   fe                  =   emptyFE
+%%]
+
+%%[11 -4.Decl.fe
+SEM Decl
+  | *           loc         .   fe                  =   emptyFE { feTyGam = @lhs.tyGam }
 %%]
 
 %%[9

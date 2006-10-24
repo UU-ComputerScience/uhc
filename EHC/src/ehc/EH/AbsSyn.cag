@@ -206,6 +206,7 @@ DATA Expr
 
 %%[7
 DATA Expr
+  | DataFields      dataFieldExpr   : DataFieldExpr
   | Rec             recExpr         : RecExpr
   | Sel             expr            : Expr
                     lbl             : {HsName}
@@ -244,7 +245,7 @@ SET AllExpr         = Expr
 %%]
 
 %%[7.AllExpr -1.AllExpr
-SET AllExpr         = Expr RecExpr
+SET AllExpr         = Expr RecExpr DataFieldExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -280,6 +281,7 @@ DATA PatExpr
 DATA PatExpr
   | Rec             recPatExpr      : RecPatExpr
 %%]
+  | DataFields      dataFieldPatExpr: DataFieldPatExpr
 
 %%[8
 DATA PatExpr
@@ -299,6 +301,7 @@ SET AllPatExpr      = PatExpr
 %%[7.AllPatExpr -1.AllPatExpr
 SET AllPatExpr      = PatExpr RecPatExpr
 %%]
+ DataFieldPatExpr
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pattern + guard in case expressions
@@ -369,6 +372,28 @@ SET AllDataConstr   = DataConstr DataConstrs
 SET AllDataField    = DataField DataFields
 SET AllData         = AllDataField AllDataConstr AllDataConstrEq
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data based record
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+DATA DataFieldExpr
+  | Upd             dataFieldExpr   : DataFieldExpr
+                    nm              : {HsName}
+                    expr            : Expr
+  | Con             nm              : {HsName}
+  | Expr            expr            : Expr
+%%]
+
+%%[7
+%%]
+DATA DataFieldPatExpr
+  | Upd             dataFieldPatExpr: DataFieldPatExpr
+                    nm              : {HsName}
+                    patExpr         : PatExpr
+  | Con             patExpr         : PatExpr
+  | Expr            patExpr         : PatExpr
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Records, rows

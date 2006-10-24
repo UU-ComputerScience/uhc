@@ -10,13 +10,13 @@
 %%[1 module {%{EH}Base.Opts} import(System.Console.GetOpt,{%{EH}Base.Common}) export(EHCOpts(..), defaultEHCOpts, ehcCmdLineOpts)
 %%]
 
-%%[4 import({%{EH}Ty},UU.Pretty,EH.Util.PPUtils) export(FIOpts(..), fioSwapCoCo, fioSwapOpts, strongFIOpts, instFIOpts, instLRFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)
+%%[4 import({%{EH}Ty},UU.Pretty,EH.Util.PPUtils) export(FIOpts(..), fioSwapCoCo, fioSwapOpts, strongFIOpts, unifyFIOpts, instFIOpts, instLRFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)
 %%]
 
 %%[4 export(fioIsSubsume)
 %%]
 
-%%[4_2 export(unifyFIOpts,meetFIOpts,joinFIOpts,impredFIOpts)
+%%[4_2 export(meetFIOpts,joinFIOpts,impredFIOpts)
 %%]
 
 %%[4_2 export(fioIsMeetJoin)
@@ -381,14 +381,14 @@ instLRFIOpts = strongFIOpts {fioBindRFirst = False, fioBindLFirst = False}
 %%]
 
 %%[4.FIOpts.instFIOpts
+unifyFIOpts :: FIOpts
+unifyFIOpts = strongFIOpts {fioMode = FitUnify}
+
 instFIOpts :: FIOpts
 instFIOpts = instLFIOpts {fioLeaveRInst = True, fioBindLFirst = False}
 %%]
 
 %%[4_2.FIOpts.defaults
-unifyFIOpts :: FIOpts
-unifyFIOpts = strongFIOpts {fioMode = FitUnify}
-
 meetFIOpts :: FIOpts
 meetFIOpts = unifyFIOpts {fioMode = FitMeet}
 

@@ -34,9 +34,6 @@
 %%[8 hs export(mkCMod)
 %%]
 
-%%[8 hs export(cTupLbl)
-%%]
-
 %%[8 hs export(CaseFailSubst)
 %%]
 
@@ -63,16 +60,34 @@ DERIVING *     : Show, Eq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Tuple operator label
+%%% Tuple operator info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[8 hs export(cTupLbl)
 cTupLbl :: CExpr -> HsName
 cTupLbl e
   =  case e of
          CExpr_TupIns _ _ l _ _ -> l
          CExpr_TupUpd _ _ l _ _ -> l
          CExpr_TupDel _ _ l _   -> l
+%%]
+
+%%[8 hs export(cTupTag)
+cTupTag :: CExpr -> CTag
+cTupTag e
+  =  case e of
+         CExpr_TupIns _ t _ _ _ -> t
+         CExpr_TupUpd _ t _ _ _ -> t
+         CExpr_TupDel _ t _ _   -> t
+%%]
+
+%%[8 hs export(cTupOff)
+cTupOff :: CExpr -> CExpr
+cTupOff e
+  =  case e of
+         CExpr_TupIns _ _ _ o _ -> o
+         CExpr_TupUpd _ _ _ o _ -> o
+         CExpr_TupDel _ _ _ o   -> o
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -194,6 +209,15 @@ mkCMod e = CModule_Mod (HNm "") e []
 cexprVar :: CExpr -> HsName
 cexprVar (CExpr_Var n) = n
 cexprVar _             = hsnUnknown
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Error
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(cerror)
+cerror :: String -> CExpr
+cerror m = CExpr_Var hsnError `mkCExprApp` [CExpr_String m]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

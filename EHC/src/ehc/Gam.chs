@@ -7,7 +7,7 @@
 %%% Gamma (aka Assumptions, Environment)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Gam} import(Data.List,EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}NameAspect}) export(Gam,emptyGam,gamMap,gamLookup,gamLookupDup, gamPushNew, gamPop, gamTop, gamAddGam, gamUnit, gamAdd, gamPushGam, gamToAssocL, gamToAssocDupL, gamToDups, assocLToGam, assocDupLToGam,gamKeys)
+%%[1 module {%{EH}Gam} import(Data.List,EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}NameAspect}) export(Gam,emptyGam,gamMap,gamLookup,gamLookupDup, gamPushNew, gamPop, gamTop, gamAddGam, gamUnit, gamAdd, gamPushGam, gamToAssocL, gamToAssocDupL, assocLToGam, assocDupLToGam,gamKeys)
 %%]
 
 %%[1 import({%{EH}Ty},{%{EH}Error}) export(ValGam, ValGamInfo(..), valGamLookup,valGamLookupTy)
@@ -61,13 +61,16 @@
 %%[6 export(mkTGI)
 %%]
 
+%%[7 export(gamNoDups)
+%%]
+
 %%[7777 export(mkTGIData)
 %%]
 
 %%[8 import(Data.Maybe,qualified Data.Map as Map,{%{EH}Core}) export(gamUpd,DataTagInfo(..),emptyDataTagInfo,DataFldInfo(..),emptyDataFldInfo,DataTagMp,DataFldMp)
 %%]
 
-%%[8 export(DataGam,DataGamInfo(..),mkDGI,dataGamLookup,tagsOfTy)
+%%[8 export(DataGam,DataGamInfo(..),mkDGI,dataGamLookup)
 %%]
 
 %%[9 import({%{EH}Base.Debug},{%{EH}Core.Subst},{%{EH}Ty.FitsInCommon}) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
@@ -169,9 +172,19 @@ gamToAssocDupL :: Ord k => Gam k v -> AssocL k [v]
 gamToAssocDupL g = tgamToAssocDupL (tgamSize1 g) g
 %%]
 
-%%[1.gamToDups
-gamToDups :: Ord k => Gam k v -> [k]
-gamToDups g = [ n | (n,(_:_:_)) <- gamToAssocDupL g ]
+%%[1.gamToOnlyDups export(gamToOnlyDups)
+gamToOnlyDups :: Ord k => Gam k v -> AssocL k [v]
+gamToOnlyDups g = [ x | x@(n,(_:_:_)) <- gamToAssocDupL g ]
+%%]
+
+%%[1.gamNoDups
+gamNoDups :: Ord k => Gam k v -> Gam k v
+gamNoDups (Gam ll) = Gam (map (nubBy (\(k1,_) (k2,_) -> k1 == k2)) ll)
+%%]
+
+%%[9 -1.gamNoDups
+gamNoDups :: Ord k => Gam k v -> Gam k v
+gamNoDups g = tgamMap2 (tgamSize1 g) (\(k,v:_) -> (k,[v])) g
 %%]
 
 %%[1.gamMap
@@ -361,6 +374,9 @@ tgamMapThr2 i f
 
 tgamMapThr :: (Ord i,Ord k') => i -> (k -> v -> t -> (k',v',t)) -> t -> TreeGam i k v -> (TreeGam i k' v',t)
 tgamMapThr i f = tgamMapThr2 i (\k (v:vs) t -> let (k',v',t') = f k v t in (k',(v':map (\v -> snd3 (f k v t)) vs),t'))
+
+tgamMap2 :: (Ord i,Ord k') => i -> ((k,[v]) -> (k',[v'])) -> TreeGam i k v -> TreeGam i k' v'
+tgamMap2 i f = fst . tgamMapThr2 i (\k vs _ -> let (k',vs') = f (k,vs) in (k',vs',())) ()
 
 tgamMap :: (Ord i,Ord k') => i -> ((k,v) -> (k',v')) -> TreeGam i k v -> TreeGam i k' v'
 tgamMap i f = fst . tgamMapThr i (\k v _ -> let (k',v') = f (k,v) in (k',v',())) ()
@@ -691,6 +707,11 @@ type DataTagMp = Map.Map HsName DataTagInfo
 emptyDataTagInfo = DataTagInfo emptyCTag Map.empty
 %%]
 
+%%[8 export(dtiOffsetOfFld)
+dtiOffsetOfFld :: HsName -> DataTagInfo -> Int
+dtiOffsetOfFld fldNm dti = dfiOffset $ panicJust "dtiOffsetOfFld" $ Map.lookup fldNm $ dtiFldMp dti
+%%]
+
 %%[8.DataGamInfo
 data DataGamInfo = DataGamInfo { dgiDataTagMp :: DataTagMp }
 
@@ -701,7 +722,14 @@ instance Show DataGamInfo where
 
 mkDGI :: DataTagMp -> DataGamInfo
 mkDGI m = DataGamInfo m
+%%]
 
+%%[8 export(dgiDtiOfCon)
+dgiDtiOfCon :: HsName -> DataGamInfo -> DataTagInfo
+dgiDtiOfCon conNm dgi = panicJust "dgiDtiOfCon" $ Map.lookup conNm $ dgiDataTagMp dgi
+%%]
+
+%%[8
 dataGamLookup :: HsName -> DataGam -> Maybe DataGamInfo
 dataGamLookup nm g
   =  case gamLookup nm g of
@@ -710,10 +738,26 @@ dataGamLookup nm g
                  -> Just (DataGamInfo Map.empty)
        Just dgi  -> Just dgi
        _         -> Nothing
-
-tagsOfTy :: Ty -> DataGam -> Maybe [CTag]
-tagsOfTy t g = fmap (map dtiCTag . Map.elems . dgiDataTagMp) $ gamLookup (tyAppFunConNm t) $ g
 %%]
+
+%%[8 export(dataGamDgiOfTy)
+dataGamDgiOfTy :: Ty -> DataGam -> Maybe DataGamInfo
+dataGamDgiOfTy conTy dg = dataGamLookup (tyAppFunConNm conTy) dg
+%%]
+
+%%[8 export(dataGamTagsOfTy)
+dataGamTagsOfTy :: Ty -> DataGam -> Maybe [CTag]
+dataGamTagsOfTy t g = fmap (map dtiCTag . Map.elems . dgiDataTagMp) $ gamLookup (tyAppFunConNm t) $ g
+%%]
+
+%%[8
+%%]
+dataGamTagOfCon :: HsName -> Ty -> DataGam -> Maybe CTag
+dataGamTagOfCon conNm conTy dg
+  = case dataGamDgiOfTy conTy dg of
+      Just dgi
+        -> Just $ dtiCTag $ dgiDtiOfCon conNm dgi
+      _ -> Nothing
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% "Ty app spine" gam, to be merged with tyGam in the future

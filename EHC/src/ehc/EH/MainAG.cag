@@ -22,10 +22,10 @@
 %%[4_2 hs import(qualified Data.Set as Set,{%{EH}Gam.Utils},{%{EH}Ty.ElimAlts},{%{EH}Ty.FreshVar})
 %%]
 
-%%[7 hs import(EH.Util.PPUtils)
+%%[7 hs import(qualified Data.Map as Map,EH.Util.PPUtils,{%{EH}Ty.FreshVar},{%{EH}Ty.Ftv})
 %%]
 
-%%[8 hs import(qualified Data.Map as Map,{%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty},{%{EH}Core.SubstCaseAltFail})
+%%[8 hs import({%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty},{%{EH}Core.SubstCaseAltFail})
 %%]
 
 %%[9 hs import(qualified Data.Set as Set,{%{EH}Pred},{%{EH}Core.Subst})
@@ -71,6 +71,7 @@ ATTR AGItf [ moduleNm: HsName | | ]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Tying together gam's, combining with imported info, gathering for following modules and/or global use
+%%% Note: will move to AG files where attr's are actually defined/used
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[12
@@ -95,15 +96,6 @@ ATTR AGItf Expr [ | | gathKiGam: KiGam ]
 SEM Expr
   | Let         lhs         .   gathKiGam           =   @body.gathKiGam -- `gamUnion` @xxx
   | * - Let     lhs         .   gathKiGam           =   emptyGam
-%%]
-
-%%[8
-ATTR AGItf [ | | gathDataGam: DataGam ]
-%%]
-
-%%[12
-SEM AGItf
-  | AGItf       expr        .   dataGam             =   @expr.gathDataGam `gamUnion` @lhs.dataGam
 %%]
 
 %%[12

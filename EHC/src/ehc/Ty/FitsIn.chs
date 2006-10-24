@@ -594,7 +594,7 @@ fitsIn opts env uniq ty1 ty2
                                  rowCoeL = [ rc | rc@(_,c) <- sortByOn rowLabCmp fst (foRowCoeL fo), not (coeIsId c) ]
                                  (fuUpdL,prUpdL,tr1s',_)
                                    =  foldr  (\(l,c) (fuL,prL,r,u)
-                                                ->  ((l,CExpr_TupUpd cvarUndefined CTagRec l (CExpr_Hole u) (c `coeEvalOn` mkLSel l u)):fuL
+                                                ->  ((l,(CExpr_TupUpd cvarUndefined CTagRec l (CExpr_Hole u) (c `coeEvalOn` mkLSel l u),Nothing)):fuL
                                                     ,mkLPred r l u : prL,r,uidNext u
                                                     )
                                              )
@@ -602,7 +602,7 @@ fitsIn opts env uniq ty1 ty2
                                  (fuDelL,prDelL,_,_)
                                    =  foldl  (\(fuL,prL,r,u) l
                                                   ->  let  (pr,r') = mkLPred' r l u
-                                                      in   ((l,CExpr_TupDel (CExpr_Var hsnWild) CTagRec l (CExpr_Hole u)):fuL
+                                                      in   ((l,(CExpr_TupDel (CExpr_Var hsnWild) CTagRec l (CExpr_Hole u),Nothing)):fuL
                                                            ,pr:prL,r',uidNext u
                                                            )
                                              )
@@ -1045,6 +1045,17 @@ fitsInL opts env uniq tyl1 tyl2
   where (fo,foL)
           = fitsInLWith (\fo1 fo2 -> fo2 {foCnstr = foCnstr fo1 |=> foCnstr fo2, foErrL = foErrL fo1 ++ foErrL fo2})
                         (mkFitsInWrap' env) opts uniq tyl1 tyl2
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Iterative fitsIn, for now just a simple one (no constr prop, no new uniq, ...)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7 export(fitsInFold)
+fitsInFold :: FIOpts -> FIEnv -> UID -> TyL -> FIOut
+fitsInFold opts env uniq tyl
+  = foldl (\fo t -> if foHasErrs fo then fo else fitsIn opts env uniq (foTy fo) t)
+          emptyFO tyl
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -166,6 +166,11 @@ SEM RecExpr
   | Ext             (recExpr.gUniq,loc.lUniq,loc.lUniq2)            =   mkNewLevUID2    @lhs.gUniq
   | Upd             (recExpr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3) =   mkNewLevUID3    @lhs.gUniq
 
+SEM DataFieldExpr
+  | Upd             (dataFieldExpr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)
+                                                                    =   mkNewLevUID3    @lhs.gUniq
+  | Con             (lhs.gUniq,loc.lUniq,loc.lUniq2)                =   mkNewLevUID2    @lhs.gUniq
+
 SEM PatExpr
   | Rec             (recPatExpr.gUniq,loc.lUniq,loc.lUniq2)         =   mkNewLevUID2    @lhs.gUniq
   | IConst CConst   (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
@@ -173,6 +178,10 @@ SEM PatExpr
 SEM RecPatExpr
   | Empty           (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
   | Ext             (recPatExpr.gUniq,loc.lUniq,loc.lUniq2)         =   mkNewLevUID2    @lhs.gUniq
+
+SEM DataField
+  | Field           (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
+
 %%]
 
 %%[8
