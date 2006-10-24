@@ -7,7 +7,7 @@ let foreign import jazy "primAddInt" add :: Int -> Int -> Int
     foreign import jazy "primEqInt"  eq  :: Int -> Int -> Bool
 in
 let not      = \x -> if x then False else True
-    iterate  = \f x -> Cons x (iterate f x)
+    iterate  = \f x -> Cons x (iterate f (f x))
     filter   = \f l -> case l of
                            Cons h t  ->  let tl = filter f t
                                          in if f h then Cons h tl else tl
@@ -16,12 +16,14 @@ let not      = \x -> if x then False else True
                            Cons h t  ->  Cons (f h) (map f t)
                            Nil       ->  Nil
     head     = \l   -> case l of
-                           Cons h _  ->  l
+                           Cons h t  ->  h
     index    = \l i -> case l of
                            Cons h t  -> if eq i 0 then h else index t (sub i 1)
-    undefined = True
+
+
 in
 let isdivs      = \n x -> not (eq 0 (mod x n))
-    the_filter  = \(Cons n ns) -> filter (isdivs n) ns
-    primes      = map head (iterate the_filter (iterate (add 1) 2))
-in index primes 64
+    thefilter   = \l -> case l of
+                    Cons n ns -> filter (isdivs n) ns
+    primes      = map head (iterate thefilter (iterate (add 1) 2))
+in  index primes 10

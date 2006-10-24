@@ -36,8 +36,8 @@ type IsBound = TyVarId -> Bool
 tvRepl :: TyVarId -> Cnstr -> IsBound -> Ty -> Ty
 tvRepl tv c isBound repl
   =  case (cnstrTyLookup tv c) of
-		Just t | not (isBound tv)  -> t
-		_                          -> repl
+        Just t | not (isBound tv)  -> t
+        _                          -> repl
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -61,7 +61,11 @@ SEM TyAGItf
 
 SEM Ty
   | Var             lhs     .   repl        :=  tvRepl @tv @lhs.cnstr @lhs.isBound @repl
-  | Quant           ty      .   isBound     =   (\v -> v == @tv || @lhs.isBound v)
+  | Quant
+%%[[11
+    Lam
+%%]]
+                    ty      .   isBound     =   (\v -> v == @tv || @lhs.isBound v)
 %%]
 
 %%[4_2

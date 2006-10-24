@@ -5,7 +5,6 @@
 module Common
   ( module Data.Maybe
   , module Data.Char
-  -- , module UU.Pretty
   , module EH.Util.Nm
   , module EH.Util.FPath
   , module EH.Util.PPUtils
@@ -16,19 +15,24 @@ module Common
   , CRef, CPos(..)
   , ChKind(..), ChDest(..), ChWrap(..)
   , Version(..), VersionOrder
+  , verMember
+  , VOMp, sortOnVOMp
   , KVMap
+  , CompilerRestriction(..)
   )
   where
 
 import Data.Maybe
 import Data.Char
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Network.URI
 import IO
 import System.Directory
 import System.Console.GetOpt
 import UU.Pretty
 import EH.Util.FPath
+import EH.Util.Utils
 import EH.Util.PPUtils
 import EH.Util.Nm
 
@@ -52,7 +56,7 @@ ppErr pos p
 
 instance PP Err where
   pp (Err_UndefNm pos knd nmL)
-    = ppErr pos (knd >|< "(s) are undefined:" >#< ppCommas nmL)
+    = ppErr pos (knd >|< "(s) are undefined:" >#< ppCommas' nmL)
   pp (Err_UndefURI pos u)
     = ppErr pos ("could not open:" >#< u)
   pp (Err_Exec pos f e)
@@ -99,6 +103,7 @@ data Opts
       , optPreamble     :: Bool
       , optLinePragmas  :: Bool
       , optIndex        :: Bool
+      , optCompiler     :: [Int]
       , optHelp         :: Bool
       , optChDest       :: (ChDest,String)
       , optGenVersion   :: Version
@@ -119,6 +124,7 @@ defaultOpts
       , optLinePragmas  =  False
       , optPlain        =  False
       , optIndex        =  False
+      , optCompiler     = []
       , optHelp         =  False
       , optChDest       =  (ChHere,"")
       , optGenVersion   =  VNone
@@ -163,7 +169,12 @@ data ChDest
   deriving (Show,Eq,Ord)
 
 data ChWrap
-  = ChWrapCode | ChWrapBoxCode | ChWrapBeamerBlockCode String | ChWrapTT | ChWrapTTtiny | ChWrapPlain
+  = ChWrapCode
+  | ChWrapBoxCode 			(Maybe String)
+  | ChWrapBeamerBlockCode 	String
+  | ChWrapTT
+  | ChWrapTTtiny
+  | ChWrapPlain
   deriving (Show,Eq,Ord)
 
 -------------------------------------------------------------------------
@@ -178,7 +189,19 @@ data Version    = VAll
                 deriving (Show,Eq,Ord)
 
 type VersionOrder = [[Version]]
+type VOMp = Map.Map Version Int
 
+verMember :: Version -> VOMp -> Bool
+verMember VAll _ = True
+verMember v    s = Map.member v s
 
+sortOnVOMp :: VOMp -> [(Version,x)] -> [x]
+sortOnVOMp m = map snd . sortOn fst . map (\(v,x) -> (Map.findWithDefault 0 v m,x))
 
+-------------------------------------------------------------------------
+-- Compiler restrictions
+-------------------------------------------------------------------------
 
+data CompilerRestriction
+  = Restricted (Maybe [Int]) (Maybe [Int])
+  deriving Show

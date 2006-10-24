@@ -7,7 +7,7 @@
 %%[1 hs module {%{EH}Ty.AnnCommon}
 %%]
 
-%%[7_2 hs import({%{EH}Base.Common}, {%{EH}Ty}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set))
+%%[7_2 hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Ty}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set))
 %%]
 
 %%[7_2 import({Ty/CommonAG},{Ty/AbsSyn})

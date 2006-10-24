@@ -192,7 +192,7 @@ instance Show DtInfo where
   show _ = "DtInfo"
 
 instance PP DtInfo where
-  pp i = "Dt" >#< ppCommas (dtScNmL i) >#< ppGam (dtVwGam i)
+  pp i = "Dt" >#< ppCommas' (dtScNmL i) >#< ppGam (dtVwGam i)
 
 type DtGam = Gam Nm DtInfo
 
@@ -461,7 +461,7 @@ instance Show ScAtBld where
 
 instance PP ScAtBld where
   pp   (ScAtBldDirect i    ) = "SAB-D" >#< pp i
-  pp i@(ScAtBldScheme _ _ _) = "SAB-S" >#< sabNm i >#< ppCommaList (sabRenameL i)
+  pp i@(ScAtBldScheme _ _ _) = "SAB-S" >#< sabNm i >#< ppBracketsCommas (sabRenameL i)
 
 -------------------------------------------------------------------------
 -- Explanations
@@ -507,7 +507,7 @@ instance Show (VwScInfo e) where
   show _ = "VwScInfo"
 
 instance PP e => PP (VwScInfo e) where
-  pp i = "VWSc" >#< pp (vwscNm i) >#< (ppCommaList (vwscAtBldL i) >-< ppGam (vwscFullAtGam i) >-< ppGam (vwscJdShpGam i) >-< ppGam (vwscExplGam i))
+  pp i = "VWSc" >#< pp (vwscNm i) >#< (ppBracketsCommas (vwscAtBldL i) >-< ppGam (vwscFullAtGam i) >-< ppGam (vwscJdShpGam i) >-< ppGam (vwscExplGam i))
 
 type VwScGam e = Gam Nm (VwScInfo e)
 
@@ -703,7 +703,7 @@ instance Show (RlJdBld e) where
 
 instance PP e => PP (RlJdBld e) where
   pp   (RlJdBldDirect      _ g1 g2) = "RJB-D"  >#< (ppGam g1 >-< ppGam g2)
-  pp i@(RlJdBldFromRuleset _ _ _ _) = "RJB-RS" >#< rjbRsNm i >#< rjbRlNm i >#< ppCommaList (rjbScRenameL i)
+  pp i@(RlJdBldFromRuleset _ _ _ _) = "RJB-RS" >#< rjbRsNm i >#< rjbRlNm i >#< ppBracketsCommas (rjbScRenameL i)
 
 -------------------------------------------------------------------------
 -- View (related to rule)
@@ -740,9 +740,9 @@ instance Show (VwRlInfo e) where
   show _ = "VwRlInfo"
 
 instance PP e => PP (VwRlInfo e) where
-  pp i = "VWRl" >#< pp (vwrlNm i) >#< (ppCommaList (vwrlJdBldL i)
-                                       >-< ppCommaList (vwrlJdBldOnAL i)
-                                       >-< ppCommaList (vwrlJdBldOnBL i)
+  pp i = "VWRl" >#< pp (vwrlNm i) >#< (ppBracketsCommas (vwrlJdBldL i)
+                                       >-< ppBracketsCommas (vwrlJdBldOnAL i)
+                                       >-< ppBracketsCommas (vwrlJdBldOnBL i)
                                        >-< ppGam (vwrlFullNoDfltPreGam i)
                                        >-< ppGam (vwrlFullNoDfltPostGam i)
                                        >-< ppGam (vwrlFullPreGam i)

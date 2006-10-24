@@ -1,0 +1,19 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Silly
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%[8 hs module {%{GRIN}Silly} import ({%{GRIN}GRINCCommon})
+%%]
+
+%%[8 hs export(SilModule(..), Function(..), Statement(..), Alternative(..), Constant(..), Variable(..), Value(..), Alternatives, Statements, Functions, Variables, Values )
+%%]
+
+%%[8 import({Silly/AbsSyn})
+DERIVING * : Show, Eq
+%%]

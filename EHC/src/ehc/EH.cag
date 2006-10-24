@@ -7,13 +7,13 @@
 %%% Haskell importable interface to EH/AbsSyn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}EH} import({%{EH}Base.Common})
+%%[1 hs module {%{EH}EH} import({%{EH}Base.Common},{%{EH}Base.Builtin})
 %%]
 
 %%[1 hs export(AGItf(..), Decl(..), Decls, TyExpr(..), Expr(..), PatExpr(..))
 %%]
 
-%%[1 hs import({%{EH}HS}(Range)) export(mkRngEH)
+%%[1 hs import({%{EH}HS}(Range))
 %%]
 
 %%[1 hs export(mkLet)
@@ -25,7 +25,7 @@
 %%[5 hs export(TyExprs, TyVar(..), TyVars, CaseAlt(..), CaseAlts, DataConstr(..), DataConstrs)
 %%]
 
-%%[5 hs export(mkCase,mkIf,mkError,mkStr)
+%%[5 hs export(mkCase,mkCase',mkIf,mkIf',mkError,mkStr,mkAlt)
 %%]
 
 %%[6 hs export(KiExpr(..))
@@ -38,6 +38,12 @@
 %%]
 
 %%[7_2 hs export(AnnDtMonoRestrictions, AnnDtMonoRestrict(..))
+%%]
+
+%%[8 hs export(mkIf'')
+%%]
+
+%%[9 hs export(ehIsDeclVal)
 %%]
 
 %%[9 hs export(PrExpr(..), PrExprs,FuncDep(..), FuncDeps)
@@ -53,14 +59,14 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Utils
+%%% Observations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs
-mkRngEH :: r -> v -> v
-mkRngEH r v = v
+%%[9 hs
+ehIsDeclVal :: Decl -> Bool
+ehIsDeclVal (Decl_Val _ _) = True
+ehIsDeclVal _              = False
 %%]
-mkRngEH :: r -> (r -> v) -> v
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Constructing
@@ -70,13 +76,13 @@ mkRngEH :: r -> (r -> v) -> v
 mkLet :: Range -> Maybe [Decl] -> Expr -> Expr
 mkLet r md e
   = case md of
-      Just d@(_:_) -> mkRngEH r Expr_Let d e
+      Just d@(_:_) -> rngLift r Expr_Let d e
       _            -> e
 %%]
 
 %%[9 hs
 mkUnit :: Range -> Expr
-mkUnit r = mkRngEH r Expr_Rec (mkRngEH r RecExpr_Empty)
+mkUnit r = rngLift r Expr_Rec (rngLift r RecExpr_Empty)
 %%]
 mkUnit :: Range -> Expr
 mkUnit _ = semCon (hsnProd 0)
@@ -84,26 +90,68 @@ mkUnit _ = semCon (hsnProd 0)
 %%[5 hs
 mkError':: HsName -> Range -> String -> Expr
 mkError' e r m
-  = mkApp [mkRngEH r Expr_Var e,mkStr r (show r ++ ": " ++ m)]
+  = mkApp [rngLift r Expr_Var e,mkStr r (show r ++ ": " ++ m)]
 
 mkError :: Range -> String -> Expr
 mkError = mkError' hsnError
 
 mkStr :: Range -> String -> Expr
 mkStr r s
-  = mkRngEH r Expr_SConst s
+  = rngLift r Expr_SConst s
+%%]
+
+%%[5 hs
+%%[[5
+mkIf' :: [HsName] -> Range -> Expr -> Expr -> Expr -> Expr
+mkIf' (bn:tn:fn:_) r c t e
+%%][8
+mkIf'' :: [HsName] -> Range -> Expr -> Expr -> Expr -> Maybe UID -> Expr
+mkIf'' (bn:tn:fn:_) r c t e i
+%%]]
+  = case c of
+      Expr_Con n | n == tn -> t
+                 | n == fn -> e
+      _ -> mkCase' r
+             ( Expr_TypeAs (TyExpr_Con bn) c )
+%%[[8
+             i False
+%%]]
+             [ mkAlt r (PatExpr_Con tn) t
+             , mkAlt r (PatExpr_Con fn) e
+             ]
+%%]
+
+%%[8 hs
+mkIf' :: [HsName] -> Range -> Expr -> Expr -> Expr -> Expr
+mkIf' ns r c t e = mkIf'' ns r c t e Nothing
+%%]
+
+%%[5 hs
+mkIf :: Range -> Expr -> Expr -> Expr -> Expr
+mkIf = mkIf' [hsnBool,hsnTrue,hsnFalse]
+%%]
+
+%%[5 hs
+mkAlt :: Range -> PatExpr -> Expr -> CaseAlt
+mkAlt r p e = rngLift r CaseAlt_Pat p e
+%%]
+
+%%[5.mkCase hs
+mkCase :: Range -> Expr -> [(PatExpr,Expr)] -> Expr
+mkCase r c as = mkCase' r c [ mkAlt r p e | (p,e) <- as ]
+
+mkCase' :: Range -> Expr -> [CaseAlt] -> Expr
+mkCase' r c as = rngLift r Expr_Case c as
+%%]
+
+%%[8 -5.mkCase hs
+mkCase' :: Range -> Expr  -> Maybe UID -> Bool -> [CaseAlt] -> Expr
+mkCase' r c id istup as
+  = rngLift r Expr_Case c as id istup
 
 mkCase :: Range -> Expr -> [(PatExpr,Expr)] -> Expr
 mkCase r c as
-  = mkRngEH r Expr_Case c [ CaseAlt_Pat p e | (p,e) <- as ]
-
-mkIf :: Range -> Expr -> Expr -> Expr -> Expr
-mkIf r c t e
-  = mkCase r
-      ( Expr_TypeAs (TyExpr_Con hsnBool) c )
-      [ (PatExpr_Con hsnTrue , t)
-      , (PatExpr_Con hsnFalse, e)
-      ]
+  = mkCase' r c Nothing False [ mkAlt r p e | (p,e) <- as ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -116,7 +164,15 @@ instance SemApp Expr where
   semAppTop    = Expr_AppTop
   semCon       = Expr_Con . mkHNm
   semParens    = Expr_Parens
+  mkRngCon _   = Expr_Con . mkHNm
+  mkRngVar _   = Expr_Var . mkHNm
 %%]
+%%[7 hs
+  mkProdApp l
+    = Expr_Rec $ RecExpr_Empty `mkRow` l
+    where mkRow = foldl (\r e -> RecExpr_Ext r Nothing e)
+%%]
+
 
 %%[1 hs
 instance SemApp PatExpr where
@@ -124,6 +180,13 @@ instance SemApp PatExpr where
   semAppTop    = PatExpr_AppTop
   semCon       = PatExpr_Con . mkHNm
   semParens    = PatExpr_Parens
+  mkRngCon _   = PatExpr_Con . mkHNm
+  mkRngVar _   = PatExpr_Var . mkHNm
+%%]
+%%[7 hs
+  mkProdApp l
+    = PatExpr_Rec $ RecPatExpr_Empty `mkRow` l
+    where mkRow = foldl (\r e -> RecPatExpr_Ext r Nothing e)
 %%]
 
 %%[1 hs
@@ -132,6 +195,18 @@ instance SemApp TyExpr where
   semAppTop    = TyExpr_AppTop
   semCon       = TyExpr_Con . mkHNm
   semParens    = TyExpr_Parens
+  mkRngCon _   = TyExpr_Con . mkHNm
+%%]
+%%[1.mkRngVar hs
+  mkRngVar     = mkRngCon
+%%]
+%%[3 -1.mkRngVar hs
+  mkRngVar _   = TyExpr_Var . mkHNm
+%%]
+%%[7 hs
+  mkProdApp l
+    = TyExpr_Row $ RowTyExpr_Empty `mkRow` l
+    where mkRow = foldl (\r e -> RowTyExpr_Ext r Nothing e)
 %%]
 
 %%[6 hs
@@ -140,5 +215,7 @@ instance SemApp KiExpr where
   semAppTop    = KiExpr_AppTop
   semCon       = KiExpr_Con . mkHNm
   semParens    = KiExpr_Parens
+  mkRngCon _   = KiExpr_Con . mkHNm
+  mkRngVar _   = KiExpr_Var . mkHNm
 %%]
 

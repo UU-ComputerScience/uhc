@@ -23,20 +23,22 @@ instance Show Token where
        )
 instance Show EnumValToken where
  show tp = case tp of       
-  TkQOp        -> "qualified operator"  
-  TkQConOp     -> "qualified con operator"            
+  TkVarid      -> "lower case identifier" 
+  TkConid      -> "upper case identifier" 
   TkOp         -> "operator"  
-  TkConOp      -> "con operator"            
+  TkConOp      -> "con operator"  
+%%[[12          
+  TkQOp        -> "qualified operator"  
+  TkQVarid     -> "lower case qualified identifier" 
+  TkQConid     -> "upper case qualified identifier" 
+  TkQConOp     -> "qualified con operator"            
+%%]
   TkString     -> "string"              
   TkChar       -> "character"            
   TkInteger8   -> "octal integer"         
   TkInteger10  -> "decimal Integer"       
   TkInteger16  -> "hexadecimal integer"   
   TkFraction   -> "fraction (float,...)"   
-  TkQVarid     -> "lower case qualified identifier" 
-  TkQConid     -> "upper case qualified identifier" 
-  TkVarid      -> "lower case identifier" 
-  TkConid      -> "upper case identifier" 
   TkTextnm     -> "text name"             
   TkTextln     -> "text lines"             
   TkError      -> "error in scanner:"   

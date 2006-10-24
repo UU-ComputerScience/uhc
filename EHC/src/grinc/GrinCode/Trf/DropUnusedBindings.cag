@@ -90,7 +90,7 @@ SEM GrBindL [ | | count: Int ]
 %%[8.dot
 SEM GrModule
   | Mod   loc  .  dot        = unlines (mkDot @lhs.entry
-                                              (show @baseName) 
+                                              (show @moduleNm) 
                                               (foldl (mkNodeEdges @lhs.nameMap @lifeBindings)
                                                      id
                                                      @nodes

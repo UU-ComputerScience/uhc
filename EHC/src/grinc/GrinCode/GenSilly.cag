@@ -1,0 +1,40 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[8 hs module {%{GRIN}GrinCode.GenSilly} import({%{GRIN}Silly}) export(grin2silly)
+%%]
+
+%%[8 hs import(UU.Pretty, {%{GRIN}GRINCCommon}, Data.List(nub), Data.Maybe, {%{EH}GrinCode}, {%{GRIN}Primitives}, {%{GRIN}Config})
+%%]
+%%[8 hs import({%{GRIN}Silly})
+%%]
+%%[8 hs import({%{EH}Base.Common} hiding "((<+>))")
+%%]
+%%[8 hs import(qualified Data.Map as Map, Data.Bits)
+%%]
+
+%%[8 import({GrinCode/AbsSyn})
+%%]
+%%[8 import({GrinCode/LastExpr})
+%%]
+
+%%[8
+WRAPPER GrAGItf
+%%]
+
+%%[8 hs
+grin2silly :: GrModule -> Bool -> Bool -> Bool -> SilModule
+grin2silly gr optJump optPar optLoc
+ = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr))
+                        (Inh_GrAGItf { optJumpTailCalls_Inh_GrAGItf = optJump
+                                     , optOwnParameters_Inh_GrAGItf = optPar
+                                     , optOwnLocals_Inh_GrAGItf = optLoc
+                                     }
+                        )
+   in silModule_Syn_GrAGItf t
+%%]
+
+%%[8 import({GrinCode/ToSilly})
+%%]

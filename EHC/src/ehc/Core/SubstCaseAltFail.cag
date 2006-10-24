@@ -1,0 +1,46 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Substituting fail place holder for case expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs module {%{EH}Core.SubstCaseAltFail} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Core}) export(cSubstCaseAltFail)
+%%]
+
+%%[8 hs import(qualified Data.Map as Map)
+%%]
+
+%%[8.WRAPPER import({Core/AbsSyn})
+WRAPPER CExpr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code substitution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+-- Substitute failRepl for CaseAltFail in ce
+cSubstCaseAltFail :: CaseFailSubst -> CExpr -> CExpr
+cSubstCaseAltFail caseFailSubst ce
+  =  let  t = wrap_CExpr (sem_CExpr ce) (Inh_CExpr {caseFailSubst_Inh_CExpr = caseFailSubst})
+     in   (cRepl_Syn_CExpr t)
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllCodeNT CodeAGItf [ caseFailSubst: CaseFailSubst | | cRepl: SELF ]
+
+SEM CExpr
+  | CaseAltFail lhs         .   cRepl       =   case Map.lookup @caseId @lhs.caseFailSubst of
+                                                  Just ce -> ce
+                                                  Nothing -> @cRepl
+%%]
+
+

@@ -7,13 +7,19 @@
 %%% Haskell importable interface to Ty pretty print
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}Ty.Pretty} import(UU.Pretty,{%{EH}Base.Common},{%{EH}Ty}) export(ppTy)
+%%[1 hs module {%{EH}Ty.Pretty} import(EH.Util.Utils,UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Ty}) export(ppTy)
 %%]
 
 %%[3 hs import(Char)
 %%]
 
 %%[7_2 hs import(qualified Data.Set as Set, Data.Set(Set), qualified Data.Map as Map, Data.Map(Map))
+%%]
+
+%%[8 hs import({%{EH}Scanner.Common(hiScanOpts)}) export(ppTyWithCfg,cfgPPTyHI,ppHINm)
+%%]
+
+%%[8 hs export(CfgPPTy(..),cfgPPTyDflt,cfgPPTyConViaCfg)
 %%]
 
 %%[9 hs export(ppTyPr)
@@ -35,22 +41,25 @@ instance PP Ty where
   pp t = ppTy t
 %%]
 
-%%[9.ppTy -1.ppTy hs
-ppTy' :: TyCtxt -> Ty -> PP_Doc
-ppTy' c ty
+%%[8.ppTy -1.ppTy hs
+ppTyWithCfg :: CfgPPTy -> Ty -> PP_Doc
+ppTyWithCfg c ty
   =  let  t =  wrap_TyAGItf
                  (sem_TyAGItf (TyAGItf_AGItf ty))
-                 (Inh_TyAGItf {ctxt_Inh_TyAGItf = c})
+                 (Inh_TyAGItf {cfg_Inh_TyAGItf = c})
      in   pp_Syn_TyAGItf t
 
 ppTy :: Ty -> PP_Doc
-ppTy = ppTy' TyCtxt_Ty
-
-ppTyPr :: Ty -> PP_Doc
-ppTyPr = ppTy' TyCtxt_Pred
+ppTy = ppTyWithCfg cfgPPTyDflt
 
 instance PP Ty where
   pp t = ppTy t
+%%]
+
+%%[9 hs
+ppTyPr :: Ty -> PP_Doc
+ppTyPr = ppTyWithCfg cfgPPTyPred
+
 %%]
 
 %%[4_2 hs
@@ -74,19 +83,84 @@ instance PP Impls where
   pp i = ppTy (Ty_Impls i)
 
 instance PP PredOcc where
-  pp po = pp (poPr po) >|< "/" >|< pp (poId po)
+  pp po = pp (poPr po) >|< "/" >|< pp (poPoi po)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% The context of a type
+%%% Configuration of PP of Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
-ATTR TyAGItf Ty [ ctxt: TyCtxt | | ]
+%%[8 hs
+data CfgPPTy
+  = CfgPPTy
+      { cfgPPTyPPHsn        :: HsName -> PP_Doc
+      , cfgPPTyPPCon        :: CfgPPTy -> HsName -> PP_Doc
+      , cfgPPTyPPVar        :: CfgPPTy -> UID -> Int -> PP_Doc
+%%[[9
+      , cfgPPTyCtxt         :: TyCtxt
+%%]
+      , cfgPPTyFollowAST    :: Bool
+      }
 
+cfgPPTyDflt :: CfgPPTy
+cfgPPTyDflt
+  = CfgPPTy
+      { cfgPPTyPPHsn        = pp
+      , cfgPPTyPPCon        = \_ -> ppCon
+      , cfgPPTyPPVar        = \c _ i -> ppTnUniq c i
+%%[[9
+      , cfgPPTyCtxt         = TyCtxt_Ty
+%%]
+      , cfgPPTyFollowAST    = False
+      }
+
+cfgPPTyConViaCfg :: CfgPPTy
+cfgPPTyConViaCfg
+  = cfgPPTyDflt
+      { cfgPPTyPPCon        = \c n -> if n == hsnRowEmpty then hsnORow >#< hsnCRow else cfgPPTyPPHsn c n
+      }
+%%]
+
+%%[9 hs
+cfgPPTyPred :: CfgPPTy
+cfgPPTyPred
+  = cfgPPTyDflt
+      { cfgPPTyCtxt         = TyCtxt_Pred
+      }
+%%]
+
+%%[8 hs
+ppHINm :: HsName -> PP_Doc
+ppHINm = ppHsnNonAlpha hiScanOpts
+%%]
+
+%%[8 hs
+cfgPPTyHI :: CfgPPTy
+cfgPPTyHI
+  = cfgPPTyConViaCfg
+      { cfgPPTyPPHsn        = ppHINm
+      , cfgPPTyFollowAST    = True
+      , cfgPPTyPPVar        = \c u _ -> "uid" >#< ppUID' u
+      }
+%%]
+
+%%[8 hs
+cfgAside :: (PP a, PP b) => CfgPPTy -> a -> b -> PP_Doc
+cfgAside c a b = if cfgPPTyFollowAST c then a >-< b else a >#< b
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The context (of a config) of a type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR TyAGItf AllTy [ cfg: CfgPPTy | | ]
+%%]
+
+%%[9
 SEM Pred
-  | Pred        loc         .   ctxt            =   TyCtxt_Pred
-  | * - Pred    loc         .   ctxt            =   TyCtxt_Ty
+  | Pred        loc         .   cfg             =   @lhs.cfg { cfgPPTyCtxt = TyCtxt_Pred }
+  | * - Pred    loc         .   cfg             =   @lhs.cfg { cfgPPTyCtxt = TyCtxt_Ty   }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -98,26 +172,43 @@ type TVarNameMap = AssocL TyVarId PP_Doc
 %%]
 
 %%[3 hs
+tnUniqRepr :: Int -> String
+tnUniqRepr
+  = lrepr
+  where lrepr i     =  if i <= 26
+                       then  [repr i]
+                       else  let  (d,r) = i `divMod` 26
+                             in   (repr d : lrepr r)
+        repr        =  (chr . (97+))
+%%]
+
+%%[3.ppTnUniq hs
 ppTnUniq :: Int -> PP_Doc
-ppTnUniq u
-  =  let  lrepr i     =  if i <= 26
-                         then  [repr i]
-                         else  let  (d,r) = i `divMod` 26
-                               in   (repr d : lrepr r)
-          repr        =  (chr . (97+))
-     in text (lrepr u)
+ppTnUniq = pp . tnUniqRepr
+%%]
+
+%%[8 -3.ppTnUniq hs
+ppTnUniq :: CfgPPTy -> Int -> PP_Doc
+ppTnUniq c = cfgPPTyPPHsn c . mkHNm . tnUniqRepr
 %%]
 
 %%[3.mkDefaultTvNm hs
 mkDefaultTvNm :: String -> TyVarId -> PP_Doc
 mkDefaultTvNm pre tv = text (pre ++ "_" ++ show tv)
+%%]
 
+%%[8 -3.mkDefaultTvNm hs
+mkDefaultTvNm :: CfgPPTy -> String -> TyVarId -> PP_Doc
+mkDefaultTvNm cfg pre tv = cfgPPTyPPHsn cfg $ mkHNm $ pre ++ "_" ++ show tv
+%%]
+
+%%[3 hs
 tvCategPrefix :: TyVarCateg -> String
 tvCategPrefix TyVarCateg_Fixed = "c"
 tvCategPrefix TyVarCateg_Plain = "v"
-%%]
-%%[6_4 hs
+%%[[6_4
 tvCategPrefix TyVarCateg_Exist = "C"
+%%]
 %%]
 
 %%[3
@@ -128,10 +219,23 @@ SEM TyAGItf
                             .   tnMap       =   []
 
 SEM Ty
-  | Quant           loc     .   tnPP        =   ppTnUniq @lhs.tnUniq
+  | Quant 
+%%[[11
+    Lam
+%%]]
+                    loc     .   tnPP        =   ppTnUniq @lhs.tnUniq
                     ty      .   tnUniq      =   @lhs.tnUniq + 1
                             .   tnMap       =   (@tv,@tnPP) : @lhs.tnMap
                     lhs     .   tnMap       =   filter (\(v,_) -> v /= @tv) @ty.tnMap
+%%]
+
+%%[8
+SEM Ty
+  | Quant
+%%[[11
+    Lam
+%%]]
+                    loc     .   tnPP        :=  cfgPPTyPPVar @lhs.cfg @lhs.cfg @tv @lhs.tnUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -144,12 +248,24 @@ ATTR TyAGItf AllTy [ | | pp USE {>#<} {empty}: PP_Doc ]
 SEM Ty
   | Con             loc     .   pp      =   ppCon @nm
   | App             loc     .   ppDflt  =   @func.pp >#< @arg.pp
-                            .   pp      =   if @isSpineRoot
-                                            then  ppParNeed  @parNeed @lhs.parNeed
-                                                             (ppAppTop (@appFunNm,@appFunPP) @appArgPPL @ppDflt)
-                                            else  @ppDflt
+                            .   ppNice  =   ppParNeed  @parNeed @lhs.parNeed
+                                                       (ppAppTop (@appFunNm,@appFunPP) @appArgPPL @ppDflt)
+                            .   pp      =   if @isSpineRoot then @ppNice else @ppDflt
   | Any             loc     .   pp      =   pp hsnUnknown
 %%]
+
+%%[8
+SEM Ty
+  | Con             loc     .   pp      :=  cfgPPTyPPCon @lhs.cfg @lhs.cfg @nm
+  | App             loc     .   ppDflt  :=  if cfgPPTyFollowAST @lhs.cfg then ppParens @func.pp >#< ppParens @arg.pp else @func.pp >#< @arg.pp
+                            .   ppAST   :=  hv ([ppParens @appFunPP] ++ map ((" " >|<) . ppParens) @appArgPPL)
+                            .   pp      :=  if @isSpineRoot
+                                            then if cfgPPTyFollowAST @lhs.cfg
+                                                 then @ppAST
+                                                 else @ppNice
+                                            else @ppDflt
+%%]
+                            .   ppAST   :=  ppParens @appFunPP >#< (vlist $ map ppParens $ @appArgPPL)
 
 %%[2.Var
 SEM Ty
@@ -159,6 +275,11 @@ SEM Ty
 %%[3.Var -2.Var
 SEM Ty
   | Var             loc     .   pp      :=  maybe (mkDefaultTvNm (tvCategPrefix @categ.self) @tv) id (lookup @tv @lhs.tnMap)
+%%]
+
+%%[8.Var -3.Var
+SEM Ty
+  | Var             loc     .   pp      :=  maybe (mkDefaultTvNm @lhs.cfg (tvCategPrefix @categ.self) @tv) id (lookup @tv @lhs.tnMap)
 %%]
 
 %%[3.Quant
@@ -176,6 +297,12 @@ SEM Ty
   
 SEM TyQu
   | Forall Exists   lhs     .   pp      =   text (showTyQu @self)
+%%]
+
+%%[8
+SEM Ty
+  | Quant           loc     .   pp      :=  ppParNeed  @parNeed @lhs.parNeed
+                                                       (cfgAside @lhs.cfg (@qu.pp >#< @tnPP) ("." >#< @ty.pp))
 %%]
 
 %%[4_2
@@ -207,8 +334,9 @@ SEM TyQu
 
 %%[7
 SEM Ty
-  | Ext             loc     .   pp      =   ppAppTop  (hsnRow,mkPPAppFun @appFunNm @appFunPP)
+  | Ext             loc     .   ppNice  =   ppAppTop  (hsnRow,mkPPAppFun @appFunNm @appFunPP)
                                                       @appArgPPL empty
+                            .   pp      =   @ppNice
 %%]
 
 %%[7_2.annotation
@@ -233,17 +361,30 @@ SEM TyExpFields
   | Cons            lhs     .   ppL     =   @hd.pp : @tl.ppL
 %%]
 
+%%[8
+SEM Ty
+  | Ext             loc     .   ppDflt  =   hsnORow >#< @ty.pp >#< "|" >#< @fldPP >#< hsnCRow
+                            .   pp      :=  if @isSpineRoot
+                                            then if cfgPPTyFollowAST @lhs.cfg
+                                                 then let (e:es) = @appArgPPL 
+                                                      in  hv ([hsnORow >#< @appFunPP,"|" >#< e] ++ map ("," >#<) es ++ [pp hsnCRow])
+                                                 else @ppNice
+                                            else @ppNice
+%%]
+
 %%[9
 SEM Ty
-  | *               loc     .   wrapPP  =   if @lhs.ctxt == TyCtxt_Pred then id else (\pp -> hsnOImpl >#< pp >#< hsnCImpl)
+  | Pred Impls      loc     .   wrapPP  =   if cfgPPTyCtxt @lhs.cfg == TyCtxt_Pred then id else (\pp -> hsnOImpl >#< pp >#< hsnCImpl)
   | Pred            loc     .   pp      =   @wrapPP @pr.pp
   | Impls           loc     .   pp      =   @wrapPP @impls.pp
-  | Con             loc     .   pp      :=  if @lhs.ctxt == TyCtxt_Pred && hsnIsArrow @nm then ppCon hsnPrArrow else ppCon @nm
+  | Con             loc     .   pp      :=  if cfgPPTyCtxt @lhs.cfg == TyCtxt_Pred && hsnIsArrow @nm
+                                            then cfgPPTyPPCon @lhs.cfg @lhs.cfg hsnPrArrow
+                                            else cfgPPTyPPCon @lhs.cfg @lhs.cfg @nm
 
 SEM Impls
-  | Tail Cons       loc     .   ppIv    =   maybe (mkDefaultTvNm "i" @iv) id (lookup @iv @lhs.tnMap)
+  | Tail Cons       loc     .   ppIv    =   maybe (mkDefaultTvNm @lhs.cfg "i" @iv) id (lookup @iv @lhs.tnMap)
   | Tail            lhs     .   pp      =   @ppIv
-  | Cons            loc     .   ppPv    =   maybe (mkDefaultTvNm "p" (poiId @pv)) id (lookup @iv @lhs.tnMap)
+  | Cons            loc     .   ppPv    =   maybe (mkDefaultTvNm @lhs.cfg "p" (poiId @pv)) id (lookup @iv @lhs.tnMap)
                     lhs     .   pp      =   @ppIv >|< "=" >|< @pr.pp >|< "/" >|< @ppPv >|< "," >|< @tl.pp
   | Nil             lhs     .   pp      =   pp "_"
 %%]
@@ -255,12 +396,18 @@ SEM TyPlus
 
 %%[10
 SEM Pred
-  | Lacks           lhs     .   pp      =   @ty.pp >|< "\\" >|< @nm
+  | Lacks           lhs     .   pp      =   @ty.pp >|< "\\" >|< cfgPPTyPPHsn @lhs.cfg @nm
+%%]
+
+%%[11
+SEM Ty
+  | Lam             loc     .   pp      =   ppParNeed  @parNeed @lhs.parNeed
+                                                       (cfgAside @lhs.cfg ("\\" >|< @tnPP) ("->" >#< @ty.pp))
 %%]
 
 %%[50
 SEM Ty
-  | Equal           loc     .   pp      =   pp_parens (maybe (mkDefaultTvNm "e" @tv) id (lookup @tv @lhs.tnMap) >|< "=" >|< @ty.pp)
+  | Equal           loc     .   pp      =   pp_parens (maybe (mkDefaultTvNm @lhs.cfg "e" @tv) id (lookup @tv @lhs.tnMap) >|< "=" >|< @ty.pp)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -313,10 +460,22 @@ SEM Ty
   | App             loc     .  (appFunPP,appArgPPL)
                                             :=  mkExtAppPP  (@appFunNm,@func.appFunPP,@func.appArgPPL)
                                                             (@arg.appFunNm,@arg.appFunPP,@arg.appArgPPL,@arg.pp)
-  | Ext             loc     .  appArgPPL    :=  @ty.appArgPPL ++ [ppFld "::" @positionalNm @nm @extTy.pp]
+  | Ext             loc     .  fldPP        =   ppFld "::" (Just @positionalNm) @nm (pp @nm) @extTy.pp
+                            .  appArgPPL    :=  @ty.appArgPPL ++ [@fldPP]
                             .  appFunPP     :=  @ty.appFunPP
   | * - App Ext     lhs     .  appArgPPL    :=  []
                             .  appFunPP     :=  @pp
+%%]
+
+%%[8
+SEM Ty
+  | App             loc     .  (appFunPP,appArgPPL)
+                                            :=  if cfgPPTyFollowAST @lhs.cfg
+                                                then (@func.appFunPP,@func.appArgPPL ++ [@arg.pp])
+                                                else mkExtAppPP  (@appFunNm,@func.appFunPP,@func.appArgPPL)
+                                                                 (@arg.appFunNm,@arg.appFunPP,@arg.appArgPPL,@arg.pp)
+  | Ext             loc     .  fldPP        :=  let pn = if cfgPPTyFollowAST @lhs.cfg then Nothing else Just @positionalNm
+                                                in  ppFld "::" pn @nm (cfgPPTyPPHsn @lhs.cfg @nm) @extTy.pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -370,6 +529,11 @@ SEM Pred
                         .   parNeedL            =   []
   | * - Pred    loc     .   parNeed             =   ParNotNeeded
                         .   parNeedL            =   []
+%%]
+
+%%[11
+SEM Ty
+  | Lam         loc     .   parNeed             =   ParNotNeeded
 %%]
 
 %%[50

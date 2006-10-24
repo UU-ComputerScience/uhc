@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}Ty} import({%{EH}Base.Common}) export(TyAGItf(..), Ty(..), TyL, tyInt, tyChar, mkTyCon)
+%%[1 hs module {%{EH}Ty} import(EH.Util.Utils,{%{EH}Base.Common}, {%{EH}Base.Builtin}) export(TyAGItf(..), Ty(..), TyL, tyInt, tyChar, mkTyCon)
 %%]
 
 %%[1 hs export(tyLHdAndTl, tyArrowArgRes, tyArrowArgsRes, tyArrowArgs, tyArrowRes, tyAppFunArgs, tyProdArgs, tyAppArgs) 
@@ -103,7 +103,10 @@
 %%[10 hs export(tyExtsOffset)
 %%]
 
-%%[99 hs export(tyInteger,tyDouble)
+%%[11 hs export(tyLamArgsRes)
+%%]
+
+%%[99 hs export(tyInteger,tyDouble,tyBool) 
 %%]
 
 %%[1 import({Ty/AbsSyn})
@@ -297,6 +300,13 @@ instance SemApp Ty where
   semAppTop      = id
   semCon         = Ty_Con . mkHNm
   semParens      = id
+  mkRngCon _     = Ty_Con . mkHNm
+%%]
+%%[1.mkRngVar hs
+  mkRngVar       = mkRngCon
+%%]
+%%[3 -1.mkRngVar hs
+  mkRngVar _     = panic "Ty:mkRngVar"
 %%]
 %%[7 hs
   mkProdApp tyL  = mkTyRec (zip positionalFldNames tyL)
@@ -425,6 +435,7 @@ tyFloat     = Ty_Con hsnFloat
 %%]
 
 %%[99 hs
+tyBool      = Ty_Con hsnBool
 tyInteger   = Ty_Con hsnInteger
 tyDouble    = Ty_Con hsnDouble
 %%]
@@ -576,6 +587,17 @@ tyArrowImplsArgRes t
 
 tyLImplsPreds :: TyL -> ([Pred],Impls)
 tyLImplsPreds = foldr (\t (ps,i) -> case t of {Ty_Pred p -> (p:ps,i); Ty_Impls i -> (ps,i)}) ([],Impls_Nil)
+%%]
+
+%%[11 hs
+tyLamArgsRes :: Ty -> ([TyVarId],Ty)
+tyLamArgsRes
+  =  extr
+  where  extr t
+           =  case t of
+                Ty_Lam a r  -> (a:as',r')
+                            where (as',r') = extr r
+                _           -> ([],t)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

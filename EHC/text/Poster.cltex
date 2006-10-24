@@ -1,0 +1,152 @@
+%%[poster
+\small\sf
+\def\ColNodeBg{yellow}
+\def\ColNodeFg{black}
+\newcommand{\Node}[4]{node[fill=#1!10,text=#2!80,anchor=north,shape=rectangle,rounded corners,draw] {#4}}
+\newcommand{\PNode}[4]{\Node{#1}{#2}{#3}{\parbox{#3cm}{\begin{center}#4\end{center}}}}
+\newcommand{\PTitle}[1]{{\huge\textbf{#1}}}
+\newcommand{\NTitle}[1]{{\Large\textbf{#1}}}
+\newcommand{\Dots}{\NTitle{...}}
+\let\NL=\\
+\noindent
+\begin{tikzpicture}
+
+% grid & reserve the space
+\draw[step=1cm,white,very thin] (0,0) grid (21,29.6);
+
+% title
+\draw (10.5,29.3) \PNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+{\FigScaledPDF{0.6}{2a_NWO_LogoBasis_PMSb}
+\PTitle{%
+ \parbox{.5\linewidth}{\centering Essential Haskell\\
+                      {\Large coping with compiler complexity}}
+}
+\FigScaledPDF{0.6}{UULogoSolRight}
+}
+};
+
+\draw (10.5,26.5) \PNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+{\large
+\NTitle{Observations:}
+\begin{itemize}
+\item Programmers: want programming languages to do as much as possible of their programming job
+\item Users: want guarantees of resulting programs, e.g. no errors
+\end{itemize}
+\vspace{0.4cm}
+\NTitle{Resulting problem:}
+\begin{itemize}
+\item Programming language + compiler: become more complex
+\end{itemize}
+}
+};
+
+% growing example
+\draw (10.5,22) \PNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+\renewcommand{\arraystretch}{1.5}
+\newcommand{\Nw}{\hspace{\tabcolsep}}
+\begin{tabular}{l@@{}l@@{\Nw|->|\Nw}l@@{\Nw|->|\Nw}l@@{\Nw|->|\Nw}l}
+\multicolumn{5}{c}{\NTitle{Coping with design complexity: stepwise grow a language (Haskell in particular)}}
+\\
+\textbf{Feature:}
+&
+Simply typed |lambda| calculus
+&
+Polymorphic type inference
+&
+Higher ranked types
+&
+\Dots
+\\
+\textbf{Example:}
+&
+%%[[wrap=boxcode{.12}
+%%@[file:test/1/demo2.eh%%]
+%%]
+&
+%%[[wrap=boxcode{.12}
+let  id = \x -> x
+in   (id 3,id 'x')
+%%]
+%yields
+%|id :: %%3(let id = \x -> x in id%%)|
+&
+%%[[wrap=boxcode{.15}
+%%@[file:test/4/demo2.eh%%]
+%%]
+&
+\Dots
+\\
+\textbf{Semantics:}
+&
+\(\rulerCmdUse{rules3.K.expr.base.e.app}\)
+&
+\(\rulerCmdUse{rules3.I1.expr.base.e.app}\)
+&
+\(\rulerCmdUse{rules3.I2.expr.base.e.app}\)
+&
+\Dots
+\\
+\textbf{Implementation:}
+&
+{\tiny
+%%@EHRulerRules.1.expr.e.app wrap=boxcode{.12}
+}
+&
+{\tiny
+%%@EHRulerRules.4.expr.e.app wrap=boxcode{.12}
+}
+&
+\Dots
+&
+\Dots
+\\
+\textbf{Documentation:}
+&
+\multicolumn{4}{l}{\Dots}
+\\
+\end{tabular}
+};
+
+% toolchain
+\draw (5,11.5) \PNode{\ColNodeBg}{\ColNodeFg}{9.5}{%
+{%\large
+\NTitle{Coping with maintenance complexity: generate, generate and generate}\\[0.2cm]
+{\large from common source: guarantees consistency of generated artefacts}\\
+\FigScaledPDF{0.27}{toolchain}
+\raggedright
+\begin{itemize}
+\item Chunks (.chs, .cag):
+ combine chunks of text for program, documentation, ...
+\item Attribute Grammar (.ag):
+ domain specific language for tree based computation
+\item Ruler (.rul):
+ domain specific language for type rules
+\end{itemize}
+}};
+
+% dsl's
+\draw (16,11.5) \PNode{\ColNodeBg}{\ColNodeFg}{9.5}{%
+{%\large
+\NTitle{Coping with formalisation complexity: domain specific languages}\\[0.2cm]
+%{\large for an otherwise too complex problem}
+\[\rulerCmdUse{rules3.I2.expr.base.e.app}\]
+\begin{itemize}
+\item Specification of type rules
+\item Implementation of type rules, different strategies
+\item Pretty printing type rules
+\end{itemize}
+}};
+
+% participants
+\draw (16,3.75) \PNode{\ColNodeBg}{\ColNodeFg}{9.5}{%
+{%\large
+\NTitle{More information}\\
+\begin{Itemize}
+\item Supported by NWO program `Hefboom' (project 641.000.412)
+\item Participants: Prof. Dr. S. Doaitse Swierstra, Dr. Bastiaan J. Heeren, Dr. Atze Dijkstra, Drs. Jeroen D. Fokker, Drs. Arie Middelkoop
+\item See \texttt{http://www.cs.uu.nl/wiki/Ehc/WebHome}
+\end{Itemize}
+}};
+
+\end{tikzpicture}
+%%]

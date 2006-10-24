@@ -60,7 +60,11 @@ ATTR TyVarCateg [ | | self: SELF ]
 
 SEM Ty
   | Var             lhs     .   tvMp        =   @tv `Map.singleton` @categ.self
-  | Quant           lhs     .   tvMp        =   @tv `Map.delete` @ty.tvMp 
+  | Quant
+%%[[11
+    Lam
+%%]]
+                    lhs     .   tvMp        =   @tv `Map.delete` @ty.tvMp 
 %%]
 
 %%[50

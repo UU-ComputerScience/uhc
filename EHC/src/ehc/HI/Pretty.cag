@@ -1,0 +1,85 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printed source
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12 hs
+hiNV' :: String -> HsName -> PP_Doc -> PP_Doc
+hiNV' k n v = k >#< ppHINm n >-< indent 1 ("=" >#< v)
+
+hiNV :: String -> HsName -> [PP_Doc] -> PP_Doc
+hiNV k n v = hiNV' k n (ppCurlysSemisBlock v)
+
+%%]
+ppHINm :: HsName -> PP_Doc
+ppHINm = ppHsnNonAlpha hiScanOpts
+
+ppAttr :: PP b => HsName -> b -> PP_Doc
+ppAttr a b = ppHINm a >#< ":" >#< b
+
+
+%%[2
+ATTR AllNT AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
+%%]
+
+%%[12
+SEM Module
+    | Module
+        lhs         .   pp          =   hiNV "module" @nm @bindings.ppL
+
+SEM Binding
+    | Stamp
+        lhs         .   pp          =   let ps :: Show a => a -> PP_Doc
+                                            ps = pp . show
+                                            pc :: PP a => a -> PP_Doc
+                                            pc = ("--" >#<)
+                                        in  hiNV "stamp" hsnUnknown
+                                              [ ps @srcTimestamp        >#< pc "time of compiler build"
+                                              , ps @srcSig              >#< pc "cryptographic hash of compiler sources"
+                                              , ps @srcVersionMajor     >#< pc "version major"
+                                              , ps @srcVersionMinor     >#< pc "version minor"
+                                              , ps @srcVersionQuality   >#< pc "build stability"
+                                              , ps @srcVersionSvn       >#< pc "svn of compiler build"
+                                              , ps @hash                >#< pc "hash for faster equality check of this info, not yet used"
+                                              ]
+    | Fixity
+        lhs         .   pp          =   hiNV "fixity" @nm [pp @prio,pp @fixity]
+    | Export
+        lhs         .   pp          =   hiNV' "export" hsnUnknown (ppModEntRel' ppHINm @exports)
+    | Ids
+        lhs         .   pp          =   hiNV "iddef" hsnUnknown (map (\(o,d) -> ppCurlysSemisBlock [ppIdOcc ppHINm o,ppIdOcc ppHINm d]) @idOccs)
+    | Val
+        lhs         .   pp          =   hiNV "value" @nm [ppTyWithCfg cfgPPTyHI @ty]
+    | DataCon
+        lhs         .   pp          =   let ppCTag t = ppCommas [pp (ctagTag' t),pp (ctagArity t)]
+                                        in  hiNV "data" @nm (map (\(n,t) -> ppHINm n >#< "=" >#< ppCTag t) @tags)
+    | Ty
+        lhs         .   pp          =   hiNV "type" @nm [ppTyWithCfg cfgPPTyHI @ty,ppTyWithCfg cfgPPTyHI @ki]
+    | Class
+        lhs         .   pp          =   hiNV "class" @nm [ppTyWithCfg cfgPPTyHI @prToEvidTy,ppTyWithCfg cfgPPTyHI @ki,@rule.pp]
+    | Instance
+        lhs         .   pp          =   hiNV "instance" @nm @rules.ppL
+%%]
+
+%%[12
+SEM Rule
+    | Rule
+        lhs         .   pp          =   hiNV "rule" @nm [ppTyWithCfg cfgPPTyHI @ty,Pr.ppHowMkEvid ppHINm @mkEvid,ppPredOccId' ppUID' @uid,Pr.ppProofCost' @cost]
+%%]
+
+%%[12
+ATTR
+  Bindings Rules
+    [ | | ppL: {[PP_Doc]} ]
+
+SEM Bindings
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+
+SEM Rules
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+%%]

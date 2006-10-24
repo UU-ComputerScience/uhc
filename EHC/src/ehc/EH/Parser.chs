@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}EH.Parser} import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.GenToken, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}EH})
+%%[1 module {%{EH}EH.Parser} import(IO, UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils(LayoutParser), UU.Scanner.GenToken, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}EH})
 %%]
 
 %%[1 export(pAGItf)
@@ -41,8 +41,7 @@ instance SemParser Expr PatExpr TyExpr Decls where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.parserSigs
-type EHCParser        ep    =    (IsParser (OffsideParser i o Token p) Token,InputState i Token p, OutputState o, Position p)
-                                    => OffsideParser i o Token p ep
+type EHCParser        ep    =    LayoutParser Token ep
 
 pAGItf                      ::   EHCParser AGItf
 
@@ -153,7 +152,11 @@ pDecl           =    Decl_Val        <$>  pPatExprBase  <*   pEQUAL   <*> pExpr
                 <|>  pDeclClass
                 <|>  pDeclInstance
 %%]
-%%[10.pDecl
+%%[11
+                <|>  Decl_Type       <$   pTYPE         <*>  pCon
+                                                        <*   pEQUAL     <*> pTyExpr
+%%]
+%%[1010.pDecl
                 <|>  Decl_DynVal     <$>  pDynVar       <*   pEQUAL     <*> pExpr
                 <|>  Decl_DynTySig   <$>  pDynVar       <*   pDCOLON    <*> pTyExpr
 %%]
@@ -272,6 +275,9 @@ pTyExprPrefix   =    TyExpr_Quant
 %%[9.pTyExprPrefix
                 <|>  pTyPrExprPrefix
 %%]
+%%[11
+                <|>  TyExpr_Lam <$ pLAM <*> pVar <* pRARROW
+%%]
 
 %%[9.pTyPrExprPrefix
 pTyPrExprPrefix ::   EHCParser (TyExpr -> TyExpr)
@@ -302,7 +308,7 @@ pTyExprApp      =    pApp pTyExprBase
 %%]
 
 %%[9.pPackImpl
-pPackImpl       ::   EHCParser p -> EHCParser p
+pPackImpl       ::   IsParser p Token => p v -> p v
 pPackImpl       =    pPacked pOIMPL pCIMPL
 %%]
 
@@ -321,7 +327,12 @@ pExprBase       =    Expr_IConst     <$>  pInt
                 <|>  pParenProd pExpr
 %%]
 %%[5.pExprBase
-                <|>  Expr_Case       <$   pKey "case" <*> pExpr <* pKey "of" <*> pCaseAlts
+%%[[5
+                <|>  Expr_Case
+%%][8
+                <|>  (\e a -> Expr_Case e a Nothing False)
+%%]]
+                     <$   pKey "case" <*> pExpr <* pKey "of" <*> pCaseAlts
 %%]
 %%[7.pExprBase -1.pExprBaseParenProd
                 <|>  pParenRow True (show hsnORec) (show hsnCRec) "=" (Just (":=",RecExpr_Upd))
@@ -381,6 +392,9 @@ pExprPrefix     =    Expr_Let      <$ pLET
                                    [ CaseAlt_Pat (PatExpr_Con (HNm "True")) t
                                    , CaseAlt_Pat (PatExpr_Con (HNm "False")) e
                                    ]
+%%[[8
+                                   Nothing False
+%%]]
                      )
                      <$ pIF <*> pExpr <* pTHEN <*> pExpr <* pELSE
 %%]
@@ -483,7 +497,7 @@ pParenRow singleAsIs o c sep mbUpd (semEmpty,semVar,semExt,semRow,semParens) pSe
 %%[7
 pExprSelSuffix  ::   EHCParser (Expr -> Expr)
 pExprSelSuffix  =    (\lbls e -> foldl Expr_Sel e lbls)
-                     <$> pList (pKey "." *> pSel)
+                     <$> pList (pHASH *> pSel)
 
 pSel            ::   EHCParser HsName
 pSel            =    pVar <|> pCon <|> HNPos <$> pInt
@@ -544,7 +558,7 @@ pClassHead      =    pTyPrExprPrefix <*> pHd <|> pHd
                 where pHd = TyExpr_Pred <$> pPrExprClass
 
 pDeclClass      ::   EHCParser Decl
-pDeclClass      =    Decl_Class
+pDeclClass      =    (\h deps d -> Decl_Class h deps Nothing d)
                      <$   pKey "class"
                      <*>  pClassHead
                      <*>  (pKey "|" *> pListSep pComma (FuncDep_Dep <$> pTyVars1 <* pKey "->" <*> pTyVars1)
@@ -554,11 +568,11 @@ pDeclClass      =    Decl_Class
 
 pDeclInstance   ::   EHCParser Decl
 pDeclInstance   =    pKey "instance"
-                     *>   (    Decl_Instance
+                     *>   (    (\n h d -> Decl_Instance n InstNormal h d)
                                <$>  ((\n e -> Just (n,e)) <$> pVar <*> (True <$ pKey "<:" <|> False <$ pKey "::") `opt` Nothing)
                                <*>  pClassHead
                                <*   pKey "where" <*> pDecls
-                          <|>  Decl_InstanceIntro <$> pExpr <* pKey "<:" <*> pPrExprClass
+                          <|>  Decl_InstanceIntro Nothing <$> pExpr <* pKey "<:" <*> pPrExprClass
                           )
 %%]
 

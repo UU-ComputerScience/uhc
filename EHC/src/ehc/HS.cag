@@ -13,10 +13,7 @@
 %%[1 hs export(AGItf(..), Module(..), Body(..), Declaration(..), Declarations, MaybeDeclarations, Type(..), Types, Expression(..), Expressions, MaybeExpression, FunctionBinding(..), FunctionBindings, LeftHandSide(..), RightHandSide(..), Pattern(..), Patterns, Literal(..), Name, Names, MaybeName, MaybeNames, Strings, Range(..), Fixity(..))
 %%]
 
-%%[1 hs export(mkRange1,mkRange2,emptyRange,mkQName,mkQNames)
-%%]
-
-%%[1 hs export(mkRngNm,mkRngStr,mkInt,mkStr)
+%%[1 hs export(mkRngNm,mkRngNm',mkRngStr)
 %%]
 
 %%[5 hs export(Constructor(..), Constructors)
@@ -43,13 +40,13 @@
 %%[7 hs export(RowRecordExpressionUpdate(..), RowRecordExpressionUpdates, RowRecordPatternBinding(..), RowRecordPatternBindings, RowTypeUpdate(..), RowTypeUpdates)
 %%]
 
-%%[8 hs export(Export(..), Exports, MaybeExports, ImportDeclaration(..), ImportDeclarations, ImportSpecification(..), MaybeImportSpecification, Import(..), Imports)
-%%]
-
-%%[9 hs export(ContextItem(..), ContextItems, ContextedExpression(..), ContextedExpressions, ContextedPattern(..), ContextedPatterns, FunctionalDependency(..), FunctionalDependencies)
+%%[9 hs export(ContextItem(..), ContextItems, ContextedExpression(..), ContextedExpressions, ContextedPattern(..), ContextedPatterns, FunctionalDependency(..), FunctionalDependencies, Deriving(..), Derivings)
 %%]
 
 %%[9 hs export(Statement(..), Statements)
+%%]
+
+%%[12 hs export(Export(..), Exports, MaybeExports, ImportDeclaration(..), ImportDeclarations, ImportSpecification(..), MaybeImportSpecification, Import(..), Imports)
 %%]
 
 %%[1.Token hs import(UU.Scanner.Token)
@@ -73,66 +70,26 @@ type MaybeNames = Maybe Names
 %%]
 
 %%[1 hs
-mkPos :: Position p => p -> Pos
-mkPos p = Pos (line p) (column p) (file p)
-
-mkRange1 :: Position p => p -> Range
-mkRange1 p = Range_Range (mkPos p) noPos
-
-mkRange2 :: Position p => p -> p -> Range
-mkRange2 p1 p2 = Range_Range (mkPos p1) (mkPos p2)
-
-emptyRange :: Range
-emptyRange = Range_Unknown
 %%]
 
 %%[1 hs
--- Assumption: tokTpIsInt (genTokTp t) == True
-mkInt :: Token -> Int
-mkInt t
-  = case genTokTp t of
-      Just TkInteger10 -> read v
-      _                -> 0
-  where v = genTokVal t
+mkRngNm' :: (Position t,HSNM t) => (Range -> HsName -> r) -> t -> (r,Range)
+mkRngNm' ast t
+  = (ast r (mkHNm t),r)
+  where r = mkRange1 t
 
-mkStr :: Token -> String
-mkStr = genTokVal
-%%]
-
-%%[1.mkQName hs
-mkQName :: Token -> HsName
-mkQName = HNm . genTokVal
-%%]
-
-%%[7 -1.mkQName hs
-mkQName :: Token -> HsName
-mkQName t
-  = case genTokTp t of
-      Just tp | tokTpIsInt tp -> HNPos $ mkInt t
-      _                       -> mkHNm $ genTokVal t
-%%]
-
-%%[1 hs
-mkQNames :: [Token] -> [HsName]
-mkQNames = map mkQName
-
-instance HSNM Token where
-  mkHNm = mkQName
-%%]
-
-%%[1 hs
 mkRngNm :: (Position t,HSNM t) => (Range -> HsName -> r) -> t -> r
-mkRngNm ast t = ast (mkRange1 t) (mkHNm t)
+mkRngNm ast t = fst (mkRngNm' ast t)
 
 mkRngStr :: (Range -> String -> r) -> Token -> r
-mkRngStr ast t = ast (mkRange1 t) (mkStr t)
+mkRngStr ast t = ast (mkRange1 t) (tokMkStr t)
 %%]
 
 %%[1 hs
+%%]
 instance Show Range where
   show (Range_Range p _) = show p
   show Range_Unknown     = "??"
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% SemApp instances
@@ -144,7 +101,14 @@ instance SemApp Type where
   semAppTop    = id
   semCon       = mkRngNm Type_Constructor
   semParens    = Type_Parenthesized emptyRange
-  mkApp (a:as) = Type_Application emptyRange False a as
+  mkApp (a:as) = if null as then a else Type_Application emptyRange False a as
+  mkRngCon r n = Type_Constructor r (mkHNm n)
+%%]
+%%[1.mkRngVar hs
+  mkRngVar     = mkRngCon
+%%]
+%%[3 -1.mkRngVar hs
+  mkRngVar r n = Type_Variable r (mkHNm n)
 %%]
 
 %%[1 hs
@@ -153,7 +117,9 @@ instance SemApp Expression where
   semAppTop    = id
   semCon       = mkRngNm Expression_Constructor
   semParens    = Expression_Parenthesized emptyRange
-  mkApp (a:as) = Expression_NormalApplication emptyRange a as
+  mkApp (a:as) = if null as then a else Expression_NormalApplication emptyRange a as
+  mkRngCon r n = Expression_Constructor r (mkHNm n)
+  mkRngVar r n = Expression_Variable r (mkHNm n)
 %%]
 
 

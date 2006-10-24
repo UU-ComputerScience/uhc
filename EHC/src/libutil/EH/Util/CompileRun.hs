@@ -111,7 +111,7 @@ ppCR :: (PP n,PP u) => CompileRun n u i e -> PP_Doc
 ppCR cr
   = "CR:" >#<
       (   (ppListSepVV "[" "]" "," $ map (\(n,u) -> pp n >#< "->" >#< pp u) $ Map.toList $ crCUCache $ cr)
-      >-< ppCommaList (map ppCommaList $ crCompileOrder $ cr)
+      >-< ppBracketsCommas (map ppBracketsCommas $ crCompileOrder $ cr)
       )
 
 crPP :: (PP n,PP u) => String -> CompileRun n u i e -> IO (CompileRun n u i e)
@@ -177,15 +177,15 @@ crCUFPath modNm cr = maybe emptyFPath cuFPath (crMbCU modNm cr)
 -------------------------------------------------------------------------
 
 cpFindFileForFPath
-  :: (Ord n,Show n,CompileUnitState s,CompileRunError e p,CompileUnit u n s,CompileModName n,CompileRunStateInfo i n p)
-       => Map.Map String s -> [String] -> Maybe n -> Maybe FPath -> CompilePhase n u i e (Maybe FPath)
+  :: (Ord n,FPATH n,CompileUnitState s,CompileRunError e p,CompileUnit u n s,CompileModName n,CompileRunStateInfo i n p)
+       => [(String,s)] -> [String] -> Maybe n -> Maybe FPath -> CompilePhase n u i e (Maybe FPath)
 cpFindFileForFPath suffs sp mbModNm mbFp
   = do { cr <- get
        ; let cus = maybe cusUnk (flip crCUState cr) mbModNm
        ; if cusIsUnk cus
-          then do { let fp = maybe (mkFPath $ show $ panicJust ("cpFindFileForFPath") $ mbModNm) id mbFp
+          then do { let fp = maybe (mkFPath $ panicJust ("cpFindFileForFPath") $ mbModNm) id mbFp
                         modNm = maybe (mkCMNm $ fpathBase $ fp) id mbModNm
-                  ; mbFpFound <- lift (searchPathForReadableFile sp (Map.keys suffs) fp)
+                  ; mbFpFound <- lift (searchPathForReadableFile sp (map fst suffs) fp)
                   ; case mbFpFound of
                       Nothing
                         -> do { cpSetErrs (creMkNotFoundErrL (crsiImportPosOfCUKey modNm (crStateInfo cr)) (fpathToStr fp) sp)
@@ -195,13 +195,11 @@ cpFindFileForFPath suffs sp mbModNm mbFp
                         -> do { cpUpdCU modNm (cuUpdFPath ff . cuUpdState cus . cuUpdKey modNm)
                               ; return (Just ff)
                               }
-                        where -- cus = Map.findWithDefault cusUnk (fpathSuff ff) suffs
-                              cus = case Map.lookup (fpathSuff ff) suffs of
+                        where cus = case lookup (fpathSuff ff) suffs of
                                       Just c  -> c
-                                      Nothing -> case Map.lookup "*" suffs of
+                                      Nothing -> case lookup "*" suffs of
                                                    Just c  -> c
                                                    Nothing -> cusUnk
-
                   }
           else return (maybe Nothing (\nm -> Just (crCUFPath nm cr)) mbModNm)
        }
@@ -215,10 +213,12 @@ cpImportGather
        => (n -> CompilePhase n u i e ()) -> n -> CompilePhase n u i e ()
 cpImportGather imp1Mod modNm
   = do { cr <- get
-       ; let impL m = [ i | i <- cuImports (crCU m cr), not (cusIsImpKnown (crCUState i cr)) ]
-             imps m = cpSeq (map (\n -> cpSeq [imp1Mod n, imps n]) (impL m))
        ; cpSeq [imp1Mod modNm, imps modNm, cpImportScc]
        }
+  where imps m = do { cr <- get
+                    ; let impL m = [ i | i <- cuImports (crCU m cr), not (cusIsImpKnown (crCUState i cr)) ]
+                    ; cpSeq (map (\n -> cpSeq [imp1Mod n, imps n]) (impL m))
+                    }
 
 crImportDepL :: (CompileUnit u n s) => CompileRun n u i e -> [(n,[n])]
 crImportDepL = map (\cu -> (cuKey cu,cuImports cu)) . Map.elems . crCUCache

@@ -7,9 +7,9 @@
 %%% Grinc Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{GRIN}GRINCCommon} 
+%%[8 module {%{GRIN}GRINCCommon}
 %%]
-%%[8 import( {%{EH}Base.Common}, qualified Data.Map as Map, qualified Data.Set as Set)
+%%[8 import( {%{EH}Base.Common}, qualified Data.Map as Map, qualified Data.Set as Set, Char(isDigit))
 %%]
 
 %%[8 export(wildcardNm, wildcardNr, evalNm, evalNr,  applyNm, applyNr, isSpecialBind, getNr, throwTag, blackholeTag)
@@ -50,19 +50,24 @@ getName :: IdentNameMap -> Int -> String
 getName m i = show $ getName' m (HNPos i)
 
 getName' :: IdentNameMap -> HsName -> HsName
-getName' (names, m) nm@(HNPos i) = if wildcardNr == nm
-                                   then wildcardNm
-                                   else if applyNr == nm
-                                   then applyNm
-                                   else if evalNr == nm
-                                   then evalNm
-                                   else findNewVar' i ""
+getName' (names, m) nm@(HNPos i)
+  = if wildcardNr == nm
+    then wildcardNm
+    else if applyNr == nm
+    then applyNm
+    else if evalNr == nm
+    then evalNm
+    else let newNm = findNewVar' i ""
+         in if   isDigit (head (show newNm))
+            then HNm ('x':'_':show i)
+            else newNm
     where
     inBetween n (l, h) = n >= l && n <= h
     findNewVar' v suffix = if v `inBetween` bounds names
                            then hsnSuffix (names ! v) suffix
                            else maybe (hsnSuffix (HNPos v) suffix) id (Map.lookup v m >>= return . flip findNewVar' ("_" ++ show v ++ suffix))
 getName' _  nm = error $ "findNewVar: Not a number: " ++ show nm
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -103,7 +108,7 @@ isBottom av = case av of
                   AV_Nodes n      ->  Map.null n
                   AV_Error s      ->  error $ "analysis error: " ++ s
                   otherwise       ->  False
-                  
+
 addEnvVar :: HptMap -> Int -> AbstractValue -> HptMap
 addEnvVar (a,fm) i v = (a, Map.insert i v fm)
 

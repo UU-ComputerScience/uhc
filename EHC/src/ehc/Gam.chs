@@ -7,22 +7,34 @@
 %%% Gamma (aka Assumptions, Environment)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Gam} import(Data.List,{%{EH}Base.Common}) export(Gam,emptyGam,gamLookup, gamPushNew, gamPop, gamTop, gamAddGam, gamUnit, gamAdd, gamPushGam, gamToAssocL, assocLToGam, gamToDups)
+%%[1 module {%{EH}Gam} import(Data.List,EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}NameAspect}) export(Gam,emptyGam,gamMap,gamLookup,gamLookupDup, gamPushNew, gamPop, gamTop, gamAddGam, gamUnit, gamAdd, gamPushGam, gamToAssocL, gamToAssocDupL, gamToDups, assocLToGam, assocDupLToGam,gamKeys)
 %%]
 
 %%[1 import({%{EH}Ty},{%{EH}Error}) export(ValGam, ValGamInfo(..), valGamLookup,valGamLookupTy)
 %%]
 
-%%[1 export(TyGam, TyGamInfo(..), tyGamLookup)
+%%[1 export(TyGam, TyGamInfo(..), tyGamLookup, initTyGam)
 %%]
 
-%%[1 import(UU.Pretty,{%{EH}Ty.Pretty}) export(ppGam)
+%%[1 export(FixityGam, FixityGamInfo(..), defaultFixityGamInfo)
+%%]
+
+%%[1 import(UU.Pretty,EH.Util.PPUtils,{%{EH}Ty.Pretty}) export(ppGam,ppGamDup)
+%%]
+
+%%[1 export(gamSingleton,gamInsert,gamUnion,gamUnions,gamFromAssocL)
+%%]
+
+%%[1 export(IdDefOccGam,IdDefOccAsc)
 %%]
 
 %%[2 import({%{EH}Cnstr},{%{EH}Substitutable})
 %%]
 
-%%[3 import({%{EH}Ty.Quantify}) export(valGamQuantify, gamMap,gamMapElts,valGamMapTy)
+%%[3 import({%{EH}Ty.Quantify}) export(valGamQuantify,gamMapElts,valGamMapTy)
+%%]
+
+%%[3 export(gamPartition)
 %%]
 
 %%[4 import({%{EH}Base.Opts},{%{EH}Ty.Instantiate}) export(valGamInst1Exists)
@@ -43,28 +55,34 @@
 %%[6 export(tyGamQuantify, tyGamInst1Exists,gamUnzip)
 %%]
 
-%%[6 export(KiGam, KiGamInfo(..))
+%%[6 export(KiGam, KiGamInfo(..),initKiGam)
 %%]
 
 %%[6 export(mkTGI)
 %%]
 
-%%[7 export(mkTGIData)
+%%[7777 export(mkTGIData)
 %%]
 
-%%[8 import(Data.Maybe,qualified Data.Map as Map,{%{EH}Core}) export(gamUpd,DataTagMp)
+%%[8 import(Data.Maybe,qualified Data.Map as Map,{%{EH}Core}) export(gamUpd,DataTagInfo(..),emptyDataTagInfo,DataFldInfo(..),emptyDataFldInfo,DataTagMp,DataFldMp)
 %%]
 
-%%[8 export(DataGam,DataGamInfo(..),mkDGI)
+%%[8 export(DataGam,DataGamInfo(..),mkDGI,dataGamLookup,tagsOfTy)
 %%]
 
 %%[9 import({%{EH}Base.Debug},{%{EH}Core.Subst},{%{EH}Ty.FitsInCommon}) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
 %%]
 
-%%[9 export(TreeGam,emptyTGam,tgamUnit,tgamLookup,tgamLookupAll,tgamElts,tgamPushNew,tgamAddGam,tgamPushGam,tgamAdd,tgamPop,tgamUpdAdd,tgamUpd,tgamMbUpd,tgamInScopes,tgamIsInScope)
+%%[9 export(TreeGam,emptyTGam,tgamSingleton,tgamLookup,tgamLookupAll,tgamLookupAllEmp,tgamElts,tgamMap,tgamPushNew,tgamAddGam,tgamPushGam,tgamAdd,tgamPop,tgamUpdAdd,tgamUpd,tgamMbUpd,tgamInScopes,tgamIsInScope,tgamToAssocL)
 %%]
 
 %%[9 export(ppTGam)
+%%]
+
+%%[9 export(idDefOccGamPartitionByKind)
+%%]
+
+%%[12 export(idDefOccGamByKind)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -106,7 +124,7 @@ gamAdd          k v g               = gamAddGam (k `gamUnit` v) g
 
 %%[9.Base.funs -1.Base.funs
 emptyGam                            = emptyTGam 1 
-gamUnit                             = tgamUnit 1
+gamUnit                             = tgamSingleton 1
 gamLookup       k g                 = tgamLookup (tgamSize1 g) k g
 gamToAssocL     g                   = tgamToAssocL (tgamSize1 g) g
 gamPushNew      g                   = let sz = tgamSize1 g in tgamPushNew sz (sz+1) g
@@ -131,22 +149,37 @@ gamTop                              = fst . gamPop
 assocLToGam                         = assocLToTGam 1 
 %%]
 
+%%[1.assocDupLToGam
+assocDupLToGam :: Ord k => AssocL k [v] -> Gam k v
+assocDupLToGam = assocLToGam . concat . map (\(k,vs) -> zip (repeat k) vs)
+%%]
+
+%%[9 -1.assocDupLToGam
+assocDupLToGam :: Ord k => AssocL k [v] -> Gam k v
+assocDupLToGam = assocDupLToTGam 1
+%%]
+
+%%[1.gamToAssocDupL
+gamToAssocDupL :: Ord k => Gam k v -> AssocL k [v]
+gamToAssocDupL = map (foldr (\(k,v) (_,vs) -> (k,v:vs)) (undefined,[])) . groupSortOn fst . gamToAssocL
+%%]
+
+%%[9 -1.gamToAssocDupL
+gamToAssocDupL :: Ord k => Gam k v -> AssocL k [v]
+gamToAssocDupL g = tgamToAssocDupL (tgamSize1 g) g
+%%]
+
 %%[1.gamToDups
 gamToDups :: Ord k => Gam k v -> [k]
-gamToDups g = [ n | ns@(n:_) <- group . sort . assocLKeys . gamToAssocL $ g, length ns > 1 ]
+gamToDups g = [ n | (n,(_:_:_)) <- gamToAssocDupL g ]
 %%]
 
-%%[9.gamToDups -1.gamToDups
-gamToDups :: Ord k => Gam k v -> [k]
-gamToDups g = [ n | (n,vs) <- tgamToAssocL2 (tgamSize1 g) g, length vs > 1 ]
-%%]
-
-%%[3.gamMap
+%%[1.gamMap
 gamMap :: ((k,v) -> (k',v')) -> Gam k v -> Gam k' v'
 gamMap f (Gam ll) = Gam (map (map f) ll)
 %%]
 
-%%[9.gamMap -3.gamMap
+%%[9.gamMap -1.gamMap
 gamMap :: (Ord k,Ord k') => ((k,v) -> (k',v')) -> Gam k v -> Gam k' v'
 gamMap f g = tgamMap (tgamSize1 g) f g
 %%]
@@ -154,6 +187,19 @@ gamMap f g = tgamMap (tgamSize1 g) f g
 %%[3.gamMapElts
 gamMapElts :: Ord k => (v -> v') -> Gam k v -> Gam k v'
 gamMapElts f = gamMap (\(n,v) -> (n,f v))
+%%]
+
+%%[3.gamPartition
+gamPartition :: (k -> v -> Bool) -> Gam k v -> (Gam k v,Gam k v)
+gamPartition f (Gam ll)
+  = (Gam ll1,Gam ll2)
+  where (ll1,ll2)
+           = unzip $ map (partition (\(k,v) -> f k v)) $ ll
+%%]
+
+%%[9 -3.gamPartition
+gamPartition :: Ord k => (k -> v -> Bool) -> Gam k v -> (Gam k v,Gam k v)
+gamPartition = tgamPartition
 %%]
 
 %%[4.gamMapThr
@@ -194,12 +240,17 @@ gamMbUpd k upd g = tgamMbUpd (tgamSize1 g) k upd g
 
 %%[8.gamUpd
 gamUpd :: Ord k => k -> (k -> v -> v) -> Gam k v -> Gam k v
-gamUpd k upd = fromJust . gamMbUpd k upd
+gamUpd k upd = panicJust "gamUpd" . gamMbUpd k upd
 %%]
 
 %%[9.gamUpd -8.gamUpd
 gamUpd :: Ord k => k -> (k -> v -> v) -> Gam k v -> Gam k v
 gamUpd k upd g = tgamUpd (tgamSize1 g) k upd g
+%%]
+
+%%[1
+gamKeys :: Ord k => Gam k v -> [k]
+gamKeys = assocLKeys . gamToAssocL
 %%]
 
 %%[9
@@ -212,9 +263,40 @@ gamLookupAll :: Ord k => k -> Gam k v -> [v]
 gamLookupAll k g = tgamLookupAll (tgamSize1 g) k g
 %%]
 
+%%[1.gamLookupDup
+gamLookupDup :: Ord k => k -> Gam k v -> Maybe [v]
+gamLookupDup k (Gam ll) = foldr (\l mv -> case filter ((==k) . fst) l of {[] -> mv; lf -> Just (assocLElts lf)}) Nothing ll
+%%]
+
+%%[9 -1.gamLookupDup
+gamLookupDup :: Ord k => k -> Gam k v -> Maybe [v]
+gamLookupDup k g = tgamLookupDup (tgamSize1 g) k g
+%%]
+
 %%[9
 gamUpdAdd :: Ord k => k -> v -> (k -> v -> v) -> Gam k v -> Gam k v
 gamUpdAdd k v upd g = tgamUpdAdd (tgamSize1 g) k v upd g
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Aliases, for future compliance with naming conventions of (e.g.) Data.Map
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+gamSingleton :: k -> v -> Gam k v
+gamSingleton = gamUnit
+
+gamInsert :: Ord k => k -> v -> Gam k v -> Gam k v
+gamInsert = gamAdd
+
+gamUnion :: Ord k => Gam k v -> Gam k v -> Gam k v
+gamUnion = gamAddGam
+
+gamUnions :: Ord k => [Gam k v] -> Gam k v
+gamUnions = foldr1 gamUnion
+
+gamFromAssocL ::  Ord k =>  AssocL k v  -> Gam k v
+gamFromAssocL = assocLToGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -239,8 +321,18 @@ emptyTGam i = TreeGam (i `Map.singleton` (Nothing,Map.empty))
 tgamSize1 :: TreeGam i k v -> Int
 tgamSize1 = Map.size . tgamEntriesOf
 
-tgamUnit :: i -> k -> v -> TreeGam i k v
-tgamUnit i k v = TreeGam (i `Map.singleton` (Nothing,k `Map.singleton` [v]))
+tgamPartition :: (Ord i,Ord k) => (k -> v -> Bool) -> TreeGam i k v -> (TreeGam i k v,TreeGam i k v)
+tgamPartition f g
+  = (g {tgamEntriesOf = Map.unions ms1},g {tgamEntriesOf = Map.unions ms2})
+  where (ms1,ms2)
+          = unzip $ map (\(i,(mi,m)) -> let (ms1,ms2) = xx m in (mk i mi ms1,mk i mi ms2)) $ Map.toList $ tgamEntriesOf g
+          where mk i mi m = Map.singleton i (mi,Map.unions m)
+        xx m = unzip [ (mk k vs1,mk k vs2) | (k,vs) <- Map.toList m, let (vs1,vs2) = yy k vs ]
+             where mk k l = if null l then Map.empty else Map.singleton k l
+        yy k = partition (f k)
+
+tgamSingleton :: i -> k -> v -> TreeGam i k v
+tgamSingleton i k v = TreeGam (i `Map.singleton` (Nothing,k `Map.singleton` [v]))
 
 tgamFoldr1 :: Ord i => i -> (i -> Maybe i -> Map.Map k [v] -> r -> r) -> r -> TreeGam i k v -> r
 tgamFoldr1 i fr r g
@@ -283,17 +375,23 @@ tgamUnzip i
                    )
                    (emptyTGam1,emptyTGam1)
 
-tgamLookupAll1 :: (Ord i,Ord k) => i -> k -> TreeGam i k v -> [[v]]
-tgamLookupAll1 i k g = tgamFoldr1 i (\_ _ e r -> maybe r (:r) (Map.lookup k e)) [] g
+tgamLookupAllDupEmp :: (Ord i,Ord k) => i -> k -> TreeGam i k v -> [[v]]
+tgamLookupAllDupEmp i k g = tgamFoldr1 i (\_ _ e r -> maybe ([]:r) (:r) (Map.lookup k e)) [] g
+
+tgamLookupAllDup :: (Ord i,Ord k) => i -> k -> TreeGam i k v -> [[v]]
+tgamLookupAllDup i k = filter (not . null) . tgamLookupAllDupEmp i k
+
+tgamLookupAllEmp :: (Ord i,Ord k) => i -> k -> v -> TreeGam i k v -> [v]
+tgamLookupAllEmp i k v = map (\l -> if null l then v else head l) . tgamLookupAllDupEmp i k
 
 tgamLookupAll :: (Ord i,Ord k) => i -> k -> TreeGam i k v -> [v]
-tgamLookupAll i k = map head . tgamLookupAll1 i k
+tgamLookupAll i k = map head . tgamLookupAllDup i k
 
-tgamLookup1 :: (Ord i,Ord k) => i -> k -> TreeGam i k v -> Maybe [v]
-tgamLookup1 i k g = tgamFoldr1 i (\_ _ e r -> maybe r Just (Map.lookup k e)) Nothing g
+tgamLookupDup :: (Ord i,Ord k) => i -> k -> TreeGam i k v -> Maybe [v]
+tgamLookupDup i k g = tgamFoldr1 i (\_ _ e r -> maybe r Just (Map.lookup k e)) Nothing g
 
 tgamLookup :: (Ord i,Ord k) => i -> k -> TreeGam i k v -> Maybe v
-tgamLookup i k = fmap head . tgamLookup1 i k
+tgamLookup i k = fmap head . tgamLookupDup i k
 
 tgamToFM1 :: (Ord i,Ord k) => i -> TreeGam i k v -> Map.Map k [v]
 tgamToFM1 i = tgamFoldr1 i (\_ _ e e' -> e `Map.union` e') Map.empty
@@ -301,14 +399,22 @@ tgamToFM1 i = tgamFoldr1 i (\_ _ e e' -> e `Map.union` e') Map.empty
 tgamToFM :: (Ord i,Ord k) => i -> TreeGam i k v -> Map.Map k v
 tgamToFM i = Map.map (\(v:_) -> v) . tgamToFM1 i
 
-tgamToAssocL2 :: Ord i => i -> TreeGam i k v -> AssocL k [v]
-tgamToAssocL2 i = tgamFoldr2 i (\k vs kvs -> (k,vs) : kvs) []
+tgamToAssocDupL :: Ord i => i -> TreeGam i k v -> AssocL k [v]
+tgamToAssocDupL i = tgamFoldr2 i (\k vs kvs -> (k,vs) : kvs) []
 
 tgamToAssocL :: Ord i => i -> TreeGam i k v -> AssocL k v
 tgamToAssocL i = tgamFoldr i (\k v kvs -> (k,v) : kvs) []
 
+assocLToTGam :: Ord k => i -> AssocL k v -> TreeGam i k v
+assocLToTGam i l = TreeGam (i `Map.singleton` (Nothing,Map.fromList . assocLMapElt (:[]) $ l))
+
+assocDupLToTGam :: Ord k => i -> AssocL k [v] -> TreeGam i k v
+assocDupLToTGam i l = TreeGam (i `Map.singleton` (Nothing,Map.fromList l))
+
 tgamPushNew :: Ord i => i -> i -> TreeGam i k v -> TreeGam i k v
-tgamPushNew i iNew g = g {tgamEntriesOf = Map.insert iNew (Just i,Map.empty) (tgamEntriesOf g)}
+tgamPushNew i iNew g
+  | i /= iNew = g {tgamEntriesOf = Map.insert iNew (Just i,Map.empty) (tgamEntriesOf g)}
+  | otherwise = g
 
 tgamAddGam :: (Ord i,Ord k) => i -> i -> TreeGam i k v -> TreeGam i k v -> TreeGam i k v
 tgamAddGam i2 i1 g2 g1
@@ -320,7 +426,7 @@ tgamPushGam :: (Ord i,Ord k) => i -> i -> i -> TreeGam i k v -> TreeGam i k v ->
 tgamPushGam i1 i2 iNew g1 g2 = tgamAddGam i1 iNew g1 (tgamPushNew i2 iNew g2)
 
 tgamAdd :: (Ord i,Ord k) => i -> k -> v -> TreeGam i k v -> TreeGam i k v
-tgamAdd i k v g = tgamAddGam i i (tgamUnit i k v) g
+tgamAdd i k v g = tgamAddGam i i (tgamSingleton i k v) g
 
 tgamPop :: Ord i => i -> i -> TreeGam i k v -> (TreeGam i k v,Maybe i,TreeGam i k v)
 tgamPop i iPop g
@@ -334,9 +440,6 @@ tgamPop i iPop g
 tgamTop :: Ord i => i -> i -> TreeGam i k v -> TreeGam i k v
 tgamTop i iTop g = let (g',_,_) = tgamPop i iTop g in g'
 
-assocLToTGam :: Ord k => i -> AssocL k v -> TreeGam i k v
-assocLToTGam i l = TreeGam (i `Map.singleton` (Nothing,Map.fromList . assocLMapElt (:[]) $ l))
-
 tgamMbUpd :: (Ord i,Ord k) => i -> k -> (k -> v -> v) -> TreeGam i k v -> Maybe (TreeGam i k v)
 tgamMbUpd i k f g
   =  tgamFoldr1 i  (\i n e mg -> case Map.lookup k e of
@@ -346,7 +449,7 @@ tgamMbUpd i k f g
                    Nothing g
 
 tgamUpd :: (Ord i,Ord k) => i -> k -> (k -> v -> v) -> TreeGam i k v -> TreeGam i k v
-tgamUpd i k f = fromJust . tgamMbUpd i k f
+tgamUpd i k f = panicJust "tgamUpd" . tgamMbUpd i k f
 
 tgamUpdAdd :: (Ord i,Ord k) => i -> k -> v -> (k -> v -> v) -> TreeGam i k v -> TreeGam i k v
 tgamUpdAdd i k v upd g = maybe (tgamAdd i k v g) id (tgamMbUpd i k upd g)
@@ -370,6 +473,20 @@ type ErrGam = Gam HsName ErrL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fixity gam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+data FixityGamInfo = FixityGamInfo { fgiPrio :: Int, fgiFixity :: Fixity } deriving Show
+
+defaultFixityGamInfo = FixityGamInfo 9 Fixity_Infixl
+%%]
+
+%%[1.FixityGam
+type FixityGam = Gam HsName FixityGamInfo
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% "Type of value" gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -388,7 +505,7 @@ valGamLookup = gamLookup
 valGamLookupTy :: HsName -> ValGam -> (Ty,ErrL)
 valGamLookupTy n g
   =  case valGamLookup n g of
-       Nothing    ->  (Ty_Any,[Err_NamesNotIntrod [n]])
+       Nothing    ->  (Ty_Any,[mkErr_NamesNotIntrod "value" [n]])
        Just vgi   ->  (vgiTy vgi,[])
 %%]
 
@@ -512,32 +629,14 @@ mkTGI t k = TyGamInfo t k
 %%]
 
 %%[7.TyGamInfo -6.TyGamInfo
-data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty, tgiData :: Ty } deriving Show
+data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty } deriving Show
 
 mkTGIData :: Ty -> Ty -> Ty -> TyGamInfo
-mkTGIData t k d = TyGamInfo t k d
+mkTGIData t k _ = TyGamInfo t k
 
 mkTGI :: Ty -> Ty -> TyGamInfo
 mkTGI t k = mkTGIData t k Ty_Any
 %%]
-
-%%[8.DataTagMp
-type DataTagMp = Map.Map HsName CTag
-%%]
-
-%%[8.TyGamInfo
-%%]
-
-data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty, tgiData :: Ty, tgiDataTagMp :: DataTagMp }
-
-instance Show TyGamInfo where
-  show _ = "TyGamInfo"
-
-mkTGIData :: Ty -> Ty -> Ty -> DataTagMp -> TyGamInfo
-mkTGIData t k d m = TyGamInfo t k d m
-
-mkTGI :: Ty -> Ty -> TyGamInfo
-mkTGI t k = mkTGIData t k Ty_Any Map.empty
 
 %%[6.tyGamLookup -1.tyGamLookup
 tyGamLookup :: HsName -> TyGam -> Maybe TyGamInfo
@@ -568,8 +667,29 @@ tyGamInst1Exists = gamInst1Exists (tgiKi,(\tgi k -> tgi {tgiKi=k}))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Data tag info gam
+%%% Data tag/etc info gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8.DataTagMp
+data DataFldInfo
+  = DataFldInfo
+      { dfiOffset 	:: Int
+      } deriving Show
+
+type DataFldMp = Map.Map HsName DataFldInfo
+
+emptyDataFldInfo = DataFldInfo (-1)
+
+data DataTagInfo
+  = DataTagInfo
+      { dtiCTag 	:: CTag
+      , dtiFldMp    :: DataFldMp
+      } deriving Show
+
+type DataTagMp = Map.Map HsName DataTagInfo
+
+emptyDataTagInfo = DataTagInfo emptyCTag Map.empty
+%%]
 
 %%[8.DataGamInfo
 data DataGamInfo = DataGamInfo { dgiDataTagMp :: DataTagMp }
@@ -581,6 +701,18 @@ instance Show DataGamInfo where
 
 mkDGI :: DataTagMp -> DataGamInfo
 mkDGI m = DataGamInfo m
+
+dataGamLookup :: HsName -> DataGam -> Maybe DataGamInfo
+dataGamLookup nm g
+  =  case gamLookup nm g of
+       Nothing
+         |  hsnIsProd nm
+                 -> Just (DataGamInfo Map.empty)
+       Just dgi  -> Just dgi
+       _         -> Nothing
+
+tagsOfTy :: Ty -> DataGam -> Maybe [CTag]
+tagsOfTy t g = fmap (map dtiCTag . Map.elems . dgiDataTagMp) $ gamLookup (tyAppFunConNm t) $ g
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -621,6 +753,26 @@ appSpineGam =  assocLToGam
 data KiGamInfo = KiGamInfo { kgiKi :: Ty } deriving Show
 
 type KiGam = Gam HsName KiGamInfo
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Identifier definition occurrence gam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+type IdDefOccGam = Gam    IdOcc  IdDefOcc
+type IdDefOccAsc = AssocL IdOcc [IdDefOcc]
+%%]
+
+%%[9 hs
+idDefOccGamPartitionByKind :: [IdOccKind] -> IdDefOccGam -> (IdDefOccAsc,IdDefOccAsc)
+idDefOccGamPartitionByKind ks
+  = partition (\(IdOcc n k',_) -> k' `elem` ks) . gamToAssocDupL
+%%]
+
+%%[12 hs
+idDefOccGamByKind :: IdOccKind -> IdDefOccGam -> AssocL HsName IdDefOcc
+idDefOccGamByKind k g = [ (n,head i) | (IdOcc n _,i) <- fst (idDefOccGamPartitionByKind [k] g) ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -677,6 +829,11 @@ ppGam :: (PP k, PP v) => Gam k v -> PP_Doc
 ppGam g = ppAssocL (gamToAssocL g)
 %%]
 
+%%[1
+ppGamDup :: (Ord k,PP k, PP v) => Gam k v -> PP_Doc
+ppGamDup g = ppAssocL $ map (\(k,v) -> (k,ppBracketsCommas v)) $ gamToAssocDupL $ g
+%%]
+
 %%[9.ppTGam
 ppTGam :: (Ord i, PP k, PP v) => i -> TreeGam i k v -> PP_Doc
 ppTGam i g = ppAssocL (tgamToAssocL i g)
@@ -708,3 +865,56 @@ instance PP TyGamInfo where
 instance PP TyGamInfo where
   pp tgi = ppTy (tgiTy tgi) >|< "/" >|< ppTy (tgiKi tgi)
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Init of tyGam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.initTyGam
+initTyGam :: TyGam
+initTyGam
+  = assocLToGam
+      [ (hsnArrow,  TyGamInfo (Ty_Con hsnArrow))
+      , (hsnInt,    TyGamInfo tyInt)
+      , (hsnChar,   TyGamInfo tyChar)
+      ]
+%%]
+
+%%[6.initTyGam -1.initTyGam
+initTyGam :: TyGam
+initTyGam
+  = assocLToGam
+      [ (hsnArrow,      mkTGI (Ty_Con hsnArrow) ([kiStar,kiStar] `mkArrow` kiStar))
+      , (hsnInt,        mkTGI tyInt kiStar)
+      , (hsnChar,       mkTGI tyChar kiStar)
+%%[[7
+      , (hsnRow,        mkTGI (Ty_Con hsnUnknown) kiRow)
+      , (hsnRec,        mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
+      , (hsnSum,        mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
+%%]
+%%[[8
+      , (hsnFloat  ,    mkTGI tyFloat   kiStar)
+%%]
+%%[[99
+      , (hsnInteger,    mkTGI tyInteger kiStar)
+      , (hsnDouble ,    mkTGI tyDouble  kiStar)
+%%]
+      ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Init of kiGam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6
+initKiGam :: KiGam
+initKiGam
+  = assocLToGam
+      [ (hsnArrow,  KiGamInfo (Ty_Con hsnArrow))
+      , (hsnStar,   KiGamInfo kiStar)
+%%[[7
+      , (hsnRow,    KiGamInfo kiRow)
+%%]
+      ]
+%%]
+

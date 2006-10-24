@@ -192,7 +192,7 @@ SEM GrTag [ | | tag: GrTag ]
 SEM GrExpr
   | Fetch   lhs  .  grTrf  = GrExpr_Fetch  (getHsName @nm @lhs.valueMap) @mbOffset @mbTag
   | Update  lhs  .  grTrf  = GrExpr_Update (getHsName @nm @lhs.valueMap) @val.grTrf @mbTag
-  | FFI     lhs  .  grTrf  = GrExpr_FFI @nm (map (flip getHsName @lhs.valueMap) @argL)
+  | FFI     lhs  .  grTrf  = GrExpr_FFI @nm (map (flip getHsName @lhs.valueMap) @argL) @resTagL.grTrf
 %%]
 
 % vim:ts=4:et:ai:

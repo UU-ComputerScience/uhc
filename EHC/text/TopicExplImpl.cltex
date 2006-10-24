@@ -18,13 +18,13 @@ In \thischapt\ we describe, in the context of Haskell, a mechanism that allows
 a programmer to explicitly construct implicit arguments. This extension
 blends well with existing resolution mechanisms, since it only overrides
 the default behavior.
-%if not (storyPHD || storyEhcBook || limitSize)
+%if not (storyPHD || storyEhcBook || shortStory)
 We include a
 description of the use of partial type signatures, which liberates the
 programmer from having to choose  between specifying a complete type
 signature  or no type signature at all.
 %endif
-%if limitSize
+%if shortStory
 We show how, by a careful set of design decisions,
 we manage to combine type inferencing with a type system that deals
 with implicit arguments.
@@ -127,7 +127,7 @@ Thus the expression
 |f 3 4| can be seen as an abbreviation for the semantically more complete |f eqDInt 3 4|.
 
 Traditionally, the name ``implicit parameter'' is used to refer to dynamically scoped variables
-%if limitSize
+%if shortStory
 \cite{lewis00implicit-param}.
 %else
 (see \secRef{ehc09-discussion} \cite{lewis00implicit-param}).
@@ -204,14 +204,14 @@ f  ::    Eq a =>  a ->  a ->  Int
 f  =   \          x     y ->  if x == y then 3 else 4
 
 v1 = f  2 4
-v2 = f  (! ((==) = \x y -> (x `mod` 2) == (y `mod` 2)) <: Eq Int !)
+v2 = f  {! ((==) = \x y -> (x `mod` 2) == (y `mod` 2)) <: Eq Int !}
         2 4
 %%]
 
 A dictionary (encoded as a record) |d| of an instance is constructed and passed directly as part of
-the language construct |(! d <: ... !)| (to be explained later).
+the language construct |{! d <: ... !}| (to be explained later).
 
-%if not limitSize
+%if not shortStory
 As a second example we briefly discuss the use
 Kiselyov and Chan \cite{kiselyov04impl-config} make of the type class system to configure programs.
 In their modular arithmetic example integer arithmetic is configured by a modulus: all integer arithmetic is done modulo this modulus.
@@ -260,7 +260,7 @@ The use of explicit parameter passing for an implicit argument proposed by us in
 even further simplified the example, as we can avoid the phantom type |Label| and related type hackery
 altogether and instead create and pass the instance directly.
 %}
-%endif %% not limitSize
+%endif %% not shortStory
 
 As we may infer from the above the Haskell class system,
 which was originally only introduced to describe simple overloading,
@@ -381,7 +381,7 @@ the proof machinery can be used as normal values,
 and normal (record) values can be used as dictionaries for predicates as well.
 \item
 The automatic choice for a dictionary at the call site of a function can be disambiguated.
-%if not (storyPHD || storyEhcBook || limitSize)
+%if not (storyPHD || storyEhcBook || shortStory)
 \item
 Types can be partially specified, thus having the benefit of explictness as well as inference,
 but avoiding the obligation of the ``all or nothing''
@@ -432,7 +432,7 @@ Haskell variant
 in which all features described in \thischapt\ have been implemented.
 In \secRef{ehc09-prelim} we start with preliminaries required for understanding the remainder of \thischapt.
 In \secRef{ehc09-implparam} we present examples of what we can express in EH.
-%if not limitSize
+%if not shortStory
 The use of partial type signatures and their interaction with
 predicates is demonstrated in
 %if (storyPHD || storyEhcBook)
@@ -632,7 +632,7 @@ nub []                   =   []
 nub (h:t)                =   h : nub (filter (not . (h ==)) t)
 
 nubBy                    ::  (a -> a -> Bool) -> [a] -> [a]
-nubBy eq                 =   nub (! ((==) = eq) <: Eq Int !)
+nubBy eq                 =   nub {! ((==) = eq) <: Eq Int !}
 %%]
 %%]
 
@@ -645,7 +645,7 @@ The notation |<:| binds an identifier, here |dEqInt|, to the dictionary represen
 The record |dEqInt| from now on is available as a normal value.
 \item
 Explicitly passing a parameter is syntactically denoted by an expression between
-|(!| and |!)|.
+|{!| and |!}|.
 The predicate after the |<:| explicitly states the predicate for which the expression is an 
 instance dictionary (or \IxAsDef{evidence}).
 The dictionary expression for |n1| is formed by using |dEqInt|,
@@ -664,10 +664,10 @@ In the implicit case the language definition determines which value to take from
 \item
 Switching between the explicit and implicit world is accomplished by means of additional notation.
 We go from
-implicit to explicit by instance definitions with the naming extension, and in the reverse direction by means of the |(! ^^ !)| construct.
+implicit to explicit by instance definitions with the naming extension, and in the reverse direction by means of the |{! ^^ !}| construct.
 \end{Itemize}
 
-%if not limitSize
+%if not shortStory
 The |Modular| motivating example now can be simplified to (merging our notation into Haskell):
 
 %{
@@ -686,7 +686,7 @@ instance (Modular a,Integral a) => Num (M a) where
 
 withModulus ::  a ->         (Modular a => w) -> w
 withModulus     (m :: a)     k
-  =  k (! (modulus = m) <: Modular a !)
+  =  k {! (modulus = m) <: Modular a !}
 %%]
 %}
 %endif
@@ -736,7 +736,7 @@ dictionary would be computed only once globally by:
 let  dEqListInt = dEqList dEqInt
 %%]
 
-%if limitSize
+%if shortStory
 The need for such higher order predicates really becomes apparent
 when genericity is implemented using the class system \cite{hinze00derive-type-class}.
 The elaboration of this aspect can be found in the extended version of \thischapt\
@@ -753,7 +753,7 @@ The following example is taken from Hinze \cite{hinze00derive-type-class}:
 The explicit variant of the computation for |v1| using the explicit parameter passing mechanism reads:
 
 %%[[wrap=code
-v1 = showBin  (! dBG dBI dBL <: Binary (GRose List Int) !)
+v1 = showBin  {! dBG dBI dBL <: Binary (GRose List Int) !}
               (GBranch 3 Nil)
 %%]
 
@@ -790,7 +790,7 @@ the higher order predicate |Binary b => Binary (f b)| as |forall ^ b . Binary b 
 that is, universally quantified over the |b| which does not appear elsewhere in the context.
 %endif
 
-%endif %% limitSize
+%endif %% shortStory
 
 
 \Paragraph{Argument ordering and mixing implicit and explicit parameters}
@@ -837,19 +837,19 @@ For example, for |f| in the following fragment first we may pass a dictionary fo
 then we must pass two normal arguments, then we may pass a dictionary,
 and finally we must pass two normal arguments:
 
-%% test/9-eq2.eh
+%% test/9/eq2.eh
 %%[[wrap=code
 let  f :: forall ^ a . Eq a => a -> a -> forall ^ b . Eq b => b -> b -> (Bool,Bool)
      f = \p q r s -> (eq p q, eq r s)
 in   f  ^                              3 4
-        (! (eq = eqMod2) <: Eq Int !)  5 6
+        {! (eq = eqMod2) <: Eq Int !}  5 6
 %%]
 
 Both for |Eq a| and |Eq b| a dictionary value corresponding to |Eq Int| has to be passed.
 For the first one the implicit |Eq Int| that is currently in scope is passed,
-whereas the second one is explicitly constructed and passed by means of |(! ^^ !)|.
+whereas the second one is explicitly constructed and passed by means of |{! ^^ !}|.
 Inside these delimiters we specify both the value and the predicate for which it is a witness.
-The notation |(! e <: p !)| suggests a combination of ``is of type'' and ``is evidence for''.
+The notation |{! e <: p !}| suggests a combination of ``is of type'' and ``is evidence for''.
 Here ``is of type'' means that the dictionary |e| must be of the record type introduced by the class declaration
 for the predicate |p|.
 The phrase ``is evidence for'' means that the dictionary |e| is used
@@ -888,15 +888,15 @@ By explicitly providing a dictionary the default decision made by EH is overrule
 This is useful in situations where ambiguities arise, as
 in the presence of overlapping instances:
 
-%% test/9-eq3.eh
+%% test/9/eq3.eh
 %%[[wrap=code test9eq3TwoExpl
 let  instance dEqInt1 <: Eq Int where
        eq = primEqInt
      instance dEqInt2 <: Eq Int where
        eq = eqMod2
      f = \p q r s -> ...
-in   f  (! dEqInt1 <: Eq Int !) 3 4
-        (! dEqInt2 <: Eq Int !) 5 6
+in   f  {! dEqInt1 <: Eq Int !} 3 4
+        {! dEqInt2 <: Eq Int !} 5 6
 %%]
 
 The two instances for |Eq Int| overlap, but we still can refer to each associated dictionary individually,
@@ -965,14 +965,14 @@ in an outer scope.
 
 In our discussion we will come back to local instances.
 
-%if not limitSize
+%if not shortStory
 
 \Paragraph{Higher order predicates revisited}
 As we mentioned earlier,
 the declaration of an instance with a context actually introduces a function taking dictionaries
 as arguments:
 
-%% test/9-eq4.eh
+%% test/9/eq4.eh
 %%[[wrap=code test9eq4EqList
 let  instance dEqInt <: Eq Int where
        eq = primEqInt
@@ -1009,8 +1009,8 @@ a dictionary for |Eq (List a)| is explicitly constructed and passed to |eq|:
 %% 9-eq5.eh
 %%[[wrap=code test9eq5EqExplPassed
 f :: forall a . Eq a  =>  a ->  List a  -> Bool
-f = \(! dEq_a <: Eq a !)
-                      ->  \p q -> eq  (! dEqList dEq_a <: Eq (List a) !)
+f = \{! dEq_a <: Eq a !}
+                      ->  \p q -> eq  {! dEqList dEq_a <: Eq (List a) !}
                                       (Cons p Nil) q
 %%]
 
@@ -1027,8 +1027,8 @@ Such transformers can also be made explicit in the following variant:
 %% 9-eq6.eh
 %%[[wrap=code test9eq6DictTransf
 f  ::  (forall ^ a . Eq a => Eq (List a))  =>  Int ->  List Int  -> Bool
-f  =   \(! dEq_La <: forall ^ a . Eq a => Eq (List a) !)
-          ->  \p  q  -> eq  (! dEq_La dEqInt <: Eq (List Int) !)
+f  =   \{! dEq_La <: forall ^ a . Eq a => Eq (List a) !}
+          ->  \p  q  -> eq  {! dEq_La dEqInt <: Eq (List Int) !}
                             (Cons p Nil) q
 %%]
 
@@ -1038,9 +1038,9 @@ This dictionary is explicitly constructed and passed to |eq|; both the construct
 We must either pass a dictionary for |Eq a => Eq (List a)| to |f| ourselves explicitly or let it happen automatically;
 here in both cases |dEqList| is the only choice possible.
 
-%endif %% not limitSize
+%endif %% not shortStory
 
-%if not (storyPHD || storyEhcBook || limitSize)
+%if not (storyPHD || storyEhcBook || shortStory)
 
 \subsection{Partial type signatures}
 \label{ehc09-partialtysig}
@@ -1372,8 +1372,8 @@ so the environment |Gamma| for |e| is extended with a binding for the predicate 
 %if False
 Whereas the rules in \figRef{rules2.exprI.baseExplImpl} describe the implicit passing of parameters,
 the rules \figRef{rules2.exprI.explimpl} describe their explicit counterpart, that is,
-the use of the |(! ... !)| notation.
-Because we require the explicit specification of predicates inside |(! ... !)| the
+the use of the |{! ... !}| notation.
+Because we require the explicit specification of predicates inside |{! ... !}| the
 rules in \figRef{rules2.exprI.explimpl} actually are simpler than the rules for normal application.
 For example, in \ruleRef{e-iapp} we do not perform any proving of predicates but query the environment
 directly to obtain the dictionary type |sigmad| for the predicate |pid|.
@@ -1591,34 +1591,34 @@ our
 %endif
 
 \Paragraph{How much explicitness is needed}
-Being explicit by means of the |(! ... !)| language construct very soon becomes cumbersome because
-our current implementation requires full specification of all predicates involved inside |(! ... !)|.
+Being explicit by means of the |{! ... !}| language construct very soon becomes cumbersome because
+our current implementation requires full specification of all predicates involved inside |{! ... !}|.
 Can we do with less?
 
 \begin{Itemize}
 \item
-\RuleRef{e-iapp} from \figRef{rules2.exprI.explimpl} uses the predicate |pi2| in |(! e2 <: pi2 !)|
+\RuleRef{e-iapp} from \figRef{rules2.exprI.explimpl} uses the predicate |pi2| in |{! e2 <: pi2 !}|
 directly, that is, without
 any predicate proving, to obtain |pid| and its corresponding dictionary type |sigmad|.
-Alternatively we could interpret |(! e2 <: pi2 !)| as an addition of |pi2| to the set of predicates used
+Alternatively we could interpret |{! e2 <: pi2 !}| as an addition of |pi2| to the set of predicates used
 by the predicate proving machinery for finding a predicate whose dictionary matches the type
 of |e2|.
 However, if insufficient type information is known about |e2| more than one solution may be found.
 Even if the type of |e2| would be fully known, its type could be coerced in dropping record fields so as to match different
 dictionary types.
 \item
-We could drop the requirement to specify a predicate and write just |(! e2 !)| instead of |(! e2 <: pi2 !)|.
+We could drop the requirement to specify a predicate and write just |{! e2 !}| instead of |{! e2 <: pi2 !}|.
 In this case we need a mechanism to find a predicate for the type of the evidence provided by
 |e2|.
 This is most likely to succeed in the case of a class system as the functions introduced by a class need to have
 globally unique names.
-%if not limitSize
+%if not shortStory
 For other types of predicates like those for dynamically scoped values this is less clear.
-By dropping the predicate in |(! e2 !)| we also loose our advocated advantage of explicitness because we can no longer
+By dropping the predicate in |{! e2 !}| we also loose our advocated advantage of explicitness because we can no longer
 specify type related information.
 %endif
 \item
-The syntax \ruleRef{e-ilam} requires a predicate |pi| in its implicit argument |(! p <: pi !)|.
+The syntax \ruleRef{e-ilam} requires a predicate |pi| in its implicit argument |{! p <: pi !}|.
 It is sufficient to either specify a predicate for this form of a lambda expression or to specify a predicate
 in a corresponding type annotation.
 \end{Itemize}
@@ -1632,7 +1632,7 @@ In our design we position based parameter passing.
 Compared to a keyword based approach, this avoids (even more) clutter at the cost of flexibility.
 %endif
 
-%if not limitSize
+%if not shortStory
 \Paragraph{Binding time of instances}
 One other topic deserves attention, especially since it deviates from the
 standard semantics of Haskell.
@@ -1642,7 +1642,7 @@ In a variation of the example for |nub|, the following invocation of |nub| is pa
 a new definition for |eq| is provided:
 
 %%[[wrap=code
-nub  (! (dEqInt | eq := eqMod2) <: Eq Int !)
+nub  {! (dEqInt | eq := eqMod2) <: Eq Int !}
      (Cons 3 (Cons 3 (Cons 4 Nil)))
 %%]
 
@@ -1681,7 +1681,7 @@ where a value for a labeled field should be inserted
 \cite{jones94phd-qual-types,gaster96poly-ext-rec-var,jones99lightweight-ext-rec}.
 %endif
 
-%if not limitSize
+%if not shortStory
 \Paragraph{Dynamically scoped variables}
 GHC \cite{www04ghc} enables the passing of plain values as
 dynamically scoped variables (also known as implicit parameters).
@@ -1734,7 +1734,7 @@ Our approach has the additional benefit that we are not obliged to rely on the p
 let  class Has_x a ...
      f  ::  (Has_x Int) =>  ...
      f  =   \               ... -> ... value_x + 2 ...
-in   f (! (value_x = 3) <: Has_x Int !) ...
+in   f {! (value_x = 3) <: Has_x Int !} ...
 %%]
 
 %if False
@@ -1899,10 +1899,10 @@ let  f  ::  r lacks l =>  (r | l :: a)  -> a
 Alternatively a more explicit notation could be employed:
 
 %%[[wrap=code
-let  f  ::  (! r lacks l !) ->  (r | l :: a)  -> a
+let  f  ::  {! r lacks l !} ->  (r | l :: a)  -> a
      f  =                       \r            -> r.l
-     g  ::  (! Eq a !) ->  [a] ->  [a] -> Bool
-     g  =   \(! eq !)      \x      \y  -> (==) (!eq!) ... && (==) ...
+     g  ::  {! Eq a !} ->  [a] ->  [a] -> Bool
+     g  =   \{! eq !}      \x      \y  -> (==) {!eq!} ... && (==) ...
 %%]
 
 The latter approach has a couple of advantages.
@@ -1913,7 +1913,7 @@ LL parsing is made easier.
 The same notation can be used for expressions (value terms) and patterns.
 \end{Itemize}
 
-The obvious syntactic sugar can be added, e.g. |(! p, q !) ->| for |(! p !) -> (! q !) ->|
+The obvious syntactic sugar can be added, e.g. |{! p, q !} ->| for |{! p !} -> {! q !} ->|
 
 The idea is that two worlds of terms co-exist, one for normal (explicit) values and one for implicit values.
 Implicit values are associated with a predicate.
@@ -1940,8 +1940,8 @@ by means of bindings of the form |[pi :~> e]|, associating predicates |pi| to im
 The type language has an additional alternative:
 %%[[wrap=code
 sigma  =  ..
-       |  (! pi !)
-       |  (! ... !)
+       |  {! pi !}
+       |  {! ... !}
 pi     =  r lacks \
        |  C ^^ Vec(sigma)
        |  v = sigma
@@ -1949,9 +1949,9 @@ pi     =  r lacks \
 %%]
 The alternatives for |pi| respectively denote the lacking constraint for extensible records, class constraint and equality constraint
 (for use by generalized data types).
-Partial type signatures w.r.t. predicates are denoted by |(! ... !)|.
-Alternatively, the more concise denotations |pi| and |pvar| are used for |(! pi !)| and |(! ... !)| respectively.
-A predicate var |(! pivar !)| is shorthanded by |pivar|.
+Partial type signatures w.r.t. predicates are denoted by |{! ... !}|.
+Alternatively, the more concise denotations |pi| and |pvar| are used for |{! pi !}| and |{! ... !}| respectively.
+A predicate var |{! pivar !}| is shorthanded by |pivar|.
 \item
 The constraint language has to deal with additional constraints on predicates:
 %%[[wrap=code
@@ -1962,7 +1962,7 @@ Cnstr  =  ..
 %%]
 These additional
 alternatives deal with 
-which predicate may replace a predicate variable |p| or how much predicates may replace a wildcard |(! ... !)| or |pvar|.
+which predicate may replace a predicate variable |p| or how much predicates may replace a wildcard |{! ... !}| or |pvar|.
 The constraint |p :-> pi| is similar to type variables; the |pvar :-> | constraints limit the number of
 predicates.
 \item The environment |Gamma| now also may contain evidence for predicates:
@@ -2004,7 +2004,7 @@ passed.
 Predicates corresponding to class declarations are introduced by:
 %%[[wrap=code
 pred  Eq a :~> ( eq :: a -> a -> Bool )
-pred  Eq a :~> x => Ord a :~> ( lt :: a -> a -> Bool, Eq :: (! Eq a !) ) = ( r | Eq = x )
+pred  Eq a :~> x => Ord a :~> ( lt :: a -> a -> Bool, Eq :: {! Eq a !} ) = ( r | Eq = x )
 %%]
 This should be read as:
 \begin{Itemize}
@@ -2024,8 +2024,8 @@ Or just only use the notation but under the hood use record structure as being k
 Rules, corresponding to instance declaratations, populate the world of predicates:
 %%[[wrap=code
 rule Eq Int = ( eq = primEqInt )
-rule Eq a :~> e => Eq [a] :~> l =  ( eq = \a -> \b ->  eq (! e !) (head a) (head b) &&
-                                                       eq (! l !) (tail a) (tail b)
+rule Eq a :~> e => Eq [a] :~> l =  ( eq = \a -> \b ->  eq {! e !} (head a) (head b) &&
+                                                       eq {! l !} (tail a) (tail b)
                                    )
 %%]
 This should be read as:
@@ -2059,11 +2059,11 @@ rule eqInt1 :: Eq Int = ( eq = primEqInt )
 Sofar an explicit parameter passed to a function just consisted of an identifier.
 Implicit parameter application could/should also be allowed
 %%[[wrap=code
-rule eqList1 :: Eq a :~> e => Eq [a] :~> l =  ( eq = \a -> \b ->  eq (! e !) (head a) (head b) &&
-                                                                  eq (! l !) (tail a) (tail b)
+rule eqList1 :: Eq a :~> e => Eq [a] :~> l =  ( eq = \a -> \b ->  eq {! e !} (head a) (head b) &&
+                                                                  eq {! l !} (tail a) (tail b)
                                               )
 
-... eq (! eqList1 eqInt1 !) ...
+... eq {! eqList1 eqInt1 !} ...
 %%]
 
 \Paragraph{Eq as predicate}
@@ -2132,9 +2132,9 @@ Issues/problems:
 \item
 Type inference means we do not yet know if a predicate must be passed.
 \item
-Yet the explicit passing via |(! expr !)| requires the presence of an implicit parameter (i.e. predicate in the corresponding type).
+Yet the explicit passing via |{! expr !}| requires the presence of an implicit parameter (i.e. predicate in the corresponding type).
 \item
-If given a |(! expr !)| how do we find the corresponding predicate |pi| for which |expr| is the evidence/proof?
+If given a |{! expr !}| how do we find the corresponding predicate |pi| for which |expr| is the evidence/proof?
 \end{Enumerate}
 
 Corresponding solutions:

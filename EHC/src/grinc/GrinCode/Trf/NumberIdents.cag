@@ -15,6 +15,9 @@ Note: after each binding we skip one number (binding needs two number in the HPT
 %%[8 import({GrinCode/AbsSyn})
 %%]
 
+%%[8 hs import({%{GRIN}Config})
+%%]
+
 %%[8.wrapper
 WRAPPER GrAGItf
 %%]
@@ -38,15 +41,15 @@ type LookupList = Map.Map HsName HsName
 findNewVar fm e = Map.findWithDefault (error $ "undeclared variable " ++ show e) e fm
 
 addMaybe u fm = maybe (fm, u) addName
-	where
-	addName e | e == wildcardNm  = (fm                       , u  )
-	          | otherwise        = (Map.insert e (HNPos u) fm, u+1)
+    where
+    addName e | e == wildcardNm  = (fm                       , u  )
+              | otherwise        = (Map.insert e (HNPos u) fm, u+1)
 
 addList u fm = onFst (flip listInsert fm) . foldr addName ([], [], u)
-	where
-	onFst f (a, b, c)                       = (f a          , b             , c  )
-	addName e (l, l2, u) | e == wildcardNm  = (l            , wildcardNr:l2 , u  )
-	                     | otherwise        = ((e,HNPos u):l, ((HNPos u):l2), u+1)
+    where
+    onFst f (a, b, c)                       = (f a          , b             , c  )
+    addName e (l, l2, u) | e == wildcardNm  = (l            , wildcardNr:l2 , u  )
+                         | otherwise        = ((e,HNPos u):l, ((HNPos u):l2), u+1)
 %%]
 
 %%[8.grTrf
@@ -66,8 +69,12 @@ SEM GrAGItf
 %%[8.translateEntry
 ATTR GrAGItf [ | entry: HsName | ]
 SEM GrAGItf
-  | AGItf  lhs . entry = fromJust $ Map.lookup @lhs.entry @bind2id
+  | AGItf  lhs . entry = case Map.lookup @lhs.entry @bind2id of
+                              Just x -> x
+                              Nothing -> error ("cannot find " ++ show @lhs.entry ++ " in " ++ show @bind2id)
+                           
 %%]
+  | AGItf  lhs . entry = fromJust $ Map.lookup @lhs.entry @bind2id
 
 %%[8.maps
 ATTR GrAGItf          [ | | varMap:  IdentNameMap ]
@@ -81,9 +88,20 @@ SEM GrAGItf
            loc     .  bind2id      = @module.bind2idFrag
                    .  bind2idList  = Map.toList @module.bind2idFrag
                    .  var2idList   = Map.toList @module.var2id
-                   .  bindMapping  = concat [ [(i, n), (i+1, n)] | (n, HNPos i) <- @bind2idList, not (n `elem` [applyNm, evalNm]) ] -- ugly
-                   .  varMapping   = let changeCaf n = if Map.member n @module.globalVars then hsnSuffix n "$global" else n
-                                     in [ (i, changeCaf n) | (n, HNPos i) <- @var2idList ]
+                   .  bindMapping  = concat [ [ (i, n2)
+                                              , (i+1, n2)
+                                              ]
+                                            | (n, HNPos i) <- @bind2idList
+                                            , not (n `elem` [applyNm, evalNm])
+                                            , let n2 = hsnPrefix "fun_" n
+                                            ] -- ugly
+                   .  varMapping   = let changeCaf n
+                                           = if    Map.member n @module.globalVars
+                                              then hsnPrefix rtsGlobalVarPrefix n
+                                              else n
+                                     in  [ (i, changeCaf n)
+                                         | (n, HNPos i) <- @var2idList
+                                         ]
                    .  varMap       = (array (@low, @high-1) (@bindMapping ++ @varMapping), Map.empty)
 
 SEM GrModule
@@ -139,7 +157,7 @@ SEM GrExpr
   | Catch      handler  .  var2id   = Map.insert @arg @newName @body.var2id
                         .  unique   = @body.unique + 1
                loc      .  newName  = HNPos @body.unique
- 
+
 SEM GrBind
   | Bind      loc   .  (var2id', newNames, unique'')  =  addList @unique' @lhs.var2id @argNmL
               expr  .  var2id                         =  @var2id'
@@ -179,10 +197,10 @@ SEM GrExpr
   | Update                       lhs  .  grTrf    =  GrExpr_Update  @newName @val.grTrf @mbTag
   | Throw                        lhs  .  grTrf    =  GrExpr_Throw   @newName
   | Catch                        lhs  .  grTrf    =  GrExpr_Catch   @body.grTrf @newName @handler.grTrf
-  | FFI                          lhs  .  grTrf    =  GrExpr_FFI @nm (map (findNewVar @lhs.var2id) @argL)
+  | FFI                          lhs  .  grTrf    =  GrExpr_FFI @nm (map (findNewVar @lhs.var2id) @argL) @resTagL.grTrf
 
 SEM GrModule
-  | Mod  lhs  . grTrf         = GrModule_Mod @baseName @globalL.grTrf @bindL.grTrf @ctagsMp @newEvalTagMp @newAppTagMp
+  | Mod  lhs  . grTrf         = GrModule_Mod @moduleNm @globalL.grTrf @bindL.grTrf @ctagsMp @newEvalTagMp @newAppTagMp
          loc  . newEvalTagMp  = map (newMap @lhs.bind2id) @evalTagMp
               . newAppTagMp   = map (newMap @lhs.bind2id) @applyTagMp
 %%]
@@ -202,5 +220,3 @@ newMap mp (k, EvApTagVar nm)  =  let newNm = if applyNm == nm
                                  in (k, EvApTagVar newNm)
 newMap mp x                   =  x
 %%]
-
-% vim:ts=4:et:ai:

@@ -1,4 +1,3 @@
-% $Id$
 %%[0
 %include lhs2TeX.fmt
 %include afp.fmt
@@ -22,7 +21,7 @@ Pupto_1(1) -> upto
 Now we retrieve the equations and initial environment and heap:
 
 - Every variable gets a number
-- The equations are represented by a base set a change set and an eqution part
+- The equations are represented by a base set a change set and an equation part
 
 On every iteration we merge the changeSet with the BaseSet and define the new
 changeSet based on the previous values. This is only possible if we update all equations each iteration.
@@ -32,7 +31,7 @@ lookup times.
 
 TODO: Shared set and Unique set instead base and shared part
 
-%%[8 module {%{GRIN}HeapPointsToFixpoint} import(Data.Maybe, Data.List, Data.Monoid, Data.Array.ST, Control.Monad.ST, Control.Monad, {%{EH}Base.Common}, {%{EH}GrinCode})
+%%[8 module {%{GRIN}HeapPointsToFixpoint} import(Data.Maybe, Data.List, Data.Ix, Data.Monoid, Data.Array.ST, Data.Array.IArray, Control.Monad.ST, Control.Monad, {%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
 
 %%[8  import(UU.Pretty, {%{EH}GrinCode.Pretty}) export("module Data.Monoid")
@@ -42,10 +41,15 @@ TODO: Shared set and Unique set instead base and shared part
 %%[8.OrdTag
 instance Ord GrTag where
     compare t1 t2 = case t1 of
+                        GrTag_Any         -> case t2 of
+                                                 GrTag_Any         -> EQ
+                                                 otherwise         -> LT
                         GrTag_Unboxed     -> case t2 of
+                                                 GrTag_Any         -> GT
                                                  GrTag_Unboxed     -> EQ
                                                  otherwise         -> LT
                         GrTag_Lit c1 _ n1 -> case t2 of
+                                                 GrTag_Any         -> GT
                                                  GrTag_Unboxed     -> GT
                                                  GrTag_Lit c2 _ n2 -> case compare c1 c2 of
                                                                           EQ -> compare n1 n2
@@ -67,12 +71,12 @@ data AbstractValue
   | AV_Nodes (Map.Map GrTag [AbstractValue]) -- TODO: use Data.Map GrTag [AbstractValue]
   | AV_Tags  (Set.Set GrTag) -- TODO: use Data.Set GrTag
   | AV_Error !String
-	deriving (Eq, Ord)
+    deriving (Eq, Ord)
 
 instance Show AbstractValue where
     show av = case av of
-                  AV_Nothing      -> "_|_"
-                  AV_Basic        -> "{BAS}"
+                  AV_Nothing      -> "bot"
+                  AV_Basic        -> "bas"
                   AV_Locations ls -> "{" ++ show ls ++ "}"
                   AV_Nodes     ns -> "{" ++ show ns ++ "}"
                   AV_Tags      ts -> "{" ++ show ts ++ "}"
@@ -94,7 +98,9 @@ instance Monoid AbstractValue where
                                       (AV_Tags      at, AV_Tags      bt) -> AV_Tags (Set.union at bt)
                                       (AV_Error     _ , _              ) -> a
                                       (_              , AV_Error     _ ) -> b
-                                      otherwise                          -> AV_Error $ "Wrong variable usage: Location, node or basic value mixed"
+                                      (AV_Basic       , _              ) -> b   -- works, but is it correct? --JF
+                                      (_              , AV_Basic       ) -> a   -- works, but is it correct? --JF
+                                      otherwise                          -> AV_Error $ "Wrong variable usage: Location, node or basic value mixed" ++ show a ++ " / " ++ show b
 
 mergeNodes an bn = Map.unionWith (zipWith mappend) an bn
 %%]
@@ -106,13 +112,13 @@ data AbstractHeapElement = AbstractHeapElement
     , ahSharedSet  ::  !(Maybe AbstractValue)
     , ahMod        ::  !AbstractHeapModifier
     }
-	deriving (Eq)
-	
+    deriving (Eq)
+
 -- TODO: which should ahSharedSet hold: <value when shared> - <value when uniq> or <value when shared>
 -- Note: ahSharedSet currently holds the former, Nothing means it the cell shared, Just means unique (and shared part is kept off the record)
 
 instance Show AbstractHeapElement where
-	show (AbstractHeapElement b s m) =    "unique = "       ++ show b 
+    show (AbstractHeapElement b s m) =    "unique = "       ++ show b
                                        ++ ";\tshared = "  ++ show s
                                        ++ ";\tmod = "     ++ show m
 
@@ -120,7 +126,7 @@ type AbstractHeapModifier = (AbstractNodeModifier, Maybe Variable)
 type AbstractNodeModifier = (GrTag, [Maybe Variable]) --(tag, [fields])
 
 updateHeapElement :: AbstractHeapElement -> AbstractEnv s -> ST s AbstractHeapElement
-updateHeapElement he env = do 
+updateHeapElement he env = do
     { (baseChange, sharedChange) <- heapChangeSet (ahMod he) env
     ; let  sharedSet       =  ahSharedSet he
            newBaseSet'     =  baseChange   `mappend` ahBaseSet he
@@ -137,10 +143,10 @@ data AbstractEnvElement = AbstractEnvElement
     , aeIsShared  :: !Bool
     , aeMod       :: !AbstractEnvModifier
     }
-	deriving (Eq)
+    deriving (Eq)
 
 instance Show AbstractEnvElement where
-	show (AbstractEnvElement b s m) =  "base = " ++ show b 
+    show (AbstractEnvElement b s m) =  "base = " ++ show b
                                        ++ ";\tshared = " ++ show s
                                        ++ ";\tmod = " ++ show m
 
@@ -151,7 +157,7 @@ data AbstractEnvModifier
   | EnvApp Variable [ApplyArg] Variable
   | EnvSelect Variable GrTag Int
   | EnvTag GrTag [Maybe Variable] (Maybe Variable)
-	deriving (Show, Eq)
+    deriving (Show, Eq)
 
 type ApplyArg = Either Variable AbstractEnvModifier -- only contains the EnvTag here
 
@@ -171,7 +177,7 @@ setSharingInfo heap v = case aeBaseSet v of
                            AV_Locations ls  ->  when (aeIsShared v) (mapM_ (setShared heap) (Set.toList ls))
                            otherwise        ->  return ()
 
-setShared heap l = do 
+setShared heap l = do
     { he <- lookupHeap heap l
     ; maybe (return ())  (\s -> do { let  baseSet  =  ahBaseSet he `mappend` s
                                           newElem  =  he { ahBaseSet = baseSet
@@ -198,26 +204,27 @@ heapChangeSet ((tag, deps), resultDep) env = do
           sharedAV    =  exceptNode `mappend` resCS
     ; return (uniqueAV, sharedAV)
     }
-	where
+    where
     throwTag      =  GrTag_Lit GrTagFun 0 (HNm "rethrow")
 --    blackholeTag  =  GrTag_Lit GrTagHole 0 (HNm "blackhole")
     getBaseSet    =  maybe (return AV_Nothing) (\v -> lookupEnv env v >>= return . aeBaseSet)
 %%]
 
 %%[8.envChangeSet
+
 envChangeSet :: AbstractEnvModifier -> AbstractEnv s -> AbstractHeap s -> AssocL GrTag (Either GrTag Int) -> ST s AbstractValue
 envChangeSet am env heap applyMap = case am of
                                         EnvSetAV    av     -> return av
                                         EnvUnion    vs mbS -> let addApplyArgument s av = envChangeSet s env heap applyMap >>= return . flip mappend av
                                                               in mapM valAbsEnv vs >>= return . mconcat >>= maybe return addApplyArgument mbS
                                         EnvEval     v ev     -> valAbsEnv v >>= evalChangeSet ev
-                                        EnvApp      f a ev   -> do { pnodes  <- valAbsEnv f 
+                                        EnvApp      f a ev   -> do { pnodes  <- valAbsEnv f
                                                                    ; argsVal <- mapM (\(Left v) -> valAbsEnv v) a
                                                                    ; applyChangeSet pnodes argsVal ev
                                                                    }
                                         EnvSelect   v n i  -> valAbsEnv v >>= return . selectChangeSet n i
                                         EnvTag      t f r  -> tagChangeSet t f r
-	where
+    where
     --valAbsEnv :: Variable -> ST s AbstractValue
     valAbsEnv v = do
         { elem <- lookupEnv env v
@@ -231,6 +238,7 @@ envChangeSet am env heap applyMap = case am of
         ; return (ahBaseSet elem `mappend` maybe AV_Nothing id (ahSharedSet elem), exceptions)
         }
     evalFilter (AV_Nodes nodes) = let isValueTag t = case t of
+                                                         GrTag_Any          -> True
                                                          GrTag_Unboxed      -> True
                                                          GrTag_Lit cat _ _  -> case cat of
                                                                                    GrTagCon     -> True
@@ -275,7 +283,7 @@ envChangeSet am env heap applyMap = case am of
                                     --getNewNode :: GrTag -> [AbstractValue] -> ST s AbstractValue
                                     getNewNode tag args       = let newArgs = args ++ [arg]
                                                                     partialF tag' = return $ AV_Nodes (Map.singleton tag' newArgs)
-                                                                    saturatedF var = 
+                                                                    saturatedF var =
                                                                         do { appendApplyArg env (AV_Nodes (Map.singleton (GrTag_Var (HNPos var))
                                                                                                                          newArgs
                                                                                                           )
@@ -287,6 +295,21 @@ envChangeSet am env heap applyMap = case am of
                                                                 in either partialF saturatedF
                                                                           (fromJust' ("tag missing in applyMap: " ++ show tag) $ lookup tag applyMap)
                                 in mapM (uncurry getNewNode) partialApplicationNodes >>= return . mconcat
+%%]
+
+%%[8 ghc (6.6,_)
+abstractBounds :: Ix i => STArray s i a -> ST s (i, i)
+abstractBounds = getBounds
+
+abstractIndices :: Ix i => STArray s i a -> ST s [i]
+abstractIndices a = getBounds a >>= return . range
+%%]
+%%[8 ghc (_,6.4.2)
+abstractBounds :: Ix i => STArray s i a -> ST s (i, i)
+abstractBounds = return . bounds
+
+abstractIndices :: Ix i => STArray s i a -> ST s [i]
+abstractIndices = return . indices
 %%]
 
 %%[8 import(Data.Either) export(lookupEnv)
@@ -310,12 +333,12 @@ lookupHeap :: AbstractHeap s -> Location -> ST s AbstractHeapElement
 lookupHeap heap idx = readArray heap idx
 
 appendApplyArg :: AbstractEnv s -> AbstractValue -> ST s ()
-appendApplyArg env av = let (applyArgIdx, _) = bounds env
-                        in do { elem <- readArray env applyArgIdx
-                              ; let applyArg = aeBaseSet elem
-                                    newElem  = elem { aeBaseSet = av `mappend` applyArg }
-                              ; writeArray env applyArgIdx newElem
-                              }
+appendApplyArg env av = do { (applyArgIdx,_) <- abstractBounds env
+                           ; elem <- readArray env applyArgIdx
+                           ; let applyArg = aeBaseSet elem
+                                 newElem  = elem { aeBaseSet = av `mappend` applyArg }
+                           ; writeArray env applyArgIdx newElem
+                           }
 
 appendExceptions :: AbstractEnv s -> Variable -> AbstractValue -> ST s ()
 appendExceptions env handlerVar av = do { elem <- readArray env handlerVar
@@ -360,31 +383,34 @@ fixpoint labels f = countFixpoint 1
 %%[8 export(heapPointsTo)
 heapPointsTo :: AbstractEnv s -> AbstractHeap s -> AssocL GrTag (Either GrTag Int) -> ST s Int
 heapPointsTo env heap applyMap =
-    let labels        = heapLabels ++ envLabels
-        heapLabels    = map Right (indices heap)
-        envLabels     = map Left (tail $ indices env)
-        f (Left i) = do
-            { e  <- lookupEnv env i
-            ; e' <- updateEnvElement e env heap applyMap
-            ; let changed = isChanged (aeBaseSet e) (aeBaseSet e')
-            ; when changed (writeArray env i e')
-            ; return changed
-            }
-        f (Right i) = do
-            { e  <- lookupHeap heap i
-            ; e' <- updateHeapElement e env
-            ; let changed = isChanged (ahBaseSet e) (ahBaseSet e') || isChanged (ahSharedSet e) (ahSharedSet e')
-            ; when changed (writeArray heap i e')
-            ; return changed
-            }
+    do { indHeap <- abstractIndices heap
+       ; indEnv  <- abstractIndices env
+       ; let { labels        = heapLabels ++ envLabels
+             ; heapLabels    = map Right indHeap
+             ; envLabels     = map Left (tail $ indEnv)
+             ; f (Left i) = do
+                 { e  <- lookupEnv env i
+                 ; e' <- updateEnvElement e env heap applyMap
+                 ; let changed = isChanged (aeBaseSet e) (aeBaseSet e')
+                 ; when changed (writeArray env i e')
+                 ; return changed
+                 }
+             ; f (Right i) = do
+                { e  <- lookupHeap heap i
+                ; e' <- updateHeapElement e env
+                ; let changed = isChanged (ahBaseSet e) (ahBaseSet e') || isChanged (ahSharedSet e) (ahSharedSet e')
+                ; when changed (writeArray heap i e')
+                ; return changed
+                }
+             }
         -- @tracef l a = do { r@((env,heap), c) <- f l a
         --                ; msg <- if c then either (\i -> lookupEnv env i >>= return . show) (\i -> lookupHeap heap i >>= return . show) l else return "nothing"
         --                ; trace ("step: " ++ show l ++ " changed: " ++ show msg) $ return r
         --                }
-    in do { count <- fixpoint labels f
-          ; addSharingInfo env heap
-          ; return count
-          }
+       ; count <- fixpoint labels f
+       ; addSharingInfo env heap
+       ; return count
+       }
 
 --AbstractValue -> AbstractValue -> Bool
 isChanged :: Eq a => a -> a -> Bool
@@ -394,5 +420,3 @@ isChanged old new = old /= new
                     --  (AV_Nodes     on, AV_Nodes nn    ) -> not $ nn <=! on
                     --  otherwise                          -> old /= new
 %%]
-
-% vim:ts=4:et:ai:

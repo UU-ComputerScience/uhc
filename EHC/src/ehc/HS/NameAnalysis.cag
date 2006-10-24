@@ -1,0 +1,1091 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Names: dependencies, binding group, in scope
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The actual name (refname) used for referring to use occurrences
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.Type.refname
+%%]
+SEM Type
+    | Constructor
+        loc             .   refname     =   @name
+
+%%[1.Expression.refname
+%%]
+SEM Expression
+    | Variable Constructor
+      RecordConstruction
+        loc             .   refname     =   @name
+
+%%[7
+%%]
+SEM RecordExpressionBinding
+    | RecordExpressionBinding
+        loc             .   refname     =   @name
+
+%%[9
+%%]
+SEM ContextItem
+    | Class
+        loc             .   refname     =   @name
+
+SEM Deriving
+    | Deriving
+        loc             .   refname     =   @name
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Identifier occurrences
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+doccForUse ::Maybe IdDefOcc -> IdIsDef
+doccForUse md
+  = case md of
+      Just d  -> IdIsDef (doccLev d)
+      Nothing -> IdIsNotDef
+%%]
+
+%%[1 hs
+mkBuiltinIdDefOcc :: HsName -> IdOccKind -> (IdOcc,IdDefOcc)
+mkBuiltinIdDefOcc n k
+  = (o,emptyIdDefOcc {doccOcc = o, doccLev = nmLevBuiltin, doccRange = builtinRange})
+  where o = IdOcc n k
+
+tyGam2IdDefOccGam :: TyGam -> IdDefOccGam
+tyGam2IdDefOccGam = gamMap (\(n,tgi) -> mkBuiltinIdDefOcc n IdOcc_Type)
+
+%%[[6
+kiGam2IdDefOccGam :: KiGam -> IdDefOccGam
+kiGam2IdDefOccGam = gamMap (\(n,kgi) -> mkBuiltinIdDefOcc n IdOcc_Kind)
+%%]
+%%]
+
+%%[1 hs
+data IdIsDef
+  = IdIsDef             { idIsDefLev :: NmLev }
+  | IdIsNotDef
+%%[[12
+  | IdIsInWrongModule   IdOcc
+%%]]
+  deriving (Show)
+
+idIsDef :: IdIsDef -> Bool
+idIsDef (IdIsDef _) = True
+idIsDef _           = False
+
+instance PP IdIsDef where
+  pp (IdIsDef _)            = pp "Def'd"
+  pp IdIsNotDef             = pp "Undef'd"
+%%[[12
+  pp (IdIsInWrongModule o)  = "Wrong" >#< o
+%%]]
+%%]
+
+%%[1 hs
+data IdUseOcc
+  = IdUseOcc
+      { uoccOcc     :: IdOcc
+      , uoccAsp     :: IdAspect
+      , uoccRange   :: Range
+      , uoccIsDef   :: IdIsDef
+      }
+  deriving (Show)
+
+instance PP IdUseOcc where
+  pp o = uoccOcc o >|< "/" >|< uoccIsDef o
+
+type IdUseOccGam = Gam    IdOcc  IdUseOcc
+type IdUseOccAsc = AssocL IdOcc [IdUseOcc]
+%%]
+
+%%[1 hs
+splitIdUseOccGam :: Int -> IdUseOccGam -> (IdUseOccGam, IdUseOccAsc, IdUseOccAsc, IdUseOccGam)
+splitIdUseOccGam level g
+  = (assocDupLToGam o,h,i,assocDupLToGam e)
+  where (o,h,i,e)
+          = foldr
+              (\x@(k,occs) (o,h,i,e)
+                 -> case partition (idIsDef . uoccIsDef) occs of
+                      (occ:_,[]) -> case compare (idIsDefLev $ uoccIsDef $ occ) level of
+                                      LT -> (x:o,  h,  i,  e)
+                                      EQ -> (  o,x:h,  i,  e)
+                                      GT -> (  o,  h,x:i,  e)
+                      (_,(_:_))  ->         (  o,  h,  i,x:e)
+              )
+              ([],[],[],[])
+              (gamToAssocDupL g)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Identifier def's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+mkDefGam' :: NmLev -> Range -> (IdOcc -> IdAspect) -> [IdOcc] -> IdDefOccGam
+mkDefGam' l r mka os
+  = assocLToGam [ (o,mkIdDefOcc o (mka o) l r) | o <- os ]
+
+mkDefGam :: NmLev -> Range -> IdAspect -> [IdOcc] -> IdDefOccGam
+mkDefGam l r a os
+  = mkDefGam' l r (const a) os
+%%]
+
+%%[3 hs
+tvarL2IdDefOccGam :: NmLev -> Range -> [HsName] -> IdDefOccGam
+tvarL2IdDefOccGam l r ns
+  = mkDefGam l r IdAsp_Type_Var [ IdOcc n IdOcc_Type | n <- ns ]
+
+tvarS2IdDefOccGam :: NmLev -> Range -> Set.Set HsName -> IdDefOccGam
+tvarS2IdDefOccGam l r ns
+  = tvarL2IdDefOccGam l r (Set.toList ns)
+%%]
+
+%%[1
+ATTR
+  AllPattern
+  AllDeclaration AllFunctionBinding
+  LeftHandSide
+%%[[7
+  AllRowRecordPatternBinding
+%%]
+    [ | | idOccDefGam USE {`gamAddGam`} {emptyGam} : IdDefOccGam ]
+%%]
+
+%%[1
+SEM Declaration
+    | TypeSignature
+        loc             .   idOccDefGam =   mkDefGam' @lhs.nmLev @range (\o -> IdAsp_Val_Sig (@mkEHSig (ioccNm o))) @idOccDefs
+%%[[3
+                        .   idOccDefGamType
+                                        =   tvarS2IdDefOccGam @nmLev @range @type.freeTvarS
+%%]
+    | Fixity
+        loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @range IdAsp_Val_Fix [ IdOcc n IdOcc_Val | n <- @oprefnames ]
+    | PatternBinding
+        loc             .   idOccDefGamPat
+                                        =   mkDefGam @lhs.nmLev @range (IdAsp_Val_Pat @eh) @idOccDefsPat
+                        .   idOccDefGam =   @idOccDefGamPat `gamAddGam` @pattern.idOccDefGam
+%%]
+%%[5
+    | Data Newtype
+        loc             .   idOccDefGamType
+                                        =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables -- ???? or from constrs itself, so implicit exists is allowed
+                        .   idOccDefGamConstrs
+                                        =   mkDefGam @lhs.nmLev @simpletype.range IdAsp_Val_Con @idOccDefsCon
+%%[[7
+                                            `gamAddGam`
+                                            mkDefGam @lhs.nmLev @simpletype.range IdAsp_Val_Fld @idOccDefsFld
+%%]
+                        .   idOccDefGam =   mkDefGam @lhs.nmLev @simpletype.range (IdAsp_Type_Def @eh) [@idOccDef]
+                                            `gamAddGam` @idOccDefGamConstrs
+%%]
+%%[9
+    | Class
+        loc             .   idOccDefGamType
+                                        =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
+                        .   idOccDefGamSigAsVar
+                                        =   assocLToGam [ (o,d {doccAsp = IdAsp_Val_Var}) | (o,d) <- gamToAssocL @where.idOccDefGam, iaspIsSig (doccAsp d) ]
+                        .   idOccDefGam =   mkDefGam @lhs.nmLev @simpletype.range (IdAsp_Class_Def @eh @ehInst) [@idOccDef]
+                                            `gamUnion` @idOccDefGamSigAsVar
+    | Instance
+        loc             .   idOccDefGamType
+                                        =   tvarS2IdDefOccGam @lhs.nmLev @range @types.freeTvarS
+                        .   idOccDefGam =   mkDefGam @lhs.nmLev @range (IdAsp_Inst_Def @eh @classrefname) [@idOccDef]
+                                            `gamUnion` mkDefGam @lhs.nmLev @range IdAsp_Val_Var [@idOccDefVal]
+    | InstanceUseImplicitly
+        loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @range (IdAsp_Inst_Def @eh @classrefname) @idOccDefs
+    | Default
+        loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @range (IdAsp_Dflt_Def @eh) @idOccDefs
+%%]
+%%[11
+    | Type
+        loc             .   idOccDefGamType
+                                        =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
+                        .   idOccDefGam =   mkDefGam @lhs.nmLev @simpletype.range (IdAsp_Type_Def @eh) @idOccDefs
+%%]
+%%[5
+    | Data Newtype
+%%]
+%%[9
+      Class
+%%]
+%%[11
+      Type
+%%]
+%%[5
+        loc             .   idOccDefGamInside
+                                        =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
+%%]
+%%[8
+    | ForeignImport ForeignExport
+        loc             .   idOccDefGamType
+                                        =   tvarS2IdDefOccGam @lhs.nmLev @range @type.freeTvarS
+    | ForeignImport
+        loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @range (IdAsp_Val_FFI @eh) @idOccDefs
+%%]
+%%[88
+    | ForeignExport -- ??
+        loc             .   idOccDefGam =   gamUnit @idOccDef (mkIdDefOcc @idOccDef IdAsp_Val_Var @lhs.nmLev @range)
+%%]
+
+%%[1
+SEM FunctionBinding
+    | FunctionBinding
+        loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @range (IdAsp_Val_Fun @lefthandside.eh @righthandside.eh @lUniq) @idOccDefs
+%%]
+
+%%[1
+SEM Pattern
+    | Variable As
+        loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @range IdAsp_Val_Var [@idOccDef]
+    | As
+        lhs             .   idOccDefGam =   @idOccDefGam `gamAddGam` @pattern.idOccDefGam
+%%[[4
+    | Typed
+        loc             .   idOccDefGamType
+                                        =   tvarS2IdDefOccGam @lhs.nmLev @range @type.freeTvarS
+%%]
+%%]
+
+%%[3
+SEM Expression
+    | Typed
+        loc             .   idOccDefGamType
+                                        =   tvarS2IdDefOccGam @lhs.nmLev @range @type.freeTvarS
+%%]
+
+%%[4
+SEM Type
+    | Forall Exists
+        loc             .   idOccDefGamInside
+                                        =   tvarL2IdDefOccGam @lhs.nmLev @range @typevariables
+%%]
+
+%%[9
+SEM ContextItem
+    | Forall
+        loc             .   idOccDefGamInside
+                                        =   tvarL2IdDefOccGam @lhs.nmLev @range @typevariables
+%%]
+
+%%[8
+SEM Body
+    | Body
+        loc             .   idOccDefGamMain
+                                        =   gamUnit @idOccDefMain (mkIdDefOcc @idOccDefMain (IdAsp_Val_Pat @ehMainDecl) @lhs.nmLev @range)
+                                            `gamUnion` gamUnit @idOccDefMain (mkIdDefOcc @idOccDefMain IdAsp_Val_Var @lhs.nmLev @range)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Identifiers in scope
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR AllNT [ idGam: IdDefOccGam | | ]
+%%]
+
+%%[5
+ATTR
+  AllQualifier
+%%[[9
+  Statement
+%%]
+    [ | | idGam: IdDefOccGam ]
+%%]
+
+%%[1.AGItf.idGam
+SEM AGItf
+    | AGItf
+        loc             .   idGam       =   tyGam2IdDefOccGam initTyGam
+%%[[6
+                                            `gamUnion`
+                                            kiGam2IdDefOccGam initKiGam
+%%]
+%%]
+
+%%[8 -1.AGItf.idGam
+ATTR AGItf [ idGam: IdDefOccGam | | ]
+%%]
+
+%%[1.initIdGam
+SEM Body
+    | Body
+        loc             .   idGam       =   gamAddGam @declarations.idOccDefGam @lhs.idGam
+%%]
+
+%%[12 -1.initIdGam
+ATTR AGItf Module Body [ modInScope: ModEntDomMp | | ]
+
+SEM Body
+    | Body
+        loc             .   idGam       =   let lk n = fmap (\es -> (n,es)) $ Map.lookup n @lhs.modInScope
+                                                as n = Map.findWithDefault n n @importdeclarations.modAsMp
+                                                mkg sel g
+                                                   = gamFromAssocL
+                                                       [ (o {ioccNm = n},d {doccNmAlts = Just ns})
+                                                       | (o,d) <- gamToAssocL g
+                                                       , (n,es) <- catMaybes (sel o)
+                                                       , let ns = [ ioccNm eo | e <- es, let eo = mentIdOcc e, ioccKind eo == ioccKind o ]
+                                                       ]
+                                                mkg' = mkg (\o -> [lk (hsnMapQual as $ ioccNm o),lk (hsnQualified $ ioccNm o)])
+                                                g1 = mkg' @declarations.idOccDefGam
+                                                g2 = mkg' @lhs.idGam
+                                                -- g2 = mkg (\o -> [lk (ioccNm o)                             ]) @lhs.idGam
+                                            in  g1 `gamUnion` g2
+%%]
+
+%%[1
+SEM Expression
+    | Let
+        loc             .   idGam       =   gamAddGam @declarations.idOccDefGam @lhs.idGam
+    | Lambda
+        expression      .   idGam       =   gamAddGam @patterns.idOccDefGam @lhs.idGam
+%%[[3
+    | Typed
+        type            .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
+%%]
+%%[[5
+    | Comprehension
+        expression      .   idGam       =   @qualifiers.idGam
+        qualifiers      .   idGam       =   @lhs.idGam
+%%]
+%%]
+
+%%[4
+SEM Pattern
+    | Typed
+        type            .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
+%%]
+
+%%[3
+SEM Declaration
+    | TypeSignature
+        type            .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
+%%[[5
+    | Data Newtype
+%%[[11
+      Type
+%%]]
+        loc             .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
+%%]]
+%%[[9
+    | Class
+        loc             .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
+                        .   idOccDefGamInstForClass
+                                        =   fst $ gamPartition (\_ d -> case doccAsp d of {IdAsp_Inst_Def _ n | n == @classrefname -> True ; _ -> False}) $ @lhs.idGam
+    | Instance
+        loc             .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
+%%]]
+%%]
+
+%%[1
+SEM FunctionBinding
+    | FunctionBinding
+        righthandside   .   idGam       =   gamAddGam @lefthandside.idOccDefGam @lhs.idGam
+%%]
+
+%%[1
+SEM RightHandSide
+    | Expression
+%%[[5
+      Guarded
+%%]
+        loc             .   idGam       =   gamAddGam @where.idOccDefGam @lhs.idGam
+%%]
+
+%%[5
+SEM Alternative
+    | Alternative
+        righthandside   .   idGam       =   gamAddGam @pattern.idOccDefGam @lhs.idGam
+
+SEM Qualifier
+    | Let
+        loc             .   idGam       =   gamAddGam @declarations.idOccDefGam @lhs.idGam
+    | Generator
+        lhs             .   idGam       =   gamAddGam @pattern.idOccDefGam @lhs.idGam
+%%]
+
+%%[9
+SEM Statement
+    | Let
+        loc             .   idGam       =   gamAddGam @declarations.idOccDefGam @lhs.idGam
+    | Generator
+        lhs             .   idGam       =   gamAddGam @pattern.idOccDefGam @lhs.idGam
+%%]
+
+%%[4
+SEM Type
+    | Forall Exists
+        loc             .   idGam       =   gamAddGam @idOccDefGamInside @lhs.idGam
+%%]
+
+%%[9
+SEM ContextItem
+    | Forall
+        loc             .   idGam       =   gamAddGam @idOccDefGamInside @lhs.idGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Identifier use's: lookup+gather of uses of defs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.mkUseOccGam hs
+mkUseOccGam :: IdDefOccGam -> [HsName] -> IdOccKind -> IdAspect -> Range -> (HsName,[HsName],IdUseOccGam,[Err])
+mkUseOccGam idGam names@(fstName:_) kind asp rng
+  = (fstName,names,gamUnions [ mkUse idGam n kind asp rng | n <- names ],[])
+  where mkUse idGam name kind asp rng
+          = idUseOccGam
+          where idOccUse    = IdOcc name kind
+                mbDef       = gamLookup idOccUse idGam
+                idUseOccGam = gamUnit idOccUse (IdUseOcc idOccUse asp rng (doccForUse mbDef))
+%%]
+
+%%[12 -1.mkUseOccGam hs
+mkUseOccGam :: IdDefOccGam -> [HsName] -> IdOccKind -> IdAspect -> Range -> (HsName,[HsName],IdUseOccGam,[Err])
+mkUseOccGam idGam names kind asp rng
+  = (n, ns, gamUnions g, concat e)
+  where (ns@(n:_),g,e) = unzip3 [ mkUse idGam n kind asp rng | n <- names ]
+        mkUse idGam name kind asp rng
+          = (nmOfDef,idUseOccGam,errs)
+          where idOccUse    = IdOcc name kind
+%%[[12
+                mbDef       = gamLookup idOccUse idGam
+%%][99
+                mbDef       = case gamLookup idOccUse idGam of
+                                Nothing | hsnIsInPrelude name -> Just (emptyIdDefOcc {doccOcc = idOccUse})
+                                md                            -> md
+%%]]
+                nmOfDef     = case mbDef of
+                                Just d -> ioccNm $ doccOcc d
+                                _      -> name
+                occOfDef    = idOccUse {ioccNm = nmOfDef}
+                idUseOccGam = gamUnit occOfDef (IdUseOcc occOfDef asp rng (doccForUse mbDef))
+                errs        = case mbDef of
+                                Just d | isJust (doccNmAlts d) && length alts > 1
+                                  -> [Err_AmbiguousNameRef name alts]
+                                  where alts = fromJust (doccNmAlts d)
+                                _ -> []
+%%]
+
+%%[1
+ATTR AllNT [ | | idUseOccGam USE {`gamAddGam`} {emptyGam}: IdUseOccGam ]
+%%]
+
+%%[1
+SEM Expression
+    | Variable
+        loc             .   idAsp       =   IdAsp_Val_Var
+    | Constructor
+%%[[7
+      RecordConstruction
+%%]
+        loc             .   idAsp       =   IdAsp_Val_Con
+    | Variable Constructor
+%%[[7
+      RecordConstruction
+%%]
+        loc             .   (refname,_,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [@name] IdOcc_Val @idAsp @range
+%%[[7
+    | RecordConstruction
+        lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@recordExpressionBindings.idUseOccGam]
+%%]
+    | Negate
+        loc             .   (refname,_,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [hsnNegate] IdOcc_Val IdAsp_Val_Var @range
+        lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@expression.idUseOccGam]
+%%[[5
+    | List
+        loc             .   (_,refnames,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [hsnListCons,hsnListNil] IdOcc_Val IdAsp_Val_Con @range
+        lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@expressions.idUseOccGam]
+    | Enum
+        loc             .   (refname,_,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [@enumNm] IdOcc_Val IdAsp_Val_Var @range
+        lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@from.idUseOccGam,@then.idUseOccGam,@to.idUseOccGam]
+    | If
+        loc             .   (_,valrefnames,idUseOccGamVal,errIdUseVal)
+                                        =   mkUseOccGam @lhs.idGam [hsnTrue,hsnFalse] IdOcc_Val IdAsp_Val_Var @range
+                        .   (typerefname,_,idUseOccGamType,errIdUseType)
+                                        =   mkUseOccGam @lhs.idGam [hsnBool] IdOcc_Type IdAsp_Type_Con @range
+                        .   idUseOccGam =   gamUnions [@idUseOccGamVal,@idUseOccGamType]
+        lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@guardExpression.idUseOccGam,@thenExpression.idUseOccGam,@elseExpression.idUseOccGam]
+%%]
+%%]
+
+%%[5
+SEM Literal
+    | String
+        loc             .   (_,refnames,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [hsnListCons,hsnListNil] IdOcc_Val IdAsp_Val_Var @range
+%%[[99
+    | Int
+        loc             .   (refname,refnames,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [hsnFromInteger] IdOcc_Val IdAsp_Val_Var @range
+    | Float
+        loc             .   (refname,refnames,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [hsnMkRatio,hsnFromRational] IdOcc_Val IdAsp_Val_Var @range
+%%]]
+%%]
+
+%%[5
+SEM Pattern
+    | Literal
+        loc             .   (eqrefname,_,idUseOccGamEq,errIdUseEq)
+                                        =   mkUseOccGam @lhs.idGam [hsnEq] IdOcc_Val IdAsp_Val_Var @range
+                        .   litnames    =   case @literal.eh of
+%%[[5
+                                              Literal_String r s -> [hsnListCons,hsnListNil]
+%%]]
+%%[[99
+                                              Literal_Int    r s -> [hsnFromInteger]
+                                              Literal_Float  r s -> [hsnMkRatio,hsnFromRational]
+%%]]
+                                              _                  -> []
+                        .   (litrefname,litrefnames,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam @litnames IdOcc_Val IdAsp_Val_Var @range
+%%[[9
+                        .   (eqclassrefname,_,idUseOccGamCls,errIdUseCls)
+                                        =   mkUseOccGam @lhs.idGam [hsnClassEq] IdOcc_Class IdAsp_Class_Class @range
+%%]]
+        lhs             .   idUseOccGam =   gamUnions
+                                                [ @idUseOccGam, @idUseOccGamEq
+%%[[9
+                                                , @idUseOccGamCls
+%%]]
+                                                , @literal.idUseOccGam
+                                                ]
+%%]
+
+%%[5
+SEM Qualifier
+    | Guard
+        loc             .   (_,valrefnames,idUseOccGamVal,errIdUseVal)
+                                        =   mkUseOccGam @lhs.idGam [hsnTrue,hsnFalse,hsnListNil] IdOcc_Val IdAsp_Val_Var @range
+                        .   (typerefname,_,idUseOccGamType,errIdUseType)
+                                        =   mkUseOccGam @lhs.idGam [hsnBool] IdOcc_Type IdAsp_Type_Con @range
+                        .   idUseOccGam =   gamUnions [@idUseOccGamVal,@idUseOccGamType]
+        lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@guard.idUseOccGam]
+    | Generator
+        loc             .   (_,refnames,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [hsnConcatMap,hsnListNil] IdOcc_Val IdAsp_Val_Var @range
+        lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@pattern.idUseOccGam,@expression.idUseOccGam]
+    | Empty
+        loc             .   (_,refnames,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [hsnListCons,hsnListNil] IdOcc_Val IdAsp_Val_Var @range
+%%]
+
+%%[5
+SEM GuardedExpression
+    | GuardedExpression
+        loc             .   (_,valrefnames,idUseOccGamVal,errIdUseVal)
+                                        =   mkUseOccGam @lhs.idGam [hsnTrue,hsnFalse] IdOcc_Val IdAsp_Val_Var @range
+                        .   (typerefname,_,idUseOccGamType,errIdUseType)
+                                        =   mkUseOccGam @lhs.idGam [hsnBool] IdOcc_Type IdAsp_Type_Con @range
+                        .   idUseOccGam =   gamUnions [@idUseOccGamVal,@idUseOccGamType]
+        lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@guard.idUseOccGam,@expression.idUseOccGam]
+%%]
+
+%%[1
+SEM Pattern
+    | Constructor
+%%[[5
+      InfixConstructor
+%%]
+        loc             .   (refname,_,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [@conNm] IdOcc_Val IdAsp_Val_Con @range
+    | Constructor
+        lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@patterns.idUseOccGam]
+%%[[5
+    | InfixConstructor
+        lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@leftPattern.idUseOccGam,@rightPattern.idUseOccGam]
+    | List
+        loc             .   (_,refnames,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [hsnListCons,hsnListNil] IdOcc_Val IdAsp_Val_Con @range
+        lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@patterns.idUseOccGam]
+%%]
+%%]
+
+%%[1
+SEM Type
+    | Constructor
+        loc             .   idAsp       =   IdAsp_Type_Con
+%%[[3
+    | Variable NamedWildcard
+        loc             .   idAsp       =   IdAsp_Type_Var
+%%]
+    | Constructor
+%%[[3
+      Variable NamedWildcard
+%%]
+        loc             .   (refname,_,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [@name] IdOcc_Type @idAsp @range
+%%]
+
+%%[7
+SEM RecordExpressionBinding
+    | RecordExpressionBinding
+        loc             .   (refname,_,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [@name] IdOcc_Val IdAsp_Val_Con @range
+        lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@expression.idUseOccGam]
+%%]
+
+%%[9
+SEM ContextItem
+    | Class
+        loc             .   (refname,_,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [@name] IdOcc_Class IdAsp_Class_Class @range
+        lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@types.idUseOccGam]
+
+SEM Deriving
+    | Deriving
+        loc             .   (refname,_,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [@name] IdOcc_Class IdAsp_Class_Class @range
+
+SEM Declaration
+    | Instance InstanceUseImplicitly
+        loc             .   (classrefname,_,idUseOccGamInst,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [@name] IdOcc_Class IdAsp_Class_Class @range
+%%]
+
+%%[9
+SEM Statement
+    | Expression
+        loc             .   (refname,_,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [hsnMonadSeq] IdOcc_Val IdAsp_Val_Var @range
+        lhs             .   idUseOccGam =   @idUseOccGam `gamUnion` @expression.idUseOccGam
+    | Generator
+        loc             .   (_,refnames,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [hsnMonadBind,hsnMonadFail] IdOcc_Val IdAsp_Val_Var @range
+        lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@pattern.idUseOccGam,@expression.idUseOccGam]
+%%]
+
+%%[8
+SEM Body
+    | Body
+        loc             .   (mainrefname,_,idUseOccGamMain,errIdUse)
+                                        =   mkUseOccGam @idGam [hsnMain] IdOcc_Val IdAsp_Val_Var @range
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Identifier use's: splitting according to level + def'd check + dependencies
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+type IdDpdMp = Map.Map IdOcc [IdOcc]
+
+idDpdMpSingleton :: IdOcc -> IdOcc -> IdDpdMp
+idDpdMpSingleton f t = Map.singleton f [t]
+
+idDpdMpUnions :: [IdDpdMp] -> IdDpdMp
+idDpdMpUnions = Map.unionsWith (++)
+
+idDpdMpUnion :: IdDpdMp -> IdDpdMp -> IdDpdMp
+idDpdMpUnion = Map.unionWith (++)
+
+idToOccL2DpdMp :: [IdOcc] -> AssocL IdOcc x -> IdDpdMp
+idToOccL2DpdMp fs l
+  = if null ts then Map.empty else idDpdMpUnions [ Map.singleton f ts | f <- fs ]
+  where ts = assocLKeys l
+
+idToOccGam2DpdMp :: [IdOcc] -> Gam IdOcc x -> IdDpdMp
+idToOccGam2DpdMp fs l
+  = idToOccL2DpdMp fs (gamToAssocL l)
+
+idFrOccGam2DpdMp :: Gam IdOcc x -> [IdOcc] -> IdDpdMp
+idFrOccGam2DpdMp g ts
+  = if null ts then Map.empty else idDpdMpUnions [ Map.singleton f ts | (f,_) <- gamToAssocL g ]
+%%]
+
+%%[1
+ATTR AllDeclaration AllFunctionBinding [ | | idDpdMp USE {`idDpdMpUnion`} {Map.empty}: IdDpdMp ]
+ATTR AllNT [ | | undefOccGam USE {`gamUnion`} {emptyGam}: IdUseOccGam ]
+%%]
+
+%%[1
+SEM FunctionBinding
+    | FunctionBinding
+        loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
+                                        =   splitIdUseOccGam @lhs.nmLev
+                                                 (gamUnions [@lefthandside.idUseOccGam,@righthandside.idUseOccGam])
+                        .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+        lhs             .   undefOccGam =   gamUnions [@undefOccGam,@lefthandside.undefOccGam,@righthandside.undefOccGam]
+
+SEM Declaration
+    | TypeSignature
+        loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
+                                        =   splitIdUseOccGam @lhs.nmLev @type.idUseOccGam
+                        .   idDpdMp     =   idToOccL2DpdMp (gamKeys @idOccDefGam) @idUseHereOccL
+        lhs             .   undefOccGam =   gamUnions [@undefOccGam,@type.undefOccGam]
+    | PatternBinding
+        loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
+                                        =   splitIdUseOccGam @lhs.nmLev @righthandside.idUseOccGam
+                        .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+                                            `idDpdMpUnion`
+                                            idToOccL2DpdMp [@idOccDef] (gamToAssocL @pattern.idOccDefGam)
+                                            `idDpdMpUnion`
+                                            idFrOccGam2DpdMp @pattern.idOccDefGam [@idOccDef]
+        lhs             .   undefOccGam =   gamUnions [@undefOccGam,@righthandside.undefOccGam]
+%%[[5
+    | Data Newtype
+        loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
+                                        =   splitIdUseOccGam @lhs.nmLev
+                                                (@constructors.idUseOccGam
+%%[[9
+                                                 `gamUnion` @context.idUseOccGam `gamUnion` @derivings.idUseOccGam
+%%]]
+                                                )
+                        .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+                                            `idDpdMpUnion`
+                                            idFrOccGam2DpdMp @idOccDefGamConstrs [@idOccDef]
+%%]]
+%%[[8
+    | ForeignImport
+        loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
+                                        =   splitIdUseOccGam @lhs.nmLev @type.idUseOccGam
+                        .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+        lhs             .   undefOccGam =   gamUnions [@undefOccGam,@type.undefOccGam]
+%%]]
+%%[[9
+    | Class
+        loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
+                                        =   splitIdUseOccGam @lhs.nmLev
+                                                (gamUnions [@context.idUseOccGam,@where.idUseOccGam])
+                        .   idDpdMp     =   idDpdMpUnions
+                                                [ idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+                                                , idToOccGam2DpdMp [@idOccDef] @idOccDefGamSigAsVar
+                                                -- , idToOccGam2DpdMp [@idOccDef] @idOccDefGamInstForClass
+                                                -- , idFrOccGam2DpdMp @idOccDefGamSigAsVar [@idOccDef]
+                                                , idFrOccGam2DpdMp @idOccDefGamSigAsVar (gamKeys @idOccDefGamInstForClass)
+                                                , @where.idDpdMp
+                                                ]
+        lhs             .   undefOccGam =   gamUnions [@undefOccGam,@where.undefOccGam]
+    | Instance
+        loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
+                                        =   splitIdUseOccGam @lhs.nmLev
+                                                (gamUnions [@idUseOccGamInst,@context.idUseOccGam,@types.idUseOccGam,@where.idUseOccGam])
+                        .   idDpdMp     =   idDpdMpUnions
+                                                [ idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+                                                , idDpdMpSingleton @idOccDefVal @idOccDef
+                                                , @where.idDpdMp
+                                                ]
+        lhs             .   undefOccGam =   gamUnions [@undefOccGam,@where.undefOccGam]
+    | InstanceUseImplicitly
+        loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
+                                        =   splitIdUseOccGam @lhs.nmLev
+                                                (gamUnions [@idUseOccGamInst,@types.idUseOccGam,@expression.idUseOccGam])
+                        .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+    | Default
+        loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
+                                        =   splitIdUseOccGam @lhs.nmLev @types.idUseOccGam
+                        .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+%%]]
+%%[[11
+    | Type
+        loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
+                                        =   splitIdUseOccGam @lhs.nmLev @type.idUseOccGam
+                        .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+        lhs             .   undefOccGam =   gamUnions [@undefOccGam,@type.undefOccGam]
+%%]]
+%%]
+
+%%[8
+SEM Body
+    | Body
+        loc             .   (_,idUseHereOccL,_,undefOccGamMain)
+                                        =   splitIdUseOccGam @lhs.nmLev @idUseOccGamMain
+                        .   mainExists  =   null @errIdUse && (null $ gamToAssocL $ @undefOccGamMain)
+%%]
+
+%%[12
+SEM Body
+    | Body
+        loc             .   idDpdMp     =   idToOccL2DpdMp [@idOccDefMain] ((IdOcc @mainrefname IdOcc_Val,undefined) : @idUseHereOccL)
+                                            `idDpdMpUnion`
+                                            idFrOccGam2DpdMp @idOccDefGamMain [@idOccDefMain]
+                                            `idDpdMpUnion`
+                                            @declarations.idDpdMp
+        lhs             .   undefOccGam =   let g = if @lhs.isTopMod then @undefOccGamMain else emptyGam
+                                            in  gamUnions [g,@declarations.undefOccGam]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Split of class decls into sigs + value bindings
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+%%]
+SEM Declaration
+    | Class
+        loc             .   (idOccDefSigGam,idOccDefValGam)
+                                        =   gamPartition (\_ d -> case doccAsp d of {IdAsp_Val_Sig _ -> True ; _ -> False})
+                                                         @where.idOccDefGam
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Ordering according to dependencies
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+idDpdMp2SccOrder :: IdDefOccGam -> IdDpdMp -> [[IdOcc]]
+idDpdMp2SccOrder gam mp
+  = dgSCCToList gr
+  where dflt = idDpdMpUnions [ idDpdMpSingleton o o | o <- gamKeys gam ] `Map.difference` mp
+        gr = mkDpdGrFromEdgesMp (idDpdMpUnions [mp,dflt])
+%%]
+
+%%[1.Body.sccOrder
+SEM Body
+    | Body
+        loc             .   sccOrder    =   idDpdMp2SccOrder @declarations.idOccDefGam @declarations.idDpdMp
+%%]
+
+%%[8.Body.sccOrder -1.Body.sccOrder
+SEM Body
+    | Body
+        loc             .   sccOrder    =   idDpdMp2SccOrder (@idOccDefGamMain `gamUnion` @declarations.idOccDefGam) @declarations.idDpdMp
+%%]
+
+%%[1
+SEM Expression
+    | Let
+        loc             .   sccOrder    =   idDpdMp2SccOrder @declarations.idOccDefGam @declarations.idDpdMp
+%%]
+
+%%[1
+SEM RightHandSide
+    | Expression
+%%[[5
+      Guarded
+%%]
+        loc             .   sccOrder    =   idDpdMp2SccOrder @where.idOccDefGam @where.idDpdMp
+%%]
+
+%%[5
+SEM Qualifier
+    | Let
+        loc             .   sccOrder    =   idDpdMp2SccOrder @declarations.idOccDefGam @declarations.idDpdMp
+%%]
+
+%%[9
+SEM Statement
+    | Let
+        loc             .   sccOrder    =   idDpdMp2SccOrder @declarations.idOccDefGam @declarations.idDpdMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% SCC reordered eh's (i.e. declarations)          
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+mkIdDefEH :: IdDefOcc -> [EH.Decl]
+mkIdDefEH def
+  = case doccAsp def of
+      IdAsp_Val_Pat decl
+        -> [decl]
+      IdAsp_Val_Sig decl
+        -> [decl]
+      IdAsp_Val_Fun lhs rhs _
+        -> [decl]
+        where (h,t) = hdAndTl lhs
+              decl  = rngLift (doccRange def) EH.Decl_Val h (foldr (rngLift (doccRange def) EH.Expr_Lam) rhs t)
+%%[[5
+      IdAsp_Type_Def decl
+        -> [decl]
+%%]
+%%[[8
+      IdAsp_Val_FFI decl
+        -> [decl]
+%%]
+%%[[9
+      IdAsp_Class_Def decl declInst
+        -> [decl,declInst]
+      IdAsp_Inst_Def decl _
+        -> [decl]
+      IdAsp_Dflt_Def decl
+        -> [] -- [decl]
+%%]
+      _ -> []
+%%]
+
+%%[1.mergeFunDefL hs
+mergeFunDefL :: [IdDefOcc] -> ([IdDefOcc],[Err])
+mergeFunDefL ds
+  = case ds of
+      [_] -> (ds,[])
+      (d:_:_)
+          -> ([d],[Err_NamesDupIntrod [ioccNm $ doccOcc $ d]])
+      _   -> ([],[])
+%%]
+
+%%[5 -1.mergeFunDefL hs
+mergeFunDefL :: [IdDefOcc] -> ([IdDefOcc],[Err])
+mergeFunDefL ds
+  = case ds of
+      [_] -> (ds,[])
+      (od : _ : _) | iaspIsFun (doccAsp od)
+          -> ([d],[])
+          where (IdAsp_Val_Fun (patf:pats1) _ uniq) = doccAsp od
+                xSz   = length pats1
+                xNmL  = [ mkHNm ("x" ++ show i) | i <- [1..xSz] ]
+                xPatL = map (rngLift (doccRange od) EH.PatExpr_Var) xNmL
+                b = EH.mkCase'
+                      (doccRange od) (mkRngProdOpt (doccRange od) $ map (rngLift (doccRange od) EH.Expr_Var) $ xNmL)
+%%[[8
+                      (Just uniq) (length xNmL > 1)
+%%]]
+                    $ zipWith (EH.mkAlt (doccRange od))
+                       [ mkRngProdOpt (doccRange od) $ tail $ iaspPatL $ doccAsp $ d | d <- ds ]
+                       [ iaspBody $ doccAsp $ d | d <- ds ]
+                d = mkIdDefOcc (doccOcc od) (IdAsp_Val_Fun (patf:xPatL) b uniq) 0 (doccRange od)
+      _   -> ([],[])
+%%]
+
+%%[9 hs
+splitOffClsInst :: [IdDefOcc] -> [[IdDefOcc]]
+splitOffClsInst
+  = foldr (\df dfs -> zipWith (++) (s df) dfs) [[],[],[]]
+  where s d = case doccAsp d of
+                (IdAsp_Class_Def _ _) -> [[d],[],[]]
+                (IdAsp_Inst_Def  _ _) -> [[],[d],[]]
+                _                     -> [[],[],[d]]
+%%]
+
+%%[1.splitOff hs
+splitOff :: [IdDefOcc] -> [[IdDefOcc]]
+splitOff os = [os,[]]
+%%]
+
+%%[9 -1.splitOff hs
+splitOff :: [IdDefOcc] -> [[IdDefOcc]]
+splitOff
+  = foldr (\df dfs -> zipWith (++) (s df) dfs) (repeat [])
+  where s d = case doccAsp d of
+                (IdAsp_Inst_Def  _ _) -> [[],[d]]
+                _                     -> [[d],[]]
+%%]
+
+%%[1 hs
+idOcc2Defs :: IdDefOccGam -> IdOcc -> [IdDefOcc]
+idOcc2Defs idDefOccGam occ = maybe [] id $ gamLookupDup occ idDefOccGam
+
+mkIdOccEH :: [IdDefOcc] -> ([EH.Decl],[Err])
+mkIdOccEH defs
+  = case defs of
+      (_:_)
+        -> (concatMap mkIdDefEH (otherDefs ++ funDef),errL)
+        where (funDefs,otherDefs) = partition (iaspIsFun . doccAsp) defs
+              (funDef,errL) = mergeFunDefL funDefs
+      _ -> ([],[])
+%%]
+
+%%[1.idDefOccs2Decls hs
+idDefOccs2Decls :: [[IdDefOcc]] -> ([[EH.Decl]],[Err])
+idDefOccs2Decls docss
+  = ([concat ds], concat es)
+  where (ds,es) = unzip $ map mkIdOccEH $ docss
+%%]
+
+%%[999 -1.idDefOccs2Decls hs
+idDefOccs2Decls :: [[IdDefOcc]] -> ([[EH.Decl]],[Err])
+idDefOccs2Decls docss
+  = (foldr (zipWith (++)) (repeat []) ds, concat es)
+  where (ds,es) = unzip [ (ds,concat es) | l <- map splitOffClsInst docss, let (ds,es) = unzip $ map mkIdOccEH $ l ]
+%%]
+
+%%[1.mkIdOccSccEH hs
+mkIdOccSccEH :: Range -> IdDefOccGam -> Maybe [[IdOcc]] -> (EH.Expr -> EH.Expr,[[EH.Decl]],[Err])
+mkIdOccSccEH r g moss
+  = (m . mkLet (concat sds), d ++ sds, e ++ ses)
+  where (m,d,e) = foldr mkl (id,[],[]) doss
+        mkl dos (mke,d,e)
+          = ((\e -> foldr mkLet e dss) . mke,dss ++ d, es ++ e)
+          where (dss,es) = idDefOccs2Decls dos
+        mkLet ds = EH.mkLet r (Just ds)
+        (sds,ses) = idDefOccs2Decls $ concat $ spls
+        (doss:spls:_)
+          = collapse
+              [ collapse [ splitOff $ idOcc2Defs g $ l | l <- ll ]
+              | ll <- maybe [gamKeys g] id moss
+              ]
+        collapse = foldr (zipWith (:)) (repeat [])
+%%]
+
+%%[1.Body.mkSccLet
+SEM Body
+    | Body
+        loc             .   (mkSccLet,_,errReorder)
+                                        =   mkIdOccSccEH @range @declarations.idOccDefGam (Just @sccOrder)
+%%]
+
+%%[8.Body.mkSccLet -1.Body.mkSccLet
+SEM Body
+    | Body
+        loc             .   (mkSccLet,_,errReorder)
+                                        =   let g = if not @mainExists then @idOccDefGamMain else emptyGam
+                                            in  mkIdOccSccEH @range (g `gamUnion` @declarations.idOccDefGam) (Just @sccOrder)
+%%]
+
+%%[12 -8.Body.mkSccLet
+SEM Body
+    | Body
+        loc             .   (mkSccLet,_,errReorder)
+                                        =   let g = if @lhs.isTopMod then @idOccDefGamMain else emptyGam
+                                            in  mkIdOccSccEH @range (g `gamUnion` @declarations.idOccDefGam) (Just @sccOrder)
+%%]
+
+%%[1
+SEM Expression
+    | Let
+        loc             .   (mkSccLet,_,errReorder)
+                                        =   mkIdOccSccEH @range @declarations.idOccDefGam (Just @sccOrder)
+
+SEM RightHandSide
+    | Expression
+%%[[5
+      Guarded
+%%]
+        loc             .   (mkSccLet,_,errReorder)
+                                        =   mkIdOccSccEH @range @where.idOccDefGam (Just @sccOrder)
+%%]
+
+%%[5
+SEM Qualifier
+    | Let
+        loc             .   (mkSccLet,_,errReorder)
+                                        =   mkIdOccSccEH @range @declarations.idOccDefGam (Just @sccOrder)
+%%]
+
+%%[9
+SEM Declaration
+    | Instance
+        loc             .   (_,ehReorderedDecls,errReorder)
+                                        =   mkIdOccSccEH @range @where.idOccDefGam Nothing
+    | Class
+        loc             .   (_,ehReorderedDecls,errReorder)
+                                        =   mkIdOccSccEH @range @where.idOccDefGam Nothing
+%%]
+
+%%[9
+SEM Statement
+    | Let
+        loc             .   (mkSccLet,_,errReorder)
+                                        =   mkIdOccSccEH @range @declarations.idOccDefGam (Just @sccOrder)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Mapping of module names via 'as'
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR AllImportDeclaration [ | | modAsMp USE {`Map.union`} {Map.empty}: {Map.Map HsName HsName} ]
+
+SEM ImportDeclaration
+    | Import
+        lhs             .   modAsMp     =   maybe Map.empty (Map.singleton @name) @asname
+    | * - Import
+        lhs             .   modAsMp     =   Map.empty
+%%]
+
+

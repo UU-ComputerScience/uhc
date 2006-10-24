@@ -30,12 +30,20 @@ type HPTResult       = (Int, Array Int AbstractEnvElement, Array Int AbstractHea
 type SetEnv          = Variable -> Bool -> AbstractEnvModifier -> Action
 type GetEnv          = Variable -> ST RealWorld AbstractEnvElement
 
+
+error2 s = AbstractEnvElement
+           { aeBaseSet    =  AV_Nothing
+           , aeIsShared   =  False
+           , aeMod        =  EnvSetAV (AV_Error s)
+           }
+
+
 heapPointsToAnalysis :: (Int,Int) -> GrModule -> IO HPTResult
 heapPointsToAnalysis (low,high) grmod = stToIO $ do
     { let applyArg = low - 1 ;
     ; absEnv <- (newArray_ (applyArg,high) ) :: EnvAction
-    ; foldM_ (\_ v -> writeArray absEnv v (error $ "no equation for variable " ++ show v)) () [applyArg..high]
-    ; let setEnvVar v shared eq = writeArray absEnv v (AbstractEnvElement  
+    ; foldM_ (\_ v -> writeArray absEnv v (error2 $ "no equation for variable " ++ show v )) () [applyArg..high]
+    ; let setEnvVar v shared eq = writeArray absEnv v (AbstractEnvElement
                                                            { aeBaseSet    =  AV_Nothing
                                                            , aeIsShared   =  shared
                                                            , aeMod        =  eq
@@ -76,6 +84,14 @@ SEM GrBind
   | Bind  loc  .  prune     = (@nm == evalNr) || (@nm == applyNr)
           lhs  .  heapList  = if @prune then @lhs.heapList else @expr.heapList
                .  fillEnv   = if @prune then (return ()) else @fillEnvBind >> @exceptEq >> @expr.fillEnv
+%%]
+
+%%%%%%%%%%%%%%%%%%%
+%% Self replica  %%
+%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllGrTag [ | | self: SELF ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%
@@ -445,11 +461,14 @@ ffi "foo"; \(Tag e1 e2)      => note: (Tag == Unboxed)
 
 %%[8.ffi
 SEM GrExpr
-  | FFI  loc . primAbsVal = primAV @nm
+  | FFI  loc . primAbsVal = let l = case @resTagL.self of
+                                      (GrTag_Unboxed : _) -> [(GrTag_Unboxed,[AV_Basic])]
+                                      ts                  -> map (\t -> (t,avForArity)) ts
+                            in  AV_Nodes (Map.fromList l)
              . prim       = case @lhs.targetInfo of
                               Left nm          -> @lhs.setEnvVar nm True (EnvSetAV @primAbsVal)
                               Right (tag, nms) -> let (AV_Nodes nodes) = @primAbsVal
-                                                      tagElementsAV    = fromJust' "FFI" $ Map.lookup tag nodes
+                                                      tagElementsAV    = fromJust' "PointsToAnalysis.GrExpr.FFI" $ Map.lookup tag nodes
                                                       makeAV teAV nm   = @lhs.setEnvVar nm True (EnvSetAV teAV)
                                                   in zipWithM_ makeAV tagElementsAV nms
              . ffi        = case @lhs.targetInfo of
@@ -457,6 +476,7 @@ SEM GrExpr
                               Right (tag, nms) -> mapM_ (\e -> @lhs.setEnvVar e True (EnvSetAV AV_Basic)) nms
              . fillEnv    = if isPrim @nm then @prim else @ffi
 %%]
+  | FFI  loc . primAbsVal = primAV @nm
 
 Note: we have the ctable, can we do something with that?
       e.g. we could get the result Tags from it. If we save result type for a FFI.
@@ -582,7 +602,9 @@ ATTR AllGrNT [ | | actualsEnv USE {.} {id} : {[(Int, [Maybe Int])] -> [(Int, [Ma
 ATTR AllBind [ allActuals: {[(Int, [Maybe Int])]} | | ]
 
 SEM GrExpr
-  | Store Unit  loc  .  fGenActuals  = \tag mns n -> let args      = tail mns -- first element is the size of the rest of the node
+  | Store Unit  loc  .  fGenActuals  = \tag mns n -> let args      = if grinStoreArity
+                                                                      then tail mns -- first element is the size of the rest of the node
+                                                                      else      mns
                                                          resultVar = lookup tag @lhs.tag2resultVar
                                                          actuals r = ((r, args) :)
                                                      in maybe id actuals resultVar
@@ -595,9 +617,22 @@ SEM GrModule
   | Mod       bindL  .  allActuals   = @bindL.actualsEnv []
 
 SEM GrBind
-  | Bind      loc    .  bindActuals  = transpose [ actuals | (resVar, actuals) <- @lhs.allActuals, resVar == @resultVar ]
-                     .  fillEnvBind  = let envElem (formal, i) actuals = @lhs.setEnvVar (getNr formal) True (EnvUnion [ actual | Just actual <- actuals] (Just . @applySelect $ i))
-                                       in zipWithM_ envElem (zip @argNmL [1..]) (if null @bindActuals then replicate (length @argNmL) [] else @bindActuals)
+  | Bind      loc    .  bindActuals  = transpose [ actuals
+                                                 | (resVar, actuals) <- @lhs.allActuals
+                                                 , resVar == @resultVar
+                                                 ]
+                     .  fillEnvBind  = let envElem (formal, i) actuals
+                                            = @lhs.setEnvVar (getNr formal)
+                                                             True
+                                                             (EnvUnion [ actual | Just actual <- actuals]
+                                                                       (Just . @applySelect $ i)
+                                                             )
+                                       in zipWithM_ envElem
+                                                    (zip @argNmL [(if grinStoreArity then 1 else 0)..])
+                                                    ( if    null @bindActuals
+                                                       then replicate (length @argNmL) []
+                                                       else @bindActuals
+                                                    )
                      .  actualsEnv   = if @prune then id else @expr.actualsEnv
                      .  applySelect  = EnvSelect @lhs.tmpVar (GrTag_Var @nm)
 %%]
@@ -626,7 +661,7 @@ SEM GrGlobal
 %%[8 hs
 --revLookup :: (Eq b) => [(a,b)] -> b -> Maybe a
 revLookup l e = lookup e (map swap l)
-	where swap = uncurry (flip (,))
+    where swap = uncurry (flip (,))
 
 getCafVar m k = getNr . fromJust' ("cafVar not found " ++ show k) $ Map.lookup k m
 
@@ -639,5 +674,3 @@ makeHeapElem l eq =  (l, AbstractHeapElement  {  ahBaseSet = AV_Nothing
                                               }
                      )
 %%]
-
-% vim:et:ts=4:ai:

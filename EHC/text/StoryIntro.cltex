@@ -514,7 +514,7 @@ to an equivalent executable program is computed.
 An EH program is a single expression, contrary to a Haskell program which consists of a set of declarations forming a module.
 
 %%[[wrap=code
-%%@[file:test/1-demo2.eh%%]
+%%@[file:test/1/demo2.eh%%]
 %%]
 
 All variables need to be typed explicitly; absence of an explicit type is considered to be an error.
@@ -523,7 +523,7 @@ actual types.
 For example:
 
 %%[[wrap=code
-%%@[file:test/1-all-fail2.eh%%]
+%%@[file:test/1/all-fail2.eh%%]
 %%]
 
 is not accepted.
@@ -531,7 +531,7 @@ is not accepted.
 Besides the basic types |Int| and |Char|, more complex types can be formed by building tuples and defining functions:
 
 %%[[wrap=code
-%%@[file:test/1-demo3.eh%%]
+%%@[file:test/1/demo3.eh%%]
 %%]
 
 All types are monomorphic.
@@ -544,18 +544,18 @@ no longer requires the explicit type specifications, which in that case will be 
 For example for:
 
 %%[[wrap=code
-%%@[file:test/1-sig-fail.eh%%]
+%%@[file:test/1/sig-fail.eh%%]
 %%]
 
-the compiler will infer the type specification |i :: %%2file(test/1-sig-fail.eh%%)|.
+the compiler will infer the type specification |i :: %%2file(test/1/sig-fail.eh%%)|.
 
 The reconstructed type information is monomorphic, for example the identity function in:
 
 %%[[wrap=code
-%%@[file:test/2-demo1.eh%%]
+%%@[file:test/2/demo1.eh%%]
 %%]
 
-is inferred to have the type |id :: %%2file(test/2-demo1.eh%%)|.
+is inferred to have the type |id :: %%2file(test/2/demo1.eh%%)|.
 
 %endif %% incl02
 
@@ -624,14 +624,14 @@ so it is also permitted to leave argument and results of a function unspecified
 using a \IxAsDef{partial type signature}
 (separately discussed in \chapterRef{ehc-partial-sig-quant-guess}).
 %%[[wrap=code
-%%@[file:test/4-ty-wild1.eh%%]
+%%@[file:test/4/ty-wild1.eh%%]
 %%]
 Here, for |f| only the part that cannot be inferred is given in the signature.
 
 Finally, type information can be hidden, or encapsulated,
 by using existential quantification:
 %%[[wrap=code
-%%@[file:test/4-demo1.eh%%]
+%%@[file:test/4/demo1.eh%%]
 %%]
 The tuple |xy| contains an |Int| (this type information is 'forgotten' via existential quantification)
 and a function constructing an |Int| from the
@@ -651,7 +651,7 @@ The fifth version (EH version 5, \chapterEHVRef)
 adds |data| types and opening/unpacking/scrutinizing
 a data type value by means of a |case| expression.
 %%[[wrap=code
-%%@[file:test/5-list.eh%%]
+%%@[file:test/5/list.eh%%]
 %%]
 
 \Paragraph{EH version 6: Kinding}
@@ -659,7 +659,7 @@ The previous version allows incorrect programs because
 data types can be used incorrectly (type signature declarations without a corresponding value declaration are allowed until
 the code generation version of EH):
 %%[[wrap=code
-%%@[file:test/5-list-wrong.eh%%]
+%%@[file:test/5/list-wrong.eh%%]
 %%]
 The type of |v| is not a type of a value, and thus the type of |v|
 itself is not well-typed.
@@ -668,7 +668,7 @@ adds kind (that is, the type of a type) inferencing.
 %if False
 For example, the previous example gives
 \begin{TT}
-%%6ppfile(test/5-list-wrong.eh%%)
+%%6ppfile(test/5/list-wrong.eh%%)
 \end{TT}
 %endif
 
@@ -697,7 +697,7 @@ Fields can be named.
 For tuples the default field names are their position (starting at |1|):
 
 %%[[wrap=code
-%%@[file:test/7-demo1.eh%%]
+%%@[file:test/7/demo1.eh%%]
 %%]
 
 The proposal by Jones \cite{jones99lightweight-ext-rec} is followed.
@@ -738,7 +738,7 @@ in   v2
 Tuple access functions can also be used in a more general way:
 
 %%[[wrap=code
-%%10srcfile(test/10-snd.eh%%)
+%%10srcfile(test/10/snd.eh%%)
 %%]
 
 

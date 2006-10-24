@@ -1,0 +1,60 @@
+This file might some day serve as a replacement for PointsToAnalysis.
+For the moment, it is just a non-functioning placeholder.
+
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[8 hs module {%{GRIN}GrinCode.AbsEval}
+%%]
+
+%%[8 hs import(qualified Data.Map as Map, qualified Data.Set as Set)
+%%]
+
+%%[8 hs import({%{EH}GrinCode}) export(abstractEvaluation)
+%%]
+%%[8 hs import({%{EH}Base.Common})
+%%]
+
+
+
+%%[8 hs
+
+data AbsValue
+  = AbsBottom
+  | AbsBasic
+  | AbsLocs   (Set.Set HsName)
+  | AbsNodes  (Set.Set (GrTag,[AbsValue]))
+  | AbsTags   (Set.Set GrTag)
+  | AbsError  String
+  
+%%]  
+  
+%%[8 hs
+
+abstractEvaluation :: GrModule -> Int
+abstractEvaluation mod = 37
+  
+%%]  
+  
+%%[8
+%%]
+
+
+ATTR GrAGItf AllGrNT 
+     [   oldHeap : Map.Map HsName AbsValue
+         oldEnv  : Map.Map HsName AbsValue
+     | | 
+         newEnv  USE {++} {[]} : [(HsName, AbsValue)] ]
+     ]
+     
+
+SEM GrBind
+  | Bind  lhs . newEnv  =  [ (arg, val)
+                           | arg <- args
+                           ]
+                           ++ @expr.newEnv
+  
+  

@@ -21,13 +21,46 @@ ppListSep o c s pps
 -}
 
 ppCommas :: PP a => [a] -> PP_Doc
-ppCommas = ppListSep "" "" ", "
+ppCommas = ppListSep "" "" ","
 
-ppCommaList :: PP a => [a] -> PP_Doc
-ppCommaList = ppListSep "[" "]" ", "
+ppCommas' :: PP a => [a] -> PP_Doc
+ppCommas' = ppListSep "" "" ", "
+
+ppSpaces :: PP a => [a] -> PP_Doc
+ppSpaces = ppListSep "" "" " "
+
+ppCurlysSemisBlock :: PP a => [a] -> PP_Doc
+ppCurlysSemisBlock = pp_block "{ " "}" "; " . map pp
+
+ppCurlysCommasBlock :: PP a => [a] -> PP_Doc
+ppCurlysCommasBlock = pp_block "{ " "}" ", " . map pp
+
+ppBracketsCommas :: PP a => [a] -> PP_Doc
+ppBracketsCommas = ppListSep "[" "]" ","
+
+ppBracketsCommas' :: PP a => [a] -> PP_Doc
+ppBracketsCommas' = ppListSep "[" "]" ", "
+
+ppParensCommas :: PP a => [a] -> PP_Doc
+ppParensCommas = ppListSep "(" ")" ","
+
+ppParensCommas' :: PP a => [a] -> PP_Doc
+ppParensCommas' = ppListSep "(" ")" ", "
+
+ppCurlysCommas :: PP a => [a] -> PP_Doc
+ppCurlysCommas = ppListSep "{" "}" ","
+
+ppCurlysCommas' :: PP a => [a] -> PP_Doc
+ppCurlysCommas' = ppListSep "{" "}" ", "
+
+ppCurlysSemis :: PP a => [a] -> PP_Doc
+ppCurlysSemis = ppListSep "{" "}" ";"
+
+ppCurlysSemis' :: PP a => [a] -> PP_Doc
+ppCurlysSemis' = ppListSep "{" "}" ", "
 
 ppCommaListV :: PP a => [a] -> PP_Doc
-ppCommaListV = ppListSepVV "[" "]" ", "
+ppCommaListV = ppListSepVV "[" "]" "; "
 
 ppListSepV' :: (PP s, PP c, PP o, PP a) => (forall x y . (PP x, PP y) => x -> y -> PP_Doc) -> o -> c -> s -> [a] -> PP_Doc
 ppListSepV' aside o c s pps
@@ -70,6 +103,19 @@ ppDots = ppListSep "" "" "."
 ppMb :: PP a => Maybe a -> PP_Doc
 ppMb = maybe empty pp
 
+ppUnless :: Bool -> PP_Doc -> PP_Doc
+ppUnless b p = if b then empty else p
+
+ppWhen :: Bool -> PP_Doc -> PP_Doc
+ppWhen b p = if b then p else empty
+
+ppVertically :: [PP_Doc] -> PP_Doc
+ppVertically = foldr (>-<) empty
+
+ppHorizontally :: [PP_Doc] -> PP_Doc
+ppHorizontally = foldr (>|<) empty
+
+
 {-
 instance PP a => PP [a] where
   pp = ppCommaList
@@ -88,8 +134,14 @@ instance PP Bool where
 hPutWidthPPLn :: Handle -> Int -> PP_Doc -> IO ()
 hPutWidthPPLn h w pp = hPutStrLn h (disp pp w "")
 
+putWidthPPLn :: Int -> PP_Doc -> IO ()
+putWidthPPLn = hPutWidthPPLn stdout
+
 hPutPPLn :: Handle -> PP_Doc -> IO ()
 hPutPPLn h = hPutWidthPPLn h 4000
+
+putPPLn :: PP_Doc -> IO ()
+putPPLn = hPutPPLn stdout
 
 hPutPPFile :: Handle -> PP_Doc -> Int -> IO ()
 hPutPPFile h pp wid

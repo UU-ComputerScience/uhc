@@ -13,6 +13,7 @@ module Err
 
 import UU.Pretty
 import EH.Util.PPUtils
+import EH.Util.Utils
 import RulerScanner( SPos, emptySPos )
 import EH.Util.ParseErrPrettyPrint
 import EH.Util.Nm
@@ -52,17 +53,17 @@ mkTr m p = Err_Tr (pp m >|< ":" >#< pp p)
 
 instance PP Err where
   pp (Err_UndefNm pos cx knd nmL)
-    = ppErr pos ("In" >#< cx >#< knd >|< "(s) are undefined:" >#< ppCommas nmL)
+    = ppErr pos ("In" >#< cx >#< knd >|< "(s) are undefined:" >#< ppCommas' nmL)
   pp (Err_Dups pos cx knd nmL)
-    = ppErr pos (cx >#< "has duplicate" >#< knd >|< "s:" >#< ppCommas nmL)
+    = ppErr pos (cx >#< "has duplicate" >#< knd >|< "s:" >#< ppCommas' nmL)
   pp (Err_MutDpds pos cx knd nmL)
-    = ppErr pos (cx >#< "has mutually dependent" >#< knd >|< "s:" >#< ppCommas nmL)
+    = ppErr pos (cx >#< "has mutually dependent" >#< knd >|< "s:" >#< ppCommas' nmL)
   pp (Err_NoXXFor pos cx knd nmL)
-    = ppErr pos ("In" >#< cx >#< "a" >#< knd >#< "lacks for:" >#< ppCommas nmL)
+    = ppErr pos ("In" >#< cx >#< "a" >#< knd >#< "lacks for:" >#< ppCommas' nmL)
   pp (Err_NoJdSpec pos cx nmL)
-    = ppErr pos ("In" >#< cx >#< "no judgespec for:" >#< ppCommas nmL)
+    = ppErr pos ("In" >#< cx >#< "no judgespec for:" >#< ppCommas' nmL)
   pp (Err_NotInSel pos cx nmL)
-    = ppErr pos ("In" >#< cx >#< "view is not in selection (implicitly defined by data):" >#< ppCommas nmL)
+    = ppErr pos ("In" >#< cx >#< "view is not in selection (implicitly defined by data):" >#< ppCommas' nmL)
   pp (Err_Match pos cx given reqd)
     = ppErr pos ("In" >#< cx >#< "could not match"
                  >-< indent 2
@@ -99,4 +100,4 @@ errLIsFatal :: [Err] -> Bool
 errLIsFatal es = not (null es) && any errIsFatal es
 
 errFirst :: [[Err]] -> [Err]
-errFirst = maybeHd [] id . filter (not . null)
+errFirst = firstNotEmpty

@@ -32,17 +32,17 @@ type ScanOptsMp = Map.Map ScState ScanOpts
 
 chKindMp = Map.fromList [ ("hs",ChHS), ("ag",ChAG), ("plain",ChPlain) ]
 chDestMp = Map.fromList [ ("here",ChHere), ("hide",ChHide) ]
-chWrapMp = Map.fromList [ ("code",ChWrapCode), ("safecode",ChWrapBoxCode), ("boxcode",ChWrapBoxCode), ("tt",ChWrapTT), ("tttiny",ChWrapTTtiny) ]
+chWrapMp = Map.fromList [ ("code",ChWrapCode), ("safecode",ChWrapBoxCode Nothing), ("tt",ChWrapTT), ("tttiny",ChWrapTTtiny) ]
 
 kwTxtAsVarTooA
-  = [ "module", "import", "export", "wrap" ]
+  = [ "module", "import", "export", "wrap", "ghc" ]
     ++ Map.keys chKindMp
 
 kwTxtAsVarTooB
   = kwTxtAsVarTooA
     ++ Map.keys chDestMp
     ++ Map.keys chWrapMp
-    ++ [ "beamerblockcode" ]
+    ++ [ "beamerblockcode", "boxcode" ]
 
 shuffleScanOpts :: ScanOptsMp
 shuffleScanOpts
@@ -91,7 +91,8 @@ tkpNone = TokPos (-1) (-1)
 data TokKind
   = TkBegChunk  | TkEndChunk
   | TkBegInline | TkEndInline
-  | TkBegGroup
+  | TkBegExpand | TkEndExpand
+  | TkBegGroup  | TkElseGroup
   | TkNameRef
   | TkReserved
   | TkNl   | TkEOF
@@ -156,6 +157,7 @@ scan scoMp st s
           | isWhite c                               = t {tokWhite = w} : ts
                                                     where (w,s') = span isWhite s
                                                           (t:ts) = sc (a w p) st s'
+        sc p st@(ScLexMeta l) ('%':'%':'}':s')      = Tok TkEndExpand  "" "%%}"  p st : sc (ai 3 p) (ScChunk l) s'
         sc p st@(ScLexMeta _) s@(c:_)
           | isWhite c                               = sc (a w p) st s'
                                                     where (w,s') = span isWhite s
@@ -181,13 +183,19 @@ scan scoMp st s
           | isOpch st c                             = scKw (isOpch st) p st s
         sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':'[':'[':s')
                                                     = Tok TkBegGroup   "" "%%[[" p st : sc (ai 4 p) (ScLexMeta (l+1)) s'
+        sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':']':'[':s')
+                                                    = Tok TkElseGroup  "" "%%][" p st : sc (ai 4 p) (ScLexMeta (l)) s'
         sc p@(TokPos _ 1) ScSkip            ('%':'%':'[':s')
                                                     = Tok TkBegChunk   "" "%%["  p ScSkip  : sc (ai 3 p) (ScLexMeta 0) s'
+        sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':']':']':s')
+          | l >  0                                  = Tok TkEndChunk   "" "%%]]" p st : sc (ai 4 p) (ScChunk (l-1)) s'
         sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':']':s')
           | l == 0                                  = Tok TkEndChunk   "" "%%]"  p st : sc (ai 3 p) ScSkip s'
           | l >  0                                  = Tok TkEndChunk   "" "%%]"  p st : sc (ai 3 p) (ScChunk (l-1)) s'
         sc p@(TokPos _ _) st@(ScChunk l)    ('%':'%':'@':'[':s')
                                                     = Tok TkBegInline  "" "%%@[" p st : sc (ai 4 p) (ScInline l) s'
+        sc p@(TokPos _ _) st@(ScChunk l)    ('%':'%':'@':'{':s')
+                                                    = Tok TkBegExpand  "" "%%@{" p st : sc (ai 4 p) (ScLexMeta l) s'
         sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':'%':s)
                                                     = Tok TkText       "" b'     p st : sc (ai (1 + length b') p) (ScChunk l) s'
                                                     where (b,s') = span isBlack s
@@ -216,6 +224,7 @@ scan scoMp st s
         isOpch st c                                 = opt st (\o -> c `Set.member` scoOpChars o)
         isKeyw st w                                 = opt st (\o -> w `Set.member` scoKeywordsTxt o)
         isInline  ('%':'%':'@':'[':_)               = True
+        isInline  ('%':'%':'@':'{':_)               = True
         isInline  _                                 = False
         span' p []       = ([],[])
         span' p xs@(x:xs')
@@ -223,12 +232,19 @@ scan scoMp st s
              | otherwise = ([],xs)
                                where (ys,zs) = span' p xs'
 
-pBegChunk, pEndChunk, pBegInline, pEndInline, pBegGroup, pBegNameRef, pNl :: (IsParser p Tok) => p Tok
+pBegChunk, pEndChunk
+ , pBegInline, pEndInline
+ , pBegExpand, pEndExpand
+ , pBegGroup, pElseGroup
+ , pBegNameRef, pNl :: (IsParser p Tok) => p Tok
 pBegChunk   = pSym (Tok TkBegChunk  "" "%%["  tkpNone ScSkip)
 pEndChunk   = pSym (Tok TkEndChunk  "" "%%]"  tkpNone ScSkip)
 pBegInline  = pSym (Tok TkBegInline "" "%%@[" tkpNone ScSkip)
 pEndInline  = pSym (Tok TkEndInline "" "%%]"  tkpNone ScSkip)
+pBegExpand  = pSym (Tok TkBegExpand "" "%%@{" tkpNone ScSkip)
+pEndExpand  = pSym (Tok TkEndExpand "" "%%}"  tkpNone ScSkip)
 pBegGroup   = pSym (Tok TkBegGroup  "" "%%[[" tkpNone ScSkip)
+pElseGroup  = pSym (Tok TkElseGroup "" "%%][" tkpNone ScSkip)
 pBegNameRef = pSym (Tok TkNameRef   "" "%%@"  tkpNone ScSkip)
 pNl         = pSym (Tok TkNl        "" "LF"   tkpNone ScSkip)
 
@@ -240,6 +256,11 @@ pVar = tokBlack <$> pSym (Tok TkText "" "<ident>" tkpNone ScSkip)
 
 pInt :: (IsParser p Tok) => p String
 pInt = tokBlack <$> pSym (Tok TkInt "" "0" tkpNone ScSkip)
+
+pFrac :: (IsParser p Tok) => p String
+pFrac
+  = (++) <$> (pMaybe "" id pInt)
+         <*> (pMaybe "" ("."++) (pKey "." *> pInt))
 
 pInt' :: (IsParser p Tok) => p Int
 pInt' = str2int <$> pInt
@@ -268,7 +289,10 @@ pAGItf :: ShPr T_AGItf
 pAGItf = sem_AGItf_AGItf <$> (pFoldr (sem_Lines_Cons,sem_Lines_Nil) (sem_Line_AsIs sem_Words_Nil <$ pNl)) <*> pChunks
 
 pVersion            ::  ShPr Version
-pVersion            =   mkVerFromIntL <$> pList1Sep (pKey "_") pInt'
+pVersion            =     mkVerFromIntL <$> pList1Sep (pKey "_") pInt'
+
+pOptVersion         ::  ShPr Version
+pOptVersion         =   pMaybe VAll id pVersion
 
 pVerOrder           ::  ShPr VersionOrder
 pVerOrder           =   pListSep (pKey ",") (pList1Sep (pKey "<") pVersion)
@@ -327,6 +351,7 @@ pChunk              =   pBegChunk
                                  <*> pMaybe NmEmp id (pKey "." *> pNm)
                                  <*> (pKey "-" *> ((:[]) <$> pChunkId <|> pParens (pList1 pChunkId)) <|> pSucceed [])
                                  <*> pChunkOptions
+                                 <*> pCompilerRestrictions
                                  <*> pMod
                                  <*> pImpExp "import"
                                  <*> pImpExp "export"
@@ -342,6 +367,15 @@ pChunk              =   pBegChunk
                     <?> "a chunk"
                     where pImpExp k = pKey k *> pParens (pStrExprSeq pStrStr2) <|> pSucceed sem_StrExprs_Nil
                           pMod      = sem_MbStrExpr_Just <$ pKey "module" <*> pStrExprOne pStrStr1 <|> pSucceed sem_MbStrExpr_Nothing
+
+pCompilerRestrictions :: ShPr CompilerRestriction
+pCompilerRestrictions
+  = pMaybe (Restricted Nothing Nothing) id (pKey "ghc" *> pParens (Restricted <$> pCompilerVersion <* pKey "," <*> pCompilerVersion))
+
+pCompilerVersion :: ShPr (Maybe [Int])
+pCompilerVersion
+  =   Just <$> pList1Sep (pKey ".") pInt'
+  <|> Nothing <$ pKey "_"
 
 pChKind             ::  ShPr ChKind
 pChKind             =   pAnyFromMap pKey chKindMp
@@ -359,6 +393,7 @@ pChWrap             ::  ShPr ChWrap
 pChWrap             =   pKey "wrap" *> pKey "="
                         *> (   pAnyFromMap pKey chWrapMp
                            <|> ChWrapBeamerBlockCode <$ pKey "beamerblockcode" <*> pStr
+                           <|> ChWrapBoxCode         <$ pKey "boxcode" <*> pMb (pCurly pFrac)
                            )
 
 pMbChWrap           ::  ShPr ChWrap
@@ -378,16 +413,16 @@ pLines              =   pFoldr (sem_Lines_Cons,sem_Lines_Nil) pLine
 pLine               ::  ShPr T_Line
 pLine               =   sem_Line_AsIs  <$> pLineChars  <*  pNl
                     <|> (\n (o,r)
-                          -> sem_Line_Group 0 o r (sem_Lines_Cons (sem_Line_Named n) sem_Lines_Nil))
+                          -> sem_Line_Groups 0 (sem_Groups_Cons (sem_Group_Group VAll o r (sem_Lines_Cons (sem_Line_Named n) sem_Lines_Nil)) sem_Groups_Nil))
                              <$  pBegNameRef <*> pN <*> pD <* pNl
-                    <|> (\(o,r) l
-                          -> sem_Line_Group 1 o r l)
-                             <$  pBegGroup   <*> pD <* pNl <*> pLines <* pEndChunk <* pNl
+                    <|> sem_Line_Groups 1
+                             <$  pBegGroup   <*> pFoldr1Sep (sem_Groups_Cons,sem_Groups_Nil) pElseGroup pG <* pEndChunk <* pNl
                     <?> "a line"
                     where pN =   pNm
                              <|> (\v n -> mkNm v `nmApd` n) <$> pVersion <*> pMaybe NmEmp id (pKey "." *> pNm)
                           pD =   pChunkOptions
                              <+> pMaybe Nothing Just ((pNm2 <|> mkNm <$> pStr) <+> pMaybe Nothing Just (pKey "=" *> pMaybe "" id pStr))
+                          pG =   (\v (o,r) ls -> sem_Group_Group v o r ls) <$> pOptVersion <*> pD <* pNl <*> pLines
 
 pLineChars          ::  ShPr T_Words
 pLineChars          =   (foldr sem_Words_Cons sem_Words_Nil . concat)
@@ -395,6 +430,8 @@ pLineChars          =   (foldr sem_Words_Cons sem_Words_Nil . concat)
                                       <$> pWhiteBlack
                                   <|> bwToWords2 (\s -> sem_Word_Inline (sem_Inline_URI (tokBlack s)))
                                       <$> pBegInline <*> pText <* pEndInline
+                                  <|> bwToWords2 (\s -> sem_Word_Expand s)
+                                      <$> pBegExpand <*> pStrExprOne pStrStr2 <* pEndExpand
                                   )
                     where bwToWords1 sem (mw,b) =  maybe [] (\w -> [sem_Word_White w])                mw  ++ [sem b]
                           bwToWords2 sem  tk t  = (maybe [] (\w -> [sem_Word_White w]) $ mbTokWhite $ tk) ++ [sem t]

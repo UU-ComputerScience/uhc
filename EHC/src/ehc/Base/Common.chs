@@ -7,43 +7,55 @@
 %%% Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Base.Common}
+%%[1 module {%{EH}Base.Common} import(UU.Scanner.Position,EH.Util.Utils,{%{EH}Base.HsName},{%{EH}Base.Builtin}) export(module {%{EH}Base.HsName})
 %%]
 
-%%[1 import(UU.Scanner.Position) export(HSNM(..),HsName(..), hsnWild, hsnArrow, strProd, hsnProd, hsnProdArity, hsnUnknown, hsnIsArrow, hsnIsProd, hsnInt, hsnChar)
-%%]
-
-%%[1 export(hsnNegate,hsnError)
+%%[1 export(IdOccKind(..),IdOcc(..),ppIdOcc)
 %%]
 
 %%[1 export(AssocL, ppAssocL)
 %%]
 
-%%[1.exp.hdAndTl export(hdAndTl, hdAndTl')
+%%[1111.exp.hdAndTl export(hdAndTl, hdAndTl')
 %%]
 
-%%[1 import(UU.Pretty, Data.List) export(ppListSep, ppCommaList, ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
+%%[1 import(UU.Pretty, EH.Util.PPUtils,Data.List) export(ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
 %%]
 
-%%[1 export(SemApp(..))
+%%[1 export(SemApp(..),mkRngProdOpt)
 %%]
 
-%%[1 export(assocLKeys)
+%%[1 export(assocLElts,assocLKeys)
 %%]
 
 %%[1 export(ParNeed(..), ParNeedL, parNeedApp, ppParNeed)
 %%]
 
-%%[2 export(UID, mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, mkNewLevUID7, mkNewLevUID8, uidNext, mkNewUID, mkNewUIDL, uidStart, uidNull)
+%%[1 export(Fixity(..))
 %%]
 
-%%[2 export(assocLMapElt,assocLMapKey)
+%%[1 export(UID(..), mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, mkNewLevUID7, mkNewLevUID8, uidNext, mkNewUID, mkNewUIDL, uidStart, uidNull, uidChild, mkInfNewUIDL)
+%%]
+
+%%[1 export(Range(..),emptyRange,builtinRange,mkRange1,mkRange2,rngLift)
+%%]
+
+%%[1 export(assocLMapElt,assocLMapKey)
+%%]
+
+%%[1 export(NmLev,nmLevAbsent, nmLevBuiltin, nmLevOutside, nmLevModule)
+%%]
+
+%%[1 import(EH.Util.ScanUtils) export(tokMkQName,tokMkQNames,tokMkInt,tokMkStr)
+%%]
+
+%%[1.Token hs import(UU.Scanner.Token)
+%%]
+
+%%[5 -1.Token hs import({%{EH}Scanner.Token})
 %%]
 
 %%[2 export(unions)
-%%]
-
-%%[3 export(hsnUn, hsnIsUn, hsnUnUn)
 %%]
 
 %%[4 export(listCombineUniq)
@@ -53,24 +65,6 @@
 %%]
 
 %%[4 export(FIMode(..),fimOpp,fimSwapCoCo)
-%%]
-
-%%[5 export(hsnBool,hsnTrue,hsnFalse,hsnString,hsnList,hsnListCons,hsnListNil)
-%%]
-
-%%[6 export(hsnStar)
-%%]
-
-%%[7 export(hsnRow,hsnRec,hsnSum,hsnRowEmpty,hsnIsRec,hsnIsSum)
-%%]
-
-%%[7 export(hsnORow,hsnCRow,hsnORec,hsnCRec,hsnOSum,hsnCSum)
-%%]
-
-%%[7 export(positionalFldNames,ppFld,mkExtAppPP,mkPPAppFun)
-%%]
-
-%%[7 export(assocLElts,uidHNm)
 %%]
 
 %%[7 export(Seq,mkSeq,unitSeq,concatSeq,"(<+>)",seqToList,emptySeq,concatSeqs,filterSeq)
@@ -85,19 +79,19 @@
 %%[7_2 export(threadMap,Belowness(..), groupAllBy, mergeListMap)
 %%]
 
-%%[8 -(1.exp.hdAndTl 1.Misc.hdAndTl) import (EH.Util.Utils hiding (tr,trp)) export(module EH.Util.Utils)
+%%[7 export(ppFld,mkExtAppPP,mkPPAppFun)
 %%]
 
-%%[8 import (EH.Util.FPath,IO,Char) export(putPPLn,putWidthPPLn,putPPFile,Verbosity(..),putCompileMsg, openFPath,writeToFile, writePP)
+%%[7 export(uidHNm)
 %%]
 
-%%[8 export(hsnFloat)
+%%[8888 -(1.exp.hdAndTl 1.Misc.hdAndTl) import (EH.Util.Utils hiding (tr,trp)) export(module EH.Util.Utils)
 %%]
 
-%%[8 export(hsnPrefix,hsnSuffix,hsnConcat)
+%%[8 import (EH.Util.FPath,IO,Char,Data.Maybe) export(Verbosity(..),putCompileMsg, openFPath,writeToFile, writePP)
 %%]
 
-%%[8 export(hsnUndefined,hsnPrimAddInt,hsnMain)
+%%[8 import(qualified Data.Set as Set) export(ppHsnNonAlpha)
 %%]
 
 %%[88 export(sortByOn,sortOn,groupOn,groupSortOn)
@@ -106,289 +100,105 @@
 %%[8 import (qualified Data.Map as Map) export(showPP,ppPair,ppFM)
 %%]
 
+%%[8 export(CTag(..),ctagTag,ctagChar,ctagInt,emptyCTag)
+%%]
+
+%%[8 hs export(ctag,ppCTag,ppCTag',ppCTagInt) 
+%%]
+
+%%[8 export(CTagsMp,ppCTagsMp)
+%%]
+
+%%[8 export(ppUID')
+%%]
+
 %%[8 export(hsnUniqSupplyL,hsnLclSupplyL)
-%%]
-
-%%[8 export(CTag(..),ctagChar,ctagInt)
-%%]
-
-%%[8 export(CTagsMp)
 %%]
 
 %%[90 export(groupSortByOn)
 %%]
 
-%%[9 export(hsnOImpl,hsnCImpl,hsnPrArrow,hsnIsPrArrow,hsnIsUnknown)
-%%]
-
 %%[9 export(ppListV,ppAssocLV)
 %%]
 
-%%[9 hs export(PredOccId(..),mkPrId,poiHNm)
+%%[9 export(PredOccId(..),mkPrId,poiHNm,ppPredOccId')
 %%]
 
-%%[9 hs export(PrfCtxtId)
+%%[9 export(PrfCtxtId)
 %%]
 
-%%[9 hs export(snd3,thd)
+%%[9 export(snd3,thd)
 %%]
 
-%%[10 export(hsnDynVar)
+%%[9 export(InstVariant(..))
 %%]
 
-%%[99 export(hsnInteger,hsnDouble)
+%%[9 export(basePrfCtxtId)
+%%]
+
+%%[12 export(ppCurlysAssocL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Haskell names
+%%% Printing of names with non-alpha numeric constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1.HsName.type
-data HsName
-  =   HNm String
-  deriving (Eq,Ord)
-
-instance Show HsName where
-  show (HNm s) = s
-%%]
-
-%%[1
-instance PP HsName where
-  pp h = pp (show h)
-%%]
-
-%%[7.HsName.type -1.HsName.type
-data HsName
-  =   HNm String
-  |   HNPos Int
-%%]
-%%[8
-  |   HNmQ [HsName]
-%%]
-%%[7
-  deriving (Eq,Ord)
-%%]
-
-%%[7
-instance Show HsName where
-  show (HNm s    )  = s
-  show (HNPos p  )  = show p
-%%]
-%%[8
-  show (HNmQ ns  )  = concat $ intersperse "." $ map show ns
-%%]
-
-%%[1
-strProd :: Int -> String
-%%]
-
-%%[1.HsName.Base.itf
-hsnArrow, hsnUnknown, hsnInt, hsnChar, hsnWild
-                                    ::  HsName
-hsnProd                             ::  Int -> HsName
-hsnProdArity                        ::  HsName -> Int
-%%]
-
-%%[1.HsName.Base.impl
-hsnArrow                            =   HNm "->"
-hsnUnknown                          =   HNm "??"
-hsnInt                              =   HNm "Int"
-hsnChar                             =   HNm "Char"
-hsnWild                             =   HNm "_"
-strProd         i                   =   ',' : show i
-hsnProd                             =   HNm . strProd
-
-hsnIsArrow, hsnIsProd               ::  HsName -> Bool
-hsnIsArrow      hsn                 =   hsn == hsnArrow
-
-hsnIsProd       (HNm (',':_))       =   True
-hsnIsProd       _                   =   False
-
-hsnProdArity    (HNm (_:ar))        =   read ar
-%%]
-
-%%[1.other
-hsnNegate                           =   HNm "negate"
-hsnError                            =   HNm "error"
-%%]
-
-%%[3.strUn
-strUn                               =   "un"
-%%]
-
-%%[99.strUn -3.strUn
-strUn                               =   "-"
-%%]
-
-%%[3
-hsnUn                               ::  HsName -> HsName
-hsnUn           nm                  =   HNm (strUn ++ show nm)
-%%]
-
-%%[3
-hsnIsUn         (HNm s)             =   isPrefixOf strUn s
-
-hsnUnUn         (HNm s)             =   HNm (drop (length strUn) s)
-%%]
-
-%%[5
-hsnBool                             =   HNm "Bool"
-hsnTrue                             =   HNm "True"
-hsnFalse                            =   HNm "False"
-hsnString                           =   HNm "String"
-hsnList                             =   HNm "[]"
-hsnListCons                         =   HNm ":"
-hsnListNil                          =   HNm "[]"
-%%]
-
-%%[5
-hsnIsList       hsn                 =   hsn == hsnList
-%%]
-
-%%[6
-hsnStar                             =   HNm "*"
-%%]
-
-%%[7
-hsnORow                             =   HNm "(|"
-hsnCRow                             =   HNm "|)"
-hsnOSum                             =   HNm "(<"
-hsnCSum                             =   HNm ">)"
-hsnORec                             =   HNm "("
-hsnCRec                             =   HNm ")"
-
-hsnRow                              =   HNm "Row"
-hsnRec                              =   HNm "Rec"
-hsnSum                              =   HNm "Var"
-hsnRowEmpty                         =   HNm (show hsnORow ++ show hsnCRow)
-
-hsnIsRec, hsnIsSum, hsnIsRow        ::  HsName -> Bool
-hsnIsRec        hsn                 =   hsn == hsnRec
-hsnIsSum        hsn                 =   hsn == hsnSum
-hsnIsRow        hsn                 =   hsn == hsnRow
-
-positionalFldNames                  ::  [HsName]
-positionalFldNames                  =   map HNPos [1..]
-%%]
 
 %%[8
-hsnPrefix                           ::  String -> HsName -> HsName
-hsnPrefix   p   hsn                 =   HNm (p ++ show hsn)
+hsnEscapeeChars :: ScanOpts -> Set.Set Char
+hsnEscapeeChars scanOpts
+  = Set.fromList ('$' : scoSpecChars scanOpts ++ scoOpChars scanOpts)
 
-hsnSuffix                           ::  HsName -> String -> HsName
-hsnSuffix       hsn   p             =   HNm (show hsn ++ p)
-
-hsnConcat                           ::  HsName -> HsName -> HsName
-hsnConcat       h1    h2            =   HNm (show h1 ++ show h2)
-%%]
-
-%%[8
-hsnFloat                            =   HNm "Float"
-%%]
-
-%%[8
-hsnMain                             =   HNm "main"
-hsnUndefined                        =   HNm "undefined"
-hsnPrimAddInt						=	HNm "primAddInt"
-%%]
-
-%%[9
-hsnOImpl                            =   HNm "(!"
-hsnCImpl                            =   HNm "!)"
-hsnPrArrow                          =   HNm "=>"
-
-hsnIsPrArrow                        ::  HsName -> Bool
-hsnIsPrArrow    hsn                 =   hsn == hsnPrArrow
-hsnIsUnknown                        =   (==hsnUnknown)
-%%]
-
-%%[10
-hsnDynVar                           =   HNm "?"
-%%]
-
-%%[99
-hsnInteger                          =   HNm "Integer"
-hsnDouble                           =   HNm "Double"
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Make HsName of something
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1
-class HSNM a where
-  mkHNm :: a -> HsName
-
-instance HSNM HsName where
-  mkHNm = id
-
-instance HSNM Int where
-  mkHNm = mkHNm . show
-
-%%]
-
-%%[1.HSNM.String
-instance HSNM String where
-  mkHNm s = HNm s
-%%]
-
-%%[8.HSNM.String -1.HSNM.String
-instance HSNM String where
-  mkHNm s
-    = mk $ map HNm $ wordsBy (=='.') $ s
-    where mk [n] = n
-          mk ns  = HNmQ ns
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% HsName class instances
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1 hs
-instance Position HsName where
-  line   _ = (-1)
-  column _ = (-1)
-  file   _ = ""
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Name supply, with/without uniqueness required
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 hs
-hsnUniqSupplyL :: UID -> [HsName]
-hsnUniqSupplyL = map uidHNm . iterate uidNext
-
-hsnLclSupplyL :: [HsName]
-hsnLclSupplyL = map (\i -> HNm ("_" ++ show i)) [1..]
+ppHsnNonAlpha :: ScanOpts -> HsName -> PP_Doc
+ppHsnNonAlpha scanOpts
+  = p
+  where escapeeChars = hsnEscapeeChars scanOpts
+        p n = let name = show n
+              in  {- if name `elem`  scoKeywordsTxt scanOpts
+                   then pp ('$' : '_' : name)
+                   else -} 
+                        let s = foldr (\c r -> if c `Set.member` escapeeChars then '$':c:r else c:r) [] name
+                         in  pp ('$':s)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Unique id's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2.UID.Base
-newtype UID= UID [Int] deriving (Eq,Ord)
+%%[1.UID.Base
+newtype UID = UID [Int] deriving (Eq,Ord)
 %%]
 
-%%[2.UID.UIDL
+%%[1
+instance HSNM UID where
+  mkHNm = mkHNm . show
+%%]
+
+%%[1.UID.UIDL
 type UIDL = [UID]
 %%]
 
-%%[2.UID.Show
+%%[1.UID.Show
 instance Show UID where
   show (UID ls) = concat . intersperse "_" . map show . reverse $ ls
 %%]
 
-%%[2.UID.mkNewLevUID
+%%[1.UID.mkNewLevUID
 uidNext :: UID -> UID
-uidNext (UID (l:ls)) = UID (l+1:ls)
+uidNext (UID (n:ns)) = UID (n+1:ns)
+
+uidChild :: UID -> UID
+uidChild (UID ns) = UID (0:ns)
 
 mkNewLevUID :: UID -> (UID,UID)
-mkNewLevUID u@(UID ls) = (uidNext u,UID (0:ls))
+mkNewLevUID u = (uidNext u, uidChild u)
 %%]
 
-%%[2.UID.Utils
+%%[1
+uidStart :: UID
+uidStart = UID [0]
+%%]
+
+%%[1.UID.Utils
 mkNewLevUID2 u = let { (u',u1)          = mkNewLevUID   u; (u'',u2)         = mkNewLevUID   u'} in (u'',u1,u2)
 mkNewLevUID3 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3)         = mkNewLevUID   u'} in (u'',u1,u2,u3)
 mkNewLevUID4 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3,u4)      = mkNewLevUID2  u'} in (u'',u1,u2,u3,u4)
@@ -396,9 +206,6 @@ mkNewLevUID5 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3,u4,u5)   = mk
 mkNewLevUID6 u = let { (u',u1,u2,u3)    = mkNewLevUID3  u; (u'',u4,u5,u6)   = mkNewLevUID3  u'} in (u'',u1,u2,u3,u4,u5,u6)
 mkNewLevUID7 u = let { (u',u1,u2,u3,u4) = mkNewLevUID4  u; (u'',u5,u6,u7)    = mkNewLevUID3  u'} in (u'',u1,u2,u3,u4,u5,u6,u7)
 mkNewLevUID8 u = let { (u',u1,u2,u3,u4) = mkNewLevUID4  u; (u'',u5,u6,u7,u8) = mkNewLevUID4  u'} in (u'',u1,u2,u3,u4,u5,u6,u7,u8)
-
-uidStart :: UID
-uidStart = UID [0]
 
 uidNull :: UID
 uidNull  = UID []
@@ -418,8 +225,16 @@ mkNewUIDL' mk sz uid
 mkNewUIDL :: Int -> UID -> [UID] -- assume sz > 0
 mkNewUIDL = mkNewUIDL' mkNewUID
 
+mkInfNewUIDL :: UID -> [UID]
+mkInfNewUIDL = mkInfNewUIDL' mkNewUID
+
 instance PP UID where
   pp = text . show
+%%]
+
+%%[8
+ppUID' :: UID -> PP_Doc
+ppUID' (UID ls) = ppCurlysCommas ls
 %%]
 
 %%[7
@@ -443,6 +258,11 @@ mkNewLevUIDL = mkNewUIDL' mkNewLevUID
 type PrfCtxtId = UID
 %%]
 
+%%[9
+basePrfCtxtId :: PrfCtxtId
+basePrfCtxtId = uidStart
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pred occurrence id
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -456,8 +276,11 @@ mkPrId ci u = PredOccId ci u
 poiHNm :: PredOccId -> HsName
 poiHNm = uidHNm . poiId
 
+ppPredOccId' :: (UID -> PP_Doc) -> PredOccId -> PP_Doc
+ppPredOccId' ppi poi = ppCurlysCommas [ppi (poiCxId poi),ppi (poiId poi)]
+
 instance PP PredOccId where
-  pp poi = "Cx:" >|< pp (poiCxId poi) >|< "/Pr:" >|< pp (poiId poi)
+  pp poi = "Poi" >|< ppPredOccId' pp poi
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -515,6 +338,12 @@ class SemApp a where
   mk1Arrow          ::  a -> a -> a
   mkArrow           ::  [a] -> a -> a
 %%]
+%%[1
+  mkRngApp          ::  Range -> [a] -> a
+  mkRngVar          ::  HSNM n => Range -> n -> a
+  mkRngCon          ::  HSNM n => Range -> n -> a
+  mkRngProd         ::  Range -> [a] -> a
+%%]
 %%[1.SemApp.default
   mkApp as          =   case as of  [a]  ->  a
                                     _    ->  semAppTop (foldl1 semApp as)
@@ -525,22 +354,16 @@ class SemApp a where
   mk1Arrow   a r    =   mkApp [semCon hsnArrow,a,r]
   mkArrow           =   flip (foldr mk1Arrow)
 %%]
-class SemApp a where
-  semApp            ::  a -> a -> a
-  semAppTop         ::  a -> a
-  semCon            ::  HsName -> a
-  semParens         ::  a -> a
-  mkApp             ::  [a] -> a
-  mkConApp          ::  HsName -> [a] -> a
-  mkProdApp         ::  [a] -> a
-  mk1Arrow          ::  a -> a -> a
-  mkArrow           ::  [a] -> a -> a
-  mkApp as          =   case as of  [a]  ->  a
-                                    _    ->  semAppTop (foldl1 semApp as)
-  mkConApp   c as   =   mkApp (semCon c : as)
-  mkProdApp  as     =   mkConApp (hsnProd (length as)) as
-  mk1Arrow   a r    =   mkApp [semCon hsnArrow,a,r]
-  mkArrow           =   flip (foldr mk1Arrow)
+%%[1
+  mkRngApp _        =   mkApp
+  mkRngProd _       =   mkProdApp
+%%]
+
+%%[1
+mkRngProdOpt :: SemApp e => Range -> [e] -> e
+mkRngProdOpt r [e] = e
+mkRngProdOpt r es  = mkRngProd r es
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Building specific structures
@@ -587,10 +410,10 @@ mkArrow = flip (foldr mk1Arrow)
 ppAppTop :: PP arg => (HsName,arg) -> [arg] -> PP_Doc -> PP_Doc
 ppAppTop (conNm,con) args dflt
   =  if       hsnIsArrow conNm  then  ppListSep "" "" (" " >|< con >|< " ") args
-     else if  hsnIsProd  conNm  then  ppListSep "(" ")" "," args
+     else if  hsnIsProd  conNm  then  ppParensCommas args
 %%]
 %%[5
-     else if  hsnIsList  conNm  then  ppListSep "[" "]" "," args
+     else if  hsnIsList  conNm  then  ppBracketsCommas args
 %%]
 %%[7
      else if  hsnIsRec   conNm  then  ppListSep (hsnORec >|< con) hsnCRec "," args
@@ -601,10 +424,11 @@ ppAppTop (conNm,con) args dflt
                                 else  dflt
 %%]
 
-%%[1.PP.NeededByExpr
+-- ppListSep to EH.Util
 ppListSep :: (PP s, PP c, PP o, PP a) => o -> c -> s -> [a] -> PP_Doc
 ppListSep o c s pps = o >|< hlist (intersperse (pp s) (map pp pps)) >|< c
 
+%%[1.PP.NeededByExpr
 ppCon :: HsName -> PP_Doc
 ppCon nm =  if    hsnIsProd nm
             then  pp_parens (text (replicate (hsnProdArity nm - 1) ','))
@@ -614,9 +438,10 @@ ppCmt :: PP_Doc -> PP_Doc
 ppCmt p = "{-" >#< p >#< "-}"
 %%]
 
-%%[1.PP.Rest
+-- ppCommaList now in EH.Util lib
 ppCommaList :: PP a => [a] -> PP_Doc
 ppCommaList = ppListSep "[" "]" ","
+%%[1.PP.Rest
 
 ppSpaced :: PP a => [a] -> PP_Doc
 ppSpaced = ppListSep "" "" " "
@@ -630,9 +455,11 @@ ppListSepFill o c s pps
 %%]
 
 %%[7
-ppFld :: String -> HsName -> HsName -> PP_Doc -> PP_Doc
-ppFld sep positionalNm nm f
-  = if nm == positionalNm then f else nm >#< sep >#< f
+ppFld :: String -> Maybe HsName -> HsName -> PP_Doc -> PP_Doc -> PP_Doc
+ppFld sep positionalNm nm nmPP f
+  = case positionalNm of
+      Just pn | pn == nm -> f
+      _                  -> nmPP >#< sep >#< f
 
 mkPPAppFun :: HsName -> PP_Doc -> PP_Doc
 mkPPAppFun c p = if c == hsnRowEmpty then empty else p >|< "|"
@@ -654,7 +481,7 @@ instance PP Bool where
 
 %%[9
 instance (PP a, PP b) => PP (a,b) where
-  pp (a,b) = ppListSep "(" ")" "," [pp a,pp b]
+  pp (a,b) = ppParensCommas' [pp a,pp b]
 %%]
 
 %%[8
@@ -682,25 +509,16 @@ ppListV = vlist . map pp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-putWidthPPLn :: Int -> PP_Doc -> IO ()
-putWidthPPLn w pp = putStrLn (disp pp w "")
-
-putPPLn :: PP_Doc -> IO ()
-putPPLn = putWidthPPLn 4000
-
 putCompileMsg :: Verbosity -> Verbosity -> String -> Maybe String -> HsName -> FPath -> IO ()
 putCompileMsg v optsVerbosity msg mbMsg2 modNm fNm
-  = if optsVerbosity >= v 
-    then putStrLn (strBlankPad 25 msg ++ " " ++ strBlankPad 15 (show modNm) ++ " (" ++ fpathToStr fNm ++ maybe "" (\m -> ", " ++ m) mbMsg2 ++ ")")
+  = if optsVerbosity >= v
+    then do { putStrLn (strBlankPad 25 msg ++ " " ++ strBlankPad 22 (show modNm) ++ " (" ++ fpathToStr fNm ++ maybe "" (\m -> ", " ++ m) mbMsg2 ++ ")")
+            ; hFlush stdout
+            }
     else return ()
+%%]
 
-putPPFile :: String -> PP_Doc -> Int -> IO ()
-putPPFile fn pp wid
-  =  do  {  h <- openFile fn WriteMode
-         ;  hPutStrLn h (disp pp wid "")
-         ;  hClose h
-         }
-
+%%[8
 openFPath :: FPath -> IOMode -> IO (String, Handle)
 openFPath fp mode | fpathIsEmpty fp = case mode of
                                         ReadMode      -> return ("<stdin>" ,stdin )
@@ -790,11 +608,44 @@ instance PP Belowness where
 %%[8 hs
 data CTag
   = CTagRec
-  | CTag {ctagTyNm :: HsName, ctagNm :: HsName, ctagTag :: Int, ctagArity :: Int}
+  | CTag {ctagTyNm :: HsName, ctagNm :: HsName, ctagTag' :: Int, ctagArity :: Int}
   deriving (Show,Eq,Ord)
+
+ctagTag :: CTag -> Int
+ctagTag CTagRec = 0
+ctagTag t       = ctagTag' t
 
 ctagInt  =  CTag hsnInt  hsnInt  0 1
 ctagChar =  CTag hsnChar hsnChar 0 1
+
+emptyCTag = CTag hsnUnknown hsnUnknown 0 0
+%%]
+
+%%[9 export(mkClassCTag)
+-- only used when `not ehcCfgClassViaRec'
+mkClassCTag :: HsName -> Int -> CTag
+mkClassCTag n sz = CTag n n 0 sz
+%%]
+
+%%[8 hs
+ctag :: a -> (HsName -> HsName -> Int -> Int -> a) -> CTag -> a
+ctag n t tg = case tg of {CTag tn cn i a -> t tn cn i a; _ -> n}
+
+-- intended for parsing
+ppCTag' :: (HsName -> PP_Doc) -> CTag -> PP_Doc
+ppCTag' ppNm t
+  = case t of
+      CTagRec              -> ppCurly "Rec"
+      CTag ty nm tag arity -> ppCurlysSemis' [ppNm ty,ppNm nm,pp tag, pp arity]
+
+ppCTag :: CTag -> PP_Doc
+ppCTag = ctag (pp "Rec") (\tn cn t a -> pp t >|< "/" >|< pp cn >|< "/" >|< pp a)
+
+ppCTagInt :: CTag -> PP_Doc
+ppCTagInt = ctag (pp "-1") (\_ _ t _ -> pp t)
+
+instance PP CTag where
+  pp = ppCTag
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -803,6 +654,11 @@ ctagChar =  CTag hsnChar hsnChar 0 1
 
 %%[8 hs
 type CTagsMp = AssocL HsName (AssocL HsName CTag)
+
+ppCTagsMp :: (HsName -> PP_Doc) -> CTagsMp -> PP_Doc
+ppCTagsMp pn
+  = mkl (mkl (ppCTag' pn))
+  where mkl pe = ppCurlysSemisBlock . map (\(n,e) -> pn n >-< indent 1 ("=" >#< pe e))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -829,7 +685,13 @@ ppAssocLV :: (PP k, PP v) => AssocL k v -> PP_Doc
 ppAssocLV = ppAssocL' vlist
 %%]
 
-%%[2
+%%[12
+-- intended for parsing
+ppCurlysAssocL :: (k -> PP_Doc) -> (v -> PP_Doc) -> AssocL k v -> PP_Doc
+ppCurlysAssocL pk pv = ppCurlysCommasBlock . map (\(k,v) -> pk k >#< "=" >#< pv v)
+%%]
+
+%%[1
 assocLMap :: (k -> v -> (k',v')) -> AssocL k v -> AssocL k' v'
 assocLMap f = map (uncurry f)
 
@@ -843,9 +705,7 @@ assocLMapKey f = assocLMap (\k v -> (f k,v))
 %%[1
 assocLKeys :: AssocL k v -> [k]
 assocLKeys = map fst
-%%]
 
-%%[7
 assocLElts :: AssocL k v -> [v]
 assocLElts = map snd
 %%]
@@ -908,13 +768,13 @@ instance PP FIMode where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.Misc.hdAndTl
+%%]
 hdAndTl' :: a -> [a] -> (a,[a])
 hdAndTl' _ (a:as) = (a,as)
 hdAndTl' n []     = (n,[])
 
 hdAndTl :: [a] -> (a,[a])
 hdAndTl = hdAndTl' undefined
-%%]
 
 %%[2.unions
 unions :: Eq a => [[a]] -> [a]
@@ -986,7 +846,223 @@ thd (a,b,c) = c
 
 %%[8
 data Verbosity
-  = VerboseQuiet | VerboseNormal | VerboseALot
+  = VerboseQuiet | VerboseNormal | VerboseALot | VerboseDebug
   deriving (Eq,Ord)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fixity
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+data Fixity
+  = Fixity_Infix | Fixity_Infixr | Fixity_Infixl
+  deriving (Eq,Ord,Show)
+
+instance PP Fixity where
+  pp Fixity_Infix  = pp "infix"
+  pp Fixity_Infixl = pp "infixl"
+  pp Fixity_Infixr = pp "infixr"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Eq,Ord for Pos
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+instance Eq Pos where
+  p1 == p2 = line p1 == line p2 && column p2 == column p2
+
+instance Ord Pos where
+  compare p1 p2
+    = case compare (line p1) (line p2) of
+        EQ -> compare (column p1) (column p2)
+        c  -> c
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Range
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+data Range
+  = Range_Range    Pos Pos
+  | Range_Unknown
+  | Range_Builtin
+
+emptyRange :: Range
+emptyRange = Range_Unknown
+
+builtinRange :: Range
+builtinRange = Range_Builtin
+
+mkPos :: Position p => p -> Pos
+mkPos p = Pos (line p) (column p) (file p)
+
+mkRange1 :: Position p => p -> Range
+mkRange1 p = Range_Range (mkPos p) noPos
+
+mkRange2 :: Position p => p -> p -> Range
+mkRange2 p1 p2 = Range_Range (mkPos p1) (mkPos p2)
+%%]
+
+%%[1
+instance Show Range where
+  show (Range_Range p _) = show p
+  show Range_Unknown     = "??"
+  show Range_Builtin     = "builtin"
+
+instance PP Range where
+  pp = pp . show
+%%]
+
+%%[1
+rngAdd :: Range -> Range -> Range
+rngAdd r1 r2
+  = case (r1,r2) of
+      (Range_Range l1 h1,Range_Range l2 h2)
+        -> Range_Range (l1 `min` l2) (h1 `max` h2)
+      (Range_Range _ _,_)
+        -> r1
+      (_,Range_Range _ _)
+        -> r2
+      _ -> Range_Unknown
+%%]
+
+%%[1
+rngLift :: Range -> v -> v
+rngLift r v = v
+%%]
+rngLift :: Range -> (Range -> v) -> v
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instance variant
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+data InstVariant
+  = InstNormal | InstDefault | InstDeriving
+  deriving (Eq,Ord,Show)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Identifier occurrences
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+data IdOccKind
+  = IdOcc_Val
+  | IdOcc_Pat
+  | IdOcc_Type
+%%[[6
+  | IdOcc_Kind
+%%]
+%%[[9
+  | IdOcc_Class
+  | IdOcc_Inst
+  | IdOcc_Dflt
+%%]
+  | IdOcc_Any
+%%[[12
+  | IdOcc_Data
+%%]
+  deriving (Show,Eq,Ord)
+%%]
+
+%%[1 hs
+-- intended for parsing
+instance PP IdOccKind where
+  pp IdOcc_Val      = pp "Value"
+  pp IdOcc_Pat      = pp "Pat"
+  pp IdOcc_Type     = pp "Type"
+%%[[6
+  pp IdOcc_Kind     = pp "Kind"
+%%]
+%%[[9
+  pp IdOcc_Class    = pp "Class"
+  pp IdOcc_Inst     = pp "Instance"
+  pp IdOcc_Dflt     = pp "Default"
+%%]
+  pp IdOcc_Any      = pp "Any"
+%%[[12
+  pp IdOcc_Data     = pp "Data"
+%%]
+%%]
+
+%%[1 hs
+data IdOcc
+  = IdOcc { ioccNm :: HsName, ioccKind :: IdOccKind }
+  deriving (Show,Eq,Ord)
+
+-- intended for parsing
+ppIdOcc :: (HsName -> PP_Doc) -> IdOcc -> PP_Doc
+ppIdOcc pn o = ppCurlysCommas [pn (ioccNm o),pp (ioccKind o)]
+
+instance PP IdOcc where
+  pp = ppIdOcc pp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Levels
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+type NmLev = Int
+
+nmLevAbsent, nmLevBuiltin, nmLevOutside, nmLevModule :: NmLev
+nmLevAbsent  = -3
+nmLevBuiltin = -2
+nmLevOutside = -1
+nmLevModule  =  0
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Token related
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+-- Assumption: tokTpIsInt (genTokTp t) == True
+tokMkInt :: Token -> Int
+tokMkInt t
+  = case genTokTp t of
+      Just TkInteger10 -> read v
+      _                -> 0
+  where v = genTokVal t
+
+tokMkStr :: Token -> String
+tokMkStr = genTokVal
+%%]
+
+%%[1.tokMkQName hs
+tokMkQName :: Token -> HsName
+tokMkQName = HNm . genTokVal
+%%]
+
+%%[7 -1.tokMkQName hs
+tokMkQName :: Token -> HsName
+tokMkQName t
+  = case genTokTp t of
+      Just tp | tokTpIsInt tp -> HNPos $ tokMkInt t
+      _                       -> mkHNm $ genTokVal t
+%%]
+
+%%[1 hs
+tokMkQNames :: [Token] -> [HsName]
+tokMkQNames = map tokMkQName
+
+instance HSNM Token where
+  mkHNm = tokMkQName
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name supply, with/without uniqueness required
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+hsnUniqSupplyL :: UID -> [HsName]
+hsnUniqSupplyL = map uidHNm . iterate uidNext
+
+hsnLclSupplyL :: [HsName]
+hsnLclSupplyL = map (\i -> HNm ("_" ++ show i)) [1..]
 %%]
 

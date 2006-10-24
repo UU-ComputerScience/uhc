@@ -1,0 +1,54 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell interface to module import/export info extraction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%[12 hs module {%{EH}HS.ModImpExp} import({%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}HS}, {%{EH}Gam}, {%{EH}NameAspect})
+%%]
+
+%%[12 hs export(Inh_AGItf(..),Syn_AGItf(..),sem_AGItf,wrap_AGItf)
+%%]
+
+%%[12 hs import(qualified Data.Set as Set)
+%%]
+
+%%[12 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Import of all separate aspects
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 import({HS/AbsSyn},{HS/NameLevel},{HS/NameDef},{HS/Module},{HS/Uniq})
+WRAPPER AGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Top level instance names, to be propagated to next phase -- a hack :-(
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR AllNT [ | topInstanceNmL: {[HsName]} | ]
+
+SEM Declaration
+    | Class Instance InstanceUseImplicitly
+        lhs             .   topInstanceNmL
+                                        =   @instancename : @lhs.topInstanceNmL
+
+SEM AGItf
+    | AGItf
+        loc             .   topInstanceNmL
+                                        =   []
+%%]
+
+%%[12
+SEM Declaration
+    | Class Instance InstanceUseImplicitly
+        loc             .   mbPrevInstancename
+                                        =   Nothing
+%%]

@@ -53,12 +53,12 @@ SEM GrExpr
   | Call                              lhs  .  grTrf    =  GrExpr_Call    @newName @argL.grTrf
   | Fetch                             lhs  .  grTrf    =  GrExpr_Fetch   @newName @mbOffset @mbTag
   | Update                            lhs  .  grTrf    =  GrExpr_Update  @newName @val.grTrf @mbTag
-  | FFI                               lhs  .  grTrf    =  GrExpr_FFI     @nm (map (getName' @lhs.names) @argL)
+  | FFI                               lhs  .  grTrf    =  GrExpr_FFI     @nm (map (getName' @lhs.names) @argL) @resTagL.grTrf
   | Throw                             lhs  .  grTrf    =  GrExpr_Throw   @newName
   | Catch                             lhs  .  grTrf    =  GrExpr_Catch   @body.grTrf (getName' @lhs.names @arg) @handler.grTrf
 
 SEM GrModule
-  | Mod  lhs  . grTrf         = GrModule_Mod @baseName @globalL.grTrf @bindL.grTrf @ctagsMp @newEvalTagMp @newAppTagMp
+  | Mod  lhs  . grTrf         = GrModule_Mod @moduleNm @globalL.grTrf @bindL.grTrf @ctagsMp @newEvalTagMp @newAppTagMp
          loc  . newEvalTagMp  = map (newMap @lhs.names) @evalTagMp
               . newAppTagMp   = map (newMap @lhs.names) @applyTagMp
 %%]

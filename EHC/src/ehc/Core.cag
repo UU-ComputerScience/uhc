@@ -7,13 +7,13 @@
 %%% Haskell importable interface to Code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core} import({%{EH}Base.Common},Data.List,UU.Pretty) export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBindL, CBindCateg(..), CPatRest(..)) 
+%%[8 hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},Data.List,UU.Pretty) export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBindL, CBindCateg(..), CPatRest(..)) 
 %%]
 
 %%[8 hs export(CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL) 
 %%]
 
-%%[8 hs export(CPatNm(..), cpatNmEither,cpatNmNone)
+%%[8 hs export(CPatNm(..), cpatNmEither,cpatNmNone,ppCPatNmNm)
 %%]
 
 %%[8 hs export(cpatVarNm,caltTag,caltIsVar,caltIsConst,caltPatL,caltPat,caltLPatNms,cvarUndefined) 
@@ -37,7 +37,7 @@
 %%[8 hs export(cTupLbl)
 %%]
 
-%%[8 hs export(ctag,ppCTag,ppCTagInt) 
+%%[8 hs export(CaseFailSubst)
 %%]
 
 %%[9 hs export(Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLetRecCoe)
@@ -50,6 +50,12 @@
 %%]
 
 %%[9 hs export(mkCExprPrHole)
+%%]
+
+%%[12 hs export(cModMerge)
+%%]
+
+%%[99 hs export(caltIsBoolExpr)
 %%]
 
 %%[8 import({Core/AbsSyn})
@@ -74,17 +80,6 @@ cTupLbl e
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-ctag :: a -> (HsName -> HsName -> Int -> Int -> a) -> CTag -> a
-ctag n t tg = case tg of {CTag tn cn i a -> t tn cn i a; _ -> n}
-
-ppCTag :: CTag -> PP_Doc
-ppCTag = ctag (pp "Rec") (\tn cn t a -> pp t >|< "/" >|< pp cn >|< "/" >|< pp a)
-
-ppCTagInt :: CTag -> PP_Doc
-ppCTagInt = ctag (pp "-1") (\_ _ t _ -> pp t)
-
-instance PP CTag where
-  pp = ppCTag
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -155,6 +150,9 @@ cpatNmEither o u pnm = case pnm of {CPatNmOrig n -> o n; CPatNmUniq n -> u n}
 
 cpatNmNone :: CPatNm
 cpatNmNone = CPatNmOrig hsnWild
+
+ppCPatNmNm :: (HsName -> PP_Doc) -> CPatNm -> PP_Doc
+ppCPatNmNm ppNm = cpatNmEither (ppNm) (\n -> "uniq" >#< ppNm n)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -185,7 +183,17 @@ mkCExprAddInt e i = if i == 0 then e else CExpr_Var hsnPrimAddInt `mkCExprApp` [
 
 %%[8 hs
 mkCMod :: CExpr -> CModule
-mkCMod e = CModule_Mod "" e []
+mkCMod e = CModule_Mod (HNm "") e []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Inspection/deconstruction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(cexprVar)
+cexprVar :: CExpr -> HsName
+cexprVar (CExpr_Var n) = n
+cexprVar _             = hsnUnknown
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -194,10 +202,13 @@ mkCMod e = CModule_Mod "" e []
 
 %%[8 hs
 cpatVarNm :: CPat -> CPatNm
-cpatVarNm (CPat_Var  n)        = n
-cpatVarNm (CPat_Con  n _ _ _)  = n
-cpatVarNm (CPat_Int  n _    )  = n
-cpatVarNm (CPat_Char n _    )  = n
+cpatVarNm (CPat_Var         n      )  = n
+cpatVarNm (CPat_Con         n _ _ _)  = n
+cpatVarNm (CPat_Int         n _    )  = n
+cpatVarNm (CPat_Char        n _    )  = n
+%%[[99
+cpatVarNm (CPat_BoolExpr    n _    )  = n
+%%]]
 
 cpatConTag :: CPat -> CTag
 cpatConTag (CPat_Con  _ t _ _)  = t
@@ -212,9 +223,11 @@ caltIsVar (CAlt_Alt (CPat_Var _ : _) _)  = True
 caltIsVar _                              = False
 
 caltIsConst :: CAlt -> Bool
-caltIsConst (CAlt_Alt (CPat_Int  _ _ : _) _)  = True
-caltIsConst (CAlt_Alt (CPat_Char _ _ : _) _)  = True
-caltIsConst _                                 = False
+caltIsConst (CAlt_Alt (p : _) _)
+  = c p
+  where c (CPat_Int   _ _) = True
+        c (CPat_Char  _ _) = True
+        c _                = False
 
 caltPatL :: CAlt -> CPatL
 caltPatL (CAlt_Alt p _) = p
@@ -227,6 +240,12 @@ caltLPatNms = nub . sort . map (cpatVarNm . caltPat)
 
 cvarUndefined :: CExpr
 cvarUndefined = CExpr_Var hsnUndefined
+%%]
+
+%%[99 hs
+caltIsBoolExpr :: CAlt -> Bool
+caltIsBoolExpr (CAlt_Alt (CPat_BoolExpr _ _ : _) _)  = True
+caltIsBoolExpr _                                     = False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -294,4 +313,25 @@ instance Show Coe where
   show _ = "COE"
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module merge
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12 hs
+cModMerge :: [CModule] -> CModule
+cModMerge mL
+  = foldr1 cmb mL
+  where get (CExpr_Let c b e) = CExpr_Let c b . get e
+        get  _                = id
+        cmb (CModule_Mod m1 e1 t1) (CModule_Mod m2 e2 t2)
+          = CModule_Mod m2 (get e1 e2) (t1++t2)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Subst to replace CaseAltFail
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type CaseFailSubst = Map.Map UID CExpr
+%%]
 

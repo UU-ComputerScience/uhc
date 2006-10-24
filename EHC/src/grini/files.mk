@@ -1,4 +1,4 @@
-# location of agprimer src
+# location of grini src
 SRC_GRINI_PREFIX						:= $(SRC_PREFIX)grini/
 
 # this file

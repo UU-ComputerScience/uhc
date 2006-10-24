@@ -1,0 +1,25 @@
+%%[8 module {%{GRIN}Config} export( machDepCForTailcallEnter, machDepCForTailcallLeave1, machDepCForTailcallLeave2 )
+%%]
+
+%%[8 import({%{GRIN}ConfigDefines}) export(module {%{GRIN}ConfigDefines})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options to adapt the structure of the generated code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+-- assembler instruction(s) to correct the C stack when
+-- jumping out of a function instead of doing a tail call
+-- should be "leave" for x86 processor
+
+machDepCForTailcallEnter :: String
+machDepCForTailcallEnter = "@MACH_DEP_C_FOR_TAILCALL_ENTER@"
+
+machDepCForTailcallLeave1 :: String
+machDepCForTailcallLeave1 = "@MACH_DEP_C_FOR_TAILCALL_LEAVE1@"
+
+machDepCForTailcallLeave2 :: String
+machDepCForTailcallLeave2 = "@MACH_DEP_C_FOR_TAILCALL_LEAVE2@"
+%%]
+

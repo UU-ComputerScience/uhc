@@ -10,19 +10,38 @@ primitives information table.
 - meta info for code generation
 - code snippets to generate the code for a primitive (C--)
 
-%%[8.abstractValues import({%{GRIN}HeapPointsToFixpoint},{%{EH}Base.Common(HsName(..))}, qualified Data.Set as Set, {%{EH}GrinCode},{%{GRIN}GRINCCommon})
+%%[8.abstractValues import({%{GRIN}HeapPointsToFixpoint},{%{EH}Base.HsName}, qualified Data.Set as Set, {%{EH}GrinCode},{%{GRIN}GRINCCommon}) export(avForArity)
+
+
+avForArity = if grinStoreArity
+              then [AV_Basic]
+              else []
+
+
+undefinedAV  = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "False"), avForArity)
+                                       ]
+                                       -- HPT-analysis seems to insist that there is at least one value here,
+                                       -- so an arbitrary value (False) is inserted in this list.
+                                       -- as fun_undefined exits the program, this value is never really used. --JF
+
 unboxedBasic = AV_Nodes $ Map.fromList [ (GrTag_Unboxed, [AV_Basic])
                                        ]
-booleanNodes = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "False"), [AV_Basic])
-                                       , (GrTag_Lit GrTagCon 1 (HNm "True" ), [AV_Basic])
+booleanNodes = AV_Nodes $ Map.fromList [ 
+                                         (GrTag_Lit GrTagCon 0 (HNm "False"), avForArity)
+                                       , (GrTag_Lit GrTagCon 1 (HNm "True" ), avForArity)
                                        ]
-compareNodes = AV_Nodes $ Map.fromList [ (GrTag_Lit GrTagCon 0 (HNm "EQ"), [AV_Basic])
-                                       , (GrTag_Lit GrTagCon 1 (HNm "GT"), [AV_Basic])
-                                       , (GrTag_Lit GrTagCon 2 (HNm "LT"), [AV_Basic])
+compareNodes = AV_Nodes $ Map.fromList [ 
+                                       {-
+                                         (GrTag_Lit GrTagCon 0 (HNm "EQ"), avForArity)
+                                       , (GrTag_Lit GrTagCon 1 (HNm "GT"), avForArity)
+                                       , (GrTag_Lit GrTagCon 2 (HNm "LT"), avForArity)
+                                       -}
                                        ]
 %%]
 
-%%[8.codeGeneration import({%{GRIN}CmmCode}, {%{GRIN}CmmCode.Building}) export(false_node, true_node)
+%%[8.codeGeneration 
+
+{-
 --buildin datatype
 true_tag   = cmmVar "@C$True"
 false_tag  = cmmVar "@C$False"
@@ -60,9 +79,24 @@ emitPrimCmpInt (l:r:[]) tn
 assignOrReturn (Left tn) expr = if null tn
                                 then cmmReturn "" (map valArg expr)
                                 else updates (zipWith (\l r -> (varUpdate l,r)) tn expr)
+-}
+
+emitPrimAddInt = undefined
+emitPrimSubInt = undefined
+emitPrimMulInt = undefined
+emitPrimDivInt = undefined
+emitPrimModInt = undefined
+emitPrimEqInt = undefined
+emitPrimLtInt = undefined
+emitPrimGtInt = undefined
+emitPrimCmpInt = undefined
+
+
 %%]
 
 %%[8.primitivesMap import(qualified Data.Map as Map)
+
+{-
 type PrimitiveInfo = (Int
                      , [String]
                      , CmmNames -> Either CmmNames [CmmBodyBuilder] -> CmmBodyBuilder
@@ -70,6 +104,9 @@ type PrimitiveInfo = (Int
                      )
 
 primitivesMap  ::  Map.Map String PrimitiveInfo
+-}
+
+
 primitivesMap  =   Map.fromList primitivesTable
     where
     -- primitivesTable: list of name |-> (return size, required imports, arguments -> result vars or bodies -> primitive, AV)
@@ -84,6 +121,7 @@ primitivesMap  =   Map.fromList primitivesTable
          , ("primAndWord"  , (1, [], undefined     ,  unboxedBasic))
          , ("primXorWord"  , (1, [], undefined     ,  unboxedBasic))
          , ("primOrWord"   , (1, [], undefined     ,  unboxedBasic))
+         , ("primUndefined", (1, [], undefined     ,  undefinedAV ))
          , ("primEqInt"    , (2, [], emitPrimEqInt ,  booleanNodes))
          , ("primLtInt"    , (2, [], emitPrimLtInt ,  booleanNodes))
          , ("primGtInt"    , (2, [], emitPrimGtInt ,  booleanNodes))
@@ -91,18 +129,36 @@ primitivesMap  =   Map.fromList primitivesTable
         ]
 %%]
 
-%%[8.utils export(isPrim,isConditionalPrim,codeGenInfo,primSize, primImports,primCode,primAV)
+%%[8.utils export(isPrim,isConditionalPrim,codeGenInfo,primAV)
 isPrim             = ("prim" ==) . take 4
 isConditionalPrim  = flip elem ["primEqInt", "primLtInt", "primGtInt"]
 
-getPrimInfo :: (PrimitiveInfo -> b) -> String -> b
+--getPrimInfo :: (PrimitiveInfo -> b) -> String -> b
 getPrimInfo f prim = f (Map.findWithDefault (error $ "prim '" ++ prim ++ "' not found!") prim primitivesMap)
 
-primSize     =  getPrimInfo (\ (a, _, _, _) -> a)
-primImports  =  getPrimInfo (\ (_, b, _, _) -> b)
-primCode     =  getPrimInfo (\ (_, _, c, _) -> c)
+-- primSize     =  getPrimInfo (\ (a, _, _, _) -> a)
+-- primImports  =  getPrimInfo (\ (_, b, _, _) -> b)
+-- primCode     =  getPrimInfo (\ (_, _, c, _) -> c)
 primAV       =  getPrimInfo (\ (_, _, _, d) -> d)
 codeGenInfo  =  getPrimInfo (\ (a, b, c, _) -> (a, b, c))
 %%]
 
-% vim:et:ts=4:ai:
+%%[12 import({%{EH}Base.Builtin},{%{GRIN}Config}) export(hsnToGlobal)
+-- primitive related names which should be globally available, in unqualified form
+primGlobalNames :: Set.Set HsName
+primGlobalNames
+  = Set.fromList
+  $ map (hsnPrefix rtsGlobalVarPrefix . hsnQualified)
+  $ [ hsnTrue, hsnFalse
+%%[[99
+    , hsnEQ, hsnLT, hsnGT
+%%]]
+    ]
+
+hsnToGlobal :: HsName -> HsName
+hsnToGlobal n
+  = if n2 `Set.member` primGlobalNames then n2 else n
+  where n2 = hsnQualified n
+%%]
+
+

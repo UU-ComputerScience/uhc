@@ -1,0 +1,138 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gather errors
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR AllNT AGItf [ | | errL USE {++} {[]} : ErrL ]
+%%]
+
+%%[1.Module
+SEM Module
+    | Module
+        loc         .   errL        =   firstNotEmpty [@errUndef,@body.errL]
+
+SEM Body
+    | Body
+        loc         .   errL        =   @errReorder ++ @declarations.errL
+%%]
+
+%%[12 -1.Module
+SEM Module
+    | Module
+        lhs         .   errL        =   firstNotEmpty [@errUndef,@errModName,@body.errL]
+
+SEM Body
+    | Body
+        lhs         .   errL        =   firstNotEmpty [@errIdUse,@errReorder ++ @declarations.errL]
+%%]
+
+%%[1
+SEM Expression
+    | Variable Constructor
+        loc         .   errL        =   @errIdUse
+    | Let
+        loc         .   errL        =   @errReorder ++ @declarations.errL ++ @expression.errL
+    | InfixApplicationChainTop 
+        loc         .   errL        =   @errRearr ++ @expression.errL
+    | Negate 
+        loc         .   errL        =   @errIdUse ++ @expression.errL
+%%[[5
+    | List
+        loc         .   errL        =   @errIdUse ++ @expressions.errL
+    | Enum
+        loc         .   errL        =   @errIdUse ++ @from.errL ++ @then.errL ++ @to.errL
+    | If
+        loc         .   errL        =   @errIdUseVal ++ @errIdUseType ++ @guardExpression.errL ++ @thenExpression.errL ++ @elseExpression.errL
+%%]]
+%%[[7
+    | RecordConstruction
+        loc         .   errL        =   @errIdUse ++ @recordExpressionBindings.errL
+%%]]
+
+SEM RightHandSide
+    | Expression
+        loc         .   errL        =   @errReorder ++ @expression.errL ++ @where.errL
+%%]
+
+%%[1
+SEM Pattern
+    | Constructor
+        loc         .   errL        =   @errIdUse ++ @patterns.errL
+%%[[5
+    | InfixConstructor
+        loc         .   errL        =   @errIdUse ++ @leftPattern.errL ++ @rightPattern.errL
+    | List
+        loc         .   errL        =   @errIdUse ++ @patterns.errL
+    | Literal
+        loc         .   errL        =   @errIdUse ++ @errIdUseEq
+%%[[9
+                                        ++ @errIdUseCls
+%%]]
+                                        ++ @literal.errL
+%%]]
+%%]
+
+%%[1
+SEM Type
+    | Constructor
+%%[[3
+      Variable NamedWildcard
+%%]]
+        loc         .   errL        =   @errIdUse
+%%]
+
+%%[5
+SEM GuardedExpression
+    | GuardedExpression
+        loc         .   errL        =   @errIdUseVal ++ @errIdUseType ++ @guard.errL ++ @expression.errL
+%%]
+
+%%[5
+SEM Qualifier
+    | Let
+        loc         .   errL        =   firstNotEmpty [@declarations.errL, @errReorder]
+    | Guard
+        loc         .   errL        =   @errIdUseVal ++ @errIdUseType ++ @guard.errL
+    | Generator
+        loc         .   errL        =   @errIdUse ++ @pattern.errL ++ @expression.errL
+    | Empty
+        loc         .   errL        =   @errIdUse
+%%]
+
+%%[7
+SEM RecordExpressionBinding
+    | RecordExpressionBinding
+        loc         .   errL        =   @errIdUse ++ @expression.errL
+%%]
+
+%%[9
+SEM Statement
+    | Let
+        loc         .   errL        =   @errReorder ++ @declarations.errL
+    | Expression
+        loc         .   errL        =   @errIdUse ++ @expression.errL
+    | Generator
+        loc         .   errL        =   @errIdUse ++ @pattern.errL ++ @expression.errL
+
+SEM ContextItem
+    | Class
+        loc         .   errL        =   @errIdUse ++ @types.errL
+
+SEM Declaration
+    | Class
+        loc         .   errL        =   @errReorder ++ @context.errL ++ @simpletype.errL ++ @dependencies.errL ++ @where.errL
+    | Instance
+        loc         .   errL        =   firstNotEmpty [@errIdUse ++ @context.errL ++ @types.errL ++ @where.errL, @errReorder]
+    | InstanceUseImplicitly
+        loc         .   errL        =   @errIdUse ++ @expression.errL ++ @types.errL
+
+SEM Deriving
+    | Deriving
+        loc         .   errL        =   @errIdUse
+%%]
+

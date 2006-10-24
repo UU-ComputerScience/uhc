@@ -7,10 +7,10 @@
 %%% Pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 module {%{EH}Pred} import(Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty)
+%%[9 module {%{EH}Pred} import(Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty,EH.Util.PPUtils)
 %%]
 
-%%[9 import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Quantify},{%{EH}Core},{%{EH}Core.Pretty},{%{EH}Core.Subst},{%{EH}Base.Common},{%{EH}Gam},{%{EH}Cnstr},{%{EH}Substitutable})
+%%[9 import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Quantify},{%{EH}Core},{%{EH}Core.Pretty},{%{EH}Core.Subst},{%{EH}Core.Utils},{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Gam},{%{EH}Cnstr},{%{EH}Substitutable})
 %%]
 
 %%[9 import({%{EH}Base.Debug})
@@ -22,7 +22,7 @@
 %%[9 export(ProvenNode(..),prvnIsAnd)
 %%]
 
-%%[9 export(ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,prvgBackToOrig,prvgReachableFrom,prvgReachableTo,prvgIsFact,prvgFactL)
+%%[9 export(ProvenGraph(..),prvgAddPrNd,prvgAddPrUids,prvgAddNd,prvgBackToOrig,prvgReachableFrom,prvgReachableTo,prvgIsFact,prvgFactL,prvgFactPrL)
 %%]
 
 %%[9 export(prvgCxBindLMap,prvgIntroBindL,prvgLetHoleCSubst)
@@ -31,10 +31,13 @@
 %%[9 export(prvg2ReachableFrom)
 %%]
 
+%%[9 export(HowMkEvid(..),mkEvid,ppHowMkEvid)
+%%]
+
 %%[9 export(Rule(..),emptyRule,mkInstElimRule)
 %%]
 
-%%[9 export(ProofCost(..),mkCost,mkCostAvailImpl,costVeryMuch,costAvailArg,costZero,costNeg,costAdd,costBase,costAddHi,costMulBy)
+%%[9 export(ProofCost(..),ppProofCost',mkPCostExec,pcostNotAvail,pcostAvailAsArg,pcostZero,pcostZero',pcostCmb,pcostBase,pcostInf,pcostLevelSet,pcostExecMulBy)
 %%]
 
 %%[9 export(ClsFuncDep(..))
@@ -43,10 +46,10 @@
 %%[9 export(PrIntroGamInfo(..),PrIntroGam,emptyPIGI)
 %%]
 
-%%[9 export(PrElimGamInfo(..))
+%%[9 export(PrElimGamInfo(..),emptyPrElimGamInfo)
 %%]
 
-%%[9 export(PrElimTGam,peTGamAdd,peTGamDel,peTGamAddKnPr,peTGamAddKnPrL,peTGamPoiS)
+%%[9 export(PrElimTGam,peTGamInsert,peTGamUnion,peTGamDel,peTGamInsertKnPr,peTGamInsertKnPrL,peTGamPoiS,peTGamUnion2)
 %%]
 
 %%[9 import({%{EH}Ty.Ftv}) export(prvgArgLeaves,prvgSatisfiedNodeS,prvgOrigs,prvgAppPoiSubst,prvg2BackMp,prvgShareMp)
@@ -56,6 +59,9 @@
 %%]
 
 %%[9 export(prfsAddPrOccL)
+%%]
+
+%%[12 export(emptyPrElimTGam)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -88,41 +94,51 @@ instance PoiSubstitutable PoiSubst where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-data ProofCost  = Cost {costHi, costLo :: Int}
-                deriving (Eq,Show)
+data ProofCost
+  = PCost {pcostLevel, pcostAvail, pcostExec :: Int}
+    deriving (Eq,Show)
+
+emptyProofCost = PCost 0 0 0
 
 instance Ord ProofCost where
-  (Cost h1 l1) `compare` (Cost h2 l2)
-    | hcmp == EQ  = l1 `compare` l2
-    | otherwise   = hcmp
-    where hcmp = h1 `compare` h2
+  c1 `compare` c2
+    = case pcostLevel c1 `compare` pcostLevel c2 of
+        EQ -> case pcostAvail c1 `compare` pcostAvail c2 of
+                EQ -> pcostExec  c1 `compare` pcostExec  c2
+                c  -> c
+        c  -> c
 
-mkCost :: Int -> ProofCost
-mkCost c = Cost 0 c
+mkPCostExec :: Int -> ProofCost
+mkPCostExec c = emptyProofCost { pcostExec = c }
 
-costVeryMuch    = Cost 100 0
-costZero        = mkCost 0
-costBase        = mkCost 1
-costAvailArg    = mkCost 2
-costNeg         = Cost (-2) 0
+pcostNotAvail l  	= emptyProofCost { pcostLevel = l, pcostAvail = 1 }
+pcostZero        	= mkPCostExec 0
+pcostZero' c     	= pcostZero {pcostLevel = pcostLevel c}
+pcostBase        	= mkPCostExec 1
+pcostAvailAsArg    	= mkPCostExec 2
+pcostInf    		= PCost 1000000 0 0
 
-mkCostAvailImpl :: Int -> ProofCost
-mkCostAvailImpl c = Cost (-1) c
+infixr 2 `pcostCmb`, `pcostLevelSet`
+infixr 3 `pcostExecMulBy`
 
-infixr 2 `costAdd`, `costAddHi`
-infixr 3 `costMulBy`
+pcostExecMulBy :: ProofCost -> Int -> ProofCost
+c `pcostExecMulBy` i = c {pcostExec = pcostExec c * i}
 
-costMulBy :: ProofCost -> Int -> ProofCost
-c1@(Cost h l) `costMulBy` i = Cost h (l * i)
+pcostCmb :: ProofCost -> ProofCost -> ProofCost
+c1 `pcostCmb` c2
+  = c1 { pcostLevel = pcostLevel c1 `min` pcostLevel c2
+       , pcostAvail = pcostAvail c1 `max` pcostAvail c2
+       , pcostExec  = pcostExec  c1  +    pcostExec  c2
+       }
 
-costAdd :: ProofCost -> ProofCost -> ProofCost
-c1@(Cost h1 l1) `costAdd` c2@(Cost h2 l2) = Cost (h1 + h2) (l1 + l2)
+pcostLevelSet :: ProofCost -> Int -> ProofCost
+c `pcostLevelSet` i = c { pcostLevel = i }
 
-costAddHi :: ProofCost -> Int -> ProofCost
-(Cost h l) `costAddHi` i = Cost (h+i) l
+ppProofCost' :: ProofCost -> PP_Doc
+ppProofCost' (PCost l a e) = ppCurlysCommas [pp l,pp a,pp e]
 
 instance PP ProofCost where
-  pp (Cost h l) = "C:" >|< pp h >|< ":" >|< l
+  pp c = "Cost" >|< ppProofCost' c
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -153,10 +169,10 @@ instance Show ProvenNode where
   show _ = ""
 
 instance PP ProvenNode where
-  pp (ProvenOr  pr es c         )   = "OR:"    >#< "pr=" >|< pp pr >#< "edges=" >|< ppCommaList es                                      >#< "cost=" >|< pp c
-  pp (ProvenAnd pr es les c ev  )   = "AND:"   >#< "pr=" >|< pp pr >#< "edges=" >|< ppCommaList es >#< "lamedges=" >|< ppCommaList les  >#< "cost=" >|< pp c >#< "evid=" >|< pp ev
-  pp (ProvenShare pr e          )   = "SHARE:" >#< "pr=" >|< pp pr >#< "edge="  >|< ppCommaList [e]
-  pp (ProvenArg pr c            )   = "ARG:"   >#< "pr=" >|< pp pr                                                                      >#< "cost=" >|< pp c
+  pp (ProvenOr  pr es c         )   = "OR:"    >#< "pr=" >|< pp pr >#< "edges=" >|< ppBracketsCommas es                                           >#< "cost=" >|< pp c
+  pp (ProvenAnd pr es les c ev  )   = "AND:"   >#< "pr=" >|< pp pr >#< "edges=" >|< ppBracketsCommas es >#< "lamedges=" >|< ppBracketsCommas les  >#< "cost=" >|< pp c >#< "evid=" >|< pp ev
+  pp (ProvenShare pr e          )   = "SHARE:" >#< "pr=" >|< pp pr >#< "edge="  >|< ppBracketsCommas [e]
+  pp (ProvenArg pr c            )   = "ARG:"   >#< "pr=" >|< pp pr                                                                                >#< "cost=" >|< pp c
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -193,7 +209,7 @@ instance PP ProvenGraph where
        >-< "Id->Nd   :" >#< ppAssocLV (Map.toList i2n)
        >-< "Pr->Orig :" >#< pp2i p2oi
        >-< "Pr->Facts:" >#< pp2i p2fi
-    where pp2i = ppAssocLV . assocLMapElt ppCommaList . Map.toList
+    where pp2i = ppAssocLV . assocLMapElt ppBracketsCommas . Map.toList
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -332,6 +348,10 @@ prvgOrigs (ProvenGraph _ _ p2oi _)
 %%]
 
 %%[9
+prvgFactPrL :: ProvenGraph -> [Pred]
+prvgFactPrL (ProvenGraph _ _ _ p2fi)
+  =  Map.keys p2fi
+
 prvgFactL :: ProvenGraph -> [PredOccId]
 prvgFactL (ProvenGraph _ _ _ p2fi)
   =  concat (Map.elems p2fi)
@@ -527,7 +547,7 @@ instance Show ProofState where
 instance PP ProofState where
   pp s = "PrfSt:" >#<  (pp (prfs2ProvenGraph s)
                        >-< pp (prfs2Uniq s)
-                       >-< ppCommaList (prfs2PredsToProve s)
+                       >-< ppBracketsCommas (prfs2PredsToProve s)
                        )
 %%]
 
@@ -551,8 +571,36 @@ prfsAddPrOccL prOccL depth st
 data ClsFuncDep = ClsFuncDep [Int] [Int] deriving Show
 
 instance PP ClsFuncDep where
-  pp (ClsFuncDep f t) = ppCommaList f >|< "->" >|< ppCommaList t
+  pp (ClsFuncDep f t) = ppBracketsCommas f >|< "->" >|< ppBracketsCommas t
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% How to make evidence
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+data HowMkEvid
+  = MkEvidVar		HsName				-- just a variable
+  | MkEvidCtxt		HsName				-- apply variable to context
+  | MkEvidSup		HsName Int CTag		-- superclass
+
+instance Show HowMkEvid where
+  show _ = "HowMkEvid"
+
+ppHowMkEvid :: (HsName -> PP_Doc) -> HowMkEvid -> PP_Doc
+ppHowMkEvid pn (MkEvidVar  n    ) = "var"  >#< pn n
+ppHowMkEvid pn (MkEvidCtxt n    ) = "ctxt" >#< pn n
+ppHowMkEvid pn (MkEvidSup  n o t) = "sup"  >#< pn n >#< pp o >#< ppCTag' pn t
+
+mkEvid :: HowMkEvid -> [CExpr] -> CExpr
+mkEvid h
+  = case h of
+      MkEvidVar  n     -> \_     -> CExpr_Var n
+      MkEvidCtxt n     -> \ctxt  -> CExpr_Var n `mkCExprApp` ctxt
+      MkEvidSup  n o t -> \[sub] -> mkCExprSatSelsCase (emptyRCEEnv) (Just $ hsnSuffix n "!") sub t
+                                                       [(n,n,o)] Nothing (CExpr_Var n)
+%%]
+mkCExprSelCase emptyRCEEnv (Just $ hsnSuffix n "!") sub t n n (CExpr_Int o) Nothing
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Rule
@@ -563,23 +611,31 @@ data Rule
   =  Rule
        { rulRuleTy          :: Ty
        , rulMkEvid          :: [CExpr] -> CExpr
+       -- , rulMkEvidCExpr     :: CExpr
+       , rulMkEvidHow       :: HowMkEvid
        , rulNmEvid          :: HsName
        , rulId              :: PredOccId
        , rulCost            :: ProofCost
        , rulFuncDeps        :: [ClsFuncDep]
        }
 
-emptyRule = Rule Ty_Any head hsnUnknown (mkPrId uidStart uidStart) costVeryMuch []
+instance Eq Rule where
+  r1 == r2 = poiId (rulId r1) == poiId (rulId r2)
+
+emptyRule = Rule Ty_Any head (MkEvidVar hsnUnknown) hsnUnknown (mkPrId uidStart uidStart) pcostInf []
 
 mkInstElimRule :: HsName -> PredOccId -> Int -> Ty -> Rule
 mkInstElimRule n i sz ctxtToInstTy
-  =  Rule  { rulRuleTy    = ctxtToInstTy
-           , rulMkEvid    = \ctxt -> CExpr_Var n `mkCExprApp` ctxt
-           , rulNmEvid    = n
-           , rulId        = i
-           , rulCost      = costBase `costAdd` (costBase `costMulBy` 2 * sz)
-           , rulFuncDeps  = []
+  =  Rule  { rulRuleTy    	= ctxtToInstTy
+           , rulMkEvid    	= mkEvid ev
+           , rulMkEvidHow	= ev
+           , rulNmEvid    	= n
+           , rulId        	= i
+           , rulCost      	= pcostBase `pcostExecMulBy` (2 * sz + 1)
+           , rulFuncDeps  	= []
            }
+  where ns = take sz hsnLclSupplyL
+        ev = MkEvidCtxt n
 
 instance Substitutable TyVarId (CnstrInfo Ty) Rule where
   s |=>  r = r { rulRuleTy = s |=> rulRuleTy r }
@@ -589,7 +645,7 @@ instance Show Rule where
   show r = show (rulNmEvid r) ++ "::" ++ show (rulRuleTy r)
 
 instance PP Rule where
-  pp r = pp (rulRuleTy r) >#< ":>" >#< pp (rulNmEvid r) >|< "/" >|< pp (rulId r) >#< "|" >|< ppCommaList (rulFuncDeps r)
+  pp r = pp (rulRuleTy r) >#< ":>" >#< pp (rulNmEvid r) >|< "/" >|< pp (rulId r) -- >#< "|" >|< ppBracketsCommas (rulFuncDeps r)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -626,12 +682,15 @@ data PrElimGamInfo
        { pegiRuleL          :: [Rule]
        } deriving Show
 
+emptyPrElimGamInfo :: PrElimGamInfo
+emptyPrElimGamInfo = PrElimGamInfo []
+
 instance Substitutable TyVarId (CnstrInfo Ty) PrElimGamInfo where
   s |=>  pegi = pegi { pegiRuleL = s |=> pegiRuleL pegi }
   ftv    pegi = ftv (pegiRuleL pegi)
 
 instance PP PrElimGamInfo where
-  pp pegi = ppCommaList (pegiRuleL pegi)
+  pp pegi = "PEGI" >#< ppCurlysCommasBlock (pegiRuleL pegi)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -641,28 +700,52 @@ instance PP PrElimGamInfo where
 %%[9
 type PrElimTGam = TreeGam PrfCtxtId HsName PrElimGamInfo
 
-peTGamAdd :: PrfCtxtId -> HsName -> Rule -> PrElimTGam -> PrElimTGam
-peTGamAdd ci n r g
-  =  let  (h,mnci,t) = tgamPop ci ci g
-          h' = tgamUpdAdd ci n (PrElimGamInfo [r]) (\_ p -> p {pegiRuleL = r : pegiRuleL p}) h
-     in   maybe h' (\nci -> tgamPushGam ci nci ci h' t) mnci
+peTGamSingleton :: PrfCtxtId -> HsName -> Rule -> PrElimTGam
+peTGamSingleton ci n r = tgamSingleton ci n (PrElimGamInfo [r])
+
+peTGamInsert :: PrfCtxtId -> HsName -> Rule -> PrElimTGam -> PrElimTGam
+peTGamInsert ci n r g = peTGamUnion ci ci (peTGamSingleton ci n r) g
+
+peTGamUnion :: PrfCtxtId -> PrfCtxtId -> PrElimTGam -> PrElimTGam -> PrElimTGam
+peTGamUnion c1 c2 g1 g2
+  = maybe h' (\nci -> tgamPushGam c2 nci c2 h' t) mnci
+  where h' = foldr (\(n,i) g -> tgamUpdAdd c2 n i (\_ p -> p {pegiRuleL = pegiRuleL i ++ pegiRuleL p}) g)
+                   h (tgamToAssocL c1 g1)
+        (h,mnci,t) = tgamPop c2 c2 g2
 
 peTGamDel :: PrfCtxtId -> HsName -> Rule -> PrElimTGam -> PrElimTGam
 peTGamDel ci n r g
-  =  maybe g id . tgamMbUpd ci n (\_ p -> p {pegiRuleL = deleteBy (\r1 r2 -> rulId r1 == rulId r2) r . pegiRuleL $ p}) $ g
+  =  maybe g id
+     $ tgamMbUpd ci n (\_ p -> p {pegiRuleL = deleteBy (==) r . pegiRuleL $ p})
+     $ g
 
-peTGamAddKnPr :: PrfCtxtId -> HsName -> PredOccId -> Pred -> PrElimTGam -> PrElimTGam
-peTGamAddKnPr ci n i p
-  = peTGamAdd ci (predMatchNm p) (mkInstElimRule n i 0 (mkTyPr p))
+peTGamInsertKnPr :: PrfCtxtId -> HsName -> PredOccId -> Pred -> PrElimTGam -> PrElimTGam
+peTGamInsertKnPr ci n i p
+  = peTGamInsert ci (predMatchNm p) (mkInstElimRule n i 0 (mkTyPr p))
 
-peTGamAddKnPrL :: PrfCtxtId -> UID -> [Pred] -> PrElimTGam -> (PrElimTGam,[HsName],[PredOccId])
-peTGamAddKnPrL ci i prL g
-  =  foldr  (\(i,p) (g,nL,idL) -> let n = poiHNm i in (peTGamAddKnPr ci n i p g,n:nL,i:idL))
+peTGamInsertKnPrL :: PrfCtxtId -> UID -> [Pred] -> PrElimTGam -> (PrElimTGam,[HsName],[PredOccId])
+peTGamInsertKnPrL ci i prL g
+  =  foldr  (\(i,p) (g,nL,idL) -> let n = poiHNm i in (peTGamInsertKnPr ci n i p g,n:nL,i:idL))
             (g,[],[])
             (zip (map (mkPrId ci) . mkNewUIDL (length prL) $ i) prL)
 
 peTGamPoiS :: PrfCtxtId -> PrElimTGam -> Set.Set PredOccId
 peTGamPoiS ci = Set.unions . map (Set.fromList . map rulId . pegiRuleL) . tgamElts ci
+
+peTGamSetRuleCtxt :: PrfCtxtId -> PrfCtxtId -> PrElimTGam -> PrElimTGam
+peTGamSetRuleCtxt c cNew g
+  = tgamMap c (\(n,i) -> (n,i {pegiRuleL = map u (pegiRuleL i)})) g
+  where u r = r {rulId = (rulId r) {poiCxId = cNew}}
+
+peTGamUnion2 :: PrfCtxtId -> PrfCtxtId -> PrElimTGam -> PrElimTGam -> PrElimTGam
+peTGamUnion2 c1 c2 g1 g2
+  = peTGamUnion c1 c2 (peTGamSetRuleCtxt c1 c2 g1) g2
 %%]
+
+%%[12
+emptyPrElimTGam :: PrElimTGam
+emptyPrElimTGam = emptyTGam basePrfCtxtId
+%%]
+
 
 

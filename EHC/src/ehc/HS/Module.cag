@@ -1,0 +1,182 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Modules: import/export relations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Import
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR Import [ | | modEntSpec: ModEntSpec ]
+
+SEM Import
+    | Variable
+        lhs             .   modEntSpec  =   ModEntSpec @name Nothing
+    | TypeOrClass
+        lhs             .   modEntSpec  =   case @names of
+                                              Just ns -> ModEntSpec @name (Just (ModEntSubs ns))
+                                              Nothing -> ModEntSpec @name Nothing
+    | TypeOrClassComplete
+        lhs             .   modEntSpec  =   ModEntSpec @name (Just ModEntSubAll)
+%%]
+
+%%[12
+ATTR Imports AllImportSpecification [ | | modEntSpecL: {[ModEntSpec]} ]
+
+SEM Imports
+    | Cons
+        lhs             .   modEntSpecL =   @hd.modEntSpec : @tl.modEntSpecL
+    | Nil
+        lhs             .   modEntSpecL =   []
+
+SEM MaybeImportSpecification
+    | Nothing
+        lhs             .   modEntSpecL =   []
+%%]
+
+%%[12
+ATTR AllImportSpecification [ | | isHiding: Bool ]
+
+SEM ImportSpecification
+    | Import
+        lhs             .   isHiding    =   @hiding
+
+SEM MaybeImportSpecification
+    | Nothing
+        lhs             .   isHiding    =   True
+%%]
+
+%%[12
+ATTR AllImportDeclaration Body [ | | modImpL USE {++} {[]}: {[ModImp]} ]
+
+SEM ImportDeclaration
+    | Import
+        lhs             .   modImpL     =   let as = maybe @name id @asname
+                                            in  [ModImp @qualified @name as @importspecification.isHiding @importspecification.modEntSpecL]
+    | * - Import
+        lhs             .   modImpL     =   []
+%%]
+
+%%[12.Module.modImpL
+SEM Module
+	| Module
+		loc				.	modImpL		=	@body.modImpL
+%%]
+
+%%[99 -12.Module.modImpL
+SEM Module
+	| Module
+		loc				.	modImpL		=	if hsnModPrelude `elem` map mimpSource @body.modImpL || @lhs.moduleNm == hsnModPrelude || hsnIsInPrelude @lhs.moduleNm
+											then @body.modImpL
+											else modImpPrelude : @body.modImpL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Imports for module dpd anal only
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR AGItf Module [ | | modImpNmL: {[HsName]} ]
+
+SEM Module
+    | Module
+        lhs             .   modImpNmL   =   map mimpSource @modImpL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Export
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR Export [ | | modExp: ModExp ]
+
+SEM Export
+    | Variable
+        lhs             .   modExp      =   ModExpEnt (ModEntSpec @name Nothing)
+    | TypeOrClass
+        lhs             .   modExp      =   case @names of
+                                              Just ns -> ModExpEnt (ModEntSpec @name (Just (ModEntSubs ns)))
+                                              Nothing -> ModExpEnt (ModEntSpec @name Nothing)
+    | TypeOrClassComplete
+        lhs             .   modExp      =   ModExpEnt (ModEntSpec @name (Just ModEntSubAll))
+    | Module
+        lhs             .   modExp      =   ModExpMod @name
+%%]
+
+%%[12
+ATTR Exports [ | | modExpL: {[ModExp]} ]
+
+SEM Exports
+    | Cons
+        lhs             .   modExpL     =   @hd.modExp : @tl.modExpL
+    | Nil
+        lhs             .   modExpL     =   []
+%%]
+
+
+%%[12
+ATTR MaybeExports [ | | modExpsMb: {Maybe [ModExp]} ]
+
+SEM MaybeExports
+    | Just
+        lhs             .   modExpsMb   =   Just @just.modExpL
+    | Nothing
+        lhs             .   modExpsMb   =   Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Definitions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR Declaration Declarations Body [ | | modDefsRel USE {`Rel.union`} {Rel.empty}: ModEntRel ]
+
+SEM Declaration
+    | TypeSignature FunctionBindings PatternBinding ForeignImport -- ForeignExport
+        lhs             .   modDefsRel  =   Rel.fromList [ (hsnQualified (ioccNm o),ModEnt IdOcc_Val o Set.empty) | o <- @idOccDefs ]
+    | Type
+        lhs             .   modDefsRel  =   Rel.fromList [ (hsnQualified (ioccNm o),ModEnt IdOcc_Type o Set.empty) | o <- @idOccDefs ]
+    | Data Newtype
+        loc             .   modDefsRel  =   Rel.singleton
+                                              @simpletype.name
+                                              (ModEnt IdOcc_Data @idOccDef (Set.fromList @modEntsSub))
+                        .   modEntsSub  =   [ ModEnt IdOcc_Val o Set.empty | o <- @idOccDefsCon ++ @idOccDefsFld ]
+    | Class
+        loc             .   modDefsRel  =   Rel.singleton
+                                              @simpletype.name
+                                              (ModEnt IdOcc_Class @idOccDef (Set.fromList @modEntsSub))
+                        .   modEntsSub  =   [ ModEnt IdOcc_Val o Set.empty | o <- @idOccDefsSig ]
+    | Data Newtype Class
+        lhs             .   modDefsRel  =   @modDefsRel
+                                            `Rel.union`
+                                            Rel.fromList [ (hsnQualified $ ioccNm $ mentIdOcc e,e) | e <- @modEntsSub ]
+    | Instance
+        lhs             .   modDefsRel  =   (if @useimplicitly
+                                             then Rel.singleton @instancename (ModEnt IdOcc_Inst @idOccDef Set.empty)
+                                             else Rel.empty)
+                                            `Rel.union`
+                                            maybe (Rel.empty) (\_ -> Rel.singleton @instancename (ModEnt IdOcc_Val @idOccDefVal Set.empty)) @maybeinstancename
+    | InstanceUseImplicitly
+        lhs             .   modDefsRel  =   Rel.singleton @instancename (ModEnt IdOcc_Inst @idOccDef Set.empty)
+%%]
+SEM Body
+    | Body
+        lhs             .   modDefsRel  =   @declarations.modDefsRel
+                                            `Rel.union` 
+                                            (Rel.fromList [ (hsnQualified n,ModEnt IdOcc_Val (doccOcc d) Set.empty) | (n,d) <- idDefOccGamByKind IdOcc_Val @declarations.idOccDefGam ])
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR Module AGItf [ | | mod: Mod ]
+
+SEM Module
+    | Module
+        lhs             .   mod         =   Mod @lhs.moduleNm @name
+                                                @exports.modExpsMb @modImpL @body.modDefsRel
+                                                (reverse @body.topInstanceNmL)
+%%]
+
+

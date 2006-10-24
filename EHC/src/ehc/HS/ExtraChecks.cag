@@ -1,0 +1,34 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional checks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+SEM Module
+    | Module
+        loc             .   errUndef    =   let ns = [ (ioccNm o >#< ppParens (ioccKind o),Just (map uoccRange os)) | (o,os) <- gamToAssocDupL @body.undefOccGam, not $ hsnIsProd $ ioccNm $ o ]
+                                            in  (if null ns then [] else [mkErr_NamesNotIntrod' "" ns])
+%%]
+
+%%[9 hs
+%%]
+idDefOccGamCheckAllowedKind :: String -> [IdOccKind] -> IdDefOccGam -> [Err]
+idDefOccGamCheckAllowedKind m ks g
+  = case idDefOccGamPartitionByKind ks g of
+      (_,[]) -> []
+      (_,ds) -> [Err_DeclsNotAllowed m [ (ioccKind o,map ioccNm os) | os@(o:_) <- groupSortOn ioccKind (assocLKeys ds)]]
+
+%%[9
+%%]
+SEM Declaration
+    | Class
+        loc             .   errNotAllowed
+                                        =   idDefOccGamCheckAllowedKind "class" [IdOcc_Val] @where.idOccDefGam
+
+%%[12
+SEM Module
+    | Module
+        loc             .   errModName  =   case @name of
+                                              Just n | n /= @lhs.moduleNm && not @lhs.isTopMod
+                                                -> [Err_ModNameMismatch @lhs.moduleNm n]
+                                              _ -> []
+%%]

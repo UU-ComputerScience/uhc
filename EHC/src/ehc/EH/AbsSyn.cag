@@ -62,7 +62,13 @@ DATA Decl
                     tyExpr          : TyExpr
 %%]
 
-%%[10.Decl
+%%[11
+DATA Decl
+  | Type            tyNm            : {HsName}
+                    tyExpr          : TyExpr
+%%]
+
+%%[1010.Decl
 DATA Decl
   | DynTySig        nm              : {HsName}
                     tyExpr          : TyExpr
@@ -115,6 +121,12 @@ DATA TyExpr
   | Pred            prExpr          : PrExpr
   | Impls
   | NoImpls
+%%]
+
+%%[11
+DATA TyExpr
+  | Lam             tyVar           : {HsName}
+                    tyExpr          : TyExpr
 %%]
 
 %%[5
@@ -193,6 +205,10 @@ DATA Expr
   | SConst          str             : {String}
   | Case            expr            : Expr
                     alts            : CaseAlts
+%%[[8
+                    mbCaseId        : {Maybe UID}
+                    isTupOfArg		: {Bool}
+%%]]
 %%]
 
 %%[7
@@ -206,6 +222,7 @@ DATA Expr
 DATA Expr
   | FConst          float           : {Float}
   | Undefined
+  | CaseAltFail     caseId          : {UID}
 %%]
 
 %%[9
@@ -275,6 +292,11 @@ DATA PatExpr
 DATA PatExpr
   | FConst          float           : {Float}
   | Irrefutable     patExpr         : PatExpr
+%%]
+
+%%[99
+DATA PatExpr
+  | Expr            expr         	: Expr
 %%]
 
 %%[1.AllPatExpr
@@ -431,11 +453,14 @@ SET AllPrExpr       = PrExpr PrExprs
 DATA Decl
   | Class           tyPrExpr        : TyExpr
                     funcDeps        : FuncDeps
+                    mbDefaultInstNm : {Maybe HsName}
                     decls           : Decls
   | Instance        mbNmElim        : {Maybe (HsName,Bool)}
+                    instVariant     : InstVariant
                     tyPrExpr        : TyExpr
                     decls           : Decls
-  | InstanceIntro   expr            : Expr
+  | InstanceIntro   mbNmElim        : {Maybe (HsName)}
+                    expr            : Expr
                     prExpr          : PrExpr
 
 DATA FuncDep

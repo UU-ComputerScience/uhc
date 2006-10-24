@@ -122,7 +122,7 @@ SEM Decl
   | Val         expr        .   knTy                :=  if @hasTySig  then @knTy
                                                                       else [mkImplsVar @lUniq2] `mkArrow` @patExpr.ty
 
-%%[10.tyInstKnown
+%%[1010.tyInstKnown
 SEM Decl
   | DynVal      loc         .   knTy                =   Ty_Any
 %%]
@@ -136,7 +136,8 @@ ATTR AllDecl [ finValGam: ValGam | | ]
 ATTR AllNT [ finTyCnstr: Cnstr | | ]
 
 SEM Expr
-  | Let         decls       .   finValGam           =   @lhs.finTyCnstr |=> (gamTop @decls.patValGam)
+  | Let         loc         .   finValGamDecls      =   @lhs.finTyCnstr |=> (gamTop @decls.patValGam)
+                decls       .   finValGam           =   @finValGamDecls
 
 SEM Decl
   | TySig       loc         .   finalTy             =   vgiTy . fromJust
@@ -148,12 +149,12 @@ SEM AGItf
 
 %%[3.finValGam
 SEM Expr
-  | Let         decls       .   finValGam           :=  @lhs.finTyCnstr |=> @quValGam_
+  | Let         loc         .   finValGamDecls      :=  @lhs.finTyCnstr |=> @quValGam_
 %%]
 
 %%[4.finValGam
 SEM Expr
-  | Let         decls       .   finValGam           :=  @lhs.finTyCnstr |=> @quValGam_ex_
+  | Let         loc         .   finValGamDecls      :=  @lhs.finTyCnstr |=> @quValGam_ex_
 %%]
 
 %%[9
@@ -161,7 +162,7 @@ SEM Expr
   | Let         loc         .   finTyCnstr          =   @tqoTyCnstr |=> @lhs.finTyCnstr
 %%]
 
-%%[10
+%%[1010
 SEM Decl
   | DynTySig    loc         .   finalTy             =   vgiTy . fromJust
                                                         . valGamLookup @nm $ @lhs.finValGam
@@ -192,7 +193,11 @@ SEM Expr
 
 %%[6
 SEM Decl
-  | Data        loc         .   knKi                =   @sigKi
+  | Data
+%%[[11
+    Type
+%%]]
+                loc         .   knKi                =   @sigKi
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -201,9 +206,15 @@ SEM Decl
 
 %%[1.valGam
 ATTR AllDecl AllExpr [ valGam: ValGam | | ]
+%%]
 
+%%[1.initValGam
 SEM AGItf
   | AGItf       expr        .   valGam              =   emptyGam
+%%]
+
+%%[12 -1.initValGam
+ATTR AGItf [ valGam: ValGam | | ]
 %%]
 
 %%[1.patValGam
@@ -356,12 +367,25 @@ ATTR AllDataConstrEq [ | tyGam: TyGam | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8.dataGam
-ATTR AllDecl AllExpr AllCase [ | gathDataGam: DataGam | ]
+ATTR
+  AllDecl AllExpr AllCase
+%%[[99
+  AllPatExpr
+%%]]
+    [ | gathDataGam: DataGam | ]
 ATTR AllDecl AllExpr AllCase AllPatExpr [ dataGam: DataGam | | ]
 
 SEM AGItf
   | AGItf       expr        .   gathDataGam         =   emptyGam
-                            .   dataGam             =   @expr.gathDataGam
+%%]
+
+%%[8.initDataGam
+SEM AGItf
+  | AGItf       expr        .   dataGam             =   @expr.gathDataGam
+%%]
+
+%%[12 -8.initDataGam
+ATTR AGItf [ dataGam: DataGam | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -375,95 +399,68 @@ SEM Decl
 
 %%[9
 SEM Decl
-  | Instance    loc         .   fe                  :=  emptyFE {fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts}
+  | Instance    loc         .   fe                  :=  emptyFE
+                                                            { fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+                                                            }
+                            .   fe2                 :=  emptyFE
+%%[[11
+                                                            { feTyGam = @lhs.tyGam }
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Init of tyGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[initTyGam.1
-                                                          [ (hsnArrow,  TyGamInfo (Ty_Con hsnArrow))
-                                                          , (hsnInt,    TyGamInfo tyInt)
-                                                          , (hsnChar,   TyGamInfo tyChar)
+%%[1.initTyGam
+SEM AGItf
+  | AGItf       loc         .   tyGam               =   initTyGam
 %%]
 
-%%[initTyGam.6
+%%[7_2.initTyGam -1.initTyGam
+SEM AGItf
+  | AGItf       loc         .   tyGam               :=  assocLToGam
                                                           [ (hsnArrow,  mkTGI (Ty_Con hsnArrow) ([kiStar,kiStar] `mkArrow` kiStar))
                                                           , (hsnInt,    mkTGI tyInt kiStar)
                                                           , (hsnChar,   mkTGI tyChar kiStar)
-%%]
-
-%%[initTyGam.7
                                                           , (hsnRow,    mkTGI (Ty_Con hsnUnknown) kiRow)
                                                           , (hsnRec,    mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
                                                           , (hsnSum,    mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
                                                           , (hsnRowEmpty, mkTGI (Ty_Con hsnRowEmpty) kiRow)
-%%]
-
-%%[1.initTyGam
-SEM AGItf
-  | AGItf       loc         .   tyGam               =   assocLToGam
-%%@initTyGam.1
-                                                          ]
-%%]
-
-%%[6
-SEM AGItf
-  | AGItf       loc         .   tyGam               :=  assocLToGam
-%%@initTyGam.6
-                                                          ]
-                            .   kiCnstr             =   emptyCnstr
-%%]
-
-%%[7
-SEM AGItf
-  | AGItf       loc         .   tyGam               :=  assocLToGam
-%%@initTyGam.6
                                                           , (hsnRow,    	mkTGI (Ty_Con hsnUnknown) kiRow)
                                                           , (hsnRec,    	mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
                                                           , (hsnSum,    	mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
                                                           , (hsnRowEmpty, mkTGI (Ty_Con hsnRowEmpty) kiRow)
-%%]
-%%[8
-                                                          , (hsnFloat  ,	mkTGI tyFloat   kiStar)
-%%]
-%%[99
-                                                          , (hsnInteger,	mkTGI tyInteger kiStar)
-                                                          , (hsnDouble ,	mkTGI tyDouble  kiStar)
-%%]
-%%[7
                                                           ]
+%%]
+
+%%[12 -1.initTyGam
+ATTR AGItf [ tyGam: TyGam | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Sort, but no inferencing && etc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[initKiGam.6
-                                                          [ (hsnArrow,  KiGamInfo (Ty_Con hsnArrow))
-                                                          , (hsnStar,   KiGamInfo kiStar)
+%%[6
+ATTR AllExpr AllTyExpr AllPatExpr AllData AllCase AllDecl [ kiGam: KiGam | | ]
 %%]
 
 %%[6
-ATTR AllExpr AllTyExpr AllPatExpr AllData AllCase AllDecl [ kiGam: KiGam | | ]
-
 SEM AGItf
-  | AGItf       loc         .   kiGam               =   assocLToGam
-%%@initKiGam.6
-                                                          ]
+  | AGItf       loc         .   kiCnstr             =   emptyCnstr
 %%]
 
-%%[initKiGam.7
-                                                          , (hsnRow,    KiGamInfo kiRow)
+%%[6.initKiGam
+SEM AGItf
+  | AGItf       loc         .   kiGam               =   initKiGam
 %%]
 
-%%[7
-SEM AGItf
-  | AGItf       loc         .   kiGam               :=  assocLToGam
-%%@initKiGam.6
-%%@initKiGam.7
-                                                          ]
+%%[12 -6.initKiGam
+ATTR AGItf [ kiGam: KiGam | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -564,7 +561,11 @@ SEM Expr
                             .   kiSigGam            =   @decls.gathKiSigGam
 
 SEM Decl
-  | Data        loc         .   (sigKi,hasKiSig)    =   case gamLookup @tyNm @lhs.kiSigGam of
+  | Data
+%%[[11
+    Type
+%%]]
+                loc         .   (sigKi,hasKiSig)    =   case gamLookup @tyNm @lhs.kiSigGam of
                                                           Nothing   -> (Ty_Any,False)
                                                           Just tgi  -> (tgiKi tgi,True)
 %%]
@@ -631,6 +632,9 @@ SEM PatExpr
   | Var VarAs   loc         .   topNm               =   if @nm == hsnWild then uidHNm @lUniq else @nm
   | App         lhs         .   topNm               =   hsnUnknown
   | AppTop Con Rec CConst IConst
+%%[[99
+    Expr
+%%]]
                 loc         .   topNm               =   uidHNm @lUniq
   | SConst      loc         .   topNm               =   uidHNm @uniq1
 %%]
@@ -748,7 +752,7 @@ SEM Decl
                 expr        .  fiOpts               =   strongFIOpts
 %%]
 
-%%[10
+%%[1010
 SEM Decl
   | DynVal      expr        .  fiOpts               =   strongFIOpts
 %%]
@@ -759,11 +763,32 @@ SEM Decl
 
 %%[9
 ATTR AllDecl [ | patPrElimTGam: PrElimTGam | ]
+%%]
+
+%%[9
+SEM Expr
+  | Let         decls       .   patPrElimTGam       =   emptyTGam @prfCtxtId
+%%]
+
+%%[9
 ATTR NTPrf [ | prElimTGam: PrElimTGam | ]
+%%]
+
+%%[9.initPrElimTGam
+SEM AGItf
+  | AGItf       loc         .   prElimTGam          =   tgamPushNew basePrfCtxtId @prfCtxtId @expr.gathPrElimTGam
+%%]
+  | AGItf       loc         .   prElimTGam          =   emptyTGam @prfCtxtId
+
+%%[12 -9.initPrElimTGam
+ATTR AGItf [ prElimTGam: PrElimTGam | | ]
 
 SEM AGItf
-  | AGItf       loc         .   prElimTGam          =   emptyTGam @prfCtxtId
+  | AGItf       loc         .   prElimTGam          =   peTGamUnion2 basePrfCtxtId @prfCtxtId @expr.gathPrElimTGam
+                                                            (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam)
 %%]
+  | AGItf       loc         .   prElimTGam          =   tgamPushGam basePrfCtxtId @lhs.prfCtxtId @prfCtxtId @expr.gathPrElimTGam @lhs.prElimTGam
+  | AGItf       loc         .   prElimTGam          =   tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Predicate env, for intro of predicates
@@ -772,7 +797,18 @@ SEM AGItf
 %%[9
 ATTR AllDecl [ | patPrIntroGam: PrIntroGam | ]
 ATTR NTPrf AllPrExpr AllTyExpr AllData AllPatExpr [ prIntroGam: PrIntroGam | | ]
+%%]
 
+%%[9.initPrIntroGam
+SEM AGItf
+  | AGItf       loc         .   prIntroGam          =   emptyGam
+%%]
+
+%%[12 -9.initPrIntroGam
+ATTR AGItf [ prIntroGam: PrIntroGam | | ]
+%%]
+
+%%[9
 SEM Expr
   | Let         decls       .   patPrIntroGam       =   gamPushNew @lhs.prIntroGam
                 loc         .   (lPrIGam,gPrIGam)   =   gamPop @decls.patPrIntroGam
@@ -784,8 +820,6 @@ SEM Expr
                                                             (\(n,t) -> (n,t {pigiKi = tyQuantify (`elem` @gKiTvL) (pigiKi t)}))
                                                             @lSubsPrIGam
                 body        .   prIntroGam          =   gamPushGam @lQuPrIGam @gSubsPrIGam
-
-SEM AGItf
-  | AGItf       loc         .   prIntroGam          =   emptyGam
 %%]
+
 

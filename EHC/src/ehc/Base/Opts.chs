@@ -31,6 +31,9 @@
 %%[9 export(predFIOpts,implFIOpts)
 %%]
 
+%%[99 import(EH.Util.Utils)
+%%]
+
 %%[50 import({%{EH}Ty.Instantiate})
 %%]
 
@@ -70,147 +73,191 @@ trfOptOverrides opts trf
 %%[1.EHCOpts
 data EHCOpts
   = EHCOpts
-      {  ehcOptShowEH         ::  Bool
+      {  ehcOptShowHS         ::  Bool
+      ,  ehcOptShowEH         ::  Bool
       ,  ehcOptShowAst        ::  Bool
       ,  ehcOptShowTopTyPP    ::  Bool
       ,  ehcOptHelp           ::  Bool
       ,  ehcOptVersion        ::  Bool
       ,  ehcOptDebug          ::  Bool
-%%]
-%%[7_2.EHCOpts
+%%[[7_2
       , ehcoptUniqueness      ::  Bool
-%%]
-%%[8.EHCOpts
+%%]]
+%%[[8
       ,  ehcOptDumpCallGraph  ::  Bool
       ,  ehcOptDumpTrfGrin    ::  Maybe String
       ,  ehcOptTimeCompile    ::  Bool
+
       ,  ehcOptGenTrace       ::  Bool
+      ,  ehcOptGenCaseDefault ::  Bool
+      ,  ehcOptGenTailCall    ::  Bool
+      ,  ehcOptGenOwnParams   ::  Bool
+      ,  ehcOptGenOwnLocals   ::  Bool
+
       ,  ehcOptShowGrin       ::  Bool
+      ,  ehcOptEmitHS         ::  Bool
       ,  ehcOptEmitEH         ::  Bool
       ,  ehcOptEmitCore       ::  Bool
       ,  ehcOptEmitJava       ::  Bool
       ,  ehcOptEmitGrin       ::  Bool
-      ,  ehcOptEmitCmm        ::  Bool
       ,  ehcOptEmitLlc        ::  Bool
+      ,  ehcOptEmitExec       ::  Bool
       ,  ehcOptSearchPath     ::  [String]
       ,  ehcOptVerbosity      ::  Verbosity
       ,  ehcOptTrf            ::  [TrfOpt]
-%%]
-%%[9.EHCOpts
+%%]]
+%%[[9
       ,  ehcOptPrfCutOffAt    ::  Int
-%%]
-%%[1
+      ,  ehcCfgClassViaRec    ::  Bool
+%%]]
+%%[[11
+      ,  ehcOptTyBetaRedCutOffAt
+                              ::  Int
+%%]]
+%%[[12
+      ,  ehcCheckRecompile    ::  Bool
+%%]]
+%%[[99
+      ,  ehcProgName          ::  String
+      ,  ehcOptShowNumVersion ::  Bool
+%%]]
       }
 %%]
 
 %%[1.defaultEHCOpts
 defaultEHCOpts
   = EHCOpts
-      {  ehcOptShowEH         =   True
+      {  ehcOptShowHS         =   False
+%%[[1
+      ,  ehcOptShowEH         =   True
+%%][99
+      ,  ehcOptShowEH         =   False
+%%]]
       ,  ehcOptShowAst        =   False
       ,  ehcOptShowTopTyPP    =   False
       ,  ehcOptHelp           =   False
       ,  ehcOptVersion        =   False
       ,  ehcOptDebug          =   False
-%%]
-%%[7_2.defaultEHCOpts
+%%[[7_2
       ,  ehcoptUniqueness     =   True
-%%]
-%%[8.defaultEHCOpts
+%%]]
+%%[[8
       ,  ehcOptDumpCallGraph  =   False
       ,  ehcOptDumpTrfGrin    =   Nothing
       ,  ehcOptTimeCompile    =   False
+
       ,  ehcOptGenTrace       =   False
+      ,  ehcOptGenCaseDefault =   False
+      ,  ehcOptGenTailCall    =   True
+      ,  ehcOptGenOwnParams   =   True
+      ,  ehcOptGenOwnLocals   =   False
+
       ,  ehcOptShowGrin       =   False
+      ,  ehcOptEmitHS         =   False
       ,  ehcOptEmitEH         =   False
       ,  ehcOptEmitCore       =   True
       ,  ehcOptEmitJava       =   False
       ,  ehcOptEmitGrin       =   False
-      ,  ehcOptEmitCmm        =   False
-      ,  ehcOptEmitLlc        =   False
       ,  ehcOptSearchPath     =   []
       ,  ehcOptVerbosity      =   VerboseNormal
       ,  ehcOptTrf            =   []
+%%]]
+%%[[8
+      ,  ehcOptEmitLlc        =   False
+      ,  ehcOptEmitExec       =   False
 %%]
-%%[9.defaultEHCOpts
+%%[[9
       ,  ehcOptPrfCutOffAt    =   20
-%%]
-%%[1
+      ,  ehcCfgClassViaRec    =   False -- True
+%%]]
+%%[[11
+      ,  ehcOptTyBetaRedCutOffAt
+                              =   20
+%%]]
+%%[[12
+      ,  ehcCheckRecompile    =   True
+%%]]
+%%[[99
+      ,  ehcProgName          =   ""
+      ,  ehcOptShowNumVersion =   False
+%%]]
       }
 %%]
 
-%%[1.ehcCmdLineOptsA
-ehcCmdLineOpts  
-  =  [  Option "p"  ["pretty"]        (OptArg oPretty "eh|grin|ast|-")
-          "show pretty printed EH/Grin source or EH abstract syntax tree, default=eh, -=off"
-     ,  Option "d"  ["debug"]         (NoArg oDebug)
-          "show extra debug information"
-     ,  Option ""   ["show-top-ty"]   (OptArg oShowTopTy "yes|no")
-          "show top ty, default=no"
-     ,  Option "h"  ["help"]          (NoArg oHelp)
-          "output this help"
-     ,  Option ""   ["version"]       (NoArg oVersion)
-          "print version info"
-%%]
-%%[7_2.ehcCmdLineOptsA
+%%[1
+ehcCmdLineOpts
+  =  [  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|grin|ast|-")  "show pretty printed EH/Grin source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
+     ,  Option "d"  ["debug"]            (NoArg oDebug)                       "show extra debug information"
+     ,  Option ""   ["show-top-ty"]      (OptArg oShowTopTy "yes|no")         "show top ty, default=no"
+     ,  Option "h"  ["help"]             (NoArg oHelp)                        "only show this help"
+     ,  Option ""   ["version"]          (NoArg oVersion)                     "only show version info"
+%%[[7_2
      ,  Option "nu"  ["nounique"]     (NoArg oUnique)
           "do not compute uniqueness solution"
-%%]
-%%[8.ehcCmdLineOptsA
-     ,  Option "c"  ["code"]          (OptArg oCode "eh|core|java|grin|cmm|llc|-")
-          "write code to file, default=core"
-     ,  Option ""   ["gen-trace"]     (NoArg oGenTrace)
-          "emit trace info into cmm code"
-     ,  Option ""   ["trf"]           (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
-          "switch on/off transformations"
-     ,  Option ""   ["time-compilation"]  (NoArg oTimeCompile)
-          "show grin compiler CPU usage for each compilation phase (only with -v2)"
-     ,  Option ""   ["dump-call-graph"]   (NoArg oDumpCallGraph)
-          "output grin call graph as dot file"
-     ,  Option ""   ["dump-trf-grin"]     (OptArg oDumpTrfGrin "basename")
-          "dump intermediate grin code after transformation"
-     ,  Option "v"  ["verbose"]       (OptArg oVerbose "0|1|2")
-          "be verbose, 0=quiet 1=normal 2=noisy, default=1"
-%%]
-%%[1
+%%]]
+%%[[8
+     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exec|-")  "write code to file, default=core (downstream only)"
+     ,  Option ""   ["trf"]              (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
+                                                                              "switch on/off transformations"
+     ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
+     ,  Option ""   ["dump-call-graph"]  (NoArg oDumpCallGraph)               "output grin call graph as dot file"
+     ,  Option ""   ["dump-trf-grin"]    (OptArg oDumpTrfGrin "basename")     "dump intermediate grin code after transformation"
+     ,  Option "v"  ["verbose"]          (OptArg oVerbose "0|1|2|3")            "be verbose, 0=quiet 1=normal 2=noisy 3=debug-noisy, default=1"
+
+     ,  Option ""   ["gen-trace"]        (boolArg optSetGenTrace)             "trace functioncalls in C (no)"
+     ,  Option ""   ["gen-casedefault"]  (boolArg optSetGenCaseDefault)       "trap wrong casedistinction in C (no)"
+     ,  Option ""   ["gen-tailcall"]     (boolArg optSetGenTailCall)          "jumps for tail calls in C (yes)"
+     ,  Option ""   ["gen-ownparams"]    (boolArg optSetGenOwnParams)         "explicit parameter allocation (yes)"
+     ,  Option ""   ["gen-ownlocals"]    (boolArg optSetGenOwnLocals)         "explicit local allocation (no, broken!)"
+%%]]
+%%[[12
+     ,  Option ""   ["no-recomp"]        (NoArg oNoRecomp)                    "turn off recompilation check (force recompile)"
+%%]]
+%%[[99
+     ,  Option ""   ["numeric-version"]  (NoArg oNumVersion)                  "only show numeric version"
+     ,  Option "P"  ["search-path"]      (ReqArg oSearchPath "path")          "search path for all files, path separators=';', appended to previous"
+%%]]
      ]
 %%]
-%%[1.ehcCmdLineOptsB
+%%[1
   where  oPretty     ms  o =  case ms of
                                 Just "-"     -> o { ehcOptShowEH       = False     }
                                 Just "no"    -> o { ehcOptShowEH       = False     }
                                 Just "off"   -> o { ehcOptShowEH       = False     }
+                                Just "hs"    -> o { ehcOptShowHS       = True      }
                                 Just "eh"    -> o { ehcOptShowEH       = True      }
+                                Just "pp"    -> o { ehcOptShowEH       = True      }
                                 Just "ast"   -> o { ehcOptShowAst      = True      }
-%%]
-%%[8.ehcCmdLineOptsB
+%%[[8
                                 Just "grin"  -> o { ehcOptShowGrin     = True      }
-%%]
-%%[1.ehcCmdLineOptsB
+%%]]
                                 _            -> o
          oShowTopTy  ms  o =  case ms of
                                 Just "yes"  -> o { ehcOptShowTopTyPP   = True      }
                                 _           -> o
          oHelp           o =  o { ehcOptHelp          = True    }
          oVersion        o =  o { ehcOptVersion       = True    }
-         oDebug          o =  (oPretty (Just "ast") o) { ehcOptDebug         = True    }
-%%]
-%%[7_2.ehcCmdLineOptsB
+         oDebug          o =  o { ehcOptDebug         = True
+                                , ehcOptShowAst       = True
+                                }
+%%[[7_2
          oUnique         o =  o { ehcoptUniqueness    = False   }
-%%]
-%%[8.ehcCmdLineOptsB
+%%]]
+%%[[8
          oTimeCompile    o =  o { ehcOptTimeCompile       = True    }
-         oGenTrace       o =  o { ehcOptGenTrace          = True    }
          oDumpTrfGrin ms o =  o { ehcOptDumpTrfGrin       = maybe (Just "") (const ms) ms }
          oDumpCallGraph  o =  o { ehcOptDumpCallGraph     = True }
+
          oCode       ms  o =  case ms of
                                 Just "-"     -> o { ehcOptEmitCore     = False     }
+                                Just "hs"    -> o { ehcOptEmitHS       = True      }
                                 Just "eh"    -> o { ehcOptEmitEH       = True      }
                                 Just "core"  -> o { ehcOptEmitCore     = True      }
                                 Just "java"  -> o { ehcOptEmitJava     = True      }
                                 Just "grin"  -> o { ehcOptEmitGrin     = True      }
-                                Just "cmm"   -> o { ehcOptEmitCmm      = True      }
-                                Just "llc"   -> o { ehcOptEmitLlc      = True      }
+                                Just "exec"  -> o { ehcOptEmitExec     = True, ehcOptEmitLlc = True }
+                                Just "exe"   -> o { ehcOptEmitExec     = True, ehcOptEmitLlc = True }
+                                Just "c"     -> o { ehcOptEmitLlc      = True      }
                                 _            -> o
          oTrf        s   o =  o { ehcOptTrf           = opt s   }
                            where  opt "" =  []
@@ -227,8 +274,40 @@ ehcCmdLineOpts
                                 Just "0"    -> o { ehcOptVerbosity     = VerboseQuiet       }
                                 Just "1"    -> o { ehcOptVerbosity     = VerboseNormal      }
                                 Just "2"    -> o { ehcOptVerbosity     = VerboseALot        }
+                                Just "3"    -> o { ehcOptVerbosity     = VerboseDebug       }
                                 Nothing     -> o { ehcOptVerbosity     = VerboseNormal      }
                                 _           -> o
+%%]]
+%%[[12
+         oNoRecomp       o =  o { ehcCheckRecompile             = False   }
+%%]]
+%%[[99
+         oNumVersion     o =  o { ehcOptShowNumVersion          = True    }
+         oSearchPath  s  o =  o { ehcOptSearchPath = ehcOptSearchPath o ++ wordsBy (==';') s }
+%%]]
+%%]
+
+%%[8
+boolArg tr = OptArg (optBoolean tr) "0|1|no|yes|-|+"
+
+optSetGenTrace       o b = o { ehcOptGenTrace       = b }
+optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
+optSetGenTailCall    o b = o { ehcOptGenTailCall    = b }
+optSetGenOwnParams   o b = o { ehcOptGenOwnParams   = b }
+optSetGenOwnLocals   o b = o { ehcOptGenOwnLocals   = b }
+
+optBoolean tr ms o
+ = case ms of
+     Just "-"     -> tr o False
+     Just "no"    -> tr o False
+     Just "off"   -> tr o False
+     Just "0"     -> tr o False
+     Just "+"     -> tr o True
+     Just "yes"   -> tr o True
+     Just "on"    -> tr o True
+     Just "1"     -> tr o True
+     _            -> o
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -374,5 +453,3 @@ fioIsSubsume fio =  case fioMode fio of {FitSubLR -> True ; _ -> False}
 fioIsMeetJoin :: FIOpts -> Bool
 fioIsMeetJoin fio =  case fioMode fio of {FitMeet -> True ; FitJoin -> True ; _ -> False}
 %%]
-
-

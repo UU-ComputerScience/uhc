@@ -11,7 +11,7 @@ module ViewSelRlRnm
 
 import qualified Data.Map as Map
 import EH.Util.Nm
--- import DpdGr
+-- import EH.Util.DependencyGraph
 import ViewSel
 }
 

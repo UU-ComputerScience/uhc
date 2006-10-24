@@ -140,11 +140,11 @@ Notation & Meaning \\
 
 %%[exprExplImpl
 & | || | &
-|e (! e <: pi !)|
+|e {! e <: pi !}|
  & \emph{explicit implicit application}
  \\
 & | || | &
-|\(! i <: pi !) -> e|
+|\{! i <: pi !} -> e|
  & \emph{explicit implicit abstraction}
  \\
 %%]

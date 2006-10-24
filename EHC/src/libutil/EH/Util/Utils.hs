@@ -3,6 +3,7 @@ module EH.Util.Utils where
 import UU.Pretty
 import Data.Char
 import Data.List
+import qualified Data.Set as Set
 import Debug.Trace
 
 -------------------------------------------------------------------------
@@ -19,7 +20,14 @@ mkTexCmdUse' :: (PP cmd, PP a) => cmd -> a -> PP_Doc
 mkTexCmdUse' cmd nm = mkTexCmdUse cmd nm >|< "%"
 
 -------------------------------------------------------------------------
--- Misc
+-- Set
+-------------------------------------------------------------------------
+
+unionMapSet :: Ord b => (a -> Set.Set b) -> (Set.Set a -> Set.Set b)
+unionMapSet f = Set.unions . map f . Set.toList
+
+-------------------------------------------------------------------------
+-- List
 -------------------------------------------------------------------------
 
 hdAndTl' :: a -> [a] -> (a,[a])
@@ -31,6 +39,36 @@ hdAndTl = hdAndTl' undefined
 
 maybeHd :: r -> (a -> r) -> [a] -> r
 maybeHd n f l = if null l then n else f (head l)
+
+wordsBy :: (a -> Bool) -> [a] -> [[a]]
+wordsBy p l
+  = w l
+  where w [] = []
+        w l  = let (l',ls') = break p l
+               in  l' : case ls' of []       -> []
+                                    (_:[])   -> [[]]
+                                    (_:ls'') -> w ls''
+
+initlast :: [a] -> Maybe ([a],a)
+initlast as
+  = il [] as
+  where il acc [a]    = Just (reverse acc,a)
+        il acc (a:as) = il (a:acc) as
+        il _   _      = Nothing
+
+initlast2 :: [a] -> Maybe ([a],a,a)
+initlast2 as
+  = il [] as
+  where il acc [a,b]  = Just (reverse acc,a,b)
+        il acc (a:as) = il (a:acc) as
+        il _   _      = Nothing
+
+firstNotEmpty :: [[x]] -> [x]
+firstNotEmpty = maybeHd [] id . filter (not . null)
+
+-------------------------------------------------------------------------
+-- String
+-------------------------------------------------------------------------
 
 strWhite :: Int -> String
 strWhite sz = replicate sz ' '
@@ -44,13 +82,9 @@ strCapitalize s
       (c:cs) -> toUpper c : cs
       _      -> s
 
-wordsBy :: (a -> Bool) -> [a] -> [[a]]
-wordsBy p l
-  = w l
-  where w [] = []
-        w l  = let (l',ls') = break p l
-               in  l' : case ls' of []       -> []
-                                    (_:ls'') -> w ls''
+-------------------------------------------------------------------------
+-- Misc
+-------------------------------------------------------------------------
 
 panic m = error ("panic: " ++ m)
 

@@ -7,7 +7,7 @@
 %%% GRI parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}GrinCode.Parser} import(IO, UU.Parsing, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Scanner}, {%{EH}GrinCode}) export(pModule,scanOpts,scoSpecChars,scoOpChars,scoKeywordsTxt)
+%%[8 module {%{EH}GrinCode.Parser} import(IO, UU.Parsing, EH.Util.ParseUtils(PlainParser), EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Scanner}, {%{EH}GrinCode}, {%{EH}Base.Parser} hiding (pInt)) export(pModule)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -15,7 +15,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-scanOpts :: ScanOpts
+%%]
+scanOpts, grinScanOpts :: ScanOpts
 scanOpts
   =  defaultScanOpts
         {   scoKeywordsTxt      =   [ "eval", "apply"
@@ -28,17 +29,18 @@ scanOpts
         ,   scoOpChars          =   "<->:=+"
         ,   scoDollarIdent      =   True
         }
-%%]
+
+grinScanOpts = scanOpts
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-type GRIParser       gp     =    IsParser p Token => p gp
+type GRIParser       gp     =    PlainParser Token gp
 
 pModule         ::   GRIParser GrModule
-pModule         =    GrModule_Mod <$ pKey "module" <*> (HNm <$> pString)
+pModule         =    GrModule_Mod <$ pKey "module" <*> (pGrNm <|> mkHNm <$> pString)
                      <*> pGlobalL
                      <*> pBindL
                      <*  pKey "ctags"     <*> pCTags
@@ -85,6 +87,7 @@ pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
                 <|>  GrExpr_Case    <$  pKey "case"         <*> pVal    <*   pKey "of" <*> pCurly_pSemics pAlt
                 <|>  GrExpr_App     <$  pKey "apply"        <*> pGrNm   <*>  pSValL
                 <|>  GrExpr_FFI     <$  pKey "ffi"          <*> pId     <*>  pGrNmL
+                                                            <*> pCurly_pSemics pTag
                 <|>  GrExpr_Throw   <$  pKey "throw"        <*> pGrNm
                 <|>  GrExpr_Catch   <$  pKey "try"          <*> pCurly pExprSeq
                                     <*  pKey "catch"        <*> pParens pGrNm <*> pCurly pExprSeq
@@ -140,6 +143,7 @@ pTag            ::   GRIParser GrTag
 pTag            =    pKey "#"
                      *>  (   (\i c n -> GrTag_Lit c i n) <$> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> pGrNm
                          <|> GrTag_Unboxed <$ pKey "U"
+                         <|> GrTag_Any     <$ pKey "*"
                          )
 
 pTagVar         ::   GRIParser GrTag
@@ -158,7 +162,7 @@ pGrNmL          ::   GRIParser [HsName]
 pGrNmL          =    pList pGrNm
 
 pGrNm           ::   GRIParser HsName
-pGrNm           =    HNm <$> pVarid
+pGrNm           =    mkHNm <$> pVarid
 
 pGrKey          ::   HsName -> GRIParser HsName
 pGrKey k        =    HNm <$> pKey (show k)

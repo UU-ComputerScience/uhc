@@ -7,7 +7,7 @@
 %%% Haskell interface to AG generated code for compiler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,UU.Pretty,{%{EH}Base.Common},{%{EH}Base.Opts}, {%{EH}Ty},{%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty},{%{EH}Ty.FitsIn},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Pretty},{%{EH}EH})
+%%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,EH.Util.Utils,UU.Pretty, EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Base.Opts}, {%{EH}Ty},{%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty},{%{EH}Ty.FitsIn},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Pretty},{%{EH}EH})
 %%]
 
 %%[2 hs import({%{EH}Cnstr},{%{EH}Substitutable},Data.Maybe)
@@ -22,7 +22,7 @@
 %%[4_2 hs import(qualified Data.Set as Set,{%{EH}Gam.Utils},{%{EH}Ty.ElimAlts},{%{EH}Ty.FreshVar})
 %%]
 
-%%[7 hs import(EH.Util.PPUtils(ppCommas))
+%%[7 hs import(EH.Util.PPUtils)
 %%]
 
 %%[7_2 hs import({%{EH}Ty.AnnCommon},{%{EH}Ty.InfuseAnn},{%{EH}Ty.TyConPat},{%{EH}Ty.AnnInferKind}, {%{EH}Ty.InferExposedAnns}, {%{EH}Ty.InfuseExp}, {%{EH}Annotations.Constraints}, {%{EH}Ty.AnnSubst}, {%{EH}Ty.Expand}, {%{EH}EH.ConstrInferTy}, {%{EH}Annotations.ConstraintSolver}, {%{EH}Annotations.BelownessSolver}, {%{EH}Annotations.VarianceSolver}, {%{EH}Annotations.UniquenessSolver}, {%{EH}Ty.InfuseDataTruncs}, {%{EH}Base.HtmlCommon}, {%{EH}Ty.PrettyHTML}, Debug.Trace(trace))
@@ -34,7 +34,7 @@
 %%[8 hs import(EH.Util.Utils(groupSortOn))
 %%]
 
-%%[8 hs import(qualified Data.Map as Map,{%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty})
+%%[8 hs import(qualified Data.Map as Map,{%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty},{%{EH}Core.SubstCaseAltFail})
 %%]
 
 %%[9 hs import(qualified Data.Set as Set,{%{EH}Pred},{%{EH}Core.Subst})
@@ -63,7 +63,7 @@ WRAPPER AGItf
 %%[7_2 import({Ty/TyConPatCollect},{Annotations/AnnDT},{Ty/AnnDecomposePat},{EH/ConstrInferExpr},{EH/ConstrInferData}, {Annotations/AnnSolvers}, {EH/PrettyHTML})
 %%]
 
-%%[8 import({EH/GenCore})
+%%[8 import({EH/ToCore})
 %%]
 
 %%[9 import({EH/ResolvePred},{EH/InferClass})
@@ -78,5 +78,91 @@ ATTR AllNT AGItf [ opts: EHCOpts | | ]
 %%]
 
 %%[8
-ATTR AGItf [ baseName: String | | ]
+ATTR AGItf [ moduleNm: HsName | | ]
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tying together gam's, combining with imported info, gathering for following modules and/or global use
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR AGItf Expr [ | | gathValGam: ValGam ]
+
+SEM Expr
+  | Let         lhs         .   gathValGam          =   @body.gathValGam `gamUnion` @finValGamDecls
+  | * - Let     lhs         .   gathValGam          =   emptyGam
+%%]
+
+%%[12
+ATTR AGItf Expr [ | | gathTyGam: TyGam ]
+
+SEM Expr
+  | Let         lhs         .   gathTyGam           =   @body.gathTyGam `gamUnion` @lQuTyGam
+  | * - Let     lhs         .   gathTyGam           =   emptyGam
+%%]
+
+%%[12
+ATTR AGItf Expr [ | | gathKiGam: KiGam ]
+
+SEM Expr
+  | Let         lhs         .   gathKiGam           =   @body.gathKiGam -- `gamUnion` @xxx
+  | * - Let     lhs         .   gathKiGam           =   emptyGam
+%%]
+
+%%[8
+ATTR AGItf [ | | gathDataGam: DataGam ]
+%%]
+
+%%[12
+SEM AGItf
+  | AGItf       expr        .   dataGam             =   @expr.gathDataGam `gamUnion` @lhs.dataGam
+%%]
+
+%%[12
+ATTR AGItf Expr [ | | gathPrIntroGam: PrIntroGam ]
+
+SEM Expr
+  | Let         lhs         .   gathPrIntroGam      =   @body.gathPrIntroGam `gamUnion` @lQuPrIGam
+  | * - Let     lhs         .   gathPrIntroGam      =   emptyGam
+%%]
+
+%%[9
+ATTR Expr [ | | gathPrElimTGam: PrElimTGam ]
+ATTR Expr [ gathPrfCtxtId: PrfCtxtId | | ]
+
+SEM AGItf
+  | AGItf       loc         .   gathPrfCtxtId       =   basePrfCtxtId
+
+SEM CaseAlt
+  | Pat         loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId
+
+SEM RecExpr
+  | Expr Ext Upd
+                loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId
+
+SEM Decl
+  | InstanceIntro Val
+                loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId
+
+SEM Expr
+  | Let         lhs         .   gathPrElimTGam      =   peTGamUnion2 @prfCtxtId @lhs.gathPrfCtxtId @decls.patPrElimTGam @body.gathPrElimTGam
+  | * - Let     lhs         .   gathPrElimTGam      =   emptyTGam @lhs.gathPrfCtxtId
+%%]
+
+%%[99
+SEM PatExpr
+  | Expr        loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId
+%%]
+
+%%[12
+ATTR AGItf [ | | gathPrElimTGam: PrElimTGam ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is toplevel mod?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR AGItf [ isTopMod: Bool | | ]
+%%]
+

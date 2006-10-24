@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Scanner.Common} import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, EH.Util.ScanUtils(), {%{EH}Base.Common})
+%%[1 module {%{EH}Scanner.Common} import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, EH.Util.ScanUtils(), {%{EH}Base.Builtin}, {%{EH}Base.Common})
 %%]
 
 %%[1 import(EH.Util.ScanUtils)
@@ -20,6 +20,9 @@
 %%]
 
 %%[5.Scanner -1.Scanner import({%{EH}Scanner.Scanner}) export(module {%{EH}Scanner.Scanner})
+%%]
+
+%%[99 import (Data.Ratio)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -50,6 +53,9 @@ ehScanOpts
 %%]
 %%[11
                 ++ tokKeywStrsEH11
+%%]
+%%[12
+                ++ tokKeywStrsEH12
 %%]
 %%[1
         ,   scoKeywordsOps      =
@@ -144,6 +150,9 @@ hsScanOpts
 %%[11
                 ++ tokKeywStrsHS11
 %%]
+%%[12
+                ++ tokKeywStrsHS12
+%%]
 %%[1
         ,   scoKeywordsOps      =
                 scoKeywordsOps ehScanOpts
@@ -188,6 +197,70 @@ hsScanOpts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Scan opts for other parsers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+coreScanOpts :: ScanOpts
+coreScanOpts
+  =  grinScanOpts
+        {   scoKeywordsTxt      =   [ "let", "in", "case", "of", "rec", "foreign", "uniq"
+                                    , "Int", "Char", "Float", "String", "Tag", "Rec"
+                                    , "module", "default"
+%%[[12
+                                    , "Integer", "Double" 
+%%]
+                                    ]
+                                    ++ scoKeywordsTxt tyScanOpts
+                                    ++ scoKeywordsTxt hsScanOpts
+        ,   scoKeywordsOps      =   scoKeywordsOps grinScanOpts ++ scoKeywordsOps hsScanOpts
+        ,   scoDollarIdent      =   True
+        ,   scoOpChars          =          scoOpChars   grinScanOpts ++ scoOpChars   hsScanOpts
+        ,   scoSpecChars        =   "!=" ++ scoSpecChars grinScanOpts ++ scoSpecChars hsScanOpts
+        }
+%%]
+
+%%[8
+grinScanOpts :: ScanOpts
+grinScanOpts
+  =  defaultScanOpts
+        {   scoKeywordsTxt      =   [ "eval", "apply"
+                                    , "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi"
+                                    , "throw", "try", "catch", "ctags", "applymap", "evalmap"
+                                    , "C", "F", "P", "A", "R", "H", "U", "W"
+                                    ]
+        ,   scoKeywordsOps      =   [ "<-", "->", "=", "+=", "-=", ":=", "-", "*" ]
+        ,   scoSpecChars        =   "();{}#/\\|,"
+        ,   scoOpChars          =   "<->:=+*"
+        ,   scoDollarIdent      =   True
+        }
+%%]
+
+%%[8
+hiScanOpts :: ScanOpts
+hiScanOpts
+  =  hsScanOpts
+        {   scoKeywordsTxt      =   [ "value", "fixity", "stamp", "uid", "rule", "var", "ctxt", "sup", "iddef"
+                                    , "Value", "Pat", "Type", "Kind", "Class", "Instance", "Default", "Any", "Data"
+                                    ]
+                                    ++ scoKeywordsTxt hsScanOpts
+                                    ++ scoKeywordsTxt tyScanOpts
+        ,   scoOpChars          =   scoOpChars coreScanOpts
+        ,   scoDollarIdent      =   True
+        ,   scoSpecChars        =   scoSpecChars coreScanOpts
+        ,   scoKeywordsOps      =   [ "??" ] ++ scoKeywordsOps coreScanOpts
+        }
+%%]
+
+%%[8
+tyScanOpts :: ScanOpts
+tyScanOpts
+  =  defaultScanOpts
+        {   scoKeywordsTxt      =   [ "uid" ]
+        }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Scan file/handle to tokenlist
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -219,6 +292,28 @@ offsideScanHandle scanOpts fn fh
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Splitting up a rational into nominator/denominator
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+floatDenot2NomDenom :: String -> (Integer,Integer)
+floatDenot2NomDenom denot
+  = (numerator f,denominator f)
+  where (n,m,e) = getRational denot
+        f :: Rational
+        f = ((read n * md + mn) * en) % (ed * md)
+        en, ed, mn, md :: Integer
+        (en,ed) = case e of
+                    Just (Just "-",e) -> (1,10 ^ read e)
+                    Just (_,e)        -> (10 ^ read e,1)
+                    _                 -> (1,1)
+        (mn,md) = case m of
+                    Just m -> (read m,10 ^ length m)
+                    _      -> (1,1)
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Scanner related parser abstractions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -236,7 +331,7 @@ pKeyw k                 =   pKeyTk (show k)
 pStringTk, pCharTk,
   pInteger8Tk, pInteger10Tk, pInteger16Tk, pFractionTk,
 %%]
-%%[8
+%%[12
   pQVaridTk, pQConidTk,
   pQVarsymTk, pQConsymTk,
 %%]
@@ -262,7 +357,7 @@ pTextnmTk     =   pCostValToken' 7 TkTextnm    "<name>"
 pTextlnTk     =   pCostValToken' 7 TkTextln    "<line>"     
 pIntegerTk    =   pInteger10Tk
 %%]
-%%[8
+%%[12
 pQVaridTk     =   pCostValToken' 7 TkQVarid     "<identifier>" 
 pQConidTk     =   pCostValToken' 7 TkQConid     "<Identifier>" 
 pQConsymTk    =   pCostValToken' 7 TkQConOp     "<conoperator>"
@@ -284,7 +379,7 @@ pVARID'          = pVaridTk'
 pVARSYM          = pVarsymTk
 %%]
 
-%%[8
+%%[12
 pQCONID, pQCONSYM, pQVARID, pQVARSYM :: IsParser p Token => p Token
 
 pQCONID          = pQConidTk
@@ -466,7 +561,8 @@ pOROWREC        ,
     pCROWROW    ,
     pOROWSUM    ,
     pCROWSUM    ,
-    pCOLEQUAL
+    pCOLEQUAL   ,
+    pHASH
   :: IsParser p Token => p Token
 %%]
 
@@ -478,10 +574,11 @@ pCROWROW         = pKeyTk (show hsnCRow)
 pOROWSUM         = pKeyTk (show hsnOSum)
 pCROWSUM         = pKeyTk (show hsnCSum)
 pCOLEQUAL        = pKeyTk ":="
+pHASH            = pKeyTk "#"
 %%]
 
 %%[7
-tokOpStrsEH7   = [ ":=" ]
+tokOpStrsEH7   = [ ":=", "#" ]
 tokOpStrsHS7   = [  ]
 %%]
 
@@ -494,12 +591,9 @@ pLABEL          ,
     pSTDCALL    ,
     pDYNAMIC    ,
     pFOREIGN    ,
-    pIMPORT     ,
     pJAZY       ,
-    pEXPORT     ,
-    pQUALIFIED  ,
-    pAS         ,
-    pHIDING     
+    pIMPORT     ,
+    pEXPORT
   :: IsParser p Token => p Token
 %%]
 
@@ -508,19 +602,16 @@ pLABEL           = pKeyTk "label"
 pSAFE            = pKeyTk "safe"
 pUNSAFE          = pKeyTk "unsafe"
 pTHREADSAFE      = pKeyTk "threadsafe"
-pCCALL           = pKeyTk "ccallconv"
-pSTDCALL         = pKeyTk "stdcallconv"
+pCCALL           = pKeyTk "ccall"
+pSTDCALL         = pKeyTk "stdcall"
 pDYNAMIC         = pKeyTk "dynamic"
 pFOREIGN         = pKeyTk "foreign"
-pIMPORT          = pKeyTk "import"
 pJAZY            = pKeyTk "jazy"
+pIMPORT          = pKeyTk "import"
 pEXPORT          = pKeyTk "export"
-pQUALIFIED       = pKeyTk "qualified"
-pAS              = pKeyTk "as"
-pHIDING          = pKeyTk "hiding"
 
 tokKeywStrsEH8 = [ "foreign", "import", "jazy" ]
-tokKeywStrsHS8 = [ "export", "qualified", "as", "hiding", "label", "safe", "unsafe", "threadsafe", "ccallconv", "stdcallconv", "dynamic" ]
+tokKeywStrsHS8 = [ "export", "label", "safe", "unsafe", "threadsafe", "ccall", "stdcall", "dynamic" ]
 %%]
 
 %%[9
@@ -571,10 +662,30 @@ pTYPE            = pKeyTk "type"
 %%]
 
 %%[11
-tokKeywStrsEH11 = [  ]
-tokKeywStrsHS11 = [ "type" ]
+tokKeywStrsEH11 = [ "type" ]
+tokKeywStrsHS11 = [  ]
 tokOpStrsEH11   = [  ]
 tokOpStrsHS11   = [  ]
+%%]
+
+%%[12
+pQUALIFIED      ,
+    pQUESTQUEST ,
+    pAS         ,
+    pHIDING     ,
+    pNUMBER     
+  :: IsParser p Token => p Token
+%%]
+
+%%[12
+pQUALIFIED       = pKeyTk "qualified"
+pAS              = pKeyTk "as"
+pHIDING          = pKeyTk "hiding"
+pNUMBER          = pKeyTk "#"
+pQUESTQUEST      = pKeyTk "??"
+
+tokKeywStrsEH12 = [  ]
+tokKeywStrsHS12 = [ "qualified", "as", "hiding" ]
 %%]
 
 %%[13

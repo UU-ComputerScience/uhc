@@ -7,22 +7,49 @@
 %%% Inline let bindings for variables and constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.Trf.InlineLetAlias} import(Data.Maybe,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfInlineLetAlias)
+%%[8 hs module {%{EH}Core.Trf.InlineLetAlias} import(Data.Maybe,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty}) export(cmodTrfInlineLetAlias)
 %%]
 
 %%[8.WRAPPER import({Core/AbsSyn},{Core/CommonLev})
 WRAPPER CodeAGItf
 %%]
 
+%%[12 hs import(qualified Data.Set as Set)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[8.cmodTrfInlineLetAlias hs
 cmodTrfInlineLetAlias :: CModule -> CModule
 cmodTrfInlineLetAlias cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
      in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%[12 -8.cmodTrfInlineLetAlias hs
+type GlobNmS = Set.Set HsName
+
+cmodTrfInlineLetAlias :: GlobNmS -> CModule -> CModule
+cmodTrfInlineLetAlias globNmS cmod
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                             (Inh_CodeAGItf {globNmS_Inh_CodeAGItf = globNmS})
+     in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Globally used vars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR CodeAGItf CExpr CModule AllBind [ globNmS: GlobNmS | | ]
+
+SEM CAlt
+  | Alt         loc         .   globNmS     =   Set.empty
+
+SEM CPatBind
+  | Bind        loc         .   globNmS     =   Set.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -85,6 +112,9 @@ SEM CBind
   | Bind        lhs         .   (bindNmMp,bindL)
                                             =   case @expr.mbRepl of
                                                   Just r | @nm /= hsnMain
+%%[[12
+                                                           && not (@nm `Set.member` @lhs.globNmS)
+%%]]
                                                     -> (@nm `Map.singleton` r,[(@nm,@cTrf)])
                                                   _ -> (Map.empty,[(@nm,@cTrf)])
 %%]
