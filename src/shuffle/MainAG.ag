@@ -166,6 +166,13 @@ voAllLE_4 opts
 voDefault :: VersionOrder
 voDefault = [take 100 (map VRef [1..])]
 
+isAllowedCompilerVersion :: CompilerRestriction -> [Int] -> Bool
+isAllowedCompilerVersion (Restricted mLower mUpper) v
+  = mLower `leq` (Just v) && (Just v) `leq` mUpper
+  where
+    leq Nothing _ = True
+    leq _ Nothing = True
+    leq (Just p) (Just q) = p <= q
 }
 
 -------------------------------------------------------------------------
@@ -463,7 +470,7 @@ data VerChunkInfo
       , vciExps     :: [String]
       , vciMbCD     :: Maybe CDoc
       , vciXRefL    :: [XRef]
-      }
+      } deriving Show
 type VerChunkInfoM = [(Version,[VerChunkInfo])]
 
 vciMToL :: VerChunkInfoM -> [VerChunkInfo]
@@ -579,7 +586,8 @@ SEM Chunk
                                                     @version @subNm @minusL
                                                     @chOptions.chKind @chOptions.chDest @mbModNm.mbStr @imports.strL @exports.strL
                                                     (fmap @addBlankLine @lines.mbCD) (Seq.toList @lines.xrefL)
-                lhs         .   verChInfoL  =   [@chInfo]
+                loc         .   isAllowed   =   isAllowedCompilerVersion @compRestrict (optCompiler @lhs.opts)
+                lhs         .   verChInfoL  =   if @isAllowed then [@chInfo] else []
 
 -------------------------------------------------------------------------
 -- Line context, in chunks
@@ -811,4 +819,3 @@ ATTR AGItf [ | | bldHS: {[Build]} ]
 
 SEM AGItf
   | AGItf       lhs         . bldHS     = @build buildHS @selChunks
-

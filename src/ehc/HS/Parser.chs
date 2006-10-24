@@ -71,7 +71,7 @@ pCurlys' = pPacked' pOCURLY pCCURLY
 pImpls' :: HSParser (Range -> v) -> HSParser v
 pImpls' = pPacked' pOIMPL pCIMPL
 
-pImpls :: HSParser v -> HSParser v
+pImpls :: IsParser p Token => p v -> p v
 pImpls = pPacked pOIMPL pCIMPL
 %%]
 

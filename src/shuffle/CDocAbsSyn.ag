@@ -19,3 +19,4 @@ DATA CDoc
   | Pos                 cpos        : CPos
                         cdoc        : CDoc
 
+DERIVING * : Show

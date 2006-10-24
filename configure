@@ -311,7 +311,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_MINORMINOR EH_VERSION_STABILITY EH_VERSION ranlibCmd RANLIB_CMD arCmd AR_CMD ghcCmd GHC_CMD GHC_VERSION CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES uuagcCmd UUAGC_CMD gccCmd GCC_CMD CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC SUFFIX_LIB PREFIX_LIB PATHS_SEP LIBTOOL_STATIC_CMD LIBTOOL_DYNAMIC_CMD EHC_GCC_OPTS_STATIC TOP_ABS TOP_ABS2 INSTALL_PREFIX INPLACE_PREFIX INPLACE_INSTALL_DIR RTS_PKG_NAME EXTLIBS_BGC_PKG_NAME LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_MINORMINOR EH_VERSION_STABILITY EH_VERSION ranlibCmd RANLIB_CMD arCmd AR_CMD ghcCmd GHC_CMD GHC_VERSION OPT_GHC_STANDARD_PACKAGES CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES uuagcCmd UUAGC_CMD gccCmd GCC_CMD CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC SUFFIX_LIB PREFIX_LIB PATHS_SEP LIBTOOL_STATIC_CMD LIBTOOL_DYNAMIC_CMD EHC_GCC_OPTS_STATIC TOP_ABS TOP_ABS2 INSTALL_PREFIX INPLACE_PREFIX INPLACE_INSTALL_DIR RTS_PKG_NAME EXTLIBS_BGC_PKG_NAME LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1635,6 +1635,22 @@ GHC_CMD=$ghcCmd
 
 ghcVersion=`$ghcCmd --numeric-version`
 GHC_VERSION=$ghcVersion
+
+
+# GHC 6.6 and higher: no package util, lang, and data anymore
+case $ghcVersion in
+  6.4.1)
+    optStandardGHCPackages=-package util -package lang -package data
+    ;;
+  6.4.2)
+    optStandardGHCPackages=-package util -package lang -package data
+    ;;
+  *)
+    optStandardGHCPackages=
+    ;;
+esac
+
+OPT_GHC_STANDARD_PACKAGES="$optStandardGHCPackages"
 
 
 # after ghc 6.4.1 the names of cabal option(s) changed
@@ -4824,6 +4840,7 @@ s,@AR_CMD@,$AR_CMD,;t t
 s,@ghcCmd@,$ghcCmd,;t t
 s,@GHC_CMD@,$GHC_CMD,;t t
 s,@GHC_VERSION@,$GHC_VERSION,;t t
+s,@OPT_GHC_STANDARD_PACKAGES@,$OPT_GHC_STANDARD_PACKAGES,;t t
 s,@CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES@,$CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES,;t t
 s,@uuagcCmd@,$uuagcCmd,;t t
 s,@UUAGC_CMD@,$UUAGC_CMD,;t t
