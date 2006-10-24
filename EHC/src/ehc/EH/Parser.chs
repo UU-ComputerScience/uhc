@@ -308,7 +308,7 @@ pTyExprApp      =    pApp pTyExprBase
 %%]
 
 %%[9.pPackImpl
-pPackImpl       ::   EHCParser p -> EHCParser p
+pPackImpl       ::   IsParser p Token => p v -> p v
 pPackImpl       =    pPacked pOIMPL pCIMPL
 %%]
 

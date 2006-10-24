@@ -18,6 +18,7 @@ module Common
   , verMember
   , VOMp, sortOnVOMp
   , KVMap
+  , CompilerRestriction(..)
   )
   where
 
@@ -102,6 +103,7 @@ data Opts
       , optPreamble     :: Bool
       , optLinePragmas  :: Bool
       , optIndex        :: Bool
+      , optCompiler     :: [Int]
       , optHelp         :: Bool
       , optChDest       :: (ChDest,String)
       , optGenVersion   :: Version
@@ -122,6 +124,7 @@ defaultOpts
       , optLinePragmas  =  False
       , optPlain        =  False
       , optIndex        =  False
+      , optCompiler     = []
       , optHelp         =  False
       , optChDest       =  (ChHere,"")
       , optGenVersion   =  VNone
@@ -195,3 +198,10 @@ verMember v    s = Map.member v s
 sortOnVOMp :: VOMp -> [(Version,x)] -> [x]
 sortOnVOMp m = map snd . sortOn fst . map (\(v,x) -> (Map.findWithDefault 0 v m,x))
 
+-------------------------------------------------------------------------
+-- Compiler restrictions
+-------------------------------------------------------------------------
+
+data CompilerRestriction
+  = Restricted (Maybe [Int]) (Maybe [Int])
+  deriving Show

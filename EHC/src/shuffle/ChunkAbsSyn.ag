@@ -13,6 +13,7 @@ DATA Chunk
                         subNm       : {Nm}
                         minusL      : {[ChunkId]}
                         chOptions	: ChunkOptions
+                        compRestrict : {CompilerRestriction}
                         mbModNm     : MbStrExpr -- {Maybe String}
                         imports     : StrExprs
                         exports     : StrExprs

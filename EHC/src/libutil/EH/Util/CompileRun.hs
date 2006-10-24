@@ -9,7 +9,7 @@ module EH.Util.CompileRun
   , CompileUnit(..)
   , CompileUnitState(..)
   , CompileRunError(..)
-  , CompileModName(..),
+  , CompileModName(..)
   , CompileRunStateInfo(..)
   
   , mkEmptyCompileRun

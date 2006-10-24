@@ -35,7 +35,7 @@ chDestMp = Map.fromList [ ("here",ChHere), ("hide",ChHide) ]
 chWrapMp = Map.fromList [ ("code",ChWrapCode), ("safecode",ChWrapBoxCode Nothing), ("tt",ChWrapTT), ("tttiny",ChWrapTTtiny) ]
 
 kwTxtAsVarTooA
-  = [ "module", "import", "export", "wrap" ]
+  = [ "module", "import", "export", "wrap", "ghc" ]
     ++ Map.keys chKindMp
 
 kwTxtAsVarTooB
@@ -289,7 +289,7 @@ pAGItf :: ShPr T_AGItf
 pAGItf = sem_AGItf_AGItf <$> (pFoldr (sem_Lines_Cons,sem_Lines_Nil) (sem_Line_AsIs sem_Words_Nil <$ pNl)) <*> pChunks
 
 pVersion            ::  ShPr Version
-pVersion            =   mkVerFromIntL <$> pList1Sep (pKey "_") pInt'
+pVersion            =     mkVerFromIntL <$> pList1Sep (pKey "_") pInt'
 
 pOptVersion         ::  ShPr Version
 pOptVersion         =   pMaybe VAll id pVersion
@@ -351,6 +351,7 @@ pChunk              =   pBegChunk
                                  <*> pMaybe NmEmp id (pKey "." *> pNm)
                                  <*> (pKey "-" *> ((:[]) <$> pChunkId <|> pParens (pList1 pChunkId)) <|> pSucceed [])
                                  <*> pChunkOptions
+                                 <*> pCompilerRestrictions
                                  <*> pMod
                                  <*> pImpExp "import"
                                  <*> pImpExp "export"
@@ -366,6 +367,15 @@ pChunk              =   pBegChunk
                     <?> "a chunk"
                     where pImpExp k = pKey k *> pParens (pStrExprSeq pStrStr2) <|> pSucceed sem_StrExprs_Nil
                           pMod      = sem_MbStrExpr_Just <$ pKey "module" <*> pStrExprOne pStrStr1 <|> pSucceed sem_MbStrExpr_Nothing
+
+pCompilerRestrictions :: ShPr CompilerRestriction
+pCompilerRestrictions
+  = pMaybe (Restricted Nothing Nothing) id (pKey "ghc" *> pParens (Restricted <$> pCompilerVersion <* pKey "," <*> pCompilerVersion))
+
+pCompilerVersion :: ShPr (Maybe [Int])
+pCompilerVersion
+  =   Just <$> pList1Sep (pKey ".") pInt'
+  <|> Nothing <$ pKey "_"
 
 pChKind             ::  ShPr ChKind
 pChKind             =   pAnyFromMap pKey chKindMp

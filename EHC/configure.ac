@@ -95,6 +95,21 @@ AC_SUBST(GHC_CMD,$ghcCmd)
 ghcVersion=`$ghcCmd --numeric-version`
 AC_SUBST(GHC_VERSION, $ghcVersion)
 
+# GHC 6.6 and higher: no package util, lang, and data anymore
+case $ghcVersion in
+  6.4.1)
+    optStandardGHCPackages=-package util -package lang -package data
+    ;;
+  6.4.2)
+    optStandardGHCPackages=-package util -package lang -package data
+    ;;
+  *)
+    optStandardGHCPackages=
+    ;;
+esac
+
+AC_SUBST(OPT_GHC_STANDARD_PACKAGES,"$optStandardGHCPackages")
+
 # after ghc 6.4.1 the names of cabal option(s) changed
 case $ghcVersion in
   6.4.1)

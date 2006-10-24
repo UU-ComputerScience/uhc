@@ -127,7 +127,7 @@ doCompile fpa fpaRest opts
 -- Cmdline opts
 -------------------------------------------------------------------------
 
-cmdLineOpts  
+cmdLineOpts
   =  [  Option "a"  ["ag"]              (NoArg oAG)
           "generate code for ag, default=no"
      ,  Option "h"  ["hs"]              (NoArg oHS)
@@ -144,6 +144,8 @@ cmdLineOpts
           "combined with latex, generate index entries, default=no"
      ,  Option "g"  ["gen"]             (ReqArg oGen "all|<nr>")
           "generate for version, default=none"
+     ,  Option ""   ["compiler"]  (ReqArg oCompiler "<compiler version>")
+          "Version of the GHC compiler, i.e. 6.6"
      ,  Option ""   ["hidedest"]        (ReqArg oHideDest "here|appx=<file>")
           "destination of text marked as 'hide', default=here"
      ,  Option ""   ["order"]           (ReqArg oVerOrder "<order-spec>")
@@ -166,6 +168,7 @@ cmdLineOpts
          oLaTeX          o =  o {optLaTeX = True}
          oPlain          o =  o {optPlain = True}
          oIndex          o =  o {optIndex = True}
+         oCompiler    s  o =  o {optCompiler = map read (words (map (\c -> if c == '.' then ' ' else c) s))}
          oLhs2tex    ms  o =  yesno' ChWrapCode ChWrapPlain (\f o -> o {optWrapLhs2tex = f}) ms o
          oBase        s  o =  o {optBaseName = Just s}
          oVerOrder    s  o =  o {optVerOrder = parseAndGetRes pVerOrder s}

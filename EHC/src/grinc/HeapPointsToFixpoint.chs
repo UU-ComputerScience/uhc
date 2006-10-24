@@ -31,7 +31,7 @@ lookup times.
 
 TODO: Shared set and Unique set instead base and shared part
 
-%%[8 module {%{GRIN}HeapPointsToFixpoint} import(Data.Maybe, Data.List, Data.Monoid, Data.Array.ST, Control.Monad.ST, Control.Monad, {%{EH}Base.Common}, {%{EH}GrinCode})
+%%[8 module {%{GRIN}HeapPointsToFixpoint} import(Data.Maybe, Data.List, Data.Ix, Data.Monoid, Data.Array.ST, Data.Array.IArray, Control.Monad.ST, Control.Monad, {%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
 
 %%[8  import(UU.Pretty, {%{EH}GrinCode.Pretty}) export("module Data.Monoid")
@@ -297,6 +297,21 @@ envChangeSet am env heap applyMap = case am of
                                 in mapM (uncurry getNewNode) partialApplicationNodes >>= return . mconcat
 %%]
 
+%%[8 ghc (6.6,_)
+abstractBounds :: Ix i => STArray s i a -> ST s (i, i)
+abstractBounds = getBounds
+
+abstractIndices :: Ix i => STArray s i a -> ST s [i]
+abstractIndices a = getBounds a >>= return . range
+%%]
+%%[8 ghc (_,6.4.2)
+abstractBounds :: Ix i => STArray s i a -> ST s (i, i)
+abstractBounds = return . bounds
+
+abstractIndices :: Ix i => STArray s i a -> ST s [i]
+abstractIndices = return . indices
+%%]
+
 %%[8 import(Data.Either) export(lookupEnv)
 fromLeft  = either id                                     (const $ error "fromLeft: found right value")
 fromRight = either (const $ error "fromRight: found left value") id
@@ -318,12 +333,12 @@ lookupHeap :: AbstractHeap s -> Location -> ST s AbstractHeapElement
 lookupHeap heap idx = readArray heap idx
 
 appendApplyArg :: AbstractEnv s -> AbstractValue -> ST s ()
-appendApplyArg env av = let (applyArgIdx, _) = bounds env
-                        in do { elem <- readArray env applyArgIdx
-                              ; let applyArg = aeBaseSet elem
-                                    newElem  = elem { aeBaseSet = av `mappend` applyArg }
-                              ; writeArray env applyArgIdx newElem
-                              }
+appendApplyArg env av = do { (applyArgIdx,_) <- abstractBounds env
+                           ; elem <- readArray env applyArgIdx
+                           ; let applyArg = aeBaseSet elem
+                                 newElem  = elem { aeBaseSet = av `mappend` applyArg }
+                           ; writeArray env applyArgIdx newElem
+                           }
 
 appendExceptions :: AbstractEnv s -> Variable -> AbstractValue -> ST s ()
 appendExceptions env handlerVar av = do { elem <- readArray env handlerVar
@@ -368,31 +383,34 @@ fixpoint labels f = countFixpoint 1
 %%[8 export(heapPointsTo)
 heapPointsTo :: AbstractEnv s -> AbstractHeap s -> AssocL GrTag (Either GrTag Int) -> ST s Int
 heapPointsTo env heap applyMap =
-    let labels        = heapLabels ++ envLabels
-        heapLabels    = map Right (indices heap)
-        envLabels     = map Left (tail $ indices env)
-        f (Left i) = do
-            { e  <- lookupEnv env i
-            ; e' <- updateEnvElement e env heap applyMap
-            ; let changed = isChanged (aeBaseSet e) (aeBaseSet e')
-            ; when changed (writeArray env i e')
-            ; return changed
-            }
-        f (Right i) = do
-            { e  <- lookupHeap heap i
-            ; e' <- updateHeapElement e env
-            ; let changed = isChanged (ahBaseSet e) (ahBaseSet e') || isChanged (ahSharedSet e) (ahSharedSet e')
-            ; when changed (writeArray heap i e')
-            ; return changed
-            }
+    do { indHeap <- abstractIndices heap
+       ; indEnv  <- abstractIndices env
+       ; let { labels        = heapLabels ++ envLabels
+             ; heapLabels    = map Right indHeap
+             ; envLabels     = map Left (tail $ indEnv)
+             ; f (Left i) = do
+                 { e  <- lookupEnv env i
+                 ; e' <- updateEnvElement e env heap applyMap
+                 ; let changed = isChanged (aeBaseSet e) (aeBaseSet e')
+                 ; when changed (writeArray env i e')
+                 ; return changed
+                 }
+             ; f (Right i) = do
+                { e  <- lookupHeap heap i
+                ; e' <- updateHeapElement e env
+                ; let changed = isChanged (ahBaseSet e) (ahBaseSet e') || isChanged (ahSharedSet e) (ahSharedSet e')
+                ; when changed (writeArray heap i e')
+                ; return changed
+                }
+             }
         -- @tracef l a = do { r@((env,heap), c) <- f l a
         --                ; msg <- if c then either (\i -> lookupEnv env i >>= return . show) (\i -> lookupHeap heap i >>= return . show) l else return "nothing"
         --                ; trace ("step: " ++ show l ++ " changed: " ++ show msg) $ return r
         --                }
-    in do { count <- fixpoint labels f
-          ; addSharingInfo env heap
-          ; return count
-          }
+       ; count <- fixpoint labels f
+       ; addSharingInfo env heap
+       ; return count
+       }
 
 --AbstractValue -> AbstractValue -> Bool
 isChanged :: Eq a => a -> a -> Bool
