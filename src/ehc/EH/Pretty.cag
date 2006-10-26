@@ -16,6 +16,9 @@ SEM Expr
   | Var         loc     .   pp      =   pp @nm
   | Con         loc     .   pp      =   ppCon @nm
   | Let         loc     .   pp      =   "let"
+%%[[8
+                                        >|< (if @isStrict then pp "!" else empty)
+%%]]
                                         >#< (@decls.pp >-< @ppExtra)
                                         >-< @errLetPP
                                         >-< "in" >#< @body.pp

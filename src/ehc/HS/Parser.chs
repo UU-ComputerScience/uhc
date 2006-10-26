@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}HS.Parser} import(IO, UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils(LayoutParser,PlainParser), UU.Scanner.GenToken, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Scanner.Common}, {%{EH}HS})
+%%[1 module {%{EH}HS.Parser} import(IO, UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils, UU.Scanner.GenToken, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Scanner.Common}, {%{EH}HS})
 %%]
 
 %%[1 export(pAGItf, HSParser)
@@ -282,6 +282,14 @@ pDeclarationValue
   =   (\l r -> Declaration_FunctionBindings emptyRange [FunctionBinding_FunctionBinding emptyRange l r]) <$> pLhs <*> rhs
   <|> Declaration_PatternBinding emptyRange <$> pPatternOp <*> rhs
   where rhs = pRhs pEQUAL
+%%]
+
+%%[8
+pDeclarationSimpleValue :: HSParser Declaration
+pDeclarationSimpleValue
+  =   Declaration_PatternBinding emptyRange <$> lhs <*> rhs
+  where lhs = mkRngNm Pattern_Variable <$> var
+        rhs = (\t e -> RightHandSide_Expression (mkRange1 t) e Nothing) <$> pEQUAL <*> pExpression
 %%]
 
 %%[1
@@ -810,7 +818,16 @@ pExpressionNoLet
 %%[1.pExpressionLetPrefix
 pExpressionLetPrefix :: HSParser (Expression -> Expression)
 pExpressionLetPrefix
-  =   (Expression_Let . mkRange1) <$> pLET <*> pDeclarations <* pIN
+%%[[1
+  =   (Expression_Let . mkRange1)
+      <$> pLET
+      <*> pDeclarations <* pIN
+%%][8
+  =   (\(s,t,d) -> Expression_Let (mkRange1 t) s d)
+      <$> (   (,,) False <$> pLET       <*> pDeclarations                          <* pIN
+          <|> (,,) True  <$> pLETSTRICT <*> pDeclarations' pDeclarationSimpleValue <* pIN
+          )
+%%]]
 %%]
 
 %%[1.pExpressionNoLetPrefix

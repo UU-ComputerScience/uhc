@@ -548,6 +548,9 @@ DATA Expression                                   {- *** -}
         expression               : Expression
     | Let                              {- *** -}
         range                    : Range
+%%[[8
+        isStrict                 : Bool
+%%]]
         declarations             : Declarations
         expression               : Expression
     | Tuple

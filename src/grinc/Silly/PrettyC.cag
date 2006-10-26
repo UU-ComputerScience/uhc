@@ -101,7 +101,8 @@ SEM Value
   | Call        lhs.prettyC   = call @name @args.prettyCs
 
 SEM Constant
-  | Literal     lhs.prettyC   = text (show @value)
+  | LiteralInt  lhs.prettyC   = text (show @value)
+  | LiteralStr  lhs.prettyC   = text (show @value)
   | Alias       lhs.prettyC   = text @name
 
 SEM Variable

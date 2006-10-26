@@ -34,7 +34,7 @@
 %%[7 hs export(RecExpr(..), RecPatExpr(..), RowTyExpr(..), DataField(..), DataFields, DataFieldExpr(..))
 %%]
 
-%%[8 hs export(mkIf'')
+%%[8 hs export(mkLet',mkIf'')
 %%]
 
 %%[9 hs export(ehIsDeclVal)
@@ -66,12 +66,23 @@ ehIsDeclVal _              = False
 %%% Constructing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs
+%%[1.mkLet hs
 mkLet :: Range -> Maybe [Decl] -> Expr -> Expr
 mkLet r md e
   = case md of
       Just d@(_:_) -> rngLift r Expr_Let d e
       _            -> e
+%%]
+
+%%[8 -1.mkLet hs
+mkLet' :: Bool -> Range -> Maybe [Decl] -> Expr -> Expr
+mkLet' isStrict r md e
+  = case md of
+      Just d@(_:_) -> rngLift r Expr_Let isStrict d e
+      _            -> e
+
+mkLet :: Range -> Maybe [Decl] -> Expr -> Expr
+mkLet = mkLet' False
 %%]
 
 %%[9 hs

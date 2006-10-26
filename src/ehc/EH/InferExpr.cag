@@ -473,6 +473,15 @@ SEM DataFieldExpr
   | Expr        loc         .   ty                  =   @expr.ty
 %%]
 
+%%[7
+%%]
+ATTR DataFieldExpr [ | | mbDti: {Maybe DataTagInfo} ]
+
+SEM DataFieldExpr
+  | Con         loc         .   dti         =   dgiDtiOfCon @nm @dgi
+                lhs         .   mbDti       =   Just @dti
+  | * - Con Upd lhs         .   mbDti       =   Nothing
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Row based records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

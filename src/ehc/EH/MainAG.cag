@@ -120,6 +120,9 @@ SEM RecExpr
   | Expr Ext Upd
                 loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId
 
+SEM DataFieldExpr
+  | Expr Upd    loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId
+
 SEM Decl
   | InstanceIntro Val
                 loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId

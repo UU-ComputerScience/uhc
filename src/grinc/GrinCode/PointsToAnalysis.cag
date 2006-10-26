@@ -159,7 +159,8 @@ SEM GrVal [ | | valInfo : {NodeInfo (Maybe Int)}]
   | Tag       lhs . valInfo = Right (@tag.tagName, [])
   | Var       lhs . valInfo = Left (getNr @nm)
   | Empty     lhs . valInfo = error "no empty value expected!"
-  | LitInt    lhs . valInfo = error "no literal value expected!"
+  | LitInt LitStr
+              lhs . valInfo = error "no literal value expected!"
   | NodeAdapt lhs . valInfo = error "no support for NodeAdapt"
 %%]
 

@@ -57,7 +57,12 @@ SEM Binding
     | Ty
         lhs             .   tyGam       =   gamSingleton @nm (mkTGI @ty @ki)
     | DataCon
-        lhs             .   dataGam     =   gamSingleton @nm (DataGamInfo (Map.map (\t -> emptyDataTagInfo {dtiCTag = t}) $ Map.fromList $ @tags))
+        lhs             .   dataGam     =   gamSingleton @nm (mkDGI (Map.map (\(t,fm) -> emptyDataTagInfo { dtiCTag = t
+                                                                                                          , dtiFldMp = Map.fromList [ (f,emptyDataFldInfo {dfiOffset = o}) | (f,o) <- fm ]
+                                                                                                          }
+                                                                             )
+                                                                     $ Map.fromList $ @tags
+                                                             )      )
     | Class
         lhs             .   prIntroGam  =   gamSingleton @nm (Pr.PrIntroGamInfo @prToEvidTy @ki @rule.rule)
     | Instance

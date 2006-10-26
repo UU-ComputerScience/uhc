@@ -38,7 +38,7 @@ DATA Binding
 		ty						: Ty
 	| DataCon
 		nm						: HsName
-		tags					: {[(HsName,CTag)]}
+		tags					: {[(HsName,(CTag,[(HsName,Int)]))]}
 	| Ty
 		nm						: HsName
 		ty						: Ty

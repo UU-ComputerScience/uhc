@@ -35,7 +35,7 @@ SEM GrModule
                                 (tagConstants @evalTagMp)   -- constants
                                 @globalL.names              -- variables
                                 ( Function_Function "initialize" False [] []
-                                                    ( Statement_Assignment Variable_BP (Value_Con (Constant_Literal 0))
+                                                    ( Statement_Assignment Variable_BP (Value_Con (Constant_LiteralInt 0))
                                                     : @globalL.initStats
                                                     )
                                 : @bindL.functions            -- functions
@@ -197,7 +197,8 @@ SEM GrGlobal
 
 
 SEM GrVal
- | LitInt  lhs.value  = Value_Con (Constant_Literal @int)
+ | LitInt  lhs.value  = Value_Con (Constant_LiteralInt @int)
+ | LitStr  lhs.value  = Value_Con (Constant_LiteralStr @str)
 %%[[8
  | Var     loc.value  = Value_Var (Variable_Var (hsnShowAlphanumeric @nm))
 %%][12
@@ -207,7 +208,7 @@ SEM GrVal
            lhs.values = [@loc.value]
  | Tag     lhs.value  = @tag.value
  | Node    lhs.values = @tag.value : @fldL.values
- | * - LitInt Var Tag
+ | * - LitInt LitStr Var Tag
            lhs.value  = error "GrVal:other value"
  | * - Node Var
            lhs.values = error "GrVal:other values"
@@ -302,7 +303,7 @@ SEM GrModule
 
 allocate :: String -> Maybe String -> Bool -> Int -> Int -> Value
 allocate (tagcat:_) mbcast allowgc n1 n2
- = Value_Call alloc [ Value_Con (Constant_Literal (sz n)) ]
+ = Value_Call alloc [ Value_Con (Constant_LiteralInt (sz n)) ]
  where alloc =  maybe "" (\c -> "(" ++ c ++ ")") mbcast ++ fc
        fc = if useBoehmGC
             then if allowgc then "GC_MALLOC" else "GC_MALLOC_UNCOLLECTABLE"
@@ -320,7 +321,7 @@ allocate (tagcat:_) mbcast allowgc n1 n2
                     then if allowgc then "GC_MALLOC" else "GC_MALLOC_UNCOLLECTABLE"
                     else "heapalloc"
                    )
-   in Value_Call alloc [ Value_Con (Constant_Literal n) ]
+   in Value_Call alloc [ Value_Con (Constant_LiteralInt n) ]
 -}
 
 store :: String -> Maybe String -> Bool -> Int -> Int -> [Value] -> Statements
@@ -331,10 +332,10 @@ store pn mbcast allowgc n1 n2 vs
                     vs
 
 arrayValue :: Variable -> Int -> Value
-arrayValue a i = Value_Var (Variable_Subs a (Constant_Literal i))
+arrayValue a i = Value_Var (Variable_Subs a (Constant_LiteralInt i))
 
 arrayVariab :: Variable -> Int -> Variable
-arrayVariab a i = Variable_Subs a (Constant_Literal i)
+arrayVariab a i = Variable_Subs a (Constant_LiteralInt i)
 
 tagConstants :: EvApTagMp -> [(String,Int)]
 tagConstants eas

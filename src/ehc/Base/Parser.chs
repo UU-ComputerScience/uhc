@@ -20,7 +20,7 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Parsers
+%%% Parsers for concrete structures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -93,5 +93,14 @@ pModEntRel
 %%[12
 pProofCost :: P Pr.ProofCost
 pProofCost = (Pr.PCost <$ pOCURLY <*> pInt <* pCOMMA <*> pInt <* pCOMMA <*> pInt <* pCCURLY)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Parser abstractions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12 export(pCurlySemiBlock)
+pCurlySemiBlock :: P p -> P [p]
+pCurlySemiBlock p = pOCURLY *> pListSep pSEMI p <* pCCURLY
 %%]
 
