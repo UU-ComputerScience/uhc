@@ -46,7 +46,8 @@ DATA Alternative
                  body       : Statements
 
 DATA Constant
-  | Literal      value      : {Int}
+  | LiteralInt   value      : {Int}
+  | LiteralStr   value      : {String}
   | Alias        name       : {String}
 
 DATA Variable

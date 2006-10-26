@@ -177,7 +177,12 @@ DATA Expr
   | Var             nm              : {HsName}
   | App             func            : Expr
                     arg             : Expr
+%%[[1
   | Let             decls           : Decls
+%%][8
+  | Let             isStrict        : {Bool}
+                    decls           : Decls
+%%]]
                     body            : Expr
   | Lam             arg             : PatExpr
                     body            : Expr

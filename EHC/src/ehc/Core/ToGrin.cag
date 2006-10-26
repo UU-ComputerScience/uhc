@@ -182,8 +182,8 @@ SEM CModule
 
                                                 -- constructorfunctions are never called via an F-thunk, so no cases for it are generated
                             .   allFTags    =   filter (\(fNm,_) -> not (fNm `elem` map ctagNm @allCTags))
-                                                       ( (hsnUndefined,0)
-                                                       : (hsnGrApply,2)
+                                                       ( {- (hsnUndefined,0)
+                                                       : -} (hsnGrApply,2)
                                                        : @allFPTags ++ Map.toList @expr.cafNmMp
                                                        )
 
@@ -230,7 +230,7 @@ SEM CModule
                                                     (@expr.grBindL
                                                      ++ [ @evalBind
                                                         , @applyBind
-                                                        , @undefBind
+                                                        -- , @undefBind
                                                         ])
                                                     @constrsMp
                                                     @evalTagMp
@@ -480,7 +480,8 @@ SEM CExpr
   | Var         loc         .   grVal       =   maybe (GrVal_Var @nm) (\a -> mkNdPApp @nm a []) @mbLam
   | Int         loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnInt  else id)  (GrVal_LitInt @int)
   | Char        loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnChar else id)  (GrVal_LitInt (ord @char))
-  | * - Int Char Var Tup
+  | String      loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnPackedString else id)  (GrVal_LitStr @str)
+  | * - Int Char String Var Tup
                 loc         .   grVal       =   GrVal_Empty
 %%]
 
@@ -536,7 +537,7 @@ SEM CBind
 tyNmIsUnboxedForFFIRes :: HsName -> Bool
 tyNmIsUnboxedForFFIRes
   = (`elem` ns)
-  where ns = [ hsnInt, hsnChar ]
+  where ns = [ hsnInt, hsnChar, hsnPackedString ]
 %%]
 
 %%[8

@@ -236,7 +236,11 @@ SEM Expression
     | Lambda
         loc         .   pp          =   "\\" >|< ppSpaces @patterns.ppL >#< "->" >#< @expression.pp
     | Let
+%%[[1
         loc         .   pp          =   "let" >#< (@declarations.pp >-< @ppExtra) >#< "in" >#< @expression.pp
+%%][8
+        loc         .   pp          =   "let" >|< (if @isStrict then pp "!" else empty) >#< (@declarations.pp >-< @ppExtra) >#< "in" >#< @expression.pp
+%%]]
 		loc			.	ppExtra		=	empty
     | Tuple
         loc         .   pp          =   ppParensCommas @expressions.ppL

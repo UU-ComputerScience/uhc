@@ -132,6 +132,7 @@ SEM GrVal
   | NodeAdapt   lhs         .   pp          =   pp_parens (ppGrNm @nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
   | Empty       lhs         .   pp          =   pp "()"
   | LitInt      lhs         .   pp          =   pp @int
+  | LitStr      lhs         .   pp          =   pp $ show @str
   | Var         lhs         .   pp          =   ppGrNm @nm
 
 SEM GrAdapt

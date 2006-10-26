@@ -35,7 +35,7 @@
 %%[8 export(hsnFloat)
 %%]
 
-%%[8 export(hsnUndefined,hsnPrimAddInt,hsnMain)
+%%[8 export(hsnPrimAddInt,hsnMain)
 %%]
 
 %%[8 import(Char(isUpper)) export(hsnIsConstructorName)
@@ -299,8 +299,9 @@ mkRV m = hsnSetQual m . HNm
       ]
 %%]
 
-%%[8
+%%[8 export(hsnUndefined,hsnFromPackedString,hsnPackedString)
 [hsnUndefined
+ ,hsnPackedString,hsnFromPackedString
  ]
   = map
 %%[[8
@@ -309,6 +310,7 @@ mkRV m = hsnSetQual m . HNm
       (mkRV hsnModBase)
 %%]]
       [ "undefined"
+      , "PackedString", "fromPackedString"
       ]
 %%]
 

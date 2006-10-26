@@ -78,6 +78,7 @@ DATA GrVal
   | Tag         tag             : GrTag
   | Empty
   | LitInt      int             : {Int}
+  | LitStr      str             : {String}
   | Var         nm              : {HsName}
 
 TYPE GrValL     =   [GrVal]

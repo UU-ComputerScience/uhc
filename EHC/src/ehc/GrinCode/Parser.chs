@@ -95,6 +95,7 @@ pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
 
 pSVal           ::   GRIParser GrVal
 pSVal           =    GrVal_Var      <$> pGrNm
+                <|>  GrVal_LitStr   <$> pString
                 <|>  GrVal_LitInt   <$> pInt
 
 pVal            ::   GRIParser GrVal

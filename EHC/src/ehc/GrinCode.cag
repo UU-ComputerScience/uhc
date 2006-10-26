@@ -37,7 +37,7 @@ DERIVING *     : Show, Eq
 hsnGrApply  = HNm "!apply"
 hsnGrEval   = HNm "!eval"
 
-grBuiltinTyNmL = [ hsnInt, hsnChar ] ++ map hsnProd (0:[2..10])
+grBuiltinTyNmL = [ hsnInt, hsnChar, hsnPackedString ] ++ map hsnProd (0:[2..10])
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

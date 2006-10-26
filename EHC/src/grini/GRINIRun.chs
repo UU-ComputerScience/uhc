@@ -30,6 +30,7 @@ data RunVal
   =  RVNil
   |  RVCat      !NdCat
   |  RVInt      !Int
+  |  RVStr      !String
   |  RVNode     !(Array Int RunVal)
   |  RVPtr      !Int
   |  RVGlob     !HsName ![HsName] !GrExpr
@@ -47,6 +48,7 @@ instance PP RunVal where
   pp (RVNil             ) = pp "-:-"
   pp (RVCat     v       ) = "C:" >|< pp (drop 2 (show v))
   pp (RVInt     v       ) = "I:" >|< pp v
+  pp (RVStr     v       ) = "S:" >|< pp v
   pp (RVNode    v       ) = "N:" >|< ppListSep "(" ")" " " (elems v)
   pp (RVPtr     v       ) = "P:" >|< pp v
   pp (RVGlob    v ns e  ) = "G:" >|< pp v >#< ppSpaces ns -- >#< "= ..."
@@ -133,6 +135,14 @@ primMp
             ,\rs [RVInt i1,RVInt i2]    ->  let  c = case i1 `compare` i2 of {EQ->0; GT->1; LT->2}
                                             in   return (rs,Just (mkRN [RVCat NdCon,RVInt c,RVInt 0]))
           )
+        , ("primFromPackedString"
+            ,\rs [v@(RVStr _)]    ->  return (rs,Just v)
+          )
+        , ("primTraceStringExit"
+            ,\rs [v@(RVStr s)]    ->  do { rs' <- halt rs (pp s)
+                                         ; return (rs',Just v)
+                                         }
+          )
         ]
 %%]
 
@@ -187,6 +197,7 @@ grEvalVal rs v
                                                              ad [] fL _
                                                                 =  fL
         GrVal_LitInt    i       ->  RVInt i
+        GrVal_LitStr    s       ->  RVStr s
         GrVal_Var       n       ->  rsVar rs n
         GrVal_Empty             ->  RVNil
 %%]

@@ -113,14 +113,15 @@ ehScanOpts
         }
   where offsideTrigs     =
             [  "let"
-%%]
-%%[5
+%%[[5
             ,  "of"
-%%]
-%%[9
+%%]]
+%%[[8
+            ,  "letstrict"
+%%]]
+%%[[9
             ,  "where"
-%%]
-%%[1
+%%]]
             ]
 %%]
 
@@ -584,6 +585,7 @@ tokOpStrsHS7   = [  ]
 
 %%[8
 pLABEL          ,
+    pLETSTRICT  ,
     pSAFE       ,
     pUNSAFE     ,
     pTHREADSAFE ,
@@ -599,6 +601,7 @@ pLABEL          ,
 
 %%[8
 pLABEL           = pKeyTk "label"
+pLETSTRICT       = pKeyTk "letstrict"
 pSAFE            = pKeyTk "safe"
 pUNSAFE          = pKeyTk "unsafe"
 pTHREADSAFE      = pKeyTk "threadsafe"
@@ -610,7 +613,7 @@ pJAZY            = pKeyTk "jazy"
 pIMPORT          = pKeyTk "import"
 pEXPORT          = pKeyTk "export"
 
-tokKeywStrsEH8 = [ "foreign", "import", "jazy" ]
+tokKeywStrsEH8 = [ "letstrict", "foreign", "import", "jazy" ]
 tokKeywStrsHS8 = [ "export", "label", "safe", "unsafe", "threadsafe", "ccall", "stdcall", "dynamic" ]
 %%]
 

@@ -110,6 +110,15 @@ SEM RecordExpressionBinding
         loc         .   errL        =   @errIdUse ++ @expression.errL
 %%]
 
+%%[8
+SEM Declaration
+    | Data
+        loc         .   errL        =   @errIdUseVal ++ @simpletype.errL ++ @constructors.errL
+%%[[9
+                                        ++ @context.errL ++ @derivings.errL
+%%]]
+%%]
+
 %%[9
 SEM Statement
     | Let
