@@ -146,7 +146,8 @@ charAlphanumeric  c  | isDigit c = [c]
 %%[8
 hsnAlphanumeric :: HsName -> HsName
 hsnAlphanumeric (HNm s) = HNm (stringAlphanumeric s)
-hsnAlphanumeric n@(HNPos p) = n
+hsnAlphanumeric n@(HNPos p) = HNm ("x"++show p)
+-- hsnAlphanumeric n@(HNPos p) = n
 %%]
 %%[12
 hsnAlphanumeric (HNmQ ns) = HNm $ hsnShow "_" $ HNmQ (map hsnAlphanumeric ns)

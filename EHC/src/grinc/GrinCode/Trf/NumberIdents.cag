@@ -195,6 +195,7 @@ SEM GrExpr
                                  lhs  .  grTrf    =  GrExpr_Call    @newName @argL.grTrf
   | Fetch                        lhs  .  grTrf    =  GrExpr_Fetch   @newName @mbOffset @mbTag
   | Update                       lhs  .  grTrf    =  GrExpr_Update  @newName @val.grTrf @mbTag
+  | FetchUpdate                  lhs  .  grTrf    =  GrExpr_FetchUpdate (findNewVar @lhs.var2id @src) (findNewVar @lhs.var2id @dst)
   | Throw                        lhs  .  grTrf    =  GrExpr_Throw   @newName
   | Catch                        lhs  .  grTrf    =  GrExpr_Catch   @body.grTrf @newName @handler.grTrf
   | FFI                          lhs  .  grTrf    =  GrExpr_FFI @nm (map (findNewVar @lhs.var2id) @argL) @resTagL.grTrf

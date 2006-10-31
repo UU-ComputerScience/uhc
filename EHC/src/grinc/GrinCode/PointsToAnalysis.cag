@@ -558,6 +558,19 @@ SEM GrExpr
                                  
 %%]
 
+
+%%%%%%%%%%%%%%%%%
+%% FetchUpdate %%
+%%%%%%%%%%%%%%%%%
+
+%%[8
+
+SEM GrExpr
+  | FetchUpdate  loc . fillEnv  =  @lhs.setEnvVar (getNr @dst) True (EnvUnion [getNr @dst, getNr @src] Nothing)
+                                 
+%%]
+
+
 %%%%%%%%%%%
 %% Throw %%
 %%%%%%%%%%%

@@ -56,6 +56,8 @@ SEM GrExpr
   | Eval    lhs   .  usedVars  =  Set.insert @nm @lhs.usedVars
   | Fetch   lhs   .  usedVars  =  Set.insert @nm @lhs.usedVars
   | Update  val   .  usedVars  =  Set.insert @nm @lhs.usedVars
+  | FetchUpdate  
+            lhs   .  usedVars  =  Set.insert @src @lhs.usedVars
   | Throw   lhs   .  usedVars  =  Set.insert @nm @lhs.usedVars
   | Seq     body  .  usedVars  =  @lhs.usedVars
             pat   .  usedVars  =  @body.usedVars
@@ -127,8 +129,8 @@ SEM GrTag
   | * - Var  lhs  .  isDead  =  True
  
 SEM GrExpr [ | | sideEffect : Bool ]
-  | Update FFI Throw      lhs  .  sideEffect  =  True
-  | * - Update FFI Throw  lhs  .  sideEffect  =  False
+  |     Update FFI Throw FetchUpdate  lhs  .  sideEffect  =  True
+  | * - Update FFI Throw FetchUpdate  lhs  .  sideEffect  =  False
 
 SEM GrExpr
   | Seq  lhs  .  grTrf      =  if @expr.throws then @expr.grTrf
@@ -165,4 +167,3 @@ SEM GrExpr
 %%[8.removeUnusedFormals
 %%]
 
-% vim:ts=4:et:ai:

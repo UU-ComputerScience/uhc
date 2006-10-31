@@ -25,12 +25,13 @@ WRAPPER GrAGItf
 %%]
 
 %%[8 hs
-grin2silly :: GrModule -> Bool -> Bool -> Bool -> SilModule
-grin2silly gr optJump optPar optLoc
+grin2silly :: HptMap -> GrModule -> Bool -> Bool -> Bool -> SilModule
+grin2silly hptmap gr optJump optPar optLoc
  = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr))
                         (Inh_GrAGItf { optJumpTailCalls_Inh_GrAGItf = optJump
                                      , optOwnParameters_Inh_GrAGItf = optPar
                                      , optOwnLocals_Inh_GrAGItf = optLoc
+                                     , hptMap_Inh_GrAGItf = hptmap
                                      }
                         )
    in silModule_Syn_GrAGItf t
