@@ -7,6 +7,9 @@
 %%% Code generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[8
+
+ATTR GrAGItf GrModule GrBindL GrBind GrExpr GrAlt GrAltL [ hptMap : {HptMap} | | ]
+
 ATTR GrAGItf GrModule   [ | | silModule                  : {SilModule}    ]
 ATTR GrBindL GrBind     [ | | functions    USE {++} {[]} : {Functions}    ]
 ATTR GrExpr             [ | | stats        USE {++} {[]} : {Statements}   ]
@@ -79,7 +82,7 @@ SEM GrBind
                             ]
 
           expr . numberParameters = length @argNmL
-          loc  . locals = map hsnShowAlphanumeric (@expr.localsF [])
+          loc  . locals = filter (\n->n/="_" && n/="x0") (map hsnShowAlphanumeric (@expr.localsF []))
           loc  . params = map hsnShowAlphanumeric @argNmL
           loc  . ownAllocation = @lhs.optOwnParameters || @lhs.optOwnLocals
 
@@ -90,11 +93,11 @@ SEM GrExpr
  | Unit    lhs.stats  = Statement_Comment "Unit"
                         : [ Statement_Assignment v e
                           | (v,e) <-zip  (if @isLastExpr
-                                          then [arrayVariab Variable_RP i | i <- [0..]       ]
-                                          else [Variable_Var   (hsnShowAlphanumeric x)   | x <- @lhs.targets]
+                                          then [arrayVariab Variable_RP i | i <- [0..] ]
+                                          else [Variable_Var (hsnShowAlphanumeric x)  | x <- @lhs.targets]
                                          )
                                          @val.values
-                          , v /= Variable_Var "_"
+                          , v/=Variable_Var "_" && v/=Variable_Var "x0"
                           ]
 
 
@@ -106,16 +109,32 @@ SEM GrExpr
 
            lhs.localsF = (@lhs.targets ++)
 
+ | FetchUpdate 
+           lhs.stats  = let p = hsnShowAlphanumeric @dst
+                            q = hsnShowAlphanumeric @src
+                            -- it would be nice to use hptMap to determine size, but hptMap cant be used after changing numbered variables back to names
+                            -- n = maximum (map (length.snd) (getNodes (absFetch @lhs.hptMap @src)))
+                            n = 9
+                         in Statement_Comment "FetchUpdate"
+                            : zipWith Statement_Assignment
+                                     (map (arrayVariab (Variable_Var p)) [0..n])
+                                     (map (arrayValue  (Variable_Var q)) [0..n])
+
+
+
  | Update  lhs.stats  = let p = hsnShowAlphanumeric @nm
                             vs = @val.values
                          in Statement_Comment "Update"
                             : zipWith Statement_Assignment
-                                     (map (arrayVariab (Variable_Var p)) [0..])
-                                     vs
+                                      (map (arrayVariab (Variable_Var p)) [0..])
+                                      vs
 
  | Fetch   lhs.stats  = Statement_Comment "Fetch"
                         : Statement_Assignment (Variable_Var (hsnShowAlphanumeric (head @lhs.targets)))
-                                               (arrayValue (Variable_Var (hsnShowAlphanumeric @nm)) (panicJust "ToSilly.GrExpr.Fetch.stats" @mbOffset))
+                                               (case @mbOffset of
+                                                 Just offset -> (arrayValue (Variable_Var (hsnShowAlphanumeric @nm)) offset)
+                                                 Nothing     -> error "cant generate code for Fetch without offset"
+                                               )
                         : []
 
            lhs.localsF = (@lhs.targets ++)
@@ -125,7 +144,7 @@ SEM GrExpr
                                            @altL.alternatives
                         : []
 
-           lhs.localsF = ((filter (not . (=="_") . hsnShowAlphanumeric) @lhs.targets) ++) . @altL.localsF
+           lhs.localsF = (@lhs.targets ++) . @altL.localsF
 
  | Call    lhs.stats  = if @isLastExpr && @lhs.optJumpTailCalls
                          then (   Statement_Comment "Call (Tail)"
@@ -149,9 +168,12 @@ SEM GrExpr
                                         )
                                    else [Statement_Call (hsnShowAlphanumeric @nm) @argL.values ]
                                   )
-                              ++ zipWith Statement_Assignment
-                                         (map (Variable_Var . hsnShowAlphanumeric) @lhs.targets)
-                                         (map (arrayValue Variable_RP) [0..])
+                              ++ [ Statement_Assignment v e
+                                 | (v,e) <-zip  [Variable_Var (hsnShowAlphanumeric x)  | x <- @lhs.targets]
+                                                (map (arrayValue Variable_RP) [0..])
+                                 , v/=Variable_Var "_" && v/=Variable_Var "x0"
+                                 ]                                         
+                                         
                               )
 
            lhs.localsF = (@lhs.targets ++)
@@ -344,7 +366,12 @@ tagConstants eas
 
 
 
-tagName categ nm = show categ ++ hsnShowAlphanumeric nm
+showGrTagCateg :: GrTagCateg -> String
+showGrTagCateg (GrTagPApp need) = "P" ++ show need ++ "_"
+showGrTagCateg x = show x
+
+
+tagName categ nm = showGrTagCateg categ ++ hsnShowAlphanumeric nm
 
 showGrTag :: GrTag -> String
 showGrTag (GrTag_Lit categ n nm) = tagName categ nm

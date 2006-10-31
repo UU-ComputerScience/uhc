@@ -179,7 +179,7 @@ SEM CModule
                                                 , k <- [1..arity]
                                                 ]
                             .   allCTags    =   [ ct | (_,xs) <- @constrsMp, (_,ct) <- xs ]
-
+                            
                                                 -- constructorfunctions are never called via an F-thunk, so no cases for it are generated
                             .   allFTags    =   filter (\(fNm,_) -> not (fNm `elem` map ctagNm @allCTags))
                                                        ( {- (hsnUndefined,0)
@@ -188,7 +188,8 @@ SEM CModule
                                                        )
 
                             .   applyTagMp  =   map makeApplyMapEntryP @allPTags
-                            .   evalTagMp   =   map makeEvalMapEntryC @allCTags
+                            .   evalTagMp   =   makeEvalMapEntryH
+                                                :  map makeEvalMapEntryC @allCTags
                                                 ++ map makeEvalMapEntryP @allPTags
                                                 ++ map makeEvalMapEntryF @allFTags
 
@@ -201,7 +202,8 @@ SEM CModule
                                                                            (GrPat_Var n2)
                                                                            (GrExpr_Case (GrVal_Var n2)
                                                                                         (zipWith ($)
-                                                                                                 (   map (makeEvalBindEntryC n2) @allCTags
+                                                                                                 (       (makeEvalBindEntryH n2)
+                                                                                                  :  map (makeEvalBindEntryC n2) @allCTags
                                                                                                   ++ map (makeEvalBindEntryP n2) @allPTags
                                                                                                   ++ map (makeEvalBindEntryF n1) @allFTags
                                                                                                  )
@@ -273,6 +275,11 @@ makeEvalMapEntryC (CTag tyNm nm tag arity)
    , EvApTagUnit
    )
 
+makeEvalMapEntryH
+ = ( ( GrTag_Lit GrTagHole 0 hsnUnknown, 0)
+   , EvApTagUnit
+   )
+
 makeEvalMapEntryF (nm, arity)
  = ( ( GrTag_Lit GrTagFun 0 nm, arity)
    , EvApTagVar nm
@@ -283,6 +290,13 @@ makeEvalBindEntryC n2 (CTag tyNm nm tag arity) ui
        parameters = take arity names
    in  GrAlt_Alt (mkGrPatTagNode GrTagCon tag nm parameters)
                  (GrExpr_Unit (GrVal_Var n2))
+
+makeEvalBindEntryH n2 ui
+ =     GrAlt_Alt (mkGrPatTagNode GrTagHole 0 hsnUnknown [])
+                 (GrExpr_Unit (GrVal_Var n2))
+
+
+
 
 makeEvalBindEntryF n1 (nm, arity) ui
  = let (result:names) = map uidHNm (mkInfNewUIDL (uidChild ui))
@@ -404,11 +418,10 @@ SEM CExpr
                                                                            $ @body.grExpr
                                                                            where  h             = mkGrTagNode GrTagHole 0 hsnUnknown []
                                                                                   mkSt nmL e    = foldr (\n e -> GrExpr_Seq (GrExpr_Store h) (GrPat_Var n) e) e nmL
-                                                                                  mkV b n n' n'' e
+                                                                                  mkV b n n' e
                                                                                                 = GrExpr_Seq b (GrPat_Var n')
-                                                                                                    (GrExpr_Seq (GrExpr_Fetch n' Nothing Nothing) (GrPat_Var n'')
-                                                                                                        (GrExpr_Seq (GrExpr_Update n (GrVal_Var n'') Nothing) GrPat_Empty e))
-                                                                                  mkVs bs e     = foldr (\(GrBind_Bind n _ v) e -> mkV v n (hsnPrefix "_" n) (hsnPrefix "__" n) e) e bs
+                                                                                                    (GrExpr_Seq (GrExpr_FetchUpdate n' n) GrPat_Empty e)
+                                                                                  mkVs bs e     = foldr (\(GrBind_Bind n _ v) e -> mkV v n (hsnPrefix "_" n) e) e bs
                                                           _            ->  foldr  (\(GrBind_Bind n _ v) e -> GrExpr_Seq v (GrPat_Var n) e)
                                                                                   @body.grExpr @binds.grBindL
                                                       ,[]

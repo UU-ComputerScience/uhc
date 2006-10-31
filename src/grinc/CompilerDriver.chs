@@ -316,10 +316,11 @@ caSplitFetch = do
 caGrin2Silly :: CompileAction SilModule
 caGrin2Silly = do
     { code <- gets gcsGrinCode
+    ; hptMap  <- gets gcsHptMap
     ; optJump <- gets (ehcOptGenTailCall  . gcsOpts)
     ; optPar  <- gets (ehcOptGenOwnParams . gcsOpts)
     ; optLoc  <- gets (ehcOptGenOwnLocals . gcsOpts)
-    ; return (grin2silly code optJump optPar optLoc)
+    ; return (grin2silly hptMap code optJump optPar optLoc)
     }
 %%]
 
@@ -430,6 +431,7 @@ caFinalize = task_ VerboseNormal "Finalizing"
          ; caDropUnusedExpr
          ; caDropUnusedTags
          ; caReturningCatch
+         -- renaming numbered variables back to names wpuld make it impossible to use hptMap in ToSilly
          ; caNameIdents
          ; caWriteGrin True "8-final"
          }

@@ -91,6 +91,7 @@ absFetch a (HNPos i) = case getEnvVar a i of
                              AV_Error s     -> error $ "analysis error: " ++ s
                              AV_Basic       -> error $ "variable " ++ show i ++ " is a basic value"
                              AV_Nodes _     -> error $ "variable " ++ show i ++ "is a node variable"
+absFetch a x = error ("absFetch tried on " ++ show x)
 
 getTags av = case av of
                  AV_Tags  ts -> Set.toList ts
