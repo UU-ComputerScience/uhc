@@ -430,23 +430,15 @@ SEM Expression
     | RecordConstruction
         loc         .   eh          =   rngLift @range EH.Expr_DataFields $ foldl (flip ($)) (rngLift @range EH.DataFieldExpr_Con @refname) @recordExpressionBindings.eh
     | RecordUpdate
-        loc         .   eh          =   @expression.eh
+        loc         .   eh          =   case @recordExpressionBindings.eh of
+                                          b@(_:_) -> rngLift @range EH.Expr_DataFields $ foldl (flip ($)) (rngLift @range EH.DataFieldExpr_Expr @expression.eh) b
+                                          _       -> @expression.eh
     | RowRecordUpdate
         loc         .   eh          =   foldl (flip ($)) @expression.eh @rowRecordExpressionUpdates.eh
     | RowRecordEmpty
         loc         .   eh          =   rngLift @range EH.Expr_Rec (rngLift @range EH.RecExpr_Empty)
     | RowRecordSelect
         loc         .   eh          =   rngLift @range EH.Expr_Sel @expression.eh @name
-%%]
-%%[77
-    | RecordConstruction
-        loc         .   eh          =   rngLift @range XX
-        name                     : Name
-        recordExpressionBindings : RecordExpressionBindings
-    | RecordUpdate
-        loc         .   eh          =   rngLift @range XX
-        expression               : Expression
-        recordExpressionBindings : RecordExpressionBindings
 %%]
 %%[9
     | ImplicitApplication

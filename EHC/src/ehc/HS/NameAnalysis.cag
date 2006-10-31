@@ -436,6 +436,8 @@ SEM ContextItem
 
 %%[1.mkUseOccGam hs
 mkUseOccGam :: IdDefOccGam -> [HsName] -> IdOccKind -> IdAspect -> Range -> (HsName,[HsName],IdUseOccGam,[Err])
+mkUseOccGam _ [] _ _ _
+  = (undefined,[],emptyGam,[])
 mkUseOccGam idGam names@(fstName:_) kind asp rng
   = (fstName,names,gamUnions [ mkUse idGam n kind asp rng | n <- names ],[])
   where mkUse idGam name kind asp rng
@@ -447,6 +449,8 @@ mkUseOccGam idGam names@(fstName:_) kind asp rng
 
 %%[12 -1.mkUseOccGam hs
 mkUseOccGam :: IdDefOccGam -> [HsName] -> IdOccKind -> IdAspect -> Range -> (HsName,[HsName],IdUseOccGam,[Err])
+mkUseOccGam _ [] _ _ _
+  = (undefined,[],emptyGam,[])
 mkUseOccGam idGam names kind asp rng
   = (n, ns, gamUnions g, concat e)
   where (ns@(n:_),g,e) = unzip3 [ mkUse idGam n kind asp rng | n <- names ]
@@ -676,7 +680,7 @@ SEM Body
 SEM Declaration
     | Data
         loc             .   (_,_,idUseOccGamVal,errIdUseVal)
-                                        =   mkUseOccGam @lhs.idGam [hsnError] IdOcc_Val IdAsp_Val_Var @range
+                                        =   mkUseOccGam @lhs.idGam (if @constructors.hasFlds then [hsnError] else []) IdOcc_Val IdAsp_Val_Var @range
     | Newtype
         loc             .   idUseOccGamVal
                                         =   emptyGam

@@ -249,10 +249,17 @@ ATTR AllTy [ coco: CoContraVariance | | ]
 SEM Ty
   | App         func        .   coco        =   @lhs.coco
                 arg         .   coco        =   if          @appIsLikeProd  then  @lhs.coco
-                                                else  if    @isArrowRoot    then  CoVariant
+                                                else  if    @isArrowRoot    then  @cocoArrowRes
                                                 else  if    @isArrowArg     then  ContraVariant
                                                                             else  CoContraVariant
+%%[[4
+                loc         .   cocoArrowRes=   CoVariant
+%%][9
+                loc         .   cocoArrowRes=   if @func.isPred then @lhs.coco else CoVariant
+%%]]
+%%]
 
+%%[4
 SEM TyAGItf
   | AGItf       ty          .   coco        =   CoVariant
 %%]
@@ -303,7 +310,13 @@ SEM Ty
   | Var         loc         .   isQuLoc     =   @lhs.coco == CoVariant
   | Quant       loc         .   isQuLoc     =   @lhs.coco /= CoContraVariant
   | App         loc         .   isQuLoc     =   @lhs.coco == CoVariant
-                                                || (@lhs.coco == ContraVariant && (@appIsLikeProd || @isArrowRoot))
+                                                || (@lhs.coco == ContraVariant
+                                                    && (@appIsLikeProd
+                                                        || @isArrowRoot
+%%[[9
+                                                           && (not @func.isPred || @arg.isQuLoc)
+%%]]
+                                                   )   )
                 lhs         .   isQuLoc     =   if @isArrowArg then @arg.isQuLoc else @isQuLoc
 %%]
 SEM Ty
@@ -390,7 +403,9 @@ tvarOccurGE2 =  map fst . filter ((>1).snd) . tvarOccurCount
 
 %%[4
 SEM Ty
-  | App         loc         .   qArrowArgTvL    =   if @appIsArrow && not @func.isQuLoc then @func.frTvLL else []
+  | App         loc         .   qArrowArgTvL    =   if @isArrowRoot && not @func.isQuLoc
+                                                    then @func.frTvLL
+                                                    else []
 %%]
 
 %%[4.qHereTvL

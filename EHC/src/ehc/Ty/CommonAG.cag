@@ -117,7 +117,7 @@ SEM Ty
 %%[[7
     Ext
 %%]
-  				loc         .   isSpineRoot     =   @lhs.appSpinePos == 0
+                loc         .   isSpineRoot     =   @lhs.appSpinePos == 0
 %%]
 
 %%[4
@@ -145,6 +145,16 @@ SEM Ty
 
 SEM TyAGItf
   | AGItf       ty          .   tyCtxt          =   TyQuCtxtOnTop
+%%]
+
+%%[9
+ATTR Ty [ | | isPred: Bool ]
+
+SEM Ty
+  | Pred Impls  lhs         .   isPred          =   True
+  | App         lhs         .   isPred          =   if @isArrowArg then @arg.isPred else False
+  | * - Pred Impls App
+                lhs         .   isPred          =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

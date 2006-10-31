@@ -58,13 +58,10 @@
 %%[7 hs import(Data.List) export(kiRow,tyRowEmpty,tyRecEmpty,tySumEmpty,tyRowExtr,tyRecExtr,mkTyRow,mkTyRec,mkTySum,mkTyRecExt,tyRowExts) 
 %%]
 
-%%[7 hs export(tyAppFunArg) 
+%%[7 hs export(tyAppFunArg,tyAppFunConNm) 
 %%]
 
 %%[8 hs export(tyFloat) 
-%%]
-
-%%[8 hs export(tyAppFunConNm) 
 %%]
 
 %%[8 hs export(tyRecOffset) 
@@ -464,15 +461,9 @@ tyArrowArgRes t
 %%[1.unMkTy.tyArrowArgsRes hs
 tyArrowArgsRes t
   =  case t of
-       Ty_App (Ty_App (Ty_Con nm) a) r
-         | hsnIsArrow nm  -> let (as,r') = tyArrowArgsRes r in (a:as,r')
-       _                  -> ([],t)
-%%]
-
-%%[8.unMkTy.tyArrowArgsRes -1.unMkTy.tyArrowArgsRes hs
-tyArrowArgsRes t
-  =  case t of
+%%[[7
        Ty_Quant _ _ t     -> tyArrowArgsRes t
+%%]]
        Ty_App (Ty_App (Ty_Con nm) a) r
          | hsnIsArrow nm  -> let (as,r') = tyArrowArgsRes r in (a:as,r')
        _                  -> ([],t)
@@ -546,7 +537,7 @@ tyAppFunArg :: Ty -> (Ty,Ty)
 tyAppFunArg t =  case t of {Ty_App f a -> (f,a); _ -> (Ty_Any,Ty_Any)}
 %%]
 
-%%[8 hs
+%%[7 hs
 tyAppFunConNm :: Ty -> HsName
 tyAppFunConNm = tyConNm . fst . tyAppFunArgs
 %%]

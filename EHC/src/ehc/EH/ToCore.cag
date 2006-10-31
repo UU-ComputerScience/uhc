@@ -66,7 +66,8 @@ ATTR Expr [ | | cexpr: CExpr ]
 
 SEM Expr
   | Let         loc         .   frontCBindL =   [(CBindFFI,@decls.ffiCBindL)]
-                            .   letCBindL   =   [(if @isStrict then CBindStrict else CBindRec,@decls.cbindL)]
+                            .   howToBind   =   if @isStrict then CBindStrict else CBindRec
+                            .   letCBindL   =   [(@howToBind,@decls.cbindL)]
                             .   cexpr       =   foldr (\(c,b) e -> mkCExprLet c b e) @body.cexpr @letCBindL
   | App AppImpred
                 loc         .   cexpr       =   CExpr_App @func.cexpr @arg.cexpr
@@ -96,7 +97,7 @@ SEM Expr
                             .   cexpr       :=  foAppCoe @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBase
 %%[9
 SEM Expr
-  | Let         loc         .   letCBindL   :=  [ (CBindRec,@decls.cbindL ++ (@cSubst `cSubstApp` (@prfIntroCBindL ++ @bodyPrfIntroCBindL))) ]
+  | Let         loc         .   letCBindL   :=  [ (@howToBind,@decls.cbindL ++ (@cSubst `cSubstApp` (@prfIntroCBindL ++ @bodyPrfIntroCBindL))) ]
   | App AppImpred AppImpl
                 loc         .   cexpr       :=  CExpr_App
                                                     (coeWipeWeave @lhs.finTyCnstr @lhs.cSubst @appImplsCoeL []
@@ -187,41 +188,52 @@ SEM RecExpr
 
 %%[8
 SEM Expr
-  | DataFields  loc         .   dfexpr     =   foldl CExpr_App @dataFieldExpr.dfeCExpr
-                                               $ fuL2ExprL $ tyRowOffsetOrder (fromJust . snd) $ @dataFieldExpr.fuCExprL
-                            .   cexpr      =   @dfexpr
+  | DataFields  loc         .   dfexpr      =   let mkTup dti mkDflt con
+                                                      = foldl CExpr_App con
+                                                        . fuL2ExprL
+                                                        . listSaturateWith 0 (ctagArity (dtiCTag dti) - 1) (\(_,(_,Just o)) -> o) dflt
+                                                        . fuMap (\l mke -> let o = dtiOffsetOfFld l dti in (mke dti o,o))
+                                                      where dflt = [ (o,(f,(CExpr_TupIns cvarUndefined (dtiCTag dti) f (CExpr_Int o) (mkDflt f),Just o)))
+                                                                   | (f,i) <- Map.toList $ dtiFldMp dti, let o = dfiOffset i
+                                                                   ]
+                                                in  case @dataFieldExpr.mbConNm of
+                                                      Just conNm
+                                                        -> mkCExprLet CBindPlain @dataFieldExpr.dfeCBindL
+                                                             (mkTup (dgiDtiOfCon conNm @dgi) (const cvarUndefined) @dataFieldExpr.dfeCExpr @dataFieldExpr.fuCExprL)
+                                                      _ -> mkCExprLet CBindPlain (err ++  @dataFieldExpr.dfeCBindL)
+                                                             (mkCExprSatSelsCases (@rceEnv {rceCaseCont = CExpr_Var en}) (Just $ mkHNm @lUniq) @dataFieldExpr.dfeCExpr alts)
+                                                        where alts = [ ( dtiCTag dti
+                                                                       , [ (f,f,dfiOffset i) | (f,i) <- Map.toList $ dtiFldMp dti ]
+                                                                       , Nothing
+                                                                       , mkTup dti CExpr_Var (CExpr_Tup $ dtiCTag dti) @dataFieldExpr.fuCExprL
+                                                                       )
+                                                                     | dti <- @dtiInFldL
+                                                                     ]
+                                                              err = [CBind_Bind en (cerror ("has no field update '" ++ show @fldL ++ "'"))]
+                                                              en = HNm "_upd_error"
+                            .   cexpr       =   @dfexpr
 %%]
 
 %%[8
-ATTR DataFieldExpr [ | | dfeCExpr: CExpr  fuCExprL: {FieldUpdateL CExpr} ]
+ATTR
+  DataFieldExpr
+    [ | | dfeCExpr: CExpr
+          dfeCBindL: CBindL
+          fuCExprL: {FieldUpdateL (DataTagInfo -> Int -> CExpr)}
+    ]
 
 SEM DataFieldExpr
-  | Upd         loc         .   dfexpr      =   case @dataFieldExpr.mbDti of
-                                                  Just dti -> CExpr_TupIns @dataFieldExpr.dfeCExpr (dtiCTag dti) @nm @offset @expr.cexpr
-                lhs         .   fuCExprL    =   (@nm,(@dfexpr,Just @ioffset)) : @dataFieldExpr.fuCExprL
+  | Upd         loc         .   fldExprNm   =   mkHNm @lUniq
+                lhs         .   fuCExprL    =   let mke dti o = CExpr_TupIns @dataFieldExpr.dfeCExpr (dtiCTag dti) @nm (CExpr_Int o) (CExpr_Var @fldExprNm)
+                                                in  (@nm,(mke,Nothing)) : @dataFieldExpr.fuCExprL
+                            .   dfeCBindL   =   CBind_Bind @fldExprNm @expr.cexpr : @dataFieldExpr.dfeCBindL
   | Con         lhs         .   dfeCExpr    =   CExpr_Tup (dtiCTag @dti)
                             .   fuCExprL    =   []
+                            .   dfeCBindL   =   []
   | Expr        loc         .   dfeCExpr    =   @expr.cexpr
                             .   fuCExprL    =   []
+                            .   dfeCBindL   =   []
 
-ATTR DataFieldExpr [ | | mbDti: {Maybe DataTagInfo} ]
-
-SEM DataFieldExpr
-  | Con         loc         .   dti         =   dgiDtiOfCon @nm @dgi
-                lhs         .   mbDti       =   Just @dti
-  | * - Con Upd lhs         .   mbDti       =   Nothing
-
-ATTR DataFieldExpr [ | | dgi: DataGamInfo ]
-
-SEM DataFieldExpr
-  | Con Expr    loc         .   dgi         =   panicJust "DataFieldExpr.dataGamDgiOfTy" $ dataGamDgiOfTy @finConTy @lhs.dataGam
-
-SEM DataFieldExpr
-  | Con Expr    loc         .   finConTy    =   @lhs.finTyCnstr |=> @ty
-
-SEM DataFieldExpr
-  | Upd         loc         .   ioffset     =   dtiOffsetOfFld @nm $ panicJust "DataFieldExpr.mbDti" @dataFieldExpr.mbDti
-                            .   offset      =   CExpr_Int @ioffset
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -264,10 +276,10 @@ SEM DataConstr
 %%[8
 SEM Decl
   | Data        loc         .   fldSelCBindL=   let (xn1:xn2:_) = hsnLclSupplyL
-                                                    tgSels f i = [ (t,[(f,f,o)],Nothing) | (t,o) <- Map.toList $ dficInTagMp i ]
+                                                    tgSels f i = [ (t,[(f,f,o)],Nothing,CExpr_Var f) | (t,o) <- Map.toList $ dficInTagMp i ]
                                                 in  [ [ CBind_Bind f
                                                           (mkCExprLam [xn1]
-                                                            (mkCExprSatSelsCases (@rceEnv {rceCaseCont = CExpr_Var en}) (Just xn2) (CExpr_Var xn1) (tgSels f i) (CExpr_Var f)))
+                                                            (mkCExprSatSelsCases (@rceEnv {rceCaseCont = CExpr_Var en}) (Just xn2) (CExpr_Var xn1) (tgSels f i)))
                                                       , CBind_Bind en (cerror ("has no field selection '" ++ show f ++ "'"))
                                                       ]
                                                     | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
@@ -710,7 +722,7 @@ rceMatchBoolExpr env (arg:args) alts = cvarUndefined
 
 %%[8
 SEM Expr
-  | Lam Sel
+  | Lam Sel DataFields
 %%[[9
     LamImpl
 %%]]

@@ -94,9 +94,9 @@ SEM CExpr
 ATTR CExpr [ | | mbRepl: {Maybe CExpr} ]
 
 SEM CExpr
-  | Var         lhs         .   mbRepl      =   Just @cTrf
-  | Int         lhs         .   mbRepl      =   Just @cTrf
-  | * - Var Int
+  | Var Int Char
+  				lhs         .   mbRepl      =   Just @cTrf
+  | * - Var Int Char
                 lhs         .   mbRepl      =   Nothing
 %%]
 

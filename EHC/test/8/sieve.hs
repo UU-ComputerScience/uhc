@@ -1,12 +1,4 @@
-data Ordering = LT | EQ | GT
-data Bool = False | True
-data ''[]'' a = a : [a] | ''[]''
-
-foreign import jazy "primAddInt" (+) :: Int -> Int -> Int
-foreign import jazy "primDivInt" (/) :: Int -> Int -> Int
-foreign import jazy "primMulInt" (*) :: Int -> Int -> Int
-foreign import jazy "primSubInt" (-) :: Int -> Int -> Int
-foreign import jazy "primCmpInt" compare :: Int -> Int -> Ordering
+-- %% inline test (prefix1) --
 
 filter p (h:t) = if p h then h : filter p t else filter p t
 filter _ []    = []

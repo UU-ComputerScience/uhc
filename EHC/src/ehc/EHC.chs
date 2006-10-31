@@ -256,7 +256,7 @@ instance CompileUnit EHCompileUnit HsName EHCompileUnitState where
 instance CompileRunError Err () where
   crePPErrL                 = ppErrL
   creMkNotFoundErrL _ fp sp = [Err_FileNotFound fp sp]
-  creAreFatal               = const True
+  creAreFatal               = errLIsFatal
 
 instance CompileModName HsName where
   mkCMNm = HNm

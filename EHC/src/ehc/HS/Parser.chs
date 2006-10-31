@@ -730,7 +730,7 @@ pExpressionConUpd
   <|> pExpressionBase
 %%[[7
       <**> ((\u e -> foldr ($) e u) <$> pList pU)
-  where pU =   pCurlys' ((\bs r e -> Expression_RecordUpdate r e bs) <$> pListSep pCOMMA pRecordExpressionBinding)
+  where pU =   pCurlys' ((\bs r e -> Expression_RecordUpdate r e bs) <$> pList1Sep pCOMMA pRecordExpressionBinding)
            <|> pRowRecordSelectionSuffix
 %%]]
 %%]
