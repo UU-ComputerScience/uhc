@@ -139,8 +139,13 @@ primMp
             ,\rs [v@(RVStr _)]    ->  return (rs,Just v)
           )
         , ("primTraceStringExit"
-            ,\rs [v@(RVStr s)]    ->  do { rs' <- halt rs (pp s)
-                                         ; return (rs',Just v)
+            ,\rs [RVStr s]        ->  do { rs' <- halt rs (pp s)
+                                         ; return (rs',Just RVNil)
+                                         }
+          )
+        , ("primUndefined"
+            ,\rs _                ->  do { rs' <- halt rs (pp "undefined")
+                                         ; return (rs',Just RVNil)
                                          }
           )
         ]

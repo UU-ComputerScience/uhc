@@ -678,8 +678,16 @@ SEM CaseAlt
 %%]
 
 %%[7
+ATTR DataFieldExpr [ fldFIOpts: FIOpts | | ]
+
 SEM RecExpr
   | Ext Upd     expr        .  fiOpts               =   strongFIOpts
+
+SEM Expr
+  | DataFields  loc         .  fldFIOpts            =   strongFIOpts
+
+SEM DataFieldExpr
+  | Upd         expr        .  fiOpts               =   @lhs.fldFIOpts
 
 SEM Expr
   | Rec         loc         .  fiOpts               =   strongFIOpts

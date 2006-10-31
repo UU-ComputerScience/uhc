@@ -1,4 +1,5 @@
 -- data fields consistency: ok
+-- %% inline test (prefix1) --
 
 data X
   = X { b :: Int, a, c :: Char }

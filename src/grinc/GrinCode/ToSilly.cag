@@ -115,7 +115,7 @@ SEM GrExpr
 
  | Fetch   lhs.stats  = Statement_Comment "Fetch"
                         : Statement_Assignment (Variable_Var (hsnShowAlphanumeric (head @lhs.targets)))
-                                               (arrayValue (Variable_Var (hsnShowAlphanumeric @nm)) (fromJust @mbOffset))
+                                               (arrayValue (Variable_Var (hsnShowAlphanumeric @nm)) (panicJust "ToSilly.GrExpr.Fetch.stats" @mbOffset))
                         : []
 
            lhs.localsF = (@lhs.targets ++)

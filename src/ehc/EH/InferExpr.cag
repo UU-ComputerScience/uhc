@@ -451,17 +451,25 @@ SEM DataFieldExpr
 %%% Data based records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[7 hs
+dfCheck :: UID -> FIOpts -> FIEnv -> HsName -> ValGam -> Cnstr -> Ty -> (Ty,Ty,FIOut,[Err])
+dfCheck uniq fiOpts fe fldNm valGam knTyCnstr knTy
+  = (knDataTy,knFldTy,fo,nmErrs)
+  where (gTy,nmErrs) = valGamLookupTy (hsnFldUpd fldNm) valGam
+        (_,u1,u2)    = mkNewLevUID2 uniq
+        (knFldTy,knDataTy,knFldUpdTy)
+                     = (e,df,v `mkArrow` (knTyCnstr |=> knTy))
+                     where v@[e,df] = mkNewTyVarL 2 u1
+        fo           = fitsIn fiOpts fe u2 (knTyCnstr |=> gTy) knFldUpdTy
+%%]
+
 %%[7
 SEM DataFieldExpr
-  | Upd         loc         .   (gTy,nmErrs)        =   valGamLookupTy (hsnFldUpd @nm) @lhs.valGam
-                            .   (knFldTy,knDataTy,knFldUpdTy)
-                                                    =   let v@[e,df] = mkNewTyVarL 2 @lUniq
-                                                        in  (e,df,v `mkArrow` (@lhs.tyCnstr |=> @lhs.knTy))
-                            .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq2 (@lhs.tyCnstr |=> @gTy) @knFldUpdTy
+  | Upd         (loc.knDataTy,expr.knTy,loc.fo_,loc.nmErrs)
+                                                    =   dfCheck @lUniq @lhs.fiOpts @fe @nm @lhs.valGam @lhs.tyCnstr @lhs.knTy
                 dataFieldExpr
                             .   knTy                =   @knDataTy
                             .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
-                expr        .   knTy                =   @knFldTy
                 loc         .   ty                  =   @expr.tyCnstr |=> @knDataTy
   | Con         loc         .   (gTy,nmErrs)        =   valGamLookupTy (hsnUn @nm) @lhs.valGam
                             .   fo_                 =   let [u] = mkNewTyVarL 1 @lUniq
@@ -470,17 +478,45 @@ SEM DataFieldExpr
                                                         in  fo {foTy = foCnstr fo |=> t}
                             .   ty                  =   foTy @fo_
                 lhs         .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
-  | Expr        loc         .   ty                  =   @expr.ty
+  | Expr        loc         .   ty                  =   @lhs.tyCnstr |=> @lhs.knTy
 %%]
 
 %%[7
-%%]
-ATTR DataFieldExpr [ | | mbDti: {Maybe DataTagInfo} ]
+ATTR DataFieldExpr [ | updExprTyCnstr: Cnstr | updExprTy: Ty ]
+
+SEM Expr
+  | DataFields  dataFieldExpr
+                            .   updExprTyCnstr      =   @lhs.tyCnstr
 
 SEM DataFieldExpr
-  | Con         loc         .   dti         =   dgiDtiOfCon @nm @dgi
-                lhs         .   mbDti       =   Just @dti
-  | * - Con Upd lhs         .   mbDti       =   Nothing
+  | Expr        expr        .   tyCnstr             =   @lhs.updExprTyCnstr
+                            .   knTy                =   mkNewTyVar @lUniq
+                lhs         .   updExprTyCnstr      =   @expr.tyCnstr
+                            .   updExprTy           =   @expr.ty
+                            .   tyCnstr             =   @lhs.tyCnstr
+  | Con         lhs         .   updExprTy           =   Ty_Any
+%%]
+
+%%[7
+SEM Expr
+  | DataFields  (dataFieldExpr.knTy,dataFieldExpr.tyCnstr,loc.dfErrs)
+                                                    =   case @dataFieldExpr.mbConNm of
+                                                          Just _
+                                                            -> (@lhs.knTy,@lhs.tyCnstr,[])
+                                                          _ -> (t,c,e)
+                                                            where (t,_,c,e,_)
+                                                                    = foldr (\fldNm (knTy,updExprTy,tyCnstr,errL,u)
+                                                                               -> let (u',u1,u2) = mkNewLevUID2 u
+                                                                                      (knDTy,knFTy,fo1,e1) = dfCheck u1 @lhs.fiOpts @fe fldNm @lhs.valGam tyCnstr knTy
+                                                                                      tyCnstr' = foCnstr fo1 |=> tyCnstr
+                                                                                      updExprTy' = foCnstr fo1 |=> updExprTy
+                                                                                      (gTy,nmErrs) = valGamLookupTy fldNm @lhs.valGam
+                                                                                      fo2 = fitsIn @fldFIOpts @fe u2 (tyCnstr' |=> gTy) ([updExprTy'] `mkArrow` (tyCnstr' |=> knFTy))
+                                                                                  in  (knDTy, foCnstr fo2 |=> updExprTy', foCnstr fo2 |=> tyCnstr', foErrL fo2 ++ foErrL fo1 ++ e1 ++ nmErrs ++ errL, u')
+                                                                            )
+                                                                            (@lhs.knTy,@dataFieldExpr.updExprTy,@dataFieldExpr.updExprTyCnstr,[],@lUniq)
+                                                                            (Set.toList $ Set.unions [ Map.keysSet (dtiFldMp i) | i <- @dtiL ] `Set.difference` @fldS)
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Row based records

@@ -4,6 +4,7 @@ import UU.Pretty
 import Data.Char
 import Data.List
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 import Debug.Trace
 
 -------------------------------------------------------------------------
@@ -65,6 +66,19 @@ initlast2 as
 
 firstNotEmpty :: [[x]] -> [x]
 firstNotEmpty = maybeHd [] id . filter (not . null)
+
+-- saturate a list
+listSaturate :: (Enum a,Ord a) => a -> a -> (x -> a) -> (a -> x) -> [x] -> [x]
+listSaturate min max get mk l
+  = [ Map.findWithDefault (mk i) i mp | i <- [min..max] ]
+  where mp = Map.fromList [ (get x,x) | x <- l ]
+
+-- saturate a list with values from assoc list
+listSaturateWith :: (Enum a,Ord a) => a -> a -> (x -> a) -> [(a,x)] -> [x] -> [x]
+listSaturateWith min max get missing l
+  = listSaturate min max get mk l
+  where mp = Map.fromList missing
+        mk a = panicJust "listSaturateWith" $ Map.lookup a mp
 
 -------------------------------------------------------------------------
 -- String

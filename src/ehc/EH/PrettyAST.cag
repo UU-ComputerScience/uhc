@@ -406,7 +406,7 @@ SEM DataFieldExpr
                                         , mkInfo1 "foTy fo_" (pp (foTy @fo_))
                                         ]
   | Expr        loc     .  ppAST    =   ppNestInfo @lhs.opts ["DataFieldExpr","Expr"] [] [@expr.ppAST] @info
-                        .  info     =   [ 
+                        .  info     =   [ mkInfo1 "ty" (pp @ty)
                                         ]
 %%]
 

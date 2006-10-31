@@ -48,6 +48,18 @@ SEM DataConstr
                                                         in   if null nms then [] else [Err_NamesDupIntrod nms]
 %%]
 
+%%[7
+SEM Expr
+  | DataFields  loc         .   fldMissErrs         =   case @dataFieldExpr.mbDti of
+                                                          Just dti | not (Set.null m)
+                                                            -> [Err_MissingDataFields (Set.toList m) (dtiConNm dti)]
+                                                            where m = Map.keysSet (dtiFldMp dti) `Set.difference` Set.fromList @fldL
+                                                          _ | null @dtiInFldL -> [Err_MissingAnyDataField @fldL (dgiTyNm @dgi)]
+                                                            | otherwise       -> []
+                            .   fldDupErrs          =   let fs = [ f | (f:_:_) <- group @fldL ]
+                                                        in  if null fs then [] else [Err_DuplicateDataFields fs]
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Predicates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

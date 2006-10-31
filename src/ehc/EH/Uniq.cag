@@ -159,6 +159,7 @@ SEM KiExpr
 %%[7
 SEM Expr
   | Rec             (recExpr.gUniq,loc.lUniq,loc.lUniq2)            =   mkNewLevUID2    @lhs.gUniq
+  | DataFields      (dataFieldExpr.gUniq,loc.lUniq)                 =   mkNewLevUID     @lhs.gUniq
   | Sel             (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
 
 SEM RecExpr
@@ -170,6 +171,7 @@ SEM DataFieldExpr
   | Upd             (dataFieldExpr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)
                                                                     =   mkNewLevUID3    @lhs.gUniq
   | Con             (lhs.gUniq,loc.lUniq,loc.lUniq2)                =   mkNewLevUID2    @lhs.gUniq
+  | Expr            (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
 
 SEM PatExpr
   | Rec             (recPatExpr.gUniq,loc.lUniq,loc.lUniq2)         =   mkNewLevUID2    @lhs.gUniq

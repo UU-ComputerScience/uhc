@@ -10,7 +10,7 @@
 %%]
 %%[8 hs import({%{GRIN}Silly})
 %%]
-%%[8 hs import({%{EH}Base.Common} hiding "((<+>))")
+%%[8 hs import(EH.Util.Utils,{%{EH}Base.Common} hiding "((<+>))")
 %%]
 %%[8 hs import(qualified Data.Map as Map, Data.Bits)
 %%]

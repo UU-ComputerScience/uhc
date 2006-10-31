@@ -22,13 +22,13 @@
 %%[4_2 hs import(qualified Data.Set as Set,{%{EH}Gam.Utils},{%{EH}Ty.ElimAlts},{%{EH}Ty.FreshVar})
 %%]
 
-%%[7 hs import(qualified Data.Map as Map,EH.Util.PPUtils,{%{EH}Ty.FreshVar},{%{EH}Ty.Ftv})
+%%[7 hs import(qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.PPUtils,{%{EH}Ty.FreshVar},{%{EH}Ty.Ftv})
 %%]
 
 %%[8 hs import({%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty},{%{EH}Core.SubstCaseAltFail})
 %%]
 
-%%[9 hs import(qualified Data.Set as Set,{%{EH}Pred},{%{EH}Core.Subst})
+%%[9 hs import({%{EH}Pred},{%{EH}Core.Subst})
 %%]
 
 %%[50 hs import({%{EH}Ty.ElimEqual},{%{EH}Gam.Utils})

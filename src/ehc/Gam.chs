@@ -61,13 +61,13 @@
 %%[6 export(mkTGI)
 %%]
 
-%%[7 export(gamNoDups)
+%%[7 import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map) export(gamNoDups)
 %%]
 
 %%[7777 export(mkTGIData)
 %%]
 
-%%[8 import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map,{%{EH}Core}) export(gamUpd)
+%%[8 import({%{EH}Core}) export(gamUpd)
 %%]
 
 %%[9 import({%{EH}Base.Debug},{%{EH}Core.Subst},{%{EH}Ty.FitsInCommon}) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
@@ -613,6 +613,23 @@ valGamInst1ExistsWithCnstr
         )
 %%]
 
+%%[7 export(valGamTyOfDataCon)
+valGamTyOfDataCon :: HsName -> ValGam -> (Ty,Ty,ErrL)
+valGamTyOfDataCon conNm g
+  = (t,rt,e)
+  where (t,e) = valGamLookupTy conNm g
+        (_,rt) = tyArrowArgsRes t
+%%]
+
+%%[7 export(valGamTyOfDataFld)
+valGamTyOfDataFld :: HsName -> ValGam -> (Ty,Ty,ErrL)
+valGamTyOfDataFld fldNm g
+  | null e    = (t,rt,e)
+  | otherwise = (t,Ty_Any,e)
+  where (t,e) = valGamLookupTy fldNm g
+        ((rt:_),_) = tyArrowArgsRes t
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% "Kind of type" gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -683,27 +700,42 @@ tyGamInst1Exists = gamInst1Exists (tgiKi,(\tgi k -> tgi {tgiKi=k}))
 %%% Data tag/etc info gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(DataFldMp,DataFldInfo(..),emptyDataFldInfo)
+%%[7 export(DataFldMp,DataFldInfo(..),emptyDataFldInfo)
 data DataFldInfo
   = DataFldInfo
+%%[[8
       { dfiOffset 	:: Int
-      } deriving Show
+      }
+%%]]
+      deriving Show
 
 type DataFldMp = Map.Map HsName DataFldInfo
 
-emptyDataFldInfo = DataFldInfo (-1)
+emptyDataFldInfo
+  = DataFldInfo
+%%[[8
+      (-1)
+%%]]
 %%]
 
-%%[8 export(DataTagInfo(..),emptyDataTagInfo,DataConstrTagMp)
+%%[7 export(DataTagInfo(..),emptyDataTagInfo,DataConstrTagMp)
 data DataTagInfo
   = DataTagInfo
-      { dtiCTag 	:: CTag
-      , dtiFldMp    :: DataFldMp
+      { dtiFldMp    :: DataFldMp
+      , dtiConNm	:: HsName
+%%[[8
+      , dtiCTag 	:: CTag
+%%]]
       } deriving Show
 
 type DataConstrTagMp = Map.Map HsName DataTagInfo
 
-emptyDataTagInfo = DataTagInfo emptyCTag Map.empty
+emptyDataTagInfo
+  = DataTagInfo
+      Map.empty hsnUnknown
+%%[[8
+      emptyCTag
+%%]]
 %%]
 
 %%[8 export(dtiOffsetOfFld)
@@ -720,11 +752,14 @@ data DataFldInConstr
 type DataFldInConstrMp = Map.Map HsName DataFldInConstr
 %%]
 
-%%[8 export(DataGam,DataGamInfo(..),mkDGI)
+%%[7 export(DataGam,DataGamInfo(..),mkDGI,emptyDataGamInfo)
 data DataGamInfo
   = DataGamInfo
-      { dgiConstrTagMp 		:: DataConstrTagMp
+      { dgiTyNm      		:: HsName
+      , dgiConstrTagMp 		:: DataConstrTagMp
+%%[[8
       , dgiFldInConstrMp	:: DataFldInConstrMp
+%%]]
       }
 
 type DataGam = Gam HsName DataGamInfo
@@ -732,30 +767,37 @@ type DataGam = Gam HsName DataGamInfo
 instance Show DataGamInfo where
   show _ = "DataGamInfo"
 
-mkDGI :: DataConstrTagMp -> DataGamInfo
-mkDGI m
-  = DataGamInfo m fm
+mkDGI :: HsName -> DataConstrTagMp -> DataGamInfo
+mkDGI tyNm m
+  = DataGamInfo
+      tyNm m
+%%[[8
+      fm
   where fm = Map.map DataFldInConstr $ Map.unionsWith Map.union
              $ [ Map.singleton f (Map.singleton (dtiCTag ci) (dfiOffset fi)) | ci <- Map.elems m, (f,fi) <- Map.toList $ dtiFldMp ci ]
+%%]]
+
+emptyDataGamInfo :: DataGamInfo
+emptyDataGamInfo = mkDGI hsnUnknown Map.empty
 %%]
 
-%%[8 export(dgiDtiOfCon)
+%%[7 export(dgiDtiOfCon)
 dgiDtiOfCon :: HsName -> DataGamInfo -> DataTagInfo
 dgiDtiOfCon conNm dgi = panicJust "dgiDtiOfCon" $ Map.lookup conNm $ dgiConstrTagMp dgi
 %%]
 
-%%[8 export(dataGamLookup)
+%%[7 export(dataGamLookup)
 dataGamLookup :: HsName -> DataGam -> Maybe DataGamInfo
 dataGamLookup nm g
   =  case gamLookup nm g of
        Nothing
          |  hsnIsProd nm
-                 -> Just (mkDGI Map.empty)
+                 -> Just emptyDataGamInfo
        Just dgi  -> Just dgi
        _         -> Nothing
 %%]
 
-%%[8 export(dataGamDgiOfTy)
+%%[7 export(dataGamDgiOfTy)
 dataGamDgiOfTy :: Ty -> DataGam -> Maybe DataGamInfo
 dataGamDgiOfTy conTy dg = dataGamLookup (tyAppFunConNm conTy) dg
 %%]

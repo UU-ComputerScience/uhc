@@ -10,7 +10,7 @@
 %%[8 module {%{EH}Core.Utils} import(qualified Data.Map as Map,Data.Maybe,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam}) export(RCEEnv(..),emptyRCEEnv)
 %%]
 
-%%[8 import(Data.List,EH.Util.Utils) export(FieldUpdateL,fuL2ExprL,fuMkCExpr)
+%%[8 import(Data.List,EH.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,25 +40,6 @@ rceEnvDataAlts env t
                        in   maybe [] id $ dataGamTagsOfTy ty (rceDataGam env)
                 _  ->  [t]
        _  ->  [t]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% General purpose saturate (should move to lib, or Common)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-listSaturate :: (Enum a,Ord a) => a -> a -> (x -> a) -> (a -> x) -> [x] -> [x]
-listSaturate min max get mk l
-  = [ Map.findWithDefault (mk i) i mp | i <- [min..max] ]
-  where mp = Map.fromList [ (get x,x) | x <- l ]
-%%]
-
-%%[8
-listSaturateWith :: (Enum a,Ord a) => a -> a -> (x -> a) -> [(a,x)] -> [x] -> [x]
-listSaturateWith min max get missing l
-  = listSaturate min max get mk l
-  where mp = Map.fromList missing
-        mk a = panicJust "listSaturateWith" $ Map.lookup a mp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -135,14 +116,14 @@ mkCExprSatSelCase env ne e ct n lbl off mbRest
 %%]
 
 %%[8
-mkCExprSelsCases' :: RCEEnv -> Maybe HsName -> CExpr -> [(CTag,[(HsName,HsName,CExpr)],MbCPatRest)] -> CExpr -> CExpr
-mkCExprSelsCases' env ne e tgSels sel
+mkCExprSelsCases' :: RCEEnv -> Maybe HsName -> CExpr -> [(CTag,[(HsName,HsName,CExpr)],MbCPatRest,CExpr)] -> CExpr
+mkCExprSelsCases' env ne e tgSels
   = mkCExprStrictSatCase env ne e alts
   where  alts = [ CAlt_Alt
                     [CPat_Con (CPatNmOrig $ maybe (cexprVar e) id ne) ct (mkRest mbRest ct)
                        [CPatBind_Bind lbl off n (CPat_Var (CPatNmOrig n)) | (n,lbl,off) <- nmLblOffL]]
                     sel
-                | (ct,nmLblOffL,mbRest) <- tgSels
+                | (ct,nmLblOffL,mbRest,sel) <- tgSels
                 ]
          mkRest mbr ct
            = case mbr of
@@ -153,13 +134,13 @@ mkCExprSelsCases' env ne e tgSels sel
 %%[8
 mkCExprSelsCase' :: RCEEnv -> Maybe HsName -> CExpr -> CTag -> [(HsName,HsName,CExpr)] -> MbCPatRest -> CExpr -> CExpr
 mkCExprSelsCase' env ne e ct nmLblOffL mbRest sel
-  = mkCExprSelsCases' env ne e [(ct,nmLblOffL,mbRest)] sel
+  = mkCExprSelsCases' env ne e [(ct,nmLblOffL,mbRest,sel)]
 %%]
 
 %%[8 export(mkCExprSatSelsCases)
-mkCExprSatSelsCases :: RCEEnv -> Maybe HsName -> CExpr -> [(CTag,[(HsName,HsName,Int)],MbCPatRest)] -> CExpr -> CExpr
-mkCExprSatSelsCases env ne e tgSels sel
-  =  mkCExprSelsCases' env ne e alts sel
+mkCExprSatSelsCases :: RCEEnv -> Maybe HsName -> CExpr -> [(CTag,[(HsName,HsName,Int)],MbCPatRest,CExpr)] -> CExpr
+mkCExprSatSelsCases env ne e tgSels
+  =  mkCExprSelsCases' env ne e alts
   where mkOffL ct mbr nol
           = case (ct,mbr) of
               (CTagRec     ,Nothing   ) -> map mklo nol
@@ -167,13 +148,13 @@ mkCExprSatSelsCases env ne e tgSels sel
               (CTag _ _ _ a,_         ) -> mkloL a
           where mklo (n,l,o) = (n,l,CExpr_Int o)
                 mkloL a = map mklo $ listSaturateWith 0 (a-1) (\(_,_,o) -> o) [(o,(l,l,o)) | (o,l) <- zip [0..a-1] hsnLclSupplyL] $ nol
-        alts = [ (ct,mkOffL ct mbRest nmLblOffL,mbRest) | (ct,nmLblOffL,mbRest) <- tgSels ]
+        alts = [ (ct,mkOffL ct mbRest nmLblOffL,mbRest,sel) | (ct,nmLblOffL,mbRest,sel) <- tgSels ]
 %%]
 
 %%[8 export(mkCExprSatSelsCase)
 mkCExprSatSelsCase :: RCEEnv -> Maybe HsName -> CExpr -> CTag -> [(HsName,HsName,Int)] -> MbCPatRest -> CExpr -> CExpr
 mkCExprSatSelsCase env ne e ct nmLblOffL mbRest sel
-  = mkCExprSatSelsCases env ne e [(ct,nmLblOffL,mbRest)] sel
+  = mkCExprSatSelsCases env ne e [(ct,nmLblOffL,mbRest,sel)]
 %%]
 
 %%[8 export(mkCExprSatSelsCaseUpd)
@@ -190,8 +171,11 @@ mkCExprSatSelsCaseUpd env ne e ct arity offValL mbRest
 %%% Reorder record Field Update (to sorted on label, upd's first, then ext's)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[8 export(FieldUpdateL,fuL2ExprL,fuMkCExpr,fuMap)
 type FieldUpdateL e = AssocL HsName (e,Maybe Int)
+
+fuMap :: (HsName -> e -> (e',Int)) -> FieldUpdateL e -> FieldUpdateL e'
+fuMap f = map (\(l,(e,_)) -> let (e',o) = f l e in (l,(e',Just o)))
 
 fuL2ExprL :: FieldUpdateL CExpr -> [CExpr]
 fuL2ExprL l = [ e | (_,(CExpr_TupIns _ _ _ _ e,_)) <- l ]

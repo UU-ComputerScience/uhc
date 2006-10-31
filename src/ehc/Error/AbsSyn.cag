@@ -89,6 +89,11 @@ DATA Err
 DATA Err
   | InconsistentIntros  kind       : String
                         nmL        : {[HsName]}
+  | MissingDataFields   nmL        : {[HsName]}
+                        con        : {HsName}
+  | MissingAnyDataField nmL        : {[HsName]}
+                        tyNm       : {HsName}
+  | DuplicateDataFields nmL        : {[HsName]}
   | MissingRowLabels    nmL        : {[HsName]}
                         ty         : {Ty}
   | TooManyRowLabels    nmL        : {[HsName]}
