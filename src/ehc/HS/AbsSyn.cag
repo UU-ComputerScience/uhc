@@ -608,8 +608,6 @@ DATA Expression                                   {- *** -}
         range                    : Range
         expression               : Expression
         recordExpressionBindings : RecordExpressionBindings
-%%]
-%%[7
     | RowRecordUpdate
         range                    : Range
         expression               : Expression
@@ -823,10 +821,13 @@ SET AllGuardedExpression
 TYPE RecordExpressionBindings    = [ RecordExpressionBinding ]
 
 DATA RecordExpressionBinding
-    | RecordExpressionBinding -- ToDo: or _Binding?
+    | Binding
         range                    : Range
         name                     : Name
         expression               : Expression
+
+SET AllRecordExpressionBinding
+  =  RecordExpressionBinding RecordExpressionBindings
 %%]
 
 %%[7
@@ -865,14 +866,20 @@ DATA RowTypeUpdate
         type                     : Type
 %%]
 
-%%[77
+%%[7
 TYPE RecordPatternBindings       = [ RecordPatternBinding ]
 
 DATA RecordPatternBinding
-    | RecordPatternBinding -- ToDo: or _Binding?
+    | Binding
         range                    : Range
         name                     : Name
         pattern                  : Pattern
+    | Pun
+        range                    : Range
+        name                     : Name
+
+SET AllRecordPatternBinding
+  = RecordPatternBinding RecordPatternBindings
 %%]
 
 %%[1
@@ -927,11 +934,8 @@ SET AllExpression
     AllQualifier
 %%]
 %%[7
-    RecordExpressionBinding RecordExpressionBindings
+    AllRecordExpressionBinding
     AllRowRecordExpressionUpdate
-%%]
-%%[77
-    RecordPatternBinding RecordPatternBindings
 %%]
 %%[9
     ContextedExpression ContextedExpressions
@@ -990,13 +994,11 @@ DATA Pattern
         range                    : Range
         patterns                 : Patterns
 %%]
-%%[77
+%%[7
     | Record
         range                    : Range
         name                     : Name
         recordPatternBindings    : RecordPatternBindings
-%%]
-%%[7
     | RowRecordBinding
         range                    : Range
         pattern                  : Pattern
@@ -1036,6 +1038,7 @@ SET AllPattern
 %%]
 %%[7
     AllRowRecordPatternBinding
+    AllRecordPatternBinding
 %%]
 %%[9
     ContextedPattern ContextedPatterns

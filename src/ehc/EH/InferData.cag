@@ -347,7 +347,25 @@ SEM Expr
                                                     =   partition (\i -> @fldS `Set.isSubsetOf` Map.keysSet (dtiFldMp i)) $ @dtiL
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pattern: additional info for checks, codegen, etc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[7
+ATTR DataFieldPatExpr [ | | dti: DataTagInfo ]
+
+SEM DataFieldPatExpr
+  | Con         loc         .   dgi                 =   let (_,t,_) = valGamTyOfDataCon @nm @lhs.valGam
+                                                        in  panicJust "DataFieldPatExpr.dgi" $ dataGamDgiOfTy t @lhs.dataGam
+                            .   dti                 =   dgiDtiOfCon @nm @dgi
+%%]
+
+%%[7
+ATTR DataFieldPatExpr [ | | fldL: {[HsName]} ]
+
+SEM DataFieldPatExpr
+  | Ext         lhs         .   fldL                =   @nm : @dataFieldPatExpr.fldL
+  | * - Ext     lhs         .   fldL                =   []
 %%]
 
 

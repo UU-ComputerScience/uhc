@@ -738,7 +738,7 @@ pExpressionConUpd
 %%[7
 pRecordExpressionBinding :: HSParser RecordExpressionBinding
 pRecordExpressionBinding
-  = mkRngNm RecordExpressionBinding_RecordExpressionBinding <$> qvar <* pEQUAL <*> pExpression
+  = mkRngNm RecordExpressionBinding_Binding <$> qvar <* pEQUAL <*> pExpression
 %%]
 
 %%[1.pExpressionApp
@@ -884,17 +884,21 @@ pPatternBase
   =   qvar <**> (   (\a p v -> Pattern_As (mkRange1 a) (tokMkQName v) p) <$> pAT <*> pPatternBase
                 <|> pSucceed (mkRngNm Pattern_Variable)
                 )
-  <|> (\c -> mkRngNm Pattern_Constructor c []) <$> qconid
   <|> Pattern_Literal emptyRange <$> pLiteral
   <|> (Pattern_Negate . mkRange1) <$> pMINUS <*> pLiteralNumber
-%%]
-%%[5
+  <|> qconid
+      <**> (   pSucceed (\c -> mkRngNm Pattern_Constructor c [])
+%%[[7
+           <|> pCurlys' ((\bs _ c -> mkRngNm Pattern_Record c bs) <$> pListSep pCOMMA pRecordPatternBinding)
+%%]]
+           )
+%%[[5
   <|> pBracks' (flip Pattern_List <$> pListSep pCOMMA pPattern)
-%%]
-%%[8
+%%]]
+%%[[8
   <|> (Pattern_Irrefutable . mkRange1) <$> pTILDE <*> pPatternBase
-%%]
-%%[1.pPatternBase.prod
+%%]]
+%%[[1
   <|> pParens' pInParens
   where pInParens :: HSParser (Range -> Pattern)
         pInParens
@@ -904,11 +908,20 @@ pPatternBase
                     <|> pSucceed (flip Pattern_Parenthesized)
               )     )
           <|> pSucceed (\r -> Pattern_Constructor r (hsnProd 0) [])
-%%]
-%%[7 -1.pPatternBase.prod
+%%][7
   <|>   pParenRow True pOROWREC pCROWREC pEQUAL False undefined undefined
           (Pattern_RowRecordEmpty,Pattern_Variable,RowRecordPatternBinding_Binding,Pattern_RowRecordBinding,Pattern_Parenthesized)
           pSelector pPattern
+%%]]
+%%]
+
+%%[7
+pRecordPatternBinding :: HSParser RecordPatternBinding
+pRecordPatternBinding
+  = qvar
+    <**> (   pSucceed (\v -> mkRngNm RecordPatternBinding_Pun v)
+         <|> (\p v -> mkRngNm RecordPatternBinding_Binding v p) <$ pEQUAL <*> pPattern
+         )
 %%]
 
 %%[1

@@ -649,15 +649,18 @@ tyRecExtr lbl t
 %%% Canonical ordering of fields of record
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7 hs export(rowExtCmp,rowLabCmp,tyRowCanonOrder)
+%%[7 hs export(rowExtCmp,rowLabCmp,tyRowCanonOrder,tyRowCanonOrderBy)
 rowLabCmp :: HsName -> HsName -> Ordering
 rowLabCmp = compare
 
 rowExtCmp :: (HsName,a) -> (HsName,a) -> Ordering
 rowExtCmp (n1,_) (n2,_) = n1 `rowLabCmp` n2
 
+tyRowCanonOrderBy :: (o -> o -> Ordering) -> AssocL o a -> AssocL o a
+tyRowCanonOrderBy cmp = sortByOn cmp fst
+
 tyRowCanonOrder :: AssocL HsName a -> AssocL HsName a
-tyRowCanonOrder = sortByOn rowLabCmp fst
+tyRowCanonOrder = tyRowCanonOrderBy rowLabCmp
 %%]
 
 %%[8 hs export(tyRowOffsetOrder)

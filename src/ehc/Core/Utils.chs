@@ -91,7 +91,7 @@ caltOffsetL alt
 %%% Construct case with: strict in expr, offsets strict
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[8 export(MbCPatRest)
 type MbCPatRest = Maybe (CPatRest,Int) -- (pat rest, arity)
 %%]
 
@@ -209,4 +209,85 @@ fuMkCExpr u fuL r
      in   mkCExprLet CBindStrict bL $ foldl (\r (_,(f,_)) -> f r) (CExpr_Var n) $ fuL'
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Reorder record Field pattern
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(FldOffset(..),foffMkOff,foffLabel)
+data FldOffset
+  = FldKnownOffset      { foffLabel'     :: HsName, foffOffset   :: Int      }
+  | FldComputeOffset    { foffLabel'     :: HsName, foffCExpr    :: CExpr    }
+--  | FldLabelOffset      { foffLabel     :: HsName                           }
+  | FldImplicitOffset
+
+instance Eq FldOffset where
+  (FldKnownOffset _ o1) == (FldKnownOffset _ o2) = o1 == o2
+  foff1                 == foff2                 = foffLabel foff1 == foffLabel foff2
+
+instance Ord FldOffset where
+  (FldKnownOffset _ o1) `compare` (FldKnownOffset _ o2) = o1 `compare` o2
+  foff1                 `compare` foff2                 = foffLabel foff1 `rowLabCmp` foffLabel foff2
+
+foffMkOff :: FldOffset -> Int -> (Int,CExpr)
+foffMkOff FldImplicitOffset      o = (o,CExpr_Int o)
+foffMkOff (FldKnownOffset   _ o) _ = (o,CExpr_Int o)
+foffMkOff (FldComputeOffset _ e) o = (o,e)
+
+foffLabel :: FldOffset -> HsName
+foffLabel FldImplicitOffset = hsnUnknown
+foffLabel foff				= foffLabel' foff
+%%]
+
+%%[8 export(FieldSplitL,fsL2PatL)
+type FieldSplitL = AssocL FldOffset CPat
+
+fsL2PatL :: FieldSplitL -> [CPat]
+fsL2PatL = assocLElts
+%%]
+
+-- Reordering compensates for the offset shift caused by predicate computation, which is predicate by predicate
+-- whereas these sets of patterns are dealt with in one go.
+%%[8 export(fsLReorder)
+fsLReorder :: FieldSplitL -> FieldSplitL
+fsLReorder fsL
+  =  let  (fsL',_)
+            =  foldr
+                 (\(FldComputeOffset l o,p) (fsL,exts) 
+                     ->  let  mkOff lbl exts o
+                                =  let nrSmaller = length . filter (\e -> rowLabCmp e lbl == LT) $ exts
+                                   in  o `mkCExprAddInt` nrSmaller
+                         in   ((FldComputeOffset l (mkOff l exts o),p):fsL,l:exts)
+                 )
+                 ([],[])
+            $  fsL
+     in   tyRowCanonOrderBy compare fsL'
+%%]
+
+%%[8 export(rpbReorder,patBindLOffset)
+rpbReorder :: CPatBindL -> CPatBindL
+rpbReorder pbL
+  =  let  (pbL',_)
+            =  foldr
+                 (\(CPatBind_Bind l o n p) (pbL,exts) 
+                     ->  let  mkOff lbl exts o
+                                =  let nrSmaller = length . filter (\e -> rowLabCmp e lbl == LT) $ exts
+                                   in  o `mkCExprAddInt` nrSmaller
+                         in   ((CPatBind_Bind l (mkOff l exts o) n p):pbL,l:exts)
+                 )
+                 ([],[])
+            $  pbL
+          cmpPB (CPatBind_Bind l1 _ _ _)  (CPatBind_Bind l2 _ _ _) = rowLabCmp l1 l2
+     in   sortBy cmpPB pbL'
+
+patBindLOffset :: CPatBindL -> (CPatBindL,[CBindL])
+patBindLOffset
+  =  unzip
+  .  map
+       (\b@(CPatBind_Bind l o n p@(CPat_Var pn))
+           ->  let  offNm = hsnPrefix "off_" . cpatNmNm $ pn
+               in   case o of
+                      CExpr_Int _  -> (b,[])
+                      _            -> (CPatBind_Bind l (CExpr_Var offNm) n p,[CBind_Bind offNm o])
+       )
+%%]
 

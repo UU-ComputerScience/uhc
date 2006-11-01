@@ -278,6 +278,12 @@ grEvalExpr rs e
           ->  do  {  n' <- rsVarDeref rs n
                   ;  return (rs,Just n')
                   }
+        GrExpr_FetchUpdate ns nd
+          ->  do  {  ns' <- rsVarDeref rs ns
+                  ;  let (RVPtr pd) = rsVar rs nd
+                  ;  ns' `seq` writeArray (rhMem . rsHeap $ rs) pd ns'
+                  ;  return (rs,Just RVNil)
+                  }
         GrExpr_Fetch n (Just offset) _
           ->  do  {  (RVNode n') <- rsVarDeref rs n
                   ;  error "fetch with offset not supported yet"

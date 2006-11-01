@@ -148,9 +148,8 @@ SEM Decl
   | KiSig       loc     .   pp      =   @nm >#< "::" >#< @kiExpr.pp
 %%]
 
-DataFieldPatExpr
 %%[7
-ATTR RecExpr RowTyExpr RecPatExpr DataFields DataFieldExpr  [ | | ppL: {[PP_Doc]} ]
+ATTR RecExpr RowTyExpr RecPatExpr DataFields DataFieldExpr DataFieldPatExpr [ | | ppL: {[PP_Doc]} ]
 
 SEM Expr
   | DataFields  loc     .   pp      =   @dataFieldExpr.pp >#< ppCurlysCommas' (reverse @dataFieldExpr.ppL)
@@ -169,6 +168,7 @@ SEM RecExpr
                 lhs     .   ppL     =   []
 
 SEM PatExpr
+  | DataFields  loc     .   pp      =   @dataFieldPatExpr.pp >#< ppCurlysCommas' (reverse @dataFieldPatExpr.ppL)
   | Rec         loc     .   pp      =   ppAppTop  (hsnRec,mkPPAppFun @appFunNm @recPatExpr.pp)
                                                   (reverse @recPatExpr.ppL) @recPatExpr.pp
 
@@ -198,13 +198,13 @@ SEM DataFieldExpr
   | Con Expr    lhs     .   ppL     =   []
 
 
-%%]
 SEM DataFieldPatExpr
-  | Upd         loc     .   pp      =   ppFld "=" Nothing @nm (pp @nm) @patExpr.pp
+  | Ext         loc     .   pp      =   ppFld "=" Nothing @nm (pp @nm) @patExpr.pp
                 lhs     .   ppL     =   @pp : @dataFieldPatExpr.ppL
                         .   pp      =   @dataFieldPatExpr.pp
-  | Expr        loc     .   pp      =   @patExpr.pp
+  | Con         loc     .   pp      =   pp @nm
                 lhs     .   ppL     =   []
+%%]
 
 %%[8
 SEM Expr

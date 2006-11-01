@@ -3,39 +3,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% The actual name (refname) used for referring to use occurrences
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1.Type.refname
-%%]
-SEM Type
-    | Constructor
-        loc             .   refname     =   @name
-
-%%[1.Expression.refname
-%%]
-SEM Expression
-    | Variable Constructor
-      RecordConstruction
-        loc             .   refname     =   @name
-
-%%[7
-%%]
-SEM RecordExpressionBinding
-    | RecordExpressionBinding
-        loc             .   refname     =   @name
-
-%%[9
-%%]
-SEM ContextItem
-    | Class
-        loc             .   refname     =   @name
-
-SEM Deriving
-    | Deriving
-        loc             .   refname     =   @name
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Identifier occurrences
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -149,6 +116,7 @@ ATTR
   LeftHandSide
 %%[[7
   AllRowRecordPatternBinding
+  AllRecordPatternBinding
 %%]
     [ | | idOccDefGam USE {`gamAddGam`} {emptyGam} : IdDefOccGam ]
 %%]
@@ -247,6 +215,12 @@ SEM Pattern
         loc             .   idOccDefGamType
                                         =   tvarS2IdDefOccGam @lhs.nmLev @range @type.freeTvarS
 %%]
+%%]
+
+%%[7
+SEM RecordPatternBinding
+    | Pun
+        loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @range IdAsp_Val_Var [@idOccDef]
 %%]
 
 %%[3
@@ -487,18 +461,18 @@ SEM Expression
     | Constructor
 %%[[7
       RecordConstruction
-%%]
+%%]]
         loc             .   idAsp       =   IdAsp_Val_Con
     | Variable Constructor
 %%[[7
       RecordConstruction
-%%]
+%%]]
         loc             .   (refname,_,idUseOccGam,errIdUse)
                                         =   mkUseOccGam @lhs.idGam [@name] IdOcc_Val @idAsp @range
 %%[[7
     | RecordConstruction
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@recordExpressionBindings.idUseOccGam]
-%%]
+%%]]
     | Negate
         loc             .   (refname,_,idUseOccGam,errIdUse)
                                         =   mkUseOccGam @lhs.idGam [hsnNegate] IdOcc_Val IdAsp_Val_Var @range
@@ -600,7 +574,10 @@ SEM Pattern
     | Constructor
 %%[[5
       InfixConstructor
-%%]
+%%]]
+%%[[7
+      Record
+%%]]
         loc             .   (refname,_,idUseOccGam,errIdUse)
                                         =   mkUseOccGam @lhs.idGam [@conNm] IdOcc_Val IdAsp_Val_Con @range
     | Constructor
@@ -612,7 +589,11 @@ SEM Pattern
         loc             .   (_,refnames,idUseOccGam,errIdUse)
                                         =   mkUseOccGam @lhs.idGam [hsnListCons,hsnListNil] IdOcc_Val IdAsp_Val_Con @range
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@patterns.idUseOccGam]
-%%]
+%%]]
+%%[[7
+    | Record
+        lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@recordPatternBindings.idUseOccGam]
+%%]]
 %%]
 
 %%[1
@@ -633,10 +614,19 @@ SEM Type
 
 %%[7
 SEM RecordExpressionBinding
-    | RecordExpressionBinding
+    | Binding
         loc             .   (refname,_,idUseOccGam,errIdUse)
-                                        =   mkUseOccGam @lhs.idGam [@name] IdOcc_Val IdAsp_Val_Con @range
+                                        =   mkUseOccGam @lhs.idGam [@name] IdOcc_Val IdAsp_Val_Fld @range
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@expression.idUseOccGam]
+%%]
+
+%%[7
+SEM RecordPatternBinding
+    | Binding Pun
+        loc             .   (fldrefname,_,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [@name] IdOcc_Val IdAsp_Val_Fld @range
+    | Binding
+        lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@pattern.idUseOccGam]
 %%]
 
 %%[9

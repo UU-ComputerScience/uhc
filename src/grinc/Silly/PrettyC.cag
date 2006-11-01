@@ -102,7 +102,7 @@ SEM Value
 
 SEM Constant
   | LiteralInt  lhs.prettyC   = text (show @value)
-  | LiteralStr  lhs.prettyC   = text (show @value)
+  | LiteralStr  lhs.prettyC   = "((GrWord)" >|< text (show @value) >|< ")"
   | Alias       lhs.prettyC   = text @name
 
 SEM Variable

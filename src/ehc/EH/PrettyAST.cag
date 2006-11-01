@@ -353,6 +353,9 @@ SEM Expr
                                         ]
 
 SEM PatExpr
+  | DataFields  loc     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","DataFields"] [] [@dataFieldPatExpr.ppAST] @info
+                        .  info     =   [ mkInfo1 "ty" (pp @dataFieldPatExpr.ty)
+                                        ]
   | Rec         loc     .  ppAST    =   ppNest ["PatExpr","Rec"] [] [@recPatExpr.ppAST]
 
 SEM TyExpr
@@ -406,6 +409,13 @@ SEM DataFieldExpr
                                         , mkInfo1 "foTy fo_" (pp (foTy @fo_))
                                         ]
   | Expr        loc     .  ppAST    =   ppNestInfo @lhs.opts ["DataFieldExpr","Expr"] [] [@expr.ppAST] @info
+                        .  info     =   [ mkInfo1 "ty" (pp @ty)
+                                        ]
+SEM DataFieldPatExpr
+  | Con         loc     .  ppAST    =   ppNestInfo @lhs.opts ["DataFieldPatExpr","Con"] [ppNm @nm] [] @info
+                        .  info     =   [ mkInfo1 "ty" (pp @ty)
+                                        ]
+  | Ext         loc     .  ppAST    =   ppNestInfo @lhs.opts ["DataFieldPatExpr","Ext"] [ppNm @nm] [@dataFieldPatExpr.ppAST,@patExpr.ppAST] @info
                         .  info     =   [ mkInfo1 "ty" (pp @ty)
                                         ]
 %%]

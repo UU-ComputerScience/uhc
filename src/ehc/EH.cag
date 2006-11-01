@@ -31,7 +31,7 @@
 %%[6 hs export(KiExpr(..))
 %%]
 
-%%[7 hs export(RecExpr(..), RecPatExpr(..), RowTyExpr(..), DataField(..), DataFields, DataFieldExpr(..))
+%%[7 hs export(RecExpr(..), RecPatExpr(..), RowTyExpr(..), DataField(..), DataFields, DataFieldExpr(..), DataFieldPatExpr(..))
 %%]
 
 %%[8 hs export(mkLet',mkIf'')
