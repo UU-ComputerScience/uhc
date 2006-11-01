@@ -31,7 +31,7 @@
 %%[77 hs export(RowExtension(..), RowExtensions, RowType(..))
 %%]
 
-%%[77 hs export(RecordPatternBinding(..), RecordPatternBindings)
+%%[7 hs export(RecordPatternBinding(..), RecordPatternBindings)
 %%]
 
 %%[7 hs export(RecordExpressionBinding(..), RecordExpressionBindings)

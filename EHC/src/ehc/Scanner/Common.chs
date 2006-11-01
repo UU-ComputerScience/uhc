@@ -226,7 +226,7 @@ grinScanOpts :: ScanOpts
 grinScanOpts
   =  defaultScanOpts
         {   scoKeywordsTxt      =   [ "eval", "apply"
-                                    , "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi"
+                                    , "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi", "fetchupdate"
                                     , "throw", "try", "catch", "ctags", "applymap", "evalmap"
                                     , "C", "F", "P", "A", "R", "H", "U", "W"
                                     ]

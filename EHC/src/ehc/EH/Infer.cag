@@ -548,6 +548,9 @@ SEM CaseAlt
 %%[7
 SEM RecPatExpr
   | Ext Expr    patExpr     .   inclVarBind         =   True
+
+SEM DataFieldPatExpr
+  | Ext         patExpr     .   inclVarBind         =   True
 %%]
 
 %%[9
@@ -574,7 +577,7 @@ ATTR PatExpr [ | | topNm: HsName ]
 SEM PatExpr
   | Var VarAs   loc         .   topNm               =   if @nm == hsnWild then uidHNm @lUniq else @nm
   | App         lhs         .   topNm               =   hsnUnknown
-  | AppTop Con Rec CConst IConst
+  | AppTop Con Rec CConst IConst DataFields
 %%[[99
     Expr
 %%]]

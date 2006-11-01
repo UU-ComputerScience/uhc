@@ -285,8 +285,8 @@ DATA PatExpr
 %%[7
 DATA PatExpr
   | Rec             recPatExpr      : RecPatExpr
-%%]
   | DataFields      dataFieldPatExpr: DataFieldPatExpr
+%%]
 
 %%[8
 DATA PatExpr
@@ -304,10 +304,9 @@ SET AllPatExpr      = PatExpr
 %%]
 
 %%[7.AllPatExpr -1.AllPatExpr
-SET AllPatExpr      = PatExpr RecPatExpr
+SET AllPatExpr      = PatExpr RecPatExpr DataFieldPatExpr
 %%]
- DataFieldPatExpr
-
+ 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pattern + guard in case expressions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -392,13 +391,12 @@ DATA DataFieldExpr
 %%]
 
 %%[7
-%%]
 DATA DataFieldPatExpr
-  | Upd             dataFieldPatExpr: DataFieldPatExpr
+  | Ext             dataFieldPatExpr: DataFieldPatExpr
                     nm              : {HsName}
                     patExpr         : PatExpr
-  | Con             patExpr         : PatExpr
-  | Expr            patExpr         : PatExpr
+  | Con             nm              : {HsName}
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Records, rows
