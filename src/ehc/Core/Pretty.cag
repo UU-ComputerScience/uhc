@@ -155,7 +155,7 @@ SEM CPat
   | Char        lhs         .   pp          =   ppCPatNmNm ppCNm @pnm >#< ppLit "Char"   [@char]
   | Var         lhs         .   pp          =   ppCPatNmNm ppCNm @pnm
   | Con         lhs         .   pp          =   ppDef (ppCPatNmNm ppCNm @pnm >#< ppTag @tag)
-                                                      (ppCurly (@rest.pp >|< "|" >|< ppCommas' @binds.ppL))
+                                                      @binds.pp
   | Undef       lhs         .   pp          =   pp hsnUnknown
 
 SEM CPatL
@@ -164,6 +164,9 @@ SEM CPatL
 
 SEM CPatBind
   | Bind        lhs         .   pp          =   ppCurlysCommas' [ppCNm @lbl,@offset.pp,ppCNm @nm] >|< "=" >|< @pat.pp
+
+SEM CPatConBind
+  | One         lhs         .   pp          =   ppCurly (@rest.pp >|< "|" >|< ppCommas' @binds.ppL)
 
 SEM CPatRest
   | Var         lhs         .   pp          =   ppCNm @nm

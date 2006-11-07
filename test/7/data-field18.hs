@@ -1,4 +1,4 @@
--- data field pattern match: ok, matchorder same as def order
+-- data field pattern match: ok, matchorder different from def order
 -- %% inline test (prefix1) --
 
 data X a
@@ -8,6 +8,6 @@ data X a
 
 x1 = X 1 'a' 'b'
 x2 = case x1 of
-       X { b = bb, c = cc } -> (bb,cc)
+       X { c = cc, b = bb } -> (bb,cc)
 
 main = x2 # 1

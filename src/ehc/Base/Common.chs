@@ -721,17 +721,8 @@ instance PP FIMode where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Misc
+%%% List related, should move in time to general library
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1.Misc.hdAndTl
-%%]
-hdAndTl' :: a -> [a] -> (a,[a])
-hdAndTl' _ (a:as) = (a,as)
-hdAndTl' n []     = (n,[])
-
-hdAndTl :: [a] -> (a,[a])
-hdAndTl = hdAndTl' undefined
 
 %%[2.unions
 unions :: Eq a => [[a]] -> [a]
@@ -743,20 +734,6 @@ listCombineUniq :: Eq a => [[a]] -> [a]
 listCombineUniq = nub . concat
 %%]
 
-%%[88
-sortOn :: Ord b => (a -> b) -> [a] -> [a]
-sortOn = sortByOn compare
-
-sortByOn :: (b -> b -> Ordering) -> (a -> b) -> [a] -> [a]
-sortByOn cmp sel = sortBy (\e1 e2 -> sel e1 `cmp` sel e2)
-
-groupOn :: Eq b => (a -> b) -> [a] -> [[a]]
-groupOn sel = groupBy (\e1 e2 -> sel e1 == sel e2)
-
-groupSortOn :: Ord b => (a -> b) -> [a] -> [[a]]
-groupSortOn sel = groupOn sel . sortOn sel
-%%]
-
 %%[90
 groupByOn :: (b -> b -> Bool) -> (a -> b) -> [a] -> [[a]]
 groupByOn eq sel = groupBy (\e1 e2 -> sel e1 `eq` sel e2)
@@ -764,6 +741,15 @@ groupByOn eq sel = groupBy (\e1 e2 -> sel e1 `eq` sel e2)
 groupSortByOn :: (b -> b -> Ordering) -> (a -> b) -> [a] -> [[a]]
 groupSortByOn cmp sel = groupByOn (\e1 e2 -> cmp e1 e2 == EQ) sel . sortByOn cmp sel
 %%]
+
+%%[8 export(replicateBy)
+replicateBy :: [a] -> b -> [b]
+replicateBy l e = replicate (length l) e
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(strBlankPad)
 strBlankPad :: Int -> String -> String
