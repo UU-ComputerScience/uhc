@@ -61,7 +61,7 @@ SEM CBind
   | FFI         (lhs.gUniq,loc.lUniq)       =   mkNewLevUID   @lhs.gUniq
 
 SEM CPat
-  | Con         (rest.gUniq,loc.lUniq)      =   mkNewLevUID   @lhs.gUniq
+  | Con         (binds.gUniq,loc.lUniq)     =   mkNewLevUID   @lhs.gUniq
   | Int Char    (lhs.gUniq,loc.lUniq)       =   mkNewLevUID   @lhs.gUniq
 %%]
 
@@ -626,7 +626,7 @@ SEM CPat
   | Int         lhs         .   grPat       =   GrPat_LitInt @int
   | Char        lhs         .   grPat       =   GrPat_LitInt (ord @char)
   | Con         lhs         .   (grPat,grWrapCase)
-                                            =   case @rest.self of
+                                            =   case @binds.cpatRest of
                                                    CPatRest_Empty
                                                      ->  (ctag mkGrPatRecNode (\_ l t _ -> mkGrPatConNode t l) @tag @binds.patNmL,id)
                                                    CPatRest_Var r
@@ -646,8 +646,8 @@ SEM CPat
 %%]
 
 %%[8
-ATTR CPatBind CPatBindL [ | | patNmL USE {++} {[]}: {[HsName]} ]
-ATTR CPatBind CPatBindL [ | | grTupFldL USE {++} {[]}: {[(GrVal,GrVal->GrSplit)]} ]
+ATTR AllPatBind [ | | patNmL USE {++} {[]}: {[HsName]} ]
+ATTR AllPatBind [ | | grTupFldL USE {++} {[]}: {[(GrVal,GrVal->GrSplit)]} ]
 
 SEM CPatBind
   | Bind        lhs         .   patNmL      =   [@pat.patNm]
@@ -665,7 +665,11 @@ SEM CPat
 %%]
 
 %%[8
-ATTR CPatRest [ | | self: SELF ]
+ATTR CPatRest [ | | cpatRest: SELF ]
+ATTR CPatConBind [ | | cpatRest: CPatRest ]
+
+SEM CPatConBind
+  | Many		lhs			.	cpatRest	=	error "CPatConBind.Many.cpatRest"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

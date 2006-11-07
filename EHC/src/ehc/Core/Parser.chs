@@ -93,7 +93,7 @@ pCPat
 					   <|> (\s n -> CPat_Char n (head s)) <$ pKeyTk "Char"
 					   )
 				       <*> (tokMkStr <$> pStringTk)
-				   <|> (\t r bs n -> CPat_Con n t r bs)
+				   <|> (\t r bs n -> CPat_Con n t (CPatConBind_One r bs))
 				       <$  pKeyTk "Tag" <*> pCTag
 				       <*  pOCURLY <*> pCPatRest <* pVBAR <*> pListSep pCOMMA pCPatBind <* pCCURLY
 				   )

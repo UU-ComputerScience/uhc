@@ -78,6 +78,10 @@ DATA CExpr
 %%]
 
 %%[8
+SET AllExpr     =   CExpr AllBind AllAlt AllPat
+%%]
+
+%%[8
 DATA CBind
   | Bind        nm              : {HsName}
                 expr            : CExpr
@@ -89,18 +93,29 @@ DATA CBind
 
 TYPE CBindL     =   [CBind]
 
+SET AllBind     =   CBind CBindL
+%%]
+
+Of CAlt, the pats will only contain one pattern, except internally during
+rewrite of case alternatives by the case expression/pattern rewriter.
+Parsing/printing of Core assumes one pattern.
+
+%%[8
 DATA CAlt
   | Alt         pats            : CPatL
                 expr            : CExpr
 
 TYPE CAltL      =   [CAlt]
 
+SET AllAlt      =   CAlt CAltL
+%%]
+
+%%[8
 DATA CPat
   | Var         pnm             : {CPatNm}
   | Con         pnm             : {CPatNm}
                 tag             : {CTag}
-                rest            : CPatRest
-                binds           : CPatBindL
+                binds           : CPatConBind
   | Int         pnm             : {CPatNm}
                 int             : {Int}
   | Char        pnm             : {CPatNm}
@@ -108,7 +123,22 @@ DATA CPat
   | Undef
 
 TYPE CPatL      =   [CPat]
+%%]
 
+Of CPatConBind, the Many alternative encodes repetitive matching for
+our of order data field pattern matching.
+It is only used internally, hence parsing/printing of Core ignores this alternative.
+
+%%[8
+DATA CPatConBind
+  | One			rest            : CPatRest
+                binds           : CPatBindL
+  | Many		conbinds        : CPatConBindL
+
+TYPE CPatConBindL  =   [CPatConBind]
+%%]
+
+%%[8
 DATA CPatRest
   | Var         nm              : {HsName}
   | Empty
@@ -136,9 +166,11 @@ DATA CPat
                 fldPat          : CPat
 
 %%[8
-SET AllBind     =   CBind CBindL
-SET AllPat      =   CPatRest CPat CPatL CPatBind CPatBindL
-SET AllAlt      =   CAlt CAltL
-SET AllExpr     =   CExpr AllBind AllAlt AllPat
+SET AllPatConBind  	=   CPatConBind CPatConBindL
+SET AllPatBind  	=   CPatBind CPatBindL AllPatConBind
+SET AllPat      	=   CPatRest CPat CPatL AllPatBind
+%%]
+
+%%[8
 SET AllCodeNT   =   CModule AllExpr
 %%]

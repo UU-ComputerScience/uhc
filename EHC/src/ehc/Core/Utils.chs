@@ -54,9 +54,23 @@ caltLSaturate env alts
             where allAlts
                     = [ (ctagTag t,mkA env t (ctagArity t)) | t <- rceEnvDataAlts env (caltTag alt1) ]
                     where mkA env ct a = CAlt_Alt [mkP ct a] (rceCaseCont env)
-                          mkP     ct a = CPat_Con cpatNmNone ct CPatRest_Empty [mkB o | o <- [0..a-1]]
+                          mkP     ct a = CPat_Con cpatNmNone ct (CPatConBind_One CPatRest_Empty [mkB o | o <- [0..a-1]])
                           mkB o        = CPatBind_Bind hsnUnknown (CExpr_Int o) (cpatNmNm cpatNmNone) (CPat_Var cpatNmNone)
       _     -> []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Flatten CPatConBind
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(cpatConBindFlatten,cpatConBindUnFlatten)
+cpatConBindFlatten :: CPatConBind -> [CPatConBind]
+cpatConBindFlatten b@(CPatConBind_One _ _) = [b]
+cpatConBindFlatten   (CPatConBind_Many bs) = concatMap cpatConBindFlatten bs
+
+cpatConBindUnFlatten :: [CPatConBind] -> CPatConBind
+cpatConBindUnFlatten [b] = b
+cpatConBindUnFlatten bs  = CPatConBind_Many bs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -64,8 +78,10 @@ caltLSaturate env alts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-cpatBindLOffsetL :: CPatBindL -> (CPatBindL,CBindL)
-cpatBindLOffsetL pbL
+cpatConBindOffsetL :: CPatConBind -> (CPatConBind,CBindL)
+cpatConBindOffsetL (CPatConBind_Many _)
+  =  error "cpatConBindOffsetL"
+cpatConBindOffsetL (CPatConBind_One r pbL)
   =  let  (pbL',obL)
             =  unzip
                .  map
@@ -76,15 +92,16 @@ cpatBindLOffsetL pbL
                                    _            -> (CPatBind_Bind l (CExpr_Var offNm) n p,[CBind_Bind offNm o])
                     )
                $  pbL
-     in   (pbL',concat obL)
+     in   (CPatConBind_One r pbL',concat obL)
 
 caltOffsetL :: CAlt -> (CAlt,CBindL)
 caltOffsetL alt
   =  case alt of
-       CAlt_Alt (CPat_Con n t r pbL : ps) e
-         ->  (CAlt_Alt (CPat_Con n t r pbL' : ps) e,offBL)
-             where (pbL',offBL) = cpatBindLOffsetL pbL
+       CAlt_Alt (CPat_Con n t b : ps) e
+         ->  (CAlt_Alt (CPat_Con n t b' : ps) e,offBL)
+             where (b',offBL) = cpatConBindOffsetL b
        _ ->  (alt,[])
+  where 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -120,8 +137,10 @@ mkCExprSelsCases' :: RCEEnv -> Maybe HsName -> CExpr -> [(CTag,[(HsName,HsName,C
 mkCExprSelsCases' env ne e tgSels
   = mkCExprStrictSatCase env ne e alts
   where  alts = [ CAlt_Alt
-                    [CPat_Con (CPatNmOrig $ maybe (cexprVar e) id ne) ct (mkRest mbRest ct)
-                       [CPatBind_Bind lbl off n (CPat_Var (CPatNmOrig n)) | (n,lbl,off) <- nmLblOffL]]
+                    [CPat_Con (CPatNmOrig $ maybe (cexprVar e) id ne) ct
+                       (CPatConBind_One (mkRest mbRest ct)
+                         [CPatBind_Bind lbl off n (CPat_Var (CPatNmOrig n)) | (n,lbl,off) <- nmLblOffL])
+                    ]
                     sel
                 | (ct,nmLblOffL,mbRest,sel) <- tgSels
                 ]
@@ -217,7 +236,6 @@ fuMkCExpr u fuL r
 data FldOffset
   = FldKnownOffset      { foffLabel'     :: HsName, foffOffset   :: Int      }
   | FldComputeOffset    { foffLabel'     :: HsName, foffCExpr    :: CExpr    }
---  | FldLabelOffset      { foffLabel     :: HsName                           }
   | FldImplicitOffset
 
 instance Eq FldOffset where
@@ -244,6 +262,10 @@ type FieldSplitL = AssocL FldOffset CPat
 fsL2PatL :: FieldSplitL -> [CPat]
 fsL2PatL = assocLElts
 %%]
+type FieldSplitL = AssocL FldOffset CPatL
+
+fsL2PatL :: FieldSplitL -> CPatL
+fsL2PatL = concat . assocLElts
 
 -- Reordering compensates for the offset shift caused by predicate computation, which is predicate by predicate
 -- whereas these sets of patterns are dealt with in one go.

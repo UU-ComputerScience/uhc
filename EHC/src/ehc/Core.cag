@@ -10,7 +10,7 @@
 %%[8 hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},Data.List,UU.Pretty) export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBindL, CBindCateg(..), CPatRest(..)) 
 %%]
 
-%%[8 hs export(CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL) 
+%%[8 hs export(CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL, CPatConBind(..), CPatConBindL) 
 %%]
 
 %%[8 hs export(CPatNm(..), cpatNmEither,cpatNmNone,ppCPatNmNm)
@@ -50,9 +50,6 @@
 %%]
 
 %%[12 hs export(cModMerge)
-%%]
-
-%%[99 hs export(caltIsBoolExpr)
 %%]
 
 %%[8 import({Core/AbsSyn})
@@ -235,18 +232,18 @@ cerror m = CExpr_Var hsnError `mkCExprApp` [cstring m]
 
 %%[8 hs
 cpatVarNm :: CPat -> CPatNm
-cpatVarNm (CPat_Var         n      )  = n
-cpatVarNm (CPat_Con         n _ _ _)  = n
-cpatVarNm (CPat_Int         n _    )  = n
-cpatVarNm (CPat_Char        n _    )  = n
+cpatVarNm (CPat_Var         n     )  = n
+cpatVarNm (CPat_Con         n _ _ )  = n
+cpatVarNm (CPat_Int         n _   )  = n
+cpatVarNm (CPat_Char        n _   )  = n
 %%[[99
-cpatVarNm (CPat_BoolExpr    n _    )  = n
+cpatVarNm (CPat_BoolExpr    n _   )  = n
 %%]]
 
 cpatConTag :: CPat -> CTag
-cpatConTag (CPat_Con  _ t _ _)  = t
-cpatConTag (CPat_Int  _ _    )  = ctagInt
-cpatConTag (CPat_Char _ _    )  = ctagChar
+cpatConTag (CPat_Con  _ t _ )  = t
+cpatConTag (CPat_Int  _ _   )  = ctagInt
+cpatConTag (CPat_Char _ _   )  = ctagChar
 
 caltTag :: CAlt -> CTag
 caltTag (CAlt_Alt (p : _) _) = cpatConTag p
@@ -275,7 +272,13 @@ cvarUndefined :: CExpr
 cvarUndefined = CExpr_Var hsnUndefined
 %%]
 
-%%[99 hs
+%%[8 hs export(caltIsConMany)
+caltIsConMany :: CAlt -> Bool
+caltIsConMany (CAlt_Alt (CPat_Con _ _ (CPatConBind_Many _) : _) _) = True
+caltIsConMany _                                                    = False
+%%]
+
+%%[99 hs export(caltIsBoolExpr)
 caltIsBoolExpr :: CAlt -> Bool
 caltIsBoolExpr (CAlt_Alt (CPat_BoolExpr _ _ : _) _)  = True
 caltIsBoolExpr _                                     = False
