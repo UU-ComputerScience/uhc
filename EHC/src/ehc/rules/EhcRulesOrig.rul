@@ -148,7 +148,7 @@ format ag ANY = (Ty_Any|Ty)
 format ag ity = imprTy
 format ag ty.ident = gTy
 
-format ag  tyString2 = "tyMapName (idQualGamReplacement @lhs.idQualGam IdOcc_Type)" tyString
+format ag  tyString2 = "(Ty_Con (ehbnString $ ehcOptBuiltinNames @lhs.opts))"
 format tex tyString2 = tyString
 
 -- tvars
@@ -297,7 +297,7 @@ format ag  translInt = CExpr_Int
 format tex translChar = Transl
 format ag  translChar = CExpr_Char
 format tex translString = Transl
-format ag  translString = cstring
+format ag  translString = "cstring @lhs.opts"
 format tex translFloat = Transl
 format ag  translFloat = CExpr_Float
 format tex translDouble = Transl
@@ -502,7 +502,7 @@ ruleset expr.base scheme expr "Expression type rules" =
       ---
       judge R : expr
           | translExpr = coe (translString (str) | TranslExpr)
-    view MD =
+    view TS =
       judge F : fit
           | lty = tyString2
       ---
@@ -1437,6 +1437,12 @@ ruleset patexpr.base scheme patexpr viewsel K - * "Pattern expression type rules
       judge R : patexpr
           | ty = tyString
           | patFunTy = ANY
+    view TS =
+      judge F : fit
+          | rty = tyString2
+      ---
+      judge R : patexpr
+          | ty = tyString2
 
   rule p.float : p.int "FConst" =
     view K =

@@ -257,3 +257,60 @@ instance Position HsName where
   file   _ = ""
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Identifier occurrences
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(IdOccKind(..))
+data IdOccKind
+  = IdOcc_Val
+  | IdOcc_Pat
+  | IdOcc_Type
+%%[[6
+  | IdOcc_Kind
+%%]]
+%%[[9
+  | IdOcc_Class
+  | IdOcc_Inst
+  | IdOcc_Dflt
+%%]]
+  | IdOcc_Any
+%%[[12
+  | IdOcc_Data
+%%]]
+  deriving (Show,Eq,Ord)
+%%]
+
+%%[1
+-- intended for parsing
+instance PP IdOccKind where
+  pp IdOcc_Val      = pp "Value"
+  pp IdOcc_Pat      = pp "Pat"
+  pp IdOcc_Type     = pp "Type"
+%%[[6
+  pp IdOcc_Kind     = pp "Kind"
+%%]]
+%%[[9
+  pp IdOcc_Class    = pp "Class"
+  pp IdOcc_Inst     = pp "Instance"
+  pp IdOcc_Dflt     = pp "Default"
+%%]]
+  pp IdOcc_Any      = pp "Any"
+%%[[12
+  pp IdOcc_Data     = pp "Data"
+%%]]
+%%]
+
+%%[1 export(IdOcc(..),ppIdOcc)
+data IdOcc
+  = IdOcc { ioccNm :: HsName, ioccKind :: IdOccKind }
+  deriving (Show,Eq,Ord)
+
+-- intended for parsing
+ppIdOcc :: (HsName -> PP_Doc) -> IdOcc -> PP_Doc
+ppIdOcc pn o = ppCurlysCommas [pn (ioccNm o),pp (ioccKind o)]
+
+instance PP IdOcc where
+  pp = ppIdOcc pp
+%%]
+

@@ -44,7 +44,7 @@ SEM PatExpr
 %%[9
 SEM Decl
   | Instance    loc         .   (instPrElimTGam,ctxtArgNmL,_)
-                                                    =   peTGamInsertKnPrL @prfCtxtId @lUniq6 @ctxtPrFixL (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam)
+                                                    =   peTGamInsertKnPrL @lhs.opts @prfCtxtId @lUniq6 @ctxtPrFixL (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam)
                             .   supPrUIDL           =   map (mkPrId @prfCtxtId) . mkNewUIDL (length @supPrTyL) $ @lUniq4
                             .   delPrElimTGam       =   peTGamDel @prfCtxtId @instClsNm @elimRule @instPrElimTGam
                             .   supPrElimTGam       =   @delPrElimTGam
@@ -77,8 +77,8 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | LamImpl     loc         .   lPrElimTGam         =   peTGamInsertKnPr @prfCtxtId @arg.topNm @knPrUid @knPr (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam)
-  | AppTop Lam  loc         .   lPrElimTGam         =   foldr  (\p g -> peTGamInsertKnPr @prfCtxtId (poiHNm (poPoi p)) (poPoi p) (poPr p) g)
+  | LamImpl     loc         .   lPrElimTGam         =   peTGamInsertKnPr @lhs.opts @prfCtxtId @arg.topNm @knPrUid @knPr (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam)
+  | AppTop Lam  loc         .   lPrElimTGam         =   foldr  (\p g -> peTGamInsertKnPr @lhs.opts @prfCtxtId (poiHNm (poPoi p)) (poPoi p) (poPr p) g)
                                                                (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam) @knPrL
   | Let         loc         .   lPrElimTGam         =   tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam
 %%]

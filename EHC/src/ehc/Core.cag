@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},Data.List,UU.Pretty) export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBindL, CBindCateg(..), CPatRest(..)) 
+%%[8 hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},Data.List,UU.Pretty) export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBindL, CBindCateg(..), CPatRest(..)) 
 %%]
 
 %%[8 hs export(CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL, CPatConBind(..), CPatConBindL) 
@@ -16,7 +16,7 @@
 %%[8 hs export(CPatNm(..), cpatNmEither,cpatNmNone,ppCPatNmNm)
 %%]
 
-%%[8 hs export(cpatVarNm,caltTag,caltIsVar,caltIsConst,caltPatL,caltPat,caltLPatNms,cvarUndefined) 
+%%[8 hs export(cpatVarNm,caltTag,caltIsVar,caltIsConst,caltPatL,caltPat,caltLPatNms) 
 %%]
 
 %%[8 hs export(mkCExprLet,mkCExprLetRec,mkCExprLam,mkCExprApp)
@@ -211,7 +211,7 @@ cexprVar _             = hsnUnknown
 %%[8 hs export(cexprTupFld)
 cexprTupFld :: CExpr -> CExpr
 cexprTupFld (CExpr_TupIns _ _ _ _ e) = e
-cexprTupFld _                        = cvarUndefined
+cexprTupFld _                        = CExpr_Var hsnUnknown
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -219,17 +219,20 @@ cexprTupFld _                        = cvarUndefined
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs export(cstring)
-cstring :: String -> CExpr
-cstring m = CExpr_Var hsnFromPackedString `mkCExprApp` [CExpr_String m]
+cstring :: EHCOpts -> String -> CExpr
+cstring opts m = CExpr_Var (ehbnFromPackedString $ ehcOptBuiltinNames opts) `mkCExprApp` [CExpr_String m]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Error
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(cerror)
-cerror :: String -> CExpr
-cerror m = CExpr_Var hsnError `mkCExprApp` [cstring m]
+%%[8 hs export(cerror,cundefined)
+cerror :: EHCOpts -> String -> CExpr
+cerror opts m = CExpr_Var (ehbnError $ ehcOptBuiltinNames opts) `mkCExprApp` [cstring opts m]
+
+cundefined :: EHCOpts -> CExpr
+cundefined opts = CExpr_Var (ehbnUndefined $ ehcOptBuiltinNames opts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -274,9 +277,9 @@ caltPat = head . caltPatL
 caltLPatNms :: CAltL -> [CPatNm]
 caltLPatNms = nub . sort . map (cpatVarNm . caltPat)
 
+%%]
 cvarUndefined :: CExpr
 cvarUndefined = CExpr_Var hsnUndefined
-%%]
 
 %%[8 hs export(caltIsConMany)
 caltIsConMany :: CAlt -> Bool

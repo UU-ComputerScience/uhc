@@ -82,7 +82,7 @@ SEM Expr
                                                 in  mkCExprLet CBindPlain bs (rceMatch @rceEnv ns as)
   | AppTop Parens TypeAs
                 loc         .   cexpr       =   @expr.cexpr
-  | Undefined   loc         .   cexpr       =   cvarUndefined
+  | Undefined   loc         .   cexpr       =   cundefined @lhs.opts
   | CaseAltFail loc         .   cexpr       =   CExpr_CaseAltFail @caseId
 %%]
   | Let         loc         .   letCBindL   =   [(CBindFFI,@decls.ffiCBindL),(CBindRec,@decls.cbindL)]
@@ -110,7 +110,7 @@ SEM Expr
 
 %%[10
 SEM Expr
-  | DynVar      loc         .   cexpr       =   cvarUndefined
+  | DynVar      loc         .   cexpr       =   cundefined @lhs.opts
 %%]
 
 %%[99
@@ -193,7 +193,7 @@ SEM Expr
                                                         . fuL2ExprL
                                                         . listSaturateWith 0 (ctagArity (dtiCTag dti) - 1) (\(_,(_,Just o)) -> o) dflt
                                                         . fuMap (\l mke -> let o = dtiOffsetOfFld l dti in (mke dti o,o))
-                                                      where dflt = [ (o,(f,(CExpr_TupIns cvarUndefined (dtiCTag dti) f (CExpr_Int o) (mkDflt f),Just o)))
+                                                      where dflt = [ (o,(f,(CExpr_TupIns (cundefined @lhs.opts) (dtiCTag dti) f (CExpr_Int o) (mkDflt f),Just o)))
                                                                    | (f,i) <- Map.toList $ dtiFldMp dti, let o = dfiOffset i
                                                                    ]
                                                 in  if dgiIsNewtype @dgi
@@ -202,7 +202,7 @@ SEM Expr
                                                     else case @dataFieldExpr.mbConNm of
                                                            Just conNm
                                                              -> mkCExprLet CBindPlain @dataFieldExpr.dfeCBindL
-                                                                  (mkTup (dgiDtiOfCon conNm @dgi) (const cvarUndefined) @dataFieldExpr.dfeCExpr @dataFieldExpr.fuCExprL)
+                                                                  (mkTup (dgiDtiOfCon conNm @dgi) (const $ cundefined @lhs.opts) @dataFieldExpr.dfeCExpr @dataFieldExpr.fuCExprL)
                                                            _ -> mkCExprLet CBindPlain (err ++  @dataFieldExpr.dfeCBindL)
                                                                   (mkCExprSatSelsCases (@rceEnv {rceCaseCont = CExpr_Var en}) (Just $ mkHNm @lUniq) @dataFieldExpr.dfeCExpr alts)
                                                              where alts = [ ( dtiCTag dti
@@ -212,7 +212,7 @@ SEM Expr
                                                                             )
                                                                           | dti <- @dtiInFldL
                                                                           ]
-                                                                   err = [CBind_Bind en (cerror ("has no field update '" ++ show @fldL ++ "'"))]
+                                                                   err = [CBind_Bind en (cerror @lhs.opts ("has no field update '" ++ show @fldL ++ "'"))]
                                                                    en = HNm "_upd_error"
                             .   cexpr       =   @dfexpr
 %%]
@@ -266,7 +266,7 @@ SEM DataConstr
   | Constr      lhs         .   cbindL      =   let len = length @fields.fldTyL
                                                     nms = map (\i -> HNm ("x" ++ show i)) [1..len]
                                                 in  if @lhs.isNewtype
-                                                    then [ CBind_Bind @conNm (CExpr_Var hsnId) ]
+                                                    then [ CBind_Bind @conNm (CExpr_Var $ ehbnId $ ehcOptBuiltinNames @lhs.opts) ]
                                                     else [ CBind_Bind @conNm
                                                              (mkCExprLam nms
                                                                (mkCExprApp (CExpr_Tup @ctag)
@@ -283,11 +283,13 @@ SEM Decl
   | Data        loc         .   fldSelCBindL=   let (xn1:xn2:_) = hsnLclSupplyL
                                                     tgSels f i = [ (t,[(f,f,o)],Nothing,CExpr_Var f) | (t,o) <- Map.toList $ dficInTagMp i ]
                                                 in  if @isNewtype
-                                                    then [ [CBind_Bind f (CExpr_Var hsnId) | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi] ]
+                                                    then [ [ CBind_Bind f (CExpr_Var $ ehbnId $ ehcOptBuiltinNames @lhs.opts)
+                                                           | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
+                                                         ] ]
                                                     else [ [ CBind_Bind f
                                                                (mkCExprLam [xn1]
                                                                  (mkCExprSatSelsCases (@rceEnv {rceCaseCont = CExpr_Var en}) (Just xn2) (CExpr_Var xn1) (tgSels f i)))
-                                                           , CBind_Bind en (cerror ("has no field selection '" ++ show f ++ "'"))
+                                                           , CBind_Bind en (cerror @lhs.opts ("has no field selection '" ++ show f ++ "'"))
                                                            ]
                                                          | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
                                                          , let en = hsnSuffix f "_datafield_sel_error"
@@ -499,12 +501,12 @@ SEM Decl
                                                      vx = CExpr_Var x
                                                      xStrict = hsnSuffix x "!"
                                                      vxStrict = CExpr_Var xStrict
-                                                     mkSel n = mkCExprSatSelsCase (emptyRCEEnv {rceDataGam = @lhs.dataGam}) (Just xStrict) vx @dictTag
+                                                     mkSel n = mkCExprSatSelsCase ((emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}) (Just xStrict) vx @dictTag
                                                                                   [(n,n,cdictOffset n @clsTyRec)] Nothing (CExpr_Var n)
                                                      dDflt
                                                        = [CBind_Bind nDflt (mkCExprLam [nD] d)] 
                                                        where nDflt = rulNmEvid . pigiRule $ @pigi
-                                                             d = mkCExprApp (CExpr_Tup @dictTag) (replicate (length $ snd $ tyRecExts $ @clsTyRec) cvarUndefined)
+                                                             d = mkCExprApp (CExpr_Tup @dictTag) (replicate (length $ snd $ tyRecExts $ @clsTyRec) (cundefined @lhs.opts))
                                                              nD = hsnPrefix "_self_" nDflt
                                                 in   (maybe dDflt (const []) @mbDefaultInstNm)
                                                      ++ [ CBind_Bind n (x `CExpr_Lam` (mkSel n `CExpr_App` vx))
@@ -525,7 +527,7 @@ SEM Decl
                                                        where mkSet d n v = CExpr_TupUpd d @dictTag n (CExpr_Int $ off n) v
                                                      mkSetFlds2 d bs
                                                        = mkCExprSatSelsCaseUpd env Nothing d @dictTag (length @recTyExts) offValL Nothing
-                                                       where env = emptyRCEEnv {rceDataGam = @lhs.dataGam}
+                                                       where env = (emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}
                                                              offValL = [ (off n,v) | (CBind_Bind n v) <- bs ]
                                                      mkSetFlds = if ehcCfgClassViaRec @lhs.opts then mkSetFlds1 else mkSetFlds2
                                                      d = case @instVariant of
@@ -552,7 +554,7 @@ SEM Decl
                                                                           (mkCExprLetRec
                                                                               [CBind_Bind nR
                                                                                   (mkCExprApp (CExpr_Tup @dictTag)
-                                                                                      (map (\(n,_) -> maybe cvarUndefined id (lookupBnd n)) $ tyRowCanonOrder $ @recTyExts))]
+                                                                                      (map (\(n,_) -> maybe (cundefined @lhs.opts) id (lookupBnd n)) $ tyRowCanonOrder $ @recTyExts))]
                                                                               (CExpr_Var nR))
                                                                    lookupBnd
                                                                      = \n -> lookup n b
@@ -784,7 +786,7 @@ rceUpdEnv e env
 %%[99 hs
 -- for now
 rceMatchBoolExpr :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
-rceMatchBoolExpr env (arg:args) alts = cvarUndefined
+rceMatchBoolExpr env (arg:args) alts = rceCaseCont env
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -797,8 +799,9 @@ SEM Expr
 %%[[9
     LamImpl
 %%]]
-                loc         .   rceEnv      =   emptyRCEEnv { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
-  | Case        loc         .   rceEnv      =   emptyRCEEnv { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam
+                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+  | Case        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts)
+                                                            { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam
                                                             , rceCaseId = maybe uidStart id @mbCaseId
                                                             }
 %%]
@@ -806,11 +809,11 @@ SEM Expr
 %%[8
 SEM PatExpr
   | AppTop Rec DataFields
-                loc         .   rceEnv      =   emptyRCEEnv { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
 %%]
 
 %%[8
 SEM Decl
-  | Data        loc         .   rceEnv      =   emptyRCEEnv { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+  | Data        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
 %%]
 

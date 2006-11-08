@@ -46,9 +46,6 @@
 %%[4_2 hs export(TyNeed(..)) 
 %%]
 
-%%[5 hs export(tyString) 
-%%]
-
 %%[6 hs export(kiStar) 
 %%]
 
@@ -401,14 +398,12 @@ tyInt   = Ty_Con hsnInt
 tyChar  = Ty_Con hsnChar
 %%]
 
-%%[5.tyString hs
+%%[5.tyString hs export(tyString)
 tyString :: Ty
 tyString  = mkConApp hsnList [tyChar]
 %%]
 
 %%[11.tyString -5.tyString hs
-tyString :: Ty
-tyString  = semCon hsnString
 %%]
 
 %%[6 hs
