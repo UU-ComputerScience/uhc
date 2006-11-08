@@ -158,30 +158,26 @@ DATA Declaration                                  {- *** -}
 %%[5
     | Data                            {- *** -}
         range                    : Range
-%%]
-%%[9
+%%[[9
         context                  : ContextItems
-%%]
-%%[5
+%%]]
         simpletype               : SimpleType
         constructors             : Constructors
-%%]
-%%[9
+%%[[9
         derivings                : Derivings
+%%]]
 %%]
 %%[5
     | Newtype
         range                    : Range
-%%]
-%%[9
+%%[[9
         context                  : ContextItems
-%%]
-%%[5
+%%]]
         simpletype               : SimpleType
         constructors             : Constructor  -- has only one field, no strictness
-%%]
-%%[9
+%%[[9
         derivings                : Derivings
+%%]]
 %%]
 %%[8
     | ForeignImport

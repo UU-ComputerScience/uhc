@@ -323,15 +323,13 @@ pDeclarationData
   <|> pD pNEWTYPE (Declaration_Newtype . mkRange1) (pEQUAL *> pConstructor)
   where pD pK sem pC
           = sem <$> pK
-%%]
-%%[9
+%%[[9
             <*> pContextItemsPrefixOpt
-%%]
-%%[5
+%%]]
             <*> pSimpleType <*> pC
-%%]
-%%[9
+%%[[9
             <*> (pDERIVING *> ((:[]) <$> pDeriving <|> pParens (pList1Sep pCOMMA pDeriving)) <|> pSucceed [])
+%%]]
 %%]
 
 %%[9

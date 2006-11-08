@@ -85,6 +85,11 @@ DATA Err
                         fiMode     : FIMode
 %%]
 
+%%[5
+DATA Err
+  | Newtype             tyNm       : {HsName}
+%%]
+
 %%[7
 DATA Err
   | InconsistentIntros  kind       : String

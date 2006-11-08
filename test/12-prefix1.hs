@@ -6,8 +6,10 @@ data [] a = ''[]'' | a : [a]
 data Bool = False | True
 data Ordering = LT | EQ | GT
 
-foreign import ccall "primFromPackedString" fromPackedString :: PackedString -> [Char]
-foreign import ccall "primTraceStringExit" traceStringExit :: [Char] -> [Char]
+type String = [Char]
+
+foreign import ccall "primFromPackedString" fromPackedString :: PackedString -> String
+foreign import ccall "primTraceStringExit" traceStringExit :: String -> String
 
 foreign import ccall "primAddInt" (+) :: Int -> Int -> Int
 foreign import ccall "primDivInt" (/) :: Int -> Int -> Int
@@ -18,7 +20,9 @@ foreign import ccall "primCmpInt" compare :: Int -> Int -> Ordering
 seq :: forall a . a -> forall b . b -> b
 x `seq` y = letstrict x' = x in y
 
-error :: [Char] -> a
+id x = x
+
+error :: String -> a
 error s = traceStringExit s `seq` undefined
 undefined :: forall a . a
 undefined = error "undefined"

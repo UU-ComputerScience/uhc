@@ -155,6 +155,12 @@ SEM Err
                                                         )
 %%]
 
+%%[5
+SEM Err
+  | Newtype             lhs     .  pp   =   ppMsgErr    ("Newtype must have exactly 1 constructor with 1 field")
+                                                        ("Type:" >#< @tyNm)
+%%]
+
 %%[7
 SEM Err
   | MissingDataFields   lhs     .  pp   =   ppMsgErr    ("Missing field(s) in data construction")

@@ -52,7 +52,12 @@ SEM Binding
     | DataCon
         lhs         .   pp          =   let ppCTag t = ppCommas [pp (ctagTag' t),pp (ctagArity t)]
                                             ppFldMp fm = [ ppHINm f >#< "=" >#< pp o | (f,o) <- fm ]
-                                        in  hiNV "data" @nm (map (\(n,(t,fm)) -> ppHINm n >#< "=" >#< ppCurlysSemisBlock (ppCTag t : ppFldMp fm)) @tags)
+                                        in  hiNV "data" @nm
+                                              [ ppCurlysSemisBlock
+                                                $ map (\(n,(t,fm)) -> ppHINm n >#< "=" >#< ppCurlysSemisBlock (ppCTag t : ppFldMp fm))
+                                                $ @tags
+                                              , pp @isNewtype
+                                              ]
     | Ty
         lhs         .   pp          =   hiNV "type" @nm [ppTyWithCfg cfgPPTyHI @ty,ppTyWithCfg cfgPPTyHI @ki]
     | Class

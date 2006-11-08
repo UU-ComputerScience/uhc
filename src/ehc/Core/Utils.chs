@@ -29,17 +29,18 @@ data RCEEnv
 
 emptyRCEEnv :: RCEEnv
 emptyRCEEnv = RCEEnv emptyGam emptyGam Map.empty uidStart cvarUndefined
+%%]
 
+%%[8
 rceEnvDataAlts :: RCEEnv -> CTag -> [CTag]
 rceEnvDataAlts env t
-  =  case t of
-       CTag _ conNm _ _
-          ->  case valGamLookup conNm (rceValGam env) of
-                Just vgi
-                   ->  let  ty = snd $ tyArrowArgsRes $ vgiTy $ vgi
-                       in   maybe [] id $ dataGamTagsOfTy ty (rceDataGam env)
-                _  ->  [t]
-       _  ->  [t]
+  = case t of
+      CTag _ conNm _ _
+         -> case valGamTyOfDataCon conNm (rceValGam env) of
+              (_,ty,[])
+                 -> maybe [] id $ dataGamTagsOfTy ty (rceDataGam env)
+              _  -> [t]
+      _  -> [t]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -80,7 +81,7 @@ cpatConBindUnFlatten bs  = CPatConBind_Many bs
 %%[8
 cpatConBindOffsetL :: CPatConBind -> (CPatConBind,CBindL)
 cpatConBindOffsetL (CPatConBind_Many _)
-  =  error "cpatConBindOffsetL"
+  =  panic "cpatConBindOffsetL"
 cpatConBindOffsetL (CPatConBind_One r pbL)
   =  let  (pbL',obL)
             =  unzip
@@ -114,12 +115,16 @@ type MbCPatRest = Maybe (CPatRest,Int) -- (pat rest, arity)
 
 %%[8 export(mkCExprStrictSatCase)
 mkCExprStrictSatCase :: RCEEnv -> Maybe HsName -> CExpr -> CAltL -> CExpr
+mkCExprStrictSatCase env eNm e [CAlt_Alt [CPat_Con _ (CTag tyNm _ _ _) (CPatConBind_One CPatRest_Empty [CPatBind_Bind _ _ _ (CPat_Var pnm)])] ae]
+  | dgiIsNewtype dgi
+  = mkCExprLet CBindPlain [CBind_Bind (cpatNmNm pnm) e] ae
+  where dgi = panicJust "mkCExprStrictSatCase" $ dataGamLookup tyNm (rceDataGam env)
 mkCExprStrictSatCase env eNm e (alt:alts)
-  =  let  (alt',altOffBL) = caltOffsetL alt
-          mk n = mkCExprLet CBindStrict altOffBL (CExpr_Case n (caltLSaturate env (alt':alts)) (rceCaseCont env))
-     in   case eNm of
-            Just n  -> mkCExprStrictIn n e mk
-            Nothing -> mk e
+  = case eNm of
+      Just n  -> mkCExprStrictIn n e mk
+      Nothing -> mk e
+  where (alt',altOffBL) = caltOffsetL alt
+        mk n = mkCExprLet CBindStrict altOffBL (CExpr_Case n (caltLSaturate env (alt':alts)) (rceCaseCont env))
 %%]
 
 %%[8 export(mkCExprSelCase,mkCExprSatSelCase)
@@ -196,8 +201,11 @@ type FieldUpdateL e = AssocL HsName (e,Maybe Int)
 fuMap :: (HsName -> e -> (e',Int)) -> FieldUpdateL e -> FieldUpdateL e'
 fuMap f = map (\(l,(e,_)) -> let (e',o) = f l e in (l,(e',Just o)))
 
+fuL2ExprL' :: (e -> CExpr) -> FieldUpdateL e -> [CExpr]
+fuL2ExprL' f l = [ f e | (_,(e,_)) <- l ]
+
 fuL2ExprL :: FieldUpdateL CExpr -> [CExpr]
-fuL2ExprL l = [ e | (_,(CExpr_TupIns _ _ _ _ e,_)) <- l ]
+fuL2ExprL = fuL2ExprL' cexprTupFld
 
 fuReorder :: [HsName] -> FieldUpdateL CExpr -> (CBindL,FieldUpdateL (CExpr -> CExpr))
 fuReorder nL fuL

@@ -86,7 +86,7 @@ ATTR AGItf [ dataGam: DataGam | | ]
 ATTR AGItf [ | | gathDataGam: DataGam ]
 
 SEM Decl
-  | Data        loc         .   dgi                 =   mkDGI @tyNm @constrs.dataConstrTagMp
+  | Data        loc         .   dgi                 =   mkDGI @tyNm @constrs.dataConstrTagMp @isNewtype
                 lhs         .   gathDataGam         =   gamAdd @tyNm @dgi @lhs.gathDataGam
 %%]
 
@@ -223,26 +223,8 @@ SEM DataConstr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Label of data fields
+%%% Type+label of data fields
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[7
-%%]
-ATTR AllDataField [ | | lblL USE {++} {[]}: {[Maybe HsName]} ]
-
-SEM DataField
-  | Field       lhs         .   lblL                =   maybe [Nothing] (map Just) @mbLabels
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Type of data fields
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[7
-%%]
-ATTR AllDataField [ | | tyL USE {++} {[]}: TyL ]
-
-SEM DataField
-  | Field       lhs         .   tyL                 =   replicate (maybe 1 length @mbLabels) @tyExpr.ty
 
 %%[7
 ATTR AllDataField [ | | fldTyL USE {++} {[]}: FldTyL ]
@@ -291,14 +273,24 @@ SEM DataField
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Expression: additional info for checks, codegen, etc
+%%% Additional info for checks, codegen, etc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllDataConstr [ isNewtype: Bool | | ]
+
+SEM Decl
+  | Data        constrs     .   isNewtype           =   @isNewtype
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% DataFieldExpr: additional info for checks, codegen, etc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[7
 SEM DataFieldExpr
   | Con         loc         .   finConTy            =   @lhs.finTyCnstr |=> @ty
 %%]
-  | Expr        loc         .   finConTy            =   @lhs.finTyCnstr |=> @expr.ty
 
 %%[7
 ATTR DataFieldExpr [ | | mbConNm: {Maybe HsName} ]

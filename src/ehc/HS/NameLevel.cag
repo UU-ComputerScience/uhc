@@ -29,17 +29,17 @@ SEM Declaration
 %%[[5
     | Data Newtype
         loc             .   nmLev       =   @lhs.nmLev -- + 1
-%%]
+%%]]
 %%[[9
     | Class InstanceUseImplicitly Default
         loc             .   nmLev       =   @lhs.nmLev -- + 1
     | Instance
         loc             .   nmLev       =   @lhs.nmLev -- + 1
-%%]
+%%]]
 %%[[11
     | Type
         loc             .   nmLev       =   @lhs.nmLev -- + 1
-%%]
+%%]]
 %%]
 
 %%[4

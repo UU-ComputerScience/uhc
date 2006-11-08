@@ -11,7 +11,7 @@ external _ instTyFixed ftv alpha tvarv exists forall
 -- View hierarchy
 -------------------------------------------------------------------------
 
-viewhierarchy = E < K < C < HM < I1 < EX < DT < CG < P < HS, I1 < I2
+viewhierarchy = E < K < C < HM < I1 < EX < DT < CG < P < TS < MD < HS, I1 < I2
 
 -------------------------------------------------------------------------
 -- Rewriting
@@ -121,7 +121,7 @@ format tex predGam = Gamma
 format tex PredGam = Gamma
 
 -- Type
-external tyInt tyChar tyFloat tyInteger tyDouble tyString ANY thardS thardH tneedR tneedO
+external tyInt tyChar tyFloat tyInteger tyDouble tyString tyString2 ANY thardS thardH tneedR tneedO
 
 format tex ity = isigma
 format tex lty = sigma.l
@@ -147,6 +147,9 @@ format ag ty..._ = tys
 format ag ANY = (Ty_Any|Ty)
 format ag ity = imprTy
 format ag ty.ident = gTy
+
+format ag  tyString2 = "tyMapName (idQualGamReplacement @lhs.idQualGam IdOcc_Type)" tyString
+format tex tyString2 = tyString
 
 -- tvars
 external tyLVar
@@ -499,6 +502,10 @@ ruleset expr.base scheme expr "Expression type rules" =
       ---
       judge R : expr
           | translExpr = coe (translString (str) | TranslExpr)
+    view MD =
+      judge F : fit
+          | lty = tyString2
+      ---
 
   rule e.float : e.int "FConst" =
     view E =
