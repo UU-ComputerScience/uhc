@@ -481,17 +481,19 @@ cpParsePrevHI modNm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-foldEH :: EHSem.Inh_AGItf -> EHCompileUnit -> EHCompileRunStateInfo -> EH.AGItf -> EHSem.Syn_AGItf
-foldEH inh ecu crsi eh
+foldEH :: HSSem.Inh_AGItf -> EHSem.Inh_AGItf -> EHCompileUnit -> EHCompileRunStateInfo -> EH.AGItf -> EHSem.Syn_AGItf
+foldEH _ ehInh ecu crsi eh
  = EHSem.wrap_AGItf (EHSem.sem_AGItf eh)
-                    (inh { EHSem.moduleNm_Inh_AGItf         = ecuModNm ecu
-                         , EHSem.gUniq_Inh_AGItf            = crsiHereUID crsi
-                         , EHSem.opts_Inh_AGItf             = crsiOpts crsi
+                    (ehInh { EHSem.moduleNm_Inh_AGItf         = ecuModNm ecu
+                           , EHSem.gUniq_Inh_AGItf            = crsiHereUID crsi
+                           , EHSem.opts_Inh_AGItf             = crsiOpts crsi
 %%[[12
-                         , EHSem.isTopMod_Inh_AGItf         = ecuIsTopMod ecu
+                           , EHSem.isTopMod_Inh_AGItf         = ecuIsTopMod ecu
 %%]]
-                         })
+                           })
+%%]
 
+%%[8
 foldHs :: HSSem.Inh_AGItf -> HsName -> EHCompileUnit -> EHCompileRunStateInfo -> HS.AGItf -> HSSem.Syn_AGItf
 foldHs inh modNm ecu crsi hs
  = HSSem.wrap_AGItf (HSSem.sem_AGItf hs)
@@ -503,14 +505,14 @@ foldHs inh modNm ecu crsi hs
                          , HSSem.modInScope_Inh_AGItf       = inscps
                          , HSSem.modEntToOrig_Inh_AGItf     = exps
                          , HSSem.topInstanceNmL_Inh_AGItf   = modInstNmL (ecuMod ecu)
-%%]
+%%]]
                          })
 %%[[12
  where inscps = Rel.toDomMap $ mmiInscps $ mmi
        exps   = Rel.toRngMap $ Rel.restrictRng (\o -> let mq = hsnQualifier (ioccNm o) in isJust mq && fromJust mq /= modNm)
                              $ Rel.mapRng mentIdOcc $ mmiExps $ mmi
        mmi    = panicJust "foldHs.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
-%%]
+%%]]
 %%]
 
 %%[12
@@ -536,7 +538,7 @@ cpFoldEH modNm
          ;  let  ecu    = crCU modNm cr
                  crsi   = crStateInfo cr
                  mbEH   = ecuMbEH ecu
-                 ehSem  = foldEH (crsiEHInh crsi) ecu crsi (panicJust "cpFoldEH" mbEH)
+                 ehSem  = foldEH (crsiHSInh crsi) (crsiEHInh crsi) ecu crsi (panicJust "cpFoldEH" mbEH)
          ;  when (isJust mbEH)
                  (cpUpdCU modNm (ecuStoreEHSem ehSem))
          }
@@ -591,8 +593,27 @@ cpFoldHI modNm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[12
-cpFlowHsSem :: HsName -> EHCompilePhase ()
-cpFlowHsSem modNm
+cpFlowHsSem1 :: HsName -> EHCompilePhase ()
+cpFlowHsSem1 modNm
+  =  do  {  cr <- get
+         ;  let  ecu    = crCU modNm cr
+                 crsi   = crStateInfo cr
+                 hsSem  = fromJust (ecuMbHSSem ecu)
+                 ehInh  = crsiEHInh crsi
+                 hsInh  = crsiHSInh crsi
+                 hsInh' = hsInh
+                            { HSSem.idGam_Inh_AGItf      = HSSem.gathIdGam_Syn_AGItf                 hsSem `gamUnion` HSSem.idGam_Inh_AGItf     hsInh
+                            }
+                 ehInh' = ehInh
+                            { EHSem.idQualGam_Inh_AGItf  = idGam2QualGam (HSSem.gathIdGam_Syn_AGItf hsSem) `gamUnion` EHSem.idQualGam_Inh_AGItf ehInh
+                            }
+         ;  when (isJust (ecuMbHSSem ecu))
+                 (put (cr {crStateInfo = crsi {crsiHSInh = hsInh', crsiEHInh = ehInh'}}))
+         -- ;  lift $ putWidthPPLn 120 (ppGam $ EHSem.idQualGam_Inh_AGItf $ ehInh')
+         }
+
+cpFlowHsSem2 :: HsName -> EHCompilePhase ()
+cpFlowHsSem2 modNm
   =  do  {  cr <- get
          ;  let  ecu    = crCU modNm cr
                  crsi   = crStateInfo cr
@@ -600,12 +621,13 @@ cpFlowHsSem modNm
                  hsInh  = crsiHSInh crsi
                  hsInh' = hsInh
                             { HSSem.fixityGam_Inh_AGItf  = HSSem.gathFixityGam_Syn_AGItf hsSem `gamUnion` HSSem.fixityGam_Inh_AGItf hsInh
-                            , HSSem.idGam_Inh_AGItf      = HSSem.gathIdGam_Syn_AGItf     hsSem `gamUnion` HSSem.idGam_Inh_AGItf     hsInh
                             }
          ;  when (isJust (ecuMbHSSem ecu))
                  (put (cr {crStateInfo = crsi {crsiHSInh = hsInh'}}))
          }
+%%]
 
+%%[12
 cpFlowEHSem :: HsName -> EHCompilePhase ()
 cpFlowEHSem modNm
   =  do  {  cr <- get
@@ -613,6 +635,8 @@ cpFlowEHSem modNm
                  crsi   = crStateInfo cr
                  ehSem  = fromJust (ecuMbEHSem ecu)
                  ehInh  = crsiEHInh crsi
+                 hsSem  = fromJust (ecuMbHSSem ecu)
+                 hsInh  = crsiHSInh crsi
                  ehInh' = ehInh
                             { EHSem.valGam_Inh_AGItf     = EHSem.gathValGam_Syn_AGItf     ehSem `gamUnion` EHSem.valGam_Inh_AGItf     ehInh
                             , EHSem.tyGam_Inh_AGItf      = EHSem.gathTyGam_Syn_AGItf      ehSem `gamUnion` EHSem.tyGam_Inh_AGItf      ehInh
@@ -974,6 +998,9 @@ cpProcessHI modNm
 cpProcessHs :: HsName -> EHCompilePhase ()
 cpProcessHs modNm 
   = cpSeq [ cpFoldHs modNm
+%%[[12
+          , cpFlowHsSem1 modNm
+%%]]
           , cpTranslateHs2EH modNm
           , cpProcessEH modNm
           ]
@@ -1206,7 +1233,7 @@ cpCompileOrderedCUs
         flow m
           = do { cr <- get
                ; case ecuState $ crCU m cr of
-                   ECUSHaskell HSAllSem   -> cpSeq [cpFlowHsSem m,cpFlowEHSem m]
+                   ECUSHaskell HSAllSem   -> cpSeq [cpFlowHsSem2 m,cpFlowEHSem m]
                    ECUSHaskell HSAllSemHI -> cpFlowHISem m
                }
         core mL
@@ -1311,6 +1338,7 @@ doCompileRun fn opts
                                               , EHSem.prIntroGam_Inh_AGItf      = emptyGam
                                               , EHSem.prElimTGam_Inh_AGItf      = emptyTGam basePrfCtxtId
                                               , EHSem.prfCtxtId_Inh_AGItf       = basePrfCtxtId
+                                              , EHSem.idQualGam_Inh_AGItf       = emptyGam
 %%]
                                               }
 %%[[12

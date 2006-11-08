@@ -208,6 +208,12 @@ cexprVar (CExpr_Var n) = n
 cexprVar _             = hsnUnknown
 %%]
 
+%%[8 hs export(cexprTupFld)
+cexprTupFld :: CExpr -> CExpr
+cexprTupFld (CExpr_TupIns _ _ _ _ e) = e
+cexprTupFld _                        = cvarUndefined
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% String
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -759,6 +759,7 @@ data DataGamInfo
       , dgiConstrTagMp 		:: DataConstrTagMp
 %%[[8
       , dgiFldInConstrMp	:: DataFldInConstrMp
+      , dgiIsNewtype 		:: Bool
 %%]]
       }
 
@@ -767,18 +768,18 @@ type DataGam = Gam HsName DataGamInfo
 instance Show DataGamInfo where
   show _ = "DataGamInfo"
 
-mkDGI :: HsName -> DataConstrTagMp -> DataGamInfo
-mkDGI tyNm m
+mkDGI :: HsName -> DataConstrTagMp -> Bool -> DataGamInfo
+mkDGI tyNm m nt
   = DataGamInfo
       tyNm m
 %%[[8
-      fm
+      fm nt
   where fm = Map.map DataFldInConstr $ Map.unionsWith Map.union
              $ [ Map.singleton f (Map.singleton (dtiCTag ci) (dfiOffset fi)) | ci <- Map.elems m, (f,fi) <- Map.toList $ dtiFldMp ci ]
 %%]]
 
 emptyDataGamInfo :: DataGamInfo
-emptyDataGamInfo = mkDGI hsnUnknown Map.empty
+emptyDataGamInfo = mkDGI hsnUnknown Map.empty False
 %%]
 
 %%[7 export(dgiDtiOfCon)
@@ -860,20 +861,36 @@ type KiGam = Gam HsName KiGamInfo
 %%% Identifier definition occurrence gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs
+%%[1
 type IdDefOccGam = Gam    IdOcc  IdDefOcc
 type IdDefOccAsc = AssocL IdOcc [IdDefOcc]
 %%]
 
-%%[9 hs
+%%[9
 idDefOccGamPartitionByKind :: [IdOccKind] -> IdDefOccGam -> (IdDefOccAsc,IdDefOccAsc)
 idDefOccGamPartitionByKind ks
   = partition (\(IdOcc n k',_) -> k' `elem` ks) . gamToAssocDupL
 %%]
 
-%%[12 hs
+%%[12
 idDefOccGamByKind :: IdOccKind -> IdDefOccGam -> AssocL HsName IdDefOcc
 idDefOccGamByKind k g = [ (n,head i) | (IdOcc n _,i) <- fst (idDefOccGamPartitionByKind [k] g) ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Identifier unqualified to qualified gam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12 export(IdQualGam)
+type IdQualGam = Gam IdOcc HsName
+%%]
+
+%%[12 export(idGam2QualGam,idQualGamReplacement)
+idGam2QualGam :: IdDefOccGam -> IdQualGam
+idGam2QualGam = gamMap (\(iocc,docc) -> (iocc {ioccNm = hsnQualified $ ioccNm iocc},ioccNm $ doccOcc $ docc))
+
+idQualGamReplacement :: IdQualGam -> IdOccKind -> HsName -> HsName
+idQualGamReplacement g k n = maybe n id $ gamLookup (IdOcc n k) g
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

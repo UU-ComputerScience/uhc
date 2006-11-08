@@ -128,7 +128,7 @@ SEM Declaration
 %%[[3
                         .   idOccDefGamType
                                         =   tvarS2IdDefOccGam @nmLev @range @type.freeTvarS
-%%]
+%%]]
     | Fixity
         loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @range IdAsp_Val_Fix [ IdOcc n IdOcc_Val | n <- @oprefnames ]
     | PatternBinding
@@ -145,7 +145,7 @@ SEM Declaration
 %%[[7
                                             `gamAddGam`
                                             mkDefGam @lhs.nmLev @simpletype.range IdAsp_Val_Fld @idOccDefsFld
-%%]
+%%]]
                         .   idOccDefGam =   mkDefGam @lhs.nmLev @simpletype.range (IdAsp_Type_Def @eh) [@idOccDef]
                                             `gamAddGam` @idOccDefGamConstrs
 %%]
@@ -175,14 +175,12 @@ SEM Declaration
 %%]
 %%[5
     | Data Newtype
-%%]
-%%[9
+%%[[9
       Class
-%%]
-%%[11
+%%]]
+%%[[11
       Type
-%%]
-%%[5
+%%]]
         loc             .   idOccDefGamInside
                                         =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
 %%]
@@ -672,8 +670,8 @@ SEM Declaration
         loc             .   (_,_,idUseOccGamVal,errIdUseVal)
                                         =   mkUseOccGam @lhs.idGam (if @constructors.hasFlds then [hsnError] else []) IdOcc_Val IdAsp_Val_Var @range
     | Newtype
-        loc             .   idUseOccGamVal
-                                        =   emptyGam
+        loc             .   (_,_,idUseOccGamVal,errIdUseVal)
+                                        =   mkUseOccGam @lhs.idGam [hsnId] IdOcc_Val IdAsp_Val_Var @range
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

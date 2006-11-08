@@ -31,6 +31,9 @@
 %%[9 hs import({%{EH}Pred},{%{EH}Core.Subst})
 %%]
 
+%%[12 hs import({%{EH}Ty.MapName})
+%%]
+
 %%[50 hs import({%{EH}Ty.ElimEqual},{%{EH}Gam.Utils})
 %%]
 
@@ -58,7 +61,7 @@ WRAPPER AGItf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Options
+%%% Global info: options, module name, name mapping
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
@@ -67,6 +70,10 @@ ATTR AllNT AGItf [ opts: EHCOpts | | ]
 
 %%[8
 ATTR AGItf [ moduleNm: HsName | | ]
+%%]
+
+%%[12
+ATTR AllNT AGItf [ idQualGam: IdQualGam | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -18,6 +18,8 @@ foreign import ccall "primCmpInt" compare :: Int -> Int -> Ordering
 seq :: forall a . a -> forall b . b -> b
 x `seq` y = letstrict x' = x in y
 
+id x = x
+
 error :: [Char] -> a
 error s = traceStringExit s `seq` undefined
 undefined :: forall a . a

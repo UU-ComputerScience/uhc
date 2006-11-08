@@ -243,6 +243,7 @@ hiScanOpts
   =  hsScanOpts
         {   scoKeywordsTxt      =   [ "value", "fixity", "stamp", "uid", "rule", "var", "ctxt", "sup", "iddef"
                                     , "Value", "Pat", "Type", "Kind", "Class", "Instance", "Default", "Any", "Data"
+                                    , "True", "False"
                                     ]
                                     ++ scoKeywordsTxt hsScanOpts
                                     ++ scoKeywordsTxt tyScanOpts

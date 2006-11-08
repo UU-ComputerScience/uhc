@@ -69,7 +69,8 @@ SEM Decl
                                 .   patPrElimTGam   =   foldr (\(n,r) g -> peTGamInsert @lhs.prfCtxtId n r g) @lhs.patPrElimTGam @elimRules
                                 .   gathDataGam     =   if ehcCfgClassViaRec @lhs.opts
                                                         then @lhs.gathDataGam
-                                                        else gamAdd @dataDictNm (mkDGI @dataDictNm (@dataDictNm `Map.singleton` emptyDataTagInfo {dtiCTag = @dataDictTag})) @lhs.gathDataGam
+                                                        else let dgi = mkDGI @dataDictNm (@dataDictNm `Map.singleton` emptyDataTagInfo {dtiCTag = @dataDictTag}) False
+                                                        	 in  gamAdd @dataDictNm dgi @lhs.gathDataGam
 %%]
                 decls           .   gathTySigGam    =   gamPushNew @lhs.gathTySigGam
                 loc             .   (lSigGam,_)     =   gamPop @decls.gathTySigGam

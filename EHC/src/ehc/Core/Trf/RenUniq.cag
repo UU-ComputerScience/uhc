@@ -112,9 +112,6 @@ SEM CBind
 SEM CPatBind
   | Bind        lhs         .   nmL         =   [@nm] ++ @pat.nmL
 
-SEM CPatConBind
-  | One         lhs         .   nmL         =   @rest.nmL ++ @binds.nmL
-
 SEM CPat
   | Var Con     loc         .   nm          =   cpatNmEither id id @pnm
   | Var         lhs         .   nmL         =   [@nm]

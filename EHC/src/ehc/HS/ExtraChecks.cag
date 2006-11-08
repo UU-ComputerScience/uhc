@@ -32,3 +32,16 @@ SEM Module
                                                 -> [Err_ModNameMismatch @lhs.moduleNm n]
                                               _ -> []
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Newtype may only have 1 con, 1 fld
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+SEM Declaration
+    | Newtype
+        loc             .   errNewtype  =   case @constructors.eh of
+                                              EH.DataConstr_Constr _ [_]
+                                                -> []
+                                              _ -> [Err_Newtype @simpletype.name]
+%%]

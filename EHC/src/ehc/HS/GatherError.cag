@@ -92,6 +92,19 @@ SEM Type
 %%]
 
 %%[5
+SEM Declaration
+    | Newtype
+        loc         .   errL        =   @errNewtype
+%%[[8
+                                        ++ @errIdUseVal
+%%]]
+                                        ++ @simpletype.errL ++ @constructors.errL
+%%[[9
+                                        ++ @context.errL ++ @derivings.errL
+%%]]
+%%]
+
+%%[5
 SEM GuardedExpression
     | GuardedExpression
         loc         .   errL        =   @errIdUseVal ++ @errIdUseType ++ @guard.errL ++ @expression.errL

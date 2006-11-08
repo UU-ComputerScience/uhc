@@ -63,7 +63,9 @@ SEM Binding
                                                                                                           }
                                                                              )
                                                                      $ Map.fromList $ @tags
-                                                             )      )
+                                                                    )
+                                                                    False
+                                                             )
     | Class
         lhs             .   prIntroGam  =   gamSingleton @nm (Pr.PrIntroGamInfo @prToEvidTy @ki @rule.rule)
     | Instance

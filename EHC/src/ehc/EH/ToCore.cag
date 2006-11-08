@@ -49,7 +49,7 @@ SEM AGItf
                                                     d = if @insertMainDef then mkCExprLet CBindPlain [CBind_Bind hsnMain @expr.letCBody] else id
                                                 in  CModule_Mod @lhs.moduleNm
                                                         (foldr (\(c,b) e -> mkCExprLet c b e) (d b) (@expr.frontCBindL ++ @expr.letCBindL))
-                                                        [ (tn,Map.toList m) | (tn,dgi) <- gamToAssocL @expr.gathDataGam, let m = Map.map dtiCTag $ dgiConstrTagMp dgi ]
+                                                        [ (tn,Map.toList m) | (tn,dgi) <- gamToAssocL @expr.gathDataGam, not (dgiIsNewtype dgi), let m = Map.map dtiCTag $ dgiConstrTagMp dgi ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -196,21 +196,24 @@ SEM Expr
                                                       where dflt = [ (o,(f,(CExpr_TupIns cvarUndefined (dtiCTag dti) f (CExpr_Int o) (mkDflt f),Just o)))
                                                                    | (f,i) <- Map.toList $ dtiFldMp dti, let o = dfiOffset i
                                                                    ]
-                                                in  case @dataFieldExpr.mbConNm of
-                                                      Just conNm
-                                                        -> mkCExprLet CBindPlain @dataFieldExpr.dfeCBindL
-                                                             (mkTup (dgiDtiOfCon conNm @dgi) (const cvarUndefined) @dataFieldExpr.dfeCExpr @dataFieldExpr.fuCExprL)
-                                                      _ -> mkCExprLet CBindPlain (err ++  @dataFieldExpr.dfeCBindL)
-                                                             (mkCExprSatSelsCases (@rceEnv {rceCaseCont = CExpr_Var en}) (Just $ mkHNm @lUniq) @dataFieldExpr.dfeCExpr alts)
-                                                        where alts = [ ( dtiCTag dti
-                                                                       , [ (f,f,dfiOffset i) | (f,i) <- Map.toList $ dtiFldMp dti ]
-                                                                       , Nothing
-                                                                       , mkTup dti CExpr_Var (CExpr_Tup $ dtiCTag dti) @dataFieldExpr.fuCExprL
-                                                                       )
-                                                                     | dti <- @dtiInFldL
-                                                                     ]
-                                                              err = [CBind_Bind en (cerror ("has no field update '" ++ show @fldL ++ "'"))]
-                                                              en = HNm "_upd_error"
+                                                in  if dgiIsNewtype @dgi
+                                                    then mkCExprLet CBindPlain @dataFieldExpr.dfeCBindL
+                                                         $ head $ fuL2ExprL $ fuMap (\_ f -> (f emptyDataTagInfo 0,0)) $ @dataFieldExpr.fuCExprL
+                                                    else case @dataFieldExpr.mbConNm of
+                                                           Just conNm
+                                                             -> mkCExprLet CBindPlain @dataFieldExpr.dfeCBindL
+                                                                  (mkTup (dgiDtiOfCon conNm @dgi) (const cvarUndefined) @dataFieldExpr.dfeCExpr @dataFieldExpr.fuCExprL)
+                                                           _ -> mkCExprLet CBindPlain (err ++  @dataFieldExpr.dfeCBindL)
+                                                                  (mkCExprSatSelsCases (@rceEnv {rceCaseCont = CExpr_Var en}) (Just $ mkHNm @lUniq) @dataFieldExpr.dfeCExpr alts)
+                                                             where alts = [ ( dtiCTag dti
+                                                                            , [ (f,f,dfiOffset i) | (f,i) <- Map.toList $ dtiFldMp dti ]
+                                                                            , Nothing
+                                                                            , mkTup dti CExpr_Var (CExpr_Tup $ dtiCTag dti) @dataFieldExpr.fuCExprL
+                                                                            )
+                                                                          | dti <- @dtiInFldL
+                                                                          ]
+                                                                   err = [CBind_Bind en (cerror ("has no field update '" ++ show @fldL ++ "'"))]
+                                                                   en = HNm "_upd_error"
                             .   cexpr       =   @dfexpr
 %%]
 
@@ -260,13 +263,15 @@ SEM Expr
 ATTR AllDataConstr [ dataAltTy: Ty | | ]
 
 SEM DataConstr
-  | Constr      lhs         .   cbindL      =   let  len = length @fields.fldTyL
-                                                     nms = map (\i -> HNm ("x" ++ show i)) [1..len]
-                                                in   [CBind_Bind @conNm
-                                                        (mkCExprLam nms
-                                                          (mkCExprApp (CExpr_Tup @ctag)
-                                                            (map CExpr_Var nms)))
-                                                     ]
+  | Constr      lhs         .   cbindL      =   let len = length @fields.fldTyL
+                                                    nms = map (\i -> HNm ("x" ++ show i)) [1..len]
+                                                in  if @lhs.isNewtype
+                                                    then [ CBind_Bind @conNm (CExpr_Var hsnId) ]
+                                                    else [ CBind_Bind @conNm
+                                                             (mkCExprLam nms
+                                                               (mkCExprApp (CExpr_Tup @ctag)
+                                                                 (map CExpr_Var nms)))
+                                                         ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -277,14 +282,16 @@ SEM DataConstr
 SEM Decl
   | Data        loc         .   fldSelCBindL=   let (xn1:xn2:_) = hsnLclSupplyL
                                                     tgSels f i = [ (t,[(f,f,o)],Nothing,CExpr_Var f) | (t,o) <- Map.toList $ dficInTagMp i ]
-                                                in  [ [ CBind_Bind f
-                                                          (mkCExprLam [xn1]
-                                                            (mkCExprSatSelsCases (@rceEnv {rceCaseCont = CExpr_Var en}) (Just xn2) (CExpr_Var xn1) (tgSels f i)))
-                                                      , CBind_Bind en (cerror ("has no field selection '" ++ show f ++ "'"))
-                                                      ]
-                                                    | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
-                                                    , let en = hsnSuffix f "_datafield_sel_error"
-                                                    ]
+                                                in  if @isNewtype
+                                                    then [ [CBind_Bind f (CExpr_Var hsnId) | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi] ]
+                                                    else [ [ CBind_Bind f
+                                                               (mkCExprLam [xn1]
+                                                                 (mkCExprSatSelsCases (@rceEnv {rceCaseCont = CExpr_Var en}) (Just xn2) (CExpr_Var xn1) (tgSels f i)))
+                                                           , CBind_Bind en (cerror ("has no field selection '" ++ show f ++ "'"))
+                                                           ]
+                                                         | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
+                                                         , let en = hsnSuffix f "_datafield_sel_error"
+                                                         ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -687,34 +694,34 @@ rceRebinds nm alts = [ CBind_Bind n (CExpr_Var nm) | (CPatNmOrig n) <- caltLPatN
 
 rceMatchVar :: RCEEnv ->  [HsName] -> RCEAltL -> CExpr
 rceMatchVar env (arg:args') alts
-  =  let  remMatch  = rceMatch env args' [CAlt_Alt remPats e | (CAlt_Alt (CPat_Var n : remPats) e) <- alts]
-     in   mkCExprLet CBindPlain (rceRebinds arg alts) remMatch
+  = mkCExprLet CBindPlain (rceRebinds arg alts) remMatch
+  where remMatch  = rceMatch env args' [CAlt_Alt remPats e | (CAlt_Alt (CPat_Var n : remPats) e) <- alts]
 
 rceMkAltAndSubAlts :: RCEEnv -> [HsName] -> RCEAltL -> CAlt
 rceMkAltAndSubAlts env (arg:args) alts@(alt:_)
-  =  let  (subAlts,subAltSubNms)
-            =  unzip
-                 [ (CAlt_Alt (pats ++ ps) e, map (cpatNmNm . cpatVarNm) pats)
-                 | (CAlt_Alt (CPat_Con _ _ (CPatConBind_One _ pbinds) : ps) e) <- alts
-                 , let pats = [ p | (CPatBind_Bind _ _ _ p) <- pbinds ]
-                 ]
-          subMatch
-            =  rceMatch env (head subAltSubNms ++ args) subAlts
-          altPat
-            =  case alt of
-                 CAlt_Alt (CPat_Con n t (CPatConBind_One r pbL) : _) _
-                   ->  CPat_Con n t (CPatConBind_One r pbL')
-                       where  pbL' = [ CPatBind_Bind l o n (CPat_Var (cpatVarNm p)) | (CPatBind_Bind l o n p) <- pbL ]
-     in   CAlt_Alt [altPat] (mkCExprLet CBindPlain (rceRebinds arg alts) subMatch)
+  = CAlt_Alt [altPat] (mkCExprLet CBindPlain (rceRebinds arg alts) subMatch)
+  where (subAlts,subAltSubNms)
+          =  unzip
+               [ (CAlt_Alt (pats ++ ps) e, map (cpatNmNm . cpatVarNm) pats)
+               | (CAlt_Alt (CPat_Con _ _ (CPatConBind_One _ pbinds) : ps) e) <- alts
+               , let pats = [ p | (CPatBind_Bind _ _ _ p) <- pbinds ]
+               ]
+        subMatch
+          =  rceMatch env (head subAltSubNms ++ args) subAlts
+        altPat
+          =  case alt of
+               CAlt_Alt (CPat_Con n t (CPatConBind_One r pbL) : _) _
+                 ->  CPat_Con n t (CPatConBind_One r pbL')
+                     where  pbL' = [ CPatBind_Bind l o n (CPat_Var (cpatVarNm p)) | (CPatBind_Bind l o n p) <- pbL ]
 
 rceMatchCon :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchCon env (arg:args) alts
-  =  let  arg'   =  hsnSuffix arg "!"
-          alts'  =  map (rceMkAltAndSubAlts env (arg':args))
-                    $ groupSortOn (ctagTag . caltTag)
-                    $ filter (not . null . caltPatL)
-                    $ alts
-     in   mkCExprStrictSatCase env (Just arg') (CExpr_Var arg) alts'
+  = mkCExprStrictSatCase env (Just arg') (CExpr_Var arg) alts'
+  where arg'   =  hsnSuffix arg "!"
+        alts'  =  map (rceMkAltAndSubAlts env (arg':args))
+                  $ groupSortOn (ctagTag . caltTag)
+                  $ filter (not . null . caltPatL)
+                  $ alts
 
 rceMatchConMany :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchConMany env (arg:args) [CAlt_Alt (CPat_Con n t (CPatConBind_Many bs) : ps) e]

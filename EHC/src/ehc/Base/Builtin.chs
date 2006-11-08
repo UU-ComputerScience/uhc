@@ -299,9 +299,10 @@ mkRV m = hsnSetQual m . HNm
       ]
 %%]
 
-%%[8 export(hsnUndefined,hsnFromPackedString,hsnPackedString)
+%%[8 export(hsnUndefined,hsnFromPackedString,hsnPackedString,hsnId)
 [hsnUndefined
- ,hsnPackedString,hsnFromPackedString
+ , hsnPackedString, hsnFromPackedString
+ , hsnId
  ]
   = map
 %%[[8
@@ -311,6 +312,7 @@ mkRV m = hsnSetQual m . HNm
 %%]]
       [ "undefined"
       , "PackedString", "fromPackedString"
+      , "id"
       ]
 %%]
 
