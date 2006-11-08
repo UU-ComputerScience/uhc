@@ -526,9 +526,10 @@ foldHsMod inh modNm ecu crsi hs
 
 %%[12
 foldHI :: HISem.Inh_AGItf -> EHCompileUnit -> EHCompileRunStateInfo -> HI.AGItf -> HISem.Syn_AGItf
-foldHI inh ecu crsi eh
- = HISem.wrap_AGItf (HISem.sem_AGItf eh)
-                    (inh)
+foldHI inh ecu crsi hi
+ = HISem.wrap_AGItf (HISem.sem_AGItf hi)
+                    (inh { HISem.opts_Inh_AGItf             = crsiOpts crsi
+                         })
 %%]
 
 %%[8
@@ -599,6 +600,7 @@ cpFlowHsSem1 modNm
          ;  let  ecu    = crCU modNm cr
                  crsi   = crStateInfo cr
                  hsSem  = fromJust (ecuMbHSSem ecu)
+                 opts   = crsiOpts  crsi
                  ehInh  = crsiEHInh crsi
                  hsInh  = crsiHSInh crsi
                  hsInh' = hsInh
@@ -607,8 +609,18 @@ cpFlowHsSem1 modNm
                  ehInh' = ehInh
                             { EHSem.idQualGam_Inh_AGItf  = idGam2QualGam (HSSem.gathIdGam_Syn_AGItf hsSem) `gamUnion` EHSem.idQualGam_Inh_AGItf ehInh
                             }
+                 opts'  = opts
+                            { ehcOptBuiltinNames = mkEHBuiltinNames mk
+                            }
+%%[[12
+                        where mk = idQualGamReplacement (EHSem.idQualGam_Inh_AGItf ehInh')
+%%][99
+                        where mk = if ehcBuiltinFromPrelude opts
+                                   then \_ n -> n
+                                   else \k n -> idQualGamReplacement (EHSem.idQualGam_Inh_AGItf ehInh') k (hsnQualified n)
+%%]]
          ;  when (isJust (ecuMbHSSem ecu))
-                 (put (cr {crStateInfo = crsi {crsiHSInh = hsInh', crsiEHInh = ehInh'}}))
+                 (put (cr {crStateInfo = crsi {crsiHSInh = hsInh', crsiEHInh = ehInh', crsiOpts = opts'}}))
          -- ;  lift $ putWidthPPLn 120 (ppGam $ EHSem.idQualGam_Inh_AGItf $ ehInh')
          }
 
@@ -1106,7 +1118,7 @@ cpOutputHI suff modNm
                               (HI.AGItf_AGItf $ HI.Module_Module modNm
                                 $ HI.Binding_Stamp (Cfg.verTimestamp Cfg.version) (Cfg.verSig Cfg.version) (Cfg.verMajor Cfg.version) (Cfg.verMinor Cfg.version) (Cfg.verQuality Cfg.version) (Cfg.verSvn Cfg.version) 0
                                   : binds))
-                            (HISem.Inh_AGItf)
+                            (crsiHIInh crsi)
          ;  when (isJust (ecuMbHSSem ecu) && isJust (ecuMbEHSem ecu))
                  (do { lift $ putPPFile (fpathToStr (fpathSetSuff suff fp)) (HISem.pp_Syn_AGItf hi) 120
                      ; now <- lift $ getClockTime
@@ -1345,7 +1357,8 @@ doCompileRun fn opts
              hsModInh       = HSSemMod.Inh_AGItf { HSSemMod.gUniq_Inh_AGItf       = uidStart
                                                  , HSSemMod.moduleNm_Inh_AGItf    = hsnUnknown
                                                  }
-             hiInh          = HISem.Inh_AGItf
+             hiInh          = HISem.Inh_AGItf { HISem.opts_Inh_AGItf            = opts2
+                                              }
 %%]
              initialState   = mkEmptyCompileRun
                                 topModNm

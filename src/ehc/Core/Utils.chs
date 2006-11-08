@@ -7,7 +7,7 @@
 %%% Core utilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}Core.Utils} import(qualified Data.Map as Map,Data.Maybe,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam}) export(RCEEnv(..),emptyRCEEnv)
+%%[8 module {%{EH}Core.Utils} import(qualified Data.Map as Map,Data.Maybe,{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam}) 
 %%]
 
 %%[8 import(Data.List,EH.Util.Utils)
@@ -17,7 +17,7 @@
 %%% Env to support Reordering of Case Expression (RCE)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[8 export(RCEEnv(..),emptyRCEEnv)
 data RCEEnv
   = RCEEnv
       { rceValGam           :: ValGam
@@ -27,8 +27,8 @@ data RCEEnv
       , rceCaseCont         :: CExpr
       }
 
-emptyRCEEnv :: RCEEnv
-emptyRCEEnv = RCEEnv emptyGam emptyGam Map.empty uidStart cvarUndefined
+emptyRCEEnv :: EHCOpts -> RCEEnv
+emptyRCEEnv opts = RCEEnv emptyGam emptyGam Map.empty uidStart (cundefined opts)
 %%]
 
 %%[8

@@ -387,3 +387,33 @@ hsnModReal                          =   hsnPrefixQual hsnEHC (HNm "Real")
 hsnClass2Dict :: HsName -> HsName
 hsnClass2Dict = hsnPrefix "Dict-"
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Builtin names used without direct access from source code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(EHBuiltinNames(..),mkEHBuiltinNames)
+data EHBuiltinNames
+  = EHBuiltinNames
+  	  { ehbnId					:: HsName
+  	  , ehbnUndefined			:: HsName
+  	  , ehbnError				:: HsName
+  	  , ehbnFromPackedString	:: HsName
+%%[[11
+  	  , ehbnString				:: HsName
+%%]]
+  	  }
+
+mkEHBuiltinNames :: (IdOccKind -> HsName -> HsName) -> EHBuiltinNames
+mkEHBuiltinNames f
+  = EHBuiltinNames
+  	  { ehbnId					= f IdOcc_Val  hsnId
+  	  , ehbnUndefined			= f IdOcc_Val  hsnUndefined
+  	  , ehbnError				= f IdOcc_Val  hsnError
+  	  , ehbnFromPackedString	= f IdOcc_Val  hsnFromPackedString
+%%[[11
+  	  , ehbnString				= f IdOcc_Type hsnString
+%%]]
+  	  }
+%%]
+

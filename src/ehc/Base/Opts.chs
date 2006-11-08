@@ -25,7 +25,7 @@
 %%[5 export(weakFIOpts)
 %%]
 
-%%[8 import(Data.List,Data.Char) export(cmdLineTrfs,trfOptOverrides)
+%%[8 import(Data.List,Data.Char,{%{EH}Base.Builtin}) export(cmdLineTrfs,trfOptOverrides)
 %%]
 
 %%[9 export(predFIOpts,implFIOpts)
@@ -102,6 +102,8 @@ data EHCOpts
       ,  ehcOptSearchPath     ::  [String]
       ,  ehcOptVerbosity      ::  Verbosity
       ,  ehcOptTrf            ::  [TrfOpt]
+
+      ,  ehcOptBuiltinNames	  ::  EHBuiltinNames
 %%]]
 %%[[9
       ,  ehcOptPrfCutOffAt    ::  Int
@@ -117,6 +119,7 @@ data EHCOpts
 %%[[99
       ,  ehcProgName          ::  String
       ,  ehcOptShowNumVersion ::  Bool
+      ,  ehcBuiltinFromPrelude::  Bool
 %%]]
       }
 %%]
@@ -155,6 +158,7 @@ defaultEHCOpts
       ,  ehcOptSearchPath     =   []
       ,  ehcOptVerbosity      =   VerboseNormal
       ,  ehcOptTrf            =   []
+      ,  ehcOptBuiltinNames   =   mkEHBuiltinNames (const id)
 %%]]
 %%[[8
       ,  ehcOptEmitLlc        =   False
@@ -177,6 +181,7 @@ defaultEHCOpts
 %%[[99
       ,  ehcProgName          =   ""
       ,  ehcOptShowNumVersion =   False
+      ,  ehcBuiltinFromPrelude=   True
 %%]]
       }
 %%]
