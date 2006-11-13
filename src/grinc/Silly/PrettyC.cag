@@ -99,6 +99,7 @@ SEM Value
   | Con         lhs.prettyC   = @con.prettyC
   | Var         lhs.prettyC   = @var.prettyC
   | Call        lhs.prettyC   = call @name @args.prettyCs
+  | Alloc       lhs.prettyC   = "heapalloc(" >|< show @size >|< ")"
 
 SEM Constant
   | LiteralInt  lhs.prettyC   = text (show @value)
