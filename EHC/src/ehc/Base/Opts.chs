@@ -98,6 +98,7 @@ data EHCOpts
       ,  ehcOptEmitJava       ::  Bool
       ,  ehcOptEmitGrin       ::  Bool
       ,  ehcOptEmitLlc        ::  Bool
+      ,  ehcOptEmitLLVM       ::  Bool
       ,  ehcOptEmitExec       ::  Bool
       ,  ehcOptSearchPath     ::  [String]
       ,  ehcOptVerbosity      ::  Verbosity
@@ -162,6 +163,7 @@ defaultEHCOpts
 %%]]
 %%[[8
       ,  ehcOptEmitLlc        =   False
+      ,  ehcOptEmitLLVM       =   False
       ,  ehcOptEmitExec       =   False
 %%][99
       ,  ehcOptEmitLlc        =   True
@@ -194,7 +196,7 @@ ehcCmdLineOpts
      ,  Option "h"  ["help"]             (NoArg oHelp)                        "only show this help"
      ,  Option ""   ["version"]          (NoArg oVersion)                     "only show version info"
 %%[[8
-     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exec|-")  "write code to file, default=core (downstream only)"
+     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exec|llvm|-")  "write code to file, default=core (downstream only)"
      ,  Option ""   ["trf"]              (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
                                                                               "switch on/off transformations"
      ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
@@ -252,6 +254,7 @@ ehcCmdLineOpts
                                 Just "grin"  -> o { ehcOptEmitGrin     = True      }
                                 Just "exec"  -> o { ehcOptEmitExec     = True, ehcOptEmitLlc = True }
                                 Just "exe"   -> o { ehcOptEmitExec     = True, ehcOptEmitLlc = True }
+                                Just "llvm"  -> o { ehcOptEmitLLVM     = True      }
                                 Just "c"     -> o { ehcOptEmitLlc      = True      }
                                 _            -> o
          oTrf        s   o =  o { ehcOptTrf           = opt s   }

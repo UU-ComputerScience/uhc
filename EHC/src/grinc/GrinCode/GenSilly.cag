@@ -19,6 +19,8 @@
 %%]
 %%[8 import({GrinCode/LastExpr})
 %%]
+%%[8 hs import(Debug.Trace)
+%%]
 
 %%[8
 WRAPPER GrAGItf
@@ -34,7 +36,7 @@ grin2silly hptmap gr optJump optPar optLoc
                                      , hptMap_Inh_GrAGItf = hptmap
                                      }
                         )
-   in silModule_Syn_GrAGItf t
+   in silModule_Syn_GrAGItf t 
 %%]
 
 %%[8 import({GrinCode/ToSilly})

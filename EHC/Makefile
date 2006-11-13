@@ -43,6 +43,7 @@ include $(SRC_PREFIX)grinc/variant.mk
 include $(SRC_PREFIX)ehc/files1.mk
 include $(SRC_PREFIX)grini/files.mk
 include $(SRC_PREFIX)grinc/files.mk
+
 include extlibs/bgc/files.mk
 include $(SRC_PREFIX)rts/files.mk
 include $(SRC_PREFIX)ehc/files2.mk
@@ -100,6 +101,8 @@ ehcs: $(EHC_ALL_PUB_EXECS)
 grinis: $(GRINI_ALL_PUB_EXECS)
 
 grincs: $(GRINC_ALL_PUB_EXECS)
+
+grinllvms: $(GRINLLVM_ALL_PUB_EXECS)
 
 docs: $(TEXT_DIST_DOC_FILES)
 
