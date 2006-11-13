@@ -61,8 +61,10 @@ DATA Variable
 DATA Value
   | Con          con        : Constant
   | Var          var        : Variable
+  | Alloc        size       : {Int}
   | Call         name       : String
                  args       : Values
 
 
+DERIVING * : Show
 %%]

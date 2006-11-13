@@ -325,8 +325,28 @@ caGrin2Silly = do
 %%]
 
 
-%%[8 import({%{GRIN}Silly.PrettyC(prettyC)})
+%%[8 import({%{GRIN}Silly.PrettyC(prettyC)},{%{GRIN}Silly.PrettyLLVM(prettyLL)})
 
+caWriteFinalCode :: String -> (Bool -> Bool -> SilModule -> PP_Doc) -> CompileAction ()
+caWriteFinalCode suffix ppFun =
+  do input <- gets gcsPath
+     do { let output = fpathSetSuff suffix input
+        ; putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
+        ; silly <- caGrin2Silly
+        ; optTrace    <- gets (ehcOptGenTrace . gcsOpts)
+        ; optCaseDef  <- gets (ehcOptGenCaseDefault . gcsOpts)
+        ; liftIO $ writePP (ppFun optTrace optCaseDef) silly output
+        }
+
+caWriteLlc :: CompileAction ()
+caWriteLlc = do
+    {
+     options <- gets gcsOpts
+    ; when (ehcOptEmitLlc options)
+           (caWriteFinalCode "c" prettyC)
+    }
+
+{-
 caWriteLlc :: CompileAction ()
 caWriteLlc = do
     { input <- gets gcsPath
@@ -340,6 +360,7 @@ caWriteLlc = do
                ; liftIO $ writePP (prettyC optTrace optCaseDef) silly output
                })
     }
+-}
 %%]
 
 
@@ -441,7 +462,12 @@ caFinalize = task_ VerboseNormal "Finalizing"
 caOutput = task_ VerboseNormal "Writing code"
     ( do { outputGrin <- gets (ehcOptDumpTrfGrin . gcsOpts)
          ; maybe (return ()) (caWriteGrin False) outputGrin
-         ; caWriteLlc
+         --; caWriteLlc
+         ; options <- gets gcsOpts
+         ; when (ehcOptEmitLLVM options)
+           (caWriteFinalCode "ll" prettyLL)
+         ; when (ehcOptEmitLlc options)
+           (caWriteFinalCode "c" prettyC)
          }
     )
 

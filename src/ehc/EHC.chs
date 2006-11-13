@@ -894,7 +894,7 @@ cpTranslateCore2Grin modNm
                         where ehInh  = crsiEHInh crsi
 %%]]
                  grin   = cmodGrin u1 dg cMod
-         ;  when (isJust mbCore && (ehcOptEmitGrin opts || ehcOptEmitLlc opts))
+         ;  when (isJust mbCore && (ehcOptEmitGrin opts || ehcOptEmitLlc opts || ehcOptEmitLLVM opts))
                  (cpUpdCU modNm (ecuStoreGrin grin))
          }
 
@@ -907,7 +907,7 @@ cpTranslateGrin modNm
                  fp     = ecuFilePath ecu
                  mbGrin = ecuMbGrin ecu
                  grin   = panicJust "cpTranslateGrin" mbGrin
-         ;  when (isJust mbGrin && (ehcOptEmitLlc opts))
+         ;  when (isJust mbGrin && (ehcOptEmitLlc opts || ehcOptEmitLLVM opts))
                  (lift $ GRINC.doCompileGrin (Right (fp,grin)) opts)
          }
 %%]

@@ -323,9 +323,12 @@ SEM GrModule
 -- that are actually possible for this function.
 -- Source of this information could be the Haskell-type, or the Grin HPT-analysis.
 
+-- NOTE: for expedience, I am ignoring previous logic for different alloc routines
+-- NOTE: we can re-introduce the complexity of Value_Alloc later... if necessary
+
 allocate :: String -> Maybe String -> Bool -> Int -> Int -> Value
-allocate (tagcat:_) mbcast allowgc n1 n2
- = Value_Call alloc [ Value_Con (Constant_LiteralInt (sz n)) ]
+allocate (tagcat:_) mbcast allowgc n1 n2 = Value_Alloc $ sz n
+-- = Value_Call alloc [ Value_Con (Constant_LiteralInt (sz n)) ]
  where alloc =  maybe "" (\c -> "(" ++ c ++ ")") mbcast ++ fc
        fc = if useBoehmGC
             then if allowgc then "GC_MALLOC" else "GC_MALLOC_UNCOLLECTABLE"
