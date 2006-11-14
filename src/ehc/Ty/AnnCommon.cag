@@ -1,0 +1,309 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+
+%%[1 hs module {%{EH}Ty.AnnCommon}
+%%]
+
+%%[7_2 hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Ty}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set))
+%%]
+
+%%[7_2 import({Ty/CommonAG},{Ty/AbsSyn})
+%%]
+
+%%[7_2 hs export(tyToplevelAnnExpF, tyToplevelTruncAnns, tyToplevelConArgs, tyToplevelConNm, tyToplevelArrowArg, tyToplevelArrowVal, tyToplevelExts)
+%%]
+
+%%[7_2 hs export(tyOutermostAnn, tyAnnotations, kindVarianceMap, tyAllTyVars, tyAllTyVarAnns, mergeDoubleAnnotations)
+%%]
+
+Some utility functions to get the toplevel constructor/args
+or expansion.
+
+%%[7_2.annotationUtil hs
+
+getSynResults :: Ty -> Syn_TyAGItf
+getSynResults ty
+  = let itf = TyAGItf_AGItf ty
+        inh = Inh_TyAGItf {}
+        syn = wrap_TyAGItf (sem_TyAGItf itf) inh
+     in syn
+
+tyToplevelAnnExpF :: Ty -> HsName -> Maybe [Ty]
+tyToplevelAnnExpF
+  = toplevelAnnExpF_Syn_TyAGItf . getSynResults
+
+tyToplevelTruncAnns :: Ty -> [Annotation Ty]
+tyToplevelTruncAnns
+  = toplevelTruncAnns_Syn_TyAGItf . getSynResults
+
+tyToplevelConArgs :: Ty -> [Ty]
+tyToplevelConArgs
+  = toplevelConArgs_Syn_TyAGItf . getSynResults
+
+tyToplevelConNm :: Ty -> HsName
+tyToplevelConNm
+  = toplevelConNm_Syn_TyAGItf . getSynResults
+
+tyToplevelArrowArg :: Ty -> Ty
+tyToplevelArrowArg
+  = toplevelArrowArg_Syn_TyAGItf . getSynResults
+
+tyToplevelArrowVal :: Ty -> Ty
+tyToplevelArrowVal
+  = toplevelArrowVal_Syn_TyAGItf . getSynResults
+
+tyToplevelExts :: Ty -> AssocL HsName Ty
+tyToplevelExts
+  = toplevelExts_Syn_TyAGItf . getSynResults
+
+tyOutermostAnn :: Ty -> Annotation Ty
+tyOutermostAnn
+  = tyOutermostAnn_Syn_TyAGItf . getSynResults
+
+tyAnnotations :: Ty -> Annotations Ty
+tyAnnotations
+  = tyAllAnnotations_Syn_TyAGItf . getSynResults
+
+kindVarianceMap :: Ty -> Map (Annotation Ty) CoContraVariance
+kindVarianceMap
+  = kindVarianceMap_Syn_TyAGItf . getSynResults
+
+tyAllTyVars :: Ty -> Set TyVarId
+tyAllTyVars
+  = allTyVars_Syn_TyAGItf . getSynResults
+
+tyAllTyVarAnns :: Ty -> Set (Annotation Ty)
+tyAllTyVarAnns
+  = allTyVarAnnots_Syn_TyAGItf . getSynResults
+
+mergeDoubleAnnotations :: Ty -> Ty
+mergeDoubleAnnotations
+  = mergedAnnTy_Syn_TyAGItf . getSynResults
+
+%%]
+
+
+%%[7_2
+
+WRAPPER TyAGItf
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% All annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7_2
+ATTR TyAGItf [|| tyAllAnnotations : {Set (Annotation Ty)} ]
+ATTR AllTyTy [|| tyAllAnnotations USE {`Set.union`} {Set.empty} : {Set (Annotation Ty)} ]
+
+SEM Ty
+  | Ann         lhs.tyAllAnnotations = Set.singleton @ann `Set.union` @ty.tyAllAnnotations
+  | TruncTyCon  lhs.tyAllAnnotations = @anns `Set.union` @ty.tyAllAnnotations
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% All type variables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7_2
+
+ATTR TyAGItf [|| allTyVars : {Set TyVarId} ]
+ATTR AllTyTy [|| allTyVars USE {`Set.union`} {Set.empty} : {Set TyVarId} ]
+
+SEM Ty
+  | Var  lhs.allTyVars = Set.singleton @tv
+
+%%]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7_2.topAnn
+
+ATTR TyAGItf [|| tyOutermostAnn : {Annotation Ty} ]
+ATTR AllTyTy [|| tyOutermostAnn USE {`const`} {error "No Annotation in Ty"} : {Annotation Ty} ]
+
+SEM Ty
+  | Ann  lhs.tyOutermostAnn = @ann
+  | App  lhs.tyOutermostAnn = @func.tyOutermostAnn
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Toplevel constructor name
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7_2.topTyConNm
+
+ATTR TyAGItf [|| toplevelConNm : HsName ]
+ATTR AllTyTy [|| toplevelConNm USE {`const`} {error "No Con in Ty"} : HsName ]
+
+SEM Ty
+  | Con  lhs.toplevelConNm = @nm
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Toplevel constructor arguments
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7_2.topTyConArgs
+
+ATTR TyAGItf [|| toplevelConArgs : {[Ty]} ]
+ATTR AllTyTy [|| toplevelConArgs USE {<+>} {emptySeq} : {Seq Ty } ]
+
+SEM TyAGItf
+  | AGItf  lhs.toplevelConArgs = seqToList @ty.toplevelConArgs
+
+SEM Ty
+  | App  lhs.toplevelConArgs = @func.toplevelConArgs <+> unitSeq @arg.self
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Toplevel constructor with truncated annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7_2.topTruncTyCon
+
+ATTR TyAGItf [|| toplevelTruncAnns : {[Annotation Ty]} ]
+ATTR AllTyTy [|| toplevelTruncAnns USE {`const`} {Set.empty} : {Annotations Ty} ]
+
+SEM TyAGItf
+  | AGItf       lhs.toplevelTruncAnns = Set.toList @ty.toplevelTruncAnns
+
+SEM Ty
+  | ExpTyCon    lhs.toplevelTruncAnns = Set.empty
+  | TruncTyCon  lhs.toplevelTruncAnns = @anns
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Toplevel annotation expansion function
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7_2.topExpTyConF
+
+ATTR TyAGItf [|| toplevelAnnExpF : {HsName -> Maybe [Ty]} ]
+ATTR AllTyTy [|| toplevelAnnExpMap USE {`Map.union`} {Map.empty} : {Map HsName [Ty]} ]
+
+SEM TyAGItf
+  | AGItf  lhs.toplevelAnnExpF = \conNm -> Map.lookup conNm @ty.toplevelAnnExpMap
+
+SEM Ty
+  | App         lhs.toplevelAnnExpMap = Map.empty
+  | TruncTyCon  lhs.toplevelAnnExpMap = Map.empty
+  | ExpTyCon    lhs.toplevelAnnExpMap = @constrs.toplevelAnnExpMap
+
+SEM TyExpConstr
+  | Constr      lhs.toplevelAnnExpMap = Map.singleton @nm (seqToList @fields.tyL)
+
+ATTR TyExpFields TyExpField [|| tyL USE {<+>} {emptySeq} : {Seq Ty} ]
+SEM TyExpField
+  | Field  lhs.tyL = unitSeq @ty.self
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Toplevel arrow val
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7_2.topArrowVal
+
+ATTR TyAGItf AllTyTy [|| toplevelArrowArg USE {`const`} {Ty_Any} : Ty ]
+ATTR TyAGItf AllTyTy [|| toplevelArrowVal USE {`const`} {Ty_Any} : Ty ]
+
+SEM Ty
+  | App  lhs.toplevelArrowVal = @arg.self
+         lhs.toplevelArrowArg = if @lhs.appSpinePos >= 1
+                                then @arg.self
+                                else @func.toplevelArrowArg
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Toplevel records
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7_2
+
+ATTR TyAGItf [|| toplevelExts : {AssocL HsName Ty} ]
+ATTR AllTyTy [|| toplevelExts USE {<+>} {emptySeq} : {Seq (HsName, Ty)} ]
+
+SEM TyAGItf
+  | AGItf  lhs.toplevelExts = seqToList @ty.toplevelExts
+
+SEM Ty
+  | App    lhs.toplevelExts = @arg.toplevelExts
+  | Ext    lhs.toplevelExts = @ty.toplevelExts <+> unitSeq @loc.toplevelExt
+           loc.toplevelExt  = (@nm, @extTy.self)
+
+%%]
+
+
+Merge double Ann non-terminals (keep the lower one)
+This can happen as a result of ty-var substitution.
+
+%%[7_2
+
+ATTR TyAGItf [|| mergedAnnTy : Ty ]
+ATTR AllTyAndFlds [|| mergedAnnTy : SELF ]
+ATTR Ty [|| isAnnNode : Bool ]
+
+SEM Ty
+  | Ann  lhs.mergedAnnTy = if   @ty.isAnnNode
+                           then @ty.mergedAnnTy
+                           else @loc.mergedAnnTy
+
+SEM Ty
+  | Ann      lhs.isAnnNode = True
+  | * - Ann  lhs.isAnnNode = False
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% All annotations on a type variable
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7_2
+
+ATTR TyAGItf [|| allTyVarAnnots : {Set (Annotation Ty)} ]
+ATTR AllTyTy [|| allTyVarAnnots USE {`Set.union`} {Set.empty} : {Set (Annotation Ty)} ]
+ATTR AllTyTy [ parentAnn : {Annotation Ty} ||]
+
+SEM TyAGItf
+  | AGItf  loc.parentAnn = error "allTyVarAnnots: no parent annotation."
+
+SEM Ty
+  | Ann  loc.parentAnn      = @ann
+  | Var  lhs.allTyVarAnnots = Set.singleton @lhs.parentAnn
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CoContraVariance on kinds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7_2
+
+ATTR AllTyTy [ kindVariance : CoContraVariance ||]
+ATTR AllTyTy [|| kindVarianceMap USE {`Map.union`} {Map.empty} : {Map (Annotation Ty) CoContraVariance} ]
+ATTR TyAGItf [|| kindVarianceMap : {Map (Annotation Ty) CoContraVariance} ]
+
+SEM TyAGItf
+  | AGItf  ty.kindVariance   = CoVariant
+
+SEM Ty
+  | App  func.kindVariance   = cocoOpp @lhs.kindVariance
+  | Ann  lhs.kindVarianceMap = Map.insert @ann @lhs.kindVariance @ty.kindVarianceMap
+
+%%]

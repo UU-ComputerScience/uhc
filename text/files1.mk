@@ -29,7 +29,7 @@ LHS2TEX_OPTS_TEXT_CONFIG	:=
 LHS2TEX_OPTS_VARIANT_CONFIG	:= 
 
 # configuration of ruler, to be done on top level
-TEXT_RULER_MARK_CHANGES_CFG	:= --markchanges="E - *"
+TEXT_RULER_MARK_CHANGES_CFG	:= # --markchanges="E - *"
 
 # order used by shuffle
 TEXT_SHUFFLE_ORDER			:= # added to in files1-*.mk

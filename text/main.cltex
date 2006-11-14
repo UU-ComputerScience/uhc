@@ -42,6 +42,10 @@
 \documentclass[a4]{report}
 %%]
 
+%%[20
+\documentclass[sffont=false,color=false,a4paper]{st-thesis}
+%%]
+
 %%[7
 \documentclass[%
                headinclude,% new for typearea
@@ -334,7 +338,7 @@
 
 %%[18
 %\usetheme{Darmstadt}
-\usetheme[sidebar=true, style=fancy]{uu}
+\usetheme[sidebar=true, style=fancy, showpagenr=true]{uu}
 %\usefonttheme{serif}
 \setbeamertemplate{blocks}[rounded][shadow=true]
 %\setbeamertemplate{blocks}[rounded]
@@ -586,6 +590,23 @@
 %endif
 %%]
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Environments
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{collorary}[theorem]{Collorary}
+
+\newenvironment{proof}
+    {\textbf{Proof}}
+    {\samepage \vspace{0.1 cm}
+     \ensuremath{\blacksquare}}
+%%]
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Title
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -735,6 +756,23 @@ WWW home page:
 \author{Atze Dijkstra}
 %%]
 
+%%[20
+\title {
+%%@Uniqueness.title
+}
+\author {
+%%@Uniqueness.author
+}
+%%]
+
+%%[21
+\title{Uniqueness Typing}
+\subtitle{Master's thesis defence}
+\author[Arie Middelkoop]{Arie Middelkoop\\Daily supervisor: dr. J. Hage\\Supervisor: prof. dr. S.D. Swierstra}
+\institute[Universiteit Utrecht]{Department of Information \& Computing Sciences\\Universiteit Utrecht\\Utrecht, The Netherlands}
+\date{Thu, 28 September 2006}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Index
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -819,6 +857,10 @@ WWW home page:
 
 %%]
 
+%%[20
+\frontmatter
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Title
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -867,6 +909,11 @@ WWW home page:
 
 %%[19
 %%@FrontMatter.titleRulerDoc
+%%]
+
+%%[20
+\maketitle
+\clearemptydoublepage
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -991,6 +1038,25 @@ have been submitted to POPL2006 in a slighty extended form.
 \begin{abstract}
 %%@ToolDocRuler.abstract
 \end{abstract}
+%%]
+
+%%[20
+\begin{abstract}
+%%@Uniqueness.abstract
+\end{abstract}
+
+\chapter*{Acknowledgements}
+\markboth{Acknowledgements}{Acknowledgements}
+
+%%@Uniqueness.ack
+
+\clearemptydoublepage
+
+\tableofcontents
+
+\clearemptydoublepage
+
+\mainmatter
 %%]
 
 %%[1
@@ -1973,6 +2039,13 @@ To be done ...
 %%@ToolDocShuffle.doc
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Uniqueness
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+%%@Uniqueness.main
+%%]
 
 
 
@@ -2023,7 +2096,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%]
 
 %%[1
-%if not asSlides && not storyPoster
+%if not asSlides && not storyPoster && not storyUniqueness
 \AddContentsLine{References}
 %if refToPDF
 %\bibliographystyle{uhcbook}
@@ -2423,6 +2496,11 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 
 
 %endif
+%%]
+
+
+%%[21
+%%@Slides.body
 %%]
 
 

@@ -1,0 +1,429 @@
+%%[[body
+
+\frame<presentation>{\titlepage}
+
+\frame<presentation>
+{
+    \frametitle{Contents}
+
+    \tableofcontents
+}
+
+
+\section{Motivation}
+
+  \frame<presentation>
+  {
+    \frametitle{The problem}
+
+    Updates of values are horribly slow in pure functional languages
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{The problem}
+    \framesubtitle{The cause}
+
+\begin{block}{example with shared value}
+%%[[wrap=safecode
+  let  a   = 3
+       a'  = a + 1
+  in   a * a'
+%%]
+\end{block}
+    
+    \begin{itemize}
+    \item Both the value of |a| and |a'| are needed for the multiplication
+    \item Referential transparency
+    \item Values are atomic
+    \item Updates are performed on a copy
+    \end{itemize}
+  }
+  
+  \frame<presentation>
+  {
+    \frametitle{The Problem}
+    \framesubtitle{Superfluous copying}
+
+\begin{block}{example with unique value}
+%%[[wrap=safecode
+  let  a   = 3
+       a'  = a + 1
+  in   a'
+%%]
+\end{block}
+
+    \begin{itemize}
+    \item The old value is not used anywhere else
+    \item The old value is not used after the update to |a'|
+    \item The old value is used at most once (important!)
+    \item There is no need to make a copy
+    \end{itemize}
+  }
+
+  \frame
+  {
+    \frametitle{The Problem}
+    \framesubtitle{Updating big values}
+
+    \begin{block}{Type with a lot of fields}
+%%[[wrap=safecode
+  data BigData
+    = BigCon  {  ... many fields ...
+              ,  field :: Int
+              }
+%%]
+    \end{block}
+    \begin{block}{Updating a single field}
+%%[[wrap=safecode
+  let  state1 = BigCon { ... }
+       state2 = state1 { field = 1 + field state1 }
+  in   state2
+%%]
+    \end{block}
+
+    \begin{itemize}
+    \item Only a small part of the big value is updated
+    \item A copy of the entire value is made (bad!)
+    \end{itemize}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{A real problem?}
+
+    \begin{itemize}
+    \item Consider programs written in an imperative language
+    \item Consider arrays
+    \item Consider hash-tables
+    \end{itemize}
+  }
+  
+  \frame<presentation>
+  {
+    \frametitle{Solutions?}
+    
+    \begin{itemize}
+    \item Monads (ST monad, IO monad)\\
+          ~\\
+%%[[wrap=safecode
+loop arr m n c | arr `seq` m `seq` n `seq` c `seq` False = undefined
+loop arr m n c
+  =  if n == m 
+     then  return c 
+     else  do  el <- unsafeRead arr n
+               if el
+               then  let  loop' j
+                       | j > m      =  loop arr m (n+1) (c + 1)
+                       | otherwise  =  unsafeWrite arr j False
+                                       >> loop' (j+n)
+                     in   loop' (n+n)
+               else  loop (arr :: IOUArray Int Bool) m (n+1) c
+%%]
+    \end{itemize}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{Solutions?}
+
+    \begin{itemize}
+    \item Monads (ST monad, IO monad)
+    \item Versioned data structures\\
+          ~\\
+          \includegraphics{unq-versioned-arr}
+    \end{itemize}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{Solutions?}
+    
+    \begin{itemize}
+    \item Monads (ST monad, IO monad)
+    \item Versioned data structures
+    \item Or ... \emph{uniqueness typing}
+    \end{itemize}
+  }
+
+\section{What is uniqueness typing?}
+
+  \frame<presentation>
+  {
+    \frametitle{Definition of unique and shared}
+
+    \begin{itemize}
+    \item A \emph{unique} value is used at most once, otherwise it is called \emph{shared}
+    \item When a unique value is used by some operation, the value is:
+          \begin{itemize}
+          \item Not used anywhere else in the program
+          \item Not used anymore in the program
+          \item Thus becomes garbage
+          \item Does not need to be atomic
+          \end{itemize}
+    \item Unique values can be updated in-place
+    \end{itemize}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{Idea}
+
+    \begin{enumerate}
+    \item Determine how often each expression is used
+    \item Combine the results for identifiers
+    \item Extract a proof that some value is unique
+    \item Distribute the fact that a value is unique throughout the AST
+    \end{enumerate}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{Idea}
+
+    \begin{center}
+    \includegraphics{unq-count-flow}
+    \end{center}
+  }
+  
+  \frame<presentation>
+  {
+    \frametitle{Idea}
+
+    \begin{center}
+    \includegraphics{unq-count-flow2}
+    \end{center}
+  }
+  
+  \frame<presentation>
+  {
+    \frametitle{Idea}
+
+    \begin{center}
+    \includegraphics{unq-count-flow3}
+    \end{center}
+  }
+
+%%@Slides.typeSysIntro
+
+  \frame<presentation>
+  {
+    \frametitle{Uniqueness typing is...}
+
+    Uniqueness typing:
+    \begin{itemize}
+    \item Store uniqueness as property of a type
+    \item A value is unique if its type is unique
+    \item Use type checking to check uniqueness types
+    \item Infer uniqueness types
+    \end{itemize}
+    ~\\
+    Why encode uniqueness property on types instead of values?
+    \begin{itemize}
+    \item Short answer: it is easier (values can be nested, infinite, etc)
+    \item Long answer: see my master's thesis
+    \end{itemize}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{Example types}
+
+    \begin{block}{the annotations}
+%%[[wrap=safecode
+    u  ::  (Sup(Int)(0))  -- u is an integer that is not used
+    v  ::  (Sup(Int)(1))  -- v is an unique integer
+    w  ::  (Sup(Int)(*))  -- w is a shared integer
+%%]
+   \end{block}
+
+    \begin{block}{more complex types}
+%%[[wrap=safecode
+      t  ::  (Sup((,))(*)) (Sup(Int)(1)) (Sup(Int)(*))   -- shared tuple
+      f  ::  (Sup((->))(1)) (Sup(Int)(1)) (Sup(Int)(*))  -- unique function
+%%]
+    \end{block}
+
+    \begin{itemize}
+    \item Annotations |0|, |1|, and |*| (sets, |<=|)
+    \item Annotations on all type constructors
+    \item Algebraic Data Types: type constructor can have many annotations
+    \end{itemize}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{Approach}
+
+    \begin{block}{Given the program:}
+%%[[wrap=safecode
+    (\x y -> y + x + x) 3 4
+%%]
+    \end{block}
+
+    \begin{block}{Infer the following types:}
+%%[[wrap=safecode
+    ( (\x y -> y + x + x) (3 :: (Sup(Int)(*))) (4 :: (Sup(Int)(1))) ) :: (Sup(Int)(1))
+%%]
+    \end{block}
+    \begin{block}{More precisely:}
+%%[[wrap=safecode
+    (  (\x y ->  (y :: (Sup(Int)(1)))
+                 +  (x :: (Sup(Int)(*)))
+                 +  (x :: (Sup(Int)(*))) :: (Sup(Int)(1)))
+       (3 :: (Sup(Int)(*))) (4 :: (Sup(Int)(1)))
+    ) :: (Sup(Int)(1))
+%%]
+    \end{block}
+    ... how?
+  }
+
+
+  \frame<presentation>
+  {
+    \frametitle{Our approach}
+
+    Phases:
+    \begin{itemize}
+    \item Gather constraint sets
+    \item Reference counting on constraints
+    \item Construct initial uniqueness substitution
+    \item Uniqueness propagation on constraints
+    \end{itemize}
+
+    Distinguishing features:
+    \begin{itemize}
+    \item Individual uniqueness types
+    \item Higher-ranked uniqueness types
+    \item Constraint based
+    \item Constraint solving with graphs
+    \item Graph reduction to limit size of graphs
+    \end{itemize}
+  }
+
+\section{Constraint gathering}
+  
+  \frame<presentation>
+  {
+    \frametitle{Analysis over the Abstract Syntax Tree}
+
+    \includegraphics{unq-pres-ast}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{The coercion constraint}
+
+    \includegraphics{unq-pres-coercion}
+
+    \begin{itemize}
+    \item |b =>= a|
+    \item Reference counting: |b <= a|
+    \item Uniqueness: |a >= b|
+    \end{itemize}
+  }
+
+
+  \frame<presentation>
+  {
+    \frametitle{Root of the expression}
+
+    \begin{center}
+    \includegraphics{unq-pres-root}
+    \end{center}
+
+    \begin{itemize}
+    \item reference count: |a === 1|
+    \item uniqueness: |a| arbitrary
+    \end{itemize}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{Application}
+
+    \begin{center}
+    \includegraphics{unq-pres-app}
+    \end{center}
+
+    \begin{itemize}
+    \item |a =>= d|, |a (Sub(=>=)(s)) c|, |b =>= e|
+    \end{itemize}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{Lambda abstraction}
+
+    \begin{center}
+    \includegraphics{unq-pres-lam}
+    \end{center}
+
+    \begin{itemize}
+    \item |c| arbitrary, |g \*/ h <= b|, |d =>= f|
+    \end{itemize}
+  }
+
+  \frame<presentation>
+  {
+    \frametitle{Plus}
+
+    \begin{center}
+    \includegraphics{unq-pres-plus}
+    \end{center}
+
+    \begin{itemize}
+    \item |f (Sub(=>=)(s)) g|
+    \item |f (Sub(=>=)(s)) h|
+    \end{itemize}
+  }
+
+
+\section{Constraint solving}
+
+  \frame<presentation>
+  {
+    \frametitle{Constraints}
+
+    \begin{block}{Set of constraints}
+%%[[wrap=safecode
+    a (Sub(=>=)(s)) c
+    a =>= d
+    d =>= f
+    f (Sub(=>=)(s)) g
+    f (Sub(=>=)(s)) h
+    g \*/ h <= b
+    b =>= e
+%%]
+    \end{block}
+
+    \begin{itemize}
+    \item Initial substitution (ref): |a === 1, b ... h === 0|
+    \item Fixpoint iteration: |a c d f g h === 1, b === *, e === *|
+    \item Initial substitution (unq): |a c d f g h === 1, b === *, e === *|
+    \item Fixpoint iteration: |a c d f === 1, b e g h === *|
+    \end{itemize}
+  }
+
+\section{Conclusions}
+
+  \frame<presentation>
+  {
+    \frametitle{Conclusion}
+
+     How to scale this approach to:
+
+     \begin{itemize}
+     \item Polyvariant uniqueness types
+     \item Higher-ranked uniqueness types
+     \item |let| construct and constraint duplication
+     \item Parallel expressions
+     \item Polymorphism and overloading
+     \item Data types, case statements, and pattern matches
+     \item Specific optimisations (+ coercions)
+     \end{itemize}
+
+     See my master's thesis!
+  }
+
+%%]

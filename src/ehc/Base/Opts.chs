@@ -80,6 +80,9 @@ data EHCOpts
       ,  ehcOptHelp           ::  Bool
       ,  ehcOptVersion        ::  Bool
       ,  ehcOptDebug          ::  Bool
+%%[[7_2
+      , ehcoptUniqueness      ::  Bool
+%%]]
 %%[[8
       ,  ehcOptDumpCallGraph  ::  Bool
       ,  ehcOptDumpTrfGrin    ::  Maybe String
@@ -139,6 +142,9 @@ defaultEHCOpts
       ,  ehcOptHelp           =   False
       ,  ehcOptVersion        =   False
       ,  ehcOptDebug          =   False
+%%[[7_2
+      ,  ehcoptUniqueness     =   True
+%%]]
 %%[[8
       ,  ehcOptDumpCallGraph  =   False
       ,  ehcOptDumpTrfGrin    =   Nothing
@@ -165,10 +171,7 @@ defaultEHCOpts
       ,  ehcOptEmitLlc        =   False
       ,  ehcOptEmitLLVM       =   False
       ,  ehcOptEmitExec       =   False
-%%][99
-      ,  ehcOptEmitLlc        =   True
-      ,  ehcOptEmitExec       =   True
-%%]]
+%%]
 %%[[9
       ,  ehcOptPrfCutOffAt    =   20
       ,  ehcCfgClassViaRec    =   False -- True
@@ -195,6 +198,10 @@ ehcCmdLineOpts
      ,  Option ""   ["show-top-ty"]      (OptArg oShowTopTy "yes|no")         "show top ty, default=no"
      ,  Option "h"  ["help"]             (NoArg oHelp)                        "only show this help"
      ,  Option ""   ["version"]          (NoArg oVersion)                     "only show version info"
+%%[[7_2
+     ,  Option "nu"  ["nounique"]     (NoArg oUnique)
+          "do not compute uniqueness solution"
+%%]]
 %%[[8
      ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exec|llvm|-")  "write code to file, default=core (downstream only)"
      ,  Option ""   ["trf"]              (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
@@ -240,6 +247,9 @@ ehcCmdLineOpts
          oDebug          o =  o { ehcOptDebug         = True
                                 , ehcOptShowAst       = True
                                 }
+%%[[7_2
+         oUnique         o =  o { ehcoptUniqueness    = False   }
+%%]]
 %%[[8
          oTimeCompile    o =  o { ehcOptTimeCompile       = True    }
          oDumpTrfGrin ms o =  o { ehcOptDumpTrfGrin       = maybe (Just "") (const ms) ms }

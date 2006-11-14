@@ -64,6 +64,12 @@
 %format (VecI(x)(i))    = x "^{\{" i "\}}"
 
 %format (Dot(x)(y)(z))	= "{" x "}_{" y "}^{" z "}"
+%format (Delta(x)) = "{\delta_{" x "}}"
+%format (Annot(x)(y)) = "{{" x "}^{\delta_{" y "}}}"
+%format (Sup(x)(y)) = "{{" x "}^{" y "}}"
+%format (Sub(x)(y)) = "{{" x "}_{" y "}}"
+%format (Card(x)(y)) = "{{" x "} \bowtie {" y "}}"
+%format (SCard(x)(z)(y)) = "{{" x "} \bowtie^{" z "} {" y "}}"
 
 %format restr		= "\backslash "
 
@@ -77,6 +83,9 @@
 %format KGamma      = Theta
 
 %format taua        = tau "_{a}"
+%format utau        = "\widetilde{" tau "}"
+%format kappa       = "\kappa"
+%format ukappa      = "\widetilde{\kappa}"
 
 %format Forall		= "{\nabla}"
 
@@ -130,7 +139,7 @@
 %format Qu          = "\mathcal{Q}"
 %format nQu         = "\neg" Qu
 
-%format ident       = iota
+%format ident       = "i"
 %format identv      = "i"
 %format identc      = "I"
 
@@ -394,3 +403,38 @@
 %format ^ =
 %format ^^ = 
 %endif
+
+%format bullet = "\!\bullet"
+%format =>= = "\triangleright"
+%format \+/ = "\oplus"
+%format \-/ = "\ominus"
+%format \*/ = "\odot"
+%format tyx = "{\tau_{x}}"
+%format sumi = "\sum_{i}"
+%format opplus = "+"
+%format hsnameFormat = "\hbar"
+%format compFormat = "\Im"
+%format oneplus = "{1^{+}}"
+%format onemin  = "{1^{-}}"
+%format Usage = "\jmath"
+%format UpperBound = "\imath"
+%format LowerBound = "\ell"
+%format leq  = "\sqsubseteq"
+%format leqB = "\sqsubseteq_B"
+%format leqBL = "\sqsubseteq_{BL}"
+%format leqL = "\sqsubseteq_L"
+%format leqU = "\sqsubseteq_U"
+%format leqC = "\sqsubseteq_C"
+%format leqS = "\sqsubseteq_S"
+%format leqX = "\sqsubseteq_X"
+%format leqZ = "\sqsubseteq_Z"
+%format leqM = "\sqsubseteq_M"
+%format leqP = "\sqsubseteq_P"
+%format leqQ = "\sqsubseteq_Q"
+%format leqV = "\sqsubseteq_V"
+%format join = "\sqcup"
+%format ConstrSet = zeta
+%format bottom = "\bot"
+%format Phi = "\Phi"
+%format Psi = "\Psi"
+%format Cs = zeta

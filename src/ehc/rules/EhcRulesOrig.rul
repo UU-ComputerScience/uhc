@@ -11,7 +11,7 @@ external _ instTyFixed ftv alpha tvarv exists forall
 -- View hierarchy
 -------------------------------------------------------------------------
 
-viewhierarchy = E < K < C < HM < I1 < EX < DT < CG < P < TS < MD < HS, I1 < I2
+viewhierarchy = E < K < C < HM < I1 < EX < DT < CG < P < TS < MD < HS, I1 < I2, DT < ANN
 
 -------------------------------------------------------------------------
 -- Rewriting
@@ -232,6 +232,8 @@ format fmtcmd rulerMk3Uniq = mkNewLevUID3
 format fmtcmd rulerMk4Uniq = mkNewLevUID4
 format fmtcmd rulerMk5Uniq = mkNewLevUID5
 format fmtcmd rulerMk6Uniq = mkNewLevUID6
+format fmtcmd rulerMk7Uniq = mkNewLevUID7
+format fmtcmd rulerMk8Uniq = mkNewLevUID8
 
 format ag decls.hd = hd
 format ag decls.tl = tl
@@ -318,6 +320,15 @@ external cocoY cocoN cocoNo
 -- Errors
 external Err_PatArity
 
+-- Global attributes from AG
+format ag  finTyCnstr          = "@lhs.finTyCnstr"
+format ag  finKiCnstr          = "@lhs.finKiCnstr"
+format ag  finTyGam            = "@lhs.finTyGam"
+format ag  annMonoRestrictions = "@lhs.annMonoRestrictions"
+format ag  tyConSeqChkF        = "@lhs.tyConSeqChkF"
+format ag  mkExpTyConF         = "@lhs.mkExpTyConF"
+format ag  exposedAnnEnv       = "@lhs.exposedAnnEnv"
+
 -------------------------------------------------------------------------
 -- Expr
 -------------------------------------------------------------------------
@@ -361,6 +372,10 @@ scheme expr "Expr" =
     explain ityCnstr.inh = (Already known constraints (for quantifier propagation))
     explain ityCnstr.syn = (|ityCnstr.inh| + new constraints (for quantifier propagation))
     explain ity = (Type (with type alternatives |talt|) of expression (for quantifier propagation))
+  view ANN =
+    holes [ | | retain tyAnnRef : Ty, retain annKindMap : AnnKindMap, retain tyAnnExp : Ty ]
+    judgespec fiopt ; kiGam ; tyGam ; valGam ; ityCnstr.inh ; tyCnstr.inh ; knTy :- e : ity ; ty ~> ityCnstr.syn ; tyCnstr.syn
+    judgeuse tex fiopt ; valGam ; ityCnstr.inh ; tyCnstr.inh ; knTy :-.."e" e : ity ; ty ~> ityCnstr.syn ; tyCnstr.syn
   view CG =
     holes [ | | retain translExpr: TranslExpr ]
     judgespec fiopt ; kiGam ; tyGam ; valGam ; tyCnstr.inh ; knTy :- e : ty ~> tyCnstr.syn ; translExpr
@@ -448,6 +463,13 @@ ruleset expr.base scheme expr "Expression type rules" =
       judge R : expr
           | ity = tyInt
           | ityCnstr.syn = ityCnstr.inh
+    view ANN =
+      judge A : annotateTyRef = ty ~> tyAnnRef
+      judge K : infAnnKindMap = tyAnnRef ~> annKindMap
+      judge E : annotateTyExp = annKindMap :- tyAnnRef ~> tyAnnExp
+      judge V2 : createUID
+          | uid = (retain ppHtmlBlockUID)
+      ---
     view CG =
       ---
       judge R : expr
@@ -471,6 +493,13 @@ ruleset expr.base scheme expr "Expression type rules" =
       ---
       judge R : expr
           | ity = tyChar
+    view ANN =
+      judge A : annotateTyRef = ty ~> tyAnnRef
+      judge K : infAnnKindMap = tyAnnRef ~> annKindMap
+      judge E : annotateTyExp = annKindMap :- tyAnnRef ~> tyAnnExp
+      judge V2 : createUID
+          | uid = (retain ppHtmlBlockUID)
+      ---
     view CG =
       ---
       judge R : expr
@@ -494,6 +523,13 @@ ruleset expr.base scheme expr "Expression type rules" =
       ---
       judge R : expr
           | ity = tyString
+    view ANN =
+      judge A : annotateTyRef = ty ~> tyAnnRef
+      judge K : infAnnKindMap = tyAnnRef ~> annKindMap
+      judge E : annotateTyExp = annKindMap :- tyAnnRef ~> tyAnnExp
+      judge V2 : createUID
+          | uid = (retain ppHtmlBlockUID)
+      ---
     view CG =
       ---
       judge R : expr
@@ -521,6 +557,13 @@ ruleset expr.base scheme expr "Expression type rules" =
       ---
       judge R : expr
           | ity = tyFloat
+    view ANN =
+      judge A : annotateTyRef = ty ~> tyAnnRef
+      judge K : infAnnKindMap = tyAnnRef ~> annKindMap
+      judge E : annotateTyExp = annKindMap :- tyAnnRef ~> tyAnnExp
+      judge V2 : createUID
+          | uid = (retain ppHtmlBlockUID)
+      ---
     view CG =
       ---
       judge R : expr
@@ -544,6 +587,13 @@ ruleset expr.base scheme expr "Expression type rules" =
       ---
       judge R : expr
           | ity = tyInteger
+    view ANN =
+      judge A : annotateTyRef = ty ~> tyAnnRef
+      judge K : infAnnKindMap = tyAnnRef ~> annKindMap
+      judge E : annotateTyExp = annKindMap :- tyAnnRef ~> tyAnnExp
+      judge V2 : createUID
+          | uid = (retain ppHtmlBlockUID)
+      ---
     view CG =
       ---
       judge R : expr
@@ -567,6 +617,13 @@ ruleset expr.base scheme expr "Expression type rules" =
       ---
       judge R : expr
           | ity = tyDouble
+    view ANN =
+      judge A : annotateTyRef = ty ~> tyAnnRef
+      judge K : infAnnKindMap = tyAnnRef ~> annKindMap
+      judge E : annotateTyExp = annKindMap :- tyAnnRef ~> tyAnnExp
+      judge V2 : createUID
+          | uid = (retain ppHtmlBlockUID)
+      ---
     view CG =
       ---
       judge R : expr
@@ -613,6 +670,19 @@ ruleset expr.base scheme expr "Expression type rules" =
       judge R : expr
           | ity = ityCnstr.inh ty.g
           | ityCnstr.syn = ityCnstr.inh
+    view ANN =
+      judge A : annotateTyRef = ty ~> tyAnnRef
+      judge K : infAnnKindMap = tyAnnRef ~> annKindMap
+      judge E : annotateTyExp = annKindMap :- tyAnnRef ~> tyAnnExp
+      judge V1 : createUID
+          | uid = (retain constrUID)
+      judge V2 : createUID
+          | uid = (retain constrUID2)
+      judge V3 : createUID
+          | uid = (retain freshUID)
+      judge V4 : createUID
+          | uid = (retain ppHtmlBlockUID)
+      ---
     view CG =
       ---
       judge R : expr
@@ -623,7 +693,7 @@ ruleset expr.base scheme expr "Expression type rules" =
           | translExpr = coe (translVar (ident) | TranslExpr)
 
   rule e.con : e.var viewsel K - * "Con" =
-    view K =	
+    view K =
       judge O: tyOpenProd = ty.p.._, n === ty.r
       judge - G F
       ---
@@ -1721,7 +1791,7 @@ ruleset tyexpr.base scheme tyexpr viewsel E - * "Type expression type rules" =
       judge split : valGamPop = tyGam.l ++ _ === tyGam.t
       ---
       judge R : tyexpr = tyGam.inh :- ((tQu|TyQu) tVar (.) (node 1 = tExpr)) : (tyexprQuant tQu tvarv `.` ty.t) ~> (tyGam.l + tyGam.inh) ; tvarv.t.._
-    
+
 -------------------------------------------------------------------------
 -- Predicates (proving of)
 -------------------------------------------------------------------------
@@ -2111,7 +2181,7 @@ ruleset match.all scheme match viewsel K - * "Type matching rules" =
       ---
 
   rule m.forall.l viewsel I1 - * =
-    view I1 = 
+    view I1 =
       judge F : match = fiopt :- ty.i <=>.(<=) ty.2 : ty ~> tyCnstr
       judge I : inst.tvarv' = ty.i, tvarv, tvarv..._ === ty.1, alpha
       ---
@@ -2122,7 +2192,7 @@ ruleset match.all scheme match viewsel K - * "Type matching rules" =
       judge F : match = fiopt :- ty.1 <=>.(<=) ty.i : ty ~> tyCnstr
       judge I : inst.tvarv' = ty.i, tvarf, tvarf..._ === ty.2, alpha
       ---
-      judge R : match = fiopt :- ty.1 <=>.(<=) (forall ^ alpha..._ `.` ty.2) : (tyCnstr (forall ^ alpha..._ `.` ty.2)) ~> tyCnstr  
+      judge R : match = fiopt :- ty.1 <=>.(<=) (forall ^ alpha..._ `.` ty.2) : (tyCnstr (forall ^ alpha..._ `.` ty.2)) ~> tyCnstr
     view DT = 
       judge O : fioptHasOpt = fioLeaveRInstN `elem` fiopt
       ---
@@ -3019,7 +3089,7 @@ relation tyAltPartition =
     judgespec partitionTy === ty
 
 relation tyAltSelect =
-  view I2 = 
+  view I2 =
     holes [ tyAlts: TyPlusL, thard: TyHardness, tneed: TyNeed | | tys: TyL, tyElt: Ty ]
     judgespec tys === tyAlts, tyElt, thard, tneed
     judgeuse tex tys === [ tyElt `|` (tyElt :: thard / tneed) <- tyAlts ]
@@ -3093,3 +3163,42 @@ relation chkProdArity =
     judgeuse ag (retain "loc.arityErrs") `=` (if length tyl == (pat).arity - then [] - else [Err_PatArity ty (pat).arity])
               | (pat).knTyL `=` reverse tyl
 
+-------------------------------------------------------------------------
+-- Infuse annotations to Ty
+-------------------------------------------------------------------------
+
+relation annotateTyRef =
+  view ANN =
+    holes [ ty: Ty | | refAnnTy: Ty ]
+    judgespec ty ~> refAnnTy
+    judgeuse ag (refAnnTy, _) `=` infuseAnn "Map.empty" (finTyCnstr |=> ty) unique
+
+-------------------------------------------------------------------------
+-- Infer Annotation Kind Map
+-------------------------------------------------------------------------
+
+relation infAnnKindMap =
+  view ANN =
+    holes [ ty: Ty | | annKindMap : AnnKindMap ]
+    judgespec ty ~> annKindMap
+    judgeuse ag (annKindMap, _) `=` inferAnnKindMap finTyGam "Map.empty" ty unique
+
+-------------------------------------------------------------------------
+-- Infuse expansion and trunc nodes to (annotated) Ty
+-------------------------------------------------------------------------
+
+relation annotateTyExp =
+  view ANN =
+    holes [ tyRef: Ty, tyGam: TyGam, annKindMap: AnnKindMap | | tyExp: Ty ]
+    judgespec annKindMap :- tyRef ~> tyExp
+    judgeuse ag (tyExp, _) `=` infuseExp annKindMap exposedAnnEnv tyConSeqChkF mkExpTyConF annMonoRestrictions tyRef unique
+
+-------------------------------------------------------------------------
+-- Add a unique id to the AST
+-------------------------------------------------------------------------
+
+relation createUID =
+  view ANN =
+    holes [ | | uid : UID ]
+    judgespec uid
+    judgeuse ag uid `=` unique

@@ -143,9 +143,20 @@ text-variant-slides-explimpl-fpnl:
 	  TEXT_SHUFFLE_VARIANT=16 \
 	  text-variant-dflt-once
 
+text-variant-uniqueness:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyUniqueness --set=inclTOC --set=asArticle --set=useHyperref --set=refToPDF" \
+	  TEXT_SHUFFLE_VARIANT=20 \
+	  text-variant-dflt-bib
+
+text-variant-slides-uniqueness:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyExplImpl --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
+	  TEXT_SHUFFLE_VARIANT=21 \
+	  text-variant-dflt-once
+
 text-variant-slides-overview:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyOverview --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=17 \
 	  text-variant-dflt-once
-

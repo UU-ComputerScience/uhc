@@ -85,6 +85,51 @@ DATA TyVarCateg
   | Exist
 %%]
 
+Adds an annotation to the type expression. The annotation can be added at any
+place, though typical places of an annotation are just above a type variable
+and type constructor.
+
+Normal type inference doesn't add these annotations. We infuse these annotations
+to a Ty, after type inference has been performed. We've added the annotations
+in such a way that a computation on a Ty that does not need annotations, can
+just behave as if they do not exist and let copy-rules do the remainder.
+
+%%[7_2.annotation
+DATA Ty
+  | Ann         ann             : {Annotation Ty}
+                ty              : Ty
+%%]
+
+Type constructors are special in our case. It is either an expanded type
+constructor, exposing the contents of the data type it represents, or a
+truncated one, hiding the contents. Expansions means that a data type is
+unfolded given it's type arguments. Expansion should be tightly controlled,
+because it could lead easily to enourmous types, or not terminate.
+
+Note: We will not expand a data type without constructors. It is useless
+      since basic annotation works already for that.
+
+%%[7_2.annotationExp
+DATA Ty
+  | ExpTyCon    constrs         : TyExpConstrs
+                args            : {[TyVarId]}
+                ty              : Ty
+    
+  | TruncTyCon  anns            : {Annotations Ty}
+                ty              : Ty
+
+TYPE TyExpConstrs = [TyExpConstr]
+
+DATA TyExpConstr
+  | Constr      nm              : {HsName}
+                fields          : TyExpFields
+
+TYPE TyExpFields = [TyExpField]
+
+DATA TyExpField
+  | Field       ty              : Ty
+%%]
+
 %%[7.Ty
 DATA Ty
   | Ext         ty              : Ty
@@ -183,6 +228,12 @@ SET AllTy           = AllTyTy
 SET AllTyAndFlds    = AllTy TyVarCateg TyQu
 %%]
 
+%%[7_2.AllTy -4.AllTy
+SET AllTyTy         = Ty TyExpConstrs TyExpConstr TyExpFields TyExpField
+SET AllTy           = AllTyTy
+SET AllTyAndFlds    = AllTy TyVarCateg TyQu
+%%]
+
 %%[9.AllTy -4.AllTy
 SET AllTyTy         = Ty
 SET AllTy           = AllTyTy Pred Impls
@@ -194,5 +245,3 @@ SET AllTyTy         = Ty TyL TyPlus TyPlusL
 SET AllTy           = AllTyTy Pred Impls
 SET AllTyAndFlds    = AllTy TyVarCateg TyQu
 %%]
-
-

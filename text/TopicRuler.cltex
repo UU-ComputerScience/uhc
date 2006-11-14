@@ -1437,7 +1437,7 @@ We define additional Haskell datatypes and functions to support the intended mea
 unique identifiers |UID| are explained later:
 %if (storyPHD || storyEhcBook)
 %%[[hide "app-ruler-supp-hs"="Ruler demo: Supporting Haskell"
-\VerbatimInput[fontsize=\footnotesize]{DemoUtils.hs}
+\VerbatimInput[fontsize=\footnotesize]{RulerDemoUtils.hs}
 %%]
 %endif
 
@@ -1576,7 +1576,7 @@ The operator |<=>| implementing the matching returns constraints as well as erro
 The errors are bound to a local attribute which is used by additional AG code for error reporting.
 %if (storyPHD || storyEhcBook)
 %%[[hide "app-ruler-supp-ag"="Ruler demo: Supporting AG"
-\VerbatimInput[fontsize=\footnotesize]{DemoMain.ag}
+\VerbatimInput[fontsize=\footnotesize]{RulerDemoMain.ag}
 %%]
 %endif
 

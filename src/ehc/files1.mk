@@ -56,6 +56,8 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													Ty/FitsInCommon Ty/FitsIn \
 													Core/Utils \
 													Gam/Utils \
+													Annotations/StateMachine Annotations/Constraints Annotations/ConstraintSolver Annotations/BelownessSolver Annotations/VarianceSolver Annotations/UniquenessSolver \
+													Base/HtmlCommon \
 											)
 EHC_HS_UTIL_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_HS_UTIL_SRC_CHS))
 
@@ -75,7 +77,13 @@ EHC_AGEHMAIN_DPDS_SRC_CAG				:= $(patsubst %,$(SRC_EHC_PREFIX)EH/%.cag,AbsSyn \
 													InferCaseExpr Pretty PrettyAST \
 													Uniq ExtraChecks GatherError \
 													ToCore ResolvePred InferClass \
-											)
+											) \
+							   $(patsubst %,$(SRC_EHC_PREFIX)%.cag, \
+													Annotations/AnnDT Ty/TyConPatCollect Ty/AnnDecomposePat \
+													EH/ConstrInferExpr EH/ConstrInferData Annotations/AnnSolvers \
+													EH/PrettyHTML \
+											) \
+
 $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_AGEHMAIN_MAIN_SRC_CAG)) \
 										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_AGEHMAIN_DPDS_SRC_CAG)) \
 											$(EHC_RULES_3_DRV_AG)
@@ -259,6 +267,61 @@ EHC_AGGRINCODE_PRETTY_DPDS_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)GrinCode/%.
 $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_AGGRINCODE_PRETTY_MAIN_SRC_CAG)) \
 										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_AGGRINCODE_PRETTY_DPDS_SRC_CAG))
 
+EHC_ANNINFERKIND_MAIN_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/AnnInferKind)
+EHC_ANNINFERKIND_DPDS_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/AbsSyn)
+$(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_ANNINFERKIND_MAIN_SRC_CAG)) \
+										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_ANNINFERKIND_DPDS_SRC_CAG))
+
+EHC_TYCONPAT_MAIN_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/TyConPat)
+EHC_TYCONPAT_DPDS_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/AbsSyn EH/AbsSyn)
+$(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_TYCONPAT_MAIN_SRC_CAG)) \
+										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_TYCONPAT_DPDS_SRC_CAG))
+
+EHC_TYINFUSEANN_MAIN_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/InfuseAnn)
+EHC_TYINFUSEANN_DPDS_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/AbsSyn)
+$(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_TYINFUSEANN_MAIN_SRC_CAG)) \
+										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_TYINFUSEANN_DPDS_SRC_CAG))
+
+EHC_TYINFUSEEXP_MAIN_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/InfuseExp)
+EHC_TYINFUSEEXP_DPDS_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/AbsSyn)
+$(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_TYINFUSEEXP_MAIN_SRC_CAG)) \
+										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_TYINFUSEEXP_DPDS_SRC_CAG))
+
+EHC_INFEREXPOSED_MAIN_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/InferExposedAnns)
+EHC_INFEREXPOSED_DPDS_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/AbsSyn)
+$(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_INFEREXPOSED_MAIN_SRC_CAG)) \
+										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_INFEREXPOSED_DPDS_SRC_CAG))
+
+EHC_ANNSUBST_MAIN_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/AnnSubst)
+EHC_ANNSUBST_DPDS_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/AbsSyn)
+$(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_ANNSUBST_MAIN_SRC_CAG)) \
+										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_ANNSUBST_DPDS_SRC_CAG))
+
+EHC_TYEXPAND_MAIN_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/Expand)
+EHC_TYEXPAND_DPDS_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/AbsSyn)
+$(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_TYEXPAND_MAIN_SRC_CAG)) \
+										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_TYEXPAND_DPDS_SRC_CAG))
+
+EHC_CONSTRINFERTY_MAIN_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,EH/ConstrInferTy)
+EHC_CONSTRINFERTY_DPDS_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/AbsSyn)
+$(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_CONSTRINFERTY_MAIN_SRC_CAG)) \
+										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_CONSTRINFERTY_DPDS_SRC_CAG))
+
+EHC_INFUSEDATATRUNCS_MAIN_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/InfuseDataTruncs)
+EHC_INFUSEDATATRUNCS_DPDS_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/AbsSyn)
+$(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_INFUSEDATATRUNCS_MAIN_SRC_CAG)) \
+										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_INFUSEDATATRUNCS_DPDS_SRC_CAG))
+
+EHC_TYPPHTML_MAIN_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/PrettyHTML)
+EHC_TYPPHTML_DPDS_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/AbsSyn)
+$(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_TYPPHTML_MAIN_SRC_CAG)) \
+										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_TYPPHTML_DPDS_SRC_CAG))
+
+EHC_TYANNCOMMON_MAIN_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/AnnCommon)
+EHC_TYANNCOMMON_DPDS_SRC_CAG		:= $(patsubst %,$(SRC_EHC_PREFIX)%.cag,Ty/AbsSyn Ty/CommonAG)
+$(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_TYPPHTML_MAIN_SRC_CAG)) \
+										: $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_TYPPHTML_DPDS_SRC_CAG))
+
 EHC_AG_D_MAIN_SRC_CAG					:= \
 											$(EHC_AGEHAST_MAIN_SRC_CAG) \
 											$(EHC_AGHSAST_MAIN_SRC_CAG) \
@@ -297,9 +360,20 @@ EHC_AG_S_MAIN_SRC_CAG					:= \
 											$(EHC_AGTY_FRESH_MAIN_SRC_CAG) \
 											$(EHC_AGTY_MAPNAME_MAIN_SRC_CAG) \
 											$(EHC_AGTY_PRETTY_MAIN_SRC_CAG) \
-											$(EHC_AGGRINCODE_PRETTY_MAIN_SRC_CAG)
+											$(EHC_AGGRINCODE_PRETTY_MAIN_SRC_CAG) \
+											$(EHC_ANNCONVERTTY_MAIN_SRC_CAG) \
+											$(EHC_ANNINFERKIND_MAIN_SRC_CAG) \
+											$(EHC_TYINFUSEANN_MAIN_SRC_CAG) \
+											$(EHC_TYINFUSEEXP_MAIN_SRC_CAG) \
+											$(EHC_INFEREXPOSED_MAIN_SRC_CAG) \
+											$(EHC_ANNSUBST_MAIN_SRC_CAG) \
+											$(EHC_TYEXPAND_MAIN_SRC_CAG) \
+											$(EHC_CONSTRINFERTY_MAIN_SRC_CAG) \
+											$(EHC_INFUSEDATATRUNCS_MAIN_SRC_CAG) \
+											$(EHC_TYPPHTML_MAIN_SRC_CAG) \
+											$(EHC_TYANNCOMMON_MAIN_SRC_CAG) \
 
-EHC_AG_DS_MAIN_SRC_CAG					:= 
+EHC_AG_DS_MAIN_SRC_CAG					:= $(EHC_TYCONPAT_MAIN_SRC_CAG)
 
 EHC_AG_ALL_MAIN_SRC_CAG					:= $(EHC_AG_D_MAIN_SRC_CAG) $(EHC_AG_S_MAIN_SRC_CAG) $(EHC_AG_DS_MAIN_SRC_CAG)
 
@@ -339,6 +413,17 @@ EHC_AG_ALL_DPDS_SRC_CAG					:= $(sort \
 											$(EHC_AGGRINCODE_PRETTY_DPDS_SRC_CAG) \
 											$(EHC_AGERR_DPDS_SRC_CAG) \
 											$(EHC_AGERR_PRETTY_DPDS_SRC_CAG) \
+											$(EHC_ANNINFERKIND_DPDS_SRC_CAG) \
+											$(EHC_TYCONPAT_DPDS_SRC_CAG) \
+											$(EHC_TYINFUSEANN_DPDS_SRC_CAG) \
+											$(EHC_TYINFUSEEXP_DPDS_SRC_CAG) \
+											$(EHC_INFEREXPOSED_DPDS_SRC_CAG) \
+											$(EHC_ANNSUBST_DPDS_SRC_CAG) \
+											$(EHC_TYEXPAND_DPDS_SRC_CAG) \
+											$(EHC_CONSTRINFERTY_DPDS_SRC_CAG) \
+											$(EHC_INFUSEDATATRUNCS_DPDS_SRC_CAG) \
+											$(EHC_TYPPHTML_DPDS_SRC_CAG) \
+											$(EHC_TYANNCOMMON_DPDS_SRC_CAG) \
 											)
 
 # all src
@@ -357,6 +442,7 @@ EHC_ON_RULES_VIEW_4_2					:= I2
 EHC_ON_RULES_VIEW_5						:= DT
 EHC_ON_RULES_VIEW_6						:= DT
 EHC_ON_RULES_VIEW_7						:= DT
+EHC_ON_RULES_VIEW_7_2					:= ANN
 EHC_ON_RULES_VIEW_8						:= CG
 EHC_ON_RULES_VIEW_9						:= P
 EHC_ON_RULES_VIEW_10					:= P
@@ -380,6 +466,7 @@ EHC_BY_RULER_RULES_4_2					:= $(EHC_BY_RULER_RULES_4)
 EHC_BY_RULER_RULES_5					:= $(EHC_BY_RULER_RULES_BASE2) e.str p.str
 EHC_BY_RULER_RULES_6					:= $(EHC_BY_RULER_RULES_5)
 EHC_BY_RULER_RULES_7					:= $(EHC_BY_RULER_RULES_6)
+EHC_BY_RULER_RULES_7_2					:= $(EHC_BY_RULER_RULES_6)
 EHC_BY_RULER_RULES_8					:= $(EHC_BY_RULER_RULES_7) e.float p.float
 EHC_BY_RULER_RULES_9					:= $(EHC_BY_RULER_RULES_8)
 EHC_BY_RULER_RULES_10					:= $(EHC_BY_RULER_RULES_9)

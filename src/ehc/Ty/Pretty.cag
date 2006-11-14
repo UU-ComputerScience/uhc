@@ -13,6 +13,9 @@
 %%[3 hs import(Char)
 %%]
 
+%%[7_2 hs import(qualified Data.Set as Set, Data.Set(Set), qualified Data.Map as Map, Data.Map(Map))
+%%]
+
 %%[8 hs import({%{EH}Scanner.Common(hiScanOpts)}) export(ppTyWithCfg,cfgPPTyHI,ppHINm)
 %%]
 
@@ -65,6 +68,11 @@ instance PP TyHardness where
 
 instance PP TyNeed where
   pp = pp . show
+%%]
+
+%%[7_2.annotation hs
+instance PP (Annotation a) where
+  pp = (>|<) "d" . pp . annUID
 %%]
 
 %%[9 hs
@@ -331,6 +339,28 @@ SEM Ty
                             .   pp      =   @ppNice
 %%]
 
+%%[7_2.annotation
+SEM Ty
+  | Ann             loc     .   pp      =   @ann >|< ":" >|< @ty.pp
+  | TruncTyCon      loc     .   pp      =   @ty.pp >|< ppListSep "<" ">" "," (Set.toList @anns)
+  | ExpTyCon        loc     .   pp      =   ( "[" >#< ( "orig:" >#< @ty.pp )
+                                                   >-< foldr (>-<) empty @constrs.ppL
+                                            ) >-< "]"
+
+ATTR TyExpConstrs [|| ppL : {[PP_Doc]} ]
+SEM TyExpConstrs
+  | Nil             lhs     .   ppL     =   []
+  | Cons            lhs     .   ppL     =   @hd.pp : @tl.ppL
+
+SEM TyExpConstr
+  | Constr          lhs     .   pp      =   @nm >|< ":" >#< ppListSep "" "" "," @fields.ppL
+
+ATTR TyExpFields [|| ppL : {[PP_Doc]} ]
+SEM TyExpFields
+  | Nil             lhs     .   ppL     =   []
+  | Cons            lhs     .   ppL     =   @hd.pp : @tl.ppL
+%%]
+
 %%[8
 SEM Ty
   | Ext             loc     .   ppDflt  =   hsnORow >#< @ty.pp >#< "|" >#< @fldPP >#< hsnCRow
@@ -385,7 +415,7 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[7
-ATTR Ty [ | positionalFldNmL: {[HsName]} | ]
+ATTR Ty Ty->Ty [ | positionalFldNmL: {[HsName]} | ]
 
 SEM TyAGItf
   | AGItf           ty      .   positionalFldNmL    =   positionalFldNames
@@ -453,7 +483,7 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.ParNeed
-ATTR Ty [ parNeed: ParNeed  parNeedL: ParNeedL | | ]
+ATTR Ty Ty->Ty [ parNeed: ParNeed  parNeedL: ParNeedL | | ]
 
 SEM TyAGItf
   | AGItf       ty      .   parNeed             =   ParNotNeeded

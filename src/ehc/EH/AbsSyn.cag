@@ -46,6 +46,13 @@ DATA Decl
                     kiExpr          : KiExpr
 %%]
 
+Nonterminals for controlling restrictions on annotations.
+
+%%[7_2
+  | AnnSigExpSeq    pat             : {TyConSeqPat}
+  | AnnSigDtMono    tycons          : AnnDtMonoRestrictions
+%%]
+
 %%[8
 DATA Decl
   | FFI             callconv        : {String}
@@ -517,3 +524,19 @@ SET AllNT           =   AllData AllCase AllTyExpr AllTyVar AllDecl AllPatExpr Al
 SET NTPrf           =   AllDecl AllCase AllExpr AllPatExpr
 %%]
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Mono restrictions on data type annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7_2
+TYPE AnnDtMonoRestrictions = [AnnDtMonoRestrict]
+
+DATA AnnDtMonoRestrict
+  | Global nm   : {HsName}
+  | Local  from : {HsName}
+           to   : {HsName}
+
+DERIVING AnnDtMonoRestrict : Eq, Ord
+
+%%]
