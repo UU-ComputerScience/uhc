@@ -31,10 +31,10 @@
 %%[1 export(Fixity(..))
 %%]
 
-%%[1 export(Range(..),emptyRange,builtinRange,mkRange1,mkRange2,rngLift)
+%%[1 export(UID(..), mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, mkNewLevUID7, mkNewLevUID8, uidNext, mkNewUID, mkNewUIDL, uidStart, uidNull, uidChild, mkInfNewUIDL)
 %%]
 
-%%[1 export(UID(..), mkNewLevUID, uidStart)
+%%[1 export(Range(..),emptyRange,builtinRange,mkRange1,mkRange2,rngLift)
 %%]
 
 %%[1 export(assocLMapElt,assocLMapKey)
@@ -52,9 +52,6 @@
 %%[5 -1.Token hs import({%{EH}Scanner.Token})
 %%]
 
-%%[2 export(mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, uidNext, mkNewUID, uidChild, mkNewUIDL, mkInfNewUIDL)
-%%]
-
 %%[2 export(unions)
 %%]
 
@@ -65,6 +62,18 @@
 %%]
 
 %%[4 export(FIMode(..),fimOpp,fimSwapCoCo)
+%%]
+
+%%[7 export(Seq,mkSeq,unitSeq,concatSeq,"(<+>)",seqToList,emptySeq,concatSeqs,filterSeq)
+%%]
+
+%%[7 export(mkNewLevUIDL,mkInfNewLevUIDL)
+%%]
+
+%%[7_2 import(qualified Data.Map as Map, Data.Map(Map), qualified Data.Set as Set, Data.Set(Set))
+%%]
+
+%%[7_2 export(threadMap,Belowness(..), groupAllBy, mergeListMap)
 %%]
 
 %%[7 export(ppFld,mkExtAppPP,mkPPAppFun)
@@ -83,9 +92,6 @@
 %%]
 
 %%[88 export(sortByOn,sortOn,groupOn,groupSortOn)
-%%]
-
-%%[8 export(Seq,mkSeq,unitSeq,concatSeq,"(<+>)",seqToList,emptySeq)
 %%]
 
 %%[8 import (qualified Data.Map as Map) export(showPP,ppPair,ppFM)
@@ -164,7 +170,7 @@ instance HSNM UID where
   mkHNm = mkHNm . show
 %%]
 
-%%[2.UID.UIDL
+%%[1.UID.UIDL
 type UIDL = [UID]
 %%]
 
@@ -189,12 +195,17 @@ uidStart :: UID
 uidStart = UID [0]
 %%]
 
-%%[2.UID.Utils
+%%[1.UID.Utils
 mkNewLevUID2 u = let { (u',u1)          = mkNewLevUID   u; (u'',u2)         = mkNewLevUID   u'} in (u'',u1,u2)
 mkNewLevUID3 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3)         = mkNewLevUID   u'} in (u'',u1,u2,u3)
 mkNewLevUID4 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3,u4)      = mkNewLevUID2  u'} in (u'',u1,u2,u3,u4)
 mkNewLevUID5 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3,u4,u5)   = mkNewLevUID3  u'} in (u'',u1,u2,u3,u4,u5)
 mkNewLevUID6 u = let { (u',u1,u2,u3)    = mkNewLevUID3  u; (u'',u4,u5,u6)   = mkNewLevUID3  u'} in (u'',u1,u2,u3,u4,u5,u6)
+mkNewLevUID7 u = let { (u',u1,u2,u3,u4) = mkNewLevUID4  u; (u'',u5,u6,u7)    = mkNewLevUID3  u'} in (u'',u1,u2,u3,u4,u5,u6,u7)
+mkNewLevUID8 u = let { (u',u1,u2,u3,u4) = mkNewLevUID4  u; (u'',u5,u6,u7,u8) = mkNewLevUID4  u'} in (u'',u1,u2,u3,u4,u5,u6,u7,u8)
+
+uidNull :: UID
+uidNull  = UID []
 
 mkNewUID :: UID -> (UID,UID)
 mkNewUID   uid = (uidNext uid,uid)
@@ -226,6 +237,14 @@ ppUID' (UID ls) = ppCurlysCommas ls
 %%[7
 uidHNm :: UID -> HsName
 uidHNm = HNm . show
+%%]
+
+%%[7
+mkInfNewLevUIDL :: UID -> [UID]
+mkInfNewLevUIDL = mkInfNewUIDL' mkNewLevUID
+
+mkNewLevUIDL :: Int -> UID -> [UID]
+mkNewLevUIDL = mkNewUIDL' mkNewLevUID
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -265,7 +284,7 @@ instance PP PredOccId where
 %%% Ordered sequence, 'delayed concat' list
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[7
 newtype Seq a = Seq ([a] -> [a])
 
 emptySeq :: Seq a
@@ -280,6 +299,9 @@ unitSeq e = Seq (e:)
 concatSeq :: Seq a -> Seq a -> Seq a
 concatSeq (Seq s1) (Seq s2) = Seq (s1.s2)
 
+concatSeqs :: [Seq a] -> Seq a
+concatSeqs = foldr (<+>) emptySeq
+
 infixr 5 <+>
 
 (<+>) :: Seq a -> Seq a -> Seq a
@@ -287,6 +309,12 @@ infixr 5 <+>
 
 seqToList :: Seq a -> [a]
 seqToList (Seq s) = s []
+
+instance Functor Seq where
+  fmap f = mkSeq . map f . seqToList
+
+filterSeq :: (a -> Bool) -> Seq a -> Seq a
+filterSeq p = mkSeq . filter p . seqToList
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -556,6 +584,21 @@ cocoOpp  _              =   CoContraVariant
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Belowness
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7_2
+data Belowness = Below | NotBelow | UnknownBelow deriving (Show,Eq,Ord)
+%%]
+
+%%[7_2
+instance PP Belowness where
+  pp Below        = pp "B+"
+  pp NotBelow     = pp "B-"
+  pp UnknownBelow = pp "B?"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Tags (of data)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -729,6 +772,21 @@ unions = foldr union []
 %%[4.listCombineUniq
 listCombineUniq :: Eq a => [[a]] -> [a]
 listCombineUniq = nub . concat
+%%]
+
+%%[7_2
+threadMap :: (a -> c -> (b, c)) -> c -> [a] -> ([b], c)
+threadMap f c = foldr (\a (bs, c) -> let (b, c') = f a c in (b:bs, c')) ([], c)
+%%]
+
+%%[7_2
+groupAllBy :: Ord b => (a -> b) -> [a] -> [[a]]
+groupAllBy f = Map.elems . foldr (\v -> Map.insertWith (++) (f v) [v]) Map.empty 
+%%]
+
+%%[7_2
+mergeListMap :: Ord k => Map k [a] -> Map k [a] -> Map k [a]
+mergeListMap = Map.unionWith (++)
 %%]
 
 %%[90

@@ -25,6 +25,15 @@
 %%[7 hs import(qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.PPUtils,{%{EH}Ty.FreshVar},{%{EH}Ty.Ftv})
 %%]
 
+%%[7_2 hs import({%{EH}Ty.AnnCommon},{%{EH}Ty.InfuseAnn},{%{EH}Ty.TyConPat},{%{EH}Ty.AnnInferKind}, {%{EH}Ty.InferExposedAnns}, {%{EH}Ty.InfuseExp}, {%{EH}Annotations.Constraints}, {%{EH}Ty.AnnSubst}, {%{EH}Ty.Expand}, {%{EH}EH.ConstrInferTy}, {%{EH}Annotations.ConstraintSolver}, {%{EH}Annotations.BelownessSolver}, {%{EH}Annotations.VarianceSolver}, {%{EH}Annotations.UniquenessSolver}, {%{EH}Ty.InfuseDataTruncs}, {%{EH}Base.HtmlCommon}, {%{EH}Ty.PrettyHTML}, Debug.Trace(trace))
+%%]
+
+%%[7_2 hs import(qualified Data.Set as Set,Data.Set(Set),qualified Data.Map as Map,Data.Map(Map))
+%%]
+
+%%[8 hs import(EH.Util.Utils(groupSortOn))
+%%]
+
 %%[8 hs import({%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty},{%{EH}Core.SubstCaseAltFail})
 %%]
 
@@ -52,6 +61,9 @@ WRAPPER AGItf
 %%]
 
 %%[6 import({EH/InferKiExpr})
+%%]
+
+%%[7_2 import({Ty/TyConPatCollect},{Annotations/AnnDT},{Ty/AnnDecomposePat},{EH/ConstrInferExpr},{EH/ConstrInferData}, {Annotations/AnnSolvers}, {EH/PrettyHTML})
 %%]
 
 %%[8 import({EH/ToCore})

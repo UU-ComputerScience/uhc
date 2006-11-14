@@ -1318,6 +1318,37 @@ doCompileRun filename opts
          }
 %%]
 
+%%[7_2.doCompile -1.doCompile
+doCompileRun :: String -> EHCOpts -> IO ()
+doCompileRun filename opts
+  =  do  {  (fn,fh) <-  if null filename
+                        then  return ("<stdin>",stdin)
+                        else  do  {  h <- openFile filename ReadMode
+                                  ;  return (filename,h)
+                                  }
+         ;  let isHS = isSuffixOf ".hs" fn
+         ;  tokens <- offsideScanHandle (if isHS then hsScanOpts else ehScanOpts) fn fh
+         ;  resd <-
+              if isHS
+              then do { let steps = parseOffside (HSPrs.pAGItf) tokens
+                      ; (resd,_) <- evalStepsIO show steps
+                      ; let res   = HSSem.sem_AGItf resd
+                            wrRes = HSSem.wrap_AGItf res (HSSem.Inh_AGItf {HSSem.opts_Inh_AGItf = opts})
+                      ; return (HSSem.eh_Syn_AGItf wrRes)
+                      }
+              else do { let steps = parseOffside (EHPrs.pAGItf) tokens
+                      ; (resd,_) <- evalStepsIO show steps
+                      ; return resd
+                      }
+         ;  let res   = EHSem.sem_AGItf resd
+                wrRes = EHSem.wrap_AGItf res (EHSem.Inh_AGItf {EHSem.opts_Inh_AGItf = opts})
+         ;  when (ehcOptShowTopTyPP opts)
+                 (putStr (disp (EHSem.topTyPP_Syn_AGItf wrRes) 1000 ""))
+         ; when (not (null filename) && ehcoptUniqueness opts)
+                (writeFile (filename ++ ".html") (EHSem.ppHTML_Syn_AGItf wrRes))
+         }
+%%]
+
 %%[8.doCompile -1.doCompile
 doCompileRun :: String -> EHCOpts -> IO ()
 doCompileRun fn opts

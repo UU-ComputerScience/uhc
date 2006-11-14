@@ -58,6 +58,15 @@
 %%[7 hs export(tyAppFunArg,tyAppFunConNm) 
 %%]
 
+%%[7_2 hs import(qualified Data.Set as Set, Data.Set(Set), qualified Data.Map as Map, Data.Map(Map))
+%%]
+
+%%[7_2 hs export(tyInsertAnnRec, tyReplaceAnnRec, touchAnn, touchAnnTy, addAnn, mkTruncArrow, rightmostResultAnnotation, annotationsStar, mkAnnArrow, addTrunc, tyAnnSubst)
+%%]
+
+%%[7_2 hs export(TyExpConstr(..),TyExpConstrs,TyExpFields,TyExpField(..),Annotations,Annotation(..), DecomposedAnnMap)
+%%]
+
 %%[8 hs export(tyFloat) 
 %%]
 
@@ -759,5 +768,192 @@ implsPrIds = map poPoi . fst . implsPredsTail
 
 %%[9 hs
 data TyCtxt = TyCtxt_Ty | TyCtxt_Pred | TyCtxt_Class deriving (Show,Eq)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+An annotation is an immutable, opaque value attached to certain components of a type. Each
+annotation is globally distinguishable and can be used as a key to some property in an
+environment. This is a design decision: we could have stored properties directly on the
+annotation, but that requires updating of the annotation of the type, and we rather keep
+an annotation immutable, and propably it's also easier to add new properties to an
+annotation by introducing yet another environment, than adding and maintaining an
+additional field to the Annotation data type.
+
+The phantom parameter is intended to reflect the type the annotation is put on,
+such that we can restrict certain operations on annotations to specific
+annotations. And make sure that we do not, by accident, mix annotations of
+different type.
+
+%%[7_2.annotation hs
+
+type Annotations a = Set (Annotation a)
+data Annotation a
+  = Annotation { annUID      :: UID
+               , annInstFrom :: Maybe (Annotation a)
+               , annOnRefTp  :: Maybe (Annotation a)
+               }
+
+instance Eq (Annotation a) where
+  a == b = annUID a == annUID b
+  a /= b = annUID a /= annUID b
+
+instance Ord (Annotation a) where
+  a <= b = annUID a <= annUID b
+  a >= b = annUID a >= annUID b
+  a < b  = annUID a <  annUID b
+  a > b  = annUID a >  annUID b
+  compare a b = compare (annUID a) (annUID b)
+
+instance Show (Annotation a) where
+  show = ('d' :) . show . annUID
+
+type DecomposedAnnMap = Map HsName Ty
+
+touchAnn :: Annotation Ty
+touchAnn = Annotation { annUID      = uidNull
+                      , annInstFrom = Nothing
+                      , annOnRefTp  = Nothing
+                      }
+
+addAnn :: UID -> Ty -> Ty
+addAnn uid ty
+  = case ty of
+      Ty_App tl tr      -> addAnn uid tl `Ty_App` tr
+      Ty_Quant qu var t -> Ty_Quant qu var (addAnn uid t)
+      _                 -> Ty_Ann (Annotation uid Nothing Nothing) ty
+
+touchAnnTy :: Ty
+touchAnnTy = Ty_Ann touchAnn Ty_Any
+
+mkTruncArrow :: Ty -> Ty -> Ty
+mkTruncArrow a b
+  = Ty_App (Ty_App (Ty_TruncTyCon Set.empty (Ty_Con hsnArrow)) a) b
+
+%%]
+
+
+Get the rightmost result annotation. I.e. when applied to a kind:
+get the annotation on the rightmost star.
+
+%%[7_2 hs
+
+rightmostResultAnnotation :: Ty -> Annotation Ty
+rightmostResultAnnotation kind
+  = rec kind
+  where
+    rec kind
+      = case kind of
+          Ty_Ann ann _   -> ann
+          Ty_Quant _ _ k -> rec k
+          Ty_App _ k     -> rec k
+          _              -> error ("rightmostResultAnnotation: no such annotation: " ++ show kind)
+
+annotationsStar :: Ty -> [Annotation Ty]
+annotationsStar
+  = fst . anns_
+  where
+    anns_ kind
+      = case kind of
+          Ty_Ann ann k   -> (if snd (anns_ k) then [ann] else [], False)
+          Ty_Quant _ _ k -> anns_ k
+          Ty_Con hsn     -> ([], hsn == hsnStar || hsn == hsnRow)
+          Ty_Var _ _     -> ([], False)
+          Ty_App f a     -> let (af, _) = anns_ f
+                                (aa, _) = anns_ a
+                             in (af ++ aa, False)
+          _              -> error ("anns_: don't know how to deal with: " ++ show kind)
+
+%%]
+
+
+%%[7_2 hs
+
+mkAnnArrow :: Ty -> TyL -> UID -> Ty
+mkAnnArrow ty tyL uid
+  = fst (foldr mkArr (ty, uid) tyL)
+  where
+    mkArr :: Ty -> (Ty, UID) -> (Ty, UID)
+    mkArr arg (res, uid)
+      = let (uid', aUid) = mkNewLevUID uid
+            res' = addAnn aUid (arg `mkTruncArr` res)
+         in (res', uid')
+    
+    mkTruncArr :: Ty -> Ty -> Ty
+    mkTruncArr arg res
+      = Ty_App (Ty_App (Ty_TruncTyCon Set.empty (Ty_Con hsnArrow)) arg) res
+
+%%]
+
+
+%%[7_2 hs
+
+addTrunc :: Annotations Ty -> Ty -> Ty
+addTrunc anns
+  = rec
+  where
+    rec ty
+      = case ty of
+          Ty_App tl tr      -> rec tl `Ty_App` tr
+          Ty_Quant qu var t -> Ty_Quant qu var (rec t)
+          Ty_Ann ann t      -> Ty_Ann ann (Ty_TruncTyCon anns t)
+
+%%]
+
+
+Some utility functions to combine annotated records.
+
+%%[7_2.annRecUtils hs
+
+tyInsertAnnRec :: Ty -> Maybe HsName -> Ty -> Ty
+tyInsertAnnRec (Ty_App tyInit tyExts) mbNm addTy
+  = let (tyEmpty, exts) = tyRowExts tyExts
+        exts' = insert mbNm exts
+     in tyInit `Ty_App` (tyEmpty `mkTyRow` exts')
+  where
+    insert Nothing   exts = (HNPos (1 + maxHnPos exts), addTy) : exts
+    insert (Just nm) exts = (nm, addTy) : exts
+tyInsertAnnRec _ _ _ = Ty_Any
+
+maxHnPos :: AssocL HsName a -> Int
+maxHnPos l = maximum (0 : [n | (HNPos n, _) <- l ])
+
+tyReplaceAnnRec :: Ty -> HsName -> Ty -> Ty
+tyReplaceAnnRec (Ty_App tyInit tyExts) nm replTy
+  = let (tyEmpty, exts) = tyRowExts tyExts
+        exts' = replace exts
+     in tyInit `Ty_App` (tyEmpty `mkTyRow` exts')
+  where
+    replace (x@(n, t) : xs) | n == nm   = (nm, replTy) : xs
+                            | otherwise = x : replace xs
+    replace []            = []
+tyReplaceAnnRec _ _ _ = Ty_Any
+
+%%]
+
+Substitution on an annotated type.
+
+%%[7_2 hs
+
+tyAnnSubst :: Map (Annotation Ty) (Annotation Ty) -> Ty -> Ty
+tyAnnSubst mp
+  = rec
+  where
+    rec (Ty_App f a)            = Ty_App (rec f) (rec a)
+    rec (Ty_Ann a t)            = Ty_Ann (repl a) (rec t)
+    rec (Ty_Quant tv cat ty)    = Ty_Quant tv cat (rec ty)
+    rec (Ty_TruncTyCon anns ty) = Ty_TruncTyCon (Set.map repl anns) (rec ty)
+    rec (Ty_ExpTyCon cs as ty)  = Ty_ExpTyCon (map recCon cs) as (rec ty)
+    rec t                       = t
+
+    recCon (TyExpConstr_Constr nm fs)
+      = TyExpConstr_Constr nm (map recFld fs)
+    recFld (TyExpField_Field ty)
+      = TyExpField_Field (rec ty)
+
+    repl a = Map.findWithDefault a a mp
+
 %%]
 
