@@ -90,8 +90,8 @@ text-variant-esop07-impred-tr:
 	  text-variant-dflt-bib
 
 text-variant-scratch:
-	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyPHD --unset=asArticle --set=useHyperref --set=refToPDF" \
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyPHD --unset=asArticle --set=useHyperref --set=refToPDF --set=blockstyle" \
 	  TEXT_SHUFFLE_VARIANT=7 \
 	  text-variant-dflt-once
 

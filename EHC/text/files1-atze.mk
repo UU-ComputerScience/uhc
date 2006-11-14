@@ -18,6 +18,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred SlidesRuler SlidesShuffle SlidesGRIN \
 								CodeFragsExplImpl \
 								ToolDocShuffle ToolDocRuler \
+								TopicGrinBytecode \
 								AppxNotation FrontMatter OldText \
 								Poster
 

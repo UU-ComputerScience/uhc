@@ -1874,8 +1874,58 @@ To be done ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[7
-
 \section{Scratch1}
+%%]
+
+%%[7
+%{
+%%@TopicGrinBytecode.defs
+
+\subsection{Compilation scheme to Grin bytecode (GrinB)}
+
+%%@TopicGrinBytecode.grin2GrinB
+
+\subsection{GrinB operational semantics}
+
+%%@TopicGrinBytecode.grinBSemantics
+
+\subsection{Meta variable encoding}
+
+%%@TopicGrinBytecode.grinBMetavarEncoding
+
+\subsection{Constants}
+
+%%@TopicGrinBytecode.grinBConstants
+
+\subsection{Moving data around}
+
+%%@TopicGrinBytecode.grinBMovingData
+
+\subsection{Arithmetic (|Int| support)}
+
+%%@TopicGrinBytecode.grinBArithmetic
+
+\subsection{Storage management}
+
+%%@TopicGrinBytecode.grinBStorage
+
+\subsection{Control}
+
+%%@TopicGrinBytecode.grinBControl
+
+\subsection{Miscellaneous (ffi, ...)}
+
+%%@TopicGrinBytecode.grinBRest
+
+\subsection{Example translations}
+
+%%@TopicGrinBytecode.grinBExampleTranslations
+
+%}
+%%]
+
+%%[77
+
 
  %%@TopicReflection.phdEvaluation
 %\input ipadissertations.tex

@@ -96,13 +96,9 @@ TYPE CBindL     =   [CBind]
 SET AllBind     =   CBind CBindL
 %%]
 
-Of CAlt, the pats will only contain one pattern, except internally during
-rewrite of case alternatives by the case expression/pattern rewriter.
-Parsing/printing of Core assumes one pattern.
-
 %%[8
 DATA CAlt
-  | Alt         pats            : CPatL
+  | Alt         pat             : CPat
                 expr            : CExpr
 
 TYPE CAltL      =   [CAlt]
@@ -115,27 +111,14 @@ DATA CPat
   | Var         pnm             : {CPatNm}
   | Con         pnm             : {CPatNm}
                 tag             : {CTag}
-                binds           : CPatConBind
+                rest            : CPatRest
+                binds           : CPatBindL
   | Int         pnm             : {CPatNm}
                 int             : {Int}
   | Char        pnm             : {CPatNm}
                 char            : {Char}
-  | Undef
 
 TYPE CPatL      =   [CPat]
-%%]
-
-Of CPatConBind, the Many alternative encodes repetitive matching for
-our of order data field pattern matching.
-It is only used internally, hence parsing/printing of Core ignores this alternative.
-
-%%[8
-DATA CPatConBind
-  | One			rest            : CPatRest
-                binds           : CPatBindL
-  | Many		conbinds        : CPatConBindL
-
-TYPE CPatConBindL  =   [CPatConBind]
 %%]
 
 %%[8
@@ -166,8 +149,7 @@ DATA CPat
                 fldPat          : CPat
 
 %%[8
-SET AllPatConBind  	=   CPatConBind CPatConBindL
-SET AllPatBind  	=   CPatBind CPatBindL AllPatConBind
+SET AllPatBind  	=   CPatBind CPatBindL
 SET AllPat      	=   CPatRest CPat CPatL AllPatBind
 %%]
 

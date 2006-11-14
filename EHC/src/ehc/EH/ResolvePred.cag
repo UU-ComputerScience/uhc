@@ -225,7 +225,7 @@ SEM Expr
 %%[9
 SEM Expr
   | Lam LamImpl loc         .   lamBodyCoeL         =   mkLamBodyCoe
-                                                            (mkCoe (\e -> rceMatch @rceEnv [@arg.topNm] [CAlt_Alt [@arg.cpat] e]))
+                                                            (mkCoe (\e -> rceMatch @rceEnv [@arg.topNm] [RAlt_Alt [@arg.rpat] e]))
                                                             @body.appArgCoeL
 %%]
 

@@ -220,6 +220,6 @@ SEM CExpr
                                                 in   mkTrf @trfIsOk @lhs.lev @levOf @trNm lt
 
 SEM CAlt
-  | Alt         lhs         .   cTrf        =   CAlt_Alt @pats.cTrf (mkLetTrf @hereBindSq @expr.cTrf)
+  | Alt         lhs         .   cTrf        =   CAlt_Alt @pat.cTrf (mkLetTrf @hereBindSq @expr.cTrf)
 %%]
 

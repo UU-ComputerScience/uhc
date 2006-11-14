@@ -77,7 +77,7 @@ SEM CExpr
   | Lam         loc         .   varS        =   @arg `Set.insert` @lhs.varS
 
 SEM CAlt
-  | Alt         expr        .   varS        =   @lhs.varS `Set.union` Set.fromList @pats.nmL
+  | Alt         expr        .   varS        =   @lhs.varS `Set.union` Set.fromList @pat.nmL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

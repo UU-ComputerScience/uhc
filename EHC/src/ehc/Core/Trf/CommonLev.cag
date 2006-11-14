@@ -27,7 +27,7 @@ SEM CExpr
                 body        .   levMp       =   Map.map @strLev @binds.levOfMp `Map.union` @lhs.levMp
 
 SEM CAlt
-  | Alt         expr        .   levMp       =   Map.fromList (zip @pats.nmL (repeat @lev)) `Map.union` @lhs.levMp
+  | Alt         expr        .   levMp       =   Map.fromList (zip @pat.nmL (repeat @lev)) `Map.union` @lhs.levMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

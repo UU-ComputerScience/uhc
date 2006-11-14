@@ -144,7 +144,7 @@ SEM CBindL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 
 SEM CAlt
-  | Alt         lhs         .   pp          =   ppDef (head @pats.ppL >#< "->") (@expr.pp)
+  | Alt         lhs         .   pp          =   ppDef (@pat.pp >#< "->") (@expr.pp)
 
 SEM CAltL
   | Nil         lhs         .   ppL         =   []
@@ -155,8 +155,7 @@ SEM CPat
   | Char        lhs         .   pp          =   ppCPatNmNm ppCNm @pnm >#< ppLit "Char"   [@char]
   | Var         lhs         .   pp          =   ppCPatNmNm ppCNm @pnm
   | Con         lhs         .   pp          =   ppDef (ppCPatNmNm ppCNm @pnm >#< ppTag @tag)
-                                                      @binds.pp
-  | Undef       lhs         .   pp          =   pp hsnUnknown
+                                                      (ppCurly (@rest.pp >|< "|" >|< ppCommas' @binds.ppL))
 
 SEM CPatL
   | Nil         lhs         .   ppL         =   []
@@ -165,9 +164,6 @@ SEM CPatL
 SEM CPatBind
   | Bind        lhs         .   pp          =   ppCurlysCommas' [ppCNm @lbl,@offset.pp,ppCNm @nm] >|< "=" >|< @pat.pp
 
-SEM CPatConBind
-  | One         lhs         .   pp          =   ppCurly (@rest.pp >|< "|" >|< ppCommas' @binds.ppL)
-
 SEM CPatRest
   | Var         lhs         .   pp          =   ppCNm @nm
 
@@ -175,6 +171,7 @@ SEM CPatBindL
   | Nil         lhs         .   ppL         =   []
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 %%]
+  | Undef       lhs         .   pp          =   pp hsnUnknown
 
   | TupSplit    lhs         .   pp          =   (cpatNmEither ((>|< "@") . pp) (const empty) @pnm)
                                                 >|< pp_parens (@pat.pp >|< "|">|< pp @tag >|< ":" >|< @offset.pp >|< "=" >|< @fldPat.pp)
