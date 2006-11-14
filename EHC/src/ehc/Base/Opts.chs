@@ -10,13 +10,13 @@
 %%[1 module {%{EH}Base.Opts} import(System.Console.GetOpt,{%{EH}Base.Common}) export(EHCOpts(..), defaultEHCOpts, ehcCmdLineOpts)
 %%]
 
-%%[4 import({%{EH}Ty},UU.Pretty,EH.Util.PPUtils) export(FIOpts(..), fioSwapCoCo, fioSwapOpts, strongFIOpts, instFIOpts, instLRFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)
+%%[4 import({%{EH}Ty},UU.Pretty,EH.Util.PPUtils) export(FIOpts(..), fioSwapCoCo, fioSwapOpts, strongFIOpts, unifyFIOpts, instFIOpts, instLRFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)
 %%]
 
 %%[4 export(fioIsSubsume)
 %%]
 
-%%[4_2 export(unifyFIOpts,meetFIOpts,joinFIOpts,impredFIOpts)
+%%[4_2 export(meetFIOpts,joinFIOpts,impredFIOpts)
 %%]
 
 %%[4_2 export(fioIsMeetJoin)
@@ -25,7 +25,7 @@
 %%[5 export(weakFIOpts)
 %%]
 
-%%[8 import(Data.List,Data.Char) export(cmdLineTrfs,trfOptOverrides)
+%%[8 import(Data.List,Data.Char,{%{EH}Base.Builtin}) export(cmdLineTrfs,trfOptOverrides)
 %%]
 
 %%[9 export(predFIOpts,implFIOpts)
@@ -101,10 +101,13 @@ data EHCOpts
       ,  ehcOptEmitJava       ::  Bool
       ,  ehcOptEmitGrin       ::  Bool
       ,  ehcOptEmitLlc        ::  Bool
+      ,  ehcOptEmitLLVM       ::  Bool
       ,  ehcOptEmitExec       ::  Bool
       ,  ehcOptSearchPath     ::  [String]
       ,  ehcOptVerbosity      ::  Verbosity
       ,  ehcOptTrf            ::  [TrfOpt]
+
+      ,  ehcOptBuiltinNames	  ::  EHBuiltinNames
 %%]]
 %%[[9
       ,  ehcOptPrfCutOffAt    ::  Int
@@ -120,6 +123,7 @@ data EHCOpts
 %%[[99
       ,  ehcProgName          ::  String
       ,  ehcOptShowNumVersion ::  Bool
+      ,  ehcBuiltinFromPrelude::  Bool
 %%]]
       }
 %%]
@@ -161,9 +165,11 @@ defaultEHCOpts
       ,  ehcOptSearchPath     =   []
       ,  ehcOptVerbosity      =   VerboseNormal
       ,  ehcOptTrf            =   []
+      ,  ehcOptBuiltinNames   =   mkEHBuiltinNames (const id)
 %%]]
 %%[[8
       ,  ehcOptEmitLlc        =   False
+      ,  ehcOptEmitLLVM       =   False
       ,  ehcOptEmitExec       =   False
 %%]
 %%[[9
@@ -180,6 +186,7 @@ defaultEHCOpts
 %%[[99
       ,  ehcProgName          =   ""
       ,  ehcOptShowNumVersion =   False
+      ,  ehcBuiltinFromPrelude=   True
 %%]]
       }
 %%]
@@ -196,7 +203,7 @@ ehcCmdLineOpts
           "do not compute uniqueness solution"
 %%]]
 %%[[8
-     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exec|-")  "write code to file, default=core (downstream only)"
+     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exec|llvm|-")  "write code to file, default=core (downstream only)"
      ,  Option ""   ["trf"]              (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
                                                                               "switch on/off transformations"
      ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
@@ -257,6 +264,7 @@ ehcCmdLineOpts
                                 Just "grin"  -> o { ehcOptEmitGrin     = True      }
                                 Just "exec"  -> o { ehcOptEmitExec     = True, ehcOptEmitLlc = True }
                                 Just "exe"   -> o { ehcOptEmitExec     = True, ehcOptEmitLlc = True }
+                                Just "llvm"  -> o { ehcOptEmitLLVM     = True      }
                                 Just "c"     -> o { ehcOptEmitLlc      = True      }
                                 _            -> o
          oTrf        s   o =  o { ehcOptTrf           = opt s   }
@@ -391,14 +399,14 @@ instLRFIOpts = strongFIOpts {fioBindRFirst = False, fioBindLFirst = False}
 %%]
 
 %%[4.FIOpts.instFIOpts
+unifyFIOpts :: FIOpts
+unifyFIOpts = strongFIOpts {fioMode = FitUnify}
+
 instFIOpts :: FIOpts
 instFIOpts = instLFIOpts {fioLeaveRInst = True, fioBindLFirst = False}
 %%]
 
 %%[4_2.FIOpts.defaults
-unifyFIOpts :: FIOpts
-unifyFIOpts = strongFIOpts {fioMode = FitUnify}
-
 meetFIOpts :: FIOpts
 meetFIOpts = unifyFIOpts {fioMode = FitMeet}
 

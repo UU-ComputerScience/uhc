@@ -7,27 +7,30 @@
 %%% Haskell importable interface to refresh tvars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_2 hs module {%{EH}Ty.FreshVar} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyFreshVar)
+%%[4 hs module {%{EH}Ty.FreshVar} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyFreshVar)
 %%]
 
-%%[4_2.WRAPPER import({Ty/AbsSyn})
+%%[4.WRAPPER import({Ty/AbsSyn})
 WRAPPER TyAGItf
 %%]
 
-%%[4_2.tyFreshVar hs
-tyFreshVar :: (TyVarId -> Bool) -> UID -> Cnstr -> Ty -> (Ty,Cnstr)
-tyFreshVar allowFresh uniq tvCnstr ty
+%%[4.tyFreshVar hs
+tyFreshVar' :: (TyVarId -> Bool) -> UID -> Cnstr -> Ty -> (Ty,Cnstr)
+tyFreshVar' allowFresh uniq tvCnstr ty
   =  let  t =  wrap_TyAGItf
                  (sem_TyAGItf (TyAGItf_AGItf ty))
                  (Inh_TyAGItf {tvCnstr_Inh_TyAGItf = tvCnstr, allowFresh_Inh_TyAGItf = allowFresh, gUniq_Inh_TyAGItf = uniq})
      in   (repl_Syn_TyAGItf t,tvCnstr_Syn_TyAGItf t)
+
+tyFreshVar :: (TyVarId -> Bool) -> UID -> Ty -> Ty
+tyFreshVar allowFresh uniq ty =  fst $ tyFreshVar' allowFresh uniq emptyCnstr ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Check if allowed
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_2
+%%[4
 ATTR TyAGItf AllTyAndFlds [ allowFresh: {TyVarId -> Bool} | | ]
 
 SEM Ty
@@ -38,7 +41,7 @@ SEM Ty
 %%% Uniq
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_2
+%%[4
 ATTR TyAGItf [ gUniq: UID | | ]
 ATTR AllTy [ | gUniq: UID | ]
 
@@ -50,12 +53,12 @@ SEM Ty
 %%% New tvar map as Cnstr, replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_2
+%%[4
 ATTR AllTyAndFlds [ | | repl: SELF  ]
 ATTR TyAGItf      [ | | repl: Ty    ]
 %%]
 
-%%[4_2
+%%[4
 ATTR AllTy TyAGItf [ | tvCnstr: Cnstr | ]
 
 SEM Ty

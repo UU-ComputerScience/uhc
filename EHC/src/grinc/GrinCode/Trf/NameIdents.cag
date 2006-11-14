@@ -53,6 +53,7 @@ SEM GrExpr
   | Call                              lhs  .  grTrf    =  GrExpr_Call    @newName @argL.grTrf
   | Fetch                             lhs  .  grTrf    =  GrExpr_Fetch   @newName @mbOffset @mbTag
   | Update                            lhs  .  grTrf    =  GrExpr_Update  @newName @val.grTrf @mbTag
+  | FetchUpdate                       lhs  .  grTrf    =  GrExpr_FetchUpdate  (getName' @lhs.names @src)(getName' @lhs.names @dst)
   | FFI                               lhs  .  grTrf    =  GrExpr_FFI     @nm (map (getName' @lhs.names) @argL) @resTagL.grTrf
   | Throw                             lhs  .  grTrf    =  GrExpr_Throw   @newName
   | Catch                             lhs  .  grTrf    =  GrExpr_Catch   @body.grTrf (getName' @lhs.names @arg) @handler.grTrf
@@ -67,5 +68,3 @@ SEM GrModule
 newMap map (k, EvApTagVar nm) = (k, EvApTagVar $ getName' map nm)
 newMap map x                  = x
 %%]
-
-% vim:ts=4:et:ai:

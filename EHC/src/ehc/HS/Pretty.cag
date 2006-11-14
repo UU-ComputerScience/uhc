@@ -236,7 +236,11 @@ SEM Expression
     | Lambda
         loc         .   pp          =   "\\" >|< ppSpaces @patterns.ppL >#< "->" >#< @expression.pp
     | Let
+%%[[1
         loc         .   pp          =   "let" >#< (@declarations.pp >-< @ppExtra) >#< "in" >#< @expression.pp
+%%][8
+        loc         .   pp          =   "let" >|< (if @isStrict then pp "!" else empty) >#< (@declarations.pp >-< @ppExtra) >#< "in" >#< @expression.pp
+%%]]
 		loc			.	ppExtra		=	empty
     | Tuple
         loc         .   pp          =   ppParensCommas @expressions.ppL
@@ -343,16 +347,8 @@ SEM GuardedExpression -- ToDo: or _Guard?
 
 %%[7
 SEM RecordExpressionBinding
-    | RecordExpressionBinding -- ToDo: or _Binding?
+    | Binding
         loc         .   pp          =   @name >|< "=" >|< @expression.pp
-%%]
-
-%%[77
-SEM RecordExpressionBinding
-    | RecordExpressionBinding -- ToDo: or _Binding?
-        loc         .   pp          =   EH.mkRngEH @range XX
-        name                     : Name
-        expression               : Expression
 %%]
 
 %%[7
@@ -373,12 +369,12 @@ SEM RowTypeUpdate
         loc         .   pp          =   @name >|< "::" >|< @type.pp
 %%]
 
-%%[77
+%%[7
 SEM RecordPatternBinding
-    | RecordPatternBinding -- ToDo: or _Binding?
-        loc         .   pp          =   EH.mkRngEH @range XX
-        name                     : Name
-        pattern                  : Pattern
+    | Binding
+        loc         .   pp          =   @name >|< "=" >|< @pattern.pp
+    | Pun
+        loc         .   pp          =   pp @name
 %%]
 
 %%[1
@@ -440,13 +436,9 @@ SEM Pattern
     | List
         loc         .   pp          =   ppBracketsCommas @patterns.ppL
 %%]
-%%[77
-    | Record
-        loc         .   pp          =   EH.mkRngEH @range XX
-        name                     : Name
-        recordPatternBindings    : RecordPatternBindings
-%%]
 %%[7
+    | Record
+        loc         .   pp          = 	@name >#< ppCurlysCommas' @recordPatternBindings.ppL
     | RowRecordBinding
         loc         .   pp          =   ppAppTop  (hsnRec,mkPPAppFun hsnRowEmpty @pattern.pp)
                                                   @rowRecordPattternBindings.ppL @pattern.pp
@@ -554,7 +546,9 @@ SEM Qualifiers
 
 %%[7
 ATTR
-  RecordExpressionBindings RowRecordExpressionUpdates RowRecordPatternBindings FieldDeclarations RowTypeUpdates
+  RecordExpressionBindings RecordPatternBindings
+  RowRecordExpressionUpdates RowRecordPatternBindings
+  FieldDeclarations RowTypeUpdates
     [ | | ppL: {[PP_Doc]} ]
 
 SEM RowTypeUpdates
@@ -564,6 +558,12 @@ SEM RowTypeUpdates
         lhs         .   ppL         =   []
 
 SEM RecordExpressionBindings
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+
+SEM RecordPatternBindings
     | Cons
         lhs         .   ppL         =   @hd.pp : @tl.ppL
     | Nil
@@ -586,7 +586,6 @@ SEM RowRecordPatternBindings
         lhs         .   ppL         =   @hd.pp : @tl.ppL
     | Nil
         lhs         .   ppL         =   []
-
 %%]
 
 %%[9

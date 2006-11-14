@@ -53,12 +53,50 @@ SEM DataConstrEq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data info gam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7.dataGam
+ATTR
+  AllDecl AllExpr AllCase
+%%[[99
+  AllPatExpr
+%%]]
+    [ | gathDataGam: DataGam | ]
+ATTR AllDecl AllExpr AllCase AllPatExpr [ dataGam: DataGam | | ]
+
+SEM AGItf
+  | AGItf       expr        .   gathDataGam         =   emptyGam
+%%]
+
+%%[7.initDataGam
+SEM AGItf
+  | AGItf       expr        .   dataGam             =   @expr.gathDataGam
+%%]
+
+%%[12 -7.initDataGam
+ATTR AGItf [ dataGam: DataGam | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gathering tag info for data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[7
+ATTR AGItf [ | | gathDataGam: DataGam ]
+
 SEM Decl
-  | Data        lhs         .   gathDataGam         =   gamAdd @tyNm (mkDGI @constrs.dataTagMp) @lhs.gathDataGam
+  | Data        loc         .   dgi                 =   mkDGI @tyNm @constrs.dataConstrTagMp @isNewtype
+                lhs         .   gathDataGam         =   gamAdd @tyNm @dgi @lhs.gathDataGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tying at toplevel
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+SEM AGItf
+  | AGItf       expr        .   dataGam             =   @expr.gathDataGam `gamUnion` @lhs.dataGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -66,7 +104,8 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[5
-ATTR AllDataConstr [ dataTy: Ty | patValGam: ValGam | ]
+ATTR AllData [ dataTy: Ty | | ]
+ATTR AllDataConstr [ | patValGam: ValGam | ]
 
 SEM DataConstr
   | Constr      loc         .   dataConTy           =   @fields.tyL `mkArrow` @lhs.dataTy
@@ -74,10 +113,16 @@ SEM DataConstr
                             .   dataQuUnConTy       =   let  fvD = ftv @lhs.dataTy
                                                              fvU = ftv @dataConProdTy
                                                         in   mkTyQu TyQu_Forall fvD ([@lhs.dataTy] `mkArrow` mkTyQu TyQu_Exists (fvU \\ fvD) @dataConProdTy)
-                lhs         .   patValGam           =   gamAdd
-                                                          @conNm (ValGamInfo @dataConTy)
-                                                          (gamAdd (hsnUn @conNm) (ValGamInfo @dataQuUnConTy) @lhs.patValGam)
+                lhs         .   patValGam           =   gamUnions
+                                                          [ assocLToGam
+                                                              [ (@conNm, ValGamInfo @dataConTy)
+                                                              , (hsnUn @conNm, ValGamInfo @dataQuUnConTy)
+                                                              ]
+                                                          , @lhs.patValGam
+                                                          ]
+%%]
 
+%%[5
 SEM Decl
   | Data        loc         .   dataTy              =   @tyNm `mkConApp` @tyVars.tyL
 %%]
@@ -87,11 +132,21 @@ SEM Decl
                                                         in   mkTyQu TyQu_Forall fvD . mkTyQu TyQu_Exists (fvU \\ fvD) $ @dataUnConTy
 
 %%[7
+SEM Decl
+  | Data        lhs         .   patValGam           =   gamUnions
+                                                          [ gamNoDups @constrs.fldSelGam
+                                                          , gamNoDups @constrs.fldUpdGam
+                                                          , @constrs.patValGam
+                                                          ]
+%%]
+
+%%[7
 ATTR AllDataConstr [ | | dataAltTyL USE {++} {[]}: {AssocL HsName Ty} ]
 
 SEM DataConstr
-  | Constr      loc         .   dataConProdTy       :=  let  lbls = zipWith (\p ml -> maybe p id ml) positionalFldNames @fields.lblL
-                                                        in   mkTyRec (zip lbls @fields.tyL)
+  | Constr      loc         .   dataConTy           :=  assocLElts @fields.fldTyL `mkArrow` @lhs.dataTy
+                            .   dataConProdTy       :=  let  lbls = zipWith (\p (ml,_) -> maybe p id ml) positionalFldNames @fields.fldTyL
+                                                        in   mkTyRec (zipWith (\l (_,t) -> (l,t)) lbls @fields.fldTyL)
                 lhs         .   dataAltTyL          =   [(@conNm,@dataConProdTy)]
 
 SEM Decl
@@ -125,7 +180,7 @@ SEM DataConstrEq
 %%% Ty name
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[7
 ATTR AllDataConstr [ tyNm: HsName | | ]
 
 SEM Decl
@@ -136,45 +191,75 @@ SEM Decl
 %%% Map for tag + arity + fld labels offsets
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[7
 SEM DataConstr
+%%[[7
+  | Constr      loc         .   fldMp               =   let mk = emptyDataFldInfo
+                                                            mkfs = foldl (\m (ml,_) -> maybe m (\l -> (l,mk):m) ml) []
+%%][8
   | Constr      loc         .   fldMp               =   let mk o = emptyDataFldInfo {dfiOffset = o}
-                                                        in  Map.fromList
-                                                            $ fst $ foldl (\(m,o) ml -> maybe (m,o+1) (\l -> ((l,mk o):m,o+1)) ml) ([],0)
-                                                            $ @fields.lblL
+                                                            mkfs = fst . foldl (\(m,o) (ml,_) -> maybe (m,o+1) (\l -> ((l,mk o):m,o+1)) ml) ([],0)
+%%]]
+                                                        in  Map.fromList $ mkfs $ @fields.fldTyL
 %%]
 
-%%[8
-ATTR AllDataConstr [ | | dataTagMp USE {`Map.union`} {Map.empty}: DataTagMp ]
+%%[7
+ATTR AllDataConstr [ | | dataConstrTagMp USE {`Map.union`} {Map.empty}: DataConstrTagMp ]
 
 SEM DataConstr
-  | Constr      loc         .   tag                 =   tyRecOffset @conNm @lhs.dataAltTy
-                            .   arity               =   length @fields.tyL
+  | Constr      lhs         .   dataConstrTagMp     =   @conNm `Map.singleton` @dti
+                loc         .   dti                 =   emptyDataTagInfo
+                                                          { dtiFldMp = @fldMp
+                                                          , dtiConNm = @conNm
+%%[[8
+                                                          , dtiCTag  = @ctag
+%%]]
+                                                          }
+%%[[8
+                            .   tag                 =   tyRecOffset @conNm @lhs.dataAltTy
+                            .   arity               =   length @fields.fldTyL
                             .   ctag                =   CTag @lhs.tyNm @conNm @tag @arity
-                lhs         .   dataTagMp           =   @conNm `Map.singleton` (emptyDataTagInfo {dtiCTag = @ctag, dtiFldMp = @fldMp})
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Label of data fields
+%%% Type+label of data fields
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[7
-ATTR AllDataField [ | | lblL USE {++} {[]}: {[Maybe HsName]} ]
+ATTR AllDataField [ | | fldTyL USE {++} {[]}: FldTyL ]
 
 SEM DataField
-  | Field       lhs         .   lblL                =   maybe [Nothing] (map Just) @mbLabels
+  | Field       loc         .   fldTyL              =   case @mbLabels of
+                                                          Just ls -> zipWith (\l t -> (Just l,t)) ls (repeat @tyExpr.ty)
+                                                          _       -> [(Nothing,@tyExpr.ty)]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Type of data fields
+%%% Gam for selector functions of data fields
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[7
-ATTR AllDataField [ | | tyL USE {++} {[]}: TyL ]
+ATTR AllDataField AllDataConstr [ | | fldSelGam USE {`gamUnion`} {emptyGam}: ValGam ]
 
 SEM DataField
-  | Field       lhs         .   tyL                 =   replicate (maybe 1 length @mbLabels) @tyExpr.ty
+  | Field       loc         .   fldSelGam           =   assocLToGam [ (l,ValGamInfo $ [@lhs.dataTy] `mkArrow` t) | (Just l,t) <- @fldTyL ]
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gam for update functions of data fields
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+ATTR AllDataField AllDataConstr [ | | fldUpdGam USE {`gamUnion`} {emptyGam}: ValGam ]
+
+SEM DataField
+  | Field       loc         .   fldUpdGam           =   let mk t = [t,fr @lhs.dataTy] `mkArrow` @lhs.dataTy
+                                                                 where fv = tyFtvMp t
+                                                                       fr dt = dt
+                                                        in  assocLToGam [ (hsnFldUpd l,ValGamInfo $ mk t) | (Just l,t) <- @fldTyL ]
+%%]
+                                                                       fr dt = tyFreshVar (`Map.member` fv) @lUniq dt
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Kind of data fields
@@ -186,3 +271,93 @@ ATTR AllDataField [ | | kiL USE {++} {[]}: TyL ]
 SEM DataField
   | Field       lhs         .   kiL                 =   replicate (maybe 1 length @mbLabels) @tyExpr.ki
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional info for checks, codegen, etc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllDataConstr [ isNewtype: Bool | | ]
+
+SEM Decl
+  | Data        constrs     .   isNewtype           =   @isNewtype
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% DataFieldExpr: additional info for checks, codegen, etc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+SEM DataFieldExpr
+  | Con         loc         .   finConTy            =   @lhs.finTyCnstr |=> @ty
+%%]
+
+%%[7
+ATTR DataFieldExpr [ | | mbConNm: {Maybe HsName} ]
+
+SEM DataFieldExpr
+  | Con         lhs         .   mbConNm             =   Just @nm
+  | * - Con Upd lhs         .   mbConNm             =   Nothing
+%%]
+
+%%[7
+ATTR DataFieldExpr [ | | mbDti: {Maybe DataTagInfo} ]
+
+SEM DataFieldExpr
+  | Con         loc         .   dti                 =   dgiDtiOfCon @nm @lhs.dgi
+                lhs         .   mbDti               =   Just @dti
+  | * - Con Upd lhs         .   mbDti               =   Nothing
+%%]
+
+%%[7
+ATTR DataFieldExpr [ | | fldL: {[HsName]} ]
+
+SEM DataFieldExpr
+  | Upd         lhs         .   fldL                =   @nm : @dataFieldExpr.fldL
+  | * - Upd     lhs         .   fldL                =   []
+
+SEM Expr
+  | DataFields  loc         .   fldL                =   sort @dataFieldExpr.fldL
+                            .   fldS                =   Set.fromList @fldL
+%%]
+
+%%[7
+ATTR DataFieldExpr [ dgi: DataGamInfo | | ]
+
+SEM Expr
+  | DataFields  loc         .   (dgi,isUpd)         =   let dgiOf t = maybe emptyDataGamInfo id $ dataGamDgiOfTy t @lhs.dataGam
+                                                        in  case (@dataFieldExpr.mbConNm,@fldL) of
+                                                              (Just c,_)
+                                                                -> (dgiOf t,False)
+                                                                where (_,t,_) = valGamTyOfDataCon c @lhs.valGam
+                                                              (_,(f:_))
+                                                                -> (dgiOf t,True)
+                                                                where (_,t,_) = valGamTyOfDataFld f @lhs.valGam
+                                                              _ -> panic "Expr.DataFields.dgi"
+                            .   dtiL                =   Map.elems $ dgiConstrTagMp @dgi
+                            .   (dtiInFldL,dtiOutFldL)
+                                                    =   partition (\i -> @fldS `Set.isSubsetOf` Map.keysSet (dtiFldMp i)) $ @dtiL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pattern: additional info for checks, codegen, etc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+ATTR DataFieldPatExpr [ | | dti: DataTagInfo ]
+
+SEM DataFieldPatExpr
+  | Con         loc         .   dgi                 =   let (_,t,_) = valGamTyOfDataCon @nm @lhs.valGam
+                                                        in  panicJust "DataFieldPatExpr.dgi" $ dataGamDgiOfTy t @lhs.dataGam
+                            .   dti                 =   dgiDtiOfCon @nm @dgi
+%%]
+
+%%[7
+ATTR DataFieldPatExpr [ | | fldL: {[HsName]} ]
+
+SEM DataFieldPatExpr
+  | Ext         lhs         .   fldL                =   @nm : @dataFieldPatExpr.fldL
+  | * - Ext     lhs         .   fldL                =   []
+%%]
+
+

@@ -7,16 +7,16 @@
 %%% Haskell importable interface to Code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},Data.List,UU.Pretty) export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBindL, CBindCateg(..), CPatRest(..)) 
+%%[8 hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},Data.List,UU.Pretty) export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBindL, CBindCateg(..), CPatRest(..)) 
 %%]
 
-%%[8 hs export(CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL) 
+%%[8 hs export(CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL, CPatConBind(..), CPatConBindL) 
 %%]
 
 %%[8 hs export(CPatNm(..), cpatNmEither,cpatNmNone,ppCPatNmNm)
 %%]
 
-%%[8 hs export(cpatVarNm,caltTag,caltIsVar,caltIsConst,caltPatL,caltPat,caltLPatNms,cvarUndefined) 
+%%[8 hs export(cpatVarNm,caltTag,caltIsVar,caltIsConst,caltPatL,caltPat,caltLPatNms) 
 %%]
 
 %%[8 hs export(mkCExprLet,mkCExprLetRec,mkCExprLam,mkCExprApp)
@@ -32,9 +32,6 @@
 %%]
 
 %%[8 hs export(mkCMod)
-%%]
-
-%%[8 hs export(cTupLbl)
 %%]
 
 %%[8 hs export(CaseFailSubst)
@@ -55,24 +52,39 @@
 %%[12 hs export(cModMerge)
 %%]
 
-%%[99 hs export(caltIsBoolExpr)
-%%]
-
 %%[8 import({Core/AbsSyn})
 DERIVING *     : Show, Eq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Tuple operator label
+%%% Tuple operator info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[8 hs export(cTupLbl)
 cTupLbl :: CExpr -> HsName
 cTupLbl e
   =  case e of
          CExpr_TupIns _ _ l _ _ -> l
          CExpr_TupUpd _ _ l _ _ -> l
          CExpr_TupDel _ _ l _   -> l
+%%]
+
+%%[8 hs export(cTupTag)
+cTupTag :: CExpr -> CTag
+cTupTag e
+  =  case e of
+         CExpr_TupIns _ t _ _ _ -> t
+         CExpr_TupUpd _ t _ _ _ -> t
+         CExpr_TupDel _ t _ _   -> t
+%%]
+
+%%[8 hs export(cTupOff)
+cTupOff :: CExpr -> CExpr
+cTupOff e
+  =  case e of
+         CExpr_TupIns _ _ _ o _ -> o
+         CExpr_TupUpd _ _ _ o _ -> o
+         CExpr_TupDel _ _ _ o   -> o
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -196,24 +208,51 @@ cexprVar (CExpr_Var n) = n
 cexprVar _             = hsnUnknown
 %%]
 
+%%[8 hs export(cexprTupFld)
+cexprTupFld :: CExpr -> CExpr
+cexprTupFld (CExpr_TupIns _ _ _ _ e) = e
+cexprTupFld _                        = CExpr_Var hsnUnknown
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% String
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(cstring)
+cstring :: EHCOpts -> String -> CExpr
+cstring opts m = CExpr_Var (ehbnFromPackedString $ ehcOptBuiltinNames opts) `mkCExprApp` [CExpr_String m]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Error
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(cerror,cundefined)
+cerror :: EHCOpts -> String -> CExpr
+cerror opts m = CExpr_Var (ehbnError $ ehcOptBuiltinNames opts) `mkCExprApp` [cstring opts m]
+
+cundefined :: EHCOpts -> CExpr
+cundefined opts = CExpr_Var (ehbnUndefined $ ehcOptBuiltinNames opts)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Misc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
 cpatVarNm :: CPat -> CPatNm
-cpatVarNm (CPat_Var         n      )  = n
-cpatVarNm (CPat_Con         n _ _ _)  = n
-cpatVarNm (CPat_Int         n _    )  = n
-cpatVarNm (CPat_Char        n _    )  = n
+cpatVarNm (CPat_Var         n     )  = n
+cpatVarNm (CPat_Con         n _ _ )  = n
+cpatVarNm (CPat_Int         n _   )  = n
+cpatVarNm (CPat_Char        n _   )  = n
 %%[[99
-cpatVarNm (CPat_BoolExpr    n _    )  = n
+cpatVarNm (CPat_BoolExpr    n _   )  = n
 %%]]
 
 cpatConTag :: CPat -> CTag
-cpatConTag (CPat_Con  _ t _ _)  = t
-cpatConTag (CPat_Int  _ _    )  = ctagInt
-cpatConTag (CPat_Char _ _    )  = ctagChar
+cpatConTag (CPat_Con  _ t _ )  = t
+cpatConTag (CPat_Int  _ _   )  = ctagInt
+cpatConTag (CPat_Char _ _   )  = ctagChar
 
 caltTag :: CAlt -> CTag
 caltTag (CAlt_Alt (p : _) _) = cpatConTag p
@@ -238,11 +277,17 @@ caltPat = head . caltPatL
 caltLPatNms :: CAltL -> [CPatNm]
 caltLPatNms = nub . sort . map (cpatVarNm . caltPat)
 
+%%]
 cvarUndefined :: CExpr
 cvarUndefined = CExpr_Var hsnUndefined
+
+%%[8 hs export(caltIsConMany)
+caltIsConMany :: CAlt -> Bool
+caltIsConMany (CAlt_Alt (CPat_Con _ _ (CPatConBind_Many _) : _) _) = True
+caltIsConMany _                                                    = False
 %%]
 
-%%[99 hs
+%%[99 hs export(caltIsBoolExpr)
 caltIsBoolExpr :: CAlt -> Bool
 caltIsBoolExpr (CAlt_Alt (CPat_BoolExpr _ _ : _) _)  = True
 caltIsBoolExpr _                                     = False

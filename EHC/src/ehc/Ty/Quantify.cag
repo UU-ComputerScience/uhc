@@ -249,10 +249,17 @@ ATTR AllTy [ coco: CoContraVariance | | ]
 SEM Ty
   | App         func        .   coco        =   @lhs.coco
                 arg         .   coco        =   if          @appIsLikeProd  then  @lhs.coco
-                                                else  if    @isArrowRoot    then  CoVariant
+                                                else  if    @isArrowRoot    then  @cocoArrowRes
                                                 else  if    @isArrowArg     then  ContraVariant
                                                                             else  CoContraVariant
+%%[[4
+                loc         .   cocoArrowRes=   CoVariant
+%%][9
+                loc         .   cocoArrowRes=   if @func.isPred then @lhs.coco else CoVariant
+%%]]
+%%]
 
+%%[4
 SEM TyAGItf
   | AGItf       ty          .   coco        =   CoVariant
 %%]
@@ -279,11 +286,11 @@ SEM Ty
   | * - Var     lhs         .   isVar       =   False
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Is location in type a place where we treat quantification specally?
+%%% Is location in type a place where we treat quantification specially?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[6_4.isSpecLoc
-ATTR Ty [ | | isSpecLoc: Bool ^^ isSpecLocL: [Bool] ]
+ATTR Ty [ | | isSpecLoc: Bool  isSpecLocL: [Bool] ]
 
 SEM Ty
   | App         loc         .   isSpecLoc   =   @isSpineRoot && (@appIsArrow || @appIsLikeProd)
@@ -297,10 +304,24 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4.isQuLoc
+ATTR Ty [ | | isQuLoc USE {&&} {False}: Bool ]
+
+SEM Ty
+  | Var         loc         .   isQuLoc     =   @lhs.coco == CoVariant
+  | Quant       loc         .   isQuLoc     =   @lhs.coco /= CoContraVariant
+  | App         loc         .   isQuLoc     =   @lhs.coco == CoVariant
+                                                || (@lhs.coco == ContraVariant
+                                                    && (@appIsLikeProd
+                                                        || @isArrowRoot
+%%[[9
+                                                           && (not @func.isPred || @arg.isQuLoc)
+%%]]
+                                                   )   )
+                lhs         .   isQuLoc     =   if @isArrowArg then @arg.isQuLoc else @isQuLoc
+%%]
 SEM Ty
   | Var App Quant
                 loc         .   isQuLoc     =   @lhs.coco /= CoContraVariant
-%%]
 
 %%[6_4.isQuLoc -4.isQuLoc
 ATTR AllTy [ isQuLoc: Bool | | ]
@@ -380,6 +401,13 @@ tvarOccurGE2 :: [TyVarIdL] -> TyVarIdL
 tvarOccurGE2 =  map fst . filter ((>1).snd) . tvarOccurCount
 %%]
 
+%%[4
+SEM Ty
+  | App         loc         .   qArrowArgTvL    =   if @isArrowRoot && not @func.isQuLoc
+                                                    then @func.frTvLL
+                                                    else []
+%%]
+
 %%[4.qHereTvL
 SEM TyAGItf
   | AGItf       loc         .   qHereTvL        =   []
@@ -388,7 +416,7 @@ SEM Ty
   | Var         loc         .   qHereTvL        =   if @isQuLoc then [@tv] else []
   | App         loc         .   qHereTvL        =   if @isQuLoc
                                                     then  if    @appIsArrow || @appIsLikeProd
-                                                          then  tvarOccurGE2 @frTvLL
+                                                          then  listCombineUniq (tvarOccurGE2 @frTvLL : @qArrowArgTvL)
                                                           else  @frTvL
                                                     else  []
 %%]
@@ -418,7 +446,7 @@ SEM Ty
 SEM Ty
   | App         loc         .   qHereTvL        :=  if @isQuLoc
                                                     then  if    @appIsArrow || @appIsLikeProd
-                                                          then  tvarOccurGE2 @frTvLL `List.union` @frRowTvL
+                                                          then  listCombineUniq (tvarOccurGE2 @frTvLL `List.union` @frRowTvL : @qArrowArgTvL)
                                                           else  @frTvL
                                                     else  []
   | Pred        loc         .   qHereTvL        =   @frTvL \\ @pr.qInsideTvL

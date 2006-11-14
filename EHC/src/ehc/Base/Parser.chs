@@ -10,20 +10,17 @@
 %%[8 module {%{EH}Base.Parser} import(UU.Parsing, EH.Util.ParseUtils, EH.Util.ScanUtils, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner})
 %%]
 
-%%[8 export(pDollNm,pUID,pInt,pCTag)
+%%[12 import({%{EH}Module},qualified Data.Set as Set,qualified EH.Util.Rel as Rel)
 %%]
 
-%%[12 import({%{EH}Module},qualified Data.Set as Set,qualified EH.Util.Rel as Rel) export(pPredOccId,pModEntRel,pIdOcc)
-%%]
-
-%%[12 import(qualified {%{EH}Pred} as Pr) export(pProofCost)
+%%[12 import(qualified {%{EH}Pred} as Pr)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Parsers
+%%% Parsers for concrete structures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[8 export(pDollNm,pUID,pInt)
 type P p = PlainParser Token p
 
 pDollNm :: P HsName
@@ -38,9 +35,8 @@ pInt = tokMkInt <$> pInteger10Tk
 
 %%]
 
-
 -- counterpart of ppCTag'
-%%[8
+%%[8 export(pCTag)
 pCTag :: P CTag
 pCTag
   = pCurly (   CTag <$> pDollNm <* pCOMMA <*> pDollNm <* pCOMMA <*> pInt <* pCOMMA <*> pInt
@@ -48,14 +44,19 @@ pCTag
            )
 %%]
 
+%%[12 export(pBool)
+pBool :: P Bool
+pBool = True <$ pKeyTk "True" <|> False <$ pKeyTk "False"
+%%]
+
 -- counterpart of ppPredOccId'
-%%[12
+%%[12 export(pPredOccId)
 pPredOccId :: P PredOccId
 pPredOccId
   = PredOccId <$ pOCURLY <*> pUID <* pCOMMA <*> pUID <* pCCURLY
 %%]
 
-%%[12
+%%[12 export(pIdOcc)
 -- counterpart of PP IdOccKind instance
 pIdOccKind :: P IdOccKind
 pIdOccKind
@@ -78,7 +79,7 @@ pAssocL :: P a -> P b -> P (AssocL a b)
 pAssocL pA pB = pOCURLY *> pListSep pCOMMA ((,) <$> pA <* pEQUAL <*> pB) <* pCCURLY
 %%]
 
-%%[12
+%%[12 export(pModEntRel)
 pModEnt :: P ModEnt
 pModEnt
   = ModEnt <$  pOCURLY <*> pIdOccKind <* pCOMMA <*> pIdOcc
@@ -90,8 +91,17 @@ pModEntRel
   = Rel.fromList <$> pAssocL pDollNm pModEnt
 %%]
 
-%%[12
+%%[12 export(pProofCost)
 pProofCost :: P Pr.ProofCost
 pProofCost = (Pr.PCost <$ pOCURLY <*> pInt <* pCOMMA <*> pInt <* pCOMMA <*> pInt <* pCCURLY)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Parser abstractions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12 export(pCurlySemiBlock)
+pCurlySemiBlock :: P p -> P [p]
+pCurlySemiBlock p = pOCURLY *> pListSep pSEMI p <* pCCURLY
 %%]
 

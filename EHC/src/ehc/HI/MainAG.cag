@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[12 hs module {%{EH}HI.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Gam},qualified {%{EH}Pred} as Pr,{%{EH}HI})
+%%[12 hs module {%{EH}HI.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Gam},qualified {%{EH}Pred} as Pr,{%{EH}HI})
 %%]
 
 %%[12 hs import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Config},{%{EH}NameAspect},{%{EH}Module})
@@ -20,6 +20,14 @@
 
 %%[12 import({HI/AbsSyn},{HI/Pretty},{HI/Uniq})
 WRAPPER AGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR AllNT AGItf [ opts: EHCOpts | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,7 +65,15 @@ SEM Binding
     | Ty
         lhs             .   tyGam       =   gamSingleton @nm (mkTGI @ty @ki)
     | DataCon
-        lhs             .   dataGam     =   gamSingleton @nm (DataGamInfo (Map.map (\t -> emptyDataTagInfo {dtiCTag = t}) $ Map.fromList $ @tags))
+        lhs             .   dataGam     =   gamSingleton @nm (mkDGI @nm
+                													(Map.map (\(t,fm) -> emptyDataTagInfo { dtiCTag = t
+                                                                                                          , dtiFldMp = Map.fromList [ (f,emptyDataFldInfo {dfiOffset = o}) | (f,o) <- fm ]
+                                                                                                          }
+                                                                             )
+                                                                     $ Map.fromList $ @tags
+                                                                    )
+                                                                    False
+                                                             )
     | Class
         lhs             .   prIntroGam  =   gamSingleton @nm (Pr.PrIntroGamInfo @prToEvidTy @ki @rule.rule)
     | Instance
@@ -72,7 +88,7 @@ SEM Rule
     | Rule
         lhs             .   rule        =   Pr.emptyRule
                                               { Pr.rulRuleTy      = @ty
-                                              , Pr.rulMkEvid      = Pr.mkEvid @mkEvid
+                                              , Pr.rulMkEvid      = Pr.mkEvid @lhs.opts @mkEvid
                                               , Pr.rulMkEvidHow   = @mkEvid
                                               , Pr.rulNmEvid      = @nm
                                               , Pr.rulId          = @uid

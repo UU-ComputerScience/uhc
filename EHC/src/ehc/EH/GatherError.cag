@@ -117,14 +117,29 @@ SEM PatExpr
 
 SEM RecPatExpr
   | Empty       lhs         .   errL        =   mkNestErr @pp (foErrL @fo_)
-  | Ext         lhs         .   errL        =   mkNestErr @pp (@recPatExpr.errL ++ @patExpr.errL ++ foErrL @fo_)
+  | Ext         lhs         .   errL        =   @recPatExpr.errL ++ mkNestErr @pp (@patExpr.errL ++ foErrL @fo_)
+
+SEM DataFieldPatExpr
+  | Con         lhs         .   errL        =   mkNestErr @pp (@nmErrs ++ foErrL @fo_)
+  | Ext         lhs         .   errL        =   @dataFieldPatExpr.errL ++ mkNestErr @pp (@patExpr.errL ++ @nmErrs ++ foErrL @fo_)
 
 SEM Expr
   | Rec         lhs         .   errL        =   mkNestErr @pp (@recExpr.errL ++ foErrL @fo_)
+  | DataFields  lhs         .   errL        =   mkNestErr @pp (@fldMissErrs ++ @fldDupErrs ++ @dfErrs ++ @dataFieldExpr.errL)
 
 SEM RecExpr
   | Empty       lhs         .   errL        =   mkNestErr @pp (foErrL @fo_)
-  | Ext Upd     lhs         .   errL        =   mkNestErr @pp (@recExpr.errL ++ @expr.errL ++ foErrL @foKnRec)
+  | Ext Upd     lhs         .   errL        =   @recExpr.errL ++ mkNestErr @pp (@expr.errL ++ foErrL @foKnRec)
+
+SEM DataFieldExpr
+  | Upd         lhs         .   errL        =   @dataFieldExpr.errL ++ mkNestErr @pp (@expr.errL ++ @nmErrs ++ foErrL @fo_)
+  | Con         lhs         .   errL        =   mkNestErr @pp (@nmErrs ++ foErrL @fo_)
+
+SEM Decl
+  | Data        lhs         .   errL        :=  mkNestErr @pp (@tyVars.errL ++ @constrs.errL ++ foErrL @fo_ ++ @inconsistFldErrs)
+
+SEM DataConstr
+  | Constr      lhs         .   errL        :=  mkNestErr @pp (@fields.errL ++ @dupErrs ++ foErrL @fo_)
 %%]
 
 %%[8

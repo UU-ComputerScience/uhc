@@ -14,7 +14,7 @@
 WRAPPER CodeAGItf
 %%]
 
-%%[8 hs import({%{EH}Gam}(DataGam,tagsOfTy))
+%%[8 hs import({%{EH}Gam}(DataGam,dataGamTagsOfTy))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -61,7 +61,7 @@ SEM CBind
   | FFI         (lhs.gUniq,loc.lUniq)       =   mkNewLevUID   @lhs.gUniq
 
 SEM CPat
-  | Con         (rest.gUniq,loc.lUniq)      =   mkNewLevUID   @lhs.gUniq
+  | Con         (binds.gUniq,loc.lUniq)     =   mkNewLevUID   @lhs.gUniq
   | Int Char    (lhs.gUniq,loc.lUniq)       =   mkNewLevUID   @lhs.gUniq
 %%]
 
@@ -179,16 +179,17 @@ SEM CModule
                                                 , k <- [1..arity]
                                                 ]
                             .   allCTags    =   [ ct | (_,xs) <- @constrsMp, (_,ct) <- xs ]
-
+                            
                                                 -- constructorfunctions are never called via an F-thunk, so no cases for it are generated
                             .   allFTags    =   filter (\(fNm,_) -> not (fNm `elem` map ctagNm @allCTags))
-                                                       ( (hsnUndefined,0)
-                                                       : (hsnGrApply,2)
+                                                       ( {- (hsnUndefined,0)
+                                                       : -} (hsnGrApply,2)
                                                        : @allFPTags ++ Map.toList @expr.cafNmMp
                                                        )
 
                             .   applyTagMp  =   map makeApplyMapEntryP @allPTags
-                            .   evalTagMp   =   map makeEvalMapEntryC @allCTags
+                            .   evalTagMp   =   makeEvalMapEntryH
+                                                :  map makeEvalMapEntryC @allCTags
                                                 ++ map makeEvalMapEntryP @allPTags
                                                 ++ map makeEvalMapEntryF @allFTags
 
@@ -201,7 +202,8 @@ SEM CModule
                                                                            (GrPat_Var n2)
                                                                            (GrExpr_Case (GrVal_Var n2)
                                                                                         (zipWith ($)
-                                                                                                 (   map (makeEvalBindEntryC n2) @allCTags
+                                                                                                 (       (makeEvalBindEntryH n2)
+                                                                                                  :  map (makeEvalBindEntryC n2) @allCTags
                                                                                                   ++ map (makeEvalBindEntryP n2) @allPTags
                                                                                                   ++ map (makeEvalBindEntryF n1) @allFTags
                                                                                                  )
@@ -230,7 +232,7 @@ SEM CModule
                                                     (@expr.grBindL
                                                      ++ [ @evalBind
                                                         , @applyBind
-                                                        , @undefBind
+                                                        -- , @undefBind
                                                         ])
                                                     @constrsMp
                                                     @evalTagMp
@@ -273,6 +275,11 @@ makeEvalMapEntryC (CTag tyNm nm tag arity)
    , EvApTagUnit
    )
 
+makeEvalMapEntryH
+ = ( ( GrTag_Lit GrTagHole 0 hsnUnknown, 0)
+   , EvApTagUnit
+   )
+
 makeEvalMapEntryF (nm, arity)
  = ( ( GrTag_Lit GrTagFun 0 nm, arity)
    , EvApTagVar nm
@@ -283,6 +290,13 @@ makeEvalBindEntryC n2 (CTag tyNm nm tag arity) ui
        parameters = take arity names
    in  GrAlt_Alt (mkGrPatTagNode GrTagCon tag nm parameters)
                  (GrExpr_Unit (GrVal_Var n2))
+
+makeEvalBindEntryH n2 ui
+ =     GrAlt_Alt (mkGrPatTagNode GrTagHole 0 hsnUnknown [])
+                 (GrExpr_Unit (GrVal_Var n2))
+
+
+
 
 makeEvalBindEntryF n1 (nm, arity) ui
  = let (result:names) = map uidHNm (mkInfNewUIDL (uidChild ui))
@@ -404,11 +418,10 @@ SEM CExpr
                                                                            $ @body.grExpr
                                                                            where  h             = mkGrTagNode GrTagHole 0 hsnUnknown []
                                                                                   mkSt nmL e    = foldr (\n e -> GrExpr_Seq (GrExpr_Store h) (GrPat_Var n) e) e nmL
-                                                                                  mkV b n n' n'' e
+                                                                                  mkV b n n' e
                                                                                                 = GrExpr_Seq b (GrPat_Var n')
-                                                                                                    (GrExpr_Seq (GrExpr_Fetch n' Nothing Nothing) (GrPat_Var n'')
-                                                                                                        (GrExpr_Seq (GrExpr_Update n (GrVal_Var n'') Nothing) GrPat_Empty e))
-                                                                                  mkVs bs e     = foldr (\(GrBind_Bind n _ v) e -> mkV v n (hsnPrefix "_" n) (hsnPrefix "__" n) e) e bs
+                                                                                                    (GrExpr_Seq (GrExpr_FetchUpdate n' n) GrPat_Empty e)
+                                                                                  mkVs bs e     = foldr (\(GrBind_Bind n _ v) e -> mkV v n (hsnPrefix "_" n) e) e bs
                                                           _            ->  foldr  (\(GrBind_Bind n _ v) e -> GrExpr_Seq v (GrPat_Var n) e)
                                                                                   @body.grExpr @binds.grBindL
                                                       ,[]
@@ -480,7 +493,8 @@ SEM CExpr
   | Var         loc         .   grVal       =   maybe (GrVal_Var @nm) (\a -> mkNdPApp @nm a []) @mbLam
   | Int         loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnInt  else id)  (GrVal_LitInt @int)
   | Char        loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnChar else id)  (GrVal_LitInt (ord @char))
-  | * - Int Char Var Tup
+  | String      loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnPackedString else id)  (GrVal_LitStr @str)
+  | * - Int Char String Var Tup
                 loc         .   grVal       =   GrVal_Empty
 %%]
 
@@ -536,7 +550,7 @@ SEM CBind
 tyNmIsUnboxedForFFIRes :: HsName -> Bool
 tyNmIsUnboxedForFFIRes
   = (`elem` ns)
-  where ns = [ hsnInt, hsnChar ]
+  where ns = [ hsnInt, hsnChar, hsnPackedString ]
 %%]
 
 %%[8
@@ -552,7 +566,7 @@ SEM CBind
                                                      resTyNm = tyConNm @resTy
                                                      resIsUnboxed = tyNmIsUnboxedForFFIRes resTyNm
                                                      resTagL
-                                                       = case tagsOfTy @resTy @lhs.dataGam of
+                                                       = case dataGamTagsOfTy @resTy @lhs.dataGam of
                                                            Just ts          -> [ GrTag_Lit GrTagCon (ctagTag' t) (ctagNm t) | t <- ts ]
                                                            _ | resIsUnboxed -> [ GrTag_Unboxed ]
                                                              | otherwise    -> [ GrTag_Any ]
@@ -612,7 +626,7 @@ SEM CPat
   | Int         lhs         .   grPat       =   GrPat_LitInt @int
   | Char        lhs         .   grPat       =   GrPat_LitInt (ord @char)
   | Con         lhs         .   (grPat,grWrapCase)
-                                            =   case @rest.self of
+                                            =   case @binds.cpatRest of
                                                    CPatRest_Empty
                                                      ->  (ctag mkGrPatRecNode (\_ l t _ -> mkGrPatConNode t l) @tag @binds.patNmL,id)
                                                    CPatRest_Var r
@@ -632,8 +646,8 @@ SEM CPat
 %%]
 
 %%[8
-ATTR CPatBind CPatBindL [ | | patNmL USE {++} {[]}: {[HsName]} ]
-ATTR CPatBind CPatBindL [ | | grTupFldL USE {++} {[]}: {[(GrVal,GrVal->GrSplit)]} ]
+ATTR AllPatBind [ | | patNmL USE {++} {[]}: {[HsName]} ]
+ATTR AllPatBind [ | | grTupFldL USE {++} {[]}: {[(GrVal,GrVal->GrSplit)]} ]
 
 SEM CPatBind
   | Bind        lhs         .   patNmL      =   [@pat.patNm]
@@ -651,7 +665,11 @@ SEM CPat
 %%]
 
 %%[8
-ATTR CPatRest [ | | self: SELF ]
+ATTR CPatRest [ | | cpatRest: SELF ]
+ATTR CPatConBind [ | | cpatRest: CPatRest ]
+
+SEM CPatConBind
+  | Many		lhs			.	cpatRest	=	error "CPatConBind.Many.cpatRest"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

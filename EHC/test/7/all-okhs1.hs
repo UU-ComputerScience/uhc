@@ -1,4 +1,5 @@
 -- record, data fields
+-- %% inline test (prefix1) --
 
 data T a = T {x, y :: a}
 x1 = T 3 4

@@ -159,7 +159,8 @@ SEM GrVal [ | | valInfo : {NodeInfo (Maybe Int)}]
   | Tag       lhs . valInfo = Right (@tag.tagName, [])
   | Var       lhs . valInfo = Left (getNr @nm)
   | Empty     lhs . valInfo = error "no empty value expected!"
-  | LitInt    lhs . valInfo = error "no literal value expected!"
+  | LitInt LitStr
+              lhs . valInfo = error "no literal value expected!"
   | NodeAdapt lhs . valInfo = error "no support for NodeAdapt"
 %%]
 
@@ -528,27 +529,47 @@ SEM GrModule
 %% Fetch %%
 %%%%%%%%%%%
 
-Fetch sould not occur outside eval. And eval is skipped.
-
 %%[8.fetch
 SEM GrExpr
-  | Fetch  loc . err      = error "no fetch expected"
-               . fillEnv  = @err
-               . absHeap  = @err
+  | Fetch  loc . fillEnv  =  case @lhs.targetInfo of
+                                  Left resVar     -> do { elem <- @lhs.getEnvVar (getNr @nm)
+                                                        ; @lhs.setEnvVar resVar True (aeMod elem)
+                                                        }
+                                  Right (tag,nms) -> error "HPT expects variable after fetch, not a node"
+
+
 %%]
 
 %%%%%%%%%%%%
 %% Update %%
 %%%%%%%%%%%%
 
-Update sould not occur outside eval. And eval is skipped.
-
 %%[8.update
+
+ATTR GrVal [ | | getName : {HsName} ]
+
+SEM GrVal
+  | Var      lhs.getName = @nm
+  | * - Var  lhs.getName = error "HPT expects variable in update"
+
+
 SEM GrExpr
-  | Update  loc . err      = error "no update expected"
-                . fillEnv  = @err
-                . absHeap  = @err
+  | Update  loc . fillEnv  =  @lhs.setEnvVar (getNr @nm) True (EnvUnion [getNr @nm, getNr @val.getName] Nothing)
+                                 
 %%]
+
+
+%%%%%%%%%%%%%%%%%
+%% FetchUpdate %%
+%%%%%%%%%%%%%%%%%
+
+%%[8
+
+SEM GrExpr
+  | FetchUpdate  loc . fillEnv  =  @lhs.setEnvVar (getNr @dst) True (EnvUnion [getNr @dst, getNr @src] Nothing)
+                                 
+%%]
+
 
 %%%%%%%%%%%
 %% Throw %%

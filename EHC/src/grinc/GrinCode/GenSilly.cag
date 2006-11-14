@@ -10,7 +10,7 @@
 %%]
 %%[8 hs import({%{GRIN}Silly})
 %%]
-%%[8 hs import({%{EH}Base.Common} hiding "((<+>))")
+%%[8 hs import(EH.Util.Utils,{%{EH}Base.Common} hiding "((<+>))")
 %%]
 %%[8 hs import(qualified Data.Map as Map, Data.Bits)
 %%]
@@ -19,21 +19,24 @@
 %%]
 %%[8 import({GrinCode/LastExpr})
 %%]
+%%[8 hs import(Debug.Trace)
+%%]
 
 %%[8
 WRAPPER GrAGItf
 %%]
 
 %%[8 hs
-grin2silly :: GrModule -> Bool -> Bool -> Bool -> SilModule
-grin2silly gr optJump optPar optLoc
+grin2silly :: HptMap -> GrModule -> Bool -> Bool -> Bool -> SilModule
+grin2silly hptmap gr optJump optPar optLoc
  = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr))
                         (Inh_GrAGItf { optJumpTailCalls_Inh_GrAGItf = optJump
                                      , optOwnParameters_Inh_GrAGItf = optPar
                                      , optOwnLocals_Inh_GrAGItf = optLoc
+                                     , hptMap_Inh_GrAGItf = hptmap
                                      }
                         )
-   in silModule_Syn_GrAGItf t
+   in silModule_Syn_GrAGItf t 
 %%]
 
 %%[8 import({GrinCode/ToSilly})

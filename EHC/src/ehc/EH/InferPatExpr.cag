@@ -27,7 +27,8 @@ SEM PatExpr
 
 %%[7
 SEM PatExpr
-  | Rec         lhs         .  arity                =   0
+  | Rec DataFields
+                lhs         .  arity                =   0
 %%]
 
 %%[8
@@ -122,6 +123,9 @@ SEM CaseAlt
 %%[7
 SEM RecPatExpr
   | Ext Expr    patExpr     .  knTyL                =   []
+
+SEM DataFieldPatExpr
+  | Ext         patExpr     .  knTyL                =   []
 %%]
 
 %%[9
@@ -275,8 +279,43 @@ SEM RecPatExpr
 %%]]
 %%]
 
+%%[7.FIEnv
+SEM DataFieldPatExpr
+  | *           loc         .   fe                  =   emptyFE
+%%[[9
+                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+                                                            }
+%%]]
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Records
+%%% Data based records
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+SEM DataFieldPatExpr
+  | Ext         loc         .   (gTy,nmErrs)        =   valGamLookupTy @nm @lhs.valGam
+                            .   knFldTy             =   mkNewTyVar @lUniq
+                            .   fo_                 =   let t = @lhs.tyCnstr |=> @lhs.knTy
+                                                        in  fitsIn @lhs.fiOpts @fe @lUniq2 (@lhs.tyCnstr |=> @gTy) ([t] `mkArrow` @knFldTy)
+                patExpr     .   knTy                =   @knFldTy
+                dataFieldPatExpr
+                            .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
+                loc         .   ty                  =   @patExpr.tyCnstr |=> @dataFieldPatExpr.ty
+  | Con         loc         .   (gTy,nmErrs)        =   valGamLookupTy (hsnUn @nm) @lhs.valGam
+                            .   fo_                 =   let [u] = mkNewTyVarL 1 @lUniq
+                                                            t = @lhs.tyCnstr |=> @lhs.knTy
+                                                            fo = fitsIn @lhs.fiOpts @fe @lUniq2 (@lhs.tyCnstr |=> @gTy) ([t] `mkArrow` u)
+                                                        in  fo {foTy = foCnstr fo |=> t}
+                            .   ty                  =   foTy @fo_
+                lhs         .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Row based records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[7

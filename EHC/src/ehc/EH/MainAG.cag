@@ -22,7 +22,7 @@
 %%[4_2 hs import(qualified Data.Set as Set,{%{EH}Gam.Utils},{%{EH}Ty.ElimAlts},{%{EH}Ty.FreshVar})
 %%]
 
-%%[7 hs import(EH.Util.PPUtils)
+%%[7 hs import(qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.PPUtils,{%{EH}Ty.FreshVar},{%{EH}Ty.Ftv})
 %%]
 
 %%[7_2 hs import({%{EH}Ty.AnnCommon},{%{EH}Ty.InfuseAnn},{%{EH}Ty.TyConPat},{%{EH}Ty.AnnInferKind}, {%{EH}Ty.InferExposedAnns}, {%{EH}Ty.InfuseExp}, {%{EH}Annotations.Constraints}, {%{EH}Ty.AnnSubst}, {%{EH}Ty.Expand}, {%{EH}EH.ConstrInferTy}, {%{EH}Annotations.ConstraintSolver}, {%{EH}Annotations.BelownessSolver}, {%{EH}Annotations.VarianceSolver}, {%{EH}Annotations.UniquenessSolver}, {%{EH}Ty.InfuseDataTruncs}, {%{EH}Base.HtmlCommon}, {%{EH}Ty.PrettyHTML}, Debug.Trace(trace))
@@ -34,10 +34,13 @@
 %%[8 hs import(EH.Util.Utils(groupSortOn))
 %%]
 
-%%[8 hs import(qualified Data.Map as Map,{%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty},{%{EH}Core.SubstCaseAltFail})
+%%[8 hs import({%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty},{%{EH}Core.SubstCaseAltFail})
 %%]
 
-%%[9 hs import(qualified Data.Set as Set,{%{EH}Pred},{%{EH}Core.Subst})
+%%[9 hs import({%{EH}Pred},{%{EH}Core.Subst})
+%%]
+
+%%[12 hs import({%{EH}Ty.MapName})
 %%]
 
 %%[50 hs import({%{EH}Ty.ElimEqual},{%{EH}Gam.Utils})
@@ -70,7 +73,7 @@ WRAPPER AGItf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Options
+%%% Global info: options, module name, name mapping
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
@@ -81,8 +84,13 @@ ATTR AllNT AGItf [ opts: EHCOpts | | ]
 ATTR AGItf [ moduleNm: HsName | | ]
 %%]
 
+%%[12
+ATTR AllNT AGItf [ idQualGam: IdQualGam | | ]
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Tying together gam's, combining with imported info, gathering for following modules and/or global use
+%%% Note: will move to AG files where attr's are actually defined/used
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[12
@@ -109,15 +117,6 @@ SEM Expr
   | * - Let     lhs         .   gathKiGam           =   emptyGam
 %%]
 
-%%[8
-ATTR AGItf [ | | gathDataGam: DataGam ]
-%%]
-
-%%[12
-SEM AGItf
-  | AGItf       expr        .   dataGam             =   @expr.gathDataGam `gamUnion` @lhs.dataGam
-%%]
-
 %%[12
 ATTR AGItf Expr [ | | gathPrIntroGam: PrIntroGam ]
 
@@ -139,6 +138,9 @@ SEM CaseAlt
 SEM RecExpr
   | Expr Ext Upd
                 loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId
+
+SEM DataFieldExpr
+  | Expr Upd    loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId
 
 SEM Decl
   | InstanceIntro Val

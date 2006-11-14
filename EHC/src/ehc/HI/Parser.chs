@@ -47,7 +47,14 @@ pBinding
   <|> Binding_Ty        <$> pNmIs "type"   <* pOCURLY <*> pTy      <* pSEMI <*> pTy     <* pCCURLY
   <|> (\tn cs -> Binding_DataCon tn (map (\f -> f tn) cs))
       <$> pNmIs "data" <*  pOCURLY
-                       <*> pListSep pSEMI ((\n t a tn -> (n,CTag tn n t a)) <$> pDollNm <* pEQUAL <*> pInt <* pCOMMA <*> pInt)
+                       <*> pCurlySemiBlock
+                             ((\n t a fm tn -> (n,(CTag tn n t a,fm)))
+                              <$> pDollNm <*  pEQUAL
+                              <*  pOCURLY <*> pInt <* pCOMMA <*> pInt
+                                          <*> pList ((,) <$ pSEMI <*> pDollNm <* pEQUAL <*> pInt)
+                              <*  pCCURLY
+                             )
+                       <*  pSEMI <*> pBool
                        <*  pCCURLY
   <|> Binding_Class     <$> pNmIs "class"       <* pOCURLY <*> pTy <* pSEMI <*> pTy <* pSEMI <*> pRule <* pCCURLY
   <|> Binding_Instance  <$> pNmIs "instance"    <* pOCURLY <*> pListSep pSEMI pRule <* pCCURLY

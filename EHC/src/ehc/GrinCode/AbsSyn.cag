@@ -59,6 +59,8 @@ DATA GrExpr
   | Update      nm              : {HsName}
                 val             : GrVal
                 mbTag           : {Maybe GrTag}
+  | FetchUpdate src             : {HsName}
+                dst             : {HsName}
   | Throw       nm              : {HsName}
   | Catch       body            : GrExpr
                 arg             : {HsName}
@@ -78,6 +80,7 @@ DATA GrVal
   | Tag         tag             : GrTag
   | Empty
   | LitInt      int             : {Int}
+  | LitStr      str             : {String}
   | Var         nm              : {HsName}
 
 TYPE GrValL     =   [GrVal]

@@ -29,10 +29,13 @@
 %%[7 export(positionalFldNames)
 %%]
 
+%%[7 export(hsnFldUpd)
+%%]
+
 %%[8 export(hsnFloat)
 %%]
 
-%%[8 export(hsnUndefined,hsnPrimAddInt,hsnMain)
+%%[8 export(hsnPrimAddInt,hsnMain)
 %%]
 
 %%[8 import(Char(isUpper)) export(hsnIsConstructorName)
@@ -85,6 +88,14 @@ strUn                               =   "un"
 strUn                               =   "-"
 %%]
 
+%%[7.strFldUpd
+strFldUpd                           =   "upd_"
+%%]
+
+%%[99 -7.strFldUpd
+strFldUpd                           =   strUn
+%%]
+
 %%[3.hsnUn
 hsnUn                               ::  HsName -> HsName
 hsnUn           nm                  =   HNm (strUn ++ show nm)
@@ -117,6 +128,16 @@ hsnUnUn                             ::  HsName -> HsName
 hsnUnUn         hsn
   = case hsnInitLast hsn of
       (ns,HNm s) -> mkHNm (ns,HNm (drop (length strUn) s))
+%%]
+
+%%[7.hsnFldUpd
+hsnFldUpd                           ::  HsName -> HsName
+hsnFldUpd       nm                  =   HNm (strFldUpd ++ show nm)
+%%]
+
+%%[12 -7.hsnFldUpd
+hsnFldUpd                           ::  HsName -> HsName
+hsnFldUpd       nm                  =   strFldUpd `hsnPrefix` nm
 %%]
 
 %%[5
@@ -278,8 +299,10 @@ mkRV m = hsnSetQual m . HNm
       ]
 %%]
 
-%%[8
+%%[8 export(hsnUndefined,hsnFromPackedString,hsnPackedString,hsnId)
 [hsnUndefined
+ , hsnPackedString, hsnFromPackedString
+ , hsnId
  ]
   = map
 %%[[8
@@ -288,6 +311,8 @@ mkRV m = hsnSetQual m . HNm
       (mkRV hsnModBase)
 %%]]
       [ "undefined"
+      , "PackedString", "fromPackedString"
+      , "id"
       ]
 %%]
 
@@ -362,3 +387,33 @@ hsnModReal                          =   hsnPrefixQual hsnEHC (HNm "Real")
 hsnClass2Dict :: HsName -> HsName
 hsnClass2Dict = hsnPrefix "Dict-"
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Builtin names used without direct access from source code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(EHBuiltinNames(..),mkEHBuiltinNames)
+data EHBuiltinNames
+  = EHBuiltinNames
+  	  { ehbnId					:: HsName
+  	  , ehbnUndefined			:: HsName
+  	  , ehbnError				:: HsName
+  	  , ehbnFromPackedString	:: HsName
+%%[[11
+  	  , ehbnString				:: HsName
+%%]]
+  	  }
+
+mkEHBuiltinNames :: (IdOccKind -> HsName -> HsName) -> EHBuiltinNames
+mkEHBuiltinNames f
+  = EHBuiltinNames
+  	  { ehbnId					= f IdOcc_Val  hsnId
+  	  , ehbnUndefined			= f IdOcc_Val  hsnUndefined
+  	  , ehbnError				= f IdOcc_Val  hsnError
+  	  , ehbnFromPackedString	= f IdOcc_Val  hsnFromPackedString
+%%[[11
+  	  , ehbnString				= f IdOcc_Type hsnString
+%%]]
+  	  }
+%%]
+

@@ -256,7 +256,7 @@ instance CompileUnit EHCompileUnit HsName EHCompileUnitState where
 instance CompileRunError Err () where
   crePPErrL                 = ppErrL
   creMkNotFoundErrL _ fp sp = [Err_FileNotFound fp sp]
-  creAreFatal               = const True
+  creAreFatal               = errLIsFatal
 
 instance CompileModName HsName where
   mkCMNm = HNm
@@ -481,17 +481,19 @@ cpParsePrevHI modNm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-foldEH :: EHSem.Inh_AGItf -> EHCompileUnit -> EHCompileRunStateInfo -> EH.AGItf -> EHSem.Syn_AGItf
-foldEH inh ecu crsi eh
+foldEH :: HSSem.Inh_AGItf -> EHSem.Inh_AGItf -> EHCompileUnit -> EHCompileRunStateInfo -> EH.AGItf -> EHSem.Syn_AGItf
+foldEH _ ehInh ecu crsi eh
  = EHSem.wrap_AGItf (EHSem.sem_AGItf eh)
-                    (inh { EHSem.moduleNm_Inh_AGItf         = ecuModNm ecu
-                         , EHSem.gUniq_Inh_AGItf            = crsiHereUID crsi
-                         , EHSem.opts_Inh_AGItf             = crsiOpts crsi
+                    (ehInh { EHSem.moduleNm_Inh_AGItf         = ecuModNm ecu
+                           , EHSem.gUniq_Inh_AGItf            = crsiHereUID crsi
+                           , EHSem.opts_Inh_AGItf             = crsiOpts crsi
 %%[[12
-                         , EHSem.isTopMod_Inh_AGItf         = ecuIsTopMod ecu
+                           , EHSem.isTopMod_Inh_AGItf         = ecuIsTopMod ecu
 %%]]
-                         })
+                           })
+%%]
 
+%%[8
 foldHs :: HSSem.Inh_AGItf -> HsName -> EHCompileUnit -> EHCompileRunStateInfo -> HS.AGItf -> HSSem.Syn_AGItf
 foldHs inh modNm ecu crsi hs
  = HSSem.wrap_AGItf (HSSem.sem_AGItf hs)
@@ -503,14 +505,14 @@ foldHs inh modNm ecu crsi hs
                          , HSSem.modInScope_Inh_AGItf       = inscps
                          , HSSem.modEntToOrig_Inh_AGItf     = exps
                          , HSSem.topInstanceNmL_Inh_AGItf   = modInstNmL (ecuMod ecu)
-%%]
+%%]]
                          })
 %%[[12
  where inscps = Rel.toDomMap $ mmiInscps $ mmi
        exps   = Rel.toRngMap $ Rel.restrictRng (\o -> let mq = hsnQualifier (ioccNm o) in isJust mq && fromJust mq /= modNm)
                              $ Rel.mapRng mentIdOcc $ mmiExps $ mmi
        mmi    = panicJust "foldHs.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
-%%]
+%%]]
 %%]
 
 %%[12
@@ -524,9 +526,10 @@ foldHsMod inh modNm ecu crsi hs
 
 %%[12
 foldHI :: HISem.Inh_AGItf -> EHCompileUnit -> EHCompileRunStateInfo -> HI.AGItf -> HISem.Syn_AGItf
-foldHI inh ecu crsi eh
- = HISem.wrap_AGItf (HISem.sem_AGItf eh)
-                    (inh)
+foldHI inh ecu crsi hi
+ = HISem.wrap_AGItf (HISem.sem_AGItf hi)
+                    (inh { HISem.opts_Inh_AGItf             = crsiOpts crsi
+                         })
 %%]
 
 %%[8
@@ -536,7 +539,7 @@ cpFoldEH modNm
          ;  let  ecu    = crCU modNm cr
                  crsi   = crStateInfo cr
                  mbEH   = ecuMbEH ecu
-                 ehSem  = foldEH (crsiEHInh crsi) ecu crsi (panicJust "cpFoldEH" mbEH)
+                 ehSem  = foldEH (crsiHSInh crsi) (crsiEHInh crsi) ecu crsi (panicJust "cpFoldEH" mbEH)
          ;  when (isJust mbEH)
                  (cpUpdCU modNm (ecuStoreEHSem ehSem))
          }
@@ -591,8 +594,38 @@ cpFoldHI modNm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[12
-cpFlowHsSem :: HsName -> EHCompilePhase ()
-cpFlowHsSem modNm
+cpFlowHsSem1 :: HsName -> EHCompilePhase ()
+cpFlowHsSem1 modNm
+  =  do  {  cr <- get
+         ;  let  ecu    = crCU modNm cr
+                 crsi   = crStateInfo cr
+                 hsSem  = fromJust (ecuMbHSSem ecu)
+                 opts   = crsiOpts  crsi
+                 ehInh  = crsiEHInh crsi
+                 hsInh  = crsiHSInh crsi
+                 hsInh' = hsInh
+                            { HSSem.idGam_Inh_AGItf      = HSSem.gathIdGam_Syn_AGItf                 hsSem `gamUnion` HSSem.idGam_Inh_AGItf     hsInh
+                            }
+                 ehInh' = ehInh
+                            { EHSem.idQualGam_Inh_AGItf  = idGam2QualGam (HSSem.gathIdGam_Syn_AGItf hsSem) `gamUnion` EHSem.idQualGam_Inh_AGItf ehInh
+                            }
+                 opts'  = opts
+                            { ehcOptBuiltinNames = mkEHBuiltinNames mk
+                            }
+%%[[12
+                        where mk = idQualGamReplacement (EHSem.idQualGam_Inh_AGItf ehInh')
+%%][99
+                        where mk = if ehcBuiltinFromPrelude opts
+                                   then \_ n -> n
+                                   else \k n -> idQualGamReplacement (EHSem.idQualGam_Inh_AGItf ehInh') k (hsnQualified n)
+%%]]
+         ;  when (isJust (ecuMbHSSem ecu))
+                 (put (cr {crStateInfo = crsi {crsiHSInh = hsInh', crsiEHInh = ehInh', crsiOpts = opts'}}))
+         -- ;  lift $ putWidthPPLn 120 (ppGam $ EHSem.idQualGam_Inh_AGItf $ ehInh')
+         }
+
+cpFlowHsSem2 :: HsName -> EHCompilePhase ()
+cpFlowHsSem2 modNm
   =  do  {  cr <- get
          ;  let  ecu    = crCU modNm cr
                  crsi   = crStateInfo cr
@@ -600,12 +633,13 @@ cpFlowHsSem modNm
                  hsInh  = crsiHSInh crsi
                  hsInh' = hsInh
                             { HSSem.fixityGam_Inh_AGItf  = HSSem.gathFixityGam_Syn_AGItf hsSem `gamUnion` HSSem.fixityGam_Inh_AGItf hsInh
-                            , HSSem.idGam_Inh_AGItf      = HSSem.gathIdGam_Syn_AGItf     hsSem `gamUnion` HSSem.idGam_Inh_AGItf     hsInh
                             }
          ;  when (isJust (ecuMbHSSem ecu))
                  (put (cr {crStateInfo = crsi {crsiHSInh = hsInh'}}))
          }
+%%]
 
+%%[12
 cpFlowEHSem :: HsName -> EHCompilePhase ()
 cpFlowEHSem modNm
   =  do  {  cr <- get
@@ -613,6 +647,8 @@ cpFlowEHSem modNm
                  crsi   = crStateInfo cr
                  ehSem  = fromJust (ecuMbEHSem ecu)
                  ehInh  = crsiEHInh crsi
+                 hsSem  = fromJust (ecuMbHSSem ecu)
+                 hsInh  = crsiHSInh crsi
                  ehInh' = ehInh
                             { EHSem.valGam_Inh_AGItf     = EHSem.gathValGam_Syn_AGItf     ehSem `gamUnion` EHSem.valGam_Inh_AGItf     ehInh
                             , EHSem.tyGam_Inh_AGItf      = EHSem.gathTyGam_Syn_AGItf      ehSem `gamUnion` EHSem.tyGam_Inh_AGItf      ehInh
@@ -858,7 +894,7 @@ cpTranslateCore2Grin modNm
                         where ehInh  = crsiEHInh crsi
 %%]]
                  grin   = cmodGrin u1 dg cMod
-         ;  when (isJust mbCore && (ehcOptEmitGrin opts || ehcOptEmitLlc opts))
+         ;  when (isJust mbCore && (ehcOptEmitGrin opts || ehcOptEmitLlc opts || ehcOptEmitLLVM opts))
                  (cpUpdCU modNm (ecuStoreGrin grin))
          }
 
@@ -871,7 +907,7 @@ cpTranslateGrin modNm
                  fp     = ecuFilePath ecu
                  mbGrin = ecuMbGrin ecu
                  grin   = panicJust "cpTranslateGrin" mbGrin
-         ;  when (isJust mbGrin && (ehcOptEmitLlc opts))
+         ;  when (isJust mbGrin && (ehcOptEmitLlc opts || ehcOptEmitLLVM opts))
                  (lift $ GRINC.doCompileGrin (Right (fp,grin)) opts)
          }
 %%]
@@ -974,6 +1010,9 @@ cpProcessHI modNm
 cpProcessHs :: HsName -> EHCompilePhase ()
 cpProcessHs modNm 
   = cpSeq [ cpFoldHs modNm
+%%[[12
+          , cpFlowHsSem1 modNm
+%%]]
           , cpTranslateHs2EH modNm
           , cpProcessEH modNm
           ]
@@ -1079,7 +1118,7 @@ cpOutputHI suff modNm
                               (HI.AGItf_AGItf $ HI.Module_Module modNm
                                 $ HI.Binding_Stamp (Cfg.verTimestamp Cfg.version) (Cfg.verSig Cfg.version) (Cfg.verMajor Cfg.version) (Cfg.verMinor Cfg.version) (Cfg.verQuality Cfg.version) (Cfg.verSvn Cfg.version) 0
                                   : binds))
-                            (HISem.Inh_AGItf)
+                            (crsiHIInh crsi)
          ;  when (isJust (ecuMbHSSem ecu) && isJust (ecuMbEHSem ecu))
                  (do { lift $ putPPFile (fpathToStr (fpathSetSuff suff fp)) (HISem.pp_Syn_AGItf hi) 120
                      ; now <- lift $ getClockTime
@@ -1206,7 +1245,7 @@ cpCompileOrderedCUs
         flow m
           = do { cr <- get
                ; case ecuState $ crCU m cr of
-                   ECUSHaskell HSAllSem   -> cpSeq [cpFlowHsSem m,cpFlowEHSem m]
+                   ECUSHaskell HSAllSem   -> cpSeq [cpFlowHsSem2 m,cpFlowEHSem m]
                    ECUSHaskell HSAllSemHI -> cpFlowHISem m
                }
         core mL
@@ -1348,13 +1387,15 @@ doCompileRun fn opts
                                               , EHSem.prIntroGam_Inh_AGItf      = emptyGam
                                               , EHSem.prElimTGam_Inh_AGItf      = emptyTGam basePrfCtxtId
                                               , EHSem.prfCtxtId_Inh_AGItf       = basePrfCtxtId
+                                              , EHSem.idQualGam_Inh_AGItf       = emptyGam
 %%]
                                               }
 %%[[12
              hsModInh       = HSSemMod.Inh_AGItf { HSSemMod.gUniq_Inh_AGItf       = uidStart
                                                  , HSSemMod.moduleNm_Inh_AGItf    = hsnUnknown
                                                  }
-             hiInh          = HISem.Inh_AGItf
+             hiInh          = HISem.Inh_AGItf { HISem.opts_Inh_AGItf            = opts2
+                                              }
 %%]
              initialState   = mkEmptyCompileRun
                                 topModNm

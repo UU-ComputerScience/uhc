@@ -53,7 +53,7 @@ hiFromAllGams exps fg idg vg tg dg ig eg
     ++ hiFromGam  (\n fgi  -> Binding_Fixity n (fgiPrio fgi) (fgiFixity fgi)) fg
     ++ hiFromGam  (\n vgi  -> Binding_Val n (vgiTy vgi)) vg
     ++ hiFromGam  (\n tgi  -> Binding_Ty n (tgiTy tgi) (tgiKi tgi)) tg
-    ++ hiFromGam  (\n dgi  -> Binding_DataCon n (Map.toList $ Map.map dtiCTag $ dgiDataTagMp dgi)) dg
+    ++ hiFromGam  (\n dgi  -> Binding_DataCon n (Map.toList $ Map.map (\i -> (dtiCTag i,Map.toList $ Map.map dfiOffset $ dtiFldMp i)) $ dgiConstrTagMp dgi) (dgiIsNewtype dgi)) dg
     ++ hiFromGam  (\n pigi -> Binding_Class n (Pr.pigiPrToEvidTy pigi) (Pr.pigiKi pigi) (mkr $ Pr.pigiRule pigi)) ig
     ++ hiFromTGam (\n pegi -> Binding_Instance n (map mkr $ Pr.pegiRuleL pegi)) basePrfCtxtId eg
   where mkr r = Rule_Rule (Pr.rulNmEvid r) (Pr.rulRuleTy r) (Pr.rulMkEvidHow r) ((Pr.rulId r) {poiCxId = basePrfCtxtId}) (Pr.rulCost r) []

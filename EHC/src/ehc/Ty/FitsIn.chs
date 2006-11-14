@@ -463,7 +463,7 @@ fitsIn opts env uniq ty1 ty2
 %%[9
             fiAddPr ci n i prTy fi
                 =  let  e = fiEnv fi
-                        tg = peTGamInsertKnPr ci n i (tyPred prTy) (tgamPushNew (fePrfCtxtId e) ci (fePrElimTGam e))
+                        tg = peTGamInsertKnPr (feEHCOpts $ fiEnv fi) ci n i (tyPred prTy) (tgamPushNew (fePrfCtxtId e) ci (fePrElimTGam e))
                    in   fi { fiEnv = e {fePrElimTGam = tg, fePrfCtxtId = ci} }
             foUpdErrs e fo = fo {foErrL = e ++ foErrL fo}
             foUpdLCoe l fo = fo {foLCoeL = l : foLCoeL fo}
@@ -586,7 +586,7 @@ fitsIn opts env uniq ty1 ty2
                                  r = CExpr_Var rn
                                  tr1s = foCnstr fo |=> tr1
                                  (u',u2,u3,u4) = mkNewLevUID3 (foUniq fo)
-                                 mkLSel n u = mkCExprSelCase emptyRCEEnv (Just $ hsnSuffix rn "!") r CTagRec n n (CExpr_Hole u) Nothing
+                                 mkLSel n u = mkCExprSelCase (emptyRCEEnv $ feEHCOpts $ fiEnv fi) (Just $ hsnSuffix rn "!") r CTagRec n n (CExpr_Hole u) Nothing
                                  mkLPred' r l u
                                    =  let  r' = maybe Ty_Any fst . tyRowExtr l $ r
                                       in   (PredOcc (Pred_Lacks r' l) (mkPrId prfCxId u),r')
@@ -594,7 +594,7 @@ fitsIn opts env uniq ty1 ty2
                                  rowCoeL = [ rc | rc@(_,c) <- sortByOn rowLabCmp fst (foRowCoeL fo), not (coeIsId c) ]
                                  (fuUpdL,prUpdL,tr1s',_)
                                    =  foldr  (\(l,c) (fuL,prL,r,u)
-                                                ->  ((l,CExpr_TupUpd cvarUndefined CTagRec l (CExpr_Hole u) (c `coeEvalOn` mkLSel l u)):fuL
+                                                ->  ((l,(CExpr_TupUpd (cundefined $ feEHCOpts $ fiEnv fi) CTagRec l (CExpr_Hole u) (c `coeEvalOn` mkLSel l u),Nothing)):fuL
                                                     ,mkLPred r l u : prL,r,uidNext u
                                                     )
                                              )
@@ -602,7 +602,7 @@ fitsIn opts env uniq ty1 ty2
                                  (fuDelL,prDelL,_,_)
                                    =  foldl  (\(fuL,prL,r,u) l
                                                   ->  let  (pr,r') = mkLPred' r l u
-                                                      in   ((l,CExpr_TupDel (CExpr_Var hsnWild) CTagRec l (CExpr_Hole u)):fuL
+                                                      in   ((l,(CExpr_TupDel (CExpr_Var hsnWild) CTagRec l (CExpr_Hole u),Nothing)):fuL
                                                            ,pr:prL,r',uidNext u
                                                            )
                                              )
@@ -1048,6 +1048,17 @@ fitsInL opts env uniq tyl1 tyl2
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Iterative fitsIn, for now just a simple one (no constr prop, no new uniq, ...)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7 export(fitsInFold)
+fitsInFold :: FIOpts -> FIEnv -> UID -> TyL -> FIOut
+fitsInFold opts env uniq tyl
+  = foldl (\fo t -> if foHasErrs fo then fo else fitsIn opts env uniq (foTy fo) t)
+          emptyFO tyl
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Proof of predicates, must be here because of mutual dep with fitsIn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1290,7 +1301,7 @@ prfOneStepPred  fe prOcc@(PredOcc pr@(Pred_Pred t) prPoi) depth
                             = tyArrowArgsRes (foCnstr fo |=> t')
            prfCtxtPrL       = map tyPred prfCtxtTyPrL
            (prfElimTGam,prfCtxtNmL,prfCtxtUIDL)
-                            = peTGamInsertKnPrL newCxId u3 prfCtxtPrL (tgamPushNew (poiCxId prPoi) newCxId (fePrElimTGam fe))
+                            = peTGamInsertKnPrL (feEHCOpts fe) newCxId u3 prfCtxtPrL (tgamPushNew (poiCxId prPoi) newCxId (fePrElimTGam fe))
            prf              = ProvenAnd (pr) (poi4 : []) (poi5 : poi4 : prfCtxtUIDL) (mkPCostExec 1) (prfCtxtNmL `mkCExprLam` (poiId poi5 `CExpr_HoleLet` CExpr_Hole u4))
            g'               = prvgAddPrNd pr [prPoi] prf g
            g''              = g'

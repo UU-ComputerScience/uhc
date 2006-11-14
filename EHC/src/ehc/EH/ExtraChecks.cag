@@ -13,7 +13,7 @@
 
 %%[1.dupErrs
 SEM Expr
-  | Let         loc         .   dupErrs             =   let  nms = gamToDups (gamTop @decls.patValGam)
+  | Let         loc         .   dupErrs             =   let  nms = assocLKeys $ gamToOnlyDups $ gamTop @decls.patValGam
                                                         in   if null nms then [] else [Err_NamesDupIntrod nms]
 %%]
 
@@ -29,6 +29,35 @@ SEM Decl
   | Val         loc         .   sigMissErrs         =   if @hasTySig then [] else [Err_MissingSig @patExpr.pp]
 
 %%[2 -1.sigMissErrs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data type, field labels
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+SEM Decl
+  | Data        loc         .   inconsistFldErrs    =   let  ft = gamToOnlyDups (@lhs.finTyCnstr |=> @constrs.fldSelGam)
+                                                             wrong tl = foHasErrs fo
+                                                                      where fo = fitsInFold unifyFIOpts @fe uidStart $ map (tyArrowRes . vgiTy) $ tl
+                                                             nms = [ f | (f,tl) <- ft, wrong tl ]
+                                                        in   if null nms then [] else [Err_InconsistentIntros "data field" nms]
+
+SEM DataConstr
+  | Constr      loc         .   dupErrs             =   let  nms = assocLKeys $ gamToOnlyDups @fields.fldSelGam
+                                                        in   if null nms then [] else [Err_NamesDupIntrod nms]
+%%]
+
+%%[7
+SEM Expr
+  | DataFields  loc         .   fldMissErrs         =   case @dataFieldExpr.mbDti of
+                                                          Just dti | not (Set.null m)
+                                                            -> [Err_MissingDataFields (Set.toList m) (dtiConNm dti)]
+                                                            where m = Map.keysSet (dtiFldMp dti) `Set.difference` Set.fromList @fldL
+                                                          _ | null @dtiInFldL -> [Err_MissingAnyDataField @fldL (dgiTyNm @dgi)]
+                                                            | otherwise       -> []
+                            .   fldDupErrs          =   let fs = [ f | (f:_:_) <- group @fldL ]
+                                                        in  if null fs then [] else [Err_DuplicateDataFields fs]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

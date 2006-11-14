@@ -85,8 +85,20 @@ DATA Err
                         fiMode     : FIMode
 %%]
 
+%%[5
+DATA Err
+  | Newtype             tyNm       : {HsName}
+%%]
+
 %%[7
 DATA Err
+  | InconsistentIntros  kind       : String
+                        nmL        : {[HsName]}
+  | MissingDataFields   nmL        : {[HsName]}
+                        con        : {HsName}
+  | MissingAnyDataField nmL        : {[HsName]}
+                        tyNm       : {HsName}
+  | DuplicateDataFields nmL        : {[HsName]}
   | MissingRowLabels    nmL        : {[HsName]}
                         ty         : {Ty}
   | TooManyRowLabels    nmL        : {[HsName]}

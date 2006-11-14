@@ -16,6 +16,9 @@ SEM Expr
   | Var         loc     .   pp      =   pp @nm
   | Con         loc     .   pp      =   ppCon @nm
   | Let         loc     .   pp      =   "let"
+%%[[8
+                                        >|< (if @isStrict then pp "!" else empty)
+%%]]
                                         >#< (@decls.pp >-< @ppExtra)
                                         >-< @errLetPP
                                         >-< "in" >#< @body.pp
@@ -146,9 +149,10 @@ SEM Decl
 %%]
 
 %%[7
-ATTR RecExpr RowTyExpr RecPatExpr DataFields [ | | ppL: {[PP_Doc]} ]
+ATTR RecExpr RowTyExpr RecPatExpr DataFields DataFieldExpr DataFieldPatExpr [ | | ppL: {[PP_Doc]} ]
 
 SEM Expr
+  | DataFields  loc     .   pp      =   @dataFieldExpr.pp >#< ppCurlysCommas' (reverse @dataFieldExpr.ppL)
   | Rec         loc     .   pp      =   ppAppTop  (hsnRec,mkPPAppFun @appFunNm @recExpr.pp)
                                                   (reverse @recExpr.ppL) @recExpr.pp
   | Sel         loc     .   pp      =   @expr.pp >|< "." >|< @lbl
@@ -163,8 +167,8 @@ SEM RecExpr
   | Expr        loc     .   pp      =   @expr.pp
                 lhs     .   ppL     =   []
 
-
 SEM PatExpr
+  | DataFields  loc     .   pp      =   @dataFieldPatExpr.pp >#< ppCurlysCommas' (reverse @dataFieldPatExpr.ppL)
   | Rec         loc     .   pp      =   ppAppTop  (hsnRec,mkPPAppFun @appFunNm @recPatExpr.pp)
                                                   (reverse @recPatExpr.ppL) @recPatExpr.pp
 
@@ -184,6 +188,22 @@ SEM RowTyExpr
   | Empty       lhs     .   ppL     =   []
   | Ext         lhs     .   pp      =   @rowTyExpr.pp
                         .   ppL     =   ppFld "::" (Just @positionalNm) @nm (pp @nm) @tyExpr.pp : @rowTyExpr.ppL
+
+SEM DataFieldExpr
+  | Upd         loc     .   pp      =   ppFld "=" Nothing @nm (pp @nm) @expr.pp
+                lhs     .   ppL     =   @pp : @dataFieldExpr.ppL
+                        .   pp      =   @dataFieldExpr.pp
+  | Con         loc     .   pp      =   pp @nm
+  | Expr        loc     .   pp      =   @expr.pp
+  | Con Expr    lhs     .   ppL     =   []
+
+
+SEM DataFieldPatExpr
+  | Ext         loc     .   pp      =   ppFld "=" Nothing @nm (pp @nm) @patExpr.pp
+                lhs     .   ppL     =   @pp : @dataFieldPatExpr.ppL
+                        .   pp      =   @dataFieldPatExpr.pp
+  | Con         loc     .   pp      =   pp @nm
+                lhs     .   ppL     =   []
 %%]
 
 %%[8
@@ -319,7 +339,7 @@ SEM DataField
 
 SEM DataConstr
   | Constr      loc     .   pp      :=  pp @conNm
-                                        >#<  (if null . catMaybes $ @fields.lblL
+                                        >#<  (if null $ catMaybes $ assocLKeys $ @fields.fldTyL
                                               then ppSpaced @fields.ppL
                                               else ppCurlysCommas' @fields.ppL
                                              )

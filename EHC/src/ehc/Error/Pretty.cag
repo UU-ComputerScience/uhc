@@ -24,10 +24,12 @@ WRAPPER Err
 %%% PP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs
+%%[1.ppErrs hs
 ppErrs :: ErrL -> PP_Doc
 ppErrs errL = if null errL then empty else ppCmt ("***ERROR(S):" >-< indent 2 (ppErrL errL))
+%%]
 
+%%[1 hs
 ppErrL :: ErrL -> PP_Doc
 ppErrL errL = if null errL then empty else vlist (map ppErr errL)
 
@@ -153,12 +155,26 @@ SEM Err
                                                         )
 %%]
 
+%%[5
+SEM Err
+  | Newtype             lhs     .  pp   =   ppMsgErr    ("Newtype must have exactly 1 constructor with 1 field")
+                                                        ("Type:" >#< @tyNm)
+%%]
+
 %%[7
 SEM Err
-  | MissingRowLabels    lhs     .  pp   =   ppMsgErr    "Missing label(s) in row"
-                                                        ("Label(s):" >#< ppListSep "" "" ", " @nmL >-< "Row     :" >#< ppTy @ty)
+  | MissingDataFields   lhs     .  pp   =   ppMsgErr    ("Missing field(s) in data construction")
+                                                        ("Field(s)   :" >#< ppCommas' @nmL >-< "Constructor:" >#< pp @con)
+  | MissingAnyDataField lhs     .  pp   =   ppMsgErr    ("No data constructor has all fields")
+                                                        ("Field(s):" >#< ppCommas' @nmL >-< "Type    :" >#< pp @tyNm)
+  | DuplicateDataFields lhs     .  pp   =   ppMsgErr    ("Duplicate field(s) in data construction/update")
+                                                        ("Field(s):" >#< ppCommas' @nmL)
+  | MissingRowLabels    lhs     .  pp   =   ppMsgErr    ("Missing label(s) in row")
+                                                        ("Label(s):" >#< ppCommas' @nmL >-< "Row     :" >#< ppTy @ty)
   | TooManyRowLabels    lhs     .  pp   =   ppMsgErr    "Too many label(s) to fit in row"
-                                                        ("Label(s):" >#< ppListSep "" "" ", " @nmL >-< "Row     :" >#< ppTy @ty)
+                                                        ("Label(s):" >#< ppCommas' @nmL >-< "Row     :" >#< ppTy @ty)
+  | InconsistentIntros  lhs     .  pp   =   ppMsgErr    ("Inconsistent " ++ @kind ++ " introductions for")
+                                                        ("names:" >#< ppCommas' @nmL)
 %%]
 
 %%[8

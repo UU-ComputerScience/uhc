@@ -230,7 +230,7 @@ SEM CBind
                             .   jvSrcStrict =   jvBind "Object" @nm (jvForceEval @expr.jvSrc)
   | FFI         lhs         .   jvSrc       =   jvBind "Object" @nm . maybe (jvNmPP hsnUnknown) (jvNmPP) . lookup @impEnt $ primToJavaMp
 
-ATTR CAlt CAltL CPat CPatL CPatBind CPatBindL [ jvCaseScrutinee: HsName  jvCaseResult: HsName | | ]
+ATTR AllAlt AllPat [ jvCaseScrutinee: HsName  jvCaseResult: HsName | | ]
 ATTR CPat [ | | fldNm: HsName ]
 
 SEM CPat
@@ -308,8 +308,8 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR CPatBindL CPatBind [ tagSz: Int | | ]
-ATTR CPatL CPat CAltL CAlt [ | | tagSz USE {`const`} {0}: Int ]
+ATTR AllPatBind [ tagSz: Int | | ]
+ATTR CPatL CPat AllAlt [ | | tagSz USE {`const`} {0}: Int ]
 
 SEM CPat
   | Con         loc         .   tagSz       =   ctag 0 (\_ _ _ _ -> 1) @tag

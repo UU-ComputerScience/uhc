@@ -93,18 +93,12 @@ SEM Pattern
     | Variable As
         loc             .   refname     =   @name
 %%]
-    | InfixConstructor
-        loc             .   refname     =   @constructorOperator
 
 %%[12 -1.Pattern.refname
 SEM Pattern
     | Variable As
         loc             .   refname     =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
 %%]
-    | Constructor
-        loc             .   refname     =   @name
-    | InfixConstructor
-        loc             .   refname     =   @constructorOperator
 
 %%[5
 ATTR AllConstructor [ | | conrefnames USE {++} {[]} : Names ]
@@ -160,6 +154,18 @@ SEM FieldDeclaration
         loc             .   fldrefnames =   map (hsnSetLevQual @lhs.nmLev @lhs.moduleNm) @names
 %%]
 
+%%[7.RecordPatternBinding.refname
+SEM RecordPatternBinding
+    | Pun
+        loc             .   refname     =   @name
+%%]
+
+%%[12 -7.RecordPatternBinding.refname
+SEM RecordPatternBinding
+    | Pun
+        loc             .   refname     =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Name occurrence
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -171,6 +177,7 @@ ATTR
   LeftHandSide
 %%[[7
   AllRowRecordPatternBinding
+  AllRecordPatternBinding
 %%]
     [ | | idOccDefs USE {++} {[]} : {[IdOcc]} ]
 %%]
@@ -192,12 +199,12 @@ SEM Declaration
                         .   idOccDefsCon=   [ IdOcc n IdOcc_Val | n <- @constructors.conrefnames ]
 %%[[7
                         .   idOccDefsFld=   [ IdOcc n IdOcc_Val | n <- @constructors.fldrefnames ]
-%%]
+%%]]
                         .   idOccDefs   =   [@idOccDef]
                                             ++ @idOccDefsCon
 %%[[7
                                             ++ @idOccDefsFld
-%%]
+%%]]
 %%]
 %%[9
     | Class
@@ -247,6 +254,12 @@ SEM Pattern
         loc             .   idOccDefs   =   [@idOccDef] ++ @pattern.idOccDefs
 %%]
 
+%%[7
+SEM RecordPatternBinding
+	| Pun
+		loc             .   idOccDef    =   IdOcc @refname IdOcc_Val
+%%]
+
 %%[8
 SEM Body
     | Body
@@ -275,11 +288,14 @@ SEM SimpleType
 %%[1
 SEM Pattern
     | Constructor
+%%[[7
+      Record
+%%]]
         loc         .   conNm       =   @name
 %%[[5
     | InfixConstructor
         loc         .   conNm       =   @constructorOperator
-%%]
+%%]]
 %%]
 
 %%[1

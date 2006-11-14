@@ -118,6 +118,7 @@ SEM GrExpr
                                                                         >#< maybe empty ppGrTag @mbTag
   | Update      lhs         .   pp          =   "update" >#< ppGrNm @nm >#< @val.pp
                                                                         >#< maybe empty ppGrTag @mbTag
+  | FetchUpdate lhs         .   pp          =   "fetchupdate" >#< ppGrNm @src >#< ppGrNm @dst
   | Throw       lhs         .   pp          =   "throw" >#< ppGrNm @nm
   | Catch       lhs         .   pp          =   "try" >-<
                                                 indent 2 (ppCurlysSemisV [@body.pp]) >-<
@@ -132,6 +133,7 @@ SEM GrVal
   | NodeAdapt   lhs         .   pp          =   pp_parens (ppGrNm @nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
   | Empty       lhs         .   pp          =   pp "()"
   | LitInt      lhs         .   pp          =   pp @int
+  | LitStr      lhs         .   pp          =   pp $ show @str
   | Var         lhs         .   pp          =   ppGrNm @nm
 
 SEM GrAdapt

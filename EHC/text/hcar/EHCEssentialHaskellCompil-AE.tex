@@ -2,19 +2,19 @@
 \label{ehc}
 \report{Atze Dijkstra}
 \status{active development}
-\participants{Atze Dijkstra, Doaitse Swierstra}
-\entry{nearly unchanged, pinged}% done, 06.05.2005
+\participants{Atze Dijkstra, Jeroen Fokker, Arie Middelkoop, Doaitse Swierstra}
+\entry{unchanged, unpinged}% done, 09.06.2006, remove 11/2006
 \makeheader
 
-The purpose of the EHC project is to provide a description a Haskell compiler
-which is as understandable as possible so it can be used for education as well
-as research.
+The purpose of the EHC project is to provide a description of a Haskell
+compiler which is as understandable as possible so it can be used for
+education as well as research.
 
-For its description an Attribute Grammer system (AG) is used
-as well as other formalisms allowing compact notation like parser combinators.
-For the description of type rules,
-and the generation of an AG implementation for those type rules,
-we recently started using the Ruler system (included in the EHC project).
+For its description an Attribute Grammar system (AG) is used as well as other
+formalisms allowing compact notation like parser combinators.  For the
+description of type rules, and the generation of an AG implementation for
+those type rules, we use the Ruler system~\cref{ruler}
+(included in the EHC project).
 
 The EHC project also tackles other issues:
 \begin{itemize}
@@ -44,14 +44,25 @@ higher-ranked polymorphism, partial type signatures, class system,
 explicit passing of implicit parameters (i.e. class instances),
 extensible records, kind polymorphism.
 
-Part of the description of the series of EH compilers is available as a PhD thesis,
+Part of the description of the series of EH compilers is available
+as a PhD thesis,
 which incorporates previously published material on the EHC project.
 
 The compiler is used for small student projects as well as larger
 experiments such as the incorporation of an Attribute Grammar system.
 
-We also hope to provide a Haskell frontend dealing with all Haskell
-syntactic sugar omitted from EHC.
+\textbf{New:}
+we are currently working on the following:
+\begin{itemize}
+\item
+   A Haskell98 frontend, supporting most of Haskell98, done by Atze Dijkstra.
+\item
+   A GRIN (Graph Reduction Intermediate Notation \cite{boquist99phd-optim-lazy}) like backend,
+   which allows experimenting with global program optimization.
+   This is done by Jeroen Fokker.
+\item
+   Arie Middelkoop will continue with the development of the Ruler system~\cref{ruler}. 
+\end{itemize}
 
 \FurtherReading
 \begin{compactitem}
@@ -61,10 +72,14 @@ syntactic sugar omitted from EHC.
 
 \item Attribute grammar system:
 
-\url{http://www.cs.uu.nl/groups/ST/twiki/bin/view/Center/AttributeGrammarSystem}
+\url{http://www.cs.uu.nl/wiki/HUT/AttributeGrammarSystem}
 
 \item Parser combinators:
 
-\url{http://www.cs.uu.nl/groups/ST/Software/UU_Parsing/}
-\end{compactitem}  
+\url{http://www.cs.uu.nl/wiki/HUT/ParserCombinators}
+\end{compactitem}
 \end{hcarentry}
+
+
+%% Additional reference:
+%% @book{boquist99phd-optim-lazy , eprint = {papers/boquist99phd-optim-lazy.pdf} , title = {{Code Optimisation Techniques for Lazy Functional Languages, PhD Thesis}} , author = {Boquist, Urban} , publisher = {Chalmers University of Technology} , year = {1999} , url = {http://www.cs.chalmers.se/~boquist/phd/index.html} , howpublished = {\verb|http://www.cs.chalmers.se/~boquist/phd/index.html|}}

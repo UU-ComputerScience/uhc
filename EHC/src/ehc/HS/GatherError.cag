@@ -62,18 +62,23 @@ SEM RightHandSide
 %%[1
 SEM Pattern
     | Constructor
+%%[[5
+      List
+%%]]
         loc         .   errL        =   @errIdUse ++ @patterns.errL
 %%[[5
     | InfixConstructor
         loc         .   errL        =   @errIdUse ++ @leftPattern.errL ++ @rightPattern.errL
-    | List
-        loc         .   errL        =   @errIdUse ++ @patterns.errL
     | Literal
         loc         .   errL        =   @errIdUse ++ @errIdUseEq
 %%[[9
                                         ++ @errIdUseCls
 %%]]
                                         ++ @literal.errL
+%%]]
+%%[[7
+    | Record
+        loc         .   errL        =   @errIdUse ++ @recordPatternBindings.errL
 %%]]
 %%]
 
@@ -84,6 +89,19 @@ SEM Type
       Variable NamedWildcard
 %%]]
         loc         .   errL        =   @errIdUse
+%%]
+
+%%[5
+SEM Declaration
+    | Newtype
+        loc         .   errL        =   @errNewtype
+%%[[8
+                                        ++ @errIdUseVal
+%%]]
+                                        ++ @simpletype.errL ++ @constructors.errL
+%%[[9
+                                        ++ @context.errL ++ @derivings.errL
+%%]]
 %%]
 
 %%[5
@@ -106,8 +124,25 @@ SEM Qualifier
 
 %%[7
 SEM RecordExpressionBinding
-    | RecordExpressionBinding
+    | Binding
         loc         .   errL        =   @errIdUse ++ @expression.errL
+%%]
+
+%%[7
+SEM RecordPatternBinding
+    | Binding
+        loc         .   errL        =   @errIdUse ++ @pattern.errL
+    | Pun
+        loc         .   errL        =   @errIdUse
+%%]
+
+%%[8
+SEM Declaration
+    | Data
+        loc         .   errL        =   @errIdUseVal ++ @simpletype.errL ++ @constructors.errL
+%%[[9
+                                        ++ @context.errL ++ @derivings.errL
+%%]]
 %%]
 
 %%[9

@@ -10,7 +10,7 @@
 %%[9 module {%{EH}Pred} import(Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty,EH.Util.PPUtils)
 %%]
 
-%%[9 import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Quantify},{%{EH}Core},{%{EH}Core.Pretty},{%{EH}Core.Subst},{%{EH}Core.Utils},{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Gam},{%{EH}Cnstr},{%{EH}Substitutable})
+%%[9 import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Quantify},{%{EH}Core},{%{EH}Core.Pretty},{%{EH}Core.Subst},{%{EH}Core.Utils},{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Gam},{%{EH}Cnstr},{%{EH}Substitutable})
 %%]
 
 %%[9 import({%{EH}Base.Debug})
@@ -592,15 +592,14 @@ ppHowMkEvid pn (MkEvidVar  n    ) = "var"  >#< pn n
 ppHowMkEvid pn (MkEvidCtxt n    ) = "ctxt" >#< pn n
 ppHowMkEvid pn (MkEvidSup  n o t) = "sup"  >#< pn n >#< pp o >#< ppCTag' pn t
 
-mkEvid :: HowMkEvid -> [CExpr] -> CExpr
-mkEvid h
+mkEvid :: EHCOpts -> HowMkEvid -> [CExpr] -> CExpr
+mkEvid opts h
   = case h of
       MkEvidVar  n     -> \_     -> CExpr_Var n
       MkEvidCtxt n     -> \ctxt  -> CExpr_Var n `mkCExprApp` ctxt
-      MkEvidSup  n o t -> \[sub] -> mkCExprSatSelsCase (emptyRCEEnv) (Just $ hsnSuffix n "!") sub t
+      MkEvidSup  n o t -> \[sub] -> mkCExprSatSelsCase (emptyRCEEnv opts) (Just $ hsnSuffix n "!") sub t
                                                        [(n,n,o)] Nothing (CExpr_Var n)
 %%]
-mkCExprSelCase emptyRCEEnv (Just $ hsnSuffix n "!") sub t n n (CExpr_Int o) Nothing
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Rule
@@ -624,10 +623,10 @@ instance Eq Rule where
 
 emptyRule = Rule Ty_Any head (MkEvidVar hsnUnknown) hsnUnknown (mkPrId uidStart uidStart) pcostInf []
 
-mkInstElimRule :: HsName -> PredOccId -> Int -> Ty -> Rule
-mkInstElimRule n i sz ctxtToInstTy
+mkInstElimRule :: EHCOpts -> HsName -> PredOccId -> Int -> Ty -> Rule
+mkInstElimRule opts n i sz ctxtToInstTy
   =  Rule  { rulRuleTy    	= ctxtToInstTy
-           , rulMkEvid    	= mkEvid ev
+           , rulMkEvid    	= mkEvid opts ev
            , rulMkEvidHow	= ev
            , rulNmEvid    	= n
            , rulId        	= i
@@ -719,13 +718,13 @@ peTGamDel ci n r g
      $ tgamMbUpd ci n (\_ p -> p {pegiRuleL = deleteBy (==) r . pegiRuleL $ p})
      $ g
 
-peTGamInsertKnPr :: PrfCtxtId -> HsName -> PredOccId -> Pred -> PrElimTGam -> PrElimTGam
-peTGamInsertKnPr ci n i p
-  = peTGamInsert ci (predMatchNm p) (mkInstElimRule n i 0 (mkTyPr p))
+peTGamInsertKnPr :: EHCOpts -> PrfCtxtId -> HsName -> PredOccId -> Pred -> PrElimTGam -> PrElimTGam
+peTGamInsertKnPr opts ci n i p
+  = peTGamInsert ci (predMatchNm p) (mkInstElimRule opts n i 0 (mkTyPr p))
 
-peTGamInsertKnPrL :: PrfCtxtId -> UID -> [Pred] -> PrElimTGam -> (PrElimTGam,[HsName],[PredOccId])
-peTGamInsertKnPrL ci i prL g
-  =  foldr  (\(i,p) (g,nL,idL) -> let n = poiHNm i in (peTGamInsertKnPr ci n i p g,n:nL,i:idL))
+peTGamInsertKnPrL :: EHCOpts -> PrfCtxtId -> UID -> [Pred] -> PrElimTGam -> (PrElimTGam,[HsName],[PredOccId])
+peTGamInsertKnPrL opts ci i prL g
+  =  foldr  (\(i,p) (g,nL,idL) -> let n = poiHNm i in (peTGamInsertKnPr opts ci n i p g,n:nL,i:idL))
             (g,[],[])
             (zip (map (mkPrId ci) . mkNewUIDL (length prL) $ i) prL)
 

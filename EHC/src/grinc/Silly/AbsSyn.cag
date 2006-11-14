@@ -46,7 +46,8 @@ DATA Alternative
                  body       : Statements
 
 DATA Constant
-  | Literal      value      : {Int}
+  | LiteralInt   value      : {Int}
+  | LiteralStr   value      : {String}
   | Alias        name       : {String}
 
 DATA Variable
@@ -60,8 +61,10 @@ DATA Variable
 DATA Value
   | Con          con        : Constant
   | Var          var        : Variable
+  | Alloc        size       : {Int}
   | Call         name       : String
                  args       : Values
 
 
+DERIVING * : Show
 %%]

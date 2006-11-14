@@ -1,0 +1,43 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to map names in types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12 hs module {%{EH}Ty.MapName} import({%{EH}Base.Common},{%{EH}Ty})
+%%]
+
+%%[12.WRAPPER import({Ty/AbsSyn})
+WRAPPER TyAGItf
+%%]
+
+%%[12 hs export(tyMapName)
+type MapName = HsName -> HsName
+
+tyMapName :: MapName -> Ty -> Ty
+tyMapName mapName ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf {mapName_Inh_TyAGItf = mapName})
+     in   (repl_Syn_TyAGItf t)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Map name function
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR TyAGItf AllTy [ mapName: MapName | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replacement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR AllTyAndFlds [ | | repl: SELF  ]
+ATTR TyAGItf      [ | | repl: Ty    ]
+%%]
+
+%%[12
+SEM Ty
+  | Con             lhs     .   repl        =   Ty_Con (@lhs.mapName @nm)
+%%]

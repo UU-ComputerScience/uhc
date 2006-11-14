@@ -82,6 +82,8 @@ pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
                 <|>  GrExpr_Eval    <$  pKey "eval"         <*> pGrNm
                 <|>  GrExpr_Fetch   <$  pKey "fetch"        <*> pGrNm   <*>  (Just <$> pInt `opt` Nothing)
                                                                         <*>  (Just <$> pTag `opt` Nothing)
+                <|>  GrExpr_FetchUpdate
+                					<$  pKey "fetchupdate"  <*> pGrNm   <*>  pGrNm
                 <|>  GrExpr_Update  <$  pKey "update"       <*> pGrNm   <*>  pVal
                                                                         <*>  (Just <$> pTag `opt` Nothing)
                 <|>  GrExpr_Case    <$  pKey "case"         <*> pVal    <*   pKey "of" <*> pCurly_pSemics pAlt
@@ -95,6 +97,7 @@ pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
 
 pSVal           ::   GRIParser GrVal
 pSVal           =    GrVal_Var      <$> pGrNm
+                <|>  GrVal_LitStr   <$> pString
                 <|>  GrVal_LitInt   <$> pInt
 
 pVal            ::   GRIParser GrVal

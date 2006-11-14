@@ -73,15 +73,16 @@ matchUnqProp :: FlowSem UniquenessSem -> UniquenessLattice -> UniquenessLattice 
 matchUnqProp SoftFlow a b
   = (a, b)
 matchUnqProp HardFlow a b
-  = case (a, b) of
-      z@(x, y) | x >= y -> z
-      _ -> let z = max a b in (z, b)
+  = let z = max a b in (z, z)
+-- case (a, b) of
+--       z@(x, y) | x >= y -> z
+--       _ -> let z = max a b in (z, b)
 
 compUnqProp :: AnnComp UniquenessLattice -> UniquenessLattice -> (AnnComp UniquenessLattice, UniquenessLattice)
 compUnqProp tree a
   = let as = collect tree
         a' = foldr max a as
-     in (distribute (repeat a') tree, a)
+     in (distribute (repeat a') tree, a')
 
 %%]
 

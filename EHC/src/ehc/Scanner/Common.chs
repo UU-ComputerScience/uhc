@@ -113,14 +113,15 @@ ehScanOpts
         }
   where offsideTrigs     =
             [  "let"
-%%]
-%%[5
+%%[[5
             ,  "of"
-%%]
-%%[9
+%%]]
+%%[[8
+            ,  "letstrict"
+%%]]
+%%[[9
             ,  "where"
-%%]
-%%[1
+%%]]
             ]
 %%]
 
@@ -225,7 +226,7 @@ grinScanOpts :: ScanOpts
 grinScanOpts
   =  defaultScanOpts
         {   scoKeywordsTxt      =   [ "eval", "apply"
-                                    , "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi"
+                                    , "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi", "fetchupdate"
                                     , "throw", "try", "catch", "ctags", "applymap", "evalmap"
                                     , "C", "F", "P", "A", "R", "H", "U", "W"
                                     ]
@@ -242,6 +243,7 @@ hiScanOpts
   =  hsScanOpts
         {   scoKeywordsTxt      =   [ "value", "fixity", "stamp", "uid", "rule", "var", "ctxt", "sup", "iddef"
                                     , "Value", "Pat", "Type", "Kind", "Class", "Instance", "Default", "Any", "Data"
+                                    , "True", "False"
                                     ]
                                     ++ scoKeywordsTxt hsScanOpts
                                     ++ scoKeywordsTxt tyScanOpts
@@ -584,6 +586,7 @@ tokOpStrsHS7   = [  ]
 
 %%[8
 pLABEL          ,
+    pLETSTRICT  ,
     pSAFE       ,
     pUNSAFE     ,
     pTHREADSAFE ,
@@ -599,6 +602,7 @@ pLABEL          ,
 
 %%[8
 pLABEL           = pKeyTk "label"
+pLETSTRICT       = pKeyTk "letstrict"
 pSAFE            = pKeyTk "safe"
 pUNSAFE          = pKeyTk "unsafe"
 pTHREADSAFE      = pKeyTk "threadsafe"
@@ -610,7 +614,7 @@ pJAZY            = pKeyTk "jazy"
 pIMPORT          = pKeyTk "import"
 pEXPORT          = pKeyTk "export"
 
-tokKeywStrsEH8 = [ "foreign", "import", "jazy" ]
+tokKeywStrsEH8 = [ "letstrict", "foreign", "import", "jazy" ]
 tokKeywStrsHS8 = [ "export", "label", "safe", "unsafe", "threadsafe", "ccall", "stdcall", "dynamic" ]
 %%]
 

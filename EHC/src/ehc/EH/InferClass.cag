@@ -39,7 +39,7 @@ SEM Decl
                                                              n =  maybe (uidHNm @lUniq) id @mbDefaultInstNm
                                                              r =  Rule
                                                                     { rulRuleTy     = tyQuantifyClosed @tyPrExpr.ty
-                                                                    , rulMkEvid     = mkEvid ev
+                                                                    , rulMkEvid     = mkEvid @lhs.opts ev
                                                                     , rulMkEvidHow  = ev
                                                                     , rulNmEvid     = n
                                                                     , rulId         = mkPrId @lhs.prfCtxtId @lUniq
@@ -51,7 +51,7 @@ SEM Decl
                                 .   elimRules       =   let  mkR u sub sup supNm
                                                                =  Rule
                                                                     { rulRuleTy     = tyQuantifyClosed ([sub] `mkArrow` sup)
-                                                                    , rulMkEvid     = mkEvid ev
+                                                                    , rulMkEvid     = mkEvid @lhs.opts ev
                                                                     , rulMkEvidHow  = ev
                                                                     , rulNmEvid     = hsnUnknown
                                                                     , rulId         = mkPrId @lhs.prfCtxtId u
@@ -69,7 +69,8 @@ SEM Decl
                                 .   patPrElimTGam   =   foldr (\(n,r) g -> peTGamInsert @lhs.prfCtxtId n r g) @lhs.patPrElimTGam @elimRules
                                 .   gathDataGam     =   if ehcCfgClassViaRec @lhs.opts
                                                         then @lhs.gathDataGam
-                                                        else gamAdd @dataDictNm (mkDGI (@dataDictNm `Map.singleton` emptyDataTagInfo {dtiCTag = @dataDictTag})) @lhs.gathDataGam
+                                                        else let dgi = mkDGI @dataDictNm (@dataDictNm `Map.singleton` emptyDataTagInfo {dtiCTag = @dataDictTag}) False
+                                                        	 in  gamAdd @dataDictNm dgi @lhs.gathDataGam
 %%]
                 decls           .   gathTySigGam    =   gamPushNew @lhs.gathTySigGam
                 loc             .   (lSigGam,_)     =   gamPop @decls.gathTySigGam
@@ -119,7 +120,7 @@ SEM Decl
                                 .   dataDictTag     =   mkClassCTag @dataDictNm (length @recTyExts) -- only used when `not ehcCfgClassViaRec'
                                 .   dictTag         =   if ehcCfgClassViaRec @lhs.opts then CTagRec else @dataDictTag
                                 .   tySigGam        =   assocLToGam $ assocLMapElt ValGamInfo $ @recTyExts
-                loc             .   elimRule        =   mkInstElimRule @dictNm @instId (length @ctxtPrTyFixL + length @supPrTyL) (tyQuantifyClosed @prTyFix)
+                loc             .   elimRule        =   mkInstElimRule @lhs.opts @dictNm @instId (length @ctxtPrTyFixL + length @supPrTyL) (tyQuantifyClosed @prTyFix)
                 decls           .   patValGam       =   gamPushNew @lhs.patValGam
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   tyGam           =   @lhs.tyGam
@@ -129,7 +130,7 @@ SEM Decl
   | InstanceIntro
                 loc             .   instClsNm       =   tyPredMatchNm @prExpr.ty
                                 .   dictNm          =   maybe (poiHNm @instId) id @mbNmElim
-                                .   elimRule        =   mkInstElimRule @dictNm @instId 0 @prExpr.ty
+                                .   elimRule        =   mkInstElimRule @lhs.opts @dictNm @instId 0 @prExpr.ty
                                 .   patPrElimTGam   =   peTGamInsert @lhs.prfCtxtId @instClsNm @elimRule @lhs.patPrElimTGam
                 loc             .   foPr            =   fitPredToEvid @lUniq @prExpr.ty @lhs.prIntroGam
                 expr            .   knTy            =   foTy @foPr

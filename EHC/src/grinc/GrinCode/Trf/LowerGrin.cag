@@ -61,8 +61,9 @@ maxNodeSize nl = 1 + Map.fold (\args maxSize -> max (length args) maxSize) 0 nl
 isSingleVar :: HptMap -> HsName -> Bool
 isSingleVar hptMap name = case getEnvVar hptMap (getNr name) of
                              AV_Locations _  -> True
+                             AV_Nothing      -> True
                              AV_Nodes     _  -> False
-                             AV_Nothing      -> error $ "dead variable " ++ show name ++ " node or pointer?"
+                             -- AV_Nothing      -> error $ "dead variable " ++ show name ++ " node or pointer?"
                              AV_Error     e  -> error $ "analysis errror: " ++ e
                              
 fromJust :: String -> Maybe a -> a

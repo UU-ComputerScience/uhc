@@ -363,38 +363,17 @@ ATTR AllDataConstrEq [ | tyGam: TyGam | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Data info gam
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8.dataGam
-ATTR
-  AllDecl AllExpr AllCase
-%%[[99
-  AllPatExpr
-%%]]
-    [ | gathDataGam: DataGam | ]
-ATTR AllDecl AllExpr AllCase AllPatExpr [ dataGam: DataGam | | ]
-
-SEM AGItf
-  | AGItf       expr        .   gathDataGam         =   emptyGam
-%%]
-
-%%[8.initDataGam
-SEM AGItf
-  | AGItf       expr        .   dataGam             =   @expr.gathDataGam
-%%]
-
-%%[12 -8.initDataGam
-ATTR AGItf [ dataGam: DataGam | | ]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gamma/Environment for fitting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+%%[4.Decl.fe
 SEM Decl
   | *           loc         .   fe                  =   emptyFE
+%%]
+
+%%[11 -4.Decl.fe
+SEM Decl
+  | *           loc         .   fe                  =   emptyFE { feTyGam = @lhs.tyGam }
 %%]
 
 %%[9
@@ -605,6 +584,9 @@ SEM CaseAlt
 %%[7
 SEM RecPatExpr
   | Ext Expr    patExpr     .   inclVarBind         =   True
+
+SEM DataFieldPatExpr
+  | Ext         patExpr     .   inclVarBind         =   True
 %%]
 
 %%[9
@@ -631,7 +613,7 @@ ATTR PatExpr [ | | topNm: HsName ]
 SEM PatExpr
   | Var VarAs   loc         .   topNm               =   if @nm == hsnWild then uidHNm @lUniq else @nm
   | App         lhs         .   topNm               =   hsnUnknown
-  | AppTop Con Rec CConst IConst
+  | AppTop Con Rec CConst IConst DataFields
 %%[[99
     Expr
 %%]]
@@ -735,8 +717,16 @@ SEM CaseAlt
 %%]
 
 %%[7
+ATTR DataFieldExpr [ fldFIOpts: FIOpts | | ]
+
 SEM RecExpr
   | Ext Upd     expr        .  fiOpts               =   strongFIOpts
+
+SEM Expr
+  | DataFields  loc         .  fldFIOpts            =   strongFIOpts
+
+SEM DataFieldExpr
+  | Upd         expr        .  fiOpts               =   @lhs.fldFIOpts
 
 SEM Expr
   | Rec         loc         .  fiOpts               =   strongFIOpts

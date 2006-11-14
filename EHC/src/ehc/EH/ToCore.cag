@@ -48,8 +48,8 @@ SEM AGItf
   | AGItf       lhs         .   cmodule     =   let b = if @insertMainUse then CExpr_Var hsnMain else @expr.letCBody
                                                     d = if @insertMainDef then mkCExprLet CBindPlain [CBind_Bind hsnMain @expr.letCBody] else id
                                                 in  CModule_Mod @lhs.moduleNm
-                                                        (foldr (\(c,b) e -> mkCExprLet c b e) (d b) @expr.letCBindL)
-                                                        [ (tn,Map.toList m) | (tn,dgi) <- gamToAssocL @expr.gathDataGam, let m = Map.map dtiCTag $ dgiDataTagMp dgi ]
+                                                        (foldr (\(c,b) e -> mkCExprLet c b e) (d b) (@expr.frontCBindL ++ @expr.letCBindL))
+                                                        [ (tn,Map.toList m) | (tn,dgi) <- gamToAssocL @expr.gathDataGam, not (dgiIsNewtype dgi), let m = Map.map dtiCTag $ dgiConstrTagMp dgi ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -65,7 +65,9 @@ SEM AGItf
 ATTR Expr [ | | cexpr: CExpr ]
 
 SEM Expr
-  | Let         loc         .   letCBindL   =   [(CBindFFI,@decls.ffiCBindL),(CBindRec,@decls.cbindL)]
+  | Let         loc         .   frontCBindL =   [(CBindFFI,@decls.ffiCBindL)]
+                            .   howToBind   =   if @isStrict then CBindStrict else CBindRec
+                            .   letCBindL   =   [(@howToBind,@decls.cbindL)]
                             .   cexpr       =   foldr (\(c,b) e -> mkCExprLet c b e) @body.cexpr @letCBindL
   | App AppImpred
                 loc         .   cexpr       =   CExpr_App @func.cexpr @arg.cexpr
@@ -80,9 +82,10 @@ SEM Expr
                                                 in  mkCExprLet CBindPlain bs (rceMatch @rceEnv ns as)
   | AppTop Parens TypeAs
                 loc         .   cexpr       =   @expr.cexpr
-  | Undefined   loc         .   cexpr       =   cvarUndefined
+  | Undefined   loc         .   cexpr       =   cundefined @lhs.opts
   | CaseAltFail loc         .   cexpr       =   CExpr_CaseAltFail @caseId
 %%]
+  | Let         loc         .   letCBindL   =   [(CBindFFI,@decls.ffiCBindL),(CBindRec,@decls.cbindL)]
 
 -- generated from ruler rules into EHRulerRules
   | IConst      loc         .   cexprBase   :=  CExpr_Int @int
@@ -94,9 +97,7 @@ SEM Expr
                             .   cexpr       :=  foAppCoe @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBase
 %%[9
 SEM Expr
-  | Let         loc         .   letCBindL   :=  [ (CBindFFI,@decls.ffiCBindL)
-                                                , (CBindRec,@decls.cbindL ++ (@cSubst `cSubstApp` (@prfIntroCBindL ++ @bodyPrfIntroCBindL)))
-                                                ]
+  | Let         loc         .   letCBindL   :=  [ (@howToBind,@decls.cbindL ++ (@cSubst `cSubstApp` (@prfIntroCBindL ++ @bodyPrfIntroCBindL))) ]
   | App AppImpred AppImpl
                 loc         .   cexpr       :=  CExpr_App
                                                     (coeWipeWeave @lhs.finTyCnstr @lhs.cSubst @appImplsCoeL []
@@ -109,7 +110,7 @@ SEM Expr
 
 %%[10
 SEM Expr
-  | DynVar      loc         .   cexpr       =   cvarUndefined
+  | DynVar      loc         .   cexpr       =   cundefined @lhs.opts
 %%]
 
 %%[99
@@ -120,7 +121,7 @@ SEM PatExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Records, construction
+%%% Row based records, construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -129,7 +130,7 @@ SEM Expr
                                                     then  foldl CExpr_App (CExpr_Tup CTagRec)
                                                             $ fuL2ExprL $ tyRowCanonOrder $ @recExpr.fuCExprL
                                                     else  fuMkCExpr @lUniq3 (reverse @recExpr.fuCExprL) @recExpr.recCExpr
-                loc         .   cexpr           =   @rcexpr
+                            .   cexpr           =   @rcexpr
 %%]
 
 %%[8
@@ -144,7 +145,7 @@ SEM RecExpr
   | Ext         loc         .   rcexpr          =   CExpr_TupIns @recExpr.recCExpr CTagRec @nm @offset @expr.cexpr
   | Upd         loc         .   rcexpr          =   CExpr_TupUpd @recExpr.recCExpr CTagRec @nm @offset @expr.cexpr
   | Ext Upd     lhs         .   fuCExprL        =   if @knRecHasLab
-                                                    then (@nm,@rcexpr) : @recExpr.fuCExprL
+                                                    then (@nm,(@rcexpr,Nothing)) : @recExpr.fuCExprL
                                                     else @recExpr.fuCExprL
 
 SEM Expr
@@ -182,7 +183,64 @@ SEM RecExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Records, dissection
+%%% Data based records, construction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM Expr
+  | DataFields  loc         .   dfexpr      =   let mkTup dti mkDflt con
+                                                      = foldl CExpr_App con
+                                                        . fuL2ExprL
+                                                        . listSaturateWith 0 (ctagArity (dtiCTag dti) - 1) (\(_,(_,Just o)) -> o) dflt
+                                                        . fuMap (\l mke -> let o = dtiOffsetOfFld l dti in (mke dti o,o))
+                                                      where dflt = [ (o,(f,(CExpr_TupIns (cundefined @lhs.opts) (dtiCTag dti) f (CExpr_Int o) (mkDflt f),Just o)))
+                                                                   | (f,i) <- Map.toList $ dtiFldMp dti, let o = dfiOffset i
+                                                                   ]
+                                                in  if dgiIsNewtype @dgi
+                                                    then mkCExprLet CBindPlain @dataFieldExpr.dfeCBindL
+                                                         $ head $ fuL2ExprL $ fuMap (\_ f -> (f emptyDataTagInfo 0,0)) $ @dataFieldExpr.fuCExprL
+                                                    else case @dataFieldExpr.mbConNm of
+                                                           Just conNm
+                                                             -> mkCExprLet CBindPlain @dataFieldExpr.dfeCBindL
+                                                                  (mkTup (dgiDtiOfCon conNm @dgi) (const $ cundefined @lhs.opts) @dataFieldExpr.dfeCExpr @dataFieldExpr.fuCExprL)
+                                                           _ -> mkCExprLet CBindPlain (err ++  @dataFieldExpr.dfeCBindL)
+                                                                  (mkCExprSatSelsCases (@rceEnv {rceCaseCont = CExpr_Var en}) (Just $ mkHNm @lUniq) @dataFieldExpr.dfeCExpr alts)
+                                                             where alts = [ ( dtiCTag dti
+                                                                            , [ (f,f,dfiOffset i) | (f,i) <- Map.toList $ dtiFldMp dti ]
+                                                                            , Nothing
+                                                                            , mkTup dti CExpr_Var (CExpr_Tup $ dtiCTag dti) @dataFieldExpr.fuCExprL
+                                                                            )
+                                                                          | dti <- @dtiInFldL
+                                                                          ]
+                                                                   err = [CBind_Bind en (cerror @lhs.opts ("has no field update '" ++ show @fldL ++ "'"))]
+                                                                   en = HNm "_upd_error"
+                            .   cexpr       =   @dfexpr
+%%]
+
+%%[8
+ATTR
+  DataFieldExpr
+    [ | | dfeCExpr: CExpr
+          dfeCBindL: CBindL
+          fuCExprL: {FieldUpdateL (DataTagInfo -> Int -> CExpr)}
+    ]
+
+SEM DataFieldExpr
+  | Upd         loc         .   fldExprNm   =   mkHNm @lUniq
+                lhs         .   fuCExprL    =   let mke dti o = CExpr_TupIns @dataFieldExpr.dfeCExpr (dtiCTag dti) @nm (CExpr_Int o) (CExpr_Var @fldExprNm)
+                                                in  (@nm,(mke,Nothing)) : @dataFieldExpr.fuCExprL
+                            .   dfeCBindL   =   CBind_Bind @fldExprNm @expr.cexpr : @dataFieldExpr.dfeCBindL
+  | Con         lhs         .   dfeCExpr    =   CExpr_Tup (dtiCTag @dti)
+                            .   fuCExprL    =   []
+                            .   dfeCBindL   =   []
+  | Expr        loc         .   dfeCExpr    =   @expr.cexpr
+                            .   fuCExprL    =   []
+                            .   dfeCBindL   =   []
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Row based records, dissection
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -198,81 +256,131 @@ SEM Expr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data constr wrapper
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllDataConstr [ dataAltTy: Ty | | ]
+
+SEM DataConstr
+  | Constr      lhs         .   cbindL      =   let len = length @fields.fldTyL
+                                                    nms = map (\i -> HNm ("x" ++ show i)) [1..len]
+                                                in  if @lhs.isNewtype
+                                                    then [ CBind_Bind @conNm (CExpr_Var $ ehbnId $ ehcOptBuiltinNames @lhs.opts) ]
+                                                    else [ CBind_Bind @conNm
+                                                             (mkCExprLam nms
+                                                               (mkCExprApp (CExpr_Tup @ctag)
+                                                                 (map CExpr_Var nms)))
+                                                         ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data field selector
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM Decl
+  | Data        loc         .   fldSelCBindL=   let (xn1:xn2:_) = hsnLclSupplyL
+                                                    tgSels f i = [ (t,[(f,f,o)],Nothing,CExpr_Var f) | (t,o) <- Map.toList $ dficInTagMp i ]
+                                                in  if @isNewtype
+                                                    then [ [ CBind_Bind f (CExpr_Var $ ehbnId $ ehcOptBuiltinNames @lhs.opts)
+                                                           | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
+                                                         ] ]
+                                                    else [ [ CBind_Bind f
+                                                               (mkCExprLam [xn1]
+                                                                 (mkCExprSatSelsCases (@rceEnv {rceCaseCont = CExpr_Var en}) (Just xn2) (CExpr_Var xn1) (tgSels f i)))
+                                                           , CBind_Bind en (cerror @lhs.opts ("has no field selection '" ++ show f ++ "'"))
+                                                           ]
+                                                         | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
+                                                         , let en = hsnSuffix f "_datafield_sel_error"
+                                                         ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data: all bindings
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM Decl
+  | Data        lhs         .   cbindL      =   concat @fldSelCBindL ++ @constrs.cbindL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pat for use in case alt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR PatExpr [ | | cpat: CPat ]
-
 SEM PatExpr
-  | Var VarAs AppTop Rec Con IConst CConst SConst FConst
+  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst FConst
 %%[[99
     Expr
 %%]]
                 loc         .   cpNm        =   maybe (CPatNmUniq @topNm) CPatNmOrig @mbTopNm
-  | Var         lhs         .   cpat        =   CPat_Var @cpNm
-  | VarAs       lhs         .   cpat        =   case @patExpr.cpat of
-                                                    CPat_Con  _ t r ps  -> CPat_Con  @cpNm t r ps
-                                                    CPat_Int  _ i       -> CPat_Int  @cpNm i
-                                                    CPat_Char _ c       -> CPat_Char @cpNm c
-                                                    _                   -> @patExpr.cpat
+%%]
+
+%%[8
+SEM PatExpr
   | AppTop Con  loc         .   finResTy    =   @lhs.finTyCnstr |=> @ty_r_
                             .   tag         =   let  (c,_)  = tyAppFunArgs @finResTy
                                                      dgi    = panicJust ("PatExpr.{AppTop,Con}.dgi:" ++ show (tyConNm c))
                                                               $ dataGamLookup (tyConNm c) $ @lhs.dataGam
                                                 in   panicJust "PatExpr.{AppTop,Con}.tag"
-                                                     $ fmap dtiCTag $ Map.lookup @appFunNm $ dgiDataTagMp dgi
+                                                     $ fmap dtiCTag $ Map.lookup @appFunNm $ dgiConstrTagMp dgi
                             .   rest        =   CPatRest_Empty
   | Rec         loc         .   tag         =   CTagRec
                             .   rest        =   @recPatExpr.patCRest
-  | AppTop Rec  loc         .   cpatBinds   =   [ (CPatBind_Bind n (CExpr_Int o) n p,Just o) | (o,(n,(_,p))) <- zip [0..] $ tyRowCanonOrder $ reverse $ @fsCPatL ]
-  | AppTop      lhs         .   cpat        =   CPat_Con @cpNm @tag @rest (map fst @cpatBinds)
-  | Con         lhs         .   cpat        =   CPat_Con @cpNm @tag CPatRest_Empty []
-  | Rec         lhs         .   cpat        =   case @rest of
+  | DataFields  loc         .   tag         =   dtiCTag @dataFieldPatExpr.dti
+                            .   rest        =   @dataFieldPatExpr.patCRest
+%%]
+
+%%[8 hs
+fsL2PatOffsetL :: FieldSplitL -> AssocL CPatBind (Maybe Int)
+fsL2PatOffsetL l = [ (CPatBind_Bind n oe n p,Just oi) | (o,(foff,p)) <- zip [0..] l, let (oi,oe) = foffMkOff foff o, let n = foffLabel foff ]
+%%]
+
+%%[8
+SEM PatExpr
+  | AppTop      loc         .   cpatBinds   =   fsL2PatOffsetL $ reverse                   $ @fsCPatL
+  | Rec         loc         .   cpatBinds   =   fsL2PatOffsetL $ tyRowCanonOrderBy compare $ @fsCPatL
+  | DataFields  loc         .   (cpatBindss,cpatBindsNonSat)
+                                            =   let fsL = reverse @fsCPatL
+                                                    grp = groupByOn (\o1 o2 -> (foffOffset o1 `compare` foffOffset o2) /= GT) fst
+                                                    max = ctagArity @tag - 1
+                                                    sat = listSaturateWith 0 max (foffOffset . fst)
+                                                            (zipWith (\o n -> (o,(FldKnownOffset n o,CPat_Var (CPatNmOrig n)))) [0..max] hsnLclSupplyL)
+                                                in  ( map (fsL2PatOffsetL . sat) $ grp fsL
+                                                    , fsL2PatOffsetL fsL
+                                                    )
+%%]
+
+%%[8
+ATTR PatExpr [ | | cpat: CPat ]
+
+SEM PatExpr
+  | IConst      loc         .   cpat        =   CPat_Int @cpNm @int
+  | CConst      loc         .   cpat        =   CPat_Char @cpNm @char
+  | FConst      loc         .   cpat        =   CPat_Int @cpNm (-1) -- for now
+  | SConst      loc         .   cpat        =   CPat_Int @cpNm (-1) -- for now
+  | Var         loc         .   cpat        =   CPat_Var @cpNm
+  | VarAs       loc         .   cpat        =   case @patExpr.cpat of
+                                                    CPat_Con  _ t bs  -> CPat_Con  @cpNm t bs
+                                                    CPat_Int  _ i     -> CPat_Int  @cpNm i
+                                                    CPat_Char _ c     -> CPat_Char @cpNm c
+                                                    _                 -> @patExpr.cpat
+  | Con         loc         .   cpat        =   CPat_Con @cpNm @tag (CPatConBind_One CPatRest_Empty [])
+  | AppTop      loc         .   cpat        =   CPat_Con @cpNm @tag (CPatConBind_One @rest (map fst @cpatBinds))
+  | Rec         loc         .   cpat        =   case @rest of
                                                     CPatRest_Empty
-                                                      ->  CPat_Con @cpNm @tag @rest (map fst @cpatBinds)
+                                                      ->  CPat_Con @cpNm @tag (CPatConBind_One @rest (map fst @cpatBinds))
                                                     CPatRest_Var r
-                                                      ->  CPat_Con @cpNm @tag @rest pbL
-                                                          where  pbL = rpbReorder . map (\(n,(o,p)) -> CPatBind_Bind n o n p) . reverse $ @fsCPatL
-  | IConst      lhs         .   cpat        =   CPat_Int @cpNm @int
-  | CConst      lhs         .   cpat        =   CPat_Char @cpNm @char
-  | FConst      lhs         .   cpat        =   CPat_Int @cpNm (-1) -- for now
-  | SConst      lhs         .   cpat        =   CPat_Int @cpNm (-1) -- for now
+                                                      ->  CPat_Con @cpNm @tag (CPatConBind_One @rest pbL)
+                                                          where  pbL = map fst $ fsL2PatOffsetL $ fsLReorder $ reverse $ @fsCPatL
+  | DataFields  loc         .   cpat        =   CPat_Con @cpNm @tag (cpatConBindUnFlatten $ map (CPatConBind_One @rest . map fst) $ @cpatBindss)
 %%]
 
 %%[99
 SEM PatExpr
-  | Expr        lhs         .   cpat        =   CPat_BoolExpr @cpNm @cexpr
-%%]
-
-%%[8 hs
-type FieldSplitL = AssocL HsName (CExpr,CPat)
-
-rpbReorder :: CPatBindL -> CPatBindL
-rpbReorder pbL
-  =  let  (pbL',_)
-            =  foldr
-                 (\(CPatBind_Bind l o n p) (pbL,exts) 
-                     ->  let  mkOff lbl exts o
-                                =  let nrSmaller = length . filter (\e -> rowLabCmp e lbl == LT) $ exts
-                                   in  o `mkCExprAddInt` nrSmaller
-                         in   ((CPatBind_Bind l (mkOff l exts o) n p):pbL,l:exts)
-                 )
-                 ([],[])
-            $  pbL
-          cmpPB (CPatBind_Bind l1 _ _ _)  (CPatBind_Bind l2 _ _ _) = rowLabCmp l1 l2
-     in   sortBy cmpPB pbL'
-
-patBindLOffset :: CPatBindL -> (CPatBindL,[CBindL])
-patBindLOffset
-  =  unzip
-  .  map
-       (\b@(CPatBind_Bind l o n p@(CPat_Var pn))
-           ->  let  offNm = hsnPrefix "off_" . cpatNmNm $ pn
-               in   case o of
-                      CExpr_Int _  -> (b,[])
-                      _            -> (CPatBind_Bind l (CExpr_Var offNm) n p,[CBind_Bind offNm o])
-       )
+  | Expr        loc         .   cpat        =   CPat_BoolExpr @cpNm @cexpr
 %%]
 
 %%[8
@@ -282,6 +390,10 @@ SEM RecPatExpr
   | Empty       lhs         .   patCRest    =   CPatRest_Empty
   | Ext         lhs         .   patCRest    =   @recPatExpr.patCRest
 
+SEM DataFieldPatExpr
+  | Con         lhs         .   patCRest    =   CPatRest_Empty
+  | Ext         lhs         .   patCRest    =   @dataFieldPatExpr.patCRest
+
 SEM PatExpr
   | Var         lhs         .   patCRest    =   CPatRest_Var @nm
   | * - Var     lhs         .   patCRest    =   CPatRest_Empty
@@ -290,20 +402,29 @@ SEM PatExpr
 %%[8
 ATTR AllPatExpr [ | | fsCPatL: FieldSplitL ]
 
+SEM DataFieldPatExpr
+  | Con         lhs         .   fsCPatL     =   []
+  | Ext         lhs         .   fsCPatL     =   (FldKnownOffset @nm @ioffset,@patExpr.cpat) : @dataFieldPatExpr.fsCPatL
+
 SEM RecPatExpr
   | Empty       lhs         .   fsCPatL     =   []
-  | Ext         lhs         .   fsCPatL     =   (@nm,(@offset,@patExpr.cpat)) : @recPatExpr.fsCPatL
+  | Ext         lhs         .   fsCPatL     =   (FldComputeOffset @nm @offset,@patExpr.cpat) : @recPatExpr.fsCPatL
 
 SEM PatExpr
-  | App         lhs         .   fsCPatL     =   (hsnUnknown,(CExpr_Int 0,@arg.cpat)) : @func.fsCPatL
+  | App         lhs         .   fsCPatL     =   (FldImplicitOffset,@arg.cpat) : @func.fsCPatL
   | AppTop      loc         .   fsCPatL     =   @patExpr.fsCPatL
   | Rec         loc         .   fsCPatL     =   @recPatExpr.fsCPatL
+  | DataFields  loc         .   fsCPatL     =   @dataFieldPatExpr.fsCPatL
   | Con         loc         .   fsCPatL     =   []
   | * - App Con Rec
                 lhs         .   fsCPatL     =   []
 %%]
 
 %%[8
+SEM DataFieldPatExpr
+  | Ext         loc         .   ioffset     =   dfiOffset $ panicJust "DataFieldPatExpr.Ext.ioffset" $ Map.lookup @nm $ dtiFldMp @dataFieldPatExpr.dti
+                            .   offset      =   CExpr_Int @ioffset
+
 SEM RecPatExpr
   | Ext         loc         .   offset      =   CExpr_Int (tyRecOffset @nm (@lhs.finTyCnstr |=> @recPatExpr.ty))
 %%]
@@ -347,17 +468,22 @@ SEM Decl
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Let bindings + body separately
+%%% Let bindings + front bindings + body separately
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Front bindings are inserted before the other bindings, though only on top level.
+Meant for global defs like FFI
+
 %%[8
-ATTR Expr [ | | letCBindL: {[(CBindCateg,CBindL)]}  letCBody: CExpr ]
+ATTR Expr [ | | letCBindL: {[(CBindCateg,CBindL)]}  frontCBindL: {[(CBindCateg,CBindL)]}  letCBody: CExpr ]
 
 SEM Expr
   | Let         lhs         .   letCBody        =   @body.letCBody
                             .   letCBindL       =   @letCBindL ++ @body.letCBindL
+                            .   frontCBindL     =   @frontCBindL ++ @body.frontCBindL
   | * - Let     lhs         .   letCBody        =   @cexpr
                             .   letCBindL       =   []
+                            .   frontCBindL     =   []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -375,20 +501,18 @@ SEM Decl
                                                      vx = CExpr_Var x
                                                      xStrict = hsnSuffix x "!"
                                                      vxStrict = CExpr_Var xStrict
-                                                     mkSel n = mkCExprSatSelsCase (emptyRCEEnv {rceDataGam = @lhs.dataGam}) (Just xStrict) vx @dictTag
+                                                     mkSel n = mkCExprSatSelsCase ((emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}) (Just xStrict) vx @dictTag
                                                                                   [(n,n,cdictOffset n @clsTyRec)] Nothing (CExpr_Var n)
                                                      dDflt
                                                        = [CBind_Bind nDflt (mkCExprLam [nD] d)] 
                                                        where nDflt = rulNmEvid . pigiRule $ @pigi
-                                                             d = mkCExprApp (CExpr_Tup @dictTag) (replicate (length $ snd $ tyRecExts $ @clsTyRec) cvarUndefined)
+                                                             d = mkCExprApp (CExpr_Tup @dictTag) (replicate (length $ snd $ tyRecExts $ @clsTyRec) (cundefined @lhs.opts))
                                                              nD = hsnPrefix "_self_" nDflt
                                                 in   (maybe dDflt (const []) @mbDefaultInstNm)
                                                      ++ [ CBind_Bind n (x `CExpr_Lam` (mkSel n `CExpr_App` vx))
                                                         | (n,_) <- @clsFldL
                                                         ]
 %%]
-                                                     mkSel n = mkCExprSelCase (emptyRCEEnv {rceDataGam = @lhs.dataGam}) (Just xStrict) vx @dictTag
-                                                                              n n (CExpr_Int $ cdictOffset n @clsTyRec) Nothing
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instance
@@ -403,7 +527,7 @@ SEM Decl
                                                        where mkSet d n v = CExpr_TupUpd d @dictTag n (CExpr_Int $ off n) v
                                                      mkSetFlds2 d bs
                                                        = mkCExprSatSelsCaseUpd env Nothing d @dictTag (length @recTyExts) offValL Nothing
-                                                       where env = emptyRCEEnv {rceDataGam = @lhs.dataGam}
+                                                       where env = (emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}
                                                              offValL = [ (off n,v) | (CBind_Bind n v) <- bs ]
                                                      mkSetFlds = if ehcCfgClassViaRec @lhs.opts then mkSetFlds1 else mkSetFlds2
                                                      d = case @instVariant of
@@ -430,7 +554,7 @@ SEM Decl
                                                                           (mkCExprLetRec
                                                                               [CBind_Bind nR
                                                                                   (mkCExprApp (CExpr_Tup @dictTag)
-                                                                                      (map (\(n,_) -> maybe cvarUndefined id (lookupBnd n)) $ tyRowCanonOrder $ @recTyExts))]
+                                                                                      (map (\(n,_) -> maybe (cundefined @lhs.opts) id (lookupBnd n)) $ tyRowCanonOrder $ @recTyExts))]
                                                                               (CExpr_Var nR))
                                                                    lookupBnd
                                                                      = \n -> lookup n b
@@ -445,12 +569,23 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+%%]
+ATTR AllCase [ | | mkAlts: MkAlts ]
+
+SEM CaseAlt
+  | Pat         lhs         .   mkAlts      =   \n -> [@patExpr.mkAlt n @expr.cexpr]
+
+SEM CaseAlts
+  | Nil         lhs         .   mkAlts      =   \n -> []
+  | Cons        lhs         .   mkAlts      =   \n -> @hd.mkAlts n ++ @tl.mkAlts n
+
+%%[8
 ATTR CaseAlt [ | | calt: CAlt  calt': CAlt ]
 ATTR CaseAlts [ | | caltL: CAltL  caltL': CAltL ]
 
 SEM CaseAlt
   | Pat         lhs         .   calt        =   CAlt_Alt [@patExpr.cpat] @expr.cexpr
-                            .   calt'       =   CAlt_Alt [ p | (_,(_,p)) <- reverse @patExpr.fsCPatL ] @expr.cexpr
+                            .   calt'       =   CAlt_Alt (fsL2PatL $ reverse @patExpr.fsCPatL) @expr.cexpr
 
 SEM CaseAlts
   | Nil         lhs         .   caltL       =   []
@@ -463,28 +598,45 @@ SEM CaseAlts
 %%% Pat for use in (recursive) let bindings (lazy unpacking)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[8 hs
+cpatBindL2CBindL :: RCEEnv -> Bool -> HsName -> CTag -> MbCPatRest -> AssocL CPatBind (Maybe Int) -> [CBind]
+cpatBindL2CBindL env hasSub parNm ct rest pbL 
+  = concat
+    $  map  (\(CPatBind_Bind l o _ p,mbOff)
+                -> let  b n = [CBind_Bind n (mkc n mbOff)]
+                        pn  = parNm
+                        pn' = hsnSuffix pn "!"
+                        mkc n (Just o) = mkCExprSatSelCase env (Just pn') (CExpr_Var pn) ct n l o rest
+                        mkc n Nothing  = mkCExprSelCase    env (Just pn') (CExpr_Var pn) ct n l o rest
+                   in   case cpatVarNm p of
+                            CPatNmOrig n           -> b n
+                            CPatNmUniq n | hasSub  -> b n
+                            _                      -> []
+            )
+    $  pbL
+%%]
+
 %%[8
 ATTR AllPatExpr [ | | cbindL USE {++} {[]}: CBindL ]
+
+SEM PatExpr
+  | AppTop Rec  loc         .   cbindL      =   cpatBindL2CBindL @rceEnv (not $ null @cbindLSub) @lhs.ceParentNm @tag (Just (@rest,length @fsCPatL)) @cpatBinds 
+  | DataFields  loc         .   cbindL      =   cpatBindL2CBindL @rceEnv (not $ null @cbindLSub) @lhs.ceParentNm @tag (Just (@rest,ctagArity @tag)) @cpatBindsNonSat 
+  | AppTop Rec DataFields
+                lhs         .   cbindL      =   @cbindL ++ @cbindLSub
+%%]
+
+%%[8
+SEM PatExpr
+  | AppTop      loc         .   cbindLSub   =   @patExpr.cbindL
+  | Rec         loc         .   cbindLSub   =   @recPatExpr.cbindL
+  | DataFields  loc         .   cbindLSub   =   @dataFieldPatExpr.cbindL
+%%]
+
+%%[8
 ATTR AllPatExpr [ ceParentNm: HsName | | ]
 
 SEM PatExpr
-  | AppTop Rec  loc         .   cbindL      =   concat
-                                                .  map  (\(CPatBind_Bind l o _ p,mbOff)
-                                                            -> let  b n = [CBind_Bind n (mkc n mbOff)]
-                                                                    pn  = @lhs.ceParentNm
-                                                                    pn' = hsnSuffix pn "!"
-                                                                    mkc n (Just o) = mkCExprSatSelCase @rceEnv (Just pn') (CExpr_Var pn) @tag n l o r
-                                                                    mkc n Nothing  = mkCExprSelCase    @rceEnv (Just pn') (CExpr_Var pn) @tag n l o r
-                                                                    r = Just (@rest,length @fsCPatL)
-                                                               in   case cpatVarNm p of
-                                                                        CPatNmOrig n                          -> b n
-                                                                        CPatNmUniq n | not (null @cbindLSub)  -> b n
-                                                                        _                                     -> []
-                                                        )
-                                                $  @cpatBinds
-                lhs         .   cbindL      =   @cbindL ++ @cbindLSub
-  | AppTop      loc         .   cbindLSub   =   @patExpr.cbindL
-  | Rec         loc         .   cbindLSub   =   @recPatExpr.cbindL
   | App         arg         .   ceParentNm  =   cpatNmNm (cpatVarNm @arg.cpat)
 
 SEM RecPatExpr
@@ -510,70 +662,94 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
+type RCEAltL = [CAlt]
+%%]
+
+%%[8 hs
 data RCESplitCateg
-  = RCESplitVar | RCESplitCon | RCESplitConst
+  = RCESplitVar | RCESplitCon | RCESplitConMany | RCESplitConst
 %%[[99
   | RCESplitBoolExpr
 %%]]
   deriving Eq
 
-rceSplit :: (CAlt -> RCESplitCateg) -> CAltL -> [CAltL]
+rceSplitMustBeOnItsOwn :: RCESplitCateg -> Bool
+rceSplitMustBeOnItsOwn RCESplitConMany = True
+rceSplitMustBeOnItsOwn _               = False
+%%]
+
+%%[8 hs
+rceSplit :: (CAlt -> RCESplitCateg) -> RCEAltL -> [RCEAltL]
 rceSplit f []   = []
 rceSplit f [x]  = [[x]]
 rceSplit f (x:xs@(x':_))
-  | f x == f x'  =  let  (z:zs) = rceSplit f xs
-                    in   (x:z) : zs
-  | otherwise    =  [x] : rceSplit f xs
+  | xcateg == f x'
+    && not (rceSplitMustBeOnItsOwn xcateg)
+      = let (z:zs) = rceSplit f xs
+        in  (x:z) : zs
+  | otherwise
+      = [x] : rceSplit f xs
+  where xcateg = f x
 
-rceRebinds :: HsName -> CAltL -> CBindL
+rceRebinds :: HsName -> RCEAltL -> CBindL
 rceRebinds nm alts = [ CBind_Bind n (CExpr_Var nm) | (CPatNmOrig n) <- caltLPatNms alts, n /= nm ]
 
-rceMatchVar :: RCEEnv ->  [HsName] -> CAltL -> CExpr
+rceMatchVar :: RCEEnv ->  [HsName] -> RCEAltL -> CExpr
 rceMatchVar env (arg:args') alts
-  =  let  remMatch  = rceMatch env args' [CAlt_Alt remPats e | (CAlt_Alt (CPat_Var n : remPats) e) <- alts]
-     in   mkCExprLet CBindPlain (rceRebinds arg alts) remMatch
+  = mkCExprLet CBindPlain (rceRebinds arg alts) remMatch
+  where remMatch  = rceMatch env args' [CAlt_Alt remPats e | (CAlt_Alt (CPat_Var n : remPats) e) <- alts]
 
-rceMkAltAndSubAlts :: RCEEnv -> [HsName] -> CAltL -> CAlt
+rceMkAltAndSubAlts :: RCEEnv -> [HsName] -> RCEAltL -> CAlt
 rceMkAltAndSubAlts env (arg:args) alts@(alt:_)
-  =  let  (subAlts,subAltSubNms)
-            =  unzip
-                 [ (CAlt_Alt (pats ++ ps) e, map (cpatNmNm . cpatVarNm) pats)
-                 | (CAlt_Alt (CPat_Con _ _ _ pbinds : ps) e) <- alts,
-                   let pats = [ p | (CPatBind_Bind _ _ _ p) <- pbinds ]
-                 ]
-          subMatch
-            =  rceMatch env (head subAltSubNms ++ args) subAlts
-          altPat
-            =  case alt of
-                 CAlt_Alt (CPat_Con n t r pbL : _) _
-                   ->  CPat_Con n t r pbL'
-                       where  pbL' = [ CPatBind_Bind l o n (CPat_Var (cpatVarNm p))| (CPatBind_Bind l o n p) <- pbL ]
-     in   CAlt_Alt [altPat] (mkCExprLet CBindPlain (rceRebinds arg alts) subMatch)
+  = CAlt_Alt [altPat] (mkCExprLet CBindPlain (rceRebinds arg alts) subMatch)
+  where (subAlts,subAltSubNms)
+          =  unzip
+               [ (CAlt_Alt (pats ++ ps) e, map (cpatNmNm . cpatVarNm) pats)
+               | (CAlt_Alt (CPat_Con _ _ (CPatConBind_One _ pbinds) : ps) e) <- alts
+               , let pats = [ p | (CPatBind_Bind _ _ _ p) <- pbinds ]
+               ]
+        subMatch
+          =  rceMatch env (head subAltSubNms ++ args) subAlts
+        altPat
+          =  case alt of
+               CAlt_Alt (CPat_Con n t (CPatConBind_One r pbL) : _) _
+                 ->  CPat_Con n t (CPatConBind_One r pbL')
+                     where  pbL' = [ CPatBind_Bind l o n (CPat_Var (cpatVarNm p)) | (CPatBind_Bind l o n p) <- pbL ]
 
-rceMatchCon :: RCEEnv -> [HsName] -> CAltL -> CExpr
+rceMatchCon :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchCon env (arg:args) alts
-  =  let  arg'   =  hsnSuffix arg "!"
-          alts'  =  map (rceMkAltAndSubAlts env (arg':args)) . groupSortOn (ctagTag . caltTag)
-                    $ filter (not . null . caltPatL)
-                    $ alts
-     in   mkCExprStrictSatCase env (Just arg') (CExpr_Var arg) alts'
+  = mkCExprStrictSatCase env (Just arg') (CExpr_Var arg) alts'
+  where arg'   =  hsnSuffix arg "!"
+        alts'  =  map (rceMkAltAndSubAlts env (arg':args))
+                  $ groupSortOn (ctagTag . caltTag)
+                  $ filter (not . null . caltPatL)
+                  $ alts
 
-rceMatchConst :: RCEEnv -> [HsName] -> CAltL -> CExpr
+rceMatchConMany :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
+rceMatchConMany env (arg:args) [CAlt_Alt (CPat_Con n t (CPatConBind_Many bs) : ps) e]
+  = mkCExprStrictIn arg' (CExpr_Var arg) (\_ -> foldr (\mka e -> rceMatch env [arg'] (mka e)) (rceMatch env (arg':args) altslast) altsinit)
+  where arg' = hsnSuffix arg "!"
+        altsinit = [ \e -> [CAlt_Alt (CPat_Con n t b     : []) e] | b <- bsinit ]
+        altslast =         [CAlt_Alt (CPat_Con n t blast : ps) e]
+        (bsinit,blast) = panicJust "rceMatchConMany" $ initlast bs
+
+rceMatchConst :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchConst env (arg:args) alts
   = mkCExprStrictIn arg' (CExpr_Var arg) (\n -> mkCExprLet CBindPlain (rceRebinds arg alts') (CExpr_Case n alts' (rceCaseCont env)))
   where arg' = hsnSuffix arg "!"
         alts' = [ CAlt_Alt p (cSubstCaseAltFail (rceCaseFailSubst env) e) | (CAlt_Alt p e) <- alts ]
 
-rceMatchSplits :: RCEEnv -> [HsName] -> CAltL -> CExpr
+rceMatchSplits :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchSplits env args alts@(alt:_)
   |  caltIsVar      alt  = rceMatchVar      env args alts
   |  caltIsConst    alt  = rceMatchConst    env args alts
 %%[[99
   |  caltIsBoolExpr alt  = rceMatchBoolExpr env args alts
 %%]]
+  |  caltIsConMany  alt  = rceMatchConMany  env args alts
   |  otherwise           = rceMatchCon      env args alts
 
-rceMatch :: RCEEnv -> [HsName] -> CAltL -> CExpr
+rceMatch :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatch env [] []    =  rceCaseCont env
 rceMatch env [] alts  
   =  case [ e | (CAlt_Alt [] e) <- alts ] of
@@ -596,6 +772,7 @@ rceMatch env args alts
 %%[[99
                         else if caltIsBoolExpr  a  then RCESplitBoolExpr
 %%]]
+                        else if caltIsConMany   a  then RCESplitConMany
                                                    else RCESplitCon
                  ) alts)
 
@@ -608,25 +785,8 @@ rceUpdEnv e env
 
 %%[99 hs
 -- for now
-rceMatchBoolExpr :: RCEEnv -> [HsName] -> CAltL -> CExpr
-rceMatchBoolExpr env (arg:args) alts = cvarUndefined
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Data
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-ATTR AllDataConstr [ dataAltTy: Ty | | ]
-
-SEM DataConstr
-  | Constr      lhs         .   cbindL      =   let  len = length @fields.tyL
-                                                     nms = map (\i -> HNm ("x" ++ show i)) [1..len]
-                                                in   [CBind_Bind @conNm
-                                                        (mkCExprLam nms
-                                                          (mkCExprApp (CExpr_Tup @ctag)
-                                                            (map CExpr_Var nms)))
-                                                     ]
+rceMatchBoolExpr :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
+rceMatchBoolExpr env (arg:args) alts = rceCaseCont env
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -635,18 +795,25 @@ SEM DataConstr
 
 %%[8
 SEM Expr
-  | Lam Sel
+  | Lam Sel DataFields
 %%[[9
     LamImpl
 %%]]
-                loc         .   rceEnv      =   emptyRCEEnv { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
-  | Case        loc         .   rceEnv      =   emptyRCEEnv { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam
+                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+  | Case        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts)
+                                                            { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam
                                                             , rceCaseId = maybe uidStart id @mbCaseId
                                                             }
 %%]
 
 %%[8
 SEM PatExpr
-  | AppTop Rec  loc         .   rceEnv      =   emptyRCEEnv { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+  | AppTop Rec DataFields
+                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+%%]
+
+%%[8
+SEM Decl
+  | Data        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
 %%]
 

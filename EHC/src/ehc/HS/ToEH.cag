@@ -428,25 +428,17 @@ SEM Expression
 %%]
 %%[7
     | RecordConstruction
-        loc         .   eh          =   rngLift @range EH.Expr_Con @refname
+        loc         .   eh          =   rngLift @range EH.Expr_DataFields $ foldl (flip ($)) (rngLift @range EH.DataFieldExpr_Con @refname) @recordExpressionBindings.eh
     | RecordUpdate
-        loc         .   eh          =   @expression.eh
+        loc         .   eh          =   case @recordExpressionBindings.eh of
+                                          b@(_:_) -> rngLift @range EH.Expr_DataFields $ foldl (flip ($)) (rngLift @range EH.DataFieldExpr_Expr @expression.eh) b
+                                          _       -> @expression.eh
     | RowRecordUpdate
         loc         .   eh          =   foldl (flip ($)) @expression.eh @rowRecordExpressionUpdates.eh
     | RowRecordEmpty
         loc         .   eh          =   rngLift @range EH.Expr_Rec (rngLift @range EH.RecExpr_Empty)
     | RowRecordSelect
         loc         .   eh          =   rngLift @range EH.Expr_Sel @expression.eh @name
-%%]
-%%[77
-    | RecordConstruction
-        loc         .   eh          =   rngLift @range XX
-        name                     : Name
-        recordExpressionBindings : RecordExpressionBindings
-    | RecordUpdate
-        loc         .   eh          =   rngLift @range XX
-        expression               : Expression
-        recordExpressionBindings : RecordExpressionBindings
 %%]
 %%[9
     | ImplicitApplication
@@ -556,29 +548,17 @@ SEM GuardedExpression -- ToDo: or _Guard?
 %%][8
     | GuardedExpression
         lhs         .   eh          =   \e -> EH.mkIf'' (@typerefname : @valrefnames) @range @guard.eh @expression.eh e Nothing -- (Just @lhs.caseId)
-%%]
+%%]]
 %%]
 
 %%[7
-ATTR RecordExpressionBindings [ | | eh USE {:} {[]}: {[()]} ]
+ATTR RecordExpressionBindings [ | | eh USE {:} {[]}: {[EH.DataFieldExpr -> EH.DataFieldExpr]} ]
 
-ATTR RecordExpressionBinding [ | | eh: {()} ]
-
-SEM RecordExpressionBinding
-    | RecordExpressionBinding -- ToDo: or _Binding?
-        lhs         .   eh          =   ()
-%%]
-
-%%[77
-ATTR RecordExpressionBindings [ | | eh USE {:} {[]}: {[EH.RecordExpressionBinding]} ]
-
-ATTR RecordExpressionBinding [ | | eh: {EH.RecordExpressionBinding} ]
+ATTR RecordExpressionBinding [ | | eh: {EH.DataFieldExpr -> EH.DataFieldExpr} ]
 
 SEM RecordExpressionBinding
-    | RecordExpressionBinding -- ToDo: or _Binding?
-        lhs         .   eh          =   rngLift @range XX
-        name                     : Name
-        expression               : Expression
+    | Binding
+        lhs         .   eh          =   \df -> rngLift @range EH.DataFieldExpr_Upd df @refname @expression.eh
 %%]
 
 %%[7 hs
@@ -651,16 +631,16 @@ SEM RowTypeUpdate
         lhs         .   eh          =   ehRowRowTyExprUpd @range @name EH.RowTyExpr_Ext @type.eh
 %%]
 
-%%[77
-ATTR RecordPatternBindings [ | | eh USE {:} {[]}: {[EH.RecordPatternBinding]} ]
+%%[7
+ATTR RecordPatternBindings [ | | eh USE {:} {[]}: {[EH.DataFieldPatExpr -> EH.DataFieldPatExpr]} ]
 
-ATTR RecordPatternBinding [ | | eh: {EH.RecordPatternBinding} ]
+ATTR RecordPatternBinding [ | | eh: {EH.DataFieldPatExpr -> EH.DataFieldPatExpr} ]
 
 SEM RecordPatternBinding
-    | RecordPatternBinding -- ToDo: or _Binding?
-        lhs         .   eh          =   rngLift @range XX
-        name                     : Name
-        pattern                  : Pattern
+    | Binding
+        lhs         .   eh          =   \df -> rngLift @range EH.DataFieldPatExpr_Ext df @fldrefname @pattern.eh
+    | Pun
+        lhs         .   eh          =   \df -> rngLift @range EH.DataFieldPatExpr_Ext df @fldrefname (rngLift @range EH.PatExpr_Var @refname)
 %%]
 
 %%[1
@@ -774,13 +754,9 @@ SEM Pattern
     | List
         lhs         .   eh          =   foldr (\l r -> ehPatConApp @range (@refnames !! 0) [l,r]) (semCon (@refnames !! 1)) @patterns.eh
 %%]
-%%[77
-    | Record
-        lhs         .   eh          =   rngLift @range XX
-        name                     : Name
-        recordPatternBindings    : RecordPatternBindings
-%%]
 %%[7
+    | Record
+        lhs         .   eh          =   rngLift @range EH.PatExpr_DataFields $ foldl (flip ($)) (rngLift @range EH.DataFieldPatExpr_Con @refname) @recordPatternBindings.eh
     | RowRecordBinding
         lhs         .   eh          =   foldl (flip ($)) @pattern.eh @rowRecordPattternBindings.eh
     | RowRecordEmpty

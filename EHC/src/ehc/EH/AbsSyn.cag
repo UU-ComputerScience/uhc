@@ -184,7 +184,12 @@ DATA Expr
   | Var             nm              : {HsName}
   | App             func            : Expr
                     arg             : Expr
+%%[[1
   | Let             decls           : Decls
+%%][8
+  | Let             isStrict        : {Bool}
+                    decls           : Decls
+%%]]
                     body            : Expr
   | Lam             arg             : PatExpr
                     body            : Expr
@@ -213,6 +218,7 @@ DATA Expr
 
 %%[7
 DATA Expr
+  | DataFields      dataFieldExpr   : DataFieldExpr
   | Rec             recExpr         : RecExpr
   | Sel             expr            : Expr
                     lbl             : {HsName}
@@ -251,7 +257,7 @@ SET AllExpr         = Expr
 %%]
 
 %%[7.AllExpr -1.AllExpr
-SET AllExpr         = Expr RecExpr
+SET AllExpr         = Expr RecExpr DataFieldExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -286,6 +292,7 @@ DATA PatExpr
 %%[7
 DATA PatExpr
   | Rec             recPatExpr      : RecPatExpr
+  | DataFields      dataFieldPatExpr: DataFieldPatExpr
 %%]
 
 %%[8
@@ -304,9 +311,9 @@ SET AllPatExpr      = PatExpr
 %%]
 
 %%[7.AllPatExpr -1.AllPatExpr
-SET AllPatExpr      = PatExpr RecPatExpr
+SET AllPatExpr      = PatExpr RecPatExpr DataFieldPatExpr
 %%]
-
+ 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pattern + guard in case expressions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -375,6 +382,27 @@ SET AllDataConstrEq = DataConstrEq DataConstrEqs
 SET AllDataConstr   = DataConstr DataConstrs
 SET AllDataField    = DataField DataFields
 SET AllData         = AllDataField AllDataConstr AllDataConstrEq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data based record
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+DATA DataFieldExpr
+  | Upd             dataFieldExpr   : DataFieldExpr
+                    nm              : {HsName}
+                    expr            : Expr
+  | Con             nm              : {HsName}
+  | Expr            expr            : Expr
+%%]
+
+%%[7
+DATA DataFieldPatExpr
+  | Ext             dataFieldPatExpr: DataFieldPatExpr
+                    nm              : {HsName}
+                    patExpr         : PatExpr
+  | Con             nm              : {HsName}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
