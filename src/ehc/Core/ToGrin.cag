@@ -598,7 +598,7 @@ ATTR CAlt    [ | | grAlt: GrAlt ]
 ATTR CAltL   [ | | grAltL: GrAltL ]
 
 SEM CAlt
-  | Alt         lhs         .   grAlt       =   GrAlt_Alt (head @pats.grPatL) @expr.grExpr
+  | Alt         lhs         .   grAlt       =   GrAlt_Alt @pat.grPat @expr.grExpr
 
 SEM CAltL
   | Cons        lhs         .   grAltL      =   @hd.grAlt : @tl.grAltL
@@ -614,8 +614,8 @@ SEM CPat
     BoolExpr
 %%]]
                 loc         .   patNm       =   cpatNmEither id id @pnm
-  | Undef       loc         .   patNm       =   hsnUnknown
 %%]
+  | Undef       loc         .   patNm       =   hsnUnknown
 
 %%[8
 ATTR CPat    [ | | grPat: GrPat ]
@@ -626,14 +626,13 @@ SEM CPat
   | Int         lhs         .   grPat       =   GrPat_LitInt @int
   | Char        lhs         .   grPat       =   GrPat_LitInt (ord @char)
   | Con         lhs         .   (grPat,grWrapCase)
-                                            =   case @binds.cpatRest of
+                                            =   case @rest.self of
                                                    CPatRest_Empty
                                                      ->  (ctag mkGrPatRecNode (\_ l t _ -> mkGrPatConNode t l) @tag @binds.patNmL,id)
                                                    CPatRest_Var r
                                                      ->  let  (oL,mkSL) = unzip @binds.grTupFldL
                                                               (oL',wrO) = unboxArgL @lUniq hsnInt oL
                                                          in   (ctag mkGrPatRecSplit (\_ l t _ -> mkGrPatConSplit t l) @tag r . zipWith ($) mkSL $ oL',wrO)
-  | Undef       lhs         .   grPat       =   GrPat_Empty
 
 SEM CPatL
   | Cons        lhs         .   grPatL      =   @hd.grPat : @tl.grPatL
@@ -665,11 +664,7 @@ SEM CPat
 %%]
 
 %%[8
-ATTR CPatRest [ | | cpatRest: SELF ]
-ATTR CPatConBind [ | | cpatRest: CPatRest ]
-
-SEM CPatConBind
-  | Many		lhs			.	cpatRest	=	error "CPatConBind.Many.cpatRest"
+ATTR CPatRest [ | | self: SELF ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

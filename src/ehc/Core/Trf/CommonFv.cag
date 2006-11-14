@@ -25,7 +25,7 @@ SEM CBind
   | Bind        lhs         .   fvSMp       =   Map.singleton @nm @expr.fvS
 
 SEM CAlt
-  | Alt         loc         .   fvS         =   @expr.fvS `Set.difference` Set.fromList @pats.nmL
+  | Alt         loc         .   fvS         =   @expr.fvS `Set.difference` Set.fromList @pat.nmL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,15 +41,12 @@ SEM CBind
 SEM CPatBind
   | Bind        lhs         .   nmL         =   [@nm] ++ @pat.nmL
 
-SEM CPatConBind
-  | One         lhs         .   nmL         =   @rest.nmL ++ @binds.nmL
-
 SEM CPatRest
   | Var         lhs         .   nmL         =   [@nm]
 
 SEM CPat
   | Var Con     loc         .   nm          =   cpatNmEither id id @pnm
   | Var         lhs         .   nmL         =   [@nm]
-  | Con         lhs         .   nmL         =   [@nm] ++ @binds.nmL
+  | Con         lhs         .   nmL         =   [@nm] ++ @rest.nmL ++ @binds.nmL
 %%]
 

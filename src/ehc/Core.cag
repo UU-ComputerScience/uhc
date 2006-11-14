@@ -10,13 +10,10 @@
 %%[8 hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},Data.List,UU.Pretty) export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBindL, CBindCateg(..), CPatRest(..)) 
 %%]
 
-%%[8 hs export(CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL, CPatConBind(..), CPatConBindL) 
+%%[8 hs export(CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL) 
 %%]
 
 %%[8 hs export(CPatNm(..), cpatNmEither,cpatNmNone,ppCPatNmNm)
-%%]
-
-%%[8 hs export(cpatVarNm,caltTag,caltIsVar,caltIsConst,caltPatL,caltPat,caltLPatNms) 
 %%]
 
 %%[8 hs export(mkCExprLet,mkCExprLetRec,mkCExprLam,mkCExprApp)
@@ -54,6 +51,107 @@
 
 %%[8 import({Core/AbsSyn})
 DERIVING *     : Show, Eq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abstract syntax for encoding case+pattern rewrite info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(RAlt(..),RPat(..),RPatConBind(..),RPatBind(..))
+data RAlt
+  = RAlt_Alt			{ rcaPats :: [RPat], raaExpr :: CExpr }
+
+data RPat
+  = RPat_Var			{ rcpPNm :: CPatNm }
+  | RPat_Con			{ rcpPNm :: CPatNm, rcpTag :: CTag, rcpBinds :: RPatConBind }
+  | RPat_Int			{ rcpPNm :: CPatNm, rcpInt :: Int }
+  | RPat_Char			{ rcpPNm :: CPatNm, rcpChar :: Char }
+%%[[99
+  | RPat_BoolExpr		{ rcpPNm :: CPatNm, rcpExpr :: CExpr }
+%%]]
+
+data RPatConBind
+  = RPatConBind_One		{ rpcbRest :: CPatRest, rpcbBinds :: [RPatBind] }
+  | RPatConBind_Many	{ rpcbConBinds :: [RPatConBind] }
+
+data RPatBind
+  = RPatBind_Bind		{ rpbLbl :: HsName, rpbOffset :: CExpr, rpbNm :: HsName, rpbPat :: RPat }
+%%]
+
+%%[8 hs export(rcaPat,raltLPatNms)
+rcaPat :: RAlt -> RPat
+rcaPat = head . rcaPats
+
+raltLPatNms :: [RAlt] -> [CPatNm]
+raltLPatNms = nub . sort . map (rcpPNm . rcaPat)
+%%]
+
+%%[8 hs export(rcaTag)
+rpatConTag :: RPat -> CTag
+rpatConTag (RPat_Int  _ _   )  = ctagInt
+rpatConTag (RPat_Char _ _   )  = ctagChar
+rpatConTag p                   = rcpTag p
+
+rcaTag :: RAlt -> CTag
+rcaTag = rpatConTag . head . rcaPats
+%%]
+
+%%[8 hs export(raltIsVar,raltIsConst)
+raltIsVar :: RAlt -> Bool
+raltIsVar (RAlt_Alt (RPat_Var _ : _) _)  = True
+raltIsVar _                              = False
+
+raltIsConst :: RAlt -> Bool
+raltIsConst (RAlt_Alt (p : _) _)
+  = c p
+  where c (RPat_Int   _ _) = True
+        c (RPat_Char  _ _) = True
+        c _                = False
+%%]
+
+%%[8 hs export(raltIsConMany)
+raltIsConMany :: RAlt -> Bool
+raltIsConMany (RAlt_Alt (RPat_Con _ _ (RPatConBind_Many _) : _) _) = True
+raltIsConMany _                                                    = False
+%%]
+
+%%[99 hs export(raltIsBoolExpr)
+raltIsBoolExpr :: RAlt -> Bool
+raltIsBoolExpr (RAlt_Alt (RPat_BoolExpr _ _ : _) _)  = True
+raltIsBoolExpr _                                     = False
+%%]
+
+%%[8 hs export(rpatConBindUnFlatten)
+rpatConBindUnFlatten :: [RPatConBind] -> RPatConBind
+rpatConBindUnFlatten [b] = b
+rpatConBindUnFlatten bs  = RPatConBind_Many bs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Conversion from Rxxx -> Cxxx
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(rpat2CPat,rpatConBind2CPatConBind,rpatBind2CPatBind)
+rpat2CPat :: RPat -> CPat
+rpat2CPat p
+  = case p of
+      RPat_Var      n       -> CPat_Var n
+      RPat_Con      n t b   -> CPat_Con n t r bs
+                            where (r,bs) = rpatConBind2CPatConBind b
+      RPat_Int      n v     -> CPat_Int n v
+      RPat_Char     n v     -> CPat_Char n v
+%%[[99
+      RPat_BoolExpr n v     -> CPat_BoolExpr n v
+%%]]
+
+rpatConBind2CPatConBind :: RPatConBind -> (CPatRest,[CPatBind])
+rpatConBind2CPatConBind b
+  = case b of
+  	  RPatConBind_One 	r bs 	-> (r,map rpatBind2CPatBind bs)
+  	  RPatConBind_Many 	bs 		-> head (map rpatConBind2CPatConBind bs)
+
+rpatBind2CPatBind :: RPatBind -> CPatBind
+rpatBind2CPatBind (RPatBind_Bind l o n p) = CPatBind_Bind l o n (rpat2CPat p)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -239,58 +337,14 @@ cundefined opts = CExpr_Var (ehbnUndefined $ ehcOptBuiltinNames opts)
 %%% Misc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
-cpatVarNm :: CPat -> CPatNm
-cpatVarNm (CPat_Var         n     )  = n
-cpatVarNm (CPat_Con         n _ _ )  = n
-cpatVarNm (CPat_Int         n _   )  = n
-cpatVarNm (CPat_Char        n _   )  = n
-%%[[99
-cpatVarNm (CPat_BoolExpr    n _   )  = n
-%%]]
-
+%%[8 hs export(caltTag) 
 cpatConTag :: CPat -> CTag
-cpatConTag (CPat_Con  _ t _ )  = t
-cpatConTag (CPat_Int  _ _   )  = ctagInt
-cpatConTag (CPat_Char _ _   )  = ctagChar
+cpatConTag (CPat_Con  _ t _ _)  = t
+cpatConTag (CPat_Int  _ _    )  = ctagInt
+cpatConTag (CPat_Char _ _    )  = ctagChar
 
 caltTag :: CAlt -> CTag
-caltTag (CAlt_Alt (p : _) _) = cpatConTag p
-
-caltIsVar :: CAlt -> Bool
-caltIsVar (CAlt_Alt (CPat_Var _ : _) _)  = True
-caltIsVar _                              = False
-
-caltIsConst :: CAlt -> Bool
-caltIsConst (CAlt_Alt (p : _) _)
-  = c p
-  where c (CPat_Int   _ _) = True
-        c (CPat_Char  _ _) = True
-        c _                = False
-
-caltPatL :: CAlt -> CPatL
-caltPatL (CAlt_Alt p _) = p
-
-caltPat :: CAlt -> CPat
-caltPat = head . caltPatL
-
-caltLPatNms :: CAltL -> [CPatNm]
-caltLPatNms = nub . sort . map (cpatVarNm . caltPat)
-
-%%]
-cvarUndefined :: CExpr
-cvarUndefined = CExpr_Var hsnUndefined
-
-%%[8 hs export(caltIsConMany)
-caltIsConMany :: CAlt -> Bool
-caltIsConMany (CAlt_Alt (CPat_Con _ _ (CPatConBind_Many _) : _) _) = True
-caltIsConMany _                                                    = False
-%%]
-
-%%[99 hs export(caltIsBoolExpr)
-caltIsBoolExpr :: CAlt -> Bool
-caltIsBoolExpr (CAlt_Alt (CPat_BoolExpr _ _ : _) _)  = True
-caltIsBoolExpr _                                     = False
+caltTag (CAlt_Alt p _) = cpatConTag p
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

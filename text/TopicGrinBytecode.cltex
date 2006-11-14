@@ -1,0 +1,683 @@
+%%[defs
+%format CSBase      = "C"
+%format CSGetFld    = "F"
+%format CSEnv       = Gamma
+%format <<          = "{\llbracket}"
+%format >>          = "{\rrbracket}"
+
+%format angle(x)     = "\langle{" x "}\rangle"
+
+%format unit        = "\mathbf{unit}"
+%format store        = "\mathbf{store}"
+%format ild(i)(rd)(rs)(x)        = "\mathsf{l}\langle{" i "}\rangle\langle{" rd "}\rangle\langle{" rs "}\rangle" ^^ x
+%format ist(i)(rd)(rs)(x)       = "\mathsf{s}\langle{" i "}\rangle\langle{" rd "}\rangle\langle{" rs "}\rangle" ^^ x
+%format icp(i)(rs)(x)         = "\mathsf{cp}\langle{" i "}\rangle\langle{" rs "}\rangle" ^^ x
+%format iop(ot)(dt)(i)(rd)(rs)(x)       = "\mathsf{o}\langle{" ot "}\rangle\langle{" dt "}\rangle\langle{" i "}\rangle\langle{" rd "}\rangle\langle{" rs "}\rangle" ^^ x
+%format iaddi(rd)(x)         = "\mathsf{addi}\langle{" rd "}\rangle" ^^ x
+%format icall(x)         = "\mathsf{call}" ^^ x
+%format itailcall(x)         = "\mathsf{tailcall}" ^^ x
+%format icase(rs)         = "\mathsf{case}\langle{" rs "}\rangle"
+%format ieval(rs)         = "\mathsf{eval}\langle{" rs "}\rangle"
+%format iapply(rs)         = "\mathsf{apply}\langle{" rs "}\rangle"
+%format ialloc(rs)         = "\mathsf{alloc}\langle{" rs "}\rangle"
+%format istore(rs)         = "\mathsf{store}\langle{" rs "}\rangle"
+%format tailcall         = "\mathsf{tailcall}"
+%format call         = "\mathsf{call}"
+%format alloc         = "\mathsf{alloc}"
+%format stores         = "\mathsf{store}"
+%format eval         = "\mathsf{eval}"
+%format apply         = "\mathsf{apply}"
+%format nop         = "\mathsf{nop}"
+%format lds         = "\mathsf{lds}"
+%format ldc         = "\mathsf{ldc}"
+%format lda         = "\mathsf{lda}"
+%format l1tt        = "\mathsf{l1tt}"
+%format l0ti        = "\mathsf{l0ti}"
+%format l0tt        = "\mathsf{l0tt}"
+%format sts         = "\mathsf{sts}"
+%format s1tt        = "\mathsf{s1tt}"
+
+%format **          = "**"
+
+%format sv          = "s_v"
+
+%format xpos        = "x^{+}"
+
+%format gcode       = "\textit{is}"
+%format gstack      = "\textit{st}"
+%format gheap       = "\textit{hp}"
+%format greg        = "\textit{r}"
+%format gpc         = "\textit{pc}"
+
+%format (ixx1(x)(f))    = x "_{" f "}"
+%format (ixx(x)(f)(t))  = x "_{" f "} .. " x "_{" t "}"
+%format (ixxjuxt(x)(f)(t))  = x "_{" f "}" x "_{" t "}"
+%format (pow2(p))   = "2^{" p "}"
+
+\newenvironment{GrinCS}{%
+\begin{tabular}{p{.35\linewidth}@@{\hspace{.5ex}=\hspace{.5ex}}p{.45\linewidth}}
+}{%
+\end{tabular}
+}
+
+\newcommand{\GriniStateBefore}[5]{%
+#1 &
+#2 &
+#3 &
+#4
+}
+
+\newcommand{\GriniStateAfter}[5]{%
+$\Longrightarrow$ &
+#2 &
+#3 &
+#4
+}
+
+\newcommand{\GriniStep}[2]{%
+\begin{tabular}{llll}
+\hline
+& Code & Stack & Heap \\
+\hline
+#1 \\ #2 \\
+\hline
+\end{tabular}
+}
+
+\newenvironment{GrinEncoding}[1]{%
+\begin{tabular}{lllll}
+\hline
+#1 & byte 0 & byte 1 & byte 2 & byte 3 \\
+\hline
+}{%
+\hline
+\end{tabular}
+}
+
+%%]
+
+%%[grin2GrinB
+\begin{GrinCS}
+|CSBase<< unit v ; \w -> e >> CSEnv|
+&
+|CSBase<< e >> ^^ CSEnv ^ [w :-> CSEnv v]| 
+\end{GrinCS}
+
+\begin{GrinCS}
+|CSBase<< unit v ; \(C ^^ Vec(w)) -> e >> CSEnv|
+&
+|Vec(lds v : lda o) : CSBase<< e >> ^^ CSEnv ^ Vec([w :-> gstack])| 
+\end{GrinCS}
+
+\begin{GrinCS}
+|CSBase<< unit (C ^^ Vec(v)) ; \(C ^^ Vec(w)) -> e >> CSEnv|
+&
+|CSBase<< e >> ^^ CSEnv ^ Vec([w :-> CSEnv v])| 
+\end{GrinCS}
+
+\begin{GrinCS}
+|CSBase<< store (C ^^ Vec(v)) ; \w -> e >> CSEnv|
+&
+|alloc ||Vec(v)|| : CSBase<< e >> ^^ CSEnv ^ [w :-> gstack]| 
+\end{GrinCS}
+
+%%]
+
+%%[grinBSemantics
+
+\subsection{Memory model}
+
+Stack, indexed by |gstack|, grows downwards/
+Positive offsets are used to refer to values in allocated part of stack.
+
+Registers: programcounter |gpc|, general purpose register |greg|.
+
+Node representation: size (16 bits), tag (16 bits), fields (3x), extension ptr (1x)
+
+\subsection{|lds|: load from stack}
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |lds v : gcode|
+ }{%
+  |s0 : ... : sv : gstack|
+ }{%
+  |gheap|
+ }{}
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |sv : s0 : ... : sv : gstack|
+ }{%
+  |gheap|
+ }{}{}
+}
+
+%%]
+
+%%[grinBMetavarEncoding
+\subsubsection{Load source, store destination}
+\begin{code}
+angle(rd), angle(rs)  =  i  -- immediate constant
+                      |  p  -- program counter relative
+                      |  t  -- top of stack relative
+                      |  r  -- scratch register relative
+\end{code}
+
+\begin{code}
+t  =  00
+r  =  01
+i  =  10
+p  =  11
+\end{code}
+
+Store destinations can only be |s| or |r|, hence the encoding omits the most significant bit in store instructions.
+
+\subsubsection{Load destination, store source}
+\begin{code}
+angle(rd), angle(rs)  =  t  -- top of stack, with push/pop side effect
+                      |  r  -- scratch register
+\end{code}
+
+\begin{code}
+t  =  0
+r  =  1
+\end{code}
+
+\subsubsection{Operator destination}
+\begin{code}
+angle(od)  =  t  -- top of stack, with push/pop side effect
+           |  r  -- scratch register
+           |  s  -- stack pointer register
+           |  p  -- program counter register
+\end{code}
+
+\begin{code}
+t  =  00
+r  =  01
+s  =  10
+p  =  11
+\end{code}
+
+\subsubsection{Operator type}
+\begin{code}
+angle(ot)  =  a  -- add
+           |  s  -- subtract
+           |  m  -- multiply
+           |  d  -- divide+modulo
+\end{code}
+
+\begin{code}
+a  =  00
+s  =  01
+m  =  10
+d  =  11
+\end{code}
+
+\subsubsection{Data type}
+\begin{code}
+angle(dt)  =  iw  -- word sized int
+           |  id  -- double word sized int
+           |  fw  -- word sized float
+           |  fd  -- double word sized float
+\end{code}
+
+\begin{code}
+iw  =  00
+id  =  01
+fw  =  10
+fd  =  11
+\end{code}
+
+\subsubsection{Sign}
+
+\begin{code}
+angle(sg)  =  +  -- positive
+           |     -- positive
+           |  -  -- negative (2's complement)
+\end{code}
+
+\begin{code}
++  =  0
+-  =  1
+\end{code}
+
+\subsubsection{Immediate constant}
+\begin{code}
+angle(c)  =  ci  -- constant in instruction
+          |  cf  -- constant following instruction
+\end{code}
+
+\begin{code}
+ci  =  0
+cf  =  1
+\end{code}
+
+\subsubsection{Indirection level}
+\begin{code}
+angle(i)  =  0  -- as is, use itself (don't follow as address)
+          |  1  -- use content pointed to (do follow as address)
+          |  2  -- and another time
+\end{code}
+
+Level 0 is only used for a source, in that case encoding equals the encoding for |i - 1|.
+
+\subsubsection{Instruction prefixes/categories}
+\begin{code}
+0           loading
+100         storing
+101         arithmetic
+1100  0     calling
+1101
+1110  0     eval/apply/case
+1110  1     node alloc/fetch
+1111  0
+1111  110   extension prefix
+\end{code}
+
+%%]
+
+%%[grinBConstants
+Signed int constants are denoted with |x|, unsigned (positive) int constants with |xpos|.
+
+\begin{GrinEncoding}{instruction with |x=angle(sg)c|}
+|0 <= c < pow2(1) | &
+|.. ^ ci ^^ ixx1(c)(0) ..| &
+&
+&
+\\
+|- pow2(7) <= c < pow2(7) | &
+|.. ^ cf ^^ sg ..| &
+|0 ^ ixx(c)(6)(0)| &
+&
+\\
+|- pow2(14) <= c < pow2(14) | &
+|.. ^ cf ^^ sg ..| &
+|1 ^ ixx(c)(13)(7)| &
+|0 ^ ixx(c)(6)(0)| &
+\\
+|- pow2(21) <= c < pow2(21) | &
+|.. ^ cf ^^ sg ..| &
+|1 ^ ixx(c)(20)(14)| &
+|1 ^ ixx(c)(13)(7)| &
+|0 ^ ixx(c)(6)(0)|
+\\
+etc.
+\\
+\end{GrinEncoding}
+
+\begin{GrinEncoding}{instruction with |xpos=c|}
+|0 <= c < pow2(1) | &
+|.. ^ ci ^^ ixx1(c)(0) ..| &
+&
+&
+\\
+|0 <= c < pow2(8) | &
+|.. ^ cf ^^ ixx1(c)(7) ..| &
+|0 ^ ixx(c)(6)(0)| &
+&
+\\
+|0 <= c < pow2(15) | &
+|.. ^ cf ^^ ixx1(c)(14) ..| &
+|1 ^ ixx(c)(13)(7)| &
+|0 ^ ixx(c)(6)(0)| &
+\\
+|0 <= c < pow2(22) | &
+|.. ^ cf ^^ ixx1(c)(21) ..| &
+|1 ^ ixx(c)(20)(14)| &
+|1 ^ ixx(c)(13)(7)| &
+|0 ^ ixx(c)(6)(0)|
+\\
+etc.
+\\
+\end{GrinEncoding}
+
+%%]
+
+%%[grinBMovingData
+
+\subsubsection{Loading}
+
+\begin{GrinEncoding}{|ild(i)(rd)(rs)(x)|}
+ &
+|0 ^ ixxjuxt(i)(1)(0) ^ ixx1(rd)(0) ^ ixxjuxt(rs)(1)(0) ^ ixxjuxt(x)(1)(0)| &
+... &
+&
+\\
+\end{GrinEncoding}
+
+\textbf{Semantics}\\
+
+%%[[wrap=code
+ild(i)(rd)(rs)(x)
+  =  case angle(i) of
+       0  ->  *d  :=  s
+       1  ->  *d  :=  *s
+       2  ->  *d  :=  **s
+%%@TopicGrinBytecode.grinBLoadSrc
+         d  <-  case ^^ angle(rd) of
+                  t  ->  gstack := [gstack]-1
+                         gstack + x
+                  r  ->  greg + x
+%%]]
+
+\textbf{Abbreviations}\\
+
+%%[[wrap=code
+lds d       =   l1tt  d            -- push content displacement d relative to tos on stack
+ldc c       =   l0ti  c            -- push constant c on stack
+lda d       =   l0tt  d            -- push address displacement d relative to tos on stack
+%%]]
+
+\subsubsection{Storing}
+
+\begin{GrinEncoding}{|ist(i)(rd)(rs)(x)|}
+ &
+|100 ^ ixx1(i)(0) ^ ixx1(rd)(0) ^ ixx1(rs)(0) ^ ixxjuxt(x)(1)(0)| &
+... &
+&
+\\
+\end{GrinEncoding}
+
+\textbf{Semantics}\\
+
+%%[[wrap=code
+ist(i)(rd)(rs)(x)
+  =  case angle(i) of
+       1  ->  *d         :=  *s
+       2  ->  **d        :=  *s
+  where  d  <-  case ^^ angle(rd) of
+                  t  -> gstack + x
+                  r  -> greg + x
+         s  <-  case ^^ angle(rs) of
+                  t  ->  s = gstack
+                         gstack := [gstack]+1
+                         s
+                  r  ->  greg
+%%]]
+
+\textbf{Abbreviations}\\
+
+%%[[wrap=code
+sts d       =   s1tt   d            -- pop tos content into displacement d relative to tos on stack
+%%]]
+
+\subsubsection{Block copy}
+
+\begin{GrinEncoding}{|icp(i)(rs)(x)|}
+ &
+|11 ^ ixxjuxt(i)(1)(0) ^ ixxjuxt(rs)(1)(0) ^ ixxjuxt(x)(1)(0)| &
+... &
+&
+\\
+\end{GrinEncoding}
+
+\textbf{Semantics}\\
+
+%%[[wrap=code
+icp(i)(rs)(x)
+  =  (*(gstack+1))[0..sz-1]  :=  (*(gstack))[0..sz-1]
+%%@TopicGrinBytecode.grinBLoadSrc2
+         sz <-  case angle(i) of
+                  0  ->  s
+                  1  ->  *s
+                  2  ->  **s
+%%]]
+
+Behavior in case of overlap of src/dst is unpredictable.
+
+%%]
+
+%%[grinBLoadSrc
+  where  s  <-  case ^^ angle(rs) of
+                  t  -> gstack + x
+                  r  -> greg + x
+                  p  -> gpc + x        -- after instruction fetch
+                  i  -> x
+%%]
+
+%%[grinBLoadSrc2
+  where  s  <-  case ^^ angle(rs) of
+                  t  -> gstack + xpos
+                  r  -> greg + xpos
+                  p  -> gpc + xpos        -- after instruction fetch
+                  i  -> xpos
+%%]
+
+%%[grinBArithmetic
+
+\subsubsection{Immediate constant addition}
+
+\begin{GrinEncoding}{|iaddi(od)(x)|}
+ &
+|1010 ^ ixxjuxt(od)(1)(0) ^ ixxjuxt(x)(1)(0)| &
+... &
+&
+\\
+\end{GrinEncoding}
+
+\subsubsection{General operators}
+
+\begin{GrinEncoding}{|iop(ot)(dt)(i)(od)(rs)(x)|}
+ &
+|1011 ^ ixxjuxt(ot)(1)(0) ^ ixxjuxt(od)(1)(0)| &
+|ixx(dt)(2)(0) ^ ixx1(i)(0) ^ ixxjuxt(rs)(1)(0) ^ ixxjuxt(x)(1)(0)| &
+... &
+\\
+\end{GrinEncoding}
+
+\textbf{Semantics}\\
+
+%%[[wrap=code
+iop(ot)(dt)(i)(rd)(rs)(x)
+  =  
+%%]]
+
+\textbf{Abbreviations}\\
+
+%%[[wrap=code
+addi        =   oaiss  0         -- on tos addition
+%%]]
+
+%%]
+
+%%[grinBControl
+\subsubsection{Call}
+
+\begin{GrinEncoding}{|icall(x)|}
+ &
+|1100 ^^ 00 ^ ixxjuxt(x)(1)(0)| &
+... &
+ &
+\\
+\end{GrinEncoding}
+
+\subsubsection{Tail call}
+
+\begin{GrinEncoding}{|itailcall(x)|}
+ &
+|1100 ^^ 01 ^ ixxjuxt(x)(1)(0)| &
+... &
+ &
+\\
+\end{GrinEncoding}
+
+\subsubsection{Case}
+
+\begin{GrinEncoding}{|icase(rs)|}
+ &
+|1110 ^^ 000 ^ ixx1(rs)(0)| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
++ table
+
+\subsubsection{Eval}
+
+\begin{GrinEncoding}{|ieval(rs)|}
+ &
+|1110 ^^ 001 ^ ixx1(rs)(0)| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+\subsubsection{Apply}
+
+\begin{GrinEncoding}{|iapply(rs)|}
+ &
+|1110 ^^ 010 ^ ixx1(rs)(0)| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+\subsubsection{Nop}
+
+\begin{GrinEncoding}{|nop|}
+ &
+|1111 ^^ 1111| &
+ &
+ &
+\\
+\end{GrinEncoding}
+%%]
+
+%%[grinBStorage
+\subsubsection{Alloc}
+
+\begin{GrinEncoding}{|ialloc(rs)|}
+ &
+|1110 ^^ 100 ^ ixx1(rs)(0)| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+\subsubsection{Store}
+
+\begin{GrinEncoding}{|istore(rs)|}
+ &
+|1110 ^^ 101 ^ ixx1(rs)(0)| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+\subsubsection{Alloc + Store}
+
+\begin{GrinEncoding}{|iallocstore(rs)|}
+ &
+|1110 ^^ 110 ^ ixx1(rs)(0)| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+\subsubsection{Fetch}
+
+\begin{GrinEncoding}{|ifetch(rs)|}
+ &
+|1110 ^^ 111 ^ ixx1(rs)(0)| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+%%]
+
+%%[grinBRest
+\subsubsection{Extension prefix}
+
+\begin{GrinEncoding}{|xxx|}
+ &
+|1111 ^^ 1110| &
+|ixx(xxx)(7)(0)| &
+... &
+\\
+\end{GrinEncoding}
+%%]
+
+%%[grinBExampleTranslations
+%%[[wrap=code
+; $x2 
+    =  {  store (#0/C/$Int 5) ; \$10_0_42_1 ->
+            ldc         5
+            ldc         #0/C/$Int       ^
+            ldc         2
+            allocstore                  CSEnv ^ [$10_0_42_1 :-> offset ...]
+          $$+ $x1 $10_0_42_1
+            lds         $10_0_42_1
+            ldg         $x1
+            ldg         $$+
+            tailcall    2
+       }
+%%]]
+
+%%[[wrap=code
+; $x4 
+    =  {    unit $x3 ; \$10_0_55_0 ->
+                                                    ^               ^               CSEnv ^ [$10_0_55_0 :-> global $x3]
+            eval $10_0_55_0 ; \$1_289_0!__26_0 ->
+                                                    ldg             $x3
+                                                    eval
+            case $1_289_0!__26_0 of
+                                                    l0tp            l3
+                                                    case            [l1,l2]
+                                                l1:
+                                                    fetch           2               CSEnv ^ [$x__27_2, ... :-> offset ...]
+              {  (#0/C/$$: $x__27_2 $1_298_0__27_4)
+                    ->  {    unit $1_298_0__27_4 ; \$10_0_59_0 ->
+                             eval $10_0_59_0 ; \$1_298_0!__28_0 ->
+                                                    lds             $10_0_59_0
+                                                    eval
+                             case $1_298_0!__28_0 of
+                               {  (#0/C/$$: $___29_4 $___29_4)
+                                     ->  {  unit $undefined ; \$10_0_63_0 ->
+                                            eval $10_0_63_0
+                                         } 
+                               ;  (#1/C/$[])
+                                     ->  {  unit $x__27_2 ; \$10_0_65_0 ->
+                                            eval $10_0_65_0
+                                         } 
+                               }
+                                                    
+                        }
+                        							addsi			...
+                        							l1pt			...
+                                                l2:
+              ;  (#1/C/$[])
+                    ->  { unit (#0/C/$Int 4)} 
+                                                    ldc             4
+                                                    ldc             #0/C/$Int
+              } 
+                        							addsi			...
+                        							l1pt			...
+                                                l3:
+        } 
+%%]]
+
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

@@ -83,7 +83,7 @@ pCBind
 
 pCAlt :: CParser CAlt
 pCAlt
-  =   (\p e -> CAlt_Alt [p] e) <$> pCPat <* pRARROW <*> pCExpr
+  =   (\p e -> CAlt_Alt p e) <$> pCPat <* pRARROW <*> pCExpr
 
 pCPat :: CParser CPat
 pCPat
@@ -93,7 +93,7 @@ pCPat
 					   <|> (\s n -> CPat_Char n (head s)) <$ pKeyTk "Char"
 					   )
 				       <*> (tokMkStr <$> pStringTk)
-				   <|> (\t r bs n -> CPat_Con n t (CPatConBind_One r bs))
+				   <|> (\t r bs n -> CPat_Con n t r bs)
 				       <$  pKeyTk "Tag" <*> pCTag
 				       <*  pOCURLY <*> pCPatRest <* pVBAR <*> pListSep pCOMMA pCPatBind <* pCCURLY
 				   )

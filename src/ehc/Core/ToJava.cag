@@ -239,7 +239,6 @@ SEM CPat
     BoolExpr
 %%]]
                 lhs         .   fldNm       =   cpatNmNm @pnm
-  | Undef       lhs         .   fldNm       =   hsnUnknown
 
 SEM CPatBind
   | Bind        lhs         .   jvSrc       =   jvBind  "Object" @pat.fldNm
@@ -247,7 +246,7 @@ SEM CPatBind
                                                                 (jvForceInt @offset.jvSrc >|< (if @lhs.tagSz == 0 then empty else ("+" >|< pp @lhs.tagSz))))
 
 SEM CAlt
-  | Alt         lhs         .   jvSrc       =   @pats.jvSrc
+  | Alt         lhs         .   jvSrc       =   @pat.jvSrc
                                                 >-< jvAssign @lhs.jvCaseResult @expr.jvSrc
                                                 >-< "break ;"
 
