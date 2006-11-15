@@ -238,7 +238,7 @@ SEM CPat
 %%[[99
     BoolExpr
 %%]]
-                lhs         .   fldNm       =   cpatNmNm @pnm
+                lhs         .   fldNm       =   @pnm
 
 SEM CPatBind
   | Bind        lhs         .   jvSrc       =   jvBind  "Object" @pat.fldNm

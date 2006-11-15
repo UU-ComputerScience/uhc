@@ -55,8 +55,8 @@ caltLSaturate env alts
             where allAlts
                     = [ (ctagTag t,mkA env t (ctagArity t)) | t <- rceEnvDataAlts env (caltTag alt1) ]
                     where mkA env ct a = CAlt_Alt (mkP ct a) (rceCaseCont env)
-                          mkP     ct a = CPat_Con cpatNmNone ct CPatRest_Empty [mkB o | o <- [0..a-1]]
-                          mkB o        = CPatBind_Bind hsnUnknown (CExpr_Int o) (cpatNmNm cpatNmNone) (CPat_Var cpatNmNone)
+                          mkP     ct a = CPat_Con hsnWild ct CPatRest_Empty [mkB o | o <- [0..a-1]]
+                          mkB o        = CPatBind_Bind hsnUnknown (CExpr_Int o) hsnWild (CPat_Var hsnWild)
       _     -> []
 %%]
 
@@ -71,7 +71,7 @@ cpatBindOffsetL pbL
             =  unzip
                .  map
                     (\b@(CPatBind_Bind l o n p@(CPat_Var pn))
-                        ->  let  offNm = hsnPrefix "off_" . cpatNmNm $ pn
+                        ->  let  offNm = hsnPrefix "off_" pn
                             in   case o of
                                    CExpr_Int _  -> (b,[])
                                    _            -> (CPatBind_Bind l (CExpr_Var offNm) n p,[CBind_Bind offNm o])
@@ -101,7 +101,7 @@ type MbCPatRest = Maybe (CPatRest,Int) -- (pat rest, arity)
 mkCExprStrictSatCase :: RCEEnv -> Maybe HsName -> CExpr -> CAltL -> CExpr
 mkCExprStrictSatCase env eNm e [CAlt_Alt (CPat_Con _ (CTag tyNm _ _ _) CPatRest_Empty [CPatBind_Bind _ _ _ (CPat_Var pnm)]) ae]
   | dgiIsNewtype dgi
-  = mkCExprLet CBindPlain [CBind_Bind (cpatNmNm pnm) e] ae
+  = mkCExprLet CBindPlain [CBind_Bind pnm e] ae
   where dgi = panicJust "mkCExprStrictSatCase" $ dataGamLookup tyNm (rceDataGam env)
 mkCExprStrictSatCase env eNm e (alt:alts)
   = case eNm of
@@ -126,9 +126,9 @@ mkCExprSelsCases' :: RCEEnv -> Maybe HsName -> CExpr -> [(CTag,[(HsName,HsName,C
 mkCExprSelsCases' env ne e tgSels
   = mkCExprStrictSatCase env ne e alts
   where  alts = [ CAlt_Alt
-                    (CPat_Con (CPatNmOrig $ maybe (cexprVar e) id ne) ct
+                    (CPat_Con (maybe (cexprVar e) id ne) ct
                        (mkRest mbRest ct)
-                       [CPatBind_Bind lbl off n (CPat_Var (CPatNmOrig n)) | (n,lbl,off) <- nmLblOffL]
+                       [CPatBind_Bind lbl off n (CPat_Var n) | (n,lbl,off) <- nmLblOffL]
                     )
                     sel
                 | (ct,nmLblOffL,mbRest,sel) <- tgSels
@@ -298,7 +298,7 @@ patBindLOffset
   =  unzip
   .  map
        (\b@(RPatBind_Bind l o n p@(RPat_Var pn))
-           ->  let  offNm = hsnPrefix "off_" . cpatNmNm $ pn
+           ->  let  offNm = hsnPrefix "off_" . rpatNmNm $ pn
                in   case o of
                       CExpr_Int _  -> (b,[])
                       _            -> (RPatBind_Bind l (CExpr_Var offNm) n p,[CBind_Bind offNm o])

@@ -53,7 +53,7 @@ test-expect test-regress: test-lists
 	      fi ; \
 	      if test -r $$t -a -x $$ehc ; \
 	      then \
-	        tprelbase=`sed -n -e 's/^-- %% *inline test *\(([a-z0-9]+)\) --$$/\1/p' < $$t` ; \
+	        tprelbase=`sed -n -E 's/^-- %% *inline test *\(([a-z0-9]+)\) --$$/\1/p' < $$t` ; \
 	        tprel="$${v}-$${tprelbase}$${tsuff}" ; \
 	        if test -r $${tprel} ; \
 	        then \

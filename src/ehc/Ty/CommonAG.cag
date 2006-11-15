@@ -124,6 +124,7 @@ SEM Ty
 SEM Ty
   | App         loc         .   isArrowRoot     =   @appIsArrow && @isSpineRoot
                             .   isArrowArg      =   @appIsArrow && @lhs.appSpinePos == 1
+                            .   isProdRoot      =   @appIsLikeProd && @isSpineRoot
 %%]
 
 %%[4

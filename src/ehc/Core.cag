@@ -13,7 +13,7 @@
 %%[8 hs export(CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL) 
 %%]
 
-%%[8 hs export(CPatNm(..), cpatNmEither,cpatNmNone,ppCPatNmNm)
+%%[8 hs export(RPatNm(..))
 %%]
 
 %%[8 hs export(mkCExprLet,mkCExprLetRec,mkCExprLam,mkCExprApp)
@@ -62,12 +62,13 @@ data RAlt
   = RAlt_Alt			{ rcaPats :: [RPat], raaExpr :: CExpr }
 
 data RPat
-  = RPat_Var			{ rcpPNm :: CPatNm }
-  | RPat_Con			{ rcpPNm :: CPatNm, rcpTag :: CTag, rcpBinds :: RPatConBind }
-  | RPat_Int			{ rcpPNm :: CPatNm, rcpInt :: Int }
-  | RPat_Char			{ rcpPNm :: CPatNm, rcpChar :: Char }
+  = RPat_Var			{ rcpPNm :: RPatNm }
+  | RPat_Con			{ rcpPNm :: RPatNm, rcpTag :: CTag, rcpBinds :: RPatConBind }
+  | RPat_Int			{ rcpPNm :: RPatNm, rcpInt :: Int }
+  | RPat_Char			{ rcpPNm :: RPatNm, rcpChar :: Char }
+  | RPat_Irrefutable	{ rcpPNm :: RPatNm, rcpCBindL :: [CBind] }
 %%[[99
-  | RPat_BoolExpr		{ rcpPNm :: CPatNm, rcpExpr :: CExpr }
+  | RPat_BoolExpr		{ rcpPNm :: RPatNm, rcpExpr :: CExpr }
 %%]]
 
 data RPatConBind
@@ -82,7 +83,7 @@ data RPatBind
 rcaPat :: RAlt -> RPat
 rcaPat = head . rcaPats
 
-raltLPatNms :: [RAlt] -> [CPatNm]
+raltLPatNms :: [RAlt] -> [RPatNm]
 raltLPatNms = nub . sort . map (rcpPNm . rcaPat)
 %%]
 
@@ -115,6 +116,12 @@ raltIsConMany (RAlt_Alt (RPat_Con _ _ (RPatConBind_Many _) : _) _) = True
 raltIsConMany _                                                    = False
 %%]
 
+%%[8 hs export(raltIsIrrefutable)
+raltIsIrrefutable :: RAlt -> Bool
+raltIsIrrefutable (RAlt_Alt (RPat_Irrefutable _ _ : _) _) = True
+raltIsIrrefutable _                                       = False
+%%]
+
 %%[99 hs export(raltIsBoolExpr)
 raltIsBoolExpr :: RAlt -> Bool
 raltIsBoolExpr (RAlt_Alt (RPat_BoolExpr _ _ : _) _)  = True
@@ -135,13 +142,13 @@ rpatConBindUnFlatten bs  = RPatConBind_Many bs
 rpat2CPat :: RPat -> CPat
 rpat2CPat p
   = case p of
-      RPat_Var      n       -> CPat_Var n
-      RPat_Con      n t b   -> CPat_Con n t r bs
+      RPat_Var      n       -> CPat_Var (rpatNmNm n)
+      RPat_Con      n t b   -> CPat_Con (rpatNmNm n) t r bs
                             where (r,bs) = rpatConBind2CPatConBind b
-      RPat_Int      n v     -> CPat_Int n v
-      RPat_Char     n v     -> CPat_Char n v
+      RPat_Int      n v     -> CPat_Int (rpatNmNm n) v
+      RPat_Char     n v     -> CPat_Char (rpatNmNm n) v
 %%[[99
-      RPat_BoolExpr n v     -> CPat_BoolExpr n v
+      RPat_BoolExpr n v     -> CPat_BoolExpr (rpatNmNm n) v
 %%]]
 
 rpatConBind2CPatConBind :: RPatConBind -> (CPatRest,[CPatBind])
@@ -250,20 +257,23 @@ mkCxBindLForPoiL availPoiS = mkCxBindLForPoiL' (`Set.member` availPoiS)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-data CPatNm = CPatNmOrig {cpatNmNm :: HsName} | CPatNmUniq {cpatNmNm :: HsName} deriving (Ord,Eq)
+data RPatNm
+  = RPatNmOrig {rpatNmNm :: HsName}
+  | RPatNmUniq {rpatNmNm :: HsName}
+  deriving (Ord,Eq)
 
-instance Show CPatNm where
-  show pnm = show (cpatNmNm pnm)
-
-cpatNmEither :: (HsName -> a) -> (HsName -> a) -> CPatNm -> a
-cpatNmEither o u pnm = case pnm of {CPatNmOrig n -> o n; CPatNmUniq n -> u n}
-
-cpatNmNone :: CPatNm
-cpatNmNone = CPatNmOrig hsnWild
-
-ppCPatNmNm :: (HsName -> PP_Doc) -> CPatNm -> PP_Doc
-ppCPatNmNm ppNm = cpatNmEither (ppNm) (\n -> "uniq" >#< ppNm n)
+instance Show RPatNm where
+  show pnm = show (rpatNmNm pnm)
 %%]
+
+cpatNmEither :: (HsName -> a) -> (HsName -> a) -> RPatNm -> a
+cpatNmEither o u pnm = case pnm of {RPatNmOrig n -> o n; RPatNmUniq n -> u n}
+
+cpatNmNone :: RPatNm
+cpatNmNone = RPatNmOrig hsnWild
+
+ppRPatNmNm :: (HsName -> PP_Doc) -> RPatNm -> PP_Doc
+ppRPatNmNm ppNm = cpatNmEither (ppNm) (\n -> "uniq" >#< ppNm n)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Construction

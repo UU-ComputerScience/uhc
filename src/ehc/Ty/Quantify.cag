@@ -311,7 +311,7 @@ SEM Ty
   | Quant       loc         .   isQuLoc     =   @lhs.coco /= CoContraVariant
   | App         loc         .   isQuLoc     =   @lhs.coco == CoVariant
                                                 || (@lhs.coco == ContraVariant
-                                                    && (@appIsLikeProd
+                                                    && (@isProdRoot
                                                         || @isArrowRoot
 %%[[9
                                                            && (not @func.isPred || @arg.isQuLoc)
@@ -390,6 +390,33 @@ SEM Ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Free tvs which should be quantified deeper but cannot because of isQuLoc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4
+ATTR Ty [ | | qOrphanTvL: TyVarIdL ]
+%%]
+
+%%[4
+SEM Ty
+  | App         loc         .   qOrphanTvL      =   @arg.qOrphanTvL ++ @func.qOrphanTvL
+%%[[7
+  | Ext         loc         .   qOrphanTvL      =   @extTy.qOrphanTvL ++ @ty.qOrphanTvL
+%%]]
+%%]
+
+%%[4
+SEM Ty
+  | App         lhs         .   qOrphanTvL      =   if @isSpineRoot && @isQuLoc then [] else @qOrphanTvL
+  | Var         lhs         .   qOrphanTvL      =   if @isQuLoc then [] else @frTvL
+  | * - App Var
+%%[[7
+    Ext
+%%]]
+                lhs         .   qOrphanTvL      =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Candidate free type variables to be quantified over 'here'
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -401,22 +428,15 @@ tvarOccurGE2 :: [TyVarIdL] -> TyVarIdL
 tvarOccurGE2 =  map fst . filter ((>1).snd) . tvarOccurCount
 %%]
 
-%%[4
-SEM Ty
-  | App         loc         .   qArrowArgTvL    =   if @isArrowRoot && not @func.isQuLoc
-                                                    then @func.frTvLL
-                                                    else []
-%%]
-
 %%[4.qHereTvL
 SEM TyAGItf
   | AGItf       loc         .   qHereTvL        =   []
 
 SEM Ty
-  | Var         loc         .   qHereTvL        =   if @isQuLoc then [@tv] else []
+  | Var         loc         .   qHereTvL        =   if @isQuLoc then @frTvL else []
   | App         loc         .   qHereTvL        =   if @isQuLoc
                                                     then  if    @appIsArrow || @appIsLikeProd
-                                                          then  listCombineUniq (tvarOccurGE2 @frTvLL : @qArrowArgTvL)
+                                                          then  listCombineUniq (tvarOccurGE2 @frTvLL : [@qOrphanTvL])
                                                           else  @frTvL
                                                     else  []
 %%]
@@ -446,7 +466,7 @@ SEM Ty
 SEM Ty
   | App         loc         .   qHereTvL        :=  if @isQuLoc
                                                     then  if    @appIsArrow || @appIsLikeProd
-                                                          then  listCombineUniq (tvarOccurGE2 @frTvLL `List.union` @frRowTvL : @qArrowArgTvL)
+                                                          then  listCombineUniq (tvarOccurGE2 @frTvLL `List.union` @frRowTvL : [@qOrphanTvL])
                                                           else  @frTvL
                                                     else  []
   | Pred        loc         .   qHereTvL        =   @frTvL \\ @pr.qInsideTvL

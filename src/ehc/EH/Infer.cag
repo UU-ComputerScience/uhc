@@ -409,9 +409,9 @@ SEM AGItf
                                                           , (hsnRec,    mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
                                                           , (hsnSum,    mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
                                                           , (hsnRowEmpty, mkTGI (Ty_Con hsnRowEmpty) kiRow)
-                                                          , (hsnRow,    	mkTGI (Ty_Con hsnUnknown) kiRow)
-                                                          , (hsnRec,    	mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
-                                                          , (hsnSum,    	mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
+                                                          , (hsnRow,        mkTGI (Ty_Con hsnUnknown) kiRow)
+                                                          , (hsnRec,        mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
+                                                          , (hsnSum,        mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
                                                           , (hsnRowEmpty, mkTGI (Ty_Con hsnRowEmpty) kiRow)
                                                           ]
 %%]
@@ -603,8 +603,14 @@ ATTR PatExpr [ | | mbTopNm: {Maybe HsName} ]
 
 SEM PatExpr
   | Var VarAs   loc         .   mbTopNm             =   if @nm == hsnWild then Nothing else Just @nm
+%%[[1
   | * - Var VarAs
                 loc         .   mbTopNm             =   Nothing
+%%][8
+  | Irrefutable loc         .   mbTopNm             =   @patExpr.mbTopNm
+  | * - Var VarAs Irrefutable
+                loc         .   mbTopNm             =   Nothing
+%%]]
 %%]
 
 %%[7.topNm
@@ -619,11 +625,10 @@ SEM PatExpr
 %%]]
                 loc         .   topNm               =   uidHNm @lUniq
   | SConst      loc         .   topNm               =   uidHNm @uniq1
-%%]
-
-%%[8
-SEM PatExpr
+%%[[8
   | FConst      loc         .   topNm               =   uidHNm @uniq1
+  | Irrefutable loc         .   topNm               =   @patExpr.topNm
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -166,10 +166,10 @@ defaultEHCOpts
       ,  ehcOptVerbosity      =   VerboseNormal
       ,  ehcOptTrf            =   []
       ,  ehcOptBuiltinNames   =   mkEHBuiltinNames (const id)
+      ,  ehcOptEmitLLVM       =   False
 %%]]
 %%[[8
       ,  ehcOptEmitLlc        =   False
-      ,  ehcOptEmitLLVM       =   False
       ,  ehcOptEmitExec       =   False
 %%]
 %%[[9

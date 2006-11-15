@@ -613,7 +613,7 @@ SEM CPat
 %%[[99
     BoolExpr
 %%]]
-                loc         .   patNm       =   cpatNmEither id id @pnm
+                loc         .   patNm       =   @pnm
 %%]
   | Undef       loc         .   patNm       =   hsnUnknown
 

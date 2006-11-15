@@ -311,11 +311,11 @@ SEM Decl
 
 %%[8
 SEM PatExpr
-  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst FConst
+  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst FConst Irrefutable
 %%[[99
     Expr
 %%]]
-                loc         .   cpNm        =   maybe (CPatNmUniq @topNm) CPatNmOrig @mbTopNm
+                loc         .   cpNm        =   maybe (RPatNmUniq @topNm) RPatNmOrig @mbTopNm
 %%]
 
 %%[8
@@ -347,7 +347,7 @@ SEM PatExpr
                                                     grp = groupByOn (\o1 o2 -> (foffOffset o1 `compare` foffOffset o2) /= GT) fst
                                                     max = ctagArity @tag - 1
                                                     sat = listSaturateWith 0 max (foffOffset . fst)
-                                                            (zipWith (\o n -> (o,(FldKnownOffset n o,RPat_Var (CPatNmOrig n)))) [0..max] hsnLclSupplyL)
+                                                            (zipWith (\o n -> (o,(FldKnownOffset n o,RPat_Var (RPatNmOrig n)))) [0..max] hsnLclSupplyL)
                                                 in  ( map (fsL2PatOffsetL . sat) $ grp fsL
                                                     , fsL2PatOffsetL fsL
                                                     )
@@ -372,6 +372,7 @@ SEM PatExpr
                                                       ->  RPat_Con @cpNm @tag (RPatConBind_One @rest pbL)
                                                           where  pbL = map fst $ fsL2PatOffsetL $ fsLReorder $ reverse $ @fsRPatL
   | DataFields  loc         .   rpat        =   RPat_Con @cpNm @tag (rpatConBindUnFlatten $ map (RPatConBind_One @rest . map fst) $ @rpatBindss)
+  | Irrefutable loc         .   rpat        =   RPat_Irrefutable @cpNm @patExpr.cbindL
 %%]
 
 %%[99
@@ -605,8 +606,8 @@ rpatBindL2CBindL env hasSub parNm ct rest pbL
                         mkc n (Just o) = mkCExprSatSelCase env (Just pn') (CExpr_Var pn) ct n l o rest
                         mkc n Nothing  = mkCExprSelCase    env (Just pn') (CExpr_Var pn) ct n l o rest
                    in   case rcpPNm p of
-                            CPatNmOrig n           -> b n
-                            CPatNmUniq n | hasSub  -> b n
+                            RPatNmOrig n           -> b n
+                            RPatNmUniq n | hasSub  -> b n
                             _                      -> []
             )
     $  pbL
@@ -633,10 +634,10 @@ SEM PatExpr
 ATTR AllPatExpr [ ceParentNm: HsName | | ]
 
 SEM PatExpr
-  | App         arg         .   ceParentNm  =   cpatNmNm (rcpPNm @arg.rpat)
+  | App         arg         .   ceParentNm  =   rpatNmNm (rcpPNm @arg.rpat)
 
 SEM RecPatExpr
-  | Ext         patExpr     .   ceParentNm  =   cpatNmNm (rcpPNm @patExpr.rpat)
+  | Ext         patExpr     .   ceParentNm  =   rpatNmNm (rcpPNm @patExpr.rpat)
 
 SEM Decl
   | Val         patExpr     .   ceParentNm  =   @patExpr.topNm
@@ -663,15 +664,16 @@ type RCEAltL = [RAlt]
 
 %%[8 hs
 data RCESplitCateg
-  = RCESplitVar | RCESplitCon | RCESplitConMany | RCESplitConst
+  = RCESplitVar | RCESplitCon | RCESplitConMany | RCESplitConst | RCESplitIrrefutable
 %%[[99
   | RCESplitBoolExpr
 %%]]
   deriving Eq
 
 rceSplitMustBeOnItsOwn :: RCESplitCateg -> Bool
-rceSplitMustBeOnItsOwn RCESplitConMany = True
-rceSplitMustBeOnItsOwn _               = False
+rceSplitMustBeOnItsOwn RCESplitConMany     = True
+rceSplitMustBeOnItsOwn RCESplitIrrefutable = True
+rceSplitMustBeOnItsOwn _                   = False
 %%]
 
 %%[8 hs
@@ -688,19 +690,24 @@ rceSplit f (x:xs@(x':_))
   where xcateg = f x
 
 rceRebinds :: HsName -> RCEAltL -> CBindL
-rceRebinds nm alts = [ CBind_Bind n (CExpr_Var nm) | (CPatNmOrig n) <- raltLPatNms alts, n /= nm ]
+rceRebinds nm alts = [ CBind_Bind n (CExpr_Var nm) | (RPatNmOrig n) <- raltLPatNms alts, n /= nm ]
 
 rceMatchVar :: RCEEnv ->  [HsName] -> RCEAltL -> CExpr
 rceMatchVar env (arg:args') alts
   = mkCExprLet CBindPlain (rceRebinds arg alts) remMatch
   where remMatch  = rceMatch env args' [RAlt_Alt remPats e | (RAlt_Alt (RPat_Var n : remPats) e) <- alts]
 
+rceMatchIrrefutable :: RCEEnv ->  [HsName] -> RCEAltL -> CExpr
+rceMatchIrrefutable env (arg:args') [RAlt_Alt (RPat_Irrefutable n b : remPats) e]
+  = mkCExprLet CBindPlain b remMatch
+  where remMatch  = rceMatch env args' [RAlt_Alt remPats e]
+
 rceMkAltAndSubAlts :: RCEEnv -> [HsName] -> RCEAltL -> CAlt
 rceMkAltAndSubAlts env (arg:args) alts@(alt:_)
   = CAlt_Alt altPat (mkCExprLet CBindPlain (rceRebinds arg alts) subMatch)
   where (subAlts,subAltSubNms)
           =  unzip
-               [ (RAlt_Alt (pats ++ ps) e, map (cpatNmNm . rcpPNm) pats)
+               [ (RAlt_Alt (pats ++ ps) e, map (rpatNmNm . rcpPNm) pats)
                | (RAlt_Alt (RPat_Con _ _ (RPatConBind_One _ pbinds) : ps) e) <- alts
                , let pats = [ p | (RPatBind_Bind _ _ _ p) <- pbinds ]
                ]
@@ -709,8 +716,8 @@ rceMkAltAndSubAlts env (arg:args) alts@(alt:_)
         altPat
           =  case alt of
                RAlt_Alt (RPat_Con n t (RPatConBind_One r pbL) : _) _
-                 ->  CPat_Con n t r pbL'
-                     where  pbL' = [ CPatBind_Bind l o n (CPat_Var (rcpPNm p)) | (RPatBind_Bind l o n p) <- pbL ]
+                 ->  CPat_Con (rpatNmNm n) t r pbL'
+                     where  pbL' = [ CPatBind_Bind l o n (CPat_Var (rpatNmNm $ rcpPNm p)) | (RPatBind_Bind l o n p) <- pbL ]
 
 rceMatchCon :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchCon env (arg:args) alts
@@ -737,13 +744,14 @@ rceMatchConst env (arg:args) alts
 
 rceMatchSplits :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchSplits env args alts@(alt:_)
-  |  raltIsVar      alt  = rceMatchVar      env args alts
-  |  raltIsConst    alt  = rceMatchConst    env args alts
+  |  raltIsVar      	alt  = rceMatchVar      	env args alts
+  |  raltIsConst    	alt  = rceMatchConst    	env args alts
+  |  raltIsIrrefutable  alt  = rceMatchIrrefutable  env args alts
 %%[[99
-  |  raltIsBoolExpr alt  = rceMatchBoolExpr env args alts
+  |  raltIsBoolExpr 	alt  = rceMatchBoolExpr 	env args alts
 %%]]
-  |  raltIsConMany  alt  = rceMatchConMany  env args alts
-  |  otherwise           = rceMatchCon      env args alts
+  |  raltIsConMany  	alt  = rceMatchConMany  	env args alts
+  |  otherwise          	 = rceMatchCon      	env args alts
 
 rceMatch :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatch env [] []    =  rceCaseCont env
@@ -758,18 +766,19 @@ rceMatch env args alts
                   CExpr_Var _
                      ->  rceMatchSplits (rceUpdEnv e env) args alts
                   _  ->  mkCExprLet CBindPlain [CBind_Bind nc e] ce'
-                     where nc  = hsnPrefix "_casecont_" (cpatNmNm . rcpPNm . rcaPat . head $ alts)
+                     where nc  = hsnPrefix "_casecont_" (rpatNmNm . rcpPNm . rcaPat . head $ alts)
                            ce' = rceMatchSplits (rceUpdEnv vc env) args alts
                            vc  = CExpr_Var nc
         )
         (rceCaseCont env)
-     $ (rceSplit (\a -> if      raltIsVar       a  then RCESplitVar
-                        else if raltIsConst     a  then RCESplitConst
+     $ (rceSplit (\a -> if      raltIsVar           a  then RCESplitVar
+                        else if raltIsConst         a  then RCESplitConst
+                        else if raltIsIrrefutable   a  then RCESplitIrrefutable
 %%[[99
-                        else if raltIsBoolExpr  a  then RCESplitBoolExpr
+                        else if raltIsBoolExpr      a  then RCESplitBoolExpr
 %%]]
-                        else if raltIsConMany   a  then RCESplitConMany
-                                                   else RCESplitCon
+                        else if raltIsConMany       a  then RCESplitConMany
+                                                       else RCESplitCon
                  ) alts)
 
 rceUpdEnv :: CExpr -> RCEEnv -> RCEEnv

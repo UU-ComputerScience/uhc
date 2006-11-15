@@ -108,14 +108,14 @@ SET AllAlt      =   CAlt CAltL
 
 %%[8
 DATA CPat
-  | Var         pnm             : {CPatNm}
-  | Con         pnm             : {CPatNm}
+  | Var         pnm             : {HsName}
+  | Con         pnm             : {HsName}
                 tag             : {CTag}
                 rest            : CPatRest
                 binds           : CPatBindL
-  | Int         pnm             : {CPatNm}
+  | Int         pnm             : {HsName}
                 int             : {Int}
-  | Char        pnm             : {CPatNm}
+  | Char        pnm             : {HsName}
                 char            : {Char}
 
 TYPE CPatL      =   [CPat]
@@ -137,11 +137,11 @@ TYPE CPatBindL  =   [CPatBind]
 
 %%[99
 DATA CPat
-  | BoolExpr    pnm             : {CPatNm}
+  | BoolExpr    pnm             : {HsName}
                 cexpr           : {CExpr}
 %%]
 
-  | TupSplit    pnm             : {CPatNm}
+  | TupSplit    pnm             : {RPatNm}
                 pat             : CPat
                 tag             : {CTag}
                 nm              : {HsName}

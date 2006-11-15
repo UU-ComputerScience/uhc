@@ -45,7 +45,7 @@ SEM CPatRest
   | Var         lhs         .   nmL         =   [@nm]
 
 SEM CPat
-  | Var Con     loc         .   nm          =   cpatNmEither id id @pnm
+  | Var Con     loc         .   nm          =   @pnm
   | Var         lhs         .   nmL         =   [@nm]
   | Con         lhs         .   nmL         =   [@nm] ++ @rest.nmL ++ @binds.nmL
 %%]
