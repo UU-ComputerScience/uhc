@@ -87,7 +87,7 @@ pCAlt
 
 pCPat :: CParser CPat
 pCPat
-  =   pCPatNm
+  =   pDollNm
       <**> (   pNUMBER
 				*> (   (   (\s n -> CPat_Int  n (read s)) <$ pKeyTk "Int"
 					   <|> (\s n -> CPat_Char n (head s)) <$ pKeyTk "Char"
@@ -99,7 +99,7 @@ pCPat
 				   )
            <|> pSucceed CPat_Var
            )
-  where pCPatNm = CPatNmOrig <$> pDollNm <|> CPatNmUniq <$ pKeyTk "uniq" <*> pDollNm
+  where -- pRPatNm = RPatNmOrig <$> pDollNm <|> RPatNmUniq <$ pKeyTk "uniq" <*> pDollNm
         pCPatRest = pMaybe CPatRest_Empty CPatRest_Var pDollNm
 
 pCPatBind :: CParser CPatBind

@@ -151,10 +151,10 @@ SEM CAltL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 
 SEM CPat
-  | Int         lhs         .   pp          =   ppCPatNmNm ppCNm @pnm >#< ppLit "Int"    (show @int)
-  | Char        lhs         .   pp          =   ppCPatNmNm ppCNm @pnm >#< ppLit "Char"   [@char]
-  | Var         lhs         .   pp          =   ppCPatNmNm ppCNm @pnm
-  | Con         lhs         .   pp          =   ppDef (ppCPatNmNm ppCNm @pnm >#< ppTag @tag)
+  | Int         lhs         .   pp          =   ppCNm @pnm >#< ppLit "Int"    (show @int)
+  | Char        lhs         .   pp          =   ppCNm @pnm >#< ppLit "Char"   [@char]
+  | Var         lhs         .   pp          =   ppCNm @pnm
+  | Con         lhs         .   pp          =   ppDef (ppCNm @pnm >#< ppTag @tag)
                                                       (ppCurly (@rest.pp >|< "|" >|< ppCommas' @binds.ppL))
 
 SEM CPatL
