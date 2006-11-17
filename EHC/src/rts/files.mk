@@ -20,8 +20,8 @@ INSABS_RTS_INC_PREFIX		:= $(INSABS_PREFIX)$(EHC_VARIANT_PREFIX)include/
 INSABS_LIB_RTS				:= $(INSABS_RTS_LIB_PREFIX)lib$(RTS_PKG_NAME)$(LIB_SUFFIX)
 
 # main + sources + dpds, for .c/.h
-RTS_C_RTS_SRC_CC			:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,rts prim)
-RTS_H_RTS_SRC_CH			:= $(patsubst %,$(SRC_RTS_PREFIX)%.ch,rts config)
+RTS_C_RTS_SRC_CC			:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,rts prim utils grinbc/grinbc)
+RTS_H_RTS_SRC_CH			:= $(patsubst %,$(SRC_RTS_PREFIX)%.ch,rts config bits utils grinbc/grinbc)
 
 RTS_C_RTS_DRV_C				:= $(patsubst $(SRC_RTS_PREFIX)%.cc,$(RTS_BLD_RTS_PREFIX)%.c,$(RTS_C_RTS_SRC_CC))
 RTS_H_RTS_DRV_H				:= $(patsubst $(SRC_RTS_PREFIX)%.ch,$(RTS_BLD_RTS_PREFIX)%.h,$(RTS_H_RTS_SRC_CH))
@@ -49,7 +49,7 @@ $(RTS_C_RTS_DRV_C): $(RTS_BLD_RTS_PREFIX)%.c: $(SRC_RTS_PREFIX)%.cc
 	touch $@
 
 $(RTS_C_RTS_DRV_O): $(RTS_BLD_RTS_PREFIX)%.o: $(RTS_BLD_RTS_PREFIX)%.c $(RTS_H_RTS_ALL_DRV_H)
-	$(GCC) $(EHC_GCC_CC_OPTS) -o $@ -c $<
+	$(GCC) $(RTS_GCC_CC_OPTS_OPTIM) $(EHC_GCC_CC_OPTS) -o $@ -c $<
 
 $(INSABS_LIB_RTS): $(EXTLIBS_BGC_INS_FLAG) $(RTS_C_RTS_DRV_O) $(RTS_H_RTS_INS_H) $(RTS_MKF)
 	mkdir -p $(@D)

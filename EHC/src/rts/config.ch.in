@@ -14,3 +14,23 @@
 #define SIZEOF_GRWORD	(sizeof(intptr_t))
 
 %%]
+
+%%[8
+#if SIZEOF_UNSIGNED_INT_P == 8
+#define USE_64_BITS 1
+#define USE_32_BITS 0
+#else
+#define USE_64_BITS 0
+#define USE_32_BITS 1
+#endif
+%%]
+
+%%[8
+/* endianness */
+
+#undef BIGENDIAN
+#undef LITTLEENDIAN
+
+%%]
+
+

@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include "config.h"
+#include "utils.h"
+#include "bits.h"
+#include "grinbc/grinbc.h"
 %%]
 
 %%[8

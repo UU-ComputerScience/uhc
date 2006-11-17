@@ -22,7 +22,7 @@
 %%[8 import ({%{EH}Core.Trf.RenUniq},{%{EH}Core.Trf.FullLazy},{%{EH}Core.Trf.InlineLetAlias},{%{EH}Core.Trf.LetUnrec},{%{EH}Core.Trf.LamLift},{%{EH}Core.Trf.ConstProp},{%{EH}Core.Trf.EtaRed})
 %%]
 
-%%[8 import ({%{EH}GrinCode.Pretty})
+%%[8 import ({%{EH}GrinCode.Pretty}, {%{GRIN}GrinByteCode.PrettyC})
 %%]
 
 %%[8 import (qualified {%{GRIN}CompilerDriver} as GRINC, qualified {%{GRIN}GRINCCommon} as GRINCCommon)

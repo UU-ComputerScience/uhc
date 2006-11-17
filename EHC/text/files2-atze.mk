@@ -160,3 +160,10 @@ text-variant-slides-overview:
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyOverview --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=17 \
 	  text-variant-dflt-once
+
+text-variant-grinbc-design:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=asArticle --set=useHyperref --set=refToPDF" \
+	  TEXT_SHUFFLE_VARIANT=22 \
+	  text-variant-dflt-once
+

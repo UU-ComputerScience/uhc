@@ -1,0 +1,215 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Prettyprint Grin ByteCode program as C
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs module {%{GRIN}GrinByteCode.PrettyC} import(UU.Pretty, EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Opts},qualified {%{GRIN}Config} as Cfg,{%{GRIN}GrinByteCode})
+%%]
+
+%%[8 hs import(Data.Bits)
+%%]
+
+%%[8 hs export(ppGBModAsC)
+%%]
+
+%%[8 import({GrinByteCode/AbsSyn})
+%%]
+
+%%[8 hs
+ppGBModAsC :: EHCOpts -> Module -> PP_Doc
+ppGBModAsC opts m
+  = let t = wrap_AGItf (sem_AGItf (AGItf_AGItf m))
+                       (Inh_AGItf
+                       )
+    in  pp_Syn_AGItf t
+%%]
+
+%%[8
+WRAPPER AGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+ppCmtC :: PP a => a -> PP_Doc
+ppCmtC x = "/*" >#< pp x >#< "*/"
+
+ppHex :: Integral a => Int -> a -> PP_Doc
+ppHex prec x = head $ ppHex' Nothing prec x
+
+ppHex' :: Integral a => Maybe Int -> Int -> a -> [PP_Doc]
+ppHex' split prec x
+  = case split of
+      Nothing  -> ["0x" >|< h]
+      Just spl -> map ("0x" >|<) $ s h
+               where s l = case splitAt spl l of
+                             ([],_ ) -> []
+                             (l1,l2) -> l1 : s l2
+  where h = strHex prec x
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% PP as code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllNT AGItf [ | | pp USE {>-<} {empty}: PP_Doc ]
+%%]
+
+%%[8
+SEM Instr
+  | Ld          lhs         .   pp          =   ppCommas [ppHex 2 @enc,@imm.pp]
+%%]
+
+%%[8
+SEM Imm
+  | Int         loc         .   ppL         =   case @lhs.immSz of
+                                                  InsOp_ImmSz_Bits08 -> ppHex' (Just 2)  2 @int
+                                                  InsOp_ImmSz_Bits16 -> ppHex' (Just 2)  4 @int
+                                                  InsOp_ImmSz_Bits32 -> ppHex' (Just 2)  8 @int
+                                                  InsOp_ImmSz_Bits64 -> ppHex' (Just 2) 16 @int
+				lhs			.	pp			=	ppCommas $ (if Cfg.machineIsBigEndian then id else reverse) $ @ppL
+%%]
+
+%%[8
+ATTR Instrs [ | | ppL : {[PP_Doc]} ]
+
+SEM Instrs
+  | Nil         lhs         .   ppL         =   []
+  | Cons        lhs         .   ppL         =   (ppCmtC @hd.mn >#< @hd.pp) : @tl.ppL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% PP as mnemonic
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllInsOp Instr Imm [ | | mn USE {>|<} {empty}: PP_Doc ]
+%%]
+
+%%[8
+SEM Instr
+  | Ld          lhs         .   mn          =   "l" >|< @ind.mn >|< @locDst.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
+
+SEM Imm
+  | Int         lhs         .   mn          =   case @lhs.immSz of
+                                                  InsOp_ImmSz_Bits08 -> ppHex  2 @int
+                                                  InsOp_ImmSz_Bits16 -> ppHex  4 @int
+                                                  InsOp_ImmSz_Bits32 -> ppHex  8 @int
+                                                  InsOp_ImmSz_Bits64 -> ppHex 16 @int
+
+SEM InsOp_LocE
+  | TOS         lhs         .   mn          =   pp "t"
+  | Reg         lhs         .   mn          =   pp "r"
+  | Imm         lhs         .   mn          =   pp "i"
+  | PC          lhs         .   mn          =   pp "p"
+
+SEM InsOp_LocB
+  | TOS         lhs         .   mn          =   pp "t"
+  | Reg         lhs         .   mn          =   pp "r"
+
+SEM InsOp_LocO
+  | TOS         lhs         .   mn          =   pp "t"
+  | Reg         lhs         .   mn          =   pp "r"
+  | SP          lhs         .   mn          =   pp "s"
+  | PC          lhs         .   mn          =   pp "p"
+
+SEM InsOp_TyOp
+  | Add         lhs         .   mn          =   pp "a"
+  | Sub         lhs         .   mn          =   pp "s"
+  | Mul         lhs         .   mn          =   pp "m"
+  | Div         lhs         .   mn          =   pp "d"
+
+SEM InsOp_DataOp
+  | Int1        lhs         .   mn          =   pp "i1"
+  | Int2        lhs         .   mn          =   pp "i2"
+  | Float1      lhs         .   mn          =   pp "f1"
+  | Float2      lhs         .   mn          =   pp "f2"
+
+SEM InsOp_ImmSz
+  | Bits08      lhs         .   mn          =   pp "08"
+  | Bits16      lhs         .   mn          =   pp "16"
+  | Bits32      lhs         .   mn          =   pp "32"
+  | Bits64      lhs         .   mn          =   pp "64"
+
+SEM InsOp_Deref
+  | Zero        lhs         .   mn          =   pp "0"
+  | One         lhs         .   mn          =   pp "1"
+  | Two         lhs         .   mn          =   pp "2"
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Encodings, must be similar to rts/src/grinbc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllInsOp [ | | enc: Int ]
+
+SEM Instr
+  | Ld          loc         .   enc         =   0x0 .|. (@ind.enc `shiftL` 5) .|. (@locDst.enc `shiftL` 4) .|. (@locSrc.enc `shiftL` 2) .|. (@immSz.enc)
+
+SEM InsOp_LocE
+  | TOS         lhs         .   enc         =   0
+  | Reg         lhs         .   enc         =   1
+  | Imm         lhs         .   enc         =   2
+  | PC          lhs         .   enc         =   3
+
+SEM InsOp_LocB
+  | TOS         lhs         .   enc         =   0
+  | Reg         lhs         .   enc         =   1
+
+SEM InsOp_LocO
+  | TOS         lhs         .   enc         =   0
+  | Reg         lhs         .   enc         =   1
+  | SP          lhs         .   enc         =   2
+  | PC          lhs         .   enc         =   3
+
+SEM InsOp_TyOp
+  | Add         lhs         .   enc         =   0
+  | Sub         lhs         .   enc         =   1
+  | Mul         lhs         .   enc         =   2
+  | Div         lhs         .   enc         =   3
+
+SEM InsOp_DataOp
+  | Int1        lhs         .   enc         =   0
+  | Int2        lhs         .   enc         =   1
+  | Float1      lhs         .   enc         =   2
+  | Float2      lhs         .   enc         =   3
+
+SEM InsOp_ImmSz
+  | Bits08      lhs         .   enc         =   0
+  | Bits16      lhs         .   enc         =   1
+  | Bits32      lhs         .   enc         =   2
+  | Bits64      lhs         .   enc         =   3
+
+SEM InsOp_Deref
+  | Zero        lhs         .   enc         =   0
+  | One         lhs         .   enc         =   1
+  | Two         lhs         .   enc         =   2
+%%]
+
+#define GB_InsLd(indLev,locB,locE,immSz)        (GB_Ins_PreLd | ((indLev) << 5) | ((locB) << 4) | ((locE) << 2) | ((immSz) << 0))
+#define GB_InsCall(locB)                        (GB_Ins_PreCall | ((0x0) << 1) | ((locB) << 0))
+#define GB_InsTailCall(locB)                    (GB_Ins_PreCall | ((0x1) << 1) | ((locB) << 0))
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% How to pp, context
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR Imm [ immSz: InsOp_ImmSz | | ]
+
+SEM Instr
+  | Ld          imm         .   immSz       =   @immSz.self
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replica's, SELF
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR InsOp_ImmSz [ | | self: SELF ]
+%%]
+
