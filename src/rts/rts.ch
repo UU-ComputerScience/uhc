@@ -1,10 +1,12 @@
 %%[8
 #include <stdio.h>
+#include <stdlib.h>
+#include <inttypes.h>
 #include "config.h"
 %%]
 
 %%[8
-typedef unsigned int GrWord;
+typedef intptr_t GrWord;
 typedef GrWord* Pointer;
 %%]
 
@@ -29,6 +31,15 @@ extern Pointer Heap;
 extern Pointer HeapEndCAF, HeapLimit;
 
 #endif
+%%]
+
+%%[8
+
+#ifndef HEAPALLOC_SIG_
+#define HEAPALLOC_SIG_
+GrWord heapalloc(int);
+#endif /* HEAPALLOC_SIG_ */
+
 %%]
 
 %%[8

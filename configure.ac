@@ -207,6 +207,9 @@ case $HostPlatform in
   i*86-pc-linux-gnu )
         mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
         ;;
+  x86_64-* )
+        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
+        ;;
   *)
         mach_dep_c_for_tailcall_leave1=""
         mach_dep_c_for_tailcall_leave2=""
