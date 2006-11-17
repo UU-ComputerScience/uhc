@@ -18,8 +18,8 @@ int main(int argc, char** argv)
 #if USE_BOEHM_GC
     GC_INIT() ;
 
-    Stack = (Pointer)GC_MALLOC_UNCOLLECTABLE(SIZEOF_GRWORD*STACKSIZE);
-    ReturnArea = (Pointer)GC_MALLOC_UNCOLLECTABLE(SIZEOF_GRWORD*RETURNSIZE);
+    Stack = (Pointer)GC_MALLOC_UNCOLLECTABLE(sizeof(GrWord)*STACKSIZE);
+    ReturnArea = (Pointer)GC_MALLOC_UNCOLLECTABLE(sizeof(GrWord)*RETURNSIZE);
 #else
     Heap = (Pointer)malloc(sizeof(GrWord)*HEAPSIZE);
 

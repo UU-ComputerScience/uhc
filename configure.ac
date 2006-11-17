@@ -98,13 +98,13 @@ AC_SUBST(GHC_VERSION, $ghcVersion)
 # GHC 6.6 and higher: no package util, lang, and data anymore
 case $ghcVersion in
   6.4.1)
-    optStandardGHCPackages=-package util -package lang -package data
+    optStandardGHCPackages="-package util -package lang -package data"
     ;;
   6.4.2)
-    optStandardGHCPackages=-package util -package lang -package data
+    optStandardGHCPackages="-package util -package lang -package data"
     ;;
   *)
-    optStandardGHCPackages=
+    optStandardGHCPackages=""
     ;;
 esac
 
@@ -181,10 +181,11 @@ AC_SUBST(GCC_CMD,$gccCmd)
 ### type configuration, machine characteristics
 
 # sizeof GrWord
-AC_CHECK_SIZEOF([unsigned int])
+# AC_CHECK_SIZEOF([unsigned int])
 
 # sizeof GrWord*, Pointer
-AC_CHECK_SIZEOF([unsigned int *])
+# AC_CHECK_SIZEOF([unsigned int *])
+AC_CHECK_SIZEOF([uintptr_t])
 
 AC_C_BIGENDIAN([AC_DEFINE([BIGENDIAN],[1]) AC_DEFINE([LITTLEENDIAN],[0])],
                [AC_DEFINE([LITTLEENDIAN],[1]) AC_DEFINE([BIGENDIAN],[0])],
