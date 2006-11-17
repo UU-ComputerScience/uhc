@@ -11,6 +11,6 @@
 /* size of GrWord */
 #undef SIZEOF_UNSIGNED_INT
 
-#define SIZEOF_GRWORD	SIZEOF_UNSIGNED_INT
+#define SIZEOF_GRWORD	(sizeof(intptr_t))
 
 %%]
