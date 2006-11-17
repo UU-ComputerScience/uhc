@@ -9,7 +9,7 @@
 %%]
 
 %%[8
-typedef intptr_t GrWord;
+typedef uintptr_t GrWord;
 typedef GrWord* Pointer;
 %%]
 
