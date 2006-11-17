@@ -249,14 +249,15 @@ case $HostPlatform in
         # file suffixes
         # path separator
         # libtool usage
-        libtoolStatic="no"
-        ehcGccOptsStatic="-static"
+        # libtoolStatic="no"
+        # ehcGccOptsStatic="-static"
+	libtoolStatic="libtool --mode=link gcc -static -o"
         ;;
   x86*-*-linux-gnu )
         # file suffixes
         # path separator
         # libtool usage
-        libtoolStatic="no"
+        libtoolStatic="libtool --mode=link gcc -static -o"
         ;;
   *)
         # file suffixes
