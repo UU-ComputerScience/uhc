@@ -56,6 +56,10 @@
                10pt]{scrbook}
 %%]
 
+%%[22
+%%@main.articleDocumentClass
+%%]
+
 %%[77
 %%@main.articleDocumentClass
 %%]
@@ -504,6 +508,10 @@
 \SetSectionsForBook
 %%]
 
+%%[22
+\SetSectionsForArticle
+%%]
+
 %%[77
 \SetSectionsForArticle
 %%]
@@ -773,6 +781,11 @@ WWW home page:
 \date{Thu, 28 September 2006}
 %%]
 
+%%[22
+\title{Grin ByteCode design}
+\author{Atze Dijkstra}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Index
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -914,6 +927,10 @@ WWW home page:
 %%[20
 \maketitle
 \clearemptydoublepage
+%%]
+
+%%[22
+\maketitle
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1967,7 +1984,7 @@ To be done ...
 
 %%@TopicGrinBytecode.grinBMovingData
 
-\subsection{Arithmetic (|Int| support)}
+\subsection{Arithmetic}
 
 %%@TopicGrinBytecode.grinBArithmetic
 
@@ -2048,6 +2065,60 @@ To be done ...
 %%]
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Grin ByteCode design
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[22
+\section{Grin ByteCode design}
+%%]
+
+%%[22
+%{
+%%@TopicGrinBytecode.defs
+
+\subsection{Compilation scheme to Grin bytecode (GrinB)}
+
+%%@TopicGrinBytecode.grin2GrinB
+
+\subsection{GrinB operational semantics}
+
+%%@TopicGrinBytecode.grinBSemantics
+
+\subsection{Meta variable encoding}
+
+%%@TopicGrinBytecode.grinBMetavarEncoding
+
+\subsection{Constants}
+
+%%@TopicGrinBytecode.grinBConstants
+
+\subsection{Moving data around}
+
+%%@TopicGrinBytecode.grinBMovingData
+
+\subsection{Arithmetic}
+
+%%@TopicGrinBytecode.grinBArithmetic
+
+\subsection{Storage management}
+
+%%@TopicGrinBytecode.grinBStorage
+
+\subsection{Control}
+
+%%@TopicGrinBytecode.grinBControl
+
+\subsection{Miscellaneous (ffi, ...)}
+
+%%@TopicGrinBytecode.grinBRest
+
+\subsection{Example translations}
+
+%%@TopicGrinBytecode.grinBExampleTranslations
+
+%}
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Conclusion

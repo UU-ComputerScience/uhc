@@ -85,7 +85,10 @@
 %%[8888 -(1.exp.hdAndTl 1.Misc.hdAndTl) import (EH.Util.Utils hiding (tr,trp)) export(module EH.Util.Utils)
 %%]
 
-%%[8 import (EH.Util.FPath,IO,Char,Data.Maybe) export(Verbosity(..),putCompileMsg, openFPath,writeToFile, writePP)
+%%[8 import (EH.Util.FPath,IO,Char,Data.Maybe,Numeric)
+%%]
+
+%%[8 export(Verbosity(..),putCompileMsg, openFPath,writeToFile, writePP)
 %%]
 
 %%[8 import(qualified Data.Set as Set) export(ppHsnNonAlpha)
@@ -987,4 +990,16 @@ hsnUniqSupplyL = map uidHNm . iterate uidNext
 hsnLclSupplyL :: [HsName]
 hsnLclSupplyL = map (\i -> HNm ("_" ++ show i)) [1..]
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Hex printing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(strHex)
+strHex :: Integral a => Int -> a -> String
+strHex prec x
+  = replicate (prec - length h) '0' ++ h
+  where h = showHex x []
+%%]
+
 

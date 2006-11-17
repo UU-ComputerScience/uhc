@@ -1,0 +1,132 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abstract syntax for Grin ByteCode
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+DATA AGItf
+  | AGItf       module          : Module
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+DATA Module
+  | Mod         moduleNm        : {HsName}
+                impModNmL		: {[HsName]}
+                instrs          : Instrs
+                stringL			: {[String]}
+                funEntryL		: {[Int]}
+                cafEntryL		: {[Int]}
+                mainCafEntry	: Int
+%%]
+
+%%[8
+DATA Instr
+  | Ld          ind             : InsOp_Deref
+  				locDst			: InsOp_LocB
+  				locSrc			: InsOp_LocE
+  				immSz			: InsOp_ImmSz
+  				imm 			: Imm
+
+TYPE Instrs = [Instr]
+%%]
+
+%%[8
+SET AllInstr = Instr Instrs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instruction opcode inline operands, see src/rts/grinbc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+/* Location variant: load source, store destination, extensive variant */
+%%[8
+DATA InsOp_LocE
+  | TOS
+  | Reg
+  | Imm
+  | PC
+%%]
+
+/* Location variant: load destination, store source, brief variant */
+%%[8
+DATA InsOp_LocB
+  | TOS
+  | Reg
+%%]
+
+/* Location variant: operator destination */
+%%[8
+DATA InsOp_LocO
+  | TOS
+  | Reg
+  | SP
+  | PC
+%%]
+
+/* Operator kind/type */
+%%[8
+DATA InsOp_TyOp
+  | Add
+  | Sub
+  | Mul
+  | Div
+%%]
+
+/* Operator data kind/type */
+%%[8
+DATA InsOp_DataOp
+  | Int1
+  | Int2
+  | Float1
+  | Float2
+%%]
+
+/* Immediate constant size */
+%%[8
+DATA InsOp_ImmSz
+  | Bits08
+  | Bits16
+  | Bits32
+  | Bits64
+%%]
+
+/* Indirection level, deref times */
+%%[8
+DATA InsOp_Deref
+  | Zero
+  | One
+  | Two
+%%]
+
+%%[8
+SET AllInsOp = InsOp_LocE InsOp_LocB InsOp_LocO InsOp_TyOp InsOp_DataOp InsOp_ImmSz InsOp_Deref
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Inlined immediate
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+DATA Imm
+  | Int			int				: Integer
+
+SET AllImm = Imm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% SETS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SET AllNT = AllInstr AllInsOp AllImm
+%%]
+

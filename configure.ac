@@ -178,13 +178,19 @@ AC_SUBST(GCC_CMD,$gccCmd)
 ### what to make
 #AC_SUBST(UUST_SUBDIRS,"shc lib")
 
-### configuration
+### type configuration, machine characteristics
 
 # sizeof GrWord
 AC_CHECK_SIZEOF([unsigned int])
 
 # sizeof GrWord*, Pointer
 AC_CHECK_SIZEOF([unsigned int *])
+
+AC_C_BIGENDIAN([AC_DEFINE([BIGENDIAN],[1]) AC_DEFINE([LITTLEENDIAN],[0])],
+               [AC_DEFINE([LITTLEENDIAN],[1]) AC_DEFINE([BIGENDIAN],[0])],
+               [])
+
+### general configuration
 
 # Use Boehm's GC
 AC_DEFINE([USE_BOEHM_GC],[0])

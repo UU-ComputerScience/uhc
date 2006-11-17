@@ -1,0 +1,40 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Grin's byte code gen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs module {%{GRIN}GrinCode.ToGrinByteCode} import(Data.Maybe,Data.List,EH.Util.FastSeq,qualified Data.Set as Set,qualified Data.Map as Map,{%{EH}Base.Common},qualified {%{GRIN}GrinByteCode} as GB,{%{EH}GrinCode})
+%%]
+
+%%[8 hs export(grinMod2ByteCodeMod)
+%%]
+
+%%[8.WRAPPER import({GrinCode/AbsSyn})
+WRAPPER GrAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+grinMod2ByteCodeMod :: GrModule -> GB.Module
+grinMod2ByteCodeMod gmod
+  =  let  t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf gmod))
+                            (Inh_GrAGItf)
+     in   gbMod_Syn_GrAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code generation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrAGItf GrModule [ | | gbMod: {GB.Module} ]
+
+SEM GrModule
+  | Mod			lhs			.	gbMod			=	GB.Module_Mod @moduleNm [] (toList @bindL.i) [] [] [] 0
+%%]
+
+%%[8
+ATTR AllBind AllExpr [ | | i USE {:++:} {FSeqNil}: {FastSeq GB.Instr} ]
+%%]

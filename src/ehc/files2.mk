@@ -1,8 +1,10 @@
 # ehc/uhc variant dispatch rules
 $(patsubst $(BIN_PREFIX)%$(EXEC_SUFFIX),%,$(EHC_ALL_EXECS)): %: $(BIN_PREFIX)%$(EXEC_SUFFIX)
 
-$(EHC_ALL_EXECS): %: $(EHC_ALL_SRC) $(GRINC_ALL_SRC) $(EHC_MKF) \
-			$(if $(filter $(EHC_VARIANT),$(EHC_CODE_VARIANTS)),$(RTS_ALL_SRC),)
+#$(EHC_ALL_EXECS): %: $(EHC_ALL_SRC) $(GRINC_ALL_SRC) $(EHC_MKF) \
+#			$(if $(filter $(EHC_VARIANT),$(EHC_CODE_VARIANTS)),$(RTS_ALL_SRC),)
+#	$(MAKE) EHC_VARIANT=$(notdir $(*D)) ehc-variant
+$(EHC_ALL_EXECS): %: $(EHC_ALL_SRC) $(GRINC_ALL_SRC) $(EHC_MKF) $(RTS_ALL_SRC)
 	$(MAKE) EHC_VARIANT=$(notdir $(*D)) ehc-variant
 
 $(patsubst %,lib-eh-%,$(EHC_VARIANTS)):

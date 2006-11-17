@@ -14,17 +14,23 @@
 %format icp(i)(rs)(x)         = "\mathsf{cp}\langle{" i "}\rangle\langle{" rs "}\rangle" ^^ x
 %format iop(ot)(dt)(i)(rd)(rs)(x)       = "\mathsf{o}\langle{" ot "}\rangle\langle{" dt "}\rangle\langle{" i "}\rangle\langle{" rd "}\rangle\langle{" rs "}\rangle" ^^ x
 %format iaddi(rd)(x)         = "\mathsf{addi}\langle{" rd "}\rangle" ^^ x
-%format icall(x)         = "\mathsf{call}" ^^ x
-%format itailcall(x)         = "\mathsf{tailcall}" ^^ x
-%format icase(rs)         = "\mathsf{case}\langle{" rs "}\rangle"
+%format icall(rs)         = "\mathsf{call}\langle{" rs "}\rangle"
+%format itailcall(rs)(n)(m)(r)         = "\mathsf{tailcall}\langle{" rs "}\rangle" ^^ n ^^ m ^^ r
+%format iretcall(n)(m)(r)         = "\mathsf{retcall}" ^^ n ^^ m ^^ r
+%format icase(n)(c)         = "\mathsf{case}" ^^ n ^^ c
 %format ieval(rs)         = "\mathsf{eval}\langle{" rs "}\rangle"
 %format iapply(rs)         = "\mathsf{apply}\langle{" rs "}\rangle"
 %format ialloc(rs)         = "\mathsf{alloc}\langle{" rs "}\rangle"
+%format iallocstore(rs)         = "\mathsf{allocstore}\langle{" rs "}\rangle"
 %format istore(rs)         = "\mathsf{store}\langle{" rs "}\rangle"
+%format ifetch(rs)         = "\mathsf{fetch}\langle{" rs "}\rangle"
 %format tailcall         = "\mathsf{tailcall}"
+%format retcall         = "\mathsf{retcall}"
 %format call         = "\mathsf{call}"
 %format alloc         = "\mathsf{alloc}"
 %format stores         = "\mathsf{store}"
+%format fetchs         = "\mathsf{fetch}"
+%format cases         = "\mathsf{case}"
 %format eval         = "\mathsf{eval}"
 %format apply         = "\mathsf{apply}"
 %format nop         = "\mathsf{nop}"
@@ -40,6 +46,10 @@
 %format **          = "**"
 
 %format sv          = "s_v"
+%format an          = "a_n"
+%format cn          = "c_n"
+%format bm          = "b_m"
+%format fm          = "f_m"
 
 %format xpos        = "x^{+}"
 %format Enc(x)      = "\overline{" x "}"
@@ -66,20 +76,22 @@
 #1 &
 #2 &
 #3 &
-#4
+#4 &
+#5
 }
 
 \newcommand{\GriniStateAfter}[5]{%
 $\Longrightarrow$ &
 #2 &
 #3 &
-#4
+#4 &
+#5
 }
 
 \newcommand{\GriniStep}[2]{%
-\begin{tabular}{llll}
+\begin{tabular}{lllll}
 \hline
-& Code & Stack & Heap \\
+& Code & Stack & Heap & Reg \\
 \hline
 #1 \\ #2 \\
 \hline
@@ -127,13 +139,16 @@ $\Longrightarrow$ &
 
 %%[grinBSemantics
 
-\subsection{Memory model}
+\subsection{Memory model and module admin}
 
+\Paragraph{Stack}
 Stack, indexed by |gstack|, grows downwards/
 Positive offsets are used to refer to values in allocated part of stack.
 
+\Paragraph{Registers}
 Registers: programcounter |gpc|, general purpose register |greg|.
 
+\Paragraph{Nodes and tagging}
 Node representation: size (16 bits), tag (16 bits), fields (3x), extension ptr (1x)
 
 Tagged data. Pointer values have lower 2 bits set to 0, direct (non pointer) values have these bits set to a non zero tag.
@@ -141,6 +156,8 @@ For signed ints |x| in the range |- pow2(29) <= x < pow2(29)|, |30| bits are use
 The encoding consists of a shift left with |sh| positions (notated as a shift |<< s| or multiplication |* pow2(s)|), and addition of tag |t|.
 For now, |sh = 1 (s = pow2(1)), t = 1| would suffice.
 
+\Paragraph{Int encoding}
+Int's are tagged values:
 %%[[wrap=code
 Enc(x)          =   x * s + t
 Enc(x1+x2)      =   (x1+x2) * s + t
@@ -162,26 +179,44 @@ Enc(x1/x2)      =   (x1/x2) * s + t
                 =   Frac(Enc(x1) - t)(Enc(x2) / s) + t                  ^ -- t/s shifts out
 %%]]
 
-\subsection{|lds|: load from stack}
-\GriniStep{%
- \GriniStateBefore{%
- }{%
-  |lds v : gcode|
- }{%
-  |s0 : ... : sv : gstack|
- }{%
-  |gheap|
- }{}
-}{%
- \GriniStateAfter{%
- }{%
-  |gcode|
- }{%
-  |sv : s0 : ... : sv : gstack|
- }{%
-  |gheap|
- }{}{}
-}
+\Paragraph{Strings}
+String constants are stored in a separate table, to be referred to by |ldg|.
+
+\Paragraph{Modules}
+Incoming and outgoing references need to be resolved during initialization time with the help of some tables
+\begin{itemize}
+\item
+  Imported modules, mapping module names to global module numbers assigned during linking time.
+\item
+\end{itemize}
+
+\Paragraph{Initialization}
+Initialization takes places in the following order, possible referring to module |angle(m)|.
+\begin{itemize}
+\item
+  Stack, heap are set up.
+\item
+  Resolve imported modules for |angle(m)|.
+  Each |angle(m)| is assigned a unique number, also referred to as |angle(m)|.
+\item
+  Each module |angle(m)| initializes itself, via a call to function |angle(m)_initialize|.
+\item
+  Resolve exported entrypoints for |angle(m)| (is this necessary?).
+\end{itemize}
+
+\Paragraph{Table summary}
+The following tables are used, |angle(m)| is the module nr, starting at |1|, global tables have module nr |0|.
+Format is |table : table nr :: functionality :: actual C encoding|.
+
+%%[[wrap=code
+bytecode                :   angle(m).0  ::  PC -> Instr             ::  Instr[]                 -- per module
+strings                 :   angle(m).1  ::  Offset -> String        ::  char[][]                -- per module
+imported modules        :   angle(m).2  ::  ModNm -> Module         ::  Node[]                  -- per module, filled at link time
+exported entrypoints    :   angle(m).3  ::  Module                  ::  PC[]                    -- mem locations, filled at link time
+CAF entrypoints         :   angle(m).4  ::  PC                      ::  PC[]                    -- mem locations, filled at link time
+all modules             :   0.0         ::  ModNm -> Module         ::  Node[]                  -- 
+CAF                     :   0.1         ::
+%%]]
 
 %%]
 
@@ -246,32 +281,32 @@ d  =  11
 
 \subsubsection{Data type}
 \begin{code}
-angle(dt)  =  iw  -- word sized int
-           |  id  -- double word sized int
-           |  fw  -- word sized float
-           |  fd  -- double word sized float
+angle(dt)  =  i1  -- 32bits int
+           |  i2  -- 64bits int
+           |  f1  -- 32bits float
+           |  f2  -- 64bits float
 \end{code}
 
 \begin{code}
-iw  =  00
-id  =  01
-fw  =  10
-fd  =  11
+i1  =  00
+i2  =  01
+f1  =  10
+f2  =  11
 \end{code}
 
 \subsubsection{Immediate signed int constant size}
 \begin{code}
-angle(is)  =  b  -- byte, 8 bits
-           |  s  -- short, 16 bits
-           |  w  -- word, 32 bits
-           |  d  -- double, 64 bits
+angle(is)  =  08, b  -- byte, 8 bits
+           |  16, s  -- short, 16 bits
+           |  32, w  -- word, 32 bits
+           |  64, d  -- double, 64 bits
 \end{code}
 
 \begin{code}
-b  =  00
-s  =  01
-w  =  10
-d  =  11
+08, b  =  00
+16, s  =  01
+32, w  =  10
+64, d  =  11
 \end{code}
 
 \subsubsection{Sign}
@@ -314,13 +349,21 @@ A level 3 represents a variation on level 0 with an implicit conversion int enco
 0           loading
 100         storing
 101         arithmetic
-1100  0     calling
+1100  0     calling, case
 1101
-1110  0     eval/apply/case
+1110  0     eval/apply
 1110  1     node alloc/fetch
 1111  0
 1111  110   extension prefix
 \end{code}
+
+\subsubsection{Misc notation}
+
+In the context of evaluation steps:
+
+%%[[wrap=code
+Sup(c)(r)       --  value c at offset r from top of stack
+%%]]
 
 %%]
 
@@ -403,6 +446,12 @@ etc.
 Whenever a constant |x| is referred to from the instruction encoding,
 its two bits |ixxjuxt(x)(1)(0)| refer to the above encoded size information.
 
+Big vs little endian:
+\begin{itemize}
+\item In memory: take host platform endianness
+\item In a file, in a persistent format (not under further consideration here): take any, probably little endian as the Intel platform is quite dominant.
+\end{itemize}
+
 %%]
 
 %%[grinBMovingData
@@ -440,6 +489,32 @@ lds d       =   l1tt  d            -- push content displacement d relative to to
 ldc c       =   l0ti  c            -- push constant c on stack
 lda d       =   l0tt  d            -- push address displacement d relative to tos on stack
 %%]]
+
+\textbf{|lds|: load from stack}\\
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |lds v : gcode|
+ }{%
+  |s0 : ... : sv : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |sv : s0 : ... : sv : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
 
 \subsubsection{Storing}
 
@@ -558,35 +633,150 @@ addi        =   oaiss  0         -- on tos addition
 %%[grinBControl
 \subsubsection{Call}
 
-\begin{GrinEncoding}{|icall(x)|}
+\begin{GrinEncoding}{|icall(rs)|}
  &
-|1100 ^^ 00 ^ ixxjuxt(x)(1)(0)| &
+|1100 ^^ 000 ^ ixx1(rs)(0)| &
 ... &
  &
 \\
 \end{GrinEncoding}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |call : gcode|
+ }{%
+  |d : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |d|
+ }{%
+  |gcode : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
 
 \subsubsection{Tail call}
 
-\begin{GrinEncoding}{|itailcall(x)|}
+\begin{GrinEncoding}{|itailcall(rs)(n)(m)(r)|}
  &
-|1100 ^^ 01 ^ ixxjuxt(x)(1)(0)| &
+|1100 ^^ 001 ^ ixx1(rs)(0)| &
+|00 ^ ixxjuxt(n)(1)(0) ^ ixxjuxt(m)(1)(0) ^ ixxjuxt(r)(1)(0)| &
 ... &
- &
 \\
 \end{GrinEncoding}
 
-\subsubsection{Case}
+where |n, m, r :: angle(is)|
 
-\begin{GrinEncoding}{|icase(rs)|}
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |tailcall n m r : _|
+ }{%
+  |d : a1 : .. : an : .. : Sup(c)(r) : b1 : .. : bm : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |d|
+ }{%
+  |c : a1 : .. : an : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
+
+\subsubsection{Return from call}
+
+\begin{GrinEncoding}{|iretcall(n)(m)(r)|}
  &
-|1110 ^^ 000 ^ ixx1(rs)(0)| &
- &
- &
+|1100 ^^ 0100| &
+|00 ^ ixxjuxt(n)(1)(0) ^ ixxjuxt(m)(1)(0) ^ ixxjuxt(r)(1)(0)| &
+... &
 \\
 \end{GrinEncoding}
 
-+ table
+where |n, m, r :: angle(is)|
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |retcall n m r : _|
+ }{%
+  |a1 : .. : an : .. : Sup(c)(r) : b1 : .. : bm : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |c|
+ }{%
+  |a1 : .. : an : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
+
+\subsubsection{Case 'call'}
+
+\begin{GrinEncoding}{|icase(n)(c)|}
+ &
+|1100 ^^ 011 ^ ixx1(rs)(0)| &
+|0000 ^ ixxjuxt(n)(1)(0) ^ ixxjuxt(c)(1)(0)| &
+... + |n| offsets &
+\\
+\end{GrinEncoding}
+
+|n| offsets, each off same size (i.e. nr of bytes) as |n|, relative to |gpc| after end of offset table.
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |case n c : c1 : .. : cn : .. : c|
+ }{%
+  |p : gstack|
+ }{%
+  |[ p :-> (t : f1 : .. : fm) ] `elem` gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |Sub(c)(t)|
+ }{%
+  |c : p : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
+
 
 \subsubsection{Eval}
 
@@ -686,7 +876,7 @@ addi        =   oaiss  0         -- on tos addition
             lds         $10_0_42_1
             ldg         $x1
             ldg         $$+
-            tailcall    2
+            tailcall    2 0 ..
        }
 %%]]
 
@@ -698,38 +888,50 @@ addi        =   oaiss  0         -- on tos addition
                                                     ldg             $x3
                                                     eval
             case $1_289_0!__26_0 of
-                                                    l0tp            l3
-                                                    case            [l1,l2]
+                                                    cases           2 l3
+                                                    [l1,l2]
                                                 l1:
-                                                    fetch           2               CSEnv ^ [$x__27_2, ... :-> offset ...]
               {  (#0/C/$$: $x__27_2 $1_298_0__27_4)
+                                                    fetchs          2               CSEnv ^ [$x__27_2, ... :-> offset ...]
                     ->  {    unit $1_298_0__27_4 ; \$10_0_59_0 ->
                              eval $10_0_59_0 ; \$1_298_0!__28_0 ->
-                                                    lds             $10_0_59_0
+                                                    lds             $10_0_59_0      ^
                                                     eval
+                                                    cases           2 l6            ^
+                                                    [l4,l5]
                              case $1_298_0!__28_0 of
+                                                l4:
                                {  (#0/C/$$: $___29_4 $___29_4)
+                                                    fetchs          2               CSEnv ^ [$___29_4, ... :-> offset ...]
                                      ->  {  unit $undefined ; \$10_0_63_0 ->
+                                                    ldg             $undefined
                                             eval $10_0_63_0
+                                                    eval
+                                                    retcall         1 1 3           ^
                                          } 
+                                                l5:
                                ;  (#1/C/$[])
                                      ->  {  unit $x__27_2 ; \$10_0_65_0 ->
+                                                    lds             $x__27_2
                                             eval $10_0_65_0
+                                                    eval
+                                                    retcall         1 1 1
                                          } 
                                }
+                                                l6:
                                                     
+                                                    retcall         1 1 3
                         }
-                                                    addsi           ...
-                                                    l1pt            ...
                                                 l2:
               ;  (#1/C/$[])
                     ->  { unit (#0/C/$Int 4)} 
                                                     ldc             4
                                                     ldc             #0/C/$Int
+                                                    allocstore      2
+                                                    retcall         1 1 1
               } 
-                                                    addsi           ...
-                                                    l1pt            ...
                                                 l3:
+                                                    retcall         1 1 1
         } 
 %%]]
 
