@@ -54,12 +54,12 @@ addList u fm = onFst (flip listInsert fm) . foldr addName ([], [], u)
 
 %%[8.grTrf
 ATTR GrAGItf [ | | grTrf: GrModule ]
-ATTR AllGrNT [ | | grTrf: SELF     ]
+ATTR AllNT [ | | grTrf: SELF     ]
 %%]
 
 %%[8.unique
 ATTR GrAGItf          [ | unique: Int | ]
-ATTR AllGrNT          [ | unique: Int | ]
+ATTR AllNT          [ | unique: Int | ]
 
 SEM GrAGItf
   | AGItf  loc     .  low         = @lhs.unique
@@ -78,7 +78,7 @@ SEM GrAGItf
 
 %%[8.maps
 ATTR GrAGItf          [ | | varMap:  IdentNameMap ]
-ATTR AllGrNT          [ bind2id: LookupList  | var2id: LookupList | ]
+ATTR AllNT          [ bind2id: LookupList  | var2id: LookupList | ]
 ATTR GrModule AllBind [ | bind2idFrag: LookupList | ]
 ATTR GrModule         [ | | globalVars: LookupList ]
 

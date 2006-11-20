@@ -28,7 +28,7 @@ buildAppBindings uniq grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf g
 
 %%[8
 ATTR GrAGItf [ | | grTrf: GrModule ]
-ATTR AllGrNT [ | | grTrf: SELF ]
+ATTR AllNT [ | | grTrf: SELF ]
 
 ATTR GrAGItf GrModule [ | unique: Int | ]
 %%]

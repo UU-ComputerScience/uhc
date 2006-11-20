@@ -333,7 +333,7 @@ allocate (tagcat:_) mbcast allowgc n1 n2 = Value_Alloc $ sz n
        fc = if useBoehmGC
             then if allowgc then "GC_MALLOC" else "GC_MALLOC_UNCOLLECTABLE"
             else "heapalloc"
-       sz = if useBoehmGC then (* sizeofPointer) else id
+       sz = if useBoehmGC then (* fromInteger sizeofPointer) else id
        n | tagcat=='C'  = n1
          | otherwise    = max n1 n2
        

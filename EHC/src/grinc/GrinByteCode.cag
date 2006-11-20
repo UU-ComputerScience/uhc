@@ -1,0 +1,190 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Grin ByteCode
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs module {%{GRIN}GrinByteCode} import({%{EH}Base.Common},{%{EH}GrinCode},qualified {%{GRIN}Config} as Cfg)
+%%]
+
+%%[8 hs import(UU.Pretty,Data.Bits)
+%%]
+
+%%[8 hs export(AGItf(..),Module(..),Instr(..), Instrs, Meta(..))
+%%]
+
+%%[8 hs export(InsOp_LocE(..), InsOp_LocB(..), InsOp_LocO(..), InsOp_TyOp(..), InsOp_DataOp(..), InsOp_ImmSz(..), InsOp_Deref(..), Imm(..))
+%%]
+
+%%[8 import({GrinByteCode/AbsSyn})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional datastructures, not incorporated as AST
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Constants
+
+%%[8 hs export(Const(..))
+data Const
+  = ConstStr { constInx :: Int }
+  deriving(Eq,Ord,Show)
+
+%%]
+
+Link items, to be resolved at runtime initialization.
+
+%%[8 hs export(Link(..),LinkTbl(..))
+data LinkTbl
+  = LinkTbl_Const
+  deriving (Show,Eq,Ord,Enum)
+
+data Link
+  = Link { linkMod :: Int, linkTbl :: LinkTbl, linkInx :: Int }
+  deriving Show
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constants
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+pow2 :: Int -> Integer
+pow2 x = 1 `shiftL` x
+
+pow2' :: Int -> (Integer,Integer,Integer)
+pow2' x
+  = (p,-p,p-1)
+  where p = pow2 x
+
+(pow2_7 ,pow2_7neg ,pow2_7sub1 )  = pow2' 7
+(pow2_8 ,pow2_8neg ,pow2_8sub1 )  = pow2' 8
+
+(pow2_15,pow2_15neg,pow2_15sub1) = pow2' 15
+(pow2_16,pow2_16neg,pow2_16sub1) = pow2' 16
+
+(pow2_31,pow2_31neg,pow2_31sub1) = pow2' 31
+(pow2_32,pow2_32neg,pow2_32sub1) = pow2' 32
+
+(pow2_63,pow2_63neg,pow2_63sub1) = pow2' 63
+(pow2_64,pow2_64neg,pow2_64sub1) = pow2' 64
+%%]
+
+%%[8 hs
+mask2 :: Int -> Integer
+mask2 x = pow2 x - 1
+
+[mask2_8,mask2_16,mask2_32,mask2_64] = map mask2 [8,16,32,64]
+%%]
+
+%%[8 hs export(nrWord2Byte)
+nrWord2Byte :: Integral c => c -> c
+nrWord2Byte sz
+  = sz * wSz
+  where wSz = fromInteger Cfg.sizeofGrWord
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+imm :: Integral c => c -> (InsOp_ImmSz,Imm)
+imm c
+  = (s,Imm_Int i)
+  where (s,i)
+          = case toInteger c of
+              i | i <  0 -> (s, i .&. m)
+                         where (s,m) = case i of
+                                         i | i >= pow2_7neg  -> (InsOp_ImmSz_Bits08,mask2_8 )
+                                           | i >= pow2_15neg -> (InsOp_ImmSz_Bits16,mask2_16)
+                                           | i >= pow2_31neg -> (InsOp_ImmSz_Bits32,mask2_32)
+                                           | otherwise       -> (InsOp_ImmSz_Bits64,mask2_64)
+              i | i >= 0 -> (s, i .&. mask2_64)
+                         where s = case i of
+                                     i | i < pow2_7sub1  -> InsOp_ImmSz_Bits08
+                                       | i < pow2_15sub1 -> InsOp_ImmSz_Bits16
+                                       | i < pow2_31sub1 -> InsOp_ImmSz_Bits32
+                                       | otherwise       -> InsOp_ImmSz_Bits64
+%%]
+
+%%[8 hs export(ldc,ldl,ldg)
+ld :: Integral c => InsOp_Deref -> InsOp_LocB -> InsOp_LocE -> c -> Instr
+ld ind locB locE c
+  = Instr_Ld ind locB locE s i
+  where (s,i) = imm c
+
+ldc :: Integral c => c -> Instr
+ldc = ld InsOp_Deref_Zero InsOp_LocB_TOS InsOp_LocE_Imm
+
+ldl :: Integral c => c -> Instr
+ldl c = ld InsOp_Deref_One InsOp_LocB_TOS InsOp_LocE_TOS (nrWord2Byte c)
+
+ldg :: Link -> Instr
+ldg l = Instr_LdGlobal l
+%%]
+
+%%[8 hs export(allocstore)
+allocstore :: InsOp_LocB -> Instr
+allocstore locB = Instr_AllocStore locB
+%%]
+
+%%[8 hs export(call)
+call :: InsOp_LocB -> Instr
+call locB = Instr_Call locB
+%%]
+
+%%[8 hs export(eval,apply)
+eval :: InsOp_LocB -> Instr
+eval locB = Instr_Eval locB
+
+apply :: InsOp_LocB -> Instr
+apply locB = Instr_Apply locB
+%%]
+
+%%[8 hs export(tailcall)
+tailcall :: Integral c => InsOp_LocB -> c -> c -> c -> Instr
+tailcall locB nArgMine nArgSurr retOffSurr
+  = Instr_TailCall locB s1 s2 s3 i1 i2 i3
+  where (s1,i1) = imm $ nrWord2Byte nArgMine
+        (s2,i2) = imm $ nrWord2Byte nArgSurr
+        (s3,i3) = imm $ nrWord2Byte retOffSurr
+%%]
+
+%%[8 hs export(meta,ann)
+meta :: PP a => a -> Instr
+meta a = Instr_Meta $ Meta_CmtHeader $ pp a
+
+ann :: PP a => a -> Instr -> Instr
+ann a = Instr_Ann $ pp a
+%%]
+
+Offsets should coincide with def of GB_NodeHeader, src/rts/grinbc/grinbc
+
+%%[8 hs export(tag)
+[tgShSize,tgShNdEv,tgShCateg]
+  = if Cfg.use32Bits then [16,15,13::Int] else [32,31,29]
+
+tag' :: GrTagCateg -> Int -> Int -> Integer
+tag' categ tg sz
+  = (toInteger sz `shiftL` tgShSize) .|. needEval `shiftL` tgShNdEv .|. categ' `shiftL` tgShCateg .|. toInteger tg'
+  where (needEval,categ',tg')
+          = case categ of
+              GrTagCon      -> (0,0,tg)
+              GrTagHole     -> (0,0,tg)
+              GrTagRec      -> (0,0,tg)
+              GrTagApp      -> (1,1,tg)
+              GrTagFun      -> (1,0,tg)
+              GrTagPApp m   -> (0,1,m )
+
+tag :: GrTag -> Int -> Integer
+tag gt sz
+  = case gt of
+      GrTag_Lit gt t _ -> tag' gt t sz
+      _ -> 0
+%%]
+
+%%[8 hs export(halt)
+halt :: Instr
+halt = Instr_Halt
+%%]
+
+

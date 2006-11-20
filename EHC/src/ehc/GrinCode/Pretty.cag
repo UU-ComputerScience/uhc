@@ -7,7 +7,10 @@
 %%% Haskell importable interface to Code's Java gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}GrinCode.Pretty} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}GrinCode},{%{EH}GrinCode.Parser},{%{EH}Scanner.Common(grinScanOpts)}) export(ppGrModule,ppGrExpr,ppGrPat)
+%%[8 hs module {%{EH}GrinCode.Pretty} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}GrinCode},{%{EH}GrinCode.Parser},{%{EH}Scanner.Common(grinScanOpts)})
+%%]
+
+%%[8 hs export(ppGrModule,ppGrExpr,ppGrPat,ppGrTag)
 %%]
 
 %%[8.WRAPPER import({GrinCode/AbsSyn})
@@ -72,7 +75,7 @@ ppEvApTagMp m
 %%]
 
 %%[8
-ATTR GrAGItf AllGrNT [ | | pp USE {>-<} {empty}: PP_Doc ]
+ATTR GrAGItf AllNT [ | | pp USE {>-<} {empty}: PP_Doc ]
 
 SEM GrModule
   | Mod         lhs         .   pp          =   "module" >#< ppGrNm @moduleNm

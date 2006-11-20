@@ -2,7 +2,10 @@
 %%% Haskell importable interface to Grin's byte code gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{GRIN}GrinCode.ToGrinByteCode} import(Data.Maybe,Data.List,EH.Util.FastSeq,qualified Data.Set as Set,qualified Data.Map as Map,{%{EH}Base.Common},qualified {%{GRIN}GrinByteCode} as GB,{%{EH}GrinCode})
+%%[8 hs module {%{GRIN}GrinCode.ToGrinByteCode} import(Data.Maybe,Data.List,UU.Pretty,EH.Util.FastSeq,EH.Util.Utils,qualified Data.Set as Set,qualified Data.Map as Map,{%{EH}Base.Common})
+%%]
+
+%%[8 hs import({%{EH}GrinCode.Pretty},qualified {%{GRIN}GrinByteCode} as GB,{%{EH}GrinCode})
 %%]
 
 %%[8 hs export(grinMod2ByteCodeMod)
@@ -24,6 +27,290 @@ grinMod2ByteCodeMod gmod
      in   gbMod_Syn_GrAGItf t
 %%]
 
+%%[8 hs
+type Ins = FastSeq GB.Instr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllNTNoMod [ modNmConstInx: Int | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constants
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type ConstMp = Map.Map GB.Const Int
+%%]
+
+%%[8
+ATTR AllNTNoMod [ | constMp: ConstMp | ]
+
+SEM GrModule
+  | Mod         loc			.	moduleNmAlpha	=	hsnShowAlphanumeric @moduleNm
+  				(loc.modNmConstInx,globalL.strMp,globalL.constMp)
+  												=   strConstAdd Map.empty Map.empty @moduleNmAlpha
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Strings
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type StrMp = Map.Map String GB.Const
+
+strConstAdd :: StrMp -> ConstMp -> String -> (Int,StrMp,ConstMp)
+strConstAdd strMp constMp str
+  = case Map.lookup str strMp of
+      Just c -> (panicJust "strConstAdd" $ Map.lookup c constMp,strMp,constMp)
+      _      -> (constInx,Map.insert str c strMp,Map.insert c constInx constMp)
+             where strInx   = Map.size strMp
+                   constInx = Map.size constMp
+                   c        = GB.ConstStr strInx
+%%]
+
+%%[8
+ATTR AllNTNoMod [ | strMp: StrMp | ]
+
+SEM GrVal
+  | LitStr      (loc.constInx,lhs.strMp,lhs.constMp)
+                                                =   strConstAdd @lhs.strMp @lhs.constMp @str
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Stack depth simulation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllGrExpr [ | stkDepth: Int | ]
+
+SEM GrBind
+  | Bind        loc         .   stkDepth        =   0
+
+SEM GrExpr
+  | Unit Store Call Eval App
+                loc         .   valDepth        =   @lhs.stkDepth + @valStkInc
+                lhs         .   stkDepth        =   @valDepth
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GrVal Value introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+data GValIntro
+  = GValIntro_Nm    HsName
+  | GValIntro_Int   Integer
+  | GValIntro_Str   String GB.Link
+  | GValIntro_Grp   GrTag [GValIntro]
+  | GValIntro_None
+
+data GValIntroAlt
+  = GValIntroAlt_One    Ins Int
+--  | GValIntroAlt_Alt    [GValIntroAlt]
+
+nmLd :: ValAccessGam -> Int -> HsName -> (Ins,Int)
+nmLd vag stkDepth nm
+  = case Map.lookup nm vag of
+      Just va
+        -> case va of
+             Val_LocalOffset o
+               -> (FSeq $ GB.ann nm $ GB.ldl (stkDepth - o), 1)
+             _ -> dflt
+      _ -> (FSeq $ GB.ann ("dummy ld for" >#< nm) $ GB.ldl stkDepth, 1)
+  where dflt = (FSeqNil,0)
+
+gviLdFold' :: GValIntroAlt -> ValAccessGam -> Int -> [GValIntro] -> GValIntroAlt
+gviLdFold' dflt vag stkDepth introL
+  = foldl ld dflt $ reverse $ introL
+  where ld (GValIntroAlt_One ins dep) intro
+          = GValIntroAlt_One (ins :++: ins') (dep+dep')
+          where (GValIntroAlt_One ins' dep') = gviLd vag (stkDepth+dep) intro
+
+gviLdFold :: ValAccessGam -> Int -> [GValIntro] -> GValIntroAlt
+gviLdFold = gviLdFold' (GValIntroAlt_One FSeqNil 0)
+
+gviLd :: ValAccessGam -> Int -> GValIntro -> GValIntroAlt
+gviLd vag stkDepth intro
+  = ld (GValIntroAlt_One FSeqNil 0) intro
+  where ld dflt@(GValIntroAlt_One ins dep) intro
+          = case intro of
+              GValIntro_Nm nm
+                -> GValIntroAlt_One (ins :++: ins') (dep+dep')
+                where (ins',dep') = nmLd vag stkDepth nm
+              GValIntro_Str s l
+                -> GValIntroAlt_One (ins ::+: (GB.ann (show l) $ GB.ldg l)) (dep+1)
+              GValIntro_Int i
+                -> GValIntroAlt_One (ins ::+: (GB.ann ("constant" >#< show i) $ GB.ldc i)) (dep+1)
+              GValIntro_Grp gtag is
+                -> GValIntroAlt_One (ins ::+: (GB.ann (ppGrTag gtag) $ GB.ldc $ GB.tag gtag inc')) inc'
+                where i@(GValIntroAlt_One ins inc) = gviLdFold' dflt vag (stkDepth+dep) is
+                      inc' = inc+1
+              _ -> dflt
+          where dep' = stkDepth + dep
+%%]
+
+%%[8
+ATTR GrVal [ | | gvalIntro: GValIntro ]
+ATTR GrValL [ | | gvalIntroL: {[GValIntro]} ]
+
+SEM GrVal
+  | Var         lhs         .   gvalIntro       =   GValIntro_Nm @nm
+  | LitInt      lhs         .   gvalIntro       =   GValIntro_Int (toInteger @int)
+  | LitStr      lhs         .   gvalIntro       =   GValIntro_Str @str (GB.Link @lhs.modNmConstInx GB.LinkTbl_Const @constInx)
+  | Node        lhs         .   gvalIntro       =   GValIntro_Grp @tag.self @fldL.gvalIntroL
+  | * - Var LitStr Node LitInt
+                lhs         .   gvalIntro       =   GValIntro_None
+
+SEM GrValL
+  | Nil         lhs         .   gvalIntroL      =   []
+  | Cons        lhs         .   gvalIntroL      =   @hd.gvalIntro : @tl.gvalIntroL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expr Value introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+data EValIntro
+  = EValIntro_TOS   Int
+  | EValIntro_None
+
+%%]
+
+%%[8
+ATTR GrExpr [ | | evalIntro: EValIntro ]
+
+SEM GrExpr
+  | Unit        loc         .   (valIns,valStkInc)
+                                                =   case gviLd @lhs.vaGam @lhs.stkDepth @val.gvalIntro of
+                                                      GValIntroAlt_One ins inc -> (ins,inc)
+  | Store       loc         .   (valIns,valStkInc)
+                                                =   case gviLd @lhs.vaGam @lhs.stkDepth @val.gvalIntro of
+                                                      GValIntroAlt_One ins inc
+                                                        -> (ins :++: FSeqL [GB.ldc (GB.nrWord2Byte inc),GB.ann "alloc+store" $ GB.allocstore GB.InsOp_LocB_TOS], 1)
+  | Call        loc         .   (valIns,valStkInc)
+                                                =   case gviLdFold @lhs.vaGam @lhs.stkDepth @argL.gvalIntroL of
+                                                      GValIntroAlt_One ins inc
+                                                        -> case @lhs.returnCtxt of
+                                                             ReturnCtxt_Call
+                                                               -> (ins :++: fins :++: FSeqL [GB.call GB.InsOp_LocB_TOS], 1)
+                                                               where (fins,_) = nmLd @lhs.vaGam (@lhs.stkDepth + inc) @nm
+                                                             ReturnCtxt_Ret nrArgsOuter
+                                                               -> (ins :++: fins :++: FSeqL [GB.tailcall GB.InsOp_LocB_TOS nArgMine nrArgsOuter retOffSurr], 1)
+                                                               where (fins,fdep) = nmLd @lhs.vaGam (@lhs.stkDepth + inc) @nm
+                                                                     nArgMine    = length @argL.gvalIntroL
+                                                                     retOffSurr  = @lhs.stkDepth + inc + fdep
+  | Eval        loc         .   (valIns,valStkInc)
+                                                =   let (ins,dep) = nmLd @lhs.vaGam @lhs.stkDepth @nm
+                                                    in  (ins :++: FSeqL [GB.eval GB.InsOp_LocB_TOS],0)
+  | App         loc         .   (valIns,valStkInc)
+                                                =   case gviLdFold @lhs.vaGam @lhs.stkDepth @argL.gvalIntroL of
+                                                      GValIntroAlt_One ins inc
+                                                        -> (ins :++: fins :++: FSeqL [GB.ldc (length @argL.gvalIntroL),GB.apply GB.InsOp_LocB_TOS], 1)
+                                                        where (fins,_) = nmLd @lhs.vaGam (@lhs.stkDepth + inc) @nm
+
+SEM GrExpr
+  | Unit Store Call Eval App
+                lhs         .   evalIntro       =   EValIntro_TOS @valDepth
+  | * - Unit Store Call Eval App
+                lhs         .   evalIntro       =   EValIntro_None
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Named value introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllGrPat [ | introOff: Int | ]
+
+SEM GrPat
+  | Var         lhs         .   introOff        =   @lhs.introOff + 1
+
+SEM GrAlt
+  | Alt         pat         .   introOff        =   0
+
+SEM GrExpr
+  | Seq         pat         .   introOff        =   0
+%%]
+
+%%[8
+ATTR AllGrPat [ | | introNmL USE {++} {[]}: {AssocL HsName Int} ]
+
+SEM GrPat
+  | Var         lhs         .   introNmL        =   [(@nm,@lhs.introOff)]
+%%]
+
+%%[8 hs
+data NmIntro
+  = NmIntro_Single    HsName
+  | NmIntro_None
+%%]
+
+%%[8
+ATTR GrPat [ | | nmIntro: NmIntro ]
+
+SEM GrPat
+  | Var         lhs         .   nmIntro         =   NmIntro_Single @nm
+  | * - Var     lhs         .   nmIntro         =   NmIntro_None
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Named value access
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+data ValAccess
+  = Val_LocalOffset     Int
+  | Val_GlobConst       HsName 
+
+type ValAccessGam = Map.Map HsName ValAccess
+%%]
+
+%%[8
+ATTR AllGrExpr AllBind [ vaGam: ValAccessGam | | ]
+
+SEM GrModule
+  | Mod         loc         .   vaGam           =   Map.empty
+
+SEM GrExpr
+  | Seq         loc         .   newVaGam        =   case (@expr.evalIntro,@pat.nmIntro) of
+                                                      (EValIntro_TOS off,NmIntro_Single nm)
+                                                        -> Map.fromList [(nm,Val_LocalOffset off)]
+                                                      _ -> Map.empty
+                body        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
+
+SEM GrBind
+  | Bind        loc         .   newVaGam        =   Map.fromList [ (n,Val_LocalOffset (@stkDepth-o)) | (n,o) <- zip @argNmL [1..] ]
+                expr        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tail call info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+data ReturnCtxt
+  = ReturnCtxt_Ret    Int
+  | ReturnCtxt_Call
+
+%%]
+
+%%[8
+ATTR AllGrExpr [ returnCtxt: ReturnCtxt | | ]
+
+SEM GrBind
+  | Bind        expr        .   returnCtxt      =   ReturnCtxt_Ret (length @argNmL)
+
+SEM GrExpr
+  | Seq         expr        .   returnCtxt      =   ReturnCtxt_Call
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Code generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -32,9 +319,32 @@ grinMod2ByteCodeMod gmod
 ATTR GrAGItf GrModule [ | | gbMod: {GB.Module} ]
 
 SEM GrModule
-  | Mod			lhs			.	gbMod			=	GB.Module_Mod @moduleNm [] (toList @bindL.i) [] [] [] 0
+  | Mod         lhs         .   gbMod           =   GB.Module_Mod @moduleNmAlpha
+%%[[12
+                                                      []
+%%]]
+                                                      (toList $ @bindL.i :++: FSeqL [GB.halt])
+                                                      [ s | (s,_) <- sortOn (GB.constInx . snd) $ Map.toList @bindL.strMp ]
+                                                      [ c | (c,_) <- sortOn snd $ Map.toList @bindL.constMp ]
+                                                      [] [] 0
 %%]
 
 %%[8
-ATTR AllBind AllExpr [ | | i USE {:++:} {FSeqNil}: {FastSeq GB.Instr} ]
+ATTR AllBind AllGrExpr [ | | i USE {:++:} {FSeqNil}: Ins ]
+
+SEM GrBind
+  | Bind        loc         .   yesCode         =   @nm `notElem` [hsnGrEval, hsnGrApply]
+                lhs         .   i               =   if @yesCode then GB.meta @nm :+:: @expr.i else FSeqNil
+
+SEM GrExpr
+  | Unit Store Call Eval App
+                lhs         .   i               =   @valIns
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% SELF
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrTag [ | | self: SELF ]
 %%]

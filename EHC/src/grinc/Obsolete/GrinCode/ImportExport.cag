@@ -11,7 +11,7 @@ Imports depend on the primitives used. See also: Primitives.cag
 
 %%[8
 ATTR GrModule [ | | imports: {Maybe CmmToplevelBuilder} ]
-ATTR AllGrNT [ | | importedNames USE {++} {[]}: {CmmExternalNames} ]
+ATTR AllNT [ | | importedNames USE {++} {[]}: {CmmExternalNames} ]
 
 SEM GrModule
   | Mod           loc . importedNames = ("@alloc", Just "GC_malloc") : ("@roots", Just "GC_add_roots") : nub @bindL.importedNames

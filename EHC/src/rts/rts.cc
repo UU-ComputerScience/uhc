@@ -1,8 +1,20 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Runtime system
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[8
 #include "rts.h"
+%%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Stack, heap
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
 Pointer SP, RP, BP ;
-Pointer Stack, ReturnArea;
+Pointer Stack, ReturnArea ;
+
+Pointer StackEnd ;
 
 #if USE_BOEHM_GC
 #else
@@ -10,10 +22,10 @@ Pointer HP;
 Pointer Heap;
 Pointer HeapEndCAF, HeapLimit;
 #endif
+%%]
 
-extern int fun_main();
-
-int main(int argc, char** argv)
+%%[8
+void memorySetup()
 {
 #if USE_BOEHM_GC
     GC_INIT() ;
@@ -33,15 +45,70 @@ int main(int argc, char** argv)
     
     SP = Stack;
     RP = ReturnArea;
+    
+    StackEnd = Stack + STACKSIZE ;
+}
+%%]
 
+%%[8
+#if USE_BOEHM_GC
+#else
+GrWord heapalloc(int n)
+{
+    GrWord res = (GrWord) HP;
+    HP += n;
+    if (HP>=HeapLimit)
+    {
+        printf("heap overflow\n");
+        exit(1);
+    }
+
+    return res;
+}
+#endif
+
+%%]
+
+%%[8
+void memoryDumpResult_Sil()
+{
+#if USE_BOEHM_GC
+     printf("result SP-offset=%d tag=%d value=%d\n", SP-Stack, RP[0], RP[1] );
+#else
+/*    printf("result SP-offset=%d HP-offset=%d tag=%d arity=%d value=%d\n", SP-Stack, HP-Heap, RP[0], RP[1], RP[2] ); */
+     printf("result SP-offset=%d HP-offset=%d tag=%d value=%d\n", SP-Stack, HP-Heap, RP[0], RP[1] );
+#endif
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Main generated entry point for Silly
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+extern int fun_main();
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Main entry points for C
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+int main_Sil_Init1(int argc, char** argv)
+{
+	memorySetup() ;
     initialize();
 #if USE_BOEHM_GC
 #else
     HeapEndCAF = HP;
 #endif
+
+    return 0;
+}
+
+int main_Sil_Run(int argc, char** argv)
+{
     fun_main();
-
-
 
 /*
     int i;
@@ -59,30 +126,32 @@ int main(int argc, char** argv)
     }
 */
 
-#if USE_BOEHM_GC
-     printf("result SP-offset=%d tag=%d value=%d\n", SP-Stack, RP[0], RP[1] );
-#else
-/*    printf("result SP-offset=%d HP-offset=%d tag=%d arity=%d value=%d\n", SP-Stack, HP-Heap, RP[0], RP[1], RP[2] ); */
-     printf("result SP-offset=%d HP-offset=%d tag=%d value=%d\n", SP-Stack, HP-Heap, RP[0], RP[1] );
-#endif
-
     return 0;
 }
 
-#if USE_BOEHM_GC
-#else
-GrWord heapalloc(int n)
+int main_Sil_Exit(int argc, char** argv)
 {
-    GrWord res = (GrWord) HP;
-    HP += n;
-    if (HP>=HeapLimit)
-    {
-        printf("heap overflow\n");
-        exit(1);
-    }
+	memoryDumpResult_Sil() ;
 
-    return res;
+    return 0;
 }
-#endif
+%%]
 
+%%[8
+int main_GB_Init1(int argc, char** argv)
+{
+	memorySetup() ;
+	
+	return 0 ;
+}
+
+int main_GB_Run(int argc, char** argv)
+{	
+	return 0 ;
+}
+
+int main_GB_Exit(int argc, char** argv)
+{	
+	return 0 ;
+}
 %%]

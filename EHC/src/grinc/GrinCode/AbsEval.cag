@@ -43,7 +43,7 @@ abstractEvaluation mod = 37
 %%]
 
 
-ATTR GrAGItf AllGrNT 
+ATTR GrAGItf AllNT 
      [   oldHeap : Map.Map HsName AbsValue
          oldEnv  : Map.Map HsName AbsValue
      | | 

@@ -163,7 +163,7 @@ text-variant-slides-overview:
 
 text-variant-grinbc-design:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=asArticle --set=useHyperref --set=refToPDF" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=asArticle --set=useHyperref --set=refToPDF --set=blockstyle" \
 	  TEXT_SHUFFLE_VARIANT=22 \
 	  text-variant-dflt-once
 

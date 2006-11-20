@@ -19,13 +19,18 @@ DATA AGItf
 
 %%[8
 DATA Module
-  | Mod         moduleNm        : {HsName}
-                impModNmL		: {[HsName]}
+  | Mod         moduleNm        : {String}
+%%[[12
+                impModNmL		: {[String]}
+%%]]
                 instrs          : Instrs
                 stringL			: {[String]}
+                constL			: {[Const]}
                 funEntryL		: {[Int]}
                 cafEntryL		: {[Int]}
                 mainCafEntry	: Int
+
+SET AllModule = Module
 %%]
 
 %%[8
@@ -35,12 +40,29 @@ DATA Instr
   				locSrc			: InsOp_LocE
   				immSz			: InsOp_ImmSz
   				imm 			: Imm
+  | LdGlobal	link			: Link
+  | AllocStore  locSrc			: InsOp_LocB
+  | Call        locSrc			: InsOp_LocB
+  | TailCall    locSrc			: InsOp_LocB
+  				nArgMineSz		: InsOp_ImmSz
+  				nArgSurrSz		: InsOp_ImmSz
+  				retOffSurrSz	: InsOp_ImmSz
+  				nArgMine		: Imm
+  				nArgSurr		: Imm
+  				retOffSurr		: Imm
+  | Eval        locSrc			: InsOp_LocB
+  | Apply       locSrc			: InsOp_LocB
+  | Ann			ann				: PP_Doc
+  				instr			: Instr
+  | Halt
+  | Meta		meta			: Meta
+
+DATA Meta
+  | CmtHeader	ann				: PP_Doc
 
 TYPE Instrs = [Instr]
-%%]
 
-%%[8
-SET AllInstr = Instr Instrs
+SET AllInstr = Instr Instrs Meta
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -105,6 +127,7 @@ DATA InsOp_Deref
   | Zero
   | One
   | Two
+  | Int
 %%]
 
 %%[8
@@ -127,6 +150,7 @@ SET AllImm = Imm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-SET AllNT = AllInstr AllInsOp AllImm
+SET AllNTNoModule = AllInstr AllImm AllInsOp
+SET AllNT = AllModule AllNTNoModule
 %%]
 

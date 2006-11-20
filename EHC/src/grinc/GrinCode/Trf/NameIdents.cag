@@ -22,11 +22,11 @@ nameIdents m grmod = let t        = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grm
 
 %%[8.grTrf
 ATTR GrAGItf [ | | grTrf: GrModule ]
-ATTR AllGrNT [ | | grTrf: SELF     ]
+ATTR AllNT [ | | grTrf: SELF     ]
 %%]
 
 %%[8.rename
-ATTR GrAGItf AllGrNT  [ names: IdentNameMap | | ]
+ATTR GrAGItf AllNT  [ names: IdentNameMap | | ]
 
 SEM GrGlobal
   | Global  lhs  .  grTrf  =  GrGlobal_Global (getName' @lhs.names @nm) @val.grTrf

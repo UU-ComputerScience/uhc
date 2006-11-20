@@ -25,7 +25,7 @@ returnCatch hptMap uniq grmod  =  let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGI
 
 %%[8
 ATTR GrAGItf [ hptMap: HptMap | uniq: Int | grTrf: GrModule ]
-ATTR AllGrNT [ hptMap: HptMap | uniq: Int | grTrf: SELF ]
+ATTR AllNT [ hptMap: HptMap | uniq: Int | grTrf: SELF ]
 %%]
 
 %%[8.catch import({GrinCode/LastExpr})

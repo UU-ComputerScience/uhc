@@ -22,7 +22,7 @@ propagate grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
 
 %%[8
 ATTR GrAGItf [ | | grTrf: GrModule  isTrf: Bool                   ]
-ATTR AllGrNT [ | | grTrf: SELF      isTrf USE {||} {False}: Bool  ]
+ATTR AllNT [ | | grTrf: SELF      isTrf USE {||} {False}: Bool  ]
 %%]
 
 
