@@ -69,8 +69,8 @@ heapPointsToAnalysis (low,high) grmod = stToIO $ do
 %%]
 
 %%[8.toplevelCombining
-ATTR GrAGItf AllGrNT [ getEnvVar: GetEnv  setEnvVar: SetEnv tmpVar: Variable | | fillEnv USE {>>} {return ()}: {Action} ]
-ATTR AllGrNT [ | heapList: {[(Location, AbstractHeapElement)]} | ]
+ATTR GrAGItf AllNT [ getEnvVar: GetEnv  setEnvVar: SetEnv tmpVar: Variable | | fillEnv USE {>>} {return ()}: {Action} ]
+ATTR AllNT [ | heapList: {[(Location, AbstractHeapElement)]} | ]
 ATTR GrAGItf [ | | makeHeap: HeapAction ]
 
 SEM GrAGItf
@@ -99,7 +99,7 @@ ATTR AllGrTag [ | | self: SELF ]
 %%%%%%%%%%%%%%%%%%%
 
 %%[8.tag2resultVar
-ATTR AllGrNT [ tag2resultVar: {AssocL GrTag Int} | | ]
+ATTR AllNT [ tag2resultVar: {AssocL GrTag Int} | | ]
 ATTR GrModule [ | | tag2resultVar: {AssocL GrTag Int} ]
 SEM GrModule
   | Mod     loc . tag2resultVar = [ (t, f) | ((t,_), EvApTagVar (HNPos f)) <- @evalTagMp ]
@@ -119,7 +119,7 @@ SEM GrVal
 %%%%%%%%%%%%%%%%%%%%%
 
 %%[8.heapPointerfillEnv
-ATTR AllGrNT [ | heapPointer: Int | ]
+ATTR AllNT [ | heapPointer: Int | ]
 SEM GrAGItf
   | AGItf  module . heapPointer = 0
 %%]
@@ -619,7 +619,7 @@ SEM GrBind
 %%%%%%%%%%%%%
 
 %%[8.actuals
-ATTR AllGrNT [ | | actualsEnv USE {.} {id} : {[(Int, [Maybe Int])] -> [(Int, [Maybe Int])]} ]
+ATTR AllNT [ | | actualsEnv USE {.} {id} : {[(Int, [Maybe Int])] -> [(Int, [Maybe Int])]} ]
 ATTR AllBind [ allActuals: {[(Int, [Maybe Int])]} | | ]
 
 SEM GrExpr

@@ -36,8 +36,8 @@ addHptInfo hptMap (orig, newNames) = let (tags,fields) = unzip . getNodes $ getE
 
 %%[8
 ATTR GrAGItf [ | | grTrf: GrModule  nameMapping: RenameMap ]
-ATTR AllGrNT [ | nameMapping: RenameMap | grTrf: SELF ]
-ATTR GrAGItf AllGrNT [ hptMap: HptMap | uniq: Int  | ]
+ATTR AllNT [ | nameMapping: RenameMap | grTrf: SELF ]
+ATTR GrAGItf AllNT [ hptMap: HptMap | uniq: Int  | ]
 
 SEM GrAGItf
   | AGItf module . nameMapping = []
@@ -112,7 +112,7 @@ In a case we transform from the maximal node size of the scrutinized value to
 the maximal node size in each alternative. (see below)
 
 %%[8
-ATTR AllGrNT [ grNodeSubst : {Map.Map HsName GrVal} | |                                        ]
+ATTR AllNT [ grNodeSubst : {Map.Map HsName GrVal} | |                                        ]
 ATTR GrPat   [                                        | | grNodeSubst : {Map.Map HsName GrVal} ]
 
 

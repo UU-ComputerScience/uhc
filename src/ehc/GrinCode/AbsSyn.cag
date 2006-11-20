@@ -136,5 +136,6 @@ SET AllGrTag    =   GrTag GrTagL
 SET AllGrVal    =   GrVal GrValL
 SET AllGrPat    =   GrPat GrPatL
 SET AllExpr     =   AllGrExpr AllGrPat AllGrTag AllGrVal
-SET AllGrNT     =   GrModule AllExpr AllGlobal AllBind AllAdapt AllSplit
+SET AllNTNoMod  =   AllExpr AllGlobal AllBind AllAdapt AllSplit
+SET AllNT       =   GrModule AllNTNoMod
 %%]

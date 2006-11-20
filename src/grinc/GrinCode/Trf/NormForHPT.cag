@@ -45,7 +45,7 @@ newGrIdent n = (GrVal_Var n, GrPat_Var n)
 
 %%[8
 ATTR GrAGItf [ | unique: Int | grTrf: GrModule ]
-ATTR AllGrNT [ | unique: Int | grTrf: SELF ]
+ATTR AllNT [ | unique: Int | grTrf: SELF ]
 %%]
 
 Change last expression of binding to last of alternative (or of catch body or handler)

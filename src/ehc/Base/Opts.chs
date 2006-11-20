@@ -102,7 +102,9 @@ data EHCOpts
       ,  ehcOptEmitGrin       ::  Bool
       ,  ehcOptEmitLlc        ::  Bool
       ,  ehcOptEmitLLVM       ::  Bool
+      ,  ehcOptEmitGrinBC     ::  Bool
       ,  ehcOptEmitExec       ::  Bool
+      ,  ehcOptEmitExecBC     ::  Bool
       ,  ehcOptSearchPath     ::  [String]
       ,  ehcOptVerbosity      ::  Verbosity
       ,  ehcOptTrf            ::  [TrfOpt]
@@ -167,11 +169,17 @@ defaultEHCOpts
       ,  ehcOptTrf            =   []
       ,  ehcOptBuiltinNames   =   mkEHBuiltinNames (const id)
       ,  ehcOptEmitLLVM       =   False
+      ,  ehcOptEmitGrinBC     =   False
 %%]]
 %%[[8
       ,  ehcOptEmitLlc        =   False
       ,  ehcOptEmitExec       =   False
-%%]
+      ,  ehcOptEmitExecBC     =   False
+%%][99
+      ,  ehcOptEmitLlc        =   True
+      ,  ehcOptEmitExec       =   True
+      ,  ehcOptEmitExecBC     =   True
+%%]]
 %%[[9
       ,  ehcOptPrfCutOffAt    =   20
       ,  ehcCfgClassViaRec    =   False -- True
@@ -199,11 +207,10 @@ ehcCmdLineOpts
      ,  Option "h"  ["help"]             (NoArg oHelp)                        "only show this help"
      ,  Option ""   ["version"]          (NoArg oVersion)                     "only show version info"
 %%[[7_2
-     ,  Option "nu"  ["nounique"]     (NoArg oUnique)
-          "do not compute uniqueness solution"
+     ,  Option ""   ["nounique"]         (NoArg oUnique)                      "do not compute uniqueness solution"
 %%]]
 %%[[8
-     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exec|llvm|-")  "write code to file, default=core (downstream only)"
+     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exec|llvm|bc|bexec|-")  "write code to file, default=core (downstream only)"
      ,  Option ""   ["trf"]              (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
                                                                               "switch on/off transformations"
      ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
@@ -262,9 +269,11 @@ ehcCmdLineOpts
                                 Just "core"  -> o { ehcOptEmitCore     = True      }
                                 Just "java"  -> o { ehcOptEmitJava     = True      }
                                 Just "grin"  -> o { ehcOptEmitGrin     = True      }
-                                Just "exec"  -> o { ehcOptEmitExec     = True, ehcOptEmitLlc = True }
-                                Just "exe"   -> o { ehcOptEmitExec     = True, ehcOptEmitLlc = True }
+                                Just m | m `elem` ["exe","exec"]
+                                             -> o { ehcOptEmitExec     = True, ehcOptEmitLlc = True, ehcOptEmitGrinBC = True }
+                                Just "bexec" -> o { ehcOptEmitExecBC   = True, ehcOptEmitGrinBC = True }
                                 Just "llvm"  -> o { ehcOptEmitLLVM     = True      }
+                                Just "bc"    -> o { ehcOptEmitGrinBC   = True      }
                                 Just "c"     -> o { ehcOptEmitLlc      = True      }
                                 _            -> o
          oTrf        s   o =  o { ehcOptTrf           = opt s   }

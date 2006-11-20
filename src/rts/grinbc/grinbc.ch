@@ -29,13 +29,67 @@ typedef uint8_t  GB_Byte ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-typedef struct GB_Node {
-  GB_NodeSize 	size ;
-  GB_NodeTag 	tag ;
-  GB_Word 		fields[0] ;    
-} GB_Node ;
+#if USE_64_BITS
+#define GB_NodeHeader_Size_BitSz		32
+#define GB_NodeHeader_NdEv_BitSz		1
+#define GB_NodeHeader_TagCat_BitSz		2
+#define GB_NodeHeader_Tag_BitSz			29
+#else
+#define GB_NodeHeader_Size_BitSz		16
+#define GB_NodeHeader_NdEv_BitSz		1
+#define GB_NodeHeader_TagCat_BitSz		2
+#define GB_NodeHeader_Tag_BitSz			13
+#endif
 
-#define	GB_TagTag
+#define GB_NodeNdEv_Yes					1
+#define GB_NodeNdEv_No					0
+
+#define GB_NodeTagCat_Fun				0			/* saturated function call closure 	*/
+#define GB_NodeTagCat_App				1			/* general purpose application 		*/
+#define GB_NodeTagCat_Ind				2			/* indirection 						*/
+#define GB_NodeTagCat_BlH				3			/* black hole 						*/
+
+#define GB_NodeTagCat_Con				0			/* data, constructor 								*/
+#define GB_NodeTagCat_PAp				1			/* partial application, tag is size of missing 		*/
+
+typedef struct GB_NodeHeader {
+  unsigned 	size 		: GB_NodeHeader_Size_BitSz 		;			/* size, incl header, in words 				*/
+  unsigned 	needsEval 	: GB_NodeHeader_NdEv_BitSz 		;			/* possibly needs eval? 					*/
+  unsigned 	tagCateg 	: GB_NodeHeader_TagCat_BitSz 	;			/* kind of tag, dpd on needsEval 			*/
+  unsigned 	tag 		: GB_NodeHeader_Tag_BitSz 		;			/* tag, or additional size dpd on tagCateg 	*/
+} GB_NodeHeader ;
+
+%%]
+
+%%[8
+typedef struct GB_Node {
+  GB_NodeHeader	header ;
+  GB_Word 		fields[0] ;    
+} GB_Node, *GB_NodePtr ;
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Linking
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+typedef struct GB_LinkEntry {
+  uint16_t		inxMod  ;
+  uint16_t		inxTbl  ;
+  uint32_t		inx     ;
+  GB_BytePtr	codeLoc ;
+} GB_LinkEntry ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Memory management
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Assume that sizeof(GrWord) == sizeof(GB_Word) (should be ok), this should merge later on
+
+%%[8
+#define GB_HeapAlloc(nBytes)		Cast(GB_Ptr,heapalloc(nBytes / sizeof(GB_Word)))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -43,15 +97,15 @@ typedef struct GB_Node {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define GB_Word_TagSize 	1
-#define GB_Word_TagMask 	1
-#define GB_Word_TagInt 		1
-#define GB_Word_TagPtr 		0
+#define GB_Word_TagSize 			1
+#define GB_Word_TagMask 			1
+#define GB_Word_TagInt 				1
+#define GB_Word_TagPtr 				0
 
-#define GB_Int_ShiftPow2	Bits_Pow2(GB_Int,GB_Word_TagSize)
+#define GB_Int_ShiftPow2			Bits_Pow2(GB_Int,GB_Word_TagSize)
 
-#define GB_Word_IsInt(x)		((x) & GB_Word_TagMask)
-#define GB_Word_IsPtr(x)		(! GB_Word_IsInt(x))
+#define GB_Word_IsInt(x)			((x) & GB_Word_TagMask)
+#define GB_Word_IsPtr(x)			(! GB_Word_IsInt(x))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -59,32 +113,19 @@ typedef struct GB_Node {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define GB_FromInt(ty,x)		((ty)((x) / GB_Int_ShiftPow2))
-#define GB_ToInt(x)				((Cast(GB_Int,x)) * GB_Int_ShiftPow2)
+#define GB_FromInt(ty,x)			((ty)((x) / GB_Int_ShiftPow2))
+#define GB_ToInt(x)					((Cast(GB_Int,x)) * GB_Int_ShiftPow2)
 
 #define GB_Int0						GB_ToInt(0)
 #define GB_Int1						GB_ToInt(1)
 #define GB_Int2						GB_ToInt(2)
 
-#define GB_Int_Add(x,y)		((x) + (y) - GB_Word_TagInt)
-#define GB_Int_Sub(x,y)		((x) - (y) + GB_Word_TagInt)
-#define GB_Int_Mul(x,y)		(((x)-GB_Word_TagInt) * ((y)/GB_Int_ShiftPow2) + GB_Word_TagInt)
-#define GB_Int_Div(x,y)		(((x)-GB_Word_TagInt) / ((y)/GB_Int_ShiftPow2) + GB_Word_TagInt)
-#define GB_Int_Neg(x)		GB_Int_Sub(GB_Int0,x)
+#define GB_Int_Add(x,y)				((x) + (y) - GB_Word_TagInt)
+#define GB_Int_Sub(x,y)				((x) - (y) + GB_Word_TagInt)
+#define GB_Int_Mul(x,y)				(((x)-GB_Word_TagInt) * ((y)/GB_Int_ShiftPow2) + GB_Word_TagInt)
+#define GB_Int_Div(x,y)				(((x)-GB_Word_TagInt) / ((y)/GB_Int_ShiftPow2) + GB_Word_TagInt)
+#define GB_Int_Neg(x)				GB_Int_Sub(GB_Int0,x)
 
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Groups/categories/prefixes of/for instruction opcodes
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-#define GB_Ins_Prefix(pre,sh)		(Cast(GB_Byte,pre) << (sh))
-
-#define GB_Ins_PreLd				GB_Ins_Prefix(0x0,7)
-#define GB_Ins_PreSt				GB_Ins_Prefix(0x4,5)
-#define GB_Ins_PreArith				GB_Ins_Prefix(0x5,5)
-#define GB_Ins_PreCall				GB_Ins_Prefix(0x18,3)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -130,7 +171,23 @@ typedef struct GB_Node {
 #define GB_InsOp_Deref0				0x0
 #define GB_InsOp_Deref1				0x1
 #define GB_InsOp_Deref2				0x2
+#define GB_InsOp_DerefInt			0x3
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Groups/categories/prefixes of/for instruction opcodes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#define GB_Ins_Prefix(pre,sh)		(Cast(GB_Byte,pre) << (sh))
+
+#define GB_Ins_PreLd				GB_Ins_Prefix(0x0,7)
+#define GB_Ins_PreSt				GB_Ins_Prefix(0x4,5)
+#define GB_Ins_PreArith				GB_Ins_Prefix(0x5,5)
+#define GB_Ins_PreCall				GB_Ins_Prefix(0x18,3)
+#define GB_Ins_PreHeap				GB_Ins_Prefix(0x1D,3)
+#define GB_Ins_PreEvAp				GB_Ins_Prefix(0x38,2)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -138,9 +195,24 @@ typedef struct GB_Node {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define GB_InsLd(indLev,locB,locE,immSz)		(GB_Ins_PreLd | ((indLev) << 5) | ((locB) << 4) | ((locE) << 2) | ((immSz) << 0))
-#define GB_InsCall(locB)						(GB_Ins_PreCall | ((0x0) << 1) | ((locB) << 0))
-#define GB_InsTailCall(locB)					(GB_Ins_PreCall | ((0x1) << 1) | ((locB) << 0))
+#define GB_Ins_Ld(indLev,locB,locE,immSz)		(GB_Ins_PreLd | ((indLev) << 5) | ((locB) << 4) | ((locE) << 2) | ((immSz) << 0))
+#define GB_Ins_Call(locB)						(GB_Ins_PreCall | ((0x0) << 1) | ((locB) << 0))
+#define GB_Ins_TailCall(locB)					(GB_Ins_PreCall | ((0x1) << 1) | ((locB) << 0))
+#define GB_Ins_AllocStore(locB)					(GB_Ins_PreHeap | ((0x00) << 1) | ((locB) << 0))
+#define GB_Ins_Eval(locB)						(GB_Ins_PreEvAp | ((0x0) << 1) | ((locB) << 0))
+#define GB_Ins_Apply(locB)						(GB_Ins_PreEvAp | ((0x1) << 1) | ((locB) << 0))
+#define GB_Ins_Ldg								0xFC
+#define GB_Ins_Upd								0xFD
+#define GB_Ins_NOP								0xFF
+#define GB_Ins_Ext								0xFE
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extended instruction opcodes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#define GB_InsExt_Halt							0xFF
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -149,4 +221,16 @@ typedef struct GB_Node {
 
 %%[8
 extern void interpretLoop() ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Init
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+extern void gb_InitTbls
+	( int linkEntriesSz
+	, GB_LinkEntry* linkEntries
+	, GB_Word* gr4constants
+	) ;
 %%]

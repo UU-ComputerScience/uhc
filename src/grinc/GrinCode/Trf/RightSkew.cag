@@ -26,8 +26,8 @@ rightSkew grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) Inh_G
 
 %%[8
 ATTR GrAGItf [ | | grTrf: GrModule ]
-ATTR AllGrNT [ | | grTrf: SELF     ] 
-ATTR AllGrNT [ | | copy:  SELF     ]
+ATTR AllNT [ | | grTrf: SELF     ] 
+ATTR AllNT [ | | copy:  SELF     ]
 ATTR AllGrExpr AllBind GrModule GrAGItf [ | | active USE {||} {False} : Bool ]
 %%]
 

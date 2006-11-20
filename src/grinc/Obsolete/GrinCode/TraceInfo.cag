@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllGrNT GrAGItf [ doFunctionTrace: Bool | | ]
+ATTR AllNT GrAGItf [ doFunctionTrace: Bool | | ]
 ATTR AllBind [ | | traces USE {++} {[]}: {[(CmmName, String)]} ]
 
 SEM GrBind

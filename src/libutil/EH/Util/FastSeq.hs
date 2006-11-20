@@ -9,10 +9,12 @@ module EH.Util.FastSeq
 -------------------------------------------------------------------------
 
 infixr 5 :++:, :+::
+infixl 5 ::+:
 
 data FastSeq a
   = FastSeq a :++: FastSeq a
   |         a :+:: FastSeq a
+  | FastSeq a ::+:         a
   | FSeq    a
   | FSeqL   [a]
   | FSeqNil
@@ -28,3 +30,4 @@ toList s
         a (FSeqL x   ) l = x ++ l
         a (x1 :++: x2) l = a x1 (a x2 l)
         a (x1 :+:: x2) l = x1 : a x2 l
+        a (x1 ::+: x2) l = a x1 (x2 : l)

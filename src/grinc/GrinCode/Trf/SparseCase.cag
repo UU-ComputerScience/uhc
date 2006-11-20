@@ -21,7 +21,7 @@ sparseCase hptMap grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod
 
 %%[8
 ATTR GrAGItf [ hptMap: HptMap | | grTrf: GrModule ]
-ATTR AllGrNT [ hptMap: HptMap | | grTrf: SELF ]
+ATTR AllNT [ hptMap: HptMap | | grTrf: SELF ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%

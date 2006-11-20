@@ -361,9 +361,9 @@ fromJust' _ (Just e) = e
 %%]
 
 %%[8
-ATTR GrAGItf AllGrNT [ | unique: Int  hptMap: HptMap | ]
+ATTR GrAGItf AllNT [ | unique: Int  hptMap: HptMap | ]
 ATTR GrAGItf [ | | grTrf: GrModule renameMap: RenameMap ]
-ATTR AllGrNT [ | renameMap: RenameMap | grTrf: SELF ]
+ATTR AllNT [ | renameMap: RenameMap | grTrf: SELF ]
 
 SEM GrAGItf
   | AGItf  module . renameMap = []

@@ -31,9 +31,9 @@ splitFetch hptMap uniq grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf 
 
 %%[8
 ATTR GrAGItf [ | hptMap: HptMap uniq: Int | grTrf: GrModule ]
-ATTR AllGrNT [ | hptMap: HptMap uniq: Int | grTrf: SELF ]
+ATTR AllNT [ | hptMap: HptMap uniq: Int | grTrf: SELF ]
 
-ATTR AllGrNT [ | renameMap: RenameMap | ]
+ATTR AllNT [ | renameMap: RenameMap | ]
 ATTR GrAGItf [ | | renameMap: RenameMap ]
 
 SEM GrAGItf

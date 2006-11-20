@@ -27,7 +27,7 @@ cleanupPass grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
 
 %%[8
 ATTR GrAGItf [ | | grTrf: GrModule ]
-ATTR AllGrNT [ | | grTrf: SELF ]
+ATTR AllNT [ | | grTrf: SELF ]
 
 SEM GrModule
   | Mod  lhs  .  grTrf         =  GrModule_Mod @moduleNm @newGlobals @bindL.grTrf @ctagsMp @newEvalTagMp @applyTagMp

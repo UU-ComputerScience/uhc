@@ -25,7 +25,7 @@ dropUnusedExpr hptMap grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf g
 
 %%[8
 ATTR GrAGItf [ hptMap: HptMap | | grTrf: GrModule ]
-ATTR AllGrNT [ hptMap: HptMap | | grTrf: SELF ]
+ATTR AllNT [ hptMap: HptMap | | grTrf: SELF ]
 %%]
 
 TODO: A unit statement can insert used variables for each variable not bounded

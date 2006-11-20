@@ -67,6 +67,9 @@ SEM SilModule
                                 >-< text ""
                                 >-< comment "Function definitions"
                                 >-< @functions.prettyC
+                                >-< text ""
+                                >-< comment "Main entry point"
+                                >-< "int main(int argc, char** argv){ main_Sil_Init1( argc, argv) ; main_Sil_Run( argc, argv) ; return main_Sil_Exit( argc, argv) ; }"
 
 SEM Function
   | Function    lhs.prettyC   = methodHeader @lhs.optTraceCall @name @parameters
