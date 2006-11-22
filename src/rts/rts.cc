@@ -141,12 +141,19 @@ int main_Sil_Exit(int argc, char** argv)
 int main_GB_Init1(int argc, char** argv)
 {
 	memorySetup() ;
+	gb_checkInterpreterAssumptions() ;
+	gb_Initialize() ;
 	
 	return 0 ;
 }
 
-int main_GB_Run(int argc, char** argv)
-{	
+int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF)
+{
+	gb_push( initCAF ) ;
+    interpretLoopWith( initPC ) ;
+#if DUMP_INTERNALS
+	gb_prState( "exit state", 1 ) ;
+#endif
 	return 0 ;
 }
 
@@ -155,3 +162,14 @@ int main_GB_Exit(int argc, char** argv)
 	return 0 ;
 }
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tracing, misc info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#if TRACE
+int traceLevel = TRACE_LEV_DFLT ;
+#endif
+%%]
+
