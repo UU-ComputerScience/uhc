@@ -126,21 +126,23 @@ void gb_push( GB_Word x )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define GB_PCImm(ty)			(*(((ty*)pc)++))
-#define GB_PCExt				GB_PCImm(GB_Byte)
+#define GB_PCImmIn(ty,x)		{ x = *(Cast(ty*,pc)); pc += sizeof(ty); }
+#define GB_PCExtIn(x)			GB_PCImmIn(GB_Byte,x)
 
-#define GB_PCImmIn(sz,x)		{ switch (sz) { \
+#define GB_PCImmIn2(sz,x)		{ switch (sz) { \
 								    case GB_InsOp_ImmSz_08 : \
-								      (x) = GB_PCImm(int8_t) ; break ; \
+								      GB_PCImmIn(int8_t,x) ; break ; \
 								    case GB_InsOp_ImmSz_16 : \
-								      (x) = GB_PCImm(int16_t) ; break ; \
+								      GB_PCImmIn(int16_t,x) ; break ; \
 								    case GB_InsOp_ImmSz_32 : \
-								      (x) = GB_PCImm(int32_t) ; break ; \
+								      GB_PCImmIn(int16_t,x) ; break ; \
 								    case GB_InsOp_ImmSz_64 : \
-								      (x) = GB_PCImm(int64_t) ; break ; \
+								      GB_PCImmIn(int16_t,x) ; break ; \
 								  } \
 								}
 %%]
+#define GB_PCImm(ty)			(*(((ty*)pc)++))
+#define GB_PCExt				GB_PCImm(GB_Byte)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Internal chunks of bytecode
@@ -261,22 +263,26 @@ void interpretLoop()
 			/* load immediate constant on stack */
 			/* l0ti08 */
 			case GB_Ins_Ld(GB_InsOp_Deref0, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Imm, GB_InsOp_ImmSz_08) :
-				GB_Push( GB_PCImm(int8_t) ) ;
+				GB_PCImmIn(int8_t,x) ;
+				GB_Push( x ) ;
 				break ;
 
 			/* l0ti16 */
 			case GB_Ins_Ld(GB_InsOp_Deref0, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Imm, GB_InsOp_ImmSz_16) :
-				GB_Push( GB_PCImm(int16_t) ) ;
+				GB_PCImmIn(int16_t,x) ;
+				GB_Push( x ) ;
 				break ;
 
 			/* l0ti32 */
 			case GB_Ins_Ld(GB_InsOp_Deref0, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Imm, GB_InsOp_ImmSz_32) :
-				GB_Push( GB_PCImm(int32_t) ) ;
+				GB_PCImmIn(int32_t,x) ;
+				GB_Push( x ) ;
 				break ;
 
 			/* l0ti64 */
 			case GB_Ins_Ld(GB_InsOp_Deref0, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Imm, GB_InsOp_ImmSz_64) :
-				GB_Push( GB_PCImm(int64_t) ) ;
+				GB_PCImmIn(int64_t,x) ;
+				GB_Push( x ) ;
 				break ;
 
 			/* l1ti08 */
@@ -292,22 +298,26 @@ void interpretLoop()
 			/* load immediate signed int constant as tagged int on stack */
 			/* liti08 */
 			case GB_Ins_Ld(GB_InsOp_DerefInt, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Imm, GB_InsOp_ImmSz_08) :
-				GB_Push( GB_ToInt( GB_PCImm(int8_t) ) ) ;
+				GB_PCImmIn(int8_t,x) ;
+				GB_Push( GB_ToInt( x ) ) ;
 				break ;
 
 			/* liti16 */
 			case GB_Ins_Ld(GB_InsOp_DerefInt, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Imm, GB_InsOp_ImmSz_16) :
-				GB_Push( GB_ToInt( GB_PCImm(int16_t) ) ) ;
+				GB_PCImmIn(int16_t,x) ;
+				GB_Push( GB_ToInt( x ) ) ;
 				break ;
 
 			/* liti32 */
 			case GB_Ins_Ld(GB_InsOp_DerefInt, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Imm, GB_InsOp_ImmSz_32) :
-				GB_Push( GB_ToInt( GB_PCImm(int32_t) ) ) ;
+				GB_PCImmIn(int32_t,x) ;
+				GB_Push( GB_ToInt( x ) ) ;
 				break ;
 
 			/* liti64 */
 			case GB_Ins_Ld(GB_InsOp_DerefInt, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Imm, GB_InsOp_ImmSz_64) :
-				GB_Push( GB_ToInt( GB_PCImm(int64_t) ) ) ;
+				GB_PCImmIn(int64_t,x) ;
+				GB_Push( GB_ToInt( x ) ) ;
 				break ;
 
 			/* l0tt08 */
@@ -318,22 +328,26 @@ void interpretLoop()
 			/* load TOS relative content on stack */
 			/* l1tt08 */
 			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_TOS, GB_InsOp_ImmSz_08) :
-				GB_Push2( GB_SPByteRelx(GB_PCImm(int8_t)) ) ;
+				GB_PCImmIn(int8_t,x) ;
+				GB_Push2( GB_SPByteRelx( x ) ) ;
 				break ;
 
 			/* l1tt16 */
 			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_TOS, GB_InsOp_ImmSz_16) :
-				GB_Push2( GB_SPByteRelx(GB_PCImm(int16_t)) ) ;
+				GB_PCImmIn(int16_t,x) ;
+				GB_Push2( GB_SPByteRelx( x ) ) ;
 				break ;
 
 			/* l1tt32 */
 			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_TOS, GB_InsOp_ImmSz_32) :
-				GB_Push2( GB_SPByteRelx(GB_PCImm(int32_t)) ) ;
+				GB_PCImmIn(int32_t,x) ;
+				GB_Push2( GB_SPByteRelx( x ) ) ;
 				break ;
 
 			/* l1tt64 */
 			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_TOS, GB_InsOp_ImmSz_64) :
-				GB_Push2( GB_SPByteRelx(GB_PCImm(int64_t)) ) ;
+				GB_PCImmIn(int64_t,x) ;
+				GB_Push2( GB_SPByteRelx( x ) ) ;
 				break ;
 
 			/* l2tt08 */
@@ -343,7 +357,8 @@ void interpretLoop()
 			
 			/* ldg */
 			case GB_Ins_Ldg :
-				GB_Push( /*GB_Deref*/( GB_PCImm(GB_Word) ) ) ; /* linked in value */
+				GB_PCImmIn(GB_Word,x) ;
+				GB_Push( x ) ; /* linked in value */
 				break ;
 			
 			/* calling, returning, case */
@@ -359,10 +374,10 @@ void interpretLoop()
 			/* tailcallt */
 #define GB_RetTailCallCode(getDst,jumpDst,getPrevRet,restorePrevRet)		/* share between tailcall & retcall */							\
 				spSave = sp ;																												\
-				x = GB_PCExt ;																												\
-				GB_PCImmIn(Bits_ExtrFromToSh(GB_Byte,x,4,5),x3) ; 			/* nArgMine  , in bytes				*/							\
-				GB_PCImmIn(Bits_ExtrFromToSh(GB_Byte,x,2,3),x4) ; 			/* nArgSurr  , in bytes				*/							\
-				GB_PCImmIn(Bits_ExtrFromToSh(GB_Byte,x,0,1),x5) ; 			/* retOffSurr, in bytes 			*/							\
+				GB_PCExtIn(x) ;																												\
+				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,4,5),x3) ; 			/* nArgMine  , in bytes				*/							\
+				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,2,3),x4) ; 			/* nArgSurr  , in bytes				*/							\
+				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,0,1),x5) ; 			/* retOffSurr, in bytes 			*/							\
 				IF_TR_ON(3,printf( "nArgMine %d nArgSurr %d retOffSurr %d\n", x3, x4, x5 );) \
 				getPrevRet ; 												/* ret address of current function 	*/							\
 				getDst ; 													/* destination of call 				*/							\
@@ -397,8 +412,8 @@ void interpretLoop()
 
 			/* casecall */ /* under construction 20061122 */
 			case GB_Ins_CaseCall :
-				x = GB_PCExt ;
-				GB_PCImmIn(Bits_ExtrFromToSh(GB_Byte,x,0,1),x2) ; 			/* nr of following locations, in bytes 			*/
+				GB_PCExtIn(x) ;
+				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,0,1),x2) ; 			/* nr of following locations, in bytes 			*/
 				p = Cast(GB_Ptr,x2) ;
 				retSave = *(p++) ;											/* return address */
 				n = Cast(GB_NodePtr,GB_TOS) ;								/* scrutinee is node */
@@ -408,10 +423,10 @@ void interpretLoop()
 
 			/* retcase */ /* under construction 20061122 */
 			case GB_Ins_RetCase :
-				x = GB_PCExt ;
-				GB_PCImmIn(Bits_ExtrFromToSh(GB_Byte,x,2,3),x2) ; 			/* nRes		 , in bytes 			*/
-				GB_PCImmIn(Bits_ExtrFromToSh(GB_Byte,x,0,1),x3) ; 			/* retOffSurr, in bytes 			*/
-				dst = GB_PCImm(GB_BytePtr) ; 								/* destination 			*/
+				GB_PCExtIn(x) ;
+				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,2,3),x2) ; 			/* nRes		 , in bytes 			*/
+				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,0,1),x3) ; 			/* retOffSurr, in bytes 			*/
+				GB_PCImmIn(GB_BytePtr,dst) ; 								/* destination 			*/
 				p2 = GB_SPByteRel(GB_Word,x3) ;								/* after retOffSurr is dst startpoint of backwards copy */
 				p  = GB_SPByteRel(GB_Word,x2) ;								/* after nRes is src startpoint of backwards copy */
 				MemCopyBackward(p,sp,p2) ;									/* copy new args over old 			*/
