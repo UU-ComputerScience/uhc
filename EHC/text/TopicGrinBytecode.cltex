@@ -18,7 +18,8 @@
 %format itailcall(rs)(n)(m)(r)         = "\mathsf{tailcall}\langle{" rs "}\rangle" ^^ n ^^ m ^^ r
 %format ildg(m)(t)(o)         = "\mathsf{ldg}" ^^ m ^^ t ^^ o
 %format iretcall(n)(m)(r)         = "\mathsf{retcall}" ^^ n ^^ m ^^ r
-%format icase(n)(c)         = "\mathsf{case}" ^^ n ^^ c
+%format iretcase(n)(r)(c)         = "\mathsf{retcase}" ^^ n ^^ r ^^ c
+%format icasecall(n)         = "\mathsf{casecall}" ^^ n
 %format ieval(rs)         = "\mathsf{eval}\langle{" rs "}\rangle"
 %format iapply(rs)         = "\mathsf{apply}\langle{" rs "}\rangle"
 %format ialloc(rs)         = "\mathsf{alloc}\langle{" rs "}\rangle"
@@ -27,17 +28,19 @@
 %format ifetch(rs)         = "\mathsf{fetch}\langle{" rs "}\rangle"
 %format tailcall         = "\mathsf{tailcall}"
 %format retcall         = "\mathsf{retcall}"
+%format retcase         = "\mathsf{retcase}"
 %format call         = "\mathsf{call}"
 %format alloc         = "\mathsf{alloc}"
 %format stores         = "\mathsf{store}"
 %format allocstore         = "\mathsf{allocstore}"
 %format fetchs         = "\mathsf{fetch}"
-%format cases         = "\mathsf{case}"
+%format casecall         = "\mathsf{casecall}"
 %format eval         = "\mathsf{eval}"
 %format apply         = "\mathsf{apply}"
 %format nop         = "\mathsf{nop}"
 %format ldl         = "\mathsf{ldl}"
 %format ldc         = "\mathsf{ldc}"
+%format ldi         = "\mathsf{ldi}"
 %format ldg         = "\mathsf{ldg}"
 %format l1tt        = "\mathsf{l1tt}"
 %format l0ti        = "\mathsf{l0ti}"
@@ -361,10 +364,10 @@ cf  =  1
 
 \subsubsection{Indirection level}
 %%[[wrap=code
-angle(i)  =  0  -- as is, use itself (don't follow as address)
-          |  1  -- use content pointed to (do follow as address)
-          |  2  -- and another time
-          |  3  -- use as int, that is yield tagged int representation
+angle(i)  =  0      -- as is, use itself (don't follow as address)
+          |  1      -- use content pointed to (do follow as address)
+          |  2      -- and another time
+          |  3, i   -- use as int, that is yield tagged int representation
 %%]]
 
 Level 0 is only used for a source, in that case encoding equals the encoding for |i - 1|.
@@ -372,13 +375,17 @@ Level 0 is only used for a source, in that case encoding equals the encoding for
 A level 3 represents a variation on level 0 with an implicit conversion to int encoding |Enc(x)|.
 
 \subsubsection{Instruction prefixes/categories}
+
+Prefixes without comment are unused.
+
 %{
-%format <<	= "{\ll}"
+%format <<  = "{\ll}"
 %%[[wrap=code
 0           0x00        0x00        loading
 100         0x04 << 5   0x80        storing
 101         0x05 << 5   0x82        arithmetic
 1100  0     0x18 << 3   0xC0        calling, case
+1100  0111
 1100  1     
 1101
 1110  00    0x38 << 2   0xE0        eval/apply
@@ -386,8 +393,7 @@ A level 3 represents a variation on level 0 with an implicit conversion to int e
 1110  1     0x1D << 3   0xE8        heap: node alloc/fetch
 1111  0
 1111  10
-1111  1110              0xFE        extension prefix
-1111  1111              0xFF        nop
+1111  11                0xFC        'standalone': extend prefix, nop, ...
 %%]]
 %}
 
@@ -508,7 +514,7 @@ ild(i)(rd)(rs)(x)
        0  ->  d  :=  s
        1  ->  d  :=  *s
        2  ->  d  :=  **s
-       3  ->  d  :=  Enc(s)
+       i  ->  d  :=  Enc(s)
 %%@TopicGrinBytecode.grinBLoadSrc
          d  <-  case ^^ angle(rd) of
                   t  ->  gstack := [gstack]-1
@@ -521,6 +527,7 @@ ild(i)(rd)(rs)(x)
 %%[[wrap=code
 ldl d       =   l1tt  d            -- push content displacement d relative to tos on stack
 ldc c       =   l0ti  c            -- push constant c on stack
+ldc i       =   liti  c            -- push constant c as int on stack
 lda d       =   l0tt  d            -- push address displacement d relative to tos on stack
 %%]]
 
@@ -728,7 +735,7 @@ where |n, m, r :: angle(is)|
  }{%
   |d|
  }{%
-  |c : a1 : .. : an : gstack|
+  |Sup(c)(r) : a1 : .. : an : gstack|
  }{%
   |gheap|
  }{
@@ -763,7 +770,7 @@ where |n, m, r :: angle(is)|
 }{%
  \GriniStateAfter{%
  }{%
-  |c|
+  |Sup(c)(r)|
  }{%
   |a1 : .. : an : gstack|
  }{%
@@ -774,22 +781,60 @@ where |n, m, r :: angle(is)|
 }
 
 
-\subsubsection{Case 'call'}
+\subsubsection{Return from case}
 
-\begin{GrinEncoding}{|icase(n)(c)|}
+\begin{GrinEncoding}{|iretcase(n)(r)(c)|}
  &
-|1100 ^^ 011 ^ ixx1(rs)(0)| &
-|0000 ^ ixxjuxt(n)(1)(0) ^ ixxjuxt(c)(1)(0)| &
-... + |n| offsets &
-\\
+|1100 ^^ 0101| &
+|00 ^ ixxjuxt(n)(1)(0) ^ ixxjuxt(r)(1)(0)| &
+|n|, |r|, code location |c| &
+... \\
 \end{GrinEncoding}
 
-|n| offsets, each off same size (i.e. nr of bytes) as |n|, relative to |gpc| after end of offset table.
+where |n, r:: angle(is)|
 
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |case n c : c1 : .. : cn : .. : c|
+  |retcase n r c : _|
+ }{%
+  |a1 : .. : an : .. : Sub(s)(r) : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |c|
+ }{%
+  |a1 : .. : an : Sub(s)(r) : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
+
+\subsubsection{Case 'call'}
+
+\begin{GrinEncoding}{|icasecall(n)|}
+ &
+|1100 ^^ 0110| &
+|0000 ^^ 00 ^ ixxjuxt(n)(1)(0)| &
+|n|, |n+1| locations &
+... \\
+\end{GrinEncoding}
+
+|n| offsets, each off same size (i.e. nr of bytes) as |n|, relative to |gpc| immediately after each |n|.
+During runtime initialization the offsets are patched to their absolute addresses.
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |casecall n : c : c1 : .. : cn : .. : c|
  }{%
   |p : gstack|
  }{%
@@ -877,8 +922,9 @@ where |n, m, r :: angle(is)|
 \\
 \end{GrinEncoding}
 
-Load from module |m|, table |t|, offset |o|.
-Fixed bitsizes resp 16, 16, 32.
+Load from module |m| (16 bits), table |t| (16 bits), offset |o| (32 bits).
+This info is stored in a separate link entry table, and patched during runtime initialization
+with the proper location.
 
 \subsubsection{Nop}
 
@@ -959,6 +1005,31 @@ Size in words, including tag.
 \\
 \end{GrinEncoding}
 
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |fetch : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |[ p :-> ((t,s) : f1 : .. : Sub(f)(s-1)) ] `elem` gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |(t,s) : f1 : .. : Sub(f)(s-1) : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
+
 %%]
 
 %%[grinBRest
@@ -997,8 +1068,8 @@ Size in words, including tag.
                                                     ldg             $x3
                                                     eval
             case $1_289_0!__26_0 of
-                                                    cases           2 l3
-                                                    [l1,l2]
+                                                    casecall        2
+                                                    [l3,l1,l2]
                                                 l1:
               {  (#0/C/$$: $x__27_2 $1_298_0__27_4)
                                                     fetchs          2               CSEnv ^ [$x__27_2, ... :-> offset ...]
@@ -1006,8 +1077,8 @@ Size in words, including tag.
                              eval $10_0_59_0 ; \$1_298_0!__28_0 ->
                                                     ldl             $10_0_59_0      ^
                                                     eval
-                                                    cases           2 l6            ^
-                                                    [l4,l5]
+                                                    casecall        2               ^
+                                                    [l6,l4,l5]
                              case $1_298_0!__28_0 of
                                                 l4:
                                {  (#0/C/$$: $___29_4 $___29_4)
@@ -1034,7 +1105,7 @@ Size in words, including tag.
                                                 l2:
               ;  (#1/C/$[])
                     ->  { unit (#0/C/$Int 4)} 
-                                                    ldc             4
+                                                    ldi             4
                                                     ldc             #0/C/$Int
                                                     ldc             2
                                                     allocstore

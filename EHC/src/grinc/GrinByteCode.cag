@@ -34,11 +34,35 @@ Link items, to be resolved at runtime initialization.
 
 %%[8 hs export(Link(..),LinkTbl(..))
 data LinkTbl
-  = LinkTbl_Const
+  = LinkTbl_Const | LinkTbl_CodeEntry
   deriving (Show,Eq,Ord,Enum)
 
 data Link
   = Link { linkMod :: Int, linkTbl :: LinkTbl, linkInx :: Int }
+  deriving Show
+%%]
+
+Reference to defining location in code
+
+%%[8 hs export(LocRef(..),LabelId,newLabelId,lrefIsLabel)
+type LabelId = Int
+
+newLabelId :: LabelId -> (LabelId,LabelId)
+newLabelId l = (l+1,l)
+
+lrefIsLabel :: LocRef -> Bool
+lrefIsLabel (LocRef_Label _) = True
+lrefIsLabel _                = False
+
+data LocRef
+  = LocRef_CodeEntry 	Int							-- resolved at initialization runtime, translates to
+  | LocRef_Label 		{ lrefId :: LabelId }		-- resolved before runtime, translates to offsets
+  deriving (Eq,Ord)
+%%]
+
+%%[8 hs export(FixOffset(..))
+data FixOffset
+  = FixOffset	LabelId Int
   deriving Show
 %%]
 
@@ -55,8 +79,8 @@ pow2' x
   = (p,-p,p-1)
   where p = pow2 x
 
-(pow2_7 ,pow2_7neg ,pow2_7sub1 )  = pow2' 7
-(pow2_8 ,pow2_8neg ,pow2_8sub1 )  = pow2' 8
+(pow2_7 ,pow2_7neg ,pow2_7sub1 ) = pow2' 7
+(pow2_8 ,pow2_8neg ,pow2_8sub1 ) = pow2' 8
 
 (pow2_15,pow2_15neg,pow2_15sub1) = pow2' 15
 (pow2_16,pow2_16neg,pow2_16sub1) = pow2' 16
@@ -106,7 +130,7 @@ imm c
                                        | otherwise       -> InsOp_ImmSz_Bits64
 %%]
 
-%%[8 hs export(ldc,ldl,ldg)
+%%[8 hs export(ldc,ldl,ldg,ldi)
 ld :: Integral c => InsOp_Deref -> InsOp_LocB -> InsOp_LocE -> c -> Instr
 ld ind locB locE c
   = Instr_Ld ind locB locE s i
@@ -115,6 +139,9 @@ ld ind locB locE c
 ldc :: Integral c => c -> Instr
 ldc = ld InsOp_Deref_Zero InsOp_LocB_TOS InsOp_LocE_Imm
 
+ldi :: Integral c => c -> Instr
+ldi = ld InsOp_Deref_Int InsOp_LocB_TOS InsOp_LocE_Imm
+
 ldl :: Integral c => c -> Instr
 ldl c = ld InsOp_Deref_One InsOp_LocB_TOS InsOp_LocE_TOS (nrWord2Byte c)
 
@@ -122,14 +149,20 @@ ldg :: Link -> Instr
 ldg l = Instr_LdGlobal l
 %%]
 
-%%[8 hs export(allocstore)
-allocstore :: InsOp_LocB -> Instr
-allocstore locB = Instr_AllocStore locB
+%%[8 hs export(labelref,label)
+labelref :: LocRef -> Instr
+labelref l = Instr_LabelRef l
+
+label :: LocRef -> Instr
+label l = Instr_Label l
 %%]
 
-%%[8 hs export(call)
-call :: InsOp_LocB -> Instr
-call locB = Instr_Call locB
+%%[8 hs export(allocstore,fetch)
+allocstore :: InsOp_LocB -> Instr
+allocstore locB = Instr_AllocStore locB
+
+fetch :: InsOp_LocB -> Instr
+fetch locB = Instr_Fetch locB
 %%]
 
 %%[8 hs export(eval,apply)
@@ -140,13 +173,27 @@ apply :: InsOp_LocB -> Instr
 apply locB = Instr_Apply locB
 %%]
 
-%%[8 hs export(tailcall)
-tailcall :: Integral c => InsOp_LocB -> c -> c -> c -> Instr
-tailcall locB nArgMine nArgSurr retOffSurr
-  = Instr_TailCall locB s1 s2 s3 i1 i2 i3
+%%[8 hs export(call,retcall,tailcall,casecall)
+call :: InsOp_LocB -> Instr
+call locB = Instr_Call locB
+
+rettailcall :: Integral c => (InsOp_ImmSz -> InsOp_ImmSz -> InsOp_ImmSz -> Imm -> Imm -> Imm -> Instr) -> c -> c -> c -> Instr
+rettailcall mk nArgMine nArgSurr retOffSurr
+  = mk s1 s2 s3 i1 i2 i3
   where (s1,i1) = imm $ nrWord2Byte nArgMine
         (s2,i2) = imm $ nrWord2Byte nArgSurr
         (s3,i3) = imm $ nrWord2Byte retOffSurr
+
+retcall :: Integral c => c -> c -> c -> Instr
+retcall = rettailcall Instr_RetCall
+
+tailcall :: Integral c => InsOp_LocB -> c -> c -> c -> Instr
+tailcall locB = rettailcall (Instr_TailCall locB)
+
+casecall :: Integral c => c -> Instr
+casecall nSizes
+  = Instr_CaseCall s1 i1
+  where (s1,i1) = imm nSizes
 %%]
 
 %%[8 hs export(meta,ann)

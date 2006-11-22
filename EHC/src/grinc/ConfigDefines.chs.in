@@ -36,6 +36,11 @@ use64Bits, use32Bits :: Bool
     else (False,True)
 %%]
 
+%%[8 export(gbLabelOffsetSize)
+gbLabelOffsetSize :: Int
+gbLabelOffsetSize = fromInteger sizeofGrWord
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Endianness
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -26,9 +26,9 @@ DATA Module
                 instrs          : Instrs
                 stringL			: {[String]}
                 constL			: {[Const]}
-                funEntryL		: {[Int]}
                 cafEntryL		: {[Int]}
                 mainCafEntry	: Int
+                fixOffsetL		: {[FixOffset]}
 
 SET AllModule = Module
 %%]
@@ -41,8 +41,16 @@ DATA Instr
   				immSz			: InsOp_ImmSz
   				imm 			: Imm
   | LdGlobal	link			: Link
+  | Link		link			: Link
   | AllocStore  locSrc			: InsOp_LocB
+  | Fetch       locSrc			: InsOp_LocB
   | Call        locSrc			: InsOp_LocB
+  | RetCall     nArgMineSz		: InsOp_ImmSz
+  				nArgSurrSz		: InsOp_ImmSz
+  				retOffSurrSz	: InsOp_ImmSz
+  				nArgMine		: Imm
+  				nArgSurr		: Imm
+  				retOffSurr		: Imm
   | TailCall    locSrc			: InsOp_LocB
   				nArgMineSz		: InsOp_ImmSz
   				nArgSurrSz		: InsOp_ImmSz
@@ -50,12 +58,16 @@ DATA Instr
   				nArgMine		: Imm
   				nArgSurr		: Imm
   				retOffSurr		: Imm
+  | CaseCall	nCasesSz		: InsOp_ImmSz
+  				nCases			: Imm
   | Eval        locSrc			: InsOp_LocB
   | Apply       locSrc			: InsOp_LocB
   | Ann			ann				: PP_Doc
   				instr			: Instr
   | Halt
   | Meta		meta			: Meta
+  | Label		locRef			: LocRef
+  | LabelRef	locRef			: LocRef
 
 DATA Meta
   | CmtHeader	ann				: PP_Doc

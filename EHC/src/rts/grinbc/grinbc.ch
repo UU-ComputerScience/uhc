@@ -1,5 +1,3 @@
-Preliminary thought dump for grin bytecode interpreter.
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Word, and Pointer to Word.
@@ -17,11 +15,16 @@ typedef  int32_t GB_SWord ;
 #endif
 
 typedef GB_Word* GB_Ptr ;
+typedef GB_Ptr*  GB_PtrPtr ;
 typedef uint8_t* GB_BytePtr ;
 typedef GB_SWord GB_Int ;
 typedef uint16_t GB_NodeTag ;
 typedef uint16_t GB_NodeSize ;
 typedef uint8_t  GB_Byte ;
+%%]
+
+%%[8
+#define GB_Deref(x)						(*Cast(GB_Ptr,x))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -69,17 +72,42 @@ typedef struct GB_Node {
 
 %%]
 
+%%[8
+extern GB_Node* gb_MkCAF( GB_BytePtr pc ) ;
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Linking
+%%% Linking, fixing addresses
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+#define GB_LinkTbl_EntryKind_Const			0			/* constants */
+#define GB_LinkTbl_EntryKind_CodeEntry		1			/* code entry */
+%%]
+#define GB_LinkTbl_EntryKind_FixOffset		2			/* fix offsets */
+
+Link commands for global references
+
+%%[8
 typedef struct GB_LinkEntry {
-  uint16_t		inxMod  ;
-  uint16_t		inxTbl  ;
+  uint16_t		tblKind ;
   uint32_t		inx     ;
+%%[[12
+  uint16_t		inxMod  ;
+%%]]
   GB_BytePtr	codeLoc ;
 } GB_LinkEntry ;
+%%]
+
+Fixing offsets, replacing offsets with actual address
+
+%%[8
+#define GB_Offset 	GB_Word 
+
+typedef struct GB_FixOffset {
+    GB_Ptr		codeLoc ;
+    uint16_t    nrOfLocs ;
+} GB_FixOffset ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -180,14 +208,14 @@ Assume that sizeof(GrWord) == sizeof(GB_Word) (should be ok), this should merge 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define GB_Ins_Prefix(pre,sh)		(Cast(GB_Byte,pre) << (sh))
+#define GB_Ins_Prefix(pre,sh)					(Cast(GB_Byte,pre) << (sh))
 
-#define GB_Ins_PreLd				GB_Ins_Prefix(0x0,7)
-#define GB_Ins_PreSt				GB_Ins_Prefix(0x4,5)
-#define GB_Ins_PreArith				GB_Ins_Prefix(0x5,5)
-#define GB_Ins_PreCall				GB_Ins_Prefix(0x18,3)
-#define GB_Ins_PreHeap				GB_Ins_Prefix(0x1D,3)
-#define GB_Ins_PreEvAp				GB_Ins_Prefix(0x38,2)
+#define GB_Ins_PreLd							GB_Ins_Prefix(0x0,7)
+#define GB_Ins_PreSt							GB_Ins_Prefix(0x4,5)
+#define GB_Ins_PreArith							GB_Ins_Prefix(0x5,5)
+#define GB_Ins_PreCall							GB_Ins_Prefix(0x18,3)
+#define GB_Ins_PreHeap							GB_Ins_Prefix(0x1D,3)
+#define GB_Ins_PreEvAp							GB_Ins_Prefix(0x38,2)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -198,7 +226,11 @@ Assume that sizeof(GrWord) == sizeof(GB_Word) (should be ok), this should merge 
 #define GB_Ins_Ld(indLev,locB,locE,immSz)		(GB_Ins_PreLd | ((indLev) << 5) | ((locB) << 4) | ((locE) << 2) | ((immSz) << 0))
 #define GB_Ins_Call(locB)						(GB_Ins_PreCall | ((0x0) << 1) | ((locB) << 0))
 #define GB_Ins_TailCall(locB)					(GB_Ins_PreCall | ((0x1) << 1) | ((locB) << 0))
-#define GB_Ins_AllocStore(locB)					(GB_Ins_PreHeap | ((0x00) << 1) | ((locB) << 0))
+#define GB_Ins_RetCall							(GB_Ins_PreCall | ((0x2) << 1))
+#define GB_Ins_RetCase							(GB_Ins_PreCall | ((0x2) << 1) | 0x1)
+#define GB_Ins_CaseCall 						(GB_Ins_PreCall | ((0x3) << 1))
+#define GB_Ins_AllocStore(locB)					(GB_Ins_PreHeap | ((0x2) << 1) | ((locB) << 0))
+#define GB_Ins_Fetch(locB)						(GB_Ins_PreHeap | ((0x3) << 1) | ((locB) << 0))
 #define GB_Ins_Eval(locB)						(GB_Ins_PreEvAp | ((0x0) << 1) | ((locB) << 0))
 #define GB_Ins_Apply(locB)						(GB_Ins_PreEvAp | ((0x1) << 1) | ((locB) << 0))
 #define GB_Ins_Ldg								0xFC
@@ -216,11 +248,16 @@ Assume that sizeof(GrWord) == sizeof(GB_Word) (should be ok), this should merge 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Groups/categories/prefixes of/for instruction codes
+%%% Interface with interpreter
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-extern void interpretLoop() ;
+extern GB_Byte gb_code_Startup[] ;
+
+extern void gb_push( GB_Word x ) ;
+
+extern void interpretLoop( ) ;
+extern void interpretLoopWith( GB_BytePtr initPC ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -228,9 +265,38 @@ extern void interpretLoop() ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-extern void gb_InitTbls
-	( int linkEntriesSz
+extern void gb_Initialize() ;
+
+extern void gb_InitTables
+	( int byteCodesSz
+	, GB_BytePtr byteCodes
+	, int linkEntriesSz
 	, GB_LinkEntry* linkEntries
-	, GB_Word* gr4constants
+	, GB_BytePtr* globalEntries
+	, int cafEntriesSz
+	, GB_BytePtr** cafEntries
+	, int fixOffsetsSz
+	, GB_FixOffset* fixOffsets
+	, GB_Word* consts
 	) ;
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Sanity check on assumptions made by interpreter
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+extern void gb_checkInterpreterAssumptions() ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Dumping, tracing. printing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#if DUMP_INTERNALS
+extern void gb_prState( char* msg, int maxStkSz ) ;
+#endif
+%%]
+
+

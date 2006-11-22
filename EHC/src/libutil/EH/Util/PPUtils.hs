@@ -35,6 +35,12 @@ ppCurlysSemisBlock = pp_block "{ " "}" "; " . map pp
 ppCurlysCommasBlock :: PP a => [a] -> PP_Doc
 ppCurlysCommasBlock = pp_block "{ " "}" ", " . map pp
 
+ppParensSemisBlock :: PP a => [a] -> PP_Doc
+ppParensSemisBlock = pp_block "( " ")" "; " . map pp
+
+ppParensCommasBlock :: PP a => [a] -> PP_Doc
+ppParensCommasBlock = pp_block "( " ")" ", " . map pp
+
 ppBracketsCommas :: PP a => [a] -> PP_Doc
 ppBracketsCommas = ppListSep "[" "]" ","
 

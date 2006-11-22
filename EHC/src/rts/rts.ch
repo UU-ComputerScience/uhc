@@ -94,6 +94,31 @@ extern int main_Sil_Run(int argc, char** argv) ;
 extern int main_Sil_Exit(int argc, char** argv) ;
 
 extern int main_GB_Init1(int argc, char** argv) ;
-extern int main_GB_Run(int argc, char** argv) ;
+extern int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF) ;
 extern int main_GB_Exit(int argc, char** argv) ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Dumping internal state
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#define DUMP_INTERNALS	1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tracing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#define TRACE 			1
+#define TRACE_LEV_DFLT 	3
+
+#if TRACE
+extern int traceLevel ;
+#  define	IF_TR_ON(l,x)			if ( l <= traceLevel ) { x ; } else {}
+#else
+#  define	IF_TR_ON(l,x)
+#endif
+
 %%]
