@@ -21,22 +21,28 @@
 %format iretcase(n)(r)(c)         = "\mathsf{retcase}" ^^ n ^^ r ^^ c
 %format icasecall(n)         = "\mathsf{casecall}" ^^ n
 %format ieval(rs)         = "\mathsf{eval}\langle{" rs "}\rangle"
-%format iapply(rs)         = "\mathsf{apply}\langle{" rs "}\rangle"
+%format itaileval(rs)(m)(r)         = "\mathsf{taileval}\langle{" rs "}\rangle" ^^ m ^^ r
+%format iapply(rs)       = "\mathsf{apply}\langle{" rs "}\rangle"
 %format ialloc(rs)         = "\mathsf{alloc}\langle{" rs "}\rangle"
 %format iallocstore(rs)         = "\mathsf{allocstore}\langle{" rs "}\rangle"
 %format istore(rs)         = "\mathsf{store}\langle{" rs "}\rangle"
 %format ifetch(rs)         = "\mathsf{fetch}\langle{" rs "}\rangle"
 %format tailcall         = "\mathsf{tailcall}"
+%format taileval         = "\mathsf{taileval}"
+%format applycont         = "\mathsf{applycont}"
+%format evappcont         = "\mathsf{evappcont}"
+%format papplycont         = "\mathsf{papplycont}"
 %format retcall         = "\mathsf{retcall}"
 %format retcase         = "\mathsf{retcase}"
 %format call         = "\mathsf{call}"
 %format alloc         = "\mathsf{alloc}"
 %format stores         = "\mathsf{store}"
 %format allocstore         = "\mathsf{allocstore}"
-%format fetchs         = "\mathsf{fetch}"
+%format fetcht         = "\mathsf{fetch}"
+%format evupdcont         = "\mathsf{GB_Ins_EvalUpdCont}"
 %format casecall         = "\mathsf{casecall}"
-%format eval         = "\mathsf{eval}"
-%format apply         = "\mathsf{apply}"
+%format evalt         = "\mathsf{eval}"
+%format applyt        = "\mathsf{apply}"
 %format nop         = "\mathsf{nop}"
 %format ldl         = "\mathsf{ldl}"
 %format ldc         = "\mathsf{ldc}"
@@ -55,6 +61,7 @@
 %format cn          = "c_n"
 %format bm          = "b_m"
 %format fm          = "f_m"
+%format bk          = "b_k"
 
 %format xpos        = "x^{+}"
 %format Enc(x)      = "\overline{" x "}"
@@ -388,12 +395,10 @@ Prefixes without comment are unused.
 1100  0111
 1100  1     
 1101
-1110  00    0x38 << 2   0xE0        eval/apply
-1110  01    
+1110  0     0x1C << 3   0xE0        eval/apply
 1110  1     0x1D << 3   0xE8        heap: node alloc/fetch
 1111  0
-1111  10
-1111  11                0xFC        'standalone': extend prefix, nop, ...
+1111  1                 0xF8        'standalone': extend prefix, nop, ...
 %%]]
 %}
 
@@ -589,32 +594,6 @@ ist(i)(rd)(rs)(x)
 %%[[wrap=code
 sts d       =   s1tt   d            -- pop tos content into displacement d relative to tos on stack
 %%]]
-
-\subsubsection{Block copy}
-
-\begin{GrinEncoding}{|icp(i)(rs)(x)|}
- &
-|1111 ^ 1110| &
-|11 ^ ixxjuxt(i)(1)(0) ^ ixxjuxt(rs)(1)(0) ^ ixxjuxt(x)(1)(0)| &
-... &
-\\
-\end{GrinEncoding}
-
-Is this instruction necessary?
-
-\textbf{Semantics}\\
-
-%%[[wrap=code
-icp(i)(rs)(x)
-  =  (*(gstack+1))[0..sz-1]  :=  (*(gstack))[0..sz-1]
-%%@TopicGrinBytecode.grinBLoadSrc2
-         sz <-  case angle(i) of
-                  0  ->  s
-                  1  ->  *s
-                  2  ->  **s
-%%]]
-
-Behavior in case of overlap of src/dst is unpredictable.
 
 %%]
 
@@ -824,17 +803,18 @@ where |n, r:: angle(is)|
  &
 |1100 ^^ 0110| &
 |0000 ^^ 00 ^ ixxjuxt(n)(1)(0)| &
-|n|, |n+1| locations &
+|n|, |n| locations &
 ... \\
 \end{GrinEncoding}
 
 |n| offsets, each off same size (i.e. nr of bytes) as |n|, relative to |gpc| immediately after each |n|.
 During runtime initialization the offsets are patched to their absolute addresses.
+Return is handled by |retcase|.
 
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |casecall n : c : c1 : .. : cn : .. : c|
+  |casecall n : c1 : .. : cn : _|
  }{%
   |p : gstack|
  }{%
@@ -847,7 +827,7 @@ During runtime initialization the offsets are patched to their absolute addresse
  }{%
   |Sub(c)(t)|
  }{%
-  |c : p : gstack|
+  |p : gstack|
  }{%
   |gheap|
  }{
@@ -867,14 +847,68 @@ During runtime initialization the offsets are patched to their absolute addresse
 \\
 \end{GrinEncoding}
 
+A saturated function call closure:
+
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |eval : gcode|
+  |evalt : gcode|
  }{%
   |p : gstack|
  }{%
-  |[ p :-> (t : f1 : .. : fm) ] `elem` gheap|
+  |[ p :-> (F : f : a1 : .. : an) ] `elem` gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |call : GB_Ins_EvalUpdCont|
+ }{%
+  |f : a1 : .. : an : gcode : p : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
+Special case, apply closure:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |evalt : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |[ p :-> (A : f : a1 .. an) ] `elem` gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |evalt : evappcont|
+ }{%
+  |f : gcode : p : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
+An indirection is just followed:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |evalt : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |[ p :-> (I : p') ] `elem` gheap|
  }{
   |greg|
  }
@@ -883,13 +917,127 @@ During runtime initialization the offsets are patched to their absolute addresse
  }{%
   |gcode|
  }{%
-  |p : gstack|
+  |p' : gstack|
  }{%
-  |gheap, not p->needsEval|
+  |gheap|
  }{
   |greg|
  }{}
 }
+
+
+\subsubsection{Eval Update continuation}
+
+\begin{GrinEncoding}{|GB_Ins_EvalUpdCont|}
+ &
+|1111 ^^ 1101| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+Updating only is done as part of |evalt|, hence is not generated/called directly.
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |GB_Ins_EvalUpdCont : _|
+ }{%
+  |p' : gcode : p : gstack|
+ }{%
+  |[p' :-> x] `elem` gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |p' : gstack|
+ }{%
+  |gheap[ p :-> (x || (I : p')) ]|
+ }{
+  |greg|
+ }{}
+}
+
+|p| is updated either with the content of |p'|, if it fits, or an indirection pointer, if it does not fit.
+Evaluation follows the indirection.
+
+
+\subsubsection{Eval Apply continuation}
+
+\begin{GrinEncoding}{|evappcont|}
+ &
+|1111 ^^ 1010| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+Only is done as part of |evalt|, hence is not generated/called directly.
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |evappcont : _|
+ }{%
+  |f : gcode : p : gstack|
+ }{%
+  |[f :-> (P m, _) : _, p :-> (A : f : a1 .. an) ] `elem` gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |applyt : gcode|
+ }{%
+  |f : n : a1 .. an : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
+
+
+\subsubsection{Tail eval}
+
+\begin{GrinEncoding}{|itaileval(rs)(m)(r)|}
+ &
+|1110 ^^ 010 ^ ixx1(rs)(0)| &
+|0000 ^ ixxjuxt(m)(1)(0) ^ ixxjuxt(r)(1)(0)|  &
+... &
+\\
+\end{GrinEncoding}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |taileval m r : _|
+ }{%
+  |p : .. : Sup(c)(r) : b1 : .. : bm : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |evalt : Sup(c)(r)|
+ }{%
+  |p : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
 
 
 \subsubsection{Apply}
@@ -902,15 +1050,123 @@ During runtime initialization the offsets are patched to their absolute addresse
 \\
 \end{GrinEncoding}
 
-\subsubsection{Upd}
+When |m<n|, i.e. more parameters |Sub(a)(i)| than are missing:
 
-\begin{GrinEncoding}{|update|}
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |applyt : gcode|
+ }{%
+  |p : n : a1 .. an : gstack|
+ }{%
+  |[p :-> (P m, f) : b1 .. bk] `elem` gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |call : papplycont|
+ }{%
+  |f : b1 .. bk : a1 .. Sub(a)(m) : gcode : (n-m) : Sub(a)(1+m) .. an : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
+When |m = n|, i.e. exactly the number of missing parameters |Sub(a)(i)|:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |applyt : gcode|
+ }{%
+  |p : n : a1 .. an : gstack|
+ }{%
+  |[p :-> (P m, f) : b1 .. bk] `elem` gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |call : gcode|
+ }{%
+  |f : b1 .. bk : a1 .. an : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
+When |m > n|, still missing parameters:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |applyt : gcode|
+ }{%
+  |p : n : a1 .. an : gstack|
+ }{%
+  |[p :-> (P m, f) : b1 .. bk] `elem` gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |p' : gstack|
+ }{%
+  |gheap[p' :-> (P (m-n), f) : b1 .. bk : a1 .. an]|
+ }{
+  |greg|
+ }{}
+}
+
+
+\subsubsection{Partial Apply continuation}
+
+\begin{GrinEncoding}{|papplycont|}
  &
-|1111 ^^ 1101| &
+|1111 ^^ 1011| &
  &
  &
 \\
 \end{GrinEncoding}
+
+Apply continuation only is done as part of |applyt|, hence is not generated/called directly.
+The saved return address of the apply and result are shuffled to be ready for the next apply.
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |papplycont : _|
+ }{%
+  |p : gcode : n : a1 : .. : an : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |applyt : gcode|
+ }{%
+  |p : n : a1 : .. : an : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
+
 
 \subsubsection{Load global}
 
@@ -1008,7 +1264,7 @@ Size in words, including tag.
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |fetch : gcode|
+  |fetcht : gcode|
  }{%
   |p : gstack|
  }{%
@@ -1066,27 +1322,27 @@ Size in words, including tag.
                                                     ^               ^               CSEnv ^ [$10_0_55_0 :-> global $x3]
             eval $10_0_55_0 ; \$1_289_0!__26_0 ->
                                                     ldg             $x3
-                                                    eval
+                                                    evalt
             case $1_289_0!__26_0 of
                                                     casecall        2
                                                     [l3,l1,l2]
                                                 l1:
               {  (#0/C/$$: $x__27_2 $1_298_0__27_4)
-                                                    fetchs          2               CSEnv ^ [$x__27_2, ... :-> offset ...]
+                                                    fetcht                          CSEnv ^ [$x__27_2, ... :-> offset ...]
                     ->  {    unit $1_298_0__27_4 ; \$10_0_59_0 ->
                              eval $10_0_59_0 ; \$1_298_0!__28_0 ->
                                                     ldl             $10_0_59_0      ^
-                                                    eval
+                                                    evalt
                                                     casecall        2               ^
                                                     [l6,l4,l5]
                              case $1_298_0!__28_0 of
                                                 l4:
                                {  (#0/C/$$: $___29_4 $___29_4)
-                                                    fetchs          2               CSEnv ^ [$___29_4, ... :-> offset ...]
+                                                    fetcht                          CSEnv ^ [$___29_4, ... :-> offset ...]
                                      ->  {  unit $undefined ; \$10_0_63_0 ->
                                                     ldg             $undefined
                                             eval $10_0_63_0
-                                                    eval
+                                                    evalt
                                                     retcall         1 1 3           ^
                                          } 
                                                 l5:
@@ -1094,7 +1350,7 @@ Size in words, including tag.
                                      ->  {  unit $x__27_2 ; \$10_0_65_0 ->
                                                     ldl             $x__27_2
                                             eval $10_0_65_0
-                                                    eval
+                                                    evalt
                                                     retcall         1 1 1
                                          } 
                                }
@@ -1118,7 +1374,33 @@ Size in words, including tag.
 
 %%]
 
-%%[XX
+%%[oldStuff
+\subsubsection{Block copy}
+
+\begin{GrinEncoding}{|icp(i)(rs)(x)|}
+ &
+|1111 ^ 1110| &
+|11 ^ ixxjuxt(i)(1)(0) ^ ixxjuxt(rs)(1)(0) ^ ixxjuxt(x)(1)(0)| &
+... &
+\\
+\end{GrinEncoding}
+
+Is this instruction necessary?
+
+\textbf{Semantics}\\
+
+%%[[wrap=code
+icp(i)(rs)(x)
+  =  (*(gstack+1))[0..sz-1]  :=  (*(gstack))[0..sz-1]
+%%@TopicGrinBytecode.grinBLoadSrc2
+         sz <-  case angle(i) of
+                  0  ->  s
+                  1  ->  *s
+                  2  ->  **s
+%%]]
+
+Behavior in case of overlap of src/dst is unpredictable.
+
 %%]
 
 %%[XX

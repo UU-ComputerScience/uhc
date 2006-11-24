@@ -102,6 +102,7 @@ static GB_BytePtr gb_initPC ;
 #define GB_Push(v)				{*(--sp) = ((GB_Word)(v)) ; }
 #define GB_Push2(v)				{*(sp-1) = ((GB_Word)(v)) ; sp-- ;}		/* avoid predecrement */
 #define GB_TOS					(*sp)
+#define GB_Popn(n)				(sp+=(n))
 #define GB_Pop					(sp++)
 #define GB_PopCastedIn(ty,v)	{(v) = Cast(ty,*GB_Pop) ;}
 #define GB_PopIn(v)				GB_PopCastedIn(GB_Word,v)
@@ -113,6 +114,12 @@ static GB_BytePtr gb_initPC ;
 
 #define GB_SPByteRel(ty,o)		GB_RegByteRel(ty,sp,o)
 #define GB_SPByteRelx(o)		GB_Deref(GB_SPByteRel(GB_Word,o))
+
+#define GB_PushNodeArgs(nd,hdr,pfr,pto)	/* push args of `fun + args' node fields */ 				\
+								pfr = Cast(GB_Ptr,&((nd)->fields[GB_NodeHeaderNrFields(hdr)])) ;	\
+								pto = Cast(GB_Ptr,&((nd)->fields[1])) ;								\
+								IF_TR_ON(3,printf("pfr %x pto %x sp %x\n",pfr,pto,sp);) ;			\
+								MemCopyBackward(pfr,pto,sp) ;
 
 void gb_push( GB_Word x )
 {
@@ -150,7 +157,15 @@ void gb_push( GB_Word x )
 
 %%[8
 static GB_Byte gb_code_AfterEvalCall[] =
-  { GB_Ins_Upd
+  { GB_Ins_EvalUpdCont
+  } ;
+
+static GB_Byte gb_code_AfterEvalApplyFunCall[] =
+  { GB_Ins_EvalApplyCont
+  } ;
+
+static GB_Byte gb_code_AfterCallInApplyWithTooManyArgs[] =
+  { GB_Ins_PApplyCont
   } ;
 
 GB_Byte gb_code_Startup[] =
@@ -168,7 +183,7 @@ GB_Byte gb_code_Startup[] =
 GB_Node* gb_MkCAF( GB_BytePtr pc )
 {
   GB_NodeHeader h = {2, 1, GB_NodeTagCat_Fun, 0} ;
-  GB_Node* n = Cast(GB_Node*,GB_HeapAlloc(2 * sizeof(GB_Word))) ;
+  GB_Node* n = Cast(GB_Node*,GB_HeapAlloc_Words(2)) ;
   n->header = h ;
   n->fields[0] = Cast(GB_Word,pc) ;
   return n ;
@@ -177,7 +192,7 @@ GB_Node* gb_MkCAF( GB_BytePtr pc )
 GB_Node* gb_MkCAF( GB_BytePtr pc )
 {
   GB_NodeHeader h = {2, 1, GB_NodeTagCat_Fun, 0} ;
-  GB_Node* n = Cast(GB_Node*,GB_HeapAlloc(2 * sizeof(GB_Word))) ;
+  GB_Node* n = Cast(GB_Node*,GB_HeapAlloc_Words(2)) ;
   n->header = h ;
   n->fields[0] = Cast(GB_Word,pc) ;
   return n ;
@@ -191,6 +206,8 @@ GB_Node* gb_MkCAF( GB_BytePtr pc )
 #if TRACE || DUMP_INTERNALS
 extern char* gb_getMnem( GB_Byte c ) ;
 
+unsigned int gb_StepCounter ;
+
 void gb_prWord( GB_Word x )
 {
 	GB_Node* n = Cast(GB_Node*,x) ;
@@ -200,7 +217,7 @@ void gb_prWord( GB_Word x )
 	} else {
 		printf( "sz %d, ev %d, cat %d, tg %d:", n->header.size, n->header.needsEval, n->header.tagCateg, n->header.tag ) ;
 		int i ;
-		for ( i = 0 ; i < 5 && i < n->header.size-1 ; i++ )
+		for ( i = 0 ; i < 5 && i < GB_NodeNrFields(n) ; i++ )
 		{
 			printf( " 0x%x", n->fields[i] ) ;
 		}
@@ -223,7 +240,7 @@ void gb_prStack( int maxStkSz )
 void gb_prState( char* msg, int maxStkSz )
 {
 	printf( "--------------------------------- %s ---------------------------------\n", msg ) ;
-	printf( "PC 0x%x %d: 0x%0.2x '%s' 0x%0.8x, SP 0x%x: 0x%0.8x", pc, pc-gb_initPC, *pc, gb_getMnem(*pc), *Cast(uint32_t*,pc+1), sp, *sp ) ;
+	printf( "[%d]PC 0x%x %d: 0x%0.2x '%s' 0x%0.8x 0x%0.8x, SP 0x%x: 0x%0.8x", gb_StepCounter, pc, pc-gb_initPC, *pc, gb_getMnem(*pc), Cast(uint32_t*,pc+1)[0], Cast(uint32_t*,pc+1)[1], sp, *sp ) ;
 	printf( "\n" ) ;
 	gb_prStack( maxStkSz ) ;
 }
@@ -239,6 +256,7 @@ void interpretLoopWith( GB_BytePtr initPC )
 {
 	pc = initPC ;
 	gb_initPC = pc ;
+	gb_StepCounter = 0 ;
 	interpretLoop() ;
 }
 
@@ -254,7 +272,7 @@ void interpretLoop()
   	GB_Word x4, x5, x6, retSave ;
   	GB_Ptr  p4, p5, p6 ;
   	GB_BytePtr  dst ;
-	
+
 	while( 1 )
 	{
 		IF_TR_ON(1,gb_prState( "interpreter step", 10 ) ;)
@@ -365,6 +383,7 @@ void interpretLoop()
 			/* callt */
 			case GB_Ins_Call(GB_InsOp_LocB_TOS) :
 				x = GB_TOS ;
+gb_interpreter_InsCallEntry:
 				GB_TOS = Cast(GB_Word,pc) ;
 				pc = Cast(GB_BytePtr,x) ;
 				break ;
@@ -410,15 +429,14 @@ void interpretLoop()
 					) ;
 				break ;
 
-			/* casecall */ /* under construction 20061122 */
+			/* casecall */
 			case GB_Ins_CaseCall :
 				GB_PCExtIn(x) ;
-				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,0,1),x2) ; 			/* nr of following locations, in bytes 			*/
-				p = Cast(GB_Ptr,x2) ;
-				retSave = *(p++) ;											/* return address */
-				n = Cast(GB_NodePtr,GB_TOS) ;								/* scrutinee is node */
+				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,0,1),x2) ; 			/* nr of following locations, in bytes 				*/
+				p = Cast(GB_Ptr,pc) ;										/* start of table after instr						*/
+				n = Cast(GB_NodePtr,GB_TOS) ;								/* scrutinee is node 								*/
 				dst = Cast(GB_BytePtr,p[n->header.tag]) ;					/* destination from following table, indexed by tag */
-				pc = dst ;													/* jump */
+				pc = dst ;													/* jump 											*/
 				break ;
 
 			/* retcase */ /* under construction 20061122 */
@@ -435,8 +453,20 @@ void interpretLoop()
 				break ;
 						
 			/* eval/apply */
+			/* tailevalt */ /* under construction 20061122 */
+			case GB_Ins_TailEval(GB_InsOp_LocB_TOS) :
+				GB_PCExtIn(x) ;
+				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,2,3),x2) ; 			/* nArgSurr  , in bytes 			*/
+				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,0,1),x3) ; 			/* retOffSurr, in bytes 			*/
+				pc = Cast(GB_BytePtr,GB_RegByteRelx(sp,x3))	;				/* continuation address				*/
+				x = GB_TOS ;
+				sp = GB_SPByteRel(GB_Word,x3+x2) ;							/* sp points to eval arg			*/
+				GB_TOS = x ;												/* which is set here				*/
+																			/* so we can fall through to eval	*/
+
 			/* evalt */ /* under construction 20061122 */
 			case GB_Ins_Eval(GB_InsOp_LocB_TOS) :
+gb_interpreter_InsEvalEntry:
 				x = GB_TOS ;
 				if ( GB_Word_IsPtr(x) ) {
 					n = Cast(GB_NodePtr,x) ;
@@ -444,18 +474,21 @@ void interpretLoop()
 					if ( h.needsEval ) {
 						switch( h.tagCateg ) {
 							case GB_NodeTagCat_Fun :
-								GB_Push(pc) ;									/* save ret for after eval 			*/
-								p = Cast(GB_Ptr,&(n->fields[1])) ;				/* 1st arg 							*/
-								p2 = Cast(GB_Ptr,&(n->fields[h.size-2])) ;		/* after last arg 					*/
-								MemCopyBackward(p2,p,sp) ;						/* push args on stack 				*/
-								pc = Cast(GB_BytePtr,n->fields[0]) ;			/* jump to function 				*/
-								GB_Push(gb_code_AfterEvalCall) ;				/* ret addr is to special handling	*/
+								GB_Push(pc) ;													/* save ret for after eval 			*/
+								p = &(n->fields[1]) ;											/* 1st arg 							*/
+								p2 = &(n->fields[GB_NodeHeaderNrFields(h)]) ;					/* after last arg 					*/
+								MemCopyBackward(p2,p,sp) ;										/* push args on stack 				*/
+								pc = Cast(GB_BytePtr,n->fields[0]) ;							/* jump to function 				*/
+								GB_Push(gb_code_AfterEvalCall) ;								/* ret addr is to update 			*/
 								break ;
 							case GB_NodeTagCat_App :
-							    
+								GB_Push(pc) ;													/* save ret for after eval 			*/
+								GB_Push(n->fields[0]) ;											/* push function to eval 			*/
+							    pc = gb_code_AfterEvalApplyFunCall ;
+							    goto gb_interpreter_InsEvalEntry ;								/* evaluate							*/
 								break ;
 							case GB_NodeTagCat_Ind :
-							    GB_TOS = n->fields[0] ;							/* just follow the indirection		*/
+							    GB_TOS = n->fields[0] ;											/* just follow the indirection		*/
 								break ;
 						}
 					}
@@ -464,37 +497,106 @@ void interpretLoop()
 
 			/* evalr */
 			
-			/* update */
-			case GB_Ins_Upd :
+			/* evupdcont */
+			case GB_Ins_EvalUpdCont :
 				GB_PopIn(x) ;													/* evaluation result 						*/
 				GB_PopIn(retSave) ;												/* saved return address 					*/
 				x2 = GB_TOS ;													/* node which was to be evaluated 			*/
 				register GB_NodePtr nOld = Cast(GB_NodePtr,x2) ;
 				if ( GB_Word_IsPtr(x) && ((n = Cast(GB_NodePtr,x))->header.size <= nOld->header.size) ) {
-					p = Cast(GB_Ptr,&(n->fields[n->header.size-1])) ;		/* overwrite content of old with new 		*/
+					p = Cast(GB_Ptr,&(n->fields[GB_NodeNrFields(n)])) ;			/* overwrite content of old with new 		*/
 					p2 = Cast(GB_Ptr,nOld) ;
 					p3 = Cast(GB_Ptr,n) ;
 					MemCopyForward(p3,p,p2) ;	
+					GB_TOS = x ;												/* return new (avoids indirection)			*/
 				} else {
 					nOld->header.tagCateg = GB_NodeTagCat_Ind ;					/* needsEval flag stays on, size unchanged 	*/
 					nOld->fields[0] = x ;										/* assumption !!: memory is available !! 	*/
 					GB_TOS = x ;
 				}
-				GB_TOS = x ;													/* update with new (??)						*/
 				pc = Cast(GB_BytePtr,retSave) ;									/* jump to saved ret address				*/
 				break ;
 
+			/* evappcont */ /* under construction 20061122 */
+			case GB_Ins_EvalApplyCont :
+				GB_PopIn(x) ;													/* evaluated function						*/
+				GB_PopIn(retSave) ;												/* saved return address 					*/
+				GB_PopCastedIn(GB_NodePtr,n) ;									/* the apply node							*/
+				h = n->header ;
+				GB_PushNodeArgs(n,h,p,p2) ;										/* copy arguments from app					*/
+				GB_Push(h.size-2) ;												/* nr of args								*/
+				GB_Push(x) ;													/* function									*/
+				pc = Cast(GB_BytePtr,retSave) ;									/* continue with apply						*/
+				goto gb_interpreter_InsApplyEntry ;
+				break ;
+
+			/* papplycont */ /* under construction 20061122 */
+			case GB_Ins_PApplyCont :
+				GB_PopIn(x) ;													/* result value								*/
+				pc = Cast(GB_BytePtr,GB_TOS) ;									/* continuation								*/
+				GB_TOS = x ;													/* result is slided down					*/
+																				/* fall through								*/
+
 			/* applyt */ /* under construction 20061122 */
 			case GB_Ins_Apply(GB_InsOp_LocB_TOS) :
+gb_interpreter_InsApplyEntry:
+				n = Cast(GB_NodePtr,GB_TOS) ;										/* function										*/
+				x = GB_SPRelx(1) ;													/* nArgs, in words 								*/
+				h = n->header ;
+				register int nLeftOver, nMiss ;
+				switch ( h.tagCateg ) {
+					case GB_NodeTagCat_PAp :
+						nMiss = h.tag ;
+						nLeftOver = Cast(int,x) - nMiss ;
+						IF_TR_ON(3,printf("nMiss %d nGiven %d nLeftOver %d\n",nMiss,x,nLeftOver);) ;
+						if ( nLeftOver > 0 ) {											/* func is partial app, enough args on stack				*/
+							p = sp ;													/* prepare continuation with next apply						*/
+							p2 = GB_SPRel(2) ;											/* by shifting down nr fun args, with remaining 			*/
+							p3 = GB_SPRel(2 + nMiss) ;									/* nr + args behind											*/
+							MemCopyForward(p2,p3,p) ;
+							GB_SPRelx(nMiss) = Cast(GB_Word,pc) ;						/* prepare for applycont, save pc, push nr remaining args	*/
+							GB_SPRelx(nMiss+1) = nLeftOver ;
+							GB_PushNodeArgs(n,h,p,p2) ;									/* copy arguments from partial app							*/
+							pc = Cast(GB_BytePtr,n->fields[0]) ;								/* call function									*/
+							GB_Push( Cast(GB_Word,gb_code_AfterCallInApplyWithTooManyArgs) ) ;  /* with continuation set to another apply			*/
+						} else if ( nLeftOver == 0 ) {
+							sp = Cast(GB_Ptr,GB_SPRel(2)) ;								/* remove node+size from stack 								*/
+							GB_PushNodeArgs(n,h,p,p2) ;									/* copy arguments from partial app							*/
+							x = n->fields[0] ;											/* call function											*/
+							GB_Push(x) ;
+							goto gb_interpreter_InsCallEntry ;
+						} else { /* ( nLeftOver < 0 ) */
+							p2 = n->fields ;											/* copy old fields prep										*/
+							p3 = Cast(GB_Ptr,&((n)->fields[GB_NodeHeaderNrFields(h)])) ;
+							h.tag -= x ;
+							h.size += x ;
+							p = GB_HeapAlloc_Words( h.size ) ;							/* fresh node												*/
+							x2 = Cast(GB_Word,p) ;										/* remember, to push later on								*/
+							Cast(GB_NodePtr,p)->header = h ;							/* set header												*/
+							p++ ;
+							MemCopyForward(p2,p3,p) ;									/* copy old fields								*/
+							GB_Popn(2) ;
+							p3 = GB_SPRel(x) ;											/* copy new args								*/
+							MemCopyForward(sp,p3,p) ;
+							GB_Push(x2) ;
+						}
+						break ;
+
+					default :
+						panic( "non partial apply applied", Cast(GB_Word,n) ) ;
+						break ;
+				}
 				break ;
 
 			/* applyr */
-
+			
 			/* heap allocation (+storing), heap retrieving (fetching) */
 			/* allocstoret */
 			case GB_Ins_AllocStore(GB_InsOp_LocB_TOS) :
 				GB_PopIn(x) ;
-				p = GB_HeapAlloc(x) ;
+				if ( x < 2*sizeof(GB_Word) ) {x2 = 2*sizeof(GB_Word) ; } else { x2 = x; }
+				// IF_TR_ON(2,printf("heap alloc %x \n",x2)) ;
+				p = GB_HeapAlloc_Bytes(x2) ;
 				p2 = p ;
 				p3 = GB_SPByteRel(GB_Word,x) ;
 				MemCopyForward(sp,p3,p) ;
@@ -507,8 +609,8 @@ void interpretLoop()
 			case GB_Ins_Fetch(GB_InsOp_LocB_TOS) :
 				GB_PopIn(x) ;
 				n = Cast(GB_NodePtr,x) ;
-				p = Cast(GB_Ptr,&(n->fields[n->header.size-1])) ;
-				p2 = Cast(GB_Ptr,x) ;
+				p = Cast(GB_Ptr,&(n->fields[GB_NodeNrFields(n)])) ;
+				p2 = n->fields ;
 				MemCopyBackward(p,p2,sp) ;
 				break ;
 
@@ -538,6 +640,8 @@ void interpretLoop()
 				break ;
 
 		}
+		
+		IF_TR_ON(0,gb_StepCounter++) ;
 
 	}
 	
@@ -630,11 +734,15 @@ void gb_checkInterpreterAssumptions()
 		panic2( m, "size of word and pointer must be equal", 0 ) ;
 	}
 	
+	if ( sizeof(GrWord) != sizeof(GB_Word) ) {
+		panic2( m, "size of GrWord and GB_Word must be equal", 0 ) ;
+	}
+	
 	if ( sizeof( GB_Word ) != sizeof(uint32_t) && sizeof( GB_Word ) != sizeof(uint64_t) ) {
 		panic2( m, "size of word and pointer must be 32 or 64", 0 ) ;
 	}
 	
-	x1 = Cast(GB_Word,GB_HeapAlloc( 8 )) ;
+	x1 = Cast(GB_Word,GB_HeapAlloc_Words( 2 )) ;
 	if ( x1 & GB_Word_TagMask ) {
 		panic2_2( m, "heap allocated pointers must have lower bits set to zero", GB_Word_TagSize, x1 ) ;
 	}
@@ -700,10 +808,13 @@ static GB_Mnem gb_mnemTable[] =
 , { GB_Ins_RetCall								, "retcall" 		}
 , { GB_Ins_RetCase								, "retcase" 		}
 , { GB_Ins_CaseCall								, "casecall" 		}
-, { GB_Ins_Eval(GB_InsOp_LocB_TOS)				, "eval" 			}
-, { GB_Ins_Upd									, "upd" 			}
+, { GB_Ins_Eval(GB_InsOp_LocB_TOS)				, "evalt" 			}
+, { GB_Ins_TailEval(GB_InsOp_LocB_TOS)			, "tailevalt" 		}
+, { GB_Ins_EvalUpdCont							, "evupdcont" 		}
 , { GB_Ins_Apply(GB_InsOp_LocB_TOS)				, "applyt" 			}
 , { GB_Ins_Ext									, "ext" 			}
+, { GB_Ins_EvalApplyCont						, "evappcont" 		}
+, { GB_Ins_PApplyCont							, "papplycont" 		}
 , { GB_Ins_NOP									, "nop" 			}
 , { 0											, "--" 				}	/* this must be the last one */
 } ;

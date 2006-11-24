@@ -24,7 +24,7 @@ ehc-variant:
 ehc-variant-dflt: $(EHC_ALL_DPDS) $(LIB_EH_UTIL_INS_FLAG) $(LIB_EHC_INS_FLAG) $(LIB_GRINC_INS_FLAG) \
 			$(if $(filter $(EHC_VARIANT),$(EHC_CODE_VARIANTS)),$(INSABS_LIB_RTS),)
 	mkdir -p $(dir $(EHC_BLD_EXEC)) && \
-	$(GHC) --make $(GHC_OPTS) -package $(LIB_EH_UTIL_PKG_NAME) -package $(LIB_EHC_PKG_NAME) -package $(LIB_GRINC_PKG_NAME) -i$(EHC_BLD_VARIANT_PREFIX) $(EHC_BLD_VARIANT_PREFIX)$(EHC_MAIN).hs -o $(EHC_BLD_EXEC)
+	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EH_UTIL_PKG_NAME) -package $(LIB_EHC_PKG_NAME) -package $(LIB_GRINC_PKG_NAME) -i$(EHC_BLD_VARIANT_PREFIX) $(EHC_BLD_VARIANT_PREFIX)$(EHC_MAIN).hs -o $(EHC_BLD_EXEC)
 
 #ehc-variant-selrule: 
 #	$(MAKE) EHC_VARIANT_RULER_SEL="($(EHC_VARIANT)).(expr.base).(e.int e.char)" ehc-variant-dflt

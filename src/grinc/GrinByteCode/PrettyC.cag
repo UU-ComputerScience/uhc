@@ -77,14 +77,18 @@ SEM Instr
   | LdGlobal    loc         .   linkCLoc    =   @lhs.cLoc + 1
   | Label       loc         .   labelCLoc   =   @lhs.cLoc
   | LabelRef    loc         .   labelCLocAft=   @lhs.cLoc + Cfg.gbLabelOffsetSize
+  | RetCase     loc         .   labelCLocAft=   @retOffSurr.cLoc + Cfg.gbLabelOffsetSize
 
 SEM Instr
   | Ld          imm         .   cLoc        =   @lhs.cLoc + 1
   | LdGlobal    lhs         .   cLoc        =   @linkCLoc + fromInteger Cfg.sizeofGrWord
-  | LabelRef    lhs         .   cLoc        =   @labelCLocAft
+  | LabelRef RetCase
+                lhs         .   cLoc        =   @labelCLocAft
   | TailCall RetCall
                 nArgMine    .   cLoc        =   @lhs.cLoc + 2
   | CaseCall    nCases      .   cLoc        =   @lhs.cLoc + 2
+  | TailEval    nArgSurr    .   cLoc        =   @lhs.cLoc + 2
+  | RetCase     nRes        .   cLoc        =   @lhs.cLoc + 2
   | Halt        lhs         .   cLoc        =   @lhs.cLoc + 2
   | AllocStore Fetch Call Eval Apply
                 lhs         .   cLoc        =   @lhs.cLoc + 1
@@ -121,7 +125,10 @@ SEM Module
 
 %%[8
 SEM Instr
-  | LabelRef    loc         .   refOff      =   (panicJust "Instr.LabelRef.refOff" $ Map.lookup (lrefId @locRef) @lhs.labelMp) - @labelCLocAft
+  | RetCase     loc         .   locRef      =   @contLocRef
+  | LabelRef RetCase
+                loc         .   refOff      =   (panicJust "Instr.{LabelRef,RetCase}.refOff"
+                                                 $ Map.lookup (lrefId @locRef) @lhs.labelMp) - @labelCLocAft
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -268,7 +275,9 @@ SEM Instr
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc]
   | TailCall RetCall
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArgMine.pp,@nArgSurr.pp,@retOffSurr.pp]
+  | TailEval    lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArgSurr.pp,@retOffSurr.pp]
   | CaseCall    lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nCases.pp]
+  | RetCase     lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nRes.pp,@retOffSurr.pp,ppLink Cfg.gbLabelOffsetSize @refOff]
   | Ann         lhs         .   pp          =   @instr.pp >#< ppCmtC @ann
   | Halt        lhs         .   pp          =   ppCommas [ppHex 2 @ext,ppHex 2 @enc]
   | LdGlobal    lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLink (fromInteger Cfg.sizeofGrWord) $ linkInx @link]
@@ -344,8 +353,10 @@ SEM Instr
   | Fetch       lhs         .   mn          =   "fetch"         >|< @locSrc.mn
   | Call        lhs         .   mn          =   "call"          >|< @locSrc.mn
   | TailCall    lhs         .   mn          =   "tailcall"      >|< @locSrc.mn >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >|< @retOffSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn >#< @retOffSurr.mn
+  | TailEval    lhs         .   mn          =   "taileval"      >|< @locSrc.mn >|< @nArgSurrSz.mn >|< @retOffSurrSz.mn >#< @nArgSurr.mn >#< @retOffSurr.mn
   | CaseCall    lhs         .   mn          =   "casecall"      >|< @nCasesSz.mn >#< @nCases.mn
   | RetCall     lhs         .   mn          =   "retcall"       >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >|< @retOffSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn >#< @retOffSurr.mn
+  | RetCase     lhs         .   mn          =   "retcase"       >|< @nResSz.mn >|< @retOffSurrSz.mn >#< @nResSz.mn >#< @retOffSurr.mn >#< lrefId @locRef
   | Eval        lhs         .   mn          =   "eval"          >|< @locSrc.mn
   | Apply       lhs         .   mn          =   "apply"         >|< @locSrc.mn
   | Halt        lhs         .   mn          =   pp "halt"
@@ -415,15 +426,21 @@ SEM Instr
   | Call        loc         .   enc         =   0xC0 .|. (@locSrc.enc)
   | TailCall    loc         .   enc         =   0xC2 .|. (@locSrc.enc)
   | RetCall     loc         .   enc         =   0xC4
+  | RetCase     loc         .   enc         =   0xC5
   | CaseCall    loc         .   enc         =   0xC6
-  | TailCall RetCall
-                loc         .   enc2        =   (@nArgMineSz.enc `shiftL` 4) .|. (@nArgSurrSz.enc `shiftL` 2) .|. (@retOffSurrSz.enc)
-  | CaseCall    loc         .   enc2        =   (@nCasesSz.enc)
   | Eval        loc         .   enc         =   0xE0 .|. (@locSrc.enc)
+  | TailEval    loc         .   enc         =   0xE4 .|. (@locSrc.enc)
   | Apply       loc         .   enc         =   0xE2 .|. (@locSrc.enc)
   | LdGlobal    loc         .   enc         =   0xFC
   | Halt        loc         .   ext         =   0xFE
                             .   enc         =   0xFF
+
+SEM Instr
+  | TailCall RetCall
+                loc         .   enc2        =   (@nArgMineSz.enc `shiftL` 4) .|. (@nArgSurrSz.enc `shiftL` 2) .|. (@retOffSurrSz.enc)
+  | CaseCall    loc         .   enc2        =   (@nCasesSz.enc)
+  | TailEval    loc         .   enc2        =   (@nArgSurrSz.enc `shiftL` 2) .|. (@retOffSurrSz.enc)
+  | RetCase     loc         .   enc2        =   (@nResSz.enc `shiftL` 2) .|. (@retOffSurrSz.enc)
 
 SEM Meta
   | CmtHeader   loc         .   enc         =   0xFF
@@ -482,7 +499,11 @@ SEM Instr
                 nArgMine    .   immSz       =   @nArgMineSz.self
                 nArgSurr    .   immSz       =   @nArgSurrSz.self
                 retOffSurr  .   immSz       =   @retOffSurrSz.self
+  | TailEval    nArgSurr    .   immSz       =   @nArgSurrSz.self
+                retOffSurr  .   immSz       =   @retOffSurrSz.self
   | CaseCall    nCases      .   immSz       =   @nCasesSz.self
+  | RetCase     nRes        .   immSz       =   @nResSz.self
+                retOffSurr  .   immSz       =   @retOffSurrSz.self
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

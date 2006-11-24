@@ -70,6 +70,8 @@ typedef struct GB_Node {
   GB_Word 		fields[0] ;    
 } GB_Node, *GB_NodePtr ;
 
+#define GB_NodeHeaderNrFields(h)			((h).size-1)
+#define GB_NodeNrFields(n)					GB_NodeHeaderNrFields((n)->header)
 %%]
 
 %%[8
@@ -114,10 +116,13 @@ typedef struct GB_FixOffset {
 %%% Memory management
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Assume that sizeof(GrWord) == sizeof(GB_Word) (should be ok), this should merge later on
+Assume that sizeof(GrWord) == sizeof(GB_Word) (should be ok).
+This should merge later on, but a check in it is currently part of the sanity check.
+Size must be minimal 2 words to ensure enough space for an indirection pointer (plus the usual header in front).
 
 %%[8
-#define GB_HeapAlloc(nBytes)		Cast(GB_Ptr,heapalloc(nBytes / sizeof(GB_Word)))
+#define GB_HeapAlloc_Words(nWords)	Cast(GB_Ptr,heapalloc(nWords))
+#define GB_HeapAlloc_Bytes(nBytes)	GB_HeapAlloc_Words(nBytes / sizeof(GB_Word))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -215,7 +220,7 @@ Assume that sizeof(GrWord) == sizeof(GB_Word) (should be ok), this should merge 
 #define GB_Ins_PreArith							GB_Ins_Prefix(0x5,5)
 #define GB_Ins_PreCall							GB_Ins_Prefix(0x18,3)
 #define GB_Ins_PreHeap							GB_Ins_Prefix(0x1D,3)
-#define GB_Ins_PreEvAp							GB_Ins_Prefix(0x38,2)
+#define GB_Ins_PreEvAp							GB_Ins_Prefix(0x1C,3)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -233,10 +238,13 @@ Assume that sizeof(GrWord) == sizeof(GB_Word) (should be ok), this should merge 
 #define GB_Ins_Fetch(locB)						(GB_Ins_PreHeap | ((0x3) << 1) | ((locB) << 0))
 #define GB_Ins_Eval(locB)						(GB_Ins_PreEvAp | ((0x0) << 1) | ((locB) << 0))
 #define GB_Ins_Apply(locB)						(GB_Ins_PreEvAp | ((0x1) << 1) | ((locB) << 0))
+#define GB_Ins_TailEval(locB)					(GB_Ins_PreEvAp | ((0x2) << 1) | ((locB) << 0))
+#define GB_Ins_EvalApplyCont					0xFA
+#define GB_Ins_PApplyCont						0xFB
 #define GB_Ins_Ldg								0xFC
-#define GB_Ins_Upd								0xFD
-#define GB_Ins_NOP								0xFF
+#define GB_Ins_EvalUpdCont						0xFD
 #define GB_Ins_Ext								0xFE
+#define GB_Ins_NOP								0xFF
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

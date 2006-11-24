@@ -27,7 +27,7 @@ Backwards startingpoint starts after the first location (so predecrement is/can 
 									}
 
 #define MemCopyBackward(frPtr,frEndPtr,toPtr) \
-									for ( ; (frPtr) >= (frEndPtr) ; ) { \
+									for ( ; (frPtr) > (frEndPtr) ; ) { \
 										*(--(toPtr)) = *(--(frPtr)) ; \
 									}
 %%]

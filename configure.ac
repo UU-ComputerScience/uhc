@@ -1,5 +1,5 @@
 ### Process this file with autoconf to produce a configure script.
-AC_INIT(EH, [0.1], [atze@cs.uu.nl])
+AC_INIT(EH, [0.1], [ehc-developers@cs.uu.nl, http://www.cs.uu.nl/wiki/Ehc/WebHome])
 
 ### version of autoconf used (and required)
 #AC_PREREQ(2.52)
@@ -72,7 +72,14 @@ AC_SUBST(RANLIB_CMD,$ranlibCmd)
 REQUIRED_PROG_FOR_EH(arCmd,ar)
 AC_SUBST(AR_CMD,$arCmd)
 
-### 'with' options
+### 'with' option for ghc
+AC_ARG_WITH(ghc-ehc-options,
+[AC_HELP_STRING([--with-ghc-ehc-options=<haskell compiler options for compiling ehc>],
+                [Additional options to pass to GHC when compiling EHC.])],
+[ ghcEhcOptions="$withval" ],)
+AC_SUBST(GHC_EHC_OPTIONS, "$ghcEhcOptions")
+
+### 'with' option for ghc
 AC_ARG_WITH(ghc,
 [AC_HELP_STRING([--with-ghc=<haskell compiler>],
                 [Use a command different from 'ghc' to compile with GHC.])],

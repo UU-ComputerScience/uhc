@@ -919,14 +919,32 @@ cpTranslateGrin modNm
          }
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Compile actions: C compilation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[8
-cpCompileWithGCC :: HsName -> EHCompilePhase ()
-cpCompileWithGCC modNm
+data GCC_CompileHow
+  = GCC_CompileOnly
+  | GCC_CompileExec
+
+cpCompileWithGCC :: GCC_CompileHow -> [HsName] -> HsName -> EHCompilePhase ()
+cpCompileWithGCC how othModNmL modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  fpC    = fpathSetSuff "c" fp
+                 fpO fp = fpathSetSuff "o" fp
                  fpExec = maybe (fpathRemoveSuff fp) (\s -> fpathSetSuff s fp) Cfg.mbSuffixExec
-         ;  when (ehcOptEmitExec opts)
+                 (fpTarg,targOpt,linkOpts,linkLibOpt,dotOFilesOpt)
+                        = case how of
+                            GCC_CompileExec -> ( fpExec
+                                               , [ "-o", fpathToStr fpExec ]
+                                               , Cfg.ehcGccOptsStatic
+                                               , map ("-l" ++) Cfg.libnamesGcc
+                                               , [ fpathToStr $ fpO fp | m <- othModNmL, let (_,_,_,fp) = crBaseInfo m cr ]
+                                               )
+                            GCC_CompileOnly -> (fpO fp, [ "-c" ], [], [], [])
+         ;  when (ehcOptEmitExec opts || ehcOptEmitExecBC opts)
                  (do { let compileC
                              = concat $ intersperse " "
                                $ (  [ Cfg.shellCmdGcc ]
@@ -935,13 +953,16 @@ cpCompileWithGCC modNm
                                     , "-I" ++ Cfg.fileprefixInplaceInstall ++ "%%@{%{VARIANT}%%}/include"
                                     , "-I" ++ Cfg.fileprefixInplaceInstall ++ "include"
                                     ]
-                                 ++ Cfg.ehcGccOptsStatic
-                                 ++ [ "-o", fpathToStr fpExec ]
+                                 ++ linkOpts
+                                 ++ targOpt
+                                 ++ dotOFilesOpt
                                  ++ [ fpathToStr fpC ]
-                                 ++ map ("-l" ++) Cfg.libnamesGcc
+                                 ++ linkLibOpt
                                  )
                      ; when (ehcOptVerbosity opts >= VerboseALot)
-                            (lift $ putStrLn compileC)
+                            (do { lift $ putCompileMsg VerboseALot (ehcOptVerbosity opts) "GCC" Nothing modNm fpTarg
+                                ; lift $ putStrLn compileC
+                                })
                      ; exitCode <- lift $ system compileC
                      ; case exitCode of
                          ExitSuccess -> return ()
@@ -977,7 +998,7 @@ cpCore1Trf modNm trfNm
                               "CLL"     -> cmodTrfLamLift
                               _         -> id
                           ) core
-         ;  lift (putCompileMsg VerboseALot (ehcOptVerbosity opts) "Transforming" (lookup trfNm cmdLineTrfs) modNm fp)
+         ;  lift $ putCompileMsg VerboseALot (ehcOptVerbosity opts) "Transforming" (lookup trfNm cmdLineTrfs) modNm fp
          ;  cpUpdCU modNm (ecuStoreCore core2)
          }
 
@@ -1051,11 +1072,14 @@ cpOutputCore suff modNm
                  mbCore = ecuMbCore ecu
                  cMod   = panicJust "cpOutputCore" mbCore
                  (jBase,jPP) = cmodJavaSrc cMod
-                 jFP = fpathSetBase jBase fp                 
+                 fpJ = fpathSetBase jBase fp                 
+                 fpC = fpathSetSuff suff fp                
          ;  when (ehcOptEmitCore opts) 
-                 (lift (putPPFile (fpathToStr (fpathSetSuff suff fp)) (ppCModule cMod) 100))
+                 (do { lift $ putCompileMsg VerboseALot (ehcOptVerbosity opts) "Emit Core" Nothing modNm fpC
+                     ; lift $ putPPFile (fpathToStr (fpathSetSuff suff fp)) (ppCModule cMod) 100
+                     })
          ;  when (ehcOptEmitJava opts)
-                 (lift (putPPFile (fpathToStr (fpathSetSuff "java" jFP)) jPP 100))
+                 (lift (putPPFile (fpathToStr (fpathSetSuff "java" fpJ)) jPP 100))
 
 %%[[12
 %%]
@@ -1074,8 +1098,11 @@ cpOutputGrin suff modNm
                  mbGrin = ecuMbGrin ecu
                  grin   = panicJust "cpOutputGrin" mbGrin
                  grinPP = ppGrModule grin
+                 fpG    = fpathSetSuff suff fp
          ;  when (ehcOptEmitGrin opts)
-                 (lift $ putPPFile (fpathToStr (fpathSetSuff suff fp)) grinPP 1000)
+                 (do { lift $ putCompileMsg VerboseALot (ehcOptVerbosity opts) "Emit Grin" Nothing modNm fpG
+                     ; lift $ putPPFile (fpathToStr fpG) grinPP 1000
+                     })
          ;  when (ehcOptShowGrin opts)
                  (lift $ putPPLn grinPP)
          }
@@ -1088,8 +1115,11 @@ cpOutputByteCodeAsC suff modNm
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mbGrinBC = ecuMbGrinBC ecu
                  grinbcPP = ppGBModAsC opts $ panicJust "cpOutputByteCodeAsC" mbGrinBC
+                 fpC      = fpathSetSuff suff fp
          ;  when (ehcOptEmitGrinBC opts)
-                 (lift $ putPPFile (fpathToStr (fpathSetSuff suff fp)) grinbcPP 150)
+                 (do { lift $ putCompileMsg VerboseALot (ehcOptVerbosity opts) "Emit ByteCode C" Nothing modNm fpC
+                     ; lift $ putPPFile (fpathToStr fpC) grinbcPP 150
+                     })
          }
 %%]
 
@@ -1200,7 +1230,7 @@ cpCompileCU targHSState modNm
                            , cpProcessHs modNm
                            , cpStepUID, cpProcessEH modNm
                            , cpStepUID, cpProcessCore1 modNm, cpProcessCore2 modNm, cpProcessGrin1 modNm, cpProcessGrin2 modNm
-                           , cpCompileWithGCC modNm
+                           , cpCompileWithGCC GCC_CompileExec [] modNm
                            ]
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
                    }
@@ -1212,7 +1242,7 @@ cpCompileCU targHSState modNm
              -> do { msg "Compiling EH"
                    ; cpSeq [ cpParseEH modNm, cpStepUID, cpProcessEH modNm
                            , cpStepUID, cpProcessCore1 modNm, cpProcessCore2 modNm, cpProcessGrin1 modNm, cpProcessGrin2 modNm
-                           , cpCompileWithGCC modNm
+                           , cpCompileWithGCC GCC_CompileExec [] modNm
                            ]
                    ; cpUpdCU modNm (ecuStoreState (ECUSEh EHAllSem))
                    }
@@ -1261,7 +1291,7 @@ cpCompileOrderedCUs
         core mL
           = cpSeq [cpGetPrevCore m | m <- mL]
         grin mL
-          = cpSeq [oneBigCore, cpProcessCore2 mMain, cpProcessGrin2 mMain, cpCompileWithGCC mMain]
+          = cpSeq [oneBigCore, cpProcessCore2 mMain, cpProcessGrin2 mMain, cpCompileWithGCC GCC_CompileExec [] mMain]
           where Just (_,mMain) = initlast mL
                 oneBigCore
                   = do { cr <- get
