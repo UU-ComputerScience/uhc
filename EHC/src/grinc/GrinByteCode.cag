@@ -5,7 +5,7 @@
 %%[8 hs module {%{GRIN}GrinByteCode} import({%{EH}Base.Common},{%{EH}GrinCode},qualified {%{GRIN}Config} as Cfg)
 %%]
 
-%%[8 hs import(UU.Pretty,Data.Bits)
+%%[8 hs import(UU.Pretty,Data.Bits,EH.Util.FastSeq,qualified Data.Map as Map)
 %%]
 
 %%[8 hs export(AGItf(..),Module(..),Instr(..), Instrs, Meta(..))
@@ -20,6 +20,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Additional datastructures, not incorporated as AST
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Instruction sequence
+
+%%[8 hs export(InsSeq)
+type InsSeq = FastSeq Instr
+%%]
 
 Constants
 
@@ -64,6 +70,39 @@ data LocRef
 data FixOffset
   = FixOffset	LabelId Int
   deriving Show
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Named value access
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(ValAccess(..),ValAccessGam)
+data ValAccess
+  = Val_LocalOffset     Int
+  | Val_GlobEntry       { vaEntryInx :: Int }
+--  | Val_GlobConst       HsName 
+  deriving Show
+
+instance PP ValAccess where
+  pp = pp . show
+
+type ValAccessGam = Map.Map HsName ValAccess
+%%]
+
+%%[8 hs export(nmLd)
+nmLd :: ValAccessGam -> Int -> Int -> HsName -> (InsSeq,Int)
+nmLd vag modNmConstInx stkDepth nm
+  = case Map.lookup nm vag of
+      Just va
+        -> case va of
+             Val_LocalOffset o
+               -> (FSeq $ ann nm $ ldl (stkDepth - o), 1)
+             Val_GlobEntry o
+               -> (FSeq $ ann nm $ ldg (Link modNmConstInx LinkTbl_CodeEntry o), 1)
+             -- _ -> dflt
+      _ -> (FSeq $ ann ("dummy ld for" >#< nm) $ ldl stkDepth, 1)
+  where dflt = (FSeqNil,0)
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -157,23 +196,32 @@ label :: LocRef -> Instr
 label l = Instr_Label l
 %%]
 
-%%[8 hs export(allocstore,fetch)
+%%[8 hs export(allocstore,fetch,ndStore)
 allocstore :: InsOp_LocB -> Instr
 allocstore locB = Instr_AllocStore locB
 
 fetch :: InsOp_LocB -> Instr
 fetch locB = Instr_Fetch locB
+
+ndStore :: Int -> (InsSeq,Int)
+ndStore sz = (FSeqL [ldc (nrWord2Byte sz),ann "alloc+store" $ allocstore InsOp_LocB_TOS], 1)
 %%]
 
-%%[8 hs export(eval,apply)
+%%[8 hs export(eval,apply,taileval)
 eval :: InsOp_LocB -> Instr
 eval locB = Instr_Eval locB
+
+taileval :: Integral c => InsOp_LocB -> c -> c -> Instr
+taileval locB nArgSurr retOffSurr
+  = Instr_TailEval locB s1 s2 i1 i2
+  where (s1,i1) = imm $ nrWord2Byte nArgSurr
+        (s2,i2) = imm $ nrWord2Byte retOffSurr
 
 apply :: InsOp_LocB -> Instr
 apply locB = Instr_Apply locB
 %%]
 
-%%[8 hs export(call,retcall,tailcall,casecall)
+%%[8 hs export(call,retcall,tailcall,casecall,retcase)
 call :: InsOp_LocB -> Instr
 call locB = Instr_Call locB
 
@@ -194,6 +242,12 @@ casecall :: Integral c => c -> Instr
 casecall nSizes
   = Instr_CaseCall s1 i1
   where (s1,i1) = imm nSizes
+
+retcase :: Integral c => c -> c -> LocRef -> Instr
+retcase nRes retOffSurr l
+  = Instr_RetCase s1 s2 i1 i2 l
+  where (s1,i1) = imm $ nrWord2Byte nRes
+        (s2,i2) = imm $ nrWord2Byte retOffSurr
 %%]
 
 %%[8 hs export(meta,ann)
@@ -210,8 +264,26 @@ Offsets should coincide with def of GB_NodeHeader, src/rts/grinbc/grinbc
 [tgShSize,tgShNdEv,tgShCateg]
   = if Cfg.use32Bits then [16,15,13::Int] else [32,31,29]
 
-tag' :: GrTagCateg -> Int -> Int -> Integer
-tag' categ tg sz
+tag :: ValAccessGam -> Int -> Int -> GrTag -> Int -> (InsSeq,Int)
+tag vag modNmConstInx stkDepth gt sz
+  = case gt of
+      GrTag_Lit categ tg nm
+        -> (tins :++: FSeqL [ldc tword],tinc+1)
+        where (needEval,categ',tg',tins,tinc)
+                = case categ of
+                    GrTagCon      -> (0,0,tg,FSeqNil,0)
+                    GrTagHole     -> (0,0,tg,FSeqNil,0)
+                    GrTagRec      -> (0,0,tg,FSeqNil,0)
+                    GrTagApp      -> (1,1,tg,FSeqNil,0)
+                    GrTagFun      -> (1,0,tg,ins,inc)
+                                  where (ins,inc) = nmLd vag modNmConstInx stkDepth nm
+                    GrTagPApp m   -> (0,1,m ,ins,inc)
+                                  where (ins,inc) = nmLd vag modNmConstInx stkDepth nm
+              tword = (toInteger (sz+tinc+1) `shiftL` tgShSize) .|. needEval `shiftL` tgShNdEv .|. categ' `shiftL` tgShCateg .|. toInteger tg'
+      _ -> (FSeqNil,0)
+%%]
+tag' :: ValAccessGam -> GrTagCateg -> Int -> Int -> Integer
+tag' vag categ tg sz
   = (toInteger sz `shiftL` tgShSize) .|. needEval `shiftL` tgShNdEv .|. categ' `shiftL` tgShCateg .|. toInteger tg'
   where (needEval,categ',tg')
           = case categ of
@@ -221,13 +293,6 @@ tag' categ tg sz
               GrTagApp      -> (1,1,tg)
               GrTagFun      -> (1,0,tg)
               GrTagPApp m   -> (0,1,m )
-
-tag :: GrTag -> Int -> Integer
-tag gt sz
-  = case gt of
-      GrTag_Lit gt t _ -> tag' gt t sz
-      _ -> 0
-%%]
 
 %%[8 hs export(halt)
 halt :: Instr

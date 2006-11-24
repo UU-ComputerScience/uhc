@@ -4,6 +4,7 @@
 
 %%[8
 #include "rts.h"
+#include <getopt.h>
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -90,7 +91,7 @@ extern int fun_main();
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Main entry points for C
+%%% Main entry points for Silly init,run,exit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -135,6 +136,19 @@ int main_Sil_Exit(int argc, char** argv)
 
     return 0;
 }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Main entry points for Grin Bytecode (GB) init,run,exit
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+/* options descriptor */
+static struct option gb_longopts[] =
+  { { "rts+"	, no_argument	, &gb_opt_rtsOn		, 1 }
+  , { "rts-"	, no_argument	, &gb_opt_rtsOn		, 0 }
+  , { NULL		, 0				, NULL				, 0 }
+  } ;
 %%]
 
 %%[8
