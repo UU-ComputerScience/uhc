@@ -143,13 +143,13 @@ int main_Sil_Exit(int argc, char** argv)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+%%]
 /* options descriptor */
 static struct option gb_longopts[] =
   { { "rts+"	, no_argument	, &gb_opt_rtsOn		, 1 }
   , { "rts-"	, no_argument	, &gb_opt_rtsOn		, 0 }
   , { NULL		, 0				, NULL				, 0 }
   } ;
-%%]
 
 %%[8
 int main_GB_Init1(int argc, char** argv)
