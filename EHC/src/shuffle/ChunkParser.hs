@@ -30,7 +30,7 @@ data ScanOpts
 
 type ScanOptsMp = Map.Map ScState ScanOpts
 
-chKindMp = Map.fromList [ ("hs",ChHS), ("ag",ChAG), ("plain",ChPlain) ]
+chKindMp = Map.fromList [ ("hs",ChHS), ("ag",ChAG), ("plain",ChPlain), ("haddock",ChHaddock) ]
 chDestMp = Map.fromList [ ("here",ChHere), ("hide",ChHide) ]
 chWrapMp = Map.fromList [ ("code",ChWrapCode), ("safecode",ChWrapBoxCode Nothing), ("tt",ChWrapTT), ("tttiny",ChWrapTTtiny) ]
 
