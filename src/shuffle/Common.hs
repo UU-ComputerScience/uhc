@@ -161,7 +161,7 @@ instance Show CPos where
 -------------------------------------------------------------------------
 
 data ChKind
-  = ChAG | ChHS | ChPlain
+  = ChAG | ChHS | ChPlain | ChHaddock
   deriving (Show,Eq,Ord)
 
 data ChDest

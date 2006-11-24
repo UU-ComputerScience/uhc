@@ -622,6 +622,17 @@ SEM AGItf
                                                           ]
                                                    in [Build fileBase v d h m]
 
+
+-------------------------------------------------------------------------
+-- Wrap in Haddock comments
+-------------------------------------------------------------------------
+
+{
+haddockize :: CDoc -> CDoc
+haddockize d
+  = "{-|" .-. d .-. "-}"
+}
+
 -------------------------------------------------------------------------
 -- Gen AG
 -------------------------------------------------------------------------
@@ -635,9 +646,10 @@ buildAG opts wrap fileBase is
   = let (pre,noPre) = vciTakePre is
         noPre' = vciMToL noPre
         h p  = "{" .-. p .-. "}"
-        mk i = if vciIsHS i
-               then h (vciCD i)
-               else buildAGImps i .-. vciCD i
+        mk i = case vciChKind i of
+                 ChHaddock -> h (haddockize (vciCD i))
+                 ChHS      -> h (vciCD i)
+                 _         -> buildAGImps i .-. vciCD i
         ish  = filter vciIsHS noPre'
         pph  = if any vciHasImpExp ish
                then wrap True (h (buildHSModImpExp fileBase ish))
@@ -762,14 +774,17 @@ buildHSModImpExp fileBase is = buildHSModuleHead fileBase is .-. buildHSImps is
 
 buildHS1 :: Opts -> (Bool -> CDoc -> CDoc) -> String -> VerChunkInfoM -> CDoc
 buildHS1 opts wrap fileBase is
-  = let (pre,noPre) = vciTakePre is
+  = let mk i = case vciChKind i of
+                 ChHaddock -> haddockize (vciCD i)
+                 _         -> vciCD i
+        (pre,noPre) = vciTakePre is
         noPre' = vciMToL noPre
         ppMod = buildHSModImpExp fileBase (vciMToL is)
         ppNoPreL
           =   map   (\is@(i:_)
                         -> let (pbs)
                                  =   map (\i -> let vnm = vciFullNm i
-                                                in  (wrap (vciHasCD i) (vciCD i)
+                                                in  (wrap (vciHasCD i) (mk i)
                                                     )
                                          )
                                    $ is
