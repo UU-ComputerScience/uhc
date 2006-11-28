@@ -22,7 +22,7 @@
 %%[8 import ({%{EH}Core.Trf.RenUniq},{%{EH}Core.Trf.FullLazy},{%{EH}Core.Trf.InlineLetAlias},{%{EH}Core.Trf.LetUnrec},{%{EH}Core.Trf.LamLift},{%{EH}Core.Trf.ConstProp},{%{EH}Core.Trf.EtaRed})
 %%]
 
-%%[8 import ({%{EH}GrinCode.Pretty}, {%{GRIN}GrinByteCode.PrettyC}, qualified {%{GRIN}GrinByteCode} as GrinBC, {%{GRIN}GrinCode.ToGrinByteCode})
+%%[8 import ({%{EH}GrinCode.Pretty}, {%{GRIN}GrinByteCode.ToC}, qualified {%{GRIN}GrinByteCode} as GrinBC, {%{GRIN}GrinCode.ToGrinByteCode})
 %%]
 
 %%[8 import (qualified {%{GRIN}CompilerDriver} as GRINC, qualified {%{GRIN}GRINCCommon} as GRINCCommon)
@@ -1114,7 +1114,7 @@ cpOutputByteCodeAsC suff modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mbGrinBC = ecuMbGrinBC ecu
-                 grinbcPP = ppGBModAsC opts $ panicJust "cpOutputByteCodeAsC" mbGrinBC
+                 grinbcPP = gbmod2C opts $ panicJust "cpOutputByteCodeAsC" mbGrinBC
                  fpC      = fpathSetSuff suff fp
          ;  when (ehcOptEmitGrinBC opts)
                  (do { lift $ putCompileMsg VerboseALot (ehcOptVerbosity opts) "Emit ByteCode C" Nothing modNm fpC

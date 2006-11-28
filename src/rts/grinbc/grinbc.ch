@@ -36,12 +36,14 @@ typedef uint8_t  GB_Byte ;
 #define GB_NodeHeader_Size_BitSz		32
 #define GB_NodeHeader_NdEv_BitSz		1
 #define GB_NodeHeader_TagCat_BitSz		2
-#define GB_NodeHeader_Tag_BitSz			29
+#define GB_NodeHeader_GC				2
+#define GB_NodeHeader_Tag_BitSz			27
 #else
 #define GB_NodeHeader_Size_BitSz		16
 #define GB_NodeHeader_NdEv_BitSz		1
 #define GB_NodeHeader_TagCat_BitSz		2
-#define GB_NodeHeader_Tag_BitSz			13
+#define GB_NodeHeader_GC				2
+#define GB_NodeHeader_Tag_BitSz			11
 #endif
 
 #define GB_NodeNdEv_Yes					1
@@ -56,10 +58,11 @@ typedef uint8_t  GB_Byte ;
 #define GB_NodeTagCat_PAp				1			/* partial application, tag is size of missing 		*/
 
 typedef struct GB_NodeHeader {
-  unsigned 	size 		: GB_NodeHeader_Size_BitSz 		;			/* size, incl header, in words 				*/
-  unsigned 	needsEval 	: GB_NodeHeader_NdEv_BitSz 		;			/* possibly needs eval? 					*/
-  unsigned 	tagCateg 	: GB_NodeHeader_TagCat_BitSz 	;			/* kind of tag, dpd on needsEval 			*/
-  unsigned 	tag 		: GB_NodeHeader_Tag_BitSz 		;			/* tag, or additional size dpd on tagCateg 	*/
+  unsigned 	size 		: GB_NodeHeader_Size_BitSz 		;			/* size, incl header, in words 					*/
+  unsigned 	needsEval 	: GB_NodeHeader_NdEv_BitSz 		;			/* possibly needs eval? 						*/
+  unsigned 	tagCateg 	: GB_NodeHeader_TagCat_BitSz 	;			/* kind of tag, dpd on needsEval 				*/
+  unsigned 	gc 			: GB_NodeHeader_GC		 		;			/* garbage collection info (unused currently)	*/
+  unsigned 	tag 		: GB_NodeHeader_Tag_BitSz 		;			/* tag, or additional size dpd on tagCateg 		*/
 } GB_NodeHeader ;
 
 %%]
@@ -67,15 +70,62 @@ typedef struct GB_NodeHeader {
 %%[8
 typedef struct GB_Node {
   GB_NodeHeader	header ;
-  GB_Word 		fields[0] ;    
+  GB_Word 		fields[0] ;
 } GB_Node, *GB_NodePtr ;
 
 #define GB_NodeHeaderNrFields(h)			((h).size-1)
 #define GB_NodeNrFields(n)					GB_NodeHeaderNrFields((n)->header)
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Node construction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[8
+#define GB_MkHeader(sz,ev,cat,tg)			{sz, ev, cat, 0, tg}
+#define GB_MkCAFHeader						GB_MkHeader(2, GB_NodeNdEv_Yes, GB_NodeTagCat_Fun, 0)
+#define GB_MkConHeader(sz,tg)				GB_MkHeader(sz, GB_NodeNdEv_No, GB_NodeTagCat_Con, tg)
+#define GB_MkConEnumNode(tg)				{ GB_MkConHeader(1,tg) }
+
+#define GB_FillNodeHdr(h,n)					{(n)->header = h;}
+#define GB_FillConNode0(n,tg)				{GB_NodeHeader _h = GB_MkConHeader(1,tg); GB_FillNodeHdr(_h,n);}
+#define GB_FillConNode1(n,tg,x1)			{GB_NodeHeader _h = GB_MkConHeader(2,tg); GB_FillNodeHdr(_h,n); (n)->fields[0] = Cast(GB_Word,x1);}
+#define GB_FillConNode2(n,tg,x1,x2)			{GB_NodeHeader _h = GB_MkConHeader(3,tg); GB_FillNodeHdr(_h,n); (n)->fields[0] = Cast(GB_Word,x1); (n)->fields[1] = Cast(GB_Word,x2);}
+
+#define GB_MkConNode0(n,tg)					{n = Cast(GB_NodePtr,GB_HeapAlloc_Words(1)); GB_FillConNode0(n,tg); }
+#define GB_MkConNode1(n,tg,x1)				{n = Cast(GB_NodePtr,GB_HeapAlloc_Words(2)); GB_FillConNode1(n,tg,x1); }
+#define GB_MkConNode2(n,tg,x1,x2)			{n = Cast(GB_NodePtr,GB_HeapAlloc_Words(3)); GB_FillConNode2(n,tg,x1,x2); }
+
 extern GB_Node* gb_MkCAF( GB_BytePtr pc ) ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% List
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#define GB_Tag_List_Nil						1
+#define GB_Tag_List_Cons					0
+
+#define GB_MkListNil(n)						{n = &gb_Nil;}
+#define GB_MkListCons(n,x1,x2)				GB_MkConNode2(n,GB_Tag_List_Cons,x1,x2)
+
+#define GB_List_IsNull(n)					((n)->header.tag == GB_Tag_List_Nil)
+#define GB_List_Head(n)						((n)->fields[0])
+#define GB_List_Tail(n)						Cast( GB_NodePtr,(n)->fields[1] )
+
+#define GB_List_Iterate(n,sz,body)			while ( sz-- && ! GB_List_IsNull( n ) ) { \
+												body ; \
+												n = GB_List_Tail(n) ; \
+											}
+
+%%]
+
+%%[8
+extern GB_NodePtr gb_listTail( GB_NodePtr n ) ;
+extern GB_Word gb_listHead( GB_NodePtr n ) ;
+extern Bool gb_listNull( GB_NodePtr n ) ;
+extern void gb_listForceEval( GB_NodePtr n, int sz ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -83,8 +133,9 @@ extern GB_Node* gb_MkCAF( GB_BytePtr pc ) ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define GB_LinkTbl_EntryKind_Const			0			/* constants */
-#define GB_LinkTbl_EntryKind_CodeEntry		1			/* code entry */
+#define GB_LinkTbl_EntryKind_Const			0			/* constant */
+#define GB_LinkTbl_EntryKind_ConstPtr		1			/* ptr to constant */
+#define GB_LinkTbl_EntryKind_CodeEntry		2			/* code entry */
 %%]
 #define GB_LinkTbl_EntryKind_FixOffset		2			/* fix offsets */
 
@@ -97,9 +148,10 @@ typedef struct GB_LinkEntry {
 %%[[12
   uint16_t		inxMod  ;
 %%]]
-  GB_BytePtr	codeLoc ;
+  GB_Ptr		infoLoc ;
 } GB_LinkEntry ;
 %%]
+  GB_BytePtr	codeLoc ;
 
 Fixing offsets, replacing offsets with actual address
 
@@ -116,13 +168,18 @@ typedef struct GB_FixOffset {
 %%% Memory management
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Assume that sizeof(GrWord) == sizeof(GB_Word) (should be ok).
-This should merge later on, but a check in it is currently part of the sanity check.
+Assume that sizeof(GrWord) == sizeof(GB_Word).
+This should be ok and merged later on, but a check in it is currently part of the sanity check.
 Size must be minimal 2 words to ensure enough space for an indirection pointer (plus the usual header in front).
 
 %%[8
+#if USE_BOEHM_GC
+#define GB_HeapAlloc_Words(nWords)	GB_HeapAlloc_Bytes(nWords * sizeof(GB_Word))
+#define GB_HeapAlloc_Bytes(nBytes)	Cast(GB_Ptr,GC_MALLOC(nBytes))
+#else
 #define GB_HeapAlloc_Words(nWords)	Cast(GB_Ptr,heapalloc(nWords))
 #define GB_HeapAlloc_Bytes(nBytes)	GB_HeapAlloc_Words(nBytes / sizeof(GB_Word))
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -146,20 +203,21 @@ Size must be minimal 2 words to ensure enough space for an indirection pointer (
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define GB_FromInt(ty,x)			((ty)((x) / GB_Int_ShiftPow2))
-#define GB_ToInt(x)					((Cast(GB_Int,x)) * GB_Int_ShiftPow2)
+#define GB_GBInt2Int(ty,x)			((ty)((x) / GB_Int_ShiftPow2))
+#define GB_Int2GBInt(x)				((Cast(GB_Int,x)) << GB_Word_TagSize | GB_Word_TagInt)
 
-#define GB_Int0						GB_ToInt(0)
-#define GB_Int1						GB_ToInt(1)
-#define GB_Int2						GB_ToInt(2)
+#define GB_Int0						GB_Int2GBInt(0)
+#define GB_Int1						GB_Int2GBInt(1)
+#define GB_Int2						GB_Int2GBInt(2)
 
 #define GB_Int_Add(x,y)				((x) + (y) - GB_Word_TagInt)
 #define GB_Int_Sub(x,y)				((x) - (y) + GB_Word_TagInt)
 #define GB_Int_Mul(x,y)				(((x)-GB_Word_TagInt) * ((y)/GB_Int_ShiftPow2) + GB_Word_TagInt)
-#define GB_Int_Div(x,y)				(((x)-GB_Word_TagInt) / ((y)/GB_Int_ShiftPow2) + GB_Word_TagInt)
+#define GB_Int_Div(x,y)				((((x)-GB_Word_TagInt) / (((y)-GB_Word_TagInt))) * GB_Int_ShiftPow2 + GB_Word_TagInt)
 #define GB_Int_Neg(x)				GB_Int_Sub(GB_Int0,x)
 
 %%]
+#define GB_Int_Div(x,y)				(((x)-GB_Word_TagInt) / ((y)/GB_Int_ShiftPow2) + GB_Word_TagInt)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instruction opcode inline operands
@@ -193,6 +251,8 @@ Size must be minimal 2 words to ensure enough space for an indirection pointer (
 #define GB_InsOp_DataOp_I2			0x1
 #define GB_InsOp_DataOp_F1			0x2
 #define GB_InsOp_DataOp_F2			0x3
+#define GB_InsOp_DataOp_IW			0x4
+#define GB_InsOp_DataOp_II			0x5
 
 /* Immediate constant size */
 #define GB_InsOp_ImmSz_08			0x0
@@ -234,11 +294,15 @@ Size must be minimal 2 words to ensure enough space for an indirection pointer (
 #define GB_Ins_RetCall							(GB_Ins_PreCall | ((0x2) << 1))
 #define GB_Ins_RetCase							(GB_Ins_PreCall | ((0x2) << 1) | 0x1)
 #define GB_Ins_CaseCall 						(GB_Ins_PreCall | ((0x3) << 1))
+#define GB_Ins_CallC	 						(GB_Ins_PreCall | ((0x3) << 1) | 0x1)
 #define GB_Ins_AllocStore(locB)					(GB_Ins_PreHeap | ((0x2) << 1) | ((locB) << 0))
 #define GB_Ins_Fetch(locB)						(GB_Ins_PreHeap | ((0x3) << 1) | ((locB) << 0))
 #define GB_Ins_Eval(locB)						(GB_Ins_PreEvAp | ((0x0) << 1) | ((locB) << 0))
 #define GB_Ins_Apply(locB)						(GB_Ins_PreEvAp | ((0x1) << 1) | ((locB) << 0))
 #define GB_Ins_TailEval(locB)					(GB_Ins_PreEvAp | ((0x2) << 1) | ((locB) << 0))
+#define GB_Ins_Op(opTy,locO)					(GB_Ins_PreArith | ((0x1) << 4) | ((opTy) << 2) | ((locO) << 0))
+#define GB_Ins_OpExt(dtTy,indLev,locE,immSz)	(((dtTy) << 5) | ((indLev) << 4) | ((locE) << 2) | ((immSz) << 0))
+#define GB_Ins_FetchUpdate						0xF9
 #define GB_Ins_EvalApplyCont					0xFA
 #define GB_Ins_PApplyCont						0xFB
 #define GB_Ins_Ldg								0xFC
@@ -260,12 +324,15 @@ Size must be minimal 2 words to ensure enough space for an indirection pointer (
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-extern GB_Byte gb_code_Startup[] ;
+extern GB_Byte gb_code_Eval[] ;
 
 extern void gb_push( GB_Word x ) ;
+extern GB_Word gb_eval( GB_Word x ) ;
 
-extern void interpretLoop( ) ;
-extern void interpretLoopWith( GB_BytePtr initPC ) ;
+extern unsigned int gb_StepCounter ;
+
+extern void gb_interpretLoop( ) ;
+extern void gb_interpretLoopWith( GB_BytePtr initPC ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -290,6 +357,14 @@ extern void gb_InitTables
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+extern int gb_Opt_TraceSteps ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Sanity check on assumptions made by interpreter
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -306,5 +381,10 @@ extern void gb_checkInterpreterAssumptions() ;
 extern void gb_prState( char* msg, int maxStkSz ) ;
 #endif
 %%]
+
+%%[8
+#define IF_GB_TR_ON(l,x)		IF_TR_ON(l,if (gb_Opt_TraceSteps) { x })
+%%]
+
 
 

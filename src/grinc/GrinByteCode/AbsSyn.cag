@@ -44,6 +44,7 @@ DATA Instr
   | Link		link			: Link
   | AllocStore  locSrc			: InsOp_LocB
   | Fetch       locSrc			: InsOp_LocB
+  | FetchUpdate	
   | Call        locSrc			: InsOp_LocB
   | RetCall     nArgMineSz		: InsOp_ImmSz
   				nArgSurrSz		: InsOp_ImmSz
@@ -63,8 +64,9 @@ DATA Instr
   				nArgMine		: Imm
   				nArgSurr		: Imm
   				retOffSurr		: Imm
-  | CaseCall	nCasesSz		: InsOp_ImmSz
-  				nCases			: Imm
+  | CaseCall	
+  | CallC		nArgSz			: InsOp_ImmSz
+  				nArg			: Imm
   | Eval        locSrc			: InsOp_LocB
   | TailEval    locSrc			: InsOp_LocB
   				nArgSurrSz		: InsOp_ImmSz
@@ -72,6 +74,13 @@ DATA Instr
   				nArgSurr		: Imm
   				retOffSurr		: Imm
   | Apply       locSrc			: InsOp_LocB
+  | Op			op				: InsOp_TyOp
+  				locDst			: InsOp_LocO
+  				opndTy			: InsOp_DataOp
+  				ind             : InsOp_Deref
+  				locSrc			: InsOp_LocE
+  				immSz			: InsOp_ImmSz
+  				imm 			: Imm
   | Ann			ann				: PP_Doc
   				instr			: Instr
   | Halt
@@ -86,6 +95,8 @@ TYPE Instrs = [Instr]
 
 SET AllInstr = Instr Instrs Meta
 %%]
+  | CaseCall	nCasesSz		: InsOp_ImmSz
+  				nCases			: Imm
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instruction opcode inline operands, see src/rts/grinbc
@@ -132,6 +143,8 @@ DATA InsOp_DataOp
   | Int2
   | Float1
   | Float2
+  | IntWord
+  | IntInf
 %%]
 
 /* Immediate constant size */

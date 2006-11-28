@@ -10,6 +10,7 @@
 #include "utils.h"
 #include "bits.h"
 #include "grinbc/grinbc.h"
+#include "grinbc/gbprim.h"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -93,7 +94,7 @@ extern int main_Sil_Init1(int argc, char** argv) ;
 extern int main_Sil_Run(int argc, char** argv) ;
 extern int main_Sil_Exit(int argc, char** argv) ;
 
-extern int main_GB_Init1(int argc, char** argv) ;
+extern int main_GB_Init1(int argc, char** argv, int* nRtsOpt) ;
 extern int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF) ;
 extern int main_GB_Exit(int argc, char** argv) ;
 %%]

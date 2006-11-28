@@ -8,7 +8,7 @@ data Ordering = LT | EQ | GT
 
 type String = [Char]
 
-foreign import ccall "primFromPackedString" fromPackedString :: PackedString -> String
+foreign import ccall "primCString2String" fromPackedString :: PackedString -> String
 foreign import ccall "primTraceStringExit" traceStringExit :: String -> String
 
 foreign import ccall "primAddInt" (+) :: Int -> Int -> Int
