@@ -2,7 +2,7 @@
 %%% Haskell importable interface to Grin ByteCode
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{GRIN}GrinByteCode} import({%{EH}Base.Common},{%{EH}GrinCode},qualified {%{GRIN}Config} as Cfg)
+%%[8 hs module {%{GRIN}GrinByteCode} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}GrinCode},qualified {%{GRIN}Config} as Cfg)
 %%]
 
 %%[8 hs import(UU.Pretty,Data.Bits,EH.Util.FastSeq,qualified Data.Map as Map)
@@ -31,7 +31,8 @@ Constants
 
 %%[8 hs export(Const(..))
 data Const
-  = ConstStr { constInx :: Int }
+  = Const_Str           { constInx :: Int }
+  | Const_CFunction     { constCFunNm :: String }
   deriving(Eq,Ord,Show)
 
 %%]
@@ -40,7 +41,7 @@ Link items, to be resolved at runtime initialization.
 
 %%[8 hs export(Link(..),LinkTbl(..))
 data LinkTbl
-  = LinkTbl_Const | LinkTbl_CodeEntry
+  = LinkTbl_Const | LinkTbl_ConstPtr | LinkTbl_CodeEntry
   deriving (Show,Eq,Ord,Enum)
 
 data Link
@@ -61,14 +62,14 @@ lrefIsLabel (LocRef_Label _) = True
 lrefIsLabel _                = False
 
 data LocRef
-  = LocRef_CodeEntry 	Int							-- resolved at initialization runtime, translates to
-  | LocRef_Label 		{ lrefId :: LabelId }		-- resolved before runtime, translates to offsets
+  = LocRef_CodeEntry    Int                         -- resolved at initialization runtime, translates to
+  | LocRef_Label        { lrefId :: LabelId }       -- resolved before runtime, translates to offsets
   deriving (Eq,Ord)
 %%]
 
 %%[8 hs export(FixOffset(..))
 data FixOffset
-  = FixOffset	LabelId Int
+  = FixOffset   LabelId Int
   deriving Show
 %%]
 
@@ -146,7 +147,26 @@ nrWord2Byte sz
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Constructing
+%%% Unboxed values
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(tagIsUnboxed)
+tagIsUnboxed :: GrTag -> Bool
+tagIsUnboxed gt
+  = case gt of
+      GrTag_Lit categ tg nm
+        -> case categ of
+             GrTagCon | nm == hsnInt
+               -> True
+             _ -> dflt
+      GrTag_Unboxed
+        -> True
+      _ -> dflt
+  where dflt = False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing: immediate operands
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
@@ -169,6 +189,10 @@ imm c
                                        | otherwise       -> InsOp_ImmSz_Bits64
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing: loading
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[8 hs export(ldc,ldl,ldg,ldi)
 ld :: Integral c => InsOp_Deref -> InsOp_LocB -> InsOp_LocE -> c -> Instr
 ld ind locB locE c
@@ -188,6 +212,10 @@ ldg :: Link -> Instr
 ldg l = Instr_LdGlobal l
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing: label
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[8 hs export(labelref,label)
 labelref :: LocRef -> Instr
 labelref l = Instr_LabelRef l
@@ -196,16 +224,27 @@ label :: LocRef -> Instr
 label l = Instr_Label l
 %%]
 
-%%[8 hs export(allocstore,fetch,ndStore)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing: allocation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(allocstore,fetch,fetchupdate,ndStore)
 allocstore :: InsOp_LocB -> Instr
 allocstore locB = Instr_AllocStore locB
 
 fetch :: InsOp_LocB -> Instr
 fetch locB = Instr_Fetch locB
 
+fetchupdate :: Instr
+fetchupdate = Instr_FetchUpdate
+
 ndStore :: Int -> (InsSeq,Int)
 ndStore sz = (FSeqL [ldc (nrWord2Byte sz),ann "alloc+store" $ allocstore InsOp_LocB_TOS], 1)
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing: eval
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs export(eval,apply,taileval)
 eval :: InsOp_LocB -> Instr
@@ -221,7 +260,11 @@ apply :: InsOp_LocB -> Instr
 apply locB = Instr_Apply locB
 %%]
 
-%%[8 hs export(call,retcall,tailcall,casecall,retcase)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing: control, call, etc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(call,retcall,tailcall,casecall,retcase,callc)
 call :: InsOp_LocB -> Instr
 call locB = Instr_Call locB
 
@@ -238,10 +281,14 @@ retcall = rettailcall Instr_RetCall
 tailcall :: Integral c => InsOp_LocB -> c -> c -> c -> Instr
 tailcall locB = rettailcall (Instr_TailCall locB)
 
-casecall :: Integral c => c -> Instr
-casecall nSizes
-  = Instr_CaseCall s1 i1
-  where (s1,i1) = imm nSizes
+casecall :: Instr
+casecall
+  = Instr_CaseCall
+
+callc :: Integral c => c -> Instr
+callc nArg
+  = Instr_CallC s1 i1
+  where (s1,i1) = imm nArg
 
 retcase :: Integral c => c -> c -> LocRef -> Instr
 retcase nRes retOffSurr l
@@ -249,6 +296,21 @@ retcase nRes retOffSurr l
   where (s1,i1) = imm $ nrWord2Byte nRes
         (s2,i2) = imm $ nrWord2Byte retOffSurr
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing: operators
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(op)
+op :: Integral c =>  InsOp_TyOp -> InsOp_LocO -> InsOp_DataOp -> InsOp_Deref -> InsOp_LocE -> c -> Instr
+op o locDst opndTy ind locSrc c
+  = Instr_Op o locDst opndTy ind locSrc s1 i1
+  where (s1,i1) = imm c
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing: comment
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs export(meta,ann)
 meta :: PP a => a -> Instr
@@ -258,41 +320,41 @@ ann :: PP a => a -> Instr -> Instr
 ann a = Instr_Ann $ pp a
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing: tag
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 Offsets should coincide with def of GB_NodeHeader, src/rts/grinbc/grinbc
 
-%%[8 hs export(tag)
-[tgShSize,tgShNdEv,tgShCateg]
-  = if Cfg.use32Bits then [16,15,13::Int] else [32,31,29]
+%%[8 hs
+[tgShSize,tgShNdEv,tgShCateg,tagShGC]
+  = if Cfg.use32Bits then [16,15,13,11::Int] else [32,31,29,27]
+%%]
 
-tag :: ValAccessGam -> Int -> Int -> GrTag -> Int -> (InsSeq,Int)
+load tag, yield stack increment and additional size to alloc
+%%[8 hs export(tag)
+tag :: ValAccessGam -> Int -> Int -> GrTag -> Int -> (InsSeq,Int,Int)
 tag vag modNmConstInx stkDepth gt sz
   = case gt of
       GrTag_Lit categ tg nm
-        -> (tins :++: FSeqL [ldc tword],tinc+1)
-        where (needEval,categ',tg',tins,tinc)
+        -> (tins :++: FSeqL [ldc tword],tinc+1,allocInc)
+        where (needEval,categ',tg',tins,tinc,allocInc)
                 = case categ of
-                    GrTagCon      -> (0,0,tg,FSeqNil,0)
-                    GrTagHole     -> (0,0,tg,FSeqNil,0)
-                    GrTagRec      -> (0,0,tg,FSeqNil,0)
-                    GrTagApp      -> (1,1,tg,FSeqNil,0)
-                    GrTagFun      -> (1,0,tg,ins,inc)
+                    GrTagCon      -> (0,0,tg,FSeqNil,0,0)
+                    GrTagHole     -> (0,3,tg,FSeqL [ldc 0],1,0)
+                    GrTagRec      -> (0,0,tg,FSeqNil,0,0)
+                    GrTagApp      -> (1,1,tg,FSeqNil,0,0)
+                    GrTagFun      -> (1,0,tg,ins,inc,0)
                                   where (ins,inc) = nmLd vag modNmConstInx stkDepth nm
-                    GrTagPApp m   -> (0,1,m ,ins,inc)
+                    GrTagPApp m   -> (0,1,m ,ins,inc,0)
                                   where (ins,inc) = nmLd vag modNmConstInx stkDepth nm
-              tword = (toInteger (sz+tinc+1) `shiftL` tgShSize) .|. needEval `shiftL` tgShNdEv .|. categ' `shiftL` tgShCateg .|. toInteger tg'
-      _ -> (FSeqNil,0)
+              tword = (toInteger (sz+tinc+allocInc+1) `shiftL` tgShSize) .|. needEval `shiftL` tgShNdEv .|. categ' `shiftL` tgShCateg .|. toInteger tg'
+      _ -> (FSeqNil,0,0)
 %%]
-tag' :: ValAccessGam -> GrTagCateg -> Int -> Int -> Integer
-tag' vag categ tg sz
-  = (toInteger sz `shiftL` tgShSize) .|. needEval `shiftL` tgShNdEv .|. categ' `shiftL` tgShCateg .|. toInteger tg'
-  where (needEval,categ',tg')
-          = case categ of
-              GrTagCon      -> (0,0,tg)
-              GrTagHole     -> (0,0,tg)
-              GrTagRec      -> (0,0,tg)
-              GrTagApp      -> (1,1,tg)
-              GrTagFun      -> (1,0,tg)
-              GrTagPApp m   -> (0,1,m )
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing: misc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs export(halt)
 halt :: Instr

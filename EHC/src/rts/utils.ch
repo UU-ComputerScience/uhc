@@ -1,4 +1,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Very basic types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+typedef int Bool ;
+
+#define True		1
+#define False		0
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Utilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -7,8 +18,10 @@
 %%]
 
 %%[8
-extern void panic( char* msg, int i ) ;
-extern void panic2( char* msg1, char* msg2, int i ) ;
+extern void error( char* msg ) ;
+extern void panic( char* msg ) ;
+extern void panic1_1( char* msg, int i ) ;
+extern void panic2_1( char* msg1, char* msg2, int i ) ;
 extern void panic2_2( char* msg1, char* msg2, int i1, int i2 ) ;
 %%]
 

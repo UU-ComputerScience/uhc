@@ -309,7 +309,7 @@ pLhs
   =   mkRngNm LeftHandSide_Function <$> qvar <*> pLhsTail
   <|> pParens' ((\l r t -> LeftHandSide_Parenthesized r l t) <$> pLhs) <*> pLhsTail
   <|> (\l o r -> LeftHandSide_Infix (mkRange1 o) l (tokMkQName o) r) <$> pPatternOp <*> varop <*> pPatternOp
-  where pLhsTail = pList1 pPatternBase
+  where pLhsTail = pList1 pPatternBaseCon
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -434,7 +434,7 @@ pDeclarationType
 %%[1
 pTypeBase :: HSParser Type
 pTypeBase
-  =   mkRngNm Type_Constructor <$> gtycon_no_delims
+  =   mkRngNm Type_Constructor <$> qtycon -- gtycon_no_delims
 %%]
 %%[2.pTypeBase
   <|> (Type_Wildcard . mkRange1) <$> pTDOT
@@ -637,33 +637,48 @@ pExpressionBase
 %%[[5
   <|> pExpressionList
 %%]]
-%%]
-%%[1
   <|> pParens' pInParens
   where pInParens :: HSParser (Range -> Expression)
         pInParens
           =   (pExpression
                <**> (   (\(o,_) e r -> Expression_SectionApplication r (Just e) o Nothing) <$> pOp
-%%]
-%%[1.parenExprAsProdA
                     <|> pSucceed (flip Expression_Parenthesized)
+%%[[1
                     <|> (\es e r -> Expression_Tuple r (e:es))
                         <$>  pList1 (pComma *> pExpression)
-%%]
-%%[1
+%%][7
+                    <|> (\es e r -> Expression_RowRecordUpdate r (Expression_RowRecordEmpty r)
+                                      (map (RowRecordExpressionUpdate_Extends r Nothing) (e:es)))
+                        <$>  pList1 (pComma *> pExpression)
+%%]]
               )     )
+          <|> (\t _ -> mkRngNm Expression_Constructor t) <$> commas
           <|> (pOpm
                <**> (   (\e (o,_) r -> Expression_SectionApplication r Nothing o (Just e)) <$> pExpression
                     <|> pSucceed (\(o,_) r -> Expression_SectionApplication r Nothing o Nothing)
               )     )
-%%]
-%%[1.parenExprAsProdB
+%%[[1
           <|> pSucceed (\r -> Expression_Constructor r (hsnProd 0))
-%%]
-%%[7 -(1.parenExprAsProdA 1.parenExprAsProdB)
-          <|> pParenRow' True pOROWREC pCROWREC pEQUAL True pCOLEQUAL RowRecordExpressionUpdate_Update
-                 (Expression_RowRecordEmpty,Expression_Variable,RowRecordExpressionUpdate_Extends,Expression_RowRecordUpdate,Expression_Parenthesized)
-                 qvarid pExpression
+%%][7
+          <|> pSucceed (\r -> Expression_RowRecordEmpty r)
+          <|> (\fs r -> Expression_RowRecordUpdate r (Expression_RowRecordEmpty r) fs) <$> pFlds
+          <|> pExtFlds
+          where pFld :: HSParser (Expression -> RowRecordExpressionUpdate)
+                pFld = qvarid
+                       <**> (   (\l -> RowRecordExpressionUpdate_Extends (mkRange1 l) (Just (tokMkQName l))) <$ pEQUAL
+                            <|> mkRngNm RowRecordExpressionUpdate_Update <$ pCOLEQUAL
+                            )
+                pFlds :: HSParser [RowRecordExpressionUpdate]
+                pFlds = pList1Sep pComma (pFld <*> pExpression)
+                pExtFlds :: HSParser (Range -> Expression)
+                pExtFlds
+                     = (\e fs r -> Expression_RowRecordUpdate r e fs)
+                       <$> (   pParens' pExtFlds
+                           <|> mkRngNm Expression_Variable <$> qvarid
+                           <|> pSucceed (Expression_RowRecordEmpty emptyRange)
+                           )
+                       <*  pVBAR <*> pFlds
+%%]]
 %%]
 
 %%[5
@@ -719,7 +734,7 @@ pExpressionDo
 %%[1
 pExpressionConUpd :: HSParser Expression
 pExpressionConUpd
-  =   gcon
+  =   qcon
       <**> (   pSucceed (mkRngNm Expression_Constructor)
 %%[[7
            <|> pCurlys' ((\bs _ c -> mkRngNm Expression_RecordConstruction c bs) <$> pListSep pCOMMA pRecordExpressionBinding)
@@ -792,14 +807,6 @@ pExpression' pPreE
         pPre1 :: HSParser (Expression -> Expression)
         pPre1 = foldr (.) id <$> pList1 pPreE
 %%]
-pExpression' :: HSParser (Expression -> Expression) -> HSParser Expression
-pExpression' pPreE
-  = (pE1 <|> pE2) <??> ((\c t e -> Expression_Typed (mkRange1 c) e t) <$> pDCOLON <*> pType)
-  where pE1, pE2 :: HSParser Expression
-        pE1  = pExpressionOpPrefix pExpressionLayout <*> (pPre1 <*> pE1 <|> pExpressionLayout)
-        pE2  = pPre1 <*> (pExpressionOpPrefix pExpressionLayout <*> pE2 <|> pExpressionLayout)
-        pPre1 :: HSParser (Expression -> Expression)
-        pPre1 = foldr (.) id <$> pList1 pPreE
 
 %%[1
 pExpression :: HSParser Expression
@@ -838,7 +845,7 @@ pExpressionNoLetPrefix
   <|> pLAM <**> pLamArgs
   where pLamArgs
           =   (\a1 a2 t e -> a1 t (a2 t e))
-              <$> (   (\ps t e -> Expression_Lambda (mkRange1 t) ps e) <$> pList1 pPatternBase
+              <$> (   (\ps t e -> Expression_Lambda (mkRange1 t) ps e) <$> pList1 pPatternBaseCon
 %%[[9
                   <|> (\ps t e -> Expression_ImplicitLambda (mkRange1 t) ps e) <$> pList1 (pImpls' pContextedPattern)
 %%]]
@@ -876,25 +883,28 @@ pAlternatives
 %%% Pattern
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[1
+pPatternConSuffix :: HSParser (Token -> Pattern)
+pPatternConSuffix
+  =   pSucceed (\c -> mkRngNm Pattern_Constructor c [])
+%%[[7
+  <|> pCurlys' ((\bs _ c -> mkRngNm Pattern_Record c bs) <$> pListSep pCOMMA pRecordPatternBinding)
+%%]]
+%%]
+
 %%[1.pPatternBase
 pPatternBase :: HSParser Pattern
 pPatternBase
-  =   qvar <**> (   (\a p v -> Pattern_As (mkRange1 a) (tokMkQName v) p) <$> pAT <*> pPatternBase
+  =   qvar <**> (   (\a p v -> Pattern_As (mkRange1 a) (tokMkQName v) p) <$> pAT <*> pPatternBaseCon
                 <|> pSucceed (mkRngNm Pattern_Variable)
                 )
   <|> Pattern_Literal emptyRange <$> pLiteral
   <|> (Pattern_Negate . mkRange1) <$> pMINUS <*> pLiteralNumber
-  <|> qconid
-      <**> (   pSucceed (\c -> mkRngNm Pattern_Constructor c [])
-%%[[7
-           <|> pCurlys' ((\bs _ c -> mkRngNm Pattern_Record c bs) <$> pListSep pCOMMA pRecordPatternBinding)
-%%]]
-           )
 %%[[5
   <|> pBracks' (flip Pattern_List <$> pListSep pCOMMA pPattern)
 %%]]
 %%[[8
-  <|> (Pattern_Irrefutable . mkRange1) <$> pTILDE <*> pPatternBase
+  <|> (Pattern_Irrefutable . mkRange1) <$> pTILDE <*> pPatternBaseCon
 %%]]
 %%[[1
   <|> pParens' pInParens
@@ -905,12 +915,20 @@ pPatternBase
                         <$>  pList1 (pComma *> pPattern)
                     <|> pSucceed (flip Pattern_Parenthesized)
               )     )
+          <|> (\c _ -> mkRngNm Pattern_Constructor c []) <$> commas
           <|> pSucceed (\r -> Pattern_Constructor r (hsnProd 0) [])
 %%][7
   <|>   pParenRow True pOROWREC pCROWREC pEQUAL False undefined undefined
           (Pattern_RowRecordEmpty,Pattern_Variable,RowRecordPatternBinding_Binding,Pattern_RowRecordBinding,Pattern_Parenthesized)
           pSelector pPattern
 %%]]
+%%]
+
+%%[1
+pPatternBaseCon :: HSParser Pattern
+pPatternBaseCon
+  =   pPatternBase
+  <|> qconid <**> pPatternConSuffix
 %%]
 
 %%[7
@@ -925,8 +943,11 @@ pRecordPatternBinding
 %%[1
 pPatternApp :: HSParser Pattern
 pPatternApp
-  =   mkRngNm Pattern_Constructor <$> qconid <*> pList1 pPatternBase
-  <|> pPatternBase
+  =   pPatternBase
+  <|> qconid
+      <**> (   (\l c -> mkRngNm Pattern_Constructor c l) <$> pList1 pPatternBase
+           <|> pPatternConSuffix
+           )
 %%]
 
 %%[1
@@ -968,16 +989,17 @@ pParenRow'
   ::   Bool -> HSParser Token -> HSParser Token -> HSParser Token -> Bool -> HSParser Token -> (Range -> HsName -> e -> r)
        -> (Range -> e,Range -> HsName -> e,Range -> Maybe HsName -> e -> r,Range -> e -> [r] -> e,Range -> e -> e)
        -> HSParser Token -> HSParser e -> HSParser (Range -> e)
-pParenRow' singleAsIs pO pC pS allowUpd pSUpd' (semUpd' :: Range -> HsName -> e -> r) (semEmpty,semVar,semExt,semRow,semParens) pSel (pE :: HSParser e)
+pParenRow' singleAsIs pO pC pS allowUpd pSUpd' (semUpd' :: Range -> HsName -> e -> r)
+           (semEmpty,semVar,semExt,semRow,semParens)
+           pSel (pE :: HSParser e)
   = pRowFlds
   where pFld          = (pSel <**> pSep <|> pSucceed FldNoSel) <*> pE
-        pFlds         = pListSep pComma pFld
         pExtFlds      = (\e fs rng -> mkR rng e fs)
                         <$> (   pPacked' pO pC pExtFlds
                             <|> mkRngNm semVar <$> qvarid
                             )
-                        <* pVBAR <*> pFlds
-        pRowFlds      =   pFld <**> mkS ((\fs f rng -> mkR rng (semEmpty rng) (f:fs)) <$ pComma <*> pFlds)
+                        <*  pVBAR <*> pListSep pComma pFld
+        pRowFlds      =   pFld <**> mkS ((\fs f rng -> mkR rng (semEmpty rng) (f:fs)) <$> pList1 (pComma *> pFld))
                       <|> pExtFlds <|> pSucceed semEmpty
                       where mkS = if singleAsIs
                                   then (\p -> p <|> pSucceed (\le rng -> case le of {FldNoSel e -> semParens rng e; _ -> mkR rng (semEmpty rng) [le]}))
@@ -991,7 +1013,6 @@ pParenRow' singleAsIs pO pC pS allowUpd pSUpd' (semUpd' :: Range -> HsName -> e 
         pSep          = if allowUpd then FldSel <$ pS <|> FldUpd <$ pSUpd' else FldSel <$ pS
         semUpd        = if allowUpd then semUpd'                           else \_ _ _ -> undefined
         pFld :: HSParser (RowFld e)
-        pFlds :: HSParser [RowFld e]
         pSep :: HSParser (Token -> a -> RowFld a)
         pRowFlds, pExtFlds :: HSParser (Range -> e)
         semUpd :: Range -> HsName -> e -> r
@@ -1016,7 +1037,7 @@ pSelector
 
 %%[1
 commas :: HSParser Token 
-commas =  genTokMap (\s -> strProd (length s + 1)) <$> pFoldr (tokConcat,tokEmpty) pCOMMA
+commas =  genTokMap (\s -> strProd (length s + 1)) <$> pFoldr1 (tokConcat,tokEmpty) pCOMMA
 %%]
 
 %%[1

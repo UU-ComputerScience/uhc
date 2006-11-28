@@ -782,7 +782,7 @@ WWW home page:
 %%]
 
 %%[22
-\title{Grin ByteCode design}
+\title{Grin ByteCode Machine (GBM)}
 \author{Atze Dijkstra}
 %%]
 
@@ -972,6 +972,12 @@ WWW home page:
 }
 %%]
 
+%%[22
+{\setlength{\parskip}{0cm}
+\tableofcontents
+}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Preface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1074,6 +1080,12 @@ have been submitted to POPL2006 in a slighty extended form.
 \clearemptydoublepage
 
 \mainmatter
+%%]
+
+%%[22
+\begin{abstract}
+%%@TopicGrinBytecode.abstract
+\end{abstract}
 %%]
 
 %%[1
@@ -2070,20 +2082,26 @@ To be done ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[22
-\section{Grin ByteCode design}
+%\section{Grin ByteCode machine}
 %%]
 
 %%[22
 %{
 %%@TopicGrinBytecode.defs
 
-\subsection{Compilation scheme to Grin bytecode (GrinB)}
+\section{Introduction}
 
-%%@TopicGrinBytecode.grin2GrinB
+%%@TopicGrinBytecode.intro
 
-\subsection{GrinB operational semantics}
+% \section{GrinB operational semantics}
 
-%%@TopicGrinBytecode.grinBSemantics
+ %%@TopicGrinBytecode.grinBSemantics
+
+\section{Memory model and module admin}
+
+%%@TopicGrinBytecode.grinBMemoryModel
+
+\section{GBM instruction set}
 
 \subsection{Meta variable encoding}
 
@@ -2109,13 +2127,26 @@ To be done ...
 
 %%@TopicGrinBytecode.grinBControl
 
-\subsection{Miscellaneous (ffi, ...)}
+\subsection{Miscellaneous}
 
 %%@TopicGrinBytecode.grinBRest
 
-\subsection{Example translations}
+\section{Compilation scheme from GRIN to GBM}
 
-%%@TopicGrinBytecode.grinBExampleTranslations
+%%@TopicGrinBytecode.grin2GrinB
+
+%\section{Example translations}
+
+ %%@TopicGrinBytecode.grinBExampleTranslations
+
+\section{Interaction with runtime environment}
+
+\emph{This section has to be done still.}
+
+
+\subsection{Code format: C}
+
+\subsection{Primitives}
 
 %}
 %%]

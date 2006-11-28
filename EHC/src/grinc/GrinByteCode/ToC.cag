@@ -2,7 +2,7 @@
 %%% Prettyprint Grin ByteCode program as C
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{GRIN}GrinByteCode.PrettyC} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Opts},qualified {%{GRIN}Config} as Cfg,{%{GRIN}GrinByteCode})
+%%[8 hs module {%{GRIN}GrinByteCode.ToC} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Opts},qualified {%{GRIN}Config} as Cfg,{%{GRIN}GrinByteCode})
 %%]
 
 %%[8 hs import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Opts},qualified {%{GRIN}Config} as Cfg,{%{GRIN}GrinByteCode})
@@ -11,15 +11,15 @@
 %%[8 hs import(Data.Maybe,Data.Bits,EH.Util.FastSeq,EH.Util.Utils,qualified Data.Map as Map)
 %%]
 
-%%[8 hs export(ppGBModAsC)
+%%[8 hs export(gbmod2C)
 %%]
 
 %%[8 import({GrinByteCode/AbsSyn})
 %%]
 
 %%[8 hs
-ppGBModAsC :: EHCOpts -> Module -> PP_Doc
-ppGBModAsC opts m
+gbmod2C :: EHCOpts -> Module -> PP_Doc
+gbmod2C opts m
   = let t = wrap_AGItf (sem_AGItf (AGItf_AGItf m))
                        (Inh_AGItf {opts_Inh_AGItf = opts}
                        )
@@ -81,18 +81,22 @@ SEM Instr
 
 SEM Instr
   | Ld          imm         .   cLoc        =   @lhs.cLoc + 1
+  | Op          imm         .   cLoc        =   @lhs.cLoc + 2
   | LdGlobal    lhs         .   cLoc        =   @linkCLoc + fromInteger Cfg.sizeofGrWord
   | LabelRef RetCase
                 lhs         .   cLoc        =   @labelCLocAft
   | TailCall RetCall
                 nArgMine    .   cLoc        =   @lhs.cLoc + 2
-  | CaseCall    nCases      .   cLoc        =   @lhs.cLoc + 2
+  | CaseCall FetchUpdate
+  				lhs         .   cLoc        =   @lhs.cLoc + 1
+  | CallC       nArg        .   cLoc        =   @lhs.cLoc + 2
   | TailEval    nArgSurr    .   cLoc        =   @lhs.cLoc + 2
   | RetCase     nRes        .   cLoc        =   @lhs.cLoc + 2
   | Halt        lhs         .   cLoc        =   @lhs.cLoc + 2
   | AllocStore Fetch Call Eval Apply
                 lhs         .   cLoc        =   @lhs.cLoc + 1
 %%]
+  | CaseCall    nCases      .   cLoc        =   @lhs.cLoc + 2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Labels
@@ -159,7 +163,8 @@ ppCast :: String -> PP_Doc -> PP_Doc
 ppCast t v = ppParens $ ppParens t >|< ppParens v
 
 ppCnst :: PP_Doc -> Const -> PP_Doc
-ppCnst ct (ConstStr i) = ppCast "GB_Word" ("&" >|< ct >|< "[" >|< i >|< "]")
+ppCnst st (Const_Str       i) = ppCast "GB_Word" $ ppAddrArrAt st i
+ppCnst _  (Const_CFunction n) = ppCast "GB_Word" $ ppAddrOf ("gb_" ++ n)
 
 ppLine :: PP_Doc -> PP_Doc
 ppLine p = p >-< text ""
@@ -170,8 +175,11 @@ ppFun h b = h >#< "{" >-< indent 2 b >-< "}"
 ppArrAt :: (PP a,PP o) => a -> o -> PP_Doc
 ppArrAt a o = a >|< "[" >|< o >|< "]"
 
+ppAddrOf :: PP a => a -> PP_Doc
+ppAddrOf a = "&" >|< ppParens a
+
 ppAddrArrAt :: (PP a,PP o) => a -> o -> PP_Doc
-ppAddrArrAt a o = "&" >|< ppArrAt a o
+ppAddrArrAt a o = ppAddrOf $ ppArrAt a o
 
 mkPre :: String -> String
 mkPre = (++ "_")
@@ -212,7 +220,7 @@ SEM Module
 %%[[12
                                                                             , pp $ linkMod l
 %%]]
-                                                                            , ppAddrArrAt @ppNmByteCodeTbl c
+                                                                            , ppCast "GB_Ptr" $ ppAddrArrAt @ppNmByteCodeTbl c
                                                                             ]
                                                                      )
                                                                  $ linkL
@@ -239,9 +247,12 @@ SEM Module
                                                     maincaf = ppLine $ "static GB_BytePtr*" >#< @ppNmMainCAFEntry >#< "=" >#< ppAddrArrAt @ppNmGlobEntriesTbl @mainCafEntry >#< ";"
                                                     mainf   = ppLine $ ppCmtC "Main entry point"
                                                                        >-< ppFun "int main(int argc, char** argv)"
-                                                                                 (    "main_GB_Init1( argc, argv) ;"
+                                                                                 (    "int nRtsOpts = 0 ;"
+                                                                                  >-< "main_GB_Init1( argc, argv, &nRtsOpts ) ;"
+                                                                                  >-< "gb_Opt_TraceSteps =" >#< ehcOptGenTrace @lhs.opts >#< ";"
+                                                                                  >-< "argc -= nRtsOpts ; argv += nRtsOpts ;"
                                                                                   >-< @ppNmMainInit2F >|< "( argc, argv) ;"
-                                                                                  >-< "main_GB_Run( argc, argv, gb_code_Startup, Cast(GB_Word,*" >|< @ppNmMainCAFEntry >|< ") ) ;"
+                                                                                  >-< "main_GB_Run( argc, argv, gb_code_Eval, Cast(GB_Word,*" >|< @ppNmMainCAFEntry >|< ") ) ;"
                                                                                   >-< "return main_GB_Exit( argc, argv) ;"
                                                                                  )
                                                     etc     = if ehcOptEmitLlc @lhs.opts
@@ -249,9 +260,9 @@ SEM Module
                                                               else ppLine $ ppCmtC "Dummy defs for Silly"
                                                                    >-< "void fun_main(void){}" >-< "void initialize(void){}"
                                                 in  top
+                                                    >-< bcode
                                                     >-< strings
                                                     >-< consts
-                                                    >-< bcode
                                                     >-< centries
                                                     >-< cafs
                                                     >-< maincaf
@@ -276,13 +287,17 @@ SEM Instr
   | TailCall RetCall
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArgMine.pp,@nArgSurr.pp,@retOffSurr.pp]
   | TailEval    lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArgSurr.pp,@retOffSurr.pp]
-  | CaseCall    lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nCases.pp]
+  | CaseCall FetchUpdate
+  				lhs         .   pp          =   ppCommas [ppHex 2 @enc]
+  | CallC       lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArg.pp]
   | RetCase     lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nRes.pp,@retOffSurr.pp,ppLink Cfg.gbLabelOffsetSize @refOff]
+  | Op          lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@imm.pp]
   | Ann         lhs         .   pp          =   @instr.pp >#< ppCmtC @ann
-  | Halt        lhs         .   pp          =   ppCommas [ppHex 2 @ext,ppHex 2 @enc]
+  | Halt        lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2]
   | LdGlobal    lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLink (fromInteger Cfg.sizeofGrWord) $ linkInx @link]
   | LabelRef    lhs         .   pp          =   ppCommas [ppLink Cfg.gbLabelOffsetSize @refOff]
 %%]
+  | CaseCall    lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nCases.pp]
 
 %%[8
 SEM Imm
@@ -354,13 +369,16 @@ SEM Instr
   | Call        lhs         .   mn          =   "call"          >|< @locSrc.mn
   | TailCall    lhs         .   mn          =   "tailcall"      >|< @locSrc.mn >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >|< @retOffSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn >#< @retOffSurr.mn
   | TailEval    lhs         .   mn          =   "taileval"      >|< @locSrc.mn >|< @nArgSurrSz.mn >|< @retOffSurrSz.mn >#< @nArgSurr.mn >#< @retOffSurr.mn
-  | CaseCall    lhs         .   mn          =   "casecall"      >|< @nCasesSz.mn >#< @nCases.mn
+  | CaseCall    lhs         .   mn          =   pp "casecall"
+  | FetchUpdate lhs         .   mn          =   pp "fetchupd"
+  | CallC       lhs         .   mn          =   "callc"         >|< @nArgSz.mn >#< @nArg.mn
   | RetCall     lhs         .   mn          =   "retcall"       >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >|< @retOffSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn >#< @retOffSurr.mn
   | RetCase     lhs         .   mn          =   "retcase"       >|< @nResSz.mn >|< @retOffSurrSz.mn >#< @nResSz.mn >#< @retOffSurr.mn >#< lrefId @locRef
   | Eval        lhs         .   mn          =   "eval"          >|< @locSrc.mn
   | Apply       lhs         .   mn          =   "apply"         >|< @locSrc.mn
   | Halt        lhs         .   mn          =   pp "halt"
   | LdGlobal    lhs         .   mn          =   pp "ldg"
+  | Op          lhs         .   mn          =   "o"             >|< @op.mn >|< @locDst.mn >|< @opndTy.mn >|< @ind.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
   | LabelRef    lhs         .   mn          =   ".ref"          >#< lrefId @locRef
 
 SEM Imm
@@ -397,6 +415,8 @@ SEM InsOp_DataOp
   | Int2        lhs         .   mn          =   pp "i2"
   | Float1      lhs         .   mn          =   pp "f1"
   | Float2      lhs         .   mn          =   pp "f2"
+  | IntWord     lhs         .   mn          =   pp "iw"
+  | IntInf      lhs         .   mn          =   pp "ii"
 
 SEM InsOp_ImmSz
   | Bits08      lhs         .   mn          =   pp "08"
@@ -421,26 +441,30 @@ ATTR AllInsOp Meta [ | | enc: Int ]
 
 SEM Instr
   | Ld          loc         .   enc         =   0x00 .|. (@ind.enc `shiftL` 5) .|. (@locDst.enc `shiftL` 4) .|. (@locSrc.enc `shiftL` 2) .|. (@immSz.enc)
-  | AllocStore  loc         .   enc         =   0xEC .|. (@locSrc.enc)
-  | Fetch       loc         .   enc         =   0xEE .|. (@locSrc.enc)
+  | Op          loc         .   enc         =   0xB0 .|. (@op.enc `shiftL` 2) .|. (@locDst.enc)
   | Call        loc         .   enc         =   0xC0 .|. (@locSrc.enc)
   | TailCall    loc         .   enc         =   0xC2 .|. (@locSrc.enc)
   | RetCall     loc         .   enc         =   0xC4
   | RetCase     loc         .   enc         =   0xC5
   | CaseCall    loc         .   enc         =   0xC6
+  | CallC       loc         .   enc         =   0xC7
   | Eval        loc         .   enc         =   0xE0 .|. (@locSrc.enc)
   | TailEval    loc         .   enc         =   0xE4 .|. (@locSrc.enc)
   | Apply       loc         .   enc         =   0xE2 .|. (@locSrc.enc)
+  | AllocStore  loc         .   enc         =   0xEC .|. (@locSrc.enc)
+  | Fetch       loc         .   enc         =   0xEE .|. (@locSrc.enc)
+  | FetchUpdate loc         .   enc         =   0xF9
   | LdGlobal    loc         .   enc         =   0xFC
-  | Halt        loc         .   ext         =   0xFE
-                            .   enc         =   0xFF
+  | Halt        loc         .   enc         =   0xFE
 
 SEM Instr
   | TailCall RetCall
                 loc         .   enc2        =   (@nArgMineSz.enc `shiftL` 4) .|. (@nArgSurrSz.enc `shiftL` 2) .|. (@retOffSurrSz.enc)
-  | CaseCall    loc         .   enc2        =   (@nCasesSz.enc)
+  | CallC       loc         .   enc2        =   (@nArgSz.enc)
   | TailEval    loc         .   enc2        =   (@nArgSurrSz.enc `shiftL` 2) .|. (@retOffSurrSz.enc)
   | RetCase     loc         .   enc2        =   (@nResSz.enc `shiftL` 2) .|. (@retOffSurrSz.enc)
+  | Op          loc         .   enc2        =   (@opndTy.enc `shiftL` 5) .|. (@ind.enc `shiftL` 4) .|. (@locSrc.enc `shiftL` 2) .|. (@immSz.enc)
+  | Halt        loc         .   enc2        =   0xFF
 
 SEM Meta
   | CmtHeader   loc         .   enc         =   0xFF
@@ -472,6 +496,8 @@ SEM InsOp_DataOp
   | Int2        lhs         .   enc         =   1
   | Float1      lhs         .   enc         =   2
   | Float2      lhs         .   enc         =   3
+  | IntWord     lhs         .   enc         =   4
+  | IntInf      lhs         .   enc         =   5
 
 SEM InsOp_ImmSz
   | Bits08      lhs         .   enc         =   0
@@ -485,6 +511,7 @@ SEM InsOp_Deref
   | Two         lhs         .   enc         =   2
   | Int         lhs         .   enc         =   3
 %%]
+  | CaseCall    loc         .   enc2        =   (@nCasesSz.enc)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% How to pp, context
@@ -495,16 +522,18 @@ ATTR Imm [ immSz: InsOp_ImmSz | | ]
 
 SEM Instr
   | Ld          imm         .   immSz       =   @immSz.self
+  | Op          imm         .   immSz       =   @immSz.self
   | TailCall RetCall
                 nArgMine    .   immSz       =   @nArgMineSz.self
                 nArgSurr    .   immSz       =   @nArgSurrSz.self
                 retOffSurr  .   immSz       =   @retOffSurrSz.self
   | TailEval    nArgSurr    .   immSz       =   @nArgSurrSz.self
                 retOffSurr  .   immSz       =   @retOffSurrSz.self
-  | CaseCall    nCases      .   immSz       =   @nCasesSz.self
+  | CallC       nArg        .   immSz       =   @nArgSz.self
   | RetCase     nRes        .   immSz       =   @nResSz.self
                 retOffSurr  .   immSz       =   @retOffSurrSz.self
 %%]
+  | CaseCall    nCases      .   immSz       =   @nCasesSz.self
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Replica's, SELF

@@ -1,3 +1,13 @@
+%%[abstract
+This document describes the design of a bytecode virtual machine for GRIN.
+The reader is assumed to be familiar with the EH project
+\cite{dijkstra05phd,dijkstra04ehc-web} and its overall design.
+Although we intend this document primarily to be for the understanding by EHC developers,
+we provide some introductory notes and background before delving into the internals of
+the machinery.
+
+%%]
+
 %%[defs
 %format CSBase      = "C"
 %format CSGetFld    = "F"
@@ -9,6 +19,7 @@
 
 %format unit        = "\mathbf{unit}"
 %format store        = "\mathbf{store}"
+%format eval        = "\mathbf{eval}"
 %format ild(i)(rd)(rs)(x)        = "\mathsf{l}\langle{" i "}\rangle\langle{" rd "}\rangle\langle{" rs "}\rangle" ^^ x
 %format ist(i)(rd)(rs)(x)       = "\mathsf{s}\langle{" i "}\rangle\langle{" rd "}\rangle\langle{" rs "}\rangle" ^^ x
 %format icp(i)(rs)(x)         = "\mathsf{cp}\langle{" i "}\rangle\langle{" rs "}\rangle" ^^ x
@@ -19,7 +30,7 @@
 %format ildg(m)(t)(o)         = "\mathsf{ldg}" ^^ m ^^ t ^^ o
 %format iretcall(n)(m)(r)         = "\mathsf{retcall}" ^^ n ^^ m ^^ r
 %format iretcase(n)(r)(c)         = "\mathsf{retcase}" ^^ n ^^ r ^^ c
-%format icasecall(n)         = "\mathsf{casecall}" ^^ n
+%format icasecall         = "\mathsf{casecall}"
 %format ieval(rs)         = "\mathsf{eval}\langle{" rs "}\rangle"
 %format itaileval(rs)(m)(r)         = "\mathsf{taileval}\langle{" rs "}\rangle" ^^ m ^^ r
 %format iapply(rs)       = "\mathsf{apply}\langle{" rs "}\rangle"
@@ -27,14 +38,17 @@
 %format iallocstore(rs)         = "\mathsf{allocstore}\langle{" rs "}\rangle"
 %format istore(rs)         = "\mathsf{store}\langle{" rs "}\rangle"
 %format ifetch(rs)         = "\mathsf{fetch}\langle{" rs "}\rangle"
+%format icallc(n)         = "\mathsf{callc}" ^^ n
 %format tailcall         = "\mathsf{tailcall}"
 %format taileval         = "\mathsf{taileval}"
+%format fetchupd         = "\mathsf{fetchupd}"
 %format applycont         = "\mathsf{applycont}"
 %format evappcont         = "\mathsf{evappcont}"
 %format papplycont         = "\mathsf{papplycont}"
 %format retcall         = "\mathsf{retcall}"
 %format retcase         = "\mathsf{retcase}"
 %format call         = "\mathsf{call}"
+%format callc         = "\mathsf{callc}"
 %format alloc         = "\mathsf{alloc}"
 %format stores         = "\mathsf{store}"
 %format allocstore         = "\mathsf{allocstore}"
@@ -122,7 +136,129 @@ $\Longrightarrow$ &
 
 %%]
 
+
+%%[intro
+The Grin Bytecode Machine (GBM) is a virtual machine for the Graph Reduction Intermediate Notation (GRIN)
+\cite{boquist99phd-optim-lazy,boquist96grin-optim}.
+GRIN is an intermediate representation for functional programs where all lazy and higher order constructs have been made
+explicit.
+This is accomplished by the following:
+\begin{Itemize}
+\item
+  Computation is done imperatively, that is the order in which computations are performed is made explicit.
+\item
+  Computation is non-lazy and always yields a result.
+  Whenever lazy behavior is desired, an appropriate datastructure is build to represent the delayed computation.
+  Computation of such a structure is enforced by an explicit evaluation.
+\end{Itemize}
+
+For example, the following program:
+
+%%[[wrap=code
+id x = x
+v = id 3
+main = v
+%%]]
+
+translates to the following GRIN program:
+
+%%[[wrap=code
+{  id x
+     =  {  unit x ; \x' ->
+           eval x'
+        } 
+;  v 
+     =  {  store (#0 ^ / ^ C ^ / ^ Int ^^ 3) ; \x ->
+           id x
+        } 
+;  main 
+     =  {  unit v ; \v' ->
+           eval v'
+        } 
+}
+%%]]
+
+Both |main| and |v| are CAF's. Computation is triggered by the context (a runtime system) requesting for the evaluation of |main|.
+The body of |main| is then invoked, requesting for the evaluation of |v|.
+|v| then heap allocates a boxed integer which is then passed to |id|, which evaluates and returns its parameter.
+The builtin function |eval| checks whether a stored node represents a delayed computation and then proceeds to compute it.
+
+The primary use of GRIN is to represent a whole program with it, and then analyse this complete self contained program.
+The most important assumption for such an analysis is that the program is closed, no other code will be invoked,
+nor will any part of the program be invoked by outside code.
+This allows the most important source of inefficiency, the builtin |eval|, to be analysed for its use, inlined, specialised for its specific use at
+each call site.
+This analysis is done as part of EH (ehc variant 8) and described elsewhere \cite{boquist99phd-optim-lazy}.
+
+\paragraph{Why a Grin Bytecode Machine?}
+Although GRIN is intended as a notation allowing whole program analysis, it also represents a program which can directly be interpreted.
+At this place the Grin Bytecode Machine (GBM) steps in.
+There are a couple of reasons as why to do this:
+
+\begin{Itemize}
+\item
+  It is yet unclear how whole program analysis scales.
+  Although it promises highly optimised code, where the price for laziness no longer has to be paid when laziness is not used,
+  its analysis and optimisation techniques are not yet sorted out completely, may be too resource expensive,
+  and inhibits fast compilation turn around times.
+\item
+  It is yet unclear how practical language features like exceptions, modules, and threads
+  interact with GRIN and whole program analysis.
+\end{Itemize}
+
+An interpreter circumvents these problems by avoiding whole program analysis, 
+and interpreting the 'optimized away' constructs like |eval| instead.
+In the context of EH there are also other benefits to using an interpretive technique in addition to full program analysis:
+
+\begin{Itemize}
+\item
+  Two implementations, one based on highly optimised code, one based on interpretation, allow correctness checks of eachother by
+  comparing test output.
+\item
+  Because GRIN already makes explicit much of the laziness, its interpretation may well turn out to be fast enough to be of real practical use.
+\item
+  It allows research into hybrid techniques where part is fully optimised, part is interpreted.
+\end{Itemize}
+
+\Paragraph{An example of GBM code}
+
+We present the translation of the example into GBM code to give the reader an intuition of what the GBM does:
+
+%%[[wrap=code
+{  id x
+     =  {  unit x ; \x' ->
+                ldl         x                   -- load parameter x
+           eval x'                             
+                ldl         x'                  -- load x' (alias for x)
+                taileval                        -- tail evaluate
+        } 
+;  v 
+     =  {  store (#0 ^ / ^ C ^ / ^ Int ^^ 3) ; \x ->
+                ldi         3                   -- load (unboxed) int 3
+                ldl         x                   -- load x (alias for 3)
+                ldg         id                  -- load global id
+           id x
+                tailcall                        -- tail call
+        } 
+;  main 
+     =  {  unit v ; \v' ->
+                ldg         v                   -- load global v
+                ldl         v'                  -- load v' (alias for v)
+           eval v'
+                taileval                        -- tail evaluate
+        } 
+}
+%%]]
+
+Note that the GBM follows quite literally, that is unoptimised, the corresponding GRIN.
+Also note that int's are treated in unboxed for, thereby avoiding the need to allocate storage for a boxed representation.
+
+%%]
+
+
 %%[grin2GrinB
+\emph{This section is left here for later rewrite.}
+
 \begin{GrinCS}
 |CSBase<< unit v ; \w -> e >> CSEnv|
 &
@@ -150,33 +286,53 @@ $\Longrightarrow$ &
 %%]
 
 %%[grinBSemantics
+%%]
 
-\subsection{Memory model and module admin}
+%%[grinBMemoryModel
 
-\Paragraph{Offsets in instructions}
-All offset relative to registers are in bytes, that is, already take size of word into account.
-Together with hardcoded endianness this makes the bytecode representation not platform independent,
-but execution speed should be better.
+\Paragraph{Memory}
+GBM uses:
 
-\Paragraph{Stack}
-Stack, indexed by |gstack|, grows downwards/
-Positive offsets are used to refer to values in allocated part of stack.
+\begin{Itemize}
+\item
+  A stack, growing downwards, a register |gstack| points to the top.
+\item
+  A heap, referred to by |gheap|.
+\item
+  A single register |greg|.
+\end{Itemize}
 
-\Paragraph{Registers}
-Registers: programcounter |gpc|, general purpose register |greg|.
+Currently the general purpose |greg| is not used, but the GBM design allows future use. It is also unclear whether the availability of
+such a register benefits the speed of the interpreter.
+It also requires the GBM code generation to be aware of this register.
+
+The heap currently is either non-garbagecollected, or under control of the Boehm garbage collector \cite{boehm88gc-c,boehm06gc-www},
+depending on configuration.
+
+Memory consists of words, either 32 bits or 64 bits, depending on the platform.
+A word is guaranteed to be able to hold a pointer.
 
 \Paragraph{Nodes and tagging}
-Node representation: header (1 word) + content (nr of field words)
+Nodes reside in the heap, and occupies at least 1 word.
+A node consists of a header (a word) + zero or more words.
 
-Node header should (for now) fit in 32 bits, 64 bits sizes under consideration:
+The following is the layout for a 32 bits header, a 64 bits header spends its available space on the |size| and |tag| field.
 %%[[wrap=code
 size            16  bits                                -- nr of words, incl header
 needsEval       1   bit                                 -- 1 == possibly needs eval
 tagCateg        2   bits                                -- eval == 0: {C,P}, eval == 1: {F,A,I,B}
-tag             13  bits                                -- also used for size info for P, A
+gc              2   bits                                -- reserved for future use by garbage collecting
+tag             11  bits                                -- also used for size info for P, A
 %%]]
 
-Tag categories:
+A bit |needsEval| is reserved to indicate whether the node possibly needs evaluation.
+This is the case for saturated function closures (|tagCateg = F|),
+general application nodes (|tagCateg = A|),
+indirection nodes (|tagCateg = I|),
+and black holes (|tagCateg = H|).
+Data constructors (|tagCateg = C|) and partial applications (|tagCateg = P|) need no further evaluation.
+
+Tag categories summary:
 %%[[wrap=code
 F               00              -- function closure
 A               01              -- general application
@@ -187,13 +343,14 @@ C               00              -- constructor
 P               01              -- partial app
 %%]]
 
-Tagged data. Pointer values have lower 2 bits set to 0, direct (non pointer) values have these bits set to a non zero tag.
-For signed ints |x| in the range |- pow2(29) <= x < pow2(29)|, |30| bits are used, with the following encoding |Enc(x)|.
-The encoding consists of a shift left with |sh| positions (notated as a shift |<< s| or multiplication |* pow2(s)|), and addition of tag |t|.
-For now, |sh = 1 (s = pow2(1)), t = 1| would suffice.
+\Paragraph{Node pointers and Int's}
+A word represents a pointer to a node or an integer.
+A pointer is required to have its least significant bit set to 0, for an integer this is 1.
+The encoding for an integer equals the original integer value shifted left |sh| positions
+plus the int tag value |t|.
+Currently |sh = 1, t = 1|,
+which means that the encoding |Enc(x)| of |x| is defined as follows, with |s = pow2(1)| (see Leroy \cite{leroy90zinc-ml-impl}):
 
-\Paragraph{Int encoding}
-Int's are tagged values:
 %%[[wrap=code
 Enc(x)          =   x * s + t
 Enc(x1+x2)      =   (x1+x2) * s + t
@@ -211,14 +368,34 @@ Enc(x1/x2)      =   (x1/x2) * s + t
                 =   Frac(x1 * s)(x2 * s) * s + t
                 =   Frac(x1 * s + t - t)(x2 * s + t - t) * s + t
                 =   Frac(Enc(x1) - t)(Enc(x2) - t) * s + t
-                =   Frac(Enc(x1) - t)(Enc(x2) / s - t / s) + t
-                =   Frac(Enc(x1) - t)(Enc(x2) / s) + t                  ^ -- t/s shifts out
 %%]]
+%                =   Frac(Enc(x1) - t)(Enc(x2) / s - t / s) + t
+%                =   Frac(Enc(x1) - t)(Enc(x2) / s) + t                  ^ -- t/s shifts out
 
-\Paragraph{Strings}
-String constants are stored in a separate table, to be referred to by |ldg|.
+Assuming a word size of 32 bits, for signed ints |x| in the range |- pow2(32-sh-1) <= x < pow2(32-sh-1)|, |32-sh| bits are used.
+
+\Paragraph{Constant values (like Strings)}
+String constants are encoded in a platform dependent manner with a wrapper function constructing the expected node based representation.
+Constants are stored in a separate table, to be accessed by a specialised instruction |ldg| for accessing global values,
+together with runtime linking functionality.
+
+\Paragraph{Platform dependencies}
+GBM is dependent on
+\begin{Itemize}
+\item \textbf{Word size.}
+  Word size may be 32 or 64 bits.
+  Some instruction depend on this parameter.
+  For example, the load global |ldg| instruction refers to a global via a pointer, which has the size of a word and is inlined in the instruction stream.
+\item \textbf{Endianness.}
+  The encoding of literal integer values is done in the encoding used by the platform.
+\end{Itemize}
+
+GBM is not designed to be platform independent.
+For a platform independent encoding of instructions a choice between these dependencies would have to be made.
 
 \Paragraph{Modules}
+\emph{This paragraph is left here for later rewrite.}
+
 Incoming and outgoing references need to be resolved during initialization time with the help of some tables
 \begin{itemize}
 \item
@@ -241,6 +418,8 @@ Initialization takes places in the following order, possible referring to module
 \end{itemize}
 
 \Paragraph{Table summary}
+\emph{This paragraph is left here for later rewrite.}
+
 The following tables are used, |angle(m)| is the module nr, starting at |1|, global tables have module nr |0|.
 Format is |table : table nr :: functionality :: actual C encoding|.
 
@@ -257,6 +436,11 @@ CAF                     :   0.1         ::
 %%]
 
 %%[grinBMetavarEncoding
+Although only a few instructions are required for the interpretation of GRIN by GBM,
+the design of the instruction set has been made as general as possible.
+We first describe the notation used to describe instruction variation.
+With each individual instruction the implemented and used variants are listed.
+
 \subsubsection{Load source, store destination: extended variant}
 %%[[wrap=code
 angle(rd), angle(rs)  =  i  -- immediate constant
@@ -321,13 +505,17 @@ angle(dt)  =  i1  -- 32bits int
            |  i2  -- 64bits int
            |  f1  -- 32bits float
            |  f2  -- 64bits float
+           |  iw  -- word
+           |  ii  -- unlimited integer precision
 %%]]
 
 %%[[wrap=code
-i1  =  00
-i2  =  01
-f1  =  10
-f2  =  11
+i1  =  000
+i2  =  001
+f1  =  010
+f2  =  011
+iw  =  100
+ii  =  101
 %%]]
 
 \subsubsection{Immediate signed int constant size}
@@ -345,30 +533,6 @@ angle(is)  =  08, b  -- byte, 8 bits
 64, d  =  11
 %%]]
 
-\subsubsection{Sign}
-
-%%[[wrap=code
-angle(sg)  =  +  -- positive
-           |     -- positive
-           |  -  -- negative (2's complement)
-%%]]
-
-%%[[wrap=code
-+  =  0
--  =  1
-%%]]
-
-\subsubsection{Immediate constant}
-%%[[wrap=code
-angle(c)  =  ci  -- constant in instruction
-          |  cf  -- constant following instruction
-%%]]
-
-%%[[wrap=code
-ci  =  0
-cf  =  1
-%%]]
-
 \subsubsection{Indirection level}
 %%[[wrap=code
 angle(i)  =  0      -- as is, use itself (don't follow as address)
@@ -383,95 +547,36 @@ A level 3 represents a variation on level 0 with an implicit conversion to int e
 
 \subsubsection{Instruction prefixes/categories}
 
-Prefixes without comment are unused.
+Instructions occupy 1 byte, plus additional immediate (inlined) parameters.
+Instructions are grouped, based on common functionality.
+Each group shares an initial bitsequence, that is their higher significant bits are equal.
+For example, all loading instructions start with |0|.
+
+Currently the following categories are used.
+Those without comment are not yet used.
 
 %{
 %format <<  = "{\ll}"
 %%[[wrap=code
-0           0x00        0x00        loading
-100         0x04 << 5   0x80        storing
-101         0x05 << 5   0x82        arithmetic
-1100  0     0x18 << 3   0xC0        calling, case
+0           ^^  0x00        ^^  0x00        -- loading
+100         ^^  0x04 << 5   ^^  0x80        -- storing
+101         ^^  0x05 << 5   ^^  0x82        -- arithmetic
+1100  0     ^^  0x18 << 3   ^^  0xC0        -- calling, case
 1100  0111
 1100  1     
 1101
-1110  0     0x1C << 3   0xE0        eval/apply
-1110  1     0x1D << 3   0xE8        heap: node alloc/fetch
-1111  0
-1111  1                 0xF8        'standalone': extend prefix, nop, ...
+1110  0     ^^  0x1C << 3   ^^  0xE0        -- eval/apply
+1110  1     ^^  0x1D << 3   ^^  0xE8        -- heap: node alloc/fetch
+1111  0     ^^  
+1111  1     ^^              ^^  0xF8        -- 'standalone': extend prefix, nop, ...
 %%]]
 %}
-
-\subsubsection{Misc notation}
-
-In the context of evaluation steps:
-
-%%[[wrap=code
-Sup(c)(r)       --  value c at offset r from top of stack
-%%]]
 
 %%]
 
 %%[grinBConstants
-Signed int constants are denoted with |x|, unsigned (positive) int constants with |xpos|.
-
-Byte at a time encoding, signed:
-
-\begin{GrinEncoding}{instruction with |x=angle(sg)c|}
-|0 <= c < pow2(1) | &
-|.. ^ ci ^^ ixx1(c)(0) ..| &
-&
-&
-\\
-|- pow2(7) <= c < pow2(7) | &
-|.. ^ cf ^^ sg ..| &
-|0 ^ ixx(c)(6)(0)| &
-&
-\\
-|- pow2(14) <= c < pow2(14) | &
-|.. ^ cf ^^ sg ..| &
-|1 ^ ixx(c)(13)(7)| &
-|0 ^ ixx(c)(6)(0)| &
-\\
-|- pow2(21) <= c < pow2(21) | &
-|.. ^ cf ^^ sg ..| &
-|1 ^ ixx(c)(20)(14)| &
-|1 ^ ixx(c)(13)(7)| &
-|0 ^ ixx(c)(6)(0)|
-\\
-etc.
-\\
-\end{GrinEncoding}
-
-Byte at a time encoding, unsigned:
-
-\begin{GrinEncoding}{instruction with |xpos=c|}
-|0 <= c < pow2(1) | &
-|.. ^ ci ^^ ixx1(c)(0) ..| &
-&
-&
-\\
-|0 <= c < pow2(8) | &
-|.. ^ cf ^^ ixx1(c)(7) ..| &
-|0 ^ ixx(c)(6)(0)| &
-&
-\\
-|0 <= c < pow2(15) | &
-|.. ^ cf ^^ ixx1(c)(14) ..| &
-|1 ^ ixx(c)(13)(7)| &
-|0 ^ ixx(c)(6)(0)| &
-\\
-|0 <= c < pow2(22) | &
-|.. ^ cf ^^ ixx1(c)(21) ..| &
-|1 ^ ixx(c)(20)(14)| &
-|1 ^ ixx(c)(13)(7)| &
-|0 ^ ixx(c)(6)(0)|
-\\
-etc.
-\\
-\end{GrinEncoding}
-
-Byte/short/word/double encoding, signed, little endian:
+Constants may appear as part of an instruction, after its initial bytecode.
+These immediate constants may be of 8, 16, 32 or 64 bits size.
 
 \begin{GrinEncoding}{instruction with |x=c|}
 |- pow2(7) <= c < pow2(7), angle(is) = b | &
@@ -490,12 +595,6 @@ etc.
 
 Whenever a constant |x| is referred to from the instruction encoding,
 its two bits |ixxjuxt(x)(1)(0)| refer to the above encoded size information.
-
-Big vs little endian:
-\begin{itemize}
-\item In memory: take host platform endianness
-\item In a file, in a persistent format (not under further consideration here): take any, probably little endian as the Intel platform is quite dominant.
-\end{itemize}
 
 %%]
 
@@ -532,8 +631,7 @@ ild(i)(rd)(rs)(x)
 %%[[wrap=code
 ldl d       =   l1tt  d            -- push content displacement d relative to tos on stack
 ldc c       =   l0ti  c            -- push constant c on stack
-ldc i       =   liti  c            -- push constant c as int on stack
-lda d       =   l0tt  d            -- push address displacement d relative to tos on stack
+ldi i       =   liti  c            -- push constant c in int encoding on stack
 %%]]
 
 \textbf{|ldl|: load local from stack}\\
@@ -562,7 +660,25 @@ lda d       =   l0tt  d            -- push address displacement d relative to to
  }{}
 }
 
+\subsubsection{Load global}
+
+\emph{This section is left here for later rewrite, |ldg| depends on additional linking tables}
+
+\begin{GrinEncoding}{|ildg(m)(t)(o)|}
+ &
+|1111 ^^ 1100| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+Load from module |m| (16 bits), table |t| (16 bits), offset |o| (32 bits).
+This info is stored in a separate link entry table, and patched during runtime initialization
+with the proper location.
+
 \subsubsection{Storing}
+
+\emph{No store instructions are required; storing is handled by node related instructions.}
 
 \begin{GrinEncoding}{|ist(i)(rd)(rs)(x)|}
  &
@@ -617,6 +733,8 @@ sts d       =   s1tt   d            -- pop tos content into displacement d relat
 
 \subsubsection{Immediate constant addition}
 
+\emph{No arithmetic instructions are required; arithmetic is currently handled by primitives.}
+
 \begin{GrinEncoding}{|iaddi(od)(x)|}
  &
 |1010 ^ ixxjuxt(od)(1)(0) ^ ixxjuxt(x)(1)(0)| &
@@ -627,6 +745,8 @@ sts d       =   s1tt   d            -- pop tos content into displacement d relat
 
 \subsubsection{General operators}
 
+\emph{No arithmetic instructions are required; arithmetic is currently handled by primitives.}
+
 \begin{GrinEncoding}{|iop(ot)(dt)(i)(od)(rs)(x)|}
  &
 |1011 ^ ixxjuxt(ot)(1)(0) ^ ixxjuxt(od)(1)(0)| &
@@ -634,19 +754,6 @@ sts d       =   s1tt   d            -- pop tos content into displacement d relat
 ... &
 \\
 \end{GrinEncoding}
-
-\textbf{Semantics}\\
-
-%%[[wrap=code
-iop(ot)(dt)(i)(rd)(rs)(x)
-  =  
-%%]]
-
-\textbf{Abbreviations}\\
-
-%%[[wrap=code
-addi        =   oaiss  0         -- on tos addition
-%%]]
 
 %%]
 
@@ -799,17 +906,18 @@ where |n, r:: angle(is)|
 
 \subsubsection{Case 'call'}
 
-\begin{GrinEncoding}{|icasecall(n)|}
+\begin{GrinEncoding}{|icasecall|}
  &
 |1100 ^^ 0110| &
-|0000 ^^ 00 ^ ixxjuxt(n)(1)(0)| &
-|n|, |n| locations &
-... \\
+|n| locations &
+... &
+\\
 \end{GrinEncoding}
 
-|n| offsets, each off same size (i.e. nr of bytes) as |n|, relative to |gpc| immediately after each |n|.
+|n| offsets, each off same size (i.e. nr of bytes) as |n|, relative to |gpc| after each location.
 During runtime initialization the offsets are patched to their absolute addresses.
 Return is handled by |retcase|.
+|n| is omitted from code.
 
 \GriniStep{%
  \GriniStateBefore{%
@@ -834,6 +942,41 @@ Return is handled by |retcase|.
   |greg|
  }{}
 }
+
+\subsubsection{Call C function}
+
+\begin{GrinEncoding}{|icallc(n)|}
+ &
+|1100 ^^ 0111| &
+|0000 ^^ 00 ^ ixxjuxt(n)(1)(0)| &
+... &
+\\
+\end{GrinEncoding}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |callc n : gcode|
+ }{%
+  |f : a1 .. an : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |(f a1 .. an) : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
 
 
 
@@ -915,9 +1058,35 @@ An indirection is just followed:
 }{%
  \GriniStateAfter{%
  }{%
-  |gcode|
+  |evalt : gcode|
  }{%
   |p' : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
+Nodes which require no evaluation are left as is, e.g. constructors and partial applications:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |evalt : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |[ p :-> (C/P : _) ] `elem` gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |p : gstack|
  }{%
   |gheap|
  }{
@@ -1167,34 +1336,12 @@ The saved return address of the apply and result are shuffled to be ready for th
 }
 
 
-
-\subsubsection{Load global}
-
-\begin{GrinEncoding}{|ildg(m)(t)(o)|}
- &
-|1111 ^^ 1100| &
- &
- &
-\\
-\end{GrinEncoding}
-
-Load from module |m| (16 bits), table |t| (16 bits), offset |o| (32 bits).
-This info is stored in a separate link entry table, and patched during runtime initialization
-with the proper location.
-
-\subsubsection{Nop}
-
-\begin{GrinEncoding}{|nop|}
- &
-|1111 ^^ 1111| &
- &
- &
-\\
-\end{GrinEncoding}
 %%]
 
 %%[grinBStorage
 \subsubsection{Alloc}
+
+\emph{No individual |alloc| is required; handled by |allocstore|.}
 
 \begin{GrinEncoding}{|ialloc(rs)|}
  &
@@ -1205,6 +1352,8 @@ with the proper location.
 \end{GrinEncoding}
 
 \subsubsection{Store}
+
+\emph{No individual |store| is required; handled by |allocstore|.}
 
 \begin{GrinEncoding}{|istore(rs)|}
  &
@@ -1224,7 +1373,7 @@ with the proper location.
 \\
 \end{GrinEncoding}
 
-Size in words, including tag.
+Size in bytes, including tag.
 
 \GriniStep{%
  \GriniStateBefore{%
@@ -1286,9 +1435,59 @@ Size in words, including tag.
 }
 
 
+\subsubsection{Fetch + Update}
+
+\begin{GrinEncoding}{|fetchupd|}
+ &
+|1111 ^^ 1001| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+To tie the knot for mutual recursive structures on a non-global level (linking solves this for global mutual references).
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |fetchupd : gcode|
+ }{%
+  |p' : p : gstack|
+ }{%
+  |[p :-> (H : _) ] `elem` gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |gstack|
+ }{%
+  |gheap[p :-> (I : p') ]|
+ }{
+  |greg|
+ }{}
+}
+
+
+
 %%]
 
 %%[grinBRest
+
+\subsubsection{Nop}
+
+\begin{GrinEncoding}{|nop|}
+ &
+|1111 ^^ 1111| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+
 \subsubsection{Extension prefix}
 
 \begin{GrinEncoding}{|xxx|}
@@ -1375,6 +1574,9 @@ Size in words, including tag.
 %%]
 
 %%[oldStuff
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsubsection{Block copy}
 
 \begin{GrinEncoding}{|icp(i)(rs)(x)|}
@@ -1400,6 +1602,94 @@ icp(i)(rs)(x)
 %%]]
 
 Behavior in case of overlap of src/dst is unpredictable.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Sign}
+
+%%[[wrap=code
+angle(sg)  =  +  -- positive
+           |     -- positive
+           |  -  -- negative (2's complement)
+%%]]
+
+%%[[wrap=code
++  =  0
+-  =  1
+%%]]
+
+\subsubsection{Immediate constant}
+%%[[wrap=code
+angle(c)  =  ci  -- constant in instruction
+          |  cf  -- constant following instruction
+%%]]
+
+%%[[wrap=code
+ci  =  0
+cf  =  1
+%%]]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Signed int constants are denoted with |x|, unsigned (positive) int constants with |xpos|.
+
+Byte at a time encoding, signed:
+
+\begin{GrinEncoding}{instruction with |x=angle(sg)c|}
+|0 <= c < pow2(1) | &
+|.. ^ ci ^^ ixx1(c)(0) ..| &
+&
+&
+\\
+|- pow2(7) <= c < pow2(7) | &
+|.. ^ cf ^^ sg ..| &
+|0 ^ ixx(c)(6)(0)| &
+&
+\\
+|- pow2(14) <= c < pow2(14) | &
+|.. ^ cf ^^ sg ..| &
+|1 ^ ixx(c)(13)(7)| &
+|0 ^ ixx(c)(6)(0)| &
+\\
+|- pow2(21) <= c < pow2(21) | &
+|.. ^ cf ^^ sg ..| &
+|1 ^ ixx(c)(20)(14)| &
+|1 ^ ixx(c)(13)(7)| &
+|0 ^ ixx(c)(6)(0)|
+\\
+etc.
+\\
+\end{GrinEncoding}
+
+Byte at a time encoding, unsigned:
+
+\begin{GrinEncoding}{instruction with |xpos=c|}
+|0 <= c < pow2(1) | &
+|.. ^ ci ^^ ixx1(c)(0) ..| &
+&
+&
+\\
+|0 <= c < pow2(8) | &
+|.. ^ cf ^^ ixx1(c)(7) ..| &
+|0 ^ ixx(c)(6)(0)| &
+&
+\\
+|0 <= c < pow2(15) | &
+|.. ^ cf ^^ ixx1(c)(14) ..| &
+|1 ^ ixx(c)(13)(7)| &
+|0 ^ ixx(c)(6)(0)| &
+\\
+|0 <= c < pow2(22) | &
+|.. ^ cf ^^ ixx1(c)(21) ..| &
+|1 ^ ixx(c)(20)(14)| &
+|1 ^ ixx(c)(13)(7)| &
+|0 ^ ixx(c)(6)(0)|
+\\
+etc.
+\\
+\end{GrinEncoding}
+
+
 
 %%]
 
