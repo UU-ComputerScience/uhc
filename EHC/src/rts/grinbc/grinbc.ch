@@ -84,11 +84,11 @@ typedef GB_Word GB_NodeHeader ;
 #define GB_NH_Size_Shift				(GB_NH_NdEv_Shift + GB_NodeHeader_NdEv_BitSz)
 #define GB_NH_Full_Shift				(GB_NH_Size_Shift + GB_NodeHeader_Size_BitSz)
 
-#define GB_NH_MkFld_Size(x)				((x)<<GB_NH_Size_Shift)
-#define GB_NH_MkFld_NdEv(x)				((x)<<GB_NH_NdEv_Shift)
-#define GB_NH_MkFld_TagCat(x)			((x)<<GB_NH_TagCat_Shift)
-#define GB_NH_MkFld_GC(x)				((x)<<GB_NH_GC_Shift)
-#define GB_NH_MkFld_Tag(x)				((x)<<GB_NH_Tag_Shift)
+#define GB_NH_MkFld_Size(x)				(Cast(GB_Word,x)<<GB_NH_Size_Shift)
+#define GB_NH_MkFld_NdEv(x)				(Cast(GB_Word,x)<<GB_NH_NdEv_Shift)
+#define GB_NH_MkFld_TagCat(x)			(Cast(GB_Word,x)<<GB_NH_TagCat_Shift)
+#define GB_NH_MkFld_GC(x)				(Cast(GB_Word,x)<<GB_NH_GC_Shift)
+#define GB_NH_MkFld_Tag(x)				(Cast(GB_Word,x)<<GB_NH_Tag_Shift)
 
 #define GB_NH_FldBits(x,f,t)			Bits_ExtrFromToSh(GB_Word,x,f,t)
 #define GB_NH_FldBitsFr(x,f)			Bits_ExtrFromSh(GB_Word,x,f)

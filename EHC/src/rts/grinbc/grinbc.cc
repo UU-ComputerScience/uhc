@@ -280,7 +280,12 @@ unsigned int gb_StepCounter ;
 void gb_prWord( GB_Word x )
 {
 	GB_Node* n = Cast(GB_Node*,x) ;
-	printf( "Wd 0x%0.16lx: ", x ) ;
+#if USE_64_BITS
+	printf( "Wd 0x%0.16lx: "
+#else
+	printf( "Wd 0x%0.8x: "
+#endif
+	      , x ) ;
 	if ( GB_Word_IsInt(x)
 #if USE_BOEHM_GC
 	     || x < Cast(GB_Word,StackEnd)
@@ -289,13 +294,24 @@ void gb_prWord( GB_Word x )
 #endif
 	)
 	{
-		printf( "int %ld", GB_GBInt2Int(x) ) ;
+#if USE_64_BITS
+		printf( "int %ld"
+#else
+		printf( "int %d"
+#endif
+		      , GB_GBInt2Int(x) ) ;
 	} else {
-		printf( "sz %d, ev %d, cat %d, tg %d:", GB_NH_Fld_Size(n->header), GB_NH_Fld_NdEv(n->header), GB_NH_Fld_TagCat(n->header), GB_NH_Fld_Tag(n->header) ) ;
+		printf( "sz %d, ev %d, cat %d, tg %d:"
+		      , GB_NH_Fld_Size(n->header), GB_NH_Fld_NdEv(n->header), GB_NH_Fld_TagCat(n->header), GB_NH_Fld_Tag(n->header) ) ;
 		int i ;
 		for ( i = 0 ; i < 5 && i < GB_Node_NrFlds(n) ; i++ )
 		{
-			printf( " 0x%0.16lx", n->fields[i] ) ;
+#if USE_64_BITS
+			printf( " 0x%0.16lx"
+#else
+			printf( " 0x%0.8x"
+#endif
+			      , n->fields[i] ) ;
 		}
 	}
 	/* printf( "\n" ) ; */
@@ -307,7 +323,12 @@ void gb_prStack( int maxStkSz )
     
 	for ( i = 0 ; i < maxStkSz && sp+i < Cast(GB_Ptr,StackEnd) ; i++ )
 	{
-		printf( "  %lx: ", sp+i) ;
+#if USE_64_BITS
+		printf( "  %lx: "
+#else
+		printf( "  %x: "
+#endif
+		      , sp+i) ;
 		gb_prWord( sp[i] ) ;
 		printf( "\n" ) ;
 	}
@@ -317,10 +338,20 @@ void gb_prState( char* msg, int maxStkSz )
 {
 	int i ;
 	printf( "--------------------------------- %s ---------------------------------\n", msg ) ;
-	printf( "[%d]PC 0x%lx: 0x%0.2x '%s'", gb_StepCounter, pc, *pc, gb_lookupMnem(*pc)) ;
+#if USE_64_BITS
+	printf( "[%d]PC 0x%lx: 0x%0.2x '%s'"
+#else
+	printf( "[%d]PC 0x%x: 0x%0.2x '%s'"
+#endif
+	      , gb_StepCounter, pc, *pc, gb_lookupMnem(*pc)) ;
 	for ( i = 0 ; i < 8 ; i++ )
 		printf(" %0.2x", pc[1+i]) ;
-	printf( ", SP 0x%lx: 0x%0.16lx", sp, *sp ) ;
+#if USE_64_BITS
+	printf( ", SP 0x%lx: 0x%0.16lx"
+#else
+	printf( ", SP 0x%x: 0x%0.8x"
+#endif
+	      , sp, *sp ) ;
 	printf( "\n" ) ;
 	gb_prStack( maxStkSz ) ;
 }
