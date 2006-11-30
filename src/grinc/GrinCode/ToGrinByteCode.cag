@@ -14,6 +14,9 @@
 %%[8 hs export(grinMod2ByteCodeMod)
 %%]
 
+%%[12 hs import({%{EH}Ty(tyRowCanonOrder)})
+%%]
+
 %%[8.WRAPPER import({GrinCode/AbsSyn})
 WRAPPER GrAGItf
 %%]
@@ -22,11 +25,23 @@ WRAPPER GrAGItf
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[8.grinMod2ByteCodeMod hs
 grinMod2ByteCodeMod :: GrModule -> GB.Module
 grinMod2ByteCodeMod gmod
   =  let  t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf gmod))
                             (Inh_GrAGItf)
+     in   gbMod_Syn_GrAGItf t
+%%]
+
+%%[12 -8.grinMod2ByteCodeMod hs
+grinMod2ByteCodeMod :: [HsName] -> [HsName] -> HsNameS -> GrModule -> GB.Module
+grinMod2ByteCodeMod allImpNmL impNmL expNmS gmod
+  =  let  t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf gmod))
+                            (Inh_GrAGItf
+                               { expNmS_Inh_GrAGItf = expNmS
+                               , impNmL_Inh_GrAGItf = impNmL
+                               , allImpNmL_Inh_GrAGItf = allImpNmL
+                               })
      in   gbMod_Syn_GrAGItf t
 %%]
 
@@ -36,6 +51,10 @@ grinMod2ByteCodeMod gmod
 
 %%[8
 ATTR AllNTNoMod [ modNmConstInx: Int | | ]
+%%]
+
+%%[12
+ATTR GrAGItf GrModule [ expNmS: HsNameS  impNmL: {[HsName]}  allImpNmL: {[HsName]} | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -52,7 +71,7 @@ ATTR AllNTNoMod [ | constMp: ConstMp | ]
 SEM GrModule
   | Mod         loc         .   moduleNmAlpha   =   hsnShowAlphanumeric @moduleNm
                 (loc.modNmConstInx,globalL.strMp,globalL.constMp)
-                                                =   constStrAdd Map.empty Map.empty @moduleNmAlpha
+                                                =   constStrAdd @moduleNmAlpha Map.empty Map.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -62,8 +81,8 @@ SEM GrModule
 %%[8 hs
 type StrMp = Map.Map String GB.Const
 
-constStrAdd :: StrMp -> ConstMp -> String -> (Int,StrMp,ConstMp)
-constStrAdd strMp constMp str
+constStrAdd :: String -> StrMp -> ConstMp -> (Int,StrMp,ConstMp)
+constStrAdd str strMp constMp
   = case Map.lookup str strMp of
       Just c -> (panicJust "constStrAdd" $ Map.lookup c constMp,strMp,constMp)
       _      -> (constInx,Map.insert str c strMp,Map.insert c constInx constMp)
@@ -71,13 +90,20 @@ constStrAdd strMp constMp str
                    constInx = Map.size constMp
                    c        = GB.Const_Str strInx
 
-constCFunAdd :: ConstMp -> String -> (Int,ConstMp)
-constCFunAdd constMp nm
+constAdd :: GB.Const -> ConstMp -> (Int,ConstMp)
+constAdd c constMp
   = case Map.lookup c constMp of
       Just i -> (i,constMp)
       _      -> (constInx,Map.insert c constInx constMp)
              where constInx = Map.size constMp
-  where c = GB.Const_CFunction nm
+
+constCFunAdd :: String -> ConstMp -> (Int,ConstMp)
+constCFunAdd nm = constAdd (GB.Const_CFunction nm)
+%%]
+
+%%[12 hs
+constImpNodeAdd :: ConstMp -> (Int,ConstMp)
+constImpNodeAdd = constAdd GB.Const_ImpNode
 %%]
 
 %%[8
@@ -85,10 +111,10 @@ ATTR AllNTNoMod [ | strMp: StrMp | ]
 
 SEM GrVal
   | LitStr      (loc.constInx,lhs.strMp,lhs.constMp)
-                                                =   constStrAdd @lhs.strMp @lhs.constMp @str
+                                                =   constStrAdd @str @lhs.strMp @lhs.constMp
 
 SEM GrExpr
-  | FFI         (loc.constInx,lhs.constMp)      =   constCFunAdd @lhs.constMp @nm
+  | FFI         (loc.constInx,lhs.constMp)      =   constCFunAdd @nm @lhs.constMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -236,7 +262,7 @@ patNmL2VAGam dep nmL = Map.fromList [ (n,GB.Val_LocalOffset (dep+o)) | (n,o) <- 
 ATTR AllGrExpr AllBind [ vaGam: {GB.ValAccessGam} | | ]
 
 SEM GrModule
-  | Mod         loc         .   vaGam           =   Map.fromList $ zipWith (\n o -> (n,GB.Val_GlobEntry o)) @entryNmL [0..]
+  | Mod         loc         .   vaGam           =   Map.fromList $ map (\(n,o) -> (n,GB.Val_GlobEntry o)) $ Map.toList @entryNmMp
 
 SEM GrExpr
   | Seq         body        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
@@ -471,8 +497,9 @@ SEM GrBind
                 loc         .   entryInx        =   GB.vaEntryInx $ panicJust "GrBind.Bind.entryInx" $ Map.lookup @nm @lhs.vaGam
 
 SEM GrModule
-  | Mod         loc         .   (entryNmL,isCafL)
-                                                =   unzip $ toList @bindL.entryNms
+  | Mod         loc         .   (entryNmMp,isCafL)
+                                                =   let (nL,cafL) = unzip $ toList @bindL.entryNms
+                                                	in  (Map.fromList $ zip nL [0..],cafL)
                             .   mainEntry       =   maybe 0 GB.vaEntryInx $ Map.lookup hsnMain @vaGam
 %%]
 
@@ -486,7 +513,9 @@ ATTR GrAGItf GrModule [ | | gbMod: {GB.Module} ]
 SEM GrModule
   | Mod         lhs         .   gbMod           =   GB.Module_Mod @moduleNmAlpha
 %%[[12
-                                                      []
+                                                      [ (n,hsnShowAlphanumeric n) | n <- @lhs.allImpNmL ]
+                                                      (tyRowCanonOrder [ (n,hsnShowAlphanumeric n) | n <- @lhs.impNmL ])
+                                                      [ e | e@(n,_) <- tyRowCanonOrder $ Map.toList @entryNmMp, n `Set.member` @lhs.expNmS ]
 %%]]
                                                       (toList $ @bindL.i :++: FSeqL [GB.halt])
                                                       [ s | (s,_) <- sortOn (GB.constInx . snd) $ Map.toList @bindL.strMp ]

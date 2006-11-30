@@ -51,7 +51,8 @@ void memorySetup()
 %%]
 
 %%[8
-#if ! USE_BOEHM_GC
+#if USE_BOEHM_GC
+#else
 GrWord heapalloc(int n)
 {
     GrWord res = (GrWord) HP;
@@ -191,7 +192,7 @@ int main_GB_Init1(int argc, char** argv, int* nRtsOpt)
 	}
 	*nRtsOpt = optind ;
 	optind = 0 ;
-	optreset = True ;
+	// optreset = True ; // flag unknown at some platforms
 	
 	return 0 ;
 }

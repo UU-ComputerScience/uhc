@@ -161,7 +161,7 @@ text-variant-slides-overview:
 	  TEXT_SHUFFLE_VARIANT=17 \
 	  text-variant-dflt-once
 
-text-variant-grinbc-design:
+text-variant-gbm:
 	$(MAKE) \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=asArticle --set=useHyperref --set=refToPDF --set=blockstyle" \
 	  TEXT_SHUFFLE_VARIANT=22 \

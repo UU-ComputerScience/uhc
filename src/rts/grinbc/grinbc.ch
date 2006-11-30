@@ -34,25 +34,26 @@ typedef uint8_t  GB_Byte ;
 %%[8
 #if USE_64_BITS
 #define GB_NodeHeader_Size_BitSz		32
-#define GB_NodeHeader_NdEv_BitSz		1
+#define GB_NodeHeader_NdEv_BitSz		2
 #define GB_NodeHeader_TagCat_BitSz		2
 #define GB_NodeHeader_GC				2
-#define GB_NodeHeader_Tag_BitSz			27
+#define GB_NodeHeader_Tag_BitSz			26
 #else
 #define GB_NodeHeader_Size_BitSz		16
-#define GB_NodeHeader_NdEv_BitSz		1
+#define GB_NodeHeader_NdEv_BitSz		2
 #define GB_NodeHeader_TagCat_BitSz		2
 #define GB_NodeHeader_GC				2
-#define GB_NodeHeader_Tag_BitSz			11
+#define GB_NodeHeader_Tag_BitSz			10
 #endif
 
+#define GB_NodeNdEv_BlH					2			/* black hole */
 #define GB_NodeNdEv_Yes					1
 #define GB_NodeNdEv_No					0
 
-#define GB_NodeTagCat_Fun				0			/* saturated function call closure 	*/
-#define GB_NodeTagCat_App				1			/* general purpose application 		*/
-#define GB_NodeTagCat_Ind				2			/* indirection 						*/
-#define GB_NodeTagCat_BlH				3			/* black hole 						*/
+#define GB_NodeTagCat_Fun				0			/* saturated function call closure 		*/
+#define GB_NodeTagCat_App				1			/* general purpose application 			*/
+#define GB_NodeTagCat_Ind				2			/* indirection 							*/
+#define GB_NodeTagCat_CFun				3			/* saturated C function call closure 	*/
 
 #define GB_NodeTagCat_Con				0			/* data, constructor 								*/
 #define GB_NodeTagCat_PAp				1			/* partial application, tag is size of missing 		*/
@@ -70,7 +71,7 @@ typedef struct GB_NodeHeader {
 %%[8
 typedef struct GB_Node {
   GB_NodeHeader	header ;
-  GB_Word 		fields[0] ;
+  GB_Word 		fields[] ;
 } GB_Node, *GB_NodePtr ;
 
 #define GB_NodeHeaderNrFields(h)			((h).size-1)
@@ -83,18 +84,33 @@ typedef struct GB_Node {
 
 %%[8
 #define GB_MkHeader(sz,ev,cat,tg)			{sz, ev, cat, 0, tg}
-#define GB_MkCAFHeader						GB_MkHeader(2, GB_NodeNdEv_Yes, GB_NodeTagCat_Fun, 0)
-#define GB_MkConHeader(sz,tg)				GB_MkHeader(sz, GB_NodeNdEv_No, GB_NodeTagCat_Con, tg)
-#define GB_MkConEnumNode(tg)				{ GB_MkConHeader(1,tg) }
+#define GB_MkFunHeader(nArg)				GB_MkHeader((nArg)+2, GB_NodeNdEv_Yes, GB_NodeTagCat_Fun, 0)
+#define GB_MkCFunHeader(nArg)				GB_MkHeader((nArg)+2, GB_NodeNdEv_Yes, GB_NodeTagCat_CFun, 0)
+#define GB_MkCAFHeader						GB_MkFunHeader(0)
+#define GB_MkConHeader(sz,tg)				GB_MkHeader((sz)+1, GB_NodeNdEv_No, GB_NodeTagCat_Con, tg)
+
+#define GB_MkConEnumNode(tg)				{ GB_MkConHeader(0,tg) }
+
+#define GB_FillNodeFlds1(n,x1)				{(n)->fields[0] = Cast(GB_Word,x1);}
+#define GB_FillNodeFlds2(n,x1,x2)			{GB_FillNodeFlds1(n,x1   );(n)->fields[1] = Cast(GB_Word,x2);}
+#define GB_FillNodeFlds3(n,x1,x2,x3)		{GB_FillNodeFlds2(n,x1,x2);(n)->fields[2] = Cast(GB_Word,x3);}
 
 #define GB_FillNodeHdr(h,n)					{(n)->header = h;}
-#define GB_FillConNode0(n,tg)				{GB_NodeHeader _h = GB_MkConHeader(1,tg); GB_FillNodeHdr(_h,n);}
-#define GB_FillConNode1(n,tg,x1)			{GB_NodeHeader _h = GB_MkConHeader(2,tg); GB_FillNodeHdr(_h,n); (n)->fields[0] = Cast(GB_Word,x1);}
-#define GB_FillConNode2(n,tg,x1,x2)			{GB_NodeHeader _h = GB_MkConHeader(3,tg); GB_FillNodeHdr(_h,n); (n)->fields[0] = Cast(GB_Word,x1); (n)->fields[1] = Cast(GB_Word,x2);}
+#define GB_FillConNode0(n,tg)				{GB_NodeHeader _h = GB_MkConHeader(0,tg); GB_FillNodeHdr(_h,n);}
+#define GB_FillConNode1(n,tg,x1)			{GB_NodeHeader _h = GB_MkConHeader(1,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds1(n,x1);}
+#define GB_FillConNode2(n,tg,x1,x2)			{GB_NodeHeader _h = GB_MkConHeader(2,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds2(n,x1,x2);}
 
 #define GB_MkConNode0(n,tg)					{n = Cast(GB_NodePtr,GB_HeapAlloc_Words(1)); GB_FillConNode0(n,tg); }
 #define GB_MkConNode1(n,tg,x1)				{n = Cast(GB_NodePtr,GB_HeapAlloc_Words(2)); GB_FillConNode1(n,tg,x1); }
 #define GB_MkConNode2(n,tg,x1,x2)			{n = Cast(GB_NodePtr,GB_HeapAlloc_Words(3)); GB_FillConNode2(n,tg,x1,x2); }
+
+#define GB_FillCFunNode0(n,f)				{GB_NodeHeader _h = GB_MkCFunHeader(0); GB_FillNodeHdr(_h,n);GB_FillNodeFlds1(n,f);}
+#define GB_FillCFunNode1(n,f,x1)			{GB_NodeHeader _h = GB_MkCFunHeader(1); GB_FillNodeHdr(_h,n);GB_FillNodeFlds2(n,f,x1);}
+#define GB_FillCFunNode2(n,f,x1,x2)			{GB_NodeHeader _h = GB_MkCFunHeader(2); GB_FillNodeHdr(_h,n);GB_FillNodeFlds3(n,f,x1,x2);}
+
+#define GB_MkCFunNode0(n,f)					{n = Cast(GB_NodePtr,GB_HeapAlloc_Words(2)); GB_FillCFunNode0(n,f); }
+#define GB_MkCFunNode1(n,f,x1)				{n = Cast(GB_NodePtr,GB_HeapAlloc_Words(3)); GB_FillCFunNode1(n,f,x1); }
+#define GB_MkCFunNode2(n,f,x1,x2)			{n = Cast(GB_NodePtr,GB_HeapAlloc_Words(4)); GB_FillCFunNode2(n,f,x1,x2); }
 
 extern GB_Node* gb_MkCAF( GB_BytePtr pc ) ;
 %%]
@@ -129,7 +145,16 @@ extern void gb_listForceEval( GB_NodePtr n, int sz ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Linking, fixing addresses
+%%% PackedString
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#define GB_Tag_PackedString					0
+#define GB_Tag_PackedStringOffset			1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Linking, fixing addresses, module info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -151,7 +176,6 @@ typedef struct GB_LinkEntry {
   GB_Ptr		infoLoc ;
 } GB_LinkEntry ;
 %%]
-  GB_BytePtr	codeLoc ;
 
 Fixing offsets, replacing offsets with actual address
 
@@ -162,6 +186,18 @@ typedef struct GB_FixOffset {
     GB_Ptr		codeLoc ;
     uint16_t    nrOfLocs ;
 } GB_FixOffset ;
+%%]
+
+Module info
+
+%%[12
+typedef struct GB_ModEntry {
+  char*			name ;
+  GB_NodePtr	expNode ;
+} GB_ModEntry ;
+
+extern GB_ModEntry* gb_lookupModEntry( char* modNm, GB_ModEntry* modTbl ) ;
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -203,7 +239,8 @@ Size must be minimal 2 words to ensure enough space for an indirection pointer (
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define GB_GBInt2Int(ty,x)			((ty)((x) / GB_Int_ShiftPow2))
+#define GB_GBInt2CastedInt(ty,x)	((ty)((x) / GB_Int_ShiftPow2))
+#define GB_GBInt2Int(x)				GB_GBInt2CastedInt(int,x)
 #define GB_Int2GBInt(x)				((Cast(GB_Int,x)) << GB_Word_TagSize | GB_Word_TagInt)
 
 #define GB_Int0						GB_Int2GBInt(0)
@@ -353,6 +390,11 @@ extern void gb_InitTables
 	, int fixOffsetsSz
 	, GB_FixOffset* fixOffsets
 	, GB_Word* consts
+%%[[12
+	, GB_NodePtr impNode
+	, GB_NodePtr expNode
+	, GB_ModEntry* modTbl
+%%]]
 	) ;
 %%]
 

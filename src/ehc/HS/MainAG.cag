@@ -106,7 +106,7 @@ SEM Expression
 %%]
 
 %%[3
-ATTR AllType [ | | freeTvarS USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
+ATTR AllType [ | | freeTvarS USE {`Set.union`} {Set.empty}: HsNameS ]
 
 SEM Type
     | Variable NamedWildcard

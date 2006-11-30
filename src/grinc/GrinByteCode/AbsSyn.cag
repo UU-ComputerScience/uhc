@@ -21,7 +21,9 @@ DATA AGItf
 DATA Module
   | Mod         moduleNm        : {String}
 %%[[12
-                impModNmL		: {[String]}
+                allImpModNmL	: {AssocL HsName String}
+                impModNmL		: {AssocL HsName String}
+                expEntryL		: {AssocL HsName Int}
 %%]]
                 instrs          : Instrs
                 stringL			: {[String]}

@@ -362,7 +362,7 @@ caltTag (CAlt_Alt p _) = cpatConTag p
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-type FvS = Set.Set HsName
+type FvS = HsNameS
 type FvSMp = Map.Map HsName FvS
 %%]
 

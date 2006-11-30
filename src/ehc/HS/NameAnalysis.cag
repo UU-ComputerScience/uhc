@@ -104,7 +104,7 @@ tvarL2IdDefOccGam :: NmLev -> Range -> [HsName] -> IdDefOccGam
 tvarL2IdDefOccGam l r ns
   = mkDefGam l r IdAsp_Type_Var [ IdOcc n IdOcc_Type | n <- ns ]
 
-tvarS2IdDefOccGam :: NmLev -> Range -> Set.Set HsName -> IdDefOccGam
+tvarS2IdDefOccGam :: NmLev -> Range -> HsNameS -> IdDefOccGam
 tvarS2IdDefOccGam l r ns
   = tvarL2IdDefOccGam l r (Set.toList ns)
 %%]
