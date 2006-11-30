@@ -937,6 +937,7 @@ GB_ModEntry* gb_lookupModEntry( char* modNm, GB_ModEntry* modTbl )
 		rts_panic2( "module lookup", modNm ) ;
 	return modTbl ;
 }
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1021,4 +1022,5 @@ char* gb_lookupMnem( GB_Byte c )
 }
 
 #endif
+
 %%]

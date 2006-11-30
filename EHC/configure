@@ -3903,7 +3903,7 @@ esac
 
 # Use Boehm's GC
 cat >>confdefs.h <<\_ACEOF
-#define USE_BOEHM_GC 1
+#define USE_BOEHM_GC 0
 _ACEOF
 
 
@@ -3975,13 +3975,14 @@ case $HostPlatform in
         # libtool usage
         # libtoolStatic="no"
         # ehcGccOptsStatic="-static"
-	libtoolStatic="libtool --mode=link gcc -static -o"
+	    libtoolStatic="libtool --mode=link gcc -static -o"
         ;;
   x86*-*-linux-gnu )
         # file suffixes
         # path separator
         # libtool usage
-        libtoolStatic="libtool --mode=link gcc -static -o"
+        # libtoolStatic="libtool --mode=link gcc -static -o"
+        libtoolStatic="no"
         ;;
   *)
         # file suffixes
@@ -4055,7 +4056,7 @@ EXTLIBS_BGC_PKG_NAME="gc"
 
                     ac_config_files="$ac_config_files src/grinc/Config.chs src/ehc/Config.chs"
 
-                    ac_config_headers="$ac_config_headers src/grinc/ConfigDefines.chs src/rts/config.ch"
+                              ac_config_headers="$ac_config_headers src/grinc/ConfigDefines.chs src/ehc/ConfigDefines.chs src/rts/config.ch"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -4586,6 +4587,7 @@ do
   "src/grinc/Config.chs" ) CONFIG_FILES="$CONFIG_FILES src/grinc/Config.chs" ;;
   "src/ehc/Config.chs" ) CONFIG_FILES="$CONFIG_FILES src/ehc/Config.chs" ;;
   "src/grinc/ConfigDefines.chs" ) CONFIG_HEADERS="$CONFIG_HEADERS src/grinc/ConfigDefines.chs" ;;
+  "src/ehc/ConfigDefines.chs" ) CONFIG_HEADERS="$CONFIG_HEADERS src/ehc/ConfigDefines.chs" ;;
   "src/rts/config.ch" ) CONFIG_HEADERS="$CONFIG_HEADERS src/rts/config.ch" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
