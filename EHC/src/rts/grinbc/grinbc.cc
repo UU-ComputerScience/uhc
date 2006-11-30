@@ -79,8 +79,8 @@
 %%]
 
 %%[8
-register GB_BytePtr  pc PC_REG;
-register GB_Ptr      sp SP_REG;
+GB_BytePtr  pc ;
+GB_Ptr      sp ;
 
 %%]
 
@@ -271,22 +271,22 @@ unsigned int gb_StepCounter ;
 void gb_prWord( GB_Word x )
 {
 	GB_Node* n = Cast(GB_Node*,x) ;
-	printf( "Wd 0x%x: ", x ) ;
+	printf( "Wd 0x%0.16lx: ", x ) ;
 	if ( GB_Word_IsInt(x)
 #if USE_BOEHM_GC
 	     || x < Cast(GB_Word,StackEnd)
-#else USE_BOEHM_GC
+#else
 	     || x < Cast(GB_Word,Heap)
 #endif
 	)
 	{
-		printf( "int %d", GB_GBInt2Int(x) ) ;
+		printf( "int %ld", GB_GBInt2Int(x) ) ;
 	} else {
 		printf( "sz %d, ev %d, cat %d, tg %d:", GB_NH_Fld_Size(n->header), GB_NH_Fld_NdEv(n->header), GB_NH_Fld_TagCat(n->header), GB_NH_Fld_Tag(n->header) ) ;
 		int i ;
 		for ( i = 0 ; i < 5 && i < GB_Node_NrFlds(n) ; i++ )
 		{
-			printf( " 0x%x", n->fields[i] ) ;
+			printf( " 0x%0.16lx", n->fields[i] ) ;
 		}
 	}
 	/* printf( "\n" ) ; */
@@ -298,7 +298,7 @@ void gb_prStack( int maxStkSz )
     
 	for ( i = 0 ; i < maxStkSz && sp+i < Cast(GB_Ptr,StackEnd) ; i++ )
 	{
-		printf( "  %x: ", sp+i) ;
+		printf( "  %lx: ", sp+i) ;
 		gb_prWord( sp[i] ) ;
 		printf( "\n" ) ;
 	}
@@ -308,10 +308,10 @@ void gb_prState( char* msg, int maxStkSz )
 {
 	int i ;
 	printf( "--------------------------------- %s ---------------------------------\n", msg ) ;
-	printf( "[%d]PC 0x%x: 0x%0.2x '%s'", gb_StepCounter, pc, *pc, gb_lookupMnem(*pc)) ;
+	printf( "[%d]PC 0x%lx: 0x%0.2x '%s'", gb_StepCounter, pc, *pc, gb_lookupMnem(*pc)) ;
 	for ( i = 0 ; i < 8 ; i++ )
 		printf(" %0.2x", pc[1+i]) ;
-	printf( ", SP 0x%x: 0x%0.8x", sp, *sp ) ;
+	printf( ", SP 0x%lx: 0x%0.16lx", sp, *sp ) ;
 	printf( "\n" ) ;
 	gb_prStack( maxStkSz ) ;
 }
