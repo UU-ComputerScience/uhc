@@ -36,13 +36,13 @@ typedef uint8_t  GB_Byte ;
 #define GB_NodeHeader_Size_BitSz		32
 #define GB_NodeHeader_NdEv_BitSz		2
 #define GB_NodeHeader_TagCat_BitSz		2
-#define GB_NodeHeader_GC				2
+#define GB_NodeHeader_GC_BitSz			2
 #define GB_NodeHeader_Tag_BitSz			26
 #else
 #define GB_NodeHeader_Size_BitSz		16
 #define GB_NodeHeader_NdEv_BitSz		2
 #define GB_NodeHeader_TagCat_BitSz		2
-#define GB_NodeHeader_GC				2
+#define GB_NodeHeader_GC_BitSz			2
 #define GB_NodeHeader_Tag_BitSz			10
 #endif
 
@@ -58,15 +58,66 @@ typedef uint8_t  GB_Byte ;
 #define GB_NodeTagCat_Con				0			/* data, constructor 								*/
 #define GB_NodeTagCat_PAp				1			/* partial application, tag is size of missing 		*/
 
+#if NODEHEADER_VIA_STRUCT
 typedef struct GB_NodeHeader {
   unsigned 	size 		: GB_NodeHeader_Size_BitSz 		;			/* size, incl header, in words 					*/
   unsigned 	needsEval 	: GB_NodeHeader_NdEv_BitSz 		;			/* possibly needs eval? 						*/
   unsigned 	tagCateg 	: GB_NodeHeader_TagCat_BitSz 	;			/* kind of tag, dpd on needsEval 				*/
-  unsigned 	gc 			: GB_NodeHeader_GC		 		;			/* garbage collection info (unused currently)	*/
+  unsigned 	gc 			: GB_NodeHeader_GC_BitSz		;			/* garbage collection info (unused currently)	*/
   unsigned 	tag 		: GB_NodeHeader_Tag_BitSz 		;			/* tag, or additional size dpd on tagCateg 		*/
 } GB_NodeHeader ;
 
+#define GB_NH_Fld_Size(x)				((x)->size)
+#define GB_NH_Fld_NdEv(x)				((x)->needsEval)
+#define GB_NH_Fld_TagCat(x)				((x)->tagCateg)
+#define GB_NH_Fld_GC(x)					((x)->gc)
+#define GB_NH_Fld_Tag(x)				((x)->tag)
+
+#else
+
+typedef GB_Word GB_NodeHeader ;
+
+#define GB_NH_Tag_Shift					0			
+#define GB_NH_GC_Shift					(GB_NH_Tag_Shift + GB_NodeHeader_Tag_BitSz)
+#define GB_NH_TagCat_Shift				(GB_NH_GC_Shift + GB_NodeHeader_GC_BitSz)
+#define GB_NH_NdEv_Shift				(GB_NH_TagCat_Shift + GB_NodeHeader_TagCat_BitSz)
+#define GB_NH_Size_Shift				(GB_NH_NdEv_Shift + GB_NodeHeader_NdEv_BitSz)
+#define GB_NH_Full_Shift				(GB_NH_Size_Shift + GB_NodeHeader_Size_BitSz)
+
+#define GB_NH_MkFld_Size(x)				((x)<<GB_NH_Size_Shift)
+#define GB_NH_MkFld_NdEv(x)				((x)<<GB_NH_NdEv_Shift)
+#define GB_NH_MkFld_TagCat(x)			((x)<<GB_NH_TagCat_Shift)
+#define GB_NH_MkFld_GC(x)				((x)<<GB_NH_GC_Shift)
+#define GB_NH_MkFld_Tag(x)				((x)<<GB_NH_Tag_Shift)
+
+#define GB_NH_FldBits(x,f,t)			Bits_ExtrFromToSh(GB_Word,x,f,t)
+#define GB_NH_FldBitsFr(x,f)			Bits_ExtrFromSh(GB_Word,x,f)
+#define GB_NH_FldMask(f,t)				Bits_MaskFromTo(GB_Word,f,t)
+#define GB_NH_FldMaskFr(f)				Bits_MaskFrom(GB_Word,f)
+
+#define GB_NH_Mask_Size					GB_NH_FldMaskFr(GB_NH_Size_Shift)
+#define GB_NH_Mask_NdEv					GB_NH_FldMask(GB_NH_NdEv_Shift,GB_NH_Size_Shift-1)
+#define GB_NH_Mask_TagCat				GB_NH_FldMask(GB_NH_TagCat_Shift,GB_NH_NdEv_Shift-1)
+#define GB_NH_Mask_GC					GB_NH_FldMask(GB_NH_GC_Shift,GB_NH_TagCat_Shift-1)
+#define GB_NH_Mask_Tag					GB_NH_FldMask(GB_NH_Tag_Shift,GB_NH_GC_Shift-1)
+
+#define GB_NH_SetFld(h,m,x)				(((h) & (~ (m))) | (x))
+#define GB_NH_SetFld_Size(h,x)			GB_NH_SetFld(h,GB_NH_Mask_Size,GB_NH_MkFld_Size(x))
+#define GB_NH_SetFld_NdEv(h,x)			GB_NH_SetFld(h,GB_NH_Mask_NdEv,GB_NH_MkFld_NdEv(x))
+#define GB_NH_SetFld_TagCat(h,x)		GB_NH_SetFld(h,GB_NH_Mask_TagCat,GB_NH_MkFld_TagCat(x))
+#define GB_NH_SetFld_GC(h,x)			GB_NH_SetFld(h,GB_NH_Mask_GC,GB_NH_MkFld_GC(x))
+#define GB_NH_SetFld_Tag(h,x)			GB_NH_SetFld(h,GB_NH_Mask_Tag,GB_NH_MkFld_Tag(x))
+
+#define GB_NH_Fld_Size(x)				GB_NH_FldBitsFr(x,GB_NH_Size_Shift)
+#define GB_NH_Fld_NdEv(x)				GB_NH_FldBits(x,GB_NH_NdEv_Shift,GB_NH_Size_Shift-1)
+#define GB_NH_Fld_TagCat(x)				GB_NH_FldBits(x,GB_NH_TagCat_Shift,GB_NH_NdEv_Shift-1)
+#define GB_NH_Fld_GC(x)					GB_NH_FldBits(x,GB_NH_GC_Shift,GB_NH_TagCat_Shift-1)
+#define GB_NH_Fld_Tag(x)				GB_NH_FldBits(x,GB_NH_Tag_Shift,GB_NH_GC_Shift-1)
+
+#endif
+
 %%]
+
 
 %%[8
 typedef struct GB_Node {
@@ -74,8 +125,13 @@ typedef struct GB_Node {
   GB_Word 		fields[] ;
 } GB_Node, *GB_NodePtr ;
 
-#define GB_NodeHeaderNrFields(h)			((h).size-1)
-#define GB_NodeNrFields(n)					GB_NodeHeaderNrFields((n)->header)
+#if NODEHEADER_VIA_STRUCT
+#define GB_NH_NrFlds(h)					((h).size-1)
+#else
+#define GB_NH_NrFlds(h)					(GB_NH_Fld_Size(h)-1)
+#endif
+
+#define GB_Node_NrFlds(n)				GB_NH_NrFlds((n)->header)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -83,7 +139,12 @@ typedef struct GB_Node {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+#if NODEHEADER_VIA_STRUCT
 #define GB_MkHeader(sz,ev,cat,tg)			{sz, ev, cat, 0, tg}
+#else
+#define GB_MkHeader(sz,ev,cat,tg)			(GB_NH_MkFld_Size(sz) | GB_NH_MkFld_NdEv(ev) | GB_NH_MkFld_TagCat(cat) | GB_NH_MkFld_GC(0) | GB_NH_MkFld_Tag(tg))
+#endif
+
 #define GB_MkFunHeader(nArg)				GB_MkHeader((nArg)+2, GB_NodeNdEv_Yes, GB_NodeTagCat_Fun, 0)
 #define GB_MkCFunHeader(nArg)				GB_MkHeader((nArg)+2, GB_NodeNdEv_Yes, GB_NodeTagCat_CFun, 0)
 #define GB_MkCAFHeader						GB_MkFunHeader(0)
@@ -126,7 +187,7 @@ extern GB_Node* gb_MkCAF( GB_BytePtr pc ) ;
 #define GB_MkListNil(n)						{n = &gb_Nil;}
 #define GB_MkListCons(n,x1,x2)				GB_MkConNode2(n,GB_Tag_List_Cons,x1,x2)
 
-#define GB_List_IsNull(n)					((n)->header.tag == GB_Tag_List_Nil)
+#define GB_List_IsNull(n)					(GB_NH_Fld_Tag((n)->header) == GB_Tag_List_Nil)
 #define GB_List_Head(n)						((n)->fields[0])
 #define GB_List_Tail(n)						Cast( GB_NodePtr,(n)->fields[1] )
 
