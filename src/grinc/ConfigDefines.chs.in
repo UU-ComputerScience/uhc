@@ -2,16 +2,7 @@
 {-# OPTIONS_GHC -cpp #-}
 %%]
 
-%%[8 module {%{GRIN}ConfigDefines}
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Utils
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-mkB :: Int -> Bool
-mkB x = if x /= 0 then True else False
+%%[8 module {%{GRIN}ConfigDefines} import({%{EH}ConfigDefines}) export(module {%{EH}ConfigDefines})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -51,17 +42,6 @@ gbLabelOffsetSize = fromInteger sizeofGrWord
 
 machineIsBigEndian :: Bool
 machineIsBigEndian = mkB BIGENDIAN
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Configuration
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 export(useBoehmGC)
-#undef USE_BOEHM_GC
-
-useBoehmGC :: Bool
-useBoehmGC = mkB USE_BOEHM_GC
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

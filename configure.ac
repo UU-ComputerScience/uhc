@@ -265,7 +265,7 @@ case $HostPlatform in
         # libtool usage
         # libtoolStatic="no"
         # ehcGccOptsStatic="-static"
-	libtoolStatic="libtool --mode=link gcc -static -o"
+	    libtoolStatic="libtool --mode=link gcc -static -o"
         ;;
   x86*-*-linux-gnu )
         # file suffixes
@@ -329,7 +329,7 @@ AC_SUBST(EXTLIBS_BGC_PKG_NAME, "gc") # should coincide with installed lib in ext
 ### file generation
 AC_CONFIG_FILES([mk/config.mk mk/shared.mk])
 AC_CONFIG_FILES([src/grinc/Config.chs src/ehc/Config.chs])
-AC_CONFIG_HEADERS([src/grinc/ConfigDefines.chs src/rts/config.ch])
+AC_CONFIG_HEADERS([src/grinc/ConfigDefines.chs src/ehc/ConfigDefines.chs src/rts/config.ch])
 AC_OUTPUT
 
 echo

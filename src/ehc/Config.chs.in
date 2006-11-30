@@ -5,6 +5,9 @@
 %%[1 module {%{EH}Config} export( Version(..), version, verNumeric, verDist, verInfo )
 %%]
 
+%%[8 import({%{EH}ConfigDefines}) export(module {%{EH}ConfigDefines})
+%%]
+
 %%[12 import(qualified {%{EH}SourceCodeSig} as Sig)
 %%]
 
@@ -97,7 +100,12 @@ prefixLib :: String
 prefixLib = "@PREFIX_LIB@"
 
 libnamesGcc :: [String]
-libnamesGcc = [ prefixLib ++ "@RTS_PKG_NAME@", "@EXTLIBS_BGC_PKG_NAME@" ]
+libnamesGcc
+  = [ prefixLib ++ "@RTS_PKG_NAME@"]
+    ++ (if useBoehmGC
+        then [ "@EXTLIBS_BGC_PKG_NAME@" ]
+        else []
+       )
 %%]
 
 %%[8 export(ehcGccOptsStatic)
