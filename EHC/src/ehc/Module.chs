@@ -24,9 +24,6 @@
 %%[12 import ({%{EH}Gam}) export(modBuiltin,modImpBuiltin)
 %%]
 
-%%[12 export(ModMpInfo(..),ModMp,modMpCombine,emptyModMpInfo)
-%%]
-
 %%[12 export(ppModMp,ppModEntDomMp,ppModEntRel,ppModEntRel')
 %%]
 
@@ -396,7 +393,7 @@ checkImp exps imp
 %%% 7 Top level (The semantics of a Haskell program)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[12 export(ModMpInfo(..),ModMp,emptyModMpInfo)
 data ModMpInfo
   = ModMpInfo
       { mmiInscps   :: ModEntRel
@@ -420,7 +417,14 @@ ppModMp :: ModMp -> PP_Doc
 ppModMp = vlist . map (\(n,i) -> n >#< pp i) . Map.toList
 %%]
 
-%%[12
+The exported names of the module
+
+%%[12 export(mmiExpsNmS)
+mmiExpsNmS :: ModMpInfo -> HsNameS
+mmiExpsNmS = Set.map (ioccNm . mentIdOcc) . Rel.rng . mmiExps
+%%]
+
+%%[12 export(modMpCombine)
 modMpCombine ::  [Mod] -> ModMp -> (ModMp,[Err])
 modMpCombine ms mp
   = (newMp,concat errs)

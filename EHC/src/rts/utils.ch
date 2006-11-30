@@ -18,11 +18,12 @@ typedef int Bool ;
 %%]
 
 %%[8
-extern void error( char* msg ) ;
-extern void panic( char* msg ) ;
-extern void panic1_1( char* msg, int i ) ;
-extern void panic2_1( char* msg1, char* msg2, int i ) ;
-extern void panic2_2( char* msg1, char* msg2, int i1, int i2 ) ;
+extern void rts_error( char* msg ) ;
+extern void rts_panic( char* msg ) ;
+extern void rts_panic1_1( char* msg, int i ) ;
+extern void rts_panic2( char* msg1, char* msg2 ) ;
+extern void rts_panic2_1( char* msg1, char* msg2, int i ) ;
+extern void rts_panic2_2( char* msg1, char* msg2, int i1, int i2 ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -44,12 +45,3 @@ Backwards startingpoint starts after the first location (so predecrement is/can 
 										*(--(toPtr)) = *(--(frPtr)) ; \
 									}
 %%]
-#define MemCopyForward(ty,frPtr,frEndPtr,toPtr) \
-									for ( ; Cast(ty*,frPtr) < Cast(ty*,frEndPtr) ; ) { \
-										*((Cast(ty*,toPtr))++) = *((Cast(ty*,frPtr))++) ; \
-									}
-
-#define MemCopyBackward(ty,frPtr,frEndPtr,toPtr) \
-									for ( ; Cast(ty*,frPtr) >= Cast(ty*,frEndPtr) ; ) { \
-										*(--(Cast(ty*,toPtr))) = *(--(Cast(ty*,frPtr))) ; \
-									}

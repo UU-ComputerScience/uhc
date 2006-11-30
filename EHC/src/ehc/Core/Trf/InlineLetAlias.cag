@@ -29,7 +29,7 @@ cmodTrfInlineLetAlias cmod
 %%]
 
 %%[12 -8.cmodTrfInlineLetAlias hs
-type GlobNmS = Set.Set HsName
+type GlobNmS = HsNameS
 
 cmodTrfInlineLetAlias :: GlobNmS -> CModule -> CModule
 cmodTrfInlineLetAlias globNmS cmod

@@ -142,7 +142,7 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-ATTR AllTyExpr [ | | clNmS USE {`Set.union`} {Set.empty}: {Set.Set HsName}  clMissNmS USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
+ATTR AllTyExpr [ | | clNmS USE {`Set.union`} {Set.empty}: HsNameS  clMissNmS USE {`Set.union`} {Set.empty}: HsNameS ]
 
 SEM PrExpr
   | Class       loc             .   (pigi,clNmS,clMissNmS)

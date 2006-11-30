@@ -86,6 +86,7 @@ register GB_Ptr      sp SP_REG;
 
 %%[8
 #define GB_RegRel(r,o)			((r)+(o))
+#define GB_RegRelx(r,o)			GB_Deref(GB_RegRel(r,o))
 #define GB_PCRel(o)				GB_RegRel(pc,o)
 
 #define GB_RegByteRel(ty,r,o)	Cast(ty*,((Cast(GB_BytePtr,r))+(o)))
@@ -97,7 +98,7 @@ register GB_Ptr      sp SP_REG;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-typedef GB_Word GB_Fun();
+typedef GB_Word GB_CFun();
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -263,7 +264,7 @@ int gb_Opt_TraceSteps = True ;
 
 %%[8
 #if TRACE || DUMP_INTERNALS
-extern char* gb_getMnem( GB_Byte c ) ;
+extern char* gb_lookupMnem( GB_Byte c ) ;
 
 unsigned int gb_StepCounter ;
 
@@ -279,7 +280,7 @@ void gb_prWord( GB_Word x )
 #endif
 	)
 	{
-		printf( "int %d", GB_GBInt2Int(int,x) ) ;
+		printf( "int %d", GB_GBInt2Int(x) ) ;
 	} else {
 		printf( "sz %d, ev %d, cat %d, tg %d:", n->header.size, n->header.needsEval, n->header.tagCateg, n->header.tag ) ;
 		int i ;
@@ -306,7 +307,7 @@ void gb_prStack( int maxStkSz )
 void gb_prState( char* msg, int maxStkSz )
 {
 	printf( "--------------------------------- %s ---------------------------------\n", msg ) ;
-	printf( "[%d]PC 0x%x: 0x%0.2x '%s' 0x%0.8x 0x%0.8x, SP 0x%x: 0x%0.8x", gb_StepCounter, pc, *pc, gb_getMnem(*pc), Cast(uint32_t*,pc+1)[0], Cast(uint32_t*,pc+1)[1], sp, *sp ) ;
+	printf( "[%d]PC 0x%x: 0x%0.2x '%s' 0x%0.8x 0x%0.8x, SP 0x%x: 0x%0.8x", gb_StepCounter, pc, *pc, gb_lookupMnem(*pc), Cast(uint32_t*,pc+1)[0], Cast(uint32_t*,pc+1)[1], sp, *sp ) ;
 	printf( "\n" ) ;
 	gb_prStack( maxStkSz ) ;
 }
@@ -505,30 +506,32 @@ gb_interpreter_InsCallEntry:
 				pc = dst ;													/* jump 											*/
 				break ;
 
+#define GB_CallCCode(f,nargs,args,res) \
+				switch ( nargs )																																								\
+				{																																												\
+					case 0 : res = Cast(GB_CFun*,f)(  ) ; break ;																																\
+					case 1 : res = Cast(GB_CFun*,f)( GB_RegRelx(args,0) ) ; break ;																												\
+					case 2 : res = Cast(GB_CFun*,f)( GB_RegRelx(args,0), GB_RegRelx(args,1) ) ; break ;																							\
+					case 3 : res = Cast(GB_CFun*,f)( GB_RegRelx(args,0), GB_RegRelx(args,1), GB_RegRelx(args,2) ) ; break ;																		\
+					case 4 : res = Cast(GB_CFun*,f)( GB_RegRelx(args,0), GB_RegRelx(args,1), GB_RegRelx(args,2), GB_RegRelx(args,3) ) ; break ;													\
+					case 5 : res = Cast(GB_CFun*,f)( GB_RegRelx(args,0), GB_RegRelx(args,1), GB_RegRelx(args,2), GB_RegRelx(args,3), GB_RegRelx(args,4) ) ; break ;								\
+					case 6 : res = Cast(GB_CFun*,f)( GB_RegRelx(args,0), GB_RegRelx(args,1), GB_RegRelx(args,2), GB_RegRelx(args,3), GB_RegRelx(args,4), GB_RegRelx(args,5) ) ; break ;			\
+					default :																																									\
+						rts_panic1_1( "no call C for nr of args", nargs ) ;																															\
+						break ;																																									\
+				}
+
 			/* callc */
 			case GB_Ins_CallC :
 				GB_PCExtIn(x) ;
 				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,0,1),x2) ; 			/* nr of args										*/
-				x = GB_TOS ;												/* function											*/
-				switch ( x2 )
-				{
-					case 0 : x = Cast(GB_Fun*,x)(  ) ; break ;
-					case 1 : x = Cast(GB_Fun*,x)( GB_SPRelx(1) ) ; break ;
-					case 2 : x = Cast(GB_Fun*,x)( GB_SPRelx(1), GB_SPRelx(2) ) ; break ;
-					case 3 : x = Cast(GB_Fun*,x)( GB_SPRelx(1), GB_SPRelx(2), GB_SPRelx(3) ) ; break ;
-					case 4 : x = Cast(GB_Fun*,x)( GB_SPRelx(1), GB_SPRelx(2), GB_SPRelx(3), GB_SPRelx(4) ) ; break ;
-					case 5 : x = Cast(GB_Fun*,x)( GB_SPRelx(1), GB_SPRelx(2), GB_SPRelx(3), GB_SPRelx(4), GB_SPRelx(5) ) ; break ;
-					case 6 : x = Cast(GB_Fun*,x)( GB_SPRelx(1), GB_SPRelx(2), GB_SPRelx(3), GB_SPRelx(4), GB_SPRelx(5), GB_SPRelx(6) ) ; break ;
-
-					default :
-						panic1_1( "no call C functionality for nr of args", x ) ;
-						break ;
-				}
+				GB_PopIn(x) ;												/* function											*/
+				GB_CallCCode(x,x2,sp,x) ;
 				sp = GB_SPRel(x2) ;
-				GB_SetTOS(x) ;
+				GB_Push(x) ;
 				break ;
 
-			/* retcase */ /* under construction 20061122 */
+			/* retcase */
 			case GB_Ins_RetCase :
 				GB_PCExtIn(x) ;
 				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,2,3),x2) ; 			/* nRes		 , in bytes 			*/
@@ -542,7 +545,7 @@ gb_interpreter_InsCallEntry:
 				break ;
 						
 			/* eval/apply */
-			/* tailevalt */ /* under construction 20061122 */
+			/* tailevalt */
 			case GB_Ins_TailEval(GB_InsOp_LocB_TOS) :
 				GB_PCExtIn(x) ;
 				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,2,3),x2) ; 			/* nArgSurr  , in bytes 			*/
@@ -553,7 +556,7 @@ gb_interpreter_InsCallEntry:
 				GB_SetTOS( x ) ;											/* which is set here				*/
 																			/* so we can fall through to eval	*/
 
-			/* evalt */ /* under construction 20061122 */
+			/* evalt */
 			case GB_Ins_Eval(GB_InsOp_LocB_TOS) :
 				x = GB_TOS ;
 gb_interpreter_InsEvalEntry:
@@ -571,7 +574,14 @@ gb_interpreter_InsEvalEntry:
 									MemCopyBackward(p2,p,sp) ;										/* push args on stack 				*/
 									pc = Cast(GB_BytePtr,n->fields[0]) ;							/* jump to function 				*/
 									GB_Push(gb_code_AfterEvalCall) ;								/* ret addr is to update 			*/
-									n->header.tagCateg = GB_NodeTagCat_BlH ;						/* may not be eval'd when eval'd	*/
+									n->header.needsEval = GB_NodeNdEv_BlH ;							/* may not be eval'd when eval'd	*/
+									break ;
+								case GB_NodeTagCat_CFun :
+									p = &(n->fields[1]) ;											/* 1st arg 							*/
+									x2 = x ;                                                        /* remember val + pc 				*/
+									retSave = Cast(GB_Word,pc) ;
+									GB_CallCCode(n->fields[0],GB_NodeHeaderNrFields(h)-1,p,x) ;
+									goto gb_interpreter_InsEvalUpdContEntry ;						/* update with result				*/
 									break ;
 								case GB_NodeTagCat_App :
 									GB_Push(pc) ;													/* save ret for after eval 			*/
@@ -583,11 +593,11 @@ gb_interpreter_InsEvalEntry:
 									GB_SetTOS( x = n->fields[0] ) ;									/* just follow the indirection		*/
 									goto gb_interpreter_InsEvalEntry ;								/* evaluate							*/
 									break ;
-								case GB_NodeTagCat_BlH :
-									panic1_1( "black hole", x ) ;									/* black hole means panic			*/
-									break ;
 							}
-						break ;
+							break ;
+						case GB_NodeNdEv_BlH :
+							rts_panic1_1( "black hole", x ) ;									/* black hole means panic			*/
+							break ;
 					}
 				}
 				break ;
@@ -599,6 +609,7 @@ gb_interpreter_InsEvalEntry:
 				GB_PopIn(x) ;													/* evaluation result 						*/
 				GB_PopIn(retSave) ;												/* saved return address 					*/
 				x2 = GB_TOS ;													/* node which was to be evaluated 			*/
+gb_interpreter_InsEvalUpdContEntry:
 				IF_GB_TR_ON(3,printf("%x isInt %d isPtr %d\n",x,GB_Word_IsInt(x),GB_Word_IsPtr(x));) ;
 				register GB_NodePtr nOld = Cast(GB_NodePtr,x2) ;
 				if (  GB_Word_IsPtr(x)
@@ -611,7 +622,8 @@ gb_interpreter_InsEvalEntry:
 					MemCopyForward(p3,p,p2) ;	
 					GB_SetTOS( x ) ;											/* return new (avoids indirection)			*/
 				} else {
-					nOld->header.tagCateg = GB_NodeTagCat_Ind ;					/* needsEval flag stays on, size unchanged 	*/
+					nOld->header.tagCateg = GB_NodeTagCat_Ind ;					/* turn into indirection node				*/
+					nOld->header.needsEval = GB_NodeNdEv_Yes ;					/* needsEval unblackholed				 	*/
 					nOld->fields[0] = x ;										/* assumption !!: memory is available !! 	*/
 					GB_SetTOS( x ) ;
 				}
@@ -684,7 +696,7 @@ gb_interpreter_InsApplyEntry:
 						break ;
 
 					default :
-						panic1_1( "non partial apply applied", Cast(GB_Word,n) ) ;
+						rts_panic1_1( "non partial apply applied", Cast(GB_Word,n) ) ;
 						break ;
 				}
 				break ;
@@ -737,7 +749,7 @@ gb_interpreter_InsApplyEntry:
 						break ;
 
 					default :
-						panic1_1( "extended instruction not implemented", *(pc-1) ) ;
+						rts_panic1_1( "extended instruction not implemented", *(pc-1) ) ;
 						break ;
 				}
 
@@ -769,13 +781,13 @@ gb_interpreter_InsApplyEntry:
 						break ;
 
 					default:
-						panic1_1( "oatXXX instruction not implemented", *(pc-1) ) ;
+						rts_panic1_1( "oatXXX instruction not implemented", *(pc-1) ) ;
 						break ;
 				}
 				break ;
 
 			default:
-				panic1_1( "instruction not implemented", *(pc-1) ) ;
+				rts_panic1_1( "instruction not implemented", *(pc-1) ) ;
 				break ;
 
 		}
@@ -814,6 +826,11 @@ void gb_InitTables
 	, int fixOffsetsSz
 	, GB_FixOffset* fixOffsets
 	, GB_Word* consts
+%%[[12
+	, GB_NodePtr impNode
+	, GB_NodePtr expNode
+	, GB_ModEntry* modTbl
+%%]]
 	)
 {
 	int i ;
@@ -853,6 +870,19 @@ void gb_InitTables
 		}
 	}
 	
+%%[[12
+	for ( i = 0 ; i < GB_NodeNrFields(impNode) ; i++ )
+	{
+		GB_ModEntry* mod = gb_lookupModEntry( Cast(char*,impNode->fields[i]), modTbl ) ;
+		impNode->fields[i] = Cast(GB_Word,mod->expNode) ;
+	}
+
+	for ( i = 0 ; i < GB_NodeNrFields(expNode) ; i++ )
+	{
+		expNode->fields[i] = Cast(GB_Word,globalEntries[ expNode->fields[i] ]) ;
+	}
+%%]]
+	
 }
 %%]
 
@@ -868,30 +898,44 @@ void gb_checkInterpreterAssumptions()
 	GB_Word x1, x2 ;
 	
 	if ( sizeof( GB_Word ) != sizeof( GB_Ptr ) ) {
-		panic2_1( m, "size of word and pointer must be equal", 0 ) ;
+		rts_panic2_1( m, "size of word and pointer must be equal", 0 ) ;
 	}
 	
 	if ( sizeof(GrWord) != sizeof(GB_Word) ) {
-		panic2_1( m, "size of GrWord and GB_Word must be equal", 0 ) ;
+		rts_panic2_1( m, "size of GrWord and GB_Word must be equal", 0 ) ;
 	}
 	
 	if ( sizeof( GB_Word ) != sizeof(uint32_t) && sizeof( GB_Word ) != sizeof(uint64_t) ) {
-		panic2_1( m, "size of word and pointer must be 32 or 64", 0 ) ;
+		rts_panic2_1( m, "size of word and pointer must be 32 or 64", 0 ) ;
 	}
 	
 	x1 = Cast(GB_Word,GB_HeapAlloc_Words( 2 )) ;
 	if ( ! x1 ) {
-		panic2_1( m, "heap allocation yields zero pointer", x1 ) ;
+		rts_panic2_1( m, "heap allocation yields zero pointer", x1 ) ;
 	}
 	if ( x1 & GB_Word_TagMask ) {
-		panic2_2( m, "heap allocated pointers must have lower bits set to zero", GB_Word_TagSize, x1 ) ;
+		rts_panic2_2( m, "heap allocated pointers must have lower bits set to zero", GB_Word_TagSize, x1 ) ;
 	}
 	
 	x1 = Cast(GB_Word,&gb_False) ;
 	if ( x1 & GB_Word_TagMask ) {
-		panic2_2( m, "statically allocated nodes must must be word aligned", GB_Word_TagSize, x1 ) ;
+		rts_panic2_2( m, "statically allocated nodes must must be word aligned", GB_Word_TagSize, x1 ) ;
 	}
 	
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module lookup
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+GB_ModEntry* gb_lookupModEntry( char* modNm, GB_ModEntry* modTbl )
+{
+	for ( ; modTbl->name != NULL && strcmp( modTbl->name, modNm ) != 0 ; modTbl++ ) ;
+	if ( modTbl == NULL )
+		rts_panic2( "module lookup", modNm ) ;
+	return modTbl ;
 }
 %%]
 
@@ -969,7 +1013,7 @@ static GB_Mnem gb_mnemTable[] =
 , { 0											, "--" 				}	/* this must be the last one */
 } ;
 
-char* gb_getMnem( GB_Byte c )
+char* gb_lookupMnem( GB_Byte c )
 {
 	GB_Mnem *mn = gb_mnemTable ;
 	for ( ; mn->code != 0 && mn->code != c ; mn++ ) ;

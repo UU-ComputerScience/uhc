@@ -2140,14 +2140,29 @@ To be done ...
  %%@TopicGrinBytecode.grinBExampleTranslations
 
 \section{Interaction with runtime environment}
+%%@TopicGrinBytecode.runtimeInteraction
 
-\emph{This section has to be done still.}
+\emph{This section still has to be done.}
 
+\section{Optimisations}
 
-\subsection{Code format: C}
+\emph{This section still has to be done.}
 
-\subsection{Primitives}
+\subsection{Unboxed Int's}
 
+\subsection{Inlining}
+
+\subsection{Primitive specialisation to equivalent instructions}
+
+\subsection{Full fetch avoiding}
+
+\subsection{Need to eval detection/propagation/...}
+
+\subsection{Name alias coalescing/propagation}
+
+\section{Bigger projects}
+
+Just in time compiler.
 %}
 %%]
 

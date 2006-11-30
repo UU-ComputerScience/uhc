@@ -10,7 +10,7 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								poster \
 								slides-ruler slides-ruler-long \
 								slides-explimpl slides-explimpl-fpnl slides-overview \
-								grinbc-design \
+								gbm \
 								uniqueness slides-uniqueness
 
 # subtext

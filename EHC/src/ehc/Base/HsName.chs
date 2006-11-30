@@ -11,7 +11,7 @@
 %%[8 export(hsnShowAlphanumeric)
 %%]
 
-%%[8 import(EH.Util.FPath,Char,Data.Maybe)
+%%[8 import(EH.Util.FPath,Char,Data.Maybe,qualified Data.Set as Set)
 %%]
 
 %%[8 export(hsnInitLast)
@@ -314,3 +314,10 @@ instance PP IdOcc where
   pp = ppIdOcc pp
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Set of names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(HsNameS)
+type HsNameS = Set.Set HsName
+%%]

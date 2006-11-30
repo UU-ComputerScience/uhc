@@ -54,10 +54,11 @@ extern Pointer HeapEndCAF, HeapLimit;
 %%]
 
 %%[8
-#ifndef HEAPALLOC_SIG_
-#define HEAPALLOC_SIG_
+#if USE_BOEHM_GC
+#define heapalloc(sz)	Cast(GrWord,GC_MALLOC(sz*sizeof(GrWord)))
+#else
 GrWord heapalloc(int);
-#endif /* HEAPALLOC_SIG_ */
+#endif
 %%]
 
 %%[8

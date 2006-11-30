@@ -65,7 +65,7 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
-checkClNms :: Set.Set HsName -> [Err]
+checkClNms :: HsNameS -> [Err]
 checkClNms s = if Set.null s then [] else [mkErr_NamesNotIntrod "class" (Set.toList s)]
 %%]
 

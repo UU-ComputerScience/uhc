@@ -53,7 +53,7 @@ the machinery.
 %format stores         = "\mathsf{store}"
 %format allocstore         = "\mathsf{allocstore}"
 %format fetcht         = "\mathsf{fetch}"
-%format evupdcont         = "\mathsf{GB_Ins_EvalUpdCont}"
+%format evupdcont         = "\mathsf{evupdcont}"
 %format casecall         = "\mathsf{casecall}"
 %format evalt         = "\mathsf{eval}"
 %format applyt        = "\mathsf{apply}"
@@ -319,17 +319,16 @@ A node consists of a header (a word) + zero or more words.
 The following is the layout for a 32 bits header, a 64 bits header spends its available space on the |size| and |tag| field.
 %%[[wrap=code
 size            16  bits                                -- nr of words, incl header
-needsEval       1   bit                                 -- 1 == possibly needs eval
-tagCateg        2   bits                                -- eval == 0: {C,P}, eval == 1: {F,A,I,B}
+needsEval       2   bit                                 -- 1 == possibly needs eval, 2 == black hole
+tagCateg        2   bits                                -- eval == 0: {C,P}, eval == 1: {F,A,I,CF}
 gc              2   bits                                -- reserved for future use by garbage collecting
-tag             11  bits                                -- also used for size info for P, A
+tag             10  bits                                -- also used for size info for P, A
 %%]]
 
 A bit |needsEval| is reserved to indicate whether the node possibly needs evaluation.
-This is the case for saturated function closures (|tagCateg = F|),
+This is the case for saturated function closures (|tagCateg = F/CF|),
 general application nodes (|tagCateg = A|),
-indirection nodes (|tagCateg = I|),
-and black holes (|tagCateg = H|).
+indirection nodes (|tagCateg = I|).
 Data constructors (|tagCateg = C|) and partial applications (|tagCateg = P|) need no further evaluation.
 
 Tag categories summary:
@@ -337,7 +336,7 @@ Tag categories summary:
 F               00              -- function closure
 A               01              -- general application
 I               10              -- indirection
-B               11              -- black hole
+CF              11              -- C function closure
 
 C               00              -- constructor
 P               01              -- partial app
@@ -432,6 +431,30 @@ CAF entrypoints         :   angle(m).4  ::  PC                      ::  PC[]    
 all modules             :   0.0         ::  ModNm -> Module         ::  Node[]                  -- 
 CAF                     :   0.1         ::
 %%]]
+
+\subsection{Strings}
+
+Strings are represented in the usual way, as |[Char]|, but string constants are platform dependent strings with a wrapper around.
+A string constant |s| like the following:
+
+%%[[wrap=code
+s = "Hello world"
+%%]]
+
+is translated to
+
+%%[[wrap=code
+data PackedString
+  = PackedString        Ptr
+
+foreign import ccall "primCString2String" fromPackedString :: PackedString -> [Char]
+
+s = fromPackedString $ PackedString "Hello world"
+%%]]
+
+The internal representation of |PackedString| is hidden and only known to GBM.
+The |Ptr| of a |PackedString| points to the string, which itself is stored in a strings table.
+The |Ptr| is also stored as a constant in a constants table, which is used by the |ldg| + linking combination.
 
 %%]
 
@@ -617,24 +640,28 @@ ild(i)(rd)(rs)(x)
   =  case angle(i) of
        0  ->  d  :=  s
        1  ->  d  :=  *s
-       2  ->  d  :=  **s
+       2  ->  d  :=  *s'
        i  ->  d  :=  Enc(s)
-%%@TopicGrinBytecode.grinBLoadSrc
+  where  (s,s')  <-  case ^^ angle(rs) of
+                       t  -> (gstack + x,*gstack+x)
+                       r  -> (greg + x,*greg+x)
+                       p  -> (gpc + x,*gpc+x)        -- after instruction fetch
+                       i  -> (x,*x)
          d  <-  case ^^ angle(rd) of
                   t  ->  gstack := [gstack]-1
                          *(gstack + x)
                   r  ->  greg
 %%]]
 
+Offset |x| in bytes.
+
 \textbf{Abbreviations}\\
 
 %%[[wrap=code
 ldl d       =   l1tt  d            -- push content displacement d relative to tos on stack
 ldc c       =   l0ti  c            -- push constant c on stack
-ldi i       =   liti  c            -- push constant c in int encoding on stack
+ldi c       =   liti  c            -- push constant c in int encoding on stack
 %%]]
-
-\textbf{|ldl|: load local from stack}\\
 
 \GriniStep{%
  \GriniStateBefore{%
@@ -652,7 +679,55 @@ ldi i       =   liti  c            -- push constant c in int encoding on stack
  }{%
   |gcode|
  }{%
-  |sv : s0 : ... : sv : gstack|
+  |gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |ldc c : gcode|
+ }{%
+  |s0 : ... : sv : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |c : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |ldi c : gcode|
+ }{%
+  |s0 : ... : sv : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |Enc(c) : gstack|
  }{%
   |gheap|
  }{
@@ -694,10 +769,10 @@ with the proper location.
 ist(i)(rd)(rs)(x)
   =  case angle(i) of
        0  ->  *d         :=  s
-       1  ->  **d        :=  s
-  where  d  <-  case ^^ angle(rd) of
-                  t  -> gstack + x
-                  r  -> greg + x
+       1  ->  *d'        :=  s
+  where  (d,d')  <-  case ^^ angle(rd) of
+                       t  -> (gstack + x,*gstack+x)
+                       r  -> (greg + x,*greg+x)
          s  <-  case ^^ angle(rs) of
                   t  ->  s = gstack
                          gstack := [gstack]+1
@@ -705,28 +780,14 @@ ist(i)(rd)(rs)(x)
                   r  ->  greg
 %%]]
 
+Offset |x| in bytes.
+
 \textbf{Abbreviations}\\
 
 %%[[wrap=code
 sts d       =   s1tt   d            -- pop tos content into displacement d relative to tos on stack
 %%]]
 
-%%]
-
-%%[grinBLoadSrc
-  where  s  <-  case ^^ angle(rs) of
-                  t  -> gstack + x
-                  r  -> greg + x
-                  p  -> gpc + x        -- after instruction fetch
-                  i  -> x
-%%]
-
-%%[grinBLoadSrc2
-  where  s  <-  case ^^ angle(rs) of
-                  t  -> gstack + xpos
-                  r  -> greg + xpos
-                  p  -> gpc + xpos        -- after instruction fetch
-                  i  -> xpos
 %%]
 
 %%[grinBArithmetic
@@ -1006,9 +1067,35 @@ A saturated function call closure:
 }{%
  \GriniStateAfter{%
  }{%
-  |call : GB_Ins_EvalUpdCont|
+  |call : evupdcont|
  }{%
   |f : a1 : .. : an : gcode : p : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
+A saturated C function call closure:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |evalt : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |[ p :-> (CF : f : a1 : .. : an) ] `elem` gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |(f a1 .. an) : gstack|
  }{%
   |gheap|
  }{
@@ -1097,7 +1184,7 @@ Nodes which require no evaluation are left as is, e.g. constructors and partial 
 
 \subsubsection{Eval Update continuation}
 
-\begin{GrinEncoding}{|GB_Ins_EvalUpdCont|}
+\begin{GrinEncoding}{|evupdcont|}
  &
 |1111 ^^ 1101| &
  &
@@ -1110,7 +1197,7 @@ Updating only is done as part of |evalt|, hence is not generated/called directly
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |GB_Ins_EvalUpdCont : _|
+  |evupdcont : _|
  }{%
   |p' : gcode : p : gstack|
  }{%
@@ -1594,7 +1681,11 @@ Is this instruction necessary?
 %%[[wrap=code
 icp(i)(rs)(x)
   =  (*(gstack+1))[0..sz-1]  :=  (*(gstack))[0..sz-1]
-%%@TopicGrinBytecode.grinBLoadSrc2
+  where  s  <-  case ^^ angle(rs) of
+                  t  -> gstack + xpos
+                  r  -> greg + xpos
+                  p  -> gpc + xpos        -- after instruction fetch
+                  i  -> xpos
          sz <-  case angle(i) of
                   0  ->  s
                   1  ->  *s
@@ -1693,7 +1784,89 @@ etc.
 
 %%]
 
-%%[XX
+%%[runtimeInteraction
+
+\subsection{Code format: C}
+
+Example program:
+%%[[wrap=tttiny
+/* bytecode in C encoding for module gr1 */
+#include "rts.h"
+
+static GB_Byte gr1_bytecode[] =
+  { /* 0: l1tt08 0x04 */                                        /* [ id ] */
+       0x20,0x04 /* x__1 */
+  , /* 2: l1tt08 0x00 */
+       0x20,0x00 /* 10_0_2_0 */
+  , /* 4: tailevalt0808 0x04 0x08 */
+       0xe4,0x00,0x04,0x08
+  , /* 8: liti08 0x03 */                                        /* [ v ] */
+       0x68,0x03 /* constant 3 */
+  , /* 10: l1tt08 0x00 */
+       0x20,0x00 /* 10_0_4_0 */
+  , /* 12: ldg */
+       0xfc,0x00,0x00,0x00,0x00 /* id */
+  , /* 17: tailcallt080808 0x04 0x00 0x0c */
+       0xc2,0x00,0x04,0x00,0x0c
+  , /* 22: ldg */                                        /* [ main ] */
+       0xfc,0x00,0x00,0x00,0x01 /* v */
+  , /* 27: l1tt08 0x00 */
+       0x20,0x00 /* 10_0_6_0 */
+  , /* 29: tailevalt0808 0x00 0x08 */
+       0xe4,0x00,0x00,0x08
+  , /* 33: halt */
+       0xfe,0xff
+  } ;
+
+static char* gr1_strings[] =
+  { "gr1"} ;
+
+static GB_Word gr1_constants[] =
+  { ((GB_Word)(&(gr1_strings[0])))} ;
+
+static GB_BytePtr gr1_globalEntries[] =
+  { &(gr1_bytecode[0]), &(gr1_bytecode[8]), &(gr1_bytecode[22])} ;
+
+static GB_BytePtr* gr1_cafEntries[] =
+  { &(gr1_globalEntries[1]), &(gr1_globalEntries[2])} ;
+
+static GB_BytePtr* gr1_mainEntryPtr = &(gr1_globalEntries[2]) ;
+
+static GB_LinkEntry gr1_linkEntries[] =
+  { { 2, 0, ((GB_Ptr)(&(gr1_bytecode[13])))}, { 2, 1, ((GB_Ptr)(&(gr1_bytecode[23])))}} ;
+
+static GB_FixOffset gr1_fixOffsets[] =
+  { } ;
+
+/* Initialization */
+void gr1_initModuleTables() {
+  gb_InitTables( 35, gr1_bytecode, 2, gr1_linkEntries, gr1_globalEntries, 2, gr1_cafEntries, 0, gr1_fixOffsets, gr1_constants) ;
+}
+
+void gr1_main_GB_Init2() {
+  gr1_initModuleTables() ;
+}
+
+/* Dummy defs for Silly */
+void fun_main(void){}
+void initialize(void){}
+
+/* Main entry point */
+int main(int argc, char** argv) {
+  int nRtsOpts = 0 ;
+  main_GB_Init1( argc, argv, &nRtsOpts ) ;
+  gb_Opt_TraceSteps = True ;
+  argc -= nRtsOpts ; argv += nRtsOpts ;
+  gr1_main_GB_Init2( argc, argv) ;
+  main_GB_Run( argc, argv, gb_code_Eval, Cast(GB_Word,*gr1_mainEntryPtr) ) ;
+  return main_GB_Exit( argc, argv) ;
+}
+%%]]
+
+\subsection{Linking, constants, modules}
+
+\subsection{Primitives}
+
 %%]
 
 %%[XX

@@ -135,7 +135,7 @@ primMp
             ,\rs [RVInt i1,RVInt i2]    ->  let  c = case i1 `compare` i2 of {EQ->0; GT->1; LT->2}
                                             in   return (rs,Just (mkRN [RVCat NdCon,RVInt c,RVInt 0]))
           )
-        , ("primFromPackedString"
+        , ("primCString2String"
             ,\rs [v@(RVStr _)]    ->  return (rs,Just v)
           )
         , ("primTraceStringExit"

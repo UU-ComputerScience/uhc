@@ -35,25 +35,25 @@ PRIM GB_Node gb_LT
 %%[8
 PRIM GB_Word gb_primAddInt( GB_Word x, GB_Word y )
 {
-	IF_GB_TR_ON(3,printf("gb_primAddInt %d(%d)+%d(%d)=%d(%d)\n", GB_GBInt2Int(int,x), x, GB_GBInt2Int(int,y), y, GB_GBInt2Int(int,GB_Int_Add(x,y)), GB_Int_Add(x,y) );) ;
+	IF_GB_TR_ON(3,printf("gb_primAddInt %d(%d)+%d(%d)=%d(%d)\n", GB_GBInt2Int(x), x, GB_GBInt2Int(y), y, GB_GBInt2Int(GB_Int_Add(x,y)), GB_Int_Add(x,y) );) ;
   	return GB_Int_Add(x,y);
 }
 
 PRIM GB_Word gb_primSubInt( GB_Word x, GB_Word y )
 {
-	IF_GB_TR_ON(3,printf("gb_primSubInt %d(%d)-%d(%d)=%d(%d)\n", GB_GBInt2Int(int,x), x, GB_GBInt2Int(int,y), y, GB_GBInt2Int(int,GB_Int_Sub(x,y)), GB_Int_Sub(x,y) );) ;
+	IF_GB_TR_ON(3,printf("gb_primSubInt %d(%d)-%d(%d)=%d(%d)\n", GB_GBInt2Int(x), x, GB_GBInt2Int(y), y, GB_GBInt2Int(GB_Int_Sub(x,y)), GB_Int_Sub(x,y) );) ;
   	return GB_Int_Sub(x,y);
 }
 
 PRIM GB_Word gb_primMulInt( GB_Word x, GB_Word y )
 {
-	IF_GB_TR_ON(3,printf("gb_primMulInt %d(%d)*%d(%d)=%d(%d)\n", GB_GBInt2Int(int,x), x, GB_GBInt2Int(int,y), y, GB_GBInt2Int(int,GB_Int_Mul(x,y)), GB_Int_Mul(x,y) );) ;
+	IF_GB_TR_ON(3,printf("gb_primMulInt %d(%d)*%d(%d)=%d(%d)\n", GB_GBInt2Int(x), x, GB_GBInt2Int(y), y, GB_GBInt2Int(GB_Int_Mul(x,y)), GB_Int_Mul(x,y) );) ;
   	return GB_Int_Mul(x,y);
 }
 
 PRIM GB_Word gb_primDivInt( GB_Word x, GB_Word y )
 {
-	IF_GB_TR_ON(3,printf("gb_primDivInt %d(%d)/%d(%d)=%d(%d)\n", GB_GBInt2Int(int,x), x, GB_GBInt2Int(int,y), y, GB_GBInt2Int(int,GB_Int_Div(x,y)), GB_Int_Div(x,y) );) ;
+	IF_GB_TR_ON(3,printf("gb_primDivInt %d(%d)/%d(%d)=%d(%d)\n", GB_GBInt2Int(x), x, GB_GBInt2Int(y), y, GB_GBInt2Int(GB_Int_Div(x,y)), GB_Int_Div(x,y) );) ;
   	return GB_Int_Div(x,y);
 }
 %%]
@@ -89,19 +89,23 @@ PRIM GB_Word gb_primCmpInt( GB_Int x, GB_Int y )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+GB_NodePtr gb_primCString2String1Char( char* s, GB_Int goff )
+{
+	char c = s[ GB_GBInt2Int(goff) ] ;
+  	GB_NodePtr n, n2 ;
+  	IF_GB_TR_ON(3,printf("gb_primCString2String1Char %x:'%s'[%d]\n", s, s, GB_GBInt2Int(goff) ););
+	if ( c ) {
+		GB_MkCFunNode2(n2,&gb_primCString2String1Char,s,GB_Int_Add(goff,GB_Int1)) ;
+		GB_MkListCons(n,c,n2) ;
+	} else {
+  		GB_MkListNil(n) ;
+	}
+  	return n ;
+}
+
 PRIM GB_NodePtr gb_primCString2String( char* s )
 {
-  	GB_NodePtr n, n2 ;
-  	GB_MkListNil(n) ;
-  	IF_GB_TR_ON(3,printf("gb_primCString2String %x:'%s'\n", s, s ););
-  	int l = strlen(s) ;
-  	for( ; l > 0 ; )
-  	{
-  		l-- ;
-  		GB_MkListCons(n2,s[l],n) ;
-  		n = n2 ;
-  	}
-  	return n ;
+  	return gb_primCString2String1Char( s, GB_Int0 ) ;
 }
 
 PRIM GB_NodePtr gb_primTraceStringExit( GB_NodePtr n )
@@ -112,7 +116,9 @@ PRIM GB_NodePtr gb_primTraceStringExit( GB_NodePtr n )
 	gb_listForceEval( n, sz ) ;
 	GB_List_Iterate(n,sz,buf[bufInx++] = GB_List_Head(n)) ;
 	buf[bufInx] = 0 ;
-	error( buf ) ;
+	rts_error( buf ) ;
 	return n ;
 }
 %%]
+
+
