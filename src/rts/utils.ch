@@ -44,4 +44,5 @@ Backwards startingpoint starts after the first location (so predecrement is/can 
 									for ( ; (frPtr) > (frEndPtr) ; ) { \
 										*(--(toPtr)) = *(--(frPtr)) ; \
 									}
+
 %%]
