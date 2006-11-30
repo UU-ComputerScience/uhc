@@ -11,6 +11,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+#define USE_REGS_FOR_PC_SP 1
+%%]
+
+%%[8
 /* register optimization:
    this makes a big difference, nfib is 1.5 times faster on a pentium
 */
@@ -21,9 +25,10 @@
 # define FP_REG
 #endif
 #ifdef __x86_64__
-#define PC_REG asm("%rsi")
-#define SP_REG asm("%rdi")
+#define PC_REG asm("6")
+#define SP_REG asm("7")
 #define FP_REG
+#undef USE_REGS_FOR_PC_SP
 #endif
 #ifdef __mips__
 #define PC_REG asm("$16")
@@ -79,9 +84,13 @@
 %%]
 
 %%[8
-GB_BytePtr  pc ;
-GB_Ptr      sp ;
-
+#if USE_REGS_FOR_PC_SP
+register GB_BytePtr  pc PC_REG ;
+register GB_Ptr      sp SP_REG ;
+#else
+GB_BytePtr pc ;
+GB_Ptr     sp ;
+#endif
 %%]
 
 %%[8
