@@ -81,7 +81,7 @@ data EHCOpts
       ,  ehcOptVersion        ::  Bool
       ,  ehcOptDebug          ::  Bool
 %%[[7_2
-      , ehcoptUniqueness      ::  Bool
+      ,  ehcoptUniqueness     ::  Bool
 %%]]
 %%[[8
       ,  ehcOptDumpCallGraph  ::  Bool
@@ -109,7 +109,7 @@ data EHCOpts
       ,  ehcOptVerbosity      ::  Verbosity
       ,  ehcOptTrf            ::  [TrfOpt]
 
-      ,  ehcOptBuiltinNames	  ::  EHBuiltinNames
+      ,  ehcOptBuiltinNames   ::  EHBuiltinNames
 %%]]
 %%[[9
       ,  ehcOptPrfCutOffAt    ::  Int
@@ -121,6 +121,7 @@ data EHCOpts
 %%]]
 %%[[12
       ,  ehcCheckRecompile    ::  Bool
+      ,  ehcFullProgGRIN      ::  Bool
 %%]]
 %%[[99
       ,  ehcProgName          ::  String
@@ -190,6 +191,7 @@ defaultEHCOpts
 %%]]
 %%[[12
       ,  ehcCheckRecompile    =   True
+      ,  ehcFullProgGRIN      =   False
 %%]]
 %%[[99
       ,  ehcProgName          =   ""
@@ -270,11 +272,19 @@ ehcCmdLineOpts
                                 Just "java"  -> o { ehcOptEmitJava     = True      }
                                 Just "grin"  -> o { ehcOptEmitGrin     = True      }
                                 Just m | m `elem` ["exe","exec"]
-                                             -> o { ehcOptEmitExec     = True, ehcOptEmitLlc = True, ehcOptEmitGrinBC = True }
+                                             -> o { ehcOptEmitExec     = True, ehcOptEmitLlc = True
+%%[[12
+                                                  , ehcFullProgGRIN    = True
+%%]]
+                                                  }
                                 Just "bexec" -> o { ehcOptEmitExecBC   = True, ehcOptEmitGrinBC = True }
                                 Just "llvm"  -> o { ehcOptEmitLLVM     = True      }
                                 Just "bc"    -> o { ehcOptEmitGrinBC   = True      }
-                                Just "c"     -> o { ehcOptEmitLlc      = True      }
+                                Just "c"     -> o { ehcOptEmitLlc      = True
+%%[[12
+                                                  , ehcFullProgGRIN    = True
+%%]]
+                                                  }
                                 _            -> o
          oTrf        s   o =  o { ehcOptTrf           = opt s   }
                            where  opt "" =  []
@@ -325,6 +335,24 @@ optBoolean tr ms o
      Just "1"     -> tr o True
      _            -> o
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Discrimination options for recompile, represent as string, difference means recompile
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12 export(optsDiscrRecompileRepr)
+optsDiscrRecompileRepr :: EHCOpts -> String
+optsDiscrRecompileRepr opts
+  = concat
+    $ intersperse " "
+    $ [ o "grin"            (ehcOptEmitGrin     opts)
+      , o "grinbc"          (ehcOptEmitGrinBC   opts)
+      , o "exec"            (ehcOptEmitExec     opts)
+      , o "fullproggrin"    (ehcFullProgGRIN    opts)
+      , o "bexec"           (ehcOptEmitExecBC   opts)
+      ]
+  where o m v = if v then m else ""
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

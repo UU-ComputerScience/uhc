@@ -51,13 +51,16 @@ ATTR
       dataGam       USE {`gamUnion`}        {emptyGam}          : DataGam
       prIntroGam    USE {`gamUnion`}        {emptyGam}          : {Pr.PrIntroGam}
       prElimTGam    USE {`prElimTGamUnion`} {Pr.emptyPrElimTGam}: {Pr.PrElimTGam}
-    ]
+      lamMp         USE {`Map.union`}       {Map.empty}         : CLamInfoMp
+   ]
 
 SEM Binding
     | Export
         lhs             .   exportRel   =   @exports
     | Ids
         lhs             .   idGam       =   gamFromAssocL [ (o,mkIdDefOcc od IdAsp_Any nmLevOutside emptyRange) | (o,od) <- @idOccs ]
+    | Arities
+        lhs             .   lamMp       =   Map.fromList @idArities
     | Fixity
         lhs             .   fixityGam   =   gamSingleton @nm (FixityGamInfo @prio @fixity)
     | Val
@@ -120,6 +123,6 @@ ATTR AllNT AGItf [ | | isValidVersion USE {||} {False}: Bool ]
 SEM Binding
     | Stamp
         lhs             .   isValidVersion
-                                        =   @srcSig == verSig version
+                                        =   @srcSig == verSig version && optsDiscrRecompileRepr @lhs.opts == @compileFlags
 %%]
 

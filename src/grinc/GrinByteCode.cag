@@ -17,6 +17,9 @@
 %%[8 import({GrinByteCode/AbsSyn})
 %%]
 
+%%[12 hs import({%{EH}Core(HsName2OffsetMpMp)})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Additional datastructures, not incorporated as AST
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -45,6 +48,9 @@ Link items, to be resolved at runtime initialization.
 %%[8 hs export(Link(..),LinkTbl(..))
 data LinkTbl
   = LinkTbl_Const | LinkTbl_ConstPtr | LinkTbl_CodeEntry
+%%[[12
+  | LinkTbl_ImpEntry
+%%]]
   deriving (Show,Eq,Ord,Enum)
 
 data Link
@@ -77,13 +83,16 @@ data FixOffset
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Named value access
+%%% Environmental info for name resolution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs export(ValAccess(..),ValAccessGam)
 data ValAccess
   = Val_LocalOffset     Int
   | Val_GlobEntry       { vaEntryInx :: Int }
+%%[[12
+  | Val_ImpEntry        { vaModOff, vaEntryOff :: Int }
+%%]]
 --  | Val_GlobConst       HsName 
   deriving Show
 
@@ -93,16 +102,62 @@ instance PP ValAccess where
 type ValAccessGam = Map.Map HsName ValAccess
 %%]
 
+%%[12 hs export(ImpNmMp)
+type ImpNmMp = Map.Map HsName Int
+%%]
+
+%%[8 hs export(NmEnv(..))
+data NmEnv
+  = NmEnv
+      { neVAGam     :: ValAccessGam
+%%[[12
+      , neImpNmMp   :: HsName2OffsetMpMp
+%%]]
+      }
+%%]
+
+%%[8.nmEnvLookup hs export(nmEnvLookup)
+nmEnvLookup :: HsName -> NmEnv -> Maybe ValAccess
+nmEnvLookup nm env = Map.lookup nm $ neVAGam env
+%%]
+
+%%[12 -8.nmEnvLookup hs export(nmEnvLookup)
+nmEnvLookup :: HsName -> NmEnv -> Maybe ValAccess
+nmEnvLookup nm env
+  = case Map.lookup nm $ neVAGam env of
+      Nothing
+        -> do { q <- hsnQualifier nm
+              ; (mo,entryMp) <- Map.lookup q $ neImpNmMp env
+              ; eo <- Map.lookup nm entryMp
+              ; return (Val_ImpEntry mo eo)
+              }
+      v -> v
+%%]
+        -> case Map.lookup (hsnQualifier nm) $ neImpNmMp env of
+             Just (mo,entryMp)
+               -> case Map.lookup nm entryMp of
+                    Just eo -> Just (Val_ImpEntry mo eo)
+                    _       -> Nothing
+             _ -> Nothing
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Named value access
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[8 hs export(nmLd)
-nmLd :: ValAccessGam -> Int -> Int -> HsName -> (InsSeq,Int)
-nmLd vag modNmConstInx stkDepth nm
-  = case Map.lookup nm vag of
+nmLd :: NmEnv -> Int -> Int -> HsName -> (InsSeq,Int)
+nmLd env modNmConstInx stkDepth nm
+  = case nmEnvLookup nm env of
       Just va
         -> case va of
              Val_LocalOffset o
                -> (FSeq $ ann nm $ ldl (stkDepth - o), 1)
              Val_GlobEntry o
-               -> (FSeq $ ann nm $ ldg (Link modNmConstInx LinkTbl_CodeEntry o), 1)
+               -> (FSeq $ ann nm $ ldg InsOp_LocB_TOS (Link modNmConstInx LinkTbl_CodeEntry o), 1)
+%%[[12
+             Val_ImpEntry mo eo
+               -> (FSeqL [ann nm $ ldg InsOp_LocB_Reg (Link mo LinkTbl_ImpEntry eo), l1tr (eo+1)], 1)
+%%]]
              -- _ -> dflt
       _ -> (FSeq $ ann ("dummy ld for" >#< nm) $ ldl stkDepth, 1)
   where dflt = (FSeqNil,0)
@@ -196,7 +251,7 @@ imm c
 %%% Constructing: loading
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(ldc,ldl,ldg,ldi)
+%%[8 hs export(ldc,ldl,ldg,ldi,l1tr)
 ld :: Integral c => InsOp_Deref -> InsOp_LocB -> InsOp_LocE -> c -> Instr
 ld ind locB locE c
   = Instr_Ld ind locB locE s i
@@ -211,8 +266,11 @@ ldi = ld InsOp_Deref_Int InsOp_LocB_TOS InsOp_LocE_Imm
 ldl :: Integral c => c -> Instr
 ldl c = ld InsOp_Deref_One InsOp_LocB_TOS InsOp_LocE_TOS (nrWord2Byte c)
 
-ldg :: Link -> Instr
-ldg l = Instr_LdGlobal l
+l1tr :: Integral c => c -> Instr
+l1tr c = ld InsOp_Deref_One InsOp_LocB_TOS InsOp_LocE_Reg (nrWord2Byte c)
+
+ldg :: InsOp_LocB -> Link -> Instr
+ldg locB l = Instr_LdGlobal locB l
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -336,8 +394,8 @@ Offsets should coincide with def of GB_NodeHeader, src/rts/grinbc/grinbc
 
 load tag, yield stack increment and additional size to alloc
 %%[8 hs export(tag)
-tag :: ValAccessGam -> Int -> Int -> GrTag -> Int -> (InsSeq,Int,Int)
-tag vag modNmConstInx stkDepth gt sz
+tag :: NmEnv -> Int -> Int -> GrTag -> Int -> (InsSeq,Int,Int)
+tag env modNmConstInx stkDepth gt sz
   = case gt of
       GrTag_Lit categ tg nm
         -> (tins :++: FSeqL [ldc tword],tinc+1,allocInc)
@@ -348,9 +406,9 @@ tag vag modNmConstInx stkDepth gt sz
                     GrTagRec      -> (0,0,tg,FSeqNil,0,0)
                     GrTagApp      -> (1,1,tg,FSeqNil,0,0)
                     GrTagFun      -> (1,0,tg,ins,inc,0)
-                                  where (ins,inc) = nmLd vag modNmConstInx stkDepth nm
+                                  where (ins,inc) = nmLd env modNmConstInx stkDepth nm
                     GrTagPApp m   -> (0,1,m ,ins,inc,0)
-                                  where (ins,inc) = nmLd vag modNmConstInx stkDepth nm
+                                  where (ins,inc) = nmLd env modNmConstInx stkDepth nm
               tword = (toInteger (sz+tinc+allocInc+1) `shiftL` tgShSize) .|. needEval `shiftL` tgShNdEv .|. categ' `shiftL` tgShCateg .|. toInteger tg'
       _ -> (FSeqNil,0,0)
 %%]

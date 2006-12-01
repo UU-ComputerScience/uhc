@@ -7,7 +7,10 @@
 %%% HI parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 module {%{EH}HI.Parser} import(UU.Parsing, EH.Util.ParseUtils(PlainParser), EH.Util.ScanUtils, {%{EH}Base.Common}, qualified {%{EH}Pred} as Pr, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.Parser}, {%{EH}Ty}, {%{EH}HI}) export(pAGItf)
+%%[12 module {%{EH}HI.Parser} import(UU.Parsing, EH.Util.ParseUtils(PlainParser), EH.Util.ScanUtils, {%{EH}Base.Common})
+%%]
+
+%%[12 import(qualified {%{EH}Pred} as Pr, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.Parser}, {%{EH}Ty}, {%{EH}HI})
 %%]
 
 %%[12 import({%{EH}HS.Parser}(pFixity),{%{EH}Core.Parser}(pCExpr),{%{EH}Ty.Parser})
@@ -17,7 +20,7 @@
 %%% Parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[12 export(pAGItf)
 type HIParser       hp     =    PlainParser Token hp
 
 pNmIs :: String -> HIParser HsName
@@ -37,10 +40,12 @@ pBinding
   <|> Binding_Ids       <$  pNmIs "iddef"  <* pOCURLY
                                            <*> pListSep pSEMI ((,) <$ pOCURLY <*> pIdOcc <* pSEMI <*> pIdOcc <* pCCURLY)
                                            <* pCCURLY
+  <|> Binding_Arities   <$  pNmIs "arity"  <*> pCurlySemiBlock ((,) <$ pOCURLY <*> pDollNm <* pSEMI <*> pInt <* pCCURLY)
   <|> Binding_Val       <$> pNmIs "value"  <* pOCURLY <*> pTy                           <* pCCURLY
   <|> Binding_Stamp     <$  pNmIs "stamp"  <* pOCURLY <*> pString <* pSEMI <*> pString
                                            <* pSEMI   <*> pString <* pSEMI <*> pString
                                            <* pSEMI   <*> pString <* pSEMI <*> pString
+                                           <* pSEMI   <*> pString
                                            <* pSEMI   <*> (read <$> pInteger)
                                            <* pCCURLY
   <|> Binding_Export    <$  pNmIs "export"            <*> pModEntRel

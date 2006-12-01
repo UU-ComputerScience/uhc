@@ -138,7 +138,7 @@ rpatConBindUnFlatten bs  = RPatConBind_Many bs
 %%% Conversion from Rxxx -> Cxxx
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(rpat2CPat,rpatConBind2CPatConBind,rpatBind2CPatBind)
+%%[8 hs export(rpat2CPat)
 rpat2CPat :: RPat -> CPat
 rpat2CPat p
   = case p of
@@ -150,7 +150,9 @@ rpat2CPat p
 %%[[99
       RPat_BoolExpr n v     -> CPat_BoolExpr (rpatNmNm n) v
 %%]]
+%%]
 
+%%[8 hs export(rpatConBind2CPatConBind,rpatBind2CPatBind)
 rpatConBind2CPatConBind :: RPatConBind -> (CPatRest,[CPatBind])
 rpatConBind2CPatConBind b
   = case b of
@@ -190,13 +192,6 @@ cTupOff e
          CExpr_TupIns _ _ _ o _ -> o
          CExpr_TupUpd _ _ _ o _ -> o
          CExpr_TupDel _ _ _ o   -> o
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Tag
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 hs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -265,15 +260,6 @@ data RPatNm
 instance Show RPatNm where
   show pnm = show (rpatNmNm pnm)
 %%]
-
-cpatNmEither :: (HsName -> a) -> (HsName -> a) -> RPatNm -> a
-cpatNmEither o u pnm = case pnm of {RPatNmOrig n -> o n; RPatNmUniq n -> u n}
-
-cpatNmNone :: RPatNm
-cpatNmNone = RPatNmOrig hsnWild
-
-ppRPatNmNm :: (HsName -> PP_Doc) -> RPatNm -> PP_Doc
-ppRPatNmNm ppNm = cpatNmEither (ppNm) (\n -> "uniq" >#< ppNm n)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Construction
@@ -381,6 +367,23 @@ fvsLev lm fvs = foldr (\n l -> fvLev lm n `max` l) cLevOuter . Set.toList $ fvs
 
 levMpAdd :: LevMp -> FvSMp -> LevMp
 levMpAdd lm fvm = Map.map (fvsLev lm) fvm `Map.union` lm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known function arity
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(CLamInfoMp)
+type CLamInfoMp = Map.Map HsName Int
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name to offset (in a record)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12 hs export(HsName2OffsetMp,HsName2OffsetMpMp)
+type HsName2OffsetMp = Map.Map HsName Int
+type HsName2OffsetMpMp = Map.Map HsName (Int,HsName2OffsetMp)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

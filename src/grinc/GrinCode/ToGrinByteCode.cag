@@ -8,7 +8,7 @@
 %%[8 hs import(Data.Maybe,Data.List,UU.Pretty,EH.Util.FastSeq,EH.Util.Utils,qualified Data.Set as Set,qualified Data.Map as Map,{%{EH}Base.Common})
 %%]
 
-%%[8 hs import({%{EH}GrinCode.Pretty},{%{EH}Base.Builtin},qualified {%{GRIN}GrinByteCode} as GB,{%{EH}GrinCode})
+%%[8 hs import({%{EH}GrinCode.Pretty},{%{EH}Base.Builtin},qualified {%{GRIN}GrinByteCode} as GB,{%{EH}Core},{%{EH}GrinCode})
 %%]
 
 %%[8 hs export(grinMod2ByteCodeMod)
@@ -34,12 +34,12 @@ grinMod2ByteCodeMod gmod
 %%]
 
 %%[12 -8.grinMod2ByteCodeMod hs
-grinMod2ByteCodeMod :: [HsName] -> [HsName] -> HsNameS -> GrModule -> GB.Module
-grinMod2ByteCodeMod allImpNmL impNmL expNmS gmod
+grinMod2ByteCodeMod :: [HsName] -> HsName2OffsetMpMp -> HsName2OffsetMp -> GrModule -> GB.Module
+grinMod2ByteCodeMod allImpNmL impNmOffMpMp expNmOffMp gmod
   =  let  t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf gmod))
                             (Inh_GrAGItf
-                               { expNmS_Inh_GrAGItf = expNmS
-                               , impNmL_Inh_GrAGItf = impNmL
+                               { expNmOffMp_Inh_GrAGItf = expNmOffMp
+                               , impNmOffMpMp_Inh_GrAGItf = impNmOffMpMp
                                , allImpNmL_Inh_GrAGItf = allImpNmL
                                })
      in   gbMod_Syn_GrAGItf t
@@ -54,7 +54,15 @@ ATTR AllNTNoMod [ modNmConstInx: Int | | ]
 %%]
 
 %%[12
-ATTR GrAGItf GrModule [ expNmS: HsNameS  impNmL: {[HsName]}  allImpNmL: {[HsName]} | | ]
+ATTR GrAGItf GrModule [ expNmOffMp: HsName2OffsetMp  allImpNmL: {[HsName]} | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module name map to field nr in node with imported modules
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR GrAGItf GrModule AllBind AllGrExpr [ impNmOffMpMp: HsName2OffsetMpMp | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -276,6 +284,32 @@ SEM GrAlt
                 expr        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
 %%]
 
+%%[8
+SEM GrExpr
+  | *           loc         .   nmEnv           =   GB.NmEnv
+                                                      { GB.neVAGam = @lhs.vaGam
+%%[[12
+                                                      , GB.neImpNmMp = @lhs.impNmOffMpMp
+%%]]
+                                                      }
+
+SEM GrBind
+  | Bind        loc         .   nmEnv           =   GB.NmEnv
+                                                      { GB.neVAGam = @lhs.vaGam
+%%[[12
+                                                      , GB.neImpNmMp = @lhs.impNmOffMpMp
+%%]]
+                                                      }
+
+SEM GrModule
+  | Mod         loc         .   nmEnv           =   GB.NmEnv
+                                                      { GB.neVAGam = @vaGam
+%%[[12
+                                                      , GB.neImpNmMp = @lhs.impNmOffMpMp
+%%]]
+                                                      }
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% GrVal Value introduction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -292,34 +326,34 @@ data GValIntroAlt
   = GValIntroAlt_One    GB.InsSeq Int
 --  | GValIntroAlt_Alt    [GValIntroAlt]
 
-gviLdFold' :: GValIntroAlt -> GB.ValAccessGam -> Int -> Int -> [GValIntro] -> GValIntroAlt
-gviLdFold' dflt vag modNmConstInx stkDepth introL
+gviLdFold' :: GValIntroAlt -> GB.NmEnv -> Int -> Int -> [GValIntro] -> GValIntroAlt
+gviLdFold' dflt env modNmConstInx stkDepth introL
   = foldl ld dflt $ reverse $ introL
   where ld (GValIntroAlt_One ins dep) intro
           = GValIntroAlt_One (ins :++: ins') (dep+dep')
-          where (GValIntroAlt_One ins' dep') = gviLd vag modNmConstInx (stkDepth+dep) intro
+          where (GValIntroAlt_One ins' dep') = gviLd env modNmConstInx (stkDepth+dep) intro
 
-gviLdFold :: GB.ValAccessGam -> Int -> Int -> [GValIntro] -> GValIntroAlt
+gviLdFold :: GB.NmEnv -> Int -> Int -> [GValIntro] -> GValIntroAlt
 gviLdFold = gviLdFold' (GValIntroAlt_One FSeqNil 0)
 
-gviLd :: GB.ValAccessGam -> Int -> Int -> GValIntro -> GValIntroAlt
-gviLd vag modNmConstInx stkDepth intro
+gviLd :: GB.NmEnv -> Int -> Int -> GValIntro -> GValIntroAlt
+gviLd env modNmConstInx stkDepth intro
   = ld (GValIntroAlt_One FSeqNil 0) intro
   where ld dflt@(GValIntroAlt_One ins dep) intro
           = case intro of
               GValIntro_Nm nm
                 -> GValIntroAlt_One (ins :++: ins') (dep+dep')
-                where (ins',dep') = GB.nmLd vag modNmConstInx stkDepth nm
+                where (ins',dep') = GB.nmLd env modNmConstInx stkDepth nm
               GValIntro_Str s l
-                -> GValIntroAlt_One (ins ::+: (GB.ann (show l) $ GB.ldg l)) (dep+1)
+                -> GValIntroAlt_One (ins ::+: (GB.ann (show l) $ GB.ldg GB.InsOp_LocB_TOS l)) (dep+1)
               GValIntro_Int i
                 -> GValIntroAlt_One (ins ::+: (GB.ann ("constant" >#< show i) $ GB.ldi i)) (dep+1)
               GValIntro_Grp gtag [i] | GB.tagIsUnboxed gtag
                 -> ld dflt i
               GValIntro_Grp gtag is
                 -> GValIntroAlt_One (gins :++: sins) sinc
-                where i@(GValIntroAlt_One ins inc) = gviLdFold' dflt vag modNmConstInx (stkDepth+dep) is
-                      (tins,tinc,allocInc) = GB.tag vag modNmConstInx (stkDepth+dep+inc) gtag inc
+                where i@(GValIntroAlt_One ins inc) = gviLdFold' dflt env modNmConstInx (stkDepth+dep) is
+                      (tins,tinc,allocInc) = GB.tag env modNmConstInx (stkDepth+dep+inc) gtag inc
                       gins = ins :++: FSeqL [GB.meta (ppGrTag gtag)] :++: tins
                       ginc = inc + tinc
                       (sins,sinc) = GB.ndStore (allocInc + ginc)
@@ -403,36 +437,36 @@ SEM GrExpr
 %%[8
 SEM GrExpr
   | Unit        loc         .   (valIns,valStkInc,retIsDone,mbUnitIntro)
-                                                =   case gviLd @lhs.vaGam @lhs.modNmConstInx @lhs.stkDepth @val.gvalIntro of
+                                                =   case gviLd @nmEnv @lhs.modNmConstInx @lhs.stkDepth @val.gvalIntro of
                                                       GValIntroAlt_One ins inc | not @lhs.isSeqArgCtxt
                                                         -> (ins,inc,False,Nothing)
                                                       _ -> (FSeqNil,0,True,Just (UnitIntro @val.gvalIntro))
   | Store       loc         .   (valIns,valStkInc,retIsDone)
-                                                =   case gviLd @lhs.vaGam @lhs.modNmConstInx @lhs.stkDepth @val.gvalIntro of
+                                                =   case gviLd @nmEnv @lhs.modNmConstInx @lhs.stkDepth @val.gvalIntro of
                                                       GValIntroAlt_One ins inc
                                                         -> (ins, inc, False)
   | Call        loc         .   (valIns,valStkInc,retIsDone)
-                                                =   case gviLdFold @lhs.vaGam @lhs.modNmConstInx @lhs.stkDepth @argL.gvalIntroL of
+                                                =   case gviLdFold @nmEnv @lhs.modNmConstInx @lhs.stkDepth @argL.gvalIntroL of
                                                       GValIntroAlt_One ins inc
                                                         -> case @lhs.returnCtxt of
                                                              ReturnCtxt_Returns nrArgsOuter
                                                                -> (ins :++: fins :++: FSeqL [GB.tailcall GB.InsOp_LocB_TOS nArgMine nrArgsOuter retOffSurr], 0, True)
-                                                               where (fins,fdep) = GB.nmLd @lhs.vaGam @lhs.modNmConstInx (@lhs.stkDepth + inc) @nm
+                                                               where (fins,fdep) = GB.nmLd @nmEnv @lhs.modNmConstInx (@lhs.stkDepth + inc) @nm
                                                                      nArgMine    = length @argL.gvalIntroL
                                                                      retOffSurr  = @lhs.stkDepth + inc + fdep
                                                              _ -> (ins :++: fins :++: FSeqL [GB.call GB.InsOp_LocB_TOS], 1, False)
-                                                               where (fins,_) = GB.nmLd @lhs.vaGam @lhs.modNmConstInx (@lhs.stkDepth + inc) @nm
+                                                               where (fins,_) = GB.nmLd @nmEnv @lhs.modNmConstInx (@lhs.stkDepth + inc) @nm
   | FFI         loc         .   (valIns,valStkInc,retIsDone)
-                                                =   case gviLdFold @lhs.vaGam @lhs.modNmConstInx @lhs.stkDepth $ map GValIntro_Nm $ @argL of
+                                                =   case gviLdFold @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ map GValIntro_Nm $ @argL of
                                                       GValIntroAlt_One ins inc
                                                         -> (ins :++: fins :++: FSeqL [GB.callc inc], 1, False)
-                                                        where fins = FSeqL [GB.ldg $ GB.Link @lhs.modNmConstInx GB.LinkTbl_Const @constInx]
+                                                        where fins = FSeqL [GB.ldg GB.InsOp_LocB_TOS $ GB.Link @lhs.modNmConstInx GB.LinkTbl_Const @constInx]
   | FetchUpdate loc         .   (valIns,valStkInc,retIsDone)
-                                                =   case gviLdFold @lhs.vaGam @lhs.modNmConstInx @lhs.stkDepth $ map GValIntro_Nm $ [@src,@dst] of
+                                                =   case gviLdFold @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ map GValIntro_Nm $ [@src,@dst] of
                                                       GValIntroAlt_One ins inc
                                                         -> (ins :++: FSeqL [GB.fetchupdate], 0, False)
   | Eval        loc         .   (valIns,valStkInc,retIsDone)
-                                                =   let (ins,inc) = GB.nmLd @lhs.vaGam @lhs.modNmConstInx @lhs.stkDepth @nm
+                                                =   let (ins,inc) = GB.nmLd @nmEnv @lhs.modNmConstInx @lhs.stkDepth @nm
                                                     in  case @lhs.returnCtxt of
                                                           ReturnCtxt_Returns nrArgsOuter
                                                             -> (ins :++: eins, 0, True)
@@ -441,12 +475,12 @@ SEM GrExpr
                                                           _ -> (ins :++: eins, inc, False)
                                                             where eins = FSeqL [GB.eval GB.InsOp_LocB_TOS]
   | App         loc         .   (valIns,valStkInc,retIsDone)
-                                                =   case gviLdFold @lhs.vaGam @lhs.modNmConstInx @lhs.stkDepth @argL.gvalIntroL of
+                                                =   case gviLdFold @nmEnv @lhs.modNmConstInx @lhs.stkDepth @argL.gvalIntroL of
                                                       GValIntroAlt_One ins inc
                                                         -> (ins :++: FSeqL [GB.ldc (length @argL.gvalIntroL)] :++: fins :++: FSeqL [GB.apply GB.InsOp_LocB_TOS], 1, False)
-                                                        where (fins,_) = GB.nmLd @lhs.vaGam @lhs.modNmConstInx (@lhs.stkDepth + inc + 1) @nm
+                                                        where (fins,_) = GB.nmLd @nmEnv @lhs.modNmConstInx (@lhs.stkDepth + inc + 1) @nm
   | Case        loc         .   (valIns,valStkInc,retIsDone,scrutineeStkInc)
-                                                =   case gviLd @lhs.vaGam @lhs.modNmConstInx @lhs.stkDepth @val.gvalIntro of
+                                                =   case gviLd @nmEnv @lhs.modNmConstInx @lhs.stkDepth @val.gvalIntro of
                                                       GValIntroAlt_One ins inc
                                                         -> (ins :++: ins',1,True,inc)
                                                         where ins' = FSeqL [GB.casecall {- @nrOfAlts -},GB.label (GB.LocRef_Label @at1stOffLabel) ]
@@ -467,7 +501,7 @@ SEM GrExpr
                                                     in  case @expr.mbUnitIntro of
                                                           Just (UnitIntro gvi)
                                                             -> nm ins inc @pat.nmIntro
-                                                            where (GValIntroAlt_One ins inc) = gviLd @lhs.vaGam @lhs.modNmConstInx @expr.stkDepth gvi
+                                                            where (GValIntroAlt_One ins inc) = gviLd @nmEnv @lhs.modNmConstInx @expr.stkDepth gvi
                                                           _ -> nm FSeqNil 0 @pat.nmIntro
 
 SEM GrExpr
@@ -494,13 +528,13 @@ ATTR AllBind [ | | entryNms USE {:++:} {FSeqNil}: {FastSeq (HsName,Bool)} ]
 
 SEM GrBind
   | Bind        lhs         .   entryNms        =   FSeq (@nm,null @argNmL)
-                loc         .   entryInx        =   GB.vaEntryInx $ panicJust "GrBind.Bind.entryInx" $ Map.lookup @nm @lhs.vaGam
+                loc         .   entryInx        =   GB.vaEntryInx $ panicJust "GrBind.Bind.entryInx" $ GB.nmEnvLookup @nm @nmEnv
 
 SEM GrModule
   | Mod         loc         .   (entryNmMp,isCafL)
                                                 =   let (nL,cafL) = unzip $ toList @bindL.entryNms
-                                                	in  (Map.fromList $ zip nL [0..],cafL)
-                            .   mainEntry       =   maybe 0 GB.vaEntryInx $ Map.lookup hsnMain @vaGam
+                                                    in  (Map.fromList $ zip nL [0..],cafL)
+                            .   mainEntry       =   maybe 0 GB.vaEntryInx $ GB.nmEnvLookup hsnMain @nmEnv
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -514,8 +548,8 @@ SEM GrModule
   | Mod         lhs         .   gbMod           =   GB.Module_Mod @moduleNmAlpha
 %%[[12
                                                       [ (n,hsnShowAlphanumeric n) | n <- @lhs.allImpNmL ]
-                                                      (tyRowCanonOrder [ (n,hsnShowAlphanumeric n) | n <- @lhs.impNmL ])
-                                                      [ e | e@(n,_) <- tyRowCanonOrder $ Map.toList @entryNmMp, n `Set.member` @lhs.expNmS ]
+                                                      [ (n,hsnShowAlphanumeric n) | (n,_) <- sortOn (fst.snd) $ Map.toList @lhs.impNmOffMpMp ]
+                                                      [ (n,panicJust ("GrModule.Mod.entryNmMp:" ++ show n) $ Map.lookup n @entryNmMp) | (n,_) <- sortOn snd $ Map.toList @lhs.expNmOffMp ]
 %%]]
                                                       (toList $ @bindL.i :++: FSeqL [GB.halt])
                                                       [ s | (s,_) <- sortOn (GB.constInx . snd) $ Map.toList @bindL.strMp ]
@@ -524,6 +558,7 @@ SEM GrModule
                                                       @mainEntry
                                                       (toList @bindL.fixOffsets)
 %%]
+                                                      [ e | e@(n,_) <- tyRowCanonOrder $ Map.toList @entryNmMp, n `Set.member` @lhs.expNmS ]
 
 %%[8
 ATTR AllBind AllGrExpr [ | | i USE {:++:} {FSeqNil}: {GB.InsSeq} ]
