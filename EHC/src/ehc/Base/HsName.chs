@@ -8,10 +8,13 @@
 %%[1 import(UU.Scanner.Position) export(HSNM(..),HsName(..))
 %%]
 
+%%[3 import(qualified Data.Set as Set)
+%%]
+
 %%[8 export(hsnShowAlphanumeric)
 %%]
 
-%%[8 import(EH.Util.FPath,Char,Data.Maybe,qualified Data.Set as Set)
+%%[8 import(EH.Util.FPath,Char,Data.Maybe)
 %%]
 
 %%[8 export(hsnInitLast)
@@ -318,6 +321,6 @@ instance PP IdOcc where
 %%% Set of names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(HsNameS)
+%%[3 export(HsNameS)
 type HsNameS = Set.Set HsName
 %%]
