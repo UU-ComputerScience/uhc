@@ -61,6 +61,7 @@ the machinery.
 %format ldl         = "\mathsf{ldl}"
 %format ldc         = "\mathsf{ldc}"
 %format ldi         = "\mathsf{ldi}"
+%format ldg         = "\mathsf{ldg}"
 %format ldgt        = "\mathsf{ldgt}"
 %format l1tt        = "\mathsf{l1tt}"
 %format l0ti        = "\mathsf{l0ti}"
@@ -236,13 +237,13 @@ We present the translation of the example into GBM code to give the reader an in
      =  {  store (#0 ^ / ^ C ^ / ^ Int ^^ 3) ; \x ->
                 ldi         3                   -- load (unboxed) int 3
                 ldl         x                   -- load x (alias for 3)
-                ldg         id                  -- load global id
+                ldgt        id                  -- load global id
            id x
                 tailcall                        -- tail call
         } 
 ;  main 
      =  {  unit v ; \v' ->
-                ldg         v                   -- load global v
+                ldgt        v                   -- load global v
                 ldl         v'                  -- load v' (alias for v)
            eval v'
                 taileval                        -- tail evaluate
@@ -739,15 +740,15 @@ ldi c       =   liti  c            -- push constant c in int encoding on stack
 
 \emph{This section is left here for later rewrite, |ldg| depends on additional linking tables}
 
-\begin{GrinEncoding}{|ildg(rd)(a)|}
+\begin{GrinEncoding}{|ildg(rd)(v)|}
  &
 |1100 ^^ 100 ^ ixx1(rd)(0)| &
-a &
+v &
 ... &
 \\
 \end{GrinEncoding}
 
-|a| is a word sized address, patched by linking during initialisation.
+|v| is a word sized value, patched by linking during initialisation.
 
 \subsubsection{Storing}
 
